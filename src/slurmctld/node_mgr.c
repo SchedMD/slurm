@@ -1638,7 +1638,10 @@ extern int validate_nodes_via_front_end(
 		slurm_node_registration_status_msg_t *reg_msg)
 {
 	int error_code = 0, i, jobs_on_node;
-	bool updated_job = false, failure_logged = false;
+	bool updated_job = false;
+#ifdef HAVE_BG
+	bool failure_logged = false;
+#endif
 	struct job_record *job_ptr;
 	struct config_record *config_ptr;
 	struct node_record *node_ptr;

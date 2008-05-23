@@ -471,7 +471,8 @@ extern int time_str2mins(char *string)
 
 	if ((string == NULL) || (string[0] == '\0'))
 		return -1;	/* invalid input */
-	if ((!strcasecmp(string, "INFINITE")) ||
+	if ((!strcasecmp(string, "-1")) ||
+	    (!strcasecmp(string, "INFINITE")) ||
 	    (!strcasecmp(string, "UNLIMITED"))) {
 		return INFINITE;
 	}

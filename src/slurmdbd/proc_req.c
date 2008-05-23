@@ -66,6 +66,8 @@ static int   _get_jobs(void *db_conn, Buf in_buffer, Buf *out_buffer);
 static int   _get_usage(uint16_t type, void *db_conn,
 			Buf in_buffer, Buf *out_buffer);
 static int   _get_users(void *db_conn, Buf in_buffer, Buf *out_buffer);
+static int   _flush_jobs(void *db_conn,
+			 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static void *_init_conn(Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _fini_conn(void **db_conn, Buf in_buffer, Buf *out_buffer);
 static int   _job_complete(void *db_conn,
@@ -176,6 +178,9 @@ proc_req(void **db_conn, slurm_fd orig_fd,
 			break;
 		case DBD_GET_USERS:
 			rc = _get_users(*db_conn, in_buffer, out_buffer);
+			break;
+		case DBD_FLUSH_JOBS:
+			rc = _flush_jobs(*db_conn, in_buffer, out_buffer, uid);
 			break;
 		case DBD_INIT:
 			if (first)
@@ -786,6 +791,39 @@ static int _get_users(void *db_conn, Buf in_buffer, Buf *out_buffer)
 	return SLURM_SUCCESS;
 }
 
+static int _flush_jobs(void *db_conn,
+			  Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	dbd_cluster_procs_msg_t *cluster_procs_msg = NULL;
+	int rc = SLURM_SUCCESS;
+	char *comment = NULL;
+
+	if (*uid != slurmdbd_conf->slurm_user_id) {
+		comment = "DBD_FLUSH_JOBS message from invalid uid";
+		error("DBD_FLUSH_JOBS message from invalid uid %u", *uid);
+		rc = ESLURM_ACCESS_DENIED;
+		goto end_it;
+	}
+	if (slurmdbd_unpack_cluster_procs_msg(&cluster_procs_msg, in_buffer) !=
+	    SLURM_SUCCESS) {
+		comment = "Failed to unpack DBD_FLUSH_JOBS message";
+		error("%s", comment);
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+	debug2("DBD_FLUSH_JOBS: called for %s",
+	       cluster_procs_msg->cluster_name);
+
+	rc = acct_storage_g_flush_jobs_on_cluster(
+		db_conn,
+		cluster_procs_msg->cluster_name,
+		cluster_procs_msg->event_time);
+end_it:
+	slurmdbd_free_cluster_procs_msg(cluster_procs_msg);
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_FLUSH_JOBS);
+	return rc;
+}
+
 static void *_init_conn(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_init_msg_t *init_msg = NULL;
@@ -1085,7 +1123,7 @@ static int   _modify_assocs(void *db_conn,
 						get_msg->cond, get_msg->rec);
 
 	slurmdbd_free_modify_msg(DBD_MODIFY_ASSOCS, get_msg);
-		*out_buffer = init_buf(1024);
+	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
 	slurmdbd_pack_list_msg(DBD_GOT_LIST, &list_msg, *out_buffer);
 	if(list_msg.my_list)
@@ -1128,7 +1166,7 @@ static int   _modify_clusters(void *db_conn,
 					    get_msg->cond, get_msg->rec);
 
 	slurmdbd_free_modify_msg(DBD_MODIFY_CLUSTERS, get_msg);
-		*out_buffer = init_buf(1024);
+	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
 	slurmdbd_pack_list_msg(DBD_GOT_LIST, &list_msg, *out_buffer);
 	if(list_msg.my_list)

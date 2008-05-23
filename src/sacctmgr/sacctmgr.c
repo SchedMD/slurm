@@ -426,7 +426,7 @@ _process_command (int argc, char *argv[])
 				 argv[0]);
 		}		
 		quiet_flag = -1;
-	} else if (strncasecmp (argv[0], "rollup", 1) == 0) {
+	} else if (strncasecmp (argv[0], "rollup", 2) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr,

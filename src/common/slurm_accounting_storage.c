@@ -142,6 +142,9 @@ typedef struct slurm_acct_storage_ops {
 				    List selected_parts, void *params);	
 	int (*update_shares_used)  (void *db_conn,
 				    List shares_used);
+	int (*flush_jobs)          (void *db_conn,
+				    char *cluster,
+				    time_t event_time);
 } slurm_acct_storage_ops_t;
 
 typedef struct slurm_acct_storage_context {
@@ -211,7 +214,8 @@ static slurm_acct_storage_ops_t * _acct_storage_get_ops(
 		"jobacct_storage_p_suspend",
 		"jobacct_storage_p_get_jobs",
 		"jobacct_storage_p_archive",
-		"acct_storage_p_update_shares_used"
+		"acct_storage_p_update_shares_used",
+		"acct_storage_p_flush_jobs_on_cluster"
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
 
@@ -1561,20 +1565,39 @@ extern acct_admin_level_t str_2_acct_admin_level(char *level)
 
 extern void log_assoc_rec(acct_association_rec_t *assoc_ptr)
 {
-	info("association rec id: %u", assoc_ptr->id);
-	info("  acct :            %s", assoc_ptr->acct);
-	info("  cluster :         %s", assoc_ptr->cluster);
-	info("  fairshare :       %u", assoc_ptr->fairshare);
-	info("  max_cpu_secs_per_job : %u", assoc_ptr->max_cpu_secs_per_job);
-	info("  max_jobs :        %u", assoc_ptr->max_jobs);
-	info("  max_nodes_per_job : %u", assoc_ptr->max_nodes_per_job);
-	info("  max_wall_duration_per_job : %u", 
-	     assoc_ptr->max_wall_duration_per_job);
-	info("  parent_acct :     %s", assoc_ptr->parent_acct);
-	info("  partition :       %s", assoc_ptr->partition);
-	info("  user :            %s(%u)", assoc_ptr->user, assoc_ptr->uid);
-	info("  used_jobs :       %u", assoc_ptr->used_jobs);
-	info("  used_share :      %u", assoc_ptr->used_share);
+	debug("association rec id          : %u", assoc_ptr->id);
+	debug("  acct                      : %s", assoc_ptr->acct);
+	debug("  cluster                   : %s", assoc_ptr->cluster);
+	if(assoc_ptr->fairshare == INFINITE)
+		debug("  fairshare                 : NONE");
+	else
+		debug("  fairshare                 : %u",
+		       assoc_ptr->fairshare);
+	if(assoc_ptr->max_cpu_secs_per_job == INFINITE)
+		debug("  max_cpu_secs_per_job      : NONE");
+	else
+		debug("  max_cpu_secs_per_job      : %d",
+		     assoc_ptr->max_cpu_secs_per_job);
+	if(assoc_ptr->max_jobs == INFINITE)
+		debug("  max_jobs                  : NONE");
+	else
+		debug("  max_jobs                  : %u", assoc_ptr->max_jobs);
+	if(assoc_ptr->max_nodes_per_job == INFINITE)
+		debug("  max_nodes_per_job         : NONE");
+	else
+		debug("  max_nodes_per_job         : %d",
+		     assoc_ptr->max_nodes_per_job);
+	if(assoc_ptr->max_wall_duration_per_job == INFINITE)
+		debug("  max_wall_duration_per_job : NONE");
+	else
+		debug("  max_wall_duration_per_job : %d", 
+		     assoc_ptr->max_wall_duration_per_job);
+	debug("  parent_acct               : %s", assoc_ptr->parent_acct);
+	debug("  partition                 : %s", assoc_ptr->partition);
+	debug("  user                      : %s(%u)",
+	      assoc_ptr->user, assoc_ptr->uid);
+	debug("  used_jobs                 : %u", assoc_ptr->used_jobs);
+	debug("  used_share                : %u", assoc_ptr->used_share);
 }
 
 /*
@@ -1982,5 +2005,23 @@ extern int acct_storage_g_update_shares_used(void *db_conn, List acct_list)
 		return SLURM_ERROR;
  	return (*(g_acct_storage_context->ops.update_shares_used))(db_conn, 
 								   acct_list);
+}
+
+/* 
+ * This should be called when a cluster does a cold start to flush out
+ * any jobs that were running during the restart so we don't have any
+ * jobs in the database "running" forever since no endtime will be
+ * placed in there other wise. 
+ * IN:  char * = cluster name
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int acct_storage_g_flush_jobs_on_cluster(
+	void *db_conn, char *cluster, time_t event_time)
+{
+	if (slurm_acct_storage_init(NULL) < 0)
+		return SLURM_ERROR;
+ 	return (*(g_acct_storage_context->ops.flush_jobs))
+		(db_conn, cluster, event_time);
+
 }
 

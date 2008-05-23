@@ -151,12 +151,9 @@ static int _set_rec(int *start, int argc, char *argv[],
 				a_set = 1;
 		} else if (strncasecmp (argv[i], "MaxWall", 4) == 0) {
 			mins = time_str2mins(argv[i]+end);
-			if (mins >= 0) {
+			if (mins != NO_VAL) {
 				association->max_wall_duration_per_job 
 					= (uint32_t) mins;
-				a_set = 1;
-			} else if (strcmp(argv[i]+end, "-1") == 0) {
-				association->max_wall_duration_per_job = -1;
 				a_set = 1;
 			} else {
 				printf(" Bad MaxWall time format: %s\n", 
@@ -319,11 +316,8 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 				limit_set = 1;
 		} else if (strncasecmp (argv[i], "MaxWall", 4) == 0) {
 			mins = time_str2mins(argv[i]+end);
-			if (mins >= 0) {
+			if (mins != NO_VAL) {
 				max_wall_duration_per_job = (uint32_t) mins;
-				limit_set = 1;
-			} else if (strcmp(argv[i]+end, "-1") == 0) {
-				max_wall_duration_per_job = -1;
 				limit_set = 1;
 			} else {
 				printf(" Bad MaxWall time format: %s\n", 
@@ -606,16 +600,30 @@ no_default:
 
 	if(limit_set) {
 		        printf(" Non Default Settings\n");
-		if(fairshare != NO_VAL)
+		if(fairshare == INFINITE)
+			printf("  Fairshare       = NONE\n");
+		else if(fairshare != NO_VAL) 
 			printf("  Fairshare       = %u\n", fairshare);
-		if(max_cpu_secs_per_job != NO_VAL)
+		
+		if(max_cpu_secs_per_job == INFINITE)
+			printf("  MaxCPUSecs      = NONE\n");
+		else if(max_cpu_secs_per_job != NO_VAL) 
 			printf("  MaxCPUSecs      = %u\n",
 			       max_cpu_secs_per_job);
-		if(max_jobs != NO_VAL)
+		
+		if(max_jobs == INFINITE) 
+			printf("  MaxJobs         = NONE\n");
+		else if(max_jobs != NO_VAL) 
 			printf("  MaxJobs         = %u\n", max_jobs);
-		if(max_nodes_per_job != NO_VAL)
+		
+		if(max_nodes_per_job == INFINITE)
+			printf("  MaxNodes        = NONE\n");
+		else if(max_nodes_per_job != NO_VAL)
 			printf("  MaxNodes        = %u\n", max_nodes_per_job);
-		if(max_wall_duration_per_job != NO_VAL) {
+		
+		if(max_wall_duration_per_job == INFINITE) 
+			printf("  MaxWall         = NONE\n");		
+		else if(max_wall_duration_per_job != NO_VAL) {
 			char time_buf[32];
 			mins2time_str((time_t) max_wall_duration_per_job, 
 				      time_buf, sizeof(time_buf));

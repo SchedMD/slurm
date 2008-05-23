@@ -353,6 +353,7 @@ extern Buf pack_slurmdbd_msg(slurmdbd_msg_t *req)
 					     buffer);
 		break;
 	case DBD_CLUSTER_PROCS:
+	case DBD_FLUSH_JOBS:
 		slurmdbd_pack_cluster_procs_msg(
 			(dbd_cluster_procs_msg_t *)req->data, buffer);
 		break;
@@ -467,6 +468,7 @@ extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp, Buf buffer)
 			(dbd_acct_coord_msg_t **)&resp->data, buffer);
 		break;
 	case DBD_CLUSTER_PROCS:
+	case DBD_FLUSH_JOBS:
 		rc = slurmdbd_unpack_cluster_procs_msg(
 			(dbd_cluster_procs_msg_t **)&resp->data, buffer);
 		break;
