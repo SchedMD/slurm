@@ -1113,8 +1113,9 @@ extern int jobacct_storage_p_suspend(void *db_conn,
 	slurmdbd_msg_t msg;
 	dbd_job_suspend_msg_t req;
 
-	req.assoc_id     = 0;	/* FIXME */
+	req.assoc_id     = job_ptr->assoc_id;
 	req.job_id       = job_ptr->job_id;
+	req.db_index     = job_ptr->db_index;
 	req.job_state    = job_ptr->job_state & (~JOB_COMPLETING);
 	if (job_ptr->details)
 		req.submit_time   = job_ptr->details->submit_time;

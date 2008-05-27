@@ -5003,8 +5003,9 @@ extern int jobacct_storage_p_job_complete(mysql_conn_t *mysql_conn,
 						  job_ptr->details->submit_time,
 						  job_ptr->job_id,
 						  job_ptr->assoc_id);
-		if(job_ptr->db_index == (uint32_t)-1) 
-			return SLURM_ERROR;
+		if(job_ptr->db_index == (uint32_t)-1) {
+			
+		}
 	}
 	query = xstrdup_printf("update %s set start=%u, end=%u, state=%d, "
 			       "nodelist='%s', comp_code=%u, "
@@ -5316,14 +5317,15 @@ extern int jobacct_storage_p_suspend(mysql_conn_t *mysql_conn,
 		xstrfmtcat(query,
 			   "insert into %s (id, associd, start, end) "
 			   "values (%u, %u, %d, 0);",
-			   suspend_table, job_ptr->assoc_id, job_ptr->db_index, 
+			   suspend_table, job_ptr->db_index, job_ptr->assoc_id,
 			   (int)job_ptr->suspend_time);
 	else
 		xstrfmtcat(query,
 			   "update %s set end=%d where id=%u && end=0;",
 			   suspend_table, (int)job_ptr->suspend_time, 
 			   job_ptr->db_index);
-		
+	debug3("%d query\n%s", mysql_conn->conn, query);
+				
 	rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
 
 	xfree(query);
