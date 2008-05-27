@@ -149,12 +149,13 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 	c_itr = list_iterator_create(cluster_usage_list);
 	while(curr_start < end) {
 		int last_id = 0;
+		int seconds = 0;
 		local_cluster_usage_t *c_usage = NULL;
 		local_assoc_usage_t *a_usage = NULL;
 
 		// first get the events during this time
 		query = xstrdup_printf("select %s from %s where "
-				       "(period_start <= %d "
+				       "(period_start < %d "
 				       "&& period_end >= %d) "
 				       "|| period_end = 0 "
 				       "order by node_name, period_start",
@@ -204,22 +205,20 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 
 					if((local_end - local_start) < 1)
 						continue;
+					/* need to add 1 sec to the
+					   subtraction to get the
+					   total time */
+					seconds = (local_end - local_start)+1;
 
 					info("node %s adds (%d)(%d-%d) * %d = %d "
 					     "to %d",
 					     row[EVENT_REQ_NAME],
-					     (local_end - local_start)+1,
+					     seconds,
 					     local_end, local_start,
 					     row_cpu, 
-					     ((local_end - local_start)+1)
-					     * row_cpu, 
+					     seconds * row_cpu, 
 					     row_cpu);
-					/* need to add 1 sec to the
-					   subtraction to get the
-					   total time */
-					c_usage->d_cpu += 
-						((local_end - local_start) + 1)
-						* row_cpu;
+					c_usage->d_cpu += seconds * row_cpu;
 					
 					/* don't break here just
 					   incase the cpu count changed during
@@ -292,19 +291,22 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 
 					if((local_end - local_start) < 1)
 						goto calc_resv;
+
+					/* need to add 1 sec to the
+					   subtraction to get the
+					   total time */
+					seconds = (local_end - local_start)+1;
+
 					info("%d assoc %d adds (%d)(%d-%d) * %d = %d "
 					     "to %d",
 					     job_id,
 					     assoc_id,
-					     local_end - local_start,
+					     seconds,
 					     local_end, local_start,
 					     row_acpu,
-					     (local_end - local_start)
-					     * row_acpu,
+					     seconds * row_acpu,
 					     row_acpu);
-					c_usage->a_cpu +=
-						(local_end - local_start)
-						* row_acpu;
+					c_usage->a_cpu += seconds * row_acpu;
 				calc_resv:
 					/* now reserved time */
 					if(row_start < c_usage->start)
@@ -319,20 +321,21 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					if((local_end - local_start) < 1)
 						continue;
 					
+					/* need to add 1 sec to the
+					   subtraction to get the
+					   total time */
+					seconds = (local_end - local_start)+1;
+
 					info("%d assoc %d reserved (%d)(%d-%d) * %d = %d "
 					     "to %d",
 					     job_id,
 					     assoc_id,
-					     (local_end - local_start),
+					     seconds,
 					     local_end, local_start,
 					     row_rcpu,
-					     (local_end - local_start)
-					     * row_rcpu,
+					     seconds * row_rcpu,
 					     row_rcpu);
-					c_usage->r_cpu +=
-						(local_end - local_start)
-						* row_rcpu;
-
+					c_usage->r_cpu += seconds * row_rcpu;
 
 					/* don't break here just
 					   incase the cpu count changed during

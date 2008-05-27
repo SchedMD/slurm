@@ -270,8 +270,8 @@ extern int slurm_send_slurmdbd_msg(slurmdbd_msg_t *req)
 	    (difftime(time(NULL), syslog_time) > 120)) {
 		/* Record critical error every 120 seconds */
 		syslog_time = time(NULL);
-		error("slurmdbd: agent queue filling, RESTART SLURM DBD NOW");
-		syslog(LOG_CRIT, "*** RESTART SLURM DBD NOW ***");
+		error("slurmdbd: agent queue filling, RESTART SLURMDBD NOW");
+		syslog(LOG_CRIT, "*** RESTART SLURMDBD NOW ***");
 	}
 	if (cnt == (MAX_AGENT_QUEUE - 1))
 		cnt -= _purge_job_start_req();
@@ -1004,7 +1004,7 @@ static void *_agent(void *x)
 		slurm_mutex_unlock(&slurmdbd_lock);
 
 		slurm_mutex_lock(&agent_lock);
-		if (agent_list && (rc != EAGAIN)) {
+		if (agent_list && (rc == SLURM_SUCCESS)) {
 			buffer = (Buf) list_dequeue(agent_list);
 			free_buf(buffer);
 			fail_time = 0;
