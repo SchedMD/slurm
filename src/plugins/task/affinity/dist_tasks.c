@@ -673,7 +673,7 @@ static void _get_resources_this_node(uint16_t *cpus,
 	for(i = 0; i < *sockets; i++) {
 		for(j = 0; j < *cores; j++) {
 			for(k = 0; k < *threads; k++) {
-				info("jobid %d lllp_reserved[%d]=%d", jobid, 
+				info("jobid %u lllp_reserved[%d]=%d", jobid, 
 				     bit_index, lllp_reserved[bit_index]);
 				if(lllp_reserved[bit_index] > 0) {
 					if (k == 0) {
@@ -689,7 +689,7 @@ static void _get_resources_this_node(uint16_t *cpus,
 
 #if(0)
 	for (i = 0; i < *sockets; i++)
-		info("_get_resources %d hostname %s socket id %d cores %d ", 
+		info("_get_resources jobid:%u hostname:%s socket id:%d cores:%u", 
 		     jobid, conf->hostname, i, alloc_cores[i]);
 #endif
 }
