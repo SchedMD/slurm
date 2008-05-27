@@ -106,7 +106,6 @@ void _trig_del(void *x) {
 	xfree(tmp);
 }
 
-#if _DEBUG
 static char *_res_type(uint16_t res_type)
 {
 	if      (res_type == TRIGGER_RES_TYPE_JOB)
@@ -141,6 +140,7 @@ static char *_trig_type(uint16_t trig_type)
 		return "unknown";
 }
 
+#if _DEBUG
 static int _trig_offset(uint16_t offset)
 {
 	static int rc;
@@ -181,6 +181,7 @@ static void _dump_trigger_msg(char *header, trigger_info_msg_t *msg)
 static bool _validate_trigger(trig_mgr_info_t *trig_in)
 {
 	struct stat buf;
+	int modes;
 
 	if (stat(trig_in->program, &buf) != 0) {
 		info("trigger program %s not found", trig_in->program);
@@ -190,13 +191,17 @@ static bool _validate_trigger(trig_mgr_info_t *trig_in)
 		info("trigger program %s not a regular file", trig_in->program);
 		return false;
 	}
-	if (((buf.st_uid == trig_in->user_id)  && (!(buf.st_mode & 0100))) ||
-	    ((buf.st_gid == trig_in->group_id) && (!(buf.st_mode & 0010))) ||
-						  (!(buf.st_mode & 0001))) {
-		info("trigger program %s not executable", trig_in->program);
-		return false;
-	}
-	return true;
+	if (buf.st_uid == trig_in->user_id)
+		modes =  (buf.st_mode >> 6) & 07;
+	else if (buf.st_gid == trig_in->group_id)
+		modes =  (buf.st_mode >> 3) & 07;
+	else
+		modes = buf.st_mode  & 07;
+	if (modes & 01)
+		return true;
+
+	info("trigger program %s not executable", trig_in->program);
+	return false;
 }
 
 extern int trigger_clear(uid_t uid, trigger_info_msg_t *msg)
@@ -1043,8 +1048,11 @@ extern void trigger_process(void)
 				rc = waitpid(trig_in->group_id, &prog_stat, 
 					     WNOHANG);
 				if ((rc > 0) && prog_stat) {
-					info("trigger uid=%u exit_status=%u:%u",
-					     trig_in->user_id, 
+					info("trigger uid=%u type=%s:%s "
+					     "exit=%u:%u",
+					     trig_in->user_id,
+					     _res_type(trig_in->res_type),
+					     _trig_type(trig_in->trig_type),
 					     WIFEXITED(prog_stat), 
 					     WTERMSIG(prog_stat));
 				}
@@ -1065,8 +1073,10 @@ extern void trigger_process(void)
 			 * Purge trigger entry above MAX_PROG_TIME later */
 			rc = waitpid(trig_in->group_id, &prog_stat, WNOHANG);
 			if ((rc > 0) && prog_stat) {
-				info("trigger uid=%u exit_status=%u:%u",
-				     trig_in->user_id, 
+				info("trigger uid=%u type=%s:%s exit=%u:%u",
+				     trig_in->user_id,
+				     _res_type(trig_in->res_type),
+				     _trig_type(trig_in->trig_type),
 				     WIFEXITED(prog_stat), WTERMSIG(prog_stat));
 			}
 			if ((rc == trig_in->group_id) ||
