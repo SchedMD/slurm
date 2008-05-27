@@ -84,7 +84,6 @@ static void  _kill_old_slurmdbd(void);
 static void  _parse_commandline(int argc, char *argv[]);
 static void *_signal_handler(void *no_data);
 static void  _update_logging(void);
-static void  _update_logging(void);
 static void  _usage(char *prog_name);
 
 /* main - slurmctld main function, start various threads and process RPCs */
@@ -355,6 +354,7 @@ static void *_signal_handler(void *no_data)
 		case SIGHUP:	/* kill -1 */
 			info("Reconfigure signal (SIGHUP) received");
 			read_slurmdbd_conf();
+			_update_logging();
 			break;
 		case SIGINT:	/* kill -2  or <CTRL-C> */
 		case SIGTERM:	/* kill -15 */
