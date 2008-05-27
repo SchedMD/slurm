@@ -1006,6 +1006,8 @@ extern void trigger_process(void)
 	slurmctld_lock_t job_node_read_lock =
 		{ NO_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
 	bool state_change = false;
+	pid_t rc;
+	int prog_stat;
 
 	lock_slurmctld(job_node_read_lock);
 	slurm_mutex_lock(&trigger_mutex);
@@ -1036,22 +1038,22 @@ extern void trigger_process(void)
 		} else if ((trig_in->state == 2) && 
 			   (difftime(now, trig_in->trig_time) > 
 					MAX_PROG_TIME)) {
-			bool purge;
-
 			if (trig_in->group_id != 0) {
-				pid_t rc;
-
 				killpg(trig_in->group_id, SIGKILL);
-				rc = waitpid(trig_in->group_id, NULL, WNOHANG);
-				if ((rc == trig_in->group_id)
-				||  ((rc == -1) && (errno == ECHILD)))
-					purge = true;
-				else
-					purge = false;
-			} else	/* No PID to wait for */
-				purge = true;
+				rc = waitpid(trig_in->group_id, &prog_stat, 
+					     WNOHANG);
+				if ((rc > 0) && prog_stat) {
+					info("trigger uid=%u exit_status=%u:%u",
+					     trig_in->user_id, 
+					     WIFEXITED(prog_stat), 
+					     WTERMSIG(prog_stat));
+				}
+				if ((rc == trig_in->group_id) ||
+				    ((rc == -1) && (errno == ECHILD)))
+					trig_in->group_id = 0;
+			}
 
-			if (purge) {
+			if (trig_in->group_id == 0) {
 #if _DEBUG
 				info("purging trigger[%u]", trig_in->trig_id);
 #endif
@@ -1061,7 +1063,15 @@ extern void trigger_process(void)
 		} else if (trig_in->state == 2) {
 			/* Elimiate zombie processes right away.
 			 * Purge trigger entry above MAX_PROG_TIME later */
-			waitpid(trig_in->group_id, NULL, WNOHANG);
+			rc = waitpid(trig_in->group_id, &prog_stat, WNOHANG);
+			if ((rc > 0) && prog_stat) {
+				info("trigger uid=%u exit_status=%u:%u",
+				     trig_in->user_id, 
+				     WIFEXITED(prog_stat), WTERMSIG(prog_stat));
+			}
+			if ((rc == trig_in->group_id) ||
+			    ((rc == -1) && (errno == ECHILD)))
+				trig_in->group_id = 0;
 		}
 	}
 	list_iterator_destroy(trig_iter);
