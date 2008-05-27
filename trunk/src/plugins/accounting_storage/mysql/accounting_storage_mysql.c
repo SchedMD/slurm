@@ -5409,9 +5409,10 @@ extern int acct_storage_p_update_shares_used(mysql_conn_t *mysql_conn,
 extern int acct_storage_p_flush_jobs_on_cluster(
 	mysql_conn_t *mysql_conn, char *cluster, time_t event_time)
 {
+	int rc = SLURM_SUCCESS;
+#ifdef HAVE_MYSQL
 	/* put end times for a clean start */
 	char *query = NULL;
-	int rc = SLURM_SUCCESS;
 
 	if(!mysql_conn) {
 		error("We need a connection to run this");
@@ -5426,13 +5427,16 @@ extern int acct_storage_p_flush_jobs_on_cluster(
 		}
 	}
 
-	query = xstrdup_printf("update %s as t1, %s as t2 set t1.end=%u where "
+	query = xstrdup_printf("update %s as t1, %s as t2 set "
+			       "t1.state=%u, t1.end=%u where "
 			       "t2.id=t1.associd and t2.cluster='%s' "
 			       "&& t1.end=0;",
-			       job_table, assoc_table, event_time, cluster);
+			       job_table, assoc_table, JOB_CANCELLED, 
+			       event_time, cluster);
 
 	rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
 	xfree(query);
+#endif
 
 	return rc;
 }
