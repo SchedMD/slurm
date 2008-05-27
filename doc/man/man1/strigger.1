@@ -1,4 +1,4 @@
-.TH STRIGGER "1" "March 2008" "strigger 1.3" "Slurm components"
+.TH STRIGGER "1" "May 2008" "strigger 1.3" "Slurm components"
 
 .SH "NAME"
 strigger \- Used set, get or clear Slurm trigger information.
@@ -18,14 +18,15 @@ These events can cause actions such as the execution of an arbitrary
 script. 
 Typical uses include notifying system administrators of node failures 
 and gracefully terminating a job when it's time limit is approaching.
+A hostlist expression for the nodelist or job ID is passed as an argument 
+to the program.
 
 Trigger events are not processed instantly, but a check is performed for 
 trigger events on a periodic basis (currently every 15 seconds). 
 Any trigger events which occur within that interval will be compared 
 against the trigger programs set at the end of the time interval. 
 The trigger program will be executed once for any event occuring in
-that interval with a hostlist expression for the nodelist or job ID 
-as an argument to the program.
+that interval.
 The record of those events (e.g. nodes which went DOWN in the previous
 15 seconds) will then be cleared.
 The trigger program must set a new trigger before the end of the next 
@@ -199,7 +200,9 @@ Pathname of the program to execute when the event occurs
 
 .SH "EXAMPLES"
 Execute the program "/usr/sbin/slurm_admin_notify" whenever 
-any node in the cluster goes down. 
+any node in the cluster goes down. The subject line will include
+the node names which have entered the down state (passed as an
+argument to the script by SLURM).
 
 .nf
 	> cat /usr/sbin/slurm_admin_notify
@@ -208,7 +211,7 @@ any node in the cluster goes down.
 	strigger \-\-set \-\-node \-\-down \\
 	         \-\-program=/usr/sbin/slurm_admin_notify
 	# Notify administrator using by e\-mail
-	/bin/mail slurm_admin@site.com \-s NodeDown
+	/bin/mail slurm_admin@site.com \-s NodesDown:$*
 
 	> strigger \-\-set \-\-node \-\-down \\
 	           \-\-program=/usr/sbin/slurm_admin_notify
