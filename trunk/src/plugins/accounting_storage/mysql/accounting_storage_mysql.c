@@ -1278,8 +1278,9 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 		return SLURM_ERROR;
 	} else if(!mysql_conn->acct_mysql_db
 		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(!mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					    mysql_db_name, mysql_db_info)) {
+		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
+					   mysql_db_name, mysql_db_info)
+			   != SLURM_SUCCESS) {
 			error("unable to re-connect to mysql database");
 			return SLURM_ERROR;
 		}
@@ -1417,8 +1418,9 @@ extern int acct_storage_p_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		return SLURM_ERROR;
 	} else if(!mysql_conn->acct_mysql_db
 		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(!mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					    mysql_db_name, mysql_db_info)) {
+		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
+					   mysql_db_name, mysql_db_info)
+			   != SLURM_SUCCESS) {
 			error("unable to re-connect to mysql database");
 			return SLURM_ERROR;
 		}
@@ -1560,8 +1562,9 @@ extern int acct_storage_p_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		return SLURM_ERROR;
 	} else if(!mysql_conn->acct_mysql_db
 		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(!mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					    mysql_db_name, mysql_db_info)) {
+		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
+					   mysql_db_name, mysql_db_info)
+			   != SLURM_SUCCESS) {
 			error("unable to re-connect to mysql database");
 			return SLURM_ERROR;
 		}
@@ -1689,8 +1692,9 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		return SLURM_ERROR;
 	} else if(!mysql_conn->acct_mysql_db
 		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(!mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					    mysql_db_name, mysql_db_info)) {
+		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
+					   mysql_db_name, mysql_db_info)
+			   != SLURM_SUCCESS) {
 			error("unable to re-connect to mysql database");
 			return SLURM_ERROR;
 		}
@@ -1896,8 +1900,9 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 	} else if(!mysql_conn->acct_mysql_db
 		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(!mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					    mysql_db_name, mysql_db_info)) {
+		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
+					   mysql_db_name, mysql_db_info)
+			   != SLURM_SUCCESS) {
 			error("unable to re-connect to mysql database");
 			return SLURM_ERROR;
 		}
@@ -2407,8 +2412,9 @@ extern List acct_storage_p_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	} else if(!mysql_conn->acct_mysql_db
 		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(!mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					    mysql_db_name, mysql_db_info)) {
+		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
+					   mysql_db_name, mysql_db_info)
+			   != SLURM_SUCCESS) {
 			error("unable to re-connect to mysql database");
 			return NULL;
 		}
@@ -2561,8 +2567,9 @@ extern List acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
 		return NULL;
 	} else if(!mysql_conn->acct_mysql_db
 		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(!mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					    mysql_db_name, mysql_db_info)) {
+		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
+					   mysql_db_name, mysql_db_info)
+			   != SLURM_SUCCESS) {
 			error("unable to re-connect to mysql database");
 			return NULL;
 		}
@@ -2706,8 +2713,9 @@ extern List acct_storage_p_modify_associations(mysql_conn_t *mysql_conn,
 		return NULL;
 	} else if(!mysql_conn->acct_mysql_db
 		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(!mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					    mysql_db_name, mysql_db_info)) {
+		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
+					   mysql_db_name, mysql_db_info)
+			   != SLURM_SUCCESS) {
 			error("unable to re-connect to mysql database");
 			return NULL;
 		}
@@ -2991,8 +2999,9 @@ extern List acct_storage_p_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	} else if(!mysql_conn->acct_mysql_db
 		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(!mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					    mysql_db_name, mysql_db_info)) {
+		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
+					   mysql_db_name, mysql_db_info)
+			   != SLURM_SUCCESS) {
 			error("unable to re-connect to mysql database");
 			return NULL;
 		}
@@ -3134,8 +3143,9 @@ extern List acct_storage_p_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	} else if(!mysql_conn->acct_mysql_db
 		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(!mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					    mysql_db_name, mysql_db_info)) {
+		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
+					   mysql_db_name, mysql_db_info)
+			   != SLURM_SUCCESS) {
 			error("unable to re-connect to mysql database");
 			return NULL;
 		}
@@ -3269,8 +3279,9 @@ extern List acct_storage_p_remove_clusters(mysql_conn_t *mysql_conn,
 		return NULL;
 	} else if(!mysql_conn->acct_mysql_db
 		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(!mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					    mysql_db_name, mysql_db_info)) {
+		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
+					   mysql_db_name, mysql_db_info)
+			   != SLURM_SUCCESS) {
 			error("unable to re-connect to mysql database");
 			return NULL;
 		}
@@ -3429,8 +3440,9 @@ extern List acct_storage_p_remove_associations(mysql_conn_t *mysql_conn,
 		return NULL;
 	} else if(!mysql_conn->acct_mysql_db
 		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(!mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					    mysql_db_name, mysql_db_info)) {
+		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
+					   mysql_db_name, mysql_db_info)
+			   != SLURM_SUCCESS) {
 			error("unable to re-connect to mysql database");
 			return NULL;
 		}
@@ -3652,8 +3664,9 @@ extern List acct_storage_p_get_users(mysql_conn_t *mysql_conn,
 		return NULL;
 	} else if(!mysql_conn->acct_mysql_db
 		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(!mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					    mysql_db_name, mysql_db_info)) {
+		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
+					   mysql_db_name, mysql_db_info)
+			   != SLURM_SUCCESS) {
 			error("unable to re-connect to mysql database");
 			return NULL;
 		}
@@ -3829,8 +3842,9 @@ extern List acct_storage_p_get_accts(mysql_conn_t *mysql_conn,
 		return NULL;
 	} else if(!mysql_conn->acct_mysql_db
 		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(!mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					    mysql_db_name, mysql_db_info)) {
+		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
+					   mysql_db_name, mysql_db_info)
+			   != SLURM_SUCCESS) {
 			error("unable to re-connect to mysql database");
 			return NULL;
 		}
@@ -4014,8 +4028,9 @@ extern List acct_storage_p_get_clusters(mysql_conn_t *mysql_conn,
 		return NULL;
 	} else if(!mysql_conn->acct_mysql_db
 		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(!mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					    mysql_db_name, mysql_db_info)) {
+		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
+					   mysql_db_name, mysql_db_info)
+			   != SLURM_SUCCESS) {
 			error("unable to re-connect to mysql database");
 			return NULL;
 		}
@@ -4194,8 +4209,9 @@ extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 		return NULL;
 	} else if(!mysql_conn->acct_mysql_db
 		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(!mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					    mysql_db_name, mysql_db_info)) {
+		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
+					   mysql_db_name, mysql_db_info)
+			   != SLURM_SUCCESS) {
 			error("unable to re-connect to mysql database");
 			return NULL;
 		}
@@ -4460,8 +4476,9 @@ extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn)
 		return SLURM_ERROR;
 	} else if(!mysql_conn->acct_mysql_db
 		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(!mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					    mysql_db_name, mysql_db_info)) {
+		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
+					   mysql_db_name, mysql_db_info)
+			   != SLURM_SUCCESS) {
 			error("unable to re-connect to mysql database");
 			return SLURM_ERROR;
 		}
@@ -4637,8 +4654,9 @@ extern int clusteracct_storage_p_node_down(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 	} else if(!mysql_conn->acct_mysql_db
 		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(!mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					    mysql_db_name, mysql_db_info)) {
+		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
+					   mysql_db_name, mysql_db_info)
+			   != SLURM_SUCCESS) {
 			error("unable to re-connect to mysql database");
 			return SLURM_ERROR;
 		}
@@ -4688,8 +4706,9 @@ extern int clusteracct_storage_p_node_up(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 	} else if(!mysql_conn->acct_mysql_db
 		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(!mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					    mysql_db_name, mysql_db_info)) {
+		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
+					   mysql_db_name, mysql_db_info)
+			   != SLURM_SUCCESS) {
 			error("unable to re-connect to mysql database");
 			return SLURM_ERROR;
 		}
@@ -4737,8 +4756,9 @@ extern int clusteracct_storage_p_cluster_procs(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 	} else if(!mysql_conn->acct_mysql_db
 		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(!mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					    mysql_db_name, mysql_db_info)) {
+		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
+					   mysql_db_name, mysql_db_info)
+			   != SLURM_SUCCESS) {
 			error("unable to re-connect to mysql database");
 			return SLURM_ERROR;
 		}
@@ -4831,8 +4851,9 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 	} else if(!mysql_conn->acct_mysql_db
 		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(!mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					    mysql_db_name, mysql_db_info)) {
+		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
+					   mysql_db_name, mysql_db_info)
+			   != SLURM_SUCCESS) {
 			error("unable to re-connect to mysql database");
 			return SLURM_ERROR;
 		}
@@ -4959,8 +4980,9 @@ extern int jobacct_storage_p_job_complete(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 	} else if(!mysql_conn->acct_mysql_db
 		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(!mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					    mysql_db_name, mysql_db_info)) {
+		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
+					   mysql_db_name, mysql_db_info)
+			   != SLURM_SUCCESS) {
 			error("unable to re-connect to mysql database");
 			return SLURM_ERROR;
 		}
@@ -5029,8 +5051,9 @@ extern int jobacct_storage_p_step_start(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 	} else if(!mysql_conn->acct_mysql_db
 		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(!mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					    mysql_db_name, mysql_db_info)) {
+		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
+					   mysql_db_name, mysql_db_info)
+			   != SLURM_SUCCESS) {
 			error("unable to re-connect to mysql database");
 			return SLURM_ERROR;
 		}
@@ -5136,8 +5159,9 @@ extern int jobacct_storage_p_step_complete(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 	} else if(!mysql_conn->acct_mysql_db
 		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(!mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					    mysql_db_name, mysql_db_info)) {
+		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
+					   mysql_db_name, mysql_db_info)
+			   != SLURM_SUCCESS) {
 			error("unable to re-connect to mysql database");
 			return SLURM_ERROR;
 		}
@@ -5263,8 +5287,9 @@ extern int jobacct_storage_p_suspend(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 	} else if(!mysql_conn->acct_mysql_db
 		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(!mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					    mysql_db_name, mysql_db_info)) {
+		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
+					   mysql_db_name, mysql_db_info)
+			   != SLURM_SUCCESS) {
 			error("unable to re-connect to mysql database");
 			return SLURM_ERROR;
 		}
@@ -5335,8 +5360,9 @@ extern List jobacct_storage_p_get_jobs(mysql_conn_t *mysql_conn,
 		return NULL;
 	} else if(!mysql_conn->acct_mysql_db
 		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(!mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					    mysql_db_name, mysql_db_info)) {
+		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
+					   mysql_db_name, mysql_db_info)
+			   != SLURM_SUCCESS) {
 			error("unable to re-connect to mysql database");
 			return NULL;
 		}
@@ -5392,8 +5418,9 @@ extern int acct_storage_p_flush_jobs_on_cluster(
 		return SLURM_ERROR;
 	} else if(!mysql_conn->acct_mysql_db
 		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(!mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					    mysql_db_name, mysql_db_info)) {
+		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
+					   mysql_db_name, mysql_db_info)
+			   != SLURM_SUCCESS) {
 			error("unable to re-connect to mysql database");
 			return SLURM_ERROR;
 		}
