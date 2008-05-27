@@ -177,6 +177,28 @@ static void _dump_trigger_msg(char *header, trigger_info_msg_t *msg)
 }
 #endif
 
+/* Validate trigger program */
+static bool _validate_trigger(trig_mgr_info_t *trig_in)
+{
+	struct stat buf;
+
+	if (stat(trig_in->program, &buf) != 0) {
+		info("trigger program %s not found", trig_in->program);
+		return false;
+	}
+	if (!S_ISREG(buf.st_mode)) {
+		info("trigger program %s not a regular file", trig_in->program);
+		return false;
+	}
+	if (((buf.st_uid == trig_in->user_id)  && (!(buf.st_mode & 0100))) ||
+	    ((buf.st_gid == trig_in->group_id) && (!(buf.st_mode & 0010))) ||
+						  (!(buf.st_mode & 0001))) {
+		info("trigger program %s not executable", trig_in->program);
+		return false;
+	}
+	return true;
+}
+
 extern int trigger_clear(uid_t uid, trigger_info_msg_t *msg)
 {
 	int rc = ESRCH;
@@ -352,6 +374,13 @@ extern int trigger_set(uid_t uid, gid_t gid, trigger_info_msg_t *msg)
 		/* move don't copy "program" */
 		trig_add->program = msg->trigger_array[i].program;
 		msg->trigger_array[i].program = NULL;
+		if (!_validate_trigger(trig_add)) {
+			rc = ESLURM_ACCESS_DENIED;
+			xfree(trig_add->program);
+			xfree(trig_add->res_id);
+			xfree(trig_add);
+			continue;
+		}
 		list_append(trigger_list, trig_add);
 		schedule_trigger_save();
 	}
@@ -921,6 +950,8 @@ static void _trigger_run_program(trig_mgr_info_t *trig_in)
 	gid_t gid;
 	pid_t child;
 
+	if (!_validate_trigger(trig_in))
+		return;
 	strncpy(program, trig_in->program, sizeof(program));
 	pname = strrchr(program, '/');
 	if (pname == NULL)
