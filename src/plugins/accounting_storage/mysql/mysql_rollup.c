@@ -49,6 +49,7 @@ typedef struct {
 
 typedef struct {
 	char *name;
+	int total_time;
 	int a_cpu;
 	int cpu_count;
 	int d_cpu;
@@ -79,8 +80,10 @@ extern void _destroy_local_cluster_usage(void *object)
 extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			       time_t start, time_t end)
 {
+	int rc = SLURM_SUCCESS;
 	int add_sec = 3600;
 	int i=0;
+	time_t now = time(NULL);
 	time_t curr_start = start;
 	time_t curr_end = curr_start + add_sec;
 	char *query = NULL;
@@ -174,8 +177,8 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		// first get the events during this time
 		query = xstrdup_printf("select %s from %s where "
 				       "(period_start < %d "
-				       "&& period_end >= %d) "
-				       "|| period_end = 0 "
+				       "&& (period_end >= %d "
+				       "|| period_end = 0)) "
 				       "order by node_name, period_start",
 				       event_str, event_table,
 				       curr_end, curr_start);
@@ -196,17 +199,47 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			if(row_start < curr_start)
 				row_start = curr_start;
 		
-			if(!row_end) 
+			if(!row_end || row_end > curr_end) 
 				row_end = curr_end;
 
+			/* Don't worry about it if the time is less
+			 * than 1 second.
+			 */
+			if((row_end - row_start) < 1)
+				continue;
+
 			if(!row[EVENT_REQ_NAME][0]) {
-				c_usage =
-					xmalloc(sizeof(local_cluster_usage_t));
-				c_usage->name = xstrdup(row[EVENT_REQ_CLUSTER]);
-				c_usage->cpu_count = row_cpu;
-				c_usage->start = row_start;
-				c_usage->end = row_end;
-				list_append(cluster_usage_list, c_usage);
+				list_iterator_reset(c_itr);
+				while((c_usage = list_next(c_itr))) {
+					if(!strcmp(c_usage->name,
+					   row[EVENT_REQ_CLUSTER])) {
+						break;
+					}
+				}
+				/* if the cpu count changes we will
+				 * only care about the last cpu count but
+				 * we will keep a total of the time for
+				 * all cpus to get the correct cpu time
+				 * for the entire period.
+				 */
+				if(!c_usage) {
+					c_usage = xmalloc(
+						sizeof(local_cluster_usage_t));
+					c_usage->name = 
+						xstrdup(row[EVENT_REQ_CLUSTER]);
+					c_usage->cpu_count = row_cpu;
+					c_usage->total_time =
+						(row_end - row_start) * row_cpu;
+					c_usage->start = row_start;
+					c_usage->end = row_end;
+					list_append(cluster_usage_list, 
+						    c_usage);
+				} else {
+					c_usage->cpu_count = row_cpu;
+					c_usage->total_time +=
+						(row_end - row_start) * row_cpu;
+					c_usage->end = row_end;
+				}
 				continue;
 			}
 
@@ -236,10 +269,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					     row_cpu);
 					c_usage->d_cpu += seconds * row_cpu;
 					
-					/* don't break here just
-					   incase the cpu count changed during
-					   this time period.
-					*/
+					break;
 				}				   
 			}
 		}
@@ -247,12 +277,11 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 
 		query = xstrdup_printf("select %s from %s as t1, "
 				       "%s as t2 where "
-				       "((eligible < %d && end >= %d) "
-				       "|| end = 0 || start = 0) "
-				       "&& associd=t2.id "
+				       "(eligible < %d && (end >= %d "
+				       "|| end = 0)) && associd=t2.id "
 				       "order by associd, eligible",
 				       job_str, job_table, assoc_table,
-				       curr_end, curr_start);
+				       curr_end, curr_start, curr_start);
 
 		debug3("%d query\n%s", mysql_conn->conn, query);
 		if(!(result = mysql_db_query_ret(
@@ -262,23 +291,23 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		}
 		xfree(query);
 		
-		
 		while((row = mysql_fetch_row(result))) {
-			int job_id = atoi(row[JOB_REQ_ASSOCID]);
+			int job_id = atoi(row[JOB_REQ_JOBID]);
 			int assoc_id = atoi(row[JOB_REQ_ASSOCID]);
 			int row_eligible = atoi(row[JOB_REQ_ELG]);
 			int row_start = atoi(row[JOB_REQ_START]);
 			int row_end = atoi(row[JOB_REQ_END]);
 			int row_acpu = atoi(row[JOB_REQ_ACPU]);
 			int row_rcpu = atoi(row[JOB_REQ_RCPU]);
-			MYSQL_RES *result2 = NULL;
-			MYSQL_ROW row2;
-					
+			seconds = 0;
+		       
 			if(row_start && (row_start < curr_start))
 				row_start = curr_start;
+
 			if(!row_start && row_end)
 				row_start = row_end;
-			if(!row_end) 
+
+			if(!row_end || row_end > curr_end) 
 				row_end = curr_end;
 			
 			if(last_id != assoc_id) {
@@ -291,16 +320,18 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 
 
 			if(!row_start || ((row_end - row_start) < 1)) 
-				continue;
+				goto calc_cluster;
 
 			seconds = (row_end - row_start);
 
 			if(row[JOB_REQ_SUSPENDED]) {
+				MYSQL_RES *result2 = NULL;
+				MYSQL_ROW row2;
 				/* get the suspended time for this job */
 				query = xstrdup_printf(
 					"select %s from %s where "
-					"((start < %d && end >= %d) "
-					"|| end = 0) && id=%s "
+					"(start < %d && (end >= %d "
+					"|| end = 0)) && id=%s "
 					"order by start",
 					suspend_str, suspend_table,
 					curr_end, curr_start,
@@ -316,9 +347,9 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				xfree(query);
 				while((row2 = mysql_fetch_row(result2))) {
 					int local_start =
-						atoi(row[SUSPEND_REQ_START]);
+						atoi(row2[SUSPEND_REQ_START]);
 					int local_end = 
-						atoi(row[SUSPEND_REQ_END]);
+						atoi(row2[SUSPEND_REQ_END]);
 
 					if(!local_start)
 						continue;
@@ -333,152 +364,165 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					
 					seconds -= (local_end - local_start);
 				}
+				mysql_free_result(result2);			
+
 			}
 			if(seconds < 1) {
 				debug("This job (%u) was suspended "
 				       "the entire hour", job_id);
-				if(result2)
-					mysql_free_result(result2);	
 				continue;
 			}
+
+
 			a_usage->a_cpu += seconds * row_acpu;
 
-			if(!row[JOB_REQ_CLUSTER]) {
-				if(result2)
-					mysql_free_result(result2);	
+		calc_cluster:
+			if(!row[JOB_REQ_CLUSTER]) 
 				continue;
-			}
+			
 			list_iterator_reset(c_itr);
 			while((c_usage = list_next(c_itr))) {
 				if(!strcmp(c_usage->name,
 					   row[JOB_REQ_CLUSTER])) {
-					int local_start = row_start;
-					int local_end = row_end;
-					if(!local_start)
+					if(!row_start || seconds < 1)
 						goto calc_resv;
-
-					if(c_usage->start > local_start)
-						local_start = c_usage->start;
-					if(c_usage->end < local_end)
-						local_end = c_usage->end;
-
-					if((local_end - local_start) < 1)
-						goto calc_resv;
-
-					seconds = (local_end - local_start);
-
-					if(result2) {
-						mysql_data_seek(result2, 0);
-						while((row2 =
-						       mysql_fetch_row(result2)
-							      )) {
-							int suspend_start = 
-								atoi(row[SUSPEND_REQ_START]);
-							int suspend_end = 
-								atoi(row[SUSPEND_REQ_END]);
-
-							if(!suspend_start)
-								continue;
-							
-							if(c_usage->start
-							   > suspend_start)
-								suspend_start =
-								c_usage->start;
-							if(c_usage->end
-							   < suspend_end)
-								suspend_end =
-								c_usage->end;
-							
-							if((suspend_end 
-							    - suspend_start)
-							   < 1)
-								continue;
-							
-							seconds -= 
-								(suspend_end -
-								 suspend_start);
-						}
-
-						if(seconds < 1) {
-							debug("This job (%u) "
-							       "was suspended "
-							       "the entire "
-							       "cluster time",
-							       job_id);
-							continue;
-						}
-					}
 
 					info("%d assoc %d adds (%d)(%d-%d) * %d = %d "
 					     "to %d",
 					     job_id,
 					     assoc_id,
 					     seconds,
-					     local_end, local_start,
+					     row_end, row_start,
 					     row_acpu,
 					     seconds * row_acpu,
 					     row_acpu);
+
 					c_usage->a_cpu += seconds * row_acpu;
+
 				calc_resv:
 					/* now reserved time */
 					if(row_start < c_usage->start)
 						continue;
-					local_start = row_eligible;
-					local_end = row_start;
-					if(c_usage->start > local_start)
-						local_start = c_usage->start;
-					if(c_usage->end < local_end)
-						local_end = c_usage->end;
+					row_start = row_eligible;
+					row_end = row_start;
+					if(c_usage->start > row_start)
+						row_start = c_usage->start;
+					if(c_usage->end < row_end)
+						row_end = c_usage->end;
 
-					if((local_end - local_start) < 1)
+					if((row_end - row_start) < 1)
 						continue;
 					
-					seconds = (local_end - local_start);
+					seconds = (row_end - row_start);
 
 					info("%d assoc %d reserved (%d)(%d-%d) * %d = %d "
 					     "to %d",
 					     job_id,
 					     assoc_id,
 					     seconds,
-					     local_end, local_start,
+					     row_end, row_start,
 					     row_rcpu,
 					     seconds * row_rcpu,
 					     row_rcpu);
 					c_usage->r_cpu += seconds * row_rcpu;
 
-					/* don't break here just
-					   incase the cpu count changed during
-					   this time period.
-					*/
+					break;
 				}
 			}
-			if(result2)
-				mysql_free_result(result2);			
 		}
 		mysql_free_result(result);
 
 		list_iterator_reset(c_itr);
+
 		while((c_usage = list_next(c_itr))) {
-			int total_time = (curr_end - curr_start)
-				* c_usage->cpu_count;
-			
-			c_usage->i_cpu = total_time - c_usage->a_cpu -
+			c_usage->i_cpu = c_usage->total_time - c_usage->a_cpu -
 				c_usage->d_cpu - c_usage->r_cpu;
+			/* sanity check just to make sure we have a
+			 * legitimate time after we calulated
+			 * idle/reserved time
+			 */
+			
 			if(c_usage->i_cpu < 0) {
 				c_usage->r_cpu += c_usage->i_cpu;
 				c_usage->i_cpu = 0;
 				if(c_usage->r_cpu < 0) 
 					c_usage->r_cpu = 0;
 			}
-
+			
 			info("cluster %s(%u) down %u alloc %u "
-			     "resv %u idle %u total= %u from %s", c_usage->name,
+			     "resv %u idle %u total= %u = %u from %s",
+			     c_usage->name,
 			     c_usage->cpu_count, c_usage->d_cpu, c_usage->a_cpu,
 			     c_usage->r_cpu, c_usage->i_cpu,
 			     c_usage->d_cpu + c_usage->a_cpu +
 			     c_usage->r_cpu + c_usage->i_cpu,
+			     c_usage->total_time,
 			     ctime(&c_usage->start));
 			info("to %s", ctime(&c_usage->end));
+			if(query) {
+				xstrfmtcat(query, 
+					   ", (%d, %d, '%s', %d, %u, "
+					   "%u, %u, %u, %u)",
+					   now, now, 
+					   c_usage->name, c_usage->start, 
+					   c_usage->cpu_count, c_usage->a_cpu,
+					   c_usage->d_cpu, c_usage->i_cpu,
+					   c_usage->r_cpu); 
+			} else {
+				xstrfmtcat(query, 
+					   "insert into %s (creation_time, "
+					   "mod_time, cluster, period_start, "
+					   "cpu_count, alloc_cpu_secs, "
+					   "down_cpu_secs, idle_cpu_secs, "
+					   "resv_cpu_secs) values "
+					   "(%d, %d, '%s', %d, %u, "
+					   "%u, %u, %u, %u)",
+					   cluster_hour_table, now, now, 
+					   c_usage->name, c_usage->start, 
+					   c_usage->cpu_count, c_usage->a_cpu,
+					   c_usage->d_cpu, c_usage->i_cpu,
+					   c_usage->r_cpu); 
+			}
+		}
+		if(query) {
+			rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
+			xfree(query);
+			if(rc != SLURM_SUCCESS) {
+				error("Couldn't add cluster hour rollup");
+				goto end_it;
+			}
+		}
+
+		list_iterator_reset(a_itr);
+		while((a_usage = list_next(a_itr))) {
+			info("association (%u) alloc %u",
+			     a_usage->assoc_id,
+			     a_usage->a_cpu);
+			if(query) {
+				xstrfmtcat(query, 
+					   ", (%d, %d, '%u', %d, %u, "
+					   "%u, %u, %u, %u)",
+					   now, now, 
+					   a_usage->assoc_id, curr_start,
+					   a_usage->a_cpu); 
+			} else {
+				xstrfmtcat(query, 
+					   "insert into %s (creation_time, "
+					   "mod_time, id, period_start, "
+					   "alloc_cpu_secs) values "
+					   "(%d, %d, %u, %d, %u)",
+					   assoc_hour_table, now, now, 
+					   a_usage->assoc_id, curr_start,
+					   a_usage->a_cpu); 
+			}
+		}
+		if(query) {
+			rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
+			xfree(query);
+			if(rc != SLURM_SUCCESS) {
+				error("Couldn't add assoc hour rollup");
+				goto end_it;
+			}
 		}
 		list_flush(assoc_usage_list);
 		list_flush(cluster_usage_list);
@@ -486,6 +530,8 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		curr_end = curr_start + add_sec;
 		debug3("curr hour is now %d-%d", curr_start, curr_end);
 	}
+end_it:
+	xfree(suspend_str);	
 	xfree(event_str);	
 	xfree(job_str);
 	list_iterator_destroy(a_itr);
@@ -495,22 +541,79 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 	list_destroy(cluster_usage_list);
 /* 	info("stop start %s", ctime(&curr_start)); */
 /* 	info("stop end %s", ctime(&curr_end)); */
-	return SLURM_SUCCESS;
+	return rc;
 }
 extern int mysql_daily_rollup(mysql_conn_t *mysql_conn, 
 			      time_t start, time_t end)
 {
-	int add_sec = 86400;
+	/* can't just add 86400 since daylight savings starts and ends every
+	 * once in a while
+	 */
+	int rc = SLURM_SUCCESS;
+	struct tm start_tm;
 	time_t curr_start = start;
-	time_t curr_end = curr_start + add_sec;
+	time_t curr_end;
+	time_t now = time(NULL);
+	char *query = NULL;
 
-/* 	info("begin start %s", ctime(&curr_start)); */
-/* 	info("begin end %s", ctime(&curr_end)); */
+	if(!localtime_r(&curr_start, &start_tm)) {
+		error("Couldn't get localtime from day start %d", curr_start);
+		return SLURM_ERROR;
+	}
+	start_tm.tm_sec = 0;
+	start_tm.tm_min = 0;
+	start_tm.tm_hour = 0;
+	start_tm.tm_mday++;
+	start_tm.tm_isdst = -1;
+	curr_end = mktime(&start_tm);
+
+	info("begin start %s", ctime(&curr_start));
+	info("begin end %s", ctime(&curr_end));
 	while(curr_start < end) {
+		query = xstrdup_printf(
+			"insert into %s (creation_time, mod_time, id, "
+			"period_start, alloc_cpu_secs) select %d, %d, id, "
+			"%d, SUM(alloc_cpu_secs) from %s where "
+			"(period_start < %d && period_start >= %d) "
+			"group by id;",
+			assoc_day_table, now, now, curr_start,
+			assoc_hour_table,
+			curr_end, curr_start);
+		xstrfmtcat(query,
+			   "insert into %s (creation_time, "
+			   "mod_time, cluster, period_start, cpu_count, "
+			   "alloc_cpu_secs, down_cpu_secs, idle_cpu_secs, "
+			   "resv_cpu_secs) select %d, %d, cluster, "
+			   "%d, MAX(cpu_count), SUM(alloc_cpu_secs), "
+			   "SUM(down_cpu_secs), SUM(idle_cpu_secs), "
+			   "SUM(resv_cpu_secs) from %s where "
+			   "(period_start < %d && period_start >= %d) "
+			   "group by cluster;",
+			   cluster_day_table, now, now, curr_start,
+			   cluster_hour_table,
+			   curr_end, curr_start);
+		//rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
+		xfree(query);
+		if(rc != SLURM_SUCCESS) {
+			error("Couldn't add day rollup");
+			return SLURM_ERROR;
+		}
 
 		curr_start = curr_end;
-		curr_end = curr_start + add_sec;
+		if(!localtime_r(&curr_start, &start_tm)) {
+			error("Couldn't get localtime from day start %d",
+			      curr_start);
+			return SLURM_ERROR;
+		}
+		start_tm.tm_sec = 0;
+		start_tm.tm_min = 0;
+		start_tm.tm_hour = 0;
+		start_tm.tm_mday++;
+		start_tm.tm_isdst = -1;
+		curr_end = mktime(&start_tm);
 		debug3("curr day is now %d-%d", curr_start, curr_end);
+	info("stop start %s", ctime(&curr_start));
+	info("stop end %s", ctime(&curr_end));
 	}
 /* 	info("stop start %s", ctime(&curr_start)); */
 /* 	info("stop end %s", ctime(&curr_end)); */
@@ -530,7 +633,7 @@ extern int mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 		error("Couldn't get localtime from month start %d", curr_start);
 		return SLURM_ERROR;
 	}
-	start_tm.tm_sec = -1;
+	start_tm.tm_sec = 0;
 	start_tm.tm_min = 0;
 	start_tm.tm_hour = 0;
 	start_tm.tm_mday = 1;
@@ -540,6 +643,8 @@ extern int mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 /* 	info("begin start %s", ctime(&curr_start)); */
 /* 	info("begin end %s", ctime(&curr_end)); */
 	while(curr_start < end) {
+
+		/* FIX ME: DO CALCULATIONS HERE */
 
 		curr_start = curr_end;
 		if(!localtime_r(&curr_start, &start_tm)) {
