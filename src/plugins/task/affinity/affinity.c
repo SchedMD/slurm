@@ -41,9 +41,7 @@
 
 void slurm_chkaffinity(cpu_set_t *mask, slurmd_job_t *job, int statval)
 {
-	char bind_type[42];
-	char action[42];
-	char status[42];
+	char *bind_type, *action, *status, *units;
 	char mstr[1 + CPU_SETSIZE / 4];
 	int task_gid = job->envtp->procid;
 	int task_lid = job->envtp->localid;
@@ -52,33 +50,42 @@ void slurm_chkaffinity(cpu_set_t *mask, slurmd_job_t *job, int statval)
 	if (!(job->cpu_bind_type & CPU_BIND_VERBOSE))
 		return;
 
-	action[0] = '\0';
-	status[0] = '\0';
 	if (statval)
-		strcpy(status, " FAILED");
+		status = " FAILED";
+	else
+		status = "";
 
 	if (job->cpu_bind_type & CPU_BIND_NONE) {
-		strcpy(action, "");
-		strcpy(bind_type, "=NONE");
+		action = "";
+		units  = "";
+		bind_type = "NONE";
 	} else {
-		strcpy(action, " set");
+		action = " set";
+		if (job->cpu_bind_type & CPU_BIND_TO_THREADS)
+			units = "_threads";
+		else if (job->cpu_bind_type & CPU_BIND_TO_CORES)
+			units = "_cores";
+		else if (job->cpu_bind_type & CPU_BIND_TO_SOCKETS)
+			units = "_sockets";
+		else
+			units = "";
 		if (job->cpu_bind_type & CPU_BIND_RANK) {
-			strcpy(bind_type, "=RANK");
+			bind_type = "RANK";
 		} else if (job->cpu_bind_type & CPU_BIND_MAP) {
-			strcpy(bind_type, "=MAP ");
+			bind_type = "MAP ";
 		} else if (job->cpu_bind_type & CPU_BIND_MASK) {
-			strcpy(bind_type, "=MASK");
+			bind_type = "MASK";
 		} else if (job->cpu_bind_type & (~CPU_BIND_VERBOSE)) {
-			strcpy(bind_type, "=UNK ");
+			bind_type = "UNK ";
 		} else {
-			strcpy(action, "");
-			strcpy(bind_type, "=NULL");
+			action = "";
+			bind_type = "NULL";
 		}
 	}
 
-	fprintf(stderr, "cpu_bind%s - "
+	fprintf(stderr, "cpu_bind%s=%s - "
 			"%s, task %2u %2u [%u]: mask 0x%s%s%s\n",
-			bind_type,
+			units, bind_type,
 			conf->hostname,
 			task_gid,
 			task_lid,
