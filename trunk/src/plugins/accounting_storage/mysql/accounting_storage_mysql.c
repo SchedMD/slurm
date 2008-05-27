@@ -4527,6 +4527,7 @@ extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn)
 //	last_hour = 1211403599;
 	//	last_hour = 1206946800;
 //	last_day = 1207033199;
+//	last_day = 1197033199;
 //	last_month = 1204358399;
 
 	if(!localtime_r(&last_hour, &start_tm)) {
