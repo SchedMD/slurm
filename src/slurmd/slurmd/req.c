@@ -2390,6 +2390,12 @@ _rpc_suspend_job(slurm_msg_t *msg)
 		sleep(1);
 	}
 
+	/* Release or reclaim resources bound to these tasks (task affinity) */
+	if (req->op == SUSPEND_JOB)
+		(void) slurmd_suspend_job(req->job_id);
+	else
+		(void) slurmd_resume_job(req->job_id);
+
 	/*
 	 * Loop through all job steps and call stepd_suspend or stepd_resume
 	 * as appropriate. Since the "suspend" action contains a 'sleep 1',
