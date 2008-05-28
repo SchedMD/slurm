@@ -17,6 +17,7 @@ documents those changes that are of interest to users and admins.
     slurmdbd.
  -- Copied job stat logic out of sacct into sstat in the future sacct -stat 
     will be deprecated.
+ -- Correct sbatch processing of --nice option with negative values.
 
 * Changes in SLURM 1.3.2
 ========================
