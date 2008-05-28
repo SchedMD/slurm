@@ -1,20 +1,20 @@
-# Makefile for sacct
+# Makefile for sstat
 
 AUTOMAKE_OPTIONS = foreign
 
 INCLUDES = -I$(top_srcdir)
 
-bin_PROGRAMS = sacct
+bin_PROGRAMS = sstat
 
-sacct_LDADD = 	$(top_builddir)/src/common/libcommon.o -ldl \
+sstat_LDADD = 	$(top_builddir)/src/common/libcommon.o -ldl \
 	$(top_builddir)/src/api/libslurmhelper.la
 
-noinst_HEADERS = sacct.c 
-sacct_SOURCES = sacct.c process.c print.c options.c sacct_stat.c
+noinst_HEADERS = sstat.c 
+sstat_SOURCES = sstat.c process.c print.c options.c
 
 force:
-$(sacct_LDADD) : force
+$(sstat_LDADD) : force
 	 @cd `dirname $@` && $(MAKE) `basename $@`
 
-sacct_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+sstat_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 

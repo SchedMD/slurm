@@ -305,6 +305,11 @@ int main(int argc, char **argv)
 			do_list();
 		break;
 	case SACCT_STAT:
+		fprintf(stderr,
+			"This functionality has been replaced with 'sstat' "
+			"in the future please make note this will "
+			"not be supported.");
+		
 		if (params.opt_header) 	/* give them something to look */
 			_print_header();/* at while we think...        */
 		do_stat();

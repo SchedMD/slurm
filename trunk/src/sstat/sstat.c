@@ -1,11 +1,9 @@
 /*****************************************************************************\
- *  sacct_stat.c - stat slurmd for percise job information
- *
- *  $Id: options.c 7541 2006-03-18 01:44:58Z da $
+ *  sstat.c - job accounting reports for SLURM's jobacct/log plugin
  *****************************************************************************
- *  Copyright (C) 2006 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Danny Auble <da@llnl.gov>.
+ *  Written by Morris Jette <jette1@llnl.gov>
  *  LLNL-CODE-402394.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -37,22 +35,65 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "sacct.h"
-#include <pthread.h>
-#include "src/common/forward.h"
-#include "src/common/slurm_auth.h"
+#include "sstat.h"
 
-jobacct_step_rec_t step;
-	
-int thr_finished = 0;
-	
+void _destroy_steps(void *object);
+void _print_header(void);
 void *_stat_thread(void *args);
-int _sacct_query(slurm_step_layout_t *step_layout, uint32_t job_id, 
+int _sstat_query(slurm_step_layout_t *step_layout, uint32_t job_id, 
 		 uint32_t step_id);
 int _process_results();
+int _do_stat(uint32_t jobid, uint32_t stepid);
 
+/*
+ * Globals
+ */
+	sacct_parameters_t params;
+fields_t fields[] = {{"cputime", print_cputime}, 
+		     {"jobid", print_jobid}, 
+		     {"ntasks", print_ntasks}, 
+		     {"pages", print_pages}, 
+		     {"rss", print_rss},
+		     {"state", print_state}, 
+		     {"vsize", print_vsize}, 
+		     {NULL, NULL}};
 
-int _sacct_query(slurm_step_layout_t *step_layout, uint32_t job_id,
+List jobs = NULL;
+jobacct_step_rec_t step;
+
+int printfields[MAX_PRINTFIELDS],	/* Indexed into fields[] */
+	nprintfields = 0;
+
+void _destroy_steps(void *object)
+{
+	jobacct_selected_step_t *step = (jobacct_selected_step_t *)object;
+	if(step) {
+		xfree(step->job);
+		xfree(step->step);
+		xfree(step);
+	}
+}
+
+void _print_header(void)
+{
+	int	i,j;
+	for (i=0; i<nprintfields; i++) {
+		if (i)
+			printf(" ");
+		j=printfields[i];
+		(fields[j].print_routine)(HEADLINE, 0);
+	}
+	printf("\n");
+	for (i=0; i<nprintfields; i++) {
+		if (i)
+			printf(" ");
+		j=printfields[i];
+		(fields[j].print_routine)(UNDERSCORE, 0);
+	}
+	printf("\n");
+}
+
+int _sstat_query(slurm_step_layout_t *step_layout, uint32_t job_id,
 		 uint32_t step_id)
 {
 	slurm_msg_t msg;
@@ -73,6 +114,7 @@ int _sacct_query(slurm_step_layout_t *step_layout, uint32_t job_id,
 	memset(&step.sacct, 0, sizeof(sacct_t));
 	step.sacct.min_cpu = (float)NO_VAL;
 
+	step.jobid = job_id;
 	step.stepid = step_id;
 	step.nodes = step_layout->node_list;
 	step.stepname = NULL;
@@ -84,7 +126,6 @@ int _sacct_query(slurm_step_layout_t *step_layout, uint32_t job_id,
 	r.jobacct     = jobacct_gather_g_create(NULL);
 	msg.msg_type        = MESSAGE_STAT_JOBACCT;
 	msg.data            = &r;
-	
 	
 	ret_list = slurm_send_recv_msgs(step_layout->node_list, &msg, 0);
 	if (!ret_list) {
@@ -151,7 +192,7 @@ int _process_results()
 	return SLURM_SUCCESS;
 }
 
-int sacct_stat(uint32_t jobid, uint32_t stepid)
+int _do_stat(uint32_t jobid, uint32_t stepid)
 {
 	slurm_msg_t req_msg;
 	slurm_msg_t resp_msg;
@@ -191,7 +232,7 @@ int sacct_stat(uint32_t jobid, uint32_t stepid)
 		return rc;
 	}
 
-	_sacct_query(step_layout, jobid, stepid);
+	_sstat_query(step_layout, jobid, stepid);
 	
 	_process_results();
 	
@@ -199,3 +240,34 @@ int sacct_stat(uint32_t jobid, uint32_t stepid)
 	
 	return rc;
 }
+
+int main(int argc, char **argv)
+{
+	ListIterator itr = NULL;
+	uint32_t jobid = 0;
+	uint32_t stepid = 0;
+	jobacct_selected_step_t *selected_step = NULL;
+	
+	List selected_steps = list_create(_destroy_steps);
+
+	parse_command_line(argc, argv, selected_steps);
+
+	if (params.opt_header) 	/* give them something to look */
+		_print_header();/* at while we think...        */
+	itr = list_iterator_create(selected_steps);
+	while((selected_step = list_next(itr))) {
+		jobid = atoi(selected_step->job);
+		if(selected_step->step)
+			stepid = atoi(selected_step->step);
+		else
+			stepid = 0;
+		_do_stat(jobid, stepid);
+	}
+	list_iterator_destroy(itr);
+		
+	list_destroy(selected_steps);
+
+	return 0;
+}
+
+
