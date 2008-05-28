@@ -1011,8 +1011,8 @@ extern int kill_job_by_part_name(char *part_name)
 					difftime(now, job_ptr->suspend_time);
 			} else
 				job_ptr->end_time = now;
-			job_completion_logger(job_ptr);
 			deallocate_nodes(job_ptr, false, suspended);
+			job_completion_logger(job_ptr);
 		} else if (job_ptr->job_state == JOB_PENDING) {
 			job_count++;
 			info("Killing job_id %u on defunct partition %s",
@@ -4769,6 +4769,7 @@ extern void job_completion_logger(struct job_record  *job_ptr)
 	}
 
 	g_slurm_jobcomp_write(job_ptr);
+	jobacct_storage_g_job_complete(acct_db_conn, job_ptr);
 }
 
 /*

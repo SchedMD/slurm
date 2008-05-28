@@ -901,6 +901,7 @@ static int _mysql_acct_check_tables(MYSQL *acct_mysql_db)
 		{ "down_cpu_secs", "bigint default 0" },
 		{ "idle_cpu_secs", "bigint default 0" },
 		{ "resv_cpu_secs", "bigint default 0" },
+		{ "over_cpu_secs", "bigint default 0" },
 		{ NULL, NULL}		
 	};
 
@@ -4440,7 +4441,8 @@ extern int acct_storage_p_get_usage(mysql_conn_t *mysql_conn,
 #endif
 }
 
-extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn)
+extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn, 
+				     time_t sent_start)
 {
 #ifdef HAVE_MYSQL
 	int rc = SLURM_SUCCESS;
@@ -4452,11 +4454,12 @@ extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn)
 	MYSQL_ROW row;
 	char *query = NULL;
 	char *tmp = NULL;
-	time_t last_hour = 0;
-	time_t last_day = 0;
-	time_t last_month = 0;
+	time_t last_hour = sent_start;
+	time_t last_day = sent_start;
+	time_t last_month = sent_start;
 	time_t start_time = 0;
   	time_t end_time = 0;
+	DEF_TIMERS;
 
 	char *update_req_inx[] = {
 		"hourly_rollup",
@@ -4484,46 +4487,60 @@ extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn)
 		}
 	}
 
-	i=0;
-	xstrfmtcat(tmp, "%s", update_req_inx[i]);
-	for(i=1; i<UPDATE_COUNT; i++) {
-		xstrfmtcat(tmp, ", %s", update_req_inx[i]);
-	}
-	
-	query = xstrdup_printf("select %s from %s", tmp, last_ran_table);
-	xfree(tmp);
-	
-	debug3("%d query\n%s", mysql_conn->conn, query);
-	if(!(result = mysql_db_query_ret(
-		     mysql_conn->acct_mysql_db, query, 0))) {
-		xfree(query);
-		return SLURM_ERROR;
-	}
-
-	xfree(query);
-	row = mysql_fetch_row(result);
-	if(row) {
-		/* the last times were one second before the next
-		 * period so increment here 1
-		 */
-		last_hour = atoi(row[UPDATE_HOUR]);
-		last_day = atoi(row[UPDATE_DAY]);
-		last_month = atoi(row[UPDATE_MONTH]);		
-	} else {
-		query = xstrdup_printf(
-			"insert into %s "
-			"(hourly_rollup, daily_rollup, monthly_rollup) "
-			"values (0, 0, 0)",
-			last_ran_table);
+	if(!sent_start) {
+		i=0;
+		xstrfmtcat(tmp, "%s", update_req_inx[i]);
+		for(i=1; i<UPDATE_COUNT; i++) {
+			xstrfmtcat(tmp, ", %s", update_req_inx[i]);
+		}
+		query = xstrdup_printf("select %s from %s",
+				       tmp, last_ran_table);
+		xfree(tmp);
 		
-		rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
+		if(!(result = mysql_db_query_ret(
+			     mysql_conn->acct_mysql_db, query, 0))) {
+			xfree(query);
+			return SLURM_ERROR;
+		}
+		
 		xfree(query);
-		if(rc == SLURM_ERROR) 
-			return rc;
+		row = mysql_fetch_row(result);
+		if(row) {
+			last_hour = atoi(row[UPDATE_HOUR]);
+			last_day = atoi(row[UPDATE_DAY]);
+			last_month = atoi(row[UPDATE_MONTH]);		
+			mysql_free_result(result);
+		} else {
+			query = xstrdup_printf(
+				"select @PS := period_start from %s limit 1;"
+				"insert into %s "
+				"(hourly_rollup, daily_rollup, monthly_rollup) "
+				"values (@PS, @PS, @PS);",
+				event_table, last_ran_table);
+			
+			mysql_free_result(result);
+			if(!(result = mysql_db_query_ret(
+				     mysql_conn->acct_mysql_db, query, 0))) {
+				xfree(query);
+				return SLURM_ERROR;
+			}
+			xfree(query);
+			row = mysql_fetch_row(result);
+			if(!row) {
+				debug("No clusters have been added "
+				      "not doing rollup");
+				mysql_free_result(result);
+				return SLURM_SUCCESS;
+			}
+			
+			last_hour = last_day = last_month = atoi(row[0]);
+			mysql_free_result(result);
+		}
 	}
-	last_hour = 1211475599;
-	last_day = 1211475599;
-	last_month = 1211475599;
+/* 	last_hour = 1211475599; */
+/* 	last_day = 1211475599; */
+/* 	last_month = 1211475599; */
+
 //	last_hour = 1211403599;
 	//	last_hour = 1206946800;
 //	last_day = 1207033199;
@@ -4558,10 +4575,12 @@ extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn)
 	end_tm.tm_isdst = -1;
 	end_time = mktime(&end_tm);
 	if(end_time-start_time > 0) {
+		START_TIMER;
 		if((rc = mysql_hourly_rollup(mysql_conn, start_time, end_time)) 
 		   != SLURM_SUCCESS)
 			return rc;
-		query = xstrdup_printf("update %s set hour_rollup=%d",
+		END_TIMER2("hourly_rollup");
+		query = xstrdup_printf("update %s set hourly_rollup=%d",
 				       last_ran_table, end_time);
 	} else {
 		debug2("no need to run this hour %d < %d", 
@@ -4583,9 +4602,11 @@ extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn)
 	end_tm.tm_isdst = -1;
 	end_time = mktime(&end_tm);
 	if(end_time-start_time > 0) {
+		START_TIMER;
 		if((rc = mysql_daily_rollup(mysql_conn, start_time, end_time)) 
 		   != SLURM_SUCCESS)
 			return rc;
+		END_TIMER2("daily_rollup");
 		if(query) 
 			xstrfmtcat(query, ", daily_rollup=%d", end_time);
 		else 
@@ -4614,9 +4635,12 @@ extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn)
 	end_tm.tm_isdst = -1;
 	end_time = mktime(&end_tm);
 	if(end_time-start_time > 0) {
+		START_TIMER;
 		if((rc = mysql_monthly_rollup(
 			    mysql_conn, start_time, end_time)) != SLURM_SUCCESS)
 			return rc;
+		END_TIMER2("monthly_rollup");
+
 		if(query) 
 			xstrfmtcat(query, ", montly_rollup=%d", end_time);
 		else 
@@ -4629,8 +4653,8 @@ extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn)
 	}
 	
 	if(query) {
-		info("%s", query);
-		//rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
+		debug3("%s", query);
+		rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
 		xfree(query);
 	}
 	return rc;

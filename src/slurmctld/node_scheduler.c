@@ -210,10 +210,6 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 		return;
 	}
 	
-	/* log this in the accounting plugin since it was allocated
-	 * something */
-	jobacct_storage_g_job_complete(acct_db_conn, job_ptr);
-	
 	agent_args->msg_args = kill_job;
 	agent_queue_request(agent_args);
 	return;

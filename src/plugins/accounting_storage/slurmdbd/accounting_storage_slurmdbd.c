@@ -710,13 +710,14 @@ extern int acct_storage_p_get_usage(void *db_conn,
 	return rc;
 }
 
-extern int acct_storage_p_roll_usage(void *db_conn)
+extern int acct_storage_p_roll_usage(void *db_conn, 
+				     time_t sent_start)
 {
 	slurmdbd_msg_t req;
 	dbd_roll_usage_msg_t get_msg;
 	int rc, resp_code;
 	
-	get_msg.start = time(NULL);
+	get_msg.start = sent_start;
 
 	req.msg_type = DBD_ROLL_USAGE;
 
@@ -879,6 +880,7 @@ extern int jobacct_storage_p_job_start(void *db_conn,
 	}
 
 	req.alloc_cpus    = job_ptr->total_procs;
+	req.account       = job_ptr->account;
 	req.assoc_id      = job_ptr->assoc_id;
 #ifdef HAVE_BG
 	select_g_get_jobinfo(job_ptr->select_jobinfo, 
@@ -886,8 +888,7 @@ extern int jobacct_storage_p_job_start(void *db_conn,
 			     &block_id);
 #endif
 	req.block_id      = block_id;
-	xfree(block_id);
-	req.db_index    = job_ptr->db_index;
+	req.db_index      = job_ptr->db_index;
 	if (job_ptr->details) 
 		req.eligible_time = job_ptr->details->begin_time;
 	req.gid           = job_ptr->group_id;
@@ -910,8 +911,11 @@ extern int jobacct_storage_p_job_start(void *db_conn,
 	 * again just send the message 
 	 */
 	if(req.db_index) {
-		if (slurm_send_slurmdbd_msg(&msg) < 0)
+		if (slurm_send_slurmdbd_msg(&msg) < 0) {
+			xfree(block_id);
 			return SLURM_ERROR;
+		}
+		xfree(block_id);
 		return SLURM_SUCCESS;
 	} 
 
@@ -920,8 +924,10 @@ extern int jobacct_storage_p_job_start(void *db_conn,
 	 */
 	rc = slurm_send_recv_slurmdbd_msg(&msg, &msg_rc);
 	if (rc != SLURM_SUCCESS) {
-		if (slurm_send_slurmdbd_msg(&msg) < 0)
+		if (slurm_send_slurmdbd_msg(&msg) < 0) {
+			xfree(block_id);
 			return SLURM_ERROR;
+		}
 	} else if (msg_rc.msg_type != DBD_JOB_START_RC) {
 		error("slurmdbd: response type not DBD_GOT_JOBS: %u", 
 		      msg_rc.msg_type);
@@ -930,6 +936,7 @@ extern int jobacct_storage_p_job_start(void *db_conn,
 		job_ptr->db_index = resp->db_index;
 		slurmdbd_free_job_start_rc_msg(resp);
 	}
+	xfree(block_id);
 	
 	return rc;
 }

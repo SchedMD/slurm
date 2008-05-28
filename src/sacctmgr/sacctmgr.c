@@ -427,15 +427,17 @@ _process_command (int argc, char *argv[])
 		}		
 		quiet_flag = -1;
 	} else if (strncasecmp (argv[0], "rollup", 2) == 0) {
-		if (argc > 1) {
+		time_t my_time = 0;
+		if (argc > 2) {
 			exit_code = 1;
 			fprintf (stderr,
 				 "too many arguments for %s keyword\n",
 				 argv[0]);
 		}
-		printf("ROLLUP DOESN'T WORK YET, "
-		       "this is for test purposes only.\n");
-		if(acct_storage_g_roll_usage(db_conn) == SLURM_SUCCESS) {
+		if(argc > 1)
+			my_time = parse_time(argv[1]);
+		if(acct_storage_g_roll_usage(db_conn, my_time)
+		   == SLURM_SUCCESS) {
 			if(commit_check("Would you like to commit rollup?")) {
 				acct_storage_g_commit(db_conn, 1);
 			} else {

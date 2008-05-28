@@ -458,9 +458,11 @@ extern int acct_storage_g_get_usage(
 	void *db_conn, void *assoc, time_t start, time_t end);
 /* 
  * roll up data in the storage 
+ * IN: sent_start (option time to do a re-roll or start from this point)
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_roll_usage(void *db_conn);
+extern int acct_storage_g_roll_usage(void *db_conn, 
+				     time_t sent_start);
 /* 
  * record shares used information for backup in case slurmctld restarts 
  * IN:  account_list List of shares_used_object_t *

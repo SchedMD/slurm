@@ -1288,6 +1288,7 @@ void inline slurmdbd_free_job_complete_msg(dbd_job_comp_msg_t *msg)
 void inline slurmdbd_free_job_start_msg(dbd_job_start_msg_t *msg)
 {
 	if (msg) {
+		xfree(msg->account);
 		xfree(msg->block_id);
 		xfree(msg->name);
 		xfree(msg->nodes);
@@ -1752,6 +1753,7 @@ unpack_error:
 void inline 
 slurmdbd_pack_job_start_msg(dbd_job_start_msg_t *msg, Buf buffer)
 {
+	packstr(msg->account, buffer);
 	pack32(msg->alloc_cpus, buffer);
 	pack32(msg->assoc_id, buffer);
 	packstr(msg->block_id, buffer);
@@ -1776,6 +1778,7 @@ slurmdbd_unpack_job_start_msg(dbd_job_start_msg_t **msg, Buf buffer)
 	uint32_t uint32_tmp;
 	dbd_job_start_msg_t *msg_ptr = xmalloc(sizeof(dbd_job_start_msg_t));
 	*msg = msg_ptr;
+	safe_unpackstr_xmalloc(&msg_ptr->account, &uint32_tmp, buffer);
 	safe_unpack32(&msg_ptr->alloc_cpus, buffer);
 	safe_unpack32(&msg_ptr->assoc_id, buffer);
 	safe_unpackstr_xmalloc(&msg_ptr->block_id, &uint32_tmp, buffer);
@@ -2147,6 +2150,7 @@ slurmdbd_unpack_roll_usage_msg(dbd_roll_usage_msg_t **msg, Buf buffer)
 {
 	dbd_roll_usage_msg_t *msg_ptr = xmalloc(sizeof(dbd_roll_usage_msg_t));
 
+	*msg = msg_ptr;
 	safe_unpack_time(&msg_ptr->start, buffer);
 	return SLURM_SUCCESS;
 	
