@@ -1535,32 +1535,48 @@ The default value is "NO".
 Controls the ability of the partition to execute more than one job at a 
 time on each resource (node, socket or core depending upon the value
 of \fBSelectTypeParameters\fR).
-Possible values are "EXCLUSIVE", "FORCE", "YES", and "NO".
-"EXCLUSIVE" allocates entire nodes to jobs even with 
-select/cons_res configured.
-This can be used to allocate whole nodes in some partitions 
-and individual processors in other partitions. 
-"FORCE" makes all resources in the partition available for sharing 
-without user means of disabling it.
-"YES" makes nodes in the partition available for sharing if and 
-only if the individual jobs permit sharing (see the srun 
-"\-\-share" option).
-"NO" makes nodes unavailable for sharing under all circumstances. 
-The default value is "NO".
-The "FORCE" and "YES" options can be followed by a colon and a job 
-count. For example "Shared=YES:4" enables each node, socket or 
-core to execute up to four jobs at once.
-If resources are to be shared, avoiding memory over\-subscription 
-is very important. 
-With sched/gang this count is the maximum number of jobs permitted
-on each resource in either running or suspended state (i.e. the total 
-number of jobs being time sliced).
-With other schedulers, this count is the maximum number of running 
-jobs on each resource (node, socket or core depending upon the 
-\fBSelectTypeParameters\fR).
-\fBSelectTypeParameters\fR should be configured to treat 
-memory as a consumable resource and the \fB\-\-mem\fR option 
+If resources are to be shared, avoiding memory over\-subscription
+is very important.
+\fBSelectTypeParameters\fR should be configured to treat
+memory as a consumable resource and the \fB\-\-mem\fR option
 should be used for job allocations.
+For more information see the following web page:
+\fIhttps://computing.llnl.gov/linux/slurm/cons_res_share.html\fR.
+Possible values for \fBShared\fR are "EXCLUSIVE", "FORCE", "YES", and "NO".
+.RS
+.TP 12
+\fBEXCLUSIVE\fR
+Aallocates entire nodes to jobs even with select/cons_res configured.
+This can be used to allocate whole nodes in some partitions 
+and individual processors in other partitions.
+.TP 
+\fBFORCE\fR
+Make all resources in the partition available for sharing 
+without any means for users to disable it.
+May be followed with a colon and maximum number of jobs in
+running or suspended state.
+For example "Shared=FORCE:4" enables each node, socket or
+core to execute up to four jobs at once.
+Recommended only for BlueGene systems configured with
+small blocks or for systems running
+with gang scheduling (\fBSchedulerType=sched/gang\fR).
+.TP
+\fBYES\fR
+Make nodes in the partition available for sharing, but provides
+the user with a means of getting dediated resources.
+If \fBSelectType=select/cons_res\fR, then resources will be 
+over\-subscribed unless explicitly disabled in the job submit 
+request using the "\-\-exclusive" option.
+With \fBSelectType=select/bluegene\fR or \fBSelectType=select/linear\fR,
+resources will only be over\-subscribed when explicitly requested
+by the user using the "\-\-share" option on job submission.
+May be followed with a colon and maximum number of jobs in 
+running or suspended state.
+For example "Shared=YES:4" enables each node, socket or
+core to execute up to four jobs at once.
+Recommended only for systems running with gang scheduling 
+(\fBSchedulerType=sched/gang\fR).
+.RE
 
 .TP
 \fBState\fR
