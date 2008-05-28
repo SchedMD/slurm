@@ -4565,7 +4565,6 @@ extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn,
 
 	start_tm.tm_sec = 0;
 	start_tm.tm_min = 0;
-	start_tm.tm_isdst = -1;
 	start_tm.tm_hour++;
 	start_tm.tm_isdst = -1;
 	start_time = mktime(&start_tm);

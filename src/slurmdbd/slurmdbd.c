@@ -74,6 +74,9 @@ static log_options_t log_opts = 	/* Log to stderr & syslog */
 			LOG_OPTS_INITIALIZER;
 static pthread_t rpc_handler_thread;	/* thread ID for RPC hander */
 static pthread_t signal_handler_thread;	/* thread ID for signal hander */
+static pthread_t rollup_handler_thread;	/* thread ID for rollup hander */
+static pthread_mutex_t rollup_lock = PTHREAD_MUTEX_INITIALIZER;
+static bool running_rollup = 0;
 
 /* Local functions */
 static void  _daemonize(void);
@@ -82,6 +85,8 @@ static void  _init_config(void);
 static void  _init_pidfile(void);
 static void  _kill_old_slurmdbd(void);
 static void  _parse_commandline(int argc, char *argv[]);
+static void _rollup_handler_cancel();
+static void *_rollup_handler(void *no_data);
 static void *_signal_handler(void *no_data);
 static void  _update_logging(void);
 static void  _usage(char *prog_name);
@@ -139,20 +144,32 @@ int main(int argc, char *argv[])
 		acct_storage_g_close_connection(&db_conn);
 		goto end_it;
 	}
-	acct_storage_g_close_connection(&db_conn);
+
 	/* Create attached thread to process incoming RPCs */
 	slurm_attr_init(&thread_attr);
 	if (pthread_create(&rpc_handler_thread, &thread_attr, rpc_mgr, NULL))
 		fatal("pthread_create error %m");
 	slurm_attr_destroy(&thread_attr);
 
+	/* Create attached thread to do usage rollup */
+	slurm_attr_init(&thread_attr);
+	if (pthread_create(&rollup_handler_thread, &thread_attr,
+			   _rollup_handler, db_conn))
+		fatal("pthread_create error %m");
+	slurm_attr_destroy(&thread_attr);
+
 	/* Daemon is fully operational here */
 
 	/* Daemon termination handled here */
+	pthread_join(rollup_handler_thread, NULL);
+
 	pthread_join(rpc_handler_thread, NULL);
 
 	pthread_join(signal_handler_thread, NULL);
+
 end_it:
+	acct_storage_g_close_connection(&db_conn);
+
 	if (slurmdbd_conf->pid_file &&
 	    (unlink(slurmdbd_conf->pid_file) < 0)) {
 		verbose("Unable to remove pidfile '%s': %m",
@@ -329,6 +346,57 @@ static void _daemonize(void)
 	}
 }
 
+static void _rollup_handler_cancel()
+{
+	if(running_rollup)
+		debug("Waiting for rollup thread to finish.");
+	slurm_mutex_lock(&rollup_lock);
+	pthread_cancel(rollup_handler_thread);
+	slurm_mutex_unlock(&rollup_lock);	
+}
+
+/* _rollup_handler - Process rollup duties */
+static void *_rollup_handler(void *db_conn)
+{
+	time_t start_time = time(NULL);
+	time_t next_time;
+/* 	int sigarray[] = {SIGUSR1, 0}; */
+	struct tm tm;
+
+	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+
+	if(!localtime_r(&start_time, &tm)) {
+		fatal("Couldn't get localtime for rollup handler %d",
+		      start_time);
+		return NULL;
+	}
+
+	while (1) {
+		if(!db_conn)
+			break;
+		/* run the roll up */
+		slurm_mutex_lock(&rollup_lock);
+		running_rollup = 1;
+		debug2("running rollup at %s", ctime(&start_time));
+		acct_storage_g_roll_usage(db_conn, 0);
+		running_rollup = 0;
+		slurm_mutex_unlock(&rollup_lock);	
+
+		/* sleep for an hour */
+		tm.tm_sec = 0;
+		tm.tm_min = 0;
+		tm.tm_hour++;
+		tm.tm_isdst = -1;
+		next_time = mktime(&tm);
+		sleep((next_time-start_time));
+		start_time = next_time;
+		/* repeat ;) */
+	}
+
+	return NULL;
+}
+
 /* _signal_handler - Process daemon-wide signals */
 static void *_signal_handler(void *no_data)
 {
@@ -361,12 +429,15 @@ static void *_signal_handler(void *no_data)
 			info("Terminate signal (SIGINT or SIGTERM) received");
 			shutdown_time = time(NULL);
 			rpc_mgr_wake();
+			_rollup_handler_cancel();
+
 			return NULL;	/* Normal termination */
 		case SIGABRT:	/* abort */
 			info("SIGABRT received");
 			abort();	/* Should terminate here */
 			shutdown_time = time(NULL);
 			rpc_mgr_wake();
+			_rollup_handler_cancel();
 			return NULL;
 		default:
 			error("Invalid signal (%d) received", sig);
