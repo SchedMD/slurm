@@ -1,11 +1,12 @@
 /*****************************************************************************\
- *  sacct.h - header file for sacct
+ *  sstat.h - header file for sstat
  *
- *  $Id: sacct.h 7541 2006-03-18 01:44:58Z da $
+ *  $Id: sstat.h 7541 2006-03-18 01:44:58Z da $
  *****************************************************************************
- *  Copyright (C) 2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Danny Auble <da@llnl.gov>.
+ *  Written by Morris Jette <jette1@llnl.gov>
  *  LLNL-CODE-402394.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -36,8 +37,8 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
-#ifndef _SACCT_H
-#define _SACCT_H
+#ifndef _SSTAT_H
+#define _SSTAT_H
 
 #include <ctype.h>
 #include <errno.h>
@@ -102,61 +103,17 @@ void find_hostname(uint32_t pos, char *hosts, char *host);
 void aggregate_sacct(sacct_t *dest, sacct_t *from);
 
 /* print.c */
+void print_cputime(type_t type, void *object);
 void print_fields(type_t type, void *object);
-void print_cpu(type_t type, void *object);
-void print_elapsed(type_t type, void *object);
-void print_exitcode(type_t type, void *object);
-void print_gid(type_t type, void *object);
-void print_group(type_t type, void *object);
-void print_job(type_t type, void *object);
-void print_name(type_t type, void *object);
 void print_jobid(type_t type, void *object);
-void print_ncpus(type_t type, void *object);
-void print_nodes(type_t type, void *object);
-void print_nnodes(type_t type, void *object);
 void print_ntasks(type_t type, void *object);
-void print_partition(type_t type, void *object);
-void print_blockid(type_t type, void *object);
 void print_pages(type_t type, void *object);
 void print_rss(type_t type, void *object);
 void print_state(type_t type, void *object);
-void print_submit(type_t type, void *object);
-void print_start(type_t type, void *object);
-void print_end(type_t type, void *object);
-void print_systemcpu(type_t type, void *object);
-void print_timelimit(type_t type, void *object);
-void print_uid(type_t type, void *object);
-void print_user(type_t type, void *object);
-void print_usercpu(type_t type, void *object);
 void print_vsize(type_t type, void *object);
-void print_cputime(type_t type, void *object);
-void print_account(type_t type, void *object);
 
-#ifdef HAVE_BG
-void print_connection(type_t type, void *object);
-void print_geo(type_t type, void *object);
-void print_max_procs(type_t type, void *object);
-void print_reboot(type_t type, void *object);
-void print_rotate(type_t type, void *object);
-void print_bg_start_point(type_t type, void *object);
-#endif
 
 /* options.c */
-int decode_state_char(char *state);
-char *decode_state_int(int state);
-int get_data(void);
-void parse_command_line(int argc, char **argv);
-void do_dump(void);
-void do_dump_completion(void);
-void do_expire(int dummy);
-void do_help(void);
-void do_list(void);
-void do_list_completion(void);
-void do_stat(void);
-void sacct_init();
-void sacct_fini();
-
-/* sacct_stat.c */
-extern int sacct_stat(uint32_t jobid, uint32_t stepid);
+void parse_command_line(int argc, char **argv, List selected_steps);
 
 #endif /* !_SACCT_H */

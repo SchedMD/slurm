@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# Makefile for sacct
+# Makefile for sstat
 
 
 VPATH = @srcdir@
@@ -36,8 +36,8 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-bin_PROGRAMS = sacct$(EXEEXT)
-subdir = src/sacct
+bin_PROGRAMS = sstat$(EXEEXT)
+subdir = src/sstat
 DIST_COMMON = $(noinst_HEADERS) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -72,13 +72,13 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am_sacct_OBJECTS = sacct.$(OBJEXT) process.$(OBJEXT) print.$(OBJEXT) \
-	options.$(OBJEXT) sacct_stat.$(OBJEXT)
-sacct_OBJECTS = $(am_sacct_OBJECTS)
-sacct_DEPENDENCIES = $(top_builddir)/src/common/libcommon.o \
+am_sstat_OBJECTS = sstat.$(OBJEXT) process.$(OBJEXT) print.$(OBJEXT) \
+	options.$(OBJEXT)
+sstat_OBJECTS = $(am_sstat_OBJECTS)
+sstat_DEPENDENCIES = $(top_builddir)/src/common/libcommon.o \
 	$(top_builddir)/src/api/libslurmhelper.la
-sacct_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
-	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(sacct_LDFLAGS) \
+sstat_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
+	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(sstat_LDFLAGS) \
 	$(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
@@ -92,8 +92,8 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(sacct_SOURCES)
-DIST_SOURCES = $(sacct_SOURCES)
+SOURCES = $(sstat_SOURCES)
+DIST_SOURCES = $(sstat_SOURCES)
 HEADERS = $(noinst_HEADERS)
 ETAGS = etags
 CTAGS = ctags
@@ -267,12 +267,12 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir)
-sacct_LDADD = $(top_builddir)/src/common/libcommon.o -ldl \
+sstat_LDADD = $(top_builddir)/src/common/libcommon.o -ldl \
 	$(top_builddir)/src/api/libslurmhelper.la
 
-noinst_HEADERS = sacct.c 
-sacct_SOURCES = sacct.c process.c print.c options.c sacct_stat.c
-sacct_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+noinst_HEADERS = sstat.c 
+sstat_SOURCES = sstat.c process.c print.c options.c
+sstat_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 all: all-am
 
 .SUFFIXES:
@@ -286,9 +286,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  src/sacct/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  src/sstat/Makefile'; \
 	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign  src/sacct/Makefile
+	  $(AUTOMAKE) --foreign  src/sstat/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -334,9 +334,9 @@ clean-binPROGRAMS:
 	  echo " rm -f $$p $$f"; \
 	  rm -f $$p $$f ; \
 	done
-sacct$(EXEEXT): $(sacct_OBJECTS) $(sacct_DEPENDENCIES) 
-	@rm -f sacct$(EXEEXT)
-	$(sacct_LINK) $(sacct_OBJECTS) $(sacct_LDADD) $(LIBS)
+sstat$(EXEEXT): $(sstat_OBJECTS) $(sstat_DEPENDENCIES) 
+	@rm -f sstat$(EXEEXT)
+	$(sstat_LINK) $(sstat_OBJECTS) $(sstat_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -347,8 +347,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/options.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/print.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/process.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sacct.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sacct_stat.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sstat.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -557,7 +556,7 @@ uninstall-am: uninstall-binPROGRAMS
 
 
 force:
-$(sacct_LDADD) : force
+$(sstat_LDADD) : force
 	 @cd `dirname $@` && $(MAKE) `basename $@`
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

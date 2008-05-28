@@ -37,7 +37,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "sacct.h"
+#include "sstat.h"
 
 
 void find_hostname(uint32_t pos, char *hosts, char *host)

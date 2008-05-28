@@ -15,6 +15,8 @@ documents those changes that are of interest to users and admins.
  -- In TaskPlugin=task/affinity, fix possible infinite loop for slurmd.
  -- Accounting rollup works for mysql plugin.  Automatic rollup when using 
     slurmdbd.
+ -- Copied job stat logic out of sacct into sstat in the future sacct -stat 
+    will be deprecated.
 
 * Changes in SLURM 1.3.2
 ========================
