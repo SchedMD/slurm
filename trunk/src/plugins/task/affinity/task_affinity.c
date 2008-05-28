@@ -2,11 +2,11 @@
  *  task_affinity.c - Library for task pre-launch and post_termination
  *	functions for task affinity support
  *****************************************************************************
- *  Copyright (C) 2005 Hewlett-Packard Development Company, L.P.
+ *  Copyright (C) 2005-2008 Hewlett-Packard Development Company, L.P.
  *  Modified by Hewlett-Packard for task affinity support using task_none.c
- *  Copyright (C) 2005 The Regents of the University of California and
+ *  Copyright (C) 2005-2007 The Regents of the University of California
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  task_none.c Written by Morris Jette <jette1@llnl.gov>. 
  *  LLNL-CODE-402394.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -84,7 +84,7 @@ const uint32_t plugin_version   = 100;
  * init() is called when the plugin is loaded, before any other functions
  *	are called.  Put global initialization here.
  */
-int init ( void )
+extern int init (void)
 {
 	lllp_ctx_alloc();
 	verbose("%s loaded", plugin_name);
@@ -95,7 +95,7 @@ int init ( void )
  * fini() is called when the plugin is removed. Clear any allocated 
  *	storage here.
  */
-int fini ( void )
+extern int fini (void)
 {
 	lllp_ctx_destroy();
 	verbose("%s unloaded", plugin_name);
@@ -195,8 +195,9 @@ static void _update_bind_type(launch_tasks_request_msg_t *req)
 /*
  * task_slurmd_launch_request()
  */
-int task_slurmd_launch_request (uint32_t job_id,
-			launch_tasks_request_msg_t *req, uint32_t node_id)
+extern int task_slurmd_launch_request (uint32_t job_id, 
+				       launch_tasks_request_msg_t *req, 
+				       uint32_t node_id)
 {
 	int hw_sockets, hw_cores, hw_threads;
 	char buf_type[100];
@@ -230,8 +231,9 @@ int task_slurmd_launch_request (uint32_t job_id,
 /*
  * task_slurmd_reserve_resources()
  */
-int task_slurmd_reserve_resources ( uint32_t job_id,
-			launch_tasks_request_msg_t *req, uint32_t node_id)
+extern int task_slurmd_reserve_resources (uint32_t job_id, 
+					  launch_tasks_request_msg_t *req,
+					  uint32_t node_id)
 {
 	debug("task_slurmd_reserve_resources: %u", job_id);
 	cr_reserve_lllp(job_id, req, node_id);
@@ -239,9 +241,27 @@ int task_slurmd_reserve_resources ( uint32_t job_id,
 }
 
 /*
+ * task_slurmd_suspend_job()
+ */
+extern int task_slurmd_suspend_job (uint32_t job_id)
+{
+	debug("task_slurmd_suspend_job: %u", job_id);
+	return SLURM_SUCCESS;
+}
+
+/*
+ * task_slurmd_resume_job()
+ */
+extern int task_slurmd_resume_job (uint32_t job_id)
+{
+	debug("task_slurmd_resume_job: %u", job_id);
+	return SLURM_SUCCESS;
+}
+
+/*
  * task_slurmd_release_resources()
  */
-int task_slurmd_release_resources ( uint32_t job_id )
+extern int task_slurmd_release_resources (uint32_t job_id)
 {
 	debug("task_slurmd_release_resources: %u", job_id);
 	cr_release_lllp(job_id);
@@ -253,7 +273,7 @@ int task_slurmd_release_resources ( uint32_t job_id )
  * user to launch his jobs. Use this to create the CPUSET directory
  * and set the owner appropriately.
  */
-int task_pre_setuid ( slurmd_job_t *job )
+extern int task_pre_setuid (slurmd_job_t *job)
 {
 	char path[PATH_MAX];
 
@@ -274,7 +294,7 @@ int task_pre_setuid ( slurmd_job_t *job )
  *	It is followed by TaskProlog program (from slurm.conf) and
  *	--task-prolog (from srun command line).
  */
-int task_pre_launch ( slurmd_job_t *job )
+extern int task_pre_launch (slurmd_job_t *job)
 {
 	char base[PATH_MAX], path[PATH_MAX];
 
@@ -358,7 +378,7 @@ int task_pre_launch ( slurmd_job_t *job )
  *	It is preceeded by --task-epilog (from srun command line)
  *	followed by TaskEpilog program (from slurm.conf).
  */
-int task_post_term ( slurmd_job_t *job )
+extern int task_post_term (slurmd_job_t *job)
 {
 	debug("affinity task_post_term: %u.%u, task %d",
 		job->jobid, job->stepid, job->envtp->procid);

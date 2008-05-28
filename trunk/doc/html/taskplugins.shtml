@@ -84,6 +84,28 @@ ID of the node on which the resources are being acquired
 On failure, the plugin should return SLURM_ERROR and set the errno to an
 appropriate value to indicate the reason for failure.</p>
 
+<p class="commandline">int task_slurmd_suspend_job (uint32_t job_id);</p>
+<p style="margin-left:.2in"><b>Description</b>: Temporarily release resources 
+previously reserved for a job. 
+Executed by the <b>slurmd</b> daemon as user root.</p>
+<p style="margin-left:.2in"><b>Arguments</b>: 
+<span class="commandline">job_id</span>&nbsp;&nbsp;&nbsp;(input)
+ID of the job which is being suspended.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful.
+On failure, the plugin should return SLURM_ERROR and set the errno to an
+appropriate value to indicate the reason for failure.</p>
+
+<p class="commandline">int task_slurmd_resume_job (uint32_t job_id);</p>
+<p style="margin-left:.2in"><b>Description</b>: Reclaim resources which 
+were previously released using the task_slurmd_suspend_job function.
+Executed by the <b>slurmd</b> daemon as user root.</p>
+<p style="margin-left:.2in"><b>Arguments</b>: 
+<span class="commandline">job_id</span>&nbsp;&nbsp;&nbsp;(input)
+ID of the job which is being resumed.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful.
+On failure, the plugin should return SLURM_ERROR and set the errno to an
+appropriate value to indicate the reason for failure.</p>
+
 <p class="commandline">int task_slurmd_release_resources (uint32_t job_id);</p>
 <p style="margin-left:.2in"><b>Description</b>: Release resources previously 
 reserved for a job. Executed by the <b>slurmd</b> daemon as user root.</p>
@@ -142,6 +164,6 @@ appropriate value to indicate the reason for failure.</p>
 Future releases of SLURM may revise this API.</p>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 27 March 2007</p>
+<p style="text-align:center;">Last modified 28 May 2008</p>
 
 <!--#include virtual="footer.txt"-->

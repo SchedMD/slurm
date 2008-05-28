@@ -35,13 +35,12 @@
 #include "src/plugins/task/affinity/dist_tasks.h"
 
 static slurm_lllp_ctx_t *lllp_ctx = NULL;	/* binding context */
-static struct node_gids *lllp_tasks = NULL; /* Keep track of the task count for
-			       * logical processors
-			       * socket/core/thread.
-			       */
-static uint32_t lllp_reserved_size = 0;/* size of lllp reserved array     */
-static uint32_t *lllp_reserved = NULL;    /* count of Reserved lllps (socket,
-		                                         * core, threads) */
+static struct node_gids *lllp_tasks = NULL;	/* Keep track of the task count
+						 * for logical processors
+						 * socket/core/thread. */
+static uint32_t lllp_reserved_size = 0;		/* lllp reserved array size */
+static uint32_t *lllp_reserved = NULL;   	/* count of Reserved lllps 
+						 * (socket, core, threads) */
 
 
 static void _task_layout_display_masks(launch_tasks_request_msg_t *req,

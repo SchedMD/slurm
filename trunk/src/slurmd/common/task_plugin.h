@@ -1,7 +1,8 @@
 /*****************************************************************************\
  *  task_plugin.h - Define plugin functions for task pre_launch and post_term.
  *****************************************************************************
- *  Copyright (C) 2005 The Regents of the University of California.
+ *  Copyright (C) 2005-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  LLNL-CODE-402394.
@@ -65,21 +66,39 @@ extern int slurmd_task_fini(void);
  *
  * RET - slurm error code
  */
-extern int slurmd_launch_request( uint32_t job_id, launch_tasks_request_msg_t *req, uint32_t node_id );
+extern int slurmd_launch_request(uint32_t job_id, 
+				 launch_tasks_request_msg_t *req, 
+				 uint32_t node_id );
 
 /*
  * Slurmd is reserving resources for the task.
  *
  * RET - slurm error code
  */
-extern int slurmd_reserve_resources( uint32_t job_id, launch_tasks_request_msg_t *req, uint32_t node_id );
+extern int slurmd_reserve_resources(uint32_t job_id, 
+				    launch_tasks_request_msg_t *req, 
+				    uint32_t node_id );
+
+/*
+ * Slurmd is suspending a job.
+ *
+ * RET - slurm error code
+ */
+extern int slurmd_suspend_job(uint32_t job_id);
+
+/*
+ * Slurmd is resuming a previously suspended job.
+ *
+ * RET - slurm error code
+ */
+extern int slurmd_resume_job(uint32_t job_id);
 
 /*
  * Slurmd is releasing resources for the task.
  *
  * RET - slurm error code
  */
-extern int slurmd_release_resources( uint32_t job_id );
+extern int slurmd_release_resources(uint32_t job_id);
 
 /*
  * Note that a task launch is about to occur.

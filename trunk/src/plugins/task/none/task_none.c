@@ -2,7 +2,8 @@
  *  task_none.c - Library for task pre-launch and post_termination functions 
  *	with no actions
  *****************************************************************************
- *  Copyright (C) 2005 The Regents of the University of California.
+ *  Copyright (C) 2005-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  LLNL-CODE-402394.
@@ -82,7 +83,7 @@ const uint32_t plugin_version   = 100;
  * init() is called when the plugin is loaded, before any other functions
  *	are called.  Put global initialization here.
  */
-int init ( void )
+extern int init (void)
 {
 	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
@@ -92,7 +93,7 @@ int init ( void )
  * fini() is called when the plugin is removed. Clear any allocated 
  *	storage here.
  */
-int fini ( void )
+extern int fini (void)
 {
 	return SLURM_SUCCESS;
 }
@@ -100,30 +101,49 @@ int fini ( void )
 /*
  * task_slurmd_launch_request()
  */
-int task_slurmd_launch_request ( uint32_t job_id, launch_tasks_request_msg_t *req, uint32_t node_id)
+extern int task_slurmd_launch_request (uint32_t job_id, 
+				       launch_tasks_request_msg_t *req, 
+				       uint32_t node_id)
 {
-	debug("task_slurmd_launch_request: %u %u", 
-		job_id, node_id);
+	debug("task_slurmd_launch_request: %u %u", job_id, node_id);
 	return SLURM_SUCCESS;
 }
 
 /*
  * task_slurmd_reserve_resources()
  */
-int task_slurmd_reserve_resources ( uint32_t job_id, launch_tasks_request_msg_t *req, uint32_t node_id )
+extern int task_slurmd_reserve_resources (uint32_t job_id, 
+					  launch_tasks_request_msg_t *req,
+					  uint32_t node_id)
 {
-	debug("task_slurmd_reserve_resources: %u %u",
-		job_id, node_id);
+	debug("task_slurmd_reserve_resources: %u %u", job_id, node_id);
+	return SLURM_SUCCESS;
+}
+
+/*
+ * task_slurmd_suspend_job()
+ */
+extern int task_slurmd_suspend_job (uint32_t job_id)
+{
+	debug("task_slurmd_suspend_job: %u", job_id);
+	return SLURM_SUCCESS;
+}
+
+/*
+ * task_slurmd_resume_job()
+ */
+extern int task_slurmd_resume_job (uint32_t job_id)
+{
+	debug("task_slurmd_resume_job: %u", job_id);
 	return SLURM_SUCCESS;
 }
 
 /*
  * task_slurmd_release_resources()
  */
-int task_slurmd_release_resources ( uint32_t job_id )
+extern int task_slurmd_release_resources (uint32_t job_id)
 {
-	debug("task_slurmd_release_resources: %u",
-		job_id);
+	debug("task_slurmd_release_resources: %u", job_id);
 	return SLURM_SUCCESS;
 }
 
@@ -132,7 +152,7 @@ int task_slurmd_release_resources ( uint32_t job_id )
  * user to launch his jobs. Use this to create the CPUSET directory
  * and set the owner appropriately.
  */
-int task_pre_setuid ( slurmd_job_t *job )
+extern int task_pre_setuid (slurmd_job_t *job)
 {
 	return SLURM_SUCCESS;
 }
@@ -142,7 +162,7 @@ int task_pre_setuid ( slurmd_job_t *job )
  *	It is followed by TaskProlog program (from slurm.conf) and
  *	--task-prolog (from srun command line).
  */
-int task_pre_launch ( slurmd_job_t *job )
+extern int task_pre_launch (slurmd_job_t *job)
 {
 	debug("task_pre_launch: %u.%u, task %d", 
 		job->jobid, job->stepid, job->envtp->procid);
@@ -154,7 +174,7 @@ int task_pre_launch ( slurmd_job_t *job )
  *	It is preceeded by --task-epilog (from srun command line)
  *	followed by TaskEpilog program (from slurm.conf).
  */
-int task_post_term ( slurmd_job_t *job )
+extern int task_post_term (slurmd_job_t *job)
 {
 	debug("task_post_term: %u.%u, task %d",
 		job->jobid, job->stepid, job->envtp->procid);
