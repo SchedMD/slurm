@@ -233,8 +233,7 @@ int task_slurmd_launch_request (uint32_t job_id,
 int task_slurmd_reserve_resources ( uint32_t job_id,
 			launch_tasks_request_msg_t *req, uint32_t node_id)
 {
-	debug("task_slurmd_reserve_resources: %u",
-		job_id);
+	debug("task_slurmd_reserve_resources: %u", job_id);
 	cr_reserve_lllp(job_id, req, node_id);
 	return SLURM_SUCCESS;
 }
@@ -244,8 +243,7 @@ int task_slurmd_reserve_resources ( uint32_t job_id,
  */
 int task_slurmd_release_resources ( uint32_t job_id )
 {
-	debug("task_slurmd_release_resources: %u",
-		job_id);
+	debug("task_slurmd_release_resources: %u", job_id);
 	cr_release_lllp(job_id);
 	return SLURM_SUCCESS;
 }
