@@ -1186,7 +1186,7 @@ static void _set_options(int argc, char **argv)
 			break;
 		case LONG_OPT_NICE:
 			if (optarg)
-				opt.nice = _get_int(optarg, "nice");
+				opt.nice = strtol(optarg, NULL, 10);
 			else
 				opt.nice = 100;
 			if (abs(opt.nice) > NICE_OFFSET) {
