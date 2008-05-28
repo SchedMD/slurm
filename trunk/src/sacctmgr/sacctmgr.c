@@ -434,6 +434,7 @@ _process_command (int argc, char *argv[])
 				 "too many arguments for %s keyword\n",
 				 argv[0]);
 		}
+
 		if(argc > 1)
 			my_time = parse_time(argv[1]);
 		if(acct_storage_g_roll_usage(db_conn, my_time)
