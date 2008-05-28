@@ -206,20 +206,20 @@ int slurm_step_launch (slurm_step_ctx_t *ctx, char *launcher_host,
 	} else {
 		launch.cwd = _lookup_cwd();
 	}
-	launch.nnodes = ctx->step_resp->step_layout->node_cnt;
-	launch.nprocs = ctx->step_resp->step_layout->task_cnt;
-	launch.slurmd_debug = params->slurmd_debug;
-	launch.switch_job = ctx->step_resp->switch_job;
-	launch.task_prolog = params->task_prolog;
-	launch.task_epilog = params->task_epilog;
-	launch.cpu_bind_type = params->cpu_bind_type;
-	launch.cpu_bind = params->cpu_bind;
-	launch.mem_bind_type = params->mem_bind_type;
-	launch.mem_bind = params->mem_bind;
-	launch.multi_prog = params->multi_prog ? 1 : 0;
-	launch.max_sockets = params->max_sockets;
-	launch.max_cores   = params->max_cores;
-	launch.max_threads = params->max_threads;
+	launch.nnodes		= ctx->step_resp->step_layout->node_cnt;
+	launch.nprocs		= ctx->step_resp->step_layout->task_cnt;
+	launch.slurmd_debug	= params->slurmd_debug;
+	launch.switch_job	= ctx->step_resp->switch_job;
+	launch.task_prolog	= params->task_prolog;
+	launch.task_epilog	= params->task_epilog;
+	launch.cpu_bind_type	= params->cpu_bind_type;
+	launch.cpu_bind		= params->cpu_bind;
+	launch.mem_bind_type	= params->mem_bind_type;
+	launch.mem_bind		= params->mem_bind;
+	launch.multi_prog	= params->multi_prog ? 1 : 0;
+	launch.max_sockets	= params->max_sockets;
+	launch.max_cores	= params->max_cores;
+	launch.max_threads	= params->max_threads;
 	launch.cpus_per_task	= params->cpus_per_task;
 	launch.ntasks_per_node	= params->ntasks_per_node;
 	launch.ntasks_per_socket= params->ntasks_per_socket;
