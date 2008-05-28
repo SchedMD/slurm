@@ -36,39 +36,55 @@ The following table describes this new functionality in more detail:
 <TH>Per-partition <CODE>Shared</CODE> Setting</TH>
 <TH>Resulting Behavior</TH>
 </TR><TR>
-<TD ROWSPAN=2>SelectType=<B>select/linear</B></TD>
+<TD ROWSPAN=3>SelectType=<B>select/linear</B></TD>
 <TD>Shared=NO</TD>
 <TD>Whole nodes are allocated to jobs. No node will run more than one job.</TD>
+</TR><TR>
+<TD>Shared=YES</TD>
+<TD>Same as Shared=FORCE if job request specifies --shared option.
+Otherwise same as Shared=NO.</TD>
 </TR><TR>
 <TD>Shared=FORCE</TD>
 <TD>Whole nodes are allocated to jobs. A node may run more than one job.</TD>
 </TR><TR>
-<TD ROWSPAN=2>SelectType=<B>select/cons_res</B><BR>
+<TD ROWSPAN=3>SelectType=<B>select/cons_res</B><BR>
 Plus one of the following:<BR>
 SelectTypeParameters=<B>CR_Core</B><BR>
 SelectTypeParameters=<B>CR_Core_Memory</B></TD>
 <TD>Shared=NO</TD>
 <TD>Cores are allocated to jobs. No core will run more than one job.</TD>
 </TR><TR>
+<TD>Shared=YES</TD>
+<TD>Allocate whole nodes if job request specifies --exclusive option.
+Otherwise same as Shared=FORCE.</TD>
+</TR><TR>
 <TD>Shared=FORCE</TD>
 <TD>Cores are allocated to jobs. A core may run more than one job.</TD>
 </TR><TR>
-<TD ROWSPAN=2>SelectType=<B>select/cons_res</B><BR>
+<TD ROWSPAN=3>SelectType=<B>select/cons_res</B><BR>
 Plus one of the following:<BR>
 SelectTypeParameters=<B>CR_CPU</B><BR>
 SelectTypeParameters=<B>CR_CPU_Memory</B></TD>
 <TD>Shared=NO</TD>
 <TD>CPUs are allocated to jobs. No CPU will run more than one job.</TD>
 </TR><TR>
+<TD>Shared=YES</TD>
+<TD>Allocate whole nodes if job request specifies --exclusive option.
+Otherwise same as Shared=FORCE.</TD>
+</TR><TR>
 <TD>Shared=FORCE</TD>
 <TD>CPUs are allocated to jobs. A CPU may run more than one job.</TD>
 </TR><TR>
-<TD ROWSPAN=2>SelectType=<B>select/cons_res</B><BR>
+<TD ROWSPAN=3>SelectType=<B>select/cons_res</B><BR>
 Plus one of the following:<BR>
 SelectTypeParameters=<B>CR_Socket</B><BR>
 SelectTypeParameters=<B>CR_Socket_Memory</B></TD>
 <TD>Shared=NO</TD>
 <TD>Sockets are allocated to jobs. No socket will run more than one job.</TD>
+</TR><TR>
+<TD>Shared=YES</TD>
+<TD>Allocate whole nodes if job request specifies --exclusive option.
+Otherwise same as Shared=FORCE.</TD>
 </TR><TR>
 <TD>Shared=FORCE</TD>
 <TD>Sockets are allocated to jobs. A socket may run more than one job.</TD>
@@ -201,6 +217,6 @@ having their memory pages swapped out because the memory has been overcommitted.
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 21 November 2007</p>
+<p style="text-align:center;">Last modified 27 May 2008</p>
 
 <!--#include virtual="footer.txt"-->
