@@ -962,6 +962,7 @@ static int  _job_start(void *db_conn,
 	memset(&job_start_rc_msg, 0, sizeof(dbd_job_start_rc_msg_t));
 
 	job.total_procs = job_start_msg->alloc_cpus;
+	job.account = job_start_msg->account;
 	job.assoc_id = job_start_msg->assoc_id;
 	job.comment = job_start_msg->block_id;
 	job.db_index = job_start_msg->db_index;
@@ -1043,7 +1044,7 @@ static int  _job_suspend(void *db_conn,
 		rc = SLURM_SUCCESS;
 end_it:
 	slurmdbd_free_job_suspend_msg(job_suspend_msg);
-	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_JOB_START);
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_JOB_SUSPEND);
 	return SLURM_SUCCESS;
 }
 
@@ -1634,8 +1635,7 @@ static int   _roll_usage(void *db_conn,
 		goto end_it;
 	}
 
-	rc = acct_storage_g_roll_usage(db_conn);
-	slurmdbd_free_roll_usage_msg(get_msg);
+	rc = acct_storage_g_roll_usage(db_conn, get_msg->start);
 
 end_it:
 	slurmdbd_free_roll_usage_msg(get_msg);

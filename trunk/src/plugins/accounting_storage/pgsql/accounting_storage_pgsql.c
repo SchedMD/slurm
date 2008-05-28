@@ -827,7 +827,8 @@ extern int acct_storage_p_get_usage(PGconn *acct_pgsql_db,
 	return rc;
 }
 
-extern int acct_storage_p_roll_usage(PGconn *acct_pgsql_db)
+extern int acct_storage_p_roll_usage(PGconn *acct_pgsql_db, 
+				     time_t sent_start)
 {
 	int rc = SLURM_SUCCESS;
 

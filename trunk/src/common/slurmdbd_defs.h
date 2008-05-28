@@ -185,6 +185,8 @@ typedef struct dbd_job_comp_msg {
 } dbd_job_comp_msg_t;
 
 typedef struct dbd_job_start_msg {
+	char *   account;       /* Account name for those not running
+				 * with associations */
 	uint32_t alloc_cpus;	/* count of allocated processors */
 	uint32_t assoc_id;	/* accounting association id */
 	char *   block_id;      /* Bluegene block id */

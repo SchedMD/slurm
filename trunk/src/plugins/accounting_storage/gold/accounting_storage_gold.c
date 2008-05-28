@@ -2511,7 +2511,8 @@ extern int acct_storage_p_get_usage(void *db_conn,
 	return rc;
 }
 
-extern int acct_storage_p_roll_usage(void *db_conn)
+extern int acct_storage_p_roll_usage(void *db_conn, 
+				     time_t sent_start)
 {
 	int rc = SLURM_ERROR;
 	/* FIX ME: This doesn't do anything now */
