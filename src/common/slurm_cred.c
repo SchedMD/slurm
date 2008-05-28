@@ -1064,7 +1064,7 @@ slurm_cred_print(slurm_cred_t cred)
 	info("Cred: job_mem  %u",  cred->job_mem       );
 	info("Cred: task_mem %u",  cred->task_mem      );
 	info("Cred: Nodes    %s",  cred->nodes         );
-	info("Cred: alloc_lps_cnt %d", cred->alloc_lps_cnt     ); 
+	info("Cred: alloc_lps_cnt %u", cred->alloc_lps_cnt     ); 
 	info("Cred: alloc_lps: ");                            
 	for (i=0; i<cred->alloc_lps_cnt; i++)                 
 		info("alloc_lps[%d] = %u ", i, cred->alloc_lps[i]);
@@ -1074,6 +1074,18 @@ slurm_cred_print(slurm_cred_t cred)
 
 }
 
+int slurm_cred_get_alloc_lps(slurm_cred_t cred, char **nodes,
+			     uint32_t *alloc_lps_cnt, uint32_t **alloc_lps)
+{
+	if ((cred == NULL) || (nodes == NULL) ||
+	    (alloc_lps_cnt == NULL) || (alloc_lps == NULL))
+		return EINVAL;
+
+	*nodes         = cred->nodes;
+	*alloc_lps_cnt = cred->alloc_lps_cnt;
+	*alloc_lps     = cred->alloc_lps;
+	return SLURM_SUCCESS;
+}
 
 static void 
 _verifier_ctx_init(slurm_cred_ctx_t ctx)
