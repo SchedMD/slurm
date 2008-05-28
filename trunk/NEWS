@@ -13,6 +13,8 @@ documents those changes that are of interest to users and admins.
  -- For BlueGene only, log "Prolog failure" once per job not once per node.
  -- Reopen slurmctld log file after reconfigure or SIGHUP is received.
  -- In TaskPlugin=task/affinity, fix possible infinite loop for slurmd.
+ -- Accounting rollup works for mysql plugin.  Automatic rollup when using 
+    slurmdbd.
 
 * Changes in SLURM 1.3.2
 ========================
