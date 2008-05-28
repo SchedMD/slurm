@@ -96,6 +96,8 @@ char *job_table = "job_table";
 char *step_table = "step_table";
 char *txn_table = "txn_table";
 char *user_table = "user_table";
+char *last_ran_table = "last_ran_table";
+char *suspend_table = "suspend_table";
 
 static int _get_db_index(PGconn *acct_pgsql_db,
 			 time_t submit, uint32_t jobid, uint32_t associd)
@@ -190,7 +192,6 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 		{ "deleted", "smallint default 0" },
 		{ "associd", "int not null" },
 		{ "period_start", "bigint not null" },
-		{ "cpu_count", "bigint default 0" },
 		{ "alloc_cpu_secs", "bigint default 0" },
 		{ NULL, NULL}		
 	};
@@ -216,6 +217,7 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 		{ "down_cpu_secs", "bigint default 0" },
 		{ "idle_cpu_secs", "bigint default 0" },
 		{ "resv_cpu_secs", "bigint default 0" },
+		{ "over_cpu_secs", "bigint default 0" },
 		{ NULL, NULL}		
 	};
 
@@ -256,6 +258,13 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 		{ NULL, NULL}
 	};
 
+	storage_field_t last_ran_table_fields[] = {
+		{ "hourly_rollup", "bigint default 0 not null" },
+		{ "daily_rollup", "bigint default 0 not null" },
+		{ "monthly_rollup", "bigint default 0 not null" },
+		{ NULL, NULL}		
+	};
+
 	storage_field_t step_table_fields[] = {
 		{ "id", "int not null" },
 		{ "stepid", "smallint not null" },
@@ -291,6 +300,14 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 		{ NULL, NULL}
 	};
 
+	storage_field_t suspend_table_fields[] = {
+		{ "id", "int not null" },
+		{ "associd", "bigint not null" },
+		{ "start", "bigint default 0 not null" },
+		{ "endtime", "bigint default 0 not null" },
+		{ NULL, NULL}		
+	};
+
 	storage_field_t txn_table_fields[] = {
 		{ "id", "serial" },
 		{ "timestamp", "bigint default 0" },
@@ -319,6 +336,8 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 		cluster_day_found = 0, cluster_month_found = 0;
 	int assoc_found = 0, assoc_hour_found = 0,
 		assoc_day_found = 0, assoc_month_found = 0;
+	int suspend_found = 0, last_ran_found = 0;
+
 	PGresult *result = NULL;
 	char *query = xstrdup_printf("select tablename from pg_tables "
 				     "where tableowner='%s' "
@@ -368,9 +387,15 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 		else if(!job_found &&
 			!strcmp(job_table, PQgetvalue(result, i, 0))) 
 			job_found = 1;
+		else if(!last_ran_found &&
+			!strcmp(last_ran_table, PQgetvalue(result, i, 0))) 
+			last_ran_found = 1;
 		else if(!step_found &&
 			!strcmp(step_table, PQgetvalue(result, i, 0))) 
 			step_found = 1;
+		else if(!suspend_found &&
+			!strcmp(suspend_table, PQgetvalue(result, i, 0))) 
+			suspend_found = 1;
 		else if(!txn_found &&
 			!strcmp(txn_table, PQgetvalue(result, i, 0))) 
 			txn_found = 1;
@@ -551,6 +576,19 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 			return SLURM_ERROR;
 	}
 	
+	if(!last_ran_found) {
+		if(pgsql_db_create_table(acct_pgsql_db, 
+					 last_ran_table, last_ran_table_fields,
+					 ")")
+		   == SLURM_ERROR)
+			return SLURM_ERROR;
+	} else {
+		if(pgsql_db_make_table_current(acct_pgsql_db,  
+					       last_ran_table,
+					       last_ran_table_fields))
+			return SLURM_ERROR;
+	}
+
 	if(!step_found) {
 		if(pgsql_db_create_table(acct_pgsql_db, 
 					 step_table, step_table_fields,
@@ -562,6 +600,20 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 		if(pgsql_db_make_table_current(acct_pgsql_db,  
 					       step_table,
 					       step_table_fields))
+			return SLURM_ERROR;
+	}
+
+	if(!suspend_found) {
+		if(pgsql_db_create_table(acct_pgsql_db, 
+					 suspend_table, suspend_table_fields,
+					 ")")
+		   == SLURM_ERROR)
+			return SLURM_ERROR;
+
+	} else {
+		if(pgsql_db_make_table_current(acct_pgsql_db,  
+					       suspend_table,
+					       suspend_table_fields))
 			return SLURM_ERROR;
 	}
 
