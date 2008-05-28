@@ -1607,7 +1607,7 @@ void cr_reserve_lllp(uint32_t job_id,
 	if (j) {
 		_append_lllp_job_state(j);
 		_cr_update_lllp(1, job_id, req->job_step_id,
-					cpu_bind_type, cpu_bind, numtasks);
+				cpu_bind_type, cpu_bind, numtasks);
 	}
 	slurm_mutex_unlock(&lllp_ctx->mutex);
 }
