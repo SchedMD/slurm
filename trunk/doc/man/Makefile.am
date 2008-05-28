@@ -14,6 +14,7 @@ man1_MANS =            \
 	man1/slurm.1 \
 	man1/smap.1 \
 	man1/squeue.1 \
+	man1/sreport.1 \
 	man1/srun.1 \
 	man1/strigger.1 \
 	man1/sview.1

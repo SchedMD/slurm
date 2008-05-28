@@ -1,6 +1,6 @@
 
 SUBDIRS = common api database \
-	slurmctld slurmd plugins srun sbcast \
+	slurmctld slurmd slurmdbd plugins srun sbcast \
 	scontrol scancel squeue sinfo smap sview salloc \
-	sbatch sattach strigger slurmdbd sacct sacctmgr
+	sbatch sattach strigger sacct sacctmgr sreport
 

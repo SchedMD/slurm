@@ -61,11 +61,6 @@ typedef struct {
 } sacctmgr_file_opts_t;
 
 
-FILE *history_fp = NULL;
-int history_pos = 0;
-int history_count = 0;
-char **history = NULL;
-
 char *command_name;
 int all_flag;		/* display even hidden partitions */
 int exit_code;		/* sacctmgr's exit code, =1 on any error at any time */
@@ -75,11 +70,6 @@ int one_liner;		/* one record per line if =1 */
 int quiet_flag;		/* quiet=1, verbose=-1, normal=0 */
 int rollback_flag;       /* immediate execute=1, else = 0 */
 int with_assoc_flag = 0;
-List sacctmgr_action_list = NULL;
-List sacctmgr_user_list = NULL;
-List sacctmgr_association_list = NULL;
-List sacctmgr_account_list = NULL;
-List sacctmgr_cluster_list = NULL;
 void *db_conn = NULL;
 uint32_t my_uid = 0;
 
