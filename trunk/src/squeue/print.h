@@ -115,6 +115,8 @@ int job_format_add_function(List list, int width, bool right_justify,
 	job_format_add_function(list,wid,right,suffix,_print_job_time_end)
 #define job_format_add_priority(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_priority)
+#define job_format_add_priority_long(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_priority_long)
 #define job_format_add_nodes(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_nodes)
 #define job_format_add_node_inx(list,wid,right,suffix) \
@@ -202,6 +204,8 @@ int _print_job_time_start(job_info_t * job, int width, bool right_justify,
 int _print_job_time_end(job_info_t * job, int width, bool right_justify, 
 			char* suffix);
 int _print_job_priority(job_info_t * job, int width, bool right_justify, 
+			char* suffix);
+int _print_job_priority_long(job_info_t * job, int width, bool right_justify,
 			char* suffix);
 int _print_job_nodes(job_info_t * job, int width, bool right_justify, 
 			char* suffix);
