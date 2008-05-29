@@ -285,6 +285,7 @@ extern int schedule(void)
 			continue;
 		if (_failed_partition(job_ptr->part_ptr, failed_parts, 
 				      failed_part_cnt)) {
+			job_ptr->state_reason = WAIT_PRIORITY;
 			continue;
 		}
 
@@ -339,8 +340,7 @@ extern int schedule(void)
 					     &ionodes);
 			if(ionodes) {
 				sprintf(tmp_char,"%s[%s]",
-						job_ptr->nodes,
-						ionodes);
+					job_ptr->nodes, ionodes);
 			} else {
 				sprintf(tmp_char,"%s",job_ptr->nodes);
 			}
