@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.3.4
+========================
+
 * Changes in SLURM 1.3.3
 ========================
  -- Add mpi_openmpi plugin to the main SLURM RPM.
