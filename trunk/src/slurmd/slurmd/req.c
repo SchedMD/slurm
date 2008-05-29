@@ -1460,7 +1460,7 @@ _rpc_step_complete(slurm_msg_t *msg)
 		goto done;
 	}
 
-	/* step completionmessages are only allowed from other slurmstepd,
+	/* step completion messages are only allowed from other slurmstepd,
 	   so only root or SlurmUser is allowed here */
 	req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	if (!_slurm_authorized_user(req_uid)) {
