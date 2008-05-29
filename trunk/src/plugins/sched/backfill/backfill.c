@@ -307,8 +307,8 @@ static void _attempt_backfill(void)
 		j = select_g_job_test(job_ptr, avail_bitmap,
 				min_nodes, max_nodes, req_nodes, 
 				SELECT_MODE_WILL_RUN);
+		job_ptr->details->shared = orig_shared;
 		if ((j != SLURM_SUCCESS) && (orig_shared != 0)) {
-			job_ptr->details->shared = orig_shared;
 			j = select_g_job_test(job_ptr, avail_bitmap,
 					min_nodes, max_nodes, req_nodes, 
 					SELECT_MODE_WILL_RUN);
