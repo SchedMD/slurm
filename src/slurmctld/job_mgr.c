@@ -4792,6 +4792,8 @@ extern bool job_independent(struct job_record *job_ptr)
 	rc = test_job_dependency(job_ptr);
 	if (rc == 0) {
 		bool send_acct_rec = false;
+		if (job_ptr->state_reason == WAIT_DEPENDENCY)
+			job_ptr->state_reason = WAIT_NO_REASON;
 		if (detail_ptr && (detail_ptr->begin_time == 0)) {
 			detail_ptr->begin_time = now;
 			send_acct_rec = true;
