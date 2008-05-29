@@ -1,4 +1,4 @@
-.TH SQUEUE "1" "December 2006" "squeue 1.2" "Slurm components"
+.TH SQUEUE "1" "May 2008" "squeue 1.3" "Slurm components"
 
 .SH "NAME"
 squeue \- view information about jobs located in the SLURM scheduling queue.
@@ -189,13 +189,18 @@ Minimum number of nodes requested by the job.
 Are contiguous nodes requested by the job
 .TP
 \fB%p\fR
-Priority of the job (converted to a floating point number between 0.0 and 1.0
+Priority of the job (converted to a floating point number between 0.0 and 1.0).
+Also see \fB%Q\fR.
 .TP
 \fB%P\fR 
 Partition of the job or job step
 .TP
 \fB%q\fR 
 Comment associated with the job
+.TP
+\fB%Q\fR
+Priority of the job (generally a very large unsigned integer).
+Also see \fB%p\fR.
 .TP
 \fB%r\fR
 The reason a job is in its current state.

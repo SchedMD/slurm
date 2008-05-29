@@ -1,8 +1,8 @@
 /*****************************************************************************\
  *  print.c - squeue print job functions
- *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, 
  *             Morris Jette <jette1@llnl.gov>, et. al.
@@ -518,6 +518,20 @@ int _print_job_priority(job_info_t * job, int width, bool right, char* suffix)
 		double prio = (double) job->priority / 
 		              (double) ((uint32_t) 0xffffffff);
 		sprintf(temp, "%16.14f", prio);
+		_print_str(temp, width, right, true);
+	}
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_priority_long(job_info_t * job, int width, bool right, char* suffix)
+{
+	char temp[FORMAT_STRING_SIZE];
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("PRIORITY", width, right, true);
+	else {
+		sprintf(temp, "%u", job->priority);
 		_print_str(temp, width, right, true);
 	}
 	if (suffix)
