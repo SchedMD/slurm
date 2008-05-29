@@ -19,6 +19,9 @@ documents those changes that are of interest to users and admins.
     will be deprecated.
  -- Correct sbatch processing of --nice option with negative values.
  -- Add squeue formatted print option %Q to print a job's integer priority.
+ -- In sched/backfill, fix bug that was changing a pending job's shared value
+    to zero (possibly changing a pending job's resource requirements from a 
+    processor on some node to the full node).
 
 * Changes in SLURM 1.3.2
 ========================
