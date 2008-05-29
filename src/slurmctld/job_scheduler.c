@@ -210,8 +210,8 @@ static void _add_failed_partition(struct part_record *failed_part_ptr,
 	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
 		if ((part_ptr == failed_part_ptr) ||
 		    (_failed_partition(part_ptr, failed_parts, count)) ||
-		    (!bit_overlap(part_ptr->node_bitmap, 
-				  failed_part_ptr->node_bitmap)))
+		    (!bit_super_set(failed_part_ptr->node_bitmap,
+				    part_ptr->node_bitmap)))
 			continue;
 		failed_parts[count++] = part_ptr;
 	}
