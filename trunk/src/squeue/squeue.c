@@ -72,8 +72,12 @@ main (int argc, char *argv[])
 {
 	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
 
-	log_init(xbasename(argv[0]), opts, SYSLOG_FACILITY_DAEMON, NULL);
+	log_init(xbasename(argv[0]), opts, SYSLOG_FACILITY_USER, NULL);
 	parse_command_line( argc, argv );
+	if (params.verbose) {
+		opts.stderr_level += params.verbose;
+		log_alter(opts, SYSLOG_FACILITY_USER, NULL);
+	}
 	max_line_size = _get_window_width( );
 	
 	while (1) 

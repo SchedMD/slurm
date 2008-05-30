@@ -101,8 +101,12 @@ int main(int argc, char *argv[])
 	List sinfo_list = NULL;
 	int rc = 0;
 
-	log_init(xbasename(argv[0]), opts, SYSLOG_FACILITY_DAEMON, NULL);
+	log_init(xbasename(argv[0]), opts, SYSLOG_FACILITY_USER, NULL);
 	parse_command_line(argc, argv);
+	if (params.verbose) {
+		opts.stderr_level += params.verbose;
+		log_alter(opts, SYSLOG_FACILITY_USER, NULL);
+	}
 
 	while (1) {
 		if ((!params.no_header)
