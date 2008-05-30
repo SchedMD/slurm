@@ -242,14 +242,15 @@ Also see \fBAccountingStoragePort\fR and \fBJobCompPort\fR.
 
 .TP
 \fBDefaultStorageType\fR
-.ad l
 Define the accounting and job completion storage mechanism type.
 Acceptable values at present include 
 "filetxt", "gold", "mysql", "none", "pgsql", and "slurmdbd".
 The value "filetxt" indicates that records will be written to a the file.
 The value "gold" indicates that records will be written to Gold
 (http://www.clusterresources.com/pages/products/gold-allocation-manager.php),
+.na
 which maintains its own database.
+.ad
 The value "mysql" indicates that accounting records will be written to 
 a mysql database.
 The default value is "none", which means that records are not maintained. 
@@ -258,7 +259,6 @@ database.
 The value "slurmdbd" indicates that records will be written to SlurmDbd,
 which maintains its own database. See "man slurmdbd for more information".
 Also see \fBAccountingStorageType\fR  and \fBJobCompType\fR.
-.ad
 
 .TP
 \fBDefaultStorageUser\fR
@@ -1542,7 +1542,9 @@ memory as a consumable resource and the \fB\-\-mem\fR option
 should be used for job allocations.
 For more information see the following web page:
 \fIhttps://computing.llnl.gov/linux/slurm/cons_res_share.html\fR.
+.na
 Possible values for \fBShared\fR are "EXCLUSIVE", "FORCE", "YES", and "NO".
+.ad
 .RS
 .TP 12
 \fBEXCLUSIVE\fR
