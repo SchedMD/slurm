@@ -1,9 +1,9 @@
 /*****************************************************************************\
  *  slurm_protocol_socket_implementation.c - slurm communications interfaces 
  *					     based upon sockets.
- *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov>, et. al.
  *  LLNL-CODE-402394.
@@ -249,6 +249,7 @@ int _slurm_send_timeout(slurm_fd fd, char *buf, size_t size,
 	struct timeval tstart;
 	int timeleft = timeout;
 	char temp[2];
+
 	ufds.fd     = fd;
 	ufds.events = POLLOUT;
 
@@ -258,7 +259,6 @@ int _slurm_send_timeout(slurm_fd fd, char *buf, size_t size,
 	gettimeofday(&tstart, NULL);
 
 	while (sent < size) {
-
 		timeleft = timeout - _tot_wait(&tstart);
 		if (timeleft <= 0) {
 			debug("_slurm_send_timeout at %d of %d, timeout",
@@ -267,6 +267,7 @@ int _slurm_send_timeout(slurm_fd fd, char *buf, size_t size,
 			sent = SLURM_ERROR;
 			goto done;
 		}
+
 		if ((rc = poll(&ufds, 1, timeleft)) <= 0) {
 			if ((rc == 0) || (errno == EINTR) || (errno == EAGAIN)) 
  				continue;
@@ -287,12 +288,22 @@ int _slurm_send_timeout(slurm_fd fd, char *buf, size_t size,
 		 * socket is gone, but getting 0 back from a
 		 * nonblocking read means just that. 
 		 */
-		rc = _slurm_recv(fd, &temp, 1, flags);
-		if (rc == 0) {
-			debug2("_slurm_send_timeout: Socket no longer there.");
+		if (ufds.revents & POLLERR) {
+			debug("_slurm_send_timeout: Socket POLLERR");
 			slurm_seterrno(ENOTCONN);
 			sent = SLURM_ERROR;
 			goto done;			
+		}
+		if ((ufds.revents & POLLHUP) || (ufds.revents & POLLNVAL) ||
+		    (_slurm_recv(fd, &temp, 1, flags) == 0)) {
+			debug2("_slurm_send_timeout: Socket no longer there");
+			slurm_seterrno(ENOTCONN);
+			sent = SLURM_ERROR;
+			goto done;			
+		}
+		if ((ufds.revents & POLLOUT) != POLLOUT) {
+			error("_slurm_send_timeout: Poll failure, revents:%d",
+			      ufds.revents);
 		}
 		
 		rc = _slurm_send(fd, &buf[sent], (size - sent), flags);
@@ -352,7 +363,6 @@ int _slurm_recv_timeout(slurm_fd fd, char *buffer, size_t size,
 	gettimeofday(&tstart, NULL);
 
 	while (recvlen < size) {
-
 		timeleft = timeout - _tot_wait(&tstart);
 		if (timeleft <= 0) {
 			debug("_slurm_recv_timeout at %d of %d, timeout",
@@ -374,7 +384,26 @@ int _slurm_recv_timeout(slurm_fd fd, char *buffer, size_t size,
  				recvlen = SLURM_ERROR; 
   				goto done;
 			}
-		} 
+		}
+
+		if (ufds.revents & POLLERR) {
+			debug("_slurm_recv_timeout: Socket POLLERR");
+			slurm_seterrno(ENOTCONN);
+			recvlen = SLURM_ERROR;
+			goto done;			
+		}
+		if ((ufds.revents & POLLHUP) || (ufds.revents & POLLNVAL)) {
+			debug2("_slurm_recv_timeout: Socket no longer there");
+			slurm_seterrno(ENOTCONN);
+			recvlen = SLURM_ERROR;
+			goto done;			
+		}
+		if ((ufds.revents & POLLIN) != POLLIN) {
+			error("_slurm_recv_timeout: Poll failure, revents:%d",
+			      ufds.revents);
+			continue;
+		}
+
 		rc = _slurm_recv(fd, &buffer[recvlen], (size - recvlen), flags);
 		if (rc < 0)  {
 			if (errno == EINTR)
