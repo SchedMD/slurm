@@ -1320,11 +1320,20 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 	char *stoptoken  = "XXXXSLURMSTOPPARSINGHEREXXXXX";
 	char cmdstr[256], *env_loc = NULL;
 	int fildes[2], found, fval, len, rc, timeleft;
-	int buf_read, buf_rem;
+	int buf_read, buf_rem, config_timeout;
 	pid_t child;
 	struct timeval begin, now;
 	struct pollfd ufds;
 	struct stat buf;
+
+	if (geteuid() != (uid_t)0) {
+		fatal("WARNING: you must be root to use --get-user-env");
+		return NULL;
+	}
+
+	config_timeout = slurm_get_env_timeout();
+	if (config_timeout == 0)	/* just read directly from cache */
+		 return _load_env_cache(username);
 
 	if (stat("/bin/su", &buf))
 		fatal("Could not locate command: /bin/su");
@@ -1336,11 +1345,6 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 		env_loc = "/usr/bin/env";
 	else
 		fatal("Could not location command: env");
-
-	if (geteuid() != (uid_t)0) {
-		fatal("WARNING: you must be root to use --get-user-env");
-		return NULL;
-	}
 
 	if (pipe(fildes) < 0) {
 		fatal("pipe: %m");
@@ -1385,8 +1389,8 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 	ufds.events = POLLIN;
 
 	/* Read all of the output from /bin/su into buffer */
-	if ((timeout == 0) && ((timeout = slurm_get_env_timeout()) == 0))
-		timeleft = DEFAULT_GET_ENV_TIMEOUT;
+	if (timeout == 0)
+		timeout = config_timeout;	/* != 0 test above */
 	found = 0;
 	buf_read = 0;
 	bzero(buffer, sizeof(buffer));

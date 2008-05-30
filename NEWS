@@ -310,6 +310,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.2.31
 =========================
+ -- For Moab only: If GetEnvTimeout=0 in slurm.conf then do not run "su" to get
+    the user's environment, only use the cache file.
 
 * Changes in SLURM 1.2.30
 =========================
