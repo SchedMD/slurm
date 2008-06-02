@@ -17,7 +17,7 @@ it arbitrates contention for resources by managing a queue of pending work.</p>
 <p>As depicted in Figure 1, SLURM consists of a <b>slurmd</b> daemon running on 
 each compute node and a central <b>slurmctld</b> daemon running on a management node 
 (with optional fail-over twin). 
-The <b>slurmd</b> daemons provide fault-tolerant hierarchical communciations.
+The <b>slurmd</b> daemons provide fault-tolerant hierarchical communications.
 The user commands include: <b>sacct</b>, <b>salloc</b>, <b>sattach</b>,
 <b>sbatch</b>, <b>sbcast</b>, <b>scancel</b>, <b>scontrol</b>,  
 <b>sinfo</b>, <b>smap</b>, <b>squeue</b>, <b>srun</b>, <b>strigger</b> 
@@ -121,28 +121,146 @@ get and update state information for jobs, partitions, and nodes managed by SLUR
 <p class="footer"><a href="#top">top</a></p>
 
 <h2>Examples</h2>
-<p>Execute <span class="commandline">/bin/hostname</span> on four nodes (<span class="commandline">-N4</span>). 
-Include task numbers on the output (<span class="commandline">-l</span>). The 
-default partition will be used. One task per node will be used by default. </p>
+<p>First we determine what partitions exist on the system, what nodes 
+they include, and general system state. This information is provided 
+by the <span class="commandline">sinfo</span> command. 
+In the example below we find there are two partitions: <i>debug</i> 
+and <i>batch</i>.
+The <i>*</i> following the name <i>debug</i> indicates this is the 
+default partition for submitted jobs. 
+We see that both partitions are in an <i>UP</i> state. 
+Some configurations may include partitions for larger jobs
+that are <i>DOWN</i> except on weekends or at night. The information 
+about each partition may be split over more than one line so that 
+nodes in different states can be identified. 
+In this case, the two nodes <i>adev[1-2]</i> are <i>down</i>. 
+The <i>*</i> following the state <i>down</i> indicate the nodes are
+not responding. Note the use of a concise expression for node
+name specification with a common prefix <i>adev</i> and numeric
+ranges or specific numbers identified. This format allows for 
+very clusters to be easily managed.
+The <span class="commandline">sinfo</span> command
+has many options to easily let you view the information of interest
+to you in whatever format you prefer.
+See the man page for more information.</p>
 <pre>
-adev0: srun -N4 -l /bin/hostname
-0: adev9
-1: adev10
-2: adev11
-3: adev12
-</pre> <p>Execute <span class="commandline">/bin/hostname</span> in four 
-tasks (<span class="commandline">-n4</span>). Include task numbers on the output 
-(<span class="commandline">-l</span>). The default partition will be used. One 
-processor per task will be used by default (note that we don't specify a node 
-count).</p>
+adev0: sinfo
+PARTITION AVAIL  TIMELIMIT NODES  STATE NODELIST
+debug*       up      30:00     2  down* adev[1-2]
+debug*       up      30:00     3   idle adev[3-5]
+batch        up      30:00     3  down* adev[6,13,15]
+batch        up      30:00     3  alloc adev[7-8,14]
+batch        up      30:00     4   idle adev[9-12]
+</pre>
+
+<p>Next we determine what jobs exist on the system using the 
+<span class="commandline">squeue</span> command. The
+<i>ST</i> field is job state.
+Two jobs are in a running state (<i>R</i> is an abbreviation 
+for <i>Running</i>) while one job is in a pending state
+(<i>PD</i> is an abbreviation for <i>Pending</i>).
+The <i>TIME</i> field shows how long the jobs have run 
+for using the format <i>days-hours:minutes:seconds</i>.
+The <i>NODELIST(REASON)</i> field indicates where the
+job is running or the reason it is still pending. Typical
+reasons for pending jobs are <i>Resources</i> (waiting
+for resources to become available) and <i>Priority</i>
+(queued behind a higher priority job).
+The <span class="commandline">squeue</span> command
+has many options to easily let you view the information of interest
+to you in whatever format you prefer. 
+See the man page for more information.</p>
+<pre>
+adev0: squeue
+JOBID PARTITION  NAME  USER ST  TIME NODES NODELIST(REASON)
+65646     batch  chem  mike  R 24:19     2 adev[7-8]
+65647     batch   bio  joan  R  0:09     1 adev14
+65648     batch  math  phil PD  0:00     6 (Resources)
+</pre>
+
+<p>The <span class="commandline">scontrol</span> command
+can be used to report more detailed information about 
+nodes, partitions, jobs, job steps, and configuration.
+It can also be used by system administrators to make
+configuration changes. A couple of examples are shown 
+below. See the man page for more information.</p>
+<pre>
+adev0: scontrol show partition
+PartitionName=debug TotalNodes=5 TotalCPUs=40 RootOnly=NO
+   Default=YES Shared=FORCE:4 Priority=1 State=UP 
+   MaxTime=00:30:00 Hidden=NO
+   MinNodes=1 MaxNodes=26 DisableRootJobs=NO AllowGroups=ALL
+   Nodes=adev[1-5] NodeIndices=0-4
+
+PartitionName=batch TotalNodes=10 TotalCPUs=80 RootOnly=NO
+   Default=NO Shared=FORCE:4 Priority=1 State=UP
+   MaxTime=16:00:00 Hidden=NO
+   MinNodes=1 MaxNodes=26 DisableRootJobs=NO AllowGroups=ALL
+   Nodes=adev[6-15] NodeIndices=5-14
+
+
+adev0: scontrol show node adev1
+NodeName=adev1 State=DOWN* CPUs=8 AllocCPUs=0
+   RealMemory=4000 TmpDisk=0
+   Sockets=2 Cores=4 Threads=1 Weight=1 Features=intel 
+   Reason=Not responding [slurm@06/02-14:01:24]
+
+65648     batch  math  phil PD  0:00     6 (Resources)
+adev0: scontrol show job
+JobId=65672 UserId=phil(5136) GroupId=phil(5136)
+   Name=math
+   Priority=4294901603 Partition=batch BatchFlag=1
+   AllocNode:Sid=adev0:16726 TimeLimit=00:10:00 ExitCode=0:0
+   StartTime=06/02-15:27:11 EndTime=06/02-15:37:11
+   JobState=PENDING NodeList=(null) NodeListIndices=
+   ReqProcs=24 ReqNodes=1 ReqS:C:T=1-65535:1-65535:1-65535
+   Shared=1 Contiguous=0 CPUs/task=0 Licenses=(null)
+   MinProcs=1 MinSockets=1 MinCores=1 MinThreads=1
+   MinMemory=0 MinTmpDisk=0 Features=(null)
+   Dependency=(null) Account=(null) Requeue=1
+   Reason=None Network=(null)
+   ReqNodeList=(null) ReqNodeListIndices=
+   ExcNodeList=(null) ExcNodeListIndices=
+   SubmitTime=06/02-15:27:11 SuspendTime=None PreSusTime=0
+   Command=/home/phil/math
+   WorkDir=/home/phil
+</pre>
+
+<p>It is possible to create a resource allocation and launch
+the tasks for a job step in a single command line using the 
+<span class="commandline">srun</span> command. Depending 
+upon the MPI implementation used, MPI jobs may also be 
+launched in this manner. 
+See the <a href="#mpi">MPI</a> section for more MPI-specific information.
+In this example we execute <span class="commandline">/bin/hostname</span> 
+on three nodes (<i>-N3</i>) and include task numbers on the output (<i>-l</i>). 
+The default partition will be used. 
+One task per node will be used by default.
+Note that the <span class="commandline">srun</span> command has
+many options available to control what resource are allocated
+and how tasks are distributed across those resources.</p>
+<pre>
+adev0: srun -N3 -l /bin/hostname
+0: adev3
+1: adev4
+2: adev5
+</pre>
+
+<p>This variation on the previous example executes 
+<span class="commandline">/bin/hostname</span> in four tasks (<i>-n4</i>). 
+One processor per task will be used by default (note that we don't specify 
+a node count).</p>
 <pre>
 adev0: srun -n4 -l /bin/hostname
-0: adev9
-1: adev9
-2: adev10
-3: adev10
-</pre> <p>Submit the script my.script for later execution.
-Explicitly use the nodes adev9 and adev10 ("-w "adev[9-10]", note the use of a 
+0: adev3
+1: adev3
+2: adev3
+3: adev3
+</pre>
+
+<p>One common mode of operation is to submit a the for later execution.
+In this example the script name is <i>my.script</i> and we explicitly use 
+the nodes adev9 and adev10 (<i>-w "adev[9-10]"</i>, note the use of a 
 node range expression). 
 We also explicitly state that the subsequent job steps will spawn four tasks 
 each, which will insure that our allocation contains at least four processors
@@ -181,29 +299,43 @@ adev9
 3: /home/jette
 </pre>
 
-<p>Submit a job, get its status, and cancel it. </p>
+<p>The final mode of operation is to create a resource allocation 
+and spawn job steps within that allocation. 
+The <span class="commandline">salloc</span> command is would be used
+to create a resource allocation and typically start a shell within 
+that allocation. 
+One or more job steps would typically be executed within that allocation 
+using the srun command to launch the tasks. 
+Finally the shell created by salloc would be terminated using the 
+<i>exit</i> command.
+In this example we will also use the <span class="commandline">sbcast</span> 
+command to transfer the executable program to local storage, /tmp/joe.a.out,
+on the allocated nodes (1024 nodes in this example).
+After executing the program, we delete it from local storage</p>
 <pre>
-adev0: sbatch my.sleeper
+tux0: salloc -N1024 bash
+$ sbcast a.out /tmp/joe.a.out
+Granted job allocation 471
+$ srun /tmp/joe.a.out
+Result is 471
+$ srun rm /tmp/joe.a.out
+$ exit
+salloc: Relinquishing job allocation 1234
+</pre>
+
+<p>In this example, we submit a batch job, get its status, and cancel it. </p>
+<pre>
+adev0: sbatch test
 srun: jobid 473 submitted
 
 adev0: squeue
-  JOBID PARTITION NAME     USER  ST TIME  NODES NODELIST(REASON)
-    473 batch     my.sleep jette R  00:00 1     adev9
+JOBID PARTITION NAME USER ST TIME  NODES NODELIST(REASON)
+  473 batch     test jill R  00:00 1     adev9
  
 adev0: scancel 473
 
 adev0: squeue
-  JOBID PARTITION NAME     USER  ST TIME  NODES NODELIST(REASON)
-</pre>
-
-<p>Get the SLURM partition and node status.</p>
-<pre>
-adev0: sinfo
-PARTITION AVAIL  TIMELIMIT NODES  STATE NODELIST
-debug     up     00:30:00      8   idle adev[0-7]
-batch     up     12:00:00      1   down adev8
-                 12:00:00      7   idle adev[9-15]
-
+JOBID PARTITION NAME USER ST TIME  NODES NODELIST(REASON)
 </pre>
 <p class="footer"><a href="#top">top</a></p>
 
@@ -236,13 +368,15 @@ tasks. When using <span class="commandline">salloc</span> command,
 <span class="commandline">mpirun</span>'s -nolocal option is recommended. 
 For example:
 <pre>
-$ salloc -n4 sh    # allocates 4 processors and spawns shell for job
+$ salloc -n4 sh    # allocates 4 processors 
+                   # and spawns shell for job
 &gt; mpirun -np 4 -nolocal a.out
-&gt; exit          # exits shell spawned by initial salloc command
+&gt; exit             # exits shell spawned by 
+                   # initial srun command
 </pre>
 <p>Note that any direct use of <span class="commandline">srun</span>
 will only launch one task per node when the LAM/MPI plugin is used.
-To launch more than one task per node usng the
+To launch more than one task per node using the
 <span class="commandline">srun</span> command, the <i>--mpi=none</i>
 option will be required to explicitly disable the LAM/MPI plugin.</p>
 
@@ -264,7 +398,8 @@ the maximum number of tasks required for the job. Then execute the
 Do not directly execute the <span class="commandline">srun</span> command 
 to launch LAM/MPI tasks. For example: 
 <pre>
-$ salloc -n16 sh  # allocates 16 processors and spawns shell for job
+$ salloc -n16 sh  # allocates 16 processors 
+                  # and spawns shell for job
 &gt; lamboot
 &gt; mpirun -np 16 foo args
 1234 foo running on adev0 (o)
@@ -272,11 +407,12 @@ $ salloc -n16 sh  # allocates 16 processors and spawns shell for job
 etc.
 &gt; lamclean
 &gt; lamhalt
-&gt; exit         # exits shell spawned by initial srun command
+&gt; exit            # exits shell spawned by 
+                  # initial srun command
 </pre>
 <p>Note that any direct use of <span class="commandline">srun</span> 
 will only launch one task per node when the LAM/MPI plugin is configured
-as the default plugin.  To launch more than one task per node usng the 
+as the default plugin.  To launch more than one task per node using the 
 <span class="commandline">srun</span> command, the <i>--mpi=none</i>
 option would be required to explicitly disable the LAM/MPI plugin
 if that is the system default.</p>
@@ -304,15 +440,15 @@ $ srun -n20 a.out
 <b>NOTES:</b>
 <ul>
 <li>Some MPICH2 functions are not currently supported by the PMI 
-libary integrated with SLURM</li>
+library integrated with SLURM</li>
 <li>Set the environment variable <b>PMI_DEBUG</b> to a numeric value 
-of 1 or higher for the PMI libary to print debugging information</li>
+of 1 or higher for the PMI library to print debugging information</li>
 </ul></p>
 
 <p><a href="http://www.myri.com/scs/download-mpichgm.html"><b>MPICH-GM</b></a>
 jobs can be launched directly by <b>srun</b> command.
 SLURM's <i>mpichgm</i> MPI plugin must be used to establish communications 
-between the laucnhed tasks. This can be accomplished either using the SLURM 
+between the launched tasks. This can be accomplished either using the SLURM 
 configuration parameter <i>MpiDefault=mpichgm</i> in <b>slurm.conf</b>
 or srun's <i>--mpi=mpichgm</i> option.
 <pre>
@@ -323,7 +459,7 @@ $ srun -n16 --mpi=mpichgm a.out
 <p><a href="http://www.myri.com/scs/download-mpichmx.html"><b>MPICH-MX</b></a>
 jobs can be launched directly by <b>srun</b> command.
 SLURM's <i>mpichmx</i> MPI plugin must be used to establish communications
-between the laucnhed tasks. This can be accomplished either using the SLURM
+between the launched tasks. This can be accomplished either using the SLURM
 configuration parameter <i>MpiDefault=mpichmx</i> in <b>slurm.conf</b>
 or srun's <i>--mpi=mpichmx</i> option.
 <pre>
@@ -334,7 +470,7 @@ $ srun -n16 --mpi=mpichmx a.out
 <p><a href="http://mvapich.cse.ohio-state.edu/"><b>MVAPICH</b></a>
 jobs can be launched directly by <b>srun</b> command.
 SLURM's <i>mvapich</i> MPI plugin must be used to establish communications 
-between the laucnhed tasks. This can be accomplished either using the SLURM 
+between the launched tasks. This can be accomplished either using the SLURM 
 configuration parameter <i>MpiDefault=mvapich</i> in <b>slurm.conf</b>
 or srun's <i>--mpi=mvapich</i> option.
 <pre>
@@ -353,7 +489,7 @@ documentation for "CQ or QP Creation failure".</p>
 <p><a href="http://nowlab.cse.ohio-state.edu/projects/mpi-iba"><b>MVAPICH2</b></a>
 jobs can be launched directly by <b>srun</b> command.
 SLURM's <i>none</i> MPI plugin must be used to establish communications 
-between the laucnhed tasks. This can be accomplished either using the SLURM 
+between the launched tasks. This can be accomplished either using the SLURM 
 configuration parameter <i>MpiDefault=none</i> in <b>slurm.conf</b> 
 or srun's <i>--mpi=none</i> option. The program must also be linked with
 SLURM's implementation of the PMI library so that tasks can communicate
@@ -432,6 +568,6 @@ sbatch: Submitted batch job 1234
 tasks. These tasks are not managed by SLURM since they are launched 
 outside of its control.</p>
  
-<p style="text-align:center;">Last modified 19 September 2007</p>
+<p style="text-align:center;">Last modified 2 June 2008</p>
 
 <!--#include virtual="footer.txt"-->
