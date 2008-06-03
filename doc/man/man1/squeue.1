@@ -88,12 +88,14 @@ By default, output is right justified.
 .RE
 
 .IP
+Note that many of these \fItype\fR specifications are valid 
+only for jobs while others are valid only for job steps.
 Valid \fItype\fR specifications include: 
 
 .RS
 .TP 4
 \fB%a\fR
-Account associated with the job
+Account associated with the job.
 .TP
 \fB%A\fR
 Number of tasks created by a job step.
@@ -128,30 +130,30 @@ Job dependency. This job will not begin execution until the dependent job
 completes.  A value of zero implies this job has no dependencies.
 .TP
 \fB%f\fR 
-Features required by the job
+Features required by the job.
 .TP
 \fB%g\fR 
-Group name
+Group name of the job.
 .TP
 \fB%G\fR
-Group ID
+Group ID of the job.
 .TP
 \fB%h\fR
-Can the nodes allocated to the job be shared with other jobs
+Can the nodes allocated to the job be shared with other jobs.
 .TP
 \fB%H\fR 
 Minimum number of sockets per node requested by the job.
 This reports the value of the \fBsrun \-\-minsockets\fR option.
 .TP
 \fB%i\fR
-Job or job step id
+Job or job step id.
 .TP
 \fB%I\fR 
 Minimum number of cores per socket requested by the job.
 This reports the value of the \fBsrun \-\-mincores\fR option.
 .TP
 \fB%j\fR
-Job or job step name
+Job or job step name.
 .TP
 \fB%J\fR 
 Minimum number of threads per core requested by the job.
@@ -186,17 +188,17 @@ in the node count being greater than the number of listed nodes.
 Minimum number of nodes requested by the job.
 .TP
 \fB%O\fR
-Are contiguous nodes requested by the job
+Are contiguous nodes requested by the job.
 .TP
 \fB%p\fR
 Priority of the job (converted to a floating point number between 0.0 and 1.0).
 Also see \fB%Q\fR.
 .TP
 \fB%P\fR 
-Partition of the job or job step
+Partition of the job or job step.
 .TP
 \fB%q\fR 
-Comment associated with the job
+Comment associated with the job.
 .TP
 \fB%Q\fR
 Priority of the job (generally a very large unsigned integer).
@@ -215,7 +217,7 @@ For all other job states: the list of allocate nodes.
 See the \fBJOB REASON CODES\fR section below for more information.
 .TP
 \fB%s\fR 
-Node selection plugin specific data. Possible data includes:
+Node selection plugin specific data for a job. Possible data includes:
 Geometry requirement of resource allocation (X,Y,Z dimensions), 
 Connection type (TORUS, MESH, or NAV == torus else mesh), 
 Permit rotation of geometry (yes or no), 
@@ -223,7 +225,7 @@ Node use (VIRTUAL or COPROCESSOR),
 etc.
 .TP
 \fB%S\fR 
-Start time of the job or job step
+Start time of the job or job step.
 .TP
 \fB%t\fR 
 Job state, compact form:
@@ -238,25 +240,26 @@ and NODE_FAIL.
 See the \fBJOB STATE CODES\fR section below for more information.
 .TP
 \fB%u\fR 
-User name
+User name for a job or job step.
 .TP
 \fB%U\fR 
-User ID
+User ID for a job or job step.
 .TP
 \fB%x\fR 
-List of node names explicitly excluded by the job
+List of node names explicitly excluded by the job.
 .TP
 \fB%X\fR 
-Number of requested sockets per node
+Number of requested sockets per node for the job.
 .TP
 \fB%Y\fR 
-Number of requested cores per socket
+Number of requested cores per socket for the job.
 .TP
 \fB%Z\fR 
-Number of requested threads per core
+Number of requested threads per core for the job.
 .TP
 \fB%z\fR 
-Extended processor information: number of requested sockets, cores, threads (S:C:T) per node
+Extended processor information: number of requested sockets, cores, 
+threads (S:C:T) per node for the job.
 .RE
 
 .TP

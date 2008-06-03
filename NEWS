@@ -312,6 +312,12 @@ documents those changes that are of interest to users and admins.
 =========================
  -- For Moab only: If GetEnvTimeout=0 in slurm.conf then do not run "su" to get
     the user's environment, only use the cache file.
+ -- For sched/wiki2 (Moab), treat the lack of a wiki.conf file or the lack 
+    of a configured AuthKey as a fatal error (lacks effective security).
+ -- For sched/wiki and sched/wiki2 (Maui or Moab) report a node's state as 
+    Busy rather than Running when allocated if SelectType=select/linear. Moab
+    was trying to schedule job's on nodes that were already allocated to jobs
+    that were hidden from it via the HidePartitionJobs in Slurm's wiki.conf.
 
 * Changes in SLURM 1.2.30
 =========================
