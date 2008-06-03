@@ -7,7 +7,6 @@ Also see <a href="publications.html">Publications and Presentations</a>.
 <h2>SLURM Users</h2>
 <ul>
 <li><a href="quickstart.shtml">Quick Start User Guide</a></li>
-<li><a href="https://computing.llnl.gov/LCdocs/slurm/">SLURM Reference Manual</a></li>
 <li><a href="mc_support.shtml">Support for Multi-core/Multi-threaded Architectures</a></li>
 <li><a href="quickstart.shtml#mpi">Guide to MPI Use</a></li>
 <li><a href="bluegene.shtml">Blue Gene User and Administrator Guide</a></li>
@@ -52,6 +51,6 @@ Also see <a href="publications.html">Publications and Presentations</a>.
 <li><a href="taskplugins.shtml">Task Plugin Programmer Guide</a></li>
 </ul>
 
-<p style="text-align:center;">Last modified 28 April 2008</p>
+<p style="text-align:center;">Last modified 3 June 2008</p>
 
 <!--#include virtual="footer.txt"-->
