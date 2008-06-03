@@ -1808,7 +1808,7 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t * bitmap,
 				avail_cpus = _get_task_cnt(job_ptr, i,
 							   task_cnt, freq,
 							   array_size);
-				if(avail_cpus <= 0)
+				if (avail_cpus <= 0)
 					continue;
 				rem_cpus -= avail_cpus;
 				bit_set(bitmap, i);
@@ -1826,8 +1826,14 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t * bitmap,
 				avail_cpus = _get_task_cnt(job_ptr, i,
 							   task_cnt, freq,
 							   array_size);
-				if(avail_cpus <= 0)
+				if (avail_cpus <= 0)
 					continue;
+				if ((rem_nodes == 1) && 
+				    (avail_cpus < rem_cpus)) {
+					/* Job can only take one more node and
+					 * this one has insufficient CPU */
+					continue;
+				}
 				rem_cpus -= avail_cpus;
 				bit_set(bitmap, i);
 				rem_nodes--;
