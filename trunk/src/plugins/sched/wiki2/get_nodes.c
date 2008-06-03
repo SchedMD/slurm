@@ -1,7 +1,8 @@
 /*****************************************************************************\
  *  get_nodes.c - Process Wiki get node info request
  *****************************************************************************
- *  Copyright (C) 2006 The Regents of the University of California.
+ *  Copyright (C) 2006-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  LLNL-CODE-402394.
@@ -357,8 +358,21 @@ static char *	_dump_node(struct node_record *node_ptr, hostlist_t hl,
 
 static char *	_get_node_state(struct node_record *node_ptr)
 {
+	static bool got_select_type = false;
+	static bool node_allocations;
 	uint16_t state = node_ptr->node_state;
 	uint16_t base_state = state & NODE_STATE_BASE;
+
+	if (!got_select_type) {
+		char * select_type = slurm_get_select_type();
+		if (select_type && 
+		    (strcasecmp(select_type, "select/linear") == 0))
+			node_allocations = true;
+		else
+			node_allocations = false;
+		xfree(select_type);
+		got_select_type = true;
+	}
 
 	if ((state & NODE_STATE_DRAIN)
 	||  (state & NODE_STATE_FAIL))
@@ -368,8 +382,12 @@ static char *	_get_node_state(struct node_record *node_ptr)
 
 	if (base_state == NODE_STATE_DOWN)
 		return "Down";
-	if (base_state == NODE_STATE_ALLOCATED)
-		return "Running";
+	if (base_state == NODE_STATE_ALLOCATED) {
+		if (node_allocations)
+			return "Busy";
+		else
+			return "Running";
+	}
 	if (base_state == NODE_STATE_IDLE)
 		return "Idle";
 	
