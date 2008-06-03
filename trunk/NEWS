@@ -318,6 +318,8 @@ documents those changes that are of interest to users and admins.
     Busy rather than Running when allocated if SelectType=select/linear. Moab
     was trying to schedule job's on nodes that were already allocated to jobs
     that were hidden from it via the HidePartitionJobs in Slurm's wiki.conf.
+ -- In select/cons_res improve the resource selection when a job has specified
+    a processor count along with a maximum node count.
 
 * Changes in SLURM 1.2.30
 =========================
