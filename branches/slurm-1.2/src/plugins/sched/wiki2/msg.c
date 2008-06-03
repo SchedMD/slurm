@@ -273,7 +273,7 @@ extern int parse_wiki_config(void)
 
 	wiki_conf = _get_wiki_conf_path();
 	if ((wiki_conf == NULL) || (stat(wiki_conf, &buf) == -1)) {
-		debug("No wiki.conf file (%s)", wiki_conf);
+		fatal("No wiki.conf file (%s)", wiki_conf);
 		xfree(wiki_conf);
 		return SLURM_SUCCESS;
 	}
@@ -284,7 +284,7 @@ extern int parse_wiki_config(void)
 		fatal("something wrong with opening/reading wiki.conf file");
 
 	if (! s_p_get_string(&key, "AuthKey", tbl))
-		debug("Warning: No wiki_conf AuthKey specified");
+		fatal("No wiki_conf AuthKey specified");
 	else {
 		strncpy(auth_key, key, sizeof(auth_key));
 		xfree(key);

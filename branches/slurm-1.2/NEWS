@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 =========================
  -- For Moab only: If GetEnvTimeout=0 in slurm.conf then do not run "su" to get
     the user's environment, only use the cache file.
+ -- For sched/wiki2 (Moab), treat the lack of a wiki.conf file or the lack 
+    of a configured AuthKey as a fatal error (lacks effective security).
 
 * Changes in SLURM 1.2.30
 =========================
