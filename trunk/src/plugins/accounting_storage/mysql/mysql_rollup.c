@@ -203,8 +203,11 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			if(row_start < curr_start)
 				row_start = curr_start;
 		
-			if(!row_end || row_end > curr_end) 
-				row_end = curr_end;
+			/* if the end isn't in this period set it to
+			 * (curr_end - 1)
+			 */
+			if(!row_end || row_end >= curr_end) 
+				row_end = curr_end-1;
 
 			/* Don't worry about it if the time is less
 			 * than 1 second.
@@ -312,8 +315,11 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			if(!row_start && row_end)
 				row_start = row_end;
 
-			if(!row_end || row_end > curr_end) 
-				row_end = curr_end;
+			/* if the end isn't in this period set it to
+			 * (curr_end - 1)
+			 */
+			if(!row_end || row_end >= curr_end) 
+				row_end = curr_end-1;
 			
 			if(last_id != assoc_id) {
 				a_usage =
