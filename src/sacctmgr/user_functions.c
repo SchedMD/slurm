@@ -1101,7 +1101,6 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 				printf("  %s\n", object);
 			}
 			list_iterator_destroy(itr);
-			list_destroy(ret_list);
 			set = 1;
 		} else if(ret_list) {
 			printf(" Nothing modified\n");
