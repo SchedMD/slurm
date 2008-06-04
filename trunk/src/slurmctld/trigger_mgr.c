@@ -993,12 +993,18 @@ static void _trigger_run_program(trig_mgr_info_t *trig_in)
 
 static void _clear_event_triggers(void)
 {
-	if (trigger_down_nodes_bitmap)
-		bit_nclear(trigger_down_nodes_bitmap, 0, (node_record_count-1));
-	if (trigger_drained_nodes_bitmap)
-		bit_nclear(trigger_drained_nodes_bitmap, 0, (node_record_count-1));
-	if (trigger_up_nodes_bitmap)
-		bit_nclear(trigger_up_nodes_bitmap,   0, (node_record_count-1));
+	if (trigger_down_nodes_bitmap) {
+		bit_nclear(trigger_down_nodes_bitmap, 
+			   0, (bit_size(trigger_down_nodes_bitmap) - 1));
+	}
+	if (trigger_drained_nodes_bitmap) {
+		bit_nclear(trigger_drained_nodes_bitmap,
+			   0, (bit_size(trigger_drained_nodes_bitmap) - 1));
+	}
+	if (trigger_up_nodes_bitmap) {
+		bit_nclear(trigger_up_nodes_bitmap,   
+			   0, (bit_size(trigger_up_nodes_bitmap) - 1));
+	}
 	trigger_node_reconfig = false;
 	trigger_block_err = false;
 }
