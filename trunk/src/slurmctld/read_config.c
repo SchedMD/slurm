@@ -55,6 +55,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "src/common/assoc_mgr.h"
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
@@ -66,6 +67,7 @@
 #include "src/common/switch.h"
 #include "src/common/xstring.h"
 
+#include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
@@ -816,7 +818,7 @@ int read_slurm_conf(int recover)
 	_purge_old_node_state(old_node_table_ptr, old_node_record_count);
 
 	if ((rc = _build_bitmaps()))
-		return rc;	/* fatal error */
+		fatal("_build_bitmaps failure");
 
 	license_free();
 	if (license_init(slurmctld_conf.licenses) != SLURM_SUCCESS)
@@ -1175,6 +1177,7 @@ static void _validate_node_proc_count(void)
 
 /*
  * _restore_job_dependencies - Build depend_list and license_list for every job
+ *	also reset the runing job count for scheduling policy
  */
 static int _restore_job_dependencies(void)
 {
@@ -1185,8 +1188,14 @@ static int _restore_job_dependencies(void)
 	bool valid;
 	List license_list;
 
+	assoc_mgr_clear_used_info();
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		if (accounting_enforce &&
+		    ((job_ptr->job_state == JOB_RUNNING) ||
+		     (job_ptr->job_state == JOB_SUSPENDED)))
+			acct_policy_job_begin(job_ptr);
+
 		license_list = license_job_validate(job_ptr->licenses, &valid);
 		if (job_ptr->license_list)
 			list_destroy(job_ptr->license_list);

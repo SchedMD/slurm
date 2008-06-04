@@ -673,3 +673,21 @@ extern int assoc_mgr_validate_assoc_id(void *db_conn,
 	return SLURM_ERROR;
 }
 
+extern void assoc_mgr_clear_used_info(void)
+{
+	ListIterator itr = NULL;
+	acct_association_rec_t * found_assoc = NULL;
+
+	if (!local_association_list)
+		return;
+
+	slurm_mutex_lock(&local_association_lock);
+	itr = list_iterator_create(local_association_list);
+	while((found_assoc = list_next(itr))) {
+		found_assoc->used_jobs  = 0;
+		found_assoc->used_share = 0;
+	}
+	list_iterator_destroy(itr);
+	slurm_mutex_unlock(&local_association_lock);
+}
+
