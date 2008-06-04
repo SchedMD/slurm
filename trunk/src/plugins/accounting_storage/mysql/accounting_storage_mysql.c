@@ -4537,6 +4537,13 @@ extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn,
 			mysql_free_result(result);
 		}
 	}
+	
+	/* test month gap */
+/* 	last_hour = 1212299999; */
+/* 	last_day = 1212217200; */
+/* 	last_month = 1212217200; */
+/* 	my_time = 1212307200; */
+
 /* 	last_hour = 1211475599; */
 /* 	last_day = 1211475599; */
 /* 	last_month = 1211475599; */
@@ -4560,19 +4567,22 @@ extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn,
 	/* below and anywhere in a rollup plugin when dealing with
 	 * epoch times we need to set the tm_isdst = -1 so we don't
 	 * have to worry about the time changes.  Not setting it to -1
-	 * will cause problems in the month with the date change.
+	 * will cause problems in the day and month with the date change.
 	 */
 
 	start_tm.tm_sec = 0;
 	start_tm.tm_min = 0;
-	start_tm.tm_hour++;
 	start_tm.tm_isdst = -1;
 	start_time = mktime(&start_tm);
-	end_tm.tm_sec = 59;
-	end_tm.tm_min = 59;
-	end_tm.tm_hour--;
+	end_tm.tm_sec = 0;
+	end_tm.tm_min = 0;
 	end_tm.tm_isdst = -1;
 	end_time = mktime(&end_tm);
+
+/* 	info("hour start %s", ctime(&start_time)); */
+/* 	info("hour end %s", ctime(&end_time)); */
+/* 	info("diff is %d", end_time-start_time); */
+
 	if(end_time-start_time > 0) {
 		START_TIMER;
 		if((rc = mysql_hourly_rollup(mysql_conn, start_time, end_time)) 
@@ -4582,7 +4592,7 @@ extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn,
 		query = xstrdup_printf("update %s set hourly_rollup=%d",
 				       last_ran_table, end_time);
 	} else {
-		debug2("no need to run this hour %d < %d", 
+		debug2("no need to run this hour %d <= %d", 
 		       end_time, start_time);
 	}
 
@@ -4593,13 +4603,16 @@ extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn,
 	start_tm.tm_sec = 0;
 	start_tm.tm_min = 0;
 	start_tm.tm_hour = 0;
-	start_tm.tm_mday++;
 	start_tm.tm_isdst = -1;
 	start_time = mktime(&start_tm);
-	end_tm.tm_hour = 23;
-	end_tm.tm_mday--;
+	end_tm.tm_hour = 0;
 	end_tm.tm_isdst = -1;
 	end_time = mktime(&end_tm);
+
+/* 	info("day start %s", ctime(&start_time)); */
+/* 	info("day end %s", ctime(&end_time)); */
+/* 	info("diff is %d", end_time-start_time); */
+
 	if(end_time-start_time > 0) {
 		START_TIMER;
 		if((rc = mysql_daily_rollup(mysql_conn, start_time, end_time)) 
@@ -4612,7 +4625,8 @@ extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn,
 			query = xstrdup_printf("update %s set daily_rollup=%d",
 					       last_ran_table, end_time);
 	} else {
-		debug2("no need to run this day %d < %d", end_time, start_time);
+		debug2("no need to run this day %d <= %d",
+		       end_time, start_time);
 	}
 
 	if(!localtime_r(&last_month, &start_tm)) {
@@ -4624,15 +4638,21 @@ extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn,
 	start_tm.tm_min = 0;
 	start_tm.tm_hour = 0;
 	start_tm.tm_mday = 1;
-	start_tm.tm_mon++;
 	start_tm.tm_isdst = -1;
 	start_time = mktime(&start_tm);
-	end_tm.tm_sec = -1;
+	end_time = mktime(&end_tm);
+
+	end_tm.tm_sec = 0;
 	end_tm.tm_min = 0;
 	end_tm.tm_hour = 0;
 	end_tm.tm_mday = 1;
 	end_tm.tm_isdst = -1;
 	end_time = mktime(&end_tm);
+
+/* 	info("month start %s", ctime(&start_time)); */
+/* 	info("month end %s", ctime(&end_time)); */
+/* 	info("diff is %d", end_time-start_time); */
+
 	if(end_time-start_time > 0) {
 		START_TIMER;
 		if((rc = mysql_monthly_rollup(
@@ -4641,13 +4661,13 @@ extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn,
 		END_TIMER2("monthly_rollup");
 
 		if(query) 
-			xstrfmtcat(query, ", montly_rollup=%d", end_time);
+			xstrfmtcat(query, ", monthly_rollup=%d", end_time);
 		else 
 			query = xstrdup_printf(
 				"update %s set monthly_rollup=%d",
 				last_ran_table, end_time);
 	} else {
-		debug2("no need to run this month %d < %d",
+		debug2("no need to run this month %d <= %d",
 		       end_time, start_time);
 	}
 	
