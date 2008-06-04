@@ -14,6 +14,8 @@ slurmctld_LDADD = 					\
 
 
 slurmctld_SOURCES = 	\
+	acct_policy.c	\
+	acct_policy.h	\
 	agent.c  	\
 	agent.h		\
 	backup.c	\

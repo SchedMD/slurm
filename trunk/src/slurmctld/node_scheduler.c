@@ -58,11 +58,12 @@
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
 #include "src/common/node_select.h"
+#include "src/common/slurm_accounting_storage.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/slurm_accounting_storage.h"
 
+#include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/node_scheduler.h"
@@ -795,7 +796,6 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	return error_code;
 }
 
-
 /*
  * select_nodes - select and allocate nodes to a specific job
  * IN job_ptr - pointer to the job record
@@ -830,6 +830,12 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
+
+	if (!acct_policy_job_runnable(job_ptr)) {
+		job_ptr->state_reason = WAIT_ASSOC_LIMIT;
+		last_job_update = now;
+		return ESLURM_ACCOUNTING_POLICY;
+	}
 
 	if ((job_ptr->user_id == 0) || (job_ptr->user_id == getuid()))
 		super_user = true;
