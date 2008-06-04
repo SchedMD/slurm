@@ -120,4 +120,10 @@ extern int assoc_mgr_validate_assoc_id(void *db_conn,
 				       uint32_t assoc_id,
 				       int enforce);
 
+/*
+ * clear the used_* fields from every assocation, 
+ *	used on reconfiguration
+ */
+extern void assoc_mgr_clear_used_info(void);
+
 #endif /* _SLURM_ASSOC_MGR_H */

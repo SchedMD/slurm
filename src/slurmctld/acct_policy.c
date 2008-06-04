@@ -46,6 +46,8 @@
 
 #include "src/slurmctld/slurmctld.h"
 
+#define _DEBUG 0
+
 static bool _valid_job_assoc(struct job_record *job_ptr)
 {
 	acct_association_rec_t assoc_rec, *assoc_ptr;
@@ -61,7 +63,8 @@ static bool _valid_job_assoc(struct job_record *job_ptr)
 		assoc_rec.acct      = job_ptr->account;
 		if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 					    accounting_enforce, &assoc_ptr)) {
-			info("_validate_job_assoc: invalid account or " 				     "partition for uid=%u jobid=%u",
+			info("_validate_job_assoc: invalid account or "
+			     "partition for uid=%u jobid=%u",
 			     job_ptr->user_id, job_ptr->job_id);
 			return false;
 		}
@@ -119,8 +122,10 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 		return false;
 
 	assoc_ptr = job_ptr->assoc_ptr;
+#if _DEBUG
 	info("acct_job_limits: %u of %u", 
 	     assoc_ptr->used_jobs, assoc_ptr->max_jobs);
+#endif
 
 	if ((assoc_ptr->max_jobs != NO_VAL) &&
 	    (assoc_ptr->max_jobs != INFINITE) &&
