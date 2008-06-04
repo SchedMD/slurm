@@ -175,8 +175,8 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		local_cluster_usage_t *c_usage = NULL;
 		local_assoc_usage_t *a_usage = NULL;
 		debug3("curr hour is now %d-%d", curr_start, curr_end);
-		info("start %s", ctime(&curr_start));
-		info("end %s", ctime(&curr_end));
+/* 		info("start %s", ctime(&curr_start)); */
+/* 		info("end %s", ctime(&curr_end)); */
 		
 		// first get the events during this time
 		query = xstrdup_printf("select %s from %s where "
@@ -203,11 +203,8 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			if(row_start < curr_start)
 				row_start = curr_start;
 		
-			/* if the end isn't in this period set it to
-			 * (curr_end - 1)
-			 */
-			if(!row_end || row_end >= curr_end) 
-				row_end = curr_end-1;
+			if(!row_end || row_end > curr_end) 
+				row_end = curr_end;
 
 			/* Don't worry about it if the time is less
 			 * than 1 second.
@@ -315,12 +312,9 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			if(!row_start && row_end)
 				row_start = row_end;
 
-			/* if the end isn't in this period set it to
-			 * (curr_end - 1)
-			 */
-			if(!row_end || row_end >= curr_end) 
-				row_end = curr_end-1;
-			
+			if(!row_end || row_end > curr_end) 
+				row_end = curr_end;
+
 			if(last_id != assoc_id) {
 				a_usage =
 					xmalloc(sizeof(local_cluster_usage_t));
@@ -458,9 +452,13 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			 */
 			
 			if(c_usage->i_cpu < 0) {
+/* 				info("got %d %d %d", c_usage->r_cpu, */
+/* 				     c_usage->i_cpu, c_usage->o_cpu); */
 				c_usage->r_cpu += c_usage->i_cpu;
 				c_usage->o_cpu -= c_usage->i_cpu;
 				c_usage->i_cpu = 0;
+				if(c_usage->r_cpu < 0)
+					c_usage->r_cpu = 0;
 			}
 			
 /* 			info("cluster %s(%d) down %d alloc %d " */
@@ -612,8 +610,8 @@ extern int mysql_daily_rollup(mysql_conn_t *mysql_conn,
 
 	while(curr_start < end) {
 		debug3("curr day is now %d-%d", curr_start, curr_end);
-	info("start %s", ctime(&curr_start));
-	info("end %s", ctime(&curr_end));
+/* 		info("start %s", ctime(&curr_start)); */
+/* 		info("end %s", ctime(&curr_end)); */
 		query = xstrdup_printf(
 			"insert into %s (creation_time, mod_time, id, "
 			"period_start, alloc_cpu_secs) select %d, %d, id, "
@@ -708,8 +706,8 @@ extern int mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 
 	while(curr_start < end) {
 		debug3("curr month is now %d-%d", curr_start, curr_end);
-	info("start %s", ctime(&curr_start));
-	info("end %s", ctime(&curr_end));
+/* 		info("start %s", ctime(&curr_start)); */
+/* 		info("end %s", ctime(&curr_end)); */
 		query = xstrdup_printf(
 			"insert into %s (creation_time, mod_time, id, "
 			"period_start, alloc_cpu_secs) select %d, %d, id, "
