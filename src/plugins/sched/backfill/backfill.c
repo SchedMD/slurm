@@ -58,6 +58,7 @@
 
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
+
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
@@ -65,6 +66,8 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+
+#include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
@@ -244,6 +247,8 @@ static void _attempt_backfill(void)
 		if ((part_ptr->root_only) && filter_root)
 			continue;
 
+		if (!acct_policy_job_runnable(job_ptr))
+			continue;
 		if (license_job_test(job_ptr) != SLURM_SUCCESS)
 			continue;
 		if (job_independent(job_ptr) != true)

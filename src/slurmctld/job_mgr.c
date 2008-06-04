@@ -1482,6 +1482,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
  
 	if ((error_code == ESLURM_NODES_BUSY) ||
 	    (error_code == ESLURM_JOB_HELD) ||
+	    (error_code == ESLURM_ACCOUNTING_POLICY) ||
 	    (error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE)) {
 		/* Not fatal error, but job can't be scheduled right now */
 		if (immediate) {
@@ -1491,7 +1492,8 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 			job_ptr->start_time = job_ptr->end_time = now;
 			job_completion_logger(job_ptr);
 		} else {	/* job remains queued */
-			if (error_code == ESLURM_NODES_BUSY) {
+			if ((error_code == ESLURM_NODES_BUSY) ||
+			    (error_code == ESLURM_ACCOUNTING_POLICY)) {
 				error_code = SLURM_SUCCESS;
 			}
 		}

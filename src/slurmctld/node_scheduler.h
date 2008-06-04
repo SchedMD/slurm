@@ -98,4 +98,4 @@ extern void re_kill_job(struct job_record *job_ptr);
 extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		bitstr_t **select_node_bitmap);
 
-#endif /* !_HAVE_NODE_SCHEDULER_H*/
+#endif /* !_HAVE_NODE_SCHEDULER_H */
