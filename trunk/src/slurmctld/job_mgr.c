@@ -71,6 +71,7 @@
 #include "src/common/xstring.h"
 #include "src/common/assoc_mgr.h"
 
+#include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
@@ -4772,6 +4773,7 @@ extern void job_completion_logger(struct job_record  *job_ptr)
 
 	g_slurm_jobcomp_write(job_ptr);
 	jobacct_storage_g_job_complete(acct_db_conn, job_ptr);
+	acct_policy_job_fini(job_ptr);
 }
 
 /*
