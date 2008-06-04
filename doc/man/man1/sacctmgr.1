@@ -1,4 +1,4 @@
-.TH SACCTMGR "1" "May 2008" "sacctmgr 1.3" "Slurm components"
+.TH SACCTMGR "1" "June 2008" "sacctmgr 1.3" "Slurm components"
 
 .SH "NAME"
 sacctmgr \- Used to view and modify Slurm account information.
@@ -333,9 +333,9 @@ To clear a previously set value use the modify command with a new value of \-1.
 .br
 > sacctmgr create account name=physics   parent=science fairshare=20
 .br
-> sacctmgr create user name=adam cluster=tux bank=physics fairshare=10
+> sacctmgr create user name=adam cluster=tux account=physics fairshare=10
 .br
-> sacctmgr modify user with name=adam cluster=tux bank=physics \
+> sacctmgr modify user with name=adam cluster=tux account=physics \
 .br
   set maxjobs=2 maxtime=30:00
 .ec
