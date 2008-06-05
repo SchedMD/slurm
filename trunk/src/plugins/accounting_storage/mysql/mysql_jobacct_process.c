@@ -382,7 +382,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 			step->state = atoi(step_row[STEP_REQ_STATE]);
 			step->exitcode = atoi(step_row[STEP_REQ_COMP_CODE]);
 			step->ncpus = atoi(step_row[STEP_REQ_CPUS]);
-			step->start = atoi(step_row[JOB_REQ_START]);
+			step->start = atoi(step_row[STEP_REQ_START]);
 			
 			step->end = atoi(step_row[STEP_REQ_END]);
 			/* figure this out by start stop */

@@ -382,7 +382,7 @@ extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
 			step->ncpus = atoi(
 				PQgetvalue(step_result, j, STEP_REQ_CPUS));
 			step->start = atoi(
-				PQgetvalue(step_result, j, JOB_REQ_START));
+				PQgetvalue(step_result, j, STEP_REQ_START));
 			step->end = atoi(
 				PQgetvalue(step_result, j, STEP_REQ_ENDTIME));
 			/* figure this out by start stop */
