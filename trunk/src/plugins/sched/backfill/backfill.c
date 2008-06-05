@@ -282,6 +282,7 @@ static void _attempt_backfill(void)
 		/* Identify usable nodes for this job */
 		FREE_NULL_BITMAP(avail_bitmap);
 		avail_bitmap = bit_copy(part_ptr->node_bitmap);
+		bit_and(avail_bitmap, up_node_bitmap);
 		for (j=0; ; ) {
 			if (node_space[j].end_time <= end_time) {
 				bit_and(avail_bitmap, 
