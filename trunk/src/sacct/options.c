@@ -221,7 +221,7 @@ void _usage(void)
 
 void _init_params()
 {
-	params.opt_cluster = NULL;	/* --cluster */
+	params.opt_cluster = slurm_get_cluster_name();	/* --cluster */
 	params.opt_completion = 0;	/* --completion */
 	params.opt_dump = 0;		/* --dump */
 	params.opt_dup = -1;		/* --duplicates; +1 = explicitly set */
@@ -396,6 +396,7 @@ void parse_command_line(int argc, char **argv)
 			params.opt_completion = 1;
 			break;
 		case 'C':
+			xfree(params.opt_cluster);
 			params.opt_cluster = xstrdup(optarg);
 			break;
 		case 'd':

@@ -794,7 +794,8 @@ extern int clusteracct_storage_p_cluster_procs(void *db_conn,
 {
 	slurmdbd_msg_t msg;
 	dbd_cluster_procs_msg_t req;
-	info("sending info for cluster %s", cluster);
+
+	debug2("Sending info for cluster %s", cluster);
 	req.cluster_name = cluster;
 	req.proc_count   = procs;
 	req.event_time   = event_time;
@@ -812,7 +813,8 @@ extern int clusteracct_storage_p_register_ctld(char *cluster,
 {
 	slurmdbd_msg_t msg;
 	dbd_register_ctld_msg_t req;
-	info("registering slurmctld for cluster %s at port %u", cluster, port);
+	info("Registering slurmctld for cluster %s at port %u with slurmdbd.",
+	     cluster, port);
 	req.cluster_name = cluster;
 	req.port         = port;
 	msg.msg_type     = DBD_REGISTER_CTLD;
