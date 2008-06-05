@@ -71,9 +71,6 @@ Source: %{name}-%{version}-%{release}.tgz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}
 URL: https://computing.llnl.gov/linux/slurm/
 BuildRequires: openssl-devel >= 0.9.6 openssl >= 0.9.6
-%ifnos aix
-BuildRequires: ncurses-devel
-%endif
 %ifos linux
 BuildRequires: python 
 %endif
