@@ -2096,15 +2096,15 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		super_user = true;
 	if ((!super_user) && 
 	    (job_desc->min_nodes > part_ptr->max_nodes)) {
-		info("Job %u requested too many nodes (%d) of "
-		     "partition %s(%d)", 
+		info("Job %u requested too many nodes (%u) of "
+		     "partition %s(%u)", 
 		     job_ptr->job_id, job_desc->min_nodes, 
 		     part_ptr->name, part_ptr->max_nodes);
 		fail_reason = WAIT_PART_NODE_LIMIT;
 	} else if ((!super_user) &&
 	           (job_desc->max_nodes != 0) &&    /* no max_nodes for job */
 		   (job_desc->max_nodes < part_ptr->min_nodes)) {
-		info("Job %u requested too few nodes (%d) of partition %s(%d)",
+		info("Job %u requested too few nodes (%u) of partition %s(%u)",
 		     job_ptr->job_id, job_desc->max_nodes, 
 		     part_ptr->name, part_ptr->min_nodes);
 		fail_reason = WAIT_PART_NODE_LIMIT;
@@ -2112,6 +2112,10 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		info("Job %u requested down partition %s", 
 		     job_ptr->job_id, part_ptr->name);
 		fail_reason = WAIT_PART_STATE;
+	} else if ((job_ptr->time_limit != NO_VAL) &&
+		   (job_ptr->time_limit > part_ptr->max_time)) {
+		info("Job %u exceeds partition time limit", job_ptr->job_id);
+		fail_reason = WAIT_PART_TIME_LIMIT;
 	}
 	if (fail_reason != WAIT_NO_REASON) {
 		error_code = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
