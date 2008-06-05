@@ -4828,7 +4828,7 @@ extern int clusteracct_storage_p_cluster_procs(mysql_conn_t *mysql_conn,
 	}
 
 	if(atoi(row[0]) == procs) {
-		debug("%s hasn't changed since last entry", cluster);
+		debug("%s hasn't changed cpu count since last start", cluster);
 		goto end_it;
 	}
 	debug("%s has changed from %s cpus to %u", cluster, row[0], procs);   
