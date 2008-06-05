@@ -308,7 +308,7 @@ int main(int argc, char **argv)
 		fprintf(stderr,
 			"This functionality has been replaced with 'sstat' "
 			"in the future please make note this will "
-			"not be supported.");
+			"not be supported.\n");
 		
 		if (params.opt_header) 	/* give them something to look */
 			_print_header();/* at while we think...        */

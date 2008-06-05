@@ -143,7 +143,7 @@ exec $bin_sleep 5
 set mem_used -1
 set mem_task -1
 set ave_used -1
-spawn $sacct --noheader --stat --job=$job_id.0 --fields vsize
+spawn $sstat --noheader --job=$job_id.0 --fields vsize
 expect {
 	-re "($float)(\[KM\]*)/.*($number) - ($float)(\[KM\]*)" {
 		set mem_used  $expect_out(1,string)
@@ -168,7 +168,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacct not responding\n"
+		send_user "\nFAILURE: sstat not responding\n"
 		set exit_code 1
 	}
 	eof {
@@ -177,24 +177,24 @@ expect {
 }
 
 if { $mem_used == -1 } {
-	send_user "\nFAILURE: sacct stat memory not found\n"
+	send_user "\nFAILURE: sstat stat memory not found\n"
 	set exit_code 1
 } elseif { $mem_task != 0 } {
-	send_user "\nFAILURE: sacct stat memory task not found\n"
+	send_user "\nFAILURE: sstat stat memory task not found\n"
 	set exit_code 1	
 } elseif { $ave_used != $mem_used } {
-	send_user "\nFAILURE: sacct stat memory task not equal to ave memory\n"
+	send_user "\nFAILURE: sstat stat memory task not equal to ave memory\n"
 	set exit_code 1	
 }
 # Compute error in KB
 set diff_mem [expr $mem_used - $mem_size]
 set error_mem [expr abs($diff_mem)]
 if {$error_mem > 4000} {
-	send_user "\nFAILURE: sacct memory use discrepancy of $error_mem KB\n"
+	send_user "\nFAILURE: sstat memory use discrepancy of $error_mem KB\n"
 	send_user "  Wanted $mem_size KB, got $mem_used KB\n"
 	set exit_code 1
 } else {
-	send_user "\nSUCCESS: sacct memory use discrepancy of $error_mem KB\n"
+	send_user "\nSUCCESS: sstat memory use discrepancy of $error_mem KB\n"
 }
 
 #

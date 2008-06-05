@@ -561,6 +561,8 @@ extern int jobacct_gather_p_startpoll(uint16_t frequency)
 	debug("jobacct-gather: frequency = %d", frequency);
 		
 	jobacct_shutdown = false;
+
+	task_list = list_create(jobacct_common_free_jobacct);
 	
 	if (frequency == 0) {	/* don't want dynamic monitoring? */
 		debug2("jobacct-gather LINUX dynamic logging disabled");
@@ -568,8 +570,6 @@ extern int jobacct_gather_p_startpoll(uint16_t frequency)
 	}
 
 	freq = frequency;
-	task_list = list_create(jobacct_common_free_jobacct);
-	
 	/* create polling thread */
 	slurm_attr_init(&attr);
 	if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
