@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "May 2008" "slurm.conf 1.3" "Slurm configuration file"
+.TH "slurm.conf" "5" "June 2008" "slurm.conf 1.3" "Slurm configuration file"
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
 .SH "DESCRIPTION"
@@ -849,6 +849,8 @@ NOTE: This implies \fIShared=YES\fR or \fIShared=FORCE\fR for all partitions.
 \fBSlurmUser\fR
 The name of the user that the \fBslurmctld\fR daemon executes as. 
 For security purposes, a user other than "root" is recommended.
+This user must exist on all nodes of the cluster for authentication 
+of communications between SLURM components.
 The default value is "root". 
 
 .TP
