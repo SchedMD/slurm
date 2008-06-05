@@ -111,7 +111,8 @@ static bitstr_t *_valid_features(struct job_details *detail_ptr,
 
 /*
  * allocate_nodes - change state of specified nodes to NODE_STATE_ALLOCATED
- *	also claim required licenses
+ *	also claim required licenses and resources reserved by accounting
+ *	policy association
  * IN job_ptr - job being allocated resources
  */
 extern void allocate_nodes(struct job_record *job_ptr)
@@ -126,14 +127,15 @@ extern void allocate_nodes(struct job_record *job_ptr)
 	}
 
 	license_job_get(job_ptr);
+	acct_policy_job_begin(job_ptr);
 	return;
 }
 
 
 /*
  * deallocate_nodes - for a given job, deallocate its nodes and make 
- *	their state NODE_STATE_COMPLETING
- *	also release the job's licenses
+ *	their state NODE_STATE_COMPLETING also release the job's licenses 
+ *	and resources reserved by accounting policy association
  * IN job_ptr - pointer to terminating job (already in some COMPLETING state)
  * IN timeout - true if job exhausted time limit, send REQUEST_KILL_TIMELIMIT
  *	RPC instead of REQUEST_TERMINATE_JOB
@@ -153,6 +155,7 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 	xassert(job_ptr->details);
 
 	license_job_return(job_ptr);
+	acct_policy_job_fini(job_ptr);
 	if (slurm_sched_freealloc(job_ptr) != SLURM_SUCCESS)
 		error("slurm_sched_freealloc(%u): %m", job_ptr->job_id);
 	if (select_g_job_fini(job_ptr) != SLURM_SUCCESS)
@@ -993,7 +996,6 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		mail_job_info(job_ptr, MAIL_JOB_BEGIN);
 
 	jobacct_storage_g_job_start(acct_db_conn, job_ptr);
-	acct_policy_job_begin(job_ptr);
 
 	slurm_sched_newalloc(job_ptr);
 
