@@ -226,6 +226,16 @@ _slurm_switch_get_ops( slurm_switch_context_t c )
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
 
+	/* Find the correct plugin. */
+        c->cur_plugin = plugin_load_and_link(c->switch_type, n_syms, syms,
+					     (void **) &c->ops);
+        if ( c->cur_plugin != PLUGIN_INVALID_HANDLE ) 
+        	return &c->ops;
+
+	error("Couldn't find the specified plugin name for %s "
+	      "looking at all files",
+	      c->switch_type);
+	
 	/* Get the plugin list, if needed. */
 	if ( c->plugin_list == NULL ) {
 		char *plugin_dir;

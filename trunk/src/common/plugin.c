@@ -45,9 +45,26 @@
 #include <dlfcn.h>        /* don't know if there's an autoconf for this. */
 #include <string.h>
 
+#include "src/common/xmalloc.h"
 #include "src/common/log.h"
 #include "src/common/plugin.h"
+#include "src/common/xstring.h"
+#include "src/common/slurm_protocol_api.h"
 #include <slurm/slurm_errno.h>
+
+#  if HAVE_UNISTD_H
+#    include <unistd.h>
+#  endif /* HAVE_UNISTD_H */
+#  if HAVE_SYS_TYPES_H
+#    include <sys/types.h>
+#  endif
+#  if HAVE_SYS_STAT_H
+#    include <sys/stat.h>
+#  endif
+
+#  if HAVE_STDLIB_H
+#    include <stdlib.h>
+#  endif
 
 /* dlerror() on AIX sometimes fails, revert to strerror() as needed */
 static char *_dlerror(void)
@@ -151,7 +168,63 @@ plugin_load_from_file( const char *fq_path )
         return plug;
 }
 
+plugin_handle_t
+plugin_load_and_link(const char *type_name, int n_syms,
+		    const char *names[], void *ptrs[])
+{
+        plugin_handle_t plug = PLUGIN_INVALID_HANDLE;
+	struct stat st;
+	char *head=NULL, *dir_array=NULL, *so_name = NULL,
+		*file_name=NULL;
+	int i=0;
+	
+	if (!type_name)
+		return plug;
 
+	so_name = xstrdup_printf("%s.so", type_name);
+
+	while(so_name[i]) {
+		if(so_name[i] == '/')
+			so_name[i] = '_';
+		i++;
+	}
+	dir_array = slurm_get_plugin_dir();
+
+	head = dir_array;
+	i=0;
+	for (i=0; ; i++) {
+		bool got_colon = 0;
+		if (dir_array[i] == ':') {
+			dir_array[i] = '\0';
+			got_colon = 1;
+		} else if(dir_array[i] != '\0') 
+			continue;
+		
+		file_name = xstrdup_printf("%s/%s", head, so_name);
+		debug3("Trying to load plugin %s", file_name);
+		if ((stat(file_name, &st) < 0) || (!S_ISREG(st.st_mode))) {
+			xfree(file_name);
+			continue;
+		}
+		
+		plug = plugin_load_from_file(file_name);
+		xfree(file_name);
+		if (plugin_get_syms(plug, n_syms, names, ptrs) >= n_syms) {
+			debug3("Success.");
+			break;
+		} else 
+			plug = PLUGIN_INVALID_HANDLE;
+		
+		if (got_colon) {
+			head = dir_array + i + 1;
+		} else 
+			break;
+	}
+	
+	xfree(dir_array);
+	xfree(so_name);
+	return plug;
+}
 /*
  * Must test plugin validity before doing dlopen() and dlsym()
  * operations because some implementations of these functions

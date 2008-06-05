@@ -117,6 +117,24 @@ int plugin_peek( const char *fq_path,
  */
 plugin_handle_t plugin_load_from_file( const char *fq_path );
 
+/*
+ * load plugin and link hooks.
+ *
+ * type_name - plugin type as entered into slurm.conf.
+ *
+ * n_syms - the number of symbols in names[].
+ * names[] - an argv-like array of symbol names to resolve.
+ * ptrs[] - an array of pointers into which the addresses of the respective
+ * 	symbols should be placed.  ptrs[i] will receive the address of
+ *	names[i].
+ *
+ * Returns a handle if successful, or NULL if not.
+ *
+ * The plugin's initialization code will be executed prior
+ * to this function's return.
+ */
+plugin_handle_t plugin_load_and_link(const char *type_name, int n_syms,
+				     const char *names[], void *ptrs[]);
 
 /*
  * Unload a plugin from memory.

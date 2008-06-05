@@ -141,7 +141,7 @@ _slurm_jobcomp_context_destroy( slurm_jobcomp_context_t c )
 static slurm_jobcomp_ops_t *
 _slurm_jobcomp_get_ops( slurm_jobcomp_context_t c )
 {
-        /*
+	/*
          * These strings must be kept in the same order as the fields
          * declared for slurm_jobcomp_ops_t.
          */
@@ -154,8 +154,18 @@ _slurm_jobcomp_get_ops( slurm_jobcomp_context_t c )
 		"slurm_jobcomp_archive"
 	};
         int n_syms = sizeof( syms ) / sizeof( char * );
+	
+	/* Find the correct plugin. */
+        c->cur_plugin = plugin_load_and_link(c->jobcomp_type, n_syms, syms,
+					     (void **) &c->ops);
+        if ( c->cur_plugin != PLUGIN_INVALID_HANDLE ) 
+        	return &c->ops;
 
-        /* Get the plugin list, if needed. */
+	error("Couldn't find the specified plugin name for %s "
+	      "looking at all files",
+	      c->jobcomp_type);
+	
+	/* Get the plugin list, if needed. */
         if ( c->plugin_list == NULL ) {
 		char *plugin_dir;
                 c->plugin_list = plugrack_create();
