@@ -5,6 +5,7 @@ documents those changes that are of interest to users and admins.
 ========================
  -- Some updates to man page formatting from Gennaro Oliva, ICAR.
  -- Smarter loading of plugins (doesn't stat every file in the plugin dir)
+ -- In sched/backfill avoid trying to schedule jobs on DOWN or DRAINED nodes.
  
 * Changes in SLURM 1.3.3
 ========================
