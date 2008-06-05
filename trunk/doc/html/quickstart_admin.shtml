@@ -19,7 +19,8 @@ and <i>--sysconfdir=</i></li>
 header files, etc.</li>
 <li>Build a configuration file using your favorite web browser and
 <i>doc/html/configurator.html</i>.<br>
-NOTE: The <i>SlurmUser</i> must be created as needed prior to starting SLURM.<br>
+NOTE: The <i>SlurmUser</i> must be created as needed prior to starting SLURM
+and must exist on all nodes of the cluster.<br>
 NOTE: The parent directories for SLURM's log files, process ID files,
 state save directories, etc. are not created by SLURM.
 They must be created and made writable by <i>SlurmUser</i> as needed prior to 
@@ -164,6 +165,8 @@ controller moves (to or from backup controller) or is restarted.</p>
 <p>We recommend that you create a Unix user <i>slurm</i> for use by 
 <b>slurmctld</b>. This user name will also be specified using the 
 <b>SlurmUser</b> in the slurm.conf configuration file.
+This user must exist on all nodes of the cluster for authentication 
+of communications.
 Note that files and directories used by <b>slurmctld</b> will need to be 
 readable or writable by the user <b>SlurmUser</b> (the slurm configuration 
 files must be readable; the log file directory and state save directory 
@@ -610,6 +613,6 @@ in the NEWS file.
 
 </pre> <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 28 April 2008</p>
+<p style="text-align:center;">Last modified 5 June 2008</p>
 
 <!--#include virtual="footer.txt"-->
