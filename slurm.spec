@@ -77,9 +77,6 @@ URL: https://computing.llnl.gov/linux/slurm/
 
 Requires: slurm-plugins
 
-%ifnos aix
-BuildRequires: ncurses-devel
-%endif
 %ifos linux
 BuildRequires: python
 %endif
