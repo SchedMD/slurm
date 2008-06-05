@@ -760,6 +760,20 @@ extern int mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 		start_tm.tm_isdst = -1;
 		curr_end = mktime(&start_tm);
 	}
+
+	/* remove all data from event table that was older than
+	 * start. 
+	 */
+	query = xstrdup_printf("delete from %s where period_end < %d "
+			       "&& end != 0",
+			       event_table, start);
+	rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
+	xfree(query);
+	if(rc != SLURM_SUCCESS) {
+		error("Couldn't remove old event data");
+		return SLURM_ERROR;
+	}
+
 	return SLURM_SUCCESS;
 }
 
