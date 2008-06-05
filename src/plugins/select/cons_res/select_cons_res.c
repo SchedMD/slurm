@@ -1734,7 +1734,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 				}
 				if (avail_cpus <= 0)
 					continue;
-				if ((rem_nodes == 1) && 
+				if ((max_nodes == 1) && 
 				    (avail_cpus < rem_cpus)) {
 					/* Job can only take one more node and
 					 * this one has insufficient CPU */
