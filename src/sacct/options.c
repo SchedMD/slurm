@@ -1128,6 +1128,7 @@ void do_list(void)
 		/* FIX ME: this should be handled while getting the
 		   data, not afterwards.
 		*/
+
 		if (params.opt_uid >= 0 && (job->uid != params.opt_uid))
 			continue;
 		if (params.opt_gid >= 0 && (job->gid != params.opt_gid))
