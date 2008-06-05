@@ -329,9 +329,7 @@ plugrack_read_dir( plugrack_t rack, const char *dir )
 	if ( ( ! rack ) || (! dir ) )
 		return SLURM_ERROR;
 
-	dir_array = xmalloc( strlen( dir ) + 1 );
-	xassert( dir_array );
-	strcpy( dir_array, dir );
+	dir_array = xstrdup(dir);
 	head = dir_array;
 	for (i=0; ; i++) {
 		if (dir_array[i] == '\0') {
