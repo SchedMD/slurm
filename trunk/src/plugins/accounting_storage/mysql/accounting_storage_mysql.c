@@ -4721,7 +4721,7 @@ extern int clusteracct_storage_p_node_down(mysql_conn_t *mysql_conn,
 	query = xstrdup_printf(
 		"update %s set period_end=%d where cluster='%s' "
 		"and period_end=0 and node_name='%s';",
-		event_table, (event_time-1), cluster, node_ptr->name);
+		event_table, event_time, cluster, node_ptr->name);
 	xstrfmtcat(query,
 		   "insert into %s "
 		   "(node_name, cluster, cpu_count, period_start, reason) "
@@ -4761,7 +4761,7 @@ extern int clusteracct_storage_p_node_up(mysql_conn_t *mysql_conn,
 	query = xstrdup_printf(
 		"update %s set period_end=%d where cluster='%s' "
 		"and period_end=0 and node_name='%s';",
-		event_table, (event_time-1), cluster, node_ptr->name);
+		event_table, event_time, cluster, node_ptr->name);
 	rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
 	xfree(query);
 	return rc;
@@ -4836,7 +4836,7 @@ extern int clusteracct_storage_p_cluster_procs(mysql_conn_t *mysql_conn,
 	query = xstrdup_printf(
 		"update %s set period_end=%d where cluster='%s' "
 		"and period_end=0 and node_name=''",
-		event_table, (event_time-1), cluster);
+		event_table, event_time, cluster);
 	rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
 	xfree(query);
 	if(rc != SLURM_SUCCESS)
@@ -5458,7 +5458,11 @@ extern int acct_storage_p_flush_jobs_on_cluster(
 	int rc = SLURM_SUCCESS;
 #ifdef HAVE_MYSQL
 	/* put end times for a clean start */
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
 	char *query = NULL;
+	char *id_char = NULL;
+	char *suspended_char = NULL;
 
 	if(!mysql_conn) {
 		error("We need a connection to run this");
@@ -5473,15 +5477,69 @@ extern int acct_storage_p_flush_jobs_on_cluster(
 		}
 	}
 
-	query = xstrdup_printf("update %s as t1, %s as t2 set "
-			       "t1.state=%u, t1.end=%u where "
-			       "t2.id=t1.associd and t2.cluster='%s' "
+	/* First we need to get the id's and states so we can clean up
+	 * the suspend table and the step table 
+	 */
+	query = xstrdup_printf("select t1.id, t1.state from %s as t1, %s as t2 "
+			       "where t2.id=t1.associd and t2.cluster='%s' "
 			       "&& t1.end=0;",
-			       job_table, assoc_table, JOB_CANCELLED, 
-			       event_time, cluster);
-
-	rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
+			       job_table, assoc_table, cluster);
+	if(!(result =
+	     mysql_db_query_ret(mysql_conn->acct_mysql_db, query, 0))) {
+		xfree(query);
+		return SLURM_ERROR;
+	}
 	xfree(query);
+
+	while((row = mysql_fetch_row(result))) {
+		int state = atoi(row[1]);
+		if(state == JOB_SUSPENDED) {
+			if(suspended_char) 
+				xstrfmtcat(suspended_char, " || id=%s", row[0]);
+			else
+				xstrfmtcat(suspended_char, "id=%s", row[0]);
+		}
+		
+		if(id_char) 
+			xstrfmtcat(id_char, " || id=%s", row[0]);
+		else
+			xstrfmtcat(id_char, "id=%s", row[0]);
+	}
+	mysql_free_result(result);
+	
+	if(suspended_char) {
+		xstrfmtcat(query,
+			   "update %s set suspended=%d-suspended where %s;",
+			   job_table, event_time, suspended_char);
+		xstrfmtcat(query,
+			   "update %s set suspended=%d-suspended where %s;",
+			   step_table, event_time, suspended_char);
+		xstrfmtcat(query,
+			   "update %s set end=%d where (%s) && end=0;",
+			   suspend_table, event_time, suspended_char);
+		xfree(suspended_char);
+	}
+	if(id_char) {
+		xstrfmtcat(query,
+			   "update %s set state=%d, end=%u where %s;",
+			   job_table, JOB_CANCELLED, event_time, id_char);
+		xstrfmtcat(query,
+			   "update %s set state=%d, end=%u where %s;",
+			   step_table, JOB_CANCELLED, event_time, id_char);
+		xfree(id_char);
+	}
+/* 	query = xstrdup_printf("update %s as t1, %s as t2 set " */
+/* 			       "t1.state=%u, t1.end=%u where " */
+/* 			       "t2.id=t1.associd and t2.cluster='%s' " */
+/* 			       "&& t1.end=0;", */
+/* 			       job_table, assoc_table, JOB_CANCELLED,  */
+/* 			       event_time, cluster); */
+	if(query) {
+		debug3("%d query\n%s", mysql_conn->conn, query);
+		
+		rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
+		xfree(query);
+	}
 #endif
 
 	return rc;
