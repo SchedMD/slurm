@@ -63,19 +63,28 @@ send_user "\ntask affinity plugin installed\n"
 set num_sockets 0
 set num_cores   0
 set num_threads 0
+set node_name ""
 log_user 0
+
+# Here we need to get the last node since if we run this on heterogeneous
+# systems the count can change
+
 spawn $scontrol show node
 expect {
+	-re "NodeName=($alpha_numeric)" {
+		set node_name $expect_out(1,string)
+		exp_continue
+	}
 	-re "Sockets=($number)" {
 		set num_sockets $expect_out(1,string)
 		exp_continue
 	}
 	-re "Cores=($number)" {
-		set num_cores $expect_out(1,string)
+	   	set num_cores $expect_out(1,string)
 		exp_continue
 	}
 	-re "Threads=($number)" {
-		set num_threads $expect_out(1,string)
+	   	set num_threads $expect_out(1,string)
 		exp_continue
 	}
 	eof {
@@ -101,7 +110,7 @@ exec $bin_chmod 700 $file_prog
 #
 global env
 set env(SLURM_CPU_BIND) "verbose"
-set salloc_pid [spawn $salloc -N1 --exclusive --verbose -t2 $bin_bash]
+set salloc_pid [spawn $salloc -w $node_name -N1 --exclusive --verbose -t2 $bin_bash]
 
 #############################################################################
 #
