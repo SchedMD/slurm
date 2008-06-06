@@ -617,13 +617,13 @@ void print_rss(type_t type, void *object)
 		nodes = job->nodes;
 		pos = sacct.min_cpu_id.nodeid;				 
 		convert_num_unit((float)sacct.max_rss, buf1, sizeof(buf1),
-				 UNIT_NONE);
+				 UNIT_KILO);
 
 		if(job->track_steps)
 			snprintf(outbuf, FORMAT_STRING_SIZE, "%s/- - -", buf1);
 		else {
 			convert_num_unit((float)sacct.ave_rss, 
-					 buf2, sizeof(buf2), UNIT_NONE);
+					 buf2, sizeof(buf2), UNIT_KILO);
 			find_hostname(pos, nodes, buf3);
 			snprintf(outbuf, FORMAT_STRING_SIZE, "%s/%s:%u - %s", 
 				 buf1,
@@ -638,9 +638,9 @@ void print_rss(type_t type, void *object)
 		nodes = step->nodes;
 		pos = sacct.min_cpu_id.nodeid;				 
 		convert_num_unit((float)sacct.max_rss, buf1, sizeof(buf1),
-				 UNIT_NONE);
+				 UNIT_KILO);
 		convert_num_unit((float)sacct.ave_rss, buf2, sizeof(buf2),
-				 UNIT_NONE);
+				 UNIT_KILO);
 		find_hostname(pos, nodes, buf3);
 		snprintf(outbuf, FORMAT_STRING_SIZE, "%s/%s:%u - %s", 
 			 buf1,
@@ -970,12 +970,12 @@ void print_vsize(type_t type, void *object)
 		nodes = job->nodes;
 		pos = sacct.min_cpu_id.nodeid;				 
 		convert_num_unit((float)sacct.max_vsize, 
-				 buf1, sizeof(buf1),UNIT_NONE);
+				 buf1, sizeof(buf1), UNIT_KILO);
 		if(job->track_steps)
 			snprintf(outbuf, FORMAT_STRING_SIZE, "%s/- - -", buf1);
 		else {
 			convert_num_unit((float)sacct.ave_vsize,
-					 buf2, sizeof(buf2), UNIT_NONE);
+					 buf2, sizeof(buf2), UNIT_KILO);
 			find_hostname(pos, nodes, buf3);
 			snprintf(outbuf, FORMAT_STRING_SIZE, "%s/%s:%u - %s", 
 				 buf1,
@@ -990,9 +990,9 @@ void print_vsize(type_t type, void *object)
 		nodes = step->nodes;
 		pos = sacct.min_cpu_id.nodeid;				 
 		convert_num_unit((float)sacct.max_vsize, buf1, sizeof(buf1), 
-				 UNIT_NONE);
+				 UNIT_KILO);
 		convert_num_unit((float)sacct.ave_vsize, buf2, sizeof(buf2),
-				 UNIT_NONE);
+				 UNIT_KILO);
 		find_hostname(pos, nodes, buf3);
 		snprintf(outbuf, FORMAT_STRING_SIZE, "%s/%s:%u - %s", 
 			 buf1,

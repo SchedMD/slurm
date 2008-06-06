@@ -2829,8 +2829,8 @@ extern void convert_num_unit(float num, char *buf, int buf_size, int orig_type)
 {
 	char *unit = "\0KMGP?";
 	int i = (int)num % 512;
-	
-	if(i > 0 || (int)num == 0) {
+
+	if((i > 0 && num < 1024) || (int)num == 0) {
 		snprintf(buf, buf_size, "%d%c", (int)num, unit[orig_type]);
 		return;
 	}

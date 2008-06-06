@@ -170,11 +170,6 @@ int _sstat_query(slurm_step_layout_t *step_layout, uint32_t job_id,
 cleanup:
 	
 	if(tot_tasks) {
-		step.sacct.ave_rss *= 1024;
-		step.sacct.max_rss *= 1024;
-		step.sacct.ave_vsize *= 1024;
-		step.sacct.max_vsize *= 1024;
-
 		step.sacct.ave_cpu /= tot_tasks;
 		step.sacct.ave_cpu /= 100;
 		step.sacct.min_cpu /= 100;

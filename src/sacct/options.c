@@ -307,11 +307,6 @@ int get_data(void)
 			/* now aggregate the aggregatable */
 			job->alloc_cpus = MAX(job->alloc_cpus, step->ncpus);
 
-			step->sacct.ave_rss *= 1024;
-			step->sacct.max_rss *= 1024;
-			step->sacct.ave_vsize *= 1024;
-			step->sacct.max_vsize *= 1024;
-
 			if(step->state < JOB_COMPLETE)
 				continue;
 			job->tot_cpu_sec += step->tot_cpu_sec;
