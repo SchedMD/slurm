@@ -789,8 +789,8 @@ void parse_command_line(int argc, char **argv)
 				 (params.opt_field_list==NULL? 0 :
 				  sizeof(params.opt_field_list)) +
 				 strlen(dot)+1);
-		strcat(params.opt_field_list, dot);
-		strcat(params.opt_field_list, ",");
+		xstrcat(params.opt_field_list, dot);
+		xstrcat(params.opt_field_list, ",");
 	} 
 
 	if(long_output) {
@@ -804,8 +804,8 @@ void parse_command_line(int argc, char **argv)
 				 (params.opt_field_list==NULL? 0 :
 				  strlen(params.opt_field_list)) +
 				 strlen(dot)+1);
-		strcat(params.opt_field_list, dot);
-		strcat(params.opt_field_list, ",");
+		xstrcat(params.opt_field_list, dot);
+		xstrcat(params.opt_field_list, ",");
 	} 
 	
 	if (params.opt_field_list==NULL) {
@@ -815,9 +815,8 @@ void parse_command_line(int argc, char **argv)
 			dot = DEFAULT_COMP_FIELDS;
 		else
 			dot = DEFAULT_FIELDS;
-		params.opt_field_list = xmalloc(strlen(dot)+1);
-		strcpy(params.opt_field_list, dot); 
-		strcat(params.opt_field_list, ",");
+		params.opt_field_list = xstrdup(dot);
+		xstrcat(params.opt_field_list, ",");
 	}
 
 	start = params.opt_field_list;
