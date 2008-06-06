@@ -1173,8 +1173,9 @@ slurm_fd slurm_open_msg_conn(slurm_addr * slurm_address)
 	return _slurm_open_msg_conn(slurm_address);
 }
 
-/* calls connect to make a connection-less datagram connection to the 
- *	primary or secondary slurmctld message engine
+/* Calls connect to make a connection-less datagram connection to the 
+ *	primary or secondary slurmctld message engine. If the controller
+ *	is very busy the connect may fail, so retry a couple of times.
  * OUT addr     - address of controller contacted
  * RET slurm_fd	- file descriptor of the connection created
  */
@@ -1182,29 +1183,39 @@ slurm_fd slurm_open_controller_conn(slurm_addr *addr)
 {
 	slurm_fd fd;
 	slurm_ctl_conf_t *conf;
+	int retry, have_backup = 0;
 
 	if (slurm_api_set_default_config() < 0)
 		return SLURM_FAILURE;
-	addr = &proto_conf->primary_controller;
-	if ((fd = slurm_open_msg_conn(&proto_conf->primary_controller)) >= 0)
-		return fd;
-	
-	debug("Failed to contact primary controller: %m");
 
-	conf = slurm_conf_lock();
-	if (!conf->backup_controller) {
-		slurm_conf_unlock();
-		goto fail;
+	for (retry=0; retry<2; retry++) {
+		if (retry)
+			sleep(1);
+
+		addr = &proto_conf->primary_controller;
+		fd = slurm_open_msg_conn(&proto_conf->primary_controller);
+		if (fd >= 0)
+			return fd;
+		debug("Failed to contact primary controller: %m");
+
+		if (retry == 0) {
+			conf = slurm_conf_lock();
+			if (conf->backup_controller)
+				have_backup = 1;
+			slurm_conf_unlock();
+		}
+
+		if (have_backup) {
+			addr = &proto_conf->secondary_controller;
+			fd = slurm_open_msg_conn(&proto_conf->
+						 secondary_controller);
+			if (fd >= 0)
+				return fd;
+			debug("Failed to contact secondary controller: %m");
+		}
 	}
-	slurm_conf_unlock();
 
-	addr = &proto_conf->secondary_controller;
-	if ((fd = slurm_open_msg_conn(&proto_conf->secondary_controller)) >= 0)
-		return fd;
 	addr = NULL;
-	debug("Failed to contact secondary controller: %m");
-
-    fail:
 	slurm_seterrno_ret(SLURMCTLD_COMMUNICATIONS_CONNECTION_ERROR);
 }
 
