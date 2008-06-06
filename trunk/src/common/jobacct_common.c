@@ -527,7 +527,7 @@ rwfail:
 }
 
 extern int jobacct_common_getinfo(struct jobacctinfo *jobacct, 
-			  enum jobacct_data_type type, void *data)
+				  enum jobacct_data_type type, void *data)
 {
 	int rc = SLURM_SUCCESS;
 	int *fd = (int *)data;

@@ -1095,6 +1095,7 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 	req.assoc_id    = step_ptr->job_ptr->assoc_id;
 	req.db_index    = step_ptr->job_ptr->db_index;
 	req.end_time    = time(NULL);	/* called at step completion */
+	req.exit_code   = step_ptr->exit_code;
 	req.jobacct     = step_ptr->jobacct;
 	req.job_id      = step_ptr->job_ptr->job_id;
 	req.req_uid     = step_ptr->job_ptr->requid;

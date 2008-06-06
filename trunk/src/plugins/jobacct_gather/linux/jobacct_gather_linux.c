@@ -296,7 +296,7 @@ static void _get_process_data() {
 		slurm_mutex_unlock(&reading_mutex);
 	
 	}
-		
+
 	if (!list_count(prec_list)) {
 		goto finished;	/* We have no business being here! */
 	}
@@ -639,7 +639,10 @@ extern int jobacct_gather_p_add_task(pid_t pid, jobacct_id_t *jobacct_id)
 extern struct jobacctinfo *jobacct_gather_p_stat_task(pid_t pid)
 {
 	_get_process_data();
-	return jobacct_common_stat_task(pid);
+	if(pid)
+		return jobacct_common_stat_task(pid);
+	else
+		return NULL;
 }
 
 extern struct jobacctinfo *jobacct_gather_p_remove_task(pid_t pid)

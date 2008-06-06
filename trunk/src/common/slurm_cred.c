@@ -280,6 +280,8 @@ _slurm_crypto_context_destroy( slurm_crypto_context_t *c )
 		if ( plugrack_destroy( c->plugin_list ) != SLURM_SUCCESS ) {
 			 return SLURM_ERROR;
 		}
+	} else {
+		plugin_unload(c->cur_plugin);
 	}
 
 	xfree( c->crypto_type );

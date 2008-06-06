@@ -41,6 +41,11 @@ set delay       10
 
 print_header $test_id
 
+if {[test_assoc_enforced]} {
+	send_user "\nWARNING: Using users default account instead of $job_acct since associations are enforced.\n"
+	set job_acct [get_default_acct 0]
+}
+
 make_bash_script $file_in "
 #SBATCH --job-name=$job_name
 #SBATCH --account=$job_acct

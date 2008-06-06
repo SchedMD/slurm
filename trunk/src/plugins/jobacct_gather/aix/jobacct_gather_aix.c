@@ -519,7 +519,10 @@ extern struct jobacctinfo *jobacct_gather_p_stat_task(pid_t pid)
 #ifdef HAVE_AIX
 	_get_process_data();
 #endif
-	return jobacct_common_stat_task(pid);
+	if(pid)
+		return jobacct_common_stat_task(pid);
+	else
+		return NULL;
 }
 
 extern struct jobacctinfo *jobacct_gather_p_remove_task(pid_t pid)

@@ -236,7 +236,7 @@ expect {
 		wait
 	}
 }
-if {$matches != 4} {
+if {$matches < 4} {
 	send_user "\nFAILURE: sacct reporting failed $matches\n"
 	set exit_code 1
 }

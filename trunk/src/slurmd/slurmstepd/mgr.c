@@ -729,7 +729,12 @@ job_manager(slurmd_job_t *job)
 	reattach_job = job;
 
 	job->state = SLURMSTEPD_STEP_RUNNING;
-
+	
+	/* if we are not polling then we need to make sure we get some
+	 * information here
+	 */
+	if(!conf->job_acct_gather_freq)
+		jobacct_gather_g_stat_task(0);
 	/* Send job launch response with list of pids */
 	_send_launch_resp(job, 0);
 

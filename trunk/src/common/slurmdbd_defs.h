@@ -258,6 +258,7 @@ typedef struct dbd_step_comp_msg {
 	uint32_t assoc_id;	/* accounting association id */
 	uint32_t db_index;	/* index into the db for this job */
 	time_t   end_time;	/* job termintation time */
+	uint32_t exit_code;	/* job exit code or signal */
 	jobacctinfo_t *jobacct; /* status info */
 	uint32_t job_id;	/* job ID */
 	uint32_t req_uid;	/* requester user ID */
