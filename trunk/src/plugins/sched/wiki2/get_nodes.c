@@ -69,7 +69,7 @@ static int	_str_cmp(char *s1, char *s2);
  *	[OS=<operating_system>;] Operating system
  *	CMEMORY=<MB>;		 MB of memory on node
  *	CDISK=<MB>;		 MB of disk space on node
- *	CPROCS=<cpus>;		 CPU count on node
+ *	CPROC=<cpus>;		 CPU count on node
  *	[FEATURE=<feature>;]	 Features associated with node, if any
  *  [#<NODEID>:...];
  */
