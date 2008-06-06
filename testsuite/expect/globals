@@ -540,6 +540,49 @@ proc test_assoc_enforced { } {
 
 ################################################################
 #
+# Proc: get_default_acct
+#
+# Purpose: get users default account.
+#
+# Returns name of default account if exists, NULL otherwise
+#
+################################################################
+
+proc get_default_acct { user } {
+	global sacctmgr alpha_numeric_under bin_id
+
+	log_user 0
+	set def_acct ""
+
+	if { !$user } {
+		spawn $bin_id -un
+		expect {      
+	       	       -re "($alpha_numeric_under)" {
+		       	   set user $expect_out(1,string)
+		       }
+		       eof {
+		    	   wait
+		       }
+		}
+	}
+
+	spawn $sacctmgr -n list user $user format="d"
+	expect {
+		-re "($alpha_numeric_under)" {
+			set def_acct $expect_out(1,string)
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+	
+	return $def_acct
+}
+
+################################################################
+#
 # Proc: test_front_end
 #
 # Purpose: Determine if the execution host is one in which the

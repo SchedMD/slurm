@@ -166,6 +166,8 @@ _slurmd_task_context_destroy(slurmd_task_context_t *c)
 		if ( plugrack_destroy( c->plugin_list ) != SLURM_SUCCESS ) {
 			return SLURM_ERROR;
 		}
+	} else {
+		plugin_unload(c->cur_plugin);
 	}
 
 	xfree( c->task_type );

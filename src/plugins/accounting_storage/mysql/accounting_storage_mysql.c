@@ -5235,7 +5235,7 @@ extern int jobacct_storage_p_step_complete(mysql_conn_t *mysql_conn,
 		comp_status = JOB_FAILED;
 	else
 		comp_status = JOB_COMPLETE;
-
+       
 	/* figure out the ave of the totals sent */
 	if(cpus > 0) {
 		ave_vsize = jobacct->tot_vsize;

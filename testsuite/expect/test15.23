@@ -36,14 +36,20 @@ set test_id          "15.23"
 set exit_code        0
 set job_id           0
 set timeout          $max_job_delay
+set job_acct    "TEST_ACCT"
 
 print_header $test_id
+
+if {[test_assoc_enforced]} {
+	send_user "\nWARNING: Using users default account instead of $job_acct since associations are enforced.\n"
+	set job_acct [get_default_acct 0]
+}
 
 #
 # Set target environment variables
 #
 global env
-set env(SALLOC_ACCOUNT)       tst.acct
+set env(SALLOC_ACCOUNT)       $job_acct
 set env(SALLOC_DEBUG)         2
 set env(SALLOC_TIMELIMIT)     2
 
@@ -72,7 +78,7 @@ expect {
 		}
 		exp_continue
 	}
-	-re "Account=tst.acct" {
+	-re "Account=$job_acct" {
 		incr matches
 		send "exit\n"
 		exp_continue

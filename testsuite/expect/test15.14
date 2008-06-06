@@ -37,8 +37,14 @@ set file_in     "test$test_id.input"
 set exit_code   0
 set job_id1     0
 set job_id2     0
+set job_acct    "TEST_ACCT"
 
 print_header $test_id
+
+if {[test_assoc_enforced]} {
+	send_user "\nWARNING: This test will not work when associations are enforced.\n"
+	exit $exit_code
+}
 
 global env
 set env(SALLOC_ACCOUNT) QA_ACCT
@@ -52,7 +58,7 @@ make_bash_script $file_in "$bin_sleep 10"
 # Spawn a srun batch job that just sleeps for a while
 #
 set timeout $max_job_delay
-spawn $sbatch --output=/dev/null --error=/dev/null --account=MY_ACCT -t1 $file_in
+spawn $sbatch --output=/dev/null --error=/dev/null --account=$job_acct -t1 $file_in
 expect {
 	 -re "Submitted batch job ($number)" {
 		set job_id1 $expect_out(1,string)
@@ -86,7 +92,7 @@ expect {
 		set match_state 1
 		exp_continue
 	}
-	-re "Account=MY_ACCT" {
+	-re "Account=$job_acct" {
 		set match_acct 1
 		exp_continue
 	}
