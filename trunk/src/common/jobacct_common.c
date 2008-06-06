@@ -67,7 +67,6 @@ unpack_error:
 static void _pack_sacct(sacct_t *sacct, Buf buffer)
 {
 	int i=0;
-	int mult = 1000000;
 
 	if(!sacct) {
 		for(i=0; i<8; i++)
@@ -79,14 +78,15 @@ static void _pack_sacct(sacct_t *sacct, Buf buffer)
 		}
 		return;
 	} 
+
 	pack32((uint32_t)sacct->max_vsize, buffer);
-	pack32((uint32_t)(sacct->ave_vsize*mult), buffer);
+	pack32((uint32_t)sacct->ave_vsize, buffer);
 	pack32((uint32_t)sacct->max_rss, buffer);
-	pack32((uint32_t)(sacct->ave_rss*mult), buffer);
+	pack32((uint32_t)sacct->ave_rss, buffer);
 	pack32((uint32_t)sacct->max_pages, buffer);
-	pack32((uint32_t)(sacct->ave_pages*mult), buffer);
-	pack32((uint32_t)(sacct->min_cpu*mult), buffer);
-	pack32((uint32_t)(sacct->ave_cpu*mult), buffer);
+	pack32((uint32_t)sacct->ave_pages, buffer);
+	pack32((uint32_t)sacct->min_cpu, buffer);
+	pack32((uint32_t)sacct->ave_cpu, buffer);
 
 	_pack_jobacct_id(&sacct->max_vsize_id, buffer);
 	_pack_jobacct_id(&sacct->max_rss_id, buffer);
@@ -97,21 +97,24 @@ static void _pack_sacct(sacct_t *sacct, Buf buffer)
 /* you need to xfree this */
 static int _unpack_sacct(sacct_t *sacct, Buf buffer)
 {
-	int mult = 1000000;
+	/* this is here to handle the floats since it appears sending
+	 * in a float with a typecast returns incorrect information
+	 */
+	uint32_t temp;
 
 	safe_unpack32(&sacct->max_vsize, buffer);
-	safe_unpack32((uint32_t *)&sacct->ave_vsize, buffer);
-	sacct->ave_vsize /= mult;
+	safe_unpack32(&temp, buffer);
+	sacct->ave_vsize = temp;
 	safe_unpack32(&sacct->max_rss, buffer);
-	safe_unpack32((uint32_t *)&sacct->ave_rss, buffer);
-	sacct->ave_rss /= mult;
+	safe_unpack32(&temp, buffer);
+	sacct->ave_rss = temp;
 	safe_unpack32(&sacct->max_pages, buffer);
-	safe_unpack32((uint32_t *)&sacct->ave_pages, buffer);
-	sacct->ave_pages /= mult;
-	safe_unpack32((uint32_t *)&sacct->min_cpu, buffer);
-	sacct->min_cpu /= mult;
-	safe_unpack32((uint32_t *)&sacct->ave_cpu, buffer);
-	sacct->ave_cpu /= mult;
+	safe_unpack32(&temp, buffer);
+	sacct->ave_pages = temp;
+	safe_unpack32(&temp, buffer);
+	sacct->min_cpu = temp;
+	safe_unpack32(&temp, buffer);
+	sacct->ave_cpu = temp;
 	if(_unpack_jobacct_id(&sacct->max_vsize_id, buffer) != SLURM_SUCCESS)
 		goto unpack_error;
 	if(_unpack_jobacct_id(&sacct->max_rss_id, buffer) != SLURM_SUCCESS)
@@ -744,6 +747,7 @@ extern int jobacct_common_unpack(struct jobacctinfo **jobacct, Buf buffer)
 	if(_unpack_jobacct_id(&(*jobacct)->min_cpu_id, buffer)
 	   != SLURM_SUCCESS)
 		goto unpack_error;
+
 	return SLURM_SUCCESS;
 
 unpack_error:

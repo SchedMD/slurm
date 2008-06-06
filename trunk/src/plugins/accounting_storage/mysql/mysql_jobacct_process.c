@@ -437,7 +437,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 				atoi(step_row[STEP_REQ_MAX_PAGES_NODE]);
 			step->sacct.min_cpu_id.nodeid = 
 				atoi(step_row[STEP_REQ_MIN_CPU_NODE]);
-	
+
 			step->requid = atoi(step_row[STEP_REQ_KILL_REQUID]);
 		}
 		mysql_free_result(step_result);
