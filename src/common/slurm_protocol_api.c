@@ -1188,7 +1188,7 @@ slurm_fd slurm_open_controller_conn(slurm_addr *addr)
 	if (slurm_api_set_default_config() < 0)
 		return SLURM_FAILURE;
 
-	for (retry=0; retry<2; retry++) {
+	for (retry=0; retry<4; retry++) {
 		if (retry)
 			sleep(1);
 
