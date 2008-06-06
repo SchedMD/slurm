@@ -405,17 +405,17 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 				step->tot_cpu_usec += 
 				step->user_cpu_usec + step->sys_cpu_usec;
 			step->sacct.max_vsize =
-				atoi(step_row[STEP_REQ_MAX_VSIZE]) * 1024;
+				atoi(step_row[STEP_REQ_MAX_VSIZE]);
 			step->sacct.max_vsize_id.taskid = 
 				atoi(step_row[STEP_REQ_MAX_VSIZE_TASK]);
 			step->sacct.ave_vsize = 
-				atof(step_row[STEP_REQ_AVE_VSIZE]) * 1024;
+				atof(step_row[STEP_REQ_AVE_VSIZE]);
 			step->sacct.max_rss =
-				atoi(step_row[STEP_REQ_MAX_RSS]) * 1024;
+				atoi(step_row[STEP_REQ_MAX_RSS]);
 			step->sacct.max_rss_id.taskid = 
 				atoi(step_row[STEP_REQ_MAX_RSS_TASK]);
 			step->sacct.ave_rss = 
-				atof(step_row[STEP_REQ_AVE_RSS]) * 1024;
+				atof(step_row[STEP_REQ_AVE_RSS]);
 			step->sacct.max_pages =
 				atoi(step_row[STEP_REQ_MAX_PAGES]);
 			step->sacct.max_pages_id.taskid = 

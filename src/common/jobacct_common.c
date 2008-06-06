@@ -48,6 +48,7 @@ uint32_t cont_id = (uint32_t)NO_VAL;
 uint32_t acct_job_id = 0;
 uint32_t job_mem_limit = 0;
 bool pgid_plugin = false;
+uint32_t mult = 1000;
 
 static void _pack_jobacct_id(jobacct_id_t *jobacct_id, Buf buffer)
 {
@@ -67,6 +68,7 @@ unpack_error:
 static void _pack_sacct(sacct_t *sacct, Buf buffer)
 {
 	int i=0;
+	uint32_t temp;
 
 	if(!sacct) {
 		for(i=0; i<8; i++)
@@ -79,14 +81,19 @@ static void _pack_sacct(sacct_t *sacct, Buf buffer)
 		return;
 	} 
 
-	pack32((uint32_t)sacct->max_vsize, buffer);
-	pack32((uint32_t)sacct->ave_vsize, buffer);
-	pack32((uint32_t)sacct->max_rss, buffer);
-	pack32((uint32_t)sacct->ave_rss, buffer);
-	pack32((uint32_t)sacct->max_pages, buffer);
-	pack32((uint32_t)sacct->ave_pages, buffer);
-	pack32((uint32_t)sacct->min_cpu, buffer);
-	pack32((uint32_t)sacct->ave_cpu, buffer);
+	pack32(sacct->max_vsize, buffer);
+	temp = sacct->ave_vsize * mult;
+	pack32(temp, buffer);
+	pack32(sacct->max_rss, buffer);
+	temp = (uint32_t)sacct->ave_rss * mult;
+	pack32(temp, buffer);
+	pack32(sacct->max_pages, buffer);
+	temp = (uint32_t)sacct->ave_pages * mult;
+	pack32(temp, buffer);
+	temp = (uint32_t)sacct->min_cpu * mult;
+	pack32(temp, buffer);
+	temp = (uint32_t)sacct->ave_cpu * mult;
+	pack32(temp, buffer);
 
 	_pack_jobacct_id(&sacct->max_vsize_id, buffer);
 	_pack_jobacct_id(&sacct->max_rss_id, buffer);
@@ -104,17 +111,17 @@ static int _unpack_sacct(sacct_t *sacct, Buf buffer)
 
 	safe_unpack32(&sacct->max_vsize, buffer);
 	safe_unpack32(&temp, buffer);
-	sacct->ave_vsize = temp;
+	sacct->ave_vsize = temp / mult;
 	safe_unpack32(&sacct->max_rss, buffer);
 	safe_unpack32(&temp, buffer);
-	sacct->ave_rss = temp;
+	sacct->ave_rss = temp / mult;
 	safe_unpack32(&sacct->max_pages, buffer);
 	safe_unpack32(&temp, buffer);
-	sacct->ave_pages = temp;
+	sacct->ave_pages = temp / mult;
 	safe_unpack32(&temp, buffer);
-	sacct->min_cpu = temp;
+	sacct->min_cpu = temp / mult;
 	safe_unpack32(&temp, buffer);
-	sacct->ave_cpu = temp;
+	sacct->ave_cpu = temp / mult;
 	if(_unpack_jobacct_id(&sacct->max_vsize_id, buffer) != SLURM_SUCCESS)
 		goto unpack_error;
 	if(_unpack_jobacct_id(&sacct->max_rss_id, buffer) != SLURM_SUCCESS)
