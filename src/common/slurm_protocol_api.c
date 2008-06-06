@@ -228,8 +228,8 @@ uint32_t slurm_get_max_mem_per_task(void)
  */
 uint32_t slurm_get_epilog_msg_time(void)
 {
-        uint32_t epilog_msg_time = 0;
-        slurm_ctl_conf_t *conf;
+	uint32_t epilog_msg_time = 0;
+	slurm_ctl_conf_t *conf;
 
  	if(slurmdbd_conf) {
 	} else {
@@ -237,7 +237,7 @@ uint32_t slurm_get_epilog_msg_time(void)
 		epilog_msg_time = conf->epilog_msg_time;
 		slurm_conf_unlock();
 	}
-        return epilog_msg_time;
+	return epilog_msg_time;
 }
 
 /* slurm_get_env_timeout
@@ -245,8 +245,8 @@ uint32_t slurm_get_epilog_msg_time(void)
  */
 int inline slurm_get_env_timeout(void)
 {
-        int timeout = 0;
-        slurm_ctl_conf_t *conf;
+	int timeout = 0;
+	slurm_ctl_conf_t *conf;
 
 	if(slurmdbd_conf) {
 	} else {
@@ -254,7 +254,7 @@ int inline slurm_get_env_timeout(void)
 		timeout = conf->get_env_timeout;
 		slurm_conf_unlock();
 	}
-        return timeout;
+	return timeout;
 }
 
 /* slurm_get_mpi_default
@@ -280,8 +280,8 @@ char *slurm_get_mpi_default(void)
  */
 uint16_t slurm_get_msg_timeout(void)
 {
-        uint16_t msg_timeout = 0;
-        slurm_ctl_conf_t *conf;
+	uint16_t msg_timeout = 0;
+	slurm_ctl_conf_t *conf;
 
  	if(slurmdbd_conf) {
 		msg_timeout = slurmdbd_conf->msg_timeout;
@@ -293,7 +293,7 @@ uint16_t slurm_get_msg_timeout(void)
 		msg_timeout *= 4;
 #endif
 	}
-        return msg_timeout;
+	return msg_timeout;
 }
 
 /* slurm_get_plugin_dir
@@ -411,8 +411,8 @@ extern char *slurm_get_crypto_type(void)
  */
 extern uint16_t slurm_get_propagate_prio_process(void)
 {
-        uint16_t propagate_prio = 0;
-        slurm_ctl_conf_t *conf;
+	uint16_t propagate_prio = 0;
+	slurm_ctl_conf_t *conf;
 
  	if(slurmdbd_conf) {
 	} else {
@@ -420,7 +420,7 @@ extern uint16_t slurm_get_propagate_prio_process(void)
 		propagate_prio = conf->propagate_prio_process;
 		slurm_conf_unlock();
 	}
-        return propagate_prio;
+	return propagate_prio;
 }
 
 /* slurm_get_fast_schedule
@@ -893,8 +893,8 @@ uint32_t slurm_get_slurm_user_id(void)
  * RET uint16_t  - Value of SchedulerRootFilter */
 extern uint16_t slurm_get_root_filter(void)
 {
-        uint16_t root_filter = 0;
-        slurm_ctl_conf_t *conf;
+	uint16_t root_filter = 0;
+	slurm_ctl_conf_t *conf;
  
  	if(slurmdbd_conf) {
 	} else {
@@ -902,14 +902,14 @@ extern uint16_t slurm_get_root_filter(void)
 		root_filter = conf->schedrootfltr;
 		slurm_conf_unlock();
 	}
-        return root_filter;
+	return root_filter;
 }
 /* slurm_get_sched_port
  * RET uint16_t  - Value of SchedulerPort */
 extern uint16_t slurm_get_sched_port(void)
 {
-        uint16_t port = 0;
-        slurm_ctl_conf_t *conf;
+	uint16_t port = 0;
+	slurm_ctl_conf_t *conf;
 
  	if(slurmdbd_conf) {
 	} else {
@@ -917,7 +917,7 @@ extern uint16_t slurm_get_sched_port(void)
 		port = conf->schedport;
 		slurm_conf_unlock();
 	}
-        return port;
+	return port;
 }
 
 /* slurm_get_sched_type
@@ -1029,7 +1029,7 @@ char *slurm_get_srun_epilog(void)
  * RET task_epilog name, must be xfreed by caller */
 char *slurm_get_task_epilog(void)
 {
-        char *task_epilog = NULL;
+	char *task_epilog = NULL;
 	slurm_ctl_conf_t *conf;
 
 	if(slurmdbd_conf) {
@@ -1038,14 +1038,14 @@ char *slurm_get_task_epilog(void)
 		task_epilog = xstrdup(conf->task_epilog);
 		slurm_conf_unlock();
 	}
-        return task_epilog;
+	return task_epilog;
 }
 
 /* slurm_get_task_prolog
  * RET task_prolog name, must be xfreed by caller */
 char *slurm_get_task_prolog(void)
 {
-        char *task_prolog = NULL;
+	char *task_prolog = NULL;
 	slurm_ctl_conf_t *conf;
 
 	if(slurmdbd_conf) {
@@ -1054,27 +1054,27 @@ char *slurm_get_task_prolog(void)
 		task_prolog = xstrdup(conf->task_prolog);
 		slurm_conf_unlock();
 	}
-        return task_prolog;
+	return task_prolog;
 }
 
 /* slurm_get_task_plugin
  * RET task_plugin name, must be xfreed by caller */
 char *slurm_get_task_plugin(void)
 {
-        char *task_plugin = NULL;
+	char *task_plugin = NULL;
 	slurm_ctl_conf_t *conf;
 
 	conf = slurm_conf_lock();
-        task_plugin = xstrdup(conf->task_plugin);
+	task_plugin = xstrdup(conf->task_plugin);
 	slurm_conf_unlock();
-        return task_plugin;
+	return task_plugin;
 }
 
 /* slurm_get_task_plugin_param */
 uint16_t slurm_get_task_plugin_param(void)
 {
-        uint16_t task_plugin_param = 0;
-        slurm_ctl_conf_t *conf;
+	uint16_t task_plugin_param = 0;
+	slurm_ctl_conf_t *conf;
 
 	if(slurmdbd_conf) {
 	} else {
@@ -1082,7 +1082,7 @@ uint16_t slurm_get_task_plugin_param(void)
 		task_plugin_param = conf->task_plugin_param;
 		slurm_conf_unlock();
 	}
-        return task_plugin_param;
+	return task_plugin_param;
 }
 
 /* Change general slurm communication errors to slurmctld specific errors */
@@ -1165,8 +1165,8 @@ int slurm_shutdown_msg_conn(slurm_fd fd)
  *	is defined to only receive messages from the address/port pair  
  *	argument of the connect call slurm_address - for now it is  
  *	really just a sockaddr_in
- * IN slurm_address     - slurm_addr of the connection destination
- * RET slurm_fd         - file descriptor of the connection created
+ * IN slurm_address	- slurm_addr of the connection destination
+ * RET slurm_fd		- file descriptor of the connection created
  */
 slurm_fd slurm_open_msg_conn(slurm_addr * slurm_address)
 {
@@ -1303,7 +1303,7 @@ int slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 	
 	if (timeout <= 0)
 		/* convert secs to msec */
-                timeout  = slurm_get_msg_timeout() * 1000; 
+		timeout  = slurm_get_msg_timeout() * 1000; 
 
 	else if(timeout > (slurm_get_msg_timeout() * 10000)) {
 		debug("You are receiving a message with very long "
@@ -1422,9 +1422,9 @@ total_return:
  * IN open_fd	- file descriptor to receive msg on
  * IN steps	- how many steps down the tree we have to wait for
  * IN timeout	- how long to wait in milliseconds
- * RET List	- List containing the responses of the childern (if any) we 
- *                forwarded the message to. List containing type
- *                (ret_data_info_t).
+ * RET List	- List containing the responses of the childern (if any) we
+ *		  forwarded the message to. List containing type
+ *		  (ret_data_info_t).
  */
 List slurm_receive_msgs(slurm_fd fd, int steps, int timeout)
 {
@@ -1446,7 +1446,7 @@ List slurm_receive_msgs(slurm_fd fd, int steps, int timeout)
 	
 	if(timeout <= 0) {
 		/* convert secs to msec */
-                timeout  = slurm_get_msg_timeout() * 1000; 
+		timeout  = slurm_get_msg_timeout() * 1000; 
 		orig_timeout = timeout;
 	}
 	if(steps) {
@@ -1608,7 +1608,7 @@ static int _unpack_msg_uid(Buf buffer)
  *       and list_destroy function.
  * IN open_fd	- file descriptor to receive msg on
  * IN/OUT msg	- a slurm_msg struct to be filled in by the function
- *                we use the orig_addr from this var for forwarding. 
+ *		  we use the orig_addr from this var for forwarding. 
  * IN timeout	- how long to wait in milliseconds
  * RET int	- returns 0 on success, -1 on failure and sets errno
  */
@@ -1641,7 +1641,7 @@ int slurm_receive_msg_and_forward(slurm_fd fd, slurm_addr *orig_addr,
 
 	if (timeout <= 0)
 		/* convert secs to msec */
-                timeout  = slurm_get_msg_timeout() * 1000; 
+		timeout  = slurm_get_msg_timeout() * 1000; 
 		
 	if(timeout >= (slurm_get_msg_timeout() * 10000)) {
 		debug("slurm_receive_msg_and_forward: "
@@ -1925,7 +1925,7 @@ slurm_fd slurm_accept_stream(slurm_fd open_fd, slurm_addr * slurm_address)
 /* slurm_open_stream
  * opens a client connection to stream server
  * IN slurm_address     - slurm_addr of the connection destination
- * RET slurm_fd         - file descriptor of the connection created
+ * RET slurm_fd	 - file descriptor of the connection created
  * NOTE: Retry with various ports as needed if connection is refused
  */
 slurm_fd slurm_open_stream(slurm_addr * slurm_address)
@@ -2302,9 +2302,9 @@ _send_and_recv_msg(slurm_fd fd, slurm_msg_t *req,
  * IN fd	- file descriptor to receive msg on
  * IN req	- a slurm_msg struct to be sent by the function
  * IN timeout	- how long to wait in milliseconds
- * RET List	- List containing the responses of the childern (if any) we 
- *                forwarded the message to. List containing type
- *                (ret_data_info_t). 
+ * RET List	- List containing the responses of the childern (if any) we
+ *		  forwarded the message to. List containing type
+ *		  (ret_data_info_t). 
  */
 static List
 _send_and_recv_msgs(slurm_fd fd, slurm_msg_t *req, int timeout)
@@ -2355,8 +2355,8 @@ _send_and_recv_msgs(slurm_fd fd, slurm_msg_t *req, int timeout)
  * opens a connection to the controller, sends the controller a message, 
  * listens for the response, then closes the connection
  * IN request_msg	- slurm_msg request
- * OUT response_msg     - slurm_msg response
- * RET int              - returns 0 on success, -1 on failure and sets errno
+ * OUT response_msg	- slurm_msg response
+ * RET int		- returns 0 on success, -1 on failure and sets errno
  */
 int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
 {
@@ -2433,8 +2433,8 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
  * for the response, then closes the connection
  * IN request_msg	- slurm_msg request
  * OUT response_msg	- slurm_msg response
- * IN timeout	        - how long to wait in milliseconds
- * RET int	        - returns 0 on success, -1 on failure and sets errno
+ * IN timeout		- how long to wait in milliseconds
+ * RET int		- returns 0 on success, -1 on failure and sets errno
  */
 int slurm_send_recv_node_msg(slurm_msg_t *req, slurm_msg_t *resp, int timeout)
 {
@@ -2528,12 +2528,12 @@ int slurm_send_only_node_msg(slurm_msg_t *req)
 /*
  *  Send a message to the nodelist specificed using fanout
  *    Then return List containing type (ret_data_info_t).
- * IN nodelist	    - list of nodes to send to.
- * IN msg           - a slurm_msg struct to be sent by the function
- * IN timeout	    - how long to wait in milliseconds
- * RET List	    - List containing the responses of the childern
- *                    (if any) we forwarded the message to. List
- *                    containing type (ret_data_info_t).
+ * IN nodelist	  - list of nodes to send to.
+ * IN msg	  - a slurm_msg struct to be sent by the function
+ * IN timeout	  - how long to wait in milliseconds
+ * RET List	  - List containing the responses of the childern
+ *		    (if any) we forwarded the message to. List
+ *		    containing type (ret_data_info_t).
  */
 List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg, 
 			  int timeout)
@@ -2591,11 +2591,11 @@ List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg,
 		msg->forward.nodelist = xstrdup(buf);
 		msg->forward.timeout = timeout;
 		msg->forward.cnt = hostlist_count(hl);
-                if (msg->forward.nodelist[0]) {
-	        	debug3("sending to %s along with to %s", 
-                               name, msg->forward.nodelist);
-                } else
-                        debug3("sending to %s", name);
+		if (msg->forward.nodelist[0]) {
+			debug3("sending to %s along with to %s", 
+			       name, msg->forward.nodelist);
+		} else
+			debug3("sending to %s", name);
 		
 		if(!(ret_list = _send_and_recv_msgs(fd, msg, timeout))) {
 			xfree(msg->forward.nodelist);
@@ -2634,11 +2634,11 @@ List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg,
 /*
  *  Send a message to msg->address
  *    Then return List containing type (ret_data_info_t). 
- * IN msg           - a slurm_msg struct to be sent by the function
- * IN timeout	    - how long to wait in milliseconds
- * RET List	    - List containing the responses of the childern
- *                    (if any) we forwarded the message to. List
- *                    containing type (ret_types_t).
+ * IN msg	  - a slurm_msg struct to be sent by the function
+ * IN timeout	  - how long to wait in milliseconds
+ * RET List	  - List containing the responses of the childern
+ *		    (if any) we forwarded the message to. List
+ *		    containing type (ret_types_t).
  */
 List slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name, int timeout)
 {
@@ -2739,9 +2739,9 @@ int slurm_send_recv_controller_rc_msg(slurm_msg_t *req, int *rc)
  * of the tree.  
  * IN total       - total number of nodes to send to
  * IN tree_width  - how wide the tree should be on each hop
- * RET int *      - int array tree_width in length each space
- *                  containing the number of nodes to send to each hop
- *                  on the span. 
+ * RET int *	  - int array tree_width in length each space
+ *		    containing the number of nodes to send to each hop
+ *		    on the span. 
  */
 
 extern int *set_span(int total,  uint16_t tree_width)
@@ -2750,8 +2750,8 @@ extern int *set_span(int total,  uint16_t tree_width)
 	int left = total;
 	int i = 0;
 
-        if (tree_width == 0)
-	        tree_width = slurm_get_tree_width();
+	if (tree_width == 0)
+		tree_width = slurm_get_tree_width();
 
 	span = xmalloc(sizeof(int) * tree_width);
 	//info("span count = %d", tree_width);
