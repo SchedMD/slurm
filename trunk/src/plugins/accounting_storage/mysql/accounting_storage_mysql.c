@@ -3747,7 +3747,7 @@ empty:
 
 	while((row = mysql_fetch_row(result))) {
 		acct_user_rec_t *user = xmalloc(sizeof(acct_user_rec_t));
-		struct passwd *passwd_ptr = NULL;
+/* 		struct passwd *passwd_ptr = NULL; */
 		list_append(user_list, user);
 
 		user->name =  xstrdup(row[USER_REQ_NAME]);
@@ -3755,11 +3755,15 @@ empty:
 		user->admin_level = atoi(row[USER_REQ_AL]);
 		user->qos = atoi(row[USER_REQ_EX]);
 
-		passwd_ptr = getpwnam(user->name);
-		if(passwd_ptr) 
-			user->uid = passwd_ptr->pw_uid;
-		else
-			user->uid = (uint32_t)NO_VAL;
+		/* user id will be set on the client since this could be on a
+		 * different machine where this user may not exist or
+		 * may have a different uid
+		 */
+/* 		passwd_ptr = getpwnam(user->name); */
+/* 		if(passwd_ptr)  */
+/* 			user->uid = passwd_ptr->pw_uid; */
+/* 		else */
+/* 			user->uid = (uint32_t)NO_VAL; */
 		user->coord_accts = list_create(destroy_acct_coord_rec);
 		query = xstrdup_printf("select acct from %s where user='%s' "
 				       "&& deleted=0",
@@ -4270,6 +4274,16 @@ extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 		xstrcat(extra, " && (");
 		itr = list_iterator_create(assoc_q->id_list);
 		while((object = list_next(itr))) {
+			char *ptr = NULL;
+			long num = strtol(object, &ptr, 10);
+			if ((num == 0) && ptr && ptr[0]) {
+				error("Invalid value for assoc id (%s)",
+				      object);
+				xfree(extra);
+				list_iterator_destroy(itr);
+				return NULL;
+			}
+
 			if(set) 
 				xstrcat(extra, " || ");
 			xstrfmtcat(extra, "id=%s", object);
