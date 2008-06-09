@@ -73,6 +73,10 @@ static int _set_assoc_parent_and_user(acct_association_rec_t *assoc)
 		struct passwd *passwd_ptr = getpwnam(assoc->user);
 		if(passwd_ptr) 
 			assoc->uid = passwd_ptr->pw_uid;
+		else
+			assoc->uid = (uint32_t)NO_VAL;	
+	} else {
+		assoc->uid = (uint32_t)NO_VAL;	
 	}
 	//log_assoc_rec(assoc);
 
@@ -215,7 +219,7 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 		if(!assoc->acct) {
 			acct_user_rec_t user;
 
-			if(!assoc->uid) {
+			if(assoc->uid == (uint32_t)NO_VAL) {
 				if(enforce) {
 					error("get_assoc_id: "
 					      "Not enough info to "
@@ -256,7 +260,8 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 			}
 			continue;
 		} else {
-			if(!assoc->uid && found_assoc->uid) {
+			if(assoc->uid == (uint32_t)NO_VAL
+			   && found_assoc->uid != (uint32_t)NO_VAL) {
 				debug3("we are looking for a "
 				       "nonuser association");
 				continue;
@@ -268,8 +273,9 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 			
 			if(found_assoc->acct 
 			   && strcasecmp(assoc->acct, found_assoc->acct)) {
-				   debug3("not the right account");
-				   continue;
+				debug3("not the right account %s != %s",
+				       assoc->acct, found_assoc->acct);
+				continue;
 			}
 
 			/* only check for on the slurmdbd */
@@ -592,6 +598,7 @@ extern int assoc_mgr_update_local_users(acct_update_object_t *update)
 	acct_user_rec_t * object = NULL;
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
+	struct passwd *passwd_ptr = NULL;
 
 	if(!local_user_list)
 		return SLURM_SUCCESS;
@@ -631,7 +638,12 @@ extern int assoc_mgr_update_local_users(acct_update_object_t *update)
 				//rc = SLURM_ERROR;
 				break;
 			}
-			info("adding user %s here", object->name);
+			passwd_ptr = getpwnam(object->name);
+			if(passwd_ptr) 
+				object->uid = passwd_ptr->pw_uid;
+			else
+				object->uid = (uint32_t)NO_VAL;
+
 			list_append(local_user_list, object);
 		case ACCT_REMOVE_USER:
 			if(!rec) {

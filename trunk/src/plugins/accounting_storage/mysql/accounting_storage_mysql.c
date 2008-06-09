@@ -3758,7 +3758,8 @@ empty:
 		passwd_ptr = getpwnam(user->name);
 		if(passwd_ptr) 
 			user->uid = passwd_ptr->pw_uid;
-		
+		else
+			user->uid = (uint32_t)NO_VAL;
 		user->coord_accts = list_create(destroy_acct_coord_rec);
 		query = xstrdup_printf("select acct from %s where user='%s' "
 				       "&& deleted=0",
