@@ -50,6 +50,35 @@ static char *local_cluster_name = NULL;
 static pthread_mutex_t local_association_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t local_user_lock = PTHREAD_MUTEX_INITIALIZER;
 
+/* locks should be put in place before calling this function */
+static int _set_assoc_parent_and_user(acct_association_rec_t *assoc)
+{
+	if(!assoc) {
+		error("you didn't give me an association");
+		return SLURM_ERROR;
+	}
+
+	if(assoc->parent_id) {
+		acct_association_rec_t *assoc2 = NULL;
+		ListIterator itr = list_iterator_create(local_association_list);
+		while((assoc2 = list_next(itr))) {
+			if(assoc2->id == assoc->parent_id) {
+				assoc->parent_acct_ptr = assoc2;
+				break;
+			}
+		}
+		list_iterator_destroy(itr);
+	}
+	if(assoc->user) {
+		struct passwd *passwd_ptr = getpwnam(assoc->user);
+		if(passwd_ptr) 
+			assoc->uid = passwd_ptr->pw_uid;
+	}
+	//log_assoc_rec(assoc);
+
+	return SLURM_SUCCESS;
+}
+
 static int _get_local_association_list(void *db_conn, int enforce)
 {
 	acct_association_cond_t assoc_q;
@@ -97,31 +126,10 @@ static int _get_local_association_list(void *db_conn, int enforce)
 		}
 	} else {
 		acct_association_rec_t *assoc = NULL;
-		acct_association_rec_t *assoc2 = NULL;
-		struct passwd *passwd_ptr = NULL;
 		ListIterator itr = list_iterator_create(local_association_list);
-		ListIterator itr2 = 
-			list_iterator_create(local_association_list);
 		//START_TIMER;
-		while((assoc = list_next(itr))) {
-			if(assoc->parent_id) {
-				while((assoc2 = list_next(itr2))) {
-					if(assoc2->id == assoc->parent_id) {
-						assoc->parent_acct_ptr = assoc2;
-						break;
-					}
-				}
-				list_iterator_reset(itr2);
-			}
-			if(!assoc->user) {
-				continue;
-			}
-			passwd_ptr = getpwnam(assoc->user);
-			if(passwd_ptr) 
-				assoc->uid = passwd_ptr->pw_uid;
-			//log_assoc_rec(assoc);
-		}
-		list_iterator_destroy(itr2);
+		while((assoc = list_next(itr))) 
+			_set_assoc_parent_and_user(assoc);
 		list_iterator_destroy(itr);
 		//END_TIMER2("load_associations");
 	}
@@ -536,6 +544,7 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 				//rc = SLURM_ERROR;
 				break;
 			}
+			_set_assoc_parent_and_user(object);
 			list_append(local_association_list, object);
 		case ACCT_REMOVE_ASSOC:
 			if(!rec) {
@@ -622,6 +631,7 @@ extern int assoc_mgr_update_local_users(acct_update_object_t *update)
 				//rc = SLURM_ERROR;
 				break;
 			}
+			info("adding user %s here", object->name);
 			list_append(local_user_list, object);
 		case ACCT_REMOVE_USER:
 			if(!rec) {

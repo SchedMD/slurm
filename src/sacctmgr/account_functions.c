@@ -83,7 +83,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 			u_set = 1;
 		} else if (strncasecmp (argv[i], "Parent", 1) == 0) {
 			acct_cond->assoc_cond->parent_acct =
-				xstrdup(argv[i]+end);
+				strip_quotes(argv[i]+end, NULL);
 			a_set = 1;
 		} else if (strncasecmp (argv[i], "QosLevel", 1) == 0) {
 			acct_cond->qos = str_2_acct_qos(argv[i]+end);
@@ -122,7 +122,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 			printf(" Bad format on %s: End your option with "
 			       "an '=' sign\n", argv[i]);
 		} else if (strncasecmp (argv[i], "Description", 1) == 0) {
-			acct->description = xstrdup(argv[i]+end);
+			acct->description =  strip_quotes(argv[i]+end, NULL);
 			u_set = 1;
 		} else if (strncasecmp (argv[i], "FairShare", 1) == 0) {
 			if (get_uint(argv[i]+end, &assoc->fairshare, 
@@ -151,10 +151,10 @@ static int _set_rec(int *start, int argc, char *argv[],
 					argv[i]);
 			}
 		} else if (strncasecmp (argv[i], "Organization", 1) == 0) {
-			acct->organization = xstrdup(argv[i]+end);
+			acct->organization = strip_quotes(argv[i]+end, NULL);
 			u_set = 1;
 		} else if (strncasecmp (argv[i], "Parent", 1) == 0) {
-			assoc->parent_acct = xstrdup(argv[i]+end);
+			assoc->parent_acct = strip_quotes(argv[i]+end, NULL);
 			a_set = 1;
 		} else if (strncasecmp (argv[i], "QosLevel=", 1) == 0) {
 			acct->qos = str_2_acct_qos(argv[i]+end);
@@ -275,7 +275,7 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 		} else if (strncasecmp (argv[i], "Cluster", 1) == 0) {
 			addto_char_list(cluster_list, argv[i]+end);
 		} else if (strncasecmp (argv[i], "Description", 1) == 0) {
-			description = xstrdup(argv[i]+end);
+			description = strip_quotes(argv[i]+end, NULL);
 		} else if (strncasecmp (argv[i], "FairShare", 1) == 0) {
 			if (get_uint(argv[i]+end, &fairshare, 
 			    "FairShare") == SLURM_SUCCESS)
@@ -304,9 +304,9 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 		} else if (strncasecmp (argv[i], "Names", 1) == 0) {
 			addto_char_list(name_list, argv[i]+end);
 		} else if (strncasecmp (argv[i], "Organization", 1) == 0) {
-			organization = xstrdup(argv[i]+end);
+			organization = strip_quotes(argv[i]+end, NULL);
 		} else if (strncasecmp (argv[i], "Parent", 1) == 0) {
-			parent = xstrdup(argv[i]+end);
+			parent = strip_quotes(argv[i]+end, NULL);
 		} else if (strncasecmp (argv[i], "QosLevel", 1) == 0) {
 			qos = str_2_acct_qos(argv[i]+end);
 		} else {
