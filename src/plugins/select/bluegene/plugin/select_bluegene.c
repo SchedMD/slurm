@@ -363,7 +363,10 @@ extern int select_p_state_restore(char *dir_name)
 	int blocks = 0;
 
 	debug("bluegene: select_p_state_restore");
-
+#ifdef HAVE_BG_FILES
+	debug("This doesn't do anything on a real bluegene system");
+	return SLURM_SUCCESS;
+#endif
 	if(!dir_name) {
 		debug2("Starting bluegene with clean slate");
 		return SLURM_SUCCESS;
