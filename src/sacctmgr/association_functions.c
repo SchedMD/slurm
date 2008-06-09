@@ -48,7 +48,9 @@ static int _set_cond(int *start, int argc, char *argv[],
 
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
-		if(!end) {
+		if(!end && !strncasecmp(argv[i], "where", 5)) {
+			continue;
+		} else if(!end) {
 			addto_char_list(association_cond->id_list, argv[i]);
 			set = 1;
 		} else if (strncasecmp (argv[i], "Id", 1) == 0) {
@@ -235,6 +237,7 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 	destroy_acct_association_cond(assoc_cond);
 	
 	if(!assoc_list) {
+		printf(" Problem with query.\n");
 		list_destroy(format_list);
 		return SLURM_ERROR;
 	}

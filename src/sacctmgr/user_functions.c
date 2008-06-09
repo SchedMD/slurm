@@ -55,6 +55,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 			break;
 		} else if (strncasecmp (argv[i], "WithAssoc", 4) == 0) {
 			user_cond->with_assocs = 1;
+		} else if(!end && !strncasecmp(argv[i], "where", 5)) {
+			continue;
 		} else if(!end) {
 			addto_char_list(user_cond->user_list, argv[i]);
 			addto_char_list(user_cond->assoc_cond->user_list,
@@ -121,6 +123,8 @@ static int _set_rec(int *start, int argc, char *argv[],
 		if (strncasecmp (argv[i], "Where", 5) == 0) {
 			i--;
 			break;
+		} else if(!end && !strncasecmp(argv[i], "set", 3)) {
+			continue;
 		} else if(!end) {
 			printf(" Bad format on %s: End your option with "
 			       "an '=' sign\n", argv[i]);
@@ -633,8 +637,7 @@ no_default:
 
 	notice_thread_init();
 	if(list_count(user_list)) {
-		rc = acct_storage_g_add_users(db_conn, my_uid, 
-					      user_list);
+		rc = acct_storage_g_add_users(db_conn, my_uid, user_list);
 	}
 
 	if(rc == SLURM_SUCCESS) {
@@ -728,6 +731,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 	destroy_acct_user_cond(user_cond);
 
 	if(!user_list) {
+		printf(" Problem with query.\n");
 		list_destroy(format_list);
 		return SLURM_ERROR;
 	}
