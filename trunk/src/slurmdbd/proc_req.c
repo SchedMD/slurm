@@ -1678,13 +1678,13 @@ static int  _step_complete(void *db_conn,
 	job.assoc_id = step_comp_msg->assoc_id;
 	job.db_index = step_comp_msg->db_index;
 	job.end_time = step_comp_msg->end_time;
+	step.exit_code = step_comp_msg->exit_code;
 	step.jobacct = step_comp_msg->jobacct;
 	job.job_id = step_comp_msg->job_id;
 	job.requid = step_comp_msg->req_uid;
 	job.start_time = step_comp_msg->start_time;
 	details.submit_time = step_comp_msg->job_submit_time;
 	step.step_id = step_comp_msg->step_id;
-	step.exit_code = step_comp_msg->exit_code;
 	job.total_procs = step_comp_msg->total_procs;
 
 	job.details = &details;
