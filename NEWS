@@ -9,7 +9,7 @@ documents those changes that are of interest to users and admins.
  -- forward exit_code from step completion to slurmdbd
  -- Add retry logic to socket connect() call from client which can fail 
     when the slurmctld is under heavy load.
- -- Fixed bug when adding associations to add correctly
+ -- Fixed bug when adding associations to add correctly.
  -- Added support for associations for user root.
 
 * Changes in SLURM 1.3.3
