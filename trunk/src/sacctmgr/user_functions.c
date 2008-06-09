@@ -129,7 +129,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 				str_2_acct_admin_level(argv[i]+end);
 			u_set = 1;
 		} else if (strncasecmp (argv[i], "DefaultAccount", 1) == 0) {
-			user->default_acct = xstrdup(argv[i]+end);
+			user->default_acct = strip_quotes(argv[i]+end, NULL);
 			u_set = 1;
 		} else if (strncasecmp (argv[i], "FairShare", 1) == 0) {
 			if (get_uint(argv[i]+end, &association->fairshare, 
@@ -295,9 +295,9 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 			addto_char_list(assoc_cond->cluster_list,
 					argv[i]+end);
 		} else if (strncasecmp (argv[i], "DefaultAccount", 1) == 0) {
-			default_acct = xstrdup(argv[i]+end);
+			default_acct = strip_quotes(argv[i]+end, NULL);
 			addto_char_list(assoc_cond->acct_list,
-					argv[i]+end);
+					default_acct);
 		} else if (strncasecmp (argv[i], "FairShare", 1) == 0) {
 			if (get_uint(argv[i]+end, &fairshare, 
 			    "FairShare") == SLURM_SUCCESS)
