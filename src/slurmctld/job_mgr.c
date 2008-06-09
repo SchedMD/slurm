@@ -3975,7 +3975,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 						    accounting_enforce, 
 						    &assoc_ptr)) {
-				info("job_update: invalid account %s for job %u",
+				info("job_update: invalid account %s "
+				     "for job %u",
 				     job_specs->account, job_ptr->job_id);
 				error_code = ESLURM_INVALID_ACCOUNT;
 				/* Let update proceed. Note there is an invalid
