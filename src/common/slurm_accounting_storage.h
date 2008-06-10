@@ -110,6 +110,7 @@ typedef struct {
 
 typedef struct {
 	uint32_t alloc_secs; /* number of cpu seconds allocated */
+	uint32_t assoc_id;	/* association ID		*/
 	time_t period_start; 
 } acct_accounting_rec_t;
 
@@ -200,6 +201,7 @@ typedef struct {
 	uint32_t cpu_count; /* number of cpus during time period */
 	uint32_t down_secs; /* number of cpu seconds down */
 	uint32_t idle_secs; /* number of cpu seconds idle */
+	uint32_t over_secs; /* number of cpu seconds overcommitted */
 	time_t period_start; /* when this record was started */
 	uint32_t resv_secs; /* number of cpu seconds reserved */	
 } cluster_accounting_rec_t;
