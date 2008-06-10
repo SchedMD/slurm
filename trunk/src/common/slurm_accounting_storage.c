@@ -1203,6 +1203,8 @@ extern void pack_acct_cluster_cond(void *in, Buf buffer)
 
 	if(!object) {
 		pack32(0, buffer);
+		pack32(0, buffer);
+		pack32(0, buffer);
 		pack16(0, buffer);
 		return;
 	}
@@ -1219,6 +1221,10 @@ extern void pack_acct_cluster_cond(void *in, Buf buffer)
 		}
 		list_iterator_destroy(itr);
 	}
+
+	pack32(object->usage_end, buffer);
+	pack32(object->usage_start, buffer);
+
 	pack16((uint16_t)object->with_usage, buffer);
 }
 
@@ -1239,6 +1245,9 @@ extern int unpack_acct_cluster_cond(void **object, Buf buffer)
 			list_append(object_ptr->cluster_list, tmp_info);
 		}
 	}
+	safe_unpack32(&object_ptr->usage_end, buffer);
+	safe_unpack32(&object_ptr->usage_start, buffer);
+
 	safe_unpack16((uint16_t *)&object_ptr->with_usage, buffer);
 
 	return SLURM_SUCCESS;
@@ -1268,6 +1277,8 @@ extern void pack_acct_association_cond(void *in, Buf buffer)
 		pack32(0, buffer);
 		pack32(0, buffer);
 		packnull(buffer);
+		pack32(0, buffer);
+		pack32(0, buffer);
 		pack32(0, buffer);
 		pack16(0, buffer);
 		return;
@@ -1332,6 +1343,9 @@ extern void pack_acct_association_cond(void *in, Buf buffer)
 	count = 0;
 
 	packstr(object->parent_acct, buffer);
+
+	pack32(object->usage_end, buffer);
+	pack32(object->usage_start, buffer);
 
 	if(object->user_list)
 		count = list_count(object->user_list);
@@ -1402,6 +1416,9 @@ extern int unpack_acct_association_cond(void **object, Buf buffer)
 	}
 
 	safe_unpackstr_xmalloc(&object_ptr->parent_acct, &uint32_tmp, buffer);
+
+	safe_unpack32(&object_ptr->usage_end, buffer);
+	safe_unpack32(&object_ptr->usage_start, buffer);
 
 	safe_unpack32(&count, buffer);
 	if(count) {

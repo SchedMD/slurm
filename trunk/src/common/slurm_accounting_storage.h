@@ -87,6 +87,8 @@ typedef struct {
 					     * can run a job (seconds) */
 	List partition_list;	/* list of char * */
 	char *parent_acct;	/* name of parent account */
+	uint32_t usage_end; 
+	uint32_t usage_start; 
 	List user_list;		/* list of char * */
 	uint16_t with_usage; 
 } acct_association_cond_t;
@@ -144,6 +146,8 @@ typedef struct acct_association_rec {
 
 typedef struct {
 	List cluster_list; /* list of char * */
+	uint32_t usage_end; 
+	uint32_t usage_start; 
 	uint16_t with_usage; 
 } acct_cluster_cond_t;
 
