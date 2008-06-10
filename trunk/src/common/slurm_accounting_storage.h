@@ -88,6 +88,7 @@ typedef struct {
 	List partition_list;	/* list of char * */
 	char *parent_acct;	/* name of parent account */
 	List user_list;		/* list of char * */
+	uint16_t with_usage; 
 } acct_association_cond_t;
 
 typedef struct {
@@ -143,6 +144,7 @@ typedef struct acct_association_rec {
 
 typedef struct {
 	List cluster_list; /* list of char * */
+	uint16_t with_usage; 
 } acct_cluster_cond_t;
 
 typedef struct {
