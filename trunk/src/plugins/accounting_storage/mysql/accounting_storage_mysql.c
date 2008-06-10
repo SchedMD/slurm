@@ -4450,6 +4450,127 @@ extern int acct_storage_p_get_usage(mysql_conn_t *mysql_conn,
 {
 #ifdef HAVE_MYSQL
 	int rc = SLURM_SUCCESS;
+	int i=0;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	char *tmp = NULL;
+	char *my_usage_table = assoc_day_table;
+	time_t my_time = time(NULL);
+	struct tm start_tm;
+	struct tm end_tm;
+	char *query = NULL;
+
+	char *assoc_req_inx[] = {
+		"t1.id",
+		"SUM(t1.alloc_cpu_secs)"
+	};
+	
+	enum {
+		ASSOC_ID,
+		ASSOC_ACPU,
+		ASSOC_COUNT
+	};
+
+	if(!acct_assoc->id) {
+		error("We need a assoc id to set data for");
+		return SLURM_ERROR;
+	}
+
+	/* Default is going to be the last day */
+	if(!end) {
+		if(!localtime_r(&my_time, &end_tm)) {
+			error("Couldn't get localtime from end %d",
+			      my_time);
+			return SLURM_ERROR;
+		}
+		end_tm.tm_hour = 0;
+		end = mktime(&end_tm);		
+	} else {
+		if(!localtime_r(&end, &end_tm)) {
+			error("Couldn't get localtime from user end %d",
+			      my_time);
+			return SLURM_ERROR;
+		}
+	}
+	end_tm.tm_sec = 0;
+	end_tm.tm_min = 0;
+	end_tm.tm_isdst = -1;
+	end = mktime(&end_tm);		
+
+	if(!start) {
+		if(!localtime_r(&my_time, &start_tm)) {
+			error("Couldn't get localtime from start %d",
+			      my_time);
+			return SLURM_ERROR;
+		}
+		start_tm.tm_hour = 0;
+		start_tm.tm_mday--;
+		start = mktime(&start_tm);		
+	} else {
+		if(!localtime_r(&start, &start_tm)) {
+			error("Couldn't get localtime from user start %d",
+			      my_time);
+			return SLURM_ERROR;
+		}
+	}
+	start_tm.tm_sec = 0;
+	start_tm.tm_min = 0;
+	start_tm.tm_isdst = -1;
+	start = mktime(&start_tm);		
+
+	if(end-start < 3600) {
+		end = start + 3600;
+		if(!localtime_r(&end, &end_tm)) {
+			error("2 Couldn't get localtime from user end %d",
+			      my_time);
+			return SLURM_ERROR;
+		}
+	}
+	/* check to see if we are off day boundaries or on month
+	 * boundaries other wise use the day table.
+	 */
+	if(start_tm.tm_hour || end_tm.tm_hour || (end-start < 86400)) 
+		my_usage_table = assoc_hour_table;
+	else if(start_tm.tm_mday == 0 && end_tm.tm_mday == 0 
+		&& (end-start > 86400))
+		my_usage_table = assoc_month_table;
+		
+	xfree(tmp);
+	i=0;
+	xstrfmtcat(tmp, "%s", assoc_req_inx[i]);
+	for(i=1; i<ASSOC_COUNT; i++) {
+		xstrfmtcat(tmp, ", %s", assoc_req_inx[i]);
+	}
+
+	query = xstrdup_printf(
+		"select %s from %s as t1, %s as t2, %s as t3 "
+		"where (t1.period_start < %d && t1.period_start >= %d) "
+		"&& t1.id=t2.id && t3.id=%u && "
+		"t2.lft between t3.lft and t3.rgt group by t1.id;",
+		tmp, my_usage_table, assoc_table, assoc_table, end, start,
+		acct_assoc->id);
+	xfree(tmp);
+	debug3("%d query\n%s", mysql_conn->conn, query);
+	if(!(result = mysql_db_query_ret(
+		     mysql_conn->acct_mysql_db, query, 0))) {
+		xfree(query);
+		return SLURM_ERROR;
+	}
+	xfree(query);
+
+	if(!acct_assoc->accounting_list)
+		acct_assoc->accounting_list =
+			list_create(destroy_acct_accounting_rec);
+
+	while((row = mysql_fetch_row(result))) {
+		acct_accounting_rec_t *accounting_rec =
+			xmalloc(sizeof(acct_accounting_rec_t));
+		accounting_rec->assoc_id = atoi(row[ASSOC_ID]);
+		accounting_rec->alloc_secs = atoi(row[ASSOC_ACPU]);
+		list_append(acct_assoc->accounting_list, accounting_rec);
+	}
+	mysql_free_result(result);
+	
 	return rc;
 #else
 	return SLURM_ERROR;
@@ -4877,8 +4998,137 @@ extern int clusteracct_storage_p_get_usage(
 	acct_cluster_rec_t *cluster_rec, time_t start, time_t end)
 {
 #ifdef HAVE_MYSQL
+	int rc = SLURM_SUCCESS;
+	int i=0;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	char *tmp = NULL;
+	char *my_usage_table = cluster_day_table;
+	time_t my_time = time(NULL);
+	struct tm start_tm;
+	struct tm end_tm;
+	char *query = NULL;
+	char *cluster_req_inx[] = {
+		"SUM(alloc_cpu_secs)",
+		"SUM(down_cpu_secs)",
+		"SUM(idle_cpu_secs)",
+		"SUM(resv_cpu_secs)",
+		"SUM(over_cpu_secs)",
+		"AVG(cpu_count_secs)"
+	};
+	
+	enum {
+		CLUSTER_ACPU,
+		CLUSTER_DCPU,
+		CLUSTER_ICPU,
+		CLUSTER_RCPU,
+		CLUSTER_OCPU,
+		CLUSTER_CPU_COUNT,
+		CLUSTER_COUNT
+	};
 
-	return SLURM_SUCCESS;
+	if(!cluster_rec->name) {
+		error("We need a cluster name to set data for");
+		return SLURM_ERROR;
+	}
+
+	/* Default is going to be the last day */
+	if(!end) {
+		if(!localtime_r(&my_time, &end_tm)) {
+			error("Couldn't get localtime from end %d",
+			      my_time);
+			return SLURM_ERROR;
+		}
+		end_tm.tm_hour = 0;
+		end = mktime(&end_tm);		
+	} else {
+		if(!localtime_r(&end, &end_tm)) {
+			error("Couldn't get localtime from user end %d",
+			      my_time);
+			return SLURM_ERROR;
+		}
+	}
+	end_tm.tm_sec = 0;
+	end_tm.tm_min = 0;
+	end_tm.tm_isdst = -1;
+	end = mktime(&end_tm);		
+
+	if(!start) {
+		if(!localtime_r(&my_time, &start_tm)) {
+			error("Couldn't get localtime from start %d",
+			      my_time);
+			return SLURM_ERROR;
+		}
+		start_tm.tm_hour = 0;
+		start_tm.tm_mday--;
+		start = mktime(&start_tm);		
+	} else {
+		if(!localtime_r(&start, &start_tm)) {
+			error("Couldn't get localtime from user start %d",
+			      my_time);
+			return SLURM_ERROR;
+		}
+	}
+	start_tm.tm_sec = 0;
+	start_tm.tm_min = 0;
+	start_tm.tm_isdst = -1;
+	start = mktime(&start_tm);		
+
+	if(end-start < 3600) {
+		end = start + 3600;
+		if(!localtime_r(&end, &end_tm)) {
+			error("2 Couldn't get localtime from user end %d",
+			      my_time);
+			return SLURM_ERROR;
+		}
+	}
+	/* check to see if we are off day boundaries or on month
+	 * boundaries other wise use the day table.
+	 */
+	if(start_tm.tm_hour || end_tm.tm_hour || (end-start < 86400)) 
+		my_usage_table = cluster_hour_table;
+	else if(start_tm.tm_mday == 0 && end_tm.tm_mday == 0 
+		&& (end-start > 86400))
+		my_usage_table = cluster_month_table;
+
+	xfree(tmp);
+	i=0;
+	xstrfmtcat(tmp, "%s", cluster_req_inx[i]);
+	for(i=1; i<CLUSTER_COUNT; i++) {
+		xstrfmtcat(tmp, ", %s", cluster_req_inx[i]);
+	}
+
+	query = xstrdup_printf(
+		"select %s from %s where (period_start < %d "
+		"&& period_start >= %d) and cluster='%s'",
+		tmp, my_usage_table, end, start, cluster_rec->name);
+
+	xfree(tmp);
+	debug3("%d query\n%s", mysql_conn->conn, query);
+	if(!(result = mysql_db_query_ret(
+		     mysql_conn->acct_mysql_db, query, 0))) {
+		xfree(query);
+		return SLURM_ERROR;
+	}
+	xfree(query);
+
+	if(!cluster_rec->accounting_list)
+		cluster_rec->accounting_list =
+			list_create(destroy_cluster_accounting_rec);
+	
+	if((row = mysql_fetch_row(result))) {
+		cluster_accounting_rec_t *accounting_rec =
+			xmalloc(sizeof(cluster_accounting_rec_t));
+		accounting_rec->alloc_secs = atoi(row[CLUSTER_ACPU]);
+		accounting_rec->down_secs = atoi(row[CLUSTER_DCPU]);
+		accounting_rec->idle_secs = atoi(row[CLUSTER_ICPU]);
+		accounting_rec->over_secs = atoi(row[CLUSTER_OCPU]);
+		accounting_rec->resv_secs = atoi(row[CLUSTER_RCPU]);
+		list_append(cluster_rec->accounting_list, accounting_rec);
+	}
+	mysql_free_result(result);
+
+	return rc;
 #else
 	return SLURM_ERROR;
 #endif
