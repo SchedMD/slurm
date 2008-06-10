@@ -1258,7 +1258,7 @@ static void _strip_cr_nl(char *line)
  * Load user environment from a cache file located in
  * <state_save_location>/env_username
  */
-char **_load_env_cache(const char *username)
+static char **_load_env_cache(const char *username)
 {
 	char *state_save_loc, fname[MAXPATHLEN];
 	char line[ENV_BUFSIZE], name[256], value[ENV_BUFSIZE];
@@ -1271,7 +1271,7 @@ char **_load_env_cache(const char *username)
 		     username);
 	xfree(state_save_loc);
 	if (i < 0) {
-		fatal("Environment cache filename overflow");
+		error("Environment cache filename overflow");
 		return NULL;
 	}
 	if (!(fp = fopen(fname, "r"))) {
@@ -1345,6 +1345,10 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 		env_loc = "/usr/bin/env";
 	else
 		fatal("Could not location command: env");
+	snprintf(cmdstr, sizeof(cmdstr),
+		 "/bin/echo; /bin/echo; /bin/echo; "
+		 "/bin/echo %s; %s; /bin/echo %s",
+		 starttoken, env_loc, stoptoken);
 
 	if (pipe(fildes) < 0) {
 		fatal("pipe: %m");
@@ -1357,15 +1361,12 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 		return NULL;
 	}
 	if (child == 0) {
+		setpgid(0, 0);
 		close(0);
 		open("/dev/null", O_RDONLY);
 		dup2(fildes[1], 1);
 		close(2);
 		open("/dev/null", O_WRONLY);
-		snprintf(cmdstr, sizeof(cmdstr),
-			 "/bin/echo; /bin/echo; /bin/echo; "
-			 "/bin/echo %s; %s; /bin/echo %s",
-			 starttoken, env_loc, stoptoken);
 		if      (mode == 1)
 			execl("/bin/su", "su", username, "-c", cmdstr, NULL);
 		else if (mode == 2)
@@ -1381,8 +1382,10 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 	}
 
 	close(fildes[1]);
-	if ((fval = fcntl(fildes[0], F_GETFL, 0)) >= 0)
-		fcntl(fildes[0], F_SETFL, fval | O_NONBLOCK);
+	if ((fval = fcntl(fildes[0], F_GETFL, 0)) < 0)
+		error("fcntl(F_GETFL) failed: %m");
+	else if (fcntl(fildes[0], F_SETFL, fval | O_NONBLOCK) < 0)
+		error("fcntl(F_SETFL) failed: %m");
 
 	gettimeofday(&begin, NULL);
 	ufds.fd = fildes[0];
@@ -1401,11 +1404,13 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 		timeleft -= (now.tv_usec - begin.tv_usec) / 1000;
 		if (timeleft <= 0) {
 			verbose("timeout waiting for /bin/su to complete");
+			kill(-child, 9);
 			break;
 		}
 		if ((rc = poll(&ufds, 1, timeleft)) <= 0) {
 			if (rc == 0) {
 				verbose("timeout waiting for /bin/su to complete");
+				kill(-child, 9);
 				break;
 			}
 			if ((errno == EINTR) || (errno == EAGAIN))
