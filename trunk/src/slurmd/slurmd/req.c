@@ -455,7 +455,7 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	pwd_buf = xmalloc(buf_size);
 	if (getpwuid_r(uid, &pwd, pwd_buf, buf_size, &pwd_ptr)) {
 		xfree(pwd_buf);
-		error("_send_slurmstepd_init getpwuid: %m");
+		error("_send_slurmstepd_init getpwuid_r: %m");
 		len = 0;
 		safe_write(fd, &len, sizeof(int));
 		return -1;
