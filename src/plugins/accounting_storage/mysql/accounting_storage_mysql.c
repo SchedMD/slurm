@@ -117,8 +117,18 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit);
 extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 					   uint32_t uid, 
 					   List association_list);
+
 extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn, 
 					    acct_association_cond_t *assoc_q);
+
+extern int acct_storage_p_get_usage(mysql_conn_t *mysql_conn,
+				    acct_association_rec_t *acct_assoc,
+				    time_t start, time_t end);
+
+extern int clusteracct_storage_p_get_usage(
+	mysql_conn_t *mysql_conn,
+	acct_cluster_rec_t *cluster_rec, time_t start, time_t end);
+
 
 /* This function will take the object given and free it later so it
  * needed to be removed from a list if in one before 
@@ -4099,6 +4109,14 @@ empty:
 		list_append(cluster_list, cluster);
 
 		cluster->name =  xstrdup(row[CLUSTER_REQ_NAME]);
+
+		/* get the usage if requested */
+		if(cluster_q->with_usage) {
+			clusteracct_storage_p_get_usage(mysql_conn, cluster,
+							cluster_q->usage_start,
+							cluster_q->usage_end);
+		}
+
 		cluster->control_host = xstrdup(row[CLUSTER_REQ_CH]);
 		cluster->control_port = atoi(row[CLUSTER_REQ_CP]);
 		query = xstrdup_printf("select %s from %s where cluster='%s' "
@@ -4326,7 +4344,14 @@ empty:
 		list_append(assoc_list, assoc);
 		
 		assoc->id =  atoi(row[ASSOC_REQ_ID]);
-		
+
+		/* get the usage if requested */
+		if(assoc_q->with_usage) {
+			acct_storage_p_get_usage(mysql_conn, assoc,
+						 assoc_q->usage_start,
+						 assoc_q->usage_end);
+		}
+
 		if(row[ASSOC_REQ_USER][0])
 			assoc->user = xstrdup(row[ASSOC_REQ_USER]);
 		assoc->acct = xstrdup(row[ASSOC_REQ_ACCT]);
