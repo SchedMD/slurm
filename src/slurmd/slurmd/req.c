@@ -55,6 +55,7 @@
 #include <utime.h>
 #include <grp.h>
 
+#include "src/common/env.h"
 #include "src/common/hostlist.h"
 #include "src/common/jobacct_common.h"
 #include "src/common/log.h"
@@ -876,6 +877,49 @@ _prolog_error(batch_job_launch_msg_t *req, int rc)
 	close(fd);
 }
 
+/* load the user's environment on this machine if requested
+ * SLURM_GET_USER_ENV environment variable is set */
+static void
+_get_user_env(batch_job_launch_msg_t *req)
+{
+	struct passwd pwd, *pwd_ptr;
+	char *pwd_buf = NULL;
+	char **new_env;
+	size_t buf_size;
+	int i;
+
+	for (i=0; i<req->argc; i++) {
+		if (strcmp(req->environment[0], "SLURM_GET_USER_ENV=1") == 0)
+			break;
+	}
+	if (i >= req->argc)
+		return;		/* don't need to load env */
+
+	buf_size = sysconf(_SC_GETPW_R_SIZE_MAX);
+	pwd_buf = xmalloc(buf_size);
+	if (getpwuid_r(req->uid, &pwd, pwd_buf, buf_size, &pwd_ptr)) {
+		error("getpwuid_r(%u):%m", req->uid);
+	} else {
+		verbose("get env for user %s here", pwd.pw_name);
+		/* Permit up to 120 second delay before using cache file */
+		new_env = env_array_user_default(pwd.pw_name, 120, 0);
+		if (new_env) {
+			env_array_merge(&new_env, 
+					(const char **) req->environment);
+			env_array_free(req->environment);
+			req->environment = new_env;
+			req->envc = envcount(new_env);
+		} else {
+			/* One option is to kill the job, but it's 
+			 * probably better to try running with what 
+			 * we have. */
+			error("Unable to get user's local environment, "
+			      "running only with passed environment");
+		}
+	}
+	xfree(pwd_buf);
+}
+
 static void
 _rpc_batch_job(slurm_msg_t *msg)
 {
@@ -917,13 +961,13 @@ _rpc_batch_job(slurm_msg_t *msg)
 				     SELECT_DATA_BLOCK_ID, 
 				     &bg_part_id);
 
-#ifdef HAVE_BG
 		/* BlueGene prolog waits for partition boot and is very slow.
+		 * On any system we might need to load environment variables
+		 * for Moab (see --get-user-env), which could also be slow.
 		 * Just reply now and send a separate kill job request if the 
 		 * prolog or launch fail. */
 		slurm_send_rc_msg(msg, rc);
 		replied = true;
-#endif
 
 		rc = _run_prolog(req->job_id, req->uid, bg_part_id);
 		xfree(bg_part_id);
@@ -954,6 +998,7 @@ _rpc_batch_job(slurm_msg_t *msg)
 		rc = ESLURMD_CREDENTIAL_REVOKED;     /* job already ran */
 		goto done;
 	}
+	_get_user_env(req);
 
 	slurm_mutex_lock(&launch_mutex);
 	if (req->step_id == SLURM_BATCH_SCRIPT)
