@@ -11,6 +11,9 @@ documents those changes that are of interest to users and admins.
     when the slurmctld is under heavy load.
  -- Fixed bug when adding associations to add correctly.
  -- Added support for associations for user root.
+ -- For Moab, sbatch --get-user-env option processed by slurmd daemon
+    rather than the sbatch command itself to permit faster response
+    for Moab.
 
 * Changes in SLURM 1.3.3
 ========================

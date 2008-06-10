@@ -3,7 +3,8 @@
  *
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2006 The Regents of the University of California.
+ *  Copyright (C) 2006-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Christopher J. Morrone <morrone2@llnl.gov>
  *  LLNL-CODE-402394.
@@ -263,16 +264,9 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 
 	desc->environment = NULL;
 	if (opt.get_user_env_time >= 0) {
-		struct passwd *pw = NULL;
-		pw = getpwuid(opt.uid);
-		if (pw != NULL) {
-			desc->environment = env_array_user_default(
-						pw->pw_name,
-						opt.get_user_env_time,
-						opt.get_user_env_mode);
-			if (desc->environment == NULL)
-				exit(1);	/* error already logged */
-		}
+		desc->environment = env_array_create();
+		env_array_overwrite(&desc->environment,
+				    "SLURM_GET_USER_ENV", "1");
 	}
 	env_array_merge(&desc->environment, (const char **)environ);
 	desc->env_size = envcount (desc->environment);

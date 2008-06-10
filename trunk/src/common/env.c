@@ -1,8 +1,8 @@
 /*****************************************************************************\
  *  src/common/env.c - add an environment variable to environment vector
- *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>, Danny Auble <da@llnl.gov>.
  *  LLNL-CODE-402394.
@@ -78,7 +78,7 @@ strong_alias(env_array_append_fmt,	slurm_env_array_append_fmt);
 strong_alias(env_array_overwrite,	slurm_env_array_overwrite);
 strong_alias(env_array_overwrite_fmt,	slurm_env_array_overwrite_fmt);
 
-#define ENV_BUFSIZE (256 * 1024)
+#define ENV_BUFSIZE (64 * 1024)
 
 /*
  *  Return pointer to `name' entry in environment if found, or
@@ -1275,12 +1275,12 @@ static char **_load_env_cache(const char *username)
 		return NULL;
 	}
 	if (!(fp = fopen(fname, "r"))) {
-		fatal("Could not open user environment cache at %s: %m",
+		error("Could not open user environment cache at %s: %m",
 			fname);
 		return NULL;
 	}
 
-	info("Getting cached environment variables at %s", fname);
+	verbose("Getting cached environment variables at %s", fname);
 	env = env_array_create();
 	while (1) {
 		if (!fgets(line, sizeof(line), fp))
