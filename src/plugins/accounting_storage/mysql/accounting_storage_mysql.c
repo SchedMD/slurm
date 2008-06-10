@@ -4462,11 +4462,13 @@ extern int acct_storage_p_get_usage(mysql_conn_t *mysql_conn,
 
 	char *assoc_req_inx[] = {
 		"t1.id",
-		"SUM(t1.alloc_cpu_secs)"
+		"t1.period_start",
+		"t1.alloc_cpu_secs"
 	};
 	
 	enum {
 		ASSOC_ID,
+		ASSOC_START,
 		ASSOC_ACPU,
 		ASSOC_COUNT
 	};
@@ -4546,7 +4548,8 @@ extern int acct_storage_p_get_usage(mysql_conn_t *mysql_conn,
 		"select %s from %s as t1, %s as t2, %s as t3 "
 		"where (t1.period_start < %d && t1.period_start >= %d) "
 		"&& t1.id=t2.id && t3.id=%u && "
-		"t2.lft between t3.lft and t3.rgt group by t1.id;",
+		"t2.lft between t3.lft and t3.rgt "
+		"order by t1.id, period_start;",
 		tmp, my_usage_table, assoc_table, assoc_table, end, start,
 		acct_assoc->id);
 	xfree(tmp);
@@ -4566,6 +4569,7 @@ extern int acct_storage_p_get_usage(mysql_conn_t *mysql_conn,
 		acct_accounting_rec_t *accounting_rec =
 			xmalloc(sizeof(acct_accounting_rec_t));
 		accounting_rec->assoc_id = atoi(row[ASSOC_ID]);
+		accounting_rec->period_start = atoi(row[ASSOC_START]);
 		accounting_rec->alloc_secs = atoi(row[ASSOC_ACPU]);
 		list_append(acct_assoc->accounting_list, accounting_rec);
 	}
@@ -5009,12 +5013,13 @@ extern int clusteracct_storage_p_get_usage(
 	struct tm end_tm;
 	char *query = NULL;
 	char *cluster_req_inx[] = {
-		"SUM(alloc_cpu_secs)",
-		"SUM(down_cpu_secs)",
-		"SUM(idle_cpu_secs)",
-		"SUM(resv_cpu_secs)",
-		"SUM(over_cpu_secs)",
-		"AVG(cpu_count_secs)"
+		"alloc_cpu_secs",
+		"down_cpu_secs",
+		"idle_cpu_secs",
+		"resv_cpu_secs",
+		"over_cpu_secs",
+		"cpu_count_secs",
+		"period_start"
 	};
 	
 	enum {
@@ -5024,6 +5029,7 @@ extern int clusteracct_storage_p_get_usage(
 		CLUSTER_RCPU,
 		CLUSTER_OCPU,
 		CLUSTER_CPU_COUNT,
+		CLUSTER_START,
 		CLUSTER_COUNT
 	};
 
@@ -5116,7 +5122,7 @@ extern int clusteracct_storage_p_get_usage(
 		cluster_rec->accounting_list =
 			list_create(destroy_cluster_accounting_rec);
 	
-	if((row = mysql_fetch_row(result))) {
+	while((row = mysql_fetch_row(result))) {
 		cluster_accounting_rec_t *accounting_rec =
 			xmalloc(sizeof(cluster_accounting_rec_t));
 		accounting_rec->alloc_secs = atoi(row[CLUSTER_ACPU]);
@@ -5124,6 +5130,8 @@ extern int clusteracct_storage_p_get_usage(
 		accounting_rec->idle_secs = atoi(row[CLUSTER_ICPU]);
 		accounting_rec->over_secs = atoi(row[CLUSTER_OCPU]);
 		accounting_rec->resv_secs = atoi(row[CLUSTER_RCPU]);
+		accounting_rec->cpu_count = atoi(row[CLUSTER_CPU_COUNT]);
+		accounting_rec->period_start = atoi(row[CLUSTER_START]);
 		list_append(cluster_rec->accounting_list, accounting_rec);
 	}
 	mysql_free_result(result);
