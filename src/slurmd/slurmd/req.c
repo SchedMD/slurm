@@ -318,7 +318,9 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	Buf buffer = NULL;
 	slurm_msg_t msg;
 	uid_t uid = (uid_t)-1;
-	struct passwd *pw = NULL;
+	struct passwd pwd, *pwd_ptr;
+	char *pwd_buf;
+	size_t buf_size;
 	gids_t *gids = NULL;
 
 	int rank;
@@ -448,16 +450,19 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	free_buf(buffer);
 	
 	/* send cached group ids array for the relevant uid */
-	debug3("_send_slurmstepd_init: call to getpwuid");
-	if (!(pw = getpwuid(uid))) {
+	debug3("_send_slurmstepd_init: call to getpwuid_r");
+	buf_size = sysconf(_SC_GETPW_R_SIZE_MAX);
+	pwd_buf = xmalloc(buf_size);
+	if (getpwuid_r(uid, &pwd, pwd_buf, buf_size, &pwd_ptr)) {
+		xfree(pwd_buf);
 		error("_send_slurmstepd_init getpwuid: %m");
 		len = 0;
 		safe_write(fd, &len, sizeof(int));
 		return -1;
 	}
-	debug3("_send_slurmstepd_init: return from getpwuid");
+	debug3("_send_slurmstepd_init: return from getpwuid_r");
 
-	if ((gids = _gids_cache_lookup(pw->pw_name, pw->pw_gid))) {
+	if ((gids = _gids_cache_lookup(pwd.pw_name, pwd.pw_gid))) {
 		int i;
 		uint32_t tmp32;
 		safe_write(fd, &gids->ngids, sizeof(int));
@@ -469,6 +474,7 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 		len = 0;
 		safe_write(fd, &len, sizeof(int));
 	}
+	xfree(pwd_buf);
 	return 0;
 
 rwfail:
