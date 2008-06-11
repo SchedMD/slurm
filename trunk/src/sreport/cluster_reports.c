@@ -228,7 +228,8 @@ static int _setup_print_fields_list(List format_list)
 	return SLURM_SUCCESS;
 }
 
-static List _get_cluster_list(int argc, char *argv[], List format_list)
+static List _get_cluster_list(int argc, char *argv[], 
+			      char *report_name, List format_list)
 {
 	acct_cluster_cond_t *cluster_cond = 
 		xmalloc(sizeof(acct_cluster_cond_t));
@@ -243,15 +244,15 @@ static List _get_cluster_list(int argc, char *argv[], List format_list)
 	if(print_fields_have_header) {
 		char start_char[20];
 		char end_char[20];
-		cluster_cond->usage_end-=1;
+		time_t my_end = cluster_cond->usage_end-1;
 		slurm_make_time_str((time_t *)&cluster_cond->usage_start, 
 				    start_char, sizeof(start_char));
-		slurm_make_time_str((time_t *)&cluster_cond->usage_end,
+		slurm_make_time_str(&my_end,
 				    end_char, sizeof(end_char));
 		printf("----------------------------------------"
 		       "----------------------------------------\n");
-		printf("\tCluster Utilization Report %s - %s\n", 
-		       start_char, end_char);
+		printf("\t%s %s - %s\n", 
+		       report_name, start_char, end_char);
 		printf("----------------------------------------"
 		       "----------------------------------------\n");
 	}
@@ -282,7 +283,8 @@ extern int cluster_utilization(int argc, char *argv[])
 		addto_char_list(format_list, "Cl,a,d,i,r,o");
 	
 
-	if(!(cluster_list = _get_cluster_list(argc, argv, format_list))) {
+	if(!(cluster_list = _get_cluster_list(
+		     argc, argv, "Cluster Utilization Report", format_list))) {
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
