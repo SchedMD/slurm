@@ -285,6 +285,7 @@ static int _env_append_fmt (char ***envp, const char *name,
 static char ** _create_environment (struct jobcomp_info *job)
 {
 	char **env;
+	char *tz;
 
 	env = xmalloc (1 * sizeof (*env));
 	env[0] = NULL;
@@ -310,6 +311,8 @@ static char ** _create_environment (struct jobcomp_info *job)
 	else 
 		_env_append_fmt (&env, "LIMIT", "%lu", job->limit);
 
+	if ((tz = getenv ("TZ")))
+		_env_append_fmt (&env, "TZ", "%s", tz);
 #ifdef _PATH_STDPATH
 	_env_append (&env, "PATH", _PATH_STDPATH);
 #else

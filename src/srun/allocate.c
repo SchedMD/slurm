@@ -503,6 +503,8 @@ create_job_step(srun_job_t *job)
 	xstrfmtcat(totalview_jobid, "%u", job->ctx_params.job_id);
 
 	job->ctx_params.node_count = job->nhosts;
+	if (!opt.nprocs_set && (opt.ntasks_per_node != NO_VAL))
+		 opt.nprocs = job->nhosts * opt.ntasks_per_node;
 	job->ctx_params.task_count = opt.nprocs;
 	
 	job->ctx_params.cpu_count = opt.overcommit ? job->ctx_params.node_count
@@ -544,10 +546,10 @@ create_job_step(srun_job_t *job)
 	job->ctx_params.network = opt.network;
 	job->ctx_params.name = opt.job_name;
 	
-	debug("requesting job %d, user %d, nodes %d including (%s)", 
+	debug("requesting job %u, user %u, nodes %u including (%s)", 
 	      job->ctx_params.job_id, job->ctx_params.uid,
 	      job->ctx_params.node_count, job->ctx_params.node_list);
-	debug("cpus %d, tasks %d, name %s, relative %d", 
+	debug("cpus %u, tasks %u, name %s, relative %u", 
 	      job->ctx_params.cpu_count, job->ctx_params.task_count,
 	      job->ctx_params.name, job->ctx_params.relative);
 
