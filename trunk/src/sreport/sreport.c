@@ -37,6 +37,8 @@
 \*****************************************************************************/
 
 #include "src/sreport/sreport.h"
+#include "src/sreport/assoc_reports.h"
+#include "src/sreport/cluster_reports.h"
 #include "src/common/xsignal.h"
 
 #define OPT_LONG_HIDE   0x102
@@ -89,7 +91,7 @@ main (int argc, char *argv[])
 	quiet_flag        = 0;
 	log_init("sacctmgr", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
-	while((opt_char = getopt_long(argc, argv, "hionpqsvV",
+	while((opt_char = getopt_long(argc, argv, "hionpqst:vV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -107,17 +109,20 @@ main (int argc, char *argv[])
 		case (int)'o':
 			one_liner = 1;
 			break;
-/* 		case (int)'n': */
-/* 			have_header = 0; */
-/* 			break; */
-/* 		case (int)'p': */
-/* 			parsable_print = 1; */
-/* 			break; */
+		case (int)'n':
+			print_fields_have_header = 0;
+			break;
+		case (int)'p':
+			print_fields_parsable_print = 1;
+			break;
 		case (int)'q':
 			quiet_flag = 1;
 			break;
 		case (int)'s':
 			with_assoc_flag = 1;
+			break;
+		case (int)'t':
+			_set_time_format(optarg);
 			break;
 		case (int)'v':
 			quiet_flag = -1;
@@ -162,7 +167,6 @@ main (int argc, char *argv[])
 
 	acct_storage_g_close_connection(&db_conn);
 	slurm_acct_storage_fini();
-	printf("\n");
 	exit(exit_code);
 }
 
@@ -327,9 +331,8 @@ _process_command (int argc, char *argv[])
 			fprintf (stderr,
 				 "too few arguments for keyword:%s\n",
 				 argv[0]);
-		}		
-		_set_time_format(argv[1]);
-		quiet_flag = -1;
+		} else		
+			_set_time_format(argv[1]);
 	} else if (strncasecmp (argv[0], "verbose", 4) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
@@ -346,6 +349,8 @@ _process_command (int argc, char *argv[])
 				 argv[0]);
 		}		
 		_print_version();
+	} else if ((strncasecmp (argv[0], "cu", 2) == 0)) {
+		cluster_utilization((argc - 1), &argv[1]);
 	} else {
 		exit_code = 1;
 		fprintf (stderr, "invalid keyword: %s\n", argv[0]);
@@ -360,10 +365,6 @@ static int _set_time_format(char *format)
 		time_format = SREPORT_TIME_SECS_PER;
 	} else if (strncasecmp (format, "Sec", 1) == 0) {
 		time_format = SREPORT_TIME_SECS;
-	} else if (strncasecmp (format, "FormattedPer", 12) == 0) {
-		time_format = SREPORT_TIME_FORMATTED_PER;
-	} else if (strncasecmp (format, "Formatted", 1) == 0) {
-		time_format = SREPORT_TIME_FORMATTED;
 	} else if (strncasecmp (format, "Percent", 1) == 0) {
 		time_format = SREPORT_TIME_PERCENT;
 	} else {

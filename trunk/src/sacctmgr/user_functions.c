@@ -37,7 +37,6 @@
 \*****************************************************************************/
 
 #include "src/sacctmgr/sacctmgr.h"
-#include "src/sacctmgr/print.h"
 
 static int _set_cond(int *start, int argc, char *argv[],
 		     acct_user_cond_t *user_cond,
@@ -745,72 +744,72 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 			field->type = PRINT_ACCOUNT;
 			field->name = xstrdup("Account");
 			field->len = 10;
-			field->print_routine = print_str;
+			field->print_routine = print_fields_str;
 		} else if(!strncasecmp("AdminLevel", object, 2)) {
 			field->type = PRINT_ADMIN;
 			field->name = xstrdup("Admin");
 			field->len = 9;
-			field->print_routine = print_str;
+			field->print_routine = print_fields_str;
 		} else if(!strncasecmp("Cluster", object, 1)) {
 			field->type = PRINT_CLUSTER;
 			field->name = xstrdup("Cluster");
 			field->len = 10;
-			field->print_routine = print_str;
+			field->print_routine = print_fields_str;
 		} else if(!strncasecmp("Default", object, 1)) {
 			field->type = PRINT_DACCT;
 			field->name = xstrdup("Def Acct");
 			field->len = 10;
-			field->print_routine = print_str;
+			field->print_routine = print_fields_str;
 		} else if(!strncasecmp("FairShare", object, 1)) {
 			field->type = PRINT_FAIRSHARE;
 			field->name = xstrdup("FairShare");
 			field->len = 9;
-			field->print_routine = print_uint;
+			field->print_routine = print_fields_uint;
 		} else if(!strncasecmp("ID", object, 1)) {
 			field->type = PRINT_ID;
 			field->name = xstrdup("ID");
 			field->len = 6;
-			field->print_routine = print_uint;
+			field->print_routine = print_fields_uint;
 		} else if(!strncasecmp("MaxCPUSecs", object, 4)) {
 			field->type = PRINT_MAXC;
 			field->name = xstrdup("MaxCPUSecs");
 			field->len = 11;
-			field->print_routine = print_uint;
+			field->print_routine = print_fields_uint;
 		} else if(!strncasecmp("MaxJobs", object, 4)) {
 			field->type = PRINT_MAXJ;
 			field->name = xstrdup("MaxJobs");
 			field->len = 7;
-			field->print_routine = print_uint;
+			field->print_routine = print_fields_uint;
 		} else if(!strncasecmp("MaxNodes", object, 4)) {
 			field->type = PRINT_MAXN;
 			field->name = xstrdup("MaxNodes");
 			field->len = 8;
-			field->print_routine = print_uint;
+			field->print_routine = print_fields_uint;
 		} else if(!strncasecmp("MaxWall", object, 4)) {
 			field->type = PRINT_MAXW;
 			field->name = xstrdup("MaxWall");
 			field->len = 11;
-			field->print_routine = print_time;
+			field->print_routine = print_fields_time;
 		} else if(!strncasecmp("QOS", object, 1)) {
 			field->type = PRINT_QOS;
 			field->name = xstrdup("QOS");
 			field->len = 9;
-			field->print_routine = print_str;
+			field->print_routine = print_fields_str;
 		} else if(!strncasecmp("ParentID", object, 7)) {
 			field->type = PRINT_PID;
 			field->name = xstrdup("Par ID");
 			field->len = 6;
-			field->print_routine = print_uint;
+			field->print_routine = print_fields_uint;
 		} else if(!strncasecmp("Partition", object, 4)) {
 			field->type = PRINT_PART;
 			field->name = xstrdup("Partition");
 			field->len = 10;
-			field->print_routine = print_str;
+			field->print_routine = print_fields_str;
 		} else if(!strncasecmp("User", object, 1)) {
 			field->type = PRINT_USER;
 			field->name = xstrdup("User");
 			field->len = 10;
-			field->print_routine = print_str;
+			field->print_routine = print_fields_str;
 		} else {
 			printf("Unknown field '%s'\n", object);
 			xfree(field);
@@ -822,7 +821,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 
 	itr = list_iterator_create(user_list);
 	itr2 = list_iterator_create(print_fields_list);
-	print_header(print_fields_list);
+	print_fields_header(print_fields_list);
 
 	while((user = list_next(itr))) {
 		if(user->assoc_list && list_count(user->assoc_list)) {
@@ -1018,8 +1017,6 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 			printf("\n");
 		}
 	}
-
-	printf("\n");
 
 	list_iterator_destroy(itr2);
 	list_iterator_destroy(itr);

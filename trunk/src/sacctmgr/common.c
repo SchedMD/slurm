@@ -174,68 +174,6 @@ extern void addto_char_list(List char_list, char *names)
 	list_iterator_destroy(itr);
 } 
 
-extern void destroy_sacctmgr_action(void *object)
-{
-	sacctmgr_action_t *action = (sacctmgr_action_t *)object;
-	
-	if(action) {
-		if(action->list)
-			list_destroy(action->list);
-			
-		switch(action->type) {
-		case SACCTMGR_ACTION_NOTSET:
-		case SACCTMGR_USER_CREATE:
-		case SACCTMGR_ACCOUNT_CREATE:
-		case SACCTMGR_CLUSTER_CREATE:
-		case SACCTMGR_ASSOCIATION_CREATE:
-			/* These only have a list so there isn't
-			 * anything else to free 
-			 */
-			break;
-		case SACCTMGR_USER_MODIFY:
-			destroy_acct_user_rec(action->rec);
-			destroy_acct_user_cond(action->cond);
-			break;
-		case SACCTMGR_USER_DELETE:
-			destroy_acct_user_cond(action->cond);
-			break;
-		case SACCTMGR_ACCOUNT_MODIFY:
-			destroy_acct_account_rec(action->rec);
-			destroy_acct_account_cond(action->cond);
-			break;
-		case SACCTMGR_ACCOUNT_DELETE:
-			destroy_acct_account_cond(action->cond);
-			break;
-		case SACCTMGR_CLUSTER_MODIFY:
-			destroy_acct_cluster_rec(action->rec);
-			destroy_acct_cluster_cond(action->cond);
-			break;
-		case SACCTMGR_CLUSTER_DELETE:
-			destroy_acct_cluster_cond(action->cond);
-			break;
-		case SACCTMGR_ASSOCIATION_MODIFY:
-			destroy_acct_association_rec(action->rec);
-			destroy_acct_association_cond(action->cond);
-			break;
-		case SACCTMGR_ASSOCIATION_DELETE:
-			destroy_acct_association_cond(action->cond);
-			break;
-		case SACCTMGR_COORD_CREATE:
-			xfree(action->rec);
-			destroy_acct_user_cond(action->cond);
-			break;
-		case SACCTMGR_COORD_DELETE:
-			xfree(action->rec);
-			destroy_acct_user_cond(action->cond);
-			break;	
-		default:
-			error("unknown action %d", action->type);
-			break;
-		}
-		xfree(action);
-	}
-}
-
 extern int notice_thread_init()
 {
 	pthread_attr_t attr;
@@ -603,3 +541,4 @@ extern int get_uint(char *in_value, uint32_t *out_value, char *type)
 		*out_value = (uint32_t) num;
 	return SLURM_SUCCESS;
 }
+

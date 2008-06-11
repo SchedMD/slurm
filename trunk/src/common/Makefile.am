@@ -49,6 +49,7 @@ libcommon_la_SOURCES = 			\
 	parse_spec.c parse_spec.h	\
 	plugin.c plugin.h		\
 	plugrack.c plugrack.h		\
+	print_fields.c print_fields.h	\
 	read_config.c read_config.h	\
 	node_select.c node_select.h	\
 	env.c env.h      		\
