@@ -188,8 +188,12 @@ plugin_load_and_link(const char *type_name, int n_syms,
 			so_name[i] = '_';
 		i++;
 	}
-	dir_array = slurm_get_plugin_dir();
-
+	if(!(dir_array = slurm_get_plugin_dir())) {
+		error("plugin_load_and_link: No plugin dir given");
+		xfree(so_name);
+		return plug;
+	}
+	
 	head = dir_array;
 	i=0;
 	for (i=0; ; i++) {

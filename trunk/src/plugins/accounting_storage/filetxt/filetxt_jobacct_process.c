@@ -299,6 +299,7 @@ static jobacct_job_rec_t *_create_jobacct_job_rec(
 	jobacct_job->priority = filetxt_job->priority;
 	jobacct_job->requid = filetxt_job->requid;
 	memcpy(&jobacct_job->sacct, &filetxt_job->sacct, sizeof(sacct_t));
+	jobacct_job->show_full = filetxt_job->show_full;
 	jobacct_job->start = filetxt_job->header.timestamp -
 		jobacct_job->elapsed;
 	jobacct_job->state = filetxt_job->status;

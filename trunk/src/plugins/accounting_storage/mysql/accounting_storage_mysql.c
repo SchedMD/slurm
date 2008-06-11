@@ -185,26 +185,6 @@ static int _move_account(mysql_conn_t *mysql_conn, uint32_t lft, uint32_t rgt,
 			 char *cluster,
 			 char *id, char *parent)
 {
-/*
-  tested sql...
-
-  SELECT @parLeft := lft from assoc_table where cluster='name' && acct='new parent' && user='';
-
-  SELECT @oldLeft := lft, @oldRight := rgt, @myWidth := (rgt - lft + 1), @myDiff := (@parLeft+1) - lft FROM assoc_table WHERE id = 'account id';
-
-  update assoc_table set deleted = deleted + 2, lft = lft + @myDiff, rgt = rgt + @myDiff WHERE lft BETWEEN @oldLeft AND @oldRight;
-
-  UPDATE assoc_table SET rgt = rgt + @myWidth WHERE rgt > @parLeft && deleted < 2;
-  UPDATE assoc_table SET lft = lft + @myWidth WHERE lft > @parLeft && deleted < 2;
-
-  UPDATE assoc_table SET rgt = rgt - @myWidth WHERE (@myDiff < 0 && rgt > @oldRight && deleted < 2) || (@myDiff >= 0 && rgt > @oldLeft);
-  UPDATE assoc_table SET lft = lft - @myWidth WHERE (@myDiff < 0 && lft > @oldRight && deleted < 2) || (@myDiff >= 0 && lft > @oldLeft);
-
-  update assoc_table set deleted = deleted - 2 WHERE deleted > 1;
-	   
-  update assoc_table set parent_acct='new parent' where id = 'account id';
-
-*/
 	int rc = SLURM_SUCCESS;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
