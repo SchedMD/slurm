@@ -91,6 +91,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Invalid MPI plugin name"                             },
 	{ SLURM_MPI_PLUGIN_PRELAUNCH_SETUP_FAILED,
 	  "MPI plugin's pre-launch setup failed"                },
+	{ "SLURM_PLUGIN_NAME_INVALID",
+	  "Plugin initialization failed"			},
 
 	/* communication failures to/from slurmctld */
 	{ SLURMCTLD_COMMUNICATIONS_CONNECTION_ERROR,

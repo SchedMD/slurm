@@ -1,9 +1,8 @@
 /*****************************************************************************\
  *  step_launch.c - launch a parallel job step
- *
- *  $Id$
  *****************************************************************************
- *  Copyright (C) 2006 The Regents of the University of California.
+ *  Copyright (C) 2006-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Christopher J. Morrone <morrone2@llnl.gov>
  *  LLNL-CODE-402394.
@@ -741,10 +740,18 @@ _launch_handler(struct step_launch_state *sls, slurm_msg_t *resp)
 
 	pthread_mutex_lock(&sls->lock);
 
-	for (i = 0; i < msg->count_of_pids; i++) {
-		bit_set(sls->tasks_started, msg->task_ids[i]);
+	if (msg->return_code) {
+		for (i = 0; i < msg->count_of_pids; i++) {
+			error("task %u launch failed: %s", 
+			      msg->task_ids[i], 
+			      slurm_strerror(msg->return_code));
+			bit_set(sls->tasks_started, msg->task_ids[i]);
+			bit_set(sls->tasks_exited, msg->task_ids[i]);
+		}
+	} else {
+		for (i = 0; i < msg->count_of_pids; i++)
+			bit_set(sls->tasks_started, msg->task_ids[i]);
 	}
-
 	if (sls->callback.task_start != NULL)
 		(sls->callback.task_start)(msg);
 
@@ -770,7 +777,7 @@ _exit_handler(struct step_launch_state *sls, slurm_msg_t *exit_msg)
 	pthread_mutex_lock(&sls->lock);
 
 	for (i = 0; i < msg->num_tasks; i++) {
-		debug("task %d done", msg->task_id_list[i]);
+		debug("task %u done", msg->task_id_list[i]);
 		bit_set(sls->tasks_exited, msg->task_id_list[i]);
 	}
 

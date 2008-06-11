@@ -3,6 +3,7 @@
  *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  LLNL-CODE-402394.
@@ -669,10 +670,13 @@ job_manager(slurmd_job_t *job)
 	 */
 	if (switch_init() != SLURM_SUCCESS
 	    || slurmd_task_init() != SLURM_SUCCESS
-	    || mpi_hook_slurmstepd_init(&job->env) != SLURM_SUCCESS
 	    || slurm_proctrack_init() != SLURM_SUCCESS
 	    || slurm_jobacct_gather_init() != SLURM_SUCCESS) {
-		rc = SLURM_FAILURE;
+		rc = SLURM_PLUGIN_NAME_INVALID;
+		goto fail1;
+	}
+	if (mpi_hook_slurmstepd_init(&job->env) != SLURM_SUCCESS) {
+		rc = SLURM_MPI_PLUGIN_NAME_INVALID;
 		goto fail1;
 	}
 	

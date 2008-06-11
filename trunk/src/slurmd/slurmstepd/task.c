@@ -1,8 +1,8 @@
 /*****************************************************************************\
  *  slurmd/slurmstepd/task.c - task launching functions for slurmstepd
- *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark A. Grondona <mgrondona@llnl.gov>.
  *  LLNL-CODE-402394.
@@ -266,7 +266,7 @@ _build_path(char* fname, char **prog_env)
 	return file_path;
 }
 
-static void
+static int
 _setup_mpi(slurmd_job_t *job, int ltaskid)
 {
 	mpi_plugin_task_info_t info[1];
@@ -282,7 +282,7 @@ _setup_mpi(slurmd_job_t *job, int ltaskid)
 	info->self = job->envtp->self;
 	info->client = job->envtp->cli;
 		
-	mpi_hook_slurmstepd_task(info, &job->env);
+	return mpi_hook_slurmstepd_task(info, &job->env);
 }
 
 
@@ -374,8 +374,12 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 			exit(1);
 		}
 
-		_setup_mpi(job, i);
-	
+		if (_setup_mpi(job, i) != SLURM_SUCCESS) {
+			error("Unable to configure MPI plugin: %m");
+			log_fini();
+			exit(1);
+		}
+
 		pdebug_stop_current(job);
 	}
 
