@@ -50,12 +50,14 @@ int one_liner;		/* one record per line if =1 */
 int quiet_flag;		/* quiet=1, verbose=-1, normal=0 */
 int rollback_flag;       /* immediate execute=1, else = 0 */
 int with_assoc_flag = 0;
+sreport_time_format_t time_format = SREPORT_TIME_SECS;
 void *db_conn = NULL;
 uint32_t my_uid = 0;
 
 static int	_get_command (int *argc, char *argv[]);
 static void     _print_version( void );
 static int	_process_command (int argc, char *argv[]);
+static int      _set_time_format(char *format);
 static void	_usage ();
 
 int 
@@ -319,6 +321,15 @@ _process_command (int argc, char *argv[])
 				 argv[0]);
 		}
 		exit_flag = 1;
+	} else if (strncasecmp (argv[0], "time", 1) == 0) {
+		if (argc < 2) {
+			exit_code = 1;
+			fprintf (stderr,
+				 "too few arguments for keyword:%s\n",
+				 argv[0]);
+		}		
+		_set_time_format(argv[1]);
+		quiet_flag = -1;
 	} else if (strncasecmp (argv[0], "verbose", 4) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
@@ -342,6 +353,27 @@ _process_command (int argc, char *argv[])
 		
 	return 0;
 }
+
+static int _set_time_format(char *format)
+{
+	if (strncasecmp (format, "SecPer", 6) == 0) {
+		time_format = SREPORT_TIME_SECS_PER;
+	} else if (strncasecmp (format, "Sec", 1) == 0) {
+		time_format = SREPORT_TIME_SECS;
+	} else if (strncasecmp (format, "FormattedPer", 12) == 0) {
+		time_format = SREPORT_TIME_FORMATTED_PER;
+	} else if (strncasecmp (format, "Formatted", 1) == 0) {
+		time_format = SREPORT_TIME_FORMATTED;
+	} else if (strncasecmp (format, "Percent", 1) == 0) {
+		time_format = SREPORT_TIME_PERCENT;
+	} else {
+		fprintf (stderr, "unknown time format %s", format);	
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+}
+
 
 /* _usage - show the valid sreport commands */
 void _usage () {
