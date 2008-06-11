@@ -85,4 +85,14 @@
 #define CKPT_WAIT	10
 #define	MAX_INPUT_FIELDS 128
 
+typedef enum {
+	SREPORT_TIME_SECS,
+	SREPORT_TIME_PERCENT,
+	SREPORT_TIME_FORMATTED,
+	SREPORT_TIME_SECS_PER,
+	SREPORT_TIME_FORMATTED_PER
+} sreport_time_format_t;
+
+extern sreport_time_format_t time_format;
+
 #endif /* HAVE_SREPORT_H */
