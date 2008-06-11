@@ -39,7 +39,6 @@
 \*****************************************************************************/
 
 #include "src/sacctmgr/sacctmgr.h"
-#include "src/sacctmgr/print.h"
 #include "src/common/xsignal.h"
 
 #define OPT_LONG_HIDE   0x102
@@ -143,10 +142,10 @@ main (int argc, char *argv[])
 			one_liner = 1;
 			break;
 		case (int)'n':
-			have_header = 0;
+			print_fields_have_header = 0;
 			break;
 		case (int)'p':
-			parsable_print = 1;
+			print_fields_parsable_print = 1;
 			break;
 		case (int)'q':
 			quiet_flag = 1;
@@ -197,7 +196,6 @@ main (int argc, char *argv[])
 
 	acct_storage_g_close_connection(&db_conn);
 	slurm_acct_storage_fini();
-	printf("\n");
 	exit(exit_code);
 }
 
@@ -1168,55 +1166,55 @@ static void _load_file (int argc, char *argv[])
 
 	admin_field.name = "Admin";
 	admin_field.len = 9;
-	admin_field.print_routine = print_str;
+	admin_field.print_routine = print_fields_str;
 
 	name_field.name = "Name";
 	name_field.len = 10;
-	name_field.print_routine = print_str;
+	name_field.print_routine = print_fields_str;
 		
 	parent_field.name = "Parent";
 	parent_field.len = 10;
-	parent_field.print_routine = print_str;
+	parent_field.print_routine = print_fields_str;
 	
 	acct_field.name = "Account";
 	acct_field.len = 10;
-	acct_field.print_routine = print_str;
+	acct_field.print_routine = print_fields_str;
 	
 	dacct_field.name = "Def Acct";
 	dacct_field.len = 10;
-	dacct_field.print_routine = print_str;
+	dacct_field.print_routine = print_fields_str;
 	
 	desc_field.name = "Descr";
 	desc_field.len = 10;
-	desc_field.print_routine = print_str;
+	desc_field.print_routine = print_fields_str;
 	
 	org_field.name = "Org";
 	org_field.len = 10;
-	org_field.print_routine = print_str;
+	org_field.print_routine = print_fields_str;
 	
 	qos_field.name = "QOS";
 	qos_field.len = 9;
-	qos_field.print_routine = print_str;
+	qos_field.print_routine = print_fields_str;
 	
 	fs_field.name = "FairShare";
 	fs_field.len = 10;
-	fs_field.print_routine = print_uint;
+	fs_field.print_routine = print_fields_uint;
 
 	mc_field.name = "MaxCPUSecs";
 	mc_field.len = 10;
-	mc_field.print_routine = print_uint;
+	mc_field.print_routine = print_fields_uint;
 
 	mj_field.name = "MaxJobs";
 	mj_field.len = 7;
-	mj_field.print_routine = print_uint;
+	mj_field.print_routine = print_fields_uint;
 
 	mn_field.name = "MaxNodes";
 	mn_field.len = 8;
-	mn_field.print_routine = print_uint;
+	mn_field.print_routine = print_fields_uint;
 
 	mw_field.name = "MaxWall";
 	mw_field.len = 7;
-	mw_field.print_routine = print_time;
+	mw_field.print_routine = print_fields_time;
 		
 	START_TIMER;
 	if(rc == SLURM_SUCCESS && list_count(acct_list)) {
@@ -1228,17 +1226,17 @@ static void _load_file (int argc, char *argv[])
 		list_append(print_fields_list, &org_field);
 		list_append(print_fields_list, &qos_field);
 
-		print_header(print_fields_list);
+		print_fields_header(print_fields_list);
 
 		itr = list_iterator_create(acct_list);
 		while((acct = list_next(itr))) {
-			print_str(SLURM_PRINT_VALUE, &name_field, 
+			print_fields_str(SLURM_PRINT_VALUE, &name_field, 
 				  acct->name);
-			print_str(SLURM_PRINT_VALUE, &desc_field, 
+			print_fields_str(SLURM_PRINT_VALUE, &desc_field, 
 				  acct->description);
-			print_str(SLURM_PRINT_VALUE, &org_field, 
+			print_fields_str(SLURM_PRINT_VALUE, &org_field, 
 				  acct->organization);
-			print_str(SLURM_PRINT_VALUE, &qos_field, 
+			print_fields_str(SLURM_PRINT_VALUE, &qos_field, 
 				  acct_qos_str(acct->qos));
 			printf("\n");
 		}
@@ -1261,23 +1259,24 @@ static void _load_file (int argc, char *argv[])
 		list_append(print_fields_list, &mn_field);
 		list_append(print_fields_list, &mw_field);
 
-		print_header(print_fields_list);
+		print_fields_header(print_fields_list);
 		
 		itr = list_iterator_create(acct_assoc_list);
 		while((assoc = list_next(itr))) {
-			print_str(SLURM_PRINT_VALUE, &name_field, assoc->acct);
-			print_str(SLURM_PRINT_VALUE, &parent_field, 
-				  assoc->parent_acct);
-			print_uint(SLURM_PRINT_VALUE, &fs_field, 
-				   assoc->fairshare);
-			print_uint(SLURM_PRINT_VALUE, &mc_field, 
-				   assoc->max_cpu_secs_per_job);
-			print_uint(SLURM_PRINT_VALUE, &mj_field, 
-				   assoc->max_jobs);
-			print_uint(SLURM_PRINT_VALUE, &mn_field, 
-				   assoc->max_nodes_per_job);
-			print_time(SLURM_PRINT_VALUE, &mw_field,
-				   assoc->max_wall_duration_per_job);
+			print_fields_str(SLURM_PRINT_VALUE, &name_field,
+					 assoc->acct);
+			print_fields_str(SLURM_PRINT_VALUE, &parent_field, 
+					 assoc->parent_acct);
+			print_fields_uint(SLURM_PRINT_VALUE, &fs_field, 
+					  assoc->fairshare);
+			print_fields_uint(SLURM_PRINT_VALUE, &mc_field, 
+					  assoc->max_cpu_secs_per_job);
+			print_fields_uint(SLURM_PRINT_VALUE, &mj_field, 
+					  assoc->max_jobs);
+			print_fields_uint(SLURM_PRINT_VALUE, &mn_field, 
+					  assoc->max_nodes_per_job);
+			print_fields_time(SLURM_PRINT_VALUE, &mw_field,
+					  assoc->max_wall_duration_per_job);
 			printf("\n");
 		}
 		list_iterator_destroy(itr);
@@ -1297,17 +1296,19 @@ static void _load_file (int argc, char *argv[])
 		list_append(print_fields_list, &qos_field);
 		list_append(print_fields_list, &admin_field);
 
-		print_header(print_fields_list);
+		print_fields_header(print_fields_list);
 
 		itr = list_iterator_create(user_list);
 		while((acct = list_next(itr))) {
-			print_str(SLURM_PRINT_VALUE, &name_field, user->name);
-			print_str(SLURM_PRINT_VALUE, &dacct_field, 
-				  user->default_acct);
-			print_str(SLURM_PRINT_VALUE, &qos_field, 
-				  acct_qos_str(user->qos));
-			print_str(SLURM_PRINT_VALUE, &admin_field,
-				  acct_admin_level_str(user->admin_level));
+			print_fields_str(SLURM_PRINT_VALUE, &name_field,
+					 user->name);
+			print_fields_str(SLURM_PRINT_VALUE, &dacct_field, 
+					 user->default_acct);
+			print_fields_str(SLURM_PRINT_VALUE, &qos_field, 
+					 acct_qos_str(user->qos));
+			print_fields_str(SLURM_PRINT_VALUE, &admin_field,
+					 acct_admin_level_str(
+						 user->admin_level));
 			printf("\n");
 		}
 		list_iterator_destroy(itr);
@@ -1330,21 +1331,23 @@ static void _load_file (int argc, char *argv[])
 		list_append(print_fields_list, &mn_field);
 		list_append(print_fields_list, &mw_field);
 
-		print_header(print_fields_list);
+		print_fields_header(print_fields_list);
 		
 		itr = list_iterator_create(user_assoc_list);
 		while((assoc = list_next(itr))) {
-			print_str(SLURM_PRINT_VALUE, &name_field, assoc->user);
-			print_str(SLURM_PRINT_VALUE, &acct_field, assoc->acct);
-			print_uint(SLURM_PRINT_VALUE, &fs_field, 
+			print_fields_str(SLURM_PRINT_VALUE, &name_field,
+					 assoc->user);
+			print_fields_str(SLURM_PRINT_VALUE, &acct_field,
+					 assoc->acct);
+			print_fields_uint(SLURM_PRINT_VALUE, &fs_field, 
 				   assoc->fairshare);
-			print_uint(SLURM_PRINT_VALUE, &mc_field, 
+			print_fields_uint(SLURM_PRINT_VALUE, &mc_field, 
 				   assoc->max_cpu_secs_per_job);
-			print_uint(SLURM_PRINT_VALUE, &mj_field, 
+			print_fields_uint(SLURM_PRINT_VALUE, &mj_field, 
 				   assoc->max_jobs);
-			print_uint(SLURM_PRINT_VALUE, &mn_field, 
+			print_fields_uint(SLURM_PRINT_VALUE, &mn_field, 
 				   assoc->max_nodes_per_job);
-			print_uint(SLURM_PRINT_VALUE, &mw_field,
+			print_fields_uint(SLURM_PRINT_VALUE, &mw_field,
 				   assoc->max_wall_duration_per_job);
 			printf("\n");
 		}

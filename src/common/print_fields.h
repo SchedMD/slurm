@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  print.h - definitions for all printing functions.
+ *  printfields.h - definitions for all printing functions.
  *****************************************************************************
  *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Copyright (C) 2002-2007 The Regents of the University of California.
@@ -35,8 +35,8 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
-#ifndef __SACCTMGR_PRINT_H__
-#define __SACCTMGR_PRINT_H__
+#ifndef __PRINT_FIELDS_H__
+#define __PRINT_FIELDS_H__
 
 #if HAVE_CONFIG_H
 #  include "config.h"
@@ -63,9 +63,9 @@
 
 #include <slurm/slurm.h>
 
+#include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/slurm_accounting_storage.h"
-#include "src/common/jobacct_common.h"
+#include "src/common/list.h"
 
 typedef enum {
 	SLURM_PRINT_HEADLINE,
@@ -80,14 +80,16 @@ typedef struct {
 	uint16_t type; /* defined in the local function */
 } print_field_t;
 
-extern int parsable_print;
-extern int have_header;
+extern int print_fields_parsable_print;
+extern int print_fields_have_header;
 
 extern void destroy_print_field(void *object);
-extern void print_header(List print_fields_list);
-extern void print_date(void);
-extern void print_str(type_t type, print_field_t *field, char *value);
-extern void print_uint(type_t type, print_field_t *field, uint32_t value);
-extern void print_time(type_t type, print_field_t *field, uint32_t value);
+extern void print_fields_header(List print_fields_list);
+extern void print_fields_date(void);
+extern void print_fields_str(type_t type, print_field_t *field, char *value);
+extern void print_fields_uint(type_t type, print_field_t *field,
+			      uint32_t value);
+extern void print_fields_time(type_t type, print_field_t *field,
+			      uint32_t value);
 
 #endif

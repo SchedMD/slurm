@@ -70,7 +70,8 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am_sreport_OBJECTS = sreport.$(OBJEXT)
+am_sreport_OBJECTS = sreport.$(OBJEXT) cluster_reports.$(OBJEXT) \
+	assoc_reports.$(OBJEXT) common.$(OBJEXT)
 sreport_OBJECTS = $(am_sreport_OBJECTS)
 am__DEPENDENCIES_1 =
 sreport_DEPENDENCIES = $(top_builddir)/src/common/libcommon.o \
@@ -266,7 +267,10 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir)
 sreport_SOURCES = \
-	sreport.c sreport.h	
+	sreport.c sreport.h \
+	cluster_reports.c cluster_reports.h \
+	assoc_reports.c assoc_reports.h	\
+	common.c
 
 sreport_LDADD = \
 	$(top_builddir)/src/common/libcommon.o -ldl \
@@ -345,6 +349,9 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/assoc_reports.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cluster_reports.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/common.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sreport.Po@am__quote@
 
 .c.o:

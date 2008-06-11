@@ -10,7 +10,7 @@ sreport_SOURCES =	\
 	sreport.c sreport.h \
 	cluster_reports.c cluster_reports.h \
 	assoc_reports.c assoc_reports.h	\
-	common.c common.h
+	common.c
 
 sreport_LDADD =  \
 	$(top_builddir)/src/common/libcommon.o -ldl \

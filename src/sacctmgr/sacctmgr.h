@@ -81,36 +81,10 @@
 #include "src/common/parse_time.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/xstring.h"
+#include "src/common/print_fields.h"
 
 #define CKPT_WAIT	10
 #define	MAX_INPUT_FIELDS 128
-
-typedef enum {
-	SACCTMGR_ACTION_NOTSET,
-	SACCTMGR_USER_CREATE,
-	SACCTMGR_USER_MODIFY,
-	SACCTMGR_USER_DELETE,
-	SACCTMGR_ACCOUNT_CREATE,
-	SACCTMGR_ACCOUNT_MODIFY,
-	SACCTMGR_ACCOUNT_DELETE,
-	SACCTMGR_CLUSTER_CREATE,
-	SACCTMGR_CLUSTER_MODIFY,
-	SACCTMGR_CLUSTER_DELETE,
-	SACCTMGR_ASSOCIATION_CREATE,
-	SACCTMGR_ASSOCIATION_MODIFY,
-	SACCTMGR_ASSOCIATION_DELETE,
-	SACCTMGR_COORD_CREATE,
-	SACCTMGR_COORD_DELETE
-} sacctmgr_action_type_t;
-
-typedef struct {
-	sacctmgr_action_type_t type;
-	void *cond; /* if the action has a condition typecast to an
-		     * account_*_cond_t * */
-	void *rec; /* if the action has a record typecast to an
-		    * account_*_rec_t * or char * for type COORD */
-	List list; /* if the action has a list */
-} sacctmgr_action_t;
 
 extern char *command_name;
 extern int exit_code;	/* sacctmgr's exit code, =1 on any error at any time */
