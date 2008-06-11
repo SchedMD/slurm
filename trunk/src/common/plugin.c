@@ -207,6 +207,7 @@ plugin_load_and_link(const char *type_name, int n_syms,
 		file_name = xstrdup_printf("%s/%s", head, so_name);
 		debug3("Trying to load plugin %s", file_name);
 		if ((stat(file_name, &st) < 0) || (!S_ISREG(st.st_mode))) {
+			debug4("No Good.");
 			xfree(file_name);
 		} else {
 			plug = plugin_load_from_file(file_name);
