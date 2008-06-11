@@ -615,15 +615,17 @@ _step_req_create(srun_job_t *j)
 	}
 	r->cpu_count  = opt.overcommit ? r->node_count
 		                       : (opt.nprocs*opt.cpus_per_task);
+	if (!opt.nprocs_set && (opt.ntasks_per_node != NO_VAL))
+		opt.nprocs = r->node_count * opt.ntasks_per_node;
 	r->num_tasks  = opt.nprocs;
 	r->node_list  = xstrdup(opt.nodelist);
 	r->network    = xstrdup(opt.network);
 	r->name       = xstrdup(opt.job_name);
 	r->relative   = (uint16_t)opt.relative;
 	r->overcommit = opt.overcommit ? 1 : 0;
-	debug("requesting job %d, user %d, nodes %d including (%s)", 
+	debug("requesting job %u, user %u, nodes %u including (%s)", 
 	      r->job_id, r->user_id, r->node_count, r->node_list);
-	debug("cpus %d, tasks %d, name %s, relative %d", 
+	debug("cpus %u, tasks %u, name %s, relative %u", 
 	      r->cpu_count, r->num_tasks, r->name, r->relative);
 	
 	switch (opt.distribution) {

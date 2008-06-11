@@ -13,6 +13,9 @@ documents those changes that are of interest to users and admins.
     that were hidden from it via the HidePartitionJobs in Slurm's wiki.conf.
  -- In select/cons_res improve the resource selection when a job has specified
     a processor count along with a maximum node count.
+ -- For an srun command with --ntasks-per-node option and *no* --ntasks count,
+    spawn a task count equal to the number of nodes selected multipled by the 
+    --ntasks-per-node value.
 
 * Changes in SLURM 1.2.30
 =========================
