@@ -78,7 +78,7 @@ strong_alias(env_array_append_fmt,	slurm_env_array_append_fmt);
 strong_alias(env_array_overwrite,	slurm_env_array_overwrite);
 strong_alias(env_array_overwrite_fmt,	slurm_env_array_overwrite_fmt);
 
-#define ENV_BUFSIZE (64 * 1024)
+#define ENV_BUFSIZE (256 * 1024)
 
 /*
  *  Return pointer to `name' entry in environment if found, or
@@ -168,15 +168,16 @@ int
 setenvfs(const char *fmt, ...)
 {
 	va_list ap;
-	char buf[ENV_BUFSIZE];
-	char *bufcpy;
+	char *buf, *bufcpy;
 	int rc;
 
+	buf = xmalloc(ENV_BUFSIZE);
 	va_start(ap, fmt);
 	vsnprintf(buf, sizeof(buf), fmt, ap);
 	va_end(ap);
 	
 	bufcpy = xstrdup(buf);
+	buf = xmalloc(ENV_BUFSIZE);
 	rc = putenv(bufcpy);
 	return rc;
 }
@@ -184,17 +185,18 @@ setenvfs(const char *fmt, ...)
 int 
 setenvf(char ***envp, const char *name, const char *fmt, ...)
 {
-	char buf[ENV_BUFSIZE];
 	char **ep = NULL;
 	char *str = NULL;
 	va_list ap;
 	int rc;
-	char *bufcpy;
+	char *buf, *bufcpy;
 
+	buf = xmalloc(ENV_BUFSIZE);
 	va_start(ap, fmt);
 	vsnprintf (buf, sizeof(buf), fmt, ap);
 	va_end(ap);
 	bufcpy = xstrdup(buf);
+	xfree(buf);
 	
 	xstrfmtcat (str, "%s=%s", name, bufcpy);
 	xfree(bufcpy);
@@ -978,30 +980,28 @@ char **env_array_create(void)
 int env_array_append_fmt(char ***array_ptr, const char *name,
 			 const char *value_fmt, ...)
 {
-	char buf[ENV_BUFSIZE];
+	char *buf;
 	char **ep = NULL;
 	char *str = NULL;
 	va_list ap;
 
-	buf[0] = '\0';
-	if (array_ptr == NULL) {
+	if (array_ptr == NULL)
 		return 0;
-	}
 
-	if (*array_ptr == NULL) {
+	if (*array_ptr == NULL)
 		*array_ptr = env_array_create();
-	}
 
+	ep = _find_name_in_env(*array_ptr, name);
+	if (*ep != NULL)
+		return 0;
+
+	buf = xmalloc(ENV_BUFSIZE);
 	va_start(ap, value_fmt);
 	vsnprintf (buf, sizeof(buf), value_fmt, ap);
 	va_end(ap);
-	
-	ep = _find_name_in_env(*array_ptr, name);
-	if (*ep != NULL) {
-		return 0;
-	}
 
 	xstrfmtcat (str, "%s=%s", name, buf);
+	xfree(buf);
 	ep = _extend_env(array_ptr);
 	*ep = str;
 	
@@ -1021,18 +1021,15 @@ int env_array_append(char ***array_ptr, const char *name,
 	char **ep = NULL;
 	char *str = NULL;
 
-	if (array_ptr == NULL) {
+	if (array_ptr == NULL)
 		return 0;
-	}
 
-	if (*array_ptr == NULL) {
+	if (*array_ptr == NULL)
 		*array_ptr = env_array_create();
-	}
 
 	ep = _find_name_in_env(*array_ptr, name);
-	if (*ep != NULL) {
+	if (*ep != NULL)
 		return 0;
-	}
 
 	xstrfmtcat (str, "%s=%s", name, value);
 	ep = _extend_env(array_ptr);
@@ -1054,25 +1051,25 @@ int env_array_append(char ***array_ptr, const char *name,
 int env_array_overwrite_fmt(char ***array_ptr, const char *name,
 			    const char *value_fmt, ...)
 {
-	char buf[ENV_BUFSIZE];
+	char *buf;
 	char **ep = NULL;
 	char *str = NULL;
 	va_list ap;
 
 	buf[0] = '\0';
-	if (array_ptr == NULL) {
+	if (array_ptr == NULL)
 		return 0;
-	}
 
-	if (*array_ptr == NULL) {
+	if (*array_ptr == NULL)
 		*array_ptr = env_array_create();
-	}
 
+	buf = xmalloc(ENV_BUFSIZE);
 	va_start(ap, value_fmt);
 	vsnprintf (buf, sizeof(buf), value_fmt, ap);
 	va_end(ap);
 	
 	xstrfmtcat (str, "%s=%s", name, buf);
+	xfree(buf);
 	ep = _find_name_in_env(*array_ptr, name);
 	if (*ep != NULL) {
 		xfree (*ep);
@@ -1188,16 +1185,17 @@ static int _env_array_entry_splitter(const char *entry,
  */
 static int _env_array_putenv(const char *string)
 {
-	char name[256];
-	char value[ENV_BUFSIZE];
+	int rc = 0;
+	char name[256], *value;
 
-	if (!_env_array_entry_splitter(string, name, sizeof(name),
-				       value, sizeof(value)))
-		return 0;
-	if (setenv(name, value, 1) == -1)
-		return 0;
-	
-	return 1;
+	value = xmalloc(ENV_BUFSIZE);
+	if ((_env_array_entry_splitter(string, name, sizeof(name),
+				       value, ENV_BUFSIZE)) &&
+	    (setenv(name, value, 1) != -1))
+		rc = 1;
+
+	xfree(value);
+	return rc;
 }
 
 /*
@@ -1224,17 +1222,18 @@ void env_array_set_environment(char **env_array)
 void env_array_merge(char ***dest_array, const char **src_array)
 {
 	char **ptr;
-	char name[256];
-	char value[ENV_BUFSIZE];
+	char name[256], *value;
 
 	if (src_array == NULL)
 		return;
 
+	value = xmalloc(ENV_BUFSIZE);
 	for (ptr = (char **)src_array; *ptr != NULL; ptr++) {
 		if (_env_array_entry_splitter(*ptr, name, sizeof(name),
 					      value, sizeof(value)))
 			env_array_overwrite(dest_array, name, value);
 	}
+	xfree(value);
 }
 
 /*
@@ -1261,7 +1260,7 @@ static void _strip_cr_nl(char *line)
 static char **_load_env_cache(const char *username)
 {
 	char *state_save_loc, fname[MAXPATHLEN];
-	char line[ENV_BUFSIZE], name[256], value[ENV_BUFSIZE];
+	char *line, name[256], *value;
 	char **env = NULL;
 	FILE *fp;
 	int i;
@@ -1282,6 +1281,8 @@ static char **_load_env_cache(const char *username)
 
 	verbose("Getting cached environment variables at %s", fname);
 	env = env_array_create();
+	line  = xmalloc(ENV_BUFSIZE);
+	value = xmalloc(ENV_BUFSIZE);
 	while (1) {
 		if (!fgets(line, sizeof(line), fp))
 			break;
@@ -1291,6 +1292,9 @@ static char **_load_env_cache(const char *username)
 		    (!_discard_env(name, value)))
 			env_array_overwrite(&env, name, value);
 	}
+	xfree(line);
+	xfree(value);
+
 	fclose(fp);
 	return env;
 }
@@ -1313,8 +1317,7 @@ static char **_load_env_cache(const char *username)
  */
 char **env_array_user_default(const char *username, int timeout, int mode)
 {
-	char *line = NULL, *last = NULL, name[128], value[ENV_BUFSIZE];
-	char buffer[ENV_BUFSIZE];
+	char *line = NULL, *last = NULL, name[128], *value, *buffer;
 	char **env = NULL;
 	char *starttoken = "XXXXSLURMSTARTPARSINGHEREXXXX";
 	char *stoptoken  = "XXXXSLURMSTOPPARSINGHEREXXXXX";
@@ -1396,7 +1399,7 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 		timeout = config_timeout;	/* != 0 test above */
 	found = 0;
 	buf_read = 0;
-	bzero(buffer, sizeof(buffer));
+	buffer = xmalloc(ENV_BUFSIZE);
 	while (1) {
 		gettimeofday(&now, NULL);
 		timeleft = timeout * 1000;
@@ -1428,7 +1431,7 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 			}
 			break;
 		}
-		buf_rem = sizeof(buffer) - buf_read;
+		buf_rem = ENV_BUFSIZE - buf_read;
 		if (buf_rem == 0) {
 			error("buffer overflow loading env vars");
 			break;
@@ -1447,6 +1450,7 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 	close(fildes[0]);
 	if (!found) {
 		error("Failed to load current user environment variables");
+		xfree(buffer);
 		return _load_env_cache(username);
 	}
 
@@ -1463,6 +1467,7 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 	}
 	if (!found) {
 		error("Failed to get current user environment variables");
+		xfree(buffer);
 		return _load_env_cache(username);
 	}
 
@@ -1471,17 +1476,20 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 	found = 0;
 	env = env_array_create();
 	line = strtok_r(NULL, "\n", &last);
+	value = xmalloc(ENV_BUFSIZE);
 	while (!found && line) {
 		if (!strncmp(line, stoptoken, len)) {
 			found = 1;
 			break;
 		}
 		if (_env_array_entry_splitter(line, name, sizeof(name), 
-					      value, sizeof(value)) &&
+					      value, ENV_BUFSIZE) &&
 		    (!_discard_env(name, value)))
 			env_array_overwrite(&env, name, value);
 		line = strtok_r(NULL, "\n", &last);
 	}
+	xfree(value);
+	xfree(buffer);
 	if (!found) {
 		error("Failed to get all user environment variables");
 		env_array_free(env);
