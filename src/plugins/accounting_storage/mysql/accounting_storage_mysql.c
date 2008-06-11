@@ -5023,7 +5023,7 @@ extern int clusteracct_storage_p_get_usage(
 		"idle_cpu_secs",
 		"resv_cpu_secs",
 		"over_cpu_secs",
-		"cpu_count_secs",
+		"cpu_count",
 		"period_start"
 	};
 	

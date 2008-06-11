@@ -476,19 +476,9 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			if(query) {
 				xstrfmtcat(query, 
 					   ", (%d, %d, '%s', %d, %d, "
-					   "%d, %d, %d, %d, %d) "
-					   "on duplicate key update "
-					   "mod_time=%d, cpu_count=%d, "
-					   "alloc_cpu_secs=%d, "
-					   "down_cpu_secs=%d, "
-					   "idle_cpu_secs=%d, "
-					   "over_cpu_secs=%d, resv_cpu_secs=%d",
+					   "%d, %d, %d, %d, %d)",
 					   now, now, 
 					   c_usage->name, c_usage->start, 
-					   c_usage->cpu_count, c_usage->a_cpu,
-					   c_usage->d_cpu, c_usage->i_cpu,
-					   c_usage->o_cpu, c_usage->r_cpu,
-					   now, 
 					   c_usage->cpu_count, c_usage->a_cpu,
 					   c_usage->d_cpu, c_usage->i_cpu,
 					   c_usage->o_cpu, c_usage->r_cpu); 
@@ -500,24 +490,23 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					   "down_cpu_secs, idle_cpu_secs, "
 					   "over_cpu_secs, resv_cpu_secs) "
 					   "values (%d, %d, '%s', %d, %d, "
-					   "%d, %d, %d, %d, %d) "
-					   "on duplicate key update "
-					   "mod_time=%d, cpu_count=%d, "
-					   "alloc_cpu_secs=%d, "
-					   "down_cpu_secs=%d, "
-					   "idle_cpu_secs=%d, "
-					   "over_cpu_secs=%d, resv_cpu_secs=%d",
+					   "%d, %d, %d, %d, %d)",
 					   cluster_hour_table, now, now, 
 					   c_usage->name, c_usage->start, 
-					   c_usage->cpu_count, c_usage->a_cpu,
-					   c_usage->d_cpu, c_usage->i_cpu,
-					   c_usage->o_cpu, c_usage->r_cpu,
-					   now,
 					   c_usage->cpu_count, c_usage->a_cpu,
 					   c_usage->d_cpu, c_usage->i_cpu,
 					   c_usage->o_cpu, c_usage->r_cpu); 
 			}
 		}
+		xstrfmtcat(query, 
+			   " on duplicate key update "
+			   "mod_time=%d, cpu_count=VALUES(cpu_count), "
+			   "alloc_cpu_secs=VALUES(alloc_cpu_secs), "
+			   "down_cpu_secs=VALUES(down_cpu_secs), "
+			   "idle_cpu_secs=VALUES(idle_cpu_secs), "
+			   "over_cpu_secs=VALUES(over_cpu_secs), "
+			   "resv_cpu_secs=VALUES(resv_cpu_secs)",
+			   now);
 		if(query) {
 			rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
 			xfree(query);
@@ -534,29 +523,26 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 /* 			     a_usage->a_cpu); */
 			if(query) {
 				xstrfmtcat(query, 
-					   ", (%d, %d, %d, %d, %d, "
-					   "%d, %d, %d, %d) "
-					   "on duplicate key update "
-					   "mod_time=%d, alloc_cpu_secs=%d",
+					   ", (%d, %d, %d, %d, %d)",
 					   now, now, 
 					   a_usage->assoc_id, curr_start,
-					   a_usage->a_cpu,
-					   now, a_usage->a_cpu); 
+					   a_usage->a_cpu); 
 			} else {
 				xstrfmtcat(query, 
 					   "insert into %s (creation_time, "
 					   "mod_time, id, period_start, "
 					   "alloc_cpu_secs) values "
-					   "(%d, %d, %d, %d, %d) "
-					   "on duplicate key update "
-					   "mod_time=%d, alloc_cpu_secs=%d",
+					   "(%d, %d, %d, %d, %d)",
 					   assoc_hour_table, now, now, 
 					   a_usage->assoc_id, curr_start,
-					   a_usage->a_cpu,
-					   now, a_usage->a_cpu); 
+					   a_usage->a_cpu); 
 			}
 		}
-		
+		xstrfmtcat(query, 
+			   " on duplicate key update "
+			   "mod_time=%d, alloc_cpu_secs=VALUES(alloc_cpu_secs)",
+			   now);
+					   	
 		if(query) {
 			debug3("%d query\n%s", mysql_conn->conn, query);
 			rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
