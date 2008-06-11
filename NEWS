@@ -16,6 +16,7 @@ documents those changes that are of interest to users and admins.
  -- For an srun command with --ntasks-per-node option and *no* --ntasks count,
     spawn a task count equal to the number of nodes selected multipled by the 
     --ntasks-per-node value.
+ -- In jobcomp/script: Set TZ if set in slurmctld's environment.
 
 * Changes in SLURM 1.2.30
 =========================
