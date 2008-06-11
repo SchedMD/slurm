@@ -1056,7 +1056,6 @@ int env_array_overwrite_fmt(char ***array_ptr, const char *name,
 	char *str = NULL;
 	va_list ap;
 
-	buf[0] = '\0';
 	if (array_ptr == NULL)
 		return 0;
 
