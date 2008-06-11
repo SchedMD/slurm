@@ -1,7 +1,8 @@
 /*****************************************************************************\
  * plugin.h - plugin architecture implementation.
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Jay Windley <jwindley@lnxi.com>.
  *  LLNL-CODE-402394.
@@ -195,7 +196,6 @@ plugin_load_and_link(const char *type_name, int n_syms,
 	}
 	
 	head = dir_array;
-	i=0;
 	for (i=0; ; i++) {
 		bool got_colon = 0;
 		if (dir_array[i] == ':') {
@@ -208,17 +208,17 @@ plugin_load_and_link(const char *type_name, int n_syms,
 		debug3("Trying to load plugin %s", file_name);
 		if ((stat(file_name, &st) < 0) || (!S_ISREG(st.st_mode))) {
 			xfree(file_name);
-			continue;
+		} else {
+			plug = plugin_load_from_file(file_name);
+			xfree(file_name);
+			if (plugin_get_syms(plug, n_syms, names, ptrs) >= 
+			    n_syms) {
+				debug3("Success.");
+				break;
+			} else 
+				plug = PLUGIN_INVALID_HANDLE;
 		}
-		
-		plug = plugin_load_from_file(file_name);
-		xfree(file_name);
-		if (plugin_get_syms(plug, n_syms, names, ptrs) >= n_syms) {
-			debug3("Success.");
-			break;
-		} else 
-			plug = PLUGIN_INVALID_HANDLE;
-		
+
 		if (got_colon) {
 			head = dir_array + i + 1;
 		} else 
