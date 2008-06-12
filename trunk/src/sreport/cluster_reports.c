@@ -172,49 +172,49 @@ static int _setup_print_fields_list(List format_list)
 			field->type = PRINT_CLUSTER_ACPU;
 			field->name = xstrdup("Allocated");
 			if(time_format == SREPORT_TIME_SECS_PER)
-				field->len = 20;
+				field->len = 18;
 			else
-				field->len = 12;
+				field->len = 10;
 			field->print_routine = sreport_print_time;
 		} else if(!strncasecmp("down", object, 1)) {
 			field->type = PRINT_CLUSTER_DCPU;
 			field->name = xstrdup("Down");
 			if(time_format == SREPORT_TIME_SECS_PER)
-				field->len = 20;
+				field->len = 18;
 			else
-				field->len = 12;
+				field->len = 10;
 			field->print_routine = sreport_print_time;
 		} else if(!strncasecmp("idle", object, 1)) {
 			field->type = PRINT_CLUSTER_ICPU;
 			field->name = xstrdup("Idle");
 			if(time_format == SREPORT_TIME_SECS_PER)
-				field->len = 20;
+				field->len = 18;
 			else
-				field->len = 12;
-			field->print_routine = sreport_print_time;
-		} else if(!strncasecmp("reserved", object, 1)) {
-			field->type = PRINT_CLUSTER_RCPU;
-			field->name = xstrdup("Reserved");
-			if(time_format == SREPORT_TIME_SECS_PER)
-				field->len = 20;
-			else
-				field->len = 12;
+				field->len = 10;
 			field->print_routine = sreport_print_time;
 		} else if(!strncasecmp("overcommited", object, 1)) {
 			field->type = PRINT_CLUSTER_OCPU;
 			field->name = xstrdup("Over Comm");
 			if(time_format == SREPORT_TIME_SECS_PER)
-				field->len = 20;
+				field->len = 18;
 			else
-				field->len = 12;
+				field->len = 10;
 			field->print_routine = sreport_print_time;
-		} else if(!strncasecmp("total", object, 1)) {
+		} else if(!strncasecmp("reported", object, 3)) {
 			field->type = PRINT_CLUSTER_TOTAL;
-			field->name = xstrdup("Total Time");
+			field->name = xstrdup("Reported");
 			if(time_format == SREPORT_TIME_SECS_PER)
-				field->len = 20;
+				field->len = 18;
 			else
-				field->len = 12;
+				field->len = 10;
+			field->print_routine = sreport_print_time;
+		} else if(!strncasecmp("reserved", object, 3)) {
+			field->type = PRINT_CLUSTER_RCPU;
+			field->name = xstrdup("Reserved");
+			if(time_format == SREPORT_TIME_SECS_PER)
+				field->len = 18;
+			else
+				field->len = 10;
 			field->print_routine = sreport_print_time;
 		} else {
 			printf("Unknown field '%s'\n", object);
@@ -228,7 +228,7 @@ static int _setup_print_fields_list(List format_list)
 	return SLURM_SUCCESS;
 }
 
-static List _get_cluster_list(int argc, char *argv[], 
+static List _get_cluster_list(int argc, char *argv[], uint64_t *total_time,
 			      char *report_name, List format_list)
 {
 	acct_cluster_cond_t *cluster_cond = 
@@ -251,11 +251,13 @@ static List _get_cluster_list(int argc, char *argv[],
 				    end_char, sizeof(end_char));
 		printf("----------------------------------------"
 		       "----------------------------------------\n");
-		printf("\t%s %s - %s\n", 
-		       report_name, start_char, end_char);
+		printf("  %s %s - %s (%d secs)\n", 
+		       report_name, start_char, end_char, 
+		       (cluster_cond->usage_end - cluster_cond->usage_start));
 		printf("----------------------------------------"
 		       "----------------------------------------\n");
 	}
+	(*total_time) = cluster_cond->usage_end - cluster_cond->usage_start;
 	destroy_acct_cluster_cond(cluster_cond);
 	
 	if(!cluster_list) 
@@ -273,6 +275,7 @@ extern int cluster_utilization(int argc, char *argv[])
 	acct_cluster_rec_t *cluster = NULL;
 
 	print_field_t *field = NULL;
+	uint64_t total_time = 0;
 
 	List cluster_list = NULL;
 	List format_list = list_create(slurm_destroy_char);
@@ -280,11 +283,12 @@ extern int cluster_utilization(int argc, char *argv[])
 	print_fields_list = list_create(destroy_print_field);
 
 	if(!list_count(format_list)) 
-		addto_char_list(format_list, "Cl,a,d,i,r,o");
+		addto_char_list(format_list, "Cl,a,d,i,res,o,rep");
 	
 
 	if(!(cluster_list = _get_cluster_list(
-		     argc, argv, "Cluster Utilization Report", format_list))) {
+		     argc, argv, &total_time, 
+		     "Cluster Utilization Report", format_list))) {
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
@@ -299,7 +303,7 @@ extern int cluster_utilization(int argc, char *argv[])
 	while((cluster = list_next(itr))) {
 		cluster_accounting_rec_t *accting = NULL;
 		cluster_accounting_rec_t total_acct;
-		uint32_t total_time = 0;
+		uint64_t total_reported = 0;
 
 		if(!cluster->accounting_list
 		   || !list_count(cluster->accounting_list))
@@ -319,8 +323,8 @@ extern int cluster_utilization(int argc, char *argv[])
 		list_iterator_destroy(itr3);
 
 		total_acct.cpu_count /= list_count(cluster->accounting_list);
-
-		total_time = total_acct.alloc_secs + total_acct.down_secs 
+		total_time *= total_acct.cpu_count;
+		total_reported = total_acct.alloc_secs + total_acct.down_secs 
 			+ total_acct.idle_secs + total_acct.resv_secs;
 
 		while((field = list_next(itr2))) {
@@ -339,36 +343,36 @@ extern int cluster_utilization(int argc, char *argv[])
 				field->print_routine(SLURM_PRINT_VALUE,
 						     field,
 						     total_acct.alloc_secs,
-						     total_time);
+						     total_reported);
 				break;
 			case PRINT_CLUSTER_DCPU:
 				field->print_routine(SLURM_PRINT_VALUE,
 						     field,
 						     total_acct.down_secs,
-						     total_time);
+						     total_reported);
 				break;
 			case PRINT_CLUSTER_ICPU:
 				field->print_routine(SLURM_PRINT_VALUE,
 						     field,
 						     total_acct.idle_secs,
-						     total_time);
+						     total_reported);
 				break;
 			case PRINT_CLUSTER_RCPU:
 				field->print_routine(SLURM_PRINT_VALUE,
 						     field,
 						     total_acct.resv_secs,
-						     total_time);
+						     total_reported);
 				break;
 			case PRINT_CLUSTER_OCPU:
 					field->print_routine(SLURM_PRINT_VALUE,
 						     field,
 						     total_acct.over_secs,
-						     total_time);
+						     total_reported);
 				break;
 			case PRINT_CLUSTER_TOTAL:
 				field->print_routine(SLURM_PRINT_VALUE,
 						     field,
-						     total_time,
+						     total_reported,
 						     total_time);
 				break;
 			default:

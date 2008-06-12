@@ -87,9 +87,12 @@ extern void destroy_print_field(void *object);
 extern void print_fields_header(List print_fields_list);
 extern void print_fields_date(void);
 extern void print_fields_str(type_t type, print_field_t *field, char *value);
-extern void print_fields_uint(type_t type, print_field_t *field,
-			      uint32_t value);
+extern void print_fields_uint32(type_t type, print_field_t *field,
+				uint32_t value);
+extern void print_fields_uint64(type_t type, print_field_t *field,
+				uint64_t value);
 extern void print_fields_time(type_t type, print_field_t *field,
 			      uint32_t value);
 
+#define print_fields_uint print_fields_uint32
 #endif

@@ -40,7 +40,7 @@
 #include "sreport.h"
 
 extern void sreport_print_time(type_t type, print_field_t *field,
-			       uint32_t value, uint32_t total_time)
+			       uint64_t value, uint64_t total_time)
 {
 	if(!total_time)
 		total_time = 1;
@@ -66,25 +66,25 @@ extern void sreport_print_time(type_t type, print_field_t *field,
 				printf("%-*s ", field->len, " ");
 		} else {
 			char *output = NULL;
-			float percent = (float)value;
+			double percent = (double)value;
 			
 			switch(time_format) {
 			case SREPORT_TIME_SECS:
-				output = xstrdup_printf("%u", value);
+				output = xstrdup_printf("%llu", value);
 				break;
 			case SREPORT_TIME_PERCENT:
 				percent /= total_time;
 				percent *= 100;
-				output = xstrdup_printf("%.2f%%", percent);
+				output = xstrdup_printf("%.2lf%%", percent);
 				break; 
 			case SREPORT_TIME_SECS_PER:
-				percent /= (float)total_time;
+				percent /= total_time;
 				percent *= 100;
-				output = xstrdup_printf("%u(%.2f%%)",
+				output = xstrdup_printf("%llu(%.2lf%%)",
 							value, percent);
 				break;
 			default:
-				output = xstrdup_printf("%u", value);
+				output = xstrdup_printf("%llu", value);
 				break;
 			}
 

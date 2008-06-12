@@ -498,16 +498,17 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					   c_usage->o_cpu, c_usage->r_cpu); 
 			}
 		}
-		xstrfmtcat(query, 
-			   " on duplicate key update "
-			   "mod_time=%d, cpu_count=VALUES(cpu_count), "
-			   "alloc_cpu_secs=VALUES(alloc_cpu_secs), "
-			   "down_cpu_secs=VALUES(down_cpu_secs), "
-			   "idle_cpu_secs=VALUES(idle_cpu_secs), "
-			   "over_cpu_secs=VALUES(over_cpu_secs), "
-			   "resv_cpu_secs=VALUES(resv_cpu_secs)",
-			   now);
+
 		if(query) {
+			xstrfmtcat(query, 
+				   " on duplicate key update "
+				   "mod_time=%d, cpu_count=VALUES(cpu_count), "
+				   "alloc_cpu_secs=VALUES(alloc_cpu_secs), "
+				   "down_cpu_secs=VALUES(down_cpu_secs), "
+				   "idle_cpu_secs=VALUES(idle_cpu_secs), "
+				   "over_cpu_secs=VALUES(over_cpu_secs), "
+				   "resv_cpu_secs=VALUES(resv_cpu_secs)",
+				   now);
 			rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
 			xfree(query);
 			if(rc != SLURM_SUCCESS) {
@@ -538,12 +539,13 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					   a_usage->a_cpu); 
 			}
 		}
-		xstrfmtcat(query, 
-			   " on duplicate key update "
-			   "mod_time=%d, alloc_cpu_secs=VALUES(alloc_cpu_secs)",
-			   now);
-					   	
 		if(query) {
+			xstrfmtcat(query, 
+				   " on duplicate key update "
+				   "mod_time=%d, "
+				   "alloc_cpu_secs=VALUES(alloc_cpu_secs)",
+				   now);
+					   	
 			debug3("%d query\n%s", mysql_conn->conn, query);
 			rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
 			xfree(query);

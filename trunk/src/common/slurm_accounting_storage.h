@@ -112,7 +112,7 @@ typedef struct {
 } acct_account_rec_t;
 
 typedef struct {
-	uint32_t alloc_secs; /* number of cpu seconds allocated */
+	uint64_t alloc_secs; /* number of cpu seconds allocated */
 	uint32_t assoc_id;	/* association ID		*/
 	time_t period_start; 
 } acct_accounting_rec_t;
@@ -218,13 +218,13 @@ typedef struct {
 } shares_used_object_t;
 
 typedef struct {
-	uint32_t alloc_secs; /* number of cpu seconds allocated */
+	uint64_t alloc_secs; /* number of cpu seconds allocated */
 	uint32_t cpu_count; /* number of cpus during time period */
-	uint32_t down_secs; /* number of cpu seconds down */
-	uint32_t idle_secs; /* number of cpu seconds idle */
-	uint32_t over_secs; /* number of cpu seconds overcommitted */
+	uint64_t down_secs; /* number of cpu seconds down */
+	uint64_t idle_secs; /* number of cpu seconds idle */
+	uint64_t over_secs; /* number of cpu seconds overcommitted */
 	time_t period_start; /* when this record was started */
-	uint32_t resv_secs; /* number of cpu seconds reserved */	
+	uint64_t resv_secs; /* number of cpu seconds reserved */	
 } cluster_accounting_rec_t;
 
 extern void destroy_acct_user_rec(void *object);

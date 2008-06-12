@@ -757,23 +757,23 @@ extern void pack_cluster_accounting_rec(void *in, Buf buffer)
 	cluster_accounting_rec_t *object = (cluster_accounting_rec_t *)in;
 	
 	if(!object) {
+		pack64(0, buffer);
 		pack32(0, buffer);
-		pack32(0, buffer);
-		pack32(0, buffer);
-		pack32(0, buffer);
-		pack32(0, buffer);
+		pack64(0, buffer);
+		pack64(0, buffer);
+		pack64(0, buffer);
 		pack_time(0, buffer);
-		pack32(0, buffer);
+		pack64(0, buffer);
 		return;
 	}
 
- 	pack32(object->alloc_secs, buffer);
+ 	pack64(object->alloc_secs, buffer);
 	pack32(object->cpu_count, buffer);
-	pack32(object->down_secs, buffer);
-	pack32(object->idle_secs, buffer);
-	pack32(object->over_secs, buffer);
+	pack64(object->down_secs, buffer);
+	pack64(object->idle_secs, buffer);
+	pack64(object->over_secs, buffer);
 	pack_time(object->period_start, buffer);
-	pack32(object->resv_secs, buffer);
+	pack64(object->resv_secs, buffer);
 }
 
 extern int unpack_cluster_accounting_rec(void **object, Buf buffer)
@@ -782,13 +782,13 @@ extern int unpack_cluster_accounting_rec(void **object, Buf buffer)
 		xmalloc(sizeof(cluster_accounting_rec_t));
 	
 	*object = object_ptr;
-	safe_unpack32(&object_ptr->alloc_secs, buffer);
+	safe_unpack64(&object_ptr->alloc_secs, buffer);
 	safe_unpack32(&object_ptr->cpu_count, buffer);
-	safe_unpack32(&object_ptr->down_secs, buffer);
-	safe_unpack32(&object_ptr->idle_secs, buffer);
-	safe_unpack32(&object_ptr->over_secs, buffer);
+	safe_unpack64(&object_ptr->down_secs, buffer);
+	safe_unpack64(&object_ptr->idle_secs, buffer);
+	safe_unpack64(&object_ptr->over_secs, buffer);
 	safe_unpack_time(&object_ptr->period_start, buffer);
-	safe_unpack32(&object_ptr->resv_secs, buffer);
+	safe_unpack64(&object_ptr->resv_secs, buffer);
 	
 	return SLURM_SUCCESS;
 
@@ -885,13 +885,13 @@ extern void pack_acct_accounting_rec(void *in, Buf buffer)
 	acct_accounting_rec_t *object = (acct_accounting_rec_t *)in;
 	
 	if(!object) {
-		pack32(0, buffer);
+		pack64(0, buffer);
 		pack32(0, buffer);
 		pack_time(0, buffer);
 		return;
 	}
 
-	pack32(object->alloc_secs, buffer);
+	pack64(object->alloc_secs, buffer);
 	pack32(object->assoc_id, buffer);
 	pack_time(object->period_start, buffer);
 }
@@ -902,7 +902,7 @@ extern int unpack_acct_accounting_rec(void **object, Buf buffer)
 		xmalloc(sizeof(acct_accounting_rec_t));
 	
 	*object = object_ptr;
-	safe_unpack32(&object_ptr->alloc_secs, buffer);
+	safe_unpack64(&object_ptr->alloc_secs, buffer);
 	safe_unpack32(&object_ptr->assoc_id, buffer);
 	safe_unpack_time(&object_ptr->period_start, buffer);
 
