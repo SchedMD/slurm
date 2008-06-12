@@ -406,7 +406,7 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
      !!                       Repeat the last command entered.             \n\
                                                                            \n\
                                                                            \n\
-  All commands entitys, and options are case-insensitive.               \n\n");
+  All commands, entities, and options are case-insensitive.              \n\n");
 	
 }
 
