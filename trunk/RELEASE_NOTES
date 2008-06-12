@@ -181,6 +181,11 @@ ACCOUNTING CHANGES
   accounting reports are currently under development and will be released 
   soon.
 
+* A new command, sreport, is available for generating accounting reports.
+  While the sacct command can be used to generate information about 
+  individual jobs, sreport can combine this data to report utilization 
+  information by cluster, bank account, user, etc. 
+
 * Job completion records can now be written to a MySQL or PostGreSQL
   database in addition to a test file as controlled using the JobCompType
   parameter.
