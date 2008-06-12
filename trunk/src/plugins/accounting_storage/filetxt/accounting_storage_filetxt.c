@@ -819,7 +819,7 @@ extern List jobacct_storage_p_get_jobs_cond(void *db_conn,
 	params.opt_uid = -1;
 
 	if(job_cond->cluster_list && list_count(job_cond->cluster_list)) {
-		params.cluster = list_pop(job_cond->cluster_list);
+		params.opt_cluster = list_pop(job_cond->cluster_list);
 	}
 	if(job_cond->user_list && list_count(job_cond->user_list)) {
 		char *user = list_pop(job_cond->user_list);
@@ -832,8 +832,8 @@ extern List jobacct_storage_p_get_jobs_cond(void *db_conn,
 	return filetxt_jobacct_process_get_jobs(job_cond->step_list, 
 						job_cond->partition_list,
 						&params);
-	if(params.cluster)
-		xfree(params.cluster);
+	if(params.opt_cluster)
+		xfree(params.opt_cluster);
 }
 
 /* 

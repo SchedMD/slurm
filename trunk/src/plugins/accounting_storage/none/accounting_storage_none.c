@@ -331,8 +331,7 @@ extern List jobacct_storage_p_get_jobs(void *db_conn,
  * returns List of jobacct_job_rec_t *
  * note List needs to be freed when called
  */
-extern List jobacct_storage_p_get_jobs_cond(void *db_conn,
-					    sacct_job_cond_t *job_cond)
+extern List jobacct_storage_p_get_jobs_cond(void *db_conn, void *job_cond)
 {
 	return NULL;
 }
