@@ -1186,6 +1186,41 @@ extern List jobacct_storage_p_get_jobs(void *db_conn,
 }
 
 /* 
+ * get info from the storage 
+ * returns List of job_rec_t *
+ * note List needs to be freed when called
+ */
+extern List jobacct_storage_p_get_jobs_cond(void *db_conn,
+					    acct_job_cond_t *job_cond)
+{
+	slurmdbd_msg_t req, resp;
+	dbd_cond_msg_t get_msg;
+	dbd_list_msg_t *got_msg;
+	int rc;
+	List job_list = NULL;
+		
+	get_msg.cond = job_cond;
+
+	req.msg_type = DBD_GET_JOBS_COND;
+	req.data = &get_msg;
+	rc = slurm_send_recv_slurmdbd_msg(&req, &resp);
+
+	if (rc != SLURM_SUCCESS)
+		error("slurmdbd: DBD_GET_JOBS_COND failure: %m");
+	else if (resp.msg_type != DBD_GOT_JOBS) {
+		error("slurmdbd: response type not DBD_GOT_JOBS: %u", 
+		      resp.msg_type);
+	} else {
+		got_msg = (dbd_list_msg_t *) resp.data;
+		job_list = got_msg->my_list;
+		got_msg->my_list = NULL;
+		slurmdbd_free_list_msg(got_msg);
+	}
+
+	return job_list;
+}
+
+/* 
  * Expire old info from the storage
  * Not applicable for any database
  */

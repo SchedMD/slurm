@@ -1125,10 +1125,9 @@ void do_list(void)
 		do_jobsteps = 0;
 	itr = list_iterator_create(jobs);
 	while((job = list_next(itr))) {
-		/* FIX ME: this should be handled while getting the
-		   data, not afterwards.
+		/* This is really handled when we got the data except
+		   for the filetxt plugin so keep it here.
 		*/
-
 		if (params.opt_uid >= 0 && (job->uid != params.opt_uid))
 			continue;
 		if (params.opt_gid >= 0 && (job->gid != params.opt_gid))

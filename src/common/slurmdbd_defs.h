@@ -99,7 +99,7 @@ typedef enum {
 	DBD_RC,			/* Return code from operation		*/
 	DBD_REGISTER_CTLD,	/* Register a slurmctld's comm port	*/
 	DBD_REMOVE_ACCOUNTS,    /* Remove existing account              */
-	DBD_REMOVE_ACCOUNT_COORDS,/* Remove existing coordinatior from
+	DBD_REMOVE_ACCOUNT_COORDS,/* Remove existing coordinator from
 				   * an account */
 	DBD_REMOVE_ASSOCS,      /* Remove existing association          */
 	DBD_REMOVE_CLUSTERS,    /* Remove existing cluster              */
@@ -107,7 +107,8 @@ typedef enum {
 	DBD_ROLL_USAGE,         /* Roll up usage                        */
 	DBD_STEP_COMPLETE,	/* Record step completion		*/
 	DBD_STEP_START,		/* Record step starting			*/
-	DBD_UPDATE_SHARES_USED	/* Record current share usage		*/
+	DBD_UPDATE_SHARES_USED,	/* Record current share usage		*/
+	DBD_GET_JOBS_COND 	/* Get job information with a condition */
 } slurmdbd_msg_type_t;
 
 /*****************************************************************************\

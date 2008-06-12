@@ -5675,7 +5675,57 @@ extern int jobacct_storage_p_suspend(mysql_conn_t *mysql_conn,
 extern List jobacct_storage_p_get_jobs(mysql_conn_t *mysql_conn, 
 				       List selected_steps,
 				       List selected_parts,
-				       void *params)
+				       sacct_parameters_t *params)
+{
+	List job_list = NULL;
+#ifdef HAVE_MYSQL
+	acct_job_cond_t job_cond;
+	struct passwd *pw = NULL;
+
+	if(!mysql_conn) {
+		error("We need a connection to run this");
+		return NULL;
+	} else if(!mysql_conn->acct_mysql_db
+		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
+		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
+					   mysql_db_name, mysql_db_info)
+			   != SLURM_SUCCESS) {
+			error("unable to re-connect to mysql database");
+			return NULL;
+		}
+	}
+	memset(&job_cond, 0, sizeof(acct_job_cond_t));
+
+	job_cond.step_list = selected_steps;
+	job_cond.partition_list = selected_parts;
+	if(params->opt_cluster) {
+		job_cond.cluster_list = list_create(NULL);
+		list_append(job_cond.cluster_list, params->opt_cluster);
+	}
+
+	if (params->opt_uid >=0 && (pw=getpwuid(params->opt_uid))) {
+		job_cond.user_list = list_create(NULL);
+		list_append(job_cond.user_list, pw->pw_name);
+	}	
+
+	job_list = mysql_jobacct_process_get_jobs(mysql_conn, &job_cond);
+
+	if(job_cond.user_list)
+		list_destroy(job_cond.user_list);
+	if(job_cond.cluster_list)
+		list_destroy(job_cond.cluster_list);
+		
+#endif
+	return job_list;
+}
+
+/* 
+ * get info from the storage 
+ * returns List of job_rec_t *
+ * note List needs to be freed when called
+ */
+extern List jobacct_storage_p_get_jobs_cond(mysql_conn_t *mysql_conn, 
+					    acct_job_cond_t *job_cond)
 {
 	List job_list = NULL;
 #ifdef HAVE_MYSQL
@@ -5691,10 +5741,7 @@ extern List jobacct_storage_p_get_jobs(mysql_conn_t *mysql_conn,
 			return NULL;
 		}
 	}
-	job_list = mysql_jobacct_process_get_jobs(mysql_conn,
-						  selected_steps,
-						  selected_parts,
-						  params);	
+	job_list = mysql_jobacct_process_get_jobs(mysql_conn, job_cond);	
 #endif
 	return job_list;
 }

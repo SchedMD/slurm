@@ -44,25 +44,19 @@
 #include "pgsql_jobacct_process.h"
 
 #ifdef HAVE_PGSQL
-static void _do_fdump(List job_list)
-{
-	info("fdump option not applicable from pgsql plugin");
-	return;
-}
 
 extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
-					   List selected_steps,
-					   List selected_parts,
-					   sacct_parameters_t *params)
+					   acct_job_cond_t *job_cond)
 {
 
 	char *query = NULL;	
 	char *extra = NULL;	
 	char *tmp = NULL;	
-	char *selected_part = NULL;
+	char *object = NULL;
 	jobacct_selected_step_t *selected_step = NULL;
 	ListIterator itr = NULL;
 	int set = 0;
+	char *table_level="t2";
 	PGresult *result = NULL, *step_result = NULL;
 	int i, j;
 	jobacct_job_rec_t *job = NULL;
@@ -96,6 +90,8 @@ extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
 		"t1.nodelist",
 		"t1.kill_requid",
 		"t1.qos",
+		"t2.user_name",
+		"t2.cluster"
 	};
 
 	/* if this changes you will need to edit the corresponding 
@@ -157,6 +153,8 @@ extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
 		JOB_REQ_NODELIST,
 		JOB_REQ_KILL_REQUID,
 		JOB_REQ_QOS,
+		JOB_REQ_USER_NAME,
+		JOB_REQ_CLUSTER,
 		JOB_REQ_COUNT		
 	};
 	enum {
@@ -193,56 +191,175 @@ extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
 		STEP_REQ_COUNT
 	};
 
-	if(selected_steps && list_count(selected_steps)) {
+	if(!job_cond)
+		goto no_cond;
+
+	/* THIS ASSOCID CHECK ALWAYS NEEDS TO BE FIRST!!!!!!! */
+	if(job_cond->associd_list && list_count(job_cond->associd_list)) {
 		set = 0;
-		xstrcat(extra, " and (");
-		itr = list_iterator_create(selected_steps);
+		xstrfmtcat(extra, ", %s as t3 where (");
+		itr = list_iterator_create(job_cond->associd_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " or ");
+			xstrfmtcat(extra, "t1.associd=%s", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+		table_level="t3";
+		/* just incase the association is gone */
+		if(set) 
+			xstrcat(extra, " || ");
+		xstrfmtcat(extra, "t3.id is null) and "
+			   "(t2.lft between t3.lft and t3.rgt "
+			   "or t2.lft is null)");
+	}
+
+	if(job_cond->acct_list && list_count(job_cond->acct_list)) {
+		set = 0;
+		if(extra)
+			xstrcat(extra, " and (");
+		else
+			xstrcat(extra, " where (");
+		itr = list_iterator_create(job_cond->acct_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " or ");
+			xstrfmtcat(extra, "t1.acct='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+
+	if(job_cond->groupid_list && list_count(job_cond->groupid_list)) {
+		set = 0;
+		if(extra)
+			xstrcat(extra, " and (");
+		else
+			xstrcat(extra, " where (");
+		itr = list_iterator_create(job_cond->groupid_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " or ");
+			xstrfmtcat(extra, "t1.gid=", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+
+	if(job_cond->partition_list && list_count(job_cond->partition_list)) {
+		set = 0;
+		if(extra)
+			xstrcat(extra, " and (");
+		else
+			xstrcat(extra, " where (");
+		itr = list_iterator_create(job_cond->partition_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " or ");
+			xstrfmtcat(extra, "t1.partition='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+
+	if(job_cond->step_list && list_count(job_cond->step_list)) {
+		set = 0;
+		if(extra)
+			xstrcat(extra, " and (");
+		else
+			xstrcat(extra, " where (");
+		itr = list_iterator_create(job_cond->step_list);
 		while((selected_step = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " or ");
-			tmp = xstrdup_printf("t1.jobid=%u",
-					      selected_step->jobid);
-			xstrcat(extra, tmp);
+			xstrfmtcat(extra, "t1.jobid=%u", selected_step->jobid);
 			set = 1;
-			xfree(tmp);
 		}
 		list_iterator_destroy(itr);
 		xstrcat(extra, ")");
 	}
 
-	if(selected_parts && list_count(selected_parts)) {
+	if(job_cond->usage_start) {
+		if(!job_cond->usage_end)
+			job_cond->usage_end = time(NULL);
+
+		if(extra)
+			xstrcat(extra, " and (");
+		else
+			xstrcat(extra, " where (");
+		xstrfmtcat(extra, 
+			   "(t1.eligible < %d and (end >= %d or end = 0)))",
+			   job_cond->usage_end, job_cond->usage_start);
+	}
+
+	/* we need to put all the associations (t2) stuff together here */
+	if(job_cond->cluster_list && list_count(job_cond->cluster_list)) {
 		set = 0;
-		xstrcat(extra, " and (");
-		itr = list_iterator_create(selected_parts);
-		while((selected_part = list_next(itr))) {
+		if(extra)
+			xstrcat(extra, " and (");
+		else
+			xstrcat(extra, " where (");
+
+		itr = list_iterator_create(job_cond->cluster_list);
+		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " or ");
-			tmp = xstrdup_printf("t1.partition='%s'",
-					      selected_part);
-			xstrcat(extra, tmp);
+			xstrfmtcat(extra, "%s.cluster='%s'", 
+				   table_level, object);
 			set = 1;
-			xfree(tmp);
 		}
 		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
+		/* just incase the association is gone */
+		if(set) 
+			xstrcat(extra, " or ");
+		xstrfmtcat(extra, "%s.cluster is null)", table_level);
 	}
-	
-	for(i=0; i<JOB_REQ_COUNT; i++) {
-		if(i) 
-			xstrcat(tmp, ", ");
-		xstrcat(tmp, job_req_inx[i]);
-	}
-	
-	query = xstrdup_printf("select %s from %s t1",
-			       tmp, job_table);
-	xfree(tmp);
 
+	if(job_cond->user_list && list_count(job_cond->user_list)) {
+		set = 0;
+		if(extra)
+			xstrcat(extra, " and (");
+		else
+			xstrcat(extra, " where (");
+
+		itr = list_iterator_create(job_cond->user_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " or ");
+			xstrfmtcat(extra, "%s.user_name='%s'",
+				   table_level, object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		/* just incase the association is gone */
+		if(set) 
+			xstrcat(extra, " or ");
+		xstrfmtcat(extra, "%s.user_name is null)", table_level);
+	}
+
+no_cond:	
+
+	xfree(tmp);
+	xstrfmtcat(tmp, "%s", job_req_inx[0]);
+	for(i=1; i<JOB_REQ_COUNT; i++) {
+		xstrfmtcat(tmp, ", %s", job_req_inx[i]);
+	}
+	
+	query = xstrdup_printf("select %s from %s as t1 left join %s as t2 "
+			       "on t1.associd=t2.id",
+			       tmp, job_table, assoc_table);
+	xfree(tmp);
 	if(extra) {
 		xstrcat(query, extra);
 		xfree(extra);
 	}
 
-	//info("query = %s", query);
+	debug3("query\n%s", query);
 	if(!(result = pgsql_db_query_ret(acct_pgsql_db, query))) {
 		xfree(query);
 		list_destroy(job_list);
@@ -252,33 +369,19 @@ extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
 
 	for (i = 0; i < PQntuples(result); i++) {
 		char *id = PQgetvalue(result, i, JOB_REQ_ID);
-		acct_association_rec_t account_rec;
-		memset(&account_rec, 0, sizeof(acct_association_rec_t));
+
 		job = create_jobacct_job_rec();
 
 		job->alloc_cpus = atoi(PQgetvalue(result, i, 
 						  JOB_REQ_ALLOC_CPUS));
 		job->associd = atoi(PQgetvalue(result, i, JOB_REQ_ASSOCID));
-		account_rec.id = job->associd;
-		assoc_mgr_fill_in_assoc(acct_pgsql_db, &account_rec, 0, NULL);
-		if(account_rec.cluster) {
-			if(params->opt_cluster &&
-			   strcmp(params->opt_cluster, account_rec.cluster)) {
-				destroy_jobacct_job_rec(job);
-				job = NULL;
-				continue;
-			}
-			job->cluster = xstrdup(account_rec.cluster);
-		}
-		if(account_rec.user) 
-			job->user = xstrdup(account_rec.user);
-		else 
+		job->cluster = xstrdup(PQgetvalue(result, i, JOB_REQ_CLUSTER));
+
+		job->user =  xstrdup(PQgetvalue(result, i, JOB_REQ_USER_NAME));
+		if(!job->user || !job->user[0]) 
 			job->uid = atoi(PQgetvalue(result, i, JOB_REQ_UID));
-		if(account_rec.acct) 
-			job->account = xstrdup(account_rec.acct);
-		else
-			job->account = xstrdup(PQgetvalue(result, i,
-							  JOB_REQ_ACCOUNT));
+		job->account = xstrdup(PQgetvalue(result, i, JOB_REQ_ACCOUNT));
+
 		job->blockid = xstrdup(PQgetvalue(result, i,
 						    JOB_REQ_BLOCKID));
 		job->eligible = atoi(PQgetvalue(result, i, JOB_REQ_SUBMIT));
@@ -316,9 +419,10 @@ extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
 
 		list_append(job_list, job);
 
-		if(selected_steps && list_count(selected_steps)) {
+		if(job_cond && job_cond->step_list && 
+		   list_count(job_cond->step_list)) {
 			set = 0;
-			itr = list_iterator_create(selected_steps);
+			itr = list_iterator_create(job_cond->step_list);
 			while((selected_step = list_next(itr))) {
 				if(selected_step->jobid != job->jobid) {
 					continue;
@@ -333,11 +437,9 @@ extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
 				else 
 					xstrcat(extra, " and (");
 			
-				tmp = xstrdup_printf("t1.stepid=%u",
-						     selected_step->stepid);
-				xstrcat(extra, tmp);
+				xstrfmtcat(extra, "t1.stepid=%u",
+					   selected_step->stepid);
 				set = 1;
-				xfree(tmp);
 				job->show_full = 0;
 			}
 			list_iterator_destroy(itr);
@@ -474,9 +576,6 @@ extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
 			job->track_steps = 1;
 	}
 	PQclear(result);
-	
-	if (params && params->opt_fdump) 
-		_do_fdump(job_list);
 	
 	return job_list;
 }

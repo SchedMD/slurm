@@ -156,12 +156,13 @@ typedef struct {
 	char *control_host;
 	uint32_t control_port;
 	uint32_t default_fairshare;	/* fairshare number */
-	uint32_t default_max_cpu_secs_per_job; /* max number of cpu seconds this 
-					* association can have per job */
-	uint32_t default_max_jobs;	/* max number of jobs this association can run
-				 * at one time */
+	uint32_t default_max_cpu_secs_per_job;/* max number of cpu seconds this 
+					       * association can have per job */
+	uint32_t default_max_jobs;/* max number of jobs this association can run
+				   * at one time */
 	uint32_t default_max_nodes_per_job; /* max number of nodes this
-				     * association can allocate per job */
+					     * association can
+					     * allocate per job */
 	uint32_t default_max_wall_duration_per_job; /* longest time this
 					     * association can run a job */
 	char *name;
@@ -172,6 +173,20 @@ typedef struct {
 	char *acct_name;
 	uint16_t sub_acct;
 } acct_coord_rec_t;
+
+typedef struct {
+	List acct_list;		/* list of char * */
+	List associd_list;	/* list of char */
+	List cluster_list;	/* list of char * */
+	uint16_t completion;	/* get job completion records instead
+				 * of accounting record */
+	List groupid_list;	/* list of char * */
+	List partition_list;	/* list of char * */
+	List step_list;         /* list of jobacct_selected_step_t */
+	uint32_t usage_end; 
+	uint32_t usage_start; 
+	List user_list;		/* list of char * */
+} acct_job_cond_t;
 
 typedef struct {
 	acct_admin_level_t admin_level;
@@ -224,9 +239,11 @@ extern void destroy_acct_user_cond(void *object);
 extern void destroy_acct_account_cond(void *object);
 extern void destroy_acct_cluster_cond(void *object);
 extern void destroy_acct_association_cond(void *object);
+extern void destroy_acct_job_cond(void *object);
 
 extern void destroy_acct_update_object(void *object);
 extern void destroy_update_shares_rec(void *object);
+
 
 /* pack functions */
 extern void pack_acct_user_rec(void *object, Buf buffer);
@@ -252,6 +269,8 @@ extern void pack_acct_cluster_cond(void *object, Buf buffer);
 extern int unpack_acct_cluster_cond(void **object, Buf buffer);
 extern void pack_acct_association_cond(void *object, Buf buffer);
 extern int unpack_acct_association_cond(void **object, Buf buffer);
+extern void pack_acct_job_cond(void *object, Buf buffer);
+extern int unpack_acct_job_cond(void **object, Buf buffer);
 
 extern void pack_acct_update_object(acct_update_object_t *object, Buf buffer);
 extern int unpack_acct_update_object(acct_update_object_t **object, Buf buffer);
@@ -560,6 +579,14 @@ extern List jobacct_storage_g_get_jobs(void *db_conn,
 				       List selected_steps,
 				       List selected_parts,
 				       void *params);
+
+/* 
+ * get info from the storage 
+ * returns List of jobacct_job_rec_t *
+ * note List needs to be freed when called
+ */
+extern List jobacct_storage_g_get_jobs_cond(void *db_conn, 
+					    acct_job_cond_t *job_cond);
 
 /* 
  * expire old info from the storage 

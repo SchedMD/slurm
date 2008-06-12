@@ -360,6 +360,7 @@ extern Buf pack_slurmdbd_msg(slurmdbd_msg_t *req)
 	case DBD_GET_ACCOUNTS:
 	case DBD_GET_ASSOCS:
 	case DBD_GET_CLUSTERS:
+	case DBD_GET_JOBS_COND:
 	case DBD_GET_USERS:
 	case DBD_REMOVE_ACCOUNTS:
 	case DBD_REMOVE_ASSOCS:
@@ -475,6 +476,7 @@ extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp, Buf buffer)
 	case DBD_GET_ACCOUNTS:
 	case DBD_GET_ASSOCS:
 	case DBD_GET_CLUSTERS:
+	case DBD_GET_JOBS_COND:
 	case DBD_GET_USERS:
 	case DBD_REMOVE_ACCOUNTS:
 	case DBD_REMOVE_ASSOCS:
@@ -1240,6 +1242,9 @@ void inline slurmdbd_free_cond_msg(slurmdbd_msg_type_t type,
 		case DBD_REMOVE_CLUSTERS:
 			my_destroy = destroy_acct_cluster_cond;
 			break;
+		case DBD_GET_JOBS:
+			my_destroy = destroy_acct_job_cond;
+			break;
 		case DBD_GET_USERS:
 		case DBD_REMOVE_USERS:
 			my_destroy = destroy_acct_user_cond;
@@ -1497,6 +1502,8 @@ void inline slurmdbd_pack_cond_msg(slurmdbd_msg_type_t type,
 	case DBD_REMOVE_CLUSTERS:
 		my_function = pack_acct_cluster_cond;
 		break;
+	case DBD_GET_JOBS:
+		my_function = pack_acct_job_cond;
 	case DBD_GET_USERS:
 	case DBD_REMOVE_USERS:
 		my_function = pack_acct_user_cond;
@@ -1527,6 +1534,9 @@ int inline slurmdbd_unpack_cond_msg(slurmdbd_msg_type_t type,
 	case DBD_GET_CLUSTERS:
 	case DBD_REMOVE_CLUSTERS:
 		my_function = unpack_acct_cluster_cond;
+		break;
+	case DBD_GET_JOBS:
+		my_function = unpack_acct_job_cond;
 		break;
 	case DBD_GET_USERS:
 	case DBD_REMOVE_USERS:

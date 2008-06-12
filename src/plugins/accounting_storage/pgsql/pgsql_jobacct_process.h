@@ -55,13 +55,12 @@
 
 #ifdef HAVE_PGSQL
 
+extern char *assoc_table;
 extern char *job_table;
 extern char *step_table;
 
 extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
-					   List selected_steps,
-					   List selected_parts,
-					   sacct_parameters_t *params);
+					   acct_job_cond_t *job_cond);
 
 extern void pgsql_jobacct_process_archive(PGconn *acct_pgsql_db,
 					  List selected_parts,

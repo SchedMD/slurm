@@ -63,6 +63,7 @@ static int   _get_accounts(void *db_conn, Buf in_buffer, Buf *out_buffer);
 static int   _get_assocs(void *db_conn, Buf in_buffer, Buf *out_buffer);
 static int   _get_clusters(void *db_conn, Buf in_buffer, Buf *out_buffer);
 static int   _get_jobs(void *db_conn, Buf in_buffer, Buf *out_buffer);
+static int   _get_jobs_cond(void *db_conn, Buf in_buffer, Buf *out_buffer);
 static int   _get_usage(uint16_t type, void *db_conn,
 			Buf in_buffer, Buf *out_buffer);
 static int   _get_users(void *db_conn, Buf in_buffer, Buf *out_buffer);
@@ -175,6 +176,9 @@ proc_req(void **db_conn, slurm_fd orig_fd,
 			break;
 		case DBD_GET_JOBS:
 			rc = _get_jobs(*db_conn, in_buffer, out_buffer);
+			break;
+		case DBD_GET_JOBS_COND:
+			rc = _get_jobs_cond(*db_conn, in_buffer, out_buffer);
 			break;
 		case DBD_GET_USERS:
 			rc = _get_users(*db_conn, in_buffer, out_buffer);
@@ -688,13 +692,48 @@ static int _get_jobs(void *db_conn, Buf in_buffer, Buf *out_buffer)
 	
 	memset(&sacct_params, 0, sizeof(sacct_parameters_t));
 	sacct_params.opt_cluster = get_jobs_msg->cluster_name;
-
+	sacct_params.opt_uid = -1;
+	if(get_jobs_msg->user) {
+		struct passwd *pw = NULL;
+		if ((pw=getpwnam(get_jobs_msg->user)))
+			sacct_params.opt_uid = pw->pw_uid;
+	}
+		
 	list_msg.my_list = jobacct_storage_g_get_jobs(
 		db_conn,
 		get_jobs_msg->selected_steps, get_jobs_msg->selected_parts,
 		&sacct_params);
 	slurmdbd_free_get_jobs_msg(get_jobs_msg);
 
+
+	*out_buffer = init_buf(1024);
+	pack16((uint16_t) DBD_GOT_JOBS, *out_buffer);
+	slurmdbd_pack_list_msg(DBD_GOT_JOBS, &list_msg, *out_buffer);
+	if(list_msg.my_list)
+		list_destroy(list_msg.my_list);
+	
+	return SLURM_SUCCESS;
+}
+
+static int _get_jobs_cond(void *db_conn, Buf in_buffer, Buf *out_buffer)
+{
+	dbd_cond_msg_t *cond_msg = NULL;
+	dbd_list_msg_t list_msg;
+	char *comment = NULL;
+
+	debug2("DBD_GET_JOBS_COND: called");
+	if (slurmdbd_unpack_cond_msg(DBD_GET_JOBS_COND, &cond_msg, in_buffer) !=
+	    SLURM_SUCCESS) {
+		comment = "Failed to unpack DBD_GET_JOBS_COND message";
+		error("%s", comment);
+		*out_buffer = make_dbd_rc_msg(SLURM_ERROR, comment, 
+					      DBD_GET_JOBS_COND);
+		return SLURM_ERROR;
+	}
+	
+	list_msg.my_list = jobacct_storage_g_get_jobs_cond(
+		db_conn, cond_msg->cond);
+	slurmdbd_free_cond_msg(DBD_GET_JOBS_COND, cond_msg);
 
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_JOBS, *out_buffer);
