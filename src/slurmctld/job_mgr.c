@@ -414,8 +414,7 @@ extern int load_all_job_state(void)
 	xfree(state_file);
 	unlock_state_files();
 
-	if (job_id_sequence == 0)
-		job_id_sequence = slurmctld_conf.first_job_id;
+	job_id_sequence = MAX(job_id_sequence, slurmctld_conf.first_job_id);
 
 	buffer = create_buf(data, data_size);
 
@@ -3464,8 +3463,7 @@ static void _reset_step_bitmaps(struct job_record *job_ptr)
  * NOTE: READ lock_slurmctld config before entry */
 void reset_first_job_id(void)
 {
-	if (job_id_sequence < slurmctld_conf.first_job_id)
-		job_id_sequence = slurmctld_conf.first_job_id;
+	job_id_sequence = MAX(job_id_sequence, slurmctld_conf.first_job_id);
 }
 
 /*
@@ -3476,8 +3474,7 @@ extern uint32_t get_next_job_id(void)
 {
 	uint32_t next_id;
 
-	if (job_id_sequence == 0)
-		job_id_sequence = slurmctld_conf.first_job_id;
+	job_id_sequence = MAX(job_id_sequence, slurmctld_conf.first_job_id);
 	next_id = job_id_sequence + 1;
 	if (next_id >= MIN_NOALLOC_JOBID)
 		next_id = slurmctld_conf.first_job_id;
@@ -3492,8 +3489,7 @@ static void _set_job_id(struct job_record *job_ptr)
 {
 	uint32_t new_id;
 
-	if (job_id_sequence == 0)
-		job_id_sequence = slurmctld_conf.first_job_id;
+	job_id_sequence = MAX(job_id_sequence, slurmctld_conf.first_job_id);
 
 	xassert(job_ptr);
 	xassert (job_ptr->magic == JOB_MAGIC);
