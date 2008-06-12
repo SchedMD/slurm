@@ -806,6 +806,37 @@ extern List jobacct_storage_p_get_jobs(void *db_conn,
 }
 
 /* 
+ * get info from the storage 
+ * returns List of jobacct_job_rec_t *
+ * note List needs to be freed when called
+ */
+extern List jobacct_storage_p_get_jobs_cond(void *db_conn,
+					    acct_job_cond_t *job_cond)
+{
+	sacct_parameters_t params;
+
+	memset(&params, 0, sizeof(sacct_parameters_t));
+	params.opt_uid = -1;
+
+	if(job_cond->cluster_list && list_count(job_cond->cluster_list)) {
+		params.cluster = list_pop(job_cond->cluster_list);
+	}
+	if(job_cond->user_list && list_count(job_cond->user_list)) {
+		char *user = list_pop(job_cond->user_list);
+		struct passwd *pw = NULL;
+		if ((pw=getpwnam(user)))
+			params.opt_uid = pw->pw_uid;
+		xfree(user);
+	}
+
+	return filetxt_jobacct_process_get_jobs(job_cond->step_list, 
+						job_cond->partition_list,
+						&params);
+	if(params.cluster)
+		xfree(params.cluster);
+}
+
+/* 
  * expire old info from the storage 
  */
 extern void jobacct_storage_p_archive(void *db_conn,

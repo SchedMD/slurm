@@ -327,6 +327,17 @@ extern List jobacct_storage_p_get_jobs(void *db_conn,
 }
 
 /* 
+ * get info from the storage 
+ * returns List of jobacct_job_rec_t *
+ * note List needs to be freed when called
+ */
+extern List jobacct_storage_p_get_jobs_cond(void *db_conn,
+					    sacct_job_cond_t *job_cond)
+{
+	return NULL;
+}
+
+/* 
  * expire old info from the storage 
  */
 extern void jobacct_storage_p_archive(void *db_conn,
