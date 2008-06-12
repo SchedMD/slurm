@@ -83,6 +83,9 @@ void	*xfer_buf_data(Buf my_buf);
 void	pack_time(time_t val, Buf buffer);
 int	unpack_time(time_t *valp, Buf buffer);
 
+void 	pack64(uint64_t val, Buf buffer);
+int	unpack64(uint64_t *valp, Buf buffer);
+
 void 	pack32(uint32_t val, Buf buffer);
 int	unpack32(uint32_t *valp, Buf buffer);
 
@@ -121,6 +124,20 @@ int	unpackmem_array(char *valp, uint32_t size_valp, Buf buffer);
 	assert(sizeof(*valp) == sizeof(time_t));	\
 	assert(buf->magic == BUF_MAGIC);		\
         if (unpack_time(valp,buf))			\
+		goto unpack_error;			\
+} while (0)
+
+#define safe_pack64(val,buf) do {			\
+	assert(sizeof(val) == sizeof(uint64_t)); 	\
+	assert(buf->magic == BUF_MAGIC);		\
+	pack64(val,buf);				\
+} while (0)
+
+#define safe_unpack64(valp,buf) do {			\
+	assert((valp) != NULL); 			\
+	assert(sizeof(*valp) == sizeof(uint64_t));      \
+	assert(buf->magic == BUF_MAGIC);		\
+        if (unpack64(valp,buf))				\
 		goto unpack_error;			\
 } while (0)
 

@@ -4575,7 +4575,7 @@ extern int acct_storage_p_get_usage(mysql_conn_t *mysql_conn,
 			xmalloc(sizeof(acct_accounting_rec_t));
 		accounting_rec->assoc_id = atoi(row[ASSOC_ID]);
 		accounting_rec->period_start = atoi(row[ASSOC_START]);
-		accounting_rec->alloc_secs = atoi(row[ASSOC_ACPU]);
+		accounting_rec->alloc_secs = atoll(row[ASSOC_ACPU]);
 		list_append(acct_assoc->accounting_list, accounting_rec);
 	}
 	mysql_free_result(result);
@@ -5130,11 +5130,11 @@ extern int clusteracct_storage_p_get_usage(
 	while((row = mysql_fetch_row(result))) {
 		cluster_accounting_rec_t *accounting_rec =
 			xmalloc(sizeof(cluster_accounting_rec_t));
-		accounting_rec->alloc_secs = atoi(row[CLUSTER_ACPU]);
-		accounting_rec->down_secs = atoi(row[CLUSTER_DCPU]);
-		accounting_rec->idle_secs = atoi(row[CLUSTER_ICPU]);
-		accounting_rec->over_secs = atoi(row[CLUSTER_OCPU]);
-		accounting_rec->resv_secs = atoi(row[CLUSTER_RCPU]);
+		accounting_rec->alloc_secs = atoll(row[CLUSTER_ACPU]);
+		accounting_rec->down_secs = atoll(row[CLUSTER_DCPU]);
+		accounting_rec->idle_secs = atoll(row[CLUSTER_ICPU]);
+		accounting_rec->over_secs = atoll(row[CLUSTER_OCPU]);
+		accounting_rec->resv_secs = atoll(row[CLUSTER_RCPU]);
 		accounting_rec->cpu_count = atoi(row[CLUSTER_CPU_COUNT]);
 		accounting_rec->period_start = atoi(row[CLUSTER_START]);
 		list_append(cluster_rec->accounting_list, accounting_rec);

@@ -47,7 +47,6 @@
 #include <string.h>
 #include <time.h>
 #include <inttypes.h>
-
 #include <slurm/slurm_errno.h>
 
 #include "src/common/pack.h"
@@ -65,6 +64,8 @@ strong_alias(init_buf,		slurm_init_buf);
 strong_alias(xfer_buf_data,	slurm_xfer_buf_data);
 strong_alias(pack_time,		slurm_pack_time);
 strong_alias(unpack_time,	slurm_unpack_time);
+strong_alias(pack64,		slurm_pack64);
+strong_alias(unpack64,		slurm_unpack64);
 strong_alias(pack32,		slurm_pack32);
 strong_alias(unpack32,		slurm_unpack32);
 strong_alias(pack16,		slurm_pack16);
@@ -173,6 +174,39 @@ int unpack_time(time_t * valp, Buf buffer)
 	return SLURM_SUCCESS;
 }
 
+
+/*
+ * Given a 64-bit integer in host byte order, convert to network byte order
+ * store in buffer, and adjust buffer counters.
+ */
+void pack64(uint64_t val, Buf buffer)
+{
+	uint64_t nl =  HTON_uint64(val);
+
+	if (remaining_buf(buffer) < sizeof(nl)) {
+		buffer->size += BUF_SIZE;
+		xrealloc(buffer->head, buffer->size);
+	}
+
+	memcpy(&buffer->head[buffer->processed], &nl, sizeof(nl));
+	buffer->processed += sizeof(nl);
+}
+
+/*
+ * Given a buffer containing a network byte order 64-bit integer,
+ * store a host integer at 'valp', and adjust buffer counters.
+ */
+int unpack64(uint64_t * valp, Buf buffer)
+{
+	uint64_t nl;
+	if (remaining_buf(buffer) < sizeof(nl))
+		return SLURM_ERROR;
+	
+	memcpy(&nl, &buffer->head[buffer->processed], sizeof(nl));
+	*valp = NTOH_uint64(nl);
+	buffer->processed += sizeof(nl);
+	return SLURM_SUCCESS;
+}
 
 /*
  * Given a 32-bit integer in host byte order, convert to network byte order
