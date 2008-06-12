@@ -893,6 +893,8 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	job_ptr->details->acctg_freq = acctg_freq;
 	job_ptr->details->contiguous = contiguous;
 	job_ptr->details->cpus_per_task = cpus_per_task;
+	/* FIXME: Need to save/restore actual task_dist value */
+	job_ptr->details->task_dist = SLURM_DIST_CYCLIC;
 	job_ptr->details->ntasks_per_node = ntasks_per_node;
 	job_ptr->details->job_min_procs = job_min_procs;
 	job_ptr->details->job_min_memory = job_min_memory;
