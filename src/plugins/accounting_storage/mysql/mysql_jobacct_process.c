@@ -56,7 +56,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 	char *object = NULL;
 	jobacct_selected_step_t *selected_step = NULL;
 	ListIterator itr = NULL;
-	int set = 0, assoc_set=0;
+	int set = 0;
 	char *table_level="t2";
 	MYSQL_RES *result = NULL, *step_result = NULL;
 	MYSQL_ROW row, step_row;
@@ -209,7 +209,6 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 		}
 		list_iterator_destroy(itr);
 		xstrcat(extra, ")");
-		assoc_set=1;
 		table_level="t3";
 		/* just incase the association is gone */
 		if(set) 
