@@ -15,13 +15,12 @@ documents those changes that are of interest to users and admins.
     rather than the sbatch command itself to permit faster response
     for Moab.
  -- We are not saving a pending job's task distribution, so after restarting
-    slurmctld select/cons_res was over-allocating resources based upon an 
-    uninitialized distribution value. Since we can't save the value without 
+    slurmctld, select/cons_res was over-allocating resources based upon an 
+    invalid task distribution value. Since we can't save the value without 
     changing the state save file format, we'll just set it to the default 
-    value for now. This will result in an incorrect task distribution for 
-    jobs that had a task distribution that was not the default and were 
-    pending when the slurmctld daemon restarted, but at least resources
-    will not be over-allocated.
+    value for now. This may result in a slight variation on how sockets 
+    and cores are allocated to jobs, but at least resources will not be 
+    over-allocated.
 
 * Changes in SLURM 1.3.3
 ========================
