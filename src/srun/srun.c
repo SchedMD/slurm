@@ -503,23 +503,23 @@ static void
 _print_job_information(resource_allocation_response_msg_t *resp)
 {
 	int i;
-	char tmp_str[10], job_details[4096];
+	char *str = NULL;
+	char *sep = "";
 
-	sprintf(job_details, "jobid %d: nodes(%d):`%s', cpu counts: ", 
-	        resp->job_id, resp->node_cnt, resp->node_list);
+	if (!_verbose)
+		return;
+
+	xstrfmtcat(str, "jobid %u nodes(%u):`%s', cpu counts: ",
+		   resp->job_id, resp->node_cnt, resp->node_list);
 
 	for (i = 0; i < resp->num_cpu_groups; i++) {
-		sprintf(tmp_str, ",%u(x%u)", resp->cpus_per_node[i], 
-		        resp->cpu_count_reps[i]);
-		if (i == 0)
-			strcat(job_details, &tmp_str[1]);
-		else if ((strlen(tmp_str) + strlen(job_details)) < 
-		         sizeof(job_details))
-			strcat(job_details, tmp_str);
-		else
-			break;
+		xstrfmtcat(str, "%s%u(x%u)",
+			   sep, resp->cpus_per_node[i],
+		           resp->cpu_count_reps[i]);
+		sep = ",";
 	}
-	verbose("%s",job_details);
+	verbose("%s", str);
+	xfree(str);
 }
 
 /* Set SLURM_UMASK environment variable with current state */

@@ -666,7 +666,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			if (shared && ((i+1) < node_set_size) && 
 			    (node_set_ptr[i].weight == node_set_ptr[i+1].weight)) {
 				/* Keep accumulating so we can pick the
-				 * most lighly loaded nodes */
+				 * most lightly loaded nodes */
 				continue;
 			}
 
