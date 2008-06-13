@@ -14,13 +14,15 @@ documents those changes that are of interest to users and admins.
  -- For Moab, sbatch --get-user-env option processed by slurmd daemon
     rather than the sbatch command itself to permit faster response
     for Moab.
- -- We are not saving a pending job's task distribution, so after restarting
+ -- IMPORTANT FIX: This only effects use of select/cons_res when allocating
+    resources by core or socket, not by nodes or processors (the default). 
+    We are not saving a pending job's task distribution, so after restarting
     slurmctld, select/cons_res was over-allocating resources based upon an 
     invalid task distribution value. Since we can't save the value without 
     changing the state save file format, we'll just set it to the default 
-    value for now. This may result in a slight variation on how sockets 
-    and cores are allocated to jobs, but at least resources will not be 
-    over-allocated.
+    value for now and save it in Slurm v1.4. This may result in a slight 
+    variation on how sockets and cores are allocated to jobs, but at least 
+    resources will not be over-allocated.
 
 * Changes in SLURM 1.3.3
 ========================
