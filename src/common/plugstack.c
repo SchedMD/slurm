@@ -377,8 +377,10 @@ static int _spank_stack_create(const char *path, List * listp)
 
 	verbose("spank: opening plugin stack %s\n", path);
 
-	if (!(fp = safeopen(path, "r", SAFEOPEN_NOCREATE)))
+	if (!(fp = safeopen(path, "r", SAFEOPEN_NOCREATE))) {
+		error("spank: Failed to open %s: %m\n", path);
 		return -1;
+	}
 
 	line = 1;
 	while (fgets(buf, sizeof(buf), fp)) {
