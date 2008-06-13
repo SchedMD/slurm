@@ -2629,6 +2629,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		case SLURM_DIST_CYCLIC_BLOCK:
 			error_code = cr_dist(job, 0, cr_type); 
 			break;
+		case SLURM_DIST_ARBITRARY:
 		case SLURM_DIST_BLOCK:
 		case SLURM_DIST_CYCLIC:				
 		case SLURM_DIST_BLOCK_CYCLIC:
@@ -2638,11 +2639,6 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			break;
 		case SLURM_DIST_PLANE:
 			error_code = cr_plane_dist(job, mc_ptr->plane_size, cr_type); 
-			break;
-		case SLURM_DIST_ARBITRARY:
-			error_code = compute_c_b_task_dist(job);
-			if (error_code != SLURM_SUCCESS)
-				error("Error in compute_c_b_task_dist");
 			break;
 		default:
 			error("select/cons_res: invalid dist_type");
