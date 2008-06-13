@@ -15,7 +15,7 @@ documents those changes that are of interest to users and admins.
     rather than the sbatch command itself to permit faster response
     for Moab.
  -- IMPORTANT FIX: This only effects use of select/cons_res when allocating
-    resources by core or socket, not by nodes or processors (the default). 
+    resources by core or socket, not by CPU (default for SelectTypeParameter). 
     We are not saving a pending job's task distribution, so after restarting
     slurmctld, select/cons_res was over-allocating resources based upon an 
     invalid task distribution value. Since we can't save the value without 
@@ -23,6 +23,8 @@ documents those changes that are of interest to users and admins.
     value for now and save it in Slurm v1.4. This may result in a slight 
     variation on how sockets and cores are allocated to jobs, but at least 
     resources will not be over-allocated.
+ -- Correct logic in accumulating resources by node weight when more than 
+    one job can run per node (select/cons_res or partition shared=yes|force).
 
 * Changes in SLURM 1.3.3
 ========================
