@@ -437,7 +437,7 @@ extern int cr_dist(struct select_cr_job *job, int cyclic,
 		     job->job_id, host_index, this_cr_node->node_ptr->name, 
 		     job->alloc_cpus[job_index]);
 		for(i=0; !cr_cpu && i<job->num_sockets[job_index];i+=2) {
-			info("cons_res: _cr_dist: %u " 
+			info("cons_res: _cr_dist: job %u " 
 			     "alloc_cores[%d][%d]=%u, [%d][%d]=%u", 
 			     job->job_id, 
 			     job_index, i, job->alloc_cores[job_index][i], 
