@@ -67,7 +67,7 @@ extern void sreport_print_time(type_t type, print_field_t *field,
 		} else {
 			char *output = NULL;
 			double percent = (double)value;
-			
+
 			switch(time_format) {
 			case SREPORT_TIME_SECS:
 				output = xstrdup_printf("%llu", value);
