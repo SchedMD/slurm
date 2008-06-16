@@ -581,7 +581,7 @@ _print_job_information(resource_allocation_response_msg_t *resp)
 	if (!_verbose)
 		return;
 
-	xstrfmtcat(str, "jobid %u nodes(%u):`%s', cpu counts: ",
+	xstrfmtcat(str, "jobid %u: nodes(%u):`%s', cpu counts: ",
 		   resp->job_id, resp->node_cnt, resp->node_list);
 
 	for (i = 0; i < resp->num_cpu_groups; i++) {
