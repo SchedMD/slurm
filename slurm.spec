@@ -244,8 +244,6 @@ SLURM process tracking plugin for SGI job containers.
 
 make %{?_smp_mflags} 
 
-
-
 %install
 rm -rf "$RPM_BUILD_ROOT"
 mkdir -p "$RPM_BUILD_ROOT"
@@ -273,45 +271,13 @@ if [ -d /etc/init.d ]; then
    echo "/etc/init.d/slurm"    >> $LIST
 fi
 
-LIST=./munge.files
-touch $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/auth_munge.so   &&
-  echo %{_libdir}/slurm/auth_munge.so             >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/crypto_munge.so &&
-  echo %{_libdir}/slurm/crypto_munge.so           >> $LIST
-
-LIST=./switch_elan.files
-touch $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/switch_elan.so &&
-  echo %{_libdir}/slurm/switch_elan.so            >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/proctrack_rms.so &&
-  echo %{_libdir}/slurm/proctrack_rms.so          >> $LIST
-
 %if %{slurm_with aix}
 install -D -m644 etc/federation.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/federation.conf.example
-LIST=./aix_federation.files
-touch $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/switch_federation.so &&
-  echo %{_libdir}/slurm/switch_federation.so      >> $LIST
-test -f  $RPM_BUILD_ROOT/%{_libdir}/slurm/proctrack_aix.so &&
-  echo %{_libdir}/slurm/proctrack_aix.so          >> $LIST
-test -f  $RPM_BUILD_ROOT/%{_libdir}/slurm/checkpoint_aix.so &&
-  echo %{_libdir}/slurm/checkpoint_aix.so         >> $LIST
-echo "%config %{_sysconfdir}/federation.conf.example" >> $LIST
 %endif
 
-LIST=./perlapi.files
-touch $LIST
-test -f $RPM_BUILD_ROOT/%{_perldir}/Slurm.pm &&
-  echo "%{_perldir}/Slurm.pm"                 >> $LIST
-test -f $RPM_BUILD_ROOT/%{_perldir}/auto/Slurm/Slurm.so &&
-  echo "%{_perldir}/auto/Slurm/Slurm.so"      >> $LIST
-test -f $RPM_BUILD_ROOT/%{_mandir}/man3/Slurm.3 &&
-echo "%{_mandir}/man3/Slurm.3"                 >> $LIST
-test -f $RPM_BUILD_ROOT/%{_perldir}/auto/Slurm/Slurm.bs &&
-  echo "%{_perldir}/auto/Slurm/Slurm.bs"      >> $LIST
-test -f $RPM_BUILD_ROOT/%{_perldir}/auto/Slurm/autosplit.ix &&
-  echo "%{_perldir}/auto/Slurm/autosplit.ix"      >> $LIST
+%if %{slurm_with bluegene}
+install -D -m644 etc/bluegene.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/bluegene.conf.example
+%endif
 
 LIST=./slurmdbd.files
 touch $LIST
@@ -327,51 +293,6 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/crypto_openssl.so &&
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/accounting_storage_gold.so
    echo %{_libdir}/slurm/accounting_storage_gold.so >> $LIST
 
-# Build file lists for optional plugin packages
-for plugin in auth_authd; do
-   LIST=./${plugin}.files
-   touch $LIST
-   test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/${plugin}.so &&
-     echo %{_libdir}/slurm/${plugin}.so > $LIST
-done
-
-
-
-
-
-
-LIST=./torque.files
-touch $LIST
-echo "%{_bindir}/pbsnodes"                    >> $LIST
-echo "%{_bindir}/qdel"                        >> $LIST
-echo "%{_bindir}/qhold"                       >> $LIST
-echo "%{_bindir}/qrls"                        >> $LIST
-echo "%{_bindir}/qstat"                       >> $LIST
-echo "%{_bindir}/qsub"                        >> $LIST
-echo "%{_bindir}/mpiexec"                     >> $LIST
-
-
-%if %{slurm_with bluegene}
-install -D -m644 etc/bluegene.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/bluegene.conf.example
-LIST=./bluegene.files
-touch $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/select_bluegene.so &&
-  echo "%{_libdir}/slurm/select_bluegene.so"      >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/libsched_if64.so &&
-  echo "%{_libdir}/slurm/libsched_if64.so"        >> $LIST
-echo "%{_mandir}/man5/bluegene.*"                 >> $LIST
-echo "%{_sbindir}/slurm_epilog"                   >> $LIST
-echo "%{_sbindir}/slurm_prolog"                   >> $LIST
-echo "%{_sbindir}/sfree"                          >> $LIST
-echo "%config %{_sysconfdir}/bluegene.conf.example" >> $LIST
-%endif
-
-%if %{slurm_with sgijob}
-LIST=./sgi-job.files
-touch $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/proctrack_sgi_job.so &&
-echo "%{_libdir}/slurm/proctrack_sgi_job.so" >> $LIST
-%endif
 
 #############################################################################
 
@@ -418,7 +339,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libpmi.la
 %{_libdir}/libslurm.a
 %{_libdir}/libslurm.la
-%{_mandir}/man3/*
+%{_mandir}/man3/slurm_*
 #############################################################################
 
 %if %{slurm_with auth_none}
@@ -429,30 +350,48 @@ rm -rf $RPM_BUILD_ROOT
 #############################################################################
 
 %if %{slurm_with munge}
-%files -f munge.files munge
+%files munge
 %defattr(-,root,root)
+%{_libdir}/slurm/auth_munge.so
+%{_libdir}/slurm/crypto_munge.so
 %endif
 #############################################################################
 
 %if %{slurm_with authd}
-%files -f auth_authd.files auth-authd
 %defattr(-,root,root)
+%files auth-authd
+%{_libdir}/slurm/auth_authd.so
 %endif
 #############################################################################
 
 %if %{slurm_with bluegene}
-%files -f bluegene.files bluegene
+%files bluegene
 %defattr(-,root,root)
+%{_libdir}/slurm/select_bluegene.so
+%{_libdir}/slurm/libsched_if64.so
+%{_mandir}/man5/bluegene.*
+%{_sbindir}/slurm_epilog
+%{_sbindir}/slurm_prolog
+%{_sbindir}/sfree
+%config %{_sysconfdir}/bluegene.conf.example
 %endif
 #############################################################################
 
-%files -f perlapi.files perlapi
+%files perlapi
 %defattr(-,root,root)
+%{_perldir}/Slurm.pm
+%{_perldir}/auto/Slurm/Slurm.so
+%{_mandir}/man3/Slurm.*
+%{_perldir}/auto/Slurm/Slurm.bs
+%{_perldir}/auto/Slurm/autosplit.ix
+
 #############################################################################
 
 %if %{slurm_with elan}
-%files -f switch_elan.files switch-elan
+%files switch-elan
 %defattr(-,root,root)
+%{_libdir}/slurm/switch_elan.so
+%{_libdir}/slurm/proctrack_rms.so
 %endif
 #############################################################################
 
@@ -505,19 +444,31 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/task_none.so
 #############################################################################
 
-%files -f torque.files torque
+%files torque
 %defattr(-,root,root)
+%{_bindir}/pbsnodes
+%{_bindir}/qdel
+%{_bindir}/qhold
+%{_bindir}/qrls
+%{_bindir}/qstat
+%{_bindir}/qsub
+%{_bindir}/mpiexec
 #############################################################################
 
 %if %{slurm_with aix}
-%files -f aix_federation.files aix-federation
+%files aix-federation
 %defattr(-,root,root)
+%{_libdir}/slurm/switch_federation.so 
+%{_libdir}/slurm/proctrack_aix.so
+%{_libdir}/slurm/checkpoint_aix.so
+%config %{_sysconfdir}/federation.conf.example
 %endif
 #############################################################################
 
 %if %{slurm_with sgijob}
-%files -f sgi-job.files proctrack-sgi-job
+%files proctrack-sgi-job
 %defattr(-,root,root)
+%{_libdir}/slurm/proctrack_sgi_job.so
 %endif
 #############################################################################
 
