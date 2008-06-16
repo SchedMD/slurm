@@ -93,7 +93,8 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 		"t1.kill_requid",
 		"t1.qos",
 		"t2.user",
-		"t2.cluster"
+		"t2.cluster",
+		"t2.lft"
 	};
 
 	/* if this changes you will need to edit the corresponding 
@@ -157,6 +158,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 		JOB_REQ_QOS,
 		JOB_REQ_USER_NAME,
 		JOB_REQ_CLUSTER,
+		JOB_REQ_LFT,
 		JOB_REQ_COUNT		
 	};
 	enum {
@@ -288,14 +290,15 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 
 	if(job_cond->usage_start) {
 		if(!job_cond->usage_end)
-			job_cond->usage_end = time(NULL);
+			job_cond->usage_end = now;
 
 		if(extra)
 			xstrcat(extra, " && (");
 		else
 			xstrcat(extra, " where (");
 		xstrfmtcat(extra, 
-			   "(t1.eligible < %d && (end >= %d || end = 0)))",
+			   "(t1.eligible < %d "
+			   "&& (t1.end >= %d || t1.end = 0)))",
 			   job_cond->usage_end, job_cond->usage_start);
 	}
 
@@ -376,29 +379,96 @@ no_cond:
 
 		job->alloc_cpus = atoi(row[JOB_REQ_ALLOC_CPUS]);
 		job->associd = atoi(row[JOB_REQ_ASSOCID]);
-		
-		job->cluster = xstrdup(row[JOB_REQ_CLUSTER]);
+
+		if(row[JOB_REQ_CLUSTER])
+			job->cluster = xstrdup(row[JOB_REQ_CLUSTER]);
 
 		if(row[JOB_REQ_USER_NAME]) 
 			job->user = xstrdup(row[JOB_REQ_USER_NAME]);
 		else 
 			job->uid = atoi(row[JOB_REQ_UID]);
-		
-		job->account = xstrdup(row[JOB_REQ_ACCOUNT]);
-	
-		job->blockid = xstrdup(row[JOB_REQ_BLOCKID]);
+
+		if(row[JOB_REQ_LFT])
+			job->lft = atoi(row[JOB_REQ_LFT]);
+
+		if(row[JOB_REQ_ACCOUNT])
+			job->account = xstrdup(row[JOB_REQ_ACCOUNT]);
+		if(row[JOB_REQ_BLOCKID])
+			job->blockid = xstrdup(row[JOB_REQ_BLOCKID]);
 
 		job->eligible = atoi(row[JOB_REQ_ELIGIBLE]);
 		job->submit = atoi(row[JOB_REQ_SUBMIT]);
 		job->start = atoi(row[JOB_REQ_START]);
 		job->end = atoi(row[JOB_REQ_END]);
-		job->suspended = atoi(row[JOB_REQ_SUSPENDED]);
-		if(!job->end) {
-			job->elapsed = now - job->start;
-		} else {
+		if(job_cond->usage_start) {
+			if(job->start && (job->start < job_cond->usage_start))
+				job->start = job_cond->usage_start;
+
+			if(!job->start && job->end)
+				job->start = job->end;
+
+			if(!job->end || job->end > job_cond->usage_end) 
+				job->end = job_cond->usage_end;
+
 			job->elapsed = job->end - job->start;
+
+			if(row[JOB_REQ_SUSPENDED]) {
+				MYSQL_RES *result2 = NULL;
+				MYSQL_ROW row2;
+				/* get the suspended time for this job */
+				query = xstrdup_printf(
+					"select start, end from %s where "
+					"(start < %d && (end >= %d "
+					"|| end = 0)) && id=%s "
+					"order by start",
+					suspend_table,
+					job_cond->usage_end, 
+					job_cond->usage_start,
+					row[JOB_REQ_ID]);
+				
+				debug4("%d query\n%s", mysql_conn->conn, query);
+				if(!(result2 = mysql_db_query_ret(
+					     mysql_conn->acct_mysql_db,
+					     query, 0))) {
+					list_destroy(job_list);
+					job_list = NULL;
+					break;
+				}
+				xfree(query);
+				while((row2 = mysql_fetch_row(result2))) {
+					int local_start =
+						atoi(row2[0]);
+					int local_end = 
+						atoi(row2[1]);
+					
+					if(!local_start)
+						continue;
+					
+					if(job->start > local_start)
+						local_start = job->start;
+					if(job->end < local_end)
+						local_end = job->end;
+					
+					if((local_end - local_start) < 1)
+						continue;
+					
+					job->elapsed -= 
+						(local_end - local_start);
+					job->suspended += 
+						(local_end - local_start);
+				}
+				mysql_free_result(result2);			
+
+			}
+		} else {
+			job->suspended = atoi(row[JOB_REQ_SUSPENDED]);
+			if(!job->end) {
+				job->elapsed = now - job->start;
+			} else {
+				job->elapsed = job->end - job->start;
+			}
+			job->elapsed -= job->suspended;
 		}
-		job->elapsed -= job->suspended;
 
 		job->jobid = atoi(row[JOB_REQ_JOBID]);
 		job->jobname = xstrdup(row[JOB_REQ_NAME]);

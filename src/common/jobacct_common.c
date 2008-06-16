@@ -145,6 +145,7 @@ extern jobacct_job_rec_t *create_jobacct_job_rec()
 	job->state = JOB_PENDING;
 	job->steps = list_create(destroy_jobacct_step_rec);
 	job->requid = -1;
+	job->lft = (uint32_t)NO_VAL;
 
       	return job;
 }
@@ -222,6 +223,7 @@ extern void pack_jobacct_job_rec(void *object, Buf buffer)
 	pack32(job->gid, buffer);
 	pack32(job->jobid, buffer);
 	packstr(job->jobname, buffer);
+	pack32(job->lft, buffer);
 	packstr(job->partition, buffer);
 	packstr(job->nodes, buffer);
 	pack32(job->priority, buffer);
@@ -277,6 +279,7 @@ extern int unpack_jobacct_job_rec(void **job, Buf buffer)
 	safe_unpack32(&job_ptr->gid, buffer);
 	safe_unpack32(&job_ptr->jobid, buffer);
 	safe_unpackstr_xmalloc(&job_ptr->jobname, &uint32_tmp, buffer);
+	safe_unpack32(&job_ptr->lft, buffer);
 	safe_unpackstr_xmalloc(&job_ptr->partition, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&job_ptr->nodes, &uint32_tmp, buffer);
 	safe_unpack32((uint32_t *)&job_ptr->priority, buffer);
@@ -311,16 +314,7 @@ extern int unpack_jobacct_job_rec(void **job, Buf buffer)
 	return SLURM_SUCCESS;
 
 unpack_error:
-	xfree(job_ptr->account);
-	xfree(job_ptr->blockid);
-	xfree(job_ptr->cluster);
-	xfree(job_ptr->jobname);
-	xfree(job_ptr->partition);
-	xfree(job_ptr->nodes);
-	if(job_ptr->steps)
-		list_destroy(job_ptr->steps);
-	xfree(job_ptr->user);
-	xfree(job_ptr);
+	destroy_jobacct_job_rec(job_ptr);
 	*job = NULL;
 	return SLURM_ERROR;
 }
@@ -378,9 +372,7 @@ extern int unpack_jobacct_step_rec(jobacct_step_rec_t **step, Buf buffer)
 	return SLURM_SUCCESS;
 
 unpack_error:
-	xfree(step_ptr->nodes);
-	xfree(step_ptr->stepname);
-	xfree(step_ptr);
+	destroy_jobacct_step_rec(step_ptr);
 	*step = NULL;
 	return SLURM_ERROR;
 } 
@@ -411,9 +403,7 @@ extern int unpack_jobacct_selected_step(jobacct_selected_step_t **step,
 	return SLURM_SUCCESS;
 
 unpack_error:
-	xfree(step_ptr->job);
-	xfree(step_ptr->step);
-	xfree(step_ptr);
+	destroy_jobacct_selected_step(step_ptr);
 	*step = NULL;
 	return SLURM_ERROR;
 }

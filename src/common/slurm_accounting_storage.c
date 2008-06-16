@@ -931,9 +931,11 @@ extern void pack_acct_association_rec(void *in, Buf buffer)
 		pack32(0, buffer);
 		pack32(0, buffer);
 		pack32(0, buffer);
+		pack32(0, buffer);
 		packnull(buffer);
 		pack32(0, buffer);
 		packnull(buffer);
+		pack32(0, buffer);
 		pack32(0, buffer);
 		pack32(0, buffer);
 		packnull(buffer);
@@ -958,6 +960,7 @@ extern void pack_acct_association_rec(void *in, Buf buffer)
 	packstr(object->cluster, buffer);
 	pack32(object->fairshare, buffer);
 	pack32(object->id, buffer);
+	pack32(object->lft, buffer);
 	pack32(object->max_cpu_secs_per_job, buffer);
 	pack32(object->max_jobs, buffer);
 	pack32(object->max_nodes_per_job, buffer);
@@ -965,6 +968,7 @@ extern void pack_acct_association_rec(void *in, Buf buffer)
 	packstr(object->parent_acct, buffer);
 	pack32(object->parent_id, buffer);
 	packstr(object->partition, buffer);
+	pack32(object->rgt, buffer);
 	pack32(object->uid, buffer);
 	pack32(object->used_share, buffer);
 	packstr(object->user, buffer);	
@@ -994,6 +998,7 @@ extern int unpack_acct_association_rec(void **object, Buf buffer)
 	safe_unpackstr_xmalloc(&object_ptr->cluster, &uint32_tmp, buffer);
 	safe_unpack32(&object_ptr->fairshare, buffer);
 	safe_unpack32(&object_ptr->id, buffer);
+	safe_unpack32(&object_ptr->lft, buffer);
 	safe_unpack32(&object_ptr->max_cpu_secs_per_job, buffer);
 	safe_unpack32(&object_ptr->max_jobs, buffer);
 	safe_unpack32(&object_ptr->max_nodes_per_job, buffer);
@@ -1001,6 +1006,7 @@ extern int unpack_acct_association_rec(void **object, Buf buffer)
 	safe_unpackstr_xmalloc(&object_ptr->parent_acct, &uint32_tmp, buffer);
 	safe_unpack32(&object_ptr->parent_id, buffer);
 	safe_unpackstr_xmalloc(&object_ptr->partition, &uint32_tmp, buffer);
+	safe_unpack32(&object_ptr->rgt, buffer);
 	safe_unpack32(&object_ptr->uid, buffer);
 	safe_unpack32(&object_ptr->used_share, buffer);
 	safe_unpackstr_xmalloc(&object_ptr->user, &uint32_tmp, buffer);
@@ -1027,6 +1033,7 @@ extern void pack_acct_user_cond(void *in, Buf buffer)
 		pack32(0, buffer);
 		pack16(0, buffer);
 		pack32(0, buffer);
+		pack16(0, buffer);
 		pack16(0, buffer);
 		return;
 	}
@@ -1064,6 +1071,7 @@ extern void pack_acct_user_cond(void *in, Buf buffer)
 		list_iterator_destroy(itr);
 	}
 	pack16((uint16_t)object->with_assocs, buffer);
+	pack16((uint16_t)object->with_deleted, buffer);
 
 }
 
@@ -1101,6 +1109,7 @@ extern int unpack_acct_user_cond(void **object, Buf buffer)
 		}
 	}
 	safe_unpack16((uint16_t *)&object_ptr->with_assocs, buffer);
+	safe_unpack16((uint16_t *)&object_ptr->with_deleted, buffer);
 
 	return SLURM_SUCCESS;
 
@@ -1122,6 +1131,7 @@ extern void pack_acct_account_cond(void *in, Buf buffer)
 		pack_acct_association_cond(NULL, buffer);
 		pack32(0, buffer);
 		pack32(0, buffer);
+		pack16(0, buffer);
 		pack16(0, buffer);
 		pack16(0, buffer);
 		return;
@@ -1170,6 +1180,7 @@ extern void pack_acct_account_cond(void *in, Buf buffer)
 	}
 	pack16((uint16_t)object->qos, buffer);
 	pack16((uint16_t)object->with_assocs, buffer);
+	pack16((uint16_t)object->with_deleted, buffer);
 }
 
 extern int unpack_acct_account_cond(void **object, Buf buffer)
@@ -1212,6 +1223,7 @@ extern int unpack_acct_account_cond(void **object, Buf buffer)
 	}
 	safe_unpack16((uint16_t *)&object_ptr->qos, buffer);
 	safe_unpack16((uint16_t *)&object_ptr->with_assocs, buffer);
+	safe_unpack16((uint16_t *)&object_ptr->with_deleted, buffer);
 
 	return SLURM_SUCCESS;
 
@@ -1233,6 +1245,7 @@ extern void pack_acct_cluster_cond(void *in, Buf buffer)
 		pack32(0, buffer);
 		pack32(0, buffer);
 		pack16(0, buffer);
+		pack16(0, buffer);
 		return;
 	}
  
@@ -1253,6 +1266,7 @@ extern void pack_acct_cluster_cond(void *in, Buf buffer)
 	pack32(object->usage_start, buffer);
 
 	pack16((uint16_t)object->with_usage, buffer);
+	pack16((uint16_t)object->with_deleted, buffer);
 }
 
 extern int unpack_acct_cluster_cond(void **object, Buf buffer)
@@ -1276,6 +1290,7 @@ extern int unpack_acct_cluster_cond(void **object, Buf buffer)
 	safe_unpack32(&object_ptr->usage_start, buffer);
 
 	safe_unpack16((uint16_t *)&object_ptr->with_usage, buffer);
+	safe_unpack16((uint16_t *)&object_ptr->with_deleted, buffer);
 
 	return SLURM_SUCCESS;
 
@@ -1307,6 +1322,7 @@ extern void pack_acct_association_cond(void *in, Buf buffer)
 		pack32(0, buffer);
 		pack32(0, buffer);
 		pack32(0, buffer);
+		pack16(0, buffer);
 		pack16(0, buffer);
 		return;
 	}
@@ -1388,6 +1404,7 @@ extern void pack_acct_association_cond(void *in, Buf buffer)
 	count = 0;
 
 	pack16((uint16_t)object->with_usage, buffer);
+	pack16((uint16_t)object->with_deleted, buffer);
 }
 
 extern int unpack_acct_association_cond(void **object, Buf buffer)
@@ -1457,6 +1474,7 @@ extern int unpack_acct_association_cond(void **object, Buf buffer)
 	}
 
 	safe_unpack16(&object_ptr->with_usage, buffer);
+	safe_unpack16((uint16_t *)&object_ptr->with_deleted, buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:

@@ -1,12 +1,12 @@
 /*****************************************************************************\
- *  mysql_jobacct_process.h - functions the processing of
- *                               information from the mysql jobacct
- *                               storage.
+ *  job_resports.h - functions for generating job reports
+ *                     from accounting infrastructure.
  *****************************************************************************
  *
- *  Copyright (C) 2004-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
+ *  LLNL-CODE-402394.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -35,48 +35,13 @@
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
- *
- *  This file is patterned after jobcomp_linux.c, written by Morris Jette and
- *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
 
-#ifndef _HAVE_MYSQL_JOBACCT_PROCESS_H
-#define _HAVE_MYSQL_JOBACCT_PROCESS_H
+#ifndef __SREPORT_JOB_REPORTS_H
+#define __SREPORT_JOB_REPORTS_H
 
-#include <sys/types.h>
-#include <pwd.h>
-#include <stdlib.h>
-#include "src/common/assoc_mgr.h"
-#include "src/common/jobacct_common.h"
-#include "src/slurmdbd/read_config.h"
-#include "src/slurmctld/slurmctld.h"
-#include "src/database/mysql_common.h"
-#include "src/common/slurm_accounting_storage.h"
+#include "sreport.h"
 
-#ifndef HAVE_MYSQL
-typedef void mysql_conn_t;
-#else
-
-typedef struct {
-	MYSQL *acct_mysql_db;
-	bool rollback;
-	List update_list;
-	int conn;
-} mysql_conn_t;
-
-//extern int acct_db_init;
-
-extern char *assoc_table;
-extern char *job_table;
-extern char *step_table;
-extern char *suspend_table;
-
-extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
-					   acct_job_cond_t *job_cond);
-
-extern void mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
-					  List selected_parts,
-					  sacct_parameters_t *params);
-#endif
+extern int job_sizes_grouped_by_top_acct(int argc, char *argv[]);
 
 #endif

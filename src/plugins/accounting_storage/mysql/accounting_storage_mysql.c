@@ -3663,10 +3663,16 @@ extern List acct_storage_p_get_users(mysql_conn_t *mysql_conn,
 		}
 	}
 
-	xstrcat(extra, "where deleted=0");
 
-	if(!user_q) 
+	xstrcat(extra, "where deleted=0");
+	
+	if(!user_q) {
 		goto empty;
+	} 
+	
+	if(user_q->with_deleted) {
+		xstrcat(extra, " || deleted=1");
+	}
 
 	if(user_q->user_list && list_count(user_q->user_list)) {
 		set = 0;
@@ -3847,8 +3853,14 @@ extern List acct_storage_p_get_accts(mysql_conn_t *mysql_conn,
 	}
 
 	xstrcat(extra, "where deleted=0");
-	if(!acct_q) 
+	
+	if(!acct_q) {
 		goto empty;
+	} 
+
+	if(acct_q->with_deleted) {
+		xstrcat(extra, " || deleted=1");
+	} 
 
 	if(acct_q->acct_list && list_count(acct_q->acct_list)) {
 		set = 0;
@@ -4034,8 +4046,13 @@ extern List acct_storage_p_get_clusters(mysql_conn_t *mysql_conn,
 
 	xstrcat(extra, "where deleted=0");
 		
-	if(!cluster_q) 
+	if(!cluster_q) {
 		goto empty;
+	}
+
+	if(cluster_q->with_deleted) {
+		xstrcat(extra, " || deleted=1");
+	}
 
 	if(cluster_q->cluster_list && list_count(cluster_q->cluster_list)) {
 		set = 0;
@@ -4175,6 +4192,8 @@ extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 	/* if this changes you will need to edit the corresponding enum */
 	char *assoc_req_inx[] = {
 		"id",
+		"lft",
+		"rgt",
 		"user",
 		"acct",
 		"cluster",
@@ -4188,6 +4207,8 @@ extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 	};
 	enum {
 		ASSOC_REQ_ID,
+		ASSOC_REQ_LFT,
+		ASSOC_REQ_RGT,
 		ASSOC_REQ_USER,
 		ASSOC_REQ_ACCT,
 		ASSOC_REQ_CLUSTER,
@@ -4222,8 +4243,14 @@ extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 	}
 
 	xstrcat(extra, "where deleted=0");
-	if(!assoc_q) 
+
+	if(!assoc_q) {
 		goto empty;
+	}
+
+	if(assoc_q->with_deleted) {
+		xstrcat(extra, " || deleted=1");
+	}
 
 	if(assoc_q->acct_list && list_count(assoc_q->acct_list)) {
 		set = 0;
@@ -4323,8 +4350,10 @@ empty:
 
 		list_append(assoc_list, assoc);
 		
-		assoc->id =  atoi(row[ASSOC_REQ_ID]);
-
+		assoc->id = atoi(row[ASSOC_REQ_ID]);
+		assoc->lft = atoi(row[ASSOC_REQ_LFT]);
+		assoc->rgt = atoi(row[ASSOC_REQ_RGT]);
+	
 		/* get the usage if requested */
 		if(assoc_q->with_usage) {
 			acct_storage_p_get_usage(mysql_conn, assoc,

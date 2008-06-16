@@ -91,7 +91,8 @@ extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
 		"t1.kill_requid",
 		"t1.qos",
 		"t2.user_name",
-		"t2.cluster"
+		"t2.cluster",
+		"t2.lft"
 	};
 
 	/* if this changes you will need to edit the corresponding 
@@ -155,6 +156,7 @@ extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
 		JOB_REQ_QOS,
 		JOB_REQ_USER_NAME,
 		JOB_REQ_CLUSTER,
+		JOB_REQ_LFT,
 		JOB_REQ_COUNT		
 	};
 	enum {
@@ -293,7 +295,8 @@ extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
 		else
 			xstrcat(extra, " where (");
 		xstrfmtcat(extra, 
-			   "(t1.eligible < %d and (end >= %d or end = 0)))",
+			   "(t1.eligible < %d and (endtime >= %d "
+			   "or endtime = 0)))",
 			   job_cond->usage_end, job_cond->usage_start);
 	}
 
@@ -376,14 +379,26 @@ no_cond:
 						  JOB_REQ_ALLOC_CPUS));
 		job->associd = atoi(PQgetvalue(result, i, JOB_REQ_ASSOCID));
 		job->cluster = xstrdup(PQgetvalue(result, i, JOB_REQ_CLUSTER));
+		if(job->cluster && !job->cluster[0]) 
+			xfree(job->cluster);
 
 		job->user =  xstrdup(PQgetvalue(result, i, JOB_REQ_USER_NAME));
 		if(!job->user || !job->user[0]) 
 			job->uid = atoi(PQgetvalue(result, i, JOB_REQ_UID));
+
+		job->lft = atoi(PQgetvalue(result, i, JOB_REQ_LFT));
+
+		if(!job->lft)
+			job->lft = (uint32_t)NO_VAL;
+
 		job->account = xstrdup(PQgetvalue(result, i, JOB_REQ_ACCOUNT));
+		if(job->account && !job->account[0]) 
+			xfree(job->account);
 
 		job->blockid = xstrdup(PQgetvalue(result, i,
-						    JOB_REQ_BLOCKID));
+						  JOB_REQ_BLOCKID));
+		if(!job->blockid || !job->blockid[0]) 
+			xfree(job->blockid);
 		job->eligible = atoi(PQgetvalue(result, i, JOB_REQ_SUBMIT));
 		job->submit = atoi(PQgetvalue(result, i, JOB_REQ_SUBMIT));
 		job->start = atoi(PQgetvalue(result, i, JOB_REQ_START));

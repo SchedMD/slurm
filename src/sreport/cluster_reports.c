@@ -50,7 +50,17 @@ enum {
 	PRINT_CLUSTER_TOTAL
 };
 
-List print_fields_list; /* types are of print_field_t */
+typedef enum {
+	GROUP_BY_ACCOUNT,
+	GROUP_BY_ACCOUNT_JOB_SIZE,
+	GROUP_BY_ACCOUNT_JOB_SIZE_DURATION,
+	GROUP_BY_USER,
+	GROUP_BY_USER_JOB_SIZE,
+	GROUP_BY_USER_JOB_SIZE_DURATION,
+	GROUP_BY_NONE
+} report_grouping_t;
+
+static List print_fields_list = NULL; /* types are of print_field_t */
 
 static int _set_cond(int *start, int argc, char *argv[],
 		     acct_cluster_cond_t *cluster_cond,
@@ -172,7 +182,7 @@ static int _setup_print_fields_list(List format_list)
 			field->type = PRINT_CLUSTER_ACPU;
 			field->name = xstrdup("Allocated");
 			if(time_format == SREPORT_TIME_SECS_PER)
-				field->len = 18;
+				field->len = 20;
 			else
 				field->len = 12;
 			field->print_routine = sreport_print_time;
@@ -188,7 +198,7 @@ static int _setup_print_fields_list(List format_list)
 			field->type = PRINT_CLUSTER_ICPU;
 			field->name = xstrdup("Idle");
 			if(time_format == SREPORT_TIME_SECS_PER)
-				field->len = 18;
+				field->len = 20;
 			else
 				field->len = 12;
 			field->print_routine = sreport_print_time;
@@ -204,7 +214,7 @@ static int _setup_print_fields_list(List format_list)
 			field->type = PRINT_CLUSTER_TOTAL;
 			field->name = xstrdup("Reported");
 			if(time_format == SREPORT_TIME_SECS_PER)
-				field->len = 18;
+				field->len = 20;
 			else
 				field->len = 12;
 			field->print_routine = sreport_print_time;
@@ -233,36 +243,41 @@ static List _get_cluster_list(int argc, char *argv[], uint64_t *total_time,
 {
 	acct_cluster_cond_t *cluster_cond = 
 		xmalloc(sizeof(acct_cluster_cond_t));
-	List cluster_list = NULL;
 	int i=0;
+	List cluster_list = NULL;
 
 	cluster_cond->cluster_list = list_create(slurm_destroy_char);
 	cluster_cond->with_usage = 1;
+
 	_set_cond(&i, argc, argv, cluster_cond, format_list);
 	
 	cluster_list = acct_storage_g_get_clusters(db_conn, cluster_cond);
+	if(!cluster_list) {
+		printf(" Problem with cluster query.\n");
+		return NULL;
+	}
+
 	if(print_fields_have_header) {
 		char start_char[20];
 		char end_char[20];
 		time_t my_end = cluster_cond->usage_end-1;
+
 		slurm_make_time_str((time_t *)&cluster_cond->usage_start, 
 				    start_char, sizeof(start_char));
 		slurm_make_time_str(&my_end,
 				    end_char, sizeof(end_char));
 		printf("----------------------------------------"
 		       "----------------------------------------\n");
-		printf("  %s %s - %s (%d*cpus secs)\n", 
+		printf("%s %s - %s (%d*cpus secs)\n", 
 		       report_name, start_char, end_char, 
 		       (cluster_cond->usage_end - cluster_cond->usage_start));
 		printf("----------------------------------------"
 		       "----------------------------------------\n");
 	}
 	(*total_time) = cluster_cond->usage_end - cluster_cond->usage_start;
+
 	destroy_acct_cluster_cond(cluster_cond);
 	
-	if(!cluster_list) 
-		printf(" Problem with query.\n");
-
 	return cluster_list;
 }
 
@@ -277,24 +292,24 @@ extern int cluster_utilization(int argc, char *argv[])
 	print_field_t *field = NULL;
 	uint64_t total_time = 0;
 
-	List cluster_list = NULL;
+	List cluster_list = NULL; 
+
 	List format_list = list_create(slurm_destroy_char);
 
 	print_fields_list = list_create(destroy_print_field);
 
-	if(!list_count(format_list)) 
-		addto_char_list(format_list, "Cl,a,d,i,res,o,rep");
-	
 
-	if(!(cluster_list = _get_cluster_list(
-		     argc, argv, &total_time, 
-		     "Cluster Utilization", format_list))) {
-		rc = SLURM_ERROR;
+	if(!(cluster_list = _get_cluster_list(argc, argv, &total_time,
+					      "Cluster Utilization",
+					      format_list))) 
 		goto end_it;
-	}
+
+	if(!list_count(format_list)) 
+		addto_char_list(format_list, "Cl,a,d,i,res,rep");
 
 	_setup_print_fields_list(format_list);
-	
+	list_destroy(format_list);
+
 	itr = list_iterator_create(cluster_list);
 	itr2 = list_iterator_create(print_fields_list);
 
@@ -304,6 +319,7 @@ extern int cluster_utilization(int argc, char *argv[])
 		cluster_accounting_rec_t *accting = NULL;
 		cluster_accounting_rec_t total_acct;
 		uint64_t total_reported = 0;
+		uint64_t local_total_time = 0;
 
 		if(!cluster->accounting_list
 		   || !list_count(cluster->accounting_list))
@@ -323,10 +339,10 @@ extern int cluster_utilization(int argc, char *argv[])
 		list_iterator_destroy(itr3);
 
 		total_acct.cpu_count /= list_count(cluster->accounting_list);
-		total_time *= total_acct.cpu_count;
+		local_total_time = total_time * total_acct.cpu_count;
 		total_reported = total_acct.alloc_secs + total_acct.down_secs 
 			+ total_acct.idle_secs + total_acct.resv_secs;
-
+		
 		while((field = list_next(itr2))) {
 			switch(field->type) {
 			case PRINT_CLUSTER_NAME:
@@ -373,7 +389,7 @@ extern int cluster_utilization(int argc, char *argv[])
 				field->print_routine(SLURM_PRINT_VALUE,
 						     field,
 						     total_reported,
-						     total_time);
+						     local_total_time);
 				break;
 			default:
 				break;
@@ -385,10 +401,18 @@ extern int cluster_utilization(int argc, char *argv[])
 
 	list_iterator_destroy(itr2);
 	list_iterator_destroy(itr);
-	list_destroy(cluster_list);
 
 end_it:
-	list_destroy(print_fields_list);
+	if(cluster_list) {
+		list_destroy(cluster_list);
+		cluster_list = NULL;
+	}
+	
+	if(print_fields_list) {
+		list_destroy(print_fields_list);
+		print_fields_list = NULL;
+	}
 
 	return rc;
 }
+

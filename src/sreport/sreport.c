@@ -39,6 +39,7 @@
 #include "src/sreport/sreport.h"
 #include "src/sreport/assoc_reports.h"
 #include "src/sreport/cluster_reports.h"
+#include "src/sreport/job_reports.h"
 #include "src/common/xsignal.h"
 
 #define OPT_LONG_HIDE   0x102
@@ -89,13 +90,13 @@ main (int argc, char *argv[])
 	exit_flag         = 0;
 	input_field_count = 0;
 	quiet_flag        = 0;
-	log_init("sacctmgr", opts, SYSLOG_FACILITY_DAEMON, NULL);
+	log_init("sreport", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
 	while((opt_char = getopt_long(argc, argv, "hionpqst:vV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
-			fprintf(stderr, "Try \"sacctmgr --help\" "
+			fprintf(stderr, "Try \"sreport --help\" "
 				"for more information\n");
 			exit(1);
 			break;
@@ -351,6 +352,8 @@ _process_command (int argc, char *argv[])
 		_print_version();
 	} else if ((strncasecmp (argv[0], "cu", 2) == 0)) {
 		cluster_utilization((argc - 1), &argv[1]);
+	} else if ((strncasecmp (argv[0], "jobsizes", 2) == 0)) {
+		job_sizes_grouped_by_top_acct((argc - 1), &argv[1]);
 	} else {
 		exit_code = 1;
 		fprintf (stderr, "invalid keyword: %s\n", argv[0]);
