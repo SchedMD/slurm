@@ -25,7 +25,11 @@ documents those changes that are of interest to users and admins.
     resources will not be over-allocated.
  -- Correct logic in accumulating resources by node weight when more than 
     one job can run per node (select/cons_res or partition shared=yes|force).
-
+ -- slurm.spec file updated to avoid creating empty RPMs. RPM now *must* be
+    built with correct specification of which packages to build or not build.
+    See the top of the slurm.spec file for information about how to control
+    package building specification.
+ 
 * Changes in SLURM 1.3.3
 ========================
  -- Add mpi_openmpi plugin to the main SLURM RPM.
