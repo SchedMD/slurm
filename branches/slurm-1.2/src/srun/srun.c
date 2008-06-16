@@ -133,7 +133,7 @@ int srun(int ac, char **av)
 {
 	resource_allocation_response_msg_t *resp;
 	srun_job_t *job = NULL;
-	int exitcode = 0;
+	int exitcode = 0, debug_level;
 	env_t *env = xmalloc(sizeof(env_t));
 	uint32_t job_id = 0;
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
@@ -148,7 +148,8 @@ int srun(int ac, char **av)
 	env->cli = NULL;
 	env->env = NULL;
 
-	logopt.stderr_level += _slurm_debug_env_val();
+	debug_level = _slurm_debug_env_val();
+	logopt.stderr_level += debug_level;
 	log_init(xbasename(av[0]), logopt, 0, NULL);
 
 	/* Initialize plugin stack, read options from plugins, etc.
@@ -183,7 +184,8 @@ int srun(int ac, char **av)
 		logopt.stderr_level -= opt.quiet;
 		logopt.prefix_level = 1;
 		log_alter(logopt, 0, NULL);
-	}
+	} else
+		_verbose = debug_level;
 
 	if (!opt.allocate) {
 		(void) _set_rlimit_env();
