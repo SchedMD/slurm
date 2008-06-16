@@ -143,6 +143,7 @@ static int _setup_signals();
 int srun(int ac, char **av)
 {
 	resource_allocation_response_msg_t *resp;
+	int debug_level;
 	env_t *env = xmalloc(sizeof(env_t));
 	uint32_t job_id = 0;
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
@@ -158,7 +159,8 @@ int srun(int ac, char **av)
 	env->env = NULL;
 	env->ckpt_path = NULL;
 
-	logopt.stderr_level += _slurm_debug_env_val();
+	debug_level = _slurm_debug_env_val();
+	logopt.stderr_level += debug_level;
 	log_init(xbasename(av[0]), logopt, 0, NULL);
 
 /* 	xsignal(SIGQUIT, _ignore_signal); */
@@ -198,7 +200,8 @@ int srun(int ac, char **av)
 		logopt.stderr_level -= opt.quiet;
 		logopt.prefix_level = 1;
 		log_alter(logopt, 0, NULL);
-	}
+	} else
+		_verbose = debug_level;
 
 	(void) _set_rlimit_env();
 	_set_prio_process_env();
@@ -509,7 +512,7 @@ _print_job_information(resource_allocation_response_msg_t *resp)
 	if (!_verbose)
 		return;
 
-	xstrfmtcat(str, "jobid %u nodes(%u):`%s', cpu counts: ",
+	xstrfmtcat(str, "jobid %u: nodes(%u):`%s', cpu counts: ",
 		   resp->job_id, resp->node_cnt, resp->node_list);
 
 	for (i = 0; i < resp->num_cpu_groups; i++) {
