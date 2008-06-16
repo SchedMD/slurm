@@ -4771,6 +4771,8 @@ extern void job_completion_logger(struct job_record  *job_ptr)
 	} else {	/* JOB_FAILED, JOB_NODE_FAIL, or JOB_TIMEOUT */
 		if (job_ptr->mail_type & MAIL_JOB_FAIL)
 			mail_job_info(job_ptr, MAIL_JOB_FAIL);
+		else if (job_ptr->mail_type & MAIL_JOB_END)
+			mail_job_info(job_ptr, MAIL_JOB_END);
 	}
 
 	g_slurm_jobcomp_write(job_ptr);
