@@ -188,7 +188,7 @@ int slurm_step_launch (slurm_step_ctx_t *ctx, char *launcher_host,
 	launch.job_step_id = ctx->step_resp->job_step_id;
 	if (params->env == NULL) {
 		/* if the user didn't specify an environment, grab the
-		   environment of the running process */
+		 * environment of the running process */
 		env_array_merge(&env, (const char **)environ);
 	} else {
 		env_array_merge(&env, (const char **)params->env);

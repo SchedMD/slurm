@@ -116,29 +116,30 @@ struct {
 /*
  * forward declaration of static funcs
  */
-static void  _print_job_information(resource_allocation_response_msg_t *resp);
-static void  _set_prio_process_env(void);
-static int   _set_rlimit_env(void);
-static int   _set_umask_env(void);
-static char *_uint16_array_to_str(int count, const uint16_t *array);
 static int   _become_user (void);
+static int   _call_spank_local_user (srun_job_t *job);
+static void  _define_symbols(void);
+static void  _handle_intr();
+static void  _handle_signal(int signo);
+static void  _print_job_information(resource_allocation_response_msg_t *resp);
+static void  _pty_restore(void);
 static void  _run_srun_prolog (srun_job_t *job);
 static void  _run_srun_epilog (srun_job_t *job);
 static int   _run_srun_script (srun_job_t *job, char *script);
-static int   _slurm_debug_env_val (void);
-static int   _call_spank_local_user (srun_job_t *job);
-static void  _set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds);
-static void  _define_symbols(void);
-static void  _pty_restore(void);
+static void  _set_cpu_env_var(resource_allocation_response_msg_t *resp);
+static int   _setup_signals();
 static void  _step_opt_exclusive(void);
-static void _task_start(launch_tasks_response_msg_t *msg);
-static void _task_finish(task_exit_msg_t *msg);
-static void _task_state_struct_init(int num_tasks);
-static void _task_state_struct_print(void);
-static void _task_state_struct_free(void);
-static void _handle_intr();
-static void _handle_signal(int signo);
-static int _setup_signals();
+static void  _set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds);
+static void  _set_prio_process_env(void);
+static int   _set_rlimit_env(void);
+static int   _set_umask_env(void);
+static int   _slurm_debug_env_val (void);
+static void  _task_start(launch_tasks_response_msg_t *msg);
+static void  _task_finish(task_exit_msg_t *msg);
+static void  _task_state_struct_init(int num_tasks);
+static void  _task_state_struct_print(void);
+static void  _task_state_struct_free(void);
+static char *_uint16_array_to_str(int count, const uint16_t *array);
 
 int srun(int ac, char **av)
 {
@@ -233,7 +234,7 @@ int srun(int ac, char **av)
                        opt.alloc_nodelist = xstrdup(resp->node_list);
 		if (opt.exclusive)
 			_step_opt_exclusive();
-
+		_set_cpu_env_var(resp);
 		job = job_step_create_allocation(resp);
 		slurm_free_resource_allocation_response_msg(resp);
 
@@ -254,6 +255,7 @@ int srun(int ac, char **av)
 		if ( !(resp = allocate_nodes()) ) 
 			exit(1);
 		_print_job_information(resp);
+		_set_cpu_env_var(resp);
 		job = job_create_allocation(resp);
 		opt.exclusive = false;	/* not applicable for this step */
 		if (!job || create_job_step(job) < 0) {
@@ -574,6 +576,22 @@ static void  _set_prio_process_env(void)
 
 	debug ("propagating SLURM_PRIO_PROCESS=%d", retval);
 }
+
+static void _set_cpu_env_var(resource_allocation_response_msg_t *resp)
+{
+	char *tmp;
+
+	if (getenv("SLURM_JOB_CPUS_PER_NODE"))
+		return;
+
+	tmp = uint32_compressed_to_str((uint32_t)resp->num_cpu_groups,
+				       resp->cpus_per_node,
+				       resp->cpu_count_reps);
+	if (setenvf(NULL, "SLURM_JOB_CPUS_PER_NODE", "%s", tmp) < 0)
+		error("unable to set SLURM_JOB_CPUS_PER_NODE in environment");
+	xfree(tmp);
+	return;
+} 
 
 /* Set SLURM_RLIMIT_* environment variables with current resource 
  * limit values, reset RLIMIT_NOFILE to maximum possible value */
