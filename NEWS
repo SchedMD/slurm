@@ -14,7 +14,7 @@ documents those changes that are of interest to users and admins.
  -- In select/cons_res improve the resource selection when a job has specified
     a processor count along with a maximum node count.
  -- For an srun command with --ntasks-per-node option and *no* --ntasks count,
-    spawn a task count equal to the number of nodes selected multipled by the 
+    spawn a task count equal to the number of nodes selected multiplied by the 
     --ntasks-per-node value.
  -- In jobcomp/script: Set TZ if set in slurmctld's environment.
  -- In srun with --verbose option properly format CPU allocation information 
