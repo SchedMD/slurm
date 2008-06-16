@@ -1242,7 +1242,7 @@ void inline slurmdbd_free_cond_msg(slurmdbd_msg_type_t type,
 		case DBD_REMOVE_CLUSTERS:
 			my_destroy = destroy_acct_cluster_cond;
 			break;
-		case DBD_GET_JOBS:
+		case DBD_GET_JOBS_COND:
 			my_destroy = destroy_acct_job_cond;
 			break;
 		case DBD_GET_USERS:
@@ -1502,8 +1502,9 @@ void inline slurmdbd_pack_cond_msg(slurmdbd_msg_type_t type,
 	case DBD_REMOVE_CLUSTERS:
 		my_function = pack_acct_cluster_cond;
 		break;
-	case DBD_GET_JOBS:
+	case DBD_GET_JOBS_COND:
 		my_function = pack_acct_job_cond;
+		break;
 	case DBD_GET_USERS:
 	case DBD_REMOVE_USERS:
 		my_function = pack_acct_user_cond;
@@ -1535,7 +1536,7 @@ int inline slurmdbd_unpack_cond_msg(slurmdbd_msg_type_t type,
 	case DBD_REMOVE_CLUSTERS:
 		my_function = unpack_acct_cluster_cond;
 		break;
-	case DBD_GET_JOBS:
+	case DBD_GET_JOBS_COND:
 		my_function = unpack_acct_job_cond;
 		break;
 	case DBD_GET_USERS:

@@ -44,18 +44,18 @@
 
 typedef struct {
 	int assoc_id;
-	int a_cpu;
+	uint64_t a_cpu;
 } local_assoc_usage_t;
 
 typedef struct {
 	char *name;
-	int total_time;
-	int a_cpu;
+	uint64_t total_time;
+	uint64_t a_cpu;
 	int cpu_count;
-	int d_cpu;
-	int i_cpu;
-	int o_cpu;
-	int r_cpu;
+	uint64_t d_cpu;
+	uint64_t i_cpu;
+	uint64_t o_cpu;
+	uint64_t r_cpu;
 	time_t start;
 	time_t end;
 } local_cluster_usage_t;
@@ -476,7 +476,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			if(query) {
 				xstrfmtcat(query, 
 					   ", (%d, %d, '%s', %d, %d, "
-					   "%d, %d, %d, %d, %d)",
+					   "%llu, %llu, %llu, %llu, %llu)",
 					   now, now, 
 					   c_usage->name, c_usage->start, 
 					   c_usage->cpu_count, c_usage->a_cpu,
@@ -490,10 +490,11 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					   "down_cpu_secs, idle_cpu_secs, "
 					   "over_cpu_secs, resv_cpu_secs) "
 					   "values (%d, %d, '%s', %d, %d, "
-					   "%d, %d, %d, %d, %d)",
+					   "%llu, %llu, %llu, %llu, %llu)",
 					   cluster_hour_table, now, now, 
 					   c_usage->name, c_usage->start, 
-					   c_usage->cpu_count, c_usage->a_cpu,
+					   c_usage->cpu_count,
+					   c_usage->a_cpu,
 					   c_usage->d_cpu, c_usage->i_cpu,
 					   c_usage->o_cpu, c_usage->r_cpu); 
 			}
@@ -524,7 +525,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 /* 			     a_usage->a_cpu); */
 			if(query) {
 				xstrfmtcat(query, 
-					   ", (%d, %d, %d, %d, %d)",
+					   ", (%d, %d, %d, %d, %llu)",
 					   now, now, 
 					   a_usage->assoc_id, curr_start,
 					   a_usage->a_cpu); 
@@ -533,7 +534,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					   "insert into %s (creation_time, "
 					   "mod_time, id, period_start, "
 					   "alloc_cpu_secs) values "
-					   "(%d, %d, %d, %d, %d)",
+					   "(%d, %d, %d, %d, %llu)",
 					   assoc_hour_table, now, now, 
 					   a_usage->assoc_id, curr_start,
 					   a_usage->a_cpu); 

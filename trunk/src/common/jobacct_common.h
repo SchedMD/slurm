@@ -125,6 +125,7 @@ typedef struct {
 	uint32_t gid;
 	uint32_t jobid;
 	char	*jobname;
+	uint32_t lft;
 	char	*partition;
 	char	*nodes;
 	int32_t priority;

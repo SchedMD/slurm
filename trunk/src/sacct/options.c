@@ -41,8 +41,6 @@
 #include "sacct.h"
 #include <time.h>
 
-void _destroy_parts(void *object);
-void _destroy_steps(void *object);
 void _help_fields_msg(void);
 void _help_msg(void);
 void _usage(void);
@@ -52,22 +50,6 @@ int selected_state[STATE_COUNT];
 List selected_parts = NULL;
 List selected_steps = NULL;
 void *acct_db_conn = NULL;
-
-void _destroy_parts(void *object)
-{
-	char *part = (char *)object;
-	xfree(part);
-}
-
-void _destroy_steps(void *object)
-{
-	jobacct_selected_step_t *step = (jobacct_selected_step_t *)object;
-	if(step) {
-		xfree(step->job);
-		xfree(step->step);
-		xfree(step);
-	}
-}
 
 void _show_rec(char *f[])
 {
@@ -1212,8 +1194,8 @@ void do_stat()
 void sacct_init()
 {
 	int i=0;
-	selected_parts = list_create(_destroy_parts);
-	selected_steps = list_create(_destroy_steps);
+	selected_parts = list_create(slurm_destroy_char);
+	selected_steps = list_create(destroy_jobacct_selected_step);
 	for(i=0; i<STATE_COUNT; i++)
 		selected_state[i] = 0;
 }

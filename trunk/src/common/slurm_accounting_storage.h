@@ -91,6 +91,7 @@ typedef struct {
 	uint32_t usage_start; 
 	List user_list;		/* list of char * */
 	uint16_t with_usage; 
+	uint16_t with_deleted; 
 } acct_association_cond_t;
 
 typedef struct {
@@ -100,6 +101,7 @@ typedef struct {
 	List organization_list; /* list of char * */
 	acct_qos_level_t qos;	
 	uint16_t with_assocs; 
+	uint16_t with_deleted; 
 } acct_account_cond_t;
 
 typedef struct {
@@ -124,6 +126,9 @@ typedef struct acct_association_rec {
 	uint32_t fairshare;	/* fairshare number */
 	uint32_t id;		/* id identifing a combination of
 				 * user-account-cluster(-partition) */
+	uint32_t lft;		/* lft used for grouping sub
+				 * associations and jobs as a left
+				 * most container used with rgt */
 	uint32_t max_cpu_secs_per_job; /* max number of cpu seconds this 
 					   * association can have per job */
 	uint32_t max_jobs;	/* max number of jobs this association can run
@@ -138,6 +143,9 @@ typedef struct acct_association_rec {
 	uint32_t parent_id;	/* id of parent account */
 	char *partition;	/* optional partition in a cluster 
 				 * associated to association */
+	uint32_t rgt;		/* rgt used for grouping sub
+				 * associations and jobs as a right
+				 * most container used with lft */
 	uint32_t uid;		/* user ID */
 	uint32_t used_jobs;	/* count of active jobs */
 	uint32_t used_share;	/* measure of resource usage */
@@ -149,6 +157,7 @@ typedef struct {
 	uint32_t usage_end; 
 	uint32_t usage_start; 
 	uint16_t with_usage; 
+	uint16_t with_deleted; 
 } acct_cluster_cond_t;
 
 typedef struct {
@@ -195,6 +204,7 @@ typedef struct {
 	acct_qos_level_t qos;	
 	List user_list; /* list of char * */
 	uint16_t with_assocs; 
+	uint16_t with_deleted; 
 } acct_user_cond_t;
 
 typedef struct {
