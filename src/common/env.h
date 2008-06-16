@@ -260,4 +260,20 @@ void env_array_set_environment(char **env_array);
  */
 char **env_array_user_default(const char *username, int timeout, int mode);
 
+/*
+ * The cpus-per-node representation in SLURM (and perhaps tasks-per-node
+ * in the future) is stored in a compressed format comprised of two
+ * equal-length arrays of uint32_t, and an integer holding the array length.
+ * In one array an element represents a count (number of cpus, number of tasks,
+ * etc.), and the corresponding element in the other array contains the
+ * number of times the count is repeated sequentially in the uncompressed
+ * something-per-node array.
+ *
+ * This function returns the string representation of the compressed
+ * array.  Free with xfree().
+ */
+char *uint32_compressed_to_str(uint32_t array_len,
+			       const uint32_t *array,
+			       const uint32_t *array_reps);
+
 #endif
