@@ -345,6 +345,8 @@ documents those changes that are of interest to users and admins.
     spawn a task count equal to the number of nodes selected multipled by the 
     --ntasks-per-node value.
  -- In jobcomp/script: Set TZ if set in slurmctld's environment.
+ -- Process a job's --mail_type=end option on any job of job termination, not
+    just normal completion (e.g. all failure modes too).
 
 * Changes in SLURM 1.2.30
 =========================
