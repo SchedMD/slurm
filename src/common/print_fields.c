@@ -183,9 +183,10 @@ extern void print_fields_uint64(type_t type, print_field_t *field,
 				printf("%-*s ", field->len, " ");
 		} else {
 			if(print_fields_parsable_print)
-				printf("%llu|", value);	
+				printf("%llu|", (long long unsigned) value);	
 			else
-				printf("%*llu ", field->len, value);
+				printf("%*llu ", field->len, 
+				       (long long unsigned) value);
 		}
 		break;
 	default:
