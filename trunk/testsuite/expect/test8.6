@@ -7,7 +7,8 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2006 The Regents of the University of California.
+# Copyright (C) 2006-2007 The Regents of the University of California.
+# Copyright (C) 2008 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Danny Auble <da@llnl.gov>
 # LLNL-CODE-402394.
@@ -65,6 +66,10 @@ proc run_batch_jobs { node_cnt job_cnt file_in } {
 	for {set inx 0} {$inx < $job_cnt} {incr inx} {
 		set sbatch_pid [spawn $sbatch --output=/dev/null -t5 -N$node_cnt-$node_cnt $file_in]
 		expect {
+			-re "Node count specification invalid" {
+				send_user "This error was expected, no worries\n"
+				return -1
+			}
 			-re "More processors requested than permitted" {
 				send_user "This error was expected, no worries\n"
 				return -1

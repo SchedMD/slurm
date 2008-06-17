@@ -7,7 +7,8 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2005-2006 The Regents of the University of California.
+# Copyright (C) 2005-2007 The Regents of the University of California.
+# Copyright (C) 2008 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Danny Auble <da@llnl.gov>
 # LLNL-CODE-402394.
@@ -35,7 +36,6 @@ set test_id     "17.28"
 set exit_code   0
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
-set job_acct    "TEST_ACCT"
 set job_name    "TEST_NAME"
 set delay       1
 
@@ -43,7 +43,6 @@ print_header $test_id
 
 make_bash_script $file_in "
 #SBATCH --job-name=$job_name
-#SBATCH --account=$job_acct
 $bin_sleep $delay
 "
 
@@ -74,10 +73,6 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "Account=$job_acct" {
-		incr matches
-		exp_continue
-	}
 	timeout {
 		send_user "\nFAILURE: scontrol not responding\n"
 		set exit_code 1
@@ -87,8 +82,8 @@ expect {
 		wait
 	}
 }
-if {$matches != 2} {
-	send_user "\nFAILURE: did not set job name and account from batch script\n"
+if {$matches != 1} {
+	send_user "\nFAILURE: did not set job name from batch script\n"
 	set exit_code 1
 }
 cancel_job $job_id
@@ -107,7 +102,7 @@ set job_id  0
 set matches 0
 spawn $sbatch -o $file_out $file_in
 expect {
-	-re "More .* requested than permitted" {	
+	-re "Node count specification invalid" {
 		send_user "This error was expected, no worries\n\n"
 		incr matches
 		exp_continue
@@ -143,7 +138,7 @@ $bin_sleep $delay
 set job_id  0
 spawn $sbatch -N1 -o $file_out $file_in
 expect {
-	-re "More nodes requested than permitted" {
+	-re "Node count specification invalid" {
 		send_user "\nFAILURE: sbatch read from the batch file options"
 		send_user "over writing the commandline options\n"
 		set exit_code 1
