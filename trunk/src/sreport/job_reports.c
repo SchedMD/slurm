@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  job_resports.c - functions for generating job reports
+ *  job_reports.c - functions for generating job reports
  *                     from accounting infrastructure.
  *****************************************************************************
  *

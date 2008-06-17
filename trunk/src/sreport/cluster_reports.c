@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  cluster_resports.c - functions for generating cluster reports
+ *  cluster_reports.c - functions for generating cluster reports
  *                       from accounting infrastructure.
  *****************************************************************************
  *

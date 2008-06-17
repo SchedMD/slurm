@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  assoc_resports.h - functions for generating association reports
+ *  assoc_reports.h - functions for generating association reports
  *                     from accounting infrastructure.
  *****************************************************************************
  *
