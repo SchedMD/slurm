@@ -130,6 +130,23 @@ extern int clusteracct_storage_p_get_usage(
 	acct_cluster_rec_t *cluster_rec, time_t start, time_t end);
 
 
+static int _check_connection(mysql_conn_t *mysql_conn)
+{
+	if(!mysql_conn) {
+		error("We need a connection to run this");
+		return SLURM_ERROR;
+	} else if(!mysql_conn->acct_mysql_db
+		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
+		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
+					   mysql_db_name, mysql_db_info)
+			   != SLURM_SUCCESS) {
+			error("unable to re-connect to mysql database");
+			return SLURM_ERROR;
+		}
+	}
+	return SLURM_SUCCESS;
+}
+
 /* This function will take the object given and free it later so it
  * needed to be removed from a list if in one before 
  */
@@ -1264,19 +1281,8 @@ extern int acct_storage_p_close_connection(mysql_conn_t **mysql_conn)
 extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 {
 #ifdef HAVE_MYSQL
-	
-	if(!mysql_conn) {
-		error("We need a connection to run this");
+	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return SLURM_ERROR;
-	} else if(!mysql_conn->acct_mysql_db
-		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					   mysql_db_name, mysql_db_info)
-			   != SLURM_SUCCESS) {
-			error("unable to re-connect to mysql database");
-			return SLURM_ERROR;
-		}
-	}
 
 	debug4("got %d commits", list_count(mysql_conn->update_list));
 
@@ -1405,18 +1411,8 @@ extern int acct_storage_p_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	int affect_rows = 0;
 	List assoc_list = list_create(destroy_acct_association_rec);
 
-	if(!mysql_conn) {
-		error("We need a connection to run this");
+	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return SLURM_ERROR;
-	} else if(!mysql_conn->acct_mysql_db
-		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					   mysql_db_name, mysql_db_info)
-			   != SLURM_SUCCESS) {
-			error("unable to re-connect to mysql database");
-			return SLURM_ERROR;
-		}
-	}
 
 	if((pw=getpwuid(uid))) {
 		user = pw->pw_name;
@@ -1549,18 +1545,8 @@ extern int acct_storage_p_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	int affect_rows = 0;
 	List assoc_list = list_create(destroy_acct_association_rec);
 
-	if(!mysql_conn) {
-		error("We need a connection to run this");
+	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return SLURM_ERROR;
-	} else if(!mysql_conn->acct_mysql_db
-		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					   mysql_db_name, mysql_db_info)
-			   != SLURM_SUCCESS) {
-			error("unable to re-connect to mysql database");
-			return SLURM_ERROR;
-		}
-	}
 
 	if((pw=getpwuid(uid))) {
 		user = pw->pw_name;
@@ -1679,18 +1665,8 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *user = NULL;
 	int affect_rows = 0;
 
-	if(!mysql_conn) {
-		error("We need a connection to run this");
+	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return SLURM_ERROR;
-	} else if(!mysql_conn->acct_mysql_db
-		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					   mysql_db_name, mysql_db_info)
-			   != SLURM_SUCCESS) {
-			error("unable to re-connect to mysql database");
-			return SLURM_ERROR;
-		}
-	}
 
 	if((pw=getpwuid(uid))) {
 		user = pw->pw_name;
@@ -1887,18 +1863,8 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 	}
 
-	if(!mysql_conn) {
-		error("We need a connection to run this");
+	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return SLURM_ERROR;
-	} else if(!mysql_conn->acct_mysql_db
-		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					   mysql_db_name, mysql_db_info)
-			   != SLURM_SUCCESS) {
-			error("unable to re-connect to mysql database");
-			return SLURM_ERROR;
-		}
-	}
 
 	if((pw=getpwuid(uid))) {
 		user = pw->pw_name;
@@ -2266,15 +2232,8 @@ extern List acct_storage_p_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	}
 
-	if(!mysql_conn) {
-		error("We need a connection to run this");
+	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
-	} else if(!mysql_conn->acct_mysql_db
-		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(!mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					    mysql_db_name, mysql_db_info))
-			return NULL;
-	}
 
 	if((pw=getpwuid(uid))) {
 		user_name = pw->pw_name;
@@ -2399,18 +2358,8 @@ extern List acct_storage_p_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	}
 
-	if(!mysql_conn) {
-		error("We need a connection to run this");
+	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
-	} else if(!mysql_conn->acct_mysql_db
-		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					   mysql_db_name, mysql_db_info)
-			   != SLURM_SUCCESS) {
-			error("unable to re-connect to mysql database");
-			return NULL;
-		}
-	}
 
 	if((pw=getpwuid(uid))) {
 		user = pw->pw_name;
@@ -2554,18 +2503,8 @@ extern List acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
 		return NULL;
 	}
 
-	if(!mysql_conn) {
-		error("We need a connection to run this");
+	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
-	} else if(!mysql_conn->acct_mysql_db
-		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					   mysql_db_name, mysql_db_info)
-			   != SLURM_SUCCESS) {
-			error("unable to re-connect to mysql database");
-			return NULL;
-		}
-	}
 
 	if((pw=getpwuid(uid))) {
 		user = pw->pw_name;
@@ -2700,18 +2639,8 @@ extern List acct_storage_p_modify_associations(mysql_conn_t *mysql_conn,
 		return NULL;
 	}
 
-	if(!mysql_conn) {
-		error("We need a connection to run this");
+	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
-	} else if(!mysql_conn->acct_mysql_db
-		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					   mysql_db_name, mysql_db_info)
-			   != SLURM_SUCCESS) {
-			error("unable to re-connect to mysql database");
-			return NULL;
-		}
-	}
 
 	if((pw=getpwuid(uid))) {
 		user = pw->pw_name;
@@ -2986,18 +2915,8 @@ extern List acct_storage_p_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	}
 
-	if(!mysql_conn) {
-		error("We need a connection to run this");
+	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
-	} else if(!mysql_conn->acct_mysql_db
-		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					   mysql_db_name, mysql_db_info)
-			   != SLURM_SUCCESS) {
-			error("unable to re-connect to mysql database");
-			return NULL;
-		}
-	}
 
 	if((pw=getpwuid(uid))) {
 		user_name = pw->pw_name;
@@ -3130,18 +3049,8 @@ extern List acct_storage_p_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		user_name = pw->pw_name;
 	}
 
-	if(!mysql_conn) {
-		error("We need a connection to run this");
+	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
-	} else if(!mysql_conn->acct_mysql_db
-		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					   mysql_db_name, mysql_db_info)
-			   != SLURM_SUCCESS) {
-			error("unable to re-connect to mysql database");
-			return NULL;
-		}
-	}
 
 	xstrcat(extra, "where deleted=0");
 	if(acct_q->acct_list && list_count(acct_q->acct_list)) {
@@ -3266,18 +3175,8 @@ extern List acct_storage_p_remove_clusters(mysql_conn_t *mysql_conn,
 		return NULL;
 	}
 
-	if(!mysql_conn) {
-		error("We need a connection to run this");
+	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
-	} else if(!mysql_conn->acct_mysql_db
-		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					   mysql_db_name, mysql_db_info)
-			   != SLURM_SUCCESS) {
-			error("unable to re-connect to mysql database");
-			return NULL;
-		}
-	}
 
 	if((pw=getpwuid(uid))) {
 		user_name = pw->pw_name;
@@ -3427,18 +3326,8 @@ extern List acct_storage_p_remove_associations(mysql_conn_t *mysql_conn,
 		return NULL;
 	}
 
-	if(!mysql_conn) {
-		error("We need a connection to run this");
+	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
-	} else if(!mysql_conn->acct_mysql_db
-		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					   mysql_db_name, mysql_db_info)
-			   != SLURM_SUCCESS) {
-			error("unable to re-connect to mysql database");
-			return NULL;
-		}
-	}
 
 	xstrcat(extra, "where id>0 && deleted=0");
 
@@ -3651,18 +3540,8 @@ extern List acct_storage_p_get_users(mysql_conn_t *mysql_conn,
 		USER_REQ_COUNT
 	};
 
-	if(!mysql_conn) {
-		error("We need a connection to run this");
+	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
-	} else if(!mysql_conn->acct_mysql_db
-		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					   mysql_db_name, mysql_db_info)
-			   != SLURM_SUCCESS) {
-			error("unable to re-connect to mysql database");
-			return NULL;
-		}
-	}
 
 
 	xstrcat(extra, "where deleted=0");
@@ -3891,18 +3770,8 @@ extern List acct_storage_p_get_accts(mysql_conn_t *mysql_conn,
 		ACCT_REQ_COUNT
 	};
 
-	if(!mysql_conn) {
-		error("We need a connection to run this");
+	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
-	} else if(!mysql_conn->acct_mysql_db
-		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					   mysql_db_name, mysql_db_info)
-			   != SLURM_SUCCESS) {
-			error("unable to re-connect to mysql database");
-			return NULL;
-		}
-	}
 
 	xstrcat(extra, "where deleted=0");
 	
@@ -4083,18 +3952,8 @@ extern List acct_storage_p_get_clusters(mysql_conn_t *mysql_conn,
 		ASSOC_REQ_COUNT
 	};
 
-	if(!mysql_conn) {
-		error("We need a connection to run this");
+	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
-	} else if(!mysql_conn->acct_mysql_db
-		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					   mysql_db_name, mysql_db_info)
-			   != SLURM_SUCCESS) {
-			error("unable to re-connect to mysql database");
-			return NULL;
-		}
-	}
 
 	xstrcat(extra, "where deleted=0");
 		
@@ -4281,18 +4140,8 @@ extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 		ASSOC2_REQ_MCPJ
 	};
 
-	if(!mysql_conn) {
-		error("We need a connection to run this");
+	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
-	} else if(!mysql_conn->acct_mysql_db
-		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					   mysql_db_name, mysql_db_info)
-			   != SLURM_SUCCESS) {
-			error("unable to re-connect to mysql database");
-			return NULL;
-		}
-	}
 
 	xstrcat(extra, "where deleted=0");
 
@@ -4700,18 +4549,8 @@ extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn,
 		UPDATE_COUNT
 	};
 
-	if(!mysql_conn) {
-		error("We need a connection to run this");
+	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return SLURM_ERROR;
-	} else if(!mysql_conn->acct_mysql_db
-		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					   mysql_db_name, mysql_db_info)
-			   != SLURM_SUCCESS) {
-			error("unable to re-connect to mysql database");
-			return SLURM_ERROR;
-		}
-	}
 
 	if(!sent_start) {
 		i=0;
@@ -4919,18 +4758,8 @@ extern int clusteracct_storage_p_node_down(mysql_conn_t *mysql_conn,
 	char *query = NULL;
 	char *my_reason;
 
-	if(!mysql_conn) {
-		error("We need a connection to run this");
+	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return SLURM_ERROR;
-	} else if(!mysql_conn->acct_mysql_db
-		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					   mysql_db_name, mysql_db_info)
-			   != SLURM_SUCCESS) {
-			error("unable to re-connect to mysql database");
-			return SLURM_ERROR;
-		}
-	}
 
 	if (slurmctld_conf.fast_schedule && !slurmdbd_conf)
 		cpus = node_ptr->config_ptr->cpus;
@@ -4971,18 +4800,8 @@ extern int clusteracct_storage_p_node_up(mysql_conn_t *mysql_conn,
 	char* query;
 	int rc = SLURM_SUCCESS;
 
-	if(!mysql_conn) {
-		error("We need a connection to run this");
+	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return SLURM_ERROR;
-	} else if(!mysql_conn->acct_mysql_db
-		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					   mysql_db_name, mysql_db_info)
-			   != SLURM_SUCCESS) {
-			error("unable to re-connect to mysql database");
-			return SLURM_ERROR;
-		}
-	}
 
 	query = xstrdup_printf(
 		"update %s set period_end=%d where cluster='%s' "
@@ -5013,18 +4832,8 @@ extern int clusteracct_storage_p_cluster_procs(mysql_conn_t *mysql_conn,
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 
- 	if(!mysql_conn) {
-		error("We need a connection to run this");
+ 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return SLURM_ERROR;
-	} else if(!mysql_conn->acct_mysql_db
-		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					   mysql_db_name, mysql_db_info)
-			   != SLURM_SUCCESS) {
-			error("unable to re-connect to mysql database");
-			return SLURM_ERROR;
-		}
-	}
 
 	/* Record the processor count */
 	query = xstrdup_printf(
@@ -5242,18 +5051,8 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 	}
 
-	if(!mysql_conn) {
-		error("We need a connection to run this");
+	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return SLURM_ERROR;
-	} else if(!mysql_conn->acct_mysql_db
-		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					   mysql_db_name, mysql_db_info)
-			   != SLURM_SUCCESS) {
-			error("unable to re-connect to mysql database");
-			return SLURM_ERROR;
-		}
-	}
 	
 	debug2("mysql_jobacct_job_start() called");
 	priority = (job_ptr->priority == NO_VAL) ?
@@ -5371,18 +5170,8 @@ extern int jobacct_storage_p_job_complete(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 	}
 
-	if(!mysql_conn) {
-		error("We need a connection to run this");
+	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return SLURM_ERROR;
-	} else if(!mysql_conn->acct_mysql_db
-		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					   mysql_db_name, mysql_db_info)
-			   != SLURM_SUCCESS) {
-			error("unable to re-connect to mysql database");
-			return SLURM_ERROR;
-		}
-	}
 	debug2("mysql_jobacct_job_complete() called");
 	if (job_ptr->end_time == 0) {
 		debug("mysql_jobacct: job %u never started", job_ptr->job_id);
@@ -5443,18 +5232,8 @@ extern int jobacct_storage_p_step_start(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 	}
 
-	if(!mysql_conn) {
-		error("We need a connection to run this");
+	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return SLURM_ERROR;
-	} else if(!mysql_conn->acct_mysql_db
-		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					   mysql_db_name, mysql_db_info)
-			   != SLURM_SUCCESS) {
-			error("unable to re-connect to mysql database");
-			return SLURM_ERROR;
-		}
-	}
 	if(slurmdbd_conf) {
 		cpus = step_ptr->job_ptr->total_procs;
 		snprintf(node_list, BUFFER_SIZE, "%s",
@@ -5551,18 +5330,8 @@ extern int jobacct_storage_p_step_complete(mysql_conn_t *mysql_conn,
 		jobacct = &dummy_jobacct;
 	}
 
-	if(!mysql_conn) {
-		error("We need a connection to run this");
+	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return SLURM_ERROR;
-	} else if(!mysql_conn->acct_mysql_db
-		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					   mysql_db_name, mysql_db_info)
-			   != SLURM_SUCCESS) {
-			error("unable to re-connect to mysql database");
-			return SLURM_ERROR;
-		}
-	}
 
 	if(slurmdbd_conf) {
 		now = step_ptr->job_ptr->end_time;
@@ -5679,18 +5448,8 @@ extern int jobacct_storage_p_suspend(mysql_conn_t *mysql_conn,
 	int rc = SLURM_SUCCESS;
 	bool suspended = false;
 
-	if(!mysql_conn) {
-		error("We need a connection to run this");
+	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return SLURM_ERROR;
-	} else if(!mysql_conn->acct_mysql_db
-		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					   mysql_db_name, mysql_db_info)
-			   != SLURM_SUCCESS) {
-			error("unable to re-connect to mysql database");
-			return SLURM_ERROR;
-		}
-	}
 	if(!job_ptr->db_index) {
 		job_ptr->db_index = _get_db_index(mysql_conn->acct_mysql_db,
 						  job_ptr->details->submit_time,
@@ -5756,18 +5515,8 @@ extern List jobacct_storage_p_get_jobs(mysql_conn_t *mysql_conn,
 	acct_job_cond_t job_cond;
 	struct passwd *pw = NULL;
 
-	if(!mysql_conn) {
-		error("We need a connection to run this");
+	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
-	} else if(!mysql_conn->acct_mysql_db
-		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					   mysql_db_name, mysql_db_info)
-			   != SLURM_SUCCESS) {
-			error("unable to re-connect to mysql database");
-			return NULL;
-		}
-	}
 	memset(&job_cond, 0, sizeof(acct_job_cond_t));
 
 	job_cond.step_list = selected_steps;
@@ -5803,18 +5552,8 @@ extern List jobacct_storage_p_get_jobs_cond(mysql_conn_t *mysql_conn,
 {
 	List job_list = NULL;
 #ifdef HAVE_MYSQL
-	if(!mysql_conn) {
-		error("We need a connection to run this");
+	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
-	} else if(!mysql_conn->acct_mysql_db
-		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					   mysql_db_name, mysql_db_info)
-			   != SLURM_SUCCESS) {
-			error("unable to re-connect to mysql database");
-			return NULL;
-		}
-	}
 	job_list = mysql_jobacct_process_get_jobs(mysql_conn, job_cond);	
 #endif
 	return job_list;
@@ -5828,15 +5567,8 @@ extern void jobacct_storage_p_archive(mysql_conn_t *mysql_conn,
 				      void *params)
 {
 #ifdef HAVE_MYSQL
-	if(!mysql_conn) {
-		error("We need a connection to run this");
+	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return;
-	} else if(!mysql_conn->acct_mysql_db
-		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(!mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					    mysql_db_name, mysql_db_info))
-			return;
-	}
 	mysql_jobacct_process_archive(mysql_conn,
 				      selected_parts, params);
 #endif
@@ -5863,18 +5595,8 @@ extern int acct_storage_p_flush_jobs_on_cluster(
 	char *id_char = NULL;
 	char *suspended_char = NULL;
 
-	if(!mysql_conn) {
-		error("We need a connection to run this");
+	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return SLURM_ERROR;
-	} else if(!mysql_conn->acct_mysql_db
-		  || mysql_db_ping(mysql_conn->acct_mysql_db) != 0) {
-		if(mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-					   mysql_db_name, mysql_db_info)
-			   != SLURM_SUCCESS) {
-			error("unable to re-connect to mysql database");
-			return SLURM_ERROR;
-		}
-	}
 
 	/* First we need to get the id's and states so we can clean up
 	 * the suspend table and the step table 
