@@ -526,7 +526,8 @@ _process_command (int argc, char *argv[])
 		}
 		_print_ping ();
 	}
-	else if (strncasecmp (argv[0], "quiet", 4) == 0) {
+	else if ((strncasecmp (argv[0], "\\q", 2) == 0) ||
+		 (strncasecmp (argv[0], "quiet", 4) == 0)) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr, "too many arguments for keyword:%s\n",

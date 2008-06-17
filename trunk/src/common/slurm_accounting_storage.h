@@ -204,6 +204,7 @@ typedef struct {
 	acct_qos_level_t qos;	
 	List user_list; /* list of char * */
 	uint16_t with_assocs; 
+	uint16_t with_coords; 
 	uint16_t with_deleted; 
 } acct_user_cond_t;
 

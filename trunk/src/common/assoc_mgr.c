@@ -147,6 +147,7 @@ static int _get_local_user_list(void *db_conn, int enforce)
 	acct_user_cond_t user_q;
 
 	memset(&user_q, 0, sizeof(acct_user_cond_t));
+	user_q.with_coords = 1;
 
 	slurm_mutex_lock(&local_user_lock);
 	if(local_user_list)

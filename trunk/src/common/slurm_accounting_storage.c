@@ -1035,6 +1035,7 @@ extern void pack_acct_user_cond(void *in, Buf buffer)
 		pack32(0, buffer);
 		pack16(0, buffer);
 		pack16(0, buffer);
+		pack16(0, buffer);
 		return;
 	}
  
@@ -1071,6 +1072,7 @@ extern void pack_acct_user_cond(void *in, Buf buffer)
 		list_iterator_destroy(itr);
 	}
 	pack16((uint16_t)object->with_assocs, buffer);
+	pack16((uint16_t)object->with_coords, buffer);
 	pack16((uint16_t)object->with_deleted, buffer);
 
 }
@@ -1109,6 +1111,7 @@ extern int unpack_acct_user_cond(void **object, Buf buffer)
 		}
 	}
 	safe_unpack16((uint16_t *)&object_ptr->with_assocs, buffer);
+	safe_unpack16((uint16_t *)&object_ptr->with_coords, buffer);
 	safe_unpack16((uint16_t *)&object_ptr->with_deleted, buffer);
 
 	return SLURM_SUCCESS;

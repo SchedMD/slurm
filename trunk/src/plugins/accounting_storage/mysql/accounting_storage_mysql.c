@@ -3761,29 +3761,80 @@ empty:
 /* 			user->uid = passwd_ptr->pw_uid; */
 /* 		else */
 /* 			user->uid = (uint32_t)NO_VAL; */
-		user->coord_accts = list_create(destroy_acct_coord_rec);
-		query = xstrdup_printf("select acct from %s where user='%s' "
-				       "&& deleted=0",
-				       acct_coord_table, user->name);
-
-		if(!(coord_result =
-		     mysql_db_query_ret(mysql_conn->acct_mysql_db, query, 0))) {
+		if(user_q && user_q->with_coords) {
+			user->coord_accts = list_create(destroy_acct_coord_rec);
+			query = xstrdup_printf(
+				"select acct from %s where user='%s' "
+				"&& deleted=0",
+				acct_coord_table, user->name);
+			
+			if(!(coord_result =
+			     mysql_db_query_ret(mysql_conn->acct_mysql_db,
+						query, 0))) {
+				xfree(query);
+				continue;
+			}
 			xfree(query);
-			continue;
+			while((coord_row = mysql_fetch_row(coord_result))) {
+				acct_coord_rec_t *coord =
+					xmalloc(sizeof(acct_coord_rec_t));
+				list_append(user->coord_accts, coord);
+				coord->acct_name = xstrdup(coord_row[0]);
+				coord->sub_acct = 0;
+				if(query) 
+					xstrcat(query, " || ");
+				else 
+					query = xstrdup_printf(
+						"select distinct t1.acct from "
+						"%s as t1, %s as t2 where ",
+						assoc_table, assoc_table);
+				/* Add 1 to the lft to not include the
+				 * one we are looking at.  Distinct
+				 * above to only get 1 instance since the acct
+				 * will most likely be on multiple clusters.
+				 */
+				xstrfmtcat(query, "(t2.acct='%s' "
+					   "&& t1.lft between t2.lft+1 "
+					   "and t2.rgt && t1.user='')",
+					   coord->acct_name);
+			}
+			mysql_free_result(coord_result);
+
+			if(query) {
+				if(!(coord_result = mysql_db_query_ret(
+					     mysql_conn->acct_mysql_db,
+					     query, 0))) {
+					xfree(query);
+					continue;
+				}
+				xfree(query);
+
+				itr = list_iterator_create(user->coord_accts);
+				while((coord_row =
+				       mysql_fetch_row(coord_result))) {
+					acct_coord_rec_t *coord = NULL;
+
+					while((coord = list_next(itr))) {
+						if(!strcmp(coord->acct_name, 
+							   coord_row[0]))
+						   break;
+					}
+					list_iterator_reset(itr);
+					if(coord) 
+						continue;
+					
+					coord = xmalloc(
+						sizeof(acct_coord_rec_t));
+					list_append(user->coord_accts, coord);
+					coord->acct_name = 
+						xstrdup(coord_row[0]);
+					coord->sub_acct = 1;
+				}
+				list_iterator_destroy(itr);
+				mysql_free_result(coord_result);
+			}
 		}
-		xfree(query);
-		
-		while((coord_row = mysql_fetch_row(coord_result))) {
-			acct_coord_rec_t *coord =
-				xmalloc(sizeof(acct_coord_rec_t));
-			list_append(user->coord_accts, coord);
-			coord->acct_name = xstrdup(coord_row[0]);
-			coord->sub_acct = 0;
-		}
-		mysql_free_result(coord_result);
-		/* FIX ME: ADD SUB projects here from assoc list lft
-		 * rgt */
-		
+
 		if(user_q && user_q->with_assocs) {
 			acct_association_cond_t *assoc_q = NULL;
 			if(!user_q->assoc_cond) {
