@@ -1196,6 +1196,7 @@ extern int init ( void )
 	rc = _mysql_acct_check_tables(acct_mysql_db);
 
 	mysql_close_db_connection(&acct_mysql_db);
+	
 #endif		
 
 	if(rc == SLURM_SUCCESS)
@@ -4956,20 +4957,12 @@ extern int clusteracct_storage_p_cluster_procs(mysql_conn_t *mysql_conn,
 					       time_t event_time)
 {
 #ifdef HAVE_MYSQL
-	static uint32_t last_procs = -1;
 	char* query;
 	int rc = SLURM_SUCCESS;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 
-	if (procs == last_procs) {
-		debug3("we have the same procs as before no need to "
-		       "update the database.");
-		return SLURM_SUCCESS;
-	}
-	last_procs = procs;
-
-	if(!mysql_conn) {
+ 	if(!mysql_conn) {
 		error("We need a connection to run this");
 		return SLURM_ERROR;
 	} else if(!mysql_conn->acct_mysql_db
@@ -5002,7 +4995,8 @@ extern int clusteracct_storage_p_cluster_procs(mysql_conn_t *mysql_conn,
 	}
 
 	if(atoi(row[0]) == procs) {
-		debug("%s hasn't changed cpu count since last start", cluster);
+		debug3("we have the same procs as before no need to "
+		       "update the database.");
 		goto end_it;
 	}
 	debug("%s has changed from %s cpus to %u", cluster, row[0], procs);   
