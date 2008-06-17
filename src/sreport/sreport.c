@@ -57,6 +57,10 @@ sreport_time_format_t time_format = SREPORT_TIME_SECS;
 void *db_conn = NULL;
 uint32_t my_uid = 0;
 
+static void	_job_rep (int argc, char *argv[]);
+static void	_user_rep (int argc, char *argv[]);
+static void	_cluster_rep (int argc, char *argv[]);
+static void	_assoc_rep (int argc, char *argv[]);
 static int	_get_command (int *argc, char *argv[]);
 static void     _print_version( void );
 static int	_process_command (int argc, char *argv[]);
@@ -194,6 +198,85 @@ getline(const char *prompt)
 }
 #endif
 
+/* 
+ * _job_rep - Reports having to do with jobs 
+ * IN argc - count of arguments
+ * IN argv - list of arguments
+ */
+static void _job_rep (int argc, char *argv[]) 
+{
+	int error_code = SLURM_SUCCESS;
+
+	/* First identify the entity to add */
+	if (strncasecmp (argv[0], "Sizes", 1) == 0) {
+		error_code = job_sizes_grouped_by_top_acct(
+			(argc - 1), &argv[1]);
+	} else {
+		exit_code = 1;
+		fprintf(stderr, "Not valid report %s\n", argv[0]);
+		fprintf(stderr, "Valid job reports are, ");
+		fprintf(stderr, "\"Sizes\"\n");
+	}
+	
+	if (error_code) {
+		exit_code = 1;
+	}
+}
+
+/* 
+ * _user_rep - Reports having to do with jobs 
+ * IN argc - count of arguments
+ * IN argv - list of arguments
+ */
+static void _user_rep (int argc, char *argv[]) 
+{
+	int error_code = SLURM_SUCCESS;
+
+	/* First identify the entity to add */
+	
+	if (error_code) {
+		exit_code = 1;
+	}
+}
+
+/* 
+ * _cluster_rep - Reports having to do with jobs 
+ * IN argc - count of arguments
+ * IN argv - list of arguments
+ */
+static void _cluster_rep (int argc, char *argv[]) 
+{
+	int error_code = SLURM_SUCCESS;
+
+	/* First identify the entity to add */
+	if (strncasecmp (argv[0], "Utilization", 1) == 0) {
+		error_code = cluster_utilization((argc - 1), &argv[1]);
+	} else {
+		exit_code = 1;
+		fprintf(stderr, "Not valid report %s\n", argv[0]);
+		fprintf(stderr, "Valid cluster reports are, ");
+		fprintf(stderr, "\"Utilization\"\n");
+	}
+	
+	if (error_code) {
+		exit_code = 1;
+	}
+}
+
+/* 
+ * _assoc_rep - Reports having to do with jobs 
+ * IN argc - count of arguments
+ * IN argv - list of arguments
+ */
+static void _assoc_rep (int argc, char *argv[]) 
+{
+	int error_code = SLURM_SUCCESS;
+
+	if (error_code) {
+		exit_code = 1;
+	}
+}
+
 /*
  * _get_command - get a command from the user
  * OUT argc - location to store count of arguments
@@ -294,6 +377,24 @@ _process_command (int argc, char *argv[])
 		exit_code = 1;
 		if (quiet_flag == -1)
 			fprintf(stderr, "no input");
+	} else if ((strncasecmp (argv[0], "association", 1) == 0)) {
+		if (argc < 2) {
+			exit_code = 1;
+			if (quiet_flag != 1)
+				fprintf(stderr, 
+				        "too few arguments for keyword:%s\n", 
+				        argv[0]);
+		} else 
+			_assoc_rep((argc - 1), &argv[1]);
+	} else if ((strncasecmp (argv[0], "cluster", 2) == 0)) {
+		if (argc < 2) {
+			exit_code = 1;
+			if (quiet_flag != 1)
+				fprintf(stderr, 
+				        "too few arguments for keyword:%s\n", 
+				        argv[0]);
+		} else 
+			_cluster_rep((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "help", 2) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
@@ -302,6 +403,15 @@ _process_command (int argc, char *argv[])
 				 argv[0]);
 		}
 		_usage ();
+	} else if ((strncasecmp (argv[0], "job", 1) == 0)) {
+		if (argc < 2) {
+			exit_code = 1;
+			if (quiet_flag != 1)
+				fprintf(stderr, 
+				        "too few arguments for keyword:%s\n", 
+				        argv[0]);
+		} else 
+			_job_rep((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "oneliner", 1) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
@@ -317,7 +427,8 @@ _process_command (int argc, char *argv[])
 				 argv[0]);
 		}
 		quiet_flag = 1;
-	} else if ((strncasecmp (argv[0], "exit", 4) == 0) ||
+	} else if ((strncasecmp (argv[0], "exit", 1) == 0) ||
+		   (strncasecmp (argv[0], "\\q", 2) == 0) ||
 		   (strncasecmp (argv[0], "quit", 4) == 0)) {
 		if (argc > 1) {
 			exit_code = 1;
@@ -350,10 +461,15 @@ _process_command (int argc, char *argv[])
 				 argv[0]);
 		}		
 		_print_version();
-	} else if ((strncasecmp (argv[0], "cu", 2) == 0)) {
-		cluster_utilization((argc - 1), &argv[1]);
-	} else if ((strncasecmp (argv[0], "jobsizes", 2) == 0)) {
-		job_sizes_grouped_by_top_acct((argc - 1), &argv[1]);
+	} else if ((strncasecmp (argv[0], "user", 1) == 0)) {
+		if (argc < 2) {
+			exit_code = 1;
+			if (quiet_flag != 1)
+				fprintf(stderr, 
+				        "too few arguments for keyword:%s\n", 
+				        argv[0]);
+		} else 
+			_user_rep((argc - 1), &argv[1]);
 	} else {
 		exit_code = 1;
 		fprintf (stderr, "invalid keyword: %s\n", argv[0]);

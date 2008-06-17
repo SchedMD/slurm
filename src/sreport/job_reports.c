@@ -151,11 +151,11 @@ static int _set_cond(int *start, int argc, char *argv[],
 		} else if (strncasecmp (argv[i], "Format", 1) == 0) {
 			if(format_list)
 				addto_char_list(format_list, argv[i]+end);
-		} else if (strncasecmp (argv[i], "Groupid", 7) == 0) {
+		} else if (strncasecmp (argv[i], "Gid", 2) == 0) {
 			addto_char_list(job_cond->groupid_list,
 					argv[i]+end);
 			set = 1;
-		} else if (strncasecmp (argv[i], "grouping", 7) == 0) {
+		} else if (strncasecmp (argv[i], "grouping", 2) == 0) {
 			if(grouping_list)
 				addto_char_list(grouping_list, argv[i]+end);
 		} else if (strncasecmp (argv[i], "Jobs", 1) == 0) {
@@ -700,6 +700,11 @@ end_it:
 	if(print_fields_list) {
 		list_destroy(print_fields_list);
 		print_fields_list = NULL;
+	}
+
+	if(grouping_print_fields_list) {
+		list_destroy(grouping_print_fields_list);
+		grouping_print_fields_list = NULL;
 	}
 
 	return rc;

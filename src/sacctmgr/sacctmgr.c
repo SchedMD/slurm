@@ -361,6 +361,7 @@ _process_command (int argc, char *argv[])
 		}
 		quiet_flag = 1;
 	} else if ((strncasecmp (argv[0], "exit", 4) == 0) ||
+		   (strncasecmp (argv[0], "\\q", 2) == 0) ||
 		   (strncasecmp (argv[0], "quit", 4) == 0)) {
 		if (argc > 1) {
 			exit_code = 1;
