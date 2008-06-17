@@ -398,7 +398,7 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 
 	List header_list = list_create(NULL);
 
-	sreport_time_format_t temp_time_format = time_format;
+//	sreport_time_format_t temp_time_format = time_format;
 
 	print_fields_list = list_create(destroy_print_field);
 
@@ -623,7 +623,7 @@ no_assocs:
 	list_destroy(grouping_list);
 	list_iterator_destroy(itr);
 	
-	time_format = SREPORT_TIME_PERCENT;
+//	time_format = SREPORT_TIME_PERCENT;
 	
 	itr = list_iterator_create(print_fields_list);
 	itr2 = list_iterator_create(grouping_print_fields_list);
@@ -676,7 +676,7 @@ no_assocs:
 	}
 	list_iterator_destroy(itr);
 
-	time_format = temp_time_format;
+//	time_format = temp_time_format;
 
 end_it:
 
