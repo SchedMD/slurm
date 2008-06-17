@@ -40,6 +40,7 @@
 #include "src/sreport/assoc_reports.h"
 #include "src/sreport/cluster_reports.h"
 #include "src/sreport/job_reports.h"
+#include "src/sreport/user_reports.h"
 #include "src/common/xsignal.h"
 
 #define OPT_LONG_HIDE   0x102
@@ -232,7 +233,14 @@ static void _user_rep (int argc, char *argv[])
 {
 	int error_code = SLURM_SUCCESS;
 
-	/* First identify the entity to add */
+	if (strncasecmp (argv[0], "Top", 1) == 0) {
+		error_code = user_top((argc - 1), &argv[1]);
+	} else {
+		exit_code = 1;
+		fprintf(stderr, "Not valid report %s\n", argv[0]);
+		fprintf(stderr, "Valid user reports are, ");
+		fprintf(stderr, "\"Top\"\n");
+	}	
 	
 	if (error_code) {
 		exit_code = 1;
@@ -248,7 +256,6 @@ static void _cluster_rep (int argc, char *argv[])
 {
 	int error_code = SLURM_SUCCESS;
 
-	/* First identify the entity to add */
 	if (strncasecmp (argv[0], "Utilization", 1) == 0) {
 		error_code = cluster_utilization((argc - 1), &argv[1]);
 	} else {

@@ -1,6 +1,6 @@
 /*****************************************************************************\
- *  cluster_reports.h - functions for generating cluster reports
- *                       from accounting infrastructure.
+ *  user_reports.h - functions for generating user reports
+ *                     from accounting infrastructure.
  *****************************************************************************
  *
  *  Copyright (C) 2008 Lawrence Livermore National Security.
@@ -37,11 +37,11 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef __SREPORT_CLUSTER_REPORTS_H
-#define __SREPORT_CLUSTER_REPORTS_H
+#ifndef __SREPORT_USER_REPORTS_H
+#define __SREPORT_USER_REPORTS_H
 
 #include "sreport.h"
 
-extern int cluster_utilization(int argc, char *argv[]);
+extern int user_top(int argc, char *argv[]);
 
 #endif

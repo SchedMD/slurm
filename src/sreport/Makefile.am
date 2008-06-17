@@ -11,6 +11,7 @@ sreport_SOURCES =	\
 	cluster_reports.c cluster_reports.h \
 	assoc_reports.c assoc_reports.h	\
 	job_reports.c job_reports.h	\
+	user_reports.c user_reports.h	\
 	common.c
 
 sreport_LDADD =  \

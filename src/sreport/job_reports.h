@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  job_resports.h - functions for generating job reports
+ *  job_reports.h - functions for generating job reports
  *                     from accounting infrastructure.
  *****************************************************************************
  *
