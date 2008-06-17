@@ -794,6 +794,14 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		int will_run, will_run_response_msg_t **resp, 
 		int allocate, uid_t submit_uid, struct job_record **job_pptr);
 
+/*
+ * job_cancel_by_assoc_id - Cancel all pending and running jobs with a given
+ *	association ID. This happens when an association is deleted (e.g. when
+ *	a user is removed from the association database).
+ * RET count of cancelled jobs
+ */
+extern int job_cancel_by_assoc_id(uint32_t assoc_id);
+
 /* log the completion of the specified job */
 extern void job_completion_logger(struct job_record  *job_ptr);
 

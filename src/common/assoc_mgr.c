@@ -47,6 +47,8 @@ static List local_association_list = NULL;
 static List local_user_list = NULL;
 static char *local_cluster_name = NULL;
 
+void (*remove_assoc_notify) (acct_association_rec_t *rec) = NULL;
+
 static pthread_mutex_t local_association_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t local_user_lock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -185,8 +187,16 @@ static int _get_local_user_list(void *db_conn, int enforce)
 	return SLURM_SUCCESS;
 }
 
-extern int assoc_mgr_init(void *db_conn, int enforce)
+extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args)
 {
+	int enforce = 0;
+
+	if(args) {
+		enforce = args->enforce;
+		if(args->remove_assoc_notify)
+			remove_assoc_notify = args->remove_assoc_notify;
+	}
+
 	if(!local_cluster_name && !slurmdbd_conf)
 		local_cluster_name = slurm_get_cluster_name();
 
@@ -201,7 +211,7 @@ extern int assoc_mgr_init(void *db_conn, int enforce)
 	return SLURM_SUCCESS;
 }
 
-extern int assoc_mgr_fini()
+extern int assoc_mgr_fini(void)
 {
 	if(local_association_list) 
 		list_destroy(local_association_list);
@@ -574,6 +584,8 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 				//rc = SLURM_ERROR;
 				break;
 			}
+			if (remove_assoc_notify)
+				remove_assoc_notify(rec);
 			list_delete_item(itr);
 			break;
 		default:

@@ -49,6 +49,11 @@
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 
+typedef struct {
+	int enforce;
+	void (*remove_assoc_notify) (acct_association_rec_t *rec);
+} assoc_init_args_t;
+
 /* 
  * get info from the storage 
  * IN/OUT:  user - acct_user_rec_t with the name set of the user.
@@ -92,8 +97,8 @@ extern acct_admin_level_t assoc_mgr_get_admin_level(void *db_conn,
 extern int assoc_mgr_is_user_acct_coord(void *db_conn, uint32_t uid,
 					char *acct);
 
-extern int assoc_mgr_init(void *db_conn, int enforce);
-extern int assoc_mgr_fini();
+extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args);
+extern int assoc_mgr_fini(void);
 
 /* 
  * update associations in local cache 

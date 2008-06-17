@@ -5349,3 +5349,31 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 
 	return true;
 }
+
+/*
+ * job_cancel_by_assoc_id - Cancel all pending and running jobs with a given
+ *	association ID. This happens when an association is deleted (e.g. when
+ *	a user is removed from the association database).
+ * RET count of cancelled jobs
+ */
+extern int job_cancel_by_assoc_id(uint32_t assoc_id)
+{
+	int cnt = 0;
+	ListIterator job_iterator;
+	struct job_record *job_ptr;
+
+	if (!job_list)
+		return cnt;
+
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		if ((job_ptr->assoc_id != assoc_id) || 
+		    IS_JOB_FINISHED(job_ptr))
+			continue;
+		info("Association deleted, cancelling job %u", job_ptr->job_id);
+		job_signal(job_ptr->job_id, SIGKILL, 0, 0);
+		cnt++;
+	}
+	list_iterator_destroy(job_iterator);
+	return cnt;
+}
