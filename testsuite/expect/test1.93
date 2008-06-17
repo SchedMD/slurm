@@ -58,7 +58,7 @@ make_bash_script $file_in "
 set timeout $max_job_delay
 set salloc_pid [spawn $salloc -t1 -n2 ./$file_in]
 expect {
-	-re "More ($alpha) requested than permitted" {
+	-re "More processors requested than permitted" {
 		send_user "\nWARNING: can't test srun task distribution\n"
 		exec $bin_rm -f $file_in
 		exit $exit_code

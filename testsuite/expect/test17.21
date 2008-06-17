@@ -7,7 +7,8 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2005-2006 The Regents of the University of California.
+# Copyright (C) 2005-2007 The Regents of the University of California.
+# Copyright (C) 2008 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Danny Auble <da@llnl.gov>
 # LLNL-CODE-402394.
@@ -104,7 +105,7 @@ $bin_sleep $delay
 
 set sbatch_pid [spawn $sbatch -o $file_out $file_in]
 expect {
-	-re "More .* requested than permitted" {	
+	-re "Node count specification invalid" {
 		send_user "This error was expected, no worries\n\n"
 		exp_continue
 	}	
@@ -133,7 +134,7 @@ $bin_sleep $delay
 
 set sbatch_pid [spawn $sbatch -N1 -o $file_out $file_in]
 expect {
-	-re "More nodes requested than permitted" {
+	-re "Node count specification invalid" {
 		send_user "\nFAILURE: sbatch read from the batch file options"
 		send_user "over writing the commandline options\n"
 		set exit_code 1

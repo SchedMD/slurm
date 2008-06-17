@@ -9,7 +9,8 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2002-2006 The Regents of the University of California.
+# Copyright (C) 2002-2007 The Regents of the University of California.
+# Copyright (C) 2008 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # LLNL-CODE-402394.
@@ -66,7 +67,7 @@ if {$available < $node_cnt} {
 
 set srun_pid [spawn $srun -N$node_cnt -l -t1 $bin_printenv SLURMD_NODENAME]
 expect {
-	-re "More ($alpha) requested than permitted" {
+	-re "Node count specification invalid" {
 		send_user "\nWARNING: can't test srun task distribution\n"
 		exit $exit_code
 	}
