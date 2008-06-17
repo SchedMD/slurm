@@ -8,7 +8,8 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2005-2006 The Regents of the University of California.
+# Copyright (C) 2005-2007 The Regents of the University of California.
+# Copyright (C) 2008 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # LLNL-CODE-402394.
@@ -208,6 +209,7 @@ if {$not_supported == 1} {
 if {$not_supported == 0} {
 	if {[wait_for_job $job_id2 RUNNING] != 0} {
 		send_user "\nFAILURE: waiting for job $job_id2 to run\n"
+		cancel_job $job_id1
 		cancel_job $job_id2
 		exit 1
 	}
