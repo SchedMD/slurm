@@ -139,7 +139,7 @@ int main(int argc, char *argv[])
 
 	db_conn = acct_storage_g_get_connection(false, false);
 	
-	if(assoc_mgr_init(db_conn, 0) == SLURM_ERROR) {
+	if(assoc_mgr_init(db_conn, NULL) == SLURM_ERROR) {
 		error("Problem getting cache of data");
 		acct_storage_g_close_connection(&db_conn);
 		goto end_it;
