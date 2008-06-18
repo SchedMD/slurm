@@ -39,7 +39,14 @@
 
 #include "user_reports.h"
 
-static bool group_accts = false;
+enum {
+	PRINT_USER_ACCT,
+	PRINT_USER_CLUSTER,
+	PRINT_USER_LOGIN,
+	PRINT_USER_PROPER,
+	PRINT_USER_USED
+};
+
 
 typedef struct {
 	char *name;
@@ -51,6 +58,9 @@ typedef struct {
 	char *name;
 	List user_list;
 } local_cluster_rec_t;
+
+static List print_fields_list = NULL; /* types are of print_field_t */
+static bool group_accts = false;
 
 static int _set_cond(int *start, int argc, char *argv[],
 		     acct_user_cond_t *user_cond, List format_list)
@@ -154,12 +164,17 @@ static int _setup_print_fields_list(List format_list)
 	itr = list_iterator_create(format_list);
 	while((object = list_next(itr))) {
 		field = xmalloc(sizeof(print_field_t));
-		if(!strncasecmp("Cluster", object, 2)) {
+		if(!strncasecmp("Accounts", object, 1)) {
+			field->type = PRINT_USER_ACCT;
+			field->name = xstrdup("Account(s)");
+			field->len = 20;
+			field->print_routine = print_fields_str;
+		} else if(!strncasecmp("Cluster", object, 2)) {
 			field->type = PRINT_USER_CLUSTER;
 			field->name = xstrdup("Cluster");
 			field->len = 9;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("login", object, 2)) {
+		} else if(!strncasecmp("Login", object, 2)) {
 			field->type = PRINT_USER_LOGIN;
 			field->name = xstrdup("Login");
 			field->len = 9;
@@ -168,7 +183,7 @@ static int _setup_print_fields_list(List format_list)
 			field->type = PRINT_USER_PROPER;
 			field->name = xstrdup("Proper Name");
 			field->len = 20;
-			field->print_routine = sreport_print_str;
+			field->print_routine = print_fields_str;
 		} else if(!strncasecmp("Used", object, 1)) {
 			field->type = PRINT_USER_USED;
 			field->name = xstrdup("Used");
@@ -177,11 +192,6 @@ static int _setup_print_fields_list(List format_list)
 			else
 				field->len = 10;
 			field->print_routine = sreport_print_time;
-		} else if(!strncasecmp("Accounts", object, 1)) {
-			field->type = PRINT_USER_ICPU;
-			field->name = xstrdup("Account(s)");
-			field->len = 20;
-			field->print_routine = sreport_print_str;
 		} else {
 			printf("Unknown field '%s'\n", object);
 			xfree(field);
@@ -197,6 +207,38 @@ static int _setup_print_fields_list(List format_list)
 extern int user_top(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
+	acct_user_cond_t *user_cond = xmalloc(sizeof(acct_user_cond_t));
+	List format_list = list_create(slurm_destroy_char);
+	List user_list = NULL;
+	int i=0;
+
+	print_fields_list = list_create(destroy_print_field);
+
+	_set_cond(&i, argc, argv, user_cond, format_list);
+
+	_setup_print_fields_list(format_list);
+	list_destroy(format_list);
+
+	user_list = acct_storage_g_get_users(db_conn, user_cond);
+	if(!user_list) {
+		printf(" Problem with user query.\n");
+		goto end_it;
+	}
+
+end_it:
+
+	destroy_acct_user_cond(user_cond);
+	
+	if(user_list) {
+		list_destroy(user_list);
+		user_list = NULL;
+	}
+	
+	if(print_fields_list) {
+		list_destroy(print_fields_list);
+		print_fields_list = NULL;
+	}
+
 	return rc;
 }
 
