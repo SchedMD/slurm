@@ -203,7 +203,7 @@ static int _setup_print_fields_list(List format_list)
 	return SLURM_SUCCESS;
 }
 
-static List _get_cluster_list(int argc, char *argv[], uint64_t *total_time,
+static List _get_cluster_list(int argc, char *argv[], uint32_t *total_time,
 			      char *report_name, List format_list)
 {
 	acct_cluster_cond_t *cluster_cond = 
@@ -255,7 +255,7 @@ extern int cluster_utilization(int argc, char *argv[])
 	acct_cluster_rec_t *cluster = NULL;
 
 	print_field_t *field = NULL;
-	uint64_t total_time = 0;
+	uint32_t total_time = 0;
 
 	List cluster_list = NULL; 
 

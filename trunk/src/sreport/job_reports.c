@@ -353,7 +353,7 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 
 	print_field_t *field = NULL;
 	print_field_t total_field;
-	uint64_t total_time = 0;
+	uint32_t total_time = 0;
 	List job_list = NULL;
 	List cluster_list = NULL;
 	List assoc_list = NULL;
