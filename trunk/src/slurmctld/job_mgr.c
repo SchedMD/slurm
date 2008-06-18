@@ -371,7 +371,7 @@ int dump_all_job_state(void)
  */
 extern int load_all_job_state(void)
 {
-	int data_allocated, data_read = 0, error_code = 0;
+	int data_allocated, data_read = 0, error_code = SLURM_SUCCESS;
 	uint32_t data_size = 0;
 	int state_fd, job_cnt = 0;
 	char *data = NULL, *state_file;
@@ -415,9 +415,10 @@ extern int load_all_job_state(void)
 	unlock_state_files();
 
 	job_id_sequence = MAX(job_id_sequence, slurmctld_conf.first_job_id);
+	if (error_code)
+		return error_code;
 
 	buffer = create_buf(data, data_size);
-
 	safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
 	debug3("Version string in job_state header is %s", ver_str);
 	if ((!ver_str) || strcmp(ver_str, JOB_STATE_VERSION) != 0) {
@@ -445,12 +446,12 @@ extern int load_all_job_state(void)
 	debug3("Set job_id_sequence to %u", job_id_sequence);
 
 	free_buf(buffer);
-	info("Recovered state of %d jobs", job_cnt);
+	info("Recovered information about %d jobs", job_cnt);
 	return error_code;
 
 unpack_error:
 	error("Incomplete job data checkpoint file");
-	info("State of %d jobs recovered", job_cnt);
+	info("Recovered information about %d jobs", job_cnt);
 	free_buf(buffer);
 	return SLURM_FAILURE;
 }
@@ -736,7 +737,7 @@ static int _load_job_state(Buf buffer)
 	job_ptr->total_procs  = total_procs;
 	job_ptr->tot_sus_time = tot_sus_time;
 	job_ptr->user_id      = user_id;
-	info("recovered job id %u", job_id);
+
 	bzero(&assoc_rec, sizeof(acct_association_rec_t));
 	assoc_rec.acct      = job_ptr->account;
 	assoc_rec.partition = job_ptr->partition;
@@ -753,8 +754,12 @@ static int _load_job_state(Buf buffer)
 		if (IS_JOB_PENDING(job_ptr))
 			job_ptr->start_time = now;
 		job_ptr->end_time = now;
-	} else
+		jobacct_storage_g_job_complete(acct_db_conn, job_ptr);
+/* NO OP?? */
+	} else {
+		info("Recovered job %u", job_id);
 		job_ptr->assoc_ptr = (void *) assoc_ptr;
+	}
 
 	safe_unpack16(&step_flag, buffer);
 	while (step_flag == STEP_FLAG) {
