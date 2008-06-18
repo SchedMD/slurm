@@ -171,7 +171,7 @@ static int _bg_record_sort_aval_inc(bg_record_t* rec_a, bg_record_t* rec_b)
 /* 
  * Comparator used for sorting blocks smallest to largest
  * 
- * returns: -1: rec_a >rec_b   0: rec_a == rec_b   1: rec_a < rec_b
+ * returns: -1: rec_a > rec_b   0: rec_a == rec_b   1: rec_a < rec_b
  * 
  */
 static int _bg_record_sort_aval_dec(bg_record_t* rec_a, bg_record_t* rec_b)

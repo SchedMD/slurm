@@ -3544,15 +3544,17 @@ extern List acct_storage_p_get_users(mysql_conn_t *mysql_conn,
 		return NULL;
 
 
-	xstrcat(extra, "where deleted=0");
 	
 	if(!user_q) {
+		xstrcat(extra, "where deleted=0");
 		goto empty;
 	} 
 	
-	if(user_q->with_deleted) {
-		xstrcat(extra, " || deleted=1");
-	}
+	if(user_q->with_deleted) 
+		xstrcat(extra, "where (deleted=0 || deleted=1)");
+	else
+		xstrcat(extra, "where deleted=0");
+		
 
 	if(user_q->user_list && list_count(user_q->user_list)) {
 		set = 0;
@@ -3773,15 +3775,16 @@ extern List acct_storage_p_get_accts(mysql_conn_t *mysql_conn,
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
-	xstrcat(extra, "where deleted=0");
 	
 	if(!acct_q) {
+		xstrcat(extra, "where deleted=0");
 		goto empty;
 	} 
 
-	if(acct_q->with_deleted) {
-		xstrcat(extra, " || deleted=1");
-	} 
+	if(acct_q->with_deleted) 
+		xstrcat(extra, "where (deleted=0 || deleted=1)");
+	else
+		xstrcat(extra, "where deleted=0");
 
 	if(acct_q->acct_list && list_count(acct_q->acct_list)) {
 		set = 0;
@@ -3955,15 +3958,16 @@ extern List acct_storage_p_get_clusters(mysql_conn_t *mysql_conn,
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
-	xstrcat(extra, "where deleted=0");
 		
 	if(!cluster_q) {
+		xstrcat(extra, "where deleted=0");
 		goto empty;
 	}
 
-	if(cluster_q->with_deleted) {
-		xstrcat(extra, " || deleted=1");
-	}
+	if(cluster_q->with_deleted) 
+		xstrcat(extra, "where (deleted=0 || deleted=1)");
+	else
+		xstrcat(extra, "where deleted=0");
 
 	if(cluster_q->cluster_list && list_count(cluster_q->cluster_list)) {
 		set = 0;
@@ -4143,15 +4147,16 @@ extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
-	xstrcat(extra, "where deleted=0");
 
 	if(!assoc_q) {
+		xstrcat(extra, "where deleted=0");
 		goto empty;
 	}
 
-	if(assoc_q->with_deleted) {
-		xstrcat(extra, " || deleted=1");
-	}
+	if(assoc_q->with_deleted) 
+		xstrcat(extra, "where (deleted=0 || deleted=1)");
+	else
+		xstrcat(extra, "where deleted=0");
 
 	if(assoc_q->acct_list && list_count(assoc_q->acct_list)) {
 		set = 0;
