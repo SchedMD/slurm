@@ -755,7 +755,6 @@ static int _load_job_state(Buf buffer)
 			job_ptr->start_time = now;
 		job_ptr->end_time = now;
 		jobacct_storage_g_job_complete(acct_db_conn, job_ptr);
-/* NO OP?? */
 	} else {
 		info("Recovered job %u", job_id);
 		job_ptr->assoc_ptr = (void *) assoc_ptr;
