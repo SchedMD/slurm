@@ -1,6 +1,10 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.2.32
+=========================
+ -- Disable scancel of job in RootOnly partition only for sched/wiki2 (Moab).
+
 * Changes in SLURM 1.2.31
 =========================
  -- For Moab only: If GetEnvTimeout=0 in slurm.conf then do not run "su" to get
