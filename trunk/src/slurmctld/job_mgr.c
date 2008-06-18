@@ -1015,8 +1015,16 @@ extern int kill_job_by_part_name(char *part_name)
 			continue;
 		job_ptr->part_ptr = NULL;
 
-		if (job_ptr->job_state == JOB_SUSPENDED)
+		if (job_ptr->job_state == JOB_SUSPENDED) {
+			enum job_states suspend_job_state = job_ptr->job_state;
+			/* we can't have it as suspended when we call the
+			 * accounting stuff.
+			 */
+			job_ptr->job_state = JOB_CANCELLED;
+			jobacct_storage_g_job_suspend(acct_db_conn, job_ptr);
+			job_ptr->job_state = suspend_job_state;
 			suspended = true;
+		}
 		if ((job_ptr->job_state == JOB_RUNNING) 
 		    || (job_ptr->job_state == JOB_PENDING)
 		    || suspended) {
@@ -1080,8 +1088,17 @@ extern int kill_running_job_by_node_name(char *node_name, bool step_test)
 		if ((job_ptr->node_bitmap == NULL) ||
 		    (!bit_test(job_ptr->node_bitmap, bit_position)))
 			continue;	/* job not on this node */
-		if (job_ptr->job_state == JOB_SUSPENDED)
+		if (job_ptr->job_state == JOB_SUSPENDED) {
+			enum job_states suspend_job_state = job_ptr->job_state;
+			/* we can't have it as suspended when we call the
+			 * accounting stuff.
+			 */
+			job_ptr->job_state = JOB_CANCELLED;
+			jobacct_storage_g_job_suspend(acct_db_conn, job_ptr);
+			job_ptr->job_state = suspend_job_state;
 			suspended = true;
+		}
+
 		if (job_ptr->job_state & JOB_COMPLETING) {
 			job_count++;
 			bit_clear(job_ptr->node_bitmap, bit_position);
@@ -1130,9 +1147,11 @@ extern int kill_running_job_by_node_name(char *node_name, bool step_test)
 				slurm_sched_requeue(job_ptr, requeue_msg);
 				job_ptr->time_last_active  = now;
 				if (suspended) {
-					job_ptr->end_time = job_ptr->suspend_time;
+					job_ptr->end_time = 
+						job_ptr->suspend_time;
 					job_ptr->tot_sus_time += 
-						difftime(now, job_ptr->suspend_time);
+						difftime(now,
+							 job_ptr->suspend_time);
 				} else
 					job_ptr->end_time = now;
 				
@@ -1557,8 +1576,17 @@ extern int job_fail(uint32_t job_id)
 
 	if (IS_JOB_FINISHED(job_ptr))
 		return ESLURM_ALREADY_DONE;
-	if (job_ptr->job_state == JOB_SUSPENDED)
+	if (job_ptr->job_state == JOB_SUSPENDED) {
+		enum job_states suspend_job_state = job_ptr->job_state;
+		/* we can't have it as suspended when we call the
+		 * accounting stuff.
+		 */
+		job_ptr->job_state = JOB_CANCELLED;
+		jobacct_storage_g_job_suspend(acct_db_conn, job_ptr);
+		job_ptr->job_state = suspend_job_state;
 		suspended = true;
+	}
+
 	if ((job_ptr->job_state == JOB_RUNNING) || suspended) {
 		/* No need to signal steps, deallocate kills them */
 		job_ptr->time_last_active       = now;
@@ -1656,6 +1684,7 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
 		job_ptr->end_time       = job_ptr->suspend_time;
 		job_ptr->tot_sus_time  += difftime(now, job_ptr->suspend_time);
 		job_ptr->job_state      = JOB_CANCELLED | JOB_COMPLETING;
+		jobacct_storage_g_job_suspend(acct_db_conn, job_ptr);
 		deallocate_nodes(job_ptr, false, true);
 		job_completion_logger(job_ptr);
 		verbose("job_signal %u of suspended job %u successful",
@@ -1760,6 +1789,13 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 	if (job_ptr->job_state == JOB_RUNNING)
 		job_comp_flag = JOB_COMPLETING;
 	if (job_ptr->job_state == JOB_SUSPENDED) {
+		enum job_states suspend_job_state = job_ptr->job_state;
+		/* we can't have it as suspended when we call the
+		 * accounting stuff.
+		 */
+		job_ptr->job_state = JOB_CANCELLED;
+		jobacct_storage_g_job_suspend(acct_db_conn, job_ptr);
+		job_ptr->job_state = suspend_job_state;
 		job_comp_flag = JOB_COMPLETING;
 		suspended = true;
 	}
@@ -3417,6 +3453,8 @@ void reset_job_bitmaps(void)
 					JOB_COMPLETING;
 				job_ptr->tot_sus_time += 
 					difftime(now, job_ptr->suspend_time);
+				jobacct_storage_g_job_suspend(acct_db_conn, 
+							      job_ptr);
 			}
 			job_ptr->exit_code = MAX(job_ptr->exit_code, 1);
 			job_ptr->state_reason = FAIL_DOWN_NODE;
@@ -5258,8 +5296,17 @@ extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd conn_fd)
 		goto reply;
 	}
 
-	if (job_ptr->job_state == JOB_SUSPENDED)
+	if (job_ptr->job_state == JOB_SUSPENDED) {
+		enum job_states suspend_job_state = job_ptr->job_state;
+		/* we can't have it as suspended when we call the
+		 * accounting stuff.
+		 */
+		job_ptr->job_state = JOB_CANCELLED;
+		jobacct_storage_g_job_suspend(acct_db_conn, job_ptr);
+		job_ptr->job_state = suspend_job_state;
 		suspended = true;
+	}
+
 	job_ptr->time_last_active  = now;
 	if (suspended)
 		job_ptr->end_time = job_ptr->suspend_time;

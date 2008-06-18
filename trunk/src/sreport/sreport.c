@@ -50,10 +50,8 @@ char *command_name;
 int exit_code;		/* sreport's exit code, =1 on any error at any time */
 int exit_flag;		/* program to terminate if =1 */
 int input_words;	/* number of words of input permitted */
-int one_liner;		/* one record per line if =1 */
 int quiet_flag;		/* quiet=1, verbose=-1, normal=0 */
-int rollback_flag;       /* immediate execute=1, else = 0 */
-int with_assoc_flag = 0;
+int all_clusters_flag = 0;
 sreport_time_format_t time_format = SREPORT_TIME_SECS;
 void *db_conn = NULL;
 uint32_t my_uid = 0;
@@ -77,9 +75,9 @@ main (int argc, char *argv[])
 
 	int option_index;
 	static struct option long_options[] = {
+		{"all_clusters", 0, 0, 'a'},
 		{"help",     0, 0, 'h'},
 		{"immediate",0, 0, 'i'},
-		{"oneliner", 0, 0, 'o'},
 		{"no_header", 0, 0, 'n'},
 		{"parsable", 0, 0, 'p'},
 		{"quiet",    0, 0, 'q'},
@@ -90,14 +88,13 @@ main (int argc, char *argv[])
 	};
 
 	command_name      = argv[0];
-	rollback_flag     = 1;
 	exit_code         = 0;
 	exit_flag         = 0;
 	input_field_count = 0;
 	quiet_flag        = 0;
 	log_init("sreport", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
-	while((opt_char = getopt_long(argc, argv, "hionpqst:vV",
+	while((opt_char = getopt_long(argc, argv, "ahnpqt:vV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -109,11 +106,8 @@ main (int argc, char *argv[])
 			_usage ();
 			exit(exit_code);
 			break;
-		case (int)'i':
-			rollback_flag = 0;
-			break;
-		case (int)'o':
-			one_liner = 1;
+		case (int)'a':
+			all_clusters_flag = 1;
 			break;
 		case (int)'n':
 			print_fields_have_header = 0;
@@ -123,9 +117,6 @@ main (int argc, char *argv[])
 			break;
 		case (int)'q':
 			quiet_flag = 1;
-			break;
-		case (int)'s':
-			with_assoc_flag = 1;
 			break;
 		case (int)'t':
 			_set_time_format(optarg);
@@ -156,7 +147,7 @@ main (int argc, char *argv[])
 		}	
 	}
 
-	db_conn = acct_storage_g_get_connection(false, rollback_flag);
+	db_conn = acct_storage_g_get_connection(false, false);
 	my_uid = getuid();
 
 	if (input_field_count)
@@ -419,14 +410,6 @@ _process_command (int argc, char *argv[])
 				        argv[0]);
 		} else 
 			_job_rep((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "oneliner", 1) == 0) {
-		if (argc > 1) {
-			exit_code = 1;
-			fprintf (stderr, 
-				 "too many arguments for keyword:%s\n",
-				 argv[0]);
-		}
-		one_liner = 1;
 	} else if (strncasecmp (argv[0], "quiet", 4) == 0) {
 		if (argc > 1) {
 			exit_code = 1;

@@ -69,9 +69,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 	int i;
 	int set = 0;
 	int end = 0;
-	time_t my_time = time(NULL);
-	struct tm start_tm;
-	struct tm end_tm;
+	int local_cluster_flag = all_clusters_flag;
 
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
@@ -79,6 +77,9 @@ static int _set_cond(int *start, int argc, char *argv[],
 			i--;
 			break;
 		} else if(!end && !strncasecmp(argv[i], "where", 5)) {
+			continue;
+		} else if(!end && !strncasecmp(argv[i], "all_clusters", 1)) {
+			local_cluster_flag = 1;
 			continue;
 		} else if(!end) {
 			addto_char_list(cluster_cond->cluster_list, argv[i]);
@@ -102,51 +103,15 @@ static int _set_cond(int *start, int argc, char *argv[],
 		}
 	}
 	(*start) = i;
-	/* Default is going to be the last day */
-	if(!cluster_cond->usage_end) {
-		if(!localtime_r(&my_time, &end_tm)) {
-			error("Couldn't get localtime from end %d",
-			      my_time);
-			return SLURM_ERROR;
-		}
-		end_tm.tm_hour = 0;
-		cluster_cond->usage_end = mktime(&end_tm);		
-	} else {
-		if(!localtime_r((time_t *)&cluster_cond->usage_end, &end_tm)) {
-			error("Couldn't get localtime from user end %d",
-			      my_time);
-			return SLURM_ERROR;
-		}
-	}
-	end_tm.tm_sec = 0;
-	end_tm.tm_min = 0;
-	end_tm.tm_isdst = -1;
-	cluster_cond->usage_end = mktime(&end_tm);		
 
-	if(!cluster_cond->usage_start) {
-		if(!localtime_r(&my_time, &start_tm)) {
-			error("Couldn't get localtime from start %d",
-			      my_time);
-			return SLURM_ERROR;
-		}
-		start_tm.tm_hour = 0;
-		start_tm.tm_mday--;
-		cluster_cond->usage_start = mktime(&start_tm);		
-	} else {
-		if(!localtime_r((time_t *)&cluster_cond->usage_start,
-		   &start_tm)) {
-			error("Couldn't get localtime from user start %d",
-			      my_time);
-			return SLURM_ERROR;
-		}
+	if(!local_cluster_flag && !list_count(cluster_cond->cluster_list)) {
+		char *temp = slurm_get_cluster_name();
+		if(temp)
+			list_append(cluster_cond->cluster_list, temp);
 	}
-	start_tm.tm_sec = 0;
-	start_tm.tm_min = 0;
-	start_tm.tm_isdst = -1;
-	cluster_cond->usage_start = mktime(&start_tm);		
 
-	if(cluster_cond->usage_end-cluster_cond->usage_start < 3600) 
-		cluster_cond->usage_end = cluster_cond->usage_start + 3600;
+	set_start_end_time((time_t *)&cluster_cond->usage_start,
+			   (time_t *)&cluster_cond->usage_end);
 
 	return set;
 }

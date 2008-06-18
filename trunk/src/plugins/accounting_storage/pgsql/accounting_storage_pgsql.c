@@ -1142,7 +1142,7 @@ extern int jobacct_storage_p_job_start(PGconn *acct_pgsql_db,
 		query = xstrdup_printf(
 			"update %s set partition='%s', blockid='%s', start=%d, "
 			"name='%s', state=%u, alloc_cpus=%u, nodelist='%s', "
-			"account='%s' where id=%d",
+			"account='%s', end=0 where id=%d",
 			job_table, job_ptr->partition, block_id,
 			(int)job_ptr->start_time,
 			jname, 
@@ -1296,9 +1296,9 @@ extern int jobacct_storage_p_step_start(PGconn *acct_pgsql_db,
 	/* we want to print a -1 for the requid so leave it a
 	   %d */
 	query = xstrdup_printf(
-		"insert into %s (id, stepid, start, name, state, "
+		"insert into %s (id, stepid, start, end, name, state, "
 		"cpus, nodelist) "
-		"values (%d, %u, %u, '%s', %d, %u, '%s')",
+		"values (%d, %u, %u, 0, '%s', %d, %u, '%s')",
 		step_table, step_ptr->job_ptr->db_index,
 		step_ptr->step_id, 
 		(int)step_ptr->start_time, step_ptr->name,
