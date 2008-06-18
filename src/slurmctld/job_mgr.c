@@ -548,6 +548,7 @@ static int _load_job_state(Buf buffer)
 	uint32_t exit_code, num_procs, assoc_id, db_index, name_len,
 		total_procs;
 	time_t start_time, end_time, suspend_time, pre_sus_time, tot_sus_time;
+	time_t now = time(NULL);
 	uint16_t job_state, next_step_id, details, batch_flag, step_flag;
 	uint16_t kill_on_node_fail, kill_on_step_done, qos;
 	uint16_t alloc_resp_port, other_port, mail_type, state_reason;
@@ -559,6 +560,7 @@ static int _load_job_state(Buf buffer)
 	struct part_record *part_ptr;
 	int error_code;
 	select_jobinfo_t select_jobinfo = NULL;
+	acct_association_rec_t assoc_rec, *assoc_ptr = NULL;
 
 	safe_unpack32(&assoc_id, buffer);
 	safe_unpack32(&job_id, buffer);
@@ -667,7 +669,7 @@ static int _load_job_state(Buf buffer)
 		job_ptr->job_state = JOB_FAILED;
 		job_ptr->exit_code = 1;
 		job_ptr->state_reason = FAIL_SYSTEM;
-		job_ptr->end_time = time(NULL);
+		job_ptr->end_time = now;
 		goto unpack_error;
 	}
 
@@ -729,12 +731,30 @@ static int _load_job_state(Buf buffer)
 	job_ptr->start_time   = start_time;
 	job_ptr->state_reason = state_reason;
 	job_ptr->suspend_time = suspend_time;
-	job_ptr->time_last_active = time(NULL);
+	job_ptr->time_last_active = now;
 	job_ptr->time_limit   = time_limit;
 	job_ptr->total_procs  = total_procs;
 	job_ptr->tot_sus_time = tot_sus_time;
 	job_ptr->user_id      = user_id;
 	info("recovered job id %u", job_id);
+	bzero(&assoc_rec, sizeof(acct_association_rec_t));
+	assoc_rec.acct      = job_ptr->account;
+	assoc_rec.partition = job_ptr->partition;
+	assoc_rec.uid       = job_ptr->user_id;
+
+	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
+				    accounting_enforce,
+				    &assoc_ptr) &&
+	    accounting_enforce && (!IS_JOB_FINISHED(job_ptr))) {
+		info("Cancelling job %u with invalid association",
+		     job_id);
+		job_ptr->job_state = JOB_CANCELLED;
+		job_ptr->state_reason = FAIL_BANK_ACCOUNT;
+		if (IS_JOB_PENDING(job_ptr))
+			job_ptr->start_time = now;
+		job_ptr->end_time = now;
+	} else
+		job_ptr->assoc_ptr = (void *) assoc_ptr;
 
 	safe_unpack16(&step_flag, buffer);
 	while (step_flag == STEP_FLAG) {
@@ -5384,6 +5404,7 @@ extern int job_cancel_by_assoc_id(uint32_t assoc_id)
 			continue;
 		info("Association deleted, cancelling job %u", job_ptr->job_id);
 		job_signal(job_ptr->job_id, SIGKILL, 0, 0);
+		job_ptr->state_reason = FAIL_BANK_ACCOUNT;
 		cnt++;
 	}
 	list_iterator_destroy(job_iterator);
