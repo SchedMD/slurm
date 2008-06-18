@@ -335,6 +335,10 @@ documents those changes that are of interest to users and admins.
     Moved existing digital signature logic into new plugin: crypto/openssl.
     Added new support for crypto/munge (available with GPL license).
 
+* Changes in SLURM 1.2.32
+=========================
+ -- Disable scancel of job in RootOnly partition only for sched/wiki2 (Moab).
+
 * Changes in SLURM 1.2.31
 =========================
  -- For Moab only: If GetEnvTimeout=0 in slurm.conf then do not run "su" to get
@@ -348,9 +352,11 @@ documents those changes that are of interest to users and admins.
  -- In select/cons_res improve the resource selection when a job has specified
     a processor count along with a maximum node count.
  -- For an srun command with --ntasks-per-node option and *no* --ntasks count,
-    spawn a task count equal to the number of nodes selected multipled by the 
+    spawn a task count equal to the number of nodes selected multiplied by the 
     --ntasks-per-node value.
  -- In jobcomp/script: Set TZ if set in slurmctld's environment.
+ -- In srun with --verbose option properly format CPU allocation information 
+    logged for clusters with 1000+ nodes and 10+ CPUs per node.
  -- Process a job's --mail_type=end option on any job of job termination, not
     just normal completion (e.g. all failure modes too).
 

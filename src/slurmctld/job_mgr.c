@@ -1579,6 +1579,18 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
 	struct job_record *job_ptr;
 	time_t now = time(NULL);
 	bool super_user;
+	static bool wiki2_sched = false;
+	static bool wiki2_sched_test = false;
+
+	/* Jobs submitted using Moab command should be cancelled using
+	 * Moab command for accurate job records */
+	if (!wiki2_sched_test) {
+		char *sched_type = slurm_get_sched_type();
+		if (strcmp(sched_type, "sched/wiki2") == 0)
+			wiki2_sched = true;
+		xfree(sched_type);
+		wiki2_sched_test = true;
+	}
 
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {
@@ -1592,10 +1604,10 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
 		      uid);
 		return ESLURM_ACCESS_DENIED;
 	}
-	if ((!super_user) && job_ptr->part_ptr
-	    &&  (job_ptr->part_ptr->root_only)) {
-		info("Attempt to cancel job in RootOnly partition from uid %d",
-		     uid);
+	if ((!super_user) && (signal == SIGKILL) && job_ptr->part_ptr &&
+	    (job_ptr->part_ptr->root_only) && wiki2_sched) {
+		info("Attempt to cancel Moab job using Slurm command from "
+		     "uid %d", uid);
 		return ESLURM_ACCESS_DENIED;
 	}
 
