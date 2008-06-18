@@ -5090,6 +5090,13 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 
 	job_ptr->requid = -1; /* force to -1 for sacct to know this
 			       * hasn't been set yet */
+	
+	/* We need to put a 0 for 'end' incase of funky job state
+	 * files from a hot start of the controllers we call
+	 * job_start on jobs we may still know about after
+	 * job_flush has been called so we need to restart
+	 * them by zeroing out the end.
+	 */
 	if(!job_ptr->db_index) {
 		query = xstrdup_printf(
 			"insert into %s "
@@ -5099,7 +5106,8 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 			"values (%u, '%s', %u, %u, %u, '%s', '%s', "
 			"%d, %d, %d, '%s', %u, "
 			"%u, %u, %u, %u, '%s') "
-			"on duplicate key update id=LAST_INSERT_ID(id)",
+			"on duplicate key update id=LAST_INSERT_ID(id), "
+			"end=0, state=%u",
 			job_table, job_ptr->job_id, job_ptr->account, 
 			job_ptr->assoc_id,
 			job_ptr->user_id, job_ptr->group_id,
@@ -5110,7 +5118,8 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 			jname, track_steps,
 			job_ptr->job_state & (~JOB_COMPLETING),
 			priority, job_ptr->num_procs,
-			job_ptr->total_procs, nodes);
+			job_ptr->total_procs, nodes,
+			job_ptr->job_state & (~JOB_COMPLETING));
 
 	try_again:
 		if(!(job_ptr->db_index = mysql_insert_ret_id(
@@ -5132,7 +5141,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 		query = xstrdup_printf(
 			"update %s set partition='%s', blockid='%s', start=%d, "
 			"name='%s', state=%u, alloc_cpus=%u, nodelist='%s', "
-			"account='%s' where id=%d",
+			"account='%s', end=0 where id=%d",
 			job_table, job_ptr->partition, block_id,
 			(int)job_ptr->start_time,
 			jname, 
@@ -5192,6 +5201,7 @@ extern int jobacct_storage_p_job_complete(mysql_conn_t *mysql_conn,
 			
 		}
 	}
+
 	query = xstrdup_printf("update %s set start=%u, end=%u, state=%d, "
 			       "nodelist='%s', comp_code=%u, "
 			       "kill_requid=%u where id=%u",
@@ -5283,11 +5293,11 @@ extern int jobacct_storage_p_step_start(mysql_conn_t *mysql_conn,
 		"insert into %s (id, stepid, start, name, state, "
 		"cpus, nodelist) "
 		"values (%d, %u, %d, '%s', %d, %u, '%s') "
-		"on duplicate key update cpus=%u",
+		"on duplicate key update cpus=%u, end=0 state=%u",
 		step_table, step_ptr->job_ptr->db_index,
 		step_ptr->step_id, 
 		(int)step_ptr->start_time, step_ptr->name,
-		JOB_RUNNING, cpus, node_list, cpus);
+		JOB_RUNNING, cpus, node_list, cpus, JOB_RUNNING);
 	debug3("%d query\n%s", mysql_conn->conn, query);
 	rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
 	xfree(query);

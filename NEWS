@@ -31,7 +31,8 @@ documents those changes that are of interest to users and admins.
     package building specification.
  -- Set SLURM_JOB_CPUS_PER_NODE for jobs allocated using the srun command.
     It was already set for salloc and sbatch commands.
- 
+ -- Fix to handle suspended jobs that were cancelled in accounting
+
 * Changes in SLURM 1.3.3
 ========================
  -- Add mpi_openmpi plugin to the main SLURM RPM.
