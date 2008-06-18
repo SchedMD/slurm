@@ -102,6 +102,11 @@ set job_id  0
 set matches 0
 spawn $sbatch -o $file_out $file_in
 expect {
+	-re "More processors requested than permitted" {
+		send_user "This error was expected, no worries\n\n"
+		incr matches
+		exp_continue
+	}
 	-re "Node count specification invalid" {
 		send_user "This error was expected, no worries\n\n"
 		incr matches
