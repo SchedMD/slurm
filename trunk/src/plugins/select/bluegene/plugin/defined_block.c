@@ -100,10 +100,22 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 			   && !bg_record->full_block
 			   && bg_record->cpus_per_bp == procs_per_node) {
 				char *name = NULL;
-				if(overlapped == LAYOUT_OVERLAP) {
+
+				if(overlapped == LAYOUT_OVERLAP) 
 					reset_ba_system(false);
-					set_all_bps_except(bg_record->nodes);
-				}
+									
+				/* we want the bps that aren't
+				 * in this record to mark them as used
+				 */
+				if(set_all_bps_except(bg_record->nodes)
+				   != SLURM_SUCCESS)
+					fatal("something happened in "
+					      "the load of %s"
+					      "Did you use smap to "
+					      "make the "
+					      "bluegene.conf file?",
+					      bg_record->bg_block_id);
+
 				for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
 					geo[i] = bg_record->geo[i];
 				debug2("adding %s %c%c%c %c%c%c",
@@ -126,6 +138,7 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 						       "bluegene.conf file?",
 						       bg_record->bg_block_id);
 						list_iterator_destroy(itr);
+						reset_all_removed_bps();
 						slurm_mutex_unlock(
 							&block_state_mutex);
 						return SLURM_ERROR;
@@ -137,6 +150,7 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 						bg_record->start, 
 						geo, 
 						bg_record->conn_type);
+					reset_all_removed_bps();
 					if(!name) {
 						error("I was unable to "
 						      "make the "

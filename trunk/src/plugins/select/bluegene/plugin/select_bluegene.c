@@ -261,6 +261,7 @@ extern int select_p_state_save(char *dir_name)
 	Buf buffer = init_buf(BUF_SIZE);
 	DEF_TIMERS;
 
+	debug("bluegene: select_p_state_save");
 	START_TIMER;
 	/* write header: time */
 	packstr(BLOCK_STATE_VERSION, buffer);

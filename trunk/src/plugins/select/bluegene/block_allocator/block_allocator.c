@@ -45,6 +45,7 @@
 #include <math.h>
 #include "block_allocator.h"
 #include "src/common/uid.h"
+#include "src/common/timers.h"
 
 #define DEBUG_PA
 #define BEST_COUNT_INIT 20
@@ -1495,6 +1496,114 @@ extern int reset_ba_system(bool track_down_nodes)
 	return 1;
 }
 
+/* need to call rest_all_removed_bps before starting another
+ * allocation attempt 
+ */
+extern int removable_set_bps(char *bps)
+{
+	int j=0, number;
+	int x,y,z;
+	int start[BA_SYSTEM_DIMENSIONS];
+	int end[BA_SYSTEM_DIMENSIONS];
+
+	if(!bps)
+		return SLURM_ERROR;
+
+	while(bps[j] != '\0') {
+		if ((bps[j] == '[' || bps[j] == ',')
+		    && (bps[j+8] == ']' || bps[j+8] == ',')
+		    && (bps[j+4] == 'x' || bps[j+4] == '-')) {
+			
+			j++;
+			number = xstrntol(bps + j, NULL, BA_SYSTEM_DIMENSIONS,
+					  HOSTLIST_BASE);
+			start[X] = number / (HOSTLIST_BASE * HOSTLIST_BASE);
+			start[Y] = (number % (HOSTLIST_BASE * HOSTLIST_BASE))
+				/ HOSTLIST_BASE;
+			start[Z] = (number % HOSTLIST_BASE);
+			j += 4;
+			number = xstrntol(bps + j, NULL, 3, HOSTLIST_BASE);
+			end[X] = number / (HOSTLIST_BASE * HOSTLIST_BASE);
+			end[Y] = (number % (HOSTLIST_BASE * HOSTLIST_BASE))
+				/ HOSTLIST_BASE;
+			end[Z] = (number % HOSTLIST_BASE);
+			j += 3;
+			for (x = start[X]; x <= end[X]; x++) {
+				for (y = start[Y]; y <= end[Y]; y++) {
+					for (z = start[Z]; z <= end[Z]; z++) {
+						if(!ba_system_ptr->grid[x]
+#ifdef HAVE_BG
+						   [y][z]
+#endif
+						   .used)
+							ba_system_ptr->grid[x]
+#ifdef HAVE_BG
+								[y][z]
+#endif
+								.used = 2;
+					}
+				}
+			}
+			
+			if(bps[j] != ',')
+				break;
+			j--;
+		} else if((bps[j] >= '0' && bps[j] <= '9')
+			  || (bps[j] >= 'A' && bps[j] <= 'Z')) {
+			
+			number = xstrntol(bps + j, NULL, BA_SYSTEM_DIMENSIONS,
+					  HOSTLIST_BASE);
+			x = number / (HOSTLIST_BASE * HOSTLIST_BASE);
+			y = (number % (HOSTLIST_BASE * HOSTLIST_BASE))
+				/ HOSTLIST_BASE;
+			z = (number % HOSTLIST_BASE);
+			j+=3;
+			if(!ba_system_ptr->grid[x]
+#ifdef HAVE_BG
+			   [y][z]
+#endif
+			   .used)
+				ba_system_ptr->grid[x]
+#ifdef HAVE_BG
+					[y][z]
+#endif
+					.used = 2;
+			
+			if(bps[j] != ',')
+				break;
+			j--;
+		}
+		j++;
+	}
+
+ 	return SLURM_SUCCESS;
+}
+
+extern int reset_all_removed_bps()
+{
+	int x,y,z;
+
+	for (x = 0; x < DIM_SIZE[X]; x++) {
+#ifdef HAVE_BG
+		for (y = 0; y < DIM_SIZE[Y]; y++)
+			for (z = 0; z < DIM_SIZE[Z]; z++) 
+				if(ba_system_ptr->grid[x][y][z].used == 2) {
+					ba_system_ptr->grid[x][y][z].used = 0;
+				}
+#else
+		if(ba_system_ptr->grid[x].used == 2)
+			ba_system_ptr->grid[x].used = 0;
+#endif
+	}
+	return SLURM_SUCCESS;
+}
+
+/* need to call rest_all_removed_bps before starting another
+ * allocation attempt if possible use removable_set_bps since it is
+ * faster. It does basically the opposite of this function. If you
+ * have to come up with this list though it is faster to use this
+ * function than if you have to call bitmap2node_name since that is slow.
+ */
 extern int set_all_bps_except(char *bps)
 {
 	int x;
@@ -1529,8 +1638,21 @@ extern int set_all_bps_except(char *bps)
 		y = temp;
 		temp = start % HOSTLIST_BASE;
 		z = temp;
+		if(ba_system_ptr->grid[x][y][z].state != NODE_STATE_IDLE) {
+			error("we can't use this node %c%c%c",	
+			      alpha_num[x],
+			      alpha_num[y],
+			      alpha_num[z]);
+
+			return SLURM_ERROR;
+		}
 		ba_system_ptr->grid[x][y][z].state = NODE_STATE_END;
 #else
+		if(ba_system_ptr->grid[x].state != NODE_STATE_IDLE) {
+			error("we can't use this node %d", x);
+
+			return SLURM_ERROR;
+		}
 		ba_system_ptr->grid[x].state = NODE_STATE_END;
 #endif
 		free(host);
@@ -1543,29 +1665,25 @@ extern int set_all_bps_except(char *bps)
 			for (z = 0; z < DIM_SIZE[Z]; z++) {
 				if(ba_system_ptr->grid[x][y][z].state
 				   == NODE_STATE_END) {
-					ba_system_ptr->grid[x][y][z].state = 
-						NODE_STATE_IDLE;
+					ba_system_ptr->grid[x][y][z].state
+						= NODE_STATE_IDLE;
 					ba_system_ptr->grid[x][y][z].used = 
 						false;
-				} else {
-					ba_system_ptr->grid[x][y][z].state = 
-						NODE_STATE_IDLE;
-					ba_system_ptr->grid[x][y][z].used = 
-						true;
+				} else if(!ba_system_ptr->grid[x][y][z].used) {
+					ba_system_ptr->grid[x][y][z].used = 2;
 				}
 			}
 #else
-		if(ba_system_ptr->grid[x].state != NODE_STATE_END) {
+		if(ba_system_ptr->grid[x].state == NODE_STATE_END) {
 			ba_system_ptr->grid[x].state = NODE_STATE_IDLE;
 			ba_system_ptr->grid[x].used = false;
-		} else {
-			ba_system_ptr->grid[x].state = NODE_STATE_IDLE;
-			ba_system_ptr->grid[x].used = true;
+		} else if(!ba_system_ptr->grid[x].used) {
+			ba_system_ptr->grid[x].used = 2;
 		}
 #endif
 	}
-				
-	return 1;
+
+ 	return SLURM_SUCCESS;
 }
 
 /* init_grid - set values of every grid point */
@@ -3188,7 +3306,10 @@ static bool _node_used(ba_node_t* ba_node, int *geometry)
 	
 	/* if we've used this node in another block already */
 	if (!ba_node || ba_node->used) {
-		debug3("node used");
+		debug3("node %c%c%c used", 
+		       alpha_num[ba_node->coord[X]],
+		       alpha_num[ba_node->coord[Y]],
+		       alpha_num[ba_node->coord[Z]]);
 		return true;
 	}
 	/* if we've used this nodes switches completely in another 
@@ -3688,7 +3809,7 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 	}
 	debug3("found - %d",found);
 	for(i=0;i<2;i++) {
-		/* info("trying port %d", ports_to_try[i]); */
+/* 		info("trying port %d", ports_to_try[i]); */
 		/* check to make sure it isn't used */
 		if(!curr_switch->int_wire[ports_to_try[i]].used) {
 			/* looking at the next node on the switch 
@@ -3697,11 +3818,15 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 				ext_wire[ports_to_try[i]].node_tar;
 			port_tar = curr_switch->
 				ext_wire[ports_to_try[i]].port_tar;
-			/* info("goes to %c%c%c port %d", */
-/* 			       alpha_num[node_tar[X]], */
-/* 			       alpha_num[node_tar[Y]], */
-/* 			       alpha_num[node_tar[Z]], */
-/* 			       port_tar); */
+/* 			info("%c%c%c port %d goes to %c%c%c port %d", */
+/* 			     alpha_num[ba_node->coord[X]], */
+/* 			     alpha_num[ba_node->coord[Y]], */
+/* 			     alpha_num[ba_node->coord[Z]], */
+/* 			     ports_to_try[i], */
+/* 			     alpha_num[node_tar[X]], */
+/* 			     alpha_num[node_tar[Y]], */
+/* 			     alpha_num[node_tar[Z]], */
+/* 			     port_tar); */
 			/* check to see if we are back at the start of the
 			   block */
 			if((node_tar[X] == 

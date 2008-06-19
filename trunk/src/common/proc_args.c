@@ -135,7 +135,7 @@ int verify_conn_type(const char *arg)
 		return SELECT_NAV;
 
 	error("invalid --conn-type argument %s ignored.", arg);
-	return -1;
+	return NO_VAL;
 }
 
 /*
