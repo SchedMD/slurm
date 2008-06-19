@@ -54,23 +54,12 @@
 #include "src/common/hostlist.h"
 #include "src/common/node_select.h"
 #include "src/api/node_select_info.h"
+#include "src/plugins/select/bluegene/plugin/bg_boot_time.h"
 
 #define _DEBUG 0
-
-/*
- * Check the bgblock's status every POLL_SLEEP seconds. 
- * Retry for a period of 
- * MIN_FREE_PERVIOUS_BLOCK_DELAY + MIN_DELAY + (INCR_DELAY * base partition count)
- * For example if MIN_FREE_PERVIOUS_BLOCK_DELAY=300 and MIN_DELAY=600 and 
- * INCR_DELAY=20 and job_size=4 base partitions then wait up to 980 seconds
- * 300 + 600 + (20 * 4)
- */ 
 #define POLL_SLEEP 3			/* retry interval in seconds  */
-#define MIN_FREE_PERVIOUS_BLOCK_DELAY 300 /* time in seconds */
-#define MIN_DELAY  600			/* time in seconds */
-#define INCR_DELAY 20			/* time in seconds per BP */
 
-int max_delay = MIN_DELAY + MIN_FREE_PERVIOUS_BLOCK_DELAY;
+int max_delay = BG_FREE_PREVIOUS_BLOCK + BG_MIN_BLOCK_BOOT;
 int cur_delay = 0; 
   
 enum rm_partition_state {RM_PARTITION_FREE, 
@@ -113,8 +102,8 @@ static int _wait_part_ready(uint32_t job_id)
 {
 	int is_ready = 0, i, rc;
 	
-	max_delay = MIN_FREE_PERVIOUS_BLOCK_DELAY + MIN_DELAY +
-		(INCR_DELAY * _get_job_size(job_id));
+	max_delay = BG_FREE_PREVIOUS_BLOCK + BG_MIN_BLOCK_BOOT +
+		   (BG_INCR_BLOCK_BOOT * _get_job_size(job_id));
 
 #if _DEBUG
 	printf("Waiting for job %u to become ready.", job_id);
