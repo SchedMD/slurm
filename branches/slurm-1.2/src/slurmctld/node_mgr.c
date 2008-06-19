@@ -70,6 +70,7 @@
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/trigger_mgr.h"
+#include "src/plugins/select/bluegene/plugin/bg_boot_time.h"
 
 #define _DEBUG		0
 #define MAX_RETRIES	10
@@ -1660,7 +1661,9 @@ extern int validate_nodes_via_front_end(uint32_t job_count,
 		     * completes which waits for bgblock boot to complete.  
 		     * This can take several minutes on BlueGene. */
 		if (difftime(now, job_ptr->time_last_active) <= 
-				(1400 + 5 * job_ptr->node_cnt))
+
+		    (BG_FREE_PREVIOUS_BLOCK + BG_MIN_BLOCK_BOOT +
+		     BG_INCR_BLOCK_BOOT * job_ptr->node_cnt))
 			continue;
 #else
 		if (difftime(now, job_ptr->time_last_active) <= 5)
