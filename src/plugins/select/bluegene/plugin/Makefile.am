@@ -11,6 +11,7 @@ pkglib_LTLIBRARIES = select_bluegene.la libsched_if64.la
 
 # Blue Gene node selection plugin.
 select_bluegene_la_SOURCES = select_bluegene.c \
+				bg_boot_time.h \
 				bg_job_place.c bg_job_place.h \
 				bg_job_run.c bg_job_run.h \
 				bg_block_info.c bg_block_info.h \
