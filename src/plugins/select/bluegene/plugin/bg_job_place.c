@@ -1107,6 +1107,15 @@ static int _find_best_block_match(List block_list,
 				 * about it now 
 				 */
 				(*found_bg_record) = list_pop(new_blocks);
+				if(!(*found_bg_record)) {
+					error("got an empty list back");
+					list_destroy(new_blocks);
+					if(bg_record) {
+						destroy_bg_record(bg_record);
+						continue;
+					} else
+						break;
+				}
 				bit_and(slurm_block_bitmap,
 					(*found_bg_record)->bitmap);
 
