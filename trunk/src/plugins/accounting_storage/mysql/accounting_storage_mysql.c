@@ -5298,7 +5298,7 @@ extern int jobacct_storage_p_step_start(mysql_conn_t *mysql_conn,
 		"insert into %s (id, stepid, start, name, state, "
 		"cpus, nodelist) "
 		"values (%d, %u, %d, '%s', %d, %u, '%s') "
-		"on duplicate key update cpus=%u, end=0 state=%u",
+		"on duplicate key update cpus=%u, end=0, state=%u",
 		step_table, step_ptr->job_ptr->db_index,
 		step_ptr->step_id, 
 		(int)step_ptr->start_time, step_ptr->name,
