@@ -280,7 +280,7 @@ static void _opt_default()
 		opt.geometry[i]	    = (uint16_t) NO_VAL;
 	opt.reboot          = false;
 	opt.no_rotate	    = false;
-	opt.conn_type	    = -1;
+	opt.conn_type	    = (uint16_t) NO_VAL;
 
 	opt.euid	    = (uid_t) -1;
 	opt.egid	    = (gid_t) -1;
@@ -1282,7 +1282,7 @@ static void _opt_list()
 	str = print_constraints();
 	info("constraints    : %s", str);
 	xfree(str);
-	if (opt.conn_type >= 0)
+	if (opt.conn_type != (uint16_t) NO_VAL)
 		info("conn_type      : %u", opt.conn_type);
 	str = print_geometry(opt.geometry);
 	info("geometry       : %s", str);

@@ -107,12 +107,8 @@ extern List create_dynamic_block(List block_list,
 	}
 
 	if(request->avail_node_bitmap) {
-		int j=0, number;
-		int x,y,z;
-		char *nodes = NULL;
+ 		char *nodes = NULL;
 		bitstr_t *bitmap = bit_alloc(node_record_count);
-		int start[BA_SYSTEM_DIMENSIONS];
-		int end[BA_SYSTEM_DIMENSIONS];
 		
 		/* we want the bps that aren't in this partition to
 		 * mark them as used
@@ -122,72 +118,8 @@ extern List create_dynamic_block(List block_list,
 		nodes = bitmap2node_name(bitmap);
 		
 		//info("not using %s", nodes);
-		while(nodes[j] != '\0') {
-			if ((nodes[j] == '[' || nodes[j] == ',')
-			    && (nodes[j+8] == ']' || nodes[j+8] == ',')
-			    && (nodes[j+4] == 'x' || nodes[j+4] == '-')) {
+		removable_set_bps(nodes);
 
-				j++;
-				number = xstrntol(nodes + j,
-						  NULL, BA_SYSTEM_DIMENSIONS,
-						  HOSTLIST_BASE);
-				start[X] = number / 
-					(HOSTLIST_BASE * HOSTLIST_BASE);
-				start[Y] = (number % 
-					    (HOSTLIST_BASE * HOSTLIST_BASE))
-					/ HOSTLIST_BASE;
-				start[Z] = (number % HOSTLIST_BASE);
-				j += 4;
-				number = xstrntol(nodes + j,
-						NULL, 3, HOSTLIST_BASE);
-				end[X] = number /
-					(HOSTLIST_BASE * HOSTLIST_BASE);
-				end[Y] = (number 
-					  % (HOSTLIST_BASE * HOSTLIST_BASE))
-					/ HOSTLIST_BASE;
-				end[Z] = (number % HOSTLIST_BASE);
-				j += 3;
-				for (x = start[X]; x <= end[X]; x++) {
-					for (y = start[Y]; y <= end[Y]; y++) {
-						for (z = start[Z]; 
-						     z <= end[Z]; z++) {
-							ba_system_ptr->
-								grid[x]
-#ifdef HAVE_BG
-								[y][z]
-#endif
-								.used = 1;
-						}
-					}
-				}
-				
-				if(nodes[j] != ',')
-					break;
-				j--;
-			} else if((nodes[j] >= '0' && nodes[j] <= '9')
-				  || (nodes[j] >= 'A' && nodes[j] <= 'Z')) {
-				
-				number = xstrntol(nodes + j,
-						  NULL, BA_SYSTEM_DIMENSIONS,
-						  HOSTLIST_BASE);
-				x = number / (HOSTLIST_BASE * HOSTLIST_BASE);
-				y = (number % (HOSTLIST_BASE * HOSTLIST_BASE))
-					/ HOSTLIST_BASE;
-				z = (number % HOSTLIST_BASE);
-				j+=3;
-
-				ba_system_ptr->grid[x]
-#ifdef HAVE_BG
-					[y][z]
-#endif
-					.used = 1;
-
-				if(nodes[j] != ',')
-					break;
-				j--;
-			}
-			j++;
-		}
 		xfree(nodes);
 		FREE_NULL_BITMAP(bitmap);
 	}
@@ -324,6 +256,8 @@ no_list:
 	add_bg_record(new_blocks, results, &blockreq);
 
 finished:
+	reset_all_removed_bps();
+	
 	xfree(request->save_name);
 	
 	if(request->elongate_geos) {

@@ -1113,8 +1113,10 @@ static int _find_best_block_match(List block_list,
 					if(bg_record) {
 						destroy_bg_record(bg_record);
 						continue;
-					} else
+					} else {
+						rc = SLURM_ERROR;
 						break;
+					}
 				}
 				bit_and(slurm_block_bitmap,
 					(*found_bg_record)->bitmap);

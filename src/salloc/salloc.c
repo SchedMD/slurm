@@ -331,7 +331,7 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 			desc->geometry[i] = opt.geometry[i];
 	}
 #endif
-	if (opt.conn_type != -1)
+	if (opt.conn_type != (uint16_t)NO_VAL)
 		desc->conn_type = opt.conn_type;
 	if (opt.reboot)
 		desc->reboot = 1;

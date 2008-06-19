@@ -174,7 +174,7 @@ typedef struct
  */
 typedef struct {
 	/* set if using this node in a block */
-	bool used;
+	uint16_t used;
 
 	/* coordinates */
 	int coord[BA_SYSTEM_DIMENSIONS];
@@ -343,6 +343,8 @@ extern char *set_bg_block(List results, int *start,
 			  int *geometry, int conn_type);
 
 extern int reset_ba_system(bool track_down_nodes);
+extern int removable_set_bps(char *bps);
+extern int reset_all_removed_bps();
 extern int set_all_bps_except(char *bps);
 
 extern void init_grid(node_info_msg_t *node_info_ptr);

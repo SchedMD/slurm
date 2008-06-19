@@ -143,6 +143,9 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 {
 #ifdef HAVE_BG
 	int j=0, number;
+	int diff=0;
+	int largest_diff=-1;
+	int best_start[BA_SYSTEM_DIMENSIONS];
 	int start[BA_SYSTEM_DIMENSIONS];
 	int end[BA_SYSTEM_DIMENSIONS];
 	ListIterator itr;
@@ -154,6 +157,7 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 			bg_record->bg_block_list =
 				list_create(destroy_ba_node);
 		}
+		memset(&best_start, 0, sizeof(best_start));
 		bg_record->bp_count = 0;
 		if((bg_record->conn_type == SELECT_SMALL) && (!startup))
 			error("We shouldn't be here there could be some "
@@ -186,14 +190,16 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 					/ HOSTLIST_BASE;
 				end[Z] = (number % HOSTLIST_BASE);
 				j += 3;
-				if(!bg_record->bp_count) {
-					bg_record->start[X] = start[X];
-					bg_record->start[Y] = start[Y];
-					bg_record->start[Z] = start[Z];
-					debug2("start is %dx%dx%d",
-					       bg_record->start[X],
-					       bg_record->start[Y],
-					       bg_record->start[Z]);
+				diff = end[X]-start[X];
+				if(diff > largest_diff) {
+					best_start[X] = start[X];
+					best_start[Y] = start[Y];
+					best_start[Z] = start[Z];
+					debug3("start is now %dx%dx%d",
+					       best_start[X],
+					       best_start[Y],
+					       best_start[Z]);
+					largest_diff = diff;
 				}
 				bg_record->bp_count += _addto_node_list(
 					bg_record, 
@@ -217,14 +223,16 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 					/ HOSTLIST_BASE;
 				start[Z] = (number % HOSTLIST_BASE);
 				j+=3;
-				if(!bg_record->bp_count) {
-					bg_record->start[X] = start[X];
-					bg_record->start[Y] = start[Y];
-					bg_record->start[Z] = start[Z];
-					debug2("start is %dx%dx%d",
-					       bg_record->start[X],
-					       bg_record->start[Y],
-					       bg_record->start[Z]);
+				diff = 0;
+				if(diff > largest_diff) {
+					best_start[X] = start[X];
+					best_start[Y] = start[Y];
+					best_start[Z] = start[Z];
+					debug3("start is now %dx%dx%d",
+					       best_start[X],
+					       best_start[Y],
+					       best_start[Z]);
+					largest_diff = diff;
 				}
 				bg_record->bp_count += _addto_node_list(
 					bg_record, 
@@ -236,6 +244,16 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 			}
 			j++;
 		}
+		if(largest_diff == -1) 
+			fatal("No hostnames given here");
+
+		bg_record->start[X] = best_start[X];
+		bg_record->start[Y] = best_start[Y];
+		bg_record->start[Z] = best_start[Z];
+		debug2("start is %dx%dx%d",
+		       bg_record->start[X],
+		       bg_record->start[Y],
+		       bg_record->start[Z]);
 	}
 	
 	bg_record->geo[X] = 0;

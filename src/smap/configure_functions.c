@@ -986,6 +986,8 @@ static int _add_bg_record(blockreq_t *blockreq, List allocated_blocks)
 #ifdef HAVE_BG
 	char *nodes = NULL, *conn_type = NULL;
 	int bp_count = 0;
+	int diff=0;
+	int largest_diff=-1;
 	int start[BA_SYSTEM_DIMENSIONS];
 	int end[BA_SYSTEM_DIMENSIONS];
 	int start1[BA_SYSTEM_DIMENSIONS];
@@ -995,10 +997,6 @@ static int _add_bg_record(blockreq_t *blockreq, List allocated_blocks)
 	int j = 0, number;
 	int len = 0;
 	int x,y,z;
-	
-	start1[X] = 0;
-	start1[Y] = 0;
-	start1[Z] = 0;
 	
 	geo[X] = 0;
 	geo[Y] = 0;
@@ -1052,7 +1050,8 @@ static int _add_bg_record(blockreq_t *blockreq, List allocated_blocks)
 			end[Z] = (number % HOSTLIST_BASE);
 
 			j += 3;
-			if(!bp_count) {
+			diff = end[X]-start[X];
+			if(diff > largest_diff) {
 				start1[X] = start[X];
 				start1[Y] = start[Y];
 				start1[Z] = start[Z];
@@ -1087,7 +1086,8 @@ static int _add_bg_record(blockreq_t *blockreq, List allocated_blocks)
 			start[Z] = (number % HOSTLIST_BASE);
 			
 			j+=3;
-			if(!bp_count) {
+			diff = 0;
+			if(diff > largest_diff) {
 				start1[X] = start[X];
 				start1[Y] = start[Y];
 				start1[Z] = start[Z];
@@ -1117,7 +1117,13 @@ static int _add_bg_record(blockreq_t *blockreq, List allocated_blocks)
 		geo[X], geo[Y], geo[Z], conn_type, 
 		start1[X], start1[Y], start1[Z],
 		blockreq->nodecards, blockreq->quarters);
+	if(!strcasecmp(layout_mode, "OVERLAP")) 
+		reset_ba_system(false);
+	
+	set_all_bps_except(nodes);
 	_create_allocation(com, allocated_blocks);
+	reset_all_removed_bps();
+	
 #endif
 	return SLURM_SUCCESS;
 }
