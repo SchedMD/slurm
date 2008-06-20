@@ -34,6 +34,10 @@ documents those changes that are of interest to users and admins.
  -- Fix to handle suspended jobs that were cancelled in accounting
  -- BLUEGENE - fix to only include bps given in a name from the bluegene.conf 
     file.
+ -- For select/cons_res: Fix record-keeping for core allocations when more 
+    than one partition uses a node or there is more than one socket per node.
+ -- In output for "scontrol show job" change "StartTime" header to "EligibleTime"
+    for pending jobs to accurately describe what is reported.
 
 * Changes in SLURM 1.3.3
 ========================
