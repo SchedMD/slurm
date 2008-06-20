@@ -1027,8 +1027,9 @@ static void *_slurmctld_background(void *no_data)
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 	debug3("_slurmctld_background pid = %u", getpid());
 
-	while (slurmctld_config.shutdown_time == 0) {
-		sleep(1);
+	while (1) {
+		if (slurmctld_config.shutdown_time == 0)
+			sleep(1);
 
 		now = time(NULL);
 		START_TIMER;

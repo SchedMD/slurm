@@ -99,7 +99,8 @@ reject_msg_t reject_msgs[REJECT_MSG_MAX];
  *	[FLAGS=INTERACTIVE;]		set if interactive (not batch) job
  *	WCLIMIT=<secs>;			wall clock time limit, seconds
  *	TASKS=<cpus>;			CPUs required
- *	NODES=<nodes>;			nodes required
+ *	NODES=<nodes>;			count of nodes required
+ *	DPROCS=<cpus_per_task>;		count of CPUs required per task
  *	QUEUETIME=<uts>;		submission time
  *	STARTTIME=<uts>;		time execution started
  *	RCLASS=<partition>;		SLURM partition name
