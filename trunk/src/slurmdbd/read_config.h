@@ -55,25 +55,31 @@
 #include <time.h>
 
 #define DEFAULT_SLURMDBD_AUTHTYPE	"auth/none"
+#define DEFAULT_SLURMDBD_JOB_PURGE	360
 #define DEFAULT_SLURMDBD_PIDFILE	"/var/run/slurmdbd.pid"
+#define DEFAULT_SLURMDBD_STEP_PURGE	30
 
 /* SlurmDBD configuration parameters */
 typedef struct slurm_dbd_conf {
 	time_t		last_update;	/* time slurmdbd.conf read	*/
+	uint16_t	archive_age;	/* archive data this age	*/
+	char *		archive_script;	/* script to archive old data	*/
 	char *		auth_info;	/* authentication info		*/
 	char *		auth_type;	/* authentication mechanism	*/
 	char *		dbd_addr;	/* network address of Slurm DBD	*/
 	char *		dbd_host;	/* hostname of Slurm DBD	*/
 	uint16_t	dbd_port;	/* port number for RPCs to DBD	*/
 	uint16_t	debug_level;	/* Debug level, default=3	*/
+	uint16_t	job_purge;	/* purge time for job info	*/ 
 	char *		log_file;	/* Log file			*/
-	uint16_t        msg_timeout;    /* message timeout */   
+	uint16_t        msg_timeout;    /* message timeout		*/   
 	char *		pid_file;	/* where to store current PID	*/
 	char *		plugindir;	/* dir to look for plugins	*/
 	uint32_t	slurm_user_id;	/* uid of slurm_user_name	*/
 	char *		slurm_user_name;/* user that slurmcdtld runs as	*/
+	uint16_t	step_purge;	/* purge time for step info	*/
 	char *		storage_host;	/* host where DB is running	*/
-	char *		storage_loc;	/* database name */
+	char *		storage_loc;	/* database name		*/
 	char *		storage_pass;   /* password for DB write	*/
 	uint16_t	storage_port;	/* port DB is listening to	*/
 	char *		storage_type;	/* DB to be used for storage	*/
