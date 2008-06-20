@@ -75,15 +75,19 @@ extern void free_slurmdbd_conf(void)
 static void _clear_slurmdbd_conf(void)
 {
 	if (slurmdbd_conf) {
+		slurmdbd_conf->archive_age = 0;
+		xfree(slurmdbd_conf->archive_script);
 		xfree(slurmdbd_conf->auth_info);
 		xfree(slurmdbd_conf->auth_type);
 		xfree(slurmdbd_conf->dbd_addr);
 		xfree(slurmdbd_conf->dbd_host);
 		slurmdbd_conf->dbd_port = 0;
+		slurmdbd_conf->job_purge = 0;
 		xfree(slurmdbd_conf->log_file);
 		xfree(slurmdbd_conf->pid_file);
 		xfree(slurmdbd_conf->plugindir);
 		xfree(slurmdbd_conf->slurm_user_name);
+		slurmdbd_conf->step_purge = 0;
 		xfree(slurmdbd_conf->storage_host);
 		xfree(slurmdbd_conf->storage_loc);
 		xfree(slurmdbd_conf->storage_pass);
@@ -102,17 +106,21 @@ static void _clear_slurmdbd_conf(void)
 extern int read_slurmdbd_conf(void)
 {
 	s_p_options_t options[] = {
+		{"ArchiveAge", S_P_UINT16},
+		{"ArchiveScript", S_P_STRING},
 		{"AuthInfo", S_P_STRING},
 		{"AuthType", S_P_STRING},
 		{"DbdAddr", S_P_STRING},
 		{"DbdHost", S_P_STRING},
 		{"DbdPort", S_P_UINT16},
 		{"DebugLevel", S_P_UINT16},
+		{"JobPurge", S_P_UINT16},
 		{"LogFile", S_P_STRING},
 		{"MessageTimeout", S_P_UINT16},
 		{"PidFile", S_P_STRING},
 		{"PluginDir", S_P_STRING},
 		{"SlurmUser", S_P_STRING},
+		{"StepPurge", S_P_UINT16},
 		{"StorageHost", S_P_STRING},
 		{"StorageLoc", S_P_STRING},
 		{"StoragePass", S_P_STRING},
@@ -144,12 +152,16 @@ extern int read_slurmdbd_conf(void)
 		 	     conf_path);
 		}
 
+		s_p_get_uint16(&slurmdbd_conf->archive_age, "ArchiveAge", tbl);
+		s_p_get_string(&slurmdbd_conf->archive_script, "ArchiveScript", tbl);
 		s_p_get_string(&slurmdbd_conf->auth_info, "AuthInfo", tbl);
 		s_p_get_string(&slurmdbd_conf->auth_type, "AuthType", tbl);
 		s_p_get_string(&slurmdbd_conf->dbd_host, "DbdHost", tbl);
 		s_p_get_string(&slurmdbd_conf->dbd_addr, "DbdAddr", tbl);
 		s_p_get_uint16(&slurmdbd_conf->dbd_port, "DbdPort", tbl);
 		s_p_get_uint16(&slurmdbd_conf->debug_level, "DebugLevel", tbl);
+		if (!s_p_get_uint16(&slurmdbd_conf->job_purge, "JobPurge", tbl))
+			slurmdbd_conf->job_purge = DEFAULT_SLURMDBD_JOB_PURGE;
 		s_p_get_string(&slurmdbd_conf->log_file, "LogFile", tbl);
 		if (!s_p_get_uint16(&slurmdbd_conf->msg_timeout,
 				    "MessageTimeout", tbl))
@@ -162,6 +174,8 @@ extern int read_slurmdbd_conf(void)
 		s_p_get_string(&slurmdbd_conf->plugindir, "PluginDir", tbl);
 		s_p_get_string(&slurmdbd_conf->slurm_user_name, "SlurmUser",
 			       tbl);
+		if (!s_p_get_uint16(&slurmdbd_conf->step_purge, "StepPurge", tbl))
+			slurmdbd_conf->step_purge = DEFAULT_SLURMDBD_STEP_PURGE;
 		s_p_get_string(&slurmdbd_conf->storage_host,
 				"StorageHost", tbl);
 		s_p_get_string(&slurmdbd_conf->storage_loc,
@@ -215,18 +229,22 @@ extern int read_slurmdbd_conf(void)
 /* Log the current configuration using verbose() */
 extern void log_config(void)
 {
+	debug2("ArchiveAge        = %u days", slurmdbd_conf->archive_age);
+	debug2("ArchiveScript     = %s", slurmdbd_conf->archive_script);
 	debug2("AuthInfo          = %s", slurmdbd_conf->auth_info);
 	debug2("AuthType          = %s", slurmdbd_conf->auth_type);
 	debug2("DbdAddr           = %s", slurmdbd_conf->dbd_addr);
 	debug2("DbdHost           = %s", slurmdbd_conf->dbd_host);
 	debug2("DbdPort           = %u", slurmdbd_conf->dbd_port);
 	debug2("DebugLevel        = %u", slurmdbd_conf->debug_level);
+	debug2("JobPurge          = %u days", slurmdbd_conf->job_purge);
 	debug2("LogFile           = %s", slurmdbd_conf->log_file);
 	debug2("MessageTimeout    = %u", slurmdbd_conf->msg_timeout);
 	debug2("PidFile           = %s", slurmdbd_conf->pid_file);
 	debug2("PluginDir         = %s", slurmdbd_conf->plugindir);
 	debug2("SlurmUser         = %s(%u)", 
-		slurmdbd_conf->slurm_user_name, slurmdbd_conf->slurm_user_id); 
+		slurmdbd_conf->slurm_user_name, slurmdbd_conf->slurm_user_id);
+	debug2("StepAge           = %u days", slurmdbd_conf->job_purge); 
 	debug2("StorageHost       = %s", slurmdbd_conf->storage_host);
 	debug2("StorageLoc        = %s", slurmdbd_conf->storage_loc);
 	debug2("StoragePass       = %s", slurmdbd_conf->storage_pass);
