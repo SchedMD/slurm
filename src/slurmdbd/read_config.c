@@ -229,7 +229,11 @@ extern int read_slurmdbd_conf(void)
 /* Log the current configuration using verbose() */
 extern void log_config(void)
 {
-	debug2("ArchiveAge        = %u days", slurmdbd_conf->archive_age);
+	if (slurmdbd_conf->archive_age) {
+		debug2("ArchiveAge        = %u days", 
+		       slurmdbd_conf->archive_age);
+	} else
+		debug2("ArchiveAge        = NONE");
 	debug2("ArchiveScript     = %s", slurmdbd_conf->archive_script);
 	debug2("AuthInfo          = %s", slurmdbd_conf->auth_info);
 	debug2("AuthType          = %s", slurmdbd_conf->auth_type);
@@ -244,7 +248,7 @@ extern void log_config(void)
 	debug2("PluginDir         = %s", slurmdbd_conf->plugindir);
 	debug2("SlurmUser         = %s(%u)", 
 		slurmdbd_conf->slurm_user_name, slurmdbd_conf->slurm_user_id);
-	debug2("StepAge           = %u days", slurmdbd_conf->job_purge); 
+	debug2("StepPurge         = %u days", slurmdbd_conf->step_purge); 
 	debug2("StorageHost       = %s", slurmdbd_conf->storage_host);
 	debug2("StorageLoc        = %s", slurmdbd_conf->storage_loc);
 	debug2("StoragePass       = %s", slurmdbd_conf->storage_pass);
