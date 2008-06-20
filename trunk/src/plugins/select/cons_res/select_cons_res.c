@@ -530,9 +530,9 @@ static uint16_t _get_task_count(struct node_cr_record *select_node_ptr,
 					    if ((cr_type == CR_SOCKET) ||
 						(cr_type == CR_SOCKET_MEMORY)) {
 						if (p_ptr->alloc_cores[i])
-							alloc_cores[i] = cores;
+							alloc_cores[i] += cores;
 					    } else {
-						alloc_cores[i] =
+						alloc_cores[i] +=
 							p_ptr->alloc_cores[i];
 					    }
 					}
@@ -573,9 +573,10 @@ static uint16_t _get_task_count(struct node_cr_record *select_node_ptr,
 				}
 				if (try_partial_idle && (alloc_row > -1)) {
 					alloc_row *= sockets;
-					for (i = 0; i < sockets; i++)
-						alloc_cores[i] =
-						p_ptr->alloc_cores[alloc_row+i];
+					for (i = 0; i < sockets; i++) {
+						alloc_cores[i] += p_ptr->
+							alloc_cores[alloc_row+i];
+					}
 				}
 			}
 		}
