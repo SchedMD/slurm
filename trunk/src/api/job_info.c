@@ -126,7 +126,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	int i, j;
 	char time_str[32], select_buf[122];
 	struct group *group_info = NULL;
-	char tmp1[128], tmp2[128];
+	char tmp1[128], tmp2[128], *tmp3_ptr;
 	char tmp_line[512];
 	char *ionodes = NULL;
 	uint16_t exit_status = 0, term_sig = 0;
@@ -209,11 +209,16 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		xstrcat(out, "\n   ");
 
 	/****** Line 5 ******/
+	if (job_ptr->job_state == JOB_PENDING)
+		tmp3_ptr = "EligibleTime";
+	else
+		tmp3_ptr = "StartTime";
 	slurm_make_time_str((time_t *)&job_ptr->start_time, time_str,
 		sizeof(time_str));
 	snprintf(tmp_line, sizeof(tmp_line),
-		"JobState=%s StartTime=%s EndTime=",
-		job_state_string(job_ptr->job_state), time_str);
+		"JobState=%s %s=%s EndTime=",
+		job_state_string(job_ptr->job_state), 
+		tmp3_ptr, time_str);
 	xstrcat(out, tmp_line);
 	if ((job_ptr->time_limit == INFINITE) && 
 	    (job_ptr->end_time > time(NULL)))
