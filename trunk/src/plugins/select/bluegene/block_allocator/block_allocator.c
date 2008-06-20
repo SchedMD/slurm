@@ -1581,10 +1581,11 @@ extern int removable_set_bps(char *bps)
 
 extern int reset_all_removed_bps()
 {
-	int x,y,z;
+	int x;
 
 	for (x = 0; x < DIM_SIZE[X]; x++) {
 #ifdef HAVE_BG
+		int y, z;
 		for (y = 0; y < DIM_SIZE[Y]; y++)
 			for (z = 0; z < DIM_SIZE[Z]; z++) 
 				if(ba_system_ptr->grid[x][y][z].used == 2) {
