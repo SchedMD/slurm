@@ -71,25 +71,30 @@ static char *	_task_list(struct job_record *job_ptr);
  *
  * Response format
  * ARG=<cnt>#<JOBID>;
- *	STATE=<state>;
- *	[HOSTLIST=<required_hosts>;]
- *	[TASKLIST=<allocated_hosts>;]
- *	[REJMESSAGE=<reason_job_failed>;]
- *	UPDATE_TIME=<uts>;
- *	WCLIMIT=<time_limit>;
- *	[TASKS=<required_cpus>;]
- *	[NODES=<required_node_cnt>;]
- *	QUEUETIME=<submit_time>;
- *	STARTTIME=<time>;
- *	PARTITIONMASK=<partition>;
- *	RMEM=<mem_size>;
- *	RDISK=<disk_space>;
- *	[COMPLETETIME=<end_time>;]
- *	[SUSPENDTIME=<time_suspended>;]
- *	[UNAME=<user>;]
- *	[GNAME=<group>;]
- *  [#<JOBID>;...];
- *
+ *	STATE=<state>;			Moab equivalent job state
+ *	[HOSTLIST=<node1:node2>;]	list of required nodes, if any
+ *	[TASKLIST=<node1:node2>;]	nodes in use, if running or completing
+ *	[RFEATURES=<features>;]		required features, if any, 
+ *					NOTE: OR operator not supported
+ *	[REJMESSAGE=<str>;]		reason job is not running, if any
+ *	UPDATETIME=<uts>;		time last active
+ *	WCLIMIT=<secs>;			wall clock time limit, seconds
+ *	TASKS=<cpus>;			CPUs required
+ *	[NODES=<nodes>;]		count of nodes required
+ *	DPROCS=<cpus_per_task>;		count of CPUs required per task
+ *	QUEUETIME=<uts>;		submission time
+ *	STARTTIME=<uts>;		time execution started
+ *	PARTITIONMASK=<partition>;	partition name
+ *	RMEM=<MB>;			MB of memory required
+ *	RDISK=<MB>;			MB of disk space required
+ *	[COMPLETETIME=<uts>;]		termination time
+ *	[SUSPENDTIME=<secs>;]		seconds that job has been suspended
+ *	[QOS=<quality_of_service>];	quality of service
+ *	[ACCOUNT=<bank_account>];	bank account name
+ *	[COMMENT=<whatever>;]		job dependency or account number
+ *	UNAME=<user_name>;		user name
+ *	GNAME=<group_name>;		group name
+ * [#<JOBID>;...];			additional jobs, if any
  */
 extern int	get_jobs(char *cmd_ptr, int *err_code, char **err_msg)
 {
