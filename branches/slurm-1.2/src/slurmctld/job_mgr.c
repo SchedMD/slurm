@@ -1069,12 +1069,14 @@ extern int kill_running_job_by_node_name(char *node_name, bool step_test)
 				_set_job_prio(job_ptr);
 				job_ptr->time_last_active  = now;
 				if (suspended)
-					job_ptr->end_time = job_ptr->suspend_time;
+					job_ptr->end_time = 
+						job_ptr->suspend_time;
 				else
 					job_ptr->end_time = now;
 				
-				/* We want this job to look like it was cancelled in the
-				 * accounting logs. Set a new submit time so the restarted
+				/* We want this job to look like it
+				 * was cancelled in the accounting
+				 * logs. Set a new submit time so the restarted
 				 * job looks like a new job. */
 				job_ptr->job_state  = JOB_CANCELLED;
 				deallocate_nodes(job_ptr, false, suspended);
