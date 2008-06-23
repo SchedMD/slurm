@@ -4,6 +4,7 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 1.2.32
 =========================
  -- Disable scancel of job in RootOnly partition only for sched/wiki2 (Moab).
+    Permit user scancel from other configurations.
 
 * Changes in SLURM 1.2.31
 =========================
