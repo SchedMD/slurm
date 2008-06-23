@@ -145,6 +145,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"DefaultStorageUser", S_P_STRING},
 	{"DefMemPerTask", S_P_UINT32},
 	{"DisableRootJobs", S_P_BOOLEAN},
+	{"EnforcePartLimits", S_P_BOOLEAN},
 	{"Epilog", S_P_STRING},
 	{"EpilogMsgTime", S_P_UINT32},
 	{"FastSchedule", S_P_UINT16},
@@ -1153,6 +1154,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->crypto_type);
 	ctl_conf_ptr->def_mem_per_task          = 0;
 	ctl_conf_ptr->disable_root_jobs         = 0;
+	ctl_conf_ptr->enforce_part_limits       = 0;
 	xfree (ctl_conf_ptr->epilog);
 	ctl_conf_ptr->epilog_msg_time		= (uint32_t) NO_VAL;
 	ctl_conf_ptr->fast_schedule		= (uint16_t) NO_VAL;
@@ -1534,6 +1536,10 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_boolean((bool *) &conf->disable_root_jobs, 
 			     "DisableRootJobs", hashtbl))
 		conf->disable_root_jobs = DEFAULT_DISABLE_ROOT_JOBS;
+
+	if (!s_p_get_boolean((bool *) &conf->enforce_part_limits, 
+			     "EnforcePartLimits", hashtbl))
+		conf->disable_root_jobs = DEFAULT_ENFORCE_PART_LIMITS;
 
 	s_p_get_string(&conf->epilog, "Epilog", hashtbl);
 

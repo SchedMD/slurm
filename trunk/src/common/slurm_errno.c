@@ -219,6 +219,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "of the slurmctld daemon to take effect"},
 	{ ESLURM_ACCOUNTING_POLICY,
 	  "Job violates accounting policy (the user's size and/or time limits)"},
+	{ ESLURM_INVALID_TIME_LIMIT,
+	  "Requested time limit exceeds partition limit"	},
 
 	/* slurmd error codes */
 

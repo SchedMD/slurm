@@ -949,6 +949,8 @@ typedef struct slurm_ctl_conf {
 	char *crypto_type;	/* cryptographic signature plugin */
 	uint32_t def_mem_per_task; /* default MB memory per spawned task */
 	uint16_t disable_root_jobs; /* if set then user root can't run jobs */
+	uint16_t enforce_part_limits;	/* if set, reject job exceeding 
+					 * partition size and/or time limits */
 	char *epilog;		/* pathname of job epilog */
 	uint32_t epilog_msg_time;  /* usecs for slurmctld to process an
 				 * epilog complete message */
