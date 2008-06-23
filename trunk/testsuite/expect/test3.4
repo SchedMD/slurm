@@ -7,7 +7,8 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2002 The Regents of the University of California.
+# Copyright (C) 2002-2007 The Regents of the University of California.
+# Copyright (C) 2008 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # LLNL-CODE-402394.
@@ -90,22 +91,10 @@ expect {
 #
 spawn $scontrol update JobId=$job_id Priority=$new_prio 
 expect {
-	-re "slurm_update error: ($alpha_numeric) ($alpha_numeric)" {
-		set access_err 0
-		set err_msg1 $expect_out(1,string)
-		set err_msg2 $expect_out(2,string)
-		if {[string compare $err_msg1 "Access"] == 0} {
-			set access_err 1
-		}
-		if {[string compare $err_msg2 "denied"] == 0} {
-			set access_err 1
-		}
-		if {$access_err == 1} {
-			send_user "\nWARNING: User not authorized to modify jobs\n"
-			exit $exit_code
-		} else {
-			set authorized 0
-		}
+	-re "slurm_update error: Access.*denied" {
+		send_user "\nWARNING: User not authorized to modify jobs\n"
+		cancel_job $job_id
+		exit $exit_code
 		exp_continue
 	}
 	timeout {
