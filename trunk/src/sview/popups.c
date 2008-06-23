@@ -638,6 +638,7 @@ extern void create_daemon_popup(GtkAction *action, gpointer user_data)
 	} else if ((n = slurm_conf_get_nodename("localhost"))) {
 		d = 1;
 		xfree(n);
+	}
 	if (actld && ctld)
 		add_display_treestore_line(update, treestore, &iter, 
 					   "Slurmctld", "1");
