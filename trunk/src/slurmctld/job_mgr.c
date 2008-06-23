@@ -1923,7 +1923,10 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		     job_desc->min_nodes, part_ptr->max_nodes_orig);
 		error_code = ESLURM_TOO_MANY_REQUESTED_NODES;
 		return error_code;
-	}
+	} else if ((job_desc->min_nodes < part_ptr->min_nodes_orig) &&
+		   ((job_desc->max_nodes == NO_VAL) ||
+		    (job_desc->max_nodes >= part_ptr->min_nodes_orig)))
+		job_desc->min_nodes = part_ptr->min_nodes_orig;
 
 	if (job_desc->max_nodes == NO_VAL) {
 #ifdef HAVE_BG
