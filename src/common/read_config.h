@@ -2,7 +2,9 @@
  *  read_config.h - definitions for reading the overall slurm configuration 
  *  file
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Portions Copyright (C) 2008 Vijay Ramasubramanian.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Mette <jette1@llnl.gov>.
  *  LLNL-CODE-402394.
@@ -266,6 +268,17 @@ extern char *slurm_conf_get_hostname(const char *node_name);
  * NOTE: Caller must NOT be holding slurm_conf_lock().
  */
 extern char *slurm_conf_get_nodename(const char *node_hostname);
+
+/*
+ * slurm_conf_get_aliased_nodename - Return the NodeName matching an alias
+ * of the local hostname
+ *
+ * Returned string was allocated with xmalloc(), and must be freed by
+ * the caller using xfree().
+ *
+ * NOTE: Caller must NOT be holding slurm_conf_lock().
+ */
+extern char *slurm_conf_get_aliased_nodename(void);
 
 /*
  * slurm_conf_get_port - Return the port for a given NodeName

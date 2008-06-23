@@ -1,7 +1,8 @@
 /****************************************************************************\
  *  sview.c - main for sview
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>, et. al.
  *  LLNL-CODE-402394.

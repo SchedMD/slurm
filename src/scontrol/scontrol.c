@@ -3,6 +3,8 @@
  *	provides interface to read, write, update, and configurations.
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Portions Copyright (C) 2008 Vijay Ramasubramanian.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  LLNL-CODE-402394.
@@ -417,6 +419,9 @@ _print_daemons (void)
 	slurm_conf_unlock();
 
 	if ((n = slurm_conf_get_nodename(me))) {
+		d = 1;
+		xfree(n);
+	} else if ((n = slurm_conf_get_aliased_nodename())) {
 		d = 1;
 		xfree(n);
 	} else if ((n = slurm_conf_get_nodename("localhost"))) {

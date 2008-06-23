@@ -1,4 +1,5 @@
 .TH "slurm.conf" "5" "June 2008" "slurm.conf 1.3" "Slurm configuration file"
+
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
 .SH "DESCRIPTION"
@@ -1257,9 +1258,11 @@ The node configuration specified the following information:
 \fBNodeName\fR
 Name that SLURM uses to refer to a node (or base partition for 
 BlueGene systems). 
-Typically this would be the string that "/bin/hostname \-s" 
-returns, however it may be an arbitrary string if 
-\fBNodeHostname\fR is specified.
+Typically this would be the string that "/bin/hostname \-s" returns.
+It may also be the fully qualified domane name as returned by "/bin/hostname \-f"
+(e.g. "foo1.bar.com"), although that may prevent use of hostlist expressions
+(the numeric portion in brackets must be at the end of the string).
+It may also be an arbitrary string if \fBNodeHostname\fR is specified.
 If the \fBNodeName\fR is "DEFAULT", the values specified 
 with that record will apply to subsequent node specifications   
 unless explicitly set to other values in that node record or 
@@ -1272,7 +1275,10 @@ considered adjacent in the computer.
 
 .TP
 \fBNodeHostname\fR
-The string that "/bin/hostname \-s" returns. 
+Typically this would be the string that "/bin/hostname \-s" returns. 
+It may also be the fully qualified domain name as returned by "/bin/hostname \-f"
+(e.g. "foo1.bar.com"), although that may prevent use of hostlist expressions
+(the numeric portion in brackets must be at the end of the string).
 A node range expression can be used to specify a set of nodes.
 If an expression is used, the number of nodes identified by 
 \fBNodeHostname\fR on a line in the configuration file must 
