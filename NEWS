@@ -373,7 +373,7 @@ documents those changes that are of interest to users and admins.
  -- In jobcomp/script: Set TZ if set in slurmctld's environment.
  -- In srun with --verbose option properly format CPU allocation information 
     logged for clusters with 1000+ nodes and 10+ CPUs per node.
- -- Process a job's --mail_type=end option on any job of job termination, not
+ -- Process a job's --mail_type=end option on any type of job termination, not
     just normal completion (e.g. all failure modes too).
 
 * Changes in SLURM 1.2.30
