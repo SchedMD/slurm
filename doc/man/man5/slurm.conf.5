@@ -1262,6 +1262,8 @@ Typically this would be the string that "/bin/hostname \-s" returns.
 It may also be the fully qualified domane name as returned by "/bin/hostname \-f"
 (e.g. "foo1.bar.com"), although that may prevent use of hostlist expressions
 (the numeric portion in brackets must be at the end of the string).
+Fully qualified domain names are incompatible with the auth/munge,
+switch/elan and switch/federation plugins at this time.
 It may also be an arbitrary string if \fBNodeHostname\fR is specified.
 If the \fBNodeName\fR is "DEFAULT", the values specified 
 with that record will apply to subsequent node specifications   
@@ -1279,6 +1281,8 @@ Typically this would be the string that "/bin/hostname \-s" returns.
 It may also be the fully qualified domain name as returned by "/bin/hostname \-f"
 (e.g. "foo1.bar.com"), although that may prevent use of hostlist expressions
 (the numeric portion in brackets must be at the end of the string).
+Fully qualified domain names are incompatible with the auth/munge,
+switch/elan and switch/federation plugins at this time.
 A node range expression can be used to specify a set of nodes.
 If an expression is used, the number of nodes identified by 
 \fBNodeHostname\fR on a line in the configuration file must 
