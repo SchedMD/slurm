@@ -1594,6 +1594,10 @@ Optional Packages:
   --with-db2-dir=PATH     Specify path to DB2 library's parent directory
   --with-bg-serial=NAME   set BG_SERIAL value BGL
   --with-xcpu=PATH        specify path to XCPU directory
+  --with-pkg-config=PATH  Specify path to pkg-config binary
+  --with-mysql_config=PATH
+                          Specify path to mysql_config binary
+  --with-pg_config=PATH   Specify path to pg_config binary
   --with-slurmctld-port=N set slurmctld default port 6817
   --with-slurmd-port=N    set slurmd default port 6818
   --with-slurmdbd-port=N  set slurmdbd default port 6819
@@ -7115,7 +7119,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 7118 "configure"' > conftest.$ac_ext
+  echo '#line 7122 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -9221,11 +9225,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:9224: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:9228: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:9228: \$? = $ac_status" >&5
+   echo "$as_me:9232: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -9511,11 +9515,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:9514: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:9518: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:9518: \$? = $ac_status" >&5
+   echo "$as_me:9522: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -9615,11 +9619,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:9618: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:9622: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:9622: \$? = $ac_status" >&5
+   echo "$as_me:9626: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -11992,7 +11996,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 11995 "configure"
+#line 11999 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -12092,7 +12096,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 12095 "configure"
+#line 12099 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -14493,11 +14497,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14496: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14500: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:14500: \$? = $ac_status" >&5
+   echo "$as_me:14504: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -14597,11 +14601,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14600: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14604: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:14604: \$? = $ac_status" >&5
+   echo "$as_me:14608: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -16195,11 +16199,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:16198: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:16202: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:16202: \$? = $ac_status" >&5
+   echo "$as_me:16206: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -16299,11 +16303,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:16302: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:16306: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:16306: \$? = $ac_status" >&5
+   echo "$as_me:16310: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -18519,11 +18523,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:18522: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:18526: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:18526: \$? = $ac_status" >&5
+   echo "$as_me:18530: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -18809,11 +18813,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:18812: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:18816: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:18816: \$? = $ac_status" >&5
+   echo "$as_me:18820: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -18913,11 +18917,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:18916: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:18920: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:18920: \$? = $ac_status" >&5
+   echo "$as_me:18924: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -25155,9 +25159,18 @@ fi
 
 ### Set to "no" if any test fails
     ac_have_gtk="yes"
+    _x_ac_pkcfg_bin="no"
 
 ### Check for pkg-config program
-    # Extract the first word of "pkg-config", so it can be a program name with args.
+
+# Check whether --with-pkg-config was given.
+if test "${with_pkg_config+set}" = set; then
+  withval=$with_pkg_config; _x_ac_pkcfg_bin="$withval"
+fi
+
+
+    if test x$_x_ac_pkcfg_bin = xno; then
+    	    # Extract the first word of "pkg-config", so it can be a program name with args.
 set dummy pkg-config; ac_word=$2
 { echo "$as_me:$LINENO: checking for $ac_word" >&5
 echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
@@ -25198,10 +25211,54 @@ echo "${ECHO_T}no" >&6; }
 fi
 
 
+    else
+   	    # Extract the first word of "pkg-config", so it can be a program name with args.
+set dummy pkg-config; ac_word=$2
+{ echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
+if test "${ac_cv_path_HAVEPKGCONFIG+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  case $HAVEPKGCONFIG in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_HAVEPKGCONFIG="$HAVEPKGCONFIG" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $_x_ac_pkcfg_bin
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_HAVEPKGCONFIG="$as_dir/$ac_word$ac_exec_ext"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+IFS=$as_save_IFS
+
+  test -z "$ac_cv_path_HAVEPKGCONFIG" && ac_cv_path_HAVEPKGCONFIG="no"
+  ;;
+esac
+fi
+HAVEPKGCONFIG=$ac_cv_path_HAVEPKGCONFIG
+if test -n "$HAVEPKGCONFIG"; then
+  { echo "$as_me:$LINENO: result: $HAVEPKGCONFIG" >&5
+echo "${ECHO_T}$HAVEPKGCONFIG" >&6; }
+else
+  { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+fi
+
+
+    fi
+
     if test x$HAVEPKGCONFIG = xno; then
-        { echo "$as_me:$LINENO: WARNING: *** pkg-config not found. Cannot probe for libglade-2.0 or gtk+-2.0." >&5
+            { echo "$as_me:$LINENO: WARNING: *** pkg-config not found. Cannot probe for libglade-2.0 or gtk+-2.0." >&5
 echo "$as_me: WARNING: *** pkg-config not found. Cannot probe for libglade-2.0 or gtk+-2.0." >&2;}
-        ac_have_gtk="no"
+            ac_have_gtk="no"
     fi
 
 ### Check for libglade package (We don't need this right now so don't add it)
@@ -25327,8 +25384,17 @@ fi
 
 	#Check for MySQL
 	ac_have_mysql="no"
+	_x_ac_mysql_bin="no"
 	### Check for mysql_config program
-    	# Extract the first word of "mysql_config", so it can be a program name with args.
+
+# Check whether --with-mysql_config was given.
+if test "${with_mysql_config+set}" = set; then
+  withval=$with_mysql_config; _x_ac_mysql_bin="$withval"
+fi
+
+
+	if test x$_x_ac_mysql_bin = xno; then
+    		# Extract the first word of "mysql_config", so it can be a program name with args.
 set dummy mysql_config; ac_word=$2
 { echo "$as_me:$LINENO: checking for $ac_word" >&5
 echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
@@ -25368,6 +25434,50 @@ else
 echo "${ECHO_T}no" >&6; }
 fi
 
+
+	else
+   		# Extract the first word of "mysql_config", so it can be a program name with args.
+set dummy mysql_config; ac_word=$2
+{ echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
+if test "${ac_cv_path_HAVEMYSQLCONFIG+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  case $HAVEMYSQLCONFIG in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_HAVEMYSQLCONFIG="$HAVEMYSQLCONFIG" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $_x_ac_mysql_bin
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_HAVEMYSQLCONFIG="$as_dir/$ac_word$ac_exec_ext"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+IFS=$as_save_IFS
+
+  test -z "$ac_cv_path_HAVEMYSQLCONFIG" && ac_cv_path_HAVEMYSQLCONFIG="no"
+  ;;
+esac
+fi
+HAVEMYSQLCONFIG=$ac_cv_path_HAVEMYSQLCONFIG
+if test -n "$HAVEMYSQLCONFIG"; then
+  { echo "$as_me:$LINENO: result: $HAVEMYSQLCONFIG" >&5
+echo "${ECHO_T}$HAVEMYSQLCONFIG" >&6; }
+else
+  { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+fi
+
+
+	fi
 
 	if test x$HAVEMYSQLCONFIG = xno; then
         	{ echo "$as_me:$LINENO: WARNING: *** mysql_config not found. Evidently no MySQL install on system." >&5
@@ -25471,8 +25581,17 @@ echo "$as_me: WARNING: *** MySQL test program execution failed." >&2;}
 
 	#Check for PostgreSQL
 	ac_have_postgres="no"
+	_x_ac_pgsql_bin="no"
 	### Check for pg_config program
-    	# Extract the first word of "pg_config", so it can be a program name with args.
+
+# Check whether --with-pg_config was given.
+if test "${with_pg_config+set}" = set; then
+  withval=$with_pg_config; _x_ac_pgsql_bin="$withval"
+fi
+
+
+	if test x$_x_ac_pgsql_bin = xno; then
+    		# Extract the first word of "pg_config", so it can be a program name with args.
 set dummy pg_config; ac_word=$2
 { echo "$as_me:$LINENO: checking for $ac_word" >&5
 echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
@@ -25512,6 +25631,50 @@ else
 echo "${ECHO_T}no" >&6; }
 fi
 
+
+	else
+  		# Extract the first word of "pg_config", so it can be a program name with args.
+set dummy pg_config; ac_word=$2
+{ echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
+if test "${ac_cv_path_HAVEPGCONFIG+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  case $HAVEPGCONFIG in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_HAVEPGCONFIG="$HAVEPGCONFIG" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $_x_ac_pgsql_bin
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_HAVEPGCONFIG="$as_dir/$ac_word$ac_exec_ext"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+IFS=$as_save_IFS
+
+  test -z "$ac_cv_path_HAVEPGCONFIG" && ac_cv_path_HAVEPGCONFIG="no"
+  ;;
+esac
+fi
+HAVEPGCONFIG=$ac_cv_path_HAVEPGCONFIG
+if test -n "$HAVEPGCONFIG"; then
+  { echo "$as_me:$LINENO: result: $HAVEPGCONFIG" >&5
+echo "${ECHO_T}$HAVEPGCONFIG" >&6; }
+else
+  { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+fi
+
+
+	fi
 
 	if test x$HAVEPGCONFIG = xno; then
         	{ echo "$as_me:$LINENO: WARNING: *** pg_config not found. Evidently no PostgreSQL install on system." >&5
