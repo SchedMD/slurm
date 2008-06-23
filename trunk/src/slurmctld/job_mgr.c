@@ -1895,6 +1895,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	uint16_t conn_type;
 #endif
 
+	*job_pptr = (struct job_record *) NULL;
 	/* find selected partition */
 	if (job_desc->partition) {
 		part_ptr = list_find_first(part_list, &list_find_part,
@@ -1963,7 +1964,6 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	       job_desc->min_nodes, job_desc->max_nodes,
 	       job_desc->num_procs, max_procs);
 	
-	*job_pptr = (struct job_record *) NULL;
 	if ((error_code = _validate_job_desc(job_desc, allocate, submit_uid)))
 		return error_code;
  
