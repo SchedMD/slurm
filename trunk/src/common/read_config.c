@@ -3,6 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Portions Copyright (C) 2008 Vijay Ramasubramanian.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  LLNL-CODE-402394.
@@ -43,6 +44,7 @@
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
+#include <netdb.h>
 #include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -67,6 +69,7 @@
 #include "src/common/parse_config.h"
 #include "src/common/parse_time.h"
 #include "src/common/slurm_selecttype_info.h"
+#include "src/common/util-net.h"
 
 /* Instantiation of the "extern slurm_ctl_conf_t slurmcltd_conf"
  * found in slurmctld.h */
@@ -926,6 +929,58 @@ extern char *slurm_conf_get_nodename(const char *node_hostname)
 	slurm_conf_unlock();
 
 	return NULL;
+}
+
+/*
+ * slurm_conf_get_aliased_nodename - Return the NodeName for the
+ * complete hostname string returned by gethostname if there is
+ * such a match, otherwise iterate through any aliases returned
+ * by get_host_by_name
+ */
+extern char *slurm_conf_get_aliased_nodename()
+{
+	char hostname_full[1024];
+	int error_code;
+	char *nodename;
+
+	error_code = gethostname(hostname_full, sizeof(hostname_full));
+	/* we shouldn't have any problem here since by the time
+	 * this function has been called, gethostname_short,
+	 * which invokes gethostname, has probably already been called
+	 * successfully, so just return NULL if something weird
+	 * happens at this point
+	 */
+	if (error_code)
+		return NULL;
+
+	nodename = slurm_conf_get_nodename(hostname_full);
+	/* if the full hostname did not match a nodename */
+	if (nodename == NULL) {
+		/* use get_host_by_name; buffer sizes, semantics, etc.
+		 * copied from slurm_protocol_socket_implementation.c
+		 */
+		struct hostent * he = NULL;
+		char * h_buf[4096];
+		int h_err;
+
+		he = get_host_by_name(hostname_full, (void *)&h_buf,
+				      sizeof(h_buf), &h_err);
+		if (he != NULL) {
+			unsigned int i = 0;
+			/* check the "official" host name first */
+			nodename = slurm_conf_get_nodename(he->h_name);
+			while ((nodename == NULL) &&
+			       (he->h_aliases[i] != NULL)) {
+				/* the "official" name still didn't match --
+				 * iterate through the aliases */
+				nodename =
+				     slurm_conf_get_nodename(he->h_aliases[i]);
+				i++;
+			}
+		}
+	}
+
+	return nodename;
 }
 
 /*

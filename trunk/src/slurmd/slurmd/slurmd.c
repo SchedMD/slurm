@@ -2,7 +2,9 @@
  *  src/slurmd/slurmd/slurmd.c - main slurm node server daemon
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Portions Copyright (C) 2008 Vijay Ramasubramanian.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  LLNL-CODE-402394.
@@ -582,6 +584,11 @@ _read_config()
 	/* node_name may already be set from a command line parameter */
 	if (conf->node_name == NULL)
 		conf->node_name = slurm_conf_get_nodename(conf->hostname);
+	/* if we didn't match the form of the hostname already
+	 * stored in conf->hostname, check to see if we match any
+	 * valid aliases */
+	if (conf->node_name == NULL)
+		conf->node_name = slurm_conf_get_aliased_nodename();
 	if (conf->node_name == NULL)
 		conf->node_name = slurm_conf_get_nodename("localhost");
 	if (conf->node_name == NULL)

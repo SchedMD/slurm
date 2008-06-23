@@ -2,7 +2,9 @@
  *  src/common/stepd_api.c - slurmstepd message API
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2005 The Regents of the University of California.
+ *  Copyright (C) 2005-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Portions Copyright (C) 2008 Vijay Ramasubramanian
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Christopher Morrone <morrone2@llnl.gov>
  *  LLNL-CODE-402394.
@@ -169,7 +171,9 @@ _guess_nodename()
 		return NULL;
 
 	nodename = slurm_conf_get_nodename(host);
-	if (nodename == NULL) /* no match?  lets try localhost */
+	if (nodename == NULL)
+		nodename = slurm_conf_get_aliased_nodename();
+	if (nodename == NULL) /* if no match, try localhost */
 		nodename = slurm_conf_get_nodename("localhost");
 
 	return nodename;
