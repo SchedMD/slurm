@@ -15,8 +15,20 @@ AC_DEFUN([X_AC_DATABASES],
 [
 	#Check for MySQL
 	ac_have_mysql="no"
+	_x_ac_mysql_bin="no"
 	### Check for mysql_config program
-    	AC_PATH_PROG(HAVEMYSQLCONFIG, mysql_config, no)
+	AC_ARG_WITH(
+		[mysql_config],
+		AS_HELP_STRING(--with-mysql_config=PATH, 
+			Specify path to mysql_config binary),
+		[_x_ac_mysql_bin="$withval"])
+	
+	if test x$_x_ac_mysql_bin = xno; then
+    		AC_PATH_PROG(HAVEMYSQLCONFIG, mysql_config, no)
+	else
+   		AC_PATH_PROG(HAVEMYSQLCONFIG, mysql_config, no, $_x_ac_mysql_bin)
+	fi
+
 	if test x$HAVEMYSQLCONFIG = xno; then
         	AC_MSG_WARN([*** mysql_config not found. Evidently no MySQL install on system.])
 	else
@@ -71,8 +83,20 @@ AC_DEFUN([X_AC_DATABASES],
 
 	#Check for PostgreSQL
 	ac_have_postgres="no"
+	_x_ac_pgsql_bin="no"
 	### Check for pg_config program
-    	AC_PATH_PROG(HAVEPGCONFIG, pg_config, no)
+ 	AC_ARG_WITH(
+		[pg_config],
+		AS_HELP_STRING(--with-pg_config=PATH, 
+			Specify path to pg_config binary),
+		[_x_ac_pgsql_bin="$withval"])
+
+	if test x$_x_ac_pgsql_bin = xno; then
+    		AC_PATH_PROG(HAVEPGCONFIG, pg_config, no)
+	else
+  		AC_PATH_PROG(HAVEPGCONFIG, pg_config, no, $_x_ac_pgsql_bin)
+	fi
+  
 	if test x$HAVEPGCONFIG = xno; then
         	AC_MSG_WARN([*** pg_config not found. Evidently no PostgreSQL install on system.])
 	else

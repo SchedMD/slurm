@@ -16,12 +16,24 @@ AC_DEFUN([X_AC_GTK],
 [
 ### Set to "no" if any test fails
     ac_have_gtk="yes"
+    _x_ac_pkcfg_bin="no"
 
 ### Check for pkg-config program
-    AC_PATH_PROG(HAVEPKGCONFIG, pkg-config, no)
+    AC_ARG_WITH(
+	    [pkg-config],
+	    AS_HELP_STRING(--with-pkg-config=PATH, 
+		    Specify path to pkg-config binary),
+	    [_x_ac_pkcfg_bin="$withval"])
+    
+    if test x$_x_ac_pkcfg_bin = xno; then
+    	    AC_PATH_PROG(HAVEPKGCONFIG, pkg-config, no)
+    else
+   	    AC_PATH_PROG(HAVEPKGCONFIG, pkg-config, no, $_x_ac_pkcfg_bin)
+    fi
+    
     if test x$HAVEPKGCONFIG = xno; then
-        AC_MSG_WARN([*** pkg-config not found. Cannot probe for libglade-2.0 or gtk+-2.0.])
-        ac_have_gtk="no"
+            AC_MSG_WARN([*** pkg-config not found. Cannot probe for libglade-2.0 or gtk+-2.0.])
+            ac_have_gtk="no"
     fi
 
 ### Check for libglade package (We don't need this right now so don't add it)
