@@ -1,0 +1,81 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Test of running non-existant job, confirm timely termination.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2002-2006 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# LLNL-CODE-402394.
+# 
+# This file is part of SLURM, a resource management program.
+# For details, see <http://www.llnl.gov/linux/slurm/>.
+#  
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+# 
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+# 
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+############################################################################
+source ./globals
+
+set test_id              "15.18"
+set exit_code            0
+
+print_header $test_id
+
+if {[test_front_end] != 0 && [test_super_user] == 0} {
+	send_user "\nWARNING: This test is incompatable with front-end systems\n"
+	exit $exit_code
+}
+
+#
+# Submit a slurm job that will execute bogus job name
+#
+set job_id  0
+set matches 0
+set timeout $max_job_delay
+set salloc_pid [spawn $salloc -N1 -t1 /bad/bad/bad]
+expect {
+	-re "Granted job allocation ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	-re "Unable to exec command" {
+		send_user "\nNo worries, this error is expected\n"
+		set matches 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: salloc not responding\n"
+		if {$job_id != 0} {
+			cancel_job $job_id
+		}
+		slow_kill [expr 0 - $salloc_pid]
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 1} {
+	send_user "\nFAILURE: unexpected output from bad job name\n"
+	set exit_code 1
+}
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code
