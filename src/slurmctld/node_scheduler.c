@@ -828,7 +828,6 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	struct node_set *node_set_ptr = NULL;
 	struct part_record *part_ptr = job_ptr->part_ptr;
 	uint32_t min_nodes, max_nodes, req_nodes;
-	int super_user = false;
 	enum job_state_reason fail_reason;
 	time_t now = time(NULL);
 
@@ -840,9 +839,6 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		last_job_update = now;
 		return ESLURM_ACCOUNTING_POLICY;
 	}
-
-	if ((job_ptr->user_id == 0) || (job_ptr->user_id == getuid()))
-		super_user = true;
 
 	/* identify partition */
 	if (part_ptr == NULL) {
@@ -859,8 +855,6 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		fail_reason = WAIT_PART_STATE;
 	else if (job_ptr->priority == 0)	/* user or administrator hold */
 		fail_reason = WAIT_HELD;
-	else if (super_user)
-		;	/* ignore any time or node count limits */
 	else if ((job_ptr->time_limit != NO_VAL) &&
 		 (job_ptr->time_limit > part_ptr->max_time))
 		fail_reason = WAIT_PART_TIME_LIMIT;
@@ -896,19 +890,10 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	/* enforce both user's and partition's node limits */
 	/* info("req: %u-%u, %u", job_ptr->details->min_nodes,
 	   job_ptr->details->max_nodes, part_ptr->max_nodes); */
-	if (super_user) {
-		min_nodes = job_ptr->details->min_nodes;
-	} else {
-		min_nodes = MAX(job_ptr->details->min_nodes, 
-				part_ptr->min_nodes);
-	}
-	if (job_ptr->details->max_nodes == 0) {
-		if (super_user)
-			max_nodes = INFINITE;
-		else
-			max_nodes = part_ptr->max_nodes;
-	} else if (super_user)
-		max_nodes = job_ptr->details->max_nodes;
+
+	min_nodes = MAX(job_ptr->details->min_nodes, part_ptr->min_nodes);
+	if (job_ptr->details->max_nodes == 0)
+		max_nodes = part_ptr->max_nodes;
 	else
 		max_nodes = MIN(job_ptr->details->max_nodes, 
 				part_ptr->max_nodes);

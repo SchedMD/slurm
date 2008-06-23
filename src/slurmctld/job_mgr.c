@@ -1882,7 +1882,6 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	enum job_state_reason fail_reason;
 	struct part_record *part_ptr;
 	bitstr_t *req_bitmap = NULL, *exc_bitmap = NULL;
-	bool super_user = false;
 	struct job_record *job_ptr;
 	uint32_t total_nodes, max_procs;
 	acct_association_rec_t assoc_rec, *assoc_ptr;
@@ -1914,19 +1913,40 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		}
 		part_ptr = default_part_loc;
 	}
+
 	if (job_desc->min_nodes == NO_VAL)
 		job_desc->min_nodes = part_ptr->min_nodes_orig;
+	else if ((job_desc->min_nodes > part_ptr->max_nodes_orig) &&
+		 slurmctld_conf.enforce_part_limits) {
+		info("_job_create: job's min nodes greater than partition's "
+		     "max nodes (%u > %u)", 
+		     job_desc->min_nodes, part_ptr->max_nodes_orig);
+		error_code = ESLURM_TOO_MANY_REQUESTED_NODES;
+		return error_code;
+	}
+
 	if (job_desc->max_nodes == NO_VAL) {
 #ifdef HAVE_BG
 		job_desc->max_nodes = part_ptr->min_nodes_orig;
 #else
 		;
 #endif
-	} else if (job_desc->max_nodes < part_ptr->min_nodes_orig) {
+	} else if ((job_desc->max_nodes < part_ptr->min_nodes_orig) &&
+		   slurmctld_conf.enforce_part_limits) {
 		info("_job_create: job's max nodes less than partition's "
 		     "min nodes (%u < %u)", 
 		     job_desc->max_nodes, part_ptr->min_nodes_orig);
 		error_code = ESLURM_TOO_MANY_REQUESTED_NODES;
+		return error_code;
+	}
+
+	if ((job_desc->time_limit != NO_VAL) &&
+	    (job_desc->time_limit > part_ptr->max_time) &&
+	    slurmctld_conf.enforce_part_limits) {
+		info("_job_create: job's time greater than partition's "
+		     "(%u > %u)", 
+		     job_desc->time_limit, part_ptr->max_time);
+		error_code = ESLURM_INVALID_TIME_LIMIT;
 		return error_code;
 	}
 
@@ -2091,7 +2111,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		job_desc->max_nodes = 0;
 	if ((part_ptr->state_up)
 	    &&  (job_desc->num_procs > part_ptr->total_cpus)) {
-		info("Job requested too many cpus (%d) of partition %s(%d)", 
+		info("Job requested too many cpus (%u) of partition %s(%u)", 
 		     job_desc->num_procs, part_ptr->name, 
 		     part_ptr->total_cpus);
 		error_code = ESLURM_TOO_MANY_REQUESTED_CPUS;
@@ -2101,7 +2121,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	select_g_alter_node_cnt(SELECT_APPLY_NODE_MIN_OFFSET,
 				&total_nodes);
 	if ((part_ptr->state_up) &&  (job_desc->min_nodes > total_nodes)) {
-		info("Job requested too many nodes (%d) of partition %s(%d)", 
+		info("Job requested too many nodes (%u) of partition %s(%u)", 
 		     job_desc->min_nodes, part_ptr->name, 
 		     part_ptr->total_nodes);
 		error_code = ESLURM_TOO_MANY_REQUESTED_NODES;
@@ -2165,18 +2185,13 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	 * otherwise leave job queued and provide warning code */
 	detail_ptr = job_ptr->details;
 	fail_reason= WAIT_NO_REASON;
-	if ((job_desc->user_id == 0) ||
-	    (job_desc->user_id == slurmctld_conf.slurm_user_id))
-		super_user = true;
-	if ((!super_user) && 
-	    (job_desc->min_nodes > part_ptr->max_nodes)) {
+	if (job_desc->min_nodes > part_ptr->max_nodes) {
 		info("Job %u requested too many nodes (%u) of "
 		     "partition %s(%u)", 
 		     job_ptr->job_id, job_desc->min_nodes, 
 		     part_ptr->name, part_ptr->max_nodes);
 		fail_reason = WAIT_PART_NODE_LIMIT;
-	} else if ((!super_user) &&
-	           (job_desc->max_nodes != 0) &&    /* no max_nodes for job */
+	} else if ((job_desc->max_nodes != 0) &&    /* no max_nodes for job */
 		   (job_desc->max_nodes < part_ptr->min_nodes)) {
 		info("Job %u requested too few nodes (%u) of partition %s(%u)",
 		     job_ptr->job_id, job_desc->max_nodes, 

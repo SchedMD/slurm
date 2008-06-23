@@ -273,6 +273,13 @@ If set to "YES" then user root will be prevented from running any jobs.
 The default value is "NO", meaning user root will be able to execute jobs.
 \fBDisableRootJobs\fR may also be set by partition.
 
+.TP
+\fBEnforcePartLimits\fR
+If set to "YES" then jobs which exceed a partition's size and/or time limits
+will be rejected at submission time. If set to "NO" then the job will be 
+accepted and remain queued until the partition limits are altered.
+The default value is "NO".
+
 \fBEpilog\fR
 Fully qualified pathname of a script to execute as user root on every 
 node when a user's job completes (e.g. "/usr/local/slurm/epilog"). This may 

@@ -162,6 +162,13 @@ void slurm_print_ctl_conf ( FILE* out,
 		fprintf(out, "DisableRootJobs         = YES\n");
 	else
 		fprintf(out, "DisableRootJobs         = NO\n");
+#if 0
+/* Add in Slurm v1.4 */
+	if (slurm_ctl_conf_ptr->enforce_part_limits)
+		fprintf(out, "EnforcePartLimits       = YES\n");
+	else
+		fprintf(out, "EnforcePartLimits       = NO\n");
+#endif
 	fprintf(out, "Epilog                  = %s\n",
 		slurm_ctl_conf_ptr->epilog);
 	fprintf(out, "EpilogMsgTime           = %u\n",

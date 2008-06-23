@@ -40,6 +40,11 @@ documents those changes that are of interest to users and admins.
     for pending jobs to accurately describe what is reported.
  -- Add more slurmdbd.conf paramters: ArchiveScript, ArchiveAge, JobPurge, and
     StepPurge (not fully implemented yet).
+ -- Add slurm.conf parameter EnforcePartLimits to reject jobs which exceed a
+    partition's size and/or time limits rather than leaving them queued for a
+    later change in the partition's limits. NOTE: Not reported by
+    "scontrol show config" to avoid changing RPCs. It will be reported in 
+    SLURM version 1.4.
 
 * Changes in SLURM 1.3.3
 ========================
