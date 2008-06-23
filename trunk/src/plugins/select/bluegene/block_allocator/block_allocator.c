@@ -1501,8 +1501,10 @@ extern int reset_ba_system(bool track_down_nodes)
  */
 extern int removable_set_bps(char *bps)
 {
+#ifdef HAVE_BG
 	int j=0, number;
-	int x,y,z;
+	int x;
+	int y,z;
 	int start[BA_SYSTEM_DIMENSIONS];
 	int end[BA_SYSTEM_DIMENSIONS];
 
@@ -1531,15 +1533,10 @@ extern int removable_set_bps(char *bps)
 			for (x = start[X]; x <= end[X]; x++) {
 				for (y = start[Y]; y <= end[Y]; y++) {
 					for (z = start[Z]; z <= end[Z]; z++) {
-						if(!ba_system_ptr->grid[x]
-#ifdef HAVE_BG
-						   [y][z]
-#endif
+						if(!ba_system_ptr->grid[x][y][z]
 						   .used)
-							ba_system_ptr->grid[x]
-#ifdef HAVE_BG
-								[y][z]
-#endif
+							ba_system_ptr->
+								grid[x][y][z]
 								.used = 2;
 					}
 				}
@@ -1558,16 +1555,8 @@ extern int removable_set_bps(char *bps)
 				/ HOSTLIST_BASE;
 			z = (number % HOSTLIST_BASE);
 			j+=3;
-			if(!ba_system_ptr->grid[x]
-#ifdef HAVE_BG
-			   [y][z]
-#endif
-			   .used)
-				ba_system_ptr->grid[x]
-#ifdef HAVE_BG
-					[y][z]
-#endif
-					.used = 2;
+			if(!ba_system_ptr->grid[x][y][z].used)
+				ba_system_ptr->grid[x][y][z].used = 2;
 			
 			if(bps[j] != ',')
 				break;
@@ -1575,13 +1564,16 @@ extern int removable_set_bps(char *bps)
 		}
 		j++;
 	}
-
+#endif
  	return SLURM_SUCCESS;
 }
 
 extern int reset_all_removed_bps()
 {
 	int x;
+#ifdef HAVE_BG
+	int y,z;
+#endif
 
 	for (x = 0; x < DIM_SIZE[X]; x++) {
 #ifdef HAVE_BG

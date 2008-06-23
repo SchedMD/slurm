@@ -45,9 +45,13 @@ documents those changes that are of interest to users and admins.
     later change in the partition's limits. NOTE: Not reported by
     "scontrol show config" to avoid changing RPCs. It will be reported in 
     SLURM version 1.4.
- -- Add support for Hostname and NodeHostname in slurm.conf being fully qualified 
-    domain names (by Vijay Ramasubramanian, University of Maryland). For more
-    information see "man slurm.conf".
+ -- Added idea of coordinator to accounting.  A coordinator can add associations
+    between exsisting users to the account or any sub-account they are 
+    coordinator to.  They can also add/remove other coordinators to those 
+    accounts.
+ -- Add support for Hostname and NodeHostname in slurm.conf being fully 
+    qualified domain names (by Vijay Ramasubramanian, University of Maryland). 
+    For more information see "man slurm.conf".
 
 * Changes in SLURM 1.3.3
 ========================

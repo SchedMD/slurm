@@ -121,7 +121,7 @@ typedef struct slurmdbd_msg {
 } slurmdbd_msg_t;
 
 typedef struct {
-	char *acct;
+	List acct_list; /* list of account names (char *'s) */
 	acct_user_cond_t *cond;
 } dbd_acct_coord_msg_t;
 

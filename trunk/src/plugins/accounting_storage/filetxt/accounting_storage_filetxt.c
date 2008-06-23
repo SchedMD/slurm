@@ -251,7 +251,7 @@ extern int acct_storage_p_add_users(void *db_conn, uint32_t uid,
 }
 
 extern int acct_storage_p_add_coord(void *db_conn, uint32_t uid,
-				    char *acct, acct_user_cond_t *user_q)
+				    List acct_list, acct_user_cond_t *user_q)
 {
 	return SLURM_SUCCESS;
 }
@@ -309,7 +309,8 @@ extern List acct_storage_p_remove_users(void *db_conn, uint32_t uid,
 }
 
 extern List acct_storage_p_remove_coord(void *db_conn, uint32_t uid,
-				       char *acct, acct_user_cond_t *user_q)
+					List acct_list, 
+					acct_user_cond_t *user_q)
 {
 	return SLURM_SUCCESS;
 }

@@ -443,7 +443,7 @@ extern int assoc_mgr_is_user_acct_coord(void *db_conn,
 	}
 	list_iterator_destroy(itr);
 		
-	if(!found_user) {
+	if(!found_user || !found_user->coord_accts) {
 		slurm_mutex_unlock(&local_user_lock);
 		return 0;
 	}
@@ -625,6 +625,7 @@ extern int assoc_mgr_update_local_users(acct_update_object_t *update)
 {
 	acct_user_rec_t * rec = NULL;
 	acct_user_rec_t * object = NULL;
+		
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
 	struct passwd *passwd_ptr = NULL;
@@ -680,6 +681,23 @@ extern int assoc_mgr_update_local_users(acct_update_object_t *update)
 				break;
 			}
 			list_delete_item(itr);
+			break;
+		case ACCT_ADD_COORD:
+		case ACCT_REMOVE_COORD:
+			if(!rec) {
+				//rc = SLURM_ERROR;
+				break;
+			}
+			/* We always get a complete list here */
+			if(!object->coord_accts) {
+				if(rec->coord_accts)
+					list_flush(rec->coord_accts);
+			} else {
+				if(rec->coord_accts)
+					list_destroy(rec->coord_accts);
+				rec->coord_accts = object->coord_accts;
+				object->coord_accts = NULL;
+			}
 			break;
 		default:
 			break;

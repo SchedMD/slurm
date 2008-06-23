@@ -101,6 +101,7 @@ extern int sacctmgr_add_association(int argc, char *argv[]);
 extern int sacctmgr_add_user(int argc, char *argv[]);
 extern int sacctmgr_add_account(int argc, char *argv[]);
 extern int sacctmgr_add_cluster(int argc, char *argv[]);
+extern int sacctmgr_add_coord(int argc, char *argv[]);
 
 extern int sacctmgr_list_association(int argc, char *argv[]);
 extern int sacctmgr_list_user(int argc, char *argv[]);
@@ -116,6 +117,7 @@ extern int sacctmgr_delete_association(int argc, char *argv[]);
 extern int sacctmgr_delete_user(int argc, char *argv[]);
 extern int sacctmgr_delete_account(int argc, char *argv[]);
 extern int sacctmgr_delete_cluster(int argc, char *argv[]);
+extern int sacctmgr_delete_coord(int argc, char *argv[]);
 
 /* common.c */
 extern int parse_option_end(char *option);

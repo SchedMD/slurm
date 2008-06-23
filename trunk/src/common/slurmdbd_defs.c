@@ -1210,7 +1210,10 @@ static int _purge_job_start_req(void)
 void inline slurmdbd_free_acct_coord_msg(dbd_acct_coord_msg_t *msg)
 {
 	if(msg) {
-		xfree(msg->acct);
+		if(msg->acct_list) {
+			list_destroy(msg->acct_list);
+			msg->acct_list = NULL;
+		}
 		destroy_acct_user_cond(msg->cond);
 		xfree(msg);
 	}
@@ -1437,7 +1440,23 @@ void inline slurmdbd_free_usage_msg(slurmdbd_msg_type_t type,
 void inline
 slurmdbd_pack_acct_coord_msg(dbd_acct_coord_msg_t *msg, Buf buffer)
 {
-	packstr(msg->acct, buffer);
+	char *acct = NULL;
+	ListIterator itr = NULL;
+	uint32_t count = 0;
+
+	if(msg->acct_list)
+		count = list_count(msg->acct_list);
+	
+	pack32(count, buffer);
+	if(count) {
+		itr = list_iterator_create(msg->acct_list);
+		while((acct = list_next(itr))) {
+			packstr(acct, buffer);
+		}
+		list_iterator_destroy(itr);
+	}
+	count = 0;
+
 	pack_acct_user_cond(msg->cond, buffer);
 }
 
@@ -1445,12 +1464,25 @@ int inline
 slurmdbd_unpack_acct_coord_msg(dbd_acct_coord_msg_t **msg, Buf buffer)
 {
 	uint32_t uint32_tmp;
+	int i;
+	char *acct = NULL;
+	uint32_t count = 0;
 	dbd_acct_coord_msg_t *msg_ptr = xmalloc(sizeof(dbd_acct_coord_msg_t));
 	*msg = msg_ptr;
 
-	safe_unpackstr_xmalloc(&msg_ptr->acct, &uint32_tmp, buffer);
+	safe_unpack32(&count, buffer);
+	if(count) {
+		msg_ptr->acct_list = list_create(slurm_destroy_char);
+		for(i=0; i<count; i++) {
+			safe_unpackstr_xmalloc(&acct, &uint32_tmp, buffer);
+			list_append(msg_ptr->acct_list, acct);
+		}
+	}
+
 	if(unpack_acct_user_cond((void *)&msg_ptr->cond, buffer) == SLURM_ERROR)
 		goto unpack_error;
+	return SLURM_SUCCESS;
+
 unpack_error:
 	slurmdbd_free_acct_coord_msg(msg_ptr);
 	*msg = NULL;

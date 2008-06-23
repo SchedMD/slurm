@@ -64,7 +64,7 @@ typedef struct slurm_acct_storage_ops {
 	int  (*add_users)          (void *db_conn, uint32_t uid,
 				    List user_list);
 	int  (*add_coord)          (void *db_conn, uint32_t uid,
-				    char *acct,
+				    List acct_list,
 				    acct_user_cond_t *user_q);
 	int  (*add_accts)          (void *db_conn, uint32_t uid,
 				    List acct_list);
@@ -87,7 +87,7 @@ typedef struct slurm_acct_storage_ops {
 	List (*remove_users)       (void *db_conn, uint32_t uid,
 				    acct_user_cond_t *user_q);
 	List (*remove_coord)       (void *db_conn, uint32_t uid,
-				    char *acct,
+				    List acct_list,
 				    acct_user_cond_t *user_q);
 	List (*remove_accts)       (void *db_conn, uint32_t uid,
 				    acct_account_cond_t *acct_q);
@@ -585,7 +585,9 @@ extern int unpack_acct_user_rec(void **object, Buf buffer)
 		object_ptr->assoc_list =
 			list_create(destroy_acct_association_rec);
 		for(i=0; i<count; i++) {
-			unpack_acct_association_rec((void *)&assoc, buffer);
+			if(unpack_acct_association_rec((void *)&assoc, buffer)
+			   == SLURM_ERROR)
+				goto unpack_error;
 			list_append(object_ptr->assoc_list, assoc);
 		}
 	}
@@ -593,7 +595,9 @@ extern int unpack_acct_user_rec(void **object, Buf buffer)
 	if(count) {
 		object_ptr->coord_accts = list_create(destroy_acct_coord_rec);
 		for(i=0; i<count; i++) {
-			unpack_acct_coord_rec((void *)&coord, buffer);
+			if(unpack_acct_coord_rec((void *)&coord, buffer)
+			   == SLURM_ERROR)
+				goto unpack_error;
 			list_append(object_ptr->coord_accts, coord);
 		}
 	}
@@ -698,7 +702,9 @@ extern int unpack_acct_account_rec(void **object, Buf buffer)
 		object_ptr->assoc_list =
 			list_create(destroy_acct_association_rec);
 		for(i=0; i<count; i++) {
-			unpack_acct_association_rec((void *)&assoc, buffer);
+			if(unpack_acct_association_rec((void *)&assoc, buffer)
+			   == SLURM_ERROR)
+				goto unpack_error;
 			list_append(object_ptr->assoc_list, assoc);
 		}
 	}
@@ -745,6 +751,7 @@ extern int unpack_acct_coord_rec(void **object, Buf buffer)
 	*object = object_ptr;
 	safe_unpackstr_xmalloc(&object_ptr->acct_name, &uint32_tmp, buffer);
 	safe_unpack16(&object_ptr->sub_acct, buffer);
+	return SLURM_SUCCESS;
 
 unpack_error:
 	destroy_acct_coord_rec(object_ptr);
@@ -990,7 +997,9 @@ extern int unpack_acct_association_rec(void **object, Buf buffer)
 		object_ptr->accounting_list =
 			list_create(destroy_acct_accounting_rec);
 		for(i=0; i<count; i++) {
-			unpack_acct_accounting_rec((void **)&acct_info, buffer);
+			if(unpack_acct_accounting_rec((void **)&acct_info,
+						      buffer) == SLURM_ERROR)
+				goto unpack_error;
 			list_append(object_ptr->accounting_list, acct_info);
 		}
 	}
@@ -1704,6 +1713,8 @@ extern void pack_acct_update_object(acct_update_object_t *object, Buf buffer)
 	case ACCT_MODIFY_USER:
 	case ACCT_ADD_USER:
 	case ACCT_REMOVE_USER:
+	case ACCT_ADD_COORD:
+	case ACCT_REMOVE_COORD:
 		my_function = pack_acct_user_rec;
 		break;
 	case ACCT_ADD_ASSOC:
@@ -1746,6 +1757,8 @@ extern int unpack_acct_update_object(acct_update_object_t **object, Buf buffer)
 	case ACCT_MODIFY_USER:
 	case ACCT_ADD_USER:
 	case ACCT_REMOVE_USER:
+	case ACCT_ADD_COORD:
+	case ACCT_REMOVE_COORD:
 		my_function = unpack_acct_user_rec;
 		my_destroy = destroy_acct_user_rec;
 		break;
@@ -1981,12 +1994,12 @@ extern int acct_storage_g_add_users(void *db_conn, uint32_t uid,
 }
 
 extern int acct_storage_g_add_coord(void *db_conn, uint32_t uid,
-				    char *acct, acct_user_cond_t *user_q)
+				    List acct_list, acct_user_cond_t *user_q)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
 	return (*(g_acct_storage_context->ops.add_coord))
-		(db_conn, uid, acct, user_q);
+		(db_conn, uid, acct_list, user_q);
 }
 
 extern int acct_storage_g_add_accounts(void *db_conn, uint32_t uid,
@@ -2066,12 +2079,13 @@ extern List acct_storage_g_remove_users(void *db_conn, uint32_t uid,
 }
 
 extern List acct_storage_g_remove_coord(void *db_conn, uint32_t uid,
-				       char *acct, acct_user_cond_t *user_q)
+					List acct_list,
+					acct_user_cond_t *user_q)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
 	return (*(g_acct_storage_context->ops.remove_coord))
-		(db_conn, uid, acct, user_q);
+		(db_conn, uid, acct_list, user_q);
 }
 
 extern List acct_storage_g_remove_accounts(void *db_conn, uint32_t uid,
