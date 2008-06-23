@@ -105,6 +105,10 @@ expect {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
+	-re "time limit exceeds" {
+		send_user "\nWARNING: unable to fully test time limits\n"
+		exit $exit_code
+	}
 	timeout {
 		send_user "\nFAILURE: sbatch not responding\n"
 		set exit_code 1
