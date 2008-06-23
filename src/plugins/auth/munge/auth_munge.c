@@ -73,7 +73,7 @@
 
 #define MUNGE_ERRNO_OFFSET	1000
 
-const char plugin_name[]       	= "auth plugin for Munge (Chris Dunlap, LLNL)";
+const char plugin_name[]       	= "auth plugin for Munge (http://home.gna.org/munge/)";
 const char plugin_type[]       	= "auth/munge";
 const uint32_t plugin_version	= 10;
 
