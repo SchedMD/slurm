@@ -2854,6 +2854,8 @@ inline static void  _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 			case ACCT_MODIFY_USER:
 			case ACCT_ADD_USER:
 			case ACCT_REMOVE_USER:
+			case ACCT_ADD_COORD:
+			case ACCT_REMOVE_COORD:
 				rc = assoc_mgr_update_local_users(object);
 				break;
 			case ACCT_ADD_ASSOC:

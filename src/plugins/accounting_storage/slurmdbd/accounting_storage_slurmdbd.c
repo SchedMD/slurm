@@ -183,13 +183,13 @@ extern int acct_storage_p_add_users(void *db_conn, uint32_t uid, List user_list)
 }
 
 extern int acct_storage_p_add_coord(void *db_conn, uint32_t uid,
-				    char *acct, acct_user_cond_t *user_q)
+				    List acct_list, acct_user_cond_t *user_q)
 {
 	slurmdbd_msg_t req;
 	dbd_acct_coord_msg_t get_msg;
 	int rc, resp_code;
 
-	get_msg.acct = acct;
+	get_msg.acct_list = acct_list;
 	get_msg.cond = user_q;
 
 	req.msg_type = DBD_ADD_ACCOUNT_COORDS;
@@ -277,7 +277,15 @@ extern List acct_storage_p_modify_users(void *db_conn, uint32_t uid,
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_MODIFY_USERS failure: %m");
-	else if (resp.msg_type != DBD_GOT_LIST) {
+	else if (resp.msg_type == DBD_RC) {
+		dbd_rc_msg_t *msg = resp.data;
+		if(msg->return_code == SLURM_SUCCESS) {
+			info("%s", msg->comment);
+			ret_list = list_create(NULL);
+		} else
+			error("%s", msg->comment);
+		slurmdbd_free_rc_msg(msg);
+	} else if (resp.msg_type != DBD_GOT_LIST) {
 		error("slurmdbd: response type not DBD_GOT_LIST: %u", 
 		      resp.msg_type);
 	} else {
@@ -309,7 +317,15 @@ extern List acct_storage_p_modify_accts(void *db_conn, uint32_t uid,
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_MODIFY_ACCOUNTS failure: %m");
-	else if (resp.msg_type != DBD_GOT_LIST) {
+	else if (resp.msg_type == DBD_RC) {
+		dbd_rc_msg_t *msg = resp.data;
+		if(msg->return_code == SLURM_SUCCESS) {
+			info("%s", msg->comment);
+			ret_list = list_create(NULL);
+		} else
+			error("%s", msg->comment);
+		slurmdbd_free_rc_msg(msg);
+	} else if (resp.msg_type != DBD_GOT_LIST) {
 		error("slurmdbd: response type not DBD_GOT_LIST: %u", 
 		      resp.msg_type);
 	} else {
@@ -343,7 +359,15 @@ extern List acct_storage_p_modify_clusters(void *db_conn, uint32_t uid,
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_MODIFY_CLUSTERS failure: %m");
-	else if (resp.msg_type != DBD_GOT_LIST) {
+	else if (resp.msg_type == DBD_RC) {
+		dbd_rc_msg_t *msg = resp.data;
+		if(msg->return_code == SLURM_SUCCESS) {
+			info("%s", msg->comment);
+			ret_list = list_create(NULL);
+		} else
+			error("%s", msg->comment);
+		slurmdbd_free_rc_msg(msg);
+	} else if (resp.msg_type != DBD_GOT_LIST) {
 		error("slurmdbd: response type not DBD_GOT_LIST: %u", 
 		      resp.msg_type);
 	} else {
@@ -377,7 +401,15 @@ extern List acct_storage_p_modify_associations(void *db_conn, uint32_t uid,
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_MODIFY_ASSOCS failure: %m");
-	else if (resp.msg_type != DBD_GOT_LIST) {
+	else if (resp.msg_type == DBD_RC) {
+		dbd_rc_msg_t *msg = resp.data;
+		if(msg->return_code == SLURM_SUCCESS) {
+			info("%s", msg->comment);
+			ret_list = list_create(NULL);
+		} else
+			error("%s", msg->comment);
+		slurmdbd_free_rc_msg(msg);
+	} else if (resp.msg_type != DBD_GOT_LIST) {
 		error("slurmdbd: response type not DBD_GOT_LIST: %u", 
 		      resp.msg_type);
 	} else {
@@ -409,7 +441,15 @@ extern List acct_storage_p_remove_users(void *db_conn, uint32_t uid,
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_REMOVE_USERS failure: %m");
-	else if (resp.msg_type != DBD_GOT_LIST) {
+	else if (resp.msg_type == DBD_RC) {
+		dbd_rc_msg_t *msg = resp.data;
+		if(msg->return_code == SLURM_SUCCESS) {
+			info("%s", msg->comment);
+			ret_list = list_create(NULL);
+		} else
+			error("%s", msg->comment);
+		slurmdbd_free_rc_msg(msg);
+	} else if (resp.msg_type != DBD_GOT_LIST) {
 		error("slurmdbd: response type not DBD_GOT_LIST: %u", 
 		      resp.msg_type);
 	} else {
@@ -423,7 +463,8 @@ extern List acct_storage_p_remove_users(void *db_conn, uint32_t uid,
 }
 
 extern List acct_storage_p_remove_coord(void *db_conn, uint32_t uid,
-				       char *acct, acct_user_cond_t *user_q)
+					List acct_list,
+					acct_user_cond_t *user_q)
 {
 	slurmdbd_msg_t req;
 	dbd_acct_coord_msg_t get_msg;
@@ -433,7 +474,7 @@ extern List acct_storage_p_remove_coord(void *db_conn, uint32_t uid,
 	List ret_list = NULL;
 
 
-	get_msg.acct = acct;
+	get_msg.acct_list = acct_list;
 	get_msg.cond = user_q;
 
 	req.msg_type = DBD_REMOVE_ACCOUNT_COORDS;
@@ -442,7 +483,15 @@ extern List acct_storage_p_remove_coord(void *db_conn, uint32_t uid,
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_REMOVE_ACCOUNT_COORDS failure: %m");
-	else if (resp.msg_type != DBD_GOT_LIST) {
+	else if (resp.msg_type == DBD_RC) {
+		dbd_rc_msg_t *msg = resp.data;
+		if(msg->return_code == SLURM_SUCCESS) {
+			info("%s", msg->comment);
+			ret_list = list_create(NULL);
+		} else
+			error("%s", msg->comment);
+		slurmdbd_free_rc_msg(msg);
+	} else if (resp.msg_type != DBD_GOT_LIST) {
 		error("slurmdbd: response type not DBD_GOT_LIST: %u", 
 		      resp.msg_type);
 	} else {
@@ -474,7 +523,15 @@ extern List acct_storage_p_remove_accts(void *db_conn, uint32_t uid,
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_REMOVE_ACCTS failure: %m");
-	else if (resp.msg_type != DBD_GOT_LIST) {
+	else if (resp.msg_type == DBD_RC) {
+		dbd_rc_msg_t *msg = resp.data;
+		if(msg->return_code == SLURM_SUCCESS) {
+			info("%s", msg->comment);
+			ret_list = list_create(NULL);
+		} else
+			error("%s", msg->comment);
+		slurmdbd_free_rc_msg(msg);
+	} else if (resp.msg_type != DBD_GOT_LIST) {
 		error("slurmdbd: response type not DBD_GOT_LIST: %u", 
 		      resp.msg_type);
 	} else {
@@ -506,7 +563,15 @@ extern List acct_storage_p_remove_clusters(void *db_conn, uint32_t uid,
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_REMOVE_CLUSTERS failure: %m");
-	else if (resp.msg_type != DBD_GOT_LIST) {
+	else if (resp.msg_type == DBD_RC) {
+		dbd_rc_msg_t *msg = resp.data;
+		if(msg->return_code == SLURM_SUCCESS) {
+			info("%s", msg->comment);
+			ret_list = list_create(NULL);
+		} else
+			error("%s", msg->comment);
+		slurmdbd_free_rc_msg(msg);
+	} else if (resp.msg_type != DBD_GOT_LIST) {
 		error("slurmdbd: response type not DBD_GOT_LIST: %u", 
 		      resp.msg_type);
 	} else {
@@ -538,7 +603,15 @@ extern List acct_storage_p_remove_associations(void *db_conn, uint32_t uid,
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_REMOVE_ASSOCS failure: %m");
-	else if (resp.msg_type != DBD_GOT_LIST) {
+	else if (resp.msg_type == DBD_RC) {
+		dbd_rc_msg_t *msg = resp.data;
+		if(msg->return_code == SLURM_SUCCESS) {
+			info("%s", msg->comment);
+			ret_list = list_create(NULL);
+		} else
+			error("%s", msg->comment);
+		slurmdbd_free_rc_msg(msg);
+	} else if (resp.msg_type != DBD_GOT_LIST) {
 		error("slurmdbd: response type not DBD_GOT_LIST: %u", 
 		      resp.msg_type);
 	} else {

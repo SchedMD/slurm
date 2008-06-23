@@ -181,6 +181,8 @@ static int _addto_update_list(List update_list, acct_update_type_t type,
 	case ACCT_MODIFY_USER:
 	case ACCT_ADD_USER:
 	case ACCT_REMOVE_USER:
+	case ACCT_ADD_COORD:
+	case ACCT_REMOVE_COORD:
 		update_object->objects = list_create(destroy_acct_user_rec);
 		break;
 	case ACCT_ADD_ASSOC:
@@ -405,6 +407,7 @@ static int _modify_common(mysql_conn_t *mysql_conn,
 
 	return SLURM_SUCCESS;
 }
+
 static int _modify_unset_users(mysql_conn_t *mysql_conn,
 			       acct_association_rec_t *assoc,
 			       char *acct,
@@ -600,6 +603,9 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 		
 		return SLURM_ERROR;
 	}
+	
+	if(table == acct_coord_table)
+		return SLURM_SUCCESS;
 
 	/* mark deleted=1 or remove completely the
 	   accounting tables
@@ -794,6 +800,86 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 	return rc;
 }
 
+static int _get_user_coords(mysql_conn_t *mysql_conn, acct_user_rec_t *user)
+{
+	char *query = NULL;
+	acct_coord_rec_t *coord = NULL;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	ListIterator itr = NULL;
+
+	if(!user) {
+		error("We need a user to fill in.");
+		return SLURM_ERROR;
+	}
+
+	if(!user->coord_accts)
+		user->coord_accts = list_create(destroy_acct_coord_rec);
+			
+	query = xstrdup_printf(
+		"select acct from %s where user='%s' && deleted=0",
+		acct_coord_table, user->name);
+			
+	if(!(result =
+	     mysql_db_query_ret(mysql_conn->acct_mysql_db, query, 0))) {
+		xfree(query);
+		return SLURM_ERROR;
+	}
+	xfree(query);
+	while((row = mysql_fetch_row(result))) {
+		coord = xmalloc(sizeof(acct_coord_rec_t));
+		list_append(user->coord_accts, coord);
+		coord->acct_name = xstrdup(row[0]);
+		coord->sub_acct = 0;
+		if(query) 
+			xstrcat(query, " || ");
+		else 
+			query = xstrdup_printf(
+				"select distinct t1.acct from "
+				"%s as t1, %s as t2 where ",
+				assoc_table, assoc_table);
+		/* Make sure we don't get the same
+		 * account back since we want to keep
+		 * track of the sub-accounts.
+		 */
+		xstrfmtcat(query, "(t2.acct='%s' "
+			   "&& t1.lft between t2.lft "
+			   "and t2.rgt && t1.user='' "
+			   "&& t1.acct!='%s')",
+			   coord->acct_name, coord->acct_name);
+	}
+	mysql_free_result(result);
+
+	if(query) {
+		if(!(result = mysql_db_query_ret(
+			     mysql_conn->acct_mysql_db, query, 0))) {
+			xfree(query);
+			return SLURM_ERROR;
+		}
+		xfree(query);
+
+		itr = list_iterator_create(user->coord_accts);
+		while((row = mysql_fetch_row(result))) {
+
+			while((coord = list_next(itr))) {
+				if(!strcmp(coord->acct_name, row[0]))
+					break;
+			}
+			list_iterator_reset(itr);
+			if(coord) 
+				continue;
+					
+			coord = xmalloc(sizeof(acct_coord_rec_t));
+			list_append(user->coord_accts, coord);
+			coord->acct_name = xstrdup(row[0]);
+			coord->sub_acct = 1;
+		}
+		list_iterator_destroy(itr);
+		mysql_free_result(result);
+	}
+	return SLURM_SUCCESS;
+}
+
 static int _get_db_index(MYSQL *acct_mysql_db, 
 			 time_t submit, uint32_t jobid, uint32_t associd)
 {
@@ -840,6 +926,8 @@ static int _mysql_acct_check_tables(MYSQL *acct_mysql_db)
 {
 	int rc = SLURM_SUCCESS;
 	storage_field_t acct_coord_table_fields[] = {
+		{ "creation_time", "int unsigned not null" },
+		{ "mod_time", "int unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0" },
 		{ "acct", "tinytext not null" },
 		{ "user", "tinytext not null" },
@@ -1370,6 +1458,8 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 			case ACCT_MODIFY_USER:
 			case ACCT_ADD_USER:
 			case ACCT_REMOVE_USER:
+			case ACCT_ADD_COORD:
+			case ACCT_REMOVE_COORD:
 				rc = assoc_mgr_update_local_users(object);
 				break;
 			case ACCT_ADD_ASSOC:
@@ -1521,9 +1611,91 @@ extern int acct_storage_p_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 }
 
 extern int acct_storage_p_add_coord(mysql_conn_t *mysql_conn, uint32_t uid, 
-				    char *acct, acct_user_cond_t *user_q)
+				    List acct_list, acct_user_cond_t *user_q)
 {
 #ifdef HAVE_MYSQL
+	char *query = NULL, *user = NULL, *acct = NULL;
+	char *user_name = NULL, *txn_query = NULL;
+	struct passwd *pw = NULL;
+	ListIterator itr, itr2;
+	time_t now = time(NULL);
+	int rc = SLURM_SUCCESS;
+	acct_user_rec_t *user_rec = NULL;
+	
+	if(!user_q || !user_q->user_list || !list_count(user_q->user_list) 
+	   || !acct_list || !list_count(acct_list)) {
+		error("we need something to add");
+		return SLURM_ERROR;
+	}
+
+	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
+		return SLURM_ERROR;
+
+	if((pw=getpwuid(uid))) {
+		user_name = pw->pw_name;
+	}
+
+	itr = list_iterator_create(user_q->user_list);
+	itr2 = list_iterator_create(acct_list);
+	while((user = list_next(itr))) {
+		while((acct = list_next(itr2))) {
+			if(query) 
+				xstrfmtcat(query, ", (%d, %d, '%s', '%s')",
+					   now, now, acct, user);
+			else
+				query = xstrdup_printf(
+					"insert into %s (creation_time, "
+					"mod_time, acct, user) values "
+					"(%d, %d, '%s', '%s')",
+					acct_coord_table, 
+					now, now, acct, user); 
+
+			if(txn_query)
+				xstrfmtcat(txn_query, 	
+					   ", (%d, %u, '%s', '%s', '%s')",
+					   now, DBD_ADD_ACCOUNT_COORDS, user,
+					   user_name, acct);
+			else
+				xstrfmtcat(txn_query, 	
+					   "insert into %s "
+					   "(timestamp, action, name, "
+					   "actor, info) "
+					   "values (%d, %u, '%s', '%s', '%s')",
+					   txn_table,
+					   now, DBD_ADD_ACCOUNT_COORDS, user,
+					   user_name, acct);
+		}
+		list_iterator_reset(itr2);
+	}
+	list_iterator_destroy(itr);
+	list_iterator_destroy(itr2);
+
+
+	if(query) {
+		xstrfmtcat(query, 
+			   " on duplicate key update mod_time=%d, deleted=0;%s",
+			   now, txn_query);
+		debug3("%d query\n%s", mysql_conn->conn, query);
+		rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
+		xfree(query);
+		xfree(txn_query);
+		
+		if(rc != SLURM_SUCCESS) {
+			error("Couldn't add cluster hour rollup");
+			return rc;
+		}
+		/* get the update list set */
+		itr = list_iterator_create(user_q->user_list);
+		while((user = list_next(itr))) {
+			user_rec = xmalloc(sizeof(acct_user_rec_t));
+			user_rec->name = xstrdup(user);
+			_get_user_coords(mysql_conn, user_rec);
+			_addto_update_list(mysql_conn->update_list, 
+					   ACCT_ADD_COORD, user_rec);
+		}
+		list_iterator_destroy(itr);
+	}
+	
 	return SLURM_SUCCESS;
 #else
 	return SLURM_ERROR;
@@ -2296,7 +2468,6 @@ extern List acct_storage_p_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		xfree(query);
 		return NULL;
 	}
-	xfree(query);
 
 	rc = 0;
 	ret_list = list_create(slurm_destroy_char);
@@ -2313,10 +2484,13 @@ extern List acct_storage_p_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	mysql_free_result(result);
 
 	if(!list_count(ret_list)) {
-		debug3("didn't effect anything");
+		errno = SLURM_NO_CHANGE_IN_DATA;
+		debug3("didn't effect anything\n%s", query);
 		xfree(vals);
+		xfree(query);
 		return ret_list;
 	}
+	xfree(query);
 	xstrcat(name_char, ")");
 
 	if(_modify_common(mysql_conn, DBD_MODIFY_USERS, now,
@@ -2433,7 +2607,6 @@ extern List acct_storage_p_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		xfree(vals);
 		return NULL;
 	}
-	xfree(query);
 
 	rc = 0;
 	ret_list = list_create(slurm_destroy_char);
@@ -2451,10 +2624,13 @@ extern List acct_storage_p_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	mysql_free_result(result);
 
 	if(!list_count(ret_list)) {
-		debug3("didn't effect anything");
+		errno = SLURM_NO_CHANGE_IN_DATA;
+		debug3("didn't effect anything\n%s", query);
+		xfree(query);
 		xfree(vals);
 		return ret_list;
 	}
+	xfree(query);
 	xstrcat(name_char, ")");
 
 	if(_modify_common(mysql_conn, DBD_MODIFY_ACCOUNTS, now,
@@ -2548,7 +2724,6 @@ extern List acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
 		error("no result given for %s", extra);
 		return NULL;
 	}
-	xfree(query);
 	
 	rc = 0;
 	ret_list = list_create(slurm_destroy_char);
@@ -2565,10 +2740,13 @@ extern List acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
 	mysql_free_result(result);
 
 	if(!list_count(ret_list)) {
-		debug3("didn't effect anything");
+		errno = SLURM_NO_CHANGE_IN_DATA;
+		debug3("didn't effect anything\n%s", query);
 		xfree(vals);
+		xfree(query);
 		return ret_list;
 	}
+	xfree(query);
 
 	if(vals) {
 		send_char = xstrdup_printf("(%s)", name_char);
@@ -2607,10 +2785,12 @@ extern List acct_storage_p_modify_associations(mysql_conn_t *mysql_conn,
 	char *vals = NULL, *extra = NULL, *query = NULL, *name_char = NULL;
 	time_t now = time(NULL);
 	struct passwd *pw = NULL;
-	char *user = NULL;
-	int set = 0, i = 0;
+	char *user_name = NULL;
+	int set = 0, i = 0, is_admin=0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
+	acct_user_rec_t user;
+
 	char *massoc_req_inx[] = {
 		"id",
 		"acct",
@@ -2642,8 +2822,47 @@ extern List acct_storage_p_modify_associations(mysql_conn_t *mysql_conn,
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
+	memset(&user, 0, sizeof(acct_user_rec_t));
+	user.uid = uid;
+
+	/* This only works when running though the slurmdbd.
+	 * THERE IS NO AUTHENTICATION WHEN RUNNNING OUT OF THE
+	 * SLURMDBD!
+	 */
+	if(slurmdbd_conf) {
+		/* we have to check the authentication here in the
+		 * plugin since we don't know what accounts are being
+		 * referenced until after the query.  Here we will
+		 * set if they are an operator or greater and then
+		 * check it below after the query.
+		 */
+		if(uid == slurmdbd_conf->slurm_user_id
+		   || assoc_mgr_get_admin_level(mysql_conn, uid) 
+		   >= ACCT_ADMIN_OPERATOR) 
+			is_admin = 1;	
+		else {
+			if(assoc_mgr_fill_in_user(mysql_conn, &user, 1)
+			   != SLURM_SUCCESS) {
+				error("couldn't get information for this user");
+				errno = SLURM_ERROR;
+				return NULL;
+			}
+			if(!user.coord_accts || !list_count(user.coord_accts)) {
+				error("This user doesn't have any "
+				      "coordinator abilities");
+				errno = ESLURM_ACCESS_DENIED;
+				return NULL;
+			}
+		}
+	} else {
+		/* Setting this here just makes it easier down below
+		 * since user will not be filled in.
+		 */
+		is_admin = 1;
+	}
+
 	if((pw=getpwuid(uid))) {
-		user = pw->pw_name;
+		user_name = pw->pw_name;
 	}
 
 	if(assoc_q->acct_list && list_count(assoc_q->acct_list)) {
@@ -2771,6 +2990,33 @@ extern List acct_storage_p_modify_associations(mysql_conn_t *mysql_conn,
 		int account_type=0;
 /* 		MYSQL_RES *result2 = NULL; */
 /* 		MYSQL_ROW row2; */
+
+		if(!is_admin) {
+			acct_coord_rec_t *coord = NULL;
+			if(!user.coord_accts) { // This should never
+						// happen
+				error("We are here with no coord accts");
+				errno = ESLURM_ACCESS_DENIED;
+				mysql_free_result(result);
+				xfree(vals);
+				list_destroy(ret_list);
+				return NULL;
+			}
+			itr = list_iterator_create(user.coord_accts);
+			while((coord = list_next(itr))) {
+				if(!strcasecmp(coord->acct_name, row[1]))
+					break;
+			}
+			list_iterator_destroy(itr);
+
+			if(!coord) {
+				error("User %s(%d) does not have the "
+				      "ability to change this account (%s)",
+				      user.name, user.uid, row[1]);
+				continue;
+			}
+		}
+
 		if(row[MASSOC_PART][0]) { 
 			// see if there is a partition name
 			object = xstrdup_printf(
@@ -2866,6 +3112,7 @@ extern List acct_storage_p_modify_associations(mysql_conn_t *mysql_conn,
 
 
 	if(!list_count(ret_list)) {
+		errno = SLURM_NO_CHANGE_IN_DATA;
 		debug3("didn't effect anything");
 		xfree(vals);
 		return ret_list;
@@ -2874,7 +3121,7 @@ extern List acct_storage_p_modify_associations(mysql_conn_t *mysql_conn,
 
 	if(vals) {
 		if(_modify_common(mysql_conn, DBD_MODIFY_ASSOCS, now,
-				  user, assoc_table, name_char, vals)
+				  user_name, assoc_table, name_char, vals)
 		   == SLURM_ERROR) {
 			error("Couldn't modify associations");
 			list_destroy(ret_list);
@@ -2972,7 +3219,6 @@ extern List acct_storage_p_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		xfree(query);
 		return NULL;
 	}
-	xfree(query);
 
 	rc = 0;
 	ret_list = list_create(slurm_destroy_char);
@@ -2991,10 +3237,13 @@ extern List acct_storage_p_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	mysql_free_result(result);
 
 	if(!list_count(ret_list)) {
-		debug3("didn't effect anything");
+		errno = SLURM_NO_CHANGE_IN_DATA;
+		debug3("didn't effect anything\n%s", query);
+		xfree(query);
 		return ret_list;
 	}
-	
+	xfree(query);
+
 	if(_remove_common(mysql_conn, DBD_REMOVE_USERS, now,
 			  user_name, user_table, name_char, assoc_char)
 	   == SLURM_ERROR) {
@@ -3004,7 +3253,19 @@ extern List acct_storage_p_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	}
 	xfree(name_char);
+
+	query = xstrdup_printf(
+		"update %s as t2, set deleted=1, mod_time=%d where %s",
+		acct_coord_table, now, assoc_char);
 	xfree(assoc_char);
+
+	rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
+	xfree(query);
+	if(rc != SLURM_SUCCESS) {
+		error("Couldn't remove user coordinators");
+		list_destroy(ret_list);
+		return NULL;
+	}		
 
 	return ret_list;
 
@@ -3014,10 +3275,176 @@ extern List acct_storage_p_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 }
 
 extern List acct_storage_p_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid, 
-					char *acct, acct_user_cond_t *user_q)
+					List acct_list,
+					acct_user_cond_t *user_q)
 {
 #ifdef HAVE_MYSQL
-	return NULL;
+	char *query = NULL, *object = NULL, *extra = NULL, *last_user = NULL;
+	char *user_name = NULL;
+	struct passwd *pw = NULL;
+	time_t now = time(NULL);
+	int set = 0, is_admin=0;
+	ListIterator itr = NULL;
+	acct_user_rec_t *user_rec = NULL;
+	List ret_list = NULL;
+	List user_list = NULL;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	acct_user_rec_t user;
+
+	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
+		return NULL;
+
+	memset(&user, 0, sizeof(acct_user_rec_t));
+	user.uid = uid;
+
+	/* This only works when running though the slurmdbd.
+	 * THERE IS NO AUTHENTICATION WHEN RUNNNING OUT OF THE
+	 * SLURMDBD!
+	 */
+	if(slurmdbd_conf) {
+		/* we have to check the authentication here in the
+		 * plugin since we don't know what accounts are being
+		 * referenced until after the query.  Here we will
+		 * set if they are an operator or greater and then
+		 * check it below after the query.
+		 */
+		if(uid == slurmdbd_conf->slurm_user_id
+		   || assoc_mgr_get_admin_level(mysql_conn, uid) 
+		   >= ACCT_ADMIN_OPERATOR) 
+			is_admin = 1;	
+		else {
+			if(assoc_mgr_fill_in_user(mysql_conn, &user, 1)
+			   != SLURM_SUCCESS) {
+				error("couldn't get information for this user");
+				errno = SLURM_ERROR;
+				return NULL;
+			}
+			if(!user.coord_accts || !list_count(user.coord_accts)) {
+				error("This user doesn't have any "
+				      "coordinator abilities");
+				errno = ESLURM_ACCESS_DENIED;
+				return NULL;
+			}
+		}
+	} else {
+		/* Setting this here just makes it easier down below
+		 * since user will not be filled in.
+		 */
+		is_admin = 1;
+	}
+
+	if((pw=getpwuid(uid))) {
+		user_name = pw->pw_name;
+	}
+
+	if(user_q->user_list && list_count(user_q->user_list)) {
+		set = 0;
+		if(extra)
+			xstrcat(extra, " && (");
+		else
+			xstrcat(extra, " (");
+			
+		itr = list_iterator_create(user_q->user_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "user='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+
+	if(acct_list && list_count(acct_list)) {
+		set = 0;
+		if(extra)
+			xstrcat(extra, " && (");
+		else
+			xstrcat(extra, " (");
+
+		itr = list_iterator_create(acct_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "acct='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+	query = xstrdup_printf(
+		"select user, acct from %s where deleted=0 && %s order by user",
+		acct_coord_table, extra);
+
+	debug3("%d query\n%s", mysql_conn->conn, query);
+	if(!(result =
+	     mysql_db_query_ret(mysql_conn->acct_mysql_db, query, 0))) {
+		xfree(query);
+		xfree(extra);
+		return NULL;
+	}
+	xfree(query);
+	ret_list = list_create(slurm_destroy_char);
+	user_list = list_create(slurm_destroy_char);
+	while((row = mysql_fetch_row(result))) {
+		if(!is_admin) {
+			acct_coord_rec_t *coord = NULL;
+			if(!user.coord_accts) { // This should never
+						// happen
+				error("We are here with no coord accts");
+				errno = ESLURM_ACCESS_DENIED;
+				list_destroy(ret_list);
+				list_destroy(user_list);
+				xfree(extra);
+				mysql_free_result(result);
+				return NULL;
+			}
+			itr = list_iterator_create(user.coord_accts);
+			while((coord = list_next(itr))) {
+				if(!strcasecmp(coord->acct_name, row[1]))
+					break;
+			}
+			list_iterator_destroy(itr);
+
+			if(!coord) {
+				error("User %s(%d) does not have the "
+				      "ability to change this account (%s)",
+				      user.name, user.uid, row[1]);
+				continue;
+			}
+		}
+		if(!last_user || strcasecmp(last_user, row[0])) {
+			list_append(user_list, xstrdup(row[0]));
+			last_user = row[0];
+		}
+		list_append(ret_list, xstrdup_printf("U = %-9s A = %-10s", 
+						     row[0], row[1]));
+	}
+	mysql_free_result(result);
+	
+	if(_remove_common(mysql_conn, DBD_REMOVE_ACCOUNT_COORDS, now,
+			  user_name, acct_coord_table, extra, NULL)
+	   == SLURM_ERROR) {
+		list_destroy(ret_list);
+		list_destroy(user_list);
+		xfree(extra);
+		return NULL;
+	}
+	xfree(extra);
+	/* get the update list set */
+	itr = list_iterator_create(user_list);
+	while((last_user = list_next(itr))) {
+		user_rec = xmalloc(sizeof(acct_user_rec_t));
+		user_rec->name = xstrdup(last_user);
+		_get_user_coords(mysql_conn, user_rec);
+		_addto_update_list(mysql_conn->update_list, 
+				   ACCT_REMOVE_COORD, user_rec);
+	}
+	list_iterator_destroy(itr);
+	list_destroy(user_list);
+
+	return ret_list;
 #else
 	return NULL;
 #endif
@@ -3111,7 +3538,6 @@ extern List acct_storage_p_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		xfree(query);
 		return NULL;
 	}
-	xfree(query);
 
 	rc = 0;
 	ret_list = list_create(slurm_destroy_char);
@@ -3130,9 +3556,12 @@ extern List acct_storage_p_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	mysql_free_result(result);
 
 	if(!list_count(ret_list)) {
-		debug3("didn't effect anything");
+		errno = SLURM_NO_CHANGE_IN_DATA;
+		debug3("didn't effect anything\n%s", query);
+		xfree(query);
 		return ret_list;
 	}
+	xfree(query);
 
 	if(_remove_common(mysql_conn, DBD_REMOVE_ACCOUNTS, now,
 			  user_name, acct_table, name_char, assoc_char)
@@ -3227,6 +3656,7 @@ extern List acct_storage_p_remove_clusters(mysql_conn_t *mysql_conn,
 	mysql_free_result(result);
 
 	if(!list_count(ret_list)) {
+		errno = SLURM_NO_CHANGE_IN_DATA;
 		debug3("didn't effect anything\n%s", query);
 		xfree(query);
 		return ret_list;
@@ -3296,9 +3726,10 @@ extern List acct_storage_p_remove_associations(mysql_conn_t *mysql_conn,
 	time_t now = time(NULL);
 	struct passwd *pw = NULL;
 	char *user_name = NULL;
-	int set = 0, i = 0;
+	int set = 0, i = 0, is_admin=0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
+	acct_user_rec_t user;
 
 	/* if this changes you will need to edit the corresponding 
 	 * enum below also t1 is step_table */
@@ -3328,6 +3759,45 @@ extern List acct_storage_p_remove_associations(mysql_conn_t *mysql_conn,
 
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
+
+	memset(&user, 0, sizeof(acct_user_rec_t));
+	user.uid = uid;
+
+	/* This only works when running though the slurmdbd.
+	 * THERE IS NO AUTHENTICATION WHEN RUNNNING OUT OF THE
+	 * SLURMDBD!
+	 */
+	if(slurmdbd_conf) {
+		/* we have to check the authentication here in the
+		 * plugin since we don't know what accounts are being
+		 * referenced until after the query.  Here we will
+		 * set if they are an operator or greater and then
+		 * check it below after the query.
+		 */
+		if(uid == slurmdbd_conf->slurm_user_id
+		   || assoc_mgr_get_admin_level(mysql_conn, uid) 
+		   >= ACCT_ADMIN_OPERATOR) 
+			is_admin = 1;	
+		else {
+			if(assoc_mgr_fill_in_user(mysql_conn, &user, 1)
+			   != SLURM_SUCCESS) {
+				error("couldn't get information for this user");
+				errno = SLURM_ERROR;
+				return NULL;
+			}
+			if(!user.coord_accts || !list_count(user.coord_accts)) {
+				error("This user doesn't have any "
+				      "coordinator abilities");
+				errno = ESLURM_ACCESS_DENIED;
+				return NULL;
+			}
+		}
+	} else {
+		/* Setting this here just makes it easier down below
+		 * since user will not be filled in.
+		 */
+		is_admin = 1;
+	}
 
 	xstrcat(extra, "where id>0 && deleted=0");
 
@@ -3411,7 +3881,6 @@ extern List acct_storage_p_remove_associations(mysql_conn_t *mysql_conn,
 		xfree(query);
 		return NULL;
 	}
-	xfree(query);
 		
 	rc = 0;
 	while((row = mysql_fetch_row(result))) {
@@ -3427,6 +3896,7 @@ extern List acct_storage_p_remove_associations(mysql_conn_t *mysql_conn,
 	mysql_free_result(result);
 
 	if(!name_char) {
+		errno = SLURM_NO_CHANGE_IN_DATA;
 		debug3("didn't effect anything\n%s", query);
 		xfree(query);
 		return ret_list;
@@ -3451,7 +3921,29 @@ extern List acct_storage_p_remove_associations(mysql_conn_t *mysql_conn,
 	ret_list = list_create(slurm_destroy_char);
 	while((row = mysql_fetch_row(result))) {
 		acct_association_rec_t *rem_assoc = NULL;
+		if(!is_admin) {
+			acct_coord_rec_t *coord = NULL;
+			if(!user.coord_accts) { // This should never
+						// happen
+				error("We are here with no coord accts");
+				errno = ESLURM_ACCESS_DENIED;
+				goto end_it;
+			}
+			itr = list_iterator_create(user.coord_accts);
+			while((coord = list_next(itr))) {
+				if(!strcasecmp(coord->acct_name,
+					       row[RASSOC_ACCT]))
+					break;
+			}
+			list_iterator_destroy(itr);
 
+			if(!coord) {
+				error("User %s(%d) does not have the "
+				      "ability to change this account (%s)",
+				      user.name, user.uid, row[RASSOC_ACCT]);
+				continue;
+			}
+		}
 		if(row[RASSOC_PART][0]) { 
 			// see if there is a partition name
 			object = xstrdup_printf(
@@ -3505,6 +3997,14 @@ extern List acct_storage_p_remove_associations(mysql_conn_t *mysql_conn,
 	xfree(assoc_char);
 
 	return ret_list;
+end_it:
+	if(ret_list) {
+		list_destroy(ret_list);
+		ret_list = NULL;
+	}
+	mysql_free_result(result);
+
+	return NULL;
 #else
 	return NULL;
 #endif
@@ -3522,8 +4022,8 @@ extern List acct_storage_p_get_users(mysql_conn_t *mysql_conn,
 	char *object = NULL;
 	int set = 0;
 	int i=0;
-	MYSQL_RES *result = NULL, *coord_result = NULL;
-	MYSQL_ROW row, coord_row;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
 
 	/* if this changes you will need to edit the corresponding enum */
 	char *user_req_inx[] = {
@@ -3643,77 +4143,7 @@ empty:
 /* 		else */
 /* 			user->uid = (uint32_t)NO_VAL; */
 		if(user_q && user_q->with_coords) {
-			user->coord_accts = list_create(destroy_acct_coord_rec);
-			query = xstrdup_printf(
-				"select acct from %s where user='%s' "
-				"&& deleted=0",
-				acct_coord_table, user->name);
-			
-			if(!(coord_result =
-			     mysql_db_query_ret(mysql_conn->acct_mysql_db,
-						query, 0))) {
-				xfree(query);
-				continue;
-			}
-			xfree(query);
-			while((coord_row = mysql_fetch_row(coord_result))) {
-				acct_coord_rec_t *coord =
-					xmalloc(sizeof(acct_coord_rec_t));
-				list_append(user->coord_accts, coord);
-				coord->acct_name = xstrdup(coord_row[0]);
-				coord->sub_acct = 0;
-				if(query) 
-					xstrcat(query, " || ");
-				else 
-					query = xstrdup_printf(
-						"select distinct t1.acct from "
-						"%s as t1, %s as t2 where ",
-						assoc_table, assoc_table);
-				/* Add 1 to the lft to not include the
-				 * one we are looking at.  Distinct
-				 * above to only get 1 instance since the acct
-				 * will most likely be on multiple clusters.
-				 */
-				xstrfmtcat(query, "(t2.acct='%s' "
-					   "&& t1.lft between t2.lft+1 "
-					   "and t2.rgt && t1.user='')",
-					   coord->acct_name);
-			}
-			mysql_free_result(coord_result);
-
-			if(query) {
-				if(!(coord_result = mysql_db_query_ret(
-					     mysql_conn->acct_mysql_db,
-					     query, 0))) {
-					xfree(query);
-					continue;
-				}
-				xfree(query);
-
-				itr = list_iterator_create(user->coord_accts);
-				while((coord_row =
-				       mysql_fetch_row(coord_result))) {
-					acct_coord_rec_t *coord = NULL;
-
-					while((coord = list_next(itr))) {
-						if(!strcmp(coord->acct_name, 
-							   coord_row[0]))
-						   break;
-					}
-					list_iterator_reset(itr);
-					if(coord) 
-						continue;
-					
-					coord = xmalloc(
-						sizeof(acct_coord_rec_t));
-					list_append(user->coord_accts, coord);
-					coord->acct_name = 
-						xstrdup(coord_row[0]);
-					coord->sub_acct = 1;
-				}
-				list_iterator_destroy(itr);
-				mysql_free_result(coord_result);
-			}
+			_get_user_coords(mysql_conn, user);
 		}
 
 		if(user_q && user_q->with_assocs) {

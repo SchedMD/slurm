@@ -146,12 +146,22 @@ static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
 			}
 		}
 		if(!found) {
-			info("adding column %s after %s", fields[i].name,
-			     fields[i-1].name);
-			xstrfmtcat(query, " add %s %s after %s,",
-				   fields[i].name,
-				   fields[i].options,
-				   fields[i-1].name);
+			if(i) {
+				info("adding column %s after %s",
+				     fields[i].name,
+				     fields[i-1].name);
+				xstrfmtcat(query, " add %s %s after %s,",
+					   fields[i].name,
+					   fields[i].options,
+					   fields[i-1].name);
+			} else {
+				info("adding column %s at the beginning",
+				     fields[i].name,
+				     fields[i-1].name);
+				xstrfmtcat(query, " add %s %s first,",
+					   fields[i].name,
+					   fields[i].options);
+			}
 		}
 
 		i++;

@@ -304,7 +304,7 @@ static int _add_accounts(void *db_conn,
 
 		memset(&user, 0, sizeof(acct_user_rec_t));
 		user.uid = *uid;
-		if(!assoc_mgr_fill_in_user(db_conn, &user, 1)) {
+		if(assoc_mgr_fill_in_user(db_conn, &user, 1) != SLURM_SUCCESS) {
 			comment = "Your user has not been added to the accounting system yet.";
 			error("%s", comment);
 			rc = SLURM_ERROR;
@@ -356,12 +356,15 @@ static int _add_account_coords(void *db_conn,
 	if(*uid != slurmdbd_conf->slurm_user_id
 	   && assoc_mgr_get_admin_level(db_conn, *uid) < ACCT_ADMIN_OPERATOR) {
 		ListIterator itr = NULL;
+		ListIterator itr2 = NULL;
 		acct_user_rec_t user;
 		acct_coord_rec_t *coord = NULL;
-		
+		char *acct = NULL;
+		int bad = 0;
+
 		memset(&user, 0, sizeof(acct_user_rec_t));
 		user.uid = *uid;
-		if(!assoc_mgr_fill_in_user(db_conn, &user, 1)) {
+		if(assoc_mgr_fill_in_user(db_conn, &user, 1) != SLURM_SUCCESS) {
 			comment = "Your user has not been added to the accounting system yet.";
 			error("%s", comment);
 			rc = SLURM_ERROR;
@@ -373,14 +376,23 @@ static int _add_account_coords(void *db_conn,
 			rc = ESLURM_ACCESS_DENIED;
 			goto end_it;
 		}
-		itr = list_iterator_create(user.coord_accts);
-		while((coord = list_next(itr))) {
-			if(!strcasecmp(coord->acct_name, get_msg->acct))
+		itr = list_iterator_create(get_msg->acct_list);
+		itr2 = list_iterator_create(user.coord_accts);
+		while((acct = list_next(itr))) {
+			while((coord = list_next(itr2))) {
+				if(!strcasecmp(coord->acct_name, acct))
+					break;
+			}
+			if(!coord)  {
+				bad = 1;
 				break;
+			}
+			list_iterator_reset(itr2);
 		}
+		list_iterator_destroy(itr2);
 		list_iterator_destroy(itr);
 		
-		if(!coord)  {
+		if(bad)  {
 			comment = "Your user doesn't have privilege to preform this action";
 			error("%s", comment);
 			rc = ESLURM_ACCESS_DENIED;
@@ -388,7 +400,7 @@ static int _add_account_coords(void *db_conn,
 		}
 	}
 
-	rc = acct_storage_g_add_coord(db_conn, *uid, get_msg->acct,
+	rc = acct_storage_g_add_coord(db_conn, *uid, get_msg->acct_list,
 				      get_msg->cond);
 end_it:
 	slurmdbd_free_acct_coord_msg(get_msg);
@@ -423,7 +435,7 @@ static int _add_assocs(void *db_conn,
 
 		memset(&user, 0, sizeof(acct_user_rec_t));
 		user.uid = *uid;
-		if(!assoc_mgr_fill_in_user(db_conn, &user, 1)) {
+		if(assoc_mgr_fill_in_user(db_conn, &user, 1) != SLURM_SUCCESS) {
 			comment = "Your user has not been added to the accounting system yet.";
 			error("%s", comment);
 			rc = SLURM_ERROR;
@@ -514,7 +526,7 @@ static int _add_users(void *db_conn,
 
 		memset(&user, 0, sizeof(acct_user_rec_t));
 		user.uid = *uid;
-		if(!assoc_mgr_fill_in_user(db_conn, &user, 1)) {
+		if(assoc_mgr_fill_in_user(db_conn, &user, 1) != SLURM_SUCCESS) {
 			comment = "Your user has not been added to the accounting system yet.";
 			error("%s", comment);
 			rc = SLURM_ERROR;
@@ -1116,8 +1128,26 @@ static int   _modify_accounts(void *db_conn,
 	}
 	
 
-	list_msg.my_list = acct_storage_g_modify_accounts(
-		db_conn, *uid, get_msg->cond, get_msg->rec);
+	if(!(list_msg.my_list = acct_storage_g_modify_accounts(
+		     db_conn, *uid, get_msg->cond, get_msg->rec))) {
+		if(errno == ESLURM_ACCESS_DENIED) {
+			comment = "Your user doesn't have privilege to preform this action";
+			rc = ESLURM_ACCESS_DENIED;
+		} else if(errno == SLURM_ERROR) {
+			comment = "Something was wrong with your query";
+			rc = SLURM_ERROR;
+		} else if(errno == SLURM_NO_CHANGE_IN_DATA) {
+			comment = "Request didn't affect anything";
+			rc = SLURM_SUCCESS;
+		} else {
+			comment = "Unkown issue";
+			rc = SLURM_ERROR;
+		}
+		error("%s", comment);
+		slurmdbd_free_modify_msg(DBD_MODIFY_ACCOUNTS, get_msg);
+		*out_buffer = make_dbd_rc_msg(rc, comment, DBD_MODIFY_ACCOUNTS);
+		return rc;		
+	}
 	slurmdbd_free_modify_msg(DBD_MODIFY_ACCOUNTS, get_msg);
 
 	*out_buffer = init_buf(1024);
@@ -1139,16 +1169,6 @@ static int   _modify_assocs(void *db_conn,
 
 	debug2("DBD_MODIFY_ASSOCS: called");
 
-	if(*uid != slurmdbd_conf->slurm_user_id
-	   && assoc_mgr_get_admin_level(db_conn, *uid) < ACCT_ADMIN_OPERATOR) {
-		comment = "Your user doesn't have privilege to preform this action";
-		error("%s", comment);
-		*out_buffer = make_dbd_rc_msg(ESLURM_ACCESS_DENIED,
-					      comment, DBD_MODIFY_ASSOCS);
-
-		return ESLURM_ACCESS_DENIED;
-	}
-
 	if (slurmdbd_unpack_modify_msg(DBD_MODIFY_ASSOCS, &get_msg, 
 				       in_buffer) != SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_MODIFY_ASSOCS message";
@@ -1159,8 +1179,31 @@ static int   _modify_assocs(void *db_conn,
 	}
 	
 
-	list_msg.my_list = acct_storage_g_modify_associations(db_conn, *uid,
-						get_msg->cond, get_msg->rec);
+	/* All authentication needs to be done inside the plugin since we are
+	 * unable to know what accounts this request is talking about
+	 * until we process it through the database.
+	 */
+
+	if(!(list_msg.my_list = acct_storage_g_modify_associations(
+		     db_conn, *uid, get_msg->cond, get_msg->rec))) {
+		if(errno == ESLURM_ACCESS_DENIED) {
+			comment = "Your user doesn't have privilege to preform this action";
+			rc = ESLURM_ACCESS_DENIED;
+		} else if(errno == SLURM_ERROR) {
+			comment = "Something was wrong with your query";
+			rc = SLURM_ERROR;
+		} else if(errno == SLURM_NO_CHANGE_IN_DATA) {
+			comment = "Request didn't affect anything";
+			rc = SLURM_SUCCESS;
+		} else {
+			comment = "Unkown issue";
+			rc = SLURM_ERROR;
+		}
+		error("%s", comment);
+		slurmdbd_free_modify_msg(DBD_MODIFY_ASSOCS, get_msg);
+		*out_buffer = make_dbd_rc_msg(rc, comment, DBD_MODIFY_ASSOCS);
+		return rc;
+	}
 
 	slurmdbd_free_modify_msg(DBD_MODIFY_ASSOCS, get_msg);
 	*out_buffer = init_buf(1024);
@@ -1202,8 +1245,26 @@ static int   _modify_clusters(void *db_conn,
 	
 	debug2("DBD_MODIFY_CLUSTERS: called");
 
-	list_msg.my_list = acct_storage_g_modify_clusters(db_conn, *uid,
-					    get_msg->cond, get_msg->rec);
+	if(!(list_msg.my_list = acct_storage_g_modify_clusters(
+		     db_conn, *uid, get_msg->cond, get_msg->rec))) {
+		if(errno == ESLURM_ACCESS_DENIED) {
+			comment = "Your user doesn't have privilege to preform this action";
+			rc = ESLURM_ACCESS_DENIED;
+		} else if(errno == SLURM_ERROR) {
+			comment = "Something was wrong with your query";
+			rc = SLURM_ERROR;
+		} else if(errno == SLURM_NO_CHANGE_IN_DATA) {
+			comment = "Request didn't affect anything";
+			rc = SLURM_SUCCESS;
+		} else {
+			comment = "Unkown issue";
+			rc = SLURM_ERROR;
+		}
+		error("%s", comment);
+		slurmdbd_free_modify_msg(DBD_MODIFY_CLUSTERS, get_msg);
+		*out_buffer = make_dbd_rc_msg(rc, comment, DBD_MODIFY_CLUSTERS);
+		return rc;
+	}
 
 	slurmdbd_free_modify_msg(DBD_MODIFY_CLUSTERS, get_msg);
 	*out_buffer = init_buf(1024);
@@ -1253,11 +1314,29 @@ static int   _modify_users(void *db_conn,
 			ACCT_ADMIN_NOTSET;
 	}
 
-	list_msg.my_list = acct_storage_g_modify_users(
-		db_conn, *uid, get_msg->cond, get_msg->rec);
+	if(!(list_msg.my_list = acct_storage_g_modify_users(
+		     db_conn, *uid, get_msg->cond, get_msg->rec))) {
+		if(errno == ESLURM_ACCESS_DENIED) {
+			comment = "Your user doesn't have privilege to preform this action";
+			rc = ESLURM_ACCESS_DENIED;
+		} else if(errno == SLURM_ERROR) {
+			comment = "Something was wrong with your query";
+			rc = SLURM_ERROR;
+		} else if(errno == SLURM_NO_CHANGE_IN_DATA) {
+			comment = "Request didn't affect anything";
+			rc = SLURM_SUCCESS;
+		} else {
+			comment = "Unkown issue";
+			rc = SLURM_ERROR;
+		}
+		error("%s", comment);
+		slurmdbd_free_modify_msg(DBD_MODIFY_USERS, get_msg);
+		*out_buffer = make_dbd_rc_msg(rc, comment, DBD_MODIFY_USERS);
+		return rc;
+	}
 
 	slurmdbd_free_modify_msg(DBD_MODIFY_USERS, get_msg);
-		*out_buffer = init_buf(1024);
+	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
 	slurmdbd_pack_list_msg(DBD_GOT_LIST, &list_msg, *out_buffer);
 	if(list_msg.my_list)
@@ -1443,18 +1522,29 @@ static int   _remove_accounts(void *db_conn,
 		return SLURM_ERROR;
 	}
 	
-	list_msg.my_list = acct_storage_g_remove_accounts(
-		db_conn, *uid, get_msg->cond);
-/* this should be done inside the plugin */
-/* 	if(rc == SLURM_SUCCESS) { */
-/* 		memset(&assoc_q, 0, sizeof(acct_association_cond_t)); */
-/* 		assoc_q.acct_list = */
-/* 			((acct_account_cond_t *)get_msg->cond)->acct_list; */
-/* 		list_msg.my_list = acct_storage_g_remove_associations(db_conn, *uid, &assoc_q); */
-/* 	} */
+	if(!(list_msg.my_list = acct_storage_g_remove_accounts(
+		     db_conn, *uid, get_msg->cond))) {
+		if(errno == ESLURM_ACCESS_DENIED) {
+			comment = "Your user doesn't have privilege to preform this action";
+			rc = ESLURM_ACCESS_DENIED;
+		} else if(errno == SLURM_ERROR) {
+			comment = "Something was wrong with your query";
+			rc = SLURM_ERROR;
+		} else if(errno == SLURM_NO_CHANGE_IN_DATA) {
+			comment = "Request didn't affect anything";
+			rc = SLURM_SUCCESS;
+		} else {
+			comment = "Unkown issue";
+			rc = SLURM_ERROR;
+		}
+		error("%s", comment);
+		slurmdbd_free_cond_msg(DBD_REMOVE_ACCOUNTS, get_msg);
+		*out_buffer = make_dbd_rc_msg(rc, comment, DBD_REMOVE_ACCOUNTS);
+		return rc;
+	}
 
 	slurmdbd_free_cond_msg(DBD_REMOVE_ACCOUNTS, get_msg);
-		*out_buffer = init_buf(1024);
+	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
 	slurmdbd_pack_list_msg(DBD_GOT_LIST, &list_msg, *out_buffer);
 	if(list_msg.my_list)
@@ -1474,37 +1564,54 @@ static int   _remove_account_coords(void *db_conn,
 
 	debug2("DBD_REMOVE_ACCOUNT_COORDS: called");
 
-	if(*uid != slurmdbd_conf->slurm_user_id
-	   && assoc_mgr_get_admin_level(db_conn, *uid) < ACCT_ADMIN_OPERATOR) {
-		comment = "Your user doesn't have privilege to preform this action";
-		error("%s", comment);
-		*out_buffer = make_dbd_rc_msg(
-			ESLURM_ACCESS_DENIED, comment,
-			DBD_REMOVE_ACCOUNT_COORDS);
-
-		return ESLURM_ACCESS_DENIED;
-	}
-
 	if (slurmdbd_unpack_acct_coord_msg(&get_msg, in_buffer) !=
 	    SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_REMOVE_ACCOUNT_COORDS message";
 		error("%s", comment);
-		*out_buffer = make_dbd_rc_msg(
-			SLURM_ERROR, comment, DBD_REMOVE_ACCOUNT_COORDS);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto end_it;
 	}
 	
-	list_msg.my_list = acct_storage_g_remove_coord(
-		db_conn, *uid, get_msg->acct, get_msg->cond);
+	/* All authentication needs to be done inside the plugin since we are
+	 * unable to know what accounts this request is talking about
+	 * until we process it through the database.
+	 */
+
+	if(!(list_msg.my_list = acct_storage_g_remove_coord(
+		     db_conn, *uid, get_msg->acct_list, get_msg->cond))) {
+		if(errno == ESLURM_ACCESS_DENIED) {
+			comment = "Your user doesn't have privilege to preform this action";
+			rc = ESLURM_ACCESS_DENIED;
+		} else if(errno == SLURM_ERROR) {
+			comment = "Something was wrong with your query";
+			rc = SLURM_ERROR;
+		} else if(errno == SLURM_NO_CHANGE_IN_DATA) {
+			comment = "Request didn't affect anything";
+			rc = SLURM_SUCCESS;
+		} else {
+			comment = "Unkown issue";
+			rc = SLURM_ERROR;
+		}
+		error("%s", comment);
+		slurmdbd_free_acct_coord_msg(get_msg);
+		*out_buffer = make_dbd_rc_msg(rc, comment, 
+					      DBD_REMOVE_ACCOUNT_COORDS);
+		return rc;
+	}
 
 	slurmdbd_free_acct_coord_msg(get_msg);
-		*out_buffer = init_buf(1024);
+	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
 	slurmdbd_pack_list_msg(DBD_GOT_LIST, &list_msg, *out_buffer);
 	if(list_msg.my_list)
 		list_destroy(list_msg.my_list);
 
 	return rc;
+end_it:
+	slurmdbd_free_acct_coord_msg(get_msg);
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_ADD_ACCOUNT_COORDS);
+	return rc;
+
 }
 
 static int   _remove_assocs(void *db_conn,
@@ -1516,17 +1623,6 @@ static int   _remove_assocs(void *db_conn,
 	char *comment = NULL;
 
 	debug2("DBD_REMOVE_ASSOCS: called");
-
-	if(*uid != slurmdbd_conf->slurm_user_id
-	   && assoc_mgr_get_admin_level(db_conn, *uid) < ACCT_ADMIN_OPERATOR) {
-		comment = "Your user doesn't have privilege to preform this action";
-		error("%s", comment);
-		*out_buffer = make_dbd_rc_msg(ESLURM_ACCESS_DENIED,
-					      comment, DBD_REMOVE_ASSOCS);
-
-		return ESLURM_ACCESS_DENIED;
-	}
-
 	if (slurmdbd_unpack_cond_msg(DBD_REMOVE_ASSOCS, &get_msg, in_buffer) !=
 	    SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_REMOVE_ASSOCS message";
@@ -1535,12 +1631,35 @@ static int   _remove_assocs(void *db_conn,
 					      comment, DBD_REMOVE_ASSOCS);
 		return SLURM_ERROR;
 	}
-	
-	list_msg.my_list = acct_storage_g_remove_associations(
-		db_conn, *uid, get_msg->cond);
 
+	/* All authentication needs to be done inside the plugin since we are
+	 * unable to know what accounts this request is talking about
+	 * until we process it through the database.
+	 */
+
+	if(!(list_msg.my_list = acct_storage_g_remove_associations(
+		     db_conn, *uid, get_msg->cond))) {
+		if(errno == ESLURM_ACCESS_DENIED) {
+			comment = "Your user doesn't have privilege to preform this action";
+			rc = ESLURM_ACCESS_DENIED;
+		} else if(errno == SLURM_ERROR) {
+			comment = "Something was wrong with your query";
+			rc = SLURM_ERROR;
+		} else if(errno == SLURM_NO_CHANGE_IN_DATA) {
+			comment = "Request didn't affect anything";
+			rc = SLURM_SUCCESS;
+		} else {
+			comment = "Unkown issue";
+			rc = SLURM_ERROR;
+		}
+		error("%s", comment);
+		slurmdbd_free_cond_msg(DBD_REMOVE_ASSOCS, get_msg);
+		*out_buffer = make_dbd_rc_msg(rc, comment, DBD_REMOVE_ASSOCS);
+		return rc;
+	}
+	
 	slurmdbd_free_cond_msg(DBD_REMOVE_ASSOCS, get_msg);
-		*out_buffer = init_buf(1024);
+	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
 	slurmdbd_pack_list_msg(DBD_GOT_LIST, &list_msg, *out_buffer);
 	if(list_msg.my_list)
@@ -1580,18 +1699,29 @@ static int   _remove_clusters(void *db_conn,
 		return SLURM_ERROR;
 	}
 	
-	list_msg.my_list = acct_storage_g_remove_clusters(
-		db_conn, *uid, get_msg->cond);
-/* this should be done inside the plugin */
-/* 	if(rc == SLURM_SUCCESS) { */
-/* 		memset(&assoc_q, 0, sizeof(acct_association_cond_t)); */
-/* 		assoc_q.cluster_list = */
-/* 			((acct_cluster_cond_t *)get_msg->cond)->cluster_list; */
-/* 		list_msg.my_list = acct_storage_g_remove_associations(db_conn, *uid, &assoc_q); */
-/* 	} */
+	if(!(list_msg.my_list = acct_storage_g_remove_clusters(
+		     db_conn, *uid, get_msg->cond))) {
+		if(errno == ESLURM_ACCESS_DENIED) {
+			comment = "Your user doesn't have privilege to preform this action";
+			rc = ESLURM_ACCESS_DENIED;
+		} else if(errno == SLURM_ERROR) {
+			comment = "Something was wrong with your query";
+			rc = SLURM_ERROR;
+		} else if(errno == SLURM_NO_CHANGE_IN_DATA) {
+			comment = "Request didn't affect anything";
+			rc = SLURM_SUCCESS;
+		} else {
+			comment = "Unkown issue";
+			rc = SLURM_ERROR;
+		}
+		error("%s", comment);
+		slurmdbd_free_cond_msg(DBD_REMOVE_CLUSTERS, get_msg);
+		*out_buffer = make_dbd_rc_msg(rc, comment, DBD_REMOVE_CLUSTERS);
+		return rc;		
+	}
 
 	slurmdbd_free_cond_msg(DBD_REMOVE_CLUSTERS, get_msg);
-		*out_buffer = init_buf(1024);
+	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
 	slurmdbd_pack_list_msg(DBD_GOT_LIST, &list_msg, *out_buffer);
 	if(list_msg.my_list)
@@ -1629,18 +1759,29 @@ static int   _remove_users(void *db_conn,
 		return SLURM_ERROR;
 	}
 	
-	list_msg.my_list = acct_storage_g_remove_users(
-		db_conn, *uid, get_msg->cond);
-/* this should be done inside the plugin */
-	/* if(rc == SLURM_SUCCESS) { */
-/* 		memset(&assoc_q, 0, sizeof(acct_association_cond_t)); */
-/* 		assoc_q.user_list = */
-/* 			((acct_user_cond_t *)get_msg->cond)->user_list; */
-/* 		list_msg.my_list = acct_storage_g_remove_associations(db_conn, *uid, &assoc_q); */
-/* 	} */
+	if(!(list_msg.my_list = acct_storage_g_remove_users(
+		     db_conn, *uid, get_msg->cond))) {
+		if(errno == ESLURM_ACCESS_DENIED) {
+			comment = "Your user doesn't have privilege to preform this action";
+			rc = ESLURM_ACCESS_DENIED;
+		} else if(errno == SLURM_ERROR) {
+			comment = "Something was wrong with your query";
+			rc = SLURM_ERROR;
+		} else if(errno == SLURM_NO_CHANGE_IN_DATA) {
+			comment = "Request didn't affect anything";
+			rc = SLURM_SUCCESS;
+		} else {
+			comment = "Unkown issue";
+			rc = SLURM_ERROR;
+		}
+		error("%s", comment);
+		slurmdbd_free_cond_msg(DBD_REMOVE_USERS, get_msg);
+		*out_buffer = make_dbd_rc_msg(rc, comment, DBD_REMOVE_USERS);
+		return rc;
+	}
 
 	slurmdbd_free_cond_msg(DBD_REMOVE_USERS, get_msg);
-		*out_buffer = init_buf(1024);
+	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
 	slurmdbd_pack_list_msg(DBD_GOT_LIST, &list_msg, *out_buffer);
 	if(list_msg.my_list)
