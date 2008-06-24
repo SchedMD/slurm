@@ -374,19 +374,19 @@ static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
 	}
 
 	if ((alias_list = hostlist_create(node_ptr->nodenames)) == NULL) {
-		error("Unable to create NodeName list from %s",
+		fatal("Unable to create NodeName list from %s",
 		      node_ptr->nodenames);
 		error_code = errno;
 		goto cleanup;
 	}
 	if ((hostname_list = hostlist_create(node_ptr->hostnames)) == NULL) {
-		error("Unable to create NodeHostname list from %s",
+		fatal("Unable to create NodeHostname list from %s",
 		      node_ptr->hostnames);
 		error_code = errno;
 		goto cleanup;
 	}
 	if ((address_list = hostlist_create(node_ptr->addresses)) == NULL) {
-		error("Unable to create NodeAddr list from %s",
+		fatal("Unable to create NodeAddr list from %s",
 		      node_ptr->addresses);
 		error_code = errno;
 		goto cleanup;
