@@ -1,4 +1,4 @@
-SUBDIRS = perlapi phpext torque 
+SUBDIRS = perlapi torque 
 
 EXTRA_DIST = \
 	env_cache_builder.c	\
