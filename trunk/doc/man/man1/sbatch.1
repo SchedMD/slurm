@@ -383,6 +383,21 @@ The default is one task per socket or core (depending upon the value
 of the \fISelectTypeParameters\fR parameter in slurm.conf), but note 
 that the \fB\-\-cpus\-per\-task\fR option will change this default.
 
+.TP
+\fB\-\-network\fR=\fItype\fR
+Specify the communication protocol to be used. 
+This option is supported on AIX systems.
+This option sets the \fBSLURM_NETWORK\fR environment variable for use by POE.
+The interpretation of \fItype\fR is system dependent. 
+For systems with an IBM Federation switch, the following 
+comma\-separated and case insensitive types are recongnized:
+\fBIP\fR (the default is user\-space), \fBSN_ALL\fR, \fBSN_SINGLE\fR, 
+\fBBULK_XFER\fR and adapter names  (e.g. \fBSNI0\fR and \fBSNI1\fR). 
+For more information, on IBM systems see \fIPOE\fR documentation on 
+the environment variables \fBMP_EUIDEVICE\fR and \fBMP_USE_BULK_XFER\fR.
+Note that only four jobs steps may be active at once on a node with the 
+\fBBULK_XFER\fR option due to limitations in the Federation switch driver.
+
 .TP 
 \fB\-\-nice\fR[=]<\fIadjustment\fR>
 Run the job with an adjusted scheduling priority within SLURM.
@@ -701,6 +716,9 @@ Same as \fB\-\-conn\-type\fR.
 .TP
 \fBSBATCH_DEBUG\fR
 Same as \fB\-v\fR or \fB\-\-verbose\fR.
+.TP
+\fBSBATCH_DISTRIBUTION\fR
+Same as \fB\-m\fR or \fB\-\-distribution\fR.
 .TP
 \fBSBATCH_EXCLUSIVE\fR
 Same as \fB\-\-exclusive\fR.

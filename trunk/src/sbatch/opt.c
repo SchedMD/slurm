@@ -81,6 +81,7 @@
 #define OPT_BOOL        0x06
 #define OPT_CORE        0x07
 #define OPT_CONN_TYPE	0x08
+#define OPT_DISTRIB	0x09
 #define OPT_NO_ROTATE	0x0a
 #define OPT_GEOMETRY	0x0b
 #define OPT_MULTI	0x0f
@@ -114,6 +115,7 @@
 #define LONG_OPT_COMMENT     0x117
 #define LONG_OPT_WRAP        0x118
 #define LONG_OPT_REQUEUE     0x119
+#define LONG_OPT_NETWORK     0x120
 #define LONG_OPT_SOCKETSPERNODE  0x130
 #define LONG_OPT_CORESPERSOCKET  0x131
 #define LONG_OPT_THREADSPERCORE  0x132
@@ -321,6 +323,7 @@ env_vars_t env_vars[] = {
   {"SBATCH_BLRTS_IMAGE",   OPT_STRING,     &opt.blrtsimage,    NULL           },
   {"SBATCH_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL           },
   {"SBATCH_DEBUG",         OPT_DEBUG,      NULL,               NULL           },
+  {"SBATCH_DISTRIBUTION",  OPT_DISTRIB ,   NULL,               NULL           },
   {"SBATCH_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL           },
   {"SBATCH_IMMEDIATE",     OPT_BOOL,       &opt.immediate,     NULL           },
   {"SBATCH_JOBID",         OPT_INT,        &opt.jobid,         NULL           },
@@ -405,6 +408,15 @@ _process_env_var(env_vars_t *e, const char *val)
 			if (!(end && *end == '\0')) 
 				error("%s=%s invalid", e->var, val);
 		}
+		break;
+
+	case OPT_DISTRIB:
+		opt.distribution = verify_dist_type(optarg, 
+						    &opt.plane_size);
+		if (opt.distribution == SLURM_DIST_UNKNOWN)
+			error("distribution type `%s' is invalid", optarg);
+		else
+			setenv("SLURM_DISTRIBUTION", optarg, 1);
 		break;
 
 	case OPT_NODES:
@@ -542,6 +554,7 @@ static struct option long_options[] = {
 	{"open-mode",     required_argument, 0, LONG_OPT_OPEN_MODE},
 	{"acctg-freq",    required_argument, 0, LONG_OPT_ACCTG_FREQ},
 	{"propagate",     optional_argument, 0, LONG_OPT_PROPAGATE},
+	{"network",       required_argument, 0, LONG_OPT_NETWORK},
 	{NULL,            0,                 0, 0}
 };
 
@@ -1007,7 +1020,8 @@ static void _set_options(int argc, char **argv)
 				error("distribution type `%s' " 
 				      "is not recognized", optarg);
 				exit(1);
-			}
+			} 
+			setenv("SLURM_DISTRIBUTION", optarg, 1);
 			break;
 		case 'n':
 			opt.nprocs_set = true;
@@ -1309,6 +1323,11 @@ static void _set_options(int argc, char **argv)
 				opt.propagate = xstrdup(optarg);
 			else
 				opt.propagate = xstrdup("ALL");
+			break;
+		case LONG_OPT_NETWORK:
+			xfree(opt.network);
+			opt.network = xstrdup(optarg);
+			setenv("SLURM_NETWORK", opt.network, 1);
 			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0)
@@ -1895,6 +1914,13 @@ static bool _opt_verify(void)
 	if (opt.acctg_freq >= 0)
 		setenvf(NULL, "SLURM_ACCTG_FREQ", "%d", opt.acctg_freq); 
 
+#ifdef HAVE_AIX
+	if (opt.network == NULL) {
+		opt.network = "us,sn_all,bulk_xfer";
+		setenv("SLURM_NETWORK", opt.network, 1);
+	}
+#endif
+
 	return verified;
 }
 
@@ -2070,6 +2096,7 @@ static void _opt_list()
 	xfree(str);
 	info("reboot         : %s", opt.reboot ? "no" : "yes");
 	info("rotate         : %s", opt.no_rotate ? "yes" : "no");
+	info("network        : %s", opt.network);
 
 	if (opt.blrtsimage)
 		info("BlrtsImage     : %s", opt.blrtsimage);
@@ -2125,6 +2152,7 @@ static void _usage(void)
 "              [--mail-type=type] [--mail-user=user][--nice[=value]]\n"
 "              [--requeue] [--no-requeue] [--ntasks-per-node=n] [--propagate]\n"
 "              [--nodefile=file] [--nodelist=hosts] [--exclude=hosts]\n"
+"              [--network=type]\n"
 "              executable [args...]\n");
 }
 
@@ -2151,6 +2179,8 @@ static void _help(void)
 "  -k, --no-kill               do not kill job on node failure\n"
 "  -s, --share                 share nodes with other jobs\n"
 "  -J, --job-name=jobname      name of job\n"
+"  -m, --distribution=type     distribution method for processes to nodes\n"
+"                              (type = block|cyclic|arbitrary)\n"
 "      --jobid=id              run under already allocated job\n"
 "  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
 "  -q, --quiet                 quiet mode (suppress informational messages)\n"
@@ -2214,6 +2244,11 @@ static void _help(void)
 	spank_print_options (stdout, 6, 30);
 
         printf("\n"
+#ifdef HAVE_AIX				/* AIX/Federation specific options */
+"AIX related options:\n"
+"      --network=type          communication protocol to be used\n"
+"\n"
+#endif
 #ifdef HAVE_BG				/* Blue gene specific options */
 "Blue Gene related options:\n"
 "  -g, --geometry=XxYxZ        geometry constraints of the job\n"
