@@ -83,6 +83,9 @@ typedef struct sbatch_options {
 	bool no_requeue;	/* --no-requeue			*/
 	bool overcommit;	/* --overcommit -O		*/
 	uint16_t shared;	/* --share,   -s		*/
+	enum task_dist_states
+		distribution;	/* --distribution=, -m dist	*/
+	char *network;		/* --network=			*/
 	int  quiet;
 	int  verbose;
 	char *wrap;
