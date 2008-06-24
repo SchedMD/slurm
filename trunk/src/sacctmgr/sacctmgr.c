@@ -99,6 +99,7 @@ main (int argc, char *argv[])
 		{"no_header", 0, 0, 'n'},
 		{"parsable", 0, 0, 'p'},
 		{"quiet",    0, 0, 'q'},
+		{"associations", 0, 0, 's'},
 		{"usage",    0, 0, 'h'},
 		{"verbose",  0, 0, 'v'},
 		{"version",  0, 0, 'V'},
@@ -1406,7 +1407,9 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
      -h or --help: equivalent to \"help\" command                          \n\
      --hide: equivalent to \"hide\" command                                \n\
      -i or --immediate: commit changes immediately                         \n\
+     -n or --no_header: no header will be added to the beginning of output \n\
      -o or --oneliner: equivalent to \"oneliner\" command                  \n\
+     -p or --parsable: output will be '|' delimited                        \n\
      -q or --quiet: equivalent to \"quiet\" command                        \n\
      -s or --associations: equivalent to \"associations\" command          \n\
      -v or --verbose: equivalent to \"verbose\" command                    \n\
@@ -1430,8 +1433,6 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
      list <ENTITY> [<SPECS>]  display info of identified entity, default   \n\
                               is display all.                              \n\
      modify <ENTITY> <SPECS>  modify entity                                \n\
-     no_header                no header will be added to the beginning of  \n\
-                              output.                                      \n\
      oneliner                 report output one record per line.           \n\
      quiet                    print no messages other than error messages. \n\
      quit                     terminate this command.                      \n\
@@ -1441,7 +1442,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
      version                  display tool version number.                 \n\
      !!                       Repeat the last command entered.             \n\
                                                                            \n\
-  <ENTITY> may be \"cluster\", \"account\", or \"user\".                   \n\
+  <ENTITY> may be \"cluster\", \"account\", \"user\", of \"coordinator\".  \n\
                                                                            \n\
   <SPECS> are different for each command entity pair.                      \n\
        list account       - Clusters=, Descriptions=, Format=, Names=,     \n\
@@ -1482,6 +1483,9 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             Partitions=, and QosLevel=                     \n\
        delete user        - Accounts=, AdminLevel=, Clusters=,             \n\
                             DefaultAccounts=, and Names=                   \n\
+                                                                           \n\
+       add coordinator    - Accounts=, and Names=                          \n\
+       delete coordinator - Accounts=, and Names=                          \n\
                                                                            \n\
                                                                            \n\
   All commands entitys, and options are case-insensitive.               \n\n");

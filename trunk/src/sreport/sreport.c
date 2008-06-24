@@ -490,10 +490,11 @@ void _usage () {
 	printf ("\
 sreport [<OPTION>] [<COMMAND>]                                             \n\
     Valid <OPTION> values are:                                             \n\
+     -a or --all_clusters: Use all clusters instead of current             \n\
      -h or --help: equivalent to \"help\" command                          \n\
-     -o or --oneliner: equivalent to \"oneliner\" command                  \n\
+     -n or --no_header: equivalent to \"no_header\" command                \n\
      -q or --quiet: equivalent to \"quiet\" command                        \n\
-     -s or --associations: equivalent to \"associations\" command          \n\
+     -p or --parsable: equivalent to \"parsable\" command                  \n\
      -v or --verbose: equivalent to \"verbose\" command                    \n\
      -V or --version: equivalent to \"version\" command                    \n\
                                                                            \n\
@@ -504,18 +505,63 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
     Valid <COMMAND> values are:                                            \n\
      exit                     terminate sreport                            \n\
      help                     print this description of use.               \n\
-     no_header                no header will be added to the beginning of  \n\
-                              output.                                      \n\
-     oneliner                 report output one record per line.           \n\
      quiet                    print no messages other than error messages. \n\
      quit                     terminate this command.                      \n\
-     parsable                 output will be | delimited                   \n\
      verbose                  enable detailed logging.                     \n\
      version                  display tool version number.                 \n\
      !!                       Repeat the last command entered.             \n\
                                                                            \n\
+    Valid report types are:                                                \n\
+     cluster <REPORT> <OPTIONS>                                            \n\
+     job <REPORT> <OPTIONS>                                                \n\
+     user <REPORT> <OPTIONS>                                               \n\
                                                                            \n\
-  All commands, entities, and options are case-insensitive.              \n\n");
+  <REPORT> is different for each report type.                              \n\
+     cluster - Utilization                                                 \n\
+     job     - Sizes                                                       \n\
+     user    - TopUsage                                                    \n\
+                                                                           \n\
+  <OPTIONS> are different for each report type.                            \n\
+                                                                           \n\
+     COMMON FOR ALL TYPES                                                  \n\
+             - All_Clusters     - Use all monitored clusters default is    \n\
+                                  local cluster.                           \n\
+             - End=<OPT>        - Period ending for report.                \n\
+                                  Default is 23:59:59 of previous day.     \n\
+             - Format=<OPT>     - Comma separated list of fields to display\n\
+                                  in report.                               \n\
+             - Start=<OPT>      - Period start for report.                 \n\
+                                  Default is 00:00:00 of previous day.     \n\
+                                                                           \n\
+     cluster - Names=<OPT>      - List of clusters to include in report    \n\
+                                  Default is local cluster.                \n\
+                                                                           \n\
+     job     - Accounts=<OPT>   - List of accounts to use for the report   \n\
+                                  Default is all.                          \n\
+             - Clusters=<OPT>   - List of clusters to include in report.   \n\
+                                  Default is local cluster.                \n\
+             - GID=<OPT>        - List of group ids to include in report   \n\
+                                  Default is all.                          \n\
+             - Grouping=<OPT>   - Comma separated list of size groupings.  \n\
+                                  (i.e. 50,100,150 would group job cpu count\n\
+                                   1-49, 50-99, 100-149, > 150).           \n\
+             - Jobs=<OPT>       - List of jobs/steps to include in report. \n\
+                                  Default is all.                          \n\
+             - Partitions=<OPT> - List of partitions jobs ran on to include\n\
+                                  in report.  Default is all.              \n\
+             - Users=<OPT>      - List of users jobs to include in report. \n\
+                                  Default is all.                          \n\
+                                                                           \n\
+     user    - Clusters=<OPT>   - List of clusters to include in report.   \n\
+                                  Default is local cluster.                \n\
+             - Group            - Group all accounts together for each user.\n\
+                                  Default is a separate entry for each user\n\
+                                  and account reference.                   \n\
+             - Users=<OPT>      - List of users jobs to include in report. \n\
+                                  Default is all.                          \n\
+                                                                           \n\
+                                                                           \n\
+  All commands and options are case-insensitive.                         \n\n");
 	
 }
 
