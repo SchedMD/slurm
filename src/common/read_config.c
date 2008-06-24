@@ -861,14 +861,6 @@ static void _init_slurmd_nodehash(void)
 	}
 }
 
-extern void slurm_conf_nodehash_init(void)
-{
-	slurm_conf_lock();
-	_init_slurmd_nodehash();
-	slurm_conf_unlock();
-}
-
-
 /*
  * Caller needs to call slurm_conf_lock() and hold the lock before
  * calling this function (and call slurm_conf_unlock() afterwards).
