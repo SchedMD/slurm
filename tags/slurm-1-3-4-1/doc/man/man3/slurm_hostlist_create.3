@@ -1,0 +1,128 @@
+.TH "Slurm API" "3" "September 2006" "Morris Jette" "Slurm host list support functions"
+
+.SH "NAME"
+slurm_hostlist_create, slurm_hostlist_shift, slurm_hostlist_destroy
+\- Slurm host list support functions
+
+.SH "SYNTAX"
+.LP 
+#include <slurm/slurm.h>
+.LP 
+.LP
+hostlist_t \fBslurm_hostlist_create\fR (
+.br
+	char *\fInode_list\fP
+.br
+);
+.LP
+char * \fBslurm_hostlist_shift\fR (
+.br
+	hostlist_t \fIhost_list\fP
+.br
+);
+.LP
+void \fBslurm_hostlist_destroy\fR (
+.br
+	hostlist_t \fIhost_list\fP
+.br
+);
+
+.SH "ARGUMENTS"
+.LP 
+.TP
+\fInode_list\fP
+A list of nodes as returned by the 
+\fBslurm_job_step_create\fR functions. The returned value may include a simple 
+range format to describe numeric ranges of values and/or multiple numeric 
+values (e.g. "linux[1\-3,6]" represents "linux1", "linux2", "linux3", and "linux6").
+.TP
+\fIhost_list\fP
+A hostlist created by the \fBslurm_hostlist_create\fR function. 
+
+.SH "DESCRIPTION"
+.LP
+\fBslurm_hostlist_create\fR creates a database of node names from a range format 
+describing node names. Use \fBslurm_hostlist_destroy\fR to release storage associated 
+with the database when no longer required.
+.LP
+\fBslurm_hostlist_shift\fR extracts the first entry from the host list database created 
+by the \fBslurm_hostlist_create\fR function.
+.LP
+\fBslurm_hostlist_destroy\fR releases storage associated with a database created by 
+\fBslurm_hostlist_create\fR when no longer required.
+
+.SH "RETURN VALUE"
+.LP
+\fBslurm_hostlist_create\fR returns the host list database or NULL if memory can not be 
+allocated for the database.
+
+.LP
+\fBslurm_hostlist_shift\fR returns a character string or NULL if no entries remain in 
+the database.
+
+.SH "EXAMPLE"
+.LP 
+#include <stdio.h>
+.br
+#include <hostlist.h>
+.br
+#include <slurm.h>
+.LP 
+int main (int argc, char *argv[])
+.br 
+{
+.br
+	hostlist_t my_hostlist;
+.br
+	char *hostnames, *host;
+.LP
+	/* generate a list of hostnames, possibly using a */
+.br
+	/*    slurm job step creation function */
+.LP
+	my_hostlist = slurm_hostlist_create (hostnames);
+.br
+	if (my_hostlist == NULL) {
+.br
+		fprintf (stderr, "No memory\\n");
+.br
+		exit (1);
+.br
+	}
+.LP
+	while ( (host = slurm_hostlist_shift(my_hostlist)) )
+.br
+		printf ("host = %s\\n", host); 
+.LP
+	slurm_hostlist_destroy (my_hostlist) ;
+.br
+	exit (0);
+.br 
+}
+
+.SH "NOTE"
+These functions are included in the libslurm library, 
+which must be linked to your process for use
+(e.g. "cc \-lslurm myprog.c").
+
+.SH "COPYING"
+Copyright (C) 2002\-2006 The Regents of the University of California.
+Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+LLNL\-CODE\-402394.
+.LP
+This file is part of SLURM, a resource management program.
+For details, see <https://computing.llnl.gov/linux/slurm/>.
+.LP
+SLURM is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+.SH "SEE ALSO"
+.LP 
+\fBslurm_get_job_steps\fR(3), \fBslurm_load_jobs\fR(3), \fBslurm_load_partitions\fB(3)
