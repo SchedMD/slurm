@@ -1259,10 +1259,13 @@ The node configuration specified the following information:
 Name that SLURM uses to refer to a node (or base partition for 
 BlueGene systems). 
 Typically this would be the string that "/bin/hostname \-s" returns.
-It may also be the fully qualified domane name as returned by "/bin/hostname \-f"
-(e.g. "foo1.bar.com"), although that may prevent use of hostlist expressions
-(the numeric portion in brackets must be at the end of the string).
-Fully qualified domain names are incompatible with the
+It may also be the fully qualified domain name as returned by "/bin/hostname \-f"
+(e.g. "foo1.bar.com"), or any valid domain name associated with the host
+through the host database (/etc/hosts) or DNS, depending on the resolver
+settings.  Note that if the short form of the hostname is not used, it
+may prevent use of hostlist expressions (the numeric portion in brackets
+must be at the end of the string).
+Only short hostname forms are compatible with the
 switch/elan and switch/federation plugins at this time.
 It may also be an arbitrary string if \fBNodeHostname\fR is specified.
 If the \fBNodeName\fR is "DEFAULT", the values specified 
@@ -1279,9 +1282,12 @@ considered adjacent in the computer.
 \fBNodeHostname\fR
 Typically this would be the string that "/bin/hostname \-s" returns. 
 It may also be the fully qualified domain name as returned by "/bin/hostname \-f"
-(e.g. "foo1.bar.com"), although that may prevent use of hostlist expressions
-(the numeric portion in brackets must be at the end of the string).
-Fully qualified domain names are incompatible with the
+(e.g. "foo1.bar.com"), or any valid domain name associated with the host
+through the host database (/etc/hosts) or DNS, depending on the resolver
+settings.  Note that if the short form of the hostname is not used, it
+may prevent use of hostlist expressions (the numeric portion in brackets
+must be at the end of the string).
+Only short hostname forms are compatible with the
 switch/elan and switch/federation plugins at this time.
 A node range expression can be used to specify a set of nodes.
 If an expression is used, the number of nodes identified by 
