@@ -616,9 +616,7 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 			if(mysql_conn->rollback) {
 				mysql_db_rollback(mysql_conn->acct_mysql_db);
 			}
-			list_destroy(mysql_conn->update_list);
-			mysql_conn->update_list =
-				list_create(destroy_acct_update_object);
+			list_flush(mysql_conn->update_list);
 			return SLURM_ERROR;
 		}
 
@@ -640,9 +638,7 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 			if(mysql_conn->rollback) {
 				mysql_db_rollback(mysql_conn->acct_mysql_db);
 			}
-			list_destroy(mysql_conn->update_list);
-			mysql_conn->update_list =
-				list_create(destroy_acct_update_object);
+			list_flush(mysql_conn->update_list);
 			return SLURM_ERROR;
 		}
 		xfree(query);
@@ -1836,6 +1832,7 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	struct passwd *pw = NULL;
 	char *user = NULL;
 	int affect_rows = 0;
+	int added = 0;
 
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return SLURM_ERROR;
@@ -1931,7 +1928,8 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			xfree(extra);
 			xfree(cols);
 			xfree(vals);
-			continue;
+			added=0;
+			break;
 		}
 
 		affect_rows = _last_affected_rows(mysql_conn->acct_mysql_db);
@@ -1967,7 +1965,8 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		if(rc != SLURM_SUCCESS) {
 			error("Couldn't add cluster root assoc");
 			xfree(extra);
-			continue;
+			added=0;
+			break;
 		}
 		xstrfmtcat(query,
 			   "insert into %s "
@@ -1981,9 +1980,17 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
 			error("Couldn't add txn");
-		}
+		} else
+			added++;
 	}
 	list_iterator_destroy(itr);
+
+	if(!added) {
+		if(mysql_conn->rollback) {
+			mysql_db_rollback(mysql_conn->acct_mysql_db);
+		}
+		list_flush(mysql_conn->update_list);
+	}
 
 	return rc;
 #else
@@ -2337,6 +2344,9 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 		xfree(extra);
 	}
 	list_iterator_destroy(itr);
+	if(rc != SLURM_SUCCESS)
+		goto end_it;
+
 	if(incr) {
 		char *up_query = xstrdup_printf(
 			"UPDATE %s SET rgt = rgt+%d "
@@ -2359,6 +2369,7 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 		
 	}
 
+end_it:
 	if(rc != SLURM_ERROR) {
 		if(txn_query) {
 			xstrcat(txn_query, ";");
@@ -2370,9 +2381,14 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 				rc = SLURM_SUCCESS;
 			}
 		}
-	} else
+	} else {
 		xfree(txn_query);
-	
+		if(mysql_conn->rollback) {
+			mysql_db_rollback(mysql_conn->acct_mysql_db);
+		}
+		list_flush(mysql_conn->update_list);
+	}
+
 	xfree(old_parent);
 	xfree(old_cluster);
 					
@@ -2906,7 +2922,7 @@ extern List acct_storage_p_modify_associations(mysql_conn_t *mysql_conn,
 		list_iterator_destroy(itr);
 		xstrcat(extra, ")");
 	} else {
-		info("no user specified");
+		debug4("no user specified");
 		xstrcat(extra, " && user = '' ");
 	}
 
@@ -2993,9 +3009,29 @@ extern List acct_storage_p_modify_associations(mysql_conn_t *mysql_conn,
 
 		if(!is_admin) {
 			acct_coord_rec_t *coord = NULL;
+			char *account = row[MASSOC_ACCT];
+
+			/* Here we want to see if the person
+			 * is a coord of the parent account
+			 * since we don't want him to be able
+			 * to alter the limits of the account
+			 * he is directly coord of.  They
+			 * should be able to alter the
+			 * sub-accounts though. If no parent account
+			 * that means we are talking about a user
+			 * association so account is really the parent
+			 * of the user a coord can change that all day long.
+			 */
+			if(row[MASSOC_PACCT][0])
+				account = row[MASSOC_PACCT];
+
 			if(!user.coord_accts) { // This should never
 						// happen
-				error("We are here with no coord accts");
+				error("We are here with no coord accts.");
+				if(mysql_conn->rollback) {
+					mysql_db_rollback(
+						mysql_conn->acct_mysql_db);
+				}
 				errno = ESLURM_ACCESS_DENIED;
 				mysql_free_result(result);
 				xfree(vals);
@@ -3004,16 +3040,36 @@ extern List acct_storage_p_modify_associations(mysql_conn_t *mysql_conn,
 			}
 			itr = list_iterator_create(user.coord_accts);
 			while((coord = list_next(itr))) {
-				if(!strcasecmp(coord->acct_name, row[1]))
+				if(!strcasecmp(coord->acct_name, account))
 					break;
 			}
 			list_iterator_destroy(itr);
 
 			if(!coord) {
-				error("User %s(%d) does not have the "
-				      "ability to change this account (%s)",
-				      user.name, user.uid, row[1]);
-				continue;
+				if(row[MASSOC_PACCT][0])
+					error("User %s(%d) can not modify "
+					      "account (%s) because they "
+					      "are not coordinators of "
+					      "parent account '%s'.",
+					      user.name, user.uid,
+					      row[MASSOC_ACCT], 
+					      row[MASSOC_PACCT]);
+				else
+					error("User %s(%d) does not have the "
+					      "ability to modify the account "
+					      "(%s).",
+					      user.name, user.uid, 
+					      row[MASSOC_ACCT]);
+					
+				if(mysql_conn->rollback) {
+					mysql_db_rollback(
+						mysql_conn->acct_mysql_db);
+				}
+				errno = ESLURM_ACCESS_DENIED;
+				mysql_free_result(result);
+				xfree(vals);
+				list_destroy(ret_list);
+				return NULL;
 			}
 		}
 
@@ -3101,17 +3157,19 @@ extern List acct_storage_p_modify_associations(mysql_conn_t *mysql_conn,
 			if(mysql_conn->rollback) {
 				mysql_db_rollback(mysql_conn->acct_mysql_db);
 			}
-			list_destroy(mysql_conn->update_list);
-			mysql_conn->update_list =
-				list_create(destroy_acct_update_object);
+			list_flush(mysql_conn->update_list);
 			list_destroy(ret_list);
 			xfree(vals);
+			errno = rc;
 			return NULL;
 		}
 	}
 
 
 	if(!list_count(ret_list)) {
+		if(mysql_conn->rollback) {
+			mysql_db_rollback(mysql_conn->acct_mysql_db);
+		}
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		debug3("didn't effect anything");
 		xfree(vals);
@@ -3123,6 +3181,10 @@ extern List acct_storage_p_modify_associations(mysql_conn_t *mysql_conn,
 		if(_modify_common(mysql_conn, DBD_MODIFY_ASSOCS, now,
 				  user_name, assoc_table, name_char, vals)
 		   == SLURM_ERROR) {
+			if(mysql_conn->rollback) {
+				mysql_db_rollback(mysql_conn->acct_mysql_db);
+			}
+			list_flush(mysql_conn->update_list);
 			error("Couldn't modify associations");
 			list_destroy(ret_list);
 			ret_list = NULL;
@@ -3411,7 +3473,12 @@ extern List acct_storage_p_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 				error("User %s(%d) does not have the "
 				      "ability to change this account (%s)",
 				      user.name, user.uid, row[1]);
-				continue;
+				errno = ESLURM_ACCESS_DENIED;
+				list_destroy(ret_list);
+				list_destroy(user_list);
+				xfree(extra);
+				mysql_free_result(result);
+				return NULL;
 			}
 		}
 		if(!last_user || strcasecmp(last_user, row[0])) {
@@ -3896,6 +3963,10 @@ extern List acct_storage_p_remove_associations(mysql_conn_t *mysql_conn,
 	mysql_free_result(result);
 
 	if(!name_char) {
+		if(mysql_conn->rollback) {
+			mysql_db_rollback(mysql_conn->acct_mysql_db);
+		}
+		list_flush(mysql_conn->update_list);
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		debug3("didn't effect anything\n%s", query);
 		xfree(query);
@@ -3912,6 +3983,10 @@ extern List acct_storage_p_remove_associations(mysql_conn_t *mysql_conn,
 	debug3("%d query\n%s", mysql_conn->conn, query);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->acct_mysql_db, query, 0))) {
+		if(mysql_conn->rollback) {
+			mysql_db_rollback(mysql_conn->acct_mysql_db);
+		}
+		list_flush(mysql_conn->update_list);
 		xfree(query);
 		xfree(name_char);
 		return NULL;
@@ -3941,7 +4016,8 @@ extern List acct_storage_p_remove_associations(mysql_conn_t *mysql_conn,
 				error("User %s(%d) does not have the "
 				      "ability to change this account (%s)",
 				      user.name, user.uid, row[RASSOC_ACCT]);
-				continue;
+				errno = ESLURM_ACCESS_DENIED;
+				goto end_it;
 			}
 		}
 		if(row[RASSOC_PART][0]) { 
@@ -3988,16 +4064,20 @@ extern List acct_storage_p_remove_associations(mysql_conn_t *mysql_conn,
 	if(_remove_common(mysql_conn, DBD_REMOVE_ASSOCS, now,
 			  user_name, assoc_table, name_char, assoc_char)
 	   == SLURM_ERROR) {
-		list_destroy(ret_list);
 		xfree(name_char);
 		xfree(assoc_char);
-		return NULL;
+		goto end_it;
 	}
 	xfree(name_char);
 	xfree(assoc_char);
 
 	return ret_list;
 end_it:
+	if(mysql_conn->rollback) {
+		mysql_db_rollback(mysql_conn->acct_mysql_db);
+	}
+	list_flush(mysql_conn->update_list);
+	
 	if(ret_list) {
 		list_destroy(ret_list);
 		ret_list = NULL;
