@@ -32,6 +32,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <limits.h>       /* INT_MAX */
 #include "src/plugins/task/affinity/dist_tasks.h"
 
 static slurm_lllp_ctx_t *lllp_ctx = NULL;	/* binding context */
