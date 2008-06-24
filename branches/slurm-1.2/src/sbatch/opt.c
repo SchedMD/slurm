@@ -107,6 +107,7 @@
 #define LONG_OPT_COMMENT     0x117
 #define LONG_OPT_WRAP        0x118
 #define LONG_OPT_REQUEUE     0x119
+#define LONG_OPT_NETWORK     0x120
 #define LONG_OPT_BLRTS_IMAGE     0x140
 #define LONG_OPT_LINUX_IMAGE     0x141
 #define LONG_OPT_MLOADER_IMAGE   0x142
@@ -668,6 +669,7 @@ static struct option long_options[] = {
 	{"wrap",          required_argument, 0, LONG_OPT_WRAP},
 	{"get-user-env",  optional_argument, 0, LONG_OPT_GET_USER_ENV},
 	{"propagate",     optional_argument, 0, LONG_OPT_PROPAGATE},
+	{"network",       required_argument, 0, LONG_OPT_NETWORK},
 	{NULL,            0,                 0, 0}
 };
 
@@ -1324,6 +1326,13 @@ static void _set_options(int argc, char **argv)
 			else
 				opt.propagate = xstrdup("ALL");
 			break;
+		case LONG_OPT_NETWORK:
+			xfree(opt.network);
+			opt.network = xstrdup(optarg);
+#ifdef HAVE_AIX
+			setenv("SLURM_NETWORK", opt.network, 1);
+#endif
+			break;
 		default:
 			fatal("Unrecognized command line parameter %c",
 			      opt_char);
@@ -1816,6 +1825,13 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
+#ifdef HAVE_AIX
+	if (opt.network == NULL) {
+		opt.network = "us,sn_all,bulk_xfer";
+		setenv("SLURM_NETWORK", opt.network, 1);
+	}
+#endif
+
 	return verified;
 }
 
@@ -2130,6 +2146,7 @@ static void _opt_list()
 	xfree(str);
 	info("reboot         : %s", opt.reboot ? "no" : "yes");
 	info("rotate         : %s", opt.no_rotate ? "yes" : "no");
+	info("network        : %s", opt.network);
 
 	if (opt.blrtsimage)
 		info("BlrtsImage     : %s", opt.blrtsimage);
@@ -2176,6 +2193,7 @@ static void _usage(void)
 "              [--mail-type=type] [--mail-user=user][--nice[=value]]\n"
 "              [--no-requeue] [--ntasks-per-node=n] [--propagate]\n"
 "              [--nodefile=file] [--nodelist=hosts] [--exclude=hosts]\n"
+"              [--network=hosts]\n"
 "              executable [args...]\n");
 }
 
@@ -2235,6 +2253,11 @@ static void _help(void)
 "      --exclusive             allocate nodes in exclusive mode when\n" 
 "                              cpu consumable resource is enabled\n"
 "\n"
+#ifdef HAVE_AIX				/* AIX/Federation specific options */
+"AIX related options:\n"
+"      --network=type          communication protocol to be used\n"
+"\n"
+#endif
 #ifdef HAVE_BG				/* Blue gene specific options */
 "Blue Gene related options:\n"
 "  -g, --geometry=XxYxZ        geometry constraints of the job\n"
