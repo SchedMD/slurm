@@ -406,6 +406,7 @@ static void _opt_default()
 	opt.nodes_set = false;
 	opt.time_limit = NO_VAL;
 	opt.partition = NULL;
+	opt.distribution = NULL;
 
 	opt.job_name = NULL;
 	opt.jobid    = NO_VAL;
@@ -481,6 +482,7 @@ env_vars_t env_vars[] = {
   {"SBATCH_BLRTS_IMAGE",   OPT_STRING,     &opt.blrtsimage,    NULL           },
   {"SBATCH_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL           },
   {"SBATCH_DEBUG",         OPT_DEBUG,      NULL,               NULL           },
+  {"SLURM_DISTRIBUTION",   OPT_STRING ,    &opt.distribution,  NULL           },
   {"SBATCH_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL           },
   {"SBATCH_IMMEDIATE",     OPT_BOOL,       &opt.immediate,     NULL           },
   {"SBATCH_JOBID",         OPT_INT,        &opt.jobid,         NULL           },
@@ -624,6 +626,7 @@ static struct option long_options[] = {
 	{"immediate",     no_argument,       0, 'I'},
 	{"job-name",      required_argument, 0, 'J'},
 	{"no-kill",       no_argument,       0, 'k'},
+	{"distribution",  required_argument, 0, 'm'},
 	{"tasks",         required_argument, 0, 'n'},	
 	{"ntasks",        required_argument, 0, 'n'},
 	{"nodes",         required_argument, 0, 'N'},
@@ -674,7 +677,7 @@ static struct option long_options[] = {
 };
 
 static char *opt_string =
-	"+a:bc:C:d:D:e:F:g:hHi:IJ:kn:N:o:Op:qR:st:uU:vVw:x:";
+	"+a:bc:C:d:D:e:F:g:hHi:IJ:km:n:N:o:Op:qR:st:uU:vVw:x:";
 
 
 /*
@@ -1096,6 +1099,10 @@ static void _set_options(int argc, char **argv)
 		case 'k':
 			opt.no_kill = true;
 			break;
+		case 'm':
+			opt.distribution = xstrdup(optarg);
+			setenv("SLURM_DISTRIBUTION", opt.distribution, 1);
+			break;
 		case 'n':
 			opt.nprocs_set = true;
 			opt.nprocs = 
@@ -1329,9 +1336,7 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_NETWORK:
 			xfree(opt.network);
 			opt.network = xstrdup(optarg);
-#ifdef HAVE_AIX
 			setenv("SLURM_NETWORK", opt.network, 1);
-#endif
 			break;
 		default:
 			fatal("Unrecognized command line parameter %c",
@@ -2120,6 +2125,7 @@ static void _opt_list()
 	info("partition      : %s",
 		opt.partition == NULL ? "default" : opt.partition);
 	info("job name       : `%s'", opt.job_name);
+	info("distribution   : %s", opt.distribution);
 	info("verbose        : %d", opt.verbose);
 	info("immediate      : %s", tf_(opt.immediate));
 	info("no-requeue     : %s", tf_(opt.no_requeue));
@@ -2218,6 +2224,8 @@ static void _help(void)
 "  -k, --no-kill               do not kill job on node failure\n"
 "  -s, --share                 share nodes with other jobs\n"
 "  -J, --job-name=jobname      name of job\n"
+"  -m, --distribution=type     distribution method for processes to nodes\n"
+"                              (type = block|cyclic|arbitrary)\n"
 "      --jobid=id              run under already allocated job\n"
 "  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
 "  -q, --quiet                 quiet mode (suppress informational messages)\n"

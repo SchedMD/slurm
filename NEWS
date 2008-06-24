@@ -5,7 +5,7 @@ documents those changes that are of interest to users and admins.
 =========================
  -- Disable scancel of job in RootOnly partition only for sched/wiki2 (Moab).
     Permit user scancel from other configurations.
- -- Add support for sbatch --network option.
+ -- Add support for sbatch --distribution and --network options.
 
 * Changes in SLURM 1.2.31
 =========================
