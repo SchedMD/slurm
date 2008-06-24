@@ -7,28 +7,33 @@ sreport \- Used to generate reports from the slurm accounting data.
 \fBssreport\fR [\fIOPTIONS\fR...] [\fICOMMAND\fR...]
 
 .SH "DESCRIPTION"
-\fBssreport\fR is used to generator certain reports.  Right now
-sreport is a template that does not really do anything.  In the future
-it will provide a view into accounting data gathered from slurm via
+\fBssreport\fR is used to generate certain reports.  More can be added
+at any time.  It provides a view into accounting data gathered from slurm via
 the account information maintained within a database with the interface 
-being provided by \fBslurmdbd\fR (Slurm Database daemon).
+being provided by the \fBslurmdbd\fR (Slurm Database daemon).
 
 .SH "OPTIONS"
 
 .TP
+\fB\-a\fR, \fB\-\-all_clusters\fR
+Use all clusters instead of only cluster from where the command was run.
+
 \fB\-h\fR, \fB\-\-help\fR
 Print a help message describing the usage of \fBssreport\fR.
 This is equivalent to the \fBhelp\fR command.
 
 .TP
-\fB\-o\fR, \fB\-\-oneliner\fR
-Print information one line per record.
-This is equivalent to the \fBoneliner\fR command.
+\fB\-n\fR, \fB\-\-no_header\fR
+Don't display header when listing results.
 
 .TP
 \fB\-q\fR, \fB\-\-quiet\fR
 Print no warning or informational messages, only error messages.
 This is equivalent to the \fBquiet\fR command.
+
+.TP
+\fB\-p\fR, \fB\-\-parsable\fR
+Make output '|' delimited.
 
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
@@ -40,8 +45,7 @@ This is equivalent to the \fBverbose\fR command.
 Print version information and exit.
 This is equivalent to the \fBversion\fR command.
 
-.TP
-\fBCOMMANDS\fR
+.SH "COMMANDS"
 
 .TP
 \fBexit\fP
@@ -51,14 +55,6 @@ Identical to the \fBquit\fR command.
 .TP
 \fBhelp\fP
 Display a description of sreport options and commands.
-
-.TP
-\fBhide\fP
-Do not display information about hidden or deleted entities. 
-
-.TP
-\fBoneliner\fP
-Print information one line per record.
 
 .TP
 \fBquiet\fP
@@ -83,9 +79,89 @@ Display the version number of sreport being executed.
 \fB!!\fP
 Repeat the last command executed.
 
+.SH "REPORT TYPES"
+.TP
+\fBcluster\fP, \fBjob\fP, and \fBuser\fP
+
+.TP
+Various reports are as follows...
+     cluster - Utilization
+     job     - Sizes
+     user    - TopUsage
+
+.TP
+Each report type has various options...
+
+.TP
+COMMON FOR ALL TYPES
+.RS
+.TP
+.B All_Clusters
+Use all monitored clusters default is local cluster.
+.TP
+.B End=<OPT>
+Period ending for report. Default is 23:59:59 of previous day.
+.TP
+.B Format=<OPT>
+Comma separated list of fields to display in report.
+.TP
+.B Start=<OPT>
+Period start for report.  Default is 00:00:00 of previous day.
+.RE
+
+.TP
+CLUSTER
+.RS
+.TP
+.B Names=<OPT>
+List of clusters to include in report.  Default is local cluster.
+.RE
+
+.TP
+JOB    
+.RS
+.TP
+.B Accounts=<OPT>
+List of accounts to use for the report Default is all.
+.TP
+.B Clusters=<OPT>
+List of clusters to include in report.  Default is local cluster.
+.TP
+.B GID=<OPT>
+List of group ids to include in report.  Default is all.
+.TP
+.B Grouping=<OPT>
+Comma separated list of size groupings.   (i.e. 50,100,150 would group job cpu count 1-49, 50-99, 100-149, > 150).
+.TP
+.B Jobs=<OPT>
+List of jobs/steps to include in report.  Default is all.
+.TP
+.B Partitions=<OPT>
+List of partitions jobs ran on to include in report.  Default is all.
+.TP
+.B Users=<OPT>
+List of users jobs to include in report.  Default is all.
+.RE
+
+.TP
+USER
+.RS
+.TP
+.B Clusters=<OPT>
+List of clusters to include in report. Default is local cluster.
+.TP
+.B Group
+Group all accounts together for each user.  Default is a separate entry for each user and account reference.
+.TP
+.B Users=<OPT>
+List of users jobs to include in report.  Default is all.
+.RE
+
+
 .SH "EXAMPLES"
 .eo
 .br
+
 .ec
 
 .SH "COPYING"
@@ -107,5 +183,4 @@ FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.
 
 .SH "SEE ALSO"
-\fBslurm.conf\fR(5)
 \fBslurmdbd\fR(8)
