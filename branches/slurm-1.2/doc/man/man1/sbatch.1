@@ -206,6 +206,55 @@ new job steps on the remaining nodes in their allocation.
 By default SLURM terminates the entire job allocation if any node fails in its
 range of allocated nodes.
 
+..TP
+\fB-u\fR, \fB\-\-unbuffered\fR
+do not line buffer stdout from remote tasks. This option cannot be used
+with \fI\-\-label\fR. 
+.TP
+\fB\-m\fR, \fB\-\-distribution\fR=
+(\fIblock\fR|\fIcyclic\fR|\fIarbitrary\fR|\fIplane=<options>\fR)
+Specify an alternate distribution method for remote processes.
+.RS
+.TP
+.B block
+The block method of distribution will allocate processes in\-order to
+the cpus on a node. If the number of processes exceeds the number of 
+cpus on all of the nodes in the allocation then all nodes will be 
+utilized. For example, consider an allocation of three nodes each with 
+two cpus. A four\-process block distribution request will distribute 
+those processes to the nodes with processes one and two on the first 
+node, process three on the second node, and process four on the third node.  
+Block distribution is the default behavior if the number of tasks 
+exceeds the number of nodes requested.
+.TP
+.B cyclic
+The cyclic method distributes processes in a round\-robin fashion across
+the allocated nodes. That is, process one will be allocated to the first
+node, process two to the second, and so on. This is the default behavior
+if the number of tasks is no larger than the number of nodes requested.
+.TP
+.B plane
+The tasks are distributed in blocks of a specified size.
+The options include a number representing the size of the task block.
+This is followed by an optional specification of the task distribution 
+scheme within a block of tasks and between the blocks of tasks.
+For more details (including examples and diagrams), please see
+.br
+https://computing.llnl.gov/linux/slurm/mc_support.html
+.br
+and
+.br
+https://computing.llnl.gov/linux/slurm/dist_plane.html.
+.TP
+.B arbitrary
+The arbitrary method of distribution will allocate processes in\-order as 
+listed in file designated by the environment variable SLURM_HOSTFILE.  If
+this variable is listed it will over ride any other method specified. 
+If not set the method will default to block.  Inside the hostfile must
+contain at minimum the number of hosts requested.  If requesting tasks
+(\-n) your tasks will be laid out on the nodes in the order of the file.
+.RE
+
 .TP
 \fB\-\-mail\-type\fR=\fItype\fR
 Notify user by email when certain event types occur. 
@@ -517,6 +566,9 @@ Same as \fB\-\-conn\-type\fR.
 .TP
 \fBSBATCH_DEBUG\fR
 Same as \fB\-v\fR or \fB\-\-verbose\fR.
+.TP
+\fBSBATCH_DISTRIBUTION\fR
+Same as \fB\-m\fR or \fB\-\-distribution\fR.
 .TP
 \fBSBATCH_EXCLUSIVE\fR
 Same as \fB\-\-exclusive\fR.
