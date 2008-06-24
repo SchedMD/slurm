@@ -103,6 +103,7 @@ typedef struct sbatch_options {
 	bool overcommit;	/* --overcommit -O		*/
 	uint16_t shared;	/* --share,   -s		*/
 	char *licenses;		/* --licenses, -L		*/
+	char *network;		/* --network=			*/
 	int  quiet;
 	int  verbose;
 	char *wrap;
