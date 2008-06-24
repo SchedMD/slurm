@@ -1556,7 +1556,7 @@ extern List jobacct_storage_p_get_jobs_cond(PGconn *acct_pgsql_db,
 					    acct_job_cond_t *job_cond)
 {
 	List job_list = NULL;
-#ifdef HAVE_MYSQL
+#ifdef HAVE_PGSQL
 	if(!acct_pgsql_db || PQstatus(acct_pgsql_db) != CONNECTION_OK) {
 		if(!pgsql_get_db_connection(&acct_pgsql_db,
 					    pgsql_db_name, pgsql_db_info))
