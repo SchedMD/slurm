@@ -51,9 +51,11 @@ extern void acct_policy_job_begin(struct job_record *job_ptr);
 extern void acct_policy_job_fini(struct job_record *job_ptr);
 
 /*
- * acct_policy_job_runnable - Determine of the specified job
- *	can execute right now or not depending upon accounting
- *	policy (e.g. running job limit for this association).
+ * acct_policy_job_runnable - Determine of the specified job can execute
+ *	right now or not depending upon accounting policy (e.g. running
+ *	job limit for this association). If the association limits prevent
+ *	the job from ever running (lowered limits since job submissin), 
+ *	then cancel the job.
  */
 extern bool acct_policy_job_runnable(struct job_record *job_ptr);
 

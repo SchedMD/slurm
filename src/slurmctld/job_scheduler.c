@@ -284,10 +284,8 @@ extern int schedule(void)
 		job_ptr = job_queue[i].job_ptr;
 		if (job_ptr->priority == 0)	/* held */
 			continue;
-		if (!acct_policy_job_runnable(job_ptr)) {
-			job_ptr->state_reason = WAIT_ASSOC_LIMIT;
+		if (!acct_policy_job_runnable(job_ptr))
 			continue;
-		}
 		if (_failed_partition(job_ptr->part_ptr, failed_parts, 
 				      failed_part_cnt)) {
 			job_ptr->state_reason = WAIT_PRIORITY;
