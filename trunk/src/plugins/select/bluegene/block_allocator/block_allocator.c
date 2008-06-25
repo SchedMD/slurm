@@ -1571,9 +1571,6 @@ extern int removable_set_bps(char *bps)
 extern int reset_all_removed_bps()
 {
 	int x;
-#ifdef HAVE_BG
-	int y,z;
-#endif
 
 	for (x = 0; x < DIM_SIZE[X]; x++) {
 #ifdef HAVE_BG
