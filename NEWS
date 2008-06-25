@@ -3,7 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.3.5
 ========================
- -- Fix in slurmdbd processing of auth/munge authtentication key. 
+ -- Fix processing of auth/munge authtentication key for messages originating 
+    in slurmdbd and sent to slurmctld. 
 
 * Changes in SLURM 1.3.4
 ========================
