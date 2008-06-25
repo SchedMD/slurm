@@ -1353,11 +1353,15 @@ static void set_options(const int argc, char **argv)
 				_get_int(optarg, "max-exit-timeout", true);
 			break;
 		case LONG_OPT_UID:
+			if (opt.euid != (uid_t) -1)
+				fatal ("duplicate --uid option");
 			opt.euid = uid_from_string (optarg);
 			if (opt.euid == (uid_t) -1)
 				fatal ("--uid=\"%s\" invalid", optarg);
 			break;
 		case LONG_OPT_GID:
+			if (opt.egid != (gid_t) -1)
+				fatal ("duplicate --gid option");
 			opt.egid = gid_from_string (optarg);
 			if (opt.egid == (gid_t) -1)
 				fatal ("--gid=\"%s\" invalid", optarg);
@@ -2011,9 +2015,6 @@ static bool _opt_verify(void)
 
 	if ((opt.egid != (gid_t) -1) && (opt.egid != opt.gid)) 
 		opt.gid = opt.egid;
-
-        if ((opt.egid != (gid_t) -1) && (opt.egid != opt.gid))
-	        opt.gid = opt.egid;
 
 	if (opt.propagate && parse_rlimits( opt.propagate, PROPAGATE_RLIMITS)) {
 		error( "--propagate=%s is not valid.", opt.propagate );
