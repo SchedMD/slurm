@@ -1,6 +1,10 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.3.5
+========================
+ -- Fix in slurmdbd processing of auth/munge authtentication key. 
+
 * Changes in SLURM 1.3.4
 ========================
  -- Some updates to man page formatting from Gennaro Oliva, ICAR.
