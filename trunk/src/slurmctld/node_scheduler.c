@@ -834,11 +834,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
 
-	if (!acct_policy_job_runnable(job_ptr)) {
-		job_ptr->state_reason = WAIT_ASSOC_LIMIT;
-		last_job_update = now;
+	if (!acct_policy_job_runnable(job_ptr))
 		return ESLURM_ACCOUNTING_POLICY;
-	}
 
 	/* identify partition */
 	if (part_ptr == NULL) {
