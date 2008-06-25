@@ -1473,6 +1473,9 @@ List slurm_receive_msgs(slurm_fd fd, int steps, int timeout)
 
 	debug4("orig_timeout was %d we have %d steps and a timeout of %d",
 	       orig_timeout, steps, timeout);
+	/* we compare to the orig_timeout here because that is really
+	 *  what we are going to wait for each step
+	 */
 	if(orig_timeout >= (slurm_get_msg_timeout() * 10000)) {
 		debug("slurm_receive_msgs: "
 		      "You are sending a message with timeout's greater "
@@ -1482,7 +1485,8 @@ List slurm_receive_msgs(slurm_fd fd, int steps, int timeout)
 	} else if(orig_timeout < 1000) {
 		debug("slurm_receive_msgs: "
 		      "You are sending a message with a very short timeout of "
-		      "%d milliseconds", timeout);
+		      "%d milliseconds each step in the tree has %d "
+		      "milliseconds", timeout, orig_timeout);
 	} 
 	
 
