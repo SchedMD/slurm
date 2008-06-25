@@ -1256,7 +1256,8 @@ extern int init ( void )
 	char *location = NULL;
 #else
 	fatal("No MySQL database was found on the machine. "
-	      "Please check the configure log and run again.");
+	      "Please check the config.log from the run of configure "
+	      "and run again.");
 #endif
 
 	/* since this can be loaded from many different places

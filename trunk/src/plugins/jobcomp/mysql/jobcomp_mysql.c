@@ -227,7 +227,8 @@ extern int init ( void )
 	static int first = 1;
 #ifndef HAVE_MYSQL
 	fatal("No MySQL storage was found on the machine. "
-	      "Please check the configure ran and run again.");
+	      "Please check the config.log from the run of configure "
+	      "and run again.");	
 #endif
 	if(first) {
 		/* since this can be loaded from many different places

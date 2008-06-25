@@ -5,13 +5,18 @@
 executed. 
 Information is available about both currently executing jobs and 
 jobs which have already terminated and can be viewed using the 
-<b>sacct</b> command. 
-Resource usage is reported for each task and this can be useful to 
+<b>sacct</b> command.  Similarly <b>sreport</b> can be used to
+view/create reports based on time.
+With sacct resource usage is reported for each task and this can be useful to 
 detect load imbalance between the tasks. 
 SLURM version 1.2 and earlier supported the storage of accounting 
 records to a text file.
 Beginning in SLURM version 1.3 accounting records can be written to 
-a database. </p>
+a database.  Also as of 1.3 a new tool <b>sstat</b> can be used to status a
+running job.  This requires there to be a JobAcctGatherType other
+than 'none' specified.  This is very helpful when debugging an
+application since an imbalance can be found while the job is running
+instead of waiting until the end of the job.</p>
 
 <p>There are three distinct plugin types associated with resource accounting.
 The configuration parameters associated with these plugins include:
@@ -54,13 +59,13 @@ after moving the files, but before compressing them so
 that new log files will be created.</p>
 
 <p>Storing the data directly into a database from SLURM may seem 
-attractive, but that requires the availability of user name and 
+attractive, but requires the availability of user name and 
 password data not only for the SLURM control daemon (slurmctld), 
-but also user commands which need to access the data (sacct and
+but also user commands which need to access the data (sacct, sreport, and
 sacctmgr). 
-Making information available to all users makes database security 
-more difficult to provide, sending the data through an intermediate
-daemon can provide better security. 
+Making possibly sensitive information available to all users makes 
+database security more difficult to provide, sending the data through
+an intermediate daemon can provide better security.   
 Gold and SlurmDBD are two such services. 
 Our initial implementation relied upon Gold, but we found its
 performance to be inadequate for our needs and developed SlurmDBD.
