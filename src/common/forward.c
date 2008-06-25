@@ -174,12 +174,15 @@ void *_forward_thread(void *arg)
 		if(fwd_msg->header.forward.cnt > 0) {
 			static int message_timeout = -1;
 			if (message_timeout < 0)
-				message_timeout = slurm_get_msg_timeout() * 1000;
+				message_timeout = 
+					slurm_get_msg_timeout() * 1000;
 			steps = (fwd_msg->header.forward.cnt+1) /
 				slurm_get_tree_width();
 			fwd_msg->timeout = (message_timeout*steps);
+/* 			info("got %d * %d = %d", message_timeout, steps, fwd_msg->timeout); */
 			steps++;
 			fwd_msg->timeout += (start_timeout*steps);
+/* 			info("now  + %d*%d = %d", start_timeout, steps, fwd_msg->timeout); */
 		}	
 		
 		ret_list = slurm_receive_msgs(fd, steps, fwd_msg->timeout);
@@ -349,6 +352,12 @@ extern int forward_msg(forward_struct_t *forward_struct,
 		forward_msg->ret_list = forward_struct->ret_list;
 		
 		forward_msg->timeout = forward_struct->timeout;
+		
+		if(forward_msg->timeout <= 0) {
+			/* convert secs to msec */
+			forward_msg->timeout  = slurm_get_msg_timeout() * 1000; 
+		}
+
 		forward_msg->notify = &forward_struct->notify;
 		forward_msg->forward_mutex = &forward_struct->forward_mutex;
 		forward_msg->buf_len = forward_struct->buf_len;
