@@ -129,11 +129,11 @@ extern void print_fields_uint32(type_t type, print_field_t *field,
 		if(print_fields_parsable_print)
 			printf("%s|", field->name);
 		else
-			printf("%-*.*s ", field->len, field->len, field->name);
+			printf("%*.*s ", field->len, field->len, field->name);
 		break;
 	case SLURM_PRINT_UNDERSCORE:
 		if(!print_fields_parsable_print)
-			printf("%-*.*s ", field->len, field->len, 
+			printf("%*.*s ", field->len, field->len, 
 			       "---------------------------------------");
 		break;
 	case SLURM_PRINT_VALUE:
@@ -142,7 +142,7 @@ extern void print_fields_uint32(type_t type, print_field_t *field,
 			if(print_fields_parsable_print)
 				printf("|");	
 			else				
-				printf("%-*s ", field->len, " ");
+				printf("%*s ", field->len, " ");
 		} else {
 			if(print_fields_parsable_print)
 				printf("%u|", value);	
@@ -154,7 +154,7 @@ extern void print_fields_uint32(type_t type, print_field_t *field,
 		if(print_fields_parsable_print)
 			printf("%s|", "n/a");
 		else
-			printf("%-*.*s ", field->len, field->len, "n/a");
+			printf("%*.*s ", field->len, field->len, "n/a");
 		break;
 	}
 }
@@ -167,11 +167,11 @@ extern void print_fields_uint64(type_t type, print_field_t *field,
 		if(print_fields_parsable_print)
 			printf("%s|", field->name);
 		else
-			printf("%-*.*s ", field->len, field->len, field->name);
+			printf("%*.*s ", field->len, field->len, field->name);
 		break;
 	case SLURM_PRINT_UNDERSCORE:
 		if(!print_fields_parsable_print)
-			printf("%-*.*s ", field->len, field->len, 
+			printf("%*.*s ", field->len, field->len, 
 			       "---------------------------------------");
 		break;
 	case SLURM_PRINT_VALUE:
@@ -180,7 +180,7 @@ extern void print_fields_uint64(type_t type, print_field_t *field,
 			if(print_fields_parsable_print)
 				printf("|");	
 			else				
-				printf("%-*s ", field->len, " ");
+				printf("%*s ", field->len, " ");
 		} else {
 			if(print_fields_parsable_print)
 				printf("%llu|", (long long unsigned) value);	
@@ -193,7 +193,7 @@ extern void print_fields_uint64(type_t type, print_field_t *field,
 		if(print_fields_parsable_print)
 			printf("%s|", "n/a");
 		else
-			printf("%-*.*s ", field->len, field->len, "n/a");
+			printf("%*.*s ", field->len, field->len, "n/a");
 		break;
 	}
 }
@@ -205,11 +205,11 @@ extern void print_fields_time(type_t type, print_field_t *field, uint32_t value)
 		if(print_fields_parsable_print)
 			printf("%s|", field->name);
 		else
-			printf("%-*.*s ", field->len, field->len, field->name);
+			printf("%*.*s ", field->len, field->len, field->name);
 		break;
 	case SLURM_PRINT_UNDERSCORE:
 		if(!print_fields_parsable_print)
-			printf("%-*.*s ", field->len, field->len, 
+			printf("%*.*s ", field->len, field->len, 
 			       "---------------------------------------");
 		break;
 	case SLURM_PRINT_VALUE:
@@ -218,7 +218,7 @@ extern void print_fields_time(type_t type, print_field_t *field, uint32_t value)
 			if(print_fields_parsable_print)
 				printf("|");	
 			else
-				printf("%-*s ", field->len, " ");
+				printf("%*s ", field->len, " ");
 		} else {
 			char time_buf[32];
 			mins2time_str((time_t) value, 
@@ -230,7 +230,7 @@ extern void print_fields_time(type_t type, print_field_t *field, uint32_t value)
 		}
 		break;
 	default:
-		printf("%-*.*s ", field->len, field->len, "n/a");
+		printf("%*.*s ", field->len, field->len, "n/a");
 		break;
 	}
 }
