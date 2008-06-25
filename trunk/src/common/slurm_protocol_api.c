@@ -647,11 +647,11 @@ static char *_global_auth_key(void)
 		return storage_pass;
 
 	if(slurmdbd_conf) {
-		if(slurmdbd_conf->storage_pass) {
-			if(strlen(slurmdbd_conf->storage_pass) > 
+		if(slurmdbd_conf->auth_info) {
+			if(strlen(slurmdbd_conf->auth_info) > 
 			   sizeof(storage_pass))
-				fatal("StoragePass is too long");
-			strncpy(storage_pass, slurmdbd_conf->storage_pass, 
+				fatal("AuthInfo is too long");
+			strncpy(storage_pass, slurmdbd_conf->auth_info, 
 				sizeof(storage_pass));
 		}
 	} else {
