@@ -344,7 +344,9 @@ To clear a previously set value use the modify command with a new value of \-1.
 .br
 > sacctmgr create account name=physics   parent=science fairshare=20
 .br
-> sacctmgr create user name=adam cluster=tux account=physics fairshare=10
+> sacctmgr create user name=adam cluster=tux account=physics \
+.br 
+  fairshare=10
 .br
 > sacctmgr modify user with name=adam cluster=tux account=physics \
 .br
