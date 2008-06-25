@@ -641,10 +641,11 @@ static char *_global_auth_key(void)
 {
 	static bool loaded_storage_pass = false;
 	static char storage_pass[512] = "\0";
+	static char *storage_pass_ptr = NULL;
 	slurm_ctl_conf_t *conf;
 
 	if(loaded_storage_pass)
-		return storage_pass;
+		return storage_pass_ptr;
 
 	if(slurmdbd_conf) {
 		if(slurmdbd_conf->auth_info) {
@@ -653,6 +654,7 @@ static char *_global_auth_key(void)
 				fatal("AuthInfo is too long");
 			strncpy(storage_pass, slurmdbd_conf->auth_info, 
 				sizeof(storage_pass));
+			storage_pass_ptr = storage_pass;
 		}
 	} else {
 		conf = slurm_conf_lock();
@@ -662,11 +664,12 @@ static char *_global_auth_key(void)
 				fatal("AccountingStoragePass is too long");
 			strncpy(storage_pass, conf->accounting_storage_pass, 
 				sizeof(storage_pass));
+			storage_pass_ptr = storage_pass;
 		}
 		slurm_conf_unlock();
 	}
 	loaded_storage_pass = true;
-	return storage_pass;
+	return storage_pass_ptr;
 }
 
 /* slurm_get_accounting_storage_port
