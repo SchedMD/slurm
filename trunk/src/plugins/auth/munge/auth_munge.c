@@ -482,15 +482,29 @@ _decode_cred(slurm_auth_credential_t *c, char *socket)
 				munge_ctx_strerror(ctx));
 			goto again;
 		}
-
-		/*
-		 *  Print any valid credential data 
+#ifdef MULTIPLE_SLURMD
+		/* In multple slurmd mode this will happen all the
+		 * time since we are authenticating with the same
+		 * munged.
 		 */
-		error ("Munge decode failed: %s", munge_ctx_strerror(ctx));
-		_print_cred(ctx); 
-
-		plugin_errno = e + MUNGE_ERRNO_OFFSET;
-
+		if (e != EMUNGE_CRED_REPLAYED) {
+#endif
+			/*
+			 *  Print any valid credential data 
+			 */
+			error ("Munge decode failed: %s",
+			       munge_ctx_strerror(ctx));
+			_print_cred(ctx); 
+			
+			plugin_errno = e + MUNGE_ERRNO_OFFSET;
+#ifdef MULTIPLE_SLURMD
+		} else {
+			debug2("We had a replayed cred, "
+			       "but this is expected in multiple "
+			       "slurmd mode.");
+			e = 0;
+		}
+#endif
 		goto done;
 	}
 
