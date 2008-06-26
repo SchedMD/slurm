@@ -25626,9 +25626,7 @@ rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
 				CFLAGS="$save_CFLAGS"
 				LIBS="$save_LIBS"
 
- 				MYSQL_CFLAGS=""
-				MYSQL_LIBS=""
-      				if test "$ac_have_mysql" == "yes"; then
+    				if test "$ac_have_mysql" == "yes"; then
             				{ echo "$as_me:$LINENO: result: MySQL (non-threaded) test program built properly." >&5
 echo "${ECHO_T}MySQL (non-threaded) test program built properly." >&6; }
 
@@ -25639,7 +25637,9 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 				else
-       					{ echo "$as_me:$LINENO: WARNING: *** MySQL test program execution failed." >&5
+					MYSQL_CFLAGS=""
+					MYSQL_LIBS=""
+          				{ echo "$as_me:$LINENO: WARNING: *** MySQL test program execution failed." >&5
 echo "$as_me: WARNING: *** MySQL test program execution failed." >&2;}
 				fi
 			fi
