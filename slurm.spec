@@ -16,6 +16,8 @@
 # --without pam      %_without_pam      1    don't require pam-devel RPM to be installed
 # --without readline %_without_readline 1    don't require readline-devel RPM to be installed
 # --with sgijob      %_with_sgijob      1    build proctrack-sgi-job RPM
+# --with mysql       %_with_mysql       1    require mysql support
+# --with postgres    %_with_postgres    1    require postgresql support
 
 #
 #  Allow defining --with and --without build options or %_with and %without in .rpmmacors
@@ -88,6 +90,14 @@ BuildRequires: readline-devel
 %endif
 %if %{slurm_with openssl}
 BuildRequires: openssl-devel >= 0.9.6 openssl >= 0.9.6
+%endif
+
+%if %{slurm_with mysql}
+BuildRequires: mysql-devel >= 6.0
+%endif
+
+%if %{slurm_with postgres}
+BuildRequires: postgresql-devel >= 8.0
 %endif
 
 %description 
