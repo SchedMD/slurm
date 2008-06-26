@@ -48,9 +48,6 @@ AC_DEFUN([X_AC_DATABASES],
 		# want that so we remove it.
 			MYSQL_CFLAGS=`$HAVEMYSQLCONFIG --cflags`
 			MYSQL_LIBS=`$HAVEMYSQLCONFIG --libs_r`
-			if test -z "$MYSQL_LIBS"; then
-				MYSQL_LIBS=`$HAVEMYSQLCONFIG --libs`
-			fi
 			save_CFLAGS="$CFLAGS"
 			save_LIBS="$LIBS"
        			CFLAGS="$MYSQL_CFLAGS $save_CFLAGS"
@@ -73,10 +70,36 @@ AC_DEFUN([X_AC_DATABASES],
 				AC_SUBST(MYSQL_CFLAGS)
 				AC_DEFINE(HAVE_MYSQL, 1, [Define to 1 if using MySQL libaries])
 			else
+				MYSQL_CFLAGS=`$HAVEMYSQLCONFIG --cflags`
+				MYSQL_LIBS=`$HAVEMYSQLCONFIG --libs`
+				save_CFLAGS="$CFLAGS"
+				save_LIBS="$LIBS"
+       				CFLAGS="$MYSQL_CFLAGS $save_CFLAGS"
+				LIBS="$MYSQL_LIBS $save_LIBS"
+				AC_TRY_LINK([#include <mysql.h>],[
+          					int main()
+          					{
+							MYSQL mysql;
+            						(void) mysql_init(&mysql);
+							(void) mysql_close(&mysql);
+            					}
+        					],
+					[ac_have_mysql="yes"],
+					[ac_have_mysql="no"])
+				CFLAGS="$save_CFLAGS"
+				LIBS="$save_LIBS"
+				
  				MYSQL_CFLAGS=""
 				MYSQL_LIBS=""
-       				AC_MSG_WARN([*** MySQL test program execution failed.])
-			fi        	
+      				if test "$ac_have_mysql" == "yes"; then
+            				AC_MSG_RESULT([MySQL (non-threaded) test program built properly.])
+            				AC_SUBST(MYSQL_LIBS)
+					AC_SUBST(MYSQL_CFLAGS)
+					AC_DEFINE(HAVE_MYSQL, 1, [Define to 1 if using MySQL libaries])
+				else
+       					AC_MSG_WARN([*** MySQL test program execution failed.])
+				fi        	
+			fi
 		fi
       	fi
 

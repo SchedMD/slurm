@@ -25500,9 +25500,6 @@ echo "$as_me: WARNING: *** mysql-$mysql_config_major_version.$mysql_config_minor
 		# want that so we remove it.
 			MYSQL_CFLAGS=`$HAVEMYSQLCONFIG --cflags`
 			MYSQL_LIBS=`$HAVEMYSQLCONFIG --libs_r`
-			if test -z "$MYSQL_LIBS"; then
-				MYSQL_LIBS=`$HAVEMYSQLCONFIG --libs`
-			fi
 			save_CFLAGS="$CFLAGS"
 			save_LIBS="$LIBS"
        			CFLAGS="$MYSQL_CFLAGS $save_CFLAGS"
@@ -25570,10 +25567,81 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 			else
+				MYSQL_CFLAGS=`$HAVEMYSQLCONFIG --cflags`
+				MYSQL_LIBS=`$HAVEMYSQLCONFIG --libs`
+				save_CFLAGS="$CFLAGS"
+				save_LIBS="$LIBS"
+       				CFLAGS="$MYSQL_CFLAGS $save_CFLAGS"
+				LIBS="$MYSQL_LIBS $save_LIBS"
+				cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+#include <mysql.h>
+int
+main ()
+{
+
+          					int main()
+          					{
+							MYSQL mysql;
+            						(void) mysql_init(&mysql);
+							(void) mysql_close(&mysql);
+            					}
+
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest$ac_exeext &&
+       $as_test_x conftest$ac_exeext; then
+  ac_have_mysql="yes"
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	ac_have_mysql="no"
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
+      conftest$ac_exeext conftest.$ac_ext
+				CFLAGS="$save_CFLAGS"
+				LIBS="$save_LIBS"
+
  				MYSQL_CFLAGS=""
 				MYSQL_LIBS=""
-       				{ echo "$as_me:$LINENO: WARNING: *** MySQL test program execution failed." >&5
+      				if test "$ac_have_mysql" == "yes"; then
+            				{ echo "$as_me:$LINENO: result: MySQL (non-threaded) test program built properly." >&5
+echo "${ECHO_T}MySQL (non-threaded) test program built properly." >&6; }
+
+
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_MYSQL 1
+_ACEOF
+
+				else
+       					{ echo "$as_me:$LINENO: WARNING: *** MySQL test program execution failed." >&5
 echo "$as_me: WARNING: *** MySQL test program execution failed." >&2;}
+				fi
 			fi
 		fi
       	fi
