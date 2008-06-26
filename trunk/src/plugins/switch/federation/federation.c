@@ -2550,9 +2550,15 @@ _unpack_libstate(fed_libstate_t *lp, Buf buffer)
 	
 	safe_unpack32(&lp->magic, buffer);
 	safe_unpack32(&node_count, buffer);
-	for(i = 0; i < node_count; i++)
-		(void)_unpack_nodeinfo(NULL, buffer, false);
-	assert(lp->node_count == node_count);
+	for(i = 0; i < node_count; i++) {
+		if (_unpack_nodeinfo(NULL, buffer, false) != SLURM_SUCCESS)
+			goto unpack_error;
+	}
+	if(lp->node_count != node_count) {
+		error("Failed to recover switch state of all nodes (%d of %u)",
+		      lp->node_count, node_count);
+		return SLURM_ERROR;
+	}
 	safe_unpack16(&lp->key_index, buffer);
 	
 	return SLURM_SUCCESS;
