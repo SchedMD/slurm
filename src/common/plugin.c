@@ -301,8 +301,8 @@ plugin_get_syms( plugin_handle_t plug,
                 if ( ptrs[ i ] ) 
 			++count;
 		else 
-			error("Couldn't find sym '%s' in the plugin",
-			      names[ i ]);
+			debug4("Couldn't find sym '%s' in the plugin",
+			       names[ i ]);
 	}
 
         return count;
