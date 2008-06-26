@@ -244,8 +244,10 @@ int schedule(void)
 			if (failed_parts[j] == job_ptr->part_ptr)
 				break;
 		}
-		if (j < failed_part_cnt)
+		if (j < failed_part_cnt) {
+			job_ptr->state_reason = WAIT_PRIORITY;
 			continue;
+		}
 
 		error_code = select_nodes(job_ptr, false, NULL);
 		if (error_code == ESLURM_NODES_BUSY) {
