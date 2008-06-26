@@ -38,6 +38,11 @@
 %slurm_without_opt auth_none
 %slurm_without_opt debug
 
+# These options are only here to force there to be these on the build.  
+# If they are not set they will still be compiled if the packages exist.
+%slurm_without_opt mysql
+%slurm_without_opt postgres
+
 # Build with munge by default on all platforms (disable using --without munge)
 %slurm_with_opt munge
 
@@ -93,11 +98,11 @@ BuildRequires: openssl-devel >= 0.9.6 openssl >= 0.9.6
 %endif
 
 %if %{slurm_with mysql}
-BuildRequires: mysql-devel >= 6.0
+BuildRequires: mysql-devel >= 5.0.0
 %endif
 
 %if %{slurm_with postgres}
-BuildRequires: postgresql-devel >= 8.0
+BuildRequires: postgresql-devel >= 8.0.0
 %endif
 
 %description 
@@ -168,12 +173,15 @@ Requires: slurm authd
 SLURM authentication module for Brent Chun's authd
 %endif
 
+# This is named munge instead of auth-munge since there are 2 plugins in the
+# package.  auth-munge and crypto-munge
 %if %{slurm_with munge}
 %package munge
 Summary: SLURM authentication and crypto implementation using Munge
 Group: System Environment/Base
 Requires: slurm munge
 BuildRequires: munge-devel munge-libs
+Obsoletes: slurm-auth-munge
 %description munge
 SLURM authentication module for Chris Dunlap's Munge
 %endif
