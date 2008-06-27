@@ -4784,11 +4784,10 @@ empty:
 		assoc->cluster = xstrdup(row[ASSOC_REQ_CLUSTER]);
 		
 		if(row[ASSOC_REQ_PARENT][0]) {
-			if(!last_acct_parent || !last_cluster 
+			if(!last_acct_parent || !last_cluster
 			   || strcmp(row[ASSOC_REQ_PARENT], last_acct_parent)
 			   || strcmp(row[ASSOC_REQ_CLUSTER], last_cluster)) {
-			
-			query = xstrdup_printf(
+				query = xstrdup_printf(
 					"select id from %s where user='' "
 					"and deleted = 0 and acct='%s' "
 					"and cluster='%s';", 
@@ -4882,8 +4881,10 @@ empty:
 		else
 			assoc->max_cpu_secs_per_job = parent_mcpj;
 
-		if(assoc->parent_id != acct_parent_id)
+		/* don't do this unless this is an user association */
+		if(assoc->user && assoc->parent_id != acct_parent_id) 
 			assoc->parent_id = user_parent_id;
+
 		//info("parent id is %d", assoc->parent_id);
 		//log_assoc_rec(assoc);
 	}
