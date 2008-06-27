@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 1.3
-14 May 2008
+27 June 2008
 
 
 IMPORTANT NOTE:
@@ -45,9 +45,11 @@ You have a choise of database, either "mysql" plus "mysql-devel" or
 "postgres" plus "postgres-devel" RPMs.
 
 Many enhancements have been made for better Slurm integration with 
-Moab and Maui schedulers. Moab development work is still underway 
-to support Slurm v1.3. Moab users should not upgrade to Slurm v1.3
-until this work has been completed.
+Moab and Maui schedulers. Moab version 5.2.3 or higher should be 
+used with SLURM version 1.3. In the Moab configuration file, moab.cfg,
+change the SUBMITCMD option from "srun --batch" to "sbatch" since the 
+"srun --batch" option is no longer valid (use of full pathnames to 
+the commands are recommended, e.g. "/usr/local/bin/sbatch").
 
 Major changes in Slurm version 1.3 are described below. Some changes
 made after the initial release of Slurm version 1.2 are also noted.
