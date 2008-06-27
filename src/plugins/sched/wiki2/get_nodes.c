@@ -235,8 +235,11 @@ static char *	_get_node_state(struct node_record *node_ptr)
 		got_select_type = true;
 	}
 
-	if (state & NODE_STATE_DRAIN)
+	if (state & NODE_STATE_DRAIN) {
+		if (base_state == NODE_STATE_IDLE)
+			return "Drained";
 		return "Draining";
+	}
 	if (state & NODE_STATE_COMPLETING)
 		return "Busy";
 
