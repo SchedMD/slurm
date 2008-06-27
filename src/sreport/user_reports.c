@@ -52,6 +52,7 @@ typedef struct {
 	List acct_list; /* list of char *'s */
 	uint64_t cpu_secs;
 	char *name;
+	uid_t uid;
 } local_user_rec_t;
 
 typedef struct {
@@ -154,6 +155,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 		} else if(!end && !strncasecmp(argv[i], "all_clusters", 1)) {
 			local_cluster_flag = 1;
 			continue;
+		} else if (!end && !strncasecmp(argv[i], "group", 1)) {
+			group_accts = 1;
 		} else if(!end) {
 			addto_char_list(user_cond->user_list, argv[i]);
 			set = 1;
@@ -171,8 +174,6 @@ static int _set_cond(int *start, int argc, char *argv[],
 		} else if (strncasecmp (argv[i], "Format", 1) == 0) {
 			if(format_list)
 				addto_char_list(format_list, argv[i]+end);
-		} else if (strncasecmp (argv[i], "group", 1) == 0) {
-			group_accts = 1;
 		} else if (strncasecmp (argv[i], "Start", 1) == 0) {
 			assoc_cond->usage_start = parse_time(argv[i]+end);
 			set = 1;
@@ -318,7 +319,6 @@ extern int user_top(int argc, char *argv[])
 
 	itr = list_iterator_create(user_list);
 	cluster_itr = list_iterator_create(cluster_list);
-
 	while((user = list_next(itr))) {
 		if(!user->assoc_list || !list_count(user->assoc_list))
 			continue;
@@ -337,16 +337,17 @@ extern int user_top(int argc, char *argv[])
 						(local_cluster->user_list); 
 					while((local_user 
 					       = list_next(user_itr))) {
-						if(!strcmp(local_user->name,
-							   assoc->user)) {
+						if(local_user->uid 
+						   == assoc->uid) {
 							if(!group_accts &&
 							   !strcmp(local_user->
 								   name,
 								   assoc->
 								   user)) {
 								break;
-							} else if(group_accts)
+							} else if(group_accts) {
 								break;
+							}
 						}
 					}
 					list_iterator_destroy(user_itr);
@@ -356,6 +357,8 @@ extern int user_top(int argc, char *argv[])
 							(local_user_rec_t));
 						local_user->name =
 							xstrdup(assoc->user);
+						local_user->uid =
+							assoc->uid;
 						local_user->acct_list =
 							list_create
 							(slurm_destroy_char);
@@ -363,7 +366,6 @@ extern int user_top(int argc, char *argv[])
 					break;
 				}
 			}
-			list_iterator_reset(cluster_itr);
 			if(!local_cluster) {
 				local_cluster = 
 					xmalloc(sizeof(local_cluster_rec_t));
@@ -375,11 +377,13 @@ extern int user_top(int argc, char *argv[])
 				local_user = 
 					xmalloc(sizeof(local_user_rec_t));
 				local_user->name = xstrdup(assoc->user);
+				local_user->uid = assoc->uid;
 				local_user->acct_list = 
 					list_create(slurm_destroy_char);
 				list_append(local_cluster->user_list, 
 					    local_user);
 			}
+			list_iterator_reset(cluster_itr);
 			
 			itr3 = list_iterator_create(local_user->acct_list);
 			while((object = list_next(itr3))) {
