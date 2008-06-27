@@ -209,6 +209,12 @@ OTHER CONFIGURATION CHANGES
   added in slurm v1.2.13). Users can override this using the --open-mode
   option when submitting a job.
 
+* A new parameter, EnforcePartLimits, was dded. If set then immediately 
+  reject a job that exceeds a partition's size and/or time limits rather
+  then queued for a later change in the partition's limits. NOTE: Not 
+  reported by "scontrol show config" to avoid changing RPCs. It will be 
+  reported in SLURM version 1.4.
+
 * Checkpoint plugins have been added for XLCH and OpenMPI.
 
 * A new parameter, PrivateData, can be used to prevent users from being 
