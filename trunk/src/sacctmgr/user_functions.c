@@ -797,6 +797,8 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 		PRINT_MAXN,
 		PRINT_MAXW,
 		PRINT_QOS,
+		PRINT_QOS_GOLD,
+		PRINT_QOS_RAW,
 		PRINT_PID,
 		PRINT_PNAME,
 		PRINT_PART,
@@ -887,6 +889,16 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 			field->name = xstrdup("MaxWall");
 			field->len = 11;
 			field->print_routine = print_fields_time;
+		} else if(!strncasecmp("QOSGOLD", object, 4)) {
+			field->type = PRINT_QOS_GOLD;
+			field->name = xstrdup("QOS_GOLD");
+			field->len = 7;
+			field->print_routine = print_fields_uint;
+		} else if(!strncasecmp("QOSRAW", object, 4)) {
+			field->type = PRINT_QOS_RAW;
+			field->name = xstrdup("QOS_RAW");
+			field->len = 7;
+			field->print_routine = print_fields_uint;
 		} else if(!strncasecmp("QOS", object, 1)) {
 			field->type = PRINT_QOS;
 			field->name = xstrdup("QOS");
@@ -1000,6 +1012,18 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 							acct_qos_str(
 								user->qos));
 						break;
+					case PRINT_QOS_GOLD:
+						field->print_routine(
+							SLURM_PRINT_VALUE, 
+							field,
+							user->qos-1);
+						break;
+					case PRINT_QOS_RAW:
+						field->print_routine(
+							SLURM_PRINT_VALUE, 
+							field,
+							user->qos);
+						break;
 					case PRINT_PID:
 						field->print_routine(
 							SLURM_PRINT_VALUE, 
@@ -1090,6 +1114,16 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 					field->print_routine(
 						SLURM_PRINT_VALUE, field,
 						acct_qos_str(user->qos));
+					break;
+				case PRINT_QOS_GOLD:
+					field->print_routine(
+						SLURM_PRINT_VALUE, field,
+						user->qos-1);
+					break;
+				case PRINT_QOS_RAW:
+					field->print_routine(
+						SLURM_PRINT_VALUE, field,
+						user->qos);
 					break;
 				case PRINT_PID:
 					field->print_routine(
