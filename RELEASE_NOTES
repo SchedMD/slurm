@@ -29,14 +29,20 @@ now supports gang scheduling (time-slicing of parallel jobs for
 improved responsiveness and system utilization). Many related 
 scheduling changes have also been made. 
 
-There are changes in SLURM's RPMs. There is a new RPM called 
-slurmdbd (SLURM DataBase Daemon) used to provide a secure 
-SLURM database interface for accounting purposes (more information 
-about that below). The SLURM plugins have been moved to a new
-RPM called slurm-plugins. If the slurmdbd is installed it 
-requires the slurm-plugins, but not the other slurm components.
-The base SLURM plugin requires the plugins, which used to be
-within that RPM. 
+There are changes in SLURM's RPMs. "slurm-auth-munge" was changed to 
+"slurm-munge" since it now contains the authentication and cryptographic 
+signature plugins for Munge. The SLURM plugins have been moved out of 
+the main "slurm" RPM to a new RPM called "slurm-plugins". There is a 
+new RPM called "slurm-slurmdbd" (SLURM DataBase Daemon). Slurmdbd is 
+used to provide a secure SLURM database interface for accounting purposes 
+(more information about that below). The "slurm-slurmdbd" RPM requires 
+the "slurm-plugins" RPM, but none of the other SLURM RPMs. The main 
+"slurm" RPM also requires the "slurm-plugins" RPM.
+
+To archive accounting records in a database then database RPMs must be 
+installed where the SLURM RPMs are build and where the database is used. 
+You have a choise of database, either "mysql" plus "mysql-devel" or 
+"postgres" plus "postgres-devel" RPMs.
 
 Many enhancements have been made for better Slurm integration with 
 Moab and Maui schedulers. Moab development work is still underway 
