@@ -305,11 +305,12 @@ with to store the job accounting data.</li>
 
 <h2>MySQL Configuration</h2>
 <p>While SLURM will create the database automatically you will need to
-  make sure the StorageUser is given permissions in MySQL to do so.
+  make sure the StorageUser is given permissions in MySQL to do so.  
   As the <i>mysql</i> user grant privileges to that user using a
   command such as 
 <pre>
-GRANT ALL ON slum_acct_db.* TO 'StorageUser'@'localhost'; 
+GRANT ALL ON StorageLoc.* TO 'StorageUser'@'StorageHost'; 
+(The ticks are needed)
 
 live example:
 
@@ -326,7 +327,9 @@ Query OK, 0 rows affected (0.00 sec)
 </pre>
 
 This will grant user 'da' access to do what he needs to do on the
-local host. 
+local host.  This should be done before the slurmdbd will work
+properly.
+
 <h2>Tools</h2>
 
 <p>There are a few tools available to work with accounting data,
