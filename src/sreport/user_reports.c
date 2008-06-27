@@ -320,37 +320,42 @@ extern int user_top(int argc, char *argv[])
 	itr = list_iterator_create(user_list);
 	cluster_itr = list_iterator_create(cluster_list);
 	while((user = list_next(itr))) {
+		struct passwd *passwd_ptr = NULL;
 		if(!user->assoc_list || !list_count(user->assoc_list))
 			continue;
 		
+		passwd_ptr = getpwnam(user->name);
+		if(passwd_ptr) 
+			user->uid = passwd_ptr->pw_uid;
+		else
+			user->uid = (uint32_t)NO_VAL;	
+
 		itr2 = list_iterator_create(user->assoc_list);
 		while((assoc = list_next(itr2))) {
+
 			if(!assoc->accounting_list
 			   || !list_count(assoc->accounting_list))
 				continue;
-
+			
 			while((local_cluster = list_next(cluster_itr))) {
 				if(!strcmp(local_cluster->name, 
 					   assoc->cluster)) {
-					ListIterator user_itr = 
-						list_iterator_create
+					ListIterator user_itr = NULL;
+					if(!group_accts) {
+						local_user = NULL;
+						goto new_user;
+					}
+					user_itr = list_iterator_create
 						(local_cluster->user_list); 
 					while((local_user 
 					       = list_next(user_itr))) {
 						if(local_user->uid 
-						   == assoc->uid) {
-							if(!group_accts &&
-							   !strcmp(local_user->
-								   name,
-								   assoc->
-								   user)) {
-								break;
-							} else if(group_accts) {
-								break;
-							}
+						   == user->uid) {
+							break;
 						}
 					}
 					list_iterator_destroy(user_itr);
+				new_user:
 					if(!local_user) {
 						local_user = xmalloc(
 							sizeof
@@ -358,10 +363,13 @@ extern int user_top(int argc, char *argv[])
 						local_user->name =
 							xstrdup(assoc->user);
 						local_user->uid =
-							assoc->uid;
+							user->uid;
 						local_user->acct_list =
 							list_create
 							(slurm_destroy_char);
+						list_append(local_cluster->
+							    user_list, 
+							    local_user);
 					}
 					break;
 				}
@@ -377,14 +385,14 @@ extern int user_top(int argc, char *argv[])
 				local_user = 
 					xmalloc(sizeof(local_user_rec_t));
 				local_user->name = xstrdup(assoc->user);
-				local_user->uid = assoc->uid;
+				local_user->uid = user->uid;
 				local_user->acct_list = 
 					list_create(slurm_destroy_char);
 				list_append(local_cluster->user_list, 
 					    local_user);
 			}
 			list_iterator_reset(cluster_itr);
-			
+
 			itr3 = list_iterator_create(local_user->acct_list);
 			while((object = list_next(itr3))) {
 				if(!strcmp(object, assoc->acct))
