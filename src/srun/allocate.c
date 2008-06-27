@@ -235,7 +235,7 @@ allocate_nodes(void)
 	xsignal(SIGUSR2, _signal_while_allocating);
 
 	while (!resp) {
-		resp = slurm_allocate_resources_blocking(j, opt.max_wait,
+		resp = slurm_allocate_resources_blocking(j, 0,
 							 _set_pending_job_id);
 		if (destroy_job) {
 			/* cancelled by signal */
