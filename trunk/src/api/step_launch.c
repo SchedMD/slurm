@@ -1011,6 +1011,7 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 	ListIterator ret_itr;
 	ret_data_info_t *ret_data = NULL;
 	int rc = SLURM_SUCCESS;
+	int tot_rc = SLURM_SUCCESS;
 
 	debug("Entering _launch_tasks");
 	if (ctx->verbose_level) {
@@ -1048,6 +1049,7 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 			error("Task launch failed on node %s: %m",
 			      ret_data->node_name);
 			rc = SLURM_ERROR;
+			tot_rc = rc;
 		} else {
 #if 0 /* only for debugging, might want to make this a callback */
 			errno = ret_data->err;
@@ -1058,6 +1060,9 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 	}
 	list_iterator_destroy(ret_itr);
 	list_destroy(ret_list);
+
+	if(tot_rc != SLURM_SUCESS)
+		return tot_rc;
 	return rc;
 }
 
