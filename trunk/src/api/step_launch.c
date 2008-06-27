@@ -1061,7 +1061,7 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 	list_iterator_destroy(ret_itr);
 	list_destroy(ret_list);
 
-	if(tot_rc != SLURM_SUCESS)
+	if(tot_rc != SLURM_SUCCESS)
 		return tot_rc;
 	return rc;
 }
