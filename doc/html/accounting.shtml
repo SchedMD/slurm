@@ -233,7 +233,8 @@ components. A value of "auth/munge" is recommended.</li>
 <li><b>DbdHost</b>:
 The name of the machine where the Slurm Database Daemon is executed. 
 This should be a node name without the full domain name (e.g. "lx0001"). 
-This defaults to <i>localhost</i>.</li>
+This defaults to <i>localhost</i> but should be supplied to avoid a
+  warning message.</li>
 
 <li><b>DbdPort</b>:
 The port number that the Slurm Database Daemon (slurmdbd) listens 
@@ -251,19 +252,21 @@ The default value is none (performs logging via syslog).</li>
 Identifies the places in which to look for SLURM plugins. 
 This is a colon-separated list of directories, like the PATH 
 environment variable. 
-The default value is "/usr/local/lib/slurm".</li>
+The default value is the prefix given at configure time + "/lib/slurm".</li>
 
 <li><b>SlurmUser</b>:
 The name of the user that the <i>slurmctld</i> daemon executes as. 
 This user must exist on the machine executing the Slurm Database Daemon
 and have the same user ID as the hosts on which <i>slurmctld</i> execute.
 For security purposes, a user other than "root" is recommended.
-The default value is "root". </li>
+The default value is "root". This name should also be the same slurm
+user on all clusters reporting to the DBD.</li>
 
 <li><b>StorageHost</b>:
 Define the name of the host the database is running where we are going
 to store the data.
-Ideally this should be the host on which slurmdbd executes.</li>
+Ideally this should be the host on which slurmdbd executes. But could
+be a different machine.</li>
 
 <li><b>StorageLoc</b>:
 Specifies the name of the database where accounting 
@@ -302,13 +305,15 @@ with to store the job accounting data.</li>
 
 <h2>Tools</h2>
 
-<p>There are two tools available to work with accounting data,
-<b>sacct</b> and <b>sacctmgr</b>. 
-Both of these tools will get or set data through the SlurmDBD daemon. 
+<p>There are a few tools available to work with accounting data,
+<b>sacct</b>, <b>sacctmgr</b>, and <b>sreport</b>. 
+These tools all get or set data through the SlurmDBD daemon.<br>
 Sacct is used to generate accounting report for both running and 
-completed jobs.
+completed jobs.<br>
 Sacctmgr is used to manage associations in the database: 
-add or remove clusters, add or remove users, etc.
+add or remove clusters, add or remove users, etc.<br>
+Sreport is used to generate various reports on usage collected over a
+given time period.<br>
 See the man pages for each command for more information.</p>
 
 <p>Web interfaces with graphical output is currently under
@@ -511,14 +516,11 @@ execute line:</p>
 <pre>
 sacctmgr remove user where default=test
 </pre>
+Note: In most cases when removing entities the record of their
+existance is still kept around only marked deleted.  If an entity has
+existed for less than 1 day the entity will be removed completely.
+This is for the case of typos and such.
 
-<h2>Node State Information</h2>
-
-<p>Node state information is also recorded in the database. 
-Whenever a node goes DOWN or becomes DRAINED that event is 
-logged along with the node's <i>Reason</i> field. 
-This can be used to generate various reports.
-
-<p style="text-align: center;">Last modified 25 March 2008</p>
+<p style="text-align: center;">Last modified 27 June 2008</p>
 
 </ul></body></html>
