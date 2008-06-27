@@ -371,6 +371,9 @@ documents those changes that are of interest to users and admins.
  -- Add support for sbatch --distribution and --network options.
  -- Correct pending job's wait reason to "Priority" rather than "Resources" if
     required resources are being held in reserve for a higher priority job.
+ -- In sched/wiki2 (Moab) report a node's state as "Drained" rather than "Draining"
+    if it has no allocated work (An undocumented Moab wiki option, see CRI
+    ticket #2394).
 
 * Changes in SLURM 1.2.31
 =========================

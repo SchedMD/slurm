@@ -375,8 +375,11 @@ static char *	_get_node_state(struct node_record *node_ptr)
 	}
 
 	if ((state & NODE_STATE_DRAIN)
-	||  (state & NODE_STATE_FAIL))
+	||  (state & NODE_STATE_FAIL)) {
+		if (base_state == NODE_STATE_IDLE)
+			return "Drained";
 		return "Draining";
+	}
 	if (state & NODE_STATE_COMPLETING)
 		return "Busy";
 
