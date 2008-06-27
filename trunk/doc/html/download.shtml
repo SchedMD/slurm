@@ -2,12 +2,13 @@
 
 <h1>Download</h1>
 <p>
-SLURM source can be downloaded from <br>
+SLURM source can be downloaded from 
 <a href="http://sourceforge.net/projects/slurm/">
 http://sourceforge.net/projects/slurm/</a><br>
-There is also a Debian package named <i>slurm-llnl</i> available at <br>
-<a href="http://www.debian.org/">http://www.debian.org/</a><br>
-The latest stable release of SLURM is version 1.3.</p>
+SLURM has also been packaged for 
+<a href="http://packages.debian.org/src:slurm-llnl">Debian</a> and 
+<a href="http://packages.ubuntu.com/src:slurm-llnl">Ubuntu</a>
+(both named <i>slurm-llnl</i>).</p>
 
 <p> Other software available for download includes
 <ul>
@@ -100,6 +101,6 @@ Portable Linux Processor Affinity (PLPA)</a></li>
 
 </ul>
 
-<p style="text-align:center;">Last modified 25 June 2008</p>
+<p style="text-align:center;">Last modified 27 June 2008</p>
 
 <!--#include virtual="footer.txt"-->
