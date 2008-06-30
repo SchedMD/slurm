@@ -162,6 +162,7 @@ static uint32_t last_verified_job_id = 0;
 static void	_cr_job_list_del(void *x);
 static int	_cr_job_list_sort(void *x, void *y);
 static struct node_cr_record *_dup_node_cr(struct node_cr_record *node_cr_ptr);
+static bool	_has_job_mem_limit(struct job_record *job_ptr);
 static int	_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			uint32_t min_nodes, uint32_t max_nodes, 
 			uint32_t req_nodes, int mode, 
@@ -221,6 +222,15 @@ static void _dump_state(struct node_cr_record *select_node_ptr)
 	return;
 }
 #endif
+
+static bool _has_job_mem_limit(struct job_record *job_ptr)
+{
+	if (job_ptr->details &&
+	    job_ptr->details->job_min_memory &&
+	    (job_ptr->details->job_min_memory & MEM_PER_TASK) == 0)
+		return true;
+	return false;
+}
 
 /* Create a duplicate node_cr_records structure */
 static struct node_cr_record *_dup_node_cr(struct node_cr_record *node_cr_ptr)
@@ -1992,7 +2002,6 @@ static int _verify_node_state(struct node_cr_record *select_node_ptr,
 			      enum node_cr_state job_node_req)
 {
 	int i;
-	uint32_t free_mem;
 
 	for (i = 0; i < select_node_cnt; i++) {
 		if (!bit_test(bitmap, i))
@@ -2001,9 +2010,12 @@ static int _verify_node_state(struct node_cr_record *select_node_ptr,
 		if ((job_ptr->details->job_min_memory) &&
 		    ((cr_type == CR_CORE_MEMORY) || (cr_type == CR_CPU_MEMORY) || 
 		     (cr_type == CR_MEMORY) || (cr_type == CR_SOCKET_MEMORY))) {
+			uint32_t free_mem, need_mem;
 			free_mem = select_node_ptr[i].real_memory;
 			free_mem -= select_node_ptr[i].alloc_memory;
-			if (free_mem < job_ptr->details->job_min_memory)
+			need_mem = job_ptr->details->job_min_memory & 
+				   (~MEM_PER_TASK);
+			if (free_mem < need_mem)
 				goto clear_bit;
 		}
 
@@ -2098,16 +2110,23 @@ static int _load_arrays(struct node_cr_record *select_node_ptr,
 {
 	int i, index = 0, size = 32;
 	int *busy_rows, *shr_tasks, *all_tasks, *num_nodes;
+	uint32_t per_task_memory = 0, free_mem;
 	
 	busy_rows = xmalloc (sizeof(int)*size); /* allocated rows */
 	shr_tasks = xmalloc (sizeof(int)*size); /* max free cpus */
 	all_tasks = xmalloc (sizeof(int)*size); /* all cpus */
 	num_nodes = xmalloc (sizeof(int)*size); /* number of nodes */
-	/* above arrays are all zero filled by xmalloc() */
+
+	if (job_ptr->details &&
+	    job_ptr->details->job_min_memory &&
+	    (job_ptr->details->job_min_memory & MEM_PER_TASK)) {
+		per_task_memory = job_ptr->details->job_min_memory &
+				  (~MEM_PER_TASK);
+	}
 
 	for (i = 0; i < select_node_cnt; i++) {
 		if (bit_test(bitmap, i)) {
-			int rows;
+			int mem_space_task_cnt = 0, rows;
 			uint16_t atasks, ptasks;
 			rows = _get_allocated_rows(select_node_ptr, job_ptr, 
 						   i, job_node_req);
@@ -2115,6 +2134,13 @@ static int _load_arrays(struct node_cr_record *select_node_ptr,
 			atasks = _get_task_count(select_node_ptr, job_ptr, i, 
 						 test_only, false,
 						 job_node_req);
+			if (per_task_memory) {
+				free_mem  = select_node_ptr[i].real_memory;
+				free_mem -= select_node_ptr[i].alloc_memory;
+				mem_space_task_cnt = free_mem / per_task_memory;
+				atasks = MAX(atasks, mem_space_task_cnt);
+				//info("node[%d], mem_space:%d", i, mem_space_task_cnt);
+			}
 			if (test_only) {
 				ptasks = atasks;
 			} else {
@@ -2122,6 +2148,8 @@ static int _load_arrays(struct node_cr_record *select_node_ptr,
 				ptasks = _get_task_count(select_node_ptr, 
 							 job_ptr, i, test_only,
 							 true, job_node_req);
+				if (per_task_memory)
+					ptasks = MAX(ptasks, mem_space_task_cnt);
 			}
 			if (rows   != busy_rows[index] ||
 			    ptasks != shr_tasks[index] ||
@@ -2363,7 +2391,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	int *busy_rows, *sh_tasks, *al_tasks, *freq;
 	bitstr_t *origmap, *reqmap = NULL;
 	int row, rows, try;
-	bool test_only;
+	bool test_only, job_has_mem_limit;
 	uint32_t save_mem = 0;
 
 	layout_ptr = job_ptr->details->req_node_layout;
@@ -2561,6 +2589,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		}
 	}
 
+	job_has_mem_limit = _has_job_mem_limit(job_ptr);
 	j = 0;
 	a = 0;
 	f = 0;
@@ -2577,7 +2606,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		if (bit_test(bitmap, i) == 0)
 			continue;
 		if (j >= job->nhosts) {
-			error("select_cons_res: job nhosts too small\n");
+			error("select_cons_res: job nhosts too small");
 			break;
 		}
 		job->cpus[j] = sh_tasks[a];
@@ -2589,9 +2618,11 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			job->cpus[j] = 0;
 		}
 		job->alloc_cpus[j] = 0;
-		if ((cr_type == CR_CORE_MEMORY) || (cr_type == CR_CPU_MEMORY) ||
-		    (cr_type == CR_MEMORY) || (cr_type == CR_SOCKET_MEMORY))
-			job->alloc_memory[j] = job_ptr->details->job_min_memory; 
+		if (job_has_mem_limit &&
+		    ((cr_type == CR_CORE_MEMORY) || (cr_type == CR_CPU_MEMORY) ||
+		    ( cr_type == CR_MEMORY) || (cr_type == CR_SOCKET_MEMORY))) {
+			job->alloc_memory[j] = job_ptr->details->job_min_memory;
+		}
 		if ((cr_type == CR_CORE) || (cr_type == CR_CORE_MEMORY)||
 		    (cr_type == CR_SOCKET) || (cr_type == CR_SOCKET_MEMORY)) {
 			_chk_resize_job(job, j, job->num_sockets[j]);
@@ -3046,7 +3077,7 @@ extern int select_p_step_begin(struct step_record *step_ptr)
 
 	if (step_layout == NULL)
 		return SLURM_SUCCESS;	/* batch script */
-	if (step_ptr->job_ptr->details->job_min_memory)
+	if (_has_job_mem_limit(step_ptr->job_ptr))
 		return SLURM_SUCCESS;
 	if ((cr_type != CR_CORE_MEMORY) && (cr_type != CR_CPU_MEMORY) &&
 	    (cr_type != CR_MEMORY) && (cr_type != CR_SOCKET_MEMORY))
@@ -3111,7 +3142,7 @@ extern int select_p_step_fini(struct step_record *step_ptr)
 
 	if (step_layout == NULL)
 		return SLURM_SUCCESS;	/* batch script */
-	if (step_ptr->job_ptr->details->job_min_memory)
+	if (_has_job_mem_limit(step_ptr->job_ptr))
 		return SLURM_SUCCESS;
 	if ((cr_type != CR_CORE_MEMORY) && (cr_type != CR_CPU_MEMORY) &&
 	    (cr_type != CR_MEMORY) && (cr_type != CR_SOCKET_MEMORY))
