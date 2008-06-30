@@ -3044,8 +3044,12 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 		job_desc_msg->job_min_cores = 1;   /* default 1 core per socket */
 	if (job_desc_msg->job_min_threads == (uint16_t) NO_VAL)
 		job_desc_msg->job_min_threads = 1; /* default 1 thread per core */
-	if (job_desc_msg->job_min_memory == NO_VAL)
-		job_desc_msg->job_min_memory = 0;  /* default no memory limit */
+	if (job_desc_msg->job_min_memory == NO_VAL) {
+		/* Default memory limit is DefMemPerTask (if set) or no limit */
+		job_desc_msg->job_min_memory = slurmctld_conf.def_mem_per_task;
+		if (slurmctld_conf.def_mem_per_task)
+			job_desc_msg->job_min_memory |= MEM_PER_TASK;
+	}
 	if (job_desc_msg->job_min_tmp_disk == NO_VAL)
 		job_desc_msg->job_min_tmp_disk = 0;/* default 0MB disk per node */
 
