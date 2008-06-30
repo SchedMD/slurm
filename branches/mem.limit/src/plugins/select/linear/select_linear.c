@@ -245,6 +245,15 @@ static int _fini_status_pthread(void)
 }
 #endif
 
+static bool _has_job_mem_limit(struct job_record *job_ptr)
+{
+	if (job_ptr->details &&
+	    job_ptr->details->job_min_memory &&
+	    (job_ptr->details->job_min_memory & MEM_PER_TASK) == 0)
+		return true;
+	return false;
+}
+
 static bool _enough_nodes(int avail_nodes, int rem_nodes, 
 		uint32_t min_nodes, uint32_t req_nodes)
 {
@@ -572,8 +581,18 @@ static int _job_count_bitmap(struct node_cr_record *node_cr_ptr,
 	else
 		exclusive = true;
 
-	if (job_ptr->details->job_min_memory  && (cr_type == CR_MEMORY))
-		job_memory = job_ptr->details->job_min_memory;
+	if (cr_type == CR_MEMORY) {
+		if (job_ptr->details->job_min_memory & MEM_PER_TASK) {
+			job_memory = job_ptr->details->job_min_memory & 
+				     ~MEM_PER_TASK;
+			if (job_ptr->details->num_tasks && 
+			    job_ptr->details->max_nodes) {
+				job_memory *= job_ptr->details->num_tasks;
+				job_memory /= job_ptr->details->max_nodes;
+			}
+		} else
+			job_memory = job_ptr->details->job_min_memory;
+	}
 
 	for (i = 0; i < node_record_count; i++) {
 		if (!bit_test(bitmap, i)) {
@@ -1012,7 +1031,7 @@ extern int select_p_update_nodeinfo (struct job_record *job_ptr)
 	&&  (job_ptr->job_state != JOB_SUSPENDED))
 		return SLURM_SUCCESS;
 	if ((cr_type != CR_MEMORY) || (job_ptr->details == NULL) || 
-	    (job_ptr->details->shared == 0) || job_ptr->details->job_min_memory)
+	    (job_ptr->details->shared == 0) || _has_job_mem_limit(job_ptr))
 		return SLURM_SUCCESS;
 
 	slurm_mutex_lock(&cr_mutex);
@@ -1139,8 +1158,8 @@ static int _rm_job_from_nodes(struct node_cr_record *node_cr_ptr,
 		return SLURM_ERROR;
 	}
 
-	if (remove_all && job_ptr->details && 
-	    job_ptr->details->job_min_memory && (cr_type == CR_MEMORY))
+	if (remove_all && _has_job_mem_limit(job_ptr) && 
+	    (cr_type == CR_MEMORY))
 		job_memory = job_ptr->details->job_min_memory;
 
 	for (i = 0; i < select_node_cnt; i++) {
@@ -1153,6 +1172,7 @@ static int _rm_job_from_nodes(struct node_cr_record *node_cr_ptr,
 			error("%s: memory underflow for node %s",
 				pre_err, node_record_table_ptr[i].name);
 		}
+
 		if (node_cr_ptr[i].exclusive_jobid == job_ptr->job_id)
 			node_cr_ptr[i].exclusive_jobid = 0;
 		part_cr_ptr = node_cr_ptr[i].parts;
@@ -1215,8 +1235,8 @@ static int _add_job_to_nodes(struct node_cr_record *node_cr_ptr,
 		return SLURM_ERROR;
 	}
 
-	if (alloc_all && job_ptr->details && 
-	    job_ptr->details->job_min_memory && (cr_type == CR_MEMORY))
+	if (alloc_all && _has_job_mem_limit(job_ptr) && 
+	    (cr_type == CR_MEMORY))
 		job_memory = job_ptr->details->job_min_memory;
 	if (job_ptr->details->shared == 0)
 		exclusive = 1;
@@ -1371,12 +1391,13 @@ static void _init_node_cr(void)
 	/* record running and suspended jobs in node_cr_records */
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		bool job_mem_limit_set;
 		if ((job_ptr->job_state != JOB_RUNNING) &&
 		    (job_ptr->job_state != JOB_SUSPENDED))
 			continue;
 
-		if (job_ptr->details && 
-		    job_ptr->details->job_min_memory && (cr_type == CR_MEMORY))
+		job_mem_limit_set = _has_job_mem_limit(job_ptr);
+		if (job_mem_limit_set && (cr_type == CR_MEMORY))
 			job_memory = job_ptr->details->job_min_memory;
 		else
 			job_memory = 0;
@@ -1420,7 +1441,7 @@ static void _init_node_cr(void)
 			}
 		}
 
-		if (job_ptr->details->job_min_memory || 
+		if (job_mem_limit_set || 
 		    (job_ptr->details->shared == 0) || (cr_type != CR_MEMORY))
 			continue;
 
@@ -1569,7 +1590,7 @@ extern int select_p_step_begin(struct step_record *step_ptr)
 		return SLURM_SUCCESS;	/* batch script */
 	/* Don't track step memory use if job has reserved memory OR
 	 * job has whole node OR we don't track memory usage */
-	if (step_ptr->job_ptr->details->job_min_memory || 
+	if (_has_job_mem_limit(step_ptr->job_ptr) || 
 	    (step_ptr->job_ptr->details->shared == 0) ||
 	    (cr_type != CR_MEMORY))
 		return SLURM_SUCCESS;
@@ -1635,7 +1656,7 @@ extern int select_p_step_fini(struct step_record *step_ptr)
 		return SLURM_SUCCESS;	/* batch script */
 	/* Don't track step memory use if job has reserved memory OR
 	 * job has whole node OR we don't track memory usage */
-	if (step_ptr->job_ptr->details->job_min_memory || 
+	if (_has_job_mem_limit(step_ptr->job_ptr) || 
 	    (step_ptr->job_ptr->details->shared == 0) ||
 	    (cr_type != CR_MEMORY))
 		return SLURM_SUCCESS;
