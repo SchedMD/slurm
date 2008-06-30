@@ -52,7 +52,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 		if (strncasecmp (argv[i], "Set", 3) == 0) {
 			i--;
 			break;
-		} else if (strncasecmp (argv[i], "WithAssoc", 4) == 0) {
+		} else if (!end && strncasecmp (argv[i], "WithAssoc", 4) == 0) {
 			user_cond->with_assocs = 1;
 		} else if(!end && !strncasecmp(argv[i], "where", 5)) {
 			continue;

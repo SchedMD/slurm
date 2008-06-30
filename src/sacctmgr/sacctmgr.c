@@ -1459,7 +1459,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             Organizations=, and Parents=                   \n\
                                                                            \n\
        list associations  - Accounts=, Clusters=, Format=, ID=,            \n\
-                            Partitions=, Parent=, Users=                   \n\
+                            Partitions=, Parent=, Tree, Users=             \n\
                                                                            \n\
        list cluster       - Names= Format=                                 \n\
        add cluster        - Fairshare=, MaxCPUSecs=,                       \n\
