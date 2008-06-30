@@ -357,6 +357,8 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->job_min_threads = opt.minthreads;
 	if (opt.realmem > -1)
 		desc->job_min_memory = opt.realmem;
+	else if (opt.task_mem > -1)
+		desc->job_min_memory = opt.task_mem | MEM_PER_TASK;
 	if (opt.tmpdisk > -1)
 		desc->job_min_tmp_disk = opt.tmpdisk;
 	if (opt.overcommit) {

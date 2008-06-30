@@ -1774,10 +1774,8 @@ static bool _opt_verify(void)
 
         /* When CR with memory as a CR is enabled we need to assign
 	 * adequate value or check the value to opt.mem */
-	if ((opt.realmem >= -1) && (opt.task_mem > 0)) {
-		if (opt.realmem == -1) {
-			opt.realmem = opt.task_mem;
-		} else if (opt.realmem < opt.task_mem) {
+	if ((opt.realmem > -1) && (opt.task_mem > -1)) {
+		if (opt.realmem < opt.task_mem) {
 			info("mem < task-mem - resizing mem to be equal "
 			     "to task-mem");
 			opt.realmem = opt.task_mem;

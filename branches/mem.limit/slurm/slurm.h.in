@@ -448,6 +448,7 @@ typedef enum select_type_plugin_info {
 #define TASK_PARAM_CPUSETS 0x0001
 #define TASK_PARAM_SCHED   0x0002
 
+#define MEM_PER_TASK 0x80000000
 #define SHARED_FORCE 0x8000
 
 /*****************************************************************************\
@@ -528,7 +529,9 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint16_t job_min_sockets;  /* minimum sockets per node, default=0 */
 	uint16_t job_min_cores;    /* minimum cores per processor, default=0 */
 	uint16_t job_min_threads;  /* minimum threads per core, default=0 */
-	uint32_t job_min_memory;   /* minimum real memory per node, default=0 */
+	uint32_t job_min_memory;   /* minimum real memory per node OR
+				    * real memory per task | MEM_PER_TASK, 
+				    * default=0 */
 	uint32_t job_min_tmp_disk; /* minimum tmp disk per node, default=0 */
 	uint32_t num_procs;	/* total count of processors required, 
 				 * default=0 */
