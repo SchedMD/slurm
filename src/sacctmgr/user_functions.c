@@ -1216,12 +1216,27 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 			return SLURM_SUCCESS;
 		}		
 	}
-
+	
 	notice_thread_init();
 	if(rec_set == 3 || rec_set == 1) { // process the account changes
 		if(cond_set == 2) {
 			rc = SLURM_ERROR;
-			goto assoc_start;
+			if(list_count(user_cond->assoc_cond->acct_list)) {
+				notice_thread_fini();
+				if(!commit_check(
+					   " You specified Accounts if your "
+					   "request.  Did you mean "
+					   "DefaultAccounts?\n")) {
+					goto assoc_start;
+				}
+				notice_thread_init();
+				list_transfer(user_cond->def_acct_list,
+					      user_cond->assoc_cond->acct_list);
+			} else {
+				printf(" There was a problem with your "
+				       "'where' options.\n");
+				goto assoc_start;
+			}
 		}
 		ret_list = acct_storage_g_modify_users(
 			db_conn, my_uid, user_cond, user);
