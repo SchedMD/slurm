@@ -480,7 +480,8 @@ extern void launch_job(struct job_record *job_ptr)
 	launch_msg_ptr->script = get_job_script(job_ptr);
 	launch_msg_ptr->environment =
 	    get_job_env(job_ptr, &launch_msg_ptr->envc);
-	launch_msg_ptr->job_mem = job_ptr->details->job_min_memory;
+	if ((job_ptr->details->job_min_memory & MEM_PER_TASK) == 0)
+		launch_msg_ptr->job_mem = job_ptr->details->job_min_memory;
 	launch_msg_ptr->num_cpu_groups = job_ptr->num_cpu_groups;
 	launch_msg_ptr->cpus_per_node  = xmalloc(sizeof(uint32_t) *
 			job_ptr->num_cpu_groups);

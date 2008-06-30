@@ -1228,7 +1228,7 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	long kill_on_node_fail, shared, immediate;
 	long cpus_per_task, requeue, num_tasks, overcommit;
 	long ntasks_per_node, ntasks_per_socket, ntasks_per_core;
-	char buf[100];
+	char *mem_type, buf[100];
 
 	if (job_specs == NULL)
 		return;
@@ -1262,12 +1262,21 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	debug3("   job_min_cores=%ld job_min_threads=%ld",
 	       job_min_cores, job_min_threads);
 
-	job_min_memory   = (job_specs->job_min_memory != NO_VAL) ? 
-		(long) job_specs->job_min_memory : -1L;
+	if (job_specs->job_min_memory == NO_VAL) {
+		job_min_memory = -1L;
+		mem_type = "job";
+	} else if (job_specs->job_min_memory & MEM_PER_TASK) {
+		job_min_memory = (long) (job_specs->job_min_memory & 
+					 (~MEM_PER_TASK));
+		mem_type = "task";
+	} else {
+		job_min_memory = (long) job_specs->job_min_memory;
+		mem_type = "job";
+	}
 	job_min_tmp_disk = (job_specs->job_min_tmp_disk != NO_VAL) ? 
 		(long) job_specs->job_min_tmp_disk : -1L;
-	debug3("   job_min_memory=%ld job_min_tmp_disk=%ld",
-	       job_min_memory, job_min_tmp_disk);
+	debug3("   %s_min_memory=%ld job_min_tmp_disk=%ld",
+	       mem_type, job_min_memory, job_min_tmp_disk);
 	immediate = (job_specs->immediate == 0) ? 0L : 1L;
 	debug3("   immediate=%ld features=%s",
 	       immediate, job_specs->features);
@@ -3333,7 +3342,8 @@ static void _pack_pending_job_details(struct job_details *detail_ptr,
 		pack16(detail_ptr->cpus_per_task, buffer);
 		pack16(detail_ptr->job_min_procs, buffer);
 
-		pack32(detail_ptr->job_min_memory, buffer);
+		pack32((detail_ptr->job_min_memory &
+		       (~MEM_PER_TASK)), buffer);
 		pack32(detail_ptr->job_min_tmp_disk, buffer);
 
 		packstr(detail_ptr->req_nodes, buffer);
@@ -3854,7 +3864,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_DISABLED;
 		else if (super_user
-			 || (detail_ptr->job_min_memory
+			 || ((detail_ptr->job_min_memory & (~MEM_PER_TASK))
 			     > job_specs->job_min_memory)) {
 			detail_ptr->job_min_memory = job_specs->job_min_memory;
 			info("update_job: setting job_min_memory to %u for "

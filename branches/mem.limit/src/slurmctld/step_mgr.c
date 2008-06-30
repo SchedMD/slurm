@@ -835,7 +835,8 @@ step_create(job_step_create_request_msg_t *step_specs,
 	    (job_ptr->end_time <= time(NULL)))
 		return ESLURM_ALREADY_DONE;
 
-	if (job_ptr->details->job_min_memory) {
+	if (job_ptr->details->job_min_memory &&
+	    ((job_ptr->details->job_min_memory & MEM_PER_TASK) == 0)) {
 		/* use memory reserved by job, no limit on steps */
 		step_specs->mem_per_task = 0;
 	} else if (step_specs->mem_per_task) {

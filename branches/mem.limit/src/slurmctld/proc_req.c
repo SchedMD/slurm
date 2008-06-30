@@ -502,7 +502,10 @@ static int _make_step_cred(struct step_record *step_rec,
 	cred_arg.jobid    = step_rec->job_ptr->job_id;
 	cred_arg.stepid   = step_rec->step_id;
 	cred_arg.uid      = step_rec->job_ptr->user_id;
-	cred_arg.job_mem  = step_rec->job_ptr->details->job_min_memory;
+	if ((step_rec->job_ptr->details->job_min_memory & MEM_PER_TASK) == 0)
+		cred_arg.job_mem  = step_rec->job_ptr->details->job_min_memory;
+	else
+		cred_arg.job_mem  = 0;
 	cred_arg.task_mem = step_rec->mem_per_task;
 	cred_arg.hostlist = step_rec->step_layout->node_list;
         if(step_rec->job_ptr->details->shared == 0)
@@ -2628,7 +2631,8 @@ int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 	launch_msg_ptr->environment = _xduparray2(job_desc_msg->env_size,
 						 job_desc_msg->environment);
 	launch_msg_ptr->envc = job_desc_msg->env_size;
-	launch_msg_ptr->job_mem = job_desc_msg->job_min_memory;
+	if ((job_desc_msg->job_min_memory & MEM_PER_TASK) == 0)
+		launch_msg_ptr->job_mem = job_desc_msg->job_min_memory;
 
 	/* _max_nprocs() represents the total number of CPUs available
 	 * for this step (overcommit not supported yet). If job_desc_msg
