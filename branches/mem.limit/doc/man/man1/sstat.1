@@ -1,0 +1,262 @@
+.TH SSTAT "1" "May 2008" "sacctmgr 1.3" "Slurm components"
+
+.SH "NAME"
+sstat \- Used to query running job and see various usage information
+of job/step running.
+
+.SH "SYNOPSIS"
+.BR "sstat "
+\fBsstat\fR [\fIOPTIONS\fR...] 
+
+.SH "DESCRIPTION"
+.PP
+Status information for jobs invoked with SLURM.
+.PP
+The 
+.BR "sstat "
+command displays job accounting data stored in the job accounting log 
+file in a variety of forms for your analysis.
+The 
+.BR "sstat "
+command displays information on jobs, job steps, status, and exitcodes by 
+default.
+You can tailor the output with the use of the 
+\f3\-\-fields=\fP 
+option to specify the fields to be shown.
+.PP
+For the root user, the 
+.BR "sstat "
+command displays job status data for any job running on the system.
+.PP
+For the non\-root user, the 
+.BR "sstat "
+command limits the display of job status data to jobs that were 
+launched with their own user identifier (UID) by default.
+
+.SS "Options"
+.TP "10"
+
+.TP "3"
+\(bu
+\f3jobid\fP 
+.IP 
+and 
+\f3\-\-fields=\fP 
+options.
+.IP 
+
+.TP 
+\f3\-F \fP\f2field_list\fP \f3,\fP  \f3\-\-fields\fP\f3=\fP\f2field_list\fP
+Displays the job status data specified by the 
+\f2field_list\fP 
+operand, which is a comma\-separated list of fields.
+Space characters are not allowed in the 
+\f2field_list\fP\c
+\&. 
+.IP 
+See the 
+\f3\-\-help\-fields\fP 
+option for a list of the available fields.
+See the section titled "Job Status Fields" for a description of 
+each field.
+.IP 
+The job accounting data is displayed in the order specified by the 
+\f2field_list\fP 
+operand.
+Thus, the following two commands display the same data but in different order:
+.RS 
+.PP
+.nf 
+.ft 3
+# sstat \-\-fields=jobid,state
+Jobid    State
+\-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-
+3          COMPLETED
+3.0        COMPLETED
+
+.ft 1
+.fi 
+.RE 
+.RS 
+.PP
+.nf 
+.ft 3
+# sacct \-\-fields=status,jobid
+State     Jobid
+\-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-
+COMPLETED  3
+COMPLETED  3.0
+
+.ft 1
+.fi 
+.RE 
+.IP 
+The default value for the 
+\f2field_list\fP 
+operand is 
+\f3"jobid,vsize,rss,pages,cputime,ntasks,state"\fP\c
+\&.
+.IP 
+This option has no effect when the 
+\f3\-\-dump\fP 
+option is also specified.
+
+
+.TP 
+\f3\-h \fP\f3,\fP \f3\-\-help\fP
+Displays a general help message.
+.TP 
+\f3\-\-help\-fields\fP
+Displays a list of fields that can be specified with the 
+\f3\-\-fields\fP 
+option.
+.RS 
+.PP
+.nf 
+.ft 3
+Fields available:
+cputime     jobid       ntasks      pages
+rss         state       vsize
+
+.ft 1
+.fi 
+.RE 
+.IP 
+The section titled "Job Accounting Fields" describes these fields.
+
+.TP 
+\f3\-j \fP\f2job(.step)\fP \f3,\fP  \f3\-\-jobs\fP\f3=\fP\f2job(.step)\fP
+Displays information about the specified job(.step) or list of job(.step)s.
+.IP 
+The 
+\f2job(.step)\fP 
+parameter is a comma\-separated list of jobs.
+Space characters are not permitted in this list.
+.IP 
+The default is to display information on all jobs.
+
+.TP 
+\f3\-\-noheader\fP
+Prevents the display of the heading over the output.
+The default action is to display a header.
+.IP 
+This option has no effect when used with the 
+\f3\-\-dump\fP 
+option.
+
+\f3\-S \fP\f3,\fP \f3\-\-stat\fP
+.IP
+Queries the status of a job as the job is running displaying
+the following data:
+.RS 
+.TP "3"
+\(bu
+\f3jobid\fP 
+.TP "3"
+\(bu
+\f3vsize\fP 
+.TP "3"
+\(bu
+\f3rss\fP 
+.TP "3"
+\(bu
+\f3pages\fP 
+.TP "3"
+\(bu
+\f3cputime\fP 
+.TP "3"
+\(bu
+\f3ntasks\fP 
+.TP "3"
+\(bu
+\f3status\fP 
+.RE 
+.IP
+You must also include the \-\-jobs=job(.step) option if no (.step) is 
+given you will recieve the job.0 step.
+
+.TP 
+\f3\-\-usage\fP
+Displays a help message.
+
+.TP 
+\f3\-v \fP\f3,\fP \f3\-\-verbose\fP
+Reports the state of certain variables during processing.
+This option is primarily used for debugging.
+
+.SS "Job Status Fields"
+The following describes each job accounting field:
+.RS 
+.TP
+\f3cputime\fP
+Minimum CPU time of any process followed by its task id along with
+the average of all processes running in the step.
+
+.TP 
+\f3jobid\fP 
+The number of the job or job step.
+It is in the form: 
+\f2job.jobstep\fP\c
+\&.
+
+.TP
+\f3ntasks\fP 
+Total number of tasks in job.
+
+.TP
+\f3pages\fP
+Maximum page faults of any process followed by its task id along with
+the average of all processes running in the step.
+
+.TP 
+\f3rss\fP 
+Maximum resident set size of any process followed by its task id along with
+the average of all processes running in the step.
+
+.TP
+\f3state\fP
+Displays the job state.
+.IP 
+Output can be 
+\f3RUNNING\fP\c
+\&, 
+\f3SUSPENDED\fP\c
+\&,
+\f3COMPLETED\fP\c
+\&, 
+\f3CANCELLED\fP\c
+\&, 
+\f3FAILED\fP\c
+\&, 
+\f3TIMEOUT\fP\c
+\&, or 
+\f3NODE_FAIL\fP\c
+\&.
+
+.TP
+\f3vsize\fP
+Maximum Virtual Memory size of any process followed by its task id along with
+the average of all processes running in the step.
+
+.SH "EXAMPLES"
+
+.SH "COPYING"
+Copyright (C) 2008 Lawrence Livermore National Security.
+Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+LLNL\-CODE\-402394.
+.LP
+This file is part of SLURM, a resource management program.
+For details, see <https://computing.llnl.gov/linux/slurm/>.
+.LP
+SLURM is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+.SH "SEE ALSO"
+\fBsacct\fR(1)
