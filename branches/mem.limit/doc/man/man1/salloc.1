@@ -1,4 +1,4 @@
-.TH "salloc" "1" "SLURM 1.3" "May 2008" "SLURM Commands"
+.TH "salloc" "1" "SLURM 1.3" "June 2008" "SLURM Commands"
 .SH "NAME"
 .LP 
 salloc \- Obtain a SLURM job allocation (a set of nodes), execute a command, and then release the allocation when the command is finished.
@@ -311,7 +311,10 @@ reserved for this job.
 If no value is specified and real memory is exhausted on 
 any allocated node then the job is subject to cancellation.
 Also see \fB\-\-task\-mem\fR.
-
+Generally the use of \fB\-\-mem\fR is preferable when allocating 
+whole nodes to jobs (\fBSelectType=select/linear\fR) while 
+\fB\-\-task\-mem\fR is preferable otherwise 
+(\fBSelectType=select/cons_res\fR).
 
 .TP
 \fB\-\-mincores\fR[=]<\fIn\fR>
@@ -485,6 +488,10 @@ Mimimum memory available per task in MegaBytes.
 Default value is \fBDefMemPerTask\fR and the maximum value is
 \fBMaxMemPerTask\fR, both of which can be seen using the
 \fBscontrol show config\fR command.
+Generally the use of \fB\-\-mem\fR is preferable when allocating 
+whole nodes to jobs (\fBSelectType=select/linear\fR) while 
+\fB\-\-task\-mem\fR is preferable otherwise 
+(\fBSelectType=select/cons_res\fR).
 
 .TP
 \fB\-\-tmp\fR[=]<\fIMB\fR>
@@ -690,6 +697,7 @@ salloc \-N5 srun \-n10 myprogram
 
 .SH "COPYING"
 Copyright (C) 2006\-2007 The Regents of the University of California.
+Copyright (C) 2008 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 LLNL\-CODE\-402394.
 .LP
