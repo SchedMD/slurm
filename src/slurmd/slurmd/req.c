@@ -1316,7 +1316,6 @@ _rpc_stat_jobacct(slurm_msg_t *msg)
 /* 
  *  For the specified job_id: reply to slurmctld, 
  *   sleep(configured kill_wait), then send SIGKILL 
- *  FIXME! - Perhaps we should send SIGXCPU first?
  */
 static void
 _rpc_timelimit(slurm_msg_t *msg)
@@ -1339,6 +1338,7 @@ _rpc_timelimit(slurm_msg_t *msg)
 	slurm_close_accepted_conn(msg->conn_fd);
 	msg->conn_fd = -1;
 
+	_kill_all_active_steps(req->job_id, SIGXCPU, true);
 	nsteps = xcpu_signal(SIGTERM, req->nodes) +
 		_kill_all_active_steps(req->job_id, SIGTERM, false);
 	verbose( "Job %u: timeout: sent SIGTERM to %d active steps", 
