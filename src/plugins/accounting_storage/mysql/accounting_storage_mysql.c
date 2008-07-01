@@ -4612,6 +4612,7 @@ extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 	char *last_acct = NULL;
 	char *last_acct_parent = NULL;
 	char *last_cluster = NULL;
+	char *last_cluster2 = NULL;
 	uint32_t user_parent_id = 0;
 	uint32_t acct_parent_id = 0;
 
@@ -4784,6 +4785,9 @@ empty:
 		assoc->cluster = xstrdup(row[ASSOC_REQ_CLUSTER]);
 		
 		if(row[ASSOC_REQ_PARENT][0]) {
+/* 			info("got %s?=%s and %s?=%s", */
+/* 			     row[ASSOC_REQ_PARENT], last_acct_parent, */
+/* 			     row[ASSOC_REQ_CLUSTER], last_cluster); */
 			if(!last_acct_parent || !last_cluster
 			   || strcmp(row[ASSOC_REQ_PARENT], last_acct_parent)
 			   || strcmp(row[ASSOC_REQ_CLUSTER], last_cluster)) {
@@ -4793,7 +4797,8 @@ empty:
 					"and cluster='%s';", 
 					assoc_table, row[ASSOC_REQ_PARENT],
 					row[ASSOC_REQ_CLUSTER]);
-			
+				debug3("%d query\n%s", mysql_conn->conn, query);
+
 				if(!(result2 = mysql_db_query_ret(
 					     mysql_conn->acct_mysql_db,
 					     query, 1))) {
@@ -4818,9 +4823,9 @@ empty:
 		else
 			assoc->fairshare = 1;
 
-		if(!last_acct || !last_cluster 
+		if(!last_acct || !last_cluster2 
 		   || strcmp(row[ASSOC_REQ_ACCT], last_acct)
-		   || strcmp(row[ASSOC_REQ_CLUSTER], last_cluster)) {
+		   || strcmp(row[ASSOC_REQ_CLUSTER], last_cluster2)) {
 			query = xstrdup_printf(
 				"call get_parent_limits('%s', '%s', '%s');"
 				"select @par_id, @mj, @mnpj, @mwpj, @mcpj;", 
@@ -4858,7 +4863,7 @@ empty:
 				parent_mcpj = -1;
 			
 			last_acct = row[ASSOC_REQ_ACCT];
-			last_cluster = row[ASSOC_REQ_CLUSTER];
+			last_cluster2 = row[ASSOC_REQ_CLUSTER];
 			mysql_free_result(result2);
 		}
 		if(row[ASSOC_REQ_MJ])

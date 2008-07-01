@@ -754,7 +754,7 @@ extern int mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 	 * start. 
 	 */
 	query = xstrdup_printf("delete from %s where period_end < %d "
-			       "&& end != 0",
+			       "&& period_end != 0",
 			       event_table, start);
 	rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
 	xfree(query);
