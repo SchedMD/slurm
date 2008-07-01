@@ -1088,6 +1088,7 @@ void print_account(type_t type, void *object)
 		break;
 	case JOBSTEP:
 		printf("%-16s", " ");
+		break;
 	default:
 		printf("%-16s", "n/a");
 		break;
