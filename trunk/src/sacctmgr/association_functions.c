@@ -201,10 +201,10 @@ static int _sort_childern_list(local_assoc_t *local_a, local_assoc_t *local_b)
 	/* check to see if this is a user association or an account.
 	 * We want the accounts at the bottom 
 	 */
-	if(list_count(local_a->childern) && !list_count(local_b->childern))
-		return 1;
-	else if(!list_count(local_a->childern) && list_count(local_b->childern))
+	if(local_a->assoc->user && !local_b->assoc->user)
 		return -1;
+	else if(!local_a->assoc->user && local_b->assoc->user)
+		return 1;
 
 	diff = strcmp(local_a->sort_name, local_b->sort_name);
 	if (diff < 0)
