@@ -52,7 +52,7 @@ static void *_print_lock_warn(void *no_data)
 	return NULL;
 }
 
-static void nonblock(int state)
+static void _nonblock(int state)
 {
 	struct termios ttystate;
 
@@ -73,6 +73,20 @@ static void nonblock(int state)
 	//set the terminal attributes.
 	tcsetattr(STDIN_FILENO, TCSANOW, &ttystate);
 
+}
+
+extern void destroy_sacctmgr_assoc(void *object)
+{
+	/* Most of this is pointers to something else that will be
+	 * destroyed elsewhere.
+	 */
+	sacctmgr_assoc_t *sacctmgr_assoc = (sacctmgr_assoc_t *)object;
+	if(sacctmgr_assoc) {
+		if(sacctmgr_assoc->childern) {
+			list_destroy(sacctmgr_assoc->childern);
+		}
+		xfree(sacctmgr_assoc);
+	}
 }
 
 extern int parse_option_end(char *option)
@@ -202,7 +216,7 @@ extern int commit_check(char *warning)
 		return 1;
 
 	printf("%s (You have 30 seconds to decide)\n", warning);
-	nonblock(1);
+	_nonblock(1);
 	while(c != 'Y' && c != 'y'
 	      && c != 'N' && c != 'n'
 	      && c != '\n') {
@@ -222,7 +236,7 @@ extern int commit_check(char *warning)
 		c = getchar();
 		printf("\n");
 	}
-	nonblock(0);
+	_nonblock(0);
 	if(ans <= 0) 
 		printf("timeout\n");
 	else if(c == 'Y' || c == 'y') 

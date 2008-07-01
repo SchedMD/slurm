@@ -1049,7 +1049,7 @@ display_it:
 				continue;
 			break;
 		default:
-			g_print("Unkown type %d\n", spec_info->type);
+			g_print("Unknown type %d\n", spec_info->type);
 			continue;
 		}
 		list_push(send_block_list, block_ptr);

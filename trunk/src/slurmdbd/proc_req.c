@@ -1140,7 +1140,7 @@ static int   _modify_accounts(void *db_conn,
 			comment = "Request didn't affect anything";
 			rc = SLURM_SUCCESS;
 		} else {
-			comment = "Unkown issue";
+			comment = "Unknown issue";
 			rc = SLURM_ERROR;
 		}
 		error("%s", comment);
@@ -1196,7 +1196,7 @@ static int   _modify_assocs(void *db_conn,
 			comment = "Request didn't affect anything";
 			rc = SLURM_SUCCESS;
 		} else {
-			comment = "Unkown issue";
+			comment = "Unknown issue";
 			rc = SLURM_ERROR;
 		}
 		error("%s", comment);
@@ -1257,7 +1257,7 @@ static int   _modify_clusters(void *db_conn,
 			comment = "Request didn't affect anything";
 			rc = SLURM_SUCCESS;
 		} else {
-			comment = "Unkown issue";
+			comment = "Unknown issue";
 			rc = SLURM_ERROR;
 		}
 		error("%s", comment);
@@ -1326,7 +1326,7 @@ static int   _modify_users(void *db_conn,
 			comment = "Request didn't affect anything";
 			rc = SLURM_SUCCESS;
 		} else {
-			comment = "Unkown issue";
+			comment = "Unknown issue";
 			rc = SLURM_ERROR;
 		}
 		error("%s", comment);
@@ -1534,7 +1534,7 @@ static int   _remove_accounts(void *db_conn,
 			comment = "Request didn't affect anything";
 			rc = SLURM_SUCCESS;
 		} else {
-			comment = "Unkown issue";
+			comment = "Unknown issue";
 			rc = SLURM_ERROR;
 		}
 		error("%s", comment);
@@ -1589,7 +1589,7 @@ static int   _remove_account_coords(void *db_conn,
 			comment = "Request didn't affect anything";
 			rc = SLURM_SUCCESS;
 		} else {
-			comment = "Unkown issue";
+			comment = "Unknown issue";
 			rc = SLURM_ERROR;
 		}
 		error("%s", comment);
@@ -1649,7 +1649,7 @@ static int   _remove_assocs(void *db_conn,
 			comment = "Request didn't affect anything";
 			rc = SLURM_SUCCESS;
 		} else {
-			comment = "Unkown issue";
+			comment = "Unknown issue";
 			rc = SLURM_ERROR;
 		}
 		error("%s", comment);
@@ -1711,7 +1711,7 @@ static int   _remove_clusters(void *db_conn,
 			comment = "Request didn't affect anything";
 			rc = SLURM_SUCCESS;
 		} else {
-			comment = "Unkown issue";
+			comment = "Unknown issue";
 			rc = SLURM_ERROR;
 		}
 		error("%s", comment);
@@ -1771,7 +1771,7 @@ static int   _remove_users(void *db_conn,
 			comment = "Request didn't affect anything";
 			rc = SLURM_SUCCESS;
 		} else {
-			comment = "Unkown issue";
+			comment = "Unknown issue";
 			rc = SLURM_ERROR;
 		}
 		error("%s", comment);

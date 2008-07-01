@@ -327,6 +327,15 @@ _process_command (int argc, char *argv[])
 		all_flag = 1;
 	} else if (strncasecmp (argv[0], "associations", 3) == 0) {
 		with_assoc_flag = 1;
+	} else if (strncasecmp (argv[0], "dump", 3) == 0) {
+		if (argc < 2) {
+			exit_code = 1;
+			if (quiet_flag != 1)
+				fprintf(stderr, 
+				        "too few arguments for keyword:%s\n", 
+				        argv[0]);
+		} else
+			sacctmgr_dump_cluster((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "help", 2) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
@@ -703,7 +712,7 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 		start=i;
 		
 		while(options[i] && options[i] != ':' && options[i] != '\n') {
-			if(options[i] == '"') {
+			if(options[i] == '"' || options[i] == '\'') {
 				if(quote)
 					quote = 0;
 				else
@@ -712,7 +721,8 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 			i++;
 		}
 		if(quote) {
-			while(options[i] && options[i] != '"') 
+			while(options[i] && options[i] != '"'
+			      && options[i] != '\'') 
 				i++;
 			if(!options[i])
 				fatal("There is a problem with option "
