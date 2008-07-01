@@ -717,26 +717,28 @@ _handle_signal_container(int fd, slurmd_job_t *job, uid_t uid)
 		goto done;
 	}
 
-	/*
-	 * Signal the container
-	 */
 	if (job->nodeid == 0) {
 		static int msg_sent = 0;
+		char *entity;
+		if (job->stepid == SLURM_BATCH_SCRIPT)
+			entity = "JOB";
+		else
+			entity = "STEP";
 		/* Not really errors, 
 		 * but we want messages displayed by default */
 		if (msg_sent)
 			;
 		else if (sig == SIGXCPU) {
-			error("*** JOB CANCELLED DUE TO TIME LIMIT ***");
+			error("*** %s CANCELLED DUE TO TIME LIMIT ***", entity);
 			msg_sent = 1;
 		} else if (sig == SIG_NODE_FAIL) {
-			error("*** JOB CANCELLED DUE TO NODE FAILURE ***");
+			error("*** %s CANCELLED DUE TO NODE FAILURE ***", entity);
 			msg_sent = 1;
 		} else if (sig == SIG_FAILURE) {
-			error("*** JOB CANCELLED DUE TO SYSTEM FAILURE ***");
+			error("*** %s CANCELLED DUE TO SYSTEM FAILURE ***", entity);
 			msg_sent = 1;
 		} else if ((sig == SIGTERM) || (sig == SIGKILL)) {
-			error("*** JOB CANCELLED ***");
+			error("*** %s CANCELLED ***", entity);
 			msg_sent = 1;
 		}
 	}
@@ -744,13 +746,16 @@ _handle_signal_container(int fd, slurmd_job_t *job, uid_t uid)
 		goto done;
 
 	pthread_mutex_lock(&suspend_mutex);
-	if (suspended) {
+	if (suspended && (sig != SIGKILL)) {
 		rc = -1;
 		errnum = ESLURMD_STEP_SUSPENDED;
 		pthread_mutex_unlock(&suspend_mutex);
 		goto done;
 	}
 
+	/*
+	 * Signal the container
+	 */
 	if (slurm_container_signal(job->cont_id, sig) < 0) {
 		rc = -1;
 		errnum = errno;

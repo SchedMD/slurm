@@ -160,7 +160,7 @@ expect {
 		set exit_code 1
 		exp_continue
 	}
-	-re "job exceeded timelimit" {
+	-re "time limit exceeded" {
 		send_user "\nFAILURE: srun failed to complete\n"
 		set exit_code 1
 		exp_continue
