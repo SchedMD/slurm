@@ -89,7 +89,7 @@ regular database plugins?</li>
 When a job is terminating, both the job and its nodes enter the COMPLETING state. 
 As the SLURM daemon on each node determines that all processes associated with 
 the job have terminated, that node changes state to IDLE or some other appropriate 
-state. 
+state for use by other jobs. 
 When every node allocated to a job has determined that all processes associated 
 with it have terminated, the job changes state to COMPLETED or some other 
 appropriate state (e.g. FAILED). 
@@ -109,6 +109,13 @@ Note that setting the node DOWN will terminate all running or suspended
 jobs associated with that node. 
 An alternative is to set the node's state to DRAIN until all jobs 
 associated with it terminate before setting it DOWN and re-booting.</p>
+<p>Note that SLURM has two configuration parameters that may be used to 
+automate some of this process.
+<i>UnkillableStepProgram</i> specifies a program to execute when 
+non-killable proceses are identified.
+<i>UnkillableStepTimeout</i> specifies how long to wait for processes
+to terminate. 
+See the "man slurm.conf" for more information about these parameters.</p>
 
 <p><a name="rlimit"><b>2. Why are my resource limits not propagated?</b></a><br>
 When the <span class="commandline">srun</span> command executes, it captures the 
@@ -947,6 +954,6 @@ slurmdbd.
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 13 May 2008</p>
+<p style="text-align:center;">Last modified 1 July 2008</p>
 
 <!--#include virtual="footer.txt"-->
