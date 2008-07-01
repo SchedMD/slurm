@@ -1412,7 +1412,6 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 		if ((rc = poll(&ufds, 1, timeleft)) <= 0) {
 			if (rc == 0) {
 				verbose("timeout waiting for /bin/su to complete");
-				kill(-child, 9);
 				break;
 			}
 			if ((errno == EINTR) || (errno == EAGAIN))
@@ -1447,6 +1446,10 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 		}
 	}
 	close(fildes[0]);
+	kill(-child, 9);
+	if (waitpid((pid_t)-1, &rc, WNOHANG))
+		waitpid((pid_t)-1, &rc, WNOHANG); /* left from previous runs */
+
 	if (!found) {
 		error("Failed to load current user environment variables");
 		xfree(buffer);
