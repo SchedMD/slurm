@@ -187,6 +187,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 
 	return set;
 }
+
 /* 
  * Comparator used for sorting immediate childern of local_assocs
  * 
@@ -196,15 +197,16 @@ static int _set_cond(int *start, int argc, char *argv[],
 
 static int _sort_childern_list(local_assoc_t *local_a, local_assoc_t *local_b)
 {
-	int diff = strcmp(local_a->sort_name, local_b->sort_name);
+	int diff = 0;
 	/* check to see if this is a user association or an account.
 	 * We want the accounts at the bottom 
 	 */
-	if(list_count(local_a->childern) && list_count(local_a->childern))
+	if(list_count(local_a->childern) && !list_count(local_b->childern))
 		return 1;
 	else if(!list_count(local_a->childern) && list_count(local_b->childern))
 		return -1;
 
+	diff = strcmp(local_a->sort_name, local_b->sort_name);
 	if (diff < 0)
 		return -1;
 	else if (diff > 0)
