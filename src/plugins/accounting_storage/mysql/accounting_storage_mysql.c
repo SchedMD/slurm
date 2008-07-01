@@ -1107,7 +1107,7 @@ static int _mysql_acct_check_tables(MYSQL *acct_mysql_db)
 	char *get_parent_proc = 
 		"drop procedure if exists get_parent_limits; "
 		"create procedure get_parent_limits("
-		"my_table text, acct text, cluster text) "
+		"my_table text, acct text, cluster text, without_limits int) "
 		"begin "
 		"set @par_id = NULL; "
 		"set @mj = NULL; "
@@ -1115,6 +1115,12 @@ static int _mysql_acct_check_tables(MYSQL *acct_mysql_db)
 		"set @mwpj = NULL; "
 		"set @mcpj = NULL; "
 		"set @my_acct = acct; "
+		"if without_limits then "
+		"set @mj = 0; " 
+		"set @mnpj = 0; "
+		"set @mwpj = 0; "
+		"set @mcpj = 0; "
+		"end if; "
 		"REPEAT "
 		"set @s = 'select '; "
 		"if @par_id is NULL then set @s = CONCAT("
@@ -3318,7 +3324,7 @@ extern List acct_storage_p_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	xfree(name_char);
 
 	query = xstrdup_printf(
-		"update %s as t2, set deleted=1, mod_time=%d where %s",
+		"update %s as t2 set deleted=1, mod_time=%d where %s",
 		acct_coord_table, now, assoc_char);
 	xfree(assoc_char);
 
@@ -4784,7 +4790,7 @@ empty:
 		assoc->acct = xstrdup(row[ASSOC_REQ_ACCT]);
 		assoc->cluster = xstrdup(row[ASSOC_REQ_CLUSTER]);
 		
-		if(row[ASSOC_REQ_PARENT][0]) {
+		if(!assoc_q->without_parent_info && row[ASSOC_REQ_PARENT][0]) {
 /* 			info("got %s?=%s and %s?=%s", */
 /* 			     row[ASSOC_REQ_PARENT], last_acct_parent, */
 /* 			     row[ASSOC_REQ_CLUSTER], last_cluster); */
@@ -4823,14 +4829,15 @@ empty:
 		else
 			assoc->fairshare = 1;
 
-		if(!last_acct || !last_cluster2 
-		   || strcmp(row[ASSOC_REQ_ACCT], last_acct)
-		   || strcmp(row[ASSOC_REQ_CLUSTER], last_cluster2)) {
+		if((!last_acct || !last_cluster2 
+		    || strcmp(row[ASSOC_REQ_ACCT], last_acct)
+		    || strcmp(row[ASSOC_REQ_CLUSTER], last_cluster2))) {
 			query = xstrdup_printf(
-				"call get_parent_limits('%s', '%s', '%s');"
+				"call get_parent_limits('%s', '%s', '%s', %u);"
 				"select @par_id, @mj, @mnpj, @mwpj, @mcpj;", 
 				assoc_table, row[ASSOC_REQ_ACCT],
-				row[ASSOC_REQ_CLUSTER]);
+				row[ASSOC_REQ_CLUSTER],
+				assoc_q->without_parent_limits);
 			
 			if(!(result2 = mysql_db_query_ret(
 				     mysql_conn->acct_mysql_db, query, 1))) {
@@ -4841,27 +4848,27 @@ empty:
 			
 			row2 = mysql_fetch_row(result2);
 			user_parent_id = atoi(row2[ASSOC2_REQ_PARENT_ID]);
-			
-			if(row2[ASSOC2_REQ_MJ])
-				parent_mj = atoi(row2[ASSOC2_REQ_MJ]);
-			else
-				parent_mj = -1;
-			
-			if(row2[ASSOC2_REQ_MNPJ])
-				parent_mnpj = atoi(row2[ASSOC2_REQ_MNPJ]);
-			else
-				parent_mwpj = -1;
-			
-			if(row2[ASSOC2_REQ_MWPJ])
-				parent_mwpj = atoi(row2[ASSOC2_REQ_MWPJ]);
-			else
-				parent_mwpj = -1;
-			
-			if(row2[ASSOC2_REQ_MCPJ])
-				parent_mcpj = atoi(row2[ASSOC2_REQ_MCPJ]);
-			else 
-				parent_mcpj = -1;
-			
+			if(!assoc_q->without_parent_limits) {
+				if(row2[ASSOC2_REQ_MJ])
+					parent_mj = atoi(row2[ASSOC2_REQ_MJ]);
+				else
+					parent_mj = -1;
+				
+				if(row2[ASSOC2_REQ_MNPJ])
+					parent_mnpj = atoi(row2[ASSOC2_REQ_MNPJ]);
+				else
+					parent_mwpj = -1;
+				
+				if(row2[ASSOC2_REQ_MWPJ])
+					parent_mwpj = atoi(row2[ASSOC2_REQ_MWPJ]);
+				else
+					parent_mwpj = -1;
+				
+				if(row2[ASSOC2_REQ_MCPJ])
+					parent_mcpj = atoi(row2[ASSOC2_REQ_MCPJ]);
+				else 
+					parent_mcpj = -1;
+			}
 			last_acct = row[ASSOC_REQ_ACCT];
 			last_cluster2 = row[ASSOC_REQ_CLUSTER];
 			mysql_free_result(result2);

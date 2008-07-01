@@ -927,6 +927,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 		list_append(print_fields_list, field);		
 	}
 	list_iterator_destroy(itr);
+	list_destroy(format_list);
 
 	itr = list_iterator_create(user_list);
 	itr2 = list_iterator_create(print_fields_list);

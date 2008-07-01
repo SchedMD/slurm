@@ -1336,6 +1336,8 @@ extern void pack_acct_association_cond(void *in, Buf buffer)
 		pack32(0, buffer);
 		pack16(0, buffer);
 		pack16(0, buffer);
+		pack16(0, buffer);
+		pack16(0, buffer);
 		return;
 	}
 
@@ -1417,6 +1419,8 @@ extern void pack_acct_association_cond(void *in, Buf buffer)
 
 	pack16((uint16_t)object->with_usage, buffer);
 	pack16((uint16_t)object->with_deleted, buffer);
+	pack16((uint16_t)object->without_parent_info, buffer);
+	pack16((uint16_t)object->without_parent_limits, buffer);
 }
 
 extern int unpack_acct_association_cond(void **object, Buf buffer)
@@ -1486,7 +1490,9 @@ extern int unpack_acct_association_cond(void **object, Buf buffer)
 	}
 
 	safe_unpack16(&object_ptr->with_usage, buffer);
-	safe_unpack16((uint16_t *)&object_ptr->with_deleted, buffer);
+	safe_unpack16(&object_ptr->with_deleted, buffer);
+	safe_unpack16(&object_ptr->without_parent_info, buffer);
+	safe_unpack16(&object_ptr->without_parent_limits, buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:

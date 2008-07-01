@@ -45,12 +45,6 @@ typedef struct {
 	char *spaces;
 } print_acct_t;
 
-typedef struct {
-	acct_association_rec_t *assoc;
-	char *sort_name;
-	List childern;
-} local_assoc_t;
-
 static void _destroy_print_acct(void *object)
 {
 	print_acct_t *print_acct = (print_acct_t *)object;
@@ -59,20 +53,6 @@ static void _destroy_print_acct(void *object)
 		xfree(print_acct->print_name);
 		xfree(print_acct->spaces);
 		xfree(print_acct);
-	}
-}
-
-static void _destroy_local_assoc(void *object)
-{
-	/* Most of this is pointers to something else that will be
-	 * destroyed elsewhere.
-	 */
-	local_assoc_t *local_assoc = (local_assoc_t *)object;
-	if(local_assoc) {
-		if(local_assoc->childern) {
-			list_destroy(local_assoc->childern);
-		}
-		xfree(local_assoc);
 	}
 }
 
@@ -189,24 +169,25 @@ static int _set_cond(int *start, int argc, char *argv[],
 }
 
 /* 
- * Comparator used for sorting immediate childern of local_assocs
+ * Comparator used for sorting immediate childern of sacctmgr_assocs
  * 
- * returns: -1: local_a > local_b   0: local_a == local_b   1: local_a < local_b
+ * returns: -1: assoc_a > assoc_b   0: assoc_a == assoc_b   1: assoc_a < assoc_b
  * 
  */
 
-static int _sort_childern_list(local_assoc_t *local_a, local_assoc_t *local_b)
+static int _sort_childern_list(sacctmgr_assoc_t *assoc_a,
+			       sacctmgr_assoc_t *assoc_b)
 {
 	int diff = 0;
 	/* check to see if this is a user association or an account.
 	 * We want the accounts at the bottom 
 	 */
-	if(local_a->assoc->user && !local_b->assoc->user)
+	if(assoc_a->assoc->user && !assoc_b->assoc->user)
 		return -1;
-	else if(!local_a->assoc->user && local_b->assoc->user)
+	else if(!assoc_a->assoc->user && assoc_b->assoc->user)
 		return 1;
 
-	diff = strcmp(local_a->sort_name, local_b->sort_name);
+	diff = strcmp(assoc_a->sort_name, assoc_b->sort_name);
 	if (diff < 0)
 		return -1;
 	else if (diff > 0)
@@ -216,43 +197,43 @@ static int _sort_childern_list(local_assoc_t *local_a, local_assoc_t *local_b)
 
 }
 
-static int _sort_local_list(List local_assoc_list)
+static int _sort_sacctmgr_assoc_list(List sacctmgr_assoc_list)
 {
-	local_assoc_t *local_assoc = NULL;
+	sacctmgr_assoc_t *sacctmgr_assoc = NULL;
 	ListIterator itr;
 
-	if(!list_count(local_assoc_list))
+	if(!list_count(sacctmgr_assoc_list))
 		return SLURM_SUCCESS;
 
-	list_sort(local_assoc_list, (ListCmpF)_sort_childern_list);
+	list_sort(sacctmgr_assoc_list, (ListCmpF)_sort_childern_list);
 
-	itr = list_iterator_create(local_assoc_list);
-	while((local_assoc = list_next(itr))) {
-		if(list_count(local_assoc->childern))
-			_sort_local_list(local_assoc->childern);
+	itr = list_iterator_create(sacctmgr_assoc_list);
+	while((sacctmgr_assoc = list_next(itr))) {
+		if(list_count(sacctmgr_assoc->childern))
+			_sort_sacctmgr_assoc_list(sacctmgr_assoc->childern);
 	}
 	list_iterator_destroy(itr);
 
 	return SLURM_SUCCESS;
 }
 
-static int _append_ret_list(List ret_list, List local_assoc_list)
+static int _append_ret_list(List ret_list, List sacctmgr_assoc_list)
 {
-	local_assoc_t *local_assoc = NULL;
+	sacctmgr_assoc_t *sacctmgr_assoc = NULL;
 	ListIterator itr;
 
 	if(!ret_list)
 		return SLURM_ERROR;
 
-	if(!list_count(local_assoc_list))
+	if(!list_count(sacctmgr_assoc_list))
 		return SLURM_SUCCESS;
 
-	itr = list_iterator_create(local_assoc_list);
-	while((local_assoc = list_next(itr))) {
-		list_append(ret_list, local_assoc->assoc);
+	itr = list_iterator_create(sacctmgr_assoc_list);
+	while((sacctmgr_assoc = list_next(itr))) {
+		list_append(ret_list, sacctmgr_assoc->assoc);
 
-		if(list_count(local_assoc->childern)) 
-			_append_ret_list(ret_list, local_assoc->childern);
+		if(list_count(sacctmgr_assoc->childern)) 
+			_append_ret_list(ret_list, sacctmgr_assoc->childern);
 	}
 	list_iterator_destroy(itr);
 
@@ -261,63 +242,69 @@ static int _append_ret_list(List ret_list, List local_assoc_list)
 
 static List _sort_assoc_list(List assoc_list)
 {
-	local_assoc_t *par_local_assoc = NULL;
-	local_assoc_t *local_assoc = NULL;
+	List sacctmgr_assoc_list = sacctmgr_get_hierarchical_list(assoc_list);
+	List ret_list = list_create(NULL);
+
+	_append_ret_list(ret_list, sacctmgr_assoc_list);
+	list_destroy(sacctmgr_assoc_list);
+	
+	return ret_list;
+}
+
+extern List sacctmgr_get_hierarchical_list(List assoc_list)
+{
+	sacctmgr_assoc_t *par_sacctmgr_assoc = NULL;
+	sacctmgr_assoc_t *sacctmgr_assoc = NULL;
 	acct_association_rec_t *assoc = NULL;
 	List total_assoc_list = list_create(NULL);
-	List local_assoc_list = list_create(_destroy_local_assoc);
-	List ret_list = NULL;
+	List sacctmgr_assoc_list = list_create(destroy_sacctmgr_assoc);
 	ListIterator itr, itr2;
 
 	itr = list_iterator_create(assoc_list);
 	itr2 = list_iterator_create(total_assoc_list);
 	
 	while((assoc = list_next(itr))) {
+		sacctmgr_assoc = xmalloc(sizeof(sacctmgr_assoc_t));
+		sacctmgr_assoc->childern = list_create(destroy_sacctmgr_assoc);
+		sacctmgr_assoc->assoc = assoc;
+	
 		if(!assoc->parent_id) {
-			local_assoc = xmalloc(sizeof(local_assoc_t));
-			local_assoc->childern =
-				list_create(_destroy_local_assoc);
-			local_assoc->sort_name = assoc->cluster;
-			local_assoc->assoc = assoc;
-			list_append(local_assoc_list, local_assoc);
-			list_append(total_assoc_list, local_assoc);
+			sacctmgr_assoc->sort_name = assoc->cluster;
+
+			list_append(sacctmgr_assoc_list, sacctmgr_assoc);
+			list_append(total_assoc_list, sacctmgr_assoc);
+
 			list_iterator_reset(itr2);
 			continue;
 		}
 
-		while((par_local_assoc = list_next(itr2))) {
-			if(assoc->parent_id == par_local_assoc->assoc->id) 
+		while((par_sacctmgr_assoc = list_next(itr2))) {
+			if(assoc->parent_id == par_sacctmgr_assoc->assoc->id) 
 				break;
 		}
 
-		local_assoc = xmalloc(sizeof(local_assoc_t));
-		local_assoc->childern = list_create(_destroy_local_assoc);
 		if(assoc->user)
-			local_assoc->sort_name = assoc->user;
+			sacctmgr_assoc->sort_name = assoc->user;
 		else
-			local_assoc->sort_name = assoc->acct;
-		
-		local_assoc->assoc = assoc;
+			sacctmgr_assoc->sort_name = assoc->acct;
 
-		if(!par_local_assoc) 
-			list_append(local_assoc_list, local_assoc);
+		if(!par_sacctmgr_assoc) 
+			list_append(sacctmgr_assoc_list, sacctmgr_assoc);
 		else
-			list_append(par_local_assoc->childern, local_assoc);
-		list_append(total_assoc_list, local_assoc);
+			list_append(par_sacctmgr_assoc->childern,
+				    sacctmgr_assoc);
+
+		list_append(total_assoc_list, sacctmgr_assoc);
 		list_iterator_reset(itr2);
 	}
 	list_iterator_destroy(itr);
 	list_iterator_destroy(itr2);
 
 	list_destroy(total_assoc_list);
+//	info("got %d", list_count(sacctmgr_assoc_list));
+	_sort_sacctmgr_assoc_list(sacctmgr_assoc_list);
 
-	_sort_local_list(local_assoc_list);
-
-	ret_list = list_create(NULL);
-
-	_append_ret_list(ret_list, local_assoc_list);
-	
-	return ret_list;
+	return sacctmgr_assoc_list;
 }
 
 extern int sacctmgr_list_association(int argc, char *argv[])
@@ -451,6 +438,7 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 		list_append(print_fields_list, field);		
 	}
 	list_iterator_destroy(itr);
+	list_destroy(format_list);
 
 	itr = list_iterator_create(assoc_list);
 	itr2 = list_iterator_create(print_fields_list);
@@ -546,6 +534,9 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 		printf("\n");
 	}
 
+	if(tree_list) 
+		list_destroy(tree_list);
+			
 	list_iterator_destroy(itr2);
 	list_iterator_destroy(itr);
 	list_destroy(first_list);

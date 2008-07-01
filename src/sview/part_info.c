@@ -2242,7 +2242,7 @@ display_it:
 				continue;
 			break;
 		default:
-			g_print("Unkown type %d\n", spec_info->type);
+			g_print("Unknown type %d\n", spec_info->type);
 			list_iterator_destroy(itr);
 			goto end_it;
 		}

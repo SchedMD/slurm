@@ -86,6 +86,13 @@
 #define CKPT_WAIT	10
 #define	MAX_INPUT_FIELDS 128
 
+typedef struct {
+	acct_association_rec_t *assoc;
+	char *sort_name;
+	List childern;
+} sacctmgr_assoc_t;
+
+
 extern char *command_name;
 extern int exit_code;	/* sacctmgr's exit code, =1 on any error at any time */
 extern int exit_flag;	/* program to terminate if =1 */
@@ -119,11 +126,18 @@ extern int sacctmgr_delete_account(int argc, char *argv[]);
 extern int sacctmgr_delete_cluster(int argc, char *argv[]);
 extern int sacctmgr_delete_coord(int argc, char *argv[]);
 
+/* this has pointers to assoc_list so do not destroy assoc_list before
+ * using the list returned from this function.
+ */
+extern List sacctmgr_get_hierarchical_list(List assoc_list);
+
+extern int sacctmgr_dump_cluster(int argc, char *argv[]);
+
 /* common.c */
+extern void destroy_sacctmgr_assoc(void *object);
 extern int parse_option_end(char *option);
 extern char *strip_quotes(char *option, int *increased);
 extern void addto_char_list(List char_list, char *names);
-extern void destroy_sacctmgr_action(void *object);
 extern int notice_thread_init();
 extern int notice_thread_fini();
 extern int commit_check(char *warning);

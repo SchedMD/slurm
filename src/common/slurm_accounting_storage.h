@@ -92,8 +92,11 @@ typedef struct {
 	uint32_t usage_end; 
 	uint32_t usage_start; 
 	List user_list;		/* list of char * */
-	uint16_t with_usage; 
-	uint16_t with_deleted; 
+	uint16_t with_usage;  /* fill in usage */
+	uint16_t with_deleted; /* return deleted associations */
+	uint16_t without_parent_info; /* don't give me parent id/name */
+	uint16_t without_parent_limits; /* don't give me limits from
+					 * parents */
 } acct_association_cond_t;
 
 typedef struct {
