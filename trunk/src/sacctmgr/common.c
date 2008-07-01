@@ -110,20 +110,26 @@ extern char *strip_quotes(char *option, int *increased)
 	int end = 0;
 	int i=0, start=0;
 	char *meat = NULL;
+	char quote_c = '\0';
+	int quote = 0;
 
 	if(!option)
 		return NULL;
 
 	/* first strip off the ("|')'s */
-	if (option[i] == '\"' || option[i] == '\'')
+	if (option[i] == '\"' || option[i] == '\'') {
+		quote_c = option[i];
+		quote = 1;
 		i++;
+	}
 	start = i;
 
 	while(option[i]) {
-		if(option[i] == '\"' || option[i] == '\'') {
+		if(quote && option[i] == quote_c) {
 			end++;
 			break;
-		}
+		} else if(option[i] == '\"' || option[i] == '\'')
+			option[i] = '`';
 		i++;
 	}
 	end += i;

@@ -700,6 +700,7 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
  	char *sub = NULL;
 	sacctmgr_file_opts_t *file_opts = xmalloc(sizeof(sacctmgr_file_opts_t));
 	char *option = NULL;
+	char quote_c = '\0';
 
 	file_opts->fairshare = NO_VAL;
 	file_opts->max_cpu_secs_per_job = NO_VAL;
@@ -713,16 +714,18 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 		
 		while(options[i] && options[i] != ':' && options[i] != '\n') {
 			if(options[i] == '"' || options[i] == '\'') {
-				if(quote)
-					quote = 0;
-				else
+				if(quote) {
+					if(options[i] == quote_c)
+						quote = 0;
+				} else {
 					quote = 1;
+					quote_c = options[i];
+				}
 			}
 			i++;
 		}
 		if(quote) {
-			while(options[i] && options[i] != '"'
-			      && options[i] != '\'') 
+			while(options[i] && options[i] != quote_c) 
 				i++;
 			if(!options[i])
 				fatal("There is a problem with option "
@@ -733,7 +736,6 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 		end = parse_option_end(sub);
 		
 		option = strip_quotes(sub+end, NULL);
-		
 		if(!end) {
 			if(file_opts->name) {
 				printf(" Bad format on %s: "
