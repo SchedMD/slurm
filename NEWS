@@ -8,6 +8,8 @@ documents those changes that are of interest to users and admins.
  -- If srun is allocating resources (not within sbatch or salloc) and MaxWait
     is configured to a non-zero value then wait indefinitely for the resource
     allocation rather than aborting the request after MaxWait time.
+ -- For Moab only: add logic to reap defunct "su" processes that are spawned by
+    slurmd to load user's environment variables.
 
 * Changes in SLURM 1.3.4
 ========================
