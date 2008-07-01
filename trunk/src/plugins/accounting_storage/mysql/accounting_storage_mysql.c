@@ -4797,7 +4797,7 @@ empty:
 					"and cluster='%s';", 
 					assoc_table, row[ASSOC_REQ_PARENT],
 					row[ASSOC_REQ_CLUSTER]);
-				debug3("%d query\n%s", mysql_conn->conn, query);
+				debug4("%d query\n%s", mysql_conn->conn, query);
 
 				if(!(result2 = mysql_db_query_ret(
 					     mysql_conn->acct_mysql_db,
