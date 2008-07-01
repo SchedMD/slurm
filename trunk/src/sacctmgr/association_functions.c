@@ -45,6 +45,12 @@ typedef struct {
 	char *spaces;
 } print_acct_t;
 
+typedef struct {
+	acct_association_rec_t *assoc;
+	char *sort_name;
+	List childern;
+} local_assoc_t;
+
 static void _destroy_print_acct(void *object)
 {
 	print_acct_t *print_acct = (print_acct_t *)object;
@@ -53,6 +59,20 @@ static void _destroy_print_acct(void *object)
 		xfree(print_acct->print_name);
 		xfree(print_acct->spaces);
 		xfree(print_acct);
+	}
+}
+
+static void _destroy_local_assoc(void *object)
+{
+	/* Most of this is pointers to something else that will be
+	 * destroyed elsewhere.
+	 */
+	local_assoc_t *local_assoc = (local_assoc_t *)object;
+	if(local_assoc) {
+		if(local_assoc->childern) {
+			list_destroy(local_assoc->childern);
+		}
+		xfree(local_assoc);
 	}
 }
 
@@ -167,109 +187,136 @@ static int _set_cond(int *start, int argc, char *argv[],
 
 	return set;
 }
+/* 
+ * Comparator used for sorting immediate childern of local_assocs
+ * 
+ * returns: -1: local_a > local_b   0: local_a == local_b   1: local_a < local_b
+ * 
+ */
 
-/* static void _print_cond(acct_association_cond_t *association_cond) */
-/* { */
-/* 	ListIterator itr = NULL; */
-/* 	char *tmp_char = NULL; */
+static int _sort_childern_list(local_assoc_t *local_a, local_assoc_t *local_b)
+{
+	int diff = strcmp(local_a->sort_name, local_b->sort_name);
+	/* check to see if this is a user association or an account.
+	 * We want the accounts at the bottom 
+	 */
+	if(list_count(local_a->childern) && list_count(local_a->childern))
+		return 1;
+	else if(!list_count(local_a->childern) && list_count(local_b->childern))
+		return -1;
 
-/* 	if(!association_cond) { */
-/* 		error("no acct_association_cond_t * given"); */
-/* 		return; */
-/* 	} */
-
-/* 	if(association_cond->id_list && list_count(association_cond->id_list)) { */
-/* 		itr = list_iterator_create(association_cond->id_list); */
-/* 		printf("  Id        = %s\n", (char *)list_next(itr)); */
-/* 		while((tmp_char = list_next(itr))) { */
-/* 			printf("           or %s\n", tmp_char); */
-/* 		} */
-/* 	} */
-
-/* 	if(association_cond->user_list */
-/* 	   && list_count(association_cond->user_list)) { */
-/* 		itr = list_iterator_create(association_cond->user_list); */
-/* 		printf("  User      = %s\n", (char *)list_next(itr)); */
-/* 		while((tmp_char = list_next(itr))) { */
-/* 			printf("           or %s\n", tmp_char); */
-/* 		} */
-/* 	} */
-
-/* 	if(association_cond->acct_list */
-/* 	   && list_count(association_cond->acct_list)) { */
-/* 		itr = list_iterator_create(association_cond->acct_list); */
-/* 		printf("  Account   = %s\n", (char *)list_next(itr)); */
-/* 		while((tmp_char = list_next(itr))) { */
-/* 			printf("           or %s\n", tmp_char); */
-/* 		} */
-/* 	} */
-
-/* 	if(association_cond->cluster_list */
-/* 	   && list_count(association_cond->cluster_list)) { */
-/* 		itr = list_iterator_create(association_cond->cluster_list); */
-/* 		printf("  Cluster   = %s\n", (char *)list_next(itr)); */
-/* 		while((tmp_char = list_next(itr))) { */
-/* 			printf("           or %s\n", tmp_char); */
-/* 		} */
-/* 	} */
-
-/* 	if(association_cond->partition_list */
-/* 	   && list_count(association_cond->partition_list)) { */
-/* 		itr = list_iterator_create(association_cond->partition_list); */
-/* 		printf("  Partition = %s\n", (char *)list_next(itr)); */
-/* 		while((tmp_char = list_next(itr))) { */
-/* 			printf("           or %s\n", tmp_char); */
-/* 		} */
-/* 	} */
-
-/* 	if(association_cond->parent_account) */
-/* 		printf("  Parent    = %s\n", association_cond->parent_account); */
-
-/* } */
-
-/* static void _print_rec(acct_association_rec_t *association) */
-/* { */
-/* 	if(!association) { */
-/* 		error("no acct_association_rec_t * given"); */
-/* 		return; */
-/* 	} */
+	if (diff < 0)
+		return -1;
+	else if (diff > 0)
+		return 1;
 	
-/* 	if(association->id)  */
-/* 		printf("  Id         = %u\n", association->id);	 */
+	return 0;
+
+}
+
+static int _sort_local_list(List local_assoc_list)
+{
+	local_assoc_t *local_assoc = NULL;
+	ListIterator itr;
+
+	if(!list_count(local_assoc_list))
+		return SLURM_SUCCESS;
+
+	list_sort(local_assoc_list, (ListCmpF)_sort_childern_list);
+
+	itr = list_iterator_create(local_assoc_list);
+	while((local_assoc = list_next(itr))) {
+		if(list_count(local_assoc->childern))
+			_sort_local_list(local_assoc->childern);
+	}
+	list_iterator_destroy(itr);
+
+	return SLURM_SUCCESS;
+}
+
+static int _append_ret_list(List ret_list, List local_assoc_list)
+{
+	local_assoc_t *local_assoc = NULL;
+	ListIterator itr;
+
+	if(!ret_list)
+		return SLURM_ERROR;
+
+	if(!list_count(local_assoc_list))
+		return SLURM_SUCCESS;
+
+	itr = list_iterator_create(local_assoc_list);
+	while((local_assoc = list_next(itr))) {
+		list_append(ret_list, local_assoc->assoc);
+
+		if(list_count(local_assoc->childern)) 
+			_append_ret_list(ret_list, local_assoc->childern);
+	}
+	list_iterator_destroy(itr);
+
+	return SLURM_SUCCESS;
+}
+
+static List _sort_assoc_list(List assoc_list)
+{
+	local_assoc_t *par_local_assoc = NULL;
+	local_assoc_t *local_assoc = NULL;
+	acct_association_rec_t *assoc = NULL;
+	List total_assoc_list = list_create(NULL);
+	List local_assoc_list = list_create(_destroy_local_assoc);
+	List ret_list = NULL;
+	ListIterator itr, itr2;
+
+	itr = list_iterator_create(assoc_list);
+	itr2 = list_iterator_create(total_assoc_list);
+	
+	while((assoc = list_next(itr))) {
+		if(!assoc->parent_id) {
+			local_assoc = xmalloc(sizeof(local_assoc_t));
+			local_assoc->childern =
+				list_create(_destroy_local_assoc);
+			local_assoc->sort_name = assoc->cluster;
+			local_assoc->assoc = assoc;
+			list_append(local_assoc_list, local_assoc);
+			list_append(total_assoc_list, local_assoc);
+			list_iterator_reset(itr2);
+			continue;
+		}
+
+		while((par_local_assoc = list_next(itr2))) {
+			if(assoc->parent_id == par_local_assoc->assoc->id) 
+				break;
+		}
+
+		local_assoc = xmalloc(sizeof(local_assoc_t));
+		local_assoc->childern = list_create(_destroy_local_assoc);
+		if(assoc->user)
+			local_assoc->sort_name = assoc->user;
+		else
+			local_assoc->sort_name = assoc->acct;
 		
-/* 	if(association->user)  */
-/* 		printf("  User       = %s\n", association->user); */
-/* 	if(association->account)  */
-/* 		printf("  Account    = %s\n", association->account); */
-/* 	if(association->cluster)  */
-/* 		printf("  Cluster    = %s\n", association->cluster); */
-/* 	if(association->partition)  */
-/* 		printf("  Partition  = %s\n", association->partition); */
-/* 	if(association->parent_account)  */
-/* 		printf("  Parent     = %s\n", association->parent_account); */
-/* 	if(association->fairshare)  */
-/* 		printf("  FairShare  = %u\n", association->fairshare); */
-/* 	if(association->max_jobs)  */
-/* 		printf("  MaxJobs    = %u\n", association->max_jobs); */
-/* 	if(association->max_nodes_per_job)  */
-/* 		printf("  MaxNodes   = %u\n", association->max_nodes_per_job); */
-/* 	if(association->max_wall_duration_per_job) { */
-/* 		char time_buf[32]; */
-/* 		mins2time_str((time_t) association->max_wall_duration_per_job, */
-/* 			      time_buf, sizeof(time_buf)); */
-/* 		printf("  MaxWall    = %s\n", time_buf); */
-/* 	} */
-/* 	if(association->max_cpu_seconds_per_job)  */
-/* 		printf("  MaxCPUSecs = %u\n", */
-/* 		       association->max_cpu_seconds_per_job); */
-/* } */
+		local_assoc->assoc = assoc;
 
-/* extern int sacctmgr_add_association(int argc, char *argv[]) */
-/* { */
-/* 	int rc = SLURM_SUCCESS; */
+		if(!par_local_assoc) 
+			list_append(local_assoc_list, local_assoc);
+		else
+			list_append(par_local_assoc->childern, local_assoc);
+		list_append(total_assoc_list, local_assoc);
+		list_iterator_reset(itr2);
+	}
+	list_iterator_destroy(itr);
+	list_iterator_destroy(itr2);
 
-/* 	return rc; */
-/* } */
+	list_destroy(total_assoc_list);
+
+	_sort_local_list(local_assoc_list);
+
+	ret_list = list_create(NULL);
+
+	_append_ret_list(ret_list, local_assoc_list);
+	
+	return ret_list;
+}
 
 extern int sacctmgr_list_association(int argc, char *argv[])
 {
@@ -277,6 +324,7 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 	acct_association_cond_t *assoc_cond =
 		xmalloc(sizeof(acct_association_cond_t));
 	List assoc_list = NULL;
+	List first_list = NULL;
 	acct_association_rec_t *assoc = NULL;
 	int i=0;
 	ListIterator itr = NULL;
@@ -314,13 +362,15 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 
 	assoc_list = acct_storage_g_get_associations(db_conn, assoc_cond);
 	destroy_acct_association_cond(assoc_cond);
-	
+
 	if(!assoc_list) {
 		printf(" Problem with query.\n");
 		list_destroy(format_list);
 		return SLURM_ERROR;
 	}
 	print_fields_list = list_create(destroy_print_field);
+	first_list = assoc_list;
+	assoc_list = _sort_assoc_list(first_list);
 
 	if(!list_count(format_list)) 
 		addto_char_list(format_list, "C,A,U,F,MaxC,MaxJ,MaxN,MaxW");
@@ -496,6 +546,7 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 
 	list_iterator_destroy(itr2);
 	list_iterator_destroy(itr);
+	list_destroy(first_list);
 	list_destroy(assoc_list);
 	list_destroy(print_fields_list);
 	return rc;
