@@ -796,6 +796,62 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 	return rc;
 }
 
+static int _get_account_coords(mysql_conn_t *mysql_conn, 
+			       acct_account_rec_t *acct)
+{
+	char *query = NULL;
+	acct_coord_rec_t *coord = NULL;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	
+	if(!acct) {
+		error("We need a account to fill in.");
+		return SLURM_ERROR;
+	}
+
+	if(!acct->coordinators)
+		acct->coordinators = list_create(destroy_acct_coord_rec);
+			
+	query = xstrdup_printf(
+		"select user from %s where acct='%s' && deleted=0",
+		acct_coord_table, acct->name);
+			
+	if(!(result =
+	     mysql_db_query_ret(mysql_conn->acct_mysql_db, query, 0))) {
+		xfree(query);
+		return SLURM_ERROR;
+	}
+	xfree(query);
+	while((row = mysql_fetch_row(result))) {
+		coord = xmalloc(sizeof(acct_coord_rec_t));
+		list_append(acct->coordinators, coord);
+		coord->name = xstrdup(row[0]);
+		coord->direct = 1;
+	}
+	mysql_free_result(result);
+		
+	query = xstrdup_printf("select distinct t0.user from %s as t0, "
+			       "%s as t1, %s as t2 where t0.acct=t1.acct && "
+			       "t1.lft<t2.lft && t1.rgt>t2.lft && "
+			       "t1.user='' && t2.acct='%s' && t1.acct!='%s' && "
+			       "!t0.deleted;",
+			       acct_coord_table, assoc_table, assoc_table,
+			       acct->name, acct->name);
+	if(!(result =
+	     mysql_db_query_ret(mysql_conn->acct_mysql_db, query, 0))) {
+		xfree(query);
+		return SLURM_ERROR;
+	}
+	xfree(query);
+	while((row = mysql_fetch_row(result))) {
+		coord = xmalloc(sizeof(acct_coord_rec_t));
+		list_append(acct->coordinators, coord);
+		coord->name = xstrdup(row[0]);
+		coord->direct = 0;
+	}
+	return SLURM_SUCCESS;
+}
+
 static int _get_user_coords(mysql_conn_t *mysql_conn, acct_user_rec_t *user)
 {
 	char *query = NULL;
@@ -825,8 +881,8 @@ static int _get_user_coords(mysql_conn_t *mysql_conn, acct_user_rec_t *user)
 	while((row = mysql_fetch_row(result))) {
 		coord = xmalloc(sizeof(acct_coord_rec_t));
 		list_append(user->coord_accts, coord);
-		coord->acct_name = xstrdup(row[0]);
-		coord->sub_acct = 0;
+		coord->name = xstrdup(row[0]);
+		coord->direct = 1;
 		if(query) 
 			xstrcat(query, " || ");
 		else 
@@ -842,7 +898,7 @@ static int _get_user_coords(mysql_conn_t *mysql_conn, acct_user_rec_t *user)
 			   "&& t1.lft between t2.lft "
 			   "and t2.rgt && t1.user='' "
 			   "&& t1.acct!='%s')",
-			   coord->acct_name, coord->acct_name);
+			   coord->name, coord->name);
 	}
 	mysql_free_result(result);
 
@@ -858,7 +914,7 @@ static int _get_user_coords(mysql_conn_t *mysql_conn, acct_user_rec_t *user)
 		while((row = mysql_fetch_row(result))) {
 
 			while((coord = list_next(itr))) {
-				if(!strcmp(coord->acct_name, row[0]))
+				if(!strcmp(coord->name, row[0]))
 					break;
 			}
 			list_iterator_reset(itr);
@@ -867,8 +923,8 @@ static int _get_user_coords(mysql_conn_t *mysql_conn, acct_user_rec_t *user)
 					
 			coord = xmalloc(sizeof(acct_coord_rec_t));
 			list_append(user->coord_accts, coord);
-			coord->acct_name = xstrdup(row[0]);
-			coord->sub_acct = 1;
+			coord->name = xstrdup(row[0]);
+			coord->direct = 0;
 		}
 		list_iterator_destroy(itr);
 		mysql_free_result(result);
@@ -3047,7 +3103,7 @@ extern List acct_storage_p_modify_associations(mysql_conn_t *mysql_conn,
 			}
 			itr = list_iterator_create(user.coord_accts);
 			while((coord = list_next(itr))) {
-				if(!strcasecmp(coord->acct_name, account))
+				if(!strcasecmp(coord->name, account))
 					break;
 			}
 			list_iterator_destroy(itr);
@@ -3471,7 +3527,7 @@ extern List acct_storage_p_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 			}
 			itr = list_iterator_create(user.coord_accts);
 			while((coord = list_next(itr))) {
-				if(!strcasecmp(coord->acct_name, row[1]))
+				if(!strcasecmp(coord->name, row[1]))
 					break;
 			}
 			list_iterator_destroy(itr);
@@ -4013,7 +4069,7 @@ extern List acct_storage_p_remove_associations(mysql_conn_t *mysql_conn,
 			}
 			itr = list_iterator_create(user.coord_accts);
 			while((coord = list_next(itr))) {
-				if(!strcasecmp(coord->acct_name,
+				if(!strcasecmp(coord->name,
 					       row[RASSOC_ACCT]))
 					break;
 			}
@@ -4271,8 +4327,8 @@ extern List acct_storage_p_get_accts(mysql_conn_t *mysql_conn,
 	char *object = NULL;
 	int set = 0;
 	int i=0;
-	MYSQL_RES *result = NULL, *coord_result = NULL;
-	MYSQL_ROW row, coord_row;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
 
 	/* if this changes you will need to edit the corresponding enum */
 	char *acct_req_inx[] = {
@@ -4384,23 +4440,9 @@ empty:
 		acct->organization = xstrdup(row[ACCT_REQ_ORG]);
 		acct->qos = atoi(row[ACCT_REQ_QOS]);
 
-		acct->coordinators = list_create(slurm_destroy_char);
-		query = xstrdup_printf("select user from %s where acct='%s' "
-				       "&& deleted=0;",
-				       acct_coord_table, acct->name);
-
-		if(!(coord_result =
-		     mysql_db_query_ret(mysql_conn->acct_mysql_db, query, 0))) {
-			xfree(query);
-			continue;
+		if(acct_q && acct_q->with_coords) {
+			_get_account_coords(mysql_conn, acct);
 		}
-		xfree(query);
-		
-		while((coord_row = mysql_fetch_row(coord_result))) {
-			object = xstrdup(coord_row[0]);
-			list_append(acct->coordinators, object);
-		}
-		mysql_free_result(coord_result);
 
 		if(acct_q && acct_q->with_assocs) {
 			acct_association_cond_t *assoc_q = NULL;

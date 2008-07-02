@@ -45,7 +45,8 @@
 #define BUFFER_SIZE 4096
 
 typedef struct {
-	uint16_t admin;
+	acct_admin_level_t admin;
+	List coord_list; /* char *list */
 	char *def_acct;
 	char *desc;
 	uint32_t fairshare;
@@ -56,7 +57,7 @@ typedef struct {
 	char *name;
 	char *org;
 	char *part;
-	uint16_t qos;
+	acct_qos_level_t qos;
 } sacctmgr_file_opts_t;
 
 
@@ -685,6 +686,8 @@ static void _destroy_sacctmgr_file_opts(void *object)
 	sacctmgr_file_opts_t *file_opts = (sacctmgr_file_opts_t *)object;
 
 	if(file_opts) {
+		if(file_opts->coord_list)
+			list_destroy(file_opts->coord_list);
 		xfree(file_opts->def_acct);
 		xfree(file_opts->desc);
 		xfree(file_opts->name);
@@ -747,6 +750,11 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 			file_opts->name = xstrdup(option);
 		} else if (strncasecmp (sub, "AdminLevel", 2) == 0) {
 			file_opts->admin = str_2_acct_admin_level(option);
+		} else if (strncasecmp (sub, "Coordinator", 2) == 0) {
+			if(!file_opts->coord_list)
+				file_opts->coord_list =
+					list_create(slurm_destroy_char);
+			addto_char_list(file_opts->coord_list, option);
 		} else if (strncasecmp (sub, "DefaultAccount", 3) == 0) {
 			file_opts->def_acct = xstrdup(option);
 		} else if (strncasecmp (sub, "Description", 3) == 0) {

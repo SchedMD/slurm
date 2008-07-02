@@ -52,8 +52,10 @@ static int _set_cond(int *start, int argc, char *argv[],
 		if (strncasecmp (argv[i], "Set", 3) == 0) {
 			i--;
 			break;
-		} else if (strncasecmp (argv[i], "WithAssoc", 4) == 0) {
+		} else if (strncasecmp (argv[i], "WithAssoc", 5) == 0) {
 			acct_cond->with_assocs = 1;
+		} else if (strncasecmp (argv[i], "WithCoordinators", 5) == 0) {
+			acct_cond->with_coords = 1;
 		} else if(!end && !strncasecmp(argv[i], "where", 5)) {
 			continue;
 		} else if(!end) {
@@ -178,69 +180,6 @@ static int _set_rec(int *start, int argc, char *argv[],
 		return 1;
 	return 0;
 }
-
-/* static void _print_cond(acct_account_cond_t *acct_cond) */
-/* { */
-/* 	ListIterator itr = NULL; */
-/* 	char *tmp_char = NULL; */
-
-/* 	if(!acct_cond) { */
-/* 		error("no acct_account_cond_t * given"); */
-/* 		return; */
-/* 	} */
-
-/* 	if(acct_cond->acct_list && list_count(acct_cond->acct_list)) { */
-/* 		itr = list_iterator_create(acct_cond->acct_list); */
-/* 		printf("  Names       = %s\n", (char *)list_next(itr)); */
-/* 		while((tmp_char = list_next(itr))) { */
-/* 			printf("             or %s\n", tmp_char); */
-/* 		} */
-/* 	} */
-
-/* 	if(acct_cond->description_list */
-/* 	   && list_count(acct_cond->description_list)) { */
-/* 		itr = list_iterator_create(acct_cond->description_list); */
-/* 		printf("  Description = %s\n", (char *)list_next(itr)); */
-/* 		while((tmp_char = list_next(itr))) { */
-/* 			printf("             or %s\n", tmp_char); */
-/* 		} */
-/* 	} */
-
-/* 	if(acct_cond->organization_list */
-/* 	   && list_count(acct_cond->organization_list)) { */
-/* 		itr = list_iterator_create(acct_cond->organization_list); */
-/* 		printf("  Organization = %s\n", (char *)list_next(itr)); */
-/* 		while((tmp_char = list_next(itr))) { */
-/* 			printf("             or %s\n", tmp_char); */
-/* 		} */
-/* 	} */
-
-/* 	if(acct_cond->qos != ACCT_QOS_NOTSET) */
-/* 		printf("  Qos     = %s\n",  */
-/* 		       acct_qos_str(acct_cond->qos)); */
-/* } */
-
-/* static void _print_rec(acct_account_rec_t *acct) */
-/* { */
-/* 	if(!acct) { */
-/* 		error("no acct_account_rec_t * given"); */
-/* 		return; */
-/* 	} */
-	
-/* 	if(acct->name)  */
-/* 		printf("  Name         = %s\n", acct->name);	 */
-		
-/* 	if(acct->description)  */
-/* 		printf("  Description  = %s\n", acct->description); */
-
-/* 	if(acct->organization)  */
-/* 		printf("  Organization = %s\n", acct->organization); */
-		
-/* 	if(acct->qos != ACCT_QOS_NOTSET) */
-/* 		printf("  Qos     = %s\n",  */
-/* 		       acct_qos_str(acct->qos)); */
-
-/* } */
 
 extern int sacctmgr_add_account(int argc, char *argv[])
 {
@@ -650,6 +589,7 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 	enum {
 		PRINT_ACCOUNT,
 		PRINT_CLUSTER,
+		PRINT_COORDS,
 		PRINT_DESC,
 		PRINT_FAIRSHARE,
 		PRINT_ID,
@@ -684,7 +624,10 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 		addto_char_list(format_list, "A,D,O,Q");
 		if(acct_cond->with_assocs)
 			addto_char_list(format_list,
-					"C,ParentN,U,F,MaxC,MaxJ,MaxN,MaxW");
+					"Cl,ParentN,U,F,MaxC,MaxJ,MaxN,MaxW");
+			
+		if(acct_cond->with_coords)
+			addto_char_list(format_list, "Coord");
 			
 	}
 	acct_list = acct_storage_g_get_accounts(db_conn, acct_cond);	
@@ -705,11 +648,16 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 			field->name = xstrdup("Account");
 			field->len = 10;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("Cluster", object, 1)) {
+		} else if(!strncasecmp("Cluster", object, 2)) {
 			field->type = PRINT_CLUSTER;
 			field->name = xstrdup("Cluster");
 			field->len = 10;
 			field->print_routine = print_fields_str;
+		} else if(!strncasecmp("Coordinators", object, 2)) {
+			field->type = PRINT_COORDS;
+			field->name = xstrdup("Coordinators");
+			field->len = 20;
+			field->print_routine = sacctmgr_print_coord_list;
 		} else if(!strncasecmp("Description", object, 1)) {
 			field->type = PRINT_DESC;
 			field->name = xstrdup("Descr");
@@ -812,6 +760,15 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 							SLURM_PRINT_VALUE,
 							field, assoc->cluster);
 						break;
+					case PRINT_COORDS:
+						list_sort(acct->coordinators,
+							  (ListCmpF)
+							  sort_coord_list);
+						field->print_routine(
+							SLURM_PRINT_VALUE,
+							field,
+							acct->coordinators);
+						break;
 					case PRINT_DESC:
 						field->print_routine(
 							SLURM_PRINT_VALUE,
@@ -863,7 +820,8 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 						field->print_routine(
 							SLURM_PRINT_VALUE,
 							field, 
-							acct_qos_str(acct->qos));
+							acct_qos_str(
+								acct->qos));
 						break;
 					case PRINT_QOS_GOLD:
 						field->print_routine(
@@ -920,6 +878,14 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 					field->print_routine(
 						SLURM_PRINT_VALUE,
 						field, NULL);
+					break;
+				case PRINT_COORDS:
+					list_sort(acct->coordinators,
+						  (ListCmpF)sort_coord_list);
+					field->print_routine(
+						SLURM_PRINT_VALUE,
+						field,
+						acct->coordinators);
 					break;
 				case PRINT_DESC:
 					field->print_routine(

@@ -449,7 +449,7 @@ extern int assoc_mgr_is_user_acct_coord(void *db_conn,
 	}
 	itr = list_iterator_create(found_user->coord_accts);
 	while((acct = list_next(itr))) {
-		if(!strcmp(acct_name, acct->acct_name))
+		if(!strcmp(acct_name, acct->name))
 			break;
 	}
 	list_iterator_destroy(itr);

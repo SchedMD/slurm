@@ -380,7 +380,7 @@ static int _add_account_coords(void *db_conn,
 		itr2 = list_iterator_create(user.coord_accts);
 		while((acct = list_next(itr))) {
 			while((coord = list_next(itr2))) {
-				if(!strcasecmp(coord->acct_name, acct))
+				if(!strcasecmp(coord->name, acct))
 					break;
 			}
 			if(!coord)  {
@@ -457,7 +457,7 @@ static int _add_assocs(void *db_conn,
 				account = object->parent_acct;
 			list_iterator_reset(itr2);
 			while((coord = list_next(itr2))) {
-				if(!strcasecmp(coord->acct_name, account))
+				if(!strcasecmp(coord->name, account))
 					break;
 			}
 			if(!coord) 

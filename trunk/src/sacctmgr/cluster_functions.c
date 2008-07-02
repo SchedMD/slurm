@@ -163,6 +163,32 @@ static int _print_file_sacctmgr_assoc_childern(FILE *fd,
 				if(user_rec->qos > ACCT_QOS_NORMAL)
 					xstrfmtcat(line, ":QOS=%s",
 						   acct_qos_str(user_rec->qos));
+				if(user_rec->coord_accts
+				   && list_count(user_rec->coord_accts)) {
+					ListIterator itr2 = NULL;
+					acct_coord_rec_t *coord = NULL;
+					int first_coord = 1;
+					list_sort(user_rec->coord_accts,
+						  (ListCmpF)sort_coord_list);
+					itr2 = list_iterator_create(
+						user_rec->coord_accts);
+					while((coord = list_next(itr2))) {
+						/* We only care about
+						 * the direct accounts here
+						 */
+						if(!coord->direct) 
+							continue;
+						if(first_coord) {
+							xstrfmtcat(line,
+								   ":Coordinator=%s",
+								   coord->name);
+						} else {
+							xstrfmtcat(line, ",%s",
+								   coord->name);
+						}				
+					}
+					list_iterator_destroy(itr2);
+				}
 			}
 		} else {
 			acct_rec = sacctmgr_find_account_from_list(
@@ -767,6 +793,7 @@ extern int sacctmgr_delete_cluster(int argc, char *argv[])
 
 extern int sacctmgr_dump_cluster (int argc, char *argv[])
 {
+	acct_user_cond_t user_cond;
 	acct_association_cond_t assoc_cond;
 	List assoc_list = NULL;
 	List acct_list = NULL;
@@ -816,14 +843,12 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 	}
 
 	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
-
 	assoc_cond.without_parent_limits = 1;
 	assoc_cond.cluster_list = list_create(NULL);
 	list_append(assoc_cond.cluster_list, cluster_name);
 
-	user_list = acct_storage_g_get_users(db_conn, NULL);
-	acct_list = acct_storage_g_get_accounts(db_conn, NULL);
 	assoc_list = acct_storage_g_get_associations(db_conn, &assoc_cond);
+
 	list_destroy(assoc_cond.cluster_list);
 	if(!assoc_list) {
 		printf(" Problem with query.\n");
@@ -836,6 +861,14 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 	}
 
 	sacctmgr_assoc_list = sacctmgr_get_hierarchical_list(assoc_list);
+
+	memset(&user_cond, 0, sizeof(acct_user_cond_t));
+	user_cond.with_coords = 1;
+
+	user_list = acct_storage_g_get_users(db_conn, &user_cond);
+
+	acct_list = acct_storage_g_get_accounts(db_conn, NULL);
+
 	
 	fd = fopen(file_name, "w");
 	/* Add header */
