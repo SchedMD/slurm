@@ -1478,7 +1478,7 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 		}
 		if (_env_array_entry_splitter(line, name, sizeof(name), 
 					      value, sizeof(value)) &&
-		    (!_discard_env(name, value)))
+		    (!_discard_env(name, value))) {
 			if (value[0] == '(') {
 				/* This is a bash function.
 				 * It may span multiple lines */
@@ -1495,6 +1495,7 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 				}
 			}
 			env_array_overwrite(&env, name, value);
+		}
 		line = strtok_r(NULL, "\n", &last);
 	}
 	if (!found) {
