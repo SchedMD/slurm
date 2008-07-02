@@ -735,7 +735,8 @@ _handle_signal_container(int fd, slurmd_job_t *job, uid_t uid)
 			error("*** %s CANCELLED DUE TO NODE FAILURE ***", entity);
 			msg_sent = 1;
 		} else if (sig == SIG_FAILURE) {
-			error("*** %s CANCELLED DUE TO SYSTEM FAILURE ***", entity);
+			error("*** %s FAILED (non-zero exit code or other "
+			      "failure mode) ***", entity);
 			msg_sent = 1;
 		} else if ((sig == SIGTERM) || (sig == SIGKILL)) {
 			error("*** %s CANCELLED ***", entity);
