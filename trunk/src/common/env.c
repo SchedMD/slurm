@@ -1254,6 +1254,23 @@ static void _strip_cr_nl(char *line)
 	}
 }
 
+/* Return the net count of curly brackets in a string
+ * '{' adds one and '}' subtracts one (zero means it is balanced).
+ * Special case: return -1 if no open brackets are found */
+static int _bracket_cnt(char *value)
+{
+	int open_br = 0, close_br = 0, i;
+	for (i=0; value[i]; i++) {
+		if (value[i] == '{')
+			open_br++;
+		else if (value[i] == '}')
+			close_br++;
+	}
+	if (open_br == 0)
+		return -1;
+	return (open_br - close_br);
+}
+
 /*
  * Load user environment from a cache file located in
  * <state_save_location>/env_username
@@ -1290,8 +1307,24 @@ static char **_load_env_cache(const char *username)
 		_strip_cr_nl(line);
 		if (_env_array_entry_splitter(line, name, sizeof(name), 
 					      value, ENV_BUFSIZE) &&
-		    (!_discard_env(name, value)))
+		    (!_discard_env(name, value))) {
+			if (value[0] == '(') {
+				/* This is a bash function.
+				 * It may span multiple lines */
+				int bracket_cnt;
+				while ((bracket_cnt = _bracket_cnt(value))) {
+					if (!fgets(line, ENV_BUFSIZE, fp))
+						break;
+					_strip_cr_nl(line);
+					if ((strlen(value) + strlen(line)) >
+					    (sizeof(value) - 1))
+						break;
+					strcat(value, "\n");
+					strcat(value, line);
+				}
+			}
 			env_array_overwrite(&env, name, value);
+		}
 	}
 	xfree(line);
 	xfree(value);
@@ -1499,8 +1532,24 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 		}
 		if (_env_array_entry_splitter(line, name, sizeof(name), 
 					      value, ENV_BUFSIZE) &&
-		    (!_discard_env(name, value)))
+		    (!_discard_env(name, value))) {
+			if (value[0] == '(') {
+				/* This is a bash function.
+				 * It may span multiple lines */
+				int bracket_cnt;
+				while ((bracket_cnt = _bracket_cnt(value))) {
+					line = strtok_r(NULL, "\n", &last);
+					if (!line)
+						break;
+					if ((strlen(value) + strlen(line)) >
+					    (sizeof(value) - 1))
+						break;
+					strcat(value, "\n");
+					strcat(value, line);
+				}
+			}
 			env_array_overwrite(&env, name, value);
+		}
 		line = strtok_r(NULL, "\n", &last);
 	}
 	xfree(value);
