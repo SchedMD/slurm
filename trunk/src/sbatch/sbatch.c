@@ -179,6 +179,7 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->task_dist  = opt.distribution;
 	if (opt.plane_size != NO_VAL)
 		desc->plane_size = opt.plane_size;
+	desc->network = opt.network;
 	if (opt.nice)
 		desc->nice = NICE_OFFSET + opt.nice;
 	desc->mail_type = opt.mail_type;

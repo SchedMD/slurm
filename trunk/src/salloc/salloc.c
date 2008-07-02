@@ -221,6 +221,8 @@ int main(int argc, char *argv[])
 		env_array_append_fmt(&env, "SLURM_TASK_MEM", "%d",
 			opt.task_mem);
 	}
+	if (opt.network)
+		env_array_append_fmt(&env, "SLURM_NETWORK", "%s", opt.network);
 	env_array_set_environment(env);
 	env_array_free(env);
 	pthread_mutex_lock(&allocation_state_lock);
@@ -310,6 +312,7 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->plane_size = opt.plane_size;
 	if (opt.licenses)
 		desc->licenses = xstrdup(opt.licenses);
+	desc->network = opt.network;
 	if (opt.nice)
 		desc->nice = NICE_OFFSET + opt.nice;
 	desc->mail_type = opt.mail_type;

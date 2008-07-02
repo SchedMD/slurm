@@ -114,6 +114,7 @@ typedef struct salloc_options {
 	bool contiguous;	/* --contiguous			*/
 	char *nodelist;		/* --nodelist=node1,node2,...	*/
 	char *exc_nodes;	/* --exclude=node1,node2,... -x	*/
+	char *network;		/* --network=			*/
 
 	/* BLUEGENE SPECIFIC */
 	uint16_t geometry[SYSTEM_DIMENSIONS]; /* --geometry, -g	*/

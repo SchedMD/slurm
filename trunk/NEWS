@@ -378,6 +378,7 @@ documents those changes that are of interest to users and admins.
     ticket #2394).
  -- Log to job's output when it is cancelled or reaches it's time limit (ported
     from existing code in slurm v1.3).
+ -- Add support in salloc and sbatch commands for --network option.
 
 * Changes in SLURM 1.2.31
 =========================
