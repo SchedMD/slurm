@@ -93,6 +93,8 @@ extern void print_fields_uint64(type_t type, print_field_t *field,
 				uint64_t value);
 extern void print_fields_time(type_t type, print_field_t *field,
 			      uint32_t value);
+extern void print_fields_char_list(type_t type, print_field_t *field,
+				   List value);
 
 #define print_fields_uint print_fields_uint32
 #endif

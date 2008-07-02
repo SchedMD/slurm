@@ -353,7 +353,7 @@ extern void destroy_acct_coord_rec(void *object)
 		(acct_coord_rec_t *)object;
 
 	if(acct_coord) {
-		xfree(acct_coord->acct_name);
+		xfree(acct_coord->name);
 		xfree(acct_coord);
 	}
 }
@@ -638,7 +638,7 @@ unpack_error:
 }
 extern void pack_acct_account_rec(void *in, Buf buffer)
 {
-	char *coord = NULL;
+	acct_coord_rec_t *coord = NULL;
 	ListIterator itr = NULL;
 	uint32_t count = 0;
 	acct_account_rec_t *object = (acct_account_rec_t *)in;
@@ -674,7 +674,7 @@ extern void pack_acct_account_rec(void *in, Buf buffer)
 	if(count) {
 		itr = list_iterator_create(object->coordinators);
 		while((coord = list_next(itr))) {
-			packstr(coord, buffer);
+			pack_acct_coord_rec(coord, buffer);
 		}
 		list_iterator_destroy(itr);
 	}
@@ -691,7 +691,7 @@ extern int unpack_acct_account_rec(void **object, Buf buffer)
 	uint32_t uint32_tmp;
 	int i;
 	uint32_t count;
-	char *coord = NULL;
+	acct_coord_rec_t *coord = NULL;
 	acct_association_rec_t *assoc = NULL;
 	acct_account_rec_t *object_ptr = xmalloc(sizeof(acct_account_rec_t));
 
@@ -710,9 +710,11 @@ extern int unpack_acct_account_rec(void **object, Buf buffer)
 	}
 	safe_unpack32(&count, buffer);
 	if(count) {
-		object_ptr->coordinators = list_create(slurm_destroy_char);
+		object_ptr->coordinators = list_create(destroy_acct_coord_rec);
 		for(i=0; i<count; i++) {
-			safe_unpackstr_xmalloc(&coord, &uint32_tmp, buffer);
+			if(unpack_acct_coord_rec((void *)&coord, buffer)
+			   == SLURM_ERROR)
+				goto unpack_error;
 			list_append(object_ptr->coordinators, coord);
 		}
 	}
@@ -739,8 +741,8 @@ extern void pack_acct_coord_rec(void *in, Buf buffer)
 		return;
 	}
 
-	packstr(object->acct_name, buffer);
-	pack16(object->sub_acct, buffer);
+	packstr(object->name, buffer);
+	pack16(object->direct, buffer);
 }
 
 extern int unpack_acct_coord_rec(void **object, Buf buffer)
@@ -749,8 +751,8 @@ extern int unpack_acct_coord_rec(void **object, Buf buffer)
 	acct_coord_rec_t *object_ptr = xmalloc(sizeof(acct_coord_rec_t));
 
 	*object = object_ptr;
-	safe_unpackstr_xmalloc(&object_ptr->acct_name, &uint32_tmp, buffer);
-	safe_unpack16(&object_ptr->sub_acct, buffer);
+	safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
+	safe_unpack16(&object_ptr->direct, buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -1146,6 +1148,7 @@ extern void pack_acct_account_cond(void *in, Buf buffer)
 		pack16(0, buffer);
 		pack16(0, buffer);
 		pack16(0, buffer);
+		pack16(0, buffer);
 		return;
 	}
  	if(object->acct_list)
@@ -1192,6 +1195,7 @@ extern void pack_acct_account_cond(void *in, Buf buffer)
 	}
 	pack16((uint16_t)object->qos, buffer);
 	pack16((uint16_t)object->with_assocs, buffer);
+	pack16((uint16_t)object->with_coords, buffer);
 	pack16((uint16_t)object->with_deleted, buffer);
 }
 
@@ -1235,6 +1239,7 @@ extern int unpack_acct_account_cond(void **object, Buf buffer)
 	}
 	safe_unpack16((uint16_t *)&object_ptr->qos, buffer);
 	safe_unpack16((uint16_t *)&object_ptr->with_assocs, buffer);
+	safe_unpack16((uint16_t *)&object_ptr->with_coords, buffer);
 	safe_unpack16((uint16_t *)&object_ptr->with_deleted, buffer);
 
 	return SLURM_SUCCESS;

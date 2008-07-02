@@ -1141,6 +1141,7 @@ void do_list(void)
 				}
 				if(step->end == 0)
 					step->end = job->end;
+				step->account = job->account;
 				print_fields(JOBSTEP, step);
 			} 
 			list_iterator_destroy(itr_step);

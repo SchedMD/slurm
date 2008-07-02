@@ -151,6 +151,12 @@ typedef struct {
 } jobacct_job_rec_t;
 
 typedef struct {
+	char    *account; /* This is a pointer to the account var inside
+			   * the jobacct_job_rec_t that contains this
+			   * step.  It is to be used only in the
+			   * client.  This should not be freed, packed
+			   * or unpacked
+			   */
 	uint32_t elapsed;
 	time_t end;
 	int32_t exitcode;

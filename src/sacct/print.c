@@ -1070,6 +1070,7 @@ void print_cputime(type_t type, void *object)
 void print_account(type_t type, void *object)
 {
 	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 
 	switch(type) {
 	case HEADLINE:
@@ -1087,7 +1088,12 @@ void print_account(type_t type, void *object)
 			printf("%-13.13s...", job->account);
 		break;
 	case JOBSTEP:
-		printf("%-16s", " ");
+		if(!step->account)
+			printf("%-16s", "unknown");
+		else if(strlen(step->account)<17)
+			printf("%-16s", step->account);
+		else
+			printf("%-13.13s...", step->account);
 		break;
 	default:
 		printf("%-16s", "n/a");
