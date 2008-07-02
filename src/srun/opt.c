@@ -1875,9 +1875,7 @@ void set_options(const int argc, char **argv, int first)
 		case LONG_OPT_NETWORK:
 			xfree(opt.network);
 			opt.network = xstrdup(optarg);
-#ifdef HAVE_AIX
 			setenv("SLURM_NETWORK", opt.network, 1);
-#endif
 			break;
 		case LONG_OPT_PROPAGATE:
 			xfree(opt.propagate);
