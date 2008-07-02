@@ -14,6 +14,8 @@ documents those changes that are of interest to users and admins.
  -- Log to job's output when it is cancelled or reaches it's time limit (ported
     from existing code in slurm v1.3).
  -- Add support in salloc and sbatch commands for --network option.
+ -- Add support for user environment variables that include '\n' (e.g. 
+    bash functions).
 
 * Changes in SLURM 1.2.31
 =========================
