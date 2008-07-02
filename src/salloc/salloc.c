@@ -204,6 +204,8 @@ int main(int argc, char *argv[])
 		env_array_append_fmt(&env, "SLURM_OVERCOMMIT", "%d", 
 			opt.overcommit);
 	}
+	if (opt.network)
+		env_array_append_fmt(&env, "SLURM_NETWORK", "%s", opt.network);
 	env_array_set_environment(env);
 	env_array_free(env);
 	pthread_mutex_lock(&allocation_state_lock);
@@ -285,6 +287,7 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->user_id = opt.uid;
 	desc->group_id = opt.gid;
 	desc->dependency = opt.dependency;
+	desc->network = opt.network;
 	if (opt.nice)
 		desc->nice = NICE_OFFSET + opt.nice;
 	desc->mail_type = opt.mail_type;

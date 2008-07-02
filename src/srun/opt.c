@@ -1115,6 +1115,7 @@ env_vars_t env_vars[] = {
 {"SLURM_TASK_EPILOG",   OPT_STRING,     &opt.task_epilog,   NULL             },
 {"SLURM_WORKING_DIR",   OPT_STRING,     &opt.cwd,           &opt.cwd_set     },
 {"SLURM_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL             },
+{"SLURM_NETWORK",       OPT_STRING,     &opt.network,       NULL             },
 {NULL, 0, NULL, NULL}
 };
 
@@ -2828,7 +2829,7 @@ static void _usage(void)
 "            [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
 "            [--mpi=type] [--account=name] [--dependency=jobid]\n"
 "            [--kill-on-bad-exit] [--propagate[=rlimits] [--comment=name]\n"
-"            [--cpu_bind=...] [--mem_bind=...]\n"
+"            [--cpu_bind=...] [--mem_bind=...] [--network=type]\n"
 "            [--ntasks-per-node=n] [--ntasks-per-socket=n]\n"
 "            [--ntasks-per-core=n]\n"
 #ifdef HAVE_BG		/* Blue gene specific options */
