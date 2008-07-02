@@ -118,6 +118,7 @@
 #define LONG_OPT_RAMDISK_IMAGE   0x123
 #define LONG_OPT_NOSHELL         0x124
 #define LONG_OPT_GET_USER_ENV    0x125
+#define LONG_OPT_NETWORK         0x126
 #define LONG_OPT_SOCKETSPERNODE  0x130
 #define LONG_OPT_CORESPERSOCKET  0x131
 #define LONG_OPT_THREADSPERCORE  0x132
@@ -326,6 +327,7 @@ env_vars_t env_vars[] = {
   {"SALLOC_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL           },
   {"SALLOC_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL           },
   {"SALLOC_ACCTG_FREQ",    OPT_INT,        &opt.acctg_freq,    NULL           },
+  {"SALLOC_NETWORK",       OPT_STRING    , &opt.network,       NULL           },
   {NULL, 0, NULL, NULL}
 };
 
@@ -540,6 +542,7 @@ void set_options(const int argc, char **argv)
 		{"acctg-freq",    required_argument, 0, LONG_OPT_ACCTG_FREQ},
 		{"no-shell",      no_argument,       0, LONG_OPT_NOSHELL},
 		{"get-user-env",  optional_argument, 0, LONG_OPT_GET_USER_ENV},
+		{"network",       required_argument, 0, LONG_OPT_NETWORK},
 		{NULL,            0,                 0, 0}
 	};
 	char *opt_string = "+a:B:c:C:d:D:F:g:hHIJ:kK:L:m:n:N:Op:P:qR:st:uU:vVw:W:x:";
@@ -912,6 +915,10 @@ void set_options(const int argc, char **argv)
 			else
 				opt.get_user_env_time = 0;
 			break;
+		case LONG_OPT_NETWORK:
+			xfree(opt.network);
+			opt.network = xstrdup(optarg);
+			break;
 		default:
 			fatal("Unrecognized command line parameter %c",
 			      opt_char);
@@ -1135,6 +1142,11 @@ static bool _opt_verify(void)
 		xfree(sched_name);
 	}
 
+#ifdef HAVE_AIX
+	if (opt.network == NULL)
+		opt.network = "us,sn_all,bulk_xfer";
+#endif
+
 	return verified;
 }
 
@@ -1280,6 +1292,7 @@ static void _opt_list()
 	info("account        : %s", opt.account);
 	info("comment        : %s", opt.comment);
 	info("dependency     : %s", opt.dependency);
+	info("network        : %s", opt.network);
 	str = print_constraints();
 	info("constraints    : %s", str);
 	xfree(str);
@@ -1340,6 +1353,7 @@ static void _usage(void)
 "              [--mail-type=type] [--mail-user=user][--nice[=value]]\n"
 "              [--bell] [--no-bell] [--kill-command[=signal]]\n"
 "              [--nodefile=file] [--nodelist=hosts] [--exclude=hosts]\n"
+"              [--network=type]\n"
 "              executable [args...]\n");
 }
 
@@ -1426,6 +1440,11 @@ static void _help(void)
 	slurm_conf_unlock();
 
         printf("\n"
+#ifdef HAVE_AIX				/* AIX/Federation specific options */
+  "AIX related options:\n"
+  "  --network=type              communication protocol to be used\n"
+  "\n"
+#endif
 #ifdef HAVE_BG				/* Blue gene specific options */
 "\n"
   "Blue Gene related options:\n"

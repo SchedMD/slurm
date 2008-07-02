@@ -778,6 +778,7 @@ env_vars_t env_vars[] = {
 {"SLURM_OPEN_MODE",     OPT_OPEN_MODE,  NULL,               NULL             },
 {"SLURM_ACCTG_FREQ",    OPT_INT,        &opt.acctg_freq,    NULL             },
 {"SLURM_TASK_MEM",      OPT_INT,        &opt.task_mem,      NULL             },
+{"SLURM_NETWORK",       OPT_STRING,     &opt.network,       NULL             },
 {NULL, 0, NULL, NULL}
 };
 
@@ -1392,9 +1393,7 @@ static void set_options(const int argc, char **argv)
 		case LONG_OPT_NETWORK:
 			xfree(opt.network);
 			opt.network = xstrdup(optarg);
-#ifdef HAVE_AIX
 			setenv("SLURM_NETWORK", opt.network, 1);
-#endif
 			break;
 		case LONG_OPT_PROPAGATE:
 			xfree(opt.propagate);
@@ -2222,7 +2221,7 @@ static void _usage(void)
 "            [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
 "            [--mpi=type] [--account=name] [--dependency=type:jobid]\n"
 "            [--kill-on-bad-exit] [--propagate[=rlimits] [--comment=name]\n"
-"            [--cpu_bind=...] [--mem_bind=...]\n"
+"            [--cpu_bind=...] [--mem_bind=...] [--network=type]\n"
 "            [--ntasks-per-node=n] [--ntasks-per-socket=n]\n"
 "            [--ntasks-per-core=n]\n"
 #ifdef HAVE_BG		/* Blue gene specific options */

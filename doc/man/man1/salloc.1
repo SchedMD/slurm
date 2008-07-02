@@ -360,6 +360,22 @@ The default is one task per socket or core (depending upon the value
 of the \fISelectTypeParameters\fR parameter in slurm.conf), but note 
 that the \fB\-\-cpus\-per\-task\fR option will change this default.
 
+.TP
+\fB\-\-network\fR=\fItype\fR
+Specify the communication protocol to be used. 
+This option is supported on AIX systems.
+Since POE is used to launch tasks, this option is not normally used or 
+is specified using the \fBSLURM_NETWORK\fR environment variable.
+The interpretation of \fItype\fR is system dependent. 
+For systems with an IBM Federation switch, the following 
+comma\-separated and case insensitive types are recongnized:
+\fBIP\fR (the default is user\-space), \fBSN_ALL\fR, \fBSN_SINGLE\fR, 
+\fBBULK_XFER\fR and adapter names  (e.g. \fBSNI0\fR and \fBSNI1\fR). 
+For more information, on IBM systems see \fIpoe\fR documenation on 
+the environment variables \fBMP_EUIDEVICE\fR and \fBMP_USE_BULK_XFER\fR.
+Note that only four jobs steps may be active at once on a node with the 
+\fBBULK_XFER\fR option due to limitations in the Federation switch driver.
+
 .TP 
 \fB\-\-nice\fR[=]<\fIadjustment\fR>
 Run the job with an adjusted scheduling priority within SLURM.
@@ -605,6 +621,9 @@ Same as \fB\-I\fR or \fB\-\-immediate\fR.
 .TP
 \fBSALLOC_JOBID\fR
 Same as \fB\-\-jobid\fR.
+.TP
+\fBSALLOC_NETWORK\fR
+Same as \fB\-\-network\fR.
 .TP
 \fBSALLOC_NO_BELL\fR
 Same as \fB\-\-no\-bell\fR.

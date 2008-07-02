@@ -340,6 +340,7 @@ env_vars_t env_vars[] = {
   {"SBATCH_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL           },
   {"SBATCH_OPEN_MODE",     OPT_OPEN_MODE,  NULL,               NULL           },
   {"SBATCH_ACCTG_FREQ",    OPT_INT,        &opt.acctg_freq,    NULL           },
+  {"SBATCH_NETWORK",       OPT_STRING,     &opt.network,       NULL           },
   {NULL, 0, NULL, NULL}
 };
 
