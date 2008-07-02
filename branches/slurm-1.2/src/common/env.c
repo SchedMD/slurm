@@ -1301,7 +1301,7 @@ char **_load_env_cache(const char *username)
 					if ((strlen(value) + strlen(line)) >
 					    (sizeof(value) - 1))
 						break;
-					strcat(value, " ");
+					strcat(value, "\n");
 					strcat(value, line);
 				}
 			}
@@ -1490,7 +1490,7 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 					if ((strlen(value) + strlen(line)) >
 					    (sizeof(value) - 1))
 						break;
-					strcat(value, " ");
+					strcat(value, "\n");
 					strcat(value, line);
 				}
 			}
