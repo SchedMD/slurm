@@ -496,6 +496,7 @@ env_vars_t env_vars[] = {
   {"SBATCH_RAMDISK_IMAGE", OPT_STRING,     &opt.ramdiskimage,  NULL           },
   {"SBATCH_TIMELIMIT",     OPT_STRING,     &opt.time_limit_str,NULL           },
   {"SBATCH_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL           },
+  {"SBATCH_NETWORK",       OPT_STRING,     &opt.network,       NULL           },
   {NULL, 0, NULL, NULL}
 };
 
@@ -2203,7 +2204,7 @@ static void _usage(void)
 "              [--mail-type=type] [--mail-user=user][--nice[=value]]\n"
 "              [--no-requeue] [--ntasks-per-node=n] [--propagate]\n"
 "              [--nodefile=file] [--nodelist=hosts] [--exclude=hosts]\n"
-"              [--network=hosts]\n"
+"              [--network=type]\n"
 "              executable [args...]\n");
 }
 

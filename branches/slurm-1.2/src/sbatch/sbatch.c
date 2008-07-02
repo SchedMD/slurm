@@ -146,6 +146,7 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->user_id = opt.uid;
 	desc->group_id = opt.gid;
 	desc->dependency = opt.dependency;
+	desc->network = opt.network;
 	if (opt.nice)
 		desc->nice = NICE_OFFSET + opt.nice;
 	desc->mail_type = opt.mail_type;
