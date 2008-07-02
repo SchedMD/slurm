@@ -1447,12 +1447,12 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 	}
 	close(fildes[0]);
 	for (config_timeout=0; ; config_timeout++) {
-		kill(-child, 9);
+		kill(-child, SIGKILL);	/* Typically a no-op */
 		if (config_timeout)
 			sleep(1);
 		if (waitpid(child, &rc, WNOHANG) > 0)
 			break;
-		if (config_timeout > 2) {
+		if (config_timeout >= 2) {
 			/* Non-killable processes are indicative of file system
 			 * problems. The process will remain as a zombie, but 
 			 * slurmd/salloc/moab will not otherwise be effected. */
