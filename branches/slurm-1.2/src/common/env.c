@@ -1241,18 +1241,20 @@ static void _strip_cr_nl(char *line)
 }
 
 /* Return the net count of curly brackets in a string
- * '{' adds one and '}' subtracs one
- * Returns zero if balanced */
+ * '{' adds one and '}' subtracts one (zero means it is balanced).
+ * Special case: return -1 if no open brackets are found */
 static int _bracket_cnt(char *value)
 {
-	int cnt = 0, i;
+	int open_br = 0, close_br = 0, i;
 	for (i=0; value[i]; i++) {
 		if (value[i] == '{')
-			cnt++;
+			open_br++;
 		else if (value[i] == '}')
-			cnt--;
+			close_br++;
 	}
-	return cnt;
+	if (open_br == 0)
+		return -1;
+	return (open_br - close_br);
 }
 
 /*
