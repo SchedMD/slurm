@@ -1159,6 +1159,8 @@ static int _env_array_entry_splitter(const char *entry,
 	int len;
 
 	ptr = index(entry, '=');
+	if (ptr == NULL)	/* Bad parsing, no '=' found */
+		return 0;
 	len = ptr - entry;
 	if (len > name_len-1)
 		return 0;
