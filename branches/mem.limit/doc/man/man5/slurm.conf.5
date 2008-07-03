@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "June 2008" "slurm.conf 1.3" "Slurm configuration file"
+.TH "slurm.conf" "5" "July 2008" "slurm.conf 1.3" "Slurm configuration file"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
@@ -835,21 +835,24 @@ On single\-core systems, each CPUs will be considered a CPU.
 .TP
 \fBCR_CPU_Memory\fR
 CPUs and memory are consumable resources.
+Setting a value for \fBDefMemPerTask\fR is strongly recommended.
 .TP
 \fBCR_Core\fR
 Cores are consumable resources.
 .TP
 \fBCR_Core_Memory\fR
 Cores and memory are consumable resources.
+Setting a value for \fBDefMemPerTask\fR is strongly recommended.
 .TP
 \fBCR_Socket\fR
 Sockets are consumable resources.
-.TP
+.TP\fBDefMemPerTask\fR
 \fBCR_Socket_Memory\fR
 Memory and CPUs are consumable resources.
 .TP
 \fBCR_Memory\fR
 Memory is a consumable resource.
+Setting a value for \fBDefMemPerTask\fR is strongly recommended.
 NOTE: This implies \fIShared=YES\fR or \fIShared=FORCE\fR for all partitions.
 .RE
 
