@@ -324,6 +324,13 @@ scontrol_update_job (int argc, char *argv[])
 						(char **) NULL, 10);
 			update_cnt++;
 		}
+		else if (strncasecmp(argv[i], "TaskMinMemory=", 14) == 0) {
+			job_msg.job_min_memory =
+				(uint32_t) strtol(&argv[i][14],
+						(char **) NULL, 10);
+			job_msg.job_min_memory |= MEM_PER_TASK;
+			update_cnt++;
+		}
 		else if (strncasecmp(argv[i], "MinMemory=", 10) == 0) {
 			job_msg.job_min_memory = 
 				(uint32_t) strtol(&argv[i][10], 

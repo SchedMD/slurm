@@ -3346,8 +3346,7 @@ static void _pack_pending_job_details(struct job_details *detail_ptr,
 		pack16(detail_ptr->cpus_per_task, buffer);
 		pack16(detail_ptr->job_min_procs, buffer);
 
-		pack32((detail_ptr->job_min_memory &
-		       (~MEM_PER_TASK)), buffer);
+		pack32(detail_ptr->job_min_memory, buffer);
 		pack32(detail_ptr->job_min_tmp_disk, buffer);
 
 		packstr(detail_ptr->req_nodes, buffer);
@@ -3868,11 +3867,17 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_DISABLED;
 		else if (super_user
-			 || ((detail_ptr->job_min_memory & (~MEM_PER_TASK))
-			     > job_specs->job_min_memory)) {
+			 || ((detail_ptr->job_min_memory & (~MEM_PER_TASK)) >
+			     (job_specs->job_min_memory  & (~MEM_PER_TASK)))) {
+			char *entity;
+			if (job_specs->job_min_memory & MEM_PER_TASK)
+				entity = "task";
+			else
+				entity = "job";
 			detail_ptr->job_min_memory = job_specs->job_min_memory;
-			info("update_job: setting job_min_memory to %u for "
-			     "job_id %u", job_specs->job_min_memory, 
+			info("update_job: setting %s_min_memory to %u for "
+			     "job_id %u", entity, 
+			     (job_specs->job_min_memory & (~MEM_PER_TASK)), 
 			     job_specs->job_id);
 		} else {
 			error("Attempt to increase job_min_memory for job %u",
