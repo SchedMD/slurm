@@ -3048,7 +3048,7 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 	    (task_mem_valid == 0)) {
 		uint32_t tasks_per_node = 1;
 		job_desc_msg->job_min_memory &= (~MEM_PER_TASK);
-		info("orig mem:%u", job_desc_msg->job_min_memory);
+		//info("orig mem:%u", job_desc_msg->job_min_memory);
 		if (job_desc_msg->ntasks_per_node != (uint16_t)NO_VAL) {
 			tasks_per_node = job_desc_msg->ntasks_per_node;
 		} else if ((job_desc_msg->num_procs != NO_VAL) &&
@@ -3058,7 +3058,7 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 			tasks_per_node /= job_desc_msg->min_nodes;
 		}
 		job_desc_msg->job_min_memory *= tasks_per_node;
-		info("final mem:%u", job_desc_msg->job_min_memory);
+		//info("final mem:%u", job_desc_msg->job_min_memory);
 	}
 
 	if (job_desc_msg->min_sockets == (uint16_t) NO_VAL)
