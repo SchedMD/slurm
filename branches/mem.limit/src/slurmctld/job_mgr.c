@@ -2944,6 +2944,23 @@ static void _job_timed_out(struct job_record *job_ptr)
 static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate, 
 			      uid_t submit_uid)
 {
+	static int task_mem_valid = -1;	/* 0=invalid, 1=valid, -1=test */
+
+	/* Specification of memory per task is not supported by select/linear
+	 * with a parameter of CR_MEMORY. Determine if that is our 
+	 * configuration. */ 
+	if (task_mem_valid == -1) {
+		char *select_type = slurm_get_select_type();
+		uint16_t cr_type = (select_type_plugin_info_t)
+				slurmctld_conf.select_type_param;
+		if ((strcmp(select_type, "select/linear") == 0) &&
+		    (cr_type == CR_MEMORY))
+			task_mem_valid = 0;
+		else
+			task_mem_valid = 1;
+		xfree(select_type);
+	}
+
 	/* Permit normal user to specify job id only for sched/wiki 
 	 * (Maui scheduler). This was also required with earlier
 	 * versions of the Moab scheduler (wiki2), but was fixed 
@@ -3019,6 +3036,31 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 			job_desc_msg->nice = NICE_OFFSET;
 	}
 
+	if (job_desc_msg->job_min_memory == NO_VAL) {
+		/* Default memory limit is DefMemPerTask (if set) or no limit */
+		job_desc_msg->job_min_memory = slurmctld_conf.def_mem_per_task;
+		if (slurmctld_conf.def_mem_per_task)
+			job_desc_msg->job_min_memory |= MEM_PER_TASK;
+	}
+	/* If memory requirements per task is not supported, convert to a 
+	 * per-node memory specification based upon other parameters */
+	if ((job_desc_msg->job_min_memory & MEM_PER_TASK) && 
+	    (task_mem_valid == 0)) {
+		uint32_t tasks_per_node = 1;
+		job_desc_msg->job_min_memory &= (~MEM_PER_TASK);
+		info("orig mem:%u", job_desc_msg->job_min_memory);
+		if (job_desc_msg->ntasks_per_node != (uint16_t)NO_VAL) {
+			tasks_per_node = job_desc_msg->ntasks_per_node;
+		} else if ((job_desc_msg->num_procs != NO_VAL) &&
+			   (job_desc_msg->min_nodes != NO_VAL)) {
+			tasks_per_node = job_desc_msg->num_procs +
+				(job_desc_msg->min_nodes - 1);
+			tasks_per_node /= job_desc_msg->min_nodes;
+		}
+		job_desc_msg->job_min_memory *= tasks_per_node;
+		info("final mem:%u", job_desc_msg->job_min_memory);
+	}
+
 	if (job_desc_msg->min_sockets == (uint16_t) NO_VAL)
 		job_desc_msg->min_sockets = 1;	/* default socket count of 1 */
 	if (job_desc_msg->min_cores == (uint16_t) NO_VAL)
@@ -3044,12 +3086,6 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 		job_desc_msg->job_min_cores = 1;   /* default 1 core per socket */
 	if (job_desc_msg->job_min_threads == (uint16_t) NO_VAL)
 		job_desc_msg->job_min_threads = 1; /* default 1 thread per core */
-	if (job_desc_msg->job_min_memory == NO_VAL) {
-		/* Default memory limit is DefMemPerTask (if set) or no limit */
-		job_desc_msg->job_min_memory = slurmctld_conf.def_mem_per_task;
-		if (slurmctld_conf.def_mem_per_task)
-			job_desc_msg->job_min_memory |= MEM_PER_TASK;
-	}
 	if (job_desc_msg->job_min_tmp_disk == NO_VAL)
 		job_desc_msg->job_min_tmp_disk = 0;/* default 0MB disk per node */
 
