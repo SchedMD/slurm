@@ -8,9 +8,9 @@ documents those changes that are of interest to users and admins.
  -- If srun is allocating resources (not within sbatch or salloc) and MaxWait
     is configured to a non-zero value then wait indefinitely for the resource
     allocation rather than aborting the request after MaxWait time.
- -- If resource allocation request includes "--task-mem" and NOT "--mem" then
-    insure sufficient memory space exists on for each task before allocating 
-    resources for the job.
+ -- If memory is a consumable resource then reserve memory for the job at 
+    its resource allocation time based upon --task-mem option (if supplied 
+    and there is no --mem option).
 
 * Changes in SLURM 1.3.4
 ========================
