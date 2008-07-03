@@ -151,7 +151,8 @@ Configuration file update procedures:
 Some RPM commands:
   rpm -qa | grep slurm                  (determine what is installed)
   rpm -qpl slurm-1.1.9-1.rpm            (check contents of an rpm)
-  rpm -e slurm-1.1.8-1                  (erase an rpm
+  rpm -e slurm-1.1.8-1                  (erase an rpm)
+  rpm --upgrade slurm-1.1.9-1.rpm       (replace existing rpm with new version)
   rpm -i --ignoresize slurm-1.1.9-1.rpm (install a new rpm)
 For main SLURM plugin installation on BGL service node:
   rpm -i --force --nodeps --ignoresize slurm-1.1.9-1.rpm
