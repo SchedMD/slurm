@@ -154,10 +154,10 @@ void slurm_print_ctl_conf ( FILE* out,
 	fprintf(out, "CryptoType              = %s\n",
 		slurm_ctl_conf_ptr->crypto_type);
 	if (slurm_ctl_conf_ptr->def_mem_per_task) {
-		fprintf(out, "DefMemPerTask           = %u\n",
+		fprintf(out, "DefMemPerCPU            = %u\n",
 			slurm_ctl_conf_ptr->def_mem_per_task);
 	} else
-		fprintf(out, "DefMemPerTask           = UNLIMITED\n");
+		fprintf(out, "DefMemPerCPU            = UNLIMITED\n");
 	if (slurm_ctl_conf_ptr->disable_root_jobs)
 		fprintf(out, "DisableRootJobs         = YES\n");
 	else
@@ -221,10 +221,10 @@ void slurm_print_ctl_conf ( FILE* out,
 	fprintf(out, "MaxJobCount             = %u\n", 
 		slurm_ctl_conf_ptr->max_job_cnt);
 	if (slurm_ctl_conf_ptr->max_mem_per_task) {
-		fprintf(out, "MaxMemPerTask           = %u\n",
+		fprintf(out, "MaxMemPerCPU            = %u\n",
 			slurm_ctl_conf_ptr->max_mem_per_task);
 	} else
-		fprintf(out, "MaxMemPerTask           = UNLIMITED\n");
+		fprintf(out, "MaxMemPerCPU            = UNLIMITED\n");
 	fprintf(out, "MessageTimeout          = %u\n",
 		slurm_ctl_conf_ptr->msg_timeout);
 	fprintf(out, "MinJobAge               = %u\n", 

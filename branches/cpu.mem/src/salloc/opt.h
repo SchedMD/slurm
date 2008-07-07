@@ -107,7 +107,7 @@ typedef struct salloc_options {
 	int minsockets;		/* --minsockets=n		*/
 	int mincores;		/* --mincores=n			*/
 	int minthreads;		/* --minthreads=n		*/
-	int task_mem;		/* --task-mem=n			*/
+	int mem_per_cpu;	/* --mem_per_cpu=n		*/
 	int realmem;		/* --mem=n			*/
 	long tmpdisk;		/* --tmp=n			*/
 	char *constraints;	/* --constraints=, -C constraint*/
