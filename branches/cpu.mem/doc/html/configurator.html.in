@@ -206,9 +206,9 @@ function displayfile()
    "# <br>" +
    "# <br>" +
    "# SCHEDULING <br>" +
-   "#DefMemPerTask=0 <br>" +
+   "#DefMemPerCPU=0 <br>" +
    "FastSchedule=" + get_radio_value(document.config.fast_schedule) + "<br>" +
-   "#MaxMemPerTask=0 <br>" +
+   "#MaxMemPerCPU=0 <br>" +
    "#SchedulerRootFilter=1 <br>" +
    "#SchedulerTimeSlice=30 <br>" +
    "SchedulerType=sched/" + get_radio_value(document.config.sched_type) + "<br>" +

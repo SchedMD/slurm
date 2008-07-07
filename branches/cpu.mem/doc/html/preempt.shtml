@@ -44,10 +44,10 @@ chosen, we recommend setting <I>SelectTypeParameter=CR_Memory</I>. When
 (ex. <I>SelectTypeParameter=CR_Core_Memory</I>).
 </LI>
 <LI>
-<B>DefMemPerTask</B>: Since job requests may not explicitly specify 
-a memory requirement, we also recommend configuring <I>DefMemPerTask</I> 
-(default memory per task). It may also be desirable to configure 
-<I>MaxMemPerTask</I> (maximum memory per task) in <I>slurm.conf</I>.
+<B>DefMemPerCPU</B>: Since job requests may not explicitly specify 
+a memory requirement, we also recommend configuring <I>DefMemPerCPU</I> 
+(default memory per allocated CPU). It may also be desirable to configure 
+<I>MaxMemPerCPU</I> (maximum memory per allocated CPU) in <I>slurm.conf</I>.
 </LI>
 <LI>
 <B>JobAcctGatherType and JobAcctGatherFrequency</B>:

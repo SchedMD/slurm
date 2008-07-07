@@ -13,7 +13,12 @@ documents those changes that are of interest to users and admins.
  -- Added more support for "dumping" account information to a flat file and 
     read in again to protect data incase something bad happens to the database.
  -- Sacct will now report account names for job steps.
-
+ -- In salloc, sbatch, and srun replace --task-mem options with --mem-per-cpu
+    (--task-mem will continue to be accepted for now, but is not documented).
+    Replace DefMemPerTask and MaxMemPerTask with DefMemPerCPU and MaxMemPerCPU
+    in slurm.conf. Allocate a job's memory memory at the same time that processors
+    are allocated based upon the --mem or --mem-per-cpu option.
+ 
 * Changes in SLURM 1.3.4
 ========================
  -- Some updates to man page formatting from Gennaro Oliva, ICAR.

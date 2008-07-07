@@ -1,4 +1,4 @@
-.TH "sbatch" "1" "SLURM 1.3" "May 2008" "SLURM Commands"
+.TH "sbatch" "1" "SLURM 1.3" "July 2008" "SLURM Commands"
 .SH "NAME"
 .LP 
 sbatch \- Submit a batch script to SLURM.
@@ -334,7 +334,15 @@ If a value is specified, that quantity of memory will be
 reserved for this job. 
 If no value is specified and real memory is exhausted on 
 any allocated node then the job is subject to cancellation.
-Also see \fB\-\-task\-mem\fR.
+Also see \fB\-\-mem\-per\-cpu\fR.
+
+.TP
+\fB\-\-mem\-per\-cpu\fR[=]<\fIMB\fR>
+Mimimum memory required per allocated CPU in MegaBytes.
+Default value is \fBDefMemPerCPU\fR and the maximum value is
+\fBMaxMemPerCPU\fR, both of which can be seen using the
+\fBscontrol show config\fR command.
+Also see \fB\-\-mem\fR.
 
 .TP
 \fB\-\-mincores\fR[=]<\fIn\fR>
@@ -581,13 +589,6 @@ interval between signals is specified by the SLURM configuration parameter
 Acceptable time formats include "minutes", "minutes:seconds", 
 "hours:minutes:seconds", "days\-hours", "days\-hours:minutes" and 
 "days\-hours:minutes:seconds".
-
-.TP
-\fB\-\-task\-mem\fR[=]<\fIMB\fR>
-Mimimum memory available per task in MegaBytes.
-Default value is \fBDefMemPerTask\fR and the maximum value is
-\fBMaxMemPerTask\fR, both of which can be seen using the
-\fBscontrol show config\fR command.
 
 .TP
 \fB\-\-tasks\-per\-node\fR[=]<\fIn\fR>
@@ -867,6 +868,7 @@ host4
 
 .SH "COPYING"
 Copyright (C) 2006\-2007 The Regents of the University of California.
+Copyright (C) 2008 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 LLNL\-CODE\-402394.
 .LP
