@@ -892,6 +892,7 @@ int _print_job_min_memory(job_info_t * job, int width, bool right_justify,
 		_print_str("MIN_MEMORY", width, right_justify, true);
 	else {
 	    	tmp_char[0] = '\0';
+		job->job_min_memory &= (~MEM_PER_CPU);
 		convert_num_unit((float)job->job_min_memory, min_mem, 
 				 sizeof(min_mem), UNIT_NONE);
 		strcat(tmp_char, min_mem);
