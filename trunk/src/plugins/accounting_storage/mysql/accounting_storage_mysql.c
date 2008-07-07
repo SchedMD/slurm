@@ -483,36 +483,36 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 		mod_assoc = xmalloc(sizeof(acct_association_rec_t));
 		mod_assoc->id = atoi(row[ASSOC_ID]);
 
-		if(!row[ASSOC_MJ] && assoc->max_jobs != (uint32_t)NO_VAL) {
+		if(!row[ASSOC_MJ] && assoc->max_jobs != NO_VAL) {
 			mod_assoc->max_jobs = assoc->max_jobs;
 			modified = 1;
 		} else
-			mod_assoc->max_jobs = (uint32_t)NO_VAL;
+			mod_assoc->max_jobs = NO_VAL;
 		
 		if(!row[ASSOC_MNPJ] &&
-		   assoc->max_nodes_per_job != (uint32_t)NO_VAL) {
+		   assoc->max_nodes_per_job != NO_VAL) {
 			mod_assoc->max_nodes_per_job =
 				assoc->max_nodes_per_job;
 			modified = 1;
 		} else 
-			mod_assoc->max_nodes_per_job = (uint32_t)NO_VAL;
+			mod_assoc->max_nodes_per_job = NO_VAL;
 
 		
 		if(!row[ASSOC_MWPJ] && 
-		   assoc->max_wall_duration_per_job != (uint32_t)NO_VAL) {
+		   assoc->max_wall_duration_per_job != NO_VAL) {
 			mod_assoc->max_wall_duration_per_job =
 				assoc->max_wall_duration_per_job;
 			modified = 1;
 		} else 
-			mod_assoc->max_wall_duration_per_job = (uint32_t)NO_VAL;
+			mod_assoc->max_wall_duration_per_job = NO_VAL;
 					
 		if(!row[ASSOC_MCPJ] && 
-		   assoc->max_cpu_secs_per_job != (uint32_t)NO_VAL) {
+		   assoc->max_cpu_secs_per_job != NO_VAL) {
 			mod_assoc->max_cpu_secs_per_job = 
 				assoc->max_cpu_secs_per_job;
 			modified = 1;
 		} else
-			mod_assoc->max_cpu_secs_per_job = (uint32_t)NO_VAL;
+			mod_assoc->max_cpu_secs_per_job = NO_VAL;
 		
 
 		if(modified) {
@@ -527,7 +527,7 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 				continue;
 			}
 
-			mod_assoc->fairshare = (uint32_t)NO_VAL;
+			mod_assoc->fairshare = NO_VAL;
 			if(row[ASSOC_PART][0]) { 
 				// see if there is a partition name
 				object = xstrdup_printf(
@@ -1922,7 +1922,7 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			xstrfmtcat(vals, ", %u", object->default_fairshare);
 			xstrfmtcat(extra, ", fairshare=%u",
 				   object->default_fairshare);
-		} else if ((int)object->default_fairshare == -1) {
+		} else if ((int)object->default_fairshare == INFINITE) {
 			xstrcat(cols, ", fairshare");
 			xstrfmtcat(vals, ", NULL");
 			xstrfmtcat(extra, ", fairshare=NULL");		
@@ -1934,7 +1934,7 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 				   object->default_max_cpu_secs_per_job);
 			xstrfmtcat(extra, ", max_cpu_secs_per_job=%u",
 				   object->default_max_cpu_secs_per_job);
-		} else if((int)object->default_max_cpu_secs_per_job == -1) {
+		} else if((int)object->default_max_cpu_secs_per_job == INFINITE) {
 			xstrcat(cols, ", max_cpu_secs_per_job");
 			xstrfmtcat(vals, ", NULL");
 			xstrfmtcat(extra, ", max_cpu_secs_per_job=NULL");
@@ -1945,7 +1945,7 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			xstrfmtcat(vals, ", %u", object->default_max_jobs);
 			xstrfmtcat(extra, ", max_jobs=%u",
 				   object->default_max_jobs);
-		} else if((int)object->default_max_jobs == -1) {
+		} else if((int)object->default_max_jobs == INFINITE) {
 			xstrcat(cols, ", max_jobs");
 			xstrfmtcat(vals, ", NULL");
 			xstrfmtcat(extra, ", max_jobs=NULL");		
@@ -1957,7 +1957,7 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 				   object->default_max_nodes_per_job);
 			xstrfmtcat(extra, ", max_nodes_per_job=%u",
 				   object->default_max_nodes_per_job);
-		} else if((int)object->default_max_nodes_per_job == -1) {
+		} else if((int)object->default_max_nodes_per_job == INFINITE) {
 			xstrcat(cols, ", max_nodes_per_job");
 			xstrfmtcat(vals, ", NULL");
 			xstrfmtcat(extra, ", max_nodes_per_job=NULL");
@@ -1970,7 +1970,7 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			xstrfmtcat(extra, ", max_wall_duration_per_job=%u",
 				   object->default_max_wall_duration_per_job);
 		} else if((int)object->default_max_wall_duration_per_job
-			  == -1) {
+			  == INFINITE) {
 			xstrcat(cols, ", max_wall_duration_per_job");
 			xstrfmtcat(vals, ", NULL");
 			xstrfmtcat(extra, ", max_duration_per_job=NULL");
@@ -2537,6 +2537,7 @@ extern List acct_storage_p_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrfmtcat(vals, ", admin_level=%u", user->admin_level);
 
 	if(!extra || !vals) {
+		errno = SLURM_NO_CHANGE_IN_DATA;
 		error("Nothing to change");
 		return NULL;
 	}
@@ -2673,6 +2674,7 @@ extern List acct_storage_p_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrfmtcat(vals, ", qos='%u'", acct->qos);
 
 	if(!extra || !vals) {
+		errno = SLURM_NO_CHANGE_IN_DATA;
 		error("Nothing to change");
 		return NULL;
 	}
@@ -2789,6 +2791,7 @@ extern List acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
 	}
 
 	if(!vals) {
+		errno = SLURM_NO_CHANGE_IN_DATA;
 		error("Nothing to change");
 		return NULL;
 	}
@@ -3009,33 +3012,35 @@ extern List acct_storage_p_modify_associations(mysql_conn_t *mysql_conn,
 
 	if((int)assoc->fairshare >= 0) 
 		xstrfmtcat(vals, ", fairshare=%u", assoc->fairshare);
-	else if((int)assoc->fairshare == -1) 
+	else if((int)assoc->fairshare == INFINITE) {
 		xstrfmtcat(vals, ", fairshare=1");
-       		
+		assoc->fairshare = 1;
+	}
 	if((int)assoc->max_cpu_secs_per_job >= 0) 
 		xstrfmtcat(vals, ", max_cpu_secs_per_job=%u",
 			   assoc->max_cpu_secs_per_job);
-	else if((int)assoc->max_cpu_secs_per_job == -1) 
+	else if((int)assoc->max_cpu_secs_per_job == INFINITE) {
 		xstrfmtcat(vals, ", max_cpu_secs_per_job=NULL");
-
+	}
 	if((int)assoc->max_jobs >= 0) 
 		xstrfmtcat(vals, ", max_jobs=%u", assoc->max_jobs);
-	else if((int)assoc->max_jobs == -1)
+	else if((int)assoc->max_jobs == INFINITE) {
 		xstrfmtcat(vals, ", max_jobs=NULL");
-		
+	}
 	if((int)assoc->max_nodes_per_job >= 0) 
 		xstrfmtcat(vals, ", max_nodes_per_job=%u",
 			   assoc->max_nodes_per_job);
-	else if((int)assoc->max_nodes_per_job == -1)
+	else if((int)assoc->max_nodes_per_job == INFINITE) {
 		xstrfmtcat(vals, ", max_nodes_per_job=NULL");
-
+	}
 	if((int)assoc->max_wall_duration_per_job >= 0) 
 		xstrfmtcat(vals, ", max_wall_duration_per_job=%u",
 			   assoc->max_wall_duration_per_job);
-	else if((int)assoc->max_wall_duration_per_job == -1) 
+	else if((int)assoc->max_wall_duration_per_job == INFINITE) {
 		xstrfmtcat(vals, ", max_wall_duration_per_job=NULL");
-		
+	}
 	if(!extra || (!vals && !assoc->parent_acct)) {
+		errno = SLURM_NO_CHANGE_IN_DATA;
 		error("Nothing to change");
 		return NULL;
 	}
@@ -4609,25 +4614,25 @@ empty:
 		if(row2[ASSOC_REQ_MJ])
 			cluster->default_max_jobs = atoi(row2[ASSOC_REQ_MJ]);
 		else
-			cluster->default_max_jobs = -1;
+			cluster->default_max_jobs = INFINITE;
 		
 		if(row2[ASSOC_REQ_MNPJ])
 			cluster->default_max_nodes_per_job =
 				atoi(row2[ASSOC_REQ_MNPJ]);
 		else
-			cluster->default_max_nodes_per_job = -1;
+			cluster->default_max_nodes_per_job = INFINITE;
 		
 		if(row2[ASSOC_REQ_MWPJ])
 			cluster->default_max_wall_duration_per_job = 
 				atoi(row2[ASSOC_REQ_MWPJ]);
 		else
-			cluster->default_max_wall_duration_per_job = -1;
+			cluster->default_max_wall_duration_per_job = INFINITE;
 		
 		if(row2[ASSOC_REQ_MCPJ])
 			cluster->default_max_cpu_secs_per_job = 
 				atoi(row2[ASSOC_REQ_MCPJ]);
 		else 
-			cluster->default_max_cpu_secs_per_job = -1;
+			cluster->default_max_cpu_secs_per_job = INFINITE;
 		mysql_free_result(result2);
 	}
 	mysql_free_result(result);
@@ -4653,10 +4658,10 @@ extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 	int i=0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	int parent_mj = -1;
-	int parent_mnpj = -1;
-	int parent_mwpj = -1;
-	int parent_mcpj = -1;
+	int parent_mj = INFINITE;
+	int parent_mnpj = INFINITE;
+	int parent_mwpj = INFINITE;
+	int parent_mcpj = INFINITE;
 	char *last_acct = NULL;
 	char *last_acct_parent = NULL;
 	char *last_cluster = NULL;
@@ -4894,22 +4899,22 @@ empty:
 				if(row2[ASSOC2_REQ_MJ])
 					parent_mj = atoi(row2[ASSOC2_REQ_MJ]);
 				else
-					parent_mj = -1;
+					parent_mj = INFINITE;
 				
 				if(row2[ASSOC2_REQ_MNPJ])
 					parent_mnpj = atoi(row2[ASSOC2_REQ_MNPJ]);
 				else
-					parent_mwpj = -1;
+					parent_mwpj = INFINITE;
 				
 				if(row2[ASSOC2_REQ_MWPJ])
 					parent_mwpj = atoi(row2[ASSOC2_REQ_MWPJ]);
 				else
-					parent_mwpj = -1;
+					parent_mwpj = INFINITE;
 				
 				if(row2[ASSOC2_REQ_MCPJ])
 					parent_mcpj = atoi(row2[ASSOC2_REQ_MCPJ]);
 				else 
-					parent_mcpj = -1;
+					parent_mcpj = INFINITE;
 			}
 			last_acct = row[ASSOC_REQ_ACCT];
 			last_cluster2 = row[ASSOC_REQ_CLUSTER];
@@ -5951,7 +5956,7 @@ extern int jobacct_storage_p_step_complete(mysql_conn_t *mysql_conn,
 		ave_cpu /= 100;
 	}
  
-	if(jobacct->min_cpu != (uint32_t)NO_VAL) {
+	if(jobacct->min_cpu != NO_VAL) {
 		ave_cpu2 = jobacct->min_cpu;
 		ave_cpu2 /= 100;
 	}

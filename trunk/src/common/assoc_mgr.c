@@ -534,26 +534,25 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 				break;
 			}
 			debug("updating assoc %u", rec->id);
-			if(object->fairshare != (uint32_t)NO_VAL) {
+			if(object->fairshare != NO_VAL) {
 				rec->fairshare = object->fairshare;
 			}
 
-			if(object->max_jobs != (uint32_t)NO_VAL) {
+			if(object->max_jobs != NO_VAL) {
 				rec->max_jobs = object->max_jobs;
 			}
 
-			if(object->max_nodes_per_job != (uint32_t)NO_VAL) {
+			if(object->max_nodes_per_job != NO_VAL) {
 				rec->max_nodes_per_job =
 					object->max_nodes_per_job;
 			}
 
-			if(object->max_wall_duration_per_job !=
-			   (uint32_t)NO_VAL) {
+			if(object->max_wall_duration_per_job != NO_VAL) {
 				rec->max_wall_duration_per_job =
 					object->max_wall_duration_per_job;
 			}
 
-			if(object->max_cpu_secs_per_job != (uint32_t)NO_VAL) {
+			if(object->max_cpu_secs_per_job != NO_VAL) {
 				rec->max_cpu_secs_per_job = 
 					object->max_cpu_secs_per_job;
 			}
@@ -570,7 +569,6 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 				
 			}
 			log_assoc_rec(rec);
-			/* FIX ME: do more updates here */
 			break;
 		case ACCT_ADD_ASSOC:
 			if(rec) {
@@ -579,6 +577,7 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 			}
 			_set_assoc_parent_and_user(object);
 			list_append(local_association_list, object);
+			break;
 		case ACCT_REMOVE_ASSOC:
 			if(!rec) {
 				//rc = SLURM_ERROR;
@@ -672,7 +671,7 @@ extern int assoc_mgr_update_local_users(acct_update_object_t *update)
 			if(passwd_ptr) 
 				object->uid = passwd_ptr->pw_uid;
 			else
-				object->uid = (uint32_t)NO_VAL;
+				object->uid = NO_VAL;
 
 			list_append(local_user_list, object);
 		case ACCT_REMOVE_USER:
@@ -683,6 +682,7 @@ extern int assoc_mgr_update_local_users(acct_update_object_t *update)
 			list_delete_item(itr);
 			break;
 		case ACCT_ADD_COORD:
+			/* same as ACCT_REMOVE_COORD */
 		case ACCT_REMOVE_COORD:
 			if(!rec) {
 				//rc = SLURM_ERROR;

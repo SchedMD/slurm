@@ -657,7 +657,7 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 				 "Are you sure you want to continue?")) {
 			printf("Aborted\n");
 			destroy_acct_association_rec(assoc);
-			destroy_acct_association_cond(assoc);
+			destroy_acct_association_cond(assoc_cond);
 			return SLURM_SUCCESS;
 		}		
 	}
@@ -839,7 +839,7 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 
 	if(!file_name) {
 		file_name = xstrdup_printf("./%s.cfg", cluster_name);
-		printf(" No filename give using %s.\n", file_name);
+		printf(" No filename given, using %s.\n", file_name);
 	}
 
 	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
