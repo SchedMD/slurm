@@ -3032,6 +3032,21 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 				     (~MEM_PER_CPU);
 		if (base_size > slurmctld_conf.max_mem_per_task)
 			return ESLURM_INVALID_TASK_MEMORY;
+	} else if (job_desc_msg->job_min_memory &&
+		   slurmctld_conf.max_mem_per_task) {
+		uint16_t cpus_per_node;
+		/* CPU count my vary by node, but we don't have a good
+		 * way to identify specific nodes for the job at this 
+		 * point, so just pick the first node as a basis for 
+		 * enforcing MaxMemPerCPU. */
+		if (slurmctld_conf.fast_schedule) {
+			cpus_per_node = node_record_table_ptr[0].
+					config_ptr->cpus;
+		} else
+			cpus_per_node = node_record_table_ptr[0]. cpus;
+		if ((job_desc_msg->job_min_memory / cpus_per_node) >
+		    slurmctld_conf.max_mem_per_task)
+			return ESLURM_INVALID_TASK_MEMORY;
 	}
 	if (job_desc_msg->min_sockets == (uint16_t) NO_VAL)
 		job_desc_msg->min_sockets = 1;	/* default socket count of 1 */
