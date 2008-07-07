@@ -705,11 +705,11 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 	char *option = NULL;
 	char quote_c = '\0';
 
-	file_opts->fairshare = NO_VAL;
-	file_opts->max_cpu_secs_per_job = NO_VAL;
-	file_opts->max_jobs = NO_VAL;
-	file_opts->max_nodes_per_job = NO_VAL;
-	file_opts->max_wall_duration_per_job = NO_VAL;
+	file_opts->fairshare = 1;
+	file_opts->max_cpu_secs_per_job = INFINITE;
+	file_opts->max_jobs = INFINITE;
+	file_opts->max_nodes_per_job = INFINITE;
+	file_opts->max_wall_duration_per_job = INFINITE;
 
 	while(options[i]) {
 		quote = 0;
@@ -935,6 +935,7 @@ static void _load_file (int argc, char *argv[])
 				rc = SLURM_ERROR;
 				break;
 			}
+
 			file_opts = _parse_options(line+start);
 			
 			if(!file_opts) {
@@ -943,8 +944,11 @@ static void _load_file (int argc, char *argv[])
 				break;
 			}
 			cluster_name = xstrdup(file_opts->name);
-			if(!sacctmgr_find_cluster_from_list(
-				   curr_cluster_list, cluster_name)) {
+
+			info("For cluster %s", cluster_name);
+
+			if(!(cluster = sacctmgr_find_cluster_from_list(
+				     curr_cluster_list, cluster_name))) {
 				List cluster_list =
 					list_create(destroy_acct_cluster_rec);
 				cluster = xmalloc(sizeof(acct_cluster_rec_t));
@@ -970,8 +974,135 @@ static void _load_file (int argc, char *argv[])
 					rc = SLURM_ERROR;
 					break;
 				}
+				set = 1;
+			} else {
+				int changed = 0;
+				acct_association_rec_t mod_assoc;
+				acct_association_cond_t assoc_cond;
+
+				memset(&mod_assoc, 0,
+				       sizeof(acct_association_rec_t));
+
+				mod_assoc.fairshare = NO_VAL;
+				mod_assoc.max_cpu_secs_per_job = NO_VAL;
+				mod_assoc.max_jobs = NO_VAL;
+				mod_assoc.max_nodes_per_job = NO_VAL;
+				mod_assoc.max_wall_duration_per_job = NO_VAL;
+
+				memset(&assoc_cond, 0,
+				       sizeof(acct_association_cond_t));
+
+				assoc_cond.fairshare = NO_VAL;
+				assoc_cond.max_cpu_secs_per_job = NO_VAL;
+				assoc_cond.max_jobs = NO_VAL;
+				assoc_cond.max_nodes_per_job = NO_VAL;
+				assoc_cond.max_wall_duration_per_job = NO_VAL;
+
+				if(cluster->default_fairshare !=
+				   file_opts->fairshare) {
+					mod_assoc.fairshare =
+						file_opts->fairshare;
+					changed = 1;
+					printf(" Changed Cluster default for "
+					       "fairshare from %d -> %d\n",
+					       cluster->default_fairshare,
+					       file_opts->fairshare);
+				}
+				if(cluster->default_max_cpu_secs_per_job != 
+				   file_opts->max_cpu_secs_per_job) {
+					mod_assoc.max_cpu_secs_per_job =
+						file_opts->max_cpu_secs_per_job;
+					changed = 1;
+					printf(" Changed Cluster default for "
+					       "MaxCPUSecsPerJob "
+					       "from %d -> %d\n",
+					       cluster->
+					       default_max_cpu_secs_per_job,
+					       file_opts->max_cpu_secs_per_job);
+				}
+				if(cluster->default_max_jobs !=
+				   file_opts->max_jobs) {
+					mod_assoc.max_jobs = 
+						file_opts->max_jobs;
+					changed = 1;
+					printf(" Changed Cluster default for "
+					       "MaxJobs from %d -> %d\n",
+					       cluster->default_max_jobs,
+					       file_opts->max_jobs);
+				}
+				if(cluster->default_max_nodes_per_job != 
+				   file_opts->max_nodes_per_job) {
+					mod_assoc.max_nodes_per_job =
+						file_opts->max_nodes_per_job;
+					changed = 1;
+					printf(" Changed Cluster default for "
+					       "MaxNodesPerJob "
+					       "from %d -> %d\n",
+					       cluster->
+					       default_max_nodes_per_job, 
+					       file_opts->max_nodes_per_job);
+				}
+				if(cluster->default_max_wall_duration_per_job !=
+				   file_opts->max_wall_duration_per_job) {
+					mod_assoc.max_wall_duration_per_job =
+						file_opts->
+						max_wall_duration_per_job;
+					changed = 1;
+					printf(" Changed Cluster default for "
+					       "MaxWallDurationPerJob "
+					       "from %d -> %d\n",
+					       cluster->
+					       default_max_wall_duration_per_job,
+					       file_opts->
+					       max_wall_duration_per_job);
+				}
+
+				if(changed) {
+					List ret_list = NULL;
+					
+					assoc_cond.cluster_list = 
+						list_create(NULL); 
+					assoc_cond.acct_list = 
+						list_create(NULL); 
+					
+					list_push(assoc_cond.cluster_list,
+						  cluster->name);
+					list_push(assoc_cond.acct_list, "root");
+					
+					notice_thread_init();
+					ret_list =
+						acct_storage_g_modify_associations(
+							db_conn, my_uid,
+							&assoc_cond, 
+							&mod_assoc);
+					notice_thread_fini();
+					
+					list_destroy(assoc_cond.cluster_list);
+					list_destroy(assoc_cond.acct_list);
+
+					if(ret_list && list_count(ret_list)) {
+						char *object = NULL;
+						ListIterator itr = 
+							list_iterator_create(
+								ret_list);
+						printf(" Modified cluster "
+						       "defaults for "
+						       "associations...\n");
+						while((object = 
+						       list_next(itr))) {
+							printf("  %s\n",
+							       object);
+						}
+						list_iterator_destroy(itr);
+					}
+ 
+					if(ret_list) {
+						list_destroy(ret_list);
+						set = 1;
+					}
+				}
 			}
-			info("For cluster %s", cluster_name);
+				     
 			_destroy_sacctmgr_file_opts(file_opts);
 			
 			memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
@@ -991,7 +1122,7 @@ static void _load_file (int argc, char *argv[])
 			continue;
 		} else if(!cluster_name) {
 			printf(" error: You need to specify a cluster name "
-			       "first with 'Cluster - name' in your file\n");
+			       "first with 'Cluster - $NAME' in your file\n");
 			break;
 		}
 
