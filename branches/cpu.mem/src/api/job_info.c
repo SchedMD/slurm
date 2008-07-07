@@ -375,7 +375,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		job_ptr->job_min_memory &= (~MEM_PER_CPU);
 		tmp3_ptr = "CPU";
 	} else
-		tmp3_ptr = "";
+		tmp3_ptr = "Node";
 	convert_num_unit((float)job_ptr->job_min_memory, tmp1, sizeof(tmp1),
 			 UNIT_NONE);
 	convert_num_unit((float)job_ptr->job_min_tmp_disk, tmp2, sizeof(tmp2),

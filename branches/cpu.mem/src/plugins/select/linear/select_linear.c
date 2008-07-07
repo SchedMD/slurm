@@ -2,8 +2,6 @@
  *  select_linear.c - node selection plugin for simple one-dimensional 
  *  address space. Selects nodes for a job so as to minimize the number 
  *  of sets of consecutive nodes using a best-fit algorithm.
- *
- *  $Id$
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008 Lawrence Livermore National Security.
@@ -70,7 +68,7 @@
 #include "src/slurmctld/proc_req.h"
 #include "src/plugins/select/linear/select_linear.h"
 
-#define SELECT_DEBUG	0
+#define SELECT_DEBUG	1
 #define NO_SHARE_LIMIT	0xfffe
 
 static int  _add_job_to_nodes(struct node_cr_record *node_cr_ptr,
@@ -559,7 +557,7 @@ static int _job_count_bitmap(struct node_cr_record *node_cr_ptr,
 {
 	int i, count = 0, total_jobs, total_run_jobs;
 	struct part_cr_record *part_cr_ptr;
-	uint32_t job_memory = 0;
+	uint32_t job_memory_cpu = 0, job_memory_node = 0;
 	bool exclusive;
 
 	xassert(node_cr_ptr);
@@ -572,24 +570,42 @@ static int _job_count_bitmap(struct node_cr_record *node_cr_ptr,
 	else
 		exclusive = true;
 
-	if (job_ptr->details->job_min_memory  && (cr_type == CR_MEMORY))
-		job_memory = job_ptr->details->job_min_memory;
+	if (job_ptr->details->job_min_memory  && (cr_type == CR_MEMORY)) {
+		if (job_ptr->details->job_min_memory & MEM_PER_CPU) {
+			job_memory_cpu = job_ptr->details->job_min_memory &
+					 (~MEM_PER_CPU);
+		} else
+			job_memory_node = job_ptr->details->job_min_memory;
+	}
 
 	for (i = 0; i < node_record_count; i++) {
 		if (!bit_test(bitmap, i)) {
 			bit_clear(jobmap, i);
 			continue;
 		}
-
-		if (select_fast_schedule) {
-			if ((node_cr_ptr[i].alloc_memory + job_memory) >
-			     node_record_table_ptr[i].config_ptr->real_memory) {
-				bit_clear(jobmap, i);
-				continue;
+		if (job_memory_cpu || job_memory_node) {
+			uint32_t alloc_mem, job_mem, avail_mem;
+			alloc_mem = node_cr_ptr[i].alloc_memory;
+			if (select_fast_schedule) {
+				avail_mem = node_record_table_ptr[i].
+					    config_ptr->real_memory;
+				if (job_memory_cpu) {
+					job_mem = job_memory_cpu *
+						  node_record_table_ptr[i].
+						  config_ptr->cpus;
+				} else
+					job_mem = job_memory_node;
+			} else {
+				avail_mem = node_record_table_ptr[i].
+					    real_memory;
+				if (job_memory_cpu) {
+					job_mem = job_memory_cpu *
+						  node_record_table_ptr[i].
+						  cpus;
+				} else
+					job_mem = job_memory_node;
 			}
-		} else {
-			if ((node_cr_ptr[i].alloc_memory + job_memory) >
-			     node_record_table_ptr[i].real_memory) {
+			if ((alloc_mem + job_mem) >avail_mem) {
 				bit_clear(jobmap, i);
 				continue;
 			}
@@ -1132,7 +1148,7 @@ static int _rm_job_from_nodes(struct node_cr_record *node_cr_ptr,
 {
 	int i, rc = SLURM_SUCCESS;
 	struct part_cr_record *part_cr_ptr;
-	uint32_t job_memory = 0;
+	uint32_t job_memory, job_memory_cpu = 0, job_memory_node = 0;
 
 	if (node_cr_ptr == NULL) {
 		error("%s: node_cr_ptr not initialized", pre_err);
@@ -1140,12 +1156,27 @@ static int _rm_job_from_nodes(struct node_cr_record *node_cr_ptr,
 	}
 
 	if (remove_all && job_ptr->details && 
-	    job_ptr->details->job_min_memory && (cr_type == CR_MEMORY))
-		job_memory = job_ptr->details->job_min_memory;
+	    job_ptr->details->job_min_memory && (cr_type == CR_MEMORY)) {
+		if (job_ptr->details->job_min_memory & MEM_PER_CPU) {
+			job_memory_cpu = job_ptr->details->job_min_memory &
+					 (~MEM_PER_CPU);
+		} else
+			job_memory_node = job_ptr->details->job_min_memory;
+	}
 
 	for (i = 0; i < select_node_cnt; i++) {
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
+		if (job_memory_cpu == 0)
+			job_memory = job_memory_node;
+		else if (select_fast_schedule) {
+			job_memory = job_memory_cpu *
+				     node_record_table_ptr[i].
+				     config_ptr->cpus;
+		} else {
+			job_memory = job_memory_cpu *
+				     node_record_table_ptr[i].cpus;
+		}
 		if (node_cr_ptr[i].alloc_memory >= job_memory)
 			node_cr_ptr[i].alloc_memory -= job_memory;
 		else {
@@ -1208,7 +1239,7 @@ static int _add_job_to_nodes(struct node_cr_record *node_cr_ptr,
 {
 	int i, rc = SLURM_SUCCESS, exclusive = 0;
 	struct part_cr_record *part_cr_ptr;
-	uint32_t job_memory = 0;
+	uint32_t job_memory_cpu = 0, job_memory_node = 0;
 
 	if (node_cr_ptr == NULL) {
 		error("%s: node_cr_ptr not initialized", pre_err);
@@ -1216,15 +1247,32 @@ static int _add_job_to_nodes(struct node_cr_record *node_cr_ptr,
 	}
 
 	if (alloc_all && job_ptr->details && 
-	    job_ptr->details->job_min_memory && (cr_type == CR_MEMORY))
-		job_memory = job_ptr->details->job_min_memory;
+	    job_ptr->details->job_min_memory && (cr_type == CR_MEMORY)) {
+		if (job_ptr->details->job_min_memory & MEM_PER_CPU) {
+			job_memory_cpu = job_ptr->details->job_min_memory &
+					 (~MEM_PER_CPU);
+		} else
+			job_memory_node = job_ptr->details->job_min_memory;
+	}
+
 	if (job_ptr->details->shared == 0)
 		exclusive = 1;
 
 	for (i = 0; i < select_node_cnt; i++) {
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
-		node_cr_ptr[i].alloc_memory += job_memory;
+		if (job_memory_cpu == 0)
+			node_cr_ptr[i].alloc_memory += job_memory_node;
+		else if (select_fast_schedule) {
+			node_cr_ptr[i].alloc_memory += 
+					job_memory_cpu *
+					node_record_table_ptr[i].
+					config_ptr->cpus;
+		} else {
+			node_cr_ptr[i].alloc_memory += 
+					job_memory_cpu *
+					node_record_table_ptr[i].cpus;
+		}
 		if (exclusive) {
 			if (node_cr_ptr[i].exclusive_jobid) {
 				error("select/linear: conflicting exclusive "
@@ -1341,7 +1389,7 @@ static void _init_node_cr(void)
 	ListIterator part_iterator;
 	struct job_record *job_ptr;
 	ListIterator job_iterator;
-	uint32_t job_memory, step_mem;
+	uint32_t job_memory_cpu, job_memory_node, step_mem = 0;
 	int exclusive, i, node_inx;
 	ListIterator step_iterator;
 	struct step_record *step_ptr;
@@ -1375,11 +1423,17 @@ static void _init_node_cr(void)
 		    (job_ptr->job_state != JOB_SUSPENDED))
 			continue;
 
+		job_memory_cpu  = 0;
+		job_memory_node = 0;
 		if (job_ptr->details && 
-		    job_ptr->details->job_min_memory && (cr_type == CR_MEMORY))
-			job_memory = job_ptr->details->job_min_memory;
-		else
-			job_memory = 0;
+		    job_ptr->details->job_min_memory && (cr_type == CR_MEMORY)) {
+			if (job_ptr->details->job_min_memory & MEM_PER_CPU) {
+				job_memory_cpu = job_ptr->details->job_min_memory &
+						 (~MEM_PER_CPU);
+			} else {
+				job_memory_node = job_ptr->details->job_min_memory;
+			}
+		}
 		if (job_ptr->details->shared == 0)
 			exclusive = 1;
 		else
@@ -1400,7 +1454,18 @@ static void _init_node_cr(void)
 				}
 				node_cr_ptr[i].exclusive_jobid = job_ptr->job_id;
 			}
-			node_cr_ptr[i].alloc_memory += job_memory;
+			if (job_memory_cpu == 0)
+				node_cr_ptr[i].alloc_memory += job_memory_node;
+			else if (select_fast_schedule) {
+				node_cr_ptr[i].alloc_memory += 
+						job_memory_cpu *
+						node_record_table_ptr[i].
+						config_ptr->cpus;
+			} else {
+				node_cr_ptr[i].alloc_memory += 
+						job_memory_cpu *
+						node_record_table_ptr[i].cpus;
+			}
 			part_cr_ptr = node_cr_ptr[i].parts;
 			while (part_cr_ptr) {
 				if (part_cr_ptr->part_ptr != job_ptr->part_ptr) {

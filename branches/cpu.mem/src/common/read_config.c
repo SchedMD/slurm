@@ -146,6 +146,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"DefaultStoragePort", S_P_UINT32},
 	{"DefaultStorageType", S_P_STRING},
 	{"DefaultStorageUser", S_P_STRING},
+	{"DefMemPerCPU", S_P_UINT32},
 	{"DefMemPerTask", S_P_UINT32},
 	{"DisableRootJobs", S_P_BOOLEAN},
 	{"EnforcePartLimits", S_P_BOOLEAN},
@@ -179,6 +180,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"Licenses", S_P_STRING},
 	{"MailProg", S_P_STRING},
 	{"MaxJobCount", S_P_UINT16},
+	{"MaxMemPerCPU", S_P_UINT32},
 	{"MaxMemPerTask", S_P_UINT32},
 	{"MessageTimeout", S_P_UINT16},
 	{"MinJobAge", S_P_UINT16},
@@ -1577,8 +1579,9 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_string(&conf->crypto_type, "CryptoType", hashtbl))
 		 conf->crypto_type = xstrdup(DEFAULT_CRYPTO_TYPE);
 
-	if (!s_p_get_uint32(&conf->def_mem_per_task, "DefMemPerTask", hashtbl))
-		conf->def_mem_per_task = DEFAULT_MEM_PER_TASK;
+	if ((!s_p_get_uint32(&conf->def_mem_per_task, "DefMemPerCPU", hashtbl)) &&
+	    (!s_p_get_uint32(&conf->def_mem_per_task, "DefMemPerTask", hashtbl)))
+		conf->def_mem_per_task = DEFAULT_MEM_PER_CPU;
 
 	if (!s_p_get_boolean((bool *) &conf->disable_root_jobs, 
 			     "DisableRootJobs", hashtbl))
@@ -1708,8 +1711,9 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_uint16(&conf->max_job_cnt, "MaxJobCount", hashtbl))
 		conf->max_job_cnt = DEFAULT_MAX_JOB_COUNT;
 
-	if (!s_p_get_uint32(&conf->max_mem_per_task, "MaxMemPerTask", hashtbl))
-		conf->max_mem_per_task = DEFAULT_MAX_MEM_PER_TASK;
+	if ((!s_p_get_uint32(&conf->max_mem_per_task, "MaxMemPerCPU", hashtbl)) &&
+	    (!s_p_get_uint32(&conf->max_mem_per_task, "MaxMemPerTask", hashtbl)))
+		conf->max_mem_per_task = DEFAULT_MAX_MEM_PER_CPU;
 
 	if (!s_p_get_uint16(&conf->msg_timeout, "MessageTimeout", hashtbl))
 		conf->msg_timeout = DEFAULT_MSG_TIMEOUT;
