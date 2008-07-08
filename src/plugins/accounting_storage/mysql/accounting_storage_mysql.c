@@ -1973,7 +1973,7 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			  == INFINITE) {
 			xstrcat(cols, ", max_wall_duration_per_job");
 			xstrfmtcat(vals, ", NULL");
-			xstrfmtcat(extra, ", max_duration_per_job=NULL");
+			xstrfmtcat(extra, ", max_wall_duration_per_job=NULL");
 		}
 
 		xstrfmtcat(query, 
@@ -2590,9 +2590,10 @@ extern List acct_storage_p_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 #endif
 }
 
-extern List acct_storage_p_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid, 
-					acct_account_cond_t *acct_q,
-					acct_account_rec_t *acct)
+extern List acct_storage_p_modify_accounts(
+	mysql_conn_t *mysql_conn, uint32_t uid, 
+	acct_account_cond_t *acct_q,
+	acct_account_rec_t *acct)
 {
 #ifdef HAVE_MYSQL
 	ListIterator itr = NULL;
@@ -2719,6 +2720,7 @@ extern List acct_storage_p_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	   == SLURM_ERROR) {
 		error("Couldn't modify accounts");
 		list_destroy(ret_list);
+		errno = SLURM_ERROR;
 		ret_list = NULL;
 	}
 		

@@ -1155,7 +1155,6 @@ static int   _modify_accounts(void *db_conn,
 	slurmdbd_pack_list_msg(DBD_GOT_LIST, &list_msg, *out_buffer);
 	if(list_msg.my_list)
 		list_destroy(list_msg.my_list);
-	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_MODIFY_ACCOUNTS);
 	return rc;
 }
 
@@ -1568,8 +1567,9 @@ static int   _remove_account_coords(void *db_conn,
 	    SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_REMOVE_ACCOUNT_COORDS message";
 		error("%s", comment);
-		rc = SLURM_ERROR;
-		goto end_it;
+		*out_buffer = make_dbd_rc_msg(SLURM_ERROR, comment,
+					      DBD_ADD_ACCOUNT_COORDS);
+		return SLURM_ERROR;
 	}
 	
 	/* All authentication needs to be done inside the plugin since we are
@@ -1607,11 +1607,6 @@ static int   _remove_account_coords(void *db_conn,
 		list_destroy(list_msg.my_list);
 
 	return rc;
-end_it:
-	slurmdbd_free_acct_coord_msg(get_msg);
-	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_ADD_ACCOUNT_COORDS);
-	return rc;
-
 }
 
 static int   _remove_assocs(void *db_conn,

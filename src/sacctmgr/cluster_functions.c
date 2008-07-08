@@ -39,9 +39,6 @@
 
 #include "src/sacctmgr/sacctmgr.h"
 
-static int _print_file_sacctmgr_assoc_list(
-	FILE *fd, List sacctmgr_assoc_list, List user_list, List acct_list);
-
 static int _set_cond(int *start, int argc, char *argv[],
 		     List cluster_list,
 		     List format_list)
@@ -134,145 +131,6 @@ static int _set_rec(int *start, int argc, char *argv[],
 
 }
 
-static int _print_file_sacctmgr_assoc_childern(FILE *fd, 
-					       List sacctmgr_assoc_list,
-					       List user_list,
-					       List acct_list)
-{
-	ListIterator itr = NULL;
-	sacctmgr_assoc_t *sacctmgr_assoc = NULL;
-	char *line = NULL;
-	acct_user_rec_t *user_rec = NULL;
-	acct_account_rec_t *acct_rec = NULL;
-
-	itr = list_iterator_create(sacctmgr_assoc_list);
-	while((sacctmgr_assoc = list_next(itr))) {
-		if(sacctmgr_assoc->assoc->user) {
-			user_rec = sacctmgr_find_user_from_list(
-				user_list, sacctmgr_assoc->assoc->user);
-			line = xstrdup_printf(
-				"User - %s", sacctmgr_assoc->sort_name);
-			if(user_rec) {
-				xstrfmtcat(line, ":DefaultAccount=%s",
-					   user_rec->default_acct);
-				if(user_rec->admin_level > ACCT_ADMIN_NONE)
-					xstrfmtcat(line, ":AdminLevel=%s",
-						   acct_admin_level_str(
-							   user_rec->
-							   admin_level));
-				if(user_rec->qos > ACCT_QOS_NORMAL)
-					xstrfmtcat(line, ":QOS=%s",
-						   acct_qos_str(user_rec->qos));
-				if(user_rec->coord_accts
-				   && list_count(user_rec->coord_accts)) {
-					ListIterator itr2 = NULL;
-					acct_coord_rec_t *coord = NULL;
-					int first_coord = 1;
-					list_sort(user_rec->coord_accts,
-						  (ListCmpF)sort_coord_list);
-					itr2 = list_iterator_create(
-						user_rec->coord_accts);
-					while((coord = list_next(itr2))) {
-						/* We only care about
-						 * the direct accounts here
-						 */
-						if(!coord->direct) 
-							continue;
-						if(first_coord) {
-							xstrfmtcat(line,
-								   ":Coordinator=%s",
-								   coord->name);
-						} else {
-							xstrfmtcat(line, ",%s",
-								   coord->name);
-						}				
-					}
-					list_iterator_destroy(itr2);
-				}
-			}
-		} else {
-			acct_rec = sacctmgr_find_account_from_list(
-				acct_list, sacctmgr_assoc->assoc->acct);
-			line = xstrdup_printf(
-				"Account - %s", sacctmgr_assoc->sort_name);
-			if(acct_rec) {
-				xstrfmtcat(line, ":Description='%s'",
-					   acct_rec->description);
-				xstrfmtcat(line, ":Organization='%s'",
-					   acct_rec->organization);
-				if(acct_rec->qos > ACCT_QOS_NORMAL)
-					xstrfmtcat(line, ":QOS=%s",
-						   acct_qos_str(acct_rec->qos));
-			}
-		}
-		if(sacctmgr_assoc->assoc->fairshare != INFINITE)
-			xstrfmtcat(line, ":Fairshare=%u", 
-				   sacctmgr_assoc->assoc->fairshare);
-		
-		if(sacctmgr_assoc->assoc->max_cpu_secs_per_job != INFINITE)
-			xstrfmtcat(line, ":MaxCPUSecs=%u",
-				   sacctmgr_assoc->assoc->max_cpu_secs_per_job);
-		
-		if(sacctmgr_assoc->assoc->max_jobs != INFINITE) 
-			xstrfmtcat(line, ":MaxJobs=%u",
-				   sacctmgr_assoc->assoc->max_jobs);
-		
-		if(sacctmgr_assoc->assoc->max_nodes_per_job != INFINITE)
-			xstrfmtcat(line, ":MaxNodes=%u",
-				   sacctmgr_assoc->assoc->max_nodes_per_job);
-		
-		if(sacctmgr_assoc->assoc->max_wall_duration_per_job 
-		   != INFINITE)
- 			xstrfmtcat(line, ":MaxWallDurationPerJob=%u",
-				   sacctmgr_assoc->assoc->
-				   max_wall_duration_per_job);
-
-
-		if(fprintf(fd, "%s\n", line) < 0) {
-			error("Can't write to file");
-			return SLURM_ERROR;
-		}
-		info("%s", line);
-	}
-	list_iterator_destroy(itr);
-	_print_file_sacctmgr_assoc_list(fd, sacctmgr_assoc_list,
-					user_list, acct_list);
-
-	return SLURM_SUCCESS;
-}
-
-static int _print_file_sacctmgr_assoc_list(FILE *fd, 
-					   List sacctmgr_assoc_list,
-					   List user_list,
-					   List acct_list)
-{
-	ListIterator itr = NULL;
-	sacctmgr_assoc_t *sacctmgr_assoc = NULL;
-
-	itr = list_iterator_create(sacctmgr_assoc_list);
-	while((sacctmgr_assoc = list_next(itr))) {
-/* 		info("got here %d with %d from %s %s",  */
-/* 		     depth, list_count(sacctmgr_assoc->childern), */
-/* 		     sacctmgr_assoc->assoc->acct, sacctmgr_assoc->assoc->user); */
-		if(!list_count(sacctmgr_assoc->childern))
-			continue;
-		if(fprintf(fd, "Parent - %s\n",
-			   sacctmgr_assoc->assoc->acct) < 0) {
-			error("Can't write to file");
-			return SLURM_ERROR;
-		}
-		info("%s - %s", "Parent",
-		       sacctmgr_assoc->assoc->acct);
-/* 		info("sending %d from %s", */
-/* 		     list_count(sacctmgr_assoc->childern), */
-/* 		     sacctmgr_assoc->assoc->acct); */
-		_print_file_sacctmgr_assoc_childern(
-			fd, sacctmgr_assoc->childern, user_list, acct_list);
-	}	
-	list_iterator_destroy(itr);
-
-	return SLURM_SUCCESS;
-}
 
 extern int sacctmgr_add_cluster(int argc, char *argv[])
 {
@@ -904,7 +762,7 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 		return SLURM_ERROR;
 	}
 
-	_print_file_sacctmgr_assoc_list(
+	print_file_sacctmgr_assoc_list(
 		fd, sacctmgr_assoc_list, user_list, acct_list);
 
 	xfree(cluster_name);
