@@ -58,6 +58,17 @@
 #include "src/common/net.h"
 #include "src/common/fd.h"
 
+/*
+ *  2008-07-03:
+ * 
+ *  This version of mvapich.c has been tested against the following
+ *   protocol versions:
+ *  
+ *   Version 8: (pmgr_collective): mvapich-1.0.1, mvapich-1.0
+ *   Version 5: mvapich-0.9.9 r1760, mvapich-0.9.7-mlx2.2.0
+ *   Version 3: mvapich-0.9.8
+ */
+
 /* NOTE: MVAPICH has changed protocols without changing version numbers.
  * This makes support of MVAPICH very difficult. 
  * Support for the following versions have been validated:
@@ -66,10 +77,11 @@
  * For MVAPICH 0.9.4 and 0.9.5, set MVAPICH_VERSION_REQUIRES_PIDS to 3
  *
  * See functions mvapich_requires_pids() below for other mvapich versions.
+ *
  */
 #define MVAPICH_VERSION_REQUIRES_PIDS 3
 
-#include "src/plugins/mpi/mvapich/mvapich.h"
+#include "mvapich.h"
 
 /* NOTE: AIX lacks timersub */
 /* Why are we using mvapich on AIX? */
@@ -85,13 +97,35 @@
 	} while (0)
 #endif
 
+
 /*
- *  Information read from each MVAPICH process
+ *  MVAPICH initialization data state codes
+ */
+enum mv_init_state
+{
+	MV_READ_VERSION,
+	MV_READ_RANK,
+	MV_READ_HOSTIDLEN,
+	MV_READ_HOSTID,
+	MV_READ_ADDRLEN,
+	MV_READ_ADDRS,
+	MV_READ_PIDLEN,
+	MV_READ_PID,
+	MV_INIT_DONE,
+};
+
+/*
+ *  Information cache for each MVAPICH process
  */
 struct mvapich_info
 {
-	int do_poll;          
+	int do_poll;              
+	enum mv_init_state state; /* Initialization state            */
+	int nread;                /* Amount of data read so far      */
+	int nwritten;             /* Amount of data written          */
+
 	int fd;             /* fd for socket connection to MPI task  */
+	int version;        /* Protocol version for this rank        */
 	int rank;           /* This process' MPI rank                */
 	int pidlen;         /* length of pid buffer                  */
 	char *pid;          /* This rank's local pid (V3 only)       */
@@ -114,6 +148,7 @@ struct mvapich_info
 /*  Globals for the mvapich thread.
  */
 int mvapich_verbose = 0;
+
 static time_t first_abort_time = 0;
 
 /*  Per-job step state information.  The MPI plugin may be called
@@ -125,6 +160,7 @@ struct mvapich_state {
 	struct mvapich_info **mvarray;
 	int fd;
 	int nprocs;
+	int nconnected;
 	int protocol_version;
 	int protocol_phase;
 	int connect_once;
@@ -136,6 +172,22 @@ struct mvapich_state {
 	mpi_plugin_client_info_t job[1];
 };
 
+/*
+ *  MVAPICH poll structure used by mvapich_poll_next, etc.
+ */
+struct mvapich_poll 
+{
+	mvapich_state_t      *st;
+	struct mvapich_info **mvmap;
+	struct pollfd        *fds;
+	int                   counter;
+	int                   nfds;
+};
+
+
+/*
+ *  mvapich debugging defines
+ */
 #define mvapich_debug(args...) \
 	do { \
 		if (mvapich_verbose) \
@@ -148,22 +200,14 @@ struct mvapich_state {
 			info ("mvapich: " args); \
 	} while (0);
 
-static struct mvapich_info * mvapich_info_create (void)
-{
-	struct mvapich_info *mvi = xmalloc (sizeof (*mvi));
-	memset (mvi, 0, sizeof (*mvi));
-	mvi->fd = -1;
-	mvi->rank = -1;
-	return (mvi);
-}
+#define mvapich_debug3(args...) \
+	do { \
+		if (mvapich_verbose > 2) \
+			info ("mvapich: " args); \
+	} while (0);
 
-static void mvapich_info_destroy (struct mvapich_info *mvi)
-{
-	xfree (mvi->addr);
-	xfree (mvi->pid);
-	xfree (mvi);
-	return;
-}
+
+static void do_timings (mvapich_state_t *st, const char *fmt, ...);
 
 static int mvapich_requires_pids (mvapich_state_t *st)
 {
@@ -174,51 +218,10 @@ static int mvapich_requires_pids (mvapich_state_t *st)
 	return (0);
 }
 
-static int mvapich_terminate_job (mvapich_state_t *st)
-{
-	slurm_kill_job_step (st->job->jobid, st->job->stepid, SIGKILL);
-	/* Give srun a chance to terminate job */
-	sleep (5);
-	/* exit forcefully */
-	exit (1);
-	/* NORETURN */
-}
-
-static void report_absent_tasks (mvapich_state_t *st)
-{
-	int i;
-	char buf[16];
-	hostlist_t tasks = hostlist_create (NULL);
-	hostlist_t hosts = hostlist_create (NULL);
-	slurm_step_layout_t *sl = st->job->step_layout;
-
-	for (i = 0; i < st->nprocs; i++) {
-		if (st->mvarray[i]->fd < 0) {
-			const char *host = slurm_step_layout_host_name (sl, i);
-			sprintf (buf, "%d", i);
-			hostlist_push (tasks, buf);
-			hostlist_push (hosts, host);
-		}
-	}
-
-	if (hostlist_count (tasks)) {
-		char r [4096];
-		char h [4096];
-		hostlist_uniq (hosts);
-		int nranks = hostlist_count (tasks);
-		int nhosts = hostlist_count (hosts);
-		hostlist_ranged_string (tasks, 4096, r);
-		hostlist_ranged_string (hosts, 4096, h);
-		error ("mvapich: timeout: never heard from rank%s %s on host%s %s.\n", 
-				nranks > 1 ? "s" : "", r, 
-				nhosts > 1 ? "s" : "", h);
-	}
-
-	hostlist_destroy (hosts);
-	hostlist_destroy (tasks);
-}
-
-
+/*
+ *  Return the number of ms left until the MVAPICH startup 
+ *   timeout expires.
+ */
 static int startup_timeout (mvapich_state_t *st)
 {
 	time_t now;
@@ -239,6 +242,253 @@ static int startup_timeout (mvapich_state_t *st)
 	else
 		return (0);
 }
+
+char * vmsg (const char *msg, va_list ap)
+{
+	int n = -1;
+	int size = BUFSIZ;
+	va_list vp;
+	char *p = xmalloc (size);
+
+	while (1) {
+		va_copy (vp, ap);
+		n = vsnprintf (p, size, msg, vp);
+		va_end (vp);
+
+		if (n > -1 && n < size)
+			return (p);
+
+		if (n > -1)
+			size = n + 1;
+		else if (n == -1)
+			size *= 2;
+
+		p = xrealloc (p, size);
+	}
+
+	return (p);
+}
+
+
+/*
+ *  Forcibly kill job (with optional error message).
+ */
+static int mvapich_terminate_job (mvapich_state_t *st, const char *msg, ...)
+{
+	if (msg) {
+		va_list ap;
+		va_start (ap, msg);
+		char *p = vmsg (msg, ap);
+		error ("mvapich: %s", p);
+		xfree (p);
+	}
+
+	slurm_kill_job_step (st->job->jobid, st->job->stepid, SIGKILL);
+	/* Give srun a chance to terminate job */
+	sleep (5);
+	/* exit forcefully */
+	exit (1);
+	/* NORETURN */
+}
+
+static struct mvapich_info *mvapich_info_find (mvapich_state_t *st, int rank)
+{
+	int i;
+
+	for (i = 0; i < st->nprocs; i++) {
+		if (st->mvarray[i] && st->mvarray[i]->rank == rank)
+			return (st->mvarray[i]);
+	}
+	return (NULL);
+}
+
+/*
+ *  Issue a report of tasks/hosts that we may be waiting for.
+ *   by checking either mvi->fd < 0 || mvi->do_poll == 1.
+ */
+static void report_absent_tasks (mvapich_state_t *st, int check_do_poll)
+{
+	int i;
+	char buf[16];
+	hostlist_t tasks = hostlist_create (NULL);
+	hostlist_t hosts = hostlist_create (NULL);
+	slurm_step_layout_t *sl = st->job->step_layout;
+
+	for (i = 0; i < st->nprocs; i++) {
+		struct mvapich_info *m = mvapich_info_find (st ,i);
+
+		if ((m == NULL) || (m->fd < 0) || (check_do_poll && m->do_poll)) {
+			const char *host = slurm_step_layout_host_name (sl, i);
+			sprintf (buf, "%d", i);
+			hostlist_push (tasks, buf);
+			hostlist_push (hosts, host);
+		}
+	}
+
+	if (hostlist_count (tasks)) {
+		char r [4096];
+		char h [4096];
+		hostlist_uniq (hosts);
+		int nranks = hostlist_count (tasks);
+		int nhosts = hostlist_count (hosts);
+		hostlist_ranged_string (tasks, 4096, r);
+		hostlist_ranged_string (hosts, 4096, h);
+		error ("mvapich: timeout: waiting on rank%s %s on host%s %s.\n", 
+				nranks > 1 ? "s" : "", r, 
+				nhosts > 1 ? "s" : "", h);
+	}
+
+	hostlist_destroy (hosts);
+	hostlist_destroy (tasks);
+}
+
+
+static struct mvapich_info * mvapich_info_create (void)
+{
+	struct mvapich_info *mvi = xmalloc (sizeof (*mvi));
+	memset (mvi, 0, sizeof (*mvi));
+	mvi->fd = -1;
+	mvi->rank = -1;
+	mvi->state = MV_READ_VERSION;
+	mvi->nread = 0;
+
+	return (mvi);
+}
+
+static void mvapich_info_destroy (struct mvapich_info *mvi)
+{
+	xfree (mvi->addr);
+	xfree (mvi->pid);
+	xfree (mvi);
+	return;
+}
+
+/*
+ *  Reset an mvapich_poll object so it may be used again.
+ */
+static void mvapich_poll_reset (struct mvapich_poll *mp)
+{
+	int i;
+	mp->counter = 0;
+	mp->nfds = 0;
+
+	/*
+	 *  Reset mvapich_info do_poll attribute.
+	 */
+	for (i = 0; i < mp->st->nprocs; i++) 
+		mp->st->mvarray[i]->do_poll = 1;
+	return;
+}
+
+
+/*
+ *  Create an mvapich_poll object, used to poll all mvapich 
+ *   file descriptors for read/write activity
+ *
+ *  Resets do_poll for all mvapich_info objects in mvarray to 1.
+ *   (Thus, only one mvapich_poll should be in use at a time)
+ */
+static struct mvapich_poll * mvapich_poll_create (mvapich_state_t *st)
+{
+	struct mvapich_poll *mp = xmalloc (sizeof (*mp));
+
+	mp->mvmap   = xmalloc (st->nprocs * sizeof (struct mvapich_info *));
+	mp->fds     = xmalloc (st->nprocs * sizeof (struct pollfd));
+	mp->st = st;
+
+	mvapich_poll_reset (mp);
+
+	return (mp);
+}
+
+static void mvapich_poll_destroy (struct mvapich_poll *mp)
+{
+	xfree (mp->mvmap);
+	xfree (mp->fds);
+	xfree (mp);
+}
+
+/*
+ *  Poll for next available mvapich_info object with read/write activity
+ * 
+ *  Returns NULL when no more mvapich fds need to be polled.
+ *
+ *  The caller is responsible for updating mvi->do_poll to indicate
+ *    when a mvapich_info object's file descriptor no longer needs
+ *    to be polled for activity.
+ *
+ */
+static struct mvapich_info *
+mvapich_poll_next (struct mvapich_poll *mp, int do_read)
+{
+	int i, rc;
+	int event = do_read ? POLLIN : POLLOUT;
+	mvapich_state_t *st = mp->st;
+
+again:
+	/*
+	 *  If the loop counter is 0, then we need to reset data structures
+	 *    and poll again.
+	 */
+	if (mp->counter == 0) {
+		int j = 0;
+
+		memset (mp->fds, 0, sizeof (st->nprocs * sizeof (struct pollfd)));
+		memset (mp->mvmap, 0, sizeof (st->nprocs * sizeof (*mp->mvmap)));
+		mp->nfds = 0;
+
+		for (i = 0; i < st->nprocs; i++) {
+			struct mvapich_info *mvi = mp->st->mvarray [i];
+			if (mvi->do_poll) {
+				mp->mvmap[j] = mvi;
+				mp->fds[j].fd = mvi->fd;
+				mp->fds[j].events = event;
+				j++;
+				mp->nfds++;
+			}
+		}
+
+		/*
+		 *  If there are no more file descriptors to poll, then
+		 *   return NULL to indicate we're done.
+		 */
+		if (mp->nfds == 0)
+			return (NULL);
+
+		mvapich_debug3 ("mvapich_poll_next (nfds=%d, timeout=%d)\n", 
+				mp->nfds, startup_timeout (st));
+		if ((rc = poll (mp->fds, mp->nfds, startup_timeout (st))) < 0)
+			mvapich_terminate_job (st, "mvapich_poll_next: %m");
+		else if (rc == 0) {
+			/*
+			 *  If we timed out, then report all tasks that we were 
+			 *   still waiting for.
+			 */
+			report_absent_tasks (st, 1);
+			mvapich_terminate_job (st, NULL);
+		}
+	}
+
+	/*
+	 *  Loop through poll fds and return first mvapich_info object
+     *   we find that has the requested read/write activity. 
+	 *   When found, we update the loop counter, and return
+     *   the corresponding mvapich_info object.
+	 *
+	 */
+	for (i = mp->counter; i < mp->nfds; i++) {
+		if (mp->fds[i].revents == event) {
+			mp->counter = i+1;
+			return (mp->mvmap[i]);
+		}
+	}
+
+	mp->counter = 0;
+	goto again;
+
+	return (NULL);
+}
+
 
 static int mvapich_poll (mvapich_state_t *st, struct mvapich_info *mvi, 
 		                 int write) {
@@ -267,14 +517,68 @@ static int mvapich_poll (mvapich_state_t *st, struct mvapich_info *mvi,
 					mvi->rank, host);
 		} 
 		else {
-			report_absent_tasks (st);
+			report_absent_tasks (st, 0);
 		}
 
-		mvapich_terminate_job (st);
+		mvapich_terminate_job (st, NULL);
 		/* NORETURN */
 	}
 
 	return (rc);
+}
+
+static int mvapich_write (struct mvapich_info *mvi, void * buf, size_t len)
+{
+	size_t nleft;
+	ssize_t n;
+	unsigned char *p;
+
+	p = buf + mvi->nwritten;
+	nleft = len - mvi->nwritten;
+
+	n = write (mvi->fd, p, nleft);
+
+	if ((n < 0) && (errno != EAGAIN)) {
+		error ("mvapich: rank %d: write (%d/%ld): %m\n", mvi->rank, nleft, len);
+		return (-1);
+	}
+
+	if (n > 0)
+		mvi->nwritten += n;
+
+	if (mvi->nwritten == len) {
+		mvi->nwritten = 0;
+		mvi->do_poll = 0;
+	}
+
+	return (0);
+}
+
+static int mvapich_read (struct mvapich_info *mvi, void * buf, size_t len)
+{
+	size_t nleft;
+	ssize_t n;
+	unsigned char *p;
+
+	p = buf + mvi->nread;
+	nleft = len - mvi->nread;
+
+	n = read (mvi->fd, p, nleft);
+
+	if ((n < 0) && (errno != EAGAIN)) {
+		error ("mvapich: rank %d: read (%d/%ld): %m\n", mvi->rank, nleft, len);
+		return (-1);
+	}
+
+	if (n > 0)
+		mvi->nread += n;
+
+	if (mvi->nread == len) {
+		mvi->nread = 0;
+		mvi->do_poll = 0;
+	}
+
+	return (0);
 }
 
 static int mvapich_write_n (mvapich_state_t *st, struct mvapich_info *mvi,
@@ -303,14 +607,14 @@ static int mvapich_write_n (mvapich_state_t *st, struct mvapich_info *mvi,
 }
 
 static int mvapich_read_n (mvapich_state_t *st,  struct mvapich_info *mvi,
-						   void *buf, size_t len)
+		void *buf, size_t len)
 {
 	int nleft = len;
 	int n = 0;
 	unsigned char * p = buf;
 
 	while (nleft > 0) {
-		/* Poll for write-activity */
+		/* Poll for read-activity */
 		if (mvapich_poll (st, mvi, 0) < 0)
 			return (-1);
 
@@ -322,8 +626,8 @@ static int mvapich_read_n (mvapich_state_t *st,  struct mvapich_info *mvi,
 
 		if (n == 0) { /* unexpected EOF */
 			error ("mvapich: rank %d: "
-			       "Unexpected EOF (%dB left to read)", 
-			       mvi->rank, nleft);
+					"Unexpected EOF (%dB left to read)", 
+					mvi->rank, nleft);
 			return (-1);
 		}
 
@@ -351,122 +655,6 @@ static int mvapich_abort_sends_rank (mvapich_state_t *st)
 }
 
 /*
- *  Create an mvapich_info object by reading information from
- *   file descriptor `fd'
- */
-static int mvapich_get_task_info (mvapich_state_t *st,
-				  struct mvapich_info *mvi)
-{
-	mvi->do_poll = 0;
-
-	if (mvapich_read_n (st, mvi, &mvi->addrlen, sizeof (int)) <= 0)
-		return error ("mvapich: Unable to read addrlen for rank %d: %m", 
-				mvi->rank);
-
-	mvi->addr = xmalloc (mvi->addrlen);
-
-	if (mvapich_read_n (st, mvi, mvi->addr, mvi->addrlen) <= 0)
-		return error ("mvapich: Unable to read addr info for rank %d: %m", 
-				mvi->rank);
-
-	if (!mvapich_requires_pids (st))
-		return (0);
-
-	if (mvapich_read_n (st, mvi, &mvi->pidlen, sizeof (int)) <= 0) {
-		return error ("mvapich: Unable to read pidlen for rank %d: %m", 
-				mvi->rank);
-	}
-
-	mvi->pid = xmalloc (mvi->pidlen);
-
-	if (mvapich_read_n (st, mvi, mvi->pid, mvi->pidlen) <= 0) {
-		return error ("mvapich: Unable to read pid for rank %d: %m", 
-				mvi->rank);
-	}
-
-	return (0);
-}
-
-static int mvapich_get_hostid (mvapich_state_t *st, struct mvapich_info *mvi)
-{
-	if (mvapich_read_n (st, mvi, &mvi->hostidlen, sizeof (int)) < 0) {
-		return error ("mvapich: Unable to read hostidlen for rank %d: %m",
-				mvi->rank);
-	}
-	if (mvi->hostidlen != sizeof (int)) {
-		return error ("mvapich: Unexpected size for hostidlen (%d)", 
-				mvi->hostidlen);
-	}
-	if (mvapich_read_n (st, mvi, &mvi->hostid, sizeof (int)) < 0) {
-		return error ("mvapich: unable to read hostid from rank %d", 
-				mvi->rank);
-	}
-
-	return (0);
-}
-
-static int mvapich_get_task_header (mvapich_state_t *st,
-				    int fd, int *version, int *rank)
-{
-	struct mvapich_info tmp[1] ;
-
-	fd_set_nonblocking (fd);
-
-	tmp->fd = fd;
-	tmp->rank = -1;
-
-	/*
-	 *  dual phase only sends version on first pass
-	 */
-	if (!mvapich_dual_phase (st) || st->protocol_phase == 0) {
-		if (mvapich_read_n (st, tmp, version, sizeof (int)) < 0) 
-			return error ("mvapich: Unable to read version from task: %m");
-	} 
-
-	if (mvapich_read_n (st, tmp, rank, sizeof (int)) < 0) 
-		return error ("mvapich: Unable to read task rank: %m");
-
-
-	if (mvapich_dual_phase (st) && st->protocol_phase > 0)
-		return (0);
-
-	if (st->protocol_version == -1)
-		st->protocol_version = *version;
-	else if (st->protocol_version != *version) {
-		return error ("mvapich: rank %d version %d != %d",
-			      *rank, *version, st->protocol_version);
-	}
-
-	return (0);
-
-}
-
-static int mvapich_handle_task (mvapich_state_t *st,
-				int fd, struct mvapich_info *mvi)
-{
-	mvi->fd = fd;
-
-	switch (st->protocol_version) {
-		case 1:
-		case 2:
-		case 3:
-			return mvapich_get_task_info (st, mvi);
-		case 5:
-		case 6:
-			if (st->protocol_phase == 0)
-				return mvapich_get_hostid (st, mvi);
-			else
-				return mvapich_get_task_info (st, mvi);
-		case 8:
-			return (0);
-		default:
-			return (error ("mvapich: Unsupported protocol version %d", 
-				       st->protocol_version));
-	}
-
-	return (0);
-}
-/*
  *  Broadcast addr information to all connected mvapich processes.
  *   The format of the information sent back to each process is:
  *
@@ -486,6 +674,8 @@ static void mvapich_bcast_addrs (mvapich_state_t *st)
 	int *out_addrs = xmalloc (out_addrs_len);
 	int i = 0;
 	int j = 0;
+
+	mvapich_debug2 ("Bcasting addrs to %d tasks", st->nprocs);
 
 	for (i = 0; i < st->nprocs; i++) {
 		m = st->mvarray[i];
@@ -511,7 +701,10 @@ static void mvapich_bcast_addrs (mvapich_state_t *st)
 			out_addrs[st->nprocs + j] = 
 				(i == j) ? -1 : st->mvarray[j]->addr[i];
 
+		mvapich_debug3 ("writing addrs to task %d", i);
 		mvapich_write_n (st, m, out_addrs, out_addrs_len);
+		if (mvapich_verbose > 2)
+			do_timings (st, "Write addrs to task %d", i);
 
 		/*
 		 * Protocol version 3 requires pid list to be sent next
@@ -530,6 +723,8 @@ static void mvapich_bcast_addrs (mvapich_state_t *st)
 
 static void mvapich_bcast_hostids (mvapich_state_t *st)
 {
+	struct mvapich_poll *mp;
+	struct mvapich_info *mvi;
 	int *  hostids;
 	int    i   = 0;
 	size_t len = st->nprocs * sizeof (int);
@@ -539,22 +734,39 @@ static void mvapich_bcast_hostids (mvapich_state_t *st)
 	for (i = 0; i < st->nprocs; i++)
 		hostids [i] = st->mvarray[i]->hostid;
 
-	for (i = 0; i < st->nprocs; i++) {
-		struct mvapich_info *mvi = st->mvarray[i];
-		int co, rc;
+	/*
+	 *  Broadcast hostids
+	 */
+	mvapich_debug ("bcasting hostids\n");
+	mp = mvapich_poll_create (st);
+	while ((mvi = mvapich_poll_next (mp, 0))) {
+		if (mvapich_write (mvi, hostids, len) < 0) 
+			mvapich_terminate_job (st, "write hostid rank %d: %m", mvi->rank);
+	}
+	xfree (hostids);
 
-		if (mvapich_write_n (st, mvi, hostids, len) < 0)
-			error ("mvapich: write hostid rank %d: %m", mvi->rank);
-
-		if ((rc = mvapich_read_n (st, mvi, &co, sizeof (int))) <= 0) {
+	/*
+	 *  Read connect_once value from every rank
+	 *   Each rank will either close the connection (connect_once = 0)
+	 *    or send the connect_once value (presumed 1).
+	 */
+	mvapich_debug ("reading connect once value");
+	mvapich_poll_reset (mp);
+	while ((mvi = mvapich_poll_next (mp, 1))) {
+		int co = 1, rc;
+		mvapich_debug3 ("reading connect once value from rank %d fd=%d\n", 
+				mvi->rank, mvi->fd);
+		if ((rc = read (mvi->fd, &co, sizeof (int))) <= 0) {
 			mvapich_debug2 ("reading connect once value rc=%d: %m\n", rc);
 			close (mvi->fd);
+			mvi->fd = -1;
 			st->connect_once = 0;
-		} else
-			mvi->do_poll = 1;
+		}
+		mvi->do_poll = 0;
 	}
 
-	xfree (hostids);
+	mvapich_poll_destroy (mp);
+	return;
 }
 
 /* Write size bytes from buf into socket for rank */
@@ -574,29 +786,39 @@ static int mvapich_recv (mvapich_state_t *st, void* buf, int size, int rank)
 /* Scatter data in buf to ranks using chunks of size bytes */
 static int mvapich_scatterbcast (mvapich_state_t *st, void* buf, int size)
 {
-	int i, rc;
+	int rc;
 	int n = 0;
+	struct mvapich_poll *mp;
+	struct mvapich_info *mvi;
 
-	for (i = 0; i < st->nprocs; i++) {
-		if ((rc = mvapich_send (st, buf + i*size, size, i)) <= 0) 
-			return (-1);
+	mp = mvapich_poll_create (st);
+	while ((mvi = mvapich_poll_next (mp, 0))) {
+		if ((rc = mvapich_write (mvi, buf + (mvi->rank * size), size)) < 0)
+			break;
 		n += rc;
 	}
-	return (n);
+	mvapich_poll_destroy (mp);
+
+	return (rc < 0 ? rc : n);
 }
 
 /* Broadcast buf to each rank, which is size bytes big */
 static int mvapich_allgatherbcast (mvapich_state_t *st, void* buf, int size)
 {
-	int i, rc;
+	int rc = 0;
 	int n = 0;
+	struct mvapich_poll *mp;
+	struct mvapich_info *mvi;
 
-	for (i = 0; i < st->nprocs; i++) {
-		if ((rc = mvapich_send (st, buf, size, i)) <= 0)
-			return (-1);
+	mp = mvapich_poll_create (st);
+	while ((mvi = mvapich_poll_next (mp, 0))) {
+		if ((rc = mvapich_write (mvi, buf, size)) < 0)
+			break;
 		n += rc;
 	}
-	return (n);
+	mvapich_poll_destroy (mp);
+
+	return (rc < 0 ? rc : n);
 }
 
 /* Perform alltoall using data in buf with elements of size bytes */
@@ -610,16 +832,16 @@ static int mvapich_alltoallbcast (mvapich_state_t *st, void* buf, int size)
 	for (i = 0; i < st->nprocs; i++) {
 		for (src = 0; src < st->nprocs; src++) {
 			memcpy( pbuf + size*src,
-				buf + size*(src*st->nprocs + i),
-				size
-				);
+					buf + size*(src*st->nprocs + i),
+					size
+				  );
 		}
 		if ((rc = mvapich_send (st, pbuf, pbufsize, i)) <= 0)
 			goto out;
 		n += rc;
 	}
-	
-    out:
+
+out:
 	xfree(pbuf);
 	return (rc < 0 ? rc : n);
 }
@@ -628,9 +850,10 @@ static int recv_common_value (mvapich_state_t *st, int *valp, int rank)
 {
 	int val;
 	if (mvapich_recv (st, &val, sizeof (int), rank) <= 0) {
-		error ("mvapich: recv: rank %d: %m\n", rank);
+		error ("mvapich: recv_common_value: rank %d: %m\n", rank);
 		return (-1);
 	}
+	mvapich_debug3 ("recv_common_value (rank=%d, val=%d)\n", rank, *valp);
 
 	/*
 	 *  If value is uninitialized, set it to current value,
@@ -640,7 +863,7 @@ static int recv_common_value (mvapich_state_t *st, int *valp, int rank)
 		*valp = val;
 	else if (val != *valp) {
 		error ("mvapich: PMGR: unexpected value from rank %d: "
-		       "expected %d, recvd %d", rank, *valp, val);
+				"expected %d, recvd %d", rank, *valp, val);
 		return (-1);
 	}
 	return (0);
@@ -663,6 +886,7 @@ static int process_pmgr_bcast (mvapich_state_t *st, int *rootp, int *sizep,
 	 *  Recv data from root 
 	 */
 	*bufp = xmalloc (*sizep);
+	mvapich_debug3 ("PMGR_BCAST: recv from root\n");
 	if (mvapich_recv (st, *bufp, *sizep, rank) < 0) {
 		error ("mvapich: PMGR_BCAST: Failed to recv from root: %m");
 		return (-1);
@@ -682,7 +906,8 @@ static int process_pmgr_gather (mvapich_state_t *st, int *rootp,
 		return (-1);
 	if (*bufp == NULL)
 		*bufp = xmalloc (*sizep * st->nprocs);
-		
+
+	mvapich_debug3 ("PMGR_GATHER: recv from rank %d\n", rank);
 	if (mvapich_recv(st, (*bufp) + (*sizep)*rank, *sizep, rank) < 0) {
 		error ("mvapich: PMGR_/GATHER: rank %d: recv: %m", rank);
 		return (-1);
@@ -705,7 +930,7 @@ static int process_pmgr_scatter (mvapich_state_t *st, int *rootp,
 
 	if (*bufp == NULL)
 		*bufp = xmalloc (*sizep * st->nprocs);
-		
+	mvapich_debug3 ("PMGR_SCATTER: recv from rank %d", rank);	
 	if (mvapich_recv(st, *bufp, (*sizep) * st->nprocs, rank) < 0) {
 		error ("mvapich: PMGR_SCATTER: rank %d: recv: %m", rank);
 		return (-1);
@@ -723,6 +948,8 @@ static int process_pmgr_allgather (mvapich_state_t *st, int *sizep,
 		return (-1);
 	if (*bufp == NULL)
 		*bufp = xmalloc (*sizep * st->nprocs);
+
+	mvapich_debug3 ("PMGR_ALLGATHER: recv from rank %d\n", rank);
 	if (mvapich_recv (st, (*bufp) + *sizep*rank, *sizep, rank) < 0) {
 		error ("mvapich: PMGR_ALLGATHER: rank %d: %m", rank);
 		return (-1);
@@ -741,9 +968,10 @@ static int process_pmgr_alltoall (mvapich_state_t *st, int *sizep,
 
 	if (*bufp == NULL)
 		*bufp = xmalloc (*sizep * st->nprocs * st->nprocs);
+	mvapich_debug3 ("PMGR_ALLTOALL: recv from rank %d\n", rank);
 	if (mvapich_recv ( st, 
-	                   *bufp + (*sizep * st->nprocs)*rank,
-	                   *sizep * st->nprocs, rank ) < 0) {
+				*bufp + (*sizep * st->nprocs)*rank,
+				*sizep * st->nprocs, rank ) < 0) {
 		error ("mvapich: PMGR_ALLTOALL: recv: rank %d: %m", rank);
 		return (-1);
 	}
@@ -751,55 +979,29 @@ static int process_pmgr_alltoall (mvapich_state_t *st, int *sizep,
 	return (0);
 }
 
-/* 
- * This function carries out pmgr_collective operations to
- * bootstrap MPI.  These collective operations are modeled after
- * MPI collectives -- all tasks must call them in the same order
- * and with consistent parameters.
- *
- * Until a 'CLOSE' or 'ABORT' message is seen, we continuously loop
- * processing ops
- *   For each op, we read one packet from each rank (socket)
- *     A packet consists of an integer OP CODE, followed by variable
- *     length data depending on the operation
- *   After reading a packet from each rank, srun completes the
- *   operation by broadcasting data back to any destinations,
- *   depending on the operation being performed
- *
- * Note: Although there are op codes available for PMGR_OPEN and
- * PMGR_ABORT, neither is fully implemented and should not be used.
- */
-static int mvapich_processops (mvapich_state_t *st)
+
+static int mvapich_process_op (mvapich_state_t *st, 
+		struct mvapich_info *mvi, int *rootp, int *opcodep, 
+		void **bufp, int *sizep)
 {
-	/* Until a 'CLOSE' or 'ABORT' message is seen, we continuously 
-	 *  loop processing ops
-	 */
+	int rank, code, opcode = -1;
 	int exit = 0;
-	while (!exit) {
-	int opcode = -1;
-	int root   = -1;
-	int size   = -1;
-	void* buf = NULL;
 
-	mvapich_debug ("Processing PMGR opcodes");
-
-	// for each process, read in one opcode and its associated data
-	int i;
-	for (i = 0; i < st->nprocs; i++) {
-		struct mvapich_info *mvi = st->mvarray [i];
-
-		// read in opcode
-		if (recv_common_value (st, &opcode, i) < 0) {
-			error ("mvapich: rank %d: Failed to read opcode: %m", 
+	// read in opcode
+	if (recv_common_value (st, opcodep, mvi->rank) < 0) {
+		error ("mvapich: rank %d: Failed to read opcode: %m", 
 				mvi->rank);
-			return (-1);
-		}
+		return (-1);
+	}
 
-		// read in additional data depending on current opcode
-		int rank, code;
-		switch(opcode) {
+	opcode = *opcodep;
+	mvapich_debug3 ("rank %d: opcode=%d\n", mvi->rank, opcode);
+
+	// read in additional data depending on current opcode
+
+	switch (*opcodep) {
 		case 0: // PMGR_OPEN (followed by rank)
-			if (mvapich_recv (st, &rank, sizeof (int), i) <= 0) {
+			if (mvapich_recv (st, &rank, sizeof (int), mvi->rank) <= 0) {
 				error ("mvapich: PMGR_OPEN: recv: %m");
 				exit = 1;
 			}
@@ -808,53 +1010,57 @@ static int mvapich_processops (mvapich_state_t *st)
 			close(mvi->fd);
 			break;
 		case 2: // PMGR_ABORT (followed by exit code)
-			if (mvapich_recv (st, &code, sizeof (int), i) <= 0) {
+			if (mvapich_recv (st, &code, sizeof (int), mvi->rank) <= 0) {
 				error ("mvapich: PMGR_ABORT: recv: %m");
 			}
-			error("mvapich abort with code %d from rank %d", 
-				code, i);
+			error("mvapich abort with code %d from rank %d", code, mvi->rank);
 			break;
 		case 3: // PMGR_BARRIER (no data)
 			break;
 		case 4: // PMGR_BCAST
-			if (process_pmgr_bcast (st, &root, &size, &buf, i) < 0)
+			if (process_pmgr_bcast (st, rootp, sizep, bufp, mvi->rank) < 0)
 				return (-1);
 			break;
 		case 5: // PMGR_GATHER 
-			if (process_pmgr_gather (st, &root, &size, &buf, i) < 0)
+			if (process_pmgr_gather (st, rootp, sizep, bufp, mvi->rank) < 0)
 				return (-1);
 			break;
 		case 6: // PMGR_SCATTER 
-			if (process_pmgr_scatter (st, &root, 
-			                          &size, &buf, i) < 0)
+			if (process_pmgr_scatter (st, rootp, sizep, bufp, mvi->rank) < 0)
 				return (-1);
 			break;
 		case 7: // PMGR_ALLGATHER 
-			if (process_pmgr_allgather (st, &size, &buf, i) < 0)
+			if (process_pmgr_allgather (st, sizep, bufp, mvi->rank) < 0)
 				return (-1);
 			break;
 		case 8: // PMGR_ALLTOALL 
-			if (process_pmgr_alltoall (st, &size, &buf, i) < 0)
+			if (process_pmgr_alltoall (st, sizep, bufp, mvi->rank) < 0)
 				return (-1);
 			break;
 		default:
 			error("Unrecognized PMGR opcode: %d", opcode);
 			return (-1);
-		}
 	}
 
-	// Complete any operations
+	return (exit);
+}
+
+static int mvapich_complete_op (mvapich_state_t *st, int opcode, int root,
+		void *buf, int size)
+{
+	int rc = 0;
+
 	switch(opcode) {
 		case 0: // PMGR_OPEN
 			mvapich_debug ("Completed PMGR_OPEN");
 			break;
 		case 1: // PMGR_CLOSE
 			mvapich_debug ("Completed PMGR_CLOSE");
-			exit = 1;
+			rc = 1;
 			break;
 		case 2: // PMGR_ABORT
 			mvapich_debug ("Completed PMGR_ABORT");
-			exit = 1;
+			rc = 1;
 			break;
 		case 3: // PMGR_BARRIER (just echo the opcode back)
 			mvapich_debug ("Completing PMGR_BARRIER");
@@ -890,10 +1096,67 @@ static int mvapich_processops (mvapich_state_t *st)
 			error("Unrecognized PMGR opcode: %d", opcode);
 	}
 
-	xfree(buf);
-  } // while(!exit)
-  mvapich_debug ("Completed processing PMGR opcodes");
-  return (0);
+	return (rc);
+}
+
+static int mvapich_pmgr_loop (mvapich_state_t *st)
+{
+	int opcode = -1;
+	int root   = -1;
+	int size   = -1;
+	int done   = 0;
+	void * buf = NULL;
+
+	int completed = 0;
+	struct mvapich_info *mvi;
+	struct mvapich_poll *mp;
+
+	mvapich_debug ("Processing PMGR opcodes");
+
+	// for each process, read in one opcode and its associated data
+	mp = mvapich_poll_create (st);
+	while ((mvi = mvapich_poll_next (mp, 1))) {
+		done = mvapich_process_op (st, mvi, &root, &opcode, &buf, &size);
+		completed++;
+		mvi->do_poll = 0;
+	}
+	mvapich_poll_destroy (mp);
+
+	// Complete any operations
+	done = mvapich_complete_op (st, opcode, root, buf, size);
+
+	return (done);
+}
+
+
+/* 
+ * This function carries out pmgr_collective operations to
+ * bootstrap MPI.  These collective operations are modeled after
+ * MPI collectives -- all tasks must call them in the same order
+ * and with consistent parameters.
+ *
+ * Until a 'CLOSE' or 'ABORT' message is seen, we continuously loop
+ * processing ops
+ *   For each op, we read one packet from each rank (socket)
+ *     A packet consists of an integer OP CODE, followed by variable
+ *     length data depending on the operation
+ *   After reading a packet from each rank, srun completes the
+ *   operation by broadcasting data back to any destinations,
+ *   depending on the operation being performed
+ *
+ * Note: Although there are op codes available for PMGR_OPEN and
+ * PMGR_ABORT, neither is fully implemented and should not be used.
+ */
+static int mvapich_processops (mvapich_state_t *st)
+{
+	/* Until a 'CLOSE' or 'ABORT' message is seen, we continuously 
+	 *  loop processing ops
+	 */
+	mvapich_debug ("Initiated PMGR processing\n");
+	while (mvapich_pmgr_loop (st) != 1) {};
+	mvapich_debug ("Completed processing PMGR opcodes\n");
+
+	return (0);
 }
 
 static void mvapich_bcast (mvapich_state_t *st)
@@ -908,6 +1171,7 @@ static void mvapich_barrier (mvapich_state_t *st)
 {
 	int i;
 	struct mvapich_info *m;
+	struct mvapich_poll *mp;
 	/*
 	 *  Simple barrier to wait for qp's to come up. 
 	 *   Once all processes have written their rank over the socket,
@@ -915,23 +1179,15 @@ static void mvapich_barrier (mvapich_state_t *st)
 	 */
 
 	debug ("mvapich: starting barrier");
-
-	for (i = 0; i < st->nprocs; i++) {
-		int j;
-		m = st->mvarray[i];
-		if (mvapich_read_n (st, m, &j, sizeof (j)) == -1)
-			error("mvapich read on barrier");
-	}
+	mp = mvapich_poll_create (st);
+	while ((m = mvapich_poll_next (mp, 1)))
+		mvapich_read (m, &i, sizeof (i));
 
 	debug ("mvapich: completed barrier for all tasks");
 
-	for (i = 0; i < st->nprocs; i++) {
-		m = st->mvarray[i];
-		if (mvapich_write_n (st, m, &i, sizeof (i)) == -1)
-			error("mvapich: write on barrier: %m");
-		close (m->fd);
-		m->fd = -1;
-	}
+	mvapich_poll_reset (mp);
+	while ((m = mvapich_poll_next (mp, 0)))
+		mvapich_write (m, &m->rank, sizeof (m->rank));
 
 	return;
 }
@@ -1024,6 +1280,9 @@ static int mvapich_abort_accept (mvapich_state_t *st)
 	pfds->fd = st->fd;
 	pfds->events = POLLIN;
 
+	mvapich_debug3 ("Polling to accept MPI_ABORT timeout=%d", 
+			mvapich_abort_timeout ());
+
 	while ((rc = poll (pfds, 1, mvapich_abort_timeout ())) < 0) {
 		if (errno != EINTR)
 			return (-1);
@@ -1034,8 +1293,7 @@ static int mvapich_abort_accept (mvapich_state_t *st)
 	 *   waiting longer for remote IO, process exit, etc.
 	 */
 	if (rc == 0) {
-		error("Timeout waiting for all tasks after MVAPICH ABORT. Exiting.");
-		mvapich_terminate_job (st);
+		mvapich_terminate_job (st, "Timeout waiting for all tasks after ABORT.");
 		/* NORETURN */
 	}
 
@@ -1101,15 +1359,6 @@ static void mvapich_wait_for_abort(mvapich_state_t *st)
 	return; /* but not reached */
 }
 
-static void mvapich_mvarray_create (mvapich_state_t *st)
-{
-	int i;
-	st->mvarray = xmalloc (st->nprocs * sizeof (*(st->mvarray)));
-	for (i = 0; i < st->nprocs; i++) {
-		st->mvarray [i] = mvapich_info_create ();
-		st->mvarray [i]->rank = i;
-	}
-}
 
 static void mvapich_mvarray_destroy (mvapich_state_t *st)
 {
@@ -1119,111 +1368,18 @@ static void mvapich_mvarray_destroy (mvapich_state_t *st)
 	xfree (st->mvarray);
 }
 
-static int mvapich_rank_from_fd (mvapich_state_t *st, int fd)
-{
-	int rank = 0;
-	while (st->mvarray[rank]->fd != fd)
-		rank++;
-	return (rank);
-}
-
-static int mvapich_handle_connection (mvapich_state_t *st, int fd)
-{
-	int version, rank;
-
-	if (st->protocol_phase == 0 || !st->connect_once) {
-		if (mvapich_get_task_header (st, fd, &version, &rank) < 0)
-			return (-1);
-
-		if (rank > st->nprocs - 1) { 
-			return (error ("mvapich: task reported invalid rank (%d)", 
-					rank));
-
-		st->mvarray[rank]->rank = rank;
-
-		}
-	} else {
-		rank = mvapich_rank_from_fd (st, fd);
-	}
-
-	if (mvapich_handle_task (st, fd, st->mvarray[rank]) < 0) 
-		return (-1);
-
-	return (0);
-}
-
-static int poll_mvapich_fds (mvapich_state_t *st)
-{
-	int i = 0;
-	int j = 0;
-	int rc;
-	int fd;
-	int nfds = 0;
-	struct pollfd *fds = xmalloc (st->nprocs * sizeof (struct pollfd));
-
-	for (i = 0; i < st->nprocs; i++) {
-		if (st->mvarray[i]->do_poll) {
-			fds[j].fd = st->mvarray[i]->fd;
-			fds[j].events = POLLIN;
-			j++;
-			nfds++;
-		}
-	}
-
-	if ((rc = poll (fds, nfds, startup_timeout (st))) < 0) {
-		error ("mvapich: poll: %m");
-		xfree (fds);
-		return SLURM_ERROR;
-	}
-
-	i = 0;
-	while (fds[i].revents != POLLIN)
-		i++;
-
-	fd = fds[i].fd;
-	xfree (fds);
-
-	return (fd);
-}
-static int mvapich_get_next_connection (mvapich_state_t *st)
-{
-	slurm_addr addr;
-	int fd;
-	int rc;
-	struct mvapich_info tmp[1];
-
-	if (st->connect_once && st->protocol_phase > 0) {
-		return (poll_mvapich_fds (st));
-	} 
-		
-	tmp->fd = st->fd;
-	tmp->rank = -1;
-	if ((rc = mvapich_poll (st, tmp, 0)) == 0)
-		report_absent_tasks (st);
-	else if (rc < 0) {
-		error ("mvapich: poll for accept: %m");
-		return (-1);
-	}
-		
-
-	if ((fd = slurm_accept_msg_conn (st->fd, &addr)) < 0) {
-		error ("mvapich: accept: %m");
-		return (-1);
-	}
-	mvapich_debug2 ("accept() = %d", fd);
-
-	return (fd);
-}
-
-static void do_timings (mvapich_state_t *st)
+static void do_timings (mvapich_state_t *st, const char *fmt, ...)
 {
 	static int initialized = 0;
 	static struct timeval initv = { 0, 0 };
 	struct timeval tv;
 	struct timeval result;
+	char *msg;
+	va_list ap;
 
 	if (!st->do_timing)
 		return;
+
 
 	if (!initialized) {
 		if (gettimeofday (&initv, NULL) < 0)
@@ -1239,82 +1395,543 @@ static void do_timings (mvapich_state_t *st)
 
 	timersub (&tv, &initv, &result);
 
-	info ("mvapich: Intialization took %d.%03d seconds", result.tv_sec,
+	va_start (ap, fmt);
+	msg = vmsg (fmt, ap);
+	va_end (ap);
+
+	info ("mvapich: %s took %d.%03d seconds", msg, result.tv_sec,
 			result.tv_usec/1000);
+
+	xfree (msg);
 
 	return;
 }
 
-static void *mvapich_thr(void *arg)
+static int mvapich_read_item (struct mvapich_info *mvi, void *buf, size_t size)
 {
-	mvapich_state_t *st = arg;
-	int i = 0;
-	int first = 1;
+	size_t nleft;
+	ssize_t n;
+	unsigned char *p;
 
-	debug ("mvapich-0.9.x/gen2: thread started: %ld", pthread_self ());
+	p = buf + mvi->nread;
+	nleft = size - mvi->nread;
 
-	mvapich_mvarray_create (st);
+	if ((n = read (mvi->fd, p, nleft)) < 0) {
+		if (errno == EAGAIN)
+			return (EAGAIN);
+		else {
+			error ("mvapich: %d: nread=%d, read (%d, %lx, size=%d, nleft=%d): %m", 
+					mvi->rank, mvi->nread, mvi->fd, buf, size, nleft);
+			return (-1);
+		}
+	}
+
+	mvi->nread += n;
+	if (mvi->nread == size) {
+		mvi->nread = 0;
+		mvi->state++;
+	} 
+
+	return (0);
+}
+
+/*
+ *  Process initial mvapich states to read items such as
+ *   version, rank, hostidlen, hostids... and so on.
+ * 
+ *  Current state is tracked int he mvapich_info object itself
+ *   and state transitions happen automatically in mvapich_read_item()
+ *   when the current item is completely read. Early exit from
+ *   the state processing may occur based on protocol version.
+ *   Similarly, some protocol version may enter state processing
+ *   at a different point.
+ * 
+ *  State processing is considered complete when state == MV_INIT_DONE.
+ *
+ */  
+static int mvapich_info_process_init (mvapich_state_t *st, 
+		                              struct mvapich_info *mvi)
+{
+	int rc = 0;
 
 again:
-	i = 0;
-	while (i < st->nprocs) {
-		int fd;
-		
-		mvapich_debug ("Waiting to accept remote connection %d of %d\n", 
-				i, st->nprocs);
+	switch (mvi->state) {
+	case MV_READ_VERSION:
+		mvapich_debug2 ("fd %d: reading mvapich version.", mvi->fd);
+		rc = mvapich_read_item (mvi, &mvi->version, sizeof (mvi->version));
 
-		if ((fd = mvapich_get_next_connection (st)) < 0) {
-			error ("mvapich: accept: %m");
-			goto fail;
+		if (mvi->state != MV_READ_RANK)
+			break;
+
+	case MV_READ_RANK:
+		if (st->protocol_version < 0)
+			st->protocol_version = mvi->version;
+
+		mvapich_debug2 ("fd %d: reading mvapich rank. version = %d", 
+				mvi->fd, mvi->version);
+
+		rc = mvapich_read_item (mvi, &mvi->rank, sizeof (int));
+
+		/*
+		 *  No hostids in protocol version 3.
+		 */
+		if (mvi->version == 3 && mvi->state == MV_READ_HOSTIDLEN) {
+			mvi->state = MV_READ_ADDRLEN;
+			goto again;
 		}
 
-		if (first) {
-			mvapich_debug ("first task checked in");
-			do_timings (st);
+		if (mvi->version >= 8 || mvi->state != MV_READ_HOSTIDLEN)
+			break;
+
+	case MV_READ_HOSTIDLEN:
+		mvapich_debug2 ("rank %d: reading hostidlen.", mvi->rank);
+
+		mvi->hostidlen = 0;
+		rc = mvapich_read_item (mvi, &mvi->hostidlen, sizeof (mvi->hostidlen));
+
+		if (mvi->state != MV_READ_HOSTID)
+			break;
+
+	case MV_READ_HOSTID:
+		if (mvi->hostidlen != sizeof (int)) {
+			error ("mvapich: rank %d: unexpected hostidlen = %d\n",
+					mvi->rank, mvi->hostidlen); 
+			return (-1);
+		}
+		mvapich_debug2 ("rank %d: reading hostid. hostidlen = %d", 
+				mvi->rank, mvi->hostidlen);
+
+		rc = mvapich_read_item (mvi, &mvi->hostid, mvi->hostidlen);
+
+		if (mvi->state != MV_READ_ADDRLEN || mvi->version > 3)
+			break;
+	
+	case MV_READ_ADDRLEN:
+		mvapich_debug2 ("rank %d: read addrlen.", mvi->rank);
+
+		rc = mvapich_read_item (mvi, &mvi->addrlen, sizeof (mvi->addrlen));
+
+		if (mvi->state != MV_READ_ADDRS)
+			break;
+
+	case MV_READ_ADDRS:
+		mvapich_debug2 ("rank %d: read addr. addrlen = %d", 
+				mvi->rank, mvi->addrlen);
+
+		mvi->addr = xmalloc (mvi->addrlen);
+		rc = mvapich_read_item (mvi, mvi->addr, mvi->addrlen);
+
+		if (mvi->state != MV_READ_PIDLEN || !mvapich_requires_pids (st))
+			break;
+
+	case MV_READ_PIDLEN:
+		mvapich_debug2 ("rank %d: read pidlen", mvi->rank);
+
+		rc = mvapich_read_item (mvi, &mvi->pidlen, sizeof (int));
+
+		if (mvi->state != MV_READ_PID)
+			break;
+
+	case MV_READ_PID:
+		mvapich_debug2 ("rank %d: read pid: pidlen = %d", 
+				mvi->rank, mvi->pidlen);
+
+		mvi->pid = xmalloc (mvi->pidlen);
+
+		rc = mvapich_read_item (mvi, mvi->pid, mvi->pidlen);
+
+		break;
+
+	case MV_INIT_DONE:
+		break;
+	}
+
+	/*
+	 *  If protocol doesn't read PIDs, we're done after ADDRs
+	 */
+	if (mvi->state == MV_READ_PIDLEN && !mvapich_requires_pids (st))
+		mvi->state = MV_INIT_DONE;
+
+	/*
+	 *  Protocol version 4,5,6: Done after reading HOSTID
+	 */
+	if (mvi->state == MV_READ_ADDRLEN && mvi->version >= 5) 
+		mvi->state = MV_INIT_DONE;
+
+	/*
+	 *  Protocol version 8: Done after reading RANK
+	 */
+	if (mvi->state == MV_READ_HOSTIDLEN && mvi->version == 8) 
+		mvi->state = MV_INIT_DONE;
+
+	return (rc);
+}
+
+
+/*
+ *  Accept as many new connections as possible and place them on
+ *   the next available slot in the mvarray.
+ */
+static int mvapich_accept_new (mvapich_state_t *st)
+{
+	slurm_addr addr;
+	int fd;
+
+	/*
+	 *  Accept as many new connections as possible
+	 */
+	while (1) {
+		if ( ((fd = slurm_accept_msg_conn (st->fd, &addr)) < 0) 
+		   && errno == EAGAIN) {
+			mvapich_debug2 ("mvapich: accept new: %m");
+			return (0);
+		}
+		else if (fd < 0) {
+			error ("mvapich: accept: %m");
+			return (-1);
+		}
+
+		if (st->nconnected == 0 && st->protocol_phase == 0) {
+			mvapich_debug ("first task connected");
+			do_timings (st, NULL);
 			/*
 			 *  Officially start timeout timer now.
 			 */
-			st->start_time = time(NULL);
-			first = 0;
+			st->start_time = time (NULL);
 		}
 
-		if (mvapich_handle_connection (st, fd) < 0) 
-			goto fail;
+		fd_set_nonblocking (fd);
 
-		i++;
+		st->mvarray[st->nconnected] = mvapich_info_create ();
+		st->mvarray[st->nconnected]->fd = fd;
+		st->nconnected++;
+
+		mvapich_debug3 ("Got connection %d: fd=%d\n", st->nconnected, fd);
 	}
 
-	if (st->protocol_version == 8) {
-		if (mvapich_processops(st) < 0)
+	return (0);
+}
+
+/*
+ *  Accept new connections on st->fd and process them with the
+ *   function [fn].  The poll loop preferentially handles incoming 
+ *   connections to avoid exceeding the socket listen queue, which can 
+ *   be quite likely when launching very large jobs. 
+ * 
+ *  When there are no connections waiting, and existing connections register 
+ *   read activity, these connections are processed using [fn], until
+ *   such time as the mvapich_info state == MV_INIT_DONE.
+ *
+ */
+static int 
+mvapich_initialize_connections (mvapich_state_t *st, 
+		int (fn) (mvapich_state_t *, struct mvapich_info *) )
+{
+	int i, j;
+	int nfds;
+	int ncompleted;
+	int rc = 0;
+	int printonce = 0;
+	struct mvapich_info **mvmap;
+	struct pollfd *fds;
+	
+	fds = xmalloc ((st->nprocs+1) * sizeof (struct pollfd));
+	mvmap = xmalloc (st->nprocs * sizeof (struct mvapich_info *));
+	st->nconnected = 0;
+
+	while (1) {
+
+		memset (fds, 0, sizeof (struct pollfd) * (st->nprocs + 1));
+		memset (mvmap, 0, sizeof (struct mvapich_info *) * st->nprocs);
+
+		/*
+		 *  Listen socket
+		 */
+		fds[0].fd = st->fd;
+		fds[0].events = POLLIN;
+
+		j = 1;
+		nfds = 1;
+		ncompleted = 0;
+
+		if (st->nconnected < st->nprocs)
+			mvapich_debug2 ("Waiting for connection %d/%d\n", 
+					st->nconnected + 1, st->nprocs);
+
+		for (i = 0; i < st->nconnected; i++) {
+			struct mvapich_info *m = st->mvarray[i];
+
+			if (m->fd >= 0 && m->state < MV_INIT_DONE) {
+				mvmap[j-1] = m;
+				fds[j].fd = m->fd;
+				fds[j].events = POLLIN;
+				j++;
+				nfds++;
+			}
+			else if (m->fd > 0 && m->state == MV_INIT_DONE)
+				ncompleted++;
+		}
+
+		if (st->nconnected == st->nprocs && !printonce) {
+			mvapich_debug ("Got %d connections.\n", st->nprocs);
+			do_timings (st, "Accept %d connection%s%s", 
+					st->nprocs, st->nprocs == 1 ? "" : "s",
+					st->protocol_phase ? " (phase 2)" : "");
+			printonce = 1;
+		}
+
+		if (ncompleted == st->nprocs) {
+			do_timings (st, "Read info for %d task%s%s",
+					st->nprocs, st->nprocs == 1 ? "" : "s",
+					st->protocol_phase ? " (phase 2)" : "");
+			break; /* All done. */
+		}
+
+		mvapich_debug3 ("do_poll (nfds=%d)\n", nfds);
+
+		if ((rc = poll (fds, nfds, startup_timeout (st))) < 0) {
+			error ("mvapich: poll: %m");
+			break;
+		}
+		else if (rc == 0) {
+			report_absent_tasks (st, 1);
+			mvapich_terminate_job (st, NULL);
+		}
+
+		mvapich_debug3 ("poll (nfds=%d) = %d\n", nfds, rc);
+
+		/*
+		 *  Preferentially accept new connections.
+		 */
+		if (fds[0].revents == POLLIN) {
+			if ((rc = mvapich_accept_new (st)) < 0) 
+				break;
+			continue;
+		}
+
+		/*
+		 *  If there are no pending connections, handle read
+		 *   activity with passed in function [fn].
+		 */
+		for (i = 0; i < st->nconnected; i++) {
+			if (fds[i+1].revents == POLLIN) {
+				if ((rc = (*fn) (st, mvmap[i])) < 0) 
+					goto out;
+			}
+		}
+	}
+
+  out:
+	xfree (fds);
+	xfree (mvmap);
+	return (rc);
+}
+
+
+static int mvapich_phase_two (mvapich_state_t *st)
+{
+	struct mvapich_poll *mp;
+	struct mvapich_info *mvi;
+	int i;
+
+	/*
+	 *  For phase 2, start reading addrlen for all tasks:
+	 */
+	for (i = 0; i < st->nprocs; i++) 
+		st->mvarray[i]->state = MV_READ_ADDRLEN;
+
+	mvapich_debug ("Reading addrs from all tasks");
+	mp = mvapich_poll_create (st);
+	while ((mvi = mvapich_poll_next (mp, 1))) {
+
+		mvapich_info_process_init (st, mvi);
+
+		if (mvi->state == MV_INIT_DONE) 
+			mvi->do_poll = 0;
+	}
+	mvapich_poll_destroy (mp);
+
+	do_timings (st, "Reading addrs from %d tasks", st->nprocs);
+
+	mvapich_bcast_addrs (st);
+
+	do_timings (st, "Bcast addrs to %d tasks", st->nprocs);
+
+	return (0);
+}
+
+static int read_phase2_header (mvapich_state_t *st, struct mvapich_info *mvi)
+{
+	int rc;
+
+	/*
+	 *  Phase 2 header is just our rank, so we know who the
+	 *   new connection is coming from.
+	 */
+	if ((rc = mvapich_read (mvi, &mvi->rank, sizeof (mvi->rank))) < 0)
+		error ("mvapich_read: %m");
+	/*
+	 *  mvapich_read resets do_poll if we're done reading. 
+	 *   Use this to set our state to MV_INIT_DONE so we don't continue
+	 *   to poll on this fd.
+	 */
+	if (mvi->do_poll == 0)
+		mvi->state = MV_INIT_DONE;
+
+	return (rc);
+}
+
+static int mvapich_handle_phase_two (mvapich_state_t *st)
+{
+	mvapich_debug ("protocol phase 0 complete. beginning phase 2.\n");
+
+	st->protocol_phase = 1;
+
+	/*
+	 *  Phase 2 is either in "connect_once" mode, where we reuse
+	 *   the existing connection (easy), or we have to handle the
+	 *   remote tasks reconnecting and re-sending their ranks
+	 *   before restarting the protocol. Since we don't know which
+	 *   connection is from which rank, we have to use a temporary
+	 *   mvapich_info array until all ranks have been read.
+	 */
+	if (!st->connect_once)  {
+		struct mvapich_info **mvarray = st->mvarray;
+		int i;
+
+		mvapich_debug ("Waiting for %d ranks to reconnect", st->nprocs);
+
+		/*
+		 *  Create temporary mvarray to handle incoming connections
+		 */
+		st->mvarray = xmalloc (st->nprocs * sizeof (struct mvapich_info *));
+
+		/*
+		 *  Accept all incoming connections and read the header (rank).
+		 */
+		if (mvapich_initialize_connections (st, read_phase2_header) < 0) 
+			mvapich_terminate_job (st, "Failed to initialize phase 2");
+
+		do_timings (st, "Phase 2 reconnect");
+
+		/*
+		 *  Now reassign mvi->fds in the real mvarray, and copy
+		 *   this back to st->mvarray.
+		 */
+		for (i = 0; i < st->nprocs; i++) {
+			struct mvapich_info *mvi = st->mvarray[i];
+			mvarray[mvi->rank]->fd = mvi->fd;
+		}
+
+		xfree (st->mvarray);
+		st->mvarray = mvarray;
+	}
+
+	/*
+	 *  Finish processing phase two.
+	 */
+	mvapich_phase_two (st);
+
+	return (0);
+}
+
+/*
+ *  Intialize all NPROCS connections
+ */
+static void mvapich_connection_init (mvapich_state_t *st)
+{
+	struct mvapich_info **mva;
+	int i;
+
+	st->mvarray = xmalloc (st->nprocs * sizeof (*(st->mvarray)));
+
+	/*
+	 *  Get initial connections and read task header information:
+	 */
+	if (mvapich_initialize_connections (st, mvapich_info_process_init) < 0) 
+		goto fail;
+
+	/*
+	 *  Sort mvarray in rank order. The rest of the startup code 
+	 *   expects this.
+	 */
+	mva = xmalloc (st->nprocs * sizeof (*mva));
+	for (i = 0; i < st->nprocs; i++) {
+		if ((mva[i] = mvapich_info_find (st, i)) == NULL) {
+			error ("mvapich: failed to find rank %d!", i);
 			goto fail;
-	} else {
+		}
+	}
+	xfree (st->mvarray);
+	st->mvarray = mva;
+
+	return;
+
+fail:
+	mvapich_terminate_job (st, "Fatal error. Killing job");
+	return;
+}
+
+/*
+ *  Close all fds in mvarray
+ */
+static void mvapich_close_fds (mvapich_state_t *st)
+{
+	int i;
+	for (i = 0; i < st->nprocs; i++) {
+		struct mvapich_info *mvi = st->mvarray[i];
+		close (mvi->fd);
+		mvi->fd = -1;
+	}
+}
+
+/*
+ *  This separate mvapich thread handles the MVAPICH startup 
+ *   protocol (tries to handle the many versions of it...).
+ */
+static void *mvapich_thr(void *arg)
+{
+	mvapich_state_t *st = arg;
+
+	/*
+	 *  Accept and initialize all remote task connections:
+	 */
+	mvapich_connection_init (st);
+
+	/*
+	 *  Process subsequent phases of various protocol versions.
+	 */
+	if (st->protocol_version == 8) {
+		if (mvapich_processops (st) < 0) 
+			mvapich_terminate_job (st, "mvapich_processops failed.");
+	}
+	else {
 		mvapich_debug ("bcasting mvapich info to %d tasks", st->nprocs);
 		mvapich_bcast (st);
+		do_timings (st,"Bcasting mvapich info to %d tasks", st->nprocs);
 
 		if (mvapich_dual_phase (st) && st->protocol_phase == 0) {
-			mvapich_debug2 ("protocol phase 0 complete\n");
-			st->protocol_phase = 1;
-			goto again;
+			if (mvapich_handle_phase_two (st) < 0)
+				mvapich_terminate_job (st, "Phase 2 failed.");
 		}
+
+		do_timings (st, "Phase 2");
 
 		mvapich_debug ("calling mvapich_barrier");
 		mvapich_barrier (st);
 		mvapich_debug ("all tasks have checked in");
+		mvapich_close_fds (st);
 	}
 
-	do_timings (st);
+	do_timings (st, "MVAPICH initialization");
 
 	mvapich_wait_for_abort (st);
 
 	mvapich_mvarray_destroy (st);
 
 	return (NULL);
-
-fail:
-	error ("mvapich: fatal error, killing job");
-	mvapich_terminate_job (st);
-	return (void *)0;
 }
+
 
 static int process_environment (mvapich_state_t *st)
 {
@@ -1368,11 +1985,63 @@ static void mvapich_state_destroy(mvapich_state_t *st)
 
 /*
  *  Create a unique MPIRUN_ID for jobid/stepid pairs.
- *  Combine the least significant bits of the jobid and stepid
+ *   Combine the least significant bits of the jobid and stepid
+ *
+ *  The MPIRUN_ID is used by MVAPICH to create shmem files in /tmp,
+ *   so we have to make sure multiple jobs and job steps on the
+ *   same node have different MPIRUN_IDs.
  */
 int mpirun_id_create(const mpi_plugin_client_info_t *job)
 {
 	return (int) ((job->jobid << 16) | (job->stepid & 0xffff));
+}
+
+/*
+ * Returns the port number in host byte order.
+ */
+static short _sock_bind_wild(int sockfd)
+{
+	socklen_t len;
+	struct sockaddr_in sin;
+
+	memset(&sin, 0, sizeof(sin));
+	sin.sin_family = AF_INET;
+	sin.sin_addr.s_addr = htonl(INADDR_ANY);
+	sin.sin_port = htons(0);    /* bind ephemeral port */
+
+	if (bind(sockfd, (struct sockaddr *) &sin, sizeof(sin)) < 0)
+		return (-1);
+	len = sizeof(sin);
+	if (getsockname(sockfd, (struct sockaddr *) &sin, &len) < 0)
+		return (-1);
+	return ntohs(sin.sin_port);
+}
+
+
+int do_listen (int *fd, short *port)
+{
+	int rc, val;
+
+	if ((*fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
+		return -1;
+
+	val = 1;
+	rc = setsockopt(*fd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(int));
+	if (rc > 0)
+		goto cleanup;
+
+	*port = _sock_bind_wild(*fd);
+	rc = listen(*fd, 2048);
+
+	if (rc < 0)
+		goto cleanup;
+
+	return 1;
+
+cleanup:
+	close(*fd);
+	return -1;
+
 }
 
 extern mvapich_state_t *mvapich_thr_create(const mpi_plugin_client_info_t *job,
@@ -1388,7 +2057,7 @@ extern mvapich_state_t *mvapich_thr_create(const mpi_plugin_client_info_t *job,
 		mvapich_state_destroy(st);
 		return NULL;
 	}
-	if (net_stream_listen(&st->fd, &port) < 0) {
+	if (do_listen (&st->fd, &port) < 0) {
 		error ("Unable to create ib listen port: %m");
 		mvapich_state_destroy(st);
 		return NULL;
@@ -1419,7 +2088,7 @@ extern mvapich_state_t *mvapich_thr_create(const mpi_plugin_client_info_t *job,
 		env_array_overwrite_fmt(env, "MPIRUN_CONNECT_ONCE", "1");
 	}
 
-	verbose ("mvapich-0.9.[45] master listening on port %hu", port);
+	verbose ("mvapich-0.9.x,1.0.x master listening on port %hu", port);
 
 	return st;
 }
