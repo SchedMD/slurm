@@ -1271,8 +1271,6 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 		job_min_memory = (long) job_specs->job_min_memory;
 		mem_type = "job";
 	}
-	job_min_memory   = (job_specs->job_min_memory != NO_VAL) ? 
-		(long) job_specs->job_min_memory : -1L;
 	job_min_tmp_disk = (job_specs->job_min_tmp_disk != NO_VAL) ? 
 		(long) job_specs->job_min_tmp_disk : -1L;
 	debug3("   min_memory_%s=%ld job_min_tmp_disk=%ld",
