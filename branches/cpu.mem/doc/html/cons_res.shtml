@@ -28,15 +28,15 @@ this plug-in is described below.
     slurm.conf (e.g. <i>SelectType=select/cons_res</i>).</li>
 <pre>
 #
-# "SelectType"			: node selection logic for scheduling.
-#	"select/bluegene"	: the default on BlueGene systems, aware of
-#				  system topology, manages bglblocks, etc.
-#	"select/cons_res"	: allocate individual consumable resources
-#				  (i.e. processors, memory, etc.)
-#	"select/linear"		: the default on non-BlueGene systems,
-#				  no topology awareness, oriented toward
-#				  allocating nodes to jobs rather than
-#				  resources within a node (e.g. CPUs)
+# "SelectType"         : node selection logic for scheduling.
+#    "select/bluegene" : the default on BlueGene systems, aware of
+#                        system topology, manages bglblocks, etc.
+#    "select/cons_res" : allocate individual consumable resources
+#                        (i.e. processors, memory, etc.)
+#    "select/linear"   : the default on non-BlueGene systems,
+#                        no topology awareness, oriented toward
+#                        allocating nodes to jobs rather than
+#                        resources within a node (e.g. CPUs)
 #
 # SelectType=select/linear
 SelectType=select/cons_res
@@ -98,15 +98,15 @@ SelectType=select/cons_res
       SelectTypeParameter in the slurm.conf.</li>
 <pre>
 #
-# "SelectType"			: node selection logic for scheduling.
-#	"select/bluegene"	: the default on BlueGene systems, aware of
-#				  system topology, manages bglblocks, etc.
-#	"select/cons_res"	: allocate individual consumable resources
-#				  (i.e. processors, memory, etc.)
-#	"select/linear"		: the default on non-BlueGene systems,
-#				  no topology awareness, oriented toward
-#				  allocating nodes to jobs rather than
-#				  resources within a node (e.g. CPUs)
+# "SelectType"         : node selection logic for scheduling.
+#    "select/bluegene" : the default on BlueGene systems, aware of
+#                        system topology, manages bglblocks, etc.
+#    "select/cons_res" : allocate individual consumable resources
+#                        (i.e. processors, memory, etc.)
+#    "select/linear"   : the default on non-BlueGene systems,
+#                        no topology awareness, oriented toward
+#                        allocating nodes to jobs rather than
+#                        resources within a node (e.g. CPUs)
 #
 # SelectType=select/linear
 SelectType=select/cons_res
@@ -115,34 +115,33 @@ SelectType=select/cons_res
 #    - select/bluegene - this parameter is currently ignored
 #    - select/linear   - this parameter is currently ignored
 #    - select/cons_res - the parameters available are
-#          - CR_CPU     (1) - CPUs as consumable resources. 
-#                      	No notion of sockets, cores, or threads. 
-#                      	On a multi-core system CPUs will be cores
-#                      	On a multi-core/hyperthread system CPUs will 
-#                      		       be threads
-#                      	On a single-core systems CPUs are CPUs. ;-)
-#          - CR_Socket (2) - Sockets as a consumable resource.
-#          - CR_Core   (3) - Cores as a consumable resource. 
-#				(Not yet implemented)
-#          - CR_Memory (4) - Memory as a consumable resource. 
-#				Note! CR_Memory assumes Shared=Yes
-#          - CR_Socket_Memory (5) - Socket and Memory as consumable 
-#				resources.
-#          - CR_Core_Memory (6) - Core and Memory as consumable 
-#				resources. (Not yet implemented)	
-#          - CR_CPU_Memory (7) - CPU and Memory as consumable 
-#				resources.
+#       - CR_CPU  (1)  - CPUs as consumable resources. 
+#                        No notion of sockets, cores, or threads. 
+#                        On a multi-core system CPUs will be cores
+#                        On a multi-core/hyperthread system CPUs 
+#                                        will be threads
+#                        On a single-core systems CPUs are CPUs.
+#      - CR_Socket (2) - Sockets as a consumable resource.
+#      - CR_Core   (3) - Cores as a consumable resource. 
+#      - CR_Memory (4) - Memory as a consumable resource. 
+#                        Note! CR_Memory assumes Shared=Yes
+#      - CR_Socket_Memory (5) - Socket and Memory as consumable 
+#                               resources.
+#      - CR_Core_Memory (6)   - Core and Memory as consumable 
+#                               resources. (Not yet implemented)
+#      - CR_CPU_Memory (7)    - CPU and Memory as consumable 
+#                               resources.
 #
 # (#) refer to the output of "scontrol show config"
 #
-# NB!:	The -E extension for sockets, cores, and threads 
-#	are ignored within the node allocation mechanism 
-#	when CR_CPU or CR_CPU_MEMORY is selected. 
-#	They are considered to compute the total number of 
-#	tasks when -n is not specified
+# NB!:   The -E extension for sockets, cores, and threads 
+#        are ignored within the node allocation mechanism 
+#        when CR_CPU or CR_CPU_MEMORY is selected. 
+#        They are considered to compute the total number of 
+#        tasks when -n is not specified
 #
 # NB! All CR_s assume Shared=No or Shared=Force EXCEPT for 
-#	CR_MEMORY which assumes Shared=Yes
+#        CR_MEMORY which assumes Shared=Yes
 #
 #SelectTypeParameters=CR_CPU (default)
 </pre>
@@ -169,7 +168,7 @@ SelectType=select/cons_res
     way as when using the default node selection scheme.</li>
   <li>The <i>--exclusive</i> srun switch allows users to request nodes in 
     exclusive mode even when consumable resources is enabled. see "man srun" 
-    for details. </li>	
+    for details. </li>        
   <li>srun's <i>-s</i> or <i>--share</i> is incompatible with the consumable resource 
     environment and will therefore not be honored. Since in this environment nodes 
     are shared by default, <i>--exclusive</i> allows users to obtain dedicated nodes.</li>
@@ -213,19 +212,18 @@ Please send comments and requests about the consumable resources to
 # srun sleep 100 &
 # srun sleep 100 &
 # squeue
-  JOBID PARTITION     NAME     USER  ST       TIME  NODES NODELIST(REASON)
-   1132  allNodes    sleep   sballe   R       0:05      1 hydra12
-   1133  allNodes    sleep   sballe   R       0:04      1 hydra12
-   1134  allNodes    sleep   sballe   R       0:02      1 hydra12
+JOBID PARTITION   NAME     USER  ST   TIME  NODES NODELIST(REASON)
+ 1132  allNodes  sleep   sballe   R   0:05      1 hydra12
+ 1133  allNodes  sleep   sballe   R   0:04      1 hydra12
+ 1134  allNodes  sleep   sballe   R   0:02      1 hydra12
 # srun -N 2-2 -E 2:2 sleep 100 &
 srun: job 1135 queued and waiting for resources
 #squeue
-  JOBID PARTITION     NAME     USER  ST       TIME  NODES NODELIST(REASON)
-   1135  allNodes    sleep   sballe  PD       0:00      2 (Resources)
-   1132  allNodes    sleep   sballe   R       0:24      1 hydra12
-   1133  allNodes    sleep   sballe   R       0:23      1 hydra12
-   1134  allNodes    sleep   sballe   R       0:21      1 hydra12
-#
+JOBID PARTITION   NAME     USER  ST   TIME  NODES NODELIST(REASON)
+ 1135  allNodes  sleep   sballe  PD   0:00      2 (Resources)
+ 1132  allNodes  sleep   sballe   R   0:24      1 hydra12
+ 1133  allNodes  sleep   sballe   R   0:23      1 hydra12
+ 1134  allNodes  sleep   sballe   R   0:21      1 hydra12
 </pre>
     <li><b>Proposed solution:</b> Enhance the selection mechanism to go through {node,socket,core,thread}-tuplets to find available match for specific request (bounded knapsack problem). </li>
     </ul>
@@ -248,7 +246,7 @@ srun: job 1135 queued and waiting for resources
 <h2>Examples of CR_Memory, CR_Socket_Memory, and CR_CPU_Memory type consumable resources</h2> 
 
 <pre>
-sinfo -lNe
+# sinfo -lNe
 NODELIST     NODES PARTITION  STATE  CPUS  S:C:T MEMORY 
 hydra[12-16]     5 allNodes*  ...       4  2:2:1   2007 
 </pre>
@@ -256,59 +254,59 @@ hydra[12-16]     5 allNodes*  ...       4  2:2:1   2007
 <p>Using select/cons_res plug-in with CR_Memory</p>
 <pre>
 Example:
-srun -N 5 -n 20 --job-mem=1000 sleep 100 &  <-- running
-srun -N 5 -n 20 --job-mem=10 sleep 100 &    <-- running 
-srun -N 5 -n 10 --job-mem=1000 sleep 100 &  <-- queued and waiting for resources
+# srun -N 5 -n 20 --job-mem=1000 sleep 100 &  <-- running
+# srun -N 5 -n 20 --job-mem=10 sleep 100 &    <-- running 
+# srun -N 5 -n 10 --job-mem=1000 sleep 100 &  <-- queued and waiting for resources
 
-squeue
-  JOBID PARTITION     NAME     USER  ST       TIME  NODES NODELIST(REASON)
-   1820  allNodes    sleep   sballe  PD       0:00      5 (Resources)
-   1818  allNodes    sleep   sballe   R       0:17      5 hydra[12-16]
-   1819  allNodes    sleep   sballe   R       0:11      5 hydra[12-16]
+# squeue
+JOBID PARTITION   NAME     USER  ST   TIME  NODES NODELIST(REASON)
+ 1820  allNodes  sleep   sballe  PD   0:00      5 (Resources)
+ 1818  allNodes  sleep   sballe   R   0:17      5 hydra[12-16]
+ 1819  allNodes  sleep   sballe   R   0:11      5 hydra[12-16]
 </pre>
 
 <p>Using select/cons_res plug-in with CR_Socket_Memory (2 sockets/node)</p>
 <pre>
 Example 1:
-srun -N 5 -n 5 --job-mem=1000 sleep 100 &        <-- running
-srun -n 1 -w hydra12 --job-mem=2000 sleep 100 &  <-- queued and waiting for resources
+# srun -N 5 -n 5 --job-mem=1000 sleep 100 &        <-- running
+# srun -n 1 -w hydra12 --job-mem=2000 sleep 100 &  <-- queued and waiting for resources
 
-squeue
-  JOBID PARTITION     NAME     USER  ST       TIME  NODES NODELIST(REASON)
-   1890  allNodes    sleep   sballe  PD       0:00      1 (Resources)
-   1889  allNodes    sleep   sballe   R       0:08      5 hydra[12-16]
+# squeue
+JOBID PARTITION   NAME     USER  ST   TIME  NODES NODELIST(REASON)
+ 1890  allNodes  sleep   sballe  PD   0:00      1 (Resources)
+ 1889  allNodes  sleep   sballe   R   0:08      5 hydra[12-16]
 
 Example 2:
-srun -N 5 -n 10 --job-mem=10 sleep 100 & <-- running 
-srun -n 1 --job-mem=10 sleep 100 & <-- queued and waiting for resourcessqueue
+# srun -N 5 -n 10 --job-mem=10 sleep 100 & <-- running 
+# srun -n 1 --job-mem=10 sleep 100 & <-- queued and waiting for resourcessqueue
 
-squeue
-  JOBID PARTITION     NAME     USER  ST       TIME  NODES NODELIST(REASON)
-   1831  allNodes    sleep   sballe  PD       0:00      1 (Resources)
-   1830  allNodes    sleep   sballe   R       0:07      5 hydra[12-16]
+# squeue
+JOBID PARTITION   NAME     USER  ST   TIME  NODES NODELIST(REASON)
+ 1831  allNodes  sleep   sballe  PD   0:00      1 (Resources)
+ 1830  allNodes  sleep   sballe   R   0:07      5 hydra[12-16]
 </pre>
 
 <p>Using select/cons_res plug-in with CR_CPU_Memory (4 CPUs/node)</p>
 <pre>
 Example 1:
-srun -N 5 -n 5 --job-mem=1000 sleep 100 &  <-- running 
-srun -N 5 -n 5 --job-mem=10 sleep 100 &    <-- running
-srun -N 5 -n 5 --job-mem=1000 sleep 100 &  <-- queued and waiting for resources
+# srun -N 5 -n 5 --job-mem=1000 sleep 100 &  <-- running 
+# srun -N 5 -n 5 --job-mem=10 sleep 100 &    <-- running
+# srun -N 5 -n 5 --job-mem=1000 sleep 100 &  <-- queued and waiting for resources
 
-squeue
-  JOBID PARTITION     NAME     USER  ST       TIME  NODES NODELIST(REASON)
-   1835  allNodes    sleep   sballe  PD       0:00      5 (Resources)
-   1833  allNodes    sleep   sballe   R       0:10      5 hydra[12-16]
-   1834  allNodes    sleep   sballe   R       0:07      5 hydra[12-16]
+# squeue
+JOBID PARTITION   NAME     USER  ST   TIME  NODES NODELIST(REASON)
+ 1835  allNodes  sleep   sballe  PD   0:00      5 (Resources)
+ 1833  allNodes  sleep   sballe   R   0:10      5 hydra[12-16]
+ 1834  allNodes  sleep   sballe   R   0:07      5 hydra[12-16]
 
 Example 2:
-srun -N 5 -n 20 --job-mem=10 sleep 100 & <-- running 
-srun -n 1 --job-mem=10 sleep 100 &       <-- queued and waiting for resources
+# srun -N 5 -n 20 --job-mem=10 sleep 100 & <-- running 
+# srun -n 1 --job-mem=10 sleep 100 &       <-- queued and waiting for resources
 
-squeue
-  JOBID PARTITION     NAME     USER  ST       TIME  NODES NODELIST(REASON)
-   1837  allNodes    sleep   sballe  PD       0:00      1 (Resources)
-   1836  allNodes    sleep   sballe   R       0:11      5 hydra[12-16]
+# squeue
+JOBID PARTITION   NAME     USER  ST   TIME  NODES NODELIST(REASON)
+ 1837  allNodes  sleep   sballe  PD   0:00      1 (Resources)
+ 1836  allNodes  sleep   sballe   R   0:11      5 hydra[12-16]
 </pre>
 
 <p class="footer"><a href="#top">top</a></p>
@@ -365,11 +363,11 @@ have one idle cpu and linux04 has 3 idle cpus.</p>
 
 <pre>
 # squeue
-  JOBID PARTITION     NAME     USER  ST       TIME  NODES NODELIST(REASON)
-      3       lsf    sleep     root  PD       0:00      3 (Resources)
-      4       lsf    sleep     root  PD       0:00      1 (Resources)
-      5       lsf    sleep     root  PD       0:00      1 (Resources)
-      2       lsf    sleep     root   R       0:14      4 xc14n[13-16]
+JOBID PARTITION   NAME   USER  ST   TIME  NODES NODELIST(REASON)
+    3       lsf  sleep   root  PD   0:00      3 (Resources)
+    4       lsf  sleep   root  PD   0:00      1 (Resources)
+    5       lsf  sleep   root  PD   0:00      1 (Resources)
+    2       lsf  sleep   root   R   0:14      4 xc14n[13-16]
 </pre>
 
 <p>Once Job 2 is finished, Job 3 is scheduled and runs on
@@ -381,10 +379,10 @@ and Job 4 can run concurrently on the cluster.</p>
 
 <pre>
 # squeue
-  JOBID PARTITION     NAME     USER  ST       TIME  NODES NODELIST(REASON)
-      5       lsf    sleep     root  PD       0:00      1 (Resources)
-      3       lsf    sleep     root   R       0:11      3 xc14n[13-15]
-      4       lsf    sleep     root   R       0:11      1 xc14n16
+JOBID PARTITION   NAME   USER  ST   TIME  NODES NODELIST(REASON)
+    5       lsf  sleep   root  PD   0:00      1 (Resources)
+    3       lsf  sleep   root   R   0:11      3 xc14n[13-15]
+    4       lsf  sleep   root   R   0:11      1 xc14n16
 </pre>
 
 <p>Once Job 3 finishes, Job 5 is allocated resources and can run.</p>
@@ -426,16 +424,16 @@ nodes) and Job 4 is scheduled onto one of the remaining idle cpus on Linux04.</p
 <pre>
 
 # squeue
-  JOBID PARTITION     NAME     USER  ST       TIME  NODES NODELIST(REASON)
-      5       lsf    sleep     root  PD       0:00      1 (Resources)
-      2       lsf    sleep     root   R       0:13      4 linux[01-04]
-      3       lsf    sleep     root   R       0:09      3 linux[01-03]
-      4       lsf    sleep     root   R       0:05      1 linux04
+JOBID PARTITION   NAME   USER  ST   TIME  NODES NODELIST(REASON)
+    5       lsf  sleep   root  PD   0:00      1 (Resources)
+    2       lsf  sleep   root   R   0:13      4 linux[01-04]
+    3       lsf  sleep   root   R   0:09      3 linux[01-03]
+    4       lsf  sleep   root   R   0:05      1 linux04
 
 # sinfo -lNe
 NODELIST     NODES PARTITION       STATE CPUS MEMORY TMP_DISK WEIGHT FEATURES REASON
-linux[01-03]    3      lsf*   allocated    2   2981        1      1   (null) none
-linux04         1      lsf*   allocated    4   3813        1      1   (null) none
+linux[01-03]     3      lsf*   allocated    2   2981        1      1   (null) none
+linux04          1      lsf*   allocated    4   3813        1      1   (null) none
 </pre>
 
 <p>Once Job 2 finishes, Job 5, which was pending, is allocated available resources and is then
@@ -443,10 +441,10 @@ running as illustrated below:</p>
 
 <pre>
 # squeue
-  JOBID PARTITION     NAME     USER  ST       TIME  NODES NODELIST(REASON)
-      3       lsf    sleep     root   R       1:58      3 linux[01-03]
-      4       lsf    sleep     root   R       1:54      1 linux04
-      5       lsf    sleep     root   R       0:02      3 linux[01-03]
+JOBID PARTITION   NAME   USER  ST   TIME  NODES NODELIST(REASON)
+   3       lsf   sleep   root   R   1:58      3 linux[01-03]
+   4       lsf   sleep   root   R   1:54      1 linux04
+   5       lsf   sleep   root   R   0:02      3 linux[01-03]
 # sinfo -lNe
 NODELIST     NODES PARTITION       STATE CPUS MEMORY TMP_DISK WEIGHT FEATURES REASON
 linux[01-03]     3      lsf*   allocated    2   2981        1      1   (null) none
@@ -457,8 +455,8 @@ linux04          1      lsf*        idle    4   3813        1      1   (null) no
 
 <pre>
 # squeue
-  JOBID PARTITION     NAME     USER  ST       TIME  NODES NODELIST(REASON)
-      5       lsf    sleep     root   R       1:52      3 linux[01-03]
+JOBID PARTITION   NAME   USER  ST   TIME  NODES NODELIST(REASON)
+    5       lsf  sleep   root   R   1:52      3 linux[01-03]
 </pre>
 
 <p>Job 3 and Job 4 have finshed and Job 5 is still running on nodes linux[01-03].</p>
@@ -480,6 +478,6 @@ one mpi process per node.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 25 September 2006</p>
+<p style="text-align:center;">Last modified 8 July 2008</p>
 
 <!--#include virtual="footer.txt"-->
