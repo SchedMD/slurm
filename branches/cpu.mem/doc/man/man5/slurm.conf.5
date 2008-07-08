@@ -211,8 +211,20 @@ The default value is "crypto/openssl".
 \fBDefMemPerCPU\fR
 Default real memory size available per allocated CPU in MegaBytes. 
 Used to avoid over\-subscribing memory and causing paging.
-Also see \fBMaxMemPerCPU\fR.
+\fBDefMemPerCPU\fR would generally be used if individual processors
+are alocated to jobs (\fBSelectType=select/cons_res\fR). 
 The default value is 0 (unlimited).
+Also see \fBDefMemPerNode\fR and \fBMaxMemPerCPU\fR.
+
+.TP
+\fBDefMemPerNode\fR
+Default real memory size available per allocated node in MegaBytes.
+Used to avoid over\-subscribing memory and causing paging.
+\fBDefMemPerNode\fR would generally be used if whole nodes
+are alocated to jobs (\fBSelectType=select/linear\fR) and 
+resources are shared (\fBShared=yes\fR or \fBShared=force\fR).
+The default value is 0 (unlimited).
+Also see \fBDefMemPerCPU\fR and \fBMaxMemPerNode\fR.
 
 .TP
 \fBDefaultStorageHost\fR
@@ -528,8 +540,20 @@ May not exceed 65533.
 \fBMaxMemPerCPU\fR
 Maximum real memory size available per allocated CPU in MegaBytes. 
 Used to avoid over\-subscribing memory and causing paging.
-Also see \fBDefMemPerCPU\fR.
+\fBMaxMemPerCPU\fR would generally be used if individual processors
+are alocated to jobs (\fBSelectType=select/cons_res\fR).
 The default value is 0 (unlimited).
+Also see \fBDefMemPerCPU\fR and \fBMaxMemPerNode\fR.
+
+.TP
+\fBMaxMemPerNode\fR
+Maximum real memory size available per allocated node in MegaBytes.
+Used to avoid over\-subscribing memory and causing paging.
+\fBMaxMemPerNode\fR would generally be used if whole nodes
+are alocated to jobs (\fBSelectType=select/linear\fR) and
+resources are shared (\fBShared=yes\fR or \fBShared=force\fR).
+The default value is 0 (unlimited).
+Also see \fBDefMemPerNode\fR and \fBMaxMemPerCPU\fR.
 
 .TP
 \fBMessageTimeout\fR

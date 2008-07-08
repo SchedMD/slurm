@@ -2,8 +2,6 @@
  *  job_mgr.c - manage the job information of slurm
  *	Note: there is a global job list (job_list), time stamp 
  *	(last_job_update), and hash table (job_hash)
- *
- *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008 Lawrence Livermore National Security.
@@ -2865,6 +2863,53 @@ static char *_copy_nodelist_no_dup(char *node_list)
 	return xstrdup(buf);
 }
 
+static bool _valid_job_min_mem(job_desc_msg_t * job_desc_msg)
+{
+	uint32_t base_size = job_desc_msg->job_min_memory;
+	uint32_t size_limit = slurmctld_conf.max_mem_per_task;
+	uint16_t cpus_per_node;
+
+	if (size_limit == 0)
+		return true;
+
+	if ((base_size  & MEM_PER_CPU) && (size_limit & MEM_PER_CPU)) {
+		base_size  &= (~MEM_PER_CPU);
+		size_limit &= (~MEM_PER_CPU);
+		if (base_size <= size_limit)
+			return true;
+		return false;
+	}
+
+	if (((base_size  & MEM_PER_CPU) == 0) &&
+	    ((size_limit & MEM_PER_CPU) == 0)) {
+		if (base_size <= size_limit)
+			return true;
+		return false;
+	}
+
+	/* Our size is per CPU and limit per node or vise-versa.
+	 * CPU count my vary by node, but we don't have a good
+	 * way to identify specific nodes for the job at this 
+	 * point, so just pick the first node as a basis for 
+	 * enforcing MaxMemPerCPU. */
+	if (slurmctld_conf.fast_schedule)
+		cpus_per_node = node_record_table_ptr[0].config_ptr->cpus;
+	else
+		cpus_per_node = node_record_table_ptr[0].cpus;
+	if (job_desc_msg->num_procs != NO_VAL)
+		cpus_per_node = MIN(cpus_per_node, job_desc_msg->num_procs);
+	if (base_size & MEM_PER_CPU) {
+		base_size &= (~MEM_PER_CPU);
+		base_size *= cpus_per_node;
+	} else {
+		size_limit &= (~MEM_PER_CPU);
+		size_limit *= cpus_per_node;
+	}
+	if (base_size <= size_limit)
+		return true;
+	return false;
+}
+
 /* 
  * job_time_limit - terminate jobs which have exceeded their time limit
  * global: job_list - pointer global job list
@@ -3024,30 +3069,9 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 	if (job_desc_msg->job_min_memory == NO_VAL) {
 		/* Default memory limit is DefMemPerCPU (if set) or no limit */
 		job_desc_msg->job_min_memory = slurmctld_conf.def_mem_per_task;
-		if (slurmctld_conf.def_mem_per_task)
-			job_desc_msg->job_min_memory |= MEM_PER_CPU;
-	} else if ((job_desc_msg->job_min_memory & MEM_PER_CPU) &&
-		   slurmctld_conf.max_mem_per_task) {
-		uint32_t base_size = job_desc_msg->job_min_memory & 
-				     (~MEM_PER_CPU);
-		if (base_size > slurmctld_conf.max_mem_per_task)
-			return ESLURM_INVALID_TASK_MEMORY;
-	} else if (job_desc_msg->job_min_memory &&
-		   slurmctld_conf.max_mem_per_task) {
-		uint16_t cpus_per_node;
-		/* CPU count my vary by node, but we don't have a good
-		 * way to identify specific nodes for the job at this 
-		 * point, so just pick the first node as a basis for 
-		 * enforcing MaxMemPerCPU. */
-		if (slurmctld_conf.fast_schedule) {
-			cpus_per_node = node_record_table_ptr[0].
-					config_ptr->cpus;
-		} else
-			cpus_per_node = node_record_table_ptr[0]. cpus;
-		if ((job_desc_msg->job_min_memory / cpus_per_node) >
-		    slurmctld_conf.max_mem_per_task)
-			return ESLURM_INVALID_TASK_MEMORY;
-	}
+	} else if (!_valid_job_min_mem(job_desc_msg))
+		return ESLURM_INVALID_TASK_MEMORY;
+
 	if (job_desc_msg->min_sockets == (uint16_t) NO_VAL)
 		job_desc_msg->min_sockets = 1;	/* default socket count of 1 */
 	if (job_desc_msg->min_cores == (uint16_t) NO_VAL)

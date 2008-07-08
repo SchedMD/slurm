@@ -153,8 +153,11 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->control_machine);
 	fprintf(out, "CryptoType              = %s\n",
 		slurm_ctl_conf_ptr->crypto_type);
-	if (slurm_ctl_conf_ptr->def_mem_per_task) {
+	if (slurm_ctl_conf_ptr->def_mem_per_task & MEM_PER_CPU) {
 		fprintf(out, "DefMemPerCPU            = %u\n",
+			slurm_ctl_conf_ptr->def_mem_per_task);
+	} else if (slurm_ctl_conf_ptr->def_mem_per_task) {
+		fprintf(out, "DefMemPerNode           = %u\n",
 			slurm_ctl_conf_ptr->def_mem_per_task);
 	} else
 		fprintf(out, "DefMemPerCPU            = UNLIMITED\n");
@@ -220,8 +223,11 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->mail_prog);
 	fprintf(out, "MaxJobCount             = %u\n", 
 		slurm_ctl_conf_ptr->max_job_cnt);
-	if (slurm_ctl_conf_ptr->max_mem_per_task) {
+	if (slurm_ctl_conf_ptr->max_mem_per_task & MEM_PER_CPU) {
 		fprintf(out, "MaxMemPerCPU            = %u\n",
+			slurm_ctl_conf_ptr->max_mem_per_task);
+	} else if (slurm_ctl_conf_ptr->max_mem_per_task) {
+		fprintf(out, "MaxMemPerNode           = %u\n",
 			slurm_ctl_conf_ptr->max_mem_per_task);
 	} else
 		fprintf(out, "MaxMemPerCPU            = UNLIMITED\n");
