@@ -640,13 +640,12 @@ int setup_env(env_t *env)
 		 * determine what command a user will execute. We could
 		 * possibly add a "srestart" command which would set
 		 * MP_POERESTART_ENV, but that presently seems unnecessary. */
+		/* setenvf(&env->env, "MP_POERESTART_ENV", res_env); */
 		if (debug_env)
 			debug_num = atoi(debug_env);
 		snprintf(res_env, sizeof(res_env), "SLURM_LL_API_DEBUG=%d",
 			debug_num);
 		
-		setenvf(&env->env, "MP_POERESTART_ENV", res_env);
-
 		/* Required for AIX/POE systems indicating pre-allocation */
 		setenvf(&env->env, "LOADLBATCH", "yes");
 		setenvf(&env->env, "LOADL_ACTIVE", "3.2.0");
