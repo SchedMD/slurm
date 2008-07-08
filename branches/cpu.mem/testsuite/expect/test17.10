@@ -104,7 +104,7 @@ expect {
 		}
 		exp_continue
 	}
-	-re "MinMemory=($number)" {
+	-re "MinMemoryNode=($number)" {
 		set read_mem $expect_out(1,string)
 		if {$read_mem == $mem_size} {
 			incr matches
