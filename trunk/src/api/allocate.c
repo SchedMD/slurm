@@ -739,7 +739,7 @@ _wait_for_allocation_response(uint32_t job_id, const listen_t *listen,
 	resource_allocation_response_msg_t *resp = NULL;
 	int errnum;
 
-	debug("job %u queued and waiting for resources", job_id);
+	info("job %u queued and waiting for resources", job_id);
 	if (_wait_for_alloc_rpc(listen, timeout, &resp) <= 0) {
 		errnum = errno;
 		/* Maybe the resource allocation response RPC got lost
@@ -760,6 +760,6 @@ _wait_for_allocation_response(uint32_t job_id, const listen_t *listen,
 			return NULL;
 		}
 	}
-
+	info("job %u has been allocated resources", job_id);
 	return resp;
 }

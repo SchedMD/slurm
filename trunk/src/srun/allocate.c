@@ -89,7 +89,7 @@ static sig_atomic_t destroy_job = 0;
 
 static void _set_pending_job_id(uint32_t job_id)
 {
-	info("Pending job allocation %u", job_id);
+	debug2("Pending job allocation %u", job_id);
 	pending_job_id = job_id;
 }
 
