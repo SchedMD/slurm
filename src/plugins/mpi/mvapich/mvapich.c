@@ -1056,12 +1056,10 @@ static int mvapich_complete_op (mvapich_state_t *st, int opcode, int root,
 			break;
 		case 1: // PMGR_CLOSE
 			mvapich_debug ("Completed PMGR_CLOSE");
-			exit = 1;
 			rc = 1;
 			break;
 		case 2: // PMGR_ABORT
 			mvapich_debug ("Completed PMGR_ABORT");
-			exit = 1;
 			rc = 1;
 			break;
 		case 3: // PMGR_BARRIER (just echo the opcode back)
