@@ -176,4 +176,12 @@ extern acct_cluster_rec_t *sacctmgr_find_cluster_from_list(
 	List cluster_list, char *name);
 
 
+/* file_functions.c */
+extern int print_file_sacctmgr_assoc_list(FILE *fd, 
+					  List sacctmgr_assoc_list,
+					  List user_list,
+					  List acct_list);
+
+extern void load_sacctmgr_cfg_file (int argc, char *argv[]);
+
 #endif

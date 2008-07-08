@@ -588,6 +588,7 @@ extern void sacctmgr_print_coord_list(type_t type, print_field_t *field,
 			else
 				print_this = xstrdup(" ");
 		} else {
+			list_sort(value, (ListCmpF)sort_coord_list);
 			itr = list_iterator_create(value);
 			while((object = list_next(itr))) {
 				if(print_this) 

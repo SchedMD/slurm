@@ -72,7 +72,8 @@ binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
 am_sacctmgr_OBJECTS = account_functions.$(OBJEXT) \
 	association_functions.$(OBJEXT) cluster_functions.$(OBJEXT) \
-	common.$(OBJEXT) sacctmgr.$(OBJEXT) user_functions.$(OBJEXT)
+	common.$(OBJEXT) file_functions.$(OBJEXT) sacctmgr.$(OBJEXT) \
+	user_functions.$(OBJEXT)
 sacctmgr_OBJECTS = $(am_sacctmgr_OBJECTS)
 am__DEPENDENCIES_1 =
 sacctmgr_DEPENDENCIES = $(top_builddir)/src/common/libcommon.o \
@@ -272,6 +273,7 @@ sacctmgr_SOURCES = \
 	association_functions.c	\
 	cluster_functions.c	\
 	common.c                \
+	file_functions.c	\
 	sacctmgr.c sacctmgr.h	\
 	user_functions.c	
 
@@ -356,6 +358,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/association_functions.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cluster_functions.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/common.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/file_functions.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sacctmgr.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/user_functions.Po@am__quote@
 

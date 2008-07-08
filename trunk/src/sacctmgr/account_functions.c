@@ -761,9 +761,6 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 							field, assoc->cluster);
 						break;
 					case PRINT_COORDS:
-						list_sort(acct->coordinators,
-							  (ListCmpF)
-							  sort_coord_list);
 						field->print_routine(
 							SLURM_PRINT_VALUE,
 							field,
@@ -880,8 +877,6 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 						field, NULL);
 					break;
 				case PRINT_COORDS:
-					list_sort(acct->coordinators,
-						  (ListCmpF)sort_coord_list);
 					field->print_routine(
 						SLURM_PRINT_VALUE,
 						field,
