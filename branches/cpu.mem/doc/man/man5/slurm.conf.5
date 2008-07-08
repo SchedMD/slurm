@@ -215,6 +215,7 @@ Used to avoid over\-subscribing memory and causing paging.
 are alocated to jobs (\fBSelectType=select/cons_res\fR). 
 The default value is 0 (unlimited).
 Also see \fBDefMemPerNode\fR and \fBMaxMemPerCPU\fR.
+\fBDefMemPerCPU\fR and \fBDefMemPerNode\fR are mutually exclusive.
 
 .TP
 \fBDefMemPerNode\fR
@@ -225,6 +226,7 @@ are alocated to jobs (\fBSelectType=select/linear\fR) and
 resources are shared (\fBShared=yes\fR or \fBShared=force\fR).
 The default value is 0 (unlimited).
 Also see \fBDefMemPerCPU\fR and \fBMaxMemPerNode\fR.
+\fBDefMemPerCPU\fR and \fBDefMemPerNode\fR are mutually exclusive.
 
 .TP
 \fBDefaultStorageHost\fR
@@ -544,6 +546,7 @@ Used to avoid over\-subscribing memory and causing paging.
 are alocated to jobs (\fBSelectType=select/cons_res\fR).
 The default value is 0 (unlimited).
 Also see \fBDefMemPerCPU\fR and \fBMaxMemPerNode\fR.
+\fBMaxMemPerCPU\fR and \fBMaxMemPerNode\fR are mutually exclusive.
 
 .TP
 \fBMaxMemPerNode\fR
@@ -554,6 +557,7 @@ are alocated to jobs (\fBSelectType=select/linear\fR) and
 resources are shared (\fBShared=yes\fR or \fBShared=force\fR).
 The default value is 0 (unlimited).
 Also see \fBDefMemPerNode\fR and \fBMaxMemPerCPU\fR.
+\fBMaxMemPerCPU\fR and \fBMaxMemPerNode\fR are mutually exclusive.
 
 .TP
 \fBMessageTimeout\fR

@@ -429,6 +429,7 @@ seen using the \fBscontrol show config\fR command.
 This parameter would generally be used of whole nodes
 are allocated to jobs (\fBSelectType=select/linear\fR).
 Also see \fB\-\-mem\-per\-cpu\fR.
+\fB\-\-mem\fR and \fB\-\-mem\-per\-cpu\fR are mutually exclusive.
 
 .TP
 \fB\-\-mem\-per\-cpu\fR[=]<\fIMB\fR>
@@ -439,6 +440,7 @@ seen using the \fBscontrol show config\fR command.
 This parameter would generally be used of individual processors
 are allocated to jobs (\fBSelectType=select/cons_res\fR).
 Also see \fB\-\-mem\fR.
+\fB\-\-mem\fR and \fB\-\-mem\-per\-cpu\fR are mutually exclusive.
 
 .TP
 \fB\-\-mem_bind\fR=[{\fIquiet,verbose\fR},]\fItype\fR

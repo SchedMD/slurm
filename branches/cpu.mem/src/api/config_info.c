@@ -155,7 +155,8 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->crypto_type);
 	if (slurm_ctl_conf_ptr->def_mem_per_task & MEM_PER_CPU) {
 		fprintf(out, "DefMemPerCPU            = %u\n",
-			slurm_ctl_conf_ptr->def_mem_per_task);
+			slurm_ctl_conf_ptr->def_mem_per_task &
+			(~MEM_PER_CPU));
 	} else if (slurm_ctl_conf_ptr->def_mem_per_task) {
 		fprintf(out, "DefMemPerNode           = %u\n",
 			slurm_ctl_conf_ptr->def_mem_per_task);
@@ -225,7 +226,8 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->max_job_cnt);
 	if (slurm_ctl_conf_ptr->max_mem_per_task & MEM_PER_CPU) {
 		fprintf(out, "MaxMemPerCPU            = %u\n",
-			slurm_ctl_conf_ptr->max_mem_per_task);
+			slurm_ctl_conf_ptr->max_mem_per_task &
+			(~MEM_PER_CPU));
 	} else if (slurm_ctl_conf_ptr->max_mem_per_task) {
 		fprintf(out, "MaxMemPerNode           = %u\n",
 			slurm_ctl_conf_ptr->max_mem_per_task);
