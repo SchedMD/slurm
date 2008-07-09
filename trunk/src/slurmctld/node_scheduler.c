@@ -1196,7 +1196,8 @@ extern int job_req_node_filter(struct job_record *job_ptr,
 		FREE_NULL_BITMAP(feature_bitmap);
 		if (slurmctld_conf.fast_schedule) {
 			if ((detail_ptr->job_min_procs    > config_ptr->cpus       )
-			||  (detail_ptr->job_min_memory   > config_ptr->real_memory) 
+			||  ((detail_ptr->job_min_memory & (~MEM_PER_CPU)) > 
+			      config_ptr->real_memory) 
 			||  (detail_ptr->job_min_tmp_disk > config_ptr->tmp_disk)) {
 				bit_clear(avail_bitmap, i);
 				continue;
@@ -1213,7 +1214,8 @@ extern int job_req_node_filter(struct job_record *job_ptr,
 			}
 		} else {
 			if ((detail_ptr->job_min_procs    > node_ptr->cpus       )
-			||  (detail_ptr->job_min_memory   > node_ptr->real_memory) 
+			||  ((detail_ptr->job_min_memory & (~MEM_PER_CPU)) >
+			      node_ptr->real_memory) 
 			||  (detail_ptr->job_min_tmp_disk > node_ptr->tmp_disk)) {
 				bit_clear(avail_bitmap, i);
 				continue;
@@ -1284,7 +1286,8 @@ static int _build_node_list(struct job_record *job_ptr,
 
 		config_filter = 0;
 		if ((detail_ptr->job_min_procs    > config_ptr->cpus       )
-		||  (detail_ptr->job_min_memory   > config_ptr->real_memory) 
+		||  ((detail_ptr->job_min_memory & (~MEM_PER_CPU)) > 
+		      config_ptr->real_memory) 
 		||  (detail_ptr->job_min_tmp_disk > config_ptr->tmp_disk))
 			config_filter = 1;
 		if (mc_ptr
@@ -1391,7 +1394,8 @@ static void _filter_nodes_in_set(struct node_set *node_set_ptr,
 
 			node_con = node_record_table_ptr[i].config_ptr;
 			if ((job_con->job_min_procs    <= node_con->cpus)
-			&&  (job_con->job_min_memory   <= node_con->real_memory)
+			&&  ((job_con->job_min_memory & (~MEM_PER_CPU)) <= 
+			      node_con->real_memory)
 			&&  (job_con->job_min_tmp_disk <= node_con->tmp_disk))
 				job_ok = 1;
 			if (mc_ptr
@@ -1419,7 +1423,8 @@ static void _filter_nodes_in_set(struct node_set *node_set_ptr,
 
 			node_ptr = &node_record_table_ptr[i];
 			if ((job_con->job_min_procs    <= node_ptr->cpus)
-			&&  (job_con->job_min_memory   <= node_ptr->real_memory)
+			&&  ((job_con->job_min_memory & (~MEM_PER_CPU)) <= 
+			      node_ptr->real_memory)
 			&&  (job_con->job_min_tmp_disk <= node_ptr->tmp_disk))
 				job_ok = 1;
 			if (mc_ptr

@@ -1,8 +1,8 @@
 /*****************************************************************************\
  *  init_msg.c - initialize RPC messages contents
- *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  LLNL-CODE-402394.
@@ -55,71 +55,25 @@
  */
 void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 {
-	job_desc_msg->account     = NULL;
-	job_desc_msg->acctg_freq  = (uint16_t) NO_VAL;
-	job_desc_msg->alloc_node  = NULL;
-	job_desc_msg->alloc_sid   = NO_VAL;
-	job_desc_msg->comment     = NULL;
-	job_desc_msg->contiguous  = (uint16_t) NO_VAL;
-	job_desc_msg->cpus_per_task = (uint16_t) NO_VAL;
-	job_desc_msg->ntasks_per_node   = (uint16_t) NO_VAL;
-	job_desc_msg->ntasks_per_socket = (uint16_t) NO_VAL;
-	job_desc_msg->ntasks_per_core   = (uint16_t) NO_VAL;
-	job_desc_msg->dependency  = NULL;
-	job_desc_msg->environment = ((char **) NULL);
-	job_desc_msg->env_size    = 0;
-	job_desc_msg->features    = NULL;
-	job_desc_msg->immediate   = 0;
-	job_desc_msg->job_id      = NO_VAL;
-	job_desc_msg->job_min_cores   = (uint16_t) NO_VAL;
-	job_desc_msg->job_min_procs   = (uint16_t) NO_VAL;
-	job_desc_msg->job_min_sockets = (uint16_t) NO_VAL;
-	job_desc_msg->job_min_threads = (uint16_t) NO_VAL;
-	job_desc_msg->job_min_memory  = NO_VAL;
-	job_desc_msg->job_min_tmp_disk= NO_VAL;
-	job_desc_msg->kill_on_node_fail = (uint16_t) NO_VAL;
-	job_desc_msg->licenses    = NULL;
-	job_desc_msg->name        = NULL;
-	job_desc_msg->network     = NULL;
-	job_desc_msg->nice        = NICE_OFFSET;
-	job_desc_msg->ntasks_per_core   = (uint16_t) NO_VAL;
-	job_desc_msg->ntasks_per_node   = (uint16_t) NO_VAL;
-	job_desc_msg->ntasks_per_socket = (uint16_t) NO_VAL;
-	job_desc_msg->num_tasks   = NO_VAL;
-	job_desc_msg->open_mode   = 0;	/* system default */
-	job_desc_msg->overcommit  = (uint8_t) NO_VAL;
-	job_desc_msg->partition   = NULL;
-	job_desc_msg->plane_size  = (uint16_t) NO_VAL;
-	job_desc_msg->priority    = NO_VAL;
-	job_desc_msg->req_nodes   = NULL;
-	job_desc_msg->exc_nodes   = NULL;
-	job_desc_msg->script      = NULL;
-	job_desc_msg->argv        = ((char **) NULL);
-	job_desc_msg->argc        = 0;
-	job_desc_msg->shared      = (uint16_t) NO_VAL;
-	job_desc_msg->task_dist   = (uint16_t) NO_VAL;
-	job_desc_msg->time_limit  = NO_VAL;
-	job_desc_msg->num_procs   = NO_VAL;
-	job_desc_msg->max_nodes   = NO_VAL;
-	job_desc_msg->min_nodes   = NO_VAL;
-	job_desc_msg->max_sockets = (uint16_t) NO_VAL;
-	job_desc_msg->min_sockets = (uint16_t) NO_VAL;
-	job_desc_msg->max_cores   = (uint16_t) NO_VAL;
-	job_desc_msg->min_cores   = (uint16_t) NO_VAL;
-	job_desc_msg->max_threads = (uint16_t) NO_VAL;
-	job_desc_msg->min_threads = (uint16_t) NO_VAL;
-	job_desc_msg->err         = NULL;
-	job_desc_msg->in          = NULL;
-	job_desc_msg->out         = NULL;
-	job_desc_msg->user_id     = NO_VAL;
-	job_desc_msg->group_id    = NO_VAL;
-	job_desc_msg->work_dir    = NULL;
-	job_desc_msg->alloc_resp_port = 0;
-	job_desc_msg->other_port  = 0;
-	job_desc_msg->mail_type   = 0;
-	job_desc_msg->mail_user   = NULL;
-	job_desc_msg->begin_time  = 0;
-	job_desc_msg->requeue  = (uint16_t) NO_VAL;
+	job_desc_msg->account		= NULL;
+	job_desc_msg->acctg_freq	= (uint16_t) NO_VAL;
+	job_desc_msg->alloc_node	= NULL;
+	job_desc_msg->alloc_resp_port	= 0;
+	job_desc_msg->alloc_sid		= NO_VAL;
+	job_desc_msg->argc		= 0;
+	job_desc_msg->argv		= ((char **) NULL);
+	job_desc_msg->begin_time	= 0;
+	job_desc_msg->blrtsimage	= NULL;
+	job_desc_msg->comment		= NULL;
+	job_desc_msg->conn_type		= (uint16_t) NO_VAL;
+	job_desc_msg->contiguous	= (uint16_t) NO_VAL;
+	job_desc_msg->cpus_per_task	= (uint16_t) NO_VAL;
+	job_desc_msg->dependency	= NULL;
+	job_desc_msg->environment	= ((char **) NULL);
+	job_desc_msg->env_size		= 0;
+	job_desc_msg->err		= NULL;
+	job_desc_msg->exc_nodes		= NULL;
+	job_desc_msg->features		= NULL;
 #if SYSTEM_DIMENSIONS
 {
 	int i;
@@ -127,14 +81,58 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 		job_desc_msg->geometry[i] = (uint16_t) NO_VAL;
 }
 #endif
-	job_desc_msg->conn_type   = (uint16_t) NO_VAL;
-	job_desc_msg->reboot      = (uint16_t) NO_VAL;
-	job_desc_msg->rotate      = (uint16_t) NO_VAL;
-	job_desc_msg->blrtsimage = NULL;
-	job_desc_msg->linuximage = NULL;
-	job_desc_msg->mloaderimage = NULL;
-	job_desc_msg->ramdiskimage = NULL;
-	job_desc_msg->select_jobinfo = NULL;
+	job_desc_msg->group_id		= NO_VAL;
+	job_desc_msg->immediate		= 0;
+	job_desc_msg->in		= NULL;
+	job_desc_msg->job_id		= NO_VAL;
+	job_desc_msg->job_min_cores	= (uint16_t) NO_VAL;
+	job_desc_msg->job_min_procs	= (uint16_t) NO_VAL;
+	job_desc_msg->job_min_sockets	= (uint16_t) NO_VAL;
+	job_desc_msg->job_min_threads	= (uint16_t) NO_VAL;
+	job_desc_msg->job_min_memory    = NO_VAL;
+	job_desc_msg->job_min_tmp_disk  = NO_VAL;
+	job_desc_msg->kill_on_node_fail = (uint16_t) NO_VAL;
+	job_desc_msg->licenses		= NULL;
+	job_desc_msg->linuximage	= NULL;
+	job_desc_msg->mail_type		= 0;
+	job_desc_msg->mail_user		= NULL;
+	job_desc_msg->max_cores		= (uint16_t) NO_VAL;
+	job_desc_msg->max_nodes		= NO_VAL;
+	job_desc_msg->max_sockets	= (uint16_t) NO_VAL;
+	job_desc_msg->max_threads	= (uint16_t) NO_VAL;
+	job_desc_msg->min_cores		= (uint16_t) NO_VAL;
+	job_desc_msg->min_nodes		= NO_VAL;
+	job_desc_msg->min_sockets	= (uint16_t) NO_VAL;
+	job_desc_msg->min_threads	= (uint16_t) NO_VAL;
+	job_desc_msg->mloaderimage	= NULL;
+	job_desc_msg->name		= NULL;
+	job_desc_msg->network		= NULL;
+	job_desc_msg->nice		= NICE_OFFSET;
+	job_desc_msg->ntasks_per_core	= (uint16_t) NO_VAL;
+	job_desc_msg->ntasks_per_node	= (uint16_t) NO_VAL;
+	job_desc_msg->ntasks_per_socket	= (uint16_t) NO_VAL;
+	job_desc_msg->num_procs		= NO_VAL;
+	job_desc_msg->num_tasks		= NO_VAL;
+	job_desc_msg->open_mode		= 0;	/* system default */
+	job_desc_msg->other_port	= 0;
+	job_desc_msg->out		= NULL;
+	job_desc_msg->overcommit	= (uint8_t) NO_VAL;
+	job_desc_msg->partition		= NULL;
+	job_desc_msg->plane_size	= (uint16_t) NO_VAL;
+	job_desc_msg->priority		= NO_VAL;
+	job_desc_msg->ramdiskimage	= NULL;
+	job_desc_msg->reboot		= (uint16_t) NO_VAL;
+	job_desc_msg->resp_host		= NULL;
+	job_desc_msg->req_nodes		= NULL;
+	job_desc_msg->requeue		= (uint16_t) NO_VAL;
+	job_desc_msg->rotate		= (uint16_t) NO_VAL;
+	job_desc_msg->script		= NULL;
+	job_desc_msg->select_jobinfo	= NULL;
+	job_desc_msg->shared		= (uint16_t) NO_VAL;
+	job_desc_msg->task_dist		= (uint16_t) NO_VAL;
+	job_desc_msg->time_limit	= NO_VAL;
+	job_desc_msg->user_id		= NO_VAL;
+	job_desc_msg->work_dir		= NULL;
 }
 
 /*

@@ -44,10 +44,13 @@ chosen, we recommend setting <I>SelectTypeParameter=CR_Memory</I>. When
 (ex. <I>SelectTypeParameter=CR_Core_Memory</I>).
 </LI>
 <LI>
-<B>DefMemPerTask</B>: Since job requests may not explicitly specify 
-a memory requirement, we also recommend configuring <I>DefMemPerTask</I> 
-(default memory per task). It may also be desirable to configure 
-<I>MaxMemPerTask</I> (maximum memory per task) in <I>slurm.conf</I>.
+<B>DefMemPerCPU</B>: Since job requests may not explicitly specify 
+a memory requirement, we also recommend configuring 
+<I>DefMemPerCPU</I> (default memory per allocated CPU) or 
+<I>DefMemPerNode</I> (default memory per allocated node). 
+It may also be desirable to configure 
+<I>MaxMemPerCPU</I> (maximum memory per allocated CPU) or 
+<I>MaxMemPerNode</I> (maximum memory per allocated node) in <I>slurm.conf</I>.
 </LI>
 <LI>
 <B>JobAcctGatherType and JobAcctGatherFrequency</B>:
@@ -242,6 +245,6 @@ again. This will be investigated at some point in the future. Requeuing a
 preempted job may make the most sense with <I>Shared=NO</I> partitions.
 </P>
 
-<p style="text-align:center;">Last modified 11 April 2008</p>
+<p style="text-align:center;">Last modified 7 July 2008</p>
 
 <!--#include virtual="footer.txt"-->

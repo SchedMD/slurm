@@ -331,7 +331,8 @@ struct job_details {
 	uint16_t ntasks_per_node;	/* number of tasks on each node */
 	/* job constraints: */
 	uint32_t job_min_procs;		/* minimum processors per node */
-	uint32_t job_min_memory;	/* minimum memory per node, MB */
+	uint32_t job_min_memory;	/* minimum memory per node (MB) OR
+					 * memory per allocated CPU | MEM_PER_CPU */
 	uint32_t job_min_tmp_disk;	/* minimum tempdisk per node, MB */
 	char *err;			/* pathname of job's stderr file */
 	char *in;			/* pathname of job's stdin file */

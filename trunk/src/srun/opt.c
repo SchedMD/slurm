@@ -1,8 +1,8 @@
 /*****************************************************************************\
  *  opt.c - options processing for srun
- *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona1@llnl.gov>, et. al.
  *  LLNL-CODE-402394.
@@ -153,7 +153,7 @@
 #define LONG_OPT_NTASKSPERNODE	 0x136
 #define LONG_OPT_NTASKSPERSOCKET 0x137
 #define LONG_OPT_NTASKSPERCORE	 0x138
-#define LONG_OPT_TASK_MEM        0x13a
+#define LONG_OPT_MEM_PER_CPU     0x13a
 #define LONG_OPT_HINT	         0x13b
 #define LONG_OPT_BLRTS_IMAGE     0x140
 #define LONG_OPT_LINUX_IMAGE     0x141
@@ -656,7 +656,7 @@ static void _opt_default()
 	opt.job_min_cores   = NO_VAL;
 	opt.job_min_threads = NO_VAL;
 	opt.job_min_memory  = NO_VAL;
-	opt.task_mem        = NO_VAL;
+	opt.mem_per_cpu     = NO_VAL;
 	opt.job_min_tmp_disk= NO_VAL;
 
 	opt.hold	    = false;
@@ -777,7 +777,6 @@ env_vars_t env_vars[] = {
 {"SLURM_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL             },
 {"SLURM_OPEN_MODE",     OPT_OPEN_MODE,  NULL,               NULL             },
 {"SLURM_ACCTG_FREQ",    OPT_INT,        &opt.acctg_freq,    NULL             },
-{"SLURM_TASK_MEM",      OPT_INT,        &opt.task_mem,      NULL             },
 {"SLURM_NETWORK",       OPT_STRING,     &opt.network,       NULL             },
 {NULL, 0, NULL, NULL}
 };
@@ -991,8 +990,9 @@ static void set_options(const int argc, char **argv)
 		{"mincores",         required_argument, 0, LONG_OPT_MINCORES},
 		{"minthreads",       required_argument, 0, LONG_OPT_MINTHREADS},
 		{"mem",              required_argument, 0, LONG_OPT_MEM},
-		{"job-mem",          required_argument, 0, LONG_OPT_TASK_MEM},
-		{"task-mem",         required_argument, 0, LONG_OPT_TASK_MEM},
+		{"job-mem",          required_argument, 0, LONG_OPT_MEM_PER_CPU},
+		{"task-mem",         required_argument, 0, LONG_OPT_MEM_PER_CPU},
+		{"mem-per-cpu",      required_argument, 0, LONG_OPT_MEM_PER_CPU},
 		{"hint",             required_argument, 0, LONG_OPT_HINT},
 		{"mpi",              required_argument, 0, LONG_OPT_MPI},
 		{"tmp",              required_argument, 0, LONG_OPT_TMP},
@@ -1314,9 +1314,9 @@ static void set_options(const int argc, char **argv)
 				exit(1);
 			}
 			break;
-		case LONG_OPT_TASK_MEM:
-			opt.task_mem = (int) str_to_bytes(optarg);
-			if (opt.task_mem < 0) {
+		case LONG_OPT_MEM_PER_CPU:
+			opt.mem_per_cpu = (int) str_to_bytes(optarg);
+			if (opt.mem_per_cpu < 0) {
 				error("invalid memory constraint %s", 
 				      optarg);
 				exit(1);
@@ -1626,15 +1626,11 @@ static void _opt_args(int argc, char **argv)
 
 	set_options(argc, argv);
 
-        /* When CR with memory as a CR is enabled we need to assign
-	 * adequate value or check the value to opt.mem */
-	if ((opt.job_min_memory >= -1) && (opt.task_mem > 0)) {
-		if (opt.job_min_memory == -1) {
-			opt.job_min_memory = opt.task_mem;
-		} else if (opt.job_min_memory < opt.task_mem) {
-			info("mem < task-mem - resizing mem to be equal "
-			     "to task-mem");
-			opt.job_min_memory = opt.task_mem;
+	if ((opt.job_min_memory > -1) && (opt.mem_per_cpu > -1)) {
+		if (opt.job_min_memory < opt.mem_per_cpu) {
+			info("mem < mem-per-cpu - resizing mem to be equal "
+			     "to mem-per-cpu");
+			opt.job_min_memory = opt.mem_per_cpu;
 		}
 	}
 
@@ -2030,19 +2026,6 @@ static bool _opt_verify(void)
 		xfree(sched_name);
 	}
 
-	if (opt.task_mem > 0) {
-		uint32_t max_mem = slurm_get_max_mem_per_task();
-		if (max_mem && (opt.task_mem > max_mem)) {
-			info("WARNING: Reducing --task-mem to system maximum "
-			     "of %u MB", max_mem);
-			opt.task_mem = max_mem;
-		}	
-	} else {
-		uint32_t max_mem = slurm_get_def_mem_per_task();
-		if (max_mem)
-			opt.task_mem = max_mem;
-	}
-
 	return verified;
 }
 
@@ -2069,8 +2052,8 @@ static char *print_constraints()
 	if (opt.job_min_memory > 0)
 		xstrfmtcat(buf, "mem=%dM ", opt.job_min_memory);
 
-	if (opt.task_mem > 0)
-		xstrfmtcat(buf, "task-mem=%dM ", opt.task_mem);
+	if (opt.mem_per_cpu > 0)
+		xstrfmtcat(buf, "mem-per-cpu=%dM ", opt.mem_per_cpu);
 
 	if (opt.job_min_tmp_disk > 0)
 		xstrfmtcat(buf, "tmp=%ld ", opt.job_min_tmp_disk);
@@ -2223,7 +2206,7 @@ static void _usage(void)
 "            [--kill-on-bad-exit] [--propagate[=rlimits] [--comment=name]\n"
 "            [--cpu_bind=...] [--mem_bind=...] [--network=type]\n"
 "            [--ntasks-per-node=n] [--ntasks-per-socket=n]\n"
-"            [--ntasks-per-core=n]\n"
+"            [--ntasks-per-core=n] [--mem-per-cpu=MB]\n"
 #ifdef HAVE_BG		/* Blue gene specific options */
 "            [--geometry=XxYxZ] [--conn-type=type] [--no-rotate] [--reboot]\n"
 "            [--blrts-image=path] [--linux-image=path]\n"
@@ -2321,8 +2304,8 @@ static void _help(void)
 "      --exclusive             allocate nodes in exclusive mode when\n" 
 "                              cpu consumable resource is enabled\n"
 "                              or don't share CPUs for job steps\n"
-"      --task-mem=MB           maximum amount of real memory per task\n"
-"                              required by the job.\n" 
+"      --mem-per-cpu=MB        maximum amount of real memory per allocated\n"
+"                              CPU required by the job.\n" 
 "                              --mem >= --job-mem if --mem is specified.\n" 
 "\n"
 "Affinity/Multi-core options: (when the task/affinity plugin is enabled)\n" 

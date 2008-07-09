@@ -455,6 +455,8 @@ static int _sort_job_by_min_memory(void *void1, void *void2)
 	job_info_t *job1 = (job_info_t *) void1;
 	job_info_t *job2 = (job_info_t *) void2;
 
+	job1->job_min_memory &= (~MEM_PER_CPU);
+	job2->job_min_memory &= (~MEM_PER_CPU);
 	diff = job1->job_min_memory - job2->job_min_memory;
 
 	if (reverse_order)

@@ -31,6 +31,7 @@ jobs terminates.
 </P>
 
 <H2>Configuration</H2>
+
 <P>
 There are several important configuration parameters relating to 
 gang scheduling:
@@ -51,10 +52,13 @@ chosen, we recommend including Memory as a resource (ex.
 <I>SelectTypeParameter=CR_Core_Memory</I>).
 </LI>
 <LI>
-<B>DefMemPerTask</B>: Since job requests may not explicitly specify 
-a memory requirement, we also recommend configuring <I>DefMemPerTask</I> 
-(default memory per task). It may also be desirable to configure 
-<I>MaxMemPerTask</I> (maximum memory per task) in <I>slurm.conf</I>.
+<B>DefMemPerCPU</B>: Since job requests may not explicitly specify 
+a memory requirement, we also recommend configuring
+<I>DefMemPerCPU</I> (default memory per allocated CPU) or
+<I>DefMemPerNode</I> (default memory per allocated node).
+It may also be desirable to configure
+<I>MaxMemPerCPU</I> (maximum memory per allocated CPU) or
+<I>MaxMemPerNode</I> (maximum memory per allocated node) in <I>slurm.conf</I>.
 </LI>
 <LI>
 <B>JobAcctGatherType and JobAcctGatherFrequency</B>:
@@ -158,7 +162,6 @@ SchedulerPort           = 7321
 SchedulerRootFilter     = 1
 SchedulerTimeSlice      = 30
 SchedulerType           = sched/gang
-[user@n16 load]$
 </PRE>
 <P>
 The <I>myload</I> script launches a simple load-generating app that runs
@@ -167,6 +170,7 @@ for the given number of seconds. Submit <I>myload</I> to run on all nodes:
 <PRE>
 [user@n16 load]$ <B>sbatch -N5 ./myload 300</B>
 sbatch: Submitted batch job 3
+
 [user@n16 load]$ <B>squeue</B>
 JOBID PARTITION    NAME  USER ST  TIME NODES NODELIST
     3    active  myload  user     0:05     5 n[12-16]
@@ -177,6 +181,7 @@ Submit it again and watch the <I>sched/gang</I> plugin suspend it:
 <PRE>
 [user@n16 load]$ <B>sbatch -N5 ./myload 300</B>
 sbatch: Submitted batch job 4
+
 [user@n16 load]$ <B>squeue</B>
 JOBID PARTITION    NAME  USER ST  TIME NODES NODELIST
     3    active  myload  user  R  0:13     5 n[12-16]
@@ -191,12 +196,14 @@ active one:
 JOBID PARTITION    NAME  USER ST  TIME NODES NODELIST
     4    active  myload  user  R  0:08     5 n[12-16]
     3    active  myload  user  S  0:41     5 n[12-16]
+
 [user@n16 load]$ <B>squeue</B>
 JOBID PARTITION    NAME  USER ST  TIME NODES NODELIST
     4    active  myload  user  R  0:21     5 n[12-16]
     3    active  myload  user  S  0:41     5 n[12-16]
 </PRE>
-<P>After another 30 seconds the <I>sched/gang</I> plugin sets job 3 running again:
+<P>
+After another 30 seconds the <I>sched/gang</I> plugin sets job 3 running again:
 </P>
 <PRE>
 [user@n16 load]$ <B>squeue</B>
@@ -204,6 +211,7 @@ JOBID PARTITION    NAME  USER ST  TIME NODES NODELIST
     3    active  myload  user  R  0:50     5 n[12-16]
     4    active  myload  user  S  0:30     5 n[12-16]
 </PRE>
+
 <P>
 <B>A possible side effect of timeslicing</B>: Note that jobs that are
 immediately suspended may cause their srun commands to produce the following
@@ -229,38 +237,45 @@ jobs should be considered benign.
 </P>
 
 <H2>More examples</H2>
+
 <P>
 The following example shows how the timeslicer algorithm keeps the resources
 busy. Job 10 runs continually, while jobs 9 and 11 are timesliced:
 </P>
+
 <PRE>
 [user@n16 load]$ <B>sbatch -N3 ./myload 300</B>
 sbatch: Submitted batch job 9
+
 [user@n16 load]$ <B>sbatch -N2 ./myload 300</B>
 sbatch: Submitted batch job 10
+
 [user@n16 load]$ <B>sbatch -N3 ./myload 300</B>
 sbatch: Submitted batch job 11
+
 [user@n16 load]$ <B>squeue</B>
 JOBID PARTITION    NAME  USER ST  TIME NODES NODELIST
     9    active  myload  user  R  0:11     3 n[12-14]
    10    active  myload  user  R  0:08     2 n[15-16]
    11    active  myload  user  S  0:00     3 n[12-14]
+
 [user@n16 load]$ <B>squeue</B>
 JOBID PARTITION    NAME  USER ST  TIME NODES NODELIST
    10    active  myload  user  R  0:50     2 n[15-16]
    11    active  myload  user  R  0:12     3 n[12-14]
     9    active  myload  user  S  0:41     3 n[12-14]
+
 [user@n16 load]$ <B>squeue</B>
 JOBID PARTITION    NAME  USER ST  TIME NODES NODELIST
    10    active  myload  user  R  1:04     2 n[15-16]
    11    active  myload  user  R  0:26     3 n[12-14]
     9    active  myload  user  S  0:41     3 n[12-14]
+
 [user@n16 load]$ <B>squeue</B>
 JOBID PARTITION    NAME  USER ST  TIME NODES NODELIST
     9    active  myload  user  R  0:46     3 n[12-14]
    10    active  myload  user  R  1:13     2 n[15-16]
    11    active  myload  user  S  0:30     3 n[12-14]
-[user@n16 load]$
 </PRE>
 </P>
 <P>
@@ -269,31 +284,36 @@ The next example displays "local backfilling":
 <PRE>
 [user@n16 load]$ <B>sbatch -N3 ./myload 300</B>
 sbatch: Submitted batch job 12
+
 [user@n16 load]$ <B>sbatch -N5 ./myload 300</B>
 sbatch: Submitted batch job 13
+
 [user@n16 load]$ <B>sbatch -N2 ./myload 300</B>
 sbatch: Submitted batch job 14
+
 [user@n16 load]$ <B>squeue</B>
 JOBID PARTITION    NAME  USER ST  TIME NODES NODELIST
    12    active  myload  user  R  0:14     3 n[12-14]
    14    active  myload  user  R  0:06     2 n[15-16]
    13    active  myload  user  S  0:00     5 n[12-16]
-[user@n16 load]$
 </PRE>
 <P>
 Without timeslicing and without the backfill scheduler enabled, job 14 has to
 wait for job 13 to finish.
-</P><P>
+</P>
+<P>
 This is called "local" backfilling because the backfilling only occurs with jobs
 close enough in the queue to get allocated by the scheduler as part of
 oversubscribing the resources. Recall that the number of jobs that can
 overcommit a resource is controlled by the <I>Shared=FORCE:max_share</I> value,
 so this value effectively controls the scope of "local backfilling".
-</P><P>
+</P>
+<P>
 Normal backfill algorithms check <U>all</U> jobs in the wait queue.
 </P>
 
 <H2>Consumable Resource Examples</H2>
+
 <P>
 The following two examples illustrate the primary difference between
 <I>CR_CPU</I> and <I>CR_Core</I> when consumable resource selection is enabled
@@ -322,26 +342,33 @@ jobs 45 and 46. The timeslicer recognizes this and timeslices only those jobs:
 [user@n16 load]$ <B>sinfo</B>
 PARTITION AVAIL  TIMELIMIT NODES  STATE NODELIST
 active*      up   infinite     5   idle n[12-16]
+
 [user@n16 load]$ <B>scontrol show config | grep Select</B>
 SelectType              = select/cons_res
 SelectTypeParameters    = CR_CORE_MEMORY
+
 [user@n16 load]$ <B>sinfo -o "%20N %5D %5c %5z"</B>
 NODELIST             NODES CPUS  S:C:T
 n[12-16]             5     8     2:4:1
-[user@n16 load]$
-[user@n16 load]$
+
 [user@n16 load]$ <B>sbatch -n10 -N5 ./myload 300</B>
 sbatch: Submitted batch job 44
+
 [user@n16 load]$ <B>sbatch -n10 -N5 ./myload 300</B>
 sbatch: Submitted batch job 45
+
 [user@n16 load]$ <B>sbatch -n10 -N5 ./myload 300</B>
 sbatch: Submitted batch job 46
+
 [user@n16 load]$ <B>sbatch -n10 -N5 ./myload 300</B>
 sbatch: Submitted batch job 47
+
 [user@n16 load]$ <B>sbatch -n10 -N5 ./myload 300</B>
 sbatch: Submitted batch job 48
+
 [user@n16 load]$ <B>sbatch -n10 -N5 ./myload 300</B>
 sbatch: Submitted batch job 49
+
 [user@n16 load]$ <B>squeue</B>
 JOBID PARTITION    NAME  USER ST  TIME NODES NODELIST
    44    active  myload  user  R  0:09     5 n[12-16]
@@ -350,6 +377,7 @@ JOBID PARTITION    NAME  USER ST  TIME NODES NODELIST
    47    active  myload  user  R  0:07     5 n[12-16]
    48    active  myload  user  S  0:00     5 n[12-16]
    49    active  myload  user  S  0:00     5 n[12-16]
+
 [user@n16 load]$ <B>squeue</B>
 JOBID PARTITION    NAME  USER ST  TIME NODES NODELIST
    46    active  myload  user  R  0:49     5 n[12-16]
@@ -358,6 +386,7 @@ JOBID PARTITION    NAME  USER ST  TIME NODES NODELIST
    49    active  myload  user  R  0:06     5 n[12-16]
    44    active  myload  user  S  0:44     5 n[12-16]
    45    active  myload  user  S  0:43     5 n[12-16]
+
 [user@n16 load]$ <B>squeue</B>
 JOBID PARTITION    NAME  USER ST  TIME NODES NODELIST
    44    active  myload  user  R  1:23     5 n[12-16]
@@ -366,13 +395,13 @@ JOBID PARTITION    NAME  USER ST  TIME NODES NODELIST
    47    active  myload  user  R  2:21     5 n[12-16]
    48    active  myload  user  S  1:00     5 n[12-16]
    49    active  myload  user  S  1:00     5 n[12-16]
-[user@n16 load]$
 </PRE>
 <P>
 Note the runtime of all 6 jobs in the output of the last <I>squeue</I> command.
 Jobs 46 and 47 have been running continuously, while jobs 45 and 46 are
 splitting their runtime with jobs 48 and 49.
-</P><P>
+</P>
+<P>
 The next example has <I>CR_CPU_Memory</I> configured and the same 6 jobs are
 submitted. Here the selector and the timeslicer treat the CPUs as countable
 resources which results in all 6 jobs sharing time on the CPUs:
@@ -381,26 +410,33 @@ resources which results in all 6 jobs sharing time on the CPUs:
 [user@n16 load]$ <B>sinfo</B>
 PARTITION AVAIL  TIMELIMIT NODES  STATE NODELIST
 active*      up   infinite     5   idle n[12-16]
+
 [user@n16 load]$ <B>scontrol show config | grep Select</B>
 SelectType              = select/cons_res
 SelectTypeParameters    = CR_CPU_MEMORY
+
 [user@n16 load]$ <B>sinfo -o "%20N %5D %5c %5z"</B>
 NODELIST             NODES CPUS  S:C:T
 n[12-16]             5     8     2:4:1
-[user@n16 load]$
-[user@n16 load]$
+
 [user@n16 load]$ <B>sbatch -n10 -N5 ./myload 300</B>
 sbatch: Submitted batch job 51
+
 [user@n16 load]$ <B>sbatch -n10 -N5 ./myload 300</B>
 sbatch: Submitted batch job 52
+
 [user@n16 load]$ <B>sbatch -n10 -N5 ./myload 300</B>
 sbatch: Submitted batch job 53
+
 [user@n16 load]$ <B>sbatch -n10 -N5 ./myload 300</B>
 sbatch: Submitted batch job 54
+
 [user@n16 load]$ <B>sbatch -n10 -N5 ./myload 300</B>
 sbatch: Submitted batch job 55
+
 [user@n16 load]$ <B>sbatch -n10 -N5 ./myload 300</B>
 sbatch: Submitted batch job 56
+
 [user@n16 load]$ <B>squeue</B>
 JOBID PARTITION    NAME  USER ST  TIME NODES NODELIST
    51    active  myload  user  R  0:11     5 n[12-16]
@@ -409,6 +445,7 @@ JOBID PARTITION    NAME  USER ST  TIME NODES NODELIST
    54    active  myload  user  R  0:09     5 n[12-16]
    55    active  myload  user  S  0:00     5 n[12-16]
    56    active  myload  user  S  0:00     5 n[12-16]
+
 [user@n16 load]$ <B>squeue</B>
 JOBID PARTITION    NAME  USER ST  TIME NODES NODELIST
    51    active  myload  user  R  1:09     5 n[12-16]
@@ -417,6 +454,7 @@ JOBID PARTITION    NAME  USER ST  TIME NODES NODELIST
    56    active  myload  user  R  0:23     5 n[12-16]
    53    active  myload  user  S  0:45     5 n[12-16]
    54    active  myload  user  S  0:44     5 n[12-16]
+
 [user@n16 load]$ <B>squeue</B>
 JOBID PARTITION    NAME  USER ST  TIME NODES NODELIST
    53    active  myload  user  R  0:55     5 n[12-16]
@@ -425,6 +463,7 @@ JOBID PARTITION    NAME  USER ST  TIME NODES NODELIST
    56    active  myload  user  R  0:40     5 n[12-16]
    51    active  myload  user  S  1:16     5 n[12-16]
    52    active  myload  user  S  1:16     5 n[12-16]
+
 [user@n16 load]$ <B>squeue</B>
 JOBID PARTITION    NAME  USER ST  TIME NODES NODELIST
    51    active  myload  user  R  3:18     5 n[12-16]
@@ -433,12 +472,12 @@ JOBID PARTITION    NAME  USER ST  TIME NODES NODELIST
    54    active  myload  user  R  3:16     5 n[12-16]
    55    active  myload  user  S  3:00     5 n[12-16]
    56    active  myload  user  S  3:00     5 n[12-16]
-[user@n16 load]$
 </PRE>
 <P>
 Note that the runtime of all 6 jobs is roughly equal. Jobs 51-54 ran first so
 they're slightly ahead, but so far all jobs have run for at least 3 minutes.
-</P><P>
+</P>
+<P>
 At the core level this means that SLURM relies on the linux kernel to move jobs
 around on the cores to maximize performance. This is different than when
 <I>CR_Core_Memory</I> was configured and the jobs would effectively remain
@@ -467,6 +506,6 @@ For now this idea could be experimented with by disabling memory support in the
 selector and submitting appropriately sized jobs.
 </P>
 
-<p style="text-align:center;">Last modified 17 March 2008</p>
+<p style="text-align:center;">Last modified 7 July 2008</p>
 
 <!--#include virtual="footer.txt"-->

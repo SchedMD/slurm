@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "June 2008" "slurm.conf 1.3" "Slurm configuration file"
+.TH "slurm.conf" "5" "July 2008" "slurm.conf 1.3" "Slurm configuration file"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
@@ -208,11 +208,25 @@ License (GPL).
 The default value is "crypto/openssl".
 
 .TP
-\fBDefMemPerTask\fR
-Default real memory size available per task in MegaBytes. 
+\fBDefMemPerCPU\fR
+Default real memory size available per allocated CPU in MegaBytes. 
 Used to avoid over\-subscribing memory and causing paging.
-Also see \fBMaxMemPerTask\fR.
+\fBDefMemPerCPU\fR would generally be used if individual processors
+are alocated to jobs (\fBSelectType=select/cons_res\fR). 
 The default value is 0 (unlimited).
+Also see \fBDefMemPerNode\fR and \fBMaxMemPerCPU\fR.
+\fBDefMemPerCPU\fR and \fBDefMemPerNode\fR are mutually exclusive.
+
+.TP
+\fBDefMemPerNode\fR
+Default real memory size available per allocated node in MegaBytes.
+Used to avoid over\-subscribing memory and causing paging.
+\fBDefMemPerNode\fR would generally be used if whole nodes
+are alocated to jobs (\fBSelectType=select/linear\fR) and 
+resources are shared (\fBShared=yes\fR or \fBShared=force\fR).
+The default value is 0 (unlimited).
+Also see \fBDefMemPerCPU\fR and \fBMaxMemPerNode\fR.
+\fBDefMemPerCPU\fR and \fBDefMemPerNode\fR are mutually exclusive.
 
 .TP
 \fBDefaultStorageHost\fR
@@ -525,11 +539,25 @@ of the slurmctld daemon.
 May not exceed 65533.
 
 .TP
-\fBMaxMemPerTask\fR
-Maximum real memory size available per task in MegaBytes. 
+\fBMaxMemPerCPU\fR
+Maximum real memory size available per allocated CPU in MegaBytes. 
 Used to avoid over\-subscribing memory and causing paging.
-Also see \fBDefMemPerTask\fR.
+\fBMaxMemPerCPU\fR would generally be used if individual processors
+are alocated to jobs (\fBSelectType=select/cons_res\fR).
 The default value is 0 (unlimited).
+Also see \fBDefMemPerCPU\fR and \fBMaxMemPerNode\fR.
+\fBMaxMemPerCPU\fR and \fBMaxMemPerNode\fR are mutually exclusive.
+
+.TP
+\fBMaxMemPerNode\fR
+Maximum real memory size available per allocated node in MegaBytes.
+Used to avoid over\-subscribing memory and causing paging.
+\fBMaxMemPerNode\fR would generally be used if whole nodes
+are alocated to jobs (\fBSelectType=select/linear\fR) and
+resources are shared (\fBShared=yes\fR or \fBShared=force\fR).
+The default value is 0 (unlimited).
+Also see \fBDefMemPerNode\fR and \fBMaxMemPerCPU\fR.
+\fBMaxMemPerCPU\fR and \fBMaxMemPerNode\fR are mutually exclusive.
 
 .TP
 \fBMessageTimeout\fR
@@ -835,22 +863,26 @@ On single\-core systems, each CPUs will be considered a CPU.
 .TP
 \fBCR_CPU_Memory\fR
 CPUs and memory are consumable resources.
+Setting a value for \fBDefMemPerCPU\fR is strongly recommended.
 .TP
 \fBCR_Core\fR
 Cores are consumable resources.
 .TP
 \fBCR_Core_Memory\fR
 Cores and memory are consumable resources.
+Setting a value for \fBDefMemPerCPU\fR is strongly recommended.
 .TP
 \fBCR_Socket\fR
 Sockets are consumable resources.
 .TP
 \fBCR_Socket_Memory\fR
 Memory and CPUs are consumable resources.
+Setting a value for \fBDefMemPerCPU\fR is strongly recommended.
 .TP
 \fBCR_Memory\fR
 Memory is a consumable resource.
 NOTE: This implies \fIShared=YES\fR or \fIShared=FORCE\fR for all partitions.
+Setting a value for \fBDefMemPerCPU\fR is strongly recommended.
 .RE
 
 .TP

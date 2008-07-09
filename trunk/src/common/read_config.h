@@ -73,8 +73,8 @@ extern char *default_plugstack;
 #define DEFAULT_KILL_WAIT           30
 #define DEFAULT_MAIL_PROG           "/bin/mail"
 #define DEFAULT_MAX_JOB_COUNT       5000
-#define DEFAULT_MEM_PER_TASK        0
-#define DEFAULT_MAX_MEM_PER_TASK    0
+#define DEFAULT_MEM_PER_CPU         0
+#define DEFAULT_MAX_MEM_PER_CPU     0
 #define DEFAULT_MIN_JOB_AGE         300
 #define DEFAULT_MPI_DEFAULT         "none"
 #define DEFAULT_MSG_TIMEOUT         10

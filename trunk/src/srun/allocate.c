@@ -450,7 +450,9 @@ job_desc_msg_create_from_opts ()
 	if (opt.job_min_threads != NO_VAL)
 		j->job_min_threads  = opt.job_min_threads;
 	if (opt.job_min_memory != NO_VAL)
-		j->job_min_memory   = opt.job_min_memory;
+		j->job_min_memory = opt.job_min_memory;
+	else if (opt.mem_per_cpu != NO_VAL)
+		j->job_min_memory = opt.mem_per_cpu | MEM_PER_CPU;
 	if (opt.job_min_tmp_disk != NO_VAL)
 		j->job_min_tmp_disk = opt.job_min_tmp_disk;
 	if (opt.overcommit) {
@@ -511,8 +513,6 @@ create_job_step(srun_job_t *job)
 		: (opt.nprocs*opt.cpus_per_task);
 	
 	job->ctx_params.relative = (uint16_t)opt.relative;
-	if (opt.task_mem != NO_VAL)
-		job->ctx_params.mem_per_task = (uint16_t)opt.task_mem;
 	job->ctx_params.ckpt_interval = (uint16_t)opt.ckpt_interval;
 	job->ctx_params.ckpt_path = opt.ckpt_path;
 	job->ctx_params.exclusive = (uint16_t)opt.exclusive;

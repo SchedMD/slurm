@@ -324,10 +324,17 @@ scontrol_update_job (int argc, char *argv[])
 						(char **) NULL, 10);
 			update_cnt++;
 		}
-		else if (strncasecmp(argv[i], "MinMemory=", 10) == 0) {
+		else if (strncasecmp(argv[i], "MinMemoryNode=", 14) == 0) {
 			job_msg.job_min_memory = 
-				(uint32_t) strtol(&argv[i][10], 
+				(uint32_t) strtol(&argv[i][14], 
 						(char **) NULL, 10);
+			update_cnt++;
+		}
+		else if (strncasecmp(argv[i], "MinMemoryCPU=", 13) == 0) {
+			job_msg.job_min_memory =
+				(uint32_t) strtol(&argv[i][13],
+						(char **) NULL, 10);
+			job_msg.job_min_memory |= MEM_PER_CPU;
 			update_cnt++;
 		}
 		else if (strncasecmp(argv[i], "MinTmpDisk=", 11) == 0) {

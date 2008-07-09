@@ -125,7 +125,7 @@
 #define LONG_OPT_NTASKSPERNODE   0x136
 #define LONG_OPT_NTASKSPERSOCKET 0x137
 #define LONG_OPT_NTASKSPERCORE   0x138
-#define LONG_OPT_TASK_MEM        0x13a
+#define LONG_OPT_MEM_PER_CPU     0x13a
 #define LONG_OPT_HINT            0x13b
 #define LONG_OPT_ACCTG_FREQ      0x13c
 
@@ -267,7 +267,7 @@ static void _opt_default()
 	opt.minsockets      = -1;
 	opt.mincores        = -1;
 	opt.minthreads      = -1;
-	opt.task_mem	    = -1;
+	opt.mem_per_cpu	    = -1;
 	opt.realmem	    = -1;
 	opt.tmpdisk	    = -1;
 
@@ -512,8 +512,9 @@ void set_options(const int argc, char **argv)
 		{"mincores",      required_argument, 0, LONG_OPT_MINCORES},
 		{"minthreads",    required_argument, 0, LONG_OPT_MINTHREADS},
 		{"mem",           required_argument, 0, LONG_OPT_MEM},
-		{"job-mem",       required_argument, 0, LONG_OPT_TASK_MEM},
-		{"task-mem",      required_argument, 0, LONG_OPT_TASK_MEM},
+		{"job-mem",       required_argument, 0, LONG_OPT_MEM_PER_CPU},
+		{"task-mem",      required_argument, 0, LONG_OPT_MEM_PER_CPU},
+		{"mem-per-cpu",   required_argument, 0, LONG_OPT_MEM_PER_CPU},
 		{"hint",          required_argument, 0, LONG_OPT_HINT},
 		{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
 		{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
@@ -761,9 +762,9 @@ void set_options(const int argc, char **argv)
 				exit(1);
 			}
 			break;
-		case LONG_OPT_TASK_MEM:
-			opt.task_mem = (int) str_to_bytes(optarg);
-			if (opt.task_mem < 0) {
+		case LONG_OPT_MEM_PER_CPU:
+			opt.mem_per_cpu = (int) str_to_bytes(optarg);
+			if (opt.mem_per_cpu < 0) {
 				error("invalid memory constraint %s", 
 				      optarg);
 				exit(1);
@@ -1015,15 +1016,11 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
-        /* When CR with memory as a CR is enabled we need to assign
-	 * adequate value or check the value to opt.mem */
-	if ((opt.realmem >= -1) && (opt.task_mem > 0)) {
-		if (opt.realmem == -1) {
-			opt.realmem = opt.task_mem;
-		} else if (opt.realmem < opt.task_mem) {
-			info("mem < task-mem - resizing mem to be equal "
-			     "to task-mem");
-			opt.realmem = opt.task_mem;
+	if ((opt.realmem > -1) && (opt.mem_per_cpu > -1)) {
+		if (opt.realmem < opt.mem_per_cpu) {
+			info("mem < mem-per-cpu - resizing mem to be equal "
+			     "to mem-per-cpu");
+			opt.realmem = opt.mem_per_cpu;
 		}
 	}
 	
@@ -1173,8 +1170,8 @@ static char *print_constraints()
 	if (opt.realmem > 0)
 		xstrfmtcat(buf, "mem=%dM ", opt.realmem);
 
-	if (opt.task_mem > 0)
-		xstrfmtcat(buf, "task-mem=%dM ", opt.task_mem);
+	if (opt.mem_per_cpu > 0)
+		xstrfmtcat(buf, "mem-per-cpu=%dM ", opt.mem_per_cpu);
 
 	if (opt.tmpdisk > 0)
 		xstrfmtcat(buf, "tmp=%ld ", opt.tmpdisk);
@@ -1353,7 +1350,7 @@ static void _usage(void)
 "              [--mail-type=type] [--mail-user=user][--nice[=value]]\n"
 "              [--bell] [--no-bell] [--kill-command[=signal]]\n"
 "              [--nodefile=file] [--nodelist=hosts] [--exclude=hosts]\n"
-"              [--network=type]\n"
+"              [--network=type] [--mem-per-cpu=MB]\n"
 "              executable [args...]\n");
 }
 
@@ -1416,8 +1413,8 @@ static void _help(void)
 "Consumable resources related options:\n" 
 "      --exclusive             allocate nodes in exclusive mode when\n" 
 "                              cpu consumable resource is enabled\n"
-"      --task-mem=MB           maximum amount of real memory per task\n"
-"                              required by the job.\n" 
+"      --mem-per-cpu=MB        maximum amount of real memory per allocated\n"
+"                              cpu required by the job.\n" 
 "                              --mem >= --job-mem if --mem is specified.\n" 
 "\n"
 "Affinity/Multi-core options: (when the task/affinity plugin is enabled)\n" 
