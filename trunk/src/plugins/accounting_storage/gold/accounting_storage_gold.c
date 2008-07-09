@@ -2434,6 +2434,12 @@ empty:
 	return association_list;
 }
 
+extern List acct_storage_p_get_txn(void *db_conn,
+				   acct_txn_cond_t *txn_cond)
+{
+	return NULL;
+}
+
 extern int acct_storage_p_get_usage(void *db_conn,
 				    acct_association_rec_t *acct_assoc,
 				    time_t start, time_t end)

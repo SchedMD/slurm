@@ -204,6 +204,7 @@ static slurm_acct_storage_ops_t * _acct_storage_get_ops(
 		"acct_storage_p_get_users",
 		"acct_storage_p_get_accts",
 		"acct_storage_p_get_clusters",
+		"acct_storage_p_get_txn",
 		"acct_storage_p_get_associations",
 		"acct_storage_p_get_usage",
 		"acct_storage_p_roll_usage",
@@ -2337,6 +2338,13 @@ extern List acct_storage_g_get_associations(void *db_conn,
 		return NULL;
 	return (*(g_acct_storage_context->ops.get_associations))
 		(db_conn, assoc_cond);
+}
+
+extern List acct_storage_g_get_txn(void *db_conn, acct_txn_cond_t *txn_cond)
+{
+	if (slurm_acct_storage_init(NULL) < 0)
+		return NULL;
+	return (*(g_acct_storage_context->ops.get_txn))(db_conn, txn_cond);
 }
 
 extern int acct_storage_g_get_usage(void *db_conn, 
