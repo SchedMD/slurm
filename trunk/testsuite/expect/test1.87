@@ -80,7 +80,8 @@ expect {
 		exit 1
 	}
 	"$prompt" {
-		send_user "Job initiated\n"
+#		Printing this message seems to damage expect's buffers
+#		send_user "Job initiated\n"
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
@@ -124,7 +125,8 @@ expect {
 		exit 1
 	}
 	"$prompt" {
-		send_user "srun completed\n"
+#		Printing this message seems to damage expect's buffers
+#		send_user "srun completed\n"
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
@@ -196,7 +198,8 @@ expect {
 		exit 1
 	}
 	"$prompt" {
-		send_user "srun completed\n"
+#		Printing this message seems to damage expect's buffers
+#		send_user "srun completed\n"
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
@@ -247,7 +250,8 @@ expect {
 		exit 1
 	}
 	"$prompt" {
-		send_user "srun completed\n"
+#		Printing this message seems to damage expect's buffers
+#		send_user "srun completed\n"
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
@@ -285,7 +289,8 @@ expect {
 		exit 1
 	}
 	"$prompt" {
-		send_user "srun completed\n"
+#		Printing this message seems to damage expect's buffers
+#		send_user "srun completed\n"
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
