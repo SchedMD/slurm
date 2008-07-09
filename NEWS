@@ -1,6 +1,10 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.2.33
+=========================
+ -- Partial rewrite of mpi/mvapich plugin for improved scalability.
+
 * Changes in SLURM 1.2.32
 =========================
  -- Disable scancel of job in RootOnly partition only for sched/wiki2 (Moab).
