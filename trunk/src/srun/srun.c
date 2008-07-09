@@ -409,7 +409,8 @@ int srun(int ac, char **av)
 		if (opt.debugger_test)
 			mpir_dump_proctable();
 	} else {
-		info("Job step aborted before step completely launched.");
+		info("Job step %u.%u aborted before step completely launched.",
+		     job->jobid, job->stepid);
 	}
 
 	slurm_step_launch_wait_finish(job->step_ctx);
@@ -1061,7 +1062,8 @@ static void _handle_intr()
 				return;
 			}
 
-			info("sending Ctrl-C to job");
+			info("sending Ctrl-C to job %u.%u",
+			     job->jobid, job->stepid);
 			last_intr_sent = time(NULL);
 			slurm_step_launch_fwd_signal(job->step_ctx, SIGINT);
 

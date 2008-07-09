@@ -5339,6 +5339,11 @@ extern int clusteracct_storage_p_node_down(mysql_conn_t *mysql_conn,
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
+	if(!node_ptr) {
+		error("No node_ptr given!");
+		return SLURM_ERROR;
+	}
+
 	if (slurmctld_conf.fast_schedule && !slurmdbd_conf)
 		cpus = node_ptr->config_ptr->cpus;
 	else
