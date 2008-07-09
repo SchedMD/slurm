@@ -1,0 +1,219 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Basic test of MPI functionality via srun
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "WARNING: ..." with an explanation of why the test can't be made, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2002 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# LLNL-CODE-402394.
+# 
+# This file is part of SLURM, a resource management program.
+# For details, see <http://www.llnl.gov/linux/slurm/>.
+#  
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+# 
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+# 
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id            "1.88"
+set exit_code          0
+set file_in            "test$test_id.input"
+set file_out           "test$test_id.output"
+set file_err           "test$test_id.error"
+set test_prog          "test$test_id.prog"
+set job_id             0
+
+print_header $test_id
+
+#
+# Test for existence of mpi compiler
+#
+if {[info exists mpicc] == 0} {
+	send_user "\nWARNING: mpicc not defined, can't perform mpi testing\n"
+	exit 0
+}
+if {[file executable $mpicc] == 0} {
+	send_user "\nWARNING: $mpicc does not exists\n"
+	exit 0
+}
+if {[test_front_end] != 0} {
+        send_user "\nWARNING: This test is incompatable with front-end systems\n"
+        exit 0
+}
+if {[test_aix] == 1} {
+	send_user "WARNING: Test is incompatible with AIX\n"
+	exit 0
+}
+
+#
+# Delete left-over program and rebuild it
+#
+exec $bin_rm -f $test_prog ${test_prog}.o
+if {$use_pmi} {
+	set pmi_link "-rpath $slurm_dir/lib -L $slurm_dir/lib -lpmi"
+	exec $mpicc -Xlinker $pmi_link -o $test_prog ${test_prog}.c
+} else {
+	exec $mpicc -o $test_prog ${test_prog}.c
+}
+	
+
+# Delete left-over stdout/err files
+file delete $file_out $file_err
+
+#
+# Build input script file
+#
+make_bash_script $file_in "
+  $bin_date
+  $bin_echo test1_N3_n6_cyclic
+  $srun -n6 --distribution=cyclic $test_prog
+
+  $bin_date
+  $bin_echo test2_n6_block
+  $srun -n6 --distribution=block  $test_prog
+
+  $bin_date
+  $bin_echo test3_n4_cyclic
+  $srun -n4 --distribution=cyclic $test_prog
+
+  $bin_date
+  $bin_echo test4_n4_block
+  $srun -n4 --distribution=block  $test_prog
+
+  $bin_date
+  $bin_echo TEST_COMPLETE
+"
+
+#
+# Spawn an sbatch job that uses stdout/err and confirm their contents
+#
+set timeout $max_job_delay
+set no_start 0
+set sbatch_pid [spawn $sbatch -N3 -n6 --output=$file_out --error=$file_err -t1 $file_in]
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	-re "configuration not available" {
+		set no_start 1
+		exp_continue
+	}
+	-re "Unable to submit batch job" {
+		set no_start 1
+		exp_continue
+	}
+	-re "Unable to contact" {
+		send_user "\nFAILURE: slurm appears to be down\n"
+		exit 1
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $sbatch_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$no_start != 0} {
+	send_user "\nWARNING: partition too small for test\n"
+	if {$job_id != 0} {
+		cancel_job $job_id
+	}
+	exit 0
+}
+if {$job_id == 0} {
+	send_user "\nFAILURE: batch submit failure\n"
+	exit 1
+}
+
+#
+# Wait for job to complete
+#
+if {[wait_for_job $job_id "DONE"] != 0} {
+	send_user "\nFAILURE: waiting for job to complete\n"
+	set exit_code 1
+}
+
+#
+# Check for desired output in stdout
+#
+set expected [expr 6 + 6 + 4 + 4]
+if {[wait_for_file $file_out] == 0} {
+	set matches  0
+	set complete 0
+	spawn $bin_cat $file_out
+	expect {
+                -re "just received msg from Rank" {
+			incr matches
+                        exp_continue
+                }
+		-re "TEST_COMPLETE" {
+			incr complete
+			exp_continue
+		}
+                eof {
+			wait
+                }
+        }
+	if {$matches == 0} {
+		send_user "\nFAILURE: No MPI communications occurred\n"
+		send_user "  The version of MPI you are using may be incompatible "
+		send_user "with the configured switch\n"
+		send_user "  Core files may be present from failed MPI tasks\n\n"
+		set exit_code 1
+	} elseif {$matches != $expected} {
+		send_user "\nFAILURE: unexpected output ($matches of $expected)\n"
+		set exit_code 1
+	} elseif {$complete == 0} {
+		send_user "\nFAILURE: test failed to complete\n"
+		set exit_code 1
+	}
+} else {
+	set exit_code 1
+}
+
+if {$exit_code == 0} {
+	exec $bin_rm -f $file_in $file_out $file_err $test_prog ${test_prog}.o
+	send_user "\nSUCCESS\n"
+} else {
+	set matches
+	spawn head $file_err
+	expect {
+		-re "Error creating CQ" {
+			incr matches
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 0} {
+		send_user "WARNING: If using MVAPICH then\n"
+		send_user "         Configure \"PropagateResourceLimitsExcept=MEMLOCK\"\n"
+		send_user "         Also start slurmd with \"ulimit -l unlimited\"\n"
+	} else {
+		send_user "Check contents of $file_err\n"
+	}
+}
+
+exit $exit_code
