@@ -411,11 +411,11 @@ int srun(int ac, char **av)
 	 *
 	 */
 	if (job->state == SRUN_JOB_FORCETERM) {
-		info("Force Terminated job");
+		info("Force Terminated job %u.%u", job->jobid, job->stepid);
 		srun_job_destroy(job, 0);
 		exit(1);
 	} else if (job->state == SRUN_JOB_CANCELLED) {
-		info("Cancelling job");
+		info("Cancelling job %u.%u", job->jobid, job->stepid);
 		srun_job_destroy(job, NO_VAL);
 		exit(1);
 	} else if (job->state == SRUN_JOB_FAILED) {
@@ -425,7 +425,7 @@ int srun(int ac, char **av)
 		   need the job failed check below incase the job
 		   failed on it's own.
 		*/
-		info("Job Failed");
+		info("Job Failed %u.%u", job->jobid, job->stepid);
 		srun_job_destroy(job, NO_VAL);
 		exit(1);
 	}
@@ -445,10 +445,10 @@ int srun(int ac, char **av)
 	   state didn't change when we were waiting for the message thread */
 	exitcode = set_job_rc(job);
 	if (job->state == SRUN_JOB_CANCELLED) {
-		info("Cancelling job");
+		info("Cancelling job %u.%u", job->jobid, job->stepid);
 		srun_job_destroy(job, NO_VAL);
 	} else if (job->state == SRUN_JOB_FAILED) {
-		info("Terminating job");
+		info("Terminating job %u.%u", job->jobid, job->stepid);
 		srun_job_destroy(job, job->rc);
 	} else 
 		srun_job_destroy(job, job->rc);
