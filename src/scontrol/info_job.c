@@ -2,6 +2,7 @@
  *  info_job.c - job information functions for scontrol.
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  LLNL-CODE-402394.
@@ -42,7 +43,8 @@
 #include "src/common/stepd_api.h"
 
 static bool	_in_node_bit_list(int inx, int *node_list_array);
-
+static int	_scontrol_load_jobs(job_info_msg_t ** job_buffer_pptr, 
+				    uint32_t job_id);
 /*
  * Determine if a node index is in a node list pair array. 
  * RET -  true if specified index is in the array
@@ -67,8 +69,8 @@ _in_node_bit_list(int inx, int *node_list_array)
 }
 
 /* Load current job table information into *job_buffer_pptr */
-extern int 
-scontrol_load_jobs (job_info_msg_t ** job_buffer_pptr) 
+static int 
+_scontrol_load_jobs(job_info_msg_t ** job_buffer_pptr, uint32_t job_id) 
 {
 	int error_code;
 	static job_info_msg_t *old_job_info_ptr = NULL;
@@ -82,8 +84,13 @@ scontrol_load_jobs (job_info_msg_t ** job_buffer_pptr)
 	if (old_job_info_ptr) {
 		if (last_show_flags != show_flags)
 			old_job_info_ptr->last_update = (time_t) 0;
-		error_code = slurm_load_jobs (old_job_info_ptr->last_update, 
+		if (job_id) {
+			error_code = slurm_load_job(&job_info_ptr, job_id);
+		} else {
+			error_code = slurm_load_jobs(
+					old_job_info_ptr->last_update,
 					&job_info_ptr, show_flags);
+		}
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_job_info_msg (old_job_info_ptr);
 		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
@@ -92,13 +99,17 @@ scontrol_load_jobs (job_info_msg_t ** job_buffer_pptr)
 			if (quiet_flag == -1)
  				printf ("slurm_load_jobs no change in data\n");
 		}
+	} else if (job_id) {
+		error_code = slurm_load_job(&job_info_ptr, job_id);
+	} else {
+		error_code = slurm_load_jobs((time_t) NULL, &job_info_ptr,
+					     show_flags);
 	}
-	else
-		error_code = slurm_load_jobs ((time_t) NULL, &job_info_ptr,
-				show_flags);
 
 	if (error_code == SLURM_SUCCESS) {
 		old_job_info_ptr = job_info_ptr;
+		if (job_id)
+			old_job_info_ptr->last_update = (time_t) 0;
 		last_show_flags  = show_flags;
 		*job_buffer_pptr = job_info_ptr;
 	}
@@ -154,7 +165,7 @@ scontrol_print_completing (void)
 	node_info_msg_t *node_info_msg;
 	uint16_t         show_flags = 0;
 
-	error_code = scontrol_load_jobs (&job_info_msg);
+	error_code = _scontrol_load_jobs (&job_info_msg, 0);
 	if (error_code) {
 		exit_code = 1;
 		if (quiet_flag != 1)
@@ -234,7 +245,10 @@ scontrol_print_job (char * job_id_str)
 	job_info_msg_t * job_buffer_ptr = NULL;
 	job_info_t *job_ptr = NULL;
 
-	error_code = scontrol_load_jobs(&job_buffer_ptr);
+	if (job_id_str)
+		job_id = (uint32_t) strtol (job_id_str, (char **)NULL, 10);
+
+	error_code = _scontrol_load_jobs(&job_buffer_ptr, job_id);
 	if (error_code) {
 		exit_code = 1;
 		if (quiet_flag != 1)
@@ -250,17 +264,12 @@ scontrol_print_job (char * job_id_str)
 			time_str, job_buffer_ptr->record_count);
 	}
 
-	if (job_id_str)
-		job_id = (uint32_t) strtol (job_id_str, (char **)NULL, 10);
+
 
 	job_ptr = job_buffer_ptr->job_array ;
 	for (i = 0; i < job_buffer_ptr->record_count; i++) {
-		if (job_id_str && job_id != job_ptr[i].job_id) 
-			continue;
 		print_cnt++;
 		slurm_print_job_info (stdout, & job_ptr[i], one_liner ) ;
-		if (job_id_str)
-			break;
 	}
 
 	if (print_cnt == 0) {

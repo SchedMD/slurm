@@ -1254,6 +1254,8 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		slurm_free_suspend_msg(data);
 		break;
 	case REQUEST_JOB_READY:
+	case REQUEST_JOB_REQUEUE:
+	case REQUEST_JOB_INFO_SINGLE:
 		slurm_free_job_id_msg(data);
 		break;
 	case REQUEST_NODE_SELECT_INFO:

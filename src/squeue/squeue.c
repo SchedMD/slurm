@@ -1,9 +1,8 @@
 /*****************************************************************************\
  *  squeue.c - Report jobs in the slurm system
- *
- *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, 
  *             Morris Jette <jette1@llnl.gov>, et. al.
@@ -133,28 +132,46 @@ _print_job ( void )
 	static job_info_msg_t * old_job_ptr = NULL, * new_job_ptr;
 	int error_code;
 	uint16_t show_flags = 0;
+	uint32_t job_id = 0;
 
 	if (params.all_flag)
 		show_flags |= SHOW_ALL;
- 
+	if (params.job_list && (list_count(params.job_list) == 1)) {
+		ListIterator iterator;
+		uint32_t *job_id_ptr;
+		iterator = list_iterator_create(params.job_list);
+		job_id_ptr = list_next(iterator);
+		job_id = *job_id_ptr;
+		list_iterator_destroy(iterator);
+	}
+
 	if (old_job_ptr) {
-		error_code = slurm_load_jobs (old_job_ptr->last_update, 
-				&new_job_ptr, show_flags);
+		if (job_id) {
+			error_code = slurm_load_job(&new_job_ptr, job_id);
+		} else {
+			error_code = slurm_load_jobs(old_job_ptr->last_update,
+						     &new_job_ptr, show_flags);
+		}
 		if (error_code ==  SLURM_SUCCESS)
 			slurm_free_job_info_msg( old_job_ptr );
 		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_SUCCESS;
 			new_job_ptr = old_job_ptr;
 		}
-	}
-	else
-		error_code = slurm_load_jobs ((time_t) NULL, &new_job_ptr,
+	} else if (job_id) {
+		error_code = slurm_load_job(&new_job_ptr, job_id);
+	} else {
+		error_code = slurm_load_jobs((time_t) NULL, &new_job_ptr,
 				show_flags);
+	}
+
 	if (error_code) {
 		slurm_perror ("slurm_load_jobs error");
 		return;
 	}
 	old_job_ptr = new_job_ptr;
+	if (job_id)
+		old_job_ptr->last_update = (time_t) 0;
 	
 	if (quiet_flag == -1)
 		printf ("last_update_time=%ld\n", 

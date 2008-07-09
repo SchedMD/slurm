@@ -3208,6 +3208,53 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 	buffer_ptr[0] = xfer_buf_data(buffer);
 }
 
+/* 
+ * pack_one_job - dump information for one jobs in 
+ *	machine independent form (for network transmission)
+ * OUT buffer_ptr - the pointer is set to the allocated buffer.
+ * OUT buffer_size - set to size of the buffer in bytes
+ * IN job_id - ID of job that we want info for
+ * IN uid - uid of user making request (for partition filtering)
+ * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
+ * NOTE: change _unpack_job_desc_msg() in common/slurm_protocol_pack.c 
+ *	whenever the data format changes
+ */
+extern int pack_one_job(char **buffer_ptr, int *buffer_size,
+			 uint32_t job_id, uid_t uid)
+{
+	ListIterator job_iterator;
+	struct job_record *job_ptr;
+	uint32_t jobs_packed = 0;
+	Buf buffer;
+
+	buffer_ptr[0] = NULL;
+	*buffer_size = 0;
+
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		if (job_ptr->job_id != job_id)
+			continue;
+
+		if (slurmctld_conf.private_data
+		&&  (job_ptr->user_id != uid) && !validate_super_user(uid))
+			break;
+
+		jobs_packed++;
+		break;
+	}
+	list_iterator_destroy(job_iterator);
+	if (jobs_packed == 0)
+		return ESLURM_INVALID_JOB_ID;
+
+	buffer = init_buf(BUF_SIZE);
+	pack32(jobs_packed, buffer);
+	pack_time(time(NULL), buffer);
+	pack_job(job_ptr, buffer);
+
+	*buffer_size = get_buf_offset(buffer);
+	buffer_ptr[0] = xfer_buf_data(buffer);
+	return SLURM_SUCCESS;
+}
 
 /* 
  * pack_job - dump all configuration information about a specific job in 
