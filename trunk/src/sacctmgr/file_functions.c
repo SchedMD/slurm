@@ -768,7 +768,7 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 		       def_acct);
 		mod_user.default_acct = def_acct;
 		changed = 1;
-	}				
+	}
 				
 	if(user->qos != file_opts->qos) {
 		printf(" Changed User '%s' "
@@ -815,6 +815,7 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 			set = 1;
 		} 
 	}
+	xfree(def_acct);
 
 	if((!user->coord_accts || !list_count(user->coord_accts))
 		  && (file_opts->coord_list 
@@ -1253,13 +1254,12 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 	user_cond.with_coords = 1;
 	curr_user_list = acct_storage_g_get_users(db_conn, &user_cond);
 
-	/* This will be freed in their local counter parts */
-	acct_list = list_create(NULL);
-	acct_assoc_list = list_create(NULL);
-	user_list = list_create(NULL);
-	user_assoc_list = list_create(NULL);
-	
 	/* These are new info so they need to be freed here */
+	acct_list = list_create(destroy_acct_account_rec);
+	acct_assoc_list = list_create(destroy_acct_association_rec);
+	user_list = list_create(destroy_acct_user_rec);
+	user_assoc_list = list_create(destroy_acct_association_rec);
+	
 	mod_acct_list = list_create(destroy_acct_account_rec);
 	mod_user_list = list_create(destroy_acct_user_rec);
 	mod_assoc_list = list_create(destroy_acct_association_rec);
@@ -1354,6 +1354,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				if(rc != SLURM_SUCCESS) {
 					printf(" Problem adding machine\n");
 					rc = SLURM_ERROR;
+					_destroy_sacctmgr_file_opts(file_opts);
 					break;
 				}
 				set = 1;
@@ -1455,7 +1456,8 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 /* 				     acct->organization); */
 				acct->qos = file_opts->qos;
 				list_append(acct_list, acct);
-				list_append(curr_acct_list, acct);
+				/* don't add anything to the
+				   curr_acct_list */
 
 				assoc = xmalloc(sizeof(acct_association_rec_t));
 				assoc->acct = xstrdup(file_opts->name);
@@ -1855,10 +1857,13 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 	}
 
 	list_destroy(format_list);
+	list_destroy(mod_acct_list);
 	list_destroy(acct_list);
 	list_destroy(acct_assoc_list);
+	list_destroy(mod_user_list);
 	list_destroy(user_list);
 	list_destroy(user_assoc_list);
+	list_destroy(mod_assoc_list);
 	if(curr_acct_list)
 		list_destroy(curr_acct_list);
 	if(curr_assoc_list)
