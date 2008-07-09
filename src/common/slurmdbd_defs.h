@@ -61,6 +61,7 @@
 #define SLURMDBD_VERSION 01
 
 /* SLURM DBD message types */
+/* ANY TIME YOU ADD TO THIS LIST UPDATE THE CONVERSION FUNCTIONS! */
 typedef enum {
 	DBD_INIT = 1400,	/* Connection initialization		*/
 	DBD_FINI,       	/* Connection finalization		*/
@@ -108,7 +109,9 @@ typedef enum {
 	DBD_STEP_COMPLETE,	/* Record step completion		*/
 	DBD_STEP_START,		/* Record step starting			*/
 	DBD_UPDATE_SHARES_USED,	/* Record current share usage		*/
-	DBD_GET_JOBS_COND 	/* Get job information with a condition */
+	DBD_GET_JOBS_COND, 	/* Get job information with a condition */
+	DBD_GET_TXN,		/* Get transaction information		*/
+	DBD_GOT_TXN		/* Got transaction information		*/
 } slurmdbd_msg_type_t;
 
 /*****************************************************************************\
@@ -319,6 +322,10 @@ extern int slurm_send_slurmdbd_recv_rc_msg(slurmdbd_msg_t *req, int *rc);
 
 extern Buf pack_slurmdbd_msg(slurmdbd_msg_t *req);
 extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp, Buf buffer);
+
+extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type);
+extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type);
+
 /*****************************************************************************\
  * Free various SlurmDBD message structures
 \*****************************************************************************/

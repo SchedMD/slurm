@@ -225,6 +225,23 @@ typedef struct {
 } acct_user_rec_t;
 
 typedef struct {
+	List action_list; /* list of char * */
+	List actor_list; /* list of char * */
+	List id_list; /* list of char * */
+	uint32_t time_end; 
+	uint32_t time_start; 
+} acct_txn_cond_t;
+
+typedef struct {
+	uint16_t action;
+	char *actor_name;
+	uint32_t id;
+	char *set_info;
+	time_t timestamp;
+	char *where_query;
+} acct_txn_rec_t;
+
+typedef struct {
 	List objects; /* depending on type */ 
 	acct_update_type_t type;
 } acct_update_object_t;
@@ -251,48 +268,54 @@ extern void destroy_cluster_accounting_rec(void *object);
 extern void destroy_acct_cluster_rec(void *object);
 extern void destroy_acct_accounting_rec(void *object);
 extern void destroy_acct_association_rec(void *object);
+extern void destroy_acct_txn_rec(void *object);
 
 extern void destroy_acct_user_cond(void *object);
 extern void destroy_acct_account_cond(void *object);
 extern void destroy_acct_cluster_cond(void *object);
 extern void destroy_acct_association_cond(void *object);
 extern void destroy_acct_job_cond(void *object);
+extern void destroy_acct_txn_cond(void *object);
 
 extern void destroy_acct_update_object(void *object);
 extern void destroy_update_shares_rec(void *object);
 
 
 /* pack functions */
-extern void pack_acct_user_rec(void *object, Buf buffer);
+extern void pack_acct_user_rec(void *in, Buf buffer);
 extern int unpack_acct_user_rec(void **object, Buf buffer);
-extern void pack_acct_account_rec(void *object, Buf buffer);
+extern void pack_acct_account_rec(void *in, Buf buffer);
 extern int unpack_acct_account_rec(void **object, Buf buffer);
-extern void pack_acct_coord_rec(void *object, Buf buffer);
+extern void pack_acct_coord_rec(void *in, Buf buffer);
 extern int unpack_acct_coord_rec(void **object, Buf buffer);
-extern void pack_cluster_accounting_rec(void *object, Buf buffer);
+extern void pack_cluster_accounting_rec(void *in, Buf buffer);
 extern int unpack_cluster_accounting_rec(void **object, Buf buffer);
-extern void pack_acct_cluster_rec(void *object, Buf buffer);
+extern void pack_acct_cluster_rec(void *in, Buf buffer);
 extern int unpack_acct_cluster_rec(void **object, Buf buffer);
-extern void pack_acct_accounting_rec(void *object, Buf buffer);
+extern void pack_acct_accounting_rec(void *in, Buf buffer);
 extern int unpack_acct_accounting_rec(void **object, Buf buffer);
-extern void pack_acct_association_rec(void *object, Buf buffer);
+extern void pack_acct_association_rec(void *in, Buf buffer);
 extern int unpack_acct_association_rec(void **object, Buf buffer);
+extern void pack_acct_txn_rec(void *in, Buf buffer);
+extern int unpack_acct_txn_rec(void **object, Buf buffer);
 
-extern void pack_acct_user_cond(void *object, Buf buffer);
+extern void pack_acct_user_cond(void *in, Buf buffer);
 extern int unpack_acct_user_cond(void **object, Buf buffer);
-extern void pack_acct_account_cond(void *object, Buf buffer);
+extern void pack_acct_account_cond(void *in, Buf buffer);
 extern int unpack_acct_account_cond(void **object, Buf buffer);
-extern void pack_acct_cluster_cond(void *object, Buf buffer);
+extern void pack_acct_cluster_cond(void *in, Buf buffer);
 extern int unpack_acct_cluster_cond(void **object, Buf buffer);
-extern void pack_acct_association_cond(void *object, Buf buffer);
+extern void pack_acct_association_cond(void *in, Buf buffer);
 extern int unpack_acct_association_cond(void **object, Buf buffer);
-extern void pack_acct_job_cond(void *object, Buf buffer);
+extern void pack_acct_job_cond(void *in, Buf buffer);
 extern int unpack_acct_job_cond(void **object, Buf buffer);
+extern void pack_acct_txn_cond(void *in, Buf buffer);
+extern int unpack_acct_txn_cond(void **object, Buf buffer);
 
 extern void pack_acct_update_object(acct_update_object_t *object, Buf buffer);
 extern int unpack_acct_update_object(acct_update_object_t **object, Buf buffer);
 
-extern void pack_update_shares_used(void *object, Buf buffer);
+extern void pack_update_shares_used(void *in, Buf buffer);
 extern int unpack_update_shares_used(void **object, Buf buffer);
 
 extern char *acct_qos_str(acct_qos_level_t level);
