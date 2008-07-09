@@ -59,14 +59,22 @@ static int   _add_users(void *db_conn,
 			Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _cluster_procs(void *db_conn,
 			    Buf in_buffer, Buf *out_buffer, uint32_t *uid);
-static int   _get_accounts(void *db_conn, Buf in_buffer, Buf *out_buffer);
-static int   _get_assocs(void *db_conn, Buf in_buffer, Buf *out_buffer);
-static int   _get_clusters(void *db_conn, Buf in_buffer, Buf *out_buffer);
-static int   _get_jobs(void *db_conn, Buf in_buffer, Buf *out_buffer);
-static int   _get_jobs_cond(void *db_conn, Buf in_buffer, Buf *out_buffer);
+static int   _get_accounts(void *db_conn,
+			   Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _get_assocs(void *db_conn,
+			 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _get_clusters(void *db_conn,
+			   Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _get_jobs(void *db_conn,
+		       Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _get_jobs_cond(void *db_conn,
+			    Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _get_txn(void *db_conn,
+		      Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _get_usage(uint16_t type, void *db_conn,
-			Buf in_buffer, Buf *out_buffer);
-static int   _get_users(void *db_conn, Buf in_buffer, Buf *out_buffer);
+			Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _get_users(void *db_conn,
+			Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _flush_jobs(void *db_conn,
 			 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static void *_init_conn(Buf in_buffer, Buf *out_buffer, uint32_t *uid);
@@ -161,27 +169,33 @@ proc_req(void **db_conn, slurm_fd orig_fd,
 					    in_buffer, out_buffer, uid);
 			break;
 		case DBD_GET_ACCOUNTS:
-			rc = _get_accounts(*db_conn, in_buffer, out_buffer);
+			rc = _get_accounts(*db_conn, 
+					   in_buffer, out_buffer, uid);
 			break;
 		case DBD_GET_ASSOCS:
-			rc = _get_assocs(*db_conn, in_buffer, out_buffer);
+			rc = _get_assocs(*db_conn, in_buffer, out_buffer, uid);
 			break;
 		case DBD_GET_ASSOC_USAGE:
 		case DBD_GET_CLUSTER_USAGE:
 			rc = _get_usage(msg_type, *db_conn,
-					in_buffer, out_buffer);
+					in_buffer, out_buffer, uid);
 			break;
 		case DBD_GET_CLUSTERS:
-			rc = _get_clusters(*db_conn, in_buffer, out_buffer);
+			rc = _get_clusters(*db_conn,
+					   in_buffer, out_buffer, uid);
 			break;
 		case DBD_GET_JOBS:
-			rc = _get_jobs(*db_conn, in_buffer, out_buffer);
+			rc = _get_jobs(*db_conn, in_buffer, out_buffer, uid);
 			break;
 		case DBD_GET_JOBS_COND:
-			rc = _get_jobs_cond(*db_conn, in_buffer, out_buffer);
+			rc = _get_jobs_cond(*db_conn, 
+					    in_buffer, out_buffer, uid);
+			break;
+		case DBD_GET_TXN:
+			rc = _get_txn(*db_conn, in_buffer, out_buffer, uid);
 			break;
 		case DBD_GET_USERS:
-			rc = _get_users(*db_conn, in_buffer, out_buffer);
+			rc = _get_users(*db_conn, in_buffer, out_buffer, uid);
 			break;
 		case DBD_FLUSH_JOBS:
 			rc = _flush_jobs(*db_conn, in_buffer, out_buffer, uid);
@@ -596,7 +610,8 @@ end_it:
 	return rc;
 }
 
-static int _get_accounts(void *db_conn, Buf in_buffer, Buf *out_buffer)
+static int _get_accounts(void *db_conn, 
+			 Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_cond_msg_t *get_msg = NULL;
 	dbd_list_msg_t list_msg;
@@ -625,7 +640,8 @@ static int _get_accounts(void *db_conn, Buf in_buffer, Buf *out_buffer)
 	return SLURM_SUCCESS;
 }
 
-static int _get_assocs(void *db_conn, Buf in_buffer, Buf *out_buffer)
+static int _get_assocs(void *db_conn, 
+		       Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_cond_msg_t *get_msg = NULL;
 	dbd_list_msg_t list_msg;
@@ -655,7 +671,8 @@ static int _get_assocs(void *db_conn, Buf in_buffer, Buf *out_buffer)
 	return SLURM_SUCCESS;
 }
 
-static int _get_clusters(void *db_conn, Buf in_buffer, Buf *out_buffer)
+static int _get_clusters(void *db_conn, 
+			 Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_cond_msg_t *get_msg = NULL;
 	dbd_list_msg_t list_msg;
@@ -685,7 +702,8 @@ static int _get_clusters(void *db_conn, Buf in_buffer, Buf *out_buffer)
 	return SLURM_SUCCESS;
 }
 
-static int _get_jobs(void *db_conn, Buf in_buffer, Buf *out_buffer)
+static int _get_jobs(void *db_conn, 
+		     Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_get_jobs_msg_t *get_jobs_msg = NULL;
 	dbd_list_msg_t list_msg;
@@ -727,7 +745,8 @@ static int _get_jobs(void *db_conn, Buf in_buffer, Buf *out_buffer)
 	return SLURM_SUCCESS;
 }
 
-static int _get_jobs_cond(void *db_conn, Buf in_buffer, Buf *out_buffer)
+static int _get_jobs_cond(void *db_conn, 
+			  Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_cond_msg_t *cond_msg = NULL;
 	dbd_list_msg_t list_msg;
@@ -756,8 +775,37 @@ static int _get_jobs_cond(void *db_conn, Buf in_buffer, Buf *out_buffer)
 	return SLURM_SUCCESS;
 }
 
+static int _get_txn(void *db_conn, 
+		    Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	dbd_cond_msg_t *cond_msg = NULL;
+	dbd_list_msg_t list_msg;
+	char *comment = NULL;
+
+	debug2("DBD_GET_TXN: called");
+	if (slurmdbd_unpack_cond_msg(DBD_GET_TXN, &cond_msg, in_buffer) !=
+	    SLURM_SUCCESS) {
+		comment = "Failed to unpack DBD_GET_TXN message";
+		error("%s", comment);
+		*out_buffer = make_dbd_rc_msg(SLURM_ERROR, comment, 
+					      DBD_GET_TXN);
+		return SLURM_ERROR;
+	}
+	
+	list_msg.my_list = acct_storage_g_get_txn(db_conn, cond_msg->cond);
+	slurmdbd_free_cond_msg(DBD_GET_TXN, cond_msg);
+
+	*out_buffer = init_buf(1024);
+	pack16((uint16_t) DBD_GOT_TXN, *out_buffer);
+	slurmdbd_pack_list_msg(DBD_GOT_TXN, &list_msg, *out_buffer);
+	if(list_msg.my_list)
+		list_destroy(list_msg.my_list);
+	
+	return SLURM_SUCCESS;
+}
+
 static int _get_usage(uint16_t type, void *db_conn,
-		      Buf in_buffer, Buf *out_buffer)
+		      Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_usage_msg_t *get_msg = NULL;
 	dbd_usage_msg_t got_msg;
@@ -813,7 +861,8 @@ static int _get_usage(uint16_t type, void *db_conn,
 	return SLURM_SUCCESS;
 }
 
-static int _get_users(void *db_conn, Buf in_buffer, Buf *out_buffer)
+static int _get_users(void *db_conn, 
+		      Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_cond_msg_t *get_msg = NULL;
 	dbd_list_msg_t list_msg;
