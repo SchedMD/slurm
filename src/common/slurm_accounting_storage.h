@@ -363,11 +363,12 @@ extern int acct_storage_g_add_users(void *db_conn, uint32_t uid,
 /* 
  * add users as account coordinators 
  * IN: acct_list list of char *'s of names of accounts
- * IN:  acct_user_cond_t *user_q
+ * IN:  acct_user_cond_t *user_cond
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int acct_storage_g_add_coord(void *db_conn, uint32_t uid,
-				    List acct_list, acct_user_cond_t *user_q);
+				    List acct_list, 
+				    acct_user_cond_t *user_cond);
 
 
 /* 
@@ -396,85 +397,86 @@ extern int acct_storage_g_add_associations(void *db_conn, uint32_t uid,
 
 /* 
  * modify existing users in the accounting system 
- * IN:  acct_user_cond_t *user_q
+ * IN:  acct_user_cond_t *user_cond
  * IN:  acct_user_rec_t *user
  * RET: List containing (char *'s) else NULL on error
  */
 extern List acct_storage_g_modify_users(void *db_conn, uint32_t uid, 
-					acct_user_cond_t *user_q,
+					acct_user_cond_t *user_cond,
 					acct_user_rec_t *user);
 
 /* 
  * modify existing accounts in the accounting system 
- * IN:  acct_acct_cond_t *acct_q
+ * IN:  acct_acct_cond_t *acct_cond
  * IN:  acct_account_rec_t *acct
  * RET: List containing (char *'s) else NULL on error
  */
 extern List acct_storage_g_modify_accounts(void *db_conn, uint32_t uid, 
-					   acct_account_cond_t *acct_q,
+					   acct_account_cond_t *acct_cond,
 					   acct_account_rec_t *acct);
 
 /* 
  * modify existing clusters in the accounting system 
- * IN:  acct_cluster_cond_t *cluster_q
+ * IN:  acct_cluster_cond_t *cluster_cond
  * IN:  acct_cluster_rec_t *cluster
  * RET: List containing (char *'s) else NULL on error
  */
 extern List acct_storage_g_modify_clusters(void *db_conn, uint32_t uid, 
-					   acct_cluster_cond_t *cluster_q,
+					   acct_cluster_cond_t *cluster_cond,
 					   acct_cluster_rec_t *cluster);
 
 /* 
  * modify existing associations in the accounting system 
- * IN:  acct_association_cond_t *assoc_q
+ * IN:  acct_association_cond_t *assoc_cond
  * IN:  acct_association_rec_t *assoc
  * RET: List containing (char *'s) else NULL on error
  */
-extern List acct_storage_g_modify_associations(void *db_conn, uint32_t uid, 
-					       acct_association_cond_t *assoc_q,
-					       acct_association_rec_t *assoc);
+extern List acct_storage_g_modify_associations(
+	void *db_conn, uint32_t uid, 
+	acct_association_cond_t *assoc_cond,
+	acct_association_rec_t *assoc);
 
 /* 
  * remove users from accounting system 
- * IN:  acct_user_cond_t *user_q
+ * IN:  acct_user_cond_t *user_cond
  * RET: List containing (char *'s) else NULL on error
  */
 extern List acct_storage_g_remove_users(void *db_conn, uint32_t uid, 
-					acct_user_cond_t *user_q);
+					acct_user_cond_t *user_cond);
 
 /* 
  * remove users from being a coordinator of an account
  * IN: acct_list list of char *'s of names of accounts
- * IN: acct_user_cond_t *user_q
+ * IN: acct_user_cond_t *user_cond
  * RET: List containing (char *'s) else NULL on error
  */
 extern List acct_storage_g_remove_coord(void *db_conn, uint32_t uid, 
 					List acct_list,
-					acct_user_cond_t *user_q);
+					acct_user_cond_t *user_cond);
 
 /* 
  * remove accounts from accounting system 
- * IN:  acct_account_cond_t *acct_q
+ * IN:  acct_account_cond_t *acct_cond
  * RET: List containing (char *'s) else NULL on error
  */
 extern List acct_storage_g_remove_accounts(void *db_conn, uint32_t uid, 
-					   acct_account_cond_t *acct_q);
+					   acct_account_cond_t *acct_cond);
 
 /* 
  * remove clusters from accounting system 
- * IN:  acct_cluster_cond_t *cluster_q
+ * IN:  acct_cluster_cond_t *cluster_cond
  * RET: List containing (char *'s) else NULL on error
  */
 extern List acct_storage_g_remove_clusters(void *db_conn, uint32_t uid, 
-					   acct_cluster_cond_t *cluster_q);
+					   acct_cluster_cond_t *cluster_cond);
 
 /* 
  * remove associations from accounting system 
- * IN:  acct_association_cond_t *assoc_q
+ * IN:  acct_association_cond_t *assoc_cond
  * RET: List containing (char *'s) else NULL on error
  */
-extern List acct_storage_g_remove_associations(void *db_conn, uint32_t uid, 
-					       acct_association_cond_t *assoc_q);
+extern List acct_storage_g_remove_associations(
+	void *db_conn, uint32_t uid, acct_association_cond_t *assoc_cond);
 
 /* 
  * get info from the storage 
@@ -484,7 +486,7 @@ extern List acct_storage_g_remove_associations(void *db_conn, uint32_t uid,
  * note List needs to be freed when called
  */
 extern List acct_storage_g_get_users(void *db_conn, 
-				     acct_user_cond_t *user_q);
+				     acct_user_cond_t *user_cond);
 
 /* 
  * get info from the storage 
@@ -494,7 +496,7 @@ extern List acct_storage_g_get_users(void *db_conn,
  * note List needs to be freed when called
  */
 extern List acct_storage_g_get_accounts(void *db_conn, 
-					acct_account_cond_t *acct_q);
+					acct_account_cond_t *acct_cond);
 
 /* 
  * get info from the storage 
@@ -503,8 +505,8 @@ extern List acct_storage_g_get_accounts(void *db_conn,
  * returns List of acct_cluster_rec_t *
  * note List needs to be freed when called
  */
-extern List acct_storage_g_get_clusters(void *db_conn, 
-					acct_cluster_cond_t *cluster_q);
+extern List acct_storage_g_get_clusters(
+	void *db_conn, acct_cluster_cond_t *cluster_cond);
 
 /* 
  * get info from the storage 
@@ -512,8 +514,17 @@ extern List acct_storage_g_get_clusters(void *db_conn,
  * RET: List of acct_association_rec_t *
  * note List needs to be freed when called
  */
-extern List acct_storage_g_get_associations(void *db_conn, 
-					    acct_association_cond_t *assoc_q);
+extern List acct_storage_g_get_associations(
+	void *db_conn, acct_association_cond_t *assoc_cond);
+
+
+/* 
+ * get info from the storage 
+ * IN:  acct_txn_cond_t *
+ * RET: List of acct_txn_rec_t *
+ * note List needs to be freed when called
+ */
+extern List acct_storage_g_get_txn(void *db_conn, acct_txn_cond_t *txn_cond);
 
 /* 
  * get info from the storage 

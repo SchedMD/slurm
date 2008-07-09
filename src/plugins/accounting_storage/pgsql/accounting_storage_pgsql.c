@@ -111,7 +111,7 @@ static int _get_db_index(PGconn *acct_pgsql_db,
 	if(!(result = pgsql_db_query_ret(acct_pgsql_db, query))) {
 		xfree(query);
 		return -1;
-	 }
+	}
 
 	xfree(query);
 	
@@ -764,7 +764,7 @@ extern int acct_storage_p_add_users(PGconn *acct_pgsql_db, uint32_t uid,
 }
 
 extern int acct_storage_p_add_coord(PGconn *acct_pgsql_db, uint32_t uid,
-				    List acct_list, acct_user_cond_t *user_q)
+				    List acct_list, acct_user_cond_t *user_cond)
 {
 	return SLURM_SUCCESS;
 }
@@ -788,86 +788,92 @@ extern int acct_storage_p_add_associations(PGconn *acct_pgsql_db, uint32_t uid,
 }
 
 extern List acct_storage_p_modify_users(PGconn *acct_pgsql_db, uint32_t uid,
-					   acct_user_cond_t *user_q,
-				       acct_user_rec_t *user)
+					acct_user_cond_t *user_cond,
+					acct_user_rec_t *user)
 {
 	return SLURM_SUCCESS;
 }
 
 extern List acct_storage_p_modify_accounts(PGconn *acct_pgsql_db, uint32_t uid,
-					   acct_account_cond_t *acct_q,
+					   acct_account_cond_t *acct_cond,
 					   acct_account_rec_t *acct)
 {
 	return SLURM_SUCCESS;
 }
 
 extern List acct_storage_p_modify_clusters(PGconn *acct_pgsql_db, uint32_t uid,
-					   acct_cluster_cond_t *cluster_q,
-					  acct_cluster_rec_t *cluster)
+					   acct_cluster_cond_t *cluster_cond,
+					   acct_cluster_rec_t *cluster)
 {
 	return SLURM_SUCCESS;
 }
 
-extern List acct_storage_p_modify_associations(PGconn *acct_pgsql_db,
-					      uint32_t uid,
-					      acct_association_cond_t *assoc_q,
-					      acct_association_rec_t *assoc)
+extern List acct_storage_p_modify_associations(
+	PGconn *acct_pgsql_db, uint32_t uid,
+	acct_association_cond_t *assoc_cond,
+	acct_association_rec_t *assoc)
 {
 	return SLURM_SUCCESS;
 }
 
 extern List acct_storage_p_remove_users(PGconn *acct_pgsql_db, uint32_t uid,
-					   acct_user_cond_t *user_q)
+					acct_user_cond_t *user_cond)
 {
 	return SLURM_SUCCESS;
 }
 
 extern List acct_storage_p_remove_coord(PGconn *acct_pgsql_db, uint32_t uid,
 					List acct_list,
-					acct_user_cond_t *user_q)
+					acct_user_cond_t *user_cond)
 {
 	return SLURM_SUCCESS;
 }
 
 extern List acct_storage_p_remove_accts(PGconn *acct_pgsql_db, uint32_t uid,
-					   acct_account_cond_t *acct_q)
+					acct_account_cond_t *acct_cond)
 {
 	return SLURM_SUCCESS;
 }
 
 extern List acct_storage_p_remove_clusters(PGconn *acct_pgsql_db, uint32_t uid,
-					   acct_account_cond_t *cluster_q)
+					   acct_account_cond_t *cluster_cond)
 {
 	return SLURM_SUCCESS;
 }
 
-extern List acct_storage_p_remove_associations(PGconn *acct_pgsql_db, 
-					      uint32_t uid,
-					      acct_association_cond_t *assoc_q)
+extern List acct_storage_p_remove_associations(
+	PGconn *acct_pgsql_db, uint32_t uid,
+	acct_association_cond_t *assoc_cond)
 {
 	return SLURM_SUCCESS;
 }
 
 extern List acct_storage_p_get_users(PGconn *acct_pgsql_db,
-					   acct_user_cond_t *user_q)
+				     acct_user_cond_t *user_cond)
 {
 	return NULL;
 }
 
 extern List acct_storage_p_get_accts(PGconn *acct_pgsql_db,
-					   acct_account_cond_t *acct_q)
+				     acct_account_cond_t *acct_cond)
 {
 	return NULL;
 }
 
 extern List acct_storage_p_get_clusters(PGconn *acct_pgsql_db,
-					   acct_account_cond_t *cluster_q)
+					acct_account_cond_t *cluster_cond)
 {
 	return NULL;
 }
 
 extern List acct_storage_p_get_associations(PGconn *acct_pgsql_db,
-					   acct_association_cond_t *assoc_q)
+					    acct_association_cond_t *assoc_cond)
+{
+	return NULL;
+}
+
+extern List acct_storage_p_get_txn(PGconn *acct_pgsql_db,
+				   acct_txn_cond_t *txn_cond)
 {
 	return NULL;
 }
