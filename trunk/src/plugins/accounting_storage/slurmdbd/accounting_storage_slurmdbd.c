@@ -749,7 +749,7 @@ extern List acct_storage_p_get_associations(void *db_conn,
 	return ret_list;
 }
 
-extern List acct_storage_p_get_txn(mysql_conn_t *mysql_conn,
+extern List acct_storage_p_get_txn(void *db_conn,
 				   acct_txn_cond_t *txn_cond)
 {
 	slurmdbd_msg_t req, resp;
