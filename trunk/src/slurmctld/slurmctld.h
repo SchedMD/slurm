@@ -1210,6 +1210,20 @@ extern void pack_job (struct job_record *dump_job_ptr, Buf buffer);
  */
 extern void pack_part (struct part_record *part_ptr, Buf buffer);
 
+/* 
+ * pack_one_job - dump information for one jobs in 
+ *	machine independent form (for network transmission)
+ * OUT buffer_ptr - the pointer is set to the allocated buffer.
+ * OUT buffer_size - set to size of the buffer in bytes
+ * IN job_id - ID of job that we want info for
+ * IN uid - uid of user making request (for partition filtering)
+ * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
+ * NOTE: change _unpack_job_desc_msg() in common/slurm_protocol_pack.c 
+ *	whenever the data format changes
+ */
+extern int pack_one_job(char **buffer_ptr, int *buffer_size,
+			 uint32_t job_id, uid_t uid);
+
 /* part_filter_clear - Clear the partition's hidden flag based upon a user's
  * group access. This must follow a call to part_filter_set() */
 extern void part_filter_clear(void);
@@ -1219,7 +1233,7 @@ extern void part_filter_clear(void);
 extern void part_filter_set(uid_t uid);
 
 /* part_fini - free all memory associated with partition records */
-void part_fini (void);
+extern void part_fini (void);
 
 /*
  * purge_old_job - purge old job records. 

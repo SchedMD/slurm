@@ -691,6 +691,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 
 	case REQUEST_JOB_READY:
 	case REQUEST_JOB_REQUEUE:
+	case REQUEST_JOB_INFO_SINGLE:
 		_pack_job_ready_msg((job_id_msg_t *)msg->data, buffer);
 		break;
 
@@ -1040,6 +1041,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 
 	case REQUEST_JOB_READY:
 	case REQUEST_JOB_REQUEUE:
+	case REQUEST_JOB_INFO_SINGLE:
 		rc = _unpack_job_ready_msg((job_id_msg_t **)
 					   & msg->data, buffer);
 		break;

@@ -1,9 +1,8 @@
 /****************************************************************************\
  *  slurm_protocol_defs.h - definitions used for RPCs
- *
- *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov>.
  *  LLNL-CODE-402394.
@@ -117,6 +116,7 @@ typedef enum {
 	REQUEST_TRIGGER_GET,
 	REQUEST_TRIGGER_CLEAR,
 	RESPONSE_TRIGGER_GET,
+	REQUEST_JOB_INFO_SINGLE,
 
 	REQUEST_UPDATE_JOB = 3001,
 	REQUEST_UPDATE_NODE,

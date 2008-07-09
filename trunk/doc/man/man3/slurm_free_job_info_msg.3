@@ -25,6 +25,15 @@ void \fBslurm_free_job_info_msg\fR (
 .br 
 );
 .LP 
+int \fBslurm_load_job\fR (
+.br 
+	job_info_msg_t **\fIjob_info_msg_pptr\fP,
+.br
+	uint32_t \fIjob_id\fP
+.br 
+);
+.LP 
+.LP 
 int \fBslurm_load_jobs\fR (
 .br 
 	time_t \fIupdate_time\fP,
@@ -53,7 +62,7 @@ int \fBslurm_get_end_time\fR (
 .LP
 long \fBslurm_get_rem_time\fR (
 .br
-	uint32_t \fIjobid\fP
+	uint32_t \fIjob_id\fP
 .br
 );
 .LP 
@@ -136,11 +145,13 @@ Specifies a pointer to a storage location into which a Slurm job id may be
 placed.
 .TP 
 \fIjob_info_msg_ptr\fP
-Specifies the pointer to the structure created by \fBslurm_load_jobs\fR. 
+Specifies the pointer to the structure created by \fBslurm_load_job\fR
+or \fBslurm_load_jobs\fR. 
 .TP
 \fIjobinfo\fP
 Job\-specific information as constructed by Slurm's NodeSelect plugin.
-This data object is returned for each job by the \fBslurm_load_jobs\fR function.
+This data object is returned for each job by the \fBslurm_load_job\fR or
+\fBslurm_load_jobs\fR function.
 .TP 
 \fIjob_pid\fP
 Specifies a process id of some process on the current node.
@@ -182,6 +193,9 @@ SLURM controller once per minute.
 expected termination time of a specified SLURM job id. The time corresponds 
 to the exhaustion of the job\'s or partition\'s time limit. NOTE: The data is 
 cached locally and only retrieved from the SLURM controller once per minute.
+.LP 
+\fBslurm_load_job\fR Returns a job_info_msg_t that contains an update time, 
+record count, and array of job_table records for some specific job ID.
 .LP 
 \fBslurm_load_jobs\fR Returns a job_info_msg_t that contains an update time, 
 record count, and array of job_table records for all jobs.
@@ -331,6 +345,7 @@ expressions into a collection of individual node names.
 
 .SH "COPYING"
 Copyright (C) 2002\-2006 The Regents of the University of California.
+Copyright (C) 2008 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 LLNL\-CODE\-402394.
 .LP
