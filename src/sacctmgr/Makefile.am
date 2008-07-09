@@ -13,6 +13,7 @@ sacctmgr_SOURCES =	\
 	common.c                \
 	file_functions.c	\
 	sacctmgr.c sacctmgr.h	\
+	txn_functions.c		\
 	user_functions.c	
 
 sacctmgr_LDADD =  \

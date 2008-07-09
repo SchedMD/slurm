@@ -493,6 +493,8 @@ static void _show_it (int argc, char *argv[])
 		error_code = sacctmgr_list_association((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "Cluster", 1) == 0) {
 		error_code = sacctmgr_list_cluster((argc - 1), &argv[1]);
+	} else if (strncasecmp (argv[0], "Transactions", 1) == 0) {
+		error_code = sacctmgr_list_txn((argc - 1), &argv[1]);
 	} else {
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in list command\n");
