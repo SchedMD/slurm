@@ -342,6 +342,7 @@ extern Buf pack_slurmdbd_msg(slurmdbd_msg_t *req)
 	case DBD_GOT_CLUSTERS:
 	case DBD_GOT_JOBS:
 	case DBD_GOT_LIST:
+	case DBD_GOT_TXN:
 	case DBD_GOT_USERS:
 	case DBD_UPDATE_SHARES_USED:
 		slurmdbd_pack_list_msg(
@@ -436,7 +437,9 @@ extern Buf pack_slurmdbd_msg(slurmdbd_msg_t *req)
 					     req->data, buffer);
 		break;
 	default:
-		error("slurmdbd: Invalid message type %u", req->msg_type);
+		error("slurmdbd: Invalid message type pack %u(%s)",
+		      req->msg_type,
+		      slurmdbd_msg_type_2_str(req->msg_type));
 		free_buf(buffer);
 		return NULL;
 	}
@@ -459,6 +462,7 @@ extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp, Buf buffer)
 	case DBD_GOT_CLUSTERS:
 	case DBD_GOT_JOBS:
 	case DBD_GOT_LIST:
+	case DBD_GOT_TXN:
 	case DBD_GOT_USERS:
 	case DBD_UPDATE_SHARES_USED:
 		rc = slurmdbd_unpack_list_msg(
@@ -557,7 +561,9 @@ extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp, Buf buffer)
 			(dbd_roll_usage_msg_t **)&resp->data, buffer);
 		break;
 	default:
-		error("slurmdbd: Invalid message type %u", resp->msg_type);
+		error("slurmdbd: Invalid message type unpack %u(%s)",
+		      resp->msg_type,
+		      slurmdbd_msg_type_2_str(resp->msg_type));
 		return SLURM_ERROR;
 	}
 	return rc;

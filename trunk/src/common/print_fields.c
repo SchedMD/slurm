@@ -85,7 +85,8 @@ extern void print_fields_date(void)
 
 extern void print_fields_str(type_t type, print_field_t *field, char *value)
 {
-	char *print_this = value;
+	char temp_char[field->len];
+	char *print_this = NULL;
 
 	switch(type) {
 	case SLURM_PRINT_HEADLINE:
@@ -100,7 +101,7 @@ extern void print_fields_str(type_t type, print_field_t *field, char *value)
 			       "---------------------------------------");
 		break;
 	case SLURM_PRINT_VALUE:
-		if(!print_this) {
+		if(!value) {
 			if(print_fields_parsable_print)
 				print_this = "";
 			else
@@ -108,11 +109,13 @@ extern void print_fields_str(type_t type, print_field_t *field, char *value)
 		}
 
 		if(print_fields_parsable_print)
-			printf("%s|", print_this);
+			printf("%s|", value);
 		else {
-			if(strlen(print_this) > field->len) 
-				print_this[field->len-1] = '+';
+			memcpy(temp_char, value, field->len);
 
+			if(strlen(value) > field->len) 
+				temp_char[field->len-1] = '+';
+			print_this = temp_char;
 			printf("%-*.*s ", field->len, field->len, print_this);
 		}
 		break;

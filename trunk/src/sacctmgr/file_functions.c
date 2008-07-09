@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  cluster_functions.c - functions dealing with clusters in the
+ *  file_functions.c - functions dealing with files that are generated in the
  *                        accounting system.
  *****************************************************************************
  *  Copyright (C) 2008 Lawrence Livermore National Security.

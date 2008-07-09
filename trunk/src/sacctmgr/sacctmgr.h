@@ -184,4 +184,7 @@ extern int print_file_sacctmgr_assoc_list(FILE *fd,
 
 extern void load_sacctmgr_cfg_file (int argc, char *argv[]);
 
+/* txn_functions.c */
+extern int sacctmgr_list_txn(int argc, char *argv[]);
+
 #endif
