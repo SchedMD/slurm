@@ -599,6 +599,17 @@ static uint16_t _get_task_count(struct node_cr_record *select_node_ptr,
 					 &threads, alloc_cores, 
 					 cr_type, job_ptr->job_id,
 					 this_node->node_ptr->name);
+
+	if (job_ptr->details->job_min_memory & MEM_PER_CPU) {
+		uint32_t free_mem, mem_per_cpu;
+		int max_cpus;
+		mem_per_cpu = job_ptr->details->job_min_memory & (~MEM_PER_CPU);
+		free_mem = this_node->real_memory - this_node->alloc_memory;
+		max_cpus = free_mem / mem_per_cpu;
+		/* info("cpus avail:%d  mem for %d", numtasks, max_cpus); */
+		numtasks = MIN(numtasks, max_cpus);
+	}
+
 #if (CR_DEBUG)
 	info("cons_res: _get_task_count computed a_tasks %d s %d c %d "
 		"t %d on %s for job %d",
@@ -1992,8 +2003,9 @@ static int _verify_node_state(struct node_cr_record *select_node_ptr,
 			      enum node_cr_state job_node_req)
 {
 	int i;
-	uint32_t free_mem;
+	uint32_t free_mem, min_mem;
 
+	min_mem = job_ptr->details->job_min_memory & (~MEM_PER_CPU);
 	for (i = 0; i < select_node_cnt; i++) {
 		if (!bit_test(bitmap, i))
 			continue;
@@ -2003,7 +2015,7 @@ static int _verify_node_state(struct node_cr_record *select_node_ptr,
 		     (cr_type == CR_MEMORY) || (cr_type == CR_SOCKET_MEMORY))) {
 			free_mem = select_node_ptr[i].real_memory;
 			free_mem -= select_node_ptr[i].alloc_memory;
-			if (free_mem < job_ptr->details->job_min_memory)
+			if (free_mem < min_mem)
 				goto clear_bit;
 		}
 
@@ -2589,9 +2601,6 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			job->cpus[j] = 0;
 		}
 		job->alloc_cpus[j] = 0;
-		if ((cr_type == CR_CORE_MEMORY) || (cr_type == CR_CPU_MEMORY) ||
-		    (cr_type == CR_MEMORY) || (cr_type == CR_SOCKET_MEMORY))
-			job->alloc_memory[j] = job_ptr->details->job_min_memory; 
 		if ((cr_type == CR_CORE) || (cr_type == CR_CORE_MEMORY)||
 		    (cr_type == CR_SOCKET) || (cr_type == CR_SOCKET_MEMORY)) {
 			_chk_resize_job(job, j, job->num_sockets[j]);
@@ -2650,6 +2659,26 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	if (error_code != SLURM_SUCCESS) {
 		_xfree_select_cr_job(job);
 		return error_code;
+	}
+
+	if (job_ptr->details->job_min_memory &&
+	    ((cr_type == CR_CORE_MEMORY) || (cr_type == CR_CPU_MEMORY) ||
+	     (cr_type == CR_MEMORY) || (cr_type == CR_SOCKET_MEMORY))) {
+		j = 0;
+		for (i = 0; i < node_record_count; i++) {
+			if (bit_test(bitmap, i) == 0)
+				continue;
+			if (job_ptr->details->job_min_memory & MEM_PER_CPU) {
+				job->alloc_memory[j] = job_ptr->details->
+						       job_min_memory &
+						       (~MEM_PER_CPU);
+				job->alloc_memory[j] *= job->alloc_cpus[j];
+			} else {
+				job->alloc_memory[j] = job_ptr->details->
+						       job_min_memory;
+			}
+			j++;
+		}
 	}
 
 	_append_to_job_list(job);

@@ -173,7 +173,9 @@ to begin running "on top of" the existing jobs. This happens with the
 
 <H3>Memory Management</H3>
 <P>
-The management of memory as a consumable resource remains unchanged:
+The management of memory as a consumable resource remains unchanged and
+can be used to prevent oversubscription of memory, which would result in
+having memory pages swapped out and severely degraded performance.
 </P>
 <TABLE CELLPADDING=3 CELLSPACING=1 BORDER=1>
 <TR><TH>Selection Setting</TH>
@@ -202,21 +204,26 @@ available memory to meet the job's memory requirement will not be allocated to
 the job.</TD>
 </TR>
 </TABLE>
-<P>Note that the <CODE>srun --mem=&lt;num&gt;</CODE> option is only used to
-request nodes that have &lt;num&gt; amount of real memory. This option does not
-compute memory that is currently available.
-</P><P>
-The <CODE>srun --job-mem=&lt;num&gt;</CODE> option is used with the
-<CODE>select/cons_res</CODE> plugin to request available memory from each node.
-</P><P>
-The <CODE>select/cons_res</CODE> plugin tracks memory usage by each job on each
-node regardless of the number partitions a node may be assigned to. The primary
-purpose of tracking memory as a consumable resource is to protect jobs from
-having their memory pages swapped out because the memory has been overcommitted.
-</P>
+<P>Users can specify their job's memory requirements one of two ways.
+<CODE>--mem=&lt;num&gt;</CODE> can be used to specify the job's memory 
+requirement on a per allocated node basis. This option is probably best 
+suited for use with the <CODE>select/linear</CODE> plugin, which allocates 
+whole nodes to jobs. 
+<CODE>--mem-per-cpu=&lt;num&gt;</CODE> can be used to specify the job's 
+memory requirement on a per allocated CPU basis. This is probably best
+suited for use with the <CODE>select/cons_res</CODE> plugin which can 
+allocate individual CPUs to jobs.</P>
+
+<P>Default and maximum values for memory on a per node or per CPU basis can 
+be configued using the following options: <CODE>DefMemPerCPU</CODE>,
+<CODE>DefMemPerNode</CODE>, <CODE>MaxMemPerCPU</CODE> and <CODE>MaxMemPerNode</CODE>.
+Enforcement of a job's memory allocation is performed by the accounting 
+plugin, which periodically gathers data about running jobs. Set 
+<CODE>JobAcctGather</CODE> and <CODE>JobAcctFrequency</CODE> to 
+values suitable for your system.</P>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 27 May 2008</p>
+<p style="text-align:center;">Last modified 8 July 2008</p>
 
 <!--#include virtual="footer.txt"-->

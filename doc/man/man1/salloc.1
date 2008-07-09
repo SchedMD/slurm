@@ -1,4 +1,4 @@
-.TH "salloc" "1" "SLURM 1.3" "May 2008" "SLURM Commands"
+.TH "salloc" "1" "SLURM 1.3" "July 2008" "SLURM Commands"
 .SH "NAME"
 .LP 
 salloc \- Obtain a SLURM job allocation (a set of nodes), execute a command, and then release the allocation when the command is finished.
@@ -306,12 +306,24 @@ The default value is the username of the submitting user.
 .TP
 \fB\-\-mem\fR[=]<\fIMB\fR>
 Specify the real memory required per node in MegaBytes.
-If a value is specified, that quantity of memory will be 
-reserved for this job. 
-If no value is specified and real memory is exhausted on 
-any allocated node then the job is subject to cancellation.
-Also see \fB\-\-task\-mem\fR.
+Default value is \fBDefMemPerNode\fR and the maximum value is
+\fBMaxMemPerNode\fR. If configured, both of parameters can be
+seen using the \fBscontrol show config\fR command.
+This parameter would generally be used of whole nodes
+are allocated to jobs (\fBSelectType=select/linear\fR).
+Also see \fB\-\-mem\-per\-cpu\fR.
+\fB\-\-mem\fR and \fB\-\-mem\-per\-cpu\fR are mutually exclusive.
 
+.TP
+\fB\-\-mem\-per\-cpu\fR[=]<\fIMB\fR>
+Mimimum memory required per allocated CPU in MegaBytes.
+Default value is \fBDefMemPerCPU\fR and the maximum value is
+\fBMaxMemPerCPU\fR. If configured, both of parameters can be 
+seen using the \fBscontrol show config\fR command.
+This parameter would generally be used of individual processors
+are allocated to jobs (\fBSelectType=select/cons_res\fR).
+Also see \fB\-\-mem\fR.
+\fB\-\-mem\fR and \fB\-\-mem\-per\-cpu\fR are mutually exclusive.
 
 .TP
 \fB\-\-mincores\fR[=]<\fIn\fR>
@@ -494,13 +506,6 @@ interval between signals is specified by the SLURM configuration parameter
 Acceptable time formats include "minutes", "minutes:seconds", 
 "hours:minutes:seconds", "days\-hours", "days\-hours:minutes" and 
 "days\-hours:minutes:seconds".
-
-.TP
-\fB\-\-task\-mem\fR[=]<\fIMB\fR>
-Mimimum memory available per task in MegaBytes.
-Default value is \fBDefMemPerTask\fR and the maximum value is
-\fBMaxMemPerTask\fR, both of which can be seen using the
-\fBscontrol show config\fR command.
 
 .TP
 \fB\-\-tmp\fR[=]<\fIMB\fR>
@@ -709,6 +714,7 @@ salloc \-N5 srun \-n10 myprogram
 
 .SH "COPYING"
 Copyright (C) 2006\-2007 The Regents of the University of California.
+Copyright (C) 2008 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 LLNL\-CODE\-402394.
 .LP

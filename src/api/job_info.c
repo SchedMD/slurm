@@ -371,13 +371,18 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		xstrcat(out, "\n   ");
 
 	/****** Line 10 ******/
+	if (job_ptr->job_min_memory & MEM_PER_CPU) {
+		job_ptr->job_min_memory &= (~MEM_PER_CPU);
+		tmp3_ptr = "CPU";
+	} else
+		tmp3_ptr = "Node";
 	convert_num_unit((float)job_ptr->job_min_memory, tmp1, sizeof(tmp1),
 			 UNIT_NONE);
 	convert_num_unit((float)job_ptr->job_min_tmp_disk, tmp2, sizeof(tmp2),
 			 UNIT_NONE);
 	snprintf(tmp_line, sizeof(tmp_line), 
-		"MinMemory=%s MinTmpDisk=%s Features=%s",
-		tmp1, tmp2, job_ptr->features);
+		"MinMemory%s=%s MinTmpDisk=%s Features=%s",
+		tmp3_ptr, tmp1, tmp2, job_ptr->features);
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");

@@ -2,8 +2,6 @@
  *  job_mgr.c - manage the job information of slurm
  *	Note: there is a global job list (job_list), time stamp 
  *	(last_job_update), and hash table (job_hash)
- *
- *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008 Lawrence Livermore National Security.
@@ -1228,7 +1226,7 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	long kill_on_node_fail, shared, immediate;
 	long cpus_per_task, requeue, num_tasks, overcommit;
 	long ntasks_per_node, ntasks_per_socket, ntasks_per_core;
-	char buf[100];
+	char *mem_type, buf[100];
 
 	if (job_specs == NULL)
 		return;
@@ -1262,12 +1260,21 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	debug3("   job_min_cores=%ld job_min_threads=%ld",
 	       job_min_cores, job_min_threads);
 
-	job_min_memory   = (job_specs->job_min_memory != NO_VAL) ? 
-		(long) job_specs->job_min_memory : -1L;
+	if (job_specs->job_min_memory == NO_VAL) {
+		job_min_memory = -1L;
+		mem_type = "job";
+	} else if (job_specs->job_min_memory & MEM_PER_CPU) {
+		job_min_memory = (long) (job_specs->job_min_memory &
+					 (~MEM_PER_CPU));
+		mem_type = "cpu";
+	} else {
+		job_min_memory = (long) job_specs->job_min_memory;
+		mem_type = "job";
+	}
 	job_min_tmp_disk = (job_specs->job_min_tmp_disk != NO_VAL) ? 
 		(long) job_specs->job_min_tmp_disk : -1L;
-	debug3("   job_min_memory=%ld job_min_tmp_disk=%ld",
-	       job_min_memory, job_min_tmp_disk);
+	debug3("   min_memory_%s=%ld job_min_tmp_disk=%ld",
+	       mem_type, job_min_memory, job_min_tmp_disk);
 	immediate = (job_specs->immediate == 0) ? 0L : 1L;
 	debug3("   immediate=%ld features=%s",
 	       immediate, job_specs->features);
@@ -2854,6 +2861,53 @@ static char *_copy_nodelist_no_dup(char *node_list)
 	return xstrdup(buf);
 }
 
+static bool _valid_job_min_mem(job_desc_msg_t * job_desc_msg)
+{
+	uint32_t base_size = job_desc_msg->job_min_memory;
+	uint32_t size_limit = slurmctld_conf.max_mem_per_task;
+	uint16_t cpus_per_node;
+
+	if (size_limit == 0)
+		return true;
+
+	if ((base_size  & MEM_PER_CPU) && (size_limit & MEM_PER_CPU)) {
+		base_size  &= (~MEM_PER_CPU);
+		size_limit &= (~MEM_PER_CPU);
+		if (base_size <= size_limit)
+			return true;
+		return false;
+	}
+
+	if (((base_size  & MEM_PER_CPU) == 0) &&
+	    ((size_limit & MEM_PER_CPU) == 0)) {
+		if (base_size <= size_limit)
+			return true;
+		return false;
+	}
+
+	/* Our size is per CPU and limit per node or vise-versa.
+	 * CPU count my vary by node, but we don't have a good
+	 * way to identify specific nodes for the job at this 
+	 * point, so just pick the first node as a basis for 
+	 * enforcing MaxMemPerCPU. */
+	if (slurmctld_conf.fast_schedule)
+		cpus_per_node = node_record_table_ptr[0].config_ptr->cpus;
+	else
+		cpus_per_node = node_record_table_ptr[0].cpus;
+	if (job_desc_msg->num_procs != NO_VAL)
+		cpus_per_node = MIN(cpus_per_node, job_desc_msg->num_procs);
+	if (base_size & MEM_PER_CPU) {
+		base_size &= (~MEM_PER_CPU);
+		base_size *= cpus_per_node;
+	} else {
+		size_limit &= (~MEM_PER_CPU);
+		size_limit *= cpus_per_node;
+	}
+	if (base_size <= size_limit)
+		return true;
+	return false;
+}
+
 /* 
  * job_time_limit - terminate jobs which have exceeded their time limit
  * global: job_list - pointer global job list
@@ -3010,6 +3064,12 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 			job_desc_msg->nice = NICE_OFFSET;
 	}
 
+	if (job_desc_msg->job_min_memory == NO_VAL) {
+		/* Default memory limit is DefMemPerCPU (if set) or no limit */
+		job_desc_msg->job_min_memory = slurmctld_conf.def_mem_per_task;
+	} else if (!_valid_job_min_mem(job_desc_msg))
+		return ESLURM_INVALID_TASK_MEMORY;
+
 	if (job_desc_msg->min_sockets == (uint16_t) NO_VAL)
 		job_desc_msg->min_sockets = 1;	/* default socket count of 1 */
 	if (job_desc_msg->min_cores == (uint16_t) NO_VAL)
@@ -3035,8 +3095,6 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 		job_desc_msg->job_min_cores = 1;   /* default 1 core per socket */
 	if (job_desc_msg->job_min_threads == (uint16_t) NO_VAL)
 		job_desc_msg->job_min_threads = 1; /* default 1 thread per core */
-	if (job_desc_msg->job_min_memory == NO_VAL)
-		job_desc_msg->job_min_memory = 0;  /* default no memory limit */
 	if (job_desc_msg->job_min_tmp_disk == NO_VAL)
 		job_desc_msg->job_min_tmp_disk = 0;/* default 0MB disk per node */
 
@@ -3900,12 +3958,16 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if (job_specs->job_min_memory != NO_VAL) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_DISABLED;
-		else if (super_user
-			 || (detail_ptr->job_min_memory
-			     > job_specs->job_min_memory)) {
+		else if (super_user) {
+			char *entity;
+			if (job_specs->job_min_memory & MEM_PER_CPU)
+				entity = "cpu";
+			else
+				entity = "job";
 			detail_ptr->job_min_memory = job_specs->job_min_memory;
-			info("update_job: setting job_min_memory to %u for "
-			     "job_id %u", job_specs->job_min_memory, 
+			info("update_job: setting min_memory_%s to %u for "
+			     "job_id %u", entity, 
+			     (job_specs->job_min_memory & (~MEM_PER_CPU)), 
 			     job_specs->job_id);
 		} else {
 			error("Attempt to increase job_min_memory for job %u",

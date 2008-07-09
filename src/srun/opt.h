@@ -170,7 +170,7 @@ typedef struct srun_options {
 	int32_t job_min_cores;	/* --mincores=n			*/
 	int32_t job_min_threads;/* --minthreads=n		*/
 	int32_t job_min_memory;	/* --mem=n			*/
-	int32_t task_mem;	/* --task-mem=n			*/
+	int32_t mem_per_cpu;	/* --mem-per-cpu=n		*/
 	long job_min_tmp_disk;	/* --tmp=n			*/
 	char *constraints;	/* --constraints=, -C constraint*/
 	bool contiguous;	/* --contiguous			*/

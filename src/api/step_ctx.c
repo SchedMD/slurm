@@ -58,12 +58,14 @@ static void
 _job_fake_cred(struct slurm_step_ctx_struct *ctx)
 {
 	slurm_cred_arg_t arg;
-	arg.jobid    = ctx->job_id;
-	arg.stepid   = ctx->step_resp->job_step_id;
-	arg.uid      = ctx->user_id;
-	arg.hostlist = ctx->step_req->node_list;
-        arg.alloc_lps_cnt = 0;    
-        arg.alloc_lps     =  NULL; 
+	arg.alloc_lps_cnt = 0;
+	arg.alloc_lps     = NULL;
+	arg.hostlist      = ctx->step_req->node_list;
+	arg.job_mem       = 0;
+	arg.jobid         = ctx->job_id;
+	arg.stepid        = ctx->step_resp->job_step_id;
+	arg.task_mem      = 0;
+	arg.uid           = ctx->user_id;
 	ctx->step_resp->cred = slurm_cred_faker(&arg);
 }
 

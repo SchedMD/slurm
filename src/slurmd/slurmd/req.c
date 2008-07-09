@@ -616,7 +616,8 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 {
 	slurm_cred_arg_t arg;
 	hostset_t        hset    = NULL;
-	bool             user_ok = _slurm_authorized_user(uid); 
+	bool             user_ok = _slurm_authorized_user(uid);
+	bool             verified = true;
 	int              host_index = -1;
 	int              rc;
 	slurm_cred_t     cred = req->cred;
@@ -628,24 +629,18 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 	 * credentials are checked
 	 */
 	if ((rc = slurm_cred_verify(conf->vctx, cred, &arg)) < 0) {
-		if (!user_ok) {
+		verified = false;
+		if (!user_ok)
 			return SLURM_ERROR;
-		} else {
+		else {
 			debug("_check_job_credential slurm_cred_verify failed:"
 			      " %m, but continuing anyway.");
 		}
 	}
 
-	/* Overwrite any memory limits in the RPC with 
-	 * contents of the credential */
-	req->job_mem  = arg.job_mem;
-	req->task_mem = arg.task_mem;
-
-	/*
-	 * If uid is the slurm user id or root, do not bother
-	 * performing validity check of the credential
-	 */
-	if (user_ok) {
+	/* If uid is the SlurmUser or root and the credential is bad,
+	 * then do not attempt validating the credential */
+	if (!verified) {
 		*step_hset = NULL;
 		if (rc >= 0) {
 			if ((hset = hostset_create(arg.hostlist)))
@@ -684,12 +679,11 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 	}
 
         if ((arg.alloc_lps_cnt > 0) && (tasks_to_launch > 0)) {
-
                 host_index = hostset_find(hset, conf->node_name);
 
                 /* Left in here for debugging purposes */
 #if(0)
-                if(host_index >= 0)
+                if (host_index >= 0)
                   info(" cons_res %u alloc_lps_cnt %u "
 			"task[%d] = %u = task_to_launch %d host %s ", 
 			arg.jobid, arg.alloc_lps_cnt, host_index, 
@@ -713,6 +707,20 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 				"the tasks to the allocated resources");
 		}
         }
+
+	/* Overwrite any memory limits in the RPC with 
+	 * contents of the credential */
+	if (arg.job_mem & MEM_PER_CPU) {
+		req->job_mem = arg.job_mem & (~MEM_PER_CPU);
+		if (host_index >= 0)
+			req->job_mem *= arg.alloc_lps[host_index];
+	} else
+		req->job_mem = arg.job_mem;
+	req->task_mem = arg.task_mem;	/* Defunct */
+#if 0
+	info("mem orig:%u cpus:%u limit:%u", 
+	     arg.job_mem, arg.alloc_lps[host_index], req->job_mem);
+#endif
 
 	*step_hset = hset;
 	xfree(arg.hostlist);
