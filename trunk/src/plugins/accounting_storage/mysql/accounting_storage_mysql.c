@@ -3290,7 +3290,7 @@ extern List acct_storage_p_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	MYSQL_ROW row;
 
 	if(!user_cond) {
-		error("we need something to change");
+		error("we need something to remove");
 		return NULL;
 	}
 
@@ -3424,6 +3424,11 @@ extern List acct_storage_p_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 	MYSQL_ROW row;
 	acct_user_rec_t user;
 
+	if(!user_cond) {
+		error("we need something to remove");
+		return NULL;
+	}
+
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
@@ -3470,6 +3475,8 @@ extern List acct_storage_p_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 		user_name = pw->pw_name;
 	}
 
+	/* Leave it this way since we are using extra below */
+
 	if(user_cond->user_list && list_count(user_cond->user_list)) {
 		set = 0;
 		if(extra)
@@ -3505,6 +3512,13 @@ extern List acct_storage_p_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 		list_iterator_destroy(itr);
 		xstrcat(extra, ")");
 	}
+	
+	if(!extra) {
+		errno = SLURM_ERROR;
+		debug3("No conditions given");
+		return NULL;
+	}
+
 	query = xstrdup_printf(
 		"select user, acct from %s where deleted=0 && %s order by user",
 		acct_coord_table, extra);
@@ -3514,6 +3528,7 @@ extern List acct_storage_p_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 	     mysql_db_query_ret(mysql_conn->acct_mysql_db, query, 0))) {
 		xfree(query);
 		xfree(extra);
+		errno = SLURM_ERROR;
 		return NULL;
 	}
 	xfree(query);
@@ -3566,6 +3581,7 @@ extern List acct_storage_p_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 		list_destroy(ret_list);
 		list_destroy(user_list);
 		xfree(extra);
+		errno = SLURM_ERROR;
 		return NULL;
 	}
 	xfree(extra);
@@ -4797,7 +4813,8 @@ extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 	}
 	
 	if(assoc_cond->parent_acct) {
-		xstrfmtcat(extra, " && parent_acct='%s'", assoc_cond->parent_acct);
+		xstrfmtcat(extra, " && parent_acct='%s'",
+			   assoc_cond->parent_acct);
 	}
 empty:
 	xfree(tmp);
@@ -4968,8 +4985,150 @@ empty:
 extern List acct_storage_p_get_txn(mysql_conn_t *mysql_conn,
 				   acct_txn_cond_t *txn_cond)
 {
+#ifdef HAVE_MYSQL
+	char *query = NULL;	
+	char *extra = NULL;	
+	char *tmp = NULL;	
+	List txn_list = NULL;
+	ListIterator itr = NULL;
+	char *object = NULL;
+	int set = 0;
+	int i=0;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
 
+	/* if this changes you will need to edit the corresponding enum */
+	char *txn_req_inx[] = {
+		"id",
+		"timestamp",
+		"action",
+		"name",
+		"actor",
+		"info"
+	};
+	enum {
+		TXN_REQ_ID,
+		TXN_REQ_TS,
+		TXN_REQ_ACTION,
+		TXN_REQ_NAME,
+		TXN_REQ_ACTOR,
+		TXN_REQ_INFO,
+		TXN_REQ_COUNT
+	};
+
+	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
+		return NULL;
+
+	if(!txn_cond) 
+		goto empty;
+	
+	if(txn_cond->action_list && list_count(txn_cond->action_list)) {
+		set = 0;
+		if(extra)
+			xstrcat(extra, " && (");
+		else
+			xstrcat(extra, " where (");
+		itr = list_iterator_create(txn_cond->action_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "action='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+
+	if(txn_cond->actor_list && list_count(txn_cond->actor_list)) {
+		set = 0;
+		if(extra)
+			xstrcat(extra, " && (");
+		else
+			xstrcat(extra, " where (");
+		itr = list_iterator_create(txn_cond->actor_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "actor='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+
+	if(txn_cond->id_list && list_count(txn_cond->id_list)) {
+		set = 0;
+		if(extra)
+			xstrcat(extra, " && (");
+		else
+			xstrcat(extra, " where (");
+		itr = list_iterator_create(txn_cond->id_list);
+		while((object = list_next(itr))) {
+			char *ptr = NULL;
+			long num = strtol(object, &ptr, 10);
+			if ((num == 0) && ptr && ptr[0]) {
+				error("Invalid value for txn id (%s)",
+				      object);
+				xfree(extra);
+				list_iterator_destroy(itr);
+				return NULL;
+			}
+
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "id=%s", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+	
+empty:
+	xfree(tmp);
+	xstrfmtcat(tmp, "%s", txn_req_inx[i]);
+	for(i=1; i<TXN_REQ_COUNT; i++) {
+		xstrfmtcat(tmp, ", %s", txn_req_inx[i]);
+	}
+
+	query = xstrdup_printf("select %s from %s", 
+			       tmp, txn_table);
+
+	if(extra) {
+		xstrfmtcat(query, "%s", extra);
+		xfree(extra);
+	}
+	xstrcat(query, " order by timestamp;");
+
+	xfree(tmp);
+
+	debug3("%d query\n%s", mysql_conn->conn, query);
+	if(!(result = mysql_db_query_ret(
+		     mysql_conn->acct_mysql_db, query, 0))) {
+		xfree(query);
+		return NULL;
+	}
+	xfree(query);
+
+	txn_list = list_create(destroy_acct_txn_rec);
+	
+	while((row = mysql_fetch_row(result))) {
+		acct_txn_rec_t *txn = xmalloc(sizeof(acct_txn_rec_t));
+
+		list_append(txn_list, txn);
+		
+		txn->action = atoi(row[TXN_REQ_ACTION]);
+		txn->actor_name = xstrdup(row[TXN_REQ_ACTOR]);
+		txn->id = atoi(row[TXN_REQ_ID]);
+		txn->set_info = xstrdup(row[TXN_REQ_INFO]);
+		txn->timestamp = atoi(row[TXN_REQ_TS]);
+		txn->where_query = xstrdup(row[TXN_REQ_NAME]);
+	}
+	mysql_free_result(result);
+
+	return txn_list;
+#else
 	return NULL;
+#endif
 }
 
 extern int acct_storage_p_get_usage(mysql_conn_t *mysql_conn,
