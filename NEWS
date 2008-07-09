@@ -1,6 +1,10 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.2.33
+=========================
+ -- Cancelled or Failed jobs will now report there job and step id on exit
+
 * Changes in SLURM 1.2.32
 =========================
  -- Moab only: disable scancel of job in RootOnly partition except by user
