@@ -59,6 +59,8 @@ a memory requirement, we also recommend configuring
 It may also be desirable to configure
 <I>MaxMemPerCPU</I> (maximum memory per allocated CPU) or
 <I>MaxMemPerNode</I> (maximum memory per allocated node) in <I>slurm.conf</I>.
+Users can use the <I>--mem</I> or <I>--mem-per-cpu</I> option
+at job submission time to specify their memory requirements.
 </LI>
 <LI>
 <B>JobAcctGatherType and JobAcctGatherFrequency</B>:

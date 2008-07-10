@@ -51,6 +51,8 @@ a memory requirement, we also recommend configuring
 It may also be desirable to configure 
 <I>MaxMemPerCPU</I> (maximum memory per allocated CPU) or 
 <I>MaxMemPerNode</I> (maximum memory per allocated node) in <I>slurm.conf</I>.
+Users can use the <I>--mem</I> or <I>--mem-per-cpu</I> option
+at job submission time to specify their memory requirements.
 </LI>
 <LI>
 <B>JobAcctGatherType and JobAcctGatherFrequency</B>:
@@ -161,7 +163,6 @@ Here are the Partition settings:
 [user@n16 ~]$ <B>grep PartitionName /shared/slurm/slurm.conf</B>
 PartitionName=active Priority=1 Default=YES Shared=FORCE:1 Nodes=n[12-16]
 PartitionName=hipri  Priority=2             Shared=FORCE:1 Nodes=n[12-16]
-[user@n16 ~]$ 
 </PRE>
 <P>
 The <I>runit.pl</I> script launches a simple load-generating app that runs
@@ -186,7 +187,6 @@ JOBID PARTITION     NAME   USER  ST   TIME  NODES NODELIST
   487    active runit.pl   user   R   0:05      1 n14
   488    active runit.pl   user   R   0:05      1 n15
   489    active runit.pl   user   R   0:04      1 n16
-[user@n16 ~]$
 </PRE>
 <P>
 Now submit a short-running 3-node job to the <I>hipri</I> partition:
@@ -202,7 +202,6 @@ JOBID PARTITION     NAME   USER  ST   TIME  NODES NODELIST
   486    active runit.pl   user   S   0:27      1 n13
   487    active runit.pl   user   S   0:26      1 n14
   490     hipri runit.pl   user   R   0:03      3 n[12-14]
-[user@n16 ~]$
 </PRE>
 <P>
 Job 490 in the <I>hipri</I> partition preempted jobs 485, 486, and 487 from
@@ -221,7 +220,6 @@ JOBID PARTITION     NAME   USER  ST   TIME  NODES NODELIST
   487    active runit.pl   user   R   0:29      1 n14
   488    active runit.pl   user   R   0:59      1 n15
   489    active runit.pl   user   R   0:58      1 n16
-[user@n16 ~]$
 </PRE>
 
 

@@ -217,6 +217,8 @@ allocate individual CPUs to jobs.</P>
 <P>Default and maximum values for memory on a per node or per CPU basis can 
 be configued using the following options: <CODE>DefMemPerCPU</CODE>,
 <CODE>DefMemPerNode</CODE>, <CODE>MaxMemPerCPU</CODE> and <CODE>MaxMemPerNode</CODE>.
+Users can use the <CODE>--mem</CODE> or <CODE>--mem-per-cpu</CODE> option
+at job submission time to specify their memory requirements.
 Enforcement of a job's memory allocation is performed by the accounting 
 plugin, which periodically gathers data about running jobs. Set 
 <CODE>JobAcctGather</CODE> and <CODE>JobAcctFrequency</CODE> to 
