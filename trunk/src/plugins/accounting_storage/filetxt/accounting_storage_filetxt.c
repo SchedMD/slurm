@@ -180,6 +180,12 @@ extern int init ( void )
 	mode_t		prot = 0600;
 	struct stat	statbuf;
 	
+	if(slurmdbd_conf) {
+		fatal("The filetxt plugin should not "
+		      "be run from the slurmdbd.  "
+		      "Please use a database plugin");
+	}
+
 	if(first) {
 		debug2("jobacct_init() called");
 		log_file = slurm_get_accounting_storage_loc();

@@ -505,6 +505,8 @@ extern void destroy_acct_job_cond(void *object)
 			list_destroy(job_cond->partition_list);
 		if(job_cond->step_list)
 			list_destroy(job_cond->step_list);
+		if(job_cond->state_list)
+			list_destroy(job_cond->state_list);
 		if(job_cond->user_list)
 			list_destroy(job_cond->user_list);
 		xfree(job_cond);
@@ -1591,12 +1593,15 @@ extern void pack_acct_job_cond(void *in, Buf buffer)
 		pack32(0, buffer);
 		pack32(0, buffer);
 		pack16(0, buffer);
+		pack16(0, buffer);
 		pack32(0, buffer);
 		pack32(0, buffer);
 		pack32(0, buffer);
 		pack32(0, buffer);
 		pack32(0, buffer);
 		pack32(0, buffer);
+		pack32(0, buffer);
+		pack16(0, buffer);
 		return;
 	}
 
@@ -1639,6 +1644,7 @@ extern void pack_acct_job_cond(void *in, Buf buffer)
 	count = 0;
 
 	pack16(object->completion, buffer);
+	pack16(object->no_duplicates, buffer);
 
 	if(object->groupid_list)
 		count = list_count(object->groupid_list);
@@ -1678,6 +1684,19 @@ extern void pack_acct_job_cond(void *in, Buf buffer)
 	}
 	count = 0;
 
+	if(object->state_list)
+		count = list_count(object->state_list);
+	
+	pack32(count, buffer);
+	if(count) {
+		itr = list_iterator_create(object->state_list);
+		while((tmp_info = list_next(itr))) {
+			packstr(tmp_info, buffer);
+		}
+		list_iterator_destroy(itr);
+	}
+	count = 0;
+
 	pack32(object->usage_end, buffer);
 	pack32(object->usage_start, buffer);
 
@@ -1693,6 +1712,8 @@ extern void pack_acct_job_cond(void *in, Buf buffer)
 		list_iterator_destroy(itr);
 	}
 	count = 0;
+
+	pack16(object->without_steps, buffer);
 }
 
 extern int unpack_acct_job_cond(void **object, Buf buffer)
@@ -1733,6 +1754,7 @@ extern int unpack_acct_job_cond(void **object, Buf buffer)
 	}
 
 	safe_unpack16(&object_ptr->completion, buffer);
+	safe_unpack16(&object_ptr->no_duplicates, buffer);
 
 	safe_unpack32(&count, buffer);
 	if(count) {
@@ -1763,6 +1785,15 @@ extern int unpack_acct_job_cond(void **object, Buf buffer)
 		}
 	}
 
+	safe_unpack32(&count, buffer);
+	if(count) {
+		object_ptr->state_list = list_create(slurm_destroy_char);
+		for(i=0; i<count; i++) {
+			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp, buffer);
+			list_append(object_ptr->state_list, tmp_info);
+		}
+	}
+	
 	safe_unpack32(&object_ptr->usage_end, buffer);
 	safe_unpack32(&object_ptr->usage_start, buffer);
 
@@ -1774,6 +1805,8 @@ extern int unpack_acct_job_cond(void **object, Buf buffer)
 			list_append(object_ptr->user_list, tmp_info);
 		}
 	}
+
+	safe_unpack16(&object_ptr->without_steps, buffer);
 
 	return SLURM_SUCCESS;
 

@@ -129,9 +129,6 @@ static int _set_cond(int *start, int argc, char *argv[],
 		return SLURM_ERROR;
 	}
 
-	if(!user_cond->user_list)
-		user_cond->user_list = list_create(slurm_destroy_char);
-
 	user_cond->with_deleted = 1;
 	user_cond->with_assocs = 1;
 	if(!user_cond->assoc_cond) {
@@ -140,14 +137,13 @@ static int _set_cond(int *start, int argc, char *argv[],
 		user_cond->assoc_cond->with_usage = 1;
 	}
 	assoc_cond = user_cond->assoc_cond;
-	if(!assoc_cond->acct_list)
-		assoc_cond->acct_list = list_create(slurm_destroy_char);
+
 	if(!assoc_cond->cluster_list)
 		assoc_cond->cluster_list = list_create(slurm_destroy_char);
 
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
-		if (strncasecmp (argv[i], "Set", 3) == 0) {
+		if (!strncasecmp (argv[i], "Set", 3)) {
 			i--;
 			break;
 		} else if(!end && !strncasecmp(argv[i], "where", 5)) {
@@ -157,29 +153,32 @@ static int _set_cond(int *start, int argc, char *argv[],
 			continue;
 		} else if (!end && !strncasecmp(argv[i], "group", 1)) {
 			group_accts = 1;
-		} else if(!end) {
+		} else if(!end
+			  || !strncasecmp (argv[i], "Users", 1)) {
+			if(!user_cond->user_list)
+				user_cond->user_list = 
+					list_create(slurm_destroy_char);
 			addto_char_list(user_cond->user_list, argv[i]);
 			set = 1;
-		} else if (strncasecmp (argv[i], "Accounts", 2) == 0) {
-				addto_char_list(assoc_cond->acct_list,
+		} else if (!strncasecmp (argv[i], "Accounts", 2)) {
+			if(!assoc_cond->acct_list)
+				assoc_cond->acct_list =
+					list_create(slurm_destroy_char);
+			addto_char_list(assoc_cond->acct_list,
 					argv[i]+end);
 			set = 1;
-		} else if (strncasecmp (argv[i], "Clusters", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "Clusters", 1)) {
 			addto_char_list(assoc_cond->cluster_list,
 					argv[i]+end);
 			set = 1;
-		} else if (strncasecmp (argv[i], "End", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "End", 1)) {
 			assoc_cond->usage_end = parse_time(argv[i]+end);
 			set = 1;
-		} else if (strncasecmp (argv[i], "Format", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "Format", 1)) {
 			if(format_list)
 				addto_char_list(format_list, argv[i]+end);
-		} else if (strncasecmp (argv[i], "Start", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "Start", 1)) {
 			assoc_cond->usage_start = parse_time(argv[i]+end);
-			set = 1;
-		} else if (strncasecmp (argv[i], "Users", 1) == 0) {
-			addto_char_list(user_cond->user_list,
-					argv[i]+end);
 			set = 1;
 		} else {
 			printf(" Unknown condition: %s\n"

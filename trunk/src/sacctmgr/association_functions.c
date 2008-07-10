@@ -127,24 +127,31 @@ static int _set_cond(int *start, int argc, char *argv[],
 			tree_display = 1;
 		} else if(!end && !strncasecmp(argv[i], "where", 5)) {
 			continue;
-		} else if(!end) {
+		} else if(!end || !strncasecmp (argv[i], "Id", 1)
+			  || !strncasecmp (argv[i], "Associations", 2)) {
+			if(!association_cond->id_list)
+				association_cond->id_list = 
+					list_create(slurm_destroy_char);
 			addto_char_list(association_cond->id_list, argv[i]);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "Id", 1)) {
-			addto_char_list(association_cond->id_list, argv[i]+end);
-			set = 1;
-		}  else if (!strncasecmp (argv[i], "Associations", 2)) {
-			addto_char_list(association_cond->id_list, argv[i]+end);
-			set = 1;
 		} else if (!strncasecmp (argv[i], "Users", 1)) {
+			if(!association_cond->user_list)
+				association_cond->user_list = 
+					list_create(slurm_destroy_char);
 			addto_char_list(association_cond->user_list,
 					argv[i]+end);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Accounts", 2)) {
+			if(!association_cond->acct_list)
+				association_cond->acct_list = 
+					list_create(slurm_destroy_char);
 			addto_char_list(association_cond->acct_list,
 					argv[i]+end);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Clusters", 1)) {
+			if(!association_cond->cluster_list)
+				association_cond->cluster_list = 
+					list_create(slurm_destroy_char);
 			addto_char_list(association_cond->cluster_list,
 					argv[i]+end);
 			set = 1;
@@ -152,6 +159,9 @@ static int _set_cond(int *start, int argc, char *argv[],
 			if(format_list)
 				addto_char_list(format_list, argv[i]+end);
 		} else if (!strncasecmp (argv[i], "Partitions", 4)) {
+			if(!association_cond->partition_list)
+				association_cond->partition_list = 
+					list_create(slurm_destroy_char);
 			addto_char_list(association_cond->partition_list,
 					argv[i]+end);
 			set = 1;
@@ -341,11 +351,6 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 		PRINT_PART,
 		PRINT_USER
 	};
-
-	assoc_cond->id_list = list_create(slurm_destroy_char);
-	assoc_cond->user_list = list_create(slurm_destroy_char);
-	assoc_cond->acct_list = list_create(slurm_destroy_char);
-	assoc_cond->cluster_list = list_create(slurm_destroy_char);
 
 	_set_cond(&i, argc, argv, assoc_cond, format_list);
 

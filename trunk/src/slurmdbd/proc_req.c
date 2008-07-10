@@ -940,7 +940,7 @@ static void *_init_conn(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 		goto end_it;
 	}
 	if ((init_msg->version < SLURMDBD_VERSION_MIN) ||
-	    (init_msg->version > SLURMDBD_VERSION) {
+	    (init_msg->version > SLURMDBD_VERSION)) {
 		comment = "Incompatable RPC version";
 		error("Incompatable RPC version received "
 		      "(%u not between %d and %d)",

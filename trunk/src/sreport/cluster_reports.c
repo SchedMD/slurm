@@ -71,9 +71,12 @@ static int _set_cond(int *start, int argc, char *argv[],
 	int end = 0;
 	int local_cluster_flag = all_clusters_flag;
 
+	if(!cluster_cond->cluster_list)
+		cluster_cond->cluster_list = list_create(slurm_destroy_char);
+
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
-		if (strncasecmp (argv[i], "Set", 3) == 0) {
+		if (!strncasecmp (argv[i], "Set", 3)) {
 			i--;
 			break;
 		} else if(!end && !strncasecmp(argv[i], "where", 5)) {
@@ -81,20 +84,17 @@ static int _set_cond(int *start, int argc, char *argv[],
 		} else if(!end && !strncasecmp(argv[i], "all_clusters", 1)) {
 			local_cluster_flag = 1;
 			continue;
-		} else if(!end) {
+		} else if(!end
+			  || !strncasecmp (argv[i], "Names", 1)) {
 			addto_char_list(cluster_cond->cluster_list, argv[i]);
 			set = 1;
-		} else if (strncasecmp (argv[i], "End", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "End", 1)) {
 			cluster_cond->usage_end = parse_time(argv[i]+end);
 			set = 1;
-		} else if (strncasecmp (argv[i], "Format", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "Format", 1)) {
 			if(format_list)
 				addto_char_list(format_list, argv[i]+end);
-		} else if (strncasecmp (argv[i], "Names", 1) == 0) {
-			addto_char_list(cluster_cond->cluster_list,
-					argv[i]+end);
-			set = 1;
-		} else if (strncasecmp (argv[i], "Start", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "Start", 1)) {
 			cluster_cond->usage_start = parse_time(argv[i]+end);
 			set = 1;
 		} else {
@@ -211,7 +211,6 @@ static List _get_cluster_list(int argc, char *argv[], uint32_t *total_time,
 	int i=0;
 	List cluster_list = NULL;
 
-	cluster_cond->cluster_list = list_create(slurm_destroy_char);
 	cluster_cond->with_usage = 1;
 
 	_set_cond(&i, argc, argv, cluster_cond, format_list);
