@@ -2,7 +2,8 @@
  *  pack.c - lowest level un/pack functions
  *  NOTE: The memory buffer will expand as needed using xrealloc()
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Jim Garlick <garlick@llnl.gov>, 
  *             Morris Jette <jette1@llnl.gov>, et. al.
@@ -93,6 +94,11 @@ Buf create_buf(char *data, int size)
 {
 	Buf my_buf;
 
+	if (size > MAX_BUF_SIZE) {
+		error("create_buf: buffer size too large");
+		return NULL;
+	}
+
 	my_buf = xmalloc(sizeof(struct slurm_buf));
 	my_buf->magic = BUF_MAGIC;
 	my_buf->size = size;
@@ -114,6 +120,11 @@ void free_buf(Buf my_buf)
 /* Grow a buffer by the specified amount */
 void grow_buf (Buf buffer, int size)
 {
+	if (buffer->size > (MAX_BUF_SIZE - size)) {
+		error("grow_buf: buffer size too large");
+		return;
+	}
+
 	buffer->size += size;
 	xrealloc(buffer->head, buffer->size);
 }
@@ -122,6 +133,11 @@ void grow_buf (Buf buffer, int size)
 Buf init_buf(int size)
 {
 	Buf my_buf;
+
+	if (size > MAX_BUF_SIZE) {
+		error("init_buf: buffer size too large");
+		return NULL;
+	}
 
 	my_buf = xmalloc(sizeof(struct slurm_buf));
 	my_buf->magic = BUF_MAGIC;
@@ -153,6 +169,10 @@ void pack_time(time_t val, Buf buffer)
 	int64_t n64 = HTON_int64((int64_t) val);
 
 	if (remaining_buf(buffer) < sizeof(n64)) {
+		if (buffer->size > (MAX_BUF_SIZE - BUF_SIZE)) {
+			error("pack_time: buffer size too large");
+			return;
+		}
 		buffer->size += BUF_SIZE;
 		xrealloc(buffer->head, buffer->size);
 	}
@@ -184,6 +204,10 @@ void pack64(uint64_t val, Buf buffer)
 	uint64_t nl =  HTON_uint64(val);
 
 	if (remaining_buf(buffer) < sizeof(nl)) {
+		if (buffer->size > (MAX_BUF_SIZE - BUF_SIZE)) {
+			error("pack64: buffer size too large");
+			return;
+		}
 		buffer->size += BUF_SIZE;
 		xrealloc(buffer->head, buffer->size);
 	}
@@ -217,6 +241,10 @@ void pack32(uint32_t val, Buf buffer)
 	uint32_t nl = htonl(val);
 
 	if (remaining_buf(buffer) < sizeof(nl)) {
+		if (buffer->size > (MAX_BUF_SIZE - BUF_SIZE)) {
+			error("pack32: buffer size too large");
+			return;
+		}
 		buffer->size += BUF_SIZE;
 		xrealloc(buffer->head, buffer->size);
 	}
@@ -308,6 +336,10 @@ void pack16(uint16_t val, Buf buffer)
 	uint16_t ns = htons(val);
 
 	if (remaining_buf(buffer) < sizeof(ns)) {
+		if (buffer->size > (MAX_BUF_SIZE - BUF_SIZE)) {
+			error("pack16: buffer size too large");
+			return;
+		}
 		buffer->size += BUF_SIZE;
 		xrealloc(buffer->head, buffer->size);
 	}
@@ -340,6 +372,10 @@ int unpack16(uint16_t * valp, Buf buffer)
 void pack8(uint8_t val, Buf buffer)
 {
 	if (remaining_buf(buffer) < sizeof(uint8_t)) {
+		if (buffer->size > (MAX_BUF_SIZE - BUF_SIZE)) {
+			error("pack8: buffer size too large");
+			return;
+		}
 		buffer->size += BUF_SIZE;
 		xrealloc(buffer->head, buffer->size);
 	}
@@ -372,6 +408,10 @@ void packmem(char *valp, uint32_t size_val, Buf buffer)
 	uint32_t ns = htonl(size_val);
 
 	if (remaining_buf(buffer) < (sizeof(ns) + size_val)) {
+		if (buffer->size > (MAX_BUF_SIZE -  size_val - BUF_SIZE)) {
+			error("packmem: buffer size too large");
+			return;
+		}
 		buffer->size += (size_val + BUF_SIZE);
 		xrealloc(buffer->head, buffer->size);
 	}
@@ -520,6 +560,10 @@ void packstr_array(char **valp, uint32_t size_val, Buf buffer)
 	uint32_t ns = htonl(size_val);
 
 	if (remaining_buf(buffer) < sizeof(ns)) {
+		if (buffer->size > (MAX_BUF_SIZE - BUF_SIZE)) {
+			error("packstr_array: buffer size too large");
+			return;
+		}
 		buffer->size += BUF_SIZE;
 		xrealloc(buffer->head, buffer->size);
 	}
@@ -574,6 +618,10 @@ int unpackstr_array(char ***valp, uint32_t * size_valp, Buf buffer)
 void packmem_array(char *valp, uint32_t size_val, Buf buffer)
 {
 	if (remaining_buf(buffer) < size_val) {
+		if (buffer->size > (MAX_BUF_SIZE - size_val - BUF_SIZE)) {
+			error("packmem_array: buffer size too large");
+			return;
+		}
 		buffer->size += (size_val + BUF_SIZE);
 		xrealloc(buffer->head, buffer->size);
 	}
