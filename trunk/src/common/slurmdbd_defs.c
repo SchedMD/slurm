@@ -989,8 +989,10 @@ static Buf _recv_msg(void)
 	if (msg_read != sizeof(nw_size))
 		return NULL;
 	msg_size = ntohl(nw_size);
-	if ((msg_size < 2) || (msg_size > 1000000)) {
-		error("slurmdbd: Invalid msg_size (%u)");
+	/* We don't error check for an upper limit here
+  	 * since size could possibly be massive */
+	if (msg_size < 2) {
+		error("slurmdbd: Invalid msg_size (%u)", msg_size);
 		return NULL;
 	}
 
