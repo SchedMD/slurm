@@ -443,20 +443,17 @@ extern int user_top(int argc, char *argv[])
 					}
 					list_iterator_destroy(itr3);
 					field->print_routine(
-						SLURM_PRINT_VALUE,
 						field,
 						tmp_char);
 					xfree(tmp_char);
 					break;
 				case PRINT_USER_CLUSTER:
 					field->print_routine(
-						SLURM_PRINT_VALUE,
 						field,
 						local_cluster->name);
 					break;
 				case PRINT_USER_LOGIN:
-					field->print_routine(SLURM_PRINT_VALUE,
-							     field,
+					field->print_routine(field,
 							     local_user->name);
 					break;
 				case PRINT_USER_PROPER:
@@ -468,13 +465,11 @@ extern int user_top(int argc, char *argv[])
 							tmp_char =
 								pwd->pw_gecos;
 					}
-					field->print_routine(SLURM_PRINT_VALUE,
-							     field,
+					field->print_routine(field,
 							     tmp_char);
 					break;
 				case PRINT_USER_USED:
 					field->print_routine(
-						SLURM_PRINT_VALUE,
 						field,
 						local_user->cpu_secs,
 						local_cluster->cpu_secs);

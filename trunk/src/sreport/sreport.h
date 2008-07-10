@@ -102,7 +102,7 @@ extern void *db_conn;
 extern uint32_t my_uid;
 extern int all_clusters_flag;
 
-extern void sreport_print_time(type_t type, print_field_t *field,
+extern void sreport_print_time(print_field_t *field,
 			       uint64_t value, uint64_t total_time);
 extern int parse_option_end(char *option);
 extern char *strip_quotes(char *option, int *increased);
