@@ -49,12 +49,12 @@ static int _set_cond(int *start, int argc, char *argv[],
 
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
-		if (strncasecmp (argv[i], "Set", 3) == 0) {
+		if (!strncasecmp (argv[i], "Set", 3)) {
 			i--;
 			break;
-		} else if (strncasecmp (argv[i], "WithAssoc", 5) == 0) {
+		} else if (!strncasecmp (argv[i], "WithAssoc", 5)) {
 			acct_cond->with_assocs = 1;
-		} else if (strncasecmp (argv[i], "WithCoordinators", 5) == 0) {
+		} else if (!strncasecmp (argv[i], "WithCoordinators", 5)) {
 			acct_cond->with_coords = 1;
 		} else if(!end && !strncasecmp(argv[i], "where", 5)) {
 			continue;
@@ -63,32 +63,32 @@ static int _set_cond(int *start, int argc, char *argv[],
 			addto_char_list(acct_cond->assoc_cond->acct_list,
 					argv[i]);
 			u_set = 1;
-		} else if (strncasecmp (argv[i], "Clusters", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "Clusters", 1)) {
 			addto_char_list(acct_cond->assoc_cond->cluster_list,
 					argv[i]+end);
 			a_set = 1;
-		} else if (strncasecmp (argv[i], "Descriptions", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "Descriptions", 1)) {
 			addto_char_list(acct_cond->description_list,
 					argv[i]+end);
 			u_set = 1;
-		} else if (strncasecmp (argv[i], "Format", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "Format", 1)) {
 			if(format_list)
 				addto_char_list(format_list, argv[i]+end);
-		} else if (strncasecmp (argv[i], "Names", 1) == 0
-			   || strncasecmp (argv[i], "Accouts", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "Names", 1)
+			   || !strncasecmp (argv[i], "Accouts", 1)) {
 			addto_char_list(acct_cond->acct_list, argv[i]+end);
 			addto_char_list(acct_cond->assoc_cond->acct_list,
 					argv[i]);
 			u_set = 1;
-		} else if (strncasecmp (argv[i], "Organizations", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "Organizations", 1)) {
 			addto_char_list(acct_cond->organization_list,
 					argv[i]+end);
 			u_set = 1;
-		} else if (strncasecmp (argv[i], "Parent", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "Parent", 1)) {
 			acct_cond->assoc_cond->parent_acct =
 				strip_quotes(argv[i]+end, NULL);
 			a_set = 1;
-		} else if (strncasecmp (argv[i], "QosLevel", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "QosLevel", 1)) {
 			acct_cond->qos = str_2_acct_qos(argv[i]+end);
 			u_set = 1;
 		} else {
@@ -118,7 +118,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
-		if (strncasecmp (argv[i], "Where", 5) == 0) {
+		if (!strncasecmp (argv[i], "Where", 5)) {
 			i--;
 			break;
 		} else if(!end && !strncasecmp(argv[i], "set", 3)) {
@@ -126,26 +126,26 @@ static int _set_rec(int *start, int argc, char *argv[],
 		} else if(!end) {
 			printf(" Bad format on %s: End your option with "
 			       "an '=' sign\n", argv[i]);
-		} else if (strncasecmp (argv[i], "Description", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "Description", 1)) {
 			acct->description =  strip_quotes(argv[i]+end, NULL);
 			u_set = 1;
-		} else if (strncasecmp (argv[i], "FairShare", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "FairShare", 1)) {
 			if (get_uint(argv[i]+end, &assoc->fairshare, 
 			    "FairShare") == SLURM_SUCCESS)
 				a_set = 1;
-		} else if (strncasecmp (argv[i], "MaxCPUSec", 4) == 0) {
+		} else if (!strncasecmp (argv[i], "MaxCPUSec", 4)) {
 			if (get_uint(argv[i]+end, &assoc->max_cpu_secs_per_job,
 			    "MaxCPUSec") == SLURM_SUCCESS)
 				a_set = 1;
-		} else if (strncasecmp (argv[i], "MaxJobs", 4) == 0) {
+		} else if (!strncasecmp (argv[i], "MaxJobs", 4)) {
 			if (get_uint(argv[i]+end, &assoc->max_jobs,
 			    "MaxJobs") == SLURM_SUCCESS)
 				a_set = 1;
-		} else if (strncasecmp (argv[i], "MaxNodes", 4) == 0) {
+		} else if (!strncasecmp (argv[i], "MaxNodes", 4)) {
 			if (get_uint(argv[i]+end, &assoc->max_nodes_per_job,
 			    "MaxNodes") == SLURM_SUCCESS)
 				a_set = 1;
-		} else if (strncasecmp (argv[i], "MaxWall", 4) == 0) {
+		} else if (!strncasecmp (argv[i], "MaxWall", 4)) {
 			mins = time_str2mins(argv[i]+end);
 			if (mins != NO_VAL) {
 				assoc->max_wall_duration_per_job 
@@ -155,13 +155,13 @@ static int _set_rec(int *start, int argc, char *argv[],
 				printf(" Bad MaxWall time format: %s\n", 
 					argv[i]);
 			}
-		} else if (strncasecmp (argv[i], "Organization", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "Organization", 1)) {
 			acct->organization = strip_quotes(argv[i]+end, NULL);
 			u_set = 1;
-		} else if (strncasecmp (argv[i], "Parent", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "Parent", 1)) {
 			assoc->parent_acct = strip_quotes(argv[i]+end, NULL);
 			a_set = 1;
-		} else if (strncasecmp (argv[i], "QosLevel=", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "QosLevel=", 1)) {
 			acct->qos = str_2_acct_qos(argv[i]+end);
 			u_set = 1;
 		} else {
@@ -214,27 +214,27 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 		int end = parse_option_end(argv[i]);
 		if(!end) {
 			addto_char_list(name_list, argv[i]+end);
-		} else if (strncasecmp (argv[i], "Cluster", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "Cluster", 1)) {
 			addto_char_list(cluster_list, argv[i]+end);
-		} else if (strncasecmp (argv[i], "Description", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "Description", 1)) {
 			description = strip_quotes(argv[i]+end, NULL);
-		} else if (strncasecmp (argv[i], "FairShare", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "FairShare", 1)) {
 			if (get_uint(argv[i]+end, &fairshare, 
 			    "FairShare") == SLURM_SUCCESS)
 				limit_set = 1;
-		} else if (strncasecmp (argv[i], "MaxCPUSecs", 4) == 0) {
+		} else if (!strncasecmp (argv[i], "MaxCPUSecs", 4)) {
 			if (get_uint(argv[i]+end, &max_cpu_secs_per_job, 
 			    "MaxCPUSecs") == SLURM_SUCCESS)
 				limit_set = 1;
-		} else if (strncasecmp (argv[i], "MaxJobs", 4) == 0) {
+		} else if (!strncasecmp (argv[i], "MaxJobs", 4)) {
 			if (get_uint(argv[i]+end, &max_jobs, 
 			    "MaxJobs") == SLURM_SUCCESS)
 				limit_set = 1;
-		} else if (strncasecmp (argv[i], "MaxNodes", 4) == 0) {
+		} else if (!strncasecmp (argv[i], "MaxNodes", 4)) {
 			if (get_uint(argv[i]+end, &max_nodes_per_job, 
 			    "MaxNodes") == SLURM_SUCCESS)
 				limit_set = 1;
-		} else if (strncasecmp (argv[i], "MaxWall", 4) == 0) {
+		} else if (!strncasecmp (argv[i], "MaxWall", 4)) {
 			mins = time_str2mins(argv[i]+end);
 			if (mins != NO_VAL) {
 				max_wall_duration_per_job = (uint32_t) mins;
@@ -243,13 +243,13 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 				printf(" Bad MaxWall time format: %s\n", 
 					argv[i]);
 			}
-		} else if (strncasecmp (argv[i], "Names", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "Names", 1)) {
 			addto_char_list(name_list, argv[i]+end);
-		} else if (strncasecmp (argv[i], "Organization", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "Organization", 1)) {
 			organization = strip_quotes(argv[i]+end, NULL);
-		} else if (strncasecmp (argv[i], "Parent", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "Parent", 1)) {
 			parent = strip_quotes(argv[i]+end, NULL);
-		} else if (strncasecmp (argv[i], "QosLevel", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "QosLevel", 1)) {
 			qos = str_2_acct_qos(argv[i]+end);
 		} else {
 			printf(" Unknown option: %s\n", argv[i]);
@@ -752,107 +752,89 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 					switch(field->type) {
 					case PRINT_ACCOUNT:
 						field->print_routine(
-							SLURM_PRINT_VALUE,
 							field, acct->name);
 						break;
 					case PRINT_CLUSTER:
 						field->print_routine(
-							SLURM_PRINT_VALUE,
 							field, assoc->cluster);
 						break;
 					case PRINT_COORDS:
 						field->print_routine(
-							SLURM_PRINT_VALUE,
 							field,
 							acct->coordinators);
 						break;
 					case PRINT_DESC:
 						field->print_routine(
-							SLURM_PRINT_VALUE,
 							field, 
 							acct->description);
 						break;
 					case PRINT_FAIRSHARE:
 						field->print_routine(
-							SLURM_PRINT_VALUE,
 							field, 
 							assoc->fairshare);
 						break;
 					case PRINT_ID:
 						field->print_routine(
-							SLURM_PRINT_VALUE,
 							field, assoc->id);
 						break;
 					case PRINT_MAXC:
 						field->print_routine(
-							SLURM_PRINT_VALUE,
 							field, assoc->
 							max_cpu_secs_per_job);
 						break;
 					case PRINT_MAXJ:
 						field->print_routine(
-							SLURM_PRINT_VALUE,
 							field, assoc->max_jobs);
 						break;
 					case PRINT_MAXN:
 						field->print_routine(
-							SLURM_PRINT_VALUE,
 							field, assoc->
 							max_nodes_per_job);
 						break;
 					case PRINT_MAXW:
 						field->print_routine(
-							SLURM_PRINT_VALUE,
 							field, 
 							assoc->
 							max_wall_duration_per_job);
 						break;
 					case PRINT_ORG:
 						field->print_routine(
-							SLURM_PRINT_VALUE,
 							field, 
 							acct->organization);
 						break;
 					case PRINT_QOS:
 						field->print_routine(
-							SLURM_PRINT_VALUE,
 							field, 
 							acct_qos_str(
 								acct->qos));
 						break;
 					case PRINT_QOS_GOLD:
 						field->print_routine(
-							SLURM_PRINT_VALUE,
 							field,
 							acct->qos-1);
 						break;
 					case PRINT_QOS_RAW:
 						field->print_routine(
-							SLURM_PRINT_VALUE,
 							field,
 							acct->qos);
 						break;
 					case PRINT_PID:
 						field->print_routine(
-							SLURM_PRINT_VALUE,
 							field, 
 							assoc->parent_id);
 						break;
 					case PRINT_PNAME:
 						field->print_routine(
-							SLURM_PRINT_VALUE,
 							field, 
 							assoc->parent_acct);
 						break;
 					case PRINT_PART:
 						field->print_routine(
-							SLURM_PRINT_VALUE,
 							field, 
 							assoc->partition);
 						break;
 					case PRINT_USER:
 						field->print_routine(
-							SLURM_PRINT_VALUE,
 							field, assoc->user);
 						break;
 					default:
@@ -868,93 +850,77 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 				switch(field->type) {
 				case PRINT_ACCOUNT:
 					field->print_routine(
-						SLURM_PRINT_VALUE,
 						field, acct->name);
 					break;
 				case PRINT_CLUSTER:
 					field->print_routine(
-						SLURM_PRINT_VALUE,
 						field, NULL);
 					break;
 				case PRINT_COORDS:
 					field->print_routine(
-						SLURM_PRINT_VALUE,
 						field,
 						acct->coordinators);
 					break;
 				case PRINT_DESC:
 					field->print_routine(
-						SLURM_PRINT_VALUE,
 						field, acct->description);
 					break;
 				case PRINT_FAIRSHARE:
 					field->print_routine(
-						SLURM_PRINT_VALUE,
 						field, NULL);
 					break;
 				case PRINT_ID:
 					field->print_routine(
-						SLURM_PRINT_VALUE,
 						field, NULL);
 					break;
 				case PRINT_MAXC:
 					field->print_routine(
-						SLURM_PRINT_VALUE,
 						field, NULL);
 					break;
 				case PRINT_MAXJ:
 					field->print_routine(
-						SLURM_PRINT_VALUE,
 						field, NULL);
 					break;
 				case PRINT_MAXN:
 					field->print_routine(
-						SLURM_PRINT_VALUE,
 						field, NULL);
 					break;
 				case PRINT_MAXW:
 					field->print_routine(
-						SLURM_PRINT_VALUE,
 						field, NULL);
 					break;
 				case PRINT_ORG:
 					field->print_routine(
-						SLURM_PRINT_VALUE,
 						field, acct->organization);
 					break;
 				case PRINT_QOS:
 					field->print_routine(
-						SLURM_PRINT_VALUE,
 						field, acct_qos_str(acct->qos));
 					break;
 				case PRINT_QOS_GOLD:
 					field->print_routine(
-						SLURM_PRINT_VALUE, field,
+						field,
 						acct->qos-1);
 					break;
 				case PRINT_QOS_RAW:
 					field->print_routine(
-						SLURM_PRINT_VALUE, field,
+						field,
 						acct->qos);
 					break;
 				case PRINT_PID:
 					field->print_routine(
-						SLURM_PRINT_VALUE,
 						field, NULL);
 					break;
 				case PRINT_PNAME:
 					field->print_routine(
-						SLURM_PRINT_VALUE, 
 						field, NULL);
 					break;
 				case PRINT_PART:
 					field->print_routine(
-						SLURM_PRINT_VALUE, 
 						field, NULL);
 					break;
 				case PRINT_USER:
 					field->print_routine(
-						SLURM_PRINT_VALUE, 
 						field, NULL);
 					break;
 				default:
@@ -1006,10 +972,10 @@ extern int sacctmgr_modify_account(int argc, char *argv[])
 	assoc->max_wall_duration_per_job = NO_VAL;
 
 	for (i=0; i<argc; i++) {
-		if (strncasecmp (argv[i], "Where", 5) == 0) {
+		if (!strncasecmp (argv[i], "Where", 5)) {
 			i++;
 			cond_set = _set_cond(&i, argc, argv, acct_cond, NULL);
-		} else if (strncasecmp (argv[i], "Set", 3) == 0) {
+		} else if (!strncasecmp (argv[i], "Set", 3)) {
 			i++;
 			rec_set = _set_rec(&i, argc, argv, acct, assoc);
 		} else {

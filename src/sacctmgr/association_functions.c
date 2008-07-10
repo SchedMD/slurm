@@ -123,39 +123,39 @@ static int _set_cond(int *start, int argc, char *argv[],
 
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
-		if (!end && strncasecmp (argv[i], "Tree", 4) == 0) {
+		if (!end && !strncasecmp (argv[i], "Tree", 4)) {
 			tree_display = 1;
 		} else if(!end && !strncasecmp(argv[i], "where", 5)) {
 			continue;
 		} else if(!end) {
 			addto_char_list(association_cond->id_list, argv[i]);
 			set = 1;
-		} else if (strncasecmp (argv[i], "Id", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "Id", 1)) {
 			addto_char_list(association_cond->id_list, argv[i]+end);
 			set = 1;
-		}  else if (strncasecmp (argv[i], "Associations", 2) == 0) {
+		}  else if (!strncasecmp (argv[i], "Associations", 2)) {
 			addto_char_list(association_cond->id_list, argv[i]+end);
 			set = 1;
-		} else if (strncasecmp (argv[i], "Users", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "Users", 1)) {
 			addto_char_list(association_cond->user_list,
 					argv[i]+end);
 			set = 1;
-		} else if (strncasecmp (argv[i], "Accounts", 2) == 0) {
+		} else if (!strncasecmp (argv[i], "Accounts", 2)) {
 			addto_char_list(association_cond->acct_list,
 					argv[i]+end);
 			set = 1;
-		} else if (strncasecmp (argv[i], "Clusters", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "Clusters", 1)) {
 			addto_char_list(association_cond->cluster_list,
 					argv[i]+end);
 			set = 1;
-		} else if (strncasecmp (argv[i], "Format", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "Format", 1)) {
 			if(format_list)
 				addto_char_list(format_list, argv[i]+end);
-		} else if (strncasecmp (argv[i], "Partitions", 4) == 0) {
+		} else if (!strncasecmp (argv[i], "Partitions", 4)) {
 			addto_char_list(association_cond->partition_list,
 					argv[i]+end);
 			set = 1;
-		} else if (strncasecmp (argv[i], "Parent", 4) == 0) {
+		} else if (!strncasecmp (argv[i], "Parent", 4)) {
 			association_cond->parent_acct =
 				strip_quotes(argv[i]+end, NULL);
 			set = 1;
@@ -477,53 +477,53 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 				} else {
 					print_acct = assoc->acct;
 				}
-				field->print_routine(SLURM_PRINT_VALUE, field, 
+				field->print_routine(field, 
 						     print_acct);
 				break;
 			case PRINT_CLUSTER:
-				field->print_routine(SLURM_PRINT_VALUE, field,
+				field->print_routine(field,
 						     assoc->cluster);
 				break;
 			case PRINT_FAIRSHARE:
-				field->print_routine(SLURM_PRINT_VALUE, field,
+				field->print_routine(field,
 						     assoc->fairshare);
 				break;
 			case PRINT_ID:
-				field->print_routine(SLURM_PRINT_VALUE, field, 
+				field->print_routine(field, 
 						     assoc->id);
 				break;
 			case PRINT_MAXC:
 				field->print_routine(
-					SLURM_PRINT_VALUE, field,
+					field,
 					assoc->max_cpu_secs_per_job);
 				break;
 			case PRINT_MAXJ:
-				field->print_routine(SLURM_PRINT_VALUE, field, 
+				field->print_routine(field, 
 						     assoc->max_jobs);
 				break;
 			case PRINT_MAXN:
-				field->print_routine(SLURM_PRINT_VALUE, field,
+				field->print_routine(field,
 						     assoc->max_nodes_per_job);
 				break;
 			case PRINT_MAXW:
 				field->print_routine(
-					SLURM_PRINT_VALUE, field,
+					field,
 					assoc->max_wall_duration_per_job);
 				break;
 			case PRINT_PID:
-				field->print_routine(SLURM_PRINT_VALUE, field,
+				field->print_routine(field,
 						     assoc->parent_id);
 				break;
 			case PRINT_PNAME:
-				field->print_routine(SLURM_PRINT_VALUE, field,
+				field->print_routine(field,
 						     assoc->parent_acct);
 				break;
 			case PRINT_PART:
-				field->print_routine(SLURM_PRINT_VALUE, field,
+				field->print_routine(field,
 						     assoc->partition);
 				break;
 			case PRINT_USER:
-				field->print_routine(SLURM_PRINT_VALUE, field, 
+				field->print_routine(field, 
 						     assoc->user);
 				break;
 			default:

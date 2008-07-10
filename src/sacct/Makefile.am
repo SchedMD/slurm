@@ -1,6 +1,7 @@
 # Makefile for sacct
 
 AUTOMAKE_OPTIONS = foreign
+CLEANFILES = core.*
 
 INCLUDES = -I$(top_srcdir)
 

@@ -1,6 +1,7 @@
 #
 
 AUTOMAKE_OPTIONS = foreign
+CLEANFILES = core.*
 
 INCLUDES = -I$(top_srcdir) 
 
@@ -22,7 +23,8 @@ srun_SOURCES = \
 	multi_prog.c multi_prog.h \
 	srun.wrapper.c
 
-convenience_libs = $(top_builddir)/src/api/libslurmhelper.la
+convenience_libs = $(top_builddir)/src/api/libslurmhelper.la	\
+	$(top_builddir)/src/common/libcommon.o -ldl
 
 srun_LDADD = \
 	$(convenience_libs) 

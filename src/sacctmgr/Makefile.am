@@ -1,6 +1,7 @@
 # Makefile for sacctmgr
 
 AUTOMAKE_OPTIONS = foreign
+CLEANFILES = core.*
 
 INCLUDES = -I$(top_srcdir)
 
@@ -17,8 +18,8 @@ sacctmgr_SOURCES =	\
 	user_functions.c	
 
 sacctmgr_LDADD =  \
-	$(top_builddir)/src/common/libcommon.o -ldl \
 	$(top_builddir)/src/api/libslurmhelper.la \
+	$(top_builddir)/src/common/libcommon.o -ldl \
 	$(READLINE_LIBS)
 
 sacctmgr_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)

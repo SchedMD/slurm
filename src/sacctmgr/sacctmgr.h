@@ -142,8 +142,7 @@ extern int notice_thread_init();
 extern int notice_thread_fini();
 extern int commit_check(char *warning);
 extern int get_uint(char *in_value, uint32_t *out_value, char *type);
-extern void sacctmgr_print_coord_list(type_t type, print_field_t *field,
-				      List value);
+extern void sacctmgr_print_coord_list(print_field_t *field, List value);
 extern int sort_coord_list(acct_coord_rec_t *coord_a,
 			   acct_coord_rec_t *coord_b);
 

@@ -52,15 +52,15 @@ static int _set_cond(int *start, int argc, char *argv[],
 		if(!end && !strncasecmp(argv[i], "where", 5)) {
 			continue;
 		} else if(!end
-			  || (strncasecmp (argv[i], "Id", 1) == 0)
-			  || (strncasecmp (argv[i], "Txn", 1) == 0)) {
+			  || (!strncasecmp (argv[i], "Id", 1))
+			  || (!strncasecmp (argv[i], "Txn", 1))) {
 			if(!txn_cond->id_list)
 				txn_cond->id_list = 
 					list_create(slurm_destroy_char);
 			
 			addto_char_list(txn_cond->id_list, argv[i]+end);
 			set = 1;
-		} else if (strncasecmp (argv[i], "Action", 4) == 0) {
+		} else if (!strncasecmp (argv[i], "Action", 4)) {
 			/* FIX ME! fill this in */
 /* 			if(!txn_cond->action_list) */
 /* 				txn_cond->action_list =  */
@@ -69,14 +69,15 @@ static int _set_cond(int *start, int argc, char *argv[],
 /* 			addto_char_list(txn_cond->action_list, */
 /* 					argv[i]+end); */
 /* 			set = 1; */
-		} else if (strncasecmp (argv[i], "Actors", 4) == 0) {
+		} else if (!strncasecmp (argv[i], "Actors", 4)
+			   || !strncasecmp (argv[i], "User", 1)) {
 			if(!txn_cond->actor_list)
 				txn_cond->actor_list =
 					list_create(slurm_destroy_char);
 			addto_char_list(txn_cond->actor_list,
 					argv[i]+end);
 			set = 1;
-		} else if (strncasecmp (argv[i], "Format", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "Format", 1)) {
 			if(format_list)
 				addto_char_list(format_list, argv[i]+end);
 		} else {
@@ -150,12 +151,12 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 		} else if(!strncasecmp("Info", object, 2)) {
 			field->type = PRINT_INFO;
 			field->name = xstrdup("Info");
-			field->len = 11;
-			field->print_routine = print_fields_uint;
+			field->len = 20;
+			field->print_routine = print_fields_str;
 		} else if(!strncasecmp("TimeStamp", object, 1)) {
 			field->type = PRINT_TS;
 			field->name = xstrdup("Time");
-			field->len = 7;
+			field->len = 15;
 			field->print_routine = print_fields_date;
 		} else if(!strncasecmp("Where", object, 1)) {
 			field->type = PRINT_WHERE;
@@ -181,27 +182,27 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 			switch(field->type) {
 			case PRINT_ACTION:
 				field->print_routine(
-					SLURM_PRINT_VALUE, field, 
+					field, 
 					slurmdbd_msg_type_2_str(txn->action));
 				break;
 			case PRINT_ACTOR:
-				field->print_routine(SLURM_PRINT_VALUE, field,
+				field->print_routine(field,
 						     txn->actor_name);
 				break;
 			case PRINT_ID:
-				field->print_routine(SLURM_PRINT_VALUE, field,
+				field->print_routine(field,
 						     txn->id);
 				break;
 			case PRINT_INFO:
-				field->print_routine(SLURM_PRINT_VALUE, field, 
+				field->print_routine(field, 
 						     txn->set_info);
 				break;
 			case PRINT_TS:
-				field->print_routine(SLURM_PRINT_VALUE, field,
+				field->print_routine(field,
 						     txn->timestamp);
 				break;
 			case PRINT_WHERE:
-				field->print_routine(SLURM_PRINT_VALUE, field, 
+				field->print_routine(field, 
 						     txn->where_query);
 				break;
 			default:

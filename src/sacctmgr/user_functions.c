@@ -49,12 +49,12 @@ static int _set_cond(int *start, int argc, char *argv[],
 
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
-		if (strncasecmp (argv[i], "Set", 3) == 0) {
+		if (!strncasecmp (argv[i], "Set", 3)) {
 			i--;
 			break;
-		} else if (!end && strncasecmp (argv[i], "WithAssoc", 5) == 0) {
+		} else if (!end && !strncasecmp (argv[i], "WithAssoc", 5)) {
 			user_cond->with_assocs = 1;
-		} else if (strncasecmp (argv[i], "WithCoordinators", 5) == 0) {
+		} else if (!strncasecmp (argv[i], "WithCoordinators", 5)) {
 			user_cond->with_coords = 1;
 		} else if(!end && !strncasecmp(argv[i], "where", 5)) {
 			continue;
@@ -63,36 +63,36 @@ static int _set_cond(int *start, int argc, char *argv[],
 			addto_char_list(user_cond->assoc_cond->user_list,
 					argv[i]);
 			u_set = 1;
-		} else if (strncasecmp (argv[i], "Account", 2) == 0) {
+		} else if (!strncasecmp (argv[i], "Account", 2)) {
 			addto_char_list(user_cond->assoc_cond->acct_list,
 					argv[i]+end);
 			a_set = 1;
-		} else if (strncasecmp (argv[i], "AdminLevel", 2) == 0) {
+		} else if (!strncasecmp (argv[i], "AdminLevel", 2)) {
 			user_cond->admin_level = 
 				str_2_acct_admin_level(argv[i]+end);
 			u_set = 1;			
-		} else if (strncasecmp (argv[i], "Clusters", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "Clusters", 1)) {
 			addto_char_list(user_cond->assoc_cond->cluster_list,
 					argv[i]+end);
 			a_set = 1;
-		} else if (strncasecmp (argv[i], "DefaultAccount", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "DefaultAccount", 1)) {
 			addto_char_list(user_cond->def_acct_list,
 					argv[i]+end);
 			u_set = 1;
-		} else if (strncasecmp (argv[i], "Format", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "Format", 1)) {
 			if(format_list)
 				addto_char_list(format_list, argv[i]+end);
-		} else if (strncasecmp (argv[i], "Names", 1) == 0
-			   || strncasecmp (argv[i], "Users", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "Names", 1)
+			   || !strncasecmp (argv[i], "Users", 1)) {
 			addto_char_list(user_cond->user_list, argv[i]+end);
 			addto_char_list(user_cond->assoc_cond->user_list,
 					argv[i]+end);
 			u_set = 1;
-		} else if (strncasecmp (argv[i], "Partition", 3) == 0) {
+		} else if (!strncasecmp (argv[i], "Partition", 3)) {
 			addto_char_list(user_cond->assoc_cond->partition_list, 
 					argv[i]+end);
 			a_set = 1;
-		} else if (strncasecmp (argv[i], "QosLevel", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "QosLevel", 1)) {
 			user_cond->qos = str_2_acct_qos(argv[i]+end);
 			u_set = 1;
 		} else {
@@ -121,7 +121,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
-		if (strncasecmp (argv[i], "Where", 5) == 0) {
+		if (!strncasecmp (argv[i], "Where", 5)) {
 			i--;
 			break;
 		} else if(!end && !strncasecmp(argv[i], "set", 3)) {
@@ -129,40 +129,40 @@ static int _set_rec(int *start, int argc, char *argv[],
 		} else if(!end) {
 			printf(" Bad format on %s: End your option with "
 			       "an '=' sign\n", argv[i]);
-		} else if (strncasecmp (argv[i], "AdminLevel", 2) == 0) {
+		} else if (!strncasecmp (argv[i], "AdminLevel", 2)) {
 			user->admin_level = 
 				str_2_acct_admin_level(argv[i]+end);
 			u_set = 1;
-		} else if (strncasecmp (argv[i], "DefaultAccount", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "DefaultAccount", 1)) {
 			user->default_acct = strip_quotes(argv[i]+end, NULL);
 			u_set = 1;
-		} else if (strncasecmp (argv[i], "FairShare", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "FairShare", 1)) {
 			if(!association)
 				continue;
 			if (get_uint(argv[i]+end, &association->fairshare, 
 			    "FairShare") == SLURM_SUCCESS)
 				a_set = 1;
-		} else if (strncasecmp (argv[i], "MaxCPUSec", 4) == 0) {
+		} else if (!strncasecmp (argv[i], "MaxCPUSec", 4)) {
 			if(!association)
 				continue;
 			if (get_uint(argv[i]+end, 
 			     &association->max_cpu_secs_per_job, 
 			    "MaxCPUSec") == SLURM_SUCCESS)
 				a_set = 1;
-		} else if (strncasecmp (argv[i], "MaxJobs", 4) == 0) {
+		} else if (!strncasecmp (argv[i], "MaxJobs", 4)) {
 			if(!association)
 				continue;
 			if (get_uint(argv[i]+end, &association->max_jobs, 
 			    "MaxJobs") == SLURM_SUCCESS)
 				a_set = 1;
-		} else if (strncasecmp (argv[i], "MaxNodes", 4) == 0) {
+		} else if (!strncasecmp (argv[i], "MaxNodes", 4)) {
 			if(!association)
 				continue;
 			if (get_uint(argv[i]+end,
 			    &association->max_nodes_per_job, 
 			    "MaxNodes") == SLURM_SUCCESS)
 				a_set = 1;
-		} else if (strncasecmp (argv[i], "MaxWall", 4) == 0) {
+		} else if (!strncasecmp (argv[i], "MaxWall", 4)) {
 			if(!association)
 				continue;
 			mins = time_str2mins(argv[i]+end);
@@ -174,7 +174,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 				printf(" Bad MaxWall time format: %s\n", 
 					argv[i]);
 			}
-		} else if (strncasecmp (argv[i], "QosLevel", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "QosLevel", 1)) {
 			user->qos = str_2_acct_qos(argv[i]+end);
 			u_set = 1;
 		} else {
@@ -243,35 +243,35 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 		int end = parse_option_end(argv[i]);
 		if(!end) {
 			addto_char_list(assoc_cond->user_list, argv[i]+end);
-		} else if (strncasecmp (argv[i], "Accounts", 2) == 0) {
+		} else if (!strncasecmp (argv[i], "Accounts", 2)) {
 			addto_char_list(assoc_cond->acct_list,
 					argv[i]+end);
-		} else if (strncasecmp (argv[i], "AdminLevel", 2) == 0) {
+		} else if (!strncasecmp (argv[i], "AdminLevel", 2)) {
 			admin_level = str_2_acct_admin_level(argv[i]+end);
-		} else if (strncasecmp (argv[i], "Clusters", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "Clusters", 1)) {
 			addto_char_list(assoc_cond->cluster_list,
 					argv[i]+end);
-		} else if (strncasecmp (argv[i], "DefaultAccount", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "DefaultAccount", 1)) {
 			default_acct = strip_quotes(argv[i]+end, NULL);
 			addto_char_list(assoc_cond->acct_list,
 					default_acct);
-		} else if (strncasecmp (argv[i], "FairShare", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "FairShare", 1)) {
 			if (get_uint(argv[i]+end, &fairshare, 
 			    "FairShare") == SLURM_SUCCESS)
 				limit_set = 1;
-		} else if (strncasecmp (argv[i], "MaxCPUSecs", 4) == 0) {
+		} else if (!strncasecmp (argv[i], "MaxCPUSecs", 4)) {
 			if (get_uint(argv[i]+end, &max_cpu_secs_per_job, 
 			    "MaxCPUSecs") == SLURM_SUCCESS)
 				limit_set = 1;
-		} else if (strncasecmp (argv[i], "MaxJobs", 4) == 0) {
+		} else if (!strncasecmp (argv[i], "MaxJobs", 4)) {
 			if (get_uint(argv[i]+end, &max_jobs, 
 			    "MaxJobs") == SLURM_SUCCESS)
 				limit_set = 1;
-		} else if (strncasecmp (argv[i], "MaxNodes", 4) == 0) {
+		} else if (!strncasecmp (argv[i], "MaxNodes", 4)) {
 			if (get_uint(argv[i]+end, &max_nodes_per_job, 
 			    "MaxNodes") == SLURM_SUCCESS)
 				limit_set = 1;
-		} else if (strncasecmp (argv[i], "MaxWall", 4) == 0) {
+		} else if (!strncasecmp (argv[i], "MaxWall", 4)) {
 			mins = time_str2mins(argv[i]+end);
 			if (mins != NO_VAL) {
 				max_wall_duration_per_job = (uint32_t) mins;
@@ -280,12 +280,12 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 				printf(" Bad MaxWall time format: %s\n", 
 					argv[i]);
 			}
-		} else if (strncasecmp (argv[i], "Names", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "Names", 1)) {
 			addto_char_list(assoc_cond->user_list, argv[i]+end);
-		} else if (strncasecmp (argv[i], "Partitions", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "Partitions", 1)) {
 			addto_char_list(assoc_cond->partition_list,
 					argv[i]+end);
-		} else if (strncasecmp (argv[i], "QosLevel", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "QosLevel", 1)) {
 			qos = str_2_acct_qos(argv[i]+end);
 		} else {
 			printf(" Unknown option: %s\n", argv[i]);
@@ -894,13 +894,11 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 					switch(field->type) {
 					case PRINT_ACCOUNT:
 						field->print_routine(
-							SLURM_PRINT_VALUE, 
 							field, 
 							assoc->acct);
 						break;
 					case PRINT_ADMIN:
 						field->print_routine(
-							SLURM_PRINT_VALUE, 
 							field,
 							acct_admin_level_str(
 								user->
@@ -908,101 +906,85 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 						break;
 					case PRINT_CLUSTER:
 						field->print_routine(
-							SLURM_PRINT_VALUE, 
 							field,
 							assoc->cluster);
 						break;
 					case PRINT_COORDS:
 						field->print_routine(
-							SLURM_PRINT_VALUE,
 							field,
 							user->coord_accts);
 						break;
 					case PRINT_DACCT:
 						field->print_routine(
-							SLURM_PRINT_VALUE, 
 							field,
 							user->default_acct);
 						break;
 					case PRINT_FAIRSHARE:
 						field->print_routine(
-							SLURM_PRINT_VALUE, 
 							field,
 							assoc->fairshare);
 						break;
 					case PRINT_ID:
 						field->print_routine(
-							SLURM_PRINT_VALUE, 
 							field,
 							assoc->id);
 						break;
 					case PRINT_MAXC:
 						field->print_routine(
-							SLURM_PRINT_VALUE, 
 							field,
 							assoc->
 							max_cpu_secs_per_job);
 						break;
 					case PRINT_MAXJ:
 						field->print_routine(
-							SLURM_PRINT_VALUE, 
 							field, 
 							assoc->max_jobs);
 						break;
 					case PRINT_MAXN:
 						field->print_routine(
-							SLURM_PRINT_VALUE, 
 							field,
 							assoc->
 							max_nodes_per_job);
 						break;
 					case PRINT_MAXW:
 						field->print_routine(
-							SLURM_PRINT_VALUE, 
 							field,
 							assoc->
 							max_wall_duration_per_job);
 						break;
 					case PRINT_QOS:
 						field->print_routine(
-							SLURM_PRINT_VALUE, 
 							field,
 							acct_qos_str(
 								user->qos));
 						break;
 					case PRINT_QOS_GOLD:
 						field->print_routine(
-							SLURM_PRINT_VALUE, 
 							field,
 							user->qos-1);
 						break;
 					case PRINT_QOS_RAW:
 						field->print_routine(
-							SLURM_PRINT_VALUE, 
 							field,
 							user->qos);
 						break;
 					case PRINT_PID:
 						field->print_routine(
-							SLURM_PRINT_VALUE, 
 							field,
 							assoc->parent_id);
 						break;
 					case PRINT_PNAME:
 						field->print_routine(
-							SLURM_PRINT_VALUE, 
 							field,
 							assoc->parent_acct);
 						break;
 					case PRINT_PART:
 						field->print_routine(
-							SLURM_PRINT_VALUE, 
 							field,
 							assoc->partition);
 						break;
 					case PRINT_USER:
 						field->print_routine(
-							SLURM_PRINT_VALUE, 
 							field,
 							user->name);
 						break;
@@ -1019,89 +1001,88 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 				switch(field->type) {
 				case PRINT_ACCOUNT:
 					field->print_routine(
-						SLURM_PRINT_VALUE, field, 
+						field, 
 						NULL);
 					break;
 				case PRINT_ADMIN:
 					field->print_routine(
-						SLURM_PRINT_VALUE, field,
+						field,
 						acct_admin_level_str(
 							user->admin_level));
 					break;
 				case PRINT_CLUSTER:
 					field->print_routine(
-						SLURM_PRINT_VALUE, field,
+						field,
 						NULL);
 					break;
 				case PRINT_COORDS:
 					field->print_routine(
-						SLURM_PRINT_VALUE,
 						field,
 						user->coord_accts);
 					break;
 				case PRINT_DACCT:
 					field->print_routine(
-						SLURM_PRINT_VALUE, field,
+						field,
 						user->default_acct);
 					break;
 				case PRINT_FAIRSHARE:
 					field->print_routine(
-						SLURM_PRINT_VALUE, field,
+						field,
 						NULL);
 					break;
 				case PRINT_ID:
 					field->print_routine(
-						SLURM_PRINT_VALUE, field,
+						field,
 						NULL);
 					break;
 				case PRINT_MAXC:
 					field->print_routine(
-						SLURM_PRINT_VALUE, field,
+						field,
 						NULL);
 					break;
 				case PRINT_MAXJ:
 					field->print_routine(
-						SLURM_PRINT_VALUE, field, 
+						field, 
 						NULL);
 					break;
 				case PRINT_MAXN:
 					field->print_routine(
-						SLURM_PRINT_VALUE, field,
+						field,
 						NULL);
 					break;
 				case PRINT_MAXW:
 					field->print_routine(
-						SLURM_PRINT_VALUE, field,
+						field,
 						NULL);
 					break;
 				case PRINT_QOS:
 					field->print_routine(
-						SLURM_PRINT_VALUE, field,
+						field,
 						acct_qos_str(user->qos));
 					break;
 				case PRINT_QOS_GOLD:
 					field->print_routine(
-						SLURM_PRINT_VALUE, field,
+						field,
 						user->qos-1);
 					break;
 				case PRINT_QOS_RAW:
 					field->print_routine(
-						SLURM_PRINT_VALUE, field,
+						field,
 						user->qos);
 					break;
 				case PRINT_PID:
 					field->print_routine(
-						SLURM_PRINT_VALUE, field,
+						field,
 						NULL);
 					break;
 				case PRINT_PART:
 					field->print_routine(
-						SLURM_PRINT_VALUE, field, 
+						field, 
 						NULL);
 					break;
 				case PRINT_USER:
 					field->print_routine(
-						SLURM_PRINT_VALUE, field, 
+						field, 
 						user->name);
 					break;
 				default:
@@ -1152,11 +1133,11 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 	assoc->max_wall_duration_per_job = NO_VAL;
 
 	for (i=0; i<argc; i++) {
-		if (strncasecmp (argv[i], "Where", 5) == 0) {
+		if (!strncasecmp (argv[i], "Where", 5)) {
 			i++;
 			cond_set = _set_cond(&i, argc, argv, user_cond, NULL);
 			      
-		} else if (strncasecmp (argv[i], "Set", 3) == 0) {
+		} else if (!strncasecmp (argv[i], "Set", 3)) {
 			i++;
 			rec_set = _set_rec(&i, argc, argv, user, assoc);
 		} else {

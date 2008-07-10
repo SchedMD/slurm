@@ -562,61 +562,39 @@ extern int get_uint(char *in_value, uint32_t *out_value, char *type)
 	return SLURM_SUCCESS;
 }
 
-extern void sacctmgr_print_coord_list(type_t type, print_field_t *field,
-				      List value)
+extern void sacctmgr_print_coord_list(print_field_t *field, List value)
 {
 	ListIterator itr = NULL;
 	char *print_this = NULL;
 	acct_coord_rec_t *object = NULL;
 	
-	switch(type) {
-	case SLURM_PRINT_HEADLINE:
+	if(!value || !list_count(value)) {
 		if(print_fields_parsable_print)
-			printf("%s|", field->name);
+			print_this = xstrdup("");
 		else
-			printf("%-*.*s ", field->len, field->len, field->name);
-		break;
-	case SLURM_PRINT_UNDERSCORE:
-		if(!print_fields_parsable_print)
-			printf("%-*.*s ", field->len, field->len, 
-			       "---------------------------------------");
-		break;
-	case SLURM_PRINT_VALUE:
-		if(!value || !list_count(value)) {
-			if(print_fields_parsable_print)
-				print_this = xstrdup("");
-			else
-				print_this = xstrdup(" ");
-		} else {
-			list_sort(value, (ListCmpF)sort_coord_list);
-			itr = list_iterator_create(value);
-			while((object = list_next(itr))) {
-				if(print_this) 
-					xstrfmtcat(print_this, ",%s", 
-						   object->name);
-				else 
-					print_this = xstrdup(object->name);
-			}
-			list_iterator_destroy(itr);
+			print_this = xstrdup(" ");
+	} else {
+		list_sort(value, (ListCmpF)sort_coord_list);
+		itr = list_iterator_create(value);
+		while((object = list_next(itr))) {
+			if(print_this) 
+				xstrfmtcat(print_this, ",%s", 
+					   object->name);
+			else 
+				print_this = xstrdup(object->name);
 		}
-
-		if(print_fields_parsable_print)
-			printf("%s|", print_this);
-		else {
-			if(strlen(print_this) > field->len) 
-				print_this[field->len-1] = '+';
-			
-			printf("%-*.*s ", field->len, field->len, print_this);
-		}
-		xfree(print_this);
-		break;
-	default:
-		if(print_fields_parsable_print)
-			printf("%s|", "n/a");
-		else
-			printf("%-*s ", field->len, "n/a");
-		break;
+		list_iterator_destroy(itr);
 	}
+	
+	if(print_fields_parsable_print)
+		printf("%s|", print_this);
+	else {
+		if(strlen(print_this) > field->len) 
+			print_this[field->len-1] = '+';
+		
+		printf("%-*.*s ", field->len, field->len, print_this);
+	}
+	xfree(print_this);
 }
 
 extern int sort_coord_list(acct_coord_rec_t *coord_a, acct_coord_rec_t *coord_b)

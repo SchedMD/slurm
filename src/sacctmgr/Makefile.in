@@ -76,9 +76,8 @@ am_sacctmgr_OBJECTS = account_functions.$(OBJEXT) \
 	txn_functions.$(OBJEXT) user_functions.$(OBJEXT)
 sacctmgr_OBJECTS = $(am_sacctmgr_OBJECTS)
 am__DEPENDENCIES_1 =
-sacctmgr_DEPENDENCIES = $(top_builddir)/src/common/libcommon.o \
-	$(top_builddir)/src/api/libslurmhelper.la \
-	$(am__DEPENDENCIES_1)
+sacctmgr_DEPENDENCIES = $(top_builddir)/src/api/libslurmhelper.la \
+	$(top_builddir)/src/common/libcommon.o $(am__DEPENDENCIES_1)
 sacctmgr_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(sacctmgr_LDFLAGS) \
 	$(LDFLAGS) -o $@
@@ -267,6 +266,7 @@ target_vendor = @target_vendor@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
+CLEANFILES = core.*
 INCLUDES = -I$(top_srcdir)
 sacctmgr_SOURCES = \
 	account_functions.c	\
@@ -279,8 +279,8 @@ sacctmgr_SOURCES = \
 	user_functions.c	
 
 sacctmgr_LDADD = \
-	$(top_builddir)/src/common/libcommon.o -ldl \
 	$(top_builddir)/src/api/libslurmhelper.la \
+	$(top_builddir)/src/common/libcommon.o -ldl \
 	$(READLINE_LIBS)
 
 sacctmgr_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
@@ -488,6 +488,7 @@ install-strip:
 mostlyclean-generic:
 
 clean-generic:
+	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
 
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
