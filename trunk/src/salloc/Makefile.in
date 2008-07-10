@@ -261,6 +261,7 @@ target_vendor = @target_vendor@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
+CLEANFILES = core.*
 INCLUDES = -I$(top_srcdir) 
 salloc_SOURCES = salloc.c salloc.h opt.c opt.h
 convenience_libs = $(top_builddir)/src/api/libslurmhelper.la
@@ -466,6 +467,7 @@ install-strip:
 mostlyclean-generic:
 
 clean-generic:
+	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
 
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)

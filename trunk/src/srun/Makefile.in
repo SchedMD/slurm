@@ -75,7 +75,9 @@ am_srun_OBJECTS = srun.$(OBJEXT) opt.$(OBJEXT) srun_job.$(OBJEXT) \
 	allocate.$(OBJEXT) core-format.$(OBJEXT) multi_prog.$(OBJEXT) \
 	srun.wrapper.$(OBJEXT)
 srun_OBJECTS = $(am_srun_OBJECTS)
-srun_DEPENDENCIES = $(convenience_libs)
+am__DEPENDENCIES_1 = $(top_builddir)/src/api/libslurmhelper.la \
+	$(top_builddir)/src/common/libcommon.o
+srun_DEPENDENCIES = $(am__DEPENDENCIES_1)
 srun_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(srun_LDFLAGS) \
 	$(LDFLAGS) -o $@
@@ -264,6 +266,7 @@ target_vendor = @target_vendor@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
+CLEANFILES = core.*
 INCLUDES = -I$(top_srcdir) 
 srun_SOURCES = \
 	srun.c srun.h \
@@ -281,7 +284,9 @@ srun_SOURCES = \
 	multi_prog.c multi_prog.h \
 	srun.wrapper.c
 
-convenience_libs = $(top_builddir)/src/api/libslurmhelper.la
+convenience_libs = $(top_builddir)/src/api/libslurmhelper.la	\
+	$(top_builddir)/src/common/libcommon.o -ldl
+
 srun_LDADD = \
 	$(convenience_libs) 
 
@@ -492,6 +497,7 @@ install-strip:
 mostlyclean-generic:
 
 clean-generic:
+	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
 
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)

@@ -49,7 +49,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
-		if (strncasecmp (argv[i], "Set", 3) == 0) {
+		if (!strncasecmp (argv[i], "Set", 3)) {
 			i--;
 			break;
 		} else if(!end && !strncasecmp(argv[i], "where", 5)) {
@@ -57,10 +57,10 @@ static int _set_cond(int *start, int argc, char *argv[],
 		} else if(!end) {
 			addto_char_list(cluster_list, argv[i]);
 			set = 1;
-		} else if (strncasecmp (argv[i], "Format", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "Format", 1)) {
 			if(format_list)
 				addto_char_list(format_list, argv[i]+end);
-		} else if (strncasecmp (argv[i], "Names", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "Names", 1)) {
 			addto_char_list(cluster_list,
 					argv[i]+end);
 			set = 1;
@@ -83,7 +83,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
-		if (strncasecmp (argv[i], "Where", 5) == 0) {
+		if (!strncasecmp (argv[i], "Where", 5)) {
 			i--;
 			break;
 		} else if(!end && !strncasecmp(argv[i], "set", 3)) {
@@ -91,20 +91,20 @@ static int _set_rec(int *start, int argc, char *argv[],
 		} else if(!end) {
 			printf(" Bad format on %s: End your option with "
 			       "an '=' sign\n", argv[i]);			
-		} else if (strncasecmp (argv[i], "FairShare", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "FairShare", 1)) {
 			if (get_uint(argv[i]+end, &assoc->fairshare, 
 			    "FairShare") == SLURM_SUCCESS)
 				set = 1;
-		} else if (strncasecmp (argv[i], "MaxJobs", 4) == 0) {
+		} else if (!strncasecmp (argv[i], "MaxJobs", 4)) {
 			if (get_uint(argv[i]+end, &assoc->max_jobs,
 			    "MaxJobs") == SLURM_SUCCESS)
 				set = 1;
-		} else if (strncasecmp (argv[i], "MaxNodes", 4) == 0) {
+		} else if (!strncasecmp (argv[i], "MaxNodes", 4)) {
 			if (get_uint(argv[i]+end, 
 			    &assoc->max_nodes_per_job,
 			    "MaxNodes") == SLURM_SUCCESS)
 				set = 1;
-		} else if (strncasecmp (argv[i], "MaxWall", 4) == 0) {
+		} else if (!strncasecmp (argv[i], "MaxWall", 4)) {
 			mins = time_str2mins(argv[i]+end);
 			if (mins != NO_VAL) {
 				assoc->max_wall_duration_per_job
@@ -114,7 +114,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 				printf(" Bad MaxWall time format: %s\n", 
 					argv[i]);
 			}
-		} else if (strncasecmp (argv[i], "MaxCPUSecs", 4) == 0) {
+		} else if (!strncasecmp (argv[i], "MaxCPUSecs", 4)) {
 			if (get_uint(argv[i]+end, 
 			     &assoc->max_cpu_secs_per_job, 
 			    "MaxCPUSecs") == SLURM_SUCCESS)
@@ -152,19 +152,19 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 		int end = parse_option_end(argv[i]);
 		if(!end) {
 			addto_char_list(name_list, argv[i]+end);
-		} else if (strncasecmp (argv[i], "FairShare", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "FairShare", 1)) {
 			fairshare = atoi(argv[i]+end);
 			limit_set = 1;
-		} else if (strncasecmp (argv[i], "MaxCPUSecs", 4) == 0) {
+		} else if (!strncasecmp (argv[i], "MaxCPUSecs", 4)) {
 			max_cpu_secs_per_job = atoi(argv[i]+end);
 			limit_set = 1;
-		} else if (strncasecmp (argv[i], "MaxJobs=", 4) == 0) {
+		} else if (!strncasecmp (argv[i], "MaxJobs=", 4)) {
 			max_jobs = atoi(argv[i]+end);
 			limit_set = 1;
-		} else if (strncasecmp (argv[i], "MaxNodes", 4) == 0) {
+		} else if (!strncasecmp (argv[i], "MaxNodes", 4)) {
 			max_nodes_per_job = atoi(argv[i]+end);
 			limit_set = 1;
-		} else if (strncasecmp (argv[i], "MaxWall", 4) == 0) {
+		} else if (!strncasecmp (argv[i], "MaxWall", 4)) {
 			mins = time_str2mins(argv[i]+end);
 			if (mins != NO_VAL) {
 				max_wall_duration_per_job = (uint32_t) mins;
@@ -173,7 +173,7 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 				printf(" Bad MaxWall time format: %s\n", 
 					argv[i]);
 			}
-		} else if (strncasecmp (argv[i], "Names", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "Names", 1)) {
 			addto_char_list(name_list, argv[i]+end);
 		} else {
 			printf(" Unknown option: %s\n", argv[i]);
@@ -410,40 +410,40 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 		while((field = list_next(itr2))) {
 			switch(field->type) {
 			case PRINT_CLUSTER:
-				field->print_routine(SLURM_PRINT_VALUE, field,
+				field->print_routine(field,
 						     cluster->name);
 				break;
 			case PRINT_CHOST:
-				field->print_routine(SLURM_PRINT_VALUE, field,
+				field->print_routine(field,
 						     cluster->control_host);
 				break;
 			case PRINT_CPORT:
-				field->print_routine(SLURM_PRINT_VALUE, field,
+				field->print_routine(field,
 						     cluster->control_port);
 				break;
 			case PRINT_FAIRSHARE:
 				field->print_routine(
-					SLURM_PRINT_VALUE, field,
+					field,
 					cluster->default_fairshare);
 				break;
 			case PRINT_MAXC:
 				field->print_routine(
-					SLURM_PRINT_VALUE, field,
+					field,
 					cluster->default_max_cpu_secs_per_job);
 				break;
 			case PRINT_MAXJ:
 				field->print_routine(
-					SLURM_PRINT_VALUE, field, 
+					field, 
 					cluster->default_max_jobs);
 				break;
 			case PRINT_MAXN:
 				field->print_routine(
-					SLURM_PRINT_VALUE, field,
+					field,
 					cluster->default_max_nodes_per_job);
 				break;
 			case PRINT_MAXW:
 				field->print_routine(
-					SLURM_PRINT_VALUE, field,
+					field,
 					cluster->
 					default_max_wall_duration_per_job);
 				break;
@@ -489,12 +489,12 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 	assoc->max_wall_duration_per_job = NO_VAL;
 
 	for (i=0; i<argc; i++) {
-		if (strncasecmp (argv[i], "Where", 5) == 0) {
+		if (!strncasecmp (argv[i], "Where", 5)) {
 			i++;
 			if(_set_cond(&i, argc, argv,
 				     assoc_cond->cluster_list, NULL))
 				cond_set = 1;
-		} else if (strncasecmp (argv[i], "Set", 3) == 0) {
+		} else if (!strncasecmp (argv[i], "Set", 3)) {
 			i++;
 			if(_set_rec(&i, argc, argv, assoc))
 				rec_set = 1;
@@ -671,14 +671,14 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 				continue;
 			}
 			cluster_name = xstrdup(argv[i]+end);
-		} else if (strncasecmp (argv[i], "File", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "File", 1)) {
 			if(file_name) {
 				printf(" File name already set to %s\n",
 				       file_name);
 				continue;
 			}		
 			file_name = xstrdup(argv[i]+end);
-		} else if (strncasecmp (argv[i], "Name", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "Name", 1)) {
 			if(cluster_name) {
 				printf(" Can only do one cluster at a time.  "
 				       "Already doing %s\n", cluster_name);

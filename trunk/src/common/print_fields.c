@@ -54,245 +54,150 @@ extern void destroy_print_field(void *object)
 extern void print_fields_header(List print_fields_list)
 {
 	ListIterator itr = NULL;
-	print_field_t *object = NULL;
+	print_field_t *field = NULL;
 
 	if(!print_fields_list || !print_fields_have_header) 
 		return;
 
 	itr = list_iterator_create(print_fields_list);
-	while((object = list_next(itr))) {
-		(object->print_routine)(SLURM_PRINT_HEADLINE, object, 0);
+	while((field = list_next(itr))) {
+		if(print_fields_parsable_print)
+			printf("%s|", field->name);
+		else
+			printf("%-*.*s ", field->len, field->len, field->name);
 	}
 	list_iterator_reset(itr);
 	printf("\n");
 	if(print_fields_parsable_print)
 		return;
-	while((object = list_next(itr))) {
-		(object->print_routine)(SLURM_PRINT_UNDERSCORE, object, 0);
+	while((field = list_next(itr))) {
+		printf("%-*.*s ", field->len, field->len, 
+		       "-----------------------------------------------------");
 	}
 	list_iterator_destroy(itr);
 	printf("\n");	
 }
 
-extern void print_fields_date(void)
+extern void print_fields_date(print_field_t *field, time_t value)
 {
-	time_t now;
+	char temp_char[field->len];
+	time_t now = value;
 
-	now = time(NULL);
-	printf("%s", ctime(&now));
-
+	if(!now)
+		now = time(NULL);
+	slurm_make_time_str(&value, (char *)temp_char, field->len);
+	if(print_fields_parsable_print)
+		printf("%s|", temp_char);
+	else 
+		printf("%-*.*s ", field->len, field->len, temp_char);
 }
 
-extern void print_fields_str(type_t type, print_field_t *field, char *value)
+extern void print_fields_str(print_field_t *field, char *value)
 {
 	char temp_char[field->len];
 	char *print_this = NULL;
 
-	switch(type) {
-	case SLURM_PRINT_HEADLINE:
+	if(!value) {
 		if(print_fields_parsable_print)
-			printf("%s|", field->name);
+			print_this = "";
 		else
-			printf("%-*.*s ", field->len, field->len, field->name);
-		break;
-	case SLURM_PRINT_UNDERSCORE:
-		if(!print_fields_parsable_print)
-			printf("%-*.*s ", field->len, field->len, 
-			       "---------------------------------------");
-		break;
-	case SLURM_PRINT_VALUE:
-		if(!value) {
-			if(print_fields_parsable_print)
-				print_this = "";
-			else
-				print_this = " ";
-		}
-
-		if(print_fields_parsable_print)
-			printf("%s|", value);
-		else {
-			memcpy(temp_char, value, field->len);
-
+			print_this = " ";
+	}
+	
+	if(print_fields_parsable_print)
+		printf("%s|", value);
+	else {
+		if(!print_this) {
+			memcpy(&temp_char, value, field->len);
+			
 			if(strlen(value) > field->len) 
 				temp_char[field->len-1] = '+';
 			print_this = temp_char;
-			printf("%-*.*s ", field->len, field->len, print_this);
 		}
-		break;
-	default:
-		if(print_fields_parsable_print)
-			printf("%s|", "n/a");
-		else
-			printf("%-*s ", field->len, "n/a");
-		break;
+		printf("%-*.*s ", field->len, field->len, print_this);
 	}
 }
 
-extern void print_fields_uint32(type_t type, print_field_t *field,
-				uint32_t value)
+extern void print_fields_uint32(print_field_t *field, uint32_t value)
 {
-	switch(type) {
-	case SLURM_PRINT_HEADLINE:
+	/* (value == unset)  || (value == cleared) */
+	if((value == NO_VAL) || (value == INFINITE)) {
 		if(print_fields_parsable_print)
-			printf("%s|", field->name);
-		else
-			printf("%*.*s ", field->len, field->len, field->name);
-		break;
-	case SLURM_PRINT_UNDERSCORE:
-		if(!print_fields_parsable_print)
-			printf("%*.*s ", field->len, field->len, 
-			       "---------------------------------------");
-		break;
-	case SLURM_PRINT_VALUE:
-		/* (value == unset)  || (value == cleared) */
-		if((value == NO_VAL) || (value == INFINITE)) {
-			if(print_fields_parsable_print)
-				printf("|");	
-			else				
-				printf("%*s ", field->len, " ");
-		} else {
-			if(print_fields_parsable_print)
-				printf("%u|", value);	
-			else
-				printf("%*u ", field->len, value);
-		}
-		break;
-	default:
+			printf("|");	
+		else				
+			printf("%*s ", field->len, " ");
+	} else {
 		if(print_fields_parsable_print)
-			printf("%s|", "n/a");
+			printf("%u|", value);	
 		else
-			printf("%*.*s ", field->len, field->len, "n/a");
-		break;
+			printf("%*u ", field->len, value);
 	}
 }
 
-extern void print_fields_uint64(type_t type, print_field_t *field,
-				uint64_t value)
+extern void print_fields_uint64(print_field_t *field, uint64_t value)
 {
-	switch(type) {
-	case SLURM_PRINT_HEADLINE:
+	/* (value == unset)  || (value == cleared) */
+	if((value == NO_VAL) || (value == INFINITE)) {
 		if(print_fields_parsable_print)
-			printf("%s|", field->name);
-		else
-			printf("%*.*s ", field->len, field->len, field->name);
-		break;
-	case SLURM_PRINT_UNDERSCORE:
-		if(!print_fields_parsable_print)
-			printf("%*.*s ", field->len, field->len, 
-			       "---------------------------------------");
-		break;
-	case SLURM_PRINT_VALUE:
-		/* (value == unset)  || (value == cleared) */
-		if((value == NO_VAL) || (value == INFINITE)) {
-			if(print_fields_parsable_print)
-				printf("|");	
-			else				
-				printf("%*s ", field->len, " ");
-		} else {
-			if(print_fields_parsable_print)
-				printf("%llu|", (long long unsigned) value);	
-			else
-				printf("%*llu ", field->len, 
-				       (long long unsigned) value);
-		}
-		break;
-	default:
+			printf("|");	
+		else				
+			printf("%*s ", field->len, " ");
+	} else {
 		if(print_fields_parsable_print)
-			printf("%s|", "n/a");
+			printf("%llu|", (long long unsigned) value);	
 		else
-			printf("%*.*s ", field->len, field->len, "n/a");
-		break;
+			printf("%*llu ", field->len, 
+			       (long long unsigned) value);
 	}
 }
 
-extern void print_fields_time(type_t type, print_field_t *field, uint32_t value)
+extern void print_fields_time(print_field_t *field, uint32_t value)
 {
-	switch(type) {
-	case SLURM_PRINT_HEADLINE:
+	/* (value == unset)  || (value == cleared) */
+	if((value == NO_VAL) || (value == INFINITE)) {
 		if(print_fields_parsable_print)
-			printf("%s|", field->name);
+			printf("|");	
 		else
-			printf("%*.*s ", field->len, field->len, field->name);
-		break;
-	case SLURM_PRINT_UNDERSCORE:
-		if(!print_fields_parsable_print)
-			printf("%*.*s ", field->len, field->len, 
-			       "---------------------------------------");
-		break;
-	case SLURM_PRINT_VALUE:
-		/* (value == unset)  || (value == cleared) */
-		if((value == NO_VAL) || (value == INFINITE)) {
-			if(print_fields_parsable_print)
-				printf("|");	
-			else
-				printf("%*s ", field->len, " ");
-		} else {
-			char time_buf[32];
-			mins2time_str((time_t) value, 
-				      time_buf, sizeof(time_buf));
-			if(print_fields_parsable_print)
-				printf("%s|", time_buf);
-			else
-				printf("%*s ", field->len, time_buf);
-		}
-		break;
-	default:
-		printf("%*.*s ", field->len, field->len, "n/a");
-		break;
+			printf("%*s ", field->len, " ");
+	} else {
+		char time_buf[32];
+		mins2time_str((time_t) value, time_buf, sizeof(time_buf));
+		if(print_fields_parsable_print)
+			printf("%s|", time_buf);
+		else
+			printf("%*s ", field->len, time_buf);
 	}
 }
 
-extern void print_fields_char_list(type_t type, print_field_t *field,
-				   List value)
+extern void print_fields_char_list(print_field_t *field, List value)
 {
 	ListIterator itr = NULL;
 	char *print_this = NULL;
 	char *object = NULL;
 	
-	switch(type) {
-	case SLURM_PRINT_HEADLINE:
+	if(!value || !list_count(value)) {
 		if(print_fields_parsable_print)
-			printf("%s|", field->name);
+			print_this = xstrdup("");
 		else
-			printf("%-*.*s ", field->len, field->len, field->name);
-		break;
-	case SLURM_PRINT_UNDERSCORE:
-		if(!print_fields_parsable_print)
-			printf("%-*.*s ", field->len, field->len, 
-			       "---------------------------------------");
-		break;
-	case SLURM_PRINT_VALUE:
-		if(!value || !list_count(value)) {
-			if(print_fields_parsable_print)
-				print_this = xstrdup("");
-			else
-				print_this = xstrdup(" ");
-		} else {
-			itr = list_iterator_create(value);
-			while((object = list_next(itr))) {
-				if(print_this) 
-					xstrfmtcat(print_this, ",%s", object);
-				else 
-					print_this = xstrdup(object);
-			}
-			list_iterator_destroy(itr);
+			print_this = xstrdup(" ");
+	} else {
+		itr = list_iterator_create(value);
+		while((object = list_next(itr))) {
+			if(print_this) 
+				xstrfmtcat(print_this, ",%s", object);
+			else 
+				print_this = xstrdup(object);
 		}
-
-		if(print_fields_parsable_print)
-			printf("%s|", print_this);
-		else {
-			if(strlen(print_this) > field->len) 
-				print_this[field->len-1] = '+';
-			
-			printf("%-*.*s ", field->len, field->len, print_this);
-		}
-		xfree(print_this);
-		break;
-	default:
-		if(print_fields_parsable_print)
-			printf("%s|", "n/a");
-		else
-			printf("%-*s ", field->len, "n/a");
-		break;
+		list_iterator_destroy(itr);
 	}
+	
+	if(print_fields_parsable_print)
+		printf("%s|", print_this);
+	else {
+		if(strlen(print_this) > field->len) 
+			print_this[field->len-1] = '+';
+		
+		printf("%-*.*s ", field->len, field->len, print_this);
+	}
+	xfree(print_this);
 }

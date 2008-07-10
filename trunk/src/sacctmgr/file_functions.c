@@ -254,52 +254,52 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 				break;
 			}
 			file_opts->name = xstrdup(option);
-		} else if (strncasecmp (sub, "AdminLevel", 2) == 0) {
+		} else if (!strncasecmp (sub, "AdminLevel", 2)) {
 			file_opts->admin = str_2_acct_admin_level(option);
-		} else if (strncasecmp (sub, "Coordinator", 2) == 0) {
+		} else if (!strncasecmp (sub, "Coordinator", 2)) {
 			if(!file_opts->coord_list)
 				file_opts->coord_list =
 					list_create(slurm_destroy_char);
 			addto_char_list(file_opts->coord_list, option);
-		} else if (strncasecmp (sub, "DefaultAccount", 3) == 0) {
+		} else if (!strncasecmp (sub, "DefaultAccount", 3)) {
 			file_opts->def_acct = xstrdup(option);
-		} else if (strncasecmp (sub, "Description", 3) == 0) {
+		} else if (!strncasecmp (sub, "Description", 3)) {
 			file_opts->desc = xstrdup(option);
-		} else if (strncasecmp (sub, "FairShare", 1) == 0) {
+		} else if (!strncasecmp (sub, "FairShare", 1)) {
 			if (get_uint(option, &file_opts->fairshare, 
 			    "FairShare") != SLURM_SUCCESS) {
 				printf(" Bad FairShare value: %s\n", option);
 				_destroy_sacctmgr_file_opts(file_opts);
 				break;
 			}
-		} else if (strncasecmp (sub, "MaxCPUSec", 4) == 0
-			   || strncasecmp (sub, "MaxProcSec", 4) == 0) {
+		} else if (!strncasecmp (sub, "MaxCPUSec", 4)
+			   || !strncasecmp (sub, "MaxProcSec", 4)) {
 			if (get_uint(option, &file_opts->max_cpu_secs_per_job,
 			    "MaxCPUSec") != SLURM_SUCCESS) {
 				printf(" Bad MaxCPUSec value: %s\n", option);
 				_destroy_sacctmgr_file_opts(file_opts);
 				break;
 			}
-		} else if (strncasecmp (sub, "MaxJobs", 4) == 0) {
+		} else if (!strncasecmp (sub, "MaxJobs", 4)) {
 			if (get_uint(option, &file_opts->max_jobs,
 			    "MaxJobs") != SLURM_SUCCESS) {
 				printf(" Bad MaxJobs value: %s\n", option);
 				_destroy_sacctmgr_file_opts(file_opts);
 				break;
 			}
-		} else if (strncasecmp (sub, "MaxNodes", 4) == 0) {
+		} else if (!strncasecmp (sub, "MaxNodes", 4)) {
 			if (get_uint(option, &file_opts->max_nodes_per_job,
 			    "MaxNodes") != SLURM_SUCCESS) {
 				printf(" Bad MaxNodes value: %s\n", option);
 				_destroy_sacctmgr_file_opts(file_opts);
 				break;
 			}
-		} else if (strncasecmp (sub, "MaxWall", 4) == 0) {
+		} else if (!strncasecmp (sub, "MaxWall", 4)) {
 			mins = time_str2mins(option);
 			if (mins >= 0) {
 				file_opts->max_wall_duration_per_job 
 					= (uint32_t) mins;
-			} else if (strcmp(option, "-1") == 0) {
+			} else if (strcmp(option, "-1")) {
 				file_opts->max_wall_duration_per_job = INFINITE;
 			} else {
 				printf(" Bad MaxWall time format: %s\n", 
@@ -307,10 +307,10 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 				_destroy_sacctmgr_file_opts(file_opts);
 				break;
 			}
-		} else if (strncasecmp (sub, "Organization", 1) == 0) {
+		} else if (!strncasecmp (sub, "Organization", 1)) {
 			file_opts->org = xstrdup(option);
-		} else if (strncasecmp (sub, "QosLevel", 1) == 0
-			   || strncasecmp (sub, "Expedite", 1) == 0) {
+		} else if (!strncasecmp (sub, "QosLevel", 1)
+			   || !strncasecmp (sub, "Expedite", 1)) {
 			file_opts->qos = str_2_acct_qos(option);
 		} else {
 			printf(" Unknown option: %s\n", sub);
@@ -489,41 +489,41 @@ static int _print_out_assoc(List assoc_list, bool user)
 		while((field = list_next(itr2))) {
 			switch(field->type) {
 			case PRINT_ACCOUNT:
-				field->print_routine(SLURM_PRINT_VALUE, field,
+				field->print_routine(field,
 						     assoc->acct);
 				break;
 			case PRINT_FAIRSHARE:
-				field->print_routine(SLURM_PRINT_VALUE, field,
+				field->print_routine(field,
 						     assoc->fairshare);
 				break;
 			case PRINT_MAXC:
 				field->print_routine(
-					SLURM_PRINT_VALUE, field,
+					field,
 					assoc->max_cpu_secs_per_job);
 				break;
 			case PRINT_MAXJ:
-				field->print_routine(SLURM_PRINT_VALUE, field, 
+				field->print_routine(field, 
 						     assoc->max_jobs);
 				break;
 			case PRINT_MAXN:
-				field->print_routine(SLURM_PRINT_VALUE, field,
+				field->print_routine(field,
 						     assoc->max_nodes_per_job);
 				break;
 			case PRINT_MAXW:
 				field->print_routine(
-					SLURM_PRINT_VALUE, field,
+					field,
 					assoc->max_wall_duration_per_job);
 				break;
 			case PRINT_PARENT:
-				field->print_routine(SLURM_PRINT_VALUE, field,
+				field->print_routine(field,
 						     assoc->parent_acct);
 				break;
 			case PRINT_PART:
-				field->print_routine(SLURM_PRINT_VALUE, field,
+				field->print_routine(field,
 						     assoc->partition);
 				break;
 			case PRINT_USER:
-				field->print_routine(SLURM_PRINT_VALUE, field, 
+				field->print_routine(field, 
 						     assoc->user);
 				break;
 			default:
@@ -1735,22 +1735,19 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				switch(field->type) {
 				case PRINT_DESC:
 					field->print_routine(
-						SLURM_PRINT_VALUE,
 						field, acct->description);
 					break;
 				case PRINT_NAME:
 					field->print_routine(
-						SLURM_PRINT_VALUE,
 						field, acct->name);
 					break;
 				case PRINT_ORG:
 					field->print_routine(
-						SLURM_PRINT_VALUE,
 						field, acct->organization);
 					break;
 				case PRINT_QOS:
 					field->print_routine(
-						SLURM_PRINT_VALUE, field,
+						field,
 						acct_qos_str(acct->qos));
 					break;
 				default:
@@ -1790,29 +1787,27 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				switch(field->type) {
 				case PRINT_ADMIN:
 					field->print_routine(
-						SLURM_PRINT_VALUE, field,
+						field,
 						acct_admin_level_str(
 							user->admin_level));
 					break;
 				case PRINT_COORDS:
 					field->print_routine(
-						SLURM_PRINT_VALUE,
 						field,
 						user->coord_accts);
 					break;
 				case PRINT_DACCT:
 					field->print_routine(
-						SLURM_PRINT_VALUE, field,
+						field,
 						user->default_acct);
 					break;
 				case PRINT_NAME:
 					field->print_routine(
-						SLURM_PRINT_VALUE,
 						field, user->name);
 					break;
 				case PRINT_QOS:
 					field->print_routine(
-						SLURM_PRINT_VALUE, field,
+						field,
 						acct_qos_str(user->qos));
 					break;
 				default:
