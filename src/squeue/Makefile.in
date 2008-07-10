@@ -76,7 +76,7 @@ PROGRAMS = $(bin_PROGRAMS)
 am_squeue_OBJECTS = squeue.$(OBJEXT) print.$(OBJEXT) opts.$(OBJEXT) \
 	sort.$(OBJEXT)
 squeue_OBJECTS = $(am_squeue_OBJECTS)
-squeue_DEPENDENCIES = $(top_builddir)/src/api/libslurmhelper.la
+squeue_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o
 squeue_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(squeue_LDFLAGS) \
 	$(LDFLAGS) -o $@
@@ -267,7 +267,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir)
-squeue_LDADD = $(top_builddir)/src/api/libslurmhelper.la
+squeue_LDADD = $(top_builddir)/src/api/libslurm.o -ldl
 noinst_HEADERS = squeue.h print.h
 squeue_SOURCES = squeue.c print.c opts.c sort.c
 squeue_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)

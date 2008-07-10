@@ -1054,13 +1054,8 @@ void do_dump_completion(void)
 /* do_expire() -- purge expired data from the accounting log file
  */
 
-void do_expire(int dummy)
+void do_expire()
 {
-	if (dummy == NO_VAL) {
-		/* just load the symbol, don't want to execute */
-		slurm_reconfigure();
-	}
-
 	if(params.opt_completion) 
 		g_slurm_jobcomp_archive(selected_parts, &params);
 	else

@@ -75,8 +75,7 @@ am_srun_OBJECTS = srun.$(OBJEXT) opt.$(OBJEXT) srun_job.$(OBJEXT) \
 	allocate.$(OBJEXT) core-format.$(OBJEXT) multi_prog.$(OBJEXT) \
 	srun.wrapper.$(OBJEXT)
 srun_OBJECTS = $(am_srun_OBJECTS)
-am__DEPENDENCIES_1 = $(top_builddir)/src/api/libslurmhelper.la \
-	$(top_builddir)/src/common/libcommon.o
+am__DEPENDENCIES_1 = $(top_builddir)/src/api/libslurm.o
 srun_DEPENDENCIES = $(am__DEPENDENCIES_1)
 srun_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(srun_LDFLAGS) \
@@ -284,8 +283,8 @@ srun_SOURCES = \
 	multi_prog.c multi_prog.h \
 	srun.wrapper.c
 
-convenience_libs = $(top_builddir)/src/api/libslurmhelper.la	\
-	$(top_builddir)/src/common/libcommon.o -ldl
+convenience_libs = \
+	$(top_builddir)/src/api/libslurm.o -ldl
 
 srun_LDADD = \
 	$(convenience_libs) 

@@ -75,7 +75,7 @@ am_slurmdbd_OBJECTS = agent.$(OBJEXT) proc_req.$(OBJEXT) \
 	read_config.$(OBJEXT) rpc_mgr.$(OBJEXT) slurmdbd.$(OBJEXT)
 slurmdbd_OBJECTS = $(am_slurmdbd_OBJECTS)
 slurmdbd_DEPENDENCIES = $(top_builddir)/src/common/libdaemonize.la \
-	$(top_builddir)/src/common/libcommon.o
+	$(top_builddir)/src/api/libslurm.o
 slurmdbd_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(slurmdbd_LDFLAGS) \
 	$(LDFLAGS) -o $@
@@ -268,7 +268,7 @@ CLEANFILES = core.*
 INCLUDES = -I$(top_srcdir)
 slurmdbd_LDADD = \
 	$(top_builddir)/src/common/libdaemonize.la \
-	 $(top_builddir)/src/common/libcommon.o -ldl
+	$(top_builddir)/src/api/libslurm.o -ldl
 
 slurmdbd_SOURCES = \
 	agent.c			\

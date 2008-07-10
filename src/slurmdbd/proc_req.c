@@ -791,7 +791,7 @@ static int _get_txn(void *db_conn,
 					      DBD_GET_TXN);
 		return SLURM_ERROR;
 	}
-	
+
 	list_msg.my_list = acct_storage_g_get_txn(db_conn, cond_msg->cond);
 	slurmdbd_free_cond_msg(DBD_GET_TXN, cond_msg);
 

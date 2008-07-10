@@ -16,12 +16,11 @@ sreport_SOURCES =	\
 	common.c
 
 sreport_LDADD =  \
-	$(top_builddir)/src/common/libcommon.o -ldl \
-	$(top_builddir)/src/api/libslurmhelper.la \
+	$(top_builddir)/src/api/libslurm.o -ldl\
 	$(READLINE_LIBS)
 
 sreport_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 
 force:
-$(convenience_libs) : force
+$(sreport_LDADD) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`

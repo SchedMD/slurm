@@ -20,7 +20,7 @@ endif
 
 INCLUDES     = -I$(top_srcdir)
 
-noinst_PROGRAMS = libcommon.o
+noinst_PROGRAMS = libcommon.o libeio.o libspank.o
 
 noinst_LTLIBRARIES = 			\
 	libcommon.la 			\
@@ -118,13 +118,23 @@ libcommon_la_LIBADD   = -ldl
 
 libcommon_la_LDFLAGS  = $(LIB_LDFLAGS) -module --export-dynamic
 
-libcommon_o_SOURCES = 
-
-
 # This was made so we chould export all symbols from libcommon 
 # on multiple platforms
+libcommon_o_SOURCES = 
 libcommon.o :  $(libcommon_la_OBJECTS) $(libcommon_la_DEPENDENCIES) 
 	$(libcommon_la_LINK)  $(libcommon_la_OBJECTS) 
+
+# This was made so we chould export all symbols from libeio 
+# on multiple platforms
+libeio_o_SOURCES = 
+libeio.o :  $(libeio_la_OBJECTS) $(libeio_la_DEPENDENCIES) 
+	$(LINK)  $(libeio_la_OBJECTS) 
+
+# This was made so we chould export all symbols from libspank 
+# on multiple platforms
+libspank_o_SOURCES = 
+libspank.o :  $(libspank_la_OBJECTS) $(libspank_la_DEPENDENCIES) 
+	$(LINK)  $(libspank_la_OBJECTS) 
 
 
 global_defaults.c : $(top_builddir)/config.h Makefile

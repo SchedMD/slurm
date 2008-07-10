@@ -759,7 +759,7 @@ extern List acct_storage_p_get_txn(void *db_conn,
 	List ret_list = NULL;
 
 	get_msg.cond = txn_cond;
-	
+
 	req.msg_type = DBD_GET_TXN;
 	req.data = &get_msg;
 	rc = slurm_send_recv_slurmdbd_msg(&req, &resp);

@@ -53,9 +53,15 @@ lib_LTLIBRARIES = libslurm.la libpmi.la
 BUILT_SOURCES = $(VERSION_SCRIPT) $(PMI_VERSION_SCRIPT) libslurm.la
 
 # Note that libslurmhelper is mostly the same as libslurm, except that
-# it exports ALL symbols, including those from libcommon, libeio, etc.
-# Also, libslurmhelper is a convenience library, it is not installed.
+# it exports ALL symbols used by the process, libcommon, libeio, etc.
+# Only link with libslurmhelper if you are sure you are not going to be 
+# loading a plugin that could use something you yourself are not 
+# calling from here.
+# libslurm.o only contains all the api symbols and will export 
+# them to plugins that are loaded.
+# Also, libslurmhelper, libslurm.o are for convenience, they are not installed.
 noinst_LTLIBRARIES = libslurmhelper.la
+noinst_PROGRAMS = libslurm.o
 
 slurmapi_src =           \
 	allocate.c       \
@@ -84,9 +90,9 @@ slurmapi_src =           \
 
 common_dir = $(top_builddir)/src/common
 
-slurmapi_add = 				\
+slurmapi_add = 			 \
 	$(common_dir)/libcommon.la	\
-	$(common_dir)/libspank.la       \
+	$(common_dir)/libspank.la      	\
 	$(common_dir)/libeio.la		\
 	-lpthread
 
@@ -96,7 +102,8 @@ libslurmhelper_la_LDFLAGs = \
 	$(LIB_LDFLAGS) \
 	-version-info $(current):$(rev):$(age)
 
-convenience_libs = $(top_builddir)/src/api/libslurmhelper.la
+convenience_libs = \
+	$(top_builddir)/src/api/libslurmhelper.la
 
 libslurm_la_SOURCES = 
 libslurm_la_LIBADD = $(convenience_libs)
@@ -115,8 +122,20 @@ libpmi_la_LIBADD = $(top_builddir)/src/api/libslurm.la
 libpmi_la_LDFLAGS = $(LIB_LDFLAGS) \
         $(PMI_OTHER_FLAGS)
 
+# This was made so we chould export all symbols from libcommon 
+# on multiple platforms
+libslurm_o_SOURCES = 
+
+libslurm_o_LDADD = $(top_builddir)/src/common/libeio.o	\
+	$(top_builddir)/src/common/libspank.o	\
+	$(top_builddir)/src/common/libcommon.o
+
+libslurm.o: $(libslurmhelper_la_OBJECTS) $(libslurm_o_LDADD)
+	$(LINK) $(libslurmhelper_la_OBJECTS) $(libslurm_o_LDADD)
+
+
 force:
-$(convenience_libs) : force
+$(libslurm_o_LDADD) $(convenience_libs) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
 
