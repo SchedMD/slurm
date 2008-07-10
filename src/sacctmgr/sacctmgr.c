@@ -51,6 +51,7 @@ int exit_flag;		/* program to terminate if =1 */
 int input_words;	/* number of words of input permitted */
 int one_liner;		/* one record per line if =1 */
 int quiet_flag;		/* quiet=1, verbose=-1, normal=0 */
+int verbosity;		/* count of -v options */
 int rollback_flag;       /* immediate execute=1, else = 0 */
 int with_assoc_flag = 0;
 void *db_conn = NULL;
@@ -96,6 +97,7 @@ main (int argc, char *argv[])
 	exit_flag         = 0;
 	input_field_count = 0;
 	quiet_flag        = 0;
+	verbosity         = 0;
 	log_init("sacctmgr", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
 	if (getenv ("SACCTMGR_ALL"))
@@ -139,6 +141,7 @@ main (int argc, char *argv[])
 			break;
 		case (int)'v':
 			quiet_flag = -1;
+			verbosity++;
 			break;
 		case (int)'V':
 			_print_version();
@@ -161,6 +164,12 @@ main (int argc, char *argv[])
 		for (i = optind; i < argc; i++) {
 			input_fields[input_field_count++] = argv[i];
 		}	
+	}
+
+	if (verbosity) {
+		opts.stderr_level += verbosity;
+		opts.prefix_level = 1;
+		log_alter(opts, 0, NULL);
 	}
 
 	db_conn = acct_storage_g_get_connection(false, rollback_flag);
