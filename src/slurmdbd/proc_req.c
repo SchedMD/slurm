@@ -939,10 +939,13 @@ static void *_init_conn(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
-	if (init_msg->version != SLURMDBD_VERSION) {
+	if ((init_msg->version < SLURMDBD_VERSION_MIN) ||
+	    (init_msg->version > SLURMDBD_VERSION) {
 		comment = "Incompatable RPC version";
-		error("Incompatable RPC version (%d != %d)",
-		      init_msg->version, SLURMDBD_VERSION);
+		error("Incompatable RPC version received "
+		      "(%u not between %d and %d)",
+		      init_msg->version, 
+		      SLURMDBD_VERSION_MIN, SLURMDBD_VERSION);
 		goto end_it;
 	}
 	*uid = init_msg->uid;

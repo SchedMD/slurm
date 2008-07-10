@@ -58,13 +58,34 @@
 #include "src/common/slurm_accounting_storage.h"
 
 /*
- * IMPORTANT: Increment SLURMDBD_VERSION if any of the RPCs change.
- * This will necessitate upgrading the slurmdbd and all slurm 
- * tools interacting with it at the same time (a very unattractive
- * option). To avoid this, just add new RPCs as needed and preserve
- * the old RPCs.
+ * SLURMDBD_VERSION is the version of the slurmdbd protocol currently 
+ *	being used (i.e. this code). Increment this value whenever an
+ *	RPC is added. Do not modify an existing RPC, but create a new
+ *	msg_type for the new format (add new entries to the end of
+ *	slurmdbd_msg_type_t so numbering of existing msg_type values
+ *	do not change). Comment the version number when a defunct 
+ *	msg_type stops being used. For example, rather than changing
+ *	the format of the RPC for DBD_ADD_USERS, add a DBD_ADD_USERS_V2, 
+ *	stop using DBD_ADD_USERS and add comment of this sort "Last used
+ *	in SLURMDBD_VERSION 05". The slurmdbd must continue to support 
+ *	old RPCs for some time (until all Slurm clusters in that grid 
+ *	get upgraded to use the new set of RPCs). At that time, slurmdbd 
+ *	can have support for the old RPCs removed.
+ *	
+ * SLURMDBD_VERSION_MIN is the minimum protocol version which slurmdbd
+ *	will accept. Messages being sent to the slurmdbd from commands
+ *	or daemons using older versions of the protocol will be 
+ *	rejected. Increment this value and discard the code processing
+ *	that msg_type only after all systems have been upgraded. Don't 
+ *	remove entries from slurmdbd_msg_type_t or the numbering scheme
+ *	will break (the enum value of a msg_type would change).
+ *
+ * The slurmdbd should be at least as current as any Slurm cluster
+ *	communicating with it (e.g. it will not accept messages with a
+ *	version higher than SLURMDBD_VERSION).
  */
-#define SLURMDBD_VERSION 01
+#define SLURMDBD_VERSION	01
+#define SLURMDBD_VERSION_MIN	01
 
 /* SLURM DBD message types */
 /* ANY TIME YOU ADD TO THIS LIST UPDATE THE CONVERSION FUNCTIONS! */
