@@ -75,7 +75,7 @@ binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
 am_strigger_OBJECTS = strigger.$(OBJEXT) opts.$(OBJEXT)
 strigger_OBJECTS = $(am_strigger_OBJECTS)
-strigger_DEPENDENCIES = $(top_builddir)/src/api/libslurmhelper.la
+strigger_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o
 strigger_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(strigger_LDFLAGS) \
 	$(LDFLAGS) -o $@
@@ -266,7 +266,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
-strigger_LDADD = $(top_builddir)/src/api/libslurmhelper.la
+strigger_LDADD = $(top_builddir)/src/api/libslurm.o -ldl
 noinst_HEADERS = strigger.h
 strigger_SOURCES = strigger.c opts.c
 strigger_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)

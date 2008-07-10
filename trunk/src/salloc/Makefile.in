@@ -72,7 +72,8 @@ binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
 am_salloc_OBJECTS = salloc.$(OBJEXT) opt.$(OBJEXT)
 salloc_OBJECTS = $(am_salloc_OBJECTS)
-salloc_DEPENDENCIES = $(convenience_libs)
+am__DEPENDENCIES_1 = $(top_builddir)/src/api/libslurm.o
+salloc_DEPENDENCIES = $(am__DEPENDENCIES_1)
 salloc_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(salloc_LDFLAGS) \
 	$(LDFLAGS) -o $@
@@ -264,7 +265,7 @@ AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.*
 INCLUDES = -I$(top_srcdir) 
 salloc_SOURCES = salloc.c salloc.h opt.c opt.h
-convenience_libs = $(top_builddir)/src/api/libslurmhelper.la
+convenience_libs = $(top_builddir)/src/api/libslurm.o -ldl
 salloc_LDADD = \
 	$(convenience_libs) 
 

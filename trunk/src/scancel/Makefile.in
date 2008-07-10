@@ -74,7 +74,7 @@ binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
 am_scancel_OBJECTS = scancel.$(OBJEXT) opt.$(OBJEXT)
 scancel_OBJECTS = $(am_scancel_OBJECTS)
-scancel_DEPENDENCIES = $(top_builddir)/src/api/libslurmhelper.la
+scancel_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o
 scancel_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(scancel_LDFLAGS) \
 	$(LDFLAGS) -o $@
@@ -265,7 +265,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir)
-scancel_LDADD = $(top_builddir)/src/api/libslurmhelper.la
+scancel_LDADD = $(top_builddir)/src/api/libslurm.o -ldl
 noinst_HEADERS = scancel.h
 scancel_SOURCES = scancel.c opt.c
 scancel_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)

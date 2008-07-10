@@ -81,9 +81,7 @@ am_slurmstepd_OBJECTS = slurmstepd.$(OBJEXT) mgr.$(OBJEXT) \
 slurmstepd_OBJECTS = $(am_slurmstepd_OBJECTS)
 am__DEPENDENCIES_1 =
 slurmstepd_DEPENDENCIES = $(top_builddir)/src/common/libdaemonize.la \
-	$(top_builddir)/src/common/libeio.la \
-	$(top_builddir)/src/common/libspank.la \
-	$(top_builddir)/src/common/libcommon.o $(am__DEPENDENCIES_1) \
+	$(top_builddir)/src/api/libslurm.o $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 slurmstepd_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -276,9 +274,7 @@ AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir)
 slurmstepd_LDADD = \
 	$(top_builddir)/src/common/libdaemonize.la \
-	$(top_builddir)/src/common/libeio.la       \
-	$(top_builddir)/src/common/libspank.la     \
-	$(top_builddir)/src/common/libcommon.o -ldl\
+	$(top_builddir)/src/api/libslurm.o -ldl\
 	$(PLPA_LIBS) $(PAM_LIBS) $(UTIL_LIBS) 
 
 slurmstepd_SOURCES = \

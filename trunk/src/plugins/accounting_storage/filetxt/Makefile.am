@@ -11,4 +11,3 @@ pkglib_LTLIBRARIES = accounting_storage_filetxt.la
 accounting_storage_filetxt_la_SOURCES = accounting_storage_filetxt.c \
 		filetxt_jobacct_process.c filetxt_jobacct_process.h
 accounting_storage_filetxt_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-

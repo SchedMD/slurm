@@ -1812,28 +1812,28 @@ extern void pack_acct_txn_cond(void *in, Buf buffer)
 	}
 	count = 0;
 
-	if(object->actor_list)
+	if(object->actor_list) 
 		count = list_count(object->actor_list);
-	
+
 	pack32(count, buffer);
 	if(count) {
 		itr = list_iterator_create(object->actor_list);
 		while((tmp_info = list_next(itr))) {
 			packstr(tmp_info, buffer);
 		}
-		list_iterator_destroy(itr);
+		list_iterator_destroy(itr); 
 	}
 	count = 0;
 
 	if(object->id_list)
 		count = list_count(object->id_list);
-	
+	 
 	pack32(count, buffer);
 	if(count) {
 		itr = list_iterator_create(object->id_list);
 		while((tmp_info = list_next(itr))) {
 			packstr(tmp_info, buffer);
-		}
+		} 
 		list_iterator_destroy(itr);
 	}
 	count = 0;
@@ -1851,6 +1851,7 @@ extern int unpack_acct_txn_cond(void **object, Buf buffer)
 	acct_txn_cond_t *object_ptr = xmalloc(sizeof(acct_txn_cond_t));
 	char *tmp_info = NULL;
 
+	*object = object_ptr;
 	safe_unpack32(&count, buffer);
 	if(count) {
 		object_ptr->action_list = list_create(slurm_destroy_char);

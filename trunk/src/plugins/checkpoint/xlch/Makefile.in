@@ -75,7 +75,7 @@ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-checkpoint_xlch_la_DEPENDENCIES = $(convenience_libs)
+checkpoint_xlch_la_LIBADD =
 am_checkpoint_xlch_la_OBJECTS = checkpoint_xlch.lo config.lo
 checkpoint_xlch_la_OBJECTS = $(am_checkpoint_xlch_la_OBJECTS)
 checkpoint_xlch_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -271,8 +271,6 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 pkglib_LTLIBRARIES = checkpoint_xlch.la
 checkpoint_xlch_la_SOURCES = checkpoint_xlch.c config.c
 checkpoint_xlch_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-convenience_libs = $(top_builddir)/src/api/libslurmhelper.la
-checkpoint_xlch_la_LIBADD = $(convenience_libs)
 all: all-am
 
 .SUFFIXES:

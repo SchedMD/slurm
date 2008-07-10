@@ -5021,7 +5021,7 @@ extern List acct_storage_p_get_txn(mysql_conn_t *mysql_conn,
 
 	if(!txn_cond) 
 		goto empty;
-	
+
 	if(txn_cond->action_list && list_count(txn_cond->action_list)) {
 		set = 0;
 		if(extra)
@@ -5090,8 +5090,7 @@ empty:
 		xstrfmtcat(tmp, ", %s", txn_req_inx[i]);
 	}
 
-	query = xstrdup_printf("select %s from %s", 
-			       tmp, txn_table);
+	query = xstrdup_printf("select %s from %s", tmp, txn_table);
 
 	if(extra) {
 		xstrfmtcat(query, "%s", extra);

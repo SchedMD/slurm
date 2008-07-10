@@ -73,7 +73,8 @@ PROGRAMS = $(bin_PROGRAMS)
 am_sattach_OBJECTS = attach.$(OBJEXT) opt.$(OBJEXT) sattach.$(OBJEXT) \
 	sattach.wrapper.$(OBJEXT)
 sattach_OBJECTS = $(am_sattach_OBJECTS)
-sattach_DEPENDENCIES = $(convenience_libs)
+am__DEPENDENCIES_1 = $(top_builddir)/src/api/libslurm.o
+sattach_DEPENDENCIES = $(am__DEPENDENCIES_1)
 sattach_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(sattach_LDFLAGS) \
 	$(LDFLAGS) -o $@
@@ -269,7 +270,7 @@ sattach_SOURCES = \
 	sattach.c \
 	sattach.wrapper.c 
 
-convenience_libs = $(top_builddir)/src/api/libslurmhelper.la
+convenience_libs = $(top_builddir)/src/api/libslurm.o -ldl
 sattach_LDADD = \
 	$(convenience_libs) 
 

@@ -72,7 +72,8 @@ binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
 am_sbatch_OBJECTS = sbatch.$(OBJEXT) opt.$(OBJEXT)
 sbatch_OBJECTS = $(am_sbatch_OBJECTS)
-sbatch_DEPENDENCIES = $(convenience_libs)
+am__DEPENDENCIES_1 = $(top_builddir)/src/api/libslurm.o
+sbatch_DEPENDENCIES = $(am__DEPENDENCIES_1)
 sbatch_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(sbatch_LDFLAGS) \
 	$(LDFLAGS) -o $@
@@ -264,7 +265,7 @@ AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.*
 INCLUDES = -I$(top_srcdir) 
 sbatch_SOURCES = sbatch.c opt.c opt.h
-convenience_libs = $(top_builddir)/src/api/libslurmhelper.la
+convenience_libs = $(top_builddir)/src/api/libslurm.o -ldl
 sbatch_LDADD = $(convenience_libs) 
 sbatch_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 all: all-am

@@ -159,7 +159,7 @@ int get_data(void);
 void parse_command_line(int argc, char **argv);
 void do_dump(void);
 void do_dump_completion(void);
-void do_expire(int dummy);
+void do_expire();
 void do_help(void);
 void do_list(void);
 void do_list_completion(void);

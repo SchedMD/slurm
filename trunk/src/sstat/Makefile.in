@@ -75,8 +75,7 @@ PROGRAMS = $(bin_PROGRAMS)
 am_sstat_OBJECTS = sstat.$(OBJEXT) process.$(OBJEXT) print.$(OBJEXT) \
 	options.$(OBJEXT)
 sstat_OBJECTS = $(am_sstat_OBJECTS)
-sstat_DEPENDENCIES = $(top_builddir)/src/common/libcommon.o \
-	$(top_builddir)/src/api/libslurmhelper.la
+sstat_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o
 sstat_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(sstat_LDFLAGS) \
 	$(LDFLAGS) -o $@
@@ -267,9 +266,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir)
-sstat_LDADD = $(top_builddir)/src/common/libcommon.o -ldl \
-	$(top_builddir)/src/api/libslurmhelper.la
-
+sstat_LDADD = $(top_builddir)/src/api/libslurm.o -ldl
 noinst_HEADERS = sstat.c 
 sstat_SOURCES = sstat.c process.c print.c options.c
 sstat_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)

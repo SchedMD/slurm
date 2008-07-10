@@ -7,6 +7,10 @@ INCLUDES = -I$(top_srcdir)
 
 bin_PROGRAMS = sacctmgr
 
+sacctmgr_LDADD =  \
+	$(top_builddir)/src/api/libslurm.o -ldl\
+	$(READLINE_LIBS)
+
 sacctmgr_SOURCES =	\
 	account_functions.c	\
 	association_functions.c	\
@@ -17,13 +21,8 @@ sacctmgr_SOURCES =	\
 	txn_functions.c		\
 	user_functions.c	
 
-sacctmgr_LDADD =  \
-	$(top_builddir)/src/api/libslurmhelper.la \
-	$(top_builddir)/src/common/libcommon.o -ldl \
-	$(READLINE_LIBS)
-
 sacctmgr_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 
 force:
-$(convenience_libs) : force
+$(sacctmgr_LDADD) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`

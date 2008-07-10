@@ -76,8 +76,8 @@ am_sacctmgr_OBJECTS = account_functions.$(OBJEXT) \
 	txn_functions.$(OBJEXT) user_functions.$(OBJEXT)
 sacctmgr_OBJECTS = $(am_sacctmgr_OBJECTS)
 am__DEPENDENCIES_1 =
-sacctmgr_DEPENDENCIES = $(top_builddir)/src/api/libslurmhelper.la \
-	$(top_builddir)/src/common/libcommon.o $(am__DEPENDENCIES_1)
+sacctmgr_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o \
+	$(am__DEPENDENCIES_1)
 sacctmgr_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(sacctmgr_LDFLAGS) \
 	$(LDFLAGS) -o $@
@@ -268,6 +268,10 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.*
 INCLUDES = -I$(top_srcdir)
+sacctmgr_LDADD = \
+	$(top_builddir)/src/api/libslurm.o -ldl\
+	$(READLINE_LIBS)
+
 sacctmgr_SOURCES = \
 	account_functions.c	\
 	association_functions.c	\
@@ -277,11 +281,6 @@ sacctmgr_SOURCES = \
 	sacctmgr.c sacctmgr.h	\
 	txn_functions.c		\
 	user_functions.c	
-
-sacctmgr_LDADD = \
-	$(top_builddir)/src/api/libslurmhelper.la \
-	$(top_builddir)/src/common/libcommon.o -ldl \
-	$(READLINE_LIBS)
 
 sacctmgr_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 all: all-am
@@ -572,7 +571,7 @@ uninstall-am: uninstall-binPROGRAMS
 
 
 force:
-$(convenience_libs) : force
+$(sacctmgr_LDADD) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

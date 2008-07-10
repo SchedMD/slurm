@@ -17,6 +17,7 @@
 #
 # Makefile for slurm API library
 
+
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkglibdir = $(libdir)/@PACKAGE@
@@ -36,6 +37,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
+noinst_PROGRAMS = libslurm.o$(EXEEXT)
 subdir = src/api
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -99,6 +101,12 @@ am__objects_1 = allocate.lo allocate_msg.lo cancel.lo checkpoint.lo \
 	triggers.lo reconfigure.lo update_config.lo
 am_libslurmhelper_la_OBJECTS = $(am__objects_1)
 libslurmhelper_la_OBJECTS = $(am_libslurmhelper_la_OBJECTS)
+PROGRAMS = $(noinst_PROGRAMS)
+am_libslurm_o_OBJECTS =
+libslurm_o_OBJECTS = $(am_libslurm_o_OBJECTS)
+libslurm_o_DEPENDENCIES = $(top_builddir)/src/common/libeio.o \
+	$(top_builddir)/src/common/libspank.o \
+	$(top_builddir)/src/common/libcommon.o
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -112,9 +120,9 @@ LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
 SOURCES = $(libpmi_la_SOURCES) $(libslurm_la_SOURCES) \
-	$(libslurmhelper_la_SOURCES)
+	$(libslurmhelper_la_SOURCES) $(libslurm_o_SOURCES)
 DIST_SOURCES = $(libpmi_la_SOURCES) $(libslurm_la_SOURCES) \
-	$(libslurmhelper_la_SOURCES)
+	$(libslurmhelper_la_SOURCES) $(libslurm_o_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -336,8 +344,13 @@ lib_LTLIBRARIES = libslurm.la libpmi.la
 BUILT_SOURCES = $(VERSION_SCRIPT) $(PMI_VERSION_SCRIPT) libslurm.la
 
 # Note that libslurmhelper is mostly the same as libslurm, except that
-# it exports ALL symbols, including those from libcommon, libeio, etc.
-# Also, libslurmhelper is a convenience library, it is not installed.
+# it exports ALL symbols used by the process, libcommon, libeio, etc.
+# Only link with libslurmhelper if you are sure you are not going to be 
+# loading a plugin that could use something you yourself are not 
+# calling from here.
+# libslurm.o only contains all the api symbols and will export 
+# them to plugins that are loaded.
+# Also, libslurmhelper, libslurm.o are for convenience, they are not installed.
 noinst_LTLIBRARIES = libslurmhelper.la
 slurmapi_src = \
 	allocate.c       \
@@ -367,7 +380,7 @@ slurmapi_src = \
 common_dir = $(top_builddir)/src/common
 slurmapi_add = \
 	$(common_dir)/libcommon.la	\
-	$(common_dir)/libspank.la       \
+	$(common_dir)/libspank.la      	\
 	$(common_dir)/libeio.la		\
 	-lpthread
 
@@ -377,7 +390,9 @@ libslurmhelper_la_LDFLAGs = \
 	$(LIB_LDFLAGS) \
 	-version-info $(current):$(rev):$(age)
 
-convenience_libs = $(top_builddir)/src/api/libslurmhelper.la
+convenience_libs = \
+	$(top_builddir)/src/api/libslurmhelper.la
+
 libslurm_la_SOURCES = 
 libslurm_la_LIBADD = $(convenience_libs)
 libslurm_la_LDFLAGS = \
@@ -395,6 +410,14 @@ libpmi_la_SOURCES = pmi.c
 libpmi_la_LIBADD = $(top_builddir)/src/api/libslurm.la
 libpmi_la_LDFLAGS = $(LIB_LDFLAGS) \
         $(PMI_OTHER_FLAGS)
+
+
+# This was made so we chould export all symbols from libcommon 
+# on multiple platforms
+libslurm_o_SOURCES = 
+libslurm_o_LDADD = $(top_builddir)/src/common/libeio.o	\
+	$(top_builddir)/src/common/libspank.o	\
+	$(top_builddir)/src/common/libcommon.o
 
 CLEANFILES = \
 	$(VERSION_SCRIPT) $(PMI_VERSION_SCRIPT)
@@ -478,6 +501,13 @@ libslurm.la: $(libslurm_la_OBJECTS) $(libslurm_la_DEPENDENCIES)
 	$(libslurm_la_LINK) -rpath $(libdir) $(libslurm_la_OBJECTS) $(libslurm_la_LIBADD) $(LIBS)
 libslurmhelper.la: $(libslurmhelper_la_OBJECTS) $(libslurmhelper_la_DEPENDENCIES) 
 	$(LINK)  $(libslurmhelper_la_OBJECTS) $(libslurmhelper_la_LIBADD) $(LIBS)
+
+clean-noinstPROGRAMS:
+	@list='$(noinst_PROGRAMS)'; for p in $$list; do \
+	  f=`echo $$p|sed 's/$(EXEEXT)$$//'`; \
+	  echo " rm -f $$p $$f"; \
+	  rm -f $$p $$f ; \
+	done
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -613,7 +643,7 @@ distdir: $(DISTFILES)
 check-am: all-am
 check: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) check-am
-all-am: Makefile $(LTLIBRARIES)
+all-am: Makefile $(LTLIBRARIES) $(PROGRAMS)
 installdirs:
 	for dir in "$(DESTDIR)$(libdir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
@@ -649,7 +679,7 @@ maintainer-clean-generic:
 clean: clean-am
 
 clean-am: clean-generic clean-libLTLIBRARIES clean-libtool \
-	clean-noinstLTLIBRARIES mostlyclean-am
+	clean-noinstLTLIBRARIES clean-noinstPROGRAMS mostlyclean-am
 
 distclean: distclean-am
 	-rm -rf ./$(DEPDIR)
@@ -709,21 +739,25 @@ uninstall-am: uninstall-libLTLIBRARIES
 
 .PHONY: CTAGS GTAGS all all-am check check-am clean clean-generic \
 	clean-libLTLIBRARIES clean-libtool clean-noinstLTLIBRARIES \
-	ctags distclean distclean-compile distclean-generic \
-	distclean-libtool distclean-tags distdir dvi dvi-am html \
-	html-am info info-am install install-am install-data \
-	install-data-am install-dvi install-dvi-am install-exec \
-	install-exec-am install-html install-html-am install-info \
-	install-info-am install-libLTLIBRARIES install-man install-pdf \
-	install-pdf-am install-ps install-ps-am install-strip \
-	installcheck installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-compile \
-	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
-	tags uninstall uninstall-am uninstall-libLTLIBRARIES
+	clean-noinstPROGRAMS ctags distclean distclean-compile \
+	distclean-generic distclean-libtool distclean-tags distdir dvi \
+	dvi-am html html-am info info-am install install-am \
+	install-data install-data-am install-dvi install-dvi-am \
+	install-exec install-exec-am install-html install-html-am \
+	install-info install-info-am install-libLTLIBRARIES \
+	install-man install-pdf install-pdf-am install-ps \
+	install-ps-am install-strip installcheck installcheck-am \
+	installdirs maintainer-clean maintainer-clean-generic \
+	mostlyclean mostlyclean-compile mostlyclean-generic \
+	mostlyclean-libtool pdf pdf-am ps ps-am tags uninstall \
+	uninstall-am uninstall-libLTLIBRARIES
 
+
+libslurm.o: $(libslurmhelper_la_OBJECTS) $(libslurm_o_LDADD)
+	$(LINK) $(libslurmhelper_la_OBJECTS) $(libslurm_o_LDADD)
 
 force:
-$(convenience_libs) : force
+$(libslurm_o_LDADD) $(convenience_libs) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # FIXME - don't export the client_io_handler_ symbols once srun is no longer
