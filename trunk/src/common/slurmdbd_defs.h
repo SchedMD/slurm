@@ -57,7 +57,13 @@
 #include "src/common/list.h"
 #include "src/common/slurm_accounting_storage.h"
 
-/* Increment SLURMDBD_VERSION if any of the RPCs change */
+/*
+ * IMPORTANT: Increment SLURMDBD_VERSION if any of the RPCs change.
+ * This will necessitate upgrading the slurmdbd and all slurm 
+ * tools interacting with it at the same time (a very unattractive
+ * option). To avoid this, just add new RPCs as needed and preserve
+ * the old RPCs.
+ */
 #define SLURMDBD_VERSION 01
 
 /* SLURM DBD message types */
