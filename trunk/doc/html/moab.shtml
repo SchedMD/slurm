@@ -198,18 +198,30 @@ that the user's environment on the execution host be loaded.
 Moab relies upon SLURM to perform this action, using the 
 <i>--get-user-env</i> option for the salloc, sbatch and srun commands.
 The SLURM command then executes as user root a command of this sort
-as user root:
+as user root:</p>
 <pre>
 /bin/su - &lt;user&gt; -c \
         "/bin/echo BEGIN; /bin/env; /bin/echo FINI"
 </pre>
-While this command is executing within salloc, sbatch or srun, 
-the Moab daemon is completely non-responsive. 
+<p> For typical batch jobs, the job transfer from Moab to 
+SLURM is performed using <i>sbatch</i> and occurs instantaneously.
+The environment is loadeded by a SLURM daemon (slurmd) when the 
+batch job begins execution.
+For interactive jobs (<i>msub -I ...</i>), the job transfer 
+from Moab to SLURM can not be completed until the environment
+variables are loaded, during which time the Moab daemon is 
+completely non-responsive. 
 To insure that Moab remains operational, SLURM will abort the above
-command within a few seconds and look for a cache file with the 
-user's environment and use that if found. 
+command within a configurable period of time and look for a cache 
+file with the user's environment and use that if found. 
 Otherwise an error is reported to Moab.
-We have provided a simple program that can be used to build 
+The time permitted for loading the current environment 
+before searching for a cache file is configurable using
+the <i>GetEnvTimeout</i> parameter in SLURM's configuration
+file, slurm.conf. A value of zero results in immediately 
+using the cache file. The default value is 2 seconds.</p>
+
+<p>We have provided a simple program that can be used to build 
 cache files for users. The program can be found in the SLURM
 distribution at <i>contribs/env_cache_builder.c</i>. 
 This program can support a longer timeout than Moab, but 
@@ -247,6 +259,6 @@ Write the output to a file with the same name as the user in the
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 23 April 2008</p>
+<p style="text-align:center;">Last modified 10 July 2008</p>
 
 <!--#include virtual="footer.txt"-->
