@@ -311,48 +311,40 @@ extern int cluster_utilization(int argc, char *argv[])
 		while((field = list_next(itr2))) {
 			switch(field->type) {
 			case PRINT_CLUSTER_NAME:
-				field->print_routine(SLURM_PRINT_VALUE,
-						     field,
+				field->print_routine(field,
 						     cluster->name);		
 				break;
 			case PRINT_CLUSTER_CPUS:
-				field->print_routine(SLURM_PRINT_VALUE,
-						     field,
+				field->print_routine(field,
 						     total_acct.cpu_count);
 				break;
 			case PRINT_CLUSTER_ACPU:
-				field->print_routine(SLURM_PRINT_VALUE,
-						     field,
+				field->print_routine(field,
 						     total_acct.alloc_secs,
 						     total_reported);
 				break;
 			case PRINT_CLUSTER_DCPU:
-				field->print_routine(SLURM_PRINT_VALUE,
-						     field,
+				field->print_routine(field,
 						     total_acct.down_secs,
 						     total_reported);
 				break;
 			case PRINT_CLUSTER_ICPU:
-				field->print_routine(SLURM_PRINT_VALUE,
-						     field,
+				field->print_routine(field,
 						     total_acct.idle_secs,
 						     total_reported);
 				break;
 			case PRINT_CLUSTER_RCPU:
-				field->print_routine(SLURM_PRINT_VALUE,
-						     field,
+				field->print_routine(field,
 						     total_acct.resv_secs,
 						     total_reported);
 				break;
 			case PRINT_CLUSTER_OCPU:
-					field->print_routine(SLURM_PRINT_VALUE,
-						     field,
+					field->print_routine(field,
 						     total_acct.over_secs,
 						     total_reported);
 				break;
 			case PRINT_CLUSTER_TOTAL:
-				field->print_routine(SLURM_PRINT_VALUE,
-						     field,
+				field->print_routine(field,
 						     total_reported,
 						     local_total_time);
 				break;

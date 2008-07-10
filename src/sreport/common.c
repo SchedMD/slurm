@@ -39,68 +39,47 @@
 
 #include "sreport.h"
 
-extern void sreport_print_time(type_t type, print_field_t *field,
+extern void sreport_print_time(print_field_t *field,
 			       uint64_t value, uint64_t total_time)
 {
 	if(!total_time)
 		total_time = 1;
 
-	switch(type) {
-	case SLURM_PRINT_HEADLINE:
+	/* (value == unset)  || (value == cleared) */
+	if((value == NO_VAL) || (value == INFINITE)) {
 		if(print_fields_parsable_print)
-			printf("%s|", field->name);
-		else
-			printf("%-*.*s ", field->len, field->len, field->name);
-		break;
-	case SLURM_PRINT_UNDERSCORE:
-		if(!print_fields_parsable_print)
-			printf("%-*.*s ", field->len, field->len, 
-			       "---------------------------------------");
-		break;
-	case SLURM_PRINT_VALUE:
-		/* (value == unset)  || (value == cleared) */
-		if((value == NO_VAL) || (value == INFINITE)) {
-			if(print_fields_parsable_print)
-				printf("|");	
-			else				
-				printf("%-*s ", field->len, " ");
-		} else {
-			char *output = NULL;
-			double percent = (double)value;
-
-			switch(time_format) {
-			case SREPORT_TIME_SECS:
-				output = xstrdup_printf("%llu", value);
-				break;
-			case SREPORT_TIME_PERCENT:
-				percent /= total_time;
-				percent *= 100;
-				output = xstrdup_printf("%.2lf%%", percent);
-				break; 
-			case SREPORT_TIME_SECS_PER:
-				percent /= total_time;
-				percent *= 100;
-				output = xstrdup_printf("%llu(%.2lf%%)",
-							value, percent);
-				break;
-			default:
-				output = xstrdup_printf("%llu", value);
-				break;
-			}
-
-			if(print_fields_parsable_print)
-				printf("%s|", output);	
-			else
-				printf("%*s ", field->len, output);
-			xfree(output);
+			printf("|");	
+		else				
+			printf("%-*s ", field->len, " ");
+	} else {
+		char *output = NULL;
+		double percent = (double)value;
+		
+		switch(time_format) {
+		case SREPORT_TIME_SECS:
+			output = xstrdup_printf("%llu", value);
+			break;
+		case SREPORT_TIME_PERCENT:
+			percent /= total_time;
+			percent *= 100;
+			output = xstrdup_printf("%.2lf%%", percent);
+			break; 
+		case SREPORT_TIME_SECS_PER:
+			percent /= total_time;
+			percent *= 100;
+			output = xstrdup_printf("%llu(%.2lf%%)",
+						value, percent);
+			break;
+		default:
+			output = xstrdup_printf("%llu", value);
+			break;
 		}
-		break;
-	default:
+		
 		if(print_fields_parsable_print)
-			printf("%s|", "n/a");
+			printf("%s|", output);	
 		else
-			printf("%-*.*s ", field->len, field->len, "n/a");
-		break;
+			printf("%*s ", field->len, output);
+		xfree(output);
 	}
 }
 

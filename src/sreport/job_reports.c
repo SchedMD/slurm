@@ -599,13 +599,11 @@ no_assocs:
 				switch(field->type) {
 				case PRINT_JOB_CLUSTER:
 					field->print_routine(
-						SLURM_PRINT_VALUE,
 						field,
 						cluster_group->cluster);
 					break;
 				case PRINT_JOB_ACCOUNT:
-					field->print_routine(SLURM_PRINT_VALUE,
-							     field,
+					field->print_routine(field,
 							     acct_group->acct);
 					break;
 				default:
@@ -619,7 +617,6 @@ no_assocs:
 				switch(field->type) {
 				case PRINT_JOB_SIZE:
 					field->print_routine(
-						SLURM_PRINT_VALUE,
 						field,
 						local_group->cpu_secs,
 						acct_group->cpu_secs);
@@ -630,8 +627,7 @@ no_assocs:
 			}
 			list_iterator_reset(itr2);
 			list_iterator_destroy(local_itr);
-			total_field.print_routine(SLURM_PRINT_VALUE,
-						  &total_field,
+			total_field.print_routine(&total_field,
 						  acct_group->cpu_secs,
 						  cluster_group->cpu_secs);
 			
