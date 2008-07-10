@@ -54,16 +54,14 @@ static int _set_cond(int *start, int argc, char *argv[],
 			break;
 		} else if(!end && !strncasecmp(argv[i], "where", 5)) {
 			continue;
-		} else if(!end) {
-			addto_char_list(cluster_list, argv[i]);
-			set = 1;
+		} else if(!end || !strncasecmp (argv[i], "Names", 1)) {
+			if(cluster_list) {
+				addto_char_list(cluster_list, argv[i]);
+				set = 1;
+			}
 		} else if (!strncasecmp (argv[i], "Format", 1)) {
 			if(format_list)
 				addto_char_list(format_list, argv[i]+end);
-		} else if (!strncasecmp (argv[i], "Names", 1)) {
-			addto_char_list(cluster_list,
-					argv[i]+end);
-			set = 1;
 		} else {
 			printf(" Unknown condition: %s\n"
 			       "Use keyword set to modify value\n", argv[i]);

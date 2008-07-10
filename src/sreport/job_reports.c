@@ -121,9 +121,12 @@ static int _set_cond(int *start, int argc, char *argv[],
 	int end = 0;
 	int local_cluster_flag = all_clusters_flag;
 
+	if(!job_cond->cluster_list)
+		job_cond->cluster_list = list_create(slurm_destroy_char);
+
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
-		if (strncasecmp (argv[i], "Set", 3) == 0) {
+		if (!strncasecmp (argv[i], "Set", 3)) {
 			i--;
 			break;
 		} else if(!end && !strncasecmp(argv[i], "where", 5)) {
@@ -131,38 +134,50 @@ static int _set_cond(int *start, int argc, char *argv[],
 		} else if(!end && !strncasecmp(argv[i], "all_clusters", 1)) {
 			local_cluster_flag = 1;
 			continue;
-		} else if(!end) {
+		} else if(!end || !strncasecmp (argv[i], "Clusters", 1)) {
 			addto_char_list(job_cond->cluster_list, argv[i]);
 			set = 1;
-		} else if (strncasecmp (argv[i], "Accounts", 2) == 0) {
+		} else if (!strncasecmp (argv[i], "Accounts", 2)) {
+			if(!job_cond->acct_list)
+				job_cond->acct_list =
+					list_create(slurm_destroy_char);
 			addto_char_list(job_cond->acct_list,
 					argv[i]+end);
 			set = 1;
-		} else if (strncasecmp (argv[i], "Associations", 2) == 0) {
+		} else if (!strncasecmp (argv[i], "Associations", 2)) {
+			if(!job_cond->associd_list)
+				job_cond->associd_list =
+					list_create(slurm_destroy_char);
 			addto_char_list(job_cond->associd_list,
 					argv[i]+end);
 			set = 1;
-		} else if (strncasecmp (argv[i], "Clusters", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "Clusters", 1)) {
 			addto_char_list(job_cond->cluster_list,
 					argv[i]+end);
 			set = 1;
-		} else if (strncasecmp (argv[i], "End", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "End", 1)) {
 			job_cond->usage_end = parse_time(argv[i]+end);
 			set = 1;
-		} else if (strncasecmp (argv[i], "Format", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "Format", 1)) {
 			if(format_list)
 				addto_char_list(format_list, argv[i]+end);
-		} else if (strncasecmp (argv[i], "Gid", 2) == 0) {
+		} else if (!strncasecmp (argv[i], "Gid", 2)) {
+			if(!job_cond->groupid_list)
+				job_cond->groupid_list =
+					list_create(slurm_destroy_char);
 			addto_char_list(job_cond->groupid_list,
 					argv[i]+end);
 			set = 1;
-		} else if (strncasecmp (argv[i], "grouping", 2) == 0) {
+		} else if (!strncasecmp (argv[i], "grouping", 2)) {
 			if(grouping_list)
 				addto_char_list(grouping_list, argv[i]+end);
-		} else if (strncasecmp (argv[i], "Jobs", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "Jobs", 1)) {
 			char *end_char = NULL, *start_char = argv[i]+end;
 			jobacct_selected_step_t *selected_step = NULL;
 			char *dot = NULL;
+			if(!job_cond->step_list)
+				job_cond->step_list =
+					list_create(slurm_destroy_char);
 
 			while ((end_char = strstr(start_char, ",")) 
 			       && start_char) {
@@ -192,14 +207,20 @@ static int _set_cond(int *start, int argc, char *argv[],
 			}
 			
 			set = 1;
-		} else if (strncasecmp (argv[i], "Partitions", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "Partitions", 1)) {
+			if(!job_cond->partition_list)
+				job_cond->partition_list =
+					list_create(slurm_destroy_char);
 			addto_char_list(job_cond->partition_list,
 					argv[i]+end);
 			set = 1;
-		} else if (strncasecmp (argv[i], "Start", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "Start", 1)) {
 			job_cond->usage_start = parse_time(argv[i]+end);
 			set = 1;
-		} else if (strncasecmp (argv[i], "Users", 1) == 0) {
+		} else if (!strncasecmp (argv[i], "Users", 1)) {
+			if(!job_cond->user_list)
+				job_cond->user_list =
+					list_create(slurm_destroy_char);
 			addto_char_list(job_cond->user_list,
 					argv[i]+end);
 			set = 1;
@@ -366,13 +387,6 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 //	sreport_time_format_t temp_time_format = time_format;
 
 	print_fields_list = list_create(destroy_print_field);
-
-	job_cond->acct_list = list_create(slurm_destroy_char);
-	job_cond->associd_list = list_create(slurm_destroy_char);
-	job_cond->cluster_list = list_create(slurm_destroy_char);
-	job_cond->groupid_list = list_create(slurm_destroy_char);
-	job_cond->partition_list = list_create(slurm_destroy_char);
-	job_cond->step_list = list_create(slurm_destroy_char);
 
 	_set_cond(&i, argc, argv, job_cond, NULL, grouping_list);
 

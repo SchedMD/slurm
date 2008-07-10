@@ -47,6 +47,21 @@ static int _set_cond(int *start, int argc, char *argv[],
 	int a_set = 0;
 	int end = 0;
 
+	if(!user_cond) {
+		error("No user_cond given");
+		return -1;
+	}
+
+	if(!user_cond->assoc_cond) {
+		user_cond->assoc_cond = 
+			xmalloc(sizeof(acct_association_cond_t));
+		user_cond->assoc_cond->fairshare = NO_VAL;
+		user_cond->assoc_cond->max_cpu_secs_per_job = NO_VAL;
+		user_cond->assoc_cond->max_jobs = NO_VAL;
+		user_cond->assoc_cond->max_nodes_per_job = NO_VAL;
+		user_cond->assoc_cond->max_wall_duration_per_job = NO_VAL;
+	}
+
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
 		if (!strncasecmp (argv[i], "Set", 3)) {
@@ -58,12 +73,24 @@ static int _set_cond(int *start, int argc, char *argv[],
 			user_cond->with_coords = 1;
 		} else if(!end && !strncasecmp(argv[i], "where", 5)) {
 			continue;
-		} else if(!end) {
+		} else if(!end
+			  || !strncasecmp (argv[i], "Names", 1)
+			  || !strncasecmp (argv[i], "Users", 1)) {
+			if(!user_cond->user_list) {
+				user_cond->user_list = 
+					list_create(slurm_destroy_char);
+				user_cond->assoc_cond->user_list = 
+					list_create(slurm_destroy_char);
+			}
 			addto_char_list(user_cond->user_list, argv[i]);
 			addto_char_list(user_cond->assoc_cond->user_list,
 					argv[i]);
 			u_set = 1;
 		} else if (!strncasecmp (argv[i], "Account", 2)) {
+			if(!user_cond->assoc_cond->acct_list) {
+				user_cond->assoc_cond->acct_list = 
+					list_create(slurm_destroy_char);
+			}
 			addto_char_list(user_cond->assoc_cond->acct_list,
 					argv[i]+end);
 			a_set = 1;
@@ -72,23 +99,29 @@ static int _set_cond(int *start, int argc, char *argv[],
 				str_2_acct_admin_level(argv[i]+end);
 			u_set = 1;			
 		} else if (!strncasecmp (argv[i], "Clusters", 1)) {
+			if(!user_cond->assoc_cond->cluster_list) {
+				user_cond->assoc_cond->cluster_list = 
+					list_create(slurm_destroy_char);
+			}
 			addto_char_list(user_cond->assoc_cond->cluster_list,
 					argv[i]+end);
 			a_set = 1;
 		} else if (!strncasecmp (argv[i], "DefaultAccount", 1)) {
+			if(!user_cond->def_acct_list) {
+				user_cond->def_acct_list = 
+					list_create(slurm_destroy_char);
+			}
 			addto_char_list(user_cond->def_acct_list,
 					argv[i]+end);
 			u_set = 1;
 		} else if (!strncasecmp (argv[i], "Format", 1)) {
 			if(format_list)
 				addto_char_list(format_list, argv[i]+end);
-		} else if (!strncasecmp (argv[i], "Names", 1)
-			   || !strncasecmp (argv[i], "Users", 1)) {
-			addto_char_list(user_cond->user_list, argv[i]+end);
-			addto_char_list(user_cond->assoc_cond->user_list,
-					argv[i]+end);
-			u_set = 1;
 		} else if (!strncasecmp (argv[i], "Partition", 3)) {
+			if(!user_cond->assoc_cond->partition_list) {
+				user_cond->assoc_cond->partition_list = 
+					list_create(slurm_destroy_char);
+			}
 			addto_char_list(user_cond->assoc_cond->partition_list, 
 					argv[i]+end);
 			a_set = 1;
@@ -636,20 +669,6 @@ extern int sacctmgr_add_coord(int argc, char *argv[])
 	char *acct_str = NULL;
 	ListIterator itr = NULL;
 
-	user_cond->user_list = list_create(slurm_destroy_char);
-	user_cond->def_acct_list = list_create(slurm_destroy_char);
-	
-	user_cond->assoc_cond = xmalloc(sizeof(acct_association_cond_t));
-	user_cond->assoc_cond->user_list = list_create(slurm_destroy_char);
-	user_cond->assoc_cond->acct_list = list_create(slurm_destroy_char);
-	user_cond->assoc_cond->cluster_list = list_create(slurm_destroy_char);
-	user_cond->assoc_cond->partition_list = list_create(slurm_destroy_char);
-	user_cond->assoc_cond->fairshare = NO_VAL;
-	user_cond->assoc_cond->max_cpu_secs_per_job = NO_VAL;
-	user_cond->assoc_cond->max_jobs = NO_VAL;
-	user_cond->assoc_cond->max_nodes_per_job = NO_VAL;
-	user_cond->assoc_cond->max_wall_duration_per_job = NO_VAL;
-
 	for (i=0; i<argc; i++) {
 		cond_set = _set_cond(&i, argc, argv, user_cond, NULL);
 	}
@@ -750,16 +769,8 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 		PRINT_USER
 	};
 
-	user_cond->user_list = list_create(slurm_destroy_char);
-	user_cond->def_acct_list = list_create(slurm_destroy_char);
 	user_cond->with_assocs = with_assoc_flag;
 
-	user_cond->assoc_cond = xmalloc(sizeof(acct_association_cond_t));
-	user_cond->assoc_cond->user_list = list_create(slurm_destroy_char);
-	user_cond->assoc_cond->acct_list = list_create(slurm_destroy_char);
-	user_cond->assoc_cond->cluster_list = list_create(slurm_destroy_char);
-	user_cond->assoc_cond->partition_list = list_create(slurm_destroy_char);
-	
 	_set_cond(&i, argc, argv, user_cond, format_list);
 
 	if(!list_count(format_list)) {
@@ -1112,20 +1123,6 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 	int cond_set = 0, rec_set = 0, set = 0;
 	List ret_list = NULL;
 
-	user_cond->user_list = list_create(slurm_destroy_char);
-	user_cond->def_acct_list = list_create(slurm_destroy_char);
-	
-	user_cond->assoc_cond = xmalloc(sizeof(acct_association_cond_t));
-	user_cond->assoc_cond->user_list = list_create(slurm_destroy_char);
-	user_cond->assoc_cond->acct_list = list_create(slurm_destroy_char);
-	user_cond->assoc_cond->cluster_list = list_create(slurm_destroy_char);
-	user_cond->assoc_cond->partition_list = list_create(slurm_destroy_char);
-	user_cond->assoc_cond->fairshare = NO_VAL;
-	user_cond->assoc_cond->max_cpu_secs_per_job = NO_VAL;
-	user_cond->assoc_cond->max_jobs = NO_VAL;
-	user_cond->assoc_cond->max_nodes_per_job = NO_VAL;
-	user_cond->assoc_cond->max_wall_duration_per_job = NO_VAL;
-	
 	assoc->fairshare = NO_VAL;
 	assoc->max_cpu_secs_per_job = NO_VAL;
 	assoc->max_jobs = NO_VAL;
@@ -1255,15 +1252,6 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 	List ret_list = NULL;
 	int set = 0;
 
-	user_cond->user_list = list_create(slurm_destroy_char);
-	user_cond->def_acct_list = list_create(slurm_destroy_char);
-	
-	user_cond->assoc_cond = xmalloc(sizeof(acct_association_cond_t));
-	user_cond->assoc_cond->user_list = list_create(slurm_destroy_char);
-	user_cond->assoc_cond->acct_list = list_create(slurm_destroy_char);
-	user_cond->assoc_cond->cluster_list = list_create(slurm_destroy_char);
-	user_cond->assoc_cond->partition_list = list_create(slurm_destroy_char);
-
 	if(!(set = _set_cond(&i, argc, argv, user_cond, NULL))) {
 		printf(" No conditions given to remove, not executing.\n");
 		destroy_acct_user_cond(user_cond);
@@ -1326,19 +1314,6 @@ extern int sacctmgr_delete_coord(int argc, char *argv[])
 	ListIterator itr = NULL;
 	List ret_list = NULL;
 
-	user_cond->user_list = list_create(slurm_destroy_char);
-	user_cond->def_acct_list = list_create(slurm_destroy_char);
-	
-	user_cond->assoc_cond = xmalloc(sizeof(acct_association_cond_t));
-	user_cond->assoc_cond->user_list = list_create(slurm_destroy_char);
-	user_cond->assoc_cond->acct_list = list_create(slurm_destroy_char);
-	user_cond->assoc_cond->cluster_list = list_create(slurm_destroy_char);
-	user_cond->assoc_cond->partition_list = list_create(slurm_destroy_char);
-	user_cond->assoc_cond->fairshare = NO_VAL;
-	user_cond->assoc_cond->max_cpu_secs_per_job = NO_VAL;
-	user_cond->assoc_cond->max_jobs = NO_VAL;
-	user_cond->assoc_cond->max_nodes_per_job = NO_VAL;
-	user_cond->assoc_cond->max_wall_duration_per_job = NO_VAL;
 
 	for (i=0; i<argc; i++) {
 		cond_set = _set_cond(&i, argc, argv, user_cond, NULL);
