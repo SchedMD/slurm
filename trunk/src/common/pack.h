@@ -2,7 +2,8 @@
  *  pack.h - definitions for lowest level un/pack functions. all functions 
  *	utilize a Buf structure. Call init_buf, un/pack, and free_buf
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov>, Morris Jette <jette1@llnl.gov>, et. al.
  *  LLNL-CODE-402394.
@@ -58,6 +59,7 @@
 
 #define BUF_MAGIC 0x42554545
 #define BUF_SIZE (16 * 1024)
+#define MAX_BUF_SIZE ((uint32_t) 0xffff0000)	/* avoid going over 32-bits */
 
 struct slurm_buf {
 	uint32_t magic;
