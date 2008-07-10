@@ -10,9 +10,11 @@ documents those changes that are of interest to users and admins.
  -- In salloc, sbatch, and srun replace --task-mem options with --mem-per-cpu
     (--task-mem will continue to be accepted for now, but is not documented).
     Replace DefMemPerTask and MaxMemPerTask with DefMemPerCPU, DefMemPerNode,
-    MaxMemPerCPU and MaxMemPerNode in slurm.conf. Allocate a job's memory memory
-    at the same time that processors are allocated based upon the --mem or
-    --mem-per-cpu option rather than when job steps are initiated.
+    MaxMemPerCPU and MaxMemPerNode in slurm.conf (old options still accepted
+    for now, but mapped to "PerCPU" parameters and not documented). Allocate
+    a job's memory memory at the same time that processors are allocated based
+    upon the --mem or --mem-per-cpu option rather than when job steps are
+    initiated.
 
 * Changes in SLURM 1.3.5
 ========================
