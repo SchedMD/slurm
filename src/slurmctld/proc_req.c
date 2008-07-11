@@ -503,22 +503,47 @@ static int _make_step_cred(struct step_record *step_rec,
 			   slurm_cred_t *slurm_cred)
 {
 	slurm_cred_arg_t cred_arg;
+	struct job_record* job_ptr = step_rec->job_ptr;
 
-	cred_arg.jobid    = step_rec->job_ptr->job_id;
+	cred_arg.jobid    = job_ptr->job_id;
 	cred_arg.stepid   = step_rec->step_id;
-	cred_arg.uid      = step_rec->job_ptr->user_id;
-	cred_arg.job_mem  = step_rec->job_ptr->details->job_min_memory;
+	cred_arg.uid      = job_ptr->user_id;
+	cred_arg.job_mem  = job_ptr->details->job_min_memory;
 	cred_arg.task_mem = step_rec->mem_per_task;
 	cred_arg.hostlist = step_rec->step_layout->node_list;
-        if(step_rec->job_ptr->details->shared == 0)
-                cred_arg.alloc_lps_cnt = 0;
-        else
-                cred_arg.alloc_lps_cnt = step_rec->job_ptr->alloc_lps_cnt;
-        if (cred_arg.alloc_lps_cnt > 0) {
-                cred_arg.alloc_lps = xmalloc(cred_arg.alloc_lps_cnt * 
+	
+	if (job_ptr->details->shared == 0)
+		cred_arg.alloc_lps_cnt = 0;
+	else
+		cred_arg.alloc_lps_cnt = job_ptr->alloc_lps_cnt;
+
+	if ((cred_arg.alloc_lps_cnt > 0) &&
+	    bit_equal(job_ptr->node_bitmap, step_rec->step_node_bitmap)) {
+		cred_arg.alloc_lps = xmalloc(cred_arg.alloc_lps_cnt *
 				sizeof(uint32_t));
-                memcpy(cred_arg.alloc_lps, step_rec->job_ptr->alloc_lps, 
-                       cred_arg.alloc_lps_cnt*sizeof(uint32_t));
+		memcpy(cred_arg.alloc_lps, step_rec->job_ptr->alloc_lps,
+		       cred_arg.alloc_lps_cnt*sizeof(uint32_t));
+        } else if (cred_arg.alloc_lps_cnt > 0) {
+		/* Construct an array of allocated CPUs per node.
+		 * Translate from array based upon job's allocation
+		 * to array based upon nodes allocated to the step. */
+		int i, job_inx = -1, step_inx = -1;
+		int job_inx_target = job_ptr->node_cnt;
+		cred_arg.alloc_lps = xmalloc(cred_arg.alloc_lps_cnt *
+				sizeof(uint32_t));
+		for (i=0; i<node_record_count; i++) {
+			if (!bit_test(job_ptr->node_bitmap, i))
+				continue;
+			job_inx++;
+			if (!bit_test(step_rec->step_node_bitmap, i))
+				continue;
+			step_inx++;
+			cred_arg.alloc_lps[step_inx] = 
+					job_ptr->alloc_lps[job_inx];
+			if (job_inx == job_inx_target)
+				break;
+		}
+		cred_arg.alloc_lps_cnt = step_inx + 1;
         } else
 		cred_arg.alloc_lps = NULL;
 
@@ -2649,7 +2674,7 @@ int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 	launch_msg_ptr->uid = uid;
 	launch_msg_ptr->nodes = xstrdup(job_ptr->nodes);
 
-	if (make_batch_job_cred(launch_msg_ptr)) {
+	if (make_batch_job_cred(launch_msg_ptr, job_ptr)) {
 		error("aborting batch step %u.%u", job_ptr->job_id,
 			job_ptr->group_id);
 		xfree(launch_msg_ptr->nodes);
