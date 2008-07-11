@@ -470,7 +470,7 @@ struct 	step_record {
 	time_t pre_sus_time;		/* time step ran prior to last suspend */
 	time_t tot_sus_time;		/* total time in suspended state */
 	bitstr_t *step_node_bitmap;	/* bitmap of nodes allocated to job 
-					   step */
+					 * step */
 	uint16_t port;			/* port for srun communications */
 	char *host;			/* host for srun communications */
 	uint16_t batch_step;		/* 1 if batch job step, 0 otherwise */
@@ -486,9 +486,9 @@ struct 	step_record {
 	uint32_t exit_code;		/* highest exit code from any task */
 	bitstr_t *exit_node_bitmap;	/* bitmap of exited nodes */
 	jobacctinfo_t *jobacct;         /* keep track of process info in the 
-					   step */
+					 * step */
 	slurm_step_layout_t *step_layout;/* info about how tasks are laid out
-					    in the step */
+					  * in the step */
 };
 
 extern List job_list;			/* list of job_record entries */
