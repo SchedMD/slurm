@@ -397,8 +397,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.2.32
 =========================
- -- Moab only: disable scancel of job in RootOnly partition except by user
-    root. Forces use of Moab tools to cancel jobs submitted through Moab.
+ -- LSF only: Enable scancel of job in RootOnly partition by the job's owner.
  -- Add support for sbatch --distribution and --network options.
  -- Correct pending job's wait reason to "Priority" rather than "Resources" if
     required resources are being held in reserve for a higher priority job.
