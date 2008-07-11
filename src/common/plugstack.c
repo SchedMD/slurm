@@ -1110,7 +1110,7 @@ global_to_local_id (slurmd_job_t *job, uint32_t gid, uint32_t *p2uint32)
 /*
  *  Return 1 if spank_item_t is valid for S_TYPE_LOCAL
  */
-static int valid_in_local_context (spank_item_t item)
+static int _valid_in_local_context (spank_item_t item)
 {
 	int rc = 0;
 	switch (item) {
@@ -1130,6 +1130,24 @@ static int valid_in_local_context (spank_item_t item)
 	return (rc);
 }
 
+/*
+ *  Return 1 if spank_item_t is just getting version (valid anywhere)
+ */
+static int _version_check (spank_item_t item)
+{
+	int rc = 0;
+	switch (item) {
+	case S_SLURM_VERSION:
+	case S_SLURM_VERSION_MAJOR:
+	case S_SLURM_VERSION_MINOR:
+	case S_SLURM_VERSION_MICRO:
+		rc = 1;
+		break;
+	default:
+		rc = 0;
+	}
+	return (rc);
+}
 
 /*
  *  Global functions for SPANK plugins
@@ -1172,6 +1190,7 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 	pid_t *p2pid;
 	pid_t  pid;
 	char ***p2argv;
+	char **p2vers;
 	slurmd_task_info_t *task;
 	slurmd_job_t  *slurmd_job = NULL;
 	struct spank_launcher_job_info *launcher_job = NULL;
@@ -1181,17 +1200,20 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 	if ((spank == NULL) || (spank->magic != SPANK_MAGIC))
 		return (ESPANK_BAD_ARG);
 
-	if ( (spank->type != S_TYPE_REMOTE) 
-	  && (!valid_in_local_context(item)))
-		return (ESPANK_NOT_REMOTE);
+	if (!_version_check(item)) {
+		/* Need job pointer to process other items */
+		if ( (spank->type != S_TYPE_REMOTE) 
+		  && (!_valid_in_local_context(item)))
+			return (ESPANK_NOT_REMOTE);
 
-	if (spank->job == NULL)
-		return (ESPANK_BAD_ARG);
+		if (spank->job == NULL)
+			return (ESPANK_BAD_ARG);
 
-	if (spank->type == S_TYPE_LOCAL)
-		launcher_job = spank->job;
-	else
-		slurmd_job = spank->job;
+		if (spank->type == S_TYPE_LOCAL)
+			launcher_job = spank->job;
+		else
+			slurmd_job = spank->job;
+	}
 
 	va_start(vargs, item);
 	switch (item) {
@@ -1342,6 +1364,22 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 		uint32 = va_arg(vargs, uint32_t);
 		p2uint32 = va_arg(vargs, uint32_t *);
 		rc = global_to_local_id (slurmd_job, uint32, p2uint32);
+		break;
+	case S_SLURM_VERSION:
+		p2vers = va_arg(vargs, char  **);
+		*p2vers = SLURM_VERSION;
+		break;
+	case S_SLURM_VERSION_MAJOR:
+		p2vers = va_arg(vargs, char  **);
+		*p2vers = SLURM_MAJOR;
+		break;
+	case S_SLURM_VERSION_MINOR:
+		p2vers = va_arg(vargs, char  **);
+		*p2vers = SLURM_MINOR;
+		break;
+	case S_SLURM_VERSION_MICRO:
+		p2vers = va_arg(vargs, char  **);
+		*p2vers = SLURM_MICRO;
 		break;
 	default:
 		rc = ESPANK_BAD_ARG;
