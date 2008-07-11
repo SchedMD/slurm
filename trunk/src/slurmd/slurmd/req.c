@@ -612,7 +612,7 @@ _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
  */
 static int
 _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
-		      int tasks_to_launch, hostset_t *step_hset)
+		      int node_id, hostset_t *step_hset)
 {
 	slurm_cred_arg_t arg;
 	hostset_t        hset    = NULL;
@@ -623,7 +623,7 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 	slurm_cred_t     cred = req->cred;
 	uint32_t         jobid = req->job_id;
 	uint32_t         stepid = req->job_step_id;
-
+	int              tasks_to_launch = req->tasks_to_launch[node_id];
 	/*
 	 * First call slurm_cred_verify() so that all valid
 	 * credentials are checked
@@ -645,8 +645,7 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 		if (rc >= 0) {
 			if ((hset = hostset_create(arg.hostlist)))
 				*step_hset = hset;
-			xfree(arg.hostlist);
-			xfree(arg.alloc_lps);
+			slurm_cred_free_args(&arg);
 		}
 		return SLURM_SUCCESS;
 	}
@@ -681,8 +680,8 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
         if ((arg.alloc_lps_cnt > 0) && (tasks_to_launch > 0)) {
                 host_index = hostset_find(hset, conf->node_name);
 
-                /* Left in here for debugging purposes */
 #if(0)
+		/* Left for debugging purposes */
                 if (host_index >= 0)
                   info(" cons_res %u alloc_lps_cnt %u "
 			"task[%d] = %u = task_to_launch %d host %s ", 
@@ -692,11 +691,14 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 #endif
 
                 if (host_index < 0) { 
-                        error("job cr credential invalid host_index %d for job %u",
-                              host_index, arg.jobid);
+                        error("job cr credential invalid host_index %d for "
+			      "job %u", host_index, arg.jobid);
                         goto fail; 
                 }
-                
+		if (host_index > arg.alloc_lps_cnt)
+			error("host_index > alloc_lps_cnt in credential");
+                else if (arg.alloc_lps[host_index] == 0)
+			error("cons_res: zero processors allocated to step");
                 if (tasks_to_launch > arg.alloc_lps[host_index]) {
 			error("cons_res: More than one tasks per logical "
 				"processor (%d > %u) on host [%u.%u %ld %s] ",
@@ -708,33 +710,33 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 		}
         }
 
-	/* Overwrite any memory limits in the RPC with 
-	 * contents of the credential */
+	/* Overwrite any memory limits in the RPC with contents of the 
+	 * memory limit within the credential. 
+	 * Reset the CPU count on this node to correct value. */
 	if (arg.job_mem & MEM_PER_CPU) {
 		req->job_mem = arg.job_mem & (~MEM_PER_CPU);
-		if (host_index >= 0)
+		if ((host_index >= 0) && (host_index < arg.alloc_lps_cnt) &&
+		    (arg.alloc_lps[host_index] > 0))
 			req->job_mem *= arg.alloc_lps[host_index];
 	} else
 		req->job_mem = arg.job_mem;
 	req->task_mem = arg.task_mem;	/* Defunct */
+	if ((host_index >= 0) && (host_index < arg.alloc_lps_cnt))
+		req->cpus_allocated[node_id] = arg.alloc_lps[host_index];
 #if 0
 	info("mem orig:%u cpus:%u limit:%u", 
 	     arg.job_mem, arg.alloc_lps[host_index], req->job_mem);
 #endif
 
 	*step_hset = hset;
-	xfree(arg.hostlist);
-	arg.alloc_lps_cnt = 0;
-	xfree(arg.alloc_lps);
+	slurm_cred_free_args(&arg);
 	return SLURM_SUCCESS;
 
     fail:
 	if (hset) 
 		hostset_destroy(hset);
 	*step_hset = NULL;
-	xfree(arg.hostlist);
-        arg.alloc_lps_cnt = 0;
-        xfree(arg.alloc_lps);
+	slurm_cred_free_args(&arg);
 	slurm_seterrno_ret(ESLURMD_INVALID_JOB_CREDENTIAL);
 }
 
@@ -775,8 +777,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	     req->job_step_id, req->uid, req->gid, host, port);
 
 	first_job_run = !slurm_cred_jobid_cached(conf->vctx, req->job_id);
-	if (_check_job_credential(req, req_uid, req->tasks_to_launch[nodeid],
-				  &step_hset) < 0) {
+	if (_check_job_credential(req, req_uid, nodeid, &step_hset) < 0) {
 		errnum = errno;
 		error("Invalid job credential from %ld@%s: %m", 
 		      (long) req_uid, host);
@@ -817,7 +818,9 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 			job_limits_ptr->job_id = req->job_id;
 			list_append(job_limits_list, job_limits_ptr);
 		}
-		job_limits_ptr->job_mem = req->job_mem;	/* reset limit */
+		/* reset memory limit based upon value calculated in 
+		 * _check_job_credential() above */
+		job_limits_ptr->job_mem = req->job_mem;
 		slurm_mutex_unlock(&job_limits_mutex);
 	}
 
@@ -928,6 +931,28 @@ _get_user_env(batch_job_launch_msg_t *req)
 	xfree(pwd_buf);
 }
 
+/* The RPC currently contains a memory size limit, but we load the 
+ * value from the job credential to be certain it has not been 
+ * altered by the user */
+static void
+_set_batch_job_limits(slurm_msg_t *msg)
+{
+	slurm_cred_arg_t arg;
+	batch_job_launch_msg_t *req = (batch_job_launch_msg_t *)msg->data;
+
+	if (slurm_cred_get_args(req->cred, &arg) != SLURM_SUCCESS)
+		return;
+
+	if (arg.job_mem & MEM_PER_CPU) {
+		req->job_mem = arg.job_mem & (~MEM_PER_CPU);
+		if (arg.alloc_lps_cnt > 1)
+			req->job_mem *= arg.alloc_lps_cnt;
+	} else
+		req->job_mem = arg.job_mem;
+
+	slurm_cred_free_args(&arg);
+}
+
 static void
 _rpc_batch_job(slurm_msg_t *msg)
 {
@@ -995,6 +1020,8 @@ _rpc_batch_job(slurm_msg_t *msg)
 			goto done;
 		}
 	}
+	_get_user_env(req);
+	_set_batch_job_limits(msg);
 
 	/* Since job could have been killed while the prolog was 
 	 * running (especially on BlueGene, which can take minutes
@@ -1006,7 +1033,6 @@ _rpc_batch_job(slurm_msg_t *msg)
 		rc = ESLURMD_CREDENTIAL_REVOKED;     /* job already ran */
 		goto done;
 	}
-	_get_user_env(req);
 
 	slurm_mutex_lock(&launch_mutex);
 	if (req->step_id == SLURM_BATCH_SCRIPT)
