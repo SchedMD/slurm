@@ -645,8 +645,7 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 		if (rc >= 0) {
 			if ((hset = hostset_create(arg.hostlist)))
 				*step_hset = hset;
-			xfree(arg.hostlist);
-			xfree(arg.alloc_lps);
+			slurm_cred_free_args(&arg);
 		}
 		return SLURM_SUCCESS;
 	}
@@ -696,7 +695,9 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 			      "job %u", host_index, arg.jobid);
                         goto fail; 
                 }
-                if (arg.alloc_lps[host_index] == 0)
+		if (host_index > arg.alloc_lps_cnt)
+			error("host_index > alloc_lps_cnt in credential");
+                else if (arg.alloc_lps[host_index] == 0)
 			error("cons_res: zero processors allocated to step");
                 if (tasks_to_launch > arg.alloc_lps[host_index]) {
 			error("cons_res: More than one tasks per logical "
@@ -714,30 +715,28 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 	 * Reset the CPU count on this node to correct value. */
 	if (arg.job_mem & MEM_PER_CPU) {
 		req->job_mem = arg.job_mem & (~MEM_PER_CPU);
-		if ((host_index >= 0) && (arg.alloc_lps[host_index] > 0))
+		if ((host_index >= 0) && (host_index < arg.alloc_lps_cnt) &&
+		    (arg.alloc_lps[host_index] > 0))
 			req->job_mem *= arg.alloc_lps[host_index];
 	} else
 		req->job_mem = arg.job_mem;
 	req->task_mem = arg.task_mem;	/* Defunct */
-	req->cpus_allocated[node_id] = arg.alloc_lps[host_index];
+	if ((host_index >= 0) && (host_index < arg.alloc_lps_cnt))
+		req->cpus_allocated[node_id] = arg.alloc_lps[host_index];
 #if 0
 	info("mem orig:%u cpus:%u limit:%u", 
 	     arg.job_mem, arg.alloc_lps[host_index], req->job_mem);
 #endif
 
 	*step_hset = hset;
-	xfree(arg.hostlist);
-	arg.alloc_lps_cnt = 0;
-	xfree(arg.alloc_lps);
+	slurm_cred_free_args(&arg);
 	return SLURM_SUCCESS;
 
     fail:
 	if (hset) 
 		hostset_destroy(hset);
 	*step_hset = NULL;
-	xfree(arg.hostlist);
-        arg.alloc_lps_cnt = 0;
-        xfree(arg.alloc_lps);
+	slurm_cred_free_args(&arg);
 	slurm_seterrno_ret(ESLURMD_INVALID_JOB_CREDENTIAL);
 }
 
@@ -932,6 +931,28 @@ _get_user_env(batch_job_launch_msg_t *req)
 	xfree(pwd_buf);
 }
 
+/* The RPC currently contains a memory size limit, but we load the 
+ * value from the job credential to be certain it has not been 
+ * altered by the user */
+static void
+_set_batch_job_limits(slurm_msg_t *msg)
+{
+	slurm_cred_arg_t arg;
+	batch_job_launch_msg_t *req = (batch_job_launch_msg_t *)msg->data;
+
+	if (slurm_cred_get_args(req->cred, &arg) != SLURM_SUCCESS)
+		return;
+
+	if (arg.job_mem & MEM_PER_CPU) {
+		req->job_mem = arg.job_mem & (~MEM_PER_CPU);
+		if (arg.alloc_lps_cnt > 1)
+			req->job_mem *= arg.alloc_lps_cnt;
+	} else
+		req->job_mem = arg.job_mem;
+
+	slurm_cred_free_args(&arg);
+}
+
 static void
 _rpc_batch_job(slurm_msg_t *msg)
 {
@@ -999,6 +1020,8 @@ _rpc_batch_job(slurm_msg_t *msg)
 			goto done;
 		}
 	}
+	_get_user_env(req);
+	_set_batch_job_limits(msg);
 
 	/* Since job could have been killed while the prolog was 
 	 * running (especially on BlueGene, which can take minutes
@@ -1010,7 +1033,6 @@ _rpc_batch_job(slurm_msg_t *msg)
 		rc = ESLURMD_CREDENTIAL_REVOKED;     /* job already ran */
 		goto done;
 	}
-	_get_user_env(req);
 
 	slurm_mutex_lock(&launch_mutex);
 	if (req->step_id == SLURM_BATCH_SCRIPT)

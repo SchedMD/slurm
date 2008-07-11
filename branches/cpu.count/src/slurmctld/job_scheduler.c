@@ -458,7 +458,7 @@ extern void launch_job(struct job_record *job_ptr)
 	launch_msg_ptr->open_mode  = job_ptr->details->open_mode;
 	launch_msg_ptr->acctg_freq = job_ptr->details->acctg_freq;
 
-	if (make_batch_job_cred(launch_msg_ptr)) {
+	if (make_batch_job_cred(launch_msg_ptr, job_ptr)) {
 		error("aborting batch job %u", job_ptr->job_id);
 		/* FIXME: This is a kludge, but this event indicates a serious
 		 * problem with OpenSSH and should never happen. We are
@@ -524,9 +524,11 @@ _xduparray(uint16_t size, char ** array)
  * make_batch_job_cred - add a job credential to the batch_job_launch_msg
  * IN/OUT launch_msg_ptr - batch_job_launch_msg in which job_id, step_id, 
  *                         uid and nodes have already been set 
+ * IN job_ptr - pointer to job record
  * RET 0 or error code
  */
-extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr)
+extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr, 
+			       struct job_record *job_ptr)
 {
 	slurm_cred_arg_t cred_arg;
 
@@ -534,6 +536,15 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr)
 	cred_arg.stepid    = launch_msg_ptr->step_id;
 	cred_arg.uid       = launch_msg_ptr->uid;
 	cred_arg.hostlist  = launch_msg_ptr->nodes;
+	if (job_ptr->details == NULL)
+		cred_arg.job_mem = 0;
+	else if (job_ptr->details->job_min_memory & MEM_PER_CPU) {
+		cred_arg.job_mem = job_ptr->details->job_min_memory;
+		cred_arg.job_mem &= (~MEM_PER_CPU);
+		cred_arg.job_mem *= job_ptr->alloc_lps[0];
+	} else
+		cred_arg.job_mem = job_ptr->details->job_min_memory;
+
 	cred_arg.alloc_lps_cnt = 0;
 	cred_arg.alloc_lps = NULL;
 

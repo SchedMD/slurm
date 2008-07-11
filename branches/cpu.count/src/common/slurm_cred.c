@@ -721,6 +721,13 @@ slurm_cred_faker(slurm_cred_arg_t *arg)
     	
 }
 
+void slurm_cred_free_args(slurm_cred_arg_t *arg)
+{
+	xfree(arg->hostlist);
+	xfree(arg->alloc_lps);
+	arg->alloc_lps_cnt = 0;
+}
+
 int
 slurm_cred_get_args(slurm_cred_t cred, slurm_cred_arg_t *arg)
 {
@@ -738,12 +745,12 @@ slurm_cred_get_args(slurm_cred_t cred, slurm_cred_arg_t *arg)
 	arg->task_mem = cred->task_mem;
 	arg->hostlist = xstrdup(cred->nodes);
 	arg->alloc_lps_cnt = cred->alloc_lps_cnt;
-	arg->alloc_lps     = NULL;
 	if (arg->alloc_lps_cnt > 0) {
-		arg->alloc_lps =  xmalloc(arg->alloc_lps_cnt * sizeof(uint32_t));
+		arg->alloc_lps = xmalloc(arg->alloc_lps_cnt * sizeof(uint32_t));
 		memcpy(arg->alloc_lps, cred->alloc_lps, 
 		       arg->alloc_lps_cnt * sizeof(uint32_t));
-	}
+	} else
+		arg->alloc_lps = NULL;
 	slurm_mutex_unlock(&cred->mutex);
 
 	return SLURM_SUCCESS;
@@ -803,12 +810,12 @@ slurm_cred_verify(slurm_cred_ctx_t ctx, slurm_cred_t cred,
 	arg->task_mem = cred->task_mem;
 	arg->hostlist = xstrdup(cred->nodes);
 	arg->alloc_lps_cnt = cred->alloc_lps_cnt;
-	arg->alloc_lps     = NULL;
 	if (arg->alloc_lps_cnt > 0) {
-		arg->alloc_lps =  xmalloc(arg->alloc_lps_cnt * sizeof(uint32_t));
+		arg->alloc_lps = xmalloc(arg->alloc_lps_cnt * sizeof(uint32_t));
 		memcpy(arg->alloc_lps, cred->alloc_lps, 
 		       arg->alloc_lps_cnt * sizeof(uint32_t));
-	}
+	} else
+		arg->alloc_lps = NULL;
 
 	slurm_mutex_unlock(&cred->mutex);
 

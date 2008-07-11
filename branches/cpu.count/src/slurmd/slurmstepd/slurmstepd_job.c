@@ -325,6 +325,7 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	
 	job->state   = SLURMSTEPD_STEP_STARTING;
 	job->pwd     = pwd;
+	job->cpus    = msg->cpus_per_node[0];
 	job->ntasks  = 1; 
 	job->nprocs  = msg->nprocs;
 	job->jobid   = msg->job_id;

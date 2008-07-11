@@ -165,6 +165,10 @@ slurm_cred_t slurm_cred_copy(slurm_cred_t cred);
  */
 slurm_cred_t slurm_cred_faker(slurm_cred_arg_t *arg);
 
+/* Free the credential arguments as loaded by either
+ * slurm_cred_get_args() or slurm_cred_verify() */
+void slurm_cred_free_args(slurm_cred_arg_t *arg);
+
 /* Make a copy of the credential's arguements */
 int slurm_cred_get_args(slurm_cred_t cred, slurm_cred_arg_t *arg);
 

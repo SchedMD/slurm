@@ -82,9 +82,11 @@ extern void launch_job(struct job_record *job_ptr);
  * make_batch_job_cred - add a job credential to the batch_job_launch_msg
  * IN/OUT launch_msg_ptr - batch_job_launch_msg in which job_id, step_id, 
  *                         uid and nodes have already been set 
+ * IN job_ptr - pointer to job record
  * RET 0 or error code
  */
-extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr);
+extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
+			       struct job_record *job_ptr);
 
 /* Print a job's dependency information based upon job_ptr->depend_list */
 extern void print_job_dependency(struct job_record *job_ptr);
