@@ -121,9 +121,25 @@ if {[wait_for_file $file_out] == 0} {
 	}
 }
 if {$step_cnt != $steps_started} {
-	send_user "\nFAILURE: not all steps reported by squeue\n"
-	send_user "  Check $file_err for errors\n"
-	set exit_code 1
+	set mem_err 0
+	if {[wait_for_file $file_err] == 0} {
+		spawn $bin_cat $file_err
+		expect {
+			-re "memory limit" {
+				set mem_err 1
+			}
+			eof {
+				wait
+			}
+		}
+	}
+	if {$mem_err == 1} {
+		send_user "\nWARNING: Test could not complete due to memory limit\n"
+		set step_cnt $steps_started
+	} else {
+		send_user "\nFAILURE: not all steps reported by squeue\n"
+		set exit_code 1
+	}
 }
 
 if {$exit_code == 0} {
