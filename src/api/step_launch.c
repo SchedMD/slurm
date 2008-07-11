@@ -410,7 +410,8 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 	}
 
 	if (!force_terminated_job && task_exit_signal)
-		info("Force Terminated job step");
+		info("Force Terminated job step %u.%u",
+		     ctx->job_id, ctx->step_resp->job_step_id);
 
 	/* Then shutdown the message handler thread */
 	eio_signal_shutdown(sls->msg_handle);

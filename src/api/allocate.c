@@ -251,6 +251,8 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 			/* yes, allocation has been granted */
 			errno = SLURM_PROTOCOL_SUCCESS;
 		} else if (!req->immediate) {
+			if(resp->error_code != SLURM_SUCCESS) 
+				info("%s", slurm_strerror(resp->error_code));
 			/* no, we need to wait for a response */
 			job_id = resp->job_id;
 			slurm_free_resource_allocation_response_msg(resp);
