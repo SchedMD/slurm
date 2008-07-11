@@ -165,6 +165,9 @@ slurm_cred_t slurm_cred_copy(slurm_cred_t cred);
  */
 slurm_cred_t slurm_cred_faker(slurm_cred_arg_t *arg);
 
+/* Make a copy of the credential's arguements */
+int slurm_cred_get_args(slurm_cred_t cred, slurm_cred_arg_t *arg);
+
 /*
  * Verify the signed credential `cred,' and return cred contents in
  * the cred_arg structure. The credential is cached and cannot be reused.
