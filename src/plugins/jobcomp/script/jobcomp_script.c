@@ -247,16 +247,15 @@ static char ** _extend_env (char ***envp)
 
 static int _env_append (char ***envp, const char *name, const char *val)
 {
-	char buf[4096];
-	char *entry;
+	char *entry = NULL;
 	char **ep;
 
 	if (val == NULL)
 		val = "";
 
-	snprintf (buf, sizeof (buf) - 1, "%s=%s", name, val);
+	xstrfmtcat (entry, "%s=%s", name, val);
 
-	if (!(entry = xstrdup (buf)))
+	if (entry == NULL)
 		return (-1);
 
 	ep = _extend_env (envp);
