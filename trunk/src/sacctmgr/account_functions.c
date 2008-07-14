@@ -77,16 +77,12 @@ static int _set_cond(int *start, int argc, char *argv[],
 		} else if(!end
 			  || !strncasecmp (argv[i], "Names", 1)
 			  || !strncasecmp (argv[i], "Accouts", 1)) {
-			if(!acct_cond->acct_list) {
-				acct_cond->acct_list = 
-					list_create(slurm_destroy_char);
+			if(!acct_cond->assoc_cond->acct_list) {
 				acct_cond->assoc_cond->acct_list = 
 					list_create(slurm_destroy_char);
 			}
-			slurm_addto_char_list(acct_cond->acct_list, 
-					      argv[i]+end);
 			slurm_addto_char_list(acct_cond->assoc_cond->acct_list,
-					argv[i]+end);
+					      argv[i]+end);
 			u_set = 1;
 		} else if (!strncasecmp (argv[i], "Clusters", 1)) {
 			if(!acct_cond->assoc_cond->cluster_list) {
@@ -337,9 +333,12 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 		return SLURM_SUCCESS;
 	} else {
 		acct_account_cond_t account_cond;
+		acct_association_cond_t assoc_cond;
 
 		memset(&account_cond, 0, sizeof(acct_account_cond_t));
-		account_cond.acct_list = name_list;
+		memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
+		assoc_cond.acct_list = name_list;
+		account_cond.assoc_cond = &assoc_cond;
 
 		local_account_list = acct_storage_g_get_accounts(
 			db_conn, &account_cond);

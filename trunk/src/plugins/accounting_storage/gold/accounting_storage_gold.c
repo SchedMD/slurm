@@ -1155,9 +1155,10 @@ extern List acct_storage_p_modify_users(void *db_conn,
 		return NULL;
 	}
 
-	if(user_q->user_list && list_count(user_q->user_list)) {
-		itr = list_iterator_create(user_q->user_list);
-		if(list_count(user_q->user_list) > 1)
+	if(user_q->assoc_cond->user_list
+	   && list_count(user_q->assoc_cond->user_list)) {
+		itr = list_iterator_create(user_q->assoc_cond->user_list);
+		if(list_count(user_q->assoc_cond->user_list) > 1)
 			set = 2;
 		else
 			set = 0;
@@ -1273,9 +1274,10 @@ extern List acct_storage_p_modify_user_admin_level(void *db_conn,
 		return NULL;
 	}
 
-	if(user_q->user_list && list_count(user_q->user_list)) {
-		itr = list_iterator_create(user_q->user_list);
-		if(list_count(user_q->user_list) > 1)
+	if(user_q->assoc_cond->user_list
+	   && list_count(user_q->assoc_cond->user_list)) {
+		itr = list_iterator_create(user_q->assoc_cond->user_list);
+		if(list_count(user_q->assoc_cond->user_list) > 1)
 			set = 2;
 		else
 			set = 0;
@@ -1358,9 +1360,10 @@ extern List acct_storage_p_modify_accts(void *db_conn,
 		return NULL;
 	}
 
-	if(acct_q->acct_list && list_count(acct_q->acct_list)) {
-		itr = list_iterator_create(acct_q->acct_list);
-		if(list_count(acct_q->acct_list) > 1)
+	if(acct_q->assoc_cond->acct_list
+	   && list_count(acct_q->assoc_cond->acct_list)) {
+		itr = list_iterator_create(acct_q->assoc_cond->acct_list);
+		if(list_count(acct_q->assoc_cond->acct_list) > 1)
 			set = 2;
 		else
 			set = 0;
@@ -1630,9 +1633,10 @@ extern List acct_storage_p_remove_users(void *db_conn,
 		return NULL;
 	}
 	
-	if(user_q->user_list && list_count(user_q->user_list)) {
-		itr = list_iterator_create(user_q->user_list);
-		if(list_count(user_q->user_list) > 1)
+	if(user_q->assoc_cond->user_list 
+	   && list_count(user_q->assoc_cond->user_list)) {
+		itr = list_iterator_create(user_q->assoc_cond->user_list);
+		if(list_count(user_q->assoc_cond->user_list) > 1)
 			set = 2;
 		else
 			set = 0;
@@ -1716,9 +1720,10 @@ extern List acct_storage_p_remove_accts(void *db_conn,
 		return NULL;
 	}
 	
-	if(acct_q->acct_list && list_count(acct_q->acct_list)) {
-		itr = list_iterator_create(acct_q->acct_list);
-		if(list_count(acct_q->acct_list) > 1)
+	if(acct_q->assoc_cond->acct_list
+	   && list_count(acct_q->assoc_cond->acct_list)) {
+		itr = list_iterator_create(acct_q->assoc_cond->acct_list);
+		if(list_count(acct_q->assoc_cond->acct_list) > 1)
 			set = 2;
 		else
 			set = 0;
@@ -2100,9 +2105,10 @@ extern List acct_storage_p_get_users(void *db_conn,
 	if(!user_q) 
 		goto empty;
 
-	if(user_q->user_list && list_count(user_q->user_list)) {
-		itr = list_iterator_create(user_q->user_list);
-		if(list_count(user_q->user_list) > 1)
+	if(user_q->assoc_cond->user_list 
+	   && list_count(user_q->assoc_cond->user_list)) {
+		itr = list_iterator_create(user_q->assoc_cond->user_list);
+		if(list_count(user_q->assoc_cond->user_list) > 1)
 			set = 2;
 		else
 			set = 0;
@@ -2191,9 +2197,10 @@ extern List acct_storage_p_get_accts(void *db_conn,
 	if(!acct_q) 
 		goto empty;
 
-	if(acct_q->acct_list && list_count(acct_q->acct_list)) {
-		itr = list_iterator_create(acct_q->acct_list);
-		if(list_count(acct_q->acct_list) > 1)
+	if(acct_q->assoc_cond->acct_list 
+	   && list_count(acct_q->assoc_cond->acct_list)) {
+		itr = list_iterator_create(acct_q->assoc_cond->acct_list);
+		if(list_count(acct_q->assoc_cond->acct_list) > 1)
 			set = 2;
 		else
 			set = 0;

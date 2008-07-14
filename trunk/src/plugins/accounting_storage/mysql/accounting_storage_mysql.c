@@ -1761,8 +1761,9 @@ extern int acct_storage_p_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 	int rc = SLURM_SUCCESS;
 	acct_user_rec_t *user_rec = NULL;
 	
-	if(!user_cond || !user_cond->user_list 
-	   || !list_count(user_cond->user_list) 
+	if(!user_cond || !user_cond->assoc_cond 
+	   || !user_cond->assoc_cond->user_list 
+	   || !list_count(user_cond->assoc_cond->user_list) 
 	   || !acct_list || !list_count(acct_list)) {
 		error("we need something to add");
 		return SLURM_ERROR;
@@ -1775,7 +1776,7 @@ extern int acct_storage_p_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 		user_name = pw->pw_name;
 	}
 
-	itr = list_iterator_create(user_cond->user_list);
+	itr = list_iterator_create(user_cond->assoc_cond->user_list);
 	itr2 = list_iterator_create(acct_list);
 	while((user = list_next(itr))) {
 		while((acct = list_next(itr2))) {
@@ -1825,7 +1826,7 @@ extern int acct_storage_p_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 			return rc;
 		}
 		/* get the update list set */
-		itr = list_iterator_create(user_cond->user_list);
+		itr = list_iterator_create(user_cond->assoc_cond->user_list);
 		while((user = list_next(itr))) {
 			user_rec = xmalloc(sizeof(acct_user_rec_t));
 			user_rec->name = xstrdup(user);
@@ -2670,10 +2671,11 @@ extern List acct_storage_p_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 
 	xstrcat(extra, "where deleted=0");
-	if(user_cond->user_list && list_count(user_cond->user_list)) {
+	if(user_cond->assoc_cond && user_cond->assoc_cond->user_list
+	   && list_count(user_cond->assoc_cond->user_list)) {
 		set = 0;
 		xstrcat(extra, " && (");
-		itr = list_iterator_create(user_cond->user_list);
+		itr = list_iterator_create(user_cond->assoc_cond->user_list);
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
@@ -2903,10 +2905,12 @@ extern List acct_storage_p_modify_accounts(
 	}
 
 	xstrcat(extra, "where deleted=0");
-	if(acct_cond->acct_list && list_count(acct_cond->acct_list)) {
+	if(acct_cond->assoc_cond 
+	   && acct_cond->assoc_cond->acct_list 
+	   && list_count(acct_cond->assoc_cond->acct_list)) {
 		set = 0;
 		xstrcat(extra, " && (");
-		itr = list_iterator_create(acct_cond->acct_list);
+		itr = list_iterator_create(acct_cond->assoc_cond->acct_list);
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
@@ -3624,10 +3628,11 @@ extern List acct_storage_p_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	xstrcat(extra, "where deleted=0");
 
-	if(user_cond->user_list && list_count(user_cond->user_list)) {
+	if(user_cond->assoc_cond && user_cond->assoc_cond->user_list
+	   && list_count(user_cond->assoc_cond->user_list)) {
 		set = 0;
 		xstrcat(extra, " && (");
-		itr = list_iterator_create(user_cond->user_list);
+		itr = list_iterator_create(user_cond->assoc_cond->user_list);
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
@@ -3815,14 +3820,15 @@ extern List acct_storage_p_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	/* Leave it this way since we are using extra below */
 
-	if(user_cond->user_list && list_count(user_cond->user_list)) {
+	if(user_cond->assoc_cond && user_cond->assoc_cond->user_list
+	   && list_count(user_cond->assoc_cond->user_list)) {
 		set = 0;
 		if(extra)
 			xstrcat(extra, " && (");
 		else
 			xstrcat(extra, " (");
 			
-		itr = list_iterator_create(user_cond->user_list);
+		itr = list_iterator_create(user_cond->assoc_cond->user_list);
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
@@ -3971,10 +3977,12 @@ extern List acct_storage_p_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 
 	xstrcat(extra, "where deleted=0");
-	if(acct_cond->acct_list && list_count(acct_cond->acct_list)) {
+	if(acct_cond->assoc_cond 
+	   && acct_cond->assoc_cond->acct_list 
+	   && list_count(acct_cond->assoc_cond->acct_list)) {
 		set = 0;
 		xstrcat(extra, " && (");
-		itr = list_iterator_create(acct_cond->acct_list);
+		itr = list_iterator_create(acct_cond->assoc_cond->acct_list);
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
@@ -4704,10 +4712,12 @@ extern List acct_storage_p_get_users(mysql_conn_t *mysql_conn,
 		xstrcat(extra, "where deleted=0");
 		
 
-	if(user_cond->user_list && list_count(user_cond->user_list)) {
+	if(user_cond->assoc_cond && 
+	   user_cond->assoc_cond->user_list
+	   && list_count(user_cond->assoc_cond->user_list)) {
 		set = 0;
 		xstrcat(extra, " && (");
-		itr = list_iterator_create(user_cond->user_list);
+		itr = list_iterator_create(user_cond->assoc_cond->user_list);
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
@@ -4869,10 +4879,12 @@ extern List acct_storage_p_get_accts(mysql_conn_t *mysql_conn,
 	else
 		xstrcat(extra, "where deleted=0");
 
-	if(acct_cond->acct_list && list_count(acct_cond->acct_list)) {
+	if(acct_cond->assoc_cond 
+	   && acct_cond->assoc_cond->acct_list 
+	   && list_count(acct_cond->assoc_cond->acct_list)) {
 		set = 0;
 		xstrcat(extra, " && (");
-		itr = list_iterator_create(acct_cond->acct_list);
+		itr = list_iterator_create(acct_cond->assoc_cond->acct_list);
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");

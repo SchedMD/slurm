@@ -449,8 +449,8 @@ extern void destroy_acct_user_cond(void *object)
 		destroy_acct_association_cond(acct_user->assoc_cond);
 		if(acct_user->def_acct_list)
 			list_destroy(acct_user->def_acct_list);
-		if(acct_user->user_list)
-			list_destroy(acct_user->user_list);
+		if(acct_user->qos_list)
+			list_destroy(acct_user->qos_list);
 		xfree(acct_user);
 	}
 }
@@ -461,13 +461,13 @@ extern void destroy_acct_account_cond(void *object)
 		(acct_account_cond_t *)object;
 
 	if(acct_account) {
-		if(acct_account->acct_list)
-			list_destroy(acct_account->acct_list);
 		destroy_acct_association_cond(acct_account->assoc_cond);
 		if(acct_account->description_list)
 			list_destroy(acct_account->description_list);
 		if(acct_account->organization_list)
 			list_destroy(acct_account->organization_list);
+		if(acct_account->qos_list)
+			list_destroy(acct_account->qos_list);
 		xfree(acct_account);
 	}
 }
@@ -1222,7 +1222,6 @@ extern void pack_acct_user_cond(void *in, Buf buffer)
 		pack_acct_association_cond(NULL, buffer);
 		pack32(0, buffer);
 		pack32(0, buffer);
-		pack32(0, buffer);
 		pack16(0, buffer);
 		pack16(0, buffer);
 		pack16(0, buffer);
@@ -1261,18 +1260,6 @@ extern void pack_acct_user_cond(void *in, Buf buffer)
 	}
 	count = 0;
 
-	if(object->user_list)
-		count = list_count(object->user_list);
-
-	pack32(count, buffer);
-
-	if(count) {
-		itr = list_iterator_create(object->user_list);
-		while((tmp_info = list_next(itr))) {
-			packstr(tmp_info, buffer);
-		}
-		list_iterator_destroy(itr);
-	}
 	pack16((uint16_t)object->with_assocs, buffer);
 	pack16((uint16_t)object->with_coords, buffer);
 	pack16((uint16_t)object->with_deleted, buffer);
@@ -1311,14 +1298,6 @@ extern int unpack_acct_user_cond(void **object, Buf buffer)
 			list_append(object_ptr->qos_list, tmp_info);
 		}
 	}
-	safe_unpack32(&count, buffer);
-	if(count) {
-		object_ptr->user_list = list_create(slurm_destroy_char);
-		for(i=0; i<count; i++) {
-			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp, buffer);
-			list_append(object_ptr->user_list, tmp_info);
-		}
-	}
 	safe_unpack16((uint16_t *)&object_ptr->with_assocs, buffer);
 	safe_unpack16((uint16_t *)&object_ptr->with_coords, buffer);
 	safe_unpack16((uint16_t *)&object_ptr->with_deleted, buffer);
@@ -1339,7 +1318,6 @@ extern void pack_acct_account_cond(void *in, Buf buffer)
 	uint32_t count = 0;
 
 	if(!object) {
-		pack32(0, buffer);
 		pack_acct_association_cond(NULL, buffer);
 		pack32(0, buffer);
 		pack32(0, buffer);
@@ -1349,19 +1327,6 @@ extern void pack_acct_account_cond(void *in, Buf buffer)
 		pack16(0, buffer);
 		return;
 	}
- 	if(object->acct_list)
-		count = list_count(object->acct_list);
-
-	pack32(count, buffer);
-
-	if(count) {
-		itr = list_iterator_create(object->acct_list);
-		while((tmp_info = list_next(itr))) {
-			packstr(tmp_info, buffer);
-		}
-		list_iterator_destroy(itr);
-	}
-
 	pack_acct_association_cond(object->assoc_cond, buffer);
 	
 	count = 0;
@@ -1421,15 +1386,6 @@ extern int unpack_acct_account_cond(void **object, Buf buffer)
 	char *tmp_info = NULL;
 
 	*object = object_ptr;
-	safe_unpack32(&count, buffer);
-	if(count) {
-		object_ptr->acct_list = list_create(slurm_destroy_char);
-		for(i=0; i<count; i++) {
-			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp, buffer);
-			list_append(object_ptr->acct_list, tmp_info);
-		}
-	}
-
 	if(unpack_acct_association_cond((void **)&object_ptr->assoc_cond,
 					buffer) == SLURM_ERROR)
 		goto unpack_error;

@@ -155,10 +155,11 @@ static int _set_cond(int *start, int argc, char *argv[],
 			group_accts = 1;
 		} else if(!end
 			  || !strncasecmp (argv[i], "Users", 1)) {
-			if(!user_cond->user_list)
-				user_cond->user_list = 
+			if(!assoc_cond->user_list)
+				assoc_cond->user_list = 
 					list_create(slurm_destroy_char);
-			slurm_addto_char_list(user_cond->user_list, argv[i]);
+			slurm_addto_char_list(assoc_cond->user_list,
+					      argv[i]);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Accounts", 2)) {
 			if(!assoc_cond->acct_list)

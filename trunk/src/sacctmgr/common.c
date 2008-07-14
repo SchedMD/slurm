@@ -302,18 +302,21 @@ extern acct_user_rec_t *sacctmgr_find_user(char *name)
 {
 	acct_user_rec_t *user = NULL;
 	acct_user_cond_t user_cond;
+	acct_association_cond_t assoc_cond;
 	List user_list = NULL;
 	
 	if(!name)
 		return NULL;
 	
 	memset(&user_cond, 0, sizeof(acct_user_cond_t));
-	user_cond.user_list = list_create(NULL);
-	list_append(user_cond.user_list, name);
+	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
+	assoc_cond.user_list = list_create(NULL);
+	list_append(assoc_cond.user_list, name);
+	user_cond.assoc_cond = &assoc_cond;
 
 	user_list = acct_storage_g_get_users(db_conn, &user_cond);
 
-	list_destroy(user_cond.user_list);
+	list_destroy(assoc_cond.user_list);
 
 	if(user_list)
 		user = list_pop(user_list);
@@ -327,18 +330,21 @@ extern acct_account_rec_t *sacctmgr_find_account(char *name)
 {
 	acct_account_rec_t *account = NULL;
 	acct_account_cond_t account_cond;
+	acct_association_cond_t assoc_cond;
 	List account_list = NULL;
 	
 	if(!name)
 		return NULL;
 
 	memset(&account_cond, 0, sizeof(acct_account_cond_t));
-	account_cond.acct_list = list_create(NULL);
-	list_append(account_cond.acct_list, name);
+	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
+	assoc_cond.acct_list = list_create(NULL);
+	list_append(assoc_cond.acct_list, name);
+	account_cond.assoc_cond = &assoc_cond;
 
 	account_list = acct_storage_g_get_accounts(db_conn, &account_cond);
 	
-	list_destroy(account_cond.acct_list);
+	list_destroy(assoc_cond.acct_list);
 
 	if(account_list)
 		account = list_pop(account_list);
