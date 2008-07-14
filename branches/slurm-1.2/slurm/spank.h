@@ -1,7 +1,8 @@
 /*****************************************************************************\
  *  spank.h - Stackable Plug-in Architecture for Node job Kontrol
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  UCRL-CODE-226842.
  *  
@@ -127,7 +128,11 @@ enum spank_item {
     S_JOB_PID_TO_LOCAL_ID,   /* local task id from pid (pid_t, uint32_t *)    */
     S_JOB_LOCAL_TO_GLOBAL_ID,/* local id to global id  (uint32_t, uint32_t *) */
     S_JOB_GLOBAL_TO_LOCAL_ID,/* global id to local id  (uint32_t, uint32_t *) */
-    S_JOB_SUPPLEMENTARY_GIDS /* Array of suppl. gids (gid_t **, int *)        */
+    S_JOB_SUPPLEMENTARY_GIDS,/* Array of suppl. gids (gid_t **, int *)        */
+    S_SLURM_VERSION,         /* Current slurm version (char **)               */
+    S_SLURM_VERSION_MAJOR,   /* Current slurm version major release (char **) */
+    S_SLURM_VERSION_MINOR,   /* Current slurm version minor release (char **) */
+    S_SLURM_VERSION_MICRO    /* Current slurm version micro release (char **) */
 };
 
 typedef enum spank_item spank_item_t;
@@ -216,8 +221,9 @@ int spank_remote (spank_t spank);
 /*  Get the value for the current job or task item specified, 
  *   storing the result in the subsequent pointer argument(s).
  *   Refer to the spank_item_t comments for argument types.
- *   For S_JOB_ARGV and S_JOB_ENV items the result returned to
- *   the caller should not be freed or modified.
+ *   For S_JOB_ARGV, S_JOB_ENV, and S_SLURM_VERSION* items 
+ *   the result returned to the caller should not be freed or
+ *   modified.
  *   
  *  Returns ESPANK_SUCCESS on success, ESPANK_NOTASK if an S_TASK*
  *   item is requested from outside a task context, ESPANK_BAD_ARG

@@ -4,6 +4,8 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 1.2.33
 =========================
  -- Cancelled or Failed jobs will now report there job and step id on exit
+ -- Add SPANK items available to get: SLURM_VERSION, SLURM_VERSION_MAJOR,
+    SLURM_VERISON_MINOR and SLURM_VERSION_MICRO.
 
 * Changes in SLURM 1.2.32
 =========================
