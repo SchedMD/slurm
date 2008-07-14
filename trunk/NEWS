@@ -5,8 +5,8 @@ documents those changes that are of interest to users and admins.
 ========================
  -- Add new function to get information for a single job rather than always
     getting information for all jobs. Improved performance of some commands. 
-    NOTE: Change in RPC means all nodes in the cluster should be updated 
-    at the same time.
+    NOTE: This new RPC means that the slurmctld daemons should be updated
+    before or at the same time as the compute nodes in order to process it.
  -- In salloc, sbatch, and srun replace --task-mem options with --mem-per-cpu
     (--task-mem will continue to be accepted for now, but is not documented).
     Replace DefMemPerTask and MaxMemPerTask with DefMemPerCPU, DefMemPerNode,
