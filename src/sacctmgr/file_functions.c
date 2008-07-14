@@ -52,7 +52,7 @@ typedef struct {
 	char *name;
 	char *org;
 	char *part;
-	acct_qos_level_t qos;
+	List qos_list;
 } sacctmgr_file_opts_t;
 
 enum {
@@ -71,7 +71,6 @@ enum {
 	PRINT_NAME,
 	PRINT_ORG,
 	PRINT_QOS,
-	PRINT_QOS_GOLD,
 	PRINT_QOS_RAW,
 	PRINT_PID,
 	PRINT_PARENT,
@@ -84,6 +83,8 @@ typedef enum {
 	MOD_ACCT,
 	MOD_USER
 } sacctmgr_mod_type_t;
+
+static List qos_list = NULL;
 
 static int _strip_continuation(char *buf, int len)
 {
@@ -204,13 +205,12 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 	sacctmgr_file_opts_t *file_opts = xmalloc(sizeof(sacctmgr_file_opts_t));
 	char *option = NULL;
 	char quote_c = '\0';
-
+	
 	file_opts->fairshare = 1;
 	file_opts->max_cpu_secs_per_job = INFINITE;
 	file_opts->max_jobs = INFINITE;
 	file_opts->max_nodes_per_job = INFINITE;
 	file_opts->max_wall_duration_per_job = INFINITE;
-	file_opts->qos = ACCT_QOS_NORMAL;
 	file_opts->admin = ACCT_ADMIN_NONE;
 
 	while(options[i]) {
@@ -260,7 +260,7 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 			if(!file_opts->coord_list)
 				file_opts->coord_list =
 					list_create(slurm_destroy_char);
-			addto_char_list(file_opts->coord_list, option);
+			slurm_addto_char_list(file_opts->coord_list, option);
 		} else if (!strncasecmp (sub, "DefaultAccount", 3)) {
 			file_opts->def_acct = xstrdup(option);
 		} else if (!strncasecmp (sub, "Description", 3)) {
@@ -311,7 +311,17 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 			file_opts->org = xstrdup(option);
 		} else if (!strncasecmp (sub, "QosLevel", 1)
 			   || !strncasecmp (sub, "Expedite", 1)) {
-			file_opts->qos = str_2_acct_qos(option);
+			if(!file_opts->qos_list) {
+				file_opts->qos_list = 
+					list_create(slurm_destroy_char);
+			}
+			
+			if(!qos_list) {
+				qos_list = acct_storage_g_get_qos(
+					db_conn, NULL);
+			}
+			addto_qos_char_list(file_opts->qos_list, qos_list,
+					    option);
 		} else {
 			printf(" Unknown option: %s\n", sub);
 		}
@@ -417,21 +427,16 @@ static List _set_up_print_fields(List format_list)
 			field->name = xstrdup("Org");
 			field->len = 20;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("QOSGOLD", object, 4)) {
-			field->type = PRINT_QOS_GOLD;
-			field->name = xstrdup("QOS_GOLD");
-			field->len = 7;
-			field->print_routine = print_fields_uint;
 		} else if(!strncasecmp("QOSRAW", object, 4)) {
 			field->type = PRINT_QOS_RAW;
 			field->name = xstrdup("QOS_RAW");
 			field->len = 7;
-			field->print_routine = print_fields_uint;
+			field->print_routine = print_fields_char_list;
 		} else if(!strncasecmp("QOS", object, 1)) {
 			field->type = PRINT_QOS;
 			field->name = xstrdup("QOS");
 			field->len = 9;
-			field->print_routine = print_fields_str;
+			field->print_routine = sacctmgr_print_qos_list;
 		} else if(!strncasecmp("Parent", object, 4)) {
 			field->type = PRINT_PARENT;
 			field->name = xstrdup("Parent");
@@ -472,10 +477,10 @@ static int _print_out_assoc(List assoc_list, bool user)
 	
 	format_list = list_create(slurm_destroy_char);
 	if(user)
-		addto_char_list(format_list,
+		slurm_addto_char_list(format_list,
 				"User,Account,F,MaxC,MaxJ,MaxN,MaxW");
 	else 
-		addto_char_list(format_list,
+		slurm_addto_char_list(format_list,
 				"Account,Parent,F,MaxC,MaxJ,MaxN,MaxW");
 	
 	print_fields_list = _set_up_print_fields(format_list);
@@ -689,15 +694,52 @@ static int _mod_acct(sacctmgr_file_opts_t *file_opts,
 		mod_acct.organization = org;
 		changed = 1;
 	}
-				
-	if(acct->qos != file_opts->qos) {
-		printf(" Changed QOS for account '%s' "
-		       "from '%s' to '%s'\n",
-		       acct->name,
-		       acct_qos_str(acct->qos),
-		       acct_qos_str(file_opts->qos));
-		mod_acct.qos = file_opts->qos;
-		changed = 1;
+
+	if(acct->qos_list && list_count(acct->qos_list)
+	   && file_opts->qos_list && list_count(file_opts->qos_list)) {
+		ListIterator now_qos_itr = list_iterator_create(acct->qos_list),
+			new_qos_itr = list_iterator_create(file_opts->qos_list);
+		char *now_qos = NULL, *new_qos = NULL;
+
+		if(!mod_acct.qos_list)
+			mod_acct.qos_list = list_create(slurm_destroy_char);
+		while((new_qos = list_next(new_qos_itr))) {
+			while((now_qos = list_next(now_qos_itr))) {
+				if(!strcmp(new_qos, now_qos))
+					break;
+			}
+			list_iterator_reset(now_qos_itr);
+			if(!now_qos) 
+				list_append(mod_acct.qos_list,
+					    xstrdup(new_qos));
+		}
+		list_iterator_destroy(new_qos_itr);
+		list_iterator_destroy(now_qos_itr);
+		if(mod_acct.qos_list && list_count(mod_acct.qos_list))
+			new_qos = get_qos_complete_str(qos_list,
+						       mod_acct.qos_list);
+		if(new_qos) {
+			printf(" Adding QOS for account '%s' '%s'\n",
+			       acct->name,
+			       new_qos);
+			xfree(new_qos);
+			changed = 1;
+		} else 
+			list_destroy(mod_acct.qos_list);
+
+	} else if(file_opts->qos_list && list_count(file_opts->qos_list)) {
+		char *new_qos = get_qos_complete_str(qos_list,
+						     file_opts->qos_list);
+		
+		if(new_qos) {
+			printf(" Adding QOS for account '%s' '%s'\n",
+			       acct->name,
+			       new_qos);
+			xfree(new_qos);
+			mod_acct.qos_list = file_opts->qos_list;
+			file_opts->qos_list = NULL;
+			changed = 1;
+		}
 	}
 									
 	if(changed) {
@@ -715,8 +757,8 @@ static int _mod_acct(sacctmgr_file_opts_t *file_opts,
 							  &mod_acct);
 		notice_thread_fini();
 	
-					
-		list_destroy(acct_cond.acct_list);
+		if(mod_acct.qos_list)
+			list_destroy(mod_acct.qos_list);
 
 /* 		if(ret_list && list_count(ret_list)) { */
 /* 			char *object = NULL; */
@@ -770,14 +812,51 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 		changed = 1;
 	}
 				
-	if(user->qos != file_opts->qos) {
-		printf(" Changed User '%s' "
-		       "QOS '%s' -> '%s'\n",
-		       user->name,
-		       acct_qos_str(user->qos),
-		       acct_qos_str(file_opts->qos));
-		mod_user.qos = file_opts->qos;
-		changed = 1;
+	if(user->qos_list && list_count(user->qos_list)
+	   && file_opts->qos_list && list_count(file_opts->qos_list)) {
+		ListIterator now_qos_itr = list_iterator_create(user->qos_list),
+			new_qos_itr = list_iterator_create(file_opts->qos_list);
+		char *now_qos = NULL, *new_qos = NULL;
+
+		if(!mod_user.qos_list)
+			mod_user.qos_list = list_create(slurm_destroy_char);
+		while((new_qos = list_next(new_qos_itr))) {
+			while((now_qos = list_next(now_qos_itr))) {
+				if(!strcmp(new_qos, now_qos))
+					break;
+			}
+			list_iterator_reset(now_qos_itr);
+			if(!now_qos) 
+				list_append(mod_user.qos_list,
+					    xstrdup(new_qos));
+		}
+		list_iterator_destroy(new_qos_itr);
+		list_iterator_destroy(now_qos_itr);
+		if(mod_user.qos_list && list_count(mod_user.qos_list))
+			new_qos = get_qos_complete_str(qos_list,
+						       mod_user.qos_list);
+		if(new_qos) {
+			printf(" Adding QOS for user '%s' '%s'\n",
+			       user->name,
+			       new_qos);
+			xfree(new_qos);
+			changed = 1;
+		} else 
+			list_destroy(mod_user.qos_list);
+
+	} else if(file_opts->qos_list && list_count(file_opts->qos_list)) {
+		char *new_qos = get_qos_complete_str(qos_list,
+						     file_opts->qos_list);
+		
+		if(new_qos) {
+			printf(" Adding QOS for user '%s' '%s'\n",
+			       user->name,
+			       new_qos);
+			xfree(new_qos);
+			mod_user.qos_list = file_opts->qos_list;
+			file_opts->qos_list = NULL;
+			changed = 1;
+		}
 	}
 									
 	if(user->admin_level != file_opts->admin) {
@@ -799,6 +878,9 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 			&user_cond, 
 			&mod_user);
 		notice_thread_fini();
+
+		if(mod_user.qos_list)
+			list_destroy(mod_user.qos_list);
 					
 /* 		if(ret_list && list_count(ret_list)) { */
 /* 			char *object = NULL; */
@@ -1078,9 +1160,21 @@ static int _print_file_sacctmgr_assoc_childern(FILE *fd,
 						   acct_admin_level_str(
 							   user_rec->
 							   admin_level));
-				if(user_rec->qos > ACCT_QOS_NORMAL)
-					xstrfmtcat(line, ":QOS=%s",
-						   acct_qos_str(user_rec->qos));
+				if(user_rec->qos_list 
+				   && list_count(user_rec->qos_list)) {
+					char *temp_char = NULL;
+					if(!qos_list) {
+						qos_list = 
+							acct_storage_g_get_qos(
+								db_conn,
+								NULL);
+					}
+					temp_char = get_qos_complete_str(
+						qos_list, user_rec->qos_list);
+					xstrfmtcat(line, ":QOS=%s", temp_char);
+					xfree(temp_char);
+				}
+
 				if(user_rec->coord_accts
 				   && list_count(user_rec->coord_accts)) {
 					ListIterator itr2 = NULL;
@@ -1121,9 +1215,15 @@ static int _print_file_sacctmgr_assoc_childern(FILE *fd,
 					   acct_rec->description);
 				xstrfmtcat(line, ":Organization='%s'",
 					   acct_rec->organization);
-				if(acct_rec->qos > ACCT_QOS_NORMAL)
-					xstrfmtcat(line, ":QOS=%s",
-						   acct_qos_str(acct_rec->qos));
+				if(acct_rec->qos_list) {
+					char *temp_char = get_qos_complete_str(
+						qos_list, acct_rec->qos_list);
+					if(temp_char) {			
+						xstrfmtcat(line, ":QOS='%s'",
+							   temp_char);
+						xfree(temp_char);
+					}
+				}
 			}
 		}
 		if(sacctmgr_assoc->assoc->partition) 
@@ -1454,7 +1554,8 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				/* info("adding acct %s (%s) (%s)", */
 /* 				     acct->name, acct->description, */
 /* 				     acct->organization); */
-				acct->qos = file_opts->qos;
+				acct->qos_list = file_opts->qos_list;
+				file_opts->qos_list = NULL;
 				list_append(acct_list, acct);
 				/* don't add anything to the
 				   curr_acct_list */
@@ -1566,7 +1667,8 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				else
 					user->default_acct = xstrdup(parent);
 					
-				user->qos = file_opts->qos;
+				user->qos_list = file_opts->qos_list;
+				file_opts->qos_list = NULL;
 				user->admin_level = file_opts->admin;
 				
 				if(file_opts->coord_list) {
@@ -1720,7 +1822,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 	START_TIMER;
 	if(rc == SLURM_SUCCESS && list_count(acct_list)) {
 		printf("Accounts\n");
-		addto_char_list(format_list,
+		slurm_addto_char_list(format_list,
 				"Name,Description,Organization,QOS");
 
 		print_fields_list = _set_up_print_fields(format_list);
@@ -1748,7 +1850,8 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				case PRINT_QOS:
 					field->print_routine(
 						field,
-						acct_qos_str(acct->qos));
+						qos_list,
+						acct->qos_list);
 					break;
 				default:
 					break;
@@ -1774,7 +1877,8 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 	if(rc == SLURM_SUCCESS && list_count(user_list)) {
 		printf("Users\n");
 
-		addto_char_list(format_list, "Name,Default,QOS,Admin,Coord");
+		slurm_addto_char_list(format_list, 
+				      "Name,Default,QOS,Admin,Coord");
 
 		print_fields_list = _set_up_print_fields(format_list);
 		list_flush(format_list);
@@ -1808,7 +1912,8 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				case PRINT_QOS:
 					field->print_routine(
 						field,
-						acct_qos_str(user->qos));
+						qos_list,
+						user->qos_list);
 					break;
 				default:
 					break;

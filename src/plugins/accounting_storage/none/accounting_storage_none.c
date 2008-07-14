@@ -132,6 +132,12 @@ extern int acct_storage_p_add_associations(void *db_conn, uint32_t uid,
 	return SLURM_SUCCESS;
 }
 
+extern int acct_storage_p_add_qos(void *db_conn, uint32_t uid, 
+				  List qos_list)
+{
+	return SLURM_SUCCESS;
+}
+
 extern List acct_storage_p_modify_users(void *db_conn, uint32_t uid,
 				       acct_user_cond_t *user_q,
 				       acct_user_rec_t *user)
@@ -191,6 +197,12 @@ extern List acct_storage_p_remove_associations(void *db_conn, uint32_t uid,
 	return SLURM_SUCCESS;
 }
 
+extern List acct_storage_p_remove_qos(void *db_conn, uint32_t uid, 
+				      acct_qos_cond_t *qos_cond)
+{
+	return NULL;
+}
+
 extern List acct_storage_p_get_users(void *db_conn,
 				     acct_user_cond_t *user_q)
 {
@@ -211,6 +223,12 @@ extern List acct_storage_p_get_clusters(void *db_conn,
 
 extern List acct_storage_p_get_associations(void *db_conn,
 					    acct_association_cond_t *assoc_q)
+{
+	return NULL;
+}
+
+extern List acct_storage_p_get_qos(void *db_conn,
+				   acct_qos_cond_t *qos_cond)
 {
 	return NULL;
 }

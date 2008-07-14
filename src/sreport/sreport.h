@@ -106,7 +106,6 @@ extern void sreport_print_time(print_field_t *field,
 			       uint64_t value, uint64_t total_time);
 extern int parse_option_end(char *option);
 extern char *strip_quotes(char *option, int *increased);
-extern void addto_char_list(List char_list, char *names);
 extern int set_start_end_time(time_t *start, time_t *end);
 
 #endif /* HAVE_SREPORT_H */

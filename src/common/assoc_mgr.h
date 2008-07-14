@@ -108,6 +108,13 @@ extern int assoc_mgr_fini(void);
 extern int assoc_mgr_update_local_assocs(acct_update_object_t *update);
 
 /* 
+ * update qos in local cache 
+ * IN:  acct_update_object_t *object
+ * RET: SLURM_SUCCESS on success (or not found) SLURM_ERROR else
+ */
+extern int assoc_mgr_update_local_qos(acct_update_object_t *update);
+
+/* 
  * update users in local cache 
  * IN:  acct_update_object_t *object
  * RET: SLURM_SUCCESS on success (or not found) SLURM_ERROR else

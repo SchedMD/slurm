@@ -44,12 +44,14 @@
 #include "src/slurmdbd/read_config.h"
 
 static List local_association_list = NULL;
+static List local_qos_list = NULL;
 static List local_user_list = NULL;
 static char *local_cluster_name = NULL;
 
 void (*remove_assoc_notify) (acct_association_rec_t *rec) = NULL;
 
 static pthread_mutex_t local_association_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t local_qos_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t local_user_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /* locks should be put in place before calling this function */
@@ -144,6 +146,28 @@ static int _get_local_association_list(void *db_conn, int enforce)
 	return SLURM_SUCCESS;
 }
 
+static int _get_local_qos_list(void *db_conn, int enforce)
+{
+	slurm_mutex_lock(&local_qos_lock);
+	if(local_qos_list)
+		list_destroy(local_qos_list);
+	local_qos_list = acct_storage_g_get_qos(db_conn, NULL);
+
+	if(!local_qos_list) {
+		slurm_mutex_unlock(&local_qos_lock);
+		if(enforce) {
+			error("_get_local_qos_list: "
+			      "no list was made.");
+			return SLURM_ERROR;
+		} else {
+			return SLURM_SUCCESS;
+		}		
+	}
+
+	slurm_mutex_unlock(&local_qos_lock);
+	return SLURM_SUCCESS;
+}
+
 static int _get_local_user_list(void *db_conn, int enforce)
 {
 	acct_user_cond_t user_q;
@@ -204,6 +228,10 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args)
 		if(_get_local_association_list(db_conn, enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
 
+	if(!local_qos_list) 
+		if(_get_local_qos_list(db_conn, enforce) == SLURM_ERROR)
+			return SLURM_ERROR;
+
 	if(!local_user_list) 
 		if(_get_local_user_list(db_conn, enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
@@ -215,10 +243,13 @@ extern int assoc_mgr_fini(void)
 {
 	if(local_association_list) 
 		list_destroy(local_association_list);
+	if(local_qos_list)
+		list_destroy(local_qos_list);
 	if(local_user_list)
 		list_destroy(local_user_list);
 	xfree(local_cluster_name);
 	local_association_list = NULL;
+	local_qos_list = NULL;
 	local_user_list = NULL;
 
 	return SLURM_SUCCESS;
@@ -655,9 +686,13 @@ extern int assoc_mgr_update_local_users(acct_update_object_t *update)
 				object->default_acct = NULL;
 			}
 
-			if(object->qos != ACCT_QOS_NOTSET)
-				rec->qos = object->qos;
-			
+			if(object->qos_list) {
+				if(rec->qos_list)
+					list_destroy(rec->qos_list);
+				rec->qos_list = object->qos_list;
+				object->qos_list = NULL;
+			}
+
 			if(object->admin_level != ACCT_ADMIN_NOTSET)
 				rec->admin_level = rec->admin_level;
 
@@ -708,6 +743,54 @@ extern int assoc_mgr_update_local_users(acct_update_object_t *update)
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&local_user_lock);
+
+	return rc;	
+}
+
+extern int assoc_mgr_update_local_qos(acct_update_object_t *update)
+{
+	acct_qos_rec_t * rec = NULL;
+	acct_qos_rec_t * object = NULL;
+		
+	ListIterator itr = NULL;
+	int rc = SLURM_SUCCESS;
+
+	if(!local_qos_list)
+		return SLURM_SUCCESS;
+
+	slurm_mutex_lock(&local_qos_lock);
+	itr = list_iterator_create(local_qos_list);
+	while((object = list_pop(update->objects))) {
+		list_iterator_reset(itr);
+		while((rec = list_next(itr))) {
+			if(object->id == rec->id) {
+				break;
+			}
+		}
+		//info("%d qos %s", update->type, object->name);
+		switch(update->type) {
+		case ACCT_ADD_QOS:
+			if(rec) {
+				//rc = SLURM_ERROR;
+				break;
+			}
+			list_append(local_qos_list, object);
+		case ACCT_REMOVE_QOS:
+			if(!rec) {
+				//rc = SLURM_ERROR;
+				break;
+			}
+			list_delete_item(itr);
+			break;
+		default:
+			break;
+		}
+		if(update->type != ACCT_ADD_QOS) {
+			destroy_acct_qos_rec(object);			
+		}
+	}
+	list_iterator_destroy(itr);
+	slurm_mutex_unlock(&local_qos_lock);
 
 	return rc;	
 }

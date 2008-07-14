@@ -15,6 +15,11 @@ documents those changes that are of interest to users and admins.
     a job's memory memory at the same time that processors are allocated based
     upon the --mem or --mem-per-cpu option rather than when job steps are
     initiated.
+ -- Altered QOS in accounting to be a list of admin defined states, an
+    account or user can have multiple QOS's now.  They need to be defined using
+    'sacctmgr add qos'.  They are no longer an enum.  If none are defined
+    Normal will be the QOS for everything.  Right now this is only for use 
+    with MOAB.  Does nothing outside of that.
 
 * Changes in SLURM 1.3.5
 ========================

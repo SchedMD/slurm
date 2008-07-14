@@ -143,57 +143,6 @@ extern char *strip_quotes(char *option, int *increased)
 	return meat;
 }
 
-extern void addto_char_list(List char_list, char *names)
-{
-	int i=0, start=0;
-	char *name = NULL, *tmp_char = NULL;
-	ListIterator itr = list_iterator_create(char_list);
-
-	if(names && char_list) {
-		if (names[i] == '\"' || names[i] == '\'')
-			i++;
-		start = i;
-		while(names[i]) {
-			if(names[i] == '\"' || names[i] == '\'')
-				break;
-			else if(names[i] == ',') {
-				if((i-start) > 0) {
-					name = xmalloc((i-start+1));
-					memcpy(name, names+start, (i-start));
-
-					while((tmp_char = list_next(itr))) {
-						if(!strcasecmp(tmp_char, name))
-							break;
-					}
-
-					if(!tmp_char)
-						list_append(char_list, name);
-					else 
-						xfree(name);
-					list_iterator_reset(itr);
-				}
-				i++;
-				start = i;
-			}
-			i++;
-		}
-		if((i-start) > 0) {
-			name = xmalloc((i-start)+1);
-			memcpy(name, names+start, (i-start));
-			while((tmp_char = list_next(itr))) {
-				if(!strcasecmp(tmp_char, name))
-					break;
-			}
-			
-			if(!tmp_char)
-				list_append(char_list, name);
-			else 
-				xfree(name);
-		}
-	}	
-	list_iterator_destroy(itr);
-} 
-
 extern int notice_thread_init()
 {
 	pthread_attr_t attr;
@@ -562,6 +511,91 @@ extern int get_uint(char *in_value, uint32_t *out_value, char *type)
 	return SLURM_SUCCESS;
 }
 
+extern void addto_qos_char_list(List char_list, List qos_list, char *names)
+{
+	int i=0, start=0;
+	char *name = NULL, *tmp_char = NULL;
+	ListIterator itr = NULL;
+	char quote_c = '\0';
+	int quote = 0;
+	uint32_t id=0;
+
+	if(!char_list) {
+		error("No list was given to fill in");
+		return;
+	}
+
+	if(!qos_list || !list_count(qos_list)) {
+		debug2("No real qos_list");
+		return;
+	}
+
+	itr = list_iterator_create(char_list);
+	if(names) {
+		if (names[i] == '\"' || names[i] == '\'') {
+			quote_c = names[i];
+			quote = 1;
+			i++;
+		}
+		start = i;
+		while(names[i]) {
+			if(quote && names[i] == quote_c)
+				break;
+			else if (names[i] == '\"' || names[i] == '\'')
+				names[i] = '`';
+			else if(names[i] == ',') {
+				if((i-start) > 0) {
+					name = xmalloc((i-start+1));
+					memcpy(name, names+start, (i-start));
+					
+					id = str_2_acct_qos(qos_list, name);
+					xfree(name);
+					if(id == NO_VAL) 
+						goto bad;
+
+					name = xstrdup_printf("%u", id);
+					while((tmp_char = list_next(itr))) {
+						if(!strcasecmp(tmp_char, name))
+							break;
+					}
+
+					if(!tmp_char)
+						list_append(char_list, name);
+					else 
+						xfree(name);
+					list_iterator_reset(itr);
+				}
+			bad:
+				i++;
+				start = i;
+			}
+			i++;
+		}
+		if((i-start) > 0) {
+			name = xmalloc((i-start)+1);
+			memcpy(name, names+start, (i-start));
+			
+			id = str_2_acct_qos(qos_list, name);
+			xfree(name);
+			if(id == NO_VAL) 
+				goto end_it;
+			
+			name = xstrdup_printf("%u", id);
+			while((tmp_char = list_next(itr))) {
+				if(!strcasecmp(tmp_char, name))
+					break;
+			}
+			
+			if(!tmp_char)
+				list_append(char_list, name);
+			else 
+				xfree(name);
+		}
+	}	
+end_it:
+	list_iterator_destroy(itr);
+} 
+
 extern void sacctmgr_print_coord_list(print_field_t *field, List value)
 {
 	ListIterator itr = NULL;
@@ -597,6 +631,59 @@ extern void sacctmgr_print_coord_list(print_field_t *field, List value)
 	xfree(print_this);
 }
 
+extern void sacctmgr_print_qos_list(print_field_t *field, List qos_list,
+				    List value)
+{
+	char *print_this = NULL;
+
+	print_this = get_qos_complete_str(qos_list, value);
+		
+	if(print_fields_parsable_print)
+		printf("%s|", print_this);
+	else {
+		if(strlen(print_this) > field->len) 
+			print_this[field->len-1] = '+';
+		
+		printf("%-*.*s ", field->len, field->len, print_this);
+	}
+	xfree(print_this);
+}
+
+extern char *get_qos_complete_str(List qos_list, List num_qos_list)
+{
+	List temp_list = NULL;
+	char *temp_char = NULL;
+	char *print_this = NULL;
+	ListIterator itr = NULL;
+
+	if(!qos_list || !list_count(qos_list)
+	   || !num_qos_list || !list_count(num_qos_list))
+		return xstrdup("Normal");
+
+	temp_list = list_create(NULL);
+	list_append(temp_list, xstrdup("Normal"));
+
+	itr = list_iterator_create(num_qos_list);
+	while((temp_char = list_next(itr))) {
+		temp_char = acct_qos_str(qos_list, atoi(temp_char));
+		if(temp_char)
+			list_append(temp_list, temp_char);
+	}
+	list_iterator_destroy(itr);
+	list_sort(temp_list, (ListCmpF)sort_char_list);
+	itr = list_iterator_create(temp_list);
+	while((temp_char = list_next(itr))) {
+		if(print_this) 
+			xstrfmtcat(print_this, ",%s", temp_char);
+		else 
+			print_this = xstrdup(temp_char);
+	}
+	list_iterator_destroy(itr);
+	list_destroy(temp_list);
+
+	return print_this;
+}
+
 extern int sort_coord_list(acct_coord_rec_t *coord_a, acct_coord_rec_t *coord_b)
 {
 	int diff = strcmp(coord_a->name, coord_b->name);
@@ -608,3 +695,16 @@ extern int sort_coord_list(acct_coord_rec_t *coord_a, acct_coord_rec_t *coord_b)
 	
 	return 0;
 }
+
+extern int sort_char_list(char *name_a, char *name_b)
+{
+	int diff = strcmp(name_a, name_b);
+
+	if (diff < 0)
+		return -1;
+	else if (diff > 0)
+		return 1;
+	
+	return 0;
+}
+

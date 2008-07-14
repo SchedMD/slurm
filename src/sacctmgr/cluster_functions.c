@@ -56,12 +56,13 @@ static int _set_cond(int *start, int argc, char *argv[],
 			continue;
 		} else if(!end || !strncasecmp (argv[i], "Names", 1)) {
 			if(cluster_list) {
-				addto_char_list(cluster_list, argv[i]);
+				slurm_addto_char_list(cluster_list,
+						      argv[i]+end);
 				set = 1;
 			}
 		} else if (!strncasecmp (argv[i], "Format", 1)) {
 			if(format_list)
-				addto_char_list(format_list, argv[i]+end);
+				slurm_addto_char_list(format_list, argv[i]+end);
 		} else {
 			printf(" Unknown condition: %s\n"
 			       "Use keyword set to modify value\n", argv[i]);
@@ -149,7 +150,7 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 	for (i=0; i<argc; i++) {
 		int end = parse_option_end(argv[i]);
 		if(!end) {
-			addto_char_list(name_list, argv[i]+end);
+			slurm_addto_char_list(name_list, argv[i]+end);
 		} else if (!strncasecmp (argv[i], "FairShare", 1)) {
 			fairshare = atoi(argv[i]+end);
 			limit_set = 1;
@@ -172,7 +173,7 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 					argv[i]);
 			}
 		} else if (!strncasecmp (argv[i], "Names", 1)) {
-			addto_char_list(name_list, argv[i]+end);
+			slurm_addto_char_list(name_list, argv[i]+end);
 		} else {
 			printf(" Unknown option: %s\n", argv[i]);
 		}		
@@ -343,8 +344,9 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 	print_fields_list = list_create(destroy_print_field);
 
 	if(!list_count(format_list)) {
-		addto_char_list(format_list, 
-				"Cl,Controlh,Controlp,F,MaxC,MaxJ,MaxN,MaxW");
+		slurm_addto_char_list(format_list, 
+				      "Cl,Controlh,Controlp,F,MaxC,"
+				      "MaxJ,MaxN,MaxW");
 	}
 
 	itr = list_iterator_create(format_list);

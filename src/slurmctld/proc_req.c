@@ -2929,10 +2929,13 @@ inline static void  _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 			case ACCT_ADD_ASSOC:
 			case ACCT_MODIFY_ASSOC:
 			case ACCT_REMOVE_ASSOC:
-				rc = assoc_mgr_update_local_assocs(
-					object);
+				rc = assoc_mgr_update_local_assocs(object);
 				break;
+			case ACCT_ADD_QOS:
+			case ACCT_REMOVE_QOS:
 			case ACCT_UPDATE_NOTSET:
+				rc = assoc_mgr_update_local_qos(object);
+				break;
 			default:
 				error("unknown type set in update_object: %d",
 				      object->type);

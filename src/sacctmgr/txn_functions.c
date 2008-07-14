@@ -58,7 +58,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 				txn_cond->id_list = 
 					list_create(slurm_destroy_char);
 			
-			addto_char_list(txn_cond->id_list, argv[i]+end);
+			slurm_addto_char_list(txn_cond->id_list, argv[i]+end);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Action", 4)) {
 			/* FIX ME! fill this in */
@@ -66,7 +66,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 /* 				txn_cond->action_list =  */
 /* 					list_create(slurm_destroy_char); */
 
-/* 			addto_char_list(txn_cond->action_list, */
+/* 			slurm_addto_char_list(txn_cond->action_list, */
 /* 					argv[i]+end); */
 /* 			set = 1; */
 		} else if (!strncasecmp (argv[i], "Actors", 4)
@@ -74,12 +74,12 @@ static int _set_cond(int *start, int argc, char *argv[],
 			if(!txn_cond->actor_list)
 				txn_cond->actor_list =
 					list_create(slurm_destroy_char);
-			addto_char_list(txn_cond->actor_list,
+			slurm_addto_char_list(txn_cond->actor_list,
 					argv[i]+end);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Format", 1)) {
 			if(format_list)
-				addto_char_list(format_list, argv[i]+end);
+				slurm_addto_char_list(format_list, argv[i]+end);
 		} else {
 			printf(" Unknown condition: %s\n", argv[i]);
 		}
@@ -128,7 +128,7 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 	print_fields_list = list_create(destroy_print_field);
 
 	if(!list_count(format_list)) 
-		addto_char_list(format_list, "T,Action,Actor,Where,Info");
+		slurm_addto_char_list(format_list, "T,Action,Actor,Where,Info");
 	
 	itr = list_iterator_create(format_list);
 	while((object = list_next(itr))) {

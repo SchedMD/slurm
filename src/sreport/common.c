@@ -135,9 +135,15 @@ extern void addto_char_list(List char_list, char *names)
 {
 	int i=0, start=0;
 	char *name = NULL, *tmp_char = NULL;
-	ListIterator itr = list_iterator_create(char_list);
+	ListIterator itr = NULL;
 
-	if(names && char_list) {
+	if(!char_list) {
+		error("No list was given to fill in");
+		return;
+	}
+
+	itr = list_iterator_create(char_list);
+	if(names) {
 		if (names[i] == '\"' || names[i] == '\'')
 			i++;
 		start = i;

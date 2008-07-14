@@ -342,6 +342,8 @@ extern Buf pack_slurmdbd_msg(slurmdbd_msg_t *req)
 	case DBD_GOT_CLUSTERS:
 	case DBD_GOT_JOBS:
 	case DBD_GOT_LIST:
+	case DBD_ADD_QOS:
+	case DBD_GOT_QOS:
 	case DBD_GOT_TXN:
 	case DBD_GOT_USERS:
 	case DBD_UPDATE_SHARES_USED:
@@ -362,11 +364,13 @@ extern Buf pack_slurmdbd_msg(slurmdbd_msg_t *req)
 	case DBD_GET_ASSOCS:
 	case DBD_GET_CLUSTERS:
 	case DBD_GET_JOBS_COND:
+	case DBD_GET_QOS:
 	case DBD_GET_TXN:
 	case DBD_GET_USERS:
 	case DBD_REMOVE_ACCOUNTS:
 	case DBD_REMOVE_ASSOCS:
 	case DBD_REMOVE_CLUSTERS:
+	case DBD_REMOVE_QOS:
 	case DBD_REMOVE_USERS:
 		slurmdbd_pack_cond_msg(
 			req->msg_type, (dbd_cond_msg_t *)req->data, buffer);
@@ -462,6 +466,8 @@ extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp, Buf buffer)
 	case DBD_GOT_CLUSTERS:
 	case DBD_GOT_JOBS:
 	case DBD_GOT_LIST:
+	case DBD_ADD_QOS:
+	case DBD_GOT_QOS:
 	case DBD_GOT_TXN:
 	case DBD_GOT_USERS:
 	case DBD_UPDATE_SHARES_USED:
@@ -483,10 +489,12 @@ extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp, Buf buffer)
 	case DBD_GET_CLUSTERS:
 	case DBD_GET_JOBS_COND:
 	case DBD_GET_USERS:
+	case DBD_GET_QOS:
 	case DBD_GET_TXN:
 	case DBD_REMOVE_ACCOUNTS:
 	case DBD_REMOVE_ASSOCS:
 	case DBD_REMOVE_CLUSTERS:
+	case DBD_REMOVE_QOS:
 	case DBD_REMOVE_USERS:
 		rc = slurmdbd_unpack_cond_msg(
 			resp->msg_type, (dbd_cond_msg_t **)&resp->data, buffer);
@@ -575,7 +583,7 @@ unpack_error:
 extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 {
 	if(!msg_type) {
-		return ACCT_QOS_NOTSET;
+		return NO_VAL;
 	} else if(!strcasecmp(msg_type, "Init")) {
 		return DBD_INIT;
 	} else if(!strcasecmp(msg_type, "Fini")) {
@@ -670,11 +678,19 @@ extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 		return DBD_GET_TXN;
 	} else if(!strcasecmp(msg_type, "Got Transations")) {
 		return DBD_GOT_TXN;
+	} else if(!strcasecmp(msg_type, "Add QOS")) {
+		return DBD_ADD_QOS;
+	} else if(!strcasecmp(msg_type, "Get QOS")) {
+		return DBD_GET_QOS;
+	} else if(!strcasecmp(msg_type, "Got QOS")) {
+		return DBD_GOT_QOS;
+	} else if(!strcasecmp(msg_type, "Remove QOS")) {
+		return DBD_REMOVE_QOS;
 	} else {
-		return 0;		
+		return NO_VAL;		
 	}
 
-	return 0;
+	return NO_VAL;
 }
 
 extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type)
@@ -820,6 +836,18 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type)
 		break;
 	case DBD_GOT_TXN:
 		return "Got Transations";
+		break;
+	case DBD_ADD_QOS:
+		return "Add QOS";
+		break;
+	case DBD_GET_QOS:
+		return "Get QOS";
+		break;
+	case DBD_GOT_QOS:
+		return "Got QOS";
+		break;
+	case DBD_REMOVE_QOS:
+		return "Remove QOS";
 		break;
 	default:
 		return "Unknown";
@@ -1515,12 +1543,16 @@ void inline slurmdbd_free_cond_msg(slurmdbd_msg_type_t type,
 		case DBD_GET_JOBS_COND:
 			my_destroy = destroy_acct_job_cond;
 			break;
-		case DBD_GET_USERS:
-		case DBD_REMOVE_USERS:
-			my_destroy = destroy_acct_user_cond;
+		case DBD_GET_QOS:
+		case DBD_REMOVE_QOS:
+			my_destroy = destroy_acct_qos_cond;
 			break;
 		case DBD_GET_TXN:
 			my_destroy = destroy_acct_txn_cond;
+			break;
+		case DBD_GET_USERS:
+		case DBD_REMOVE_USERS:
+			my_destroy = destroy_acct_user_cond;
 			break;
 		default:
 			fatal("Unknown cond type");
@@ -1807,6 +1839,10 @@ void inline slurmdbd_pack_cond_msg(slurmdbd_msg_type_t type,
 	case DBD_GET_JOBS_COND:
 		my_function = pack_acct_job_cond;
 		break;
+	case DBD_GET_QOS:
+	case DBD_REMOVE_QOS:
+		my_function = pack_acct_qos_cond;
+		break;
 	case DBD_GET_USERS:
 	case DBD_REMOVE_USERS:
 		my_function = pack_acct_user_cond;
@@ -1843,6 +1879,10 @@ int inline slurmdbd_unpack_cond_msg(slurmdbd_msg_type_t type,
 		break;
 	case DBD_GET_JOBS_COND:
 		my_function = unpack_acct_job_cond;
+		break;
+	case DBD_GET_QOS:
+	case DBD_REMOVE_QOS:
+		my_function = unpack_acct_qos_cond;
 		break;
 	case DBD_GET_USERS:
 	case DBD_REMOVE_USERS:
@@ -2202,6 +2242,10 @@ void inline slurmdbd_pack_list_msg(slurmdbd_msg_type_t type,
 	case DBD_GOT_LIST:
 		my_function = _slurmdbd_packstr;
 		break;
+	case DBD_ADD_QOS:
+	case DBD_GOT_QOS:
+		my_function = pack_acct_qos_rec;
+		break;
 	case DBD_ADD_USERS:
 	case DBD_GOT_USERS:
 		my_function = pack_acct_user_rec;
@@ -2265,6 +2309,11 @@ int inline slurmdbd_unpack_list_msg(slurmdbd_msg_type_t type,
 	case DBD_GOT_LIST:
 		my_function = _slurmdbd_unpackstr;
 		my_destroy = slurm_destroy_char;
+		break;
+	case DBD_ADD_QOS:
+	case DBD_GOT_QOS:
+		my_function = unpack_acct_qos_rec;
+		my_destroy = destroy_acct_qos_rec;
 		break;
 	case DBD_ADD_USERS:
 	case DBD_GOT_USERS:

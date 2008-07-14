@@ -259,6 +259,25 @@ extern int acct_storage_p_add_associations(void *db_conn, uint32_t uid,
 	return rc;
 }
 
+extern int acct_storage_p_add_qos(void *db_conn, uint32_t uid,
+				  List qos_list)
+{
+	slurmdbd_msg_t req;
+	dbd_list_msg_t get_msg;
+	int rc, resp_code;
+
+	get_msg.my_list = qos_list;
+
+	req.msg_type = DBD_ADD_QOS;
+	req.data = &get_msg;
+	rc = slurm_send_slurmdbd_recv_rc_msg(&req, &resp_code);
+	
+	if(resp_code != SLURM_SUCCESS)
+		rc = resp_code;
+	
+	return rc;
+}
+
 extern List acct_storage_p_modify_users(void *db_conn, uint32_t uid,
 					acct_user_cond_t *user_cond,
 					acct_user_rec_t *user)
@@ -627,6 +646,47 @@ extern List acct_storage_p_remove_associations(
 	return ret_list;
 }
 
+extern List acct_storage_p_remove_qos(
+	void *db_conn, uint32_t uid,
+	acct_qos_cond_t *qos_cond)
+{
+	slurmdbd_msg_t req;
+	dbd_cond_msg_t get_msg;
+	int rc;
+	slurmdbd_msg_t resp;
+	dbd_list_msg_t *got_msg;
+	List ret_list = NULL;
+
+
+	get_msg.cond = qos_cond;
+
+	req.msg_type = DBD_REMOVE_QOS;
+	req.data = &get_msg;
+	rc = slurm_send_recv_slurmdbd_msg(&req, &resp);
+
+	if (rc != SLURM_SUCCESS)
+		error("slurmdbd: DBD_REMOVE_QOS failure: %m");
+	else if (resp.msg_type == DBD_RC) {
+		dbd_rc_msg_t *msg = resp.data;
+		if(msg->return_code == SLURM_SUCCESS) {
+			info("%s", msg->comment);
+			ret_list = list_create(NULL);
+		} else
+			error("%s", msg->comment);
+		slurmdbd_free_rc_msg(msg);
+	} else if (resp.msg_type != DBD_GOT_LIST) {
+		error("slurmdbd: response type not DBD_GOT_LIST: %u", 
+		      resp.msg_type);
+	} else {
+		got_msg = (dbd_list_msg_t *) resp.data;
+		ret_list = got_msg->my_list;
+		got_msg->my_list = NULL;
+		slurmdbd_free_list_msg(got_msg);
+	}
+
+	return ret_list;
+}
+
 extern List acct_storage_p_get_users(void *db_conn,
 				     acct_user_cond_t *user_cond)
 {
@@ -742,6 +802,43 @@ extern List acct_storage_p_get_associations(void *db_conn,
 	} else {
 		got_msg = (dbd_list_msg_t *) resp.data;
 		ret_list = got_msg->my_list;
+		got_msg->my_list = NULL;
+		slurmdbd_free_list_msg(got_msg);
+	}
+
+	return ret_list;
+}
+
+extern List acct_storage_p_get_qos(void *db_conn,
+				   acct_qos_cond_t *qos_cond)
+{
+	slurmdbd_msg_t req, resp;
+	dbd_cond_msg_t get_msg;
+	dbd_list_msg_t *got_msg;
+	int rc;
+	List ret_list = NULL;
+
+	get_msg.cond = qos_cond;
+
+	req.msg_type = DBD_GET_QOS;
+	req.data = &get_msg;
+	rc = slurm_send_recv_slurmdbd_msg(&req, &resp);
+
+	if (rc != SLURM_SUCCESS)
+		error("slurmdbd: DBD_GET_QOS failure: %m");
+	else if (resp.msg_type != DBD_GOT_QOS) {
+		error("slurmdbd: response type not DBD_GOT_QOS: %u", 
+		      resp.msg_type);
+	} else {
+		got_msg = (dbd_list_msg_t *) resp.data;
+		/* do this just for this type since it could be called
+		 * multiple times, and if we send back and empty list
+		 * instead of no list we will only call this once.
+		 */
+		if(!got_msg->my_list)
+		        ret_list = list_create(NULL);
+		else 
+			ret_list = got_msg->my_list;
 		got_msg->my_list = NULL;
 		slurmdbd_free_list_msg(got_msg);
 	}

@@ -54,14 +54,6 @@ typedef enum {
 } acct_admin_level_t;
 
 typedef enum {
-	ACCT_QOS_NOTSET,
-	ACCT_QOS_NORMAL,
-	ACCT_QOS_EXPEDITE,
-	ACCT_QOS_STANDBY,
-	ACCT_QOS_EXEMPT	
-} acct_qos_level_t;
-
-typedef enum {
 	ACCT_UPDATE_NOTSET,
 	ACCT_ADD_USER,
 	ACCT_ADD_ASSOC,
@@ -70,7 +62,9 @@ typedef enum {
 	ACCT_MODIFY_ASSOC,
 	ACCT_REMOVE_USER,
 	ACCT_REMOVE_ASSOC,
-	ACCT_REMOVE_COORD
+	ACCT_REMOVE_COORD,
+	ACCT_ADD_QOS,
+	ACCT_REMOVE_QOS
 } acct_update_type_t;
 
 /* Association conditions used for queries of the database */
@@ -104,7 +98,7 @@ typedef struct {
 	acct_association_cond_t *assoc_cond;
 	List description_list; /* list of char * */
 	List organization_list; /* list of char * */
-	acct_qos_level_t qos;	
+	List qos_list; /* list of char * */	
 	uint16_t with_assocs; 
 	uint16_t with_coords; 
 	uint16_t with_deleted; 
@@ -116,7 +110,7 @@ typedef struct {
 	char *description;
 	char *name;
 	char *organization;
-	acct_qos_level_t qos;
+	List qos_list /* list of char *'s */;
 } acct_account_rec_t;
 
 typedef struct {
@@ -207,10 +201,23 @@ typedef struct {
 } acct_job_cond_t;
 
 typedef struct {
+	char *description;
+	uint32_t id;
+	char *name;
+} acct_qos_rec_t;
+
+typedef struct {
+	List description_list; /* list of char * */
+	List id_list; /* list of char * */
+	List name_list; /* list of char * */
+	uint16_t with_deleted; 
+} acct_qos_cond_t;
+
+typedef struct {
 	acct_admin_level_t admin_level;
 	acct_association_cond_t *assoc_cond;
 	List def_acct_list; /* list of char * */
-	acct_qos_level_t qos;	
+	List qos_list; 	/* list of char * */
 	List user_list; /* list of char * */
 	uint16_t with_assocs; 
 	uint16_t with_coords; 
@@ -223,7 +230,7 @@ typedef struct {
 	List coord_accts; /* list of acct_coord_rec_t *'s */
 	char *default_acct;
 	char *name;
-	acct_qos_level_t qos;
+	List qos_list; /* list of char * */
 	uint32_t uid;
 } acct_user_rec_t;
 
@@ -271,6 +278,7 @@ extern void destroy_cluster_accounting_rec(void *object);
 extern void destroy_acct_cluster_rec(void *object);
 extern void destroy_acct_accounting_rec(void *object);
 extern void destroy_acct_association_rec(void *object);
+extern void destroy_acct_qos_rec(void *object);
 extern void destroy_acct_txn_rec(void *object);
 
 extern void destroy_acct_user_cond(void *object);
@@ -278,6 +286,7 @@ extern void destroy_acct_account_cond(void *object);
 extern void destroy_acct_cluster_cond(void *object);
 extern void destroy_acct_association_cond(void *object);
 extern void destroy_acct_job_cond(void *object);
+extern void destroy_acct_qos_cond(void *object);
 extern void destroy_acct_txn_cond(void *object);
 
 extern void destroy_acct_update_object(void *object);
@@ -299,6 +308,8 @@ extern void pack_acct_accounting_rec(void *in, Buf buffer);
 extern int unpack_acct_accounting_rec(void **object, Buf buffer);
 extern void pack_acct_association_rec(void *in, Buf buffer);
 extern int unpack_acct_association_rec(void **object, Buf buffer);
+extern void pack_acct_qos_rec(void *in, Buf buffer);
+extern int unpack_acct_qos_rec(void **object, Buf buffer);
 extern void pack_acct_txn_rec(void *in, Buf buffer);
 extern int unpack_acct_txn_rec(void **object, Buf buffer);
 
@@ -312,6 +323,8 @@ extern void pack_acct_association_cond(void *in, Buf buffer);
 extern int unpack_acct_association_cond(void **object, Buf buffer);
 extern void pack_acct_job_cond(void *in, Buf buffer);
 extern int unpack_acct_job_cond(void **object, Buf buffer);
+extern void pack_acct_qos_cond(void *in, Buf buffer);
+extern int unpack_acct_qos_cond(void **object, Buf buffer);
 extern void pack_acct_txn_cond(void *in, Buf buffer);
 extern int unpack_acct_txn_cond(void **object, Buf buffer);
 
@@ -321,8 +334,8 @@ extern int unpack_acct_update_object(acct_update_object_t **object, Buf buffer);
 extern void pack_update_shares_used(void *in, Buf buffer);
 extern int unpack_update_shares_used(void **object, Buf buffer);
 
-extern char *acct_qos_str(acct_qos_level_t level);
-extern acct_qos_level_t str_2_acct_qos(char *level);
+extern char *acct_qos_str(List qos_list, uint32_t level);
+extern uint32_t str_2_acct_qos(List qos_list, char *level);
 extern char *acct_admin_level_str(acct_admin_level_t level);
 extern acct_admin_level_t str_2_acct_admin_level(char *level);
 
@@ -391,12 +404,20 @@ extern int acct_storage_g_add_clusters(void *db_conn, uint32_t uid,
 				       List cluster_list);
 
 /* 
- * add accts to accounting system 
+ * add associations to accounting system 
  * IN:  association_list List of acct_association_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int acct_storage_g_add_associations(void *db_conn, uint32_t uid, 
 					   List association_list);
+
+/* 
+ * add qos's to accounting system 
+ * IN:  qos_list List of char *
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int acct_storage_g_add_qos(void *db_conn, uint32_t uid, 
+				  List qos_list);
 
 /* 
  * modify existing users in the accounting system 
@@ -482,6 +503,14 @@ extern List acct_storage_g_remove_associations(
 	void *db_conn, uint32_t uid, acct_association_cond_t *assoc_cond);
 
 /* 
+ * remove qos from accounting system 
+ * IN:  acct_qos_cond_t *assoc_qos
+ * RET: List containing (char *'s) else NULL on error
+ */
+extern List acct_storage_g_remove_qos(
+	void *db_conn, uint32_t uid, acct_qos_cond_t *qos_cond);
+
+/* 
  * get info from the storage 
  * IN:  acct_user_cond_t *
  * IN:  params void *
@@ -520,6 +549,14 @@ extern List acct_storage_g_get_clusters(
 extern List acct_storage_g_get_associations(
 	void *db_conn, acct_association_cond_t *assoc_cond);
 
+
+/* 
+ * get info from the storage 
+ * IN:  acct_qos_cond_t *
+ * RET: List of acct_qos_rec_t *
+ * note List needs to be freed when called
+ */
+extern List acct_storage_g_get_qos(void *db_conn, acct_qos_cond_t *qos_cond);
 
 /* 
  * get info from the storage 

@@ -132,37 +132,38 @@ static int _set_cond(int *start, int argc, char *argv[],
 			if(!association_cond->id_list)
 				association_cond->id_list = 
 					list_create(slurm_destroy_char);
-			addto_char_list(association_cond->id_list, argv[i]);
+			slurm_addto_char_list(association_cond->id_list,
+					      argv[i]+end);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Users", 1)) {
 			if(!association_cond->user_list)
 				association_cond->user_list = 
 					list_create(slurm_destroy_char);
-			addto_char_list(association_cond->user_list,
+			slurm_addto_char_list(association_cond->user_list,
 					argv[i]+end);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Accounts", 2)) {
 			if(!association_cond->acct_list)
 				association_cond->acct_list = 
 					list_create(slurm_destroy_char);
-			addto_char_list(association_cond->acct_list,
+			slurm_addto_char_list(association_cond->acct_list,
 					argv[i]+end);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Clusters", 1)) {
 			if(!association_cond->cluster_list)
 				association_cond->cluster_list = 
 					list_create(slurm_destroy_char);
-			addto_char_list(association_cond->cluster_list,
+			slurm_addto_char_list(association_cond->cluster_list,
 					argv[i]+end);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Format", 1)) {
 			if(format_list)
-				addto_char_list(format_list, argv[i]+end);
+				slurm_addto_char_list(format_list, argv[i]+end);
 		} else if (!strncasecmp (argv[i], "Partitions", 4)) {
 			if(!association_cond->partition_list)
 				association_cond->partition_list = 
 					list_create(slurm_destroy_char);
-			addto_char_list(association_cond->partition_list,
+			slurm_addto_char_list(association_cond->partition_list,
 					argv[i]+end);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Parent", 4)) {
@@ -367,7 +368,8 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 	assoc_list = _sort_assoc_list(first_list);
 
 	if(!list_count(format_list)) 
-		addto_char_list(format_list, "C,A,U,F,MaxC,MaxJ,MaxN,MaxW");
+		slurm_addto_char_list(format_list,
+				      "C,A,U,F,MaxC,MaxJ,MaxN,MaxW");
 	
 	itr = list_iterator_create(format_list);
 	while((object = list_next(itr))) {

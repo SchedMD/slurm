@@ -137,14 +137,18 @@ extern int sacctmgr_dump_cluster(int argc, char *argv[]);
 extern void destroy_sacctmgr_assoc(void *object);
 extern int parse_option_end(char *option);
 extern char *strip_quotes(char *option, int *increased);
-extern void addto_char_list(List char_list, char *names);
 extern int notice_thread_init();
 extern int notice_thread_fini();
 extern int commit_check(char *warning);
 extern int get_uint(char *in_value, uint32_t *out_value, char *type);
+extern void addto_qos_char_list(List char_list, List qos_list, char *names);
 extern void sacctmgr_print_coord_list(print_field_t *field, List value);
+extern void sacctmgr_print_qos_list(print_field_t *field, List qos_list,
+				    List value);
+extern char *get_qos_complete_str(List qos_list, List num_qos_list);
 extern int sort_coord_list(acct_coord_rec_t *coord_a,
 			   acct_coord_rec_t *coord_b);
+extern int sort_char_list(char *name_a, char *name_b);
 
 /* you need to free the objects returned from these functions */
 extern acct_association_rec_t *sacctmgr_find_association(char *user,

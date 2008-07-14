@@ -46,6 +46,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 	int a_set = 0;
 	int u_set = 0;
 	int end = 0;
+	List qos_list = NULL;
 
 	if(!acct_cond) {
 		error("No acct_cond given");
@@ -82,35 +83,37 @@ static int _set_cond(int *start, int argc, char *argv[],
 				acct_cond->assoc_cond->acct_list = 
 					list_create(slurm_destroy_char);
 			}
-			addto_char_list(acct_cond->acct_list, argv[i]);
-			addto_char_list(acct_cond->assoc_cond->acct_list,
-					argv[i]);
+			slurm_addto_char_list(acct_cond->acct_list, 
+					      argv[i]+end);
+			slurm_addto_char_list(acct_cond->assoc_cond->acct_list,
+					argv[i]+end);
 			u_set = 1;
 		} else if (!strncasecmp (argv[i], "Clusters", 1)) {
 			if(!acct_cond->assoc_cond->cluster_list) {
 				acct_cond->assoc_cond->cluster_list = 
 					list_create(slurm_destroy_char);
 			}
-			addto_char_list(acct_cond->assoc_cond->cluster_list,
-					argv[i]+end);
+			slurm_addto_char_list(
+				acct_cond->assoc_cond->cluster_list,
+				argv[i]+end);
 			a_set = 1;
 		} else if (!strncasecmp (argv[i], "Descriptions", 1)) {
 			if(!acct_cond->description_list) {
 				acct_cond->description_list = 
 					list_create(slurm_destroy_char);
 			}
-			addto_char_list(acct_cond->description_list,
+			slurm_addto_char_list(acct_cond->description_list,
 					argv[i]+end);
 			u_set = 1;
 		} else if (!strncasecmp (argv[i], "Format", 1)) {
 			if(format_list)
-				addto_char_list(format_list, argv[i]+end);
+				slurm_addto_char_list(format_list, argv[i]+end);
 		} else if (!strncasecmp (argv[i], "Organizations", 1)) {
 			if(!acct_cond->organization_list) {
 				acct_cond->organization_list = 
 					list_create(slurm_destroy_char);
 			}
-			addto_char_list(acct_cond->organization_list,
+			slurm_addto_char_list(acct_cond->organization_list,
 					argv[i]+end);
 			u_set = 1;
 		} else if (!strncasecmp (argv[i], "Parent", 1)) {
@@ -118,7 +121,17 @@ static int _set_cond(int *start, int argc, char *argv[],
 				strip_quotes(argv[i]+end, NULL);
 			a_set = 1;
 		} else if (!strncasecmp (argv[i], "QosLevel", 1)) {
-			acct_cond->qos = str_2_acct_qos(argv[i]+end);
+			if(!acct_cond->qos_list) {
+				acct_cond->qos_list = 
+					list_create(slurm_destroy_char);
+			}
+			
+			if(!qos_list) {
+				qos_list = acct_storage_g_get_qos(
+					db_conn, NULL);
+			}
+			addto_qos_char_list(acct_cond->qos_list, qos_list,
+					    argv[i]+end);
 			u_set = 1;
 		} else {
 			printf(" Unknown condition: %s\n"
@@ -126,6 +139,10 @@ static int _set_cond(int *start, int argc, char *argv[],
 			       "SLURM_PRINT_VALUE\n", argv[i]);
 		}
 	}
+
+	if(qos_list)
+		list_destroy(qos_list);
+
 	(*start) = i;
 
 	if(a_set) 
@@ -144,6 +161,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 	int u_set = 0;
 	int a_set = 0;
 	int end = 0;
+	List qos_list = NULL;
 
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
@@ -191,7 +209,17 @@ static int _set_rec(int *start, int argc, char *argv[],
 			assoc->parent_acct = strip_quotes(argv[i]+end, NULL);
 			a_set = 1;
 		} else if (!strncasecmp (argv[i], "QosLevel=", 1)) {
-			acct->qos = str_2_acct_qos(argv[i]+end);
+			if(!acct->qos_list) {
+				acct->qos_list = 
+					list_create(slurm_destroy_char);
+			}
+			
+			if(!qos_list) {
+				qos_list = acct_storage_g_get_qos(
+					db_conn, NULL);
+			}
+			addto_qos_char_list(acct->qos_list, qos_list,
+					    argv[i]+end);
 			u_set = 1;
 		} else {
 			printf(" Unknown option: %s\n"
@@ -199,6 +227,9 @@ static int _set_rec(int *start, int argc, char *argv[],
 			       argv[i]);
 		}
 	}
+	if(qos_list)
+		list_destroy(qos_list);
+
 	(*start) = i;
 
 	if(u_set && a_set)
@@ -225,7 +256,8 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 	char *parent = NULL;
 	char *cluster = NULL;
 	char *name = NULL;
-	acct_qos_level_t qos = ACCT_QOS_NOTSET;
+	List add_qos_list = NULL;
+	List qos_list = NULL;
 	List acct_list = NULL;
 	List assoc_list = NULL;
 	List local_assoc_list = NULL;
@@ -242,9 +274,9 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 	for (i=0; i<argc; i++) {
 		int end = parse_option_end(argv[i]);
 		if(!end) {
-			addto_char_list(name_list, argv[i]+end);
+			slurm_addto_char_list(name_list, argv[i]+end);
 		} else if (!strncasecmp (argv[i], "Cluster", 1)) {
-			addto_char_list(cluster_list, argv[i]+end);
+			slurm_addto_char_list(cluster_list, argv[i]+end);
 		} else if (!strncasecmp (argv[i], "Description", 1)) {
 			description = strip_quotes(argv[i]+end, NULL);
 		} else if (!strncasecmp (argv[i], "FairShare", 1)) {
@@ -273,13 +305,23 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 					argv[i]);
 			}
 		} else if (!strncasecmp (argv[i], "Names", 1)) {
-			addto_char_list(name_list, argv[i]+end);
+			slurm_addto_char_list(name_list, argv[i]+end);
 		} else if (!strncasecmp (argv[i], "Organization", 1)) {
 			organization = strip_quotes(argv[i]+end, NULL);
 		} else if (!strncasecmp (argv[i], "Parent", 1)) {
 			parent = strip_quotes(argv[i]+end, NULL);
 		} else if (!strncasecmp (argv[i], "QosLevel", 1)) {
-			qos = str_2_acct_qos(argv[i]+end);
+			if(!add_qos_list) {
+				add_qos_list = 
+					list_create(slurm_destroy_char);
+			}
+			
+			if(!qos_list) {
+				qos_list = acct_storage_g_get_qos(
+					db_conn, NULL);
+			}
+			addto_qos_char_list(add_qos_list, qos_list,
+					    argv[i]+end);
 		} else {
 			printf(" Unknown option: %s\n", argv[i]);
 		}		
@@ -439,7 +481,7 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 			else
 				acct->organization = xstrdup(name);
 				
-			acct->qos = qos;
+			acct->qos_list = add_qos_list;
 			xstrfmtcat(acct_str, "  %s\n", name);
 			list_append(acct_list, acct);
 		}
@@ -514,8 +556,14 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 			printf("  Organization    = %s\n",
 			       "Parent/Account Name");
 
-		if(qos != ACCT_QOS_NOTSET)
-		   	printf("  Qos             = %s\n", acct_qos_str(qos));
+		if(add_qos_list) {
+			char *temp_char = get_qos_complete_str(
+				qos_list, add_qos_list);
+			if(temp_char) {		
+				printf("  Qos             = %s\n", temp_char);
+				xfree(temp_char);
+			}
+		}
 		xfree(acct_str);
 	}
 
@@ -609,6 +657,7 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 	acct_account_rec_t *acct = NULL;
 	acct_association_rec_t *assoc = NULL;
 	char *object;
+	List qos_list = NULL;
 
 	print_field_t *field = NULL;
 
@@ -628,7 +677,6 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 		PRINT_MAXW,
 		PRINT_ORG,
 		PRINT_QOS,
-		PRINT_QOS_GOLD,
 		PRINT_QOS_RAW,
 		PRINT_PID,
 		PRINT_PNAME,
@@ -641,13 +689,13 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 	_set_cond(&i, argc, argv, acct_cond, format_list);
 
 	if(!list_count(format_list)) {
-		addto_char_list(format_list, "A,D,O,Q");
+		slurm_addto_char_list(format_list, "A,D,O,Q");
 		if(acct_cond->with_assocs)
-			addto_char_list(format_list,
+			slurm_addto_char_list(format_list,
 					"Cl,ParentN,U,F,MaxC,MaxJ,MaxN,MaxW");
 			
 		if(acct_cond->with_coords)
-			addto_char_list(format_list, "Coord");
+			slurm_addto_char_list(format_list, "Coord");
 			
 	}
 	acct_list = acct_storage_g_get_accounts(db_conn, acct_cond);	
@@ -718,21 +766,16 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 			field->name = xstrdup("Org");
 			field->len = 20;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("QOSGOLD", object, 4)) {
-			field->type = PRINT_QOS_GOLD;
-			field->name = xstrdup("QOS_GOLD");
-			field->len = 7;
-			field->print_routine = print_fields_uint;
 		} else if(!strncasecmp("QOSRAW", object, 4)) {
 			field->type = PRINT_QOS_RAW;
 			field->name = xstrdup("QOS_RAW");
 			field->len = 7;
-			field->print_routine = print_fields_uint;
+			field->print_routine = print_fields_char_list;
 		} else if(!strncasecmp("QOS", object, 1)) {
 			field->type = PRINT_QOS;
 			field->name = xstrdup("QOS");
 			field->len = 9;
-			field->print_routine = print_fields_str;
+			field->print_routine = sacctmgr_print_qos_list;
 		} else if(!strncasecmp("ParentID", object, 7)) {
 			field->type = PRINT_PID;
 			field->name = xstrdup("Par ID");
@@ -823,20 +866,28 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 							acct->organization);
 						break;
 					case PRINT_QOS:
+						if(!qos_list) {
+							qos_list = 
+								acct_storage_g_get_qos(
+									db_conn,
+									NULL);
+						}
 						field->print_routine(
 							field, 
-							acct_qos_str(
-								acct->qos));
-						break;
-					case PRINT_QOS_GOLD:
-						field->print_routine(
-							field,
-							acct->qos-1);
+							qos_list,
+							acct->qos_list);
 						break;
 					case PRINT_QOS_RAW:
+						if(!qos_list) {
+							qos_list = 
+								acct_storage_g_get_qos(
+									db_conn,
+									NULL);
+						}
 						field->print_routine(
 							field,
-							acct->qos);
+							qos_list,
+							acct->qos_list);
 						break;
 					case PRINT_PID:
 						field->print_routine(
@@ -914,18 +965,26 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 						field, acct->organization);
 					break;
 				case PRINT_QOS:
+					if(!qos_list) {
+						qos_list = 
+							acct_storage_g_get_qos(
+								db_conn,
+								NULL);
+					}
 					field->print_routine(
-						field, acct_qos_str(acct->qos));
-					break;
-				case PRINT_QOS_GOLD:
-					field->print_routine(
-						field,
-						acct->qos-1);
+						field, qos_list,
+						acct->qos_list);
 					break;
 				case PRINT_QOS_RAW:
+					if(!qos_list) {
+						qos_list = 
+							acct_storage_g_get_qos(
+								db_conn,
+								NULL);
+					}
 					field->print_routine(
-						field,
-						acct->qos);
+						field, qos_list,
+						acct->qos_list);
 					break;
 				case PRINT_PID:
 					field->print_routine(
@@ -972,8 +1031,6 @@ extern int sacctmgr_modify_account(int argc, char *argv[])
 	int cond_set = 0, rec_set = 0, set = 0;
 	List ret_list = NULL;
 
-	acct_cond->acct_list = list_create(slurm_destroy_char);
-	
 	assoc->fairshare = NO_VAL;
 	assoc->max_cpu_secs_per_job = NO_VAL;
 	assoc->max_jobs = NO_VAL;
@@ -1087,8 +1144,6 @@ extern int sacctmgr_delete_account(int argc, char *argv[])
 	List ret_list = NULL;
 	int set = 0;
 	
-	acct_cond->acct_list = list_create(slurm_destroy_char);
-
 	if(!(set = _set_cond(&i, argc, argv, acct_cond, NULL))) {
 		printf(" No conditions given to remove, not executing.\n");
 		destroy_acct_account_cond(acct_cond);
