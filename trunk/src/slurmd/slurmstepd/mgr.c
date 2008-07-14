@@ -1801,7 +1801,7 @@ _run_script_as_user(const char *name, const char *path, slurmd_job_t *job,
 			break;
 		} else if (rc == 0) {
 			sleep(1);
-			if ((--max_wait) == 0) {
+			if ((--max_wait) <= 0) {
 				killpg(cpid, SIGKILL);
 				opt = 0;
 			}
@@ -1810,7 +1810,7 @@ _run_script_as_user(const char *name, const char *path, slurmd_job_t *job,
 			break;
 		}
 	}
-	/* Insure that all child processes get killed */
+	/* Insure that all child processes get killed, one last time */
 	killpg(cpid, SIGKILL);
 	slurm_container_signal(job->cont_id, SIGKILL);
 	
