@@ -41,6 +41,18 @@
 int print_fields_parsable_print = 0;
 int print_fields_have_header = 1;
 
+static int _sort_char_list(char *name_a, char *name_b)
+{
+	int diff = strcmp(name_a, name_b);
+
+	if (diff < 0)
+		return -1;
+	else if (diff > 0)
+		return 1;
+	
+	return 0;
+}
+
 extern void destroy_print_field(void *object)
 {
 	print_field_t *field = (print_field_t *)object;
@@ -181,6 +193,7 @@ extern void print_fields_char_list(print_field_t *field, List value)
 		else
 			print_this = xstrdup(" ");
 	} else {
+		list_sort(value, (ListCmpF)_sort_char_list);
 		itr = list_iterator_create(value);
 		while((object = list_next(itr))) {
 			if(print_this) 

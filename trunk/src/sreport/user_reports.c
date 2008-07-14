@@ -158,17 +158,17 @@ static int _set_cond(int *start, int argc, char *argv[],
 			if(!user_cond->user_list)
 				user_cond->user_list = 
 					list_create(slurm_destroy_char);
-			addto_char_list(user_cond->user_list, argv[i]);
+			slurm_addto_char_list(user_cond->user_list, argv[i]);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Accounts", 2)) {
 			if(!assoc_cond->acct_list)
 				assoc_cond->acct_list =
 					list_create(slurm_destroy_char);
-			addto_char_list(assoc_cond->acct_list,
+			slurm_addto_char_list(assoc_cond->acct_list,
 					argv[i]+end);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Clusters", 1)) {
-			addto_char_list(assoc_cond->cluster_list,
+			slurm_addto_char_list(assoc_cond->cluster_list,
 					argv[i]+end);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "End", 1)) {
@@ -176,7 +176,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Format", 1)) {
 			if(format_list)
-				addto_char_list(format_list, argv[i]+end);
+				slurm_addto_char_list(format_list, argv[i]+end);
 		} else if (!strncasecmp (argv[i], "Start", 1)) {
 			assoc_cond->usage_start = parse_time(argv[i]+end);
 			set = 1;
@@ -283,7 +283,7 @@ extern int user_top(int argc, char *argv[])
 	_set_cond(&i, argc, argv, user_cond, format_list);
 
 	if(!list_count(format_list)) 
-		addto_char_list(format_list, "Cl,L,P,A,U");
+		slurm_addto_char_list(format_list, "Cl,L,P,A,U");
 
 	_setup_print_fields_list(format_list);
 	list_destroy(format_list);

@@ -110,6 +110,69 @@ extern void slurm_destroy_char(void *object)
 	xfree(tmp);
 }
 
+extern void slurm_addto_char_list(List char_list, char *names)
+{
+	int i=0, start=0;
+	char *name = NULL, *tmp_char = NULL;
+	ListIterator itr = NULL;
+	char quote_c = '\0';
+	int quote = 0;
+
+	if(!char_list) {
+		error("No list was given to fill in");
+		return;
+	}
+
+	itr = list_iterator_create(char_list);
+	if(names) {
+		if (names[i] == '\"' || names[i] == '\'') {
+			quote_c = names[i];
+			quote = 1;
+			i++;
+		}
+		start = i;
+		while(names[i]) {
+			if(quote && names[i] == quote_c)
+				break;
+			else if (names[i] == '\"' || names[i] == '\'')
+				names[i] = '`';
+			else if(names[i] == ',') {
+				if((i-start) > 0) {
+					name = xmalloc((i-start+1));
+					memcpy(name, names+start, (i-start));
+
+					while((tmp_char = list_next(itr))) {
+						if(!strcasecmp(tmp_char, name))
+							break;
+					}
+
+					if(!tmp_char)
+						list_append(char_list, name);
+					else 
+						xfree(name);
+					list_iterator_reset(itr);
+				}
+				i++;
+				start = i;
+			}
+			i++;
+		}
+		if((i-start) > 0) {
+			name = xmalloc((i-start)+1);
+			memcpy(name, names+start, (i-start));
+			while((tmp_char = list_next(itr))) {
+				if(!strcasecmp(tmp_char, name))
+					break;
+			}
+			
+			if(!tmp_char)
+				list_append(char_list, name);
+			else 
+				xfree(name);
+		}
+	}	
+	list_iterator_destroy(itr);
+} 
 
 void slurm_free_last_update_msg(last_update_msg_t * msg)
 {

@@ -135,24 +135,24 @@ static int _set_cond(int *start, int argc, char *argv[],
 			local_cluster_flag = 1;
 			continue;
 		} else if(!end || !strncasecmp (argv[i], "Clusters", 1)) {
-			addto_char_list(job_cond->cluster_list, argv[i]);
+			slurm_addto_char_list(job_cond->cluster_list, argv[i]);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Accounts", 2)) {
 			if(!job_cond->acct_list)
 				job_cond->acct_list =
 					list_create(slurm_destroy_char);
-			addto_char_list(job_cond->acct_list,
+			slurm_addto_char_list(job_cond->acct_list,
 					argv[i]+end);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Associations", 2)) {
 			if(!job_cond->associd_list)
 				job_cond->associd_list =
 					list_create(slurm_destroy_char);
-			addto_char_list(job_cond->associd_list,
+			slurm_addto_char_list(job_cond->associd_list,
 					argv[i]+end);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Clusters", 1)) {
-			addto_char_list(job_cond->cluster_list,
+			slurm_addto_char_list(job_cond->cluster_list,
 					argv[i]+end);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "End", 1)) {
@@ -160,17 +160,17 @@ static int _set_cond(int *start, int argc, char *argv[],
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Format", 1)) {
 			if(format_list)
-				addto_char_list(format_list, argv[i]+end);
+				slurm_addto_char_list(format_list, argv[i]+end);
 		} else if (!strncasecmp (argv[i], "Gid", 2)) {
 			if(!job_cond->groupid_list)
 				job_cond->groupid_list =
 					list_create(slurm_destroy_char);
-			addto_char_list(job_cond->groupid_list,
+			slurm_addto_char_list(job_cond->groupid_list,
 					argv[i]+end);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "grouping", 2)) {
 			if(grouping_list)
-				addto_char_list(grouping_list, argv[i]+end);
+				slurm_addto_char_list(grouping_list, argv[i]+end);
 		} else if (!strncasecmp (argv[i], "Jobs", 1)) {
 			char *end_char = NULL, *start_char = argv[i]+end;
 			jobacct_selected_step_t *selected_step = NULL;
@@ -211,7 +211,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 			if(!job_cond->partition_list)
 				job_cond->partition_list =
 					list_create(slurm_destroy_char);
-			addto_char_list(job_cond->partition_list,
+			slurm_addto_char_list(job_cond->partition_list,
 					argv[i]+end);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Start", 1)) {
@@ -221,7 +221,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 			if(!job_cond->user_list)
 				job_cond->user_list =
 					list_create(slurm_destroy_char);
-			addto_char_list(job_cond->user_list,
+			slurm_addto_char_list(job_cond->user_list,
 					argv[i]+end);
 			set = 1;
 		} else {
@@ -390,10 +390,10 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 
 	_set_cond(&i, argc, argv, job_cond, NULL, grouping_list);
 
-	addto_char_list(format_list, "Cl,a");
+	slurm_addto_char_list(format_list, "Cl,a");
 
 	if(!list_count(grouping_list)) 
-		addto_char_list(grouping_list, "50,250,500,1000");
+		slurm_addto_char_list(grouping_list, "50,250,500,1000");
 	
 	_setup_print_fields_list(format_list);
 	list_destroy(format_list);

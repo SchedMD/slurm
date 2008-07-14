@@ -84,8 +84,8 @@
  *	communicating with it (e.g. it will not accept messages with a
  *	version higher than SLURMDBD_VERSION).
  */
-#define SLURMDBD_VERSION	01
-#define SLURMDBD_VERSION_MIN	01
+#define SLURMDBD_VERSION	02
+#define SLURMDBD_VERSION_MIN	02
 
 /* SLURM DBD message types */
 /* ANY TIME YOU ADD TO THIS LIST UPDATE THE CONVERSION FUNCTIONS! */
@@ -138,7 +138,11 @@ typedef enum {
 	DBD_UPDATE_SHARES_USED,	/* Record current share usage		*/
 	DBD_GET_JOBS_COND, 	/* Get job information with a condition */
 	DBD_GET_TXN,		/* Get transaction information		*/
-	DBD_GOT_TXN		/* Got transaction information		*/
+	DBD_GOT_TXN,		/* Got transaction information		*/
+	DBD_ADD_QOS,		/* Add QOS information   	        */
+	DBD_GET_QOS,		/* Get QOS information   	        */
+	DBD_GOT_QOS,		/* Got QOS information   	        */
+	DBD_REMOVE_QOS		/* Remove QOS information   	        */
 } slurmdbd_msg_type_t;
 
 /*****************************************************************************\

@@ -357,7 +357,7 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 
 	if (job->multi_prog && task->argv[0]) {
 		/*
-		 * Normally the client (srun/slauch) expands the command name
+		 * Normally the client (srun) expands the command name
 		 * to a fully qualified path, but in --multi-prog mode it
 		 * is left up to the server to search the PATH for the
 		 * executable.

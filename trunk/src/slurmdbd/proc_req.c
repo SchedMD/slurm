@@ -55,6 +55,8 @@ static int   _add_assocs(void *db_conn,
 			 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _add_clusters(void *db_conn,
 			   Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _add_qos(void *db_conn,
+		      Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _add_users(void *db_conn,
 			Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _cluster_procs(void *db_conn,
@@ -69,6 +71,8 @@ static int   _get_jobs(void *db_conn,
 		       Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _get_jobs_cond(void *db_conn,
 			    Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _get_qos(void *db_conn,
+		      Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _get_txn(void *db_conn,
 		      Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _get_usage(uint16_t type, void *db_conn,
@@ -107,6 +111,8 @@ static int   _remove_assocs(void *db_conn,
 			    Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _remove_clusters(void *db_conn,
 			      Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _remove_qos(void *db_conn,
+			 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _remove_users(void *db_conn,
 			   Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _roll_usage(void *db_conn,
@@ -161,6 +167,9 @@ proc_req(void **db_conn, slurm_fd orig_fd,
 			rc = _add_clusters(*db_conn,
 					   in_buffer, out_buffer, uid);
 			break;
+		case DBD_ADD_QOS:
+			rc = _add_qos(*db_conn, in_buffer, out_buffer, uid);
+			break;
 		case DBD_ADD_USERS:
 			rc = _add_users(*db_conn, in_buffer, out_buffer, uid);
 			break;
@@ -190,6 +199,9 @@ proc_req(void **db_conn, slurm_fd orig_fd,
 		case DBD_GET_JOBS_COND:
 			rc = _get_jobs_cond(*db_conn, 
 					    in_buffer, out_buffer, uid);
+			break;
+		case DBD_GET_QOS:
+			rc = _get_qos(*db_conn, in_buffer, out_buffer, uid);
 			break;
 		case DBD_GET_TXN:
 			rc = _get_txn(*db_conn, in_buffer, out_buffer, uid);
@@ -266,6 +278,9 @@ proc_req(void **db_conn, slurm_fd orig_fd,
 		case DBD_REMOVE_CLUSTERS:
 			rc = _remove_clusters(*db_conn,
 					      in_buffer, out_buffer, uid);
+			break;
+		case DBD_REMOVE_QOS:
+			rc = _remove_qos(*db_conn, in_buffer, out_buffer, uid);
 			break;
 		case DBD_REMOVE_USERS:
 			rc = _remove_users(*db_conn,
@@ -527,6 +542,42 @@ end_it:
 	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_ADD_CLUSTERS);
 	return rc;
 }
+
+static int _add_qos(void *db_conn,
+		    Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	int rc = SLURM_SUCCESS;
+	dbd_list_msg_t *get_msg = NULL;
+	char *comment = NULL;
+
+	debug2("DBD_ADD_QOS: called");
+	if(*uid != slurmdbd_conf->slurm_user_id
+	   && (assoc_mgr_get_admin_level(db_conn, *uid) 
+	       < ACCT_ADMIN_SUPER_USER)) {
+		comment = "Your user doesn't have privilege to preform this action";
+		error("%s", comment);
+		rc = ESLURM_ACCESS_DENIED;
+		goto end_it;
+	}
+
+	if (slurmdbd_unpack_list_msg(DBD_ADD_QOS, &get_msg, in_buffer) !=
+	    SLURM_SUCCESS) {
+		comment = "Failed to unpack DBD_ADD_QOS message";
+		error("%s", comment);
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+	
+	rc = acct_storage_g_add_qos(db_conn, *uid, get_msg->my_list);
+	if(rc != SLURM_SUCCESS) 
+		comment = "Failed to add qos.";
+
+end_it:
+	slurmdbd_free_list_msg(get_msg);
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_ADD_QOS);
+	return rc;
+}
+
 static int _add_users(void *db_conn,
 		      Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
@@ -769,6 +820,35 @@ static int _get_jobs_cond(void *db_conn,
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_JOBS, *out_buffer);
 	slurmdbd_pack_list_msg(DBD_GOT_JOBS, &list_msg, *out_buffer);
+	if(list_msg.my_list)
+		list_destroy(list_msg.my_list);
+	
+	return SLURM_SUCCESS;
+}
+
+static int _get_qos(void *db_conn, 
+			  Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	dbd_cond_msg_t *cond_msg = NULL;
+	dbd_list_msg_t list_msg;
+	char *comment = NULL;
+
+	debug2("DBD_GET_QOS: called");
+	if (slurmdbd_unpack_cond_msg(DBD_GET_QOS, &cond_msg, in_buffer) !=
+	    SLURM_SUCCESS) {
+		comment = "Failed to unpack DBD_GET_QOS message";
+		error("%s", comment);
+		*out_buffer = make_dbd_rc_msg(SLURM_ERROR, comment, 
+					      DBD_GET_QOS);
+		return SLURM_ERROR;
+	}
+	
+	list_msg.my_list = acct_storage_g_get_qos(db_conn, cond_msg->cond);
+	slurmdbd_free_cond_msg(DBD_GET_QOS, cond_msg);
+
+	*out_buffer = init_buf(1024);
+	pack16((uint16_t) DBD_GOT_QOS, *out_buffer);
+	slurmdbd_pack_list_msg(DBD_GOT_QOS, &list_msg, *out_buffer);
 	if(list_msg.my_list)
 		list_destroy(list_msg.my_list);
 	
@@ -1768,6 +1848,67 @@ static int   _remove_clusters(void *db_conn,
 	}
 
 	slurmdbd_free_cond_msg(DBD_REMOVE_CLUSTERS, get_msg);
+	*out_buffer = init_buf(1024);
+	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
+	slurmdbd_pack_list_msg(DBD_GOT_LIST, &list_msg, *out_buffer);
+	if(list_msg.my_list)
+		list_destroy(list_msg.my_list);
+
+	return rc;
+}
+
+static int   _remove_qos(void *db_conn,
+			      Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	int rc = SLURM_SUCCESS;
+	dbd_cond_msg_t *get_msg = NULL;
+	dbd_list_msg_t list_msg;
+	char *comment = NULL;
+
+	debug2("DBD_REMOVE_QOS: called");
+
+	if(*uid != slurmdbd_conf->slurm_user_id
+	   && assoc_mgr_get_admin_level(db_conn, *uid) 
+	   < ACCT_ADMIN_SUPER_USER) {
+		comment = "Your user doesn't have privilege to preform this action";
+		error("%s", comment);
+		*out_buffer = make_dbd_rc_msg(ESLURM_ACCESS_DENIED,
+					      comment, DBD_REMOVE_QOS);
+
+		return ESLURM_ACCESS_DENIED;
+	}
+
+	if (slurmdbd_unpack_cond_msg(DBD_REMOVE_QOS, &get_msg, 
+				     in_buffer) != SLURM_SUCCESS) {
+		comment = "Failed to unpack DBD_REMOVE_QOS message";
+		error("%s", comment);
+		*out_buffer = make_dbd_rc_msg(SLURM_ERROR,
+					      comment, DBD_REMOVE_QOS);
+		return SLURM_ERROR;
+	}
+	
+	if(!(list_msg.my_list = acct_storage_g_remove_qos(
+		     db_conn, *uid, get_msg->cond))) {
+		if(errno == ESLURM_ACCESS_DENIED) {
+			comment = "Your user doesn't have privilege to preform this action";
+			rc = ESLURM_ACCESS_DENIED;
+		} else if(errno == SLURM_ERROR) {
+			comment = "Something was wrong with your query";
+			rc = SLURM_ERROR;
+		} else if(errno == SLURM_NO_CHANGE_IN_DATA) {
+			comment = "Request didn't affect anything";
+			rc = SLURM_SUCCESS;
+		} else {
+			comment = "Unknown issue";
+			rc = SLURM_ERROR;
+		}
+		error("%s", comment);
+		slurmdbd_free_cond_msg(DBD_REMOVE_QOS, get_msg);
+		*out_buffer = make_dbd_rc_msg(rc, comment, DBD_REMOVE_QOS);
+		return rc;		
+	}
+
+	slurmdbd_free_cond_msg(DBD_REMOVE_QOS, get_msg);
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
 	slurmdbd_pack_list_msg(DBD_GOT_LIST, &list_msg, *out_buffer);
