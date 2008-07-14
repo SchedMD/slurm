@@ -830,6 +830,8 @@ extern struct jobacctinfo *jobacct_common_stat_task(pid_t pid)
 			break;
 	}
 	list_iterator_destroy(itr);
+	if (jobacct == NULL)
+		goto error;
 	ret_jobacct = xmalloc(sizeof(struct jobacctinfo));
 	memcpy(ret_jobacct, jobacct, sizeof(struct jobacctinfo));
 error:

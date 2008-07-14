@@ -74,7 +74,7 @@ make_bash_script $file_in "
 #    causes the test to fail
 #
 set matches 0
-set timeout $max_job_delay
+set timeout [expr $max_job_delay + 30]
 if { [test_bluegene] } {
 	set node_cnt 1-1024
 } else {
