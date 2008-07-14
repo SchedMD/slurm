@@ -62,7 +62,7 @@ the job step to be launched.
 .TP
 \fIlauncher_host\fP
 Host name or address to be used to identify the destination of PMI communications
-for MPICH2. We intend to imbed this information within \fIlaunch_req\fP in the
+for MPICH2. We intend to embed this information within \fIlaunch_req\fP in the
 next major release of SLURM, when changes to the protocol can be more easily
 addressed.
 
@@ -81,29 +81,35 @@ default values.  This function will NOT allocate any new memory.
 .LP
 \fBslurm_step_launch_abort\fR Abort an in-progress launch, or terminate 
 the fully launched job step. Can be called from a signal handler.
+
+.SH "IO Redirection"
 .LP
-Use the \fIlocal_fds\fR entry in the \fIslurm_step_launch_params_t\fR 
+Use the \fIlocal_fds\fR entry in  \fIslurm_step_launch_params_t\fR 
 to specify file descriptors to be used for standard input, output 
 and error. Any \fIlocal_fds\fR not specified will result in the launched 
 tasks using the calling process's standard input, output and error.
-Threads created by the \fBslurm_step_launch\fR will completely handle
+Threads created by \fBslurm_step_launch\fR will completely handle
 copying data between the remote processes and the specified local file
 descriptors. 
 .LP
-Use the substructure in \fIslurm_step_io_fds_t\fR ti restrict the 
+Use the substructure in \fIslurm_step_io_fds_t\fR to restrict the 
 redirection of I/O to a specific node or task ID. For example, to 
 redirect standard output only from task 0, set
-\fIparams.local_fs.out.taskid=0;\fR
+.LP
+.nf
+params.local_fs.out.taskid=0;
+.fi
 .LP
 Use the \fIremote_*_filename\fR fields in \fIslurm_step_launch_params_t\fR
-to have the lauched tasks read and/or write directly to local files 
-rather than transferring it over the network to the calling process.
+to have launched tasks read and/or write directly to local files 
+rather than transferring data over the network to the calling process.
 These strings support many of the same format options as the \fBsrun\fR
 command. Any \fIremote_*_filename\fR fields set will supersede the 
 corresponding \fIlocal_fds\fR entries. For example, the following 
 code will direct each task to write standard output and standard
 error to local files with names containing the task ID (e.g. 
-"run1.out.0" and "run.1.err.0" for task 0).
+"/home/bob/test_output/run1.out.0" and 
+"/home/bob/test_output/run.1.err.0" for task 0).
 .LP
 .nf
 params.remote_output_filename = "/home/bob/test_output/run1.out.%t"
