@@ -576,7 +576,7 @@ extern void addto_qos_char_list(List char_list, List qos_list, char *names)
 				start = i;
 				if(!names[i]) {
 					info("There is a problem with "
-					     "your line.  It appears you "
+					     "your request.  It appears you "
 					     "have spaces inside your list.");
 					break;
 				}
