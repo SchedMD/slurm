@@ -841,7 +841,7 @@ stepd_stat_jobacct(int fd, stat_jobacct_msg_t *sent, stat_jobacct_msg_t *resp)
 	resp->num_tasks = tasks;
 	return rc;
 rwfail:
-	error("an error occured %d", rc);
+	error("gathering job accounting: %d", rc);
 	jobacct_gather_g_destroy(resp->jobacct);
 	resp->jobacct = NULL;
 	return rc;
