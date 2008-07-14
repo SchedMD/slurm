@@ -77,14 +77,10 @@ static int _set_cond(int *start, int argc, char *argv[],
 		} else if(!end
 			  || !strncasecmp (argv[i], "Names", 1)
 			  || !strncasecmp (argv[i], "Users", 1)) {
-			if(!user_cond->user_list) {
-				user_cond->user_list = 
-					list_create(slurm_destroy_char);
+			if(!user_cond->assoc_cond->user_list) {
 				user_cond->assoc_cond->user_list = 
 					list_create(slurm_destroy_char);
 			}
-			slurm_addto_char_list(user_cond->user_list, 
-					      argv[i]+end);
 			slurm_addto_char_list(user_cond->assoc_cond->user_list,
 					      argv[i]+end);
 			u_set = 1;
@@ -376,8 +372,8 @@ extern int sacctmgr_add_user(int argc, char *argv[])
  		acct_user_cond_t user_cond;
 
 		memset(&user_cond, 0, sizeof(acct_user_cond_t));
-		user_cond.user_list = assoc_cond->user_list;
-
+		user_cond.assoc_cond = assoc_cond;
+		
 		local_user_list = acct_storage_g_get_users(
 			db_conn, &user_cond);
 		
@@ -398,7 +394,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
  		acct_account_cond_t account_cond;
 
 		memset(&account_cond, 0, sizeof(acct_account_cond_t));
-		account_cond.acct_list = assoc_cond->acct_list;
+		account_cond.assoc_cond = assoc_cond;
 
 		local_acct_list = acct_storage_g_get_accounts(
 			db_conn, &account_cond);
@@ -729,7 +725,7 @@ extern int sacctmgr_add_coord(int argc, char *argv[])
 		return SLURM_ERROR;
 	}
 
-	itr = list_iterator_create(user_cond->user_list);
+	itr = list_iterator_create(user_cond->assoc_cond->user_list);
 	while((name = list_next(itr))) {
 		xstrfmtcat(user_str, "  %s\n", name);
 
@@ -1385,7 +1381,7 @@ extern int sacctmgr_delete_coord(int argc, char *argv[])
 		return SLURM_ERROR;
 	}
 
-	itr = list_iterator_create(user_cond->user_list);
+	itr = list_iterator_create(user_cond->assoc_cond->user_list);
 	while((name = list_next(itr))) {
 		xstrfmtcat(user_str, "  %s\n", name);
 

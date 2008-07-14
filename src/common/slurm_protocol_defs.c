@@ -132,6 +132,8 @@ extern void slurm_addto_char_list(List char_list, char *names)
 		}
 		start = i;
 		while(names[i]) {
+			//info("got %d - %d = %d", i, start, i-start);
+
 			if(quote && names[i] == quote_c)
 				break;
 			else if (names[i] == '\"' || names[i] == '\'')
@@ -140,6 +142,7 @@ extern void slurm_addto_char_list(List char_list, char *names)
 				if((i-start) > 0) {
 					name = xmalloc((i-start+1));
 					memcpy(name, names+start, (i-start));
+					//info("got %s %d", name, i-start);
 
 					while((tmp_char = list_next(itr))) {
 						if(!strcasecmp(tmp_char, name))
@@ -154,6 +157,12 @@ extern void slurm_addto_char_list(List char_list, char *names)
 				}
 				i++;
 				start = i;
+				if(!names[i]) {
+					info("There is a problem with "
+					     "your line.  It appears you "
+					     "have spaces inside your list.");
+					break;
+				}
 			}
 			i++;
 		}

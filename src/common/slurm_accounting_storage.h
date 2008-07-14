@@ -94,8 +94,8 @@ typedef struct {
 } acct_association_cond_t;
 
 typedef struct {
-	List acct_list; /* list of char * */
-	acct_association_cond_t *assoc_cond;
+	acct_association_cond_t *assoc_cond;/* use acct_list here for
+						names */
 	List description_list; /* list of char * */
 	List organization_list; /* list of char * */
 	List qos_list; /* list of char * */	
@@ -215,10 +215,10 @@ typedef struct {
 
 typedef struct {
 	acct_admin_level_t admin_level;
-	acct_association_cond_t *assoc_cond;
+	acct_association_cond_t *assoc_cond; /* use user_list here for
+						names */
 	List def_acct_list; /* list of char * */
 	List qos_list; 	/* list of char * */
-	List user_list; /* list of char * */
 	uint16_t with_assocs; 
 	uint16_t with_coords; 
 	uint16_t with_deleted; 

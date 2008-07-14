@@ -661,9 +661,11 @@ static int _mod_acct(sacctmgr_file_opts_t *file_opts,
 	char *desc = NULL, *org = NULL;
 	acct_account_rec_t mod_acct;
 	acct_account_cond_t acct_cond;
+	acct_association_cond_t assoc_cond;
 	
 	memset(&mod_acct, 0, sizeof(acct_account_rec_t));
 	memset(&acct_cond, 0, sizeof(acct_account_cond_t));
+	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
 
 	if(file_opts->desc) 
 		desc = xstrdup(file_opts->desc);
@@ -745,18 +747,18 @@ static int _mod_acct(sacctmgr_file_opts_t *file_opts,
 	if(changed) {
 		List ret_list = NULL;
 					
-		acct_cond.acct_list = 
-			list_create(NULL); 
-					
-		list_push(acct_cond.acct_list,
-			  acct->name);
-					
+		assoc_cond.acct_list = list_create(NULL);
+		list_append(assoc_cond.acct_list, acct->name);
+		acct_cond.assoc_cond = &assoc_cond;
+
 		notice_thread_init();
 		ret_list = acct_storage_g_modify_accounts(db_conn, my_uid,
 							  &acct_cond, 
 							  &mod_acct);
 		notice_thread_fini();
 	
+		list_destroy(assoc_cond.acct_list);
+
 		if(mod_acct.qos_list)
 			list_destroy(mod_acct.qos_list);
 
@@ -790,12 +792,15 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 	acct_user_rec_t mod_user;
 	acct_user_cond_t user_cond;
 	List ret_list = NULL;
+	acct_association_cond_t assoc_cond;
 	
 	memset(&mod_user, 0, sizeof(acct_user_rec_t));
 	memset(&user_cond, 0, sizeof(acct_user_cond_t));
+	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
 				
-	user_cond.user_list = list_create(NULL); 
-	list_push(user_cond.user_list, user->name);
+	assoc_cond.user_list = list_create(NULL);
+	list_append(assoc_cond.user_list, user->name);
+	user_cond.assoc_cond = &assoc_cond;
 
 	if(file_opts->def_acct)
 		def_acct = xstrdup(file_opts->def_acct);
@@ -975,7 +980,7 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 		}
 		list_destroy(add_list);
 	}
-	list_destroy(user_cond.user_list);
+	list_destroy(assoc_cond.user_list);
 
 	return set;
 }
@@ -1673,17 +1678,20 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				
 				if(file_opts->coord_list) {
 					acct_user_cond_t user_cond;
+					acct_association_cond_t assoc_cond;
 					ListIterator coord_itr = NULL;
 					char *temp_char = NULL;
 					acct_coord_rec_t *coord = NULL;
 
 					memset(&user_cond, 0,
 					       sizeof(acct_user_cond_t));
-					user_cond.user_list = 
-						list_create(NULL); 
-					
-					list_push(user_cond.user_list,
-						  user->name);
+					memset(&assoc_cond, 0, 
+					       sizeof(acct_association_cond_t));
+					assoc_cond.user_list = 
+						list_create(NULL);
+					list_append(assoc_cond.user_list, 
+						    user->name);
+					user_cond.assoc_cond = &assoc_cond;
 					
 					notice_thread_init();
 					rc = acct_storage_g_add_coord(
@@ -1691,7 +1699,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 						file_opts->coord_list,
 						&user_cond);
 					notice_thread_fini();
-					list_destroy(user_cond.user_list);
+					list_destroy(assoc_cond.user_list);
 					user->coord_accts = list_create(
 						destroy_acct_coord_rec);
 					coord_itr = list_iterator_create(
