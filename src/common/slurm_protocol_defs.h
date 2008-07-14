@@ -858,8 +858,10 @@ extern char *node_state_string_compact(enum node_states inx);
 		char *ptr = (char *) buf;				\
 		int rc;							\
 		while (remaining > 0) {					\
-                        rc = read(fd, ptr, remaining);			\
-                        if (rc == 0) {					\
+			rc = read(fd, ptr, remaining);			\
+			if ((rc == 0) && (remaining == size))		\
+				goto rwfail;				\
+			else if (rc == 0) {				\
 				debug("%s:%d: %s: safe_read (%d of %d) EOF", \
 				      __FILE__, __LINE__, __CURRENT_FUNC__, \
 				      remaining, (int)size);		\
