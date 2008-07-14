@@ -1,4 +1,4 @@
-.TH "Slurm API" "3" "December 2006" "Morris Jette" "Slurm job step launch functions"
+.TH "Slurm API" "3" "July 2008" "Morris Jette" "Slurm job step launch functions"
 
 .SH "NAME"
 
@@ -19,6 +19,8 @@ void \fBslurm_step_launch_params_t_init\fR (
 int \fBslurm_step_launch\fR (
 .br
 	slurm_step_ctx \fIctx\fP,
+.br
+	char * \fIlauncher_host\fP,
 .br
 	const slurm_step_launch_params_t *\fIlaunch_req\fP,
 .br
@@ -57,6 +59,12 @@ function calls, and destroyed by \fBslurm_step_ctx_destroy\fR.
 \fIlaunch_req\fP
 Pointer to a structure allocated by the user containing specifications of 
 the job step to be launched.
+.TP
+\fIlauncher_host\fP
+Host name or address to be used to identify the destination of PMI communications
+for MPICH2. We intend to imbed this information within \fIlaunch_req\fP in the
+next major release of SLURM, when changes to the protocol can be more easily
+addressed.
 
 .SH "DESCRIPTION"
 .LP
@@ -73,6 +81,34 @@ default values.  This function will NOT allocate any new memory.
 .LP
 \fBslurm_step_launch_abort\fR Abort an in-progress launch, or terminate 
 the fully launched job step. Can be called from a signal handler.
+.LP
+Use the \fIlocal_fds\fR entry in the \fIslurm_step_launch_params_t\fR 
+to specify file descriptors to be used for standard input, output 
+and error. Any \fIlocal_fds\fR not specified will result in the launched 
+tasks using the calling process's standard input, output and error.
+Threads created by the \fBslurm_step_launch\fR will completely handle
+copying data between the remote processes and the specified local file
+descriptors. 
+.LP
+Use the substructure in \fIslurm_step_io_fds_t\fR ti restrict the 
+redirection of I/O to a specific node or task ID. For example, to 
+redirect standard output only from task 0, set
+\fIparams.local_fs.out.taskid=0;\fR
+.LP
+Use the \fIremote_*_filename\fR fields in \fIslurm_step_launch_params_t\fR
+to have the lauched tasks read and/or write directly to local files 
+rather than transferring it over the network to the calling process.
+These strings support many of the same format options as the \fBsrun\fR
+command. Any \fIremote_*_filename\fR fields set will supersede the 
+corresponding \fIlocal_fds\fR entries. For example, the following 
+code will direct each task to write standard output and standard
+error to local files with names containing the task ID (e.g. 
+"run1.out.0" and "run.1.err.0" for task 0).
+.LP
+.nf
+params.remote_output_filename = "/home/bob/test_output/run1.out.%t"
+params.remote_error_filename  = "/home/bob/test_output/run1.err.%t"
+.fi
 
 .SH "RETURN VALUE"
 .LP
@@ -154,7 +190,7 @@ int main (int argc, char *argv[])
 	params.argv = argv + 1;
 	callbacks.task_start = _task_start;
 	callbacks.task_finish = _task_finish;
-	if (slurm_step_launch(step_ctx, &params, &callbacks)
+	if (slurm_step_launch(step_ctx, NULL, &params, &callbacks)
 			!= SLURM_SUCCESS) {
 		slurm_perror("slurm_step_launch");
 		exit(1);
@@ -181,7 +217,8 @@ which must be linked to your process for use
 (e.g. "cc \-lslurm myprog.c").
 
 .SH "COPYING"
-Copyright (C) 2006 The Regents of the University of California.
+Copyright (C) 2006-2007 The Regents of the University of California.
+Copyright (C) 2008 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 LLNL\-CODE\-402394.
 .LP
