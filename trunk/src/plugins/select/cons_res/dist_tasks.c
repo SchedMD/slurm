@@ -63,8 +63,12 @@
 int compute_c_b_task_dist(struct select_cr_job *job)
 {
 	int i, j, rc = SLURM_SUCCESS;
+	bool over_commit = false;
 	bool over_subscribe = false;
 	uint32_t taskid = 0, last_taskid, maxtasks = job->nprocs;
+
+	if (job->job_ptr->details && job->job_ptr->details->overcommit)
+		over_commit = true;
 
 	for (j = 0; (taskid < maxtasks); j++) {	/* cycle counter */
 		bool space_remaining = false;
@@ -72,7 +76,9 @@ int compute_c_b_task_dist(struct select_cr_job *job)
 		for (i = 0; ((i < job->nhosts) && (taskid < maxtasks)); i++) {
 			if ((j < job->cpus[i]) || over_subscribe) {
 				taskid++;
-				job->alloc_cpus[i]++;
+				if ((job->alloc_cpus[i] == 0) ||
+				    (!over_commit))
+					job->alloc_cpus[i]++;
 				if ((j + 1) < job->cpus[i])
 					space_remaining = true;
 			}
@@ -508,6 +514,7 @@ extern int cr_plane_dist(struct select_cr_job *job,
 	uint32_t taskcount = 0, last_taskcount;
 	int job_index = -1;
 	bool count_done = false;
+	bool over_commit = false;
 
 	debug3("cons_res _cr_plane_dist plane_size %u ", plane_size);
 	debug3("cons_res _cr_plane_dist  maxtasks %u num_hosts %u",
@@ -517,7 +524,10 @@ extern int cr_plane_dist(struct select_cr_job *job,
 		error("Error in _cr_plane_dist");
 		return SLURM_ERROR;
 	}
-	
+
+	if (job->job_ptr->details && job->job_ptr->details->overcommit)
+		over_commit = true;
+
 	taskcount = 0;
 	for (j=0; ((taskcount<maxtasks) && (!count_done)); j++) {
 		last_taskcount = taskcount;
@@ -530,7 +540,9 @@ extern int cr_plane_dist(struct select_cr_job *job,
 					break;
 				}
 				taskcount++;
-				job->alloc_cpus[i]++;
+				if ((job->alloc_cpus[i] == 0) ||
+				    (!over_commit))
+					job->alloc_cpus[i]++;
 			}
 		}
 		if (last_taskcount == taskcount) {
