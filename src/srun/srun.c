@@ -1106,7 +1106,7 @@ static int _setup_signals()
 {
 	int sigarray[] = {
 		SIGINT,  SIGQUIT, /*SIGTSTP,*/ SIGCONT, SIGTERM,
-		SIGALRM, SIGUSR1, SIGUSR2, SIGPIPE, 0
+		SIGALRM, SIGUSR1, SIGUSR2, /* SIGPIPE,*/ 0
 	};
 	int rc = SLURM_SUCCESS, i=0, signo;
 
