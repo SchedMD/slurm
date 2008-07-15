@@ -124,6 +124,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 					argv[i]+end);
 			a_set = 1;
 		} else if (!strncasecmp (argv[i], "QosLevel", 1)) {
+			int option = 0;
 			if(!user_cond->qos_list) {
 				user_cond->qos_list = 
 					list_create(slurm_destroy_char);
@@ -133,8 +134,14 @@ static int _set_cond(int *start, int argc, char *argv[],
 				qos_list = acct_storage_g_get_qos(
 					db_conn, NULL);
 			}
+
+			if(end > 2 && argv[i][end-1] == '='
+			   && (argv[i][end-2] == '+' 
+			       || argv[i][end-2] == '-'))
+				option = (int)argv[i][end-2];
+
 			addto_qos_char_list(user_cond->qos_list, qos_list,
-					    argv[i]+end);
+					    argv[i]+end, option);
 			u_set = 1;
 		} else {
 			printf(" Unknown condition: %s\n"
@@ -221,6 +228,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 					argv[i]);
 			}
 		} else if (!strncasecmp (argv[i], "QosLevel", 1)) {
+			int option = 0;
 			if(!user->qos_list) {
 				user->qos_list = 
 					list_create(slurm_destroy_char);
@@ -230,8 +238,13 @@ static int _set_rec(int *start, int argc, char *argv[],
 				qos_list = acct_storage_g_get_qos(
 					db_conn, NULL);
 			}
+			if(end > 2 && argv[i][end-1] == '='
+			   && (argv[i][end-2] == '+' 
+			       || argv[i][end-2] == '-'))
+				option = (int)argv[i][end-2];
+
 			addto_qos_char_list(user->qos_list, qos_list,
-					    argv[i]+end);
+					    argv[i]+end, option);
 			u_set = 1;
 		} else {
 			printf(" Unknown option: %s\n"
@@ -348,6 +361,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 			slurm_addto_char_list(assoc_cond->partition_list,
 					argv[i]+end);
 		} else if (!strncasecmp (argv[i], "QosLevel", 1)) {
+			int option = 0;
 			if(!add_qos_list) {
 				add_qos_list = 
 					list_create(slurm_destroy_char);
@@ -357,8 +371,13 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 				qos_list = acct_storage_g_get_qos(
 					db_conn, NULL);
 			}
+			if(end > 2 && argv[i][end-1] == '='
+			   && (argv[i][end-2] == '+' 
+			       || argv[i][end-2] == '-'))
+				option = (int)argv[i][end-2];
+
 			addto_qos_char_list(add_qos_list, qos_list,
-					    argv[i]+end);
+					    argv[i]+end, option);
 		} else {
 			printf(" Unknown option: %s\n", argv[i]);
 		}		

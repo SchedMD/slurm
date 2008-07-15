@@ -463,20 +463,22 @@ static void _add_it (int argc, char *argv[])
 	int error_code = SLURM_SUCCESS;
 
 	/* First identify the entity to add */
-	if (strncasecmp (argv[0], "User", 1) == 0) {
-		error_code = sacctmgr_add_user((argc - 1), &argv[1]);
+	if (strncasecmp (argv[0], "Account", 1) == 0) {
+		error_code = sacctmgr_add_account((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "Cluster", 2) == 0) {
 		error_code = sacctmgr_add_cluster((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "Coordinator", 2) == 0) {
 		error_code = sacctmgr_add_coord((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "Account", 1) == 0) {
-		error_code = sacctmgr_add_account((argc - 1), &argv[1]);
+	} else if (strncasecmp (argv[0], "QOS", 1) == 0) {
+		error_code = sacctmgr_add_qos((argc - 1), &argv[1]);
+	} else if (strncasecmp (argv[0], "User", 1) == 0) {
+		error_code = sacctmgr_add_user((argc - 1), &argv[1]);
 	} else {
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in add command\n");
 		fprintf(stderr, "Input line must include, ");
 		fprintf(stderr, "\"User\", \"Account\", \"Coordinator\", ");
-		fprintf(stderr, "or \"Cluster\"\n");
+		fprintf(stderr, "\"Cluster\", or \"QOS\"\n");
 	}
 	
 	if (error_code) {
@@ -494,22 +496,24 @@ static void _show_it (int argc, char *argv[])
 	int error_code = SLURM_SUCCESS;
 		
 	/* First identify the entity to list */
-	if (strncasecmp (argv[0], "User", 1) == 0) {
-		error_code = sacctmgr_list_user((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "Account", 2) == 0) {
+	if (strncasecmp (argv[0], "Account", 2) == 0) {
 		error_code = sacctmgr_list_account((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "Association", 2) == 0) {
 		error_code = sacctmgr_list_association((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "Cluster", 1) == 0) {
 		error_code = sacctmgr_list_cluster((argc - 1), &argv[1]);
+	} else if (strncasecmp (argv[0], "QOS", 1) == 0) {
+		error_code = sacctmgr_list_qos((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "Transactions", 1) == 0) {
 		error_code = sacctmgr_list_txn((argc - 1), &argv[1]);
+	} else if (strncasecmp (argv[0], "User", 1) == 0) {
+		error_code = sacctmgr_list_user((argc - 1), &argv[1]);
 	} else {
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in list command\n");
 		fprintf(stderr, "Input line must include ");
 		fprintf(stderr, "\"User\", \"Account\", \"Association\", ");
-		fprintf(stderr, "or \"Cluster\"\n");
+		fprintf(stderr, "\"Cluster\", or \"QOS\"\n");
 	} 
 	
 	if (error_code) {
@@ -528,12 +532,12 @@ static void _modify_it (int argc, char *argv[])
 	int error_code = SLURM_SUCCESS;
 
 	/* First identify the entity to modify */
-	if (strncasecmp (argv[0], "User", 1) == 0) {
-		error_code = sacctmgr_modify_user((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "Account", 1) == 0) {
+	if (strncasecmp (argv[0], "Account", 1) == 0) {
 		error_code = sacctmgr_modify_account((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "Cluster", 1) == 0) {
 		error_code = sacctmgr_modify_cluster((argc - 1), &argv[1]);
+	} else if (strncasecmp (argv[0], "User", 1) == 0) {
+		error_code = sacctmgr_modify_user((argc - 1), &argv[1]);
 	} else {
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in modify command\n");
@@ -557,20 +561,22 @@ static void _delete_it (int argc, char *argv[])
 	int error_code = SLURM_SUCCESS;
 
 	/* First identify the entity to delete */
-	if (strncasecmp (argv[0], "User", 1) == 0) {
-		error_code = sacctmgr_delete_user((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "Account", 1) == 0) {
+	if (strncasecmp (argv[0], "Account", 1) == 0) {
 		error_code = sacctmgr_delete_account((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "Cluster", 2) == 0) {
 		error_code = sacctmgr_delete_cluster((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "Coordinator", 2) == 0) {
 		error_code = sacctmgr_delete_coord((argc - 1), &argv[1]);
+	} else if (strncasecmp (argv[0], "QOS", 2) == 0) {
+		error_code = sacctmgr_delete_qos((argc - 1), &argv[1]);
+	} else if (strncasecmp (argv[0], "User", 1) == 0) {
+		error_code = sacctmgr_delete_user((argc - 1), &argv[1]);
 	} else {
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in delete command\n");
 		fprintf(stderr, "Input line must include ");
 		fprintf(stderr, "\"User\", \"Account\", \"Coordinator\", ");
-		fprintf(stderr, "or \"Cluster\"\n");
+		fprintf(stderr, "\"Cluster\", or \"QOS\"\n");
 	}
 	
 	if (error_code) {

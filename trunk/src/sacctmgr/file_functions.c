@@ -311,6 +311,7 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 			file_opts->org = xstrdup(option);
 		} else if (!strncasecmp (sub, "QosLevel", 1)
 			   || !strncasecmp (sub, "Expedite", 1)) {
+			int option2 = 0;
 			if(!file_opts->qos_list) {
 				file_opts->qos_list = 
 					list_create(slurm_destroy_char);
@@ -320,8 +321,13 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 				qos_list = acct_storage_g_get_qos(
 					db_conn, NULL);
 			}
+			if(end > 2 && sub[end-1] == '='
+			   && (sub[end-2] == '+' 
+			       || sub[end-2] == '-'))
+				option2 = (int)sub[end-2];
+
 			addto_qos_char_list(file_opts->qos_list, qos_list,
-					    option);
+					    option, option2);
 		} else {
 			printf(" Unknown option: %s\n", sub);
 		}

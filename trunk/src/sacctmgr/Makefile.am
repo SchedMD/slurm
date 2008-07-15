@@ -18,6 +18,7 @@ sacctmgr_SOURCES =	\
 	common.c                \
 	file_functions.c	\
 	sacctmgr.c sacctmgr.h	\
+	qos_functions.c		\
 	txn_functions.c		\
 	user_functions.c	
 
