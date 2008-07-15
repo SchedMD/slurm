@@ -135,11 +135,6 @@ static int _set_cond(int *start, int argc, char *argv[],
 					db_conn, NULL);
 			}
 
-			if(end > 2 && argv[i][end-1] == '='
-			   && (argv[i][end-2] == '+' 
-			       || argv[i][end-2] == '-'))
-				option = (int)argv[i][end-2];
-
 			addto_qos_char_list(user_cond->qos_list, qos_list,
 					    argv[i]+end, option);
 			u_set = 1;
@@ -238,6 +233,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 				qos_list = acct_storage_g_get_qos(
 					db_conn, NULL);
 			}
+
 			if(end > 2 && argv[i][end-1] == '='
 			   && (argv[i][end-2] == '+' 
 			       || argv[i][end-2] == '-'))
@@ -371,10 +367,6 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 				qos_list = acct_storage_g_get_qos(
 					db_conn, NULL);
 			}
-			if(end > 2 && argv[i][end-1] == '='
-			   && (argv[i][end-2] == '+' 
-			       || argv[i][end-2] == '-'))
-				option = (int)argv[i][end-2];
 
 			addto_qos_char_list(add_qos_list, qos_list,
 					    argv[i]+end, option);

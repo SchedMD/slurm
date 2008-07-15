@@ -559,7 +559,6 @@ extern void addto_qos_char_list(List char_list, List qos_list, char *names,
 		debug2("No real qos_list");
 		return;
 	}
-	info("got option of %c", option);
 
 	itr = list_iterator_create(char_list);
 	if(names) {
@@ -682,7 +681,7 @@ extern void sacctmgr_print_qos_list(print_field_t *field, List qos_list,
 	char *print_this = NULL;
 
 	print_this = get_qos_complete_str(qos_list, value);
-		
+	
 	if(print_fields_parsable_print)
 		printf("%s|", print_this);
 	else {
@@ -724,6 +723,9 @@ extern char *get_qos_complete_str(List qos_list, List num_qos_list)
 	}
 	list_iterator_destroy(itr);
 	list_destroy(temp_list);
+
+	if(!print_this)
+		return xstrdup("normal");
 
 	return print_this;
 }
