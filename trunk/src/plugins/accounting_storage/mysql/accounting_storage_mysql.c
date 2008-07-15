@@ -1396,7 +1396,8 @@ static int _mysql_acct_check_tables(MYSQL *acct_mysql_db)
 
 	if(mysql_db_create_table(acct_mysql_db, qos_table,
 				 qos_table_fields, 
-				 ", primary key (id, name(20)))")
+				 ", primary key (id), "
+				 "unique index (name(20)))")
 	   == SLURM_ERROR)
 		return SLURM_ERROR;
 	else {
@@ -2773,7 +2774,9 @@ extern List acct_storage_p_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "qos='\%%s\%'", object);
+			xstrfmtcat(extra, 
+				   "(qos like '%%,%s' || qos like '%%,%s,%%')",
+				   object, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -3017,7 +3020,9 @@ extern List acct_storage_p_modify_accounts(
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "qos='\%%s\%'", object);
+			xstrfmtcat(extra, 
+				   "(qos like '%%,%s' || qos like '%%,%s,%%')",
+				   object, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -3725,7 +3730,9 @@ extern List acct_storage_p_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "qos='\%%s\%'", object);
+			xstrfmtcat(extra, 
+				   "(qos like '%%,%s' || qos like '%%,%s,%%')",
+				   object, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -4091,7 +4098,9 @@ extern List acct_storage_p_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "qos='\%%s\%'", object);
+			xstrfmtcat(extra, 
+				   "(qos like '%%,%s' || qos like '%%,%s,%%')",
+				   object, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -4814,7 +4823,9 @@ extern List acct_storage_p_get_users(mysql_conn_t *mysql_conn,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "qos='\%%s\%'", object);
+			xstrfmtcat(extra, 
+				   "(qos like '%%,%s' || qos like '%%,%s,%%')",
+				   object, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -4997,7 +5008,9 @@ extern List acct_storage_p_get_accts(mysql_conn_t *mysql_conn,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "qos='\%%s\%'", object);
+			xstrfmtcat(extra, 
+				   "(qos like '%%,%s' || qos like '%%,%s,%%')",
+				   object, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);

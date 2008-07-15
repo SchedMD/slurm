@@ -777,12 +777,12 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 		} else if(!strncasecmp("QOSRAW", object, 4)) {
 			field->type = PRINT_QOS_RAW;
 			field->name = xstrdup("QOS_RAW");
-			field->len = 7;
+			field->len = 10;
 			field->print_routine = print_fields_char_list;
 		} else if(!strncasecmp("QOS", object, 1)) {
 			field->type = PRINT_QOS;
 			field->name = xstrdup("QOS");
-			field->len = 9;
+			field->len = 20;
 			field->print_routine = sacctmgr_print_qos_list;
 		} else if(!strncasecmp("ParentID", object, 7)) {
 			field->type = PRINT_PID;
@@ -1090,6 +1090,7 @@ extern int sacctmgr_modify_account(int argc, char *argv[])
 				printf("  %s\n", object);
 			}
 			list_iterator_destroy(itr);
+			set = 1;
 		} else if(ret_list) {
 			printf(" Nothing modified\n");
 			rc = SLURM_ERROR;
