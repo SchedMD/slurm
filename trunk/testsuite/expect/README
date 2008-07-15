@@ -502,3 +502,5 @@ test21.4   sacctmgr version
 test21.5   sacctmgr add a cluster
 test21.6   sacctmgr add multiple clusters
 test21.7   sacctmgr list clusters
+test21.8   sacctmgr modify a cluster
+test21.9   sacctmgr modify multiple clusters
