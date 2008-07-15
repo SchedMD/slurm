@@ -656,8 +656,59 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 	}
 	
-	if(table == acct_coord_table
-	   || table == qos_table)
+	if(table == qos_table) {
+		/* remove this qos from all the users/accts that have it
+		 */
+		xstrfmtcat(query,
+			   "update %s set mod_time=%d, %s "
+			   "where deleted=0;",
+			   user_table, now, assoc_char);
+		xstrfmtcat(query,
+			   "update %s set mod_time=%d, %s "
+			   "where deleted=0;",
+			   acct_table, now, assoc_char);
+		debug3("%d query\n%s", mysql_conn->conn, query);
+		rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
+		xfree(query);
+		if(rc != SLURM_SUCCESS) {
+			if(mysql_conn->rollback) {
+				mysql_db_rollback(mysql_conn->acct_mysql_db);
+			}
+			list_flush(mysql_conn->update_list);
+			
+			return SLURM_ERROR;
+		}
+		/* now get what we changed and set the update */
+		xstrfmtcat(query,
+			   "select name, qos from %s where "
+			   "mod_time=%d and deleted=0;",
+			   user_table, now);
+		if(!(result = mysql_db_query_ret(
+			     mysql_conn->acct_mysql_db, query, 0))) {
+			xfree(query);
+			if(mysql_conn->rollback) {
+				mysql_db_rollback(mysql_conn->acct_mysql_db);
+			}
+			list_flush(mysql_conn->update_list);
+			
+			return SLURM_ERROR;
+		}
+		
+		rc = 0;
+		while((row = mysql_fetch_row(result))) {
+			acct_user_rec_t *user_rec = 
+				xmalloc(sizeof(acct_user_rec_t));
+			user_rec->name = xstrdup(row[0]);
+			user_rec->qos_list = list_create(slurm_destroy_char);
+			slurm_addto_char_list(user_rec->qos_list, row[1]);
+			_addto_update_list(mysql_conn->update_list,
+					   ACCT_MODIFY_USER,
+					   user_rec);
+		}
+		mysql_free_result(result);
+		
+		return SLURM_SUCCESS;
+	} else if(table == acct_coord_table)
 		return SLURM_SUCCESS;
 
 	/* mark deleted=1 or remove completely the
@@ -1348,7 +1399,18 @@ static int _mysql_acct_check_tables(MYSQL *acct_mysql_db)
 				 ", primary key (id, name(20)))")
 	   == SLURM_ERROR)
 		return SLURM_ERROR;
-
+	else {
+		time_t now = time(NULL);
+		char *query = xstrdup_printf(
+			"insert into %s "
+			"(creation_time, mod_time, name, description) "
+			"values (%d, %d, 'normal', 'Normal QOS default') "
+			"on duplicate key update deleted=0;",
+			qos_table, now, now);
+		debug3("%s", query);
+		mysql_db_query(acct_mysql_db, query);
+		xfree(query);		
+	}
 	if(mysql_db_create_table(acct_mysql_db, step_table,
 				 step_table_fields, 
 				 ", primary key (id, stepid))") == SLURM_ERROR)
@@ -1663,6 +1725,9 @@ extern int acct_storage_p_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 
 			xstrfmtcat(vals, ", '%s'", qos_val); 		
 			xstrfmtcat(extra, ", qos='%s'", qos_val); 		
+		} else {
+			xstrfmtcat(vals, ", 'normal'"); 		
+			xstrfmtcat(extra, ", qos='normal'"); 	       
 		}
 
 		if(object->admin_level != ACCT_ADMIN_NOTSET) {
@@ -2583,11 +2648,11 @@ extern int acct_storage_p_add_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		xstrfmtcat(query, 
 			   "insert into %s (creation_time, mod_time, "
-			   "name, desciption) "
+			   "name, description) "
 			   "values (%d, %d, '%s', '%s') "
 			   "on duplicate key update deleted=0, mod_time=%d;",
 			   qos_table, 
-			   now, now, object->name,
+			   now, now, object->name, object->description,
 			   now);
 		debug3("%d query\n%s", mysql_conn->conn, query);
 		rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
@@ -2657,6 +2722,7 @@ extern List acct_storage_p_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	int set = 0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
+	int replace_qos = 0;
 
 	if(!user_cond) {
 		error("we need something to change");
@@ -2722,6 +2788,7 @@ extern List acct_storage_p_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrfmtcat(vals, ", default_acct='%s'", user->default_acct);
 
 	if(user->qos_list && list_count(user->qos_list)) {
+		char *tmp_qos = NULL;
 		set = 0;
 		itr = list_iterator_create(user->qos_list);
 		while((object = list_next(itr))) {
@@ -2730,22 +2797,24 @@ extern List acct_storage_p_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 			 * it.
 			 */
 			if(object[0] == '-') {
-				xstrfmtcat(extra,
+				xstrfmtcat(vals,
 					   ", qos=replace(qos, ',%s', '')",
 					   object+1);
 			} else if(object[0] == '+') {
-				xstrfmtcat(extra,
+				xstrfmtcat(vals,
 					   ", qos=concat("
 					   "replace(qos, ',%s', ''), ',%s')",
 					   object+1, object+1);
 			} else {
-				xstrfmtcat(extra,
-					   ", qos=concat("
-					   "replace(qos, ',%s', ''), ',%s')",
-					   object, object);
+				xstrfmtcat(tmp_qos, ",%s", object);
 			}
 		}
 		list_iterator_destroy(itr);
+		if(tmp_qos) {
+			xstrfmtcat(vals, ", qos='%s'", tmp_qos);
+			xfree(tmp_qos);
+			replace_qos = 1;
+		}
 	}
 
 	if(user->admin_level != ACCT_ADMIN_NOTSET)
@@ -2789,7 +2858,9 @@ extern List acct_storage_p_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 			char *new_qos = NULL, *curr_qos = NULL;
 
 			user_rec->qos_list = list_create(slurm_destroy_char);
-			slurm_addto_char_list(user_rec->qos_list, row[1]);
+			if(!replace_qos)
+				slurm_addto_char_list(user_rec->qos_list,
+						      row[1]);
 			curr_qos_itr = list_iterator_create(user_rec->qos_list);
 
 			while((new_qos = list_next(new_qos_itr))) {
@@ -2823,20 +2894,8 @@ extern List acct_storage_p_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 						xfree(tmp_char);
 					list_iterator_reset(curr_qos_itr);
 				} else {
-					tmp_char = xstrdup(object);
-					while((curr_qos =
-					       list_next(curr_qos_itr))) {
-						if(!strcmp(curr_qos,
-							   tmp_char)) {
-							break;
-						}
-					}
-					if(!curr_qos)
-						list_append(user_rec->qos_list,
-							    tmp_char);
-					else
-						xfree(tmp_char);
-					list_iterator_reset(curr_qos_itr);
+					list_append(user_rec->qos_list,
+						    xstrdup(object));
 				}
 			}
 			list_iterator_destroy(curr_qos_itr);
@@ -2971,6 +3030,7 @@ extern List acct_storage_p_modify_accounts(
 		xstrfmtcat(vals, ", organization='%u'", acct->organization);
 
 	if(acct->qos_list && list_count(acct->qos_list)) {
+		char *tmp_qos = NULL;
 		set = 0;
 		itr = list_iterator_create(acct->qos_list);
 		while((object = list_next(itr))) {
@@ -2979,22 +3039,23 @@ extern List acct_storage_p_modify_accounts(
 			 * it.
 			 */
 			if(object[0] == '-') {
-				xstrfmtcat(extra,
+				xstrfmtcat(vals,
 					   ", qos=replace(qos, ',%s', '')",
 					   object+1);
 			} else if(object[0] == '+') {
-				xstrfmtcat(extra,
+				xstrfmtcat(vals,
 					   ", qos=concat("
 					   "replace(qos, ',%s', ''), ',%s')",
 					   object+1, object+1);
 			} else {
-				xstrfmtcat(extra,
-					   ", qos=concat("
-					   "replace(qos, ',%s', ''), ',%s')",
-					   object, object);
+				xstrfmtcat(tmp_qos, ",%s", object);
 			}
 		}
 		list_iterator_destroy(itr);
+		if(tmp_qos) {
+			xstrfmtcat(vals, ", qos='%s'", tmp_qos);
+			xfree(tmp_qos);
+		}
 	}
 
 	if(!extra || !vals) {
@@ -4543,7 +4604,8 @@ extern List acct_storage_p_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	List ret_list = NULL;
 	int rc = SLURM_SUCCESS;
 	char *object = NULL;
-	char *extra = NULL, *query = NULL, *name_char = NULL;
+	char *extra = NULL, *query = NULL,
+		*name_char = NULL, *assoc_char = NULL;
 	time_t now = time(NULL);
 	struct passwd *pw = NULL;
 	char *user_name = NULL;
@@ -4614,7 +4676,7 @@ extern List acct_storage_p_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	}
 
-	query = xstrdup_printf("select name from %s %s;", qos_table, extra);
+	query = xstrdup_printf("select id from %s %s;", qos_table, extra);
 	xfree(extra);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->acct_mysql_db, query, 0))) {
@@ -4630,11 +4692,14 @@ extern List acct_storage_p_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		list_append(ret_list, object);
 		if(!rc) {
-			xstrfmtcat(name_char, "name='%s'", object);
+			xstrfmtcat(name_char, "id='%s'", object);
+			xstrfmtcat(assoc_char, "qos=replace(qos, ',%s', '')",
+				   object);
 			rc = 1;
 		} else  {
-			xstrfmtcat(name_char, " || name='%s'", object);
- 
+			xstrfmtcat(name_char, " || id='%s'", object); 
+			xstrfmtcat(assoc_char, ", qos=replace(qos, ',%s', '')",
+				   object);
 		}
 		qos_rec = xmalloc(sizeof(acct_qos_rec_t));
 		qos_rec->name = xstrdup(object);
@@ -4652,7 +4717,7 @@ extern List acct_storage_p_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	xfree(query);
 
 	if(_remove_common(mysql_conn, DBD_REMOVE_ACCOUNTS, now,
-			  user_name, acct_table, name_char, NULL)
+			  user_name, qos_table, name_char, assoc_char)
 	   == SLURM_ERROR) {
 		list_destroy(ret_list);
 		xfree(name_char);

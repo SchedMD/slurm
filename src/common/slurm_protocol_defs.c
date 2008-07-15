@@ -69,6 +69,7 @@ static void _slurm_free_partition_info_members (partition_info_t * part);
 
 static void _free_all_step_info (job_step_info_response_msg_t *msg);
 static void _slurm_free_job_step_info_members (job_step_info_t * msg);
+static void _make_lower(char *change);
 
 /*
  * slurm_msg_t_init - initialize a slurm message 
@@ -133,7 +134,6 @@ extern void slurm_addto_char_list(List char_list, char *names)
 		start = i;
 		while(names[i]) {
 			//info("got %d - %d = %d", i, start, i-start);
-
 			if(quote && names[i] == quote_c)
 				break;
 			else if (names[i] == '\"' || names[i] == '\'')
@@ -149,9 +149,10 @@ extern void slurm_addto_char_list(List char_list, char *names)
 							break;
 					}
 
-					if(!tmp_char)
+					if(!tmp_char) {
+						_make_lower(name);
 						list_append(char_list, name);
-					else 
+					} else 
 						xfree(name);
 					list_iterator_reset(itr);
 				}
@@ -174,9 +175,10 @@ extern void slurm_addto_char_list(List char_list, char *names)
 					break;
 			}
 			
-			if(!tmp_char)
+			if(!tmp_char) {
+				_make_lower(name);
 				list_append(char_list, name);
-			else 
+			} else 
 				xfree(name);
 		}
 	}	
@@ -1445,3 +1447,18 @@ void inline slurm_free_job_notify_msg(job_notify_msg_t * msg)
 		xfree(msg);
 	}
 }
+
+/* make everything lowercase should not be called on static char *'s */
+static void _make_lower(char *change)
+{
+	if(change) {
+		int j = 0;
+		while(change[j]) {
+			char lower = tolower(change[j]);
+			if(lower != change[j])
+				change[j] = lower;
+			j++;
+		}
+	}
+}
+

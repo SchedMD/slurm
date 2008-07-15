@@ -92,14 +92,16 @@ extern void destroy_sacctmgr_assoc(void *object)
 extern int parse_option_end(char *option)
 {
 	int end = 0;
-	
+
 	if(!option)
 		return 0;
 
 	while(option[end] && option[end] != '=')
 		end++;
+
 	if(!option[end])
 		return 0;
+
 	end++;
 	return end;
 }
@@ -435,6 +437,27 @@ extern acct_association_rec_t *sacctmgr_find_account_base_assoc_from_list(
 
 	return assoc;
 }
+
+extern acct_qos_rec_t *sacctmgr_find_qos_from_list(
+	List qos_list, char *name)
+{
+	ListIterator itr = NULL;
+	acct_qos_rec_t *qos = NULL;
+	
+	if(!name || !qos_list)
+		return NULL;
+	
+	itr = list_iterator_create(qos_list);
+	while((qos = list_next(itr))) {
+		if(!strcasecmp(name, qos->name))
+			break;
+	}
+	list_iterator_destroy(itr);
+	
+	return qos;
+
+}
+
 extern acct_user_rec_t *sacctmgr_find_user_from_list(
 	List user_list, char *name)
 {
@@ -517,7 +540,8 @@ extern int get_uint(char *in_value, uint32_t *out_value, char *type)
 	return SLURM_SUCCESS;
 }
 
-extern void addto_qos_char_list(List char_list, List qos_list, char *names)
+extern void addto_qos_char_list(List char_list, List qos_list, char *names, 
+				int option)
 {
 	int i=0, start=0;
 	char *name = NULL, *tmp_char = NULL;
@@ -535,6 +559,7 @@ extern void addto_qos_char_list(List char_list, List qos_list, char *names)
 		debug2("No real qos_list");
 		return;
 	}
+	info("got option of %c", option);
 
 	itr = list_iterator_create(char_list);
 	if(names) {
@@ -559,17 +584,21 @@ extern void addto_qos_char_list(List char_list, List qos_list, char *names)
 					if(id == NO_VAL) 
 						goto bad;
 
-					name = xstrdup_printf("%u", id);
+					if(option) {
+						name = xstrdup_printf(
+							"%c%u", option, id);
+					} else
+						name = xstrdup_printf("%u", id);
 					while((tmp_char = list_next(itr))) {
 						if(!strcasecmp(tmp_char, name))
 							break;
 					}
-
-					if(!tmp_char)
-						list_append(char_list, name);
-					else 
-						xfree(name);
 					list_iterator_reset(itr);
+
+					if(!tmp_char) {
+						list_append(char_list, name);
+					} else 
+						xfree(name);
 				}
 			bad:
 				i++;
@@ -592,7 +621,11 @@ extern void addto_qos_char_list(List char_list, List qos_list, char *names)
 			if(id == NO_VAL) 
 				goto end_it;
 			
-			name = xstrdup_printf("%u", id);
+			if(option) {
+				name = xstrdup_printf(
+					"%c%u", option, id);
+			} else
+				name = xstrdup_printf("%u", id);
 			while((tmp_char = list_next(itr))) {
 				if(!strcasecmp(tmp_char, name))
 					break;
@@ -670,10 +703,9 @@ extern char *get_qos_complete_str(List qos_list, List num_qos_list)
 
 	if(!qos_list || !list_count(qos_list)
 	   || !num_qos_list || !list_count(num_qos_list))
-		return xstrdup("Normal");
+		return xstrdup("normal");
 
 	temp_list = list_create(NULL);
-	list_append(temp_list, xstrdup("Normal"));
 
 	itr = list_iterator_create(num_qos_list);
 	while((temp_char = list_next(itr))) {
