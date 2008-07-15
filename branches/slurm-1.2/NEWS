@@ -6,6 +6,7 @@ documents those changes that are of interest to users and admins.
  -- Cancelled or Failed jobs will now report there job and step id on exit
  -- Add SPANK items available to get: SLURM_VERSION, SLURM_VERSION_MAJOR,
     SLURM_VERISON_MINOR and SLURM_VERSION_MICRO.
+ -- Fixed handling of SIGPIPE in srun
 
 * Changes in SLURM 1.2.32
 =========================
