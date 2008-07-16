@@ -305,22 +305,31 @@ The <span class="commandline">salloc</span> command is would be used
 to create a resource allocation and typically start a shell within 
 that allocation. 
 One or more job steps would typically be executed within that allocation 
-using the srun command to launch the tasks. 
-Finally the shell created by salloc would be terminated using the 
-<i>exit</i> command.
-In this example we will also use the <span class="commandline">sbcast</span> 
-command to transfer the executable program to local storage, /tmp/joe.a.out,
-on the allocated nodes (1024 nodes in this example).
+using the <span class="commandline">srun</span> command to launch the tasks
+(depending upon the type of MPI being used, the launch mechanism may 
+differ, see <a href="#mpi">MPI</a> details below).
+Finally the shell created by <span class="commandline">salloc</span> would 
+be terminated using the <i>exit</i> command.
+SLURM does not automatically migrate executable or data files
+to the nodes allocated to a job. 
+Either the files must exists on local disk or in some global file system
+(e.g. NFS or Lustre).
+We provide the tool <span class="commandline">sbcast</span> to transfer
+files to local storage on allocated nodes using SLURM's hierarchical
+communications.
+In this example we use <span class="commandline">sbcast</span> to transfer 
+the executable program <i>a.out</i> to <i>/tmp/joe.a.out</i> on local storage 
+of the allocated nodes.
 After executing the program, we delete it from local storage</p>
 <pre>
 tux0: salloc -N1024 bash
 $ sbcast a.out /tmp/joe.a.out
 Granted job allocation 471
 $ srun /tmp/joe.a.out
-Result is 471
+Result is 3.14159
 $ srun rm /tmp/joe.a.out
 $ exit
-salloc: Relinquishing job allocation 1234
+salloc: Relinquishing job allocation 471
 </pre>
 
 <p>In this example, we submit a batch job, get its status, and cancel it. </p>
@@ -568,6 +577,6 @@ sbatch: Submitted batch job 1234
 tasks. These tasks are not managed by SLURM since they are launched 
 outside of its control.</p>
  
-<p style="text-align:center;">Last modified 2 June 2008</p>
+<p style="text-align:center;">Last modified 16 July 2008</p>
 
 <!--#include virtual="footer.txt"-->
