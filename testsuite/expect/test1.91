@@ -9,6 +9,7 @@
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2005-2007 The Regents of the University of California.
+# Copyright (C) 2008 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # LLNL-CODE-402394.
@@ -58,23 +59,39 @@ if {$affinity == 0} {
 	send_user "\nWARNING: task affinity not supported on this system\n"
 	exit 0
 }
+
 send_user "\ntask affinity plugin installed\n"
 
-set num_sockets 0
-set num_cores   0
-set num_threads 0
+# Identify a usable node
+set timeout $max_job_delay
 set node_name ""
-log_user 0
-
-# Here we need to get the last node since if we run this on heterogeneous
-# systems the count can change
-
-spawn $scontrol show node
+set srun_pid [spawn $srun -N1 --exclusive --verbose $bin_hostname]
 expect {
-	-re "NodeName=($alpha_numeric)" {
+	-re "on host ($alpha_numeric_under)" {
 		set node_name $expect_out(1,string)
 		exp_continue
 	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {[string compare $node_name ""] == 0} {
+	send_user "\nFAILURE: failed to get a usable node name\n"
+	exit 1
+}
+
+# Determine how many sockets, cores, and threads the node has
+set num_sockets 0
+set num_cores   0
+set num_threads 0
+log_user 0
+spawn $scontrol show node $node_name
+expect {
 	-re "Sockets=($number)" {
 		set num_sockets $expect_out(1,string)
 		exp_continue
