@@ -58,25 +58,26 @@ static int _set_cond(int *start, int argc, char *argv[],
 				txn_cond->id_list = 
 					list_create(slurm_destroy_char);
 			
-			slurm_addto_char_list(txn_cond->id_list, argv[i]+end);
-			set = 1;
+			if(slurm_addto_char_list(txn_cond->id_list, 
+						 argv[i]+end))
+				set = 1;
 		} else if (!strncasecmp (argv[i], "Action", 4)) {
 			/* FIX ME! fill this in */
 /* 			if(!txn_cond->action_list) */
 /* 				txn_cond->action_list =  */
 /* 					list_create(slurm_destroy_char); */
 
-/* 			slurm_addto_char_list(txn_cond->action_list, */
-/* 					argv[i]+end); */
+/* 			if(slurm_addto_char_list(txn_cond->action_list, */
+/* 					argv[i]+end)) */
 /* 			set = 1; */
 		} else if (!strncasecmp (argv[i], "Actors", 4)
 			   || !strncasecmp (argv[i], "User", 1)) {
 			if(!txn_cond->actor_list)
 				txn_cond->actor_list =
 					list_create(slurm_destroy_char);
-			slurm_addto_char_list(txn_cond->actor_list,
-					argv[i]+end);
-			set = 1;
+			if(slurm_addto_char_list(txn_cond->actor_list,
+						 argv[i]+end))
+				set = 1;
 		} else if (!strncasecmp (argv[i], "Format", 1)) {
 			if(format_list)
 				slurm_addto_char_list(format_list, argv[i]+end);

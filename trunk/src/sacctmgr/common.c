@@ -540,8 +540,8 @@ extern int get_uint(char *in_value, uint32_t *out_value, char *type)
 	return SLURM_SUCCESS;
 }
 
-extern void addto_qos_char_list(List char_list, List qos_list, char *names, 
-				int option)
+extern int addto_qos_char_list(List char_list, List qos_list, char *names, 
+			       int option)
 {
 	int i=0, start=0;
 	char *name = NULL, *tmp_char = NULL;
@@ -549,15 +549,16 @@ extern void addto_qos_char_list(List char_list, List qos_list, char *names,
 	char quote_c = '\0';
 	int quote = 0;
 	uint32_t id=0;
+	int count = 0;
 
 	if(!char_list) {
 		error("No list was given to fill in");
-		return;
+		return 0;
 	}
 
 	if(!qos_list || !list_count(qos_list)) {
 		debug2("No real qos_list");
-		return;
+		return 0;
 	}
 
 	itr = list_iterator_create(char_list);
@@ -596,6 +597,7 @@ extern void addto_qos_char_list(List char_list, List qos_list, char *names,
 
 					if(!tmp_char) {
 						list_append(char_list, name);
+						count++;
 					} else 
 						xfree(name);
 				}
@@ -630,14 +632,16 @@ extern void addto_qos_char_list(List char_list, List qos_list, char *names,
 					break;
 			}
 			
-			if(!tmp_char)
+			if(!tmp_char) {
 				list_append(char_list, name);
-			else 
+				count++;
+			} else 
 				xfree(name);
 		}
 	}	
 end_it:
 	list_iterator_destroy(itr);
+	return count;
 } 
 
 extern void sacctmgr_print_coord_list(print_field_t *field, List value)

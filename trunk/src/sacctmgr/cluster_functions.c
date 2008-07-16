@@ -56,9 +56,9 @@ static int _set_cond(int *start, int argc, char *argv[],
 			continue;
 		} else if(!end || !strncasecmp (argv[i], "Names", 1)) {
 			if(cluster_list) {
-				slurm_addto_char_list(cluster_list,
-						      argv[i]+end);
-				set = 1;
+				if(slurm_addto_char_list(cluster_list,
+							 argv[i]+end))
+					set = 1;
 			}
 		} else if (!strncasecmp (argv[i], "Format", 1)) {
 			if(format_list)
