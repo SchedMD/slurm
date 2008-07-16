@@ -111,17 +111,19 @@ extern void slurm_destroy_char(void *object)
 	xfree(tmp);
 }
 
-extern void slurm_addto_char_list(List char_list, char *names)
+/* returns number of objects added to list */
+extern int slurm_addto_char_list(List char_list, char *names)
 {
 	int i=0, start=0;
 	char *name = NULL, *tmp_char = NULL;
 	ListIterator itr = NULL;
 	char quote_c = '\0';
 	int quote = 0;
+	int count = 0;
 
 	if(!char_list) {
 		error("No list was given to fill in");
-		return;
+		return 0;
 	}
 
 	itr = list_iterator_create(char_list);
@@ -152,6 +154,7 @@ extern void slurm_addto_char_list(List char_list, char *names)
 					if(!tmp_char) {
 						_make_lower(name);
 						list_append(char_list, name);
+						count++;
 					} else 
 						xfree(name);
 					list_iterator_reset(itr);
@@ -178,11 +181,13 @@ extern void slurm_addto_char_list(List char_list, char *names)
 			if(!tmp_char) {
 				_make_lower(name);
 				list_append(char_list, name);
+				count++;
 			} else 
 				xfree(name);
 		}
 	}	
 	list_iterator_destroy(itr);
+	return count;
 } 
 
 void slurm_free_last_update_msg(last_update_msg_t * msg)

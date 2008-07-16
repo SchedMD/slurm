@@ -81,26 +81,27 @@ static int _set_cond(int *start, int argc, char *argv[],
 				acct_cond->assoc_cond->acct_list = 
 					list_create(slurm_destroy_char);
 			}
-			slurm_addto_char_list(acct_cond->assoc_cond->acct_list,
-					      argv[i]+end);
-			u_set = 1;
+			if(slurm_addto_char_list(
+				   acct_cond->assoc_cond->acct_list,
+				   argv[i]+end))
+				u_set = 1;
 		} else if (!strncasecmp (argv[i], "Clusters", 1)) {
 			if(!acct_cond->assoc_cond->cluster_list) {
 				acct_cond->assoc_cond->cluster_list = 
 					list_create(slurm_destroy_char);
 			}
-			slurm_addto_char_list(
-				acct_cond->assoc_cond->cluster_list,
-				argv[i]+end);
-			a_set = 1;
+			if(slurm_addto_char_list(
+				   acct_cond->assoc_cond->cluster_list,
+				   argv[i]+end))
+				a_set = 1;
 		} else if (!strncasecmp (argv[i], "Descriptions", 1)) {
 			if(!acct_cond->description_list) {
 				acct_cond->description_list = 
 					list_create(slurm_destroy_char);
 			}
-			slurm_addto_char_list(acct_cond->description_list,
-					argv[i]+end);
-			u_set = 1;
+			if(slurm_addto_char_list(acct_cond->description_list,
+						 argv[i]+end))
+				u_set = 1;
 		} else if (!strncasecmp (argv[i], "Format", 1)) {
 			if(format_list)
 				slurm_addto_char_list(format_list, argv[i]+end);
@@ -109,9 +110,9 @@ static int _set_cond(int *start, int argc, char *argv[],
 				acct_cond->organization_list = 
 					list_create(slurm_destroy_char);
 			}
-			slurm_addto_char_list(acct_cond->organization_list,
-					argv[i]+end);
-			u_set = 1;
+			if(slurm_addto_char_list(acct_cond->organization_list,
+						 argv[i]+end))
+				u_set = 1;
 		} else if (!strncasecmp (argv[i], "Parent", 1)) {
 			acct_cond->assoc_cond->parent_acct =
 				strip_quotes(argv[i]+end, NULL);
@@ -176,19 +177,19 @@ static int _set_rec(int *start, int argc, char *argv[],
 			u_set = 1;
 		} else if (!strncasecmp (argv[i], "FairShare", 1)) {
 			if (get_uint(argv[i]+end, &assoc->fairshare, 
-			    "FairShare") == SLURM_SUCCESS)
+				     "FairShare") == SLURM_SUCCESS)
 				a_set = 1;
 		} else if (!strncasecmp (argv[i], "MaxCPUSec", 4)) {
 			if (get_uint(argv[i]+end, &assoc->max_cpu_secs_per_job,
-			    "MaxCPUSec") == SLURM_SUCCESS)
+				     "MaxCPUSec") == SLURM_SUCCESS)
 				a_set = 1;
 		} else if (!strncasecmp (argv[i], "MaxJobs", 4)) {
 			if (get_uint(argv[i]+end, &assoc->max_jobs,
-			    "MaxJobs") == SLURM_SUCCESS)
+				     "MaxJobs") == SLURM_SUCCESS)
 				a_set = 1;
 		} else if (!strncasecmp (argv[i], "MaxNodes", 4)) {
 			if (get_uint(argv[i]+end, &assoc->max_nodes_per_job,
-			    "MaxNodes") == SLURM_SUCCESS)
+				     "MaxNodes") == SLURM_SUCCESS)
 				a_set = 1;
 		} else if (!strncasecmp (argv[i], "MaxWall", 4)) {
 			mins = time_str2mins(argv[i]+end);
@@ -198,7 +199,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 				a_set = 1;
 			} else {
 				printf(" Bad MaxWall time format: %s\n", 
-					argv[i]);
+				       argv[i]);
 			}
 		} else if (!strncasecmp (argv[i], "Organization", 1)) {
 			acct->organization = strip_quotes(argv[i]+end, NULL);
@@ -1151,12 +1152,35 @@ extern int sacctmgr_delete_account(int argc, char *argv[])
 		xmalloc(sizeof(acct_account_cond_t));
 	int i=0;
 	List ret_list = NULL;
+	ListIterator itr = NULL;
 	int set = 0;
 	
 	if(!(set = _set_cond(&i, argc, argv, acct_cond, NULL))) {
 		printf(" No conditions given to remove, not executing.\n");
 		destroy_acct_account_cond(acct_cond);
 		return SLURM_ERROR;
+	}
+
+	/* check to see if person is trying to remove root account.  This is
+	 * bad, and should not be allowed outside of deleting a cluster.
+	 */
+	if(acct_cond->assoc_cond
+	   && acct_cond->assoc_cond->acct_list
+	   && list_count(acct_cond->assoc_cond->acct_list)) {
+		char *tmp_char = NULL;
+		itr = list_iterator_create(acct_cond->assoc_cond->acct_list);
+		while((tmp_char = list_next(itr))) {
+			if(!strcasecmp(tmp_char, "root")) 
+				break;
+		}
+		list_iterator_destroy(itr);
+		if(tmp_char) {
+			printf(" You are not allowed to remove "
+			       "the root account.\n"
+			       " Use remove cluster instead.\n");
+			destroy_acct_account_cond(acct_cond);
+			return SLURM_ERROR;
+		}
 	}
 
 	notice_thread_init();

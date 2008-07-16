@@ -81,17 +81,19 @@ static int _set_cond(int *start, int argc, char *argv[],
 				user_cond->assoc_cond->user_list = 
 					list_create(slurm_destroy_char);
 			}
-			slurm_addto_char_list(user_cond->assoc_cond->user_list,
-					      argv[i]+end);
-			u_set = 1;
+			if(slurm_addto_char_list(
+				   user_cond->assoc_cond->user_list,
+				   argv[i]+end))
+				u_set = 1;
 		} else if (!strncasecmp (argv[i], "Account", 2)) {
 			if(!user_cond->assoc_cond->acct_list) {
 				user_cond->assoc_cond->acct_list = 
 					list_create(slurm_destroy_char);
 			}
-			slurm_addto_char_list(user_cond->assoc_cond->acct_list,
-					argv[i]+end);
-			a_set = 1;
+			if(slurm_addto_char_list(
+				   user_cond->assoc_cond->acct_list,
+				   argv[i]+end))
+				a_set = 1;
 		} else if (!strncasecmp (argv[i], "AdminLevel", 2)) {
 			user_cond->admin_level = 
 				str_2_acct_admin_level(argv[i]+end);
@@ -101,17 +103,18 @@ static int _set_cond(int *start, int argc, char *argv[],
 				user_cond->assoc_cond->cluster_list = 
 					list_create(slurm_destroy_char);
 			}
-			slurm_addto_char_list(user_cond->assoc_cond->cluster_list,
-					argv[i]+end);
-			a_set = 1;
+			if(slurm_addto_char_list(
+				   user_cond->assoc_cond->cluster_list,
+				   argv[i]+end))
+				a_set = 1;
 		} else if (!strncasecmp (argv[i], "DefaultAccount", 1)) {
 			if(!user_cond->def_acct_list) {
 				user_cond->def_acct_list = 
 					list_create(slurm_destroy_char);
 			}
-			slurm_addto_char_list(user_cond->def_acct_list,
-					argv[i]+end);
-			u_set = 1;
+			if(slurm_addto_char_list(user_cond->def_acct_list,
+						 argv[i]+end))
+				u_set = 1;
 		} else if (!strncasecmp (argv[i], "Format", 1)) {
 			if(format_list)
 				slurm_addto_char_list(format_list, argv[i]+end);
@@ -120,9 +123,10 @@ static int _set_cond(int *start, int argc, char *argv[],
 				user_cond->assoc_cond->partition_list = 
 					list_create(slurm_destroy_char);
 			}
-			slurm_addto_char_list(user_cond->assoc_cond->partition_list, 
-					argv[i]+end);
-			a_set = 1;
+			if(slurm_addto_char_list(
+				   user_cond->assoc_cond->partition_list, 
+				   argv[i]+end))
+				a_set = 1;
 		} else if (!strncasecmp (argv[i], "QosLevel", 1)) {
 			int option = 0;
 			if(!user_cond->qos_list) {
@@ -188,14 +192,14 @@ static int _set_rec(int *start, int argc, char *argv[],
 			if(!association)
 				continue;
 			if (get_uint(argv[i]+end, &association->fairshare, 
-			    "FairShare") == SLURM_SUCCESS)
+				     "FairShare") == SLURM_SUCCESS)
 				a_set = 1;
 		} else if (!strncasecmp (argv[i], "MaxCPUSec", 4)) {
 			if(!association)
 				continue;
 			if (get_uint(argv[i]+end, 
-			     &association->max_cpu_secs_per_job, 
-			    "MaxCPUSec") == SLURM_SUCCESS)
+				     &association->max_cpu_secs_per_job, 
+				     "MaxCPUSec") == SLURM_SUCCESS)
 				a_set = 1;
 		} else if (!strncasecmp (argv[i], "MaxJobs", 4)) {
 			if(!association)

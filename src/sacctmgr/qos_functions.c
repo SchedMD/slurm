@@ -66,23 +66,25 @@ static int _set_cond(int *start, int argc, char *argv[],
 				qos_cond->name_list = 
 					list_create(slurm_destroy_char);
 			}
-			slurm_addto_char_list(qos_cond->name_list, argv[i]+end);
-			set = 1;
+			if(slurm_addto_char_list(qos_cond->name_list,
+						 argv[i]+end))
+				set = 1;
 		} else if(!strncasecmp (argv[i], "Descriptions", 1)) {
 			if(!qos_cond->description_list) {
 				qos_cond->description_list = 
 					list_create(slurm_destroy_char);
 			}
-			slurm_addto_char_list(qos_cond->description_list,
-					      argv[i]+end);
-			set = 1;
+			if(slurm_addto_char_list(qos_cond->description_list,
+						 argv[i]+end))
+				set = 1;
 		} else if(!strncasecmp (argv[i], "Ids", 1)) {
 			if(!qos_cond->id_list) {
 				qos_cond->id_list = 
 					list_create(slurm_destroy_char);
 			}
-			slurm_addto_char_list(qos_cond->id_list, argv[i]+end);
-			set = 1;
+			if(slurm_addto_char_list(qos_cond->id_list, 
+						 argv[i]+end))
+				set = 1;
 		} else {
 			printf(" Unknown condition: %s\n"
 			       " Use keyword 'set' to modify "
