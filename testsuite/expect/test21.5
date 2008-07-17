@@ -62,7 +62,7 @@ print_header $test_id
 #
 # Use sacctmgr to create a cluster
 #
-set sadd_pid [spawn $sacctmgr add $clu $nams=$tc1 $fs=$fs1 $mc=$mc1 $mj=$mj1 $mn=$mn1 $mw=$mw1]
+set sadd_pid [spawn $sacctmgr -i add $clu $nams=$tc1 $fs=$fs1 $mc=$mc1 $mj=$mj1 $mn=$mn1 $mw=$mw1]
 expect {
 	-re "Adding Cluster" {
 		incr amatches
@@ -96,15 +96,6 @@ expect {
 		incr amatches
 		exp_continue
 	}
-	-re "Would you like to commit changes\\\? \\\(You have 30 seconds to decide\\\)" {
-		incr amatches
-		exp_continue
-	}
-	-re "\\\(N\\\/y\\\):" {
-		incr amatches
-		send "Y\r"
-		exp_continue
-	}
 	timeout {
 		send_user "\nFAILURE: sacctmgr add not responding\n"
 		slow_kill $sadd_pid
@@ -115,34 +106,27 @@ expect {
 	}
 }
 
-if {$amatches != 10} {
-	send_user "\nFAILURE:  sacctmgr had a problem adding clusters\n"
+if {$amatches != 8} {
+	send_user "\nFAILURE:  sacctmgr had a problem adding clusters
+	got $amatches\n"
 	set exit_code 1
 }
-if { ![check_acct_associations "cluster='$tc1'"] } {
+if { ![check_acct_associations] } {
 	send_user "\nFAILURE:  Our associations don't line up\n"
 	set exit_code 1
 }
 #
 # Use sacctmgr to delete the test cluster
 #
-set sadel_pid [spawn $sacctmgr $del $clu $tc1]
+set sadel_pid [spawn $sacctmgr -i $del $clu $tc1]
 expect {
 	-re "Deleting clusters" {
+	send_user "here0\n"
 		incr dmatches
 		exp_continue
 	}
 	-re "$tc1" {
 		incr dmatches
-		exp_continue
-	}
-	-re "Would you like to commit changes\\\? \\\(You have 30 seconds to decide\\\)" {
-		incr dmatches
-		exp_continue
-	}
-	-re "\\\(N\\\/y\\\):" {
-		incr dmatches
-		send "Y\r"
 		exp_continue
 	}
 	timeout {
@@ -155,8 +139,13 @@ expect {
 	}
 }
 
-if {$dmatches != 4} {
-	send_user "\nFAILURE: sacctmgr had a problem deleting cluster\n"
+if {$dmatches != 2} {
+	send_user "\nFAILURE: sacctmgr had a problem deleting cluster got $dmatches\n"
+	set exit_code 1
+}
+
+if { ![check_acct_associations] } {
+	send_user "\nFAILURE:  Our associations don't line up\n"
 	set exit_code 1
 }
 

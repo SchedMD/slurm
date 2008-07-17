@@ -984,17 +984,18 @@ proc is_super_user { } {
 #
 # 
 ################################################################
-proc check_acct_associations { options } {
+proc check_acct_associations { } {
         global sacctmgr number
 
         set rc 1
 	set min -1
 	set max -1
-
+	log_user 0
+	send_user "Testing Associations\n"
      	#
      	# Use sacctmgr to check associations
      	#
-     	set s_pid [spawn $sacctmgr -n -p list assoc format=lft,rgt $options]
+     	set s_pid [spawn $sacctmgr -n -p list assoc wopi wopl format=lft,rgt]
      	expect {
 	       -re "($number)\\|($number)\\|" {
 	       	      # Here we are checking if we have duplicates and 
@@ -1006,10 +1007,10 @@ proc check_acct_associations { options } {
 		      set sec [info exists found($num2)]
 		      #send_user "$first=$num1 $sec=$num2\n";
 		      if { $first } {
-			     send_user "\nFAILURE: found lft $num1 again\n"
+			     send_user "FAILURE: found lft $num1 again\n"
 			     set rc 1	
 		      } elseif { $sec } {
-			     send_user "\nFAILURE: found rgt $num2 again\n"
+			     send_user "FAILURE: found rgt $num2 again\n"
 			     set rc 1	
 		      } else {
 			     set found($num1) 1
@@ -1024,7 +1025,7 @@ proc check_acct_associations { options } {
 		      exp_continue
  	       }
 	       timeout {
-		      send_user "\nFAILURE: sacctmgr add not responding\n"
+		      send_user "FAILURE: sacctmgr add not responding\n"
 		      slow_kill $s_pid
 		      set exit_code 1
 	       }
@@ -1036,9 +1037,10 @@ proc check_acct_associations { options } {
       	# Here we are checking for holes in the list from above
 	for {set inx $min} {$inx < $max} {incr inx} {
 	       if { ![info exists found($inx)] } {
-		      send_user "\nFAILURE: No index at $inx\n"
+		      send_user "FAILURE: No index at $inx\n"
 		      set rc 1	
 	       }
 	}
+	log_user 1
 	return $rc
 }
