@@ -3078,7 +3078,7 @@ extern List acct_storage_p_modify_accounts(
 	if(acct->description)
 		xstrfmtcat(vals, ", description='%s'", acct->description);
 	if(acct->organization)
-		xstrfmtcat(vals, ", organization='%u'", acct->organization);
+		xstrfmtcat(vals, ", organization='%s'", acct->organization);
 
 	if(acct->qos_list && list_count(acct->qos_list)) {
 		char *tmp_qos = NULL;

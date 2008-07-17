@@ -675,9 +675,8 @@ static int _mod_acct(sacctmgr_file_opts_t *file_opts,
 
 	if(file_opts->desc) 
 		desc = xstrdup(file_opts->desc);
-	else
-		desc = xstrdup(file_opts->name);
-	if(strcmp(desc, acct->description)) {
+
+	if(desc && strcmp(desc, acct->description)) {
 		printf(" Changed description for account "
 		       "'%s' from '%s' to '%s'\n",
 		       acct->name,
@@ -685,15 +684,13 @@ static int _mod_acct(sacctmgr_file_opts_t *file_opts,
 		       desc);
 		mod_acct.description = desc;
 		changed = 1;
-	}
+	} else 
+		xfree(desc);
 				
 	if(file_opts->org)
 		org = xstrdup(file_opts->org);
-	else if(strcmp(parent, "root"))
-		org = xstrdup(parent);
-	else
-		org = xstrdup(file_opts->name);
-	if(strcmp(org, acct->organization)) {
+
+	if(org && strcmp(org, acct->organization)) {
 		printf(" Changed organization for account '%s' "
 		       "from '%s' to '%s'\n",
 		       acct->name,
@@ -701,7 +698,8 @@ static int _mod_acct(sacctmgr_file_opts_t *file_opts,
 		       org);
 		mod_acct.organization = org;
 		changed = 1;
-	}
+	} else
+		xfree(org);
 
 	if(acct->qos_list && list_count(acct->qos_list)
 	   && file_opts->qos_list && list_count(file_opts->qos_list)) {
@@ -810,10 +808,8 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 
 	if(file_opts->def_acct)
 		def_acct = xstrdup(file_opts->def_acct);
-	else
-		def_acct = xstrdup(parent);
 
-	if(strcmp(def_acct, user->default_acct)) {
+	if(def_acct && strcmp(def_acct, user->default_acct)) {
 		printf(" Changed User '%s' "
 		       "default account '%s' -> '%s'\n",
 		       user->name,
