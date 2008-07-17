@@ -57,9 +57,12 @@ inline static int av_store_int(AV* av, int index, int val)
  */
 inline static int hv_store_charp(HV* hv, const char *key, charp val)
 {
-	SV* sv = newSVpv(val, 0);
-	
-	if (hv_store(hv, key, (I32)strlen(key), sv, 0) == NULL) {
+	SV* sv = NULL;
+
+	if(val)
+		sv = newSVpv(val, 0);
+
+	if (!key || hv_store(hv, key, (I32)strlen(key), sv, 0) == NULL) {
 		SvREFCNT_dec(sv);
 		return -1;
 	}
@@ -73,7 +76,7 @@ inline static int hv_store_uint32_t(HV* hv, const char *key, uint32_t val)
 {
 	SV* sv = newSVuv(val);
 	
-	if (hv_store(hv, key, (I32)strlen(key), sv, 0) == NULL) {
+	if (!key || hv_store(hv, key, (I32)strlen(key), sv, 0) == NULL) {
 		SvREFCNT_dec(sv);
 		return -1;
 	}
@@ -87,7 +90,7 @@ inline static int hv_store_uint16_t(HV* hv, const char *key, uint16_t val)
 {
 	SV* sv = newSVuv(val);
 	
-	if (hv_store(hv, key, (I32)strlen(key), sv, 0) == NULL) {
+	if (!key || hv_store(hv, key, (I32)strlen(key), sv, 0) == NULL) {
 		SvREFCNT_dec(sv);
 		return -1;
 	}
@@ -101,7 +104,7 @@ inline static int hv_store_uint8_t(HV* hv, const char *key, uint8_t val)
 {
 	SV* sv = newSVuv(val);
 	
-	if (hv_store(hv, key, (I32)strlen(key), sv, 0) == NULL) {
+	if (!key || hv_store(hv, key, (I32)strlen(key), sv, 0) == NULL) {
 		SvREFCNT_dec(sv);
 		return -1;
 	}
@@ -114,7 +117,7 @@ inline static int hv_store_int(HV* hv, const char *key, int val)
 {
 	SV* sv = newSViv(val);
 	
-	if (hv_store(hv, key, (I32)strlen(key), sv, 0) == NULL) {
+	if (!key || hv_store(hv, key, (I32)strlen(key), sv, 0) == NULL) {
 		SvREFCNT_dec(sv);
 		return -1;
 	}
@@ -126,7 +129,7 @@ inline static int hv_store_int(HV* hv, const char *key, int val)
  */
 inline static int hv_store_bool(HV* hv, const char *key, bool val)
 {
-	if (hv_store(hv, key, (I32)strlen(key), (val ? &PL_sv_yes : &PL_sv_no), 0) == NULL) {
+	if (!key || hv_store(hv, key, (I32)strlen(key), (val ? &PL_sv_yes : &PL_sv_no), 0) == NULL) {
 		return -1;
 	}
 	return 0;
@@ -139,7 +142,7 @@ inline static int hv_store_time_t(HV* hv, const char *key, time_t val)
 {
 	SV* sv = newSVuv(val);
 	
-	if (hv_store(hv, key, (I32)strlen(key), sv, 0) == NULL) {
+	if (!key || hv_store(hv, key, (I32)strlen(key), sv, 0) == NULL) {
 		SvREFCNT_dec(sv);
 		return -1;
 	}
@@ -151,7 +154,7 @@ inline static int hv_store_time_t(HV* hv, const char *key, time_t val)
  */
 inline static int hv_store_sv(HV* hv, const char *key, SV* sv)
 {
-	if (hv_store(hv, key, (I32)strlen(key), sv, 0) == NULL) {
+	if (!key || hv_store(hv, key, (I32)strlen(key), sv, 0) == NULL) {
 		return -1;
 	}
 	return 0;
