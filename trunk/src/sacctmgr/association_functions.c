@@ -127,6 +127,10 @@ static int _set_cond(int *start, int argc, char *argv[],
 			tree_display = 1;
 		} else if (!end && !strncasecmp (argv[i], "WithDeleted", 5)) {
 			association_cond->with_deleted = 1;
+		} else if (!end && !strncasecmp (argv[i], "WOPInfo", 4)) {
+			association_cond->without_parent_info = 1;
+		} else if (!end && !strncasecmp (argv[i], "WOPLimits", 4)) {
+			association_cond->without_parent_limits = 1;
 		} else if(!end && !strncasecmp(argv[i], "where", 5)) {
 			continue;
 		} else if(!end || !strncasecmp (argv[i], "Id", 1)

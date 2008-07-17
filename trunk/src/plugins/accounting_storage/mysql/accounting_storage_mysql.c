@@ -2427,37 +2427,37 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 				parent, object->cluster);
 			MYSQL_RES *sel_result = NULL;
 			
-			/* if(incr) { */
-/* 				char *up_query = xstrdup_printf( */
-/* 					"UPDATE %s SET rgt = rgt+%d " */
-/* 					"WHERE rgt > %d && deleted < 2;" */
-/* 					"UPDATE %s SET lft = lft+%d " */
-/* 					"WHERE lft > %d " */
-/* 					"&& deleted < 2;" */
-/* 					"UPDATE %s SET deleted = 0 " */
-/* 					"WHERE deleted = 2;", */
-/* 					assoc_table, incr, */
-/* 					my_left, */
-/* 					assoc_table, incr, */
-/* 					my_left, */
-/* 					assoc_table); */
-/* 				debug3("%d(%d) query\n%s", */
-/* 				       mysql_conn->conn, __LINE__, */
-/* 				       up_query); */
-/* 				rc = mysql_db_query( */
-/* 					mysql_conn->acct_mysql_db, */
-/* 					up_query); */
-/* 				xfree(up_query); */
-/* 				if(rc != SLURM_SUCCESS) { */
-/* 					error("Couldn't do update"); */
-/* 					xfree(cols); */
-/* 					xfree(vals); */
-/* 					xfree(update); */
-/* 					xfree(extra); */
-/* 					xfree(sel_query); */
-/* 					break; */
-/* 				} */
-/* 			} */
+			if(incr) {
+				char *up_query = xstrdup_printf(
+					"UPDATE %s SET rgt = rgt+%d "
+					"WHERE rgt > %d && deleted < 2;"
+					"UPDATE %s SET lft = lft+%d "
+					"WHERE lft > %d "
+					"&& deleted < 2;"
+					"UPDATE %s SET deleted = 0 "
+					"WHERE deleted = 2;",
+					assoc_table, incr,
+					my_left,
+					assoc_table, incr,
+					my_left,
+					assoc_table);
+				debug3("%d(%d) query\n%s",
+				       mysql_conn->conn, __LINE__,
+				       up_query);
+				rc = mysql_db_query(
+					mysql_conn->acct_mysql_db,
+					up_query);
+				xfree(up_query);
+				if(rc != SLURM_SUCCESS) {
+					error("Couldn't do update");
+					xfree(cols);
+					xfree(vals);
+					xfree(update);
+					xfree(extra);
+					xfree(sel_query);
+					break;
+				}
+			}
 
 			debug3("%d(%d) query\n%s", mysql_conn->conn,
 			       __LINE__, sel_query);
@@ -2497,27 +2497,37 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 			incr = 0;
 		}
 		incr += 2;
+		/* definantly works but slow */
+/* 		xstrfmtcat(query, */
+/* 			   "insert into %s (%s, lft, rgt, deleted) " */
+/* 			   "values (%s, %d, %d, 2) " */
+/* 			   "on duplicate key update deleted=2, " */
+/* 			   "id=LAST_INSERT_ID(id)%s, lft=VALUES(lft), " */
+/* 			   "rgt=VALUES(rgt);" */
+/* 			   "UPDATE %s SET rgt = rgt+%d " */
+/* 			   "WHERE rgt > %d && deleted < 2;" */
+/* 			   "UPDATE %s SET lft = lft+%d " */
+/* 			   "WHERE lft > %d " */
+/* 			   "&& deleted < 2;" */
+/* 			   "UPDATE %s SET deleted = 0 " */
+/* 			   "WHERE deleted = 2;", */
+/* 			   assoc_table, cols, */
+/* 			   vals, my_left+(1), my_left+2, */
+/* 			   extra, */
+/* 			   assoc_table, 2, */
+/* 			   my_left, */
+/* 			   assoc_table, 2, */
+/* 			   my_left, */
+/* 			   assoc_table); */
 		xstrfmtcat(query,
 			   "insert into %s (%s, lft, rgt, deleted) "
 			   "values (%s, %d, %d, 2) "
 			   "on duplicate key update deleted=2, "
 			   "id=LAST_INSERT_ID(id)%s, lft=VALUES(lft), "
-			   "rgt=VALUES(rgt);"
-			   "UPDATE %s SET rgt = rgt+%d "
-			   "WHERE rgt > %d && deleted < 2;"
-			   "UPDATE %s SET lft = lft+%d "
-			   "WHERE lft > %d "
-			   "&& deleted < 2;"
-			   "UPDATE %s SET deleted = 0 "
-			   "WHERE deleted = 2;",
+			   "rgt=VALUES(rgt);",
 			   assoc_table, cols,
 			   vals, my_left+(incr-1), my_left+incr,
-			   extra,
-			   assoc_table, incr,
-			   my_left,
-			   assoc_table, incr,
-			   my_left,
-			   assoc_table);
+			   extra);
 			
 		/* definantly works but slow */
 /* 			xstrfmtcat(query, */
@@ -2621,28 +2631,28 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 	if(rc != SLURM_SUCCESS)
 		goto end_it;
 
-/* 	if(incr) { */
-/* 		char *up_query = xstrdup_printf( */
-/* 			"UPDATE %s SET rgt = rgt+%d " */
-/* 			"WHERE rgt > %d && deleted < 2;" */
-/* 			"UPDATE %s SET lft = lft+%d " */
-/* 			"WHERE lft > %d " */
-/* 			"&& deleted < 2;" */
-/* 			"UPDATE %s SET deleted = 0 " */
-/* 			"WHERE deleted = 2;", */
-/* 			assoc_table, incr, */
-/* 			my_left, */
-/* 			assoc_table, incr, */
-/* 			my_left, */
-/* 			assoc_table); */
-/* 		debug3("%d(%d) query\n%s", */
-/* 		       mysql_conn->conn, __LINE__, up_query); */
-/* 		rc = mysql_db_query(mysql_conn->acct_mysql_db, up_query); */
-/* 		xfree(up_query); */
-/* 		if(rc != SLURM_SUCCESS)  */
-/* 			error("Couldn't do update 2"); */
+	if(incr) {
+		char *up_query = xstrdup_printf(
+			"UPDATE %s SET rgt = rgt+%d "
+			"WHERE rgt > %d && deleted < 2;"
+			"UPDATE %s SET lft = lft+%d "
+			"WHERE lft > %d "
+			"&& deleted < 2;"
+			"UPDATE %s SET deleted = 0 "
+			"WHERE deleted = 2;",
+			assoc_table, incr,
+			my_left,
+			assoc_table, incr,
+			my_left,
+			assoc_table);
+		debug3("%d(%d) query\n%s",
+		       mysql_conn->conn, __LINE__, up_query);
+		rc = mysql_db_query(mysql_conn->acct_mysql_db, up_query);
+		xfree(up_query);
+		if(rc != SLURM_SUCCESS)
+			error("Couldn't do update 2");
 		
-/* 	} */
+	}
 
 end_it:
 	if(rc != SLURM_ERROR) {
