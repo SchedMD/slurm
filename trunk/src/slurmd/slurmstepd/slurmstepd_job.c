@@ -213,6 +213,7 @@ job_create(launch_tasks_request_msg_t *msg)
 	job->mem_bind_type = msg->mem_bind_type;
 	job->mem_bind = xstrdup(msg->mem_bind);
 	job->ckpt_path = xstrdup(msg->ckpt_path);
+	job->cpus_per_task = msg->cpus_per_task;
 
 	job->env     = _array_copy(msg->envc, msg->env);
 	job->eio     = eio_handle_create();
@@ -365,7 +366,8 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	job->envtp->mem_bind_type = 0;
 	job->envtp->mem_bind = NULL;
 	job->envtp->ckpt_path = NULL;
-	
+	job->cpus_per_task = msg->cpus_per_node[0];
+
 	srun = srun_info_create(NULL, NULL, NULL);
 
 	list_append(job->sruns, (void *) srun);

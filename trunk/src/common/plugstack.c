@@ -1277,6 +1277,10 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 		p2uint16 = va_arg(vargs, uint16_t *);
 		*p2uint16 = slurmd_job->cpus;
 		break;
+	case S_STEP_CPUS_PER_TASK:
+		p2uint32 = va_arg(vargs, uint32_t *);
+		*p2uint32 = slurmd_job->cpus_per_task;
+		break;
 	case S_JOB_ARGV:
 		p2int = va_arg(vargs, int *);
 		p2argv = va_arg(vargs, char ***);

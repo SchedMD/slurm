@@ -22,6 +22,7 @@ documents those changes that are of interest to users and admins.
     with MOAB.  Does nothing outside of that.
  -- Fixed issue in accounting when removing associations after they have 
     been around more than a day and then adding them back later.
+ -- Added spank_get_item support for field S_STEP_CPUS_PER_TASK.
 
 * Changes in SLURM 1.3.5
 ========================
