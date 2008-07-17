@@ -2898,7 +2898,7 @@ extern List acct_storage_p_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 		user_rec = xmalloc(sizeof(acct_user_rec_t));
 		user_rec->name = xstrdup(object);
-		user_rec->default_acct = user->default_acct;
+		user_rec->default_acct = xstrdup(user->default_acct);
 		user_rec->admin_level = user->admin_level;
 		if(user->qos_list) {
 			ListIterator new_qos_itr = 
