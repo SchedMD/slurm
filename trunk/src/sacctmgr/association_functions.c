@@ -343,6 +343,7 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 		PRINT_CLUSTER,
 		PRINT_FAIRSHARE,
 		PRINT_ID,
+		PRINT_LFT,
 		PRINT_MAXC,
 		PRINT_MAXJ,
 		PRINT_MAXN,
@@ -350,6 +351,7 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 		PRINT_PID,
 		PRINT_PNAME,
 		PRINT_PART,
+		PRINT_RGT,
 		PRINT_USER
 	};
 
@@ -397,6 +399,11 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 			field->name = xstrdup("ID");
 			field->len = 6;
 			field->print_routine = print_fields_uint;
+		} else if(!strncasecmp("LFT", object, 1)) {
+			field->type = PRINT_LFT;
+			field->name = xstrdup("LFT");
+			field->len = 6;
+			field->print_routine = print_fields_uint;
 		} else if(!strncasecmp("MaxCPUSecs", object, 4)) {
 			field->type = PRINT_MAXC;
 			field->name = xstrdup("MaxCPUSecs");
@@ -432,6 +439,11 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 			field->name = xstrdup("Partition");
 			field->len = 10;
 			field->print_routine = print_fields_str;
+		} else if(!strncasecmp("RGT", object, 1)) {
+			field->type = PRINT_RGT;
+			field->name = xstrdup("RGT");
+			field->len = 6;
+			field->print_routine = print_fields_uint;
 		} else if(!strncasecmp("User", object, 1)) {
 			field->type = PRINT_USER;
 			field->name = xstrdup("User");
@@ -499,6 +511,10 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 				field->print_routine(field, 
 						     assoc->id);
 				break;
+			case PRINT_LFT:
+				field->print_routine(field, 
+						     assoc->lft);
+				break;
 			case PRINT_MAXC:
 				field->print_routine(
 					field,
@@ -528,6 +544,10 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 			case PRINT_PART:
 				field->print_routine(field,
 						     assoc->partition);
+				break;
+			case PRINT_RGT:
+				field->print_routine(field, 
+						     assoc->rgt);
 				break;
 			case PRINT_USER:
 				field->print_routine(field, 
