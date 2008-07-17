@@ -978,3 +978,46 @@ proc is_super_user { } {
 	log_user 1
 	return $found_user
 }
+
+################################################################
+# 
+#
+# 
+################################################################
+set found(13) 1 
+send_user [info exists found(13)]
+send_user "\n"
+#
+# Use sacctmgr to create a cluster
+#
+set sadd_pid [spawn $sacctmgr -n -p list assoc format=lft,rgt cluster=clus1]
+expect {
+	-re "($number)\\|($number)\\|" {
+		set num1 $expect_out(1,string)
+		set num2 $expect_out(2,string)
+		set first [info exists found($num1)]
+		set sec [info exists found($num2)]
+		#send_user "$first=$num1 $sec=$num2\n";
+		if { $first } {
+			send_user "\nFAILURE: NO BUENO.found $num1 again\n"
+			set exit_code 1	
+		} elseif { $sec } {
+			send_user "\nFAILURE: NO BUENO.found $num2 again\n"
+			set exit_code 1	
+		} else {
+			set found($num1) 1
+			set found($num2) 1
+		}
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $sadd_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+exit;
