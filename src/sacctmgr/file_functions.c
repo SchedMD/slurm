@@ -817,7 +817,8 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 		       def_acct);
 		mod_user.default_acct = def_acct;
 		changed = 1;
-	}
+	} else
+		xfree(def_acct);
 				
 	if(user->qos_list && list_count(user->qos_list)
 	   && file_opts->qos_list && list_count(file_opts->qos_list)) {
