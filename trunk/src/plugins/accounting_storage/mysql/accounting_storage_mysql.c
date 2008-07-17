@@ -863,6 +863,8 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 			   row2[1],
 			   assoc_table, row2[2],
 			   row2[1]);
+		
+		mysql_free_result(result2);
 
 		debug3("%d(%d) query\n%s",
 		       mysql_conn->conn, __LINE__, query);
@@ -1735,10 +1737,18 @@ extern int acct_storage_p_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 
 			xstrfmtcat(vals, ", '%s'", qos_val); 		
 			xstrfmtcat(extra, ", qos='%s'", qos_val); 		
-		} else {
-			xstrfmtcat(vals, ", 'normal'"); 		
-			xstrfmtcat(extra, ", qos='normal'"); 	       
 		}
+		/* Since I don't really want to go find out which id
+		 * normal is we are not going to add it at all which
+		 * isn't a big deal since if the list is blank the user
+		 * will get it be default 
+		 */
+		/* else { */
+/* 			/\* Add normal qos to the user *\/ */
+/* 			xstrcat(cols, ", qos"); */
+/* 			xstrfmtcat(vals, ", ',0'"); 		 */
+/* 			xstrfmtcat(extra, ", qos=',0'"); 	        */
+/* 		} */
 
 		if(object->admin_level != ACCT_ADMIN_NOTSET) {
 			xstrcat(cols, ", admin_level");

@@ -338,6 +338,8 @@ extern void destroy_acct_user_rec(void *object)
 			list_destroy(acct_user->coord_accts);
 		xfree(acct_user->default_acct);
 		xfree(acct_user->name);
+		if(acct_user->qos_list)
+			list_destroy(acct_user->qos_list);
 		xfree(acct_user);
 	}
 }
@@ -355,6 +357,8 @@ extern void destroy_acct_account_rec(void *object)
 		xfree(acct_account->description);
 		xfree(acct_account->name);
 		xfree(acct_account->organization);
+		if(acct_account->qos_list)
+			list_destroy(acct_account->qos_list);
 		xfree(acct_account);
 	}
 }
@@ -425,6 +429,7 @@ extern void destroy_acct_qos_rec(void *object)
 {
 	acct_qos_rec_t *acct_qos = (acct_qos_rec_t *)object;
 	if(acct_qos) {
+		xfree(acct_qos->description);
 		xfree(acct_qos->name);
 		xfree(acct_qos);
 	}
