@@ -161,7 +161,7 @@ function displayfile()
    "MpiDefault=" + get_radio_value(document.config.mpi_default) + "<br>" +
    "#PluginDir= <br>" +
    "#PlugStackConfig= <br>" +
-   "#PrivateData=0 <br>" +
+   "#PrivateData=jobs <br>" +
    "ProctrackType=proctrack/" + get_radio_value(document.config.proctrack_type) + "<br>" +
    get_field("Prolog",document.config.prolog) + "<br>" +
    "#PropagatePrioProcess=0 <br>" +
@@ -812,6 +812,6 @@ before terminating all remaining tasks. A value of zero indicates unlimited wait
 </FORM>
 <HR>
 <P class="footer">LLNL-WEB-402631<BR>
-Last modified 1 April 2008</P>
+Last modified 17 July 2008</P>
 </BODY>
 

@@ -716,6 +716,30 @@ void inline slurm_free_will_run_response_msg(will_run_response_msg_t *msg)
         }
 }
 
+extern void
+private_data_string(uint16_t private_data, char *str, int str_len)
+{
+	if (str_len > 0)
+		str[0] = '\0';
+	if (str_len < 22) {
+		error("private_data_string: output buffer too small");
+		return;
+	}
+
+	if (private_data & PRIVATE_DATA_JOBS)
+		strcat(str, "jobs");
+	if (private_data & PRIVATE_DATA_NODES) {
+		if (str[0])
+			strcat(str, ",");
+		strcat(str, "nodes");
+	}
+	if (private_data & PRIVATE_DATA_PARTITIONS) {
+		if (str[0])
+			strcat(str, ",");
+		strcat(str, "partitions");
+	}
+}
+
 char *job_state_string(enum job_states inx)
 {
 	if (inx & JOB_COMPLETING)

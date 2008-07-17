@@ -833,7 +833,8 @@ static void _slurm_rpc_dump_nodes(slurm_msg_t * msg)
 		(unsigned int) uid);
 	lock_slurmctld(node_read_lock);
 
-	if (slurmctld_conf.private_data && !validate_super_user(uid)) {
+	if ((slurmctld_conf.private_data & PRIVATE_DATA_NODES)
+	&&  (!validate_super_user(uid))) {
 		unlock_slurmctld(node_read_lock);
 		error("Security violation, REQUEST_NODE_INFO RPC from uid=%d", uid);
 		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
@@ -882,7 +883,8 @@ static void _slurm_rpc_dump_partitions(slurm_msg_t * msg)
 	part_req_msg = (part_info_request_msg_t  *) msg->data;
 	lock_slurmctld(part_read_lock);
 
-	if (slurmctld_conf.private_data && !validate_super_user(uid)) {
+	if ((slurmctld_conf.private_data & PRIVATE_DATA_PARTITIONS)
+	&&  (!validate_super_user(uid))) {
 		unlock_slurmctld(part_read_lock);
 		debug2("Security violation, PARTITION_INFO RPC from uid=%d", uid);
 		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
@@ -928,7 +930,7 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t * msg)
 	debug2("Processing RPC: MESSAGE_EPILOG_COMPLETE uid=%u",
 		(unsigned int) uid);
 	lock_slurmctld(job_write_lock);
-	if (slurmctld_conf.private_data && !validate_super_user(uid)) {
+	if (!validate_super_user(uid)) {
 		unlock_slurmctld(job_write_lock);
 		error("Security violation, EPILOG_COMPLETE RPC from uid=%u",
 		      (unsigned int) uid);
@@ -2278,7 +2280,8 @@ static void  _slurm_rpc_node_select_info(slurm_msg_t * msg)
 	debug2("Processing RPC: REQUEST_NODE_SELECT_INFO from uid=%u",
 		(unsigned int) uid);
 	lock_slurmctld(config_read_lock);
-	if (slurmctld_conf.private_data && !validate_super_user(uid)) {
+	if ((slurmctld_conf.private_data & PRIVATE_DATA_NODES)
+	&&  (!validate_super_user(uid))) {
 		error_code = ESLURM_USER_ID_MISSING;
 		error("Security violation, NODE_SELECT_INFO RPC from uid=u",
 			(unsigned int) uid);

@@ -451,6 +451,10 @@ typedef enum select_type_plugin_info {
 #define MEM_PER_CPU  0x80000000
 #define SHARED_FORCE 0x8000
 
+#define PRIVATE_DATA_JOBS	0x0001	/* job/step data is private */
+#define PRIVATE_DATA_NODES	0x0002	/* node data is private */
+#define PRIVATE_DATA_PARTITIONS	0x0004	/* partition data is private */
+
 /*****************************************************************************\
  *	PROTOCOL DATA STRUCTURE DEFINITIONS
 \*****************************************************************************/
@@ -993,7 +997,8 @@ typedef struct slurm_ctl_conf {
 				   bluegene clusters NULL otherwise */
 	char *plugindir;	/* pathname to plugins */
 	char *plugstack;        /* pathname to plugin stack config file */
-	uint16_t private_data;	/* block viewing of other user jobs */
+	uint16_t private_data;	/* block viewing of information, 
+				 * see PRIVATE_DATA_* */
 	char *proctrack_type;	/* process tracking plugin type */
 	char *prolog;		/* pathname of job prolog */
 	uint16_t propagate_prio_process; /* 1 if process priority should

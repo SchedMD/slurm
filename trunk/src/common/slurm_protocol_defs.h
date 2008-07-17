@@ -853,6 +853,7 @@ extern char *job_state_string(enum job_states inx);
 extern char *job_state_string_compact(enum job_states inx);
 extern char *node_state_string(enum node_states inx);
 extern char *node_state_string_compact(enum node_states inx);
+extern void  private_data_string(uint16_t private_data, char *str, int str_len);
 
 #define safe_read(fd, buf, size) do {					\
 		int remaining = size;					\

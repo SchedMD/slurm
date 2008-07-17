@@ -61,6 +61,7 @@ extern long slurm_api_version (void)
 	return (long) SLURM_API_VERSION;
 }
 
+
 static char *
 _select_info(uint16_t select_type_param)
 {
@@ -109,7 +110,7 @@ static char *_task_plugin_param(uint16_t task_plugin_param)
 void slurm_print_ctl_conf ( FILE* out, 
                             slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr )
 {
-	char time_str[32];
+	char time_str[32], tmp_str[128];
 
 	if ( slurm_ctl_conf_ptr == NULL )
 		return ;
@@ -248,8 +249,9 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->plugindir);
 	fprintf(out, "PlugStackConfig         = %s\n",
 		slurm_ctl_conf_ptr->plugstack);
-	fprintf(out, "PrivateData             = %u\n",
-		slurm_ctl_conf_ptr->private_data);
+	private_data_string(slurm_ctl_conf_ptr->private_data,
+			    tmp_str, sizeof(tmp_str));
+	fprintf(out, "PrivateData             = %s\n", tmp_str);
 	fprintf(out, "ProctrackType           = %s\n",
 		slurm_ctl_conf_ptr->proctrack_type);
 	fprintf(out, "Prolog                  = %s\n", 
