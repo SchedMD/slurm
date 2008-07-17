@@ -62,7 +62,7 @@ print_header $test_id
 #
 # Use sacctmgr to create a cluster
 #
-set sadd_pid [spawn $sacctmgr $add $clu $nams=$tc1 $fs=$fs1 $mc=$mc1 $mj=$mj1 $mn=$mn1 $mw=$mw1]
+set sadd_pid [spawn $sacctmgr add $clu $nams=$tc1 $fs=$fs1 $mc=$mc1 $mj=$mj1 $mn=$mn1 $mw=$mw1]
 expect {
 	-re "Adding Cluster" {
 		incr amatches
@@ -119,7 +119,10 @@ if {$amatches != 10} {
 	send_user "\nFAILURE:  sacctmgr had a problem adding clusters\n"
 	set exit_code 1
 }
-
+if { ![check_acct_associations "cluster='$tc1'"] } {
+	send_user "\nFAILURE:  Our associations don't line up\n"
+	set exit_code 1
+}
 #
 # Use sacctmgr to delete the test cluster
 #

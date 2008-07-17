@@ -988,15 +988,18 @@ proc check_acct_associations { options } {
         global sacctmgr number
 
         set rc 1
-     	set found(13) 1 	     
-     	send_user [info exists found(13)]
-     	send_user "\n"
+	set min -1
+	set max -1
+
      	#
      	# Use sacctmgr to check associations
      	#
      	set s_pid [spawn $sacctmgr -n -p list assoc format=lft,rgt $options]
      	expect {
 	       -re "($number)\\|($number)\\|" {
+	       	      # Here we are checking if we have duplicates and 
+		      # setting up an array to check for holes later
+			      
 	    	      set num1 $expect_out(1,string)
 		      set num2 $expect_out(2,string)
 		      set first [info exists found($num1)]
@@ -1011,6 +1014,12 @@ proc check_acct_associations { options } {
 		      } else {
 			     set found($num1) 1
 			     set found($num2) 1
+			     if { $min == -1 || $min > $num1 } {
+			     	    set min $num1
+			     }
+			     if { $max == -1 || $max < $num2 } {
+			     	    set max $num2
+			     }
 		      }
 		      exp_continue
  	       }
@@ -1023,5 +1032,13 @@ proc check_acct_associations { options } {
 		      wait
 	       }
         }
+
+      	# Here we are checking for holes in the list from above
+	for {set inx $min} {$inx < $max} {incr inx} {
+	       if { ![info exists found($inx)] } {
+		      send_user "\nFAILURE: No index at $inx\n"
+		      set rc 1	
+	       }
+	}
 	return $rc
 }
