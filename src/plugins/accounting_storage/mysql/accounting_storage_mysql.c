@@ -2415,7 +2415,17 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 			xfree(extra);
 			continue;
 		}
-		
+
+		/* This code speeds up the add process quite a bit
+		 * here we are only doing an update when we are done
+		 * adding to a specific group (cluster/account) other
+		 * than that we are adding right behind what we were
+		 * so just total them up and then do one update
+		 * instead of the slow ones that require an update
+		 * every time.  There is a incr check outside of the
+		 * loop to catch everything on the last spin of the
+		 * while. 
+		 */ 
 		if(!old_parent || !old_cluster
 		   || strcasecmp(parent, old_parent) 
 		   || strcasecmp(object->cluster, old_cluster)) {
