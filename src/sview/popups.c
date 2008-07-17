@@ -214,7 +214,7 @@ static GtkTreeStore *_local_create_treestore_2cols(GtkWidget *popup,
 static void _layout_ctl_conf(GtkTreeStore *treestore,
 			     slurm_ctl_conf_info_msg_t *slurm_ctl_conf_ptr)
 {
-	char temp_str[32];
+	char temp_str[32], temp_str2[128];
 	int update = 0;
 	GtkTreeIter iter;
 	
@@ -379,8 +379,9 @@ static void _layout_ctl_conf(GtkTreeStore *treestore,
 	add_display_treestore_line(update, treestore, &iter, 
 				   "PlugStackConfig",
 				   slurm_ctl_conf_ptr->plugstack);
-	snprintf(temp_str, sizeof(temp_str), "%u", 
-		 slurm_ctl_conf_ptr->private_data);
+	private_data_string(slurm_ctl_conf_ptr->private_data, 
+			    temp_str2, sizeof(temp_str2));
+	snprintf(temp_str, sizeof(temp_str), "%s", temp_str2);
 	add_display_treestore_line(update, treestore, &iter, 
 				   "PrivateData",
 				   temp_str);

@@ -190,7 +190,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"MpiDefault", S_P_STRING},
 	{"PluginDir", S_P_STRING},
 	{"PlugStackConfig", S_P_STRING},
-	{"PrivateData", S_P_UINT16},
+	{"PrivateData", S_P_STRING},
 	{"ProctrackType", S_P_STRING},
 	{"Prolog", S_P_STRING},
 	{"PropagatePrioProcess", S_P_UINT16},
@@ -1817,7 +1817,17 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	    && (!strcmp(conf->proctrack_type,"proctrack/linuxproc")))
 		fatal("proctrack/linuxproc is incompatable with switch/elan");
 
-	s_p_get_uint16(&conf->private_data, "PrivateData", hashtbl);
+	if (s_p_get_string(&temp_str, "PrivateData", hashtbl)) {
+		if (strstr(temp_str, "job"))
+			conf->private_data |= PRIVATE_DATA_JOBS;
+		if (strstr(temp_str, "node"))
+			conf->private_data |= PRIVATE_DATA_NODES;
+		if (strstr(temp_str, "partition"))
+			conf->private_data |= PRIVATE_DATA_PARTITIONS;
+		if (strstr(temp_str, "all"))
+			conf->private_data = 0xffff;
+		xfree(temp_str);
+	}
 
 	s_p_get_string(&conf->prolog, "Prolog", hashtbl);
 

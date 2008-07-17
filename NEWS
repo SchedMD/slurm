@@ -23,6 +23,9 @@ documents those changes that are of interest to users and admins.
  -- Fixed issue in accounting when removing associations after they have 
     been around more than a day and then adding them back later.
  -- Added spank_get_item support for field S_STEP_CPUS_PER_TASK.
+ -- Convert configuration parameter PrivateData from on/off flag to have
+    separate flags for job, partition, and node data. See "man slurm.conf"
+    for details.
 
 * Changes in SLURM 1.3.5
 ========================

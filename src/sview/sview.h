@@ -70,6 +70,7 @@
 #include "src/common/macros.h"
 #include "src/plugins/select/bluegene/block_allocator/block_allocator.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_defs.h"
 
 #include "src/plugins/select/bluegene/wrap_rm_api.h"
 

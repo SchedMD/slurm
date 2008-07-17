@@ -604,10 +604,21 @@ on SPANK plugins, see the \fBspank\fR(8) manual.
 
 .TP
 \fBPrivateData\fR
-If non-zero then users are unable to view jobs or job steps belonging 
-to other users (except for SlurmUser or root, who can view all jobs).
-The default value is "0", permitting any user to view any jobs or 
-job steps.
+This controls what type of information is hidden from regular users.
+By default, all information is visible to all users.
+User \fBSlurmUser\fR and root can always view all information.
+Multiple values may be specified with a comma separator.
+Acceptable values include:
+.RS
+.TP
+\fBjobs\fR prevents users from viewing jobs or job steps belonging
+to other users.
+.TP
+\fBnodes\fR prevents users from viewing node state information.
+.TP
+\fBpartitions\fR prevents users from viewing partition state information.
+.RE
+
 
 .TP
 \fBProctrackType\fR

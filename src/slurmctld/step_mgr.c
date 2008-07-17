@@ -1132,7 +1132,7 @@ extern int pack_ctld_job_step_info_response_msg(uint32_t job_id,
 			    (job_ptr->part_ptr->hidden))
 				continue;
 
-			if (slurmctld_conf.private_data
+			if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS)
 			&&  (job_ptr->user_id != uid) 
 			&&  !validate_super_user(uid))
 				continue;
@@ -1156,7 +1156,7 @@ extern int pack_ctld_job_step_info_response_msg(uint32_t job_id,
 		    (job_ptr->part_ptr) && 
 		    (job_ptr->part_ptr->hidden))
 			job_ptr = NULL;
-		else if (slurmctld_conf.private_data
+		else if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS)
 		&&  (job_ptr->user_id != uid) && !validate_super_user(uid))
 			job_ptr = NULL;
 
@@ -1180,7 +1180,7 @@ extern int pack_ctld_job_step_info_response_msg(uint32_t job_id,
 		&&  (job_ptr->part_ptr) 
 		&&  (job_ptr->part_ptr->hidden))
 			job_ptr = NULL;
-		else if (slurmctld_conf.private_data
+		else if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS)
 		&&  (job_ptr->user_id != uid) && !validate_super_user(uid))
 			job_ptr = NULL;
 
