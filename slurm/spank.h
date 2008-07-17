@@ -62,6 +62,8 @@ typedef int (spank_f) (spank_t spank, int ac, char *argv[]);
  *
  *   slurmd -> slurmstepd
  *               `-> init ()
+ *                -> process spank options
+ *                -> init_post_opt ()
  *               + drop privileges (initgroups(), seteuid(), chdir()) 
  *               `-> user_init ()  
  *               + for each task
@@ -83,6 +85,7 @@ typedef int (spank_f) (spank_t spank, int ac, char *argv[]);
  */
 
 extern spank_f slurm_spank_init;
+extern spank_f slurm_spank_init_post_opt;
 extern spank_f slurm_spank_local_user_init;
 extern spank_f slurm_spank_user_init;
 extern spank_f slurm_spank_task_init;
