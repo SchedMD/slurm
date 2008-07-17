@@ -20,6 +20,8 @@ documents those changes that are of interest to users and admins.
     'sacctmgr add qos'.  They are no longer an enum.  If none are defined
     Normal will be the QOS for everything.  Right now this is only for use 
     with MOAB.  Does nothing outside of that.
+ -- Fixed issue in accounting when removing associations after they have 
+    been around more than a day and then adding them back later.
 
 * Changes in SLURM 1.3.5
 ========================
