@@ -700,12 +700,13 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
                 else if (arg.alloc_lps[host_index] == 0)
 			error("cons_res: zero processors allocated to step");
                 if (tasks_to_launch > arg.alloc_lps[host_index]) {
-			error("cons_res: More than one tasks per logical "
+			/* This is expected with the --overcommit option */
+			verbose("cons_res: More than one tasks per logical "
 				"processor (%d > %u) on host [%u.%u %ld %s] ",
 				tasks_to_launch, arg.alloc_lps[host_index], 
 				arg.jobid, arg.stepid, (long) arg.uid, 
 				arg.hostlist);
-			error(" cons_res: Use task/affinity plug-in to bind "
+			verbose("cons_res: Use task/affinity plug-in to bind "
 				"the tasks to the allocated resources");
 		}
         }

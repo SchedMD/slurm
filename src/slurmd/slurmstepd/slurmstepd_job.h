@@ -116,6 +116,7 @@ typedef struct slurmd_job {
 	uint32_t       nprocs; /* total number of processes in current job  */
 	uint32_t       nodeid; /* relative position of this node in job     */
 	uint32_t       ntasks; /* number of tasks on *this* node            */
+	uint32_t       cpus_per_task;	/* number of cpus desired per task  */
 	uint32_t       debug;  /* debug level for job slurmd                */
 	uint32_t       job_mem;  /* MB of memory reserved for the job       */
 	uint32_t       task_mem; /* MB of memory reserved for each task     */ 

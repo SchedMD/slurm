@@ -512,11 +512,7 @@ static int _make_step_cred(struct step_record *step_rec,
 	cred_arg.task_mem = step_rec->mem_per_task;
 	cred_arg.hostlist = step_rec->step_layout->node_list;
 	
-	if (job_ptr->details->shared == 0)
-		cred_arg.alloc_lps_cnt = 0;
-	else
-		cred_arg.alloc_lps_cnt = job_ptr->alloc_lps_cnt;
-
+	cred_arg.alloc_lps_cnt = job_ptr->alloc_lps_cnt;
 	if ((cred_arg.alloc_lps_cnt > 0) &&
 	    bit_equal(job_ptr->node_bitmap, step_rec->step_node_bitmap)) {
 		cred_arg.alloc_lps = xmalloc(cred_arg.alloc_lps_cnt *
@@ -544,8 +540,10 @@ static int _make_step_cred(struct step_record *step_rec,
 				break;
 		}
 		cred_arg.alloc_lps_cnt = step_inx + 1;
-        } else
+        } else {
+		error("No resources allocated to job %u", job_ptr->job_id);
 		cred_arg.alloc_lps = NULL;
+	}
 
 	*slurm_cred = slurm_cred_create(slurmctld_config.cred_ctx, 
 			&cred_arg);
