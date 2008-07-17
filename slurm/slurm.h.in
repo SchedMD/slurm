@@ -213,7 +213,7 @@ enum job_state_reason {
 /* Reasons for job to be pending */
 	WAIT_NO_REASON = 0,	/* not set or job not pending */
 	WAIT_PRIORITY,		/* higher priority jobs exist */
-	WAIT_DEPENDENCY,	/* depedent job has not completed */
+	WAIT_DEPENDENCY,	/* dependent job has not completed */
 	WAIT_RESOURCES,		/* required resources not available */
 	WAIT_PART_NODE_LIMIT,	/* request exceeds partition node limit */
 	WAIT_PART_TIME_LIMIT,	/* request exceeds partition time limit */
