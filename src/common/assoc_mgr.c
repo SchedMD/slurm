@@ -324,14 +324,14 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 				       "nonuser association");
 				continue;
 			} else if(assoc->uid != found_assoc->uid) {
-				debug3("not the right user %u != %u",
+				debug4("not the right user %u != %u",
 				       assoc->uid, found_assoc->uid);
 				continue;
 			}
 			
 			if(found_assoc->acct 
 			   && strcasecmp(assoc->acct, found_assoc->acct)) {
-				debug3("not the right account %s != %s",
+				debug4("not the right account %s != %s",
 				       assoc->acct, found_assoc->acct);
 				continue;
 			}
@@ -340,7 +340,7 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 			if(!local_cluster_name && found_assoc->cluster
 			   && strcasecmp(assoc->cluster,
 					 found_assoc->cluster)) {
-				debug3("not the right cluster");
+				debug4("not the right cluster");
 				continue;
 			}
 	
@@ -522,11 +522,11 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 				continue;
 			} else {
 				if(!object->user && rec->user) {
-					debug3("we are looking for a "
+					debug4("we are looking for a "
 					       "nonuser association");
 					continue;
 				} else if(object->uid != rec->uid) {
-					debug3("not the right user");
+					debug4("not the right user");
 					continue;
 				}
 				
@@ -534,7 +534,7 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 				   && (!rec->acct 
 				       || strcasecmp(object->acct,
 						     rec->acct))) {
-					debug3("not the right account");
+					debug4("not the right account");
 					continue;
 				}
 				
@@ -543,7 +543,7 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 				   && (!rec->cluster
 				       || strcasecmp(object->cluster,
 						     rec->cluster))) {
-					debug3("not the right cluster");
+					debug4("not the right cluster");
 					continue;
 				}
 				
@@ -551,7 +551,7 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 				   && (!rec->partition 
 				       || strcasecmp(object->partition, 
 						     rec->partition))) {
-					debug3("not the right partition");
+					debug4("not the right partition");
 					continue;
 				}
 				break;
@@ -709,6 +709,7 @@ extern int assoc_mgr_update_local_users(acct_update_object_t *update)
 				object->uid = NO_VAL;
 
 			list_append(local_user_list, object);
+			break;
 		case ACCT_REMOVE_USER:
 			if(!rec) {
 				//rc = SLURM_ERROR;
@@ -775,6 +776,7 @@ extern int assoc_mgr_update_local_qos(acct_update_object_t *update)
 				break;
 			}
 			list_append(local_qos_list, object);
+			break;
 		case ACCT_REMOVE_QOS:
 			if(!rec) {
 				//rc = SLURM_ERROR;
