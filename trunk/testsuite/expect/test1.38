@@ -85,13 +85,13 @@ expect {
 		exec $bin_kill -INT $srun_pid
 		exp_continue
 	}
-	-re "srun: interrupt" {
-		incr matches
-		exp_continue
-	}
 	-re "srun: task0: running" {
 		incr matches
 		cancel_job $job_id
+		exp_continue
+	}
+	-re "srun: interrupt" {
+		incr matches
 		exp_continue
 	}
 	timeout {
