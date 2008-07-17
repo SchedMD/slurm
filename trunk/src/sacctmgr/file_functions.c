@@ -1161,10 +1161,10 @@ static int _print_file_sacctmgr_assoc_childern(FILE *fd,
 			line = xstrdup_printf(
 				"User - %s", sacctmgr_assoc->sort_name);
 			if(user_rec) {
-				xstrfmtcat(line, ":DefaultAccount=%s",
+				xstrfmtcat(line, ":DefaultAccount='%s'",
 					   user_rec->default_acct);
 				if(user_rec->admin_level > ACCT_ADMIN_NONE)
-					xstrfmtcat(line, ":AdminLevel=%s",
+					xstrfmtcat(line, ":AdminLevel='%s'",
 						   acct_admin_level_str(
 							   user_rec->
 							   admin_level));
@@ -1179,7 +1179,8 @@ static int _print_file_sacctmgr_assoc_childern(FILE *fd,
 					}
 					temp_char = get_qos_complete_str(
 						qos_list, user_rec->qos_list);
-					xstrfmtcat(line, ":QOS=%s", temp_char);
+					xstrfmtcat(line, ":QOS='%s'",
+						   temp_char);
 					xfree(temp_char);
 				}
 
@@ -1202,7 +1203,7 @@ static int _print_file_sacctmgr_assoc_childern(FILE *fd,
 							xstrfmtcat(
 								line,
 								":Coordinator"
-								"=%s",
+								"='%s",
 								coord->name);
 							first_coord = 0;
 						} else {
@@ -1210,6 +1211,8 @@ static int _print_file_sacctmgr_assoc_childern(FILE *fd,
 								   coord->name);
 						}				
 					}
+					if(!first_coord)
+						xstrcat(line, "'");
 					list_iterator_destroy(itr2);
 				}
 			}
