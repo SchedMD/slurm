@@ -125,6 +125,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 		end = parse_option_end(argv[i]);
 		if (!end && !strncasecmp (argv[i], "Tree", 4)) {
 			tree_display = 1;
+		} else if (!end && !strncasecmp (argv[i], "WithDeleted", 5)) {
+			association_cond->with_deleted = 1;
 		} else if(!end && !strncasecmp(argv[i], "where", 5)) {
 			continue;
 		} else if(!end || !strncasecmp (argv[i], "Id", 1)
