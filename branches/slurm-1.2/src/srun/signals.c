@@ -68,7 +68,7 @@
  */
 static int srun_sigarray[] = {
 	SIGINT,  SIGQUIT, /*SIGTSTP,*/ SIGCONT, SIGTERM,
-	SIGALRM, SIGUSR1, SIGUSR2, /*SIGPIPE,*/ 0
+	SIGALRM, SIGUSR1, SIGUSR2, SIGPIPE, 0
 };
 
 /* 
