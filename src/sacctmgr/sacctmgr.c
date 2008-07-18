@@ -628,7 +628,8 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
      version                  display tool version number.                 \n\
      !!                       Repeat the last command entered.             \n\
                                                                            \n\
-  <ENTITY> may be \"cluster\", \"account\", \"user\", of \"coordinator\".  \n\
+  <ENTITY> may be \"account\", \"association\", \"cluster\",               \n\
+                  \"coordinator\", \"qos\", \"transaction\", or \"user\".  \n\
                                                                            \n\
   <SPECS> are different for each command entity pair.                      \n\
        list account       - Clusters=, Descriptions=, Format=, Names=,     \n\
@@ -655,6 +656,16 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             (where options) Names=                         \n\
        delete cluster     - Names=                                         \n\
                                                                            \n\
+       add coordinator    - Accounts=, and Names=                          \n\
+       delete coordinator - Accounts=, and Names=                          \n\
+                                                                           \n\
+       list qos           - Descriptions=, Ids=, Names=, and WithDeleted   \n\
+       add qos            - Description=, and Names=                       \n\
+       delete qos         - Descriptions=, Ids=, and Names=                \n\
+                                                                           \n\
+       list transactions  - Actor=, EndTime,                               \n\
+                            Format=, ID=, and Start=                       \n\
+                                                                           \n\
        list user          - AdminLevel=, DefaultAccounts=, Format=, Names=,\n\
                             QosLevel=, and WithAssocs                      \n\
        add user           - Accounts=, AdminLevel=, Clusters=,             \n\
@@ -670,8 +681,24 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
        delete user        - Accounts=, AdminLevel=, Clusters=,             \n\
                             DefaultAccounts=, and Names=                   \n\
                                                                            \n\
-       add coordinator    - Accounts=, and Names=                          \n\
-       delete coordinator - Accounts=, and Names=                          \n\
+  Format options are different for listing each entity pair.               \n\
+                                                                           \n\
+       Account            - Account, Cluster, CoordinatorList,             \n\
+                            Description, Organization, QOS, QOSRAW         \n\
+                                                                           \n\
+       Association        - Account, Cluster, Fairshare, ID, LFT,          \n\
+                            MaxCPUSecs, MaxJobs, MaxNodes, MaxWall,        \n\
+                            ParentID, ParentName, Partition, RGT, User     \n\
+                                                                           \n\
+       Cluster            - Cluster, ControlHost, ControlPort, Fairshare   \n\
+                            MaxCPUSecs, MaxJobs, MaxNodes, MaxWall         \n\
+                                                                           \n\
+       QOS                - Description, ID, Name                          \n\
+                                                                           \n\
+       Transactions       - Action, Actor, ID, Info, TimeStamp, Where      \n\
+                                                                           \n\
+       User               - Account, AdminLevel, Cluster, CoordinatorList, \n\
+                            DefaultAccount, QOS, QOSRAW, User              \n\
                                                                            \n\
                                                                            \n\
   All commands entitys, and options are case-insensitive.               \n\n");
