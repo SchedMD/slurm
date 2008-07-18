@@ -1593,7 +1593,7 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_boolean((bool *) &conf->enforce_part_limits, 
 			     "EnforcePartLimits", hashtbl))
-		conf->disable_root_jobs = DEFAULT_ENFORCE_PART_LIMITS;
+		conf->enforce_part_limits = DEFAULT_ENFORCE_PART_LIMITS;
 
 	s_p_get_string(&conf->epilog, "Epilog", hashtbl);
 
