@@ -180,6 +180,21 @@ The \fIClusterName\fR parameter in the \fIslurm.conf\fR configuration
 file, used to differentiate accounts from on different machines. 
 
 .TP
+\fIcoordinator\fR
+A special priviaged user usually an account manager or such that can
+add users or sub accounts to the account they are coordinator over.
+This should be a trusted person since they can change limits on
+account and user associations inside their realm.
+ 
+.TP
+\fIqos\fR
+Quality of Service (For use with MOAB only).
+
+.TP
+\fItransaction\fR
+List of transactions that have occured during a given time period.
+
+.TP
 \fIuser\fR
 The login name.
 
@@ -188,6 +203,7 @@ The login name.
 .TP
 \fICluster\fP=<cluster>
 Specific cluster to add account to.  Default is all in system.
+.TP
 \fIDescription\fP=<description>
 An arbitrary string describing an account.
 .TP
@@ -278,6 +294,24 @@ To clear a previously set value use the modify command with a new value of \-1.
 Quality of Service jobs are to run at for this account.  Now consisting
 of Normal, Standby, Expedite, and Exempt.
 This is overridden if set directly on an account or user. 
+
+.TP
+\fBSPECIFICATIONS FOR COORDINATOR\fR
+.TP
+\fIAccountsfP=<comma separated list of account names>
+Account name to add this user as a coordinator to.
+.TP
+\fINames\fP=<comma separated list of user names>
+Names of coordinators.
+
+.TP
+\fBSPECIFICATIONS FOR QOS\fR
+.TP
+\fIDescription\fP=<description>
+An arbitrary string describing an account.
+.TP
+\fINames\fP=<qos>
+Names of qos.
 
 .TP
 \fBSPECIFICATIONS FOR USERS\fR
