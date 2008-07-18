@@ -212,7 +212,7 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 			xfree(req);
 			return NULL;
 		}
-		req->alloc_resp_hostname = listen->hostname;
+		/* req->alloc_resp_hostname is set by slurmctld */
 		req->alloc_resp_port = listen->port;
 	}
 
@@ -560,8 +560,7 @@ static listen_t *_create_allocation_response_socket(char *interface_hostname)
 		return NULL;
 
 	/* port "0" lets the operating system pick any port */
-	slurm_set_addr(&listen->address, 0, interface_hostname);
-	if ((listen->fd = slurm_init_msg_engine(&listen->address)) < 0) {
+	if ((listen->fd = slurm_init_msg_engine_port(0)) < 0) {
 		error("slurm_init_msg_engine_port error %m");
 		return NULL;
 	}
@@ -613,6 +612,9 @@ _handle_msg(slurm_msg_t *msg, resource_allocation_response_msg_t **resp)
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
 			*resp = msg->data;
 			rc = 1;
+			break;
+		case SRUN_JOB_COMPLETE:
+			info("Job has been cancelled");
 			break;
 		default:
 			error("received spurious message type: %d\n",
