@@ -28,6 +28,7 @@ documents those changes that are of interest to users and admins.
  -- Convert configuration parameter PrivateData from on/off flag to have
     separate flags for job, partition, and node data. See "man slurm.conf"
     for details.
+ -- Fix bug, failed to load DisableRootJobs configuration parameter.
  -- Altered sacctmgr to always return a non-zero exit code on error and send 
     error messages to stderr.
 
