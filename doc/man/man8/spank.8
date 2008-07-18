@@ -1,4 +1,4 @@
-.TH "SPANK" "8" "May 2006" "SPANK" "SLURM plug\-in architecture for Node and job (K)control"
+.TH "SPANK" "8" "Jul 2008" "SPANK" "SLURM plug\-in architecture for Node and job (K)control"
 .SH "NAME"
 \fBSPANK\fR \- SLURM Plug\-in Architecture for Node and job (K)control 
 
@@ -34,9 +34,17 @@ Plugins may query the context in which they are running with the
 launch. A plugin may define the following functions:
 .TP 2
 \fBslurm_spank_init\fR 
-Called just after plugins are loaded. In remote context, this is
-just after job step is initialized. For local context, this is before
-user options are processed.
+Called just after plugins are loaded. In remote context, this is just
+after job step is initialized. This function is called before any plugin
+option processing.
+.TP
+\fBslurm_spank_init_post_opt\fR
+Called at the same point as \fBslurm_spank_init\fR, but after all
+user options to the plugin have been processed. The reason that the
+\fBinit\fR and \fBinit_post_opt\fR callbacks are separated is so that
+plugins can process system-wide options specified in plugstack.conf in
+the \fBinit\fR callback, then process user options, and finaly take some
+action in \fBslurm_spank_init_post_opt\fR if necessary.
 .TP
 \fBslurm_spank_local_user_init\fR
 Called in local (\fBsrun\fR or \fBsbatch\fR) context only after all 
