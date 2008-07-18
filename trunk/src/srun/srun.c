@@ -120,6 +120,7 @@ static int   _become_user (void);
 static int   _call_spank_local_user (srun_job_t *job);
 static void  _define_symbols(void);
 static void  _handle_intr();
+static void  _handle_pipe(int signo);
 static void  _handle_signal(int signo);
 static void  _print_job_information(resource_allocation_response_msg_t *resp);
 static void  _pty_restore(void);
@@ -241,11 +242,6 @@ int srun(int ac, char **av)
 
 		if (!job || create_job_step(job) < 0)
 			exit(1);
-		/* ignore sigpipe for steps.  This is already done
-		 * when allocating nodes elsewhere.
-		 */
-		xsignal(SIGPIPE, ignore_signal);
-
 	} else {
 		got_alloc = 1;
 		/* Combined job allocation and job step launch */
@@ -1080,6 +1076,16 @@ static void _handle_intr()
 	}
 }
 
+static void _handle_pipe(int signo)
+{
+	static int ending = 0;
+
+	if(ending)
+		return;
+	ending = 1;
+	slurm_step_launch_abort(job->step_ctx);
+}
+
 static void _handle_signal(int signo)
 {
 	debug2("got signal %d", signo);
@@ -1116,7 +1122,7 @@ static int _setup_signals()
 {
 	int sigarray[] = {
 		SIGINT,  SIGQUIT, /*SIGTSTP,*/ SIGCONT, SIGTERM,
-		SIGALRM, SIGUSR1, SIGUSR2, /* SIGPIPE,*/ 0
+		SIGALRM, SIGUSR1, SIGUSR2, /*SIGPIPE,*/ 0
 	};
 	int rc = SLURM_SUCCESS, i=0, signo;
 
@@ -1125,6 +1131,10 @@ static int _setup_signals()
 
 	while ((signo = sigarray[i++])) 
 		xsignal(signo, _handle_signal);
+	/* special case for SIGPIPE since we don't want to print stuff
+	 * and get into a locked up state
+	 */
+	xsignal(SIGPIPE, _handle_pipe);
 
 	return rc;
 }
