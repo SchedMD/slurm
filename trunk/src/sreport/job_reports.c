@@ -225,7 +225,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 					argv[i]+end);
 			set = 1;
 		} else {
-			printf(" Unknown condition: %s\n"
+			exit_code=1;
+			fprintf(stderr, " Unknown condition: %s\n"
 			       "Use keyword set to modify value\n", argv[i]);
 		}
 	}
@@ -251,7 +252,9 @@ static int _setup_print_fields_list(List format_list)
 	char *object = NULL;
 
 	if(!format_list || !list_count(format_list)) {
-		printf(" error: we need a format list to set up the print.\n");
+		exit_code=1;
+		fprintf(stderr, 
+			" We need a format list to set up the print.\n");
 		return SLURM_ERROR;
 	}
 
@@ -297,7 +300,8 @@ static int _setup_print_fields_list(List format_list)
 			field->len = 9;
 			field->print_routine = print_fields_str;
 		} else {
-			printf("Unknown field '%s'\n", object);
+			exit_code=1;
+			fprintf(stderr, " Unknown field '%s'\n", object);
 			xfree(field);
 			continue;
 		}
@@ -317,8 +321,9 @@ static int _setup_grouping_print_fields_list(List grouping_list)
 	uint32_t size = 0;
 
 	if(!grouping_list || !list_count(grouping_list)) {
-		printf(" error: we need a grouping list to "
-		       "set up the print.\n");
+		exit_code=1;
+		fprintf(stderr, " We need a grouping list to "
+			"set up the print.\n");
 		return SLURM_ERROR;
 	}
 
@@ -402,7 +407,8 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 
 	job_list = jobacct_storage_g_get_jobs_cond(db_conn, job_cond);
 	if(!job_list) {
-		printf(" Problem with job query.\n");
+		exit_code=1;
+		fprintf(stderr, " Problem with job query.\n");
 		goto end_it;
 	}
 

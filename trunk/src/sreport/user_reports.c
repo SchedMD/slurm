@@ -182,7 +182,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 			assoc_cond->usage_start = parse_time(argv[i]+end);
 			set = 1;
 		} else {
-			printf(" Unknown condition: %s\n"
+			exit_code=1;
+			fprintf(stderr, " Unknown condition: %s\n"
 			       "Use keyword set to modify value\n", argv[i]);
 		}
 	}
@@ -207,7 +208,9 @@ static int _setup_print_fields_list(List format_list)
 	char *object = NULL;
 
 	if(!format_list || !list_count(format_list)) {
-		printf(" error: we need a format list to set up the print.\n");
+		exit_code=1;
+		fprintf(stderr, 
+			" We need a format list to set up the print.\n");
 		return SLURM_ERROR;
 	}
 
@@ -246,7 +249,8 @@ static int _setup_print_fields_list(List format_list)
 				field->len = 10;
 			field->print_routine = sreport_print_time;
 		} else {
-			printf("Unknown field '%s'\n", object);
+			exit_code=1;
+			fprintf(stderr, " Unknown field '%s'\n", object);
 			xfree(field);
 			continue;
 		}
@@ -291,7 +295,8 @@ extern int user_top(int argc, char *argv[])
 
 	user_list = acct_storage_g_get_users(db_conn, user_cond);
 	if(!user_list) {
-		printf(" Problem with user query.\n");
+		exit_code=1;
+		fprintf(stderr, " Problem with user query.\n");
 		goto end_it;
 	}
 

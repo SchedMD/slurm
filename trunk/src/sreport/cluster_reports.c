@@ -99,7 +99,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 			cluster_cond->usage_start = parse_time(argv[i]+end);
 			set = 1;
 		} else {
-			printf(" Unknown condition: %s\n"
+			exit_code=1;
+			fprintf(stderr," Unknown condition: %s\n"
 			       "Use keyword set to modify value\n", argv[i]);
 		}
 	}
@@ -124,7 +125,9 @@ static int _setup_print_fields_list(List format_list)
 	char *object = NULL;
 
 	if(!format_list || !list_count(format_list)) {
-		printf(" error: we need a format list to set up the print.\n");
+		exit_code=1;
+			fprintf(stderr, " we need a format list "
+				"to set up the print.\n");
 		return SLURM_ERROR;
 	}
 
@@ -193,7 +196,8 @@ static int _setup_print_fields_list(List format_list)
 				field->len = 9;
 			field->print_routine = sreport_print_time;
 		} else {
-			printf("Unknown field '%s'\n", object);
+			exit_code=1;
+			fprintf(stderr, " Unknown field '%s'\n", object);
 			xfree(field);
 			continue;
 		}
@@ -218,7 +222,8 @@ static List _get_cluster_list(int argc, char *argv[], uint32_t *total_time,
 	
 	cluster_list = acct_storage_g_get_clusters(db_conn, cluster_cond);
 	if(!cluster_list) {
-		printf(" Problem with cluster query.\n");
+		exit_code=1;
+		fprintf(stderr, " Problem with cluster query.\n");
 		return NULL;
 	}
 
