@@ -82,7 +82,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 			if(format_list)
 				slurm_addto_char_list(format_list, argv[i]+end);
 		} else {
-			printf(" Unknown condition: %s\n", argv[i]);
+			exit_code=1;
+			fprintf(stderr, " Unknown condition: %s\n", argv[i]);
 		}
 	}
 	(*start) = i;
@@ -122,7 +123,8 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 	destroy_acct_txn_cond(txn_cond);
 
 	if(!txn_list) {
-		printf(" Problem with query.\n");
+		exit_code=1;
+		fprintf(stderr, " Problem with query.\n");
 		list_destroy(format_list);
 		return SLURM_ERROR;
 	}
@@ -165,7 +167,8 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 			field->len = 20;
 			field->print_routine = print_fields_str;
 		} else {
-			printf("Unknown field '%s'\n", object);
+			exit_code=1;
+			fprintf(stderr, " Unknown field '%s'\n", object);
 			xfree(field);
 			continue;
 		}

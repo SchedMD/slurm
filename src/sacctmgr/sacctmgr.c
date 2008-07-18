@@ -481,7 +481,7 @@ static void _add_it (int argc, char *argv[])
 		fprintf(stderr, "\"Cluster\", or \"QOS\"\n");
 	}
 	
-	if (error_code) {
+	if (error_code == SLURM_ERROR) {
 		exit_code = 1;
 	}
 }
@@ -516,7 +516,7 @@ static void _show_it (int argc, char *argv[])
 		fprintf(stderr, "\"Cluster\", or \"QOS\"\n");
 	} 
 	
-	if (error_code) {
+	if (error_code == SLURM_ERROR) {
 		exit_code = 1;
 	}
 }
@@ -546,7 +546,7 @@ static void _modify_it (int argc, char *argv[])
 		fprintf(stderr, "or \"Cluster\"\n");
 	}
 
-	if (error_code) {
+	if (error_code == SLURM_ERROR) {
 		exit_code = 1;
 	}
 }
@@ -579,7 +579,7 @@ static void _delete_it (int argc, char *argv[])
 		fprintf(stderr, "\"Cluster\", or \"QOS\"\n");
 	}
 	
-	if (error_code) {
+	if (error_code == SLURM_ERROR) {
 		exit_code = 1;
 	}
 }
