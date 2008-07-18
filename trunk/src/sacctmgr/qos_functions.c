@@ -161,15 +161,20 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 		}		
 	}
 
-	if(!list_count(name_list)) {
+	if(exit_code) {
+		list_destroy(name_list);
+		xfree(description);
+		return SLURM_ERROR;
+	} else if(!list_count(name_list)) {
 		list_destroy(name_list);
 		xfree(description);
 		exit_code=1;
 		fprintf(stderr, " Need name of qos to add.\n"); 
 		return SLURM_SUCCESS;
-	} else {
-		local_qos_list = acct_storage_g_get_qos(db_conn, NULL);
-	}
+	} 
+
+
+	local_qos_list = acct_storage_g_get_qos(db_conn, NULL);
 
 	if(!local_qos_list) {
 		exit_code=1;
@@ -180,8 +185,6 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 		return SLURM_ERROR;
 	}
 
-
-		
 	qos_list = list_create(destroy_acct_qos_rec);
 
 	itr = list_iterator_create(name_list);
@@ -270,18 +273,14 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 
 	_set_cond(&i, argc, argv, qos_cond, format_list);
 
-	if(!list_count(format_list)) {
+	if(exit_code) {
+		destroy_acct_txn_cond(qos_cond);
+		list_destroy(format_list);		
+		return SLURM_ERROR;
+	} else if(!list_count(format_list)) {
 		slurm_addto_char_list(format_list, "N");
 	}
-	qos_list = acct_storage_g_get_qos(db_conn, qos_cond);	
-	destroy_acct_qos_cond(qos_cond);
 
-	if(!qos_list) {
-		exit_code=1;
-		fprintf(stderr, " Problem with query.\n");
-		list_destroy(format_list);
-		return SLURM_ERROR;
-	}
 	print_fields_list = list_create(destroy_print_field);
 
 	itr = list_iterator_create(format_list);
@@ -313,6 +312,19 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 	list_iterator_destroy(itr);
 	list_destroy(format_list);
 
+	if(exit_code) {
+		list_destroy(print_fields_list);
+		return SLURM_ERROR;
+	}
+	qos_list = acct_storage_g_get_qos(db_conn, qos_cond);	
+	destroy_acct_qos_cond(qos_cond);
+
+	if(!qos_list) {
+		exit_code=1;
+		fprintf(stderr, " Problem with query.\n");
+		list_destroy(print_fields_list);
+		return SLURM_ERROR;
+	}
 	itr = list_iterator_create(qos_list);
 	itr2 = list_iterator_create(print_fields_list);
 	print_fields_header(print_fields_list);
@@ -360,6 +372,9 @@ extern int sacctmgr_delete_qos(int argc, char *argv[])
 		exit_code=1;
 		fprintf(stderr, 
 			" No conditions given to remove, not executing.\n");
+		destroy_acct_qos_cond(qos_cond);
+		return SLURM_ERROR;
+	} else if(set == -1) {
 		destroy_acct_qos_cond(qos_cond);
 		return SLURM_ERROR;
 	}

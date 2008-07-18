@@ -721,7 +721,11 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 
 	_set_cond(&i, argc, argv, acct_cond, format_list);
 
-	if(!list_count(format_list)) {
+	if(exit_code) {
+		destroy_acct_account_cond(acct_cond);
+		list_destroy(format_list);
+		return SLURM_ERROR;
+	} else if(!list_count(format_list)) {
 		slurm_addto_char_list(format_list, "A,D,O,Q");
 		if(acct_cond->with_assocs)
 			slurm_addto_char_list(format_list,
@@ -731,15 +735,7 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 			slurm_addto_char_list(format_list, "Coord");
 			
 	}
-	acct_list = acct_storage_g_get_accounts(db_conn, acct_cond);	
-	destroy_acct_account_cond(acct_cond);
 
-	if(!acct_list) {
-		exit_code=1;
-		fprintf(stderr, " Problem with query.\n");
-		list_destroy(format_list);
-		return SLURM_ERROR;
-	}
 	print_fields_list = list_create(destroy_print_field);
 
 	itr = list_iterator_create(format_list);
@@ -835,6 +831,22 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 	}
 	list_iterator_destroy(itr);
 	list_destroy(format_list);
+
+	if(exit_code) {
+		destroy_acct_account_cond(acct_cond);
+		list_destroy(print_fields_list);
+		return SLURM_ERROR;
+	}
+
+	acct_list = acct_storage_g_get_accounts(db_conn, acct_cond);	
+	destroy_acct_account_cond(acct_cond);
+
+	if(!acct_list) {
+		exit_code=1;
+		fprintf(stderr, " Problem with query.\n");
+		list_destroy(print_fields_list);
+		return SLURM_ERROR;
+	}
 
 	itr = list_iterator_create(acct_list);
 	itr2 = list_iterator_create(print_fields_list);

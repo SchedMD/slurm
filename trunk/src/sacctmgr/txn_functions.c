@@ -125,15 +125,12 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 
 	_set_cond(&i, argc, argv, txn_cond, format_list);
 
-	txn_list = acct_storage_g_get_txn(db_conn, txn_cond);
-	destroy_acct_txn_cond(txn_cond);
-
-	if(!txn_list) {
-		exit_code=1;
-		fprintf(stderr, " Problem with query.\n");
+	if(exit_code) {
+		destroy_acct_txn_cond(txn_cond);
 		list_destroy(format_list);
 		return SLURM_ERROR;
 	}
+
 	print_fields_list = list_create(destroy_print_field);
 
 	if(!list_count(format_list)) 
@@ -183,6 +180,20 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 	list_iterator_destroy(itr);
 	list_destroy(format_list);
 
+	if(exit_code) {
+		list_destroy(print_fields_list);
+		return SLURM_ERROR;
+	}
+
+	txn_list = acct_storage_g_get_txn(db_conn, txn_cond);
+	destroy_acct_txn_cond(txn_cond);
+
+	if(!txn_list) {
+		exit_code=1;
+		fprintf(stderr, " Problem with query.\n");
+		list_destroy(print_fields_list);
+		return SLURM_ERROR;
+	}
 	itr = list_iterator_create(txn_list);
 	itr2 = list_iterator_create(print_fields_list);
 	print_fields_header(print_fields_list);

@@ -364,23 +364,16 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 
 	_set_cond(&i, argc, argv, assoc_cond, format_list);
 
-	assoc_list = acct_storage_g_get_associations(db_conn, assoc_cond);
-	destroy_acct_association_cond(assoc_cond);
-
-	if(!assoc_list) {
-		exit_code=1;
-		fprintf(stderr, " Problem with query.\n");
+	if(exit_code) {
+		destroy_acct_association_cond(assoc_cond);
 		list_destroy(format_list);
 		return SLURM_ERROR;
-	}
-	print_fields_list = list_create(destroy_print_field);
-	first_list = assoc_list;
-	assoc_list = _sort_assoc_list(first_list);
-
-	if(!list_count(format_list)) 
+	} else if(!list_count(format_list)) 
 		slurm_addto_char_list(format_list,
 				      "C,A,U,F,MaxC,MaxJ,MaxN,MaxW");
-	
+
+	print_fields_list = list_create(destroy_print_field);
+
 	itr = list_iterator_create(format_list);
 	while((object = list_next(itr))) {
 		field = xmalloc(sizeof(print_field_t));
@@ -468,6 +461,24 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 	}
 	list_iterator_destroy(itr);
 	list_destroy(format_list);
+
+	if(exit_code) {
+		destroy_acct_association_cond(assoc_cond);
+		list_destroy(print_fields_list);
+		return SLURM_ERROR;
+	}
+
+	assoc_list = acct_storage_g_get_associations(db_conn, assoc_cond);
+	destroy_acct_association_cond(assoc_cond);
+
+	if(!assoc_list) {
+		exit_code=1;
+		fprintf(stderr, " Problem with query.\n");
+		list_destroy(print_fields_list);
+		return SLURM_ERROR;
+	}
+	first_list = assoc_list;
+	assoc_list = _sort_assoc_list(first_list);
 
 	itr = list_iterator_create(assoc_list);
 	itr2 = list_iterator_create(print_fields_list);
