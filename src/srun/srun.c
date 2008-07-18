@@ -229,6 +229,7 @@ int srun(int ac, char **av)
 			exit(1);
 		}
 	} else if ((resp = existing_allocation())) {
+		
 		job_id = resp->job_id;
 		if (opt.alloc_nodelist == NULL)
                        opt.alloc_nodelist = xstrdup(resp->node_list);
@@ -240,6 +241,11 @@ int srun(int ac, char **av)
 
 		if (!job || create_job_step(job) < 0)
 			exit(1);
+		/* ignore sigpipe for steps.  This is already done
+		 * when allocating nodes elsewhere.
+		 */
+		xsignal(SIGPIPE, ignore_signal);
+
 	} else {
 		got_alloc = 1;
 		/* Combined job allocation and job step launch */
@@ -1087,7 +1093,11 @@ static void _handle_signal(int signo)
 		/* continue with slurm_step_launch_abort */
 	case SIGTERM:
 	case SIGHUP:
-		job_force_termination(job);
+		/* No need to call job_force_termination here since we
+		 * are ending the job now and we don't need to update the
+		 * state.
+		 */
+		info ("forcing job termination");
 		slurm_step_launch_abort(job->step_ctx);
 		break;
 	/* case SIGTSTP: */
