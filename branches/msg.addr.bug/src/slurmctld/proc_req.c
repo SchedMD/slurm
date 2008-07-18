@@ -86,7 +86,8 @@ static int 	    _launch_batch_step(job_desc_msg_t *job_desc_msg,
 					uid_t uid, uint32_t *step_id);
 static int          _make_step_cred(struct step_record *step_rec, 
 				    slurm_cred_t *slurm_cred);
-inline static void  _slurm_rpc_allocate_resources(slurm_msg_t * msg);
+inline static void  _slurm_rpc_allocate_resources(slurm_msg_t * msg, 
+		                                  slurm_addr *addr);
 inline static void  _slurm_rpc_checkpoint(slurm_msg_t * msg);
 inline static void  _slurm_rpc_checkpoint_comp(slurm_msg_t * msg);
 inline static void  _slurm_rpc_delete_partition(slurm_msg_t * msg);
@@ -130,11 +131,11 @@ inline static void  _update_cred_key(void);
  * slurmctld_req  - Process an individual RPC request
  * IN/OUT msg - the request message, data associated with the message is freed
  */
-void slurmctld_req (slurm_msg_t * msg)
+void slurmctld_req (slurm_msg_t * msg, slurm_addr *cli_addr)
 {
 	switch (msg->msg_type) {
 	case REQUEST_RESOURCE_ALLOCATION:
-		_slurm_rpc_allocate_resources(msg);
+		_slurm_rpc_allocate_resources(msg, cli_addr);
 		slurm_free_job_desc_msg(msg->data);
 		break;
 	case REQUEST_BUILD_INFO:
@@ -446,9 +447,24 @@ static int _make_step_cred(struct step_record *step_rec,
 	return SLURM_SUCCESS;
 }
 
+/*
+ *  Set alloc_resp_host to string representation of addr
+ */
+static void _set_alloc_resp_hostname (job_desc_msg_t *job, slurm_addr *addr)
+{
+	char host [256];
+	uint16_t port;
+	slurm_get_addr (addr, &port, host, sizeof (host));
+
+	xfree (job->alloc_resp_hostname);
+	job->alloc_resp_hostname = xstrdup (host);
+	xfree (job->other_hostname);
+	job->other_hostname = xstrdup (host);
+}
+
 /* _slurm_rpc_allocate_resources:  process RPC to allocate resources for 
  *	a job */
-static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
+static void _slurm_rpc_allocate_resources(slurm_msg_t * msg, slurm_addr *addr)
 {
 	/* init */
 	int error_code = SLURM_SUCCESS;
@@ -467,6 +483,8 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_RESOURCE_ALLOCATION");
+
+	_set_alloc_resp_hostname (job_desc_msg, addr);
 
 	/* do RPC call */
 	dump_job_desc(job_desc_msg);

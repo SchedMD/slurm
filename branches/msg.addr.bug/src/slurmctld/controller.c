@@ -743,7 +743,11 @@ static void *_service_connection(void *arg)
 			info("_service_connection/slurm_receive_msg %m");
 	} else {
 		/* process the request */
-		slurmctld_req(msg);
+		slurm_addr addr;
+		if (slurm_get_peer_addr(conn->newsockfd, &addr) < 0) 
+			error ("service_connection: "
+			       "Failed to get peer address: %m");
+		slurmctld_req(msg, &addr);
 	}
 	if ((conn->newsockfd >= 0) 
 	    && slurm_close_accepted_conn(conn->newsockfd) < 0)

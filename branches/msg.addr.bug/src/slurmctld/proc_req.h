@@ -45,8 +45,9 @@
 /*
  * slurmctld_req  - Process an individual RPC request
  * IN/OUT msg - the request message, data associated with the message is freed
+ * addrp IN - Address of peer issuing request
  */
-void slurmctld_req (slurm_msg_t * msg);
+void slurmctld_req (slurm_msg_t * msg, slurm_addr *addrp);
 
 /*
  * slurm_drain_nodes - process a request to drain a list of nodes,
