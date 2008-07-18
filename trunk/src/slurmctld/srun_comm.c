@@ -108,6 +108,28 @@ extern void srun_allocate (uint32_t job_id)
 }
 
 /*
+ * srun_allocate_abort - notify srun of a resource allocation failure
+ * IN job_id - id of the job allocated resource
+ */
+extern void srun_allocate_abort(struct job_record *job_ptr)
+{
+	if (job_ptr && job_ptr->alloc_resp_port && job_ptr->alloc_node
+	&&  job_ptr->resp_host) {
+		slurm_addr * addr;
+		srun_job_complete_msg_t *msg_arg;
+		addr = xmalloc(sizeof(struct sockaddr_in));
+		slurm_set_addr(addr, job_ptr->alloc_resp_port,
+			       job_ptr->resp_host);
+		msg_arg = xmalloc(sizeof(srun_timeout_msg_t));
+		msg_arg->job_id   = job_ptr->job_id;
+		msg_arg->step_id  = NO_VAL;
+		_srun_agent_launch(addr, job_ptr->alloc_node, 
+				   SRUN_JOB_COMPLETE,
+				   msg_arg);
+	}
+}
+
+/*
  * srun_node_fail - notify srun of a node's failure
  * IN job_id    - id of job to notify
  * IN node_name - name of failed node

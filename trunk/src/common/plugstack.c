@@ -63,6 +63,7 @@
 
 struct spank_plugin_operations {
 	spank_f *init;
+	spank_f *init_post_opt;
 	spank_f *local_user_init;
 	spank_f *user_init;
 	spank_f *user_task_init;
@@ -71,9 +72,10 @@ struct spank_plugin_operations {
 	spank_f *exit;
 };
 
-const int n_spank_syms = 7;
+const int n_spank_syms = 8;
 const char *spank_syms[] = {
 	"slurm_spank_init",
+	"slurm_spank_init_post_opt",
 	"slurm_spank_local_user_init",
 	"slurm_spank_user_init",
 	"slurm_spank_task_init",
@@ -131,6 +133,7 @@ typedef enum spank_handle_type {
  */
 typedef enum step_fn {
 	SPANK_INIT = 0,
+	SPANK_INIT_POST_OPT,
 	LOCAL_USER_INIT,
 	STEP_USER_INIT,
 	STEP_USER_TASK_INIT,
@@ -449,6 +452,8 @@ static const char *_step_fn_name(step_fn_t type)
 	switch (type) {
 	case SPANK_INIT:
 		return ("init");
+	case SPANK_INIT_POST_OPT:
+		return ("init_post_opt");
 	case LOCAL_USER_INIT:
 		return ("local_user_init");
 	case STEP_USER_INIT:
@@ -493,6 +498,14 @@ static int _do_call_stack(step_fn_t type, void * job, int taskid)
 		case SPANK_INIT:
 			if (sp->ops.init) {
 				rc = (*sp->ops.init) (spank, sp->ac,
+						      sp->argv);
+				debug2("spank: %s: %s = %d\n", name,
+				       fn_name, rc);
+			}
+			break;
+		case SPANK_INIT_POST_OPT:
+			if (sp->ops.init_post_opt) {
+				rc = (*sp->ops.init_post_opt) (spank, sp->ac,
 						      sp->argv);
 				debug2("spank: %s: %s = %d\n", name,
 				       fn_name, rc);
@@ -585,6 +598,9 @@ int spank_init(slurmd_job_t * job)
 		error("spank: Unable to get remote options");
 		return (-1);
 	}
+
+	if (_do_call_stack(SPANK_INIT_POST_OPT, job, -1) < 0)
+		return (-1);
 
 	return (0);
 }

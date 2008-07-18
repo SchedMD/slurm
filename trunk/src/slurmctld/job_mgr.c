@@ -1684,6 +1684,7 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
 		job_ptr->job_state	= JOB_CANCELLED;
 		job_ptr->start_time	= now;
 		job_ptr->end_time	= now;
+		srun_allocate_abort(job_ptr);
 		job_completion_logger(job_ptr);
 		delete_job_details(job_ptr);
 		verbose("job_signal of pending job %u successful", job_id);

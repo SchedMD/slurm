@@ -633,6 +633,9 @@ _handle_msg(slurm_msg_t *msg, resource_allocation_response_msg_t **resp)
 			*resp = msg->data;
 			rc = 1;
 			break;
+		case SRUN_JOB_COMPLETE:
+			info("Job has been cancelled");
+			break;
 		default:
 			error("received spurious message type: %d\n",
 				 msg->msg_type);

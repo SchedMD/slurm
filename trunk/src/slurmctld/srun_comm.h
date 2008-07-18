@@ -50,6 +50,12 @@
 extern void srun_allocate (uint32_t job_id);
 
 /*
+ * srun_allocate_abort - notify srun of a resource allocation failure
+ * IN job_id - id of the job allocated resource
+ */
+extern void srun_allocate_abort(struct job_record *job_ptr);
+
+/*
  * srun_exec - request that srun execute a specific command
  *	and route it's output to stdout
  * IN step_ptr - pointer to the slurmctld job step record
