@@ -80,7 +80,6 @@ static uint32_t pending_job_id = 0;
  * Static Prototypes
  */
 static void _set_pending_job_id(uint32_t job_id);
-static void _ignore_signal(int signo);
 static void _exit_on_signal(int signo);
 static void _signal_while_allocating(int signo);
 static void  _intr_handler(int signo);
@@ -99,11 +98,6 @@ static void _signal_while_allocating(int signo)
 	if (pending_job_id != 0) {
 		slurm_complete_job(pending_job_id, 0);
 	}
-}
-
-static void _ignore_signal(int signo)
-{
-	/* do nothing */
 }
 
 static void _exit_on_signal(int signo)
@@ -249,16 +243,22 @@ allocate_nodes(void)
 	}
 	
 	xsignal(SIGHUP, _exit_on_signal);
-	xsignal(SIGINT, _ignore_signal);
-	xsignal(SIGQUIT, _ignore_signal);
-	xsignal(SIGPIPE, _ignore_signal);
-	xsignal(SIGTERM, _ignore_signal);
-	xsignal(SIGUSR1, _ignore_signal);
-	xsignal(SIGUSR2, _ignore_signal);
+	xsignal(SIGINT, ignore_signal);
+	xsignal(SIGQUIT, ignore_signal);
+	xsignal(SIGPIPE, ignore_signal);
+	xsignal(SIGTERM, ignore_signal);
+	xsignal(SIGUSR1, ignore_signal);
+	xsignal(SIGUSR2, ignore_signal);
 
 	job_desc_msg_destroy(j);
 
 	return resp;
+}
+
+void
+ignore_signal(int signo)
+{
+	/* do nothing */
 }
 
 int 

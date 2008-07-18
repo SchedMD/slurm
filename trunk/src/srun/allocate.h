@@ -60,6 +60,9 @@ slurmctld_comm_addr_t slurmctld_comm_addr;
  */
 resource_allocation_response_msg_t * allocate_nodes(void);
 
+/* dummy function to handle all signals we want to ignore */
+void ignore_signal(int signo);
+
 /* clean up the msg thread polling for information from the controller */
 int cleanup_allocation();
 
