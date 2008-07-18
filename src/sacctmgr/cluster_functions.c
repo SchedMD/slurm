@@ -67,6 +67,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 			exit_code=1;
 			fprintf(stderr, " Unknown condition: %s\n"
 				"Use keyword set to modify value\n", argv[i]);
+			break;
 		}
 	}
 	(*start) = i;
@@ -188,7 +189,10 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 		}		
 	}
 
-	if(!list_count(name_list)) {
+	if(exit_code) {
+		list_destroy(name_list);
+		return SLURM_ERROR;
+	} else if(!list_count(name_list)) {
 		list_destroy(name_list);
 		exit_code=1;
 		fprintf(stderr, " Need name of cluster to add.\n"); 
@@ -344,13 +348,8 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 
 	cluster_cond->cluster_list = list_create(slurm_destroy_char);
 	_set_cond(&i, argc, argv, cluster_cond->cluster_list, format_list);
-	
-	cluster_list = acct_storage_g_get_clusters(db_conn, cluster_cond);
-	destroy_acct_cluster_cond(cluster_cond);
-	
-	if(!cluster_list) {
-		exit_code=1;
-		fprintf(stderr, " Problem with query.\n");
+	if(exit_code) {
+		destroy_acct_cluster_cond(cluster_cond);
 		list_destroy(format_list);
 		return SLURM_ERROR;
 	}
@@ -416,6 +415,22 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 	}
 	list_iterator_destroy(itr);
 	list_destroy(format_list);
+
+	if(exit_code) {
+		destroy_acct_cluster_cond(cluster_cond);
+		list_destroy(print_fields_list);
+		return SLURM_ERROR;
+	}
+
+	cluster_list = acct_storage_g_get_clusters(db_conn, cluster_cond);
+	destroy_acct_cluster_cond(cluster_cond);
+	
+	if(!cluster_list) {
+		exit_code=1;
+		fprintf(stderr, " Problem with query.\n");
+		list_destroy(print_fields_list);
+		return SLURM_ERROR;
+	}
 
 	itr = list_iterator_create(cluster_list);
 	itr2 = list_iterator_create(print_fields_list);
@@ -534,6 +549,10 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 			destroy_acct_association_cond(assoc_cond);
 			return SLURM_SUCCESS;
 		}		
+	} else if(exit_code) {
+		destroy_acct_association_rec(assoc);
+		destroy_acct_association_cond(assoc_cond);
+		return SLURM_ERROR;		
 	}
 
 	printf(" Setting\n");

@@ -389,7 +389,10 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 		}		
 	}
 
-	if(!list_count(assoc_cond->user_list)) {
+	if(exit_code) {
+		destroy_acct_association_cond(assoc_cond);
+		return SLURM_ERROR;
+	} else if(!list_count(assoc_cond->user_list)) {
 		destroy_acct_association_cond(assoc_cond);
 		exit_code=1;
 		fprintf(stderr, " Need name of user to add.\n"); 
@@ -404,6 +407,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 			db_conn, &user_cond);
 		
 	}	
+
 	if(!local_user_list) {
 		exit_code=1;
 		fprintf(stderr, " Problem getting users from database.  "
@@ -759,7 +763,10 @@ extern int sacctmgr_add_coord(int argc, char *argv[])
 		cond_set = _set_cond(&i, argc, argv, user_cond, NULL);
 	}
 
-	if(!cond_set) {
+	if(exit_code) {
+		destroy_acct_user_cond(user_cond);
+		return SLURM_ERROR;
+	} else if(!cond_set) {
 		exit_code=1;
 		fprintf(stderr, " You need to specify conditions to "
 		       "to add the coordinator.\n"); 
@@ -861,6 +868,12 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 
 	_set_cond(&i, argc, argv, user_cond, format_list);
 
+	if(exit_code) {
+		destroy_acct_user_cond(user_cond);
+		list_destroy(format_list);
+		return SLURM_ERROR;
+	}
+
 	if(!list_count(format_list)) {
 		slurm_addto_char_list(format_list, "U,D,Q,Ad");
 		if(user_cond->with_assocs)
@@ -868,16 +881,6 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 					"Cl,Ac,Part,F,MaxC,MaxJ,MaxN,MaxW");
 		if(user_cond->with_coords)
 			slurm_addto_char_list(format_list, "Coord");
-	}
-
-	user_list = acct_storage_g_get_users(db_conn, user_cond);
-	destroy_acct_user_cond(user_cond);
-
-	if(!user_list) {
-		exit_code=1;
-		fprintf(stderr, " Problem with query.\n");
-		list_destroy(format_list);
-		return SLURM_ERROR;
 	}
 
 	print_fields_list = list_create(destroy_print_field);
@@ -975,6 +978,22 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 	}
 	list_iterator_destroy(itr);
 	list_destroy(format_list);
+
+	if(exit_code) {
+		destroy_acct_user_cond(user_cond);
+		list_destroy(print_fields_list);
+		return SLURM_ERROR;
+	}
+
+	user_list = acct_storage_g_get_users(db_conn, user_cond);
+	destroy_acct_user_cond(user_cond);
+
+	if(!user_list) {
+		exit_code=1;
+		fprintf(stderr, " Problem with query.\n");
+		list_destroy(print_fields_list);
+		return SLURM_ERROR;
+	}
 
 	itr = list_iterator_create(user_list);
 	itr2 = list_iterator_create(print_fields_list);
@@ -1242,7 +1261,12 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 		}
 	}
 
-	if(!rec_set) {
+	if(exit_code) {
+		destroy_acct_user_cond(user_cond);
+		destroy_acct_user_rec(user);
+		destroy_acct_association_rec(assoc);
+		return SLURM_ERROR;
+	} else if(!rec_set) {
 		exit_code=1;
 		fprintf(stderr, " You didn't give me anything to set\n");
 		destroy_acct_user_cond(user_cond);
@@ -1365,6 +1389,11 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 		return SLURM_ERROR;
 	}
 
+	if(exit_code) {
+		destroy_acct_user_cond(user_cond);
+		return SLURM_ERROR;
+	} 
+
 	notice_thread_init();
 	if(set == 1) {
 		ret_list = acct_storage_g_remove_users(
@@ -1427,7 +1456,10 @@ extern int sacctmgr_delete_coord(int argc, char *argv[])
 		cond_set = _set_cond(&i, argc, argv, user_cond, NULL);
 	}
 
-	if(!cond_set) {
+	if(exit_code) {
+		destroy_acct_user_cond(user_cond);
+		return SLURM_ERROR;
+	} else if(!cond_set) {
 		exit_code=1;
 		fprintf(stderr, " You need to specify a user list "
 		       "or account list here.\n"); 

@@ -5271,9 +5271,10 @@ empty:
 
 		/* get the usage if requested */
 		if(cluster_cond->with_usage) {
-			clusteracct_storage_p_get_usage(mysql_conn, cluster,
-							cluster_cond->usage_start,
-							cluster_cond->usage_end);
+			clusteracct_storage_p_get_usage(
+				mysql_conn, cluster,
+				cluster_cond->usage_start,
+				cluster_cond->usage_end);
 		}
 
 		cluster->control_host = xstrdup(row[CLUSTER_REQ_CH]);
@@ -5870,7 +5871,28 @@ extern List acct_storage_p_get_txn(mysql_conn_t *mysql_conn,
 		list_iterator_destroy(itr);
 		xstrcat(extra, ")");
 	}
-	
+
+	if(txn_cond->time_start && txn_cond->time_end) {
+		if(extra)
+			xstrcat(extra, " && (");
+		else
+			xstrcat(extra, " where (");
+		xstrfmtcat(extra, "timestamp < %d && timestamp >= %d)", 
+			   txn_cond->time_end, txn_cond->time_start);
+	} else if(txn_cond->time_start) {
+		if(extra)
+			xstrcat(extra, " && (");
+		else
+			xstrcat(extra, " where (");
+		xstrfmtcat(extra, "timestamp >= %d)", txn_cond->time_start);
+		
+	} else if(txn_cond->time_end) {
+		if(extra)
+			xstrcat(extra, " && (");
+		else
+			xstrcat(extra, " where (");
+		xstrfmtcat(extra, "timestamp < %d)", txn_cond->time_end);
+	}
 empty:
 	xfree(tmp);
 	xstrfmtcat(tmp, "%s", txn_req_inx[i]);
