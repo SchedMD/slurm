@@ -212,7 +212,7 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 			xfree(req);
 			return NULL;
 		}
-		req->alloc_resp_hostname = listen->hostname;
+		/* req->alloc_resp_hostname is set by slurmctld */
 		req->alloc_resp_port = listen->port;
 	}
 

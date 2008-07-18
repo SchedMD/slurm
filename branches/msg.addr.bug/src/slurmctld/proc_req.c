@@ -454,7 +454,7 @@ static void _set_alloc_resp_hostname (job_desc_msg_t *job, slurm_addr *addr)
 {
 	char host [256];
 	uint16_t port;
-	slurm_get_addr (addr, &port, host, sizeof (host));
+	slurm_get_ip_str (addr, &port, host, sizeof (host));
 
 	xfree (job->alloc_resp_hostname);
 	job->alloc_resp_hostname = xstrdup (host);
