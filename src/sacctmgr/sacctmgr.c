@@ -72,6 +72,7 @@ main (int argc, char *argv[])
 	int error_code = SLURM_SUCCESS, i, opt_char, input_field_count;
 	char **input_fields;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
+	int local_exit_code = 0;
 
 	int option_index;
 	static struct option long_options[] = {
@@ -185,8 +186,17 @@ main (int argc, char *argv[])
 		if (error_code || exit_flag)
 			break;
 		error_code = _get_command (&input_field_count, input_fields);
+		/* This is here so if someone made a mistake we allow
+		 * them to fix it and let the process happen since there
+		 * are checks for global exit_code we need to reset it.
+		 */
+		if(exit_code) {
+			local_exit_code = exit_code;
+			exit_code = 0;
+		}
 	}
-
+	if(local_exit_code) 
+		exit_code = local_exit_code;
 	acct_storage_g_close_connection(&db_conn);
 	slurm_acct_storage_fini();
 	exit(exit_code);
