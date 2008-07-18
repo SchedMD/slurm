@@ -143,8 +143,10 @@ static int _set_cond(int *start, int argc, char *argv[],
 					    argv[i]+end, option);
 			u_set = 1;
 		} else {
-			printf(" Unknown condition: %s\n"
-			       " Use keyword 'set' to modify value\n", argv[i]);
+			exit_code=1;
+			fprintf(stderr, " Unknown condition: %s\n"
+				" Use keyword 'set' to modify value\n",
+				argv[i]);
 		}		
 	}	
 
@@ -179,8 +181,10 @@ static int _set_rec(int *start, int argc, char *argv[],
 		} else if(!end && !strncasecmp(argv[i], "set", 3)) {
 			continue;
 		} else if(!end) {
-			printf(" Bad format on %s: End your option with "
-			       "an '=' sign\n", argv[i]);
+			exit_code=1;
+			fprintf(stderr, 
+				" Bad format on %s: End your option with "
+				"an '=' sign\n", argv[i]);
 		} else if (!strncasecmp (argv[i], "AdminLevel", 2)) {
 			user->admin_level = 
 				str_2_acct_admin_level(argv[i]+end);
@@ -223,7 +227,9 @@ static int _set_rec(int *start, int argc, char *argv[],
 					= (uint32_t) mins;
 				a_set = 1;
 			} else {
-				printf(" Bad MaxWall time format: %s\n", 
+				exit_code=1;
+				fprintf(stderr, 
+					" Bad MaxWall time format: %s\n", 
 					argv[i]);
 			}
 		} else if (!strncasecmp (argv[i], "QosLevel", 1)) {
@@ -247,9 +253,10 @@ static int _set_rec(int *start, int argc, char *argv[],
 					    argv[i]+end, option);
 			u_set = 1;
 		} else {
-			printf(" Unknown option: %s\n"
-			       " Use keyword 'where' to modify condition\n",
-			       argv[i]);
+			exit_code=1;
+			fprintf(stderr, " Unknown option: %s\n"
+				" Use keyword 'where' to modify condition\n",
+				argv[i]);
 		}		
 	}	
 	if(qos_list)
@@ -351,7 +358,9 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 				max_wall_duration_per_job = (uint32_t) mins;
 				limit_set = 1;
 			} else {
-				printf(" Bad MaxWall time format: %s\n", 
+				exit_code=1;
+				fprintf(stderr, 
+					" Bad MaxWall time format: %s\n", 
 					argv[i]);
 			}
 		} else if (!strncasecmp (argv[i], "Names", 1)) {
@@ -375,13 +384,15 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 			addto_qos_char_list(add_qos_list, qos_list,
 					    argv[i]+end, option);
 		} else {
-			printf(" Unknown option: %s\n", argv[i]);
+			exit_code=1;
+			fprintf(stderr, " Unknown option: %s\n", argv[i]);
 		}		
 	}
 
 	if(!list_count(assoc_cond->user_list)) {
 		destroy_acct_association_cond(assoc_cond);
-		printf(" Need name of user to add.\n"); 
+		exit_code=1;
+		fprintf(stderr, " Need name of user to add.\n"); 
 		return SLURM_ERROR;
 	} else {
  		acct_user_cond_t user_cond;
@@ -394,8 +405,9 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 		
 	}	
 	if(!local_user_list) {
-		printf(" Problem getting users from database.  "
-		       "Contact your admin.\n");
+		exit_code=1;
+		fprintf(stderr, " Problem getting users from database.  "
+			"Contact your admin.\n");
 		destroy_acct_association_cond(assoc_cond);
 		return SLURM_ERROR;
 	}
@@ -403,7 +415,8 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 
 	if(!list_count(assoc_cond->acct_list)) {
 		destroy_acct_association_cond(assoc_cond);
-		printf(" Need name of acct to add user to.\n"); 
+		exit_code=1;
+		fprintf(stderr, " Need name of acct to add user to.\n"); 
 		return SLURM_ERROR;
 	} else {
  		acct_account_cond_t account_cond;
@@ -417,7 +430,8 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 	}	
 
 	if(!local_acct_list) {
-		printf(" Problem getting accounts from database.  "
+		exit_code=1;
+		fprintf(stderr, " Problem getting accounts from database.  "
 		       "Contact your admin.\n");
 		list_destroy(local_user_list);
 		destroy_acct_association_cond(assoc_cond);
@@ -431,7 +445,9 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 
 		cluster_list = acct_storage_g_get_clusters(db_conn, NULL);
 		if(!cluster_list) {
-			printf(" Problem getting clusters from database.  "
+			exit_code=1;
+			fprintf(stderr, 
+				" Problem getting clusters from database.  "
 			       "Contact your admin.\n");
 			destroy_acct_association_cond(assoc_cond);
 			list_destroy(local_user_list);
@@ -447,8 +463,10 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 		list_iterator_destroy(itr_c);
 
 		if(!list_count(assoc_cond->cluster_list)) {
-			printf("  Can't add users, no cluster defined yet.\n"
-			       " Please contact your administrator.\n");
+			exit_code=1;
+			fprintf(stderr, 
+				"  Can't add users, no cluster defined yet.\n"
+				" Please contact your administrator.\n");
 			destroy_acct_association_cond(assoc_cond);
 			list_destroy(local_user_list);
 			list_destroy(local_acct_list);
@@ -478,7 +496,8 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 		user = NULL;
 		if(!sacctmgr_find_user_from_list(local_user_list, name)) {
 			if(!default_acct) {
-				printf(" Need a default account for "
+				exit_code=1;
+				fprintf(stderr, " Need a default account for "
 				       "these users to add.\n"); 
 				rc = SLURM_ERROR;
 				goto no_default;
@@ -486,10 +505,11 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 			if(first) {
 				if(!sacctmgr_find_account_from_list(
 					   local_acct_list, default_acct)) {
-					printf(" error: This account '%s' "
-					       "doesn't exist.\n"
-					       "        Contact your admin "
-					       "to add this account.\n",
+					exit_code=1;
+					fprintf(stderr, " This account '%s' "
+						"doesn't exist.\n"
+						"        Contact your admin "
+						"to add this account.\n",
 					       default_acct);
 					continue;
 				}
@@ -511,10 +531,11 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 			if(acct_first) {
 				if(!sacctmgr_find_account_from_list(
 					   local_acct_list, default_acct)) {
-					printf(" error: This account '%s' "
-					       "doesn't exist.\n"
-					       "        Contact your admin "
-					       "to add this account.\n",
+					exit_code=1;
+					fprintf(stderr, " This account '%s' "
+						"doesn't exist.\n"
+						"        Contact your admin "
+						"to add this account.\n",
 					       account);
 					continue;
 				}
@@ -524,15 +545,17 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 				if(!sacctmgr_find_account_base_assoc_from_list(
 					   local_assoc_list, account,
 					   cluster)) {
-					if(acct_first)
-						printf(" error: This "
-						       "account '%s' "
-						       "doesn't exist on "
-						       "cluster %s\n"
-						       "        Contact your "
-						       "admin "
-						       "to add this account.\n",
-						       account, cluster);	
+					if(acct_first) {
+						exit_code=1;
+						fprintf(stderr, " This "
+							"account '%s' "
+							"doesn't exist on "
+							"cluster %s\n"
+							"        Contact your "
+							"admin to add "
+							"this account.\n",
+							account, cluster);
+					}	
 					continue;
 				}
 				
@@ -620,7 +643,8 @@ no_default:
 		printf(" Nothing new added.\n");
 		goto end_it;
 	} else if(!assoc_str) {
-		printf(" Error: no associations created.\n");
+		exit_code=1;
+		fprintf(stderr, " No associations created.\n");
 		goto end_it;
 	}
 
@@ -691,7 +715,8 @@ no_default:
 			rc = acct_storage_g_add_associations(db_conn, my_uid, 
 							     assoc_list);
 	} else {
-		printf(" error: Problem adding users\n");
+		exit_code=1;
+		fprintf(stderr, " Problem adding users\n");
 		rc = SLURM_ERROR;
 		notice_thread_fini();
 		goto end_it;
@@ -706,7 +731,8 @@ no_default:
 			acct_storage_g_commit(db_conn, 0);
 		}
 	} else {
-		printf(" error: Problem adding user associations\n");
+		exit_code=1;
+		fprintf(stderr, " Problem adding user associations\n");
 		rc = SLURM_ERROR;
 	}
 
@@ -734,8 +760,9 @@ extern int sacctmgr_add_coord(int argc, char *argv[])
 	}
 
 	if(!cond_set) {
-		printf(" You need to specify a user list "
-		       "and account list here.\n"); 
+		exit_code=1;
+		fprintf(stderr, " You need to specify conditions to "
+		       "to add the coordinator.\n"); 
 		destroy_acct_user_cond(user_cond);
 		return SLURM_ERROR;
 	}
@@ -748,8 +775,8 @@ extern int sacctmgr_add_coord(int argc, char *argv[])
 	list_iterator_destroy(itr);
 
 	if(!user_str) {
-		printf(" You need to specify a user list "
-		       "and account list here.\n"); 
+		exit_code=1;
+		fprintf(stderr, " You need to specify a user list here.\n"); 
 		destroy_acct_user_cond(user_cond);
 		return SLURM_ERROR;		
 	}
@@ -760,8 +787,8 @@ extern int sacctmgr_add_coord(int argc, char *argv[])
 	}
 	list_iterator_destroy(itr);
 	if(!acct_str) {
-		printf(" You need to specify a user list "
-		       "and account list here.\n"); 
+		exit_code=1;
+		fprintf(stderr, " You need to specify a account list here.\n"); 
 		destroy_acct_user_cond(user_cond);
 		return SLURM_ERROR;		
 	}
@@ -784,7 +811,8 @@ extern int sacctmgr_add_coord(int argc, char *argv[])
 			acct_storage_g_commit(db_conn, 0);
 		}
 	} else {
-		printf(" error: Problem adding coordinator\n");
+		exit_code=1;
+		fprintf(stderr, " Problem adding coordinator\n");
 		rc = SLURM_ERROR;
 	}
 
@@ -846,7 +874,8 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 	destroy_acct_user_cond(user_cond);
 
 	if(!user_list) {
-		printf(" Problem with query.\n");
+		exit_code=1;
+		fprintf(stderr, " Problem with query.\n");
 		list_destroy(format_list);
 		return SLURM_ERROR;
 	}
@@ -937,7 +966,8 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 			field->len = 10;
 			field->print_routine = print_fields_str;
 		} else {
-			printf("Unknown field '%s'\n", object);
+			exit_code=1;
+			fprintf(stderr, "Unknown field '%s'\n", object);
 			xfree(field);
 			continue;
 		}
@@ -1213,7 +1243,8 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 	}
 
 	if(!rec_set) {
-		printf(" You didn't give me anything to set\n");
+		exit_code=1;
+		fprintf(stderr, " You didn't give me anything to set\n");
 		destroy_acct_user_cond(user_cond);
 		destroy_acct_user_rec(user);
 		destroy_acct_association_rec(assoc);
@@ -1245,8 +1276,10 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 				list_transfer(user_cond->def_acct_list,
 					      user_cond->assoc_cond->acct_list);
 			} else {
-				printf(" There was a problem with your "
-				       "'where' options.\n");
+				exit_code=1;
+				fprintf(stderr, 
+					" There was a problem with your "
+					"'where' options.\n");
 				goto assoc_start;
 			}
 		}
@@ -1264,7 +1297,8 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 		} else if(ret_list) {
 			printf(" Nothing modified\n");
 		} else {
-			printf(" Error with request\n");
+			exit_code=1;
+			fprintf(stderr, " Error with request\n");
 			rc = SLURM_ERROR;
 		}
 
@@ -1289,7 +1323,8 @@ assoc_start:
 		} else if(ret_list) {
 			printf(" Nothing modified\n");
 		} else {
-			printf(" Error with request\n");
+			exit_code=1;
+			fprintf(stderr, " Error with request\n");
 			rc = SLURM_ERROR;
 		}
 
@@ -1323,7 +1358,9 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 	int set = 0;
 
 	if(!(set = _set_cond(&i, argc, argv, user_cond, NULL))) {
-		printf(" No conditions given to remove, not executing.\n");
+		exit_code=1;
+		fprintf(stderr, 
+			" No conditions given to remove, not executing.\n");
 		destroy_acct_user_cond(user_cond);
 		return SLURM_ERROR;
 	}
@@ -1361,7 +1398,8 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 	} else if(ret_list) {
 		printf(" Nothing deleted\n");
 	} else {
-		printf(" Error with request\n");
+		exit_code=1;
+		fprintf(stderr, " Error with request\n");
 		rc = SLURM_ERROR;
 	} 
 	
@@ -1390,7 +1428,8 @@ extern int sacctmgr_delete_coord(int argc, char *argv[])
 	}
 
 	if(!cond_set) {
-		printf(" You need to specify a user list "
+		exit_code=1;
+		fprintf(stderr, " You need to specify a user list "
 		       "or account list here.\n"); 
 		destroy_acct_user_cond(user_cond);
 		return SLURM_ERROR;
@@ -1410,7 +1449,8 @@ extern int sacctmgr_delete_coord(int argc, char *argv[])
 	}
 	list_iterator_destroy(itr);
 	if(!user_str && !acct_str) {
-		printf(" You need to specify a user list "
+		exit_code=1;
+		fprintf(stderr, " You need to specify a user list "
 		       "or an account list here.\n"); 
 		destroy_acct_user_cond(user_cond);
 		return SLURM_ERROR;		
@@ -1447,7 +1487,8 @@ extern int sacctmgr_delete_coord(int argc, char *argv[])
 	} else if(ret_list) {
 		printf(" Nothing removed\n");
 	} else {
-		printf(" Error with request\n");
+		exit_code=1;
+		fprintf(stderr, " Error with request\n");
 		rc = SLURM_ERROR;
 	}
 

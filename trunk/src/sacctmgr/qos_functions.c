@@ -86,9 +86,10 @@ static int _set_cond(int *start, int argc, char *argv[],
 						 argv[i]+end))
 				set = 1;
 		} else {
-			printf(" Unknown condition: %s\n"
-			       " Use keyword 'set' to modify "
-			       "SLURM_PRINT_VALUE\n", argv[i]);
+			exit_code=1;
+			fprintf(stderr, " Unknown condition: %s\n"
+				" Use keyword 'set' to modify "
+				"SLURM_PRINT_VALUE\n", argv[i]);
 		}
 	}
 
@@ -155,21 +156,24 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 		} else if (!strncasecmp (argv[i], "Description", 1)) {
 			description = strip_quotes(argv[i]+end, NULL);
 		} else {
-			printf(" Unknown option: %s\n", argv[i]);
+			exit_code=1;
+			fprintf(stderr, " Unknown option: %s\n", argv[i]);
 		}		
 	}
 
 	if(!list_count(name_list)) {
 		list_destroy(name_list);
 		xfree(description);
-		printf(" Need name of qos to add.\n"); 
+		exit_code=1;
+		fprintf(stderr, " Need name of qos to add.\n"); 
 		return SLURM_SUCCESS;
 	} else {
 		local_qos_list = acct_storage_g_get_qos(db_conn, NULL);
 	}
 
 	if(!local_qos_list) {
-		printf(" Problem getting qos's from database.  "
+		exit_code=1;
+		fprintf(stderr, " Problem getting qos's from database.  "
 		       "Contact your admin.\n");
 		list_destroy(name_list);
 		xfree(description);
@@ -230,7 +234,8 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 			acct_storage_g_commit(db_conn, 0);
 		}
 	} else {
-		printf(" error: Problem adding account associations\n");
+		exit_code=1;
+		fprintf(stderr, " Problem adding QOS.\n");
 		rc = SLURM_ERROR;
 	}
 
@@ -272,7 +277,8 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 	destroy_acct_qos_cond(qos_cond);
 
 	if(!qos_list) {
-		printf(" Problem with query.\n");
+		exit_code=1;
+		fprintf(stderr, " Problem with query.\n");
 		list_destroy(format_list);
 		return SLURM_ERROR;
 	}
@@ -297,7 +303,8 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 			field->len = 10;
 			field->print_routine = print_fields_str;
 		} else {
-			printf("Unknown field '%s'\n", object);
+			exit_code=1;
+			fprintf(stderr, "Unknown field '%s'\n", object);
 			xfree(field);
 			continue;
 		}
@@ -350,7 +357,9 @@ extern int sacctmgr_delete_qos(int argc, char *argv[])
 	int set = 0;
 	
 	if(!(set = _set_cond(&i, argc, argv, qos_cond, NULL))) {
-		printf(" No conditions given to remove, not executing.\n");
+		exit_code=1;
+		fprintf(stderr, 
+			" No conditions given to remove, not executing.\n");
 		destroy_acct_qos_cond(qos_cond);
 		return SLURM_ERROR;
 	}
@@ -378,7 +387,8 @@ extern int sacctmgr_delete_qos(int argc, char *argv[])
 	} else if(ret_list) {
 		printf(" Nothing deleted\n");
 	} else {
-		printf(" Error with request\n");
+		exit_code=1;
+		fprintf(stderr, " Error with request\n");
 		rc = SLURM_ERROR;
 	} 
 

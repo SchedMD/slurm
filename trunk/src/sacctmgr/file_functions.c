@@ -247,7 +247,8 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 		option = strip_quotes(sub+end, NULL);
 		if(!end) {
 			if(file_opts->name) {
-				printf(" Bad format on %s: "
+				exit_code=1;
+				fprintf(stderr, " Bad format on %s: "
 				       "End your option with "
 				       "an '=' sign\n", sub);
 				_destroy_sacctmgr_file_opts(file_opts);
@@ -268,7 +269,9 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 		} else if (!strncasecmp (sub, "FairShare", 1)) {
 			if (get_uint(option, &file_opts->fairshare, 
 			    "FairShare") != SLURM_SUCCESS) {
-				printf(" Bad FairShare value: %s\n", option);
+				exit_code=1;
+				fprintf(stderr, 
+					" Bad FairShare value: %s\n", option);
 				_destroy_sacctmgr_file_opts(file_opts);
 				break;
 			}
@@ -276,21 +279,27 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 			   || !strncasecmp (sub, "MaxProcSec", 4)) {
 			if (get_uint(option, &file_opts->max_cpu_secs_per_job,
 			    "MaxCPUSec") != SLURM_SUCCESS) {
-				printf(" Bad MaxCPUSec value: %s\n", option);
+				exit_code=1;
+				fprintf(stderr, 
+					" Bad MaxCPUSec value: %s\n", option);
 				_destroy_sacctmgr_file_opts(file_opts);
 				break;
 			}
 		} else if (!strncasecmp (sub, "MaxJobs", 4)) {
 			if (get_uint(option, &file_opts->max_jobs,
 			    "MaxJobs") != SLURM_SUCCESS) {
-				printf(" Bad MaxJobs value: %s\n", option);
+				exit_code=1;
+				fprintf(stderr, 
+					" Bad MaxJobs value: %s\n", option);
 				_destroy_sacctmgr_file_opts(file_opts);
 				break;
 			}
 		} else if (!strncasecmp (sub, "MaxNodes", 4)) {
 			if (get_uint(option, &file_opts->max_nodes_per_job,
 			    "MaxNodes") != SLURM_SUCCESS) {
-				printf(" Bad MaxNodes value: %s\n", option);
+				exit_code=1;
+				fprintf(stderr, 
+					" Bad MaxNodes value: %s\n", option);
 				_destroy_sacctmgr_file_opts(file_opts);
 				break;
 			}
@@ -302,7 +311,9 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 			} else if (strcmp(option, "-1")) {
 				file_opts->max_wall_duration_per_job = INFINITE;
 			} else {
-				printf(" Bad MaxWall time format: %s\n", 
+				exit_code=1;
+				fprintf(stderr, 
+					" Bad MaxWall time format: %s\n", 
 					option);
 				_destroy_sacctmgr_file_opts(file_opts);
 				break;
@@ -329,7 +340,8 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 			addto_qos_char_list(file_opts->qos_list, qos_list,
 					    option, option2);
 		} else {
-			printf(" Unknown option: %s\n", sub);
+			exit_code=1;
+			fprintf(stderr, " Unknown option: %s\n", sub);
 		}
 
 		xfree(sub);
@@ -346,7 +358,8 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 	xfree(option);
 
 	if(!file_opts->name) {
-		printf(" error: No name given\n");
+		exit_code=1;
+		fprintf(stderr, " No name given\n");
 		_destroy_sacctmgr_file_opts(file_opts);
 	}
 	return file_opts;
@@ -459,7 +472,8 @@ static List _set_up_print_fields(List format_list)
 			field->len = 10;
 			field->print_routine = print_fields_str;
 		} else {
-			printf("Unknown field '%s'\n", object);
+			exit_code=1;
+			fprintf(stderr, "Unknown field '%s'\n", object);
 			xfree(field);
 			continue;
 		}
@@ -1266,7 +1280,8 @@ static int _print_file_sacctmgr_assoc_childern(FILE *fd,
 
 
 		if(fprintf(fd, "%s\n", line) < 0) {
-			error("Can't write to file");
+			exit_code=1;
+			fprintf(stderr, " Can't write to file");
 			return SLURM_ERROR;
 		}
 		info("%s", line);
@@ -1355,7 +1370,8 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 	
 	fd = fopen(argv[0], "r");
 	if (fd == NULL) {
-		printf(" error: Unable to read \"%s\": %m\n", argv[0]);
+		exit_code=1;
+		fprintf(stderr, " Unable to read \"%s\": %m\n", argv[0]);
 		return;
 	}
 
@@ -1402,16 +1418,19 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 			} 
 		}
 		if(!object[0]) {
-			printf(" error: Misformatted line(%d): %s\n", lc, line);
+			exit_code=1;
+			fprintf(stderr, " Misformatted line(%d): %s\n",
+				lc, line);
 			rc = SLURM_ERROR;
 			break;
 		} 
 		while(line[start] != ' ' && start<len)
 			start++;
 		if(start>=len) {
-			printf(" error: Nothing after object "
-			       "name '%s'. line(%d)\n",
-			       object, lc);
+			exit_code=1;
+			fprintf(stderr, " Nothing after object "
+				"name '%s'. line(%d)\n",
+				object, lc);
 			rc = SLURM_ERROR;
 			break;
 			
@@ -1423,7 +1442,8 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 			acct_association_cond_t assoc_cond;
 
 			if(cluster_name) {
-				printf(" You can only add one cluster "
+				exit_code=1;
+				fprintf(stderr, " You can only add one cluster "
 				       "at a time.\n");
 				rc = SLURM_ERROR;
 				break;
@@ -1432,7 +1452,9 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 			file_opts = _parse_options(line+start);
 			
 			if(!file_opts) {
-				printf(" error: Problem with line(%d)\n", lc);
+				exit_code=1;
+				fprintf(stderr, 
+					" error: Problem with line(%d)\n", lc);
 				rc = SLURM_ERROR;
 				break;
 			}
@@ -1464,7 +1486,9 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				list_destroy(cluster_list);
 
 				if(rc != SLURM_SUCCESS) {
-					printf(" Problem adding machine\n");
+					exit_code=1;
+					fprintf(stderr, 
+						" Problem adding machine\n");
 					rc = SLURM_ERROR;
 					_destroy_sacctmgr_file_opts(file_opts);
 					break;
@@ -1484,16 +1508,18 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 			list_destroy(assoc_cond.cluster_list);
 
 			if(!curr_assoc_list) {
-				printf(" Problem getting associations "
-				       "for this cluster\n");
+				exit_code=1;
+				fprintf(stderr, " Problem getting associations "
+					"for this cluster\n");
 				rc = SLURM_ERROR;
 				break;
 			}
 			//info("got %d assocs", list_count(curr_assoc_list));
 			continue;
 		} else if(!cluster_name) {
-			printf(" error: You need to specify a cluster name "
-			       "first with 'Cluster - $NAME' in your file\n");
+			exit_code=1;
+			fprintf(stderr, " You need to specify a cluster name "
+				"first with 'Cluster - $NAME' in your file\n");
 			break;
 		}
 		
@@ -1505,8 +1531,9 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				i++;
 			
 			if(i >= len) {
-				printf(" error: No parent name "
-				       "given line(%d)\n",
+				exit_code=1;
+				fprintf(stderr, " No parent name "
+					"given line(%d)\n",
 				       lc);
 				rc = SLURM_ERROR;
 				break;
@@ -1517,7 +1544,8 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				   curr_assoc_list, parent, cluster_name)
 			   && !sacctmgr_find_account_base_assoc_from_list(
 				   acct_assoc_list, parent, cluster_name)) {
-				printf(" error: line(%d) You need to add "
+				exit_code=1;
+				fprintf(stderr, " line(%d) You need to add "
 				       "this parent (%s) as a child before "
 				       "you can add childern to it.\n",
 				       lc, parent);
@@ -1536,7 +1564,8 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 			file_opts = _parse_options(line+start);
 			
 			if(!file_opts) {
-				printf(" error: Problem with line(%d)\n", lc);
+				exit_code=1;
+				fprintf(stderr, " Problem with line(%d)\n", lc);
 				rc = SLURM_ERROR;
 				break;
 			}
@@ -1662,7 +1691,8 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 			file_opts = _parse_options(line+start);
 			
 			if(!file_opts) {
-				printf(" error: Problem with line(%d)\n", lc);
+				exit_code=1;
+				fprintf(stderr, " Problem with line(%d)\n", lc);
 				rc = SLURM_ERROR;
 				break;
 			}
@@ -1825,7 +1855,9 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 			_destroy_sacctmgr_file_opts(file_opts);
 			continue;
 		} else {
-			printf(" error: Misformatted line(%d): %s\n", lc, line);
+			exit_code=1;
+			fprintf(stderr, 
+				" Misformatted line(%d): %s\n", lc, line);
 			rc = SLURM_ERROR;
 			break;
 		}
@@ -1968,7 +2000,8 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 			printf(" Nothing new added.\n");
 		}
 	} else {
-		printf(" error: Problem with requests.\n");
+		exit_code=1;
+		fprintf(stderr, " Problem with requests.\n");
 	}
 
 	list_destroy(format_list);
