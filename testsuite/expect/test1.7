@@ -95,7 +95,11 @@ set timeout [expr $max_job_delay + $sleep_time]
 set timed_out 0
 set srun_pid [spawn $srun -t1 $bin_sleep $sleep_time]
 expect {
-	-re "time limit exceeded" {
+	-re "time limit" {
+		set timed_out 1
+		exp_continue
+	}
+	-re "TIME LIMIT" {
 		set timed_out 1
 		exp_continue
 	}
@@ -126,7 +130,11 @@ if {$timed_out == 1} {
 set completions 0
 set srun_pid [spawn $srun -t4 $bin_sleep $sleep_time]
 expect {
-	-re "time limit exceeded" {
+	-re "time limit" {
+		set completions -1
+		exp_continue
+	}
+	-re "TIME LIMIT" {
 		set completions -1
 		exp_continue
 	}
