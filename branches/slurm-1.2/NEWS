@@ -9,7 +9,8 @@ documents those changes that are of interest to users and admins.
  -- Fixed handling of SIGPIPE in srun. Abort job.
  -- Fix bug introduced to MVAPICH plugin preventing use of TotalView debugger.
  -- Modify slurmctld to get srun/salloc network address based upon the incoming
-    message rather than hostname set by the user command (backport of logic in 	   SLURM v1.3).
+    message rather than hostname set by the user command (backport of logic in
+    SLURM v1.3).
 
 * Changes in SLURM 1.2.32
 =========================
