@@ -56,9 +56,18 @@
 #include "src/common/list.h"
 #include "src/common/xstring.h"
 
-#ifdef HAVE_MYSQL
+#ifndef HAVE_MYSQL
+typedef void mysql_conn_t;
+#else
 #include <mysql.h>
 #include <mysqld_error.h>
+
+typedef struct {
+	MYSQL *db_conn;
+	bool rollback;
+	List update_list;
+	int conn;
+} mysql_conn_t;
 
 typedef struct {
 	uint32_t port;	

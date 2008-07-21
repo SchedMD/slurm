@@ -56,8 +56,17 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/common/xstring.h"
 
-#ifdef HAVE_PGSQL
+#ifndef HAVE_PGSQL
+typedef void pgsql_conn_t;
+#else
 #include <libpq-fe.h>
+
+typedef struct {
+	PGconn *db_conn;
+	bool rollback;
+	List update_list;
+	int conn;
+} pgsql_conn_t;
 
 typedef struct {
 	uint32_t port;	

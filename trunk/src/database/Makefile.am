@@ -36,4 +36,3 @@ libslurm_pgsql_la_LDFLAGS  = $(LIB_LDFLAGS)
 
 libslurm_mysql_la_CFLAGS = $(MYSQL_CFLAGS)
 libslurm_pgsql_la_CFLAGS = $(PGSQL_CFLAGS)
-
