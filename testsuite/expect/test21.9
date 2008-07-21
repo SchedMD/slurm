@@ -50,9 +50,9 @@ set mj		MaxJobs
 set mn		MaxNodes
 set mw		MaxWall
 set clu		cluster
-set tc1		tCluster1
-set tc2		tCluster2
-set tc3		tCluster3
+set tc1		tcluster1
+set tc2		tcluster2
+set tc3		tcluster3
 set fs1		2500
 set fs2		1375
 set mc1		1000000
@@ -135,6 +135,10 @@ if {$amatches != 12} {
 	send_user "\nFAILURE:  sacctmgr had a problem adding clusters\n"
 	set exit_code 1
 }
+if { ![check_acct_associations] } {
+	send_user "\nFAILURE:  Our associations don't line up\n"
+	set exit_code 1
+}
 
 #
 # Use sacctmgr to modify one cluster
@@ -190,6 +194,10 @@ expect {
 
 if {$mmatches != 9} {
 	send_user "\nFAILURE:  sacctmgr had a problem modifying clusters\n"
+	set exit_code 1
+}
+if { ![check_acct_associations] } {
+	send_user "\nFAILURE:  Our associations don't line up\n"
 	set exit_code 1
 }
 
@@ -270,6 +278,10 @@ expect {
 
 if {$dmatches != 4} {
 	send_user "\nFAILURE: sacctmgr had a problem deleting cluster\n"
+	set exit_code 1
+}
+if { ![check_acct_associations] } {
+	send_user "\nFAILURE:  Our associations don't line up\n"
 	set exit_code 1
 }
 
