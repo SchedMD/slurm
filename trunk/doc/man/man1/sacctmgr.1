@@ -20,7 +20,7 @@ These parameters are \fIuser\fR, \fIcluster\fR, \fIpartition\fR, and
 the \fIClusterName\fR parameter in the \fIslurm.conf\fR configuration file. 
 \fIpartition\fR is the name of a Slurm partition on that cluster.
 \fIaccount\fR is the bank account for a job.
-The intended mode of operation is to initiate the \fBssacctmgr\fR command, 
+The intended mode of operation is to initiate the \fBsacctmgr\fR command, 
 add, delete, modify, and/or list \fIassociation\fR records then 
 commit the changes and exit.
 
@@ -46,35 +46,35 @@ commit changes immediately.
 
 .TP
 \fB\-n\fR, \fB\-\-no_header\fR
-Don't display header when listing results.
+No header will be added to the beginning of the output.
 
 .TP
 \fB\-o\fR, \fB\-\-oneliner\fR
-Print information one line per record.
+Report output one record per line.
 This is equivalent to the \fBoneliner\fR command.
 
 .TP
 \fB\-p\fR, \fB\-\-parsable\fR
-Make output '|' delimited.
+Output will be '|' delimited.
 
 .TP
 \fB\-q\fR, \fB\-\-quiet\fR
-Print no warning or informational messages, only error messages.
+Print no messages other than error messages.
 This is equivalent to the \fBquiet\fR command.
 
 .TP
 \fB\-s\fR, \fB\-\-associations\fR
-Show an association for entities displayed.
+Use with show or list to display associations with the entity.
 This is equivalent to the \fBassociations\fR command.
 
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
-Print detailed event logging. 
+Enable detailed logging. 
 This is equivalent to the \fBverbose\fR command.
 
 .TP
 \fB\-V\fR , \fB\-\-version\fR
-Print version information and exit.
+Display version number.
 This is equivalent to the \fBversion\fR command.
 
 .SH "COMMANDS"
@@ -90,7 +90,7 @@ Identical to the \fBcreate\fR command.
 
 .TP
 \fBassociations\fR
-Show associations for entities displayed.
+Use with show or list to display associations with the entity.
 
 .TP
 \fBcreate\fR <\fIENTITY\fR> <\fISPECS\fR>
@@ -103,7 +103,7 @@ Delete the specified entities.
 
 .TP
 \fBexit\fP
-Terminate the execution of sacctmgr.
+Terminate sacctmgr.
 Identical to the \fBquit\fR command.
 
 .TP
@@ -122,15 +122,15 @@ Identical to the \fBshow\fR command.
 
 .TP
 \fBmodify\fR <\fIENTITY\fR> \fbwith\fR <\fISPECS\fR> \fbset\fR <\fISPECS\fR>
-Modify an entities.
+Modify an entity.
 
 .TP
 \fBoneliner\fP
-Print information one line per record.
+Output one record per line.
 
 .TP
 \fBquiet\fP
-Print no warning or informational messages, only fatal error messages.
+Print no messages other than error messages.
 
 .TP
 \fBquit\fP
@@ -145,17 +145,17 @@ Identical to the \fBlist\fR command.
 
 .TP
 \fBverbose\fP
-Print detailed event logging. 
+Enable detailed logging. 
 This includes time\-stamps on data structures, record counts, etc.
 This is an independent command with no options meant for use in interactive mode.
 
 .TP
 \fBversion\fP
-Display the version number of sacctmgr being executed.
+Display the version number of sacctmgr.
 
 .TP
 \fB!!\fP
-Repeat the last command executed.
+Repeat the last command.
 
 .TP
 \fBENTITIES\fR
