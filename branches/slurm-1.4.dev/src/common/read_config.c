@@ -148,7 +148,6 @@ s_p_options_t slurm_conf_options[] = {
 	{"DefaultStorageUser", S_P_STRING},
 	{"DefMemPerCPU", S_P_UINT32},
 	{"DefMemPerNode", S_P_UINT32},
-	{"DefMemPerTask", S_P_UINT32},	/* defunct */
 	{"DisableRootJobs", S_P_BOOLEAN},
 	{"EnforcePartLimits", S_P_BOOLEAN},
 	{"Epilog", S_P_STRING},
@@ -1581,8 +1580,7 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_string(&conf->crypto_type, "CryptoType", hashtbl))
 		 conf->crypto_type = xstrdup(DEFAULT_CRYPTO_TYPE);
 
-	if ((s_p_get_uint32(&conf->def_mem_per_task, "DefMemPerCPU", hashtbl)) ||
-	    (s_p_get_uint32(&conf->def_mem_per_task, "DefMemPerTask", hashtbl)))
+	if (s_p_get_uint32(&conf->def_mem_per_task, "DefMemPerCPU", hashtbl))
 		conf->def_mem_per_task |= MEM_PER_CPU;
 	else if (!s_p_get_uint32(&conf->def_mem_per_task, "DefMemPerNode", hashtbl))
 		conf->def_mem_per_task = DEFAULT_MEM_PER_CPU;
