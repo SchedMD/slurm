@@ -53,16 +53,7 @@
 #include "src/database/mysql_common.h"
 #include "src/common/slurm_accounting_storage.h"
 
-#ifndef HAVE_MYSQL
-typedef void mysql_conn_t;
-#else
-
-typedef struct {
-	MYSQL *acct_mysql_db;
-	bool rollback;
-	List update_list;
-	int conn;
-} mysql_conn_t;
+#ifdef HAVE_MYSQL
 
 //extern int acct_db_init;
 

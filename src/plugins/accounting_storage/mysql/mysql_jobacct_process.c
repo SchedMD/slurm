@@ -365,7 +365,7 @@ no_cond:
 	
 	debug3("%d query\n%s", mysql_conn->conn, query);
 	if(!(result = mysql_db_query_ret(
-		     mysql_conn->acct_mysql_db, query, 0))) {
+		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);
 		list_destroy(job_list);
 		return NULL;
@@ -428,7 +428,7 @@ no_cond:
 				
 				debug4("%d query\n%s", mysql_conn->conn, query);
 				if(!(result2 = mysql_db_query_ret(
-					     mysql_conn->acct_mysql_db,
+					     mysql_conn->db_conn,
 					     query, 0))) {
 					list_destroy(job_list);
 					job_list = NULL;
@@ -534,7 +534,7 @@ no_cond:
 		
 		//info("query = %s", query);
 		if(!(step_result = mysql_db_query_ret(
-			     mysql_conn->acct_mysql_db, query, 0))) {
+			     mysql_conn->db_conn, query, 0))) {
 			xfree(query);
 			list_destroy(job_list);
 			return NULL;
