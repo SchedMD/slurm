@@ -89,7 +89,7 @@
 #define JOB_HASH_INX(_job_id)	(_job_id % hash_table_size)
 
 /* Change JOB_STATE_VERSION value when changing the state save format */
-#define JOB_STATE_VERSION      "VER006"
+#define JOB_STATE_VERSION      "VER007"
 
 /* Global variables */
 List   job_list = NULL;		/* job_record list */
@@ -798,12 +798,13 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 	pack32(detail_ptr->max_nodes, buffer);
 	pack32(detail_ptr->num_tasks, buffer);
 
-	pack16(detail_ptr->shared, buffer);
+	pack16(detail_ptr->acctg_freq, buffer);
 	pack16(detail_ptr->contiguous, buffer);
 	pack16(detail_ptr->cpus_per_task, buffer);
 	pack16(detail_ptr->ntasks_per_node, buffer);
 	pack16(detail_ptr->requeue, buffer);
-	pack16(detail_ptr->acctg_freq, buffer);
+	pack16(detail_ptr->shared, buffer);
+	pack16(detail_ptr->task_dist, buffer);
 
 	pack8(detail_ptr->open_mode, buffer);
 	pack8(detail_ptr->overcommit, buffer);
@@ -840,7 +841,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	uint32_t job_min_memory, job_min_tmp_disk;
 	uint32_t num_tasks, name_len, argc = 0;
 	uint16_t shared, contiguous, ntasks_per_node;
-	uint16_t acctg_freq, cpus_per_task, requeue;
+	uint16_t acctg_freq, cpus_per_task, requeue, task_dist;
 	uint8_t open_mode, overcommit;
 	time_t begin_time, submit_time;
 	int i;
@@ -851,12 +852,13 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	safe_unpack32(&max_nodes, buffer);
 	safe_unpack32(&num_tasks, buffer);
 
-	safe_unpack16(&shared, buffer);
+	safe_unpack16(&acctg_freq, buffer);
 	safe_unpack16(&contiguous, buffer);
 	safe_unpack16(&cpus_per_task, buffer);
 	safe_unpack16(&ntasks_per_node, buffer);
 	safe_unpack16(&requeue, buffer);
-	safe_unpack16(&acctg_freq, buffer);
+	safe_unpack16(&shared, buffer);
+	safe_unpack16(&task_dist, buffer);
 
 	safe_unpack8(&open_mode, buffer);
 	safe_unpack8(&overcommit, buffer);
@@ -915,8 +917,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	job_ptr->details->acctg_freq = acctg_freq;
 	job_ptr->details->contiguous = contiguous;
 	job_ptr->details->cpus_per_task = cpus_per_task;
-	/* FIXME: Need to save/restore actual task_dist value */
-	job_ptr->details->task_dist = SLURM_DIST_CYCLIC;
+	job_ptr->details->task_dist = task_dist;
 	job_ptr->details->ntasks_per_node = ntasks_per_node;
 	job_ptr->details->job_min_procs = job_min_procs;
 	job_ptr->details->job_min_memory = job_min_memory;
