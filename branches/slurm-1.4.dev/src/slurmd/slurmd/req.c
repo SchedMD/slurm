@@ -608,7 +608,7 @@ _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
  * The job(step) credential is the only place to get a definitive
  * list of the nodes allocated to a job step.  We need to return
  * a hostset_t of the nodes. Validate the incoming RPC, updating 
- * job_mem and task_mem as needed.
+ * job_mem needed.
  */
 static int
 _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
@@ -721,7 +721,6 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 			req->job_mem *= arg.alloc_lps[host_index];
 	} else
 		req->job_mem = arg.job_mem;
-	req->task_mem = arg.task_mem;	/* Defunct */
 	if ((host_index >= 0) && (host_index < arg.alloc_lps_cnt))
 		req->cpus_allocated[node_id] = arg.alloc_lps[host_index];
 #if 0

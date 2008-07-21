@@ -3116,7 +3116,6 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer)
 	pack32(msg->uid, buffer);
 	pack32(msg->gid, buffer);
 	pack32(msg->job_mem, buffer);
-	pack32(msg->task_mem, buffer);
 
 	pack32(msg->nnodes, buffer);
 	pack16(msg->max_sockets, buffer);
@@ -3191,7 +3190,6 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 	safe_unpack32(&msg->uid, buffer);
 	safe_unpack32(&msg->gid, buffer);
 	safe_unpack32(&msg->job_mem, buffer);
-	safe_unpack32(&msg->task_mem, buffer);
 
 	safe_unpack32(&msg->nnodes, buffer);
 	safe_unpack16(&msg->max_sockets, buffer);

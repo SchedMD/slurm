@@ -194,13 +194,8 @@ job_create(launch_tasks_request_msg_t *msg)
 	job->stepid	= msg->job_step_id;
 
 	job->job_mem	= msg->job_mem;
-	job->task_mem	= msg->task_mem;
 	if (job->job_mem)
 		jobacct_common_set_mem_limit(job->jobid, job->job_mem);
-	else if (job->task_mem && job->ntasks) {
-		jobacct_common_set_mem_limit(job->jobid, 
-					     (job->task_mem * job->ntasks));
-	}
 	
 	job->uid	= (uid_t) msg->uid;
 	job->gid	= (gid_t) msg->gid;
