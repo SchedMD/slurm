@@ -500,6 +500,8 @@ static void _add_it (int argc, char *argv[])
  * _show_it - list the slurm configuration per the supplied arguments 
  * IN argc - count of arguments
  * IN argv - list of arguments
+ * undocumented association options wopi and wopl
+ * without parent info and without parent limits
  */
 static void _show_it (int argc, char *argv[]) 
 {
