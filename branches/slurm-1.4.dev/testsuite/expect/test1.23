@@ -141,7 +141,7 @@ if {$err_msg != 1} {
 #
 set host_0      ""
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N1 -l --mem=1 -t1 $bin_hostname]
+set srun_pid [spawn $srun -N1 -l --mem=10 -t1 $bin_hostname]
 expect {
 	-re "0: ($alpha_numeric)" {
 		set host_0 $expect_out(1,string)
