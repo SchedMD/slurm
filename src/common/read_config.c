@@ -1647,11 +1647,19 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			xstrdup(DEFAULT_JOB_ACCT_GATHER_TYPE);
 
 	if (!s_p_get_string(&conf->job_comp_type, "JobCompType", hashtbl)) {
-		if(default_storage_type)
-			conf->job_comp_type =
-				xstrdup_printf("jobcomp/%s",
-					       default_storage_type);
-		else
+		if(default_storage_type) {
+			if(!strcasecmp("slurmdbd", default_storage_type)) {
+				error("Can not use the default storage type "
+				      "specified for jobcomp since there is "
+				      "not slurmdbd type.  We are using %s "
+				      "as the type.");
+				conf->job_comp_type =
+					xstrdup(DEFAULT_JOB_COMP_TYPE);
+			} else 
+				conf->job_comp_type =
+					xstrdup_printf("jobcomp/%s",
+						       default_storage_type);
+		} else
 			conf->job_comp_type = xstrdup(DEFAULT_JOB_COMP_TYPE);
 	}
 	if (!s_p_get_string(&conf->job_comp_loc, "JobCompLoc", hashtbl)) {
