@@ -1,0 +1,169 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Confirm that job time limit function works (--time and 
+#          --kill-command options).
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2002-2006 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# LLNL-CODE-402394.
+# 
+# This file is part of SLURM, a resource management program.
+# For details, see <http://www.llnl.gov/linux/slurm/>.
+#  
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+# 
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+# 
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+############################################################################
+source ./globals
+
+set test_id     "15.5"
+set exit_code   0
+set file_in     "test$test_id.input"
+set job_id      0
+
+# NOTE: If you increase sleep_time, change job time limits as well
+set sleep_time  180
+
+print_header $test_id
+
+set kill_wait       $sleep_time
+log_user 0
+spawn $scontrol show config
+expect {
+	-re "KillWait *= ($number)" {
+		set kill_wait $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+log_user 1
+if {$kill_wait > 60} {
+	send_user "\nWARNING: KillWait ($kill_wait) is too high for this test\n"
+	exit 0
+}
+
+#
+# Build input script file
+#
+make_bash_script $file_in "
+  $bin_sleep $sleep_time
+  $bin_echo FINI
+"
+
+proc date {} {
+	send_user "local time: [clock format [clock seconds]]\n"
+}
+
+#
+# Execute a couple of three minute jobs; one with a one minute time  
+# limit and the other with a four minute time limit. Confirm jobs 
+# are terminated on a timeout as required. Note that SLURM time 
+# limit enforcement has a resolution of about one minute. 
+#
+# Ideally the job gets a "job exceeded timelimit" followed by a 
+# "Terminated" message, but if the timing is bad only the "Terminated" 
+# message gets sent. This is due to salloc recognizing job termination 
+# prior to the message from slurmd being processed.
+#
+set timeout [expr $max_job_delay + $sleep_time]
+set job_id    0
+set salloc_pid [spawn $salloc -t1 --kill-command=KILL ./$file_in]
+expect {
+	-re "Granted job allocation ($number)" {
+		set job_id $expect_out(1,string)
+		date
+		exp_continue
+	}
+	-re "Job allocation time limit to be reached at" {
+		date
+		exp_continue
+	}
+	-re "Job allocation ($number) has been revoked." {
+		date
+		exp_continue
+	}
+	-re "FINI" {
+		send_user "\nFAILURE: job time limit not honored\n"
+		date
+		set exit_code 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: salloc not responding\n"
+		if {$job_id != 0} {
+			cancel_job $job_id
+		}
+		slow_kill [expr 0 - $salloc_pid]
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+set completions 0
+set job_id      0
+set salloc_pid [spawn $salloc -t4 --kill-command=KILL ./$file_in]
+expect {
+	-re "Granted job allocation ($number)" {
+		set job_id $expect_out(1,string)
+		date
+		exp_continue
+	}
+	-re "Job allocation time limit to be reached at" {
+		date
+		exp_continue
+	}
+	-re "Job allocation ($number) has been revoked." {
+		date
+		exp_continue
+	}
+	-re "FINI" {
+		date
+		incr completions
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: salloc not responding\n"
+		if {$job_id != 0} {
+			cancel_job $job_id
+		}
+		slow_kill [expr 0 - $salloc_pid]
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$completions != 1} {
+	send_user "\nFAILURE: job failed to complete properly\n"
+	set exit_code 1
+}
+
+if {$exit_code == 0} {
+	file delete $file_in
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code
