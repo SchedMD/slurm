@@ -995,7 +995,7 @@ proc check_acct_associations { } {
      	#
      	# Use sacctmgr to check associations
      	#
-     	set s_pid [spawn $sacctmgr -n -p list assoc wopi wopl format=lft,rgt]
+     	set s_pid [spawn $sacctmgr -n -p list assoc wopi wopl withd format=lft,rgt]
      	expect {
 	       -re "($number)\\|($number)\\|" {
 	       	      # Here we are checking if we have duplicates and 
@@ -1008,10 +1008,10 @@ proc check_acct_associations { } {
 		      #send_user "$first=$num1 $sec=$num2\n";
 		      if { $first } {
 			     send_user "FAILURE: found lft $num1 again\n"
-			     set rc 1	
+			     set rc 0	
 		      } elseif { $sec } {
 			     send_user "FAILURE: found rgt $num2 again\n"
-			     set rc 1	
+			     set rc 0	
 		      } else {
 			     set found($num1) 1
 			     set found($num2) 1
@@ -1038,7 +1038,7 @@ proc check_acct_associations { } {
 	for {set inx $min} {$inx < $max} {incr inx} {
 	       if { ![info exists found($inx)] } {
 		      send_user "FAILURE: No index at $inx\n"
-		      set rc 1	
+		      set rc 0
 	       }
 	}
 	log_user 1

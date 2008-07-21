@@ -49,7 +49,7 @@ set mj		MaxJobs
 set mn		MaxNodes
 set mw		MaxWall
 set clu		cluster
-set tc1		tCluster1
+set tc1		tcluster1
 set fs1		2500
 set mc1		1000000
 set mj1		50
@@ -121,7 +121,6 @@ if { ![check_acct_associations] } {
 set sadel_pid [spawn $sacctmgr -i $del $clu $tc1]
 expect {
 	-re "Deleting clusters" {
-	send_user "here0\n"
 		incr dmatches
 		exp_continue
 	}

@@ -20,8 +20,6 @@ documents those changes that are of interest to users and admins.
     'sacctmgr add qos'.  They are no longer an enum.  If none are defined
     Normal will be the QOS for everything.  Right now this is only for use 
     with MOAB.  Does nothing outside of that.
- -- Fixed issue in accounting when removing associations after they have 
-    been around more than a day and then adding them back later.
  -- Added spank_get_item support for field S_STEP_CPUS_PER_TASK.
  -- Make corrections in spank_get_item for field S_JOB_NCPUS, previously 
     reported task count rather than CPU count.
