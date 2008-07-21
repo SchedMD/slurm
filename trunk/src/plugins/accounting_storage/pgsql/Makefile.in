@@ -76,6 +76,9 @@ am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
+accounting_storage_pgsql_la_DEPENDENCIES =  \
+	$(top_builddir)/src/database/libslurm_pgsql.la \
+	$(am__DEPENDENCIES_1)
 am_accounting_storage_pgsql_la_OBJECTS =  \
 	accounting_storage_pgsql_la-accounting_storage_pgsql.lo \
 	accounting_storage_pgsql_la-pgsql_jobacct_process.lo
@@ -282,9 +285,6 @@ accounting_storage_pgsql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 accounting_storage_pgsql_la_CFLAGS = $(PGSQL_CFLAGS)
 accounting_storage_pgsql_la_LIBADD = \
 	$(top_builddir)/src/database/libslurm_pgsql.la $(PGSQL_LIBS)
-
-accounting_storage_pgsql_la_DEPENDENCIES = \
-	$(top_builddir)/src/database/libslurm_pgsql.la
 
 all: all-am
 
@@ -578,6 +578,10 @@ uninstall-am: uninstall-pkglibLTLIBRARIES
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
 	tags uninstall uninstall-am uninstall-pkglibLTLIBRARIES
 
+
+force:
+$(accounting_storage_pgsql_la_LIBADD) : force
+	@cd `dirname $@` && $(MAKE) `basename $@`
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

@@ -189,7 +189,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 
 		debug3("%d query\n%s", mysql_conn->conn, query);
 		if(!(result = mysql_db_query_ret(
-			     mysql_conn->acct_mysql_db, query, 0))) {
+			     mysql_conn->db_conn, query, 0))) {
 			xfree(query);
 			return SLURM_ERROR;
 		}
@@ -290,7 +290,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 
 		debug3("%d query\n%s", mysql_conn->conn, query);
 		if(!(result = mysql_db_query_ret(
-			     mysql_conn->acct_mysql_db, query, 0))) {
+			     mysql_conn->db_conn, query, 0))) {
 			xfree(query);
 			return SLURM_ERROR;
 		}
@@ -344,7 +344,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				
 				debug4("%d query\n%s", mysql_conn->conn, query);
 				if(!(result2 = mysql_db_query_ret(
-					     mysql_conn->acct_mysql_db,
+					     mysql_conn->db_conn,
 					     query, 0))) {
 					xfree(query);
 					return SLURM_ERROR;
@@ -510,7 +510,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				   "over_cpu_secs=VALUES(over_cpu_secs), "
 				   "resv_cpu_secs=VALUES(resv_cpu_secs)",
 				   now);
-			rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
+			rc = mysql_db_query(mysql_conn->db_conn, query);
 			xfree(query);
 			if(rc != SLURM_SUCCESS) {
 				error("Couldn't add cluster hour rollup");
@@ -548,7 +548,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				   now);
 					   	
 			debug3("%d query\n%s", mysql_conn->conn, query);
-			rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
+			rc = mysql_db_query(mysql_conn->db_conn, query);
 			xfree(query);
 			if(rc != SLURM_SUCCESS) {
 				error("Couldn't add assoc hour rollup");
@@ -633,7 +633,7 @@ extern int mysql_daily_rollup(mysql_conn_t *mysql_conn,
 			   cluster_hour_table,
 			   curr_end, curr_start, now);
 		debug3("%d query\n%s", mysql_conn->conn, query);
-		rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
+		rc = mysql_db_query(mysql_conn->db_conn, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
 			error("Couldn't add day rollup");
@@ -658,7 +658,7 @@ extern int mysql_daily_rollup(mysql_conn_t *mysql_conn,
 	 */
 	query = xstrdup_printf("delete from %s where end < %d && end != 0",
 			       suspend_table, start);
-	rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
+	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
 	if(rc != SLURM_SUCCESS) {
 		error("Couldn't remove old suspend data");
@@ -729,7 +729,7 @@ extern int mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 			   cluster_day_table,
 			   curr_end, curr_start, now);
 		debug3("%d query\n%s", mysql_conn->conn, query);
-		rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
+		rc = mysql_db_query(mysql_conn->db_conn, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
 			error("Couldn't add day rollup");
@@ -756,7 +756,7 @@ extern int mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 	query = xstrdup_printf("delete from %s where period_end < %d "
 			       "&& period_end != 0",
 			       event_table, start);
-	rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
+	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
 	if(rc != SLURM_SUCCESS) {
 		error("Couldn't remove old event data");

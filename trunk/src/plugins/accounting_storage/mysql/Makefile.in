@@ -76,6 +76,9 @@ am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
+accounting_storage_mysql_la_DEPENDENCIES =  \
+	$(top_builddir)/src/database/libslurm_mysql.la \
+	$(am__DEPENDENCIES_1)
 am_accounting_storage_mysql_la_OBJECTS =  \
 	accounting_storage_mysql_la-accounting_storage_mysql.lo \
 	accounting_storage_mysql_la-mysql_jobacct_process.lo \
@@ -284,9 +287,6 @@ accounting_storage_mysql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 accounting_storage_mysql_la_CFLAGS = $(MYSQL_CFLAGS)
 accounting_storage_mysql_la_LIBADD = \
 	$(top_builddir)/src/database/libslurm_mysql.la $(MYSQL_LIBS)
-
-accounting_storage_mysql_la_DEPENDENCIES = \
-	$(top_builddir)/src/database/libslurm_mysql.la
 
 all: all-am
 
@@ -588,6 +588,10 @@ uninstall-am: uninstall-pkglibLTLIBRARIES
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
 	tags uninstall uninstall-am uninstall-pkglibLTLIBRARIES
 
+
+force:
+$(accounting_storage_mysql_la_LIBADD) : force
+	@cd `dirname $@` && $(MAKE) `basename $@`
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:
