@@ -576,9 +576,12 @@ static bool _check_jobs_before_remove(mysql_conn_t *mysql_conn,
 	bool rc = 0;
 	MYSQL_RES *result = NULL;
 
-	query = xstrdup_printf("select t1.associd from %s as t1, %s as t2 "
-			       "where (%s) and t1.associd=t2.id limit 1;",
-			       job_table, assoc_table, assoc_char);
+	query = xstrdup_printf("select t0.associd from %s as t0, %s as t1, "
+			       "%s as t2 where t1.lft between "
+			       "t2.lft and t2.rgt && (%s)"
+			       "and t0.associd=t1.id limit 1;",
+			       job_table, assoc_table, assoc_table, 
+			       assoc_char);
 
 	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
@@ -588,8 +591,40 @@ static bool _check_jobs_before_remove(mysql_conn_t *mysql_conn,
 	}
 	xfree(query);
 
-	if(mysql_num_rows(result))
+	if(mysql_num_rows(result)) {
+		debug4("We have jobs for this combo");
 		rc = true;
+	}
+
+	mysql_free_result(result);
+	return rc;
+}
+
+static bool _check_jobs_before_remove_assoc(mysql_conn_t *mysql_conn,
+					    char *assoc_char)
+{
+	char *query = NULL;
+	bool rc = 0;
+	MYSQL_RES *result = NULL;
+
+	query = xstrdup_printf("select t1.associd from %s as t1, "
+			       "%s as t2 where (%s)"
+			       "and t1.associd=t2.id limit 1;",
+			       job_table, assoc_table, 
+			       assoc_char);
+
+	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+	if(!(result = mysql_db_query_ret(
+		     mysql_conn->acct_mysql_db, query, 0))) {
+		xfree(query);
+		return rc;
+	}
+	xfree(query);
+
+	if(mysql_num_rows(result)) {
+		debug4("We have jobs for this combo");
+		rc = true;
+	}
 
 	mysql_free_result(result);
 	return rc;
@@ -624,9 +659,9 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 	} else if(table != assoc_table) {
 		has_jobs = _check_jobs_before_remove(mysql_conn, assoc_char);
 	} else {
-		has_jobs = _check_jobs_before_remove(mysql_conn, name_char);	
+		has_jobs = _check_jobs_before_remove_assoc(mysql_conn,
+							   name_char);	
 	}
-
 	/* we want to remove completely all that is less than a day old */
 	if(!has_jobs && table != assoc_table) {
 		query = xstrdup_printf("delete from %s where creation_time>%d "
@@ -639,6 +674,7 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 			   "update %s set mod_time=%d, deleted=1 "
 			   "where deleted=0 && (%s);",
 			   table, now, name_char);
+	
 	xstrfmtcat(query, 	
 		   "insert into %s (timestamp, action, name, actor) "
 		   "values (%d, %d, \"%s\", '%s');",
@@ -802,9 +838,20 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 	}
 
-	query = xstrdup_printf("select id, creation_time "
-			       "from %s as t1 where (%s);",
-			       assoc_table, loc_assoc_char);
+	/* If we have jobs that have ran don't go through the logic of
+	 * removing the associations. Since we may want them for
+	 * reports in the future since jobs had ran.
+	 */
+	if(has_jobs)
+		goto just_update;
+
+	/* remove completely all the associations for this added in the last
+	 * day, since they are most likely nothing we really wanted in
+	 * the first place.
+	 */
+	query = xstrdup_printf("select id from %s as t1 where "
+			       "creation_time>%d && (%s);",
+			       assoc_table, day_old, loc_assoc_char);
 	
 	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
@@ -823,8 +870,9 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 		MYSQL_ROW row2;
 		
 		/* we have to do this one at a time since the lft's and rgt's
-		   change. DO NOT REMOVE THIS (what appears to be)
-		   extra query */
+		   change. If you think you need to remove this make
+		   sure your new way can handle changing lft and rgt's
+		   in the association. */
 		xstrfmtcat(query,
 			   "SELECT lft, rgt, (rgt - lft + 1) "
 			   "FROM %s WHERE id = %s;",
@@ -843,17 +891,12 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 			continue;
 		}
 
-		/* remove completely all the associations for this
-		 * added in the last day, since they are most likely
-		 * nothing we really wanted in the first place.
-		 */
-		if(!has_jobs && atoi(row[1])>day_old)
-			xstrfmtcat(query,
-				   "delete quick from %s where lft between "
-				   "%s AND %s;",
-				   assoc_table,
-				   row2[0], row2[1]);
-
+		xstrfmtcat(query,
+			   "delete quick from %s where lft between "
+			   "%s AND %s;",
+			   assoc_table,
+			   row2[0], row2[1]);
+		
 		xstrfmtcat(query,
 			   "UPDATE %s SET rgt = rgt - %s WHERE "
 			   "rgt > %s;"
@@ -884,9 +927,14 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 		return rc;
 	}
 
-	/* now update the associations themselves that are still around */
+just_update:
+	/* now update the associations themselves that are still
+	 * around clearing all the limits since if we add them back
+	 * we don't want any residue from past associations lingering
+	 * around.
+	 */
 	query = xstrdup_printf("update %s as t1 set mod_time=%d, deleted=1, "
-			       "lft=0, rgt=0, fairshare=1, max_jobs=NULL, "
+			       "fairshare=1, max_jobs=NULL, "
 			       "max_nodes_per_job=NULL, "
 			       "max_wall_duration_per_job=NULL, "
 			       "max_cpu_secs_per_job=NULL "
@@ -2192,8 +2240,7 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			   "insert into %s (%s, lft, rgt) "
 			   "values (%s, @MyMax+1, @MyMax+2) "
 			   "on duplicate key update deleted=0, "
-			   "id=LAST_INSERT_ID(id)%s, lft=VALUES(lft), "
-			   "rgt=VALUES(rgt);",
+			   "id=LAST_INSERT_ID(id)%s;",
 			   assoc_table, cols,
 			   vals,
 			   extra);
@@ -2384,7 +2431,7 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 		}
 		
 		xstrfmtcat(query, 
-			   "select distinct %s from %s %s  order by lft "
+			   "select distinct %s from %s %s order by lft "
 			   "FOR UPDATE;",
 			   tmp_char, assoc_table, update);
 		xfree(tmp_char);
@@ -2404,142 +2451,104 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 		xfree(query);
 
 		assoc_id = 0;
-		row = mysql_fetch_row(result);
+		if(!(row = mysql_fetch_row(result))) {
+			/* This code speeds up the add process quite a bit
+			 * here we are only doing an update when we are done
+			 * adding to a specific group (cluster/account) other
+			 * than that we are adding right behind what we were
+			 * so just total them up and then do one update
+			 * instead of the slow ones that require an update
+			 * every time.  There is a incr check outside of the
+			 * loop to catch everything on the last spin of the
+			 * while. 
+			 */ 
+			if(!old_parent || !old_cluster
+			   || strcasecmp(parent, old_parent) 
+			   || strcasecmp(object->cluster, old_cluster)) {
+				char *sel_query = xstrdup_printf(
+					"SELECT lft FROM %s WHERE "
+					"acct = '%s' and cluster = '%s' "
+					"and user = '' order by lft;",
+					assoc_table,
+					parent, object->cluster);
+				MYSQL_RES *sel_result = NULL;
+				
+				if(incr) {
+					char *up_query = xstrdup_printf(
+						"UPDATE %s SET rgt = rgt+%d "
+						"WHERE rgt > %d && deleted < 2;"
+						"UPDATE %s SET lft = lft+%d "
+						"WHERE lft > %d "
+						"&& deleted < 2;"
+						"UPDATE %s SET deleted = 0 "
+						"WHERE deleted = 2;",
+						assoc_table, incr,
+						my_left,
+						assoc_table, incr,
+						my_left,
+						assoc_table);
+					debug3("%d query\n%s", mysql_conn->conn,
+					       up_query);
+					rc = mysql_db_query(
+						mysql_conn->acct_mysql_db,
+						up_query);
+					xfree(up_query);
+					if(rc != SLURM_SUCCESS) {
+						error("Couldn't do update");
+						xfree(cols);
+						xfree(vals);
+						xfree(update);
+						xfree(extra);
+						xfree(sel_query);
+						break;
+					}
+				}
 
-		if(row && !atoi(row[MASSOC_DELETED])) {
-			debug("This account was added already");
-			xfree(cols);
-			xfree(vals);
-			xfree(update);
-			mysql_free_result(result);
-			xfree(extra);
-			continue;
-		}
-
-		/* This code speeds up the add process quite a bit
-		 * here we are only doing an update when we are done
-		 * adding to a specific group (cluster/account) other
-		 * than that we are adding right behind what we were
-		 * so just total them up and then do one update
-		 * instead of the slow ones that require an update
-		 * every time.  There is a incr check outside of the
-		 * loop to catch everything on the last spin of the
-		 * while. 
-		 */ 
-		if(!old_parent || !old_cluster
-		   || strcasecmp(parent, old_parent) 
-		   || strcasecmp(object->cluster, old_cluster)) {
-			char *sel_query = xstrdup_printf(
-				"SELECT lft FROM %s WHERE "
-				"acct = '%s' and cluster = '%s' "
-				"and user = '' order by lft;",
-				assoc_table,
-				parent, object->cluster);
-			MYSQL_RES *sel_result = NULL;
-			
-			if(incr) {
-				char *up_query = xstrdup_printf(
-					"UPDATE %s SET rgt = rgt+%d "
-					"WHERE rgt > %d && deleted < 2;"
-					"UPDATE %s SET lft = lft+%d "
-					"WHERE lft > %d "
-					"&& deleted < 2;"
-					"UPDATE %s SET deleted = 0 "
-					"WHERE deleted = 2;",
-					assoc_table, incr,
-					my_left,
-					assoc_table, incr,
-					my_left,
-					assoc_table);
-				debug3("%d(%d) query\n%s",
-				       mysql_conn->conn, __LINE__,
-				       up_query);
-				rc = mysql_db_query(
-					mysql_conn->acct_mysql_db,
-					up_query);
-				xfree(up_query);
-				if(rc != SLURM_SUCCESS) {
-					error("Couldn't do update");
+				debug3("%d query\n%s", mysql_conn->conn,
+				       sel_query);
+				if(!(sel_result = mysql_db_query_ret(
+					     mysql_conn->acct_mysql_db,
+					     sel_query, 0))) {
 					xfree(cols);
 					xfree(vals);
 					xfree(update);
 					xfree(extra);
 					xfree(sel_query);
+					rc = SLURM_ERROR;
 					break;
 				}
-			}
-
-			debug3("%d(%d) query\n%s", mysql_conn->conn,
-			       __LINE__, sel_query);
-			if(!(sel_result = mysql_db_query_ret(
-				     mysql_conn->acct_mysql_db,
-				     sel_query, 0))) {
-				xfree(cols);
-				xfree(vals);
-				xfree(update);
-				xfree(extra);
-				xfree(sel_query);
-				rc = SLURM_ERROR;
-				break;
-			}
 				
-			if(!(row = mysql_fetch_row(sel_result))) {
-				error("Couldn't get left from query\n",
-				      sel_query);
-				mysql_free_result(sel_result);
-				xfree(cols);
-				xfree(vals);
-				xfree(update);
-				xfree(extra);
+				if(!(row = mysql_fetch_row(sel_result))) {
+					error("Couldn't get left from query\n",
+					      sel_query);
+					mysql_free_result(sel_result);
+					xfree(cols);
+					xfree(vals);
+					xfree(update);
+					xfree(extra);
+					xfree(sel_query);
+					rc = SLURM_ERROR;
+					break;
+				}
 				xfree(sel_query);
-				rc = SLURM_ERROR;
-				break;
-			}
-			xfree(sel_query);
 
-			my_left = atoi(row[0]);
-			mysql_free_result(sel_result);
-			//info("left is %d", my_left);
-			xfree(old_parent);
-			xfree(old_cluster);
-			old_parent = xstrdup(parent);
-			old_cluster = xstrdup(object->cluster);
-			incr = 0;
-		}
-		incr += 2;
-		/* definantly works but slow */
-/* 		xstrfmtcat(query, */
-/* 			   "insert into %s (%s, lft, rgt, deleted) " */
-/* 			   "values (%s, %d, %d, 2) " */
-/* 			   "on duplicate key update deleted=2, " */
-/* 			   "id=LAST_INSERT_ID(id)%s, lft=VALUES(lft), " */
-/* 			   "rgt=VALUES(rgt);" */
-/* 			   "UPDATE %s SET rgt = rgt+%d " */
-/* 			   "WHERE rgt > %d && deleted < 2;" */
-/* 			   "UPDATE %s SET lft = lft+%d " */
-/* 			   "WHERE lft > %d " */
-/* 			   "&& deleted < 2;" */
-/* 			   "UPDATE %s SET deleted = 0 " */
-/* 			   "WHERE deleted = 2;", */
-/* 			   assoc_table, cols, */
-/* 			   vals, my_left+(1), my_left+2, */
-/* 			   extra, */
-/* 			   assoc_table, 2, */
-/* 			   my_left, */
-/* 			   assoc_table, 2, */
-/* 			   my_left, */
-/* 			   assoc_table); */
-		xstrfmtcat(query,
-			   "insert into %s (%s, lft, rgt, deleted) "
-			   "values (%s, %d, %d, 2) "
-			   "on duplicate key update deleted=2, "
-			   "id=LAST_INSERT_ID(id)%s, lft=VALUES(lft), "
-			   "rgt=VALUES(rgt);",
-			   assoc_table, cols,
-			   vals, my_left+(incr-1), my_left+incr,
-			   extra);
+				my_left = atoi(row[0]);
+				mysql_free_result(sel_result);
+				//info("left is %d", my_left);
+				xfree(old_parent);
+				xfree(old_cluster);
+				old_parent = xstrdup(parent);
+				old_cluster = xstrdup(object->cluster);
+				incr = 0;
+			}
+			incr += 2;
+			xstrfmtcat(query,
+				   "insert into %s (%s, lft, rgt, deleted) "
+				   "values (%s, %d, %d, 2);",
+				   assoc_table, cols,
+				   vals, my_left+(incr-1), my_left+incr);
 			
-		/* definantly works but slow */
+			/* definantly works but slow */
 /* 			xstrfmtcat(query, */
 /* 				   "SELECT @myLeft := lft FROM %s WHERE " */
 /* 				   "acct = '%s' " */
@@ -2559,40 +2568,46 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 /* 				   "values (%s, @myLeft+1, @myLeft+2);", */
 /* 				   assoc_table, cols, */
 /* 				   vals); */
-/*	} else if(!atoi(row[MASSOC_DELETED])) { */
-/* 			debug("This account was added already"); */
-/* 			xfree(cols); */
-/* 			xfree(vals); */
-/* 			xfree(update); */
-/* 			mysql_free_result(result); */
-/* 			xfree(extra); */
-/* 			continue; */
-/* 		} else { */
-/* 			assoc_id = atoi(row[MASSOC_ID]); */
-/* 			if(object->parent_acct  */
-/* 			   && strcasecmp(object->parent_acct, */
-/* 					 row[MASSOC_PACCT])) { */
+		} else if(!atoi(row[MASSOC_DELETED])) {
+			/* We don't need to do anything here */
+			debug("This account was added already");
+			xfree(cols);
+			xfree(vals);
+			xfree(update);
+			mysql_free_result(result);
+			xfree(extra);
+			continue;
+		} else {
+			/* If it was once deleted we have kept the lft
+			 * and rgt's consant while it was deleted and
+			 * so we can just unset the deleted flag,
+			 * check for the parent and move if needed.
+			 */
+			assoc_id = atoi(row[MASSOC_ID]);
+			if(object->parent_acct 
+			   && strcasecmp(object->parent_acct,
+					 row[MASSOC_PACCT])) {
 				
-/* 				/\* We need to move the parent! *\/ */
-/* 				if(_move_parent(mysql_conn, */
-/* 						atoi(row[MASSOC_LFT]), */
-/* 						atoi(row[MASSOC_RGT]), */
-/* 						object->cluster, */
-/* 						row[MASSOC_ID], */
-/* 						row[MASSOC_PACCT], */
-/* 						object->parent_acct) */
-/* 				   == SLURM_ERROR) */
-/* 					continue; */
-/* 			} */
+				/* We need to move the parent! */
+				if(_move_parent(mysql_conn,
+						atoi(row[MASSOC_LFT]),
+						atoi(row[MASSOC_RGT]),
+						object->cluster,
+						row[MASSOC_ID],
+						row[MASSOC_PACCT],
+						object->parent_acct)
+				   == SLURM_ERROR)
+					continue;
+			}
 
 
-/* 			affect_rows = 2; */
-/* 			xstrfmtcat(query, */
-/* 				   "update %s set deleted=0, " */
-/* 				   "id=LAST_INSERT_ID(id)%s %s;", */
-/* 				   assoc_table,  */
-/* 				   extra, update); */
-/* 		} */
+			affect_rows = 2;
+			xstrfmtcat(query,
+				   "update %s set deleted=0, "
+				   "id=LAST_INSERT_ID(id)%s %s;",
+				   assoc_table, 
+				   extra, update);
+		}
 		mysql_free_result(result);
 
 		xfree(cols);
@@ -5353,6 +5368,11 @@ extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 	uint32_t user_parent_id = 0;
 	uint32_t acct_parent_id = 0;
 
+	/* needed if we don't have an assoc_cond */
+	uint16_t without_parent_info = 0;
+	uint16_t without_parent_limits = 0;
+	uint16_t with_usage = 0;
+
 	/* if this changes you will need to edit the corresponding enum */
 	char *assoc_req_inx[] = {
 		"id",
@@ -5477,6 +5497,10 @@ extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 		xstrfmtcat(extra, " && parent_acct='%s'",
 			   assoc_cond->parent_acct);
 	}
+
+	with_usage = assoc_cond->with_usage;
+	without_parent_limits = assoc_cond->without_parent_limits;
+	without_parent_info = assoc_cond->without_parent_info;
 empty:
 	xfree(tmp);
 	xstrfmtcat(tmp, "%s", assoc_req_inx[i]);
@@ -5511,7 +5535,7 @@ empty:
 		assoc->rgt = atoi(row[ASSOC_REQ_RGT]);
 	
 		/* get the usage if requested */
-		if(assoc_cond->with_usage) {
+		if(with_usage) {
 			acct_storage_p_get_usage(mysql_conn, assoc,
 						 assoc_cond->usage_start,
 						 assoc_cond->usage_end);
@@ -5522,7 +5546,8 @@ empty:
 		assoc->acct = xstrdup(row[ASSOC_REQ_ACCT]);
 		assoc->cluster = xstrdup(row[ASSOC_REQ_CLUSTER]);
 		
-		if(!assoc_cond->without_parent_info && row[ASSOC_REQ_PARENT][0]) {
+		if(!without_parent_info 
+		   && row[ASSOC_REQ_PARENT][0]) {
 /* 			info("got %s?=%s and %s?=%s", */
 /* 			     row[ASSOC_REQ_PARENT], last_acct_parent, */
 /* 			     row[ASSOC_REQ_CLUSTER], last_cluster); */
@@ -5570,7 +5595,7 @@ empty:
 				"select @par_id, @mj, @mnpj, @mwpj, @mcpj;", 
 				assoc_table, row[ASSOC_REQ_ACCT],
 				row[ASSOC_REQ_CLUSTER],
-				assoc_cond->without_parent_limits);
+				without_parent_limits);
 			
 			if(!(result2 = mysql_db_query_ret(
 				     mysql_conn->acct_mysql_db, query, 1))) {
@@ -5581,7 +5606,7 @@ empty:
 			
 			row2 = mysql_fetch_row(result2);
 			user_parent_id = atoi(row2[ASSOC2_REQ_PARENT_ID]);
-			if(!assoc_cond->without_parent_limits) {
+			if(!without_parent_limits) {
 				if(row2[ASSOC2_REQ_MJ])
 					parent_mj = atoi(row2[ASSOC2_REQ_MJ]);
 				else
