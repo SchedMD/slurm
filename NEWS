@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.2.34
+=========================
+
 * Changes in SLURM 1.2.33
 =========================
  -- Cancelled or Failed jobs will now report their job and step id on exit
