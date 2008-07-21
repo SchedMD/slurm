@@ -689,6 +689,10 @@ uninstall-am: uninstall-pkglibLTLIBRARIES uninstall-sbinPROGRAMS
 	tags uninstall uninstall-am uninstall-pkglibLTLIBRARIES \
 	uninstall-sbinPROGRAMS
 
+
+force:
+$(select_bluegene_la_LIBADD) $(sfree_LDADD) : force
+	@cd `dirname $@` && $(MAKE) `basename $@`
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

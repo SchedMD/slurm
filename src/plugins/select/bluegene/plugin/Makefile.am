@@ -47,3 +47,7 @@ slurm_epilog_SOURCES = slurm_epilog.c
 sfree_LDFLAGS = -export-dynamic -lm $(CMD_LDFLAGS) 
 slurm_prolog_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 slurm_epilog_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+
+force:
+$(select_bluegene_la_LIBADD) $(sfree_LDADD) : force
+	@cd `dirname $@` && $(MAKE) `basename $@`
