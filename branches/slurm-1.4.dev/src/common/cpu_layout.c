@@ -35,16 +35,88 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
+#include <string.h>
 #include <slurm/slurm_errno.h>
 
 #include "src/common/cpu_layout.h"
 #include "src/common/log.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xassert.h"
+#include <stdlib.h>
+#include "src/common/hostlist.h"
+
+extern cpu_layout_t *create_cpu_layout(char *hosts, uint16_t fast_schedule,
+		struct node_record * (*node_finder) (char *host_name) )
+{
+	hostset_t hs;
+	char *host_name;
+	int core_cnt = 0, host_inx = 0, sock_inx = -1;
+	cpu_layout_t *cpu_layout;
+	struct node_record *node_ptr;
+
+	hs = hostset_create(hosts);
+	if (!hs) {
+		error("create_cpu_layout: Invalid hostlist: %s", hosts);
+		return NULL;
+	}
+	cpu_layout = xmalloc(sizeof(cpu_layout_t));
+	cpu_layout->node_cnt = hostset_count(hs);
+	cpu_layout->memory_reserved = xmalloc(sizeof(uint32_t) * 
+					      cpu_layout->node_cnt);
+	cpu_layout->memory_rep_count = xmalloc(sizeof(uint32_t) * 
+					       cpu_layout->node_cnt);
+	cpu_layout->sockets_per_node = xmalloc(sizeof(uint32_t) * 
+					       cpu_layout->node_cnt);
+	cpu_layout->cores_per_socket = xmalloc(sizeof(uint32_t) * 
+					       cpu_layout->node_cnt);
+	cpu_layout->sock_core_rep_count = xmalloc(sizeof(uint32_t) * 
+						  cpu_layout->node_cnt);
+
+/*	cpu_layout.memory_reserved initialized to zero */
+	cpu_layout->memory_rep_count[0] = cpu_layout->node_cnt;
+	while ((host_name = hostset_shift(hs))) {
+		node_ptr = node_finder(host_name);
+		if (++host_inx > cpu_layout->node_cnt) {
+			error("create_cpu_layout: hostlist parsing problem: %s",
+			      hosts);
+			free(host_name);
+			goto fail;
+		} else if (node_ptr) {
+			uint32_t cores, socks;
+			if (fast_schedule) {
+				socks = node_ptr->config_ptr->sockets;
+				cores = node_ptr->config_ptr->cores;
+			} else {
+				socks = node_ptr->sockets;
+				cores = node_ptr->cores;
+			}
+			if ((sock_inx < 0) ||
+			    (socks != cpu_layout->sockets_per_node[sock_inx]) ||
+			    (cores != cpu_layout->cores_per_socket[sock_inx])){
+				sock_inx++;
+				cpu_layout->sockets_per_node[sock_inx] = socks;
+				cpu_layout->cores_per_socket[sock_inx] = cores;
+			}
+			cpu_layout->sock_core_rep_count[sock_inx]++;
+			core_cnt += (cores * socks);
+		} else {
+			error("create_cpu_layout: Invalid host: %s", host_name);
+			free(host_name);
+			goto fail;
+		}
+		free(host_name);
+	}
+	hostset_destroy(hs);
+	cpu_layout->allocated_cores = bit_alloc(core_cnt);
+	return cpu_layout;
+
+ fail:	free_cpu_layout(&cpu_layout);
+	return NULL;
+}
 
 extern cpu_layout_t *copy_cpu_layout(cpu_layout_t *cpu_layout_ptr)
 {
-	int core_inx = 0, i, mem_inx = 0, sock_cnt = 0, sock_inx = 0;
+	int i, mem_inx = 0, sock_inx = 0;
 	cpu_layout_t *new_layout = xmalloc(sizeof(cpu_layout_t));
 
 	new_layout->node_cnt = cpu_layout_ptr->node_cnt;
@@ -56,46 +128,38 @@ extern cpu_layout_t *copy_cpu_layout(cpu_layout_t *cpu_layout_ptr)
 	new_layout->memory_rep_count = xmalloc(sizeof(uint32_t) * 
 					       new_layout->node_cnt);
 	for (i=0; i<new_layout->node_cnt; i++) {
-		new_layout->memory_reserved[i] = 
-			cpu_layout_ptr->memory_reserved[i];
-		new_layout->memory_rep_count[i] = 
-			cpu_layout_ptr->memory_rep_count[i];
-		mem_inx += new_layout->memory_rep_count[i];
-		if (mem_inx >= new_layout->node_cnt)
+		mem_inx += cpu_layout_ptr->memory_rep_count[i];
+		if (mem_inx >= cpu_layout_ptr->node_cnt) {
+			i++;
 			break;
+		}
 	}
+	memcpy(new_layout->memory_reserved, 
+	       cpu_layout_ptr->memory_reserved, (sizeof(uint32_t) * i));
+	memcpy(new_layout->memory_rep_count, 
+	       cpu_layout_ptr->memory_rep_count, (sizeof(uint32_t) * i));
 
-	/* Copy sockets_per_node and sockets_rep_count */
+	/* Copy sockets_per_node, cores_per_socket and core_sock_rep_count */
 	new_layout->sockets_per_node = xmalloc(sizeof(uint32_t) * 
-					       new_layout->node_cnt);		
-	new_layout->sockets_rep_count = xmalloc(sizeof(uint32_t) * 
-					        new_layout->node_cnt);
-	for (i=0; i<new_layout->node_cnt; i++) {
-		new_layout->sockets_per_node[i] = 
-			cpu_layout_ptr->sockets_per_node[i];
-		new_layout->sockets_rep_count[i] = 
-			cpu_layout_ptr->sockets_rep_count[i];
-		sock_cnt += (new_layout->sockets_per_node[i] *
-			     new_layout->sockets_rep_count[i]);
-		sock_inx += new_layout->sockets_rep_count[i];
-		if (sock_inx >= new_layout->node_cnt)
-			break;
-	}
-
-	/* Copy cores_per_socket and cores_rep_count */
+					       new_layout->node_cnt);	
 	new_layout->cores_per_socket = xmalloc(sizeof(uint32_t) * 
-					       sock_cnt);		
-	new_layout->cores_rep_count = xmalloc(sizeof(uint32_t) * 
-					      sock_cnt);
-	for (i=0; i<sock_cnt; i++) {
-		new_layout->cores_per_socket[i] = 
-			cpu_layout_ptr->cores_per_socket[i];
-		new_layout->cores_rep_count[i] = 
-			cpu_layout_ptr->cores_rep_count[i];
-		core_inx += new_layout->cores_rep_count[i];
-		if (core_inx >= sock_cnt)
+					       new_layout->node_cnt);	
+	new_layout->sock_core_rep_count = xmalloc(sizeof(uint32_t) * 
+						  new_layout->node_cnt);	
+	for (i=0; i<new_layout->node_cnt; i++) {
+		sock_inx += cpu_layout_ptr->sock_core_rep_count[i];
+		if (sock_inx >= cpu_layout_ptr->node_cnt) {
+			i++;
 			break;
+		}
 	}
+	memcpy(new_layout->sockets_per_node, 
+	       cpu_layout_ptr->sockets_per_node, (sizeof(uint32_t) * i));
+	memcpy(new_layout->cores_per_socket, 
+	       cpu_layout_ptr->cores_per_socket, (sizeof(uint32_t) * i));
+	memcpy(new_layout->sock_core_rep_count, 
+	       cpu_layout_ptr->sock_core_rep_count, (sizeof(uint32_t) * i));
+
 	return new_layout;
 }
 
@@ -106,25 +170,25 @@ extern void free_cpu_layout(cpu_layout_t **cpu_layout_pptr)
 		xfree(cpu_layout_ptr->memory_reserved);
 		xfree(cpu_layout_ptr->memory_rep_count);
 		xfree(cpu_layout_ptr->sockets_per_node);
-		xfree(cpu_layout_ptr->sockets_rep_count);
 		xfree(cpu_layout_ptr->cores_per_socket);
-		xfree(cpu_layout_ptr->cores_rep_count);
-		bit_free(cpu_layout_ptr->allocated_cores);
+		xfree(cpu_layout_ptr->sock_core_rep_count);
+		if (cpu_layout_ptr->allocated_cores)
+			bit_free(cpu_layout_ptr->allocated_cores);
 		xfree(cpu_layout_ptr);
 		*cpu_layout_pptr = NULL;
 	}
 }
 
+/* Log the contents of a cpu_layout data structure using info() */
 extern void log_cpu_layout(cpu_layout_t *cpu_layout_ptr)
 {
-	int bit_inx = 0;
-	int core_inx = 0, core_reps = 0;
-	int i, j;
+	int bit_inx = 0, bit_reps, i;
 	int mem_inx = 0, mem_reps = 0;
 	int node_inx;
 	int sock_inx = 0, sock_reps = 0;
 
 	xassert(cpu_layout_ptr);
+	info("====================");
 	for (node_inx=0; node_inx<cpu_layout_ptr->node_cnt; node_inx++) {
 		info("Node[%d]:", node_inx);
 
@@ -132,43 +196,41 @@ extern void log_cpu_layout(cpu_layout_t *cpu_layout_ptr)
 			mem_inx++;
 			mem_reps = 0;
 		}
-		info(" Mem:%u MB", cpu_layout_ptr->memory_reserved[mem_inx]);
 		mem_reps++;
 
-		if (sock_reps >= cpu_layout_ptr->sockets_rep_count[sock_inx]) {
+		if (sock_reps >= 
+		    cpu_layout_ptr->sock_core_rep_count[sock_inx]) {
 			sock_inx++;
 			sock_reps = 0;
 		}
-		info(" Sockets:%u", cpu_layout_ptr->sockets_per_node[sock_inx]);
 		sock_reps++;
 
-		for (i=0; i<cpu_layout_ptr->sockets_per_node[sock_inx]; i++) {
-			if (core_reps >= 
-			    cpu_layout_ptr->cores_rep_count[core_inx]) {
-				core_inx++;
-				core_reps = 0;
+		info("  Mem(MB):%u  Sockets:%u  Cores:%u", 
+		     cpu_layout_ptr->memory_reserved[mem_inx],
+		     cpu_layout_ptr->sockets_per_node[sock_inx],
+		     cpu_layout_ptr->cores_per_socket[sock_inx]);
+
+		bit_reps = cpu_layout_ptr->sockets_per_node[sock_inx] *
+			   cpu_layout_ptr->cores_per_socket[sock_inx];
+		for (i=0; i<bit_reps; i++) {
+			if (bit_test(cpu_layout_ptr->allocated_cores,
+				     bit_inx)) {
+				info("  Socket[%d] Core[%d] in use",
+				     (i / cpu_layout_ptr->
+				          cores_per_socket[sock_inx]),
+				     (i % cpu_layout_ptr->
+					  cores_per_socket[sock_inx]));
 			}
-			info("  Socket[%d]: Cores:%u", 
-			     i, cpu_layout_ptr->cores_per_socket[core_inx]);
-			core_reps++;
-			for (j=0; j<cpu_layout_ptr->cores_per_socket[core_inx];
-			     j++) {
-				if (bit_test(cpu_layout_ptr->allocated_cores,
-					     bit_inx)) {
-					info("  Socket[%d] Core[%d] in use",
-					     i, j);
-				}
-				bit_inx++;
-			}
+			bit_inx++;
 		}
 	}
+	info("====================");
 }
 
 extern void pack_cpu_layout(cpu_layout_t *cpu_layout_ptr, Buf buffer)
 {
 	int i;
-	uint32_t core_cnt = 0, core_recs = 0, mem_recs = 0;
-	uint32_t sock_cnt = 0, sock_recs = 0;
+	uint32_t core_cnt = 0, mem_recs = 0, sock_recs = 0;
 
 	pack32(cpu_layout_ptr->node_cnt, buffer);
 	for (i=0; i<cpu_layout_ptr->node_cnt; i++) {
@@ -176,27 +238,24 @@ extern void pack_cpu_layout(cpu_layout_t *cpu_layout_ptr, Buf buffer)
 		if (mem_recs >= cpu_layout_ptr->node_cnt)
 			break;
 	}
+	i++;
 	pack32_array(cpu_layout_ptr->memory_reserved,  (uint32_t) i, buffer);
 	pack32_array(cpu_layout_ptr->memory_rep_count, (uint32_t) i, buffer);
+
 	for (i=0; i<cpu_layout_ptr->node_cnt; i++) {
-		sock_cnt  += (cpu_layout_ptr->sockets_per_node[i] +
-			      cpu_layout_ptr->sockets_rep_count[i]);
-		sock_recs += cpu_layout_ptr->sockets_rep_count[i];
+		core_cnt += cpu_layout_ptr->sockets_per_node[i] *
+			    cpu_layout_ptr->cores_per_socket[i] *
+			    cpu_layout_ptr->sock_core_rep_count[i];
+		sock_recs += cpu_layout_ptr->sock_core_rep_count[i];
 		if (sock_recs >= cpu_layout_ptr->node_cnt)
 			break;
 	}
-	pack32_array(cpu_layout_ptr->sockets_per_node,  (uint32_t) i, buffer);
-	pack32_array(cpu_layout_ptr->sockets_rep_count, (uint32_t) i, buffer);
-	for (i=0; i<sock_cnt; i++) {
-		core_cnt  += (cpu_layout_ptr->cores_per_socket[i] +
-			      cpu_layout_ptr->cores_rep_count[i]);
-		core_recs += cpu_layout_ptr->cores_rep_count[i];
-		if (core_recs >= sock_cnt)
-			break;
-	}
-	pack32_array(cpu_layout_ptr->cores_per_socket, (uint32_t) i, buffer);
-	pack32_array(cpu_layout_ptr->cores_rep_count,  (uint32_t) i, buffer);
+	i++;
+	pack32_array(cpu_layout_ptr->sockets_per_node,    (uint32_t) i, buffer);
+	pack32_array(cpu_layout_ptr->cores_per_socket,    (uint32_t) i, buffer);
+	pack32_array(cpu_layout_ptr->sock_core_rep_count, (uint32_t) i, buffer);
 	pack32(core_cnt, buffer);
+	xassert (core_cnt == bit_size(cpu_layout_ptr->allocated_cores));
 	pack_bit_fmt(cpu_layout_ptr->allocated_cores, buffer);
 }
 
@@ -207,12 +266,11 @@ extern int  unpack_cpu_layout(cpu_layout_t **cpu_layout_pptr, Buf buffer)
 	cpu_layout_t *cpu_layout = xmalloc(sizeof(cpu_layout_t));
 
 	safe_unpack32(&cpu_layout->node_cnt, buffer);
-	safe_unpack32_array(&cpu_layout->memory_reserved,   &tmp32, buffer);
-	safe_unpack32_array(&cpu_layout->memory_rep_count,  &tmp32, buffer);
-	safe_unpack32_array(&cpu_layout->sockets_per_node,  &tmp32, buffer);
-	safe_unpack32_array(&cpu_layout->sockets_rep_count, &tmp32, buffer);
-	safe_unpack32_array(&cpu_layout->cores_per_socket,  &tmp32, buffer);
-	safe_unpack32_array(&cpu_layout->cores_rep_count,   &tmp32, buffer);
+	safe_unpack32_array(&cpu_layout->memory_reserved,     &tmp32, buffer);
+	safe_unpack32_array(&cpu_layout->memory_rep_count,    &tmp32, buffer);
+	safe_unpack32_array(&cpu_layout->sockets_per_node,    &tmp32, buffer);
+	safe_unpack32_array(&cpu_layout->cores_per_socket,    &tmp32, buffer);
+	safe_unpack32_array(&cpu_layout->sock_core_rep_count, &tmp32, buffer);
 	safe_unpack32(&core_cnt, buffer);    /* NOTE: Not part of struct */
 	safe_unpackstr_xmalloc(&bit_fmt, &tmp32, buffer);
 	cpu_layout->allocated_cores = bit_alloc((bitoff_t) core_cnt);

@@ -51,20 +51,56 @@
 
 #include "src/common/bitstring.h"
 #include "src/common/pack.h"
+#include "src/slurmctld/slurmctld.h"
 
+/* struct cpu_layout defines exactly which resources are allocated
+ *	to a job, step, partition, etc.
+ *
+ * node_cnt		- Number of nodes in the allocation
+ * memory_reserved	- MB per node reserved
+ * memory_rep_count	- How many consecutive nodes that memory_reserved
+ *			  applies to
+ * sockets_per_node	- Count of sockets on this node
+ * cores_per_socket	- Count of cores per socket on this node
+ * sock_core_rep_count	- How many consecutive nodes that sockets_per_node
+ *			  and cores_per_socket apply to
+ * allocated_cores	- bitmap of selected cores for all nodes and sockets
+ *
+ * Sample layout:
+ *   |               Node_0              |               Node_1              |
+ *   |      Sock_0     |      Sock_1     |      Sock_0     |      Sock_1     |
+ *   | Core_0 | Core_1 | Core_0 | Core_1 | Core_0 | Core_1 | Core_0 | Core_1 |
+ *   | Bit_0  | Bit_1  | Bit_2  | Bit_3  | Bit_4  | Bit_5  | Bit_6  | Bit_7  |
+ */
 typedef struct cpu_layout {
 	uint32_t	node_cnt;
-	uint32_t *	memory_reserved;	/* MB per node */
+	uint32_t *	memory_reserved;
 	uint32_t *	memory_rep_count;
 	uint32_t *	sockets_per_node;
-	uint32_t *	sockets_rep_count;
 	uint32_t *	cores_per_socket;
-	uint32_t *	cores_rep_count;
+	uint32_t *	sock_core_rep_count;
 	bitstr_t *	allocated_cores;
 } cpu_layout_t;
 
+/* Create a cpu_layout data structure based upon slurmctld state.
+ * Call this ONLY from slurmctld. We pass a pointer to slurmctld's
+ * find_node_record function so this module can be loaded in libslurm
+ * and the other functions used from slurmd. Example of use:
+ * cpu_layout_ptr = create_cpu_layout("tux[2,5,10-12,16]", 
+ *				      slurmctld_conf.fast_schedule,
+ *				      find_node_record);
+ */
+extern cpu_layout_t *create_cpu_layout(char *hosts, uint16_t fast_schedule,
+		struct node_record * (*node_finder) (char *host_name) );
+
+/* Make a copy of a cpu_layout data structure, free using free_cpu_layout() */
 extern cpu_layout_t *copy_cpu_layout(cpu_layout_t *cpu_layout_ptr);
+
+/* Free cpu_layout data structure created using copy_cpu_layout() or
+ *	unpack_cpu_layout() */
 extern void free_cpu_layout(cpu_layout_t **cpu_layout_pptr);
+
+/* Log the contents of a cpu_layout data structure using info() */
 extern void log_cpu_layout(cpu_layout_t *cpu_layout_ptr);
 
 extern void pack_cpu_layout(cpu_layout_t *cpu_layout_ptr, Buf buffer);
