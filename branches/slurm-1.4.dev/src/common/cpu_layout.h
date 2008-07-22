@@ -103,7 +103,14 @@ extern void free_cpu_layout(cpu_layout_t **cpu_layout_pptr);
 /* Log the contents of a cpu_layout data structure using info() */
 extern void log_cpu_layout(cpu_layout_t *cpu_layout_ptr);
 
+/* Un/pack full cpu_layout data structure */
 extern void pack_cpu_layout(cpu_layout_t *cpu_layout_ptr, Buf buffer);
 extern int  unpack_cpu_layout(cpu_layout_t **cpu_layout_pptr, Buf buffer);
 
+/* Get/set bit value at specified location.
+ *	node_id, socket_id and core_id are all zero origin */
+extern int get_cpu_layout_bit(cpu_layout_t *cpu_layout_ptr, uint32_t node_id,
+			      uint32_t socket_id, uint32_t core_id);
+extern int set_cpu_layout_bit(cpu_layout_t *cpu_layout_ptr, uint32_t node_id,
+			      uint32_t socket_id, uint32_t core_id);
 #endif /* !_CPU_LAYOUT_H */

@@ -54,6 +54,7 @@ extern cpu_layout_t *create_cpu_layout(char *hosts, uint16_t fast_schedule,
 	cpu_layout_t *cpu_layout;
 	struct node_record *node_ptr;
 
+	xassert(hosts);
 	hs = hostset_create(hosts);
 	if (!hs) {
 		error("create_cpu_layout: Invalid hostlist: %s", hosts);
@@ -119,6 +120,7 @@ extern cpu_layout_t *copy_cpu_layout(cpu_layout_t *cpu_layout_ptr)
 	int i, mem_inx = 0, sock_inx = 0;
 	cpu_layout_t *new_layout = xmalloc(sizeof(cpu_layout_t));
 
+	xassert(cpu_layout_ptr);
 	new_layout->node_cnt = cpu_layout_ptr->node_cnt;
 	new_layout->allocated_cores = bit_copy(cpu_layout_ptr->allocated_cores);
 
@@ -232,6 +234,7 @@ extern void pack_cpu_layout(cpu_layout_t *cpu_layout_ptr, Buf buffer)
 	int i;
 	uint32_t core_cnt = 0, mem_recs = 0, sock_recs = 0;
 
+	xassert(cpu_layout_ptr);
 	pack32(cpu_layout_ptr->node_cnt, buffer);
 	for (i=0; i<cpu_layout_ptr->node_cnt; i++) {
 		mem_recs += cpu_layout_ptr->memory_rep_count[i];
@@ -265,6 +268,7 @@ extern int  unpack_cpu_layout(cpu_layout_t **cpu_layout_pptr, Buf buffer)
 	uint32_t core_cnt, tmp32;
 	cpu_layout_t *cpu_layout = xmalloc(sizeof(cpu_layout_t));
 
+	xassert(cpu_layout_pptr);
 	safe_unpack32(&cpu_layout->node_cnt, buffer);
 	safe_unpack32_array(&cpu_layout->memory_reserved,     &tmp32, buffer);
 	safe_unpack32_array(&cpu_layout->memory_rep_count,    &tmp32, buffer);
@@ -287,3 +291,69 @@ extern int  unpack_cpu_layout(cpu_layout_t **cpu_layout_pptr, Buf buffer)
 	return SLURM_ERROR;
 }
 
+extern int get_cpu_layout_bit(cpu_layout_t *cpu_layout_ptr, uint32_t node_id,
+			      uint32_t socket_id, uint32_t core_id)
+{
+	int i, bit_inx = 0;
+
+	xassert(cpu_layout_ptr);
+
+	for (i=0; i<cpu_layout_ptr->node_cnt; i++) {
+		if (cpu_layout_ptr->sock_core_rep_count[i] <= node_id) {
+			bit_inx += cpu_layout_ptr->sockets_per_node[i] *
+				   cpu_layout_ptr->cores_per_socket[i] *
+				   cpu_layout_ptr->sock_core_rep_count[i];
+			node_id -= cpu_layout_ptr->sock_core_rep_count[i];
+		} else {
+			bit_inx += cpu_layout_ptr->sockets_per_node[i] *
+				   cpu_layout_ptr->cores_per_socket[i] *
+				   node_id;
+			bit_inx += cpu_layout_ptr->cores_per_socket[i] *
+				   socket_id;
+			bit_inx += core_id;
+			break;
+		}
+	}
+	i = bit_size(cpu_layout_ptr->allocated_cores);
+	if (bit_inx >= i) {
+		error("get_cpu_layout_bit: offset >= bitmap size (%d >= %d)",
+		      bit_inx, i);
+		return 0;
+	}
+
+	return bit_test(cpu_layout_ptr->allocated_cores, bit_inx);
+}
+
+extern int set_cpu_layout_bit(cpu_layout_t *cpu_layout_ptr, uint32_t node_id,
+			      uint32_t socket_id, uint32_t core_id)
+{
+	int i, bit_inx = 0;
+
+	xassert(cpu_layout_ptr);
+
+	for (i=0; i<cpu_layout_ptr->node_cnt; i++) {
+		if (cpu_layout_ptr->sock_core_rep_count[i] <= node_id) {
+			bit_inx += cpu_layout_ptr->sockets_per_node[i] *
+				   cpu_layout_ptr->cores_per_socket[i] *
+				   cpu_layout_ptr->sock_core_rep_count[i];
+			node_id -= cpu_layout_ptr->sock_core_rep_count[i];
+		} else {
+			bit_inx += cpu_layout_ptr->sockets_per_node[i] *
+				   cpu_layout_ptr->cores_per_socket[i] *
+				   node_id;
+			bit_inx += cpu_layout_ptr->cores_per_socket[i] *
+				   socket_id;
+			bit_inx += core_id;
+			break;
+		}
+	}
+	i = bit_size(cpu_layout_ptr->allocated_cores);
+	if (bit_inx >= i) {
+		error("set_cpu_layout_bit: offset >= bitmap size (%d >= %d)",
+		      bit_inx, i);
+		return SLURM_ERROR;
+	}
+
+	bit_set(cpu_layout_ptr->allocated_cores, bit_inx);
+	return SLURM_SUCCESS;
+}
