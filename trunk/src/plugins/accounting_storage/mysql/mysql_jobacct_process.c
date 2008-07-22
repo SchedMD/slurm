@@ -60,7 +60,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 	char *table_level="t2";
 	MYSQL_RES *result = NULL, *step_result = NULL;
 	MYSQL_ROW row, step_row;
-	int i;
+	int i, last_id = -1, curr_id = -1;
 	jobacct_job_rec_t *job = NULL;
 	jobacct_step_rec_t *step = NULL;
 	time_t now = time(NULL);
@@ -237,6 +237,24 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 		xstrcat(extra, ")");
 	}
 
+	if(job_cond->userid_list && list_count(job_cond->userid_list)) {
+		set = 0;
+		if(extra)
+			xstrcat(extra, " && (");
+		else
+			xstrcat(extra, " where (");
+
+		itr = list_iterator_create(job_cond->userid_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "t1.uid='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+
 	if(job_cond->groupid_list && list_count(job_cond->groupid_list)) {
 		set = 0;
 		if(extra)
@@ -302,6 +320,24 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 			   job_cond->usage_end, job_cond->usage_start);
 	}
 
+	if(job_cond->state_list && list_count(job_cond->state_list)) {
+		set = 0;
+		if(extra)
+			xstrcat(extra, " && (");
+		else
+			xstrcat(extra, " where (");
+
+		itr = list_iterator_create(job_cond->state_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "t1.state='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+
 	/* we need to put all the associations (t2) stuff together here */
 	if(job_cond->cluster_list && list_count(job_cond->cluster_list)) {
 		set = 0;
@@ -325,27 +361,6 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 		xstrfmtcat(extra, "%s.cluster is null)", table_level);
 	}
 
-	if(job_cond->user_list && list_count(job_cond->user_list)) {
-		set = 0;
-		if(extra)
-			xstrcat(extra, " && (");
-		else
-			xstrcat(extra, " where (");
-
-		itr = list_iterator_create(job_cond->user_list);
-		while((object = list_next(itr))) {
-			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "%s.user='%s'", table_level, object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		/* just incase the association is gone */
-		if(set) 
-			xstrcat(extra, " || ");
-		xstrfmtcat(extra, "%s.user is null)", table_level);
-	}
-
 no_cond:	
 
 	xfree(tmp);
@@ -362,7 +377,12 @@ no_cond:
 		xstrcat(query, extra);
 		xfree(extra);
 	}
-	
+	/* Here we want to order them this way in such a way so it is
+	   easy to look for duplicates 
+	*/
+	if(job_cond && !job_cond->duplicates) 
+		xstrcat(query, " order by jobid, submit desc");
+
 	debug3("%d query\n%s", mysql_conn->conn, query);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
@@ -374,7 +394,14 @@ no_cond:
 
 	while((row = mysql_fetch_row(result))) {
 		char *id = row[JOB_REQ_ID];
+
+		curr_id = atoi(row[JOB_REQ_JOBID]);
+
+		if(job_cond && !job_cond->duplicates && curr_id == last_id)
+			continue;
 		
+		last_id = curr_id;
+
 		job = create_jobacct_job_rec();
 
 		job->alloc_cpus = atoi(row[JOB_REQ_ALLOC_CPUS]);
@@ -400,7 +427,7 @@ no_cond:
 		job->submit = atoi(row[JOB_REQ_SUBMIT]);
 		job->start = atoi(row[JOB_REQ_START]);
 		job->end = atoi(row[JOB_REQ_END]);
-		if(job_cond->usage_start) {
+		if(job_cond && job_cond->usage_start) {
 			if(job->start && (job->start < job_cond->usage_start))
 				job->start = job_cond->usage_start;
 
@@ -424,7 +451,7 @@ no_cond:
 					suspend_table,
 					job_cond->usage_end, 
 					job_cond->usage_start,
-					row[JOB_REQ_ID]);
+					id);
 				
 				debug4("%d query\n%s", mysql_conn->conn, query);
 				if(!(result2 = mysql_db_query_ret(
@@ -470,7 +497,7 @@ no_cond:
 			job->elapsed -= job->suspended;
 		}
 
-		job->jobid = atoi(row[JOB_REQ_JOBID]);
+		job->jobid = curr_id;
 		job->jobname = xstrdup(row[JOB_REQ_NAME]);
 		job->gid = atoi(row[JOB_REQ_GID]);
 		job->exitcode = atoi(row[JOB_REQ_COMP_CODE]);

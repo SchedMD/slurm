@@ -64,6 +64,7 @@
 #include <ctype.h>
 
 #define BUFFER_SIZE 4096
+#define FDUMP_FLAG 0x04
 
 typedef struct {
 	uint16_t taskid; /* contains which task number it was on */
@@ -86,30 +87,34 @@ typedef struct {
 } sacct_t;
 
 typedef struct {
-	char *opt_cluster;	/* --cluster */
+	List opt_acct_list;	        /* --accounts list of char * */
+	int opt_begin;	        /* --begin */
+	List opt_cluster_list;	/* --cluster list of char * */
 	int opt_completion;	/* --completion */
 	int opt_dump;		/* --dump */
 	int opt_dup;		/* --duplicates; +1 = explicitly set */
-	int opt_fdump;		/* --formattted_dump */
-	int opt_stat;		/* --stat */
-	int opt_gid;		/* --gid (-1=wildcard, 0=root) */
-	int opt_header;		/* can only be cleared */
-	int opt_help;		/* --help */
-	int opt_long;		/* --long */
-	int opt_lowmem;		/* --low_memory */
-	int opt_raw;		/* --raw */
-	int opt_purge;		/* --purge */
-	int opt_total;		/* --total */
-	int opt_uid;		/* --uid (-1=wildcard, 0=root) */
-	int opt_uid_set;	
-	int opt_verbose;	/* --verbose */
+	int opt_end;		/* --end */
 	long opt_expire;		/* --expire= */ 
 	char *opt_expire_timespec; /* --expire= */
+	int opt_fdump;		/* --formattted_dump */
 	char *opt_field_list;	/* --fields= */
 	char *opt_filein;	/* --file */
-	char *opt_job_list;	/* --jobs */
-	char *opt_partition_list;/* --partitions */
-	char *opt_state_list;	/* --states */
+	int opt_gid;		/* running persons gid */
+	List opt_gid_list;	/* --gid list of char * */
+	int opt_help;		/* --help */
+	List opt_job_list;	/* --jobs */
+	int opt_long;		/* --long */
+	int opt_lowmem;		/* --low_memory */
+	int opt_noheader;	/* can only be cleared */
+	List opt_partition_list;/* --partitions */
+	int opt_purge;		/* --purge */
+	int opt_raw;		/* --raw */
+	int opt_stat;		/* --stat */
+	List opt_state_list;	/* --states */
+	int opt_total;		/* --total */
+	int opt_uid;		/* running persons uid */
+	List opt_uid_list;	/* --uid  list of char * */
+	int opt_verbose;	/* --verbose */
 } sacct_parameters_t;
 
 typedef struct {
@@ -179,8 +184,6 @@ typedef struct {
 } jobacct_step_rec_t;
 
 typedef struct selected_step_t {
-	char *job;
-	char *step;
 	uint32_t jobid;
 	uint32_t stepid;
 } jobacct_selected_step_t;

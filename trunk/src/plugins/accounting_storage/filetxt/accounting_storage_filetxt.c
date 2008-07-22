@@ -830,10 +830,37 @@ extern int jobacct_storage_p_suspend(void *db_conn,
 extern List jobacct_storage_p_get_jobs(void *db_conn,
 				       List selected_steps,
 				       List selected_parts,
-				       void *params)
+				       sacct_parameters_t *params)
 {
-	return filetxt_jobacct_process_get_jobs(selected_steps, selected_parts,
-						params);
+	List job_list = NULL;
+	acct_job_cond_t job_cond;
+	memset(&job_cond, 0, sizeof(acct_job_cond_t));
+
+	job_cond.acct_list = selected_steps;
+	job_cond.step_list = selected_steps;
+	job_cond.partition_list = selected_parts;
+	job_cond.cluster_list = params->opt_cluster_list;
+
+	if (params->opt_uid >=0) {
+		char *temp = xstrdup_printf("%u", params->opt_uid);
+		job_cond.userid_list = list_create(NULL);
+		list_append(job_cond.userid_list, temp);
+	}	
+
+	if (params->opt_gid >=0) {
+		char *temp = xstrdup_printf("%u", params->opt_gid);
+		job_cond.groupid_list = list_create(NULL);
+		list_append(job_cond.groupid_list, temp);
+	}	
+
+	job_list = filetxt_jobacct_process_get_jobs(&job_cond);
+
+	if(job_cond.userid_list)
+		list_destroy(job_cond.userid_list);
+	if(job_cond.groupid_list)
+		list_destroy(job_cond.groupid_list);
+		
+	return job_list;
 }
 
 /* 
@@ -844,27 +871,7 @@ extern List jobacct_storage_p_get_jobs(void *db_conn,
 extern List jobacct_storage_p_get_jobs_cond(void *db_conn,
 					    acct_job_cond_t *job_cond)
 {
-	sacct_parameters_t params;
-
-	memset(&params, 0, sizeof(sacct_parameters_t));
-	params.opt_uid = -1;
-
-	if(job_cond->cluster_list && list_count(job_cond->cluster_list)) {
-		params.opt_cluster = list_pop(job_cond->cluster_list);
-	}
-	if(job_cond->user_list && list_count(job_cond->user_list)) {
-		char *user = list_pop(job_cond->user_list);
-		struct passwd *pw = NULL;
-		if ((pw=getpwnam(user)))
-			params.opt_uid = pw->pw_uid;
-		xfree(user);
-	}
-
-	return filetxt_jobacct_process_get_jobs(job_cond->step_list, 
-						job_cond->partition_list,
-						&params);
-	if(params.opt_cluster)
-		xfree(params.opt_cluster);
+	return filetxt_jobacct_process_get_jobs(job_cond);
 }
 
 /* 

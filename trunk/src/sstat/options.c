@@ -119,29 +119,119 @@ void _do_help(void)
 
 void _init_params()
 {
-	params.opt_cluster = NULL;	/* --cluster */
-	params.opt_completion = 0;	/* --completion */
-	params.opt_dump = 0;		/* --dump */
-	params.opt_dup = -1;		/* --duplicates; +1 = explicitly set */
-	params.opt_fdump = 0;		/* --formattted_dump */
-	params.opt_stat = 0;		/* --stat */
-	params.opt_gid = -1;		/* --gid (-1=wildcard, 0=root) */
-	params.opt_header = 1;		/* can only be cleared */
-	params.opt_help = 0;		/* --help */
-	params.opt_long = 0;		/* --long */
-	params.opt_lowmem = 0;		/* --low_memory */
-	params.opt_purge = 0;		/* --purge */
-	params.opt_total = 0;		/* --total */
-	params.opt_uid = -1;		/* --uid (-1=wildcard, 0=root) */
-	params.opt_uid_set = 0;
-	params.opt_verbose = 0;		/* --verbose */
-	params.opt_expire_timespec = NULL; /* --expire= */
-	params.opt_field_list = NULL;	/* --fields= */
-	params.opt_filein = NULL;	/* --file */
-	params.opt_job_list = NULL;	/* --jobs */
-	params.opt_partition_list = NULL;/* --partitions */
-	params.opt_state_list = NULL;	/* --states */
+	memset(&params, 0, sizeof(sacct_parameters_t));
 }
+
+/* returns number of objects added to list */
+static int _addto_job_list(List job_list, char *names)
+{
+	int i=0, start=0;
+	char *name = NULL, *dot = NULL;
+	jobacct_selected_step_t *selected_step = NULL;
+	jobacct_selected_step_t *curr_step = NULL;
+	
+	ListIterator itr = NULL;
+	char quote_c = '\0';
+	int quote = 0;
+	int count = 0;
+
+	if(!job_list) {
+		error("No list was given to fill in");
+		return 0;
+	}
+
+	itr = list_iterator_create(job_list);
+	if(names) {
+		if (names[i] == '\"' || names[i] == '\'') {
+			quote_c = names[i];
+			quote = 1;
+			i++;
+		}
+		start = i;
+		while(names[i]) {
+			//info("got %d - %d = %d", i, start, i-start);
+			if(quote && names[i] == quote_c)
+				break;
+			else if (names[i] == '\"' || names[i] == '\'')
+				names[i] = '`';
+			else if(names[i] == ',') {
+				if((i-start) > 0) {
+					char *dot = NULL;
+					name = xmalloc((i-start+1));
+					memcpy(name, names+start, (i-start));
+
+					selected_step = xmalloc(
+						sizeof(jobacct_selected_step_t));
+					dot = strstr(name, ".");
+					if (dot == NULL) {
+						debug2("No jobstep requested");
+						selected_step->stepid = NO_VAL;
+					} else {
+						*dot++ = 0;
+						selected_step->stepid =
+							atoi(dot);
+					}
+					selected_step->jobid = atoi(name);
+					xfree(name);
+
+					while((curr_step = list_next(itr))) {
+						if((curr_step->jobid 
+						    == selected_step->jobid)
+						   && (curr_step->stepid 
+						       == selected_step->
+						       stepid))
+							break;
+					}
+
+					if(!curr_step) {
+						list_append(job_list,
+							    selected_step);
+						count++;
+					} else 
+						destroy_jobacct_selected_step(
+							selected_step);
+					list_iterator_reset(itr);
+				}
+				i++;
+				start = i;
+			}
+			i++;
+		}
+		if((i-start) > 0) {
+			name = xmalloc((i-start)+1);
+			memcpy(name, names+start, (i-start));
+
+			selected_step =
+				xmalloc(sizeof(jobacct_selected_step_t));
+			dot = strstr(name, ".");
+			if (dot == NULL) {
+				debug2("No jobstep requested");
+				selected_step->stepid = NO_VAL;
+			} else {
+				*dot++ = 0;
+				selected_step->stepid = atoi(dot);
+			}
+			selected_step->jobid = atoi(name);
+			xfree(name);
+
+			while((curr_step = list_next(itr))) {
+				if((curr_step->jobid == selected_step->jobid)
+				   && (curr_step->stepid 
+				       == selected_step->stepid))
+					break;
+			}
+
+			if(!curr_step) {
+				list_append(job_list, selected_step);
+				count++;
+			} else 
+				destroy_jobacct_selected_step(
+					selected_step);
+		}
+	}	
+	list_iterator_destroy(itr);
+	return count;
+} 
 
 int decode_state_char(char *state)
 {
@@ -165,14 +255,13 @@ int decode_state_char(char *state)
 		return -1; // unknown
 } 
 
-void parse_command_line(int argc, char **argv, List selected_steps)
+void parse_command_line(int argc, char **argv)
 {
 	extern int optind;
 	int c, i, optionIndex = 0;
 	char *end = NULL, *start = NULL;
 	jobacct_selected_step_t *selected_step = NULL;
 	ListIterator itr = NULL;
-	char *dot = NULL;
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 
 	static struct option long_options[] = {
@@ -181,7 +270,7 @@ void parse_command_line(int argc, char **argv, List selected_steps)
 		{"help", 0, &params.opt_help, 1},
 		{"help-fields", 0, &params.opt_help, 2},
 		{"jobs", 1, 0, 'j'},
-		{"noheader", 0, &params.opt_header, 0},
+		{"noheader", 0, &params.opt_noheader, 1},
 		{"usage", 0, &params.opt_help, 3},
 		{"verbose", 0, 0, 'v'},
 		{"version", 0, 0, 'V'},
@@ -198,14 +287,11 @@ void parse_command_line(int argc, char **argv, List selected_steps)
 	opterr = 1;		/* Let getopt report problems to the user */
 
 	while (1) {		/* now cycle through the command line */
-		c = getopt_long(argc, argv, "C:F:hj:Vv",
+		c = getopt_long(argc, argv, "F:hj:Vv",
 				long_options, &optionIndex);
 		if (c == -1)
 			break;
 		switch (c) {
-		case 'C':
-			params.opt_cluster = xstrdup(optarg);
-			break;
 		case 'F':
 			if(params.opt_field_list)
 				xfree(params.opt_field_list);
@@ -229,13 +315,10 @@ void parse_command_line(int argc, char **argv, List selected_steps)
 					optarg);
 				exit(1);
 			}
-			params.opt_job_list =
-				xrealloc(params.opt_job_list,
-					 (params.opt_job_list==NULL? 0 :
-					  strlen(params.opt_job_list)) +
-					 strlen(optarg) + 1);
-			strcat(params.opt_job_list, optarg);
-			strcat(params.opt_job_list, ",");
+			if(!params.opt_job_list)
+				params.opt_job_list = list_create(
+					destroy_jobacct_selected_step);
+			_addto_job_list(params.opt_job_list, optarg);
 			break;
 		case 'v':
 			/* Handle -vvv thusly...
@@ -281,13 +364,10 @@ void parse_command_line(int argc, char **argv, List selected_steps)
 				optarg);
 			exit(1);
 		}
-		params.opt_job_list =
-			xrealloc(params.opt_job_list,
-				 (params.opt_job_list==NULL? 0 :
-				  strlen(params.opt_job_list)) +
-				 strlen(optarg) + 1);
-		strcat(params.opt_job_list, optarg);
-		strcat(params.opt_job_list, ",");
+		if(!params.opt_job_list)
+			params.opt_job_list = list_create(
+				destroy_jobacct_selected_step);
+		_addto_job_list(params.opt_job_list, optarg);
 	}
 
 	if(!params.opt_field_list) {
@@ -300,17 +380,13 @@ void parse_command_line(int argc, char **argv, List selected_steps)
 
 	if (params.opt_verbose) {
 		fprintf(stderr, "Options selected:\n"
-			"\topt_cluster=%s\n"
 			"\topt_field_list=%s\n"
-			"\topt_header=%d\n"
+			"\topt_noheader=%d\n"
 			"\topt_help=%d\n"
-			"\topt_job_list=%s\n"
 			"\topt_verbose=%d\n",
-			params.opt_cluster,
 			params.opt_field_list,
-			params.opt_header,
+			params.opt_noheader,
 			params.opt_help,
-			params.opt_job_list,
 			params.opt_verbose);
 		logopt.stderr_level += params.opt_verbose;
 		log_alter(logopt, 0, NULL);
@@ -318,46 +394,20 @@ void parse_command_line(int argc, char **argv, List selected_steps)
 	}
 
 	/* specific jobs requested? */
-	if (params.opt_job_list) { 
-		start = params.opt_job_list;
-		while ((end = strstr(start, ",")) && start) {
-			*end = 0;
-			while (isspace(*start))
-				start++;	/* discard whitespace */
-			if(!(int)*start)
-				continue;
-			selected_step = 
-				xmalloc(sizeof(jobacct_selected_step_t));
-			list_append(selected_steps, selected_step);
-			
-			dot = strstr(start, ".");
-			if (dot == NULL) {
-				debug2("No jobstep requested");
-				selected_step->step = NULL;
-				selected_step->stepid = (uint32_t)NO_VAL;
-			} else {
-				*dot++ = 0;
-				selected_step->step = xstrdup(dot);
-				selected_step->stepid = atoi(dot);
-			}
-			selected_step->job = xstrdup(start);
-			selected_step->jobid = atoi(start);
-			start = end + 1;
+	if (params.opt_verbose && params.opt_job_list
+	    && list_count(params.opt_job_list)) { 
+		fprintf(stderr, "Jobs requested:\n");
+		itr = list_iterator_create(params.opt_job_list);
+		while((selected_step = list_next(itr))) {
+			if(selected_step->stepid != NO_VAL) 
+				fprintf(stderr, "\t: %d.%d\n",
+					selected_step->jobid,
+					selected_step->stepid);
+			else	
+				fprintf(stderr, "\t: %d\n", 
+					selected_step->jobid);
 		}
-		if (params.opt_verbose) {
-			fprintf(stderr, "Jobs requested:\n");
-			itr = list_iterator_create(selected_steps);
-			while((selected_step = list_next(itr))) {
-				if(selected_step->step) 
-					fprintf(stderr, "\t: %s.%s\n",
-						selected_step->job,
-						selected_step->step);
-				else	
-					fprintf(stderr, "\t: %s\n", 
-						selected_step->job);
-			}
-			list_iterator_destroy(itr);
-		}
+		list_iterator_destroy(itr);
 	}
 
 	start = params.opt_field_list;

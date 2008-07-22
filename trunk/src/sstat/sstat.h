@@ -114,6 +114,6 @@ void print_vsize(type_t type, void *object);
 
 
 /* options.c */
-void parse_command_line(int argc, char **argv, List selected_steps);
+void parse_command_line(int argc, char **argv);
 
 #endif /* !_SACCT_H */

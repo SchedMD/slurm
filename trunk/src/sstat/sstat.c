@@ -64,16 +64,6 @@ jobacct_step_rec_t step;
 int printfields[MAX_PRINTFIELDS],	/* Indexed into fields[] */
 	nprintfields = 0;
 
-void _destroy_steps(void *object)
-{
-	jobacct_selected_step_t *step = (jobacct_selected_step_t *)object;
-	if(step) {
-		xfree(step->job);
-		xfree(step->step);
-		xfree(step);
-	}
-}
-
 void _print_header(void)
 {
 	int	i,j;
@@ -239,28 +229,28 @@ int _do_stat(uint32_t jobid, uint32_t stepid)
 int main(int argc, char **argv)
 {
 	ListIterator itr = NULL;
-	uint32_t jobid = 0;
 	uint32_t stepid = 0;
 	jobacct_selected_step_t *selected_step = NULL;
 	
-	List selected_steps = list_create(_destroy_steps);
+	parse_command_line(argc, argv);
+	if(!params.opt_job_list || !list_count(params.opt_job_list)) {
+		error("You didn't give me any jobs to stat.");
+		return 1;
+	}
 
-	parse_command_line(argc, argv, selected_steps);
-
-	if (params.opt_header) 	/* give them something to look */
+	if (!params.opt_noheader) 	/* give them something to look */
 		_print_header();/* at while we think...        */
-	itr = list_iterator_create(selected_steps);
+	itr = list_iterator_create(params.opt_job_list);
 	while((selected_step = list_next(itr))) {
-		jobid = atoi(selected_step->job);
-		if(selected_step->step)
-			stepid = atoi(selected_step->step);
+		if(selected_step->stepid != NO_VAL)
+			stepid = selected_step->stepid;
 		else
 			stepid = 0;
-		_do_stat(jobid, stepid);
+		_do_stat(selected_step->jobid, stepid);
 	}
 	list_iterator_destroy(itr);
 		
-	list_destroy(selected_steps);
+	list_destroy(params.opt_job_list);
 
 	return 0;
 }

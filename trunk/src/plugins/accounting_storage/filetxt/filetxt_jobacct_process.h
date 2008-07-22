@@ -44,11 +44,10 @@
 #define _HAVE_FILETXT_JOBACCT_PROCESS_H
 
 #include "src/common/jobacct_common.h"
+#include "src/common/slurm_accounting_storage.h"
 #include "src/slurmdbd/read_config.h"
 
-extern List filetxt_jobacct_process_get_jobs(List selected_steps,
-					     List selected_parts,
-					     sacct_parameters_t *params);
+extern List filetxt_jobacct_process_get_jobs(acct_job_cond_t *job_cond);
 extern void filetxt_jobacct_process_archive(List selected_parts,
 					    sacct_parameters_t *params);
 

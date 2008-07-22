@@ -45,8 +45,7 @@
 
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
-#include "src/common/slurm_protocol_api.h"
-#include "src/common/jobacct_common.h"
+#include "filetxt_jobacct_process.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmdbd/read_config.h"
 /* Map field names to positions */
@@ -275,12 +274,33 @@ static jobacct_step_rec_t *_create_jobacct_step_rec(
 }
 
 static jobacct_job_rec_t *_create_jobacct_job_rec(
-	filetxt_job_rec_t *filetxt_job)
+	filetxt_job_rec_t *filetxt_job, acct_job_cond_t *job_cond)
 {
-	jobacct_job_rec_t *jobacct_job = create_jobacct_job_rec();
+	jobacct_job_rec_t *jobacct_job = NULL;
 	ListIterator itr = NULL;
 	filetxt_step_rec_t *filetxt_step = NULL;
 
+	if(!job_cond)
+		goto no_cond;
+
+	if (job_cond->state_list
+	    && list_count(job_cond->state_list)) {
+		char *object = NULL;
+		itr = list_iterator_create(job_cond->state_list);
+		while((object = list_next(itr))) {
+			if (atoi(object) == filetxt_job->status) {
+				list_iterator_destroy(itr);
+				goto foundstate;
+			}
+		}
+		list_iterator_destroy(itr);
+		return NULL;	/* no match */
+	} 
+	
+foundstate:
+		
+no_cond:
+	jobacct_job = create_jobacct_job_rec();
 	jobacct_job->associd = 0;
 	jobacct_job->account = xstrdup(filetxt_job->account);
 	jobacct_job->blockid = xstrdup(filetxt_job->header.blockid);
@@ -835,8 +855,7 @@ static void _process_start(List job_list, char *f[], int lc,
 }
 
 static void _process_step(List job_list, char *f[], int lc,
-			  int show_full, int len,
-			  sacct_parameters_t *params)
+			  int show_full, int len)
 {
 	filetxt_job_rec_t *job = NULL;
 	
@@ -844,7 +863,7 @@ static void _process_step(List job_list, char *f[], int lc,
 	filetxt_step_rec_t *temp = NULL;
 
 	_parse_line(f, (void **)&temp, len);
-
+	
 	job = _find_job_record(job_list, temp->header, JOB_STEP);
 	
 	if (temp->stepnum == -2) {
@@ -854,11 +873,9 @@ static void _process_step(List job_list, char *f[], int lc,
 	if (!job) {	/* fake it for now */
 		job = _create_filetxt_job_rec(temp->header);
 		job->jobname = xstrdup("(unknown)");
-		if (params->opt_verbose > 1) 
-			fprintf(stderr, 
-				"Note: JOB_STEP record %u.%u preceded "
-				"JOB_START record at line %d\n",
-				temp->header.jobnum, temp->stepnum, lc);
+		debug2("Note: JOB_STEP record %u.%u preceded "
+		       "JOB_START record at line %d\n",
+		       temp->header.jobnum, temp->stepnum, lc);
 	}
 	job->show_full = show_full;
 	
@@ -945,8 +962,7 @@ static void _process_suspend(List job_list, char *f[], int lc,
 }
 	
 static void _process_terminated(List job_list, char *f[], int lc,
-				int show_full, int len,
-				sacct_parameters_t *params)
+				int show_full, int len)
 {
 	filetxt_job_rec_t *job = NULL;
 	filetxt_job_rec_t *temp = NULL;
@@ -956,20 +972,17 @@ static void _process_terminated(List job_list, char *f[], int lc,
 	if (!job) {	/* fake it for now */
 		job = _create_filetxt_job_rec(temp->header);
 		job->jobname = xstrdup("(unknown)");
-		if (params->opt_verbose > 1) 
-			fprintf(stderr, "Note: JOB_TERMINATED record for job "
-				"%u preceded "
-				"other job records at line %d\n",
-				temp->header.jobnum, lc);
+		debug("Note: JOB_TERMINATED record for job "
+		      "%u preceded "
+		      "other job records at line %d\n",
+		      temp->header.jobnum, lc);
 	} else if (job->job_terminated_seen) {
 		if (temp->status == JOB_NODE_FAIL) {
 			/* multiple node failures - extra TERMINATED records */
-			if (params->opt_verbose > 1)
-				fprintf(stderr, 
-					"Note: Duplicate JOB_TERMINATED "
-					"record (nf) for job %u at "
-					"line %d\n", 
-					temp->header.jobnum, lc);
+			debug("Note: Duplicate JOB_TERMINATED "
+			      "record (nf) for job %u at "
+			      "line %d\n", 
+			      temp->header.jobnum, lc);
 			/* JOB_TERMINATED/NF records may be preceded
 			 * by a JOB_TERMINATED/CA record; NF is much
 			 * more interesting.
@@ -999,32 +1012,40 @@ finished:
 	_destroy_filetxt_job_rec(temp);
 }
 
-extern List filetxt_jobacct_process_get_jobs(List selected_steps,
-					     List selected_parts,
-					     sacct_parameters_t *params)
+extern List filetxt_jobacct_process_get_jobs(acct_job_cond_t *job_cond)
 {
 	char line[BUFFER_SIZE];
 	char *f[MAX_RECORD_FIELDS+1];    /* End list with null entry and,
 					    possibly, more data than we
 					    expected */
-	char *fptr;
+	char *fptr = NULL, *filein = NULL;
 	int i;
 	FILE *fd = NULL;
 	int lc = 0;
 	int rec_type = -1;
+	int job_id = 0, step_id = 0, uid = 0, gid = 0;
 	filetxt_job_rec_t *filetxt_job = NULL;
 	jobacct_selected_step_t *selected_step = NULL;
-	char *selected_part = NULL;
-	ListIterator itr = NULL;
+	char *object = NULL;
+	ListIterator itr = NULL, itr2 = NULL;
 	int show_full = 0;
+	int fdump_flag = 0;
 	List ret_job_list = list_create(destroy_jobacct_job_rec);
 	List job_list = list_create(_destroy_filetxt_job_rec);
 
-	if(slurmdbd_conf) {
-		params->opt_filein = slurm_get_accounting_storage_loc();
+	filein = slurm_get_accounting_storage_loc();
+	
+	/* we grab the fdump only for the filetxt plug through the
+	   FDUMP_FLAG on the job_cond->duplicates variable.  We didn't
+	   add this extra field to the structure since it only applies
+	   to this plugin.
+	*/
+	if(job_cond) {
+		fdump_flag = job_cond->duplicates & FDUMP_FLAG;
+		job_cond->duplicates &= (~FDUMP_FLAG);
 	}
 
-	fd = _open_log_file(params->opt_filein);
+	fd = _open_log_file(filein);
 	
 	while (fgets(line, BUFFER_SIZE, fd)) {
 		lc++;
@@ -1048,20 +1069,62 @@ extern List filetxt_jobacct_process_get_jobs(List selected_steps,
 		}
 		
 		rec_type = atoi(f[F_RECTYPE]);
-		
-		if (list_count(selected_steps)) {
-			itr = list_iterator_create(selected_steps);
+		job_id = atoi(f[F_JOB]);
+		uid = atoi(f[F_UID]);
+		gid = atoi(f[F_GID]);
+
+		if(rec_type == JOB_STEP)
+			step_id = atoi(f[F_JOBSTEP]);
+		else
+			step_id = NO_VAL;
+
+		if(!job_cond) {
+			show_full = 1;
+			goto no_cond;
+		}
+
+		if (job_cond->userid_list
+		    && list_count(job_cond->userid_list)) {
+			itr = list_iterator_create(job_cond->userid_list);
+			while((object = list_next(itr))) {
+				if (atoi(object) == uid) {
+					list_iterator_destroy(itr);
+					goto founduid;
+				}
+			}
+			list_iterator_destroy(itr);
+			continue;	/* no match */
+		} 
+	founduid:
+
+		if (job_cond->groupid_list
+		    && list_count(job_cond->groupid_list)) {
+			itr = list_iterator_create(job_cond->groupid_list);
+			while((object = list_next(itr))) {
+				if (atoi(object) == gid) {
+					list_iterator_destroy(itr);
+					goto foundgid;
+				}
+			}
+			list_iterator_destroy(itr);
+			continue;	/* no match */
+		} 
+	foundgid:
+
+		if (job_cond->step_list
+		    && list_count(job_cond->step_list)) {
+			itr = list_iterator_create(job_cond->step_list);
 			while((selected_step = list_next(itr))) {
-				if (strcmp(selected_step->job, f[F_JOB]))
+				if (selected_step->jobid != job_id)
 					continue;
 				/* job matches; does the step? */
-				if(selected_step->step == NULL) {
+				if(selected_step->stepid == NO_VAL) {
 					show_full = 1;
 					list_iterator_destroy(itr);
 					goto foundjob;
 				} else if (rec_type != JOB_STEP 
-					   || !strcmp(f[F_JOBSTEP], 
-						      selected_step->step)) {
+					   || selected_step->stepid
+					   == step_id) {
 					list_iterator_destroy(itr);
 					goto foundjob;
 				} 
@@ -1073,11 +1136,11 @@ extern List filetxt_jobacct_process_get_jobs(List selected_steps,
 		}
 	foundjob:
 		
-		if (list_count(selected_parts)) {
-			itr = list_iterator_create(selected_parts);
-			while((selected_part = list_next(itr))) 
-				if (!strcasecmp(f[F_PARTITION], 
-						selected_part)) {
+		if (job_cond->partition_list
+		    && list_count(job_cond->partition_list)) {
+			itr = list_iterator_create(job_cond->partition_list);
+			while((object = list_next(itr))) 
+				if (!strcasecmp(f[F_PARTITION], object)) {
 					list_iterator_destroy(itr);
 					goto foundp;
 				}
@@ -1085,12 +1148,13 @@ extern List filetxt_jobacct_process_get_jobs(List selected_steps,
 			continue;	/* no match */
 		}
 	foundp:
-		
-		if (params->opt_fdump) {
+		if (fdump_flag) {
 			_do_fdump(f, lc);
 			continue;
 		}
-		
+
+	no_cond:
+				
 		/* Build suitable tables with all the data */
 		switch(rec_type) {
 		case JOB_START:
@@ -1105,8 +1169,7 @@ extern List filetxt_jobacct_process_get_jobs(List selected_steps,
 				printf("Bad data on a Step entry\n");
 				_show_rec(f);
 			} else
-				_process_step(job_list, f, lc, show_full, i, 
-					      params);
+				_process_step(job_list, f, lc, show_full, i);
 			break;
 		case JOB_SUSPEND:
 			if(i < F_JOB_REQUID) {
@@ -1122,36 +1185,53 @@ extern List filetxt_jobacct_process_get_jobs(List selected_steps,
 				_show_rec(f);
 			} else
 				_process_terminated(job_list, f, lc,
-						    show_full, i, params);
+						    show_full, i);
 			break;
 		default:
-			if (params->opt_verbose > 1)
-				fprintf(stderr,
-					"Invalid record at line %d of "
-					"input file\n",
-					lc);
-			if (params->opt_verbose > 2)
-				_show_rec(f);
+			debug("Invalid record at line %d of input file", lc);
+			_show_rec(f);
 			break;
 		}
 	}
 	
 	if (ferror(fd)) {
-		perror(params->opt_filein);
+		perror(filein);
 		exit(1);
 	} 
 	fclose(fd);
 
 	itr = list_iterator_create(job_list);
+	if(!job_cond->duplicates)
+		itr2 = list_iterator_create(ret_job_list);
 	while((filetxt_job = list_next(itr))) {
-		list_append(ret_job_list, _create_jobacct_job_rec(filetxt_job));
+		jobacct_job_rec_t *jobacct_job = 
+			_create_jobacct_job_rec(filetxt_job, job_cond);
+		if(jobacct_job) {
+			jobacct_job_rec_t *curr_job = NULL;
+			if(job_cond && !job_cond->duplicates) {
+				while((curr_job = list_next(itr2))) {
+					if (curr_job->jobid == 
+					    jobacct_job->jobid) {
+						list_delete_item(itr2);
+						break;
+					}
+				}
+			}
+			list_append(ret_job_list, jobacct_job);
+			
+			if(!job_cond->duplicates)
+				list_iterator_reset(itr2);
+		}
 	}
+
+	if(!job_cond->duplicates)
+		list_iterator_destroy(itr2);
+
 	list_iterator_destroy(itr);
 	list_destroy(job_list);
 
-	if(slurmdbd_conf) {
-		xfree(params->opt_filein);
-	}
+	xfree(filein);
+	
 	return ret_job_list;
 }
 

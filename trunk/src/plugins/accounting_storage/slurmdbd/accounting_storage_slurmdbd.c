@@ -1359,7 +1359,12 @@ extern List jobacct_storage_p_get_jobs(void *db_conn,
 
 	get_msg.selected_steps = selected_steps;
 	get_msg.selected_parts = selected_parts;
-	get_msg.cluster_name = params->opt_cluster;
+	if(params->opt_cluster_list && list_count(params->opt_cluster_list)) {
+		ListIterator itr = 
+			list_iterator_create(params->opt_cluster_list);
+		get_msg.cluster_name = list_next(itr);
+		list_iterator_destroy(itr);
+	}
 	get_msg.gid = params->opt_gid;
 	
 	if (params->opt_uid >=0 && (pw=getpwuid(params->opt_uid)))

@@ -1652,7 +1652,9 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 				error("Can not use the default storage type "
 				      "specified for jobcomp since there is "
 				      "not slurmdbd type.  We are using %s "
-				      "as the type.");
+				      "as the type. To disable this message "
+				      "set JobCompType in your slurm.conf",
+				      DEFAULT_JOB_COMP_TYPE);
 				conf->job_comp_type =
 					xstrdup(DEFAULT_JOB_COMP_TYPE);
 			} else 
