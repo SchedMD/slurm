@@ -187,17 +187,15 @@ typedef struct {
 	List acct_list;		/* list of char * */
 	List associd_list;	/* list of char */
 	List cluster_list;	/* list of char * */
-	uint16_t completion;	/* get job completion records instead
-				 * of accounting record */
-	uint16_t no_duplicates;    /* report duplicate job entries */
+	uint16_t duplicates;    /* report duplicate job entries */
 	List groupid_list;	/* list of char * */
 	List partition_list;	/* list of char * */
 	List step_list;         /* list of jobacct_selected_step_t */
-	List state_list;         /* list of char * */
+	List state_list;        /* list of char * */
 	uint32_t usage_end; 
 	uint32_t usage_start; 
-	List user_list;		/* list of char * */
-	uint16_t without_steps;  /* don't give me step info */
+	List userid_list;		/* list of char * */
+	uint16_t without_steps; /* don't give me step info */
 } acct_job_cond_t;
 
 typedef struct {

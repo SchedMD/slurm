@@ -3188,20 +3188,20 @@ extern List jobacct_storage_p_get_jobs(void *db_conn,
 /* 						      "id %u", */
 /* 						      account_rec.id); */
 					
-					if(account_rec.cluster) {
-						if(params->opt_cluster &&
-						   strcmp(params->opt_cluster,
-							  account_rec.
-							  cluster)) {
-							destroy_jobacct_job_rec(
-								job);
-							job = NULL;
-							break;
-						}
-						job->cluster =
-							xstrdup(account_rec.
-								cluster);
-					}
+/* 					if(account_rec.cluster) { */
+/* 						if(params->opt_cluster && */
+/* 						   strcmp(params->opt_cluster, */
+/* 							  account_rec. */
+/* 							  cluster)) { */
+/* 							destroy_jobacct_job_rec( */
+/* 								job); */
+/* 							job = NULL; */
+/* 							break; */
+/* 						} */
+/* 						job->cluster = */
+/* 							xstrdup(account_rec. */
+/* 								cluster); */
+/* 					} */
 
 					if(account_rec.user) {
 						struct passwd *passwd_ptr =

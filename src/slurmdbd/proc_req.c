@@ -772,7 +772,12 @@ static int _get_jobs(void *db_conn,
 	}
 	
 	memset(&sacct_params, 0, sizeof(sacct_parameters_t));
-	sacct_params.opt_cluster = get_jobs_msg->cluster_name;
+	if (get_jobs_msg->cluster_name) {
+		sacct_params.opt_cluster_list = list_create(NULL);
+		list_append(sacct_params.opt_cluster_list,
+			    get_jobs_msg->cluster_name);
+	}	
+
 	sacct_params.opt_uid = -1;
 	if(get_jobs_msg->user) {
 		struct passwd *pw = NULL;
@@ -786,6 +791,8 @@ static int _get_jobs(void *db_conn,
 		&sacct_params);
 	slurmdbd_free_get_jobs_msg(get_jobs_msg);
 
+	if(sacct_params.opt_cluster_list)
+		list_destroy(sacct_params.opt_cluster_list);
 
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_JOBS, *out_buffer);

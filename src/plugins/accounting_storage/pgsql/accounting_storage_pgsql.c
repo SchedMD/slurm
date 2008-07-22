@@ -93,6 +93,7 @@ char *cluster_month_table = "cluster_month_usage_table";
 char *cluster_table = "cluster_table";
 char *event_table = "cluster_event_table";
 char *job_table = "job_table";
+char *qos_table = "qos_table";
 char *step_table = "step_table";
 char *txn_table = "txn_table";
 char *user_table = "user_table";
@@ -149,6 +150,8 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 				    char *user)
 {
 	storage_field_t acct_coord_table_fields[] = {
+		{ "creation_time", "bigint not null" },
+		{ "mod_time", "bigint default 0" },
 		{ "deleted", "smallint default 0" },
 		{ "acct", "text not null" },
 		{ "user_name", "text not null" },
@@ -162,7 +165,7 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 		{ "name", "text not null" },
 		{ "description", "text not null" },
 		{ "organization", "text not null" },
-		{ "qos", "smallint default 1 not null" },
+		{ "qos", "text not null" },
 		{ NULL, NULL}		
 	};
 
@@ -265,6 +268,16 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 		{ NULL, NULL}		
 	};
 
+	storage_field_t qos_table_fields[] = {
+		{ "creation_time", "bigint not null" },
+		{ "mod_time", "bigint default 0" },
+		{ "deleted", "smallint default 0" },
+		{ "id", "serial" },
+		{ "name", "text not null" }, 
+		{ "description", "text" }, 
+		{ NULL, NULL}		
+	};
+
 	storage_field_t step_table_fields[] = {
 		{ "id", "int not null" },
 		{ "stepid", "smallint not null" },
@@ -330,7 +343,7 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 	};
 
 	int i = 0, job_found = 0;
-	int step_found = 0, txn_found = 0, event_found = 0;
+	int step_found = 0, txn_found = 0, event_found = 0, qos_found = 0;
 	int user_found = 0, acct_found = 0, acct_coord_found = 0;
 	int cluster_found = 0, cluster_hour_found = 0,
 		cluster_day_found = 0, cluster_month_found = 0;
@@ -390,6 +403,9 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 		else if(!last_ran_found &&
 			!strcmp(last_ran_table, PQgetvalue(result, i, 0))) 
 			last_ran_found = 1;
+		else if(!qos_found &&
+			!strcmp(qos_table, PQgetvalue(result, i, 0))) 
+			qos_found = 1;
 		else if(!step_found &&
 			!strcmp(step_table, PQgetvalue(result, i, 0))) 
 			step_found = 1;
@@ -586,6 +602,20 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 		if(pgsql_db_make_table_current(acct_pgsql_db,  
 					       last_ran_table,
 					       last_ran_table_fields))
+			return SLURM_ERROR;
+	}
+
+	if(!qos_found) {
+		if(pgsql_db_create_table(acct_pgsql_db, 
+					 qos_table, qos_table_fields,
+					 ", unique (name))")
+		   == SLURM_ERROR)
+			return SLURM_ERROR;
+
+	} else {
+		if(pgsql_db_make_table_current(acct_pgsql_db,  
+					       step_table,
+					       step_table_fields))
 			return SLURM_ERROR;
 	}
 
@@ -1042,8 +1072,8 @@ extern int clusteracct_storage_p_cluster_procs(PGconn *acct_pgsql_db,
 		goto end_it;
 add_it:
 	query = xstrdup_printf(
-		"insert into %s (cluster, cpu_count, period_start) "
-		"values ('%s', %u, %d)",
+		"insert into %s (cluster, cpu_count, period_start, reason) "
+		"values ('%s', %u, %d, 'Cluster processor count')",
 		event_table, cluster, procs, event_time);
 	rc = pgsql_db_query(acct_pgsql_db, query);
 	xfree(query);
@@ -1540,7 +1570,6 @@ extern List jobacct_storage_p_get_jobs(PGconn *acct_pgsql_db,
 	List job_list = NULL;
 #ifdef HAVE_PGSQL
 	acct_job_cond_t job_cond;
-	struct passwd *pw = NULL;
 
 	if(!acct_pgsql_db || PQstatus(acct_pgsql_db) != CONNECTION_OK) {
 		if(!pgsql_get_db_connection(&acct_pgsql_db,
@@ -1550,24 +1579,30 @@ extern List jobacct_storage_p_get_jobs(PGconn *acct_pgsql_db,
 
 	memset(&job_cond, 0, sizeof(acct_job_cond_t));
 
+	job_cond.acct_list = selected_steps;
 	job_cond.step_list = selected_steps;
 	job_cond.partition_list = selected_parts;
-	if(params->opt_cluster) {
-		job_cond.cluster_list = list_create(NULL);
-		list_append(job_cond.cluster_list, params->opt_cluster);
-	}
+	job_cond.cluster_list = params->opt_cluster_list;
 
-	if (params->opt_uid >=0 && (pw=getpwuid(params->opt_uid))) {
-		job_cond.user_list = list_create(NULL);
-		list_append(job_cond.user_list, pw->pw_name);
+	if (params->opt_uid >=0) {
+		char *temp = xstrdup_printf("%u", params->opt_uid);
+		job_cond.userid_list = list_create(NULL);
+		list_append(job_cond.userid_list, temp);
+	}	
+
+	if (params->opt_gid >=0) {
+		char *temp = xstrdup_printf("%u", params->opt_gid);
+		job_cond.groupid_list = list_create(NULL);
+		list_append(job_cond.groupid_list, temp);
 	}	
 
 	job_list = pgsql_jobacct_process_get_jobs(acct_pgsql_db, &job_cond);	
 
-	if(job_cond.user_list)
-		list_destroy(job_cond.user_list);
-	if(job_cond.cluster_list)
-		list_destroy(job_cond.cluster_list);
+	if(job_cond.userid_list)
+		list_destroy(job_cond.userid_list);
+	if(job_cond.groupid_list)
+		list_destroy(job_cond.groupid_list);
+
 #endif
 	return job_list;
 }

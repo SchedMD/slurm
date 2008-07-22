@@ -112,6 +112,109 @@ static void _destroy_cluster_grouping(void *object)
 	}
 }
 
+/* returns number of objects added to list */
+extern int _addto_uid_char_list(List char_list, char *names)
+{
+	int i=0, start=0;
+	char *name = NULL, *tmp_char = NULL;
+	ListIterator itr = NULL;
+	char quote_c = '\0';
+	int quote = 0;
+	int count = 0;
+
+	if(!char_list) {
+		error("No list was given to fill in");
+		return 0;
+	}
+
+	itr = list_iterator_create(char_list);
+	if(names) {
+		if (names[i] == '\"' || names[i] == '\'') {
+			quote_c = names[i];
+			quote = 1;
+			i++;
+		}
+		start = i;
+		while(names[i]) {
+			//info("got %d - %d = %d", i, start, i-start);
+			if(quote && names[i] == quote_c)
+				break;
+			else if (names[i] == '\"' || names[i] == '\'')
+				names[i] = '`';
+			else if(names[i] == ',') {
+				if((i-start) > 0) {
+					name = xmalloc((i-start+1));
+					memcpy(name, names+start, (i-start));
+					//info("got %s %d", name, i-start);
+					if (!isdigit((int) *name)) {
+						struct passwd *pwd;
+						if (!(pwd=getpwnam(name))) {
+							fprintf(stderr, 
+								"Invalid user "
+								"id: %s\n",
+								name);
+							exit(1);
+						}
+						xfree(name);
+						name = xstrdup_printf(
+							"%d", pwd->pw_uid);
+					}
+					
+					while((tmp_char = list_next(itr))) {
+						if(!strcasecmp(tmp_char, name))
+							break;
+					}
+
+					if(!tmp_char) {
+						list_append(char_list, name);
+						count++;
+					} else 
+						xfree(name);
+					list_iterator_reset(itr);
+				}
+				i++;
+				start = i;
+				if(!names[i]) {
+					info("There is a problem with "
+					     "your request.  It appears you "
+					     "have spaces inside your list.");
+					break;
+				}
+			}
+			i++;
+		}
+		if((i-start) > 0) {
+			name = xmalloc((i-start)+1);
+			memcpy(name, names+start, (i-start));
+			
+			if (!isdigit((int) *name)) {
+				struct passwd *pwd;
+				if (!(pwd=getpwnam(name))) {
+					fprintf(stderr, 
+						"Invalid user id: %s\n",
+						name);
+					exit(1);
+				}
+				xfree(name);
+				name = xstrdup_printf("%d", pwd->pw_uid);
+			}
+			
+			while((tmp_char = list_next(itr))) {
+				if(!strcasecmp(tmp_char, name))
+					break;
+			}
+			
+			if(!tmp_char) {
+				list_append(char_list, name);
+				count++;
+			} else 
+				xfree(name);
+		}
+	}	
+	list_iterator_destroy(itr);
+	return count;
+} 
+
 static int _set_cond(int *start, int argc, char *argv[],
 		     acct_job_cond_t *job_cond,
 		     List format_list, List grouping_list)
@@ -193,15 +296,11 @@ static int _set_cond(int *start, int argc, char *argv[],
 				dot = strstr(start_char, ".");
 				if (dot == NULL) {
 					debug2("No jobstep requested");
-					selected_step->step = NULL;
-					selected_step->stepid = 
-						(uint32_t)NO_VAL;
+					selected_step->stepid = NO_VAL;
 				} else {
 					*dot++ = 0;
-					selected_step->step = xstrdup(dot);
 					selected_step->stepid = atoi(dot);
 				}
-				selected_step->job = xstrdup(start_char);
 				selected_step->jobid = atoi(start_char);
 				start_char = end_char + 1;
 			}
@@ -218,11 +317,11 @@ static int _set_cond(int *start, int argc, char *argv[],
 			job_cond->usage_start = parse_time(argv[i]+end);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Users", 1)) {
-			if(!job_cond->user_list)
-				job_cond->user_list =
+			if(!job_cond->userid_list)
+				job_cond->userid_list =
 					list_create(slurm_destroy_char);
-			slurm_addto_char_list(job_cond->user_list,
-					argv[i]+end);
+			_addto_uid_char_list(job_cond->userid_list,
+					     argv[i]+end);
 			set = 1;
 		} else {
 			exit_code=1;

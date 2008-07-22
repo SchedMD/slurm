@@ -6462,8 +6462,8 @@ extern int clusteracct_storage_p_cluster_procs(mysql_conn_t *mysql_conn,
 		goto end_it;
 add_it:
 	query = xstrdup_printf(
-		"insert into %s (cluster, cpu_count, period_start) "
-		"values ('%s', %u, %d)",
+		"insert into %s (cluster, cpu_count, period_start, reason) "
+		"values ('%s', %u, %d, 'Cluster processor count')",
 		event_table, cluster, procs, event_time);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
@@ -7114,30 +7114,34 @@ extern List jobacct_storage_p_get_jobs(mysql_conn_t *mysql_conn,
 	List job_list = NULL;
 #ifdef HAVE_MYSQL
 	acct_job_cond_t job_cond;
-	struct passwd *pw = NULL;
 
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 	memset(&job_cond, 0, sizeof(acct_job_cond_t));
 
+	job_cond.acct_list = selected_steps;
 	job_cond.step_list = selected_steps;
 	job_cond.partition_list = selected_parts;
-	if(params->opt_cluster) {
-		job_cond.cluster_list = list_create(NULL);
-		list_append(job_cond.cluster_list, params->opt_cluster);
-	}
+	job_cond.cluster_list = params->opt_cluster_list;
 
-	if (params->opt_uid >=0 && (pw=getpwuid(params->opt_uid))) {
-		job_cond.user_list = list_create(NULL);
-		list_append(job_cond.user_list, pw->pw_name);
+	if (params->opt_uid >=0) {
+		char *temp = xstrdup_printf("%u", params->opt_uid);
+		job_cond.userid_list = list_create(NULL);
+		list_append(job_cond.userid_list, temp);
+	}	
+
+	if (params->opt_gid >=0) {
+		char *temp = xstrdup_printf("%u", params->opt_gid);
+		job_cond.groupid_list = list_create(NULL);
+		list_append(job_cond.groupid_list, temp);
 	}	
 
 	job_list = mysql_jobacct_process_get_jobs(mysql_conn, &job_cond);
 
-	if(job_cond.user_list)
-		list_destroy(job_cond.user_list);
-	if(job_cond.cluster_list)
-		list_destroy(job_cond.cluster_list);
+	if(job_cond.userid_list)
+		list_destroy(job_cond.userid_list);
+	if(job_cond.groupid_list)
+		list_destroy(job_cond.groupid_list);
 		
 #endif
 	return job_list;

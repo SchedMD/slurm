@@ -62,7 +62,7 @@
 %slurm_with_opt aix
 %endif
 
-# Build with sgijob, elan, and mysql plugins on CHAOS systems
+# Build with sgijob, and mysql plugins on CHAOS systems
 %if %{?chaos}0
 %slurm_with_opt mysql
 %slurm_with_opt sgijob

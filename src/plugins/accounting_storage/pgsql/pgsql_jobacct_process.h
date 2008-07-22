@@ -58,6 +58,7 @@
 extern char *assoc_table;
 extern char *job_table;
 extern char *step_table;
+extern char *suspend_table;
 
 extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
 					   acct_job_cond_t *job_cond);

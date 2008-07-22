@@ -188,7 +188,7 @@ extern void filetxt_jobcomp_process_get_jobs(List job_list,
 {
 	char line[BUFFER_SIZE];
 	char *fptr = NULL;
-	char *jobid = NULL;
+	int jobid = 0;
 	char *partition = NULL;
 	FILE *fd = NULL;
 	int lc = 0;
@@ -207,7 +207,7 @@ extern void filetxt_jobcomp_process_get_jobs(List job_list,
 				   terminated strings */
 		if(job_info_list) 
 			list_destroy(job_info_list);
-		jobid = NULL;
+		jobid = 0;
 		partition = NULL;
 		job_info_list = list_create(_destroy_filetxt_jobcomp_info);
 		while(fptr) {
@@ -220,7 +220,7 @@ extern void filetxt_jobcomp_process_get_jobs(List job_list,
 			jobcomp_info->val = fptr;
 			fptr = strstr(fptr, " ");
 			if(!strcasecmp("JobId", jobcomp_info->name)) 
-				jobid = jobcomp_info->val;
+				jobid = atoi(jobcomp_info->val);
 			else if(!strcasecmp("Partition",
 					    jobcomp_info->name)) 
 				partition = jobcomp_info->val;
@@ -245,7 +245,7 @@ extern void filetxt_jobcomp_process_get_jobs(List job_list,
 				continue;
 			itr = list_iterator_create(selected_steps);
 			while((selected_step = list_next(itr))) {
-				if (strcmp(selected_step->job, jobid))
+				if (selected_step->jobid == jobid)
 					continue;
 				/* job matches */
 				list_iterator_destroy(itr);

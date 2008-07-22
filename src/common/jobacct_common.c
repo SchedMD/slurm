@@ -197,8 +197,6 @@ extern void destroy_jobacct_selected_step(void *object)
 {
 	jobacct_selected_step_t *step = (jobacct_selected_step_t *)object;
 	if (step) {
-		xfree(step->job);
-		xfree(step->step);
 		xfree(step);
 	}
 }
@@ -380,8 +378,6 @@ unpack_error:
 extern void pack_jobacct_selected_step(jobacct_selected_step_t *step,
 				       Buf buffer)
 {
-	packstr(step->job, buffer);
-	packstr(step->step, buffer);
 	pack32(step->jobid, buffer);
 	pack32(step->stepid, buffer);
 }
@@ -389,14 +385,11 @@ extern void pack_jobacct_selected_step(jobacct_selected_step_t *step,
 extern int unpack_jobacct_selected_step(jobacct_selected_step_t **step,
 					Buf buffer)
 {
-	uint32_t uint32_tmp;
 	jobacct_selected_step_t *step_ptr =
 		xmalloc(sizeof(jobacct_selected_step_t));
 	
 	*step = step_ptr;
 
-	safe_unpackstr_xmalloc(&step_ptr->job, &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&step_ptr->step, &uint32_tmp, buffer);
 	safe_unpack32(&step_ptr->jobid, buffer);
 	safe_unpack32(&step_ptr->stepid, buffer);
 

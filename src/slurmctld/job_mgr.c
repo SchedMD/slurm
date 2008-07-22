@@ -2002,8 +2002,9 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 
 	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 				    accounting_enforce, &assoc_ptr)) {
-		info("_job_create: invalid account or partition for user %u",
-		     job_desc->user_id);
+		info("_job_create: invalid account or partition for user %u, "
+		     "account '%s', and partition '%s'",
+		     job_desc->user_id, assoc_rec.acct, assoc_rec.partition);
 		error_code = ESLURM_INVALID_ACCOUNT;
 		return error_code;
 	}

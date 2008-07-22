@@ -530,8 +530,8 @@ extern void destroy_acct_job_cond(void *object)
 			list_destroy(job_cond->step_list);
 		if(job_cond->state_list)
 			list_destroy(job_cond->state_list);
-		if(job_cond->user_list)
-			list_destroy(job_cond->user_list);
+		if(job_cond->userid_list)
+			list_destroy(job_cond->userid_list);
 		xfree(job_cond);
 	}
 }
@@ -1751,8 +1751,7 @@ extern void pack_acct_job_cond(void *in, Buf buffer)
 	}
 	count = 0;
 
-	pack16(object->completion, buffer);
-	pack16(object->no_duplicates, buffer);
+	pack16(object->duplicates, buffer);
 
 	if(object->groupid_list)
 		count = list_count(object->groupid_list);
@@ -1808,12 +1807,12 @@ extern void pack_acct_job_cond(void *in, Buf buffer)
 	pack32(object->usage_end, buffer);
 	pack32(object->usage_start, buffer);
 
-	if(object->user_list)
-		count = list_count(object->user_list);
+	if(object->userid_list)
+		count = list_count(object->userid_list);
 	
 	pack32(count, buffer);
 	if(count) {
-		itr = list_iterator_create(object->user_list);
+		itr = list_iterator_create(object->userid_list);
 		while((tmp_info = list_next(itr))) {
 			packstr(tmp_info, buffer);
 		}
@@ -1861,8 +1860,7 @@ extern int unpack_acct_job_cond(void **object, Buf buffer)
 		}
 	}
 
-	safe_unpack16(&object_ptr->completion, buffer);
-	safe_unpack16(&object_ptr->no_duplicates, buffer);
+	safe_unpack16(&object_ptr->duplicates, buffer);
 
 	safe_unpack32(&count, buffer);
 	if(count) {
@@ -1907,10 +1905,10 @@ extern int unpack_acct_job_cond(void **object, Buf buffer)
 
 	safe_unpack32(&count, buffer);
 	if(count) {
-		object_ptr->user_list = list_create(slurm_destroy_char);
+		object_ptr->userid_list = list_create(slurm_destroy_char);
 		for(i=0; i<count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp, buffer);
-			list_append(object_ptr->user_list, tmp_info);
+			list_append(object_ptr->userid_list, tmp_info);
 		}
 	}
 

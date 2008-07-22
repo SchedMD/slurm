@@ -257,16 +257,12 @@ int main(int argc, char **argv)
 					"\topt_total=%d\n"
 					"\topt_field_list=%s\n"
 					"\topt_gid=%d\n"
-					"\topt_uid=%d\n"
-					"\topt_job_list=%s\n"
-					"\topt_state_list=%s\n",
+					"\topt_uid=%d\n",
 					params.opt_long, 
 					params.opt_total, 
 					params.opt_field_list,
 					params.opt_gid, 
-					params.opt_uid, 
-					params.opt_job_list,
-					params.opt_state_list);
+					params.opt_uid);
 			invalidSwitchCombo("--expire",
 					   "--brief, --long, --fields, "
 					   "--total, --gid, --uid, --jobs, "
@@ -295,7 +291,7 @@ int main(int argc, char **argv)
 			exit(errno);
 		break;
 	case SACCT_LIST:
-		if (params.opt_header) 	/* give them something to look */
+		if (!params.opt_noheader)/* give them something to look */
 			_print_header();/* at while we think...        */
 		if(get_data() == SLURM_ERROR)
 			exit(errno);
@@ -310,7 +306,7 @@ int main(int argc, char **argv)
 			"in the future please make note this will "
 			"not be supported.\n");
 		
-		if (params.opt_header) 	/* give them something to look */
+		if (!params.opt_noheader)/* give them something to look */
 			_print_header();/* at while we think...        */
 		do_stat();
 		break;

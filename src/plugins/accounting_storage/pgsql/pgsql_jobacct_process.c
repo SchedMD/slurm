@@ -58,7 +58,7 @@ extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
 	int set = 0;
 	char *table_level="t2";
 	PGresult *result = NULL, *step_result = NULL;
-	int i, j;
+	int i, j, last_id = -1, curr_id = -1;
 	jobacct_job_rec_t *job = NULL;
 	jobacct_step_rec_t *step = NULL;
 	time_t now = time(NULL);
@@ -252,6 +252,24 @@ extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
 		xstrcat(extra, ")");
 	}
 
+	if(job_cond->userid_list && list_count(job_cond->userid_list)) {
+		set = 0;
+		if(extra)
+			xstrcat(extra, " && (");
+		else
+			xstrcat(extra, " where (");
+
+		itr = list_iterator_create(job_cond->userid_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "t1.uid='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+
 	if(job_cond->partition_list && list_count(job_cond->partition_list)) {
 		set = 0;
 		if(extra)
@@ -300,6 +318,24 @@ extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
 			   job_cond->usage_end, job_cond->usage_start);
 	}
 
+	if(job_cond->state_list && list_count(job_cond->state_list)) {
+		set = 0;
+		if(extra)
+			xstrcat(extra, " && (");
+		else
+			xstrcat(extra, " where (");
+
+		itr = list_iterator_create(job_cond->state_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "t1.state='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+
 	/* we need to put all the associations (t2) stuff together here */
 	if(job_cond->cluster_list && list_count(job_cond->cluster_list)) {
 		set = 0;
@@ -323,28 +359,6 @@ extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
 		xstrfmtcat(extra, "%s.cluster is null)", table_level);
 	}
 
-	if(job_cond->user_list && list_count(job_cond->user_list)) {
-		set = 0;
-		if(extra)
-			xstrcat(extra, " and (");
-		else
-			xstrcat(extra, " where (");
-
-		itr = list_iterator_create(job_cond->user_list);
-		while((object = list_next(itr))) {
-			if(set) 
-				xstrcat(extra, " or ");
-			xstrfmtcat(extra, "%s.user_name='%s'",
-				   table_level, object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		/* just incase the association is gone */
-		if(set) 
-			xstrcat(extra, " or ");
-		xstrfmtcat(extra, "%s.user_name is null)", table_level);
-	}
-
 no_cond:	
 
 	xfree(tmp);
@@ -361,6 +375,11 @@ no_cond:
 		xstrcat(query, extra);
 		xfree(extra);
 	}
+	/* Here we want to order them this way in such a way so it is
+	   easy to look for duplicates 
+	*/
+	if(job_cond && !job_cond->duplicates) 
+		xstrcat(query, " order by jobid, submit desc");
 
 	debug3("query\n%s", query);
 	if(!(result = pgsql_db_query_ret(acct_pgsql_db, query))) {
@@ -372,6 +391,13 @@ no_cond:
 
 	for (i = 0; i < PQntuples(result); i++) {
 		char *id = PQgetvalue(result, i, JOB_REQ_ID);
+
+		curr_id = atoi(PQgetvalue(result, i, JOB_REQ_JOBID));
+
+		if(job_cond && !job_cond->duplicates && curr_id == last_id)
+			continue;
+		
+		last_id = curr_id;
 
 		job = create_jobacct_job_rec();
 
@@ -411,7 +437,76 @@ no_cond:
 		}
 		job->elapsed -= job->suspended;
 
-		job->jobid = atoi(PQgetvalue(result, i, JOB_REQ_JOBID));
+		if(job_cond && job_cond->usage_start) {
+			if(job->start && (job->start < job_cond->usage_start))
+				job->start = job_cond->usage_start;
+
+			if(!job->start && job->end)
+				job->start = job->end;
+
+			if(!job->end || job->end > job_cond->usage_end) 
+				job->end = job_cond->usage_end;
+
+			job->elapsed = job->end - job->start;
+
+			if(atoi(PQgetvalue(result, i, JOB_REQ_SUSPENDED))) {
+				PGresult *result2 = NULL;
+				int i2=0;
+				/* get the suspended time for this job */
+				query = xstrdup_printf(
+					"select start, end from %s where "
+					"(start < %d && (end >= %d "
+					"|| end = 0)) && id=%s "
+					"order by start",
+					suspend_table,
+					job_cond->usage_end, 
+					job_cond->usage_start,
+					id);
+				
+				debug4("query\n%s", query);
+				if(!(result2 = pgsql_db_query_ret(
+					     acct_pgsql_db, query))) {
+					list_destroy(job_list);
+					job_list = NULL;
+					break;
+				}
+				xfree(query);
+				for (i2 = 0; i2 < PQntuples(result2); i2++) {
+					int local_start =
+						atoi(PQgetvalue(result, i2, 0));
+					int local_end = 
+						atoi(PQgetvalue(result, i2, 1));
+					
+					if(!local_start)
+						continue;
+					
+					if(job->start > local_start)
+						local_start = job->start;
+					if(job->end < local_end)
+						local_end = job->end;
+					
+					if((local_end - local_start) < 1)
+						continue;
+					
+					job->elapsed -= 
+						(local_end - local_start);
+					job->suspended += 
+						(local_end - local_start);
+				}
+				PQclear(result2);
+			}
+		} else {
+			job->suspended =
+				atoi(PQgetvalue(result, i, JOB_REQ_SUSPENDED));
+			if(!job->end) {
+				job->elapsed = now - job->start;
+			} else {
+				job->elapsed = job->end - job->start;
+			}
+			job->elapsed -= job->suspended;
+		}
+
+		job->jobid = curr_id;
 		job->jobname = xstrdup(PQgetvalue(result, i, JOB_REQ_NAME));
 		job->gid = atoi(PQgetvalue(result, i, JOB_REQ_GID));
 		job->exitcode = atoi(PQgetvalue(result, i, JOB_REQ_COMP_CODE));
