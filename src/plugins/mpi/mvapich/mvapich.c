@@ -485,9 +485,9 @@ again:
 
 	/*
 	 *  Loop through poll fds and return first mvapich_info object
-     *   we find that has the requested read/write activity. 
+	 *   we find that has the requested read/write activity. 
 	 *   When found, we update the loop counter, and return
-     *   the corresponding mvapich_info object.
+	 *   the corresponding mvapich_info object.
 	 *
 	 */
 	for (i = mp->counter; i < mp->nfds; i++) {
@@ -800,7 +800,7 @@ static int mvapich_recv (mvapich_state_t *st, void* buf, int size, int rank)
 /* Scatter data in buf to ranks using chunks of size bytes */
 static int mvapich_scatterbcast (mvapich_state_t *st, void* buf, int size)
 {
-	int rc;
+	int rc = 0;
 	int n = 0;
 	struct mvapich_poll *mp;
 	struct mvapich_info *mvi;
