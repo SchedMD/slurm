@@ -1,7 +1,8 @@
 /*****************************************************************************\
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  UCRL-CODE-2002-040.
  *  
@@ -231,14 +232,14 @@ _hostrange_member(char *hostname, char *str)
  */
 int _slurm_load_jobs (job_info_msg_t **msgp)
 {
-    static int (*load_jobs) (time_t, job_info_msg_t **);
+    static int (*load_jobs) (time_t, job_info_msg_t **, uint16_t);
 
     if (!(load_jobs = dlsym (slurm_h, "slurm_load_jobs"))) {
         _log_msg (LOG_ERR, "Unable to resolve slurm_load_jobs\n");
         return -1;
     }
     
-    return load_jobs ((time_t) NULL, msgp);
+    return load_jobs ((time_t) NULL, msgp, (uint16_t) SHOW_ALL);
 }
 
 /*
