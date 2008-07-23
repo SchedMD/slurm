@@ -1,0 +1,171 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Confirm that job time limit function works (-t option).
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2002-2007 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# LLNL-CODE-402394.
+# 
+# This file is part of SLURM, a resource management program.
+# For details, see <http://www.llnl.gov/linux/slurm/>.
+#  
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+# 
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+# 
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id     "1.7"
+set exit_code   0
+set job_id      0
+
+# NOTE: If you increase sleep_time, change job time limits as well
+set sleep_time  180
+
+print_header $test_id
+
+#
+# Make sure sleep time is no larger than InactiveLimit
+set inactive_limit  $sleep_time
+set kill_wait       $sleep_time
+log_user 0
+spawn $scontrol show config
+expect {
+	-re "InactiveLimit *= ($number)" {
+		set inactive_limit $expect_out(1,string)
+		exp_continue
+	}
+	-re "KillWait *= ($number)" {
+		set kill_wait $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+log_user 1
+if {$inactive_limit == 0} {
+	set inactive_limit $sleep_time
+}
+if {$inactive_limit < 120} {
+	send_user "\nWARNING: InactiveLimit ($inactive_limit) is too low for this test\n"
+	exit 0
+}
+if {$kill_wait > 60} {
+	send_user "\nWARNING: KillWait ($kill_wait) is too high for this test\n"
+	exit 0
+}
+if {$inactive_limit < $sleep_time} {
+	set sleep_time [expr $inactive_limit + $kill_wait]
+	send_user "\nReset job sleep time to $sleep_time seconds\n"
+}
+
+#
+# Execute a couple of three minute jobs; one with a one minute time  
+# limit and the other with a four minute time limit. Confirm jobs 
+# are terminated on a timeout as required. Note that SLURM time 
+# limit enforcement has a resolution of about one minute. 
+#
+# Ideally the job gets a "job exceeded timelimit" followed by a 
+# "Terminated" message, but if the timing is bad only the "Terminated" 
+# message gets sent. This is due to srun recognizing job termination 
+# prior to the message from slurmd being processed.
+#
+set timeout [expr $max_job_delay + $sleep_time]
+set timed_out 0
+set srun_pid [spawn $srun -t1 $bin_sleep $sleep_time]
+expect {
+	-re "time limit" {
+		set timed_out 1
+		exp_continue
+	}
+	-re "TIME LIMIT" {
+		set timed_out 1
+		exp_continue
+	}
+	-re "Terminated" {
+		set timed_out 1
+		exp_continue
+	}
+	-re "Unable to contact" {
+		send_user "\nFAILURE: slurm appears to be down\n"
+		exit 1
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$timed_out == 1} {
+	send_user "Early termination is expected, no worries.\n"
+} else {
+	send_user "\nFAILURE: time limit not enforced\n"
+	set exit_code 1
+}
+
+set completions 0
+set srun_pid [spawn $srun -t4 $bin_sleep $sleep_time]
+expect {
+	-re "time limit" {
+		set completions -1
+		exp_continue
+	}
+	-re "TIME LIMIT" {
+		set completions -1
+		exp_continue
+	}
+	-re "Terminated" {
+		set completions -1
+		exp_continue
+	}
+	-re "Unable to contact" {
+		send_user "\nFAILURE: slurm appears to be down\n"
+		exit 1
+	}
+	-re "error" {
+		set completions -1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+		incr completions
+	}
+}
+if {$completions != 1} {
+	send_user "\nFAILURE: job failed to complete properly\n"
+	set exit_code 1
+}
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code
