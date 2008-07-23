@@ -769,7 +769,7 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 /* 				       assoc_table, assoc_char); */
 		query = xstrdup_printf("select distinct t1.id "
 				       "from %s as t1, %s as t2 "
-				       "where %s && t1.lft between "
+				       "where (%s) && t1.lft between "
 				       "t2.lft and t2.rgt && t1.deleted=0 "
 				       " && t2.deleted=0;",
 				       assoc_table, assoc_table, assoc_char);
@@ -808,6 +808,11 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 		mysql_free_result(result);
 	} else 
 		loc_assoc_char = assoc_char;
+
+	if(!loc_assoc_char) {
+		debug2("No associations with object being deleted\n");
+		return rc;
+	}
 
 	if(!has_jobs)
 		query = xstrdup_printf(
