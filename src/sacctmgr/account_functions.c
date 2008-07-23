@@ -678,7 +678,8 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 	}
 
 end_it:
-	list_destroy(add_qos_list);
+	if(add_qos_list)
+		list_destroy(add_qos_list);
 	list_destroy(acct_list);
 	list_destroy(assoc_list);
 		

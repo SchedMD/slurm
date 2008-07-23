@@ -754,7 +754,8 @@ no_default:
 	}
 
 end_it:
-	list_destroy(add_qos_list);
+	if(add_qos_list)
+		list_destroy(add_qos_list);
 	list_destroy(user_list);
 	list_destroy(assoc_list);
 	xfree(default_acct);
