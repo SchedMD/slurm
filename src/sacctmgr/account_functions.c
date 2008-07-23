@@ -508,8 +508,18 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 				acct->organization = xstrdup(parent);
 			else
 				acct->organization = xstrdup(name);
-				
-			acct->qos_list = add_qos_list;
+			if(add_qos_list && list_count(add_qos_list)) {
+				char *tmp_qos = NULL;
+				ListIterator qos_itr = 
+					list_iterator_create(add_qos_list);
+				acct->qos_list = 
+					list_create(slurm_destroy_char);
+				while((tmp_qos = list_next(qos_itr))) {
+					list_append(acct->qos_list,
+						    xstrdup(tmp_qos));
+				}
+				list_iterator_destroy(qos_itr);
+			}
 			xstrfmtcat(acct_str, "  %s\n", name);
 			list_append(acct_list, acct);
 		}
@@ -668,6 +678,7 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 	}
 
 end_it:
+	list_destroy(add_qos_list);
 	list_destroy(acct_list);
 	list_destroy(assoc_list);
 		

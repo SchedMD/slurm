@@ -523,7 +523,20 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 			user->assoc_list = list_create(NULL);
 			user->name = xstrdup(name);
 			user->default_acct = xstrdup(default_acct);
-			user->qos_list = add_qos_list;
+
+			if(add_qos_list && list_count(add_qos_list)) {
+				char *tmp_qos = NULL;
+				ListIterator qos_itr = 
+					list_iterator_create(add_qos_list);
+				user->qos_list = 
+					list_create(slurm_destroy_char);
+				while((tmp_qos = list_next(qos_itr))) {
+					list_append(user->qos_list,
+						    xstrdup(tmp_qos));
+				}
+				list_iterator_destroy(qos_itr);
+			}
+
 			user->admin_level = admin_level;
 			xstrfmtcat(user_str, "  %s\n", name);
 
@@ -741,6 +754,7 @@ no_default:
 	}
 
 end_it:
+	list_destroy(add_qos_list);
 	list_destroy(user_list);
 	list_destroy(assoc_list);
 	xfree(default_acct);
