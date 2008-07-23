@@ -1677,7 +1677,13 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
 	/* save user ID of the one who requested the job be cancelled */
 	if(signal == SIGKILL)
 		job_ptr->requid = uid;
-	
+	if ((job_ptr->job_state == (JOB_PENDING | JOB_COMPLETING)) &&
+	    (signal == SIGKILL)) {
+		job_ptr->job_state = JOB_CANCELLED | JOB_COMPLETING;
+		verbose("job_signal of requeuing job %u successful", job_id);
+		return SLURM_SUCCESS;
+	}
+
 	if ((job_ptr->job_state == JOB_PENDING) &&
 	    (signal == SIGKILL)) {
 		last_job_update		= now;
