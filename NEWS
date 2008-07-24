@@ -407,6 +407,8 @@ documents those changes that are of interest to users and admins.
 =========================
  -- Permit the cancellation of a job that is in the process of being 
     requeued.
+ -- Ignore the show_flag when getting job, step, node or partition information
+    for user root.
 
 * Changes in SLURM 1.2.33
 =========================
