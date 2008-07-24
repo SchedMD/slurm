@@ -8,7 +8,8 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2005 The Regents of the University of California.
+# Copyright (C) 2002-2007 The Regents of the University of California.
+# Copyright (C) 2008 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Chris Morrone <morrone2@llnl.gov>
 # LLNL-CODE-402394.
@@ -97,7 +98,11 @@ for {set inx 0} {$inx < $cycle_count} {incr inx} {
 		set stdout_lines [get_line_cnt $file_out]
 	}
 	if {$stdout_lines != $stdout_target} {
-		send_user "\nFAILURE: stdout is incomplete\n"
+		if {$stdout_lines == 0} {
+			send_user "\nFAILURE: stdout is empty, is current working directory writable from compute nodes?\n"
+		} else {
+			send_user "\nFAILURE:stdout is incomplete\n"
+		}
 	        set exit_code 1
 	        break
 	} else {
