@@ -105,7 +105,7 @@ am__libcommon_la_SOURCES_DIST = assoc_mgr.c assoc_mgr.h xmalloc.c \
 	slurm_selecttype_info.c slurm_resource_info.c \
 	slurm_resource_info.h hostlist.c hostlist.h \
 	slurm_step_layout.c slurm_step_layout.h checkpoint.c \
-	checkpoint.h cpu_layout.c cpu_layout.h parse_time.c \
+	checkpoint.h select_job_res.c select_job_res.h parse_time.c \
 	parse_time.h job_options.c job_options.h global_defaults.c \
 	timers.c timers.h slurm_xlator.h stepd_api.c stepd_api.h \
 	proc_args.c proc_args.h
@@ -123,7 +123,7 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo xmalloc.lo xassert.lo \
 	slurm_jobacct_gather.lo slurm_jobcomp.lo switch.lo arg_desc.lo \
 	malloc.lo getopt.lo getopt1.lo $(am__objects_1) \
 	slurm_selecttype_info.lo slurm_resource_info.lo hostlist.lo \
-	slurm_step_layout.lo checkpoint.lo cpu_layout.lo parse_time.lo \
+	slurm_step_layout.lo checkpoint.lo select_job_res.lo parse_time.lo \
 	job_options.lo global_defaults.lo timers.lo stepd_api.lo \
 	proc_args.lo
 am__EXTRA_libcommon_la_SOURCES_DIST = unsetenv.c unsetenv.h
@@ -415,7 +415,7 @@ libcommon_la_SOURCES = \
 	hostlist.c hostlist.h		\
 	slurm_step_layout.c slurm_step_layout.h	\
 	checkpoint.c checkpoint.h	\
-	cpu_layout.c cpu_layout.h	\
+	select_job_res.c select_job_res.h	\
 	parse_time.c parse_time.h	\
 	job_options.c job_options.h	\
 	global_defaults.c		\
@@ -523,7 +523,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bitstring.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cbuf.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/checkpoint.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cpu_layout.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/select_job_res.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/daemonize.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eio.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/env.Plo@am__quote@

@@ -59,6 +59,7 @@
 
 #include <slurm/slurm_errno.h>
 
+#include "src/common/assoc_mgr.h"
 #include "src/common/checkpoint.h"
 #include "src/common/daemonize.h"
 #include "src/common/fd.h"
@@ -68,6 +69,7 @@
 #include "src/common/node_select.h"
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
+#include "src/common/select_job_res.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_auth.h"
@@ -77,7 +79,6 @@
 #include "src/common/uid.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
-#include "src/common/assoc_mgr.h"
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/job_scheduler.h"
@@ -1007,6 +1008,40 @@ static void *_slurmctld_background(void *no_data)
 	/* Locks: Write partition */
 	slurmctld_lock_t part_write_lock = { 
 		NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
+
+Buf buffer = init_buf(4096);
+select_job_res_t select_res_ptr1, select_res_ptr2;
+lock_slurmctld(job_read_lock);
+select_res_ptr1 = create_select_job_res("dummy[2,5,12,16]", 
+			slurmctld_conf.fast_schedule, 
+			find_node_record);
+set_select_job_res_bit(select_res_ptr1, 0, 2, 1); info("set_bit(0,2,1)");
+set_select_job_res_bit(select_res_ptr1, 1, 0, 0); info("set_bit(1,0,0)");
+set_select_job_res_bit(select_res_ptr1, 2, 1, 1); info("set_bit(2,1,1)");
+set_select_job_res_bit(select_res_ptr1, 3, 0, 3); info("set_bit(3,0,3)");
+info("get_bit(1,0,0):%d", get_select_job_res_bit(select_res_ptr1, 1, 0, 0));
+info("get_bit(1,0,1):%d", get_select_job_res_bit(select_res_ptr1, 1, 0, 1));
+select_res_ptr1->memory_reserved[0] = 123;
+info("orig select_job_res");
+log_select_job_res(select_res_ptr1);
+
+select_res_ptr2 = copy_select_job_res(select_res_ptr1);
+free_select_job_res(&select_res_ptr1);
+info("copied select_job_res");
+
+log_select_job_res(select_res_ptr2);
+
+pack_select_job_res(select_res_ptr2, buffer);
+free_select_job_res(&select_res_ptr2);
+set_buf_offset(buffer, 0);
+if (unpack_select_job_res(&select_res_ptr1, buffer))
+  error("unpack_select_job_res failure");
+else {
+  info("unpacked select_job_res");
+  log_select_job_res(select_res_ptr1);
+  free_select_job_res(&select_res_ptr1);
+}
+unlock_slurmctld(job_read_lock);
 
 	/* Let the dust settle before doing work */
 	now = time(NULL);

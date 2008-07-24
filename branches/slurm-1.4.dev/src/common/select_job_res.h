@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  cpu_layout.h - functions to manage data structure identifying specific
+ *  select_job_res.h - functions to manage data structure identifying specific
  *	CPUs allocated to a job, step or partition
  *****************************************************************************
  *  Copyright (C) 2008 Lawrence Livermore National Security.
@@ -35,8 +35,8 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#ifndef _CPU_LAYOUT_H
-#define _CPU_LAYOUT_H
+#ifndef _SELECT_JOB_RES_H
+#define _SELECT_JOB_RES_H
 
 #if HAVE_CONFIG_H
 #  include "config.h"
@@ -53,7 +53,7 @@
 #include "src/common/pack.h"
 #include "src/slurmctld/slurmctld.h"
 
-/* struct cpu_layout defines exactly which resources are allocated
+/* struct select_job_res defines exactly which resources are allocated
  *	to a job, step, partition, etc.
  *
  * node_cnt		- Number of nodes in the allocation
@@ -72,7 +72,7 @@
  *   | Core_0 | Core_1 | Core_0 | Core_1 | Core_0 | Core_1 | Core_0 | Core_1 |
  *   | Bit_0  | Bit_1  | Bit_2  | Bit_3  | Bit_4  | Bit_5  | Bit_6  | Bit_7  |
  */
-typedef struct cpu_layout {
+struct select_job_res {
 	uint32_t	node_cnt;
 	uint32_t *	memory_reserved;
 	uint32_t *	memory_rep_count;
@@ -80,37 +80,43 @@ typedef struct cpu_layout {
 	uint32_t *	cores_per_socket;
 	uint32_t *	sock_core_rep_count;
 	bitstr_t *	allocated_cores;
-} cpu_layout_t;
+};
 
-/* Create a cpu_layout data structure based upon slurmctld state.
+/* Create a select_job_res data structure based upon slurmctld state.
  * Call this ONLY from slurmctld. We pass a pointer to slurmctld's
  * find_node_record function so this module can be loaded in libslurm
  * and the other functions used from slurmd. Example of use:
- * cpu_layout_ptr = create_cpu_layout("tux[2,5,10-12,16]", 
+ * select_job_res_ptr = create_select_job_res("tux[2,5,10-12,16]", 
  *				      slurmctld_conf.fast_schedule,
  *				      find_node_record);
  */
-extern cpu_layout_t *create_cpu_layout(char *hosts, uint16_t fast_schedule,
+extern select_job_res_t create_select_job_res(char *hosts, 
+		uint16_t fast_schedule,
 		struct node_record * (*node_finder) (char *host_name) );
 
-/* Make a copy of a cpu_layout data structure, free using free_cpu_layout() */
-extern cpu_layout_t *copy_cpu_layout(cpu_layout_t *cpu_layout_ptr);
+/* Make a copy of a select_job_res data structure, free using free_select_job_res() */
+extern select_job_res_t copy_select_job_res(select_job_res_t 
+					    select_job_res_ptr);
 
-/* Free cpu_layout data structure created using copy_cpu_layout() or
- *	unpack_cpu_layout() */
-extern void free_cpu_layout(cpu_layout_t **cpu_layout_pptr);
+/* Free select_job_res data structure created using copy_select_job_res() or
+ *	unpack_select_job_res() */
+extern void free_select_job_res(select_job_res_t *select_job_res_pptr);
 
-/* Log the contents of a cpu_layout data structure using info() */
-extern void log_cpu_layout(cpu_layout_t *cpu_layout_ptr);
+/* Log the contents of a select_job_res data structure using info() */
+extern void log_select_job_res(select_job_res_t select_job_res_ptr);
 
-/* Un/pack full cpu_layout data structure */
-extern void pack_cpu_layout(cpu_layout_t *cpu_layout_ptr, Buf buffer);
-extern int  unpack_cpu_layout(cpu_layout_t **cpu_layout_pptr, Buf buffer);
+/* Un/pack full select_job_res data structure */
+extern void pack_select_job_res(select_job_res_t select_job_res_ptr, 
+				Buf buffer);
+extern int unpack_select_job_res(select_job_res_t *select_job_res_pptr, 
+				 Buf buffer);
 
 /* Get/set bit value at specified location.
  *	node_id, socket_id and core_id are all zero origin */
-extern int get_cpu_layout_bit(cpu_layout_t *cpu_layout_ptr, uint32_t node_id,
-			      uint32_t socket_id, uint32_t core_id);
-extern int set_cpu_layout_bit(cpu_layout_t *cpu_layout_ptr, uint32_t node_id,
-			      uint32_t socket_id, uint32_t core_id);
-#endif /* !_CPU_LAYOUT_H */
+extern int get_select_job_res_bit(select_job_res_t select_job_res_ptr, 
+				  uint32_t node_id,
+				  uint32_t socket_id, uint32_t core_id);
+extern int set_select_job_res_bit(select_job_res_t select_job_res_ptr, 
+				  uint32_t node_id,
+				  uint32_t socket_id, uint32_t core_id);
+#endif /* !_SELECT_JOB_RES_H */

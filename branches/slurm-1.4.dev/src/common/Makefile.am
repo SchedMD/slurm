@@ -90,7 +90,7 @@ libcommon_la_SOURCES = 			\
 	hostlist.c hostlist.h		\
 	slurm_step_layout.c slurm_step_layout.h	\
 	checkpoint.c checkpoint.h	\
-	cpu_layout.c cpu_layout.h	\
+	select_job_res.c select_job_res.h	\
 	parse_time.c parse_time.h	\
 	job_options.c job_options.h	\
 	global_defaults.c		\

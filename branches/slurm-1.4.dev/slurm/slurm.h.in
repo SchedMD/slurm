@@ -133,10 +133,12 @@ BEGIN_C_DECLS
    typedef struct switch_jobinfo *switch_jobinfo_t;	/* opaque data type */
 #endif
 
-/* Define select_jobinfo_t below to avoid including extraneous slurm headers */
+/* Define select_jobinfo_t and select_job_res_t below 
+ * to avoid including extraneous slurm headers */
 #ifndef __select_jobinfo_t_defined
-#  define  __select_jobinfo_t_defined
-   typedef struct select_jobinfo *select_jobinfo_t;     /* opaque data type */
+#  define  __select_jobinfo_t_defined	/* Opaque data for select plugins */
+   typedef struct select_jobinfo *select_jobinfo_t;  /* for BlueGene */
+   typedef struct select_job_res *select_job_res_t;  /* for non-BlueGene */
 #endif
 
 /* Define jobacctinfo_t below to avoid including extraneous slurm headers */
