@@ -73,23 +73,22 @@ extern int build_select_job_res(select_job_res_t select_job_res,
 		error("build_select_job_res: Invalid hostlist: %s", hosts);
 		return SLURM_ERROR;
 	}
-	select_job_res->node_cnt = hostset_count(hs);
+	select_job_res->nhosts = hostset_count(hs);
 	xfree(select_job_res->sockets_per_node);
 	xfree(select_job_res->cores_per_socket);
 	xfree(select_job_res->sock_core_rep_count);
 	select_job_res->sockets_per_node = xmalloc(sizeof(uint32_t) * 
-						   select_job_res->node_cnt);
+						   select_job_res->nhosts);
 	select_job_res->cores_per_socket = xmalloc(sizeof(uint32_t) * 
-						   select_job_res->node_cnt);
+						   select_job_res->nhosts);
 	select_job_res->sock_core_rep_count = xmalloc(sizeof(uint32_t) * 
-						      select_job_res->
-						      node_cnt);
+						      select_job_res->nhosts);
 
 	node_finder_local = (struct node_record * (*) (char *host_name)) 
 			    node_finder;
 	while ((host_name = hostset_shift(hs))) {
 		node_ptr = node_finder_local(host_name);
-		if (++host_inx > select_job_res->node_cnt) {
+		if (++host_inx > select_job_res->nhosts) {
 			error("build_select_job_res: "
 			      "hostlist parsing problem: %s",
 			      hosts);
@@ -126,7 +125,7 @@ extern int build_select_job_res(select_job_res_t select_job_res,
 		free(host_name);
 	}
 	hostset_destroy(hs);
-	select_job_res->allocated_cores = bit_alloc(core_cnt);
+	select_job_res->alloc_core_bitmap = bit_alloc(core_cnt);
 	return SLURM_SUCCESS;
 }
 
@@ -137,46 +136,47 @@ extern select_job_res_t copy_select_job_res(select_job_res_t
 	select_job_res_t new_layout = xmalloc(sizeof(struct select_job_res));
 
 	xassert(select_job_res_ptr);
-	new_layout->node_cnt = select_job_res_ptr->node_cnt;
-	new_layout->allocated_cores = bit_copy(select_job_res_ptr->
-					       allocated_cores);
+	new_layout->nhosts = select_job_res_ptr->nhosts;
+	new_layout->nprocs = select_job_res_ptr->nprocs;
+	new_layout->node_req = select_job_res_ptr->node_req;
+	new_layout->alloc_core_bitmap = bit_copy(select_job_res_ptr->
+						 alloc_core_bitmap);
 
-	/* Copy memory_reserved and memory_rep_count */
-	new_layout->memory_reserved = xmalloc(sizeof(uint32_t) * 
-					      new_layout->node_cnt);
+	/* Copy memory_allocated and memory_rep_count */
+	new_layout->memory_allocated = xmalloc(sizeof(uint32_t) * 
+					       new_layout->nhosts);
 	new_layout->memory_rep_count = xmalloc(sizeof(uint32_t) * 
-					       new_layout->node_cnt);
-	for (i=0; i<new_layout->node_cnt; i++) {
+					       new_layout->nhosts);
+	for (i=0; i<new_layout->nhosts; i++) {
 		if (select_job_res_ptr->memory_rep_count[i] ==  0) {
 			error("copy_select_job_res: memory_rep_count=0");
 			break;
 		}
 		mem_inx += select_job_res_ptr->memory_rep_count[i];
-		if (mem_inx >= select_job_res_ptr->node_cnt) {
+		if (mem_inx >= select_job_res_ptr->nhosts) {
 			i++;
 			break;
 		}
 	}
-	memcpy(new_layout->memory_reserved, 
-	       select_job_res_ptr->memory_reserved, (sizeof(uint32_t) * i));
+	memcpy(new_layout->memory_allocated, 
+	       select_job_res_ptr->memory_allocated, (sizeof(uint32_t) * i));
 	memcpy(new_layout->memory_rep_count, 
 	       select_job_res_ptr->memory_rep_count, (sizeof(uint32_t) * i));
 
 	/* Copy sockets_per_node, cores_per_socket and core_sock_rep_count */
 	new_layout->sockets_per_node = xmalloc(sizeof(uint32_t) * 
-					       new_layout->node_cnt);	
+					       new_layout->nhosts);	
 	new_layout->cores_per_socket = xmalloc(sizeof(uint32_t) * 
-					       new_layout->node_cnt);	
+					       new_layout->nhosts);	
 	new_layout->sock_core_rep_count = xmalloc(sizeof(uint32_t) * 
-						  new_layout->
-						  node_cnt);	
-	for (i=0; i<new_layout->node_cnt; i++) {
+						  new_layout->nhosts);	
+	for (i=0; i<new_layout->nhosts; i++) {
 		if (select_job_res_ptr->sock_core_rep_count[i] ==  0) {
 			error("copy_select_job_res: sock_core_rep_count=0");
 			break;
 		}
 		sock_inx += select_job_res_ptr->sock_core_rep_count[i];
-		if (sock_inx >= select_job_res_ptr->node_cnt) {
+		if (sock_inx >= select_job_res_ptr->nhosts) {
 			i++;
 			break;
 		}
@@ -196,13 +196,13 @@ extern void free_select_job_res(select_job_res_t *select_job_res_pptr)
 {
 	if (select_job_res_pptr) {
 		select_job_res_t select_job_res_ptr = *select_job_res_pptr;
-		xfree(select_job_res_ptr->memory_reserved);
+		xfree(select_job_res_ptr->memory_allocated);
 		xfree(select_job_res_ptr->memory_rep_count);
 		xfree(select_job_res_ptr->sockets_per_node);
 		xfree(select_job_res_ptr->cores_per_socket);
 		xfree(select_job_res_ptr->sock_core_rep_count);
-		if (select_job_res_ptr->allocated_cores)
-			bit_free(select_job_res_ptr->allocated_cores);
+		if (select_job_res_ptr->alloc_core_bitmap)
+			bit_free(select_job_res_ptr->alloc_core_bitmap);
 		xfree(select_job_res_ptr);
 		*select_job_res_pptr = NULL;
 	}
@@ -218,7 +218,10 @@ extern void log_select_job_res(select_job_res_t select_job_res_ptr)
 
 	xassert(select_job_res_ptr);
 	info("====================");
-	for (node_inx=0; node_inx<select_job_res_ptr->node_cnt; node_inx++) {
+	info("nhosts:%u nprocs:%u node_req:%u", 
+	     select_job_res_ptr->nhosts, select_job_res_ptr->nprocs,
+	     select_job_res_ptr->node_req);
+	for (node_inx=0; node_inx<select_job_res_ptr->nhosts; node_inx++) {
 		info("Node[%d]:", node_inx);
 
 		if (mem_reps >= 
@@ -236,14 +239,14 @@ extern void log_select_job_res(select_job_res_t select_job_res_ptr)
 		sock_reps++;
 
 		info("  Mem(MB):%u  Sockets:%u  Cores:%u", 
-		     select_job_res_ptr->memory_reserved[mem_inx],
+		     select_job_res_ptr->memory_allocated[mem_inx],
 		     select_job_res_ptr->sockets_per_node[sock_inx],
 		     select_job_res_ptr->cores_per_socket[sock_inx]);
 
 		bit_reps = select_job_res_ptr->sockets_per_node[sock_inx] *
 			   select_job_res_ptr->cores_per_socket[sock_inx];
 		for (i=0; i<bit_reps; i++) {
-			if (bit_test(select_job_res_ptr->allocated_cores,
+			if (bit_test(select_job_res_ptr->alloc_core_bitmap,
 				     bit_inx)) {
 				info("  Socket[%d] Core[%d] in use",
 				     (i / select_job_res_ptr->
@@ -264,24 +267,26 @@ extern void pack_select_job_res(select_job_res_t select_job_res_ptr,
 	uint32_t core_cnt = 0, mem_recs = 0, sock_recs = 0;
 
 	xassert(select_job_res_ptr);
-	pack32(select_job_res_ptr->node_cnt, buffer);
-	for (i=0; i<select_job_res_ptr->node_cnt; i++) {
+	pack32(select_job_res_ptr->nhosts, buffer);
+	pack32(select_job_res_ptr->nprocs, buffer);
+	pack8(select_job_res_ptr->node_req, buffer);
+	for (i=0; i<select_job_res_ptr->nhosts; i++) {
 		mem_recs += select_job_res_ptr->memory_rep_count[i];
-		if (mem_recs >= select_job_res_ptr->node_cnt)
+		if (mem_recs >= select_job_res_ptr->nhosts)
 			break;
 	}
 	i++;
-	pack32_array(select_job_res_ptr->memory_reserved,  
+	pack32_array(select_job_res_ptr->memory_allocated,  
 		     (uint32_t) i, buffer);
 	pack32_array(select_job_res_ptr->memory_rep_count, 
 		     (uint32_t) i, buffer);
 
-	for (i=0; i<select_job_res_ptr->node_cnt; i++) {
+	for (i=0; i<select_job_res_ptr->nhosts; i++) {
 		core_cnt += select_job_res_ptr->sockets_per_node[i] *
 			    select_job_res_ptr->cores_per_socket[i] *
 			    select_job_res_ptr->sock_core_rep_count[i];
 		sock_recs += select_job_res_ptr->sock_core_rep_count[i];
-		if (sock_recs >= select_job_res_ptr->node_cnt)
+		if (sock_recs >= select_job_res_ptr->nhosts)
 			break;
 	}
 	i++;
@@ -292,8 +297,8 @@ extern void pack_select_job_res(select_job_res_t select_job_res_ptr,
 	pack32_array(select_job_res_ptr->sock_core_rep_count, 
 		     (uint32_t) i, buffer);
 	pack32(core_cnt, buffer);
-	xassert (core_cnt == bit_size(select_job_res_ptr->allocated_cores));
-	pack_bit_fmt(select_job_res_ptr->allocated_cores, buffer);
+	xassert (core_cnt == bit_size(select_job_res_ptr->alloc_core_bitmap));
+	pack_bit_fmt(select_job_res_ptr->alloc_core_bitmap, buffer);
 }
 
 extern int  unpack_select_job_res(select_job_res_t *select_job_res_pptr, Buf buffer)
@@ -304,8 +309,10 @@ extern int  unpack_select_job_res(select_job_res_t *select_job_res_pptr, Buf buf
 
 	xassert(select_job_res_pptr);
 	select_job_res = xmalloc(sizeof(struct select_job_res));
-	safe_unpack32(&select_job_res->node_cnt, buffer);
-	safe_unpack32_array(&select_job_res->memory_reserved,
+	safe_unpack32(&select_job_res->nhosts, buffer);
+	safe_unpack32(&select_job_res->nprocs, buffer);
+	safe_unpack8(&select_job_res->node_req, buffer);
+	safe_unpack32_array(&select_job_res->memory_allocated,
 			    &tmp32, buffer);
 	safe_unpack32_array(&select_job_res->memory_rep_count,
 			    &tmp32, buffer);
@@ -317,8 +324,8 @@ extern int  unpack_select_job_res(select_job_res_t *select_job_res_pptr, Buf buf
 			    &tmp32, buffer);
 	safe_unpack32(&core_cnt, buffer);    /* NOTE: Not part of struct */
 	safe_unpackstr_xmalloc(&bit_fmt, &tmp32, buffer);
-	select_job_res->allocated_cores = bit_alloc((bitoff_t) core_cnt);
-	if (bit_unfmt(select_job_res->allocated_cores, bit_fmt))
+	select_job_res->alloc_core_bitmap = bit_alloc((bitoff_t) core_cnt);
+	if (bit_unfmt(select_job_res->alloc_core_bitmap, bit_fmt))
 		goto unpack_error;
 	xfree(bit_fmt);
 	*select_job_res_pptr = select_job_res;
@@ -339,7 +346,7 @@ extern int get_select_job_res_bit(select_job_res_t select_job_res_ptr,
 
 	xassert(select_job_res_ptr);
 
-	for (i=0; i<select_job_res_ptr->node_cnt; i++) {
+	for (i=0; i<select_job_res_ptr->nhosts; i++) {
 		if (select_job_res_ptr->sock_core_rep_count[i] <= node_id) {
 			bit_inx += select_job_res_ptr->sockets_per_node[i] *
 				   select_job_res_ptr->cores_per_socket[i] *
@@ -355,14 +362,14 @@ extern int get_select_job_res_bit(select_job_res_t select_job_res_ptr,
 			break;
 		}
 	}
-	i = bit_size(select_job_res_ptr->allocated_cores);
+	i = bit_size(select_job_res_ptr->alloc_core_bitmap);
 	if (bit_inx >= i) {
 		error("get_select_job_res_bit: offset >= bitmap size "
 		      "(%d >= %d)", bit_inx, i);
 		return 0;
 	}
 
-	return bit_test(select_job_res_ptr->allocated_cores, bit_inx);
+	return bit_test(select_job_res_ptr->alloc_core_bitmap, bit_inx);
 }
 
 extern int set_select_job_res_bit(select_job_res_t select_job_res_ptr, 
@@ -373,7 +380,7 @@ extern int set_select_job_res_bit(select_job_res_t select_job_res_ptr,
 
 	xassert(select_job_res_ptr);
 
-	for (i=0; i<select_job_res_ptr->node_cnt; i++) {
+	for (i=0; i<select_job_res_ptr->nhosts; i++) {
 		if (select_job_res_ptr->sock_core_rep_count[i] <= node_id) {
 			bit_inx += select_job_res_ptr->sockets_per_node[i] *
 				   select_job_res_ptr->cores_per_socket[i] *
@@ -389,13 +396,13 @@ extern int set_select_job_res_bit(select_job_res_t select_job_res_ptr,
 			break;
 		}
 	}
-	i = bit_size(select_job_res_ptr->allocated_cores);
+	i = bit_size(select_job_res_ptr->alloc_core_bitmap);
 	if (bit_inx >= i) {
 		error("set_select_job_res_bit: offset >= bitmap size "
 		      "(%d >= %d)", bit_inx, i);
 		return SLURM_ERROR;
 	}
 
-	bit_set(select_job_res_ptr->allocated_cores, bit_inx);
+	bit_set(select_job_res_ptr->alloc_core_bitmap, bit_inx);
 	return SLURM_SUCCESS;
 }

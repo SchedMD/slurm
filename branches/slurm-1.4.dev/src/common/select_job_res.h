@@ -56,30 +56,34 @@
 /* struct select_job_res defines exactly which resources are allocated
  *	to a job, step, partition, etc.
  *
- * node_cnt		- Number of nodes in the allocation
- * memory_reserved	- MB per node reserved
+ * alloc_core_bitmap	- bitmap of allocated cores for all nodes and sockets
+ * cores_per_socket	- Count of cores per socket on this node
+ * memory_allocated	- MB per node reserved
  * memory_rep_count	- How many consecutive nodes that memory_reserved
  *			  applies to
- * sockets_per_node	- Count of sockets on this node
- * cores_per_socket	- Count of cores per socket on this node
+ * nhosts		- Number of nodes in the allocation
+ * node_req		- NODE_CR_RESERVED|NODE_CR_ONE_ROW|NODE_CR_AVAILABLE
+ * nprocs		- Number of processors in the allocation
  * sock_core_rep_count	- How many consecutive nodes that sockets_per_node
  *			  and cores_per_socket apply to
- * allocated_cores	- bitmap of selected cores for all nodes and sockets
+ * sockets_per_node	- Count of sockets on this node
  *
- * Sample layout:
+ * Sample layout of alloc_core_bitmap:
  *   |               Node_0              |               Node_1              |
  *   |      Sock_0     |      Sock_1     |      Sock_0     |      Sock_1     |
  *   | Core_0 | Core_1 | Core_0 | Core_1 | Core_0 | Core_1 | Core_0 | Core_1 |
  *   | Bit_0  | Bit_1  | Bit_2  | Bit_3  | Bit_4  | Bit_5  | Bit_6  | Bit_7  |
  */
 struct select_job_res {
-	uint32_t	node_cnt;
-	uint32_t *	memory_reserved;
-	uint32_t *	memory_rep_count;
-	uint32_t *	sockets_per_node;
 	uint32_t *	cores_per_socket;
+	uint32_t *	memory_allocated;
+	uint32_t *	memory_rep_count;
+	uint32_t	nhosts;
+	uint8_t		node_req;
+	uint32_t	nprocs;
 	uint32_t *	sock_core_rep_count;
-	bitstr_t *	allocated_cores;
+	uint32_t *	sockets_per_node;
+	bitstr_t *	alloc_core_bitmap;
 };
 
 /* Create an empty select_job_res data structure */
@@ -90,6 +94,7 @@ extern select_job_res_t create_select_job_res(void);
  * Call this ONLY from slurmctld. We pass a pointer to slurmctld's
  * find_node_record function so this module can be loaded in libslurm
  * and the other functions used from slurmd. Example of use:
+ *
  * select_job_res_t select_job_res_ptr = create_select_job_res();
  * rc = build_select_job_res(select_job_res_ptr,
  *			     "tux[2,5,10-12,16]", 
@@ -100,7 +105,8 @@ extern int build_select_job_res(select_job_res_t select_job_res_ptr,
 				char *hosts, uint16_t fast_schedule,
 				void *node_finder);
 
-/* Make a copy of a select_job_res data structure, free using free_select_job_res() */
+/* Make a copy of a select_job_res data structure, 
+ * free using free_select_job_res() */
 extern select_job_res_t copy_select_job_res(select_job_res_t 
 					    select_job_res_ptr);
 
