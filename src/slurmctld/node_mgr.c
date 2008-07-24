@@ -843,8 +843,8 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 		xassert (node_ptr->config_ptr->magic ==  
 			 CONFIG_MAGIC);
 
-		if (((show_flags & SHOW_ALL) == 0)
-		&&  (_node_is_hidden(node_ptr)))
+		if (((show_flags & SHOW_ALL) == 0) && (uid != 0) &&
+		    (_node_is_hidden(node_ptr)))
 			continue;
 
 		_pack_node(node_ptr, cr_flag, buffer);

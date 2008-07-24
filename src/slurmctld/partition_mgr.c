@@ -675,7 +675,7 @@ extern void pack_all_part(char **buffer_ptr, int *buffer_size,
 	part_iterator = list_iterator_create(part_list);
 	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
 		xassert (part_ptr->magic == PART_MAGIC);
-		if (((show_flags & SHOW_ALL) == 0) &&
+		if (((show_flags & SHOW_ALL) == 0) && (uid != 0) &&
 		    ((part_ptr->hidden) || (validate_group (part_ptr, uid) == 0)))
 			continue;
 		pack_part(part_ptr, buffer);
