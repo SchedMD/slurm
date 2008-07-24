@@ -40,7 +40,7 @@ if [ ! -x ./regression ]; then
 	exit 1
 fi
 if [ ! -x ./globals ]; then
-	echo "FAILURE: copy 'globals.example' to 'globals' and modify as needed"
+	echo "FAILURE: 'globals' file not found"
 	exit 1
 fi
 
