@@ -70,13 +70,14 @@
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
+#include "src/common/read_config.h" /* location of slurmctld_conf */
+#include "src/common/select_job_res.h"
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/switch.h"
 #include "src/common/timers.h"
 #include "src/common/xmalloc.h"
-#include "src/common/read_config.h" /* location of slurmctld_conf */
 
 #define FREE_NULL_BITMAP(_X)		\
 	do {				\

@@ -35,38 +35,48 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
+#include <stdlib.h>
 #include <string.h>
 #include <slurm/slurm_errno.h>
 
-#include "src/common/select_job_res.h"
+#include "src/common/hostlist.h"
 #include "src/common/log.h"
+#include "src/common/select_job_res.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xassert.h"
-#include <stdlib.h>
-#include "src/common/hostlist.h"
+#include "src/slurmctld/slurmctld.h"
 
-extern select_job_res_t create_select_job_res(char *hosts, 
-		uint16_t fast_schedule,
-		struct node_record * (*node_finder) (char *host_name) )
+
+/* Create an empty select_job_res data structure */
+extern select_job_res_t create_select_job_res(void)
+{
+	select_job_res_t select_job_res;
+
+	select_job_res = xmalloc(sizeof(struct select_job_res));
+	return select_job_res;
+}
+
+
+extern int build_select_job_res(select_job_res_t select_job_res,
+				 char *hosts, uint16_t fast_schedule,
+				 void *node_finder)
 {
 	hostset_t hs;
 	char *host_name;
 	int core_cnt = 0, host_inx = 0, sock_inx = -1;
-	select_job_res_t select_job_res;
+	struct node_record * (*node_finder_local) (char *host_name);
 	struct node_record *node_ptr;
 
 	xassert(hosts);
 	hs = hostset_create(hosts);
 	if (!hs) {
-		error("create_select_job_res: Invalid hostlist: %s", hosts);
-		return NULL;
+		error("build_select_job_res: Invalid hostlist: %s", hosts);
+		return SLURM_ERROR;
 	}
-	select_job_res = xmalloc(sizeof(struct select_job_res));
 	select_job_res->node_cnt = hostset_count(hs);
-	select_job_res->memory_reserved = xmalloc(sizeof(uint32_t) * 
-						  select_job_res->node_cnt);
-	select_job_res->memory_rep_count = xmalloc(sizeof(uint32_t) * 
-						   select_job_res->node_cnt);
+	xfree(select_job_res->sockets_per_node);
+	xfree(select_job_res->cores_per_socket);
+	xfree(select_job_res->sock_core_rep_count);
 	select_job_res->sockets_per_node = xmalloc(sizeof(uint32_t) * 
 						   select_job_res->node_cnt);
 	select_job_res->cores_per_socket = xmalloc(sizeof(uint32_t) * 
@@ -75,16 +85,16 @@ extern select_job_res_t create_select_job_res(char *hosts,
 						      select_job_res->
 						      node_cnt);
 
-/*	select_job_res.memory_reserved initialized to zero */
-	select_job_res->memory_rep_count[0] = select_job_res->node_cnt;
+	node_finder_local = (struct node_record * (*) (char *host_name)) 
+			    node_finder;
 	while ((host_name = hostset_shift(hs))) {
-		node_ptr = node_finder(host_name);
+		node_ptr = node_finder_local(host_name);
 		if (++host_inx > select_job_res->node_cnt) {
-			error("create_select_job_res: "
+			error("build_select_job_res: "
 			      "hostlist parsing problem: %s",
 			      hosts);
 			free(host_name);
-			goto fail;
+			return SLURM_ERROR;
 		} else if (node_ptr) {
 			uint32_t cores, socks;
 			if (fast_schedule) {
@@ -108,19 +118,16 @@ extern select_job_res_t create_select_job_res(char *hosts,
 			select_job_res->sock_core_rep_count[sock_inx]++;
 			core_cnt += (cores * socks);
 		} else {
-			error("create_select_job_res: Invalid host: %s", 
+			error("build_select_job_res: Invalid host: %s", 
 			      host_name);
 			free(host_name);
-			goto fail;
+			return SLURM_ERROR;
 		}
 		free(host_name);
 	}
 	hostset_destroy(hs);
 	select_job_res->allocated_cores = bit_alloc(core_cnt);
-	return select_job_res;
-
- fail:	free_select_job_res(&select_job_res);
-	return NULL;
+	return SLURM_SUCCESS;
 }
 
 extern select_job_res_t copy_select_job_res(select_job_res_t
@@ -140,6 +147,10 @@ extern select_job_res_t copy_select_job_res(select_job_res_t
 	new_layout->memory_rep_count = xmalloc(sizeof(uint32_t) * 
 					       new_layout->node_cnt);
 	for (i=0; i<new_layout->node_cnt; i++) {
+		if (select_job_res_ptr->memory_rep_count[i] ==  0) {
+			error("copy_select_job_res: memory_rep_count=0");
+			break;
+		}
 		mem_inx += select_job_res_ptr->memory_rep_count[i];
 		if (mem_inx >= select_job_res_ptr->node_cnt) {
 			i++;
@@ -160,6 +171,10 @@ extern select_job_res_t copy_select_job_res(select_job_res_t
 						  new_layout->
 						  node_cnt);	
 	for (i=0; i<new_layout->node_cnt; i++) {
+		if (select_job_res_ptr->sock_core_rep_count[i] ==  0) {
+			error("copy_select_job_res: sock_core_rep_count=0");
+			break;
+		}
 		sock_inx += select_job_res_ptr->sock_core_rep_count[i];
 		if (sock_inx >= select_job_res_ptr->node_cnt) {
 			i++;

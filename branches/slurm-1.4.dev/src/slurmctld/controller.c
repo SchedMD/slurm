@@ -69,7 +69,6 @@
 #include "src/common/node_select.h"
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
-#include "src/common/select_job_res.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_auth.h"
@@ -1009,19 +1008,25 @@ static void *_slurmctld_background(void *no_data)
 	slurmctld_lock_t part_write_lock = { 
 		NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
 
+#if 1
 Buf buffer = init_buf(4096);
 select_job_res_t select_res_ptr1, select_res_ptr2;
 lock_slurmctld(job_read_lock);
-select_res_ptr1 = create_select_job_res("dummy[2,5,12,16]", 
-			slurmctld_conf.fast_schedule, 
-			find_node_record);
+select_res_ptr1 = create_select_job_res();
+build_select_job_res(select_res_ptr1, "dummy[2,5,12,16]", 
+		     slurmctld_conf.fast_schedule, find_node_record);
 set_select_job_res_bit(select_res_ptr1, 0, 2, 1); info("set_bit(0,2,1)");
 set_select_job_res_bit(select_res_ptr1, 1, 0, 0); info("set_bit(1,0,0)");
 set_select_job_res_bit(select_res_ptr1, 2, 1, 1); info("set_bit(2,1,1)");
 set_select_job_res_bit(select_res_ptr1, 3, 0, 3); info("set_bit(3,0,3)");
 info("get_bit(1,0,0):%d", get_select_job_res_bit(select_res_ptr1, 1, 0, 0));
 info("get_bit(1,0,1):%d", get_select_job_res_bit(select_res_ptr1, 1, 0, 1));
+select_res_ptr1->memory_reserved = xmalloc(sizeof(uint32_t) * 2);
+select_res_ptr1->memory_rep_count = xmalloc(sizeof(uint32_t) * 2);
 select_res_ptr1->memory_reserved[0] = 123;
+select_res_ptr1->memory_reserved[1] = 456;
+select_res_ptr1->memory_rep_count[0] = 1;
+select_res_ptr1->memory_rep_count[1] = 3;
 info("orig select_job_res");
 log_select_job_res(select_res_ptr1);
 
@@ -1042,6 +1047,7 @@ else {
   free_select_job_res(&select_res_ptr1);
 }
 unlock_slurmctld(job_read_lock);
+#endif
 
 	/* Let the dust settle before doing work */
 	now = time(NULL);

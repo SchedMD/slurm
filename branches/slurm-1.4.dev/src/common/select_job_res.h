@@ -82,17 +82,23 @@ struct select_job_res {
 	bitstr_t *	allocated_cores;
 };
 
-/* Create a select_job_res data structure based upon slurmctld state.
+/* Create an empty select_job_res data structure */
+extern select_job_res_t create_select_job_res(void);
+
+/* Set the socket and core counts associated with a set of selected
+ * nodes of a select_job_res data structure based upon slurmctld state.
  * Call this ONLY from slurmctld. We pass a pointer to slurmctld's
  * find_node_record function so this module can be loaded in libslurm
  * and the other functions used from slurmd. Example of use:
- * select_job_res_ptr = create_select_job_res("tux[2,5,10-12,16]", 
- *				      slurmctld_conf.fast_schedule,
- *				      find_node_record);
+ * select_job_res_t select_job_res_ptr = create_select_job_res();
+ * rc = build_select_job_res(select_job_res_ptr,
+ *			     "tux[2,5,10-12,16]", 
+ *			     slurmctld_conf.fast_schedule,
+ *			     find_node_record);
  */
-extern select_job_res_t create_select_job_res(char *hosts, 
-		uint16_t fast_schedule,
-		struct node_record * (*node_finder) (char *host_name) );
+extern int build_select_job_res(select_job_res_t select_job_res_ptr,
+				char *hosts, uint16_t fast_schedule,
+				void *node_finder);
 
 /* Make a copy of a select_job_res data structure, free using free_select_job_res() */
 extern select_job_res_t copy_select_job_res(select_job_res_t 
