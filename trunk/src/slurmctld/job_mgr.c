@@ -3249,7 +3249,7 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		xassert (job_ptr->magic == JOB_MAGIC);
 
-		if (((show_flags & SHOW_ALL) == 0) &&
+		if (((show_flags & SHOW_ALL) == 0) && (uid != 0) &&
 		    (job_ptr->part_ptr) && 
 		    (job_ptr->part_ptr->hidden))
 			continue;
