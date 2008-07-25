@@ -40,9 +40,10 @@
 #  include "config.h"
 #endif
 
+#include <ctype.h>
 #include <errno.h>
-#include <pwd.h>
 #include <grp.h>
+#include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -54,13 +55,13 @@
 #include <slurm/slurm_errno.h>
 
 #include "src/api/job_info.h"
+#include "src/common/forward.h"
 #include "src/common/node_select.h"
 #include "src/common/parse_time.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
-#include "src/common/forward.h"
 
 /*
  * slurm_print_job_info_msg - output information about all Slurm 
@@ -400,9 +401,13 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		xstrcat(out, "\n   ");
 
 	/****** Line 12 ******/
-	if (job_ptr->state_desc)
+	if (job_ptr->state_desc) {
+		for (j=0; job_ptr->state_desc[j]; j++) {
+			if (isspace(job_ptr->state_desc[j]))
+				job_ptr->state_desc[j] = '_';
+		}
 		tmp3_ptr = job_ptr->state_desc;
-	else
+	} else
 		tmp3_ptr = job_reason_string(job_ptr->state_reason);
 	snprintf(tmp_line, sizeof(tmp_line), 
 		"Reason=%s Network=%s",
