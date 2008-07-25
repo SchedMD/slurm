@@ -54,7 +54,7 @@ if {$available < $node_cnt} {
 log_user 0
 set scontrol_pid [spawn $scontrol show nodes]
 expect {
-	-re "CPUS=($number)" {
+	-re " CPUs=($number)" {
 		if {$expect_out(1,string) < $ppn_cnt} {
 			set ppn_cnt $expect_out(1,string)
 		}
