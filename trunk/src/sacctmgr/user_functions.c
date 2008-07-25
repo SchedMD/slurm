@@ -619,9 +619,10 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 
 				if(sacctmgr_find_association_from_list(
 					   local_assoc_list,
-					   name, account, cluster, NULL))
-						continue;
-					
+					   name, account, cluster, NULL)) {
+					continue;
+				}		
+			
 				assoc = xmalloc(sizeof(acct_association_rec_t));
 				assoc->user = xstrdup(name);
 				assoc->acct = xstrdup(account);

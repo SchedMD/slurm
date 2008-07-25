@@ -2377,20 +2377,22 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 		}
 		
 		if(object->user) {
+			char *part = object->partition;
 			xstrcat(cols, ", user");
 			xstrfmtcat(vals, ", '%s'", object->user); 		
 			xstrfmtcat(extra, ", user='%s'", object->user);
 			xstrfmtcat(update, " && user='%s'",
 				   object->user); 
-			
-			if(object->partition) {
-				xstrcat(cols, ", partition");
-				xstrfmtcat(vals, ", '%s'", object->partition);
-				xstrfmtcat(extra, ", partition='%s'",
-					   object->partition);
-				xstrfmtcat(update, " && partition='%s'",
-					   object->partition);
-			}
+
+			/* We need to give a partition wiether it be
+			 * '' or the actual partition name given
+			 */
+			if(!part)
+				part = "";
+			xstrcat(cols, ", partition");
+			xstrfmtcat(vals, ", '%s'", part);
+			xstrfmtcat(extra, ", partition='%s'", part);
+			xstrfmtcat(update, " && partition='%s'", part);
 		}
 
 		if((int)object->fairshare >= 0) {
