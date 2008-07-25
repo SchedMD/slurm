@@ -58,10 +58,10 @@
  *
  * alloc_core_bitmap	- Bitmap of allocated cores for all nodes and sockets
  * cores_per_socket	- Count of cores per socket on this node
- * cpus			- Count of desired/allocated CPUs per node
- * memory_allocated	- MB per node reserved
- * memory_rep_count	- How many consecutive nodes that memory_reserved
- *			  applies to
+ * cpus			- Count of desired/allocated CPUs per node for job/step
+ * cpus_used		- For a job, count of CPUs per node used by job steps
+ * memory_allocated	- MB per node reserved for the job or step
+ * memory_used		- MB per node of memory consumed by job steps
  * nhosts		- Number of nodes in the allocation
  * node_bitmap		- Bitmap of nodes allocated to the job. Unlike the
  *			  node_bitmap in slurmctld's job record, the bits
@@ -82,9 +82,10 @@
 struct select_job_res {
 	bitstr_t *	alloc_core_bitmap;
 	uint32_t *	cpus;
+	uint32_t *	cpus_used;
 	uint32_t *	cores_per_socket;
 	uint32_t *	memory_allocated;
-	uint32_t *	memory_rep_count;
+	uint32_t *	memory_used;
 	uint32_t	nhosts;
 	bitstr_t *	node_bitmap;
 	uint8_t		node_req;

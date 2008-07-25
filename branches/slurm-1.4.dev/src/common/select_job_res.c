@@ -111,7 +111,7 @@ extern int build_select_job_res(select_job_res_t select_job_res,
 extern select_job_res_t copy_select_job_res(select_job_res_t
 					    select_job_res_ptr)
 {
-	int i, mem_inx = 0, sock_inx = 0;
+	int i, sock_inx = 0;
 	select_job_res_t new_layout = xmalloc(sizeof(struct select_job_res));
 
 	xassert(select_job_res_ptr);
@@ -126,6 +126,7 @@ extern select_job_res_t copy_select_job_res(select_job_res_t
 		new_layout->node_bitmap = bit_copy(select_job_res_ptr->
 						   node_bitmap);
 	}
+
 	if (select_job_res_ptr->cpus) {
 		new_layout->cpus = xmalloc(sizeof(uint32_t) *
 					   select_job_res_ptr->nhosts);
@@ -133,26 +134,27 @@ extern select_job_res_t copy_select_job_res(select_job_res_t
 		       (sizeof(uint32_t) * select_job_res_ptr->nhosts));
 	}
 
-	/* Copy memory_allocated and memory_rep_count */
-	new_layout->memory_allocated = xmalloc(sizeof(uint32_t) * 
-					       new_layout->nhosts);
-	new_layout->memory_rep_count = xmalloc(sizeof(uint32_t) * 
-					       new_layout->nhosts);
-	for (i=0; i<new_layout->nhosts; i++) {
-		if (select_job_res_ptr->memory_rep_count[i] ==  0) {
-			error("copy_select_job_res: memory_rep_count=0");
-			break;
-		}
-		mem_inx += select_job_res_ptr->memory_rep_count[i];
-		if (mem_inx >= select_job_res_ptr->nhosts) {
-			i++;
-			break;
-		}
+	if (select_job_res_ptr->cpus_used) {
+		new_layout->cpus_used = xmalloc(sizeof(uint32_t) *
+						select_job_res_ptr->nhosts);
+		memcpy(new_layout->cpus_used, select_job_res_ptr->cpus_used, 
+		       (sizeof(uint32_t) * select_job_res_ptr->nhosts));
 	}
-	memcpy(new_layout->memory_allocated, 
-	       select_job_res_ptr->memory_allocated, (sizeof(uint32_t) * i));
-	memcpy(new_layout->memory_rep_count, 
-	       select_job_res_ptr->memory_rep_count, (sizeof(uint32_t) * i));
+
+	if (select_job_res_ptr->memory_allocated) {
+		new_layout->memory_allocated = xmalloc(sizeof(uint32_t) * 
+						       new_layout->nhosts);
+		memcpy(new_layout->memory_allocated, 
+		       select_job_res_ptr->memory_allocated, 
+		       (sizeof(uint32_t) * select_job_res_ptr->nhosts));
+	}
+	if (select_job_res_ptr->memory_used) {
+		new_layout->memory_used = xmalloc(sizeof(uint32_t) * 
+						  new_layout->nhosts);
+		memcpy(new_layout->memory_used, 
+		       select_job_res_ptr->memory_used, 
+		       (sizeof(uint32_t) * select_job_res_ptr->nhosts));
+	}
 
 	/* Copy sockets_per_node, cores_per_socket and core_sock_rep_count */
 	new_layout->sockets_per_node = xmalloc(sizeof(uint32_t) * 
@@ -191,8 +193,9 @@ extern void free_select_job_res(select_job_res_t *select_job_res_pptr)
 			bit_free(select_job_res_ptr->alloc_core_bitmap);
 		xfree(select_job_res_ptr->cores_per_socket);
 		xfree(select_job_res_ptr->cpus);
+		xfree(select_job_res_ptr->cpus_used);
 		xfree(select_job_res_ptr->memory_allocated);
-		xfree(select_job_res_ptr->memory_rep_count);
+		xfree(select_job_res_ptr->memory_used);
 		if (select_job_res_ptr->node_bitmap)
 			bit_free(select_job_res_ptr->node_bitmap);
 		xfree(select_job_res_ptr->sock_core_rep_count);
@@ -206,7 +209,6 @@ extern void free_select_job_res(select_job_res_t *select_job_res_pptr)
 extern void log_select_job_res(select_job_res_t select_job_res_ptr)
 {
 	int bit_inx = 0, bit_reps, i;
-	int mem_inx = 0, mem_reps = 0;
 	int node_inx;
 	int sock_inx = 0, sock_reps = 0;
 
@@ -220,8 +222,11 @@ extern void log_select_job_res(select_job_res_t select_job_res_ptr)
 	     select_job_res_ptr->nhosts, select_job_res_ptr->nprocs,
 	     select_job_res_ptr->node_req);
 
-	if ((select_job_res_ptr->memory_allocated == NULL) ||
-	    (select_job_res_ptr->memory_rep_count == NULL)) {
+	if (select_job_res_ptr->cpus == NULL) {
+		error("log_select_job_res: cpus array is NULL");
+		return;
+	}
+	if (select_job_res_ptr->memory_allocated == NULL) {
 		error("log_select_job_res: memory array is NULL");
 		return;
 	}
@@ -234,14 +239,8 @@ extern void log_select_job_res(select_job_res_t select_job_res_ptr)
 
 	/* Can only log node_bitmap from slurmctld, so don't bother here */
 	for (node_inx=0; node_inx<select_job_res_ptr->nhosts; node_inx++) {
+		uint32_t cpus_used = 0, memory_used = 0;
 		info("Node[%d]:", node_inx);
-
-		if (mem_reps >= 
-		    select_job_res_ptr->memory_rep_count[mem_inx]) {
-			mem_inx++;
-			mem_reps = 0;
-		}
-		mem_reps++;
 
 		if (sock_reps >= 
 		    select_job_res_ptr->sock_core_rep_count[sock_inx]) {
@@ -250,18 +249,25 @@ extern void log_select_job_res(select_job_res_t select_job_res_ptr)
 		}
 		sock_reps++;
 
-		info("  Mem(MB):%u  Sockets:%u  Cores:%u  CPUs(alloc):%u", 
-		     select_job_res_ptr->memory_allocated[mem_inx],
+		if (select_job_res_ptr->cpus_used)
+			cpus_used = select_job_res_ptr->cpus_used[node_inx];
+		if (select_job_res_ptr->memory_used)
+			memory_used = select_job_res_ptr->memory_used[node_inx];
+
+		info("  Mem(MB):%u:%u  Sockets:%u  Cores:%u  CPUs:%u:%u", 
+		     select_job_res_ptr->memory_allocated[node_inx],
+		     memory_used,
 		     select_job_res_ptr->sockets_per_node[sock_inx],
 		     select_job_res_ptr->cores_per_socket[sock_inx],
-		     select_job_res_ptr->cpus[node_inx]);
+		     select_job_res_ptr->cpus[node_inx],
+		     cpus_used);
 
 		bit_reps = select_job_res_ptr->sockets_per_node[sock_inx] *
 			   select_job_res_ptr->cores_per_socket[sock_inx];
 		for (i=0; i<bit_reps; i++) {
 			if (bit_test(select_job_res_ptr->alloc_core_bitmap,
 				     bit_inx)) {
-				info("  Socket[%d] Core[%d] in use",
+				info("  Socket[%d] Core[%d] in allocated",
 				     (i / select_job_res_ptr->
 				          cores_per_socket[sock_inx]),
 				     (i % select_job_res_ptr->
@@ -277,7 +283,7 @@ extern void pack_select_job_res(select_job_res_t select_job_res_ptr,
 				Buf buffer)
 {
 	int i;
-	uint32_t core_cnt = 0, host_cnt = 0, mem_recs = 0, sock_recs = 0;
+	uint32_t core_cnt = 0, host_cnt = 0, sock_recs = 0;
 
 	if (select_job_res_ptr == NULL) {
 		uint32_t empty = NO_VAL;
@@ -289,7 +295,6 @@ extern void pack_select_job_res(select_job_res_t select_job_res_ptr,
 	xassert(select_job_res_ptr->cores_per_socket);
 	xassert(select_job_res_ptr->cpus);
 	xassert(select_job_res_ptr->memory_allocated);
-	xassert(select_job_res_ptr->memory_rep_count);
 	xassert(select_job_res_ptr->nhosts);
 	xassert(select_job_res_ptr->node_bitmap);
 	xassert(select_job_res_ptr->sock_core_rep_count);
@@ -301,17 +306,19 @@ extern void pack_select_job_res(select_job_res_t select_job_res_ptr,
 
 	pack32_array(select_job_res_ptr->cpus,
 		     select_job_res_ptr->nhosts, buffer);
+	if (select_job_res_ptr->cpus_used) {
+		pack32_array(select_job_res_ptr->cpus_used,
+			     select_job_res_ptr->nhosts, buffer);
+	} else
+		pack32_array(select_job_res_ptr->cpus_used, 0, buffer);
 
-	for (i=0; i<select_job_res_ptr->nhosts; i++) {
-		mem_recs += select_job_res_ptr->memory_rep_count[i];
-		if (mem_recs >= select_job_res_ptr->nhosts)
-			break;
-	}
-	i++;
 	pack32_array(select_job_res_ptr->memory_allocated,  
-		     (uint32_t) i, buffer);
-	pack32_array(select_job_res_ptr->memory_rep_count, 
-		     (uint32_t) i, buffer);
+		     select_job_res_ptr->nhosts, buffer);
+	if (select_job_res_ptr->memory_used) {
+		pack32_array(select_job_res_ptr->memory_used,  
+			     select_job_res_ptr->nhosts, buffer);
+	} else
+		pack32_array(select_job_res_ptr->memory_used, 0, buffer);
 
 	for (i=0; i<select_job_res_ptr->nhosts; i++) {
 		core_cnt += select_job_res_ptr->sockets_per_node[i] *
@@ -357,20 +364,27 @@ extern int unpack_select_job_res(select_job_res_t *select_job_res_pptr,
 	select_job_res->nhosts = empty;
 	safe_unpack32(&select_job_res->nprocs, buffer);
 	safe_unpack8(&select_job_res->node_req, buffer);
-	safe_unpack32_array(&select_job_res->cpus,
+
+	safe_unpack32_array(&select_job_res->cpus, &tmp32, buffer);
+	if (tmp32 != select_job_res->nhosts)
+		goto unpack_error;
+	safe_unpack32_array(&select_job_res->cpus_used, &tmp32, buffer);
+	if (tmp32 == 0)
+		xfree(select_job_res->cpus_used);
+
+	safe_unpack32_array(&select_job_res->memory_allocated,
 			    &tmp32, buffer);
 	if (tmp32 != select_job_res->nhosts)
 		goto unpack_error;
-	safe_unpack32_array(&select_job_res->memory_allocated,
-			    &tmp32, buffer);
-	safe_unpack32_array(&select_job_res->memory_rep_count,
-			    &tmp32, buffer);
-	safe_unpack32_array(&select_job_res->sockets_per_node,
-			    &tmp32, buffer);
-	safe_unpack32_array(&select_job_res->cores_per_socket,
-			    &tmp32, buffer);
+	safe_unpack32_array(&select_job_res->memory_used, &tmp32, buffer);
+	if (tmp32 == 0)
+		xfree(select_job_res->memory_used);
+
+	safe_unpack32_array(&select_job_res->sockets_per_node, &tmp32, buffer);
+	safe_unpack32_array(&select_job_res->cores_per_socket, &tmp32, buffer);
 	safe_unpack32_array(&select_job_res->sock_core_rep_count,
 			    &tmp32, buffer);
+
 	safe_unpack32(&core_cnt, buffer);    /* NOTE: Not part of struct */
 	safe_unpackstr_xmalloc(&bit_fmt, &tmp32, buffer);
 	select_job_res->alloc_core_bitmap = bit_alloc((bitoff_t) core_cnt);

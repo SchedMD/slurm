@@ -1042,21 +1042,24 @@ if (i == 0)
   info("get_bit(1,0,1):%d", i);
 else
   error("get_bit(1,0,1):%d", i);
-select_res_ptr1->memory_allocated = xmalloc(sizeof(uint32_t) * 2);
-select_res_ptr1->memory_rep_count = xmalloc(sizeof(uint32_t) * 2);
+select_res_ptr1->memory_allocated = xmalloc(sizeof(uint32_t) * 4);
 select_res_ptr1->memory_allocated[0] = 123;
 select_res_ptr1->memory_allocated[1] = 456;
-select_res_ptr1->memory_rep_count[0] = 1;
-select_res_ptr1->memory_rep_count[1] = 3;
+select_res_ptr1->memory_allocated[2] = 456;
+select_res_ptr1->memory_allocated[3] = 456;
 info("orig select_job_res");
 log_select_job_res(select_res_ptr1);
 
 select_res_ptr2 = copy_select_job_res(select_res_ptr1);
 free_select_job_res(&select_res_ptr1);
 info("copied select_job_res");
-
 log_select_job_res(select_res_ptr2);
 
+info("Setting cpus_used and memory_used for node_id 1");
+select_res_ptr2->cpus_used = xmalloc(sizeof(uint32_t) * 4);
+select_res_ptr2->cpus_used[1] = 1;
+select_res_ptr2->memory_used = xmalloc(sizeof(uint32_t) * 4);
+select_res_ptr2->memory_used[1] = 111;
 pack_select_job_res(select_res_ptr2, buffer);
 free_select_job_res(&select_res_ptr2);
 set_buf_offset(buffer, 0);
