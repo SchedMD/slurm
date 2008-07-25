@@ -223,7 +223,7 @@ enum job_state_reason {
 	WAIT_HELD,		/* job is held, priority==0 */
 	WAIT_TIME,		/* job waiting for specific begin time */
 	WAIT_LICENSES,		/* job is waiting for licenses */
-	WAIT_ASSOC_LIMIT,	/* user/bank job limit reached */
+	WAIT_ASSOC_JOB_LIMIT,	/* user/bank job limit reached */
 	WAIT_TBD1,
 	WAIT_TBD2,
 	FAIL_DOWN_PARTITION,	/* partition for job is DOWN */
@@ -500,7 +500,8 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	char *network;		/* network use spec */
 	uint16_t nice;		/* requested priority change, 
 				 * NICE_OFFSET == no change */
-	uint32_t num_tasks;	/* number of tasks to be started, for batch only */
+	uint32_t num_tasks;	/* number of tasks to be started, 
+				 * for batch only */
 	uint8_t open_mode;	/* out/err open mode truncate or append,
 				 * see OPEN_MODE_* */
 	uint16_t other_port;	/* port to send various notification msg to */
@@ -635,6 +636,7 @@ typedef struct job_info {
 				 * process using select_g_get_jobinfo() */
 	uint16_t shared;	/* 1 if job can share nodes with other jobs */
 	time_t start_time;	/* time execution begins, actual or expected */
+	char *state_desc;	/* optional details for state_reason */
 	uint16_t state_reason;	/* reason job still pending or failed, see
 				 * slurm.h:enum job_state_reason */
 	time_t submit_time;	/* time of job submission */

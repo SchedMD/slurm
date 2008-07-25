@@ -14,6 +14,8 @@ documents those changes that are of interest to users and admins.
  -- Modify slurm_step_launch API call. Move launch host from function argument
     to element in the data structure slurm_step_launch_params_t, which is 
     used as a function argument.
+ -- Add state_reason_string to job state with optional details about why 
+    a job is pending.
 
 * Changes in SLURM 1.3.6
 ========================

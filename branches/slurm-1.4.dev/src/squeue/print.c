@@ -334,9 +334,12 @@ int _print_job_reason(job_info_t * job, int width, bool right, char* suffix)
 	if (job == NULL)        /* Print the Header instead */
 		_print_str("REASON", width, right, true);
 	else {
-		char id[FORMAT_STRING_SIZE];
-		snprintf(id, FORMAT_STRING_SIZE, "%s", 
-			job_reason_string(job->state_reason));
+		char id[FORMAT_STRING_SIZE], *reason;
+		if (job->state_desc)
+			reason = job->state_desc;
+		else
+			reason = job_reason_string(job->state_reason);
+		snprintf(id, FORMAT_STRING_SIZE, "%s", reason);
 		_print_str(id, width, right, true);
 	}
 	if (suffix)
@@ -572,9 +575,12 @@ int _print_job_reason_list(job_info_t * job, int width, bool right,
 	} else if ((job->job_state == JOB_PENDING)
 	||         (job->job_state == JOB_TIMEOUT)
 	||         (job->job_state == JOB_FAILED)) {
-		char id[FORMAT_STRING_SIZE];
-		snprintf(id, FORMAT_STRING_SIZE, "(%s)", 
-			job_reason_string(job->state_reason));
+		char id[FORMAT_STRING_SIZE], *reason;
+		if (job->state_desc)
+			reason = job->state_desc;
+		else
+			reason = job_reason_string(job->state_reason);
+		snprintf(id, FORMAT_STRING_SIZE, "(%s)", reason);
 		_print_str(id, width, right, true);
 	} else {
 #ifdef HAVE_BG

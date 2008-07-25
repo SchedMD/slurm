@@ -150,7 +150,7 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 	if ((assoc_ptr->max_jobs != NO_VAL) &&
 	    (assoc_ptr->max_jobs != INFINITE) &&
 	    (assoc_ptr->used_jobs >= assoc_ptr->max_jobs)) {
-		job_ptr->state_reason = WAIT_ASSOC_LIMIT;
+		job_ptr->state_reason = WAIT_ASSOC_JOB_LIMIT;
 		return false;
 	}
 

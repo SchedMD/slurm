@@ -400,10 +400,13 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		xstrcat(out, "\n   ");
 
 	/****** Line 12 ******/
+	if (job_ptr->state_desc)
+		tmp3_ptr = job_ptr->state_desc;
+	else
+		tmp3_ptr = job_reason_string(job_ptr->state_reason);
 	snprintf(tmp_line, sizeof(tmp_line), 
 		"Reason=%s Network=%s",
-		job_reason_string(job_ptr->state_reason), 
-		job_ptr->network);
+		tmp3_ptr, job_ptr->network);
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");

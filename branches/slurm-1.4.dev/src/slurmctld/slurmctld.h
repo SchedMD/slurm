@@ -422,6 +422,7 @@ struct job_record {
 	select_job_res_t select_job;	/* opaque data, non-BlueGene */
 	time_t start_time;		/* time execution begins, 
 					 * actual or expected */
+	char *state_desc;		/* optional details for state_reason */
 	uint16_t state_reason;		/* reason job still pending or failed
 					 * see slurm.h:enum job_wait_reason */
 	List step_list;			/* list of job's steps */

@@ -495,7 +495,9 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack16(dump_job_ptr->qos, buffer);
 	pack16(dump_job_ptr->state_reason, buffer);
 
+	packstr(dump_job_ptr->state_desc, buffer);
 	packstr(dump_job_ptr->resp_host, buffer);
+
 	pack16(dump_job_ptr->alloc_resp_port, buffer);
 	pack16(dump_job_ptr->other_port, buffer);
 
@@ -554,7 +556,7 @@ static int _load_job_state(Buf buffer)
 	char *nodes = NULL, *partition = NULL, *name = NULL, *resp_host = NULL;
 	char *account = NULL, *network = NULL, *mail_user = NULL;
 	char *comment = NULL, *nodes_completing = NULL, *alloc_node = NULL;
-	char *licenses = NULL;
+	char *licenses = NULL, *state_desc;
 	struct job_record *job_ptr;
 	struct part_record *part_ptr;
 	int error_code;
@@ -589,7 +591,9 @@ static int _load_job_state(Buf buffer)
 	safe_unpack16(&qos, buffer);
 	safe_unpack16(&state_reason, buffer);
 
+	safe_unpackstr_xmalloc(&state_desc, &name_len, buffer);
 	safe_unpackstr_xmalloc(&resp_host, &name_len, buffer);
+
 	safe_unpack16(&alloc_resp_port, buffer);
 	safe_unpack16(&other_port, buffer);
 
@@ -729,6 +733,8 @@ static int _load_job_state(Buf buffer)
 	job_ptr->select_jobinfo = select_jobinfo;
 	job_ptr->start_time   = start_time;
 	job_ptr->state_reason = state_reason;
+	job_ptr->state_desc   = state_desc;
+	state_desc            = NULL;	/* reused, nothing left to free */
 	job_ptr->suspend_time = suspend_time;
 	job_ptr->time_last_active = now;
 	job_ptr->time_limit   = time_limit;
@@ -772,16 +778,17 @@ static int _load_job_state(Buf buffer)
 
 unpack_error:
 	error("Incomplete job record");
-	xfree(nodes);
-	xfree(nodes_completing);
-	xfree(partition);
-	xfree(name);
 	xfree(alloc_node);
 	xfree(account);
 	xfree(comment);
 	xfree(resp_host);
 	xfree(licenses);
 	xfree(mail_user);
+	xfree(name);
+	xfree(nodes);
+	xfree(nodes_completing);
+	xfree(partition);
+	xfree(state_desc);
 	select_g_free_jobinfo(&select_jobinfo);
 	return SLURM_FAILURE;
 }
@@ -1182,7 +1189,8 @@ extern int kill_running_job_by_node_name(char *node_name, bool step_test)
 					job_ptr->end_time =
 						job_ptr->suspend_time;
 					job_ptr->tot_sus_time += 
-						difftime(now, job_ptr->suspend_time);
+						difftime(now, 
+							 job_ptr->suspend_time);
 				} else
 					job_ptr->end_time = time(NULL);
 				deallocate_nodes(job_ptr, false, suspended);
@@ -2243,12 +2251,14 @@ static int _validate_job_create_req(job_desc_msg_t * job_desc)
 		     strlen(job_desc->account));
 		return ESLURM_PATHNAME_TOO_LONG;
 	}
-	if (job_desc->alloc_node && (strlen(job_desc->alloc_node) > MAX_STR_LEN)) {
+	if (job_desc->alloc_node && 
+	    (strlen(job_desc->alloc_node) > MAX_STR_LEN)) {
 		info("_validate_job_create_req: strlen(alloc_node) too big (%d)",
 		     strlen(job_desc->alloc_node));
 		return ESLURM_PATHNAME_TOO_LONG;
 	}
-	if (job_desc->blrtsimage && (strlen(job_desc->blrtsimage) > MAX_STR_LEN)) {
+	if (job_desc->blrtsimage && 
+	    (strlen(job_desc->blrtsimage) > MAX_STR_LEN)) {
 		info("_validate_job_create_req: strlen(blrtsimage) too big (%d)",
 		     strlen(job_desc->blrtsimage));
 		return ESLURM_PATHNAME_TOO_LONG;
@@ -2258,7 +2268,8 @@ static int _validate_job_create_req(job_desc_msg_t * job_desc)
 		     strlen(job_desc->comment));
 		return ESLURM_PATHNAME_TOO_LONG;
 	}
-	if (job_desc->dependency && (strlen(job_desc->dependency) > MAX_STR_LEN)) {
+	if (job_desc->dependency && 
+	    (strlen(job_desc->dependency) > MAX_STR_LEN)) {
 		info("_validate_job_create_req: strlen(dependency) too big (%d)",
 		     strlen(job_desc->dependency));
 		return ESLURM_PATHNAME_TOO_LONG;
@@ -2278,7 +2289,8 @@ static int _validate_job_create_req(job_desc_msg_t * job_desc)
 		     strlen(job_desc->in));
 		return ESLURM_PATHNAME_TOO_LONG;
 	}
-	if (job_desc->linuximage && (strlen(job_desc->linuximage) > MAX_STR_LEN)) {
+	if (job_desc->linuximage && 
+	    (strlen(job_desc->linuximage) > MAX_STR_LEN)) {
 		info("_validate_job_create_req: strlen(linuximage) too big (%d)",
 		     strlen(job_desc->linuximage));
 		return ESLURM_PATHNAME_TOO_LONG;
@@ -2293,7 +2305,8 @@ static int _validate_job_create_req(job_desc_msg_t * job_desc)
 		     strlen(job_desc->mail_user));
 		return ESLURM_PATHNAME_TOO_LONG;
 	}
-	if (job_desc->mloaderimage && (strlen(job_desc->mloaderimage) > MAX_STR_LEN)) {
+	if (job_desc->mloaderimage && 
+	    (strlen(job_desc->mloaderimage) > MAX_STR_LEN)) {
 		info("_validate_job_create_req: strlen(mloaderimage) too big (%d)",
 		     strlen(job_desc->features));
 		return ESLURM_PATHNAME_TOO_LONG;
@@ -2318,7 +2331,8 @@ static int _validate_job_create_req(job_desc_msg_t * job_desc)
 		     strlen(job_desc->partition));
 		return ESLURM_PATHNAME_TOO_LONG;
 	}
-	if (job_desc->ramdiskimage && (strlen(job_desc->ramdiskimage) > MAX_STR_LEN)) {
+	if (job_desc->ramdiskimage && 
+	    (strlen(job_desc->ramdiskimage) > MAX_STR_LEN)) {
 		info("_validate_job_create_req: strlen(ramdiskimage) too big (%d)",
 		     strlen(job_desc->ramdiskimage));
 		return ESLURM_PATHNAME_TOO_LONG;
@@ -3130,30 +3144,31 @@ static void _list_delete_job(void *job_entry)
 	*job_pptr = job_ptr->job_next;
 
 	delete_job_details(job_ptr);
+	xfree(job_ptr->account);
+	xfree(job_ptr->alloc_lps);
 	xfree(job_ptr->alloc_node);
-	xfree(job_ptr->name);
-	xfree(job_ptr->nodes);
-	xfree(job_ptr->nodes_completing);
-	FREE_NULL_BITMAP(job_ptr->node_bitmap);
-	xfree(job_ptr->partition);
+	xfree(job_ptr->comment);
 	xfree(job_ptr->cpus_per_node);
 	xfree(job_ptr->cpu_count_reps);
-	xfree(job_ptr->node_addr);
-	xfree(job_ptr->account);
-	xfree(job_ptr->resp_host);
 	xfree(job_ptr->licenses);
 	if (job_ptr->license_list)
 		list_destroy(job_ptr->license_list);
 	xfree(job_ptr->mail_user);
+	xfree(job_ptr->name);
 	xfree(job_ptr->network);
-	xfree(job_ptr->alloc_lps);
-	xfree(job_ptr->used_lps);
-	xfree(job_ptr->comment);
+	xfree(job_ptr->node_addr);
+	FREE_NULL_BITMAP(job_ptr->node_bitmap);
+	xfree(job_ptr->nodes);
+	xfree(job_ptr->nodes_completing);
+	xfree(job_ptr->partition);
+	xfree(job_ptr->resp_host);
 	select_g_free_jobinfo(&job_ptr->select_jobinfo);
+	xfree(job_ptr->state_desc);
 	if (job_ptr->step_list) {
 		delete_step_records(job_ptr, 0);
 		list_destroy(job_ptr->step_list);
 	}
+	xfree(job_ptr->used_lps);
 	job_count--;
 	xfree(job_ptr);
 }
@@ -3363,6 +3378,7 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 	packstr(dump_job_ptr->network, buffer);
 	packstr(dump_job_ptr->comment, buffer);
 	packstr(dump_job_ptr->licenses, buffer);
+	packstr(dump_job_ptr->state_desc, buffer);
 
 	pack32(dump_job_ptr->exit_code, buffer);
 
@@ -4280,7 +4296,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			} else {
 				xfree(job_ptr->account);
 				if (assoc_rec.acct[0] != '\0') {
-					job_ptr->account = xstrdup(assoc_rec.acct);
+					job_ptr->account = 
+							xstrdup(assoc_rec.acct);
 					info("update_job: setting account to "
 					     "%s for job_id %u",
 					     assoc_rec.acct, job_ptr->job_id);
@@ -4299,7 +4316,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_DISABLED;
 		else if (super_user) {
-			detail_ptr->ntasks_per_node = job_specs->ntasks_per_node;
+			detail_ptr->ntasks_per_node = 
+					job_specs->ntasks_per_node;
 			info("update_job: setting ntasks_per_node to %u for "
 			     "job_id %u", job_specs->ntasks_per_node,
 			     job_specs->job_id);
