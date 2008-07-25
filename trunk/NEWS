@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.3.7
+========================
+
 * Changes in SLURM 1.3.6
 ========================
  -- Add new function to get information for a single job rather than always
