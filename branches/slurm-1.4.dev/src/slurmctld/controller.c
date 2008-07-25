@@ -1008,7 +1008,8 @@ static void *_slurmctld_background(void *no_data)
 	slurmctld_lock_t part_write_lock = { 
 		NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
 
-#if 1
+#if 0
+/* FIXME: Added to test src/common/select_job_res functions */
 Buf buffer = init_buf(4096);
 select_job_res_t select_res_ptr1, select_res_ptr2;
 int i; 
@@ -1062,8 +1063,13 @@ set_buf_offset(buffer, 0);
 if (unpack_select_job_res(&select_res_ptr1, buffer))
   error("unpack_select_job_res failure");
 else {
+  uint32_t core_cnt, socket_cnt;
   info("unpacked select_job_res");
   log_select_job_res(select_res_ptr1);
+  get_select_job_res_cnt(select_res_ptr1, 0, &socket_cnt, &core_cnt);
+  info("node 0 counts sockets:%u cores_per_socket:%u", socket_cnt, core_cnt);
+  get_select_job_res_cnt(select_res_ptr1, 3, &socket_cnt, &core_cnt);
+  info("node 3 counts sockets:%u cores_per_socket:%u", socket_cnt, core_cnt);
   free_select_job_res(&select_res_ptr1);
 }
 unlock_slurmctld(job_read_lock);

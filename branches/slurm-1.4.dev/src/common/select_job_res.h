@@ -93,7 +93,7 @@ struct select_job_res {
 	uint32_t *	sockets_per_node;
 };
 
-/* Create an empty select_job_res data structure */
+/* Create an empty select_job_res data structure, just a call to xmalloc() */
 extern select_job_res_t create_select_job_res(void);
 
 /* Set the socket and core counts associated with a set of selected
@@ -138,4 +138,10 @@ extern int get_select_job_res_bit(select_job_res_t select_job_res_ptr,
 extern int set_select_job_res_bit(select_job_res_t select_job_res_ptr, 
 				  uint32_t node_id,
 				  uint32_t socket_id, uint32_t core_id);
+
+/* Get socket and core count for a specific node_id (zero origin) */
+extern int get_select_job_res_cnt(select_job_res_t select_job_res_ptr, 
+				  uint32_t node_id,
+				  uint32_t *socket_cnt, 				  uint32_t *cores_per_socket_cnt);
+
 #endif /* !_SELECT_JOB_RES_H */

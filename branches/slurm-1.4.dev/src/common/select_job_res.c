@@ -463,3 +463,32 @@ extern int set_select_job_res_bit(select_job_res_t select_job_res_ptr,
 	bit_set(select_job_res_ptr->alloc_core_bitmap, bit_inx);
 	return SLURM_SUCCESS;
 }
+
+extern int get_select_job_res_cnt(select_job_res_t select_job_res_ptr, 
+				  uint32_t node_id,
+				  uint32_t *socket_cnt, 
+				  uint32_t *cores_per_socket_cnt)
+{
+	int i, node_inx = -1;
+
+	xassert(socket_cnt);
+	xassert(cores_per_socket_cnt);
+	xassert(select_job_res_ptr->cores_per_socket);
+	xassert(select_job_res_ptr->sock_core_rep_count);
+	xassert(select_job_res_ptr->sockets_per_node);
+
+	for (i=0; i<select_job_res_ptr->nhosts; i++) {
+		node_inx += select_job_res_ptr->sock_core_rep_count[i];
+		if (node_id <= node_inx) {
+			*cores_per_socket_cnt = select_job_res_ptr->
+						cores_per_socket[i];
+			*socket_cnt = select_job_res_ptr->sockets_per_node[i];
+			return SLURM_SUCCESS;
+		}	
+	}
+
+	error("get_select_job_res_cnt: invalid node_id: %u", node_id);
+	*cores_per_socket_cnt = 0;
+	*socket_cnt = 0;
+	return SLURM_ERROR;
+}
