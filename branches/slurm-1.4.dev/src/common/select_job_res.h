@@ -58,6 +58,7 @@
  *
  * alloc_core_bitmap	- Bitmap of allocated cores for all nodes and sockets
  * cores_per_socket	- Count of cores per socket on this node
+ * cpus			- Count of desired/allocated CPUs per node
  * memory_allocated	- MB per node reserved
  * memory_rep_count	- How many consecutive nodes that memory_reserved
  *			  applies to
@@ -80,6 +81,7 @@
  */
 struct select_job_res {
 	bitstr_t *	alloc_core_bitmap;
+	uint32_t *	cpus;
 	uint32_t *	cores_per_socket;
 	uint32_t *	memory_allocated;
 	uint32_t *	memory_rep_count;

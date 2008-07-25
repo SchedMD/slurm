@@ -1011,6 +1011,8 @@ static void *_slurmctld_background(void *no_data)
 #if 1
 Buf buffer = init_buf(4096);
 select_job_res_t select_res_ptr1, select_res_ptr2;
+int i; 
+
 lock_slurmctld(job_read_lock);
 select_res_ptr1 = create_select_job_res();
 select_res_ptr1->nhosts = 4;
@@ -1019,13 +1021,26 @@ build_select_job_res(select_res_ptr1, node_record_table_ptr,
 		     slurmctld_conf.fast_schedule);
 select_res_ptr1->nprocs = 5;
 select_res_ptr1->node_req = 1;
+select_res_ptr1->cpus = xmalloc(sizeof(uint32_t) * 4);
 set_select_job_res_bit(select_res_ptr1, 0, 2, 1); info("set_bit(0,2,1)");
+select_res_ptr1->cpus[0] = 1;
 set_select_job_res_bit(select_res_ptr1, 1, 0, 0); info("set_bit(1,0,0)");
+select_res_ptr1->cpus[1] = 1;
 set_select_job_res_bit(select_res_ptr1, 2, 1, 1); info("set_bit(2,1,1)");
+select_res_ptr1->cpus[2] = 1;
 set_select_job_res_bit(select_res_ptr1, 3, 0, 3); info("set_bit(3,0,3)");
 set_select_job_res_bit(select_res_ptr1, 3, 0, 4); info("set_bit(3,0,3)");
-info("get_bit(1,0,0):%d", get_select_job_res_bit(select_res_ptr1, 1, 0, 0));
-info("get_bit(1,0,1):%d", get_select_job_res_bit(select_res_ptr1, 1, 0, 1));
+select_res_ptr1->cpus[3] = 2;
+i = get_select_job_res_bit(select_res_ptr1, 1, 0, 0);
+if (i == 1)
+  info("get_bit(1,0,0):%d", i);
+else
+  error("get_bit(1,0,0):%d", i);
+i = get_select_job_res_bit(select_res_ptr1, 1, 0, 1);
+if (i == 0)
+  info("get_bit(1,0,1):%d", i);
+else
+  error("get_bit(1,0,1):%d", i);
 select_res_ptr1->memory_allocated = xmalloc(sizeof(uint32_t) * 2);
 select_res_ptr1->memory_rep_count = xmalloc(sizeof(uint32_t) * 2);
 select_res_ptr1->memory_allocated[0] = 123;
