@@ -37,11 +37,11 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include <time.h>
+#include <grp.h>
+#include <pwd.h>
 #include <stdio.h>
 #include <string.h>
-#include <pwd.h>
-#include <grp.h>
+#include <time.h>
 #include <sys/types.h>
 
 #include "src/common/hostlist.h"
@@ -49,11 +49,11 @@
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
 #include "src/common/parse_time.h"
+#include "src/squeue/print.h"
+#include "src/squeue/squeue.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/squeue/print.h"
-#include "src/squeue/squeue.h"
 
 static int	_adjust_completing (job_info_t *j, node_info_msg_t **ni);
 static int	_filter_job(job_info_t * job);
