@@ -41,11 +41,9 @@
 #include "src/sacctmgr/sacctmgr.h"
 #include "src/common/xsignal.h"
 
-#define OPT_LONG_HIDE   0x102
 #define BUFFER_SIZE 4096
 
 char *command_name;
-int all_flag;		/* display even hidden partitions */
 int exit_code;		/* sacctmgr's exit code, =1 on any error at any time */
 int exit_flag;		/* program to terminate if =1 */
 int input_words;	/* number of words of input permitted */
@@ -76,9 +74,7 @@ main (int argc, char *argv[])
 
 	int option_index;
 	static struct option long_options[] = {
-		{"all",      0, 0, 'a'},
 		{"help",     0, 0, 'h'},
-		{"hide",     0, 0, OPT_LONG_HIDE},
 		{"immediate",0, 0, 'i'},
 		{"oneliner", 0, 0, 'o'},
 		{"no_header", 0, 0, 'n'},
@@ -92,7 +88,6 @@ main (int argc, char *argv[])
 	};
 
 	command_name      = argv[0];
-	all_flag          = 0;
 	rollback_flag     = 1;
 	exit_code         = 0;
 	exit_flag         = 0;
@@ -101,10 +96,7 @@ main (int argc, char *argv[])
 	verbosity         = 0;
 	log_init("sacctmgr", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
-	if (getenv ("SACCTMGR_ALL"))
-		all_flag= 1;
-
-	while((opt_char = getopt_long(argc, argv, "ahionpqsvV",
+	while((opt_char = getopt_long(argc, argv, "hionpqsvV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -112,15 +104,9 @@ main (int argc, char *argv[])
 				"for more information\n");
 			exit(1);
 			break;
-		case (int)'a':
-			all_flag = 1;
-			break;
 		case (int)'h':
 			_usage ();
 			exit(exit_code);
-			break;
-		case OPT_LONG_HIDE:
-			all_flag = 0;
 			break;
 		case (int)'i':
 			rollback_flag = 0;
@@ -325,8 +311,6 @@ _process_command (int argc, char *argv[])
 		exit_code = 1;
 		if (quiet_flag == -1)
 			fprintf(stderr, "no input");
-	} else if (strncasecmp (argv[0], "all", 3) == 0) {
-		all_flag = 1;
 	} else if (strncasecmp (argv[0], "associations", 3) == 0) {
 		with_assoc_flag = 1;
 	} else if (strncasecmp (argv[0], "dump", 3) == 0) {
@@ -346,8 +330,6 @@ _process_command (int argc, char *argv[])
 				 argv[0]);
 		}
 		_usage ();
-	} else if (strncasecmp (argv[0], "hide", 2) == 0) {
-		all_flag = 0;
 	} else if (strncasecmp (argv[0], "load", 2) == 0) {
 		if (argc < 2) {
 			exit_code = 1;
@@ -601,9 +583,7 @@ void _usage () {
 	printf ("\
 sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
     Valid <OPTION> values are:                                             \n\
-     -a or --all: equivalent to \"all\" command                            \n\
      -h or --help: equivalent to \"help\" command                          \n\
-     --hide: equivalent to \"hide\" command                                \n\
      -i or --immediate: commit changes immediately                         \n\
      -n or --no_header: no header will be added to the beginning of output \n\
      -o or --oneliner: equivalent to \"oneliner\" command                  \n\
@@ -618,16 +598,12 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
   terminated.                                                              \n\
                                                                            \n\
     Valid <COMMAND> values are:                                            \n\
-     all                      display information about all entities,      \n\
-                              including hidden/deleted ones.               \n\
      add <ENTITY> <SPECS>     add entity                                   \n\
      associations             when using show/list will list the           \n\
                               associations associated with the entity.     \n\
      delete <ENTITY> <SPECS>  delete the specified entity(s)               \n\
      exit                     terminate sacctmgr                           \n\
      help                     print this description of use.               \n\
-     hide                     do not display information about             \n\
-                              hidden/deleted entities.                     \n\
      list <ENTITY> [<SPECS>]  display info of identified entity, default   \n\
                               is display all.                              \n\
      modify <ENTITY> <SPECS>  modify entity                                \n\
