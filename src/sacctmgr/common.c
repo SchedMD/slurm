@@ -132,6 +132,12 @@ extern char *strip_quotes(char *option, int *increased)
 			break;
 		} else if(option[i] == '\"' || option[i] == '\'')
 			option[i] = '`';
+		else {
+			char lower = tolower(option[i]);
+			if(lower != option[i])
+				option[i] = lower;
+		}
+		
 		i++;
 	}
 	end += i;
@@ -393,14 +399,19 @@ extern acct_association_rec_t *sacctmgr_find_association_from_list(
 	
 	itr = list_iterator_create(assoc_list);
 	while((assoc = list_next(itr))) {
-		if((user && (!assoc->user || strcasecmp(user, assoc->user)))
-		   || (account && (!assoc->acct 
-				   || strcasecmp(account, assoc->acct)))
-		   || (cluster && (!assoc->cluster 
-				   || strcasecmp(cluster, assoc->cluster)))
-		   || (partition && (!assoc->partition 
-				     || strcasecmp(partition, 
-						   assoc->partition))))
+		if(((!user && assoc->user)
+		    || (user && (!assoc->user
+				 || strcasecmp(user, assoc->user))))
+		   || ((!account && assoc->acct)
+		       || (account && (!assoc->acct 
+				       || strcasecmp(account, assoc->acct))))
+		   || ((!cluster && assoc->cluster)
+		       || (cluster && (!assoc->cluster 
+				       || strcasecmp(cluster, assoc->cluster))))
+		   || ((!partition && assoc->partition)
+		       || (partition && (!assoc->partition 
+					 || strcasecmp(partition, 
+						       assoc->partition)))))
 			continue;
 		break;
 	}

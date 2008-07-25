@@ -370,7 +370,7 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 		return SLURM_ERROR;
 	} else if(!list_count(format_list)) 
 		slurm_addto_char_list(format_list,
-				      "C,A,U,F,MaxC,MaxJ,MaxN,MaxW");
+				      "C,A,U,Part,F,MaxC,MaxJ,MaxN,MaxW");
 
 	print_fields_list = list_create(destroy_print_field);
 
