@@ -1013,8 +1013,10 @@ Buf buffer = init_buf(4096);
 select_job_res_t select_res_ptr1, select_res_ptr2;
 lock_slurmctld(job_read_lock);
 select_res_ptr1 = create_select_job_res();
-build_select_job_res(select_res_ptr1, "dummy[2,5,12,16]", 
-		     slurmctld_conf.fast_schedule, find_node_record);
+select_res_ptr1->nhosts = 4;
+node_name2bitmap("dummy[2,5,12,16]", true, &(select_res_ptr1->node_bitmap));
+build_select_job_res(select_res_ptr1, node_record_table_ptr, 
+		     slurmctld_conf.fast_schedule);
 select_res_ptr1->nprocs = 5;
 select_res_ptr1->node_req = 1;
 set_select_job_res_bit(select_res_ptr1, 0, 2, 1); info("set_bit(0,2,1)");

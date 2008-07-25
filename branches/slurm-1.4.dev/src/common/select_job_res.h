@@ -56,12 +56,16 @@
 /* struct select_job_res defines exactly which resources are allocated
  *	to a job, step, partition, etc.
  *
- * alloc_core_bitmap	- bitmap of allocated cores for all nodes and sockets
+ * alloc_core_bitmap	- Bitmap of allocated cores for all nodes and sockets
  * cores_per_socket	- Count of cores per socket on this node
  * memory_allocated	- MB per node reserved
  * memory_rep_count	- How many consecutive nodes that memory_reserved
  *			  applies to
  * nhosts		- Number of nodes in the allocation
+ * node_bitmap		- Bitmap of nodes allocated to the job. Unlike the
+ *			  node_bitmap in slurmctld's job record, the bits
+ *			  here do NOT get cleared as the job completes on a
+ *			  node
  * node_req		- NODE_CR_RESERVED|NODE_CR_ONE_ROW|NODE_CR_AVAILABLE
  * nprocs		- Number of processors in the allocation
  * sock_core_rep_count	- How many consecutive nodes that sockets_per_node
@@ -75,15 +79,16 @@
  *   | Bit_0  | Bit_1  | Bit_2  | Bit_3  | Bit_4  | Bit_5  | Bit_6  | Bit_7  |
  */
 struct select_job_res {
+	bitstr_t *	alloc_core_bitmap;
 	uint32_t *	cores_per_socket;
 	uint32_t *	memory_allocated;
 	uint32_t *	memory_rep_count;
 	uint32_t	nhosts;
+	bitstr_t *	node_bitmap;
 	uint8_t		node_req;
 	uint32_t	nprocs;
 	uint32_t *	sock_core_rep_count;
 	uint32_t *	sockets_per_node;
-	bitstr_t *	alloc_core_bitmap;
 };
 
 /* Create an empty select_job_res data structure */
@@ -91,19 +96,19 @@ extern select_job_res_t create_select_job_res(void);
 
 /* Set the socket and core counts associated with a set of selected
  * nodes of a select_job_res data structure based upon slurmctld state.
- * Call this ONLY from slurmctld. We pass a pointer to slurmctld's
- * find_node_record function so this module can be loaded in libslurm
- * and the other functions used from slurmd. Example of use:
+ * (sets cores_per_socket, sockets_per_node, and sock_core_rep_count based
+ * upon the value of node_bitmap, also creates alloc_core_bitmap based upon
+ * the total number of cores in the allocation). Call this ONLY from 
+ * slurmctld. Example of use:
  *
  * select_job_res_t select_job_res_ptr = create_select_job_res();
- * rc = build_select_job_res(select_job_res_ptr,
- *			     "tux[2,5,10-12,16]", 
- *			     slurmctld_conf.fast_schedule,
- *			     find_node_record);
+ * node_name2bitmap("dummy[2,5,12,16]", true, &(select_res_ptr->node_bitmap));
+ * rc = build_select_job_res(select_job_res_ptr, node_record_table_ptr,
+ *			     slurmctld_conf.fast_schedule);
  */
 extern int build_select_job_res(select_job_res_t select_job_res_ptr,
-				char *hosts, uint16_t fast_schedule,
-				void *node_finder);
+				void *node_rec_table,
+				uint16_t fast_schedule);
 
 /* Make a copy of a select_job_res data structure, 
  * free using free_select_job_res() */

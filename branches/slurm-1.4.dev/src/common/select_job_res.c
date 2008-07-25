@@ -58,22 +58,20 @@ extern select_job_res_t create_select_job_res(void)
 
 
 extern int build_select_job_res(select_job_res_t select_job_res,
-				 char *hosts, uint16_t fast_schedule,
-				 void *node_finder)
+				void *node_rec_table,
+				uint16_t fast_schedule)
 {
-	hostset_t hs;
-	char *host_name;
-	int core_cnt = 0, host_inx = 0, sock_inx = -1;
-	struct node_record * (*node_finder_local) (char *host_name);
-	struct node_record *node_ptr;
+	int i, bitmap_len;
+	int core_cnt = 0, sock_inx = -1;
+	uint32_t cores, socks;
+	struct node_record *node_ptr, *node_record_table;
 
-	xassert(hosts);
-	hs = hostset_create(hosts);
-	if (!hs) {
-		error("build_select_job_res: Invalid hostlist: %s", hosts);
+	if (select_job_res->node_bitmap == NULL) {
+		error("build_select_job_res: node_bitmap is NULL");
 		return SLURM_ERROR;
 	}
-	select_job_res->nhosts = hostset_count(hs);
+
+	node_record_table = (struct node_record *) node_rec_table;
 	xfree(select_job_res->sockets_per_node);
 	xfree(select_job_res->cores_per_socket);
 	xfree(select_job_res->sock_core_rep_count);
@@ -84,47 +82,28 @@ extern int build_select_job_res(select_job_res_t select_job_res,
 	select_job_res->sock_core_rep_count = xmalloc(sizeof(uint32_t) * 
 						      select_job_res->nhosts);
 
-	node_finder_local = (struct node_record * (*) (char *host_name)) 
-			    node_finder;
-	while ((host_name = hostset_shift(hs))) {
-		node_ptr = node_finder_local(host_name);
-		if (++host_inx > select_job_res->nhosts) {
-			error("build_select_job_res: "
-			      "hostlist parsing problem: %s",
-			      hosts);
-			free(host_name);
-			return SLURM_ERROR;
-		} else if (node_ptr) {
-			uint32_t cores, socks;
-			if (fast_schedule) {
-				socks = node_ptr->config_ptr->sockets;
-				cores = node_ptr->config_ptr->cores;
-			} else {
-				socks = node_ptr->sockets;
-				cores = node_ptr->cores;
-			}
-			if ((sock_inx < 0) ||
-			    (socks != select_job_res->
-				      sockets_per_node[sock_inx]) ||
-			    (cores != select_job_res->
-				      cores_per_socket[sock_inx])){
-				sock_inx++;
-				select_job_res->sockets_per_node[sock_inx] = 
-						socks;
-				select_job_res->cores_per_socket[sock_inx] = 
-						cores;
-			}
-			select_job_res->sock_core_rep_count[sock_inx]++;
-			core_cnt += (cores * socks);
+	bitmap_len = bit_size(select_job_res->node_bitmap);
+	for (i=0; i<bitmap_len; i++) {
+		if (!bit_test(select_job_res->node_bitmap, i))
+			continue;
+		node_ptr = node_record_table + i;
+		if (fast_schedule) {
+			socks = node_ptr->config_ptr->sockets;
+			cores = node_ptr->config_ptr->cores;
 		} else {
-			error("build_select_job_res: Invalid host: %s", 
-			      host_name);
-			free(host_name);
-			return SLURM_ERROR;
+			socks = node_ptr->sockets;
+			cores = node_ptr->cores;
 		}
-		free(host_name);
+		if ((sock_inx < 0) ||
+		    (socks != select_job_res->sockets_per_node[sock_inx]) ||
+		    (cores != select_job_res->cores_per_socket[sock_inx])) {
+			sock_inx++;
+			select_job_res->sockets_per_node[sock_inx] = socks;
+			select_job_res->cores_per_socket[sock_inx] = cores;
+		}
+		select_job_res->sock_core_rep_count[sock_inx]++;
+		core_cnt += (cores * socks);
 	}
-	hostset_destroy(hs);
 	select_job_res->alloc_core_bitmap = bit_alloc(core_cnt);
 	return SLURM_SUCCESS;
 }
@@ -139,8 +118,14 @@ extern select_job_res_t copy_select_job_res(select_job_res_t
 	new_layout->nhosts = select_job_res_ptr->nhosts;
 	new_layout->nprocs = select_job_res_ptr->nprocs;
 	new_layout->node_req = select_job_res_ptr->node_req;
-	new_layout->alloc_core_bitmap = bit_copy(select_job_res_ptr->
-						 alloc_core_bitmap);
+	if (select_job_res_ptr->alloc_core_bitmap) {
+		new_layout->alloc_core_bitmap = bit_copy(select_job_res_ptr->
+							 alloc_core_bitmap);
+	}
+	if (select_job_res_ptr->node_bitmap) {
+		new_layout->node_bitmap = bit_copy(select_job_res_ptr->
+						   node_bitmap);
+	}
 
 	/* Copy memory_allocated and memory_rep_count */
 	new_layout->memory_allocated = xmalloc(sizeof(uint32_t) * 
@@ -203,6 +188,8 @@ extern void free_select_job_res(select_job_res_t *select_job_res_pptr)
 		xfree(select_job_res_ptr->sock_core_rep_count);
 		if (select_job_res_ptr->alloc_core_bitmap)
 			bit_free(select_job_res_ptr->alloc_core_bitmap);
+		if (select_job_res_ptr->node_bitmap)
+			bit_free(select_job_res_ptr->node_bitmap);
 		xfree(select_job_res_ptr);
 		*select_job_res_pptr = NULL;
 	}
@@ -216,11 +203,29 @@ extern void log_select_job_res(select_job_res_t select_job_res_ptr)
 	int node_inx;
 	int sock_inx = 0, sock_reps = 0;
 
-	xassert(select_job_res_ptr);
+	if (select_job_res_ptr == NULL) {
+		error("log_select_job_res: select_job_res_ptr is NULL");
+		return;
+	}
+
 	info("====================");
 	info("nhosts:%u nprocs:%u node_req:%u", 
 	     select_job_res_ptr->nhosts, select_job_res_ptr->nprocs,
 	     select_job_res_ptr->node_req);
+
+	if ((select_job_res_ptr->memory_allocated == NULL) ||
+	    (select_job_res_ptr->memory_rep_count == NULL)) {
+		error("log_select_job_res: memory array is NULL");
+		return;
+	}
+	if ((select_job_res_ptr->cores_per_socket == NULL) ||
+	    (select_job_res_ptr->sockets_per_node == NULL) ||
+	    (select_job_res_ptr->sock_core_rep_count == NULL)) {
+		error("log_select_job_res: socket/core array is NULL");
+		return;
+	}
+
+	/* Can only log node_bitmap from slurmctld, so don't bother here */
 	for (node_inx=0; node_inx<select_job_res_ptr->nhosts; node_inx++) {
 		info("Node[%d]:", node_inx);
 
@@ -264,9 +269,20 @@ extern void pack_select_job_res(select_job_res_t select_job_res_ptr,
 				Buf buffer)
 {
 	int i;
-	uint32_t core_cnt = 0, mem_recs = 0, sock_recs = 0;
+	uint32_t core_cnt = 0, host_cnt = 0, mem_recs = 0, sock_recs = 0;
 
-	xassert(select_job_res_ptr);
+	if (select_job_res_ptr == NULL) {
+		uint32_t empty = NO_VAL;
+		pack32(empty, buffer);
+		return;
+	}
+
+	xassert(select_job_res_ptr->cores_per_socket);
+	xassert(select_job_res_ptr->memory_allocated);
+	xassert(select_job_res_ptr->memory_rep_count);
+	xassert(select_job_res_ptr->sock_core_rep_count);
+	xassert(select_job_res_ptr->sockets_per_node);
+
 	pack32(select_job_res_ptr->nhosts, buffer);
 	pack32(select_job_res_ptr->nprocs, buffer);
 	pack8(select_job_res_ptr->node_req, buffer);
@@ -296,20 +312,33 @@ extern void pack_select_job_res(select_job_res_t select_job_res_ptr,
 		     (uint32_t) i, buffer);
 	pack32_array(select_job_res_ptr->sock_core_rep_count, 
 		     (uint32_t) i, buffer);
+
 	pack32(core_cnt, buffer);
-	xassert (core_cnt == bit_size(select_job_res_ptr->alloc_core_bitmap));
+	xassert(core_cnt == bit_size(select_job_res_ptr->alloc_core_bitmap));
 	pack_bit_fmt(select_job_res_ptr->alloc_core_bitmap, buffer);
+	host_cnt = bit_size(select_job_res_ptr->node_bitmap);
+	/* FIXME: don't pack the node_bitmap, but recreate it based upon 
+	 * select_job_res_ptr->node_list */
+	pack32(host_cnt, buffer);
+	pack_bit_fmt(select_job_res_ptr->node_bitmap, buffer);
 }
 
-extern int  unpack_select_job_res(select_job_res_t *select_job_res_pptr, Buf buffer)
+extern int unpack_select_job_res(select_job_res_t *select_job_res_pptr, 
+				 Buf buffer)
 {
 	char *bit_fmt = NULL;
-	uint32_t core_cnt, tmp32;
+	uint32_t core_cnt, empty, host_cnt, tmp32;
 	select_job_res_t select_job_res;
 
 	xassert(select_job_res_pptr);
+	safe_unpack32(&empty, buffer);
+	if (empty == NO_VAL) {
+		*select_job_res_pptr = NULL;
+		return SLURM_SUCCESS;
+	}
+
 	select_job_res = xmalloc(sizeof(struct select_job_res));
-	safe_unpack32(&select_job_res->nhosts, buffer);
+	select_job_res->nhosts = empty;
 	safe_unpack32(&select_job_res->nprocs, buffer);
 	safe_unpack8(&select_job_res->node_req, buffer);
 	safe_unpack32_array(&select_job_res->memory_allocated,
@@ -328,11 +357,19 @@ extern int  unpack_select_job_res(select_job_res_t *select_job_res_pptr, Buf buf
 	if (bit_unfmt(select_job_res->alloc_core_bitmap, bit_fmt))
 		goto unpack_error;
 	xfree(bit_fmt);
+	/* FIXME: but recreate node_bitmap based upon 
+	 * select_job_res_ptr->node_list */
+	safe_unpack32(&host_cnt, buffer);    /* NOTE: Not part of struct */
+	safe_unpackstr_xmalloc(&bit_fmt, &tmp32, buffer);
+	select_job_res->node_bitmap = bit_alloc((bitoff_t) host_cnt);
+	if (bit_unfmt(select_job_res->node_bitmap, bit_fmt))
+		goto unpack_error;
+	xfree(bit_fmt);
 	*select_job_res_pptr = select_job_res;
 	return SLURM_SUCCESS;
 
   unpack_error:
-	xfree(select_job_res);
+	free_select_job_res(&select_job_res);
 	xfree(bit_fmt);
 	*select_job_res_pptr = NULL;
 	return SLURM_ERROR;
