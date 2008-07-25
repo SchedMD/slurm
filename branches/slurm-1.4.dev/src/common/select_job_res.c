@@ -250,7 +250,7 @@ extern void log_select_job_res(select_job_res_t select_job_res_ptr)
 		}
 		sock_reps++;
 
-		info("  Mem(MB):%u  Sockets:%u  Cores:%u CPUs(alloc):%u", 
+		info("  Mem(MB):%u  Sockets:%u  Cores:%u  CPUs(alloc):%u", 
 		     select_job_res_ptr->memory_allocated[mem_inx],
 		     select_job_res_ptr->sockets_per_node[sock_inx],
 		     select_job_res_ptr->cores_per_socket[sock_inx],
@@ -285,11 +285,13 @@ extern void pack_select_job_res(select_job_res_t select_job_res_ptr,
 		return;
 	}
 
+	xassert(select_job_res_ptr->alloc_core_bitmap);
 	xassert(select_job_res_ptr->cores_per_socket);
 	xassert(select_job_res_ptr->cpus);
 	xassert(select_job_res_ptr->memory_allocated);
 	xassert(select_job_res_ptr->memory_rep_count);
 	xassert(select_job_res_ptr->nhosts);
+	xassert(select_job_res_ptr->node_bitmap);
 	xassert(select_job_res_ptr->sock_core_rep_count);
 	xassert(select_job_res_ptr->sockets_per_node);
 
