@@ -705,6 +705,8 @@ typedef struct task_ext_msg {
 	uint32_t num_tasks;
 	uint32_t *task_id_list;
 	uint32_t return_code;
+	uint32_t job_id;
+	uint32_t step_id;
 } task_exit_msg_t;
 
 typedef struct srun_ping_msg {

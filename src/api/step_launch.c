@@ -767,6 +767,13 @@ _exit_handler(struct step_launch_state *sls, slurm_msg_t *exit_msg)
 	task_exit_msg_t *msg = (task_exit_msg_t *) exit_msg->data;
 	int i;
 
+	if ((msg->job_id != sls->mpi_info->jobid) || 
+	    (msg->step_id != sls->mpi_info->stepid)) {
+		debug("Received MESSAGE_TASK_EXIT from wrong job: %u.%u",
+		      msg->job_id, msg->step_id);
+		return;
+	}
+
 	/* Record SIGTERM and SIGKILL termination codes to 
 	 * recognize abnormal termination */
 	if (WIFSIGNALED(msg->return_code)) {
