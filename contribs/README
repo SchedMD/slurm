@@ -47,6 +47,8 @@ of the SLURM contribs distribution follows:
      modification.  
  
  ptrace.patch       [ Linux Kernel patch required to for TotalView use ]
+     0. This has been fixed on most recent Linux kernels. Older versions of
+     Linux may need this patch support TotalView.
      1. gdb and other tools cannot attach to a stopped process. The wait that 
      follows the PTRACE_ATTACH will block indefinitely.
      2. It is not possible to use PTRACE_DETACH to leave a process stopped, 

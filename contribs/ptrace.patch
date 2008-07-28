@@ -1,6 +1,6 @@
 <http://linux.llnl.gov/software/kernel/ptrace.html>
 
-CHAOS kernels must implement ptrace semantics required by the TotalView
+The Linux kernels must implement ptrace semantics required by the TotalView
 debugger. In order to initiate a parallel job under debugger control, a
 resource manager or job launch utility must be able to start all tasks
 in a stopped state, notify TotalView, and then allow TotalView debugger
@@ -9,7 +9,8 @@ servers to attach to all tasks. This functionality requires the ability to:
     * Detach from a traced process and leave the process stopped
     * Attach to a stopped process
 
-Under Linux (CHAOS 1.2), both of the above are impossible without the
+Most newer versions of the Linux kernel support this functionality. For
+some older Linux kernels, both of the above are impossible without the
 following patch by Vic Zandy:
 
     * initial posting <http://seclists.org/linux-kernel/2001/Dec/5146.html>
