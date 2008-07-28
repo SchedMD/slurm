@@ -1,8 +1,8 @@
 /****************************************************************************\
  *  srun_job.c - job data structure creation functions
- *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona@llnl.gov>.
  *  LLNL-CODE-402394.
@@ -388,8 +388,25 @@ job_state(srun_job_t *job)
 void 
 job_force_termination(srun_job_t *job)
 {
-	info ("forcing job termination");
-	update_job_state(job, SRUN_JOB_FORCETERM);
+	static int kill_sent = 0;
+	static time_t last_msg = 0;
+
+	if (kill_sent == 0) {
+		info("forcing job termination");
+		/* Sends SIGKILL to tasks directly */
+		update_job_state(job, SRUN_JOB_FORCETERM);
+	} else {
+		time_t now = time(NULL);
+		if (last_msg != now) {
+			info("job abort in progress");
+			last_msg = now;
+		}
+		if (kill_sent == 1) {
+			/* Try sending SIGKILL through slurmctld */
+			slurm_kill_job_step(job->jobid, job->stepid, SIGKILL);
+		}
+	}
+	kill_sent++;
 }
 
 static inline int
