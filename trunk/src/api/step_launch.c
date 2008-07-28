@@ -65,6 +65,8 @@
 #include "src/api/step_ctx.h"
 #include "src/api/pmi_server.h"
 
+#define STEP_ABORT_TIME 10
+
 extern char **environ;
 
 /**********************************************************************
@@ -369,15 +371,16 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 				sls->abort_action_taken = true;
 			}
 			if (!time_set) {
-				/* Only set the time once, because we only
-				 * want to wait 10 seconds, no matter how many
+				/* Only set the time once, because we only want
+				 * to wait STEP_ABORT_TIME, no matter how many
 				 * times the condition variable is signalled.
 				 */
-				ts.tv_sec = time(NULL) + 10;
+				ts.tv_sec = time(NULL) + STEP_ABORT_TIME;
 				time_set = true;
 				/* FIXME - should this be a callback? */
 				info("Job step aborted: Waiting up to "
-				     "10 seconds for job step to finish.");
+				     "%d seconds for job step to finish.",
+				     STEP_ABORT_TIME);
 			}
 
 			errnum = pthread_cond_timedwait(&sls->cond,
