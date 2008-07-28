@@ -1051,7 +1051,10 @@ static void _handle_intr()
 	}
 
 	if (((time(NULL) - last_intr) > 1) && !opt.disable_status) {
-		info("interrupt (one more within 1 sec to abort)");
+		if (job->state < SRUN_JOB_FORCETERM)
+			info("interrupt (one more within 1 sec to abort)");
+		else
+			info("interrupt (abort already in progress)");
 		_task_state_struct_print();
 		last_intr = time(NULL);
 	} else  { /* second Ctrl-C in half as many seconds */
