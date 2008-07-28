@@ -529,6 +529,12 @@ _exit_handler(message_thread_state_t *mts, slurm_msg_t *exit_msg)
 	int i;
 	int rc;
 
+	if ((msg->job_id != opt.jobid) || (msg->step_id != opt.stepid)) {
+		debug("Received MESSAGE_TASK_EXIT from wrong job: %u.%u",
+		      msg->job_id, msg->step_id);
+		return;
+	}
+
 	pthread_mutex_lock(&mts->lock);
 
 	for (i = 0; i < msg->num_tasks; i++) {

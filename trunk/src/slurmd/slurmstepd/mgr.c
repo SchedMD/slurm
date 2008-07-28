@@ -420,6 +420,8 @@ _send_exit_msg(slurmd_job_t *job, uint32_t *tid, int n, int status)
 	msg.task_id_list = tid;
 	msg.num_tasks    = n;
 	msg.return_code  = status;
+	msg.job_id       = job->jobid;
+	msg.step_id      = job->stepid;
 	slurm_msg_t_init(&resp);
 	resp.data        = &msg;
 	resp.msg_type    = MESSAGE_TASK_EXIT;

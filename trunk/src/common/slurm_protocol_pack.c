@@ -3032,10 +3032,12 @@ static void
 _pack_task_exit_msg(task_exit_msg_t * msg, Buf buffer)
 {
 	xassert(msg != NULL);
-	pack32((uint32_t)msg->return_code, buffer);
-	pack32((uint32_t)msg->num_tasks, buffer);
+	pack32(msg->return_code, buffer);
+	pack32(msg->num_tasks, buffer);
 	pack32_array(msg->task_id_list,
 		     msg->num_tasks, buffer);
+	pack32(msg->job_id, buffer);
+	pack32(msg->step_id, buffer);
 }
 
 static int
@@ -3053,6 +3055,8 @@ _unpack_task_exit_msg(task_exit_msg_t ** msg_ptr, Buf buffer)
 	safe_unpack32_array(&msg->task_id_list, &uint32_tmp, buffer);
 	if (msg->num_tasks != uint32_tmp)
 		goto unpack_error;
+	safe_unpack32(&msg->job_id, buffer);
+	safe_unpack32(&msg->step_id, buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:
