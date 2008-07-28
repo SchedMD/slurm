@@ -65,7 +65,7 @@
 #include "src/api/step_ctx.h"
 #include "src/api/pmi_server.h"
 
-#define STEP_ABORT_TIME 10
+#define STEP_ABORT_TIME 5
 
 extern char **environ;
 
