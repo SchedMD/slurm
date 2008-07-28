@@ -32,8 +32,9 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-subdir = contribs
-DIST_COMMON = README $(srcdir)/Makefile.am $(srcdir)/Makefile.in
+subdir = contribs/python/hostlist
+DIST_COMMON = README $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
+	COPYING
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/slurm.m4 \
@@ -245,14 +246,13 @@ target_os = @target_os@
 target_vendor = @target_vendor@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = perlapi python torque 
+SUBDIRS = test
 EXTRA_DIST = \
-	env_cache_builder.c	\
-	make.slurm.patch	\
-	mpich1.slurm.patch	\
-	ptrace.patch		\
-	time_login.c		\
-	README
+	COPYING		\
+	hostlist.py	\
+	PKG-INFO	\
+	README		\
+	setup.py
 
 all: all-recursive
 
@@ -266,9 +266,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu  contribs/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu  contribs/python/hostlist/Makefile'; \
 	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu  contribs/Makefile
+	  $(AUTOMAKE) --gnu  contribs/python/hostlist/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
