@@ -18,6 +18,9 @@ of the SLURM contribs distribution follows:
      API to SLURM using perl.  Making available all SLURM command that exist
      in the SLURM proper API.
 
+  python/            [Python modules]
+     Directory for Python modules.
+
   time_login.c       [ C program ]
      This program will report how long a pseudo-login will take for specific
      users or all users on the system. Users identified by this program 

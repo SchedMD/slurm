@@ -278,6 +278,9 @@ AC_CONFIG_FILES([Makefile
 		 contribs/torque/Makefile
 		 contribs/phpext/Makefile
 		 contribs/phpext/slurm_php/config.m4
+		 contribs/python/Makefile
+		 contribs/python/hostlist/Makefile
+		 contribs/python/hostlist/test/Makefile
 		 src/Makefile 
 		 src/api/Makefile 
 		 src/common/Makefile
