@@ -43,6 +43,7 @@
 #include "defined_block.h"
 #endif
 
+#include "src/common/uid.h"
 #include "src/slurmctld/trigger_mgr.h"
 #include <fcntl.h>
  
@@ -360,8 +361,8 @@ extern int select_p_state_restore(char *dir_name)
 	int data_allocated, data_read = 0;
 	char *ver_str = NULL;
 	uint32_t ver_str_len;
-	struct passwd *pw_ent = NULL;
 	int blocks = 0;
+	uid_t my_uid;
 
 	debug("bluegene: select_p_state_restore");
 #ifdef HAVE_BG_FILES
@@ -542,12 +543,12 @@ extern int select_p_state_restore(char *dir_name)
 			bg_record->user_name = 
 				xstrdup(slurmctld_conf.slurm_user_name);
 			slurm_conf_unlock();
-			if((pw_ent = getpwnam(bg_record->user_name)) 
-			   == NULL) {
-				error("getpwnam(%s): %m", 
+			my_uid = uid_from_string(bg_record->user_name);
+			if (my_uid == (uid_t) -1) {
+				error("getpwnam_r(%s): %m", 
 				      bg_record->user_name);
 			} else {
-				bg_record->user_uid = pw_ent->pw_uid;
+				bg_record->user_uid = my_uid;
 			} 
 				
 			bg_record->blrtsimage =

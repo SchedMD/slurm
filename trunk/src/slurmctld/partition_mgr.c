@@ -58,6 +58,7 @@
 #include "src/common/list.h"
 #include "src/common/node_select.h"
 #include "src/common/pack.h"
+#include "src/common/uid.h"
 #include "src/common/xstring.h"
 
 #include "src/slurmctld/locks.h"
@@ -1051,49 +1052,65 @@ uid_t *_get_groups_members(char *group_names)
  */
 uid_t *_get_group_members(char *group_name)
 {
-	struct group *group_struct_ptr;
-	struct passwd *user_pw_ptr;
-	int i, j;
-	uid_t *group_uids = NULL;
-	int uid_cnt = 0;
-
-	group_struct_ptr = getgrnam(group_name); /* Note: static memory, 
-						  * do not free */
-	if (group_struct_ptr == NULL) {
+	size_t grp_bufsize, pwd_bufsize;
+	char *grp_buffer,  *pwd_buffer;
+	struct group grp,  *grp_result;
+	struct passwd pwd, *pwd_result;
+	uid_t *group_uids;
+	gid_t my_gid;
+	int i, j, rc, uid_cnt;
+	
+	grp_bufsize = sysconf(_SC_GETGR_R_SIZE_MAX);
+	grp_buffer = xmalloc(grp_bufsize);
+	if (getgrnam_r(group_name, &grp, grp_buffer, grp_bufsize, 
+		       &grp_result)) {
 		error("Could not find configured group %s", group_name);
-		setgrent();
+		xfree(grp_buffer);
 		return NULL;
 	}
+	my_gid = grp_result->gr_gid;
 
-	for (i = 0;; i++) {
-		if (group_struct_ptr->gr_mem[i] == NULL)
+	for (uid_cnt=0; ; uid_cnt++) {
+		if (grp_result->gr_mem[uid_cnt] == NULL)
 			break;
 	}
-
-	uid_cnt = i;
 	group_uids = (uid_t *) xmalloc(sizeof(uid_t) * (uid_cnt + 1));
-	
+
+	pwd_bufsize = sysconf(_SC_GETGR_R_SIZE_MAX);
+	pwd_buffer = xmalloc(pwd_bufsize);
 	j = 0;
-	for (i = 0; i < uid_cnt; i++) {
-		user_pw_ptr = getpwnam(group_struct_ptr->gr_mem[i]);
-		if (user_pw_ptr) {
-			if (user_pw_ptr->pw_uid)
-				group_uids[j++] = user_pw_ptr->pw_uid;
-		} else
+	for (i=0; i<uid_cnt; i++) {
+		while (1) {
+			rc = getpwnam_r(grp_result->gr_mem[i], &pwd, pwd_buffer,
+					pwd_bufsize, &pwd_result);
+			if (rc == EINTR)
+				continue;
+			else if (rc != 0)
+				pwd_result = NULL;
+			break;
+		}
+		if (pwd_result == NULL) {
 			error("Could not find user %s in configured group %s",
-			      group_struct_ptr->gr_mem[i], group_name);
-		setpwent();
+			      grp_result->gr_mem[i], group_name);
+		} else {
+			if (pwd_result->pw_uid)
+				group_uids[j++] = pwd_result->pw_uid;
+		}
 	}
-	
-	while((user_pw_ptr = getpwent())) {
-		if(user_pw_ptr->pw_gid != group_struct_ptr->gr_gid)
+	xfree(pwd_buffer);
+	xfree(grp_buffer);
+
+	/* NOTE: code below not reentrant, avoid these functions elsewhere */
+	setpwent();
+	while ((pwd_result = getpwent())) {
+		if (pwd_result->pw_gid != my_gid)
 			continue;
 		j++;
 		xrealloc(group_uids, ((j+1) * sizeof(uid_t)));
-		group_uids[j-1] = user_pw_ptr->pw_uid;		
+		group_uids[j-1] = pwd_result->pw_uid;		
 	}
-	setpwent();
-	setgrent();
+	endpwent();
+
 	return group_uids;
 }
 

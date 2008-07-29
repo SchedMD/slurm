@@ -70,6 +70,7 @@
 #include "src/common/parse_time.h"
 #include "src/common/slurm_selecttype_info.h"
 #include "src/common/util-net.h"
+#include "src/common/uid.h"
 
 /* Instantiation of the "extern slurm_ctl_conf_t slurmcltd_conf"
  * found in slurmctld.h */
@@ -1918,14 +1919,13 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->slurm_user_name = xstrdup("root");
 		conf->slurm_user_id   = 0;
 	} else {
-		struct passwd *slurm_passwd;
-		slurm_passwd = getpwnam(conf->slurm_user_name);
-		if (slurm_passwd == NULL) {
+		uid_t my_uid = uid_from_string(conf->slurm_user_name);
+		if (my_uid == (uid_t) -1) {
 			error ("Invalid user for SlurmUser %s, ignored",
 			       conf->slurm_user_name);
 			xfree(conf->slurm_user_name);
 		} else {
-			conf->slurm_user_id = slurm_passwd->pw_uid;
+			conf->slurm_user_id = my_uid;
 		}
 	}
 
