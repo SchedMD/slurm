@@ -1072,7 +1072,6 @@ uid_t *_get_group_members(char *group_name)
 
 	uid_cnt = i;
 	group_uids = (uid_t *) xmalloc(sizeof(uid_t) * (uid_cnt + 1));
-	memset(group_uids, 0, (sizeof(uid_t) * (uid_cnt + 1)));
 	
 	j = 0;
 	for (i = 0; i < uid_cnt; i++) {
