@@ -47,7 +47,6 @@
 
 static char *	_dump_all_jobs(int *job_cnt, time_t update_time);
 static char *	_dump_job(struct job_record *job_ptr, time_t update_time);
-static char *	_get_group_name(gid_t gid);
 static uint16_t _get_job_cpus_per_task(struct job_record *job_ptr);
 static uint32_t	_get_job_end_time(struct job_record *job_ptr);
 static char *	_get_job_features(struct job_record *job_ptr);
@@ -319,7 +318,7 @@ static char *	_dump_job(struct job_record *job_ptr, time_t update_time)
 	snprintf(tmp, sizeof(tmp),
 		"UNAME=%s;GNAME=%s;",
 		uid_to_string((uid_t) job_ptr->user_id),
-		_get_group_name(job_ptr->group_id));
+		gid_to_string(job_ptr->group_id));
 	xstrcat(buf, tmp);
 
 	return buf;
@@ -360,16 +359,6 @@ static uint32_t	_get_job_min_nodes(struct job_record *job_ptr)
 	if (job_ptr->details)
 		return job_ptr->details->min_nodes;
 	return (uint32_t) 1;
-}
-
-static char *	_get_group_name(gid_t gid)
-{
-	struct group *grp;
-
-	grp = getgrgid(gid);
-	if (grp)
-		return grp->gr_name;
-	return "nobody";
 }
 
 static uint32_t _get_job_submit_time(struct job_record *job_ptr)

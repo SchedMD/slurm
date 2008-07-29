@@ -40,6 +40,7 @@
 #define __SLURM_UID_UTILITY_H__
 
 #include <sys/types.h>
+#include <unistd.h>
 
 /*
  * Return validated uid_t for string in ``name'' which contains
@@ -60,4 +61,8 @@ gid_t gid_from_string (char *name);
  */
 char *uid_to_string (uid_t uid);
 
+/*
+ * Same as uid_to_string, but for group name.
+*/
+char *gid_to_string (gid_t gid);
 #endif /*__SLURM_UID_UTILITY_H__*/

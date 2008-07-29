@@ -37,6 +37,7 @@
 \*****************************************************************************/
 
 #include "bluegene.h"
+#include "src/common/uid.h"
 #include "src/slurmctld/trigger_mgr.h"
 #include <stdio.h>
 
@@ -572,8 +573,6 @@ extern bg_record_t *find_bg_record_in_list(List my_list, char *bg_block_id)
 */
 extern int update_block_user(bg_record_t *bg_record, int set) 
 {
-	struct passwd *pw_ent = NULL;
-
 	if(!bg_record->target_name) {
 		error("Must set target_name to run update_block_user.");
 		return -1;
@@ -616,13 +615,14 @@ extern int update_block_user(bg_record_t *bg_record, int set)
 #endif
 	
 	if(strcmp(bg_record->target_name, bg_record->user_name)) {
+		uid_t my_uid = uid_from_string(bg_record->target_name);
 		xfree(bg_record->user_name);
 		bg_record->user_name = xstrdup(bg_record->target_name);
-		if((pw_ent = getpwnam(bg_record->user_name)) == NULL) {
-			error("getpwnam(%s): %m", bg_record->user_name);
+		if(my_uid == (uid_t) -1) {
+			error("getpwnam_r(%s): %m", bg_record->user_name);
 			return -1;
 		} else {
-			bg_record->user_uid = pw_ent->pw_uid; 
+			bg_record->user_uid = my_uid; 
 		}		
 		return 1;
 	}
@@ -2219,7 +2219,7 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq)
 	bg_record_t *found_record = NULL;
 	ba_node_t *ba_node = NULL;
 	ListIterator itr;
-	struct passwd *pw_ent = NULL;
+	uid_t my_uid;
 	int i, len;
 	int small_size = 0;
 	int small_count = 0;
@@ -2238,10 +2238,11 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq)
 	bg_record->target_name = 
 		xstrdup(slurmctld_conf.slurm_user_name);
 	slurm_conf_unlock();
-	if((pw_ent = getpwnam(bg_record->user_name)) == NULL) {
-		error("getpwnam(%s): %m", bg_record->user_name);
+	my_uid = uid_from_string(bg_record->user_name);
+	if(my_uid == (uid_t) -1) {
+		error("getpwnam_r(%s): %m", bg_record->user_name);
 	} else {
-		bg_record->user_uid = pw_ent->pw_uid;
+		bg_record->user_uid = my_uid;
 	}
 
 	bg_record->bg_block_list = list_create(destroy_ba_node);

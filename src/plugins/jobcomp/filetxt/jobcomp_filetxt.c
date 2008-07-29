@@ -164,20 +164,13 @@ _get_user_name(uint32_t user_id, char *user_name, int buf_size)
 {
 	static uint32_t cache_uid      = 0;
 	static char     cache_name[32] = "root";
-	struct passwd * user_info      = NULL;
 
-	if (user_id == cache_uid)
-		snprintf(user_name, buf_size, "%s", cache_name);
-	else {
-		user_info = getpwuid((uid_t) user_id);
-		if (user_info && user_info->pw_name[0])
-			snprintf(cache_name, sizeof(cache_name), "%s", 
-				user_info->pw_name);
-		else
-			snprintf(cache_name, sizeof(cache_name), "Unknown");
+	if (user_id != cache_uid) {
+		snprintf(cache_name, sizeof(cache_name), "%s", 
+			 uid_to_string((uid_t) user_id));
 		cache_uid = user_id;
-		snprintf(user_name, buf_size, "%s", cache_name);
 	}
+	snprintf(user_name, buf_size, "%s", cache_name);
 }
 
 /*
