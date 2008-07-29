@@ -29,6 +29,14 @@ Jeffrey M. Squyres, Pervasive Technology Labs at Indiana University
 <HR SIZE=4>
 
 <i>
+"Thank you for SLURM! It is one of the nicest pieces of free software
+for managing HPC clusters we have come across in a long time."<br><br>
+Adam Todorski, Computational Center for Nanotechnology Inovations,
+Rensselaer Polytechnic Institute
+</i>
+<HR SIZE=4>
+
+<i>
 We adopted SLURM as our resource manager over two years ago when it was at
 the 0.3.x release level. Since then it has become an integral and important
 component of our production research services. Its stability, flexibility
@@ -102,6 +110,6 @@ Bill Celmaster, XC Program Manager, Hewlett-Packard Company
 </i>
 <HR SIZE=4>
 
-<p style="text-align:center;">Last modified 17 January 2007</p>
+<p style="text-align:center;">Last modified 289 July 2008</p>
 
 <!--#include virtual="footer.txt"-->
