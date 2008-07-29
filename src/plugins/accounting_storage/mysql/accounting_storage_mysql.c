@@ -3482,6 +3482,24 @@ extern List acct_storage_p_modify_associations(
 		xstrcat(extra, " && user = '' ");
 	}
 
+	if(assoc_cond->partition_list 
+	   && list_count(assoc_cond->partition_list)) {
+		set = 0;
+		xstrcat(extra, " && (");
+		itr = list_iterator_create(assoc_cond->partition_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "partition='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	} else {
+		debug4("no partitions specified");
+		xstrcat(extra, " && user = '' ");
+	}
+
 	if(assoc_cond->id_list && list_count(assoc_cond->id_list)) {
 		set = 0;
 		xstrcat(extra, " && (");
@@ -4521,6 +4539,21 @@ extern List acct_storage_p_remove_associations(
 			if(set) 
 				xstrcat(extra, " || ");
 			xstrfmtcat(extra, "user='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+
+	if(assoc_cond->partition_list 
+	   && list_count(assoc_cond->partition_list)) {
+		set = 0;
+		xstrcat(extra, " && (");
+		itr = list_iterator_create(assoc_cond->partition_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "partition='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
