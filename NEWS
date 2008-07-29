@@ -421,6 +421,8 @@ documents those changes that are of interest to users and admins.
     requeued.
  -- Ignore the show_flag when getting job, step, node or partition information
     for user root.
+ -- Convert some functions to thread-safe versions: getpwnam, getpwuid, 
+    getgrnam, and getgrgid to similar functions with "_r" suffix.
 
 * Changes in SLURM 1.2.33
 =========================
