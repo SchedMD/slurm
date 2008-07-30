@@ -91,7 +91,7 @@ uid_to_string (uid_t uid)
 {
 	struct passwd pwd, *result;
 	size_t bufsize;
-	char *buffer;
+	char *buffer, *ustring;
 	int rc;
 
 	/* Suse Linux does not handle multiple users with UID=0 well */
@@ -108,10 +108,12 @@ uid_to_string (uid_t uid)
 			result = NULL;
 		break;
 	}
-	xfree(buffer);
 	if (result)
-		return xstrdup(result->pw_name);
-	return xstrdup("nobody");
+		ustring = xstrdup(result->pw_name);
+	else
+		ustring = xstrdup("nobody");
+	xfree(buffer);
+	return ustring;
 }
 
 gid_t
@@ -160,7 +162,7 @@ gid_to_string (gid_t gid)
 {
 	struct group grp, *result;
 	size_t bufsize;
-	char *buffer;
+	char *buffer, *gstring;
 	int rc;
 
 	bufsize = sysconf(_SC_GETGR_R_SIZE_MAX);
@@ -173,8 +175,10 @@ gid_to_string (gid_t gid)
 			result = NULL;
 		break;
 	}
-	xfree(buffer);
 	if (result)
-		return xstrdup(result->gr_name);
-	return xstrdup("nobody");
+		gstring = xstrdup(result->gr_name);
+	else
+		gstring = xstrdup("nobody");
+	xfree(buffer);
+	return gstring;
 }
