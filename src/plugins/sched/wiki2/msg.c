@@ -719,14 +719,22 @@ static void	_proc_msg(slurm_fd new_fd, char *msg)
 static void	_send_reply(slurm_fd new_fd, char *response)
 {
 	size_t i;
-	char *buf, sum[20];
+	char *buf, sum[20], *tmp;
+	static char uname[64] = "";
 
 	i = strlen(response);
 	i += 100;	/* leave room for header */
 	buf = xmalloc(i);
 
+	if (uname[0] == '\0') {
+		tmp = uid_to_string(getuid());
+		strncpy(uname, tmp, sizeof(uname));
+		uname[sizeof(uname) - 1] = '\0';
+		xfree(tmp);
+	}
+
 	snprintf(buf, i, "CK=dummy67890123456 TS=%u AUTH=%s DT=%s", 
-		(uint32_t) time(NULL), uid_to_string(getuid()), response);
+		(uint32_t) time(NULL), uname, response);
 	checksum(sum, auth_key, (buf+20));   /* overwrite "CK=dummy..." above */
 	memcpy(buf, sum, 19);
 

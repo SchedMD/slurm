@@ -1414,7 +1414,7 @@ extern void mail_job_info (struct job_record *job_ptr, uint16_t mail_type)
 	mail_info_t *mi = _mail_alloc();
 
 	if (!job_ptr->mail_user)
-		mi->user_name = xstrdup(uid_to_string((uid_t)job_ptr->user_id));
+		mi->user_name = uid_to_string((uid_t)job_ptr->user_id);
 	else
 		mi->user_name = xstrdup(job_ptr->mail_user);
 

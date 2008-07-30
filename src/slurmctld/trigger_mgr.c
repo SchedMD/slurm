@@ -950,7 +950,8 @@ static void _trigger_node_event(trig_mgr_info_t *trig_in, time_t now)
  * may be sufficient. */
 static void _trigger_run_program(trig_mgr_info_t *trig_in)
 {
-	char program[1024], arg0[1024], arg1[1024], user_name[1024], *pname;
+	char program[1024], arg0[1024], arg1[1024], user_name[1024];
+	char *pname, *uname;
 	uid_t uid;
 	gid_t gid;
 	pid_t child;
@@ -967,7 +968,9 @@ static void _trigger_run_program(trig_mgr_info_t *trig_in)
 	strncpy(arg1, trig_in->res_id, sizeof(arg1));
 	uid = trig_in->user_id;
 	gid = trig_in->group_id;
-	snprintf(user_name, sizeof(user_name), "%s", uid_to_string(uid));
+	uname = uid_to_string(uid);
+	snprintf(user_name, sizeof(user_name), "%s", uname);
+	xfree(uname);
 
 	child = fork();
 	if (child > 0) {
