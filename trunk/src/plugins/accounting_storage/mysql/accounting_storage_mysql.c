@@ -236,10 +236,17 @@ static int _move_account(mysql_conn_t *mysql_conn, uint32_t lft, uint32_t rgt,
 	}
 	par_left = atoi(row[0]);
 	mysql_free_result(result);
+
+	diff = ((par_left + 1) - lft);
+
+	if(diff == 0) {
+		debug3("Trying to move association to the same position?  "
+		       "Nothing to do.");
+		return rc;
+	}
 	
 	width = (rgt - lft + 1);
-	diff = ((par_left + 1) - lft);
-	
+
 	xstrfmtcat(query,
 		   "update %s set deleted = deleted + 2, "
 		   "lft = lft + %d, rgt = rgt + %d "
@@ -259,10 +266,10 @@ static int _move_account(mysql_conn_t *mysql_conn, uint32_t lft, uint32_t rgt,
 	xstrfmtcat(query,
 		   "UPDATE %s SET rgt = rgt - %d WHERE "
 		   "(%d < 0 && rgt > %u && deleted < 2) "
-		   "|| (%d >= 0 && rgt > %u);"
+		   "|| (%d > 0 && rgt > %u);"
 		   "UPDATE %s SET lft = lft - %d WHERE "
 		   "(%d < 0 && lft > %u && deleted < 2) "
-		   "|| (%d >= 0 && lft > %u);",
+		   "|| (%d > 0 && lft > %u);",
 		   assoc_table, width,
 		   diff, rgt,
 		   diff, lft,
@@ -6209,6 +6216,8 @@ extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn,
 				"values (@PS, @PS, @PS);",
 				event_table, last_ran_table);
 			
+			debug3("%d(%d) query\n%s", mysql_conn->conn, 
+			       __LINE__, query);
 			mysql_free_result(result);
 			if(!(result = mysql_db_query_ret(
 				     mysql_conn->db_conn, query, 0))) {
@@ -6363,7 +6372,7 @@ extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn,
 	}
 	
 	if(query) {
-		debug3("%s", query);
+		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 		xfree(query);
 	}
