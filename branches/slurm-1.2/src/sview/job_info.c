@@ -1035,7 +1035,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 			       sview_job_info_t *sview_job_info_ptr, 
 			       int update)
 {
-	char *nodes = NULL, *uname;
+	char *nodes = NULL, *uname = NULL;
 	char tmp_char[50];
 	time_t now_time = time(NULL);
 	job_info_t *job_ptr = sview_job_info_ptr->job_ptr;
@@ -1431,7 +1431,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 			       GtkTreeStore *treestore,
 			       GtkTreeIter *iter)
 {
-	char *nodes = NULL, uname;
+	char *nodes = NULL, *uname = NULL;
 	char tmp_char[50];
 	time_t now_time = time(NULL);
 	GtkTreeIter step_iter;
@@ -1832,7 +1832,7 @@ static void _update_step_record(job_step_info_t *step_ptr,
 				GtkTreeStore *treestore,
 				GtkTreeIter *iter)
 {
-	char *nodes = NULL, uname;
+	char *nodes = NULL, *uname = NULL;
 	char tmp_char[50];
 	char tmp_time[50];
 	time_t now_time = time(NULL);
@@ -2738,7 +2738,7 @@ extern void specific_info_job(popup_info_t *popup_win)
 	sview_job_info_t *sview_job_info_ptr = NULL;
 	job_info_t *job_ptr = NULL;	
 	ListIterator itr = NULL;
-	char name[30], uname;
+	char name[30], *uname = NULL;
 	char *host = NULL, *host2 = NULL;
 	hostlist_t hostlist = NULL;
 	int found = 0, name_diff;
