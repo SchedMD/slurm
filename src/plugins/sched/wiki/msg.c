@@ -624,6 +624,7 @@ static void	_send_reply(slurm_fd new_fd, char *response)
 		tmp = uid_to_string(getuid());
 		strncpy(uname, tmp, sizeof(uname));
 		uname[sizeof(uname) - 1] = '\0';
+		xfree(tmp);
 	}
 
 	snprintf(buf, i, "CK=dummy67890123456 TS=%u AUTH=%s DT=%s", 
