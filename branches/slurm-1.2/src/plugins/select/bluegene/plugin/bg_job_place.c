@@ -41,6 +41,7 @@
 #include <pwd.h>
 
 #include "src/common/node_select.h"
+#include "src/common/uid.h"
 #include "src/slurmctld/trigger_mgr.h"
 #include "bluegene.h"
 
