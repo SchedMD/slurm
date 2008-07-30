@@ -204,7 +204,8 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 			case PRINT_ACTION:
 				field->print_routine(
 					field, 
-					slurmdbd_msg_type_2_str(txn->action));
+					slurmdbd_msg_type_2_str(txn->action,
+								0));
 				break;
 			case PRINT_ACTOR:
 				field->print_routine(field,

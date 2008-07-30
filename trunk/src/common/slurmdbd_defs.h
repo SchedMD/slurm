@@ -355,7 +355,8 @@ extern Buf pack_slurmdbd_msg(slurmdbd_msg_t *req);
 extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp, Buf buffer);
 
 extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type);
-extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type);
+extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type,
+				     int get_enum);
 
 /*****************************************************************************\
  * Free various SlurmDBD message structures

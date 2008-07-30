@@ -593,6 +593,24 @@ char *slurm_get_accounting_storage_loc(void)
 	return storage_loc;	
 }
 
+/* slurm_get_accounting_storage_enforce
+ * returns whether or not to enforce associations
+ */
+int slurm_get_accounting_storage_enforce(void)
+{
+	int enforce = 0;
+	slurm_ctl_conf_t *conf;
+
+	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		enforce = conf->accounting_storage_enforce;
+		slurm_conf_unlock();
+	}
+	return enforce;	
+
+}
+
 /* slurm_set_accounting_storage_loc
  * IN: char *loc (name of file or database)
  * RET 0 or error code

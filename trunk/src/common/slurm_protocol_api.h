@@ -245,6 +245,11 @@ char *slurm_get_accounting_storage_host(void);
  */
 char *slurm_get_accounting_storage_loc(void);
 
+/* slurm_get_accounting_storage_enforce
+ * returns whether or not to enforce associations
+ */
+int slurm_get_accounting_storage_enforce(void);
+
 /* slurm_set_accounting_storage_loc
  * IN: char *loc (name of file or database)
  * RET 0 or error code
