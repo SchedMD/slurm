@@ -619,7 +619,7 @@ extern int update_block_user(bg_record_t *bg_record, int set)
 		xfree(bg_record->user_name);
 		bg_record->user_name = xstrdup(bg_record->target_name);
 		if(my_uid == (uid_t) -1) {
-			error("getpwnam_r(%s): %m", bg_record->user_name);
+			error("uid_from_string(%s): %m", bg_record->user_name);
 			return -1;
 		} else {
 			bg_record->user_uid = my_uid; 
@@ -2240,7 +2240,7 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq)
 	slurm_conf_unlock();
 	my_uid = uid_from_string(bg_record->user_name);
 	if(my_uid == (uid_t) -1) {
-		error("getpwnam_r(%s): %m", bg_record->user_name);
+		error("uid_from_string(%s): %m", bg_record->user_name);
 	} else {
 		bg_record->user_uid = my_uid;
 	}

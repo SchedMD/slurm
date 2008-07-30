@@ -503,7 +503,7 @@ extern int select_p_state_restore(char *dir_name)
 			slurm_conf_unlock();
 			my_uid = uid_from_string(bg_record->user_name);
 			if (my_uid == (uid_t) -1) {
-				error("getpwnam_r(%s): %m", 
+				error("uid_from_strin(%s): %m", 
 				      bg_record->user_name);
 			} else {
 				bg_record->user_uid = my_uid;
