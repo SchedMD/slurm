@@ -96,7 +96,7 @@ uid_to_string (uid_t uid)
 
 	/* Suse Linux does not handle multiple users with UID=0 well */
 	if (uid == 0)
-		return "root";
+		return xstrdup("root");
 
 	bufsize = sysconf(_SC_GETPW_R_SIZE_MAX);
 	buffer = xmalloc(bufsize);
