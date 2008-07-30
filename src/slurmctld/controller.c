@@ -419,10 +419,11 @@ int main(int argc, char *argv[])
 				&thread_attr, _slurmctld_rpc_mgr, NULL))
 			fatal("pthread_create error %m");
 		slurm_attr_destroy(&thread_attr);
-		clusteracct_storage_g_register_ctld(
-					slurmctld_conf.cluster_name, 
-					slurmctld_conf.slurmctld_port);
 
+		clusteracct_storage_g_register_ctld(
+			slurmctld_conf.cluster_name, 
+			slurmctld_conf.slurmctld_port);
+		
 		/*
 		 * create attached thread for signal handling
 		 */
