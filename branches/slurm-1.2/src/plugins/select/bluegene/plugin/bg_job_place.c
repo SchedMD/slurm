@@ -94,7 +94,7 @@ pthread_mutex_t create_dynamic_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int _get_user_groups(uint32_t user_id, uint32_t group_id, 
 			    gid_t *groups, int max_groups, int *ngroups)
 {
-	int rc = 0;
+	int rc;
 	char *user_name;
 
 	user_name = uid_to_string((uid_t) user_id);
@@ -105,6 +105,7 @@ static int _get_user_groups(uint32_t user_id, uint32_t group_id,
 		rc = -1;
 	} else {
 		*ngroups = rc;
+		rc = 0;
 	}
 	xfree(user_name);
 	return rc;
