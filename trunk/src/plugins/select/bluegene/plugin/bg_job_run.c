@@ -233,8 +233,8 @@ static void _sync_agent(bg_update_t *bg_update_ptr)
 			      bg_update_ptr->job_ptr->job_id,
 			      bg_update_ptr->bg_block_id);
 			xfree(bg_record->target_name);
-			bg_record->target_name = xstrdup(
-				uid_to_string(bg_update_ptr->job_ptr->user_id));
+			bg_record->target_name = 
+				uid_to_string(bg_update_ptr->job_ptr->user_id);
 			set_user_rc = set_block_user(bg_record);
 			slurm_mutex_unlock(&block_state_mutex);
 		
@@ -454,8 +454,8 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		
 	bg_record->boot_count = 0;
 	xfree(bg_record->target_name);
-	bg_record->target_name = xstrdup(
-		uid_to_string(bg_update_ptr->job_ptr->user_id));
+	bg_record->target_name = 
+		uid_to_string(bg_update_ptr->job_ptr->user_id);
 	debug("setting the target_name for Block %s to %s",
 	      bg_record->bg_block_id,
 	      bg_record->target_name);

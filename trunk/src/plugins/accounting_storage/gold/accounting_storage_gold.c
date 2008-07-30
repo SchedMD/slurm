@@ -3204,19 +3204,28 @@ extern List jobacct_storage_p_get_jobs(void *db_conn,
 /* 					} */
 
 					if(account_rec.user) {
-						struct passwd *passwd_ptr =
-							getpwnam(account_rec.
-								 user);
+						struct passwd pwd, *result;
+						size_t bufsize;
+						char *buffer;
+						int rc;
+						bufsize = sysconf(_SC_GETPW_R_SIZE_MAX);
+						buffer = xmalloc(bufsize);
+						rc = getpwnam_r(account_rec.user,
+								&pwd, buffer,
+								bufsize, &result);
+						if (rc != 0)
+							result = NULL;
 						job->user = xstrdup(account_rec.
 								    user);
-						if(passwd_ptr) {
+						if(result) {
 							job->uid =
-								passwd_ptr->
+								result->
 								pw_uid;
 							job->gid = 
-								passwd_ptr->
+								result->
 								pw_gid;
 						}
+						xfree(buffer);
 					}
 					if(account_rec.acct) 
 						job->account =

@@ -41,6 +41,7 @@
 #include <pwd.h>
 
 #include "src/common/node_select.h"
+#include "src/common/uid.h"
 #include "src/slurmctld/trigger_mgr.h"
 #include "bluegene.h"
 #include "dynamic_block.h"
@@ -221,32 +222,21 @@ static int _bg_record_sort_aval_dec(bg_record_t* rec_a, bg_record_t* rec_b)
 static int _get_user_groups(uint32_t user_id, uint32_t group_id, 
 			    gid_t *groups, int max_groups, int *ngroups)
 {
-	struct passwd pwd, *results;
-	char *buffer;
-	static size_t buf_size = 0;
 	int rc;
+	char *user_name;
 
-	if (!buf_size && ((buf_size = sysconf(_SC_GETPW_R_SIZE_MAX)) < 0)) {
-		error("sysconf(_SC_GETPW_R_SIZE_MAX)");
-		return -1;
-	}
-	buffer = xmalloc(buf_size);
-	rc = getpwuid_r((uid_t) user_id, &pwd, buffer, buf_size, &results);
-	if (rc != 0) {
-		error("getpwuid_r(%u): %m", user_id);
-		xfree(buffer);
-		return -1;
-	}
+	user_name = uid_to_string((uid_t) user_id);
 	*ngroups = max_groups;
- 	rc = getgrouplist(pwd.pw_name, (gid_t) group_id, groups, ngroups);
-	xfree(buffer);
+	rc = getgrouplist(user_name, (gid_t) group_id, groups, ngroups);
 	if (rc < 0) {
-		error("getgrouplist(%s): %m", pwd.pw_name);
-		return -1;
+		error("getgrouplist(%s): %m", user_name);
+		rc = -1;
+	} else {
+		*ngroups = rc;
+		rc = 0;
 	}
-	*ngroups = rc;
-
-	return 0;
+	xfree(user_name);
+	return rc;
 }
 
 /*

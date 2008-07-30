@@ -231,6 +231,7 @@ static char *   _dump_all_jobs(int *job_cnt, time_t update_time)
 static char *	_dump_job(struct job_record *job_ptr, time_t update_time)
 {
 	char tmp[16384], *buf = NULL;
+	char *uname, *gname;
 	uint32_t end_time, suspend_time;
 	int i, rej_sent = 0;
 
@@ -366,11 +367,13 @@ static char *	_dump_job(struct job_record *job_ptr, time_t update_time)
 	    (update_time > job_ptr->details->submit_time))
 		return buf;
 
+	uname = uid_to_string((uid_t) job_ptr->user_id);
+	gname = gid_to_string(job_ptr->group_id);
 	snprintf(tmp, sizeof(tmp),
-		"UNAME=%s;GNAME=%s;",
-		uid_to_string((uid_t) job_ptr->user_id),
-		gid_to_string(job_ptr->group_id));
+		"UNAME=%s;GNAME=%s;", uname, gname);
 	xstrcat(buf, tmp);
+	xfree(uname);
+	xfree(gname);
 
 	return buf;
 }

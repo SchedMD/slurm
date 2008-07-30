@@ -1052,13 +1052,13 @@ uid_t *_get_groups_members(char *group_names)
  */
 uid_t *_get_group_members(char *group_name)
 {
-	size_t grp_bufsize, pwd_bufsize;
-	char *grp_buffer,  *pwd_buffer;
+	size_t grp_bufsize;
+	char *grp_buffer;
 	struct group grp,  *grp_result;
-	struct passwd pwd, *pwd_result;
-	uid_t *group_uids;
+	struct passwd *pwd_result;
+	uid_t *group_uids, my_uid;
 	gid_t my_gid;
-	int i, j, rc, uid_cnt;
+	int i, j, uid_cnt;
 	
 	grp_bufsize = sysconf(_SC_GETGR_R_SIZE_MAX);
 	grp_buffer = xmalloc(grp_bufsize);
@@ -1076,28 +1076,16 @@ uid_t *_get_group_members(char *group_name)
 	}
 	group_uids = (uid_t *) xmalloc(sizeof(uid_t) * (uid_cnt + 1));
 
-	pwd_bufsize = sysconf(_SC_GETGR_R_SIZE_MAX);
-	pwd_buffer = xmalloc(pwd_bufsize);
 	j = 0;
 	for (i=0; i<uid_cnt; i++) {
-		while (1) {
-			rc = getpwnam_r(grp_result->gr_mem[i], &pwd, pwd_buffer,
-					pwd_bufsize, &pwd_result);
-			if (rc == EINTR)
-				continue;
-			else if (rc != 0)
-				pwd_result = NULL;
-			break;
-		}
-		if (pwd_result == NULL) {
+		my_uid = uid_from_string(grp_result->gr_mem[i]);
+		if (my_uid == (uid_t) -1) {
 			error("Could not find user %s in configured group %s",
 			      grp_result->gr_mem[i], group_name);
-		} else {
-			if (pwd_result->pw_uid)
-				group_uids[j++] = pwd_result->pw_uid;
+		} else if (my_uid) {
+			group_uids[j++] = my_uid;
 		}
 	}
-	xfree(pwd_buffer);
 	xfree(grp_buffer);
 
 	/* NOTE: code below not reentrant, avoid these functions elsewhere */

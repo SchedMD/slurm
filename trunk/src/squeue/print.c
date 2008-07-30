@@ -370,9 +370,11 @@ int _print_job_user_name(job_info_t * job, int width, bool right, char* suffix)
 {
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("USER", width, right, true);
-	else
-		_print_str(uid_to_string((uid_t) job->user_id), width, 
-			right, true);
+	else {
+		char *uname = uid_to_string((uid_t) job->user_id);
+		_print_str(uname, width, right, true);
+		xfree(uname);
+	}
 	if (suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;
@@ -1171,9 +1173,11 @@ int _print_step_user_name(job_step_info_t * step, int width, bool right,
 {
 	if (step == NULL)	/* Print the Header instead */
 		_print_str("USER", width, right, true);
-	else
-		_print_str(uid_to_string((uid_t) step->user_id), width, 
-			right, true);
+	else {
+		char *uname = uid_to_string((uid_t) step->user_id);
+		_print_str(uname, width, right, true);
+		xfree(uname);
+	}
 	if (suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;

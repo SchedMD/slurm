@@ -211,7 +211,7 @@ static int _post_allocate(bg_record_t *bg_record)
 
 		my_uid = uid_from_string(bg_record->user_name);
 		if (my_uid == (uid_t) -1) {
-			error("getpwnam_r(%s): %m", bg_record->user_name);
+			error("uid_from_string(%s): %m", bg_record->user_name);
 		} else {
 			bg_record->user_uid = my_uid;
 		} 
@@ -710,7 +710,7 @@ int read_bg_blocks()
 			}
 			my_uid = uid_from_string(bg_record->user_name);
 			if (my_uid == (uid_t) -1) {
-				error("getpwnam_r(%s): %m", 
+				error("uid_from_string(%s): %m", 
 				      bg_record->user_name);
 			} else {
 				bg_record->user_uid = my_uid;
