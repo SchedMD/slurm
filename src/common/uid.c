@@ -43,6 +43,7 @@
 
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
 uid_t
 uid_from_string (char *name)
@@ -108,7 +109,9 @@ uid_to_string (uid_t uid)
 		break;
 	}
 	xfree(buffer);
-	return result ? result->pw_name : "nobody";
+	if (result)
+		return xstrdup(result->pw_name);
+	return xstrdup("nobody");
 }
 
 gid_t
@@ -171,5 +174,7 @@ gid_to_string (gid_t gid)
 		break;
 	}
 	xfree(buffer);
-	return result ? result->gr_name : "nobody";
+	if (result)
+		return xstrdup(result->gr_name);
+	return xstrdup("nobody");
 }

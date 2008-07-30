@@ -163,11 +163,12 @@ static void
 _get_user_name(uint32_t user_id, char *user_name, int buf_size)
 {
 	static uint32_t cache_uid      = 0;
-	static char     cache_name[32] = "root";
+	static char     cache_name[32] = "root", *uname;
 
 	if (user_id != cache_uid) {
-		snprintf(cache_name, sizeof(cache_name), "%s", 
-			 uid_to_string((uid_t) user_id));
+		uname = uid_to_string((uid_t) user_id);
+		snprintf(cache_name, sizeof(cache_name), "%s", uname);
+		xfree(uname);
 		cache_uid = user_id;
 	}
 	snprintf(user_name, buf_size, "%s", cache_name);

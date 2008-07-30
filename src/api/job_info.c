@@ -124,7 +124,7 @@ extern char *
 slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 {
 	int i, j;
-	char time_str[32], select_buf[122];
+	char time_str[32], select_buf[122], *user_name;
 	struct group *group_info = NULL;
 	char tmp1[128], tmp2[128];
 	char tmp_line[512];
@@ -142,11 +142,12 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 #endif	
 
 	/****** Line 1 ******/
+	user_name = uid_to_string((uid_t) job_ptr->user_id);
 	snprintf(tmp_line, sizeof(tmp_line), 
 		"JobId=%u UserId=%s(%u) ", 
-		job_ptr->job_id, 
-		uid_to_string((uid_t) job_ptr->user_id), job_ptr->user_id);
+		job_ptr->job_id, user_name, job_ptr->user_id);
 	out = xstrdup(tmp_line);
+	xfree(user_name);
 	group_info = getgrgid((gid_t) job_ptr->group_id );
 	if ( group_info && group_info->gr_name[ 0 ] ) {
 		snprintf(tmp_line, sizeof(tmp_line), "GroupId=%s(%u)",
