@@ -253,7 +253,7 @@ static int _print_text_job(job_info_t * job_ptr)
 	char time_buf[20];
 	char tmp_cnt[8];
 	uint32_t node_cnt = 0;
-	char *ionodes = NULL, uname;
+	char *ionodes = NULL, *uname;
 	time_t now_time = time(NULL);
 
 #ifdef HAVE_BG
@@ -294,7 +294,7 @@ static int _print_text_job(job_info_t * job_ptr)
 						  SELECT_PRINT_BG_ID));
 		main_xcord += 18;
 #endif
-		uname = uid_to_string((uid_t) job_ptr->user_id)
+		uname = uid_to_string((uid_t) job_ptr->user_id);
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "%.8s", uname);
 		xfree(uname);
