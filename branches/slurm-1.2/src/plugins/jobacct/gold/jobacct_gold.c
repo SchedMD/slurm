@@ -716,7 +716,7 @@ static int _add_edit_job(gold_job_info_msg_t *job_ptr, gold_object_t action)
 	char tmp_buff[50];
 	int rc = SLURM_ERROR;
 	char *gold_account_id = NULL;
-	char *user = uid_to_string((uid_t)job_ptr->user_id);
+	char *user = NULL;
 	char *jname = NULL;
 	char *account = NULL;
 	char *nodes = "(null)";
@@ -735,8 +735,9 @@ static int _add_edit_job(gold_job_info_msg_t *job_ptr, gold_object_t action)
 			 (uint32_t)job_ptr->submit_time);
 		gold_request_add_assignment(gold_request, "SubmitTime",
 					    tmp_buff);
-		
+		user = uid_to_string((uid_t)job_ptr->user_id);
 		gold_account_id = _get_account_id(user, account, cluster_name);
+		xfree(user);
 		if ((gold_account_id == NULL) ||
 		    ((gold_account_id[0] == '0') && (gold_account_id[1] == '\0'))) {
 			destroy_gold_request(gold_request);

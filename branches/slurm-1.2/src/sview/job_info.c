@@ -1035,7 +1035,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 			       sview_job_info_t *sview_job_info_ptr, 
 			       int update)
 {
-	char *nodes = NULL;
+	char *nodes = NULL, *uname;
 	char tmp_char[50];
 	time_t now_time = time(NULL);
 	job_info_t *job_ptr = sview_job_info_ptr->job_ptr;
@@ -1135,10 +1135,11 @@ static void _layout_job_record(GtkTreeView *treeview,
 					   sizeof(tmp_char), 
 					   SELECT_PRINT_BG_ID));
 #endif
+	uname = uid_to_string((uid_t)job_ptr->user_id);
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
-						 SORTID_USER), 
-				   uid_to_string((uid_t)job_ptr->user_id));
+						 SORTID_USER), uname);
+	xfree(uname);
 	group_info = getgrgid((gid_t) job_ptr->group_id );
 	if ( group_info && group_info->gr_name[ 0 ] ) {
 		snprintf(tmp_char, sizeof(tmp_char), "%s",
@@ -1430,7 +1431,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 			       GtkTreeStore *treestore,
 			       GtkTreeIter *iter)
 {
-	char *nodes = NULL;
+	char *nodes = NULL, uname;
 	char tmp_char[50];
 	time_t now_time = time(NULL);
 	GtkTreeIter step_iter;
@@ -1569,9 +1570,10 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 				   SELECT_PRINT_RAMDISK_IMAGE), -1);
 	
 #endif
+	uname = uid_to_string((uid_t)job_ptr->user_id);
 	gtk_tree_store_set(treestore, iter, 
-			   SORTID_USER, 
-			   uid_to_string((uid_t)job_ptr->user_id), -1);
+			   SORTID_USER, uname, -1);
+	xfree(uname);
 	group_info = getgrgid((gid_t) job_ptr->group_id );
 	if ( group_info && group_info->gr_name[ 0 ] ) {
 		snprintf(tmp_char, sizeof(tmp_char), "%s",
@@ -1734,7 +1736,7 @@ static void _layout_step_record(GtkTreeView *treeview,
 				job_step_info_t *step_ptr,
 				int update)
 {
-	char *nodes = NULL;
+	char *nodes = NULL, *uname;
 	char tmp_char[50];
 	char tmp_time[50];
 	time_t now_time = time(NULL);
@@ -1798,10 +1800,11 @@ static void _layout_step_record(GtkTreeView *treeview,
 /* 				   sizeof(tmp_char),  */
 /* 				   SELECT_PRINT_BG_ID)); */
 /* #endif */
+	uname = uid_to_string((uid_t)step_ptr->user_id);
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
-						 SORTID_USER), 
-				   uid_to_string((uid_t)step_ptr->user_id));
+						 SORTID_USER), uname);
+	xfree(uname);
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
 						 SORTID_NAME),
@@ -1829,7 +1832,7 @@ static void _update_step_record(job_step_info_t *step_ptr,
 				GtkTreeStore *treestore,
 				GtkTreeIter *iter)
 {
-	char *nodes = NULL;
+	char *nodes = NULL, uname;
 	char tmp_char[50];
 	char tmp_time[50];
 	time_t now_time = time(NULL);
@@ -1878,9 +1881,10 @@ static void _update_step_record(job_step_info_t *step_ptr,
 /* 				   sizeof(tmp_char),  */
 /* 				   SELECT_PRINT_BG_ID), -1); */
 /* #endif */
+	uname = uid_to_string((uid_t)step_ptr->user_id);
 	gtk_tree_store_set(treestore, iter, 
-			   SORTID_USER, 
-			   uid_to_string((uid_t)step_ptr->user_id), -1);
+			   SORTID_USER, uname, -1);
+	xfree(uname);
 	gtk_tree_store_set(treestore, iter, 
 			   SORTID_NAME, step_ptr->name, -1);
 		
@@ -2734,10 +2738,10 @@ extern void specific_info_job(popup_info_t *popup_win)
 	sview_job_info_t *sview_job_info_ptr = NULL;
 	job_info_t *job_ptr = NULL;	
 	ListIterator itr = NULL;
-	char name[30];
+	char name[30], uname;
 	char *host = NULL, *host2 = NULL;
 	hostlist_t hostlist = NULL;
-	int found = 0;
+	int found = 0, name_diff;
 	
 	if(!spec_info->display_widget)
 		setup_popup_info(popup_win, display_data_job, SORTID_CNT);
@@ -2877,8 +2881,11 @@ display_it:
 			case SEARCH_JOB_USER:
 				if(!search_info->gchar_data)
 					continue;
-				if(strcmp(uid_to_string(job_ptr->user_id),
-					  search_info->gchar_data))
+				uname = uid_to_string(job_ptr->user_id);
+				name_diff = strcmp(uname, 
+						   search_info->gchar_data);
+				xfree(uname);
+				if(name_diff)
 					continue;
 				break;
 			case SEARCH_JOB_STATE:

@@ -57,12 +57,14 @@ uid_t uid_from_string (char *name);
 gid_t gid_from_string (char *name);
 
 /* 
- * Translate uid to user name
+ * Translate uid to user name, 
+ * NOTE: xfree the return value
  */
 char *uid_to_string (uid_t uid);
 
 /*
  * Same as uid_to_string, but for group name.
-*/
+ * NOTE: xfree the return value
+ */
 char *gid_to_string (gid_t gid);
 #endif /*__SLURM_UID_UTILITY_H__*/
