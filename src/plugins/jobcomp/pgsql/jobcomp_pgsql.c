@@ -42,6 +42,7 @@
 #include <sys/types.h>
 #include "src/common/parse_time.h"
 #include "src/common/node_select.h"
+#include "src/common/uid.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they

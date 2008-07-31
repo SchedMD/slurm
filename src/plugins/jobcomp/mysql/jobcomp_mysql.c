@@ -42,6 +42,7 @@
 #include <sys/types.h>
 #include "src/common/parse_time.h"
 #include "src/common/node_select.h"
+#include "src/common/uid.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -175,7 +176,7 @@ static char *_get_user_name(uint32_t user_id)
 static char *_get_group_name(uint32_t group_id)
 {
 	static uint32_t cache_gid      = 0;
-	static char     cache_name[32] = "root", *gname
+	static char     cache_name[32] = "root", *gname;
 	char *ret_name = NULL;
 
 	slurm_mutex_lock(&jobcomp_lock);
