@@ -1761,7 +1761,7 @@ extern int acct_storage_p_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	acct_user_rec_t *object = NULL;
 	char *cols = NULL, *vals = NULL, *query = NULL, *txn_query = NULL;
 	time_t now = time(NULL);
-	char *user = NULL;
+	char *user_name = NULL;
 	char *extra = NULL;
 	int affect_rows = 0;
 	List assoc_list = list_create(destroy_acct_association_rec);
@@ -2000,7 +2000,7 @@ extern int acct_storage_p_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
-	user_name = pw->pw_name;
+	user_name = uid_to_string((uid_t) uid);
 	itr = list_iterator_create(acct_list);
 	while((object = list_next(itr))) {
 		if(!object->name || !object->description
@@ -2302,7 +2302,7 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 		*extra = NULL, *query = NULL, *update = NULL;
 	char *parent = NULL;
 	time_t now = time(NULL);
-	char *user = NULL;
+	char *user_name = NULL;
 	char *tmp_char = NULL;
 	int assoc_id = 0;
 	int incr = 0, my_left = 0;
@@ -2335,7 +2335,7 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
-	user_name = uid_to_string((uid_t) uid;
+	user_name = uid_to_string((uid_t) uid);
 	itr = list_iterator_create(association_list);
 	while((object = list_next(itr))) {
 		if(!object->cluster || !object->acct) {
@@ -4665,7 +4665,7 @@ extern List acct_storage_p_remove_associations(
 	}
 	mysql_free_result(result);
 
-	user_name = uid_to_string(pw->pw_name);
+	user_name = uid_to_string((uid_t) uid);
 	rc = _remove_common(mysql_conn, DBD_REMOVE_ASSOCS, now,
 			    user_name, assoc_table, name_char, assoc_char);
 	xfree(user_name);
