@@ -506,3 +506,4 @@ test21.8   sacctmgr modify a cluster
 test21.9   sacctmgr modify multiple clusters
 test21.10  sacctmgr add an account
 test21.11  sacctmgr add multiple accounts
+test21.12  sacctmgr list multiple accounts
