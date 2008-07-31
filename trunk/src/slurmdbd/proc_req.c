@@ -42,6 +42,7 @@
 #include "src/common/jobacct_common.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/uid.h"
 #include "src/slurmdbd/read_config.h"
 #include "src/slurmdbd/rpc_mgr.h"
 #include "src/slurmctld/slurmctld.h"
@@ -780,9 +781,9 @@ static int _get_jobs(void *db_conn,
 
 	sacct_params.opt_uid = -1;
 	if(get_jobs_msg->user) {
-		struct passwd *pw = NULL;
-		if ((pw=getpwnam(get_jobs_msg->user)))
-			sacct_params.opt_uid = pw->pw_uid;
+		uid_t pw_uid = uid_from_string(get_jobs_msg->user);
+		if (pw_uid != (uid_t) -1)
+			sacct_params.opt_uid = pw_uid;
 	}
 		
 	list_msg.my_list = jobacct_storage_g_get_jobs(

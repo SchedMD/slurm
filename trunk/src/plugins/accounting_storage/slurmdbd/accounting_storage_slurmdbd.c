@@ -56,6 +56,7 @@
 #include "src/common/read_config.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurmdbd_defs.h"
+#include "src/common/uid.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
 
@@ -1355,7 +1356,6 @@ extern List jobacct_storage_p_get_jobs(void *db_conn,
 	dbd_list_msg_t *got_msg;
 	int rc;
 	List job_list = NULL;
-	struct passwd *pw = NULL;
 
 	get_msg.selected_steps = selected_steps;
 	get_msg.selected_parts = selected_parts;
@@ -1367,14 +1367,15 @@ extern List jobacct_storage_p_get_jobs(void *db_conn,
 	}
 	get_msg.gid = params->opt_gid;
 	
-	if (params->opt_uid >=0 && (pw=getpwuid(params->opt_uid)))
-		get_msg.user = pw->pw_name;
+	if (params->opt_uid >=0)
+		get_msg.user = uid_to_string((uid_t) params->opt_uid);
 	else
 		get_msg.user = NULL;
 
 	req.msg_type = DBD_GET_JOBS;
 	req.data = &get_msg;
 	rc = slurm_send_recv_slurmdbd_msg(&req, &resp);
+	xfree(get_msg.user);
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_GET_JOBS failure: %m");

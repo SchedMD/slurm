@@ -132,21 +132,15 @@ static void
 _get_group_name(uint32_t group_id, char *group_name, int buf_size)
 {
 	static uint32_t cache_gid      = 0;
-	static char     cache_name[32] = "root";
-	struct group  *group_info      = NULL;
+	static char     cache_name[32] = "root", *gname;
 
-	if (group_id == cache_gid)
-		snprintf(group_name, buf_size, "%s", cache_name);
-	else {
-		group_info = getgrgid((gid_t) group_id);
-		if (group_info && group_info->gr_name[0])
-			snprintf(cache_name, sizeof(cache_name), "%s", 
-				group_info->gr_name);
-		else
-			snprintf(cache_name, sizeof(cache_name), "Unknown");
+	if (group_id != cache_gid) {
+		gname = gid_to_string((gid_t) group_id);
+		snprintf(cache_name, sizeof(cache_name), "%s", gname);
+		xfree(gname);
 		cache_gid = group_id;
-		snprintf(group_name, buf_size, "%s", cache_name);
 	}
+	snprintf(group_name, buf_size, "%s", cache_name);
 }
 
 /* 

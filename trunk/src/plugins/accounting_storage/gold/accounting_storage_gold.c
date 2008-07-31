@@ -3208,11 +3208,14 @@ extern List jobacct_storage_p_get_jobs(void *db_conn,
 						size_t bufsize;
 						char *buffer;
 						int rc;
-						bufsize = sysconf(_SC_GETPW_R_SIZE_MAX);
+						bufsize = sysconf(
+							_SC_GETPW_R_SIZE_MAX);
 						buffer = xmalloc(bufsize);
-						rc = getpwnam_r(account_rec.user,
+						rc = getpwnam_r(account_rec.
+								user,
 								&pwd, buffer,
-								bufsize, &result);
+								bufsize, 
+								&result);
 						if (rc != 0)
 							result = NULL;
 						job->user = xstrdup(account_rec.
