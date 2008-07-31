@@ -48,6 +48,7 @@
 #include "src/common/log.h"
 #include "src/common/parse_config.h"
 #include "src/common/read_config.h"
+#include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/slurmdbd/read_config.h"
@@ -208,13 +209,12 @@ extern int read_slurmdbd_conf(void)
 	if(slurmdbd_conf->plugindir == NULL)
 		slurmdbd_conf->plugindir = xstrdup(default_plugin_path);
 	if (slurmdbd_conf->slurm_user_name) {
-		struct passwd *slurm_passwd;
-		slurm_passwd = getpwnam(slurmdbd_conf->slurm_user_name);
-		if (slurm_passwd == NULL) {
+		uid_t pw_uid = uid_from_string(slurmdbd_conf->slurm_user_name);
+		if (pw_uid == (uid_t) -1) {
 			fatal("Invalid user for SlurmUser %s, ignored",
 			      slurmdbd_conf->slurm_user_name);
 		} else
-			slurmdbd_conf->slurm_user_id = slurm_passwd->pw_uid;
+			slurmdbd_conf->slurm_user_id = pw_uid;
 	} else {
 		slurmdbd_conf->slurm_user_name = xstrdup("root");
 		slurmdbd_conf->slurm_user_id = 0;

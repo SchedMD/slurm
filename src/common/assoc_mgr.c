@@ -40,6 +40,7 @@
 #include <sys/types.h>
 #include <pwd.h>
 
+#include "src/common/uid.h"
 #include "src/common/xstring.h"
 #include "src/slurmdbd/read_config.h"
 
@@ -74,11 +75,11 @@ static int _set_assoc_parent_and_user(acct_association_rec_t *assoc)
 		list_iterator_destroy(itr);
 	}
 	if(assoc->user) {
-		struct passwd *passwd_ptr = getpwnam(assoc->user);
-		if(passwd_ptr) 
-			assoc->uid = passwd_ptr->pw_uid;
+		uid_t pw_uid = uid_from_string(assoc->user);
+		if(pw_uid == (uid_t) -1)
+			assoc->uid = (uint32_t)NO_VAL;
 		else
-			assoc->uid = (uint32_t)NO_VAL;	
+			assoc->uid = pw_uid;	
 	} else {
 		assoc->uid = (uint32_t)NO_VAL;	
 	}
@@ -191,15 +192,14 @@ static int _get_local_user_list(void *db_conn, int enforce)
 		}		
 	} else {
 		acct_user_rec_t *user = NULL;
-		struct passwd *passwd_ptr = NULL;
 		ListIterator itr = list_iterator_create(local_user_list);
 		//START_TIMER;
 		while((user = list_next(itr))) {
-			passwd_ptr = getpwnam(user->name);
-			if(passwd_ptr) 
-				user->uid = passwd_ptr->pw_uid;
-			else
+			uid_t pw_uid = uid_from_string(user->name);
+			if(pw_uid == (uid_t) -1)
 				user->uid = (uint32_t)NO_VAL;
+			else
+				user->uid = pw_uid;
 		}
 		list_iterator_destroy(itr);
 		//END_TIMER2("load_users");
@@ -658,7 +658,7 @@ extern int assoc_mgr_update_local_users(acct_update_object_t *update)
 		
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
-	struct passwd *passwd_ptr = NULL;
+	uid_t pw_uid;
 
 	if(!local_user_list)
 		return SLURM_SUCCESS;
@@ -702,12 +702,11 @@ extern int assoc_mgr_update_local_users(acct_update_object_t *update)
 				//rc = SLURM_ERROR;
 				break;
 			}
-			passwd_ptr = getpwnam(object->name);
-			if(passwd_ptr) 
-				object->uid = passwd_ptr->pw_uid;
-			else
+			pw_uid = uid_from_string(object->name);
+			if(pw_uid == (uid_t) -1) 
 				object->uid = NO_VAL;
-
+			else
+				object->uid = pw_uid;
 			list_append(local_user_list, object);
 			break;
 		case ACCT_REMOVE_USER:

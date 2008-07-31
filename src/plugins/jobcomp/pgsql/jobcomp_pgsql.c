@@ -178,18 +178,14 @@ static int _pgsql_jobcomp_check_tables(char *user)
 static char *_get_user_name(uint32_t user_id)
 {
 	static uint32_t cache_uid      = 0;
-	static char     cache_name[32] = "root";
-	struct passwd * user_info      = NULL;
+	static char     cache_name[32] = "root", *uname;
 	char *ret_name = NULL;
 
 	slurm_mutex_lock(&jobcomp_lock);
 	if (user_id != cache_uid) {
-		user_info = getpwuid((uid_t) user_id);
-		if (user_info && user_info->pw_name[0])
-			snprintf(cache_name, sizeof(cache_name), "%s", 
-				user_info->pw_name);
-		else
-			snprintf(cache_name, sizeof(cache_name), "Unknown");
+		uname = uid_to_string((uid_t) user_id);
+		snprintf(cache_name, sizeof(cache_name), "%s", uname);
+		xfree(uname);
 		cache_uid = user_id;
 	}
 	ret_name = xstrdup(cache_name);
@@ -202,18 +198,14 @@ static char *_get_user_name(uint32_t user_id)
 static char *_get_group_name(uint32_t group_id)
 {
 	static uint32_t cache_gid      = 0;
-	static char     cache_name[32] = "root";
-	struct group  *group_info      = NULL;
+	static char     cache_name[32] = "root", *gname;
 	char *ret_name = NULL;
 
 	slurm_mutex_lock(&jobcomp_lock);
 	if (group_id != cache_gid) {
-		group_info = getgrgid((gid_t) group_id);
-		if (group_info && group_info->gr_name[0])
-			snprintf(cache_name, sizeof(cache_name), "%s", 
-				 group_info->gr_name);
-		else
-			snprintf(cache_name, sizeof(cache_name), "Unknown");
+		gname = gid_to_string((gid_t) group_id);
+		snprintf(cache_name, sizeof(cache_name), "%s", gname);
+		xfree(gname);
 		cache_gid = group_id;
 	}
 	ret_name = xstrdup(cache_name);

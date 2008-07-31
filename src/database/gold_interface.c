@@ -319,7 +319,7 @@ extern gold_response_t *get_gold_response(gold_request_t *gold_request)
 	unsigned int dlen = SHA_DIGEST_LENGTH;
 	unsigned char digest[dlen];
 	unsigned char signature[slen];
-	char c;
+	char c, *user_name;
 	char *object = NULL;
 	char *action = NULL;
 	char *innerds = NULL;
@@ -431,10 +431,12 @@ extern gold_response_t *get_gold_response(gold_request_t *gold_request)
 	}
 	list_iterator_destroy(itr);
 
+	user_name = uid_to_string(geteuid());
 	xstrfmtcat(gold_request->body,
 		   "<Body><Request action=\"%s\" actor=\"%s\">"
 		   "<Object>%s</Object>",
-		   action, uid_to_string(geteuid()), object);
+		   action, user_name, object);
+	xfree(user_name);
 	if(innerds) {
 		xstrcat(gold_request->body, innerds);
 		xfree(innerds);

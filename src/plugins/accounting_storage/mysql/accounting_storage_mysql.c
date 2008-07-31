@@ -1759,7 +1759,6 @@ extern int acct_storage_p_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	int rc = SLURM_SUCCESS;
 	acct_user_rec_t *object = NULL;
 	char *cols = NULL, *vals = NULL, *query = NULL, *txn_query = NULL;
-	struct passwd *pw = NULL;
 	time_t now = time(NULL);
 	char *user = NULL;
 	char *extra = NULL;
@@ -1769,10 +1768,7 @@ extern int acct_storage_p_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
-	if((pw=getpwuid(uid))) {
-		user = pw->pw_name;
-	}
-
+	user_name = uid_to_string((uid_t) uid);
 	itr = list_iterator_create(user_list);
 	while((object = list_next(itr))) {
 		if(!object->name || !object->default_acct) {
@@ -1847,7 +1843,7 @@ extern int acct_storage_p_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 			xstrfmtcat(txn_query, 	
 				   ", (%d, %u, '%s', '%s', \"%s\")",
 				   now, DBD_ADD_USERS, object->name,
-				   user, extra);
+				   user_name, extra);
 		else
 			xstrfmtcat(txn_query, 	
 				   "insert into %s "
@@ -1855,7 +1851,7 @@ extern int acct_storage_p_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 				   "values (%d, %u, '%s', '%s', \"%s\")",
 				   txn_table,
 				   now, DBD_ADD_USERS, object->name,
-				   user, extra);
+				   user_name, extra);
 		xfree(extra);
 		
 		if(!object->assoc_list)
@@ -1864,6 +1860,7 @@ extern int acct_storage_p_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		list_transfer(assoc_list, object->assoc_list);
 	}
 	list_iterator_destroy(itr);
+	xfree(user_name);
 
 	if(rc != SLURM_ERROR) {
 		if(txn_query) {
@@ -1900,7 +1897,6 @@ extern int acct_storage_p_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 #ifdef HAVE_MYSQL
 	char *query = NULL, *user = NULL, *acct = NULL;
 	char *user_name = NULL, *txn_query = NULL;
-	struct passwd *pw = NULL;
 	ListIterator itr, itr2;
 	time_t now = time(NULL);
 	int rc = SLURM_SUCCESS;
@@ -1917,10 +1913,7 @@ extern int acct_storage_p_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
-	if((pw=getpwuid(uid))) {
-		user_name = pw->pw_name;
-	}
-
+	user_name = uid_to_string((uid_t) uid);
 	itr = list_iterator_create(user_cond->assoc_cond->user_list);
 	itr2 = list_iterator_create(acct_list);
 	while((user = list_next(itr))) {
@@ -1953,9 +1946,9 @@ extern int acct_storage_p_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 		list_iterator_reset(itr2);
 	}
+	xfree(user_name);
 	list_iterator_destroy(itr);
 	list_iterator_destroy(itr2);
-
 
 	if(query) {
 		xstrfmtcat(query, 
@@ -1997,9 +1990,8 @@ extern int acct_storage_p_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	int rc = SLURM_SUCCESS;
 	acct_account_rec_t *object = NULL;
 	char *cols = NULL, *vals = NULL, *query = NULL, *txn_query = NULL;
-	struct passwd *pw = NULL;
 	time_t now = time(NULL);
-	char *user = NULL;
+	char *user_name = NULL;
 	char *extra = NULL;
 	int affect_rows = 0;
 	List assoc_list = list_create(destroy_acct_association_rec);
@@ -2007,10 +1999,7 @@ extern int acct_storage_p_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
-	if((pw=getpwuid(uid))) {
-		user = pw->pw_name;
-	}
-
+	user_name = pw->pw_name;
 	itr = list_iterator_create(acct_list);
 	while((object = list_next(itr))) {
 		if(!object->name || !object->description
@@ -2073,7 +2062,7 @@ extern int acct_storage_p_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 			xstrfmtcat(txn_query, 	
 				   ", (%d, %u, '%s', '%s', \"%s\")",
 				   now, DBD_ADD_ACCOUNTS, object->name,
-				   user, extra);
+				   user_name, extra);
 		else
 			xstrfmtcat(txn_query, 	
 				   "insert into %s "
@@ -2081,7 +2070,7 @@ extern int acct_storage_p_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 				   "values (%d, %u, '%s', '%s', \"%s\")",
 				   txn_table,
 				   now, DBD_ADD_ACCOUNTS, object->name,
-				   user, extra);
+				   user_name, extra);
 		xfree(extra);
 		
 		if(!object->assoc_list)
@@ -2090,6 +2079,7 @@ extern int acct_storage_p_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		list_transfer(assoc_list, object->assoc_list);
 	}
 	list_iterator_destroy(itr);
+	xfree(user_name);
 	
 	if(rc != SLURM_ERROR) {
 		if(txn_query) {
@@ -2129,18 +2119,14 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	acct_cluster_rec_t *object = NULL;
 	char *cols = NULL, *vals = NULL, *extra = NULL, *query = NULL;
 	time_t now = time(NULL);
-	struct passwd *pw = NULL;
-	char *user = NULL;
+	char *user_name = NULL;
 	int affect_rows = 0;
 	int added = 0;
 
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
-	if((pw=getpwuid(uid))) {
-		user = pw->pw_name;
-	}
-
+	user_name = uid_to_string((uid_t) uid);
 	itr = list_iterator_create(cluster_list);
 	while((object = list_next(itr))) {
 		if(!object->name) {
@@ -2275,8 +2261,8 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			   "insert into %s "
 			   "(timestamp, action, name, actor, info) "
 			   "values (%d, %u, '%s', '%s', \"%s\");",
-			   txn_table,
-			   now, DBD_ADD_CLUSTERS, object->name, user, extra);
+			   txn_table, now, DBD_ADD_CLUSTERS, 
+			   object->name, user_name, extra);
 		xfree(extra);			
 		debug4("query\n%s",query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
@@ -2287,6 +2273,7 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			added++;
 	}
 	list_iterator_destroy(itr);
+	xfree(user_name);
 
 	if(!added) {
 		if(mysql_conn->rollback) {
@@ -2314,7 +2301,6 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 		*extra = NULL, *query = NULL, *update = NULL;
 	char *parent = NULL;
 	time_t now = time(NULL);
-	struct passwd *pw = NULL;
 	char *user = NULL;
 	char *tmp_char = NULL;
 	int assoc_id = 0;
@@ -2348,10 +2334,7 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
-	if((pw=getpwuid(uid))) {
-		user = pw->pw_name;
-	}
-
+	user_name = uid_to_string((uid_t) uid;
 	itr = list_iterator_create(association_list);
 	while((object = list_next(itr))) {
 		if(!object->cluster || !object->acct) {
@@ -2656,17 +2639,21 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 		if(txn_query)
 			xstrfmtcat(txn_query, 	
 				   ", (%d, %d, '%d', '%s', \"%s\")",
-				   now, DBD_ADD_ASSOCS, assoc_id, user, extra);
+				   now, DBD_ADD_ASSOCS, assoc_id, user_name,
+				   extra);
 		else
 			xstrfmtcat(txn_query, 	
 				   "insert into %s "
 				   "(timestamp, action, name, actor, info) "
 				   "values (%d, %d, '%d', '%s', \"%s\")",
 				   txn_table,
-				   now, DBD_ADD_ASSOCS, assoc_id, user, extra);
+				   now, DBD_ADD_ASSOCS, assoc_id, user_name, 
+				   extra);
 		xfree(extra);
 	}
 	list_iterator_destroy(itr);
+	xfree(user_name);
+
 	if(rc != SLURM_SUCCESS)
 		goto end_it;
 
@@ -2731,18 +2718,14 @@ extern int acct_storage_p_add_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	acct_qos_rec_t *object = NULL;
 	char *query = NULL;
 	time_t now = time(NULL);
-	struct passwd *pw = NULL;
-	char *user = NULL;
+	char *user_name = NULL;
 	int affect_rows = 0;
 	int added = 0;
 
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
-	if((pw=getpwuid(uid))) {
-		user = pw->pw_name;
-	}
-
+	user_name = uid_to_string((uid_t) uid);
 	itr = list_iterator_create(qos_list);
 	while((object = list_next(itr))) {
 		if(!object->name) {
@@ -2780,7 +2763,7 @@ extern int acct_storage_p_add_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 			   "(timestamp, action, name, actor, info) "
 			   "values (%d, %u, '%s', '%s', \"%s\");",
 			   txn_table,
-			   now, DBD_ADD_QOS, object->name, user,
+			   now, DBD_ADD_QOS, object->name, user_name,
 			   object->description);
 
 		debug4("query\n%s",query);
@@ -2798,6 +2781,7 @@ extern int acct_storage_p_add_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		
 	}
 	list_iterator_destroy(itr);
+	xfree(user_name);
 
 	if(!added) {
 		if(mysql_conn->rollback) {
@@ -2823,7 +2807,6 @@ extern List acct_storage_p_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *object = NULL;
 	char *vals = NULL, *extra = NULL, *query = NULL, *name_char = NULL;
 	time_t now = time(NULL);
-	struct passwd *pw = NULL;
 	char *user_name = NULL;
 	int set = 0;
 	MYSQL_RES *result = NULL;
@@ -2837,10 +2820,6 @@ extern List acct_storage_p_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
-
-	if((pw=getpwuid(uid))) {
-		user_name = pw->pw_name;
-	}
 
 	xstrcat(extra, "where deleted=0");
 	if(user_cond->assoc_cond && user_cond->assoc_cond->user_list
@@ -3024,16 +3003,17 @@ extern List acct_storage_p_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	xfree(query);
 	xstrcat(name_char, ")");
 
-	if(_modify_common(mysql_conn, DBD_MODIFY_USERS, now,
-			  user_name, user_table, name_char, vals)
-	   == SLURM_ERROR) {
+	user_name = uid_to_string((uid_t) uid);
+	rc = _modify_common(mysql_conn, DBD_MODIFY_USERS, now,
+			    user_name, user_table, name_char, vals);
+	xfree(user_name);
+	xfree(name_char);
+	xfree(vals);
+	if (rc == SLURM_ERROR) {
 		error("Couldn't modify users");
 		list_destroy(ret_list);
 		ret_list = NULL;
 	}
-
-	xfree(name_char);
-	xfree(vals);
 				
 	return ret_list;
 #else
@@ -3053,8 +3033,7 @@ extern List acct_storage_p_modify_accounts(
 	char *object = NULL;
 	char *vals = NULL, *extra = NULL, *query = NULL, *name_char = NULL;
 	time_t now = time(NULL);
-	struct passwd *pw = NULL;
-	char *user = NULL;
+	char *user_name = NULL;
 	int set = 0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
@@ -3066,10 +3045,6 @@ extern List acct_storage_p_modify_accounts(
 
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
-
-	if((pw=getpwuid(uid))) {
-		user = pw->pw_name;
-	}
 
 	xstrcat(extra, "where deleted=0");
 	if(acct_cond->assoc_cond 
@@ -3209,9 +3184,11 @@ extern List acct_storage_p_modify_accounts(
 	xfree(query);
 	xstrcat(name_char, ")");
 
-	if(_modify_common(mysql_conn, DBD_MODIFY_ACCOUNTS, now,
-			  user, acct_table, name_char, vals)
-	   == SLURM_ERROR) {
+	user_name = uid_to_string((uid_t) uid);
+	rc = _modify_common(mysql_conn, DBD_MODIFY_ACCOUNTS, now,
+			    user_name, acct_table, name_char, vals);
+	xfree(user_name);
+	if (rc == SLURM_ERROR) {
 		error("Couldn't modify accounts");
 		list_destroy(ret_list);
 		errno = SLURM_ERROR;
@@ -3240,8 +3217,7 @@ extern List acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
 	char *vals = NULL, *extra = NULL, *query = NULL,
 		*name_char = NULL, *assoc_char= NULL, *send_char = NULL;
 	time_t now = time(NULL);
-	struct passwd *pw = NULL;
-	char *user = NULL;
+	char *user_name = NULL;
 	int set = 0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
@@ -3258,10 +3234,6 @@ extern List acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
 
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
-
-	if((pw=getpwuid(uid))) {
-		user = pw->pw_name;
-	}
 
 	xstrcat(extra, "where deleted=0");
 	if(cluster_cond->cluster_list
@@ -3329,9 +3301,11 @@ extern List acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
 
 	if(vals) {
 		send_char = xstrdup_printf("(%s)", name_char);
-		if(_modify_common(mysql_conn, DBD_MODIFY_CLUSTERS, now,
-				  user, cluster_table, send_char, vals)
-		   == SLURM_ERROR) {
+		user_name = uid_to_string((uid_t) uid);
+		rc = _modify_common(mysql_conn, DBD_MODIFY_CLUSTERS, now,
+				    user_name, cluster_table, send_char, vals);
+		xfree(user_name);
+		if (rc == SLURM_ERROR) {
 			error("Couldn't modify cluster 1");
 			list_destroy(ret_list);
 			ret_list = NULL;
@@ -3363,7 +3337,6 @@ extern List acct_storage_p_modify_associations(
 	char *object = NULL;
 	char *vals = NULL, *extra = NULL, *query = NULL, *name_char = NULL;
 	time_t now = time(NULL);
-	struct passwd *pw = NULL;
 	char *user_name = NULL;
 	int set = 0, i = 0, is_admin=0;
 	MYSQL_RES *result = NULL;
@@ -3438,10 +3411,6 @@ extern List acct_storage_p_modify_associations(
 		 * since user will not be filled in.
 		 */
 		is_admin = 1;
-	}
-
-	if((pw=getpwuid(uid))) {
-		user_name = pw->pw_name;
 	}
 
 	if(assoc_cond->acct_list && list_count(assoc_cond->acct_list)) {
@@ -3762,9 +3731,11 @@ extern List acct_storage_p_modify_associations(
 	xstrcat(name_char, ")");
 
 	if(vals) {
-		if(_modify_common(mysql_conn, DBD_MODIFY_ASSOCS, now,
-				  user_name, assoc_table, name_char, vals)
-		   == SLURM_ERROR) {
+		user_name = uid_to_string((uid_t) uid);
+		rc = _modify_common(mysql_conn, DBD_MODIFY_ASSOCS, now,
+				    user_name, assoc_table, name_char, vals);
+		xfree(user_name);
+		if (rc == SLURM_ERROR) {
 			if(mysql_conn->rollback) {
 				mysql_db_rollback(mysql_conn->db_conn);
 			}
@@ -3797,7 +3768,6 @@ extern List acct_storage_p_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *extra = NULL, *query = NULL,
 		*name_char = NULL, *assoc_char = NULL;
 	time_t now = time(NULL);
-	struct passwd *pw = NULL;
 	char *user_name = NULL;
 	int set = 0;
 	MYSQL_RES *result = NULL;
@@ -3810,10 +3780,6 @@ extern List acct_storage_p_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
-
-	if((pw=getpwuid(uid))) {
-		user_name = pw->pw_name;
-	}
 
 	xstrcat(extra, "where deleted=0");
 
@@ -3910,15 +3876,16 @@ extern List acct_storage_p_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 	xfree(query);
 
-	if(_remove_common(mysql_conn, DBD_REMOVE_USERS, now,
-			  user_name, user_table, name_char, assoc_char)
-	   == SLURM_ERROR) {
+	user_name = uid_to_string((uid_t) uid);
+	rc = _remove_common(mysql_conn, DBD_REMOVE_USERS, now,
+			    user_name, user_table, name_char, assoc_char);
+	xfree(user_name);
+	xfree(name_char);
+	if (rc == SLURM_ERROR) {
 		list_destroy(ret_list);
-		xfree(name_char);
 		xfree(assoc_char);
 		return NULL;
 	}
-	xfree(name_char);
 
 	query = xstrdup_printf(
 		"update %s as t2 set deleted=1, mod_time=%d where %s",
@@ -3947,9 +3914,8 @@ extern List acct_storage_p_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 #ifdef HAVE_MYSQL
 	char *query = NULL, *object = NULL, *extra = NULL, *last_user = NULL;
 	char *user_name = NULL;
-	struct passwd *pw = NULL;
 	time_t now = time(NULL);
-	int set = 0, is_admin=0;
+	int set = 0, is_admin=0, rc;
 	ListIterator itr = NULL;
 	acct_user_rec_t *user_rec = NULL;
 	List ret_list = NULL;
@@ -4003,10 +3969,6 @@ extern List acct_storage_p_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 		 * since user will not be filled in.
 		 */
 		is_admin = 1;
-	}
-
-	if((pw=getpwuid(uid))) {
-		user_name = pw->pw_name;
 	}
 
 	/* Leave it this way since we are using extra below */
@@ -4110,16 +4072,18 @@ extern List acct_storage_p_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 	mysql_free_result(result);
 	
-	if(_remove_common(mysql_conn, DBD_REMOVE_ACCOUNT_COORDS, now,
-			  user_name, acct_coord_table, extra, NULL)
-	   == SLURM_ERROR) {
+	user_name = uid_to_string((uid_t) uid);
+	rc = _remove_common(mysql_conn, DBD_REMOVE_ACCOUNT_COORDS, now,
+			    user_name, acct_coord_table, extra, NULL);
+	xfree(user_name);
+	xfree(extra);
+	if (rc == SLURM_ERROR) {
 		list_destroy(ret_list);
 		list_destroy(user_list);
-		xfree(extra);
 		errno = SLURM_ERROR;
 		return NULL;
 	}
-	xfree(extra);
+
 	/* get the update list set */
 	itr = list_iterator_create(user_list);
 	while((last_user = list_next(itr))) {
@@ -4149,7 +4113,6 @@ extern List acct_storage_p_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *extra = NULL, *query = NULL,
 		*name_char = NULL, *assoc_char = NULL;
 	time_t now = time(NULL);
-	struct passwd *pw = NULL;
 	char *user_name = NULL;
 	int set = 0;
 	MYSQL_RES *result = NULL;
@@ -4158,10 +4121,6 @@ extern List acct_storage_p_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	if(!acct_cond) {
 		error("we need something to change");
 		return NULL;
-	}
-
-	if((pw=getpwuid(uid))) {
-		user_name = pw->pw_name;
 	}
 
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
@@ -4267,16 +4226,16 @@ extern List acct_storage_p_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 	xfree(query);
 
-	if(_remove_common(mysql_conn, DBD_REMOVE_ACCOUNTS, now,
-			  user_name, acct_table, name_char, assoc_char)
-	   == SLURM_ERROR) {
-		list_destroy(ret_list);
-		xfree(name_char);
-		xfree(assoc_char);
-		return NULL;
-	}
+	user_name = uid_to_string((uid_t) uid);
+	rc = _remove_common(mysql_conn, DBD_REMOVE_ACCOUNTS, now,
+			    user_name, acct_table, name_char, assoc_char);
+	xfree(user_name);
 	xfree(name_char);
 	xfree(assoc_char);
+	if (rc == SLURM_ERROR) {
+		list_destroy(ret_list);
+		return NULL;
+	}
 
 	return ret_list;
 #else
@@ -4296,7 +4255,6 @@ extern List acct_storage_p_remove_clusters(mysql_conn_t *mysql_conn,
 	char *extra = NULL, *query = NULL,
 		*name_char = NULL, *assoc_char = NULL;
 	time_t now = time(NULL);
-	struct passwd *pw = NULL;
 	char *user_name = NULL;
 	int set = 0;
 	MYSQL_RES *result = NULL;
@@ -4311,9 +4269,6 @@ extern List acct_storage_p_remove_clusters(mysql_conn_t *mysql_conn,
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
-	if((pw=getpwuid(uid))) {
-		user_name = pw->pw_name;
-	}
 	xstrcat(extra, "where deleted=0");
 	if(cluster_cond->cluster_list
 	   && list_count(cluster_cond->cluster_list)) {
@@ -4400,16 +4355,16 @@ extern List acct_storage_p_remove_clusters(mysql_conn_t *mysql_conn,
 	assoc_char = xstrdup_printf("t2.acct='root' && (%s)", extra);
 	xfree(extra);
 
-	if(_remove_common(mysql_conn, DBD_REMOVE_CLUSTERS, now,
-			  user_name, cluster_table, name_char, assoc_char)
-	   == SLURM_ERROR) {
-		list_destroy(ret_list);
-		xfree(name_char);
-		xfree(assoc_char);
-		return NULL;
-	}
+	user_name = uid_to_string((uid_t) uid);
+	rc = _remove_common(mysql_conn, DBD_REMOVE_CLUSTERS, now,
+			    user_name, cluster_table, name_char, assoc_char);
+	xfree(user_name);
 	xfree(name_char);
 	xfree(assoc_char);
+	if (rc  == SLURM_ERROR) {
+		list_destroy(ret_list);
+		return NULL;
+	}
 
 	return ret_list;
 #else
@@ -4429,7 +4384,6 @@ extern List acct_storage_p_remove_associations(
 	char *extra = NULL, *query = NULL,
 		*name_char = NULL, *assoc_char = NULL;
 	time_t now = time(NULL);
-	struct passwd *pw = NULL;
 	char *user_name = NULL;
 	int set = 0, i = 0, is_admin=0;
 	MYSQL_RES *result = NULL;
@@ -4505,10 +4459,6 @@ extern List acct_storage_p_remove_associations(
 	}
 
 	xstrcat(extra, "where id>0 && deleted=0");
-
-	if((pw=getpwuid(uid))) {
-		user_name = pw->pw_name;
-	}
 
 	if(assoc_cond->acct_list && list_count(assoc_cond->acct_list)) {
 		set = 0;
@@ -4714,15 +4664,14 @@ extern List acct_storage_p_remove_associations(
 	}
 	mysql_free_result(result);
 
-	if(_remove_common(mysql_conn, DBD_REMOVE_ASSOCS, now,
-			  user_name, assoc_table, name_char, assoc_char)
-	   == SLURM_ERROR) {
-		xfree(name_char);
-		xfree(assoc_char);
-		goto end_it;
-	}
+	user_name = uid_to_string(pw->pw_name);
+	rc = _remove_common(mysql_conn, DBD_REMOVE_ASSOCS, now,
+			    user_name, assoc_table, name_char, assoc_char);
+	xfree(user_name);
 	xfree(name_char);
 	xfree(assoc_char);
+	if (rc  == SLURM_ERROR)
+		goto end_it;
 
 	return ret_list;
 end_it:
@@ -4754,7 +4703,6 @@ extern List acct_storage_p_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *extra = NULL, *query = NULL,
 		*name_char = NULL, *assoc_char = NULL;
 	time_t now = time(NULL);
-	struct passwd *pw = NULL;
 	char *user_name = NULL;
 	int set = 0;
 	MYSQL_RES *result = NULL;
@@ -4763,10 +4711,6 @@ extern List acct_storage_p_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	if(!qos_cond) {
 		error("we need something to change");
 		return NULL;
-	}
-
-	if((pw=getpwuid(uid))) {
-		user_name = pw->pw_name;
 	}
 
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
@@ -4863,14 +4807,15 @@ extern List acct_storage_p_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 	xfree(query);
 
-	if(_remove_common(mysql_conn, DBD_REMOVE_ACCOUNTS, now,
-			  user_name, qos_table, name_char, assoc_char)
-	   == SLURM_ERROR) {
+	user_name = uid_to_string((uid_t) uid);
+	rc = _remove_common(mysql_conn, DBD_REMOVE_ACCOUNTS, now,
+			    user_name, qos_table, name_char, assoc_char);
+	xfree(name_char);
+	xfree(user_name);
+	if (rc == SLURM_ERROR) {
 		list_destroy(ret_list);
-		xfree(name_char);
 		return NULL;
 	}
-	xfree(name_char);
 
 	return ret_list;
 #else
@@ -4998,7 +4943,7 @@ empty:
 
 	while((row = mysql_fetch_row(result))) {
 		acct_user_rec_t *user = xmalloc(sizeof(acct_user_rec_t));
-/* 		struct passwd *passwd_ptr = NULL; */
+/* 		uid_t pw_uid; */
 		list_append(user_list, user);
 
 		user->name =  xstrdup(row[USER_REQ_NAME]);
@@ -5014,11 +4959,12 @@ empty:
 		 * different machine where this user may not exist or
 		 * may have a different uid
 		 */
-/* 		passwd_ptr = getpwnam(user->name); */
-/* 		if(passwd_ptr)  */
-/* 			user->uid = passwd_ptr->pw_uid; */
-/* 		else */
+/* 		pw_uid = uid_from_string(user->name); */
+/* 		if(pw_uid == (uid_t) -1)  */
 /* 			user->uid = (uint32_t)NO_VAL; */
+/* 		else */
+/* 			user->uid = passwd_ptr->pw_uid; */
+
 		if(user_cond && user_cond->with_coords) {
 			_get_user_coords(mysql_conn, user);
 		}
