@@ -51,6 +51,7 @@
 #include "mysql_rollup.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/slurm_auth.h"
+#include "src/common/uid.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
