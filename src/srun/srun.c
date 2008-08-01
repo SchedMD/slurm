@@ -72,6 +72,7 @@
 
 
 #include "src/common/fd.h"
+#include "src/common/hostlist.h"
 #include "src/common/log.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/switch.h"
@@ -916,11 +917,50 @@ _handle_max_wait(int signo)
 	_terminate_job_step(job->step_ctx);
 }
 
+static char *
+_taskids_to_nodelist(bitstr_t *tasks_exited)
+{
+	int i, hostid;
+	bitstr_t *nodes_exited = NULL;
+	char *hostname, *hostlist_str;
+	hostlist_t hostlist;
+	job_step_create_response_msg_t *step_resp;
+	slurm_step_layout_t *step_layout;
+
+	if (!job->step_ctx) {
+		error("No step_ctx");
+		hostlist_str = xstrdup("Unknown");
+		return hostlist_str;
+	}
+
+	slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_RESP, &step_resp);
+	step_layout = step_resp->step_layout;
+	nodes_exited = bit_alloc(job->nhosts);
+	for (i=0; i<job->ntasks; i++) {
+		if (!bit_test(tasks_exited, i))
+			continue;
+		hostid = slurm_step_layout_host_id(step_layout, i);
+		bit_set(nodes_exited, hostid);
+	}
+	hostlist = hostlist_create(NULL);
+	for (i=0; i<job->nhosts; i++) {
+		if (!bit_test(tasks_exited, i))
+			continue;
+		hostname = slurm_step_layout_host_name(step_layout, i);
+		hostlist_push(hostlist, hostname);
+	}
+	hostlist_str = xmalloc(2048);
+	hostlist_ranged_string(hostlist, 2048, hostlist_str);
+	hostlist_destroy(hostlist);
+	bit_free(nodes_exited);
+	return hostlist_str;
+}
+
 static void
 _task_finish(task_exit_msg_t *msg)
 {
 	bitstr_t *tasks_exited = NULL;
-	char buf[2048], *core_str = "", *msg_str;
+	char buf[2048], *core_str = "", *msg_str, *node_list = NULL;
 	static bool first_done = true;
 	static bool first_error = true;
 	int rc = 0;
@@ -936,7 +976,9 @@ _task_finish(task_exit_msg_t *msg)
 		rc = WEXITSTATUS(msg->return_code);
 		if (rc != 0) {
 			bit_or(task_state.finish_abnormal, tasks_exited);
-			error("task %s: Exited with exit code %d", buf, rc);
+			node_list = _taskids_to_nodelist(tasks_exited);
+			error("%s: task %s: Exited with exit code %d", 
+			      node_list, buf, rc);
 		} else {
 			bit_or(task_state.finish_normal, tasks_exited);
 			verbose("task %s: Completed", buf);
@@ -949,11 +991,16 @@ _task_finish(task_exit_msg_t *msg)
 		if (WCOREDUMP(msg->return_code))
 			core_str = " (core dumped)";
 #endif
-		if (job->state >= SRUN_JOB_CANCELLED)
-			verbose("task %s: %s%s", buf, msg_str, core_str);
-		else
-			error("task %s: %s%s", buf, msg_str, core_str); 
+		node_list = _taskids_to_nodelist(tasks_exited);
+		if (job->state >= SRUN_JOB_CANCELLED) {
+			verbose("%s: task %s: %s%s", 
+				node_list, buf, msg_str, core_str);
+		} else {
+			error("%s: task %s: %s%s", 
+			      node_list, buf, msg_str, core_str);
+		}
 	}
+	xfree(node_list);
 	bit_free(tasks_exited);
 	global_rc = MAX(global_rc, rc);
 
