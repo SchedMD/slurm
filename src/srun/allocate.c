@@ -60,6 +60,8 @@
 #include "src/srun/allocate.h"
 #include "src/srun/opt.h"
 #include "src/srun/debugger.h"
+#include "src/srun/srun.h"
+#include "src/srun/srun_job.h"
 
 #define MAX_ALLOC_WAIT 60	/* seconds */
 #define MIN_ALLOC_WAIT  5	/* seconds */
@@ -103,15 +105,6 @@ static void _signal_while_allocating(int signo)
 static void _exit_on_signal(int signo)
 {
 	exit_flag = true;
-}
-
-/* This typically signifies the job was cancelled by scancel */
-static void _job_complete_handler(srun_job_complete_msg_t *msg)
-{
-	if((int)msg->step_id >= 0)
-		info("Force Terminated job %u.%u", msg->job_id, msg->step_id);
-	else
-		info("Force Terminated job %u", msg->job_id);
 }
 
 /*
@@ -216,7 +209,7 @@ allocate_nodes(void)
 	}
 	callbacks.ping = _ping_handler;
 	callbacks.timeout = _timeout_handler;
-	callbacks.job_complete = _job_complete_handler;
+	callbacks.job_complete = job_complete_handler;
 	callbacks.user_msg = _user_msg_handler;
 	callbacks.node_fail = _node_fail_handler;
 
