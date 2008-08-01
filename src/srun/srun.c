@@ -920,8 +920,7 @@ _handle_max_wait(int signo)
 static char *
 _taskids_to_nodelist(bitstr_t *tasks_exited)
 {
-	int i, hostid;
-	bitstr_t *nodes_exited = NULL;
+	int i;
 	char *hostname, *hostlist_str;
 	hostlist_t hostlist;
 	job_step_create_response_msg_t *step_resp;
@@ -935,24 +934,17 @@ _taskids_to_nodelist(bitstr_t *tasks_exited)
 
 	slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_RESP, &step_resp);
 	step_layout = step_resp->step_layout;
-	nodes_exited = bit_alloc(job->nhosts);
-	for (i=0; i<job->ntasks; i++) {
-		if (!bit_test(tasks_exited, i))
-			continue;
-		hostid = slurm_step_layout_host_id(step_layout, i);
-		bit_set(nodes_exited, hostid);
-	}
 	hostlist = hostlist_create(NULL);
-	for (i=0; i<job->nhosts; i++) {
+	for (i=0; i<job->ntasks; i++) {
 		if (!bit_test(tasks_exited, i))
 			continue;
 		hostname = slurm_step_layout_host_name(step_layout, i);
 		hostlist_push(hostlist, hostname);
 	}
+	hostlist_uniq(hostlist);
 	hostlist_str = xmalloc(2048);
 	hostlist_ranged_string(hostlist, 2048, hostlist_str);
 	hostlist_destroy(hostlist);
-	bit_free(nodes_exited);
 	return hostlist_str;
 }
 
