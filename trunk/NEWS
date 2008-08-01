@@ -12,6 +12,8 @@ documents those changes that are of interest to users and admins.
  -- Added Python module to process hostslists as used by SLURM. See
     contribs/python/hostlist. Supplied by Kent Engstrom, National
     Supercomputer Centre, Sweden.
+ -- Report abormal task termination message (restored functionality present
+    in slurm v1.2).
  
 * Changes in SLURM 1.3.6
 ========================

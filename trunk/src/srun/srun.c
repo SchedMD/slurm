@@ -994,7 +994,7 @@ _task_state_struct_print(void)
 		bit_copybits(tmp, task_state.finish_abnormal);
 		bit_and(tmp, not_seen);
 		bit_fmt(buf, BUFSIZ, tmp);
-		info("task%s: exited abnormally", buf);
+		info("task %s: exited abnormally", buf);
 		bit_or(seen, tmp);
 		bit_copybits(not_seen, seen);
 		bit_not(not_seen);
@@ -1004,7 +1004,7 @@ _task_state_struct_print(void)
 		bit_copybits(tmp, task_state.finish_normal);
 		bit_and(tmp, not_seen);
 		bit_fmt(buf, BUFSIZ, tmp);
-		info("task%s: exited", buf);
+		info("task %s: exited", buf);
 		bit_or(seen, tmp);
 		bit_copybits(not_seen, seen);
 		bit_not(not_seen);
@@ -1014,7 +1014,7 @@ _task_state_struct_print(void)
 		bit_copybits(tmp, task_state.start_failure);
 		bit_and(tmp, not_seen);
 		bit_fmt(buf, BUFSIZ, tmp);
-		info("task%s: failed to start", buf);
+		info("task %s: failed to start", buf);
 		bit_or(seen, tmp);
 		bit_copybits(not_seen, seen);
 		bit_not(not_seen);
@@ -1024,7 +1024,7 @@ _task_state_struct_print(void)
 		bit_copybits(tmp, task_state.start_success);
 		bit_and(tmp, not_seen);
 		bit_fmt(buf, BUFSIZ, tmp);
-		info("task%s: running", buf);
+		info("task %s: running", buf);
 		bit_or(seen, tmp);
 		bit_copybits(not_seen, seen);
 		bit_not(not_seen);
@@ -1071,7 +1071,7 @@ static void _handle_intr()
 			     job->jobid, job->stepid);
 			last_intr_sent = time(NULL);
 			slurm_step_launch_fwd_signal(job->step_ctx, SIGINT);
-
+			slurm_step_launch_abort(job->step_ctx);
 		} else {
 			job_force_termination(job);
 			slurm_step_launch_abort(job->step_ctx);

@@ -65,6 +65,12 @@
 #include "src/api/step_ctx.h"
 #include "src/api/pmi_server.h"
 
+#if defined (HAVE_DECL_STRSIGNAL) && !HAVE_DECL_STRSIGNAL
+#  ifndef strsignal
+ extern char *strsignal(int);
+#  endif
+#endif /* defined HAVE_DECL_STRSIGNAL && !HAVE_DECL_STRSIGNAL */
+
 #define STEP_ABORT_TIME 2
 
 extern char **environ;
@@ -76,6 +82,9 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 			 launch_tasks_request_msg_t *launch_msg,
 			 uint32_t timeout);
 static char *_lookup_cwd(void);
+static void _print_exit_status(struct step_launch_state *sls, 
+			      task_exit_msg_t *exit_msg, 
+			      bitstr_t *tasks_exited);
 static void _print_launch_msg(launch_tasks_request_msg_t *msg,
 			      char *hostname, int nodeid);
 
@@ -768,12 +777,18 @@ static void
 _exit_handler(struct step_launch_state *sls, slurm_msg_t *exit_msg)
 {
 	task_exit_msg_t *msg = (task_exit_msg_t *) exit_msg->data;
+	bitstr_t *tasks_exited;
 	int i;
 
 	if ((msg->job_id != sls->mpi_info->jobid) || 
 	    (msg->step_id != sls->mpi_info->stepid)) {
 		debug("Received MESSAGE_TASK_EXIT from wrong job: %u.%u",
 		      msg->job_id, msg->step_id);
+		return;
+	}
+
+	if (msg->num_tasks < 1) {
+		error("task_exit_msg has zero tasks");
 		return;
 	}
 
@@ -786,17 +801,93 @@ _exit_handler(struct step_launch_state *sls, slurm_msg_t *exit_msg)
 	}
 
 	pthread_mutex_lock(&sls->lock);
-
-	for (i = 0; i < msg->num_tasks; i++) {
-		debug("task %u done", msg->task_id_list[i]);
-		bit_set(sls->tasks_exited, msg->task_id_list[i]);
-	}
+	tasks_exited = bit_alloc(sls->tasks_requested);
+	for (i = 0; i < msg->num_tasks; i++)
+		bit_set(tasks_exited, msg->task_id_list[i]);
+	_print_exit_status(sls, msg, tasks_exited);
+	bit_or(sls->tasks_exited, tasks_exited);
+	bit_free(tasks_exited);
 
 	if (sls->callback.task_finish != NULL)
 		(sls->callback.task_finish)(msg);
 
 	pthread_cond_signal(&sls->cond);
 	pthread_mutex_unlock(&sls->lock);
+}
+
+static void
+_print_exit_status(struct step_launch_state *sls, task_exit_msg_t *exit_msg,
+		   bitstr_t *tasks_exited)
+{
+	char buf[2048], term_msg[32], task_id[32];
+	char *host_str, *core_str = "", *msg_str = NULL;
+	void (*print) (const char *, ...) = (void *) &error;
+	hostlist_t node_list, task_list;
+	int i, j;
+
+	if (exit_msg->return_code == 0) {
+		if (exit_msg->num_tasks == 1) {
+			snprintf(buf, sizeof(buf), "%u", 
+				 exit_msg->task_id_list[0]);
+			verbose("task %s: Completed", buf);
+		} else {
+			bit_fmt(buf, sizeof(buf), tasks_exited);
+			verbose("task %s: Completed", buf);
+		}
+		return;
+	}
+
+#ifdef WCOREDUMP
+	if (WCOREDUMP(exit_msg->return_code))
+		core_str = " (core dumped)";
+#endif
+
+
+	if (WIFSIGNALED(exit_msg->return_code)) {
+		/*
+		 *  Print message that task was signaled as verbose message
+		 *    not error message if the user generated the signal.
+		 */
+		if (sls->abort)
+			print = &verbose;
+		msg_str = strsignal(WTERMSIG(exit_msg->return_code));
+	} else {
+		snprintf(term_msg, sizeof(term_msg), 
+			 "Exited with exit code %u", 
+			 WEXITSTATUS(exit_msg->return_code));
+		msg_str = term_msg;
+	}
+
+	/* We want to identify the nodes associated with the failure.
+	 * The message may contain the response from several nodes, 
+	 * so we split out the results by node for this message */
+	node_list = hostlist_create(sls->layout->node_list);
+	task_list = NULL;
+	if (node_list == NULL)
+		fatal("malloc failure");
+	for (i=0; i<sls->layout->node_cnt; i++) {
+		host_str = hostlist_shift(node_list);
+		for (j=0; j<sls->layout->tasks[i]; j++) {
+			if (!bit_test(tasks_exited, 
+				      sls->layout->tids[i][j]))
+				continue;
+			if (task_list == NULL)
+				task_list = hostlist_create(NULL);
+			snprintf(task_id, sizeof(task_id), "%u", 
+				 sls->layout->tids[i][j]);
+			hostlist_push(task_list, task_id);
+		}
+		if (task_list) {
+			hostlist_ranged_string(task_list, sizeof(buf), buf);
+			hostlist_destroy(task_list);
+			task_list = NULL;
+			(*print) ("%s: task %s: %s%s", 
+				  host_str, buf, msg_str, core_str);
+		}
+		free(host_str);
+	}
+	hostlist_destroy(node_list);
+	return;
 }
 
 static void 
