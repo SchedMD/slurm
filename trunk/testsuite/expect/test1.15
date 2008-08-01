@@ -61,7 +61,7 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "task.0,2-9.: running" {	# bracket escape not working
+	-re "task..0,2-9.: running" {	# bracket escape not working
 		incr matches
 		exp_continue
 	}
