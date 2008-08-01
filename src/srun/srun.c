@@ -1089,16 +1089,6 @@ _task_state_struct_free(void)
 	bit_free(task_state.finish_abnormal);
 }
 
-/* This typically signifies the job was cancelled by scancel */
-extern void job_complete_handler(srun_job_complete_msg_t *msg)
-{
-	if((int)msg->step_id >= 0) 
-		info("Force Terminated job %u.%u", msg->job_id, msg->step_id);
-	else
-		info("Force Terminated job %u", msg->job_id);
-	update_job_state(job, SRUN_JOB_CANCELLED);
-}
-
 static void _handle_intr()
 {
 	static time_t last_intr      = 0;
