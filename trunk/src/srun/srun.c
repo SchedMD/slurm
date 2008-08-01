@@ -94,6 +94,12 @@
 #include "src/api/pmi_server.h"
 #include "src/api/step_launch.h"
 
+#if defined (HAVE_DECL_STRSIGNAL) && !HAVE_DECL_STRSIGNAL
+#  ifndef strsignal
+ extern char *strsignal(int);
+#  endif
+#endif /* defined HAVE_DECL_STRSIGNAL && !HAVE_DECL_STRSIGNAL */
+
 #define MAX_RETRIES 20
 #define MAX_ENTRIES 50
 
@@ -913,38 +919,42 @@ _handle_max_wait(int signo)
 static void
 _task_finish(task_exit_msg_t *msg)
 {
+	bitstr_t *tasks_exited = NULL;
+	char buf[2048], *core_str = "", *msg_str;
 	static bool first_done = true;
 	static bool first_error = true;
 	int rc = 0;
 	int i;
 
-	verbose("%d tasks finished (rc=%u)",
+	verbose("%u tasks finished (rc=%u)",
 		msg->num_tasks, msg->return_code);
+	tasks_exited = bit_alloc(job->ntasks);
+	for (i=0; i<msg->num_tasks; i++)
+		bit_set(tasks_exited,  msg->task_id_list[i]);
+	bit_fmt(buf, sizeof(buf), tasks_exited);
 	if (WIFEXITED(msg->return_code)) {
 		rc = WEXITSTATUS(msg->return_code);
 		if (rc != 0) {
-			for (i = 0; i < msg->num_tasks; i++) {
-				error("task %u exited with exit code %d",
-				      msg->task_id_list[i], rc);
-				bit_set(task_state.finish_abnormal,
-					msg->task_id_list[i]);
-			}
+			bit_or(task_state.finish_abnormal, tasks_exited);
+			error("task %s: Exited with exit code %d", buf, rc);
 		} else {
-			for (i = 0; i < msg->num_tasks; i++) {
-				bit_set(task_state.finish_normal,
-					msg->task_id_list[i]);
-			}
+			bit_or(task_state.finish_normal, tasks_exited);
+			verbose("task %s: Completed", buf);
 		}
 	} else if (WIFSIGNALED(msg->return_code)) {
-		for (i = 0; i < msg->num_tasks; i++) {
-			verbose("task %u killed by signal %d",
-				msg->task_id_list[i],
-				WTERMSIG(msg->return_code));
-			bit_set(task_state.finish_abnormal,
-				msg->task_id_list[i]);
-		}
+		bit_or(task_state.finish_abnormal, tasks_exited);
 		rc = 1;
+		msg_str = strsignal(WTERMSIG(msg->return_code));
+#ifdef WCOREDUMP
+		if (WCOREDUMP(msg->return_code))
+			core_str = " (core dumped)";
+#endif
+		if (job->state >= SRUN_JOB_CANCELLED)
+			verbose("task %s: %s%s", buf, msg_str, core_str);
+		else
+			error("task %s: %s%s", buf, msg_str, core_str); 
 	}
+	bit_free(tasks_exited);
 	global_rc = MAX(global_rc, rc);
 
 	if (first_error && rc > 0 && opt.kill_bad_exit) {
@@ -1039,7 +1049,17 @@ _task_state_struct_free(void)
 	bit_free(task_state.finish_normal);
 	bit_free(task_state.finish_abnormal);
 }
-	
+
+/* This typically signifies the job was cancelled by scancel */
+extern void job_complete_handler(srun_job_complete_msg_t *msg)
+{
+	if((int)msg->step_id >= 0) 
+		info("Force Terminated job %u.%u", msg->job_id, msg->step_id);
+	else
+		info("Force Terminated job %u", msg->job_id);
+	update_job_state(job, SRUN_JOB_CANCELLED);
+}
+
 static void _handle_intr()
 {
 	static time_t last_intr      = 0;
