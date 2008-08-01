@@ -37,7 +37,6 @@
 #include "src/api/step_io.h"
 #include "src/srun/srun_job.h"
 
-extern void job_complete_handler(srun_job_complete_msg_t *msg);
 void srun_set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds);
 
 #endif /* !_HAVE_SRUN_H */
