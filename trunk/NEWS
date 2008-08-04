@@ -16,6 +16,8 @@ documents those changes that are of interest to users and admins.
     in slurm v1.2).
  -- Remove sbatch test for script size being no larger than 64k bytes.
     The current limit is 4GB.
+ -- Disable FastSchedule=0 use with SchedulerType=sched/gang. Node 
+    configuration must be specified in slurm.conf for gang scheduling now.
  
 * Changes in SLURM 1.3.6
 ========================
