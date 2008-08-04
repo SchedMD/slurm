@@ -549,13 +549,24 @@ static int parse_partitionname(void **dest, slurm_parser_enum_t type,
 			/* Only "Shared=NO" is valid on XCPU systems */
 			else if (strcasecmp(tmp, "EXCLUSIVE") == 0)
 				p->max_share = 0;
-			else if (strncasecmp(tmp, "YES:", 4) == 0)
-				p->max_share = strtol(&tmp[4], (char **) NULL, 10);
-			else if (strcasecmp(tmp, "YES") == 0) 
+			else if (strncasecmp(tmp, "YES:", 4) == 0) {
+				int i = strtol(&tmp[4], (char **) NULL, 10);
+				if (i <= 1) {
+					error("Ignoring bad Shared value: %s",
+					      tmp);
+					p->max_share = 1; /* Shared=NO */
+				} else
+					p->max_share = i;
+			} else if (strcasecmp(tmp, "YES") == 0) 
 				p->max_share = 4;
 			else if (strncasecmp(tmp, "FORCE:", 6) == 0) {
-				p->max_share = strtol(&tmp[6], (char **) NULL, 10) |
-					SHARED_FORCE;
+				int i = strtol(&tmp[6], (char **) NULL, 10);
+				if (i <= 1) {
+					error("Ignoring bad Shared value: %s",
+					      tmp);
+					p->max_share = 1; /* Shared=NO */
+				} else
+					p->max_share = i | SHARED_FORCE;
 			} else if (strcasecmp(tmp, "FORCE") == 0)
 				p->max_share = 4 | SHARED_FORCE;
 #endif
