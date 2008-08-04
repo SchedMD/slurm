@@ -787,7 +787,8 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		error_code = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 	if (!runable_ever) {
 		error_code = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
-		info("_pick_best_nodes %u : job never runnable", job_ptr->job_id);
+		info("_pick_best_nodes %u : job never runnable", 
+		     job_ptr->job_id);
 	}
 
 	if (error_code == SLURM_SUCCESS) {
@@ -861,6 +862,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		 fail_reason = WAIT_PART_NODE_LIMIT;
 	if (fail_reason != WAIT_NO_REASON) {
 		job_ptr->state_reason = fail_reason;
+		xfree(job_ptr->state_desc);
 		last_job_update = now;
 		if (job_ptr->priority == 0)	/* user/admin hold */
 			return ESLURM_JOB_HELD;
@@ -918,11 +920,13 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 			debug3("JobId=%u not runnable with present config",
 			       job_ptr->job_id);
 			job_ptr->state_reason = WAIT_PART_NODE_LIMIT;
+			xfree(job_ptr->state_desc);
 			if (job_ptr->priority != 0)  /* Move to end of queue */
 				job_ptr->priority = 1;
 			last_job_update = now;
 		} else {
 			job_ptr->state_reason = WAIT_RESOURCES;
+			xfree(job_ptr->state_desc);
 			if (error_code == ESLURM_NODES_BUSY)
 				slurm_sched_job_is_pending();
 		}
@@ -966,6 +970,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 
 	/* assign the nodes and stage_in the job */
 	job_ptr->state_reason = WAIT_NO_REASON;
+	xfree(job_ptr->state_desc);
 	job_ptr->nodes = bitmap2node_name(select_bitmap);
 	select_bitmap = NULL;	/* nothing left to free */
 	allocate_nodes(job_ptr);

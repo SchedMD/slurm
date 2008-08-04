@@ -1695,6 +1695,7 @@ extern int validate_nodes_via_front_end(
 			job_ptr->job_state = JOB_FAILED;
 			job_ptr->exit_code = 1;
 			job_ptr->state_reason = FAIL_SYSTEM;
+			xfree(job_ptr->state_desc);
 			last_job_update    = now;
 			job_ptr->start_time = job_ptr->end_time = now;
 			kill_job_on_node(reg_msg->job_id[i], job_ptr, node_ptr);
