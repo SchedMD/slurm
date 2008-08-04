@@ -2747,7 +2747,8 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_ptr->comment    = xstrdup(job_desc->comment);
 	if (!wiki_sched_test) {
 		char *sched_type = slurm_get_sched_type();
-		if (strcmp(sched_type, "sched/wiki") == 0)
+		if ((strcmp(sched_type, "sched/wiki") == 0) ||
+		    (strcmp(sched_type, "sched/wiki2") == 0))
 			wiki_sched = true;
 		xfree(sched_type);
 		wiki_sched_test = true;
@@ -3003,7 +3004,8 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 	 * in early 2007 to submit jobs as user root */
 	if (!wiki_sched_test) {
 		char *sched_type = slurm_get_sched_type();
-		if (strcmp(sched_type, "sched/wiki") == 0)
+		if ((strcmp(sched_type, "sched/wiki") == 0) ||
+		    (strcmp(sched_type, "sched/wiki2") == 0))
 			wiki_sched = true;
 		xfree(sched_type);
 		wiki_sched_test = true;
@@ -3843,6 +3845,14 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		return ESLURM_USER_ID_MISSING;
 	}
 
+	if (!wiki_sched_test) {
+		char *sched_type = slurm_get_sched_type();
+		if ((strcmp(sched_type, "sched/wiki") == 0) ||
+		    (strcmp(sched_type, "sched/wiki2") == 0))
+			wiki_sched = true;
+		xfree(sched_type);
+		wiki_sched_test = true;
+	}
 	detail_ptr = job_ptr->details;
 	if (detail_ptr)
 		mc_ptr = detail_ptr->mc_ptr;
@@ -4137,7 +4147,21 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		}
 	}
 
-	if (job_specs->comment) {
+	if (job_specs->comment && wiki_sched && (!super_user)) {
+		/* User must use Moab command to change job comment */
+		error("Attempt to change comment for job %u",
+		      job_specs->job_id);
+		error_code = ESLURM_ACCESS_DENIED;
+#if 0
+		if (wiki_sched && strstr(job_ptr->comment, "QOS:")) {
+			if (strstr(job_ptr->comment, "FLAGS:PREEMPTOR"))
+				job_ptr->qos = QOS_EXPEDITE;
+			else if (strstr(job_ptr->comment, "FLAGS:PREEMPTEE"))
+				job_ptr->qos = QOS_STANDBY;
+			else
+				job_ptr->qos = QOS_NORMAL;
+#endif
+	} else if (job_specs->comment) {
 		xfree(job_ptr->comment);
 		job_ptr->comment = job_specs->comment;
 		job_specs->comment = NULL;	/* Nothing left to free */
