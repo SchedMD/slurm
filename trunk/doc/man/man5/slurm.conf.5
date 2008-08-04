@@ -815,10 +815,6 @@ The default value is "sched/builtin".
 Backfill scheduling will initiate lower\-priority jobs if doing 
 so does not delay the expected initiation time of any higher 
 priority job. 
-Note that this backfill scheduler implementation is relatively 
-simple. It does not support partitions configured to to share 
-resources (run multiple jobs on the same nodes) or support 
-jobs requesting specific nodes.
 When initially setting the value to "sched/wiki", any pending jobs 
 must have their priority set to zero (held).
 When changing the value from "sched/wiki", all pending jobs 
