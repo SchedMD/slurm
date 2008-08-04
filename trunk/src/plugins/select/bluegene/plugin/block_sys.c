@@ -158,7 +158,7 @@ static int _post_allocate(bg_record_t *bg_record)
 #ifdef HAVE_BG_FILES	
 	int i;
 	pm_partition_id_t block_id;
-	uind_t my_uid;
+	uid_t my_uid;
 
 	/* Add partition record to the DB */
 	debug2("adding block\n");
