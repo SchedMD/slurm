@@ -16,6 +16,8 @@ documents those changes that are of interest to users and admins.
     used as a function argument.
  -- Add state_reason_string to job state with optional details about why 
     a job is pending.
+ -- Make "scontrol show node" output match scontrol input for some fields
+    ("Cores" changed to "CoresPerSocket", etc.).
 
 * Changes in SLURM 1.3.6
 ========================
