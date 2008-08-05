@@ -72,6 +72,7 @@ static char *	_task_list(struct job_record *job_ptr);
  * ARG=<cnt>#<JOBID>;
  *	STATE=<state>;			Moab equivalent job state
  *	[HOSTLIST=<node1:node2>;]	list of required nodes, if any
+ *	[STARTDATE=<uts>;]		earliest start time, if any
  *	[TASKLIST=<node1:node2>;]	nodes in use, if running or completing
  *	[RFEATURES=<features>;]		required features, if any, 
  *					NOTE: OR operator not supported
@@ -216,14 +217,21 @@ static char *	_dump_job(struct job_record *job_ptr, time_t update_time)
 
 	if ((job_ptr->job_state == JOB_PENDING)
 	&&  (job_ptr->details)
-	&&  (job_ptr->details->req_nodes)
-	&&  (job_ptr->details->req_nodes[0])) {
-		char *hosts = bitmap2wiki_node_name(
-			job_ptr->details->req_node_bitmap);
-		snprintf(tmp, sizeof(tmp),
-			"HOSTLIST=%s;", hosts);
-		xstrcat(buf, tmp);
-		xfree(hosts);
+		if ((job_ptr->details->req_nodes)
+		&&  (job_ptr->details->req_nodes[0])) {
+			char *hosts = bitmap2wiki_node_name(
+				job_ptr->details->req_node_bitmap);
+			snprintf(tmp, sizeof(tmp),
+				"HOSTLIST=%s;", hosts);
+			xstrcat(buf, tmp);
+			xfree(hosts);
+		}
+		if (job_ptr->details->begin_time) {
+			snprintf(tmp, sizeof(tmp),
+				 "STARTDATE=%u;", (uint32_t)
+				 job_ptr->details->begin_time);
+			xstrcat(buf, tmp);
+		}
 	} else if (!IS_JOB_FINISHED(job_ptr)) {
 		char *hosts = _task_list(job_ptr);
 		snprintf(tmp, sizeof(tmp),
