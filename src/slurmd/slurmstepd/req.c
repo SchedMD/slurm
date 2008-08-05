@@ -745,6 +745,10 @@ _handle_signal_container(int fd, slurmd_job_t *job, uid_t uid)
 	}
 	if ((sig == SIG_NODE_FAIL) || (sig == SIG_FAILURE))
 		goto done;
+	if (sig == SIG_ABORT) {
+		sig = SIGKILL;
+		job->aborted = true;
+	}
 
 	pthread_mutex_lock(&suspend_mutex);
 	if (suspended && (sig != SIGKILL)) {

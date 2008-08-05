@@ -242,7 +242,15 @@ _batch_finish(slurmd_job_t *job, int rc)
 	if (job->batchdir && (rmdir(job->batchdir) < 0))
 		error("rmdir(%s): %m",  job->batchdir);
 	xfree(job->batchdir);
-	if ((job->stepid == NO_VAL) || (job->stepid == SLURM_BATCH_SCRIPT)) {
+	if (job->aborted) {
+		if ((job->stepid == NO_VAL) ||
+		    (job->stepid == SLURM_BATCH_SCRIPT)) {
+			info("step %u.%u abort completed", 
+			     job->jobid, job->stepid);
+		} else
+			info("job %u abort completed", job->jobid);
+	} else if ((job->stepid == NO_VAL) ||
+		   (job->stepid == SLURM_BATCH_SCRIPT)) {
 		verbose("job %u completed with slurm_rc = %d, job_rc = %d",
 			job->jobid, rc, step_complete.step_rc);
 		_send_complete_batch_script_msg(job, rc, job->task[0]->estatus);
@@ -309,7 +317,9 @@ cleanup1:
 	error("batch script setup failed for job %u.%u",
 	      msg->job_id, msg->step_id);
 
-	if (msg->step_id == SLURM_BATCH_SCRIPT) {
+	if (job->aborted)
+		verbose("job %u abort complete", job->jobid);
+	else if (msg->step_id == SLURM_BATCH_SCRIPT) {
 		_send_complete_batch_script_msg(job, 
 			ESLURMD_CREATE_BATCH_DIR_ERROR, -1);
 	} else
@@ -807,7 +817,9 @@ job_manager(slurmd_job_t *job)
 		_send_launch_resp(job, rc);
 	}
 
-	if (job->batch) {
+	if (job->aborted)
+		info("job_manager exiting with aborted job");
+	else if (job->batch) {
 		_batch_finish(job, rc); /* sends batch complete message */
 	} else if (step_complete.rank > -1) {
 		_wait_for_children_slurmstepd(job);

@@ -590,6 +590,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	case REQUEST_SIGNAL_JOB:
 		_pack_signal_job_msg((signal_job_msg_t *) msg->data, buffer);
 		break;
+	case REQUEST_ABORT_JOB:
 	case REQUEST_KILL_TIMELIMIT:
 	case REQUEST_TERMINATE_JOB:
 		_pack_kill_job_msg((kill_job_msg_t *) msg->data, buffer);
@@ -928,6 +929,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		rc = _unpack_signal_job_msg((signal_job_msg_t **)&(msg->data),
 					    buffer);
 		break;
+	case REQUEST_ABORT_JOB:
 	case REQUEST_KILL_TIMELIMIT:
 	case REQUEST_TERMINATE_JOB:
 		rc = _unpack_kill_job_msg((kill_job_msg_t **) & (msg->data), 

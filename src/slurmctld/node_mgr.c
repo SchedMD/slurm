@@ -1668,7 +1668,7 @@ extern int validate_nodes_via_front_end(
 		if (job_ptr == NULL) {
 			error("Orphan job %u.%u reported",
 			      reg_msg->job_id[i], reg_msg->step_id[i]);
-			kill_job_on_node(reg_msg->job_id[i], job_ptr, node_ptr);
+			abort_job_on_node(reg_msg->job_id[i], job_ptr, node_ptr);
 		}
 
 		else if ((job_ptr->job_state == JOB_RUNNING) ||
@@ -1689,17 +1689,11 @@ extern int validate_nodes_via_front_end(
 
 
 		else if (job_ptr->job_state == JOB_PENDING) {
+			/* Typically indicates a job requeue and the hung
+			 * slurmd that went DOWN is now responding */
 			error("Registered PENDING job %u.%u",
 				reg_msg->job_id[i], reg_msg->step_id[i]);
-			/* FIXME: Could possibly recover the job */
-			job_ptr->job_state = JOB_FAILED;
-			job_ptr->exit_code = 1;
-			job_ptr->state_reason = FAIL_SYSTEM;
-			last_job_update    = now;
-			job_ptr->start_time = job_ptr->end_time = now;
-			kill_job_on_node(reg_msg->job_id[i], job_ptr, node_ptr);
-			job_completion_logger(job_ptr);
-			delete_job_details(job_ptr);
+			abort_job_on_node(reg_msg->job_id[i], job_ptr, node_ptr);
 		}
 
 		else {		/* else job is supposed to be done */

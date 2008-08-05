@@ -517,6 +517,21 @@ enum select_data_info {
 \*****************************************************************************/
 
 /*
+ * abort_job_on_node - Kill the specific job_id on a specific node,
+ *	the request is not processed immediately, but queued. 
+ *	This is to prevent a flood of pthreads if slurmctld restarts 
+ *	without saved state and slurmd daemons register with a 
+ *	multitude of running jobs. Slurmctld will not recognize 
+ *	these jobs and use this function to kill them - one 
+ *	agent request per node as they register.
+ * IN job_id - id of the job to be killed
+ * IN job_ptr - pointer to terminating job (NULL if unknown, e.g. orphaned)
+ * IN node_ptr - pointer to the node on which the job resides
+ */
+extern void abort_job_on_node(uint32_t job_id, struct job_record *job_ptr,
+			      struct node_record *node_ptr);
+
+/*
  * bitmap2node_name - given a bitmap, build a list of comma separated node 
  *	names. names may include regular expressions (e.g. "lx[01-10]")
  * IN bitmap - bitmap pointer
@@ -993,20 +1008,14 @@ extern void job_time_limit (void);
 extern int kill_job_by_part_name(char *part_name);
 
 /*
- * kill_job_on_node - Kill the specific job_id on a specific node,
- *	the request is not processed immediately, but queued. 
- *	This is to prevent a flood of pthreads if slurmctld restarts 
- *	without saved state and slurmd daemons register with a 
- *	multitude of running jobs. Slurmctld will not recognize 
- *	these jobs and use this function to kill them - one 
+ * kill_job_on_node - Kill the specific job_id on a specific node.
  *	agent request per node as they register.
  * IN job_id - id of the job to be killed
  * IN job_ptr - pointer to terminating job (NULL if unknown, e.g. orphaned)
  * IN node_ptr - pointer to the node on which the job resides
  */
-extern void kill_job_on_node(uint32_t job_id, 
-		struct job_record *job_ptr,
-		struct node_record *node_ptr);
+extern void kill_job_on_node(uint32_t job_id, struct job_record *job_ptr,
+			     struct node_record *node_ptr);
 
 /*
  * kill_running_job_by_node_name - Given a node name, deallocate jobs 
