@@ -1467,6 +1467,17 @@ extern void filetxt_jobacct_process_archive(List selected_parts,
 	}
 	list_iterator_destroy(itr);
 	
+	/* write records in other_list to new log */
+	itr = list_iterator_create(other_list);
+	while((exp_rec = list_next(itr))) {
+		if (fputs(exp_rec->line, new_logfile)<0) {
+			perror("writing keep_logfile");
+			list_iterator_destroy(itr);
+			goto finished2;
+		}
+	}
+	list_iterator_destroy(itr);
+	
 	if (rename(params->opt_filein, old_logfile_name)) {
 		perror("renaming logfile to .old.");
 		goto finished2;
@@ -1503,6 +1514,13 @@ extern void filetxt_jobacct_process_archive(List selected_parts,
 		perror("looking for late-arriving records");
 		goto finished2;
 	}
+
+	/* reopen new logfile in append mode, since slurmctld may write it */
+	if (freopen(params.opt_filein, "a", new_logfile) == NULL) {
+		perror("reopening new logfile");
+		goto finished2;
+	}
+
 	while (fgets(line, BUFFER_SIZE, fd)) {
 		if (fputs(line, new_logfile)<0) {
 			perror("writing final records");

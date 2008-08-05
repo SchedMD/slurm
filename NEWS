@@ -433,7 +433,11 @@ documents those changes that are of interest to users and admins.
  -- Ignore the show_flag when getting job, step, node or partition information
     for user root.
  -- Convert some functions to thread-safe versions: getpwnam, getpwuid, 
-    getgrnam, and getgrgid to similar functions with "_r" suffix.
+    getgrnam, and getgrgid to similar functions with "_r" suffix. While no
+    failures have been observed, a race condition would in the worst case
+    permit a user access to a partition not normally allowed due to the
+    AllowGroup specification or the wrong user identified in an accounting
+    record. The job would NOT be run as the wrong user.
 
 * Changes in SLURM 1.2.33
 =========================

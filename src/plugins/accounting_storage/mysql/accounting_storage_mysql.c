@@ -3472,9 +3472,6 @@ extern List acct_storage_p_modify_associations(
 		}
 		list_iterator_destroy(itr);
 		xstrcat(extra, ")");
-	} else {
-		debug4("no partitions specified");
-		xstrcat(extra, " && partition = '' ");
 	}
 
 	if(assoc_cond->id_list && list_count(assoc_cond->id_list)) {
