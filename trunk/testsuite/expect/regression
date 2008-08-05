@@ -51,7 +51,7 @@ fi
 # Run the tests in this directory
 /bin/date
 BEGIN_TIME=`date +%s`
-for major in `seq 1 20`; do
+for major in `seq 1 100`; do
 	for minor in `seq 1 100`; do
 		TEST=test${major}.${minor}
 		if [ ! -f ./$TEST ]; then continue; fi
