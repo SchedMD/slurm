@@ -184,7 +184,8 @@ typedef enum {
 	REQUEST_SIGNAL_JOB,
 	REQUEST_TERMINATE_JOB,
 	MESSAGE_EPILOG_COMPLETE,
-	DEFUNCT_REQUEST_SPAWN_TASK, /* DEFUNCT */
+	REQUEST_ABORT_JOB,	/* job shouldn't be running, kill it without
+				 * job/step/task complete responses */
 	REQUEST_FILE_BCAST,
 	TASK_USER_MANAGED_IO_STREAM,
 
@@ -516,6 +517,7 @@ typedef struct return_code_msg {
  * the event of some launch failure or race condition preventing slurmd 
  * from getting the MPIRUN_PARTITION at that time. It is needed for 
  * the job epilog. */
+#define SIG_ABORT	997	/* Dummy signal value to abort a job */
 #define SIG_NODE_FAIL	998	/* Dummy signal value to signify node failure */
 #define SIG_FAILURE     999	/* Dummy signal value to signify sys failure */
 typedef struct kill_job_msg {

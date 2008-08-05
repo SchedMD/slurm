@@ -1398,6 +1398,7 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_SIGNAL_JOB:
 		slurm_free_signal_job_msg(data);
 		break;
+	case REQUEST_ABORT_JOB:
 	case REQUEST_TERMINATE_JOB:
 		slurm_free_kill_job_msg(data);
 		break;

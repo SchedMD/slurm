@@ -23,6 +23,7 @@ documents those changes that are of interest to users and admins.
     storing scheduler state information).
  -- For sched/wiki (Maui) add pending job's future start time to the state
     info reported to Maui.
+ -- Improve reliability of job requeue logic on node failure.
  
 * Changes in SLURM 1.3.6
 ========================

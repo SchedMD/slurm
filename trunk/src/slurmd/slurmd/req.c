@@ -112,6 +112,7 @@ static bool _job_still_running(uint32_t job_id);
 static int  _kill_all_active_steps(uint32_t jobid, int sig, bool batch);
 static int  _terminate_all_steps(uint32_t jobid, bool batch);
 static void _rpc_launch_tasks(slurm_msg_t *);
+static void _rpc_abort_job(slurm_msg_t *);
 static void _rpc_batch_job(slurm_msg_t *);
 static void _rpc_signal_tasks(slurm_msg_t *);
 static void _rpc_checkpoint_tasks(slurm_msg_t *);
@@ -240,6 +241,12 @@ slurmd_req(slurm_msg_t *msg)
 		_rpc_suspend_job(msg);
 		last_slurmctld_msg = time(NULL);
 		slurm_free_suspend_msg(msg->data);
+		break;
+	case REQUEST_ABORT_JOB:
+		debug2("Processing RPC: REQUEST_ABORT_JOB");
+		last_slurmctld_msg = time(NULL);
+		_rpc_abort_job(msg);
+		slurm_free_kill_job_msg(msg->data);
 		break;
 	case REQUEST_TERMINATE_JOB:
 		debug2("Processing RPC: REQUEST_TERMINATE_JOB");
@@ -2550,6 +2557,76 @@ _rpc_suspend_job(slurm_msg_t *msg)
 		debug2("No steps in jobid %u to suspend/resume", 
 			req->job_id);
 	}
+}
+
+/* Job shouldn't even be runnin here, abort it immediately */
+static void 
+_rpc_abort_job(slurm_msg_t *msg)
+{
+	kill_job_msg_t *req    = msg->data;
+	uid_t           uid    = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+	char           *bg_part_id = NULL;
+
+	debug("_rpc_abort_job, uid = %d", uid);
+	/* 
+	 * check that requesting user ID is the SLURM UID
+	 */
+	if (!_slurm_authorized_user(uid)) {
+		error("Security violation: abort_job(%ld) from uid %ld",
+		      req->job_id, (long) uid);
+		if (msg->conn_fd >= 0)
+			slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
+		return;
+	} 
+
+	slurmd_release_resources(req->job_id);
+
+	/*
+	 * "revoke" all future credentials for this jobid
+	 */
+	if (slurm_cred_revoke(conf->vctx, req->job_id, req->time) < 0) {
+		debug("revoking cred for job %u: %m", req->job_id);
+	} else {
+		save_cred_state(conf->vctx);
+		debug("credential for job %u revoked", req->job_id);
+	}
+
+	/*
+	 *  At this point, if connection still open, we send controller
+	 *   a "success" reply to indicate that we've recvd the msg.
+	 */
+	if (msg->conn_fd >= 0) {
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
+		if (slurm_close_accepted_conn(msg->conn_fd) < 0)
+			error ("rpc_abort_job: close(%d): %m", msg->conn_fd);
+		msg->conn_fd = -1;
+	}
+
+	if ((xcpu_signal(SIGKILL, req->nodes) +
+	     _kill_all_active_steps(req->job_id, SIG_ABORT, true)) ) {
+		/*
+		 *  Block until all user processes are complete.
+		 */
+		_pause_for_job_completion (req->job_id, req->nodes, 0);
+	}
+		
+	/*
+	 *  Begin expiration period for cached information about job.
+	 *   If expiration period has already begun, then do not run
+	 *   the epilog again, as that script has already been executed 
+	 *   for this job.
+	 */
+	if (slurm_cred_begin_expiration(conf->vctx, req->job_id) < 0) {
+		debug("Not running epilog for jobid %d: %m", req->job_id);
+		return;
+	}
+
+	save_cred_state(conf->vctx);
+
+	select_g_get_jobinfo(req->select_jobinfo, SELECT_DATA_BLOCK_ID,
+		&bg_part_id);
+	_run_epilog(req->job_id, req->job_uid, bg_part_id);
+	xfree(bg_part_id);
 }
 
 static void 

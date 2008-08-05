@@ -4576,7 +4576,7 @@ extern void validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 			error("Orphan job %u.%u reported on node %s",
 				reg_msg->job_id[i], reg_msg->step_id[i], 
 				reg_msg->node_name);
-			kill_job_on_node(reg_msg->job_id[i], job_ptr, node_ptr);
+			abort_job_on_node(reg_msg->job_id[i], job_ptr, node_ptr);
 		}
 
 		else if ((job_ptr->job_state == JOB_RUNNING) ||
@@ -4593,10 +4593,13 @@ extern void validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 					job_ptr->time_last_active = now;
 				}
 			} else {
+				/* Typically indicates a job requeue and
+				 * restart on another nodes. A node from the
+				 * original allocation just responded here. */
 				error("Registered job %u.%u on wrong node %s ",
 					reg_msg->job_id[i], reg_msg->step_id[i],
 					reg_msg->node_name);
-				kill_job_on_node(reg_msg->job_id[i], job_ptr, 
+				abort_job_on_node(reg_msg->job_id[i], job_ptr, 
 						node_ptr);
 			}
 		}
@@ -4609,25 +4612,19 @@ extern void validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 
 
 		else if (job_ptr->job_state == JOB_PENDING) {
+			/* Typically indicates a job requeue and the hung
+			 * slurmd that went DOWN is now responding */
 			error("Registered PENDING job %u.%u on node %s ",
 				reg_msg->job_id[i], reg_msg->step_id[i], 
 				reg_msg->node_name);
-			job_ptr->job_state = JOB_FAILED;
-			job_ptr->exit_code = 1;
-			job_ptr->state_reason = FAIL_SYSTEM;
-			last_job_update = now;
-			job_ptr->start_time = job_ptr->end_time  = now;
-			kill_job_on_node(reg_msg->job_id[i], job_ptr, node_ptr);
-			job_completion_logger(job_ptr);
-			delete_job_details(job_ptr);
+			abort_job_on_node(reg_msg->job_id[i], job_ptr, node_ptr);
 		}
 
 		else {		/* else job is supposed to be done */
-			error
-			    ("Registered job %u.%u in state %s on node %s ",
-			     reg_msg->job_id[i], reg_msg->step_id[i], 
-			     job_state_string(job_ptr->job_state),
-			     reg_msg->node_name);
+			error("Registered job %u.%u in state %s on node %s ",
+			      reg_msg->job_id[i], reg_msg->step_id[i], 
+			      job_state_string(job_ptr->job_state),
+			      reg_msg->node_name);
 			kill_job_on_node(reg_msg->job_id[i], job_ptr, node_ptr);
 		}
 	}
@@ -4674,13 +4671,47 @@ static void _purge_lost_batch_jobs(int node_inx, time_t now)
 }
 
 /*
- * kill_job_on_node - Kill the specific job_id on a specific node,
+ * abort_job_on_node - Kill the specific job_id on a specific node,
  *	the request is not processed immediately, but queued. 
  *	This is to prevent a flood of pthreads if slurmctld restarts 
  *	without saved state and slurmd daemons register with a 
  *	multitude of running jobs. Slurmctld will not recognize 
  *	these jobs and use this function to kill them - one 
  *	agent request per node as they register.
+ * IN job_id - id of the job to be killed
+ * IN job_ptr - pointer to terminating job (NULL if unknown, e.g. orphaned)
+ * IN node_ptr - pointer to the node on which the job resides
+ */
+extern void
+abort_job_on_node(uint32_t job_id, struct job_record *job_ptr, 
+		  struct node_record *node_ptr)
+{
+	agent_arg_t *agent_info;
+	kill_job_msg_t *kill_req;
+
+	debug("Aborting job %u on node %s", job_id, node_ptr->name);
+
+	kill_req = xmalloc(sizeof(kill_job_msg_t));
+	kill_req->job_id	= job_id;
+	kill_req->time          = time(NULL);
+	kill_req->nodes	        = xstrdup(node_ptr->name);
+	if (job_ptr) {  /* NULL if unknown */
+		kill_req->select_jobinfo = 
+			select_g_copy_jobinfo(job_ptr->select_jobinfo);
+	}
+
+	agent_info = xmalloc(sizeof(agent_arg_t));
+	agent_info->node_count	= 1;
+	agent_info->retry	= 0;
+	agent_info->hostlist	= hostlist_create(node_ptr->name);
+	agent_info->msg_type	= REQUEST_ABORT_JOB;
+	agent_info->msg_args	= kill_req;
+
+	agent_queue_request(agent_info);
+}
+
+/*
+ * kill_job_on_node - Kill the specific job_id on a specific node.
  * IN job_id - id of the job to be killed
  * IN job_ptr - pointer to terminating job (NULL if unknown, e.g. orphaned)
  * IN node_ptr - pointer to the node on which the job resides
