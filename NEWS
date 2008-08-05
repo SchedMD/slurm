@@ -21,6 +21,8 @@ documents those changes that are of interest to users and admins.
  -- For sched/wiki and sched/wiki2 (Maui or Moab scheduler) disable the ability
     of a non-root user to change a job's comment field (used by Maui/Moab for
     storing scheduler state information).
+ -- For sched/wiki (Maui) add pending job's future start time to the state
+    info reported to Maui.
  
 * Changes in SLURM 1.3.6
 ========================
