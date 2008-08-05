@@ -519,8 +519,8 @@ _one_step_complete_msg(slurmd_job_t *job, int first, int last)
 	/************* acct stuff ********************/
 	if(!acct_sent) {
 		jobacct_gather_g_aggregate(step_complete.jobacct, job->jobacct);
-		jobacct_gather_g_getinfo(step_complete.jobacct, JOBACCT_DATA_TOTAL, 
-				  msg.jobacct);
+		jobacct_gather_g_getinfo(step_complete.jobacct, 
+					 JOBACCT_DATA_TOTAL, msg.jobacct);
 		acct_sent = true;
 	}
 	/*********************************************/	
