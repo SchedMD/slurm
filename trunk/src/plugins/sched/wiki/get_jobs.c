@@ -214,15 +214,15 @@ static char *	_dump_job(struct job_record *job_ptr, time_t update_time)
 
 	if (update_time > last_job_update)
 		return buf;
-
+	
 	if ((job_ptr->job_state == JOB_PENDING)
-	&&  (job_ptr->details)
+	    &&  (job_ptr->details)) {
 		if ((job_ptr->details->req_nodes)
-		&&  (job_ptr->details->req_nodes[0])) {
+		    &&  (job_ptr->details->req_nodes[0])) {
 			char *hosts = bitmap2wiki_node_name(
 				job_ptr->details->req_node_bitmap);
 			snprintf(tmp, sizeof(tmp),
-				"HOSTLIST=%s;", hosts);
+				 "HOSTLIST=%s;", hosts);
 			xstrcat(buf, tmp);
 			xfree(hosts);
 		}
