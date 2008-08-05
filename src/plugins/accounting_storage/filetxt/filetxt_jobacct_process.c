@@ -1516,7 +1516,7 @@ extern void filetxt_jobacct_process_archive(List selected_parts,
 	}
 
 	/* reopen new logfile in append mode, since slurmctld may write it */
-	if (freopen(params.opt_filein, "a", new_logfile) == NULL) {
+	if (freopen(params->opt_filein, "a", new_logfile) == NULL) {
 		perror("reopening new logfile");
 		goto finished2;
 	}
