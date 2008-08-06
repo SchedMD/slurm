@@ -113,6 +113,21 @@ extern int build_select_job_res(select_job_res_t select_job_res_ptr,
 				void *node_rec_table,
 				uint16_t fast_schedule);
 
+/* Validate a select_job_res data structure originally built using
+ * build_select_job_res() is still valid based upon slurmctld state.
+ * NOTE: Reset the node_bitmap field before calling this function.
+ * If the sockets_per_node or cores_per_socket for any node in the allocation 
+ * changes, then return SLURM_ERROR. Otherwise return SLURM_SUCCESS. Any 
+ * change in a node's socket or core count require that any job running on
+ * that node be killed. Example of use:
+ *
+ * rc = valid_select_job_res(select_job_res_ptr, node_record_table_ptr,
+ *			     slurmctld_conf.fast_schedule);
+ */
+extern int valid_select_job_res(select_job_res_t select_job_res_ptr,
+				void *node_rec_table,
+				uint16_t fast_schedule);
+
 /* Make a copy of a select_job_res data structure, 
  * free using free_select_job_res() */
 extern select_job_res_t copy_select_job_res(select_job_res_t 

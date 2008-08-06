@@ -1008,7 +1008,7 @@ static void *_slurmctld_background(void *no_data)
 	slurmctld_lock_t part_write_lock = { 
 		NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
 
-#if 0
+#if 1
 /* FIXME: Added to test src/common/select_job_res functions
  * NodeName=DEFAULT Sockets=4 CoresPerSocket=3 RealMemory=512 State=UNKNOWN
  * NodeName=dummy[0-19] NodeHostname=wayfarer NodeAddr=wayfarer
@@ -1021,8 +1021,12 @@ lock_slurmctld(job_read_lock);
 select_res_ptr1 = create_select_job_res();
 select_res_ptr1->nhosts = 4;
 node_name2bitmap("dummy[2,5,12,16]", true, &(select_res_ptr1->node_bitmap));
-build_select_job_res(select_res_ptr1, node_record_table_ptr, 
-		     slurmctld_conf.fast_schedule);
+i = build_select_job_res(select_res_ptr1, node_record_table_ptr, 
+			 slurmctld_conf.fast_schedule);
+if (i)
+  error("build_select_job_res failure");
+else
+  info("build_select_job_res success");
 select_res_ptr1->nprocs = 5;
 select_res_ptr1->node_req = 1;
 select_res_ptr1->cpus = xmalloc(sizeof(uint32_t) * 4);
@@ -1088,6 +1092,12 @@ else {
   info("node 0 counts sockets:%u cores_per_socket:%u", socket_cnt, core_cnt);
   get_select_job_res_cnt(select_res_ptr1, 3, &socket_cnt, &core_cnt);
   info("node 3 counts sockets:%u cores_per_socket:%u", socket_cnt, core_cnt);
+  i = valid_select_job_res(select_res_ptr1, node_record_table_ptr, 
+			   slurmctld_conf.fast_schedule);
+  if (i)
+    error("valid_select_job_res failure");
+  else
+    info("valid_select_job_res success");
   free_select_job_res(&select_res_ptr1);
 }
 unlock_slurmctld(job_read_lock);

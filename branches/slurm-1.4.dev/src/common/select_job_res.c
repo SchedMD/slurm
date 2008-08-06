@@ -108,6 +108,52 @@ extern int build_select_job_res(select_job_res_t select_job_res,
 	return SLURM_SUCCESS;
 }
 
+extern int valid_select_job_res(select_job_res_t select_job_res,
+				void *node_rec_table,
+				uint16_t fast_schedule)
+{
+	int i, bitmap_len;
+	int sock_inx = 0, sock_cnt = 0;
+	uint32_t cores, socks;
+	struct node_record *node_ptr, *node_record_table;
+
+	if (select_job_res->node_bitmap == NULL) {
+		error("valid_select_job_res: node_bitmap is NULL");
+		return SLURM_ERROR;
+	}
+	if ((select_job_res->sockets_per_node == NULL) ||
+	    (select_job_res->cores_per_socket == NULL) ||
+	    (select_job_res->sock_core_rep_count == NULL)) {
+		error("valid_select_job_res: socket/core array is NULL");
+		return SLURM_ERROR;
+	}
+
+	node_record_table = (struct node_record *) node_rec_table;
+	bitmap_len = bit_size(select_job_res->node_bitmap);
+	for (i=0; i<bitmap_len; i++) {
+		if (!bit_test(select_job_res->node_bitmap, i))
+			continue;
+		node_ptr = node_record_table + i;
+		if (fast_schedule) {
+			socks = node_ptr->config_ptr->sockets;
+			cores = node_ptr->config_ptr->cores;
+		} else {
+			socks = node_ptr->sockets;
+			cores = node_ptr->cores;
+		}
+		if (sock_cnt > select_job_res->sock_core_rep_count[sock_inx]) {
+			sock_inx++;
+			sock_cnt = 0;
+		}
+		if ((socks != select_job_res->sockets_per_node[sock_inx]) ||
+		    (cores != select_job_res->cores_per_socket[sock_inx])) {
+			return SLURM_ERROR;
+		}
+		sock_cnt++;
+	}
+	return SLURM_SUCCESS;
+}
+
 extern select_job_res_t copy_select_job_res(select_job_res_t
 					    select_job_res_ptr)
 {
