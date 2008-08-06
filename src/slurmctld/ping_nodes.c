@@ -136,6 +136,8 @@ void ping_nodes (void)
 	if (slurmctld_conf.health_check_interval &&
 	    (difftime(now, last_health_check) >= 
 	     slurmctld_conf.health_check_interval)) {
+		/* This will communicate with every node,
+		 * substituting for the PING logic below */
 		last_health_check = now;
 		_run_health_check();
 		return;
@@ -182,13 +184,14 @@ void ping_nodes (void)
 		base_state   = node_ptr->node_state & NODE_STATE_BASE;
 		no_resp_flag = node_ptr->node_state & NODE_STATE_NO_RESPOND;
 		
-		if ((slurmctld_conf.slurmd_timeout == 0)
-		&&  (base_state != NODE_STATE_UNKNOWN))
+		if ((slurmctld_conf.slurmd_timeout == 0) &&
+		    (base_state != NODE_STATE_UNKNOWN)   &&
+		    (no_resp_flag == 0))
 			continue;
 
-		if ((node_ptr->last_response != (time_t) 0)
-		    &&  (node_ptr->last_response <= node_dead_time)
-		    &&  (base_state != NODE_STATE_DOWN)) {
+		if ((node_ptr->last_response != (time_t) 0)     &&
+		    (node_ptr->last_response <= node_dead_time) &&
+		    (base_state != NODE_STATE_DOWN)) {
 			if (down_hostlist)
 				(void) hostlist_push_host(down_hostlist,
 					node_ptr->name);
