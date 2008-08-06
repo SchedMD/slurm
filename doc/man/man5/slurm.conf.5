@@ -980,13 +980,15 @@ different shared memory region and lose track of any running jobs.
 \fBSlurmdTimeout\fR
 The interval, in seconds, that the SLURM controller waits for \fBslurmd\fR 
 to respond before configuring that node's state to DOWN. 
-The default value is 300 seconds.
 A value of zero indicates the node will not be tested by \fBslurmctld\fR to 
 confirm the state of \fBslurmd\fR, the node will not be automatically set to 
 a DOWN state indicating a non\-responsive \fBslurmd\fR, and some other tool 
 will take responsibility for monitoring the state of each compute node 
 and its \fBslurmd\fR daemon.
-The value may not exceed 65533.
+SLURM's hiearchical communication mechanism is used to ping the \fBslurmd\fR
+daemons in order to minimize system noise and overhead.
+The default value is 300 seconds.
+The value may not exceed 65533 seconds.
 
 .TP
 \fBSrunEpilog\fR
