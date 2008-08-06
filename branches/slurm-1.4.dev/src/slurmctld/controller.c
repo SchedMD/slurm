@@ -1009,7 +1009,10 @@ static void *_slurmctld_background(void *no_data)
 		NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
 
 #if 0
-/* FIXME: Added to test src/common/select_job_res functions */
+/* FIXME: Added to test src/common/select_job_res functions
+ * NodeName=DEFAULT Sockets=4 CoresPerSocket=3 RealMemory=512 State=UNKNOWN
+ * NodeName=dummy[0-19] NodeHostname=wayfarer NodeAddr=wayfarer
+ */
 Buf buffer = init_buf(4096);
 select_job_res_t select_res_ptr1, select_res_ptr2;
 int i; 
@@ -1027,11 +1030,23 @@ set_select_job_res_bit(select_res_ptr1, 0, 2, 1); info("set_bit(0,2,1)");
 select_res_ptr1->cpus[0] = 1;
 set_select_job_res_bit(select_res_ptr1, 1, 0, 0); info("set_bit(1,0,0)");
 select_res_ptr1->cpus[1] = 1;
+i = get_select_job_res_node(select_res_ptr1, 2);
+if (i == 0)
+  info("get_node(2):%d",i);
+else
+  error("get_node(2):%d",i);
 set_select_job_res_bit(select_res_ptr1, 2, 1, 1); info("set_bit(2,1,1)");
 select_res_ptr1->cpus[2] = 1;
-set_select_job_res_bit(select_res_ptr1, 3, 0, 3); info("set_bit(3,0,3)");
-set_select_job_res_bit(select_res_ptr1, 3, 0, 4); info("set_bit(3,0,3)");
-select_res_ptr1->cpus[3] = 2;
+i = get_select_job_res_node(select_res_ptr1, 2);
+if (i == 0)
+  error("get_node(2):%d",i);
+else
+  info("get_node(2):%d",i);
+//set_select_job_res_bit(select_res_ptr1, 3, 0, 1); info("set_bit(3,0,1)");
+//set_select_job_res_bit(select_res_ptr1, 3, 0, 2); info("set_bit(3,0,2)");
+//select_res_ptr1->cpus[3] = 2;
+set_select_job_res_node(select_res_ptr1, 3); info("set_node(3)");
+select_res_ptr1->cpus[3] = 12;
 i = get_select_job_res_bit(select_res_ptr1, 1, 0, 0);
 if (i == 1)
   info("get_bit(1,0,0):%d", i);
@@ -1055,7 +1070,7 @@ free_select_job_res(&select_res_ptr1);
 info("copied select_job_res");
 log_select_job_res(select_res_ptr2);
 
-info("Setting cpus_used and memory_used for node_id 1");
+info("Setting cpus_used(1) and memory_used(111) for node_id 1");
 select_res_ptr2->cpus_used = xmalloc(sizeof(uint32_t) * 4);
 select_res_ptr2->cpus_used[1] = 1;
 select_res_ptr2->memory_used = xmalloc(sizeof(uint32_t) * 4);

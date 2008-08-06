@@ -140,6 +140,16 @@ extern int set_select_job_res_bit(select_job_res_t select_job_res_ptr,
 				  uint32_t node_id,
 				  uint32_t socket_id, uint32_t core_id);
 
+/* Get/set bit value at specified location for whole node allocations
+ *	get is for any socket/core on the specified node
+ *	set is for all sockets/cores on the specified node
+ *	fully comptabable with set/get_select_job_res_bit()
+ *	node_id is all zero origin */
+extern int get_select_job_res_node(select_job_res_t select_job_res_ptr, 
+				   uint32_t node_id);
+extern int set_select_job_res_node(select_job_res_t select_job_res_ptr, 
+				   uint32_t node_id);
+
 /* Get socket and core count for a specific node_id (zero origin) */
 extern int get_select_job_res_cnt(select_job_res_t select_job_res_ptr, 
 				  uint32_t node_id,

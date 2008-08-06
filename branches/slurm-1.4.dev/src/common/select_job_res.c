@@ -209,7 +209,7 @@ extern void free_select_job_res(select_job_res_t *select_job_res_pptr)
 extern void log_select_job_res(select_job_res_t select_job_res_ptr)
 {
 	int bit_inx = 0, bit_reps, i;
-	int node_inx;
+	int array_size, node_inx;
 	int sock_inx = 0, sock_reps = 0;
 
 	if (select_job_res_ptr == NULL) {
@@ -236,6 +236,11 @@ extern void log_select_job_res(select_job_res_t select_job_res_ptr)
 		error("log_select_job_res: socket/core array is NULL");
 		return;
 	}
+	if (select_job_res_ptr->alloc_core_bitmap == NULL) {
+		error("log_select_job_res: alloc_core_bitmap is NULL");
+		return;
+	}
+	array_size = bit_size(select_job_res_ptr->alloc_core_bitmap);
 
 	/* Can only log node_bitmap from slurmctld, so don't bother here */
 	for (node_inx=0; node_inx<select_job_res_ptr->nhosts; node_inx++) {
@@ -265,9 +270,13 @@ extern void log_select_job_res(select_job_res_t select_job_res_ptr)
 		bit_reps = select_job_res_ptr->sockets_per_node[sock_inx] *
 			   select_job_res_ptr->cores_per_socket[sock_inx];
 		for (i=0; i<bit_reps; i++) {
+			if (bit_inx >= array_size) {
+				error("log_select_job_res: array size wrong");
+				break;
+			}
 			if (bit_test(select_job_res_ptr->alloc_core_bitmap,
 				     bit_inx)) {
-				info("  Socket[%d] Core[%d] in allocated",
+				info("  Socket[%d] Core[%d] is allocated",
 				     (i / select_job_res_ptr->
 				          cores_per_socket[sock_inx]),
 				     (i % select_job_res_ptr->
@@ -475,6 +484,86 @@ extern int set_select_job_res_bit(select_job_res_t select_job_res_ptr,
 	}
 
 	bit_set(select_job_res_ptr->alloc_core_bitmap, bit_inx);
+	return SLURM_SUCCESS;
+}
+
+extern int get_select_job_res_node(select_job_res_t select_job_res_ptr, 
+				   uint32_t node_id)
+{
+	int i, bit_inx = 0, core_cnt = 0;
+
+	xassert(select_job_res_ptr);
+
+	for (i=0; i<select_job_res_ptr->nhosts; i++) {
+		if (select_job_res_ptr->sock_core_rep_count[i] <= node_id) {
+			bit_inx += select_job_res_ptr->sockets_per_node[i] *
+				   select_job_res_ptr->cores_per_socket[i] *
+				   select_job_res_ptr->sock_core_rep_count[i];
+			node_id -= select_job_res_ptr->sock_core_rep_count[i];
+		} else {
+			bit_inx += select_job_res_ptr->sockets_per_node[i] *
+				   select_job_res_ptr->cores_per_socket[i] *
+				   node_id;
+			core_cnt = select_job_res_ptr->sockets_per_node[i] *
+				   select_job_res_ptr->cores_per_socket[i];
+			break;
+		}
+	}
+	if (core_cnt < 1) {
+		error("get_select_job_res_node: core_cnt=0");
+		return 0;
+	}
+	i = bit_size(select_job_res_ptr->alloc_core_bitmap);
+	if ((bit_inx + core_cnt) > i) {
+		error("get_select_job_res_node: offset > bitmap size "
+		      "(%d >= %d)", (bit_inx + core_cnt), i);
+		return 0;
+	}
+
+	for (i=0; i<core_cnt; i++) {
+		if (bit_test(select_job_res_ptr->alloc_core_bitmap, bit_inx++))
+			return 1;
+	}
+	return 0;
+}
+
+extern int set_select_job_res_node(select_job_res_t select_job_res_ptr, 
+				   uint32_t node_id)
+{
+	int i, bit_inx = 0, core_cnt = 0;
+
+	xassert(select_job_res_ptr);
+
+	for (i=0; i<select_job_res_ptr->nhosts; i++) {
+		if (select_job_res_ptr->sock_core_rep_count[i] <= node_id) {
+			bit_inx += select_job_res_ptr->sockets_per_node[i] *
+				   select_job_res_ptr->cores_per_socket[i] *
+				   select_job_res_ptr->sock_core_rep_count[i];
+			node_id -= select_job_res_ptr->sock_core_rep_count[i];
+		} else {
+			bit_inx += select_job_res_ptr->sockets_per_node[i] *
+				   select_job_res_ptr->cores_per_socket[i] *
+				   node_id;
+			core_cnt = select_job_res_ptr->sockets_per_node[i] *
+				   select_job_res_ptr->cores_per_socket[i];
+			break;
+		}
+	}
+	if (core_cnt < 1) {
+		error("set_select_job_res_node: core_cnt=0");
+		return SLURM_ERROR;
+	}
+
+	i = bit_size(select_job_res_ptr->alloc_core_bitmap);
+	if ((bit_inx + core_cnt) > i) {
+		error("set_select_job_res_node: offset > bitmap size "
+		      "(%d >= %d)", (bit_inx + core_cnt), i);
+		return SLURM_ERROR;
+	}
+
+	for (i=0; i<core_cnt; i++)
+		bit_set(select_job_res_ptr->alloc_core_bitmap, bit_inx++);
+
 	return SLURM_SUCCESS;
 }
 
