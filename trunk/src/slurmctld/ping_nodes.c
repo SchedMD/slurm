@@ -1,6 +1,5 @@
 /*****************************************************************************\
  *  ping_nodes.c - ping the slurmd daemons to test if they respond
- *	Note: there is a global node table (node_record_table_ptr)
  *****************************************************************************
  *  Copyright (C) 2003-2006 The Regents of the University of California.
  *  Copyright (C) 2008 Lawrence Livermore National Security.
@@ -68,8 +67,6 @@ static int ping_count = 0;
 
 static void _run_health_check(void);
 
-/* struct timeval start_time, end_time; */
-
 /*
  * is_ping_done - test if the last node ping cycle has completed.
  *	Use this to avoid starting a new set of ping requests before the 
@@ -115,17 +112,6 @@ void ping_end (void)
 	else
 		fatal ("ping_count < 0");
 	slurm_mutex_unlock(&lock_mutex);
-
-#if 0
-	gettimeofday(&end_time, NULL);
-	start = start_time.tv_sec;
-	start *= 1000000;
-	start += start_time.tv_usec;
-	end = end_time.tv_sec;
-	end *= 1000000;
-	end += end_time.tv_usec;
-	info("done with ping took %ld",(end-start));
-#endif
 }
 
 /*
@@ -164,7 +150,6 @@ void ping_nodes (void)
 	reg_agent_args->msg_type = REQUEST_NODE_REGISTRATION_STATUS;
 	reg_agent_args->retry = 0;
 	reg_agent_args->hostlist = hostlist_create("");
-	/* gettimeofday(&start_time, NULL); */
 		
 	/*
 	 * If there are a large number of down nodes, the node ping
