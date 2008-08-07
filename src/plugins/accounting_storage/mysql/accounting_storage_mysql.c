@@ -336,12 +336,33 @@ static int _move_parent(mysql_conn_t *mysql_conn, uint32_t lft, uint32_t rgt,
 	if(rc == SLURM_ERROR) 
 		return rc;
 	
-	/* now move the one we wanted to move in the first place */
-	rc = _move_account(mysql_conn, lft, rgt, cluster, id, new_parent);
+	/* now move the one we wanted to move in the first place 
+	 * We need to get the new lft and rgts though since they may
+	 * have changed.
+	 */
+	query = xstrdup_printf(
+		"select lft, rgt from %s where id=%s;",
+		assoc_table, id);
+	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+	if(!(result = 
+	     mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
+		xfree(query);
+		return SLURM_ERROR;
+	}
+	xfree(query);
+
+	if((row = mysql_fetch_row(result))) {
+		rc = _move_account(mysql_conn, atoi(row[0]), atoi(row[1]),
+				   cluster, id, new_parent);
+	} else {
+		error("can't find parent? we were able to a second ago.");
+		rc = SLURM_ERROR;
+	}
+	mysql_free_result(result);
 
 	if(rc == SLURM_ERROR) 
 		return rc;
-
+	
 	/* now we need to send the update of the new parents and
 	 * limits, so just to be safe, send the whole tree
 	 */
