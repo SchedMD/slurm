@@ -222,6 +222,11 @@ typedef struct {
 	uint16_t with_deleted; 
 } acct_user_cond_t;
 
+/* If there is something that can be altered here it will need to
+ * added as something to check for when modifying a user since a user
+ * can modify there default account but nothing else in
+ * src/slurmdbd/proc_req.c.
+ */
 typedef struct {
 	acct_admin_level_t admin_level;
 	List assoc_list; /* list of acct_association_rec_t *'s */

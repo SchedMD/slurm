@@ -1465,6 +1465,9 @@ is_same_user:
 	
 	/* same_user can only alter the default account nothing else */ 
 	if(same_user) {
+		/* If we add anything else here for the user we will
+		 * need to document it
+		 */
 		if((user_rec->admin_level != ACCT_ADMIN_NOTSET)
 		   || (user_rec->qos_list)) {
 			comment = "You can only change your own default account, nothing else";
