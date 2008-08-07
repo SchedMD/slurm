@@ -244,42 +244,34 @@ set as_list_pid [spawn $sacctmgr -n -p list $usr $nams=$us1,$us2 WithAssocs]
 expect {
 	-re "$us1\\\|$nm1\\\|$qs1\\\|$ala\\\|$tc1\\\|$nm2\\\|$dbu\\\|$fs2\\\|$mc2\\\|$mj2\\\|$mn2\\\|$mw2" {
 		incr dlumatches
-		send_user "\nONE\n"
 		exp_continue
 	}
 	-re "$us1\\\|$nm1\\\|$qs1\\\|$ala\\\|$tc1\\\|$nm1\\\|$dbu\\\|$fs2\\\|$mc2\\\|$mj2\\\|$mn2\\\|$mw2" {
 		incr dlumatches
-		send_user "\nTWO\n"
 		exp_continue
 	}
 	-re "$us1\\\|$nm1\\\|$qs1\\\|$ala\\\|$tc2\\\|$nm2\\\|$dbu\\\|$fs1\\\|$mc1\\\|$mj1\\\|$mn1\\\|$mw1" {
 		incr dlumatches
-		send_user "\nTHREE\n"
 		exp_continue
 	}
 	-re "$us1\\\|$nm1\\\|$qs1\\\|$ala\\\|$tc2\\\|$nm1\\\|$dbu\\\|$fs1\\\|$mc1\\\|$mj1\\\|$mn1\\\|$mw1" {
 		incr dlumatches
-		send_user "\nFOUR\n"
 		exp_continue
 	}
 	-re "$us2\\\|$nm1\\\|$qs1\\\|$ala\\\|$tc1\\\|$nm2\\\|$dbu\\\|$fs2\\\|$mc2\\\|$mj2\\\|$mn2\\\|$mw2" {
 		incr dlumatches
-		send_user "\nFIVE\n"
 		exp_continue
 	}
 	-re "$us2\\\|$nm1\\\|$qs1\\\|$ala\\\|$tc1\\\|$nm1\\\|$dbu\\\|$fs2\\\|$mc2\\\|$mj2\\\|$mn2\\\|$mw2" {
 		incr dlumatches
-		send_user "\nSIX\n"
 		exp_continue
 	}
 	-re "$us2\\\|$nm1\\\|$qs1\\\|$ala\\\|$tc2\\\|$nm2\\\|$dbu\\\|$fs1\\\|$mc1\\\|$mj1\\\|$mn1\\\|$mw1" {
 		incr dlumatches
-		send_user "\nSEVEN\n"
 		exp_continue
 	}
 	-re "$us2\\\|$nm1\\\|$qs1\\\|$ala\\\|$tc2\\\|$nm1\\\|$dbu\\\|$fs1\\\|$mc1\\\|$mj1\\\|$mn1\\\|$mw1" {
 		incr dlumatches
-		send_user "\nEIGHT\n"
 		exp_continue
 	}
 	-re "$tc3" {
