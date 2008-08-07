@@ -621,7 +621,8 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                                                                            \n\
   <SPECS> are different for each command entity pair.                      \n\
        list account       - Clusters=, Descriptions=, Format=, Names=,     \n\
-                            Organizations=, Parents=, and WithAssocs       \n\
+                            Organizations=, Parents=, WithCoor=,           \n\
+                            and WithAssocs                                 \n\
        add account        - Clusters=, Description=, Fairshare=,           \n\
                             MaxCPUSecs=, MaxJobs=, MaxNodes=, MaxWall=,    \n\
                             Names=, Organization=, Parent=, and QosLevel   \n\
@@ -655,7 +656,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             Format=, ID=, and Start=                       \n\
                                                                            \n\
        list user          - AdminLevel=, DefaultAccounts=, Format=, Names=,\n\
-                            QosLevel=, and WithAssocs                      \n\
+                            QosLevel=, WithCoor=, and WithAssocs           \n\
        add user           - Accounts=, AdminLevel=, Clusters=,             \n\
                             DefaultAccount=, Fairshare=, MaxCPUSecs=,      \n\
                             MaxJobs=, MaxNodes=, MaxWall=, Names=,         \n\
