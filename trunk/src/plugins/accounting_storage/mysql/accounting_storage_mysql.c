@@ -248,10 +248,12 @@ static int _move_account(mysql_conn_t *mysql_conn, uint32_t lft, uint32_t rgt,
 	
 	width = (rgt - lft + 1);
 
+	/* every thing below needs to be a %d not a %u because we are
+	   looking for -1 */
 	xstrfmtcat(query,
 		   "update %s set deleted = deleted + 2, "
 		   "lft = lft + %d, rgt = rgt + %d "
-		   "WHERE lft BETWEEN %u AND %u;",
+		   "WHERE lft BETWEEN %d AND %d;",
 		   assoc_table, diff, diff, lft, rgt);
 
 	xstrfmtcat(query,
@@ -266,11 +268,11 @@ static int _move_account(mysql_conn_t *mysql_conn, uint32_t lft, uint32_t rgt,
 
 	xstrfmtcat(query,
 		   "UPDATE %s SET rgt = rgt - %d WHERE "
-		   "(%d < 0 && rgt > %u && deleted < 2) "
-		   "|| (%d > 0 && rgt > %u);"
+		   "(%d < 0 && rgt > %d && deleted < 2) "
+		   "|| (%d > 0 && rgt > %d);"
 		   "UPDATE %s SET lft = lft - %d WHERE "
-		   "(%d < 0 && lft > %u && deleted < 2) "
-		   "|| (%d > 0 && lft > %u);",
+		   "(%d < 0 && lft > %d && deleted < 2) "
+		   "|| (%d > 0 && lft > %d);",
 		   assoc_table, width,
 		   diff, rgt,
 		   diff, lft,
@@ -3389,7 +3391,7 @@ extern List acct_storage_p_modify_associations(
 		 * set if they are an operator or greater and then
 		 * check it below after the query.
 		 */
-		if(uid == slurmdbd_conf->slurm_user_id
+		if((uid == slurmdbd_conf->slurm_user_id || uid == 0)
 		   || assoc_mgr_get_admin_level(mysql_conn, uid) 
 		   >= ACCT_ADMIN_OPERATOR) 
 			is_admin = 1;	
@@ -3944,7 +3946,7 @@ extern List acct_storage_p_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 		 * set if they are an operator or greater and then
 		 * check it below after the query.
 		 */
-		if(uid == slurmdbd_conf->slurm_user_id
+		if((uid == slurmdbd_conf->slurm_user_id || uid == 0)
 		   || assoc_mgr_get_admin_level(mysql_conn, uid) 
 		   >= ACCT_ADMIN_OPERATOR) 
 			is_admin = 1;	
@@ -4431,7 +4433,7 @@ extern List acct_storage_p_remove_associations(
 		 * set if they are an operator or greater and then
 		 * check it below after the query.
 		 */
-		if(uid == slurmdbd_conf->slurm_user_id
+		if((uid == slurmdbd_conf->slurm_user_id || uid == 0)
 		   || assoc_mgr_get_admin_level(mysql_conn, uid) 
 		   >= ACCT_ADMIN_OPERATOR) 
 			is_admin = 1;	

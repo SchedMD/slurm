@@ -154,7 +154,8 @@ extern int read_slurmdbd_conf(void)
 		}
 
 		s_p_get_uint16(&slurmdbd_conf->archive_age, "ArchiveAge", tbl);
-		s_p_get_string(&slurmdbd_conf->archive_script, "ArchiveScript", tbl);
+		s_p_get_string(&slurmdbd_conf->archive_script, "ArchiveScript",
+			       tbl);
 		s_p_get_string(&slurmdbd_conf->auth_info, "AuthInfo", tbl);
 		s_p_get_string(&slurmdbd_conf->auth_type, "AuthType", tbl);
 		s_p_get_string(&slurmdbd_conf->dbd_host, "DbdHost", tbl);
@@ -175,7 +176,8 @@ extern int read_slurmdbd_conf(void)
 		s_p_get_string(&slurmdbd_conf->plugindir, "PluginDir", tbl);
 		s_p_get_string(&slurmdbd_conf->slurm_user_name, "SlurmUser",
 			       tbl);
-		if (!s_p_get_uint16(&slurmdbd_conf->step_purge, "StepPurge", tbl))
+		if (!s_p_get_uint16(&slurmdbd_conf->step_purge, "StepPurge",
+				    tbl))
 			slurmdbd_conf->step_purge = DEFAULT_SLURMDBD_STEP_PURGE;
 		s_p_get_string(&slurmdbd_conf->storage_host,
 				"StorageHost", tbl);
@@ -197,7 +199,8 @@ extern int read_slurmdbd_conf(void)
 	if (slurmdbd_conf->auth_type == NULL)
 		slurmdbd_conf->auth_type = xstrdup(DEFAULT_SLURMDBD_AUTHTYPE);
 	if (slurmdbd_conf->dbd_host == NULL) {
-		error("slurmdbd.conf lacks DbdHost parameter, using 'localhost'");
+		error("slurmdbd.conf lacks DbdHost parameter, "
+		      "using 'localhost'");
 		slurmdbd_conf->dbd_host = xstrdup("localhost");
 	}
 	if (slurmdbd_conf->dbd_addr == NULL)
