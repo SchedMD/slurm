@@ -1475,28 +1475,31 @@ extern int sacctmgr_delete_coord(int argc, char *argv[])
 	if(exit_code) {
 		destroy_acct_user_cond(user_cond);
 		return SLURM_ERROR;
-	} else if(!cond_set || !user_cond->assoc_cond->user_list 
-		  || !user_cond->assoc_cond->acct_list) {
+	} else if(!cond_set) {
 		exit_code=1;
 		fprintf(stderr, " You need to specify a user list "
 		       "or account list here.\n"); 
 		destroy_acct_user_cond(user_cond);
 		return SLURM_ERROR;
 	}
-		
-	itr = list_iterator_create(user_cond->assoc_cond->user_list);
-	while((name = list_next(itr))) {
-		xstrfmtcat(user_str, "  %s\n", name);
-
+	if(user_cond->assoc_cond->user_list) {	
+		itr = list_iterator_create(user_cond->assoc_cond->user_list);
+		while((name = list_next(itr))) {
+			xstrfmtcat(user_str, "  %s\n", name);
+			
+		}
+		list_iterator_destroy(itr);
 	}
-	list_iterator_destroy(itr);
 
-	itr = list_iterator_create(user_cond->assoc_cond->acct_list);
-	while((name = list_next(itr))) {
-		xstrfmtcat(acct_str, "  %s\n", name);
-
+	if(user_cond->assoc_cond->acct_list) {
+		itr = list_iterator_create(user_cond->assoc_cond->acct_list);
+		while((name = list_next(itr))) {
+			xstrfmtcat(acct_str, "  %s\n", name);
+			
+		}
+		list_iterator_destroy(itr);
 	}
-	list_iterator_destroy(itr);
+
 	if(!user_str && !acct_str) {
 		exit_code=1;
 		fprintf(stderr, " You need to specify a user list "
