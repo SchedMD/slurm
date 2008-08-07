@@ -478,7 +478,8 @@ static int _handle_uint16(s_p_values_t *v,
 			error("%s value (%s) is less than zero", v->key, value);
 			return -1;
 		} else if (num > 0xffff) {
-			error("%s value (%s) is greater than 65535", v->key, value);
+			error("%s value (%s) is greater than 65535", v->key,
+			      value);
 			return -1;
 		}
 		v->data = xmalloc(sizeof(uint16_t));
