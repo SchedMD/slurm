@@ -301,13 +301,12 @@ static void _open_slurmdbd_fd()
 
 	slurmdbd_host = slurm_get_accounting_storage_host();
 	slurmdbd_port = slurm_get_accounting_storage_port();
-	if ((slurmdbd_host == NULL) || (slurmdbd_port == 0)) {
-		error("Invalid SlurmDbd address %s:%u",
-		      slurmdbd_host, slurmdbd_port);
-		xfree(slurmdbd_host);
-		return;
-	}
-
+	if (slurmdbd_host == NULL)
+		slurmdbd_host = xstrdup(DEFAULT_STORAGE_HOST);
+	
+	if (slurmdbd_port == 0) 
+		slurmdbd_port = SLURMDBD_PORT;
+	
 	slurm_set_addr(&dbd_addr, slurmdbd_port, slurmdbd_host);
 	if (dbd_addr.sin_port == 0)
 		error("Unable to locate SlurmDBD host %s:%u", 
