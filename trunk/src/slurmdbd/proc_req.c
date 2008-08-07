@@ -1422,18 +1422,12 @@ static int   _modify_users(void *db_conn,
 	int rc = SLURM_SUCCESS;
 	dbd_modify_msg_t *get_msg = NULL;
 	char *comment = NULL;
-
+	int same_user = 0;
+	int admin_level = assoc_mgr_get_admin_level(db_conn, *uid);
+	acct_user_cond_t *user_cond = NULL;
+	acct_user_rec_t *user_rec = NULL;
+		
 	debug2("DBD_MODIFY_USERS: called");
-
-	if((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)
-	   && assoc_mgr_get_admin_level(db_conn, *uid) < ACCT_ADMIN_OPERATOR) {
-		comment = "Your user doesn't have privilege to preform this action";
-		error("%s", comment);
-		*out_buffer = make_dbd_rc_msg(ESLURM_ACCESS_DENIED,
-					      comment, DBD_MODIFY_USERS);
-
-		return ESLURM_ACCESS_DENIED;
-	}
 
 	if (slurmdbd_unpack_modify_msg(DBD_MODIFY_USERS, &get_msg, in_buffer) !=
 	    SLURM_SUCCESS) {
@@ -1443,18 +1437,54 @@ static int   _modify_users(void *db_conn,
 					      comment, DBD_MODIFY_USERS);
 		return SLURM_ERROR;
 	}
+	
+	user_cond = (acct_user_cond_t *)get_msg->cond;
+	user_rec = (acct_user_rec_t *)get_msg->rec;
+			
+	if((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)
+	   && admin_level < ACCT_ADMIN_OPERATOR) {
+		if(user_cond && user_cond->assoc_cond 
+		   && user_cond->assoc_cond->user_list
+		   && (list_count(user_cond->assoc_cond->user_list) == 1)) {
+			uid_t pw_uid = uid_from_string(
+				list_peek(user_cond->assoc_cond->user_list));
+			if (pw_uid == *uid) {
+				same_user = 1;
+				goto is_same_user;
+			}
+		}
+		comment = "Your user doesn't have privilege to preform this action";
+		error("%s", comment);
+		*out_buffer = make_dbd_rc_msg(ESLURM_ACCESS_DENIED,
+					      comment, DBD_MODIFY_USERS);
 
-	if(((acct_user_rec_t *)get_msg->rec)->admin_level != ACCT_ADMIN_NOTSET 
+		return ESLURM_ACCESS_DENIED;
+	}
+
+is_same_user:
+	
+	/* same_user can only alter the default account nothing else */ 
+	if(same_user) {
+		if((user_rec->admin_level != ACCT_ADMIN_NOTSET)
+		   || (user_rec->qos_list)) {
+			comment = "You can only change your own default account, nothing else";
+			error("%s", comment);
+			*out_buffer = make_dbd_rc_msg(ESLURM_ACCESS_DENIED,
+						      comment, DBD_MODIFY_USERS);
+			
+			return ESLURM_ACCESS_DENIED;	
+		}		
+	}
+
+	if((user_rec->admin_level != ACCT_ADMIN_NOTSET) 
 	   && (*uid != slurmdbd_conf->slurm_user_id && *uid != 0)
-	   && assoc_mgr_get_admin_level(db_conn, *uid) 
-	   < ((acct_user_rec_t *)get_msg->rec)->admin_level) {
+	   && (admin_level < user_rec->admin_level)) {
 		comment = "You have to be the same or higher admin level to change another persons";
-		((acct_user_rec_t *)get_msg->rec)->admin_level =
-			ACCT_ADMIN_NOTSET;
+		user_rec->admin_level = ACCT_ADMIN_NOTSET;
 	}
 
 	if(!(list_msg.my_list = acct_storage_g_modify_users(
-		     db_conn, *uid, get_msg->cond, get_msg->rec))) {
+		     db_conn, *uid, user_cond, user_rec))) {
 		if(errno == ESLURM_ACCESS_DENIED) {
 			comment = "Your user doesn't have privilege to preform this action";
 			rc = ESLURM_ACCESS_DENIED;
