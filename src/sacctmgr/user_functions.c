@@ -1475,14 +1475,15 @@ extern int sacctmgr_delete_coord(int argc, char *argv[])
 	if(exit_code) {
 		destroy_acct_user_cond(user_cond);
 		return SLURM_ERROR;
-	} else if(!cond_set) {
+	} else if(!cond_set || !user_cond->assoc_cond->user_list 
+		  || !user_cond->assoc_cond->acct_list) {
 		exit_code=1;
 		fprintf(stderr, " You need to specify a user list "
 		       "or account list here.\n"); 
 		destroy_acct_user_cond(user_cond);
 		return SLURM_ERROR;
 	}
-
+		
 	itr = list_iterator_create(user_cond->assoc_cond->user_list);
 	while((name = list_next(itr))) {
 		xstrfmtcat(user_str, "  %s\n", name);
