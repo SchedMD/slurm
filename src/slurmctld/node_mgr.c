@@ -1986,28 +1986,52 @@ void node_not_resp (char *name, time_t msg_time)
 	struct node_record *node_ptr;
 #ifdef HAVE_FRONT_END		/* Fake all other nodes */
 	int i;
-	char host_str[64];
-	hostlist_t no_resp_hostlist = hostlist_create("");
 
 	for (i=0; i<node_record_count; i++) {
-		node_ptr = &node_record_table_ptr[i];
-		(void) hostlist_push_host(no_resp_hostlist, node_ptr->name);
-		_node_not_resp(node_ptr, msg_time);
+		node_ptr = node_record_table_ptr + i;
+		node_ptr->not_responding = true;
 	}
-	hostlist_uniq(no_resp_hostlist);
-	hostlist_ranged_string(no_resp_hostlist, sizeof(host_str), host_str);
-	error("Nodes %s not responding", host_str);
-	hostlist_destroy(no_resp_hostlist);
 #else
 	node_ptr = find_node_record (name);
 	if (node_ptr == NULL) {
 		error ("node_not_resp unable to find node %s", name);
 		return;
 	}
-	if ((node_ptr->node_state & NODE_STATE_BASE) != NODE_STATE_DOWN)
-		error("Node %s not responding", node_ptr->name);
+	if ((node_ptr->node_state & NODE_STATE_BASE) != NODE_STATE_DOWN) {
+		/* Logged by node_no_resp_msg() on periodic basis */
+		node_ptr->not_responding = true;
+	}
 	_node_not_resp(node_ptr, msg_time);
 #endif
+}
+
+/* For every node with the "not_responding" flag set, clear the flag
+ * and log that the node is not responding using a hostlist expression */
+extern void node_no_resp_msg(void)
+{
+	int i;
+	struct node_record *node_ptr;
+	char host_str[1024];
+	hostlist_t no_resp_hostlist = NULL;
+
+	for (i=0; i<node_record_count; i++) {
+		node_ptr = &node_record_table_ptr[i];
+		if (!node_ptr->not_responding)
+			continue;
+		if (no_resp_hostlist) {
+			(void) hostlist_push_host(no_resp_hostlist, 
+						  node_ptr->name);
+		} else
+			no_resp_hostlist = hostlist_create(node_ptr->name);
+		node_ptr->not_responding = false;
+ 	}
+	if (no_resp_hostlist) {
+		hostlist_uniq(no_resp_hostlist);
+		hostlist_ranged_string(no_resp_hostlist, 
+				       sizeof(host_str), host_str);
+		error("Nodes %s not responding", host_str);
+		hostlist_destroy(no_resp_hostlist);
+	}
 }
 
 static void _node_not_resp (struct node_record *node_ptr, time_t msg_time)

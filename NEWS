@@ -28,6 +28,10 @@ documents those changes that are of interest to users and admins.
     the node to be returned to use when it starts responding rather than 
     remaining in a non-usable state.
  -- Honor HealthCheckInterval values that are smaller than SlurmdTimeout.
+ -- For non-responding nodes, log them all on a single line with a hostlist 
+    expression rather than one line per node. Frequency of log messages is 
+    dependent upon SlurmctldDebug value from 300 seconds at SlurmctldDebug<=3
+    to 1 second at SlurmctldDebug>=5.
  
 * Changes in SLURM 1.3.6
 ========================
