@@ -1296,6 +1296,9 @@ extern void resume_job_step(struct job_record *job_ptr);
  *	mode, assuming control when the primary controller stops responding */
 extern void run_backup(void);
 
+/* Spawn health check function for every node that is not DOWN */
+extern void run_health_check(void);
+
 /* save_all_state - save entire slurmctld state for later recovery */
 extern void save_all_state(void);
 

@@ -27,6 +27,7 @@ documents those changes that are of interest to users and admins.
  -- Add logic to ping non-responsive nodes even if SlurmdTimeout=0. This permits
     the node to be returned to use when it starts responding rather than 
     remaining in a non-usable state.
+ -- Honor HealthCheckInterval values that are smaller than SlurmdTimeout.
  
 * Changes in SLURM 1.3.6
 ========================

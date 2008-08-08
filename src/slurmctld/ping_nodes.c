@@ -65,7 +65,6 @@
 static pthread_mutex_t lock_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int ping_count = 0;
 
-static void _run_health_check(void);
 
 /*
  * is_ping_done - test if the last node ping cycle has completed.
@@ -124,7 +123,6 @@ void ping_nodes (void)
 	int i;
 	time_t now, still_live_time, node_dead_time;
 	static time_t last_ping_time = (time_t) 0;
-	static time_t last_health_check = (time_t) 0;
 	uint16_t base_state, no_resp_flag;
 	bool restart_flag;
 	hostlist_t down_hostlist = NULL;
@@ -133,15 +131,6 @@ void ping_nodes (void)
 	agent_arg_t *reg_agent_args = NULL;
 
 	now = time (NULL);
-	if (slurmctld_conf.health_check_interval &&
-	    (difftime(now, last_health_check) >= 
-	     slurmctld_conf.health_check_interval)) {
-		/* This will communicate with every node,
-		 * substituting for the PING logic below */
-		last_health_check = now;
-		_run_health_check();
-		return;
-	}
 	
 	ping_agent_args = xmalloc (sizeof (agent_arg_t));
 	ping_agent_args->msg_type = REQUEST_PING;
@@ -273,7 +262,8 @@ void ping_nodes (void)
 	}
 }
 
-static void _run_health_check(void)
+/* Spawn health check function for every node that is not DOWN */
+extern void run_health_check(void)
 {
 	int i;
 	uint16_t base_state;
