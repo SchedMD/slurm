@@ -978,6 +978,7 @@ static void *_slurmctld_background(void *no_data)
 	static time_t last_sched_time;
 	static time_t last_checkpoint_time;
 	static time_t last_group_time;
+	static time_t last_health_check_time;
 	static time_t last_ping_node_time;
 	static time_t last_ping_srun_time;
 	static time_t last_purge_job_time;
@@ -1012,15 +1013,13 @@ static void *_slurmctld_background(void *no_data)
 	/* Let the dust settle before doing work */
 	now = time(NULL);
 	last_sched_time = last_checkpoint_time = last_group_time = now;
-	last_purge_job_time = last_trigger = now;
+	last_purge_job_time = last_trigger = last_health_check_time = now;
 	last_timelimit_time = last_assert_primary_time = now;
-	if (slurmctld_conf.slurmd_timeout ||
-	    slurmctld_conf.health_check_interval) {
+	if (slurmctld_conf.slurmd_timeout) {
 		/* We ping nodes that haven't responded in SlurmdTimeout/3,
 		 * but need to do the test at a higher frequency or we might
 		 * DOWN nodes with times that fall in the gap. */
-		ping_interval = MIN((slurmctld_conf.slurmd_timeout/3),
-				    slurmctld_conf.health_check_interval);
+		ping_interval = slurmctld_conf.slurmd_timeout / 3;
 	} else {
 		/* This will just ping non-responding nodes
 		 * and restore them to service */
@@ -1066,6 +1065,17 @@ static void *_slurmctld_background(void *no_data)
 			job_time_limit();
 			step_checkpoint();
 			unlock_slurmctld(job_write_lock);
+		}
+
+		if (slurmctld_conf.health_check_interval &&
+		    (difftime(now, last_health_check_time) >=
+		     slurmctld_conf.health_check_interval)) {
+			if (is_ping_done()) {
+				last_health_check_time = now;
+				lock_slurmctld(node_write_lock);
+				run_health_check();
+				unlock_slurmctld(node_write_lock);
+			}
 		}
 
 		if (difftime(now, last_ping_node_time) >= ping_interval) {
