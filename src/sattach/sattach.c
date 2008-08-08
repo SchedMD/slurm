@@ -326,7 +326,8 @@ static int _attach_to_tasks(uint32_t jobid,
 	msg.msg_type = REQUEST_REATTACH_TASKS;
 	msg.data = &reattach_msg;
 	
-	nodes_resp = slurm_send_recv_msgs(layout->node_list, &msg, timeout);
+	nodes_resp = slurm_send_recv_msgs(layout->node_list, &msg, 
+					  timeout, false);
 	if (nodes_resp == NULL) {
 		error("slurm_send_recv_msgs failed: %m");
 		return SLURM_ERROR;

@@ -513,7 +513,7 @@ void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo)
 	
 	debug3("sending signal to host %s", name);
 	
-	if (!(ret_list = slurm_send_recv_msgs(name, &req, 0))) { 
+	if (!(ret_list = slurm_send_recv_msgs(name, &req, 0, false))) { 
 		error("fwd_signal: slurm_send_recv_msgs really failed bad");
 		xfree(name);
 		return;
@@ -1042,7 +1042,7 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 	
 	if(!(ret_list = slurm_send_recv_msgs(
 		     ctx->step_resp->step_layout->node_list,
-		     &msg, timeout))) {
+		     &msg, timeout, false))) {
 		error("slurm_send_recv_msgs failed miserably: %m");
 		return SLURM_ERROR;
 	}

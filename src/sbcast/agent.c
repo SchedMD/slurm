@@ -86,7 +86,7 @@ static void *_agent_thread(void *args)
 
 	ret_list = slurm_send_recv_msgs(thread_ptr->nodelist,
 					&thread_ptr->msg,
-					params.timeout);
+					params.timeout, false);
 	if (ret_list == NULL) {
 		error("slurm_send_recv_msgs: %m");
 		exit(1);
