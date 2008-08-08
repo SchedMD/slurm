@@ -82,6 +82,7 @@ to log job step information at the appropriate level?</li>
 SLURM RPM?</li>
 <li><a href="#slurmdbd">Why should I use the slurmdbd instead of the
 regular database plugins?</li>
+<li><a href="#debug">How can I build SLURM with debugging symbols?</li>
 </ol>
 
 <h2>For Users</h2>
@@ -952,8 +953,14 @@ slurmdbd.
    slurmdbd you can also query any cluster using the slurmdbd from any
    other cluster's nodes.
 
+<p><a name="debug"><b>29. How can I build SLURM with debugging symbols?</b></br>
+Set your CFLAGS environment variable before building. 
+You want the "-g" option to produce debugging information and
+"-O0" to set the optimization level to zero (off). For example:<br>
+CFLAGS="-g -O0" ./configure ...
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 1 July 2008</p>
+<p style="text-align:center;">Last modified 8 August 2008</p>
 
 <!--#include virtual="footer.txt"-->
