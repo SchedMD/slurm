@@ -783,11 +783,13 @@ int slurm_send_recv_node_msg(slurm_msg_t * request_msg,
  * IN nodelist	    - list of nodes to send to.
  * IN msg           - a slurm_msg struct to be sent by the function
  * IN timeout	    - how long to wait in milliseconds
+ * IN quiet       - if set, reduce logging details
  * RET List	    - List containing the responses of the childern
  *                    (if any) we forwarded the message to. List
  *                    containing type (ret_types_t).
  */
-List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg, int timeout);
+List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg, int timeout,
+			  bool quiet);
 
 /*
  *  Send a message to msg->address

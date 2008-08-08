@@ -734,14 +734,15 @@ finished:	;
 #endif
 }
 
-/* Report a communications error for specified node */
+/* Report a communications error for specified node
+ * This also gets logged as a non-responsive node */
 static inline int _comm_err(char *node_name)
 {
 	int rc = 1;
 #if AGENT_IS_THREAD
 	if ((rc = is_node_resp (node_name)))
 #endif
-		error("agent/send_recv_msg: %s: %m", node_name);
+		verbose("agent/send_recv_msg: %s: %m", node_name);
 	return rc;
 }
 
@@ -841,8 +842,7 @@ static void *_thread_per_group_rpc(void *args)
 		} else {
 			if(!(ret_list = slurm_send_recv_msgs(
 				     thread_ptr->nodelist,
-				     &msg, 
-				     0))) {
+				     &msg, 0, true))) {
 				error("_thread_per_group_rpc: "
 				      "no ret_list given");
 				goto cleanup;
