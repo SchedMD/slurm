@@ -979,6 +979,7 @@ static void *_slurmctld_background(void *no_data)
 	static time_t last_checkpoint_time;
 	static time_t last_group_time;
 	static time_t last_health_check_time;
+	static time_t last_no_resp_msg_time;
 	static time_t last_ping_node_time;
 	static time_t last_ping_srun_time;
 	static time_t last_purge_job_time;
@@ -987,7 +988,7 @@ static void *_slurmctld_background(void *no_data)
 	static time_t last_trigger;
 	static time_t last_node_acct;
 	time_t now;
-	int ping_interval;
+	int no_resp_msg_interval, ping_interval;
 	DEF_TIMERS;
 
 	/* Locks: Read config */
@@ -1006,6 +1007,9 @@ static void *_slurmctld_background(void *no_data)
 	/* Locks: Read node */
 	slurmctld_lock_t node_read_lock = { 
 		NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
+	/* Locks: Write node */
+	slurmctld_lock_t node_write_lock2 = { 
+		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
 	/* Locks: Write partition */
 	slurmctld_lock_t part_write_lock = { 
 		NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
@@ -1015,6 +1019,7 @@ static void *_slurmctld_background(void *no_data)
 	last_sched_time = last_checkpoint_time = last_group_time = now;
 	last_purge_job_time = last_trigger = last_health_check_time = now;
 	last_timelimit_time = last_assert_primary_time = now;
+	last_no_resp_msg_time = now;
 	if (slurmctld_conf.slurmd_timeout) {
 		/* We ping nodes that haven't responded in SlurmdTimeout/3,
 		 * but need to do the test at a higher frequency or we might
@@ -1039,6 +1044,13 @@ static void *_slurmctld_background(void *no_data)
 		now = time(NULL);
 		START_TIMER;
 
+		if (slurmctld_conf.slurmctld_debug <= 3)
+			no_resp_msg_interval = 300;
+		else if (slurmctld_conf.slurmctld_debug == 4)
+			no_resp_msg_interval = 60;
+		else
+			no_resp_msg_interval = 1;
+
 		if (slurmctld_config.shutdown_time) {
 			int i;
 			/* wait for RPC's to complete */
@@ -1056,6 +1068,14 @@ static void *_slurmctld_background(void *no_data)
 			} else
 				error("can not save state, semaphores set");
 			break;
+		}
+
+		if (difftime(now, last_no_resp_msg_time) >= 
+		    no_resp_msg_interval) {
+			last_no_resp_msg_time = now;
+			lock_slurmctld(node_write_lock2);
+			node_no_resp_msg();
+			unlock_slurmctld(node_write_lock2);
 		}
 
 		if (difftime(now, last_timelimit_time) >= PERIODIC_TIMEOUT) {

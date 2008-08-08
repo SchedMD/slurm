@@ -196,6 +196,8 @@ struct node_record {
 	uint16_t node_state;		/* enum node_states, ORed with 
 					 * NODE_STATE_NO_RESPOND if not 
 					 * responding */
+	bool not_responding;		/* set if fails to respond, 
+					 * clear after logging this */
 	time_t last_response;		/* last response from the node */
 	time_t last_idle;		/* time node last become idle */
 	uint16_t cpus;			/* count of processors on the node */
@@ -1128,6 +1130,10 @@ extern void node_did_resp (char *name);
  * IN msg_time - time message was sent
  */
 extern void node_not_resp (char *name, time_t msg_time);
+
+/* For every node with the "not_responding" flag set, clear the flag
+ * and log that the node is not responding using a hostlist expression */
+extern void node_no_resp_msg(void);
 
 /*
  * job_alloc_info - get details about an existing job allocation

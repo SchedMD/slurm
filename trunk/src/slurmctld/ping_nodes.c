@@ -188,6 +188,7 @@ void ping_nodes (void)
 				down_hostlist = 
 					hostlist_create(node_ptr->name);
 			set_node_down(node_ptr->name, "Not responding");
+			node_ptr->not_responding = false;  /* logged below */
 			continue;
 		}
 
