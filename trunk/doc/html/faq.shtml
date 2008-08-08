@@ -23,8 +23,10 @@ name for a batch job?</a></li>
 allocated to a SLURM job?</a></li>
 <li><a href="#terminal">Can tasks be launched with a remote terminal?</a></li>
 <li><a href="#force">What does &quot;srun: Force Terminated job&quot; indicate?</a></li>
-<li><a href="#early_exit">What does this mean: &quot;srun: First task exited 30s ago&quot;
-followed by &quot;srun Job Failed&quot;?</a></li>
+<li><a href="#early_exit">What does this mean: &quot;srun: First task exited 
+30s ago&quot; followed by &quot;srun Job Failed&quot;?</a></li>
+<li><a href="#memlock">Why is my MPI job  failing due to the locked memory 
+(memlock) limit being too low?</a></li>
 </ol>
 <h2>For Administrators</h2>
 <ol>
@@ -485,9 +487,32 @@ not normally productive. This behavior can be changed using srun's
 period or disable the timeout altogether. See srun's man page
 for details.
 
+<p><a name="memlock"><b>18. Why is my MPI job  failing due to the 
+locked memory (memlock) limit being too low?</b></a><br>
+By default, SLURM propagates all of your resource limits at the 
+time of job submission to the spawned tasks. 
+This can be disabled by specifically excluding the propagation of
+specific limits in the <i>slurm.conf</i> file. For example
+<i>PropagateResourceLimitsExcept=MEMLOCK</i> might be used to 
+prevent the propagation of a user's locked memory limit from a 
+login node to a dedicated node used for his parallel job.
+If the user's resource limit is not propagated, the limit in 
+effect for the <i>slurmd</i> daemon will be used for the spawned job.
+A simple way to control this is to insure that user <i>root</i> has a 
+sufficiently large resource limit and insuring that <i>slurmd</i> takes 
+full advantage of this limit. For example, you can set user's root's
+locked memory limit limit to be unlimited on the compute nodes (see
+<i>"man limits.conf"</i>) and insuring that <i>slurmd</i> takes 
+full advantage of this limit (e.g. by adding something like
+<i>"ulimit -l unlimited"</i> to the <i>/etc/init.d/slurm</i>
+script used to initiate <i>slurmd</i>). 
+Related information about <a href="#pam">PAM</a> is also available.
+
 <p class="footer"><a href="#top">top</a></p>
 
+
 <h2>For Administrators</h2>
+
 <p><a name="suspend"><b>1. How is job suspend/resume useful?</b></a><br>
 Job suspend/resume is most useful to get particularly large jobs initiated 
 in a timely fashion with minimal overhead. Say you want to get a full-system
