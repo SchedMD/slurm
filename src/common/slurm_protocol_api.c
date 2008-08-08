@@ -2607,8 +2607,8 @@ List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg,
 		
 		if(slurm_conf_get_addr(name, &msg->address) == SLURM_ERROR) {
 			if (quiet) {
-				verbose("slurm_send_recv_msgs: can't get addr "
-				        "for host %s", name);
+				debug("slurm_send_recv_msgs: can't get addr "
+				      "for host %s", name);
 			} else {
 				error("slurm_send_recv_msgs: can't get addr "
 				      "for host %s", name);
@@ -2621,7 +2621,7 @@ List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg,
 		
 		if ((fd = slurm_open_msg_conn(&msg->address)) < 0) {
 			if (quiet)
-				verbose("slurm_send_recv_msgs to %s: %m", name);
+				debug("slurm_send_recv_msgs to %s: %m", name);
 			else
 				error("slurm_send_recv_msgs to %s: %m", name);
 			mark_as_failed_forward(&tmp_ret_list, name, 
@@ -2644,9 +2644,9 @@ List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg,
 		if(!(ret_list = _send_and_recv_msgs(fd, msg, timeout))) {
 			xfree(msg->forward.nodelist);
 			if (quiet) {
-				verbose("slurm_send_recv_msgs"
-				        "(_send_and_recv_msgs) to %s: %m", 
-				        name);
+				debug("slurm_send_recv_msgs"
+				      "(_send_and_recv_msgs) to %s: %m", 
+				      name);
 			} else {
 				error("slurm_send_recv_msgs"
 				      "(_send_and_recv_msgs) to %s: %m", 
