@@ -217,7 +217,8 @@ void ping_nodes (void)
 			continue;
 		}
 
-		if (node_ptr->last_response >= still_live_time)
+		if ((!no_resp_flag) && 
+		    (node_ptr->last_response >= still_live_time))
 			continue;
 
 		/* Do not keep pinging down nodes since this can induce

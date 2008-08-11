@@ -237,6 +237,7 @@ extern uint32_t total_cpus;		/* count of CPUs in the entire cluster */
 extern bitstr_t *idle_node_bitmap;	/* bitmap of idle nodes */
 extern bitstr_t *share_node_bitmap;	/* bitmap of sharable nodes */
 extern bitstr_t *up_node_bitmap;	/* bitmap of up nodes, not DOWN */
+extern bool ping_nodes_now;		/* if set, ping nodes immediately */
 
 /*****************************************************************************\
  *  PARTITION parameters and data structures

@@ -32,6 +32,8 @@ documents those changes that are of interest to users and admins.
     expression rather than one line per node. Frequency of log messages is 
     dependent upon SlurmctldDebug value from 300 seconds at SlurmctldDebug<=3
     to 1 second at SlurmctldDebug>=5.
+ -- If a DOWN node is resumed, set its state to IDLE & NOT_RESPONDING and 
+    ping the node immediately to clear the NOT_RESPONDING flag.
  
 * Changes in SLURM 1.3.6
 ========================
