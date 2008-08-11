@@ -102,7 +102,6 @@ static void 	_make_node_down(struct node_record *node_ptr,
 				time_t event_time);
 static void	_node_did_resp(struct node_record *node_ptr);
 static bool	_node_is_hidden(struct node_record *node_ptr);
-static void	_node_not_resp (struct node_record *node_ptr, time_t msg_time);
 static void 	_pack_node (struct node_record *dump_node_ptr, bool cr_flag,
 				Buf buffer);
 static void	_sync_bitmaps(struct node_record *node_ptr, int job_count);
@@ -110,6 +109,9 @@ static void	_update_config_ptr(bitstr_t *bitmap,
 				struct config_record *config_ptr);
 static int	_update_node_features(char *node_names, char *features);
 static bool 	_valid_node_state_change(uint16_t old, uint16_t new); 
+#ifndef HAVE_FRONT_END
+static void	_node_not_resp (struct node_record *node_ptr, time_t msg_time);
+#endif
 #if _DEBUG
 static void	_dump_hash (void);
 #endif
@@ -2038,6 +2040,7 @@ extern void node_no_resp_msg(void)
 	}
 }
 
+#ifndef HAVE_FRONT_END
 static void _node_not_resp (struct node_record *node_ptr, time_t msg_time)
 {
 	int i;
@@ -2056,6 +2059,7 @@ static void _node_not_resp (struct node_record *node_ptr, time_t msg_time)
 	node_ptr->node_state |= NODE_STATE_NO_RESPOND;
 	return;
 }
+#endif
 
 /*
  * set_node_down - make the specified node's state DOWN and
