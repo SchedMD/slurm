@@ -512,8 +512,6 @@ void set_options(const int argc, char **argv)
 		{"mincores",      required_argument, 0, LONG_OPT_MINCORES},
 		{"minthreads",    required_argument, 0, LONG_OPT_MINTHREADS},
 		{"mem",           required_argument, 0, LONG_OPT_MEM},
-		{"job-mem",       required_argument, 0, LONG_OPT_MEM_PER_CPU},
-		{"task-mem",      required_argument, 0, LONG_OPT_MEM_PER_CPU},
 		{"mem-per-cpu",   required_argument, 0, LONG_OPT_MEM_PER_CPU},
 		{"hint",          required_argument, 0, LONG_OPT_HINT},
 		{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
@@ -1415,7 +1413,7 @@ static void _help(void)
 "                              cpu consumable resource is enabled\n"
 "      --mem-per-cpu=MB        maximum amount of real memory per allocated\n"
 "                              cpu required by the job.\n" 
-"                              --mem >= --job-mem if --mem is specified.\n" 
+"                              --mem >= --mem-per-cpu if --mem is specified.\n" 
 "\n"
 "Affinity/Multi-core options: (when the task/affinity plugin is enabled)\n" 
 "  -B --extra-node-info=S[:C[:T]]            Expands to:\n"

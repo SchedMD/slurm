@@ -141,8 +141,9 @@ struct slurm_job_credential {
 	uint32_t  jobid;	/* Job ID associated with this cred	*/
 	uint32_t  stepid;	/* Job step ID for this credential	*/
 	uid_t     uid;		/* user for which this cred is valid	*/
-	uint32_t  job_mem;	/* MB of memory reserved for job	*/
-	uint32_t  task_mem;	/* MB of memory reserved per task	*/
+	uint32_t  job_mem;	/* MB of memory reserved per node OR
+				 * real memory per CPU | MEM_PER_CPU,
+				 * default=0 (no limit) */
 	time_t    ctime;	/* time of credential creation		*/
 	char     *nodes;	/* hostnames for which the cred is ok	*/
 	uint32_t  alloc_lps_cnt;/* Number of hosts in the list above	*/
@@ -603,7 +604,6 @@ slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg)
 	cred->stepid = arg->stepid;
 	cred->uid    = arg->uid;
 	cred->job_mem = arg->job_mem;
-	cred->task_mem = arg->task_mem;
 	cred->nodes  = xstrdup(arg->hostlist);
         cred->alloc_lps_cnt = arg->alloc_lps_cnt;
         cred->alloc_lps  = NULL;
@@ -650,7 +650,6 @@ slurm_cred_copy(slurm_cred_t cred)
 	rcred->stepid = cred->stepid;
 	rcred->uid    = cred->uid;
 	rcred->job_mem = cred->job_mem;
-	rcred->task_mem = cred->task_mem;
 	rcred->nodes  = xstrdup(cred->nodes);
 	rcred->alloc_lps_cnt = cred->alloc_lps_cnt;
 	rcred->alloc_lps  = NULL;
@@ -687,7 +686,6 @@ slurm_cred_faker(slurm_cred_arg_t *arg)
 	cred->stepid   = arg->stepid;
 	cred->uid      = arg->uid;
 	cred->job_mem  = arg->job_mem;
-	cred->task_mem = arg->task_mem;
 	cred->nodes    = xstrdup(arg->hostlist);
 	cred->alloc_lps_cnt = arg->alloc_lps_cnt;
 	cred->alloc_lps  = NULL;
@@ -742,7 +740,6 @@ slurm_cred_get_args(slurm_cred_t cred, slurm_cred_arg_t *arg)
 	arg->stepid   = cred->stepid;
 	arg->uid      = cred->uid;
 	arg->job_mem  = cred->job_mem;
-	arg->task_mem = cred->task_mem;
 	arg->hostlist = xstrdup(cred->nodes);
 	arg->alloc_lps_cnt = cred->alloc_lps_cnt;
 	if (arg->alloc_lps_cnt > 0) {
@@ -807,7 +804,6 @@ slurm_cred_verify(slurm_cred_ctx_t ctx, slurm_cred_t cred,
 	arg->stepid   = cred->stepid;
 	arg->uid      = cred->uid;
 	arg->job_mem  = cred->job_mem;
-	arg->task_mem = cred->task_mem;
 	arg->hostlist = xstrdup(cred->nodes);
 	arg->alloc_lps_cnt = cred->alloc_lps_cnt;
 	if (arg->alloc_lps_cnt > 0) {
@@ -1040,7 +1036,6 @@ slurm_cred_unpack(Buf buffer)
 	safe_unpack32(          &tmpint,             buffer);
 	cred->uid = tmpint;
 	safe_unpack32(          &cred->job_mem,      buffer);
-	safe_unpack32(          &cred->task_mem,     buffer);
 	safe_unpackstr_xmalloc( &cred->nodes, &len,  buffer);
 	safe_unpack32(          &cred->alloc_lps_cnt,     buffer);
         if (cred->alloc_lps_cnt > 0)
@@ -1109,7 +1104,6 @@ slurm_cred_print(slurm_cred_t cred)
 	info("Cred: Stepid   %u",  cred->jobid         );
 	info("Cred: UID      %lu", (u_long) cred->uid  );
 	info("Cred: job_mem  %u",  cred->job_mem       );
-	info("Cred: task_mem %u",  cred->task_mem      );
 	info("Cred: Nodes    %s",  cred->nodes         );
 	info("Cred: alloc_lps_cnt %u", cred->alloc_lps_cnt     ); 
 	info("Cred: alloc_lps: ");                            
@@ -1324,7 +1318,6 @@ _pack_cred(slurm_cred_t cred, Buf buffer)
 	pack32(           cred->stepid,   buffer);
 	pack32((uint32_t) cred->uid,      buffer);
 	pack32(           cred->job_mem,  buffer);
-	pack32(           cred->task_mem, buffer);
 	packstr(          cred->nodes,    buffer);
 	pack32(           cred->alloc_lps_cnt, buffer);
 	if (cred->alloc_lps_cnt > 0)

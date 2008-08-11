@@ -132,9 +132,13 @@ static char *	_dump_all_nodes(int *node_cnt, time_t update_time)
 	int i, cnt = 0;
 	struct node_record *node_ptr = node_record_table_ptr;
 	char *tmp_buf, *buf = NULL;
+	uint16_t base_state;
 
 	for (i=0; i<node_record_count; i++, node_ptr++) {
 		if (node_ptr->name == NULL)
+			continue;
+		base_state = node_ptr->node_state & NODE_STATE_BASE;
+		if (base_state == NODE_STATE_FUTURE)
 			continue;
 		tmp_buf = _dump_node(node_ptr, update_time);
 		if (cnt > 0)

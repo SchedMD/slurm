@@ -363,15 +363,15 @@ int srun(int ac, char **av)
 	if (opt.acctg_freq >= 0)
 		launch_params.acctg_freq = opt.acctg_freq;
 	launch_params.pty = opt.pty;
-	launch_params.max_sockets     = opt.max_sockets_per_node;
-	launch_params.max_cores       = opt.max_cores_per_socket;
-	launch_params.max_threads     = opt.max_threads_per_core;
-	launch_params.cpus_per_task = opt.cpus_per_task;
+	launch_params.max_sockets	= opt.max_sockets_per_node;
+	launch_params.max_cores		= opt.max_cores_per_socket;
+	launch_params.max_threads	= opt.max_threads_per_core;
+	launch_params.cpus_per_task	= opt.cpus_per_task;
 	launch_params.ntasks_per_node   = opt.ntasks_per_node;
 	launch_params.ntasks_per_socket = opt.ntasks_per_socket;
 	launch_params.ntasks_per_core   = opt.ntasks_per_core;
-	launch_params.ckpt_path = xstrdup(opt.ckpt_path);
-
+	launch_params.ckpt_path		= xstrdup(opt.ckpt_path);
+	launch_params.launcher_host	= xstrdup(slurmctld_comm_addr.hostname);
 	/* job structure should now be filled in */
 	_setup_signals();
 
@@ -397,8 +397,8 @@ int srun(int ac, char **av)
 	}
 
 	update_job_state(job, SRUN_JOB_LAUNCHING);
-	if (slurm_step_launch(job->step_ctx, slurmctld_comm_addr.hostname, 
-	    &launch_params, &callbacks) != SLURM_SUCCESS) {
+	if (slurm_step_launch(job->step_ctx, &launch_params, &callbacks) != 
+	    SLURM_SUCCESS) {
 		error("Application launch failed: %m");
 		goto cleanup;
 	}
@@ -407,7 +407,7 @@ int srun(int ac, char **av)
 	if (slurm_step_launch_wait_start(job->step_ctx) == SLURM_SUCCESS) {
 		update_job_state(job, SRUN_JOB_RUNNING);
 		/* Only set up MPIR structures if the step launched
-		   correctly. */
+		 * correctly. */
 		if (opt.multi_prog)
 			mpir_set_multi_name(job->ctx_params.task_count,
 					    launch_params.argv[0]);

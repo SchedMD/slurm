@@ -37,11 +37,11 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include <time.h>
+#include <grp.h>
+#include <pwd.h>
 #include <stdio.h>
 #include <string.h>
-#include <pwd.h>
-#include <grp.h>
+#include <time.h>
 #include <sys/types.h>
 
 #include "src/common/hostlist.h"
@@ -49,11 +49,11 @@
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
 #include "src/common/parse_time.h"
+#include "src/squeue/print.h"
+#include "src/squeue/squeue.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/squeue/print.h"
-#include "src/squeue/squeue.h"
 
 static int	_adjust_completing (job_info_t *j, node_info_msg_t **ni);
 static int	_filter_job(job_info_t * job);
@@ -334,9 +334,12 @@ int _print_job_reason(job_info_t * job, int width, bool right, char* suffix)
 	if (job == NULL)        /* Print the Header instead */
 		_print_str("REASON", width, right, true);
 	else {
-		char id[FORMAT_STRING_SIZE];
-		snprintf(id, FORMAT_STRING_SIZE, "%s", 
-			job_reason_string(job->state_reason));
+		char id[FORMAT_STRING_SIZE], *reason;
+		if (job->state_desc)
+			reason = job->state_desc;
+		else
+			reason = job_reason_string(job->state_reason);
+		snprintf(id, FORMAT_STRING_SIZE, "%s", reason);
 		_print_str(id, width, right, true);
 	}
 	if (suffix)
@@ -574,9 +577,12 @@ int _print_job_reason_list(job_info_t * job, int width, bool right,
 	} else if ((job->job_state == JOB_PENDING)
 	||         (job->job_state == JOB_TIMEOUT)
 	||         (job->job_state == JOB_FAILED)) {
-		char id[FORMAT_STRING_SIZE];
-		snprintf(id, FORMAT_STRING_SIZE, "(%s)", 
-			job_reason_string(job->state_reason));
+		char id[FORMAT_STRING_SIZE], *reason;
+		if (job->state_desc)
+			reason = job->state_desc;
+		else
+			reason = job_reason_string(job->state_reason);
+		snprintf(id, FORMAT_STRING_SIZE, "(%s)", reason);
 		_print_str(id, width, right, true);
 	} else {
 #ifdef HAVE_BG

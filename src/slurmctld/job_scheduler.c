@@ -289,11 +289,13 @@ extern int schedule(void)
 		if (_failed_partition(job_ptr->part_ptr, failed_parts, 
 				      failed_part_cnt)) {
 			job_ptr->state_reason = WAIT_PRIORITY;
+			xfree(job_ptr->state_desc);
 			continue;
 		}
 
 		if (license_job_test(job_ptr) != SLURM_SUCCESS) {
 			job_ptr->state_reason = WAIT_LICENSES;
+			xfree(job_ptr->state_desc);
 			continue;
 		}
 
@@ -309,6 +311,7 @@ extern int schedule(void)
 			job_ptr->job_state = JOB_FAILED;
 			job_ptr->exit_code = 1;
 			job_ptr->state_reason = FAIL_BANK_ACCOUNT;
+			xfree(job_ptr->state_desc);
 			job_ptr->start_time = job_ptr->end_time = time(NULL);
 			job_completion_logger(job_ptr);
 			delete_job_details(job_ptr);
@@ -369,6 +372,7 @@ extern int schedule(void)
 				job_ptr->job_state = JOB_FAILED;
 				job_ptr->exit_code = 1;
 				job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
+				xfree(job_ptr->state_desc);
 				job_ptr->start_time = job_ptr->end_time = now;
 				job_completion_logger(job_ptr);
 				delete_job_details(job_ptr);

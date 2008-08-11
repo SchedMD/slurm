@@ -116,7 +116,8 @@ extern int	get_nodes(char *cmd_ptr, int *err_code, char **err_msg)
 					      node_name);
 					continue;
 				}
-				tmp_buf = _dump_node(node_ptr, NULL, update_time);
+				tmp_buf = _dump_node(node_ptr, NULL, 
+						     update_time);
 				if (node_rec_cnt > 0)
 					xstrcat(buf, "#");
 				xstrcat(buf, tmp_buf);
@@ -152,9 +153,13 @@ static char *	_dump_all_nodes(int *node_cnt, time_t update_time)
 	char *tmp_buf = NULL, *buf = NULL;
 	struct node_record *uniq_node_ptr = NULL;
 	hostlist_t hl = NULL;
-	
+	uint16_t base_state;
+
 	for (i=0; i<node_record_count; i++, node_ptr++) {
 		if (node_ptr->name == NULL)
+			continue;
+		base_state = node_ptr->node_state & NODE_STATE_BASE;
+		if (base_state == NODE_STATE_FUTURE)
 			continue;
 		if (use_host_exp == 2) {
 			rc = _same_info(uniq_node_ptr, node_ptr, update_time);

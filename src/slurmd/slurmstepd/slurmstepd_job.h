@@ -119,7 +119,6 @@ typedef struct slurmd_job {
 	uint32_t       cpus_per_task;	/* number of cpus desired per task  */
 	uint32_t       debug;  /* debug level for job slurmd                */
 	uint32_t       job_mem;  /* MB of memory reserved for the job       */
-	uint32_t       task_mem; /* MB of memory reserved for each task     */ 
 	uint16_t       cpus;   /* number of cpus to use for this job        */
 	uint16_t       argc;   /* number of commandline arguments           */
 	char         **env;    /* job environment                           */

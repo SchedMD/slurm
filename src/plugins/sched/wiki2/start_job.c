@@ -320,6 +320,7 @@ static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist,
 			}
 			wait_string = job_reason_string(wait_reason);
 			job_ptr->state_reason = WAIT_HELD;
+			xfree(job_ptr->state_desc);
 		}
 		*err_code = -910 - wait_reason;
 		snprintf(tmp_msg, sizeof(tmp_msg),

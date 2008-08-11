@@ -64,7 +64,6 @@ _job_fake_cred(struct slurm_step_ctx_struct *ctx)
 	arg.job_mem       = 0;
 	arg.jobid         = ctx->job_id;
 	arg.stepid        = ctx->step_resp->job_step_id;
-	arg.task_mem      = 0;
 	arg.uid           = ctx->user_id;
 	ctx->step_resp->cred = slurm_cred_faker(&arg);
 }

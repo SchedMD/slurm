@@ -1,6 +1,5 @@
 /*****************************************************************************\
  *  src/common/slurm_cred.h  - SLURM job credential operations
- *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -129,8 +128,9 @@ int  slurm_cred_ctx_unpack(slurm_cred_ctx_t ctx, Buf buffer);
 typedef struct {
 	uint32_t jobid;
 	uint32_t stepid;
-	uint32_t job_mem;	/* MB of memory reserved for job */
-	uint32_t task_mem;	/* MB of memory reserved per task */
+	uint32_t job_mem;	/* MB of memory reserved per node OR
+				 * real memory per CPU | MEM_PER_CPU,
+				 * default=0 (no limit) */
 	uid_t    uid;
 	char    *hostlist;
 	uint32_t alloc_lps_cnt;

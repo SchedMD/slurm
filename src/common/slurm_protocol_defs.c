@@ -338,26 +338,27 @@ void slurm_free_job_info(job_info_t * job)
 void slurm_free_job_info_members(job_info_t * job)
 {
 	if (job) {
-		xfree(job->nodes);
-		xfree(job->partition);
 		xfree(job->account);
-		xfree(job->name);
 		xfree(job->alloc_node);
-		xfree(job->node_inx);
-		xfree(job->cpus_per_node);
+		xfree(job->command);
+		xfree(job->comment);
 		xfree(job->cpu_count_reps);
-		select_g_free_jobinfo(&job->select_jobinfo);
-		xfree(job->features);
-		xfree(job->req_nodes);
-		xfree(job->req_node_inx);
+		xfree(job->cpus_per_node);
+		xfree(job->dependency);
 		xfree(job->exc_nodes);
 		xfree(job->exc_node_inx);
-		xfree(job->network);
-		xfree(job->comment);
-		xfree(job->dependency);
-		xfree(job->work_dir);
-		xfree(job->command);
+		xfree(job->features);
 		xfree(job->licenses);
+		xfree(job->name);
+		xfree(job->network);
+		xfree(job->node_inx);
+		xfree(job->nodes);
+		xfree(job->partition);
+		xfree(job->req_nodes);
+		xfree(job->req_node_inx);
+		select_g_free_jobinfo(&job->select_jobinfo);
+		xfree(job->state_desc);
+		xfree(job->work_dir);
 	}
 }
 
@@ -380,8 +381,8 @@ void slurm_free_node_registration_status_msg(
 void slurm_free_update_node_msg(update_node_msg_t * msg)
 {
 	if (msg) {
-		xfree(msg->node_names);
 		xfree(msg->features);
+		xfree(msg->node_names);
 		xfree(msg->reason);
 		xfree(msg);
 	}
@@ -675,8 +676,8 @@ extern char *job_reason_string(enum job_state_reason inx)
 			return "BeginTime";
 		case WAIT_LICENSES:
 			return "Licenses";
-		case WAIT_ASSOC_LIMIT:
-			return "AssociationLimit";
+		case WAIT_ASSOC_JOB_LIMIT:
+			return "AssociationJobLimit";
 		case FAIL_DOWN_PARTITION:
 			return "PartitionDown";
 		case FAIL_DOWN_NODE:
@@ -850,6 +851,13 @@ char *node_state_string(enum node_states inx)
 			return "IDLE~";
 		return "IDLE";
 	}
+	if (inx == NODE_STATE_FUTURE) {
+		if (no_resp_flag)
+			return "FUTURE*";
+		if (power_flag)
+			return "FUTURE~";
+		return "FUTURE";
+	}
 	if (inx == NODE_STATE_UNKNOWN) {
 		if (no_resp_flag)
 			return "UNKNOWN*";
@@ -913,6 +921,13 @@ char *node_state_string_compact(enum node_states inx)
 		if (power_flag)
 			return "IDLE~";
 		return "IDLE";
+	}
+	if (inx == NODE_STATE_FUTURE) {
+		if (no_resp_flag)
+			return "FUTR*";
+		if (power_flag)
+			return "FUTR~";
+		return "FUTR";
 	}
 	if (inx == NODE_STATE_UNKNOWN) {
 		if (no_resp_flag)

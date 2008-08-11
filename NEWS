@@ -1,6 +1,26 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.4.0-pre1
+=============================
+ -- Save/restore a job's task_distribution option on slurmctld retart.
+    NOTE: SLURM must be cold-started on converstion from version 1.3.x.
+ -- Remove task_mem from job step credential (only job_mem is used now).
+ -- Remove --task-mem and --job-mem options from salloc, sbatch and srun
+    (use --mem-per-cpu or --mem instead).
+ -- Remove DefMemPerTask from slurm.conf (use DefMemPerCPU or DefMemPerNode
+    instead).
+ -- Modify slurm_step_launch API call. Move launch host from function argument
+    to element in the data structure slurm_step_launch_params_t, which is
+    used as a function argument.
+ -- Add state_reason_string to job state with optional details about why
+    a job is pending.
+ -- Make "scontrol show node" output match scontrol input for some fields
+    ("Cores" changed to "CoresPerSocket", etc.).
+ -- Add support for a new node state "FUTURE" in slurm.conf. These node records
+    are created in SLURM tables for future use without a reboot of the SLURM
+    daemons, but are not reported by any SLURM commands or APIs.
+
 * Changes in SLURM 1.3.7
 ========================
  -- Add jobid/stepid to MESSAGE_TASK_EXIT to address race condition when 

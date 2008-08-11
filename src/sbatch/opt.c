@@ -523,8 +523,6 @@ static struct option long_options[] = {
 	{"mincores",      required_argument, 0, LONG_OPT_MINCORES},
 	{"minthreads",    required_argument, 0, LONG_OPT_MINTHREADS},
 	{"mem",           required_argument, 0, LONG_OPT_MEM},
-	{"job-mem",       required_argument, 0, LONG_OPT_MEM_PER_CPU},
-	{"task-mem",      required_argument, 0, LONG_OPT_MEM_PER_CPU},
 	{"mem-per-cpu",   required_argument, 0, LONG_OPT_MEM_PER_CPU},
 	{"hint",          required_argument, 0, LONG_OPT_HINT},
 	{"tmp",           required_argument, 0, LONG_OPT_TMP},
