@@ -143,6 +143,7 @@ int bg_recover = DEFAULT_RECOVER;
 char *slurmctld_cluster_name = NULL; /* name of cluster */
 void *acct_db_conn = NULL;
 int accounting_enforce = 0;
+bool ping_nodes_now = false;
 
 /* Local variables */
 static int	daemonize = DEFAULT_DAEMONIZE;
@@ -1097,12 +1098,13 @@ static void *_slurmctld_background(void *no_data)
 				unlock_slurmctld(node_write_lock);
 			}
 		}
-
-		if (difftime(now, last_ping_node_time) >= ping_interval) {
+		if ((difftime(now, last_ping_node_time) >= ping_interval) ||
+		    ping_nodes_now) {
 			static bool msg_sent = false;
 			if (is_ping_done()) {
 				msg_sent = false;
 				last_ping_node_time = now;
+				ping_nodes_now = false;
 				lock_slurmctld(node_write_lock);
 				ping_nodes();
 				unlock_slurmctld(node_write_lock);
