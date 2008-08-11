@@ -196,7 +196,9 @@ void ping_nodes (void)
 		node_ptr = &node_record_table_ptr[i];
 		base_state   = node_ptr->node_state & NODE_STATE_BASE;
 		no_resp_flag = node_ptr->node_state & NODE_STATE_NO_RESPOND;
-		
+
+		if (base_state == NODE_STATE_FUTURE)
+			continue;
 		if ((slurmctld_conf.slurmd_timeout == 0)
 		&&  (base_state != NODE_STATE_UNKNOWN))
 			continue;
@@ -303,7 +305,8 @@ static void _run_health_check(void)
 		node_ptr   = &node_record_table_ptr[i];
 		base_state = node_ptr->node_state & NODE_STATE_BASE;
 
-		if (base_state == NODE_STATE_DOWN)
+		if ((base_state == NODE_STATE_DOWN) ||
+		    (base_state == NODE_STATE_FUTURE))
 			continue;
 
 #ifdef HAVE_FRONT_END		/* Operate only on front-end */

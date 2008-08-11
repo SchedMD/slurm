@@ -18,6 +18,9 @@ documents those changes that are of interest to users and admins.
     a job is pending.
  -- Make "scontrol show node" output match scontrol input for some fields
     ("Cores" changed to "CoresPerSocket", etc.).
+ -- Add support for a new node state "FUTURE" in slurm.conf. These node records
+    are created in SLURM tables for future use without a reboot of the SLURM
+    daemons, but are not reported by any SLURM commands or APIs. 
 
 * Changes in SLURM 1.3.6
 ========================

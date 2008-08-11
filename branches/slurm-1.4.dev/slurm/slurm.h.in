@@ -390,6 +390,7 @@ enum node_states {
 	NODE_STATE_DOWN,	/* node in non-usable state */
 	NODE_STATE_IDLE,	/* node idle and available for use */
 	NODE_STATE_ALLOCATED,	/* node has been allocated to a job */
+	NODE_STATE_FUTURE,	/* node slot reserved for future use */
 	NODE_STATE_END		/* last entry in table */
 };
 #define NODE_STATE_BASE       0x00ff

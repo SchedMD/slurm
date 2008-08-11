@@ -851,6 +851,13 @@ char *node_state_string(enum node_states inx)
 			return "IDLE~";
 		return "IDLE";
 	}
+	if (inx == NODE_STATE_FUTURE) {
+		if (no_resp_flag)
+			return "FUTURE*";
+		if (power_flag)
+			return "FUTURE~";
+		return "FUTURE";
+	}
 	if (inx == NODE_STATE_UNKNOWN) {
 		if (no_resp_flag)
 			return "UNKNOWN*";
@@ -914,6 +921,13 @@ char *node_state_string_compact(enum node_states inx)
 		if (power_flag)
 			return "IDLE~";
 		return "IDLE";
+	}
+	if (inx == NODE_STATE_FUTURE) {
+		if (no_resp_flag)
+			return "FUTR*";
+		if (power_flag)
+			return "FUTR~";
+		return "FUTR";
 	}
 	if (inx == NODE_STATE_UNKNOWN) {
 		if (no_resp_flag)
