@@ -1,0 +1,109 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Download</h1>
+<p>
+SLURM source can be downloaded from 
+<a href="http://sourceforge.net/projects/slurm/">
+http://sourceforge.net/projects/slurm/</a><br>
+SLURM has also been packaged for 
+<a href="http://packages.debian.org/src:slurm-llnl">Debian</a> and 
+<a href="http://packages.ubuntu.com/src:slurm-llnl">Ubuntu</a>
+(both named <i>slurm-llnl</i>).</p>
+
+<p> Other software available for download includes
+<ul>
+<li><b>PAM Modules (pam_slurm)</b><br>
+Pluggable Authentication Module (PAM) for restricting access to compute nodes 
+where SLURM performs resource management. Access to the node is restricted to 
+user root and users who have been allocated resources on that node. <br>
+pam_slurm is available for download from 
+<a href="https://sourceforge.net/projects/slurm/"> 
+https://sourceforge.net/projects/slurm/</a><br> 
+SLURM's PAM module has also been packaged for 
+<a href="http://packages.debian.org/src:libpam-slurm">Debian</a> and 
+<a href="http://packages.ubuntu.com/src:libpam-slurm">Ubuntu</a>
+(both named <i>libpam-slurm</i>).</p>
+
+</ul>
+<h1>Related Software</h1>
+<ul>
+
+<li>Authentication plugins identifies the user originating a message.</li>
+<ul>
+<li><b>Munge</b><br>
+In order to compile the "auth/munge" authentication plugin for SLURM, 
+you will need to build and install Munge, available from 
+<a href="http://home.gna.org/munge/">http://home.gna.org/munge/</a> or
+<a href="http://packages.debian.org/src:munge">Debian</a> or
+<a href="http://packages.ubuntu.com/src:munge">Ubuntu</a>.
+</li>
+</ul>
+
+<li>Databases can be used to store accounting information.
+See our <a href="accounting.html">Accounting</a> web page for more information.</li>
+<ul>
+<li><a href="http://www.mysql.com/">MySQL</a> (recommended)</li>
+<li><a href="http://www.postgresql.org/">PostgreSQL</a></li>
+<li><a href="http://www.clusterresources.com/pages/products/gold-allocation-manager.php">Gold</a></li>
+</ul>
+
+<li>Digital signatures (Cypto plugin) are used to insure message are not altered.</li>
+<ul>
+<li><b>OpenSSL</b><br>
+OpenSSL is recommended for generation of digital signatures.
+Download it from <a href="http://www.openssl.org/">http://www.openssl.org/</a>.</li>
+<li><b>Munge</b><br>
+Munge can be used at an alternative to OpenSSL. 
+Munge is available under the Gnu General Public License, but is slower than 
+OpenSSL for the generation of digital signatures. See Munge download 
+information above.</li>
+</ul> 
+
+<li>Interconnect plugins (Switch plugin)</li>
+<ul>
+<li><b>QsNet</b><br>
+In order to build the "switch/elan" plugin for SLURM, you will need
+the <b>qsnetlibs</b> development libraries from 
+<a href="http://www.quadrics.com">Quadrics</a>. The Elan
+plugin also requires the <b>libelanhosts</b> library and
+a corresponding /etc/elanhosts configuration file, used to map
+hostnames to Elan IDs. The libelanhosts source is available from
+<a href="https://sourceforge.net/projects/slurm/">
+https://sourceforge.net/projects/slurm/</a>.
+</ul>
+
+<li>MPI versions supported</li>
+<ul>
+<li><a href="http://www.mpi-softtech.com/">ChaMPIon, MPI Software Technology</a></li>
+<li><a href="http://www.hp.com/go/mpi">HP-MPI</a></li>
+<li><a href="http://www.lam-mpi.org/">LAM/MPI</a></li>
+<li><a href="http://www-unix.mcs.anl.gov/mpi/mpich1/">MPICH1</a></li>
+<li><a href="http://www.mcs.anl.gov/research/projects/mpich2/">MPICH2</a></li>
+<li><a href="http://www.myri.com/scs/download-mpichgm.html">MPICH-GM</a></li>
+<li><a href="http://www.myri.com/scs/download-mpichmx.html">MPICH-MX</a></li>
+<li><a href="http://mvapich.cse.ohio-state.edu/">MVAPICH</a></li>
+<li><a href="http://nowlab.cse.ohio-state.edu/projects/mpi-iba">MVAPICH2</a></li>
+<li><a href="http://www.open-mpi.org">Open MPI</a></li>
+<li><a href="http://www.quadrics.com/">Quadrics MPI</a></li>
+</ul>
+
+<li>Schedulers offering greater control over the workload</li>
+<ul>
+<li><a href="http://www.platform.com/">Load Sharing Facility (LSF)</a></li>
+<li><a href="http://www.clusterresources.com/pages/products/maui-cluster-scheduler.php">
+Maui Scheduler</a></li>
+<li><a href="http://www.clusterresources.com/pages/products/moab-cluster-suite.php">
+Moab Cluster Suite</a></li>
+</ul>
+
+<li>Task Affinity plugins</li>
+<ul>
+<li><a href="http://www.open-mpi.org/software/plpa/">
+Portable Linux Processor Affinity (PLPA)</a></li>
+</ul> 
+
+</ul>
+
+<p style="text-align:center;">Last modified 25 July 2008</p>
+
+<!--#include virtual="footer.txt"-->
