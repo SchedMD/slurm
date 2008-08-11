@@ -6207,12 +6207,18 @@ extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn,
 			last_month = atoi(row[UPDATE_MONTH]);		
 			mysql_free_result(result);
 		} else {
+			time_t now = time(NULL);
+			/* If we don't have any events like adding a
+			 * cluster this will not work correctly, so we
+			 * will insert now as a starting point
+			 */
 			query = xstrdup_printf(
-				"select @PS := period_start from %s limit 1;"
+				"select @PS := coalesce(period_start, %d) "
+				"from %s limit 1;"
 				"insert into %s "
 				"(hourly_rollup, daily_rollup, monthly_rollup) "
 				"values (@PS, @PS, @PS);",
-				event_table, last_ran_table);
+				now, event_table, last_ran_table);
 			
 			debug3("%d(%d) query\n%s", mysql_conn->conn, 
 			       __LINE__, query);
