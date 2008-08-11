@@ -72,7 +72,6 @@ set qs		QosLevel
 set qs1		normal
 
 
-
 print_header $test_id
 
 #
