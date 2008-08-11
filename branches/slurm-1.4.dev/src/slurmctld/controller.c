@@ -1008,7 +1008,7 @@ static void *_slurmctld_background(void *no_data)
 	slurmctld_lock_t part_write_lock = { 
 		NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
 
-#if 1
+#if 0
 /* FIXME: Added to test src/common/select_job_res functions
  * NodeName=DEFAULT Sockets=4 CoresPerSocket=3 RealMemory=512 State=UNKNOWN
  * NodeName=dummy[0-19] NodeHostname=wayfarer NodeAddr=wayfarer
