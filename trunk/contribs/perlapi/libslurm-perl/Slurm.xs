@@ -1006,8 +1006,8 @@ slurm_step_launch(slurm_step_ctx ctx = NULL, HV* hv = NULL, SV* start_cb = NULL,
 			dot_ptr = strchr(launcher_host, '.');
 			if (dot_ptr)
 				dot_ptr[0] = '\0';
-			RETVAL = slurm_step_launch(ctx, launcher_host,
-						   &params, &callbacks);
+			params.launcher_host = launcher_host;
+			RETVAL = slurm_step_launch(ctx, &params, &callbacks);
 		}
 	OUTPUT:
 		RETVAL
