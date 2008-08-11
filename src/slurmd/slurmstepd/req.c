@@ -724,7 +724,8 @@ _handle_signal_container(int fd, slurmd_job_t *job, uid_t uid)
 			;
 		else if (sig == SIGXCPU) {
 			error("*** %s CANCELLED DUE TO TIME LIMIT ***", entity);
-			msg_sent = 1;
+			msg_sent = 1;	/* we just want to log the event */
+			goto done;	/* don't actually send the signal */
 		} else if ((sig == SIGTERM) || (sig == SIGKILL)) {
 			error("*** %s CANCELLED ***", entity);
 			msg_sent = 1;
