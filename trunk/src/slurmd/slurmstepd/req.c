@@ -743,7 +743,7 @@ _handle_signal_container(int fd, slurmd_job_t *job, uid_t uid)
 			msg_sent = 1;
 		}
 	}
-	if ((sig == SIG_NODE_FAIL) || (sig == SIG_FAILURE))
+	if ((sig == SIG_NODE_FAIL) || (sig == SIG_FAILURE) || (sig == SIGXCPU))
 		goto done;
 	if (sig == SIG_ABORT) {
 		sig = SIGKILL;

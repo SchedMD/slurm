@@ -405,7 +405,8 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 			field->name = xstrdup("LFT");
 			field->len = 6;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("MaxCPUSecs", object, 4)) {
+		} else if(!strncasecmp("MaxCPUSecs", object, 4)
+			  || !strncasecmp("MaxProcSecsPerJob", object, 4)) {
 			field->type = PRINT_MAXC;
 			field->name = xstrdup("MaxCPUSecs");
 			field->len = 11;
