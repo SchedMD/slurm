@@ -132,7 +132,9 @@ extern int clusteracct_storage_p_get_usage(
 	mysql_conn_t *mysql_conn,
 	acct_cluster_rec_t *cluster_rec, time_t start, time_t end);
 
-
+/* This should be added to the beginning of each function to make sure
+ * we have a connection to the database before we try to use it.
+ */
 static int _check_connection(mysql_conn_t *mysql_conn)
 {
 	if(!mysql_conn) {
@@ -208,6 +210,9 @@ static int _addto_update_list(List update_list, acct_update_type_t type,
 	return SLURM_SUCCESS;
 }
 
+/* This should take care of all the lft and rgts when you move an
+ * account.  This handles deleted associations also.
+ */
 static int _move_account(mysql_conn_t *mysql_conn, uint32_t lft, uint32_t rgt,
 			 char *cluster,
 			 char *id, char *parent)
@@ -293,6 +298,11 @@ static int _move_account(mysql_conn_t *mysql_conn, uint32_t lft, uint32_t rgt,
 	return rc;
 }
 
+
+/* This code will move an account from one parent to another.  This
+ * should work either way in the tree.  (i.e. move child to be parent
+ * of current parent, and parent to be child of child.)
+ */
 static int _move_parent(mysql_conn_t *mysql_conn, uint32_t lft, uint32_t rgt,
 			char *cluster,
 			char *id, char *old_parent, char *new_parent)
@@ -305,11 +315,9 @@ static int _move_parent(mysql_conn_t *mysql_conn, uint32_t lft, uint32_t rgt,
 	ListIterator itr = NULL;
 	acct_association_rec_t *assoc = NULL;
 		
-	/* first we need to see if we are
-	 * going to make a child of this
-	 * account the new parent.  If so we
-	 * need to move that child to this
-	 * accounts parent and then do the move 
+	/* first we need to see if we are going to make a child of this
+	 * account the new parent.  If so we need to move that child to this
+	 * accounts parent and then do the move.
 	 */
 	query = xstrdup_printf(
 		"select id, lft, rgt from %s where lft between %d and %d "
@@ -386,6 +394,8 @@ static int _move_parent(mysql_conn_t *mysql_conn, uint32_t lft, uint32_t rgt,
 	return rc;
 }
 
+/* Let me know if the last statement had rows that were affected.
+ */
 static int _last_affected_rows(MYSQL *mysql_db)
 {
 	int status=0, rows=0;
@@ -408,6 +418,9 @@ static int _last_affected_rows(MYSQL *mysql_db)
 	return rows;
 }
 
+/* This is called by most modify functions to alter the table and
+ * insert a new line in the transaction table.
+ */
 static int _modify_common(mysql_conn_t *mysql_conn,
 			  uint16_t type,
 			  time_t now,
@@ -446,6 +459,10 @@ static int _modify_common(mysql_conn_t *mysql_conn,
 	return SLURM_SUCCESS;
 }
 
+/* Used to get all the users inside a lft and rgt set.  This is just
+ * to send the user all the associations that are being modified from
+ * a previous change to it's parent.    
+ */
 static int _modify_unset_users(mysql_conn_t *mysql_conn,
 			       acct_association_rec_t *assoc,
 			       char *acct,
@@ -495,16 +512,13 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 		xstrcat(object, assoc_req_inx[i]);
 	}
 
+	/* We want all the sub accounts and user accounts */
 	query = xstrdup_printf("select distinct %s from %s where deleted=0 "
 			       "&& lft between %d and %d && "
 			       "((user = '' && parent_acct = '%s') || "
 			       "(user != '' && acct = '%s')) "
 			       "order by lft;",
 			       object, assoc_table, lft, rgt, acct, acct);
-/* 	query = xstrdup_printf("select distinct %s from %s where deleted=0 " */
-/* 			       "&& lft between %d and %d and user != ''" */
-/* 			       "order by lft;", */
-/* 			       object, assoc_table, lft, rgt); */
 	xfree(object);
 	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	if(!(result =
@@ -552,9 +566,15 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 		} else
 			mod_assoc->max_cpu_secs_per_job = NO_VAL;
 		
-
+		/* We only want to add those that are modified here */
 		if(modified) {
+			/* Since we aren't really changing this non
+			 * user association we don't want to send it.
+			 */
 			if(!row[ASSOC_USER][0]) {
+				/* This is a sub account so run it
+				 * through as if it is a parent.
+				 */
 				_modify_unset_users(mysql_conn,
 						    mod_assoc,
 						    row[ASSOC_ACCT],
@@ -564,7 +584,7 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 				destroy_acct_association_rec(mod_assoc);
 				continue;
 			}
-
+			/* We do want to send all user accounts though */
 			mod_assoc->fairshare = NO_VAL;
 			if(row[ASSOC_PART][0]) { 
 				// see if there is a partition name
@@ -631,6 +651,7 @@ static bool _check_jobs_before_remove(mysql_conn_t *mysql_conn,
 	return rc;
 }
 
+/* Same as above but for associations instead of other tables */
 static bool _check_jobs_before_remove_assoc(mysql_conn_t *mysql_conn,
 					    char *assoc_char)
 {
@@ -994,6 +1015,9 @@ just_update:
 	return rc;
 }
 
+/* Fill in all the users that are coordinator for this account.  This
+ * will fill in if there are coordinators from a parent account also.
+ */
 static int _get_account_coords(mysql_conn_t *mysql_conn, 
 			       acct_account_rec_t *acct)
 {
@@ -1050,6 +1074,9 @@ static int _get_account_coords(mysql_conn_t *mysql_conn,
 	return SLURM_SUCCESS;
 }
 
+/* Fill in all the accounts this user is coordinator over.  This
+ * will fill in all the sub accounts they are coordinator over also.
+ */
 static int _get_user_coords(mysql_conn_t *mysql_conn, acct_user_rec_t *user)
 {
 	char *query = NULL;
@@ -1130,6 +1157,9 @@ static int _get_user_coords(mysql_conn_t *mysql_conn, acct_user_rec_t *user)
 	return SLURM_SUCCESS;
 }
 
+/* Used in job functions for getting the database index based off the
+ * submit time, job and assoc id.
+ */
 static int _get_db_index(MYSQL *db_conn, 
 			 time_t submit, uint32_t jobid, uint32_t associd)
 {
@@ -1172,6 +1202,7 @@ static mysql_db_info_t *_mysql_acct_create_db_info()
 	return db_info;
 }
 
+/* Any time a new table is added set it up here */
 static int _mysql_acct_check_tables(MYSQL *db_conn)
 {
 	int rc = SLURM_SUCCESS;
