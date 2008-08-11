@@ -75,6 +75,11 @@ set qs1		normal
 
 print_header $test_id
 
+if { [test_account_storage] == 0 } {
+	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
+	exit 0
+}
+ 
 #
 # Use sacctmgr to create a cluster
 #
