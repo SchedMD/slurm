@@ -6415,10 +6415,19 @@ extern int clusteracct_storage_p_node_down(mysql_conn_t *mysql_conn,
 		"update %s set period_end=%d where cluster='%s' "
 		"and period_end=0 and node_name='%s';",
 		event_table, event_time, cluster, node_ptr->name);
+	/* If you are clean-restarting the controller over and over again you
+	 * could get records that are duplicates in the database.  If
+	 * this is the case we will zero out the period_end we are
+	 * just filled in.  This will cause the last time to be erased
+	 * from the last restart, but if you are restarting things
+	 * this often the pervious one didn't mean anything anyway.
+	 * This way we only get one for the last time we let it run.
+	 */
 	xstrfmtcat(query,
 		   "insert into %s "
 		   "(node_name, cluster, cpu_count, period_start, reason) "
-		   "values ('%s', '%s', %u, %d, '%s');",
+		   "values ('%s', '%s', %u, %d, '%s') on duplicate key "
+		   "update period_end=0;",
 		   event_table, node_ptr->name, cluster, 
 		   cpus, event_time, my_reason);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
