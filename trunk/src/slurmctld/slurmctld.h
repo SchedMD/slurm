@@ -70,13 +70,14 @@
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
+#include "src/common/read_config.h" /* location of slurmctld_conf */
+#include "src/common/select_job_res.h"
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/switch.h"
 #include "src/common/timers.h"
 #include "src/common/xmalloc.h"
-#include "src/common/read_config.h" /* location of slurmctld_conf */
 
 #define FREE_NULL_BITMAP(_X)		\
 	do {				\
@@ -416,12 +417,15 @@ struct job_record {
 	time_t pre_sus_time;		/* time job ran prior to last suspend */
 	uint32_t priority;		/* relative priority of the job,
 					 * zero == held (don't initiate) */
-	uint16_t qos;			/* quality of service, used only by Moab */
+	uint16_t qos;			/* quality of service, 
+					 * used only by Moab */
 	uint32_t requid;            	/* requester user ID */
 	char *resp_host;		/* host for srun communications */
-	select_jobinfo_t select_jobinfo;/* opaque data */
+	select_jobinfo_t select_jobinfo;/* opaque data, BlueGene */
+	select_job_res_t select_job;	/* opaque data, non-BlueGene */
 	time_t start_time;		/* time execution begins, 
 					 * actual or expected */
+	char *state_desc;		/* optional details for state_reason */
 	uint16_t state_reason;		/* reason job still pending or failed
 					 * see slurm.h:enum job_wait_reason */
 	List step_list;			/* list of job's steps */

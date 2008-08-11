@@ -144,7 +144,7 @@ int main (int argc, char *argv[])
 	launch->user_managed_io = true; /* This is the key to using
 					  "user managed" IO */
 	
-	if (slurm_step_launch(ctx, "", launch, NULL) != SLURM_SUCCESS) {
+	if (slurm_step_launch(ctx, launch, NULL) != SLURM_SUCCESS) {
 		slurm_perror("slurm_step_launch");
 		rc = 1;
 		goto done;

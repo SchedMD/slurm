@@ -1028,7 +1028,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 			       sview_job_info_t *sview_job_info_ptr, 
 			       int update)
 {
-	char *nodes = NULL, *uname = NULL;
+	char *nodes = NULL, *reason, *uname = NULL;
 	char tmp_char[50];
 	time_t now_time = time(NULL);
 	job_info_t *job_ptr = sview_job_info_ptr->job_ptr;
@@ -1400,10 +1400,13 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_ACCOUNT),
 				   job_ptr->account);
 
+	if (job->state_desc)
+		reason = job_ptr->state_desc;
+	else
+		reason = job_reason_string(job_ptr->state_reason);
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
-						 SORTID_REASON),
-				   job_reason_string(job_ptr->state_reason));
+						 SORTID_REASON), reason);
 
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
@@ -1420,7 +1423,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 			       GtkTreeStore *treestore,
 			       GtkTreeIter *iter)
 {
-	char *nodes = NULL, *uname = NULL;
+	char *nodes = NULL, *reason, *uname = NULL;
 	char tmp_char[50];
 	time_t now_time = time(NULL);
 	GtkTreeIter step_iter;
@@ -1694,9 +1697,13 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_FEATURES, job_ptr->features, -1);
+	if (job_ptr->state_desc)
+		reason = job_ptr->state_desc;
+	else
+		reason = job_reason_string(job->state_reason);
 	gtk_tree_store_set(treestore, iter,
-			   SORTID_REASON,
-			   job_reason_string(job_ptr->state_reason), -1);
+			   SORTID_REASON, reason, -1);
+
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_NETWORK, job_ptr->network, -1);
 	gtk_tree_store_set(treestore, iter,

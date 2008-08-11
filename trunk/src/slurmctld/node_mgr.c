@@ -808,6 +808,7 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 {
 	int inx;
 	uint32_t nodes_packed, tmp_offset;
+	uint16_t base_state;
 	Buf buffer;
 	bool cr_flag = false;
 	time_t now = time(NULL);
@@ -844,6 +845,9 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 
 		if (((show_flags & SHOW_ALL) == 0) && (uid != 0) &&
 		    (_node_is_hidden(node_ptr)))
+			continue;
+		base_state = node_ptr->node_state & NODE_STATE_BASE;
+		if (base_state == NODE_STATE_FUTURE)
 			continue;
 		if ((node_ptr->name == NULL) ||
 		    (node_ptr->name[0] == '\0'))
@@ -967,12 +971,16 @@ void set_slurmd_addr (void)
 {
 	int i;
 	struct node_record *node_ptr = node_record_table_ptr;
+	uint16_t base_state;
 	DEF_TIMERS;
 
 	START_TIMER;
 	for (i = 0; i < node_record_count; i++, node_ptr++) {
 		if ((node_ptr->name == NULL) ||
 		    (node_ptr->name[0] == '\0'))
+			continue;
+		base_state = node_ptr->node_state & NODE_STATE_BASE;
+		if (base_state == NODE_STATE_FUTURE)
 			continue;
 		if (node_ptr->port == 0)
 			node_ptr->port = slurmctld_conf.slurmd_port;
@@ -1073,6 +1081,26 @@ int update_node ( update_node_msg_t * update_node_msg )
 							NODE_STATE_NO_RESPOND;
 					node_ptr->last_response = now;
 					ping_nodes_now = true;
+				} else if (base_state == NODE_STATE_FUTURE) {
+					if (node_ptr->port == 0) {
+						node_ptr->port = slurmctld_conf.
+								 slurmd_port;
+					}
+					slurm_set_addr(	&node_ptr->slurm_addr,
+							node_ptr->port,
+							node_ptr->comm_name);
+					if (node_ptr->slurm_addr.sin_port) {
+						state_val = NODE_STATE_IDLE;
+						node_ptr->node_state |=
+							NODE_STATE_NO_RESPOND;
+						node_ptr->last_response = now;
+						ping_nodes_now = true;
+					} else {
+						error("slurm_set_addr failure "
+						      "on %s", 
+		       				      node_ptr->comm_name);
+						state_val = base_state;
+					}
 				} else
 					state_val = base_state;
 			}
@@ -1410,6 +1438,7 @@ static bool _valid_node_state_change(uint16_t old, uint16_t new)
 			if (base_state == NODE_STATE_UNKNOWN)
 				return false;
 			if ((base_state == NODE_STATE_DOWN)
+			||  (base_state == NODE_STATE_FUTURE)
 			||  (node_flags & NODE_STATE_DRAIN)
 			||  (node_flags & NODE_STATE_FAIL))
 				return true;

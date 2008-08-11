@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "July 2008" "slurm.conf 1.3" "Slurm configuration file"
+.TH "slurm.conf" "5" "August 2008" "slurm.conf 1.3" "Slurm configuration file"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
@@ -1454,6 +1454,7 @@ scheduling overhead), give each node a distinct \fBWeight\fR
 value and they will be added to the pool of nodes being 
 considered for scheduling individually.
 The default value is 1.
+
 .LP
 The "DownNodes=" configuration permits you to mark certain nodes as in a 
 DOWN, DRAIN, FAIL, or FAILING state without altering the permanent 
@@ -1482,10 +1483,18 @@ to any new jobs.
 "FAILING" indicates the node is expected to fail soon, has
 one or more jobs allocated to it, but will not be allocated
 to any new jobs.
+"FUTURE" indicates the node is defined for future use and need not 
+exist when the SLURM daemons are started. These nodes can be made available 
+for use simply by updating the node state using the scontrol command rather 
+than restarting the slurmctld daemon. After these nodes are made available, 
+change their \fRState\fR in the slurm.conf file. Until these nodes are made 
+available, they will not be seen using any SLURM commands or APIs nor will 
+any attempt be made to contact them. 
 "UNKNOWN" indicates the node's state is undefined (BUSY or IDLE), 
 but will be established when the \fBslurmd\fR daemon on that node 
 registers.
 The default value is "UNKNOWN".
+
 .LP
 The partition configuration permits you to establish different job 
 limits or access controls for various groups (or partitions) of nodes. 

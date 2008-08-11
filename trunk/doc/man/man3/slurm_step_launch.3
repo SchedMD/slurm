@@ -20,8 +20,6 @@ int \fBslurm_step_launch\fR (
 .br
 	slurm_step_ctx \fIctx\fP,
 .br
-	char * \fIlauncher_host\fP,
-.br
 	const slurm_step_launch_params_t *\fIlaunch_req\fP,
 .br
 	const slurm_step_launch_callbacks_t \fIcallbacks\fP
@@ -59,12 +57,6 @@ function calls, and destroyed by \fBslurm_step_ctx_destroy\fR.
 \fIlaunch_req\fP
 Pointer to a structure allocated by the user containing specifications of 
 the job step to be launched.
-.TP
-\fIlauncher_host\fP
-Host name or address to be used to identify the destination of PMI communications
-for MPICH2. We intend to embed this information within \fIlaunch_req\fP in the
-next major release of SLURM, when changes to the protocol can be more easily
-addressed.
 
 .SH "DESCRIPTION"
 .LP

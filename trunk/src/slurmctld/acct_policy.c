@@ -57,6 +57,7 @@ static void _cancel_job(struct job_record *job_ptr)
 	job_ptr->job_state = JOB_FAILED;
 	job_ptr->exit_code = 1;
 	job_ptr->state_reason = FAIL_BANK_ACCOUNT;
+	xfree(job_ptr->state_desc);
 	job_ptr->start_time = job_ptr->end_time = now;
 	job_completion_logger(job_ptr);
 	delete_job_details(job_ptr);
@@ -150,7 +151,8 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 	if ((assoc_ptr->max_jobs != NO_VAL) &&
 	    (assoc_ptr->max_jobs != INFINITE) &&
 	    (assoc_ptr->used_jobs >= assoc_ptr->max_jobs)) {
-		job_ptr->state_reason = WAIT_ASSOC_LIMIT;
+		job_ptr->state_reason = WAIT_ASSOC_JOB_LIMIT;
+		xfree(job_ptr->state_desc);
 		return false;
 	}
 

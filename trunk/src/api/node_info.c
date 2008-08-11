@@ -2,7 +2,8 @@
  *  node_info.c - get/print the node state information of slurm
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  LLNL-CODE-402394.
@@ -128,7 +129,7 @@ slurm_sprint_node_table (node_info_t * node_ptr, int one_liner )
 
 	/****** Line 1 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
-		"NodeName=%s State=%s%s%s CPUs=%u AllocCPUs=%u "
+		"NodeName=%s State=%s%s%s Procs=%u AllocProcs=%u "
 		"RealMemory=%u TmpDisk=%u",
 		node_ptr->name, node_state_string(my_state),
 		comp_str, drain_str, node_ptr->cpus, node_ptr->used_cpus,
@@ -141,14 +142,22 @@ slurm_sprint_node_table (node_info_t * node_ptr, int one_liner )
 
 	/****** Line 2 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
-		"Sockets=%u Cores=%u Threads=%u "
+		"Sockets=%u CoresPerSocket=%u ThreadsPerCore=%u",
+		node_ptr->sockets, node_ptr->cores, node_ptr->threads);
+	xstrcat(out, tmp_line);
+	if (one_liner)
+		xstrcat(out, " ");
+	else
+		xstrcat(out, "\n   ");
+
+	/****** Line 3 ******/
+	snprintf(tmp_line, sizeof(tmp_line),
 		"Weight=%u Features=%s Reason=%s" ,
-		node_ptr->sockets, node_ptr->cores, node_ptr->threads,
 		node_ptr->weight, node_ptr->features,
 		node_ptr->reason);
 	xstrcat(out, tmp_line);
 
-	/****** Line 3 (optional) ******/
+	/****** Line 4 (optional) ******/
 	if (node_ptr->arch || node_ptr->os) {
 		if (one_liner)
 			xstrcat(out, " ");
