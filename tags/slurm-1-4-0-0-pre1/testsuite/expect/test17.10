@@ -1,0 +1,141 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Test of processors, memory, and temporary disk space 
+#          constraints options (--mincpus, --mem, and --tmp options).
+#          Also test that priority zero job is not started (--hold 
+#          option).
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2002-2006 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# LLNL-CODE-402394.
+# 
+# This file is part of SLURM, a resource management program.
+# For details, see <http://www.llnl.gov/linux/slurm/>.
+#  
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+# 
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+# 
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+############################################################################
+source ./globals
+
+set test_id     "17.10"
+set exit_code   0
+set file_in     "test$test_id.input"
+set job_id      0
+
+set cpu_cnt     1
+set mem_size    13
+set tmp_size    2
+set matches     0
+
+print_header $test_id
+
+#
+# Delete left-over input script
+# Build input script file
+#
+exec $bin_rm -f $file_in
+make_bash_script $file_in "
+  $bin_sleep 10
+"
+
+#
+# Spawn a sbatch job with constraints and stdout/err
+#
+spawn $sbatch --output=none --error=none --mincpus=$cpu_cnt --mem=$mem_size --tmp=$tmp_size --hold -t1 $file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	send_user "\nFAILURE: batch submit failure\n"
+	exit 1
+}
+
+#
+# Confirm constraints are registered and wait for job completion
+#
+spawn $scontrol show job $job_id
+expect {
+	-re "Priority=($number)" {
+		set read_prio $expect_out(1,string)
+		if {$read_prio == 0} {
+			incr matches
+			send_user "match of Priority\n"
+		}
+		exp_continue
+	}
+	-re "JobState=PENDING" {
+		incr matches
+		send_user "match of JobState\n"
+		exp_continue
+	}
+	-re "MinProcs=($number)" {
+		set read_proc $expect_out(1,string)
+		if {$read_proc == $cpu_cnt} {
+			incr matches
+			send_user "match of MinProcs\n"
+		}
+		exp_continue
+	}
+	-re "MinMemoryNode=($number)" {
+		set read_mem $expect_out(1,string)
+		if {$read_mem == $mem_size} {
+			incr matches
+			send_user "match of MinMemory\n"
+		}
+		exp_continue
+	}
+	-re "MinTmpDisk=($number)" {
+		set read_disk $expect_out(1,string)
+		if {$read_disk == $tmp_size} {
+			incr matches
+			send_user "match of MinTmpDisk\n"
+		}
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+cancel_job $job_id
+
+if {$matches != 5} {
+	send_user "\nFAILURE: Did not get proper constraints\n"
+	set exit_code 1
+}
+if {$exit_code == 0} {
+	exec $bin_rm -f $file_in
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code
