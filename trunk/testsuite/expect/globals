@@ -540,6 +540,40 @@ proc test_assoc_enforced { } {
 
 ################################################################
 #
+# Proc: test_account_storage
+#
+# Purpose: Determine if we are using a usable accounting storage
+# package. 
+# This is based upon 
+# the value of AccountingStorageType in the slurm.conf.
+#
+# Returns 1 if the system is running an accounting storage type
+# that is complete, 0 otherwise
+#
+################################################################
+
+proc test_account_storage { } {
+	global scontrol
+
+	log_user 0
+	set account_storage 0
+	spawn $scontrol show config
+	expect {
+		-re "(accounting_storage/slurmdbd|accounting_storage/mysql)" {
+			set account_storage 1
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+	
+	return $account_storage
+}
+
+################################################################
+#
 # Proc: get_default_acct
 #
 # Purpose: get users default account.
