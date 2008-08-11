@@ -37,8 +37,7 @@ propagation delays (e.g. due to NFS), the value of "max_file_delay" in the
     set slurm_dir     "/usr/local"
     set max_job_delay 300
 
-Each test can be executed independently. Upon successful cotest21.12  sacctmgr list multiple accounts
-mpletion, the test 
+Each test can be executed independently. Upon successful completion, the test 
 will print "SUCCESS" and terminate with an exit code of zero. Upon failure, 
 the test will typically print "FAILURE" and an explanation of the failure. 
 The message "WARNING" indicates that the cluster configuration can not fully 
