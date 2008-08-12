@@ -691,6 +691,7 @@ _handle_signal_container(int fd, slurmd_job_t *job, uid_t uid)
 	int rc = SLURM_SUCCESS;
 	int errnum = 0;
 	int sig;
+	static int msg_sent = 0;
 
 	debug("_handle_signal_container for job %u.%u",
 	      job->jobid, job->stepid);
@@ -718,23 +719,22 @@ _handle_signal_container(int fd, slurmd_job_t *job, uid_t uid)
 		goto done;
 	}
 
-	if (job->nodeid == 0) {
-		static int msg_sent = 0;
-		char *entity;
+	if ((job->nodeid == 0) && (msg_sent == 0)) {
 		time_t now = time(NULL);
-		char time_str[24];
-		if (job->stepid == SLURM_BATCH_SCRIPT)
-			entity = "JOB";
-		else
-			entity = "STEP";
+		char entity[24], time_str[24];
+		if (job->stepid == SLURM_BATCH_SCRIPT) {
+			snprintf(entity, sizeof(entity), "JOB %u", job->jobid);
+		} else {
+			snprintf(entity, sizeof(entity), "STEP %u.%u", 
+				 job->jobid, job->stepid);
+		}
 		slurm_make_time_str(&now, time_str, sizeof(time_str));
+
 		/* Not really errors, 
 		 * but we want messages displayed by default */
-		if (msg_sent)
-			;
-		else if (sig == SIG_TIME_LIMIT) {
-			error("*** %s %u CANCELLED AT %s DUE TO TIME LIMIT ***",
-			      entity, job->jobid, time_str);
+		if (sig == SIG_TIME_LIMIT) {
+			error("*** %s CANCELLED AT %s DUE TO TIME LIMIT ***",
+			      entity, time_str);
 			msg_sent = 1;
 		} else if (sig == SIG_NODE_FAIL) {
 			error("*** %s CANCELLED AT %s DUE TO NODE FAILURE ***",
