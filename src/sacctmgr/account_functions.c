@@ -146,7 +146,9 @@ static int _set_cond(int *start, int argc, char *argv[],
 
 	(*start) = i;
 
-	if(a_set) 
+	if(u_set && a_set)
+		return 3;
+	else if(a_set)
 		return 2;
 	else if(u_set)
 		return 1;
@@ -1129,6 +1131,11 @@ extern int sacctmgr_modify_account(int argc, char *argv[])
 	notice_thread_init();
 	if(rec_set == 3 || rec_set == 1) { // process the account changes
 		if(cond_set == 2) {
+			exit_code=1;
+			fprintf(stderr, " You gave settings for an account "
+				"record, but didn't give me anything to "
+				"query against (i.e. Description, "
+				"Organization, etc).\n");
 			rc = SLURM_ERROR;
 			goto assoc_start;
 		}
@@ -1158,6 +1165,15 @@ extern int sacctmgr_modify_account(int argc, char *argv[])
 
 assoc_start:
 	if(rec_set == 3 || rec_set == 2) { // process the association changes
+		if(cond_set == 1) {
+			exit_code=1;
+			fprintf(stderr, " You gave settings for an account "
+				"association, but didn't give me anything to "
+				"query against (i.e. Cluster, "
+				"Fairshare, etc).\n");
+			rc = SLURM_ERROR;
+			goto assoc_end;
+		}
 		ret_list = acct_storage_g_modify_associations(
 			db_conn, my_uid, acct_cond->assoc_cond, assoc);
 
@@ -1182,6 +1198,7 @@ assoc_start:
 			list_destroy(ret_list);
 	}
 
+assoc_end:
 	notice_thread_fini();
 	if(set) {
 		if(commit_check("Would you like to commit changes?")) 
