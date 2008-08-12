@@ -155,7 +155,9 @@ static int _set_cond(int *start, int argc, char *argv[],
 
 	(*start) = i;
 
-	if(a_set) {
+	if(u_set && a_set)
+		return 3;
+	else if(a_set) {
 		return 2;
 	} else if(u_set)
 		return 1;
@@ -1304,25 +1306,27 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 	if(rec_set == 3 || rec_set == 1) { // process the account changes
 		if(cond_set == 2) {
 			rc = SLURM_ERROR;
-			if(list_count(user_cond->assoc_cond->acct_list)) {
-				notice_thread_fini();
-				if(!commit_check(
-					   " You specified Accounts if your "
-					   "request.  Did you mean "
-					   "DefaultAccounts?\n")) {
-					goto assoc_start;
-				}
-				notice_thread_init();
+			exit_code=1;
+			fprintf(stderr, 
+				" There was a problem with your "
+				"'where' options.\n");
+			goto assoc_start;
+		}
+
+		if(user_cond->assoc_cond 
+		   && user_cond->assoc_cond->acct_list 
+		   && list_count(user_cond->assoc_cond->acct_list)) {
+			notice_thread_fini();
+			if(commit_check(
+				   " You specified Accounts in your "
+				   "request.  Did you mean "
+				   "DefaultAccounts?\n")) {
 				list_transfer(user_cond->def_acct_list,
 					      user_cond->assoc_cond->acct_list);
-			} else {
-				exit_code=1;
-				fprintf(stderr, 
-					" There was a problem with your "
-					"'where' options.\n");
-				goto assoc_start;
 			}
+			notice_thread_init();
 		}
+			
 		ret_list = acct_storage_g_modify_users(
 			db_conn, my_uid, user_cond, user);
 		if(ret_list && list_count(ret_list)) {
@@ -1348,6 +1352,14 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 
 assoc_start:
 	if(rec_set == 3 || rec_set == 2) { // process the association changes
+		if(cond_set == 1) {
+			rc = SLURM_ERROR;
+			exit_code=1;
+			fprintf(stderr, 
+				" There was a problem with your "
+				"'where' options.\n");
+			goto assoc_end;
+		}
 		ret_list = acct_storage_g_modify_associations(
 			db_conn, my_uid, user_cond->assoc_cond, assoc);
 
@@ -1371,6 +1383,8 @@ assoc_start:
 		if(ret_list)
 			list_destroy(ret_list);
 	}
+
+assoc_end:
 
 	notice_thread_fini();
 	if(set) {

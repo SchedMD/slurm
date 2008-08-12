@@ -1132,10 +1132,9 @@ extern int sacctmgr_modify_account(int argc, char *argv[])
 	if(rec_set == 3 || rec_set == 1) { // process the account changes
 		if(cond_set == 2) {
 			exit_code=1;
-			fprintf(stderr, " You gave settings for an account "
-				"record, but didn't give me anything to "
-				"query against (i.e. Description, "
-				"Organization, etc).\n");
+			fprintf(stderr, 
+				" There was a problem with your "
+				"'where' options.\n");
 			rc = SLURM_ERROR;
 			goto assoc_start;
 		}
@@ -1167,10 +1166,9 @@ assoc_start:
 	if(rec_set == 3 || rec_set == 2) { // process the association changes
 		if(cond_set == 1) {
 			exit_code=1;
-			fprintf(stderr, " You gave settings for an account "
-				"association, but didn't give me anything to "
-				"query against (i.e. Cluster, "
-				"Fairshare, etc).\n");
+			fprintf(stderr, 
+				" There was a problem with your "
+				"'where' options.\n");
 			rc = SLURM_ERROR;
 			goto assoc_end;
 		}
