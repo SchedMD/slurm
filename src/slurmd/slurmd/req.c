@@ -1746,7 +1746,7 @@ _rpc_timelimit(slurm_msg_t *msg)
 	slurm_close_accepted_conn(msg->conn_fd);
 	msg->conn_fd = -1;
 
-	_kill_all_active_steps(req->job_id, SIGXCPU, true);
+	_kill_all_active_steps(req->job_id, SIG_TIME_LIMIT, true);
 	nsteps = xcpu_signal(SIGTERM, req->nodes) +
 		_kill_all_active_steps(req->job_id, SIGTERM, false);
 	verbose( "Job %u: timeout: sent SIGTERM to %d active steps", 

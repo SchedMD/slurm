@@ -517,9 +517,10 @@ typedef struct return_code_msg {
  * the event of some launch failure or race condition preventing slurmd 
  * from getting the MPIRUN_PARTITION at that time. It is needed for 
  * the job epilog. */
+#define SIG_TIME_LIMIT	996	/* Dummy signal value i time limit reached */
 #define SIG_ABORT	997	/* Dummy signal value to abort a job */
 #define SIG_NODE_FAIL	998	/* Dummy signal value to signify node failure */
-#define SIG_FAILURE     999	/* Dummy signal value to signify sys failure */
+#define SIG_FAILURE	999	/* Dummy signal value to signify sys failure */
 typedef struct kill_job_msg {
 	uint32_t job_id;
 	uint16_t job_state;
