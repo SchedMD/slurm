@@ -1019,6 +1019,7 @@ uid_t *_get_groups_members(char *group_names)
 
 	if (group_names == NULL)
 		return NULL;
+
 	tmp_names = xstrdup(group_names);
 	one_group_name = strtok_r(tmp_names, ",", &name_ptr);
 	while (one_group_name) {
@@ -1054,12 +1055,16 @@ uid_t *_get_group_members(char *group_name)
 {
 	size_t grp_bufsize;
 	char *grp_buffer;
-	struct group grp,  *grp_result;
-	struct passwd *pwd_result;
+	char buf[BUF_SIZE];
+  	struct group grp,  *grp_result = NULL;
+	struct passwd pw, *pwd_result = NULL;
 	uid_t *group_uids, my_uid;
 	gid_t my_gid;
 	int i, j, uid_cnt;
-	
+#ifdef HAVE_AIX
+	FILE *fp = NULL;
+#endif
+
 	grp_bufsize = sysconf(_SC_GETGR_R_SIZE_MAX);
 	grp_buffer = xmalloc(grp_bufsize);
 	if (getgrnam_r(group_name, &grp, grp_buffer, grp_bufsize, 
@@ -1074,6 +1079,7 @@ uid_t *_get_group_members(char *group_name)
 		if (grp_result->gr_mem[uid_cnt] == NULL)
 			break;
 	}
+
 	group_uids = (uid_t *) xmalloc(sizeof(uid_t) * (uid_cnt + 1));
 
 	j = 0;
@@ -1088,14 +1094,18 @@ uid_t *_get_group_members(char *group_name)
 	}
 	xfree(grp_buffer);
 
-	/* NOTE: code below not reentrant, avoid these functions elsewhere */
 	setpwent();
-	while ((pwd_result = getpwent())) {
-		if (pwd_result->pw_gid != my_gid)
+#ifdef HAVE_AIX
+	while (!getpwent_r(&pw, buf, BUF_SIZE, &fp)) {
+		pwd_result = &pw;
+#else
+	while (!getpwent_r(&pw, buf, BUF_SIZE, &pwd_result)) {
+#endif
+ 		if (pwd_result->pw_gid != my_gid)
 			continue;
 		j++;
-		xrealloc(group_uids, ((j+1) * sizeof(uid_t)));
-		group_uids[j-1] = pwd_result->pw_uid;		
+ 		xrealloc(group_uids, ((j+1) * sizeof(uid_t)));
+		group_uids[j-1] = pwd_result->pw_uid;
 	}
 	endpwent();
 

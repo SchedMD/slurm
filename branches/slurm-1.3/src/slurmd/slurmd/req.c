@@ -3176,10 +3176,14 @@ _getgroups(void)
 extern void
 init_gids_cache(int cache)
 {
-	struct passwd *pwd;
+	struct passwd pw, *pwd;
 	int ngids;
 	gid_t *orig_gids;
 	gids_t *gids;
+	char buf[BUF_SIZE];
+#ifdef HAVE_AIX
+	FILE *fp = NULL;
+#endif
 
 	if (!cache) {
 		_gids_cache_purge();
@@ -3193,7 +3197,13 @@ init_gids_cache(int cache)
 	orig_gids = (gid_t *)xmalloc(ngids * sizeof(gid_t));
 	getgroups(ngids, orig_gids);
 
-	while ((pwd = getpwent())) {
+	setpwent();
+#ifdef HAVE_AIX
+	while (!getpwent_r(&pw, buf, BUF_SIZE, &fp)) {
+		pwd = &pw;
+#else
+	while (!getpwent_r(&pw, buf, BUF_SIZE, &pwd)) {
+#endif
 		if (_gids_cache_lookup(pwd->pw_name, pwd->pw_gid))
 			continue;
 		if (initgroups(pwd->pw_name, pwd->pw_gid)) {
