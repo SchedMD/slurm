@@ -61,6 +61,7 @@ pthread_mutex_t allocation_state_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool exit_flag = false;
 static bool allocation_interrupted = false;
 static uint32_t pending_job_id = 0;
+static time_t last_timeout = 0;
 
 static int fill_job_desc_from_opts(job_desc_msg_t *desc);
 static void ring_terminal_bell(void);
@@ -462,8 +463,14 @@ static void _job_complete_handler(srun_job_complete_msg_t *comp)
 			 * no need to print this message.  We probably
 			 * relinquished the allocation ourself.
 			 */
-			info("Job allocation %u has been revoked.",
-			     comp->job_id);
+			if (last_timeout && (last_timeout < time(NULL))) {
+				info("Job %u has exceeded its time limit and "
+				     "its allocation has been revoked.",
+				     comp->job_id);
+			} else {
+				info("Job allocation %u has been revoked.",
+				     comp->job_id);
+			}
 		}
 		if (allocation_state == GRANTED
 		    && command_pid > -1
@@ -491,8 +498,6 @@ static void _job_complete_handler(srun_job_complete_msg_t *comp)
  */
 static void _timeout_handler(srun_timeout_msg_t *msg)
 {
-	static time_t last_timeout = 0;
-
 	if (msg->timeout != last_timeout) {
 		last_timeout = msg->timeout;
 		verbose("Job allocation time limit to be reached at %s", 
