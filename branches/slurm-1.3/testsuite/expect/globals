@@ -69,7 +69,7 @@ cset smap        "${slurm_dir}/bin/smap"
 cset squeue      "${slurm_dir}/bin/squeue"
 cset srun        "${slurm_dir}/bin/srun"
 cset sreport     "${slurm_dir}/bin/sreport"
-cset sstat        "${slurm_dir}/bin/sstat"
+cset sstat       "${slurm_dir}/bin/sstat"
 cset strigger    "${slurm_dir}/bin/strigger"
 
 cset pbsnodes    "${slurm_dir}/bin/pbsnodes"
