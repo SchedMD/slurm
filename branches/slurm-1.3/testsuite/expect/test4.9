@@ -47,7 +47,7 @@ print_header $test_id
 set format "--format=partition=%P node_cnt=%D"
 spawn $sinfo --noheader $format
 expect {
-	-re "partition=($alpha_numeric).* node_cnt=($number)" {
+	-re "partition=($alpha_numeric_under).* node_cnt=($number)" {
 		incr matches
 		exp_continue
 	}
@@ -73,7 +73,7 @@ set matches      0
 set env(SINFO_FORMAT) "part=%P nodes=%D"
 spawn $sinfo --noheader
 expect {
-	-re "part=($alpha_numeric).* nodes=($number)" {
+	-re "part=($alpha_numeric_under).* nodes=($number)" {
 		incr matches
 		exp_continue
 	}

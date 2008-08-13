@@ -47,7 +47,7 @@ print_header $test_id
 #
 spawn $sinfo --summarize  
 expect {
-	-re "($end_of_line)($alpha_numeric)(\[ \*\]) *up" {
+	-re "($end_of_line)($alpha_numeric_under)(\[ \*\]) *up" {
 		if (![string compare $expect_out(3,string) "*"]) {
 			set def_part_name   $expect_out(2,string)
 		} else {
@@ -99,7 +99,7 @@ if {$job_id == 0} {
 	set read_part ""
 	spawn $scontrol show job $job_id
 	expect {
-		-re "Partition=($alpha_numeric)" {
+		-re "Partition=($alpha_numeric_under)" {
 			set read_part $expect_out(1,string)
 			exp_continue
 		}
@@ -157,7 +157,7 @@ if {$job_id == 0} {
 	set read_part ""
 	spawn $scontrol show job $job_id
 	expect {
-		-re "Partition=($alpha_numeric)" {
+		-re "Partition=($alpha_numeric_under)" {
 			set read_part $expect_out(1,string)
 			exp_continue
 		}

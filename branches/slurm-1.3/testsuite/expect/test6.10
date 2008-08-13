@@ -50,7 +50,7 @@ print_header $test_id
 set got_login 0
 spawn $bin_id -un
 expect {
-        -re "($alpha_numeric)" {
+        -re "($alpha_numeric_under)" {
 		set my_login $expect_out(1,string)
 		set got_login 1
 		exp_continue
@@ -100,7 +100,7 @@ exec $bin_rm -f $file_in
 set matches  0
 spawn $scancel --interactive $job_id
 expect {
-	-re "Cancel job_id=$job_id .* partition=($alpha_numeric) .*\? " {
+	-re "Cancel job_id=$job_id .* partition=($alpha_numeric_under) .*\? " {
 		set default_part $expect_out(1,string)
 		send "n\n"
 		exp_continue

@@ -46,10 +46,10 @@ print_header $test_id
 # Execute a srun job in the specified partition name
 # Returns 0 on successful completion, returns 1 otherwise
 proc run_job { part_name } {
-	global bin_hostname srun timeout
+	global bin_printenv srun timeout
 	set rc 1
 
-	set srun_pid [spawn $srun --output=none --error=none -p $part_name -N1-128 -t1 $bin_hostname]
+	set srun_pid [spawn $srun --output=none --error=none -p $part_name -N1-128 -t1 $bin_printenv SLURMD_NODENAME]
 	expect {
 		-re "Unable to contact" {
 			send_user "\nFAILURE: slurm appears to be down\n"
@@ -81,7 +81,7 @@ proc run_job { part_name } {
 #
 spawn $scontrol show part  
 expect {
-	-re "PartitionName=($alpha_numeric) " {
+	-re "PartitionName=($alpha_numeric_under) " {
 		if {[string compare $part_name ""] == 0} {
 			set part_name $expect_out(1,string)
 		}
@@ -152,7 +152,7 @@ if {$job_runable == 0} {
 #
 spawn $scontrol update PartitionName=$part_name State=$part_new_state  
 expect {
-	-re "slurm_update error: ($alpha_numeric) ($alpha_numeric)" {
+	-re "slurm_update error: ($alpha_numeric_under) ($alpha_numeric_under)" {
 		set access_err 0
 		set err_msg1 $expect_out(1,string)
 		set err_msg2 $expect_out(2,string)

@@ -62,7 +62,7 @@ expect {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
-	-re "(SLURM_$alpha_under)=($alpha_numeric)" {
+	-re "(SLURM_$alpha_under)=($alpha_numeric_under)" {
 		set found_vars($expect_out(1,string)) "$expect_out(2,string)"
 		exp_continue
 	}

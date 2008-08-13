@@ -88,9 +88,9 @@ exec $bin_rm -f $file_in
 #
 set host_0      ""
 set host_1      ""
-send "$srun -l --mpi=lam $bin_hostname\n"
+send "$srun -l --mpi=lam $bin_printenv SLURMD_NODENAME\n"
 expect {
-	-re "($number): ($alpha_numeric)" {
+	-re "($number): ($alpha_numeric_under)" {
 		set host_inx $expect_out(1,string)
 		if {$host_inx == 0} {
 			set host_0 $expect_out(2,string)
