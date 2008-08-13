@@ -785,6 +785,8 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	slurm_get_ip_str(cli, &port, host, sizeof(host));
 	info("launch task %u.%u request from %u.%u@%s (port %hu)", req->job_id,
 	     req->job_step_id, req->uid, req->gid, host, port);
+	env_array_append(&req->env, "SLURM_SRUN_COMM_HOST", host);
+	req->envc = envcount(req->env);
 
 	first_job_run = !slurm_cred_jobid_cached(conf->vctx, req->job_id);
 	if (_check_job_credential(req, req_uid, nodeid, &step_hset) < 0) {

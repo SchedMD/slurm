@@ -452,6 +452,9 @@ documents those changes that are of interest to users and admins.
     permit a user access to a partition not normally allowed due to the
     AllowGroup specification or the wrong user identified in an accounting
     record. The job would NOT be run as the wrong user.
+ -- For PMI only (MPICH2/MVAPICH2) base address to send messages to (the srun)
+    upon the address from which slurmd gets the task launch request rather then
+    "hostname" where srun executes.
 
 * Changes in SLURM 1.2.33
 =========================
