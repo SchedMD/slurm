@@ -118,7 +118,7 @@ cset bin_env	"env"
 cset bin_file	"file"
 cset bin_id	"id"
 cset bin_grep    "grep"
-cset bin_hostname "hostname"
+#cset bin_hostname "hostname" #Don't user $bin_hostname use $bin_printenv SLURMD_NODENAME
 cset bin_kill	"kill"
 cset bin_make	"make"
 cset bin_od     "od"
@@ -772,7 +772,7 @@ proc test_aix {} {
 ################################################################
 
 proc test_super_user { } {
-	global alpha_numeric bin_id number scontrol super_user super_user_set
+	global alpha_numeric_under bin_id number scontrol super_user super_user_set
 
 	if {$super_user_set != 0} {
 		return $super_user
@@ -806,7 +806,7 @@ proc test_super_user { } {
 	spawn $bin_id -un
 	set user ""
 	expect {
-		-re "($alpha_numeric)" {
+		-re "($alpha_numeric_under)" {
 			set user $expect_out(1,string)
 			exp_continue
 		}
@@ -817,7 +817,7 @@ proc test_super_user { } {
 	spawn $scontrol show control
 	set slurm_user ""
 	expect {
-		-re "SlurmUser *= ($alpha_numeric)" {
+		-re "SlurmUser *= ($alpha_numeric_under)" {
 			set slurm_user $expect_out(1,string)
 			exp_continue
 		}
@@ -979,13 +979,13 @@ proc make_bash_script { script_name script_contents } {
 ################################################################
 
 proc is_super_user { } {
-	global alpha_numeric bin_id scontrol
+	global alpha_numeric_under bin_id scontrol
 
 	log_user 0
 	set user_name "nobody"
 	spawn $bin_id -u -n
 	expect {
-		-re "($alpha_numeric)" {
+		-re "($alpha_numeric_under)" {
 			set user_name $expect_out(1,string)
 			exp_continue
 		}

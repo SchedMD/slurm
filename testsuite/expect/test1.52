@@ -123,7 +123,7 @@ for {set i 0} {$i<3} {incr i} {
 			set no_hostfile 1
 			exp_continue
 		}
-		-re "($number): ($alpha_numeric)" {
+		-re "($number): ($alpha_numeric_under)" {
 			set task_id $expect_out(1,string)
 			if {$task_id == 0} {
 				set node0 $expect_out(2,string)

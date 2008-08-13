@@ -81,7 +81,7 @@ set sched_wiki   0
 exec $bin_rm -f $file_in $test_prog
 spawn $scontrol show config
 expect {
-	-re "ControlAddr *= ($alpha_numeric)" {
+	-re "ControlAddr *= ($alpha_numeric_under)" {
 		set control_addr $expect_out(1,string)
 		exp_continue
 	}

@@ -95,9 +95,9 @@ exec $bin_rm -f $file_in
 #
 set host_0      ""
 set host_1      ""
-send "$srun -l $bin_hostname\n"
+send "$srun -l $bin_printenv SLURMD_NODENAME\n"
 expect {
-	-re "($number): ($alpha_numeric)" {
+	-re "($number): ($alpha_numeric_under)" {
 		set host_inx $expect_out(1,string)
 		if {$host_inx == 0} {
 			set host_0 $expect_out(2,string)
@@ -144,9 +144,9 @@ if {$exit_code != 0} {
 # Exclude specific node
 #
 set matches 0
-send "$srun -l -N1 -n1 --exclude=$host_0 $bin_hostname\n"
+send "$srun -l -N1 -n1 --exclude=$host_0 $bin_printenv SLURMD_NODENAME\n"
 expect {
-	-re "0: ($alpha_numeric)" {
+	-re "0: ($alpha_numeric_under)" {
 		if {[string compare $expect_out(1,string) $host_1] == 0} {
 			incr matches
 		} else {
@@ -181,9 +181,9 @@ if {$matches == 0} {
 # Exclude specific node
 #
 set matches 0
-send "$srun -l -N1 -n1 --exclude=$host_1 $bin_hostname\n"
+send "$srun -l -N1 -n1 --exclude=$host_1 $bin_printenv SLURMD_NODENAME\n"
 expect {
-	-re "0: ($alpha_numeric)" {
+	-re "0: ($alpha_numeric_under)" {
 		if {[string compare $expect_out(1,string) $host_0] == 0} {
 			incr matches
 		} else {
@@ -218,7 +218,7 @@ if {$matches == 0} {
 # Include specific node
 #
 set matches 0
-send "$srun -l -N1 -n1 --nodelist=$host_0 $bin_hostname\n"
+send "$srun -l -N1 -n1 --nodelist=$host_0 $bin_printenv SLURMD_NODENAME\n"
 expect {
 	-re "Requested node configuration is not available" {
 		send_user "\nWARNING: Appears you are using "
@@ -227,7 +227,7 @@ expect {
 		send "exit\n"
 		exit 0	
 	}
-	-re "0: ($alpha_numeric)" {
+	-re "0: ($alpha_numeric_under)" {
 		if {[string compare $expect_out(1,string) $host_0] == 0} {
 			incr matches
 		} else {
@@ -262,9 +262,9 @@ if {$matches == 0} {
 # Include specific node
 #
 set matches 0
-send "$srun -l -N1 -n1 --nodelist=$host_1 $bin_hostname\n"
+send "$srun -l -N1 -n1 --nodelist=$host_1 $bin_printenv SLURMD_NODENAME\n"
 expect {
-	-re "0: ($alpha_numeric)" {
+	-re "0: ($alpha_numeric_under)" {
 		if {[string compare $expect_out(1,string) $host_1] == 0} {
 			incr matches
 		} else {
@@ -302,9 +302,9 @@ if {$matches == 0} {
 #
 set matches 0
 send "$srun -l -N1 -n1 --nodelist=$host_0 "
-send " --exclude=$host_0 $bin_hostname\n"
+send " --exclude=$host_0 $bin_printenv SLURMD_NODENAME\n"
 expect {
-	-re "0: ($alpha_numeric)" {
+	-re "0: ($alpha_numeric_under)" {
 		send_user "\nFAILURE: wrong node responded\n"
 		set exit_code   1
 		exp_continue
@@ -336,9 +336,9 @@ if {$matches == 0} {
 # Error test: Exceed node count
 #
 set matches 0
-send "$srun -l -N3 -n3 -O $bin_hostname\n"
+send "$srun -l -N3 -n3 -O $bin_printenv SLURMD_NODENAME\n"
 expect {
-	-re "0: ($alpha_numeric)" {
+	-re "0: ($alpha_numeric_under)" {
 		send_user "\nFAILURE: wrong node responded\n"
 		set exit_code   1
 		exp_continue
@@ -371,9 +371,9 @@ if {$matches == 0} {
 #
 set test_0      ""
 set test_1      ""
-send "$srun -l -N1-1 -n2 -O $bin_hostname\n"
+send "$srun -l -N1-1 -n2 -O $bin_printenv SLURMD_NODENAME\n"
 expect {
-	-re "($number): ($alpha_numeric)" {
+	-re "($number): ($alpha_numeric_under)" {
 		set host_inx $expect_out(1,string)
 		if {$host_inx == 0} {
 			set test_0 $expect_out(2,string)
@@ -409,9 +409,9 @@ if {[string compare $test_0 $test_1] != 0} {
 # Error test: Exceed task count, first get the processor count then exceed it
 #
 set processors 1
-send "$srun -l -c1 $bin_hostname\n"
+send "$srun -l -c1 $bin_printenv SLURMD_NODENAME\n"
 expect {
-	-re "($number): ($alpha_numeric)" {
+	-re "($number): ($alpha_numeric_under)" {
 		incr processors
 		exp_continue
 	}
@@ -433,9 +433,9 @@ expect {
 	}
 }
 set matches 0
-send "$srun -l -n $processors $bin_hostname\n"
+send "$srun -l -n $processors $bin_printenv SLURMD_NODENAME\n"
 expect {
-	-re "0: ($alpha_numeric)" {
+	-re "0: ($alpha_numeric_under)" {
 		send_user "\nFAILURE: wrong node responded\n"
 		set exit_code   1
 		exp_continue

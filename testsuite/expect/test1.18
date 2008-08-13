@@ -41,7 +41,7 @@ print_header $test_id
 # Run a job attempting to get some dummy license name
 #
 set match 0
-set srun_pid [spawn $srun --licenses=DUMMY_FOR_TESTING $bin_hostname]
+set srun_pid [spawn $srun --licenses=DUMMY_FOR_TESTING $bin_printenv SLURMD_NODENAME]
 expect {
 	-re "invalid license" {
 		set match 1
@@ -80,7 +80,7 @@ expect {
 log_user 1
 
 if {[string compare $licenses ""] != 0} {
-	set srun_pid [spawn $srun --licenses=$licenses $bin_hostname]
+	set srun_pid [spawn $srun --licenses=$licenses $bin_printenv SLURMD_NODENAME]
 	expect {
 		-re "invalid license" {
 			send_user "\nFAILURE: Error getting license\n"

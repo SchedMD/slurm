@@ -169,7 +169,7 @@ if {$allow != 1} {
 #
 spawn $bin_id -gn
 expect {
-	-re "($alpha_numeric)" {
+	-re "($alpha_numeric_under)" {
 		set my_group  $expect_out(1,string)
 		exp_continue
 	}

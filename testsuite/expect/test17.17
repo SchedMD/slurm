@@ -48,7 +48,7 @@ print_header $test_id
 # Submit a job and get the node's NodeName from the nodelist
 #
 set timeout $max_job_delay
-set srun_pid [spawn $srun -v -N1 -l -t1 $bin_hostname]
+set srun_pid [spawn $srun -v -N1 -l -t1 $bin_printenv SLURMD_NODENAME]
 expect {
 	-re "on host ($alpha_numeric_under)," {
 		set nodelist_name $expect_out(1,string)

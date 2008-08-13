@@ -53,9 +53,9 @@ if { [test_bluegene] } {
 	}
 }
 
-set srun_pid [spawn $srun -N$node_cnt -l --threads=1 -t1 $bin_hostname]
+set srun_pid [spawn $srun -N$node_cnt -l --threads=1 -t1 $bin_printenv SLURMD_NODENAME]
 expect {
-	-re "0: ($alpha_numeric)" {
+	-re "0: ($alpha_numeric_under)" {
 		set host_0 $expect_out(1,string)
 		exp_continue
 	}
@@ -82,13 +82,13 @@ if {[string compare $host_0 ""] == 0} {
 #
 set host_0      ""
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N$node_cnt -n32 -O -l --threads=32 -t1 $bin_hostname]
+set srun_pid [spawn $srun -N$node_cnt -n32 -O -l --threads=32 -t1 $bin_printenv SLURMD_NODENAME]
 expect {
 	-re "Memory required by task is not available" {
 		send_user "\nWARNING: DefMemPerTask is configured too high for this test\n"
 		set host_0 "warn"
 	} 
-	-re "0: ($alpha_numeric)" {
+	-re "0: ($alpha_numeric_under)" {
 		set host_0 $expect_out(1,string)
 		exp_continue
 	}

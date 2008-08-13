@@ -46,14 +46,14 @@ print_header $test_id
 #
 spawn $scontrol show node  
 expect {
-        -re "NodeName=($alpha_numeric) State=IDLE " {
+        -re "NodeName=($alpha_numeric_under) State=IDLE " {
                 if {[string compare $node_name ""] == 0} {
                         set node_name $expect_out(1,string)
                         set node_old_state "IDLE"
                 }
                 exp_continue
         }
-        -re "NodeName=($alpha_numeric) State=ALLOCATED " {
+        -re "NodeName=($alpha_numeric_under) State=ALLOCATED " {
                 if {[string compare $node_name ""] == 0} {
                         set node_name $expect_out(1,string)
                         set node_old_state "ALLOCATED" 
@@ -82,7 +82,7 @@ if {[string compare $node_name ""] == 0} {
 #
 spawn $scontrol update NodeName=$node_name State=DRAIN Reason=TESTING
 expect {
-	-re "slurm_update error: ($alpha_numeric) ($alpha_numeric)" {
+	-re "slurm_update error: ($alpha_numeric_under) ($alpha_numeric_under)" {
 		set access_err 0
 		set err_msg1 $expect_out(1,string)
 		set err_msg2 $expect_out(2,string)

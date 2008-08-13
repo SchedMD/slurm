@@ -41,7 +41,7 @@ print_header $test_id
 #
 set timeout 60
 for {set node_cnt 1} {$node_cnt > 0} {set node_cnt [expr $node_cnt * 2]} {
-	set srun_pid [spawn $srun --test-only -N$node_cnt -t1 $bin_hostname]
+	set srun_pid [spawn $srun --test-only -N$node_cnt -t1 $bin_printenv SLURMD_NODENAME]
 	expect {
 		-re "allocation success" {
 			exp_continue
