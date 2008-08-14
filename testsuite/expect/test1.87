@@ -104,7 +104,7 @@ set host_2      ""
 set host_3      ""
 send "$srun -l $bin_printenv SLURMD_NODENAME\n"
 expect {
-	-re "($number): ($alpha_numeric)" {
+	-re "($number): ($alpha_numeric_under)" {
 		set host_num $expect_out(1,string)
 		if { $host_num == 0 } {
 			set host_0 $expect_out(2,string)
@@ -169,7 +169,7 @@ set matches 0
 
 send "$srun -l -N2 -n2 --relative=0 $bin_printenv SLURMD_NODENAME\n"
 expect {
-	-re "($number): ($alpha_numeric)" {
+	-re "($number): ($alpha_numeric_under)" {
 		set host_num $expect_out(1,string)
 		if { $host_num == 0 } {
 			if {[string compare $expect_out(2,string) $host_0] == 0} {
@@ -221,7 +221,7 @@ if {$matches < 2} {
 set matches 0
 send "$srun -l -N2 -n2 --relative=2 $bin_printenv SLURMD_NODENAME\n"
 expect {
-	-re "($number): ($alpha_numeric)" {
+	-re "($number): ($alpha_numeric_under)" {
 		set host_num $expect_out(1,string)
 		if { $host_num == 0 } {
 			if {[string compare $expect_out(2,string) $host_2] == 0} {
@@ -279,7 +279,7 @@ expect {
 		incr error
 		exp_continue
 	}
-	-re "($number): ($alpha_numeric)" {
+	-re "($number): ($alpha_numeric_under)" {
 		send_user "\nFAILURE: running where we shouldn't be able to run\n"
 		set exit_code   1	
 		exp_continue

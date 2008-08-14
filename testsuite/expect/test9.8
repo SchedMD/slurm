@@ -111,7 +111,7 @@ set user_name ""
 exec $bin_sleep [expr $delay + 6]
 spawn $bin_id -un
 expect {
-	-re "($alpha_numeric)" {
+	-re "($alpha_numeric_under)" {
 		set user_name $expect_out(1,string)
 	}
 	eof {

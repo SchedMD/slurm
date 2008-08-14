@@ -196,16 +196,16 @@ static int _get_local_user_list(void *db_conn, int enforce)
 		//START_TIMER;
 		while((user = list_next(itr))) {
 			uid_t pw_uid = uid_from_string(user->name);
-			if(pw_uid == (uid_t) -1)
+			if(pw_uid == (uid_t) -1) {
+				error("couldn't get a uid for user %s",
+				      user->name);
 				user->uid = (uint32_t)NO_VAL;
-			else
+			} else
 				user->uid = pw_uid;
 		}
 		list_iterator_destroy(itr);
 		//END_TIMER2("load_users");
 	}
-	
-
 
 	slurm_mutex_unlock(&local_user_lock);
 	return SLURM_SUCCESS;

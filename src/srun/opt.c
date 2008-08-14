@@ -565,7 +565,6 @@ static void _opt_default()
 	char buf[MAXPATHLEN + 1];
 	struct passwd *pw;
 	int i;
-	char hostname[64];
 
 	if ((pw = getpwuid(getuid())) != NULL) {
 		strncpy(opt.user, pw->pw_name, MAX_USERNAME);
@@ -690,8 +689,7 @@ static void _opt_default()
 	opt.task_prolog     = NULL;
 	opt.task_epilog     = NULL;
 
-	gethostname_short(hostname, sizeof(hostname));
-	opt.ctrl_comm_ifhn  = xstrdup(hostname);
+	opt.ctrl_comm_ifhn  = NULL;
 
 	/*
 	 * Reset some default values if running under a parallel debugger

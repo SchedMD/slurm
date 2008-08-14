@@ -44,14 +44,14 @@ print_header $test_id
 set err_msg     0
 set host_0      ""
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N1 -l --mincpus=999999 -t1 $bin_hostname]
+set srun_pid [spawn $srun -N1 -l --mincpus=999999 -t1 $bin_printenv SLURMD_NODENAME]
 expect {
 	-re "configuration is not available" {
 		send_user "This error is expected, no worries\n"
 		set err_msg 1
 		exp_continue
 	}
-	-re "0: ($alpha_numeric)" {
+	-re "0: ($alpha_numeric_under)" {
 		set host_0 $expect_out(1,string)
 		exp_continue
 	}
@@ -79,9 +79,9 @@ if {$err_msg != 1} {
 #
 set host_0      ""
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N1 -l --mincpus=1 -t1 $bin_hostname]
+set srun_pid [spawn $srun -N1 -l --mincpus=1 -t1 $bin_printenv SLURMD_NODENAME]
 expect {
-	-re "0: ($alpha_numeric)" {
+	-re "0: ($alpha_numeric_under)" {
 		set host_0 $expect_out(1,string)
 		exp_continue
 	}
@@ -106,14 +106,14 @@ if {[string compare $host_0 ""] == 0} {
 set err_msg     0
 set host_0      ""
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N1 -l --mem=999999 -t1 $bin_hostname]
+set srun_pid [spawn $srun -N1 -l --mem=999999 -t1 $bin_printenv SLURMD_NODENAME]
 expect {
 	-re "not available" {
 		send_user "This error is expected, no worries\n"
 		set err_msg 1
 		exp_continue
 	}
-	-re "0: ($alpha_numeric)" {
+	-re "0: ($alpha_numeric_under)" {
 		set host_0 $expect_out(1,string)
 		exp_continue
 	}
@@ -141,9 +141,9 @@ if {$err_msg != 1} {
 #
 set host_0      ""
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N1 -l --mem=10 -t1 $bin_hostname]
+set srun_pid [spawn $srun -N1 -l --mem=10 -t1 $bin_printenv SLURMD_NODENAME]
 expect {
-	-re "0: ($alpha_numeric)" {
+	-re "0: ($alpha_numeric_under)" {
 		set host_0 $expect_out(1,string)
 		exp_continue
 	}
@@ -168,14 +168,14 @@ if {[string compare $host_0 ""] == 0} {
 set err_msg     0
 set host_0      ""
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N1 -l --tmp=999999999 -t1 $bin_hostname]
+set srun_pid [spawn $srun -N1 -l --tmp=999999999 -t1 $bin_printenv SLURMD_NODENAME]
 expect {
 	-re "configuration is not available" {
 		send_user "This error is expected, no worries\n"
 		set err_msg 1
 		exp_continue
 	}
-	-re "0: ($alpha_numeric)" {
+	-re "0: ($alpha_numeric_under)" {
 		set host_0 $expect_out(1,string)
 		exp_continue
 	}
@@ -203,9 +203,9 @@ if {$err_msg != 1} {
 #
 set host_0      ""
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N1 -l --tmp=0 -t1 $bin_hostname]
+set srun_pid [spawn $srun -N1 -l --tmp=0 -t1 $bin_printenv SLURMD_NODENAME]
 expect {
-	-re "0: ($alpha_numeric)" {
+	-re "0: ($alpha_numeric_under)" {
 		set host_0 $expect_out(1,string)
 		exp_continue
 	}

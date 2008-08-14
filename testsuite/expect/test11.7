@@ -93,22 +93,22 @@ for {set i 0} {$i<2} {incr i} {
 		set file [open $hostfile "w"]
 		puts $file "$node1\n$node0"
 		close $file
-		spawn $poe $bin_hostname -rmpool $partition -procs \
+		spawn $poe $bin_printenv SLURMD_NODENAME -rmpool $partition -procs \
 				$num_tasks -nodes $num_nodes -retry wait \
 				-hostfile $hostfile
 	} else {
 		#
 		# execute poe with a specific node count
 		#
-		spawn $poe $bin_hostname -rmpool $partition -procs \
+		spawn $poe $bin_printenv SLURMD_NODENAME -rmpool $partition -procs \
 				$num_tasks -nodes $num_nodes -retry wait
 	}
 	expect {
-		-re "0:($alpha_numeric)" {
+		-re "0:($alpha_numeric_under)" {
 			set node0 $expect_out(1,string)
 			exp_continue
 		}
-		-re "1:($alpha_numeric)" {
+		-re "1:($alpha_numeric_under)" {
 			set node1 $expect_out(1,string)
 			exp_continue
 		}

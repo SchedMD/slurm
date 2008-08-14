@@ -512,7 +512,6 @@ _decode_cred(slurm_auth_credential_t *c, char *socket)
 
      done:
 	munge_ctx_destroy(ctx);
-
 	return e ? SLURM_ERROR : SLURM_SUCCESS;
 }
 

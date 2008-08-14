@@ -812,7 +812,11 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 	acct_user_cond_t user_cond;
 	List ret_list = NULL;
 	acct_association_cond_t assoc_cond;
-	
+
+	if(!user || !user->name) {
+		fatal(" We need a user name in _mod_user");
+	}
+
 	memset(&mod_user, 0, sizeof(acct_user_rec_t));
 	memset(&user_cond, 0, sizeof(acct_user_cond_t));
 	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
@@ -824,7 +828,8 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 	if(file_opts->def_acct)
 		def_acct = xstrdup(file_opts->def_acct);
 
-	if(def_acct && strcmp(def_acct, user->default_acct)) {
+	if(def_acct && 
+	   (!user->default_acct || strcmp(def_acct, user->default_acct))) {
 		printf(" Changed User '%s' "
 		       "default account '%s' -> '%s'\n",
 		       user->name,
@@ -1156,6 +1161,80 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 	return changed;
 }
 
+static acct_user_rec_t *_set_user_up(sacctmgr_file_opts_t *file_opts,
+				     char *parent)
+{
+	acct_user_rec_t *user = xmalloc(sizeof(acct_user_rec_t));
+
+	user->assoc_list = NULL;
+	user->name = xstrdup(file_opts->name);
+	
+	if(file_opts->def_acct)
+		user->default_acct = xstrdup(file_opts->def_acct);
+	else
+		user->default_acct = xstrdup(parent);
+	
+	user->qos_list = file_opts->qos_list;
+	file_opts->qos_list = NULL;
+	user->admin_level = file_opts->admin;
+	
+	if(file_opts->coord_list) {
+		acct_user_cond_t user_cond;
+		acct_association_cond_t assoc_cond;
+		ListIterator coord_itr = NULL;
+		char *temp_char = NULL;
+		acct_coord_rec_t *coord = NULL;
+		
+		memset(&user_cond, 0, sizeof(acct_user_cond_t));
+		memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
+		assoc_cond.user_list = list_create(NULL);
+		list_append(assoc_cond.user_list, user->name);
+		user_cond.assoc_cond = &assoc_cond;
+		
+		notice_thread_init();
+		acct_storage_g_add_coord(db_conn, my_uid, 
+					 file_opts->coord_list,
+					 &user_cond);
+		notice_thread_fini();
+		list_destroy(assoc_cond.user_list);
+		user->coord_accts = list_create(destroy_acct_coord_rec);
+		coord_itr = list_iterator_create(file_opts->coord_list);
+		while((temp_char = list_next(coord_itr))) {
+			coord = xmalloc(sizeof(acct_coord_rec_t));
+			coord->name = xstrdup(temp_char);
+			coord->direct = 1;
+			list_push(user->coord_accts, coord);
+		}
+		list_iterator_destroy(coord_itr);
+	}
+	return user;
+}
+
+
+static acct_account_rec_t *_set_acct_up(sacctmgr_file_opts_t *file_opts,
+					char *parent)
+{
+	acct_account_rec_t *acct = xmalloc(sizeof(acct_account_rec_t));
+	acct->assoc_list = NULL;	
+	acct->name = xstrdup(file_opts->name);
+	if(file_opts->desc) 
+		acct->description = xstrdup(file_opts->desc);
+	else
+		acct->description = xstrdup(file_opts->name);
+	if(file_opts->org)
+		acct->organization = xstrdup(file_opts->org);
+	else if(strcmp(parent, "root"))
+		acct->organization = xstrdup(parent);
+	else
+		acct->organization = xstrdup(file_opts->name);
+	/* info("adding acct %s (%s) (%s)", */
+/* 	        acct->name, acct->description, */
+/* 		acct->organization); */
+	acct->qos_list = file_opts->qos_list;
+	file_opts->qos_list = NULL;
+
+	return acct;
+}
 
 static int _print_file_sacctmgr_assoc_childern(FILE *fd, 
 					       List sacctmgr_assoc_list,
@@ -1575,28 +1654,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				     curr_acct_list, file_opts->name))
 			   && !sacctmgr_find_account_from_list(
 				   acct_list, file_opts->name)) {
-				acct = xmalloc(sizeof(acct_account_rec_t));
-				acct->assoc_list = NULL;	
-				acct->name = xstrdup(file_opts->name);
-				if(file_opts->desc) 
-					acct->description =
-						xstrdup(file_opts->desc);
-				else
-					acct->description = 
-						xstrdup(file_opts->name);
-				if(file_opts->org)
-					acct->organization =
-						xstrdup(file_opts->org);
-				else if(strcmp(parent, "root"))
-					acct->organization = xstrdup(parent);
-				else
-					acct->organization =
-						xstrdup(file_opts->name);
-				/* info("adding acct %s (%s) (%s)", */
-/* 				     acct->name, acct->description, */
-/* 				     acct->organization); */
-				acct->qos_list = file_opts->qos_list;
-				file_opts->qos_list = NULL;
+				acct = _set_acct_up(file_opts, parent);
 				list_append(acct_list, acct);
 				/* don't add anything to the
 				   curr_acct_list */
@@ -1696,65 +1754,13 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				rc = SLURM_ERROR;
 				break;
 			}
+
 			if(!(user = sacctmgr_find_user_from_list(
 				     curr_user_list, file_opts->name))
 			   && !sacctmgr_find_user_from_list(
 				   user_list, file_opts->name)) {
-				user = xmalloc(sizeof(acct_user_rec_t));
-				user->assoc_list = NULL;
-				user->name = xstrdup(file_opts->name);
-				if(file_opts->def_acct)
-					user->default_acct = 
-						xstrdup(file_opts->def_acct);
-				else
-					user->default_acct = xstrdup(parent);
-					
-				user->qos_list = file_opts->qos_list;
-				file_opts->qos_list = NULL;
-				user->admin_level = file_opts->admin;
-				
-				if(file_opts->coord_list) {
-					acct_user_cond_t user_cond;
-					acct_association_cond_t assoc_cond;
-					ListIterator coord_itr = NULL;
-					char *temp_char = NULL;
-					acct_coord_rec_t *coord = NULL;
 
-					memset(&user_cond, 0,
-					       sizeof(acct_user_cond_t));
-					memset(&assoc_cond, 0, 
-					       sizeof(acct_association_cond_t));
-					assoc_cond.user_list = 
-						list_create(NULL);
-					list_append(assoc_cond.user_list, 
-						    user->name);
-					user_cond.assoc_cond = &assoc_cond;
-					
-					notice_thread_init();
-					rc = acct_storage_g_add_coord(
-						db_conn, my_uid, 
-						file_opts->coord_list,
-						&user_cond);
-					notice_thread_fini();
-					list_destroy(assoc_cond.user_list);
-					user->coord_accts = list_create(
-						destroy_acct_coord_rec);
-					coord_itr = list_iterator_create(
-						file_opts->coord_list);
-					while((temp_char =
-					       list_next(coord_itr))) {
-						coord = xmalloc(
-							sizeof
-							(acct_coord_rec_t));
-						coord->name =
-							xstrdup(temp_char);
-						coord->direct = 1;
-						list_push(user->coord_accts,
-							  coord);
-					}
-					list_iterator_destroy(coord_itr);
-				}
-				
+				user = _set_user_up(file_opts, parent);
 				list_append(user_list, user);
 				/* don't add anything to the
 				   curr_user_list */
@@ -1785,6 +1791,17 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 					  file_opts->name, parent,
 					  cluster_name,
 					  file_opts->part)) {
+
+				/* This means the user was added
+				 * during this round but this is a new
+				 * association we are adding
+				 */
+				if(!user) 
+					goto new_association;
+
+				/* This means there could be a change
+				 * on the user.
+				 */
 				user2 = sacctmgr_find_user_from_list(
 					mod_user_list, file_opts->name);
 				if(!user2) {
@@ -1797,7 +1814,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				} else {
 					debug2("already modified this user");
 				}
-
+			new_association:
 				assoc = xmalloc(sizeof(acct_association_rec_t));
 				assoc->acct = xstrdup(parent);
 				assoc->cluster = xstrdup(cluster_name);

@@ -1,8 +1,8 @@
 /*****************************************************************************\
  *  src/slurmd/slurmstepd/req.c - slurmstepd domain socket request handling
- *  $Id$
  *****************************************************************************
- *  Copyright (C) 2005 The Regents of the University of California.
+ *  Copyright (C) 2005-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Christopher Morrone <morrone2@llnl.gov>
  *  LLNL-CODE-402394.
@@ -48,16 +48,17 @@
 #include <signal.h>
 #include <time.h>
 
-#include "src/common/xstring.h"
-#include "src/common/xmalloc.h"
 #include "src/common/fd.h"
 #include "src/common/eio.h"
+#include "src/common/parse_time.h"
+#include "src/slurmd/common/proctrack.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/stepd_api.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
-#include "src/slurmd/common/proctrack.h"
 #include "src/slurmd/slurmstepd/slurmstepd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 #include "src/slurmd/slurmstepd/req.h"
@@ -690,6 +691,7 @@ _handle_signal_container(int fd, slurmd_job_t *job, uid_t uid)
 	int rc = SLURM_SUCCESS;
 	int errnum = 0;
 	int sig;
+	static int msg_sent = 0;
 
 	debug("_handle_signal_container for job %u.%u",
 	      job->jobid, job->stepid);
@@ -717,33 +719,38 @@ _handle_signal_container(int fd, slurmd_job_t *job, uid_t uid)
 		goto done;
 	}
 
-	if (job->nodeid == 0) {
-		static int msg_sent = 0;
-		char *entity;
-		if (job->stepid == SLURM_BATCH_SCRIPT)
-			entity = "JOB";
-		else
-			entity = "STEP";
+	if ((job->nodeid == 0) && (msg_sent == 0)) {
+		time_t now = time(NULL);
+		char entity[24], time_str[24];
+		if (job->stepid == SLURM_BATCH_SCRIPT) {
+			snprintf(entity, sizeof(entity), "JOB %u", job->jobid);
+		} else {
+			snprintf(entity, sizeof(entity), "STEP %u.%u", 
+				 job->jobid, job->stepid);
+		}
+		slurm_make_time_str(&now, time_str, sizeof(time_str));
+
 		/* Not really errors, 
 		 * but we want messages displayed by default */
-		if (msg_sent)
-			;
-		else if (sig == SIGXCPU) {
-			error("*** %s CANCELLED DUE TO TIME LIMIT ***", entity);
+		if (sig == SIG_TIME_LIMIT) {
+			error("*** %s CANCELLED AT %s DUE TO TIME LIMIT ***",
+			      entity, time_str);
 			msg_sent = 1;
 		} else if (sig == SIG_NODE_FAIL) {
-			error("*** %s CANCELLED DUE TO NODE FAILURE ***", entity);
+			error("*** %s CANCELLED AT %s DUE TO NODE FAILURE ***",
+			      entity, time_str);
 			msg_sent = 1;
 		} else if (sig == SIG_FAILURE) {
 			error("*** %s FAILED (non-zero exit code or other "
 			      "failure mode) ***", entity);
 			msg_sent = 1;
 		} else if ((sig == SIGTERM) || (sig == SIGKILL)) {
-			error("*** %s CANCELLED ***", entity);
+			error("*** %s CANCELLED AT %s ***", entity, time_str);
 			msg_sent = 1;
 		}
 	}
-	if ((sig == SIG_NODE_FAIL) || (sig == SIG_FAILURE) || (sig == SIGXCPU))
+	if ((sig == SIG_TIME_LIMIT) || (sig == SIG_NODE_FAIL) || 
+	    (sig == SIG_FAILURE))
 		goto done;
 	if (sig == SIG_ABORT) {
 		sig = SIGKILL;

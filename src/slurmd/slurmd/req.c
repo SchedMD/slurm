@@ -784,6 +784,8 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	slurm_get_ip_str(cli, &port, host, sizeof(host));
 	info("launch task %u.%u request from %u.%u@%s (port %hu)", req->job_id,
 	     req->job_step_id, req->uid, req->gid, host, port);
+	env_array_append(&req->env, "SLURM_SRUN_COMM_HOST", host);
+	req->envc = envcount(req->env);
 
 	first_job_run = !slurm_cred_jobid_cached(conf->vctx, req->job_id);
 	if (_check_job_credential(req, req_uid, nodeid, &step_hset) < 0) {
@@ -1745,7 +1747,7 @@ _rpc_timelimit(slurm_msg_t *msg)
 	slurm_close_accepted_conn(msg->conn_fd);
 	msg->conn_fd = -1;
 
-	_kill_all_active_steps(req->job_id, SIGXCPU, true);
+	_kill_all_active_steps(req->job_id, SIG_TIME_LIMIT, true);
 	nsteps = xcpu_signal(SIGTERM, req->nodes) +
 		_kill_all_active_steps(req->job_id, SIGTERM, false);
 	verbose( "Job %u: timeout: sent SIGTERM to %d active steps", 
@@ -3175,10 +3177,14 @@ _getgroups(void)
 extern void
 init_gids_cache(int cache)
 {
-	struct passwd *pwd;
+	struct passwd pw, *pwd;
 	int ngids;
 	gid_t *orig_gids;
 	gids_t *gids;
+	char buf[BUF_SIZE];
+#ifdef HAVE_AIX
+	FILE *fp = NULL;
+#endif
 
 	if (!cache) {
 		_gids_cache_purge();
@@ -3192,7 +3198,13 @@ init_gids_cache(int cache)
 	orig_gids = (gid_t *)xmalloc(ngids * sizeof(gid_t));
 	getgroups(ngids, orig_gids);
 
-	while ((pwd = getpwent())) {
+	setpwent();
+#ifdef HAVE_AIX
+	while (!getpwent_r(&pw, buf, BUF_SIZE, &fp)) {
+		pwd = &pw;
+#else
+	while (!getpwent_r(&pw, buf, BUF_SIZE, &pwd)) {
+#endif
 		if (_gids_cache_lookup(pwd->pw_name, pwd->pw_gid))
 			continue;
 		if (initgroups(pwd->pw_name, pwd->pw_gid)) {
