@@ -54,7 +54,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 			break;
 		} else if(!end && !strncasecmp(argv[i], "where", 5)) {
 			continue;
-		} else if(!end || !strncasecmp (argv[i], "Names", 1)) {
+		} else if(!end || !strncasecmp (argv[i], "Names", 1)
+			  || !strncasecmp (argv[i], "Clusters", 1)) {
 			if(cluster_list) {
 				if(slurm_addto_char_list(cluster_list,
 							 argv[i]+end))

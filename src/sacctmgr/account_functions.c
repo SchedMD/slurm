@@ -1270,7 +1270,7 @@ extern int sacctmgr_delete_account(int argc, char *argv[])
 		ListIterator itr = list_iterator_create(ret_list);
 		if(set == 1) {
 			printf(" Deleting accounts...\n");
-		} else if(set == 2) {
+		} else if(set == 2 || set == 3) {
 			printf(" Deleting account associations...\n");
 		}
 		while((object = list_next(itr))) {
