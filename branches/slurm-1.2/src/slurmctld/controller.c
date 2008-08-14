@@ -1362,22 +1362,25 @@ _init_pidfile(void)
 extern int
 set_slurmctld_state_loc(void)
 {
-	char *tmp;
+	int rc;
+	struct stat st;
+	const char *path = slurmctld_conf.state_save_location;
 
-	if ((mkdir(slurmctld_conf.state_save_location, 0755) < 0) && 
-	    (errno != EEXIST)) {
-		fatal("mkdir(%s): %m", slurmctld_conf.state_save_location);
-		return SLURM_ERROR;
+	/* 
+	 * If state save location does not exist, try to create it.
+	 *  Otherwise, ensure path is a directory as expected, and that
+	 *  we have permission to write to it.
+	 */
+	if (((rc = stat(path, &st)) < 0) && (errno == ENOENT)) {
+		if (mkdir(path, 0755) < 0)
+			fatal("mkdir(%s): %m", path);
 	}
-
-	tmp = xstrdup(slurmctld_conf.state_save_location);
-	xstrcat(tmp, "/slurm_mkdir_test");
-	if ((mkdir(tmp, 0755) < 0) && (errno != EEXIST)) {
-		fatal("mkdir(%s): %m", tmp);
-		return SLURM_ERROR;
-	}
-	(void) unlink(tmp);
-	xfree(tmp);
+	else if (rc < 0)
+		fatal("Unable to stat state save loc: %s: %m", path);
+	else if (!S_ISDIR(st.st_mode))
+		fatal("State save loc: %s: Not a directory!", path);
+	else if (access(path, R_OK|W_OK|X_OK) < 0)
+		fatal("Incorrect permissions on state save loc: %s", path);
 
 	return SLURM_SUCCESS;
 }
