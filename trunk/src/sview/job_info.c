@@ -1400,7 +1400,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_ACCOUNT),
 				   job_ptr->account);
 
-	if (job->state_desc)
+	if (job_ptr->state_desc)
 		reason = job_ptr->state_desc;
 	else
 		reason = job_reason_string(job_ptr->state_reason);
@@ -1700,7 +1700,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	if (job_ptr->state_desc)
 		reason = job_ptr->state_desc;
 	else
-		reason = job_reason_string(job->state_reason);
+		reason = job_reason_string(job_ptr->state_reason);
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_REASON, reason, -1);
 
