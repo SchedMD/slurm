@@ -45,7 +45,7 @@ print_header $test_id
 # Build input script file
 #
 exec $bin_rm -f $file_in
-make_bash_script $file_in "$bin_hostname"
+make_bash_script $file_in "$bin_printenv SLURMD_NODENAME"
 
 #
 # Spawn a sbatch job that uses stdout/err and confirm their contents

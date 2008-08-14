@@ -65,7 +65,7 @@ send_user "\ntask affinity plugin installed\n"
 # Identify a usable node
 set timeout $max_job_delay
 set node_name ""
-set srun_pid [spawn $srun -N1 --exclusive --verbose $bin_hostname]
+set srun_pid [spawn $srun -N1 --exclusive --verbose $bin_printenv SLURMD_NODENAME]
 expect {
 	-re "on host ($alpha_numeric_under)" {
 		set node_name $expect_out(1,string)

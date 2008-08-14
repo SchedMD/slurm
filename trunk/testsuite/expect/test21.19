@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          sacctmgr modify accounts
+#          sacctmgr add/delete coordinator
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -31,22 +31,20 @@
 ############################################################################
 source ./globals
 
-set test_id     "21.13"
+set test_id     "21.19"
 set exit_code   0
 set acmatches   0
 set aamatches   0
-set ammatches   0
-set almatches   0
-set aclmatches  0
+set camatches   0
+set cumatches   0
 set lmatches    0
-set lamatches   0
 set damatches   0
 set dcmatches   0
+set dumatches   0
 set not_support 0
 set add		add
 set lis		list
 set del		delete
-set mod		modify
 set nams	Names
 set nam		Name
 set fs		Fairshare
@@ -56,35 +54,33 @@ set mn		MaxNodes
 set mw		MaxWall
 set clu		cluster
 set tc1		tcluster1
-set tc2		tcluster2
-set tc3		tcluster3
 set fs1		2500
-set fs2		1700
 set mc1		1000000
-set mc2		700000
 set mj1		50
-set mj2		70
 set mn1		300
-set mn2		70
 set mw1		01:00:00
-set mw2		00:07:00
 set acc		account
+set acs		accounts
 set ass		associations
-set nm1		testaccta1
-set nm2		testaccta2
+set nm1		tacct1
 set des		Description
-set ds1		testaccounta1
-set ds2		testacct
+set ds1		"tacct1"
 set org		Organization
-set or1		accountorga1
-set or2		acttrg
+set or1		"acctorg2"
 set qs		QosLevel
 set qs1		normal
-set par		parent
+set usr		user
+set us1		tuser1
+set al		AdminLevel
+set aln		None
+set dac		DefaultAccount
+set cor		Coordinator
+set par		Partition
+set dbu		debug
+
 
 
 print_header $test_id
-
 
 #
 # Check accounting config and bail if not found.
@@ -94,10 +90,11 @@ if { [test_account_storage] == 0 } {
 	exit 0
 }
  
+
 #
 # Use sacctmgr to create a cluster
 #
-set sadd_pid [spawn $sacctmgr -i add $clu $nams=$tc1,$tc2 $fs=$fs1 $mc=$mc1 $mj=$mj1 $mn=$mn1 $mw=$mw1]
+set sadd_pid [spawn $sacctmgr -i add $clu $nams=$tc1 $fs=$fs1 $mc=$mc1 $mj=$mj1 $mn=$mn1 $mw=$mw1]
 expect {
 	-re "Adding Cluster" {
 		incr acmatches
@@ -127,7 +124,7 @@ if { ![check_acct_associations] } {
 #
 # Use sacctmgr to add an account
 #
-set sadel_pid [spawn $sacctmgr -i $add $acc $clu=$tc1 $des="$ds1" $fs=$fs1 $mc=$mc1 $mj=$mj1 $mn=$mn1 $mw=$mw1 $nams=$nm1,$nm2 $org="$or1" $qs=$qs1]
+set sadel_pid [spawn $sacctmgr -i $add $acc $clu=$tc1 $des="$ds1" $fs=$fs1 $mc=$mc1 $mj=$mj1 $mn=$mn1 $mw=$mw1 $nams=$nm1 $org="$or1" $qs=$qs1]
 expect {
 	-re "Adding Account" {
 		incr aamatches
@@ -150,31 +147,21 @@ if {$aamatches != 1} {
 }
 
 #
-# Use sacctmgr to list the test accounts
+# Use sacctmgr to add a user
 #
-set ac_list_pid [spawn $sacctmgr -n list $acc withassoc]
+set as_list_pid [spawn $sacctmgr -i $add $usr $acs=$nm1 $al=$aln $clu=$tc1 $dac=$nm1 $fs=$fs1 $mc=$mc1 $mj=$mj1 $mn=$mn1 $mw=$mw1 $nams=$us1 $par=$dbu $qs=$qs1 ]
 expect {
-	-re "$nm1 *$ds1 *$or1 *$qs1 *$tc1 *root *$fs1 *$mc1 *$mj1 *$mn1 *$mw1" {
-		incr lmatches
-		exp_continue
-	}
-	-re "$nm2 *$ds1 *$or1 *$qs1 *$tc1 *root *$fs1 *$mc1 *$mj1 *$mn1 *$mw1" {
-		incr lmatches
+	-re "$nams *$nm1" {
 		exp_continue
 	}
 	timeout {
 		send_user "\nFAILURE: sacctmgr list associations not responding\n"
-		slow_kill $ac_list_pid
+		slow_kill $as_list_pid
 		set exit_code 1
 	}
 	eof {
 		wait
 	}
-}
-
-if {$lmatches != 2} {
-	send_user "\nFAILURE:  Accounts addition not correct.\n"
-	set exit_code 1
 }
 
 if { ![check_acct_associations] } {
@@ -183,28 +170,21 @@ if { ![check_acct_associations] } {
 }
 
 #
-# Use sacctmgr to modify an account
+# Use sacctmgr to add a coordinator
 #
-set sadel_pid [spawn $sacctmgr -i $mod $acc set $des="$ds2" $fs=$fs2 $mc=$mc2 $mj=$mj2 $mn=$mn2 $mw=$mw2 $org="$or2" $par=$nm1 where $des="$ds1" $nams=$nm2 $org="$or1" ]
+set as_list_pid [spawn $sacctmgr -i $add $cor $acs=$nm1 $nams=$us1 ]
 expect {
-	-re "Modified accounts" {
-		incr ammatches
+	-re "Adding *$cor" {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr add not responding\n"
-		slow_kill $sadd_pid
+		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		slow_kill $as_list_pid
 		set exit_code 1
 	}
 	eof {
 		wait
 	}
-}
-
-if {$ammatches != 1} {
-	send_user "\nFAILURE:  sacctmgr had a problem modifying account.
-	got $ammatches\n"
-	set exit_code 1
 }
 
 if { ![check_acct_associations] } {
@@ -213,21 +193,17 @@ if { ![check_acct_associations] } {
 }
 
 #
-# Use sacctmgr to list the test account modifications
+# Use sacctmgr to list the test coordinator user
 #
-set ac_list_pid [spawn $sacctmgr -n list $acc withassoc]
+set as_list_pid [spawn $sacctmgr -n list $usr withcoor WithAssocs]
 expect {
-	-re "$nm1 *$ds1 *$or1 *$qs1 *$tc1 *root *$fs1 *$mc1 *$mj1 *$mn1 *$mw1" {
-		incr lamatches
-		exp_continue
-	}
-	-re "$nm2 *$ds2 *$or2 *$qs1 *$tc1 *$nm1 *$fs2 *$mc2 *$mj2 *$mn2 *$mw2" {
-		incr lamatches
+	-re "$us1 *$nm1 *$qs1 *None *$tc1 *$nm1 *$dbu *$fs1 *$mc1 *$mj1 *$mn1 *$mw1 *$nm1" {
+		incr cumatches
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
-		slow_kill $ac_list_pid
+		send_user "\nFAILURE: sacctmgr list user not responding\n"
+		slow_kill $as_list_pid
 		set exit_code 1
 	}
 	eof {
@@ -235,15 +211,87 @@ expect {
 	}
 }
 
-if {$lamatches != 2} {
-	send_user "\nFAILURE:  Account modification incorrect.\n"
+if {$cumatches != 1} {
+	send_user "\nFAILURE:  sacctmgr had a problem finding coordinator user.
+	got $aamatches\n"
+	set exit_code 1
+}
+
+#
+# Use sacctmgr to list the test coordinator account.
+#
+set as_list_pid [spawn $sacctmgr -n list $acc withcoor WithAssocs]
+expect {
+	-re "$nm1 *$ds1 *$or1 *$qs1 *$tc1 *root *$fs1 *$mc1 *$mj1 *$mn1 *$mw1 $us1" {
+		incr camatches
+		exp_continue
+	}
+	-re "$nm1 *$ds1 *$or1 *$qs1 *$tc1 *$us1 *$fs1 *$mc1 *$mj1 *$mn1 *$mw1 $us1" {
+		incr camatches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr list account not responding\n"
+		slow_kill $as_list_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$camatches != 2} {
+	send_user "\nFAILURE:  sacctmgr had a problem finding coordinator account.\n"
+	set exit_code 1
+}
+
+#
+# Use sacctmgr to delete the test coordinator
+#
+set sadel_pid [spawn $sacctmgr -i $del $cor $us1]
+expect {
+	-re "Deleting users" {
+		incr dumatches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr delete not responding\n"
+		slow_kill $sadel_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# Use sacctmgr to delete the test user
+#
+set sadel_pid [spawn $sacctmgr -i $del $usr $us1]
+expect {
+	-re "Deleting users" {
+		incr dumatches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr delete not responding\n"
+		slow_kill $sadel_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$dumatches != 1} {
+	send_user "\nFAILURE: sacctmgr had a problem deleting user got $dumatches\n"
 	set exit_code 1
 }
 
 #
 # Use sacctmgr to delete the test account
 #
-set sadel_pid [spawn $sacctmgr -i $del $acc $nm1,$nm2]
+set sadel_pid [spawn $sacctmgr -i $del $acc $nm1]
 expect {
 	-re "Deleting account" {
 		incr damatches
@@ -260,7 +308,7 @@ expect {
 }
 
 if {$damatches != 1} {
-	send_user "\nFAILURE: sacctmgr had a problem deleting cluster got $damatches\n"
+	send_user "\nFAILURE: sacctmgr had a problem deleting account got $damatches\n"
 	set exit_code 1
 }
 
@@ -272,7 +320,7 @@ if { ![check_acct_associations] } {
 #
 # Use sacctmgr to delete the test cluster
 #
-set sadel_pid [spawn $sacctmgr -i $del $clu $tc1,$tc2]
+set sadel_pid [spawn $sacctmgr -i $del $clu $tc1]
 expect {
 	-re "Deleting clusters" {
 		incr dcmatches

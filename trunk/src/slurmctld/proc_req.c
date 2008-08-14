@@ -137,6 +137,14 @@ inline static void  _slurm_rpc_accounting_update_msg(slurm_msg_t *msg);
  */
 void slurmctld_req (slurm_msg_t * msg)
 {
+	/* Just to validate the cred */
+	(void) g_slurm_auth_get_uid(msg->auth_cred, NULL);
+	if (g_slurm_auth_errno(msg->auth_cred) != SLURM_SUCCESS) {
+		error("Bad authentication: %s",
+		      g_slurm_auth_errstr(g_slurm_auth_errno(msg->auth_cred)));
+		return;
+	}
+
 	switch (msg->msg_type) {
 	case REQUEST_RESOURCE_ALLOCATION:
 		_slurm_rpc_allocate_resources(msg);

@@ -891,7 +891,6 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
  *	SLURM_NPROCS
  *	SLURM_NODELIST
  *	SLURM_TASKS_PER_NODE
- *	SLURM_SRUN_COMM_HOST
  *	SLURM_SRUN_COMM_PORT
  *	SLURM_LAUNCH_NODE_IPADDR
  *
@@ -926,8 +925,6 @@ env_array_for_step(char ***dest,
 	env_array_overwrite_fmt(dest, "SLURM_NPROCS",
 			 "%u", step->step_layout->task_cnt);
 	env_array_overwrite_fmt(dest, "SLURM_TASKS_PER_NODE", "%s", tmp);
-	env_array_overwrite_fmt(dest, "SLURM_SRUN_COMM_HOST",
-			 "%s", launcher_hostname);
 	env_array_overwrite_fmt(dest, "SLURM_SRUN_COMM_PORT",
 			 "%hu", launcher_port);
 

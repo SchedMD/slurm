@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          sacctmgr modify accounts
+#          sacctmgr modify multiple accounts
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -31,7 +31,7 @@
 ############################################################################
 source ./globals
 
-set test_id     "21.13"
+set test_id     "21.14"
 set exit_code   0
 set acmatches   0
 set aamatches   0
@@ -72,6 +72,7 @@ set acc		account
 set ass		associations
 set nm1		testaccta1
 set nm2		testaccta2
+set nm3		testaccta3
 set des		Description
 set ds1		testaccounta1
 set ds2		testacct
@@ -127,7 +128,7 @@ if { ![check_acct_associations] } {
 #
 # Use sacctmgr to add an account
 #
-set sadel_pid [spawn $sacctmgr -i $add $acc $clu=$tc1 $des="$ds1" $fs=$fs1 $mc=$mc1 $mj=$mj1 $mn=$mn1 $mw=$mw1 $nams=$nm1,$nm2 $org="$or1" $qs=$qs1]
+set sadel_pid [spawn $sacctmgr -i $add $acc $clu=$tc1,$tc2 $des="$ds1" $fs=$fs1 $mc=$mc1 $mj=$mj1 $mn=$mn1 $mw=$mw1 $nams=$nm1,$nm2,$nm3 $org="$or1" $qs=$qs1]
 expect {
 	-re "Adding Account" {
 		incr aamatches
@@ -158,7 +159,23 @@ expect {
 		incr lmatches
 		exp_continue
 	}
+	-re "$nm1 *$ds1 *$or1 *$qs1 *$tc2 *root *$fs1 *$mc1 *$mj1 *$mn1 *$mw1" {
+		incr lmatches
+		exp_continue
+	}
 	-re "$nm2 *$ds1 *$or1 *$qs1 *$tc1 *root *$fs1 *$mc1 *$mj1 *$mn1 *$mw1" {
+		incr lmatches
+		exp_continue
+	}
+	-re "$nm2 *$ds1 *$or1 *$qs1 *$tc2 *root *$fs1 *$mc1 *$mj1 *$mn1 *$mw1" {
+		incr lmatches
+		exp_continue
+	}
+	-re "$nm3 *$ds1 *$or1 *$qs1 *$tc1 *root *$fs1 *$mc1 *$mj1 *$mn1 *$mw1" {
+		incr lmatches
+		exp_continue
+	}
+	-re "$nm3 *$ds1 *$or1 *$qs1 *$tc2 *root *$fs1 *$mc1 *$mj1 *$mn1 *$mw1" {
 		incr lmatches
 		exp_continue
 	}
@@ -172,7 +189,7 @@ expect {
 	}
 }
 
-if {$lmatches != 2} {
+if {$lmatches != 6} {
 	send_user "\nFAILURE:  Accounts addition not correct.\n"
 	set exit_code 1
 }
@@ -185,7 +202,7 @@ if { ![check_acct_associations] } {
 #
 # Use sacctmgr to modify an account
 #
-set sadel_pid [spawn $sacctmgr -i $mod $acc set $des="$ds2" $fs=$fs2 $mc=$mc2 $mj=$mj2 $mn=$mn2 $mw=$mw2 $org="$or2" $par=$nm1 where $des="$ds1" $nams=$nm2 $org="$or1" ]
+set sadel_pid [spawn $sacctmgr -i $mod $acc set $des="$ds2" $fs=$fs2 $mc=$mc2 $mj=$mj2 $mn=$mn2 $mw=$mw2 $org="$or2" $par=$nm1 where $des="$ds1" $nams=$nm2,$nm3 $org="$or1" ]
 expect {
 	-re "Modified accounts" {
 		incr ammatches
@@ -221,7 +238,23 @@ expect {
 		incr lamatches
 		exp_continue
 	}
+	-re "$nm1 *$ds1 *$or1 *$qs1 *$tc2 *root *$fs1 *$mc1 *$mj1 *$mn1 *$mw1" {
+		incr lamatches
+		exp_continue
+	}
 	-re "$nm2 *$ds2 *$or2 *$qs1 *$tc1 *$nm1 *$fs2 *$mc2 *$mj2 *$mn2 *$mw2" {
+		incr lamatches
+		exp_continue
+	}
+	-re "$nm2 *$ds2 *$or2 *$qs1 *$tc2 *$nm1 *$fs2 *$mc2 *$mj2 *$mn2 *$mw2" {
+		incr lamatches
+		exp_continue
+	}
+	-re "$nm3 *$ds2 *$or2 *$qs1 *$tc1 *$nm1 *$fs2 *$mc2 *$mj2 *$mn2 *$mw2" {
+		incr lamatches
+		exp_continue
+	}
+	-re "$nm3 *$ds2 *$or2 *$qs1 *$tc2 *$nm1 *$fs2 *$mc2 *$mj2 *$mn2 *$mw2" {
 		incr lamatches
 		exp_continue
 	}
@@ -235,7 +268,7 @@ expect {
 	}
 }
 
-if {$lamatches != 2} {
+if {$lamatches != 6} {
 	send_user "\nFAILURE:  Account modification incorrect.\n"
 	set exit_code 1
 }
@@ -243,7 +276,7 @@ if {$lamatches != 2} {
 #
 # Use sacctmgr to delete the test account
 #
-set sadel_pid [spawn $sacctmgr -i $del $acc $nm1,$nm2]
+set sadel_pid [spawn $sacctmgr -i $del $acc $nm1,$nm2,$nm3]
 expect {
 	-re "Deleting account" {
 		incr damatches

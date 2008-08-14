@@ -55,7 +55,11 @@ documents those changes that are of interest to users and admins.
  -- If a DOWN node is resumed, set its state to IDLE & NOT_RESPONDING and 
     ping the node immediately to clear the NOT_RESPONDING flag.
  -- Log that a job's time limit is reached, but don't sent SIGXCPU.
- 
+ -- Fixed gid to be set in slurmstepd when run by root
+ -- Changed getpwent to getpwent_r in the slurmctld and slurmd
+ -- Increase timeout on most slurmdbd communications to 60 secs (time for
+    substantial database updates).
+
 * Changes in SLURM 1.3.6
 ========================
  -- Add new function to get information for a single job rather than always
@@ -470,6 +474,9 @@ documents those changes that are of interest to users and admins.
     permit a user access to a partition not normally allowed due to the
     AllowGroup specification or the wrong user identified in an accounting
     record. The job would NOT be run as the wrong user.
+ -- For PMI only (MPICH2/MVAPICH2) base address to send messages to (the srun)
+    upon the address from which slurmd gets the task launch request rather then
+    "hostname" where srun executes.
 
 * Changes in SLURM 1.2.33
 =========================

@@ -65,7 +65,7 @@ array set good_vars {
 set timeout $max_job_delay
 set srun_pid [spawn $srun -N1 -n1 -t1 $bin_env]
 expect {
-	-re "(SLURM_$alpha_under)=($alpha_numeric)" {
+	-re "(SLURM_$alpha_under)=($alpha_numeric_under)" {
 		set found_vars($expect_out(1,string)) "$expect_out(2,string)"
 		exp_continue
 	}

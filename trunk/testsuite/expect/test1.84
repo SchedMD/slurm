@@ -54,7 +54,7 @@ if {[test_multiple_slurmd] != 0} {
 
 make_bash_script $file_in "
    env | grep SLURM_CPUS_ON_NODE
-   $bin_hostname"
+   $bin_printenv SLURMD_NODENAME"
 
 #
 # Submit a 1 node job to determine the node's CPU count
@@ -77,7 +77,7 @@ expect {
 		incr task_cnt
 		exp_continue
 	}
-	-re "($number): ($alpha_numeric)" {
+	-re "($number): ($alpha_numeric_under)" {
 		set task $expect_out(1,string)
 		set host $expect_out(2,string)
 		exp_continue
@@ -123,7 +123,7 @@ if {$cpu_cnt < 2} {
 # Submit a 1 node job to determine the node's CPU count
 #
 set task_cnt  0
-set srun_pid [spawn $srun -N1 -t1 --nodelist=$host --cpus-per-task=2 -l $bin_hostname]
+set srun_pid [spawn $srun -N1 -t1 --nodelist=$host --cpus-per-task=2 -l $bin_printenv SLURMD_NODENAME]
 expect {
 	-re "Invalid node name specified" {
 		send_user "\nWARNING: Appears you are using "
@@ -131,7 +131,7 @@ expect {
 		send_user "This test won't work in that fashion.\n"
 		exit 0	
 	}
-	-re "$number: ($alpha_numeric)" {
+	-re "$number: ($alpha_numeric_under)" {
 		incr task_cnt
 		exp_continue
 	}

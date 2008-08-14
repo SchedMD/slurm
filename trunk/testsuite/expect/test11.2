@@ -92,7 +92,7 @@ got '$found_device'\n"
 spawn $poe hostname -rmpool $partition -euilib $mode -retry wait
 
 expect {
-	-re "LL_AdapterUsageMode = ($alpha_numeric)" {
+	-re "LL_AdapterUsageMode = ($alpha_numeric_under)" {
 		set found_mode $expect_out(1,string)
 		exp_continue
 	}
@@ -124,11 +124,11 @@ spawn $poe hostname -rmpool $partition -euilib $mode\
     -euidevice $device -retry wait
 
 expect {
-	-re "LL_AdapterUsageMode = ($alpha_numeric)" {
+	-re "LL_AdapterUsageMode = ($alpha_numeric_under)" {
 		set found_mode $expect_out(1,string)
 		exp_continue
 	}
-	-re "LL_AdapterUsageDevice = ($alpha_numeric)" {
+	-re "LL_AdapterUsageDevice = ($alpha_numeric_under)" {
 		set found_device $expect_out(1,string)
 		exp_continue
 	}
