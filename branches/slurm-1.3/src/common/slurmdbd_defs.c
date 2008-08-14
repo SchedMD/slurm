@@ -2205,7 +2205,6 @@ slurmdbd_unpack_init_msg(dbd_init_msg_t **msg, Buf buffer, char *auth_info)
 	}
 	msg_ptr->uid = g_slurm_auth_get_uid(auth_cred, auth_info);
 	if(g_slurm_auth_errno(auth_cred) != SLURM_SUCCESS) {
-		
 		error("Bad authentication: %s",
 		      g_slurm_auth_errstr(g_slurm_auth_errno(auth_cred)));
 		goto unpack_error;
