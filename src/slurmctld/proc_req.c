@@ -134,9 +134,9 @@ inline static void  _update_cred_key(void);
 void slurmctld_req (slurm_msg_t * msg, slurm_addr *cli_addr)
 {
 	/* Just to validate the cred */
-	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
+	(void) g_slurm_auth_get_uid(msg->auth_cred);
 	if (g_slurm_auth_errno(msg->auth_cred) != SLURM_SUCCESS) {
-		error("Bad authentication for uid %d: %s", uid,
+		error("Bad authentication: %s",
 		      g_slurm_auth_errstr(g_slurm_auth_errno(msg->auth_cred)));
 		return;
 	}
