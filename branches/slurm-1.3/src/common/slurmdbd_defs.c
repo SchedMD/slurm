@@ -2210,7 +2210,7 @@ slurmdbd_unpack_init_msg(dbd_init_msg_t **msg, Buf buffer, char *auth_info)
 		      g_slurm_auth_errstr(g_slurm_auth_errno(auth_cred)));
 		goto unpack_error;
 	}
-	info("got %d for the uid", msg_ptr->uid);
+
 	g_slurm_auth_destroy(auth_cred);
 	return SLURM_SUCCESS;
 
