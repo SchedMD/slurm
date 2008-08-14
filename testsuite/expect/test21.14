@@ -86,6 +86,7 @@ set par		parent
 
 print_header $test_id
 
+set timeout 60
 
 #
 # Check accounting config and bail if not found.
@@ -94,123 +95,396 @@ if { [test_account_storage] == 0 } {
 	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
 	exit 0
 }
- 
+
+
 #
 # Use sacctmgr to create a cluster
-#
-set sadd_pid [spawn $sacctmgr -i add $clu $nams=$tc1,$tc2 $fs=$fs1 $mc=$mc1 $mj=$mj1 $mn=$mn1 $mw=$mw1]
-expect {
-	-re "Adding Cluster" {
-		incr acmatches
-		exp_continue
+#	
+proc _add_cluster {name} {
+        global sacctmgr timeout
+
+	set exit_code 0
+	set matches 0
+
+	if { ![string length $name] } {
+		send_user "FAILURE: we need a name to add\n"
+		return 1
 	}
+
+	set my_pid [spawn $sacctmgr -i add cluster $name]
+	expect {
+		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
+			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+			set exit_code 1
+		}
+		-re "Problem getting" {
+			send_user "FAILURE: there was a problem getting information from the database\n"
+			set exit_code 1
+		}
+		-re "Problem adding" {
+			send_user "FAILURE: there was an unknwon problem\n"
+			set exit_code 1
+		}
+		-re "No associations" {
+			send_user "FAILURE: your command didn't return anything\n"
+			set exit_code 1
+		}
+		-re "Adding Cluster" {
+			incr matches
+			exp_continue
+		}
 		timeout {
-		send_user "\nFAILURE: sacctmgr add not responding\n"
-		slow_kill $sadd_pid
+			send_user "\nFAILURE: sacctmgr add not responding\n"
+			slow_kill $my_pid
+			exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != 1} {
+		send_user "\nFAILURE:  sacctmgr had a problem adding clusters
+	got $matches\n"
 		set exit_code 1
 	}
-	eof {
-		wait
+
+	if { ![check_acct_associations] } {
+		send_user "\nFAILURE:  Our associations don't line up\n"
+		set exit_code 1
 	}
+	
+	return $exit_code
 }
 
-if {$acmatches != 1} {
-	send_user "\nFAILURE:  sacctmgr had a problem adding clusters
-	got $acmatches\n"
-	set exit_code 1
-}
+#
+# Use sacctmgr to remove the test cluster
+#
+proc _remove_cluster {name} {
+        global sacctmgr timeout
 
-if { ![check_acct_associations] } {
-	send_user "\nFAILURE:  Our associations don't line up\n"
-	set exit_code 1
+	set exit_code 0
+	set matches 0
+
+	if { ![string length $name] } {
+		send_user "FAILURE: we need a name to remove\n"
+		return 1
+	}
+
+	set my_pid [spawn $sacctmgr -i delete cluster $name]
+	expect {
+		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
+			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+			set exit_code 1
+		}
+		-re "Problem getting" {
+			send_user "FAILURE: there was a problem getting information from the database\n"
+			set exit_code 1
+		}
+		-re "Problem adding" {
+			send_user "FAILURE: there was an unknwon problem\n"
+			set exit_code 1
+		}
+		-re "No associations" {
+			send_user "FAILURE: your command didn't return anything\n"
+			set exit_code 1
+		}
+		-re "Deleting clusters" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr delete not responding\n"
+			slow_kill $my_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	
+	if {$matches != 1} {
+		send_user "\nFAILURE: sacctmgr had a problem deleting cluster got $matches\n"
+		set exit_code 1
+	}
+	
+	if { ![check_acct_associations] } {
+		send_user "\nFAILURE:  Our associations don't line up\n"
+		set exit_code 1
+	}
+	return $exit_code
 }
 
 #
 # Use sacctmgr to add an account
 #
-set sadel_pid [spawn $sacctmgr -i $add $acc $clu=$tc1,$tc2 $des="$ds1" $fs=$fs1 $mc=$mc1 $mj=$mj1 $mn=$mn1 $mw=$mw1 $nams=$nm1,$nm2,$nm3 $org="$or1" $qs=$qs1]
-expect {
-	-re "Adding Account" {
-		incr aamatches
-		exp_continue
+proc _add_acct { cluster name } {
+        global sacctmgr timeout
+
+	set exit_code 0
+	set matches 0
+
+	if { ![string length $name] } {
+		send_user "FAILURE: we need a name to add\n"
+		return 1
 	}
-	timeout {
-		send_user "\nFAILURE: sacctmgr add not responding\n"
-		slow_kill $sadd_pid
+
+	set command "$name"
+
+	if { [string length $cluster] } {
+		set command "$command cluster=$cluster"
+	}
+
+	set my_pid [eval spawn $sacctmgr -i add account $command]
+	expect {
+		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
+			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+			set exit_code 1
+		}
+		-re "Problem getting" {
+			send_user "FAILURE: there was a problem getting information from the database\n"
+			set exit_code 1
+		}
+		-re "Problem adding" {
+			send_user "FAILURE: there was an unknwon problem\n"
+			set exit_code 1
+		}
+		-re "No associations" {
+			send_user "FAILURE: your command didn't return anything\n"
+			set exit_code 1
+		}
+		-re "Adding Account" {
+			incr matches
+			exp_continue
+		}
+		-re "Associations" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr add not responding\n"
+			slow_kill $my_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != 2} {
+		send_user "\nFAILURE:  sacctmgr had a problem adding account.
+	got $matches\n"
 		set exit_code 1
 	}
-	eof {
-		wait
-	}
-}
-
-if {$aamatches != 1} {
-	send_user "\nFAILURE:  sacctmgr had a problem adding account.
-	got $aamatches\n"
-	set exit_code 1
+	return $exit_code
 }
 
 #
-# Use sacctmgr to list the test accounts
+# Use sacctmgr to remove an account
 #
-set ac_list_pid [spawn $sacctmgr -n list $acc withassoc]
-expect {
-	-re "$nm1 *$ds1 *$or1 *$qs1 *$tc1 *root *$fs1 *$mc1 *$mj1 *$mn1 *$mw1" {
-		incr lmatches
-		exp_continue
+proc _remove_acct { cluster name } {
+        global sacctmgr timeout
+
+	set exit_code 0
+	set matches 0
+	set check "Deleting account"
+
+	if { ![string length $name] } {
+		send_user "FAILURE: we need a name to remove\n"
+		return 1
 	}
-	-re "$nm1 *$ds1 *$or1 *$qs1 *$tc2 *root *$fs1 *$mc1 *$mj1 *$mn1 *$mw1" {
-		incr lmatches
-		exp_continue
+
+	set command "$name"
+
+	if { [string length $cluster] } {
+		set command "$command cluster=$cluster"
+		set check "Deleting account associations"
 	}
-	-re "$nm2 *$ds1 *$or1 *$qs1 *$tc1 *root *$fs1 *$mc1 *$mj1 *$mn1 *$mw1" {
-		incr lmatches
-		exp_continue
+
+	set my_pid [eval spawn $sacctmgr -i delete account $command]
+	expect {
+		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
+			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+			set exit_code 1
+		}
+		-re "Problem getting" {
+			send_user "FAILURE: there was a problem getting information from the database\n"
+			set exit_code 1
+		}
+		-re "Problem adding" {
+			send_user "FAILURE: there was an unknwon problem\n"
+			set exit_code 1
+		}
+		-re "No associations" {
+			send_user "FAILURE: your command didn't return anything\n"
+			set exit_code 1
+		}
+		-re $check {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr add not responding\n"
+			slow_kill $my_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
 	}
-	-re "$nm2 *$ds1 *$or1 *$qs1 *$tc2 *root *$fs1 *$mc1 *$mj1 *$mn1 *$mw1" {
-		incr lmatches
-		exp_continue
-	}
-	-re "$nm3 *$ds1 *$or1 *$qs1 *$tc1 *root *$fs1 *$mc1 *$mj1 *$mn1 *$mw1" {
-		incr lmatches
-		exp_continue
-	}
-	-re "$nm3 *$ds1 *$or1 *$qs1 *$tc2 *root *$fs1 *$mc1 *$mj1 *$mn1 *$mw1" {
-		incr lmatches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
-		slow_kill $ac_list_pid
+
+	if {$matches != 1} {
+		send_user "\nFAILURE:  sacctmgr had a problem deleting account.
+	got $matches\n"
 		set exit_code 1
 	}
-	eof {
-		wait
-	}
-}
-
-if {$lmatches != 6} {
-	send_user "\nFAILURE:  Accounts addition not correct.\n"
-	set exit_code 1
-}
-
-if { ![check_acct_associations] } {
-	send_user "\nFAILURE:  Our associations don't line up\n"
-	set exit_code 1
+	return $exit_code
 }
 
 #
 # Use sacctmgr to modify an account
 #
-set sadel_pid [spawn $sacctmgr -i $mod $acc set $des="$ds2" $fs=$fs2 $mc=$mc2 $mj=$mj2 $mn=$mn2 $mw=$mw2 $org="$or2" $par=$nm1 where $des="$ds1" $nams=$nm2,$nm3 $org="$or1" ]
+proc _mod_acct_limits_and_desc { cluster name desc org fs maxcpu maxjob maxnodes maxwall wdesc worg} {
+	global sacctmgr timeout
+	
+	set exit_code 0
+	set matches 0
+
+	if { ![string length $name] } {
+		send_user "FAILURE: we need a name to modify\n"
+		return 1
+	}
+
+	#set up the where
+	set wcommand "where $name"
+
+	if { [string length $cluster] } {
+		set wcommand "$wcommand cluster=$cluster"
+	}
+
+	if { [string length $wdesc] } {
+		set wcommand "$wcommand description='$wdesc'"
+	}
+
+	if { [string length $worg] } {
+		set wcommand "$wcommand organization='$worg'"
+	}
+
+	#set up the set
+	set scommand "set"
+	if { [string length $fs] } {
+		set scommand "$scommand fairshare=$fs"
+	}
+
+	if { [string length $maxcpu] } {
+		set scommand "$scommand maxc=$maxcpu"
+	}
+
+	if { [string length $maxjob] } {
+		set scommand "$scommand maxj=$maxjob"
+	}
+
+	if { [string length $maxnodes] } {
+		set scommand "$scommand maxn=$maxnodes"
+	}
+
+	if { [string length $maxwall] } {
+		set scommand "$scommand maxw=$maxwall"
+	}
+
+	if { [string length $desc] } {
+		set scommand "$scommand description='$desc'"
+	}
+
+	if { [string length $org] } {
+		set scommand "$scommand organization='$org'"
+	}
+
+	set my_pid [eval spawn $sacctmgr -i modify account $scommand $wcommand ]
+	expect {
+		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
+			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+			set exit_code 1
+		}
+		-re "Problem getting" {
+			send_user "FAILURE: there was a problem getting information from the database\n"
+			set exit_code 1
+		}
+		-re "Problem adding" {
+			send_user "FAILURE: there was an unknwon problem\n"
+			set exit_code 1
+		}
+		-re "No associations" {
+			send_user "FAILURE: your command didn't return anything\n"
+			set exit_code 1
+		}
+		-re "Modified accounts" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr add not responding\n"
+			slow_kill $my_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != 1} {
+		send_user "\nFAILURE:  sacctmgr had a problem modifying account.
+	got $matches\n"
+		set exit_code 1
+	}
+	
+	if { ![check_acct_associations] } {
+		send_user "\nFAILURE:  Our associations don't line up\n"
+		set exit_code 1
+	}
+	return $exit_code
+}
+
+set exit_code [_add_cluster "$tc1,$tc2"]
+if { $exit_code } {
+	_remove_cluster "$tc1,$tc2"
+	exit $exit_code
+}
+
+set exit_code [_add_acct "$tc1,$tc2" "$nm1,$nm2,$nm3"]
+if { $exit_code } {
+	_remove_acct "" "$nm1,$nm2,$nm3"
+	_remove_cluster "$tc1,$tc2"
+	exit $exit_code
+}
+
+set exit_code [_remove_acct "$tc1,$tc2" "$nm1,$nm2,$nm3"]
+set exit_code [_remove_acct "" "$nm1,$nm2,$nm3"]
+set exit_code [_remove_cluster "$tc1,$tc2"]
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+} else {
+	send_user "\nFAILURE\n"
+}
+exit $exit_code
+
+#
+# Use sacctmgr to modify an account
+#
+set my_pid [spawn $sacctmgr -i mod $acc set $des="$ds2" $fs=$fs2 $mc=$mc2 $mj=$mj2 $mn=$mn2 $mw=$mw2 $org="$or2" $par=$nm1 where $des="$ds1" $nams=$nm2,$nm3 $org="$or1" ]
 expect {
+	-re "There was a problem" {
+	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+	    	set exit_code 1
+	}
 	-re "Modified accounts" {
 		incr ammatches
 		exp_continue
 	}
 	timeout {
 		send_user "\nFAILURE: sacctmgr add not responding\n"
-		slow_kill $sadd_pid
+		slow_kill $my_pid
 		set exit_code 1
 	}
 	eof {
@@ -232,8 +506,12 @@ if { ![check_acct_associations] } {
 #
 # Use sacctmgr to list the test account modifications
 #
-set ac_list_pid [spawn $sacctmgr -n list $acc withassoc]
+set my_pid [spawn $sacctmgr -n list $acc withassoc acc=$nm1,$nm2,$nm3]
 expect {
+	-re "There was a problem" {
+	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+	    	set exit_code 1
+	}
 	-re "$nm1 *$ds1 *$or1 *$qs1 *$tc1 *root *$fs1 *$mc1 *$mj1 *$mn1 *$mw1" {
 		incr lamatches
 		exp_continue
@@ -260,7 +538,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: sacctmgr list associations not responding\n"
-		slow_kill $ac_list_pid
+		slow_kill $my_pid
 		set exit_code 1
 	}
 	eof {
@@ -276,7 +554,7 @@ if {$lamatches != 6} {
 #
 # Use sacctmgr to delete the test account
 #
-set sadel_pid [spawn $sacctmgr -i $del $acc $nm1,$nm2,$nm3]
+set my_pid [spawn $sacctmgr -i $del $acc $nm1,$nm2,$nm3]
 expect {
 	-re "Deleting account" {
 		incr damatches
@@ -284,7 +562,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: sacctmgr delete not responding\n"
-		slow_kill $sadel_pid
+		slow_kill $my_pid
 		set exit_code 1
 	}
 	eof {
@@ -305,7 +583,7 @@ if { ![check_acct_associations] } {
 #
 # Use sacctmgr to delete the test cluster
 #
-set sadel_pid [spawn $sacctmgr -i $del $clu $tc1,$tc2]
+set my_pid [spawn $sacctmgr -i $del $clu $tc1,$tc2]
 expect {
 	-re "Deleting clusters" {
 		incr dcmatches
@@ -313,7 +591,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: sacctmgr delete not responding\n"
-		slow_kill $sadel_pid
+		slow_kill $my_pid
 		set exit_code 1
 	}
 	eof {
