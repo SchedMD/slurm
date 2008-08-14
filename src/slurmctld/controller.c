@@ -235,8 +235,7 @@ int main(int argc, char *argv[])
 	/* 
 	 * Create StateSaveLocation directory if necessary.
 	 */
-	if (set_slurmctld_state_loc() < 0)
-		fatal("Unable to initialize StateSaveLocation");
+	set_slurmctld_state_loc();
 
 	if (daemonize) {
 		error_code = daemon(1, 1);
@@ -1359,7 +1358,7 @@ _init_pidfile(void)
 /*
  * set_slurmctld_state_loc - create state directory as needed and "cd" to it
  */
-extern int
+extern void
 set_slurmctld_state_loc(void)
 {
 	int rc;
@@ -1381,6 +1380,4 @@ set_slurmctld_state_loc(void)
 		fatal("State save loc: %s: Not a directory!", path);
 	else if (access(path, R_OK|W_OK|X_OK) < 0)
 		fatal("Incorrect permissions on state save loc: %s", path);
-
-	return SLURM_SUCCESS;
 }
