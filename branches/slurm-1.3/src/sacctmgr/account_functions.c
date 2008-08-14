@@ -84,7 +84,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 			}
 			if(slurm_addto_char_list(
 				   acct_cond->assoc_cond->acct_list,
-				   argv[i]+end))
+				   argv[i]+end)) 
 				u_set = 1;
 		} else if (!strncasecmp (argv[i], "Clusters", 1)) {
 			if(!acct_cond->assoc_cond->cluster_list) {
@@ -1258,7 +1258,7 @@ extern int sacctmgr_delete_account(int argc, char *argv[])
 	if(set == 1) {
 		ret_list = acct_storage_g_remove_accounts(
 			db_conn, my_uid, acct_cond);		
-	} else if(set == 2) {
+	} else if(set == 2 || set == 3) {
 		ret_list = acct_storage_g_remove_associations(
 			db_conn, my_uid, acct_cond->assoc_cond);
 	}
