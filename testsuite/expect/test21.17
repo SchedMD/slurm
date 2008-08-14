@@ -295,7 +295,7 @@ expect {
 }
 
 if {$dlumatches != 8} {
-	send_user "\nFAILURE: sacctmgr had a problem listing user got $dumatches\n"
+	send_user "\nFAILURE: sacctmgr had a problem listing user got $dumatches of 8\n"
 	set exit_code 1
 }
 
@@ -383,8 +383,8 @@ if { ![check_acct_associations] } {
 
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
-		} else {
+} else {
 	send_user "\nFAILURE\n"
-		}
+}
 
 exit $exit_code
