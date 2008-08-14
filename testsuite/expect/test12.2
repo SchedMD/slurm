@@ -343,7 +343,7 @@ if {$aix == 1 && $exit_code == 1} {
 }
 
 if {$exit_code == 0} {
-	exec rm -f $file_prog
+	exec rm -f $file_prog $file_in $file_out $file_err
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
