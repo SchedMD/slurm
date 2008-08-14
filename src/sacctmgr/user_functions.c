@@ -83,7 +83,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 			}
 			if(slurm_addto_char_list(
 				   user_cond->assoc_cond->user_list,
-				   argv[i]+end))
+				   argv[i]+end)) 
 				u_set = 1;
 		} else if (!strncasecmp (argv[i], "Account", 2)) {
 			if(!user_cond->assoc_cond->acct_list) {
@@ -1428,7 +1428,7 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 	if(set == 1) {
 		ret_list = acct_storage_g_remove_users(
 			db_conn, my_uid, user_cond);		
-	} else if(set == 2) {
+	} else if(set == 2 || set == 3) {
 		ret_list = acct_storage_g_remove_associations(
 			db_conn, my_uid, user_cond->assoc_cond);
 	}
