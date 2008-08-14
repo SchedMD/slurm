@@ -1441,7 +1441,7 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 		ListIterator itr = list_iterator_create(ret_list);
 		if(set == 1) {
 			printf(" Deleting users...\n");
-		} else if(set == 2) {
+		} else if(set == 2 || set == 3) {
 			printf(" Deleting user associations...\n");
 		}
 		while((object = list_next(itr))) {

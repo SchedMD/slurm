@@ -46,8 +46,8 @@ static pthread_t lock_warning_thread;
 
 static void *_print_lock_warn(void *no_data)
 {
-	sleep(2);
-	printf(" Waiting for lock from other user.\n");
+	sleep(5);
+	printf(" Database is busy or waiting for lock from other user.\n");
 
 	return NULL;
 }
