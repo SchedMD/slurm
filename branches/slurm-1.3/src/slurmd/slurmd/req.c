@@ -70,6 +70,7 @@
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
 #include "src/common/list.h"
+#include "src/common/uid.h"
 #include "src/common/util-net.h"
 #include "src/common/forward.h"
 #include "src/common/read_config.h"
@@ -332,8 +333,7 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	int parent_rank, children, depth, max_depth;
 	char *parent_alias = NULL;
 	slurm_addr parent_addr = {0};
-	size_t pwd_bufsize;
-	char *pwd_buffer;
+	char pwd_buffer[PW_BUF_SIZE];
 	struct passwd pwd, *pwd_result;
 
 	slurm_msg_t_init(&msg);
@@ -459,14 +459,11 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	
 	/* send cached group ids array for the relevant uid */
 	debug3("_send_slurmstepd_init: call to getpwuid_r");
-	pwd_bufsize = sysconf(_SC_GETPW_R_SIZE_MAX);
-	pwd_buffer = xmalloc(pwd_bufsize);
-	if (getpwuid_r(uid, &pwd, pwd_buffer, pwd_bufsize, &pwd_result) ||
+	if (getpwuid_r(uid, &pwd, pwd_buffer, PW_BUF_SIZE, &pwd_result) ||
 	    (pwd_result == NULL)) {
 		error("_send_slurmstepd_init getpwuid_r: %m");
 		len = 0;
 		safe_write(fd, &len, sizeof(int));
-		xfree(pwd_buffer);
 		return -1;
 	}
 	debug3("_send_slurmstepd_init: return from getpwuid_r");
@@ -484,7 +481,6 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 		len = 0;
 		safe_write(fd, &len, sizeof(int));
 	}
-	xfree(pwd_buffer);
 	return 0;
 
 rwfail:
@@ -905,10 +901,9 @@ _prolog_error(batch_job_launch_msg_t *req, int rc)
 static void
 _get_user_env(batch_job_launch_msg_t *req)
 {
-	struct passwd pwd, *pwd_ptr;
-	char *pwd_buf = NULL;
+	struct passwd pwd, *pwd_ptr = NULL;
+	char pwd_buf[PW_BUF_SIZE];
 	char **new_env;
-	size_t buf_size;
 	int i;
 
 	for (i=0; i<req->argc; i++) {
@@ -918,9 +913,8 @@ _get_user_env(batch_job_launch_msg_t *req)
 	if (i >= req->argc)
 		return;		/* don't need to load env */
 
-	buf_size = sysconf(_SC_GETPW_R_SIZE_MAX);
-	pwd_buf = xmalloc(buf_size);
-	if (getpwuid_r(req->uid, &pwd, pwd_buf, buf_size, &pwd_ptr)) {
+	if (getpwuid_r(req->uid, &pwd, pwd_buf, PW_BUF_SIZE, &pwd_ptr) ||
+	    (pwd_ptr == NULL)) {
 		error("getpwuid_r(%u):%m", req->uid);
 	} else {
 		verbose("get env for user %s here", pwd.pw_name);
@@ -940,7 +934,6 @@ _get_user_env(batch_job_launch_msg_t *req)
 			      "running only with passed environment");
 		}
 	}
-	xfree(pwd_buf);
 }
 
 /* The RPC currently contains a memory size limit, but we load the 
