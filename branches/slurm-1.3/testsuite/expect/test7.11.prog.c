@@ -85,11 +85,15 @@ slurm_spank_local_user_init(spank_t sp, int ac, char **av)
 /* Called from slurmd only */
 int slurm_spank_task_init(spank_t sp, int ac, char **av)
 {
+	uid_t my_uid;
+
 	if (opt_out_file && opt_arg) {
 		FILE *fp = fopen(opt_out_file, "a");
 		if (!fp)
 			return (-1);
 		fprintf(fp, "slurm_spank_task_init: opt_arg=%d\n", opt_arg);
+		if (spank_get_item(sp, S_JOB_UID, &my_uid) == ESPANK_SUCCESS)
+			fprintf(fp, "spank_get_item: my_uid=%d\n", my_uid);
 		fclose(fp);
 	}
 	return (0);
