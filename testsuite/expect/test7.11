@@ -97,6 +97,8 @@ expect {
 		wait
 	}
 }
+# wait for the plugstack.conf to be propogated to compute nodes
+exec $bin_sleep 60
 
 #
 # Test of srun help message
@@ -162,8 +164,8 @@ if {$matches != 3} {
 #
 # Test for slurmd output in file
 #
-set matches 0
 if {[wait_for_file $file_out] == 0} {
+	set matches 0
 	spawn $bin_cat $file_out
 	expect {
 		-re "slurm_spank_task_init: opt_arg=5" {
@@ -182,9 +184,14 @@ if {[wait_for_file $file_out] == 0} {
 			wait
 		}
 	}
-}
-if {$matches != 3} {
-	send_user "\nFAILURE: remote (slurmd) spank plugins failure\n"
+	if {$matches != 3} {
+		send_user "\nFAILURE: remote (slurmd) spank plugins failure\n"
+		set exit_code 1
+	}
+} else {
+	send_user "\nWARNING: This can be caused by the plugstack.conf file not\n"
+	send_user "      being propagated to the compute node or not being in a\n"
+	send_user "      shared file system.\n"
 	set exit_code 1
 }
 
