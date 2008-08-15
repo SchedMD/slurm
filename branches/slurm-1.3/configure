@@ -25271,7 +25271,7 @@ echo "$as_me: WARNING: *** pkg-config not found. Cannot probe for libglade-2.0 o
 #    fi
 
 
-### Check for gtk2.6 package
+### Check for gtk2.8 package
     if test "$ac_have_gtk" == "yes" ; then
         $HAVEPKGCONFIG --exists gtk+-2.0
         if ! test $? -eq 0 ; then
@@ -25286,9 +25286,9 @@ echo "$as_me: WARNING: *** gtk+-2.0 is not available." >&2;}
     	   gtk_config_micro_version=`$HAVEPKGCONFIG --modversion gtk+-2.0 | \
              sed 's/\([0-9]*\).\([0-9]*\).\([0-9]*\)/\3/'`
 
-	   if test $gtk_config_major_version -lt 2 || test $gtk_config_minor_version -lt 6 ; then
-	   	{ echo "$as_me:$LINENO: WARNING: *** gtk+-$gtk_config_major_version.$gtk_config_minor_version.$gtk_config_micro_version available, we need >= gtk+-2.6.0 installed for sview." >&5
-echo "$as_me: WARNING: *** gtk+-$gtk_config_major_version.$gtk_config_minor_version.$gtk_config_micro_version available, we need >= gtk+-2.6.0 installed for sview." >&2;}
+	   if test $gtk_config_major_version -lt 2 || test $gtk_config_minor_version -lt 8; then
+	   	{ echo "$as_me:$LINENO: WARNING: *** gtk+-$gtk_config_major_version.$gtk_config_minor_version.$gtk_config_micro_version available, we need >= gtk+-2.8.0 installed for sview." >&5
+echo "$as_me: WARNING: *** gtk+-$gtk_config_major_version.$gtk_config_minor_version.$gtk_config_micro_version available, we need >= gtk+-2.8.0 installed for sview." >&2;}
             	ac_have_gtk="no"
 	   fi
         fi
