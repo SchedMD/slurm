@@ -714,16 +714,18 @@ no_assocs:
 	while((cluster_group = list_next(cluster_itr))) {
 		acct_itr = list_iterator_create(cluster_group->acct_list);
 		while((acct_group = list_next(acct_itr))) {
+			
 			while((field = list_next(itr))) {
 				switch(field->type) {
 				case PRINT_JOB_CLUSTER:
 					field->print_routine(
 						field,
-						cluster_group->cluster);
+						cluster_group->cluster, 0);
 					break;
 				case PRINT_JOB_ACCOUNT:
 					field->print_routine(field,
-							     acct_group->acct);
+							     acct_group->acct,
+							     0);
 					break;
 				default:
 					break;
@@ -748,7 +750,7 @@ no_assocs:
 			list_iterator_destroy(local_itr);
 			total_field.print_routine(&total_field,
 						  acct_group->cpu_secs,
-						  cluster_group->cpu_secs);
+						  cluster_group->cpu_secs, 1);
 			
 			printf("\n");
 		}

@@ -146,9 +146,10 @@ extern int commit_check(char *warning);
 extern int get_uint(char *in_value, uint32_t *out_value, char *type);
 extern int addto_qos_char_list(List char_list, List qos_list, char *names, 
 			       int option);
-extern void sacctmgr_print_coord_list(print_field_t *field, List value);
+extern void sacctmgr_print_coord_list(
+	print_field_t *field, List value, int last);
 extern void sacctmgr_print_qos_list(print_field_t *field, List qos_list,
-				    List value);
+				    List value, int last);
 extern char *get_qos_complete_str(List qos_list, List num_qos_list);
 extern int sort_coord_list(acct_coord_rec_t *coord_a,
 			   acct_coord_rec_t *coord_b);

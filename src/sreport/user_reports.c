@@ -282,6 +282,7 @@ extern int user_top(int argc, char *argv[])
 	local_user_rec_t *local_user = NULL;
 	local_cluster_rec_t *local_cluster = NULL;
 	print_field_t *field = NULL;
+	int field_count = 0;
 
 	print_fields_list = list_create(destroy_print_field);
 
@@ -423,6 +424,8 @@ extern int user_top(int argc, char *argv[])
 	itr2 = list_iterator_create(print_fields_list);
 	print_fields_header(print_fields_list);
 
+	field_count = list_count(print_fields_list);
+
 	list_iterator_reset(cluster_itr);
 	while((local_cluster = list_next(cluster_itr))) {
 		list_sort(local_cluster->user_list, (ListCmpF)_sort_user_dec);
@@ -430,6 +433,7 @@ extern int user_top(int argc, char *argv[])
 		itr = list_iterator_create(local_cluster->user_list);
 		while((local_user = list_next(itr))) {
 			int count = 0;
+			int curr_inx = 1;
 			while((field = list_next(itr2))) {
 				char *tmp_char = NULL;
 				struct passwd *pwd = NULL;
@@ -449,17 +453,21 @@ extern int user_top(int argc, char *argv[])
 					list_iterator_destroy(itr3);
 					field->print_routine(
 						field,
-						tmp_char);
+						tmp_char,
+						(curr_inx == field_count));
 					xfree(tmp_char);
 					break;
 				case PRINT_USER_CLUSTER:
 					field->print_routine(
 						field,
-						local_cluster->name);
+						local_cluster->name,
+						(curr_inx == field_count));
 					break;
 				case PRINT_USER_LOGIN:
 					field->print_routine(field,
-							     local_user->name);
+							     local_user->name,
+							     (curr_inx == 
+							      field_count));
 					break;
 				case PRINT_USER_PROPER:
 					pwd = getpwnam(local_user->name);
@@ -467,21 +475,25 @@ extern int user_top(int argc, char *argv[])
 						tmp_char = strtok(pwd->pw_gecos,
 								  ",");
 						if(!tmp_char)
-							tmp_char =
+							tmp_char = 
 								pwd->pw_gecos;
 					}
 					field->print_routine(field,
-							     tmp_char);
+							     tmp_char,
+							     (curr_inx == 
+							      field_count));
 					break;
 				case PRINT_USER_USED:
 					field->print_routine(
 						field,
 						local_user->cpu_secs,
-						local_cluster->cpu_secs);
+						local_cluster->cpu_secs,
+						(curr_inx == field_count));
 					break;
 				default:
 					break;
 				}
+				curr_inx++;
 			}
 			list_iterator_reset(itr2);
 			printf("\n");

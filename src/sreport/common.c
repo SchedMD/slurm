@@ -40,14 +40,18 @@
 #include "sreport.h"
 
 extern void sreport_print_time(print_field_t *field,
-			       uint64_t value, uint64_t total_time)
+			       uint64_t value, uint64_t total_time, int last)
 {
 	if(!total_time)
 		total_time = 1;
 
 	/* (value == unset)  || (value == cleared) */
 	if((value == NO_VAL) || (value == INFINITE)) {
-		if(print_fields_parsable_print)
+		if(print_fields_parsable_print 
+		   == PRINT_FIELDS_PARSABLE_NO_ENDING
+		   && last)
+			;
+		else if(print_fields_parsable_print)
 			printf("|");	
 		else				
 			printf("%-*s ", field->len, " ");
@@ -75,7 +79,11 @@ extern void sreport_print_time(print_field_t *field,
 			break;
 		}
 		
-		if(print_fields_parsable_print)
+		if(print_fields_parsable_print 
+		   == PRINT_FIELDS_PARSABLE_NO_ENDING
+		   && last)
+			printf("%s", output);
+		else if(print_fields_parsable_print)
 			printf("%s|", output);	
 		else
 			printf("%*s ", field->len, output);
