@@ -1067,12 +1067,17 @@ uid_t *_get_group_members(char *group_name)
 
 	grp_bufsize = sysconf(_SC_GETGR_R_SIZE_MAX);
 	grp_buffer = xmalloc(grp_bufsize);
+	
+	/* We need to check for !grp_result, since it appears some 
+	 * versions of this function do not return an error on failure.
+	 */
 	if (getgrnam_r(group_name, &grp, grp_buffer, grp_bufsize, 
-		       &grp_result)) {
+		       &grp_result) || !grp_result) {
 		error("Could not find configured group %s", group_name);
 		xfree(grp_buffer);
 		return NULL;
 	}
+
 	my_gid = grp_result->gr_gid;
 
 	for (uid_cnt=0; ; uid_cnt++) {
