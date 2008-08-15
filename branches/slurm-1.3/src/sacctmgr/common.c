@@ -655,7 +655,8 @@ end_it:
 	return count;
 } 
 
-extern void sacctmgr_print_coord_list(print_field_t *field, List value)
+extern void sacctmgr_print_coord_list(
+	print_field_t *field, List value, int last)
 {
 	ListIterator itr = NULL;
 	char *print_this = NULL;
@@ -679,7 +680,10 @@ extern void sacctmgr_print_coord_list(print_field_t *field, List value)
 		list_iterator_destroy(itr);
 	}
 	
-	if(print_fields_parsable_print)
+	if(print_fields_parsable_print == PRINT_FIELDS_PARSABLE_NO_ENDING
+	   && last)
+		printf("%s", print_this);
+	else if(print_fields_parsable_print)
 		printf("%s|", print_this);
 	else {
 		if(strlen(print_this) > field->len) 
@@ -691,13 +695,16 @@ extern void sacctmgr_print_coord_list(print_field_t *field, List value)
 }
 
 extern void sacctmgr_print_qos_list(print_field_t *field, List qos_list,
-				    List value)
+				    List value, int last)
 {
 	char *print_this = NULL;
 
 	print_this = get_qos_complete_str(qos_list, value);
 	
-	if(print_fields_parsable_print)
+	if(print_fields_parsable_print == PRINT_FIELDS_PARSABLE_NO_ENDING
+	   && last)
+		printf("%s", print_this);
+	else if(print_fields_parsable_print)
 		printf("%s|", print_this);
 	else {
 		if(strlen(print_this) > field->len) 

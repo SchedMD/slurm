@@ -74,17 +74,25 @@ typedef struct {
 	uint16_t type; /* defined in the local function */
 } print_field_t;
 
+enum {
+	PRINT_FIELDS_PARSABLE_NOT = 0,
+	PRINT_FIELDS_PARSABLE_ENDING,
+	PRINT_FIELDS_PARSABLE_NO_ENDING
+};
+
 extern int print_fields_parsable_print;
 extern int print_fields_have_header;
 
 extern void destroy_print_field(void *object);
 extern void print_fields_header(List print_fields_list);
-extern void print_fields_date(print_field_t *field, time_t value);
-extern void print_fields_str(print_field_t *field, char *value);
-extern void print_fields_uint32(print_field_t *field, uint32_t value);
-extern void print_fields_uint64(print_field_t *field, uint64_t value);
-extern void print_fields_time(print_field_t *field, uint32_t value);
-extern void print_fields_char_list(print_field_t *field, List value);
+extern void print_fields_date(print_field_t *field, time_t value, int last);
+extern void print_fields_str(print_field_t *field, char *value, int last);
+extern void print_fields_uint32(
+	print_field_t *field, uint32_t value, int last);
+extern void print_fields_uint64(
+	print_field_t *field, uint64_t value, int last);
+extern void print_fields_time(print_field_t *field, uint32_t value, int last);
+extern void print_fields_char_list(print_field_t *field, List value, int last);
 
 #define print_fields_uint print_fields_uint32
 #endif

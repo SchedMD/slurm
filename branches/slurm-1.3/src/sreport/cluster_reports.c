@@ -265,6 +265,7 @@ extern int cluster_utilization(int argc, char *argv[])
 	List cluster_list = NULL; 
 
 	List format_list = list_create(slurm_destroy_char);
+	int field_count = 0;
 
 	print_fields_list = list_create(destroy_print_field);
 
@@ -285,11 +286,14 @@ extern int cluster_utilization(int argc, char *argv[])
 
 	print_fields_header(print_fields_list);
 
+	field_count = list_count(print_fields_list);
+
 	while((cluster = list_next(itr))) {
 		cluster_accounting_rec_t *accting = NULL;
 		cluster_accounting_rec_t total_acct;
 		uint64_t total_reported = 0;
 		uint64_t local_total_time = 0;
+		int curr_inx = 1;
 
 		if(!cluster->accounting_list
 		   || !list_count(cluster->accounting_list))
@@ -317,45 +321,62 @@ extern int cluster_utilization(int argc, char *argv[])
 			switch(field->type) {
 			case PRINT_CLUSTER_NAME:
 				field->print_routine(field,
-						     cluster->name);		
+						     cluster->name,
+						     (curr_inx == 
+						      field_count));		
 				break;
 			case PRINT_CLUSTER_CPUS:
 				field->print_routine(field,
-						     total_acct.cpu_count);
+						     total_acct.cpu_count,
+						     (curr_inx == 
+						      field_count));
 				break;
 			case PRINT_CLUSTER_ACPU:
 				field->print_routine(field,
 						     total_acct.alloc_secs,
-						     total_reported);
+						     total_reported,
+						     (curr_inx == 
+						      field_count));
 				break;
 			case PRINT_CLUSTER_DCPU:
 				field->print_routine(field,
 						     total_acct.down_secs,
-						     total_reported);
+						     total_reported,
+						     (curr_inx == 
+						      field_count));
 				break;
 			case PRINT_CLUSTER_ICPU:
 				field->print_routine(field,
 						     total_acct.idle_secs,
-						     total_reported);
+						     total_reported,
+						     (curr_inx == 
+						      field_count));
 				break;
 			case PRINT_CLUSTER_RCPU:
 				field->print_routine(field,
 						     total_acct.resv_secs,
-						     total_reported);
+						     total_reported,
+						     (curr_inx == 
+						      field_count));
 				break;
 			case PRINT_CLUSTER_OCPU:
 					field->print_routine(field,
 						     total_acct.over_secs,
-						     total_reported);
+						     total_reported,
+						     (curr_inx == 
+						      field_count));
 				break;
 			case PRINT_CLUSTER_TOTAL:
 				field->print_routine(field,
 						     total_reported,
-						     local_total_time);
+						     local_total_time,
+						     (curr_inx == 
+						      field_count));
 				break;
 			default:
 				break;
 			}
+			curr_inx++;
 		}
 		list_iterator_reset(itr2);
 		printf("\n");
