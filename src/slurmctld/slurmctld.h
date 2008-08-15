@@ -1320,7 +1320,7 @@ extern void set_node_down (char *name, char *reason);
 /*
  * set_slurmctld_state_loc - create state directory as needed and "cd" to it
  */
-extern int set_slurmctld_state_loc(void);
+extern void set_slurmctld_state_loc(void);
 
 /* set_slurmd_addr - establish the slurm_addr for the slurmd on each node
  *	Uses common data structures. */

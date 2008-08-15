@@ -1053,9 +1053,8 @@ uid_t *_get_groups_members(char *group_names)
  */
 uid_t *_get_group_members(char *group_name)
 {
-	size_t grp_bufsize;
-	char *grp_buffer;
-	char buf[BUF_SIZE];
+	char grp_buffer[PW_BUF_SIZE];
+	char pw_buffer[PW_BUF_SIZE];
   	struct group grp,  *grp_result = NULL;
 	struct passwd pw, *pwd_result = NULL;
 	uid_t *group_uids, my_uid;
@@ -1065,16 +1064,12 @@ uid_t *_get_group_members(char *group_name)
 	FILE *fp = NULL;
 #endif
 
-	grp_bufsize = sysconf(_SC_GETGR_R_SIZE_MAX);
-	grp_buffer = xmalloc(grp_bufsize);
-	
 	/* We need to check for !grp_result, since it appears some 
 	 * versions of this function do not return an error on failure.
 	 */
-	if (getgrnam_r(group_name, &grp, grp_buffer, grp_bufsize, 
-		       &grp_result) || !grp_result) {
+	if (getgrnam_r(group_name, &grp, grp_buffer, PW_BUF_SIZE, 
+		       &grp_result) || (grp_result == NULL)) {
 		error("Could not find configured group %s", group_name);
-		xfree(grp_buffer);
 		return NULL;
 	}
 
@@ -1097,14 +1092,13 @@ uid_t *_get_group_members(char *group_name)
 			group_uids[j++] = my_uid;
 		}
 	}
-	xfree(grp_buffer);
 
 	setpwent();
 #ifdef HAVE_AIX
-	while (!getpwent_r(&pw, buf, BUF_SIZE, &fp)) {
+	while (!getpwent_r(&pw, pw_buffer, PW_BUF_SIZE, &fp)) {
 		pwd_result = &pw;
 #else
-	while (!getpwent_r(&pw, buf, BUF_SIZE, &pwd_result)) {
+	while (!getpwent_r(&pw, pw_buffer, PW_BUF_SIZE, &pwd_result)) {
 #endif
  		if (pwd_result->pw_gid != my_gid)
 			continue;
