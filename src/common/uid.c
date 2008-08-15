@@ -49,16 +49,14 @@ uid_t
 uid_from_string (char *name)
 {
 	struct passwd pwd, *result;
-	size_t bufsize;
-	char *buffer, *p = NULL;
+	char buffer[PW_BUF_SIZE], *p = NULL;
 	int rc;
 	uid_t uid = (uid_t) strtoul (name, &p, 10);
 
-	bufsize = sysconf(_SC_GETPW_R_SIZE_MAX);
-	buffer = xmalloc(bufsize);
 	if (*p != '\0') {
 		while (1) {
-			rc = getpwnam_r(name, &pwd, buffer, bufsize, &result);
+			rc = getpwnam_r(name, &pwd, buffer, PW_BUF_SIZE, 
+					&result);
 			if (rc == EINTR)
 				continue;
 			if (rc != 0)
@@ -71,7 +69,8 @@ uid_from_string (char *name)
 			uid = result->pw_uid;
 	} else {
 		while (1) {
-			rc = getpwuid_r(uid, &pwd, buffer, bufsize, &result);
+			rc = getpwuid_r(uid, &pwd, buffer, PW_BUF_SIZE, 
+					&result);
 			if (rc == EINTR)
 				continue;
 			if (rc != 0)
@@ -82,7 +81,6 @@ uid_from_string (char *name)
 			uid = (uid_t) -1;
 		/* else uid is already correct */
 	}
-	xfree(buffer);
 	return uid; 
 }
 
@@ -90,18 +88,15 @@ char *
 uid_to_string (uid_t uid)
 {
 	struct passwd pwd, *result;
-	size_t bufsize;
-	char *buffer, *ustring;
+	char buffer[PW_BUF_SIZE], *ustring;
 	int rc;
 
 	/* Suse Linux does not handle multiple users with UID=0 well */
 	if (uid == 0)
 		return xstrdup("root");
 
-	bufsize = sysconf(_SC_GETPW_R_SIZE_MAX);
-	buffer = xmalloc(bufsize);
 	while (1) {
-		rc = getpwuid_r(uid, &pwd, buffer, bufsize, &result);
+		rc = getpwuid_r(uid, &pwd, buffer, PW_BUF_SIZE, &result);
 		if (rc == EINTR)
 			continue;
 		if (rc != 0)
@@ -112,7 +107,6 @@ uid_to_string (uid_t uid)
 		ustring = xstrdup(result->pw_name);
 	else
 		ustring = xstrdup("nobody");
-	xfree(buffer);
 	return ustring;
 }
 
@@ -120,16 +114,14 @@ gid_t
 gid_from_string (char *name)
 {
 	struct group grp, *result;
-	size_t bufsize;
-	char *buffer, *p = NULL;
+	char buffer[PW_BUF_SIZE], *p = NULL;
 	int rc;
 	gid_t gid = (gid_t) strtoul (name, &p, 10);
 
-	bufsize = sysconf(_SC_GETGR_R_SIZE_MAX);
-	buffer = xmalloc(bufsize);
 	if (*p != '\0') {
 		while (1) {
-			rc = getgrnam_r(name, &grp, buffer, bufsize, &result);
+			rc = getgrnam_r(name, &grp, buffer, PW_BUF_SIZE, 
+					&result);
 			if (rc == EINTR)
 				continue;
 			if (rc != 0)
@@ -142,7 +134,8 @@ gid_from_string (char *name)
 			gid = result->gr_gid;
 	} else {
 		while (1) {
-			rc = getgrgid_r(gid, &grp, buffer, bufsize, &result);
+			rc = getgrgid_r(gid, &grp, buffer, PW_BUF_SIZE, 
+					&result);
 			if (rc == EINTR)
 				continue;
 			if (rc != 0)
@@ -153,7 +146,6 @@ gid_from_string (char *name)
 			gid = (gid_t) -1;
 		/* else gid is already correct */
 	}
-	xfree(buffer);
 	return gid; 
 }
 
@@ -161,14 +153,11 @@ char *
 gid_to_string (gid_t gid)
 {
 	struct group grp, *result;
-	size_t bufsize;
-	char *buffer, *gstring;
+	char buffer[PW_BUF_SIZE], *gstring;
 	int rc;
 
-	bufsize = sysconf(_SC_GETGR_R_SIZE_MAX);
-	buffer = xmalloc(bufsize);
 	while (1) {
-		rc = getgrgid_r(gid, &grp, buffer, bufsize, &result);
+		rc = getgrgid_r(gid, &grp, buffer, PW_BUF_SIZE, &result);
 		if (rc == EINTR)
 			continue;
 		if (rc != 0)
@@ -179,6 +168,5 @@ gid_to_string (gid_t gid)
 		gstring = xstrdup(result->gr_name);
 	else
 		gstring = xstrdup("nobody");
-	xfree(buffer);
 	return gstring;
 }

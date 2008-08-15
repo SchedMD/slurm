@@ -992,20 +992,16 @@ uid_t *_get_groups_members(char *group_names)
  */
 uid_t *_get_group_members(char *group_name)
 {
-	size_t grp_bufsize;
-	char *grp_buffer;
-	struct group grp,  *grp_result;
+	char grp_buffer[PW_BUF_SIZE];
+	struct group grp, *grp_result;
 	struct passwd *pwd_result;
 	uid_t *group_uids, my_uid;
 	gid_t my_gid;
 	int i, j, uid_cnt;
 	
-	grp_bufsize = sysconf(_SC_GETGR_R_SIZE_MAX);
-	grp_buffer = xmalloc(grp_bufsize);
-	if (getgrnam_r(group_name, &grp, grp_buffer, grp_bufsize, 
-		       &grp_result)) {
+	if (getgrnam_r(group_name, &grp, grp_buffer, PW_BUF_SIZE, 
+		       &grp_result) || (grp_result == NULL)) {
 		error("Could not find configured group %s", group_name);
-		xfree(grp_buffer);
 		return NULL;
 	}
 	my_gid = grp_result->gr_gid;
@@ -1026,7 +1022,6 @@ uid_t *_get_group_members(char *group_name)
 			group_uids[j++] = my_uid;
 		}
 	}
-	xfree(grp_buffer);
 
 	/* NOTE: code below not reentrant, avoid these functions elsewhere */
 	setpwent();

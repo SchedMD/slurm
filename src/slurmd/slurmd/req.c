@@ -68,6 +68,7 @@
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
 #include "src/common/list.h"
+#include "src/common/uid.h"
 #include "src/common/util-net.h"
 #include "src/common/forward.h"
 #include "src/common/read_config.h"
@@ -285,8 +286,7 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	int parent_rank, children, depth, max_depth;
 	char *parent_alias = NULL;
 	slurm_addr parent_addr = {0};
-	size_t pwd_bufsize;
-	char *pwd_buffer;
+	char pwd_buffer[PW_BUF_SIZE];
 	struct passwd pwd, *pwd_result;
 
 	slurm_msg_t_init(&msg);
@@ -412,14 +412,11 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	
 	/* send cached group ids array for the relevant uid */
 	debug3("_send_slurmstepd_init: call to getpwuid_r");
-	pwd_bufsize = sysconf(_SC_GETPW_R_SIZE_MAX);
-	pwd_buffer = xmalloc(pwd_bufsize);
-	if (getpwuid_r(uid, &pwd, pwd_buffer, pwd_bufsize, &pwd_result) ||
+	if (getpwuid_r(uid, &pwd, pwd_buffer, PW_BUF_SIZE, &pwd_result) ||
 	    (pwd_result == NULL)) {
 		error("_send_slurmstepd_init getpwuid_r: %m");
 		len = 0;
 		safe_write(fd, &len, sizeof(int));
-		xfree(pwd_buffer);
 		return -1;
 	}
 	debug3("_send_slurmstepd_init: return from getpwuid_r");
@@ -437,7 +434,6 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 		len = 0;
 		safe_write(fd, &len, sizeof(int));
 	}
-	xfree(pwd_buffer);
 	return 0;
 
 rwfail:
