@@ -23,12 +23,12 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
-#include <sys/types.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
+#include <unistd.h>
 #include <sys/resource.h>
+#include <sys/types.h>
 
 #include <slurm/spank.h>
 
@@ -55,28 +55,62 @@ struct spank_option spank_options[] =
 
 static int _test_opt_process(int val, const char *optarg, int remote)
 {
+	opt_arg = atoi(optarg);
 	if (!remote)
-		slurm_info("_test_opt_process: test_suite: opt_arg=%s", optarg);
+		slurm_info("_test_opt_process: test_suite: opt_arg=%d", opt_arg);
 
 	return (0);
 }
 
-/*
- *  Called from both srun and slurmd.
- */
+/*  Called from both srun and slurmd */
 int slurm_spank_init(spank_t sp, int ac, char **av)
 {
-	if (ac == 1)
+	if (spank_remote(sp) && (ac == 1))
 		opt_out_file = strdup(av[0]);
-
-	if (!spank_remote (sp) && opt_out_file)
-		slurm_info("slurm_spank_init: opt_out_file=%s", opt_out_file);
 
 	return (0);
 }
 
+/* Called from both srun and slurmd, not tested here
+int slurm_spank_init_post_opt(spank_t sp, int ac, char **av) */
 
-int slurm_spank_task_post_fork (spank_t sp, int ac, char **av)
+/* Called from srun only */
+slurm_spank_local_user_init(spank_t sp, int ac, char **av)
 {
+	slurm_info("slurm_spank_local_user_init");
+
+	return (0);
+}
+
+/* Called from slurmd only */
+int slurm_spank_task_init(spank_t sp, int ac, char **av)
+{
+	if (opt_out_file && opt_arg) {
+		FILE *fp = fopen(opt_out_file, "a");
+		if (!fp)
+			return (-1);
+		fprintf(fp, "slurm_spank_task_init: opt_arg=%d\n", opt_arg);
+		fclose(fp);
+	}
+	return (0);
+}
+
+/* Called from slurmd only, not tested here
+int slurm_spank_task_post_fork(spank_t sp, int ac, char **av) */
+
+/* Called from slurmd only, not tested here
+int slurm_spank_task_exit(spank_t sp, int ac, char **av) */
+
+/* Called from both srun and slurmd */
+int slurm_spank_exit(spank_t sp, int ac, char **av)
+{
+	if (opt_out_file && opt_arg) {
+		FILE *fp = fopen(opt_out_file, "a");
+		if (!fp)
+			return (-1);
+		fprintf(fp, "slurm_spank_exit: opt_arg=%d\n", opt_arg);
+		fclose(fp);
+	} else if (opt_arg)
+		slurm_info("slurm_spank_exit: opt_arg=%d", opt_arg);
 	return (0);
 }
