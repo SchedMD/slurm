@@ -303,7 +303,6 @@ int srun(int ac, char **av)
 	env->slurmd_debug = opt.slurmd_debug;
 	env->labelio = opt.labelio;
 	env->comm_port = slurmctld_comm_addr.port;
-	env->comm_hostname = slurmctld_comm_addr.hostname;
 	if (job) {
 		uint16_t *tasks = NULL;
 		slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_TASKS, 
@@ -371,7 +370,6 @@ int srun(int ac, char **av)
 	launch_params.ntasks_per_socket = opt.ntasks_per_socket;
 	launch_params.ntasks_per_core   = opt.ntasks_per_core;
 	launch_params.ckpt_path		= xstrdup(opt.ckpt_path);
-	launch_params.launcher_host	= xstrdup(slurmctld_comm_addr.hostname);
 	/* job structure should now be filled in */
 	_setup_signals();
 

@@ -141,7 +141,6 @@
 #define LONG_OPT_NICE        0x11e
 #define LONG_OPT_CPU_BIND    0x11f
 #define LONG_OPT_MEM_BIND    0x120
-#define LONG_OPT_CTRL_COMM_IFHN 0x121
 #define LONG_OPT_MULTI       0x122
 #define LONG_OPT_COMMENT     0x124
 #define LONG_OPT_SOCKETSPERNODE  0x130
@@ -689,8 +688,6 @@ static void _opt_default()
 	opt.task_prolog     = NULL;
 	opt.task_epilog     = NULL;
 
-	opt.ctrl_comm_ifhn  = NULL;
-
 	/*
 	 * Reset some default values if running under a parallel debugger
 	 */
@@ -763,7 +760,6 @@ env_vars_t env_vars[] = {
 {"SLURM_WAIT",          OPT_INT,        &opt.max_wait,      NULL             },
 {"SLURM_DISABLE_STATUS",OPT_INT,        &opt.disable_status,NULL             },
 {"SLURM_MPI_TYPE",      OPT_MPI,        NULL,               NULL             },
-{"SLURM_SRUN_COMM_IFHN",OPT_STRING,     &opt.ctrl_comm_ifhn,NULL             },
 {"SLURM_SRUN_MULTI",    OPT_MULTI,      NULL,               NULL             },
 {"SLURM_UNBUFFEREDIO",  OPT_INT,        &opt.unbuffered,    NULL             },
 {"SLURM_NODELIST",      OPT_STRING,     &opt.alloc_nodelist,NULL             },
@@ -1013,7 +1009,6 @@ static void set_options(const int argc, char **argv)
 		{"task-prolog",      required_argument, 0, LONG_OPT_TASK_PROLOG},
 		{"task-epilog",      required_argument, 0, LONG_OPT_TASK_EPILOG},
 		{"nice",             optional_argument, 0, LONG_OPT_NICE},
-		{"ctrl-comm-ifhn",   required_argument, 0, LONG_OPT_CTRL_COMM_IFHN},
 		{"multi-prog",       no_argument,       0, LONG_OPT_MULTI},
 		{"comment",          required_argument, 0, LONG_OPT_COMMENT},
 		{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
@@ -1449,10 +1444,6 @@ static void set_options(const int argc, char **argv)
 					opt.nice = 0;
 				}
 			}
-			break;
-		case LONG_OPT_CTRL_COMM_IFHN:
-			xfree(opt.ctrl_comm_ifhn);
-			opt.ctrl_comm_ifhn = xstrdup(optarg);
 			break;
 		case LONG_OPT_MULTI:
 			opt.multi_prog = true;
@@ -2163,7 +2154,6 @@ static void _opt_list()
 	info("mail_user      : %s", opt.mail_user);
 	info("task_prolog    : %s", opt.task_prolog);
 	info("task_epilog    : %s", opt.task_epilog);
-	info("ctrl_comm_ifhn : %s", opt.ctrl_comm_ifhn);
 	info("multi_prog     : %s", opt.multi_prog ? "yes" : "no");
 	info("sockets-per-node  : %d - %d", opt.min_sockets_per_node,
 					    opt.max_sockets_per_node);
@@ -2209,9 +2199,8 @@ static void _usage(void)
 "            [--mloader-image=path] [--ramdisk-image=path]\n"
 #endif
 		"            [--mail-type=type] [--mail-user=user] [--nice[=value]]\n"
-		"            [--prolog=fname] [--epilog=fname]\n"
+		"            [--prolog=fname] [--epilog=fname] [--multi-prog]\n"
 		"            [--task-prolog=fname] [--task-epilog=fname]\n"
-		"            [--ctrl-comm-ifhn=addr] [--multi-prog]\n"
 		"            [-w hosts...] [-x hosts...] executable [args...]\n");
 }
 
@@ -2272,7 +2261,6 @@ static void _help(void)
 "      --begin=time            defer job until HH:MM DD/MM/YY\n"
 "      --mail-type=type        notify on state change: BEGIN, END, FAIL or ALL\n"
 "      --mail-user=user        who to send email notification for job state changes\n"
-"      --ctrl-comm-ifhn=addr   interface hostname for PMI communications from srun\n"
 "      --multi-prog            if set the program name specified is the\n"
 "                              configuration specification for multiple programs\n"
 "      --get-user-env          used by Moab.  See srun man page.\n"

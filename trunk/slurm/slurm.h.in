@@ -814,7 +814,6 @@ typedef struct {
 	uint16_t acctg_freq;
 	bool pty;
 	char *ckpt_path;
-	char *launcher_host;	/* destination for PMI communications */
 } slurm_step_launch_params_t;
 
 typedef struct {

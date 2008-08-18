@@ -201,7 +201,6 @@ typedef struct srun_options {
 	time_t begin;		/* --begin			*/
 	uint16_t mail_type;	/* --mail-type			*/
 	char *mail_user;	/* --mail-user			*/
-	char *ctrl_comm_ifhn;	/* --ctrl-comm-ifhn		*/
 	uint8_t open_mode;	/* --open-mode=append|truncate	*/
 	int acctg_freq;		/* --acctg-freq=secs		*/
 	bool pty;		/* --pty			*/

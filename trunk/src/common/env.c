@@ -603,11 +603,6 @@ int setup_env(env_t *env)
 		error ("Can't set SLURM_SRUN_COMM_PORT env variable");
 		rc = SLURM_FAILURE;
 	}
-	if (env->comm_hostname
-	    && setenvf (&env->env, "SLURM_SRUN_COMM_HOST", "%s", env->comm_hostname)) {
-		error ("Can't set SLURM_SRUN_COMM_HOST env variable");
-		rc = SLURM_FAILURE;
-	}
 		
 	if (env->cli) {
 		
@@ -881,7 +876,6 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
  *	SLURM_STEP_NUM_NODES
  *	SLURM_STEP_NUM_TASKS
  *	SLURM_STEP_TASKS_PER_NODE
- *	SLURM_STEP_LAUNCHER_HOSTNAME
  *	SLURM_STEP_LAUNCHER_PORT
  *	SLURM_STEP_LAUNCHER_IPADDR
  *
@@ -898,7 +892,6 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 void
 env_array_for_step(char ***dest, 
 		   const job_step_create_response_msg_t *step,
-		   const char *launcher_hostname,
 		   uint16_t launcher_port)
 {
 	char *tmp;
@@ -913,8 +906,6 @@ env_array_for_step(char ***dest,
 	env_array_overwrite_fmt(dest, "SLURM_STEP_NUM_TASKS",
 			 "%u", step->step_layout->task_cnt);
 	env_array_overwrite_fmt(dest, "SLURM_STEP_TASKS_PER_NODE", "%s", tmp);
-	env_array_overwrite_fmt(dest, "SLURM_STEP_LAUNCHER_HOSTNAME",
-			 "%s", launcher_hostname);
 	env_array_overwrite_fmt(dest, "SLURM_STEP_LAUNCHER_PORT",
 			 "%hu", launcher_port);
 

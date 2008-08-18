@@ -55,7 +55,6 @@ typedef struct env_options {
 	char *nodelist;		/* nodelist in string form */
 	char **env;             /* job environment */
 	uint16_t comm_port;	/* srun's communication port */
-	char *comm_hostname;	/* srun's hostname */
 	slurm_addr *cli;	/* launch node address */
 	slurm_addr *self;
 	int jobid;		/* assigned job id */
@@ -146,7 +145,6 @@ extern void env_array_for_batch_job(char ***dest,
  *	SLURM_STEP_NUM_NODES
  *	SLURM_STEP_NUM_TASKS
  *	SLURM_STEP_TASKS_PER_NODE
- *	SLURM_STEP_LAUNCHER_HOSTNAME
  *	SLURM_STEP_LAUNCHER_PORT
  *	SLURM_STEP_LAUNCHER_IPADDR
  *
@@ -164,7 +162,6 @@ extern void env_array_for_batch_job(char ***dest,
 void
 env_array_for_step(char ***dest,
 		   const job_step_create_response_msg_t *step,
-		   const char *launcher_hostname,
 		   uint16_t launcher_port);
 
 /*
