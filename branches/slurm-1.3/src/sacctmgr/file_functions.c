@@ -211,7 +211,7 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 	file_opts->max_jobs = INFINITE;
 	file_opts->max_nodes_per_job = INFINITE;
 	file_opts->max_wall_duration_per_job = INFINITE;
-	file_opts->admin = ACCT_ADMIN_NONE;
+	file_opts->admin = ACCT_ADMIN_NOTSET;
 
 	while(options[i]) {
 		quote = 0;
@@ -887,7 +887,9 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 		}
 	}
 									
-	if(user->admin_level != file_opts->admin) {
+	if(user->admin_level != ACCT_ADMIN_NOTSET
+	   && file_opts->admin != ACCT_ADMIN_NOTSET
+	   && user->admin_level != file_opts->admin) {
 		printf(" Changed User '%s' "
 		       "AdminLevel '%s' -> '%s'\n",
 		       user->name,
