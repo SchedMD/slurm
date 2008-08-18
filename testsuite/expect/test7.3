@@ -50,7 +50,7 @@ if {[test_front_end] != 0} {
 #
 file delete $io_prog $test_prog
 
-exec $bin_make -f /dev/null $io_prog
+exec $bin_cc -O -o $io_prog ${io_prog}.c
 exec $bin_chmod 700 $io_prog
 
 send_user "slurm_dir is $slurm_dir\n"
