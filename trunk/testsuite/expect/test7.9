@@ -92,7 +92,7 @@ if {$invalid == 1} {
 # of the ulimit program is inconsistent across systems.
 #
 exec $bin_rm -f $file_prog $file_in $file_out
-exec $bin_make -f /dev/null $file_prog
+exec $bin_cc -O -o $file_prog ${file_prog}.c
 
 make_bash_script $file_in "
   $bin_echo 'testing within script'

@@ -54,7 +54,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 			break;
 		} else if(!end && !strncasecmp(argv[i], "where", 5)) {
 			continue;
-		} else if(!end || !strncasecmp (argv[i], "Names", 1)) {
+		} else if(!end || !strncasecmp (argv[i], "Names", 1)
+			  || !strncasecmp (argv[i], "Clusters", 1)) {
 			if(cluster_list) {
 				if(slurm_addto_char_list(cluster_list,
 							 argv[i]+end))
@@ -329,6 +330,8 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 	acct_cluster_rec_t *cluster = NULL;
 	char *object;
 
+	int field_count = 0;
+
 	print_field_t *field = NULL;
 
 	List format_list = list_create(slurm_destroy_char);
@@ -365,7 +368,8 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 	itr = list_iterator_create(format_list);
 	while((object = list_next(itr))) {
 		field = xmalloc(sizeof(print_field_t));
-		if(!strncasecmp("Cluster", object, 2)) {
+		if(!strncasecmp("Cluster", object, 2)
+		   || !strncasecmp("Name", object, 2)) {
 			field->type = PRINT_CLUSTER;
 			field->name = xstrdup("Cluster");
 			field->len = 10;
@@ -436,50 +440,62 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 	itr2 = list_iterator_create(print_fields_list);
 	print_fields_header(print_fields_list);
 
+	field_count = list_count(print_fields_list);
+
 	while((cluster = list_next(itr))) {
+		int curr_inx = 1;
 		while((field = list_next(itr2))) {
 			switch(field->type) {
 			case PRINT_CLUSTER:
 				field->print_routine(field,
-						     cluster->name);
+						     cluster->name,
+						     (curr_inx == field_count));
 				break;
 			case PRINT_CHOST:
 				field->print_routine(field,
-						     cluster->control_host);
+						     cluster->control_host,
+						     (curr_inx == field_count));
 				break;
 			case PRINT_CPORT:
 				field->print_routine(field,
-						     cluster->control_port);
+						     cluster->control_port,
+						     (curr_inx == field_count));
 				break;
 			case PRINT_FAIRSHARE:
 				field->print_routine(
 					field,
-					cluster->default_fairshare);
+					cluster->default_fairshare,
+					(curr_inx == field_count));
 				break;
 			case PRINT_MAXC:
 				field->print_routine(
 					field,
-					cluster->default_max_cpu_secs_per_job);
+					cluster->default_max_cpu_secs_per_job,
+					(curr_inx == field_count));
 				break;
 			case PRINT_MAXJ:
 				field->print_routine(
 					field, 
-					cluster->default_max_jobs);
+					cluster->default_max_jobs,
+					(curr_inx == field_count));
 				break;
 			case PRINT_MAXN:
 				field->print_routine(
 					field,
-					cluster->default_max_nodes_per_job);
+					cluster->default_max_nodes_per_job,
+					(curr_inx == field_count));
 				break;
 			case PRINT_MAXW:
 				field->print_routine(
 					field,
 					cluster->
-					default_max_wall_duration_per_job);
+					default_max_wall_duration_per_job,
+					(curr_inx == field_count));
 				break;
 			default:
 				break;
 			}
+			curr_inx++;
 		}
 		list_iterator_reset(itr2);
 		printf("\n");

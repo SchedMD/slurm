@@ -58,9 +58,9 @@ set matches 0
 set timeout $max_job_delay
 set srun_pid [spawn $srun -n1 -O $test_prog]
 expect {
-	-re "Segmentation.*core dumped" {
-		send_user "This error was expected, no worries\n"
-		incr matches
+	-re "Segmentation fault" {
+		send_user "\nThis error was expected, no worries\n"
+		set matches 1
 		exp_continue
 	}
 	timeout {

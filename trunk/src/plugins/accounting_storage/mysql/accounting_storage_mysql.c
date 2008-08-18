@@ -5641,7 +5641,8 @@ empty:
 				assoc_table, row[ASSOC_REQ_ACCT],
 				row[ASSOC_REQ_CLUSTER],
 				without_parent_limits);
-			
+			debug4("%d(%d) query\n%s",
+			       mysql_conn->conn, __LINE__, query);
 			if(!(result2 = mysql_db_query_ret(
 				     mysql_conn->db_conn, query, 1))) {
 				xfree(query);
@@ -5661,7 +5662,7 @@ empty:
 					parent_mnpj =
 						atoi(row2[ASSOC2_REQ_MNPJ]);
 				else
-					parent_mwpj = INFINITE;
+					parent_mnpj = INFINITE;
 				
 				if(row2[ASSOC2_REQ_MWPJ])
 					parent_mwpj =

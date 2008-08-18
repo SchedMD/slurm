@@ -186,7 +186,12 @@ extern int init ( void )
 		      "Please use a database plugin");
 	}
 
-	if(first) {
+	/* This check for the slurm user id is a quick and dirty patch
+	 * to see if the controller is calling this, since we open the
+	 * file in append mode sacct could fail on it if the file
+	 * isn't world writable.
+	 */
+	if(first && (getuid() == slurm_get_slurm_user_id())) {
 		debug2("jobacct_init() called");
 		log_file = slurm_get_accounting_storage_loc();
 		if(!log_file)

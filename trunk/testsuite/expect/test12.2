@@ -97,7 +97,7 @@ if {$supported_storage == 0} {
 #
 exec $bin_rm -f $file_prog
 exec $bin_rm -f $file_in $file_out $file_err
-exec $bin_make -f /dev/null $file_prog
+exec $bin_cc -O -o $file_prog ${file_prog}.c
 exec $bin_chmod 700 $file_prog
 
 make_bash_script $file_in "
@@ -145,20 +145,24 @@ set mem_task -1
 set ave_used -1
 spawn $sstat --noheader --job=$job_id.0 --fields vsize
 expect {
-	-re "($float)(\[KM\]*)/.*($number) - ($float)(\[KM\]*)" {
+	-re "($float)(\[KMG\]*)/.*($number) - ($float)(\[KMG\]*)" {
 		set mem_used  $expect_out(1,string)
 		set scale1    $expect_out(2,string)
 		set mem_task  $expect_out(3,string)
 		set ave_used  $expect_out(4,string)
 		set scale2    $expect_out(5,string)
-		if {[string compare $scale1 "M"] == 0} {
+		if {[string compare $scale1 "G"] == 0} {
+			 set mem_used [expr $mem_used * 1024 * 1024]
+		} elseif {[string compare $scale1 "M"] == 0} {
 			set mem_used [expr $mem_used * 1024]
 		} elseif {[string compare $scale1 "K"] == 0} {
 			set mem_used [expr $mem_used * 1]
 		} else {
 			 set mem_used [expr $mem_used / 1024]
 		}
-		if {[string compare $scale2 "M"] == 0} {
+		if {[string compare $scale2 "G"] == 0} {
+			set ave_used [expr $ave_used * 1024 * 1024]
+		} elseif {[string compare $scale2 "M"] == 0} {
 			set ave_used [expr $ave_used * 1024]
 		} elseif {[string compare $scale2 "K"] == 0} {
                         set ave_used [expr $ave_used * 1]
@@ -280,20 +284,24 @@ set mem_task -1
 set ave_used -1
 spawn $sacct --noheader  --job=$job_id.0 --fields vsize
 expect {
-	-re "($float)(\[KM\]*)/.*($number) - ($float)(\[KM\]*)" {
+	-re "($float)(\[KMG\]*)/.*($number) - ($float)(\[KMG\]*)" {
 		set mem_used  $expect_out(1,string)
 		set scale1    $expect_out(2,string)
 		set mem_task  $expect_out(3,string)
 		set ave_used  $expect_out(4,string)
 		set scale2    $expect_out(5,string)
-		if {[string compare $scale1 "M"] == 0} {
+		if {[string compare $scale1 "G"] == 0} {
+			set mem_used [expr $mem_used * 1024 * 1024]
+		} elseif {[string compare $scale1 "M"] == 0} {
 			set mem_used [expr $mem_used * 1024]
 		} elseif {[string compare $scale1 "K"] == 0} {
 			set mem_used [expr $mem_used * 1]
 		} else {
 			 set mem_used [expr $mem_used / 1024]
 		}
-		if {[string compare $scale2 "M"] == 0} {
+		if {[string compare $scale2 "G"] == 0} {
+			set ave_used [expr $ave_used * 1024 * 1024]
+		} elseif {[string compare $scale2 "M"] == 0} {
 			set ave_used [expr $ave_used * 1024]
 		} elseif {[string compare $scale2 "K"] == 0} {
                         set ave_used [expr $ave_used * 1]
@@ -343,7 +351,7 @@ if {$aix == 1 && $exit_code == 1} {
 }
 
 if {$exit_code == 0} {
-	exec rm -f $file_prog
+	exec rm -f $file_prog $file_in $file_out $file_err
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code

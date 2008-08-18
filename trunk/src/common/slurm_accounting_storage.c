@@ -2322,39 +2322,39 @@ extern acct_admin_level_t str_2_acct_admin_level(char *level)
 
 extern void log_assoc_rec(acct_association_rec_t *assoc_ptr)
 {
-	debug("association rec id          : %u", assoc_ptr->id);
-	debug("  acct                      : %s", assoc_ptr->acct);
-	debug("  cluster                   : %s", assoc_ptr->cluster);
+	debug2("association rec id          : %u", assoc_ptr->id);
+	debug2("  acct                      : %s", assoc_ptr->acct);
+	debug2("  cluster                   : %s", assoc_ptr->cluster);
 	if(assoc_ptr->fairshare == INFINITE)
-		debug("  fairshare                 : NONE");
+		debug2("  fairshare                 : NONE");
 	else
-		debug("  fairshare                 : %u",
-		      assoc_ptr->fairshare);
+		debug2("  fairshare                 : %u",
+		       assoc_ptr->fairshare);
 	if(assoc_ptr->max_cpu_secs_per_job == INFINITE)
-		debug("  max_cpu_secs_per_job      : NONE");
+		debug2("  max_cpu_secs_per_job      : NONE");
 	else
-		debug("  max_cpu_secs_per_job      : %d",
-		      assoc_ptr->max_cpu_secs_per_job);
+		debug2("  max_cpu_secs_per_job      : %d",
+		       assoc_ptr->max_cpu_secs_per_job);
 	if(assoc_ptr->max_jobs == INFINITE)
-		debug("  max_jobs                  : NONE");
+		debug2("  max_jobs                  : NONE");
 	else
-		debug("  max_jobs                  : %u", assoc_ptr->max_jobs);
+		debug2("  max_jobs                  : %u", assoc_ptr->max_jobs);
 	if(assoc_ptr->max_nodes_per_job == INFINITE)
-		debug("  max_nodes_per_job         : NONE");
+		debug2("  max_nodes_per_job         : NONE");
 	else
-		debug("  max_nodes_per_job         : %d",
-		      assoc_ptr->max_nodes_per_job);
+		debug2("  max_nodes_per_job         : %d",
+		       assoc_ptr->max_nodes_per_job);
 	if(assoc_ptr->max_wall_duration_per_job == INFINITE)
-		debug("  max_wall_duration_per_job : NONE");
+		debug2("  max_wall_duration_per_job : NONE");
 	else
-		debug("  max_wall_duration_per_job : %d", 
-		      assoc_ptr->max_wall_duration_per_job);
-	debug("  parent_acct               : %s", assoc_ptr->parent_acct);
-	debug("  partition                 : %s", assoc_ptr->partition);
-	debug("  user                      : %s(%u)",
-	      assoc_ptr->user, assoc_ptr->uid);
-	debug("  used_jobs                 : %u", assoc_ptr->used_jobs);
-	debug("  used_share                : %u", assoc_ptr->used_share);
+		debug2("  max_wall_duration_per_job : %d", 
+		       assoc_ptr->max_wall_duration_per_job);
+	debug2("  parent_acct               : %s", assoc_ptr->parent_acct);
+	debug2("  partition                 : %s", assoc_ptr->partition);
+	debug2("  user                      : %s(%u)",
+	       assoc_ptr->user, assoc_ptr->uid);
+	debug2("  used_jobs                 : %u", assoc_ptr->used_jobs);
+	debug2("  used_share                : %u", assoc_ptr->used_share);
 }
 
 /*

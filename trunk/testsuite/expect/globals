@@ -814,7 +814,7 @@ proc test_super_user { } {
 			wait
 		}
 	}
-	spawn $scontrol show control
+	spawn $scontrol show config
 	set slurm_user ""
 	expect {
 		-re "SlurmUser *= ($alpha_numeric_under)" {

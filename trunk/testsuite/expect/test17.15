@@ -56,7 +56,7 @@ print_header $test_id
 # of the ulimit program is inconsistent across systems.
 #
 exec $bin_rm -f $file_prog_get $file_err $file_in $file_out
-exec $bin_make -f /dev/null $file_prog_get
+exec $bin_cc -O -o $file_prog_get ${file_prog_get}.c
 
 #
 # Get our current limits and adjust targets accordingly
