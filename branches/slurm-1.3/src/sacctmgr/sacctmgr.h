@@ -101,6 +101,7 @@ extern int one_liner;	/* one record per line if =1 */
 extern int quiet_flag;	/* quiet=1, verbose=-1, normal=0 */
 extern int rollback_flag;/* immediate execute=0, else = 1 */
 extern int with_assoc_flag;/* show acct/user associations flag */
+extern int readonly_flag; /* make it so you can only run list commands */
 extern void *db_conn;
 extern uint32_t my_uid;
 
