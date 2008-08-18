@@ -80,6 +80,7 @@ main (int argc, char *argv[])
 		{"immediate",0, 0, 'i'},
 		{"no_header", 0, 0, 'n'},
 		{"parsable", 0, 0, 'p'},
+		{"parsable2", 0, 0, 'P'},
 		{"quiet",    0, 0, 'q'},
 		{"usage",    0, 0, 'h'},
 		{"verbose",  0, 0, 'v'},
@@ -94,7 +95,7 @@ main (int argc, char *argv[])
 	quiet_flag        = 0;
 	log_init("sreport", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
-	while((opt_char = getopt_long(argc, argv, "ahnpqt:vV",
+	while((opt_char = getopt_long(argc, argv, "ahnpPqt:vV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -113,7 +114,12 @@ main (int argc, char *argv[])
 			print_fields_have_header = 0;
 			break;
 		case (int)'p':
-			print_fields_parsable_print = 1;
+			print_fields_parsable_print = 
+			PRINT_FIELDS_PARSABLE_ENDING;
+			break;
+		case (int)'P':
+			print_fields_parsable_print =
+			PRINT_FIELDS_PARSABLE_NO_ENDING;
 			break;
 		case (int)'q':
 			quiet_flag = 1;
@@ -494,7 +500,8 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
      -h or --help: equivalent to \"help\" command                          \n\
      -n or --no_header: equivalent to \"no_header\" command                \n\
      -q or --quiet: equivalent to \"quiet\" command                        \n\
-     -p or --parsable: equivalent to \"parsable\" command                  \n\
+     -p or --parsable: output will be '|' delimited with a '|' at the end  \n\
+     -P or --parsable2: output will be '|' delimited without a '|' at the end\n\
      -v or --verbose: equivalent to \"verbose\" command                    \n\
      -V or --version: equivalent to \"version\" command                    \n\
                                                                            \n\
@@ -505,7 +512,9 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
     Valid <COMMAND> values are:                                            \n\
      exit                     terminate sreport                            \n\
      help                     print this description of use.               \n\
-     quiet                    print no messages other than error messages. \n\
+     parsable                 output will be | delimited with an ending '|'\n\
+     parsable2                output will be | delimited without an ending '|'\n\
+    quiet                    print no messages other than error messages. \n\
      quit                     terminate this command.                      \n\
      verbose                  enable detailed logging.                     \n\
      version                  display tool version number.                 \n\

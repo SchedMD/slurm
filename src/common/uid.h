@@ -43,6 +43,14 @@
 #include <unistd.h>
 
 /*
+ * In an ideal world, we could use sysconf(_SC_GETPW_R_SIZE_MAX) to get the 
+ * maximum buffer size neede for getpwnam_r(), but if there is no maximum
+ * value configured, the value returned is 1024, which can too small.
+ * Diito for _SC_GETGR_R_SIZE_MAX. Use 64k byte buffer by default.
+ */
+#define PW_BUF_SIZE 65536
+
+/*
  * Return validated uid_t for string in ``name'' which contains
  *  either the UID number or user name
  * 

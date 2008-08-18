@@ -49,6 +49,7 @@ int exit_flag;		/* program to terminate if =1 */
 int input_words;	/* number of words of input permitted */
 int one_liner;		/* one record per line if =1 */
 int quiet_flag;		/* quiet=1, verbose=-1, normal=0 */
+int readonly_flag;      /* make it so you can only run list commands */
 int verbosity;		/* count of -v options */
 int rollback_flag;       /* immediate execute=1, else = 0 */
 int with_assoc_flag = 0;
@@ -79,7 +80,9 @@ main (int argc, char *argv[])
 		{"oneliner", 0, 0, 'o'},
 		{"no_header", 0, 0, 'n'},
 		{"parsable", 0, 0, 'p'},
+		{"parsable2", 0, 0, 'P'},
 		{"quiet",    0, 0, 'q'},
+		{"readonly", 0, 0, 'r'},
 		{"associations", 0, 0, 's'},
 		{"usage",    0, 0, 'h'},
 		{"verbose",  0, 0, 'v'},
@@ -93,10 +96,11 @@ main (int argc, char *argv[])
 	exit_flag         = 0;
 	input_field_count = 0;
 	quiet_flag        = 0;
+	readonly_flag     = 0;
 	verbosity         = 0;
 	log_init("sacctmgr", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
-	while((opt_char = getopt_long(argc, argv, "hionpqsvV",
+	while((opt_char = getopt_long(argc, argv, "hionpPqrsvV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -118,10 +122,18 @@ main (int argc, char *argv[])
 			print_fields_have_header = 0;
 			break;
 		case (int)'p':
-			print_fields_parsable_print = 1;
+			print_fields_parsable_print = 
+			PRINT_FIELDS_PARSABLE_ENDING;
+			break;
+		case (int)'P':
+			print_fields_parsable_print =
+			PRINT_FIELDS_PARSABLE_NO_ENDING;
 			break;
 		case (int)'q':
 			quiet_flag = 1;
+			break;
+		case (int)'r':
+			readonly_flag = 1;
 			break;
 		case (int)'s':
 			with_assoc_flag = 1;
@@ -409,6 +421,14 @@ _process_command (int argc, char *argv[])
 				 argv[0]);
 		}		
 		quiet_flag = -1;
+	} else if (strncasecmp (argv[0], "readonly", 4) == 0) {
+		if (argc > 1) {
+			exit_code = 1;
+			fprintf (stderr,
+				 "too many arguments for %s keyword\n",
+				 argv[0]);
+		}		
+		readonly_flag = 1;
 	} else if (strncasecmp (argv[0], "rollup", 2) == 0) {
 		time_t my_time = 0;
 		if (argc > 2) {
@@ -453,6 +473,12 @@ _process_command (int argc, char *argv[])
 static void _add_it (int argc, char *argv[]) 
 {
 	int error_code = SLURM_SUCCESS;
+
+	if(readonly_flag) {
+		exit_code = 1;
+		fprintf(stderr, "Can't run this command in readonly mode.\n");
+		return;		
+	}
 
 	/* First identify the entity to add */
 	if (strncasecmp (argv[0], "Account", 1) == 0) {
@@ -525,6 +551,13 @@ static void _modify_it (int argc, char *argv[])
 {
 	int error_code = SLURM_SUCCESS;
 
+
+	if(readonly_flag) {
+		exit_code = 1;
+		fprintf(stderr, "Can't run this command in readonly mode.\n");
+		return;		
+	}
+
 	/* First identify the entity to modify */
 	if (strncasecmp (argv[0], "Account", 1) == 0) {
 		error_code = sacctmgr_modify_account((argc - 1), &argv[1]);
@@ -553,6 +586,12 @@ static void _modify_it (int argc, char *argv[])
 static void _delete_it (int argc, char *argv[]) 
 {
 	int error_code = SLURM_SUCCESS;
+
+	if(readonly_flag) {
+		exit_code = 1;
+		fprintf(stderr, "Can't run this command in readonly mode.\n");
+		return;		
+	}
 
 	/* First identify the entity to delete */
 	if (strncasecmp (argv[0], "Account", 1) == 0) {
@@ -587,8 +626,10 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
      -i or --immediate: commit changes immediately                         \n\
      -n or --no_header: no header will be added to the beginning of output \n\
      -o or --oneliner: equivalent to \"oneliner\" command                  \n\
-     -p or --parsable: output will be '|' delimited                        \n\
+     -p or --parsable: output will be '|' delimited with a '|' at the end  \n\
+     -P or --parsable2: output will be '|' delimited without a '|' at the end\n\
      -q or --quiet: equivalent to \"quiet\" command                        \n\
+     -r or --readonly: equivalent to \"readonly\" command                  \n\
      -s or --associations: equivalent to \"associations\" command          \n\
      -v or --verbose: equivalent to \"verbose\" command                    \n\
      -V or --version: equivalent to \"version\" command                    \n\
@@ -608,9 +649,11 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                               is display all.                              \n\
      modify <ENTITY> <SPECS>  modify entity                                \n\
      oneliner                 report output one record per line.           \n\
+     parsable                 output will be | delimited with an ending '|'\n\
+     parsable2                output will be | delimited without an ending '|'\n\
+     readonly                 makes it so no modification can happen.      \n\
      quiet                    print no messages other than error messages. \n\
      quit                     terminate this command.                      \n\
-     parsable                 output will be | delimited                   \n\
      show                     same as list                                 \n\
      verbose                  enable detailed logging.                     \n\
      version                  display tool version number.                 \n\

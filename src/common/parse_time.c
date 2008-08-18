@@ -60,6 +60,7 @@ static int _get_delta(char *time_str, int *pos, long *delta)
 {
 	int offset;
 	long cnt = 0;
+	int digit = 0;
 
 	offset = (*pos) + 1;
 	for ( ; ((time_str[offset]!='\0')&&(time_str[offset]!='\n')); offset++) {
@@ -87,10 +88,15 @@ static int _get_delta(char *time_str, int *pos, long *delta)
 		}
 		if ((time_str[offset] >= '0') && (time_str[offset] <= '9')) {
 			cnt = (cnt * 10) + (time_str[offset] - '0');
+			digit++;
 			continue;
 		}
 		goto prob;
 	}
+
+	if (!digit)	/* No numbers after the '=' */
+		return -1;
+
 	*pos = offset - 1;
 	*delta = cnt;
 	return 0;

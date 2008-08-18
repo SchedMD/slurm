@@ -54,7 +54,7 @@ if { [test_xcpu] } {
 # Delete left-over program and rebuild it
 #
 exec $bin_rm -f $file_prog
-exec $bin_make -f /dev/null $file_prog
+exec $bin_cc -O ${file_prog}.c -o $file_prog
 exec $bin_chmod 700 $file_prog
 
 #

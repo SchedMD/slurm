@@ -59,6 +59,8 @@ documents those changes that are of interest to users and admins.
  -- Changed getpwent to getpwent_r in the slurmctld and slurmd
  -- Increase timeout on most slurmdbd communications to 60 secs (time for
     substantial database updates).
+ -- Treat srun option of --begin= with a value of now without a numeric
+    component as a failure (e.g. "--begin=now+hours").
 
 * Changes in SLURM 1.3.6
 ========================
@@ -477,6 +479,7 @@ documents those changes that are of interest to users and admins.
  -- For PMI only (MPICH2/MVAPICH2) base address to send messages to (the srun)
     upon the address from which slurmd gets the task launch request rather then
     "hostname" where srun executes.
+ -- Make test for StateSaveLocation directory more comprehensive.
 
 * Changes in SLURM 1.2.33
 =========================
