@@ -44,7 +44,6 @@
 #include "src/srun/srun_job.h"
 
 typedef struct slurmctld_communication_addr {
-	char *hostname;
 	uint16_t port;
 } slurmctld_comm_addr_t;
 

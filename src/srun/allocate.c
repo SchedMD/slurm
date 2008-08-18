@@ -307,7 +307,6 @@ slurmctld_msg_init(void)
 		return slurmctld_fd;
 
 	slurmctld_fd = -1;
-	slurmctld_comm_addr.hostname = NULL;
 	slurmctld_comm_addr.port = 0;
 
 	if ((slurmctld_fd = slurm_init_msg_engine_port(0)) < 0)
@@ -318,11 +317,8 @@ slurmctld_msg_init(void)
 	/* hostname is not set,  so slurm_get_addr fails
 	   slurm_get_addr(&slurm_address, &port, hostname, sizeof(hostname)); */
 	port = ntohs(slurm_address.sin_port);
-	slurmctld_comm_addr.hostname = xstrdup(opt.ctrl_comm_ifhn);
 	slurmctld_comm_addr.port     = port;
-	debug2("slurmctld messages to host=%s,port=%u", 
-	       slurmctld_comm_addr.hostname, 
-	       slurmctld_comm_addr.port);
+	debug2("srun PMI messages to port=%u", slurmctld_comm_addr.port);
 
 	return slurmctld_fd;
 }

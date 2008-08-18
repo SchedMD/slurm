@@ -214,14 +214,6 @@ full core dumps is enabled. If run with type = "list", srun will
 print a list of supported corefile format types to stdout and exit.
 
 .TP
-\fB\-\-ctrl\-comm\-ifhn\fR=\fIaddr\fR
-Specify the address or hostname to be used for PMI communications only
-(task communication and synchronization primitives for MPCIH2).
-Defaults to hostname (response from getnodename function).
-Use of this is required if a DNS lookup can not be performed on 
-the hostname or if that address is blocked from the compute nodes.
-
-.TP
 \fB\-D\fR, \fB\-\-chdir\fR=\fIpath\fR
 have the remote processes do a chdir to \fIpath\fR before beginning
 execution. The default is to chdir to the current working directory
@@ -1254,9 +1246,6 @@ Same as \fB\-\-prolog\fR=\fIexecutable\fR
 .TP
 \fBSLURM_REMOTE_CWD\fR
 Same as \fB\-D, \-\-chdir=\fR=\fIdir\fR
-.TP
-\fBSLURM_SRUN_COMM_IFHN\fR
-Same as \fB\-\-ctrl\-comm\-ifhn\fR=\fIaddr\fR
 .TP
 \fBSLURM_STDERRMODE\fR
 Same as \fB\-e, \-\-error\fR=\fImode\fR
