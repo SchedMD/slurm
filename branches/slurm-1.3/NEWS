@@ -460,6 +460,8 @@ documents those changes that are of interest to users and admins.
     upon the address from which slurmd gets the task launch request rather then
     "hostname" where srun executes.
  -- Make test for StateSaveLocation directory more comprehensive.
+ -- For spank plugin when used by sbatch to get S_JOB_TOTAL_TASK_COUNT or 
+    S_JOB_NODES, return ESPANK_ENV_NOEXIST rather than invalid memory reference.
 
 * Changes in SLURM 1.2.33
 =========================
