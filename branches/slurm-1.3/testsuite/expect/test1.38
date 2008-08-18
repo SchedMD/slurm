@@ -91,7 +91,7 @@ expect {
 		exec $bin_kill -INT $srun_pid
 		exp_continue
 	}
-	-re "Force Terminated" {
+	-re "Force Terminated job $number" {
 		incr matches
 		exp_continue
 	}

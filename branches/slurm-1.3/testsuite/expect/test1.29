@@ -61,7 +61,7 @@ if {[test_front_end] != 0 && [test_super_user] == 0} {
 # of the ulimit program is inconsistent across systems.
 #
 exec $bin_rm -f $file_prog_get $file_err $file_in $file_out
-exec $bin_make -f /dev/null $file_prog_get
+exec $bin_cc -O ${file_prog_get}.c -o $file_prog_get
 exec $bin_chmod 700 $file_prog_get
 
 #

@@ -97,7 +97,7 @@ if {$supported_storage == 0} {
 #
 exec $bin_rm -f $file_prog
 exec $bin_rm -f $file_in $file_out $file_err
-exec $bin_make -f /dev/null $file_prog
+exec $bin_cc -O -o $file_prog ${file_prog}.c
 exec $bin_chmod 700 $file_prog
 
 make_bash_script $file_in "
