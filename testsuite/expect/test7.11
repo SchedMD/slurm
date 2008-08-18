@@ -138,12 +138,17 @@ if {$matches != 1} {
 }
 
 #
-# Test of locally logged messages()
+# Test of locally logged messages().
+# We update the plugstatck.conf in this script since NFS delays may 
+# prevent it from having the same state as the submit host. 
 #
 make_bash_script $file_in "
   $bin_cp $new_spank_conf $spank_conf_file
   $srun --test_suite=5 $bin_uname
-  $bin_cp $spank_conf_file $new_spank_conf
+  if test -f $orig_spank_conf
+  then
+    $bin_cp $orig_spank_conf $spank_conf_file
+  fi
 "
 spawn $sbatch -N1 -t1 -o $file_out $file_in
 expect {
