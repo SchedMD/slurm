@@ -40,6 +40,11 @@ set too_small     0
 
 print_header $test_id
 
+if {[file exists $smap] == 0} {
+	send_user "\nWARNING: smap not installed\n"
+	exit 0
+}
+
 #
 # Check the smap --iterate option
 # in curses format.

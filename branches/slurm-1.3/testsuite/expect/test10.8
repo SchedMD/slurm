@@ -35,14 +35,19 @@ source ./globals
 set test_id       "10.8"
 set exit_code     0
 set matches       0
-set stuff ""
+set stuff         ""
+
 print_header $test_id
+
+if {[file exists $smap] == 0} {
+	send_user "\nWARNING: smap not installed\n"
+	exit 0
+}
 
 #
 # Check the smap format of header for displaying job information
 # in commandline format.
 #
- 
 spawn $smap -Dj -c
 expect {
 	-re "JOBID" {
