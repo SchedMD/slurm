@@ -590,7 +590,7 @@ char *process_options_first_pass(int argc, char **argv)
 	optind = 0;
 
 	while((opt_char = getopt_long(argc, argv, opt_string,
-				      optz, &option_index)) != -1) {
+				      long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case '?':
 			fprintf(stderr, "Try \"sbatch --help\" for more "
@@ -912,7 +912,7 @@ static void _set_options(int argc, char **argv)
 
 	optind = 0;
 	while((opt_char = getopt_long(argc, argv, opt_string,
-				      optz, &option_index)) != -1) {
+				      long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case '?':
 			fatal("Try \"sbatch --help\" for more information");
