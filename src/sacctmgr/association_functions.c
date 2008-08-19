@@ -173,6 +173,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 					argv[i]+end);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Parent", 4)) {
+			xfree(association_cond->parent_acct);
 			association_cond->parent_acct =
 				strip_quotes(argv[i]+end, NULL);
 			set = 1;
