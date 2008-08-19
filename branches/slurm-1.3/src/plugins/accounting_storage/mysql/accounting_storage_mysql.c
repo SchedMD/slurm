@@ -6852,7 +6852,16 @@ extern int jobacct_storage_p_job_complete(mysql_conn_t *mysql_conn,
 						  job_ptr->job_id,
 						  job_ptr->assoc_id);
 		if(job_ptr->db_index == (uint32_t)-1) {
-			
+			/* If we get an error with this just fall
+			 * through to avoid an infinite loop
+			 */
+			if(jobacct_storage_p_job_start(mysql_conn, job_ptr)
+			   == SLURM_ERROR) {
+				error("couldn't add job %u at job completion",
+				      job_ptr->job_id);
+				return SLURM_SUCCESS;
+			}
+			jobacct_storage_p_job_start(mysql_conn, job_ptr);
 		}
 	}
 
@@ -6938,8 +6947,18 @@ extern int jobacct_storage_p_step_start(mysql_conn_t *mysql_conn,
 				      step_ptr->job_ptr->details->submit_time,
 				      step_ptr->job_ptr->job_id,
 				      step_ptr->job_ptr->assoc_id);
-		if(step_ptr->job_ptr->db_index == (uint32_t)-1) 
-			return SLURM_ERROR;
+		if(step_ptr->job_ptr->db_index == (uint32_t)-1) {
+			/* If we get an error with this just fall
+			 * through to avoid an infinite loop
+			 */
+			if(jobacct_storage_p_job_start(mysql_conn,
+						       step_ptr->job_ptr)
+			   == SLURM_ERROR) {
+				error("couldn't add job %u at step start",
+				      step_ptr->job_ptr->job_id);
+				return SLURM_SUCCESS;
+			}
+		}
 	}
 	/* we want to print a -1 for the requid so leave it a
 	   %d */
@@ -7045,8 +7064,19 @@ extern int jobacct_storage_p_step_complete(mysql_conn_t *mysql_conn,
 				      step_ptr->job_ptr->details->submit_time,
 				      step_ptr->job_ptr->job_id,
 				      step_ptr->job_ptr->assoc_id);
-		if(step_ptr->job_ptr->db_index == -1) 
-			return SLURM_ERROR;
+		if(step_ptr->job_ptr->db_index == (uint32_t)-1) {
+			/* If we get an error with this just fall
+			 * through to avoid an infinite loop
+			 */
+			if(jobacct_storage_p_job_start(mysql_conn,
+						       step_ptr->job_ptr)
+			   == SLURM_ERROR) {
+				error("couldn't add job %u "
+				      "at step completion",
+				      step_ptr->job_ptr->job_id);
+				return SLURM_SUCCESS;
+			}
+		}
 	}
 
 	query = xstrdup_printf(
@@ -7119,8 +7149,17 @@ extern int jobacct_storage_p_suspend(mysql_conn_t *mysql_conn,
 						  job_ptr->details->submit_time,
 						  job_ptr->job_id,
 						  job_ptr->assoc_id);
-		if(job_ptr->db_index == -1) 
-			return SLURM_ERROR;
+		if(job_ptr->db_index == (uint32_t)-1) {
+			/* If we get an error with this just fall
+			 * through to avoid an infinite loop
+			 */
+			if(jobacct_storage_p_job_start(mysql_conn, job_ptr)
+			   == SLURM_ERROR) {
+				error("couldn't suspend job %u",
+				      job_ptr->job_id);
+				return SLURM_SUCCESS;
+			}
+		}
 	}
 
 	if (job_ptr->job_state == JOB_SUSPENDED)

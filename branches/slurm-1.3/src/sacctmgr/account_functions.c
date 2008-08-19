@@ -698,7 +698,7 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 	acct_account_cond_t *acct_cond =
 		xmalloc(sizeof(acct_account_cond_t));
  	List acct_list;
-	int i=0;
+	int i=0, set=0;
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
 	acct_account_rec_t *acct = NULL;
@@ -735,7 +735,7 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 
 	acct_cond->with_assocs = with_assoc_flag;
 
-	_set_cond(&i, argc, argv, acct_cond, format_list);
+	set = _set_cond(&i, argc, argv, acct_cond, format_list);
 
 	if(exit_code) {
 		destroy_acct_account_cond(acct_cond);
@@ -750,6 +750,17 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 		if(acct_cond->with_coords)
 			slurm_addto_char_list(format_list, "Coord");
 			
+	}
+	
+	if(!acct_cond->with_assocs && set != 1) {
+		if(!commit_check("You requested options that are only vaild "
+				 "when querying with the withassoc option.\n"
+				 "Are you sure you want to continue?")) {
+			printf("Aborted\n");
+			list_destroy(format_list);
+			destroy_acct_account_cond(acct_cond);
+			return SLURM_SUCCESS;
+		}		
 	}
 
 	print_fields_list = list_create(destroy_print_field);
@@ -872,10 +883,9 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 	field_count = list_count(print_fields_list);
 
 	while((acct = list_next(itr))) {
-		if(acct->assoc_list && list_count(acct->assoc_list)) {
+		if(acct->assoc_list) {
 			ListIterator itr3 =
 				list_iterator_create(acct->assoc_list);
-			
 			while((assoc = list_next(itr3))) {
 				int curr_inx = 1;
 				while((field = list_next(itr2))) {

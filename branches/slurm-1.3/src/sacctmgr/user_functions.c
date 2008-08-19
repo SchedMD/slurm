@@ -849,7 +849,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 	int rc = SLURM_SUCCESS;
 	acct_user_cond_t *user_cond = xmalloc(sizeof(acct_user_cond_t));
 	List user_list;
-	int i=0;
+	int i=0, set=0;
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
 	acct_user_rec_t *user = NULL;
@@ -885,7 +885,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 
 	user_cond->with_assocs = with_assoc_flag;
 
-	_set_cond(&i, argc, argv, user_cond, format_list);
+	set = _set_cond(&i, argc, argv, user_cond, format_list);
 
 	if(exit_code) {
 		destroy_acct_user_cond(user_cond);
@@ -900,6 +900,17 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 					"Cl,Ac,Part,F,MaxC,MaxJ,MaxN,MaxW");
 		if(user_cond->with_coords)
 			slurm_addto_char_list(format_list, "Coord");
+	}
+
+	if(!user_cond->with_assocs && set != 1) {
+		if(!commit_check("You requested options that are only vaild "
+				 "when querying with the withassoc option.\n"
+				 "Are you sure you want to continue?")) {
+			printf("Aborted\n");
+			list_destroy(format_list);
+			destroy_acct_user_cond(user_cond);
+			return SLURM_SUCCESS;
+		}		
 	}
 
 	print_fields_list = list_create(destroy_print_field);
@@ -1022,7 +1033,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 	field_count = list_count(print_fields_list);
 
 	while((user = list_next(itr))) {
-		if(user->assoc_list && list_count(user->assoc_list)) {
+		if(user->assoc_list) {
 			ListIterator itr3 =
 				list_iterator_create(user->assoc_list);
 			
