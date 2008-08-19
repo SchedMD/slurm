@@ -850,6 +850,22 @@ proc dec2hex16 {value} {
 	}
 }
 
+# Create a 32 bit hex number from a signed decimal number
+# Replace all non-decimal characters
+# Courtesy of Chris Cornish
+# http://aspn.activestate.com/ASPN/Cookbook/Tcl/Recipe/415982
+proc dec2hex {value} {
+	regsub -all {[^0-x\.-]} $value {} newtemp
+	set value [string trim $newtemp]
+	if {$value < 2147483647 && $value > -2147483648} {
+		set tempvalue [format "%#010X" [expr $value]]
+		return [string range $tempvalue 2 9]
+	} elseif {$value < -2147483647} {
+		return "80000000"
+	} else {
+		return "7FFFFFFF"
+	}
+}
 
 ################################################################
 #

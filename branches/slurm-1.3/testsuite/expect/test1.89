@@ -217,7 +217,7 @@ set cpu_cnt 0
 while {$cpu_cnt < $task_cnt} {
 	set mask_sum 0
 	set mask [ expr 1 << $cpu_cnt ]
-	set mstr [ dec2hex16 $mask]
+	set mstr [ dec2hex $mask]
 	send "$srun -c1 --cpu_bind=mask_cpu:$mstr $file_prog\n"
 	expect {
 		-re "TASK_ID:($number),MASK:($number)" {
@@ -258,7 +258,7 @@ set full_mask [ expr (1 << $task_cnt) - 1 ]
 while {$cpu_cnt < $task_cnt} {
 	set mask_sum 0
 	set mask [ expr 1 << $cpu_cnt ]
-	set mstr [ dec2hex16  $mask]
+	set mstr [ dec2hex  $mask]
 	set fwd_mask "$fwd_mask,$mstr"
 	set fwd_map  "$fwd_map,$cpu_cnt"
 	set rev_mask "$mstr,$rev_mask"
