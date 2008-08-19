@@ -63,7 +63,7 @@ set mn1		300
 set mn2		125
 set mw1		01:00:00
 set mw2		12:00:00
-
+set access_err  0
 
 print_header $test_id
 
@@ -77,6 +77,10 @@ if { [test_account_storage] == 0 } {
 #
 set sadd_pid [spawn $sacctmgr $add $clu $nams=$tc1,$tc2,$tc3 $fs=$fs1 $mc=$mc1 $mj=$mj1 $mn=$mn1 $mw=$mw1]
 expect {
+	-re "privilege to preform this action" {
+		set access_err 1
+		exp_continue
+	}
 	-re "Adding Cluster" {
 		incr amatches
 		exp_continue
@@ -135,7 +139,10 @@ expect {
 		wait
 	}
 }
-
+if {$access_err != 0} {
+	send_user "\nWARNING: not authorized to perform this test\n"
+	exit $exit_code
+}
 if {$amatches != 12} {
 	send_user "\nFAILURE:  sacctmgr had a problem adding clusters\n"
 	set exit_code 1
