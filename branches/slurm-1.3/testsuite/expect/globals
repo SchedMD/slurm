@@ -989,6 +989,25 @@ proc make_bash_script { script_name script_contents } {
 }
 
 ################################################################
+# Given a hostname, return it's numeric suffix
+################################################################
+proc get_suffix { hostname } {
+	set host_len [string length $hostname]
+	for {set host_inx [expr $host_len - 1]} {$host_inx >= 0} {incr host_inx -1} {
+		set host_char [string index $hostname $host_inx]
+		if {[string compare $host_char "0"] < 0} { break }
+		if {[string compare $host_char "9"] > 0} { break }
+	}
+	incr host_inx
+	incr host_len -1
+	if {$host_inx == $host_len} {
+		send_user "\nHostname lacks a suffix:$hostname\n"
+		return "-1"
+	}
+	return [string range $hostname $host_inx $host_len]
+}
+
+################################################################
 # Check if we are user root or SlurmUser
 #
 # Return 1 if true, 0 if false
