@@ -39,11 +39,15 @@ set non_bg       0
 
 print_header $test_id
 
+if {[file exists $smap] == 0} {
+	send_user "\nWARNING: smap not installed\n"
+	exit 0
+}
+
 #
 # Check the smap format of header for displaying bg partitions
 # in curses format.
 #
- 
 spawn $smap -Db -c
 expect {
 	-re "BG SYSTEM" {
