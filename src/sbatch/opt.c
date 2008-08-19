@@ -61,7 +61,6 @@
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/parse_time.h"
-#include "src/common/plugstack.h"
 #include "src/common/proc_args.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/uid.h"
@@ -2236,9 +2235,6 @@ static void _help(void)
 "                              (see \"--hint=help\" for options)\n");
 	}
 	slurm_conf_unlock();
-
-	printf("\n");
-	spank_print_options (stdout, 6, 30);
 
         printf("\n"
 #ifdef HAVE_AIX				/* AIX/Federation specific options */
