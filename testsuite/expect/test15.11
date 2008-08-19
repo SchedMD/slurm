@@ -39,6 +39,12 @@ set name_read   ""
 
 print_header $test_id
 
+if {[test_wiki_sched] == 1} {
+	send_user "\nWARNING: not compatable with sched/wiki (Maui)\n"
+	send_user "         or sched/wiki2 (Moab) schedulers\n"
+	exit $exit_code
+}
+
 #
 # Test setting job's name and get priority
 #

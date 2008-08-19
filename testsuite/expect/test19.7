@@ -98,7 +98,7 @@ set disabled 0
 set matches  0
 set strigger_pid [spawn $strigger --set -v --idle --offset=1 --program=$cwd/$file_in_idle]
 expect {
-	-re "Operation not permitted" {
+	-re "permission denied" {
 		set disabled 1
 		exp_continue
 	}
