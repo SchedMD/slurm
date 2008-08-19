@@ -42,7 +42,7 @@ print_header $test_id
 # Report the sacctmgr version keyword
 #
  
-spawn $sacctmgr version
+spawn $sacctmgr --version
 expect {
 	-re "slurm \[0-9]*.\[0-9]*.\[0-9]*" {
 		incr matches
