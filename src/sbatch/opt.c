@@ -582,12 +582,6 @@ char *process_options_first_pass(int argc, char **argv)
 {
 	int opt_char, option_index = 0;
 	char *str = NULL;
-	struct option *optz = spank_option_table_create (long_options);
-
-	if (!optz) {
-		error ("Unable to create option table");
-		exit (1);
-	}
 
 	/* initialize option defaults */
 	_opt_default();
@@ -915,12 +909,6 @@ static void _set_options(int argc, char **argv)
 {
 	int opt_char, option_index = 0;
 	char *tmp;
-	struct option *optz = spank_option_table_create (long_options);
-
-	if (!optz) {
-		error ("Unable to create option table");
-		exit (1);
-	}
 
 	optind = 0;
 	while((opt_char = getopt_long(argc, argv, opt_string,
@@ -1334,15 +1322,14 @@ static void _set_options(int argc, char **argv)
 			setenv("SLURM_NETWORK", opt.network, 1);
 			break;
 		default:
-			if (spank_process_option (opt_char, optarg) < 0)
-				 exit (1);
+			fatal("Unrecognized command line parameter %c",
+			      opt_char);
 		}
 	}
 
 	if (optind < argc) {
 		fatal("Invalid argument: %s", argv[optind]);
 	}
-	spank_option_table_destroy (optz);
 }
 
 static void _proc_get_user_env(char *optarg)
