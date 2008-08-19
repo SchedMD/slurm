@@ -42,7 +42,6 @@
 #include <slurm/slurm.h>
 
 #include "src/common/env.h"
-#include "src/common/plugstack.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/xstring.h"
@@ -52,8 +51,6 @@
 
 #define MAX_RETRIES 3
 
-static void _call_spank_local_user(job_desc_msg_t desc,
-				   submit_response_msg_t *resp);
 static int   fill_job_desc_from_opts(job_desc_msg_t *desc);
 static void *get_script_buffer(const char *filename, int *size);
 static void  set_prio_process_env(void);
@@ -72,9 +69,6 @@ int main(int argc, char *argv[])
 	int retries = 0;
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
-	if (spank_init(NULL) < 0)
-		fatal("Plug-in initialization failed");
-
 	script_name = process_options_first_pass(argc, argv);
 	/* reinit log with new verbosity (if changed by command line) */
 	if (opt.verbose || opt.quiet) {
@@ -122,29 +116,10 @@ int main(int argc, char *argv[])
 			error(msg);
 		sleep (++retries);
         }
-	_call_spank_local_user(desc, resp);
 	info("Submitted batch job %d", resp->job_id);
 	xfree(desc.script);
 	slurm_free_submit_response_response_msg(resp);
-	spank_fini(NULL);
 	return 0;
-}
-
-static void _call_spank_local_user(job_desc_msg_t desc,
-				   submit_response_msg_t *resp)
-{
-	struct spank_launcher_job_info info[1];
-
-	info->uid = desc.user_id;
-	info->gid = desc.group_id;
-	info->jobid = resp->job_id;
-	info->stepid = SLURM_BATCH_SCRIPT;
-	info->step_layout = NULL;
-	info->argc = desc.argc;
-	info->argv = desc.argv;
-
-	if (spank_local_user(info) < 0)
-		error("spank_local_user: %m");
 }
 
 /* Returns 0 on success, -1 on failure */
