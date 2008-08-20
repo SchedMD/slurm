@@ -338,6 +338,12 @@ Type 'help;' or '\h' for help. Type '\c' to clear the buffer.
 
 mysql> grant all on slurm_acct_db.* TO 'da'@'localhost';
 Query OK, 0 rows affected (0.00 sec)
+
+or with a password...
+
+mysql> grant all on slurm_acct_db.* TO 'da'@'localhost' 
+    -> identified by 'some_pass' with grant option;
+Query OK, 0 rows affected (0.00 sec)
 </pre>
 
 <p>This will grant user 'da' access to do what he needs to do on the
