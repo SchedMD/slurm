@@ -133,6 +133,7 @@ if {[string compare $host_2_name ""] == 0} {
 set host_0_num [get_suffix $host_0_name]
 set host_1_num [get_suffix $host_1_name]
 set host_2_num [get_suffix $host_2_name]
+
 if {$host_1_num != [expr $host_0_num + 1]} {
 	send_user "\nFAILURE: node sequence number not contiguous\n"
 	set exit_code   1	
