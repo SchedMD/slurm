@@ -76,7 +76,7 @@ static int _set_assoc_parent_and_user(acct_association_rec_t *assoc)
 	}
 	if(assoc->user) {
 		uid_t pw_uid = uid_from_string(assoc->user);
-		if(pw_uid == (uid_t) -1)
+		if(pw_uid == (uid_t) -1) 
 			assoc->uid = (uint32_t)NO_VAL;
 		else
 			assoc->uid = pw_uid;	
@@ -693,8 +693,10 @@ extern int assoc_mgr_update_local_users(acct_update_object_t *update)
 				object->qos_list = NULL;
 			}
 
-			if(object->admin_level != ACCT_ADMIN_NOTSET)
-				rec->admin_level = rec->admin_level;
+			if(object->admin_level != ACCT_ADMIN_NOTSET) {
+				info("admin level changed");
+				rec->admin_level = object->admin_level;
+			}
 
 			break;
 		case ACCT_ADD_USER:
@@ -703,9 +705,11 @@ extern int assoc_mgr_update_local_users(acct_update_object_t *update)
 				break;
 			}
 			pw_uid = uid_from_string(object->name);
-			if(pw_uid == (uid_t) -1) 
+			if(pw_uid == (uid_t) -1) {
+				error("couldn't get a uid for user %s",
+				      object->name);
 				object->uid = NO_VAL;
-			else
+			} else
 				object->uid = pw_uid;
 			list_append(local_user_list, object);
 			break;
