@@ -3508,9 +3508,12 @@ extern List acct_storage_p_modify_associations(
 		}
 		list_iterator_destroy(itr);
 		xstrcat(extra, ")");
-	} else {
-		debug4("no user specified");
+	} else if (!assoc_cond->user_list) {
+		debug4("no user specified looking at accounts");
 		xstrcat(extra, " && user = '' ");
+	} else {
+		debug4("no user specified looking at users");
+		xstrcat(extra, " && user != '' ");
 	}
 
 	if(assoc_cond->partition_list 
