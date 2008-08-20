@@ -77,17 +77,19 @@ set matches 0
 set job_id  0
 set srun_pid [spawn $srun -v -N1 -t1 --unbuffered $file_in]
 expect {
+	-re "launching ($number).0" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
 	-re "srun: task 0: running" {
 		incr matches
 		cancel_job $job_id
 		exp_continue
 	}
-	-re "launching ($number).0" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
 	-re "WAITING" {
 		incr matches
+		# make sure the task gets started
+		sleep 1 
 		exec $bin_kill -INT $srun_pid
 		exp_continue
 	}
@@ -105,7 +107,7 @@ expect {
 	}
 }
 if {$matches != 3} {
-	send_user "\nFAILURE: srun failed to properly process SIGINT\n"
+	send_user "\nFAILURE: srun failed to properly process SIGINT matches was $matches\n"
 	set exit_code 1
 }
 

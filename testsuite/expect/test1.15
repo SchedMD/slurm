@@ -61,11 +61,11 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "task.0,2-9.: running" {	# bracket escape not working
+	-re "task \\\[0,2-9\\\]: running" {
 		incr matches
 		exp_continue
 	}
-	-re "exited with exit code" {
+	-re "Exited with exit code" {
 		send_user "This error is expected, no worries\n"
 		exp_continue
 	}
@@ -80,7 +80,7 @@ expect {
 }
 
 if {$matches != 2} {
-	send_user "\nFAILURE: problem with srun wait option\n"
+	send_user "\nFAILURE: problem with srun wait option matches was $matches\n"
 	set exit_code 1
 }
 if {$exit_code == 0} {
