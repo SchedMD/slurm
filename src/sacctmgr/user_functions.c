@@ -902,7 +902,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 			slurm_addto_char_list(format_list, "Coord");
 	}
 
-	if(!user_cond->with_assocs && set != 1) {
+	if(!user_cond->with_assocs && set > 1) {
 		if(!commit_check("You requested options that are only vaild "
 				 "when querying with the withassoc option.\n"
 				 "Are you sure you want to continue?")) {

@@ -752,7 +752,7 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 			
 	}
 	
-	if(!acct_cond->with_assocs && set != 1) {
+	if(!acct_cond->with_assocs && set > 1) {
 		if(!commit_check("You requested options that are only vaild "
 				 "when querying with the withassoc option.\n"
 				 "Are you sure you want to continue?")) {
