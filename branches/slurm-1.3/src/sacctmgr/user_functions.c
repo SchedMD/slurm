@@ -61,6 +61,12 @@ static int _set_cond(int *start, int argc, char *argv[],
 		user_cond->assoc_cond->max_jobs = NO_VAL;
 		user_cond->assoc_cond->max_nodes_per_job = NO_VAL;
 		user_cond->assoc_cond->max_wall_duration_per_job = NO_VAL;
+		/* we need this to make sure we only change users, not
+		 * accounts if this list didn't exist it would change
+		 * accounts.
+		 */
+		user_cond->assoc_cond->user_list = 
+			list_create(slurm_destroy_char);
 	}
 
 	for (i=(*start); i<argc; i++) {
@@ -77,10 +83,6 @@ static int _set_cond(int *start, int argc, char *argv[],
 		} else if(!end
 			  || !strncasecmp (argv[i], "Names", 1)
 			  || !strncasecmp (argv[i], "Users", 1)) {
-			if(!user_cond->assoc_cond->user_list) {
-				user_cond->assoc_cond->user_list = 
-					list_create(slurm_destroy_char);
-			}
 			if(slurm_addto_char_list(
 				   user_cond->assoc_cond->user_list,
 				   argv[i]+end)) 
