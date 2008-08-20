@@ -87,6 +87,11 @@ set access_err  0
 
 print_header $test_id
 
+if { 0 == 0 } {
+	send_user "\n This test is not ready\n"
+	exit 0
+}
+ 
 if { [test_account_storage] == 0 } {
 	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
 	exit 0
