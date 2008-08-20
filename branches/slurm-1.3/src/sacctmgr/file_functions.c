@@ -1569,7 +1569,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				if(rc != SLURM_SUCCESS) {
 					exit_code=1;
 					fprintf(stderr, 
-						" Problem adding machine\n");
+						" Problem adding cluster\n");
 					rc = SLURM_ERROR;
 					_destroy_sacctmgr_file_opts(file_opts);
 					break;
