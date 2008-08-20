@@ -6211,11 +6211,11 @@ extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn,
 			time_t now = time(NULL);
 			/* If we don't have any events like adding a
 			 * cluster this will not work correctly, so we
-			 * will insert now as a starting point
+			 * will insert now as a starting point.
 			 */
 			query = xstrdup_printf(
-				"select @PS := coalesce(period_start, %d) "
-				"from %s limit 1;"
+				"set @PS = %d;"
+				"select @PS := period_start from %s limit 1;"
 				"insert into %s "
 				"(hourly_rollup, daily_rollup, monthly_rollup) "
 				"values (@PS, @PS, @PS);",
