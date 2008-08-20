@@ -839,6 +839,10 @@ void parse_command_line(int argc, char **argv)
 			break;
 
 		case 'u':
+			if(!strcmp(optarg, "-1")) {
+				all_users = 1;
+				break;
+			}
 			if(!params.opt_uid_list)
 				params.opt_uid_list = 
 					list_create(slurm_destroy_char);
