@@ -1374,7 +1374,7 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 			return SLURM_SUCCESS;
 		}		
 	}
-	
+
 	notice_thread_init();
 	if(rec_set == 3 || rec_set == 1) { // process the account changes
 		if(cond_set == 2) {
@@ -1425,6 +1425,16 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 
 assoc_start:
 	if(rec_set == 3 || rec_set == 2) { // process the association changes
+		if(cond_set == 1 
+		   && !list_count(user_cond->assoc_cond->user_list)) {
+			rc = SLURM_ERROR;
+			exit_code=1;
+			fprintf(stderr, 
+				" There was a problem with your "
+				"'where' options.\n");
+			goto assoc_end;
+		}
+
 		ret_list = acct_storage_g_modify_associations(
 			db_conn, my_uid, user_cond->assoc_cond, assoc);
 
@@ -1448,6 +1458,7 @@ assoc_start:
 		if(ret_list)
 			list_destroy(ret_list);
 	}
+assoc_end:
 
 	notice_thread_fini();
 	if(set) {
