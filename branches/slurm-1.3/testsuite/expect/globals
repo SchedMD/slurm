@@ -358,9 +358,14 @@ proc wait_for_file { file_name } {
 	global bin_sleep max_file_delay
 
 	for {set my_delay 0} {$my_delay <= $max_file_delay} {incr my_delay} {
-		if [file exists $file_name] {
+		if {[file exists $file_name]} {
 #			Add small delay for I/O buffering
 			for {} {$my_delay <= $max_file_delay} {incr my_delay} {
+				if {[file exists $file_name] == 0} {
+					send_user "\nFAILURE: file being waited for just purged\n"
+					send_user "  likley two or more tests running at the same time\n"
+					return 1
+				}
 				if {[file size $file_name] != 0} {
 					break
 				}
