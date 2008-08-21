@@ -254,35 +254,35 @@ if { ![check_acct_associations] } {
 #
 set as_list_pid [spawn $sacctmgr -n -p list $usr $nams=$us1,$us2 WithAssocs]
 expect {
-	-re "$us1\\\|$nm1\\\|$qs1\\\|$ala\\\|$tc1\\\|$nm2\\\|$dbu\\\|$fs2\\\|$mc2\\\|$mj2\\\|$mn2\\\|$mw2" {
+	-re "$us1.$nm1.$qs1.$ala.$tc1.$nm2.$dbu.$fs2.$mc2.$mj2.$mn2.$mw2" {
 		incr dlumatches
 		exp_continue
 	}
-	-re "$us1\\\|$nm1\\\|$qs1\\\|$ala\\\|$tc1\\\|$nm1\\\|$dbu\\\|$fs2\\\|$mc2\\\|$mj2\\\|$mn2\\\|$mw2" {
+	-re "$us1.$nm1.$qs1.$ala.$tc1.$nm1.$dbu.$fs2.$mc2.$mj2.$mn2.$mw2" {
 		incr dlumatches
 		exp_continue
 	}
-	-re "$us1\\\|$nm1\\\|$qs1\\\|$ala\\\|$tc2\\\|$nm2\\\|$dbu\\\|$fs1\\\|$mc1\\\|$mj1\\\|$mn1\\\|$mw1" {
+	-re "$us1.$nm1.$qs1.$ala.$tc2.$nm2.$dbu.$fs1.$mc1.$mj1.$mn1.$mw1" {
 		incr dlumatches
 		exp_continue
 	}
-	-re "$us1\\\|$nm1\\\|$qs1\\\|$ala\\\|$tc2\\\|$nm1\\\|$dbu\\\|$fs1\\\|$mc1\\\|$mj1\\\|$mn1\\\|$mw1" {
+	-re "$us1.$nm1.$qs1.$ala.$tc2.$nm1.$dbu.$fs1.$mc1.$mj1.$mn1.$mw1" {
 		incr dlumatches
 		exp_continue
 	}
-	-re "$us2\\\|$nm1\\\|$qs1\\\|$ala\\\|$tc1\\\|$nm2\\\|$dbu\\\|$fs2\\\|$mc2\\\|$mj2\\\|$mn2\\\|$mw2" {
+	-re "$us2.$nm1.$qs1.$ala.$tc1.$nm2.$dbu.$fs2.$mc2.$mj2.$mn2.$mw2" {
 		incr dlumatches
 		exp_continue
 	}
-	-re "$us2\\\|$nm1\\\|$qs1\\\|$ala\\\|$tc1\\\|$nm1\\\|$dbu\\\|$fs2\\\|$mc2\\\|$mj2\\\|$mn2\\\|$mw2" {
+	-re "$us2.$nm1.$qs1.$ala.$tc1.$nm1.$dbu.$fs2.$mc2.$mj2.$mn2.$mw2" {
 		incr dlumatches
 		exp_continue
 	}
-	-re "$us2\\\|$nm1\\\|$qs1\\\|$ala\\\|$tc2\\\|$nm2\\\|$dbu\\\|$fs1\\\|$mc1\\\|$mj1\\\|$mn1\\\|$mw1" {
+	-re "$us2.$nm1.$qs1.$ala.$tc2.$nm2.$dbu.$fs1.$mc1.$mj1.$mn1.$mw1" {
 		incr dlumatches
 		exp_continue
 	}
-	-re "$us2\\\|$nm1\\\|$qs1\\\|$ala\\\|$tc2\\\|$nm1\\\|$dbu\\\|$fs1\\\|$mc1\\\|$mj1\\\|$mn1\\\|$mw1" {
+	-re "$us2.$nm1.$qs1.$ala.$tc2.$nm1.$dbu.$fs1.$mc1.$mj1.$mn1.$mw1" {
 		incr dlumatches
 		exp_continue
 	}
