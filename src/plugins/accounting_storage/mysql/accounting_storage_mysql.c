@@ -2421,13 +2421,10 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 			xstrfmtcat(vals, ", '%s'", parent);
 			xstrfmtcat(extra, ", parent_acct='%s'", parent);
 			xstrfmtcat(update, " && user=''"); 
-		}
-		
-		if(object->user) {
+		} else {
 			char *part = object->partition;
 			xstrcat(cols, ", user");
 			xstrfmtcat(vals, ", '%s'", object->user); 		
-			xstrfmtcat(extra, ", user='%s'", object->user);
 			xstrfmtcat(update, " && user='%s'",
 				   object->user); 
 
@@ -2438,7 +2435,6 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 				part = "";
 			xstrcat(cols, ", partition");
 			xstrfmtcat(vals, ", '%s'", part);
-			xstrfmtcat(extra, ", partition='%s'", part);
 			xstrfmtcat(update, " && partition='%s'", part);
 		}
 
