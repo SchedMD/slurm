@@ -503,7 +503,7 @@ no_cond:
 		job->exitcode = atoi(row[JOB_REQ_COMP_CODE]);
 		job->partition = xstrdup(row[JOB_REQ_PARTITION]);
 		job->nodes = xstrdup(row[JOB_REQ_NODELIST]);
-		if (!strcmp(job->nodes, "(null)")) {
+		if (!job->nodes || !strcmp(job->nodes, "(null)")) {
 			xfree(job->nodes);
 			job->nodes = xstrdup("(unknown)");
 		}
