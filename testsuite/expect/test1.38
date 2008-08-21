@@ -73,7 +73,9 @@ expect {
 #	exec $bin_pkill -INT -n -u $uid srun
 #
 set timeout $max_job_delay
-set matches 0
+set match_run  0
+set match_term 0
+set match_wait 0
 set job_id  0
 set srun_pid [spawn $srun -v -N1 -t1 --unbuffered $file_in]
 expect {
@@ -82,19 +84,19 @@ expect {
 		exp_continue
 	}
 	-re "srun: task 0: running" {
-		incr matches
+		set match_run 1
 		cancel_job $job_id
 		exp_continue
 	}
 	-re "WAITING" {
-		incr matches
+		set match_wait 1
 		# make sure the task gets started
 		sleep 1 
 		exec $bin_kill -INT $srun_pid
 		exp_continue
 	}
-	-re "Force Terminated job $number" {
-		incr matches
+	-re "Force Terminated job" {
+		set match_term 1
 		exp_continue
 	}
 	timeout {
@@ -106,7 +108,7 @@ expect {
 		wait
 	}
 }
-if {$matches != 3} {
+if {[expr $match_run + $match_wait + $match_term] != 3} {
 	send_user "\nFAILURE: srun failed to properly process SIGINT matches was $matches\n"
 	set exit_code 1
 }
@@ -116,7 +118,9 @@ if {$matches != 3} {
 # Note: For systems supporting proper pthreads, instead use
 #       exec $bin_kill -INT $srun_pid
 #
-set matches 0
+set match_run  0
+set match_term 0
+set match_wait 0
 set job_id  0
 set srun_pid [spawn $srun -v -N1 -t1 --unbuffered --quit-on-interrupt $file_in]
 expect {
@@ -125,20 +129,20 @@ expect {
 		exp_continue
 	}
 	-re "WAITING" {
-		incr matches
+		set match_wait 1
 		exec $bin_kill -INT $srun_pid
 		exp_continue
 	}
 	-re "srun: interrupt" {
-		set matches = -999
+		set match_run 999
 		exp_continue
 	}
 	-re "srun: task0: running" {
-		set matches = -999
+		set match_run 999
 		exp_continue
 	}
 	-re "forcing job termination" {
-		incr matches
+		set match_term 1
 		exp_continue
 	}
 	timeout {
@@ -151,7 +155,7 @@ expect {
 	}
 }
 cancel_job $job_id
-if {$matches != 2} {
+if {[expr $match_run + $match_wait + $match_term] != 2} {
 	send_user "\nFAILURE: srun failed to properly process SIGINT\n"
 	set exit_code 1
 }
