@@ -693,10 +693,8 @@ extern int assoc_mgr_update_local_users(acct_update_object_t *update)
 				object->qos_list = NULL;
 			}
 
-			if(object->admin_level != ACCT_ADMIN_NOTSET) {
-				info("admin level changed");
+			if(object->admin_level != ACCT_ADMIN_NOTSET) 
 				rec->admin_level = object->admin_level;
-			}
 
 			break;
 		case ACCT_ADD_USER:
