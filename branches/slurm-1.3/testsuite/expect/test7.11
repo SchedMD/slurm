@@ -112,6 +112,7 @@ expect {
 		wait
 	}
 }
+exec $bin_sleep 1
 
 #
 # Test of srun help message
