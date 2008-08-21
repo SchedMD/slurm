@@ -520,7 +520,7 @@ expect {
 	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
-	-re "($nm1|$nm2|$nm3)\\\|$ds2\\\|$or2\\\|" {
+	-re "($nm1|$nm2|$nm3).$ds2.$or2." {
 		incr matches
 		exp_continue
 	}
@@ -556,7 +556,7 @@ expect {
 	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
-	-re "($nm1\\\|($tc1|$tc2)\\\|$fs2\\\|$mc2\\\|$mj2\\\|$mn2\\\|$mw2\\\||($nm2|$nm3)\\\|($tc1|$tc2)\\\|1)" {
+	-re "($nm1.($tc1|$tc2).$fs2.$mc2.$mj2.$mn2.$mw2.|($nm2|$nm3).($tc1|$tc2).1)" {
 		incr matches
 		exp_continue
 	}
@@ -595,7 +595,7 @@ expect {
 	}
 	# Any time you use () around something you need to combine all 
 	# those things together since you can miss some and they be thrown away
-	-re "($nm1\\\|$ds1\\\|$or1\\\|($tc1|$tc2)\\\|1\\\|\\\|\\\|\\\|\\\||($nm2|$nm3)\\\|$ds2\\\|$or2\\\|($tc1|$tc2)\\\|1\\\|\\\|\\\|\\\|\\\|)" {
+	-re "($nm1.$ds1.$or1.($tc1|$tc2).1.....|($nm2|$nm3).$ds2.$or2.($tc1|$tc2).1.....)" {
 		incr matches
 		exp_continue
 	}
