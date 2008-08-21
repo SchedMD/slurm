@@ -1864,6 +1864,8 @@ extern int acct_storage_p_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		if(object->admin_level != ACCT_ADMIN_NOTSET) {
 			xstrcat(cols, ", admin_level");
 			xstrfmtcat(vals, ", %u", object->admin_level);
+			xstrfmtcat(extra, ", admin_level='%u'", 
+				   object->admin_level); 		
 		}
 
 		query = xstrdup_printf(
