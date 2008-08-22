@@ -58,6 +58,7 @@ make_bash_script $file_script "
 # Set umask and confirm it is propagated
 #
 set matches 0
+set timeout $max_job_delay
 set srun_pid [spawn ./$file_script]
 expect {
 	-re (0123|123) {
