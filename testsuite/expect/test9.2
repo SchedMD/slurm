@@ -35,10 +35,15 @@
 source ./globals
 
 set test_id      "9.2"
-set cycle_count  100
 set exit_code    0
 set file_out     "test$test_id.output"
 set job_name     "test$test_id"
+
+if {[test_wiki_sched] == 1} {
+	set cycle_count 5
+} else {
+	set cycle_count 100
+}
 
 if { [test_bluegene] } {
 	set node_cnt 1-2048
