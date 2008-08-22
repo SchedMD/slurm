@@ -469,13 +469,13 @@ int main(int argc, char *argv[])
 				!= SLURM_SUCCESS )
 			error("failed to save node selection state");
 		switch_save(slurmctld_conf.state_save_location);
-		if (slurmctld_config.resume_backup == false)
-			break;
-		recover = 2;
 
 		/* Save any pending state save RPCs */
 		acct_storage_g_close_connection(&acct_db_conn);
-		assoc_mgr_fini();
+
+		if (slurmctld_config.resume_backup == false)
+			break;
+		recover = 2;
 	}
 
 	/* Since pidfile is created as user root (its owner is
