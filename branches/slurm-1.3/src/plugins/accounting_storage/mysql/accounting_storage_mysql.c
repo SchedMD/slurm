@@ -1442,7 +1442,9 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		"UNTIL (@mj != -1 && @mnpj != -1 && @mwpj != -1 "
 		"&& @mcpj != -1) || @my_acct = '' END REPEAT; "
 		"END;";
-	
+	char *query = NULL;
+	time_t now = time(NULL);
+
 	if(mysql_db_create_table(db_conn, acct_coord_table,
 				 acct_coord_table_fields,
 				 ", primary key (acct(20), user(20)))")
@@ -1527,8 +1529,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 	   == SLURM_ERROR)
 		return SLURM_ERROR;
 	else {
-		time_t now = time(NULL);
-		char *query = xstrdup_printf(
+		query = xstrdup_printf(
 			"insert into %s "
 			"(creation_time, mod_time, name, description) "
 			"values (%d, %d, 'normal', 'Normal QOS default') "
@@ -1557,6 +1558,28 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		return SLURM_ERROR;
 
 	rc = mysql_db_query(db_conn, get_parent_proc);
+
+	/* Add user root to be a user by default and have this default
+	 * account be root.  If already there just update
+	 * name='root'.  That way if the admins delete it it will
+	 * remained deleted. Creation time will be 0 so it will never
+	 * really be deleted.
+	 */
+	query = xstrdup_printf(
+		"insert into %s (creation_time, mod_time, name, default_acct, "
+		"admin_level) values (0, %d, 'root', 'root', %u) "
+		"on duplicate key update name='root';",
+		user_table, now, ACCT_ADMIN_SUPER_USER, now);
+	xstrfmtcat(query, 
+		   "insert into %s (creation_time, mod_time, name, "
+		   "description, organization) values (0, %d, 'root', "
+		   "'default root account', 'root') on duplicate key "
+		   "update name='root';",
+		   acct_table, now); 
+
+	debug3("%s", query);
+	mysql_db_query(db_conn, query);
+	xfree(query);		
 
 	return rc;
 }
@@ -1864,7 +1887,7 @@ extern int acct_storage_p_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		if(object->admin_level != ACCT_ADMIN_NOTSET) {
 			xstrcat(cols, ", admin_level");
 			xstrfmtcat(vals, ", %u", object->admin_level);
-			xstrfmtcat(extra, ", admin_level='%u'", 
+			xstrfmtcat(extra, ", admin_level=%u", 
 				   object->admin_level); 		
 		}
 
@@ -2179,9 +2202,23 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *user_name = NULL;
 	int affect_rows = 0;
 	int added = 0;
+	List assoc_list = NULL;
+	acct_association_rec_t *assoc = NULL;
 
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return SLURM_ERROR;
+
+	assoc_list = list_create(destroy_acct_association_rec);
+	assoc = xmalloc(sizeof(acct_association_rec_t));
+	list_append(assoc_list, assoc);
+
+	assoc->user = xstrdup("root");
+	assoc->acct = xstrdup("root");
+	assoc->fairshare = NO_VAL;
+	assoc->max_cpu_secs_per_job = NO_VAL;
+	assoc->max_jobs = NO_VAL;
+	assoc->max_nodes_per_job = NO_VAL;
+	assoc->max_wall_duration_per_job = NO_VAL;
 
 	user_name = uid_to_string((uid_t) uid);
 	itr = list_iterator_create(cluster_list);
@@ -2328,9 +2365,23 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			error("Couldn't add txn");
 		} else
 			added++;
+
+		/* Add user root by default to run from the root
+		 * association 
+		 */
+		xfree(assoc->cluster);
+		assoc->cluster = xstrdup(object->name);
+		if(acct_storage_p_add_associations(mysql_conn, uid, assoc_list)
+		   == SLURM_ERROR) {
+			error("Problem adding root user association");
+			rc = SLURM_ERROR;
+		}
+
 	}
 	list_iterator_destroy(itr);
 	xfree(user_name);
+
+	list_destroy(assoc_list);
 
 	if(!added) {
 		if(mysql_conn->rollback) {
