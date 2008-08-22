@@ -198,6 +198,14 @@ static int _sort_childern_list(sacctmgr_assoc_t *assoc_a,
 			       sacctmgr_assoc_t *assoc_b)
 {
 	int diff = 0;
+
+	/* first just check the lfts and rgts if a lft is inside of the
+	 * others lft and rgt just return it is less
+	 */ 
+	if(assoc_a->assoc->lft > assoc_b->assoc->lft 
+	   && assoc_a->assoc->lft < assoc_b->assoc->rgt)
+		return 1;
+
 	/* check to see if this is a user association or an account.
 	 * We want the accounts at the bottom 
 	 */
