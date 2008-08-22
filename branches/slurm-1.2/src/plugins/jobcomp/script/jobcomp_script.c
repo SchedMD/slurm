@@ -179,11 +179,23 @@ static struct jobcomp_info * _jobcomp_info_create (struct job_record *job)
 	j->limit = job->time_limit;
 	j->start = job->start_time;
 	j->end = job->end_time;
-	j->submit = job->details ? job->details->submit_time:job->start_time;;
+	j->submit = job->details ? job->details->submit_time:job->start_time;
 	j->batch_flag = job->batch_flag;
 	j->nodes = xstrdup (job->nodes);
-	j->nprocs = job->num_procs;
 	j->account = job->account ? xstrdup (job->account) : NULL;
+
+	if (job->num_cpu_groups && job->cpus_per_node && job->cpu_count_reps) {
+		/* compute count of processors actually scheduled to job */
+		int i;
+		j->nprocs = 0;
+		for (i=0; i<job->num_cpu_groups; i++) {
+			j->nprocs += job->cpus_per_node[i] * 
+				     job->cpu_count_reps[i];
+		}
+	} else {
+		/* never scheduled resources */
+		j->nprocs = job->num_procs;
+	}
 
 	return (j);
 }

@@ -17,6 +17,9 @@ documents those changes that are of interest to users and admins.
     upon the address from which slurmd gets the task launch request rather then
     "hostname" where srun executes.
  -- Make test for StateSaveLocation directory more comprehensive.
+ -- For jobcomp/script plugin, PROCS environment variable is now the actual
+    count of allocated processors rather than the count of processses to 
+    be started.
 
 * Changes in SLURM 1.2.33
 =========================
