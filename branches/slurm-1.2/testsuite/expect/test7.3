@@ -54,12 +54,15 @@ exec $bin_make -f /dev/null $io_prog
 exec $bin_chmod 700 $io_prog
 
 send_user "slurm_dir is $slurm_dir\n"
-if {![test_aix]} {
-	send_user "$bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${slurm_dir}/include -Wl,--rpath=${slurm_dir}/lib -L${slurm_dir}/lib -lslurm\n"
-	exec       $bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${slurm_dir}/include -Wl,--rpath=${slurm_dir}/lib -L${slurm_dir}/lib -lslurm
-} else {
+if {[test_aix]} {
 	send_user "$bin_cc ${test_prog}.c -Wl,-brtl -g -pthread -o ${test_prog} -I${slurm_dir}/include  -L${slurm_dir}/lib -lslurm -lntbl\n"
 	exec       $bin_cc ${test_prog}.c -Wl,-brtl -g -pthread -o ${test_prog} -I${slurm_dir}/include  -L${slurm_dir}/lib -lslurm -lntbl
+} elseif [file exists ${slurm_dir}/lib64] {
+	send_user "$bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${slurm_dir}/include -Wl,--rpath=${slurm_dir}/lib64 -L${slurm_dir}/lib64 -lslurm\n"
+	exec       $bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${slurm_dir}/include -Wl,--rpath=${slurm_dir}/lib64 -L${slurm_dir}/lib64 -lslurm
+} else {
+	send_user "$bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${slurm_dir}/include -Wl,--rpath=${slurm_dir}/lib -L${slurm_dir}/lib -lslurm\n"
+	exec       $bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${slurm_dir}/include -Wl,--rpath=${slurm_dir}/lib -L${slurm_dir}/lib -lslurm
 }
 exec $bin_chmod 700 $test_prog
 
