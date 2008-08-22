@@ -80,12 +80,11 @@ expect {
 #
 set timeout $max_job_delay
 set srun_pid [spawn $srun -N1 -t1 --unbuffered $file_prog]
-exec $bin_sleep 5
-exec $bin_kill -USR1 $srun_pid
-exec $bin_kill -USR2 $srun_pid
 expect {
 	-re "WAITING" {
 		incr matches
+		exec $bin_kill -USR1 $srun_pid
+		exec $bin_kill -USR2 $srun_pid
 		exp_continue
 	}
 	-re "SIGUSR($number)" {

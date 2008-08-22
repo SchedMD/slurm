@@ -39,6 +39,7 @@ print_header $test_id
 #
 # Issue scontrol reconfigure
 #
+set timeout $max_job_delay
 set matches 0
 spawn $srun -N1 $scontrol show slurmd
 expect {
