@@ -95,11 +95,12 @@ set salloc_pid [spawn $salloc -N1 --exclusive --verbose -t2 $bin_bash]
 # Run a job step to get allocated processor count and affinity
 #
 expect -re $prompt
-set full_mask 0
+set full_mask -1
+set timeout $max_job_delay
 send "$srun -c1 $file_prog\n"
 expect {
 	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
-		set full_mask $expect_out(2,string)
+		set full_mask $expect_out(3,string)
 		exp_continue
 	}
 	-re "error" {
@@ -133,8 +134,11 @@ if {$full_mask == 1} {
 	set task_cnt 6
 } elseif {$full_mask == 127} {
 	set task_cnt 7
-} else {
+} elseif {$full_mask == 255} {
 	set task_cnt 8
+} else {
+	send_user "\nFAILURE: Unable to get memory mask\n"
+	exit 1
 }
 
 #
