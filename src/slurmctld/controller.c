@@ -293,6 +293,11 @@ int main(int argc, char *argv[])
 		slurmctld_config.daemonize = 0;
 	}
 
+	/* This must happen before we spawn any threads
+	 * which are not designed to handle them */
+	if (xsignal_block(controller_sigarray) < 0)
+		error("Unable to block signals");
+
 	/* This needs to be copied for other modules to access the
 	 * memory, it will report 'HashBase' if it is not duped
 	 */
@@ -328,9 +333,6 @@ int main(int argc, char *argv[])
 	 * slurm_cred_ctx_set(slurmctld_config.cred_ctx, 
 	 *                    SLURM_CRED_OPT_EXPIRY_WINDOW, CRED_LIFE);
 	 */
-
-	if (xsignal_block(controller_sigarray) < 0)
-		error("Unable to block signals");
 
 	/*
 	 * Initialize plugins.
