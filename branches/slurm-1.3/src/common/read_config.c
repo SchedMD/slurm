@@ -1164,6 +1164,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->propagate_rlimits);
 	xfree (ctl_conf_ptr->resume_program);
 	xfree (ctl_conf_ptr->slurm_conf);
+	xfree (ctl_conf_ptr->sched_params);
 	xfree (ctl_conf_ptr->schedtype);
 	xfree (ctl_conf_ptr->select_type);
 	xfree (ctl_conf_ptr->slurm_user_name);
