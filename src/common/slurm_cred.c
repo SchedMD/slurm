@@ -446,7 +446,6 @@ slurm_cred_verifier_ctx_create(const char *path)
 {
 	slurm_cred_ctx_t ctx = NULL;
 
-	xassert(path != NULL);
 	if (_slurm_crypto_init() < 0)
 		return NULL;
 
