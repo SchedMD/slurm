@@ -330,7 +330,7 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 			
 			if(!qos_list) {
 				qos_list = acct_storage_g_get_qos(
-					db_conn, NULL);
+					db_conn, my_uid, NULL);
 			}
 			if(end > 2 && sub[end-1] == '='
 			   && (sub[end-2] == '+' 
@@ -1296,7 +1296,7 @@ static int _print_file_sacctmgr_assoc_childern(FILE *fd,
 					if(!qos_list) {
 						qos_list = 
 							acct_storage_g_get_qos(
-								db_conn,
+								db_conn, my_uid,
 								NULL);
 					}
 					temp_char = get_qos_complete_str(
@@ -1482,12 +1482,12 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 		return;
 	}
 
-	curr_acct_list = acct_storage_g_get_accounts(db_conn, NULL);
-	curr_cluster_list = acct_storage_g_get_clusters(db_conn, NULL);
+	curr_acct_list = acct_storage_g_get_accounts(db_conn, my_uid, NULL);
+	curr_cluster_list = acct_storage_g_get_clusters(db_conn, my_uid, NULL);
 
 	memset(&user_cond, 0, sizeof(acct_user_cond_t));
 	user_cond.with_coords = 1;
-	curr_user_list = acct_storage_g_get_users(db_conn, &user_cond);
+	curr_user_list = acct_storage_g_get_users(db_conn, my_uid, &user_cond);
 
 	/* These are new info so they need to be freed here */
 	acct_list = list_create(destroy_acct_account_rec);
@@ -1611,7 +1611,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 			assoc_cond.cluster_list = list_create(NULL);
 			list_append(assoc_cond.cluster_list, cluster_name);
 			curr_assoc_list = acct_storage_g_get_associations(
-				db_conn, &assoc_cond);
+				db_conn, my_uid, &assoc_cond);
 			list_destroy(assoc_cond.cluster_list);
 
 			if(!curr_assoc_list) {

@@ -92,6 +92,8 @@ static int _get_local_association_list(void *db_conn, int enforce)
 {
 	acct_association_cond_t assoc_q;
 	char *cluster_name = NULL;
+	uid_t uid = getuid();
+
 //	DEF_TIMERS;
 	slurm_mutex_lock(&local_association_lock);
 	if(local_association_list)
@@ -113,7 +115,7 @@ static int _get_local_association_list(void *db_conn, int enforce)
 
 //	START_TIMER;
 	local_association_list =
-		acct_storage_g_get_associations(db_conn, &assoc_q);
+		acct_storage_g_get_associations(db_conn, uid, &assoc_q);
 //	END_TIMER2("get_associations");
 
 	if(assoc_q.cluster_list)
@@ -149,10 +151,12 @@ static int _get_local_association_list(void *db_conn, int enforce)
 
 static int _get_local_qos_list(void *db_conn, int enforce)
 {
+	uid_t uid = getuid();
+
 	slurm_mutex_lock(&local_qos_lock);
 	if(local_qos_list)
 		list_destroy(local_qos_list);
-	local_qos_list = acct_storage_g_get_qos(db_conn, NULL);
+	local_qos_list = acct_storage_g_get_qos(db_conn, uid, NULL);
 
 	if(!local_qos_list) {
 		slurm_mutex_unlock(&local_qos_lock);
@@ -172,14 +176,15 @@ static int _get_local_qos_list(void *db_conn, int enforce)
 static int _get_local_user_list(void *db_conn, int enforce)
 {
 	acct_user_cond_t user_q;
+	uid_t uid = getuid();
 
 	memset(&user_q, 0, sizeof(acct_user_cond_t));
 	user_q.with_coords = 1;
-
+	
 	slurm_mutex_lock(&local_user_lock);
 	if(local_user_list)
 		list_destroy(local_user_list);
-	local_user_list = acct_storage_g_get_users(db_conn, &user_q);
+	local_user_list = acct_storage_g_get_users(db_conn, uid, &user_q);
 
 	if(!local_user_list) {
 		slurm_mutex_unlock(&local_user_lock);

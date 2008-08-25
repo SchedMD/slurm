@@ -1831,6 +1831,12 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			conf->private_data |= PRIVATE_DATA_NODES;
 		if (strstr(temp_str, "partition"))
 			conf->private_data |= PRIVATE_DATA_PARTITIONS;
+		if (strstr(temp_str, "usage"))
+			conf->private_data |= PRIVATE_DATA_USAGE;
+		if (strstr(temp_str, "users"))
+			conf->private_data |= PRIVATE_DATA_USERS;
+		if (strstr(temp_str, "accounts"))
+			conf->private_data |= PRIVATE_DATA_ACCOUNTS;
 		if (strstr(temp_str, "all"))
 			conf->private_data = 0xffff;
 		xfree(temp_str);

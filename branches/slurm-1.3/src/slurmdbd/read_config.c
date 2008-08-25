@@ -87,6 +87,7 @@ static void _clear_slurmdbd_conf(void)
 		xfree(slurmdbd_conf->log_file);
 		xfree(slurmdbd_conf->pid_file);
 		xfree(slurmdbd_conf->plugindir);
+		slurmdbd_conf->private_data = 0;
 		xfree(slurmdbd_conf->slurm_user_name);
 		slurmdbd_conf->step_purge = 0;
 		xfree(slurmdbd_conf->storage_host);
@@ -120,6 +121,7 @@ extern int read_slurmdbd_conf(void)
 		{"MessageTimeout", S_P_UINT16},
 		{"PidFile", S_P_STRING},
 		{"PluginDir", S_P_STRING},
+		{"PrivateData", S_P_STRING},
 		{"SlurmUser", S_P_STRING},
 		{"StepPurge", S_P_UINT16},
 		{"StorageHost", S_P_STRING},
@@ -129,8 +131,9 @@ extern int read_slurmdbd_conf(void)
 		{"StorageType", S_P_STRING},
 		{"StorageUser", S_P_STRING},
 		{NULL} };
-	s_p_hashtbl_t *tbl;
-	char *conf_path;
+	s_p_hashtbl_t *tbl = NULL;
+	char *conf_path = NULL;
+	char *temp_str = NULL;
 	struct stat buf;
 
 	/* Set initial values */
@@ -174,6 +177,30 @@ extern int read_slurmdbd_conf(void)
 		}
 		s_p_get_string(&slurmdbd_conf->pid_file, "PidFile", tbl);
 		s_p_get_string(&slurmdbd_conf->plugindir, "PluginDir", tbl);
+		if (s_p_get_string(&temp_str, "PrivateData", tbl)) {
+			if (strstr(temp_str, "job"))
+				slurmdbd_conf->private_data 
+					|= PRIVATE_DATA_JOBS;
+			if (strstr(temp_str, "node"))
+				slurmdbd_conf->private_data 
+					|= PRIVATE_DATA_NODES;
+			if (strstr(temp_str, "partition"))
+				slurmdbd_conf->private_data 
+					|= PRIVATE_DATA_PARTITIONS;
+			if (strstr(temp_str, "usage"))
+				slurmdbd_conf->private_data
+					|= PRIVATE_DATA_USAGE;
+			if (strstr(temp_str, "users"))
+				slurmdbd_conf->private_data 
+					|= PRIVATE_DATA_USERS;
+			if (strstr(temp_str, "accounts"))
+				slurmdbd_conf->private_data 
+					|= PRIVATE_DATA_ACCOUNTS;
+			if (strstr(temp_str, "all"))
+				slurmdbd_conf->private_data = 0xffff;
+			xfree(temp_str);
+		}
+
 		s_p_get_string(&slurmdbd_conf->slurm_user_name, "SlurmUser",
 			       tbl);
 		if (!s_p_get_uint16(&slurmdbd_conf->step_purge, "StepPurge",
@@ -232,6 +259,8 @@ extern int read_slurmdbd_conf(void)
 /* Log the current configuration using verbose() */
 extern void log_config(void)
 {
+	char tmp_str[128];
+
 	if (slurmdbd_conf->archive_age) {
 		debug2("ArchiveAge        = %u days", 
 		       slurmdbd_conf->archive_age);
@@ -249,6 +278,11 @@ extern void log_config(void)
 	debug2("MessageTimeout    = %u", slurmdbd_conf->msg_timeout);
 	debug2("PidFile           = %s", slurmdbd_conf->pid_file);
 	debug2("PluginDir         = %s", slurmdbd_conf->plugindir);
+
+	private_data_string(slurmdbd_conf->private_data,
+			    tmp_str, sizeof(tmp_str));
+
+	debug2("PrivateData       = %s", tmp_str);
 	debug2("SlurmUser         = %s(%u)", 
 		slurmdbd_conf->slurm_user_name, slurmdbd_conf->slurm_user_id);
 	debug2("StepPurge         = %u days", slurmdbd_conf->step_purge); 

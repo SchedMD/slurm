@@ -315,6 +315,24 @@ char *slurm_get_plugin_dir(void)
 	return plugin_dir;
 }
 
+/* slurm_get_private_data
+ * get private data from slurmctld_conf object
+ */
+uint16_t slurm_get_private_data(void)
+{
+	uint16_t private_data = 0;
+	slurm_ctl_conf_t *conf;
+
+	if(slurmdbd_conf) {
+		private_data = slurmdbd_conf->private_data;
+	} else {
+		conf = slurm_conf_lock();
+		private_data = conf->private_data;
+		slurm_conf_unlock();
+	}
+	return private_data;
+}
+
 /* slurm_get_state_save_location
  * get state_save_location from slurmctld_conf object from slurmctld_conf object 
  * RET char *   - state_save_location directory, MUST be xfreed by caller

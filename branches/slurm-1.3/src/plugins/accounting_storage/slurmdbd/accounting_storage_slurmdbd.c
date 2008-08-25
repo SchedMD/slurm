@@ -688,7 +688,7 @@ extern List acct_storage_p_remove_qos(
 	return ret_list;
 }
 
-extern List acct_storage_p_get_users(void *db_conn,
+extern List acct_storage_p_get_users(void *db_conn, uid_t uid,
 				     acct_user_cond_t *user_cond)
 {
 	slurmdbd_msg_t req, resp;
@@ -718,7 +718,7 @@ extern List acct_storage_p_get_users(void *db_conn,
 	return ret_list;
 }
 
-extern List acct_storage_p_get_accts(void *db_conn,
+extern List acct_storage_p_get_accts(void *db_conn, uid_t uid,
 				     acct_account_cond_t *acct_cond)
 {
 	slurmdbd_msg_t req, resp;
@@ -749,7 +749,7 @@ extern List acct_storage_p_get_accts(void *db_conn,
 	return ret_list;
 }
 
-extern List acct_storage_p_get_clusters(void *db_conn,
+extern List acct_storage_p_get_clusters(void *db_conn, uid_t uid,
 					acct_account_cond_t *cluster_cond)
 {
 	slurmdbd_msg_t req, resp;
@@ -780,7 +780,7 @@ extern List acct_storage_p_get_clusters(void *db_conn,
 	return ret_list;
 }
 
-extern List acct_storage_p_get_associations(void *db_conn,
+extern List acct_storage_p_get_associations(void *db_conn, uid_t uid,
 					    acct_association_cond_t *assoc_cond)
 {
 	slurmdbd_msg_t req, resp;
@@ -810,7 +810,7 @@ extern List acct_storage_p_get_associations(void *db_conn,
 	return ret_list;
 }
 
-extern List acct_storage_p_get_qos(void *db_conn,
+extern List acct_storage_p_get_qos(void *db_conn, uid_t uid,
 				   acct_qos_cond_t *qos_cond)
 {
 	slurmdbd_msg_t req, resp;
@@ -847,7 +847,7 @@ extern List acct_storage_p_get_qos(void *db_conn,
 	return ret_list;
 }
 
-extern List acct_storage_p_get_txn(void *db_conn,
+extern List acct_storage_p_get_txn(void *db_conn, uid_t uid,
 				   acct_txn_cond_t *txn_cond)
 {
 	slurmdbd_msg_t req, resp;
@@ -877,7 +877,7 @@ extern List acct_storage_p_get_txn(void *db_conn,
 	return ret_list;
 }
 
-extern int acct_storage_p_get_usage(void *db_conn,
+extern int acct_storage_p_get_usage(void *db_conn, uid_t uid,
 				    acct_association_rec_t *acct_assoc,
 				    time_t start, time_t end)
 {
@@ -1029,7 +1029,7 @@ extern int clusteracct_storage_p_register_ctld(char *cluster,
 }
 
 extern int clusteracct_storage_p_get_usage(
-	void *db_conn,
+	void *db_conn, uid_t uid,
 	acct_cluster_rec_t *cluster_rec,
 	time_t start, time_t end)
 {
@@ -1346,7 +1346,7 @@ extern int jobacct_storage_p_suspend(void *db_conn,
  * returns List of job_rec_t *
  * note List needs to be freed when called
  */
-extern List jobacct_storage_p_get_jobs(void *db_conn,
+extern List jobacct_storage_p_get_jobs(void *db_conn, uid_t uid,
 				       List selected_steps,
 				       List selected_parts,
 				       sacct_parameters_t *params)
@@ -1397,7 +1397,7 @@ extern List jobacct_storage_p_get_jobs(void *db_conn,
  * returns List of job_rec_t *
  * note List needs to be freed when called
  */
-extern List jobacct_storage_p_get_jobs_cond(void *db_conn,
+extern List jobacct_storage_p_get_jobs_cond(void *db_conn, uid_t uid,
 					    acct_job_cond_t *job_cond)
 {
 	slurmdbd_msg_t req, resp;

@@ -520,7 +520,7 @@ extern List acct_storage_g_remove_qos(
  * returns List of acct_user_rec_t *
  * note List needs to be freed when called
  */
-extern List acct_storage_g_get_users(void *db_conn, 
+extern List acct_storage_g_get_users(void *db_conn,  uint32_t uid,
 				     acct_user_cond_t *user_cond);
 
 /* 
@@ -530,7 +530,7 @@ extern List acct_storage_g_get_users(void *db_conn,
  * returns List of acct_account_rec_t *
  * note List needs to be freed when called
  */
-extern List acct_storage_g_get_accounts(void *db_conn, 
+extern List acct_storage_g_get_accounts(void *db_conn,  uint32_t uid,
 					acct_account_cond_t *acct_cond);
 
 /* 
@@ -541,7 +541,7 @@ extern List acct_storage_g_get_accounts(void *db_conn,
  * note List needs to be freed when called
  */
 extern List acct_storage_g_get_clusters(
-	void *db_conn, acct_cluster_cond_t *cluster_cond);
+	void *db_conn,  uint32_t uid, acct_cluster_cond_t *cluster_cond);
 
 /* 
  * get info from the storage 
@@ -550,7 +550,7 @@ extern List acct_storage_g_get_clusters(
  * note List needs to be freed when called
  */
 extern List acct_storage_g_get_associations(
-	void *db_conn, acct_association_cond_t *assoc_cond);
+	void *db_conn, uint32_t uid, acct_association_cond_t *assoc_cond);
 
 
 /* 
@@ -559,7 +559,8 @@ extern List acct_storage_g_get_associations(
  * RET: List of acct_qos_rec_t *
  * note List needs to be freed when called
  */
-extern List acct_storage_g_get_qos(void *db_conn, acct_qos_cond_t *qos_cond);
+extern List acct_storage_g_get_qos(void *db_conn, uint32_t uid,
+				   acct_qos_cond_t *qos_cond);
 
 /* 
  * get info from the storage 
@@ -567,7 +568,8 @@ extern List acct_storage_g_get_qos(void *db_conn, acct_qos_cond_t *qos_cond);
  * RET: List of acct_txn_rec_t *
  * note List needs to be freed when called
  */
-extern List acct_storage_g_get_txn(void *db_conn, acct_txn_cond_t *txn_cond);
+extern List acct_storage_g_get_txn(void *db_conn,  uint32_t uid,
+				   acct_txn_cond_t *txn_cond);
 
 /* 
  * get info from the storage 
@@ -577,7 +579,7 @@ extern List acct_storage_g_get_txn(void *db_conn, acct_txn_cond_t *txn_cond);
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int acct_storage_g_get_usage(
-	void *db_conn, void *assoc, time_t start, time_t end);
+	void *db_conn,  uint32_t uid, void *assoc, time_t start, time_t end);
 /* 
  * roll up data in the storage 
  * IN: sent_start (option time to do a re-roll or start from this point)
@@ -632,7 +634,7 @@ extern int clusteracct_storage_g_register_ctld(char *cluster, uint16_t port);
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int clusteracct_storage_g_get_usage(
-	void *db_conn, void *cluster_rec,
+	void *db_conn, uint32_t uid, void *cluster_rec,
 	time_t start, time_t end);
 
 /* 
@@ -670,7 +672,7 @@ extern int jobacct_storage_g_job_suspend (void *db_conn,
  * returns List of jobacct_job_rec_t *
  * note List needs to be freed when called
  */
-extern List jobacct_storage_g_get_jobs(void *db_conn, 
+extern List jobacct_storage_g_get_jobs(void *db_conn, uint32_t uid, 
 				       List selected_steps,
 				       List selected_parts,
 				       void *params);
@@ -680,7 +682,7 @@ extern List jobacct_storage_g_get_jobs(void *db_conn,
  * returns List of jobacct_job_rec_t *
  * note List needs to be freed when called
  */
-extern List jobacct_storage_g_get_jobs_cond(void *db_conn, 
+extern List jobacct_storage_g_get_jobs_cond(void *db_conn, uint32_t uid, 
 					    acct_job_cond_t *job_cond);
 
 /* 

@@ -294,7 +294,7 @@ extern int user_top(int argc, char *argv[])
 	_setup_print_fields_list(format_list);
 	list_destroy(format_list);
 
-	user_list = acct_storage_g_get_users(db_conn, user_cond);
+	user_list = acct_storage_g_get_users(db_conn, my_uid, user_cond);
 	if(!user_list) {
 		exit_code=1;
 		fprintf(stderr, " Problem with user query.\n");

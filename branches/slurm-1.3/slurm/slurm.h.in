@@ -454,6 +454,9 @@ typedef enum select_type_plugin_info {
 #define PRIVATE_DATA_JOBS	0x0001	/* job/step data is private */
 #define PRIVATE_DATA_NODES	0x0002	/* node data is private */
 #define PRIVATE_DATA_PARTITIONS	0x0004	/* partition data is private */
+#define PRIVATE_DATA_USAGE	0x0008	/* accounting usage data is private */
+#define PRIVATE_DATA_USERS	0x0010	/* accounting user data is private */
+#define PRIVATE_DATA_ACCOUNTS	0x0020	/* accounting account data is private */
 
 /*****************************************************************************\
  *	PROTOCOL DATA STRUCTURE DEFINITIONS
