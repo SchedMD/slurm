@@ -210,6 +210,7 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 		xfree(kill_job->nodes);
 		select_g_free_jobinfo(&kill_job->select_jobinfo);
 		xfree(kill_job);
+		hostlist_destroy(agent_args->hostlist);
 		xfree(agent_args);
 		return;
 	}
