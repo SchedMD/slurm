@@ -753,19 +753,12 @@ void parse_command_line(int argc, char **argv)
 			if(params.opt_stat)
 				xfree(params.opt_field_list);
 			
-			params.opt_field_list =
-				xrealloc(params.opt_field_list,
-					 (params.opt_field_list==NULL? 0 :
-					  strlen(params.opt_field_list)) +
-					 strlen(optarg) + 1);
-			strcat(params.opt_field_list, optarg);
-			strcat(params.opt_field_list, ",");
+			xstrfmtcat(params.opt_field_list, "%s,", optarg);
 			break;
 
 		case 'f':
-			params.opt_filein =
-				xrealloc(params.opt_filein, strlen(optarg)+1);
-			strcpy(params.opt_filein, optarg);
+			xfree(params.opt_filein);
+			params.opt_filein = xstrdup(optarg);
 			break;
 
 		case 'g':
@@ -823,10 +816,8 @@ void parse_command_line(int argc, char **argv)
 			break;
 		case 'S':
 			if(!params.opt_field_list) {
-				params.opt_field_list = 
-					xmalloc(sizeof(STAT_FIELDS)+1);
-				strcat(params.opt_field_list, STAT_FIELDS);
-				strcat(params.opt_field_list, ",");
+				xstrfmtcat(params.opt_field_list, "%s,",
+					   STAT_FIELDS);
 			}
 			params.opt_stat = 1;
 			break;
@@ -1057,13 +1048,7 @@ void parse_command_line(int argc, char **argv)
 		else
 			dot = BRIEF_FIELDS;
 		
-		params.opt_field_list =
-			xrealloc(params.opt_field_list,
-				 (params.opt_field_list==NULL? 0 :
-				  sizeof(params.opt_field_list)) +
-				 strlen(dot)+1);
-		xstrcat(params.opt_field_list, dot);
-		xstrcat(params.opt_field_list, ",");
+		xstrfmtcat(params.opt_field_list, "%s,", dot);
 	} 
 
 	if(long_output) {
@@ -1071,14 +1056,8 @@ void parse_command_line(int argc, char **argv)
 			dot = LONG_COMP_FIELDS;
 		else
 			dot = LONG_FIELDS;
-		
-		params.opt_field_list =
-			xrealloc(params.opt_field_list,
-				 (params.opt_field_list==NULL? 0 :
-				  strlen(params.opt_field_list)) +
-				 strlen(dot)+1);
-		xstrcat(params.opt_field_list, dot);
-		xstrcat(params.opt_field_list, ",");
+
+		xstrfmtcat(params.opt_field_list, "%s,", dot);
 	} 
 	
 	if (params.opt_field_list==NULL) {
@@ -1088,8 +1067,8 @@ void parse_command_line(int argc, char **argv)
 			dot = DEFAULT_COMP_FIELDS;
 		else
 			dot = DEFAULT_FIELDS;
-		params.opt_field_list = xstrdup(dot);
-		xstrcat(params.opt_field_list, ",");
+
+		xstrfmtcat(params.opt_field_list, "%s,", dot);
 	}
 
 	start = params.opt_field_list;
