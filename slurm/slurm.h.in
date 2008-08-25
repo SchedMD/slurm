@@ -1904,10 +1904,12 @@ extern int slurm_reconfigure PARAMS(( void ));
  * slurm_shutdown - issue RPC to have Slurm controller (slurmctld)
  *	cease operations, both the primary and backup controller 
  *	are shutdown.
- * IN core - controller generates a core file if set
+ * IN options - 0: all slurm daemons are shutdown
+ *              1: slurmctld generates a core file
+ *              2: only the slurmctld is shutdown (no core file)
  * RET 0 or a slurm error code
  */
-extern int slurm_shutdown PARAMS(( uint16_t core ));
+extern int slurm_shutdown PARAMS(( uint16_t options ));
 
 /*
  * slurm_set_debug_level - issue RPC to set slurm controller debug level
