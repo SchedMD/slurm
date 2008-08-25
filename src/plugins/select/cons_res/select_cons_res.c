@@ -1528,13 +1528,9 @@ extern int select_p_job_init(List job_list)
 			suspend = 1;
 		else
 			suspend = 0;
-		if ((job->job_ptr->nodes == NULL) ||
-		    (node_name2bitmap(job->job_ptr->nodes, true,
-				      &job->node_bitmap))) {
-			error("cons_res: job %u has no allocated nodes",
-				job->job_id);
-			job->node_bitmap = bit_alloc(node_record_count);
-		}
+		FREE_NULL_BITMAP(job->node_bitmap);
+		node_name2bitmap(job->job_ptr->nodes, true,
+				 &job->node_bitmap);
 		_add_job_to_nodes(job, "select_p_job_init", suspend);
 	}
 	list_iterator_destroy(iterator);
