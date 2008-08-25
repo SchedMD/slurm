@@ -41,8 +41,10 @@ documents those changes that are of interest to users and admins.
     substantial database updates).
  -- Treat srun option of --begin= with a value of now without a numeric
     component as a failure (e.g. "--begin=now+hours").
- -- Eliminate a memory leak associated with notifying srun of allocated 
+ -- Eliminate a memory leak associated with notifying srun of allocated
     nodes having failed.
+ -- Add scontrol shutdown option of "slurmctld" to just shutdown the 
+    slurmctld daemon and leave the slurmd daemons running.
 
 * Changes in SLURM 1.3.6
 ========================

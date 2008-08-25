@@ -446,7 +446,7 @@ _print_daemons (void)
 static int
 _process_command (int argc, char *argv[]) 
 {
-	int error_code;
+	int error_code = 0;
 
 	if (argc < 1) {
 		exit_code = 1;
@@ -764,17 +764,31 @@ _process_command (int argc, char *argv[])
 	}
 	else if (strncasecmp (argv[0], "shutdown", 8) == 0) {
 		/* require full command name */
-		if (argc > 2) {
+		uint16_t options = 0;
+		if (argc == 2) {
+			if (strcmp(argv[1], "slurmctld") &&
+			    strcmp(argv[1], "controller")) {
+				error_code = 1;
+				exit_code = 1;
+				fprintf (stderr,
+					 "invalid shutdown argument:%s\n", 
+					 argv[1]);
+			} else
+				options= 2;
+		} else if (argc > 2) {
+			error_code = 1;
 			exit_code = 1;
 			fprintf (stderr,
 				 "too many arguments for keyword:%s\n", 
 				 argv[0]);
 		}
-		error_code = slurm_shutdown (0);
-		if (error_code) {
-			exit_code = 1;
-			if (quiet_flag != 1)
-				slurm_perror ("slurm_shutdown error");
+		if (error_code == 0) {
+			error_code = slurm_shutdown(options);
+			if (error_code) {
+				exit_code = 1;
+				if (quiet_flag != 1)
+					slurm_perror ("slurm_shutdown error");
+			}
 		}
 	}
 	else if (strncasecmp (argv[0], "update", 1) == 0) {
@@ -1069,7 +1083,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      setdebug <LEVEL>         reset slurmctld debug level                  \n\
      show <ENTITY> [<ID>]     display state of identified entity, default  \n\
                               is all records.                              \n\
-     shutdown                 shutdown slurm controller.                   \n\
+     shutdown <OPTS>          shutdown slurm daemons                       \n\
      suspend <job_id>         susend specified job                         \n\
      resume <job_id>          resume previously suspended job              \n\
      setdebug <level>         set slurmctld debug level                    \n\
@@ -1093,6 +1107,9 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
   <LEVEL> may be an integer value like SlurmctldDebug in the slurm.conf    \n\
        file or the name of the most detailed errors to report (e.g. \"info\",\n\
        \"verbose\", \"debug\", \"debug2\", etc.).                          \n\
+                                                                           \n\
+  <OPTS> may be \"slurmctld\" to shutdown just the slurmctld daemon,       \n\
+       otherwise all slurm daemons are shutdown                            \n\
                                                                            \n\
   Node names may be specified using simple range expressions,              \n\
   (e.g. \"lx[10-20]\" corresponsds to lx10, lx11, lx12, ...)               \n\

@@ -3371,7 +3371,7 @@ unpack_error:
 static void
 _pack_shutdown_msg(shutdown_msg_t * msg, Buf buffer)
 {
-	pack16((uint16_t)msg->core, buffer);
+	pack16((uint16_t)msg->options, buffer);
 }
 
 static int
@@ -3382,7 +3382,7 @@ _unpack_shutdown_msg(shutdown_msg_t ** msg_ptr, Buf buffer)
 	msg = xmalloc(sizeof(shutdown_msg_t));
 	*msg_ptr = msg;
 
-	safe_unpack16(&msg->core, buffer);
+	safe_unpack16(&msg->options, buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:
