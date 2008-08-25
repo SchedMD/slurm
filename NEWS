@@ -1,6 +1,12 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.3.8
+========================
+ -- Added PrivateData flags for Users, Usage, and Accounts to Accounting
+    if using slurmdbd set in the slurmdbd.conf file if not set in the 
+    slurm.conf file. 
+
 * Changes in SLURM 1.3.7
 ========================
  -- Add jobid/stepid to MESSAGE_TASK_EXIT to address race condition when 

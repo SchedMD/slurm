@@ -478,7 +478,8 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 		return SLURM_ERROR;
 	}
 
-	assoc_list = acct_storage_g_get_associations(db_conn, assoc_cond);
+	assoc_list = acct_storage_g_get_associations(db_conn, my_uid,
+						     assoc_cond);
 	destroy_acct_association_cond(assoc_cond);
 
 	if(!assoc_list) {

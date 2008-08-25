@@ -563,7 +563,8 @@ int get_data(void)
 		job_cond->usage_end = params.opt_end;
 		job_cond->userid_list = params.opt_uid_list;
 				
-		jobs = jobacct_storage_g_get_jobs_cond(acct_db_conn, job_cond);
+		jobs = jobacct_storage_g_get_jobs_cond(acct_db_conn, getuid(),
+						       job_cond);
 		destroy_acct_job_cond(job_cond);
 	}
 

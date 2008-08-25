@@ -721,23 +721,39 @@ private_data_string(uint16_t private_data, char *str, int str_len)
 {
 	if (str_len > 0)
 		str[0] = '\0';
-	if (str_len < 22) {
+	if (str_len < 42) {
 		error("private_data_string: output buffer too small");
 		return;
 	}
 
 	if (private_data & PRIVATE_DATA_JOBS)
-		strcat(str, "jobs");
+		strcat(str, "jobs"); //4 len
 	if (private_data & PRIVATE_DATA_NODES) {
 		if (str[0])
 			strcat(str, ",");
-		strcat(str, "nodes");
+		strcat(str, "nodes"); //6 len
 	}
 	if (private_data & PRIVATE_DATA_PARTITIONS) {
 		if (str[0])
 			strcat(str, ",");
-		strcat(str, "partitions");
+		strcat(str, "partitions"); //11 len
 	}
+	if (private_data & PRIVATE_DATA_USAGE) {
+		if (str[0])
+			strcat(str, ",");
+		strcat(str, "usage"); //6 len
+	}
+	if (private_data & PRIVATE_DATA_USERS) {
+		if (str[0])
+			strcat(str, ",");
+		strcat(str, "users"); //6 len
+	}
+	if (private_data & PRIVATE_DATA_ACCOUNTS) {
+		if (str[0])
+			strcat(str, ",");
+		strcat(str, "accounts"); //9 len
+	}
+	// total len 42
 }
 
 char *job_state_string(enum job_states inx)

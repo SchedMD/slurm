@@ -99,19 +99,19 @@ typedef struct slurm_acct_storage_ops {
 				    acct_association_cond_t *assoc_cond);
 	List (*remove_qos)         (void *db_conn, uint32_t uid,
 				    acct_qos_cond_t *qos_cond);
-	List (*get_users)          (void *db_conn,
+	List (*get_users)          (void *db_conn, uint32_t uid,
 				    acct_user_cond_t *user_cond);
-	List (*get_accts)          (void *db_conn,
+	List (*get_accts)          (void *db_conn, uint32_t uid,
 				    acct_account_cond_t *acct_cond);
-	List (*get_clusters)       (void *db_conn,
+	List (*get_clusters)       (void *db_conn, uint32_t uid,
 				    acct_cluster_cond_t *cluster_cond);
-	List (*get_associations)   (void *db_conn,
+	List (*get_associations)   (void *db_conn, uint32_t uid,
 				    acct_association_cond_t *assoc_cond);
-	List (*get_qos)            (void *db_conn,
+	List (*get_qos)            (void *db_conn, uint32_t uid,
 				    acct_qos_cond_t *qos_cond);
-	List (*get_txn)            (void *db_conn,
+	List (*get_txn)            (void *db_conn, uint32_t uid,
 				    acct_txn_cond_t *txn_cond);
-	int  (*get_usage)          (void *db_conn,
+	int  (*get_usage)          (void *db_conn, uint32_t uid,
 				    void *acct_assoc,
 				    time_t start, 
 				    time_t end);
@@ -129,7 +129,7 @@ typedef struct slurm_acct_storage_ops {
 	int  (*cluster_procs)      (void *db_conn,
 				    char *cluster,
 				    uint32_t procs, time_t event_time);
-	int  (*c_get_usage)        (void *db_conn,
+	int  (*c_get_usage)        (void *db_conn, uint32_t uid,
 				    void *cluster_rec, 
 				    time_t start, time_t end);
 	int  (*register_ctld)      (char *cluster, uint16_t port);
@@ -143,11 +143,11 @@ typedef struct slurm_acct_storage_ops {
 				    struct step_record *step_ptr);
 	int  (*job_suspend)        (void *db_conn,
 				    struct job_record *job_ptr);
-	List (*get_jobs)           (void *db_conn,
+	List (*get_jobs)           (void *db_conn, uint32_t uid,
 				    List selected_steps,
 				    List selected_parts,
 				    void *params);	
-	List (*get_jobs_cond)      (void *db_conn,
+	List (*get_jobs_cond)      (void *db_conn, uint32_t uid,
 				    acct_job_cond_t *job_cond);	
 	void (*job_archive)        (void *db_conn,
 				    List selected_parts, void *params);	
@@ -2582,63 +2582,66 @@ extern List acct_storage_g_remove_qos(void *db_conn, uint32_t uid,
 		(db_conn, uid, qos_cond);
 }
 
-extern List acct_storage_g_get_users(void *db_conn,
+extern List acct_storage_g_get_users(void *db_conn, uint32_t uid,
 				     acct_user_cond_t *user_cond)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
-	return (*(g_acct_storage_context->ops.get_users))(db_conn, user_cond);
+	return (*(g_acct_storage_context->ops.get_users))
+		(db_conn, uid, user_cond);
 }
 
-extern List acct_storage_g_get_accounts(void *db_conn,
+extern List acct_storage_g_get_accounts(void *db_conn, uint32_t uid,
 					acct_account_cond_t *acct_cond)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
 	return (*(g_acct_storage_context->ops.get_accts))
-		(db_conn, acct_cond);
+		(db_conn, uid, acct_cond);
 }
 
-extern List acct_storage_g_get_clusters(void *db_conn,
+extern List acct_storage_g_get_clusters(void *db_conn, uint32_t uid,
 					acct_cluster_cond_t *cluster_cond)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
 	return (*(g_acct_storage_context->ops.get_clusters))
-		(db_conn, cluster_cond);
+		(db_conn, uid, cluster_cond);
 }
 
-extern List acct_storage_g_get_associations(void *db_conn,
+extern List acct_storage_g_get_associations(void *db_conn, uint32_t uid,
 					    acct_association_cond_t *assoc_cond)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
 	return (*(g_acct_storage_context->ops.get_associations))
-		(db_conn, assoc_cond);
+		(db_conn, uid, assoc_cond);
 }
 
-extern List acct_storage_g_get_qos(void *db_conn, acct_qos_cond_t *qos_cond)
+extern List acct_storage_g_get_qos(void *db_conn, uint32_t uid, 
+				   acct_qos_cond_t *qos_cond)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
-	return (*(g_acct_storage_context->ops.get_qos))(db_conn, qos_cond);
+	return (*(g_acct_storage_context->ops.get_qos))(db_conn, uid, qos_cond);
 }
 
-extern List acct_storage_g_get_txn(void *db_conn, acct_txn_cond_t *txn_cond)
+extern List acct_storage_g_get_txn(void *db_conn,  uint32_t uid, 
+				   acct_txn_cond_t *txn_cond)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
-	return (*(g_acct_storage_context->ops.get_txn))(db_conn, txn_cond);
+	return (*(g_acct_storage_context->ops.get_txn))(db_conn, uid, txn_cond);
 }
 
-extern int acct_storage_g_get_usage(void *db_conn, 
+extern int acct_storage_g_get_usage(void *db_conn,  uint32_t uid,
 				    void *acct_assoc,
 				    time_t start, time_t end)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
 	return (*(g_acct_storage_context->ops.get_usage))
-		(db_conn, acct_assoc, start, end);
+		(db_conn, uid, acct_assoc, start, end);
 }
 
 extern int acct_storage_g_roll_usage(void *db_conn, 
@@ -2686,13 +2689,13 @@ extern int clusteracct_storage_g_cluster_procs(void *db_conn,
 
 
 extern int clusteracct_storage_g_get_usage(
-	void *db_conn, void *cluster_rec,
+	void *db_conn, uint32_t uid, void *cluster_rec,
 	time_t start, time_t end)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
 	return (*(g_acct_storage_context->ops.c_get_usage))
-		(db_conn, cluster_rec, start, end);
+		(db_conn, uid, cluster_rec, start, end);
 }
 
 extern int clusteracct_storage_g_register_ctld(char *cluster, uint16_t port)
@@ -2764,7 +2767,7 @@ extern int jobacct_storage_g_job_suspend (void *db_conn,
  * returns List of job_rec_t *
  * note List needs to be freed when called
  */
-extern List jobacct_storage_g_get_jobs(void *db_conn,
+extern List jobacct_storage_g_get_jobs(void *db_conn, uint32_t uid,
 				       List selected_steps,
 				       List selected_parts,
 				       void *params)
@@ -2772,7 +2775,7 @@ extern List jobacct_storage_g_get_jobs(void *db_conn,
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
  	return (*(g_acct_storage_context->ops.get_jobs))
-		(db_conn, selected_steps, selected_parts, params);
+		(db_conn, uid, selected_steps, selected_parts, params);
 }
 
 /* 
@@ -2780,13 +2783,13 @@ extern List jobacct_storage_g_get_jobs(void *db_conn,
  * returns List of job_rec_t *
  * note List needs to be freed when called
  */
-extern List jobacct_storage_g_get_jobs_cond(void *db_conn,
+extern List jobacct_storage_g_get_jobs_cond(void *db_conn, uint32_t uid,
 					    acct_job_cond_t *job_cond)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
  	return (*(g_acct_storage_context->ops.get_jobs_cond))
-		(db_conn, job_cond);
+		(db_conn, uid, job_cond);
 }
 
 /* 

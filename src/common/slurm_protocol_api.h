@@ -169,6 +169,12 @@ uint16_t slurm_get_slurmdbd_port(void);
  */
 char *slurm_get_plugin_dir(void);
 
+/* slurm_get_private_data
+ * get private data from slurmctld_conf object
+ * RET uint16_t   - private_data
+ */
+uint16_t slurm_get_private_data(void);
+
 /* slurm_get_state_save_location
  * get state_save_location from slurmctld_conf object from slurmctld_conf object 
  * RET char *   - state_save_location directory, MUST be xfreed by caller

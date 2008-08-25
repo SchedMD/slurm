@@ -206,7 +206,8 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 		memset(&cluster_cond, 0, sizeof(acct_cluster_cond_t));
 		cluster_cond.cluster_list = name_list;
 
-		temp_list = acct_storage_g_get_clusters(db_conn, &cluster_cond);
+		temp_list = acct_storage_g_get_clusters(db_conn, my_uid,
+							&cluster_cond);
 		if(!temp_list) {
 			exit_code=1;
 			fprintf(stderr,
@@ -426,7 +427,8 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 		return SLURM_ERROR;
 	}
 
-	cluster_list = acct_storage_g_get_clusters(db_conn, cluster_cond);
+	cluster_list = acct_storage_g_get_clusters(db_conn, my_uid,
+						   cluster_cond);
 	destroy_acct_cluster_cond(cluster_cond);
 	
 	if(!cluster_list) {
@@ -768,7 +770,8 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 	assoc_cond.cluster_list = list_create(NULL);
 	list_append(assoc_cond.cluster_list, cluster_name);
 
-	assoc_list = acct_storage_g_get_associations(db_conn, &assoc_cond);
+	assoc_list = acct_storage_g_get_associations(db_conn, my_uid,
+						     &assoc_cond);
 
 	list_destroy(assoc_cond.cluster_list);
 	if(!assoc_list) {
@@ -788,9 +791,9 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 	memset(&user_cond, 0, sizeof(acct_user_cond_t));
 	user_cond.with_coords = 1;
 
-	user_list = acct_storage_g_get_users(db_conn, &user_cond);
+	user_list = acct_storage_g_get_users(db_conn, my_uid, &user_cond);
 
-	acct_list = acct_storage_g_get_accounts(db_conn, NULL);
+	acct_list = acct_storage_g_get_accounts(db_conn, my_uid, NULL);
 
 	
 	fd = fopen(file_name, "w");

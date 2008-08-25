@@ -138,7 +138,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 			
 			if(!qos_list) {
 				qos_list = acct_storage_g_get_qos(
-					db_conn, NULL);
+					db_conn, my_uid, NULL);
 			}
 
 			addto_qos_char_list(user_cond->qos_list, qos_list,
@@ -245,7 +245,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 			
 			if(!qos_list) {
 				qos_list = acct_storage_g_get_qos(
-					db_conn, NULL);
+					db_conn, my_uid, NULL);
 			}
 
 			if(end > 2 && argv[i][end-1] == '='
@@ -382,7 +382,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 			
 			if(!qos_list) {
 				qos_list = acct_storage_g_get_qos(
-					db_conn, NULL);
+					db_conn, my_uid, NULL);
 			}
 
 			addto_qos_char_list(add_qos_list, qos_list,
@@ -408,7 +408,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 		user_cond.assoc_cond = assoc_cond;
 		
 		local_user_list = acct_storage_g_get_users(
-			db_conn, &user_cond);
+			db_conn, my_uid, &user_cond);
 		
 	}	
 
@@ -433,7 +433,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 		account_cond.assoc_cond = assoc_cond;
 
 		local_acct_list = acct_storage_g_get_accounts(
-			db_conn, &account_cond);
+			db_conn, my_uid, &account_cond);
 		
 	}	
 
@@ -451,7 +451,8 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 		List cluster_list = NULL;
 		acct_cluster_rec_t *cluster_rec = NULL;
 
-		cluster_list = acct_storage_g_get_clusters(db_conn, NULL);
+		cluster_list = acct_storage_g_get_clusters(db_conn,
+							   my_uid, NULL);
 		if(!cluster_list) {
 			exit_code=1;
 			fprintf(stderr, 
@@ -497,7 +498,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 	query_assoc_cond.acct_list = assoc_cond->acct_list;
 	query_assoc_cond.cluster_list = assoc_cond->cluster_list;
 	local_assoc_list = acct_storage_g_get_associations(
-		db_conn, &query_assoc_cond);	
+		db_conn, my_uid, &query_assoc_cond);	
 	
 	itr = list_iterator_create(assoc_cond->user_list);
 	while((name = list_next(itr))) {
@@ -1018,7 +1019,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 		return SLURM_ERROR;
 	}
 
-	user_list = acct_storage_g_get_users(db_conn, user_cond);
+	user_list = acct_storage_g_get_users(db_conn, my_uid, user_cond);
 	destroy_acct_user_cond(user_cond);
 
 	if(!user_list) {
@@ -1132,6 +1133,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 							qos_list = 
 								acct_storage_g_get_qos(
 									db_conn,
+									my_uid,
 									NULL);
 						}
 						field->print_routine(
@@ -1146,6 +1148,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 							qos_list = 
 								acct_storage_g_get_qos(
 									db_conn,
+									my_uid,
 									NULL);
 						}
 						field->print_routine(
@@ -1268,6 +1271,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 						qos_list = 
 							acct_storage_g_get_qos(
 								db_conn,
+								my_uid,
 								NULL);
 					}
 					field->print_routine(
@@ -1280,6 +1284,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 						qos_list = 
 							acct_storage_g_get_qos(
 								db_conn,
+								my_uid,
 								NULL);
 					}
 					field->print_routine(

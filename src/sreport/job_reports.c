@@ -504,7 +504,7 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 
 	_setup_grouping_print_fields_list(grouping_list);
 
-	job_list = jobacct_storage_g_get_jobs_cond(db_conn, job_cond);
+	job_list = jobacct_storage_g_get_jobs_cond(db_conn, my_uid, job_cond);
 	if(!job_list) {
 		exit_code=1;
 		fprintf(stderr, " Problem with job query.\n");
@@ -518,7 +518,8 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 	assoc_cond.partition_list = job_cond->partition_list;
 	assoc_cond.parent_acct = "root";
 
-	assoc_list = acct_storage_g_get_associations(db_conn, &assoc_cond);
+	assoc_list = acct_storage_g_get_associations(db_conn, my_uid,
+						     &assoc_cond);
 	
 	if(print_fields_have_header) {
 		char start_char[20];
