@@ -1,0 +1,268 @@
+.TH "Slurm API" "3" "May 2007" "Morris Jette" "Slurm administrative calls"
+.SH "NAME"
+slurm_delete_partition, slurm_init_part_desc_msg,
+slurm_reconfigure, slurm_shutdown, slurm_update_job, 
+slurm_update_node, slurm_update_partition
+\- Slurm administrative functions 
+.SH "SYNTAX"
+.LP 
+#include <slurm/slurm.h>
+.LP
+void \fBslurm_init_part_desc_msg\fR (
+.br
+	update_part_msg_t *\fIupdate_part_msg_ptr\fP 
+.br 
+);
+.LP 
+int \fBslurm_reconfigure\fR ( );
+.LP 
+int \fBslurm_shutdown\fR ( 
+.br
+	uint16_t \fIoptions\fP
+.br
+);
+.LP
+int \fBslurm_update_job\fR (
+.br 
+	job_desc_msg_t *\fIupdate_job_msg_ptr\fP
+.br 
+);
+.LP
+int \fBslurm_update_node\fR ( 
+.br 
+	update_node_msg_t *\fIupdate_node_msg_ptr\fP 
+.br 
+);
+.LP
+int \fBslurm_delete_partition\fR ( 
+.br 
+	delete_part_msg_t *\fIdelete_part_msg_ptr\fP 
+.br 
+);
+.LP
+int \fBslurm_update_partition\fR ( 
+.br 
+	update_part_msg_t *\fIupdate_part_msg_ptr\fP 
+.br 
+);
+.SH "ARGUMENTS"
+.LP 
+.TP 
+\fIoptions\fP
+0: all slurm daemons are shutdown
+.br
+1: slurmctld generates a core file
+.br
+2: only the slurmctld is shutdown (no core file)
+.TP 
+\fIdelete_part_msg_ptr\fP
+Specifies the pointer to a partition delete request specification. See slurm.h for 
+full details on the data structure's contents. 
+.TP
+\fIupdate_job_msg_ptr\fP
+Specifies the pointer to a job update request specification. See slurm.h for full 
+details on the data structure's contents. 
+.TP 
+\fIupdate_node_msg_ptr\fP
+Specifies the pointer to a node update request specification. See slurm.h for full 
+details on the data structure's contents. 
+.TP 
+\fIupdate_part_msg_ptr\fP
+Specifies the pointer to a partition update request specification. See slurm.h for 
+full details on the data structure's contents. 
+.SH "DESCRIPTION"
+.LP 
+\fBslurm_delete_partition\fR Request that the specified partition be deleted. 
+All jobs associated with the identified partition will be terminated and purged.
+This function may only be successfully executed by user root.
+.LP 
+\fBslurm_init_part_desc_msg\fR Initialize the contents of a partition descriptor 
+with default values. Note: \fBslurm_init_part_desc_msg\fR is not equivalent to 
+setting the data structure values to zero. Execute this function before executing 
+\fBslurm_update_part\fR.
+.LP 
+\fBslurm_reconfigure\fR Request that the Slurm controller re\-read its configuration 
+file. The new configuration parameters take effect immediately. This function may 
+only be successfully executed by user root.
+.LP 
+\fBslurm_shutdown\fR Request that the Slurm controller terminate. This function may 
+only be successfully executed by user root.
+.LP 
+\fBslurm_update_job\fR Request that the configuration of a job be updated. Note 
+that most, but not all parameters of a job may be changed by this function. 
+Initialize the data structure using the \fBslurm_init_job_desc_msg\fR function 
+prior to setting values of the parameters to be changed. Note: 
+\fBslurm_init_job_desc_msg\fR is not equivalent to setting the data structure 
+values to zero. This function may only be successfully executed by user root. 
+Note the job priority of zero represents a job that will not be scheduled. 
+Slurm uses the priority one to represent jobs that can not be scheduled until 
+additional nodes are returned to service (i.e. not DOWN, DRAINED, or FAILED). 
+This permits lower priority jobs to utilize those resources which are available.
+.LP 
+\fBslurm_update_node\fR Request that the state of one or more nodes be updated. 
+Note that the state of a node (e.g. DRAINING, IDLE, etc.) may be changed, but 
+its hardware configuration may not be changed by this function. If the hardware 
+configuration of a node changes, update the Slurm configuration file and execute 
+the \fBslurm_reconfigure\fR function. This function may only be successfully 
+executed by user root. If used by some autonomous program, the state value 
+most likely to be used is \fBNODE_STATE_DRAIN\fR or \fBNODE_STATE_FAILING\fR. 
+The node state flag \fBNODE_STATE_NO_RESPOND\fR may be specified without 
+changing the underlying node state. Note that the node's 
+\fBNODE_STATE_NO_RESPOND\fR flag will be cleared as soon as the slurmd 
+daemon on that node communicates with the slurmctld daemon.
+Likewise the state \fBNODE_STATE_DOWN\fR indicates that the slurmd daemon 
+is not responding (and has not responded for an interval at least as long 
+as the \fBSlurmdTimeout\fR configuration parameter). The node will leave the 
+\fBNODE_STATE_DOWN\fR state as soon as  the slurmd daemon communicates.
+.LP 
+\fBslurm_update_partition\fR Request that the configuration of a partition be updated. 
+Note that most, but not all parameters of a partition may be changed by this 
+function. Initialize the data structure using the \fBslurm_init_part_desc_msg\fR 
+function prior to setting values of the parameters to be changed. Note: 
+\fBslurm_init_part_desc_msg\fR is not equivalent to setting the data structure 
+values to zero. If the partition name specified by this function does not 
+already exist, a new partition is created with the supplied parameters. This 
+function may only be successfully executed by user root.
+.SH "RETURN VALUE"
+.LP
+On success, zero is returned. On error, \-1 is returned, and the Slurm error 
+code is set appropriately.
+.SH "ERRORS"
+.LP
+\fBSLURM_PROTOCOL_VERSION_ERROR\fR Protocol version has changed, re\-link your 
+code.
+.LP
+\fBESLURM_INVALID_NODE_NAME\fR The requested node name(s) is/are not valid. 
+.LP
+\fBESLURM_INVALID_NODE_STATE\fR The specified state node state or requested 
+node state transition is not valid. 
+.LP
+\fBESLURM_INVALID_PARTITION_NAME\fR The requested partition name is not valid. 
+.LP
+\fBESLURM_INVALID_AUTHTYPE_CHANGE\fR The \fBAuthType\fR parameter can
+not be changed using the \fBslurm_reconfigure\fR function, but all SLURM
+daemons and commands must be restarted. See \fBslurm.conf\fR(5) for more information.
+.LP
+\fBESLURM_INVALID_SCHEDTYPE_CHANGE\fR The \fBSchedulerType\fR parameter can 
+not be changed using the \fBslurm_reconfigure\fR function, but the 
+\fBslurmctld\fR daemon must be restarted. Manual changes to existing job 
+parameters may also be required. See \fBslurm.conf\fR(5) for more information.
+.LP
+\fBESLURM_INVALID_SWITCHTYPE_CHANGE\fR The \fBSwitchType\fR parameter can
+not be changed using the \fBslurm_reconfigure\fR function, but all
+SLURM daemons and commands must be restarted. All previously running 
+jobs will be lost. See \fBslurm.conf\fR(5) for more information.
+.LP
+\fBESLURM_ACCESS_DENIED\fR The requesting user lacks authorization for 
+the requested action (e.g. trying to delete or modify another user's job). 
+.LP
+\fBSLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT\fR Timeout in communicating with 
+SLURM controller.
+.SH "EXAMPLE"
+.LP 
+#include <stdio.h>
+.br
+#include <slurm/slurm.h>
+.br
+#include <slurm/slurm_errno.h>
+.LP 
+int main (int argc, char *argv[])
+.br 
+{
+.br 
+	job_desc_msg_t update_job_msg;
+.br
+	update_node_msg_t update_node_msg;
+.br
+	partition_desc_msg_t update_part_msg ;
+.br
+	delete_part_msg_t delete_part_msg ;
+.LP 
+	if (slurm_reconfigure ( )) {
+.br
+		slurm_perror ("slurm_reconfigure error");
+.br 
+		exit (1);
+.br
+	}
+.LP 
+	slurm_init_job_desc_msg( &update_job_msg );
+.br 
+	update_job_msg.job_id = 1234;
+.br 
+	update_job_msg time_limit = 200;
+.br 
+	if (slurm_update_job (&update_job_msg)) { 
+.br
+		slurm_perror ("slurm_update_job error");
+.br 
+		exit (1);
+.br
+	}
+.LP 
+	slurm_init_part_desc_msg ( &update_part_msg );
+.br
+	update_part_msg.name = "test.partition";
+.br
+	update_part_msg.state_up = 0;  /* partition down */
+.br 
+	if (slurm_update_partition (&update_part_msg)) { 
+.br
+		slurm_perror ("slurm_update_partition error");
+.br 
+		exit (1);
+.br
+	}
+.LP 
+	delete_part_msg.name = "test.partition";
+.br 
+	if (slurm_delete_partition (&delete_part_msg)) { 
+.br
+		slurm_perror ("slurm_delete_partition error");
+.br 
+		exit (1);
+.br
+	}
+.LP 
+	update_node_msg.node_names = "lx[10\-12]";
+.br
+	update_node_msg.node_state = NODE_STATE_DRAINING ;
+.br 
+	if (slurm_update_node (&update_node_msg)) { 
+.br
+		slurm_perror ("slurm_update_node error");
+.br 
+		exit (1);
+.br 
+	}
+.br 
+	exit (0);
+.br 
+}
+
+.SH "NOTE"
+These functions are included in the libslurm library, 
+which must be linked to your process for use
+(e.g. "cc \-lslurm myprog.c").
+
+.SH "COPYING"
+Copyright (C) 2002\-2007 The Regents of the University of California.
+Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+LLNL\-CODE\-402394.
+.LP
+This file is part of SLURM, a resource management program.
+For details, see <https://computing.llnl.gov/linux/slurm/>.
+.LP
+SLURM is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+.SH "SEE ALSO"
+.LP 
+\fBscontrol\fR(1), \fBslurm_get_errno\fR(3), \fBslurm_init_job_desc_msg\fR(3),
+\fBslurm_perror\fR(3), \fBslurm_strerror\fR(3), \fBslurm.conf\fR(5)
