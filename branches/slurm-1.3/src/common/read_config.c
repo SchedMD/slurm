@@ -1550,13 +1550,10 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	s_p_get_string(&default_storage_pass, "DefaultStoragePass", hashtbl);
 	s_p_get_string(&default_storage_loc,  "DefaultStorageLoc", hashtbl);
 	s_p_get_uint32(&default_storage_port, "DefaultStoragePort", hashtbl);
-
-	if (!s_p_get_string(&conf->job_credential_private_key,
-			    "JobCredentialPrivateKey", hashtbl))
-		fatal("JobCredentialPrivateKey not set");
-	if (!s_p_get_string(&conf->job_credential_public_certificate,
-			    "JobCredentialPublicCertificate", hashtbl))
-		fatal("JobCredentialPublicCertificate not set");
+	s_p_get_string(&conf->job_credential_private_key,
+		       "JobCredentialPrivateKey", hashtbl);
+	s_p_get_string(&conf->job_credential_public_certificate,
+		      "JobCredentialPublicCertificate", hashtbl);
 
 	if (s_p_get_uint16(&conf->max_job_cnt, "MaxJobCount", hashtbl)
 	    && conf->max_job_cnt < 1)
@@ -1573,6 +1570,13 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_string(&conf->crypto_type, "CryptoType", hashtbl))
 		 conf->crypto_type = xstrdup(DEFAULT_CRYPTO_TYPE);
+	if ((strcmp(conf->crypto_type, "crypto/openssl") == 0) &&
+	    ((conf->job_credential_private_key == NULL) ||
+	     (conf->job_credential_public_certificate == NULL))) {
+		fatal("CryptoType=crypto/openssl requires that both "
+		      "JobCredentialPrivateKey and "
+		      "JobCredentialPublicCertificate be set");
+	}
 
 	if ((s_p_get_uint32(&conf->def_mem_per_task, "DefMemPerCPU", hashtbl)) ||
 	    (s_p_get_uint32(&conf->def_mem_per_task, "DefMemPerTask", hashtbl)))
