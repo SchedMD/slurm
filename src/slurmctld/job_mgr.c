@@ -3177,20 +3177,23 @@ static int _list_find_job_id(void *job_entry, void *key)
  */
 static int _list_find_job_old(void *job_entry, void *key)
 {
-	time_t now      = time(NULL);
-	time_t kill_age = now - (slurmctld_conf.kill_wait + 20);
-	time_t min_age  = now - slurmctld_conf.min_job_age;
+	time_t kill_age, min_age, now = time(NULL);;
 	struct job_record *job_ptr = (struct job_record *)job_entry;
 
-	if ( (job_ptr->job_state & JOB_COMPLETING) &&
-	     (job_ptr->end_time < kill_age) ) {
-		re_kill_job(job_ptr);
+	if (job_ptr->job_state & JOB_COMPLETING) {
+		kill_age = now - (slurmctld_conf.kill_wait +
+				  2 * slurm_get_msg_timeout());
+		if (job_ptr->time_last_active < kill_age) {
+			job_ptr->time_last_active = now;
+			re_kill_job(job_ptr);
+		}
 		return 0;       /* Job still completing */
 	}
 
 	if (slurmctld_conf.min_job_age == 0)
 		return 0;	/* No job record purging */
 
+	min_age  = now - slurmctld_conf.min_job_age;
 	if (job_ptr->end_time > min_age)
 		return 0;	/* Too new to purge */
 
