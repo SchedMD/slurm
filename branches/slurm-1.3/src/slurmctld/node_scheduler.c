@@ -556,12 +556,11 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			error_code = select_g_get_info_from_plugin (
 					SELECT_BITMAP, 
 					&partially_idle_node_bitmap);
+			if (error_code != SLURM_SUCCESS) {
+				FREE_NULL_BITMAP(partially_idle_node_bitmap);
+				return error_code;
+			}
 		}
-
-                if (error_code != SLURM_SUCCESS) {
-                       FREE_NULL_BITMAP(partially_idle_node_bitmap);
-                       return error_code;
-                }
         }
 
 	if (job_ptr->details->req_node_bitmap) {  /* specific nodes required */
