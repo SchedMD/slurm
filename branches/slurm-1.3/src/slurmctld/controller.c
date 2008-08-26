@@ -1171,6 +1171,7 @@ static void *_slurmctld_background(void *no_data)
 			_accounting_cluster_ready();
 			unlock_slurmctld(node_read_lock);
 		}
+
 		/* Reassert this machine as the primary controller.
 		 * A network or security problem could result in 
 		 * the backup controller assuming control even 
