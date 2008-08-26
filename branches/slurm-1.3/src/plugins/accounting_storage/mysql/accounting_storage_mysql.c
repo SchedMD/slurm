@@ -114,6 +114,8 @@ char *user_table = "user_table";
 char *last_ran_table = "last_ran_table";
 char *suspend_table = "suspend_table";
 
+static int normal_qos_id = NO_VAL;
+
 extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit);
 
 extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
@@ -1223,7 +1225,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "name", "tinytext not null" },
 		{ "description", "text not null" },
 		{ "organization", "text not null" },
-		{ "qos", "blob" },
+		{ "qos", "blob not null default ''" },
 		{ NULL, NULL}		
 	};
 
@@ -1395,7 +1397,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "deleted", "tinyint default 0" },
 		{ "name", "tinytext not null" },
 		{ "default_acct", "tinytext not null" },
-		{ "qos", "blob" },
+		{ "qos", "blob not null default ''" },
 		{ "admin_level", "smallint default 1 not null" },
 		{ NULL, NULL}		
 	};
@@ -1534,10 +1536,11 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 			"insert into %s "
 			"(creation_time, mod_time, name, description) "
 			"values (%d, %d, 'normal', 'Normal QOS default') "
-			"on duplicate key update deleted=0;",
+			"on duplicate key update id=LAST_INSERT_ID(id), "
+			"deleted=0;",
 			qos_table, now, now);
 		debug3("%s", query);
-		mysql_db_query(db_conn, query);
+		normal_qos_id = mysql_insert_ret_id(db_conn, query);
 		xfree(query);		
 	}
 	if(mysql_db_create_table(db_conn, step_table,
@@ -1872,18 +1875,12 @@ extern int acct_storage_p_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 
 			xstrfmtcat(vals, ", '%s'", qos_val); 		
 			xstrfmtcat(extra, ", qos='%s'", qos_val); 		
+		} else if(normal_qos_id != NO_VAL) { 
+			/* Add normal qos to the user */
+			xstrcat(cols, ", qos");
+			xstrfmtcat(vals, ", ',%d'", normal_qos_id);
+			xstrfmtcat(extra, ", qos=',%d'", normal_qos_id);
 		}
-		/* Since I don't really want to go find out which id
-		 * normal is we are not going to add it at all which
-		 * isn't a big deal since if the list is blank the user
-		 * will get it be default 
-		 */
-		/* else { */
-/* 			/\* Add normal qos to the user *\/ */
-/* 			xstrcat(cols, ", qos"); */
-/* 			xstrfmtcat(vals, ", ',0'"); 		 */
-/* 			xstrfmtcat(extra, ", qos=',0'"); 	        */
-/* 		} */
 
 		if(object->admin_level != ACCT_ADMIN_NOTSET) {
 			xstrcat(cols, ", admin_level");
@@ -2112,6 +2109,11 @@ extern int acct_storage_p_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 
 			xstrfmtcat(vals, ", '%s'", qos_val); 		
 			xstrfmtcat(extra, ", qos='%s'", qos_val); 		
+		} else if(normal_qos_id != NO_VAL) { 
+			/* Add normal qos to the account */
+			xstrcat(cols, ", qos");
+			xstrfmtcat(vals, ", ',%d'", normal_qos_id);
+			xstrfmtcat(extra, ", qos=',%d'", normal_qos_id);
 		}
 
 		query = xstrdup_printf(
@@ -2994,8 +2996,8 @@ extern List acct_storage_p_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 					   object+1);
 			} else if(object[0] == '+') {
 				xstrfmtcat(vals,
-					   ", qos=concat("
-					   "replace(qos, ',%s', ''), ',%s')",
+					   ", qos=concat_ws(',', "
+					   "replace(qos, ',%s', ''), '%s')",
 					   object+1, object+1);
 			} else {
 				xstrfmtcat(tmp_qos, ",%s", object);
@@ -3234,8 +3236,8 @@ extern List acct_storage_p_modify_accounts(
 					   object+1);
 			} else if(object[0] == '+') {
 				xstrfmtcat(vals,
-					   ", qos=concat("
-					   "replace(qos, ',%s', ''), ',%s')",
+					   ", qos=concat_ws(',', "
+					   "replace(qos, ',%s', ''), '%s')",
 					   object+1, object+1);
 			} else {
 				xstrfmtcat(tmp_qos, ",%s", object);

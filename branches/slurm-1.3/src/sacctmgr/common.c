@@ -729,7 +729,7 @@ extern char *get_qos_complete_str(List qos_list, List num_qos_list)
 
 	if(!qos_list || !list_count(qos_list)
 	   || !num_qos_list || !list_count(num_qos_list))
-		return xstrdup("normal");
+		return xstrdup("");
 
 	temp_list = list_create(NULL);
 
@@ -752,7 +752,7 @@ extern char *get_qos_complete_str(List qos_list, List num_qos_list)
 	list_destroy(temp_list);
 
 	if(!print_this)
-		return xstrdup("normal");
+		return xstrdup("");
 
 	return print_this;
 }
