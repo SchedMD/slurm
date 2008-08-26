@@ -35,6 +35,9 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#define STOP_CHECK_USEC     100000	/* check for shutdown every 0.1 secs */
+#define BACKFILL_CHECK_SEC  2		/* try to backfill every 2.0 seconds */
+
 /* backfill_agent - detached thread periodically attempts to backfill jobs */
 extern void *backfill_agent(void *args);
 
