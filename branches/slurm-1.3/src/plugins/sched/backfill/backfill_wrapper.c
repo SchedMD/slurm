@@ -101,9 +101,9 @@ static void _cancel_thread (pthread_t thread_id)
 	int i;
 
 	for (i=0; i<4; i++) {
+		usleep(STOP_CHECK_USEC);
 		if (pthread_cancel(thread_id))
 			return;
-		usleep(1000);
 	}
 	error("Could not kill backfill sched pthread");
 }
