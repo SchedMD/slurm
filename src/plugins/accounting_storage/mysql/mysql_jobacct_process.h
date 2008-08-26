@@ -62,7 +62,7 @@ extern char *job_table;
 extern char *step_table;
 extern char *suspend_table;
 
-extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
+extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 					   acct_job_cond_t *job_cond);
 
 extern void mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,

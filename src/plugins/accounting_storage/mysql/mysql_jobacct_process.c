@@ -46,7 +46,7 @@
 
 #ifdef HAVE_MYSQL
 
-extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
+extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 					   acct_job_cond_t *job_cond)
 {
 
@@ -56,7 +56,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 	char *object = NULL;
 	jobacct_selected_step_t *selected_step = NULL;
 	ListIterator itr = NULL;
-	int set = 0;
+	int set = 0, is_admin=1;
 	char *table_level="t2";
 	MYSQL_RES *result = NULL, *step_result = NULL;
 	MYSQL_ROW row, step_row;
@@ -65,6 +65,8 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 	jobacct_step_rec_t *step = NULL;
 	time_t now = time(NULL);
 	List job_list = list_create(destroy_jobacct_job_rec);
+	uint16_t private_data = 0;
+	acct_user_rec_t user;
 		
 	/* if this changes you will need to edit the corresponding 
 	 * enum below also t1 is job_table */
@@ -194,6 +196,33 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 		STEP_REQ_AVE_CPU,
 		STEP_REQ_COUNT
 	};
+
+	memset(&user, 0, sizeof(acct_user_rec_t));
+	user.uid = uid;
+
+	private_data = slurm_get_private_data();
+	if (private_data & PRIVATE_DATA_JOBS) {
+		/* This only works when running though the slurmdbd.
+		 * THERE IS NO AUTHENTICATION WHEN RUNNNING OUT OF THE
+		 * SLURMDBD!
+		 */
+		if(slurmdbd_conf) {
+			is_admin = 0;
+			/* we have to check the authentication here in the
+			 * plugin since we don't know what accounts are being
+			 * referenced until after the query.  Here we will
+			 * set if they are an operator or greater and then
+			 * check it below after the query.
+			 */
+			if((uid == slurmdbd_conf->slurm_user_id || uid == 0)
+			   || assoc_mgr_get_admin_level(mysql_conn, uid) 
+			   >= ACCT_ADMIN_OPERATOR) 
+				is_admin = 1;	
+			else {
+				assoc_mgr_fill_in_user(mysql_conn, &user, 1);
+			}
+		}
+	}
 
 	if(!job_cond)
 		goto no_cond;
@@ -367,6 +396,57 @@ no_cond:
 	xstrfmtcat(tmp, "%s", job_req_inx[0]);
 	for(i=1; i<JOB_REQ_COUNT; i++) {
 		xstrfmtcat(tmp, ", %s", job_req_inx[i]);
+	}
+
+	/* This is here to make sure we are looking at only this user
+	 * if this flag is set.  We also include any accounts they may be
+	 * coordinator of.
+	 */
+	if(!is_admin && (private_data & PRIVATE_DATA_JOBS)) {
+		query = xstrdup_printf("select lft from %s where user='%s'", 
+				       assoc_table, user.name);
+		if(user.coord_accts) {
+			acct_coord_rec_t *coord = NULL;
+			itr = list_iterator_create(user.coord_accts);
+			while((coord = list_next(itr))) {
+				xstrfmtcat(query, " || acct='%s'",
+					   coord->name);
+			}
+			list_iterator_destroy(itr);
+		}
+		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+		if(!(result = mysql_db_query_ret(
+			     mysql_conn->db_conn, query, 0))) {
+			xfree(extra);
+			xfree(query);
+			return NULL;
+		}
+		xfree(query);
+		set = 0;
+		while((row = mysql_fetch_row(result))) {
+			if(set) {
+				xstrfmtcat(extra,
+					   " || (%s between %s.lft and %s.rgt)",
+					   row[0], table_level, table_level);
+			} else {
+				set = 1;
+				if(extra)
+					xstrfmtcat(extra,
+						   " && ((%s between %s.lft "
+						   "and %s.rgt)",
+						   row[0], table_level,
+						   table_level);
+				else
+					xstrfmtcat(extra, 
+						   " where ((%s between %s.lft "
+						   "and %s.rgt)",
+						   row[0], table_level,
+						   table_level);
+			}
+		}		
+		if(set)
+			xstrcat(extra,")");
+		mysql_free_result(result);
 	}
 	
 	query = xstrdup_printf("select %s from %s as t1 left join %s as t2 "
