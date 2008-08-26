@@ -96,25 +96,12 @@ int init( void )
 /**************************************************************************/
 /*  TAG(                              fini                              ) */
 /**************************************************************************/
-static void _cancel_thread (pthread_t thread_id)
-{
-	int i;
-
-	for (i=0; i<4; i++) {
-		usleep(STOP_CHECK_USEC);
-		if (pthread_cancel(thread_id))
-			return;
-	}
-	error("Could not kill backfill sched pthread");
-}
-
 void fini( void )
 {
 	pthread_mutex_lock( &thread_flag_mutex );
 	if ( backfill_thread ) {
 		verbose( "Backfill scheduler plugin shutting down" );
 		stop_backfill_agent();
-		_cancel_thread( backfill_thread );
 		backfill_thread = 0;
 	}
 	pthread_mutex_unlock( &thread_flag_mutex );
