@@ -4970,12 +4970,12 @@ extern List acct_storage_p_get_users(mysql_conn_t *mysql_conn, uid_t uid,
 
 	private_data = slurm_get_private_data();
 	if (private_data & PRIVATE_DATA_USERS) {
-		is_admin = 0;
 		/* This only works when running though the slurmdbd.
 		 * THERE IS NO AUTHENTICATION WHEN RUNNNING OUT OF THE
 		 * SLURMDBD!
 		 */
 		if(slurmdbd_conf) {
+			is_admin = 0;
 			/* we have to check the authentication here in the
 			 * plugin since we don't know what accounts are being
 			 * referenced until after the query.  Here we will
@@ -6275,13 +6275,13 @@ extern int acct_storage_p_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 		 * SLURMDBD!
 		 */
 		if(slurmdbd_conf) {
+			is_admin = 0;
 			/* we have to check the authentication here in the
 			 * plugin since we don't know what accounts are being
 			 * referenced until after the query.  Here we will
 			 * set if they are an operator or greater and then
 			 * check it below after the query.
 			 */
-			is_admin = 0;
 			if((uid == slurmdbd_conf->slurm_user_id || uid == 0)
 			   || assoc_mgr_get_admin_level(mysql_conn, uid) 
 			   >= ACCT_ADMIN_OPERATOR) 
@@ -7521,7 +7521,7 @@ extern List jobacct_storage_p_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		list_append(job_cond.groupid_list, temp);
 	}	
 
-	job_list = mysql_jobacct_process_get_jobs(mysql_conn, &job_cond);
+	job_list = mysql_jobacct_process_get_jobs(mysql_conn, uid, &job_cond);
 
 	if(job_cond.userid_list)
 		list_destroy(job_cond.userid_list);
@@ -7545,7 +7545,7 @@ extern List jobacct_storage_p_get_jobs_cond(mysql_conn_t *mysql_conn,
 #ifdef HAVE_MYSQL
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
-	job_list = mysql_jobacct_process_get_jobs(mysql_conn, job_cond);	
+	job_list = mysql_jobacct_process_get_jobs(mysql_conn, uid, job_cond);	
 #endif
 	return job_list;
 }
