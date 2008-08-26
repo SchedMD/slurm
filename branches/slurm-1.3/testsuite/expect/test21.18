@@ -838,7 +838,7 @@ expect {
 	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
-	-re "($us1|$us2|$us3)\\\|$nm2\\\|$alo\\\|" {
+	-re "($us1|$us2|$us3).$nm2.$alo." {
 		incr matches
 		exp_continue
 	}
@@ -877,7 +877,7 @@ expect {
 	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
-	-re "(($us1|$us3)\\\|$nm3\\\|$ala\\\||$us2\\\|$nm2\\\|$alo\\\|)" {
+	-re "(($us1|$us3).$nm3.$ala.|$us2.$nm2.$alo.)" {
 		incr matches
 		exp_continue
 	}
@@ -917,7 +917,7 @@ expect {
 	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
-	-re "(($us1|$us2|$us3)\\\|($tc1|$tc2)\\\|$fs2\\\|$mc2\\\|$mj2\\\|$mn2\\\|$mw2\\\|)" {
+	-re "(($us1|$us2|$us3).($tc1|$tc2).$fs2.$mc2.$mj2.$mn2.$mw2.)" {
 		incr matches
 		exp_continue
 	}
@@ -959,7 +959,7 @@ expect {
 	}
 	# Any time you use () around something you need to combine all 
 	# those things together since you can miss some and they be thrown away
-	-re "(($us1|$us3)\\\|($tc1|$tc2)\\\|$fs3\\\|$mc3\\\|$mj3\\\|$mn3\\\|$mw3\\\||$us2\\\|($tc1|$tc2)\\\|$fs2\\\|$mc2\\\|$mj2\\\|$mn2\\\|$mw2\\\|)" {
+	-re "(($us1|$us3).($tc1|$tc2).$fs3.$mc3.$mj3.$mn3.$mw3.|$us2.($tc1|$tc2).$fs2.$mc2.$mj2.$mn2.$mw2.)" {
 		incr matches
 		exp_continue
 	}
