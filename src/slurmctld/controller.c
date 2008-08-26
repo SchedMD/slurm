@@ -1369,7 +1369,6 @@ static int _shutdown_backup_controller(int wait_time)
 {
 	int rc;
 	slurm_msg_t req;
-	DEF_TIMERS;
 
 	slurm_msg_t_init(&req);
 	if ((slurmctld_conf.backup_addr == NULL) ||
@@ -1384,11 +1383,9 @@ static int _shutdown_backup_controller(int wait_time)
 	/* send request message */
 	req.msg_type = REQUEST_CONTROL;
 	
-	START_TIMER;
 	if (slurm_send_recv_rc_msg_only_one(&req, &rc, 
 				(CONTROL_TIMEOUT * 1000)) < 0) {
-		END_TIMER2("_shutdown_backup_controller");
-		error("_shutdown_backup_controller:send/recv: %m, %s", TIME_STR);
+		error("_shutdown_backup_controller:send/recv: %m");
 		return SLURM_ERROR;
 	}
 	if (rc == ESLURM_DISABLED)
