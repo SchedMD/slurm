@@ -1161,21 +1161,21 @@ static int _get_user_coords(mysql_conn_t *mysql_conn, acct_user_rec_t *user)
 }
 
 /* Used in job functions for getting the database index based off the
- * submit time, job and assoc id.
+ * submit time, job and assoc id.  0 is returned if none is found
  */
 static int _get_db_index(MYSQL *db_conn, 
 			 time_t submit, uint32_t jobid, uint32_t associd)
 {
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	int db_index = -1;
+	int db_index = 0;
 	char *query = xstrdup_printf("select id from %s where "
 				     "submit=%d and jobid=%u and associd=%u",
 				     job_table, (int)submit, jobid, associd);
 
 	if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
 		xfree(query);
-		return -1;
+		return 0;
 	}
 	xfree(query);
 
@@ -1185,7 +1185,7 @@ static int _get_db_index(MYSQL *db_conn,
 		error("We can't get a db_index for this combo, "
 		      "submit=%d and jobid=%u and associd=%u.",
 		      (int)submit, jobid, associd);
-		return -1;
+		return 0;
 	}
 	db_index = atoi(row[0]);
 	mysql_free_result(result);
@@ -7058,6 +7058,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 			job_ptr->total_procs, nodes,
 			job_ptr->job_state & (~JOB_COMPLETING));
 
+		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	try_again:
 		if(!(job_ptr->db_index = mysql_insert_ret_id(
 			     mysql_conn->db_conn, query))) {
@@ -7085,6 +7086,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 			job_ptr->job_state & (~JOB_COMPLETING),
 			job_ptr->total_procs, nodes, 
 			job_ptr->account, job_ptr->db_index);
+		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 	}
 
@@ -7130,11 +7132,11 @@ extern int jobacct_storage_p_job_complete(mysql_conn_t *mysql_conn,
 		nodes = "(null)";
 
 	if(!job_ptr->db_index) {
-		job_ptr->db_index = _get_db_index(mysql_conn->db_conn,
-						  job_ptr->details->submit_time,
-						  job_ptr->job_id,
-						  job_ptr->assoc_id);
-		if(job_ptr->db_index == (uint32_t)-1) {
+		if(!(job_ptr->db_index =
+		     _get_db_index(mysql_conn->db_conn,
+				   job_ptr->details->submit_time,
+				   job_ptr->job_id,
+				   job_ptr->assoc_id))) {
 			/* If we get an error with this just fall
 			 * through to avoid an infinite loop
 			 */
@@ -7156,10 +7158,11 @@ extern int jobacct_storage_p_job_complete(mysql_conn_t *mysql_conn,
 			       job_ptr->job_state & (~JOB_COMPLETING),
 			       nodes, job_ptr->exit_code,
 			       job_ptr->requid, job_ptr->db_index);
+	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
 	
-	return  rc;
+	return rc;
 #else
 	return SLURM_ERROR;
 #endif
@@ -7225,12 +7228,11 @@ extern int jobacct_storage_p_step_start(mysql_conn_t *mysql_conn,
 					 * hasn't been set yet  */
 
 	if(!step_ptr->job_ptr->db_index) {
-		step_ptr->job_ptr->db_index = 
-			_get_db_index(mysql_conn->db_conn,
-				      step_ptr->job_ptr->details->submit_time,
-				      step_ptr->job_ptr->job_id,
-				      step_ptr->job_ptr->assoc_id);
-		if(step_ptr->job_ptr->db_index == (uint32_t)-1) {
+		if(!(step_ptr->job_ptr->db_index = 
+		     _get_db_index(mysql_conn->db_conn,
+				   step_ptr->job_ptr->details->submit_time,
+				   step_ptr->job_ptr->job_id,
+				   step_ptr->job_ptr->assoc_id))) {
 			/* If we get an error with this just fall
 			 * through to avoid an infinite loop
 			 */
@@ -7342,12 +7344,11 @@ extern int jobacct_storage_p_step_complete(mysql_conn_t *mysql_conn,
 	}
 
 	if(!step_ptr->job_ptr->db_index) {
-		step_ptr->job_ptr->db_index = 
-			_get_db_index(mysql_conn->db_conn,
-				      step_ptr->job_ptr->details->submit_time,
-				      step_ptr->job_ptr->job_id,
-				      step_ptr->job_ptr->assoc_id);
-		if(step_ptr->job_ptr->db_index == (uint32_t)-1) {
+		if(!(step_ptr->job_ptr->db_index = 
+		     _get_db_index(mysql_conn->db_conn,
+				   step_ptr->job_ptr->details->submit_time,
+				   step_ptr->job_ptr->job_id,
+				   step_ptr->job_ptr->assoc_id))) {
 			/* If we get an error with this just fall
 			 * through to avoid an infinite loop
 			 */
@@ -7405,6 +7406,7 @@ extern int jobacct_storage_p_step_complete(mysql_conn_t *mysql_conn,
 		jobacct->min_cpu_id.nodeid,	/* min cpu node */
 		ave_cpu,	/* ave cpu */
 		step_ptr->job_ptr->db_index, step_ptr->step_id);
+	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
 	 
@@ -7428,11 +7430,11 @@ extern int jobacct_storage_p_suspend(mysql_conn_t *mysql_conn,
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 	if(!job_ptr->db_index) {
-		job_ptr->db_index = _get_db_index(mysql_conn->db_conn,
-						  job_ptr->details->submit_time,
-						  job_ptr->job_id,
-						  job_ptr->assoc_id);
-		if(job_ptr->db_index == (uint32_t)-1) {
+		if(!(job_ptr->db_index =
+		     _get_db_index(mysql_conn->db_conn,
+				   job_ptr->details->submit_time,
+				   job_ptr->job_id,
+				   job_ptr->assoc_id))) {
 			/* If we get an error with this just fall
 			 * through to avoid an infinite loop
 			 */
