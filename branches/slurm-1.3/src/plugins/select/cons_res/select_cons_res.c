@@ -273,10 +273,9 @@ static void _destroy_node_part_array(struct node_cr_record *this_cr_node)
 	for (p_ptr = this_cr_node->parts; p_ptr; p_ptr = next) {
 		next = p_ptr->next;
 		xfree(p_ptr->alloc_cores);
-		xfree(p_ptr);
+//		xfree(p_ptr);
 	}
 	xfree(this_cr_node->parts);
-	xfree(this_cr_node);
 }
 
 static void _cr_job_list_del(void *x)
@@ -2356,6 +2355,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	list_iterator_destroy(job_iterator);
 	list_destroy(cr_job_list);
 	_destroy_node_part_array(exp_node_cr);
+	xfree(exp_node_cr);
 	bit_free(orig_map);
 	return rc;
 }
