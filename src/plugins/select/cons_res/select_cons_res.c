@@ -265,13 +265,18 @@ static struct node_cr_record *_dup_node_cr(struct node_cr_record *node_cr_ptr)
 
 static void _destroy_node_part_array(struct node_cr_record *this_cr_node)
 {
-	struct part_cr_record *p_ptr;
+	struct part_cr_record *p_ptr, *next;
 
 	if (!this_cr_node)
 		return;
-	for (p_ptr = this_cr_node->parts; p_ptr; p_ptr = p_ptr->next)
+
+	for (p_ptr = this_cr_node->parts; p_ptr; p_ptr = next) {
+		next = p_ptr->next;
 		xfree(p_ptr->alloc_cores);
+		xfree(p_ptr);
+	}
 	xfree(this_cr_node->parts);
+	xfree(this_cr_node);
 }
 
 static void _cr_job_list_del(void *x)
