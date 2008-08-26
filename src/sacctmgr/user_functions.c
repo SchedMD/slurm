@@ -310,7 +310,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 	int limit_set = 0, mins;
 	int first = 1;
 	int acct_first = 1;
-
+	
 /* 	if(!list_count(sacctmgr_cluster_list)) { */
 /* 		printf(" Can't add users, no cluster defined yet.\n" */
 /* 		       " Please contact your administrator.\n"); */
