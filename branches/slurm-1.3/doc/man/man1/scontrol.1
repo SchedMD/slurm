@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "December 2007" "scontrol 1.3" "Slurm components"
+.TH SCONTROL "1" "August 2008" "scontrol 1.3" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -43,8 +43,9 @@ Print information one line per record.
 Print no warning or informational messages, only fatal error messages.
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
-Print detailed event logging. This includes time\-stamps on data structures, 
-record counts, etc.
+Print detailed event logging. Multiple \fB\-v\fR's will further increase 
+the verbosity of logging. By default only errors will be displayed.
+
 .TP
 \fB\-V\fR , \fB\-\-version\fR
 Print version information and exit.
