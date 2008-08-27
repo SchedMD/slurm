@@ -35,7 +35,14 @@ source ./globals
 set test_id     "17.12"
 set exit_code   0
 set file_in     "test$test_id.input"
+
 print_header $test_id
+
+if {[test_wiki_sched] == 1} {
+	send_user "\nWARNING: not compatable with sched/wiki (Maui)\n"
+	send_user "         or sched/wiki2 (Moab) schedulers\n"
+	exit $exit_code
+}
 
 #
 # Delete left-over input script
@@ -60,6 +67,7 @@ expect {
 	}
 	-re "Submitted batch job ($number)" {
 		send_user "\nFAILURE: sbatch job submitted with invalid constraint\n"
+		cancel_job $expect_out(1,string)
 		set exit_code 1
 		exp_continue
 	}

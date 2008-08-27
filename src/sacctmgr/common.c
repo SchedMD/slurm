@@ -247,7 +247,8 @@ extern acct_association_rec_t *sacctmgr_find_association(char *user,
 	else
 		list_append(assoc_cond.partition_list, "");
 	
-	assoc_list = acct_storage_g_get_associations(db_conn, &assoc_cond);
+	assoc_list = acct_storage_g_get_associations(db_conn, my_uid,
+						     &assoc_cond);
 	
 	list_destroy(assoc_cond.acct_list);
 	list_destroy(assoc_cond.cluster_list);
@@ -287,7 +288,8 @@ extern acct_association_rec_t *sacctmgr_find_account_base_assoc(char *account,
 //	info("looking for %s %s in %d", account, cluster,
 //	     list_count(sacctmgr_association_list));
 	
-	assoc_list = acct_storage_g_get_associations(db_conn, &assoc_cond);
+	assoc_list = acct_storage_g_get_associations(db_conn, my_uid,
+						     &assoc_cond);
 
 	list_destroy(assoc_cond.acct_list);
 	list_destroy(assoc_cond.cluster_list);
@@ -322,7 +324,8 @@ extern acct_user_rec_t *sacctmgr_find_user(char *name)
 	list_append(assoc_cond.user_list, name);
 	user_cond.assoc_cond = &assoc_cond;
 
-	user_list = acct_storage_g_get_users(db_conn, &user_cond);
+	user_list = acct_storage_g_get_users(db_conn, my_uid,
+					     &user_cond);
 
 	list_destroy(assoc_cond.user_list);
 
@@ -350,7 +353,8 @@ extern acct_account_rec_t *sacctmgr_find_account(char *name)
 	list_append(assoc_cond.acct_list, name);
 	account_cond.assoc_cond = &assoc_cond;
 
-	account_list = acct_storage_g_get_accounts(db_conn, &account_cond);
+	account_list = acct_storage_g_get_accounts(db_conn, my_uid,
+						   &account_cond);
 	
 	list_destroy(assoc_cond.acct_list);
 
@@ -375,7 +379,8 @@ extern acct_cluster_rec_t *sacctmgr_find_cluster(char *name)
 	cluster_cond.cluster_list = list_create(NULL);
 	list_append(cluster_cond.cluster_list, name);
 
-	cluster_list = acct_storage_g_get_clusters(db_conn, &cluster_cond);
+	cluster_list = acct_storage_g_get_clusters(db_conn, my_uid,
+						   &cluster_cond);
 
 	list_destroy(cluster_cond.cluster_list);
 
@@ -724,7 +729,7 @@ extern char *get_qos_complete_str(List qos_list, List num_qos_list)
 
 	if(!qos_list || !list_count(qos_list)
 	   || !num_qos_list || !list_count(num_qos_list))
-		return xstrdup("normal");
+		return xstrdup("");
 
 	temp_list = list_create(NULL);
 
@@ -747,7 +752,7 @@ extern char *get_qos_complete_str(List qos_list, List num_qos_list)
 	list_destroy(temp_list);
 
 	if(!print_this)
-		return xstrdup("normal");
+		return xstrdup("");
 
 	return print_this;
 }

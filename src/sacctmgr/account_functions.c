@@ -127,7 +127,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 			
 			if(!qos_list) {
 				qos_list = acct_storage_g_get_qos(
-					db_conn, NULL);
+					db_conn, my_uid, NULL);
 			}
 			
 			addto_qos_char_list(acct_cond->qos_list, qos_list,
@@ -224,7 +224,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 			
 			if(!qos_list) {
 				qos_list = acct_storage_g_get_qos(
-					db_conn, NULL);
+					db_conn, my_uid, NULL);
 			}
 			if(end > 2 && argv[i][end-1] == '='
 			   && (argv[i][end-2] == '+' 
@@ -335,7 +335,7 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 			
 			if(!qos_list) {
 				qos_list = acct_storage_g_get_qos(
-					db_conn, NULL);
+					db_conn, my_uid, NULL);
 			}
 			addto_qos_char_list(add_qos_list, qos_list,
 					    argv[i]+end, option);
@@ -364,7 +364,7 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 		account_cond.assoc_cond = &assoc_cond;
 
 		local_account_list = acct_storage_g_get_accounts(
-			db_conn, &account_cond);
+			db_conn, my_uid, &account_cond);
 		
 	}
 	if(!local_account_list) {
@@ -386,7 +386,7 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 		List temp_list = NULL;
 		acct_cluster_rec_t *cluster_rec = NULL;
 
-		temp_list = acct_storage_g_get_clusters(db_conn, NULL);
+		temp_list = acct_storage_g_get_clusters(db_conn, my_uid, NULL);
 		if(!cluster_list) {
 			exit_code=1;
 			fprintf(stderr, 
@@ -428,7 +428,8 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 		memset(&cluster_cond, 0, sizeof(acct_cluster_cond_t));
 		cluster_cond.cluster_list = cluster_list;
 
-		temp_list = acct_storage_g_get_clusters(db_conn, &cluster_cond);
+		temp_list = acct_storage_g_get_clusters(db_conn, my_uid,
+							&cluster_cond);
 		
 		itr_c = list_iterator_create(cluster_list);
 		itr = list_iterator_create(temp_list);
@@ -477,7 +478,7 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 
 	assoc_cond.cluster_list = cluster_list;
 	local_assoc_list = acct_storage_g_get_associations(
-		db_conn, &assoc_cond);	
+		db_conn, my_uid, &assoc_cond);	
 	list_destroy(assoc_cond.acct_list);
 	if(!local_assoc_list) {
 		exit_code=1;
@@ -698,7 +699,7 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 	acct_account_cond_t *acct_cond =
 		xmalloc(sizeof(acct_account_cond_t));
  	List acct_list;
-	int i=0;
+	int i=0, set=0;
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
 	acct_account_rec_t *acct = NULL;
@@ -735,7 +736,7 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 
 	acct_cond->with_assocs = with_assoc_flag;
 
-	_set_cond(&i, argc, argv, acct_cond, format_list);
+	set = _set_cond(&i, argc, argv, acct_cond, format_list);
 
 	if(exit_code) {
 		destroy_acct_account_cond(acct_cond);
@@ -750,6 +751,17 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 		if(acct_cond->with_coords)
 			slurm_addto_char_list(format_list, "Coord");
 			
+	}
+	
+	if(!acct_cond->with_assocs && set > 1) {
+		if(!commit_check("You requested options that are only vaild "
+				 "when querying with the withassoc option.\n"
+				 "Are you sure you want to continue?")) {
+			printf("Aborted\n");
+			list_destroy(format_list);
+			destroy_acct_account_cond(acct_cond);
+			return SLURM_SUCCESS;
+		}		
 	}
 
 	print_fields_list = list_create(destroy_print_field);
@@ -855,7 +867,7 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 		return SLURM_ERROR;
 	}
 
-	acct_list = acct_storage_g_get_accounts(db_conn, acct_cond);	
+	acct_list = acct_storage_g_get_accounts(db_conn, my_uid, acct_cond);	
 	destroy_acct_account_cond(acct_cond);
 
 	if(!acct_list) {
@@ -872,10 +884,9 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 	field_count = list_count(print_fields_list);
 
 	while((acct = list_next(itr))) {
-		if(acct->assoc_list && list_count(acct->assoc_list)) {
+		if(acct->assoc_list) {
 			ListIterator itr3 =
 				list_iterator_create(acct->assoc_list);
-			
 			while((assoc = list_next(itr3))) {
 				int curr_inx = 1;
 				while((field = list_next(itr2))) {
@@ -959,6 +970,7 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 							qos_list = 
 								acct_storage_g_get_qos(
 									db_conn,
+									my_uid,
 									NULL);
 						}
 						field->print_routine(
@@ -973,6 +985,7 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 							qos_list = 
 								acct_storage_g_get_qos(
 									db_conn,
+									my_uid,
 									NULL);
 						}
 						field->print_routine(
@@ -1094,6 +1107,7 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 						qos_list = 
 							acct_storage_g_get_qos(
 								db_conn,
+								my_uid,
 								NULL);
 					}
 					field->print_routine(
@@ -1107,6 +1121,7 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 						qos_list = 
 							acct_storage_g_get_qos(
 								db_conn,
+								my_uid,
 								NULL);
 					}
 					field->print_routine(
@@ -1241,6 +1256,15 @@ extern int sacctmgr_modify_account(int argc, char *argv[])
 
 assoc_start:
 	if(rec_set == 3 || rec_set == 2) { // process the association changes
+		if(cond_set == 1 && !acct_cond->assoc_cond->acct_list) {
+			rc = SLURM_ERROR;
+			exit_code=1;
+			fprintf(stderr, 
+				" There was a problem with your "
+				"'where' options.\n");
+			goto assoc_end;
+		}
+
 		ret_list = acct_storage_g_modify_associations(
 			db_conn, my_uid, acct_cond->assoc_cond, assoc);
 
@@ -1264,6 +1288,8 @@ assoc_start:
 		if(ret_list)
 			list_destroy(ret_list);
 	}
+
+assoc_end:
 
 	notice_thread_fini();
 	if(set) {

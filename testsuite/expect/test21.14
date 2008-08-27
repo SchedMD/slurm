@@ -61,7 +61,7 @@ set or2		acttrg
 set qs		QosLevel
 set qs1		normal
 set par		parent
-
+set access_err  0
 
 print_header $test_id
 
@@ -140,7 +140,7 @@ proc _add_cluster {name} {
 # Use sacctmgr to remove the test cluster
 #
 proc _remove_cluster {name} {
-        global sacctmgr timeout
+        global access_err sacctmgr timeout
 
 	set exit_code 0
 	set matches 0
@@ -153,6 +153,10 @@ proc _remove_cluster {name} {
 
 	set my_pid [spawn $sacctmgr -i delete cluster $name]
 	expect {
+		-re "privilege to preform this action" {
+			set access_err 1
+			exp_continue
+		}
 		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
 			send_user "FAILURE: there was a problem with the sacctmgr command\n"
 			incr exit_code 1
@@ -187,7 +191,9 @@ proc _remove_cluster {name} {
 			wait
 		}
 	}
-	
+	if {$access_err != 0} {
+		return 1
+	}
 	if {$matches != 1} {
 		send_user "\nFAILURE: sacctmgr had a problem deleting cluster got $matches\n"
 		incr exit_code 1
@@ -473,8 +479,12 @@ proc _mod_acct { cluster name desc org parent fs maxcpu maxjob maxnodes maxwall 
 	return $exit_code
 }
 
-#make sure we have a clean system
+#make sure we have a clean system and permission to do this work
 _remove_cluster "$tc1,$tc2"
+if {$access_err != 0} {
+	send_user "\nWARNING: not authorized to perform this test\n"
+	exit $exit_code
+}
 _remove_acct "" "$nm1,$nm2,$nm3"
 
 #add cluster
@@ -511,7 +521,7 @@ expect {
 	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
-	-re "($nm1|$nm2|$nm3)\\\|$ds2\\\|$or2\\\|" {
+	-re "($nm1|$nm2|$nm3).$ds2.$or2." {
 		incr matches
 		exp_continue
 	}
@@ -547,7 +557,7 @@ expect {
 	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
-	-re "($nm1|$nm2|$nm3)\\\|($tc1|$tc2)\\\|$fs2\\\|$mc2\\\|$mj2\\\|$mn2\\\|$mw2\\\|" {
+	-re "($nm1|$nm2|$nm3).($tc1|$tc2).$fs2.$mc2.$mj2.$mn2.$mw2." {
 		incr matches
 		exp_continue
 	}
@@ -585,7 +595,7 @@ expect {
 	}
 	# Any time you use () around something you need to combine all 
 	# those things together since you can miss some and they be thrown away
-	-re "(($nm1|$nm3)\\\|$ds1\\\|$or1\\\|($tc1|$tc2)\\\|1\\\|\\\|\\\|\\\|\\\||$nm2\\\|$ds2\\\|$or2\\\|($tc1|$tc2)\\\|$fs2\\\|$mc2\\\|$mj2\\\|$mn2\\\|$mw2\\\|)" {
+	-re "(($nm1|$nm3).$ds1.$or1.($tc1|$tc2).1.....|$nm2.$ds2.$or2.($tc1|$tc2).$fs2.$mc2.$mj2.$mn2.$mw2.)" {
 		incr matches
 		exp_continue
 	}
@@ -622,11 +632,11 @@ expect {
 	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
-	-re "$nm3\\\|$nm2\\\|$tc1\\\|1\\\|$mc2\\\|$mj2\\\|$mn2\\\|$mw2\\\|" {
+	-re "$nm3.$nm2.$tc1.1.$mc2.$mj2.$mn2.$mw2." {
 		incr matches
 		exp_continue
 	}
-	-re "$nm3\\\|root\\\|$tc2\\\|1\\\|\\\|\\\|\\\|\\\|" {
+	-re "$nm3.root.$tc2.1....." {
 		incr matches
 		exp_continue
 	}
@@ -663,7 +673,7 @@ expect {
 	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
-	-re "($nm2\\\|root\\\|$tc2\\\|$fs2\\\|$mc2\\\|$mj2\\\|$mn2\\\|$mw2\\\||$nm2\\\|$nm3\\\|$tc1\\\|$fs2\\\|$mc2\\\|$mj2\\\|$mn2\\\|$mw2\\\||$nm3\\\|root\\\|($tc1|$tc2)\\\|1\\\|\\\|\\\|\\\|\\\|)" {
+	-re "($nm2.root.$tc2.$fs2.$mc2.$mj2.$mn2.$mw2.|$nm2.$nm3.$tc1.$fs2.$mc2.$mj2.$mn2.$mw2.|$nm3.root.($tc1|$tc2).1.....)" {
 		incr matches
 		exp_continue
 	}
@@ -701,7 +711,7 @@ expect {
 	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
-	-re "($nm2\\\|root\\\|($tc1|$tc2)\\\|$fs2\\\|$mc2\\\|$mj2\\\|$mn2\\\|$mw2\\\||$nm3\\\|$nm2\\\|$tc1\\\|1\\\|$mc2\\\|$mj2\\\|$mn2\\\|$mw2\\\||$nm3\\\|root\\\|$tc2\\\|1\\\|\\\|\\\|\\\|\\\|)" {
+	-re "($nm2.root.($tc1|$tc2).$fs2.$mc2.$mj2.$mn2.$mw2.|$nm3.$nm2.$tc1.1.$mc2.$mj2.$mn2.$mw2.|$nm3.root.$tc2.1.....)" {
 		incr matches
 		exp_continue
 	}

@@ -56,6 +56,7 @@ array set good_vars {
 # Spawn a job via salloc to print environment variables
 #
 set job_id 0
+set timeout $max_job_delay
 set salloc_pid [spawn $salloc -N1 -t1 -v $bin_env]
 expect {
 	-re "Granted job allocation ($number)" {

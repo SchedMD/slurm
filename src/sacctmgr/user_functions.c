@@ -61,6 +61,12 @@ static int _set_cond(int *start, int argc, char *argv[],
 		user_cond->assoc_cond->max_jobs = NO_VAL;
 		user_cond->assoc_cond->max_nodes_per_job = NO_VAL;
 		user_cond->assoc_cond->max_wall_duration_per_job = NO_VAL;
+		/* we need this to make sure we only change users, not
+		 * accounts if this list didn't exist it would change
+		 * accounts.
+		 */
+		user_cond->assoc_cond->user_list = 
+			list_create(slurm_destroy_char);
 	}
 
 	for (i=(*start); i<argc; i++) {
@@ -77,10 +83,6 @@ static int _set_cond(int *start, int argc, char *argv[],
 		} else if(!end
 			  || !strncasecmp (argv[i], "Names", 1)
 			  || !strncasecmp (argv[i], "Users", 1)) {
-			if(!user_cond->assoc_cond->user_list) {
-				user_cond->assoc_cond->user_list = 
-					list_create(slurm_destroy_char);
-			}
 			if(slurm_addto_char_list(
 				   user_cond->assoc_cond->user_list,
 				   argv[i]+end)) 
@@ -136,7 +138,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 			
 			if(!qos_list) {
 				qos_list = acct_storage_g_get_qos(
-					db_conn, NULL);
+					db_conn, my_uid, NULL);
 			}
 
 			addto_qos_char_list(user_cond->qos_list, qos_list,
@@ -243,7 +245,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 			
 			if(!qos_list) {
 				qos_list = acct_storage_g_get_qos(
-					db_conn, NULL);
+					db_conn, my_uid, NULL);
 			}
 
 			if(end > 2 && argv[i][end-1] == '='
@@ -308,7 +310,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 	int limit_set = 0, mins;
 	int first = 1;
 	int acct_first = 1;
-
+	
 /* 	if(!list_count(sacctmgr_cluster_list)) { */
 /* 		printf(" Can't add users, no cluster defined yet.\n" */
 /* 		       " Please contact your administrator.\n"); */
@@ -380,7 +382,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 			
 			if(!qos_list) {
 				qos_list = acct_storage_g_get_qos(
-					db_conn, NULL);
+					db_conn, my_uid, NULL);
 			}
 
 			addto_qos_char_list(add_qos_list, qos_list,
@@ -406,7 +408,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 		user_cond.assoc_cond = assoc_cond;
 		
 		local_user_list = acct_storage_g_get_users(
-			db_conn, &user_cond);
+			db_conn, my_uid, &user_cond);
 		
 	}	
 
@@ -431,7 +433,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 		account_cond.assoc_cond = assoc_cond;
 
 		local_acct_list = acct_storage_g_get_accounts(
-			db_conn, &account_cond);
+			db_conn, my_uid, &account_cond);
 		
 	}	
 
@@ -449,7 +451,8 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 		List cluster_list = NULL;
 		acct_cluster_rec_t *cluster_rec = NULL;
 
-		cluster_list = acct_storage_g_get_clusters(db_conn, NULL);
+		cluster_list = acct_storage_g_get_clusters(db_conn,
+							   my_uid, NULL);
 		if(!cluster_list) {
 			exit_code=1;
 			fprintf(stderr, 
@@ -495,7 +498,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 	query_assoc_cond.acct_list = assoc_cond->acct_list;
 	query_assoc_cond.cluster_list = assoc_cond->cluster_list;
 	local_assoc_list = acct_storage_g_get_associations(
-		db_conn, &query_assoc_cond);	
+		db_conn, my_uid, &query_assoc_cond);	
 	
 	itr = list_iterator_create(assoc_cond->user_list);
 	while((name = list_next(itr))) {
@@ -849,7 +852,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 	int rc = SLURM_SUCCESS;
 	acct_user_cond_t *user_cond = xmalloc(sizeof(acct_user_cond_t));
 	List user_list;
-	int i=0;
+	int i=0, set=0;
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
 	acct_user_rec_t *user = NULL;
@@ -885,7 +888,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 
 	user_cond->with_assocs = with_assoc_flag;
 
-	_set_cond(&i, argc, argv, user_cond, format_list);
+	set = _set_cond(&i, argc, argv, user_cond, format_list);
 
 	if(exit_code) {
 		destroy_acct_user_cond(user_cond);
@@ -900,6 +903,17 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 					"Cl,Ac,Part,F,MaxC,MaxJ,MaxN,MaxW");
 		if(user_cond->with_coords)
 			slurm_addto_char_list(format_list, "Coord");
+	}
+
+	if(!user_cond->with_assocs && set > 1) {
+		if(!commit_check("You requested options that are only vaild "
+				 "when querying with the withassoc option.\n"
+				 "Are you sure you want to continue?")) {
+			printf("Aborted\n");
+			list_destroy(format_list);
+			destroy_acct_user_cond(user_cond);
+			return SLURM_SUCCESS;
+		}		
 	}
 
 	print_fields_list = list_create(destroy_print_field);
@@ -1005,7 +1019,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 		return SLURM_ERROR;
 	}
 
-	user_list = acct_storage_g_get_users(db_conn, user_cond);
+	user_list = acct_storage_g_get_users(db_conn, my_uid, user_cond);
 	destroy_acct_user_cond(user_cond);
 
 	if(!user_list) {
@@ -1022,7 +1036,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 	field_count = list_count(print_fields_list);
 
 	while((user = list_next(itr))) {
-		if(user->assoc_list && list_count(user->assoc_list)) {
+		if(user->assoc_list) {
 			ListIterator itr3 =
 				list_iterator_create(user->assoc_list);
 			
@@ -1119,6 +1133,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 							qos_list = 
 								acct_storage_g_get_qos(
 									db_conn,
+									my_uid,
 									NULL);
 						}
 						field->print_routine(
@@ -1133,6 +1148,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 							qos_list = 
 								acct_storage_g_get_qos(
 									db_conn,
+									my_uid,
 									NULL);
 						}
 						field->print_routine(
@@ -1255,6 +1271,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 						qos_list = 
 							acct_storage_g_get_qos(
 								db_conn,
+								my_uid,
 								NULL);
 					}
 					field->print_routine(
@@ -1267,6 +1284,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 						qos_list = 
 							acct_storage_g_get_qos(
 								db_conn,
+								my_uid,
 								NULL);
 					}
 					field->print_routine(
@@ -1361,7 +1379,7 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 			return SLURM_SUCCESS;
 		}		
 	}
-	
+
 	notice_thread_init();
 	if(rec_set == 3 || rec_set == 1) { // process the account changes
 		if(cond_set == 2) {
@@ -1412,6 +1430,16 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 
 assoc_start:
 	if(rec_set == 3 || rec_set == 2) { // process the association changes
+		if(cond_set == 1 
+		   && !list_count(user_cond->assoc_cond->user_list)) {
+			rc = SLURM_ERROR;
+			exit_code=1;
+			fprintf(stderr, 
+				" There was a problem with your "
+				"'where' options.\n");
+			goto assoc_end;
+		}
+
 		ret_list = acct_storage_g_modify_associations(
 			db_conn, my_uid, user_cond->assoc_cond, assoc);
 
@@ -1435,6 +1463,7 @@ assoc_start:
 		if(ret_list)
 			list_destroy(ret_list);
 	}
+assoc_end:
 
 	notice_thread_fini();
 	if(set) {

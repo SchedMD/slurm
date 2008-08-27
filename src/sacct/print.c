@@ -968,7 +968,7 @@ void print_vsize(type_t type, void *object)
 	case JOB:
 		sacct = job->sacct;
 		nodes = job->nodes;
-		pos = sacct.min_cpu_id.nodeid;				 
+		pos = sacct.min_cpu_id.nodeid;
 		convert_num_unit((float)sacct.max_vsize, 
 				 buf1, sizeof(buf1), UNIT_KILO);
 		if(job->track_steps)

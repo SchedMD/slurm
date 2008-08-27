@@ -190,22 +190,6 @@ extern int slurm_conf_init(const char *file_name);
  */
 extern int slurm_conf_reinit(const char *file_name);
 
-/*
- * slurm_conf_reinit_nolock - reload the slurm configuration from a file.
- *	This does the same thing as slurm_conf_reinit, but it performs
- *	no internal locking.  You are responsible for calling slurm_conf_lock()
- *	before calling this function, and calling slurm_conf_unlock()
- *	afterwards.
- * IN file_name - name of the slurm configuration file to be read
- *	If file_name is NULL, then this routine tries to use
- *	the value in the SLURM_CONF env variable.  Failing that,
- *	it uses the compiled-in default file name.
- *	Unlike slurm_conf_init, slurm_conf_reinit will always reread the
- *	file and reinitialize the configuration structures.
- * RET SLURM_SUCCESS if conf file is reinitialized, otherwise SLURM_ERROR.
- */
-extern int slurm_conf_reinit_nolock(const char *file_name);
-
 /* 
  * slurm_conf_mutex_init - init the slurm_conf mutex
  */

@@ -3028,19 +3028,6 @@ static void _job_timed_out(struct job_record *job_ptr)
 static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate, 
 			      uid_t submit_uid)
 {
-	/* Permit normal user to specify job id only for sched/wiki 
-	 * (Maui scheduler). This was also required with earlier
-	 * versions of the Moab scheduler (wiki2), but was fixed 
-	 * in early 2007 to submit jobs as user root */
-	if (!wiki_sched_test) {
-		char *sched_type = slurm_get_sched_type();
-		if ((strcmp(sched_type, "sched/wiki") == 0) ||
-		    (strcmp(sched_type, "sched/wiki2") == 0))
-			wiki_sched = true;
-		xfree(sched_type);
-		wiki_sched_test = true;
-	}
-
 	if ((job_desc_msg->num_procs == NO_VAL)
 	    &&  (job_desc_msg->min_nodes == NO_VAL)
 	    &&  (job_desc_msg->req_nodes == NULL)) {
@@ -3075,7 +3062,7 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 
 	if (job_desc_msg->job_id != NO_VAL) {
 		struct job_record *dup_job_ptr;
-		if ((submit_uid != 0) && (!wiki_sched) &&
+		if ((submit_uid != 0) && 
 		    (submit_uid != slurmctld_conf.slurm_user_id)) {
 			info("attempt by uid %u to set job_id", submit_uid);
 			return ESLURM_INVALID_JOB_ID;
@@ -3221,20 +3208,23 @@ static int _list_find_job_id(void *job_entry, void *key)
  */
 static int _list_find_job_old(void *job_entry, void *key)
 {
-	time_t now      = time(NULL);
-	time_t kill_age = now - (slurmctld_conf.kill_wait + 20);
-	time_t min_age  = now - slurmctld_conf.min_job_age;
+	time_t kill_age, min_age, now = time(NULL);;
 	struct job_record *job_ptr = (struct job_record *)job_entry;
 
-	if ( (job_ptr->job_state & JOB_COMPLETING) &&
-	     (job_ptr->end_time < kill_age) ) {
-		re_kill_job(job_ptr);
+	if (job_ptr->job_state & JOB_COMPLETING) {
+		kill_age = now - (slurmctld_conf.kill_wait +
+				  2 * slurm_get_msg_timeout());
+		if (job_ptr->time_last_active < kill_age) {
+			job_ptr->time_last_active = now;
+			re_kill_job(job_ptr);
+		}
 		return 0;       /* Job still completing */
 	}
 
 	if (slurmctld_conf.min_job_age == 0)
 		return 0;	/* No job record purging */
 
+	min_age  = now - slurmctld_conf.min_job_age;
 	if (job_ptr->end_time > min_age)
 		return 0;	/* Too new to purge */
 

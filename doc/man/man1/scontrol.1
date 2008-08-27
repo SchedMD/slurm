@@ -219,10 +219,13 @@ local host). It can be useful to diagnose problems.
 By default, all elements of the entity type specified are printed.
 
 .TP
-\fBshutdown\fP
-Instruct all Slurm daemons to save current state and terminate.
-The Slurm controller (slurmctld) forwards the request all other daemons 
-(slurmd daemon on each compute node). 
+\fBshutdown\fP \fIOPTION\fP
+Instruct Slurm daemons to save current state and terminate.
+By default, the Slurm controller (slurmctld) forwards the request all 
+other daemons (slurmd daemon on each compute node). 
+An \fIOPTION\fP of \fIslurmctld\fP or \fIcontroller\fP results in 
+only the slurmctld daemon being shutdown and the slurmd daemons 
+remaining active.
 
 .TP
 \fBsuspend\fP \fIjob_id\fP

@@ -236,7 +236,6 @@ extern int update_block_list()
 	char *name = NULL;
 	bg_record_t *bg_record = NULL;
 	time_t now;
-	int skipped_dealloc = 0;
 	kill_job_struct_t *freeit = NULL;
 	ListIterator itr = NULL;
 	
@@ -305,6 +304,7 @@ extern int update_block_list()
 		} else if(bg_record->job_running != BLOCK_ERROR_STATE 
 			  //plugin set error
 			  && bg_record->state != state) {
+			int skipped_dealloc = 0;
 			debug("state of Block %s was %d and now is %d",
 			      bg_record->bg_block_id, 
 			      bg_record->state, 
@@ -319,11 +319,9 @@ extern int update_block_list()
 
 			bg_record->state = state;
 
-			if(bg_record->state == RM_PARTITION_DEALLOCATING) {
+			if(bg_record->state == RM_PARTITION_DEALLOCATING
+			   || skipped_dealloc) {
 				_block_is_deallocating(bg_record);
-			} else if(skipped_dealloc) {
-				_block_is_deallocating(bg_record);
-				skipped_dealloc = 0;
 			} else if(bg_record->state == RM_PARTITION_CONFIGURING)
 				bg_record->boot_state = 1;
 			updated = 1;
@@ -438,7 +436,6 @@ extern int update_freeing_block_list()
 	rm_partition_state_t state;
 	char *name = NULL;
 	bg_record_t *bg_record = NULL;
-	int skipped_dealloc = 0;
 	ListIterator itr = NULL;
 	
 	if(!bg_freeing_list) 
@@ -489,14 +486,6 @@ extern int update_freeing_block_list()
 			      bg_record->bg_block_id, 
 			      bg_record->state, 
 			      state);
-			/* 
-			   check to make sure block went 
-			   through freeing correctly 
-			*/
-			if(bg_record->state 
-			   != RM_PARTITION_DEALLOCATING
-			   && state == RM_PARTITION_FREE)
-				skipped_dealloc = 1;
 
 			bg_record->state = state;
 		}

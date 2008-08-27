@@ -272,7 +272,7 @@ static int _init_all_slurm_conf(void)
 	int error_code;
 	char *conf_name = xstrdup(slurmctld_conf.slurm_conf);
 
-	slurm_conf_reinit_nolock(conf_name);
+	slurm_conf_reinit(conf_name);
 	xfree(conf_name);
 
 	if ((error_code = init_node_conf()))

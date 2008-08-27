@@ -174,7 +174,7 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 	} 
 
 
-	local_qos_list = acct_storage_g_get_qos(db_conn, NULL);
+	local_qos_list = acct_storage_g_get_qos(db_conn, my_uid, NULL);
 
 	if(!local_qos_list) {
 		exit_code=1;
@@ -316,7 +316,7 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 		list_destroy(print_fields_list);
 		return SLURM_ERROR;
 	}
-	qos_list = acct_storage_g_get_qos(db_conn, qos_cond);	
+	qos_list = acct_storage_g_get_qos(db_conn, my_uid, qos_cond);	
 	destroy_acct_qos_cond(qos_cond);
 
 	if(!qos_list) {

@@ -109,19 +109,21 @@ slurm_ping (int primary)
  * slurm_shutdown - issue RPC to have Slurm controller (slurmctld)
  *	cease operations, both the primary and backup controller 
  *	are shutdown.
- * IN core - controller generates a core file if set
+ * IN options - 0: all slurm daemons are shutdown
+ *              1: slurmctld generates a core file
+ *              2: only the slurmctld is shutdown (no core file)
  * RET 0 or a slurm error code
  */
 int
-slurm_shutdown (uint16_t core)
+slurm_shutdown (uint16_t options)
 {
 	slurm_msg_t req_msg;
 	shutdown_msg_t shutdown_msg;
 
 	slurm_msg_t_init(&req_msg);
-	shutdown_msg.core = core;
-	req_msg.msg_type  = REQUEST_SHUTDOWN;
-	req_msg.data      = &shutdown_msg;
+	shutdown_msg.options = options;
+	req_msg.msg_type     = REQUEST_SHUTDOWN;
+	req_msg.data         = &shutdown_msg;
 		
 	/* 
 	 * Explicity send the message to both primary 

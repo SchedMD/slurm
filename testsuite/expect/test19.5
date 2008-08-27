@@ -105,7 +105,7 @@ set disabled 0
 set matches  0
 set strigger_pid [spawn $strigger --set -v --time --jobid=$job_id --offset=-90 --program=$cwd/$file_in_time]
 expect {
-	-re "Operation not permitted" {
+	-re "permission denied" {
 		set disabled 1
 		exp_continue
 	}

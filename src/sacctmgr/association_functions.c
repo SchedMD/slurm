@@ -173,6 +173,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 					argv[i]+end);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Parent", 4)) {
+			xfree(association_cond->parent_acct);
 			association_cond->parent_acct =
 				strip_quotes(argv[i]+end, NULL);
 			set = 1;
@@ -197,6 +198,14 @@ static int _sort_childern_list(sacctmgr_assoc_t *assoc_a,
 			       sacctmgr_assoc_t *assoc_b)
 {
 	int diff = 0;
+
+	/* first just check the lfts and rgts if a lft is inside of the
+	 * others lft and rgt just return it is less
+	 */ 
+	if(assoc_a->assoc->lft > assoc_b->assoc->lft 
+	   && assoc_a->assoc->lft < assoc_b->assoc->rgt)
+		return 1;
+
 	/* check to see if this is a user association or an account.
 	 * We want the accounts at the bottom 
 	 */
@@ -469,7 +478,8 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 		return SLURM_ERROR;
 	}
 
-	assoc_list = acct_storage_g_get_associations(db_conn, assoc_cond);
+	assoc_list = acct_storage_g_get_associations(db_conn, my_uid,
+						     assoc_cond);
 	destroy_acct_association_cond(assoc_cond);
 
 	if(!assoc_list) {

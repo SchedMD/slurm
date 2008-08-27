@@ -128,6 +128,18 @@ The pathname of local domain socket will be needed in the SLURM
 and SlurmDBD configuration files (slurm.conf and slurmdbd.conf 
 respectively, more details are provided below).</p>
 
+Whether you use any authentication module or not you will need to have
+a way for the SlurmDBD to get uid's for users and/or admin.  If using
+Munge it is ideal for your users to have the same id on all your
+clusters.  If this is the case you should have a combination of every clusters
+/etc/passwd file on the database server to allow the DBD to resolve
+names for authentication.  If using Munge and a users name is not in
+the passwd file the action will fail.  If not using Munge, you should
+add anyone you want to be an administrator or operator to the passwd file.
+If they plan on running sacctmgr or any of the accounting tools they
+should have the same uid, or they will not authentic correctly.  An
+LDAP server could also server as a way to gather this information.
+
 <h2>Slurm JobComp Configuration</h2>
 
 <p>Presently job completion is not supported with the SlurmDBD, but can be
@@ -336,11 +348,17 @@ Server version: 5.0.51a-3ubuntu5.1 (Ubuntu)
 
 Type 'help;' or '\h' for help. Type '\c' to clear the buffer.
 
-mysql> grant all on slurm_acct_db.* TO 'da'@'localhost';
+mysql> grant all on slurm_acct_db.* TO 'slurm'@'localhost';
+Query OK, 0 rows affected (0.00 sec)
+
+or with a password...
+
+mysql> grant all on slurm_acct_db.* TO 'slurm'@'localhost' 
+    -> identified by 'some_pass' with grant option;
 Query OK, 0 rows affected (0.00 sec)
 </pre>
 
-<p>This will grant user 'da' access to do what he needs to do on the
+<p>This will grant user 'slurm' access to do what he needs to do on the
 local host. This should be done before the SlurmDBD will work
 properly.</p>
 

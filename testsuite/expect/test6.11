@@ -66,7 +66,7 @@ if {$job_id == 0} {
 #
 # Test basic scancel
 #
-spawn $scancel $job_id
+spawn $scancel -v $job_id
 expect {
 	-re "error" {
 		set exit_code 1
@@ -85,7 +85,7 @@ expect {
 # Test basic scancel with job already killed
 #
 set matches 0
-spawn $scancel $job_id
+spawn $scancel -v $job_id
 expect {
 	-re "error:" {
 		send_user "This error is expected, no worries\n"

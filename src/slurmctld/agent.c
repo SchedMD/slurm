@@ -229,7 +229,7 @@ void *agent(void *args)
 	}
 	slurm_mutex_unlock(&agent_cnt_mutex);
 	if (slurmctld_config.shutdown_time)
-		return NULL;
+		goto cleanup;
 	
 	/* basic argument value tests */
 	begin_time = time(NULL);
@@ -1343,6 +1343,8 @@ static void _purge_agent_args(agent_arg_t *agent_arg_ptr)
 			slurm_free_srun_user_msg(agent_arg_ptr->msg_args);
 		else if (agent_arg_ptr->msg_type == SRUN_EXEC)
 			slurm_free_srun_exec_msg(agent_arg_ptr->msg_args);
+		else if (agent_arg_ptr->msg_type == SRUN_NODE_FAIL)
+			slurm_free_srun_node_fail_msg(agent_arg_ptr->msg_args);
 		else
 			xfree(agent_arg_ptr->msg_args);
 	}
