@@ -161,7 +161,8 @@ static uint32_t last_verified_job_id = 0;
 
 static void	_cr_job_list_del(void *x);
 static int	_cr_job_list_sort(void *x, void *y);
-static struct node_cr_record *_dup_node_cr(struct node_cr_record *node_cr_ptr);
+static struct node_cr_record *_dup_node_cr(struct node_cr_record *node_cr_ptr,
+					   int node_cr_cnt);
 static int	_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			uint32_t min_nodes, uint32_t max_nodes, 
 			uint32_t req_nodes, int mode, 
@@ -222,43 +223,55 @@ static void _dump_state(struct node_cr_record *select_node_ptr)
 }
 #endif
 
-/* Create a duplicate node_cr_records structure */
-static struct node_cr_record *_dup_node_cr(struct node_cr_record *node_cr_ptr)
+/* Create a duplicate part_cr_record structure */
+static struct part_cr_record *_dup_part_cr(struct node_cr_record *node_cr_ptr)
 {
-	int i, j;
-	struct node_cr_record *new_node_cr_ptr;
+	int i, j, part_cnt;
 	struct part_cr_record *part_cr_ptr, *new_part_cr_ptr;
+
+	part_cnt = node_cr_ptr->node_ptr->part_cnt;
+	new_part_cr_ptr = xmalloc(sizeof(struct part_cr_record) * part_cnt);
+	part_cr_ptr = node_cr_ptr->parts;
+	for (i=0; i<part_cnt; i++) {
+		if (!part_cr_ptr)
+			break;
+		new_part_cr_ptr[i].part_ptr = part_cr_ptr->part_ptr;
+		new_part_cr_ptr[i].num_rows = part_cr_ptr->num_rows;
+		j = sizeof(uint16_t) * part_cr_ptr->num_rows *
+		    select_node_ptr->sockets;
+		new_part_cr_ptr[i].alloc_cores = xmalloc(j);
+		memcpy(new_part_cr_ptr[i].alloc_cores,
+		       part_cr_ptr->alloc_cores, j);
+		if (i > 0)
+			new_part_cr_ptr[i-1].next = &new_part_cr_ptr[i];
+		part_cr_ptr = part_cr_ptr->next;
+	}
+	return new_part_cr_ptr;
+}
+
+/* Create a duplicate node_cr_records structure */
+static struct node_cr_record *_dup_node_cr(struct node_cr_record *node_cr_ptr,
+					   int node_cr_cnt)
+{
+	int i;
+	struct node_cr_record *new_node_cr_ptr;
 
 	if (node_cr_ptr == NULL)
 		return NULL;
 
-	new_node_cr_ptr = xmalloc(select_node_cnt *
-				  sizeof(struct node_cr_record));
+	new_node_cr_ptr = xmalloc(sizeof(struct node_cr_record) *
+				  node_cr_cnt);
 
-	for (i=0; i<select_node_cnt; i++) {
-		new_node_cr_ptr[i].node_ptr     = select_node_ptr[i].node_ptr;
-		new_node_cr_ptr[i].cpus         = select_node_ptr[i].cpus;
-		new_node_cr_ptr[i].sockets      = select_node_ptr[i].sockets;
-		new_node_cr_ptr[i].cores        = select_node_ptr[i].cores;
-		new_node_cr_ptr[i].threads      = select_node_ptr[i].threads;
-		new_node_cr_ptr[i].real_memory  = select_node_ptr[i].real_memory;
-		new_node_cr_ptr[i].alloc_memory = select_node_ptr[i].alloc_memory;
-		new_node_cr_ptr[i].node_state   = select_node_ptr[i].node_state;
-
-		part_cr_ptr = select_node_ptr[i].parts;
-		while (part_cr_ptr) {
-			new_part_cr_ptr = xmalloc(sizeof(struct part_cr_record));
-			new_part_cr_ptr->part_ptr   = part_cr_ptr->part_ptr;
-			new_part_cr_ptr->num_rows   = part_cr_ptr->num_rows;
-			j = sizeof(uint16_t) * part_cr_ptr->num_rows * 
-			    select_node_ptr[i].sockets;
-			new_part_cr_ptr->alloc_cores = xmalloc(j);
-			memcpy(new_part_cr_ptr->alloc_cores, 
-			       part_cr_ptr->alloc_cores, j);
-			new_part_cr_ptr->next        = new_node_cr_ptr[i].parts;
-			new_node_cr_ptr[i].parts     = new_part_cr_ptr;
-			part_cr_ptr = part_cr_ptr->next;
-		}
+	for (i=0; i<node_cr_cnt; i++) {
+		new_node_cr_ptr[i].node_ptr     = node_cr_ptr[i].node_ptr;
+		new_node_cr_ptr[i].cpus         = node_cr_ptr[i].cpus;
+		new_node_cr_ptr[i].sockets      = node_cr_ptr[i].sockets;
+		new_node_cr_ptr[i].cores        = node_cr_ptr[i].cores;
+		new_node_cr_ptr[i].threads      = node_cr_ptr[i].threads;
+		new_node_cr_ptr[i].real_memory  = node_cr_ptr[i].real_memory;
+		new_node_cr_ptr[i].alloc_memory = node_cr_ptr[i].alloc_memory;
+		new_node_cr_ptr[i].node_state   = node_cr_ptr[i].node_state;
+		new_node_cr_ptr[i].parts        = _dup_part_cr(&node_cr_ptr[i]);
 	}
 	return new_node_cr_ptr;
 }
@@ -803,10 +816,13 @@ static uint16_t _count_idle_cpus(struct node_cr_record *this_node)
 
 static int _synchronize_bitmaps(bitstr_t ** partially_idle_bitmap)
 {
-	int rc = SLURM_SUCCESS;
 	int size, i, idlecpus = bit_set_count(avail_node_bitmap);
 	size = bit_size(avail_node_bitmap);
 	bitstr_t *bitmap = bit_alloc(size);
+
+	*partially_idle_bitmap = bitmap;
+	if (bitmap == NULL)
+		return SLURM_ERROR;
 
 	debug3("cons_res: synch_bm: size avail %d (%d set) size idle %d ",
 	       size, idlecpus, bit_size(idle_node_bitmap));
@@ -827,10 +843,7 @@ static int _synchronize_bitmaps(bitstr_t ** partially_idle_bitmap)
 	idlecpus = bit_set_count(bitmap);
 	debug3("cons_res: synch found %d partially idle nodes", idlecpus);
 
-	*partially_idle_bitmap = bitmap;
-	if (rc != SLURM_SUCCESS)
-		FREE_NULL_BITMAP(bitmap);
-	return rc;
+	return SLURM_SUCCESS;
 }
 
 /* allocate resources to the given job
@@ -1528,13 +1541,9 @@ extern int select_p_job_init(List job_list)
 			suspend = 1;
 		else
 			suspend = 0;
-		if ((job->job_ptr->nodes == NULL) ||
-		    (node_name2bitmap(job->job_ptr->nodes, true,
-				      &job->node_bitmap))) {
-			error("cons_res: job %u has no allocated nodes",
-				job->job_id);
-			job->node_bitmap = bit_alloc(node_record_count);
-		}
+		FREE_NULL_BITMAP(job->node_bitmap);
+		node_name2bitmap(job->job_ptr->nodes, true,
+				 &job->node_bitmap);
 		_add_job_to_nodes(job, "select_p_job_init", suspend);
 	}
 	list_iterator_destroy(iterator);
@@ -2305,7 +2314,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	/* Job is still pending. Simulate termination of jobs one at a time 
 	 * to determine when and where the job can start. */
-	exp_node_cr = _dup_node_cr(select_node_ptr);
+	exp_node_cr = _dup_node_cr(select_node_ptr, select_node_cnt);
 	if (exp_node_cr == NULL) {
 		bit_free(orig_map);
 		return SLURM_ERROR;
@@ -2354,7 +2363,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	}
 	list_iterator_destroy(job_iterator);
 	list_destroy(cr_job_list);
-	_destroy_node_part_array(exp_node_cr);
+	_xfree_select_nodes(exp_node_cr, select_node_cnt); 
 	bit_free(orig_map);
 	return rc;
 }

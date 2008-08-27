@@ -293,6 +293,11 @@ int main(int argc, char *argv[])
 		slurmctld_config.daemonize = 0;
 	}
 
+	/* This must happen before we spawn any threads
+	 * which are not designed to handle them */
+	if (xsignal_block(controller_sigarray) < 0)
+		error("Unable to block signals");
+
 	/* This needs to be copied for other modules to access the
 	 * memory, it will report 'HashBase' if it is not duped
 	 */
@@ -328,9 +333,6 @@ int main(int argc, char *argv[])
 	 * slurm_cred_ctx_set(slurmctld_config.cred_ctx, 
 	 *                    SLURM_CRED_OPT_EXPIRY_WINDOW, CRED_LIFE);
 	 */
-
-	if (xsignal_block(controller_sigarray) < 0)
-		error("Unable to block signals");
 
 	/*
 	 * Initialize plugins.
@@ -469,13 +471,13 @@ int main(int argc, char *argv[])
 				!= SLURM_SUCCESS )
 			error("failed to save node selection state");
 		switch_save(slurmctld_conf.state_save_location);
-		if (slurmctld_config.resume_backup == false)
-			break;
-		recover = 2;
 
 		/* Save any pending state save RPCs */
 		acct_storage_g_close_connection(&acct_db_conn);
-		assoc_mgr_fini();
+
+		if (slurmctld_config.resume_backup == false)
+			break;
+		recover = 2;
 	}
 
 	/* Since pidfile is created as user root (its owner is
@@ -501,6 +503,12 @@ int main(int argc, char *argv[])
 	if (i >= 10)
 		error("Left %d agent threads active", cnt);
 
+	/* Purge our local data structures */
+	job_fini();
+	part_fini();	/* part_fini() must preceed node_fini() */
+	node_fini();
+	trigger_fini();
+
 	/* Plugins are needed to purge job/node data structures,
 	 * unplug after other data structures are purged */
 	g_slurm_jobcomp_fini();
@@ -512,12 +520,6 @@ int main(int argc, char *argv[])
 	slurm_auth_fini();
 	switch_fini();
 	assoc_mgr_fini();
-
-	/* Purge our local data structures */
-	job_fini();
-	part_fini();	/* part_fini() must preceed node_fini() */
-	node_fini();
-	trigger_fini();
 
 	/* purge remaining data structures */
 	slurm_cred_ctx_destroy(slurmctld_config.cred_ctx);
@@ -1264,6 +1266,7 @@ unlock_slurmctld(job_read_lock);
 			_accounting_cluster_ready();
 			unlock_slurmctld(node_read_lock);
 		}
+
 		/* Reassert this machine as the primary controller.
 		 * A network or security problem could result in 
 		 * the backup controller assuming control even 
@@ -1462,7 +1465,6 @@ static int _shutdown_backup_controller(int wait_time)
 {
 	int rc;
 	slurm_msg_t req;
-	DEF_TIMERS;
 
 	slurm_msg_t_init(&req);
 	if ((slurmctld_conf.backup_addr == NULL) ||
@@ -1477,11 +1479,9 @@ static int _shutdown_backup_controller(int wait_time)
 	/* send request message */
 	req.msg_type = REQUEST_CONTROL;
 	
-	START_TIMER;
 	if (slurm_send_recv_rc_msg_only_one(&req, &rc, 
 				(CONTROL_TIMEOUT * 1000)) < 0) {
-		END_TIMER2("_shutdown_backup_controller");
-		error("_shutdown_backup_controller:send/recv: %m, %s", TIME_STR);
+		error("_shutdown_backup_controller:send/recv: %m");
 		return SLURM_ERROR;
 	}
 	if (rc == ESLURM_DISABLED)

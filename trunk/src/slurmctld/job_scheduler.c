@@ -125,6 +125,9 @@ extern bool job_is_completing(void)
 	struct job_record *job_ptr = NULL;
 	time_t recent = time(NULL) - (slurmctld_conf.kill_wait + 2);
 
+	if (!job_list)
+		return completing;
+
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if ((job_ptr->job_state & JOB_COMPLETING) &&

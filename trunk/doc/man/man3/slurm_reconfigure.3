@@ -18,7 +18,7 @@ int \fBslurm_reconfigure\fR ( );
 .LP 
 int \fBslurm_shutdown\fR ( 
 .br
-	uint16_t \fIcore\fP
+	uint16_t \fIoptions\fP
 .br
 );
 .LP
@@ -48,8 +48,12 @@ int \fBslurm_update_partition\fR (
 .SH "ARGUMENTS"
 .LP 
 .TP 
-\fIcore\fP
-Generate a core file if value is non\-zero.
+\fIoptions\fP
+0: all slurm daemons are shutdown
+.br
+1: slurmctld generates a core file
+.br
+2: only the slurmctld is shutdown (no core file)
 .TP 
 \fIdelete_part_msg_ptr\fP
 Specifies the pointer to a partition delete request specification. See slurm.h for 

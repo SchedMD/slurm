@@ -890,43 +890,43 @@ extern List acct_storage_p_remove_qos(void *db_conn, uint32_t uid,
 	return NULL;
 }
 
-extern List acct_storage_p_get_users(PGconn *acct_pgsql_db,
+extern List acct_storage_p_get_users(PGconn *acct_pgsql_db, uid_t uid,
 				     acct_user_cond_t *user_cond)
 {
 	return NULL;
 }
 
-extern List acct_storage_p_get_accts(PGconn *acct_pgsql_db,
+extern List acct_storage_p_get_accts(PGconn *acct_pgsql_db, uid_t uid,
 				     acct_account_cond_t *acct_cond)
 {
 	return NULL;
 }
 
-extern List acct_storage_p_get_clusters(PGconn *acct_pgsql_db,
+extern List acct_storage_p_get_clusters(PGconn *acct_pgsql_db, uid_t uid,
 					acct_account_cond_t *cluster_cond)
 {
 	return NULL;
 }
 
-extern List acct_storage_p_get_associations(PGconn *acct_pgsql_db,
+extern List acct_storage_p_get_associations(PGconn *acct_pgsql_db, uid_t uid,
 					    acct_association_cond_t *assoc_cond)
 {
 	return NULL;
 }
 
-extern List acct_storage_p_get_qos(void *db_conn,
+extern List acct_storage_p_get_qos(void *db_conn, uid_t uid,
 				   acct_qos_cond_t *qos_cond)
 {
 	return NULL;
 }
 
-extern List acct_storage_p_get_txn(PGconn *acct_pgsql_db,
+extern List acct_storage_p_get_txn(PGconn *acct_pgsql_db, uid_t uid,
 				   acct_txn_cond_t *txn_cond)
 {
 	return NULL;
 }
 
-extern int acct_storage_p_get_usage(PGconn *acct_pgsql_db,
+extern int acct_storage_p_get_usage(PGconn *acct_pgsql_db, uid_t uid,
 				    acct_association_rec_t *acct_assoc,
 				    time_t start, time_t end)
 {
@@ -1087,7 +1087,7 @@ end_it:
 }
 
 extern int clusteracct_storage_p_get_usage(
-	void *db_conn,
+	void *db_conn, uid_t uid,
 	acct_cluster_rec_t *cluster_rec, time_t start, time_t end)
 {
 
@@ -1562,7 +1562,7 @@ extern int jobacct_storage_p_suspend(PGconn *acct_pgsql_db,
  * returns List of job_rec_t *
  * note List needs to be freed when called
  */
-extern List jobacct_storage_p_get_jobs(PGconn *acct_pgsql_db,
+extern List jobacct_storage_p_get_jobs(PGconn *acct_pgsql_db, uid_t uid,
 				       List selected_steps,
 				       List selected_parts,
 				       sacct_parameters_t *params)
@@ -1612,7 +1612,7 @@ extern List jobacct_storage_p_get_jobs(PGconn *acct_pgsql_db,
  * returns List of job_rec_t *
  * note List needs to be freed when called
  */
-extern List jobacct_storage_p_get_jobs_cond(PGconn *acct_pgsql_db, 
+extern List jobacct_storage_p_get_jobs_cond(PGconn *acct_pgsql_db, uid_t uid, 
 					    acct_job_cond_t *job_cond)
 {
 	List job_list = NULL;

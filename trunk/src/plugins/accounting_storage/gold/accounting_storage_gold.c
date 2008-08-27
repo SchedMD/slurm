@@ -1041,82 +1041,6 @@ extern int acct_storage_p_add_associations(void *db_conn,
 	return rc;
 }
 
-extern int acct_storage_p_get_assoc_id(void *db_conn,
-				       acct_association_rec_t *assoc)
-{
-	ListIterator itr = NULL;
-	acct_association_rec_t * found_assoc = NULL;
-	acct_association_rec_t * ret_assoc = NULL;
-
-	if(!local_association_list) 
-		local_association_list = acct_storage_g_get_associations(NULL,
-									 NULL);
-
-	if((!assoc->cluster && !assoc->acct) && !assoc->id) {
-		error("acct_storage_p_get_assoc_id: "
-		      "You need to supply a cluster and account name to get "
-		      "an association.");
-		return SLURM_ERROR;
-	}
-
-	itr = list_iterator_create(local_association_list);
-	while((found_assoc = list_next(itr))) {
-		if(assoc->id) {
-			if(assoc->id == found_assoc->id) {
-				ret_assoc = found_assoc;
-				break;
-			}
-			continue;
-		} else {
-			if((!found_assoc->acct 
-			    || strcasecmp(assoc->acct,
-					  found_assoc->acct))
-			   || (!assoc->cluster 
-			       || strcasecmp(assoc->cluster,
-					     found_assoc->cluster))
-			   || (assoc->user 
-			       && (!found_assoc->user 
-				   || strcasecmp(assoc->user,
-						 found_assoc->user)))
-			   || (!assoc->user && found_assoc->user 
-			       && strcasecmp("none",
-					     found_assoc->user)))
-				continue;
-			if(assoc->partition
-			   && (!assoc->partition 
-			       || strcasecmp(assoc->partition, 
-					     found_assoc->partition))) {
-				ret_assoc = found_assoc;
-				continue;
-			}
-		}
-		ret_assoc = found_assoc;
-		break;
-	}
-	list_iterator_destroy(itr);
-
-	if(!ret_assoc)
-		return SLURM_ERROR;
-
-	assoc->id = ret_assoc->id;
-	if(!assoc->user)
-		assoc->user = ret_assoc->user;
-	if(!assoc->acct)
-		assoc->acct = ret_assoc->acct;
-	if(!assoc->cluster)
-		assoc->cluster = ret_assoc->cluster;
-	if(!assoc->partition)
-		assoc->partition = ret_assoc->partition;
-
-	return SLURM_SUCCESS;
-}
-
-extern int acct_storage_p_validate_assoc_id(void *db_conn,
-					    uint32_t assoc_id)
-{
-	return SLURM_SUCCESS;
-}
-
 extern int acct_storage_p_add_qos(void *db_conn, uint32_t uid, 
 				  List qos_list)
 {
@@ -2085,7 +2009,7 @@ extern List acct_storage_p_remove_qos(void *db_conn, uint32_t uid,
 	return NULL;
 }
 
-extern List acct_storage_p_get_users(void *db_conn,
+extern List acct_storage_p_get_users(void *db_conn, uid_t uid,
 				     acct_user_cond_t *user_q)
 {
 	gold_request_t *gold_request = NULL;
@@ -2177,7 +2101,7 @@ empty:
 	return user_list;
 }
 
-extern List acct_storage_p_get_accts(void *db_conn,
+extern List acct_storage_p_get_accts(void *db_conn, uid_t uid,
 				     acct_account_cond_t *acct_q)
 {
 	gold_request_t *gold_request = NULL;
@@ -2286,7 +2210,7 @@ empty:
 	return acct_list;
 }
 
-extern List acct_storage_p_get_clusters(void *db_conn,
+extern List acct_storage_p_get_clusters(void *db_conn, uid_t uid,
 					acct_cluster_cond_t *cluster_q)
 {
 	gold_request_t *gold_request = NULL;
@@ -2349,7 +2273,7 @@ empty:
 	return cluster_list;
 }
 
-extern List acct_storage_p_get_associations(void *db_conn,
+extern List acct_storage_p_get_associations(void *db_conn, uid_t uid,
 					    acct_association_cond_t *assoc_q)
 {
 
@@ -2461,19 +2385,19 @@ empty:
 	return association_list;
 }
 
-extern List acct_storage_p_get_qos(void *db_conn,
+extern List acct_storage_p_get_qos(void *db_conn, uid_t uid,
 				   acct_qos_cond_t *qos_cond)
 {
 	return NULL;
 }
 
-extern List acct_storage_p_get_txn(void *db_conn,
+extern List acct_storage_p_get_txn(void *db_conn, uid_t uid,
 				   acct_txn_cond_t *txn_cond)
 {
 	return NULL;
 }
 
-extern int acct_storage_p_get_usage(void *db_conn,
+extern int acct_storage_p_get_usage(void *db_conn, uid_t uid,
 				    acct_association_rec_t *acct_assoc,
 				    time_t start, time_t end)
 {
@@ -2929,7 +2853,7 @@ extern int clusteracct_storage_p_cluster_procs(void *db_conn,
 }
 
 extern int clusteracct_storage_p_get_usage(
-	void *db_conn, 
+	void *db_conn, uid_t uid, 
 	acct_cluster_rec_t *cluster_rec, time_t start, 
 	time_t end)
 {
@@ -3081,7 +3005,7 @@ extern int jobacct_storage_p_suspend(void *db_conn,
  * returns List of jobacct_job_rec_t *
  * note List needs to be freed when called
  */
-extern List jobacct_storage_p_get_jobs(void *db_conn,
+extern List jobacct_storage_p_get_jobs(void *db_conn, uid_t uid,
 				       List selected_steps,
 				       List selected_parts,
 				       sacct_parameters_t *params)
@@ -3296,7 +3220,7 @@ extern List jobacct_storage_p_get_jobs(void *db_conn,
  * returns List of jobacct_job_rec_t *
  * note List needs to be freed when called
  */
-extern List jobacct_storage_p_get_jobs_cond(void *db_conn,
+extern List jobacct_storage_p_get_jobs_cond(void *db_conn, uid_t uid,
 					    void *job_cond)
 {
 	info("not implemented");

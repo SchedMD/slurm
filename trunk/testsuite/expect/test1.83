@@ -43,6 +43,11 @@ set exit_code   0
 
 print_header $test_id
 
+if {[test_wiki_sched] == 1} {
+	send_user "\nWARNING: not compatable with sched/wiki (Maui)\n"
+	send_user "         or sched/wiki2 (Moab) schedulers\n"
+	exit $exit_code
+}
 if {[test_front_end] != 0} {
 	send_user "\nWARNING: This test is incompatable with front-end systems\n"
 	exit 0
@@ -74,22 +79,6 @@ expect {
 	-re "Requested node configuration is not available" {
 		send_user "\nWARNING: can't test srun task distribution\n"
 		exit $exit_code
-	}
-	-re "($number): ($alpha_numeric_under)($number)" {
-		set task_id $expect_out(1,string)
-		if {$task_id == 0} {
-			set host_0_name $expect_out(2,string)
-			set host_0_num  $expect_out(3,string)
-		}
-		if {$task_id == 1} {
-			set host_1_name $expect_out(2,string)
-			set host_1_num  $expect_out(3,string)
-		}
-		if {$task_id == 2} {
-			set host_2_name $expect_out(2,string)
-			set host_2_num  $expect_out(3,string)
-		}
-		exp_continue
 	}
 	-re "($number): ($alpha_numeric_under)" {
 		set task_id $expect_out(1,string)
@@ -127,20 +116,24 @@ if {[test_front_end] != 0} {
 
 if {[string compare $host_0_name ""] == 0} {
 	send_user "\nFAILURE: Did not get hostname of task 0\n"
-	set exit_code   1	
+	exit 1	
 }
 if {[string compare $host_1_name ""] == 0} {
 	send_user "\nFAILURE: Did not get hostname of task 1\n"
-	set exit_code   1	
+	exit 1	
 }
 if {[string compare $host_2_name ""] == 0} {
 	send_user "\nFAILURE: Did not get hostname of task 2\n"
-	set exit_code   1	
+	exit 1	
 }
 
 #
 # Verify node sequence number
 #
+set host_0_num [get_suffix $host_0_name]
+set host_1_num [get_suffix $host_1_name]
+set host_2_num [get_suffix $host_2_name]
+
 if {$host_1_num != [expr $host_0_num + 1]} {
 	send_user "\nFAILURE: node sequence number not contiguous\n"
 	set exit_code   1	

@@ -1,16 +1,24 @@
-.TH "salloc" "1" "SLURM 1.3" "July 2008" "SLURM Commands"
+.TH "salloc" "1" "SLURM 1.3" "August 2008" "SLURM Commands"
 .SH "NAME"
 .LP 
-salloc \- Obtain a SLURM job allocation (a set of nodes), execute a command, and then release the allocation when the command is finished.
+salloc \- Obtain a SLURM job allocation (a set of nodes), execute a command, 
+and then release the allocation when the command is finished.
+
 .SH "SYNOPSIS"
 .LP 
 salloc [\fIoptions\fP] [<\fIcommand\fP> [\fIcommand args\fR]]
 
 .SH "DESCRIPTION"
 .LP 
-salloc is used to allocate a SLURM job allocation, which is a set of resources (nodes), possibly with some set of constraints (e.g. number of processors per node).  When salloc successfully obtains the requested allocation, it then runs the command specified by the user.  Finally, when the user specified command is complete, salloc relinquishes the job allocation.
+salloc is used to allocate a SLURM job allocation, which is a set of resources 
+(nodes), possibly with some set of constraints (e.g. number of processors per 
+node).  When salloc successfully obtains the requested allocation, it then runs 
+the command specified by the user.  Finally, when the user specified command is 
+complete, salloc relinquishes the job allocation.
 
-The command may be any program the user wishes.  Some typical commands are xterm, a shell script containing srun commands, and srun (see the EXAMPLES section).
+The command may be any program the user wishes.  Some typical commands are 
+xterm, a shell script containing srun commands, and srun (see the EXAMPLES 
+section). If no command is specified, the user's default shell.
 
 .SH "OPTIONS"
 .LP 

@@ -679,7 +679,8 @@ static int _get_accounts(void *db_conn,
 		return SLURM_ERROR;
 	}
 	
-	list_msg.my_list = acct_storage_g_get_accounts(db_conn, get_msg->cond);
+	list_msg.my_list = acct_storage_g_get_accounts(db_conn, *uid,
+						       get_msg->cond);
 	slurmdbd_free_cond_msg(DBD_GET_ACCOUNTS, get_msg);
 
 
@@ -710,7 +711,7 @@ static int _get_assocs(void *db_conn,
 	}
 	
 	list_msg.my_list = acct_storage_g_get_associations(
-		db_conn, get_msg->cond);
+		db_conn, *uid, get_msg->cond);
 	slurmdbd_free_cond_msg(DBD_GET_ASSOCS, get_msg);
 
 
@@ -741,7 +742,7 @@ static int _get_clusters(void *db_conn,
 	}
 	
 	list_msg.my_list = acct_storage_g_get_clusters(
-		db_conn, get_msg->cond);
+		db_conn, *uid, get_msg->cond);
 	slurmdbd_free_cond_msg(DBD_GET_CLUSTERS, get_msg);
 
 
@@ -787,7 +788,7 @@ static int _get_jobs(void *db_conn,
 	}
 		
 	list_msg.my_list = jobacct_storage_g_get_jobs(
-		db_conn,
+		db_conn, *uid,
 		get_jobs_msg->selected_steps, get_jobs_msg->selected_parts,
 		&sacct_params);
 	slurmdbd_free_get_jobs_msg(get_jobs_msg);
@@ -822,7 +823,7 @@ static int _get_jobs_cond(void *db_conn,
 	}
 	
 	list_msg.my_list = jobacct_storage_g_get_jobs_cond(
-		db_conn, cond_msg->cond);
+		db_conn, *uid, cond_msg->cond);
 	slurmdbd_free_cond_msg(DBD_GET_JOBS_COND, cond_msg);
 
 	*out_buffer = init_buf(1024);
@@ -851,7 +852,8 @@ static int _get_qos(void *db_conn,
 		return SLURM_ERROR;
 	}
 	
-	list_msg.my_list = acct_storage_g_get_qos(db_conn, cond_msg->cond);
+	list_msg.my_list = acct_storage_g_get_qos(db_conn, *uid,
+						  cond_msg->cond);
 	slurmdbd_free_cond_msg(DBD_GET_QOS, cond_msg);
 
 	*out_buffer = init_buf(1024);
@@ -880,7 +882,8 @@ static int _get_txn(void *db_conn,
 		return SLURM_ERROR;
 	}
 
-	list_msg.my_list = acct_storage_g_get_txn(db_conn, cond_msg->cond);
+	list_msg.my_list = acct_storage_g_get_txn(db_conn, *uid,
+						  cond_msg->cond);
 	slurmdbd_free_cond_msg(DBD_GET_TXN, cond_msg);
 
 	*out_buffer = init_buf(1024);
@@ -898,7 +901,7 @@ static int _get_usage(uint16_t type, void *db_conn,
 	dbd_usage_msg_t *get_msg = NULL;
 	dbd_usage_msg_t got_msg;
 	uint16_t ret_type = 0;
-	int (*my_function) (void *db_conn, void *object,
+	int (*my_function) (void *db_conn, uid_t uid, void *object,
 			    time_t start, time_t end);
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
@@ -928,7 +931,7 @@ static int _get_usage(uint16_t type, void *db_conn,
 		return SLURM_ERROR;
 	}		
 
-	rc = (*(my_function))(db_conn, get_msg->rec,
+	rc = (*(my_function))(db_conn, *uid, get_msg->rec,
 			      get_msg->start, get_msg->end);
 	slurmdbd_free_usage_msg(type, get_msg);
 
@@ -967,7 +970,8 @@ static int _get_users(void *db_conn,
 		return SLURM_ERROR;
 	}
 	
-	list_msg.my_list = acct_storage_g_get_users(db_conn, get_msg->cond);
+	list_msg.my_list = acct_storage_g_get_users(db_conn, *uid,
+						    get_msg->cond);
 	slurmdbd_free_cond_msg(DBD_GET_USERS, get_msg);
 
 	*out_buffer = init_buf(1024);

@@ -76,7 +76,7 @@ static int _set_assoc_parent_and_user(acct_association_rec_t *assoc)
 	}
 	if(assoc->user) {
 		uid_t pw_uid = uid_from_string(assoc->user);
-		if(pw_uid == (uid_t) -1)
+		if(pw_uid == (uid_t) -1) 
 			assoc->uid = (uint32_t)NO_VAL;
 		else
 			assoc->uid = pw_uid;	
@@ -92,6 +92,8 @@ static int _get_local_association_list(void *db_conn, int enforce)
 {
 	acct_association_cond_t assoc_q;
 	char *cluster_name = NULL;
+	uid_t uid = getuid();
+
 //	DEF_TIMERS;
 	slurm_mutex_lock(&local_association_lock);
 	if(local_association_list)
@@ -113,7 +115,7 @@ static int _get_local_association_list(void *db_conn, int enforce)
 
 //	START_TIMER;
 	local_association_list =
-		acct_storage_g_get_associations(db_conn, &assoc_q);
+		acct_storage_g_get_associations(db_conn, uid, &assoc_q);
 //	END_TIMER2("get_associations");
 
 	if(assoc_q.cluster_list)
@@ -149,10 +151,12 @@ static int _get_local_association_list(void *db_conn, int enforce)
 
 static int _get_local_qos_list(void *db_conn, int enforce)
 {
+	uid_t uid = getuid();
+
 	slurm_mutex_lock(&local_qos_lock);
 	if(local_qos_list)
 		list_destroy(local_qos_list);
-	local_qos_list = acct_storage_g_get_qos(db_conn, NULL);
+	local_qos_list = acct_storage_g_get_qos(db_conn, uid, NULL);
 
 	if(!local_qos_list) {
 		slurm_mutex_unlock(&local_qos_lock);
@@ -172,14 +176,15 @@ static int _get_local_qos_list(void *db_conn, int enforce)
 static int _get_local_user_list(void *db_conn, int enforce)
 {
 	acct_user_cond_t user_q;
+	uid_t uid = getuid();
 
 	memset(&user_q, 0, sizeof(acct_user_cond_t));
 	user_q.with_coords = 1;
-
+	
 	slurm_mutex_lock(&local_user_lock);
 	if(local_user_list)
 		list_destroy(local_user_list);
-	local_user_list = acct_storage_g_get_users(db_conn, &user_q);
+	local_user_list = acct_storage_g_get_users(db_conn, uid, &user_q);
 
 	if(!local_user_list) {
 		slurm_mutex_unlock(&local_user_lock);
@@ -693,8 +698,8 @@ extern int assoc_mgr_update_local_users(acct_update_object_t *update)
 				object->qos_list = NULL;
 			}
 
-			if(object->admin_level != ACCT_ADMIN_NOTSET)
-				rec->admin_level = rec->admin_level;
+			if(object->admin_level != ACCT_ADMIN_NOTSET) 
+				rec->admin_level = object->admin_level;
 
 			break;
 		case ACCT_ADD_USER:
@@ -703,9 +708,11 @@ extern int assoc_mgr_update_local_users(acct_update_object_t *update)
 				break;
 			}
 			pw_uid = uid_from_string(object->name);
-			if(pw_uid == (uid_t) -1) 
+			if(pw_uid == (uid_t) -1) {
+				error("couldn't get a uid for user %s",
+				      object->name);
 				object->uid = NO_VAL;
-			else
+			} else
 				object->uid = pw_uid;
 			list_append(local_user_list, object);
 			break;

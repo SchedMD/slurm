@@ -56,7 +56,7 @@ exec $bin_echo "int getuid(void)  { return ID; }" >>${ld_preload}.c
 exec $bin_echo "int geteuid(void) { return ID; }" >>${ld_preload}.c
 exec $bin_echo "int getgid(void)  { return ID; }" >>${ld_preload}.c
 exec $bin_echo "int getegid(void) { return ID; }" >>${ld_preload}.c
-exec $bin_cc -c -o ${ld_preload}.lo ${ld_preload}.c
+exec $bin_cc -c -fPIC -o ${ld_preload}.lo ${ld_preload}.c
 exec $bin_cc -shared -o ${ld_preload}.so ${ld_preload}.lo
 
 global env

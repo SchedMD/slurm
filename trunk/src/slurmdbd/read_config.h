@@ -75,6 +75,7 @@ typedef struct slurm_dbd_conf {
 	uint16_t        msg_timeout;    /* message timeout		*/   
 	char *		pid_file;	/* where to store current PID	*/
 	char *		plugindir;	/* dir to look for plugins	*/
+	uint16_t        private_data;   /* restrict information         */
 	uint32_t	slurm_user_id;	/* uid of slurm_user_name	*/
 	char *		slurm_user_name;/* user that slurmcdtld runs as	*/
 	uint16_t	step_purge;	/* purge time for step info	*/

@@ -388,7 +388,7 @@ typedef struct epilog_complete_msg {
 } epilog_complete_msg_t;
 
 typedef struct shutdown_msg {
-	uint16_t core;
+	uint16_t options;
 } shutdown_msg_t;
 
 typedef struct last_update_msg {

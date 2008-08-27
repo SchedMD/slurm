@@ -114,6 +114,8 @@ char *user_table = "user_table";
 char *last_ran_table = "last_ran_table";
 char *suspend_table = "suspend_table";
 
+static int normal_qos_id = NO_VAL;
+
 extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit);
 
 extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
@@ -121,15 +123,15 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 					   List association_list);
 
 extern List acct_storage_p_get_associations(
-	mysql_conn_t *mysql_conn, 
+	mysql_conn_t *mysql_conn, uid_t uid, 
 	acct_association_cond_t *assoc_cond);
 
-extern int acct_storage_p_get_usage(mysql_conn_t *mysql_conn,
+extern int acct_storage_p_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 				    acct_association_rec_t *acct_assoc,
 				    time_t start, time_t end);
 
 extern int clusteracct_storage_p_get_usage(
-	mysql_conn_t *mysql_conn,
+	mysql_conn_t *mysql_conn, uid_t uid,
 	acct_cluster_rec_t *cluster_rec, time_t start, time_t end);
 
 /* This should be added to the beginning of each function to make sure
@@ -303,7 +305,8 @@ static int _move_account(mysql_conn_t *mysql_conn, uint32_t lft, uint32_t rgt,
  * should work either way in the tree.  (i.e. move child to be parent
  * of current parent, and parent to be child of child.)
  */
-static int _move_parent(mysql_conn_t *mysql_conn, uint32_t lft, uint32_t rgt,
+static int _move_parent(mysql_conn_t *mysql_conn, uid_t uid,
+			uint32_t lft, uint32_t rgt,
 			char *cluster,
 			char *id, char *old_parent, char *new_parent)
 {
@@ -374,7 +377,7 @@ static int _move_parent(mysql_conn_t *mysql_conn, uint32_t lft, uint32_t rgt,
 	/* now we need to send the update of the new parents and
 	 * limits, so just to be safe, send the whole tree
 	 */
-	assoc_list = acct_storage_p_get_associations(mysql_conn, NULL);
+	assoc_list = acct_storage_p_get_associations(mysql_conn, uid, NULL);
 	/* NOTE: you can not use list_pop, or list_push
 	   anywhere either, since mysql is
 	   exporting something of the same type as a macro,
@@ -1158,21 +1161,21 @@ static int _get_user_coords(mysql_conn_t *mysql_conn, acct_user_rec_t *user)
 }
 
 /* Used in job functions for getting the database index based off the
- * submit time, job and assoc id.
+ * submit time, job and assoc id.  0 is returned if none is found
  */
 static int _get_db_index(MYSQL *db_conn, 
 			 time_t submit, uint32_t jobid, uint32_t associd)
 {
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	int db_index = -1;
+	int db_index = 0;
 	char *query = xstrdup_printf("select id from %s where "
 				     "submit=%d and jobid=%u and associd=%u",
 				     job_table, (int)submit, jobid, associd);
 
 	if(!(result = mysql_db_query_ret(db_conn, query, 0))) {
 		xfree(query);
-		return -1;
+		return 0;
 	}
 	xfree(query);
 
@@ -1182,7 +1185,7 @@ static int _get_db_index(MYSQL *db_conn,
 		error("We can't get a db_index for this combo, "
 		      "submit=%d and jobid=%u and associd=%u.",
 		      (int)submit, jobid, associd);
-		return -1;
+		return 0;
 	}
 	db_index = atoi(row[0]);
 	mysql_free_result(result);
@@ -1222,7 +1225,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "name", "tinytext not null" },
 		{ "description", "text not null" },
 		{ "organization", "text not null" },
-		{ "qos", "blob" },
+		{ "qos", "blob not null default ''" },
 		{ NULL, NULL}		
 	};
 
@@ -1351,11 +1354,11 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "user_usec", "int unsigned default 0 not null" },
 		{ "sys_sec", "int unsigned default 0 not null" },
 		{ "sys_usec", "int unsigned default 0 not null" },
-		{ "max_vsize", "mediumint unsigned default 0 not null" },
+		{ "max_vsize", "int unsigned default 0 not null" },
 		{ "max_vsize_task", "smallint unsigned default 0 not null" },
 		{ "max_vsize_node", "mediumint unsigned default 0 not null" },
 		{ "ave_vsize", "float default 0.0 not null" },
-		{ "max_rss", "mediumint unsigned default 0 not null" },
+		{ "max_rss", "int unsigned default 0 not null" },
 		{ "max_rss_task", "smallint unsigned default 0 not null" },
 		{ "max_rss_node", "mediumint unsigned default 0 not null" },
 		{ "ave_rss", "float default 0.0 not null" },
@@ -1394,7 +1397,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "deleted", "tinyint default 0" },
 		{ "name", "tinytext not null" },
 		{ "default_acct", "tinytext not null" },
-		{ "qos", "blob" },
+		{ "qos", "blob not null default ''" },
 		{ "admin_level", "smallint default 1 not null" },
 		{ NULL, NULL}		
 	};
@@ -1442,7 +1445,9 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		"UNTIL (@mj != -1 && @mnpj != -1 && @mwpj != -1 "
 		"&& @mcpj != -1) || @my_acct = '' END REPEAT; "
 		"END;";
-	
+	char *query = NULL;
+	time_t now = time(NULL);
+
 	if(mysql_db_create_table(db_conn, acct_coord_table,
 				 acct_coord_table_fields,
 				 ", primary key (acct(20), user(20)))")
@@ -1527,15 +1532,15 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 	   == SLURM_ERROR)
 		return SLURM_ERROR;
 	else {
-		time_t now = time(NULL);
-		char *query = xstrdup_printf(
+		query = xstrdup_printf(
 			"insert into %s "
 			"(creation_time, mod_time, name, description) "
 			"values (%d, %d, 'normal', 'Normal QOS default') "
-			"on duplicate key update deleted=0;",
+			"on duplicate key update id=LAST_INSERT_ID(id), "
+			"deleted=0;",
 			qos_table, now, now);
 		debug3("%s", query);
-		mysql_db_query(db_conn, query);
+		normal_qos_id = mysql_insert_ret_id(db_conn, query);
 		xfree(query);		
 	}
 	if(mysql_db_create_table(db_conn, step_table,
@@ -1557,6 +1562,28 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		return SLURM_ERROR;
 
 	rc = mysql_db_query(db_conn, get_parent_proc);
+
+	/* Add user root to be a user by default and have this default
+	 * account be root.  If already there just update
+	 * name='root'.  That way if the admins delete it it will
+	 * remained deleted. Creation time will be 0 so it will never
+	 * really be deleted.
+	 */
+	query = xstrdup_printf(
+		"insert into %s (creation_time, mod_time, name, default_acct, "
+		"admin_level) values (0, %d, 'root', 'root', %u) "
+		"on duplicate key update name='root';",
+		user_table, now, ACCT_ADMIN_SUPER_USER, now);
+	xstrfmtcat(query, 
+		   "insert into %s (creation_time, mod_time, name, "
+		   "description, organization) values (0, %d, 'root', "
+		   "'default root account', 'root') on duplicate key "
+		   "update name='root';",
+		   acct_table, now); 
+
+	debug3("%s", query);
+	mysql_db_query(db_conn, query);
+	xfree(query);		
 
 	return rc;
 }
@@ -1848,22 +1875,18 @@ extern int acct_storage_p_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 
 			xstrfmtcat(vals, ", '%s'", qos_val); 		
 			xstrfmtcat(extra, ", qos='%s'", qos_val); 		
+		} else if(normal_qos_id != NO_VAL) { 
+			/* Add normal qos to the user */
+			xstrcat(cols, ", qos");
+			xstrfmtcat(vals, ", ',%d'", normal_qos_id);
+			xstrfmtcat(extra, ", qos=',%d'", normal_qos_id);
 		}
-		/* Since I don't really want to go find out which id
-		 * normal is we are not going to add it at all which
-		 * isn't a big deal since if the list is blank the user
-		 * will get it be default 
-		 */
-		/* else { */
-/* 			/\* Add normal qos to the user *\/ */
-/* 			xstrcat(cols, ", qos"); */
-/* 			xstrfmtcat(vals, ", ',0'"); 		 */
-/* 			xstrfmtcat(extra, ", qos=',0'"); 	        */
-/* 		} */
 
 		if(object->admin_level != ACCT_ADMIN_NOTSET) {
 			xstrcat(cols, ", admin_level");
 			xstrfmtcat(vals, ", %u", object->admin_level);
+			xstrfmtcat(extra, ", admin_level=%u", 
+				   object->admin_level); 		
 		}
 
 		query = xstrdup_printf(
@@ -2086,6 +2109,11 @@ extern int acct_storage_p_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 
 			xstrfmtcat(vals, ", '%s'", qos_val); 		
 			xstrfmtcat(extra, ", qos='%s'", qos_val); 		
+		} else if(normal_qos_id != NO_VAL) { 
+			/* Add normal qos to the account */
+			xstrcat(cols, ", qos");
+			xstrfmtcat(vals, ", ',%d'", normal_qos_id);
+			xstrfmtcat(extra, ", qos=',%d'", normal_qos_id);
 		}
 
 		query = xstrdup_printf(
@@ -2177,9 +2205,23 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *user_name = NULL;
 	int affect_rows = 0;
 	int added = 0;
+	List assoc_list = NULL;
+	acct_association_rec_t *assoc = NULL;
 
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return SLURM_ERROR;
+
+	assoc_list = list_create(destroy_acct_association_rec);
+	assoc = xmalloc(sizeof(acct_association_rec_t));
+	list_append(assoc_list, assoc);
+
+	assoc->user = xstrdup("root");
+	assoc->acct = xstrdup("root");
+	assoc->fairshare = NO_VAL;
+	assoc->max_cpu_secs_per_job = NO_VAL;
+	assoc->max_jobs = NO_VAL;
+	assoc->max_nodes_per_job = NO_VAL;
+	assoc->max_wall_duration_per_job = NO_VAL;
 
 	user_name = uid_to_string((uid_t) uid);
 	itr = list_iterator_create(cluster_list);
@@ -2326,9 +2368,23 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			error("Couldn't add txn");
 		} else
 			added++;
+
+		/* Add user root by default to run from the root
+		 * association 
+		 */
+		xfree(assoc->cluster);
+		assoc->cluster = xstrdup(object->name);
+		if(acct_storage_p_add_associations(mysql_conn, uid, assoc_list)
+		   == SLURM_ERROR) {
+			error("Problem adding root user association");
+			rc = SLURM_ERROR;
+		}
+
 	}
 	list_iterator_destroy(itr);
 	xfree(user_name);
+
+	list_destroy(assoc_list);
 
 	if(!added) {
 		if(mysql_conn->rollback) {
@@ -2419,13 +2475,10 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 			xstrfmtcat(vals, ", '%s'", parent);
 			xstrfmtcat(extra, ", parent_acct='%s'", parent);
 			xstrfmtcat(update, " && user=''"); 
-		}
-		
-		if(object->user) {
+		} else {
 			char *part = object->partition;
 			xstrcat(cols, ", user");
 			xstrfmtcat(vals, ", '%s'", object->user); 		
-			xstrfmtcat(extra, ", user='%s'", object->user);
 			xstrfmtcat(update, " && user='%s'",
 				   object->user); 
 
@@ -2436,7 +2489,6 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 				part = "";
 			xstrcat(cols, ", partition");
 			xstrfmtcat(vals, ", '%s'", part);
-			xstrfmtcat(extra, ", partition='%s'", part);
 			xstrfmtcat(update, " && partition='%s'", part);
 		}
 
@@ -2641,7 +2693,7 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 					 row[MASSOC_PACCT])) {
 				
 				/* We need to move the parent! */
-				if(_move_parent(mysql_conn,
+				if(_move_parent(mysql_conn, uid,
 						atoi(row[MASSOC_LFT]),
 						atoi(row[MASSOC_RGT]),
 						object->cluster,
@@ -2944,8 +2996,8 @@ extern List acct_storage_p_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 					   object+1);
 			} else if(object[0] == '+') {
 				xstrfmtcat(vals,
-					   ", qos=concat("
-					   "replace(qos, ',%s', ''), ',%s')",
+					   ", qos=concat_ws(',', "
+					   "replace(qos, ',%s', ''), '%s')",
 					   object+1, object+1);
 			} else {
 				xstrfmtcat(tmp_qos, ",%s", object);
@@ -3184,8 +3236,8 @@ extern List acct_storage_p_modify_accounts(
 					   object+1);
 			} else if(object[0] == '+') {
 				xstrfmtcat(vals,
-					   ", qos=concat("
-					   "replace(qos, ',%s', ''), ',%s')",
+					   ", qos=concat_ws(',', "
+					   "replace(qos, ',%s', ''), '%s')",
 					   object+1, object+1);
 			} else {
 				xstrfmtcat(tmp_qos, ",%s", object);
@@ -3508,9 +3560,12 @@ extern List acct_storage_p_modify_associations(
 		}
 		list_iterator_destroy(itr);
 		xstrcat(extra, ")");
-	} else {
-		debug4("no user specified");
+	} else if (!assoc_cond->user_list) {
+		debug4("no user specified looking at accounts");
 		xstrcat(extra, " && user = '' ");
+	} else {
+		debug4("no user specified looking at users");
+		xstrcat(extra, " && user != '' ");
 	}
 
 	if(assoc_cond->partition_list 
@@ -3709,7 +3764,7 @@ extern List acct_storage_p_modify_associations(
 					continue;
 				}
 
-				if(_move_parent(mysql_conn,
+				if(_move_parent(mysql_conn, uid,
 						atoi(row[MASSOC_LFT]),
 						atoi(row[MASSOC_RGT]),
 						row[MASSOC_CLUSTER],
@@ -4875,7 +4930,7 @@ extern List acct_storage_p_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 #endif
 }
 
-extern List acct_storage_p_get_users(mysql_conn_t *mysql_conn, 
+extern List acct_storage_p_get_users(mysql_conn_t *mysql_conn, uid_t uid, 
 				     acct_user_cond_t *user_cond)
 {
 #ifdef HAVE_MYSQL
@@ -4886,9 +4941,11 @@ extern List acct_storage_p_get_users(mysql_conn_t *mysql_conn,
 	ListIterator itr = NULL;
 	char *object = NULL;
 	int set = 0;
-	int i=0;
+	int i=0, is_admin=1;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
+	uint16_t private_data = 0;
+	acct_user_rec_t user;
 
 	/* if this changes you will need to edit the corresponding enum */
 	char *user_req_inx[] = {
@@ -4908,7 +4965,32 @@ extern List acct_storage_p_get_users(mysql_conn_t *mysql_conn,
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
+	memset(&user, 0, sizeof(acct_user_rec_t));
+	user.uid = uid;
 
+	private_data = slurm_get_private_data();
+	if (private_data & PRIVATE_DATA_USERS) {
+		/* This only works when running though the slurmdbd.
+		 * THERE IS NO AUTHENTICATION WHEN RUNNNING OUT OF THE
+		 * SLURMDBD!
+		 */
+		if(slurmdbd_conf) {
+			is_admin = 0;
+			/* we have to check the authentication here in the
+			 * plugin since we don't know what accounts are being
+			 * referenced until after the query.  Here we will
+			 * set if they are an operator or greater and then
+			 * check it below after the query.
+			 */
+			if((uid == slurmdbd_conf->slurm_user_id || uid == 0)
+			   || assoc_mgr_get_admin_level(mysql_conn, uid) 
+			   >= ACCT_ADMIN_OPERATOR) 
+				is_admin = 1;	
+			else {
+				assoc_mgr_fill_in_user(mysql_conn, &user, 1);
+			}
+		}
+	}
 	
 	if(!user_cond) {
 		xstrcat(extra, "where deleted=0");
@@ -4972,6 +5054,12 @@ extern List acct_storage_p_get_users(mysql_conn_t *mysql_conn,
 			   user_cond->admin_level);
 	}
 empty:
+	/* This is here to make sure we are looking at only this user
+	 * if this flag is set. 
+	 */
+	if(!is_admin && (private_data & PRIVATE_DATA_USERS)) {
+		xstrfmtcat(extra, " && name='%s'", user.name);
+	}
 
 	xfree(tmp);
 	xstrfmtcat(tmp, "%s", user_req_inx[i]);
@@ -5034,7 +5122,7 @@ empty:
 			assoc_cond->user_list = list_create(NULL);
 			list_append(assoc_cond->user_list, user->name);
 			user->assoc_list = acct_storage_p_get_associations(
-				mysql_conn, assoc_cond);
+				mysql_conn, uid, assoc_cond);
 			list_destroy(assoc_cond->user_list);
 			assoc_cond->user_list = NULL;
 		}
@@ -5047,7 +5135,7 @@ empty:
 #endif
 }
 
-extern List acct_storage_p_get_accts(mysql_conn_t *mysql_conn, 
+extern List acct_storage_p_get_accts(mysql_conn_t *mysql_conn, uid_t uid,
 				     acct_account_cond_t *acct_cond)
 {
 #ifdef HAVE_MYSQL
@@ -5058,9 +5146,11 @@ extern List acct_storage_p_get_accts(mysql_conn_t *mysql_conn,
 	ListIterator itr = NULL;
 	char *object = NULL;
 	int set = 0;
-	int i=0;
+	int i=0, is_admin=1;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
+	uint16_t private_data = 0;
+	acct_user_rec_t user;
 
 	/* if this changes you will need to edit the corresponding enum */
 	char *acct_req_inx[] = {
@@ -5080,6 +5170,39 @@ extern List acct_storage_p_get_accts(mysql_conn_t *mysql_conn,
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
+	memset(&user, 0, sizeof(acct_user_rec_t));
+	user.uid = uid;
+
+	private_data = slurm_get_private_data();
+
+	if (private_data & PRIVATE_DATA_ACCOUNTS) {
+		/* This only works when running though the slurmdbd.
+		 * THERE IS NO AUTHENTICATION WHEN RUNNNING OUT OF THE
+		 * SLURMDBD!
+		 */
+		if(slurmdbd_conf) {
+			is_admin = 0;
+			/* we have to check the authentication here in the
+			 * plugin since we don't know what accounts are being
+			 * referenced until after the query.  Here we will
+			 * set if they are an operator or greater and then
+			 * check it below after the query.
+			 */
+			if((uid == slurmdbd_conf->slurm_user_id || uid == 0)
+			   || assoc_mgr_get_admin_level(mysql_conn, uid) 
+			   >= ACCT_ADMIN_OPERATOR) 
+				is_admin = 1;	
+			else {
+				assoc_mgr_fill_in_user(mysql_conn, &user, 1);
+			}
+
+			if(!is_admin && (!user.coord_accts 
+					 || !list_count(user.coord_accts))) {
+				errno = ESLURM_ACCESS_DENIED;
+				return NULL;
+			}
+		}
+	}
 	
 	if(!acct_cond) {
 		xstrcat(extra, "where deleted=0");
@@ -5161,6 +5284,27 @@ empty:
 		xstrfmtcat(tmp, ", %s", acct_req_inx[i]);
 	}
 
+	/* This is here to make sure we are looking at only this user
+	 * if this flag is set.  We also include any accounts they may be
+	 * coordinator of.
+	 */
+	if(!is_admin && (private_data & PRIVATE_DATA_ACCOUNTS)) {
+		acct_coord_rec_t *coord = NULL;
+		set = 0;
+		itr = list_iterator_create(user.coord_accts);
+		while((coord = list_next(itr))) {
+			if(set) {
+				xstrfmtcat(extra, " || name='%s'", coord->name);
+			} else {
+				set = 1;
+				xstrfmtcat(extra, " && (name='%s'",coord->name);
+			}
+		}		
+		list_iterator_destroy(itr);
+		if(set)
+			xstrcat(extra,")");
+	}
+
 	query = xstrdup_printf("select %s from %s %s", tmp, acct_table, extra);
 	xfree(tmp);
 	xfree(extra);
@@ -5205,7 +5349,7 @@ empty:
 			assoc_cond->acct_list = list_create(NULL);
 			list_append(assoc_cond->acct_list, acct->name);
 			acct->assoc_list = acct_storage_p_get_associations(
-				mysql_conn, assoc_cond);
+				mysql_conn, uid, assoc_cond);
 			list_destroy(assoc_cond->acct_list);
 			assoc_cond->acct_list = NULL;
 		}
@@ -5219,7 +5363,7 @@ empty:
 #endif
 }
 
-extern List acct_storage_p_get_clusters(mysql_conn_t *mysql_conn, 
+extern List acct_storage_p_get_clusters(mysql_conn_t *mysql_conn, uid_t uid, 
 					acct_cluster_cond_t *cluster_cond)
 {
 #ifdef HAVE_MYSQL
@@ -5332,7 +5476,7 @@ empty:
 		/* get the usage if requested */
 		if(cluster_cond->with_usage) {
 			clusteracct_storage_p_get_usage(
-				mysql_conn, cluster,
+				mysql_conn, uid, cluster,
 				cluster_cond->usage_start,
 				cluster_cond->usage_end);
 		}
@@ -5388,7 +5532,8 @@ empty:
 #endif
 }
 
-extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn, 
+extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
+					    uid_t uid, 
 					    acct_association_cond_t *assoc_cond)
 {
 #ifdef HAVE_MYSQL
@@ -5399,7 +5544,7 @@ extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 	ListIterator itr = NULL;
 	char *object = NULL;
 	int set = 0;
-	int i=0;
+	int i=0, is_admin=1;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	int parent_mj = INFINITE;
@@ -5412,6 +5557,8 @@ extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 	char *last_cluster2 = NULL;
 	uint32_t user_parent_id = 0;
 	uint32_t acct_parent_id = 0;
+	uint16_t private_data = 0;
+	acct_user_rec_t user;
 
 	/* needed if we don't have an assoc_cond */
 	uint16_t without_parent_info = 0;
@@ -5458,13 +5605,39 @@ extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 		ASSOC2_REQ_MCPJ
 	};
 
-	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
-		return NULL;
-
-
 	if(!assoc_cond) {
 		xstrcat(extra, "where deleted=0");
 		goto empty;
+	}
+
+	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
+		return NULL;
+
+	memset(&user, 0, sizeof(acct_user_rec_t));
+	user.uid = uid;
+
+	private_data = slurm_get_private_data();
+	if (private_data & PRIVATE_DATA_USERS) {
+		/* This only works when running though the slurmdbd.
+		 * THERE IS NO AUTHENTICATION WHEN RUNNNING OUT OF THE
+		 * SLURMDBD!
+		 */
+		if(slurmdbd_conf) {
+			is_admin = 0;
+			/* we have to check the authentication here in the
+			 * plugin since we don't know what accounts are being
+			 * referenced until after the query.  Here we will
+			 * set if they are an operator or greater and then
+			 * check it below after the query.
+			 */
+			if((uid == slurmdbd_conf->slurm_user_id || uid == 0)
+			   || assoc_mgr_get_admin_level(mysql_conn, uid) 
+			   >= ACCT_ADMIN_OPERATOR) 
+				is_admin = 1;	
+			else {
+				assoc_mgr_fill_in_user(mysql_conn, &user, 1);
+			}
+		}
 	}
 
 	if(assoc_cond->with_deleted) 
@@ -5552,7 +5725,49 @@ empty:
 	for(i=1; i<ASSOC_REQ_COUNT; i++) {
 		xstrfmtcat(tmp, ", %s", assoc_req_inx[i]);
 	}
-
+	
+	/* this is here to make sure we are looking at only this user
+	 * if this flag is set.  We also include any accounts they may be
+	 * coordinator of.
+	 */
+	if(!is_admin && (private_data & PRIVATE_DATA_USERS)) {
+		query = xstrdup_printf("select lft from %s where user='%s'", 
+				       assoc_table, user.name);
+		if(user.coord_accts) {
+			acct_coord_rec_t *coord = NULL;
+			itr = list_iterator_create(user.coord_accts);
+			while((coord = list_next(itr))) {
+				xstrfmtcat(query, " || acct='%s'",
+					   coord->name);
+			}
+			list_iterator_destroy(itr);
+		}
+		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+		if(!(result = mysql_db_query_ret(
+			     mysql_conn->db_conn, query, 0))) {
+			xfree(extra);
+			xfree(query);
+			return NULL;
+		}
+		xfree(query);
+		set = 0;
+		while((row = mysql_fetch_row(result))) {
+			if(set) {
+				xstrfmtcat(extra,
+					   " || (%s between lft and rgt)",
+					   row[0]);
+			} else {
+				set = 1;
+				xstrfmtcat(extra,
+					" && ((%s between lft and rgt)",
+					row[0]);
+			}
+		}		
+		if(set)
+			xstrcat(extra,")");
+		mysql_free_result(result);
+	}
+	
 	query = xstrdup_printf("select %s from %s %s order by lft;", 
 			       tmp, assoc_table, extra);
 	xfree(tmp);
@@ -5566,31 +5781,31 @@ empty:
 	xfree(query);
 
 	assoc_list = list_create(destroy_acct_association_rec);
-	
+
 	while((row = mysql_fetch_row(result))) {
 		acct_association_rec_t *assoc =
 			xmalloc(sizeof(acct_association_rec_t));
 		MYSQL_RES *result2 = NULL;
 		MYSQL_ROW row2;
-
+		
 		list_append(assoc_list, assoc);
 		
 		assoc->id = atoi(row[ASSOC_REQ_ID]);
 		assoc->lft = atoi(row[ASSOC_REQ_LFT]);
 		assoc->rgt = atoi(row[ASSOC_REQ_RGT]);
-	
-		/* get the usage if requested */
-		if(with_usage) {
-			acct_storage_p_get_usage(mysql_conn, assoc,
-						 assoc_cond->usage_start,
-						 assoc_cond->usage_end);
-		}
 
 		if(row[ASSOC_REQ_USER][0])
 			assoc->user = xstrdup(row[ASSOC_REQ_USER]);
 		assoc->acct = xstrdup(row[ASSOC_REQ_ACCT]);
 		assoc->cluster = xstrdup(row[ASSOC_REQ_CLUSTER]);
-		
+			
+		/* get the usage if requested */
+		if(with_usage) {
+			acct_storage_p_get_usage(mysql_conn, uid, assoc,
+						 assoc_cond->usage_start,
+						 assoc_cond->usage_end);
+		}
+
 		if(!without_parent_info 
 		   && row[ASSOC_REQ_PARENT][0]) {
 /* 			info("got %s?=%s and %s?=%s", */
@@ -5715,7 +5930,7 @@ empty:
 #endif
 }
 
-extern List acct_storage_p_get_qos(mysql_conn_t *mysql_conn,
+extern List acct_storage_p_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 				   acct_qos_cond_t *qos_cond)
 {
 #ifdef HAVE_MYSQL
@@ -5842,7 +6057,7 @@ empty:
 #endif
 }
 
-extern List acct_storage_p_get_txn(mysql_conn_t *mysql_conn,
+extern List acct_storage_p_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 				   acct_txn_cond_t *txn_cond)
 {
 #ifdef HAVE_MYSQL
@@ -6011,13 +6226,13 @@ empty:
 #endif
 }
 
-extern int acct_storage_p_get_usage(mysql_conn_t *mysql_conn,
+extern int acct_storage_p_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 				    acct_association_rec_t *acct_assoc,
 				    time_t start, time_t end)
 {
 #ifdef HAVE_MYSQL
 	int rc = SLURM_SUCCESS;
-	int i=0;
+	int i=0, is_admin=1;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	char *tmp = NULL;
@@ -6026,6 +6241,8 @@ extern int acct_storage_p_get_usage(mysql_conn_t *mysql_conn,
 	struct tm start_tm;
 	struct tm end_tm;
 	char *query = NULL;
+	uint16_t private_data = 0;
+	acct_user_rec_t user;
 
 	char *assoc_req_inx[] = {
 		"t1.id",
@@ -6044,6 +6261,72 @@ extern int acct_storage_p_get_usage(mysql_conn_t *mysql_conn,
 		error("We need a assoc id to set data for");
 		return SLURM_ERROR;
 	}
+
+	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
+		return SLURM_ERROR;
+
+	memset(&user, 0, sizeof(acct_user_rec_t));
+	user.uid = uid;
+
+	private_data = slurm_get_private_data();
+	if (private_data & PRIVATE_DATA_USAGE) {
+		/* This only works when running though the slurmdbd.
+		 * THERE IS NO AUTHENTICATION WHEN RUNNNING OUT OF THE
+		 * SLURMDBD!
+		 */
+		if(slurmdbd_conf) {
+			is_admin = 0;
+			/* we have to check the authentication here in the
+			 * plugin since we don't know what accounts are being
+			 * referenced until after the query.  Here we will
+			 * set if they are an operator or greater and then
+			 * check it below after the query.
+			 */
+			if((uid == slurmdbd_conf->slurm_user_id || uid == 0)
+			   || assoc_mgr_get_admin_level(mysql_conn, uid) 
+			   >= ACCT_ADMIN_OPERATOR) 
+				is_admin = 1;	
+			else {
+				assoc_mgr_fill_in_user(mysql_conn, &user, 1);
+			}
+			
+			if(!is_admin) {
+				ListIterator itr = NULL;
+				acct_coord_rec_t *coord = NULL;
+
+				if(acct_assoc->user && 
+				   !strcmp(acct_assoc->user, user.name)) 
+					goto is_user;
+				
+				if(!user.coord_accts) {
+					debug4("This user isn't a coord.");
+					goto bad_user;
+				}
+
+				if(!acct_assoc->acct) {
+					debug("No account name given "
+					      "in association.");
+					goto bad_user;				
+				}
+				
+				itr = list_iterator_create(user.coord_accts);
+				while((coord = list_next(itr))) {
+					if(!strcasecmp(coord->name, 
+						       acct_assoc->acct))
+						break;
+				}
+				list_iterator_destroy(itr);
+				
+				if(coord) 
+					goto is_user;
+				
+			bad_user:
+				errno = ESLURM_ACCESS_DENIED;
+				return SLURM_ERROR;
+			}
+		}
+	}
+is_user:
 
 	/* Default is going to be the last day */
 	if(!end) {
@@ -6211,11 +6494,11 @@ extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn,
 			time_t now = time(NULL);
 			/* If we don't have any events like adding a
 			 * cluster this will not work correctly, so we
-			 * will insert now as a starting point
+			 * will insert now as a starting point.
 			 */
 			query = xstrdup_printf(
-				"select @PS := coalesce(period_start, %d) "
-				"from %s limit 1;"
+				"set @PS = %d;"
+				"select @PS := period_start from %s limit 1;"
 				"insert into %s "
 				"(hourly_rollup, daily_rollup, monthly_rollup) "
 				"values (@PS, @PS, @PS);",
@@ -6540,7 +6823,7 @@ end_it:
 }
 
 extern int clusteracct_storage_p_get_usage(
-	mysql_conn_t *mysql_conn,
+	mysql_conn_t *mysql_conn, uid_t uid,
 	acct_cluster_rec_t *cluster_rec, time_t start, time_t end)
 {
 #ifdef HAVE_MYSQL
@@ -6775,6 +7058,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 			job_ptr->total_procs, nodes,
 			job_ptr->job_state & (~JOB_COMPLETING));
 
+		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	try_again:
 		if(!(job_ptr->db_index = mysql_insert_ret_id(
 			     mysql_conn->db_conn, query))) {
@@ -6802,6 +7086,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 			job_ptr->job_state & (~JOB_COMPLETING),
 			job_ptr->total_procs, nodes, 
 			job_ptr->account, job_ptr->db_index);
+		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 	}
 
@@ -6847,12 +7132,21 @@ extern int jobacct_storage_p_job_complete(mysql_conn_t *mysql_conn,
 		nodes = "(null)";
 
 	if(!job_ptr->db_index) {
-		job_ptr->db_index = _get_db_index(mysql_conn->db_conn,
-						  job_ptr->details->submit_time,
-						  job_ptr->job_id,
-						  job_ptr->assoc_id);
-		if(job_ptr->db_index == (uint32_t)-1) {
-			
+		if(!(job_ptr->db_index =
+		     _get_db_index(mysql_conn->db_conn,
+				   job_ptr->details->submit_time,
+				   job_ptr->job_id,
+				   job_ptr->assoc_id))) {
+			/* If we get an error with this just fall
+			 * through to avoid an infinite loop
+			 */
+			if(jobacct_storage_p_job_start(mysql_conn, job_ptr)
+			   == SLURM_ERROR) {
+				error("couldn't add job %u at job completion",
+				      job_ptr->job_id);
+				return SLURM_SUCCESS;
+			}
+			jobacct_storage_p_job_start(mysql_conn, job_ptr);
 		}
 	}
 
@@ -6864,10 +7158,11 @@ extern int jobacct_storage_p_job_complete(mysql_conn_t *mysql_conn,
 			       job_ptr->job_state & (~JOB_COMPLETING),
 			       nodes, job_ptr->exit_code,
 			       job_ptr->requid, job_ptr->db_index);
+	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
 	
-	return  rc;
+	return rc;
 #else
 	return SLURM_ERROR;
 #endif
@@ -6933,13 +7228,22 @@ extern int jobacct_storage_p_step_start(mysql_conn_t *mysql_conn,
 					 * hasn't been set yet  */
 
 	if(!step_ptr->job_ptr->db_index) {
-		step_ptr->job_ptr->db_index = 
-			_get_db_index(mysql_conn->db_conn,
-				      step_ptr->job_ptr->details->submit_time,
-				      step_ptr->job_ptr->job_id,
-				      step_ptr->job_ptr->assoc_id);
-		if(step_ptr->job_ptr->db_index == (uint32_t)-1) 
-			return SLURM_ERROR;
+		if(!(step_ptr->job_ptr->db_index = 
+		     _get_db_index(mysql_conn->db_conn,
+				   step_ptr->job_ptr->details->submit_time,
+				   step_ptr->job_ptr->job_id,
+				   step_ptr->job_ptr->assoc_id))) {
+			/* If we get an error with this just fall
+			 * through to avoid an infinite loop
+			 */
+			if(jobacct_storage_p_job_start(mysql_conn,
+						       step_ptr->job_ptr)
+			   == SLURM_ERROR) {
+				error("couldn't add job %u at step start",
+				      step_ptr->job_ptr->job_id);
+				return SLURM_SUCCESS;
+			}
+		}
 	}
 	/* we want to print a -1 for the requid so leave it a
 	   %d */
@@ -7040,13 +7344,23 @@ extern int jobacct_storage_p_step_complete(mysql_conn_t *mysql_conn,
 	}
 
 	if(!step_ptr->job_ptr->db_index) {
-		step_ptr->job_ptr->db_index = 
-			_get_db_index(mysql_conn->db_conn,
-				      step_ptr->job_ptr->details->submit_time,
-				      step_ptr->job_ptr->job_id,
-				      step_ptr->job_ptr->assoc_id);
-		if(step_ptr->job_ptr->db_index == -1) 
-			return SLURM_ERROR;
+		if(!(step_ptr->job_ptr->db_index = 
+		     _get_db_index(mysql_conn->db_conn,
+				   step_ptr->job_ptr->details->submit_time,
+				   step_ptr->job_ptr->job_id,
+				   step_ptr->job_ptr->assoc_id))) {
+			/* If we get an error with this just fall
+			 * through to avoid an infinite loop
+			 */
+			if(jobacct_storage_p_job_start(mysql_conn,
+						       step_ptr->job_ptr)
+			   == SLURM_ERROR) {
+				error("couldn't add job %u "
+				      "at step completion",
+				      step_ptr->job_ptr->job_id);
+				return SLURM_SUCCESS;
+			}
+		}
 	}
 
 	query = xstrdup_printf(
@@ -7092,6 +7406,7 @@ extern int jobacct_storage_p_step_complete(mysql_conn_t *mysql_conn,
 		jobacct->min_cpu_id.nodeid,	/* min cpu node */
 		ave_cpu,	/* ave cpu */
 		step_ptr->job_ptr->db_index, step_ptr->step_id);
+	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
 	 
@@ -7115,12 +7430,21 @@ extern int jobacct_storage_p_suspend(mysql_conn_t *mysql_conn,
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 	if(!job_ptr->db_index) {
-		job_ptr->db_index = _get_db_index(mysql_conn->db_conn,
-						  job_ptr->details->submit_time,
-						  job_ptr->job_id,
-						  job_ptr->assoc_id);
-		if(job_ptr->db_index == -1) 
-			return SLURM_ERROR;
+		if(!(job_ptr->db_index =
+		     _get_db_index(mysql_conn->db_conn,
+				   job_ptr->details->submit_time,
+				   job_ptr->job_id,
+				   job_ptr->assoc_id))) {
+			/* If we get an error with this just fall
+			 * through to avoid an infinite loop
+			 */
+			if(jobacct_storage_p_job_start(mysql_conn, job_ptr)
+			   == SLURM_ERROR) {
+				error("couldn't suspend job %u",
+				      job_ptr->job_id);
+				return SLURM_SUCCESS;
+			}
+		}
 	}
 
 	if (job_ptr->job_state == JOB_SUSPENDED)
@@ -7169,7 +7493,7 @@ extern int jobacct_storage_p_suspend(mysql_conn_t *mysql_conn,
  * returns List of job_rec_t *
  * note List needs to be freed when called
  */
-extern List jobacct_storage_p_get_jobs(mysql_conn_t *mysql_conn, 
+extern List jobacct_storage_p_get_jobs(mysql_conn_t *mysql_conn, uid_t uid, 
 				       List selected_steps,
 				       List selected_parts,
 				       sacct_parameters_t *params)
@@ -7199,7 +7523,7 @@ extern List jobacct_storage_p_get_jobs(mysql_conn_t *mysql_conn,
 		list_append(job_cond.groupid_list, temp);
 	}	
 
-	job_list = mysql_jobacct_process_get_jobs(mysql_conn, &job_cond);
+	job_list = mysql_jobacct_process_get_jobs(mysql_conn, uid, &job_cond);
 
 	if(job_cond.userid_list)
 		list_destroy(job_cond.userid_list);
@@ -7216,13 +7540,14 @@ extern List jobacct_storage_p_get_jobs(mysql_conn_t *mysql_conn,
  * note List needs to be freed when called
  */
 extern List jobacct_storage_p_get_jobs_cond(mysql_conn_t *mysql_conn, 
+					    uid_t uid, 
 					    acct_job_cond_t *job_cond)
 {
 	List job_list = NULL;
 #ifdef HAVE_MYSQL
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
-	job_list = mysql_jobacct_process_get_jobs(mysql_conn, job_cond);	
+	job_list = mysql_jobacct_process_get_jobs(mysql_conn, uid, job_cond);	
 #endif
 	return job_list;
 }

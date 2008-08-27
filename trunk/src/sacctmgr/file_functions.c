@@ -330,7 +330,7 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 			
 			if(!qos_list) {
 				qos_list = acct_storage_g_get_qos(
-					db_conn, NULL);
+					db_conn, my_uid, NULL);
 			}
 			if(end > 2 && sub[end-1] == '='
 			   && (sub[end-2] == '+' 
@@ -594,46 +594,56 @@ static int _mod_cluster(sacctmgr_file_opts_t *file_opts,
 	if(cluster->default_fairshare != file_opts->fairshare) {
 		mod_assoc.fairshare = file_opts->fairshare;
 		changed = 1;
-		xstrfmtcat(my_info, " Changed Cluster default for "
-		       "fairshare from %d -> %d\n",
-		       cluster->default_fairshare,
-		       file_opts->fairshare);
+		xstrfmtcat(my_info, 
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
+			   " Changed fairshare", "Cluster",
+			   cluster->name,
+			   cluster->default_fairshare,
+			   file_opts->fairshare); 
 	}
 	if(cluster->default_max_cpu_secs_per_job != 
 	   file_opts->max_cpu_secs_per_job) {
 		mod_assoc.max_cpu_secs_per_job = 
 			file_opts->max_cpu_secs_per_job;
 		changed = 1;
-		printf(" Changed Cluster default for "
-		       "MaxCPUSecsPerJob from %d -> %d\n",
-		       cluster->default_max_cpu_secs_per_job,
-		       file_opts->max_cpu_secs_per_job);
+		xstrfmtcat(my_info, 
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
+			   " Changed MaxCPUSecsPerJob", "Cluster",
+			   cluster->name,
+			   cluster->default_max_cpu_secs_per_job,
+			   file_opts->max_cpu_secs_per_job);
 	}
 	if(cluster->default_max_jobs != file_opts->max_jobs) {
 		mod_assoc.max_jobs = file_opts->max_jobs;
 		changed = 1;
-		printf(" Changed Cluster default for "
-		       "MaxJobs from %d -> %d\n",
-		       cluster->default_max_jobs,
-		       file_opts->max_jobs);
+		xstrfmtcat(my_info, 
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
+			   " Changed MaxJobs", "Cluster",
+			   cluster->name,
+			   cluster->default_max_jobs,
+			   file_opts->max_jobs);
 	}
 	if(cluster->default_max_nodes_per_job != file_opts->max_nodes_per_job) {
 		mod_assoc.max_nodes_per_job = file_opts->max_nodes_per_job;
 		changed = 1;
-		printf(" Changed Cluster default for "
-		       "MaxNodesPerJob from %d -> %d\n",
-		       cluster->default_max_nodes_per_job, 
-		       file_opts->max_nodes_per_job);
+		xstrfmtcat(my_info, 
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
+			   " Changed MaxNodesPerJob", "Cluster",
+			   cluster->name,
+			   cluster->default_max_nodes_per_job, 
+			   file_opts->max_nodes_per_job);
 	}
 	if(cluster->default_max_wall_duration_per_job !=
 	   file_opts->max_wall_duration_per_job) {
 		mod_assoc.max_wall_duration_per_job =
 			file_opts->max_wall_duration_per_job;
 		changed = 1;
-		printf(" Changed Cluster default for "
-		       "MaxWallDurationPerJob from %d -> %d\n",
-		       cluster->default_max_wall_duration_per_job,
-		       file_opts->max_wall_duration_per_job);
+		xstrfmtcat(my_info, 
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
+			   " Changed MaxWallDurationPerJob", "Cluster",
+			   cluster->name,
+			   cluster->default_max_wall_duration_per_job,
+			   file_opts->max_wall_duration_per_job);
 	}
 
 	if(changed) {
@@ -666,9 +676,11 @@ static int _mod_cluster(sacctmgr_file_opts_t *file_opts,
 /* 		} */
  
 		if(ret_list) {
+			printf("%s", my_info);
 			list_destroy(ret_list);
 		} else
 			changed = 0;
+		xfree(my_info);
 	}
 
 	return changed;
@@ -678,7 +690,7 @@ static int _mod_acct(sacctmgr_file_opts_t *file_opts,
 		     acct_account_rec_t *acct, char *parent)
 {
 	int changed = 0;
-	char *desc = NULL, *org = NULL;
+	char *desc = NULL, *org = NULL, *my_info = NULL;
 	acct_account_rec_t mod_acct;
 	acct_account_cond_t acct_cond;
 	acct_association_cond_t assoc_cond;
@@ -691,11 +703,12 @@ static int _mod_acct(sacctmgr_file_opts_t *file_opts,
 		desc = xstrdup(file_opts->desc);
 
 	if(desc && strcmp(desc, acct->description)) {
-		printf(" Changed description for account "
-		       "'%s' from '%s' to '%s'\n",
-		       acct->name,
-		       acct->description,
-		       desc);
+		xstrfmtcat(my_info, 
+			   "%-30.30s for %-7.7s %-10.10s %8s -> %s\n",
+			   " Changed description", "Account",
+			   acct->name,
+			   acct->description,
+			   desc);
 		mod_acct.description = desc;
 		changed = 1;
 	} else 
@@ -705,11 +718,12 @@ static int _mod_acct(sacctmgr_file_opts_t *file_opts,
 		org = xstrdup(file_opts->org);
 
 	if(org && strcmp(org, acct->organization)) {
-		printf(" Changed organization for account '%s' "
-		       "from '%s' to '%s'\n",
-		       acct->name,
-		       acct->organization,
-		       org);
+		xstrfmtcat(my_info, 
+			   "%-30.30s for %-7.7s %-10.10s %8s -> %s\n",
+			   " Changed organization", "Account",
+			   acct->name,
+			   acct->organization,
+			   org);
 		mod_acct.organization = org;
 		changed = 1;
 	} else
@@ -739,9 +753,10 @@ static int _mod_acct(sacctmgr_file_opts_t *file_opts,
 			new_qos = get_qos_complete_str(qos_list,
 						       mod_acct.qos_list);
 		if(new_qos) {
-			printf(" Adding QOS for account '%s' '%s'\n",
-			       acct->name,
-			       new_qos);
+			xstrfmtcat(my_info, 
+				   " Adding QOS for account '%s' '%s'\n",
+				   acct->name,
+				   new_qos);
 			xfree(new_qos);
 			changed = 1;
 		} else {
@@ -753,9 +768,10 @@ static int _mod_acct(sacctmgr_file_opts_t *file_opts,
 						     file_opts->qos_list);
 		
 		if(new_qos) {
-			printf(" Adding QOS for account '%s' '%s'\n",
-			       acct->name,
-			       new_qos);
+			xstrfmtcat(my_info, 
+				   " Adding QOS for account '%s' '%s'\n",
+				   acct->name,
+				   new_qos);
 			xfree(new_qos);
 			mod_acct.qos_list = file_opts->qos_list;
 			file_opts->qos_list = NULL;
@@ -792,9 +808,11 @@ static int _mod_acct(sacctmgr_file_opts_t *file_opts,
 /* 		} */
  
 		if(ret_list) {
+			printf("%s", my_info);
 			list_destroy(ret_list);
 		} else
 			changed = 0;
+		xfree(my_info);
 	}
 	xfree(desc);
 	xfree(org);
@@ -807,7 +825,7 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 	int rc;
 	int set = 0;
 	int changed = 0;
-	char *def_acct = NULL;
+	char *def_acct = NULL, *my_info = NULL;
 	acct_user_rec_t mod_user;
 	acct_user_cond_t user_cond;
 	List ret_list = NULL;
@@ -830,11 +848,12 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 
 	if(def_acct && 
 	   (!user->default_acct || strcmp(def_acct, user->default_acct))) {
-		printf(" Changed User '%s' "
-		       "default account '%s' -> '%s'\n",
-		       user->name,
-		       user->default_acct,
-		       def_acct);
+		xstrfmtcat(my_info, 
+			   "%-30.30s for %-7.7s %-10.10s %8s -> %s\n",
+			   " Changed Default Account", "User",
+			   user->name,
+			   user->default_acct,
+			   def_acct);
 		mod_user.default_acct = def_acct;
 		changed = 1;
 	} else
@@ -864,9 +883,10 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 			new_qos = get_qos_complete_str(qos_list,
 						       mod_user.qos_list);
 		if(new_qos) {
-			printf(" Adding QOS for user '%s' '%s'\n",
-			       user->name,
-			       new_qos);
+			xstrfmtcat(my_info, 
+				   " Adding QOS for user '%s' '%s'\n",
+				   user->name,
+				   new_qos);
 			xfree(new_qos);
 			changed = 1;
 		} else 
@@ -877,9 +897,10 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 						     file_opts->qos_list);
 		
 		if(new_qos) {
-			printf(" Adding QOS for user '%s' '%s'\n",
-			       user->name,
-			       new_qos);
+			xstrfmtcat(my_info, 
+				   " Adding QOS for user '%s' '%s'\n",
+				   user->name,
+				   new_qos);
 			xfree(new_qos);
 			mod_user.qos_list = file_opts->qos_list;
 			file_opts->qos_list = NULL;
@@ -890,13 +911,14 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 	if(user->admin_level != ACCT_ADMIN_NOTSET
 	   && file_opts->admin != ACCT_ADMIN_NOTSET
 	   && user->admin_level != file_opts->admin) {
-		printf(" Changed User '%s' "
-		       "AdminLevel '%s' -> '%s'\n",
-		       user->name,
-		       acct_admin_level_str(
-			       user->admin_level),
-		       acct_admin_level_str(
-			       file_opts->admin));
+		xstrfmtcat(my_info, 
+			   "%-30.30s for %-7.7s %-10.10s %8s -> %s\n",
+			   " Changed Admin Level", "User",
+			   user->name,
+			   acct_admin_level_str(
+				   user->admin_level),
+			   acct_admin_level_str(
+				   file_opts->admin));
 		mod_user.admin_level = file_opts->admin;
 		changed = 1;
 	}
@@ -923,9 +945,11 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 /* 		} */
  
 		if(ret_list) {
+			printf("%s", my_info);
 			list_destroy(ret_list);
 			set = 1;
 		} 
+		xfree(my_info);
 	}
 	xfree(def_acct);
 
@@ -1059,7 +1083,8 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 		mod_assoc.fairshare = file_opts->fairshare;
 		changed = 1;
 		xstrfmtcat(my_info, 
-			   " Changed fairshare for %s '%s' from %d to %d\n",
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
+			   " Changed fairshare",
 			   type, name,
 			   assoc->fairshare,
 			   file_opts->fairshare);
@@ -1069,8 +1094,8 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 			file_opts->max_cpu_secs_per_job;
 		changed = 1;
 		xstrfmtcat(my_info, 
-			   " Changed MaxCPUSecsPerJob for %s "
-			   "'%s' from %d to %d\n",
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
+			   " Changed MaxCPUSecsPerJob",
 			   type, name,
 			   assoc->max_cpu_secs_per_job,
 			   file_opts->max_cpu_secs_per_job);
@@ -1079,7 +1104,8 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 		mod_assoc.max_jobs = file_opts->max_jobs;
 		changed = 1;
 		xstrfmtcat(my_info, 
-			   " Changed MaxJobs for %s '%s' from %d to %d\n",
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
+			   " Changed MaxJobs",
 			   type, name,
 			   assoc->max_jobs,
 			   file_opts->max_jobs);
@@ -1088,8 +1114,8 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 		mod_assoc.max_nodes_per_job = file_opts->max_nodes_per_job;
 		changed = 1;
 		xstrfmtcat(my_info, 
-			   " Changed MaxNodesPerJob for %s '%s' "
-			   "from %d to %d\n",
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
+			   " Changed MaxNodesPerJob",
 			   type, name,
 			   assoc->max_nodes_per_job, 
 			   file_opts->max_nodes_per_job);
@@ -1100,8 +1126,8 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 			file_opts->max_wall_duration_per_job;
 		changed = 1;
 		xstrfmtcat(my_info, 
-			   " Changed MaxWallDurationPerJob for %s '%s' "
-			   "from %d to %d\n",
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
+			   " Changed MaxWallDurationPerJob",
 			   type, name,
 			   assoc->max_wall_duration_per_job,
 			   file_opts->max_wall_duration_per_job);
@@ -1270,7 +1296,7 @@ static int _print_file_sacctmgr_assoc_childern(FILE *fd,
 					if(!qos_list) {
 						qos_list = 
 							acct_storage_g_get_qos(
-								db_conn,
+								db_conn, my_uid,
 								NULL);
 					}
 					temp_char = get_qos_complete_str(
@@ -1456,12 +1482,12 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 		return;
 	}
 
-	curr_acct_list = acct_storage_g_get_accounts(db_conn, NULL);
-	curr_cluster_list = acct_storage_g_get_clusters(db_conn, NULL);
+	curr_acct_list = acct_storage_g_get_accounts(db_conn, my_uid, NULL);
+	curr_cluster_list = acct_storage_g_get_clusters(db_conn, my_uid, NULL);
 
 	memset(&user_cond, 0, sizeof(acct_user_cond_t));
 	user_cond.with_coords = 1;
-	curr_user_list = acct_storage_g_get_users(db_conn, &user_cond);
+	curr_user_list = acct_storage_g_get_users(db_conn, my_uid, &user_cond);
 
 	/* These are new info so they need to be freed here */
 	acct_list = list_create(destroy_acct_account_rec);
@@ -1569,7 +1595,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				if(rc != SLURM_SUCCESS) {
 					exit_code=1;
 					fprintf(stderr, 
-						" Problem adding machine\n");
+						" Problem adding cluster\n");
 					rc = SLURM_ERROR;
 					_destroy_sacctmgr_file_opts(file_opts);
 					break;
@@ -1585,7 +1611,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 			assoc_cond.cluster_list = list_create(NULL);
 			list_append(assoc_cond.cluster_list, cluster_name);
 			curr_assoc_list = acct_storage_g_get_associations(
-				db_conn, &assoc_cond);
+				db_conn, my_uid, &assoc_cond);
 			list_destroy(assoc_cond.cluster_list);
 
 			if(!curr_assoc_list) {

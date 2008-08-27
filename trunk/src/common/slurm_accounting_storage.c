@@ -99,19 +99,19 @@ typedef struct slurm_acct_storage_ops {
 				    acct_association_cond_t *assoc_cond);
 	List (*remove_qos)         (void *db_conn, uint32_t uid,
 				    acct_qos_cond_t *qos_cond);
-	List (*get_users)          (void *db_conn,
+	List (*get_users)          (void *db_conn, uint32_t uid,
 				    acct_user_cond_t *user_cond);
-	List (*get_accts)          (void *db_conn,
+	List (*get_accts)          (void *db_conn, uint32_t uid,
 				    acct_account_cond_t *acct_cond);
-	List (*get_clusters)       (void *db_conn,
+	List (*get_clusters)       (void *db_conn, uint32_t uid,
 				    acct_cluster_cond_t *cluster_cond);
-	List (*get_associations)   (void *db_conn,
+	List (*get_associations)   (void *db_conn, uint32_t uid,
 				    acct_association_cond_t *assoc_cond);
-	List (*get_qos)            (void *db_conn,
+	List (*get_qos)            (void *db_conn, uint32_t uid,
 				    acct_qos_cond_t *qos_cond);
-	List (*get_txn)            (void *db_conn,
+	List (*get_txn)            (void *db_conn, uint32_t uid,
 				    acct_txn_cond_t *txn_cond);
-	int  (*get_usage)          (void *db_conn,
+	int  (*get_usage)          (void *db_conn, uint32_t uid,
 				    void *acct_assoc,
 				    time_t start, 
 				    time_t end);
@@ -129,7 +129,7 @@ typedef struct slurm_acct_storage_ops {
 	int  (*cluster_procs)      (void *db_conn,
 				    char *cluster,
 				    uint32_t procs, time_t event_time);
-	int  (*c_get_usage)        (void *db_conn,
+	int  (*c_get_usage)        (void *db_conn, uint32_t uid,
 				    void *cluster_rec, 
 				    time_t start, time_t end);
 	int  (*register_ctld)      (char *cluster, uint16_t port);
@@ -143,11 +143,11 @@ typedef struct slurm_acct_storage_ops {
 				    struct step_record *step_ptr);
 	int  (*job_suspend)        (void *db_conn,
 				    struct job_record *job_ptr);
-	List (*get_jobs)           (void *db_conn,
+	List (*get_jobs)           (void *db_conn, uint32_t uid,
 				    List selected_steps,
 				    List selected_parts,
 				    void *params);	
-	List (*get_jobs_cond)      (void *db_conn,
+	List (*get_jobs_cond)      (void *db_conn, uint32_t uid,
 				    acct_job_cond_t *job_cond);	
 	void (*job_archive)        (void *db_conn,
 				    List selected_parts, void *params);	
@@ -586,18 +586,18 @@ extern void pack_acct_user_rec(void *in, Buf buffer)
 {
 	ListIterator itr = NULL;
 	acct_user_rec_t *object = (acct_user_rec_t *)in;
-	uint32_t count = 0;
+	uint32_t count = NO_VAL;
 	acct_coord_rec_t *coord = NULL;
 	acct_association_rec_t *assoc = NULL;
 	char *tmp_info = NULL;
 
 	if(!object) {
 		pack16(0, buffer);
-		pack32(0, buffer);
-		pack32(0, buffer);
+		pack32(NO_VAL, buffer);
+		pack32(NO_VAL, buffer);
 		packnull(buffer);
 		packnull(buffer);
-		pack32(0, buffer);
+		pack32(NO_VAL, buffer);
 		pack32(0, buffer);
 		return;
 	}
@@ -607,27 +607,27 @@ extern void pack_acct_user_rec(void *in, Buf buffer)
 		count = list_count(object->assoc_list);
 	
 	pack32(count, buffer);
-	if(count) {
+	if(count && count != NO_VAL) {
 		itr = list_iterator_create(object->assoc_list);
 		while((assoc = list_next(itr))) {
 			pack_acct_association_rec(assoc, buffer);
 		}
 		list_iterator_destroy(itr);
 	}
-	count = 0;
+	count = NO_VAL;
 
 	if(object->coord_accts)
 		count = list_count(object->coord_accts);
 	
 	pack32(count, buffer);
-	if(count) {
+	if(count && count != NO_VAL) {
 		itr = list_iterator_create(object->coord_accts);
 		while((coord = list_next(itr))) {
 			pack_acct_coord_rec(coord, buffer);
 		}
 		list_iterator_destroy(itr);
 	}
-	count = 0;
+	count = NO_VAL;
 
 	packstr(object->default_acct, buffer);
 	packstr(object->name, buffer);
@@ -637,14 +637,14 @@ extern void pack_acct_user_rec(void *in, Buf buffer)
 
 	pack32(count, buffer);
 
-	if(count) {
+	if(count && count != NO_VAL) {
 		itr = list_iterator_create(object->qos_list);
 		while((tmp_info = list_next(itr))) {
 			packstr(tmp_info, buffer);
 		}
 		list_iterator_destroy(itr);
 	}
-	count = 0;
+	count = NO_VAL;
 	pack32(object->uid, buffer);
 }
 
@@ -652,7 +652,7 @@ extern int unpack_acct_user_rec(void **object, Buf buffer)
 {
 	uint32_t uint32_tmp;
 	acct_user_rec_t *object_ptr = xmalloc(sizeof(acct_user_rec_t));
-	uint32_t count = 0;
+	uint32_t count = NO_VAL;
 	acct_coord_rec_t *coord = NULL;
 	acct_association_rec_t *assoc = NULL;
 	int i;
@@ -661,7 +661,7 @@ extern int unpack_acct_user_rec(void **object, Buf buffer)
 	*object = object_ptr;
 	safe_unpack16((uint16_t *)&object_ptr->admin_level, buffer);
 	safe_unpack32(&count, buffer);
-	if(count) {
+	if(count != NO_VAL) {
 		object_ptr->assoc_list =
 			list_create(destroy_acct_association_rec);
 		for(i=0; i<count; i++) {
@@ -672,7 +672,7 @@ extern int unpack_acct_user_rec(void **object, Buf buffer)
 		}
 	}
 	safe_unpack32(&count, buffer);
-	if(count) {
+	if(count != NO_VAL) {
 		object_ptr->coord_accts = list_create(destroy_acct_coord_rec);
 		for(i=0; i<count; i++) {
 			if(unpack_acct_coord_rec((void *)&coord, buffer)
@@ -684,7 +684,7 @@ extern int unpack_acct_user_rec(void **object, Buf buffer)
 	safe_unpackstr_xmalloc(&object_ptr->default_acct, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
 	safe_unpack32(&count, buffer);
-	if(count) {
+	if(count != NO_VAL) {
 		object_ptr->qos_list = list_create(slurm_destroy_char);
 		for(i=0; i<count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp, buffer);
@@ -727,18 +727,18 @@ extern void pack_acct_account_rec(void *in, Buf buffer)
 {
 	acct_coord_rec_t *coord = NULL;
 	ListIterator itr = NULL;
-	uint32_t count = 0;
+	uint32_t count = NO_VAL;
 	acct_account_rec_t *object = (acct_account_rec_t *)in;
 	acct_association_rec_t *assoc = NULL;
 	char *tmp_info = NULL;
 
 	if(!object) {
-		pack32(0, buffer);
-		pack32(0, buffer);
+		pack32(NO_VAL, buffer);
+		pack32(NO_VAL, buffer);
 		packnull(buffer);
 		packnull(buffer);
 		packnull(buffer);
-		pack32(0, buffer);
+		pack32(NO_VAL, buffer);
 		return;
 	}
  
@@ -746,27 +746,27 @@ extern void pack_acct_account_rec(void *in, Buf buffer)
 		count = list_count(object->assoc_list);
 	
 	pack32(count, buffer);
-	if(count) {
+	if(count && count != NO_VAL) {
 		itr = list_iterator_create(object->assoc_list);
 		while((assoc = list_next(itr))) {
 			pack_acct_association_rec(assoc, buffer);
 		}
 		list_iterator_destroy(itr);
 	}
-	count = 0;
+	count = NO_VAL;
 
 	if(object->coordinators)
 		count = list_count(object->coordinators);
 	
 	pack32(count, buffer);
-	if(count) {
+	if(count && count != NO_VAL) {
 		itr = list_iterator_create(object->coordinators);
 		while((coord = list_next(itr))) {
 			pack_acct_coord_rec(coord, buffer);
 		}
 		list_iterator_destroy(itr);
 	}
-	count = 0;
+	count = NO_VAL;
 
 	packstr(object->description, buffer);
 	packstr(object->name, buffer);
@@ -777,14 +777,14 @@ extern void pack_acct_account_rec(void *in, Buf buffer)
 
 	pack32(count, buffer);
 
-	if(count) {
+	if(count && count != NO_VAL) {
 		itr = list_iterator_create(object->qos_list);
 		while((tmp_info = list_next(itr))) {
 			packstr(tmp_info, buffer);
 		}
 		list_iterator_destroy(itr);
 	}
-	count = 0;
+	count = NO_VAL;
 }
 
 extern int unpack_acct_account_rec(void **object, Buf buffer)
@@ -800,7 +800,7 @@ extern int unpack_acct_account_rec(void **object, Buf buffer)
 	*object = object_ptr;
 
 	safe_unpack32(&count, buffer);
-	if(count) {
+	if(count != NO_VAL) {
 		object_ptr->assoc_list =
 			list_create(destroy_acct_association_rec);
 		for(i=0; i<count; i++) {
@@ -811,7 +811,7 @@ extern int unpack_acct_account_rec(void **object, Buf buffer)
 		}
 	}
 	safe_unpack32(&count, buffer);
-	if(count) {
+	if(count != NO_VAL) {
 		object_ptr->coordinators = list_create(destroy_acct_coord_rec);
 		for(i=0; i<count; i++) {
 			if(unpack_acct_coord_rec((void *)&coord, buffer)
@@ -824,7 +824,7 @@ extern int unpack_acct_account_rec(void **object, Buf buffer)
 	safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&object_ptr->organization, &uint32_tmp, buffer);
 	safe_unpack32(&count, buffer);
-	if(count) {
+	if(count != NO_VAL) {
 		object_ptr->qos_list = list_create(slurm_destroy_char);
 		for(i=0; i<count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp, buffer);
@@ -920,11 +920,11 @@ extern void pack_acct_cluster_rec(void *in, Buf buffer)
 {
 	cluster_accounting_rec_t *acct_info = NULL;
 	ListIterator itr = NULL;
-	uint32_t count = 0;
+	uint32_t count = NO_VAL;
 	acct_cluster_rec_t *object = (acct_cluster_rec_t *)in;
 
 	if(!object) {
-		pack32(0, buffer);
+		pack32(NO_VAL, buffer);
 		packnull(buffer);
 		pack32(0, buffer);
 		pack32(0, buffer);
@@ -941,14 +941,14 @@ extern void pack_acct_cluster_rec(void *in, Buf buffer)
 
 	pack32(count, buffer);
 
-	if(count) {
+	if(count && count != NO_VAL) {
 		itr = list_iterator_create(object->accounting_list);
 		while((acct_info = list_next(itr))) {
 			pack_cluster_accounting_rec(acct_info, buffer);
 		}
 		list_iterator_destroy(itr);
 	}
-	count = 0;
+	count = NO_VAL;
 
 	packstr(object->control_host, buffer);
 	pack32(object->control_port, buffer);
@@ -972,7 +972,7 @@ extern int unpack_acct_cluster_rec(void **object, Buf buffer)
 	*object = object_ptr;
 
 	safe_unpack32(&count, buffer);
-	if(count) {
+	if(count != NO_VAL) {
 		object_ptr->accounting_list =
 			list_create(destroy_cluster_accounting_rec);
 		for(i=0; i<count; i++) {
@@ -1036,11 +1036,11 @@ extern void pack_acct_association_rec(void *in, Buf buffer)
 {
 	acct_accounting_rec_t *acct_info = NULL;
 	ListIterator itr = NULL;
-	uint32_t count = 0;
+	uint32_t count = NO_VAL;
 	acct_association_rec_t *object = (acct_association_rec_t *)in;	
 	
 	if(!object) {
-		pack32(0, buffer);
+		pack32(NO_VAL, buffer);
 		packnull(buffer);
 		packnull(buffer);
 		pack32(0, buffer);
@@ -1065,14 +1065,14 @@ extern void pack_acct_association_rec(void *in, Buf buffer)
 
 	pack32(count, buffer);
 
-	if(count) {
+	if(count && count != NO_VAL) {
 		itr = list_iterator_create(object->accounting_list);
 		while((acct_info = list_next(itr))) {
 			pack_acct_accounting_rec(acct_info, buffer);
 		}
 		list_iterator_destroy(itr);
 	}
-	count = 0;
+	count = NO_VAL;
 
 	packstr(object->acct, buffer);
 	packstr(object->cluster, buffer);
@@ -1104,7 +1104,7 @@ extern int unpack_acct_association_rec(void **object, Buf buffer)
 	*object = object_ptr;
 
 	safe_unpack32(&count, buffer);
-	if(count) {
+	if(count != NO_VAL) {
 		object_ptr->accounting_list =
 			list_create(destroy_acct_accounting_rec);
 		for(i=0; i<count; i++) {
@@ -1220,13 +1220,13 @@ extern void pack_acct_user_cond(void *in, Buf buffer)
 	char *tmp_info = NULL;
 	ListIterator itr = NULL;
 	acct_user_cond_t *object = (acct_user_cond_t *)in;
-	uint32_t count = 0;
+	uint32_t count = NO_VAL;
 
 	if(!object) {
 		pack16(0, buffer);
 		pack_acct_association_cond(NULL, buffer);
-		pack32(0, buffer);
-		pack32(0, buffer);
+		pack32(NO_VAL, buffer);
+		pack32(NO_VAL, buffer);
 		pack16(0, buffer);
 		pack16(0, buffer);
 		pack16(0, buffer);
@@ -1242,28 +1242,28 @@ extern void pack_acct_user_cond(void *in, Buf buffer)
 
 	pack32(count, buffer);
 
-	if(count) {
+	if(count && count != NO_VAL) {
 		itr = list_iterator_create(object->def_acct_list);
 		while((tmp_info = list_next(itr))) {
 			packstr(tmp_info, buffer);
 		}
 		list_iterator_destroy(itr);
 	}
-	count = 0;
+	count = NO_VAL;
 
 	if(object->qos_list)
 		count = list_count(object->qos_list);
 
 	pack32(count, buffer);
 
-	if(count) {
+	if(count && count != NO_VAL) {
 		itr = list_iterator_create(object->qos_list);
 		while((tmp_info = list_next(itr))) {
 			packstr(tmp_info, buffer);
 		}
 		list_iterator_destroy(itr);
 	}
-	count = 0;
+	count = NO_VAL;
 
 	pack16((uint16_t)object->with_assocs, buffer);
 	pack16((uint16_t)object->with_coords, buffer);
@@ -1288,7 +1288,7 @@ extern int unpack_acct_user_cond(void **object, Buf buffer)
 		goto unpack_error;
 	
 	safe_unpack32(&count, buffer);
-	if(count) {
+	if(count != NO_VAL) {
 		object_ptr->def_acct_list = list_create(slurm_destroy_char);
 		for(i=0; i<count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp, buffer);
@@ -1296,7 +1296,7 @@ extern int unpack_acct_user_cond(void **object, Buf buffer)
 		}
 	}
 	safe_unpack32(&count, buffer);
-	if(count) {
+	if(count != NO_VAL) {
 		object_ptr->qos_list = list_create(slurm_destroy_char);
 		for(i=0; i<count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp, buffer);
@@ -1320,13 +1320,13 @@ extern void pack_acct_account_cond(void *in, Buf buffer)
 	char *tmp_info = NULL;
 	ListIterator itr = NULL;
 	acct_account_cond_t *object = (acct_account_cond_t *)in;
-	uint32_t count = 0;
+	uint32_t count = NO_VAL;
 
 	if(!object) {
 		pack_acct_association_cond(NULL, buffer);
-		pack32(0, buffer);
-		pack32(0, buffer);
-		pack32(0, buffer);
+		pack32(NO_VAL, buffer);
+		pack32(NO_VAL, buffer);
+		pack32(NO_VAL, buffer);
 		pack16(0, buffer);
 		pack16(0, buffer);
 		pack16(0, buffer);
@@ -1334,47 +1334,47 @@ extern void pack_acct_account_cond(void *in, Buf buffer)
 	}
 	pack_acct_association_cond(object->assoc_cond, buffer);
 	
-	count = 0;
+	count = NO_VAL;
 	if(object->description_list)
 		count = list_count(object->description_list);
 
 	pack32(count, buffer);
 
-	if(count) {
+	if(count && count != NO_VAL) {
 		itr = list_iterator_create(object->description_list);
 		while((tmp_info = list_next(itr))) {
 			packstr(tmp_info, buffer);
 		}
 		list_iterator_destroy(itr);
 	}
-	count = 0;
+	count = NO_VAL;
 
 	if(object->organization_list)
 		count = list_count(object->organization_list);
 
 	pack32(count, buffer);
 
-	if(count) {
+	if(count && count != NO_VAL) {
 		itr = list_iterator_create(object->organization_list);
 		while((tmp_info = list_next(itr))) {
 			packstr(tmp_info, buffer);
 		}
 		list_iterator_destroy(itr);
-		count = 0;
 	}
+	count = NO_VAL;
 
 	if(object->qos_list)
 		count = list_count(object->qos_list);
 
 	pack32(count, buffer);
 
-	if(count) {
+	if(count && count != NO_VAL) {
 		itr = list_iterator_create(object->qos_list);
 		while((tmp_info = list_next(itr))) {
 			packstr(tmp_info, buffer);
 		}
 		list_iterator_destroy(itr);
-		count = 0;
+		count = NO_VAL;
 	}
 
 	pack16((uint16_t)object->with_assocs, buffer);
@@ -1396,7 +1396,7 @@ extern int unpack_acct_account_cond(void **object, Buf buffer)
 		goto unpack_error;
 	
 	safe_unpack32(&count, buffer);
-	if(count) {
+	if(count != NO_VAL) {
 		object_ptr->description_list = list_create(slurm_destroy_char);
 		for(i=0; i<count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp, buffer);
@@ -1404,7 +1404,7 @@ extern int unpack_acct_account_cond(void **object, Buf buffer)
 		}
 	}
 	safe_unpack32(&count, buffer);
-	if(count) {
+	if(count != NO_VAL) {
 		object_ptr->organization_list = list_create(slurm_destroy_char);
 		for(i=0; i<count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp, buffer);
@@ -1412,7 +1412,7 @@ extern int unpack_acct_account_cond(void **object, Buf buffer)
 		}
 	}
 	safe_unpack32(&count, buffer);
-	if(count) {
+	if(count != NO_VAL) {
 		object_ptr->qos_list = list_create(slurm_destroy_char);
 		for(i=0; i<count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp, buffer);
@@ -1436,10 +1436,10 @@ extern void pack_acct_cluster_cond(void *in, Buf buffer)
 	char *tmp_info = NULL;
 	ListIterator itr = NULL;
 	acct_cluster_cond_t *object = (acct_cluster_cond_t *)in;
-	uint32_t count = 0;
+	uint32_t count = NO_VAL;
 
 	if(!object) {
-		pack32(0, buffer);
+		pack32(NO_VAL, buffer);
 		pack32(0, buffer);
 		pack32(0, buffer);
 		pack16(0, buffer);
@@ -1452,7 +1452,7 @@ extern void pack_acct_cluster_cond(void *in, Buf buffer)
 	
 	pack32(count, buffer);
 			
-	if(count) {
+	if(count && count != NO_VAL) {
 		itr = list_iterator_create(object->cluster_list);
 		while((tmp_info = list_next(itr))) {
 			packstr(tmp_info, buffer);
@@ -1477,7 +1477,7 @@ extern int unpack_acct_cluster_cond(void **object, Buf buffer)
 
 	*object = object_ptr;
 	safe_unpack32(&count, buffer);
-	if(count) {
+	if(count != NO_VAL) {
 		object_ptr->cluster_list = list_create(slurm_destroy_char);
 		for(i=0; i<count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp, buffer);
@@ -1501,25 +1501,25 @@ unpack_error:
 extern void pack_acct_association_cond(void *in, Buf buffer)
 {
 	char *tmp_info = NULL;
-	uint32_t count = 0;
+	uint32_t count = NO_VAL;
 
 	ListIterator itr = NULL;
 	acct_association_cond_t *object = (acct_association_cond_t *)in;
 
 	if(!object) {
+		pack32(NO_VAL, buffer);
+		pack32(NO_VAL, buffer);
+		pack32(0, buffer);
+		pack32(NO_VAL, buffer);
 		pack32(0, buffer);
 		pack32(0, buffer);
 		pack32(0, buffer);
 		pack32(0, buffer);
-		pack32(0, buffer);
-		pack32(0, buffer);
-		pack32(0, buffer);
-		pack32(0, buffer);
-		pack32(0, buffer);
+		pack32(NO_VAL, buffer);
 		packnull(buffer);
 		pack32(0, buffer);
 		pack32(0, buffer);
-		pack32(0, buffer);
+		pack32(NO_VAL, buffer);
 		pack16(0, buffer);
 		pack16(0, buffer);
 		pack16(0, buffer);
@@ -1531,27 +1531,27 @@ extern void pack_acct_association_cond(void *in, Buf buffer)
 		count = list_count(object->acct_list);
 	
 	pack32(count, buffer);
-	if(count) {
+	if(count && count != NO_VAL) {
 		itr = list_iterator_create(object->acct_list);
 		while((tmp_info = list_next(itr))) {
 			packstr(tmp_info, buffer);
 		}
 		list_iterator_destroy(itr);
 	}
-	count = 0;
+	count = NO_VAL;
 
 	if(object->cluster_list)
 		count = list_count(object->cluster_list);
 	
 	pack32(count, buffer);
-	if(count) {
+	if(count && count != NO_VAL) {
 		itr = list_iterator_create(object->cluster_list);
 		while((tmp_info = list_next(itr))) {
 			packstr(tmp_info, buffer);
 		}
 		list_iterator_destroy(itr);
 	}
-	count = 0;
+	count = NO_VAL;
 
 	pack32(object->fairshare, buffer);
 	
@@ -1559,13 +1559,13 @@ extern void pack_acct_association_cond(void *in, Buf buffer)
 		count = list_count(object->id_list);
 	
 	pack32(count, buffer);
-	if(count) {
+	if(count && count != NO_VAL) {
 		itr = list_iterator_create(object->id_list);
 		while((tmp_info = list_next(itr))) {
 			packstr(tmp_info, buffer);
 		}
 	}
-	count = 0;
+	count = NO_VAL;
 
 	pack32(object->max_cpu_secs_per_job, buffer);
 	pack32(object->max_jobs, buffer);
@@ -1576,14 +1576,14 @@ extern void pack_acct_association_cond(void *in, Buf buffer)
 		count = list_count(object->partition_list);
 	
 	pack32(count, buffer);
-	if(count) {
+	if(count && count != NO_VAL) {
 		itr = list_iterator_create(object->partition_list);
 		while((tmp_info = list_next(itr))) {
 			packstr(tmp_info, buffer);
 		}
 		list_iterator_destroy(itr);
 	}
-	count = 0;
+	count = NO_VAL;
 
 	packstr(object->parent_acct, buffer);
 
@@ -1594,14 +1594,14 @@ extern void pack_acct_association_cond(void *in, Buf buffer)
 		count = list_count(object->user_list);
 	
 	pack32(count, buffer);
-	if(count) {
+	if(count && count != NO_VAL) {
 		itr = list_iterator_create(object->user_list);
 		while((tmp_info = list_next(itr))) {
 			packstr(tmp_info, buffer);
 		}
 		list_iterator_destroy(itr);
 	}
-	count = 0;
+	count = NO_VAL;
 
 	pack16((uint16_t)object->with_usage, buffer);
 	pack16((uint16_t)object->with_deleted, buffer);
@@ -1620,7 +1620,7 @@ extern int unpack_acct_association_cond(void **object, Buf buffer)
 
 	*object = object_ptr;
 	safe_unpack32(&count, buffer);
-	if(count) {
+	if(count != NO_VAL) {
 		object_ptr->acct_list = list_create(slurm_destroy_char);
 		for(i=0; i<count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp, buffer);
@@ -1628,7 +1628,7 @@ extern int unpack_acct_association_cond(void **object, Buf buffer)
 		}
 	}
 	safe_unpack32(&count, buffer);
-	if(count) {
+	if(count != NO_VAL) {
 		object_ptr->cluster_list = list_create(slurm_destroy_char);
 		for(i=0; i<count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp, buffer);
@@ -1639,7 +1639,7 @@ extern int unpack_acct_association_cond(void **object, Buf buffer)
 	safe_unpack32(&object_ptr->fairshare, buffer);
 
 	safe_unpack32(&count, buffer);
-	if(count) {
+	if(count != NO_VAL) {
 		object_ptr->id_list = list_create(slurm_destroy_char);
 		for(i=0; i<count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp, buffer);
@@ -1653,7 +1653,7 @@ extern int unpack_acct_association_cond(void **object, Buf buffer)
 	safe_unpack32(&object_ptr->max_wall_duration_per_job, buffer);
 
 	safe_unpack32(&count, buffer);
-	if(count) {
+	if(count != NO_VAL) {
 		object_ptr->partition_list = list_create(slurm_destroy_char);
 		for(i=0; i<count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp, buffer);
@@ -1667,7 +1667,7 @@ extern int unpack_acct_association_cond(void **object, Buf buffer)
 	safe_unpack32(&object_ptr->usage_start, buffer);
 
 	safe_unpack32(&count, buffer);
-	if(count) {
+	if(count != NO_VAL) {
 		object_ptr->user_list = list_create(slurm_destroy_char);
 		for(i=0; i<count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp, buffer);
@@ -1691,24 +1691,23 @@ extern void pack_acct_job_cond(void *in, Buf buffer)
 {
 	char *tmp_info = NULL;
 	jobacct_selected_step_t *job = NULL;
-	uint32_t count = 0;
+	uint32_t count = NO_VAL;
 
 	ListIterator itr = NULL;
 	acct_job_cond_t *object = (acct_job_cond_t *)in;
 
 	if(!object) {
-		pack32(0, buffer);
-		pack32(0, buffer);
-		pack32(0, buffer);
+		pack32(NO_VAL, buffer);
+		pack32(NO_VAL, buffer);
+		pack32(NO_VAL, buffer);
 		pack16(0, buffer);
-		pack16(0, buffer);
+		pack32(NO_VAL, buffer);
+		pack32(NO_VAL, buffer);
+		pack32(NO_VAL, buffer);
+		pack32(NO_VAL, buffer);
 		pack32(0, buffer);
 		pack32(0, buffer);
-		pack32(0, buffer);
-		pack32(0, buffer);
-		pack32(0, buffer);
-		pack32(0, buffer);
-		pack32(0, buffer);
+		pack32(NO_VAL, buffer);
 		pack16(0, buffer);
 		return;
 	}
@@ -1717,39 +1716,39 @@ extern void pack_acct_job_cond(void *in, Buf buffer)
 		count = list_count(object->acct_list);
 	
 	pack32(count, buffer);
-	if(count) {
+	if(count && count != NO_VAL) {
 		itr = list_iterator_create(object->acct_list);
 		while((tmp_info = list_next(itr))) {
 			packstr(tmp_info, buffer);
 		}
 		list_iterator_destroy(itr);
 	}
-	count = 0;
+	count = NO_VAL;
 
 	if(object->associd_list)
 		count = list_count(object->associd_list);
 	
 	pack32(count, buffer);
-	if(count) {
+	if(count && count != NO_VAL) {
 		itr = list_iterator_create(object->associd_list);
 		while((tmp_info = list_next(itr))) {
 			packstr(tmp_info, buffer);
 		}
 	}
-	count = 0;
+	count = NO_VAL;
 
 	if(object->cluster_list)
 		count = list_count(object->cluster_list);
 	
 	pack32(count, buffer);
-	if(count) {
+	if(count && count != NO_VAL) {
 		itr = list_iterator_create(object->cluster_list);
 		while((tmp_info = list_next(itr))) {
 			packstr(tmp_info, buffer);
 		}
 		list_iterator_destroy(itr);
 	}
-	count = 0;
+	count = NO_VAL;
 
 	pack16(object->duplicates, buffer);
 
@@ -1757,52 +1756,52 @@ extern void pack_acct_job_cond(void *in, Buf buffer)
 		count = list_count(object->groupid_list);
 	
 	pack32(count, buffer);
-	if(count) {
+	if(count && count != NO_VAL) {
 		itr = list_iterator_create(object->groupid_list);
 		while((tmp_info = list_next(itr))) {
 			packstr(tmp_info, buffer);
 		}
 	}
-	count = 0;
+	count = NO_VAL;
 	
 	if(object->partition_list)
 		count = list_count(object->partition_list);
 	
 	pack32(count, buffer);
-	if(count) {
+	if(count && count != NO_VAL) {
 		itr = list_iterator_create(object->partition_list);
 		while((tmp_info = list_next(itr))) {
 			packstr(tmp_info, buffer);
 		}
 		list_iterator_destroy(itr);
 	}
-	count = 0;
+	count = NO_VAL;
 
 	if(object->step_list)
 		count = list_count(object->step_list);
 	
 	pack32(count, buffer);
-	if(count) {
+	if(count && count != NO_VAL) {
 		itr = list_iterator_create(object->step_list);
 		while((job = list_next(itr))) {
 			pack_jobacct_selected_step(job, buffer);
 		}
 		list_iterator_destroy(itr);
 	}
-	count = 0;
+	count = NO_VAL;
 
 	if(object->state_list)
 		count = list_count(object->state_list);
 	
 	pack32(count, buffer);
-	if(count) {
+	if(count && count != NO_VAL) {
 		itr = list_iterator_create(object->state_list);
 		while((tmp_info = list_next(itr))) {
 			packstr(tmp_info, buffer);
 		}
 		list_iterator_destroy(itr);
 	}
-	count = 0;
+	count = NO_VAL;
 
 	pack32(object->usage_end, buffer);
 	pack32(object->usage_start, buffer);
@@ -1811,14 +1810,14 @@ extern void pack_acct_job_cond(void *in, Buf buffer)
 		count = list_count(object->userid_list);
 	
 	pack32(count, buffer);
-	if(count) {
+	if(count && count != NO_VAL) {
 		itr = list_iterator_create(object->userid_list);
 		while((tmp_info = list_next(itr))) {
 			packstr(tmp_info, buffer);
 		}
 		list_iterator_destroy(itr);
 	}
-	count = 0;
+	count = NO_VAL;
 
 	pack16(object->without_steps, buffer);
 }
@@ -1834,7 +1833,7 @@ extern int unpack_acct_job_cond(void **object, Buf buffer)
 
 	*object = object_ptr;
 	safe_unpack32(&count, buffer);
-	if(count) {
+	if(count != NO_VAL) {
 		object_ptr->acct_list = list_create(slurm_destroy_char);
 		for(i=0; i<count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp, buffer);
@@ -1843,7 +1842,7 @@ extern int unpack_acct_job_cond(void **object, Buf buffer)
 	}
 
 	safe_unpack32(&count, buffer);
-	if(count) {
+	if(count != NO_VAL) {
 		object_ptr->associd_list = list_create(slurm_destroy_char);
 		for(i=0; i<count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp, buffer);
@@ -1852,7 +1851,7 @@ extern int unpack_acct_job_cond(void **object, Buf buffer)
 	}
 
 	safe_unpack32(&count, buffer);
-	if(count) {
+	if(count != NO_VAL) {
 		object_ptr->cluster_list = list_create(slurm_destroy_char);
 		for(i=0; i<count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp, buffer);
@@ -1863,7 +1862,7 @@ extern int unpack_acct_job_cond(void **object, Buf buffer)
 	safe_unpack16(&object_ptr->duplicates, buffer);
 
 	safe_unpack32(&count, buffer);
-	if(count) {
+	if(count != NO_VAL) {
 		object_ptr->groupid_list = list_create(slurm_destroy_char);
 		for(i=0; i<count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp, buffer);
@@ -1872,7 +1871,7 @@ extern int unpack_acct_job_cond(void **object, Buf buffer)
 	}
 	
 	safe_unpack32(&count, buffer);
-	if(count) {
+	if(count != NO_VAL) {
 		object_ptr->partition_list = list_create(slurm_destroy_char);
 		for(i=0; i<count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp, buffer);
@@ -1882,7 +1881,7 @@ extern int unpack_acct_job_cond(void **object, Buf buffer)
 
 
 	safe_unpack32(&count, buffer);
-	if(count) {
+	if(count != NO_VAL) {
 		object_ptr->step_list =
 			list_create(destroy_jobacct_selected_step);
 		for(i=0; i<count; i++) {
@@ -1892,7 +1891,7 @@ extern int unpack_acct_job_cond(void **object, Buf buffer)
 	}
 
 	safe_unpack32(&count, buffer);
-	if(count) {
+	if(count != NO_VAL) {
 		object_ptr->state_list = list_create(slurm_destroy_char);
 		for(i=0; i<count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp, buffer);
@@ -1904,7 +1903,7 @@ extern int unpack_acct_job_cond(void **object, Buf buffer)
 	safe_unpack32(&object_ptr->usage_start, buffer);
 
 	safe_unpack32(&count, buffer);
-	if(count) {
+	if(count != NO_VAL) {
 		object_ptr->userid_list = list_create(slurm_destroy_char);
 		for(i=0; i<count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp, buffer);
@@ -1924,15 +1923,15 @@ unpack_error:
 
 extern void pack_acct_qos_cond(void *in, Buf buffer)
 {
-	uint32_t count = 0;
+	uint32_t count = NO_VAL;
 	char *tmp_info = NULL;
 	ListIterator itr = NULL;
 	acct_qos_cond_t *object = (acct_qos_cond_t *)in;
 
 	if(!object) {
-		pack32(0, buffer);
-		pack32(0, buffer);
-		pack32(0, buffer);
+		pack32(NO_VAL, buffer);
+		pack32(NO_VAL, buffer);
+		pack32(NO_VAL, buffer);
 		pack16(0, buffer);
 		return;
 	}
@@ -1941,40 +1940,40 @@ extern void pack_acct_qos_cond(void *in, Buf buffer)
 		count = list_count(object->description_list);
 	
 	pack32(count, buffer);
-	if(count) {
+	if(count && count != NO_VAL) {
 		itr = list_iterator_create(object->description_list);
 		while((tmp_info = list_next(itr))) {
 			packstr(tmp_info, buffer);
 		}
 		list_iterator_destroy(itr);
 	}
-	count = 0;
+	count = NO_VAL;
 
 	if(object->id_list)
 		count = list_count(object->id_list);
 	
 	pack32(count, buffer);
-	if(count) {
+	if(count && count != NO_VAL) {
 		itr = list_iterator_create(object->id_list);
 		while((tmp_info = list_next(itr))) {
 			packstr(tmp_info, buffer);
 		}
 		list_iterator_destroy(itr);
 	}
-	count = 0;
+	count = NO_VAL;
 
 	if(object->name_list) 
 		count = list_count(object->name_list);
 
 	pack32(count, buffer);
-	if(count) {
+	if(count && count != NO_VAL) {
 		itr = list_iterator_create(object->name_list);
 		while((tmp_info = list_next(itr))) {
 			packstr(tmp_info, buffer);
 		}
 		list_iterator_destroy(itr); 
 	}
-	count = 0;
+	count = NO_VAL;
 
 	pack16(object->with_deleted, buffer);
 }
@@ -1990,7 +1989,7 @@ extern int unpack_acct_qos_cond(void **object, Buf buffer)
 	*object = object_ptr;
 
 	safe_unpack32(&count, buffer);
-	if(count) {
+	if(count != NO_VAL) {
 		object_ptr->description_list = list_create(slurm_destroy_char);
 		for(i=0; i<count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp, buffer);
@@ -1999,7 +1998,7 @@ extern int unpack_acct_qos_cond(void **object, Buf buffer)
 	}
 
 	safe_unpack32(&count, buffer);
-	if(count) {
+	if(count != NO_VAL) {
 		object_ptr->id_list = list_create(slurm_destroy_char);
 		for(i=0; i<count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp, buffer);
@@ -2008,7 +2007,7 @@ extern int unpack_acct_qos_cond(void **object, Buf buffer)
 	}
 
 	safe_unpack32(&count, buffer);
-	if(count) {
+	if(count != NO_VAL) {
 		object_ptr->name_list = list_create(slurm_destroy_char);
 		for(i=0; i<count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp, buffer);
@@ -2027,15 +2026,15 @@ unpack_error:
 
 extern void pack_acct_txn_cond(void *in, Buf buffer)
 {
-	uint32_t count = 0;
+	uint32_t count = NO_VAL;
 	char *tmp_info = NULL;
 	ListIterator itr = NULL;
 	acct_txn_cond_t *object = (acct_txn_cond_t *)in;
 
 	if(!object) {
-		pack32(0, buffer);
-		pack32(0, buffer);
-		pack32(0, buffer);
+		pack32(NO_VAL, buffer);
+		pack32(NO_VAL, buffer);
+		pack32(NO_VAL, buffer);
 		pack32(0, buffer);
 		pack32(0, buffer);
 		return;
@@ -2044,40 +2043,40 @@ extern void pack_acct_txn_cond(void *in, Buf buffer)
 		count = list_count(object->action_list);
 	
 	pack32(count, buffer);
-	if(count) {
+	if(count && count != NO_VAL) {
 		itr = list_iterator_create(object->action_list);
 		while((tmp_info = list_next(itr))) {
 			packstr(tmp_info, buffer);
 		}
 		list_iterator_destroy(itr);
 	}
-	count = 0;
+	count = NO_VAL;
 
 	if(object->actor_list) 
 		count = list_count(object->actor_list);
 
 	pack32(count, buffer);
-	if(count) {
+	if(count && count != NO_VAL) {
 		itr = list_iterator_create(object->actor_list);
 		while((tmp_info = list_next(itr))) {
 			packstr(tmp_info, buffer);
 		}
 		list_iterator_destroy(itr); 
 	}
-	count = 0;
+	count = NO_VAL;
 
 	if(object->id_list)
 		count = list_count(object->id_list);
 	 
 	pack32(count, buffer);
-	if(count) {
+	if(count && count != NO_VAL) {
 		itr = list_iterator_create(object->id_list);
 		while((tmp_info = list_next(itr))) {
 			packstr(tmp_info, buffer);
 		} 
 		list_iterator_destroy(itr);
 	}
-	count = 0;
+	count = NO_VAL;
 
 	pack32(object->time_end, buffer);
 	pack32(object->time_start, buffer);
@@ -2094,7 +2093,7 @@ extern int unpack_acct_txn_cond(void **object, Buf buffer)
 
 	*object = object_ptr;
 	safe_unpack32(&count, buffer);
-	if(count) {
+	if(count != NO_VAL) {
 		object_ptr->action_list = list_create(slurm_destroy_char);
 		for(i=0; i<count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp, buffer);
@@ -2103,7 +2102,7 @@ extern int unpack_acct_txn_cond(void **object, Buf buffer)
 	}
 
 	safe_unpack32(&count, buffer);
-	if(count) {
+	if(count != NO_VAL) {
 		object_ptr->actor_list = list_create(slurm_destroy_char);
 		for(i=0; i<count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp, buffer);
@@ -2112,7 +2111,7 @@ extern int unpack_acct_txn_cond(void **object, Buf buffer)
 	}
 
 	safe_unpack32(&count, buffer);
-	if(count) {
+	if(count != NO_VAL) {
 		object_ptr->id_list = list_create(slurm_destroy_char);
 		for(i=0; i<count; i++) {
 			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp, buffer);
@@ -2133,7 +2132,7 @@ unpack_error:
 
 extern void pack_acct_update_object(acct_update_object_t *object, Buf buffer)
 {
-	uint32_t count = 0;
+	uint32_t count = NO_VAL;
 	ListIterator itr = NULL;
 	void *acct_object = NULL;
 	void (*my_function) (void *object, Buf buffer);
@@ -2165,7 +2164,7 @@ extern void pack_acct_update_object(acct_update_object_t *object, Buf buffer)
 		count = list_count(object->objects);
 			
 	pack32(count, buffer);
-	if(count) {
+	if(count && count != NO_VAL) {
 		itr = list_iterator_create(object->objects);
 		while((acct_object = list_next(itr))) {
 			(*(my_function))(acct_object, buffer);
@@ -2214,7 +2213,7 @@ extern int unpack_acct_update_object(acct_update_object_t **object, Buf buffer)
 		goto unpack_error;
 	}
 	safe_unpack32(&count, buffer);
-	if(count) {
+	if(count != NO_VAL) {
 		object_ptr->objects = list_create((*(my_destroy)));
 		for(i=0; i<count; i++) {
 			if(((*(my_function))(&acct_object, buffer))
@@ -2583,63 +2582,66 @@ extern List acct_storage_g_remove_qos(void *db_conn, uint32_t uid,
 		(db_conn, uid, qos_cond);
 }
 
-extern List acct_storage_g_get_users(void *db_conn,
+extern List acct_storage_g_get_users(void *db_conn, uint32_t uid,
 				     acct_user_cond_t *user_cond)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
-	return (*(g_acct_storage_context->ops.get_users))(db_conn, user_cond);
+	return (*(g_acct_storage_context->ops.get_users))
+		(db_conn, uid, user_cond);
 }
 
-extern List acct_storage_g_get_accounts(void *db_conn,
+extern List acct_storage_g_get_accounts(void *db_conn, uint32_t uid,
 					acct_account_cond_t *acct_cond)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
 	return (*(g_acct_storage_context->ops.get_accts))
-		(db_conn, acct_cond);
+		(db_conn, uid, acct_cond);
 }
 
-extern List acct_storage_g_get_clusters(void *db_conn,
+extern List acct_storage_g_get_clusters(void *db_conn, uint32_t uid,
 					acct_cluster_cond_t *cluster_cond)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
 	return (*(g_acct_storage_context->ops.get_clusters))
-		(db_conn, cluster_cond);
+		(db_conn, uid, cluster_cond);
 }
 
-extern List acct_storage_g_get_associations(void *db_conn,
+extern List acct_storage_g_get_associations(void *db_conn, uint32_t uid,
 					    acct_association_cond_t *assoc_cond)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
 	return (*(g_acct_storage_context->ops.get_associations))
-		(db_conn, assoc_cond);
+		(db_conn, uid, assoc_cond);
 }
 
-extern List acct_storage_g_get_qos(void *db_conn, acct_qos_cond_t *qos_cond)
+extern List acct_storage_g_get_qos(void *db_conn, uint32_t uid, 
+				   acct_qos_cond_t *qos_cond)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
-	return (*(g_acct_storage_context->ops.get_qos))(db_conn, qos_cond);
+	return (*(g_acct_storage_context->ops.get_qos))(db_conn, uid, qos_cond);
 }
 
-extern List acct_storage_g_get_txn(void *db_conn, acct_txn_cond_t *txn_cond)
+extern List acct_storage_g_get_txn(void *db_conn,  uint32_t uid, 
+				   acct_txn_cond_t *txn_cond)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
-	return (*(g_acct_storage_context->ops.get_txn))(db_conn, txn_cond);
+	return (*(g_acct_storage_context->ops.get_txn))(db_conn, uid, txn_cond);
 }
 
-extern int acct_storage_g_get_usage(void *db_conn, 
+extern int acct_storage_g_get_usage(void *db_conn,  uint32_t uid,
 				    void *acct_assoc,
 				    time_t start, time_t end)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
 	return (*(g_acct_storage_context->ops.get_usage))
-		(db_conn, acct_assoc, start, end);
+		(db_conn, uid, acct_assoc, start, end);
 }
 
 extern int acct_storage_g_roll_usage(void *db_conn, 
@@ -2687,13 +2689,13 @@ extern int clusteracct_storage_g_cluster_procs(void *db_conn,
 
 
 extern int clusteracct_storage_g_get_usage(
-	void *db_conn, void *cluster_rec,
+	void *db_conn, uint32_t uid, void *cluster_rec,
 	time_t start, time_t end)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
 	return (*(g_acct_storage_context->ops.c_get_usage))
-		(db_conn, cluster_rec, start, end);
+		(db_conn, uid, cluster_rec, start, end);
 }
 
 extern int clusteracct_storage_g_register_ctld(char *cluster, uint16_t port)
@@ -2765,7 +2767,7 @@ extern int jobacct_storage_g_job_suspend (void *db_conn,
  * returns List of job_rec_t *
  * note List needs to be freed when called
  */
-extern List jobacct_storage_g_get_jobs(void *db_conn,
+extern List jobacct_storage_g_get_jobs(void *db_conn, uint32_t uid,
 				       List selected_steps,
 				       List selected_parts,
 				       void *params)
@@ -2773,7 +2775,7 @@ extern List jobacct_storage_g_get_jobs(void *db_conn,
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
  	return (*(g_acct_storage_context->ops.get_jobs))
-		(db_conn, selected_steps, selected_parts, params);
+		(db_conn, uid, selected_steps, selected_parts, params);
 }
 
 /* 
@@ -2781,13 +2783,13 @@ extern List jobacct_storage_g_get_jobs(void *db_conn,
  * returns List of job_rec_t *
  * note List needs to be freed when called
  */
-extern List jobacct_storage_g_get_jobs_cond(void *db_conn,
+extern List jobacct_storage_g_get_jobs_cond(void *db_conn, uint32_t uid,
 					    acct_job_cond_t *job_cond)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
  	return (*(g_acct_storage_context->ops.get_jobs_cond))
-		(db_conn, job_cond);
+		(db_conn, uid, job_cond);
 }
 
 /* 

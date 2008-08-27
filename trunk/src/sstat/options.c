@@ -296,13 +296,7 @@ void parse_command_line(int argc, char **argv)
 			if(params.opt_field_list)
 				xfree(params.opt_field_list);
 			
-			params.opt_field_list =
-				xrealloc(params.opt_field_list,
-					 (params.opt_field_list==NULL? 0 :
-					  strlen(params.opt_field_list)) +
-					 strlen(optarg) + 1);
-			strcat(params.opt_field_list, optarg);
-			strcat(params.opt_field_list, ",");
+			xstrfmtcat(params.opt_field_list, "%s,", optarg);
 			break;
 		case 'h':
 			params.opt_help = 1;
@@ -370,13 +364,8 @@ void parse_command_line(int argc, char **argv)
 		_addto_job_list(params.opt_job_list, optarg);
 	}
 
-	if(!params.opt_field_list) {
-		params.opt_field_list = 
-			xmalloc(sizeof(STAT_FIELDS)+1);
-		strcat(params.opt_field_list, STAT_FIELDS);
-		strcat(params.opt_field_list, ",");
-	}
-
+	if(!params.opt_field_list) 
+		xstrfmtcat(params.opt_field_list, "%s,", STAT_FIELDS);
 
 	if (params.opt_verbose) {
 		fprintf(stderr, "Options selected:\n"

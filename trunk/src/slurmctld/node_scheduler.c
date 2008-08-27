@@ -210,6 +210,7 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 		xfree(kill_job->nodes);
 		select_g_free_jobinfo(&kill_job->select_jobinfo);
 		xfree(kill_job);
+		hostlist_destroy(agent_args->hostlist);
 		xfree(agent_args);
 		return;
 	}
@@ -555,12 +556,11 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			error_code = select_g_get_info_from_plugin (
 					SELECT_BITMAP, 
 					&partially_idle_node_bitmap);
+			if (error_code != SLURM_SUCCESS) {
+				FREE_NULL_BITMAP(partially_idle_node_bitmap);
+				return error_code;
+			}
 		}
-
-                if (error_code != SLURM_SUCCESS) {
-                       FREE_NULL_BITMAP(partially_idle_node_bitmap);
-                       return error_code;
-                }
         }
 
 	if (job_ptr->details->req_node_bitmap) {  /* specific nodes required */

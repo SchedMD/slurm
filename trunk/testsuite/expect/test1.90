@@ -95,13 +95,12 @@ set salloc_pid [spawn $salloc -N1 --exclusive --verbose -t2 $bin_bash]
 # Run a job step to get allocated processor count and affinity
 #
 expect -re $prompt
-set task_cnt 0
-set full_mask 0
+set full_mask -1
+set timeout $max_job_delay
 send "$srun -c1 $file_prog\n"
 expect {
 	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
-		set full_mask $expect_out(2,string)
-		incr task_cnt
+		set full_mask $expect_out(3,string)
 		exp_continue
 	}
 	-re "error" {
@@ -118,11 +117,36 @@ expect {
 }
 
 #
+# We probably bind to socket memory, so get that from the MEM_MASK
+# and use that number of tasks
+#
+if {$full_mask == 1} {
+	set task_cnt 1
+} elseif {$full_mask == 3} {
+	set task_cnt 2
+} elseif {$full_mask == 7} {
+	set task_cnt 3
+} elseif {$full_mask == 15} {
+	set task_cnt 4
+} elseif {$full_mask == 31} {
+	set task_cnt 5
+} elseif {$full_mask == 63} {
+	set task_cnt 6
+} elseif {$full_mask == 127} {
+	set task_cnt 7
+} elseif {$full_mask == 255} {
+	set task_cnt 8
+} else {
+	send_user "\nFAILURE: Unable to get memory mask\n"
+	exit 1
+}
+
+#
 # Run a job step with memory affinity
 #
 set cpu_mask 0
 set mem_mask 0
-send "$srun -c1 --mem_bind=rank $file_prog\n"
+send "$srun -n $task_cnt --mem_bind=rank $file_prog\n"
 expect {
 	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
 		incr cpu_mask $expect_out(2,string)
@@ -151,7 +175,7 @@ if {$mem_mask != $full_mask} {
 #
 set task_mask 0
 set verbose_cnt 0
-send "$srun -c1 --mem_bind=verbose,map_mem:0 $file_prog\n"
+send "$srun -n $task_cnt --mem_bind=verbose,map_mem:0 $file_prog\n"
 expect {
 	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
 		incr task_mask $expect_out(3,string)
@@ -174,7 +198,7 @@ if {$task_mask != $task_cnt} {
 	set exit_code 1
 }
 set verbose_cnt 0
-send "$srun -c1 --mem_bind=verbose,map_mem:0 $file_prog\n"
+send "$srun -n $task_cnt --mem_bind=verbose,map_mem:0 $file_prog\n"
 expect {
 	-re "mem_bind=MAP" {
 		incr verbose_cnt
@@ -200,7 +224,7 @@ if {$verbose_cnt != $task_cnt} {
 #
 # Run all tasks all bound to the same CPU's memory (local CPU)
 #
-send "$srun -c1 --cpu_bind=rank --mem_bind=local $file_prog\n"
+send "$srun -n $task_cnt --cpu_bind=rank --mem_bind=local $file_prog\n"
 expect {
 	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
 		if {$expect_out(2,string) != $expect_out(3,string)} {
@@ -230,7 +254,7 @@ set cpu_cnt 0
 while {$cpu_cnt < $task_cnt} {
 	set mask_sum 0
 	set mask [ expr 1 << $cpu_cnt ]
-	send "$srun -c1 --mem_bind=map_mem:$cpu_cnt $file_prog\n"
+	send "$srun -n $task_cnt --mem_bind=map_mem:$cpu_cnt $file_prog\n"
 	expect {
 		-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
 			incr mask_sum $expect_out(3,string)
@@ -263,8 +287,8 @@ set cpu_cnt 0
 while {$cpu_cnt < $task_cnt} {
 	set mask_sum 0
 	set mask [ expr 1 << $cpu_cnt ]
-	set mstr [ dec2hex16 $mask]
-	send "$srun -c1 --mem_bind=mask_mem:$mstr $file_prog\n"
+	set mstr [ dec2hex $mask]
+	send "$srun -n $task_cnt --mem_bind=mask_mem:$mstr $file_prog\n"
 	expect {
 		 -re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
 			incr mask_sum $expect_out(3,string)
@@ -304,7 +328,7 @@ set full_mask [ expr (1 << $task_cnt) - 1 ]
 while {$cpu_cnt < $task_cnt} {
 	set mask_sum 0
 	set mask [ expr 1 << $cpu_cnt ]
-	set mstr [ dec2hex16  $mask]
+	set mstr [ dec2hex  $mask]
 	set fwd_mask "$fwd_mask,$mstr"
 	set fwd_map  "$fwd_map,$cpu_cnt"
 	set rev_mask "$mstr,$rev_mask"
@@ -340,7 +364,7 @@ send_user "alt_mask: $alt_mask\n"
 # Run all tasks bound to a different CPU's memory by specifying a forward map
 #
 set task_mask 0
-send "$srun -c1 --mem_bind=map_mem:$fwd_map $file_prog\n"
+send "$srun -n $task_cnt --mem_bind=map_mem:$fwd_map $file_prog\n"
 expect {
 	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
 		incr task_mask $expect_out(3,string)
@@ -368,7 +392,7 @@ if {$task_mask != $full_mask} {
 # Run all tasks bound to a different CPU's memory by specifying a reverse map
 #
 set task_mask 0
-send "$srun -c1 --mem_bind=map_mem:$rev_map $file_prog\n"
+send "$srun -n $task_cnt --mem_bind=map_mem:$rev_map $file_prog\n"
 expect {
 	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
 		incr task_mask $expect_out(3,string)
@@ -396,7 +420,7 @@ if {$task_mask != $full_mask} {
 # Run all tasks bound to a different CPU's memroy by specifying an alternating map
 #
 set task_mask 0
-send "$srun -c1 --mem_bind=map_mem:$alt_map $file_prog\n"
+send "$srun -n $task_cnt --mem_bind=map_mem:$alt_map $file_prog\n"
 expect {
 	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
 		incr task_mask $expect_out(3,string)
@@ -424,7 +448,7 @@ if {$task_mask != $full_mask} {
 # Run all tasks bound to a different CPU's memory by specifying a forward mask
 #
 set task_mask 0
-send "$srun -c1 --mem_bind=mask_mem:$fwd_mask $file_prog\n"
+send "$srun -n $task_cnt --mem_bind=mask_mem:$fwd_mask $file_prog\n"
 expect {
 	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
 		incr task_mask $expect_out(3,string)
@@ -452,7 +476,7 @@ if {$task_mask != $full_mask} {
 # Run all tasks bound to a different CPU's memory by specifying a reverse mask
 #
 set task_mask 0
-send "$srun -c1 --mem_bind=mask_mem:$rev_mask $file_prog\n"
+send "$srun -n $task_cnt --mem_bind=mask_mem:$rev_mask $file_prog\n"
 expect {
 	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
 		incr task_mask $expect_out(3,string)
@@ -480,7 +504,7 @@ if {$task_mask != $full_mask} {
 # Run all tasks bound to a different CPU's memory by specifying an alternating mask
 #
 set task_mask 0
-send "$srun -c1 --mem_bind=mask_mem:$alt_mask $file_prog\n"
+send "$srun -n $task_cnt --mem_bind=mask_mem:$alt_mask $file_prog\n"
 expect {
 	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
 		incr task_mask $expect_out(3,string)

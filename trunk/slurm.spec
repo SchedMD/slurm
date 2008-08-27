@@ -62,7 +62,7 @@
 %slurm_with_opt aix
 %endif
 
-# Build with sgijob, and mysql plugins on CHAOS systems
+# Build with sgijob plugin and mysql (for slurmdbdb) on CHAOS systems
 %if %{?chaos}0
 %slurm_with_opt mysql
 %slurm_with_opt sgijob
@@ -87,12 +87,19 @@ Requires: slurm-plugins
 %ifos linux
 BuildRequires: python
 %endif
+
+%if %{?chaos}0
+BuildRequires: ncurses-devel
+%endif
+
 %if %{slurm_with pam}
 BuildRequires: pam-devel
 %endif
+
 %if %{slurm_with readline}
 BuildRequires: readline-devel
 %endif
+
 %if %{slurm_with openssl}
 BuildRequires: openssl-devel >= 0.9.6 openssl >= 0.9.6
 %endif
