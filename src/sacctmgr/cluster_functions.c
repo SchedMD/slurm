@@ -38,6 +38,7 @@
 \*****************************************************************************/
 
 #include "src/sacctmgr/sacctmgr.h"
+#include "src/common/uid.h"
 
 static int _set_cond(int *start, int argc, char *argv[],
 		     List cluster_list,
@@ -709,6 +710,7 @@ extern int sacctmgr_delete_cluster(int argc, char *argv[])
 extern int sacctmgr_dump_cluster (int argc, char *argv[])
 {
 	acct_user_cond_t user_cond;
+	acct_user_rec_t *user = NULL;
 	acct_association_cond_t assoc_cond;
 	List assoc_list = NULL;
 	List acct_list = NULL;
@@ -716,8 +718,37 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 	List sacctmgr_assoc_list = NULL;
 	char *cluster_name = NULL;
 	char *file_name = NULL;
+	char *user_name = NULL;
 	int i;
 	FILE *fd = NULL;
+
+	memset(&user_cond, 0, sizeof(acct_user_cond_t));
+	user_cond.with_coords = 1;
+
+	user_list = acct_storage_g_get_users(db_conn, my_uid, &user_cond);
+	/* make sure this person running is an admin */
+	user_name = uid_to_string(my_uid);
+	if(!(user = sacctmgr_find_user_from_list(user_list, user_name))) {
+		exit_code=1;
+		fprintf(stderr, " Your uid (%u) is not in the "
+			"accounting system, can't dump cluster.\n", my_uid);
+		xfree(user_name);
+		if(user_list)
+			list_destroy(user_list);
+		return SLURM_ERROR;
+		
+	} else {
+		if(user->admin_level < ACCT_ADMIN_SUPER_USER) {
+			exit_code=1;
+			fprintf(stderr, " Your user does not have sufficient "
+				"privileges to dump clusters.\n");
+			if(user_list)
+				list_destroy(user_list);
+			xfree(user_name);
+			return SLURM_ERROR;
+		}
+	}
+	xfree(user_name);
 
 	for (i=0; i<argc; i++) {
 		int end = parse_option_end(argv[i]);
@@ -782,16 +813,12 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 	} else if(!list_count(assoc_list)) {
 		exit_code=1;
 		fprintf(stderr, " Cluster %s returned nothing.", cluster_name);
+		list_destroy(assoc_list);
 		xfree(cluster_name);
 		return SLURM_ERROR;
 	}
 
 	sacctmgr_assoc_list = sacctmgr_get_hierarchical_list(assoc_list);
-
-	memset(&user_cond, 0, sizeof(acct_user_cond_t));
-	user_cond.with_coords = 1;
-
-	user_list = acct_storage_g_get_users(db_conn, my_uid, &user_cond);
 
 	acct_list = acct_storage_g_get_accounts(db_conn, my_uid, NULL);
 
