@@ -971,6 +971,20 @@ static void _opt_args(int argc, char **argv)
 		exit(1);
 }
 
+/* _get_shell - return a string containing the default shell for this user
+ * NOTE: This function is NOT reentrant (see getpwuid_r if needed) */
+static char *_get_shell(void)
+{
+	struct passwd *pw_ent_ptr;
+
+	pw_ent_ptr = getpwuid(opt.uid);
+	if (!pw_ent_ptr) {
+		pw_ent_ptr = getpwnam("nobody");
+		error("warning - no user information for user %d", opt.uid);
+	}
+	return pw_ent_ptr->pw_shell;
+}
+
 /* 
  * _opt_verify : perform some post option processing verification
  *
@@ -991,8 +1005,11 @@ static bool _opt_verify(void)
 		opt.job_name = base_name(command_argv[0]);
 
 	if ((opt.no_shell == false) && (command_argc == 0)) {
-		error("A local command is a required parameter!");
-		verified = false;
+		/* Using default shell as the user command */
+		command_argc = 1;
+		command_argv = (char **) xmalloc(sizeof(char *) * 2);
+		command_argv[0] = _get_shell();
+		command_argv[1] = NULL;
 	}
 
 
@@ -1351,7 +1368,7 @@ static void _usage(void)
 "              [--bell] [--no-bell] [--kill-command[=signal]]\n"
 "              [--nodefile=file] [--nodelist=hosts] [--exclude=hosts]\n"
 "              [--network=type] [--mem-per-cpu=MB]\n"
-"              executable [args...]\n");
+"              [executable [args...]]\n");
 }
 
 static void _help(void)
@@ -1359,7 +1376,7 @@ static void _help(void)
 	slurm_ctl_conf_t *conf;
 
         printf (
-"Usage: salloc [OPTIONS...] executable [args...]\n"
+"Usage: salloc [OPTIONS...] [executable [args...]]\n"
 "\n"
 "Parallel run options:\n"
 "  -N, --nodes=N               number of nodes on which to run (N = min[-max])\n"
