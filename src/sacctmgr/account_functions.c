@@ -255,6 +255,38 @@ static int _set_rec(int *start, int argc, char *argv[],
 	return 0;
 }
 
+static int _isdefault(List acct_list)
+{
+	int rc = 0;
+	acct_user_cond_t user_cond;
+	List ret_list = NULL;
+
+	if(!acct_list || !list_count(acct_list))
+		return rc;
+
+	memset(&user_cond, 0, sizeof(acct_user_cond_t));
+	user_cond.def_acct_list = acct_list;
+
+	ret_list = acct_storage_g_get_users(db_conn, my_uid, &user_cond);
+	if(ret_list && list_count(ret_list)) {
+		ListIterator itr = list_iterator_create(ret_list);
+		acct_user_rec_t *user = NULL;
+		fprintf(stderr," Users listed below have these "
+			"as their Default Accounts.\n");
+		while((user = list_next(itr))) {
+			fprintf(stderr, " User - %-10.10s Account - %s\n",
+				user->name, user->default_acct);
+		}
+		list_iterator_destroy(itr);
+		rc = 1;		
+	}
+
+	if(ret_list)
+		list_destroy(ret_list);
+
+	return rc;
+}
+
 extern int sacctmgr_add_account(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
@@ -1361,7 +1393,23 @@ extern int sacctmgr_delete_account(int argc, char *argv[])
 	
 	if(ret_list && list_count(ret_list)) {
 		char *object = NULL;
-		ListIterator itr = list_iterator_create(ret_list);
+		ListIterator itr = NULL;
+
+		/* Check to see if person is trying to remove a default
+		 * account of a user.
+		 */
+		if(_isdefault(ret_list)) {
+			exit_code=1;
+			fprintf(stderr, " Please either remove accounts listed "
+				"above from list and resubmit,\n"
+				" or change these users default account to "
+				"remove the account(s).\n"
+				" Changes Discarded\n");
+			list_destroy(ret_list);
+			acct_storage_g_commit(db_conn, 0);
+			return SLURM_ERROR;	
+		}
+		itr = list_iterator_create(ret_list);
 		if(set == 1) {
 			printf(" Deleting accounts...\n");
 		} else if(set == 2 || set == 3) {
