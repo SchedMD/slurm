@@ -869,15 +869,9 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 		return rc;
 	}
 
-	if(!has_jobs)
-		query = xstrdup_printf(
-			"delete from %s where creation_time>%d && (%s);"
-			"delete from %s where creation_time>%d && (%s);"
-			"delete from %s where creation_time>%d && (%s);",
-			assoc_day_table, day_old, loc_assoc_char,
-			assoc_hour_table, day_old, loc_assoc_char,
-			assoc_month_table, day_old, loc_assoc_char);
-
+	/* We should not have to delete from usage table, only flag since we
+	 * only delete things that are typos.
+	 */ 
 	xstrfmtcat(query,
 		   "update %s set mod_time=%d, deleted=1 where (%s);"
 		   "update %s set mod_time=%d, deleted=1 where (%s);"
@@ -4367,7 +4361,6 @@ extern List acct_storage_p_remove_clusters(mysql_conn_t *mysql_conn,
 	int set = 0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	int day_old = now - DELETE_SEC_BACK;
 
 	if(!cluster_cond) {
 		error("we need something to change");
@@ -4431,13 +4424,8 @@ extern List acct_storage_p_remove_clusters(mysql_conn_t *mysql_conn,
 	}
 	xfree(query);
 
-	/* if this is a cluster update the machine usage tables as well */
-	query = xstrdup_printf("delete from %s where creation_time>%d && (%s);"
-			       "delete from %s where creation_time>%d && (%s);"
-			       "delete from %s where creation_time>%d && (%s);",
-			       cluster_day_table, day_old, assoc_char,
-			       cluster_hour_table, day_old, assoc_char,
-			       cluster_month_table, day_old, assoc_char);
+	/* We should not need to delete any cluster usage just set it
+	 * to deleted */
 	xstrfmtcat(query,
 		   "update %s set mod_time=%d, deleted=1 where (%s);"
 		   "update %s set mod_time=%d, deleted=1 where (%s);"
