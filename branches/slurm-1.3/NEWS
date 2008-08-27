@@ -10,6 +10,8 @@ documents those changes that are of interest to users and admins.
     network problems or down nodes.
  -- Fix memory leak caused under heavy load when running with select/cons_res
     plus sched/backfill.
+ -- For salloc, if no local command is specified, execute the user's default
+    shell.
 
 * Changes in SLURM 1.3.7
 ========================
