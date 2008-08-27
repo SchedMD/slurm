@@ -38,6 +38,7 @@
 \*****************************************************************************/
 
 #include "src/sacctmgr/sacctmgr.h"
+#include "src/common/uid.h"
 
 typedef struct {
 	acct_admin_level_t admin;
@@ -1440,6 +1441,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 	FILE *fd = NULL;
 	char *parent = NULL;
 	char *cluster_name = NULL;
+	char *user_name = NULL;
 	char object[25];
 	int start = 0, len = 0, i = 0;
 	int lc=0, num_lines=0;
@@ -1475,6 +1477,43 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 	
 	int set = 0;
 	
+	if(readonly_flag) {
+		exit_code = 1;
+		fprintf(stderr, "Can't run this command in readonly mode.\n");
+		return;		
+	}
+
+	/* reset the connection to get the most recent stuff */
+	acct_storage_g_commit(db_conn, 0);
+
+	memset(&user_cond, 0, sizeof(acct_user_cond_t));
+	user_cond.with_coords = 1;
+	curr_user_list = acct_storage_g_get_users(db_conn, my_uid, &user_cond);
+
+	/* make sure this person running is an admin */
+	user_name = uid_to_string(my_uid);
+	if(!(user = sacctmgr_find_user_from_list(curr_user_list, user_name))) {
+		exit_code=1;
+		fprintf(stderr, " Your uid (%u) is not in the "
+			"accounting system, can't load file.\n", my_uid);
+		if(curr_user_list)
+			list_destroy(curr_user_list);
+		xfree(user_name);
+		return;
+		
+	} else {
+		if(user->admin_level < ACCT_ADMIN_SUPER_USER) {
+			exit_code=1;
+			fprintf(stderr, " Your user does not have sufficient "
+				"privileges to load files.\n");
+			if(curr_user_list)
+				list_destroy(curr_user_list);
+			xfree(user_name);
+			return;
+		}
+	}
+	xfree(user_name);
+	
 	fd = fopen(argv[0], "r");
 	if (fd == NULL) {
 		exit_code=1;
@@ -1482,12 +1521,8 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 		return;
 	}
 
-	curr_acct_list = acct_storage_g_get_accounts(db_conn, my_uid, NULL);
 	curr_cluster_list = acct_storage_g_get_clusters(db_conn, my_uid, NULL);
-
-	memset(&user_cond, 0, sizeof(acct_user_cond_t));
-	user_cond.with_coords = 1;
-	curr_user_list = acct_storage_g_get_users(db_conn, my_uid, &user_cond);
+	curr_acct_list = acct_storage_g_get_accounts(db_conn, my_uid, NULL);
 
 	/* These are new info so they need to be freed here */
 	acct_list = list_create(destroy_acct_account_rec);
@@ -1609,6 +1644,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 			
 			memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
 			assoc_cond.cluster_list = list_create(NULL);
+			assoc_cond.without_parent_limits = 1;
 			list_append(assoc_cond.cluster_list, cluster_name);
 			curr_assoc_list = acct_storage_g_get_associations(
 				db_conn, my_uid, &assoc_cond);
