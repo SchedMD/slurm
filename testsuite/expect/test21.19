@@ -79,6 +79,8 @@ set par		Partition
 set dbu		debug
 set access_err  0
 
+set timeout 60
+
 print_header $test_id
 
 #
