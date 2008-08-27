@@ -2212,16 +2212,6 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		return SLURM_ERROR;
 
 	assoc_list = list_create(destroy_acct_association_rec);
-	assoc = xmalloc(sizeof(acct_association_rec_t));
-	list_append(assoc_list, assoc);
-
-	assoc->user = xstrdup("root");
-	assoc->acct = xstrdup("root");
-	assoc->fairshare = NO_VAL;
-	assoc->max_cpu_secs_per_job = NO_VAL;
-	assoc->max_jobs = NO_VAL;
-	assoc->max_nodes_per_job = NO_VAL;
-	assoc->max_wall_duration_per_job = NO_VAL;
 
 	user_name = uid_to_string((uid_t) uid);
 	itr = list_iterator_create(cluster_list);
@@ -2370,10 +2360,21 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			added++;
 
 		/* Add user root by default to run from the root
-		 * association 
+		 * association.  This gets popped off so we need to
+		 * readd it every time here. 
 		 */
-		xfree(assoc->cluster);
+		assoc = xmalloc(sizeof(acct_association_rec_t));
+		list_append(assoc_list, assoc);
+		
 		assoc->cluster = xstrdup(object->name);
+		assoc->user = xstrdup("root");
+		assoc->acct = xstrdup("root");
+		assoc->fairshare = NO_VAL;
+		assoc->max_cpu_secs_per_job = NO_VAL;
+		assoc->max_jobs = NO_VAL;
+		assoc->max_nodes_per_job = NO_VAL;
+		assoc->max_wall_duration_per_job = NO_VAL;
+
 		if(acct_storage_p_add_associations(mysql_conn, uid, assoc_list)
 		   == SLURM_ERROR) {
 			error("Problem adding root user association");
