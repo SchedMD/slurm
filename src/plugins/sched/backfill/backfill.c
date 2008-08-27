@@ -177,6 +177,14 @@ extern void *backfill_agent(void *args)
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
 
 	while (!stop_backfill) {
+		iter = (BACKFILL_CHECK_SEC * 1000000) /
+		       STOP_CHECK_USEC;
+		for (i=0; ((i<iter) && (!stop_backfill)); i++) {
+			/* test stop_backfill every 0.1 sec for
+			 * 2.0 secs to avoid running continuously */
+			usleep(STOP_CHECK_USEC);
+		}
+		
 		now = time(NULL);
 		/* Avoid resource fragmentation if important */
 		if (switch_no_frag() && job_is_completing())
@@ -195,13 +203,6 @@ extern void *backfill_agent(void *args)
 #if __DEBUG
 		info("backfill: completed, %s", tv_str);
 #endif
-		iter = (BACKFILL_CHECK_SEC * 1000000) /
-		       STOP_CHECK_USEC;
-		for (i=0; ((i<iter) && (!stop_backfill)); i++) {
-			/* test stop_backfill every 0.1 sec for
-			 * 2.0 secs to avoid running continuously */
-			usleep(STOP_CHECK_USEC);
-		}
 	}
 	return NULL;
 }
