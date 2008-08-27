@@ -512,8 +512,10 @@ slurm_fd _slurm_open_stream(slurm_addr *addr, bool retry)
 		}
 
 		if (retry_cnt) {
-			if (retry_cnt == 1)
-				debug3("Error connecting, picking new stream port");
+			if (retry_cnt == 1) {
+				debug3("Error connecting, "
+				       "picking new stream port");
+			}
 			_sock_bind_wild(fd);
 		}
 
