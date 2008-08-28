@@ -4,7 +4,7 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 1.3.8
 ========================
  -- Added PrivateData flags for Users, Usage, and Accounts to Accounting. 
-    If using slurmdbd, set in the slurmdbd.conf file. Ohterwise set in the 
+    If using slurmdbd, set in the slurmdbd.conf file. Otherwise set in the 
     slurm.conf file.  See "man slurm.conf" or "man slurmdbd.conf" for details.
  -- Reduce frequency of resending job kill RPCs. Helpful in the event of 
     network problems or down nodes.
