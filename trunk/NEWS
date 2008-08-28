@@ -5,6 +5,9 @@ documents those changes that are of interest to users and admins.
 =============================
  -- Remove srun's --ctrl-comm-ifhn-addr option (for PMI/MPICH2). It is no
     longer needed.
+ -- Modify power save mode so that nodes can be powered off when idle. See
+    "man slurm.conf" (SuspendProgram and related parameters) for more 
+    information.
 
 * Changes in SLURM 1.4.0-pre1
 =============================

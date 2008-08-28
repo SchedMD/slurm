@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  ping_nodes.c - ping the slurmd daemons to test if they respond
  *****************************************************************************
- *  Copyright (C) 2003-2006 The Regents of the University of California.
+ *  Copyright (C) 2003-2007 The Regents of the University of California.
  *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
@@ -173,7 +173,8 @@ void ping_nodes (void)
 		base_state   = node_ptr->node_state & NODE_STATE_BASE;
 		no_resp_flag = node_ptr->node_state & NODE_STATE_NO_RESPOND;
 
-		if (base_state == NODE_STATE_FUTURE)
+		if ((base_state == NODE_STATE_FUTURE) ||
+		    (node_ptr->node_state & NODE_STATE_POWER_SAVE))
 			continue;
 		if ((slurmctld_conf.slurmd_timeout == 0) &&
 		    (base_state != NODE_STATE_UNKNOWN)   &&
