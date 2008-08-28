@@ -537,7 +537,8 @@ slurm_fd _slurm_open_stream(slurm_addr *addr, bool retry)
 
     error:
 	slurm_get_ip_str(addr, &port, ip, sizeof(ip));
-	debug2("Error connecting slurm stream socket at %s: %m", ip);
+	debug2("Error connecting slurm stream socket at %s:%d: %m",
+	       ip, ntohs(port));
 	if ((_slurm_close_stream(fd) < 0) && (errno == EINTR))
 		_slurm_close_stream(fd);	/* try again */
 	return SLURM_SOCKET_ERROR;
