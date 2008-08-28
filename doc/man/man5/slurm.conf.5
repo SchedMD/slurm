@@ -739,9 +739,14 @@ See \fBPropagateResourceLimits\fR above for a list of valid limit names.
 \fBResumeProgram\fR
 SLURM supports a mechanism to reduce power consumption on nodes that 
 remain idle for an extended period of time. 
-This is typically accomplished by reducing voltage and frequency. 
+This is typically accomplished by reducing voltage and frequency or powering
+the node down. 
 \fBResumeProgram\fR is the program that will be executed when a node 
 in power save mode is assigned work to perform.
+For reasons of reliability, \fBResumeProgram\fR may execute more than once
+for a node.
+If \fBResumeProgram\fR is unable to restore a node to service, it should
+requeue any node associated with the node and set the node state to DRAIN.
 The program executes as \fBSlurmUser\fR.
 The argument to the program will be the names of nodes to
 be removed from power savings mode (using SLURM's hostlist
@@ -1039,11 +1044,13 @@ Related configuration options include \fBResumeProgram\fR, \fBResumeRate\fR,
 \fBSuspendProgram\fR is the program that will be executed when a node
 remains idle for an extended period of time.
 This program is expected to place the node into some power save mode.
+This can be used to reduce the frequency and voltage of a node or 
+completely power the node off.
 The program executes as \fBSlurmUser\fR.
 The argument to the program will be the names of nodes to
 be placed into power savings mode (using SLURM's hostlist
 expression format).
-By default no program is run.
+By default, no program is run.
 Related configuration options include \fBResumeProgram\fR, \fBResumeRate\fR,
 \fBSuspendRate\fR, \fBSuspendTime\fR, \fBSuspendExcNodes\fR, and
 \fBSuspendExcParts\fR.

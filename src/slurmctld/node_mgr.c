@@ -3,10 +3,9 @@
  *	Note: there is a global node table (node_record_table_ptr), its 
  *	hash table (node_hash_table), time stamp (last_node_update) and 
  *	configuration list (config_list)
- *
- *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>, et. al.
  *  LLNL-CODE-402394.
@@ -519,6 +518,8 @@ extern int load_all_node_state ( bool state_only )
 				if (node_state & NODE_STATE_FAIL)
 					node_ptr->node_state |=
 						NODE_STATE_FAIL;
+				if (node_state & NODE_STATE_POWER_SAVE)
+					node_ptr->node_state = node_state;
 			}
 			if (node_ptr->reason == NULL)
 				node_ptr->reason = reason;

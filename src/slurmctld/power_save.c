@@ -1,11 +1,13 @@
 /*****************************************************************************\
  *  power_save.c - support node power saving mode. Nodes which have been 
  *  idle for an extended period of time will be placed into a power saving 
- *  mode by running an arbitrary script (typically to set frequency governor).
+ *  mode by running an arbitrary script. This script can lower the voltage
+ *  or frequency of the nodes or can completely power the nodes off.
  *  When the node is restored to normal operation, another script will be 
  *  executed. Many parameters are available to control this mode of operation.
  *****************************************************************************
  *  Copyright (C) 2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  LLNL-CODE-402394.
@@ -55,7 +57,9 @@
 #include <unistd.h>
 
 #define _DEBUG 0
+#define PID_CNT 10
 
+pid_t child_pid[PID_CNT];
 int idle_time, suspend_rate, resume_rate;
 char *suspend_prog = NULL, *resume_prog = NULL;
 char *exc_nodes = NULL, *exc_parts = NULL;
@@ -69,7 +73,7 @@ static void  _do_power_work(void);
 static void  _do_resume(char *host);
 static void  _do_suspend(char *host);
 static int   _init_power_config(void);
-static void  _kill_zombies(void);
+static int   _reap_procs(void);
 static void  _re_wake(void);
 static pid_t _run_prog(char *prog, char *arg);
 static bool  _valid_prog(char *file_name);
@@ -113,6 +117,7 @@ static void _do_power_work(void)
 			wake_cnt++;
 			suspend_cnt++;
 			node_ptr->node_state &= (~NODE_STATE_POWER_SAVE);
+			node_ptr->node_state |=   NODE_STATE_NO_RESPOND;
 			bit_set(wake_node_bitmap, i);
 		}
 		if ((susp_state == 0)
@@ -121,8 +126,10 @@ static void _do_power_work(void)
 		&&  (node_ptr->last_idle < (now - idle_time))
 		&&  ((exc_node_bitmap == NULL) || 
 		     (bit_test(exc_node_bitmap, i) == 0))) {
-			if (sleep_node_bitmap == NULL)
-				sleep_node_bitmap = bit_alloc(node_record_count);
+			if (sleep_node_bitmap == NULL) {
+				sleep_node_bitmap = 
+					bit_alloc(node_record_count);
+			}
 			sleep_cnt++;
 			resume_cnt++;
 			node_ptr->node_state |= NODE_STATE_POWER_SAVE;
@@ -130,7 +137,7 @@ static void _do_power_work(void)
 		}
 	}
 	if ((now - last_log) > 600) {
-		info("Power save mode %d nodes", susp_total);
+		info("Power save mode: %d nodes", susp_total);
 		last_log = now;
 	}
 
@@ -169,19 +176,24 @@ static void _re_wake(void)
 {
 	static time_t last_wakeup = 0;
 	static int last_inx = 0;
+	uint16_t base_state;
 	time_t now = time(NULL);
 	struct node_record *node_ptr;
 	bitstr_t *wake_node_bitmap = NULL;
 	int i, lim = MIN(node_record_count, 20);
 
-	/* Run at most once per minute */
-	if ((now - last_wakeup) < 60)
+	/* Run at most once every 30 minutes */
+	if ((now - last_wakeup) < 1800)
 		return;
 	last_wakeup = now;
 
 	for (i=0; i<lim; i++) {
 		node_ptr = &node_record_table_ptr[last_inx];
-		if ((node_ptr->node_state & NODE_STATE_POWER_SAVE) == 0) {
+		base_state = node_ptr->node_state & NODE_STATE_BASE;
+		if ((base_state != NODE_STATE_DOWN) &&
+		    (base_state != NODE_STATE_FUTURE) &&
+		    ((node_ptr->node_state & NODE_STATE_DRAIN) == 0) &&
+		    ((node_ptr->node_state & NODE_STATE_POWER_SAVE) == 0)) {
 			if (wake_node_bitmap == NULL)
 				wake_node_bitmap = bit_alloc(node_record_count);
 			bit_set(wake_node_bitmap, last_inx);
@@ -230,6 +242,7 @@ static void _do_suspend(char *host)
 
 static pid_t _run_prog(char *prog, char *arg)
 {
+	int i;
 	char program[1024], arg0[1024], arg1[1024], *pname;
 	pid_t child;
 
@@ -247,24 +260,39 @@ static pid_t _run_prog(char *prog, char *arg)
 
 	child = fork();
 	if (child == 0) {
-		int i;
 		for (i=0; i<128; i++)
 			close(i);
 		execl(program, arg0, arg1, NULL);
 		exit(1);
 	} else if (child < 0)
 		error("fork: %m");
+	else {
+		/* save the pid */
+		for (i=0; i<PID_CNT; i++) {
+			if (child_pid[i])
+				continue;
+			child_pid[i] = child;
+			break;
+		}
+	}
 	return child;
 }
 
-/* We don't bother to track individual process IDs, 
- * just clean everything up here. We could capture 
- * the value of "child" in _run_prog() if we want 
- * to track each process. */
-static void  _kill_zombies(void)
+static int  _reap_procs(void)
 {
-	while (waitpid(-1, NULL, WNOHANG) > 0)
-		;
+	int empties = 0, i, rc, status;
+
+	for (i=0; i<PID_CNT; i++) {
+		if (child_pid[i] == 0) {
+			empties++;
+			continue;
+		}
+		rc = waitpid(child_pid[i], &status, WNOHANG);
+		if (rc == 0)
+			continue;
+		child_pid[i] = 0;
+	}
+	return empties;
 }
 
 /* Free all allocated memory */
@@ -352,7 +380,8 @@ static int _init_power_config(void)
 			if (exc_node_bitmap)
 				bit_or(exc_node_bitmap, part_ptr->node_bitmap);
 			else
-				exc_node_bitmap = bit_copy(part_ptr->node_bitmap);
+				exc_node_bitmap = bit_copy(part_ptr->
+							   node_bitmap);
 			one_part = strtok_r(NULL, ",", &tmp);
 		}
 		xfree(part_list);
@@ -374,23 +403,26 @@ static bool _valid_prog(char *file_name)
 	struct stat buf;
 
 	if (file_name[0] != '/') {
-		debug("program %s not absolute pathname", file_name);
+		debug("power_save program %s not absolute pathname", file_name);
+		return false;
+	}
+
+	if (access(file_name, X_OK) != 0) {
+		debug("power_save program %s not executable", file_name);
 		return false;
 	}
 
 	if (stat(file_name, &buf)) {
-		debug("program %s not found", file_name);
-		return false;
-	}
-	if (!S_ISREG(buf.st_mode)) {
-		debug("program %s not regular file", file_name);
+		debug("power_save program %s not found", file_name);
 		return false;
 	}
 	if (buf.st_mode & 022) {
-		debug("program %s has group or world write permission",
-			file_name);
+		debug("power_save program %s has group or "
+		      "world write permission",
+		      file_name);
 		return false;
 	}
+
 	return true;
 }
 
@@ -411,7 +443,11 @@ extern void *init_power_save(void *arg)
 
 	while (slurmctld_config.shutdown_time == 0) {
 		sleep(1);
-		_kill_zombies();
+
+		if (_reap_procs() < 3) {
+			error("power_save programs not completing quickly");
+			continue;
+		}
 
 		if ((last_config != slurmctld_conf.last_update)
 		&&  (_init_power_config()))
