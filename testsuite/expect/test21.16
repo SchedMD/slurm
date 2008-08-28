@@ -615,7 +615,7 @@ proc _add_user { account adminlevel cluster defaultaccount fs maxcpu maxjob maxn
 #
 # Use sacctmgr to remove an user
 #
-proc _remove_user { user name } {
+proc _remove_user { acct user } {
         global sacctmgr timeout
 
 	set exit_code 0
@@ -623,15 +623,15 @@ proc _remove_user { user name } {
 	set nothing 1
 	set check "Deleting user"
 
-	if { ![string length $name] } {
+	if { ![string length $user] } {
 		send_user "FAILURE: we need a name to remove\n"
 		return 1
 	}
 
-	set command "$name"
+	set command "$user"
 
-	if { [string length $user] } {
-		set command "$command user=$user"
+	if { [string length $acct] } {
+		set command "$command account=$acct"
 		set check "Deleting user associations"
 	}
 
@@ -756,7 +756,7 @@ if {$matches != 27} {
 
 # This is the end below here
 
-incr exit_code [_remove_user "$tc1,$tc2" "$nm1,$nm2,$nm3"]
+incr exit_code [_remove_user "" "$us1,$us2,$us3"]
 incr exit_code [_remove_acct "" "$nm1,$nm2,$nm3"]
 incr exit_code [_remove_cluster "$tc1,$tc2,$tc3"]
 
