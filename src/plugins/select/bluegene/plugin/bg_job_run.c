@@ -185,6 +185,50 @@ static int _remove_job(db_job_id_t job_id)
 }
 #endif
 
+/* block_state_mutex should be locked before calling this function */
+static int _reset_block(bg_record_t *bg_record) 
+{
+	int rc = SLURM_SUCCESS;
+	if(bg_record) {
+		if(bg_record->job_running > NO_JOB_RUNNING) {
+			bg_record->job_running = NO_JOB_RUNNING;
+			bg_record->job_ptr = NULL;
+		}
+		/* remove user from list */
+		
+		slurm_conf_lock();
+		if(bg_record->target_name) {
+			if(strcmp(bg_record->target_name, 
+				  slurmctld_conf.slurm_user_name)) {
+				xfree(bg_record->target_name);
+				bg_record->target_name = 
+					xstrdup(slurmctld_conf.
+						slurm_user_name);
+			}
+			update_block_user(bg_record, 1);
+		} else {
+			bg_record->target_name = 
+				xstrdup(slurmctld_conf.slurm_user_name);
+		}	
+		slurm_conf_unlock();
+			
+		bg_record->boot_state = 0;
+		bg_record->boot_count = 0;
+		
+		last_bg_update = time(NULL);
+		if(remove_from_bg_list(bg_job_block_list, bg_record) 
+		   == SLURM_SUCCESS) {
+			num_unused_cpus += 
+				bg_record->bp_count*bg_record->cpus_per_bp;
+		}
+	} else {
+		error("No block given to reset");
+		rc = SLURM_ERROR;
+	}
+
+	return rc;
+}
+
 /* Delete a bg_update_t record */
 static void _bg_list_del(void *x)
 {
@@ -262,7 +306,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 	bg_record_t *found_record = NULL;
 	ListIterator itr;
 	List delete_list;
-/* 	int bad_state = 0; */
+	int requeue_job = 0;
 
 	slurm_mutex_lock(&job_start_mutex);
 		
@@ -272,7 +316,18 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 	if(!bg_record) {
 		error("block %s not found in bg_list",
 		      bg_update_ptr->bg_block_id);
-		(void) slurm_fail_job(bg_update_ptr->job_ptr->job_id);
+		/* wait for the slurmd to begin 
+		   the batch script, slurm_fail_job() 
+		   is a no-op if issued prior 
+		   to the script initiation do clean up just
+		   incase the fail job isn't ran */
+		sleep(2);	
+		if((rc = job_requeue(0, bg_update_ptr->job_ptr->job_id, -1))) {
+			error("couldn't requeue job %u, failing it: %s",
+			      bg_update_ptr->job_ptr->job_id, 
+			      slurm_strerror(rc));
+			slurm_fail_job(bg_update_ptr->job_ptr->job_id);
+		}
 		slurm_mutex_unlock(&job_start_mutex);
 		return;
 	}
@@ -307,11 +362,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 			       bg_record->bg_block_id);
 			continue;
 		}
-		/* FIX ME: this should end and requeue the job since
-		 * something bad has happened.  This is here right now to
-		 * only let us know we made a mistake.  The mistake will
-		 * still happen though.
-		 */
+
 		if(found_record->job_ptr) {
 			error("Trying to start job %u on block %s, "
 			      "but there is a job %u running on an overlapping "
@@ -322,8 +373,8 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 			      found_record->job_ptr->job_id,
 			      found_record->bg_block_id,
 			      found_record->job_ptr->end_time);
-/* 			bad_state = 1; */
-/* 			break; */
+			requeue_job = 1;
+			break;
 		}
 
 		debug2("need to make sure %s is free, it's part of %s",
@@ -337,13 +388,29 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 	}		
 	list_iterator_destroy(itr);
 
-/* 	if(bad_state) { */
-/* 		num_block_to_free = 0; */
-/* 		num_block_freed = 0; */
-/* 		list_destroy(delete_list); */
-/* 		slurm_mutex_unlock(&block_state_mutex); */
-/* 		slurm_mutex_unlock(&job_start_mutex); */
-/* 	} */
+	if(requeue_job) {
+		num_block_to_free = 0;
+		num_block_freed = 0;
+		list_destroy(delete_list);
+
+		_reset_block(bg_record);
+
+		slurm_mutex_unlock(&block_state_mutex);
+		/* wait for the slurmd to begin 
+		   the batch script, slurm_fail_job() 
+		   is a no-op if issued prior 
+		   to the script initiation do clean up just
+		   incase the fail job isn't ran */
+		sleep(2);	
+		if((rc = job_requeue(0, bg_update_ptr->job_ptr->job_id, -1))) {
+			error("couldn't requeue job %u, failing it: %s",
+			      bg_update_ptr->job_ptr->job_id, 
+			      slurm_strerror(rc));
+			slurm_fail_job(bg_update_ptr->job_ptr->job_id);
+		}
+		slurm_mutex_unlock(&job_start_mutex);
+		return;
+	}	
 
 	free_block_list(delete_list);
 	list_destroy(delete_list);
@@ -450,20 +517,27 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 	
 	if(bg_record->state == RM_PARTITION_FREE) {
 		if((rc = boot_block(bg_record)) != SLURM_SUCCESS) {
-			sleep(2);	
-			/* wait for the slurmd to begin 
-			   the batch script, slurm_fail_job() 
-			   is a no-op if issued prior 
-			   to the script initiation do clean up just
-			   incase the fail job isn't ran */
-			(void) slurm_fail_job(bg_update_ptr->job_ptr->job_id);
 			slurm_mutex_lock(&block_state_mutex);
+			_reset_block(bg_record);
 			if (remove_from_bg_list(bg_job_block_list, bg_record)
 			    == SLURM_SUCCESS) {
 				num_unused_cpus += bg_record->bp_count
 					*bg_record->cpus_per_bp;
 			}
 			slurm_mutex_unlock(&block_state_mutex);
+			sleep(2);	
+			/* wait for the slurmd to begin 
+			   the batch script, slurm_fail_job() 
+			   is a no-op if issued prior 
+			   to the script initiation do clean up just
+			   incase the fail job isn't ran */
+			if((rc = job_requeue(
+				    0, bg_update_ptr->job_ptr->job_id, -1))) {
+				error("couldn't requeue job %u, failing it: %s",
+				      bg_update_ptr->job_ptr->job_id, 
+				      slurm_strerror(rc));
+				slurm_fail_job(bg_update_ptr->job_ptr->job_id);
+			}
 			slurm_mutex_unlock(&job_start_mutex);
 			return;
 		}
@@ -637,37 +711,9 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 		}
 			
 		slurm_mutex_lock(&block_state_mutex);
-		if(bg_record->job_running > NO_JOB_RUNNING) {
-			bg_record->job_running = NO_JOB_RUNNING;
-			bg_record->job_ptr = NULL;
-		}
-		/* remove user from list */
+
+		_reset_block(bg_record);
 		
-		slurm_conf_lock();
-		if(bg_record->target_name) {
-			if(strcmp(bg_record->target_name, 
-				  slurmctld_conf.slurm_user_name)) {
-				xfree(bg_record->target_name);
-				bg_record->target_name = 
-					xstrdup(slurmctld_conf.
-						slurm_user_name);
-			}
-			update_block_user(bg_record, 1);
-		} else {
-			bg_record->target_name = 
-				xstrdup(slurmctld_conf.slurm_user_name);
-		}	
-		slurm_conf_unlock();
-			
-		bg_record->boot_state = 0;
-		bg_record->boot_count = 0;
-		
-		last_bg_update = time(NULL);
-		if(remove_from_bg_list(bg_job_block_list, bg_record) 
-		   == SLURM_SUCCESS) {
-			num_unused_cpus += 
-				bg_record->bp_count*bg_record->cpus_per_bp;
-		}
 		slurm_mutex_unlock(&block_state_mutex);
 		
 	} else {

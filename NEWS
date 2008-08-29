@@ -12,6 +12,9 @@ documents those changes that are of interest to users and admins.
     plus sched/backfill.
  -- For salloc, if no local command is specified, execute the user's default
     shell.
+ -- BLUEGENE - patch to make sure when starting a job blocks required to be
+    freed are checked to make sure no job is running on them.  If one is found
+    we will requeue the new job.  No job will be lost.
 
 * Changes in SLURM 1.3.7
 ========================
