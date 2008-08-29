@@ -705,9 +705,7 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 			x_offset = DIM_SIZE[Z] - 1;
 			for (z=0; z<DIM_SIZE[Z]; z++){
 				coord_x = x + x_offset;
-				g_print("got offset=%d y=%d coord=%d\n",
-					y_offset, y, coord_y);
-				
+			
 				grid_button = xmalloc(sizeof(grid_button_t));
 				grid_button->inx = i++;
 				grid_button->table = table;
