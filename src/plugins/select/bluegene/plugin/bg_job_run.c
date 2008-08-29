@@ -62,6 +62,7 @@
 #include "src/common/xstring.h"
 #include "src/slurmctld/proc_req.h"
 #include "bluegene.h"
+#include "src/slurmctld/locks.h"
 
 #define MAX_POLL_RETRIES    220
 #define POLL_INTERVAL        3
@@ -307,6 +308,8 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 	ListIterator itr;
 	List delete_list;
 	int requeue_job = 0;
+	slurmctld_lock_t job_write_lock = {
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 
 	slurm_mutex_lock(&job_start_mutex);
 		
@@ -322,12 +325,14 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		   to the script initiation do clean up just
 		   incase the fail job isn't ran */
 		sleep(2);	
+		lock_slurmctld(job_write_lock);
 		if((rc = job_requeue(0, bg_update_ptr->job_ptr->job_id, -1))) {
 			error("couldn't requeue job %u, failing it: %s",
 			      bg_update_ptr->job_ptr->job_id, 
 			      slurm_strerror(rc));
-			slurm_fail_job(bg_update_ptr->job_ptr->job_id);
+			job_fail(bg_update_ptr->job_ptr->job_id);
 		}
+		unlock_slurmctld(job_write_lock);
 		slurm_mutex_unlock(&job_start_mutex);
 		return;
 	}
@@ -402,12 +407,14 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		   to the script initiation do clean up just
 		   incase the fail job isn't ran */
 		sleep(2);	
+		lock_slurmctld(job_write_lock);
 		if((rc = job_requeue(0, bg_update_ptr->job_ptr->job_id, -1))) {
 			error("couldn't requeue job %u, failing it: %s",
 			      bg_update_ptr->job_ptr->job_id, 
 			      slurm_strerror(rc));
-			slurm_fail_job(bg_update_ptr->job_ptr->job_id);
+			job_fail(bg_update_ptr->job_ptr->job_id);
 		}
+		unlock_slurmctld(job_write_lock);
 		slurm_mutex_unlock(&job_start_mutex);
 		return;
 	}	
@@ -531,13 +538,16 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 			   is a no-op if issued prior 
 			   to the script initiation do clean up just
 			   incase the fail job isn't ran */
+			lock_slurmctld(job_write_lock);
 			if((rc = job_requeue(
 				    0, bg_update_ptr->job_ptr->job_id, -1))) {
 				error("couldn't requeue job %u, failing it: %s",
 				      bg_update_ptr->job_ptr->job_id, 
 				      slurm_strerror(rc));
-				slurm_fail_job(bg_update_ptr->job_ptr->job_id);
+				job_fail(bg_update_ptr->job_ptr->job_id);
 			}
+			lock_slurmctld(job_write_lock);
+
 			slurm_mutex_unlock(&job_start_mutex);
 			return;
 		}
