@@ -574,7 +574,8 @@ create_job_step(srun_job_t *job)
 		}
 		
 		if (i == 0) {
-			info("Job step creation temporarily disabled, retrying");	
+			info("Job step creation temporarily disabled, "
+			     "retrying");
 			ointf  = xsignal(SIGINT,  _intr_handler);
 			otermf  = xsignal(SIGTERM, _intr_handler);
 			oquitf  = xsignal(SIGQUIT, _intr_handler);

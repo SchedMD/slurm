@@ -1,8 +1,8 @@
 /*****************************************************************************\
  *  step_mgr.c - manage the job step information of slurm
- *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>, et. al.
  *  LLNL-CODE-402394.
@@ -435,7 +435,6 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		  job_step_create_request_msg_t *step_spec,
 		  bool batch_step, int *return_code)
 {
-
 	bitstr_t *nodes_avail = NULL, *nodes_idle = NULL;
 	bitstr_t *nodes_picked = NULL, *node_tmp = NULL;
 	int error_code, nodes_picked_cnt=0, cpus_picked_cnt = 0, i;
@@ -456,10 +455,28 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		fatal("bit_copy malloc failure");
 	bit_and (nodes_avail, up_node_bitmap);
 
+	if (job_ptr->next_step_id == 0) {
+		for (i=bit_ffs(job_ptr->node_bitmap); i<node_record_count; 
+		     i++) {
+			if (!bit_test(job_ptr->node_bitmap, i))
+				continue;
+			if ((node_record_table_ptr[i].node_state &
+			     NODE_STATE_POWER_SAVE) ||
+			    (node_record_table_ptr[i].node_state &
+			     NODE_STATE_NO_RESPOND)) {
+				/* Node is/was powered down. Need to wait 
+				 * for it to start responding again. */
+				FREE_NULL_BITMAP(nodes_avail);
+				*return_code = ESLURM_NODES_BUSY;
+				return NULL;
+			}
+		}
+	}
+
 	/* In exclusive mode, just satisfy the processor count.
 	 * Do not use nodes that have no unused CPUs */
 	if (step_spec->exclusive) {
-		int i, j=0, avail, tot_cpus = 0;
+		int j=0, avail, tot_cpus = 0;
 		for (i=bit_ffs(job_ptr->node_bitmap); i<node_record_count; 
 		     i++) {
 			if (!bit_test(job_ptr->node_bitmap, i))
