@@ -262,7 +262,8 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 	bg_record_t *found_record = NULL;
 	ListIterator itr;
 	List delete_list;
-	
+/* 	int bad_state = 0; */
+
 	slurm_mutex_lock(&job_start_mutex);
 		
 	bg_record = 
@@ -306,7 +307,25 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 			       bg_record->bg_block_id);
 			continue;
 		}
-		
+		/* FIX ME: this should end and requeue the job since
+		 * something bad has happened.  This is here right now to
+		 * only let us know we made a mistake.  The mistake will
+		 * still happen though.
+		 */
+		if(found_record->job_ptr) {
+			error("Trying to start job %u on block %s, "
+			      "but there is a job %u running on an overlapping "
+			      "block %s it will not end until %u.  "
+			      "This should never happen.",
+			      bg_update_ptr->job_ptr->job_id,
+			      bg_record->bg_block_id,
+			      found_record->job_ptr->job_id,
+			      found_record->bg_block_id,
+			      found_record->job_ptr->end_time);
+/* 			bad_state = 1; */
+/* 			break; */
+		}
+
 		debug2("need to make sure %s is free, it's part of %s",
 		       found_record->bg_block_id, 
 		       bg_record->bg_block_id);
@@ -317,6 +336,15 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		num_block_to_free++;
 	}		
 	list_iterator_destroy(itr);
+
+/* 	if(bad_state) { */
+/* 		num_block_to_free = 0; */
+/* 		num_block_freed = 0; */
+/* 		list_destroy(delete_list); */
+/* 		slurm_mutex_unlock(&block_state_mutex); */
+/* 		slurm_mutex_unlock(&job_start_mutex); */
+/* 	} */
+
 	free_block_list(delete_list);
 	list_destroy(delete_list);
 	slurm_mutex_unlock(&block_state_mutex);

@@ -1239,8 +1239,8 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo, buf, sizeof(buf), 
 				SELECT_PRINT_MIXED);
-	debug("bluegene:submit_job: %s nodes=%u-%u-%u", 
-	      buf, min_nodes, req_nodes, max_nodes);
+	debug("bluegene:submit_job: %s nodes=%u-%u-%u run_mode=%d", 
+	      buf, min_nodes, req_nodes, max_nodes, test_only);
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo, buf, sizeof(buf), 
 				SELECT_PRINT_BLRTS_IMAGE);
 	debug2("BlrtsImage=%s", buf);
