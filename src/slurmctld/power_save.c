@@ -84,7 +84,7 @@ static void _do_power_work(void)
 	static time_t last_log = 0, last_work_scan = 0;
 	int i, wake_cnt = 0, sleep_cnt = 0, susp_total = 0;
 	time_t now = time(NULL), delta_t;
-	uint16_t base_state, susp_state;
+	uint16_t base_state, comp_state, susp_state;
 	bitstr_t *wake_node_bitmap = NULL, *sleep_node_bitmap = NULL;
 	struct node_record *node_ptr;
 
@@ -105,6 +105,7 @@ static void _do_power_work(void)
 		node_ptr = &node_record_table_ptr[i];
 		base_state = node_ptr->node_state & NODE_STATE_BASE;
 		susp_state = node_ptr->node_state & NODE_STATE_POWER_SAVE;
+		comp_state = node_ptr->node_state & JOB_COMPLETING;
 
 		if (susp_state)
 			susp_total++;
@@ -123,6 +124,7 @@ static void _do_power_work(void)
 		if ((susp_state == 0)
 		&&  ((resume_rate == 0) || (resume_cnt <= resume_rate))
 		&&  (base_state == NODE_STATE_IDLE)
+		&&  (comp_state == 0)
 		&&  (node_ptr->last_idle < (now - idle_time))
 		&&  ((exc_node_bitmap == NULL) || 
 		     (bit_test(exc_node_bitmap, i) == 0))) {
@@ -274,10 +276,14 @@ static pid_t _run_prog(char *prog, char *arg)
 			child_pid[i] = child;
 			break;
 		}
+		if (i == PID_CNT)
+			error("power_save: filled child_pid array");
 	}
 	return child;
 }
 
+/* reap child processes previously forked to modify node state.
+ * return the count of empty slots in the child_pid array */
 static int  _reap_procs(void)
 {
 	int empties = 0, i, rc, status;
@@ -291,6 +297,9 @@ static int  _reap_procs(void)
 		if (rc == 0)
 			continue;
 		child_pid[i] = 0;
+		rc = WEXITSTATUS(status);
+		if (rc != 0)
+			error("power_save: program exit status of %d", rc);
 	}
 	return empties;
 }
@@ -444,7 +453,7 @@ extern void *init_power_save(void *arg)
 	while (slurmctld_config.shutdown_time == 0) {
 		sleep(1);
 
-		if (_reap_procs() < 3) {
+		if (_reap_procs() < 2) {
 			error("power_save programs not completing quickly");
 			continue;
 		}
