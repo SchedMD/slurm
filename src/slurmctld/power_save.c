@@ -119,6 +119,7 @@ static void _do_power_work(void)
 			suspend_cnt++;
 			node_ptr->node_state &= (~NODE_STATE_POWER_SAVE);
 			node_ptr->node_state |=   NODE_STATE_NO_RESPOND;
+			node_ptr->last_response = now;
 			bit_set(wake_node_bitmap, i);
 		}
 		if ((susp_state == 0)
