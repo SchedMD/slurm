@@ -607,6 +607,14 @@ extern void *mult_free_block(void *args)
 			usleep(100000);
 			continue;
 		}
+		if(bg_record->job_ptr) {
+			info("We are freeing a block (%s) that "
+			     "has job %u(%u), This should never happen.\n",
+			     bg_record->bg_block_id,
+			     bg_record->job_ptr->job_id, 
+			     bg_record->job_running);
+			term_jobs_on_block(bg_record->bg_block_id);
+		}
 		debug("freeing the block %s.", bg_record->bg_block_id);
 		bg_free_block(bg_record);	
 		debug("done\n");
