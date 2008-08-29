@@ -205,7 +205,8 @@ extern bool blocks_overlap(bg_record_t *rec_a, bg_record_t *rec_b)
 {
 	bitstr_t *my_bitmap = NULL;
 
-	if(rec_a->bp_count > 1 && rec_a->bp_count > 1) {
+	if((rec_a->bp_count > 1) && (rec_b->bp_count > 1)) {
+		/* Test for conflicting passthroughs */
 		reset_ba_system(false);
 		check_and_set_node_list(rec_a->bg_block_list);
 		if(check_and_set_node_list(rec_b->bg_block_list)
