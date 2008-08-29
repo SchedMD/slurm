@@ -162,6 +162,7 @@ typedef struct mail_info {
 } mail_info_t;
 
 static void _sig_handler(int dummy);
+static bool _batch_launch_defer(queued_request_t *queued_req_ptr);
 static inline int _comm_err(char *node_name);
 static void _list_delete_retry(void *retry_entry);
 static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr);
@@ -1160,6 +1161,8 @@ extern int agent_retry (int min_wait, bool mail_too)
 		retry_iter = list_iterator_create(retry_list);
 		while ((queued_req_ptr = (queued_request_t *)
 				list_next(retry_iter))) {
+			if (_batch_launch_defer(queued_req_ptr))
+				continue;
  			if (queued_req_ptr->last_attempt == 0) {
 				list_remove(retry_iter);
 				list_size--;
@@ -1178,6 +1181,8 @@ extern int agent_retry (int min_wait, bool mail_too)
 		/* next try to find an older record to retry */
 		while ((queued_req_ptr = (queued_request_t *) 
 				list_next(retry_iter))) {
+			if (_batch_launch_defer(queued_req_ptr))
+				continue;
 			age = difftime(now, queued_req_ptr->last_attempt);
 			if (age > min_wait) {
 				list_remove(retry_iter);
@@ -1440,3 +1445,48 @@ extern void mail_job_info (struct job_record *job_ptr, uint16_t mail_type)
 	return;
 }
 
+/* return true if the requests is to launch a batch job and the message
+ * destination is not yet powered up, otherwise return false */
+static bool _batch_launch_defer(queued_request_t *queued_req_ptr)
+{
+	char hostname[512];
+	agent_arg_t *agent_arg_ptr;
+	batch_job_launch_msg_t *launch_msg_ptr;
+	struct node_record *node_ptr;
+	time_t now = time(NULL);
+
+	agent_arg_ptr = queued_req_ptr->agent_arg_ptr;
+	if (agent_arg_ptr->msg_type != REQUEST_BATCH_JOB_LAUNCH)
+		return false;
+
+	launch_msg_ptr = (batch_job_launch_msg_t *)agent_arg_ptr->msg_args;
+	hostlist_deranged_string(agent_arg_ptr->hostlist, 
+				 sizeof(hostname), hostname);
+	node_ptr = find_node_record(hostname);
+	if (node_ptr == NULL) {
+		error("agent(batch_launch) could not locate node %s",
+		      agent_arg_ptr->hostlist);
+		queued_req_ptr->last_attempt = (time_t) 0;
+		return false;	/* no benefit to defer */
+	}
+
+	if (((node_ptr->node_state & NODE_STATE_POWER_SAVE) == 0) &&
+	    ((node_ptr->node_state & NODE_STATE_NO_RESPOND) == 0)) {
+info("agent ready to send batch request to %s", hostname);
+		queued_req_ptr->last_attempt = (time_t) 0;
+		return false;
+	}
+
+	if (queued_req_ptr->last_attempt == 0)
+		queued_req_ptr->last_attempt = now;
+	else if (difftime(now, queued_req_ptr->last_attempt) >= 
+				BATCH_START_TIME) {
+		error("agent waited too long for node %s to come up, "
+		      "sending batch request anyway...");
+		queued_req_ptr->last_attempt = (time_t) 0;
+		return false;
+	}
+
+info("agent waiting to send batch request to %s", hostname);
+	return true;
+}

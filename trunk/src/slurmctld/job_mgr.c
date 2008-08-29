@@ -4604,7 +4604,8 @@ extern void validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 			error("Orphan job %u.%u reported on node %s",
 				reg_msg->job_id[i], reg_msg->step_id[i], 
 				reg_msg->node_name);
-			abort_job_on_node(reg_msg->job_id[i], job_ptr, node_ptr);
+			abort_job_on_node(reg_msg->job_id[i], 
+					  job_ptr, node_ptr);
 		}
 
 		else if ((job_ptr->job_state == JOB_RUNNING) ||
@@ -4645,7 +4646,8 @@ extern void validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 			error("Registered PENDING job %u.%u on node %s ",
 				reg_msg->job_id[i], reg_msg->step_id[i], 
 				reg_msg->node_name);
-			abort_job_on_node(reg_msg->job_id[i], job_ptr, node_ptr);
+			abort_job_on_node(reg_msg->job_id[i], 
+					  job_ptr, node_ptr);
 		}
 
 		else {		/* else job is supposed to be done */
@@ -4675,7 +4677,7 @@ extern void validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 }
 
 /* Purge any batch job that should have its script running on node 
- * node_inx, but is not (i.e. its time_last_active != now) */
+ * node_inx, but is not. Allow BATCH_START_TIME secs for startup. */
 static void _purge_lost_batch_jobs(int node_inx, time_t now)
 {
 	ListIterator job_iterator;
@@ -4685,9 +4687,9 @@ static void _purge_lost_batch_jobs(int node_inx, time_t now)
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		bool job_active = ((job_ptr->job_state == JOB_RUNNING) ||
 				   (job_ptr->job_state == JOB_SUSPENDED));
-		if ((!job_active)                       ||
-		    (job_ptr->batch_flag == 0)          ||
-		    (job_ptr->time_last_active == now)  ||
+		if ((!job_active)                           ||
+		    (job_ptr->batch_flag == 0)              ||
+		    ((job_ptr->time_last_active + BATCH_START_TIME) > now) ||
 		    (node_inx != bit_ffs(job_ptr->node_bitmap)))
 			continue;
 
