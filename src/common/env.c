@@ -771,6 +771,7 @@ extern char *uint32_compressed_to_str(uint32_t array_len,
  *	SLURM_JOB_NODELIST
  *	SLURM_JOB_CPUS_PER_NODE
  *	LOADLBATCH (AIX only)
+ *	MPIRUN_PARTITION, MPIRUN_NOFREE, and MPIRUN_NOALLOCATE (BGL only)
  *
  * Sets OBSOLETE variables:
  *	SLURM_JOBID
@@ -782,7 +783,7 @@ extern char *uint32_compressed_to_str(uint32_t array_len,
 void
 env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc)
 {
-	char *tmp;
+	char *bgl_part_id = NULL, *tmp;
 
 	env_array_overwrite_fmt(dest, "SLURM_JOB_ID", "%u", alloc->job_id);
 	env_array_overwrite_fmt(dest, "SLURM_JOB_NUM_NODES", "%u",
@@ -798,6 +799,16 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc)
 	/* this puts the "poe" command into batch mode */
 	env_array_overwrite(dest, "LOADLBATCH", "yes");
 #endif
+
+	/* BlueGene only */
+	select_g_get_jobinfo(alloc->select_jobinfo, SELECT_DATA_BLOCK_ID,
+			     &bgl_part_id);
+	if (bgl_part_id) {
+		env_array_overwrite_fmt(dest, "MPIRUN_PARTITION", "%s",
+					bgl_part_id);
+		env_array_overwrite_fmt(dest, "MPIRUN_NOFREE", "%d", 1);
+		env_array_overwrite_fmt(dest, "MPIRUN_NOALLOCATE", "%d", 1);
+	}
 
 	/* obsolete */
 	env_array_overwrite_fmt(dest, "SLURM_JOBID", "%u", alloc->job_id);
