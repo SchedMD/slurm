@@ -87,7 +87,7 @@ extern char *default_plugstack;
 #endif
 #define DEFAULT_PROPAGATE_PRIO_PROCESS 0
 #define DEFAULT_RETURN_TO_SERVICE   0
-#define DEFAULT_RESUME_RATE         60
+#define DEFAULT_RESUME_RATE         300
 #define DEFAULT_SAVE_STATE_LOC      "/tmp"
 #define DEFAULT_SCHEDROOTFILTER     1
 #define DEFAULT_SCHEDULER_PORT      7321

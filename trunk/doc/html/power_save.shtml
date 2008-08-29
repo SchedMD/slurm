@@ -3,18 +3,20 @@
 <h1>Power Saving Guide</h1>
 <p>SLURM provides an integrated power saving mechanism beginning with 
 version 1.2.7.
+Beginning with version 1.4.0, nodes can be fully powered down rather 
+than only having their power consumption reduced.
 Nodes that remain idle for an configurable period of time can be placed 
 in a power saving mode. 
 The nodes will be restored to normal operation once work is assigned to them.
-Power saving is accomplished using a <i>cpufreq</i> governor that can change
-CPU frequency and voltage.
+Power saving can be accomplished either using a <i>cpufreq</i> governor 
+that can change CPU frequency and voltage or by powering down the node.
 Note that the <i>cpufreq</i> driver must be enabled in the Linux kernel 
 configuration. 
 While the "ondemand" governor can be configured to operate at all
 times to automatically alter the CPU performance based upon workload, 
 SLURM provides somewhat greater flexibility for power management on a
 cluster. 
-Of particular note, SLURM can alter the governors across the cluster
+Of particular note, SLURM can power nodes up or down 
 at a configurable rate to prevent rapid changes in power demands. 
 For example, starting a 1000 node job on an idle cluster could result 
 in an instantaneous surge in power demand of multiple megawatts without 
@@ -41,10 +43,10 @@ The default value is 60.
 Use this to prevent rapid drops in power requirements.</li>
 
 <li><b>ResumeRate</b>:
-Maximum number of nodes to be placed into power saving mode 
+Maximum number of nodes to be removed from power saving mode 
 per minute. 
 A value of zero results in no limits being imposed.
-The default value is 60.
+The default value is 300.
 Use this to prevent rapid increasses in power requirements.</li>
 
 <li><b>SuspendProgram</b>:
@@ -117,6 +119,6 @@ nodes are in power save mode using messages of this sort:
 You can also configure SLURM without SuspendProgram or ResumeProgram values
 to assess the potential impact of power saving mode before enabling it.</p>
 
-<p style="text-align:center;">Last modified 14 May 2007</p>
+<p style="text-align:center;">Last modified 29 August 2008</p>
 
 <!--#include virtual="footer.txt"-->

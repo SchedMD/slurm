@@ -153,6 +153,8 @@ typedef struct task_info {
 
 typedef struct queued_request {
 	agent_arg_t* agent_arg_ptr;	/* The queued request */
+	time_t       first_attempt;	/* Time of first check for batch 
+					 * launch RPC *only* */
 	time_t       last_attempt;	/* Time of last xmit attempt */
 } queued_request_t;
 
@@ -1459,6 +1461,11 @@ static bool _batch_launch_defer(queued_request_t *queued_req_ptr)
 	if (agent_arg_ptr->msg_type != REQUEST_BATCH_JOB_LAUNCH)
 		return false;
 
+	if (difftime(now, queued_req_ptr->last_attempt) < 5) {
+		/* Reduce overhead by only testing once every 5 secs */
+		return false;
+	}
+
 	launch_msg_ptr = (batch_job_launch_msg_t *)agent_arg_ptr->msg_args;
 	hostlist_deranged_string(agent_arg_ptr->hostlist, 
 				 sizeof(hostname), hostname);
@@ -1472,14 +1479,14 @@ static bool _batch_launch_defer(queued_request_t *queued_req_ptr)
 
 	if (((node_ptr->node_state & NODE_STATE_POWER_SAVE) == 0) &&
 	    ((node_ptr->node_state & NODE_STATE_NO_RESPOND) == 0)) {
-info("agent ready to send batch request to %s", hostname);
 		queued_req_ptr->last_attempt = (time_t) 0;
 		return false;
 	}
 
-	if (queued_req_ptr->last_attempt == 0)
-		queued_req_ptr->last_attempt = now;
-	else if (difftime(now, queued_req_ptr->last_attempt) >= 
+	if (queued_req_ptr->last_attempt == 0) {
+		queued_req_ptr->first_attempt = now;
+		queued_req_ptr->last_attempt  = now;
+	} else if (difftime(now, queued_req_ptr->first_attempt) >= 
 				BATCH_START_TIME) {
 		error("agent waited too long for node %s to come up, "
 		      "sending batch request anyway...");
@@ -1487,6 +1494,6 @@ info("agent ready to send batch request to %s", hostname);
 		return false;
 	}
 
-info("agent waiting to send batch request to %s", hostname);
+	queued_req_ptr->last_attempt  = now;
 	return true;
 }
