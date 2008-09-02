@@ -2295,6 +2295,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	pack16(build_ptr->private_data, buffer);
 	packstr(build_ptr->proctrack_type, buffer);
 	packstr(build_ptr->prolog, buffer);
+	packstr(build_ptr->prolog_slurmctld, buffer);
 	pack16(build_ptr->propagate_prio_process, buffer);
         packstr(build_ptr->propagate_rlimits, buffer);
         packstr(build_ptr->propagate_rlimits_except, buffer);
@@ -2455,6 +2456,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpackstr_xmalloc(&build_ptr->proctrack_type, &uint32_tmp, 
 			       buffer);
 	safe_unpackstr_xmalloc(&build_ptr->prolog, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->prolog_slurmctld, &uint32_tmp, 
+			       buffer);
 	safe_unpack16(&build_ptr->propagate_prio_process, buffer);
         safe_unpackstr_xmalloc(&build_ptr->propagate_rlimits,
                                &uint32_tmp, buffer);
@@ -2562,6 +2565,7 @@ unpack_error:
 	xfree(build_ptr->plugstack);
 	xfree(build_ptr->proctrack_type);
 	xfree(build_ptr->prolog);
+	xfree(build_ptr->prolog_slurmctld);
 	xfree(build_ptr->propagate_rlimits);
 	xfree(build_ptr->propagate_rlimits_except);
 	xfree(build_ptr->resume_program);

@@ -164,6 +164,7 @@ function displayfile()
    "#PrivateData=jobs <br>" +
    "ProctrackType=proctrack/" + get_radio_value(document.config.proctrack_type) + "<br>" +
    get_field("Prolog",document.config.prolog) + "<br>" +
+   "#PrologSlurmctld= <br>" +
    "#PropagatePrioProcess=0 <br>" +
    "#PropagateResourceLimits= <br>" +
    "#PropagateResourceLimitsExcept= <br>" +

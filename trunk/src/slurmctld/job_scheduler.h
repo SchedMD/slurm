@@ -2,7 +2,8 @@
  *  job_scheduler.h - data structures and function definitions for scheduling
  *	of pending jobs in priority order
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette@llnl.gov>, et. al.
  *  Derived from dsh written by Jim Garlick <garlick1@llnl.gov>
@@ -90,6 +91,14 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
 
 /* Print a job's dependency information based upon job_ptr->depend_list */
 extern void print_job_dependency(struct job_record *job_ptr);
+
+/*
+ * prolog_slurmctld - execute the prolog_slurmctld for a job that has just
+ *	been allocated resources.
+ * IN job_ptr - pointer to job that will be initiated
+ * RET SLURM_SUCCESS(0) or error code
+ */
+extern int prolog_slurmctld(struct job_record *job_ptr);
 
 /* 
  * schedule - attempt to schedule all pending jobs
