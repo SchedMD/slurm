@@ -817,6 +817,7 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 
 	pack8(detail_ptr->open_mode, buffer);
 	pack8(detail_ptr->overcommit, buffer);
+	pack8(detail_ptr->prolog_running, buffer);
 
 	pack32(detail_ptr->job_min_procs, buffer);
 	pack32(detail_ptr->job_min_memory, buffer);
@@ -851,7 +852,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	uint32_t num_tasks, name_len, argc = 0;
 	uint16_t shared, contiguous, ntasks_per_node;
 	uint16_t acctg_freq, cpus_per_task, requeue, task_dist;
-	uint8_t open_mode, overcommit;
+	uint8_t open_mode, overcommit, prolog_running;
 	time_t begin_time, submit_time;
 	int i;
 	multi_core_data_t *mc_ptr;
@@ -871,6 +872,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 
 	safe_unpack8(&open_mode, buffer);
 	safe_unpack8(&overcommit, buffer);
+	safe_unpack8(&prolog_running, buffer);
 
 	safe_unpack32(&job_min_procs, buffer);
 	safe_unpack32(&job_min_memory, buffer);
@@ -903,8 +905,11 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 		      requeue, overcommit);
 		goto unpack_error;
 	}
-
-
+	if (prolog_running > 1) {
+		error("Invalid data for job %u: prolog_running=%u",
+		      job_ptr->job_id, prolog_running);
+		goto unpack_error;
+	}
 
 	/* free any left-over detail data */
 	xfree(job_ptr->details->req_nodes);
@@ -934,6 +939,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	job_ptr->details->requeue = requeue;
 	job_ptr->details->open_mode = open_mode;
 	job_ptr->details->overcommit = overcommit;
+	job_ptr->details->prolog_running = prolog_running;
 	job_ptr->details->begin_time = begin_time;
 	job_ptr->details->submit_time = submit_time;
 	job_ptr->details->req_nodes = req_nodes;
