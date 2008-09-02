@@ -994,7 +994,7 @@ required. If you have nodes in a DRAIN state and want to preserve that
 information, you can easily build a script to preserve that information
 using the <i>sinfo</i> command. The following command line will report the 
 <i>Reason</i> field for every node in a DRAIN state and write the output 
-in a form that can be executed to restore state.
+in a form that can be executed later to restore state.
 <pre>
 sinfo -t drain -h -o "scontrol update nodename='%N' state=drain reason='%E'"
 </pre>
