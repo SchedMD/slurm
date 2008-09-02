@@ -329,6 +329,7 @@ struct job_details {
 	uint32_t num_tasks;		/* number of tasks to start */
 	uint8_t open_mode;		/* stdout/err append or trunctate */
 	uint8_t overcommit;		/* processors being over subscribed */
+	uint8_t prolog_running;		/* set while prolog_slurmctld is running */
 	uint16_t acctg_freq;		/* accounting polling interval */
 	uint16_t cpus_per_task;		/* number of processors required for 
 					 * each task */

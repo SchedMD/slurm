@@ -363,10 +363,10 @@ extern int schedule(void)
 			info("schedule: JobId=%u NodeList=%s",
 			     job_ptr->job_id, job_ptr->nodes);
 #endif
-			if (job_ptr->batch_flag)
-				launch_job(job_ptr);
-			else
+			if (job_ptr->batch_flag == 0)
 				srun_allocate(job_ptr->job_id);
+			else if (job_ptr->details->prolog_running == 0)
+				launch_job(job_ptr);
 			job_cnt++;
 		} else if (error_code !=
 		           ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) {
@@ -431,8 +431,9 @@ extern void sort_job_queue(struct job_queue *job_queue, int job_queue_size)
 		tmp_part_prio = job_queue[i].part_priority;
 
 		job_queue[i].job_ptr       = job_queue[top_prio_inx].job_ptr;
-		job_queue[i].job_priority  = job_queue[top_prio_inx].job_priority;
-		job_queue[i].part_priority = job_queue[top_prio_inx].part_priority;
+		job_queue[i].job_priority  = job_queue[top_prio_inx].
+					     job_priority;
+
 
 		job_queue[top_prio_inx].job_ptr       = tmp_job_ptr;
 		job_queue[top_prio_inx].job_priority  = tmp_job_prio;
@@ -909,6 +910,10 @@ extern int prolog_slurmctld(struct job_record *job_ptr)
 		return errno;
 	}
 
+
+	if (job_ptr->details)
+		job_ptr->details->prolog_running = 1;
+
 	slurm_attr_init(&thread_attr_prolog);
 	pthread_attr_setdetachstate(&thread_attr_prolog, 
 				    PTHREAD_CREATE_DETACHED);
@@ -979,13 +984,31 @@ static void *_run_prolog(void *arg)
 		}
 	}
 	if (status != 0) {
-		error("prolog_slurmctld job %u exit status %u:%u",
+		error("prolog_slurmctld job %u prolog exit status %u:%u",
 		      job_id, WEXITSTATUS(status), WTERMSIG(status));
-	}
+	} else
+		debug2("prolog_slurmctld job %u prolog completed", job_id);
 
  fini:	xfree(argv[0]);
 	for (i=0; my_env[i]; i++)
 		xfree(my_env[i]);
 	xfree(my_env);
+	lock_slurmctld(config_read_lock);
+	if (job_ptr->job_id != job_id) {
+		error("prolog_slurmctld job %u pointer invalid", job_id);
+		job_ptr = find_job_record(job_id);
+		if (job_ptr == NULL)
+			error("prolog_slurmctld job %u now defunct", job_id);
+	}
+	if (job_ptr) {
+		if (job_ptr->details)
+			job_ptr->details->prolog_running = 0;
+		if (job_ptr->batch_flag &&
+		    ((job_ptr->job_state == JOB_RUNNING) ||
+		     (job_ptr->job_state == JOB_SUSPENDED)))
+			launch_job(job_ptr);
+	}
+	unlock_slurmctld(config_read_lock);
+
 	return NULL;
 }
