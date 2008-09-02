@@ -9,6 +9,9 @@ documents those changes that are of interest to users and admins.
     https://computing.llnl.gov/linux/slurm/power_save.html or 
     "man slurm.conf" (SuspendProgram and related parameters) for more 
     information.
+ -- Added configuration parameter PrologSlurmctld, which can be used to boot
+    nodes into a particular state for each job. See "man slurm.conf" for 
+    details.
 
 * Changes in SLURM 1.4.0-pre1
 =============================

@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "August 2008" "slurm.conf 1.3" "Slurm configuration file"
+.TH "slurm.conf" "5" "September 2008" "slurm.conf 1.3" "Slurm configuration file"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
@@ -295,6 +295,8 @@ The default value is "NO".
 Fully qualified pathname of a script to execute as user root on every 
 node when a user's job completes (e.g. "/usr/local/slurm/epilog"). This may 
 be used to purge files, disable user login, etc. By default there is no epilog.
+The following environment variables are set for use by the program:
+SLURM_JOBID, SLURM_UID and MPIRUN_PARTITION (for BlueGene systems).
 
 .TP
 \fBEpilogMsgTime\fR
@@ -650,12 +652,14 @@ default for all other systems
 
 .TP
 \fBProlog\fR
-Fully qualified pathname of a script for the slurmd to execute whenever
-it is asked to run a job step from a new job allocation.  (e.g.
+Fully qualified pathname of a program for the slurmd to execute 
+whenever it is asked to run a job step from a new job allocation (e.g.
 "/usr/local/slurm/prolog").  The slurmd executes the script before starting
-the job step.  This may be used to purge files, enable user login, etc.
+the first job step.  This may be used to purge files, enable user login, etc.
 By default there is no prolog. Any configured script is expected to 
 complete execution quickly (in less time than \fBMessageTimeout\fR).
+The following environment variables are set for use by the program:
+SLURM_JOBID, SLURM_UID and MPIRUN_PARTITION (for BlueGene systems).
 
 NOTE:  The Prolog script is ONLY run on any individual
 node when it first sees a job step from a new allocation; it does not
@@ -663,6 +667,20 @@ run the Prolog immediately when an allocation is granted.  If no job steps
 from an allocation are run on a node, it will never run the Prolog for that
 allocation.  The Epilog, on the other hand, always runs on every node of an
 allocation when the allocation is released.
+
+.TP
+\fBPrologSlurmctld\fR
+Fully qualified pathname of a program for the slurmctld to execute 
+before granting a new job allocation (e.g.
+"/usr/local/slurm/prolog_controller"). 
+The program executes as SlurmUser, which gives it permission to drain 
+nodes and requeue the job if a failure occurs or cancel the job if appropriate.
+The program can be used to reboot nodes or perform other work to prepare 
+resources for use. 
+The available environments for the job would be identified as a 
+node \fBFeature\fR and specified in the user request as a job constraint.
+The following environment variables are set for use by the program:
+SLURM_JOBID, SLURM_UID, SLURM_NODELIST and SLURM_CONSTRAINTS.
 
 .TP
 \fBPropagatePrioProcess\fR

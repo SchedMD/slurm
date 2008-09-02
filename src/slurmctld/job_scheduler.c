@@ -3,6 +3,7 @@
  *	Note there is a global job list (job_list)
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  LLNL-CODE-402394.
@@ -47,6 +48,7 @@
 #include <unistd.h>
 
 #include "src/common/assoc_mgr.h"
+#include "src/common/env.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
@@ -66,8 +68,9 @@
 #define _DEBUG 0
 #define MAX_RETRIES 10
 
-static void _depend_list_del(void *dep_ptr);
-static char **_xduparray(uint16_t size, char ** array);
+static void	_depend_list_del(void *dep_ptr);
+static void *	_run_prolog(void *arg);
+static char **	_xduparray(uint16_t size, char ** array);
 
 /* 
  * build_job_queue - build (non-priority ordered) list of pending jobs
@@ -883,4 +886,106 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 		return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 	}
 
+}
+
+/*
+ * prolog_slurmctld - execute the prolog_slurmctld for a job that has just
+ *	been allocated resources.
+ * IN job_ptr - pointer to job that will be initiated
+ * RET SLURM_SUCCESS(0) or error code
+ */
+extern int prolog_slurmctld(struct job_record *job_ptr)
+{
+	int rc;
+	pthread_t thread_id_prolog;
+	pthread_attr_t thread_attr_prolog;
+
+	if ((slurmctld_conf.prolog_slurmctld == NULL) ||
+	    (slurmctld_conf.prolog_slurmctld[0] == '\0'))
+		return SLURM_SUCCESS;
+
+	if (access(slurmctld_conf.prolog_slurmctld, X_OK) < 0) {
+		error("Invalid PrologSlurmctld: %m");
+		return errno;
+	}
+
+	slurm_attr_init(&thread_attr_prolog);
+	pthread_attr_setdetachstate(&thread_attr_prolog, 
+				    PTHREAD_CREATE_DETACHED);
+	while(1) {
+		rc = pthread_create(&thread_id_prolog,
+				    &thread_attr_prolog,
+				    _run_prolog, (void *) job_ptr);
+		if (rc == 0)
+			return SLURM_SUCCESS;
+		if (errno == EAGAIN)
+			continue;
+		error("pthread_create: %m");
+		return errno;
+	}
+}
+
+static void *_run_prolog(void *arg)
+{
+	struct job_record *job_ptr = (struct job_record *) arg;
+	uint32_t job_id;
+	pid_t cpid;
+	int i, status, wait_rc;
+	char *argv[2], **my_env;
+	/* Locks: Read config, job */
+	slurmctld_lock_t config_read_lock = { 
+		READ_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+
+	lock_slurmctld(config_read_lock);
+	argv[0] = xstrdup(slurmctld_conf.prolog_slurmctld);
+	argv[1] = NULL;
+
+	my_env = xmalloc(sizeof(char *));
+	my_env[0] = NULL;
+	if (job_ptr->details && job_ptr->details->features) {
+		setenvf(&my_env, "SLURM_CONSTRAINTS", 
+			"%s", job_ptr->details->features);
+	}
+	setenvf(&my_env, "SLURM_JOBID", "%u", job_ptr->job_id);
+	setenvf(&my_env, "SLURM_NODELIST", "%s", job_ptr->nodes);
+	setenvf(&my_env, "SLURM_UID", "%u", job_ptr->user_id);
+	job_id = job_ptr->job_id;
+	unlock_slurmctld(config_read_lock);
+
+	if ((cpid = fork()) < 0) {
+		error("prolog_slurmctld fork error: %m");
+		goto fini;
+	}
+	if (cpid == 0) {
+#ifdef SETPGRP_TWO_ARGS
+		setpgrp(0, 0);
+#else
+		setpgrp();
+#endif
+		execve(argv[0], argv, my_env);
+		exit(127);
+	}
+
+	while (1) {
+		wait_rc = waitpid(cpid, &status, 0);
+		if (wait_rc < 0) {
+			if (errno == EINTR)
+				continue;
+			error("prolog_slurmctld waitpid error: %m");
+			break;
+		} else if (wait_rc > 0) {
+			killpg(cpid, SIGKILL);	/* kill children too */
+			break;
+		}
+	}
+	if (status != 0) {
+		error("prolog_slurmctld job %u exit status %u:%u",
+		      job_id, WEXITSTATUS(status), WTERMSIG(status));
+	}
+
+ fini:	xfree(argv[0]);
+	for (i=0; my_env[i]; i++)
+		xfree(my_env[i]);
+	xfree(my_env);
+	return NULL;
 }

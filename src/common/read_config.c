@@ -193,6 +193,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"PrivateData", S_P_STRING},
 	{"ProctrackType", S_P_STRING},
 	{"Prolog", S_P_STRING},
+	{"PrologSlurmctld", S_P_STRING},
 	{"PropagatePrioProcess", S_P_UINT16},
 	{"PropagateResourceLimitsExcept", S_P_STRING},
 	{"PropagateResourceLimits", S_P_STRING},
@@ -1841,6 +1842,7 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	}
 
 	s_p_get_string(&conf->prolog, "Prolog", hashtbl);
+	s_p_get_string(&conf->prolog_slurmctld, "PrologSlurmctld", hashtbl);
 
 	if (!s_p_get_uint16(&conf->propagate_prio_process,
 			"PropagatePrioProcess", hashtbl)) {

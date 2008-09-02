@@ -1010,7 +1010,8 @@ typedef struct slurm_ctl_conf {
 	uint16_t private_data;	/* block viewing of information, 
 				 * see PRIVATE_DATA_* */
 	char *proctrack_type;	/* process tracking plugin type */
-	char *prolog;		/* pathname of job prolog */
+	char *prolog;		/* pathname of job prolog run by slurmc */
+	char *prolog_slurmctld;	/* pathname of job prolog run by slurmctld */
 	uint16_t propagate_prio_process; /* 1 if process priority should
 				          * be propagated */
         char *propagate_rlimits;/* Propagate (all/specific) resource limits */

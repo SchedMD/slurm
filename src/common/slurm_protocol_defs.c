@@ -1063,6 +1063,7 @@ void slurm_free_ctl_conf(slurm_ctl_conf_info_msg_t * config_ptr)
 		xfree(config_ptr->plugstack);
 		xfree(config_ptr->proctrack_type);
 		xfree(config_ptr->prolog);
+		xfree(config_ptr->prolog_slurmctld);
 		xfree(config_ptr->propagate_rlimits);
 		xfree(config_ptr->propagate_rlimits_except);
 		xfree(config_ptr->resume_program);
