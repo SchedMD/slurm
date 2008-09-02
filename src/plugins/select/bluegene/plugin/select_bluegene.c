@@ -602,7 +602,7 @@ extern int select_p_state_restore(char *dir_name)
 				list_destroy(bg_record->bg_block_list);
 			bg_record->bg_block_list =
 				list_create(destroy_ba_node);
-			copy_node_path(results, bg_record->bg_block_list);
+			copy_node_path(results, &bg_record->bg_block_list);
 			list_destroy(results);			
 			
 			configure_block(bg_record);
