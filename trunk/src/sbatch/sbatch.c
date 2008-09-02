@@ -1,7 +1,5 @@
 /*****************************************************************************\
- *  sbatch.c - Submit a SLURM batch script.
- *
- *  $Id$
+ *  sbatch.c - Submit a SLURM batch script.$
  *****************************************************************************
  *  Copyright (C) 2006-2007 The Regents of the University of California.
  *  Copyright (C) 2008 Lawrence Livermore National Security.
@@ -49,7 +47,7 @@
 
 #include "src/sbatch/opt.h"
 
-#define MAX_RETRIES 3
+#define MAX_RETRIES 15
 
 static int   fill_job_desc_from_opts(job_desc_msg_t *desc);
 static void *get_script_buffer(const char *filename, int *size);
@@ -102,10 +100,16 @@ int main(int argc, char *argv[])
 	desc.script = (char *)script_body;
 
 	while (slurm_submit_batch_job(&desc, &resp) < 0) {
-		static char *msg = "Slurm job queue full, sleeping and retrying.";
-
-		if ((errno != ESLURM_ERROR_ON_DESC_TO_RECORD_COPY) ||
-		    (retries >= MAX_RETRIES)) {
+		static char *msg;
+		
+		if (errno == ESLURM_ERROR_ON_DESC_TO_RECORD_COPY)
+			msg = "Slurm job queue full, sleeping and retrying.";
+		else if (errno == EAGAIN) {
+			msg = "Slurm temporarily unable to accept job, "
+			      "sleeping and retrying.";
+		} else
+			msg = NULL;
+		if ((msg == NULL) || (retries >= MAX_RETRIES)) {
 			error("Batch job submission failed: %m");
 			exit(3);
 		}

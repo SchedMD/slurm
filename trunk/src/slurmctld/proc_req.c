@@ -1944,6 +1944,13 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 				unlock_slurmctld(job_write_lock);
 				return;
 			}
+			if (job_ptr->details && 
+			    job_ptr->details->prolog_running) {
+				slurm_send_rc_msg(msg, EAGAIN);
+				unlock_slurmctld(job_write_lock);
+				return;
+			}
+
 			error_code = _launch_batch_step(job_desc_msg, uid,
 							&step_id);
 			unlock_slurmctld(job_write_lock);
