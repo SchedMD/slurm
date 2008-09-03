@@ -352,7 +352,7 @@ static bool contains_null_char(const void *buf, int size)
 static bool contains_dos_linebreak(const void *buf, int size)
 {
 	char *str = (char *)buf;
-	char prev_char = "0";
+	char prev_char = '\0';
 	int i;
 
 	for (i = 0; i < size; i++) {
