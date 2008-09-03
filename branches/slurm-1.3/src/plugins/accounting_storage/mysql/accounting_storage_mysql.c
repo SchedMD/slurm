@@ -7082,7 +7082,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 			"update %s set partition='%s', ",
 			job_table, job_ptr->partition);
 		if(block_id)
-			xstrfmtcat(query, "blockid='%s', ");
+			xstrfmtcat(query, "blockid='%s', ", block_id);
 		xstrfmtcat(query, "start=%d, name='%s', state=%u, "
 			   "alloc_cpus=%u, nodelist='%s', "
 			   "account='%s', associd=%u, end=0 where id=%d",
