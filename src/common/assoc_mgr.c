@@ -202,7 +202,7 @@ static int _get_local_user_list(void *db_conn, int enforce)
 		while((user = list_next(itr))) {
 			uid_t pw_uid = uid_from_string(user->name);
 			if(pw_uid == (uid_t) -1) {
-				error("couldn't get a uid for user %s",
+				debug("couldn't get a uid for user %s",
 				      user->name);
 				user->uid = (uint32_t)NO_VAL;
 			} else
@@ -709,7 +709,7 @@ extern int assoc_mgr_update_local_users(acct_update_object_t *update)
 			}
 			pw_uid = uid_from_string(object->name);
 			if(pw_uid == (uid_t) -1) {
-				error("couldn't get a uid for user %s",
+				debug("couldn't get a uid for user %s",
 				      object->name);
 				object->uid = NO_VAL;
 			} else
