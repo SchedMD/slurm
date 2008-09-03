@@ -1,0 +1,236 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Verify node configuration specification (--mem, --mincpus, and 
+#          --tmp options).
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "WARNING: ..." with an explanation of why the test can't be made, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2002 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# LLNL-CODE-402394.
+# 
+# This file is part of SLURM, a resource management program.
+# For details, see <http://www.llnl.gov/linux/slurm/>.
+#  
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+# 
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+# 
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id     "1.23"
+set exit_code   0
+
+print_header $test_id
+
+if {[test_wiki_sched] == 1} {
+	send_user "\nWARNING: not compatable with sched/wiki (Maui)\n"
+	send_user "         or sched/wiki2 (Moab) schedulers\n"
+	exit $exit_code
+}
+
+#
+# Submit a job with invalid mincpus requirement
+#
+set err_msg     0
+set host_0      ""
+set timeout $max_job_delay
+set srun_pid [spawn $srun -N1 -l --mincpus=999999 -t1 $bin_printenv SLURMD_NODENAME]
+expect {
+	-re "configuration is not available" {
+		send_user "This error is expected, no worries\n"
+		set err_msg 1
+		exp_continue
+	}
+	-re "0: ($alpha_numeric_under)" {
+		set host_0 $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {[string compare $host_0 ""] != 0} {
+	send_user "\nFAILURE: job ran with invalid mincpus option\n"
+	set exit_code   1	
+}
+if {$err_msg != 1} {
+	send_user "\nFAILURE: job failed to report required error\n"
+	set exit_code   1	
+}
+
+#
+# Submit a job with valid mincpus requirement
+#
+set host_0      ""
+set timeout $max_job_delay
+set srun_pid [spawn $srun -N1 -l --mincpus=1 -t1 $bin_printenv SLURMD_NODENAME]
+expect {
+	-re "0: ($alpha_numeric_under)" {
+		set host_0 $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {[string compare $host_0 ""] == 0} {
+	send_user "\nFAILURE: job failed with valid mincpus option\n"
+	set exit_code   1	
+}
+
+#
+# Submit a job with invalid mem requirement
+#
+set err_msg     0
+set host_0      ""
+set timeout $max_job_delay
+set srun_pid [spawn $srun -N1 -l --mem=999999 -t1 $bin_printenv SLURMD_NODENAME]
+expect {
+	-re "not available" {
+		send_user "This error is expected, no worries\n"
+		set err_msg 1
+		exp_continue
+	}
+	-re "0: ($alpha_numeric_under)" {
+		set host_0 $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {[string compare $host_0 ""] != 0} {
+	send_user "\nFAILURE: job ran with invalid mem option\n"
+	set exit_code   1	
+}
+if {$err_msg != 1} {
+	send_user "\nFAILURE: job failed to report required error\n"
+	set exit_code   1	
+}
+
+#
+# Submit a job with valid mem requirement
+#
+set host_0      ""
+set timeout $max_job_delay
+set srun_pid [spawn $srun -N1 -l --mem=1 -t1 $bin_printenv SLURMD_NODENAME]
+expect {
+	-re "0: ($alpha_numeric_under)" {
+		set host_0 $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {[string compare $host_0 ""] == 0} {
+	send_user "\nFAILURE: job failed with valid mem option\n"
+	set exit_code   1	
+}
+
+#
+# Submit a job with invalid tmp requirement
+#
+set err_msg     0
+set host_0      ""
+set timeout $max_job_delay
+set srun_pid [spawn $srun -N1 -l --tmp=999999999 -t1 $bin_printenv SLURMD_NODENAME]
+expect {
+	-re "configuration is not available" {
+		send_user "This error is expected, no worries\n"
+		set err_msg 1
+		exp_continue
+	}
+	-re "0: ($alpha_numeric_under)" {
+		set host_0 $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {[string compare $host_0 ""] != 0} {
+	send_user "\nFAILURE: job ran with invalid tmp option\n"
+	set exit_code   1	
+}
+if {$err_msg != 1} {
+	send_user "\nFAILURE: job failed to report required error\n"
+	set exit_code   1	
+}
+
+#
+# Submit a job with valid tmp requirement
+#
+set host_0      ""
+set timeout $max_job_delay
+set srun_pid [spawn $srun -N1 -l --tmp=0 -t1 $bin_printenv SLURMD_NODENAME]
+expect {
+	-re "0: ($alpha_numeric_under)" {
+		set host_0 $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {[string compare $host_0 ""] == 0} {
+	send_user "\nFAILURE: job failed with valid tmp option\n"
+	set exit_code   1	
+}
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code
