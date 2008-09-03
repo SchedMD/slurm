@@ -280,6 +280,20 @@ be placed into the config file. The plugins will simply be called
 in order, one after the other, and appropriate action taken on
 failure given that state of the plugin's \fIoptional\fR flag.
 .LP
+Additional config files or directories of config files may be included
+in \fBplugstack.conf\fR with the \fBinclude\fR keyword. The \fBinclude\fR
+keyword must appear on its own line, and takes a glob as its parameter,
+so multiple files may be included from one \fBinclude\fR line. For
+example, the following syntax will load all config files in the
+/etc/slurm/plugstack.conf.d directory, in local collation order:
+.nf
+
+  include /etc/slurm/plugstack.conf.d/*
+
+.fi
+which might be considered a more flexible method for building up
+a spank plugin stack.
+.LP
 The \fBSPANK\fR config file is re\-read on each job launch, so editing
 the config file will not affect running jobs. However care should
 be taken so that a partially edited config file is not read by a
