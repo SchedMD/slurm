@@ -171,7 +171,10 @@ main (int argc, char *argv[])
 		log_alter(opts, 0, NULL);
 	}
 
-	db_conn = acct_storage_g_get_connection(false, rollback_flag);
+	/* always do a rollback.  If you don't then if there is an
+	 * error you can not rollback ;)
+	 */
+	db_conn = acct_storage_g_get_connection(false, 1);
 	my_uid = getuid();
 
 	if (input_field_count)

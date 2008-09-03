@@ -201,11 +201,15 @@ extern void fini_bg(void)
 	ba_fini();
 }
 
+/* 
+ * block_state_mutex should be locked before calling this function
+ */
 extern bool blocks_overlap(bg_record_t *rec_a, bg_record_t *rec_b)
 {
 	bitstr_t *my_bitmap = NULL;
 
-	if(rec_a->bp_count > 1 && rec_a->bp_count > 1) {
+	if((rec_a->bp_count > 1) && (rec_b->bp_count > 1)) {
+		/* Test for conflicting passthroughs */
 		reset_ba_system(false);
 		check_and_set_node_list(rec_a->bg_block_list);
 		if(check_and_set_node_list(rec_b->bg_block_list)
@@ -606,6 +610,14 @@ extern void *mult_free_block(void *args)
 		if (!bg_record) {
 			usleep(100000);
 			continue;
+		}
+		if(bg_record->job_ptr) {
+			info("We are freeing a block (%s) that "
+			     "has job %u(%u), This should never happen.\n",
+			     bg_record->bg_block_id,
+			     bg_record->job_ptr->job_id, 
+			     bg_record->job_running);
+			term_jobs_on_block(bg_record->bg_block_id);
 		}
 		debug("freeing the block %s.", bg_record->bg_block_id);
 		bg_free_block(bg_record);	

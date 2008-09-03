@@ -494,6 +494,8 @@ slurm_fd _slurm_open_stream(slurm_addr *addr, bool retry)
 {
 	int retry_cnt;
 	slurm_fd fd;
+	uint16_t port;
+	char ip[32];
 
 	if ( (addr->sin_family == 0) || (addr->sin_port  == 0) ) {
 		error("Error connecting, bad data: family = %u, port = %u",
@@ -510,12 +512,15 @@ slurm_fd _slurm_open_stream(slurm_addr *addr, bool retry)
 		}
 
 		if (retry_cnt) {
-			if (retry_cnt == 1)
-				debug3("Error connecting, picking new stream port");
+			if (retry_cnt == 1) {
+				debug3("Error connecting, "
+				       "picking new stream port");
+			}
 			_sock_bind_wild(fd);
 		}
 
-		rc = _slurm_connect(fd, (struct sockaddr const *)addr, sizeof(*addr));
+		rc = _slurm_connect(fd, (struct sockaddr const *)addr, 
+				    sizeof(*addr));
 		if (rc >= 0)		    /* success */
 			break;
 		if ((errno != ECONNREFUSED) || 
@@ -531,7 +536,9 @@ slurm_fd _slurm_open_stream(slurm_addr *addr, bool retry)
 	return fd;
 
     error:
-	debug2("Error connecting slurm stream socket: %m");
+	slurm_get_ip_str(addr, &port, ip, sizeof(ip));
+	debug2("Error connecting slurm stream socket at %s:%d: %m",
+	       ip, ntohs(port));
 	if ((_slurm_close_stream(fd) < 0) && (errno == EINTR))
 		_slurm_close_stream(fd);	/* try again */
 	return SLURM_SOCKET_ERROR;

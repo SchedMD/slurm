@@ -40,15 +40,17 @@
 #  include "config.h"
 #endif
 
-#include <sys/wait.h>
-#include <sys/stat.h>
-#include <sys/param.h>
-#include <unistd.h>
-#include <pwd.h>
-#include <grp.h>
-#include <string.h>
 #include <assert.h>
 #include <ctype.h>
+#include <fcntl.h>
+#include <grp.h>
+#include <pwd.h>
+#include <string.h>
+#include <sys/param.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 #if HAVE_STDLIB_H
 #  include <stdlib.h>
@@ -294,7 +296,7 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 {
 	char c;
 	uint32_t *gtids;		/* pointer to arrary of ranks */
-	int j;
+	int fd, j;
 	int rc;
 	slurmd_task_info_t *task = job->task[i];
 
@@ -430,6 +432,21 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 	/* 
 	 * print error message and clean up if execve() returns:
 	 */
+	if ((errno == ENOENT) &&
+	    ((fd = open(task->argv[0], O_RDONLY)) >= 0)) {
+		char buf[256], *eol;
+		int sz;
+		sz = read(fd, buf, sizeof(buf));
+		if ((sz >= 3) && (strncmp(buf, "#!", 2) == 0)) {
+			eol = strchr(buf, '\n');
+			if (eol)
+				eol[0] = '\0';
+			else
+				buf[sizeof(buf)-1] = '\0';
+			error("execve(): bad interpreter(%s): %m", buf+2);
+			exit(errno);
+		}
+	}
 	error("execve(): %s: %m", task->argv[0]); 
 	exit(errno);
 }

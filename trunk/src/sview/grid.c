@@ -661,7 +661,7 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 	ListIterator itr = NULL;
 	sview_node_info_t *sview_node_info_ptr = NULL;
 #ifdef HAVE_BG
-	int y=0, z=0, x_offset=0, y_offset=0;
+	int y=0, z=0, x_offset=0, y_offset=0, default_y_offset=0;
 #endif
 
 	if(!node_list) {
@@ -693,14 +693,19 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 	 * get the nodes from the controller going up from the Z dim
 	 * instead of laying these out in a nice X fashion
 	 */
+	
+	default_y_offset = (DIM_SIZE[Z] * DIM_SIZE[Y]) 
+		+ (DIM_SIZE[Y] - DIM_SIZE[Z]);
+
 	for (x=0; x<DIM_SIZE[X]; x++) {
-		y_offset = (DIM_SIZE[Z] * DIM_SIZE[Y]);
+		y_offset = default_y_offset;
+			
 		for (y=0; y<DIM_SIZE[Y]; y++) {
 			coord_y = y_offset - y;
 			x_offset = DIM_SIZE[Z] - 1;
 			for (z=0; z<DIM_SIZE[Z]; z++){
 				coord_x = x + x_offset;
-				
+			
 				grid_button = xmalloc(sizeof(grid_button_t));
 				grid_button->inx = i++;
 				grid_button->table = table;

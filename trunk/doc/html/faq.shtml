@@ -85,6 +85,8 @@ SLURM RPM?</li>
 <li><a href="#slurmdbd">Why should I use the slurmdbd instead of the
 regular database plugins?</li>
 <li><a href="#debug">How can I build SLURM with debugging symbols?</li>
+<li><a href="#state_preserve">How can I easily preserve drained node information 
+between major SLURM updates?</li>
 </ol>
 
 <h2>For Users</h2>
@@ -984,8 +986,21 @@ You want the "-g" option to produce debugging information and
 "-O0" to set the optimization level to zero (off). For example:<br>
 CFLAGS="-g -O0" ./configure ...
 
+<p><a name="state_preserve"><b>30. How can I easily preserve drained node 
+information between major SLURM updates?</b><br>
+Major SLURM updates generally have changes in the state save files and 
+communication protocols, so a cold-start (without state) is generally 
+required. If you have nodes in a DRAIN state and want to preserve that
+information, you can easily build a script to preserve that information
+using the <i>sinfo</i> command. The following command line will report the 
+<i>Reason</i> field for every node in a DRAIN state and write the output 
+in a form that can be executed later to restore state.
+<pre>
+sinfo -t drain -h -o "scontrol update nodename='%N' state=drain reason='%E'"
+</pre>
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 8 August 2008</p>
+<p style="text-align:center;">Last modified 2 September 2008</p>
 
 <!--#include virtual="footer.txt"-->

@@ -49,6 +49,7 @@ int exit_flag;		/* program to terminate if =1 */
 int input_words;	/* number of words of input permitted */
 int one_liner;		/* one record per line if =1 */
 int quiet_flag;		/* quiet=1, verbose=-1, normal=0 */
+int verbosity;		/* count of "-v" options */
 
 static void	_delete_it (int argc, char *argv[]);
 static int	_get_command (int *argc, char *argv[]);
@@ -90,6 +91,7 @@ main (int argc, char *argv[])
 	exit_flag         = 0;
 	input_field_count = 0;
 	quiet_flag        = 0;
+	verbosity         = 0;
 	log_init("scontrol", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
 	if (getenv ("SCONTROL_ALL"))
@@ -99,7 +101,8 @@ main (int argc, char *argv[])
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
-			fprintf(stderr, "Try \"scontrol --help\" for more information\n");
+			fprintf(stderr, "Try \"scontrol --help\" for "
+				"more information\n");
 			exit(1);
 			break;
 		case (int)'a':
@@ -120,6 +123,7 @@ main (int argc, char *argv[])
 			break;
 		case (int)'v':
 			quiet_flag = -1;
+			verbosity++;
 			break;
 		case (int)'V':
 			_print_version();
@@ -127,9 +131,15 @@ main (int argc, char *argv[])
 			break;
 		default:
 			exit_code = 1;
-			fprintf(stderr, "getopt error, returned %c\n", opt_char);
+			fprintf(stderr, "getopt error, returned %c\n", 
+				opt_char);
 			exit(exit_code);
 		}
+	}
+
+	if (verbosity) {
+		opts.stderr_level += verbosity;
+		log_alter(opts, SYSLOG_FACILITY_USER, NULL);
 	}
 
 	if (argc > MAX_INPUT_FIELDS)	/* bogus input, but continue anyway */

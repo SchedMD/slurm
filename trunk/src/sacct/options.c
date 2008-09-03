@@ -1,9 +1,8 @@
 /*****************************************************************************\
  *  options.c - option functions for sacct
- *
- *  $Id: options.c 7541 2006-03-18 01:44:58Z da $
  *****************************************************************************
- *  Copyright (C) 2006 The Regents of the University of California.
+ *  Copyright (C) 2006-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>.
  *  LLNL-CODE-402394.
@@ -852,18 +851,8 @@ void parse_command_line(int argc, char **argv)
 			break;
 
 		case 'V':
-		{
-			char	obuf[20]; /* should be long enough */
-			char	*rev="$Revision: 7267 $";
-			char	*s;
-
-			s=strstr(rev, " ")+1;
-			for (i=0; s[i]!=' '; i++)
-				obuf[i]=s[i];
-			obuf[i] = 0;
-			printf("%s: %s\n", argv[0], obuf);
+			printf("%s %s\n", PACKAGE, SLURM_VERSION);
 			exit(0);
-		}
 
 		case ':':
 		case '?':	/* getopt() has explained it */
