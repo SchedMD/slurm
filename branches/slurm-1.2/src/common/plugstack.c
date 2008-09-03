@@ -41,6 +41,8 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
+#include <libgen.h>
+#include <glob.h>
 
 #include "src/common/plugin.h"
 #include "src/common/xmalloc.h"
@@ -60,6 +62,7 @@
 
 #define REQUIRED "required"
 #define OPTIONAL "optional"
+#define INCLUDE  "include"
 
 struct spank_plugin_operations {
 	spank_f *init;
@@ -169,7 +172,6 @@ static const char * default_spank_path = NULL;
  */
 static int _spank_plugin_options_cache(struct spank_plugin *p);
 
-
 static void _argv_append(char ***argv, int ac, const char *newarg)
 {
 	*argv = xrealloc(*argv, (++ac + 1) * sizeof(char *));
@@ -178,9 +180,32 @@ static void _argv_append(char ***argv, int ac, const char *newarg)
 	return;
 }
 
+typedef enum {
+   CF_ERROR = 0,
+   CF_OPTIONAL,
+   CF_REQUIRED,
+   CF_INCLUDE,
+} cf_line_t;
+
+static cf_line_t _plugin_stack_line_type (const char *str)
+{
+	if (strcmp(str, REQUIRED) == 0)
+		return (CF_REQUIRED);
+	else if (strcmp(str, OPTIONAL) == 0)
+		return (CF_OPTIONAL);
+	else if (strcmp(str, INCLUDE) == 0)
+		return (CF_INCLUDE);
+	else {
+		error("spank: Invalid option \"%s\". Must be %s, %s or %s",
+		     str, REQUIRED, OPTIONAL, INCLUDE);
+		return (CF_ERROR);
+	}
+}
+
+
 static int
 _plugin_stack_parse_line(char *line, char **plugin, int *acp, char ***argv,
-			 bool * required)
+			 cf_line_t * type)
 {
 	int ac;
 	const char *separators = " \t\n";
@@ -206,19 +231,10 @@ _plugin_stack_parse_line(char *line, char **plugin, int *acp, char ***argv,
 		*s = '\0';
 
 	if (!(option = strtok_r(line, separators, &sp)))
-		return 0;
+		return (0);
 
-	if (strncmp(option, REQUIRED, strlen(option)) == 0) {
-		*required = true;
-	} 
-	else if (strncmp(option, OPTIONAL, strlen(option)) == 0) {
-		*required = false;
-	} 
-	else {
-		error("spank: Invalid option \"%s\". Must be either %s or %s",
-		     option, REQUIRED, OPTIONAL);
+	if (((*type) = _plugin_stack_line_type(option)) == CF_ERROR) 
 		return (-1);
-	}
 
 	if (!(path = strtok_r(NULL, separators, &sp)))
 		return (-1);
@@ -326,23 +342,26 @@ _spank_plugin_find (const char *path, const char *file)
 	return (NULL);
 }
 
+static int _spank_conf_include (const char *, int, const char *, List *);
+
 static int
-_spank_stack_process_line(const char *file, int line, char *buf,
-			  struct spank_plugin **plugin)
+_spank_stack_process_line(const char *file, int line, char *buf, List *stackp)
 {
 	char **argv;
 	int ac;
 	char *path;
-	bool required = FALSE;
+	cf_line_t type = CF_REQUIRED;
+	bool required;
 
 	struct spank_plugin *p;
 
-	*plugin = NULL;
-
-	if (_plugin_stack_parse_line(buf, &path, &ac, &argv, &required) < 0) {
+	if (_plugin_stack_parse_line(buf, &path, &ac, &argv, &type) < 0) {
 		error("spank: %s:%d: Invalid line. Ignoring.", file, line);
 		return (0);
 	}
+
+	if (type == CF_INCLUDE)
+		return (_spank_conf_include (file, line, path, stackp));
 
 	if (path == NULL)	/* No plugin listed on this line */
 		return (0);
@@ -356,20 +375,30 @@ _spank_stack_process_line(const char *file, int line, char *buf,
 		}
 	}
 
+	required = (type == CF_REQUIRED);
 	if (!(p = _spank_plugin_create(path, ac, argv, required))) {
 		if (required)
-			error ("spank: %s:%d: Failed to load plugin %s. Aborting.",
-					file, line, path);
+			error ("spank: %s:%d:" 
+			       " Failed to load plugin %s. Aborting.",
+			       file, line, path);
 		else
-			verbose ("spank: %s:%d: Failed to load optional plugin %s. Ignored.",
-					file, line, path);
+			verbose ("spank: %s:%d:" 
+				 "Failed to load optional plugin %s. Ignored.",
+				 file, line, path);
 		return (required ? -1 : 0);
 	}
+	if (*stackp == NULL)
+		*stackp = list_create((ListDelF) _spank_plugin_destroy);
 
-	*plugin = p;
+	verbose ("spank: %s:%d: Loaded plugin %s", 
+			file, line, xbasename (p->fq_path));
+
+	list_append (*stackp, p);
+	_spank_plugin_options_cache(p);
 
 	return (0);
 }
+
 
 static int _spank_stack_create(const char *path, List * listp)
 {
@@ -391,24 +420,8 @@ static int _spank_stack_create(const char *path, List * listp)
 
 	line = 1;
 	while (fgets(buf, sizeof(buf), fp)) {
-		struct spank_plugin *p;
-
-		if (_spank_stack_process_line(path, line, buf, &p) < 0)
+		if (_spank_stack_process_line(path, line, buf, listp) < 0)
 			goto fail_immediately;
-
-		if (p == NULL)
-			continue;
-
-		if (*listp == NULL)
-			*listp =
-			    list_create((ListDelF) _spank_plugin_destroy);
-
-		verbose("spank: loaded plugin %s\n",
-			xbasename(p->fq_path));
-		list_append(*listp, p);
-
-		_spank_plugin_options_cache(p);
-
 		line++;
 	}
 
@@ -422,6 +435,60 @@ static int _spank_stack_create(const char *path, List * listp)
 	}
 	fclose(fp);
 	return (-1);
+}
+
+static int
+_spank_conf_include (const char *file, int lineno, const char *pattern,
+		List *stackp)
+{
+	int rc = 0;
+	glob_t gl;
+	size_t i;
+	char *copy = NULL;
+
+	if (pattern == NULL) {
+		error ("%s: %d: Invalid include directive", file, lineno);
+		return (SLURM_ERROR);
+	}
+
+	if (pattern[0] != '/') { 
+		char *dirc = xstrdup (file);
+		char *dname = dirname (dirc);
+
+		if (dname != NULL)  {
+			xstrfmtcat (copy, "%s/%s", dname, pattern);
+			pattern = copy;
+		}
+		xfree (dirc);
+	}
+
+	verbose ("%s: %d: include \"%s\"", file, lineno, pattern);
+	
+	rc = glob (pattern, 0, NULL, &gl);
+	switch (rc) {
+	  case 0:
+	  	for (i = 0; i < gl.gl_pathc; i++) {
+			rc = _spank_stack_create (gl.gl_pathv[i], stackp);
+			if (rc < 0) 
+				break;
+		}
+	  	break;
+	  case GLOB_NOMATCH:
+		break;
+	  case GLOB_NOSPACE:
+		errno = ENOMEM;
+	  case GLOB_ABORTED:
+		verbose ("%s:%d: cannot read dir %s: %m",
+			file, lineno, pattern);
+		break;
+	  default:
+		error ("Unknown glob(3) return code = %d", rc);
+		break;
+	}
+
+	xfree (copy);
+	globfree (&gl);
+	return (rc);
 }
 
 static int
