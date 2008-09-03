@@ -2708,6 +2708,9 @@ static int _append_geo(int *geometry, List geos, int rotate)
 	return 1;
 }
 
+/*
+ *
+ */
 static int _fill_in_coords(List results, List start_list,
 			    int *geometry, int conn_type)
 {
