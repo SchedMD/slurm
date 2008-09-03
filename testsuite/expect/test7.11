@@ -127,6 +127,10 @@ expect {
 		incr matches
 		exp_continue
 	}
+	-re "Registered component of slurm test suite" {
+		incr matches
+		exp_continue
+	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
 		slow_kill $srun_pid
@@ -136,7 +140,7 @@ expect {
 		wait
 	}
 }
-if {$matches != 1} {
+if {$matches != 2} {
 	send_user "\nFAILURE: spank help message not in srun help message\n"
 	set exit_code 1
 }
