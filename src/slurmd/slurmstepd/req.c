@@ -174,6 +174,8 @@ _domain_socket_create(const char *dir, const char *nodename,
 	 * First check to see if the named socket already exists.
 	 */
 	if (stat(name, &stat_buf) == 0) {
+		/* Vestigial from a slurmd crash or
+		 * job requeue that did not happen properly */
 		error("Socket %s already exists", name);
 		xfree(name);
 		errno = ESLURMD_STEP_EXISTS;
