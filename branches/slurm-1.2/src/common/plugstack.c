@@ -145,6 +145,7 @@ typedef enum step_fn {
 struct spank_handle {
 #   define SPANK_MAGIC 0x00a5a500
 	int                  magic;  /* Magic identifier to ensure validity. */
+	struct spank_plugin *plugin; /* Current plugin using handle          */
 	spank_handle_type_t  type;   /* remote(slurmd) || local(srun)        */
 	step_fn_t            phase;  /* Which spank fn are we called from?   */
 	void               * job;    /* Reference to current srun|slurmd job */
@@ -429,6 +430,7 @@ _spank_handle_init(struct spank_handle *spank, void * arg,
 {
 	memset(spank, 0, sizeof(*spank));
 	spank->magic = SPANK_MAGIC;
+	spank->plugin = NULL;
 
 	spank->phase = fn;
 
@@ -493,6 +495,8 @@ static int _do_call_stack(step_fn_t type, void * job, int taskid)
 	i = list_iterator_create(spank_stack);
 	while ((sp = list_next(i))) {
 		const char *name = xbasename(sp->fq_path);
+
+		spank->plugin = sp;
 
 		switch (type) {
 		case SPANK_INIT:
@@ -656,6 +660,33 @@ static int _spank_next_option_val(void)
 	return (optval);
 }
 
+static struct spank_option * _spank_option_copy(struct spank_option *opt)
+{
+	struct spank_option *copy = xmalloc (sizeof (*copy));
+
+	memset (copy, 0, sizeof (*copy));
+
+	copy->name = xstrdup (opt->name);
+	copy->has_arg = opt->has_arg;
+	copy->val = opt->val;
+	copy->cb = opt->cb;
+
+	if (opt->arginfo)
+		copy->arginfo = xstrdup (opt->arginfo);
+	if (opt->usage)
+		copy->usage = xstrdup (opt->usage);
+
+	return (copy);
+}
+
+static void _spank_option_destroy(struct spank_option *opt)
+{
+	xfree (opt->name);
+	xfree (opt->arginfo);
+	xfree (opt->usage);
+	xfree (opt);
+}
+
 static struct spank_plugin_opt *_spank_plugin_opt_create(struct
 							 spank_plugin *p,
 							 struct
@@ -663,7 +694,7 @@ static struct spank_plugin_opt *_spank_plugin_opt_create(struct
 							 int disabled)
 {
 	struct spank_plugin_opt *spopt = xmalloc(sizeof(*spopt));
-	spopt->opt = opt;
+	spopt->opt = _spank_option_copy (opt);
 	spopt->plugin = p;
 	spopt->optval = _spank_next_option_val();
 	spopt->found = 0;
@@ -676,6 +707,7 @@ static struct spank_plugin_opt *_spank_plugin_opt_create(struct
 
 void _spank_plugin_opt_destroy(struct spank_plugin_opt *spopt)
 {
+	_spank_option_destroy (spopt->opt);
 	xfree(spopt->optarg);
 	xfree(spopt);
 }
@@ -690,9 +722,56 @@ static int _opt_by_name(struct spank_plugin_opt *opt, char *optname)
 	return (strcmp(opt->opt->name, optname) == 0);
 }
 
-static int _spank_plugin_options_cache(struct spank_plugin *p)
+static int
+_spank_option_register(struct spank_plugin *p, struct spank_option *opt)
 {
 	int disabled = 0;
+	struct spank_plugin_opt *spopt;
+
+	spopt = list_find_first(option_cache, 
+			(ListFindF) _opt_by_name, opt->name);
+
+	if (spopt) {
+		struct spank_plugin *q = spopt->plugin;
+		info("spank: option \"%s\" provided by both %s and %s", 
+				opt->name, xbasename(p->fq_path), 
+				xbasename(q->fq_path));
+		/*
+		 *  Disable this option, but still cache it, in case
+		 *    options are loaded in a different order on the 
+		 *    remote side.
+		 */
+		disabled = 1;
+	}
+
+	if ((strlen(opt->name) > SPANK_OPTION_MAXLEN)) {
+		error("spank: option \"%s\" provided by %s too long. Ignoring.",
+			       	opt->name, p->name);
+		return (ESPANK_NOSPACE);
+	}
+
+	verbose("SPANK: appending plugin option \"%s\"\n", opt->name);
+	list_append(option_cache, _spank_plugin_opt_create(p, opt, disabled));
+
+	return (ESPANK_SUCCESS);
+}
+
+spank_err_t spank_option_register(spank_t sp, struct spank_option *opt)
+{
+	if (sp->phase != SPANK_INIT)
+		return (ESPANK_BAD_ARG);
+
+	if (!sp->plugin)
+		error ("Uh, oh, no current plugin!");
+
+	if (!opt || !opt->name || !opt->usage)
+		return (ESPANK_BAD_ARG);
+
+	return (_spank_option_register(sp->plugin, opt));
+}
+
+static int _spank_plugin_options_cache(struct spank_plugin *p)
+{
 	struct spank_option *opt = p->opts;
 
 	if ((opt == NULL) || opt->name == NULL)
@@ -703,38 +782,8 @@ static int _spank_plugin_options_cache(struct spank_plugin *p)
 		    list_create((ListDelF) _spank_plugin_opt_destroy);
 	}
 
-	for (; opt && opt->name != NULL; opt++) {
-		struct spank_plugin_opt *spopt;
-
-		spopt =
-		    list_find_first(option_cache, (ListFindF) _opt_by_name,
-				    opt->name);
-		if (spopt) {
-			struct spank_plugin *q = spopt->plugin;
-			info("spank: option \"%s\" "
-			     "provided by both %s and %s", 
-			     opt->name, xbasename(p->fq_path), 
-			     xbasename(q->fq_path));
-			/*
-			 *  Disable this option, but still cache it, in case
-			 *    options are loaded in a different order on the 
-			 *    remote side.
-			 */
-			disabled = 1;
-		}
-
-		if ((strlen(opt->name) > SPANK_OPTION_MAXLEN)) {
-			error
-			    ("spank: option \"%s\" provided by %s too long."
-			     " Ignoring.", opt->name, p->name);
-			continue;
-		}
-
-		verbose("SPANK: appending plugin option \"%s\"\n",
-			opt->name);
-		list_append(option_cache,
-			    _spank_plugin_opt_create(p, opt, disabled));
-	}
+	for (; opt && opt->name != NULL; opt++)
+		_spank_option_register(p, opt);
 
 	return (0);
 }

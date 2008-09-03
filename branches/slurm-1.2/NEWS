@@ -1,6 +1,11 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.2.35
+=========================
+ -- Permit SPANK plugins to dynamically register options at runtime base upon
+    configuration or other runtime checks.
+
 * Changes in SLURM 1.2.34
 =========================
  -- Permit the cancellation of a job that is in the process of being 
