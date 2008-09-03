@@ -201,6 +201,9 @@ extern void fini_bg(void)
 	ba_fini();
 }
 
+/* 
+ * block_state_mutex should be locked before calling this function
+ */
 extern bool blocks_overlap(bg_record_t *rec_a, bg_record_t *rec_b)
 {
 	bitstr_t *my_bitmap = NULL;

@@ -481,7 +481,7 @@ extern int *find_bp_loc(char* bp_id);
 extern char *find_bp_rack_mid(char* xyz);
 
 /*
- * set the used wires for a block out of the database 
+ * set the used wires in the virtual system for a block from the real system 
  */
 extern int load_block_wiring(char *bg_block_id);
 
