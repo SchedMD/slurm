@@ -466,6 +466,13 @@ documents those changes that are of interest to users and admins.
     Moved existing digital signature logic into new plugin: crypto/openssl.
     Added new support for crypto/munge (available with GPL license).
 
+* Changes in SLURM 1.2.35
+=========================
+ -- Permit SPANK plugins to dynamically register options at runtime base upon
+    configuration or other runtime checks.
+ -- Add "include" keywork to SPANK plugstack.conf file to optionally include
+    other configuration files or directories of configuration files.
+
 * Changes in SLURM 1.2.34
 =========================
  -- Permit the cancellation of a job that is in the process of being 
