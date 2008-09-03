@@ -443,7 +443,7 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 				eol[0] = '\0';
 			else
 				buf[sizeof(buf)-1] = '\0';
-			error("execve(): bad interpretter(%s): %m", buf+2);
+			error("execve(): bad interpreter(%s): %m", buf+2);
 			exit(errno);
 		}
 	}
