@@ -25,6 +25,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <errno.h>
 #include <netdb.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -71,7 +72,7 @@ static int _conn_wiki_port(char *host, int port)
 
 static int _conn_event_port(char *host, int port)
 {
-	int sock_fd;
+	int i, rc, sock_fd;
 	struct sockaddr_in wiki_addr;
 	struct hostent *hptr;
 
@@ -88,11 +89,19 @@ static int _conn_event_port(char *host, int port)
 	wiki_addr.sin_family = AF_INET;
 	wiki_addr.sin_port   = htons(port);
 	memcpy(&wiki_addr.sin_addr.s_addr, hptr->h_addr, hptr->h_length);
-	if (bind(sock_fd, (struct sockaddr *) &wiki_addr,
-			sizeof(wiki_addr))) {
-		printf("WARNING: bind to port %i failed, may not be real error\n",
-			port);
-		return -1;
+	for (i=0; ; i++) {
+		if (i)
+			sleep(5);
+		rc = bind(sock_fd, (struct sockaddr *) &wiki_addr,
+			  sizeof(wiki_addr));
+		if (rc == 0)
+			break;
+		if ((errno != EINVAL) || (i > 5)) {
+			printf("WARNING: bind to port %i; %s\n", 
+			       port, strerror(errno));
+			return -1;
+		}
+		printf("WARNING: port %i in use, retrying\n", port);
 	}
 	listen(sock_fd, 1);
 	return sock_fd;
@@ -179,7 +188,7 @@ static char *_recv_msg(int fd)
 	return buf;
 }	
 
-static void _xmit(char *msg)
+static int _xmit(char *msg)
 {
 	int msg_len = strlen(msg);
 	char *out_msg, *in_msg, sum[20], *sc_ptr;
@@ -199,12 +208,11 @@ static void _xmit(char *msg)
 	printf("recv:%s\n\n", in_msg);
 	sc_ptr = strstr(in_msg, "SC=");
 	sc = atoi(sc_ptr+3);
-	if (sc != 0) {
+	if (sc != 0)
 		fprintf(stderr, "RPC failure\n");
-		exit(1);
-	} 
 	free(in_msg);
 	close(wiki_fd);
+	return sc;
 }
 
 static void _event_mgr(void)
@@ -240,19 +248,22 @@ static void _get_jobs(void)
 	snprintf(out_msg, sizeof(out_msg),
 		"TS=%u AUTH=root DT=%s",
 		(uint32_t) now, "CMD=GETJOBS ARG=0:ALL");
-	_xmit(out_msg);
+	if (_xmit(out_msg))
+		exit(1);
 
 	/* Dump volitile data */
 	snprintf(out_msg, sizeof(out_msg),
 		"TS=%u AUTH=root DT=CMD=GETJOBS ARG=%u:ALL",
 		(uint32_t) now, (uint32_t) 1);
-	_xmit(out_msg);
+	if (_xmit(out_msg))
+		exit(1);
 
 	/* Dump state only */
 	snprintf(out_msg, sizeof(out_msg),
 		"TS=%u AUTH=root DT=CMD=GETJOBS ARG=%u:ALL",
 		(uint32_t) now, (uint32_t) (now+2));
-	_xmit(out_msg);
+	if (_xmit(out_msg))
+		exit(1);
 }
 
 static void _get_nodes(void)
@@ -264,19 +275,22 @@ static void _get_nodes(void)
 	snprintf(out_msg, sizeof(out_msg),
 		"TS=%u AUTH=root DT=%s", 
 		(uint32_t) now, "CMD=GETNODES ARG=0:ALL");
-	_xmit(out_msg);
+	if (_xmit(out_msg))
+		exit(1);
 
 	/* Dump volitile data */
 	snprintf(out_msg, sizeof(out_msg),
 		"TS=%u AUTH=root DT=CMD=GETNODES ARG=%u:ALL",
 		(uint32_t) now, (uint32_t) 1);
-	_xmit(out_msg);
+	if (_xmit(out_msg))
+		exit(1);
 
 	/* Dump state only */
 	snprintf(out_msg, sizeof(out_msg),
 		"TS=%u AUTH=root DT=CMD=GETNODES ARG=%u:ALL",
 		(uint32_t) now, (uint32_t) (now+2));
-	_xmit(out_msg);
+	if (_xmit(out_msg))
+		exit(1);
 }
 
 static void _cancel_job(long my_job_id)
@@ -289,20 +303,32 @@ static void _cancel_job(long my_job_id)
 		"TYPE=ADMIN "
 		"COMMENT=\"cancel comment\" ",
 		(uint32_t) now, my_job_id);
-	_xmit(out_msg);
+	if (_xmit(out_msg))
+		exit(1);
 }
 
 static void _start_job(long my_job_id)
 {
 	time_t now = time(NULL);
 	char out_msg[128];
+	int i, rc;
 
 	snprintf(out_msg, sizeof(out_msg),
 		"TS=%u AUTH=root DT=CMD=STARTJOB ARG=%ld "
 		"COMMENT=\'start comment\' "
 		"TASKLIST=",	/* Empty TASKLIST means we don't care */
 		(uint32_t) now, my_job_id);
-	_xmit(out_msg);
+
+	for (i=0; i<10; i++) {
+		if (i)
+			sleep(10);
+		rc = _xmit(out_msg);
+		if (rc == 0)
+			break;
+		/* Still completing after requeue */
+	}
+	if (rc != 0)
+		exit(1);
 }
 
 static void _suspend_job(long my_job_id)
@@ -313,7 +339,8 @@ static void _suspend_job(long my_job_id)
 	snprintf(out_msg, sizeof(out_msg),
 		"TS=%u AUTH=root DT=CMD=SUSPENDJOB ARG=%ld",
 		(uint32_t) now, my_job_id);
-	_xmit(out_msg);
+	if (_xmit(out_msg))
+		exit(1);
 }
 
 static void _signal_job(long my_job_id)
@@ -324,7 +351,8 @@ static void _signal_job(long my_job_id)
 	snprintf(out_msg, sizeof(out_msg),
 		"TS=%u AUTH=root DT=CMD=SIGNALJOB ARG=%ld VALUE=URG",
 		(uint32_t) now, my_job_id);
-	_xmit(out_msg);
+	if (_xmit(out_msg))
+		exit(1);
 }
 
 static void _modify_job(long my_job_id)
@@ -343,7 +371,8 @@ static void _modify_job(long my_job_id)
 		/* "INVALID=123 " */
 		"TIMELIMIT=10 BANK=test_bank",
 		(uint32_t) now, my_job_id);
-	_xmit(out_msg);
+	if (_xmit(out_msg))
+		exit(1);
 }
 
 static void _notify_job(long my_job_id)
@@ -355,7 +384,8 @@ static void _notify_job(long my_job_id)
 		"TS=%u AUTH=root DT=CMD=NOTIFYJOB ARG=%ld "
 		"MSG=this_is_a_test",
 		(uint32_t) now, my_job_id);
-	_xmit(out_msg);
+	if (_xmit(out_msg))
+		exit(1);
 }
 
 static void _resume_job(long my_job_id)
@@ -366,7 +396,8 @@ static void _resume_job(long my_job_id)
 	snprintf(out_msg, sizeof(out_msg),
 		"TS=%u AUTH=root DT=CMD=RESUMEJOB ARG=%ld",
 		(uint32_t) now, my_job_id);
-	_xmit(out_msg);
+	if (_xmit(out_msg))
+		exit(1);
 }
 
 static void _job_requeue(long my_job_id)
@@ -377,7 +408,8 @@ static void _job_requeue(long my_job_id)
 	snprintf(out_msg, sizeof(out_msg),
 		"TS=%u AUTH=root DT=CMD=REQUEUEJOB ARG=%ld",
 		(uint32_t) now, my_job_id);
-	_xmit(out_msg);
+	if (_xmit(out_msg))
+		exit(1);
 }
 
 static void _job_will_run(long my_job_id)
@@ -389,7 +421,8 @@ static void _job_will_run(long my_job_id)
 		"TS=%u AUTH=root DT=CMD=JOBWILLRUN ARG=JOBID=%ld,%s",
 		(uint32_t) now, my_job_id,
 		"");		/* put available node list here */
-	_xmit(out_msg);
+	if (_xmit(out_msg))
+		exit(1);
 }
 
 static void _initialize(void)
@@ -400,7 +433,8 @@ static void _initialize(void)
 	snprintf(out_msg, sizeof(out_msg),
 		"TS=%u AUTH=root DT=CMD=INITIALIZE ARG=USEHOSTEXP=N EPORT=%u",
 		(uint32_t) now, e_port);
-	_xmit(out_msg);
+	if (_xmit(out_msg))
+		exit(1);
 }
 
 static void _single_msg(void)
@@ -411,8 +445,10 @@ static void _single_msg(void)
 	snprintf(out_msg, sizeof(out_msg),
 		"TS=%u AUTH=root DT=CMD=%s",
 		(uint32_t) now, 
-		"JOBWILLRUN ARG=JOBID=65537,bgl[000x733] JOBID=65539,bgl[000x733] JOBID=65538,bgl[000x733]");
-	_xmit(out_msg);
+		"JOBWILLRUN ARG=JOBID=65537,bgl[000x733] "
+		"JOBID=65539,bgl[000x733] JOBID=65538,bgl[000x733]");
+	if (_xmit(out_msg))
+		exit(1);
 }
 
 int main(int argc, char * argv[])
@@ -458,7 +494,7 @@ int main(int argc, char * argv[])
 	}
 	_cancel_job(job_id+1);
 	_job_requeue(job_id);	/* Put job back into HELD state */
-	sleep(15);
+	sleep(10);
 	_start_job(job_id);
 	_get_jobs();
 #endif
