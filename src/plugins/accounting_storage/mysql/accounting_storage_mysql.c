@@ -7026,27 +7026,40 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 	if(!job_ptr->db_index) {
 		query = xstrdup_printf(
 			"insert into %s "
-			"(jobid, account, associd, uid, gid, partition, "
-			"blockid, eligible, submit, start, name, track_steps, "
-			"state, priority, req_cpus, alloc_cpus, nodelist) "
-			"values (%u, '%s', %u, %u, %u, '%s', '%s', "
-			"%d, %d, %d, '%s', %u, "
-			"%u, %u, %u, %u, '%s') "
-			"on duplicate key update id=LAST_INSERT_ID(id), "
-			"end=0, state=%u",
-			job_table, job_ptr->job_id, job_ptr->account, 
-			job_ptr->assoc_id,
-			job_ptr->user_id, job_ptr->group_id,
-			job_ptr->partition, block_id,
-			(int)job_ptr->details->begin_time,
-			(int)job_ptr->details->submit_time,
-			(int)job_ptr->start_time,
-			jname, track_steps,
-			job_ptr->job_state & (~JOB_COMPLETING),
-			priority, job_ptr->num_procs,
-			job_ptr->total_procs, nodes,
-			job_ptr->job_state & (~JOB_COMPLETING));
+			"(jobid, account, associd, uid, gid, partition, ",
+			job_table);
 
+		if(block_id) 
+			xstrcat(query, "blockid, ");
+		
+		xstrfmtcat(query, 
+			   "eligible, submit, start, name, track_steps, "
+			   "state, priority, req_cpus, alloc_cpus, nodelist) "
+			   "values (%u, '%s', %u, %u, %u, '%s', ",
+			   job_ptr->job_id, job_ptr->account, 
+			   job_ptr->assoc_id,
+			   job_ptr->user_id, job_ptr->group_id,
+			   job_ptr->partition);
+		
+		if(block_id) 
+			xstrfmtcat(query, "'%s', ", block_id);
+		
+		xstrfmtcat(query, 
+			   "%d, %d, %d, '%s', %u, %u, %u, %u, %u, '%s') "
+			   "on duplicate key update "
+			   "id=LAST_INSERT_ID(id), end=0, state=%u, "
+			   "partition ='%s', account='%s', associd=%u",
+			   (int)job_ptr->details->begin_time,
+			   (int)job_ptr->details->submit_time,
+			   (int)job_ptr->start_time,
+			   jname, track_steps,
+			   job_ptr->job_state & (~JOB_COMPLETING),
+			   priority, job_ptr->num_procs,
+			   job_ptr->total_procs, nodes,
+			   job_ptr->job_state & (~JOB_COMPLETING),
+			   job_ptr->partition, job_ptr->account, 
+			   job_ptr->assoc_id);
+		
 		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	try_again:
 		if(!(job_ptr->db_index = mysql_insert_ret_id(
@@ -7066,15 +7079,18 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 		}
 	} else {
 		query = xstrdup_printf(
-			"update %s set partition='%s', blockid='%s', start=%d, "
-			"name='%s', state=%u, alloc_cpus=%u, nodelist='%s', "
-			"account='%s', end=0 where id=%d",
-			job_table, job_ptr->partition, block_id,
-			(int)job_ptr->start_time,
-			jname, 
-			job_ptr->job_state & (~JOB_COMPLETING),
-			job_ptr->total_procs, nodes, 
-			job_ptr->account, job_ptr->db_index);
+			"update %s set partition='%s', ",
+			job_table, job_ptr->partition);
+		if(block_id)
+			xstrfmtcat(query, "blockid='%s', ");
+		xstrfmtcat(query, "start=%d, name='%s', state=%u, "
+			   "alloc_cpus=%u, nodelist='%s', "
+			   "account='%s', associd=%u, end=0 where id=%d",
+			   (int)job_ptr->start_time,
+			   jname, job_ptr->job_state & (~JOB_COMPLETING),
+			   job_ptr->total_procs, nodes, 
+			   job_ptr->account, job_ptr->assoc_id,
+			   job_ptr->db_index);
 		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 	}
