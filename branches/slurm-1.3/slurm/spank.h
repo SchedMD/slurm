@@ -183,6 +183,8 @@ struct spank_option {
 
 /*
  *  Plugin may declare spank_options option table:
+ *   [Note: options may also be declared with spank_option_register(),
+ *    defined below.]
  */
 extern struct spank_option spank_options [];
 
@@ -221,6 +223,17 @@ int spank_symbol_supported (const char *symbol);
  *  < 0   spank handle was not valid.
  */
 int spank_remote (spank_t spank);
+
+/*
+ *  Register a plugin-provided option dynamically. This function
+ *   is only valid when called from slurm_spank_init(), and must
+ *   be called in both remote (slurmd) and local (srun) contexts.
+ *   May be called multiple times to register many options.
+ *
+ *  Returns ESPANK_SUCCESS on successful registration of the option
+ *   or ESPANK_BAD_ARG if not called from slurm_spank_init().
+ */
+spank_err_t spank_option_register (spank_t spank, struct spank_option *opt);
 
 
 /*  Get the value for the current job or task item specified, 

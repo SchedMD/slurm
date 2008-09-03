@@ -169,10 +169,8 @@ option is specified, its value is forwarded and registered with
 the plugin on the remote side. In this way, \fBSPANK\fR plugins
 may dynamically provide new options and functionality to SLURM.
 .LP
-In order to register new options with SLURM, a plugin must 
-define symbol \fBspank_options\fR which is a pointer to the
-first element of an array of \fBstruct spank_option\fR declared
-in \fB<slurm/spank.h>\fR as
+Each option registered by a plugin to SLURM takes the form of
+a \fBstruct spank_option\fR which is declared in \fB<slurm/spank.h>\fR as
 .nf
 
    struct spank_option {
@@ -185,7 +183,7 @@ in \fB<slurm/spank.h>\fR as
    };
 
 .fi
-.LP
+
 Where
 .TP
 .I name
@@ -221,9 +219,27 @@ struct, \fIoptarg\fR is the supplied argument if applicable, and \fIremote\fR
 is 0 if the function is being called from the "local" host 
 (e.g. \fBsrun\fR or \fBsbatch\fR) or 1 from the "remote" host (\fBslurmd\fR).
 .LP
-The last element of the array must filled with zeros. A
+There are two methods by which the plugin can register these options
+with SLURM. The simplest method is for the plugin to define an array
+of \fBstruct spank_option\fR with the symbol name \fBspank_options\fR. 
+This final element in the options table must be filled with zeros. A
 \fBSPANK_OPTIONS_TABLE_END\fR macro is defined in \fB<slurm/spank.h>\fR
 for this purpose.
+.LP
+Plugin options may also be dynamically registered with SLURM using 
+the \fBspank_option_register\fR function. This function is only valid
+when called from the plugin's \fBslurm_spank_init\fR handler, and 
+registers one option at a time. The prototype is
+.nf
+
+   spank_err_t spank_option_register (spank_t sp, 
+		   struct spank_option *opt);
+
+.fi
+This function will return \fBESPANK_SUCCESS\fR on successful registration
+of an option, or \fBESPANK_BAD_ARG\fR for errors including invalid spank_t
+handle, or when the function is not called from the \fBslurm_spank_init\fR
+function.
 .LP
 When an option is provided by the user on the local side, \fBSLURM\fR will 
 immediately invoke the option's callback with \fIremote\fR=0. This
@@ -275,6 +291,20 @@ currently configure \fIPluginDir\fR in \fBslurm.conf\fR(5) is searched.
 be placed into the config file. The plugins will simply be called
 in order, one after the other, and appropriate action taken on
 failure given that state of the plugin's \fIoptional\fR flag.
+.LP
+Additional config files or directories of config files may be included
+in \fBplugstack.conf\fR with the \fBinclude\fR keyword. The \fBinclude\fR
+keyword must appear on its own line, and takes a glob as its parameter,
+so multiple files may be included from one \fBinclude\fR line. For
+example, the following syntax will load all config files in the
+/etc/slurm/plugstack.conf.d directory, in local collation order:
+.nf
+
+  include /etc/slurm/plugstack.conf.d/*
+
+.fi
+which might be considered a more flexible method for building up
+a spank plugin stack.
 .LP
 The \fBSPANK\fR config file is re\-read on each job launch, so editing
 the config file will not affect running jobs. However care should
