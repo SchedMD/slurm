@@ -41,6 +41,8 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
+#include <libgen.h>
+#include <glob.h>
 
 #include "src/common/plugin.h"
 #include "src/common/xmalloc.h"
@@ -60,6 +62,7 @@
 
 #define REQUIRED "required"
 #define OPTIONAL "optional"
+#define INCLUDE  "include"
 
 struct spank_plugin_operations {
 	spank_f *init;
@@ -145,6 +148,7 @@ typedef enum step_fn {
 struct spank_handle {
 #   define SPANK_MAGIC 0x00a5a500
 	int                  magic;  /* Magic identifier to ensure validity. */
+	struct spank_plugin *plugin; /* Current plugin using handle          */
 	spank_handle_type_t  type;   /* remote(slurmd) || local(srun)        */
 	step_fn_t            phase;  /* Which spank fn are we called from?   */
 	void               * job;    /* Reference to current srun|slurmd job */
@@ -168,7 +172,6 @@ static const char * default_spank_path = NULL;
  */
 static int _spank_plugin_options_cache(struct spank_plugin *p);
 
-
 static void _argv_append(char ***argv, int ac, const char *newarg)
 {
 	*argv = xrealloc(*argv, (++ac + 1) * sizeof(char *));
@@ -177,9 +180,32 @@ static void _argv_append(char ***argv, int ac, const char *newarg)
 	return;
 }
 
+typedef enum {
+   CF_ERROR = 0,
+   CF_OPTIONAL,
+   CF_REQUIRED,
+   CF_INCLUDE,
+} cf_line_t;
+
+static cf_line_t _plugin_stack_line_type (const char *str)
+{
+	if (strcmp(str, REQUIRED) == 0)
+		return (CF_REQUIRED);
+	else if (strcmp(str, OPTIONAL) == 0)
+		return (CF_OPTIONAL);
+	else if (strcmp(str, INCLUDE) == 0)
+		return (CF_INCLUDE);
+	else {
+		error("spank: Invalid option \"%s\". Must be %s, %s or %s",
+		     str, REQUIRED, OPTIONAL, INCLUDE);
+		return (CF_ERROR);
+	}
+}
+
+
 static int
 _plugin_stack_parse_line(char *line, char **plugin, int *acp, char ***argv,
-			 bool * required)
+			 cf_line_t * type)
 {
 	int ac;
 	const char *separators = " \t\n";
@@ -205,19 +231,10 @@ _plugin_stack_parse_line(char *line, char **plugin, int *acp, char ***argv,
 		*s = '\0';
 
 	if (!(option = strtok_r(line, separators, &sp)))
-		return 0;
+		return (0);
 
-	if (strncmp(option, REQUIRED, strlen(option)) == 0) {
-		*required = true;
-	} 
-	else if (strncmp(option, OPTIONAL, strlen(option)) == 0) {
-		*required = false;
-	} 
-	else {
-		error("spank: Invalid option \"%s\". Must be either %s or %s",
-		     option, REQUIRED, OPTIONAL);
+	if (((*type) = _plugin_stack_line_type(option)) == CF_ERROR) 
 		return (-1);
-	}
 
 	if (!(path = strtok_r(NULL, separators, &sp)))
 		return (-1);
@@ -325,23 +342,26 @@ _spank_plugin_find (const char *path, const char *file)
 	return (NULL);
 }
 
+static int _spank_conf_include (const char *, int, const char *, List *);
+
 static int
-_spank_stack_process_line(const char *file, int line, char *buf,
-			  struct spank_plugin **plugin)
+_spank_stack_process_line(const char *file, int line, char *buf, List *stackp)
 {
 	char **argv;
 	int ac;
 	char *path;
-	bool required = FALSE;
+	cf_line_t type = CF_REQUIRED;
+	bool required;
 
 	struct spank_plugin *p;
 
-	*plugin = NULL;
-
-	if (_plugin_stack_parse_line(buf, &path, &ac, &argv, &required) < 0) {
+	if (_plugin_stack_parse_line(buf, &path, &ac, &argv, &type) < 0) {
 		error("spank: %s:%d: Invalid line. Ignoring.", file, line);
 		return (0);
 	}
+
+	if (type == CF_INCLUDE)
+		return (_spank_conf_include (file, line, path, stackp));
 
 	if (path == NULL)	/* No plugin listed on this line */
 		return (0);
@@ -355,20 +375,30 @@ _spank_stack_process_line(const char *file, int line, char *buf,
 		}
 	}
 
+	required = (type == CF_REQUIRED);
 	if (!(p = _spank_plugin_create(path, ac, argv, required))) {
 		if (required)
-			error ("spank: %s:%d: Failed to load plugin %s. Aborting.",
-					file, line, path);
+			error ("spank: %s:%d:" 
+			       " Failed to load plugin %s. Aborting.",
+			       file, line, path);
 		else
-			verbose ("spank: %s:%d: Failed to load optional plugin %s. Ignored.",
-					file, line, path);
+			verbose ("spank: %s:%d:" 
+				 "Failed to load optional plugin %s. Ignored.",
+				 file, line, path);
 		return (required ? -1 : 0);
 	}
+	if (*stackp == NULL)
+		*stackp = list_create((ListDelF) _spank_plugin_destroy);
 
-	*plugin = p;
+	verbose ("spank: %s:%d: Loaded plugin %s", 
+			file, line, xbasename (p->fq_path));
+
+	list_append (*stackp, p);
+	_spank_plugin_options_cache(p);
 
 	return (0);
 }
+
 
 static int _spank_stack_create(const char *path, List * listp)
 {
@@ -390,24 +420,8 @@ static int _spank_stack_create(const char *path, List * listp)
 
 	line = 1;
 	while (fgets(buf, sizeof(buf), fp)) {
-		struct spank_plugin *p;
-
-		if (_spank_stack_process_line(path, line, buf, &p) < 0)
+		if (_spank_stack_process_line(path, line, buf, listp) < 0)
 			goto fail_immediately;
-
-		if (p == NULL)
-			continue;
-
-		if (*listp == NULL)
-			*listp =
-			    list_create((ListDelF) _spank_plugin_destroy);
-
-		verbose("spank: loaded plugin %s\n",
-			xbasename(p->fq_path));
-		list_append(*listp, p);
-
-		_spank_plugin_options_cache(p);
-
 		line++;
 	}
 
@@ -424,11 +438,66 @@ static int _spank_stack_create(const char *path, List * listp)
 }
 
 static int
+_spank_conf_include (const char *file, int lineno, const char *pattern,
+		List *stackp)
+{
+	int rc = 0;
+	glob_t gl;
+	size_t i;
+	char *copy = NULL;
+
+	if (pattern == NULL) {
+		error ("%s: %d: Invalid include directive", file, lineno);
+		return (SLURM_ERROR);
+	}
+
+	if (pattern[0] != '/') { 
+		char *dirc = xstrdup (file);
+		char *dname = dirname (dirc);
+
+		if (dname != NULL)  {
+			xstrfmtcat (copy, "%s/%s", dname, pattern);
+			pattern = copy;
+		}
+		xfree (dirc);
+	}
+
+	verbose ("%s: %d: include \"%s\"", file, lineno, pattern);
+	
+	rc = glob (pattern, 0, NULL, &gl);
+	switch (rc) {
+	  case 0:
+	  	for (i = 0; i < gl.gl_pathc; i++) {
+			rc = _spank_stack_create (gl.gl_pathv[i], stackp);
+			if (rc < 0) 
+				break;
+		}
+	  	break;
+	  case GLOB_NOMATCH:
+		break;
+	  case GLOB_NOSPACE:
+		errno = ENOMEM;
+	  case GLOB_ABORTED:
+		verbose ("%s:%d: cannot read dir %s: %m",
+			file, lineno, pattern);
+		break;
+	  default:
+		error ("Unknown glob(3) return code = %d", rc);
+		break;
+	}
+
+	xfree (copy);
+	globfree (&gl);
+	return (rc);
+}
+
+static int
 _spank_handle_init(struct spank_handle *spank, void * arg,
 		   int taskid, step_fn_t fn)
 {
 	memset(spank, 0, sizeof(*spank));
 	spank->magic = SPANK_MAGIC;
+	spank->plugin = NULL;
 
 	spank->phase = fn;
 
@@ -493,6 +562,8 @@ static int _do_call_stack(step_fn_t type, void * job, int taskid)
 	i = list_iterator_create(spank_stack);
 	while ((sp = list_next(i))) {
 		const char *name = xbasename(sp->fq_path);
+
+		spank->plugin = sp;
 
 		switch (type) {
 		case SPANK_INIT:
@@ -656,6 +727,33 @@ static int _spank_next_option_val(void)
 	return (optval);
 }
 
+static struct spank_option * _spank_option_copy(struct spank_option *opt)
+{
+	struct spank_option *copy = xmalloc (sizeof (*copy));
+
+	memset (copy, 0, sizeof (*copy));
+
+	copy->name = xstrdup (opt->name);
+	copy->has_arg = opt->has_arg;
+	copy->val = opt->val;
+	copy->cb = opt->cb;
+
+	if (opt->arginfo)
+		copy->arginfo = xstrdup (opt->arginfo);
+	if (opt->usage)
+		copy->usage = xstrdup (opt->usage);
+
+	return (copy);
+}
+
+static void _spank_option_destroy(struct spank_option *opt)
+{
+	xfree (opt->name);
+	xfree (opt->arginfo);
+	xfree (opt->usage);
+	xfree (opt);
+}
+
 static struct spank_plugin_opt *_spank_plugin_opt_create(struct
 							 spank_plugin *p,
 							 struct
@@ -663,7 +761,7 @@ static struct spank_plugin_opt *_spank_plugin_opt_create(struct
 							 int disabled)
 {
 	struct spank_plugin_opt *spopt = xmalloc(sizeof(*spopt));
-	spopt->opt = opt;
+	spopt->opt = _spank_option_copy (opt);
 	spopt->plugin = p;
 	spopt->optval = _spank_next_option_val();
 	spopt->found = 0;
@@ -676,6 +774,7 @@ static struct spank_plugin_opt *_spank_plugin_opt_create(struct
 
 void _spank_plugin_opt_destroy(struct spank_plugin_opt *spopt)
 {
+	_spank_option_destroy (spopt->opt);
 	xfree(spopt->optarg);
 	xfree(spopt);
 }
@@ -690,9 +789,56 @@ static int _opt_by_name(struct spank_plugin_opt *opt, char *optname)
 	return (strcmp(opt->opt->name, optname) == 0);
 }
 
-static int _spank_plugin_options_cache(struct spank_plugin *p)
+static int
+_spank_option_register(struct spank_plugin *p, struct spank_option *opt)
 {
 	int disabled = 0;
+	struct spank_plugin_opt *spopt;
+
+	spopt = list_find_first(option_cache, 
+			(ListFindF) _opt_by_name, opt->name);
+
+	if (spopt) {
+		struct spank_plugin *q = spopt->plugin;
+		info("spank: option \"%s\" provided by both %s and %s", 
+				opt->name, xbasename(p->fq_path), 
+				xbasename(q->fq_path));
+		/*
+		 *  Disable this option, but still cache it, in case
+		 *    options are loaded in a different order on the 
+		 *    remote side.
+		 */
+		disabled = 1;
+	}
+
+	if ((strlen(opt->name) > SPANK_OPTION_MAXLEN)) {
+		error("spank: option \"%s\" provided by %s too long. Ignoring.",
+			       	opt->name, p->name);
+		return (ESPANK_NOSPACE);
+	}
+
+	verbose("SPANK: appending plugin option \"%s\"\n", opt->name);
+	list_append(option_cache, _spank_plugin_opt_create(p, opt, disabled));
+
+	return (ESPANK_SUCCESS);
+}
+
+spank_err_t spank_option_register(spank_t sp, struct spank_option *opt)
+{
+	if (sp->phase != SPANK_INIT)
+		return (ESPANK_BAD_ARG);
+
+	if (!sp->plugin)
+		error ("Uh, oh, no current plugin!");
+
+	if (!opt || !opt->name || !opt->usage)
+		return (ESPANK_BAD_ARG);
+
+	return (_spank_option_register(sp->plugin, opt));
+}
+
+static int _spank_plugin_options_cache(struct spank_plugin *p)
+{
 	struct spank_option *opt = p->opts;
 
 	if ((opt == NULL) || opt->name == NULL)
@@ -703,38 +849,8 @@ static int _spank_plugin_options_cache(struct spank_plugin *p)
 		    list_create((ListDelF) _spank_plugin_opt_destroy);
 	}
 
-	for (; opt && opt->name != NULL; opt++) {
-		struct spank_plugin_opt *spopt;
-
-		spopt =
-		    list_find_first(option_cache, (ListFindF) _opt_by_name,
-				    opt->name);
-		if (spopt) {
-			struct spank_plugin *q = spopt->plugin;
-			info("spank: option \"%s\" "
-			     "provided by both %s and %s", 
-			     opt->name, xbasename(p->fq_path), 
-			     xbasename(q->fq_path));
-			/*
-			 *  Disable this option, but still cache it, in case
-			 *    options are loaded in a different order on the 
-			 *    remote side.
-			 */
-			disabled = 1;
-		}
-
-		if ((strlen(opt->name) > SPANK_OPTION_MAXLEN)) {
-			error
-			    ("spank: option \"%s\" provided by %s too long."
-			     " Ignoring.", opt->name, p->name);
-			continue;
-		}
-
-		verbose("SPANK: appending plugin option \"%s\"\n",
-			opt->name);
-		list_append(option_cache,
-			    _spank_plugin_opt_create(p, opt, disabled));
-	}
+	for (; opt && opt->name != NULL; opt++)
+		_spank_option_register(p, opt);
 
 	return (0);
 }

@@ -899,7 +899,7 @@ if {$matches != 27} {
 
 # This is the end below here
 
-incr exit_code [_remove_user "$tc1,$tc2" "$nm1,$nm2,$nm3"]
+incr exit_code [_remove_user "" "$us1,$us2,$us3"]
 incr exit_code [_remove_acct "" "$nm1,$nm2,$nm3"]
 incr exit_code [_remove_cluster "$tc1,$tc2,$tc3"]
 

@@ -1,7 +1,8 @@
 /****************************************************************************\
  *  opts.c - sinfo command line option processing functions
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Morris Jette <jette1@llnl.gov>
  *  LLNL-CODE-402394.
@@ -122,7 +123,8 @@ extern void parse_command_line(int argc, char *argv[])
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
-			fprintf(stderr, "Try \"sinfo --help\" for more information\n");
+			fprintf(stderr, 
+				"Try \"sinfo --help\" for more information\n");
 			exit(1);
 			break;
 		case (int)'a':

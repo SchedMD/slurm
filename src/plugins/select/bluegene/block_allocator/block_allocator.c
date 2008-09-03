@@ -101,19 +101,26 @@ s_p_options_t bg_conf_file_options[] = {
 #ifdef HAVE_BG_FILES
 /** */
 static void _bp_map_list_del(void *object);
+
+/** */
 static int _port_enum(int port);
+
 #endif
 /* */
 static int _check_for_options(ba_request_t* ba_request); 
+
 /* */
 static int _append_geo(int *geo, List geos, int rotate);
+
 /* */
 static int _fill_in_coords(List results, List start_list, 
 			   int *geometry, int conn_type);
+
 /* */
 static int _copy_the_path(List nodes, ba_switch_t *curr_switch,
 			  ba_switch_t *mark_switch, 
 			  int source, int dim);
+
 /* */
 static int _find_yz_path(ba_node_t *ba_node, int *first, 
 			 int *geometry, int conn_type);
@@ -145,26 +152,33 @@ static void _delete_path_list(void *object);
 /* find the first block match in the system */
 static int _find_match(ba_request_t* ba_request, List results);
 
+/** */
 static bool _node_used(ba_node_t* ba_node, int *geometry);
 
 /* */
 static void _switch_config(ba_node_t* source, ba_node_t* target, int dim, 
 			   int port_src, int port_tar);
+
 /* */
 static int _set_external_wires(int dim, int count, ba_node_t* source, 
 				ba_node_t* target);
+
 /* */
 static char *_set_internal_wires(List nodes, int size, int conn_type);
+
 /* */
 static int _find_x_path(List results, ba_node_t *ba_node, 
 			int *start, int *first, 
 			int *geometry, int found, int conn_type);
+
 /* */
 static int _find_x_path2(List results, ba_node_t *ba_node, 
 			 int *start, int *first, 
 			 int *geometry, int found, int conn_type);
+
 /* */
 static int _remove_node(List results, int *node_tar);
+
 /* */
 static int _find_next_free_using_port_2(ba_switch_t *curr_switch, 
 					int source_port, 
@@ -372,12 +386,39 @@ extern void destroy_ba_node(void *ptr)
 	}
 }
 
-/**
+/*
  * create a block request.  Note that if the geometry is given,
- * then size is ignored.  
+ * then size is ignored.  If elongate is true, the algorithm will try
+ * to fit that a block of cubic shape and then it will try other
+ * elongated geometries.  (ie, 2x2x2 -> 4x2x1 -> 8x1x1). 
  * 
  * IN/OUT - ba_request: structure to allocate and fill in.  
- * return SUCCESS of operation.
+ * 
+ * ALL below IN's need to be set within the ba_request before the call
+ * if you want them to be used.
+ * ALL below OUT's are set and returned within the ba_request.
+ * IN - avail_node_bitmap: bitmap of usable midplanes.
+ * IN - blrtsimage: BlrtsImage for this block if not default
+ * IN - conn_type: connection type of request (TORUS or MESH or SMALL)
+ * IN - elongate: if true, will try to fit different geometries of
+ *      same size requests
+ * IN/OUT - geometry: requested/returned geometry of block
+ * IN - linuximage: LinuxImage for this block if not default
+ * IN - mloaderimage: MLoaderImage for this block if not default
+ * IN - nodecards: Number of nodecards in each block in request only
+ *      used of small block allocations.
+ * OUT - passthroughs: if there were passthroughs used in the
+ *       generation of the block.
+ * IN - procs: Number of real processors requested
+ * IN - quarters: Number of midplane quarters in each block in request only
+ *      used of small block allocations.
+ * IN - RamDiskimage: RamDiskImage for this block if not default
+ * IN - rotate: if true, allows rotation of block during fit
+ * OUT - save_name: hostlist of midplanes used in block
+ * IN/OUT - size: requested/returned count of midplanes in block
+ * IN - start: geo location of where to start the allocation
+ * IN - start_req: if set use the start variable to start at
+ * return success of allocation/validation of params
  */
 extern int new_ba_request(ba_request_t* ba_request)
 {
@@ -967,6 +1008,11 @@ node_info_error:
 	init_grid(node_info_ptr);
 }
 
+/* If emulating a system set up a known configuration for wires in a
+ * system of the size given.
+ * If a real bluegene system, query the system and get all wiring
+ * information of the system.
+ */
 extern void init_wires()
 {
 	int x, y, z, i;
@@ -1037,10 +1083,12 @@ extern void ba_fini()
 }
 
 
-/** 
- * set the node in the internal configuration as unusable
+/* 
+ * set the node in the internal configuration as in, or not in use,
+ * along with the current state of the node.
  * 
- * IN ba_node: ba_node_t to put down
+ * IN ba_node: ba_node_t to update state
+ * IN state: new state of ba_node_t
  */
 extern void ba_update_node_state(ba_node_t *ba_node, uint16_t state)
 {
@@ -1070,11 +1118,12 @@ extern void ba_update_node_state(ba_node_t *ba_node, uint16_t state)
 		ba_node->used = false;
 	ba_node->state = state;
 }
-/** 
- * copy info from a ba_node
+
+/* 
+ * copy info from a ba_node, a direct memcpy of the ba_node_t
  * 
  * IN ba_node: node to be copied
- * OUT ba_node_t *: copied info must be freed with destroy_ba_node
+ * Returned ba_node_t *: copied info must be freed with destroy_ba_node
  */
 extern ba_node_t *ba_copy_node(ba_node_t *ba_node)
 {
@@ -1083,7 +1132,74 @@ extern ba_node_t *ba_copy_node(ba_node_t *ba_node)
 	memcpy(new_ba_node, ba_node, sizeof(ba_node_t));
 	return new_ba_node;
 }
-/** 
+
+/* 
+ * copy the path of the nodes given
+ * 
+ * IN nodes List of ba_node_t *'s: nodes to be copied
+ * OUT dest_nodes List of ba_node_t *'s: filled in list of nodes
+ * wiring.
+ * Return on success SLURM_SUCCESS, on error SLURM_ERROR
+ */
+extern int copy_node_path(List nodes, List *dest_nodes)
+{
+	int rc = SLURM_ERROR;
+	
+#ifdef HAVE_BG
+	ListIterator itr = NULL;
+	ListIterator itr2 = NULL;
+	ba_node_t *ba_node = NULL, *new_ba_node = NULL;
+	int dim;
+	ba_switch_t *curr_switch = NULL, *new_switch = NULL; 
+	
+	if(!nodes)
+		return SLURM_ERROR;
+	if(!*dest_nodes)
+		*dest_nodes = list_create(destroy_ba_node);
+
+	itr = list_iterator_create(nodes);
+	while((ba_node = list_next(itr))) {
+		itr2 = list_iterator_create(*dest_nodes);
+		while((new_ba_node = list_next(itr2))) {
+			if (ba_node->coord[X] == new_ba_node->coord[X] &&
+			    ba_node->coord[Y] == new_ba_node->coord[Y] &&
+			    ba_node->coord[Z] == new_ba_node->coord[Z]) 
+				break;	/* we found it */
+		}
+		list_iterator_destroy(itr2);
+	
+		if(!new_ba_node) {
+			debug2("adding %c%c%c as a new node",
+			       alpha_num[ba_node->coord[X]], 
+			       alpha_num[ba_node->coord[Y]],
+			       alpha_num[ba_node->coord[Z]]);
+			new_ba_node = ba_copy_node(ba_node);
+			_new_ba_node(new_ba_node, ba_node->coord, false);
+			list_push(*dest_nodes, new_ba_node);
+			
+		}
+		new_ba_node->used = true;
+		for(dim=0;dim<BA_SYSTEM_DIMENSIONS;dim++) {		
+			curr_switch = &ba_node->axis_switch[dim];
+			new_switch = &new_ba_node->axis_switch[dim];
+			if(curr_switch->int_wire[0].used) {
+				if(!_copy_the_path(*dest_nodes, 
+						   curr_switch, new_switch,
+						   0, dim)) {
+					rc = SLURM_ERROR;
+					break;
+				}
+			}
+		}
+		
+	}
+	list_iterator_destroy(itr);
+	rc = SLURM_SUCCESS;
+#endif	
+	return rc;
+}
+
+/* 
  * Try to allocate a block.
  * 
  * IN - ba_request: allocation request
@@ -1114,10 +1230,9 @@ extern int allocate_block(ba_request_t* ba_request, List results)
 }
 
 
-/** 
- * Doh!  Admin made a boo boo.  
- *
- * returns SLURM_SUCCESS if undo was successful.
+/* 
+ * Admin wants to remove a previous allocation.
+ * will allow Admin to delete a previous allocation retrival by letter code.
  */
 extern int remove_block(List nodes, int new_count)
 {
@@ -1148,11 +1263,11 @@ extern int remove_block(List nodes, int new_count)
 	return 1;
 }
 
-/** 
- * Doh!  Admin made a boo boo.  Note: Undo only has one history
- * element, so two consecutive undo's will fail.
- *
- * returns SLURM_SUCCESS if undo was successful.
+/* 
+ * Admin wants to change something about a previous allocation. 
+ * will allow Admin to change previous allocation by giving the 
+ * letter code for the allocation and the variable to alter
+ * (Not currently used in the system, update this if it is)
  */
 extern int alter_block(List nodes, int conn_type)
 {
@@ -1185,10 +1300,10 @@ extern int alter_block(List nodes, int conn_type)
 /* 	} */
 }
 
-/** 
+/* 
  * After a block is deleted or altered following allocations must
  * be redone to make sure correct path will be used in the real system
- *
+ * (Not currently used in the system, update this if it is)
  */
 extern int redo_block(List nodes, int *geo, int conn_type, int new_count)
 {
@@ -1211,64 +1326,19 @@ extern int redo_block(List nodes, int *geo, int conn_type, int new_count)
 	}
 }
 
-extern int copy_node_path(List nodes, List dest_nodes)
-{
-	int rc = SLURM_ERROR;
-	
-#ifdef HAVE_BG
-	ListIterator itr = NULL;
-	ListIterator itr2 = NULL;
-	ba_node_t *ba_node = NULL, *new_ba_node = NULL;
-	int dim;
-	ba_switch_t *curr_switch = NULL, *new_switch = NULL; 
-	
-	if(!nodes)
-		return SLURM_ERROR;
-	if(!dest_nodes)
-		dest_nodes = list_create(destroy_ba_node);
-
-	itr = list_iterator_create(nodes);
-	while((ba_node = list_next(itr))) {
-		itr2 = list_iterator_create(dest_nodes);
-		while((new_ba_node = list_next(itr2))) {
-			if (ba_node->coord[X] == new_ba_node->coord[X] &&
-			    ba_node->coord[Y] == new_ba_node->coord[Y] &&
-			    ba_node->coord[Z] == new_ba_node->coord[Z]) 
-				break;	/* we found it */
-		}
-		list_iterator_destroy(itr2);
-	
-		if(!new_ba_node) {
-			debug2("adding %c%c%c as a new node",
-			       alpha_num[ba_node->coord[X]], 
-			       alpha_num[ba_node->coord[Y]],
-			       alpha_num[ba_node->coord[Z]]);
-			new_ba_node = ba_copy_node(ba_node);
-			_new_ba_node(new_ba_node, ba_node->coord, false);
-			list_push(dest_nodes, new_ba_node);
-			
-		}
-		new_ba_node->used = true;
-		for(dim=0;dim<BA_SYSTEM_DIMENSIONS;dim++) {		
-			curr_switch = &ba_node->axis_switch[dim];
-			new_switch = &new_ba_node->axis_switch[dim];
-			if(curr_switch->int_wire[0].used) {
-				if(!_copy_the_path(dest_nodes, 
-						   curr_switch, new_switch,
-						   0, dim)) {
-					rc = SLURM_ERROR;
-					break;
-				}
-			}
-		}
-		
-	}
-	list_iterator_destroy(itr);
-	rc = SLURM_SUCCESS;
-#endif	
-	return rc;
-}
-
+/*
+ * Used to set a block into a virtual system.  The system can be
+ * cleared first and this function sets all the wires and midplanes
+ * used in the nodelist given.  The nodelist is a list of ba_node_t's
+ * that are already set up.  This is very handly to test if there are
+ * any passthroughs used by one block when adding another block that
+ * also uses those wires, and neither use any overlapping
+ * midplanes. Doing a simple bitmap & will not reveal this.
+ *
+ * Returns SLURM_SUCCESS if nodelist fits into system without
+ * conflict, and SLURM_ERROR if nodelist conflicts with something
+ * already in the system.
+ */
 extern int check_and_set_node_list(List nodes)
 {
 	int rc = SLURM_ERROR;
@@ -1352,6 +1422,19 @@ end_it:
 	return rc;
 }
 
+/*
+ * Used to find, and set up midplanes and the wires in the virtual
+ * system and return them in List results 
+ * 
+ * IN/OUT results - a list with a NULL destroyer filled in with
+ *        midplanes and wires set to create the block with the api. If
+ *        only interested in the hostlist NULL can be excepted also.
+ * IN start - where to start the allocation.
+ * IN geometry - the requested geometry of the block.
+ * IN conn_type - mesh, torus, or small.
+ * RET char * - hostlist of midplanes results represent must be
+ *     xfreed.  NULL on failure
+ */
 extern char *set_bg_block(List results, int *start, 
 			  int *geometry, int conn_type)
 {
@@ -1457,6 +1540,7 @@ extern char *set_bg_block(List results, int *start,
 end_it:
 	if(!send_results && results) {
 		list_destroy(results);
+		results = NULL;
 	}
 	if(name!=NULL) {
 		debug2("name = %s", name);
@@ -1468,6 +1552,10 @@ end_it:
 	return name;	
 }
 
+/*
+ * Resets the virtual system to a virgin state.  If track_down_nodes is set
+ * then those midplanes are not set to idle, but kept in a down state.
+ */
 extern int reset_ba_system(bool track_down_nodes)
 {
 	int x;
@@ -1496,8 +1584,15 @@ extern int reset_ba_system(bool track_down_nodes)
 	return 1;
 }
 
-/* need to call rest_all_removed_bps before starting another
- * allocation attempt 
+/*
+ * Used to set all midplanes in a special used state except the ones
+ * we are able to use in a new allocation.
+ *
+ * IN: hostlist of midplanes we do not want
+ * RET: SLURM_SUCCESS on success, or SLURM_ERROR on error
+ *
+ * Note: Need to call reset_all_removed_bps before starting another
+ * allocation attempt after 
  */
 extern int removable_set_bps(char *bps)
 {
@@ -1568,6 +1663,10 @@ extern int removable_set_bps(char *bps)
  	return SLURM_SUCCESS;
 }
 
+/*
+ * Resets the virtual system to the pervious state before calling
+ * removable_set_bps, or set_all_bps_except.
+ */
 extern int reset_all_removed_bps()
 {
 	int x;
@@ -1588,7 +1687,11 @@ extern int reset_all_removed_bps()
 	return SLURM_SUCCESS;
 }
 
-/* need to call rest_all_removed_bps before starting another
+/*
+ * IN: hostlist of midplanes we do not want
+ * RET: SLURM_SUCCESS on success, or SLURM_ERROR on error
+ *
+ * Need to call rest_all_removed_bps before starting another
  * allocation attempt if possible use removable_set_bps since it is
  * faster. It does basically the opposite of this function. If you
  * have to come up with this list though it is faster to use this
@@ -1676,7 +1779,9 @@ extern int set_all_bps_except(char *bps)
  	return SLURM_SUCCESS;
 }
 
-/* init_grid - set values of every grid point */
+/*
+ * set values of every grid point (used in smap)
+ */
 extern void init_grid(node_info_msg_t * node_info_ptr)
 {
 	node_info_t *node_ptr = NULL;
@@ -1761,6 +1866,155 @@ extern void init_grid(node_info_msg_t * node_info_ptr)
 	return;
 }
 
+/*
+ * Convert a BG API error code to a string
+ * IN inx - error code from any of the BG Bridge APIs
+ * RET - string describing the error condition
+ */
+extern char *bg_err_str(status_t inx)
+{
+#ifdef HAVE_BG_FILES
+	switch (inx) {
+	case STATUS_OK:
+		return "Status OK";
+	case PARTITION_NOT_FOUND:
+		return "Partition not found";
+	case JOB_NOT_FOUND:
+		return "Job not found";
+	case BP_NOT_FOUND:
+		return "Base partition not found";
+	case SWITCH_NOT_FOUND:
+		return "Switch not found";
+	case JOB_ALREADY_DEFINED:
+		return "Job already defined";
+	case CONNECTION_ERROR:
+		return "Connection error";
+	case INTERNAL_ERROR:
+		return "Internal error";
+	case INVALID_INPUT:
+		return "Invalid input";
+	case INCOMPATIBLE_STATE:
+		return "Incompatible state";
+	case INCONSISTENT_DATA:
+		return "Inconsistent data";
+	}
+#endif
+
+	return "?";
+}
+
+/*
+ * Set up the map for resolving
+ */
+extern int set_bp_map(void)
+{
+#ifdef HAVE_BG_FILES
+	static rm_BGL_t *bg = NULL;
+	int rc;
+	rm_BP_t *my_bp = NULL;
+	ba_bp_map_t *bp_map = NULL;
+	int bp_num, i;
+	char *bp_id = NULL;
+	rm_location_t bp_loc;
+	int number = 0;
+
+	if(_bp_map_initialized)
+		return 1;
+
+	bp_map_list = list_create(_bp_map_list_del);
+
+	if (!have_db2) {
+		fatal("Can't access DB2 library, run from service node");
+		return -1;
+	}
+
+	if (!getenv("DB2INSTANCE") || !getenv("VWSPATH")) {
+		fatal("Missing DB2INSTANCE or VWSPATH env var."
+			"Execute 'db2profile'");
+		return -1;
+	}
+	
+	if ((rc = bridge_get_bg(&bg)) != STATUS_OK) {
+		error("bridge_get_BGL(): %d", rc);
+		return -1;
+	}
+	
+	if ((rc = bridge_get_data(bg, RM_BPNum, &bp_num)) != STATUS_OK) {
+		error("bridge_get_data(RM_BPNum): %d", rc);
+		bp_num = 0;
+	}
+
+	for (i=0; i<bp_num; i++) {
+
+		if (i) {
+			if ((rc = bridge_get_data(bg, RM_NextBP, &my_bp))
+			    != STATUS_OK) {
+				error("bridge_get_data(RM_NextBP): %d", rc);
+				break;
+			}
+		} else {
+			if ((rc = bridge_get_data(bg, RM_FirstBP, &my_bp))
+			    != STATUS_OK) {
+				error("bridge_get_data(RM_FirstBP): %d", rc);
+				break;
+			}
+		}
+		
+		bp_map = (ba_bp_map_t *) xmalloc(sizeof(ba_bp_map_t));
+		
+		if ((rc = bridge_get_data(my_bp, RM_BPID, &bp_id))
+		    != STATUS_OK) {
+			xfree(bp_map);
+			error("bridge_get_data(RM_BPID): %d", rc);
+			continue;
+		}
+
+		if(!bp_id) {
+			error("No BP ID was returned from database");
+			continue;
+		}
+			
+		if ((rc = bridge_get_data(my_bp, RM_BPLoc, &bp_loc))
+		    != STATUS_OK) {
+			xfree(bp_map);
+			error("bridge_get_data(RM_BPLoc): %d", rc);
+			continue;
+		}
+		
+		bp_map->bp_id = xstrdup(bp_id);
+		bp_map->coord[X] = bp_loc.X;
+		bp_map->coord[Y] = bp_loc.Y;
+		bp_map->coord[Z] = bp_loc.Z;
+		
+		number = xstrntol(bp_id+1, NULL,
+				  BA_SYSTEM_DIMENSIONS, HOSTLIST_BASE);
+/* no longer needed for calculation */
+/* 		if(DIM_SIZE[X] > bp_loc.X */
+/* 		   && DIM_SIZE[Y] > bp_loc.Y */
+/* 		   && DIM_SIZE[Z] > bp_loc.Z) */
+/* 			ba_system_ptr->grid */
+/* 				[bp_loc.X] */
+/* 				[bp_loc.Y] */
+/* 				[bp_loc.Z].phys_x = */
+/* 				number / (HOSTLIST_BASE * HOSTLIST_BASE); */
+		
+		list_push(bp_map_list, bp_map);
+		
+		free(bp_id);		
+	}
+
+	if ((rc = bridge_free_bg(bg)) != STATUS_OK)
+		error("bridge_free_BGL(): %s", rc);	
+	
+#endif
+	_bp_map_initialized = true;
+	return 1;
+	
+}
+
+/*
+ * find a base blocks bg location 
+ */
 extern int *find_bp_loc(char* bp_id)
 {
 #ifdef HAVE_BG_FILES
@@ -1787,6 +2041,9 @@ extern int *find_bp_loc(char* bp_id)
 #endif
 }
 
+/*
+ * find a rack/midplace location 
+ */
 extern char *find_bp_rack_mid(char* xyz)
 {
 #ifdef HAVE_BG_FILES
@@ -1826,6 +2083,9 @@ extern char *find_bp_rack_mid(char* xyz)
 #endif
 }
 
+/*
+ * set the used wires in the virtual system for a block from the real system 
+ */
 extern int load_block_wiring(char *bg_block_id)
 {
 #ifdef HAVE_BG_FILES
@@ -2043,6 +2303,10 @@ extern int load_block_wiring(char *bg_block_id)
 	
 }
 
+/*
+ * get the used wires for a block out of the database and return the
+ * node list
+ */
 extern List get_and_set_block_wiring(char *bg_block_id)
 {
 #ifdef HAVE_BG_FILES
@@ -2300,6 +2564,7 @@ static void _bp_map_list_del(void *object)
 	}
 }
 
+/* translation from the enum to the actual port number */
 static int _port_enum(int port)
 {
 	switch(port) {
@@ -2328,6 +2593,10 @@ static int _port_enum(int port)
 
 #endif
 
+/*
+ * This function is here to check options for rotating and elongating
+ * and set up the request based on the count of each option
+ */
 static int _check_for_options(ba_request_t* ba_request) 
 {
 	int temp;
@@ -2394,6 +2663,9 @@ static int _check_for_options(ba_request_t* ba_request)
 	return 0;
 }
 
+/* 
+ * grab all the geometries that we can get and append them to the list geos
+ */
 static int _append_geo(int *geometry, List geos, int rotate) 
 {
 	ListIterator itr;
@@ -2436,6 +2708,9 @@ static int _append_geo(int *geometry, List geos, int rotate)
 	return 1;
 }
 
+/*
+ *
+ */
 static int _fill_in_coords(List results, List start_list,
 			    int *geometry, int conn_type)
 {
@@ -2901,150 +3176,6 @@ static int _reset_the_path(ba_switch_t *curr_switch, int source,
 
 	return _reset_the_path(next_switch, port_tar, target, dim);
 //	return 1;
-}
-
-/*
- * Convert a BG API error code to a string
- * IN inx - error code from any of the BG Bridge APIs
- * RET - string describing the error condition
- */
-extern char *bg_err_str(status_t inx)
-{
-#ifdef HAVE_BG_FILES
-	switch (inx) {
-	case STATUS_OK:
-		return "Status OK";
-	case PARTITION_NOT_FOUND:
-		return "Partition not found";
-	case JOB_NOT_FOUND:
-		return "Job not found";
-	case BP_NOT_FOUND:
-		return "Base partition not found";
-	case SWITCH_NOT_FOUND:
-		return "Switch not found";
-	case JOB_ALREADY_DEFINED:
-		return "Job already defined";
-	case CONNECTION_ERROR:
-		return "Connection error";
-	case INTERNAL_ERROR:
-		return "Internal error";
-	case INVALID_INPUT:
-		return "Invalid input";
-	case INCOMPATIBLE_STATE:
-		return "Incompatible state";
-	case INCONSISTENT_DATA:
-		return "Inconsistent data";
-	}
-#endif
-
-	return "?";
-}
-
-/** */
-extern int set_bp_map(void)
-{
-#ifdef HAVE_BG_FILES
-	static rm_BGL_t *bg = NULL;
-	int rc;
-	rm_BP_t *my_bp = NULL;
-	ba_bp_map_t *bp_map = NULL;
-	int bp_num, i;
-	char *bp_id = NULL;
-	rm_location_t bp_loc;
-	int number = 0;
-
-	if(_bp_map_initialized)
-		return 1;
-
-	bp_map_list = list_create(_bp_map_list_del);
-
-	if (!have_db2) {
-		fatal("Can't access DB2 library, run from service node");
-		return -1;
-	}
-
-	if (!getenv("DB2INSTANCE") || !getenv("VWSPATH")) {
-		fatal("Missing DB2INSTANCE or VWSPATH env var."
-			"Execute 'db2profile'");
-		return -1;
-	}
-	
-	if ((rc = bridge_get_bg(&bg)) != STATUS_OK) {
-		error("bridge_get_BGL(): %d", rc);
-		return -1;
-	}
-	
-	if ((rc = bridge_get_data(bg, RM_BPNum, &bp_num)) != STATUS_OK) {
-		error("bridge_get_data(RM_BPNum): %d", rc);
-		bp_num = 0;
-	}
-
-	for (i=0; i<bp_num; i++) {
-
-		if (i) {
-			if ((rc = bridge_get_data(bg, RM_NextBP, &my_bp))
-			    != STATUS_OK) {
-				error("bridge_get_data(RM_NextBP): %d", rc);
-				break;
-			}
-		} else {
-			if ((rc = bridge_get_data(bg, RM_FirstBP, &my_bp))
-			    != STATUS_OK) {
-				error("bridge_get_data(RM_FirstBP): %d", rc);
-				break;
-			}
-		}
-		
-		bp_map = (ba_bp_map_t *) xmalloc(sizeof(ba_bp_map_t));
-		
-		if ((rc = bridge_get_data(my_bp, RM_BPID, &bp_id))
-		    != STATUS_OK) {
-			xfree(bp_map);
-			error("bridge_get_data(RM_BPID): %d", rc);
-			continue;
-		}
-
-		if(!bp_id) {
-			error("No BP ID was returned from database");
-			continue;
-		}
-			
-		if ((rc = bridge_get_data(my_bp, RM_BPLoc, &bp_loc))
-		    != STATUS_OK) {
-			xfree(bp_map);
-			error("bridge_get_data(RM_BPLoc): %d", rc);
-			continue;
-		}
-		
-		bp_map->bp_id = xstrdup(bp_id);
-		bp_map->coord[X] = bp_loc.X;
-		bp_map->coord[Y] = bp_loc.Y;
-		bp_map->coord[Z] = bp_loc.Z;
-		
-		number = xstrntol(bp_id+1, NULL,
-				  BA_SYSTEM_DIMENSIONS, HOSTLIST_BASE);
-/* no longer needed for calculation */
-/* 		if(DIM_SIZE[X] > bp_loc.X */
-/* 		   && DIM_SIZE[Y] > bp_loc.Y */
-/* 		   && DIM_SIZE[Z] > bp_loc.Z) */
-/* 			ba_system_ptr->grid */
-/* 				[bp_loc.X] */
-/* 				[bp_loc.Y] */
-/* 				[bp_loc.Z].phys_x = */
-/* 				number / (HOSTLIST_BASE * HOSTLIST_BASE); */
-		
-		list_push(bp_map_list, bp_map);
-		
-		free(bp_id);		
-	}
-
-	if ((rc = bridge_free_bg(bg)) != STATUS_OK)
-		error("bridge_free_BGL(): %s", rc);	
-	
-#endif
-	_bp_map_initialized = true;
-	return 1;
-	
 }
 
 static void _new_ba_node(ba_node_t *ba_node, int *coord, bool track_down_nodes)

@@ -38,6 +38,7 @@
 \*****************************************************************************/
 
 #include "src/sacctmgr/sacctmgr.h"
+#include "src/common/uid.h"
 
 typedef struct {
 	acct_admin_level_t admin;
@@ -1439,10 +1440,14 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 	char line[BUFFER_SIZE];
 	FILE *fd = NULL;
 	char *parent = NULL;
+	char *file_name = NULL;
 	char *cluster_name = NULL;
+	char *user_name = NULL;
 	char object[25];
 	int start = 0, len = 0, i = 0;
 	int lc=0, num_lines=0;
+	int start_clean=0;
+	int cluster_name_set=0;
 	int rc = SLURM_SUCCESS;
 
 	sacctmgr_file_opts_t *file_opts = NULL;
@@ -1475,19 +1480,92 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 	
 	int set = 0;
 	
-	fd = fopen(argv[0], "r");
-	if (fd == NULL) {
-		exit_code=1;
-		fprintf(stderr, " Unable to read \"%s\": %m\n", argv[0]);
-		return;
+	if(readonly_flag) {
+		exit_code = 1;
+		fprintf(stderr, "Can't run this command in readonly mode.\n");
+		return;		
 	}
 
-	curr_acct_list = acct_storage_g_get_accounts(db_conn, my_uid, NULL);
-	curr_cluster_list = acct_storage_g_get_clusters(db_conn, my_uid, NULL);
+	/* reset the connection to get the most recent stuff */
+	acct_storage_g_commit(db_conn, 0);
 
 	memset(&user_cond, 0, sizeof(acct_user_cond_t));
 	user_cond.with_coords = 1;
 	curr_user_list = acct_storage_g_get_users(db_conn, my_uid, &user_cond);
+
+	/* make sure this person running is an admin */
+	user_name = uid_to_string(my_uid);
+	if(!(user = sacctmgr_find_user_from_list(curr_user_list, user_name))) {
+		exit_code=1;
+		fprintf(stderr, " Your uid (%u) is not in the "
+			"accounting system, can't load file.\n", my_uid);
+		if(curr_user_list)
+			list_destroy(curr_user_list);
+		xfree(user_name);
+		return;
+		
+	} else {
+		if(user->admin_level < ACCT_ADMIN_SUPER_USER) {
+			exit_code=1;
+			fprintf(stderr, " Your user does not have sufficient "
+				"privileges to load files.\n");
+			if(curr_user_list)
+				list_destroy(curr_user_list);
+			xfree(user_name);
+			return;
+		}
+	}
+	xfree(user_name);
+
+	for (i=0; i<argc; i++) {
+		int end = parse_option_end(argv[i]);
+
+		if(!end && !strncasecmp(argv[i], "clean", 3)) {
+			start_clean = 1;
+		} else if(!end || !strncasecmp (argv[i], "File", 1)) {
+			if(file_name) {
+				exit_code=1;
+				fprintf(stderr, 
+					" File name already set to %s\n",
+					file_name);
+				continue;
+			}		
+			file_name = xstrdup(argv[i]+end);
+		} else if (!strncasecmp (argv[i], "Cluster", 3)) {
+			if(cluster_name) {
+				exit_code=1;
+				fprintf(stderr, 
+					" Can only do one cluster at a time.  "
+					"Already doing %s\n", cluster_name);
+				continue;
+			}
+			cluster_name = xstrdup(argv[i]+end);
+			cluster_name_set = 1;
+		} else {
+			exit_code=1;
+			fprintf(stderr, " Unknown option: %s\n", argv[i]);
+		}		
+	}
+
+	if(!file_name) {
+		exit_code=1;
+		xfree(cluster_name);
+		fprintf(stderr, 
+			" No filename given, specify one with file=''\n");
+		return;
+		
+	}
+
+	fd = fopen(file_name, "r");
+	xfree(file_name);
+	if (fd == NULL) {
+		exit_code=1;
+		fprintf(stderr, " Unable to read \"%s\": %m\n", argv[0]);
+		xfree(cluster_name);
+		return;
+	}
+
+	curr_acct_list = acct_storage_g_get_accounts(db_conn, my_uid, NULL);
 
 	/* These are new info so they need to be freed here */
 	acct_list = list_create(destroy_acct_account_rec);
@@ -1499,8 +1577,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 	mod_user_list = list_create(destroy_acct_user_rec);
 	mod_assoc_list = list_create(destroy_acct_association_rec);
 
-	format_list = list_create(slurm_destroy_char);
-	
+	format_list = list_create(slurm_destroy_char);	
 
 	while((num_lines = _get_next_line(line, BUFFER_SIZE, fd)) > 0) {
 		lc += num_lines;
@@ -1540,7 +1617,6 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				object, lc);
 			rc = SLURM_ERROR;
 			break;
-			
 		}
 		start++;
 		
@@ -1548,7 +1624,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 		   || !strcasecmp("Cluster", object)) {
 			acct_association_cond_t assoc_cond;
 
-			if(cluster_name) {
+			if(cluster_name && !cluster_name_set) {
 				exit_code=1;
 				fprintf(stderr, " You can only add one cluster "
 				       "at a time.\n");
@@ -1565,7 +1641,44 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				rc = SLURM_ERROR;
 				break;
 			}
-			cluster_name = xstrdup(file_opts->name);
+
+			if(!cluster_name_set)
+				cluster_name = xstrdup(file_opts->name);
+			if(start_clean) {
+				acct_cluster_cond_t cluster_cond;
+				List ret_list = NULL;
+
+				if(!commit_check("You requested to flush "
+						 "the cluster before "
+						 "adding it again.\n"
+						 "Are you sure you want "
+						 "to continue?")) {
+					printf("Aborted\n");
+					break;
+				}		
+
+				memset(&cluster_cond, 0, 
+				       sizeof(acct_cluster_cond_t));
+				cluster_cond.cluster_list = list_create(NULL);
+				list_append(cluster_cond.cluster_list,
+					    cluster_name);
+
+				notice_thread_init();
+				ret_list = acct_storage_g_remove_clusters(
+					db_conn, my_uid, &cluster_cond);
+				notice_thread_fini();
+				list_destroy(cluster_cond.cluster_list);
+
+				if(!ret_list) {
+					exit_code=1;
+					fprintf(stderr, " There was a problem "
+						"removing the cluster.\n");
+					rc = SLURM_ERROR;
+					break;
+				}
+			}
+			curr_cluster_list = acct_storage_g_get_clusters(
+				db_conn, my_uid, NULL);
 
 			if(cluster_name)
 				info("For cluster %s", cluster_name);
@@ -1609,6 +1722,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 			
 			memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
 			assoc_cond.cluster_list = list_create(NULL);
+			assoc_cond.without_parent_limits = 1;
 			list_append(assoc_cond.cluster_list, cluster_name);
 			curr_assoc_list = acct_storage_g_get_associations(
 				db_conn, my_uid, &assoc_cond);
@@ -2030,8 +2144,9 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 		set = 1;
 	}
 	END_TIMER2("add cluster");
-		
-	info("Done adding cluster in %s", TIME_STR);
+
+	if(set)
+		info("Done adding cluster in %s", TIME_STR);
 		
 	if(rc == SLURM_SUCCESS) {
 		if(set) {

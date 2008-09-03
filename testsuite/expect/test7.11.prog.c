@@ -52,6 +52,14 @@ struct spank_option spank_options[] =
 	},
 	SPANK_OPTIONS_TABLE_END
 };
+struct spank_option spank_options_reg[] =
+{
+	{ "test_suite_reg", "[opt_arg]", 
+		"Registered component of slurm test suite.", 2, 0,
+		_test_opt_process
+	},
+	SPANK_OPTIONS_TABLE_END
+};
 
 static int _test_opt_process(int val, const char *optarg, int remote)
 {
@@ -65,6 +73,8 @@ static int _test_opt_process(int val, const char *optarg, int remote)
 /*  Called from both srun and slurmd */
 int slurm_spank_init(spank_t sp, int ac, char **av)
 {
+	if (spank_option_register(sp, spank_options_reg) != ESPANK_SUCCESS)
+		slurm_error("spank_option_register error");
 	if (spank_remote(sp) && (ac == 1))
 		opt_out_file = strdup(av[0]);
 

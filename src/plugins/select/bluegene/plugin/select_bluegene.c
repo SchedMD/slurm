@@ -431,6 +431,7 @@ extern int select_p_state_restore(char *dir_name)
 		error("select_p_state_restore: problem unpacking node_info");
 		goto unpack_error;
 	}
+	slurm_mutex_lock(&block_state_mutex);
 	reset_ba_system(false);
 
 	node_bitmap = bit_alloc(node_record_count);	
@@ -481,11 +482,9 @@ extern int select_p_state_restore(char *dir_name)
 
 		list_iterator_reset(itr);
 		if(bg_record) {
-			slurm_mutex_lock(&block_state_mutex);
 			if(bg_info_record->state == RM_PARTITION_ERROR)
 				bg_record->job_running = BLOCK_ERROR_STATE;
 			bg_record->state = bg_info_record->state;
-			slurm_mutex_unlock(&block_state_mutex);
 			blocks++;
 		} else {
 			int ionodes = 0;
@@ -602,7 +601,7 @@ extern int select_p_state_restore(char *dir_name)
 				list_destroy(bg_record->bg_block_list);
 			bg_record->bg_block_list =
 				list_create(destroy_ba_node);
-			copy_node_path(results, bg_record->bg_block_list);
+			copy_node_path(results, &bg_record->bg_block_list);
 			list_destroy(results);			
 			
 			configure_block(bg_record);
@@ -614,7 +613,6 @@ extern int select_p_state_restore(char *dir_name)
 	FREE_NULL_BITMAP(node_bitmap);
 	list_iterator_destroy(itr);
 
-	slurm_mutex_lock(&block_state_mutex);
 	sort_bg_record_inc_size(bg_list);
 	slurm_mutex_unlock(&block_state_mutex);
 		

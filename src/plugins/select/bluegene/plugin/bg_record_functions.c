@@ -645,7 +645,7 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq)
 
 	bg_record->bg_block_list = list_create(destroy_ba_node);
 	if(used_nodes) {
-		if(copy_node_path(used_nodes, bg_record->bg_block_list)
+		if(copy_node_path(used_nodes, &bg_record->bg_block_list)
 		   == SLURM_ERROR)
 			error("couldn't copy the path for the allocation");
 		bg_record->bp_count = list_count(used_nodes);
