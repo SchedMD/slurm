@@ -568,7 +568,7 @@ static int _wait_bluegene_block_ready(resource_allocation_response_msg_t *alloc)
 			rc = _blocks_dealloc();
 			if ((rc == 0) || (rc == -1)) 
 				cur_delay += POLL_SLEEP;
-			debug(".");
+			debug("still waiting");
 		}
 
 		rc = slurm_job_node_ready(alloc->job_id);
