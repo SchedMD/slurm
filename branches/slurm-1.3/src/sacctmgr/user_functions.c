@@ -37,6 +37,7 @@
 \*****************************************************************************/
 
 #include "src/sacctmgr/sacctmgr.h"
+#include "src/common/uid.h"
 
 static int _set_cond(int *start, int argc, char *argv[],
 		     acct_user_cond_t *user_cond,
@@ -504,6 +505,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 	while((name = list_next(itr))) {
 		user = NULL;
 		if(!sacctmgr_find_user_from_list(local_user_list, name)) {
+			uid_t pw_uid;
 			if(!default_acct) {
 				exit_code=1;
 				fprintf(stderr, " Need a default account for "
@@ -524,6 +526,22 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 				}
 				first = 0;				
 			}
+			pw_uid = uid_from_string(name);
+			if(pw_uid == (uid_t) -1) {
+				char *warning = xstrdup_printf(
+					"There is no uid for user '%s'"
+					"\nAre you sure you want to continue?",
+					name);
+
+				if(!commit_check(warning)) {
+					xfree(warning);
+					rc = SLURM_ERROR;
+					list_flush(user_list);
+					goto no_default;
+				}
+				xfree(warning);
+			}
+
 			user = xmalloc(sizeof(acct_user_rec_t));
 			user->assoc_list = list_create(NULL);
 			user->name = xstrdup(name);
@@ -543,6 +561,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 			}
 
 			user->admin_level = admin_level;
+			
 			xstrfmtcat(user_str, "  %s\n", name);
 
 			list_append(user_list, user);
