@@ -560,6 +560,9 @@ static int _wait_bluegene_block_ready(resource_allocation_response_msg_t *alloc)
 			     &block_id);
 
 	for (i=0; (cur_delay < max_delay); i++) {
+		if(i == 1)
+			info("Waiting for block %s to become ready for job",
+			     block_id);
 		if (i) {
 			sleep(POLL_SLEEP);
 			rc = _blocks_dealloc();
@@ -569,14 +572,6 @@ static int _wait_bluegene_block_ready(resource_allocation_response_msg_t *alloc)
 		}
 
 		rc = slurm_job_node_ready(alloc->job_id);
-		if (rc & READY_NODE_STATE) {		/* job and node ready */
-			is_ready = 1;
-			break;
-		}
-
-		if(!i)
-			info("Waiting for block %s to become ready for job",
-			     block_id);
 
 		if (rc == READY_JOB_FATAL)
 			break;				/* fatal error */
@@ -584,6 +579,10 @@ static int _wait_bluegene_block_ready(resource_allocation_response_msg_t *alloc)
 			continue;			/* retry */
 		if ((rc & READY_JOB_STATE) == 0)	/* job killed */
 			break;
+		if (rc & READY_NODE_STATE) {		/* job and node ready */
+			is_ready = 1;
+			break;
+		}
 	}
 
 	if (is_ready)
