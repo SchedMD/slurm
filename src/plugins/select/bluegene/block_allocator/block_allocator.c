@@ -96,6 +96,11 @@ s_p_options_t bg_conf_file_options[] = {
 	{NULL}
 };
 
+typedef enum {
+	BLOCK_ALGO_FIRST,
+	BLOCK_ALGO_SECOND
+} block_algo_t;
+
 #ifdef HAVE_BG
 /** internal helper functions */
 #ifdef HAVE_BG_FILES
@@ -167,12 +172,9 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 static char *_set_internal_wires(List nodes, int size, int conn_type);
 
 /* */
-static int _find_x_path(List results, ba_node_t *ba_node, 
-			int *start, int x_size, int found, int conn_type);
-
-/* */
-static int _find_x_path2(List results, ba_node_t *ba_node, 
-			 int *start, int x_size, int found, int conn_type);
+static int _find_x_path(List results, ba_node_t *ba_node, int *start,
+			int x_size, int found, int conn_type, 
+			block_algo_t algo);
 
 /* */
 static int _remove_node(List results, int *node_tar);
@@ -1493,18 +1495,18 @@ extern char *set_bg_block(List results, int *start,
 			     ba_node->coord, 
 			     geometry[X], 
 			     1,
-			     conn_type);
+			     conn_type, BLOCK_ALGO_FIRST);
 
 	if(!found) {
 		debug2("trying less efficient code");
 		remove_block(results, color_count);
 		list_delete_all(results, &empty_null_destroy_list, "");
 		list_append(results, ba_node);
-		found = _find_x_path2(results, ba_node,
-				      ba_node->coord,
-				      geometry[X],
-				      1,
-				      conn_type);
+		found = _find_x_path(results, ba_node,
+				     ba_node->coord,
+				     geometry[X],
+				     1,
+				     conn_type, BLOCK_ALGO_SECOND);
 	}
 	if(found) {
 #ifdef HAVE_BG
@@ -3971,21 +3973,22 @@ static char *_set_internal_wires(List nodes, int size, int conn_type)
  * IN: x_size - How many midplanes are we looking for in the X dim
  * IN: found - count of how many midplanes we have found in the x dim
  * IN: conn_type - MESH or TORUS
+ * IN: algo - algorythm to try an allocation by
  *
  * RET: 0 on failure, 1 on success
  */
 static int _find_x_path(List results, ba_node_t *ba_node, 
 			int *start, int x_size, 
-			int found, int conn_type) 
+			int found, int conn_type, block_algo_t algo) 
 {
 	ba_switch_t *curr_switch = NULL; 
 	ba_switch_t *next_switch = NULL; 
 	
 	int port_tar = 0;
 	int source_port=0;
-	int target_port=0;
+	int target_port=1;
 	int broke = 0, not_first = 0;
-	int ports_to_try[2] = {3,5};
+	int ports_to_try[2] = {4, 2};
 	int *node_tar = NULL;
 	int i = 0;
 	ba_node_t *next_node = NULL;
@@ -3993,7 +3996,7 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 /* 	int highest_phys_x = x_size - start[X]; */
 /* 	info("highest_phys_x is %d", highest_phys_x); */
 
-	ListIterator itr;
+	ListIterator itr = NULL;
 
 	if(!ba_node || !results || !start)
 		return 0;
@@ -4002,15 +4005,20 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 	if(x_size == 1) 
 		return 1;
 
-	if(!source_port) {
-		target_port=1;
+	if(algo == BLOCK_ALGO_FIRST) {
 		ports_to_try[0] = 4;
 		ports_to_try[1] = 2;
-			
-	}
+	} else if(algo == BLOCK_ALGO_SECOND) {
+		ports_to_try[0] = 2;
+		ports_to_try[1] = 4;
+	} else {
+		error("Unknown algo %d", algo);
+		return 0;
+	}			
+	
 	curr_switch = &ba_node->axis_switch[X];
 
-	debug3("found - %d",found);
+	debug3("Algo(%d) found - %d", algo, found);
 
 	/* Check the 2 ports we can leave though in ports_to_try */
 	for(i=0;i<2;i++) {
@@ -4049,24 +4057,26 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 			/* check to see if I am going to a place I have
 			   already been before */
 			itr = list_iterator_create(results);
-			while((next_node = (ba_node_t*) list_next(itr))) {
-				debug3("looking at %c%c%c and %c%c%c",
+			while((next_node = list_next(itr))) {
+				debug3("Algo(%d) looking at %c%c%c and %c%c%c",
+				       algo,
 				       alpha_num[next_node->coord[X]],
 				       alpha_num[next_node->coord[Y]],
 				       alpha_num[next_node->coord[Z]],
 				       alpha_num[node_tar[X]],
 				       alpha_num[node_tar[Y]],
 				       alpha_num[node_tar[Z]]);
-				if((node_tar[X] == next_node->coord[X] && 
-				    node_tar[Y] == next_node->coord[Y] && 
-				    node_tar[Z] == next_node->coord[Z])) {
+				if((node_tar[X] == next_node->coord[X] 
+				    && node_tar[Y] == next_node->coord[Y]
+				    && node_tar[Z] == next_node->coord[Z])) {
 					not_first = 1;
 					break;
 				}				
 			}
 			list_iterator_destroy(itr);
 			if(not_first && found < DIM_SIZE[X]) {
-				debug2("already been there before");
+				debug2("Algo(%d) already been there before",
+				       algo);
 				not_first = 0;
 				continue;
 			} 
@@ -4082,16 +4092,17 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 			next_switch = &next_node->axis_switch[X];
 
  			if((conn_type == SELECT_MESH) && (found == (x_size))) {
-				debug2("we found the end of the mesh");
+				debug2("Algo(%d) we found the end of the mesh",
+				       algo);
 				return 1;
 			}
-			debug3("Broke = %d Found = %d x_size = %d",
-			       broke, found, x_size);
+			debug3("Algo(%d) Broke = %d Found = %d x_size = %d",
+			       algo, broke, found, x_size);
 
 			if(broke && (found == x_size)) {
 				goto found_path;
 			} else if(found == x_size) {
-				debug2("finishing the torus!");
+				debug2("Algo(%d) finishing the torus!", algo);
 
 				if(best_path)
 					list_flush(best_path);
@@ -4107,8 +4118,9 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 				_finish_torus(curr_switch, 0, X, 0, start);
 
 				if(best_count < BEST_COUNT_INIT) {
-					debug2("Found a best path with %d "
-					       "steps.", best_count);
+					debug2("Algo(%d) Found a best path "
+					       "with %d steps.",
+					       algo, best_count);
 					_set_best_path();
 					return 1;
 				} else {
@@ -4121,8 +4133,9 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 
 			if (!_node_used(next_node, x_size)) {
 #ifdef HAVE_BG
-				debug2("found %d looking at %c%c%c "
+				debug2("Algo(%d) found %d looking at %c%c%c "
 				       "%d going to %c%c%c %d",
+				       algo,
 				       found,
 				       alpha_num[ba_node->coord[X]],
 				       alpha_num[ba_node->coord[Y]],
@@ -4135,11 +4148,10 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 #endif
 				itr = list_iterator_create(results);
 				while((check_node = list_next(itr))) {
-					if((node_tar[X] == 
-					    check_node->coord[X] && 
-					    node_tar[Y] == 
-					    check_node->coord[Y] && 
-					    node_tar[Z] == 
+					if((node_tar[X] == check_node->coord[X]
+					    && node_tar[Y] == 
+					    check_node->coord[Y]
+					    && node_tar[Z] == 
 					    check_node->coord[Z])) {
 						break;
 					}
@@ -4147,7 +4159,8 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 				list_iterator_destroy(itr);
 				if(!check_node) {
 #ifdef HAVE_BG
-					debug2("add %c%c%c",
+					debug2("Algo(%d) add %c%c%c",
+					       algo,
 					       alpha_num[next_node->coord[X]],
 					       alpha_num[next_node->coord[Y]],
 					       alpha_num[next_node->coord[Z]]);
@@ -4155,8 +4168,9 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 					list_append(results, next_node);
 				} else {
 #ifdef HAVE_BG
-					debug2("Hey this is already added "
-					       "%c%c%c",
+					debug2("Algo(%d) Hey this is already "
+					       "added %c%c%c",
+					       algo,
 					       alpha_num[node_tar[X]],
 					       alpha_num[node_tar[Y]],
 					       alpha_num[node_tar[Z]]);
@@ -4168,15 +4182,16 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 				/* look for the next closest midplane */
 				if(!_find_x_path(results, next_node, 
 						 start, x_size, 
-						 found, conn_type)) {
+						 found, conn_type, algo)) {
 					_remove_node(results, next_node->coord);
 					found--;
 					continue;
 				} else {
 				found_path:
 #ifdef HAVE_BG
-					debug2("added node %c%c%c %d %d -> "
-					       "%c%c%c %d %d",
+					debug2("Algo(%d) added node %c%c%c "
+					       "%d %d -> %c%c%c %d %d",
+					       algo,
 					       alpha_num[ba_node->coord[X]],
 					       alpha_num[ba_node->coord[Y]],
 					       alpha_num[ba_node->coord[Z]],
@@ -4214,300 +4229,78 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 		}
 	}
 
-	debug2("couldn't find path");
-	return 0;
-}
-
-static int _find_x_path2(List results, ba_node_t *ba_node, 
-			 int *start, int x_size, 
-			 int found, int conn_type) 
-{
-	ba_switch_t *curr_switch = NULL; 
-	ba_switch_t *next_switch = NULL; 
-	
-	int port_tar = 0;
-	int source_port=0;
-	int target_port=0;
-	int broke = 0, not_first = 0;
-	int ports_to_try[2] = {3,5};
-	int *node_tar = NULL;
-	int i = 0;
-	ba_node_t *next_node = NULL;
-	ba_node_t *check_node = NULL;
-	
-	ListIterator itr;
-	
-	if(!ba_node)
+	if(algo == BLOCK_ALGO_FIRST) {
+		debug2("Algo(%d) couldn't find path", algo);
 		return 0;
-
-	if(!source_port) {
-		target_port=1;
-		ports_to_try[0] = 2;
-		ports_to_try[1] = 4;
+	} else if(algo == BLOCK_ALGO_SECOND) {
+#ifdef HAVE_BG
+		debug2("Algo(%d) looking for the next free node "
+		       "starting at %c%c%c",
+		       algo,
+		       alpha_num[ba_node->coord[X]],
+		       alpha_num[ba_node->coord[Y]],
+		       alpha_num[ba_node->coord[Z]]);
+#endif
+		
+		if(best_path)
+			list_flush(best_path);
+		else
+			best_path = list_create(_delete_path_list);
+		
+		if(path)
+			list_flush(path);
+		else
+			path = list_create(_delete_path_list);
+		
+		_find_next_free_using_port_2(curr_switch, 0, results, X, 0);
+		
+		if(best_count < BEST_COUNT_INIT) {
+			debug2("Algo(%d) yes found next free %d", algo,
+			       best_count);
+			node_tar = _set_best_path();
 			
-	}
-	curr_switch = &ba_node->axis_switch[X];
-	if(x_size == 1) {
-		goto found_one;
-	}
-	debug2("found - %d",found);
-	for(i=0;i<2;i++) {
-		/* check to make sure it isn't used */
-		if(!curr_switch->int_wire[ports_to_try[i]].used) {
-			node_tar = curr_switch->
-				ext_wire[ports_to_try[i]].node_tar;
-			port_tar = curr_switch->
-				ext_wire[ports_to_try[i]].port_tar;
-			if((node_tar[X] == 
-			    start[X] && 
-			    node_tar[Y] == 
-			    start[Y] && 
-			    node_tar[Z] == 
-			    start[Z])) {
-				broke = 1;
-				goto broke_it;
-			}
-			if((node_tar[X] == 
-			    ba_node->coord[X] && 
-			    node_tar[Y] == 
-			    ba_node->coord[Y] && 
-			    node_tar[Z] == 
-			    ba_node->coord[Z])) {
-				continue;
-			}
-			itr = list_iterator_create(results);
-			while((next_node = (ba_node_t*) list_next(itr))) {
-				if((node_tar[X] == 
-				    next_node->coord[X] && 
-				    node_tar[Y] == 
-				    next_node->coord[Y] && 
-				    node_tar[Z] == 
-				    next_node->coord[Z])) {
-					not_first = 1;
-					break;
-				}
-				
-			}
-			list_iterator_destroy(itr);
-			if(not_first && found<DIM_SIZE[X]) {
-				not_first = 0;
-				continue;
-			} 
-			not_first = 0;
-				
-		broke_it:
-			next_node = &ba_system_ptr->
-				grid[node_tar[X]]
+			next_node = &ba_system_ptr->grid[node_tar[X]]
 #ifdef HAVE_BG
 				[node_tar[Y]]
 				[node_tar[Z]]
 #endif
 				;
-
-			next_switch = &next_node->axis_switch[X];
-		
 			
- 			if((conn_type == SELECT_MESH) 
-			   && (found == (x_size))) {
-				debug2("we found the end of the mesh");
-				return 1;
-			}
-			debug3("Broke = %d Found = %d x_size = %d",
-			       broke, found, x_size);
-			if(broke && (found == x_size)) {
-				goto found_path;
-			} else if(found == x_size) {
-				debug2("finishing the torus!");
-				if(best_path)
-					list_flush(best_path);
-				else
-					best_path =
-						list_create(_delete_path_list);
-				if(path)
-					list_flush(path);
-				else
-					path = list_create(_delete_path_list);
-
-				_finish_torus(curr_switch, 0, X, 0, start);
-
-				if(best_count < BEST_COUNT_INIT) {
-					debug2("Found a best path with %d "
-					       "steps.", best_count);
-					_set_best_path();
-					return 1;
-				} else {
-					return 0;
-				}
-			} else if(broke) {
-				broke = 0;
-				continue;
-			}
-
-			if (!_node_used(next_node, x_size)) {
+			next_switch = &next_node->axis_switch[X];
+			
 #ifdef HAVE_BG
-				debug2("found %d looking at %c%c%c "
-				       "%d going to %c%c%c %d",
-				       found,
-				       alpha_num[ba_node->coord[X]],
-				       alpha_num[ba_node->coord[Y]],
-				       alpha_num[ba_node->coord[Z]],
-				       ports_to_try[i],
-				       alpha_num[node_tar[X]],
-				       alpha_num[node_tar[Y]],
-				       alpha_num[node_tar[Z]],
-				       port_tar);
-#endif
-				itr = list_iterator_create(results);
-				while((check_node = 
-				       (ba_node_t*) list_next(itr))) {
-					if((node_tar[X] == 
-					    check_node->coord[X] && 
-					    node_tar[Y] == 
-					    check_node->coord[Y] && 
-					    node_tar[Z] == 
-					    check_node->coord[Z])) {
-						break;
-					}
-				}
-				list_iterator_destroy(itr);
-				if(!check_node) {
-#ifdef HAVE_BG
-					debug2("add %c%c%c",
-					       alpha_num[next_node->coord[X]],
-					       alpha_num[next_node->coord[Y]],
-					       alpha_num[next_node->coord[Z]]);
-#endif					       
-					list_append(results, next_node);
-				} else {
-#ifdef HAVE_BG
-					debug2("Hey this is already added "
-					       "%c%c%c",
-					       alpha_num[node_tar[X]],
-					       alpha_num[node_tar[Y]],
-					       alpha_num[node_tar[Z]]);
-#endif
-					continue;
-				}
-				found++;
-				
-				if(!_find_x_path2(results, next_node, 
-						 start, x_size, 
-						 found, conn_type)) {
-					_remove_node(results,
-						     next_node->coord);
-					found--;
-					continue;
-				} else {
-				found_path:
-#ifdef HAVE_BG
-					debug2("added node %c%c%c %d %d -> "
-					       "%c%c%c %d %d",
-					       alpha_num[ba_node->coord[X]],
-					       alpha_num[ba_node->coord[Y]],
-					       alpha_num[ba_node->coord[Z]],
-					       source_port,
-					       ports_to_try[i],
-					       alpha_num[node_tar[X]],
-					       alpha_num[node_tar[Y]],
-					       alpha_num[node_tar[Z]],
-					       port_tar,
-					       target_port);
-#endif					
-				found_one:			
-					if(x_size != 1) {
-						curr_switch->
-							int_wire
-							[source_port].used = 1;
-						curr_switch->
-							int_wire
-							[source_port].port_tar
-							= ports_to_try[i];
-						curr_switch->
-							int_wire
-							[ports_to_try[i]].used
-							= 1;
-						curr_switch->
-							int_wire
-							[ports_to_try[i]].
-							port_tar = source_port;
-					
-						next_switch->
-							int_wire[port_tar].used
-							= 1;
-						next_switch->
-							int_wire
-							[port_tar].port_tar
-							= target_port;
-						next_switch->
-							int_wire
-							[target_port].used = 1;
-						next_switch->
-							int_wire
-							[target_port].port_tar
-							= port_tar;
-					}
-					return 1;
-				}
-			} 			
-		}
-	}
-#ifdef HAVE_BG
-	debug2("looking for the next free node starting at %c%c%c",
-	       alpha_num[ba_node->coord[X]],
-	       alpha_num[ba_node->coord[Y]],
-	       alpha_num[ba_node->coord[Z]]);
-#endif
-
-	if(best_path)
-		list_flush(best_path);
-	else
-		best_path = list_create(_delete_path_list);
-
-	if(path)
-		list_flush(path);
-	else
-		path = list_create(_delete_path_list);
-	
-	_find_next_free_using_port_2(curr_switch, 0, results, X, 0);
-
-	if(best_count < BEST_COUNT_INIT) {
-		debug2("yes found next free %d", best_count);
-		node_tar = _set_best_path();
-
-		next_node = &ba_system_ptr->grid[node_tar[X]]
-#ifdef HAVE_BG
-			[node_tar[Y]]
-			[node_tar[Z]]
-#endif
-			;
-
-		next_switch = &next_node->axis_switch[X];
-		
-#ifdef HAVE_BG
-		debug2("found %d looking at %c%c%c going to %c%c%c %d",
-		       found,
-		       alpha_num[ba_node->coord[X]],
-		       alpha_num[ba_node->coord[Y]],
-		       alpha_num[ba_node->coord[Z]],
-		       alpha_num[node_tar[X]],
-		       alpha_num[node_tar[Y]],
-		       alpha_num[node_tar[Z]],
-		       port_tar);
+			debug2("Algo(%d) found %d looking at %c%c%c "
+			       "going to %c%c%c %d",
+			       algo, found,
+			       alpha_num[ba_node->coord[X]],
+			       alpha_num[ba_node->coord[Y]],
+			       alpha_num[ba_node->coord[Z]],
+			       alpha_num[node_tar[X]],
+			       alpha_num[node_tar[Y]],
+			       alpha_num[node_tar[Z]],
+			       port_tar);
 #endif		
-		list_append(results, next_node);
-		found++;
-		if(_find_x_path2(results, next_node, 
-				 start, x_size, found, conn_type)) {
-			return 1;
-		} else {
-			found--;
-			_reset_the_path(curr_switch, 0, 1, X);
-			_remove_node(results, next_node->coord);
-			debug2("couldn't finish the path off this one");
-		}
-	} 
-	
-	debug2("couldn't find path 2");
+			list_append(results, next_node);
+			found++;
+			if(_find_x_path(results, next_node, 
+					start, x_size, found,
+					conn_type, algo)) {
+				return 1;
+			} else {
+				found--;
+				_reset_the_path(curr_switch, 0, 1, X);
+				_remove_node(results, next_node->coord);
+				debug2("Algo(%d) couldn't finish "
+				       "the path off this one", algo);
+			}
+		} 
+		
+		debug2("Algo(%d) couldn't find path", algo);
+		return 0;
+	}
+
+	error("We got here meaning there is a bad algo, "
+	      "but this should never happen algo(%d)", algo);
 	return 0;
 }
 
