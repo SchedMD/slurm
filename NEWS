@@ -8,7 +8,7 @@ documents those changes that are of interest to users and admins.
  -- Add "include" keywork to SPANK plugstack.conf file to optionally include
     other configuration files or directories of configuration files.
  -- Srun to wait indefinitely for resource allocation to be made. Used to
-    abort after one minute.
+    abort after two minutes.
 
 * Changes in SLURM 1.2.34
 =========================
