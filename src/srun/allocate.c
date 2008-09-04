@@ -187,7 +187,6 @@ _wait_for_resources(resource_allocation_response_msg_t **resp)
 	resource_allocation_response_msg_t *r = *resp;
 	int sleep_time = MIN_ALLOC_WAIT;
 	int job_id = r->job_id;
-	int i;
 
 	if (!opt.quiet)
 		info ("job %u queued and waiting for resources", r->job_id);
@@ -195,10 +194,7 @@ _wait_for_resources(resource_allocation_response_msg_t **resp)
 	slurm_free_resource_allocation_response_msg(r);
 
 	/* Keep polling until the job is allocated resources */
-	for (i=0; ; i++) {
-		if (_wait_for_alloc_rpc(sleep_time, resp) > 0)
-			break;
-
+	while (_wait_for_alloc_rpc(sleep_time, resp) <= 0) {
 		if (slurm_allocation_lookup_lite(job_id, resp) >= 0)
 			break;
 
@@ -208,7 +204,7 @@ _wait_for_resources(resource_allocation_response_msg_t **resp)
 			fatal ("Unable to confirm allocation for job %u: %m", 
 			       job_id);
 
-		if ((i > 10) || destroy_job) {
+		if (destroy_job) {
 			verbose("cancelling job %u", job_id);
 			slurm_complete_job(job_id, 0);
 			debugger_launch_failure(allocate_job);
