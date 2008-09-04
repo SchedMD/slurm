@@ -153,7 +153,7 @@ static void _delete_path_list(void *object);
 static int _find_match(ba_request_t* ba_request, List results);
 
 /** */
-static bool _node_used(ba_node_t* ba_node, int *geometry);
+static bool _node_used(ba_node_t* ba_node, int x_size);
 
 /* */
 static void _switch_config(ba_node_t* source, ba_node_t* target, int dim, 
@@ -168,13 +168,11 @@ static char *_set_internal_wires(List nodes, int size, int conn_type);
 
 /* */
 static int _find_x_path(List results, ba_node_t *ba_node, 
-			int *start, int *first, 
-			int *geometry, int found, int conn_type);
+			int *start, int x_size, int found, int conn_type);
 
 /* */
 static int _find_x_path2(List results, ba_node_t *ba_node, 
-			 int *start, int *first, 
-			 int *geometry, int found, int conn_type);
+			 int *start, int x_size, int found, int conn_type);
 
 /* */
 static int _remove_node(List results, int *node_tar);
@@ -190,7 +188,7 @@ static int _find_next_free_using_port_2(ba_switch_t *curr_switch,
 /* 			     int count, int highest_phys_x);  */
 /* */
 static int _finish_torus(ba_switch_t *curr_switch, int source_port, 
-			   List nodes, int dim, int count, int *start);
+			 int dim, int count, int *start);
 /* */
 static int *_set_best_path();
 
@@ -1432,6 +1430,7 @@ end_it:
  * IN start - where to start the allocation.
  * IN geometry - the requested geometry of the block.
  * IN conn_type - mesh, torus, or small.
+ *
  * RET char * - hostlist of midplanes results represent must be
  *     xfreed.  NULL on failure
  */
@@ -1478,22 +1477,21 @@ extern char *set_bg_block(List results, int *start,
 		results = list_create(NULL);
 	else
 		send_results = 1;
-		
+	/* This midplane should have already been checked if it was in
+	   use or not */
 	list_append(results, ba_node);
 	if(conn_type == SELECT_SMALL) {
 		/* adding the ba_node and ending */
 		ba_node->used = true;
-		name = xmalloc(4);
-		snprintf(name, 4, "%c%c%c",
-			 alpha_num[ba_node->coord[X]],
-			 alpha_num[ba_node->coord[Y]],
-			 alpha_num[ba_node->coord[Z]]);
+		name = xstrdup_printf("%c%c%c",
+				      alpha_num[ba_node->coord[X]],
+				      alpha_num[ba_node->coord[Y]],
+				      alpha_num[ba_node->coord[Z]]);
 		goto end_it; 
 	}
 	found = _find_x_path(results, ba_node,
 			     ba_node->coord, 
-			     ba_node->coord, 
-			     geometry, 
+			     geometry[X], 
 			     1,
 			     conn_type);
 
@@ -1504,8 +1502,7 @@ extern char *set_bg_block(List results, int *start,
 		list_append(results, ba_node);
 		found = _find_x_path2(results, ba_node,
 				      ba_node->coord,
-				      ba_node->coord,
-				      geometry,
+				      geometry[X],
 				      1,
 				      conn_type);
 	}
@@ -2709,10 +2706,25 @@ static int _append_geo(int *geometry, List geos, int rotate)
 }
 
 /*
- * IN/OUT
+ * Fill in the paths and extra midplanes we need for the block.
+ * Basically copy the x path sent in with the start_list in each Y anx
+ * Z dimension filling in every midplane for the block and then
+ * completing the Y and Z wiring, tying the whole block together.
+ *
+ * IN/OUT results - total list of midplanes after this function
+ *        returns successfully.  Should be
+ *        an exact copy of the start_list at first.
+ * IN start_list - exact copy of results at first, This should only be
+ *        a list of midplanes on the X dim.  We will work off this and
+ *        the geometry to fill in this wiring for the X dim in all the
+ *        Y and Z coords.
+ * IN geometry - What the block looks like
+ * IN conn_type - Mesh or Torus
+ * 
+ * RET: 0 on failure 1 on success
  */
 static int _fill_in_coords(List results, List start_list,
-			    int *geometry, int conn_type)
+			   int *geometry, int conn_type)
 {
 	ba_node_t *ba_node = NULL;
 	ba_node_t *check_node = NULL;
@@ -2724,6 +2736,7 @@ static int _fill_in_coords(List results, List start_list,
 	
 	if(!start_list || !results)
 		return 0;
+	/* go through the start_list and add all the midplanes */
 	itr = list_iterator_create(start_list);
 	while((check_node = (ba_node_t*) list_next(itr))) {		
 		curr_switch = &check_node->axis_switch[X];
@@ -2744,12 +2757,12 @@ static int _fill_in_coords(List results, List start_list,
 					[check_node->coord[X]]
 					[check_node->coord[Y]+y]
 					[check_node->coord[Z]+z];
-				if(ba_node->coord[Y] 
-				   == check_node->coord[Y]
-				   && ba_node->coord[Z] 
-				   == check_node->coord[Z])
+
+				if(ba_node->coord[Y] == check_node->coord[Y]
+				   && ba_node->coord[Z] == check_node->coord[Z])
 					continue;
-				if (!_node_used(ba_node,geometry)) {
+
+				if (!_node_used(ba_node, geometry[X])) {
 					debug3("here Adding %c%c%c",
 					       alpha_num[ba_node->coord[X]],
 					       alpha_num[ba_node->coord[Y]],
@@ -3386,7 +3399,7 @@ start_again:
 #endif
 			;
 
-		if (!_node_used(ba_node, ba_request->geometry)) {
+		if (!_node_used(ba_node, ba_request->geometry[X])) {
 			debug3("trying this node %c%c%c %c%c%c %d",
 			       alpha_num[start[X]],
 			       alpha_num[start[Y]],
@@ -3455,10 +3468,15 @@ requested_end:
 	return 0;
 }
 
-/* bool _node_used(ba_node_t* ba_node, int geometry,  */
-static bool _node_used(ba_node_t* ba_node, int *geometry)
+/* 
+ * Used to check if midplane is usable in the block we are creating
+ *
+ * IN: ba_node - node to check if is used
+ * IN: x_size - How big is the block in the X dim used to see if the
+ *     wires are full hence making this midplane unusable.
+ */
+static bool _node_used(ba_node_t* ba_node, int x_size)
 {
-	int i=0;
 	ba_switch_t* ba_switch = NULL;
 	
 	/* if we've used this node in another block already */
@@ -3469,17 +3487,27 @@ static bool _node_used(ba_node_t* ba_node, int *geometry)
 		       alpha_num[ba_node->coord[Z]]);
 		return true;
 	}
-	/* if we've used this nodes switches completely in another 
-	   block already */
-	for(i=0;i<1;i++) {
-		if(geometry[i]>1) {
-			ba_switch = &ba_node->axis_switch[i];
-			
-			if(ba_switch->int_wire[3].used 
-			   && ba_switch->int_wire[5].used) {
-				debug3("switch in use dim %d!",i);
-				return true;
-			}
+	/* Check If we've used this node's switches completely in another 
+	   block already.  Right now we are only needing to look at
+	   the X dim since it is the only one with extra wires.  This
+	   can be set up to do all the dim's if in the future if it is
+	   needed. We only need to check this if we are planning on
+	   using more than 1 midplane in the block creation */
+	if(x_size > 1) {
+		/* get the switch of the X Dimension */
+		ba_switch = &ba_node->axis_switch[X];
+		
+		/* If both of these ports are used then the node
+		   is in use since there are no more wires we
+		   can use since these can not connect to each
+		   other they must be connected to the other ports.
+		*/
+		if(ba_switch->int_wire[3].used && ba_switch->int_wire[5].used) {
+			debug3("switch full in the X dim on node %c%c%c!",
+			       alpha_num[ba_node->coord[X]],
+			       alpha_num[ba_node->coord[Y]],
+			       alpha_num[ba_node->coord[Z]]);
+			return true;
 		}
 	}
 		
@@ -3880,7 +3908,7 @@ static char *_set_internal_wires(List nodes, int size, int conn_type)
 	name = xmalloc(BUFSIZE);
 	hostlist = hostlist_create(NULL);
 	itr = list_iterator_create(nodes);
-	while((ba_node[count] = (ba_node_t*) list_next(itr))) {
+	while((ba_node[count] = list_next(itr))) {
 		snprintf(temp_name, sizeof(temp_name), "%c%c%c", 
 			 alpha_num[ba_node[count]->coord[X]],
 			 alpha_num[ba_node[count]->coord[Y]],
@@ -3930,9 +3958,25 @@ static char *_set_internal_wires(List nodes, int size, int conn_type)
 	return name;
 }				
 
+/*
+ * Used to find a complete path based on the conn_type for an x dim.
+ * When starting to wire a block together this should be called first.
+ *
+ * IN/OUT: results - contains the number of midplanes we are
+ *     potentially going to use in the X dim.  
+ * IN: ba_node - current node we are looking at and have already added
+ *     to results.
+ * IN: start - coordinates of the first midplane (so we know when when
+ *     to end with a torus)
+ * IN: x_size - How many midplanes are we looking for in the X dim
+ * IN: found - count of how many midplanes we have found in the x dim
+ * IN: conn_type - MESH or TORUS
+ *
+ * RET: 0 on failure, 1 on success
+ */
 static int _find_x_path(List results, ba_node_t *ba_node, 
-	int *start, int *first, int *geometry, 
-	int found, int conn_type) 
+			int *start, int x_size, 
+			int found, int conn_type) 
 {
 	ba_switch_t *curr_switch = NULL; 
 	ba_switch_t *next_switch = NULL; 
@@ -3946,13 +3990,17 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 	int i = 0;
 	ba_node_t *next_node = NULL;
 	ba_node_t *check_node = NULL;
-/* 	int highest_phys_x = geometry[X] - start[X]; */
+/* 	int highest_phys_x = x_size - start[X]; */
 /* 	info("highest_phys_x is %d", highest_phys_x); */
 
 	ListIterator itr;
 
-	if(!ba_node)
+	if(!ba_node || !results || !start)
 		return 0;
+
+	/* we don't need to go any further */
+	if(x_size == 1) 
+		return 1;
 
 	if(!source_port) {
 		target_port=1;
@@ -3961,10 +4009,10 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 			
 	}
 	curr_switch = &ba_node->axis_switch[X];
-	if(geometry[X] == 1) {
-		goto found_one;
-	}
+
 	debug3("found - %d",found);
+
+	/* Check the 2 ports we can leave though in ports_to_try */
 	for(i=0;i<2;i++) {
 /* 		info("trying port %d", ports_to_try[i]); */
 		/* check to make sure it isn't used */
@@ -3986,22 +4034,16 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 /* 			     port_tar); */
 			/* check to see if we are back at the start of the
 			   block */
-			if((node_tar[X] == 
-			    start[X] && 
-			    node_tar[Y] == 
-			    start[Y] && 
-			    node_tar[Z] == 
-			    start[Z])) {
+			if((node_tar[X] == start[X] 
+			    && node_tar[Y] == start[Y] 
+			    && node_tar[Z] == start[Z])) {
 				broke = 1;
 				goto broke_it;
 			}
 			/* check to see if the port points to itself */
-			if((node_tar[X] == 
-			    ba_node->coord[X] && 
-			    node_tar[Y] == 
-			    ba_node->coord[Y] && 
-			    node_tar[Z] == 
-			    ba_node->coord[Z])) {
+			if((node_tar[X] == ba_node->coord[X]
+			    && node_tar[Y] == ba_node->coord[Y]
+			    && node_tar[Z] == ba_node->coord[Z])) {
 				continue;
 			}
 			/* check to see if I am going to a place I have
@@ -4023,7 +4065,7 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 				}				
 			}
 			list_iterator_destroy(itr);
-			if(not_first && found<DIM_SIZE[X]) {
+			if(not_first && found < DIM_SIZE[X]) {
 				debug2("already been there before");
 				not_first = 0;
 				continue;
@@ -4031,8 +4073,7 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 			not_first = 0;
 				
 		broke_it:
-			next_node = &ba_system_ptr->
-				grid[node_tar[X]]
+			next_node = &ba_system_ptr->grid[node_tar[X]]
 #ifdef HAVE_BG
 				[node_tar[Y]]
 				[node_tar[Z]]
@@ -4040,94 +4081,31 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 				;
 			next_switch = &next_node->axis_switch[X];
 
- 			if((conn_type == SELECT_MESH) 
-			   && (found == (geometry[X]))) {
+ 			if((conn_type == SELECT_MESH) && (found == (x_size))) {
 				debug2("we found the end of the mesh");
 				return 1;
 			}
-			debug3("Broke = %d Found = %d geometry[X] = %d",
-			       broke, found, geometry[X]);
+			debug3("Broke = %d Found = %d x_size = %d",
+			       broke, found, x_size);
 
-/* This doesnt' appear to be of any use since we are doing a circular
- * system not a linear one.  Kept just to make sure.
- */
-
-/* 			debug3("Next Phys X %d Highest X %d", */
-/* 			       next_node->phys_x, highest_phys_x); */
-/* 			if(next_node->phys_x >= highest_phys_x) { */
-/* 				debug3("looking for a passthrough"); */
-/* 				if(best_path) */
-/* 					list_destroy(best_path); */
-/* 				best_path = list_create(_delete_path_list); */
-/* 				if(path) */
-/* 					list_destroy(path); */
-/* 				path = list_create(_delete_path_list); */
-	
-/* 				_find_passthrough(curr_switch, */
-/* 						  0, */
-/* 						  results, */
-/* 						  X, */
-/* 						  0, */
-/* 						  highest_phys_x); */
-/* 				if(best_count < BEST_COUNT_INIT) { */
-/* 					debug2("yes found next free %d",  */
-/* 					       best_count); */
-/* 					node_tar = _set_best_path(); */
-/* 					next_node = &ba_system_ptr-> */
-/* 						grid[node_tar[X]] */
-/* #ifdef HAVE_BG */
-/* 						[node_tar[Y]] */
-/* 						[node_tar[Z]] */
-/* #endif */
-/* 						; */
-/* 					next_switch =  */
-/* 						&next_node->axis_switch[X]; */
-					
-/* #ifdef HAVE_BG */
-/* 					debug2("found %d looking at " */
-/* 					       "%c%c%c going to %c%c%c %d", */
-/* 					       found, */
-/* 					       alpha_num[ba_node->coord[X]], */
-/* 					       alpha_num[ba_node->coord[Y]], */
-/* 					       alpha_num[ba_node->coord[Z]], */
-/* 					       alpha_num[node_tar[X]], */
-/* 					       alpha_num[node_tar[Y]], */
-/* 					       alpha_num[node_tar[Z]], */
-/* 					       port_tar); */
-/* #endif		 */
-/* 					list_append(results, next_node); */
-/* 					found++; */
-/* 					if(_find_x_path(results, next_node,  */
-/* 							start, first, geometry, */
-/* 							found, conn_type)) { */
-/* 						return 1; */
-/* 					} else { */
-/* 						found--; */
-/* 						_reset_the_path(curr_switch, 0, */
-/* 								1, X); */
-/* 						_remove_node(results,  */
-/* 							     next_node->coord); */
-/* 						return 0; */
-/* 					} */
-/* 				} */
-/* 			}			 */
-
-			if(broke && (found == geometry[X])) {
+			if(broke && (found == x_size)) {
 				goto found_path;
-			} else if(found == geometry[X]) {
+			} else if(found == x_size) {
 				debug2("finishing the torus!");
+
 				if(best_path)
-					list_destroy(best_path);
-				best_path = list_create(_delete_path_list);
+					list_flush(best_path);
+				else
+					best_path =
+						list_create(_delete_path_list);
+
 				if(path)
-					list_destroy(path);
-				path = list_create(_delete_path_list);
-				_finish_torus(curr_switch, 
-					      0, 
-					      results, 
-					      X, 
-					      0, 
-					      start);
+					list_flush(path);
+				else
+					path = list_create(_delete_path_list);
+				
+				_finish_torus(curr_switch, 0, X, 0, start);
+
 				if(best_count < BEST_COUNT_INIT) {
 					debug2("Found a best path with %d "
 					       "steps.", best_count);
@@ -4141,7 +4119,7 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 				continue;
 			}
 
-			if (!_node_used(next_node, geometry)) {
+			if (!_node_used(next_node, x_size)) {
 #ifdef HAVE_BG
 				debug2("found %d looking at %c%c%c "
 				       "%d going to %c%c%c %d",
@@ -4156,8 +4134,7 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 				       port_tar);
 #endif
 				itr = list_iterator_create(results);
-				while((check_node = 
-				       (ba_node_t*) list_next(itr))) {
+				while((check_node = list_next(itr))) {
 					if((node_tar[X] == 
 					    check_node->coord[X] && 
 					    node_tar[Y] == 
@@ -4187,12 +4164,12 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 					continue;
 				}
 				found++;
-				
+
+				/* look for the next closest midplane */
 				if(!_find_x_path(results, next_node, 
-						 start, first, geometry, 
+						 start, x_size, 
 						 found, conn_type)) {
-					_remove_node(results,
-						     next_node->coord);
+					_remove_node(results, next_node->coord);
 					found--;
 					continue;
 				} else {
@@ -4211,41 +4188,27 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 					       port_tar,
 					       target_port);
 #endif					
-				found_one:			
-					if(geometry[X] != 1) {
-						curr_switch->
-							int_wire
-							[source_port].used = 1;
-						curr_switch->
-							int_wire
-							[source_port].port_tar
-							= ports_to_try[i];
-						curr_switch->
-							int_wire
-							[ports_to_try[i]].used
-							= 1;
-						curr_switch->
-							int_wire
-							[ports_to_try[i]].
-							port_tar = source_port;
+					curr_switch->int_wire[source_port].used
+						= 1;
+					curr_switch->int_wire
+						[source_port].port_tar
+						= ports_to_try[i];
+					curr_switch->int_wire
+						[ports_to_try[i]].used = 1;
+					curr_switch->int_wire
+						[ports_to_try[i]].port_tar 
+						= source_port;
 					
-						next_switch->
-							int_wire[port_tar].used
-							= 1;
-						next_switch->
-							int_wire
-							[port_tar].port_tar
-							= target_port;
-						next_switch->
-							int_wire
-							[target_port].used = 1;
-						next_switch->
-							int_wire
-							[target_port].port_tar
-							= port_tar;
-					}
+					next_switch->int_wire[port_tar].used
+						= 1;
+					next_switch->int_wire[port_tar].port_tar
+						= target_port;
+					next_switch->int_wire[target_port].used
+						= 1;
+					next_switch->int_wire
+						[target_port].port_tar
+						= port_tar;
 					return 1;
-
 				}
 			} 			
 		}
@@ -4256,7 +4219,7 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 }
 
 static int _find_x_path2(List results, ba_node_t *ba_node, 
-			 int *start, int *first, int *geometry, 
+			 int *start, int x_size, 
 			 int found, int conn_type) 
 {
 	ba_switch_t *curr_switch = NULL; 
@@ -4284,7 +4247,7 @@ static int _find_x_path2(List results, ba_node_t *ba_node,
 			
 	}
 	curr_switch = &ba_node->axis_switch[X];
-	if(geometry[X] == 1) {
+	if(x_size == 1) {
 		goto found_one;
 	}
 	debug2("found - %d",found);
@@ -4345,28 +4308,28 @@ static int _find_x_path2(List results, ba_node_t *ba_node,
 		
 			
  			if((conn_type == SELECT_MESH) 
-			   && (found == (geometry[X]))) {
+			   && (found == (x_size))) {
 				debug2("we found the end of the mesh");
 				return 1;
 			}
-			debug3("Broke = %d Found = %d geometry[X] = %d",
-			       broke, found, geometry[X]);
-			if(broke && (found == geometry[X])) {
+			debug3("Broke = %d Found = %d x_size = %d",
+			       broke, found, x_size);
+			if(broke && (found == x_size)) {
 				goto found_path;
-			} else if(found == geometry[X]) {
+			} else if(found == x_size) {
 				debug2("finishing the torus!");
 				if(best_path)
-					list_destroy(best_path);
-				best_path = list_create(_delete_path_list);
+					list_flush(best_path);
+				else
+					best_path =
+						list_create(_delete_path_list);
 				if(path)
-					list_destroy(path);
-				path = list_create(_delete_path_list);
-				_finish_torus(curr_switch, 
-					      0, 
-					      results, 
-					      X, 
-					      0, 
-					      start);
+					list_flush(path);
+				else
+					path = list_create(_delete_path_list);
+
+				_finish_torus(curr_switch, 0, X, 0, start);
+
 				if(best_count < BEST_COUNT_INIT) {
 					debug2("Found a best path with %d "
 					       "steps.", best_count);
@@ -4380,7 +4343,7 @@ static int _find_x_path2(List results, ba_node_t *ba_node,
 				continue;
 			}
 
-			if (!_node_used(next_node, geometry)) {
+			if (!_node_used(next_node, x_size)) {
 #ifdef HAVE_BG
 				debug2("found %d looking at %c%c%c "
 				       "%d going to %c%c%c %d",
@@ -4428,7 +4391,7 @@ static int _find_x_path2(List results, ba_node_t *ba_node,
 				found++;
 				
 				if(!_find_x_path2(results, next_node, 
-						 start, first, geometry, 
+						 start, x_size, 
 						 found, conn_type)) {
 					_remove_node(results,
 						     next_node->coord);
@@ -4451,7 +4414,7 @@ static int _find_x_path2(List results, ba_node_t *ba_node,
 					       target_port);
 #endif					
 				found_one:			
-					if(geometry[X] != 1) {
+					if(x_size != 1) {
 						curr_switch->
 							int_wire
 							[source_port].used = 1;
@@ -4496,23 +4459,22 @@ static int _find_x_path2(List results, ba_node_t *ba_node,
 #endif
 
 	if(best_path)
-		list_destroy(best_path);
-	best_path = list_create(_delete_path_list);
+		list_flush(best_path);
+	else
+		best_path = list_create(_delete_path_list);
+
 	if(path)
-		list_destroy(path);
-	path = list_create(_delete_path_list);
+		list_flush(path);
+	else
+		path = list_create(_delete_path_list);
 	
-	_find_next_free_using_port_2(curr_switch, 
-				     0, 
-				     results, 
-				     X, 
-				     0);
+	_find_next_free_using_port_2(curr_switch, 0, results, X, 0);
+
 	if(best_count < BEST_COUNT_INIT) {
 		debug2("yes found next free %d", best_count);
 		node_tar = _set_best_path();
 
-		next_node = &ba_system_ptr->
-			grid[node_tar[X]]
+		next_node = &ba_system_ptr->grid[node_tar[X]]
 #ifdef HAVE_BG
 			[node_tar[Y]]
 			[node_tar[Z]]
@@ -4535,7 +4497,7 @@ static int _find_x_path2(List results, ba_node_t *ba_node,
 		list_append(results, next_node);
 		found++;
 		if(_find_x_path2(results, next_node, 
-				start, first, geometry, found, conn_type)) {
+				 start, x_size, found, conn_type)) {
 			return 1;
 		} else {
 			found--;
@@ -4650,8 +4612,8 @@ static int _find_next_free_using_port_2(ba_switch_t *curr_switch,
 		if((source_port%2))
 			target_port=1;
 		
-		list_destroy(best_path);
-		best_path = list_create(_delete_path_list);
+		list_flush(best_path);
+		
 		found = true;
 		path_add->out = target_port;
 		list_push(path, path_add);
@@ -4670,7 +4632,7 @@ static int _find_next_free_using_port_2(ba_switch_t *curr_switch,
 			temp_switch->dim = path_switch->dim;
 			temp_switch->in = path_switch->in;
 			temp_switch->out = path_switch->out;
-			list_append(best_path,temp_switch);
+			list_append(best_path, temp_switch);
 		}
 		list_iterator_destroy(itr);
 		best_count = count;
@@ -4747,205 +4709,28 @@ return_0:
 	return 0;
 }
 
-/* static int _find_passthrough(ba_switch_t *curr_switch, int source_port,  */
-/* 			     List nodes, int dim, int count, int highest_phys_x)  */
-/* { */
-/* 	ba_switch_t *next_switch = NULL;  */
-/* 	ba_path_switch_t *path_add =  */
-/* 		(ba_path_switch_t *) xmalloc(sizeof(ba_path_switch_t)); */
-/* 	ba_path_switch_t *path_switch = NULL; */
-/* 	ba_path_switch_t *temp_switch = NULL; */
-/* 	int port_tar; */
-/* 	int target_port = 0; */
-/* 	int ports_to_try[2] = {3,5}; */
-/* 	int *node_tar= curr_switch->ext_wire[0].node_tar; */
-/* 	int *node_src = curr_switch->ext_wire[0].node_tar; */
-/* 	int i; */
-/* 	int used=0; */
-/* 	int broke = 0; */
-/* 	ba_node_t *ba_node = NULL; */
-	
-/* 	ListIterator itr; */
-/* 	static bool found = false; */
-
-/* 	path_add->geometry[X] = node_src[X]; */
-/* #ifdef HAVE_BG */
-/* 	path_add->geometry[Y] = node_src[Y]; */
-/* 	path_add->geometry[Z] = node_src[Z]; */
-/* #endif */
-/* 	path_add->dim = dim; */
-/* 	path_add->in = source_port; */
-	
-/* 	if(count>=best_count) { */
-/* 		xfree(path_add); */
-/* 		return 0; */
-/* 	} */
-
-/* 	itr = list_iterator_create(nodes); */
-/* 	while((ba_node = (ba_node_t*) list_next(itr))) { */
-		
-/* #ifdef HAVE_BG */
-/* 		if(node_tar[X] == ba_node->coord[X]  */
-/* 		   && node_tar[Y] == ba_node->coord[Y]  */
-/* 		   && node_tar[Z] == ba_node->coord[Z]) { */
-/* 			broke = 1; */
-/* 			break; */
-/* 		} */
-/* #else */
-/* 		if(node_tar[X] == ba_node->coord[X]) { */
-/* 			broke = 1; */
-/* 			break; */
-/* 		} */
-/* #endif */
-		
-/* 	} */
-/* 	list_iterator_destroy(itr); */
-/* 	ba_node = &ba_system_ptr-> */
-/* 		grid[node_tar[X]] */
-/* #ifdef HAVE_BG */
-/* 		[node_tar[Y]] */
-/* 		[node_tar[Z]] */
-/* #endif */
-/* 		; */
-/* 	if(!broke && count>0 */
-/* 	   && !ba_node->used  */
-/* 	   && (ba_node->phys_x < highest_phys_x)) { */
-		
-/* 		debug3("this one not found %c%c%c", */
-/* 		       alpha_num[node_tar[X]], */
-/* 		       alpha_num[node_tar[Y]], */
-/* 		       alpha_num[node_tar[Z]]); */
-		
-/* 		broke = 0; */
-				
-/* 		if((source_port%2)) */
-/* 			target_port=1; */
-		
-/* 		list_destroy(best_path); */
-/* 		best_path = list_create(_delete_path_list); */
-/* 		found = true; */
-/* 		path_add->out = target_port; */
-/* 		list_push(path, path_add); */
-		
-/* 		itr = list_iterator_create(path); */
-/* 		while((path_switch = (ba_path_switch_t*) list_next(itr))){ */
-		
-/* 			temp_switch = (ba_path_switch_t *)  */
-/* 				xmalloc(sizeof(ba_path_switch_t)); */
-			 
-/* 			temp_switch->geometry[X] = path_switch->geometry[X]; */
-/* #ifdef HAVE_BG */
-/* 			temp_switch->geometry[Y] = path_switch->geometry[Y]; */
-/* 			temp_switch->geometry[Z] = path_switch->geometry[Z]; */
-/* #endif */
-/* 			temp_switch->dim = path_switch->dim; */
-/* 			temp_switch->in = path_switch->in; */
-/* 			temp_switch->out = path_switch->out; */
-/* 			list_append(best_path,temp_switch); */
-/* 		} */
-/* 		list_iterator_destroy(itr); */
-/* 		best_count = count; */
-/* 		return 1; */
-/* 	}  */
-
-/* 	if(source_port==0 || source_port==3 || source_port==5) { */
-/* 		if(count==0) { */
-/* 			ports_to_try[0] = 2; */
-/* 			ports_to_try[1] = 4;	 */
-/* 		} else { */
-/* 			ports_to_try[0] = 4; */
-/* 			ports_to_try[1] = 2;	 */
-/* 		} */
-/* 	} */
-			
-/* 	for(i=0;i<2;i++) { */
-/* 		used=0; */
-/* 		if(!curr_switch->int_wire[ports_to_try[i]].used) { */
-/* 			itr = list_iterator_create(path); */
-/* 			while((path_switch =  */
-/* 			       (ba_path_switch_t*) list_next(itr))){ */
-				
-/* 				if(((path_switch->geometry[X] == node_src[X])  */
-/* #ifdef HAVE_BG */
-/* 				    && (path_switch->geometry[Y]  */
-/* 					== node_src[Y]) */
-/* 				    && (path_switch->geometry[Z]  */
-/* 					== node_tar[Z]) */
-/* #endif */
-/* 					   )) { */
-					
-/* 					if( path_switch->out */
-/* 					    == ports_to_try[i]) { */
-/* 						used = 1; */
-/* 						break; */
-/* 					} */
-/* 				} */
-/* 			} */
-/* 			list_iterator_destroy(itr); */
-			
-/* 			if(curr_switch-> */
-/* 			   ext_wire[ports_to_try[i]].node_tar[X] */
-/* 			   == curr_switch->ext_wire[0].node_tar[X]   */
-/* #ifdef HAVE_BG */
-/* 			   && curr_switch-> */
-/* 			   ext_wire[ports_to_try[i]].node_tar[Y]  */
-/* 			   == curr_switch->ext_wire[0].node_tar[Y]  */
-/* 			   && curr_switch-> */
-/* 			   ext_wire[ports_to_try[i]].node_tar[Z]  */
-/* 			   == curr_switch->ext_wire[0].node_tar[Z] */
-/* #endif */
-/* 				) { */
-/* 				continue; */
-/* 			} */
-						
-/* 			if(!used) { */
-/* 				port_tar = curr_switch-> */
-/* 					ext_wire[ports_to_try[i]].port_tar; */
-/* 				node_tar = curr_switch-> */
-/* 					ext_wire[ports_to_try[i]].node_tar; */
-				
-/* 				next_switch = &ba_system_ptr-> */
-/* 					grid[node_tar[X]] */
-/* #ifdef HAVE_BG */
-/* 					[node_tar[Y]] */
-/* 					[node_tar[Z]] */
-/* #endif */
-/* 					.axis_switch[X]; */
-				
-/* 				count++; */
-/* 				path_add->out = ports_to_try[i]; */
-/* 				list_push(path, path_add); */
-/* 				debug3("looking at this one " */
-/* 				       "%c%c%c %d -> %c%c%c %d", */
-/* 				       alpha_num[ba_node->coord[X]], */
-/* 				       alpha_num[ba_node->coord[Y]], */
-/* 				       alpha_num[ba_node->coord[Z]], */
-/* 				       ports_to_try[i], */
-/* 				       alpha_num[node_tar[X]], */
-/* 				       alpha_num[node_tar[Y]], */
-/* 				       alpha_num[node_tar[Z]], */
-/* 				       port_tar); */
-		
-/* 				_find_passthrough(next_switch, port_tar, nodes, */
-/* 						dim, count, highest_phys_x); */
-/* 				while((temp_switch = list_pop(path))  */
-/* 				      != path_add){ */
-/* 					xfree(temp_switch); */
-/* 					debug3("something here 2"); */
-/* 				} */
-/* 			} */
-/* 		} */
-/* 	} */
-/* 	xfree(path_add); */
-/* 	return 0; */
-/* } */
+/*
+ * Used to tie the end of the block to the start. best_path and path
+ * should both be set up before calling this function.
+ *
+ * IN: curr_switch -
+ * IN: source_port - 
+ * IN: dim -
+ * IN: count -
+ * IN: start -
+ * 
+ * RET: 0 on failure, 1 on success
+ *
+ * Sets up global variable best_path, and best_count.  On success
+ * best_count will be >= BEST_COUNT_INIT you can call _set_best_path
+ * to apply this path to the main system (ba_system_ptr)
+ */
 
 static int _finish_torus(ba_switch_t *curr_switch, int source_port,
-			 List nodes, int dim, int count, int *start)
+			 int dim, int count, int *start)
 {
 	ba_switch_t *next_switch = NULL;
-	ba_path_switch_t *path_add =
-		(ba_path_switch_t *) xmalloc(sizeof(ba_path_switch_t));
+	ba_path_switch_t *path_add = xmalloc(sizeof(ba_path_switch_t));
 	ba_path_switch_t *path_switch = NULL;
 	ba_path_switch_t *temp_switch = NULL;
 	int port_tar;
@@ -4981,18 +4766,16 @@ static int _finish_torus(ba_switch_t *curr_switch, int source_port,
 			target_port=1;
 		if(!curr_switch->int_wire[target_port].used) {
 			
-			list_destroy(best_path);
-			best_path = list_create(_delete_path_list);
+			list_flush(best_path);
+			
 			found = true;
 			path_add->out = target_port;
 			list_push(path, path_add);
 			
 			itr = list_iterator_create(path);
-			while((path_switch =
-			       (ba_path_switch_t*) list_next(itr))){
+			while((path_switch = list_next(itr))) {
 				
-				temp_switch = (ba_path_switch_t *)
-					xmalloc(sizeof(ba_path_switch_t));
+				temp_switch = xmalloc(sizeof(ba_path_switch_t));
 				
 				temp_switch->geometry[X] =
 					path_switch->geometry[X];
@@ -5022,8 +4805,7 @@ static int _finish_torus(ba_switch_t *curr_switch, int source_port,
 		used=0;
 		if(!curr_switch->int_wire[ports_to_try[i]].used) {
 			itr = list_iterator_create(path);
-			while((path_switch =
-			       (ba_path_switch_t*) list_next(itr))){
+			while((path_switch = list_next(itr))){
 				
 				if(((path_switch->geometry[X] == node_src[X])
 #ifdef HAVE_BG
@@ -5058,8 +4840,7 @@ static int _finish_torus(ba_switch_t *curr_switch, int source_port,
 				node_tar = curr_switch->
 					ext_wire[ports_to_try[i]].node_tar;
 				
-				next_switch = &ba_system_ptr->
-					grid[node_tar[X]]
+				next_switch = &ba_system_ptr->grid[node_tar[X]]
 #ifdef HAVE_BG
 					[node_tar[Y]]
 					[node_tar[Z]]
@@ -5070,8 +4851,8 @@ static int _finish_torus(ba_switch_t *curr_switch, int source_port,
 				count++;
 				path_add->out = ports_to_try[i];
 				list_push(path, path_add);
-				_finish_torus(next_switch, port_tar, nodes,
-						dim, count, start);
+				_finish_torus(next_switch, port_tar, 
+					      dim, count, start);
 				while((temp_switch = list_pop(path))
 				      != path_add){
 					xfree(temp_switch);
@@ -5084,14 +4865,22 @@ static int _finish_torus(ba_switch_t *curr_switch, int source_port,
        return 0;
 }
 
+/*
+ * using best_path set up previously from _finish_torus or
+ * _find_next_free_using_port_2.  Will set up the path contained there
+ * into the main virtual system.  With will also set the passthrough
+ * flag if there was a passthrough used.
+ */
 static int *_set_best_path()
 {
 	ListIterator itr;
 	ba_path_switch_t *path_switch = NULL;
 	ba_switch_t *curr_switch = NULL; 
 	int *geo = NULL;
+
 	if(!best_path)
 		return NULL;
+
 	itr = list_iterator_create(best_path);
 	while((path_switch = (ba_path_switch_t*) list_next(itr))) {
 		if(passthrough && path_switch->in > 1 && path_switch->out > 1) {
@@ -5106,15 +4895,13 @@ static int *_set_best_path()
 		       path_switch->in, path_switch->out);
 		if(!geo)
 			geo = path_switch->geometry;
-		curr_switch = &ba_system_ptr->
-			grid
+		curr_switch = &ba_system_ptr->grid
 			[path_switch->geometry[X]]
 			[path_switch->geometry[Y]]
 			[path_switch->geometry[Z]].  
 			axis_switch[path_switch->dim];
 #else
-		curr_switch = &ba_system_ptr->
-			grid[path_switch->geometry[X]].
+		curr_switch = &ba_system_ptr->grid[path_switch->geometry[X]].
 			axis_switch[path_switch->dim];
 #endif
 	

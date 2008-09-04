@@ -488,7 +488,6 @@ extern bg_record_t *find_and_remove_org_from_bg_list(List my_list,
 		if(bit_equal(bg_record->bitmap, found_record->bitmap)
 		   && bit_equal(bg_record->ionode_bitmap,
 				found_record->ionode_bitmap)) {
-			
 			if(!strcmp(bg_record->bg_block_id,
 				   found_record->bg_block_id)) {
 				list_remove(itr);
