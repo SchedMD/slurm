@@ -2709,7 +2709,7 @@ static int _append_geo(int *geometry, List geos, int rotate)
 }
 
 /*
- *
+ * IN/OUT
  */
 static int _fill_in_coords(List results, List start_list,
 			    int *geometry, int conn_type)
@@ -2722,7 +2722,7 @@ static int _fill_in_coords(List results, List start_list,
 	ba_switch_t *curr_switch = NULL; 
 	ba_switch_t *next_switch = NULL; 
 	
-	if(!start_list)
+	if(!start_list || !results)
 		return 0;
 	itr = list_iterator_create(start_list);
 	while((check_node = (ba_node_t*) list_next(itr))) {		
@@ -2756,6 +2756,11 @@ static int _fill_in_coords(List results, List start_list,
 					       alpha_num[ba_node->coord[Z]]);
 					list_append(results, ba_node);
 					next_switch = &ba_node->axis_switch[X];
+					
+					/* since we are going off the
+					 * main system we can send NULL
+					 * here
+					 */
 					_copy_the_path(NULL, curr_switch, 
 						       next_switch, 
 						       0, X);
@@ -2788,6 +2793,24 @@ failed:
 	return rc;
 }
 
+/*
+ * Copy a path through the wiring of a switch to another switch on a
+ * starting port on a dimension.
+ *
+ * IN/OUT: nodes - Local list of midplanes you are keeping track of.  If
+ *         you visit any new midplanes a copy from ba_system_grid  
+ *         will be added to the list.  If NULL the path will be
+ *         set in mark_switch of the main virtual system (ba_system_grid).  
+ * IN: curr_switch - The switch you want to copy the path of
+ * IN/OUT: mark_switch - The switch you want to fill in.  On success
+ *         this switch will contain a complete path from the curr_switch
+ *         starting from the source port.
+ * IN: source - source port number (If calling for the first time
+ *         should be 0 since we are looking for 1 at the end)
+ * IN: dim - Dimension XYZ
+ *
+ * RET: on success 1, on error 0
+ */
 static int _copy_the_path(List nodes, ba_switch_t *curr_switch, 
 			  ba_switch_t *mark_switch, 
 			  int source, int dim)
@@ -2798,7 +2821,8 @@ static int _copy_the_path(List nodes, ba_switch_t *curr_switch,
 	int port_tar, port_tar1;
 	ba_switch_t *next_switch = NULL; 
 	ba_switch_t *next_mark_switch = NULL; 
-	/*set the switch to not be used */
+       
+	/* Copy the source used and port_tar */
 	mark_switch->int_wire[source].used = 
 		curr_switch->int_wire[source].used;
 	mark_switch->int_wire[source].port_tar = 
@@ -2806,6 +2830,7 @@ static int _copy_the_path(List nodes, ba_switch_t *curr_switch,
 
 	port_tar = curr_switch->int_wire[source].port_tar;
 	
+	/* Now to the same thing from the other end */
 	mark_switch->int_wire[port_tar].used = 
 		curr_switch->int_wire[port_tar].used;
 	mark_switch->int_wire[port_tar].port_tar = 
@@ -2828,6 +2853,7 @@ static int _copy_the_path(List nodes, ba_switch_t *curr_switch,
 		       port_tar);	
 	
 	if(port_tar == 1) {
+		/* found the end of the line */
 		mark_switch->int_wire[1].used = 
 			curr_switch->int_wire[1].used;
 		mark_switch->int_wire[1].port_tar = 
@@ -2841,12 +2867,18 @@ static int _copy_the_path(List nodes, ba_switch_t *curr_switch,
 	if(node_curr[X] == node_tar[X]
 	   && node_curr[Y] == node_tar[Y]
 	   && node_curr[Z] == node_tar[Z]) {
+		/* We are going to the same node! this should never
+		   happen */
 		debug4("something bad happened!!");
 		return 0;
 	}
+
+	/* see what the next switch is going to be */
 	next_switch = &ba_system_ptr->
 		grid[node_tar[X]][node_tar[Y]][node_tar[Z]].axis_switch[dim];
 	if(!nodes) {
+		/* If no nodes then just get the next switch to fill
+		   in from the main system */
 		next_mark_switch = &ba_system_ptr->
 			grid[mark_node_tar[X]]
 			[mark_node_tar[Y]]
@@ -2855,6 +2887,7 @@ static int _copy_the_path(List nodes, ba_switch_t *curr_switch,
 	} else {
 		ba_node_t *ba_node = NULL;
 		ListIterator itr = list_iterator_create(nodes);
+		/* see if we have already been to this node */
 		while((ba_node = list_next(itr))) {
 			if (ba_node->coord[X] == mark_node_tar[X] &&
 			    ba_node->coord[Y] == mark_node_tar[Y] &&
@@ -2863,6 +2896,7 @@ static int _copy_the_path(List nodes, ba_switch_t *curr_switch,
 		}
 		list_iterator_destroy(itr);
 		if(!ba_node) {
+			/* If node grab a copy and add it to the list */
 			ba_node = ba_copy_node(&ba_system_ptr->
 					       grid[mark_node_tar[X]]
 					       [mark_node_tar[Y]]
@@ -2877,8 +2911,10 @@ static int _copy_the_path(List nodes, ba_switch_t *curr_switch,
 		next_mark_switch = &ba_node->axis_switch[dim];
 			
 	}
+
+	/* Keep going until we reach the end of the line */
 	return _copy_the_path(nodes, next_switch, next_mark_switch,
-		       port_tar, dim);
+			      port_tar, dim);
 }
 
 static int _find_yz_path(ba_node_t *ba_node, int *first, 
