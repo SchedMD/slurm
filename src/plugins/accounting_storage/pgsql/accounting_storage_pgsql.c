@@ -1143,7 +1143,7 @@ extern int jobacct_storage_p_job_start(PGconn *acct_pgsql_db,
 	if (job_ptr->nodes && job_ptr->nodes[0])
 		nodes = job_ptr->nodes;
 	else
-		nodes = "(null)";
+		nodes = "None assigned";
 
 	if(job_ptr->batch_flag)
 		track_steps = 1;
@@ -1250,15 +1250,24 @@ extern int jobacct_storage_p_job_complete(PGconn *acct_pgsql_db,
 	if (job_ptr->nodes && job_ptr->nodes[0])
 		nodes = job_ptr->nodes;
 	else
-		nodes = "(null)";
-
+		nodes = "None assigned";
+	
 	if(!job_ptr->db_index) {
-		job_ptr->db_index = _get_db_index(acct_pgsql_db,
-						  job_ptr->details->submit_time,
-						  job_ptr->job_id,
-						  job_ptr->assoc_id);
-		if(job_ptr->db_index == -1) 
-			return SLURM_ERROR;
+		if(!(job_ptr->db_index =
+		     _get_db_index(acct_pgsql_db,
+				   job_ptr->details->submit_time,
+				   job_ptr->job_id,
+				   job_ptr->assoc_id))) {
+			/* If we get an error with this just fall
+			 * through to avoid an infinite loop
+			 */
+			if(jobacct_storage_p_job_start(acct_pgsql_db, job_ptr)
+			   == SLURM_ERROR) {
+				error("couldn't add job %u at job completion",
+				      job_ptr->job_id);
+				return SLURM_SUCCESS;
+			}
+		}
 	}
 	query = xstrdup_printf("update %s set start=%u, endtime=%u, state=%d, "
 			       "nodelist='%s', comp_code=%u, "
