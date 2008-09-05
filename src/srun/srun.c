@@ -250,7 +250,6 @@ int srun(int ac, char **av)
 		if (!job || create_job_step(job) < 0)
 			exit(1);
 	} else {
-		got_alloc = 1;
 		/* Combined job allocation and job step launch */
 #ifdef HAVE_FRONT_END
 		uid_t my_uid = getuid();
@@ -263,6 +262,7 @@ int srun(int ac, char **av)
 	
 		if ( !(resp = allocate_nodes()) ) 
 			exit(1);
+		got_alloc = 1;
 		_print_job_information(resp);
 		_set_cpu_env_var(resp);
 		job = job_create_allocation(resp);
