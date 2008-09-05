@@ -1838,7 +1838,6 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		 * take us here. */
 		return SLURM_SUCCESS;
 	} else {
-		info("here %d", job_return_code);
 		if (job_return_code == NO_VAL) {
 			job_ptr->job_state = JOB_CANCELLED | job_comp_flag;
 			job_ptr->requid = uid;
