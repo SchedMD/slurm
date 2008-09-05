@@ -1838,6 +1838,7 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		 * take us here. */
 		return SLURM_SUCCESS;
 	} else {
+		info("here %d", job_return_code);
 		if (job_return_code == NO_VAL) {
 			job_ptr->job_state = JOB_CANCELLED | job_comp_flag;
 			job_ptr->requid = uid;
@@ -1851,8 +1852,9 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 			job_ptr->job_state = JOB_TIMEOUT  | job_comp_flag;
 			job_ptr->exit_code = MAX(job_ptr->exit_code, 1);
 			job_ptr->state_reason = FAIL_TIMEOUT;
-		} else
+		} else 
 			job_ptr->job_state = JOB_COMPLETE | job_comp_flag;
+		
 		if (suspended) {
 			job_ptr->end_time = job_ptr->suspend_time;
 			job_ptr->tot_sus_time += 
@@ -5002,6 +5004,16 @@ extern void job_completion_logger(struct job_record  *job_ptr)
 	}
 
 	g_slurm_jobcomp_write(job_ptr);
+
+	/* 
+	 * This means the job wasn't ever eligible, but we want to
+	 * keep track of all jobs, so we will set the db_inx to
+	 * INFINITE and the database will understand what happened.
+	 */ 
+	if(!job_ptr->nodes && !job_ptr->db_index) {
+		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
+	}
+
 	jobacct_storage_g_job_complete(acct_db_conn, job_ptr);
 }
 

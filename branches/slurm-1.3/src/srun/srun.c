@@ -110,7 +110,7 @@
 
 mpi_plugin_client_info_t mpi_job_info[1];
 static struct termios termdefaults;
-int global_rc;
+uint32_t global_rc = 0;
 srun_job_t *job = NULL;
 
 struct {
@@ -436,7 +436,7 @@ cleanup:
 	_task_state_struct_free();
 	log_fini();
 
-	return global_rc;
+	return (int)global_rc;
 }
 
 static int _call_spank_local_user (srun_job_t *job)
@@ -956,7 +956,7 @@ _task_finish(task_exit_msg_t *msg)
 	char buf[2048], *core_str = "", *msg_str, *node_list = NULL;
 	static bool first_done = true;
 	static bool first_error = true;
-	int rc = 0;
+	uint32_t rc = 0;
 	int i;
 
 	verbose("%u tasks finished (rc=%u)",
@@ -978,7 +978,6 @@ _task_finish(task_exit_msg_t *msg)
 		}
 	} else if (WIFSIGNALED(msg->return_code)) {
 		bit_or(task_state.finish_abnormal, tasks_exited);
-		rc = 1;
 		msg_str = strsignal(WTERMSIG(msg->return_code));
 #ifdef WCOREDUMP
 		if (WCOREDUMP(msg->return_code))
@@ -986,9 +985,11 @@ _task_finish(task_exit_msg_t *msg)
 #endif
 		node_list = _taskids_to_nodelist(tasks_exited);
 		if (job->state >= SRUN_JOB_CANCELLED) {
+			rc = NO_VAL;
 			verbose("%s: task %s: %s%s", 
 				node_list, buf, msg_str, core_str);
 		} else {
+			rc = msg->return_code;
 			error("%s: task %s: %s%s", 
 			      node_list, buf, msg_str, core_str);
 		}

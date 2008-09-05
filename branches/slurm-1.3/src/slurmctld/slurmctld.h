@@ -1411,7 +1411,7 @@ extern bool step_on_node(struct job_record  *job_ptr,
  * RET 0 on success, otherwise ESLURM error code
  */
 extern int step_partial_comp(step_complete_msg_t *req, int *rem,
-		int *max_rc);
+			     uint32_t *max_rc);
 
 /* Update time stamps for job step suspend */
 extern void suspend_job_step(struct job_record *job_ptr);
