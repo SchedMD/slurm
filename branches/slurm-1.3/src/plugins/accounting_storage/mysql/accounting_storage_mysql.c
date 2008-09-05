@@ -7133,12 +7133,12 @@ extern int jobacct_storage_p_job_complete(mysql_conn_t *mysql_conn,
 #ifdef HAVE_MYSQL
 	char *query = NULL, *nodes = NULL;
 	int rc=SLURM_SUCCESS;
-	
+
 	if (!job_ptr->db_index 
 	    && (!job_ptr->details || !job_ptr->details->submit_time)) {
 		error("jobacct_storage_p_job_complete: "
 		      "Not inputing this job, it has no submit time.");
-		return SLURM_SUCCESS;
+		return SLURM_ERROR;
 	}
 
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
