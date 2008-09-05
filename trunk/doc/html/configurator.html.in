@@ -197,6 +197,7 @@ function displayfile()
    "#HealthCheckProgram= <br>" +
    "InactiveLimit=" + document.config.inactive_limit.value + "<br>" +
    "MinJobAge=" + document.config.min_job_age.value + "<br>" +
+   "#CompleteWait=0 <br>" +
    "KillWait=" + document.config.kill_wait.value + "<br>" +
    "#MessageTimeout=10 <br>" +
    "SlurmctldTimeout=" + document.config.slurmctld_timeout.value + "<br>" +

@@ -2241,6 +2241,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	pack16(build_ptr->cache_groups, buffer);
 	packstr(build_ptr->checkpoint_type, buffer);
 	packstr(build_ptr->cluster_name, buffer);
+	pack16(build_ptr->complete_wait, buffer);
 	packstr(build_ptr->control_addr, buffer);
 	packstr(build_ptr->control_machine, buffer);
 	packstr(build_ptr->crypto_type, buffer);
@@ -2394,6 +2395,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpackstr_xmalloc(&build_ptr->checkpoint_type, &uint32_tmp,
 			       buffer);
 	safe_unpackstr_xmalloc(&build_ptr->cluster_name, &uint32_tmp, buffer);
+	safe_unpack16(&build_ptr->complete_wait, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->control_addr, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->control_machine, &uint32_tmp,
 			       buffer);

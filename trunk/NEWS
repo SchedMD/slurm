@@ -12,6 +12,9 @@ documents those changes that are of interest to users and admins.
  -- Added configuration parameter PrologSlurmctld, which can be used to boot
     nodes into a particular state for each job. See "man slurm.conf" for 
     details.
+ -- Add configuration parameter CompleteTime to control how long to wait for 
+    a job's completion before allocating already released resources to pending
+    jobs. This can be used to reduce fragmentation of resources.
 
 * Changes in SLURM 1.4.0-pre1
 =============================

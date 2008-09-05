@@ -138,6 +138,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"CheckpointType", S_P_STRING},
 	{"CacheGroups", S_P_UINT16},
 	{"ClusterName", S_P_STRING},
+	{"CompleteWait", S_P_UINT16},
 	{"ControlAddr", S_P_STRING},
 	{"ControlMachine", S_P_STRING},
 	{"CryptoType", S_P_STRING},
@@ -1213,6 +1214,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->cache_groups		= 0;
 	xfree (ctl_conf_ptr->checkpoint_type);
 	xfree (ctl_conf_ptr->cluster_name);
+	ctl_conf_ptr->complete_wait		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->control_addr);
 	xfree (ctl_conf_ptr->control_machine);
 	xfree (ctl_conf_ptr->crypto_type);
@@ -1523,6 +1525,9 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	s_p_get_string(&conf->cluster_name, "ClusterName", hashtbl);
 
+	if (!s_p_get_uint16(&conf->complete_wait, "CompleteWait", hashtbl))
+		conf->complete_wait = DEFAULT_COMPLETE_WAIT;
+
 	if (!s_p_get_string(&conf->control_machine, "ControlMachine", hashtbl))
 		fatal ("validate_and_set_defaults: "
 		       "ControlMachine not specified.");
@@ -1580,7 +1585,8 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (s_p_get_uint32(&conf->def_mem_per_task, "DefMemPerCPU", hashtbl))
 		conf->def_mem_per_task |= MEM_PER_CPU;
-	else if (!s_p_get_uint32(&conf->def_mem_per_task, "DefMemPerNode", hashtbl))
+	else if (!s_p_get_uint32(&conf->def_mem_per_task, "DefMemPerNode", 
+				 hashtbl))
 		conf->def_mem_per_task = DEFAULT_MEM_PER_CPU;
 
 	if (!s_p_get_boolean((bool *) &conf->disable_root_jobs, 
@@ -1707,8 +1713,10 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_uint16(&conf->get_env_timeout, "GetEnvTimeout", hashtbl))
 		conf->get_env_timeout = DEFAULT_GET_ENV_TIMEOUT;
 
-	s_p_get_uint16(&conf->health_check_interval, "HealthCheckInterval", hashtbl);
-	s_p_get_string(&conf->health_check_program, "HealthCheckProgram", hashtbl);
+	s_p_get_uint16(&conf->health_check_interval, "HealthCheckInterval", 
+		       hashtbl);
+	s_p_get_string(&conf->health_check_program, "HealthCheckProgram", 
+		       hashtbl);
 
 	if (!s_p_get_uint16(&conf->kill_wait, "KillWait", hashtbl))
 		conf->kill_wait = DEFAULT_KILL_WAIT;
