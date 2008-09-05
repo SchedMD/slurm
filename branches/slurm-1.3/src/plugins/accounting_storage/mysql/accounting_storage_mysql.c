@@ -7144,6 +7144,10 @@ extern int jobacct_storage_p_job_complete(mysql_conn_t *mysql_conn,
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 	debug2("mysql_jobacct_job_complete() called");
+	
+	/* If we get an error with this just fall through to avoid an
+	 * infinite loop
+	 */
 	if (job_ptr->end_time == 0) {
 		debug("mysql_jobacct: job %u never started", job_ptr->job_id);
 		return SLURM_SUCCESS;
