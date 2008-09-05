@@ -500,6 +500,7 @@ no_cond:
 
 		if(row[JOB_REQ_ACCOUNT])
 			job->account = xstrdup(row[JOB_REQ_ACCOUNT]);
+
 		if(row[JOB_REQ_BLOCKID])
 			job->blockid = xstrdup(row[JOB_REQ_BLOCKID]);
 
@@ -569,11 +570,15 @@ no_cond:
 			}
 		} else {
 			job->suspended = atoi(row[JOB_REQ_SUSPENDED]);
-			if(!job->end) {
+
+			if(!job->start) {
+				job->elapsed = 0;
+			} else if(!job->end) {
 				job->elapsed = now - job->start;
 			} else {
 				job->elapsed = job->end - job->start;
 			}
+
 			job->elapsed -= job->suspended;
 		}
 
@@ -581,8 +586,13 @@ no_cond:
 		job->jobname = xstrdup(row[JOB_REQ_NAME]);
 		job->gid = atoi(row[JOB_REQ_GID]);
 		job->exitcode = atoi(row[JOB_REQ_COMP_CODE]);
-		job->partition = xstrdup(row[JOB_REQ_PARTITION]);
-		job->nodes = xstrdup(row[JOB_REQ_NODELIST]);
+
+		if(row[JOB_REQ_PARTITION])
+			job->partition = xstrdup(row[JOB_REQ_PARTITION]);
+
+		if(row[JOB_REQ_NODELIST])
+			job->nodes = xstrdup(row[JOB_REQ_NODELIST]);
+
 		if (!job->nodes || !strcmp(job->nodes, "(null)")) {
 			xfree(job->nodes);
 			job->nodes = xstrdup("(unknown)");
