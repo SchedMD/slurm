@@ -717,6 +717,7 @@ _wait_for_alloc_rpc(const listen_t *listen, int sleep_time,
 			case EINTR:
 				*resp = NULL;
 				return -1;
+			case EBADF:
 			case ENOMEM:
 			case EINVAL:
 			case EFAULT:
