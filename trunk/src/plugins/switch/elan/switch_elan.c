@@ -1,8 +1,8 @@
 /*****************************************************************************\
  *  switch_elan.c - Library routines for initiating jobs on QsNet. 
- *  $Id$
  *****************************************************************************
- *  Copyright (C) 2003-2006 The Regents of the University of California.
+ *  Copyright (C) 2003-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov>, et. al.
  *  LLNL-CODE-402394.
@@ -307,12 +307,6 @@ int switch_p_libstate_restore (char *dir_name, bool recover)
 int switch_p_libstate_clear ( void )
 {
 	return qsw_clear();
-}
-
-
-bool switch_p_no_frag ( void )
-{
-	return true;
 }
 
 /*

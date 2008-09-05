@@ -1,8 +1,8 @@
 /*****************************************************************************\
- **  federation.c - Library routines for initiating jobs on IBM Federation
- **  $Id$
+ *  federation.c - Library routines for initiating jobs on IBM Federation
  *****************************************************************************
- *  Copyright (C) 2004 The Regents of the University of California.
+ *  Copyright (C) 2004-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Jason King <jking@llnl.gov>
  *  LLNL-CODE-402394.

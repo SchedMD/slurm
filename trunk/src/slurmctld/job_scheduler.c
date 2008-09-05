@@ -126,11 +126,13 @@ extern bool job_is_completing(void)
 	bool completing = false;
 	ListIterator job_iterator;
 	struct job_record *job_ptr = NULL;
-	time_t recent = time(NULL) - (slurmctld_conf.kill_wait + 2);
+	uint16_t complete_wait = slurm_get_complete_wait();
+	time_t recent;
 
-	if (!job_list)
+	if ((job_list == NULL) || (complete_wait == 0))
 		return completing;
 
+	recent = time(NULL) - complete_wait;
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if ((job_ptr->job_state & JOB_COMPLETING) &&
@@ -270,7 +272,7 @@ extern int schedule(void)
 
 	lock_slurmctld(job_write_lock);
 	/* Avoid resource fragmentation if important */
-	if ((!wiki_sched) && switch_no_frag() && job_is_completing()) {
+	if ((!wiki_sched) && job_is_completing()) {
 		unlock_slurmctld(job_write_lock);
 		debug("schedule() returning, some job still completing");
 		return SLURM_SUCCESS;

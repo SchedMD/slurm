@@ -181,6 +181,23 @@ void slurm_api_clear_config(void)
 	slurm_conf_destroy();
 }
 
+/* slurm_get_complete_wait
+ * RET CompleteWait value from slurm.conf
+ */
+uint16_t slurm_get_complete_wait(void)
+{
+	uint16_t complete_wait = 0;
+	slurm_ctl_conf_t *conf;
+
+	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		complete_wait = conf->complete_wait;
+		slurm_conf_unlock();
+	}
+	return complete_wait;
+}
+
 /* update internal configuration data structure as needed.
  *	exit with lock set */
 /* static inline void _lock_update_config() */
