@@ -961,6 +961,8 @@ typedef struct slurm_ctl_conf {
 	uint16_t cache_groups;	/* cache /etc/groups to avoid initgroups(2) */
 	char *checkpoint_type;	/* checkpoint plugin type */
 	char *cluster_name;     /* general name of the entire cluster */
+	uint16_t complete_wait;	/* seconds to wait for job completion before
+				 * scheduling another job */
 	char *control_addr;	/* comm path of slurmctld primary server */
 	char *control_machine;	/* name of slurmctld primary server */
 	char *crypto_type;	/* cryptographic signature plugin */

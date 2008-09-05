@@ -258,6 +258,11 @@ static void _layout_ctl_conf(GtkTreeStore *treestore,
 	add_display_treestore_line(update, treestore, &iter, 
 				   "CheckpointType",
 				   slurm_ctl_conf_ptr->checkpoint_type);
+	snprintf(temp_str, sizeof(temp_str), "%u", 
+		 slurm_ctl_conf_ptr->complete_wait);
+	add_display_treestore_line(update, treestore, &iter, 
+				   "CompleteWait", 
+				   temp_str);
 	add_display_treestore_line(update, treestore, &iter, 
 				   "ControlAddr", 
 				   slurm_ctl_conf_ptr->control_addr);
@@ -267,11 +272,17 @@ static void _layout_ctl_conf(GtkTreeStore *treestore,
 	add_display_treestore_line(update, treestore, &iter, 
 				   "CryptoType", 
 				   slurm_ctl_conf_ptr->crypto_type);
-	snprintf(temp_str, sizeof(temp_str), "%u", 
-		 slurm_ctl_conf_ptr->def_mem_per_task);
-	add_display_treestore_line(update, treestore, &iter, 
-				   "DefMemPerTask", 
-				   temp_str);
+	if (slurm_ctl_conf_ptr->def_mem_per_task & MEM_PER_CPU) {
+		snprintf(temp_str, sizeof(temp_str), "%u", 
+			 slurm_ctl_conf_ptr->def_mem_per_task & (~MEM_PER_CPU));
+		add_display_treestore_line(update, treestore, &iter, 
+					   "DefMemPerCPU", temp_str);
+	} else {
+		snprintf(temp_str, sizeof(temp_str), "%u", 
+			 slurm_ctl_conf_ptr->def_mem_per_task);
+		add_display_treestore_line(update, treestore, &iter, 
+					   "DefMemPerNode", temp_str);
+	}
 	add_display_treestore_line(update, treestore, &iter, 
 				   "Epilog", 
 				   slurm_ctl_conf_ptr->epilog);
@@ -324,7 +335,8 @@ static void _layout_ctl_conf(GtkTreeStore *treestore,
 
 	add_display_treestore_line(update, treestore, &iter, 
 				   "JobCredentialPrivateKey", 
-				   slurm_ctl_conf_ptr->job_credential_private_key);
+				   slurm_ctl_conf_ptr->
+				   job_credential_private_key);
 	add_display_treestore_line(update, treestore, &iter, 
 				   "JobCredentialPublicCertificate", 
 				   slurm_ctl_conf_ptr->
@@ -346,11 +358,17 @@ static void _layout_ctl_conf(GtkTreeStore *treestore,
 	add_display_treestore_line(update, treestore, &iter, 
 				   "MaxJobCount", 
 				   temp_str);
-	snprintf(temp_str, sizeof(temp_str), "%u", 
-		 slurm_ctl_conf_ptr->max_mem_per_task);
-	add_display_treestore_line(update, treestore, &iter, 
-				   "MaxMemPerTask", 
-				   temp_str);
+	if (slurm_ctl_conf_ptr->max_mem_per_task & MEM_PER_CPU) {
+		snprintf(temp_str, sizeof(temp_str), "%u", 
+			 slurm_ctl_conf_ptr->max_mem_per_task & (~MEM_PER_CPU));
+		add_display_treestore_line(update, treestore, &iter, 
+					   "MaxMemPerCPU", temp_str);
+	} else {
+		snprintf(temp_str, sizeof(temp_str), "%u", 
+			 slurm_ctl_conf_ptr->max_mem_per_task);
+		add_display_treestore_line(update, treestore, &iter, 
+					   "MaxMemPerNode", temp_str);
+	}
 	snprintf(temp_str, sizeof(temp_str), "%u", 
 		 slurm_ctl_conf_ptr->msg_timeout);
 	add_display_treestore_line(update, treestore, &iter, 
