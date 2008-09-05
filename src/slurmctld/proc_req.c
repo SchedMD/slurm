@@ -1800,7 +1800,7 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg)
 		}
 	} else {
 		error_code = job_step_complete(req->job_id, req->job_step_id,
-				uid, job_requeue, step_rc);
+					       uid, job_requeue, step_rc);
 		unlock_slurmctld(job_write_lock);
 		END_TIMER2("_slurm_rpc_step_complete");
 

@@ -233,9 +233,25 @@ static void
 _batch_finish(slurmd_job_t *job, int rc)
 {
 	int i;
-	for (i = 0; i < job->ntasks; i++)
+	for (i = 0; i < job->ntasks; i++) {
+		/* If signalled we only need to check one and then
+		   break out of the loop */ 
+		if(WIFSIGNALED(job->task[i]->estatus)) {
+			switch(WTERMSIG(job->task[i]->estatus)) {
+			case SIGTERM:
+			case SIGKILL:
+			case SIGINT:
+				step_complete.step_rc = NO_VAL;
+				break;
+			default:
+				step_complete.step_rc = job->task[i]->estatus;
+				break;
+			}
+			break;
+		}
 		step_complete.step_rc = MAX(step_complete.step_rc,
 					    WEXITSTATUS(job->task[i]->estatus));
+	}
 
 	if (job->argv[0] && (unlink(job->argv[0]) < 0))
 		error("unlink(%s): %m", job->argv[0]);
@@ -494,10 +510,25 @@ _wait_for_children_slurmstepd(slurmd_job_t *job)
 	}
 
 	/* Find the maximum task return code */
-	for (i = 0; i < job->ntasks; i++)
+	for (i = 0; i < job->ntasks; i++) {
+		/* If signalled we only need to check one and then
+		   break out of the loop */ 
+		if(WIFSIGNALED(job->task[i]->estatus)) {
+			switch(WTERMSIG(job->task[i]->estatus)) {
+			case SIGTERM:
+			case SIGKILL:
+			case SIGINT:
+				step_complete.step_rc = NO_VAL;
+				break;
+			default:
+				step_complete.step_rc = job->task[i]->estatus;
+				break;
+			}
+			break;
+		}
 		step_complete.step_rc = MAX(step_complete.step_rc,
-					 WEXITSTATUS(job->task[i]->estatus));
-
+					    WEXITSTATUS(job->task[i]->estatus));
+	}
 	step_complete.wait_children = false;
 
 	pthread_mutex_unlock(&step_complete.lock);
