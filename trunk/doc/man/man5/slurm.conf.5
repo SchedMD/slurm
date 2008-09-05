@@ -184,10 +184,12 @@ If set to zero, pending jobs will be started as soon as possible.
 Since a COMPLETING job's resources are released for use by other 
 jobs as soon as the \fBEpilog\fR completes on each individual node, 
 this can result in very fragmented resource allocations. 
-In order to minimize fragmentation of resources without substantial
-performance degradation, a value equal to \fBKillWait\fR plus two
-is recommended.
-The default value is 0 seconds for fastest job scheduling.
+To provide jobs with the minimum response time, a value of zero is 
+recommended (no waiting).
+To minimize fragmentation of resources, a value equal to \fBKillWait\fR 
+plus two is recommended. 
+In that case, setting \fBKillWait\fR to a small value may be beneficial.
+The default value of \fBCompleteWait\fR is zero seconds.
 The value may not exceed 65533.
 
 .TP
@@ -514,10 +516,10 @@ The default value is 1.
 \fBKillWait\fR
 The interval, in seconds, given to a job's processes between the 
 SIGTERM and SIGKILL signals upon reaching its time limit. 
-If the job fails to terminate gracefully 
-in the interval specified, it will be forcibly terminated. 
+If the job fails to terminate gracefully in the interval specified, 
+it will be forcibly terminated. 
 The default value is 30 seconds.
-May not exceed 65533.
+The value may not exceed 65533.
 
 .TP
 \fBLicenses\fR
