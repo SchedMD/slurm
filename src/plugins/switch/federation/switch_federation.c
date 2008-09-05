@@ -1,9 +1,9 @@
 /***************************************************************************** \
- **  switch_federation.c - Library routines for initiating jobs on IBM 
- **	Federation
- **  $Id$
+ *  switch_federation.c - Library routines for initiating jobs on IBM 
+ *	Federation
  *****************************************************************************
- *  Copyright (C) 2004-2006 The Regents of the University of California.
+ *  Copyright (C) 2004-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Jason King <jking@llnl.gov>
  *  LLNL-CODE-402394.
@@ -607,10 +607,6 @@ int switch_p_job_attach(switch_jobinfo_t jobinfo, char ***env,
 /*
  * switch functions for other purposes
  */
-bool switch_p_no_frag(void)
-{
-	return false;
-}
 
 /* 
  * Linear search through table of errno values and strings,

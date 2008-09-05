@@ -187,7 +187,7 @@ extern void *backfill_agent(void *args)
 		
 		now = time(NULL);
 		/* Avoid resource fragmentation if important */
-		if (switch_no_frag() && job_is_completing())
+		if (job_is_completing())
 			continue;
 		if ((difftime(now, last_backfill_time) < BACKFILL_INTERVAL) ||
 		    stop_backfill || (!_more_work()))

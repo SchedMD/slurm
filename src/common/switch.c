@@ -1,7 +1,8 @@
 /*****************************************************************************\
  *  src/common/switch.c - Generic switch (interconnect) for slurm
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  LLNL-CODE-402394.
@@ -57,8 +58,7 @@
 typedef struct slurm_switch_ops {
 	int          (*state_save)        ( char *dir_name );
 	int          (*state_restore)     ( char *dir_name, bool recover );
-	
-	bool         (*no_frag)           ( void );
+
 	int          (*alloc_jobinfo)     ( switch_jobinfo_t *jobinfo );
 	int          (*build_jobinfo)     ( switch_jobinfo_t jobinfo,
 						char *nodelist,
@@ -191,7 +191,6 @@ _slurm_switch_get_ops( slurm_switch_context_t c )
 	static const char *syms[] = {
 		"switch_p_libstate_save",
 		"switch_p_libstate_restore",
-		"switch_p_no_frag",
 		"switch_p_alloc_jobinfo",
 		"switch_p_build_jobinfo",
 		"switch_p_copy_jobinfo",
@@ -340,14 +339,6 @@ extern int  switch_clear(void)
 		return SLURM_ERROR;
 
 	return (*(g_context->ops.state_clear))( );
-}
-
-extern bool switch_no_frag(void)
-{
-	if ( switch_init() < 0 )
-		return SLURM_ERROR;
-
-	return (*(g_context->ops.no_frag))( );
 }
 
 extern int  switch_alloc_jobinfo(switch_jobinfo_t *jobinfo)

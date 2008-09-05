@@ -97,6 +97,11 @@ int inline slurm_set_api_config(slurm_protocol_config_t * protocol_conf);
  */
 inline slurm_protocol_config_t *slurm_get_api_config();
 
+/* slurm_get_complete_wait
+ * RET CompleteWait value from slurm.conf
+ */
+uint16_t slurm_get_complete_wait(void);
+
 /* slurm_get_def_mem_per_task
  * RET DefMemPerTask value from slurm.conf
  */

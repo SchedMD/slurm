@@ -1,7 +1,8 @@
 /*****************************************************************************\
  *  src/common/switch.h - Generic switch (interconnect) info for slurm
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  LLNL-CODE-402394.
@@ -92,12 +93,6 @@ extern int  switch_restore(char *dir_name, bool recover);
  * RET         - slurm error code
  */
 extern int  switch_clear(void);
-
-/* report if resource fragmentation is important. if so, delay scheduling a 
- * new job while another is in the process of terminating.
- * RET          - true if fragmentation is important
- */
-extern bool switch_no_frag(void);
 
 /* return the number of a switch-specific error code */
 extern int switch_get_errno(void);

@@ -1,7 +1,8 @@
 /*****************************************************************************\
  *  switch_none.c - Library for managing a switch with no special handling.
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  LLNL-CODE-402394.
@@ -221,11 +222,6 @@ extern int switch_p_get_jobinfo(switch_jobinfo_t switch_job,
 /*
  * switch functions for other purposes
  */
-bool switch_p_no_frag ( void )
-{
-	return false;
-}
-
 extern int switch_p_get_errno(void)
 {
 	return SLURM_SUCCESS;

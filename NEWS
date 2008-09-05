@@ -14,7 +14,8 @@ documents those changes that are of interest to users and admins.
     details.
  -- Add configuration parameter CompleteTime to control how long to wait for 
     a job's completion before allocating already released resources to pending
-    jobs. This can be used to reduce fragmentation of resources.
+    jobs. This can be used to reduce fragmentation of resources. See
+    "man slurm.conf" for details.
 
 * Changes in SLURM 1.4.0-pre1
 =============================
