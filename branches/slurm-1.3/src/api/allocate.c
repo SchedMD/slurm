@@ -262,7 +262,7 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 							     timeout);
 			/* If NULL, we didn't get the allocation in 
 			   the time desired, so just free the job id */
-			if (resp == NULL) {
+			if (resp == NULL && errno != ESLURM_ALREADY_DONE) {
 				errnum = errno;
 				slurm_complete_job(job_id, -1);
 			}

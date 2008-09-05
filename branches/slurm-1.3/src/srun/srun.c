@@ -266,6 +266,7 @@ int srun(int ac, char **av)
 		_print_job_information(resp);
 		_set_cpu_env_var(resp);
 		job = job_create_allocation(resp);
+		
 		opt.exclusive = false;	/* not applicable for this step */
 		if (!job || create_job_step(job) < 0) {
 			slurm_complete_job(job->jobid, 1);
