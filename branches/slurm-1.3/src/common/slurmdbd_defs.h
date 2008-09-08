@@ -317,6 +317,10 @@ typedef struct dbd_step_start_msg {
 	uint32_t total_procs;	/* count of allocated processors */
 } dbd_step_start_msg_t;
 
+/* flag to let us know if we are running on cache or from the actual
+ * database */
+extern bool running_cache;
+
 /*****************************************************************************\
  * Slurm DBD message processing functions
 \*****************************************************************************/

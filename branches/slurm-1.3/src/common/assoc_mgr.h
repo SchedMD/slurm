@@ -45,6 +45,7 @@
 
 #include "src/common/list.h"
 #include "src/common/slurm_accounting_storage.h"
+#include "src/common/slurmdbd_defs.h"
 #include "src/slurmctld/slurmctld.h"
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
@@ -105,7 +106,7 @@ extern int assoc_mgr_is_user_acct_coord(void *db_conn, uint32_t uid,
 					char *acct);
 
 extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args);
-extern int assoc_mgr_fini(void);
+extern int assoc_mgr_fini(char *state_save_location);
 
 /* 
  * update associations in local cache 
@@ -144,5 +145,18 @@ extern int assoc_mgr_validate_assoc_id(void *db_conn,
  *	used on reconfiguration
  */
 extern void assoc_mgr_clear_used_info(void);
+
+
+/*
+ * Dump the state information of the association mgr just incase the
+ * database isn't up next time we run.
+ */
+extern int dump_assoc_mgr_state(char *state_save_location);
+
+/*
+ * Read in the information of the association mgr if the database
+ * isn't up when starting.
+ */
+extern int load_assoc_mgr_state(char *state_save_location);
 
 #endif /* _SLURM_ASSOC_MGR_H */
