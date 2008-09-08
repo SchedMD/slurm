@@ -2222,7 +2222,8 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 	int i;
 	shutdown_msg_t *shutdown_req;
 	agent_arg_t *kill_agent_args;
-	
+	uint16_t base_state;
+
 	kill_agent_args = xmalloc (sizeof (agent_arg_t));
 	kill_agent_args->msg_type = msg_type;
 	kill_agent_args->retry = 0;
@@ -2234,6 +2235,9 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 	}
 
 	for (i = 0; i < node_record_count; i++) {
+		base_state = node_record_table_ptr[i].node_state;
+		if (base_state == NODE_STATE_FUTURE)
+			continue;
 		hostlist_push(kill_agent_args->hostlist, 
 			      node_record_table_ptr[i].name);
 		kill_agent_args->node_count++;
