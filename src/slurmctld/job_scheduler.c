@@ -538,7 +538,11 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
 	cred_arg.jobid     = launch_msg_ptr->job_id;
 	cred_arg.stepid    = launch_msg_ptr->step_id;
 	cred_arg.uid       = launch_msg_ptr->uid;
+#ifdef HAVE_FRONT_END
+	cred_arg.hostlist  = node_record_table_ptr[0].name;
+#else
 	cred_arg.hostlist  = launch_msg_ptr->nodes;
+#endif
 	if (job_ptr->details == NULL)
 		cred_arg.job_mem = 0;
 	else if (job_ptr->details->job_min_memory & MEM_PER_CPU) {

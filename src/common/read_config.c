@@ -809,6 +809,7 @@ static int _register_conf_node_aliases(slurm_conf_node_t *node_ptr)
 		      "in FRONT_END mode");
 		goto cleanup;
 	}
+
 	hostname = node_ptr->hostnames;
 	address = node_ptr->addresses;
 #else
@@ -824,15 +825,20 @@ static int _register_conf_node_aliases(slurm_conf_node_t *node_ptr)
 #endif
 
 	/* now build the individual node structures */
+#ifdef HAVE_FRONT_END
+	/* we always want the first on in the list to be the one
+	 * returned when looking for localhost
+	 */
+	while ((alias = hostlist_pop(alias_list))) {
+#else
 	while ((alias = hostlist_shift(alias_list))) {
-#ifndef HAVE_FRONT_END
 		hostname = hostlist_shift(hostname_list);
 		address = hostlist_shift(address_list);
 #endif
 
 		_push_to_hashtbls(alias, hostname, address, node_ptr->port,
-					node_ptr->cpus, node_ptr->sockets,
-					node_ptr->cores, node_ptr->threads);
+				  node_ptr->cpus, node_ptr->sockets,
+				  node_ptr->cores, node_ptr->threads);
 
 		free(alias);
 #ifndef HAVE_FRONT_END
