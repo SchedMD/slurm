@@ -2,13 +2,15 @@
 
 <h1>Quick Start Administrator Guide</h1>
 <h2>Overview</h2>
-Please see the <a href="quickstart.html">Quick Start User Guide</a> for a general 
-overview. 
+Please see the <a href="quickstart.html">Quick Start User Guide</a> for a
+general overview. 
 
 <h2>Super Quick Start</h2>
 <ol>
 <li>Make sure that you have synchronized clocks plus consistent users and groups
 across the cluster.</li>
+<li>Install <a href="http://home/gna.org/munge">MUNGE</a> for 
+authentication.</li>
 <li>bunzip2 the distributed tar-ball and untar the files:<br>
 <i>tar --bzip -x -f slurm*tar.bz2</i></li>
 <li><i>cd</i> to the directory containing the SLURM source and type
@@ -27,22 +29,15 @@ They must be created and made writable by <i>SlurmUser</i> as needed prior to
 starting SLURM daemons.</li>
 <li>Install the configuration file in <i>&lt;sysconfdir&gt;/slurm.conf</i>.<br>
 NOTE: You will need to install this configuration file on all nodes of the cluster.</li>
-<li>Create OpenSSL keys:<br>
-<i>openssl genrsa -out &lt;sysconfdir&gt;/slurm.key 1024</i><br>
-<i>openssl rsa -in  &lt;sysconfdir&gt/slurm.key -pubout -out  &lt;sysconfdir&gt;/slurm.cert</i><br>
-NOTE: You will build the OpenSSL key files on one node and distribute <i>slurm.cert</i>
-to all of the nodes in the cluster. <i>slurm.key</i> must be readable only by
-<i>SlurmUser<i> and is only needed where the <i>slurmctld</i> (SLURM controller
-daemon) executes, typically just a couple of nodes.</li>
 <li>Start the <i>slurmctld</i> and <i>slurmd</i> daemons.</li>
 </ol>
-<p>NOTE: Items 2 through 5 can be replaced with</p>
+<p>NOTE: Items 3 through 6 can be replaced with</p>
 <ol>
 <li><i>rpmbuild -ta slurm*.tar.bz2</i></li>
 <li><i>rpm --install &lt;the rpm files&gt;</i></li>
 </ol>
 
-<h2>Building and Installing</h2>
+<h2>Building and Installing SLURM</h2>
 
 <p>Instructions to build and install SLURM manually are shown below. 
 See the README and INSTALL files in the source distribution for more details.
@@ -51,13 +46,14 @@ See the README and INSTALL files in the source distribution for more details.
 <li>bunzip2 the distributed tar-ball and untar the files:</br> 
 <i>tar --bzip -x -f slurm*tar.bz2</i>
 <li><i>cd</i> to the directory containing the SLURM source and type 
-<i>./configure</i> with appropriate options.</li>
+<i>./configure</i> with appropriate options (see below).</li>
 <li>Type <i>make</i> to compile SLURM.</li>
 <li>Type <i>make install</i> to install the programs, documentation, libaries, 
 header files, etc.</li>
 </ol>
-<p>The most commonly used arguments to the <span class="commandline">configure</span> 
-command include: </p>
+<p>A full list of <i>configure</i> options will be returned by the command
+<i>configure --help</i>. The most commonly used arguments to the 
+<i>configure</i> command include: </p>
 <p style="margin-left:.2in"><span class="commandline">--enable-debug</span><br>
 Enable additional debugging logic within SLURM.</p>
 <p style="margin-left:.2in"><span class="commandline">--prefix=<i>PREFIX</i></span><br>
@@ -69,15 +65,15 @@ Specify location of SLURM configuration file. The default value is PREFIX/etc</p
 
 <p>If required libraries or header files are in non-standard locations, 
 set CFLAGS and LDFLAGS environment variables accordingly.
-Type <i>configure --help</i> for a more complete description of options.
 Optional SLURM plugins will be built automatically when the
 <span class="commandline">configure</span> script detects that the required 
 build requirements are present. Build dependencies for various plugins
 and commands are denoted below.
 </p>
 <ul>
-<li> <b>Munge</b> The auth/munge plugin will be built if the Munge authentication
-                  library is installed. </li>
+<li> <b>MUNGE</b> The auth/munge plugin will be built if the MUNGE authentication
+                  library is installed. MUNGE is used as the default
+                  authentication mechanism.</li>
 <li> <b>Authd</b> The auth/authd plugin will be built and installed if 
                   the libauth library and its dependency libe are installed. 
 		  </li>
@@ -127,7 +123,7 @@ Some macro definitions that may be used in building SLURM include:
 <dt>slurm_sysconfdir
 <dd>Pathname of directory containing the slurm.conf configuration file
 <dt>with_munge
-<dd>Specifies munge (authentication library) installation location
+<dd>Specifies the MUNGE (authentication library) installation location
 <dt>with_proctrack
 <dd>Specifies AIX process tracking kernel extension header file location
 <dt>with_ssl
@@ -172,12 +168,18 @@ readable or writable by the user <b>SlurmUser</b> (the slurm configuration
 files must be readable; the log file directory and state save directory 
 must be writable).</p>
 
-<p>The <b>slurmd</b> daemon executes on every compute node. It resembles a remote 
-shell daemon to export control to SLURM. Because slurmd initiates and manages 
-user jobs, it must execute as the user root.</p>
+<p>The <b>slurmd</b> daemon executes on every compute node. It resembles a 
+remote shell daemon to export control to SLURM. Because slurmd initiates and 
+manages user jobs, it must execute as the user root.</p>
 
-<p><b>slurmctld</b> and/or <b>slurmd</b> should be initiated at node startup time 
-per the SLURM configuration.
+<p>If you want to archive job accounting records to a database, the 
+<b>slurmdbd</b> (SLURM DataBase Daemon) should be used. We recommend that 
+you defer adding accounting support until after basic SLURM functionality has 
+established you your system. An <a href="accounting.html">Accounting</a> web 
+page contains more information.</p>
+
+<p><b>slurmctld</b> and/or <b>slurmd</b> should be initiated at node startup 
+time per the SLURM configuration.
 A file <b>etc/init.d/slurm</b> is provided for this purpose. 
 This script accepts commands <b>start</b>, <b>startclean</b> (ignores 
 all saved state), <b>restart</b>, and <b>stop</b>.</p>
@@ -197,16 +199,17 @@ plugin chosen at runtame via the <b>AuthType</b> keyword in the SLURM
 configuration file.  Currently available authentication types include
 <a href="http://www.theether.org/authd/">authd</a>, 
 <a href="http://home.gna.org/munge/">munge</a>, and none.
-The default authentication infrastructure is "none". This permits any user to execute 
-any job as another user. This may be fine for testing purposes, but certainly not for production 
-use. <b>Configure some AuthType value other than "none" if you want any security.</b>
-We recommend the use of Munge unless you are experienced with authd.
-</p>
+The default authentication infrastructure is "munge", but this does 
+require the installation of the MUNGE package.
+An authentication type of "none" requires no infrastructure, but permits
+any user to execute any job as another user with limited programming effort. 
+This may be fine for testing purposes, but certainly not for production use. 
+<b>Configure some AuthType value other than "none" if you want any security.</b>
+We recommend the use of MUNGE unless you are experienced with authd.</p>
+
 <p>While SLURM itself does not rely upon synchronized clocks on all nodes
 of a cluster for proper operation, its underlying authentication mechanism 
-may have this requirement. For instance, if SLURM is making use of the
-auth/munge plugin for communication, the clocks on all nodes will need to 
-be synchronized. </p>
+do have this requirement.</p>
 
 <h3>MPI support</h3>
 <p>SLURM supports many different SLURM implementations. 
@@ -408,22 +411,20 @@ PartitionName=pbatch Nodes=mcr[192-1151]
 </pre>
  
 <h2>Security</h2>
-<p>The use of <a href="http://www.openssl.org/">OpenSSL</a> is 
-recommended to provide a digital signature on job step credentials.
-<a href="http://home.gna.org/munge/">Munge</a> can alternately
-be used with somewhat slower performance.
+<p>Besides authentication of SLURM comunications based upon the value
+of the <b>AuthType</b>, digital signatures are used in job step 
+credentials. 
 This signature is used by <i>slurmctld</i> to construct a job step
 credential, which is sent to <i>srun</i> and then forwarded to
 <i>slurmd</i> to initiate job steps.
 This design offers improved performance by removing much of the 
 job step initiation overhead from the <i> slurmctld </i> daemon.
-The mechanism to be used is controlled through the <b>CryptoType</b>
-configuration parameter (newly added in SLURM version 1.3, 
-earlier versions always use OpenSSL).</p>
+The digital signature mechanism is specified by the <b>CryptoType</b> 
+configuration parameter. </p>
 
 <h3>OpenSSL</h3>
-<p>If using OpenSSL digital signatures, unique job credential keys 
-must be created for your site using the program 
+<p>If using <a href="http://www.openssl.org/">OpenSSL</a> digital signatures, 
+unique job credential keys must be created for your site using the program 
 <a href="http://www.openssl.org/">openssl</a>. 
 <b>You must use openssl and not ssh-genkey to construct these keys.</b>
 An example of how to do this is shown below. Specify file names that 
@@ -444,22 +445,23 @@ credential, which is sent to <i>srun</i> and then forwarded to
 <i>openssl rsa -in &lt;sysconfdir&gt;/slurm.key -pubout -out  &lt;sysconfdir&gt;/slurm.cert</i> 
 </p>
 
-<h3>Munge</h3>
-<p>If using Munge digital signatures, no SLURM keys are required.
-This will be address in the installation and configuration of Munge.</p>
+<h3>MUNGE</h3>
+<p>If using MUNGE digital signatures, no SLURM keys are required.
+This will be address in the installation and configuration of MUNGE.</p>
 
 <h3>Authentication</h3>
 <p>Authentication of communications (identifying who generated a particular
 message) between SLURM components can use a different security mechanism 
 that is configurable.  
-You must specify one &quot;auth&quot; plugin for this purpose (<b>AuthType</b>. 
+You must specify one &quot;auth&quot; plugin for this purpose using the
+<b>AuthType</b> configuration parameter. 
 Currently, only three authentication plugins are supported: 
 <b>auth/none</b>, <b>auth/authd</b>, and <b>auth/munge</b>. 
-The auth/none plugin is built and used by default, but either 
+The auth/none plugin is built by default, but either 
 Brent Chun's <a href="http://www.theether.org/authd/">authd</a>, 
-or LLNL's <a href="http://home.gna.org/munge/">munge</a> 
+or LLNL's <a href="http://home.gna.org/munge/">MUNGE</a> 
 should be installed in order to get properly authenticated communications. 
-Unless you are experience with authd, we recommend the use of munge.
+Unless you are experience with authd, we recommend the use of MUNGE.
 The configure script in the top-level directory of this distribution will 
 determine which authentication plugins may be built. 
 The configuration file specifies which of the available plugins will be utilized. </p>
@@ -610,9 +612,10 @@ SLURM and restart the daemons.
 An exception to this is that jobs may be lost when installing new pre-release 
 versions (e.g. 1.3.0-pre1 to 1.3.0-pre2). We'll try to note these cases 
 in the NEWS file.
+Contents of major releases are also described in the RELEASE_NOTES file.
 
 </pre> <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 5 June 2008</p>
+<p style="text-align:center;">Last modified 8 September 2008</p>
 
 <!--#include virtual="footer.txt"-->
