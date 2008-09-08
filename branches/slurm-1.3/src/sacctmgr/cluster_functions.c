@@ -812,7 +812,8 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 		return SLURM_ERROR;
 	} else if(!list_count(assoc_list)) {
 		exit_code=1;
-		fprintf(stderr, " Cluster %s returned nothing.", cluster_name);
+		fprintf(stderr, " Cluster %s returned nothing.\n",
+			cluster_name);
 		list_destroy(assoc_list);
 		xfree(cluster_name);
 		return SLURM_ERROR;
