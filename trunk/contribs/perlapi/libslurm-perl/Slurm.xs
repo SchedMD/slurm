@@ -1001,12 +1001,6 @@ slurm_step_launch(slurm_step_ctx ctx = NULL, HV* hv = NULL, SV* start_cb = NULL,
 		if(hv_to_slurm_step_launch_params(hv, &params) < 0) {
 			RETVAL = SLURM_ERROR;
 		} else {
-			char *dot_ptr, launcher_host[1024];
-			gethostname(launcher_host, sizeof(launcher_host));
-			dot_ptr = strchr(launcher_host, '.');
-			if (dot_ptr)
-				dot_ptr[0] = '\0';
-			params.launcher_host = launcher_host;
 			RETVAL = slurm_step_launch(ctx, &params, &callbacks);
 		}
 	OUTPUT:
