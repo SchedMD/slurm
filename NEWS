@@ -17,6 +17,7 @@ documents those changes that are of interest to users and admins.
     jobs. This can be used to reduce fragmentation of resources. See
     "man slurm.conf" for details.
  -- Make default CryptoType=crypto/munge. OpenSSL is now completely optional.
+ -- Make default AuthType=auth/munge rather than auth/none.
 
 * Changes in SLURM 1.4.0-pre1
 =============================

@@ -52,7 +52,7 @@ extern char *default_plugstack;
 
 #define DEFAULT_ACCOUNTING_ENFORCE  0
 #define DEFAULT_ACCOUNTING_STORAGE_TYPE "accounting_storage/none"
-#define DEFAULT_AUTH_TYPE          "auth/none"
+#define DEFAULT_AUTH_TYPE          "auth/munge"
 #define DEFAULT_CACHE_GROUPS        0
 #define DEFAULT_COMPLETE_WAIT       0
 #define DEFAULT_CRYPTO_TYPE        "crypto/munge"

@@ -116,8 +116,8 @@ Define the authentication method for communications between SLURM
 components. 
 Acceptable values at present include "auth/none", "auth/authd", 
 and "auth/munge".
-The default value is "auth/none", which means the UID included in 
-communication messages is not verified. 
+The default value is "auth/munge".
+"auth/nume includes the UID in each communication, but it is not verified. 
 This may be fine for testing purposes, but 
 \fBdo not use "auth/none" if you desire any security\fR.
 "auth/authd" indicates that Brett Chun's authd is to be used (see
