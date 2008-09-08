@@ -1741,7 +1741,8 @@ static void _slurm_rpc_shutdown_controller_immediate(slurm_msg_t * msg)
  *	represent the termination of an entire job */
 static void _slurm_rpc_step_complete(slurm_msg_t *msg)
 {
-	int error_code = SLURM_SUCCESS, rc, rem, step_rc;
+	int error_code = SLURM_SUCCESS, rc, rem;
+	uint32_t step_rc;
 	DEF_TIMERS;
 	step_complete_msg_t *req = (step_complete_msg_t *)msg->data;
 	/* Locks: Write job, write node */
