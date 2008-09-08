@@ -668,6 +668,7 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 	float ave_vsize = 0, ave_rss = 0, ave_pages = 0;
 	float ave_cpu = 0, ave_cpu2 = 0;
 	char *account;
+	uint32_t exit_code;
 
 	if(!storage_init) {
 		debug("jobacct init was not called or it failed");
@@ -684,7 +685,12 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 	
 	if ((elapsed=now-step_ptr->start_time)<0)
 		elapsed=0;	/* For *very* short jobs, if clock is wrong */
-	if (step_ptr->exit_code)
+
+	exit_code = step_ptr->exit_code;
+	if (exit_code == NO_VAL) {
+		comp_status = JOB_CANCELLED;
+		exit_code = 0;
+	} else if (exit_code)
 		comp_status = JOB_FAILED;
 	else
 		comp_status = JOB_COMPLETE;
@@ -740,7 +746,7 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 		 JOB_STEP,
 		 step_ptr->step_id,	/* stepid */
 		 comp_status,		/* completion status */
-		 step_ptr->exit_code,	/* completion code */
+		 exit_code,	/* completion code */
 		 cpus,          	/* number of tasks */
 		 cpus,                  /* number of cpus */
 		 elapsed,	        /* elapsed seconds */

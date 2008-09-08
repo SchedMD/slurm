@@ -1416,7 +1416,7 @@ extern bool step_on_node(struct job_record  *job_ptr,
  * RET 0 on success, otherwise ESLURM error code
  */
 extern int step_partial_comp(step_complete_msg_t *req, int *rem,
-		int *max_rc);
+			     uint32_t *max_rc);
 
 /* Update time stamps for job step suspend */
 extern void suspend_job_step(struct job_record *job_ptr);
@@ -1437,6 +1437,16 @@ extern int sync_job_files(void);
  *	last_job_update - time of last job table update
  */
 extern int update_job (job_desc_msg_t * job_specs, uid_t uid);
+
+/*
+ * Modify the account associated with a pending job
+ * IN module - where this is called from
+ * IN job_ptr - pointer to job which should be modified
+ * IN new_account - desired account name
+ * RET SLURM_SUCCESS or error code
+ */
+extern int update_job_account(char *module, struct job_record *job_ptr, 
+			      char *new_account);
 
 /* Reset nodes_completing field for all jobs */
 extern void update_job_nodes_completing(void);

@@ -39,6 +39,13 @@ documents those changes that are of interest to users and admins.
     are created in SLURM tables for future use without a reboot of the SLURM
     daemons, but are not reported by any SLURM commands or APIs.
 
+* Changes in SLURM 1.3.9
+========================
+ -- Fix jobs being cancelled by ctrl-C to have correct cancelled state in 
+    accounting.
+ -- Slurmdbd will only cache user data, made for faster start up
+ -- Improved support for job steps in FRONT_END systems
+
 * Changes in SLURM 1.3.8
 ========================
  -- Added PrivateData flags for Users, Usage, and Accounts to Accounting. 
@@ -56,6 +63,7 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - Set MPI environment variables from salloc.
  -- BLUEGENE - Fix threading issue for overlap mode
  -- Reject batch scripts containing DOS linebreaks.
+ -- BLUEGENE - Added wait for block boot to salloc
 
 * Changes in SLURM 1.3.7
 ========================
@@ -512,6 +520,8 @@ documents those changes that are of interest to users and admins.
     configuration or other runtime checks.
  -- Add "include" keywork to SPANK plugstack.conf file to optionally include
     other configuration files or directories of configuration files.
+ -- Srun to wait indefinitely for resource allocation to be made. Used to
+    abort after two minutes.
 
 * Changes in SLURM 1.2.34
 =========================

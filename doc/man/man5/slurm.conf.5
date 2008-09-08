@@ -1661,11 +1661,19 @@ is very important.
 \fBSelectTypeParameters\fR should be configured to treat
 memory as a consumable resource and the \fB\-\-mem\fR option
 should be used for job allocations.
-For more information see the following web page:
-\fIhttps://computing.llnl.gov/linux/slurm/cons_res_share.html\fR.
-.na
 Possible values for \fBShared\fR are "EXCLUSIVE", "FORCE", "YES", and "NO".
-.ad
+Sharing of resources is typically useful only when using
+\fBSchedulerType=sched/gang\fR.
+For more information see the following web pages:
+.br
+\fIhttps://computing.llnl.gov/linux/slurm/cons_res.html\fR,
+.br
+\fIhttps://computing.llnl.gov/linux/slurm/cons_res_share.html\fR,
+.br
+\fIhttps://computing.llnl.gov/linux/slurm/gang_scheduling.html\fR, and
+.br
+\fIhttps://computing.llnl.gov/linux/slurm/preempt.html\fR.
+
 .RS
 .TP 12
 \fBEXCLUSIVE\fR

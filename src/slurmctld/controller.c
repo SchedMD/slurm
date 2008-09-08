@@ -304,8 +304,13 @@ int main(int argc, char *argv[])
 	slurmctld_cluster_name = xstrdup(slurmctld_conf.cluster_name);
 	accounting_enforce = slurmctld_conf.accounting_storage_enforce;
 	acct_db_conn = acct_storage_g_get_connection(true, false);
+
+	memset(&assoc_init_arg, 0, sizeof(assoc_init_args_t));
 	assoc_init_arg.enforce = accounting_enforce;
 	assoc_init_arg.remove_assoc_notify = _remove_assoc;
+	assoc_init_arg.refresh = 0;
+	assoc_init_arg.cache_level = ASSOC_MGR_CACHE_ALL;
+
 	if (assoc_mgr_init(acct_db_conn, &assoc_init_arg) &&
 	    accounting_enforce) {
 		error("assoc_mgr_init failure");

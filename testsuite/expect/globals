@@ -1134,3 +1134,54 @@ proc check_acct_associations { } {
 	log_user 1
 	return $rc
 }
+
+################################################################
+# 
+#
+# 
+################################################################
+proc check_accounting_admin_level { } {
+        global sacctmgr alpha alpha_numeric_under bin_id
+
+        set admin_level ""
+
+	log_user 0
+
+	spawn $bin_id -u -n
+	expect {
+		-re "($alpha_numeric_under)" {
+			set user_name $expect_out(1,string)
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+
+	if { ![string length $user_name] } {
+	   	send_user "FAILURE: No name returned from id\n"
+		return ""
+	}
+
+     	#
+     	# Use sacctmgr to check admin_level
+     	#
+     	set s_pid [spawn $sacctmgr -n -P list user $user_name format=admin]
+     	expect {
+		-re "($alpha)" {
+	    	      set admin_level $expect_out(1,string)
+		      exp_continue
+ 	       }
+	       timeout {
+		      send_user "FAILURE: sacctmgr add not responding\n"
+		      slow_kill $s_pid
+		      set exit_code 1
+	       }
+	       eof {
+		      wait
+	       }
+        }
+
+	log_user 1
+	return $admin_level
+}

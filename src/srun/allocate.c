@@ -96,7 +96,7 @@ static void _signal_while_allocating(int signo)
 {
 	destroy_job = 1;
 	if (pending_job_id != 0) {
-		slurm_complete_job(pending_job_id, 0);
+		slurm_complete_job(pending_job_id, NO_VAL);
 	}
 }
 
