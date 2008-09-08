@@ -1,0 +1,96 @@
+.TH "Slurm API" "3" "November 2003" "Morris Jette" "Slurm job signal calls"
+.SH "NAME"
+slurm_kill_job, slurm_kill_job_step \- Slurm job signal calls
+.SH "SYNTAX"
+.LP 
+#include <slurm/slurm.h>
+.LP
+int \fBslurm_kill_job\fR (
+.br 
+	uint32_t \fIjob_id\fP,
+.br 
+	uint16_t \fIsignal\fP,
+.br
+	uint16_t \fIbatch_flag\fP
+.br 
+);
+.LP
+int \fBslurm_kill_job_step\fR (
+.br 
+	uint32_t \fIjob_id\fP,
+.br 
+	uint32_t \fIjob_step_id\fP,
+.br 
+	uint16_t \fIsignal\fP
+.br 
+);
+.SH "ARGUMENTS"
+.LP 
+\fIbatch_flag\fP
+If non\-zero then signal only the batch job shell.
+.TP 
+\fIjob_id\fP
+Slurm job id number.
+.TP
+\fIjob_step_id\fp
+Slurm job step id number.
+.TP
+\fIsignal\fp
+Signal to be sent to the job or job step.
+.SH "DESCRIPTION"
+.LP 
+\fBslurm_kill_job\fR Request that a signal be sent to either the batch job shell 
+(if \fIbatch_flag\fP is non\-zero) or all steps of the specified job. 
+If the job is pending and the signal is SIGKILL, the job will be terminated immediately.
+This function may only be successfully executed by the job's owner or user root.
+.LP 
+\fBslurm_kill_job_step\fR Request that a signal be sent to a specific job step. 
+This function may only be successfully executed by the job's owner or user root.
+.SH "RETURN VALUE"
+.LP
+On success, zero is returned. On error, \-1 is returned, and Slurm error code is set appropriately.
+.SH "ERRORS"
+.LP
+\fBSLURM_PROTOCOL_VERSION_ERROR\fR Protocol version has changed, re\-link your code.
+.LP
+\fBESLURM_DEFAULT_PARTITION_NOT_SET\fR the system lacks a valid default partition.
+.LP
+\fBESLURM_INVALID_JOB_ID\fR the requested job id does not exist. 
+.LP
+\fBESLURM_JOB_SCRIPT_MISSING\fR the \fIbatch_flag\fP was set for a non\-batch job.
+.LP
+\fBESLURM_ALREADY_DONE\fR the specified job has already completed and can not be modified. 
+.LP
+\fBESLURM_ACCESS_DENIED\fR the requesting user lacks authorization for the requested action (e.g. trying to delete or modify another user's job). 
+.LP
+\fBESLURM_INTERCONNECT_FAILURE\fR failed to configure the node interconnect. 
+.LP
+\fBSLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT\fR Timeout in communicating with 
+SLURM controller.
+
+.SH "NOTE"
+These functions are included in the libslurm library, 
+which must be linked to your process for use
+(e.g. "cc \-lslurm myprog.c").
+
+.SH "COPYING"
+Copyright (C) 2002 The Regents of the University of California.
+Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+LLNL\-CODE\-402394.
+.LP
+This file is part of SLURM, a resource management program.
+For details, see <https://computing.llnl.gov/linux/slurm/>.
+.LP
+SLURM is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+.SH "SEE ALSO"
+.LP 
+\fBscancel\fR(1), \fBslurm_get_errno\fR(3), 
+\fBslurm_perror\fR(3), \fBslurm_strerror\fR(3)
