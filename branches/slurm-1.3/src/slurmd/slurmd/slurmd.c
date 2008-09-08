@@ -589,9 +589,11 @@ _read_config()
 	 * valid aliases */
 	if (conf->node_name == NULL)
 		conf->node_name = slurm_conf_get_aliased_nodename();
-	if (conf->node_name == NULL)
+	
+	if (conf->node_name == NULL) 
 		conf->node_name = slurm_conf_get_nodename("localhost");
-	if (conf->node_name == NULL)
+
+	if (conf->node_name == NULL) 
 		fatal("Unable to determine this slurmd's NodeName");
 
 	_massage_pathname(&conf->logfile);

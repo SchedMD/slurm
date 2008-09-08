@@ -6,6 +6,7 @@ documents those changes that are of interest to users and admins.
  -- Fix jobs being cancelled by ctrl-C to have correct cancelled state in 
     accounting.
  -- Slurmdbd will only cache user data, made for faster start up
+ -- Improved support for job steps in FRONT_END systems
 
 * Changes in SLURM 1.3.8
 ========================

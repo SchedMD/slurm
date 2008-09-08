@@ -518,8 +518,11 @@ static int _make_step_cred(struct step_record *step_rec,
 	cred_arg.uid      = job_ptr->user_id;
 	cred_arg.job_mem  = job_ptr->details->job_min_memory;
 	cred_arg.task_mem = step_rec->mem_per_task;
+#ifdef HAVE_FRONT_END
+	cred_arg.hostlist = node_record_table_ptr[0].name;
+#else
 	cred_arg.hostlist = step_rec->step_layout->node_list;
-	
+#endif
 	cred_arg.alloc_lps_cnt = job_ptr->alloc_lps_cnt;
 	if ((cred_arg.alloc_lps_cnt > 0) &&
 	    bit_equal(job_ptr->node_bitmap, step_rec->step_node_bitmap)) {
@@ -553,8 +556,7 @@ static int _make_step_cred(struct step_record *step_rec,
 		cred_arg.alloc_lps = NULL;
 	}
 
-	*slurm_cred = slurm_cred_create(slurmctld_config.cred_ctx, 
-			&cred_arg);
+	*slurm_cred = slurm_cred_create(slurmctld_config.cred_ctx, &cred_arg);
 	xfree(cred_arg.alloc_lps);
 	if (*slurm_cred == NULL) {
 		error("slurm_cred_create error");

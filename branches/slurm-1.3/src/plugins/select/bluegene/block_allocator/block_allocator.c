@@ -1451,24 +1451,22 @@ extern char *set_bg_block(List results, int *start,
 	   || start[Y]>=DIM_SIZE[Y]
 	   || start[Z]>=DIM_SIZE[Z])
 		return NULL;
-	if(geometry[X]<=0 
-	   || geometry[Y]<=0
-	   || geometry[Z]<=0) {
+
+	if(geometry[X] <= 0 || geometry[Y] <= 0 || geometry[Z] <= 0) {
 		error("problem with geometry %c%c%c, needs to be at least 111",
 		      alpha_num[geometry[X]],
 		      alpha_num[geometry[Y]],
 		      alpha_num[geometry[Z]]);		      
 		return NULL;
 	}
+
 	size = geometry[X] * geometry[Y] * geometry[Z];
-	ba_node = &ba_system_ptr->
-		grid[start[X]][start[Y]][start[Z]];
+	ba_node = &ba_system_ptr->grid[start[X]][start[Y]][start[Z]];
 #else
 	if(start[X]>=DIM_SIZE[X])
 		return NULL;
 	size = geometry[X];
-	ba_node = &ba_system_ptr->
-			grid[start[X]];	
+	ba_node = &ba_system_ptr->grid[start[X]];	
 #endif
 	
 
