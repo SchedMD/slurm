@@ -56,7 +56,8 @@
 /* struct select_job_res defines exactly which resources are allocated
  *	to a job, step, partition, etc.
  *
- * alloc_core_bitmap	- Bitmap of allocated cores for all nodes and sockets
+ * core_bitmap		- Bitmap of allocated cores for all nodes and sockets
+ * core_bitmap_used	- Bitmap of cores allocated to job steps
  * cores_per_socket	- Count of cores per socket on this node
  * cpus			- Count of desired/allocated CPUs per node for job/step
  * cpus_used		- For a job, count of CPUs per node used by job steps
@@ -73,17 +74,18 @@
  *			  and cores_per_socket apply to
  * sockets_per_node	- Count of sockets on this node
  *
- * Sample layout of alloc_core_bitmap:
+ * Sample layout of core_bitmap:
  *   |               Node_0              |               Node_1              |
  *   |      Sock_0     |      Sock_1     |      Sock_0     |      Sock_1     |
  *   | Core_0 | Core_1 | Core_0 | Core_1 | Core_0 | Core_1 | Core_0 | Core_1 |
  *   | Bit_0  | Bit_1  | Bit_2  | Bit_3  | Bit_4  | Bit_5  | Bit_6  | Bit_7  |
  */
 struct select_job_res {
-	bitstr_t *	alloc_core_bitmap;
-	uint32_t *	cpus;
-	uint32_t *	cpus_used;
-	uint32_t *	cores_per_socket;
+	bitstr_t *	core_bitmap;
+	bitstr_t *	core_bitmap_used;
+	uint16_t *	cpus;
+	uint16_t *	cpus_used;
+	uint16_t *	cores_per_socket;
 	uint32_t *	memory_allocated;
 	uint32_t *	memory_used;
 	uint32_t	nhosts;
@@ -91,7 +93,7 @@ struct select_job_res {
 	uint8_t		node_req;
 	uint32_t	nprocs;
 	uint32_t *	sock_core_rep_count;
-	uint32_t *	sockets_per_node;
+	uint16_t *	sockets_per_node;
 };
 
 /* Create an empty select_job_res data structure, just a call to xmalloc() */
@@ -100,7 +102,7 @@ extern select_job_res_t create_select_job_res(void);
 /* Set the socket and core counts associated with a set of selected
  * nodes of a select_job_res data structure based upon slurmctld state.
  * (sets cores_per_socket, sockets_per_node, and sock_core_rep_count based
- * upon the value of node_bitmap, also creates alloc_core_bitmap based upon
+ * upon the value of node_bitmap, also creates core_bitmap based upon
  * the total number of cores in the allocation). Call this ONLY from 
  * slurmctld. Example of use:
  *
@@ -150,10 +152,10 @@ extern int unpack_select_job_res(select_job_res_t *select_job_res_pptr,
  *	node_id, socket_id and core_id are all zero origin */
 extern int get_select_job_res_bit(select_job_res_t select_job_res_ptr, 
 				  uint32_t node_id,
-				  uint32_t socket_id, uint32_t core_id);
+				  uint16_t socket_id, uint16_t core_id);
 extern int set_select_job_res_bit(select_job_res_t select_job_res_ptr, 
 				  uint32_t node_id,
-				  uint32_t socket_id, uint32_t core_id);
+				  uint16_t socket_id, uint16_t core_id);
 
 /* Get/set bit value at specified location for whole node allocations
  *	get is for any socket/core on the specified node
@@ -168,6 +170,7 @@ extern int set_select_job_res_node(select_job_res_t select_job_res_ptr,
 /* Get socket and core count for a specific node_id (zero origin) */
 extern int get_select_job_res_cnt(select_job_res_t select_job_res_ptr, 
 				  uint32_t node_id,
-				  uint32_t *socket_cnt, 				  uint32_t *cores_per_socket_cnt);
+				  uint16_t *socket_cnt,
+ 				  uint16_t *cores_per_socket_cnt);
 
 #endif /* !_SELECT_JOB_RES_H */
