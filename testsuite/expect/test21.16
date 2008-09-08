@@ -88,7 +88,7 @@ set mn		maxnode
 set mw		maxwall
 set dbu		debug
 set access_err  0
-
+#set user_name   "id -u -n"
 
 print_header $test_id
 
