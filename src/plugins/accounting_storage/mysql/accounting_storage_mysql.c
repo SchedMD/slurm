@@ -2011,7 +2011,8 @@ extern int acct_storage_p_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 					   "insert into %s "
 					   "(timestamp, action, name, "
 					   "actor, info) "
-					   "values (%d, %u, '%s', '%s', '%s')",
+					   "values (%d, %u, '%s', "
+					   "'%s', \"%s\")",
 					   txn_table,
 					   now, DBD_ADD_ACCOUNT_COORDS, user,
 					   user_name, acct);
@@ -6705,10 +6706,11 @@ extern int clusteracct_storage_p_node_down(mysql_conn_t *mysql_conn,
 	xstrfmtcat(query,
 		   "insert into %s "
 		   "(node_name, cluster, cpu_count, period_start, reason) "
-		   "values ('%s', '%s', %u, %d, '%s') on duplicate key "
+		   "values ('%s', '%s', %u, %d, \"%s\") on duplicate key "
 		   "update period_end=0;",
 		   event_table, node_ptr->name, cluster, 
 		   cpus, event_time, my_reason);
+	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
 
@@ -6733,6 +6735,7 @@ extern int clusteracct_storage_p_node_up(mysql_conn_t *mysql_conn,
 		"update %s set period_end=%d where cluster='%s' "
 		"and period_end=0 and node_name='%s';",
 		event_table, event_time, cluster, node_ptr->name);
+	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
 	return rc;
@@ -7309,7 +7312,8 @@ extern int jobacct_storage_p_step_complete(mysql_conn_t *mysql_conn,
 	float ave_cpu = 0, ave_cpu2 = 0;
 	char *query = NULL;
 	int rc =SLURM_SUCCESS;
-	
+	uint32_t exit_code = 0;
+
 	if (!step_ptr->job_ptr->db_index 
 	    && (!step_ptr->job_ptr->details
 		|| !step_ptr->job_ptr->details->submit_time)) {
@@ -7346,7 +7350,12 @@ extern int jobacct_storage_p_step_complete(mysql_conn_t *mysql_conn,
 	
 	if ((elapsed=now-step_ptr->start_time)<0)
 		elapsed=0;	/* For *very* short jobs, if clock is wrong */
-	if (step_ptr->exit_code)
+	
+	exit_code = step_ptr->exit_code;
+	if (exit_code == NO_VAL) {
+		comp_status = JOB_CANCELLED;
+		exit_code = 0;
+	} else if (exit_code)
 		comp_status = JOB_FAILED;
 	else
 		comp_status = JOB_COMPLETE;
@@ -7406,7 +7415,7 @@ extern int jobacct_storage_p_step_complete(mysql_conn_t *mysql_conn,
 		step_table, (int)now,
 		comp_status,
 		step_ptr->job_ptr->requid, 
-		step_ptr->exit_code,
+		exit_code,
 		/* user seconds */
 		jobacct->user_cpu_sec,	
 		/* user microseconds */

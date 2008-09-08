@@ -97,6 +97,7 @@ int main(int argc, char *argv[])
 	pthread_attr_t thread_attr;
 	char node_name[128];
 	void *db_conn = NULL;
+	assoc_init_args_t assoc_init_arg;
 
 	_init_config();
 	log_init(argv[0], log_opts, LOG_DAEMON, NULL);
@@ -139,7 +140,10 @@ int main(int argc, char *argv[])
 
 	db_conn = acct_storage_g_get_connection(false, false);
 	
-	if(assoc_mgr_init(db_conn, NULL) == SLURM_ERROR) {
+	memset(&assoc_init_arg, 0, sizeof(assoc_init_args_t));
+	assoc_init_arg.cache_level = ASSOC_MGR_CACHE_USER;
+
+	if(assoc_mgr_init(db_conn, &assoc_init_arg) == SLURM_ERROR) {
 		error("Problem getting cache of data");
 		acct_storage_g_close_connection(&db_conn);
 		goto end_it;

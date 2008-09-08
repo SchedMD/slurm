@@ -218,26 +218,35 @@ static int _get_local_user_list(void *db_conn, int enforce)
 
 extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args)
 {
-	int enforce = 0;
+	uint16_t enforce = 0;
+	uint16_t refresh = 0;
+	uint16_t cache_level = ASSOC_MGR_CACHE_ALL;
 
 	if(args) {
 		enforce = args->enforce;
 		if(args->remove_assoc_notify)
 			remove_assoc_notify = args->remove_assoc_notify;
+		refresh = args->refresh;
+		cache_level = args->cache_level;
 	}
 
-	if(!local_cluster_name && !slurmdbd_conf)
+	if((!local_cluster_name || refresh) && !slurmdbd_conf) {
+		xfree(local_cluster_name);
 		local_cluster_name = slurm_get_cluster_name();
+	}
 
-	if(!local_association_list) 
+	if((!local_association_list || refresh) 
+	   && (cache_level & ASSOC_MGR_CACHE_ASSOC))
 		if(_get_local_association_list(db_conn, enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
-
-	if(!local_qos_list) 
+	
+	if((!local_qos_list || refresh) 
+	   && (cache_level & ASSOC_MGR_CACHE_QOS)) 
 		if(_get_local_qos_list(db_conn, enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
-
-	if(!local_user_list) 
+	
+	if((!local_user_list || refresh) 
+	   && (cache_level & ASSOC_MGR_CACHE_USER)) 
 		if(_get_local_user_list(db_conn, enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
 

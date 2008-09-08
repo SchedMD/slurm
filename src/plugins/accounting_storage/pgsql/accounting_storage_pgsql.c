@@ -1394,7 +1394,8 @@ extern int jobacct_storage_p_step_complete(PGconn *acct_pgsql_db,
 	float ave_cpu = 0, ave_cpu2 = 0;
 	char *query = NULL;
 	int rc =SLURM_SUCCESS;
-	
+	uint32_t exit_code;
+
 	if (!step_ptr->job_ptr->db_index 
 	    && (!step_ptr->job_ptr->details
 		|| !step_ptr->job_ptr->details->submit_time)) {
@@ -1434,7 +1435,12 @@ extern int jobacct_storage_p_step_complete(PGconn *acct_pgsql_db,
 
 	if ((elapsed=now-step_ptr->start_time)<0)
 		elapsed=0;	/* For *very* short jobs, if clock is wrong */
-	if (step_ptr->exit_code)
+
+	exit_code = step_ptr->exit_code;
+	if (exit_code == NO_VAL) {
+		comp_status = JOB_CANCELLED;
+		exit_code = 0;
+	} else if (exit_code)
 		comp_status = JOB_FAILED;
 	else
 		comp_status = JOB_COMPLETE;
@@ -1484,7 +1490,7 @@ extern int jobacct_storage_p_step_complete(PGconn *acct_pgsql_db,
 		step_table, (int)now,
 		comp_status,
 		step_ptr->job_ptr->requid, 
-		step_ptr->exit_code, 
+		exit_code, 
 		/* user seconds */
 		jobacct->user_cpu_sec,	
 		/* user microseconds */
