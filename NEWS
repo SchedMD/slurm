@@ -7,6 +7,8 @@ documents those changes that are of interest to users and admins.
     accounting.
  -- Slurmdbd will only cache user data, made for faster start up
  -- Improved support for job steps in FRONT_END systems
+ -- Added support to dump and load association information in the controller
+    on start up if slurmdbd is unresponsive
 
 * Changes in SLURM 1.3.8
 ========================

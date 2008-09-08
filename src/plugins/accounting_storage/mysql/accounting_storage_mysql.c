@@ -6710,7 +6710,7 @@ extern int clusteracct_storage_p_node_down(mysql_conn_t *mysql_conn,
 		   "update period_end=0;",
 		   event_table, node_ptr->name, cluster, 
 		   cpus, event_time, my_reason);
-	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+	debug4("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
 
@@ -6735,7 +6735,7 @@ extern int clusteracct_storage_p_node_up(mysql_conn_t *mysql_conn,
 		"update %s set period_end=%d where cluster='%s' "
 		"and period_end=0 and node_name='%s';",
 		event_table, event_time, cluster, node_ptr->name);
-	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+	debug4("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
 	return rc;
@@ -6767,7 +6767,7 @@ extern int clusteracct_storage_p_cluster_procs(mysql_conn_t *mysql_conn,
 	/* Record the processor count */
 	query = xstrdup_printf(
 		"select cpu_count from %s where cluster='%s' "
-		"and period_end=0 and node_name=''",
+		"and period_end=0 and node_name='' limit 1",
 		event_table, cluster);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
@@ -6780,6 +6780,10 @@ extern int clusteracct_storage_p_cluster_procs(mysql_conn_t *mysql_conn,
 	if(!(row = mysql_fetch_row(result))) {
 		debug("We don't have an entry for this machine %s "
 		      "most likely a first time running.", cluster);
+		/* 
+		 * FIX ME: send a message to the controller to give me
+		 * all down nodes and jobs that are eligible or running
+		 */
 		goto add_it;
 	}
 

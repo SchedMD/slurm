@@ -39,6 +39,7 @@
 
 #include <sys/types.h>
 #include <pwd.h>
+#include <fcntl.h>
 
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
@@ -54,6 +55,7 @@ void (*remove_assoc_notify) (acct_association_rec_t *rec) = NULL;
 static pthread_mutex_t local_association_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t local_qos_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t local_user_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t local_file_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /* locks should be put in place before calling this function */
 static int _set_assoc_parent_and_user(acct_association_rec_t *assoc)
@@ -161,8 +163,7 @@ static int _get_local_qos_list(void *db_conn, int enforce)
 	if(!local_qos_list) {
 		slurm_mutex_unlock(&local_qos_lock);
 		if(enforce) {
-			error("_get_local_qos_list: "
-			      "no list was made.");
+			error("_get_local_qos_list: no list was made.");
 			return SLURM_ERROR;
 		} else {
 			return SLURM_SUCCESS;
@@ -218,9 +219,9 @@ static int _get_local_user_list(void *db_conn, int enforce)
 
 extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args)
 {
-	uint16_t enforce = 0;
-	uint16_t refresh = 0;
-	uint16_t cache_level = ASSOC_MGR_CACHE_ALL;
+	static uint16_t enforce = 0;
+	uint16_t refresh = 1;
+	static uint16_t cache_level = ASSOC_MGR_CACHE_ALL;
 
 	if(args) {
 		enforce = args->enforce;
@@ -229,6 +230,12 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args)
 		refresh = args->refresh;
 		cache_level = args->cache_level;
 	}
+	
+	if(running_cache && !refresh) { 
+		debug4("No need to run assoc_mgr_init if you "
+		       "are not refreshing, we have no connection.");
+		return SLURM_SUCCESS;
+	}
 
 	if((!local_cluster_name || refresh) && !slurmdbd_conf) {
 		xfree(local_cluster_name);
@@ -236,25 +243,31 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args)
 	}
 
 	if((!local_association_list || refresh) 
-	   && (cache_level & ASSOC_MGR_CACHE_ASSOC))
+	   && (cache_level & ASSOC_MGR_CACHE_ASSOC)) 
 		if(_get_local_association_list(db_conn, enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
-	
+
 	if((!local_qos_list || refresh) 
-	   && (cache_level & ASSOC_MGR_CACHE_QOS)) 
+	   && (cache_level & ASSOC_MGR_CACHE_QOS))
 		if(_get_local_qos_list(db_conn, enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
-	
+
 	if((!local_user_list || refresh) 
-	   && (cache_level & ASSOC_MGR_CACHE_USER)) 
+	   && (cache_level & ASSOC_MGR_CACHE_USER))
 		if(_get_local_user_list(db_conn, enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
 
+	if(running_cache && refresh) 
+		running_cache = 0;
+	
 	return SLURM_SUCCESS;
 }
 
-extern int assoc_mgr_fini(void)
+extern int assoc_mgr_fini(char *state_save_location)
 {
+	if(state_save_location)
+		dump_assoc_mgr_state(state_save_location);
+
 	if(local_association_list) 
 		list_destroy(local_association_list);
 	if(local_qos_list)
@@ -860,3 +873,223 @@ extern void assoc_mgr_clear_used_info(void)
 	slurm_mutex_unlock(&local_association_lock);
 }
 
+extern int dump_assoc_mgr_state(char *state_save_location) 
+{
+	static int high_buffer_size = (1024 * 1024);
+	int error_code = 0, log_fd;
+	char *old_file = NULL, *new_file = NULL, *reg_file = NULL;
+	dbd_list_msg_t msg;
+	Buf buffer = init_buf(high_buffer_size);
+	DEF_TIMERS;
+
+	START_TIMER;
+	/* write header: version, time */
+	pack16(SLURMDBD_VERSION, buffer);
+	pack_time(time(NULL), buffer);
+
+	if(local_association_list) {
+		memset(&msg, 0, sizeof(dbd_list_msg_t));
+		msg.my_list = local_association_list;
+		slurm_mutex_lock(&local_association_lock);
+		/* let us know what to unpack */
+		pack16(DBD_ADD_ASSOCS, buffer);
+		slurmdbd_pack_list_msg(DBD_ADD_ASSOCS, &msg, buffer);
+		slurm_mutex_unlock(&local_association_lock);
+	}
+	
+	if(local_user_list) {
+		memset(&msg, 0, sizeof(dbd_list_msg_t));
+		msg.my_list = local_user_list;
+		slurm_mutex_lock(&local_user_lock);
+		/* let us know what to unpack */
+		pack16(DBD_ADD_USERS, buffer);
+		slurmdbd_pack_list_msg(DBD_ADD_USERS, &msg, buffer);
+		slurm_mutex_unlock(&local_user_lock);
+	}
+
+	if(local_qos_list) {		
+		memset(&msg, 0, sizeof(dbd_list_msg_t));
+		msg.my_list = local_qos_list;
+		slurm_mutex_lock(&local_qos_lock);
+		/* let us know what to unpack */
+		pack16(DBD_ADD_QOS, buffer);
+		slurmdbd_pack_list_msg(DBD_ADD_QOS, &msg, buffer);	
+		slurm_mutex_unlock(&local_qos_lock);
+	}
+
+	/* write the buffer to file */
+	old_file = xstrdup(state_save_location);
+	xstrcat(old_file, "/assoc_mgr_state.old");
+	reg_file = xstrdup(state_save_location);
+	xstrcat(reg_file, "/assoc_mgr_state");
+	new_file = xstrdup(state_save_location);
+	xstrcat(new_file, "/assoc_mgr_state.new");
+	
+	slurm_mutex_lock(&local_file_lock);
+	log_fd = creat(new_file, 0600);
+	if (log_fd == 0) {
+		error("Can't save state, create file %s error %m",
+		      new_file);
+		error_code = errno;
+	} else {
+		int pos = 0, nwrite = get_buf_offset(buffer), amount;
+		char *data = (char *)get_buf_data(buffer);
+		high_buffer_size = MAX(nwrite, high_buffer_size);
+		while (nwrite > 0) {
+			amount = write(log_fd, &data[pos], nwrite);
+			if ((amount < 0) && (errno != EINTR)) {
+				error("Error writing file %s, %m", new_file);
+				error_code = errno;
+				break;
+			}
+			nwrite -= amount;
+			pos    += amount;
+		}
+		fsync(log_fd);
+		close(log_fd);
+	}
+	if (error_code)
+		(void) unlink(new_file);
+	else {			/* file shuffle */
+		(void) unlink(old_file);
+		(void) link(reg_file, old_file);
+		(void) unlink(reg_file);
+		(void) link(new_file, reg_file);
+		(void) unlink(new_file);
+	}
+	xfree(old_file);
+	xfree(reg_file);
+	xfree(new_file);
+	slurm_mutex_unlock(&local_file_lock);
+	
+	free_buf(buffer);
+	END_TIMER2("dump_assoc_mgr_state");
+	return error_code;
+
+}
+
+extern int load_assoc_mgr_state(char *state_save_location)
+{
+	int data_allocated, data_read = 0, error_code = SLURM_SUCCESS;
+	uint32_t data_size = 0;
+	uint16_t type = 0;
+	uint16_t ver = 0;
+	int state_fd;
+	char *data = NULL, *state_file;
+	Buf buffer;
+	time_t buf_time;
+	dbd_list_msg_t *msg = NULL;
+	
+	/* read the file */
+	state_file = xstrdup(state_save_location);
+	xstrcat(state_file, "/assoc_mgr_state");
+	info("looking at the %s file", state_file);
+	slurm_mutex_lock(&local_file_lock);
+	state_fd = open(state_file, O_RDONLY);
+	if (state_fd < 0) {
+		info("No job state file (%s) to recover", state_file);
+		error_code = ENOENT;
+	} else {
+		data_allocated = BUF_SIZE;
+		data = xmalloc(data_allocated);
+		while (1) {
+			data_read = read(state_fd, &data[data_size],
+					 BUF_SIZE);
+			if (data_read < 0) {
+				if (errno == EINTR)
+					continue;
+				else {
+					error("Read error on %s: %m", 
+					      state_file);
+					break;
+				}
+			} else if (data_read == 0)	/* eof */
+				break;
+			data_size      += data_read;
+			data_allocated += data_read;
+			xrealloc(data, data_allocated);
+		}
+		close(state_fd);
+	}
+	xfree(state_file);
+	slurm_mutex_unlock(&local_file_lock);
+
+	buffer = create_buf(data, data_size);
+	safe_unpack16(&ver, buffer);
+	debug3("Version in assoc_mgr_state header is %u", ver);
+	if (ver > SLURMDBD_VERSION || ver < SLURMDBD_VERSION_MIN) {
+		error("***********************************************");
+		error("Can not recover assoc_mgr state, incompatable version, got %u need > %u <= %u", ver, SLURMDBD_VERSION_MIN, SLURMDBD_VERSION);
+		error("***********************************************");
+		free_buf(buffer);
+		return EFAULT;
+	}
+
+	safe_unpack_time(&buf_time, buffer);
+	while (remaining_buf(buffer) > 0) {
+		safe_unpack16(&type, buffer);
+		switch(type) {
+		case DBD_ADD_ASSOCS:
+			error_code = slurmdbd_unpack_list_msg(
+				DBD_ADD_ASSOCS, &msg, buffer);
+			if (error_code != SLURM_SUCCESS)
+				goto unpack_error;
+			else if(!msg->my_list) {
+				error("No associations retrieved");
+				break;
+			}
+			slurm_mutex_lock(&local_association_lock);
+			local_association_list = msg->my_list;
+			debug("Recovered %u associations", 
+			      list_count(local_association_list));
+			slurm_mutex_unlock(&local_association_lock);
+			msg->my_list = NULL;
+			slurmdbd_free_list_msg(msg);
+			break;
+		case DBD_ADD_USERS:
+			error_code = slurmdbd_unpack_list_msg(
+				DBD_ADD_USERS, &msg, buffer);
+			if (error_code != SLURM_SUCCESS)
+				goto unpack_error;
+			else if(!msg->my_list) {
+				error("No users retrieved");
+				break;
+			}
+			slurm_mutex_lock(&local_user_lock);
+			local_user_list = msg->my_list;
+			debug("Recovered %u users", 
+			      list_count(local_user_list));
+			slurm_mutex_unlock(&local_user_lock);
+			msg->my_list = NULL;
+			slurmdbd_free_list_msg(msg);
+			break;
+		case DBD_ADD_QOS:
+			error_code = slurmdbd_unpack_list_msg(
+				DBD_ADD_QOS, &msg, buffer);
+			if (error_code != SLURM_SUCCESS)
+				goto unpack_error;
+			else if(!msg->my_list) {
+				error("No qos retrieved");
+				break;
+			}
+			slurm_mutex_lock(&local_qos_lock);
+			local_qos_list = msg->my_list;
+			debug("Recovered %u qos", 
+			      list_count(local_qos_list));
+			slurm_mutex_unlock(&local_qos_lock);
+			msg->my_list = NULL;
+			slurmdbd_free_list_msg(msg);	
+			break;
+		default:
+			error("unknown type %u given", type);
+			goto unpack_error;
+			break;
+		}
+	}
+	running_cache = 1;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	return SLURM_ERROR;
+
+} 

@@ -63,6 +63,7 @@
 #include "src/common/fd.h"
 #include "src/common/pack.h"
 #include "src/common/slurmdbd_defs.h"
+#include "src/common/assoc_mgr.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_accounting_storage.h"
@@ -76,6 +77,9 @@
 #define MAX_DBD_MSG_LEN		16384
 #define SLURMDBD_TIMEOUT	60	/* Seconds SlurmDBD for response */
 
+bool running_cache = 0;
+
+static pthread_mutex_t replace_cache = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t agent_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  agent_cond = PTHREAD_COND_INITIALIZER;
 static List      agent_list     = (List) NULL;
@@ -138,7 +142,7 @@ extern int slurm_open_slurmdbd_conn(char *auth_info, bool make_agent,
 	if (slurmdbd_fd < 0)
 		_open_slurmdbd_fd();
 	slurm_mutex_unlock(&slurmdbd_lock);
-
+	
 	return SLURM_SUCCESS;
 }
 
@@ -241,6 +245,7 @@ extern int slurm_send_recv_slurmdbd_msg(slurmdbd_msg_t *req,
 
 	free_buf(buffer);
 	slurm_mutex_unlock(&slurmdbd_lock);
+	
 	return rc;
 }
 
@@ -315,6 +320,7 @@ static void _open_slurmdbd_fd(void)
 		      slurmdbd_host, slurmdbd_port);
 	else {
 		slurmdbd_fd = slurm_open_msg_conn(&dbd_addr);
+
 		if (slurmdbd_fd < 0)
 			error("slurmdbd: slurm_open_msg_conn: %m");
 		else {
@@ -1034,6 +1040,7 @@ static int _send_init_msg(void)
 
 	read_timeout = slurm_get_msg_timeout() * 1000;
 	rc = _get_return_code(read_timeout);
+	
 	return rc;
 }
 
@@ -1443,6 +1450,16 @@ static void *_agent(void *x)
 		slurm_mutex_unlock(&agent_lock);
 		if (buffer == NULL) {
 			slurm_mutex_unlock(&slurmdbd_lock);
+
+			slurm_mutex_lock(&replace_cache);
+			/* It is ok to send a NULL as the first value since
+			 * this will most likely only happen when talking with
+			 * the DBD 
+			 */
+			if(slurmdbd_fd >= 0 && running_cache)
+				assoc_mgr_init(NULL, NULL);		
+			slurm_mutex_unlock(&replace_cache);
+			
 			continue;
 		}
 
@@ -1464,6 +1481,15 @@ static void *_agent(void *x)
 			}
 		}
 		slurm_mutex_unlock(&slurmdbd_lock);
+		
+		slurm_mutex_lock(&replace_cache);
+		/* It is ok to send a NULL as the first value since
+		 * this will most likely only happen when talking with
+		 * the DBD 
+		 */
+		if(slurmdbd_fd >= 0 && running_cache)
+			assoc_mgr_init(NULL, NULL);		
+		slurm_mutex_unlock(&replace_cache);
 
 		slurm_mutex_lock(&agent_lock);
 		if (agent_list && (rc == SLURM_SUCCESS)) {

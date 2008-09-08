@@ -311,11 +311,21 @@ int main(int argc, char *argv[])
 	assoc_init_arg.refresh = 0;
 	assoc_init_arg.cache_level = ASSOC_MGR_CACHE_ALL;
 
-	if (assoc_mgr_init(acct_db_conn, &assoc_init_arg) &&
-	    accounting_enforce) {
-		error("assoc_mgr_init failure");
-		fatal("slurmdbd and/or database must be up at "
-		      "slurmctld start time");
+	if (assoc_mgr_init(acct_db_conn, &assoc_init_arg)) {
+		if(accounting_enforce) 
+			error("Association database appears down, "
+			      "reading from state file.");
+		else
+			debug("Association database appears down, "
+			      "reading from state file.");
+			
+		if ((load_assoc_mgr_state(slurmctld_conf.state_save_location)
+		     != SLURM_SUCCESS) && accounting_enforce) {
+			error("Unable to get any information from "
+			      "the state file");
+			fatal("slurmdbd and/or database must be up at "
+			      "slurmctld start time");
+		}
 	}
 
 	info("slurmctld version %s started on cluster %s",
@@ -403,7 +413,7 @@ int main(int argc, char *argv[])
 			acct_db_conn = 
 				acct_storage_g_get_connection(true, false);
 			if (assoc_mgr_init(acct_db_conn, &assoc_init_arg) &&
-			    accounting_enforce) {
+			    accounting_enforce && !running_cache) {
 				error("assoc_mgr_init failure");
 				fatal("slurmdbd and/or database must be up at "
 				      "slurmctld start time");
@@ -1216,6 +1226,7 @@ void save_all_state(void)
 	schedule_node_save();
 	schedule_trigger_save();
 	select_g_state_save(slurmctld_conf.state_save_location);
+	dump_assoc_mgr_state(slurmctld_conf.state_save_location);
 }
 
 /* 
