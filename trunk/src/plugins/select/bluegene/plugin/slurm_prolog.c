@@ -176,10 +176,11 @@ static int _get_job_size(uint32_t job_id)
 }
 
 /*
- * Test if any BG blocks are in deallocating state 
+ * Test if any BG blocks are in deallocating state since they are
+ * probably related to this job we will want to sleep longer
  * RET	1:  deallocate in progress
  *	0:  no deallocate in progress
- *	-1: error occurred
+ *     -1: error occurred
  */
 static int _partitions_dealloc()
 {

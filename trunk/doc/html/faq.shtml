@@ -890,7 +890,12 @@ about these options.
 clocks on the cluster?</b></a><br>
 In general, yes. Having inconsistent clocks may cause nodes to 
 be unusable. SLURM log files should contain references to 
-expired credentials.
+expired credentials. For example:
+<pre>
+error: Munge decode failed: Expired credential
+ENCODED: Wed May 12 12:34:56 2008
+DECODED: Wed May 12 12:01:12 2008
+</pre>
 
 <p><a name="cred_invalid"><b>21. Why are &quot;Invalid job credential&quot; 
 errors generated?</b></a><br>
@@ -1001,6 +1006,6 @@ sinfo -t drain -h -o "scontrol update nodename='%N' state=drain reason='%E'"
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 2 September 2008</p>
+<p style="text-align:center;">Last modified 3 September 2008</p>
 
 <!--#include virtual="footer.txt"-->

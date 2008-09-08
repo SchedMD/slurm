@@ -49,8 +49,15 @@
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 
+#define ASSOC_MGR_CACHE_ASSOC 0x0001
+#define ASSOC_MGR_CACHE_QOS 0x0002
+#define ASSOC_MGR_CACHE_USER 0x0004
+#define ASSOC_MGR_CACHE_ALL 0xffff
+
 typedef struct {
-	int enforce;
+	uint16_t cache_level;
+	uint16_t enforce;
+       	uint16_t refresh;
 	void (*remove_assoc_notify) (acct_association_rec_t *rec);
 } assoc_init_args_t;
 

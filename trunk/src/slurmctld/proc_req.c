@@ -519,8 +519,11 @@ static int _make_step_cred(struct step_record *step_rec,
 	cred_arg.stepid   = step_rec->step_id;
 	cred_arg.uid      = job_ptr->user_id;
 	cred_arg.job_mem  = job_ptr->details->job_min_memory;
+#ifdef HAVE_FRONT_END
+	cred_arg.hostlist = node_record_table_ptr[0].name;
+#else
 	cred_arg.hostlist = step_rec->step_layout->node_list;
-	
+#endif
 	cred_arg.alloc_lps_cnt = job_ptr->alloc_lps_cnt;
 	if ((cred_arg.alloc_lps_cnt > 0) &&
 	    bit_equal(job_ptr->node_bitmap, step_rec->step_node_bitmap)) {
@@ -554,8 +557,7 @@ static int _make_step_cred(struct step_record *step_rec,
 		cred_arg.alloc_lps = NULL;
 	}
 
-	*slurm_cred = slurm_cred_create(slurmctld_config.cred_ctx, 
-			&cred_arg);
+	*slurm_cred = slurm_cred_create(slurmctld_config.cred_ctx, &cred_arg);
 	xfree(cred_arg.alloc_lps);
 	if (*slurm_cred == NULL) {
 		error("slurm_cred_create error");
@@ -1742,7 +1744,8 @@ static void _slurm_rpc_shutdown_controller_immediate(slurm_msg_t * msg)
  *	represent the termination of an entire job */
 static void _slurm_rpc_step_complete(slurm_msg_t *msg)
 {
-	int error_code = SLURM_SUCCESS, rc, rem, step_rc;
+	int error_code = SLURM_SUCCESS, rc, rem;
+	uint32_t step_rc;
 	DEF_TIMERS;
 	step_complete_msg_t *req = (step_complete_msg_t *)msg->data;
 	/* Locks: Write job, write node */
@@ -1801,7 +1804,7 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg)
 		}
 	} else {
 		error_code = job_step_complete(req->job_id, req->job_step_id,
-				uid, job_requeue, step_rc);
+					       uid, job_requeue, step_rc);
 		unlock_slurmctld(job_write_lock);
 		END_TIMER2("_slurm_rpc_step_complete");
 

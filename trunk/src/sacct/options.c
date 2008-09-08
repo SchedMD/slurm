@@ -414,7 +414,7 @@ void _help_msg(void)
 	       "-c, --completion\n"
 	       "    Use job completion instead of accounting data.\n"
 	       "-C, --cluster\n"
-	       "    Only send data about this cluster.\n"
+	       "    Only send data about this cluster -1 for all clusters.\n"
 	       "-d, --dump\n"
 	       "    Dump the raw data records\n"
 	       "--duplicates\n"
@@ -622,7 +622,7 @@ void parse_command_line(int argc, char **argv)
 	char *dot = NULL;
 	bool brief_output = FALSE, long_output = FALSE;
 	bool all_users = 0;
-
+	bool all_clusters = 1;
 	static struct option long_options[] = {
 		{"all", 0,0, 'a'},
 		{"accounts", 1, 0, 'A'},
@@ -690,6 +690,10 @@ void parse_command_line(int argc, char **argv)
 			params.opt_completion = 1;
 			break;
 		case 'C':
+			if(!strcasecmp(optarg, "-1")) {
+				all_clusters = 1;
+				break;
+			}
 			if(!params.opt_cluster_list) 
 				params.opt_cluster_list =
 					list_create(slurm_destroy_char);
@@ -934,7 +938,15 @@ void parse_command_line(int argc, char **argv)
 	}
 
 	/* specific clusters requested? */
-	if (params.opt_verbose && params.opt_cluster_list 
+	if(all_clusters) {
+		if(params.opt_cluster_list 
+		   && list_count(params.opt_cluster_list)) {
+			list_destroy(params.opt_cluster_list);
+			params.opt_cluster_list = NULL;
+		}
+		if(params.opt_verbose)
+			fprintf(stderr, "Clusters requested:\n\t: all\n");
+	} else if (params.opt_verbose && params.opt_cluster_list 
 	    && list_count(params.opt_cluster_list)) {
 		fprintf(stderr, "Clusters requested:\n");
 		itr = list_iterator_create(params.opt_cluster_list);

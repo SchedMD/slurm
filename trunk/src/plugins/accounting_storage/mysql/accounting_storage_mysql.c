@@ -2011,7 +2011,8 @@ extern int acct_storage_p_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 					   "insert into %s "
 					   "(timestamp, action, name, "
 					   "actor, info) "
-					   "values (%d, %u, '%s', '%s', '%s')",
+					   "values (%d, %u, '%s', "
+					   "'%s', \"%s\")",
 					   txn_table,
 					   now, DBD_ADD_ACCOUNT_COORDS, user,
 					   user_name, acct);
@@ -6705,10 +6706,11 @@ extern int clusteracct_storage_p_node_down(mysql_conn_t *mysql_conn,
 	xstrfmtcat(query,
 		   "insert into %s "
 		   "(node_name, cluster, cpu_count, period_start, reason) "
-		   "values ('%s', '%s', %u, %d, '%s') on duplicate key "
+		   "values ('%s', '%s', %u, %d, \"%s\") on duplicate key "
 		   "update period_end=0;",
 		   event_table, node_ptr->name, cluster, 
 		   cpus, event_time, my_reason);
+	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
 
@@ -6733,6 +6735,7 @@ extern int clusteracct_storage_p_node_up(mysql_conn_t *mysql_conn,
 		"update %s set period_end=%d where cluster='%s' "
 		"and period_end=0 and node_name='%s';",
 		event_table, event_time, cluster, node_ptr->name);
+	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
 	return rc;
@@ -6964,7 +6967,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 {
 #ifdef HAVE_MYSQL
 	int	rc=SLURM_SUCCESS;
-	char	*jname, *nodes;
+	char	*jname = NULL, *nodes = NULL;
 	long	priority;
 	int track_steps = 0;
 	char *block_id = NULL;
@@ -7001,7 +7004,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 	if (job_ptr->nodes && job_ptr->nodes[0])
 		nodes = job_ptr->nodes;
 	else
-		nodes = "(null)";
+		nodes = "None assigned";
 
 	if(job_ptr->batch_flag)
 		track_steps = 1;
@@ -7026,27 +7029,52 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 	if(!job_ptr->db_index) {
 		query = xstrdup_printf(
 			"insert into %s "
-			"(jobid, account, associd, uid, gid, partition, "
-			"blockid, eligible, submit, start, name, track_steps, "
-			"state, priority, req_cpus, alloc_cpus, nodelist) "
-			"values (%u, '%s', %u, %u, %u, '%s', '%s', "
-			"%d, %d, %d, '%s', %u, "
-			"%u, %u, %u, %u, '%s') "
-			"on duplicate key update id=LAST_INSERT_ID(id), "
-			"end=0, state=%u",
-			job_table, job_ptr->job_id, job_ptr->account, 
-			job_ptr->assoc_id,
-			job_ptr->user_id, job_ptr->group_id,
-			job_ptr->partition, block_id,
-			(int)job_ptr->details->begin_time,
-			(int)job_ptr->details->submit_time,
-			(int)job_ptr->start_time,
-			jname, track_steps,
-			job_ptr->job_state & (~JOB_COMPLETING),
-			priority, job_ptr->num_procs,
-			job_ptr->total_procs, nodes,
-			job_ptr->job_state & (~JOB_COMPLETING));
+			"(jobid, associd, uid, gid, nodelist, ",
+			job_table);
 
+		if(job_ptr->account) 
+			xstrcat(query, "account, ");
+		if(job_ptr->partition) 
+			xstrcat(query, "partition, ");
+		if(block_id) 
+			xstrcat(query, "blockid, ");
+		
+		xstrfmtcat(query, 
+			   "eligible, submit, start, name, track_steps, "
+			   "state, priority, req_cpus, alloc_cpus) "
+			   "values (%u, %u, %u, %u, '%s', ",
+			   job_ptr->job_id, job_ptr->assoc_id,
+			   job_ptr->user_id, job_ptr->group_id, nodes);
+		
+		if(job_ptr->account) 
+			xstrfmtcat(query, "'%s', ", job_ptr->account);
+		if(job_ptr->partition) 
+			xstrfmtcat(query, "'%s', ", job_ptr->partition);
+		if(block_id) 
+			xstrfmtcat(query, "'%s', ", block_id);
+		
+		xstrfmtcat(query, 
+			   "%d, %d, %d, '%s', %u, %u, %u, %u, %u) "
+			   "on duplicate key update "
+			   "id=LAST_INSERT_ID(id), state=%u, associd=%u",
+			   (int)job_ptr->details->begin_time,
+			   (int)job_ptr->details->submit_time,
+			   (int)job_ptr->start_time,
+			   jname, track_steps,
+			   job_ptr->job_state & (~JOB_COMPLETING),
+			   priority, job_ptr->num_procs,
+			   job_ptr->total_procs, 
+			   job_ptr->job_state & (~JOB_COMPLETING),
+			   job_ptr->assoc_id);
+
+		if(job_ptr->account) 
+			xstrfmtcat(query, ", account='%s'", job_ptr->account);
+		if(job_ptr->partition) 
+			xstrfmtcat(query, ", partition='%s'",
+				   job_ptr->partition);
+		if(block_id)
+			xstrfmtcat(query, ", blockid='%s'", block_id);
+		
 		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	try_again:
 		if(!(job_ptr->db_index = mysql_insert_ret_id(
@@ -7065,16 +7093,25 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 				rc = SLURM_ERROR;
 		}
 	} else {
-		query = xstrdup_printf(
-			"update %s set partition='%s', blockid='%s', start=%d, "
-			"name='%s', state=%u, alloc_cpus=%u, nodelist='%s', "
-			"account='%s', end=0 where id=%d",
-			job_table, job_ptr->partition, block_id,
-			(int)job_ptr->start_time,
-			jname, 
-			job_ptr->job_state & (~JOB_COMPLETING),
-			job_ptr->total_procs, nodes, 
-			job_ptr->account, job_ptr->db_index);
+		query = xstrdup_printf("update %s set nodelist='%s', ", 
+				       job_table, nodes);
+
+		if(job_ptr->account) 
+			xstrfmtcat(query, "account='%s', ",
+				   job_ptr->account);
+		if(job_ptr->partition) 
+			xstrfmtcat(query, "partition='%s', ",
+				   job_ptr->partition);
+		if(block_id)
+			xstrfmtcat(query, "blockid='%s', ", block_id);
+
+		xstrfmtcat(query, "start=%d, name='%s', state=%u, "
+			   "alloc_cpus=%u, associd=%u where id=%d",
+			   (int)job_ptr->start_time,
+			   jname, job_ptr->job_state & (~JOB_COMPLETING),
+			   job_ptr->total_procs, nodes, 
+			   job_ptr->assoc_id,
+			   job_ptr->db_index);
 		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 	}
@@ -7099,7 +7136,7 @@ extern int jobacct_storage_p_job_complete(mysql_conn_t *mysql_conn,
 #ifdef HAVE_MYSQL
 	char *query = NULL, *nodes = NULL;
 	int rc=SLURM_SUCCESS;
-	
+
 	if (!job_ptr->db_index 
 	    && (!job_ptr->details || !job_ptr->details->submit_time)) {
 		error("jobacct_storage_p_job_complete: "
@@ -7110,15 +7147,19 @@ extern int jobacct_storage_p_job_complete(mysql_conn_t *mysql_conn,
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 	debug2("mysql_jobacct_job_complete() called");
+	
+	/* If we get an error with this just fall through to avoid an
+	 * infinite loop
+	 */
 	if (job_ptr->end_time == 0) {
 		debug("mysql_jobacct: job %u never started", job_ptr->job_id);
-		return SLURM_ERROR;
+		return SLURM_SUCCESS;
 	}	
 	
 	if (job_ptr->nodes && job_ptr->nodes[0])
 		nodes = job_ptr->nodes;
 	else
-		nodes = "(null)";
+		nodes = "None assigned";
 
 	if(!job_ptr->db_index) {
 		if(!(job_ptr->db_index =
@@ -7135,7 +7176,6 @@ extern int jobacct_storage_p_job_complete(mysql_conn_t *mysql_conn,
 				      job_ptr->job_id);
 				return SLURM_SUCCESS;
 			}
-			jobacct_storage_p_job_start(mysql_conn, job_ptr);
 		}
 	}
 
@@ -7272,7 +7312,8 @@ extern int jobacct_storage_p_step_complete(mysql_conn_t *mysql_conn,
 	float ave_cpu = 0, ave_cpu2 = 0;
 	char *query = NULL;
 	int rc =SLURM_SUCCESS;
-	
+	uint32_t exit_code = 0;
+
 	if (!step_ptr->job_ptr->db_index 
 	    && (!step_ptr->job_ptr->details
 		|| !step_ptr->job_ptr->details->submit_time)) {
@@ -7309,7 +7350,12 @@ extern int jobacct_storage_p_step_complete(mysql_conn_t *mysql_conn,
 	
 	if ((elapsed=now-step_ptr->start_time)<0)
 		elapsed=0;	/* For *very* short jobs, if clock is wrong */
-	if (step_ptr->exit_code)
+	
+	exit_code = step_ptr->exit_code;
+	if (exit_code == NO_VAL) {
+		comp_status = JOB_CANCELLED;
+		exit_code = 0;
+	} else if (exit_code)
 		comp_status = JOB_FAILED;
 	else
 		comp_status = JOB_COMPLETE;
@@ -7369,7 +7415,7 @@ extern int jobacct_storage_p_step_complete(mysql_conn_t *mysql_conn,
 		step_table, (int)now,
 		comp_status,
 		step_ptr->job_ptr->requid, 
-		step_ptr->exit_code,
+		exit_code,
 		/* user seconds */
 		jobacct->user_cpu_sec,	
 		/* user microseconds */

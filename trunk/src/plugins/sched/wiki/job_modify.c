@@ -95,11 +95,10 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr,
 				  old_time) * 60);
 		last_job_update = time(NULL);
 	}
-	if (bank_ptr) {
-		info("wiki: change job %u bank %s", jobid, bank_ptr);
-		xfree(job_ptr->account);
-		job_ptr->account = xstrdup(bank_ptr);
-		last_job_update = time(NULL);
+
+	if (bank_ptr &&
+	    (update_job_account("wiki", job_ptr, bank_ptr) != SLURM_SUCCESS)) {
+		return EINVAL;
 	}
 
 	if (new_hostlist) {

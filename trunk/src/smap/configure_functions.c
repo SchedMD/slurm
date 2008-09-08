@@ -1276,7 +1276,7 @@ static void _print_text_command(allocated_block_t *allocated_block)
 	main_xcord += 7;
 
 	mvwprintw(text_win, main_ycord,
-		  main_xcord, "%d",allocated_block->request->size);
+		  main_xcord, "%d", allocated_block->request->size);
 	main_xcord += 10;
 	
 	if(allocated_block->request->conn_type == SELECT_SMALL) {

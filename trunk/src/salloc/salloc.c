@@ -50,6 +50,14 @@
 #include "src/salloc/salloc.h"
 #include "src/salloc/opt.h"
 
+#ifdef HAVE_BG
+#include "src/api/job_info.h"
+#include "src/api/node_select_info.h"
+#include "src/common/node_select.h"
+#include "src/plugins/select/bluegene/plugin/bg_boot_time.h"
+#include "src/plugins/select/bluegene/wrap_rm_api.h"
+#endif
+
 #define MAX_RETRIES 3
 
 char **command_argv;
@@ -75,6 +83,16 @@ static void _timeout_handler(srun_timeout_msg_t *msg);
 static void _user_msg_handler(srun_user_msg_t *msg);
 static void _ping_handler(srun_ping_msg_t *msg);
 static void _node_fail_handler(srun_node_fail_msg_t *msg);
+
+#ifdef HAVE_BG
+
+#define POLL_SLEEP 3			/* retry interval in seconds  */
+
+static int _wait_bluegene_block_ready(
+	resource_allocation_response_msg_t *alloc);
+static int _blocks_dealloc();
+#endif
+
 
 int main(int argc, char *argv[])
 {
@@ -187,6 +205,13 @@ int main(int argc, char *argv[])
 	 * Allocation granted!
 	 */
 	info("Granted job allocation %d", alloc->job_id);
+#ifdef HAVE_BG
+	if (!_wait_bluegene_block_ready(alloc)) {
+		error("Something is wrong with the boot of the block.");
+		goto relinquish;
+	}
+
+#endif
 	if (opt.bell == BELL_ALWAYS
 	    || (opt.bell == BELL_AFTER_DELAY
 		&& ((after - before) > DEFAULT_BELL_DELAY))) {
@@ -520,3 +545,93 @@ static void _node_fail_handler(srun_node_fail_msg_t *msg)
 {
 	error("Node failure on %s", msg->nodelist);
 }
+
+#ifdef HAVE_BG
+/* returns 1 if job and nodes are ready for job to begin, 0 otherwise */
+static int _wait_bluegene_block_ready(resource_allocation_response_msg_t *alloc)
+{
+	int is_ready = 0, i, rc;
+	char *block_id = NULL;
+	int cur_delay = 0;
+	int max_delay = BG_FREE_PREVIOUS_BLOCK + BG_MIN_BLOCK_BOOT +
+		(BG_INCR_BLOCK_BOOT * alloc->node_cnt);
+
+	select_g_get_jobinfo(alloc->select_jobinfo, SELECT_DATA_BLOCK_ID,
+			     &block_id);
+
+	for (i=0; (cur_delay < max_delay); i++) {
+		if(i == 1)
+			info("Waiting for block %s to become ready for job",
+			     block_id);
+		if (i) {
+			sleep(POLL_SLEEP);
+			rc = _blocks_dealloc();
+			if ((rc == 0) || (rc == -1)) 
+				cur_delay += POLL_SLEEP;
+			debug("still waiting");
+		}
+
+		rc = slurm_job_node_ready(alloc->job_id);
+
+		if (rc == READY_JOB_FATAL)
+			break;				/* fatal error */
+		if (rc == READY_JOB_ERROR)		/* error */
+			continue;			/* retry */
+		if ((rc & READY_JOB_STATE) == 0)	/* job killed */
+			break;
+		if (rc & READY_NODE_STATE) {		/* job and node ready */
+			is_ready = 1;
+			break;
+		}
+	}
+
+	if (is_ready)
+     		info("Block %s is ready for job", block_id);
+	else
+		error("Block %s still not ready", block_id);
+	xfree(block_id);
+
+	return is_ready;
+}
+
+/*
+ * Test if any BG blocks are in deallocating state since they are
+ * probably related to this job we will want to sleep longer
+ * RET	1:  deallocate in progress
+ *	0:  no deallocate in progress
+ *     -1: error occurred
+ */
+static int _blocks_dealloc()
+{
+	static node_select_info_msg_t *bg_info_ptr = NULL, *new_bg_ptr = NULL;
+	int rc = 0, error_code = 0, i;
+	
+	if (bg_info_ptr) {
+		error_code = slurm_load_node_select(bg_info_ptr->last_update, 
+						   &new_bg_ptr);
+		if (error_code == SLURM_SUCCESS)
+			select_g_free_node_info(&bg_info_ptr);
+		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
+			error_code = SLURM_SUCCESS;
+			new_bg_ptr = bg_info_ptr;
+		}
+	} else {
+		error_code = slurm_load_node_select((time_t) NULL, &new_bg_ptr);
+	}
+
+	if (error_code) {
+		error("slurm_load_partitions: %s\n",
+		      slurm_strerror(slurm_get_errno()));
+		return -1;
+	}
+	for (i=0; i<new_bg_ptr->record_count; i++) {
+		if(new_bg_ptr->bg_info_array[i].state 
+		   == RM_PARTITION_DEALLOCATING) {
+			rc = 1;
+			break;
+		}
+	}
+	bg_info_ptr = new_bg_ptr;
+	return rc;
+}
+#endif

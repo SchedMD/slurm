@@ -1468,7 +1468,7 @@ extern int job_step_checkpoint_task_comp(checkpoint_task_comp_msg_t *ckpt_ptr,
  * RET 0 on success, otherwise ESLURM error code
  */
 extern int step_partial_comp(step_complete_msg_t *req, int *rem, 
-		int *max_rc)
+			     uint32_t *max_rc)
 {
 	struct job_record *job_ptr;
 	struct step_record *step_ptr;

@@ -44,6 +44,12 @@ else
    RETVAL=0
 fi
 
+# We can not use a starter program without losing environment 
+# variables that are critical on Blue Gene systems
+if [ -d /bgl/BlueLight/ppcfloor ]; then
+   STARTPROC=""
+fi
+
 # Source slurm specific configuration
 if [ -f /etc/sysconfig/slurm ] ; then
     . /etc/sysconfig/slurm
@@ -53,18 +59,23 @@ fi
 
 [ -f $CONFDIR/slurmdbd.conf ] || exit 1
 
+# setup library paths for slurm and munge support
+export LD_LIBRARY_PATH="$LIBDIR:$LD_LIBRARY_PATH"
+
 start() {
-    echo -n "starting slurmdbd: " 
+    prog=$1
+    shift
+    echo -n "starting $prog: " 
     unset HOME MAIL USER USERNAME 
-    $STARTPROC $SBINDIR/slurmdbd $SLURMDBD_OPTIONS
+    $STARTPROC $SBINDIR/$prog $SLURMDBD_OPTIONS
     rc_status -v
     echo
     touch /var/lock/subsys/slurmdbd
 }
 
 stop() { 
-    echo -n "stopping slurmdbd: "
-    killproc slurmdbd -TERM
+    echo -n "stopping $1: "
+    killproc $1 -TERM
     rc_status -v
     echo
     rm -f /var/lock/subsys/slurmdbd
@@ -76,7 +87,7 @@ slurmstatus() {
     local rpid
     local pidfile
 
-    pidfile=`grep -i PidFile $CONFDIR/slurmdbd.conf | grep -v '^ *#'`
+    pidfile=`grep -i ${base}pid $CONFDIR/slurmdbd.conf | grep -v '^ *#'`
     if [ $? = 0 ]; then
         pidfile=${pidfile##*=}
         pidfile=${pidfile%#*}
@@ -84,25 +95,26 @@ slurmstatus() {
         pidfile=/var/run/slurmdbd.pid
     fi
 
-    pid=`pidof -o $$ -o $$PPID -o %PPID -x slurmdbd`
+   pid=`pidof -o $$ -o $$PPID -o %PPID -x $1 || \
+         pidof -o $$ -o $$PPID -o %PPID -x ${base}`
 
     if [ -f $pidfile ]; then
         read rpid < $pidfile
         if [ "$rpid" != "" -a "$pid" != "" ]; then
             for i in $pid ; do
                 if [ "$i" = "$rpid" ]; then 
-                    echo $"slurmdbd (pid $pid) is running..."
+                    echo $"${base} (pid $pid) is running..."
                     return 0
                 fi     
             done
         elif [ "$rpid" != "" -a "$pid" = "" ]; then
-            echo $"slurmdbd is stopped"
+            echo $"${base} is stopped"
             return 1
         fi 
 
     fi
      
-    echo $"slurmdbd is stopped"
+    echo $"${base} is stopped"
     
     return 3
 }
@@ -125,8 +137,8 @@ case "$1" in
 	slurmstatus slurmdbd
         ;;
     restart)
-	stop slurmdbd
-	start slurmdbd
+	$0 stop
+	$0 start
         ;;
     condrestart)
         if [ -f /var/lock/subsys/slurm ]; then

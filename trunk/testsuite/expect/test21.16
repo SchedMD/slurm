@@ -88,7 +88,7 @@ set mn		maxnode
 set mw		maxwall
 set dbu		debug
 set access_err  0
-
+#set user_name   "id -u -n"
 
 print_header $test_id
 
@@ -102,6 +102,10 @@ if { [test_account_storage] == 0 } {
 	exit 0
 }
 
+if { [string compare [check_accounting_admin_level] "Administrator"] } {
+	send_user "\nWARNING: This test can't be run without being an Accounting administrator.\nUse sacctmgr mod user \$USER_NAME admin=admin.\n"
+	exit 0
+}
 
 #
 # Use sacctmgr to create a cluster

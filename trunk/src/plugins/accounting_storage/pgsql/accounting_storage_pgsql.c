@@ -1143,7 +1143,7 @@ extern int jobacct_storage_p_job_start(PGconn *acct_pgsql_db,
 	if (job_ptr->nodes && job_ptr->nodes[0])
 		nodes = job_ptr->nodes;
 	else
-		nodes = "(null)";
+		nodes = "None assigned";
 
 	if(job_ptr->batch_flag)
 		track_steps = 1;
@@ -1250,15 +1250,24 @@ extern int jobacct_storage_p_job_complete(PGconn *acct_pgsql_db,
 	if (job_ptr->nodes && job_ptr->nodes[0])
 		nodes = job_ptr->nodes;
 	else
-		nodes = "(null)";
-
+		nodes = "None assigned";
+	
 	if(!job_ptr->db_index) {
-		job_ptr->db_index = _get_db_index(acct_pgsql_db,
-						  job_ptr->details->submit_time,
-						  job_ptr->job_id,
-						  job_ptr->assoc_id);
-		if(job_ptr->db_index == -1) 
-			return SLURM_ERROR;
+		if(!(job_ptr->db_index =
+		     _get_db_index(acct_pgsql_db,
+				   job_ptr->details->submit_time,
+				   job_ptr->job_id,
+				   job_ptr->assoc_id))) {
+			/* If we get an error with this just fall
+			 * through to avoid an infinite loop
+			 */
+			if(jobacct_storage_p_job_start(acct_pgsql_db, job_ptr)
+			   == SLURM_ERROR) {
+				error("couldn't add job %u at job completion",
+				      job_ptr->job_id);
+				return SLURM_SUCCESS;
+			}
+		}
 	}
 	query = xstrdup_printf("update %s set start=%u, endtime=%u, state=%d, "
 			       "nodelist='%s', comp_code=%u, "
@@ -1385,7 +1394,8 @@ extern int jobacct_storage_p_step_complete(PGconn *acct_pgsql_db,
 	float ave_cpu = 0, ave_cpu2 = 0;
 	char *query = NULL;
 	int rc =SLURM_SUCCESS;
-	
+	uint32_t exit_code;
+
 	if (!step_ptr->job_ptr->db_index 
 	    && (!step_ptr->job_ptr->details
 		|| !step_ptr->job_ptr->details->submit_time)) {
@@ -1425,7 +1435,12 @@ extern int jobacct_storage_p_step_complete(PGconn *acct_pgsql_db,
 
 	if ((elapsed=now-step_ptr->start_time)<0)
 		elapsed=0;	/* For *very* short jobs, if clock is wrong */
-	if (step_ptr->exit_code)
+
+	exit_code = step_ptr->exit_code;
+	if (exit_code == NO_VAL) {
+		comp_status = JOB_CANCELLED;
+		exit_code = 0;
+	} else if (exit_code)
 		comp_status = JOB_FAILED;
 	else
 		comp_status = JOB_COMPLETE;
@@ -1475,7 +1490,7 @@ extern int jobacct_storage_p_step_complete(PGconn *acct_pgsql_db,
 		step_table, (int)now,
 		comp_status,
 		step_ptr->job_ptr->requid, 
-		step_ptr->exit_code, 
+		exit_code, 
 		/* user seconds */
 		jobacct->user_cpu_sec,	
 		/* user microseconds */

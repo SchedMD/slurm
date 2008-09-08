@@ -80,6 +80,14 @@ if { [test_account_storage] == 0 } {
 }
  
 #
+# Verify if Administrator privileges
+#
+ if { [string compare [check_accounting_admin_level] "Administrator"] } {
+	send_user "\nWARNING: This test can't be run without being an Accounting administrator.\nUse sacctmgr mod user \$USER_NAME admin=admin.\n"
+	exit 0
+}
+
+#
 # Use sacctmgr to create a cluster
 #
 set sadd_pid [spawn $sacctmgr -i add $clu $nams=$tc1,$tc2 $fs=$fs1 $mc=$mc1 $mj=$mj1 $mn=$mn1 $mw=$mw1]

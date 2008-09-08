@@ -1878,6 +1878,7 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 			xfree(job_ptr->state_desc);
 		} else
 			job_ptr->job_state = JOB_COMPLETE | job_comp_flag;
+		
 		if (suspended) {
 			job_ptr->end_time = job_ptr->suspend_time;
 			job_ptr->tot_sus_time += 
@@ -4320,55 +4321,24 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	}
 
 	if (job_specs->account) {
-		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL)) {
-			info("update_job: attempt to modify account for "
-			     "non-pending job_id %u", job_specs->job_id);
-			error_code = ESLURM_DISABLED;
-		} else {
-			acct_association_rec_t assoc_rec, *assoc_ptr;
-			bzero(&assoc_rec, sizeof(acct_association_rec_t));
-
-			assoc_rec.uid       = job_ptr->user_id;
-			assoc_rec.partition = job_ptr->partition;
-			assoc_rec.acct      = job_specs->account;
-			if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
-						    accounting_enforce, 
-						    &assoc_ptr)) {
-				info("job_update: invalid account %s for "
-				     "job_id %u",
-				     job_specs->account, job_ptr->job_id);
-				error_code = ESLURM_INVALID_ACCOUNT;
-			} else {
-				xfree(job_ptr->account);
-				if (assoc_rec.acct[0] != '\0') {
-					job_ptr->account = 
-							xstrdup(assoc_rec.acct);
-					info("update_job: setting account to "
-					     "%s for job_id %u",
-					     assoc_rec.acct, job_ptr->job_id);
-				} else {
-					info("update_job: cleared account for "
-					     "job_id %u",
-					     job_specs->job_id);
-				}
-				job_ptr->assoc_id = assoc_rec.id;
-				job_ptr->assoc_ptr = (void *) assoc_ptr;
-			}
-		}
+		int rc = update_job_account("update_job", job_ptr, 
+					    job_specs->account);
+		if (rc != SLURM_SUCCESS)
+			error_code = rc;
 	}
 
 	if (job_specs->ntasks_per_node != (uint16_t) NO_VAL) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_DISABLED;
 		else if (super_user) {
-			detail_ptr->ntasks_per_node = 
-					job_specs->ntasks_per_node;
+			detail_ptr->ntasks_per_node = job_specs->
+						      ntasks_per_node;
 			info("update_job: setting ntasks_per_node to %u for "
 			     "job_id %u", job_specs->ntasks_per_node,
 			     job_specs->job_id);
 		} else {
-			error("Not super user: setting ntasks_oper_node to job %u",
-			      job_specs->job_id);
+			error("Not super user: setting ntasks_oper_node to "
+			      "job %u", job_specs->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
@@ -5077,6 +5047,16 @@ extern void job_completion_logger(struct job_record  *job_ptr)
 	}
 
 	g_slurm_jobcomp_write(job_ptr);
+
+	/* 
+	 * This means the job wasn't ever eligible, but we want to
+	 * keep track of all jobs, so we will set the db_inx to
+	 * INFINITE and the database will understand what happened.
+	 */ 
+	if(!job_ptr->nodes && !job_ptr->db_index) {
+		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
+	}
+
 	jobacct_storage_g_job_complete(acct_db_conn, job_ptr);
 }
 
@@ -5686,7 +5666,8 @@ extern int job_cancel_by_assoc_id(uint32_t assoc_id)
 		if ((job_ptr->assoc_id != assoc_id) || 
 		    IS_JOB_FINISHED(job_ptr))
 			continue;
-		info("Association deleted, cancelling job %u", job_ptr->job_id);
+		info("Association deleted, cancelling job %u", 
+		     job_ptr->job_id);
 		job_signal(job_ptr->job_id, SIGKILL, 0, 0);
 		job_ptr->state_reason = FAIL_BANK_ACCOUNT;
 		xfree(job_ptr->state_desc);
@@ -5694,4 +5675,56 @@ extern int job_cancel_by_assoc_id(uint32_t assoc_id)
 	}
 	list_iterator_destroy(job_iterator);
 	return cnt;
+}
+
+/*
+ * Modify the account associated with a pending job
+ * IN module - where this is called from
+ * IN job_ptr - pointer to job which should be modified
+ * IN new_account - desired account name
+ * RET SLURM_SUCCESS or error code
+ */
+extern int update_job_account(char *module, struct job_record *job_ptr, 
+			      char *new_account)
+{
+	acct_association_rec_t assoc_rec, *assoc_ptr;
+
+	if ((!IS_JOB_PENDING(job_ptr)) || (job_ptr->details == NULL)) {
+		info("%s: attempt to modify account for non-pending "
+		     "job_id %u", module, job_ptr->job_id);
+		return ESLURM_DISABLED;
+	}
+
+
+	bzero(&assoc_rec, sizeof(acct_association_rec_t));
+	assoc_rec.uid       = job_ptr->user_id;
+	assoc_rec.partition = job_ptr->partition;
+	assoc_rec.acct      = new_account;
+	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
+				    accounting_enforce, &assoc_ptr)) {
+		info("%s: invalid account %s for job_id %u",
+		     module, new_account, job_ptr->job_id);
+		return ESLURM_INVALID_ACCOUNT;
+	}
+
+
+	xfree(job_ptr->account);
+	if (assoc_rec.acct[0] != '\0') {
+		job_ptr->account = xstrdup(assoc_rec.acct);
+		info("%s: setting account to %s for job_id %u",
+		     module, assoc_rec.acct, job_ptr->job_id);
+	} else {
+		info("%s: cleared account for job_id %u",
+		     module, job_ptr->job_id);
+	}
+	job_ptr->assoc_id = assoc_rec.id;
+	job_ptr->assoc_ptr = (void *) assoc_ptr;
+
+	if (job_ptr->details && job_ptr->details->begin_time) {
+		/* Update account associated with the eligible time */
+		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
+	}
+	last_job_update = time(NULL);
+
+	return SLURM_SUCCESS;
 }

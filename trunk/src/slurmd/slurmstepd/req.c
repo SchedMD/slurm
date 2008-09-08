@@ -174,10 +174,16 @@ _domain_socket_create(const char *dir, const char *nodename,
 	 * First check to see if the named socket already exists.
 	 */
 	if (stat(name, &stat_buf) == 0) {
-		error("Socket %s already exists", name);
-		xfree(name);
-		errno = ESLURMD_STEP_EXISTS;
-		return -1;
+		/* Vestigial from a slurmd crash or job requeue that did not
+		 * happen properly (very rare conditions). Try another name */
+		xstrcat(name, ".ALT");
+		if (stat(name, &stat_buf) == 0) {
+			error("Socket %s already exists", name);
+			xfree(name);
+			errno = ESLURMD_STEP_EXISTS;
+			return -1;
+		}
+		error("Using alternate socket name %s", name);
 	}
 
 	fd = _create_socket(name);

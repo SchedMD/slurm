@@ -25271,7 +25271,7 @@ echo "$as_me: WARNING: *** pkg-config not found. Cannot probe for libglade-2.0 o
 #    fi
 
 
-### Check for gtk2.8 package
+### Check for gtk2.7.1 package
     if test "$ac_have_gtk" == "yes" ; then
         $HAVEPKGCONFIG --exists gtk+-2.0
         if ! test $? -eq 0 ; then
