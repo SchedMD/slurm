@@ -1038,7 +1038,7 @@ int i;
 lock_slurmctld(job_read_lock);
 select_res_ptr1 = create_select_job_res();
 select_res_ptr1->nhosts = 4;
-node_name2bitmap("dummy[2,5,12,16]", true, &(select_res_ptr1->node_bitmap));
+node_name2bitmap("dummy[2,9,12,16]", true, &(select_res_ptr1->node_bitmap));
 i = build_select_job_res(select_res_ptr1, node_record_table_ptr, 
 			 slurmctld_conf.fast_schedule);
 if (i)
@@ -1047,7 +1047,7 @@ else
   info("build_select_job_res success");
 select_res_ptr1->nprocs = 5;
 select_res_ptr1->node_req = 1;
-select_res_ptr1->cpus = xmalloc(sizeof(uint32_t) * 4);
+select_res_ptr1->cpus = xmalloc(sizeof(uint16_t) * 4);
 set_select_job_res_bit(select_res_ptr1, 0, 2, 1); info("set_bit(0,2,1)");
 select_res_ptr1->cpus[0] = 1;
 set_select_job_res_bit(select_res_ptr1, 1, 0, 0); info("set_bit(1,0,0)");
@@ -1093,7 +1093,7 @@ info("copied select_job_res");
 log_select_job_res(select_res_ptr2);
 
 info("Setting cpus_used(1) and memory_used(111) for node_id 1");
-select_res_ptr2->cpus_used = xmalloc(sizeof(uint32_t) * 4);
+select_res_ptr2->cpus_used = xmalloc(sizeof(uint16_t) * 4);
 select_res_ptr2->cpus_used[1] = 1;
 select_res_ptr2->memory_used = xmalloc(sizeof(uint32_t) * 4);
 select_res_ptr2->memory_used[1] = 111;
@@ -1103,7 +1103,7 @@ set_buf_offset(buffer, 0);
 if (unpack_select_job_res(&select_res_ptr1, buffer))
   error("unpack_select_job_res failure");
 else {
-  uint32_t core_cnt, socket_cnt;
+  uint16_t core_cnt, socket_cnt;
   info("unpacked select_job_res");
   log_select_job_res(select_res_ptr1);
   get_select_job_res_cnt(select_res_ptr1, 0, &socket_cnt, &core_cnt);
