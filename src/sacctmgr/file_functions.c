@@ -362,7 +362,12 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 		exit_code=1;
 		fprintf(stderr, " No name given\n");
 		_destroy_sacctmgr_file_opts(file_opts);
+		file_opts = NULL;
+	} else if(exit_code) {
+		_destroy_sacctmgr_file_opts(file_opts);
+		file_opts = NULL;
 	}
+
 	return file_opts;
 }
 
