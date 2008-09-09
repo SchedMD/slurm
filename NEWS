@@ -1,6 +1,12 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.2.36
+=========================
+ -- For spank_get_item(S_JOB_ARGV) for batch job with script input via STDIN,
+    set argc value to 1 (rather than 2, argv[0] still set to path of generated
+    script).
+
 * Changes in SLURM 1.2.35
 =========================
  -- Permit SPANK plugins to dynamically register options at runtime base upon
