@@ -684,6 +684,7 @@ _handle_signal_container(int fd, slurmd_job_t *job, uid_t uid)
 	int rc = SLURM_SUCCESS;
 	int errnum = 0;
 	int sig;
+	static int msg_sent = 0;
 
 	debug("_handle_signal_container for job %u.%u",
 	      job->jobid, job->stepid);
@@ -711,8 +712,8 @@ _handle_signal_container(int fd, slurmd_job_t *job, uid_t uid)
 		goto done;
 	}
 
-	if (job->nodeid == 0) {
-		static int msg_sent = 0;
+	if ((job->nodeid == 0) && (msg_sent == 0) &&
+	    (job->state < SLURMSTEPD_STEP_ENDING)) {
 		char *entity;
 		if (job->stepid == SLURM_BATCH_SCRIPT)
 			entity = "JOB";
@@ -720,9 +721,7 @@ _handle_signal_container(int fd, slurmd_job_t *job, uid_t uid)
 			entity = "STEP";
 		/* Not really errors,
 		 * but we want messages displayed by default */
-		if (msg_sent)
-			;
-		else if (sig == SIGXCPU) {
+		if (sig == SIGXCPU) {
 			error("*** %s CANCELLED DUE TO TIME LIMIT ***", entity);
 			msg_sent = 1;	/* we just want to log the event */
 			goto done;	/* don't actually send the signal */
