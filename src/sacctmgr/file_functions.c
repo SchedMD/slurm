@@ -890,8 +890,10 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 				   new_qos);
 			xfree(new_qos);
 			changed = 1;
-		} else 
+		} else {
 			list_destroy(mod_user.qos_list);
+			mod_user.qos_list = NULL;
+		}
 
 	} else if(file_opts->qos_list && list_count(file_opts->qos_list)) {
 		char *new_qos = get_qos_complete_str(qos_list,
