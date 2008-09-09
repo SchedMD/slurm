@@ -1457,7 +1457,7 @@ static void *_agent(void *x)
 			 * the DBD 
 			 */
 			if(slurmdbd_fd >= 0 && running_cache)
-				assoc_mgr_init(NULL, NULL);		
+				assoc_mgr_refresh_lists(NULL, NULL);		
 			slurm_mutex_unlock(&replace_cache);
 			
 			continue;
@@ -1488,7 +1488,7 @@ static void *_agent(void *x)
 		 * the DBD 
 		 */
 		if(slurmdbd_fd >= 0 && running_cache)
-			assoc_mgr_init(NULL, NULL);		
+			assoc_mgr_refresh_lists(NULL, NULL);		
 		slurm_mutex_unlock(&replace_cache);
 
 		slurm_mutex_lock(&agent_lock);

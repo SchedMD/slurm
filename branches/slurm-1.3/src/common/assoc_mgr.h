@@ -58,8 +58,7 @@
 typedef struct {
 	uint16_t cache_level;
 	uint16_t enforce;
-       	uint16_t refresh;
-	void (*remove_assoc_notify) (acct_association_rec_t *rec);
+ 	void (*remove_assoc_notify) (acct_association_rec_t *rec);
 } assoc_init_args_t;
 
 /* 
@@ -158,5 +157,11 @@ extern int dump_assoc_mgr_state(char *state_save_location);
  * isn't up when starting.
  */
 extern int load_assoc_mgr_state(char *state_save_location);
+
+/*
+ * Refresh the lists if when running_cache is set this will load new
+ * information from the database (if any) and update the cached list.
+ */
+extern int assoc_mgr_refresh_lists(void *db_conn, assoc_init_args_t *args);
 
 #endif /* _SLURM_ASSOC_MGR_H */
