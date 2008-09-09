@@ -349,11 +349,11 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 		job->argc    = msg->argc;
 		job->argv    = _array_copy(job->argc, msg->argv);
 	} else {
-		job->argc    = 2;
+		job->argc    = 1;
 		/* job script has not yet been written out to disk --
-		 * argv will be filled in later
+		 * argv will be filled in later by _make_batch_script()
 		 */
-		job->argv    = (char **) xmalloc(job->argc * sizeof(char *));
+		job->argv    = (char **) xmalloc(sizeof(char *));
 	}
 
 	job->task = (slurmd_task_info_t **)
