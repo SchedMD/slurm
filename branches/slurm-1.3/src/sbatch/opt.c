@@ -652,6 +652,9 @@ char *process_options_first_pass(int argc, char **argv)
 
 		return opt.script_argv[0];
 	} else {
+		opt.script_argc = 1;
+		opt.script_argv = (char **) xmalloc(2 * sizeof(char *));
+		opt.script_argv[0] = "STDIN";
 		return NULL;
 	}
 }
