@@ -31,7 +31,7 @@ Print a help message describing the usage of \fBssacctmgr\fR.
 This is equivalent to the \fBhelp\fR command.
 
 .TP
-\fB\-\-immediate\fR
+\fB\-i\fR, \fB\-\-immediate\fR
 commit changes immediately.
 
 .TP
@@ -93,8 +93,12 @@ Add an entity.
 Identical to the \fBadd\fR command.
 
 .TP
-\fBdelete\fR \fIENTITY\fR with \fISPECS\fR
+\fBdelete\fR <\fIENTITY\fR> with <\fISPECS\fR>
 Delete the specified entities.
+
+.TP
+\fBdump\fR <\fIENTITY\fR> with <\fIFILENAME\fR>
+Dump cluster data to the specified file.
 
 .TP
 \fBexit\fP
@@ -110,6 +114,10 @@ Display a description of sacctmgr options and commands.
 Display information about the specified entities.
 By default, all entities are displayed.
 Identical to the \fBshow\fR command.
+
+.TP
+\fBload\fR <\fIFILENAME\fR>
+Load cluster data to the specified file.
 
 .TP
 \fBmodify\fR <\fIENTITY\fR> \fbwith\fR <\fISPECS\fR> \fbset\fR <\fISPECS\fR>
@@ -361,6 +369,25 @@ Default is the account's limit.
 The is recorded in minutes with rounding as needed.
 To clear a previously set value use the modify command with a new value of \-1.
 
+
+.SH "FLAT FILE DUMP AND LOAD"
+sacctmgr has the capability to load and dump Slurm account data to and
+from a file. Each file contains Slurm account data for one
+cluster. Loading a file will modify the database. Blank lines in the
+file must begin with the # character. Each line of information will
+begin with one of the four titles; Cluster, Parent, Account or
+User. Following the title is a space, dash, space, entity value, then specifications. Specifications are colon separated with string values enclosed in
+single quotes. An example of the form is:
+
+Cluster\ \-\ tux
+.br
+Parent\ \-\ root
+.br
+Account\ \-\ physics:Description='physics\ account':Organization='science':QOS='normal':Fairshare=10:MaxCPUSecs=700:MaxJobs=3:MaxNodes=9:MaxWallDurationPerJob=3600
+.br
+User\ \-\ adam:DefaultAccount='physics':QOS='normal':Fairshare=4:MaxCPUSecs=400:MaxJobs=2:MaxNodes=4:MaxWallDurationPerJob=3600
+
+
 .SH "EXAMPLES"
 .eo
 .br
@@ -379,6 +406,11 @@ To clear a previously set value use the modify command with a new value of \-1.
 > sacctmgr modify user with name=adam cluster=tux account=physics \
 .br
   set maxjobs=2 maxtime=30:00
+.br
+> sacctmgr dump cluster=tux tux_data_file
+.br
+> sacctmgr load tux_data_file
+.br
 .ec
 
 .SH "COPYING"
