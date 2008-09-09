@@ -406,7 +406,8 @@ static void *get_script_buffer(const char *filename, int *size)
 		ptr = buf + script_size;
 		buf_left = buf_size - script_size;
 	}
-	close(fd);
+	if (filename)
+		close(fd);
 
 	/*
 	 * Finally we perform some sanity tests on the script.
