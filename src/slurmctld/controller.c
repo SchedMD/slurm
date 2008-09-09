@@ -308,7 +308,6 @@ int main(int argc, char *argv[])
 	memset(&assoc_init_arg, 0, sizeof(assoc_init_args_t));
 	assoc_init_arg.enforce = accounting_enforce;
 	assoc_init_arg.remove_assoc_notify = _remove_assoc;
-	assoc_init_arg.refresh = 0;
 	assoc_init_arg.cache_level = ASSOC_MGR_CACHE_ALL;
 
 	if (assoc_mgr_init(acct_db_conn, &assoc_init_arg)) {
@@ -412,7 +411,12 @@ int main(int argc, char *argv[])
 		if(!acct_db_conn) {
 			acct_db_conn = 
 				acct_storage_g_get_connection(true, false);
-			if (assoc_mgr_init(acct_db_conn, &assoc_init_arg) &&
+			/* We only send in a variable the first time
+			   we call this since we are setting up static
+			   variables inside the function sending a
+			   NULL will just use those set before.
+			*/
+			if (assoc_mgr_init(acct_db_conn, NULL) &&
 			    accounting_enforce && !running_cache) {
 				error("assoc_mgr_init failure");
 				fatal("slurmdbd and/or database must be up at "
@@ -523,6 +527,7 @@ int main(int argc, char *argv[])
 	part_fini();	/* part_fini() must preceed node_fini() */
 	node_fini();
 	trigger_fini();
+	assoc_mgr_fini();
 
 	/* Plugins are needed to purge job/node data structures,
 	 * unplug after other data structures are purged */
@@ -534,7 +539,6 @@ int main(int argc, char *argv[])
 	checkpoint_fini();
 	slurm_auth_fini();
 	switch_fini();
-	assoc_mgr_fini();
 
 	/* purge remaining data structures */
 	slurm_cred_ctx_destroy(slurmctld_config.cred_ctx);
