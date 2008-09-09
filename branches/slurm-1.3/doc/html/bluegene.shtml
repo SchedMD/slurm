@@ -272,11 +272,17 @@ etc.).  Sample prolog and epilog scripts follow. </p>
 /usr/sbin/slurm_epilog
 </pre>
 
-<p>Since jobs with different geometries or other characteristics do not interfere 
-with each other's scheduling, backfill scheduling is not presently meaningful.
+<p>Since jobs with different geometries or other characteristics might not 
+interfere with each other, scheduling is somewhat different on a BlueGene 
+system than typical clusters.
 SLURM's builtin scheduler on BlueGene will sort pending jobs and then attempt 
-to schedule all of them in priority order. 
+to schedule <b>all</b> of them in priority order. 
 This essentially functions as if there is a separate queue for each job size.
+SLURM's backfill scheduler on BlueGene will enforce FIFO (first-in first-out)
+scheduling with backfill (lower priority jobs will start early if doing so 
+will not impact the expected initiation time of a higher priority job). 
+As on other systems, effective backfill relies upon users setting reasonable
+job time limits.
 Note that SLURM does support different partitions with an assortment of 
 different scheduling parameters.
 For example, SLURM can have defined a partition for full system jobs that 
@@ -631,6 +637,6 @@ scheduling logic, etc. </p>
  
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 23 April 2008</p>
+<p style="text-align:center;">Last modified 9 September 2008</p>
 
 <!--#include virtual="footer.txt"-->

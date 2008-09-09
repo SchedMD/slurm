@@ -90,9 +90,15 @@ static bool stop_backfill = false;
 static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* Backfill scheduling has considerable overhead, 
- * so only attempt it every BACKFILL_INTERVAL seconds */
+ *	so only attempt it every BACKFILL_INTERVAL seconds.
+ * Much of the scheduling for BlueGene happens through backfill,
+ *	so we run it more frequently. */
 #ifndef BACKFILL_INTERVAL
-#  define BACKFILL_INTERVAL	10
+#  ifdef HAVE_BG
+#    define BACKFILL_INTERVAL	5
+#  else
+#    define BACKFILL_INTERVAL	10
+#  endif
 #endif
 
 /* Set __DEBUG to get detailed logging for this thread without 
@@ -329,9 +335,9 @@ static void _attempt_backfill(void)
 		}
 		if (j != SLURM_SUCCESS)
 			continue;	/* not runable */
-		if (job_ptr->start_time <= now) {
-			/* Start the job now */
-			_start_job(job_ptr, avail_bitmap);
+		if ((job_ptr->start_time <= now) &&
+		    (_start_job(job_ptr, avail_bitmap) != SLURM_SUCCESS)) {
+			/* Planned to start job, but something bad happended */
 			break;
 		}
 		if (job_ptr->start_time > (now + BACKFILL_WINDOW)) {
