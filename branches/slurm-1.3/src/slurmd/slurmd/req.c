@@ -906,11 +906,11 @@ _get_user_env(batch_job_launch_msg_t *req)
 	char **new_env;
 	int i;
 
-	for (i=0; i<req->argc; i++) {
-		if (strcmp(req->environment[0], "SLURM_GET_USER_ENV=1") == 0)
+	for (i=0; i<req->envc; i++) {
+		if (strcmp(req->environment[i], "SLURM_GET_USER_ENV=1") == 0)
 			break;
 	}
-	if (i >= req->argc)
+	if (i >= req->envc)
 		return;		/* don't need to load env */
 
 	if (getpwuid_r(req->uid, &pwd, pwd_buf, PW_BUF_SIZE, &pwd_ptr) ||
