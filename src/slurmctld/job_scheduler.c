@@ -195,7 +195,6 @@ static bool _failed_partition(struct part_record *part_ptr,
 	return false;
 }
 
-#ifndef HAVE_BG
 /* Add a partition to the failed_parts array, reserving its nodes
  * from use by lower priority jobs. Also flags all partitions with
  * nodes overlapping this partition. */
@@ -223,7 +222,6 @@ static void _add_failed_partition(struct part_record *failed_part_ptr,
 
 	*failed_part_cnt = count;
 }
-#endif
 
 /* 
  * schedule - attempt to schedule all pending jobs
@@ -248,21 +246,25 @@ extern int schedule(void)
 	char *ionodes = NULL;
 	char tmp_char[256];
 #endif
+	static bool backfill_sched = false;
+	static bool sched_test = false;
 	static bool wiki_sched = false;
-	static bool wiki_sched_test = false;
 	time_t now = time(NULL);
 
 	DEF_TIMERS;
 
 	START_TIMER;
-	/* don't bother trying to avoid fragmentation with sched/wiki */
-	if (!wiki_sched_test) {
+	if (!sched_test) {
 		char *sched_type = slurm_get_sched_type();
+		/* On BlueGene, do FIFO only with sched/backfill */
+		if (strcmp(sched_type, "sched/backfill") == 0)
+			backfill_sched = true;
+		/* Disable avoiding of fragmentation with sched/wiki */
 		if ((strcmp(sched_type, "sched/wiki") == 0)
 		||  (strcmp(sched_type, "sched/wiki2") == 0))
 			wiki_sched = true;
 		xfree(sched_type);
-		wiki_sched_test = true;
+		sched_test = true;
 	}
 
 	lock_slurmctld(job_write_lock);
@@ -320,23 +322,24 @@ extern int schedule(void)
 
 		error_code = select_nodes(job_ptr, false, NULL);
 		if (error_code == ESLURM_NODES_BUSY) {
-#ifndef HAVE_BG 	/* keep trying to schedule jobs in partition */
-			/* While we use static partitiioning on Blue Gene, 
-			 * each job can be scheduled independently without 
-			 * impacting other jobs with different characteristics
-			 * (e.g. node-use [virtual or coprocessor] or conn-type
-			 * [mesh, torus, or nav]). Because of this we sort and 
-			 * then try to schedule every pending job. This does 
-			 * increase the overhead of this job scheduling cycle, 
-			 * but the only way to effectively avoid this is to 
-			 * define each SLURM partition as containing a 
-			 * single Blue Gene job partition type (e.g. 
-			 * group all Blue Gene job partitions of type 
-			 * 2x2x2 coprocessor mesh into a single SLURM
-			 * partition, say "co-mesh-222") */
-			_add_failed_partition(job_ptr->part_ptr, failed_parts,
-				      &failed_part_cnt);
+			bool fail_by_part = true;
+#ifdef HAVE_BG
+			/* When we use static or overlap partitioning on
+			 * BlueGene, each job can possibly be scheduled
+			 * independently, without impacting other jobs of
+			 * different sizes. Therefor we sort and try to
+			 * schedule every pending job unless the backfill
+			 * scheduler is configured. */
+			if (!backfill_sched)
+				fail_by_part = false;
 #endif
+			if (fail_by_part) {
+		 		/* do not schedule more jobs 
+				 * in this partition */
+				_add_failed_partition(job_ptr->part_ptr, 
+						      failed_parts, 
+						      &failed_part_cnt);
+			}
 		} else if (error_code == SLURM_SUCCESS) {	
 			/* job initiated */
 			last_job_update = now;
