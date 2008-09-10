@@ -72,7 +72,7 @@ main (int argc, char *argv[])
 	char **input_fields;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
 	int local_exit_code = 0;
-
+	char *temp = NULL;
 	int option_index;
 	static struct option long_options[] = {
 		{"help",     0, 0, 'h'},
@@ -171,6 +171,19 @@ main (int argc, char *argv[])
 		log_alter(opts, 0, NULL);
 	}
 
+	/* Check to see if we are running a supported accounting plugin */
+	temp = slurm_get_accounting_storage_type();
+	if(strcasecmp(temp, "accounting_storage/slurmdbd")
+	   && strcasecmp(temp, "accounting_storage/mysql")) {
+		fprintf (stderr, "You are not running a supported "
+			 "accounting_storage plugin\n(%s).\n"
+			 "Only 'accounting_storage/slurmdbd' "
+			 "and 'accounting_storage/mysql' are supported.\n",
+			temp);
+		xfree(temp);
+		exit(1);
+	}
+	xfree(temp);
 	/* always do a rollback.  If you don't then if there is an
 	 * error you can not rollback ;)
 	 */
