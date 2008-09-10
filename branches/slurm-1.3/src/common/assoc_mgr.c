@@ -488,7 +488,7 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 	}
 /* 	info("looking for assoc of user=%s(%u), acct=%s, " */
 /* 	     "cluster=%s, partition=%s", */
-/* 	     assoc->user, assoc->uid, assoc->acct,  */
+/* 	     assoc->user, assoc->uid, assoc->acct, */
 /* 	     assoc->cluster, assoc->partition); */
 	slurm_mutex_lock(&local_association_lock);
 	itr = list_iterator_create(local_association_list);

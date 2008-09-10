@@ -425,6 +425,10 @@ int main(int argc, char *argv[])
 		}
 
 		info("Running as primary controller");
+		clusteracct_storage_g_register_ctld(
+			slurmctld_conf.cluster_name, 
+			slurmctld_conf.slurmctld_port);
+		
 		_accounting_cluster_ready();
 		if (slurm_sched_init() != SLURM_SUCCESS)
 			fatal("failed to initialize scheduling plugin");
@@ -441,10 +445,6 @@ int main(int argc, char *argv[])
 			fatal("pthread_create error %m");
 		slurm_attr_destroy(&thread_attr);
 
-		clusteracct_storage_g_register_ctld(
-			slurmctld_conf.cluster_name, 
-			slurmctld_conf.slurmctld_port);
-		
 		/*
 		 * create attached thread for signal handling
 		 */
@@ -936,6 +936,14 @@ static int _accounting_cluster_ready()
 	rc = clusteracct_storage_g_cluster_procs(acct_db_conn,
 						 slurmctld_cluster_name,
 						 procs, event_time);
+	if(rc == ACCOUNTING_FIRST_REG) {
+		/* see if we are running directly to a database
+		 * instead of a slurmdbd.
+		 */
+		send_jobs_to_accounting(event_time);
+		send_nodes_to_accounting(event_time);
+		rc = SLURM_SUCCESS;
+	}
 
 	return rc;
 }

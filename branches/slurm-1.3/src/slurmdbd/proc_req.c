@@ -1176,7 +1176,7 @@ static int  _job_start(void *db_conn,
 
 	job.details = &details;
 
-	if(job.db_index) {
+	if(job.start_time) {
 		debug2("DBD_JOB_START: START CALL ID:%u NAME:%s INX:%u", 
 		       job_start_msg->job_id, job_start_msg->name, 
 		       job.db_index);	
@@ -1545,11 +1545,18 @@ static int _node_state(void *db_conn,
 		goto end_it;
 	}
 
-	debug2("DBD_NODE_STATE: NODE:%s STATE:%s REASON:%s TIME:%u", 
-	       node_state_msg->hostlist,
-	       _node_state_string(node_state_msg->new_state),
-	       node_state_msg->reason, 
-	       node_state_msg->event_time);
+	if(node_state_msg->new_state == DBD_NODE_STATE_UP)
+		debug3("DBD_NODE_STATE: NODE:%s STATE:%s REASON:%s TIME:%u", 
+		       node_state_msg->hostlist,
+		       _node_state_string(node_state_msg->new_state),
+		       node_state_msg->reason, 
+		       node_state_msg->event_time);
+	else
+		debug2("DBD_NODE_STATE: NODE:%s STATE:%s REASON:%s TIME:%u", 
+		       node_state_msg->hostlist,
+		       _node_state_string(node_state_msg->new_state),
+		       node_state_msg->reason, 
+		       node_state_msg->event_time);
 	node_ptr.name = node_state_msg->hostlist;
 	node_ptr.cpus = node_state_msg->cpu_count;
 
@@ -1627,8 +1634,10 @@ static int   _register_ctld(void *db_conn, slurm_fd orig_fd,
 	cluster.control_port = register_ctld_msg->port;
 	list_msg.my_list = acct_storage_g_modify_clusters(
 		db_conn, *uid, &cluster_q, &cluster);
-
-	if(!list_msg.my_list || !list_count(list_msg.my_list)) {
+	if(errno == EFAULT) {
+		comment = "Request to register was incomplete";
+		rc = SLURM_ERROR;		
+	} else if(!list_msg.my_list || !list_count(list_msg.my_list)) {
 		comment = "This cluster hasn't been added to accounting yet";
 		rc = SLURM_ERROR;
 	} 

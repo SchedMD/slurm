@@ -206,6 +206,7 @@ typedef enum {
 	RESPONSE_FORWARD_FAILED = 9001,
 
 	ACCOUNTING_UPDATE_MSG = 10001,
+	ACCOUNTING_FIRST_REG,
 
 } slurm_msg_type_t;
 

@@ -1732,14 +1732,11 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 		ListIterator itr = NULL;
 		acct_update_object_t *object = NULL;
 		
-		slurm_msg_t_init(&req);
-		slurm_msg_t_init(&resp);
-		
 		memset(&msg, 0, sizeof(accounting_update_msg_t));
 		msg.update_list = mysql_conn->update_list;
 		
-		xstrfmtcat(query, "select control_host, control_port from %s "
-			   "where deleted=0 && control_port != 0",
+		xstrfmtcat(query, "select control_host, control_port, name "
+			   "from %s where deleted=0 && control_port != 0",
 			   cluster_table);
 		if(!(result = mysql_db_query_ret(
 			     mysql_conn->db_conn, query, 0))) {
@@ -1748,16 +1745,18 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 		}
 		xfree(query);
 		while((row = mysql_fetch_row(result))) {
-			info("sending to %s(%s)", row[0], row[1]);
+			info("sending to %s at %s(%s)", row[2], row[0], row[1]);
+			slurm_msg_t_init(&req);
 			slurm_set_addr_char(&req.address, atoi(row[1]), row[0]);
 			req.msg_type = ACCOUNTING_UPDATE_MSG;
 			req.flags = SLURM_GLOBAL_AUTH_KEY;
 			req.data = &msg;			
+			slurm_msg_t_init(&resp);
 			
 			rc = slurm_send_recv_node_msg(&req, &resp, 0);
 			if ((rc != 0) || !resp.auth_cred) {
-				error("update cluster: %m to %s(%s)",
-				      row[0], row[1]);
+				error("update cluster: %m to %s at %s(%s)",
+				      row[2], row[0], row[1]);
 				if (resp.auth_cred)
 					g_slurm_auth_destroy(resp.auth_cred);
 				rc = SLURM_ERROR;
@@ -2285,7 +2284,8 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrfmtcat(query, 
 			   "insert into %s (creation_time, mod_time, name) "
 			   "values (%d, %d, '%s') "
-			   "on duplicate key update deleted=0, mod_time=%d;",
+			   "on duplicate key update deleted=0, mod_time=%d, "
+			   "control_host='', control_port=0;",
 			   cluster_table, 
 			   now, now, object->name,
 			   now);
@@ -3354,21 +3354,33 @@ extern List acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
 		xstrcat(extra, ")");
 	}
 
-		
+	set = 0;
 	if(cluster->control_host) {
 		xstrfmtcat(vals, ", control_host='%s'", cluster->control_host);
+		set++;
 	}
 	if(cluster->control_port) {
 		xstrfmtcat(vals, ", control_port=%u", cluster->control_port);
+		set++;
 	}
 
 	if(!vals) {
+		xfree(extra);
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		error("Nothing to change");
 		return NULL;
+	} else if(set != 2) {
+		xfree(vals);
+		xfree(extra);
+		errno = EFAULT;
+		error("Need both control host, and port to register a cluster");
+		return NULL;
 	}
 
-	xstrfmtcat(query, "select name from %s %s;", cluster_table, extra);
+
+	xstrfmtcat(query, "select name, control_port from %s %s;",
+		   cluster_table, extra);
+
 	xfree(extra);
 	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
@@ -3378,11 +3390,21 @@ extern List acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
 		error("no result given for %s", extra);
 		return NULL;
 	}
-	
+
+	/* Set here is used to ask for jobs and nodes in anything
+	 * other than up state, so it you reset it later make sure
+	 * this is accounted for before you do
+	 */
+	set = 1;
 	rc = 0;
 	ret_list = list_create(slurm_destroy_char);
 	while((row = mysql_fetch_row(result))) {
 		object = xstrdup(row[0]);
+
+		/* check to see if this is the first time to register */
+		if(row[1][0] == '0')
+			set = 0;
+
 		list_append(ret_list, object);
 		if(!rc) {
 			xstrfmtcat(name_char, "name='%s'", object);
@@ -3413,6 +3435,40 @@ extern List acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
 			list_destroy(ret_list);
 			ret_list = NULL;
 			goto end_it;
+		}
+	}
+
+	/* Get all nodes in a down state and jobs pending or running.
+	 * This is for the first time a cluster registers
+	 */
+
+	if(!set && slurmdbd_conf) {
+		/* This only happens here with the slurmdbd.  If
+		 * calling this plugin directly we do this in
+		 * clusteracct_storage_p_cluster_procs.
+		 */
+		slurm_addr ctld_address;
+		slurm_fd fd;
+
+		info("First time to register cluster requesting "
+		     "running jobs and system information.");
+
+		slurm_set_addr_char(&ctld_address, cluster->control_port,
+				    cluster->control_host);
+		fd =  slurm_open_msg_conn(&ctld_address);
+		if (fd < 0) {
+			error("can not open socket back to slurmctld");
+		} else {
+			slurm_msg_t out_msg;
+			slurm_msg_t_init(&out_msg);
+			out_msg.msg_type = ACCOUNTING_FIRST_REG;
+			out_msg.flags = SLURM_GLOBAL_AUTH_KEY;
+			slurm_send_node_msg(fd, &out_msg);
+			/* We probably need to add matching recv_msg function
+			 * for an arbitray fd or should these be fire
+			 * and forget?  For this, that we can probably
+			 * forget about it */
+			slurm_close_stream(fd);
 		}
 	}
 
@@ -6758,6 +6814,7 @@ extern int clusteracct_storage_p_cluster_procs(mysql_conn_t *mysql_conn,
 #ifdef HAVE_MYSQL
 	char* query;
 	int rc = SLURM_SUCCESS;
+	int first = 0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 
@@ -6780,10 +6837,21 @@ extern int clusteracct_storage_p_cluster_procs(mysql_conn_t *mysql_conn,
 	if(!(row = mysql_fetch_row(result))) {
 		debug("We don't have an entry for this machine %s "
 		      "most likely a first time running.", cluster);
-		/* 
-		 * FIX ME: send a message to the controller to give me
-		 * all down nodes and jobs that are eligible or running
+
+		/* Get all nodes in a down state and jobs pending or running.
+		 * This is for the first time a cluster registers
+		 *
+		 * This only happens here when calling the plugin directly.  If
+		 * calling this plugin throught the slurmdbd we do this in
+		 * acct_storage_p_modify_clusters.
 		 */
+		if(!slurmdbd_conf) {
+			/* We will return ACCOUNTING_FIRST_REG so this
+			   is taken care of since the message thread
+			   may not be up when we run this in the controller.
+			*/
+			first = 1;
+		}
 		goto add_it;
 	}
 
@@ -6809,9 +6877,11 @@ add_it:
 		event_table, cluster, procs, event_time);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
-
 end_it:
 	mysql_free_result(result);
+	if(first && rc == SLURM_SUCCESS)
+		rc = ACCOUNTING_FIRST_REG;
+
 	return rc;
 #else
 	return SLURM_ERROR;
@@ -7110,11 +7180,10 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 			xstrfmtcat(query, "blockid='%s', ", block_id);
 
 		xstrfmtcat(query, "start=%d, name='%s', state=%u, "
-			   "alloc_cpus=%u, associd=%u where id=%d",
+			   "alloc_cpus=%u, associd=%d where id=%d",
 			   (int)job_ptr->start_time,
 			   jname, job_ptr->job_state & (~JOB_COMPLETING),
-			   job_ptr->total_procs, nodes, 
-			   job_ptr->assoc_id,
+			   job_ptr->total_procs, job_ptr->assoc_id,
 			   job_ptr->db_index);
 		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);

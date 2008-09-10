@@ -2078,8 +2078,6 @@ void set_node_down (char *name, char *reason)
 		return;
 	}
 
-	_make_node_down(node_ptr, now);
-	(void) kill_running_job_by_node_name(name, false);
 	if ((node_ptr->reason == NULL)
 	||  (strncmp(node_ptr->reason, "Not responding", 14) == 0)) {
 		time_t now;
@@ -2093,6 +2091,8 @@ void set_node_down (char *name, char *reason)
 		node_ptr->reason = xstrdup(reason);
 		xstrcat(node_ptr->reason, time_buf);
 	}
+	_make_node_down(node_ptr, now);
+	(void) kill_running_job_by_node_name(name, false);
 
 	return;
 }
@@ -2445,4 +2445,28 @@ void node_fini(void)
 	xfree(node_record_table_ptr);
 	xfree(node_hash_table);
 	node_record_count = 0;
+}
+
+extern int send_nodes_to_accounting(time_t event_time)
+{
+	int rc = SLURM_SUCCESS, i = 0;
+	struct node_record *node_ptr;
+	/* send nodes not in not 'up' state */
+	node_ptr = node_record_table_ptr;
+	for (i = 0; i < node_record_count; i++, node_ptr++) {
+		if (node_ptr->name == '\0'
+		    || (!(node_ptr->node_state & NODE_STATE_DRAIN)
+			&& !(node_ptr->node_state & NODE_STATE_FAIL) 
+			&& (node_ptr->node_state & NODE_STATE_BASE) 
+			!= NODE_STATE_DOWN))
+			continue;
+
+		if((rc = clusteracct_storage_g_node_down(acct_db_conn,
+							 slurmctld_cluster_name,
+							 node_ptr, event_time,
+							 NULL))
+		   == SLURM_ERROR) 
+			break;
+	}
+	return rc;
 }
