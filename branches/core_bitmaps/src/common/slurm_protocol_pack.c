@@ -1242,9 +1242,9 @@ _pack_resource_allocation_response_msg(resource_allocation_response_msg_t *
 	pack32(msg->job_id, buffer);
 	packstr(msg->node_list, buffer);
 
-	pack16(msg->num_cpu_groups, buffer);
+	pack32(msg->num_cpu_groups, buffer);
 	if (msg->num_cpu_groups) {
-		pack32_array(msg->cpus_per_node, msg->num_cpu_groups, buffer);
+		pack16_array(msg->cpus_per_node, msg->num_cpu_groups, buffer);
 		pack32_array(msg->cpu_count_reps, msg->num_cpu_groups, buffer);
 	}
 
@@ -1270,15 +1270,13 @@ _unpack_resource_allocation_response_msg(resource_allocation_response_msg_t
 	safe_unpack32(&tmp_ptr->job_id, buffer);
 	safe_unpackstr_xmalloc(&tmp_ptr->node_list, &uint32_tmp, buffer);
 
-	safe_unpack16(&tmp_ptr->num_cpu_groups, buffer);
+	safe_unpack32(&tmp_ptr->num_cpu_groups, buffer);
 	if (tmp_ptr->num_cpu_groups > 0) {
-		safe_unpack32_array((uint32_t **) &
-				    (tmp_ptr->cpus_per_node), &uint32_tmp,
+		safe_unpack16_array(&tmp_ptr->cpus_per_node, &uint32_tmp,
 				    buffer);
 		if (tmp_ptr->num_cpu_groups != uint32_tmp)
 			goto unpack_error;
-		safe_unpack32_array((uint32_t **) &
-				    (tmp_ptr->cpu_count_reps), &uint32_tmp,
+		safe_unpack32_array(&tmp_ptr->cpu_count_reps, &uint32_tmp,
 				    buffer);
 		if (tmp_ptr->num_cpu_groups != uint32_tmp)
 			goto unpack_error;
@@ -1315,9 +1313,9 @@ _pack_job_alloc_info_response_msg(job_alloc_info_response_msg_t * msg,
 	pack32(msg->job_id, buffer);
 	packstr(msg->node_list, buffer);
 
-	pack16(msg->num_cpu_groups, buffer);
+	pack32(msg->num_cpu_groups, buffer);
 	if (msg->num_cpu_groups) {
-		pack32_array(msg->cpus_per_node, msg->num_cpu_groups, buffer);
+		pack16_array(msg->cpus_per_node, msg->num_cpu_groups, buffer);
 		pack32_array(msg->cpu_count_reps, msg->num_cpu_groups, buffer);
 	}
 
@@ -1345,21 +1343,16 @@ _unpack_job_alloc_info_response_msg(job_alloc_info_response_msg_t ** msg,
 	safe_unpack32(&tmp_ptr->job_id, buffer);
 	safe_unpackstr_xmalloc(&tmp_ptr->node_list, &uint32_tmp, buffer);
 
-	safe_unpack16(&tmp_ptr->num_cpu_groups, buffer);
+	safe_unpack32(&tmp_ptr->num_cpu_groups, buffer);
 	if (tmp_ptr->num_cpu_groups > 0) {
-		safe_unpack32_array((uint32_t **) &
-				    (tmp_ptr->cpus_per_node), &uint32_tmp,
+		safe_unpack16_array(&tmp_ptr->cpus_per_node, &uint32_tmp,
 				    buffer);
 		if (tmp_ptr->num_cpu_groups != uint32_tmp)
 			goto unpack_error;
-		safe_unpack32_array((uint32_t **) &
-				    (tmp_ptr->cpu_count_reps), &uint32_tmp,
+		safe_unpack32_array(&tmp_ptr->cpu_count_reps, &uint32_tmp,
 				    buffer);
 		if (tmp_ptr->num_cpu_groups != uint32_tmp)
 			goto unpack_error;
-	} else {
-		tmp_ptr->cpus_per_node = NULL;
-		tmp_ptr->cpu_count_reps = NULL;
 	}
 
 	safe_unpack32(&tmp_ptr->node_cnt, buffer);
@@ -2120,9 +2113,11 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 	safe_unpackstr_xmalloc(&job->state_desc, &uint32_tmp, buffer);
 
 	safe_unpack32(&job->exit_code, buffer);
-	safe_unpack16(&job->num_cpu_groups, buffer);
-	safe_unpack32_array(&job->cpus_per_node, &uint32_tmp, buffer);
-	safe_unpack32_array(&job->cpu_count_reps, &uint32_tmp, buffer);
+	safe_unpack32(&job->num_cpu_groups, buffer);
+	if (job->num_cpu_groups) {
+		safe_unpack16_array(&job->cpus_per_node, &uint32_tmp, buffer);
+		safe_unpack32_array(&job->cpu_count_reps, &uint32_tmp, buffer);
+	}
 
 	safe_unpackstr_xmalloc(&job->name, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&job->alloc_node, &uint32_tmp, buffer);
@@ -3813,10 +3808,12 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, Buf buffer)
 	pack8(msg->overcommit, buffer);
 
 	pack16(msg->acctg_freq,     buffer);
-	pack16(msg->num_cpu_groups, buffer);
 
-	pack32_array(msg->cpus_per_node, msg->num_cpu_groups, buffer);
-	pack32_array(msg->cpu_count_reps, msg->num_cpu_groups, buffer);
+	pack32(msg->num_cpu_groups, buffer);
+	if (msg->num_cpu_groups) {
+		pack16_array(msg->cpus_per_node, msg->num_cpu_groups, buffer);
+		pack32_array(msg->cpu_count_reps, msg->num_cpu_groups, buffer);
+	}
 
 	packstr(msg->nodes, buffer);
 	packstr(msg->script, buffer);
@@ -3859,18 +3856,18 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer)
 	safe_unpack8(&launch_msg_ptr->overcommit, buffer);
 
 	safe_unpack16(&launch_msg_ptr->acctg_freq,     buffer);
-	safe_unpack16(&launch_msg_ptr->num_cpu_groups, buffer);
 
-	safe_unpack32_array((uint32_t **) &(launch_msg_ptr->cpus_per_node), 
-			    &uint32_tmp,
-			    buffer);
-	if (launch_msg_ptr->num_cpu_groups != uint32_tmp)
-		goto unpack_error;
-	safe_unpack32_array((uint32_t **) &(launch_msg_ptr->cpu_count_reps), 
-			    &uint32_tmp,
-			    buffer);
-	if (launch_msg_ptr->num_cpu_groups != uint32_tmp)
-		goto unpack_error;
+	safe_unpack32(&launch_msg_ptr->num_cpu_groups, buffer);
+	if (launch_msg_ptr->num_cpu_groups) {
+		safe_unpack16_array(&(launch_msg_ptr->cpus_per_node), 
+				    &uint32_tmp, buffer);
+		if (launch_msg_ptr->num_cpu_groups != uint32_tmp)
+			goto unpack_error;
+		safe_unpack32_array(&(launch_msg_ptr->cpu_count_reps), 
+				    &uint32_tmp, buffer);
+		if (launch_msg_ptr->num_cpu_groups != uint32_tmp)
+			goto unpack_error;
+	}
 	
 	safe_unpackstr_xmalloc(&launch_msg_ptr->nodes,    &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&launch_msg_ptr->script,   &uint32_tmp, buffer);

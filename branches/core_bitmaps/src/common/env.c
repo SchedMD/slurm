@@ -722,8 +722,8 @@ static char *_uint16_array_to_str(int array_len, const uint16_t *array)
 /*
  * The cpus-per-node representation in SLURM (and perhaps tasks-per-node
  * in the future) is stored in a compressed format comprised of two
- * equal-length arrays of uint32_t, and an integer holding the array length.
- * In one array an element represents a count (number of cpus, number of tasks,
+ * equal-length arrays, and an integer holding the array length.  In one
+ * array an element represents a count (number of cpus, number of tasks,
  * etc.), and the corresponding element in the other array contains the
  * number of times the count is repeated sequentially in the uncompressed
  * something-per-node array.
@@ -732,7 +732,7 @@ static char *_uint16_array_to_str(int array_len, const uint16_t *array)
  * array.  Free with xfree().
  */
 extern char *uint32_compressed_to_str(uint32_t array_len,
-				       const uint32_t *array,
+				       const uint16_t *array,
 				       const uint32_t *array_reps)
 {
 	int i;
@@ -786,7 +786,7 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc)
 	env_array_overwrite_fmt(dest, "SLURM_JOB_NODELIST", "%s",
 				alloc->node_list);
 
-	tmp = uint32_compressed_to_str((uint32_t)alloc->num_cpu_groups,
+	tmp = uint32_compressed_to_str(alloc->num_cpu_groups,
 					alloc->cpus_per_node,
 					alloc->cpu_count_reps);
 	env_array_overwrite_fmt(dest, "SLURM_JOB_CPUS_PER_NODE", "%s", tmp);
@@ -854,7 +854,7 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 	env_array_overwrite_fmt(dest, "SLURM_JOB_ID", "%u", batch->job_id);
 	env_array_overwrite_fmt(dest, "SLURM_JOB_NUM_NODES", "%u", num_nodes);
 	env_array_overwrite_fmt(dest, "SLURM_JOB_NODELIST", "%s", batch->nodes);
-	tmp = uint32_compressed_to_str((uint32_t)batch->num_cpu_groups,
+	tmp = uint32_compressed_to_str(batch->num_cpu_groups,
 					batch->cpus_per_node,
 					batch->cpu_count_reps);
 	env_array_overwrite_fmt(dest, "SLURM_JOB_CPUS_PER_NODE", "%s", tmp);

@@ -593,7 +593,7 @@ static void _set_cpu_env_var(resource_allocation_response_msg_t *resp)
 	if (getenv("SLURM_JOB_CPUS_PER_NODE"))
 		return;
 
-	tmp = uint32_compressed_to_str((uint32_t)resp->num_cpu_groups,
+	tmp = uint32_compressed_to_str(resp->num_cpu_groups,
 				       resp->cpus_per_node,
 				       resp->cpu_count_reps);
 	if (setenvf(NULL, "SLURM_JOB_CPUS_PER_NODE", "%s", tmp) < 0)

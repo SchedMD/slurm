@@ -90,10 +90,10 @@ extern void srun_allocate (uint32_t job_id)
 		msg_arg->job_id 	= job_ptr->job_id;
 		msg_arg->node_list	= xstrdup(job_ptr->nodes);
 		msg_arg->num_cpu_groups	= job_ptr->num_cpu_groups;
-		msg_arg->cpus_per_node  = xmalloc(sizeof(uint32_t) *
+		msg_arg->cpus_per_node  = xmalloc(sizeof(uint16_t) *
 				job_ptr->num_cpu_groups);
 		memcpy(msg_arg->cpus_per_node, job_ptr->cpus_per_node,
-				(sizeof(uint32_t) * job_ptr->num_cpu_groups));
+				(sizeof(uint16_t) * job_ptr->num_cpu_groups));
 		msg_arg->cpu_count_reps  = xmalloc(sizeof(uint32_t) *
 				job_ptr->num_cpu_groups);
 		memcpy(msg_arg->cpu_count_reps, job_ptr->cpu_count_reps,

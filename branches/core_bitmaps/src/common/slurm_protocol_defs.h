@@ -568,8 +568,8 @@ typedef struct batch_job_launch_msg {
 	uint32_t uid;
 	uint32_t gid;
 	uint32_t nprocs;	/* number of tasks in this job         */
-	uint16_t num_cpu_groups;/* elements in below cpu arrays */
-	uint32_t *cpus_per_node;/* cpus per node */
+	uint32_t num_cpu_groups;/* elements in below cpu arrays */
+	uint16_t *cpus_per_node;/* cpus per node */
 	uint32_t *cpu_count_reps;/* how many nodes have same cpu count */
 	char *nodes;		/* list of nodes allocated to job_step */
 	char *script;		/* the actual job script, default NONE */

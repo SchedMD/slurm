@@ -495,10 +495,10 @@ extern void launch_job(struct job_record *job_ptr)
 	    get_job_env(job_ptr, &launch_msg_ptr->envc);
 	launch_msg_ptr->job_mem = job_ptr->details->job_min_memory;
 	launch_msg_ptr->num_cpu_groups = job_ptr->num_cpu_groups;
-	launch_msg_ptr->cpus_per_node  = xmalloc(sizeof(uint32_t) *
+	launch_msg_ptr->cpus_per_node  = xmalloc(sizeof(uint16_t) *
 			job_ptr->num_cpu_groups);
 	memcpy(launch_msg_ptr->cpus_per_node, job_ptr->cpus_per_node,
-			(sizeof(uint32_t) * job_ptr->num_cpu_groups));
+			(sizeof(uint16_t) * job_ptr->num_cpu_groups));
 	launch_msg_ptr->cpu_count_reps  = xmalloc(sizeof(uint32_t) *
 			job_ptr->num_cpu_groups);
 	memcpy(launch_msg_ptr->cpu_count_reps, job_ptr->cpu_count_reps,

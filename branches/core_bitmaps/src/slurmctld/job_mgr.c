@@ -3402,12 +3402,12 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 
 	pack32(dump_job_ptr->exit_code, buffer);
 
-	pack16(dump_job_ptr->num_cpu_groups, buffer);
+	pack32(dump_job_ptr->num_cpu_groups, buffer);
 	size_tmp = dump_job_ptr->num_cpu_groups;
 	if (size_tmp < 0) {
 	    	size_tmp = 0;
 	}
-	pack32_array(dump_job_ptr->cpus_per_node, size_tmp, buffer);
+	pack16_array(dump_job_ptr->cpus_per_node, size_tmp, buffer);
 	pack32_array(dump_job_ptr->cpu_count_reps, size_tmp, buffer);
 
 	packstr(dump_job_ptr->name, buffer);

@@ -75,7 +75,7 @@
 #define MAX_RETRIES   10
 
 struct node_set {		/* set of nodes with same configuration */
-	uint32_t cpus_per_node;	/* NOTE: This is the minimum count,
+	uint16_t cpus_per_node;	/* NOTE: This is the minimum count,
 				 * if FastSchedule==0 then individual 
 				 * nodes within the same configuration 
 				 * line (in slurm.conf) can actually 
@@ -1522,7 +1522,7 @@ extern void build_node_details(struct job_record *job_ptr)
 	job_ptr->node_cnt = hostlist_count(host_list);	
 
 	xrealloc(job_ptr->cpus_per_node, 
-		(sizeof(uint32_t) * job_ptr->node_cnt));
+		(sizeof(uint16_t) * job_ptr->node_cnt));
 	xrealloc(job_ptr->cpu_count_reps, 
 		(sizeof(uint32_t) * job_ptr->node_cnt));
 	xrealloc(job_ptr->node_addr, 
@@ -1530,9 +1530,9 @@ extern void build_node_details(struct job_record *job_ptr)
 
 	job_ptr->alloc_lps_cnt = job_ptr->node_cnt;
 	xrealloc(job_ptr->alloc_lps,
-		(sizeof(uint32_t) * job_ptr->node_cnt));
+		(sizeof(uint16_t) * job_ptr->node_cnt));
 	xrealloc(job_ptr->used_lps,
-		(sizeof(uint32_t) * job_ptr->node_cnt));
+		(sizeof(uint16_t) * job_ptr->node_cnt));
 
 	while ((this_node_name = hostlist_shift(host_list))) {
 		node_ptr = find_node_record(this_node_name);

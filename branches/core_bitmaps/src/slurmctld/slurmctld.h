@@ -440,18 +440,18 @@ struct job_record {
 	uint32_t user_id;		/* user the job runs as */
 
 	/* Per node allocation details */
-	uint16_t num_cpu_groups;	/* record count in cpus_per_node and 
+	uint32_t num_cpu_groups;	/* record count in cpus_per_node and 
 					 * cpu_count_reps */
-	uint32_t *cpus_per_node;	/* array of cpus per node allocated */
+	uint16_t *cpus_per_node;	/* array of cpus per node allocated */
 	uint32_t *cpu_count_reps;	/* array of consecutive nodes with 
 					 * same cpu count */
 
-        uint32_t alloc_lps_cnt;		/* number of hosts in alloc_lps
+	uint32_t alloc_lps_cnt;		/* number of hosts in alloc_lps
 					 * or 0 if alloc_lps is not needed
 					 * for the credentials */
-        uint32_t *alloc_lps;		/* number of logical processors
+	uint16_t *alloc_lps;		/* number of logical processors
 					 * allocated for this job */
-	uint32_t *used_lps;		/* number of logical processors
+	uint16_t *used_lps;		/* number of logical processors
 					 * already allocated to job steps */
 };
 

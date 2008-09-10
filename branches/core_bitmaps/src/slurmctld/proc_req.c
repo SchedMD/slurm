@@ -528,9 +528,9 @@ static int _make_step_cred(struct step_record *step_rec,
 	if ((cred_arg.alloc_lps_cnt > 0) &&
 	    bit_equal(job_ptr->node_bitmap, step_rec->step_node_bitmap)) {
 		cred_arg.alloc_lps = xmalloc(cred_arg.alloc_lps_cnt *
-				sizeof(uint32_t));
+				sizeof(uint16_t));
 		memcpy(cred_arg.alloc_lps, step_rec->job_ptr->alloc_lps,
-		       cred_arg.alloc_lps_cnt*sizeof(uint32_t));
+		       cred_arg.alloc_lps_cnt*sizeof(uint16_t));
         } else if (cred_arg.alloc_lps_cnt > 0) {
 		/* Construct an array of allocated CPUs per node.
 		 * Translate from array based upon job's allocation
@@ -538,7 +538,7 @@ static int _make_step_cred(struct step_record *step_rec,
 		int i, job_inx = -1, step_inx = -1;
 		int job_inx_target = job_ptr->node_cnt;
 		cred_arg.alloc_lps = xmalloc(cred_arg.alloc_lps_cnt *
-				sizeof(uint32_t));
+					     sizeof(uint16_t));
 		for (i=0; i<node_record_count; i++) {
 			if (!bit_test(job_ptr->node_bitmap, i))
 				continue;
@@ -634,10 +634,10 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 				job_ptr->num_cpu_groups);
 		memcpy(alloc_msg.cpu_count_reps, job_ptr->cpu_count_reps,
 				(sizeof(uint32_t) * job_ptr->num_cpu_groups));
-		alloc_msg.cpus_per_node  = xmalloc(sizeof(uint32_t) *
+		alloc_msg.cpus_per_node  = xmalloc(sizeof(uint16_t) *
 				job_ptr->num_cpu_groups);
 		memcpy(alloc_msg.cpus_per_node, job_ptr->cpus_per_node,
-				(sizeof(uint32_t) * job_ptr->num_cpu_groups));
+				(sizeof(uint16_t) * job_ptr->num_cpu_groups));
 		alloc_msg.error_code     = error_code;
 		alloc_msg.job_id         = job_ptr->job_id;
 		alloc_msg.node_cnt       = job_ptr->node_cnt;
@@ -1482,9 +1482,9 @@ static void _slurm_rpc_job_alloc_info(slurm_msg_t * msg)
 		       job_ptr->cpu_count_reps,
 		       (sizeof(uint32_t) * job_ptr->num_cpu_groups));
 		job_info_resp_msg.cpus_per_node  = 
-			xmalloc(sizeof(uint32_t) * job_ptr->num_cpu_groups);
+			xmalloc(sizeof(uint16_t) * job_ptr->num_cpu_groups);
 		memcpy(job_info_resp_msg.cpus_per_node, job_ptr->cpus_per_node,
-		       (sizeof(uint32_t) * job_ptr->num_cpu_groups));
+		       (sizeof(uint16_t) * job_ptr->num_cpu_groups));
 		job_info_resp_msg.error_code     = error_code;
 		job_info_resp_msg.job_id         = job_info_msg->job_id;
 		job_info_resp_msg.node_addr      = xmalloc(sizeof(slurm_addr) *
@@ -1557,9 +1557,9 @@ static void _slurm_rpc_job_alloc_info_lite(slurm_msg_t * msg)
 		       job_ptr->cpu_count_reps,
 		       (sizeof(uint32_t) * job_ptr->num_cpu_groups));
 		job_info_resp_msg.cpus_per_node  = 
-			xmalloc(sizeof(uint32_t) * job_ptr->num_cpu_groups);
+			xmalloc(sizeof(uint16_t) * job_ptr->num_cpu_groups);
 		memcpy(job_info_resp_msg.cpus_per_node, job_ptr->cpus_per_node,
-		       (sizeof(uint32_t) * job_ptr->num_cpu_groups));
+		       (sizeof(uint16_t) * job_ptr->num_cpu_groups));
 		job_info_resp_msg.error_code     = error_code;
 		job_info_resp_msg.job_id         = job_info_msg->job_id;
 		job_info_resp_msg.node_cnt       = job_ptr->node_cnt;
@@ -2734,10 +2734,10 @@ int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 		launch_msg_ptr->nprocs = job_ptr->num_procs;
 
 	launch_msg_ptr->num_cpu_groups = job_ptr->num_cpu_groups;
-	launch_msg_ptr->cpus_per_node  = xmalloc(sizeof(uint32_t) *
+	launch_msg_ptr->cpus_per_node  = xmalloc(sizeof(uint16_t) *
 			job_ptr->num_cpu_groups);
 	memcpy(launch_msg_ptr->cpus_per_node, job_ptr->cpus_per_node,
-			(sizeof(uint32_t) * job_ptr->num_cpu_groups));
+			(sizeof(uint16_t) * job_ptr->num_cpu_groups));
 	launch_msg_ptr->cpu_count_reps  = xmalloc(sizeof(uint32_t) *
 			job_ptr->num_cpu_groups);
 	memcpy(launch_msg_ptr->cpu_count_reps, job_ptr->cpu_count_reps,
