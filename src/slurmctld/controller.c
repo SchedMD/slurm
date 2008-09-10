@@ -1045,11 +1045,12 @@ if (i)
   error("build_select_job_res failure");
 else
   info("build_select_job_res success");
-select_res_ptr1->nprocs = 5;
+select_res_ptr1->nprocs = 16;
 select_res_ptr1->node_req = 1;
 select_res_ptr1->cpus = xmalloc(sizeof(uint16_t) * 4);
+set_select_job_res_bit(select_res_ptr1, 0, 1, 1); info("set_bit(0,1,1)");
 set_select_job_res_bit(select_res_ptr1, 0, 2, 1); info("set_bit(0,2,1)");
-select_res_ptr1->cpus[0] = 1;
+select_res_ptr1->cpus[0] = 2;
 set_select_job_res_bit(select_res_ptr1, 1, 0, 0); info("set_bit(1,0,0)");
 select_res_ptr1->cpus[1] = 1;
 i = get_select_job_res_node(select_res_ptr1, 2);
@@ -1069,6 +1070,12 @@ else
 //select_res_ptr1->cpus[3] = 2;
 set_select_job_res_node(select_res_ptr1, 3); info("set_node(3)");
 select_res_ptr1->cpus[3] = 12;
+i = build_select_job_res_cpu_array(select_res_ptr1);
+if (i)
+  error("build_select_job_res_cpu_array failure");
+else
+  info("build_select_job_res_cpu_array success");
+
 i = get_select_job_res_bit(select_res_ptr1, 1, 0, 0);
 if (i == 1)
   info("get_bit(1,0,0):%d", i);

@@ -61,6 +61,10 @@
  * cores_per_socket	- Count of cores per socket on this node
  * cpus			- Count of desired/allocated CPUs per node for job/step
  * cpus_used		- For a job, count of CPUs per node used by job steps
+ * cpu_array_cnt	- Count of elements in cpu_array_* below
+ * cpu_array_value	- Count of allocated CPUs per node for job
+ * cpu_array_reps	- Number of consecutive nodes on which cpu_array_value
+ *			  is duplicated. See NOTES below.
  * memory_allocated	- MB per node reserved for the job or step
  * memory_used		- MB per node of memory consumed by job steps
  * nhosts		- Number of nodes in the allocation
@@ -74,6 +78,13 @@
  *			  and cores_per_socket apply to
  * sockets_per_node	- Count of sockets on this node
  *
+ * NOTES:
+ * cpu_array_* contains the same information as "cpus", but in a more compact
+ * format. For example if cpus = {4, 4, 2, 2, 2, 2, 2, 2} then cpu_array_cnt=2
+ * cpu_array_value = {4, 2} and cpu_array_reps = {2, 6}. We do not need to 
+ * save/restore these values, but generate them by calling 
+ * build_select_job_res_cpu_array()
+ *
  * Sample layout of core_bitmap:
  *   |               Node_0              |               Node_1              |
  *   |      Sock_0     |      Sock_1     |      Sock_0     |      Sock_1     |
@@ -83,6 +94,9 @@
 struct select_job_res {
 	bitstr_t *	core_bitmap;
 	bitstr_t *	core_bitmap_used;
+	uint32_t	cpu_array_cnt;
+	uint16_t *	cpu_array_value;
+	uint32_t *	cpu_array_reps;
 	uint16_t *	cpus;
 	uint16_t *	cpus_used;
 	uint16_t *	cores_per_socket;
@@ -114,6 +128,10 @@ extern select_job_res_t create_select_job_res(void);
 extern int build_select_job_res(select_job_res_t select_job_res_ptr,
 				void *node_rec_table,
 				uint16_t fast_schedule);
+
+/* Rebuild cpu_array_cnt, cpu_array_value, and cpu_array_reps based upon the
+ * values of cpus in an existing data structure */
+extern int build_select_job_res_cpu_array(select_job_res_t select_job_res_ptr);
 
 /* Validate a select_job_res data structure originally built using
  * build_select_job_res() is still valid based upon slurmctld state.

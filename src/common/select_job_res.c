@@ -109,6 +109,46 @@ extern int build_select_job_res(select_job_res_t select_job_res,
 	return SLURM_SUCCESS;
 }
 
+/* Rebuild cpu_array_cnt, cpu_array_value, and cpu_array_reps based upon the
+ * values of cpus in an existing data structure */
+extern int build_select_job_res_cpu_array(select_job_res_t select_job_res_ptr)
+{
+	int i;
+	uint32_t last_cpu_cnt = 0;
+
+	if (select_job_res_ptr->nhosts == 0)
+		return SLURM_SUCCESS;	/* no work to do */
+	if (select_job_res_ptr->cpus == NULL) {
+		error("build_select_job_res_cpu_array cpus==NULL");
+		return SLURM_ERROR;
+	}
+
+	/* clear vestigial data and create new arrays of max size */
+	select_job_res_ptr->cpu_array_cnt = 0;
+	xfree(select_job_res_ptr->cpu_array_reps);
+	select_job_res_ptr->cpu_array_reps = 
+		xmalloc(select_job_res_ptr->nhosts * sizeof(uint32_t));
+	xfree(select_job_res_ptr->cpu_array_value);
+	select_job_res_ptr->cpu_array_value = 
+		xmalloc(select_job_res_ptr->nhosts * sizeof(uint16_t));
+
+	for (i=0; i<select_job_res_ptr->nhosts; i++) {
+		if (select_job_res_ptr->cpus[i] != last_cpu_cnt) {
+			last_cpu_cnt = select_job_res_ptr->cpus[i];
+			select_job_res_ptr->cpu_array_value[
+				select_job_res_ptr->cpu_array_cnt] 
+				= last_cpu_cnt;
+			select_job_res_ptr->cpu_array_reps[
+				select_job_res_ptr->cpu_array_cnt] = 1;
+			select_job_res_ptr->cpu_array_cnt++;
+		} else {
+			select_job_res_ptr->cpu_array_reps[
+				select_job_res_ptr->cpu_array_cnt-1]++;
+		}
+	}
+	return SLURM_SUCCESS;
+}
+
 extern int valid_select_job_res(select_job_res_t select_job_res,
 				void *node_rec_table,
 				uint16_t fast_schedule)
@@ -181,13 +221,33 @@ extern select_job_res_t copy_select_job_res(select_job_res_t
 		new_layout->node_bitmap = bit_copy(select_job_res_ptr->
 						   node_bitmap);
 	}
+
+	new_layout->cpu_array_cnt = select_job_res_ptr->cpu_array_cnt;
+	if (select_job_res_ptr->cpu_array_reps && 
+	    select_job_res_ptr->cpu_array_cnt) {
+		new_layout->cpu_array_reps = 
+			xmalloc(sizeof(uint32_t) *
+				select_job_res_ptr->cpu_array_cnt);
+		memcpy(new_layout->cpu_array_reps, 
+		       select_job_res_ptr->cpu_array_reps, 
+		       (sizeof(uint32_t) * select_job_res_ptr->cpu_array_cnt));
+	}
+	if (select_job_res_ptr->cpu_array_value && 
+	    select_job_res_ptr->cpu_array_cnt) {
+		new_layout->cpu_array_value = 
+			xmalloc(sizeof(uint16_t) *
+				select_job_res_ptr->cpu_array_cnt);
+		memcpy(new_layout->cpu_array_value, 
+		       select_job_res_ptr->cpu_array_value, 
+		       (sizeof(uint16_t) * select_job_res_ptr->cpu_array_cnt));
+	}
+
 	if (select_job_res_ptr->cpus) {
 		new_layout->cpus = xmalloc(sizeof(uint16_t) *
 					   select_job_res_ptr->nhosts);
 		memcpy(new_layout->cpus, select_job_res_ptr->cpus, 
 		       (sizeof(uint16_t) * select_job_res_ptr->nhosts));
 	}
-
 	if (select_job_res_ptr->cpus_used) {
 		new_layout->cpus_used = xmalloc(sizeof(uint16_t) *
 						select_job_res_ptr->nhosts);
@@ -248,6 +308,8 @@ extern void free_select_job_res(select_job_res_t *select_job_res_pptr)
 		if (select_job_res_ptr->core_bitmap_used)
 			bit_free(select_job_res_ptr->core_bitmap_used);
 		xfree(select_job_res_ptr->cores_per_socket);
+		xfree(select_job_res_ptr->cpu_array_reps);
+		xfree(select_job_res_ptr->cpu_array_value);
 		xfree(select_job_res_ptr->cpus);
 		xfree(select_job_res_ptr->cpus_used);
 		xfree(select_job_res_ptr->memory_allocated);
@@ -350,6 +412,14 @@ extern void log_select_job_res(select_job_res_t select_job_res_ptr)
 			bit_inx++;
 		}
 	}
+	for (node_inx=0; node_inx<select_job_res_ptr->cpu_array_cnt; 
+	     node_inx++) {
+		if (node_inx == 0)
+			info("--------------------");
+		info("cpu_array_value[%d]:%u reps:%u", node_inx,
+		     select_job_res_ptr->cpu_array_value[node_inx],
+		     select_job_res_ptr->cpu_array_reps[node_inx]);
+	}
 	info("====================");
 }
 
@@ -378,6 +448,18 @@ extern void pack_select_job_res(select_job_res_t select_job_res_ptr,
 	pack32(select_job_res_ptr->nhosts, buffer);
 	pack32(select_job_res_ptr->nprocs, buffer);
 	pack8(select_job_res_ptr->node_req, buffer);
+
+	if (select_job_res_ptr->cpu_array_cnt &&
+	    select_job_res_ptr->cpu_array_reps &&
+	    select_job_res_ptr->cpu_array_value) {
+		pack32(select_job_res_ptr->cpu_array_cnt, buffer);
+		pack32_array(select_job_res_ptr->cpu_array_reps,
+			     select_job_res_ptr->cpu_array_cnt, buffer);
+		pack16_array(select_job_res_ptr->cpu_array_value,
+			     select_job_res_ptr->cpu_array_cnt, buffer);
+	} else {
+		pack32((uint32_t) 0, buffer);
+	}
 
 	pack16_array(select_job_res_ptr->cpus,
 		     select_job_res_ptr->nhosts, buffer);
@@ -441,6 +523,18 @@ extern int unpack_select_job_res(select_job_res_t *select_job_res_pptr,
 	select_job_res->nhosts = empty;
 	safe_unpack32(&select_job_res->nprocs, buffer);
 	safe_unpack8(&select_job_res->node_req, buffer);
+
+	safe_unpack32(&select_job_res->cpu_array_cnt, buffer);
+	if (select_job_res->cpu_array_cnt) {
+		safe_unpack32_array(&select_job_res->cpu_array_reps,
+				    &tmp32, buffer);
+		if (tmp32 != select_job_res->cpu_array_cnt)
+			goto unpack_error;
+		safe_unpack16_array(&select_job_res->cpu_array_value,
+				    &tmp32, buffer);
+		if (tmp32 != select_job_res->cpu_array_cnt)
+			goto unpack_error;
+	}
 
 	safe_unpack16_array(&select_job_res->cpus, &tmp32, buffer);
 	if (tmp32 != select_job_res->nhosts)
