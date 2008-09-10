@@ -1150,18 +1150,28 @@ static int _get_return_code(int read_timeout)
 		if (slurmdbd_unpack_rc_msg(&msg, buffer) == SLURM_SUCCESS) {
 			rc = msg->return_code;
 			if (rc != SLURM_SUCCESS) {
-				error("slurmdbd: DBD_RC is %d from %s(%u): %s",
-				      rc,
-				      slurmdbd_msg_type_2_str(msg->sent_type,
-							       1),
-				      msg->sent_type,
-				      msg->comment);
 				if(msg->sent_type == DBD_REGISTER_CTLD &&
-				   slurm_get_accounting_storage_enforce())
+				   slurm_get_accounting_storage_enforce()) {
+					error("slurmdbd: DBD_RC is %d from "
+					      "%s(%u): %s",
+					      rc,
+					      slurmdbd_msg_type_2_str(
+						      msg->sent_type, 1),
+					      msg->sent_type,
+					      msg->comment);
 					fatal("You need to add this cluster "
 					      "to accounting if you want to "
 					      "enforce associations, or no "
 					      "jobs will ever run.");
+				} else
+					error("slurmdbd: DBD_RC is %d from "
+					      "%s(%u): %s",
+					      rc,
+					      slurmdbd_msg_type_2_str(
+						      msg->sent_type, 1),
+					      msg->sent_type,
+					      msg->comment);
+				
 			}
 			slurmdbd_free_rc_msg(msg);
 		} else

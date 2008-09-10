@@ -13,6 +13,8 @@ documents those changes that are of interest to users and admins.
  -- sched/backfill modified to initiate multiple jobs per cycle.
  -- Increase buffer size in srun to hold task list expressions. Critical 
     for jobs with 16k tasks or more.
+ -- Added support for eligible jobs and downed nodes to be sent to accounting
+    from the controller the first time accounting is turned on.
 
 * Changes in SLURM 1.3.8
 ========================
