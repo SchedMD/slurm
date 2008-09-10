@@ -1,0 +1,171 @@
+<!--#include virtual="header.txt"-->
+
+<h1><a name="top">SLURM Scheduler Plugin API</a></h1>
+
+<h2> Overview</h2>
+<p> This document describes SLURM scheduler plugins and the API that defines 
+them. It is intended as a resource to programmers wishing to write their own SLURM 
+scheduler plugins. This is version 100 of the API.</p>
+
+<p>It is noteworthy that two different models are used for job scheduling.
+The <b>backfill</b> scheduler lets SLURM establish the initial job priority
+and can periodically alter job priorities to change their order within the queue.
+The <b>wiki</b> scheduler establishes an initial priority of zero (held) for
+all jobs. These jobs only begin execution when the <b>wiki</b> scheduler 
+explicitly raises the their priority (releasing them). 
+Developers may use the model that best fits their needs. 
+Note that a separate <a href="selectplugins.html" class="nav">node selection plugin</a>
+is available for controlling that aspect of scheduling.</p>
+
+<p>SLURM scheduler plugins are SLURM plugins that implement the SLURM scheduler
+API described herein. They must conform to the SLURM Plugin API with the following 
+specifications:</p>
+<p><span class="commandline">const char plugin_type[]</span><br>
+The major type must be &quot;sched.&quot; The minor type can be any recognizable 
+abbreviation for the type of scheduler. We recommend, for example:</p>
+<ul>
+<li><b>builtin</b>&#151;A plugin that implements the API without providing any actual 
+scheduling services. This is the default behavior and implements first-in-first-out scheduling.</li>
+<li><b>backfill</b>&#151;Raise the priority of jobs if doing so results in their starting earlier 
+without any delay in the expected initiation time of any higher priority job.</li>
+<li><b>wiki</b>&#151;Uses
+<a href="http://www.clusterresources.com/pages/products/maui-cluster-scheduler.php">
+The Maui Scheduler</a> (Wiki version) 
+as an external entity to control SLURM job scheduling.</li>
+<li><b>wiki2</b>&#151;Uses 
+<a href="http://www.clusterresources.com/pages/products/moab-cluster-suite.php">
+Moab Cluster Suite</a> as an external entity to control SLURM job scheduling.
+Note that wiki2 is an expanded version of the wiki plugin with additional 
+functions supported specifically for Moab.</li>
+
+</ul>
+<p>The <span class="commandline">plugin_name</span> and 
+<span class="commandline">plugin_version</span> 
+symbols required by the SLURM Plugin API require no specialization for scheduler support. 
+Note carefully, however, the versioning discussion below.</p>
+<p>The programmer is urged to study 
+<span class="commandline">src/plugins/sched/backfill</span> and
+<span class="commandline">src/plugins/sched/builtin</span> 
+for sample implementations of a SLURM scheduler plugin.</p>
+<p class="footer"><a href="#top">top</a></p>
+
+<h2>Data Objects</h2>
+<p>The implementation must maintain (though not necessarily directly export) an
+enumerated <span class="commandline">errno</span>  to allow SLURM to discover
+as practically as possible the reason for any failed API call. Plugin-specific enumerated
+integer values should be used when appropriate. It is desirable that these values 
+be mapped into the range ESLURM_SCHED_MIN and ESLURM_SCHED_MAX
+as defined in <span class="commandline">slurm/slurm_errno.h</span>.
+The error number should be returned by the function
+<a href="#get_errno"><span class="commandline">slurm_sched_get_errno()</span></a>
+and  string describing the error's meaning should be returned by the function
+<a href="#strerror"><span class="commandline">slurm_sched_strerror()</span></a> 
+described below.</p>
+
+<p>These values must not be used as return values in integer-valued functions
+in the API. The proper error return value from integer-valued functions is SLURM_ERROR.
+The implementation should endeavor to provide useful and pertinent information by 
+whatever means is practical. In some cases this means an errno for each credential,
+since plugins must be re-entrant. If a plugin maintains a global errno in place of or in
+addition to a per-credential errno, it is not required to enforce mutual exclusion on it.
+Successful API calls are not required to reset any errno to a known value. However,
+the initial value of any errno, prior to any error condition arising, should be
+SLURM_SUCCESS. </p>
+<p class="footer"><a href="#top">top</a></p>
+
+<h2>API Functions</h2>
+<p>The following functions must appear. Functions which are not implemented should 
+be stubbed.</p>
+
+<p class="commandline">int slurm_sched_plugin_reconfig (void);</p>
+<p style="margin-left:.2in"><b>Description</b>: Reread any configuration files.</p>
+<p style="margin-left:.2in"><b>Arguments</b>: None</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On fail
+ure,
+the plugin should return SLURM_ERROR and set the errno to an appropriate value
+to indicate the reason for failure.</p>
+
+<p class="commandline">int slurm_sched_plugin_schedule (void);</p>
+<p style="margin-left:.2in"><b>Description</b>: For passive schedulers, invoke a scheduling pass.</p>
+<p style="margin-left:.2in"><b>Arguments</b>: None</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure, 
+the plugin should return SLURM_ERROR and set the errno to an appropriate value 
+to indicate the reason for failure.</p>
+
+<p class="commandline">int slurm_sched_plugin_newalloc (void);</p>
+<p style="margin-left:.2in"><b>Description</b>: Note the successful allocation of resources to a job.</p>
+<p style="margin-left:.2in"><b>Arguments</b>: Pointer to the slurmctld job structure. This can be used to
+get partition, allocated resources, time limit, etc.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure, 
+the plugin should return SLURM_ERROR and set the errno to an appropriate value 
+to indicate the reason for failure.</p>
+
+<p class="commandline">int slurm_sched_plugin_freealloc (void);</p>
+<p style="margin-left:.2in"><b>Description</b>: Note the successful release of resources for a job.</p>
+<p style="margin-left:.2in"><b>Arguments</b>: Pointer to the slurmctld job structure. This can be used to
+get partition, allocated resources, time limit, etc.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure, 
+the plugin should return SLURM_ERROR and set the errno to an appropriate value 
+to indicate the reason for failure.</p>
+
+<p class="commandline">uint32_t slurm_sched_plugin_initial_priority (
+uint32_t last_prio, struct job_record *job_ptr);</p>
+<p style="margin-left:.2in"><b>Description</b>: Establish the initial priority of a new job.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<b>last_prio</b> (input) default priority of the previously submitted job. 
+This can be used to provide First-In-First-Out scheduling by assigning the 
+new job a priority lower than this value.
+This could also be used to establish an initial priority of zero for all jobs, 
+representing a "held" state. 
+The scheduler plugin can then decide where and when to initiate pending jobs 
+by altering their priority and (optionally) list of required nodes.<br>
+<b>job_ptr</b> (input) 
+Pointer to the slurmctld job structure. This can be used to get partition, 
+resource requirements, time limit, etc.</p>
+<p style="margin-left:.2in"><b>Returns</b>: The priority to be assigned to this job.</p>
+
+<p class="commandline">void slurm_sched_plugin_job_is_pending (void);</p>
+<p style="margin-left:.2in"><b>Description</b>: Note that some job is pending execution.</p>
+<p style="margin-left:.2in"><b>Arguments</b>: None</p>
+<p style="margin-left:.2in"><b>Returns</b>: Nothing.</p>
+
+<p class="commandline">void slurm_sched_plugin_partition_change (void);</p>
+<p style="margin-left:.2in"><b>Description</b>: Note that some partition state change 
+happened such as time or size limits.</p>
+<p style="margin-left:.2in"><b>Arguments</b>: None</p>
+<p style="margin-left:.2in"><b>Returns</b>: Nothing.</p>
+<p class="footer"><a href="#top">top</a></p>
+
+<p class="commandline">char *slurm_sched_get_conf (void);</p></a>
+<p style="margin-left:.2in"><b>Description</b>: Return scheduler specific 
+configuration information to be reported for the <i>scontrol show configuration</i>
+command.</p>
+<p style="margin-left:.2in"><b>Arguments</b>: None</p>
+<p style="margin-left:.2in"><b>Returns</b>: A string containing configuration 
+information. The return value is released using the <i>xfree()</i> function.</p>
+
+<a name="get_errno"><p class="commandline">int slurm_sched_get_errno (void);</p></a>
+<p style="margin-left:.2in"><b>Description</b>: Return the number of a scheduler
+specific error.</p>
+<p style="margin-left:.2in"><b>Arguments</b>: None</p>
+<p style="margin-left:.2in"><b>Returns</b>: Error number for the last failure encountered by the scheduler plugin.</p>
+
+<p class="commandline"><a name="strerror">const char *slurm_sched_strerror(int errnum);</a></p>
+<p style="margin-left:.2in"><b>Description</b>: Return a string description of a scheduler
+specific error code.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<b>errnum</b> (input) a scheduler
+specific error code.</p>
+<p style="margin-left:.2in"><b>Returns</b>: Pointer to string describing the error
+or NULL if no description found in this plugin.</p>
+<p class="footer"><a href="#top">top</a></p>
+
+<h2>Versioning</h2>
+<p> This document describes version 100 of the SLURM Scheduler API. Future 
+releases of SLURM may revise this API. A scheduler plugin conveys its ability 
+to implement a particular API version using the mechanism outlined for SLURM plugins.</p>
+<p class="footer"><a href="#top">top</a></p>
+
+<p style="text-align:center;">Last modified 8 November 2007</p>
+
+<!--#include virtual="footer.txt"-->
