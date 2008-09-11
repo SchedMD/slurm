@@ -1608,13 +1608,9 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				break;
 			} 
 		}
-		if(!object[0]) {
-			exit_code=1;
-			fprintf(stderr, " Misformatted line(%d): %s\n",
-				lc, line);
-			rc = SLURM_ERROR;
-			break;
-		} 
+		if(!object[0]) 
+			continue;
+		
 		while(line[start] != ' ' && start<len)
 			start++;
 		if(start>=len) {
