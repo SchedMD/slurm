@@ -752,7 +752,7 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 
 	for (i=0; i<argc; i++) {
 		int end = parse_option_end(argv[i]);
-		if(!end) {
+		if(!end || !strncasecmp (argv[i], "Cluster", 1)) {
 			if(cluster_name) {
 				exit_code=1;
 				fprintf(stderr, 
@@ -770,15 +770,6 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 				continue;
 			}		
 			file_name = xstrdup(argv[i]+end);
-		} else if (!strncasecmp (argv[i], "Name", 1)) {
-			if(cluster_name) {
-				exit_code=1;
-				fprintf(stderr, 
-					" Can only do one cluster at a time.  "
-					"Already doing %s\n", cluster_name);
-				continue;
-			}
-			cluster_name = xstrdup(argv[i]+end);
 		} else {
 			exit_code=1;
 			fprintf(stderr, " Unknown option: %s\n", argv[i]);
