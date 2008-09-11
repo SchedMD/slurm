@@ -329,7 +329,8 @@ struct job_details {
 	uint32_t num_tasks;		/* number of tasks to start */
 	uint8_t open_mode;		/* stdout/err append or trunctate */
 	uint8_t overcommit;		/* processors being over subscribed */
-	uint8_t prolog_running;		/* set while prolog_slurmctld is running */
+	uint8_t prolog_running;		/* set while prolog_slurmctld is 
+					 * running */
 	uint16_t acctg_freq;		/* accounting polling interval */
 	uint16_t cpus_per_task;		/* number of processors required for 
 					 * each task */
@@ -337,7 +338,8 @@ struct job_details {
 	/* job constraints: */
 	uint32_t job_min_procs;		/* minimum processors per node */
 	uint32_t job_min_memory;	/* minimum memory per node (MB) OR
-					 * memory per allocated CPU | MEM_PER_CPU */
+					 * memory per allocated 
+					 * CPU | MEM_PER_CPU */
 	uint32_t job_min_tmp_disk;	/* minimum tempdisk per node, MB */
 	char *err;			/* pathname of job's stderr file */
 	char *in;			/* pathname of job's stdin file */
@@ -423,7 +425,7 @@ struct job_record {
 	uint32_t requid;            	/* requester user ID */
 	char *resp_host;		/* host for srun communications */
 	select_jobinfo_t select_jobinfo;/* opaque data, BlueGene */
-	select_job_res_t select_job;	/* opaque data, non-BlueGene */
+	select_job_res_t select_job;	/* details of allocated cores */
 	time_t start_time;		/* time execution begins, 
 					 * actual or expected */
 	char *state_desc;		/* optional details for state_reason */

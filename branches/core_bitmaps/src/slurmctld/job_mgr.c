@@ -519,8 +519,8 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	packstr(dump_job_ptr->licenses, buffer);
 	packstr(dump_job_ptr->mail_user, buffer);
 
-	select_g_pack_jobinfo(dump_job_ptr->select_jobinfo,
-			      buffer);
+	select_g_pack_jobinfo(dump_job_ptr->select_jobinfo, buffer);
+	pack_select_job_res(dump_job_ptr->select_job, buffer);
 
 	/* Dump job details, if available */
 	detail_ptr = dump_job_ptr->details;
@@ -561,6 +561,7 @@ static int _load_job_state(Buf buffer)
 	struct part_record *part_ptr;
 	int error_code;
 	select_jobinfo_t select_jobinfo = NULL;
+	select_job_res_t select_job = NULL;
 	acct_association_rec_t assoc_rec, *assoc_ptr = NULL;
 
 	safe_unpack32(&assoc_id, buffer);
@@ -614,6 +615,9 @@ static int _load_job_state(Buf buffer)
 	if (select_g_alloc_jobinfo(&select_jobinfo)
 	    ||  select_g_unpack_jobinfo(select_jobinfo, buffer))
 		goto unpack_error;
+	if (unpack_select_job_res(&select_job, buffer))
+		goto unpack_error;
+
 
 	/* validity test as possible */
 	if (job_id == 0) {
@@ -732,6 +736,7 @@ static int _load_job_state(Buf buffer)
 	job_ptr->resp_host    = resp_host;
 	resp_host             = NULL;	/* reused, nothing left to free */
 	job_ptr->select_jobinfo = select_jobinfo;
+	job_ptr->select_job   = select_job;
 	job_ptr->start_time   = start_time;
 	job_ptr->state_reason = state_reason;
 	job_ptr->state_desc   = state_desc;
