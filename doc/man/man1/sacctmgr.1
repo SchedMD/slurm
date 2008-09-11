@@ -376,8 +376,9 @@ from a file. Each file contains Slurm account data for one
 cluster. Loading a file will modify the database. Blank lines in the
 file must begin with the # character. Each line of information will
 begin with one of the four titles; Cluster, Parent, Account or
-User. Following the title is a space, dash, space, entity value, then specifications. Specifications are colon separated with string values enclosed in
-single quotes. An example of the form is:
+User. Following the title is a space, dash, space, entity value, then
+specifications. Specifications are colon separated and  single or double
+quotes around strings is optional. An example of the form is:
 
 Cluster\ \-\ tux
 .br
@@ -387,6 +388,8 @@ Account\ \-\ physics:Description='physics\ account':Organization='science':QOS='
 .br
 User\ \-\ adam:DefaultAccount='physics':QOS='normal':Fairshare=4:MaxCPUSecs=400:MaxJobs=2:MaxNodes=4:MaxWallDurationPerJob=3600:AdminLevel='Administrator':Coordinator='physics'
 
+Specify the AdminLevel privilege in the first appearance of the particular
+user.
 
 .SH "EXAMPLES"
 .eo
