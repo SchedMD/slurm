@@ -130,7 +130,7 @@ test1.33   Test of srun application exit code reporting
 test1.34   Test of task signal abort message
 test1.35   Test of batch job with multiple concurrent job steps
 test1.36   Test parallel launch of srun (e.g. "srun srun hostname")
-test1.37   REMOVED
+test1.37   Test of srun --tasks-per-node option.
 test1.38   Test srun handling of SIGINT to get task status or kill the job
            (--quit-on-interrupt option).
 test1.39   Test of linux light-weight core files.
