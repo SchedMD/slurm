@@ -15,6 +15,7 @@ documents those changes that are of interest to users and admins.
     for jobs with 16k tasks or more.
  -- Added support for eligible jobs and downed nodes to be sent to accounting
     from the controller the first time accounting is turned on.
+ -- Correct srun logic to support --tasks-per-node option without task count.
 
 * Changes in SLURM 1.3.8
 ========================
