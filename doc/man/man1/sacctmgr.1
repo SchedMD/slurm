@@ -371,30 +371,115 @@ To clear a previously set value use the modify command with a new value of \-1.
 
 
 .SH "FLAT FILE DUMP AND LOAD"
-sacctmgr has the capability to load and dump Slurm account data to and
-from a file. Each file contains Slurm account data for one
-cluster. Loading a file will modify the database. Blank lines in the
-file must begin with the # character. Each line of information will
-begin with one of the four titles; Cluster, Parent, Account or
-User. Following the title is a space, dash, space, entity value, then
-specifications. Specifications are colon separated and  single or double
-quotes around strings is optional. An example of the form is:
+sacctmgr has the capability to load and dump SLURM association data to and
+from a file.  This method can easily add a new cluster or copy an
+existing clusters associations into a new cluster with similar
+accounts. Each file contains Slurm association data for a single
+cluster.  Comments can be put into the file with the # character.
+Each line of information must begin with one of the four titles; \fBCluster, Parent, Account or
+User\fP. Following the title is a space, dash, space, entity value,
+then specifications. Specifications are colon separated.  If any
+variable such as Organization has a space in it surround the name with
+single or double quotes.
 
-Cluster\ \-\ tux
-.br
-Parent\ \-\ root
-.br
-Account\ \-\ physics:Description='physics\ account':Organization='science':QOS='normal':Fairshare=10:MaxCPUSecs=700:MaxJobs=3:MaxNodes=9:MaxWallDurationPerJob=3600
-.br
-User\ \-\ adam:DefaultAccount='physics':QOS='normal':Fairshare=4:MaxCPUSecs=400:MaxJobs=2:MaxNodes=4:MaxWallDurationPerJob=3600:AdminLevel='Administrator':Coordinator='physics'
+To create a file of associations one can run
 
-Specify the AdminLevel privilege in the first appearance of the particular
-user.
+> sacctmgr dump tux file=tux.cfg
+.br
+(file=tux.cfg is optional)
+
+To load a previously created file you can run
+
+> sacctmgr load file=tux.cfg
+
+Other options for load are -
+
+clean - delete what was already there and start from scratch with this
+information.
+.br
+Cluster= - specify a different name for the cluster than that which is
+in the file.
+
+Quick explanation how the file works.
+
+Since the associations in the system follow a hierarchy so does the
+file.  Any thing that is a parent needs to be defined before any
+childern.  The only exception is the understood 'root' account.  This
+is always a default for any cluster and does not need to be defined.
+
+To edit/create a file start with a cluster line for the new cluster
+
+\fBCluster\ \-\ cluster_name\fP
+
+Followed by Accounts you want in this fashion...
+
+\fBAccount\ \-\ cs:MaxNodesPerJob=5:MaxJobs=4:MaxProcSecondsPerJob=20:FairShare=399:MaxWallDurationPerJob=40:Description='Computer Science':Organization='LC'\fP
+
+Any of the options after a ':' can be left out and they can be in any order.
+If you want to add any sub accounts just list the Parent THAT HAS ALREADY 
+BEEN CREATED before the account line in this fashion...
+
+All account options are
+.br
+Description= - a brief description of the account
+.br
+FairShare= - to be used with a scheduler like MOAB to determine priority
+.br
+MaxJobs= - maximum number of jobs the childern of this account can run
+.br
+MaxNodesPerJob= - maximum number of nodes per job the childern of this
+account can run
+.br
+MaxProcSecondsPerJob= - maximum cpu seconds childern of this accounts
+jobs can run
+.br
+MaxWallDurationPerJob= - maximum time (not related to job size)
+childern of this accounts jobs can run
+.br
+Organization= - Name of organization that owns this account
+.br
+QOS= - Comma seperated list of Quality of Service names (Defined in sacctmgr)
+.br
+
+\fBParent\ \-\ cs
+.br
+Account\ \-\ test:MaxNodesPerJob=1:MaxJobs=1:MaxProcSecondsPerJob=1:FairShare=1:MaxWallDurationPerJob=1:Description='Test Account':Organization='Test'\fP
+
+To add users to a account add a line like this after a Parent - line
+
+\fBUser\ \-\ lipari:MaxNodesPerJob=2:MaxJobs=3:MaxProcSecondsPerJob=4:FairShare=1:MaxWallDurationPerJob=1:AdminLevel=Operator:Coordinator='test'\fP
+
+All user options are
+.br
+AdminLevel= - Type of admin this user is (Administrator, Operator)
+\fBMust be defined on the first occurrence of the user.\fP
+.br
+Coordinator= - Comma seperated list of accounts this user is
+coordinator over \fBMust be defined on the first occurrence of the user.\fP
+.br
+DefaultAccount= - system wide default account name
+\fBMust be defined on the first occurrence of the user.\fP
+.br
+FairShare= - to be used with a scheduler like MOAB to determine priority
+.br
+MaxJobs= - maximum number of jobs this user can run
+.br
+MaxNodesPerJob= - maximum number of nodes per job this user can run
+.br
+MaxProcSecondsPerJob= - maximum cpu seconds this user can run per job
+.br
+MaxWallDurationPerJob= - maximum time (not related to job size) this
+user can run
+.br
+QOS= - Comma seperated list of Quality of Service names (Defined in sacctmgr)
+\fBMust be defined on the first occurrence of the user.\fP
+.br
+
 
 .SH "EXAMPLES"
 .eo
 .br
-> sacctmgr create cluster=tux
+> sacctmgr create cluster tux
 .br
 > sacctmgr create account name=science fairshare=50
 .br
@@ -402,13 +487,10 @@ user.
 .br
 > sacctmgr create account name=physics parent=science fairshare=20
 .br
-> sacctmgr create user name=adam cluster=tux account=physics \
-.br 
-  fairshare=10
+> sacctmgr create user name=adam cluster=tux account=physics fairshare=10
 .br
-> sacctmgr modify user with name=adam cluster=tux account=physics \
-.br
-  set maxjobs=2 maxtime=30:00
+> sacctmgr modify user with name=adam cluster=tux account=physics set
+  maxjobs=2 maxtime=30:00
 .br
 > sacctmgr dump cluster=tux tux_data_file
 .br
