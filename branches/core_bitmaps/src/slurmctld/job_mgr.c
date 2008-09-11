@@ -3363,7 +3363,6 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 {
 	struct job_details *detail_ptr;
-	uint32_t size_tmp;
 
 	pack32(dump_job_ptr->job_id, buffer);
 	pack32(dump_job_ptr->user_id, buffer);
@@ -3403,12 +3402,12 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 	pack32(dump_job_ptr->exit_code, buffer);
 
 	pack32(dump_job_ptr->num_cpu_groups, buffer);
-	size_tmp = dump_job_ptr->num_cpu_groups;
-	if (size_tmp < 0) {
-	    	size_tmp = 0;
+	if (dump_job_ptr->num_cpu_groups) {
+		pack16_array(dump_job_ptr->cpus_per_node, 
+			     dump_job_ptr->num_cpu_groups, buffer);
+		pack32_array(dump_job_ptr->cpu_count_reps, 
+			     dump_job_ptr->num_cpu_groups, buffer);
 	}
-	pack16_array(dump_job_ptr->cpus_per_node, size_tmp, buffer);
-	pack32_array(dump_job_ptr->cpu_count_reps, size_tmp, buffer);
 
 	packstr(dump_job_ptr->name, buffer);
 	packstr(dump_job_ptr->alloc_node, buffer);
