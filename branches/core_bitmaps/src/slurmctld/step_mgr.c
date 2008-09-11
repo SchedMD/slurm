@@ -1022,7 +1022,7 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 					       uint16_t task_dist,
 					       uint32_t plane_size)
 {
-	uint32_t cpus_per_node[node_count];
+	uint16_t cpus_per_node[node_count];
 	uint32_t cpu_count_reps[node_count];
 	int cpu_inx = -1;
 	int usable_cpus = 0, i;
