@@ -700,6 +700,22 @@ extern int init ( void )
 
 	first = 0;
 
+	if(slurmdbd_conf) {
+		error("This plugin is not fully compatible with association "
+		      "logic.  Please use the mysql plugin for full "
+		      "compatiablitly.  If you are interested in filling "
+		      "this plugin in please send email to "
+		      "slurm-dev@lists.llnl.gov. Job accounting without "
+		      "associations will continue to work.");
+	} else {
+		error("This plugin is not fully compatible with association "
+		      "logic.  Please use the mysql or slurmdbd/mysql plugin "
+		      "for full compatiablitly.  If you are interested in "
+		      "filling this plugin in please send email to "
+		      "slurm-dev@lists.llnl.gov.  Job accounting without "
+		      "associations will continue to work.");
+	}
+
 #ifdef HAVE_PGSQL
 	pgsql_db_info = _pgsql_acct_create_db_info();		
 
