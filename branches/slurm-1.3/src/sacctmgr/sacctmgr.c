@@ -672,12 +672,12 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                               associations associated with the entity.     \n\
      delete <ENTITY> <SPECS>  delete the specified entity(s)               \n\
      dump <CLUSTER> <FILE>    dump database information of the             \n\
-                              specified cluster to the flat file .          \n\
+                              specified cluster to the flat file.          \n\
      exit                     terminate sacctmgr                           \n\
      help                     print this description of use.               \n\
      list <ENTITY> [<SPECS>]  display info of identified entity, default   \n\
                               is display all.                              \n\
-     load <file>              read in the file to update the database      \n\
+     load <FILE>              read in the file to update the database      \n\
                               with the file contents.                      \n\
      modify <ENTITY> <SPECS>  modify entity                                \n\
      oneliner                 report output one record per line.           \n\
