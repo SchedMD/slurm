@@ -188,10 +188,13 @@ extern int valid_select_job_res(select_job_res_t select_job_res,
 		}
 		if ((socks != select_job_res->sockets_per_node[sock_inx]) ||
 		    (cores != select_job_res->cores_per_socket[sock_inx])) {
-			error("valid_select_job_res: %s sockets:%u,%u, cores %u,%u",
+			error("valid_select_job_res: "
+			      "%s sockets:%u,%u, cores %u,%u",
 			      node_ptr->name,
-			      socks, select_job_res->sockets_per_node[sock_inx],
-			      cores, select_job_res->cores_per_socket[sock_inx]);
+			      socks, 
+			      select_job_res->sockets_per_node[sock_inx],
+			      cores, 
+			      select_job_res->cores_per_socket[sock_inx]);
 			return SLURM_ERROR;
 		}
 		sock_cnt++;
