@@ -134,6 +134,10 @@ extern int clusteracct_storage_p_get_usage(
 	mysql_conn_t *mysql_conn, uid_t uid,
 	acct_cluster_rec_t *cluster_rec, time_t start, time_t end);
 
+extern List acct_storage_p_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid, 
+					List acct_list,
+					acct_user_cond_t *user_cond);
+
 /* This should be added to the beginning of each function to make sure
  * we have a connection to the database before we try to use it.
  */
@@ -706,8 +710,7 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 	 * really delete it for accounting purposes.  This is for
 	 * corner cases most of the time this won't matter.
 	 */
-	if(table == acct_coord_table
-	   || table == qos_table) {
+	if(table == acct_coord_table || table == qos_table) {
 		/* This doesn't apply for these tables since we are
 		 * only looking for association type tables.
 		 */
@@ -1110,7 +1113,7 @@ static int _get_user_coords(mysql_conn_t *mysql_conn, acct_user_rec_t *user)
 		else 
 			query = xstrdup_printf(
 				"select distinct t1.acct from "
-				"%s as t1, %s as t2 where ",
+				"%s as t1, %s as t2 where t1.deleted=0 && ",
 				assoc_table, assoc_table);
 		/* Make sure we don't get the same
 		 * account back since we want to keep
@@ -1533,7 +1536,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 			"on duplicate key update id=LAST_INSERT_ID(id), "
 			"deleted=0;",
 			qos_table, now, now);
-		debug3("%s", query);
+		//debug3("%s", query);
 		normal_qos_id = mysql_insert_ret_id(db_conn, query);
 		xfree(query);		
 	}
@@ -1575,7 +1578,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		   "update name='root';",
 		   acct_table, now); 
 
-	debug3("%s", query);
+	//debug3("%s", query);
 	mysql_db_query(db_conn, query);
 	xfree(query);		
 
@@ -3922,6 +3925,7 @@ extern List acct_storage_p_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 #ifdef HAVE_MYSQL
 	ListIterator itr = NULL;
 	List ret_list = NULL;
+	List coord_list = NULL;
 	int rc = SLURM_SUCCESS;
 	char *object = NULL;
 	char *extra = NULL, *query = NULL,
@@ -3931,6 +3935,8 @@ extern List acct_storage_p_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	int set = 0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
+	acct_user_cond_t user_coord_cond;
+	acct_association_cond_t assoc_cond;
 
 	if(!user_cond) {
 		error("we need something to remove");
@@ -4004,6 +4010,14 @@ extern List acct_storage_p_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	}
 
+	memset(&user_coord_cond, 0, sizeof(acct_user_cond_t));
+	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
+	/* we do not need to free the objects we put in here since
+	   they are also placed in a list that will be freed
+	*/
+	assoc_cond.user_list = list_create(NULL);
+	user_coord_cond.assoc_cond = &assoc_cond;
+
 	rc = 0;
 	ret_list = list_create(slurm_destroy_char);
 	while((row = mysql_fetch_row(result))) {
@@ -4011,6 +4025,8 @@ extern List acct_storage_p_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		acct_user_rec_t *user_rec = NULL;
 		
 		list_append(ret_list, object);
+		list_append(assoc_cond.user_list, object);
+
 		if(!rc) {
 			xstrfmtcat(name_char, "name='%s'", object);
 			xstrfmtcat(assoc_char, "t2.user='%s'", object);
@@ -4031,9 +4047,17 @@ extern List acct_storage_p_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		debug3("didn't effect anything\n%s", query);
 		xfree(query);
+		list_destroy(assoc_cond.user_list);
 		return ret_list;
 	}
 	xfree(query);
+
+	/* We need to remove these accounts from the coord's that have it */
+	coord_list = acct_storage_p_remove_coord(
+		mysql_conn, uid, NULL, &user_coord_cond);
+	if(coord_list)
+		list_destroy(coord_list);
+	list_destroy(assoc_cond.user_list);
 
 	user_name = uid_to_string((uid_t) uid);
 	rc = _remove_common(mysql_conn, DBD_REMOVE_USERS, now,
@@ -4083,10 +4107,11 @@ extern List acct_storage_p_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 	MYSQL_ROW row;
 	acct_user_rec_t user;
 
-	if(!user_cond) {
+	if(!user_cond && !acct_list) {
 		error("we need something to remove");
 		return NULL;
-	}
+	} else if(user_cond && user_cond->assoc_cond)
+		user_list = user_cond->assoc_cond->user_list;
 
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
@@ -4132,15 +4157,14 @@ extern List acct_storage_p_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	/* Leave it this way since we are using extra below */
 
-	if(user_cond->assoc_cond && user_cond->assoc_cond->user_list
-	   && list_count(user_cond->assoc_cond->user_list)) {
+	if(user_list && list_count(user_list)) {
 		set = 0;
 		if(extra)
 			xstrcat(extra, " && (");
 		else
-			xstrcat(extra, " (");
+			xstrcat(extra, "(");
 			
-		itr = list_iterator_create(user_cond->assoc_cond->user_list);
+		itr = list_iterator_create(user_list);
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
@@ -4156,7 +4180,7 @@ extern List acct_storage_p_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 		if(extra)
 			xstrcat(extra, " && (");
 		else
-			xstrcat(extra, " (");
+			xstrcat(extra, "(");
 
 		itr = list_iterator_create(acct_list);
 		while((object = list_next(itr))) {
@@ -4267,6 +4291,7 @@ extern List acct_storage_p_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 #ifdef HAVE_MYSQL
 	ListIterator itr = NULL;
 	List ret_list = NULL;
+	List coord_list = NULL;
 	int rc = SLURM_SUCCESS;
 	char *object = NULL;
 	char *extra = NULL, *query = NULL,
@@ -4384,6 +4409,12 @@ extern List acct_storage_p_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		return ret_list;
 	}
 	xfree(query);
+
+	/* We need to remove these accounts from the coord's that have it */
+	coord_list = acct_storage_p_remove_coord(
+		mysql_conn, uid, ret_list, NULL);
+	if(coord_list)
+		list_destroy(coord_list);
 
 	user_name = uid_to_string((uid_t) uid);
 	rc = _remove_common(mysql_conn, DBD_REMOVE_ACCOUNTS, now,
