@@ -77,10 +77,6 @@ static int             thread_count = 0;
 static pthread_mutex_t thread_count_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  thread_count_cond = PTHREAD_COND_INITIALIZER;
 
-typedef struct connection_arg {
-	slurm_fd newsockfd;
-} connection_arg_t;
-
 
 /* Process incoming RPCs. Meant to execute as a pthread */
 extern void *rpc_mgr(void *no_data)
@@ -89,7 +85,7 @@ extern void *rpc_mgr(void *no_data)
 	slurm_fd sockfd, newsockfd;
 	int i, retry_cnt, sigarray[] = {SIGUSR1, 0};
 	slurm_addr cli_addr;
-	connection_arg_t *conn_arg = NULL;
+	slurmdbd_conn_t *conn_arg = NULL;
 
 	slurm_mutex_lock(&thread_count_lock);
 	master_thread_id = pthread_self();
@@ -134,7 +130,7 @@ extern void *rpc_mgr(void *no_data)
 			continue;
 		}
 		fd_set_nonblocking(newsockfd);
-		conn_arg = xmalloc(sizeof(connection_arg_t));
+		conn_arg = xmalloc(sizeof(slurmdbd_conn_t));
 		conn_arg->newsockfd = newsockfd;
 		retry_cnt = 0;
 		while (pthread_create(&slave_thread_id[i],
@@ -178,14 +174,13 @@ extern void rpc_mgr_wake(void)
 
 static void * _service_connection(void *arg)
 {
-	connection_arg_t *conn = (connection_arg_t *) arg;
+	slurmdbd_conn_t *conn = (slurmdbd_conn_t *) arg;
 	uint32_t nw_size, msg_size, uid;
 	char *msg = NULL;
 	ssize_t msg_read, offset;
 	bool fini = false, first = true;
 	Buf buffer = NULL;
 	int rc;
-	void *db_conn = NULL;
 			 
 	debug2("Opened connection %d", conn->newsockfd);
 	while (!fini) {
@@ -220,8 +215,8 @@ static void * _service_connection(void *arg)
 			offset += msg_read;
 		}
 		if (msg_size == offset) {
-			rc = proc_req(&db_conn, conn->newsockfd,
-				      msg, msg_size, first, &buffer, &uid);
+			rc = proc_req(
+				conn, msg, msg_size, first, &buffer, &uid);
 			first = false;
 			if (rc != SLURM_SUCCESS) {
 				error("Processing message from connection %d",
@@ -237,12 +232,12 @@ static void * _service_connection(void *arg)
 		xfree(msg);
 	}
 
-	acct_storage_g_close_connection(&db_conn);
+	acct_storage_g_close_connection(&conn->db_conn);
 	if (slurm_close_accepted_conn(conn->newsockfd) < 0)
 		error("close(%d): %m",  conn->newsockfd);
 	else
 		debug2("Closed connection %d uid(%d)", conn->newsockfd, uid);
-	xfree(arg);
+	xfree(conn);
 	_free_server_thread(pthread_self());
 	return NULL;
 }
