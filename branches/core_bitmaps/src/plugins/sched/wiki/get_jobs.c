@@ -1,7 +1,8 @@
 /*****************************************************************************\
  *  get_jobs.c - Process Wiki get job info request
  *****************************************************************************
- *  Copyright (C) 2006 The Regents of the University of California.
+ *  Copyright (C) 2006-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  LLNL-CODE-402394.
@@ -526,20 +527,22 @@ static char * _task_list(struct job_record *job_ptr)
 	int i, j, task_cnt;
 	char *buf = NULL, *host;
 	hostlist_t hl = hostlist_create(job_ptr->nodes);
+	select_job_res_t select_ptr = job_ptr->select_job;
 
+	xassert(select_ptr && select_ptr->cpus);
 	buf = xstrdup("");
 	if (hl == NULL)
 		return buf;
 
-	for (i=0; i<job_ptr->alloc_lps_cnt; i++) {
+	for (i=0; i<job_ptr->node_cnt; i++) {
 		host = hostlist_shift(hl);
 		if (host == NULL) {
-			error("bad alloc_lps_cnt for job %u (%s, %d)", 
+			error("bad node_cnt for job %u (%s, %d)", 
 				job_ptr->job_id, job_ptr->nodes,
-				job_ptr->alloc_lps_cnt);
+				job_ptr->node_cnt);
 			break;
 		}
-		task_cnt = job_ptr->alloc_lps[i];
+		task_cnt = select_ptr->cpus[i];
 		if (job_ptr->details && job_ptr->details->cpus_per_task)
 			task_cnt /= job_ptr->details->cpus_per_task;
 		for (j=0; j<task_cnt; j++) {

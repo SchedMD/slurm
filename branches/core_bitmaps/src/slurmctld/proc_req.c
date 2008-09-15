@@ -514,7 +514,9 @@ static int _make_step_cred(struct step_record *step_rec,
 {
 	slurm_cred_arg_t cred_arg;
 	struct job_record* job_ptr = step_rec->job_ptr;
+	select_job_res_t select_ptr = job_ptr->select_job;
 
+	xassert(select_ptr && select_ptr->cpus);
 	cred_arg.jobid    = job_ptr->job_id;
 	cred_arg.stepid   = step_rec->step_id;
 	cred_arg.uid      = job_ptr->user_id;
@@ -524,12 +526,12 @@ static int _make_step_cred(struct step_record *step_rec,
 #else
 	cred_arg.hostlist = step_rec->step_layout->node_list;
 #endif
-	cred_arg.alloc_lps_cnt = job_ptr->alloc_lps_cnt;
+	cred_arg.alloc_lps_cnt = job_ptr->node_cnt;
 	if ((cred_arg.alloc_lps_cnt > 0) &&
 	    bit_equal(job_ptr->node_bitmap, step_rec->step_node_bitmap)) {
 		cred_arg.alloc_lps = xmalloc(cred_arg.alloc_lps_cnt *
 				sizeof(uint16_t));
-		memcpy(cred_arg.alloc_lps, step_rec->job_ptr->alloc_lps,
+		memcpy(cred_arg.alloc_lps, select_ptr->cpus,
 		       cred_arg.alloc_lps_cnt*sizeof(uint16_t));
         } else if (cred_arg.alloc_lps_cnt > 0) {
 		/* Construct an array of allocated CPUs per node.
@@ -546,8 +548,8 @@ static int _make_step_cred(struct step_record *step_rec,
 			if (!bit_test(step_rec->step_node_bitmap, i))
 				continue;
 			step_inx++;
-			cred_arg.alloc_lps[step_inx] = 
-					job_ptr->alloc_lps[job_inx];
+			cred_arg.alloc_lps[step_inx] = select_ptr->
+						       cpus[job_inx];
 			if (job_inx == job_inx_target)
 				break;
 		}

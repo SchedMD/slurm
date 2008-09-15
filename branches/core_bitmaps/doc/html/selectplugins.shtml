@@ -284,21 +284,6 @@ return zero.</p>
 <p class="footer"><a href="#top">top</a></p>
 
 <h3>Get/set plugin information</h3>
-<p class="commandline">int select_p_get_extra_jobinfo(struct node_record *node_ptr,
-struct job_record *job_ptr, enum select_data_info info, void *data);</p>
-<p style="margin-left:.2in"><b>Description</b>: Get plugin-specific information 
-related to the specified job and/or node.</p>
-<p style="margin-left:.2in"><b>Arguments</b>:<br>
-<span class="commandline"> node_ptr</span>&nbsp; &nbsp;&nbsp;(input) pointer
-to the node for which information is requested.<br>
-<span class="commandline"> job_ptr</span>&nbsp; &nbsp;&nbsp;(input) pointer
-to the job for which information is requested.<br>
-<span class="commandline"> info</span>&nbsp; &nbsp;&nbsp;(input) identifies 
-the type of data requested.<br>
-<span class="commandline"> data</span>&nbsp; &nbsp;&nbsp;(output) the requested data.</p>
-<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
-the plugin should return SLURM_ERROR.</p>
-
 <p class="commandline">int select_p_get_select_nodeinfo(struct node_record *node_ptr,
 enum select_data_info info, void *data);</p>
 <p style="margin-left:.2in"><b>Description</b>: Get plugin-specific information
@@ -386,6 +371,6 @@ to maintain data format compatibility across different versions of the plugin.</
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 8 October 2007</p>
+<p style="text-align:center;">Last modified 10 September 2008</p>
 
 <!--#include virtual="footer.txt"-->

@@ -1495,9 +1495,7 @@ extern void build_node_details(struct job_record *job_ptr)
 	hostlist_t host_list = NULL;
 	struct node_record *node_ptr;
 	char *this_node_name;
-        int error_code = SLURM_SUCCESS;
 	int node_inx = 0, cpu_inx = -1;
-        int cr_count = 0;
 	uint32_t total_procs = 0;
 
 	if ((job_ptr->node_bitmap == NULL) || (job_ptr->nodes == NULL)) {
@@ -1507,9 +1505,6 @@ extern void build_node_details(struct job_record *job_ptr)
 		job_ptr->cpus_per_node = NULL;
 		job_ptr->cpu_count_reps = NULL;
 		job_ptr->node_addr = NULL;
-		job_ptr->alloc_lps_cnt = 0;
-		xfree(job_ptr->alloc_lps);
-		xfree(job_ptr->used_lps);
 		return;
 	}
 
@@ -1528,12 +1523,6 @@ extern void build_node_details(struct job_record *job_ptr)
 	xrealloc(job_ptr->node_addr, 
 		(sizeof(slurm_addr) * job_ptr->node_cnt));	
 
-	job_ptr->alloc_lps_cnt = job_ptr->node_cnt;
-	xrealloc(job_ptr->alloc_lps,
-		(sizeof(uint16_t) * job_ptr->node_cnt));
-	xrealloc(job_ptr->used_lps,
-		(sizeof(uint16_t) * job_ptr->node_cnt));
-
 	while ((this_node_name = hostlist_shift(host_list))) {
 		node_ptr = find_node_record(this_node_name);
 		     		
@@ -1550,31 +1539,9 @@ extern void build_node_details(struct job_record *job_ptr)
 					job_ptr->num_procs;
 				total_procs += job_ptr->num_procs;
 				job_ptr->cpu_count_reps[cpu_inx] = 1;
-				job_ptr->alloc_lps[0] = job_ptr->num_procs;
-				job_ptr->used_lps[0]  = 0;
 				goto cleanup;
 			}
 #endif
-			error_code = select_g_get_extra_jobinfo( 
-				node_ptr, job_ptr, SELECT_AVAIL_CPUS, 
-				&usable_lps);
-			if (error_code == SLURM_SUCCESS) {
-				if (job_ptr->alloc_lps) {
-					job_ptr->used_lps[cr_count] = 0;
-					job_ptr->alloc_lps[cr_count++] =
-								usable_lps;
-				}
-			} else {
-				error("Unable to get extra jobinfo "
-				      "from JobId=%u", job_ptr->job_id);
-				/* Job is likely completed according to 
-				 * select plugin */
-				if (job_ptr->alloc_lps) {
-					job_ptr->used_lps[cr_count] = 0;
-					job_ptr->alloc_lps[cr_count++] = 0;
-				}
-			}
-			
 			memcpy(&job_ptr->node_addr[node_inx++],
 			       &node_ptr->slurm_addr, sizeof(slurm_addr));
 

@@ -440,9 +440,12 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	int error_code, nodes_picked_cnt=0, cpus_picked_cnt = 0, i;
 	ListIterator step_iterator;
 	struct step_record *step_p;
+	select_job_res_t select_ptr = job_ptr->select_job;
 #if STEP_DEBUG
 	char *temp;
 #endif
+
+	xassert(select_ptr && select_ptr->cpus && select_ptr->cpus_used);
 
 	*return_code = SLURM_SUCCESS;
 	if (job_ptr->node_bitmap == NULL) {
@@ -485,8 +488,9 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		     i++) {
 			if (!bit_test(job_ptr->node_bitmap, i))
 				continue;
-			avail = job_ptr->alloc_lps[j] - job_ptr->used_lps[j];
-			tot_cpus += job_ptr->alloc_lps[j];
+			avail = job_ptr->select_job->cpus[j] - 
+				job_ptr->select_job->cpus_used[j];
+			tot_cpus += job_ptr->select_job->cpus[j];
 			if ((avail <= 0) ||
 			    (cpus_picked_cnt >= step_spec->cpu_count))
 				bit_clear(nodes_avail, i);
@@ -730,8 +734,11 @@ static int _count_cpus(bitstr_t *bitmap)
 extern void step_alloc_lps(struct step_record *step_ptr)
 {
 	struct job_record  *job_ptr = step_ptr->job_ptr;
+	select_job_res_t select_ptr = job_ptr->select_job;
 	int i_node, i_first, i_last;
 	int job_node_inx = -1, step_node_inx = -1;
+
+	xassert(select_ptr && select_ptr->cpus && select_ptr->cpus_used);
 
 	i_first = bit_ffs(job_ptr->node_bitmap);
 	i_last  = bit_fls(job_ptr->node_bitmap);
@@ -744,13 +751,13 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 		if (!bit_test(step_ptr->step_node_bitmap, i_node))
 			continue;
 		step_node_inx++;
-		job_ptr->used_lps[job_node_inx] += 
+		select_ptr->cpus_used[job_node_inx] += 
 			step_ptr->step_layout->tasks[step_node_inx];
 #if 0
 		info("step alloc of %s procs: %u of %u", 
-			node_record_table_ptr[i_node].name,
-			job_ptr->used_lps[job_node_inx],
-			job_ptr->alloc_lps[job_node_inx]);
+		     node_record_table_ptr[i_node].name,
+		     select_ptr->cpus_used[job_node_inx],
+		     select_ptr->cpus[job_node_inx]);
 #endif
 		if (step_node_inx == (step_ptr->step_layout->node_cnt - 1))
 			break;
@@ -761,9 +768,11 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 static void _step_dealloc_lps(struct step_record *step_ptr)
 {
 	struct job_record  *job_ptr = step_ptr->job_ptr;
+	select_job_res_t select_ptr = job_ptr->select_job;
 	int i_node, i_first, i_last;
 	int job_node_inx = -1, step_node_inx = -1;
 
+	xassert(select_ptr && select_ptr->cpus && select_ptr->cpus_used);
 	if (step_ptr->step_layout == NULL)	/* batch step */
 		return;
 
@@ -778,20 +787,20 @@ static void _step_dealloc_lps(struct step_record *step_ptr)
 		if (!bit_test(step_ptr->step_node_bitmap, i_node))
 			continue;
 		step_node_inx++;
-		if (job_ptr->used_lps[job_node_inx] >=
+		if (select_ptr->cpus_used[job_node_inx] >=
 		    step_ptr->step_layout->tasks[step_node_inx]) {
-			job_ptr->used_lps[job_node_inx] -= 
+			select_ptr->cpus_used[job_node_inx] -= 
 				step_ptr->step_layout->tasks[step_node_inx];
 		} else {
 			error("_step_dealloc_lps: underflow for %u.%u",
 				job_ptr->job_id, step_ptr->step_id);
-			job_ptr->used_lps[job_node_inx] = 0;
+			select_ptr->cpus_used[job_node_inx] = 0;
 		}
 #if 0
 		info("step dealloc of %s procs: %u of %u", 
-			node_record_table_ptr[i_node].name,
-			job_ptr->used_lps[job_node_inx],
-			job_ptr->alloc_lps[job_node_inx]);
+		     node_record_table_ptr[i_node].name,
+		     select_ptr->cpus_used[job_node_inx],
+		     select_ptr->cpus[job_node_inx]);
 #endif
 		if (step_node_inx == (step_ptr->step_layout->node_cnt - 1))
 			break;
@@ -1029,6 +1038,9 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 	int set_nodes = 0, set_cpus = 0;
 	int pos = -1;
 	struct job_record *job_ptr = step_ptr->job_ptr;
+	select_job_res_t select_ptr = job_ptr->select_job;
+
+	xassert(select_ptr && select_ptr->cpus && select_ptr->cpus_used);
 
 	/* build the cpus-per-node arrays for the subset of nodes
 	   used by this job step */
@@ -1039,8 +1051,8 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 			if (pos == -1)
 				return NULL;
 			if (step_ptr->exclusive) {
-				usable_cpus = job_ptr->alloc_lps[pos] -
-					      job_ptr->used_lps[pos];
+				usable_cpus = job_ptr->select_job->cpus[pos] -
+					      job_ptr->select_job->cpus_used[pos];
 				if (usable_cpus < 0) {
 					error("step_layout_create exclusive");
 					return NULL;
@@ -1048,7 +1060,7 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 				usable_cpus = MAX(usable_cpus, 
 						  (num_tasks - set_cpus));
 			} else
-				usable_cpus = job_ptr->alloc_lps[pos];
+				usable_cpus = select_ptr->cpus[pos];
 			debug2("step_layout cpus = %d pos = %d", 
 			       usable_cpus, pos);
 			

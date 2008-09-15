@@ -780,7 +780,7 @@ static int _load_job_state(Buf buffer)
 
 	build_node_details(job_ptr);	/* set: num_cpu_groups, cpus_per_node,
 					 *  cpu_count_reps, node_cnt,
-					 *  node_addr, alloc_lps, used_lps */
+					 *  node_addr, and some select_job */
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -3167,7 +3167,6 @@ static void _list_delete_job(void *job_entry)
 
 	delete_job_details(job_ptr);
 	xfree(job_ptr->account);
-	xfree(job_ptr->alloc_lps);
 	xfree(job_ptr->alloc_node);
 	xfree(job_ptr->comment);
 	xfree(job_ptr->cpus_per_node);
@@ -3184,13 +3183,13 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->nodes_completing);
 	xfree(job_ptr->partition);
 	xfree(job_ptr->resp_host);
+	free_select_job_res(&job_ptr->select_job);
 	select_g_free_jobinfo(&job_ptr->select_jobinfo);
 	xfree(job_ptr->state_desc);
 	if (job_ptr->step_list) {
 		delete_step_records(job_ptr, 0);
 		list_destroy(job_ptr->step_list);
 	}
-	xfree(job_ptr->used_lps);
 	job_count--;
 	xfree(job_ptr);
 }

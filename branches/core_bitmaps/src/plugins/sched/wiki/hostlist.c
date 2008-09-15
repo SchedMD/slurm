@@ -2,6 +2,7 @@
  *  hostlist.c - Convert hostlist expressions between Slurm and Moab formats
  *****************************************************************************
  *  Copyright (C) 2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  LLNL-CODE-402394.
@@ -164,6 +165,7 @@ static char * _task_list(struct job_record *job_ptr)
 	int i, j;
 	char *buf = NULL, *host;
 	hostlist_t hl = hostlist_create(job_ptr->nodes);
+	select_job_res_t select_ptr = job_ptr->select_job;
 
 	if (hl == NULL) {
 		error("hostlist_create error for job %u, %s",
@@ -171,15 +173,15 @@ static char * _task_list(struct job_record *job_ptr)
 		return buf;
 	}
 
-	for (i=0; i<job_ptr->alloc_lps_cnt; i++) {
+	for (i=0; i<job_ptr->node_cnt; i++) {
 		host = hostlist_shift(hl);
 		if (host == NULL) {
-			error("bad alloc_lps_cnt for job %u (%s, %d)", 
+			error("bad node_cnt for job %u (%s, %d)", 
 				job_ptr->job_id, job_ptr->nodes,
-				job_ptr->alloc_lps_cnt);
+				job_ptr->node_cnt);
 			break;
 		}
-		for (j=0; j<job_ptr->alloc_lps[i]; j++) {
+		for (j=0; j<select_ptr->cpus[i]; j++) {
 			if (buf)
 				xstrcat(buf, ":");
 			xstrcat(buf, host);
@@ -252,23 +254,25 @@ static char * _task_list_exp(struct job_record *job_ptr)
 	char *buf = NULL, *host;
 	hostlist_t hl = hostlist_create(job_ptr->nodes);
 	hostlist_t hl_tmp = (hostlist_t) NULL;
+	select_job_res_t select_ptr = job_ptr->select_job;
 
+	xassert(select_ptr && select_ptr->cpus);
 	if (hl == NULL) {
 		error("hostlist_create error for job %u, %s",
 			job_ptr->job_id, job_ptr->nodes);
 		return buf;
 	}
 
-	for (i=0; i<job_ptr->alloc_lps_cnt; i++) {
+	for (i=0; i<job_ptr->node_cnt; i++) {
 		host = hostlist_shift(hl);
 		if (host == NULL) {
-			error("bad alloc_lps_cnt for job %u (%s, %d)", 
+			error("bad node_cnt for job %u (%s, %d)", 
 				job_ptr->job_id, job_ptr->nodes,
-				job_ptr->alloc_lps_cnt);
+				job_ptr->node_cnt);
 			break;
 		}
 
-		if (reps == job_ptr->alloc_lps[i]) {
+		if (reps == select_ptr->cpus[i]) {
 			/* append to existing hostlist record */
 			if (hostlist_push(hl_tmp, host) == 0)
 				error("hostlist_push failure");
@@ -279,7 +283,7 @@ static char * _task_list_exp(struct job_record *job_ptr)
 			/* start new hostlist record */
 			hl_tmp = hostlist_create(host);
 			if (hl_tmp)
-				reps = job_ptr->alloc_lps[i];
+				reps = select_ptr->cpus[i];
 			else
 				error("hostlist_create failure");
 		}

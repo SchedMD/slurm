@@ -59,6 +59,7 @@
 #include "src/common/log.h"
 #include "src/common/node_select.h"
 #include "src/common/parse_time.h"
+#include "src/common/select_job_res.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/common/xassert.h"
@@ -417,6 +418,76 @@ static uint16_t _get_avail_cpus(struct job_record *job_ptr, int index)
 	return(avail_cpus);
 }
 
+static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap,
+				 uint32_t req_nodes)
+{
+	int i, j;
+	uint32_t node_cpus, total_cpus = 0;
+	struct node_record *node_ptr;
+	uint32_t job_memory_cpu = 0, job_memory_node = 0;
+	bool memory_info = false;
+
+	if (job_ptr->details->job_min_memory  && (cr_type == CR_MEMORY)) {
+		if (job_ptr->details->job_min_memory & MEM_PER_CPU) {
+			job_memory_cpu = job_ptr->details->job_min_memory &
+					 (~MEM_PER_CPU);
+			memory_info = true;
+		} else {
+			job_memory_node = job_ptr->details->job_min_memory;
+			memory_info = true;
+		}
+	}
+
+	if (job_ptr->select_job) {
+		error("select_p_job_test: already have select_job");
+		free_select_job_res(&job_ptr->select_job);
+	}
+	job_ptr->select_job = create_select_job_res();
+	job_ptr->select_job->core_bitmap = bit_alloc(job_ptr->total_procs);
+	job_ptr->select_job->core_bitmap_used = bit_alloc(job_ptr->total_procs);
+	job_ptr->select_job->cpus = xmalloc(sizeof(uint16_t) * req_nodes);
+	job_ptr->select_job->cpus_used = xmalloc(sizeof(uint16_t) * req_nodes);
+	job_ptr->select_job->memory_allocated = xmalloc(sizeof(uint32_t) * 
+							req_nodes);
+	job_ptr->select_job->memory_used = xmalloc(sizeof(uint32_t) * 
+						   req_nodes);
+	job_ptr->select_job->nhosts = req_nodes;
+	job_ptr->select_job->node_bitmap = bit_copy(bitmap);
+	job_ptr->select_job->nprocs = job_ptr->total_procs;
+	if (build_select_job_res(job_ptr->select_job, (void *)select_node_ptr,
+				 select_fast_schedule))
+		error("select_p_job_test: build_select_job_res: %m");
+
+	for (i=0, j=0; i<node_record_count; i++) {
+		if (!bit_test(bitmap, i))
+			continue;
+		node_ptr = &(select_node_ptr[i]);
+		if (select_fast_schedule)
+			node_cpus = node_ptr->config_ptr->cpus;
+		else
+			node_cpus = node_ptr->cpus;
+		job_ptr->select_job->cpus[j] = node_cpus;
+		total_cpus += node_cpus;
+		if (!memory_info)
+			;
+		else if (job_memory_node) {
+			job_ptr->select_job->memory_allocated[j] = 
+					job_memory_node;
+		} else if (job_memory_cpu) {
+			job_ptr->select_job->memory_allocated[j] = 
+					job_memory_cpu * node_cpus;
+		}
+		if (set_select_job_res_node(job_ptr->select_job, i))
+			error("select_p_job_test: set_select_job_res_node: %m");
+		if (++j == req_nodes)
+			break;
+	}
+	if (job_ptr->select_job->nprocs != total_cpus) {
+		error("select_p_job_test: nprocs mismatch %u != %u",
+		      job_ptr->select_job->nprocs, total_cpus);
+	}
+}
+
 /*
  * select_p_job_test - Given a specification of scheduling requirements, 
  *	identify the nodes which "best" satisfy the request.
@@ -523,6 +594,8 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	}
 	bit_free(orig_map);
 	slurm_mutex_unlock(&cr_mutex);
+	if ((rc == SLURM_SUCCESS) && (mode == SELECT_MODE_RUN_NOW))
+		_build_select_struct(job_ptr, bitmap, req_nodes);
 	if (save_mem)
 		job_ptr->details->job_min_memory = save_mem;
 	return rc;
@@ -670,6 +743,7 @@ static int _find_job_mate(struct job_record *job_ptr, bitstr_t *bitmap,
 		    (job_scan_ptr->total_procs >= job_ptr->num_procs) &&
 		    bit_super_set(job_scan_ptr->node_bitmap, bitmap)) {
 			bit_and(bitmap, job_scan_ptr->node_bitmap);
+			job_ptr->total_procs = job_scan_ptr->total_procs;
 			return SLURM_SUCCESS;
 		}
 	}
@@ -1068,42 +1142,6 @@ extern int select_p_update_block (update_part_msg_t *part_desc_ptr)
 extern int select_p_update_sub_node (update_part_msg_t *part_desc_ptr)
 {
 	return SLURM_SUCCESS;
-}
-extern int select_p_get_extra_jobinfo (struct node_record *node_ptr, 
-                                       struct job_record *job_ptr, 
-                                       enum select_data_info info,
-                                       void *data)
-{
-	int rc = SLURM_SUCCESS;
-	uint16_t *tmp_16;
-
-	xassert(job_ptr);
-	xassert(job_ptr->magic == JOB_MAGIC);
-
-	switch (info) {
-	case SELECT_AVAIL_CPUS:
-		tmp_16 = (uint16_t *) data;
-
-		if (job_ptr->details &&
-		    ((job_ptr->details->cpus_per_task > 1) ||
-		     (job_ptr->details->mc_ptr))) {
-			int index = (node_ptr - node_record_table_ptr);
-			*tmp_16 = _get_avail_cpus(job_ptr, index);
-		} else {
-			if (slurmctld_conf.fast_schedule) {
-				*tmp_16 = node_ptr->config_ptr->cpus;
-			} else {
-				*tmp_16 = node_ptr->cpus;
-			}
-		}
-		break;
-	default:
-		error("select_g_get_extra_jobinfo info %d invalid", info);
-		rc = SLURM_ERROR;
-		break;
-	}
-	
-	return rc;
 }
 
 extern int select_p_get_info_from_plugin (enum select_data_info info,

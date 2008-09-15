@@ -447,14 +447,6 @@ struct job_record {
 	uint16_t *cpus_per_node;	/* array of cpus per node allocated */
 	uint32_t *cpu_count_reps;	/* array of consecutive nodes with 
 					 * same cpu count */
-
-	uint32_t alloc_lps_cnt;		/* number of hosts in alloc_lps
-					 * or 0 if alloc_lps is not needed
-					 * for the credentials */
-	uint16_t *alloc_lps;		/* number of logical processors
-					 * allocated for this job */
-	uint16_t *used_lps;		/* number of logical processors
-					 * already allocated to job steps */
 };
 
 /* Job dependency specification, used in "depend_list" within job_record */
@@ -518,7 +510,6 @@ enum select_data_info {
 	SELECT_BITMAP,       /* data-> partially_idle_bitmap (CR support) */
 	SELECT_ALLOC_CPUS,   /* data-> uint16 alloc cpus (CR support) */
 	SELECT_ALLOC_LPS,    /* data-> uint32 alloc lps  (CR support) */
-	SELECT_AVAIL_CPUS,   /* data-> uint16 avail cpus (CR support) */ 
 	SELECT_AVAIL_MEMORY  /* data-> uint32 avail mem  (CR support) */ 
 } ;
 
