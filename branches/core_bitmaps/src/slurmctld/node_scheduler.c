@@ -1486,8 +1486,7 @@ static int _nodes_in_sets(bitstr_t *req_bitmap,
 }
 
 /*
- * build_node_details - set cpu counts and addresses for allocated nodes:
- *	cpu_count_reps, cpus_per_node, node_addr, node_cnt, num_cpu_groups
+ * build_node_details - sets addresses for allocated nodes
  * IN job_ptr - pointer to a job record
  */
 extern void build_node_details(struct job_record *job_ptr)
@@ -1500,69 +1499,26 @@ extern void build_node_details(struct job_record *job_ptr)
 
 	if ((job_ptr->node_bitmap == NULL) || (job_ptr->nodes == NULL)) {
 		/* No nodes allocated, we're done... */
-		job_ptr->num_cpu_groups = 0;
 		job_ptr->node_cnt = 0;
-		job_ptr->cpus_per_node = NULL;
-		job_ptr->cpu_count_reps = NULL;
 		job_ptr->node_addr = NULL;
 		return;
 	}
-
-	job_ptr->num_cpu_groups = 0;
 	
 	/* Use hostlist here to insure ordering of info matches that of srun */
 	if ((host_list = hostlist_create(job_ptr->nodes)) == NULL)
 		fatal("hostlist_create error for %s: %m", job_ptr->nodes);
-
 	job_ptr->node_cnt = hostlist_count(host_list);	
-
-	xrealloc(job_ptr->cpus_per_node, 
-		(sizeof(uint16_t) * job_ptr->node_cnt));
-	xrealloc(job_ptr->cpu_count_reps, 
-		(sizeof(uint32_t) * job_ptr->node_cnt));
 	xrealloc(job_ptr->node_addr, 
 		(sizeof(slurm_addr) * job_ptr->node_cnt));	
 
 	while ((this_node_name = hostlist_shift(host_list))) {
-		node_ptr = find_node_record(this_node_name);
-		     		
-		if (node_ptr) {
-			uint16_t usable_lps = 0;
-#ifdef HAVE_BG
-			if(job_ptr->node_cnt == 1) {
-				memcpy(&job_ptr->node_addr[node_inx++],
-				       &node_ptr->slurm_addr, 
-				       sizeof(slurm_addr));
-				cpu_inx++;
-				
-				job_ptr->cpus_per_node[cpu_inx] =
-					job_ptr->num_procs;
-				total_procs += job_ptr->num_procs;
-				job_ptr->cpu_count_reps[cpu_inx] = 1;
-				goto cleanup;
-			}
-#endif
+		if ((node_ptr = find_node_record(this_node_name))) {
 			memcpy(&job_ptr->node_addr[node_inx++],
 			       &node_ptr->slurm_addr, sizeof(slurm_addr));
-
-			if ((cpu_inx == -1) ||
-			    (job_ptr->cpus_per_node[cpu_inx] !=
-			     usable_lps)) {
-				cpu_inx++;
-				job_ptr->cpus_per_node[cpu_inx] =
-					usable_lps;
-				job_ptr->cpu_count_reps[cpu_inx] = 1;
-			} else
-				job_ptr->cpu_count_reps[cpu_inx]++;
-			total_procs +=  usable_lps;
-
 		} else {
 			error("Invalid node %s in JobId=%u",
 			      this_node_name, job_ptr->job_id);
 		}
-#ifdef HAVE_BG
- cleanup:	
-#endif
 		free(this_node_name);
 	}
 	hostlist_destroy(host_list);
@@ -1570,8 +1526,6 @@ extern void build_node_details(struct job_record *job_ptr)
 		error("Node count mismatch for JobId=%u (%u,%u)",
 		      job_ptr->job_id, job_ptr->node_cnt, node_inx);
 	}
-	job_ptr->num_cpu_groups = cpu_inx + 1;
-	job_ptr->total_procs = total_procs;
 }
 
 /*

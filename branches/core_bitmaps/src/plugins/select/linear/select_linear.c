@@ -421,7 +421,7 @@ static uint16_t _get_avail_cpus(struct job_record *job_ptr, int index)
 static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap,
 				 uint32_t req_nodes)
 {
-	int i, j;
+	int i, j, k;
 	uint32_t node_cpus, total_cpus = 0;
 	struct node_record *node_ptr;
 	uint32_t job_memory_cpu = 0, job_memory_node = 0;
@@ -445,6 +445,10 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap,
 	job_ptr->select_job = create_select_job_res();
 	job_ptr->select_job->core_bitmap = bit_alloc(job_ptr->total_procs);
 	job_ptr->select_job->core_bitmap_used = bit_alloc(job_ptr->total_procs);
+	job_ptr->select_job->cpu_array_reps = xmalloc(sizeof(uint32_t) * 
+						      req_nodes);
+	job_ptr->select_job->cpu_array_value = xmalloc(sizeof(uint16_t) * 
+						       req_nodes);
 	job_ptr->select_job->cpus = xmalloc(sizeof(uint16_t) * req_nodes);
 	job_ptr->select_job->cpus_used = xmalloc(sizeof(uint16_t) * req_nodes);
 	job_ptr->select_job->memory_allocated = xmalloc(sizeof(uint32_t) * 
@@ -458,7 +462,7 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap,
 				 select_fast_schedule))
 		error("select_p_job_test: build_select_job_res: %m");
 
-	for (i=0, j=0; i<node_record_count; i++) {
+	for (i=0, j=0, k=-1; i<node_record_count; i++) {
 		if (!bit_test(bitmap, i))
 			continue;
 		node_ptr = &(select_node_ptr[i]);
@@ -467,7 +471,14 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap,
 		else
 			node_cpus = node_ptr->cpus;
 		job_ptr->select_job->cpus[j] = node_cpus;
+		if ((k == -1) ||
+		    (job_ptr->select_job->cpu_array_value[k] != node_cpus)) {
+			job_ptr->select_job->cpu_array_cnt++;
+			job_ptr->select_job->cpu_array_reps[++k] = 1;
+			job_ptr->select_job->cpu_array_value[k] = node_cpus;
+		}
 		total_cpus += node_cpus;
+
 		if (!memory_info)
 			;
 		else if (job_memory_node) {
@@ -477,6 +488,7 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap,
 			job_ptr->select_job->memory_allocated[j] = 
 					job_memory_cpu * node_cpus;
 		}
+
 		if (set_select_job_res_node(job_ptr->select_job, i))
 			error("select_p_job_test: set_select_job_res_node: %m");
 		if (++j == req_nodes)

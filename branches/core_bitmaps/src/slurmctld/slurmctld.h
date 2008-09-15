@@ -440,13 +440,6 @@ struct job_record {
 	uint32_t total_procs;		/* number of allocated processors, 
 					 * for accounting */
 	uint32_t user_id;		/* user the job runs as */
-
-	/* Per node allocation details */
-	uint32_t num_cpu_groups;	/* record count in cpus_per_node and 
-					 * cpu_count_reps */
-	uint16_t *cpus_per_node;	/* array of cpus per node allocated */
-	uint32_t *cpu_count_reps;	/* array of consecutive nodes with 
-					 * same cpu count */
 };
 
 /* Job dependency specification, used in "depend_list" within job_record */
@@ -1365,8 +1358,9 @@ extern int step_create ( job_step_create_request_msg_t *step_specs,
 
 /*
  * step_layout_create - creates a step_layout according to the inputs.
- * IN job_ptr - job record step belongs to
+ * IN step_ptr - step having tasks layed out
  * IN step_node_list - node list of hosts in step
+ * IN node_count - count of nodes in step allocation
  * IN num_tasks - number of tasks in step
  * IN task_dist - type of task distribution
  * IN plane_size - size of plane (only needed for the plane distribution)
@@ -1376,7 +1370,7 @@ extern int step_create ( job_step_create_request_msg_t *step_specs,
  */
 extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 					       char *step_node_list,
-					       uint16_t node_count,
+					       uint32_t node_count,
 					       uint32_t num_tasks,
 					       uint16_t task_dist,
 					       uint32_t plane_size);

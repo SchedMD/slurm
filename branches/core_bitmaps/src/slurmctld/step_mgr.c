@@ -635,12 +635,14 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	/* if user specifies step needs a specific processor count and 
 	 * all nodes have the same processor count, just translate this to
 	 * a node count */
-	if (step_spec->cpu_count && (job_ptr->num_cpu_groups == 1) && 
-	    job_ptr->cpus_per_node[0]) {
-		i = (step_spec->cpu_count + (job_ptr->cpus_per_node[0] - 1) ) 
-				/ job_ptr->cpus_per_node[0];
+	if (step_spec->cpu_count && job_ptr->select_job && 
+	    (job_ptr->select_job->cpu_array_cnt == 1) &&
+	    job_ptr->select_job->cpu_array_value) {
+		i = (step_spec->cpu_count + 
+		     (job_ptr->select_job->cpu_array_value[0] - 1)) /
+		    job_ptr->select_job->cpu_array_value[0];
 		step_spec->node_count = (i > step_spec->node_count) ? 
-						i : step_spec->node_count ;
+					 i : step_spec->node_count ;
 		step_spec->cpu_count = 0;
 	}
 
@@ -1026,7 +1028,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 
 extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 					       char *step_node_list,
-					       uint16_t node_count,
+					       uint32_t node_count,
 					       uint32_t num_tasks,
 					       uint16_t task_dist,
 					       uint32_t plane_size)

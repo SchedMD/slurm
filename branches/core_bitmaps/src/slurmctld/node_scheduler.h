@@ -47,8 +47,7 @@
 extern void allocate_nodes(struct job_record *job_ptr);
 
 /*
- * build_node_details - set cpu counts and addresses for allocated nodes:
- *	cpu_count_reps, cpus_per_node, node_addr, node_cnt, num_cpu_groups
+ * build_node_details - sets addresses for allocated nodes
  * IN job_ptr - pointer to a job record
  */
 extern void build_node_details(struct job_record *job_ptr);

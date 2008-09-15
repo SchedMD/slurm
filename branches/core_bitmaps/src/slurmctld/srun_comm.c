@@ -78,8 +78,9 @@ extern void srun_allocate (uint32_t job_id)
 	struct job_record *job_ptr = find_job_record (job_id);
 
 	xassert(job_ptr);
-	if (job_ptr && job_ptr->alloc_resp_port && job_ptr->alloc_node
-	&&  job_ptr->resp_host) {
+	if (job_ptr && job_ptr->alloc_resp_port && job_ptr->alloc_node &&
+	    job_ptr->resp_host && job_ptr->select_job && 
+	    job_ptr->select_job->cpu_array_cnt) {
 		slurm_addr * addr;
 		resource_allocation_response_msg_t *msg_arg;
 
@@ -89,15 +90,17 @@ extern void srun_allocate (uint32_t job_id)
 		msg_arg = xmalloc(sizeof(resource_allocation_response_msg_t));
 		msg_arg->job_id 	= job_ptr->job_id;
 		msg_arg->node_list	= xstrdup(job_ptr->nodes);
-		msg_arg->num_cpu_groups	= job_ptr->num_cpu_groups;
+		msg_arg->num_cpu_groups	= job_ptr->select_job->cpu_array_cnt;
 		msg_arg->cpus_per_node  = xmalloc(sizeof(uint16_t) *
-				job_ptr->num_cpu_groups);
-		memcpy(msg_arg->cpus_per_node, job_ptr->cpus_per_node,
-				(sizeof(uint16_t) * job_ptr->num_cpu_groups));
+				job_ptr->select_job->cpu_array_cnt);
+		memcpy(msg_arg->cpus_per_node, 
+		       job_ptr->select_job->cpu_array_value,
+		       (sizeof(uint16_t) * job_ptr->select_job->cpu_array_cnt));
 		msg_arg->cpu_count_reps  = xmalloc(sizeof(uint32_t) *
-				job_ptr->num_cpu_groups);
-		memcpy(msg_arg->cpu_count_reps, job_ptr->cpu_count_reps,
-				(sizeof(uint32_t) * job_ptr->num_cpu_groups));
+				job_ptr->select_job->cpu_array_cnt);
+		memcpy(msg_arg->cpu_count_reps, 
+		       job_ptr->select_job->cpu_array_reps,
+		       (sizeof(uint32_t) * job_ptr->select_job->cpu_array_cnt));
 		msg_arg->node_cnt	= job_ptr->node_cnt;
 		msg_arg->select_jobinfo = select_g_copy_jobinfo(
 				job_ptr->select_jobinfo);

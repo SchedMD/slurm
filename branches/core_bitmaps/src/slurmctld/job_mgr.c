@@ -778,9 +778,7 @@ static int _load_job_state(Buf buffer)
 		safe_unpack16(&step_flag, buffer);
 	}
 
-	build_node_details(job_ptr);	/* set: num_cpu_groups, cpus_per_node,
-					 *  cpu_count_reps, node_cnt,
-					 *  node_addr, and some select_job */
+	build_node_details(job_ptr);	/* set node_addr */
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -1225,17 +1223,33 @@ extern int kill_running_job_by_node_name(char *node_name, bool step_test)
 static void _excise_node_from_job(struct job_record *job_ptr, 
 				  struct node_record *node_ptr)
 {
+	int i, orig_pos = -1, new_pos = -1;
+	bitstr_t *orig_bitmap = bit_copy(job_ptr->node_bitmap);
+
 	make_node_idle(node_ptr, job_ptr); /* updates bitmap */
 	xfree(job_ptr->nodes);
 	job_ptr->nodes = bitmap2node_name(job_ptr->node_bitmap);
-	xfree(job_ptr->cpus_per_node);
-	xfree(job_ptr->cpu_count_reps);
-	xfree(job_ptr->node_addr);
-
-	/* build_node_details rebuilds everything from node_bitmap */
-	build_node_details(job_ptr);
+	for (i=bit_ffs(orig_bitmap); i<node_record_count; i++) {
+		if (!bit_test(orig_bitmap,i))
+			continue;
+		orig_pos++;
+		if (!bit_test(job_ptr->node_bitmap, i))
+			continue;
+		new_pos++;
+		if (orig_pos == new_pos)
+			continue;
+		memcpy(&job_ptr->node_addr[new_pos],
+		       &job_ptr->node_addr[orig_pos], sizeof(slurm_addr));
+		if (job_ptr->select_job && job_ptr->select_job->cpus &&
+		    job_ptr->select_job->cpus_used) {
+			job_ptr->select_job->cpus[new_pos] = 
+				job_ptr->select_job->cpus[orig_pos];
+			job_ptr->select_job->cpus_used[new_pos] = 
+				job_ptr->select_job->cpus_used[orig_pos];
+		}
+	}
+	job_ptr->node_cnt = new_pos + 1;
 }
-
 
 /*
  * dump_job_desc - dump the incoming job submit request message
@@ -1464,9 +1478,6 @@ extern void rehash_jobs(void)
  * RET 0 or an error code. If the job would only be able to execute with 
  *	some change in partition configuration then 
  *	ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE is returned
- * NOTE: If allocating nodes lx[0-7] to a job and those nodes have cpu counts  
- *	of 4, 4, 4, 4, 8, 8, 4, 4 then num_cpu_groups=3, cpus_per_node={4,8,4}
- *	and cpu_count_reps={4,2,2}
  * globals: job_list - pointer to global job list 
  *	list_part - global list of partition info
  *	default_part_loc - pointer to default partition
@@ -3169,8 +3180,6 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->account);
 	xfree(job_ptr->alloc_node);
 	xfree(job_ptr->comment);
-	xfree(job_ptr->cpus_per_node);
-	xfree(job_ptr->cpu_count_reps);
 	xfree(job_ptr->licenses);
 	if (job_ptr->license_list)
 		list_destroy(job_ptr->license_list);
@@ -3405,13 +3414,15 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 
 	pack32(dump_job_ptr->exit_code, buffer);
 
-	pack32(dump_job_ptr->num_cpu_groups, buffer);
-	if (dump_job_ptr->num_cpu_groups) {
-		pack16_array(dump_job_ptr->cpus_per_node, 
-			     dump_job_ptr->num_cpu_groups, buffer);
-		pack32_array(dump_job_ptr->cpu_count_reps, 
-			     dump_job_ptr->num_cpu_groups, buffer);
-	}
+	if (dump_job_ptr->select_job && 
+	    dump_job_ptr->select_job->cpu_array_cnt) {
+		pack32(dump_job_ptr->select_job->cpu_array_cnt, buffer);
+		pack16_array(dump_job_ptr->select_job->cpu_array_value,
+			     dump_job_ptr->select_job->cpu_array_cnt, buffer);
+		pack32_array(dump_job_ptr->select_job->cpu_array_reps,
+			     dump_job_ptr->select_job->cpu_array_cnt, buffer);
+	} else
+		pack32((uint32_t) 0, buffer);
 
 	packstr(dump_job_ptr->name, buffer);
 	packstr(dump_job_ptr->alloc_node, buffer);
@@ -3592,9 +3603,7 @@ void reset_job_bitmaps(void)
 		    	      job_ptr->nodes, job_ptr->job_id);
 			job_fail = true;
 		}
-		build_node_details(job_ptr);	/* set: num_cpu_groups, 
-						 * cpu_count_reps, node_cnt, 
-						 * cpus_per_node, node_addr */
+		build_node_details(job_ptr);	/* set node_addr */
 
 		if (_reset_detail_bitmaps(job_ptr))
 			job_fail = true;
