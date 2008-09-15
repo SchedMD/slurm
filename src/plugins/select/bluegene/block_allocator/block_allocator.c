@@ -3080,6 +3080,23 @@ static int _find_yz_path(ba_node_t *ba_node, int *first,
 				}
 			}
 		} else if(geometry[i2] == 1) {
+			/* FIX ME: This is put here because we got
+			   into a state where the Y dim was not being
+			   processed correctly.  This will set up the
+			   0 -> 1 port correctly.  We should probably
+			   find out why this was happening in the
+			   first place though.  A reproducer was to
+			   have 
+			   BPs=[310x323] Type=TORUS
+			   BPs=[200x233] Type=TORUS
+			   BPs=[300x303] Type=TORUS
+			   BPs=[100x133] Type=TORUS
+			   BPs=[000x033] Type=TORUS
+			   BPs=[400x433] Type=TORUS
+			   and then add 
+			   BPs=[330x333] Type=TORUS
+			*/
+
 			dim_curr_switch = &ba_node->axis_switch[i2];
 			debug3("%d node %c%c%c port 0 -> 1",
 			       i2,
