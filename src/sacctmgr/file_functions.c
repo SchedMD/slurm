@@ -1512,7 +1512,8 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 		return;
 		
 	} else {
-		if(user->admin_level < ACCT_ADMIN_SUPER_USER) {
+		if(my_uid != slurm_get_slurm_user_id() && my_uid != 0
+		   && user->admin_level < ACCT_ADMIN_SUPER_USER) {
 			exit_code=1;
 			fprintf(stderr, " Your user does not have sufficient "
 				"privileges to load files.\n");
