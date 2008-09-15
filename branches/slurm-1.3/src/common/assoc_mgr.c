@@ -1040,7 +1040,8 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 		slurm_mutex_lock(&local_association_lock);
 		/* let us know what to unpack */
 		pack16(DBD_ADD_ASSOCS, buffer);
-		slurmdbd_pack_list_msg(DBD_ADD_ASSOCS, &msg, buffer);
+		slurmdbd_pack_list_msg(SLURMDBD_VERSION, 
+				       DBD_ADD_ASSOCS, &msg, buffer);
 		slurm_mutex_unlock(&local_association_lock);
 	}
 	
@@ -1050,7 +1051,8 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 		slurm_mutex_lock(&local_user_lock);
 		/* let us know what to unpack */
 		pack16(DBD_ADD_USERS, buffer);
-		slurmdbd_pack_list_msg(DBD_ADD_USERS, &msg, buffer);
+		slurmdbd_pack_list_msg(SLURMDBD_VERSION, 
+				       DBD_ADD_USERS, &msg, buffer);
 		slurm_mutex_unlock(&local_user_lock);
 	}
 
@@ -1060,7 +1062,8 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 		slurm_mutex_lock(&local_qos_lock);
 		/* let us know what to unpack */
 		pack16(DBD_ADD_QOS, buffer);
-		slurmdbd_pack_list_msg(DBD_ADD_QOS, &msg, buffer);	
+		slurmdbd_pack_list_msg(SLURMDBD_VERSION, 
+				       DBD_ADD_QOS, &msg, buffer);	
 		slurm_mutex_unlock(&local_qos_lock);
 	}
 
@@ -1179,7 +1182,7 @@ extern int load_assoc_mgr_state(char *state_save_location)
 		switch(type) {
 		case DBD_ADD_ASSOCS:
 			error_code = slurmdbd_unpack_list_msg(
-				DBD_ADD_ASSOCS, &msg, buffer);
+				SLURMDBD_VERSION, DBD_ADD_ASSOCS, &msg, buffer);
 			if (error_code != SLURM_SUCCESS)
 				goto unpack_error;
 			else if(!msg->my_list) {
@@ -1193,11 +1196,11 @@ extern int load_assoc_mgr_state(char *state_save_location)
 			      list_count(local_association_list));
 			slurm_mutex_unlock(&local_association_lock);
 			msg->my_list = NULL;
-			slurmdbd_free_list_msg(msg);
+			slurmdbd_free_list_msg(SLURMDBD_VERSION, msg);
 			break;
 		case DBD_ADD_USERS:
 			error_code = slurmdbd_unpack_list_msg(
-				DBD_ADD_USERS, &msg, buffer);
+				SLURMDBD_VERSION, DBD_ADD_USERS, &msg, buffer);
 			if (error_code != SLURM_SUCCESS)
 				goto unpack_error;
 			else if(!msg->my_list) {
@@ -1211,11 +1214,11 @@ extern int load_assoc_mgr_state(char *state_save_location)
 			      list_count(local_user_list));
 			slurm_mutex_unlock(&local_user_lock);
 			msg->my_list = NULL;
-			slurmdbd_free_list_msg(msg);
+			slurmdbd_free_list_msg(SLURMDBD_VERSION, msg);
 			break;
 		case DBD_ADD_QOS:
 			error_code = slurmdbd_unpack_list_msg(
-				DBD_ADD_QOS, &msg, buffer);
+				SLURMDBD_VERSION, DBD_ADD_QOS, &msg, buffer);
 			if (error_code != SLURM_SUCCESS)
 				goto unpack_error;
 			else if(!msg->my_list) {
@@ -1228,7 +1231,7 @@ extern int load_assoc_mgr_state(char *state_save_location)
 			      list_count(local_qos_list));
 			slurm_mutex_unlock(&local_qos_lock);
 			msg->my_list = NULL;
-			slurmdbd_free_list_msg(msg);	
+			slurmdbd_free_list_msg(SLURMDBD_VERSION, msg);	
 			break;
 		default:
 			error("unknown type %u given", type);

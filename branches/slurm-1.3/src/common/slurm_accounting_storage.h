@@ -175,7 +175,7 @@ typedef struct {
 	uint32_t default_max_wall_duration_per_job; /* longest time this
 					     * association can run a job */
 	char *name;
-
+	uint16_t rpc_version; /* version of rpc this cluter is running */
 } acct_cluster_rec_t;
 
 typedef struct {
@@ -297,45 +297,67 @@ extern void destroy_update_shares_rec(void *object);
 
 
 /* pack functions */
-extern void pack_acct_user_rec(void *in, Buf buffer);
-extern int unpack_acct_user_rec(void **object, Buf buffer);
-extern void pack_acct_account_rec(void *in, Buf buffer);
-extern int unpack_acct_account_rec(void **object, Buf buffer);
-extern void pack_acct_coord_rec(void *in, Buf buffer);
-extern int unpack_acct_coord_rec(void **object, Buf buffer);
-extern void pack_cluster_accounting_rec(void *in, Buf buffer);
-extern int unpack_cluster_accounting_rec(void **object, Buf buffer);
-extern void pack_acct_cluster_rec(void *in, Buf buffer);
-extern int unpack_acct_cluster_rec(void **object, Buf buffer);
-extern void pack_acct_accounting_rec(void *in, Buf buffer);
-extern int unpack_acct_accounting_rec(void **object, Buf buffer);
-extern void pack_acct_association_rec(void *in, Buf buffer);
-extern int unpack_acct_association_rec(void **object, Buf buffer);
-extern void pack_acct_qos_rec(void *in, Buf buffer);
-extern int unpack_acct_qos_rec(void **object, Buf buffer);
-extern void pack_acct_txn_rec(void *in, Buf buffer);
-extern int unpack_acct_txn_rec(void **object, Buf buffer);
+extern void pack_acct_user_rec(void *in, uint16_t rpc_version, Buf buffer);
+extern int unpack_acct_user_rec(void **object, uint16_t rpc_version, 
+				Buf buffer);
+extern void pack_acct_account_rec(void *in, uint16_t rpc_version, Buf buffer);
+extern int unpack_acct_account_rec(void **object, uint16_t rpc_version, 
+				   Buf buffer);
+extern void pack_acct_coord_rec(void *in, uint16_t rpc_version, Buf buffer);
+extern int unpack_acct_coord_rec(void **object, uint16_t rpc_version,
+				 Buf buffer);
+extern void pack_cluster_accounting_rec(void *in, uint16_t rpc_version, 
+					Buf buffer);
+extern int unpack_cluster_accounting_rec(void **object, uint16_t rpc_version,
+					 Buf buffer);
+extern void pack_acct_cluster_rec(void *in, uint16_t rpc_version, Buf buffer);
+extern int unpack_acct_cluster_rec(void **object, uint16_t rpc_version,
+				   Buf buffer);
+extern void pack_acct_accounting_rec(void *in, uint16_t rpc_version,
+				     Buf buffer);
+extern int unpack_acct_accounting_rec(void **object, uint16_t rpc_version, 
+				      Buf buffer);
+extern void pack_acct_association_rec(void *in, uint16_t rpc_version, 
+				      Buf buffer);
+extern int unpack_acct_association_rec(void **object, uint16_t rpc_version,
+				       Buf buffer);
+extern void pack_acct_qos_rec(void *in, uint16_t rpc_version, Buf buffer);
+extern int unpack_acct_qos_rec(void **object, uint16_t rpc_version, Buf buffer);
+extern void pack_acct_txn_rec(void *in, uint16_t rpc_version, Buf buffer);
+extern int unpack_acct_txn_rec(void **object, uint16_t rpc_version, Buf buffer);
 
-extern void pack_acct_user_cond(void *in, Buf buffer);
-extern int unpack_acct_user_cond(void **object, Buf buffer);
-extern void pack_acct_account_cond(void *in, Buf buffer);
-extern int unpack_acct_account_cond(void **object, Buf buffer);
-extern void pack_acct_cluster_cond(void *in, Buf buffer);
-extern int unpack_acct_cluster_cond(void **object, Buf buffer);
-extern void pack_acct_association_cond(void *in, Buf buffer);
-extern int unpack_acct_association_cond(void **object, Buf buffer);
-extern void pack_acct_job_cond(void *in, Buf buffer);
-extern int unpack_acct_job_cond(void **object, Buf buffer);
-extern void pack_acct_qos_cond(void *in, Buf buffer);
-extern int unpack_acct_qos_cond(void **object, Buf buffer);
-extern void pack_acct_txn_cond(void *in, Buf buffer);
-extern int unpack_acct_txn_cond(void **object, Buf buffer);
+extern void pack_acct_user_cond(void *in, uint16_t rpc_version, Buf buffer);
+extern int unpack_acct_user_cond(void **object, uint16_t rpc_version,
+				 Buf buffer);
+extern void pack_acct_account_cond(void *in, uint16_t rpc_version, Buf buffer);
+extern int unpack_acct_account_cond(void **object, uint16_t rpc_version,
+				    Buf buffer);
+extern void pack_acct_cluster_cond(void *in, uint16_t rpc_version, Buf buffer);
+extern int unpack_acct_cluster_cond(void **object, uint16_t rpc_version, 
+				    Buf buffer);
+extern void pack_acct_association_cond(void *in, uint16_t rpc_version,
+				       Buf buffer);
+extern int unpack_acct_association_cond(void **object, uint16_t rpc_version, 
+					Buf buffer);
+extern void pack_acct_job_cond(void *in, uint16_t rpc_version, Buf buffer);
+extern int unpack_acct_job_cond(void **object, uint16_t rpc_version,
+				Buf buffer);
+extern void pack_acct_qos_cond(void *in, uint16_t rpc_version, Buf buffer);
+extern int unpack_acct_qos_cond(void **object, uint16_t rpc_version,
+				Buf buffer);
+extern void pack_acct_txn_cond(void *in, uint16_t rpc_version, Buf buffer);
+extern int unpack_acct_txn_cond(void **object, uint16_t rpc_version,
+				Buf buffer);
 
-extern void pack_acct_update_object(acct_update_object_t *object, Buf buffer);
-extern int unpack_acct_update_object(acct_update_object_t **object, Buf buffer);
+extern void pack_acct_update_object(acct_update_object_t *object, 
+				    uint16_t rpc_version, Buf buffer);
+extern int unpack_acct_update_object(acct_update_object_t **object,
+				     uint16_t rpc_version, Buf buffer);
 
-extern void pack_update_shares_used(void *in, Buf buffer);
-extern int unpack_update_shares_used(void **object, Buf buffer);
+extern void pack_update_shares_used(void *in, uint16_t rpc_version,
+				    Buf buffer);
+extern int unpack_update_shares_used(void **object, uint16_t rpc_version, 
+				     Buf buffer);
 
 extern char *acct_qos_str(List qos_list, uint32_t level);
 extern uint32_t str_2_acct_qos(List qos_list, char *level);

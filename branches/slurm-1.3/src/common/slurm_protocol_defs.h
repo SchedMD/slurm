@@ -726,6 +726,7 @@ typedef struct slurm_node_registration_status_msg {
 
 typedef struct {
 	List update_list; /* of type acct_update_object_t *'s */
+	uint16_t rpc_version;
 } accounting_update_msg_t;
 
 typedef struct slurm_ctl_conf slurm_ctl_conf_info_msg_t;
