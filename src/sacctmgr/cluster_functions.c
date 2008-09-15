@@ -347,7 +347,8 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 		PRINT_MAXC,
 		PRINT_MAXJ,
 		PRINT_MAXN,
-		PRINT_MAXW
+		PRINT_MAXW,
+		PRINT_RPC_VERSION		
 	};
 
 
@@ -363,7 +364,7 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 
 	if(!list_count(format_list)) {
 		slurm_addto_char_list(format_list, 
-				      "Cl,Controlh,Controlp,F,MaxC,"
+				      "Cl,Controlh,Controlp,RPC,F,MaxC,"
 				      "MaxJ,MaxN,MaxW");
 	}
 
@@ -411,6 +412,11 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 			field->name = xstrdup("MaxWall");
 			field->len = 11;
 			field->print_routine = print_fields_time;
+		} else if(!strncasecmp("RPC", object, 1)) {
+			field->type = PRINT_RPC_VERSION;
+			field->name = xstrdup("RPC");
+			field->len = 3;
+			field->print_routine = print_fields_uint;
 		} else {
 			exit_code=1;
 			fprintf(stderr, "Unknown field '%s'\n", object);
@@ -493,6 +499,12 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 					field,
 					cluster->
 					default_max_wall_duration_per_job,
+					(curr_inx == field_count));
+				break;
+			case PRINT_RPC_VERSION:
+				field->print_routine(
+					field,
+					cluster->rpc_version,
 					(curr_inx == field_count));
 				break;
 			default:

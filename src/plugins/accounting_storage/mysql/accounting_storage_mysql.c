@@ -1263,6 +1263,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "name", "tinytext not null" },
 		{ "control_host", "tinytext not null default ''" },
 		{ "control_port", "mediumint not null default 0" },
+		{ "rpc_version", "mediumint not null default 0" },
 		{ NULL, NULL}		
 	};
 
@@ -1738,7 +1739,8 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 		memset(&msg, 0, sizeof(accounting_update_msg_t));
 		msg.update_list = mysql_conn->update_list;
 		
-		xstrfmtcat(query, "select control_host, control_port, name "
+		xstrfmtcat(query, "select control_host, control_port, "
+			   "name, rpc_version "
 			   "from %s where deleted=0 && control_port != 0",
 			   cluster_table);
 		if(!(result = mysql_db_query_ret(
@@ -1748,7 +1750,9 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 		}
 		xfree(query);
 		while((row = mysql_fetch_row(result))) {
-			info("sending to %s at %s(%s)", row[2], row[0], row[1]);
+			info("sending to %s at %s(%s) ver %u",
+			     row[2], row[0], row[1], row[3]);
+			msg.rpc_version = atoi(row[3]);
 			slurm_msg_t_init(&req);
 			slurm_set_addr_char(&req.address, atoi(row[1]), row[0]);
 			req.msg_type = ACCOUNTING_UPDATE_MSG;
@@ -3362,8 +3366,14 @@ extern List acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
 		xstrfmtcat(vals, ", control_host='%s'", cluster->control_host);
 		set++;
 	}
+
 	if(cluster->control_port) {
 		xstrfmtcat(vals, ", control_port=%u", cluster->control_port);
+		set++;
+	}
+
+	if(cluster->rpc_version) {
+		xstrfmtcat(vals, ", rpc_version=%u", cluster->rpc_version);
 		set++;
 	}
 
@@ -3372,11 +3382,12 @@ extern List acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		error("Nothing to change");
 		return NULL;
-	} else if(set != 2) {
+	} else if(set != 3) {
 		xfree(vals);
 		xfree(extra);
 		errno = EFAULT;
-		error("Need both control host, and port to register a cluster");
+		error("Need control host, port and rpc version "
+		      "to register a cluster");
 		return NULL;
 	}
 
@@ -5459,12 +5470,14 @@ extern List acct_storage_p_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
 	char *cluster_req_inx[] = {
 		"name",
 		"control_host",
-		"control_port"
+		"control_port",
+		"rpc_version"
 	};
 	enum {
 		CLUSTER_REQ_NAME,
 		CLUSTER_REQ_CH,
 		CLUSTER_REQ_CP,
+		CLUSTER_REQ_VERSION,
 		CLUSTER_REQ_COUNT
 	};
 	char *assoc_req_inx[] = {
@@ -5560,6 +5573,7 @@ empty:
 
 		cluster->control_host = xstrdup(row[CLUSTER_REQ_CH]);
 		cluster->control_port = atoi(row[CLUSTER_REQ_CP]);
+		cluster->rpc_version = atoi(row[CLUSTER_REQ_VERSION]);
 		query = xstrdup_printf("select %s from %s where cluster='%s' "
 				       "&& acct='root'", 
 				       tmp, assoc_table, cluster->name);

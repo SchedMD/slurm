@@ -202,7 +202,7 @@ extern void destroy_jobacct_selected_step(void *object)
 }
 
  
-extern void pack_jobacct_job_rec(void *object, Buf buffer)
+extern void pack_jobacct_job_rec(void *object, uint16_t rpc_version, Buf buffer)
 {
 	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
 	ListIterator itr = NULL;
@@ -238,7 +238,7 @@ extern void pack_jobacct_job_rec(void *object, Buf buffer)
 	if(count) {
 		itr = list_iterator_create(job->steps);
 		while((step = list_next(itr))) {
-			pack_jobacct_step_rec(step, buffer);
+			pack_jobacct_step_rec(step, rpc_version, buffer);
 		}
 		list_iterator_destroy(itr);
 	}
@@ -255,7 +255,7 @@ extern void pack_jobacct_job_rec(void *object, Buf buffer)
 	pack32(job->user_cpu_usec, buffer);
 }
 
-extern int unpack_jobacct_job_rec(void **job, Buf buffer)
+extern int unpack_jobacct_job_rec(void **job, uint16_t rpc_version, Buf buffer)
 {
 	jobacct_job_rec_t *job_ptr = xmalloc(sizeof(jobacct_job_rec_t));
 	int i = 0;
@@ -292,7 +292,7 @@ extern int unpack_jobacct_job_rec(void **job, Buf buffer)
 
 	job_ptr->steps = list_create(destroy_jobacct_step_rec);
 	for(i=0; i<count; i++) {
-		unpack_jobacct_step_rec(&step, buffer);
+		unpack_jobacct_step_rec(&step, rpc_version, buffer);
 		if(step)
 			list_append(job_ptr->steps, step);
 	}
@@ -317,7 +317,8 @@ unpack_error:
 	return SLURM_ERROR;
 }
  
-extern void pack_jobacct_step_rec(jobacct_step_rec_t *step, Buf buffer)
+extern void pack_jobacct_step_rec(jobacct_step_rec_t *step, 
+				  uint16_t rpc_version, Buf buffer)
 {
 	pack32(step->elapsed, buffer);
 	pack_time(step->end, buffer);
@@ -340,7 +341,8 @@ extern void pack_jobacct_step_rec(jobacct_step_rec_t *step, Buf buffer)
 	pack32(step->user_cpu_usec, buffer);
 }
 
-extern int unpack_jobacct_step_rec(jobacct_step_rec_t **step, Buf buffer)
+extern int unpack_jobacct_step_rec(jobacct_step_rec_t **step, 
+				   uint16_t rpc_version, Buf buffer)
 {
 	uint32_t uint32_tmp;
 	jobacct_step_rec_t *step_ptr = xmalloc(sizeof(jobacct_step_rec_t));
@@ -376,14 +378,14 @@ unpack_error:
 } 
 
 extern void pack_jobacct_selected_step(jobacct_selected_step_t *step,
-				       Buf buffer)
+				       uint16_t rpc_version, Buf buffer)
 {
 	pack32(step->jobid, buffer);
 	pack32(step->stepid, buffer);
 }
 
 extern int unpack_jobacct_selected_step(jobacct_selected_step_t **step,
-					Buf buffer)
+					uint16_t rpc_version, Buf buffer)
 {
 	jobacct_selected_step_t *step_ptr =
 		xmalloc(sizeof(jobacct_selected_step_t));
