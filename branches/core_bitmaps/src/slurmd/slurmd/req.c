@@ -544,7 +544,7 @@ _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
 		}
 		if (read(to_slurmd[0], &rc, sizeof(int)) != sizeof(int)) {
 			error("Error reading return code message "
-			      " from slurmstepd: %m");
+			      "from slurmstepd: %m");
 			rc = SLURM_FAILURE;
 		}
 
