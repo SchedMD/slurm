@@ -5169,6 +5169,16 @@ empty:
 
 	user_list = list_create(destroy_acct_user_rec);
 
+	if(user_cond && user_cond->with_assocs) {
+		/* We are going to be freeing the inners of
+		   this list in the user->name so we don't
+		   free it here
+		*/
+		if(user_cond->assoc_cond->user_list)
+			list_destroy(user_cond->assoc_cond->user_list);
+		user_cond->assoc_cond->user_list = list_create(NULL);
+	}
+
 	while((row = mysql_fetch_row(result))) {
 		acct_user_rec_t *user = xmalloc(sizeof(acct_user_rec_t));
 /* 		uid_t pw_uid; */
@@ -5198,24 +5208,49 @@ empty:
 		}
 
 		if(user_cond && user_cond->with_assocs) {
-			acct_association_cond_t *assoc_cond = NULL;
 			if(!user_cond->assoc_cond) {
 				user_cond->assoc_cond = xmalloc(
 					sizeof(acct_association_cond_t));
 			}
-			assoc_cond = user_cond->assoc_cond;
-			if(assoc_cond->user_list)
-				list_destroy(assoc_cond->user_list);
 
-			assoc_cond->user_list = list_create(NULL);
-			list_append(assoc_cond->user_list, user->name);
-			user->assoc_list = acct_storage_p_get_associations(
-				mysql_conn, uid, assoc_cond);
-			list_destroy(assoc_cond->user_list);
-			assoc_cond->user_list = NULL;
+			list_append(user_cond->assoc_cond->user_list,
+				    user->name);
 		}
 	}
 	mysql_free_result(result);
+
+	if(user_cond && user_cond->with_assocs) {
+		ListIterator assoc_itr = NULL;
+		acct_user_rec_t *user = NULL;
+		acct_association_rec_t *assoc = NULL;
+		List assoc_list = acct_storage_p_get_associations(
+			mysql_conn, uid, user_cond->assoc_cond);
+
+		if(!assoc_list) {
+			error("no associations");
+			return user_list;
+		}
+
+		itr = list_iterator_create(user_list);
+		assoc_itr = list_iterator_create(assoc_list);
+		while((user = list_next(itr))) {
+			while((assoc = list_next(assoc_itr))) {
+				if(strcmp(assoc->user, user->name)) 
+					continue;
+				
+				if(!user->assoc_list)
+					user->assoc_list = list_create(
+						destroy_acct_association_rec);
+				list_append(user->assoc_list, assoc);
+				list_remove(assoc_itr);
+			}
+			list_iterator_reset(assoc_itr);
+		}
+		list_iterator_destroy(itr);
+		list_iterator_destroy(assoc_itr);
+
+		list_destroy(assoc_list);
+	}
 
 	return user_list;
 #else
@@ -5406,6 +5441,16 @@ empty:
 	xfree(query);
 
 	acct_list = list_create(destroy_acct_account_rec);
+	
+	if(acct_cond && acct_cond->with_assocs) {
+		/* We are going to be freeing the inners of
+			   this list in the acct->name so we don't
+			   free it here
+			*/
+		if(acct_cond->assoc_cond->acct_list) 
+			list_destroy(acct_cond->assoc_cond->acct_list);
+		acct_cond->assoc_cond->acct_list = list_create(NULL);
+	}
 
 	while((row = mysql_fetch_row(result))) {
 		acct_account_rec_t *acct = xmalloc(sizeof(acct_account_rec_t));
@@ -5425,25 +5470,49 @@ empty:
 		}
 
 		if(acct_cond && acct_cond->with_assocs) {
-			acct_association_cond_t *assoc_cond = NULL;
 			if(!acct_cond->assoc_cond) {
 				acct_cond->assoc_cond = xmalloc(
 					sizeof(acct_association_cond_t));
 			}
-			assoc_cond = acct_cond->assoc_cond;
-			if(assoc_cond->acct_list)
-				list_destroy(assoc_cond->acct_list);
 
-			assoc_cond->acct_list = list_create(NULL);
-			list_append(assoc_cond->acct_list, acct->name);
-			acct->assoc_list = acct_storage_p_get_associations(
-				mysql_conn, uid, assoc_cond);
-			list_destroy(assoc_cond->acct_list);
-			assoc_cond->acct_list = NULL;
+			list_append(acct_cond->assoc_cond->acct_list,
+				    acct->name);
 		}
-
 	}
 	mysql_free_result(result);
+
+	if(acct_cond && acct_cond->with_assocs) {
+		ListIterator assoc_itr = NULL;
+		acct_account_rec_t *acct = NULL;
+		acct_association_rec_t *assoc = NULL;
+		List assoc_list = acct_storage_p_get_associations(
+			mysql_conn, uid, acct_cond->assoc_cond);
+
+		if(!assoc_list) {
+			error("no associations");
+			return acct_list;
+		}
+
+		itr = list_iterator_create(acct_list);
+		assoc_itr = list_iterator_create(assoc_list);
+		while((acct = list_next(itr))) {
+			while((assoc = list_next(assoc_itr))) {
+				if(strcmp(assoc->acct, acct->name)) 
+					continue;
+				
+				if(!acct->assoc_list)
+					acct->assoc_list = list_create(
+						destroy_acct_association_rec);
+				list_append(acct->assoc_list, assoc);
+				list_remove(assoc_itr);
+			}
+			list_iterator_reset(assoc_itr);
+		}
+		list_iterator_destroy(itr);
+		list_iterator_destroy(assoc_itr);
+
+		list_destroy(assoc_list);
+	}
 
 	return acct_list;
 #else
