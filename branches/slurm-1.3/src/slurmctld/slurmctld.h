@@ -455,6 +455,7 @@ struct job_record {
 #define SLURM_DEPEND_AFTER_ANY		2
 #define SLURM_DEPEND_AFTER_NOT_OK	3
 #define SLURM_DEPEND_AFTER_OK		4
+#define SLURM_DEPEND_SINGLETON		5
 struct	depend_spec {
 	uint16_t	depend_type;	/* SLURM_DEPEND_* type */
 	uint32_t	job_id;		/* SLURM job_id */
