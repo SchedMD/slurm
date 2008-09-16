@@ -546,7 +546,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 				      slurm_strerror(rc));
 				job_fail(bg_update_ptr->job_ptr->job_id);
 			}
-			lock_slurmctld(job_write_lock);
+			unlock_slurmctld(job_write_lock);
 
 			slurm_mutex_unlock(&job_start_mutex);
 			return;
