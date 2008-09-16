@@ -5643,6 +5643,9 @@ empty:
 		cluster->control_host = xstrdup(row[CLUSTER_REQ_CH]);
 		cluster->control_port = atoi(row[CLUSTER_REQ_CP]);
 		cluster->rpc_version = atoi(row[CLUSTER_REQ_VERSION]);
+		/* default this to the lowest supported version */
+		if(!cluster->rpc_version)
+			cluster->rpc_version = SLURMDBD_VERSION_MIN;
 		query = xstrdup_printf("select %s from %s where cluster='%s' "
 				       "&& acct='root'", 
 				       tmp, assoc_table, cluster->name);
