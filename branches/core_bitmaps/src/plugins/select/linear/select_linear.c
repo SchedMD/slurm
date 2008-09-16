@@ -476,7 +476,8 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap,
 			job_ptr->select_job->cpu_array_cnt++;
 			job_ptr->select_job->cpu_array_reps[++k] = 1;
 			job_ptr->select_job->cpu_array_value[k] = node_cpus;
-		}
+		} else
+			job_ptr->select_job->cpu_array_reps[k]++;
 		total_cpus += node_cpus;
 
 		if (!memory_info)
