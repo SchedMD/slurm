@@ -142,7 +142,7 @@ test1.43   Test of slurm_job_will_run API, (srun --test-only option).
 test1.44   Read srun's stdout slowly and test for lost data.   
 test1.45   REMOVED
 test1.46   Test srun option --kill-on-bad-exit
-test1.47   REMOVED
+test1.47   Test of job dependencies with singleton parameter.
 test1.48   Test of srun mail options (--mail-type and --mail-user options).
 test1.49   Test of srun task-prolog and task-epilog options.
 test1.50   Test of running non-existant job, confirm timely termination.
