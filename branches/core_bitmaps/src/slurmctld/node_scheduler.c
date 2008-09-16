@@ -1494,8 +1494,7 @@ extern void build_node_details(struct job_record *job_ptr)
 	hostlist_t host_list = NULL;
 	struct node_record *node_ptr;
 	char *this_node_name;
-	int node_inx = 0, cpu_inx = -1;
-	uint32_t total_procs = 0;
+	int node_inx = 0;
 
 	if ((job_ptr->node_bitmap == NULL) || (job_ptr->nodes == NULL)) {
 		/* No nodes allocated, we're done... */
