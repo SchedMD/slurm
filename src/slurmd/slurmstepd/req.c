@@ -725,7 +725,8 @@ _handle_signal_container(int fd, slurmd_job_t *job, uid_t uid)
 		goto done;
 	}
 
-	if ((job->nodeid == 0) && (msg_sent == 0)) {
+	if ((job->nodeid == 0) && (msg_sent == 0) && 
+	    (job->state < SLURMSTEPD_STEP_ENDING)) {
 		time_t now = time(NULL);
 		char entity[24], time_str[24];
 		if (job->stepid == SLURM_BATCH_SCRIPT) {

@@ -97,7 +97,10 @@ The default value is "accounting_storage/none", which means that
 account records are not maintained. 
 The value "accounting_storage/pgsql" indicates that accounting records
 should be written to a PostgreSQL database specified by the 
-\fBAccountingStorageLoc\fR parameter.
+\fBAccountingStorageLoc\fR parameter.  This plugin is not complete and 
+should not be used if wanting to use associations.  It will however work with
+basic accounting of jobs and job steps.  If interested in 
+completing please email slurm-dev@lists.llnl.gov.
 The value "accounting_storage/slurmdbd" indicates that accounting records
 will be written to SlurmDDB, which manages an underlying MySQL or 
 PostgreSQL database. See "man slurmdbd" for more information.

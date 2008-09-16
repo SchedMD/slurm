@@ -278,6 +278,120 @@ static int _set_rec(int *start, int argc, char *argv[],
 	return 0;
 }
 
+/*
+ * IN: user_cond - used for the assoc_cond pointing to the user and
+ *     acct list 
+ * IN: check - whether or not to check if the existance of the above lists
+ */
+static int _check_coord_request(acct_user_cond_t *user_cond, bool check)
+{
+	ListIterator itr = NULL, itr2 = NULL;
+	char *name = NULL, *name2 = NULL;
+
+	acct_account_cond_t account_cond;
+	List local_acct_list = NULL;
+	List local_user_list = NULL;
+	int rc = SLURM_SUCCESS;
+
+	if(!user_cond) {
+		exit_code=1;
+		fprintf(stderr, " You need to specify the user_cond here.\n"); 
+		return SLURM_ERROR;
+	}
+
+	if(!check && (!user_cond->assoc_cond->user_list
+		      || !list_count(user_cond->assoc_cond->user_list))) {
+		exit_code=1;
+		fprintf(stderr, " You need to specify a user list here.\n"); 
+		return SLURM_ERROR;	
+	}
+
+	if(!check && (!user_cond->assoc_cond->acct_list
+		      || !list_count(user_cond->assoc_cond->acct_list))) {
+		exit_code=1;
+		fprintf(stderr, " You need to specify a account list here.\n"); 
+		return SLURM_ERROR;	
+	}
+
+	memset(&account_cond, 0, sizeof(acct_account_cond_t));
+	account_cond.assoc_cond = user_cond->assoc_cond;
+	local_acct_list =
+		acct_storage_g_get_accounts(db_conn, my_uid, &account_cond);
+	if(!local_acct_list) {
+		exit_code=1;
+		fprintf(stderr, " Problem getting accounts from database.  "
+			"Contact your admin.\n");
+		return SLURM_ERROR;
+	}
+
+	if(user_cond->assoc_cond->acct_list && 
+	   (list_count(local_acct_list) != 
+	    list_count(user_cond->assoc_cond->acct_list))) {
+		
+		itr = list_iterator_create(user_cond->assoc_cond->acct_list);
+		itr2 = list_iterator_create(local_acct_list);
+		
+		while((name = list_next(itr))) {
+			while((name2 = list_next(itr2))) {
+				if(!strcmp(name, name2)) 
+					break;
+			}
+			list_iterator_reset(itr2);
+			if(!name2) {
+				fprintf(stderr, 
+					" You specified a non-existant "
+					"account '%s'.\n", name); 
+				exit_code=1;
+				rc = SLURM_ERROR;
+			}
+		}
+		list_iterator_destroy(itr);
+		list_iterator_destroy(itr2);
+	}
+
+	local_user_list = acct_storage_g_get_users(db_conn, my_uid, user_cond);
+	if(!local_user_list) {
+		exit_code=1;
+		fprintf(stderr, " Problem getting users from database.  "
+			"Contact your admin.\n");
+		if(local_acct_list)
+			list_destroy(local_acct_list);
+		return SLURM_ERROR;
+	}
+
+	if(user_cond->assoc_cond->user_list &&
+	   (list_count(local_user_list) != 
+	    list_count(user_cond->assoc_cond->user_list))) {
+		
+		itr = list_iterator_create(user_cond->assoc_cond->user_list);
+		itr2 = list_iterator_create(local_user_list);
+		
+		while((name = list_next(itr))) {
+			while((name2 = list_next(itr2))) {
+				if(!strcmp(name, name2)) 
+					break;
+			}
+			list_iterator_reset(itr2);
+			if(!name2) {
+				fprintf(stderr, 
+					" You specified a non-existant "
+					"user '%s'.\n", name); 
+				exit_code=1;
+				rc = SLURM_ERROR;
+			}
+		}
+		list_iterator_destroy(itr);
+		list_iterator_destroy(itr2);
+	}
+
+	if(local_acct_list)
+		list_destroy(local_acct_list);
+	if(local_user_list)
+		list_destroy(local_user_list);
+
+	return rc;
+}
+
 extern int sacctmgr_add_user(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
@@ -814,31 +928,23 @@ extern int sacctmgr_add_coord(int argc, char *argv[])
 		return SLURM_ERROR;
 	}
 
+	if((_check_coord_request(user_cond, true) == SLURM_ERROR)
+	   || exit_code) {
+		destroy_acct_user_cond(user_cond);
+		return SLURM_ERROR;
+	}
+
 	itr = list_iterator_create(user_cond->assoc_cond->user_list);
 	while((name = list_next(itr))) {
 		xstrfmtcat(user_str, "  %s\n", name);
-
 	}
 	list_iterator_destroy(itr);
 
-	if(!user_str) {
-		exit_code=1;
-		fprintf(stderr, " You need to specify a user list here.\n"); 
-		destroy_acct_user_cond(user_cond);
-		return SLURM_ERROR;		
-	}
 	itr = list_iterator_create(user_cond->assoc_cond->acct_list);
 	while((name = list_next(itr))) {
 		xstrfmtcat(acct_str, "  %s\n", name);
-
 	}
 	list_iterator_destroy(itr);
-	if(!acct_str) {
-		exit_code=1;
-		fprintf(stderr, " You need to specify a account list here.\n"); 
-		destroy_acct_user_cond(user_cond);
-		return SLURM_ERROR;		
-	}
 
 	printf(" Adding Coordinator User(s)\n%s", user_str);
 	printf(" To Account(s) and all sub-accounts\n%s", acct_str);
@@ -1594,6 +1700,12 @@ extern int sacctmgr_delete_coord(int argc, char *argv[])
 		destroy_acct_user_cond(user_cond);
 		return SLURM_ERROR;
 	}
+	if((_check_coord_request(user_cond, false) == SLURM_ERROR)
+	   || exit_code) {
+		destroy_acct_user_cond(user_cond);
+		return SLURM_ERROR;
+	}
+
 	if(user_cond->assoc_cond->user_list) {	
 		itr = list_iterator_create(user_cond->assoc_cond->user_list);
 		while((name = list_next(itr))) {

@@ -951,7 +951,7 @@ static void
 _task_finish(task_exit_msg_t *msg)
 {
 	bitstr_t *tasks_exited = NULL;
-	char buf[2048], *core_str = "", *msg_str, *node_list = NULL;
+	char buf[65536], *core_str = "", *msg_str, *node_list = NULL;
 	static bool first_done = true;
 	static bool first_error = true;
 	uint32_t rc = 0;
@@ -1030,7 +1030,7 @@ static void
 _task_state_struct_print(void)
 {
 	bitstr_t *tmp, *seen, *not_seen;
-	char buf[BUFSIZ];
+	char buf[65536];
 	int len;
 
 	len = bit_size(task_state.finish_abnormal); /* all the same length */
@@ -1042,7 +1042,7 @@ _task_state_struct_print(void)
 	if (bit_set_count(task_state.finish_abnormal) > 0) {
 		bit_copybits(tmp, task_state.finish_abnormal);
 		bit_and(tmp, not_seen);
-		bit_fmt(buf, BUFSIZ, tmp);
+		bit_fmt(buf, sizeof(buf), tmp);
 		info("task %s: exited abnormally", buf);
 		bit_or(seen, tmp);
 		bit_copybits(not_seen, seen);
@@ -1052,7 +1052,7 @@ _task_state_struct_print(void)
 	if (bit_set_count(task_state.finish_normal) > 0) {
 		bit_copybits(tmp, task_state.finish_normal);
 		bit_and(tmp, not_seen);
-		bit_fmt(buf, BUFSIZ, tmp);
+		bit_fmt(buf, sizeof(buf), tmp);
 		info("task %s: exited", buf);
 		bit_or(seen, tmp);
 		bit_copybits(not_seen, seen);
@@ -1062,7 +1062,7 @@ _task_state_struct_print(void)
 	if (bit_set_count(task_state.start_failure) > 0) {
 		bit_copybits(tmp, task_state.start_failure);
 		bit_and(tmp, not_seen);
-		bit_fmt(buf, BUFSIZ, tmp);
+		bit_fmt(buf, sizeof(buf), tmp);
 		info("task %s: failed to start", buf);
 		bit_or(seen, tmp);
 		bit_copybits(not_seen, seen);

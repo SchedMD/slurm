@@ -96,6 +96,8 @@ slurm_spank_local_user_init(spank_t sp, int ac, char **av)
 int slurm_spank_task_init(spank_t sp, int ac, char **av)
 {
 	uid_t my_uid;
+	int argc, i;
+	char **argv;
 
 	if (opt_out_file && opt_arg) {
 		FILE *fp = fopen(opt_out_file, "a");
@@ -104,6 +106,13 @@ int slurm_spank_task_init(spank_t sp, int ac, char **av)
 		fprintf(fp, "slurm_spank_task_init: opt_arg=%d\n", opt_arg);
 		if (spank_get_item(sp, S_JOB_UID, &my_uid) == ESPANK_SUCCESS)
 			fprintf(fp, "spank_get_item: my_uid=%d\n", my_uid);
+                if (spank_get_item(sp, S_JOB_ARGV, &argc, &argv) == 
+		    ESPANK_SUCCESS) {
+			for (i=0; i<argc; i++) {
+				fprintf(fp, "spank_get_item: argv[%d]=%s\n", 
+					i, argv[i]);
+			}
+		}
 		fclose(fp);
 	}
 	return (0);

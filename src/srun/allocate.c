@@ -505,7 +505,7 @@ create_job_step(srun_job_t *job)
 
 	job->ctx_params.node_count = job->nhosts;
 	if (!opt.nprocs_set && (opt.ntasks_per_node != NO_VAL))
-		 opt.nprocs = job->nhosts * opt.ntasks_per_node;
+		job->ntasks = opt.nprocs = job->nhosts * opt.ntasks_per_node;
 	job->ctx_params.task_count = opt.nprocs;
 	
 	job->ctx_params.cpu_count = opt.overcommit ? job->ctx_params.node_count

@@ -224,6 +224,10 @@ if {[wait_for_file $spank_out] == 0} {
 			incr matches
 			exp_continue
 		}
+		-re "spank_get_item: argv" {
+			incr matches
+			exp_continue
+		}
 		-re "slurm_spank_exit: opt_arg=5" {
 			incr matches
 			exp_continue
@@ -232,7 +236,7 @@ if {[wait_for_file $spank_out] == 0} {
 			wait
 		}
 	}
-	if {$matches != 3} {
+	if {$matches != 4} {
 		send_user "\nFAILURE: remote (slurmd) spank plugin failure\n"
 		set exit_code 1
 	} else {
