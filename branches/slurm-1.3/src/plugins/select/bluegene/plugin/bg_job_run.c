@@ -1190,7 +1190,7 @@ extern int boot_block(bg_record_t *bg_record)
 			snprintf(reason, sizeof(reason),
 				 "boot_block: "
 				 "Block %s is in an incompatable state.  "
-				 "This usually means hareware is allocated "
+				 "This usually means hardware is allocated "
 				 "by another block (maybe outside of SLURM). "
 				 "[SLURM@%s]", 
 				 bg_record->bg_block_id, time_str);
