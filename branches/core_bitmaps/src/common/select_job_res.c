@@ -304,8 +304,9 @@ extern select_job_res_t copy_select_job_res(select_job_res_t
 
 extern void free_select_job_res(select_job_res_t *select_job_res_pptr)
 {
-	if (select_job_res_pptr) {
-		select_job_res_t select_job_res_ptr = *select_job_res_pptr;
+	select_job_res_t select_job_res_ptr = *select_job_res_pptr;
+
+	if (select_job_res_ptr) {
 		if (select_job_res_ptr->core_bitmap)
 			bit_free(select_job_res_ptr->core_bitmap);
 		if (select_job_res_ptr->core_bitmap_used)

@@ -86,6 +86,7 @@ expect {
 		incr matches
 		exec $bin_kill -USR1 $srun_pid
 		exec $bin_kill -USR2 $srun_pid
+		send_user "\nSent signals USR1 and USR2\n"
 		exp_continue
 	}
 	-re "SIGUSR($number)" {
