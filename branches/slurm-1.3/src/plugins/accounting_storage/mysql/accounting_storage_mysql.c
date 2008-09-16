@@ -1750,7 +1750,7 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 		}
 		xfree(query);
 		while((row = mysql_fetch_row(result))) {
-			info("sending to %s at %s(%s) ver %u",
+			info("sending to %s at %s(%s) ver %s",
 			     row[2], row[0], row[1], row[3]);
 			msg.rpc_version = atoi(row[3]);
 			slurm_msg_t_init(&req);
@@ -5643,9 +5643,7 @@ empty:
 		cluster->control_host = xstrdup(row[CLUSTER_REQ_CH]);
 		cluster->control_port = atoi(row[CLUSTER_REQ_CP]);
 		cluster->rpc_version = atoi(row[CLUSTER_REQ_VERSION]);
-		/* default this to the lowest supported version */
-		if(!cluster->rpc_version)
-			cluster->rpc_version = SLURMDBD_VERSION_MIN;
+
 		query = xstrdup_printf("select %s from %s where cluster='%s' "
 				       "&& acct='root'", 
 				       tmp, assoc_table, cluster->name);
