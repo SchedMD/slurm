@@ -175,9 +175,17 @@ the database with.</li>
 <p>While the SlurmDBD will work with a flat text file for recording
 job completions and such this configuration will not allow
 "associations" between a user and account. A database allows such
-a configuration. MySQL is the preferred database, PostgreSQL is
-supported for job and step accounting only. The infrastructure for
-associations is not yet supported. To enable this database support
+a configuration. 
+
+<p>
+<b>MySQL is the preferred database, PostgreSQL is
+supported for job and step accounting only.</b> The infrastructure for
+PostgresSQL for use with associations is not yet supported, meaning
+sacctmgr will not work correcting.  If interested in adding this
+capabilty for PostgresSQL please email slurm-dev@lists.llnl.gov.
+
+<p>
+To enable this database support
 one only needs to have the development package for the database they
 wish to use on the system. The slurm configure script uses
 mysql_config and pg-config to find out the information it needs

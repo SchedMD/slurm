@@ -2873,7 +2873,7 @@ static int _copy_the_path(List nodes, ba_switch_t *curr_switch,
 			curr_switch->int_wire[1].port_tar;
 		return 1;
 	}
-
+	
 	mark_node_tar = mark_switch->ext_wire[port_tar].node_tar;
 	port_tar = curr_switch->ext_wire[port_tar].port_tar;
 	
@@ -2882,7 +2882,13 @@ static int _copy_the_path(List nodes, ba_switch_t *curr_switch,
 	   && node_curr[Z] == node_tar[Z]) {
 		/* We are going to the same node! this should never
 		   happen */
-		debug4("something bad happened!!");
+		debug4("something bad happened!! "
+		       "we are on %c%c%c and are going to it "
+		       "from port %d - > %d", 
+		       alpha_num[node_curr[X]],
+		       alpha_num[node_curr[Y]],
+		       alpha_num[node_curr[Z]],
+		       port_tar1, port_tar);
 		return 0;
 	}
 
@@ -2942,23 +2948,19 @@ static int _find_yz_path(ba_node_t *ba_node, int *first,
 
 	for(i2=1;i2<=2;i2++) {
 		if(geometry[i2] > 1) {
-			debug3("%d node %c%c%c"
-			       " port 2 -> ",
+			debug3("%d node %c%c%c port 2 -> ",
 			       i2,
 			       alpha_num[ba_node->coord[X]],
 			       alpha_num[ba_node->coord[Y]],
 			       alpha_num[ba_node->coord[Z]]);
 							       
-			dim_curr_switch = 
-				&ba_node->
-				axis_switch[i2];
+			dim_curr_switch = &ba_node->axis_switch[i2];
 			if(dim_curr_switch->int_wire[2].used) {
 				debug4("returning here");
 				return 0;
 			}
 							
-			node_tar = dim_curr_switch->
-				ext_wire[2].node_tar;
+			node_tar = dim_curr_switch->ext_wire[2].node_tar;
 							
 			next_node = &ba_system_ptr->
 				grid[node_tar[X]][node_tar[Y]][node_tar[Z]];
@@ -2984,17 +2986,12 @@ static int _find_yz_path(ba_node_t *ba_node, int *first,
 				       alpha_num[node_tar[Y]],
 				       alpha_num[node_tar[Z]]);
 				if(conn_type == SELECT_TORUS) {
-					dim_curr_switch->
-						int_wire[0].used = 1;
-					dim_curr_switch->
-						int_wire[0].port_tar
+					dim_curr_switch->int_wire[0].used = 1;
+					dim_curr_switch->int_wire[0].port_tar
 						= 2;
-					dim_curr_switch->
-						int_wire[2].used
-						= 1;
-					dim_curr_switch->
-						int_wire[2].
-						port_tar = 0;
+					dim_curr_switch->int_wire[2].used = 1;
+					dim_curr_switch->int_wire[2].port_tar
+						= 0;
 					dim_curr_switch = dim_next_switch;
 									
 					while(node_tar[i2] != first[i2]) {
@@ -3082,6 +3079,34 @@ static int _find_yz_path(ba_node_t *ba_node, int *first,
 						= 5;
 				}
 			}
+		} else if(geometry[i2] == 1) {
+			/* FIX ME: This is put here because we got
+			   into a state where the Y dim was not being
+			   processed correctly.  This will set up the
+			   0 -> 1 port correctly.  We should probably
+			   find out why this was happening in the
+			   first place though.  A reproducer was to
+			   have 
+			   BPs=[310x323] Type=TORUS
+			   BPs=[200x233] Type=TORUS
+			   BPs=[300x303] Type=TORUS
+			   BPs=[100x133] Type=TORUS
+			   BPs=[000x033] Type=TORUS
+			   BPs=[400x433] Type=TORUS
+			   and then add 
+			   BPs=[330x333] Type=TORUS
+			*/
+
+			dim_curr_switch = &ba_node->axis_switch[i2];
+			debug3("%d node %c%c%c port 0 -> 1",
+			       i2,
+			       alpha_num[ba_node->coord[X]],
+			       alpha_num[ba_node->coord[Y]],
+			       alpha_num[ba_node->coord[Z]]);
+			dim_curr_switch->int_wire[0].used = 1;
+			dim_curr_switch->int_wire[0].port_tar = 1;
+			dim_curr_switch->int_wire[1].used = 1;
+			dim_curr_switch->int_wire[1].port_tar = 0;
 		}
 	}
 	return 1;
@@ -3999,9 +4024,16 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 	if(!ba_node || !results || !start)
 		return 0;
 
+	curr_switch = &ba_node->axis_switch[X];
+
 	/* we don't need to go any further */
-	if(x_size == 1) 
+	if(x_size == 1) {
+		curr_switch->int_wire[source_port].used = 1;
+		curr_switch->int_wire[source_port].port_tar = target_port;
+		curr_switch->int_wire[target_port].used = 1;
+		curr_switch->int_wire[target_port].port_tar = source_port;
 		return 1;
+	}
 
 	if(algo == BLOCK_ALGO_FIRST) {
 		ports_to_try[0] = 4;
@@ -4014,8 +4046,6 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 		return 0;
 	}			
 	
-	curr_switch = &ba_node->axis_switch[X];
-
 	debug3("Algo(%d) found - %d", algo, found);
 
 	/* Check the 2 ports we can leave though in ports_to_try */

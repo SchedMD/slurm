@@ -460,6 +460,7 @@ struct job_record {
 #define SLURM_DEPEND_AFTER_ANY		2
 #define SLURM_DEPEND_AFTER_NOT_OK	3
 #define SLURM_DEPEND_AFTER_OK		4
+#define SLURM_DEPEND_SINGLETON		5
 struct	depend_spec {
 	uint16_t	depend_type;	/* SLURM_DEPEND_* type */
 	uint32_t	job_id;		/* SLURM job_id */
@@ -1313,6 +1314,16 @@ extern void run_health_check(void);
 
 /* save_all_state - save entire slurmctld state for later recovery */
 extern void save_all_state(void);
+
+/* sends all jobs in eligible state to accounting.  Only needed at
+ * first registration
+ */
+extern int send_jobs_to_accounting(time_t event_time);
+
+/* send all nodes in a down like state to accounting.  Only needed at
+ * first registration
+ */
+extern int send_nodes_to_accounting(time_t event_time);
 
 /*
  * set_node_down - make the specified node's state DOWN if possible

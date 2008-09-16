@@ -129,6 +129,7 @@ inline static void  _slurm_rpc_end_time(slurm_msg_t * msg);
 inline static void  _update_cred_key(void);
 inline static void  _slurm_rpc_set_debug_level(slurm_msg_t *msg);
 inline static void  _slurm_rpc_accounting_update_msg(slurm_msg_t *msg);
+inline static void  _slurm_rpc_accounting_first_reg(slurm_msg_t *msg);
 
 
 /*
@@ -318,6 +319,10 @@ void slurmctld_req (slurm_msg_t * msg)
 	case ACCOUNTING_UPDATE_MSG:
 		_slurm_rpc_accounting_update_msg(msg);
 		slurm_free_accounting_update_msg(msg->data);
+		break;
+	case ACCOUNTING_FIRST_REG:
+		_slurm_rpc_accounting_first_reg(msg);
+		/* No body to free */
 		break;
 	default:
 		error("invalid RPC msg_type=%d", msg->msg_type);
@@ -2973,3 +2978,24 @@ inline static void  _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 	slurm_send_rc_msg(msg, rc);
 }
 
+inline static void  _slurm_rpc_accounting_first_reg(slurm_msg_t *msg)
+{
+	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+	time_t event_time = time(NULL);
+	
+	DEF_TIMERS;
+
+	START_TIMER;
+	debug2("Processing RPC: ACCOUNTING_FIRST_REG from uid=%u",
+		(unsigned int) uid);
+	if (!validate_super_user(uid)) {
+		error("Update Association request from non-super user uid=%d", 
+		      uid);
+		return;
+	}
+
+	send_jobs_to_accounting(event_time);
+	send_nodes_to_accounting(event_time);
+	
+	END_TIMER2("_slurm_rpc_accounting_first_reg");
+}

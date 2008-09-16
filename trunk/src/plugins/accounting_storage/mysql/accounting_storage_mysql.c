@@ -134,6 +134,10 @@ extern int clusteracct_storage_p_get_usage(
 	mysql_conn_t *mysql_conn, uid_t uid,
 	acct_cluster_rec_t *cluster_rec, time_t start, time_t end);
 
+extern List acct_storage_p_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid, 
+					List acct_list,
+					acct_user_cond_t *user_cond);
+
 /* This should be added to the beginning of each function to make sure
  * we have a connection to the database before we try to use it.
  */
@@ -706,8 +710,7 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 	 * really delete it for accounting purposes.  This is for
 	 * corner cases most of the time this won't matter.
 	 */
-	if(table == acct_coord_table
-	   || table == qos_table) {
+	if(table == acct_coord_table || table == qos_table) {
 		/* This doesn't apply for these tables since we are
 		 * only looking for association type tables.
 		 */
@@ -1110,7 +1113,7 @@ static int _get_user_coords(mysql_conn_t *mysql_conn, acct_user_rec_t *user)
 		else 
 			query = xstrdup_printf(
 				"select distinct t1.acct from "
-				"%s as t1, %s as t2 where ",
+				"%s as t1, %s as t2 where t1.deleted=0 && ",
 				assoc_table, assoc_table);
 		/* Make sure we don't get the same
 		 * account back since we want to keep
@@ -1260,6 +1263,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "name", "tinytext not null" },
 		{ "control_host", "tinytext not null default ''" },
 		{ "control_port", "mediumint not null default 0" },
+		{ "rpc_version", "mediumint not null default 0" },
 		{ NULL, NULL}		
 	};
 
@@ -1533,7 +1537,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 			"on duplicate key update id=LAST_INSERT_ID(id), "
 			"deleted=0;",
 			qos_table, now, now);
-		debug3("%s", query);
+		//debug3("%s", query);
 		normal_qos_id = mysql_insert_ret_id(db_conn, query);
 		xfree(query);		
 	}
@@ -1575,7 +1579,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		   "update name='root';",
 		   acct_table, now); 
 
-	debug3("%s", query);
+	//debug3("%s", query);
 	mysql_db_query(db_conn, query);
 	xfree(query);		
 
@@ -1732,14 +1736,12 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 		ListIterator itr = NULL;
 		acct_update_object_t *object = NULL;
 		
-		slurm_msg_t_init(&req);
-		slurm_msg_t_init(&resp);
-		
 		memset(&msg, 0, sizeof(accounting_update_msg_t));
 		msg.update_list = mysql_conn->update_list;
 		
-		xstrfmtcat(query, "select control_host, control_port from %s "
-			   "where deleted=0 && control_port != 0",
+		xstrfmtcat(query, "select control_host, control_port, "
+			   "name, rpc_version "
+			   "from %s where deleted=0 && control_port != 0",
 			   cluster_table);
 		if(!(result = mysql_db_query_ret(
 			     mysql_conn->db_conn, query, 0))) {
@@ -1748,16 +1750,20 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 		}
 		xfree(query);
 		while((row = mysql_fetch_row(result))) {
-			info("sending to %s(%s)", row[0], row[1]);
+			info("sending to %s at %s(%s) ver %s",
+			     row[2], row[0], row[1], row[3]);
+			msg.rpc_version = atoi(row[3]);
+			slurm_msg_t_init(&req);
 			slurm_set_addr_char(&req.address, atoi(row[1]), row[0]);
 			req.msg_type = ACCOUNTING_UPDATE_MSG;
 			req.flags = SLURM_GLOBAL_AUTH_KEY;
 			req.data = &msg;			
+			slurm_msg_t_init(&resp);
 			
 			rc = slurm_send_recv_node_msg(&req, &resp, 0);
 			if ((rc != 0) || !resp.auth_cred) {
-				error("update cluster: %m to %s(%s)",
-				      row[0], row[1]);
+				error("update cluster: %m to %s at %s(%s)",
+				      row[2], row[0], row[1]);
 				if (resp.auth_cred)
 					g_slurm_auth_destroy(resp.auth_cred);
 				rc = SLURM_ERROR;
@@ -2285,7 +2291,8 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrfmtcat(query, 
 			   "insert into %s (creation_time, mod_time, name) "
 			   "values (%d, %d, '%s') "
-			   "on duplicate key update deleted=0, mod_time=%d;",
+			   "on duplicate key update deleted=0, mod_time=%d, "
+			   "control_host='', control_port=0;",
 			   cluster_table, 
 			   now, now, object->name,
 			   now);
@@ -3354,21 +3361,40 @@ extern List acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
 		xstrcat(extra, ")");
 	}
 
-		
+	set = 0;
 	if(cluster->control_host) {
 		xstrfmtcat(vals, ", control_host='%s'", cluster->control_host);
+		set++;
 	}
+
 	if(cluster->control_port) {
 		xstrfmtcat(vals, ", control_port=%u", cluster->control_port);
+		set++;
+	}
+
+	if(cluster->rpc_version) {
+		xstrfmtcat(vals, ", rpc_version=%u", cluster->rpc_version);
+		set++;
 	}
 
 	if(!vals) {
+		xfree(extra);
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		error("Nothing to change");
 		return NULL;
+	} else if(set != 3) {
+		xfree(vals);
+		xfree(extra);
+		errno = EFAULT;
+		error("Need control host, port and rpc version "
+		      "to register a cluster");
+		return NULL;
 	}
 
-	xstrfmtcat(query, "select name from %s %s;", cluster_table, extra);
+
+	xstrfmtcat(query, "select name, control_port from %s %s;",
+		   cluster_table, extra);
+
 	xfree(extra);
 	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
@@ -3378,11 +3404,21 @@ extern List acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
 		error("no result given for %s", extra);
 		return NULL;
 	}
-	
+
+	/* Set here is used to ask for jobs and nodes in anything
+	 * other than up state, so it you reset it later make sure
+	 * this is accounted for before you do
+	 */
+	set = 1;
 	rc = 0;
 	ret_list = list_create(slurm_destroy_char);
 	while((row = mysql_fetch_row(result))) {
 		object = xstrdup(row[0]);
+
+		/* check to see if this is the first time to register */
+		if(row[1][0] == '0')
+			set = 0;
+
 		list_append(ret_list, object);
 		if(!rc) {
 			xstrfmtcat(name_char, "name='%s'", object);
@@ -3413,6 +3449,40 @@ extern List acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
 			list_destroy(ret_list);
 			ret_list = NULL;
 			goto end_it;
+		}
+	}
+
+	/* Get all nodes in a down state and jobs pending or running.
+	 * This is for the first time a cluster registers
+	 */
+
+	if(!set && slurmdbd_conf) {
+		/* This only happens here with the slurmdbd.  If
+		 * calling this plugin directly we do this in
+		 * clusteracct_storage_p_cluster_procs.
+		 */
+		slurm_addr ctld_address;
+		slurm_fd fd;
+
+		info("First time to register cluster requesting "
+		     "running jobs and system information.");
+
+		slurm_set_addr_char(&ctld_address, cluster->control_port,
+				    cluster->control_host);
+		fd =  slurm_open_msg_conn(&ctld_address);
+		if (fd < 0) {
+			error("can not open socket back to slurmctld");
+		} else {
+			slurm_msg_t out_msg;
+			slurm_msg_t_init(&out_msg);
+			out_msg.msg_type = ACCOUNTING_FIRST_REG;
+			out_msg.flags = SLURM_GLOBAL_AUTH_KEY;
+			slurm_send_node_msg(fd, &out_msg);
+			/* We probably need to add matching recv_msg function
+			 * for an arbitray fd or should these be fire
+			 * and forget?  For this, that we can probably
+			 * forget about it */
+			slurm_close_stream(fd);
 		}
 	}
 
@@ -3866,6 +3936,7 @@ extern List acct_storage_p_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 #ifdef HAVE_MYSQL
 	ListIterator itr = NULL;
 	List ret_list = NULL;
+	List coord_list = NULL;
 	int rc = SLURM_SUCCESS;
 	char *object = NULL;
 	char *extra = NULL, *query = NULL,
@@ -3875,6 +3946,8 @@ extern List acct_storage_p_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	int set = 0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
+	acct_user_cond_t user_coord_cond;
+	acct_association_cond_t assoc_cond;
 
 	if(!user_cond) {
 		error("we need something to remove");
@@ -3948,6 +4021,14 @@ extern List acct_storage_p_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	}
 
+	memset(&user_coord_cond, 0, sizeof(acct_user_cond_t));
+	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
+	/* we do not need to free the objects we put in here since
+	   they are also placed in a list that will be freed
+	*/
+	assoc_cond.user_list = list_create(NULL);
+	user_coord_cond.assoc_cond = &assoc_cond;
+
 	rc = 0;
 	ret_list = list_create(slurm_destroy_char);
 	while((row = mysql_fetch_row(result))) {
@@ -3955,6 +4036,8 @@ extern List acct_storage_p_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		acct_user_rec_t *user_rec = NULL;
 		
 		list_append(ret_list, object);
+		list_append(assoc_cond.user_list, object);
+
 		if(!rc) {
 			xstrfmtcat(name_char, "name='%s'", object);
 			xstrfmtcat(assoc_char, "t2.user='%s'", object);
@@ -3975,9 +4058,17 @@ extern List acct_storage_p_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		debug3("didn't effect anything\n%s", query);
 		xfree(query);
+		list_destroy(assoc_cond.user_list);
 		return ret_list;
 	}
 	xfree(query);
+
+	/* We need to remove these accounts from the coord's that have it */
+	coord_list = acct_storage_p_remove_coord(
+		mysql_conn, uid, NULL, &user_coord_cond);
+	if(coord_list)
+		list_destroy(coord_list);
+	list_destroy(assoc_cond.user_list);
 
 	user_name = uid_to_string((uid_t) uid);
 	rc = _remove_common(mysql_conn, DBD_REMOVE_USERS, now,
@@ -4027,10 +4118,11 @@ extern List acct_storage_p_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 	MYSQL_ROW row;
 	acct_user_rec_t user;
 
-	if(!user_cond) {
+	if(!user_cond && !acct_list) {
 		error("we need something to remove");
 		return NULL;
-	}
+	} else if(user_cond && user_cond->assoc_cond)
+		user_list = user_cond->assoc_cond->user_list;
 
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
@@ -4076,15 +4168,14 @@ extern List acct_storage_p_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	/* Leave it this way since we are using extra below */
 
-	if(user_cond->assoc_cond && user_cond->assoc_cond->user_list
-	   && list_count(user_cond->assoc_cond->user_list)) {
+	if(user_list && list_count(user_list)) {
 		set = 0;
 		if(extra)
 			xstrcat(extra, " && (");
 		else
-			xstrcat(extra, " (");
+			xstrcat(extra, "(");
 			
-		itr = list_iterator_create(user_cond->assoc_cond->user_list);
+		itr = list_iterator_create(user_list);
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
@@ -4100,7 +4191,7 @@ extern List acct_storage_p_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 		if(extra)
 			xstrcat(extra, " && (");
 		else
-			xstrcat(extra, " (");
+			xstrcat(extra, "(");
 
 		itr = list_iterator_create(acct_list);
 		while((object = list_next(itr))) {
@@ -4211,6 +4302,7 @@ extern List acct_storage_p_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 #ifdef HAVE_MYSQL
 	ListIterator itr = NULL;
 	List ret_list = NULL;
+	List coord_list = NULL;
 	int rc = SLURM_SUCCESS;
 	char *object = NULL;
 	char *extra = NULL, *query = NULL,
@@ -4328,6 +4420,12 @@ extern List acct_storage_p_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		return ret_list;
 	}
 	xfree(query);
+
+	/* We need to remove these accounts from the coord's that have it */
+	coord_list = acct_storage_p_remove_coord(
+		mysql_conn, uid, ret_list, NULL);
+	if(coord_list)
+		list_destroy(coord_list);
 
 	user_name = uid_to_string((uid_t) uid);
 	rc = _remove_common(mysql_conn, DBD_REMOVE_ACCOUNTS, now,
@@ -5071,6 +5169,16 @@ empty:
 
 	user_list = list_create(destroy_acct_user_rec);
 
+	if(user_cond && user_cond->with_assocs) {
+		/* We are going to be freeing the inners of
+		   this list in the user->name so we don't
+		   free it here
+		*/
+		if(user_cond->assoc_cond->user_list)
+			list_destroy(user_cond->assoc_cond->user_list);
+		user_cond->assoc_cond->user_list = list_create(NULL);
+	}
+
 	while((row = mysql_fetch_row(result))) {
 		acct_user_rec_t *user = xmalloc(sizeof(acct_user_rec_t));
 /* 		uid_t pw_uid; */
@@ -5100,24 +5208,49 @@ empty:
 		}
 
 		if(user_cond && user_cond->with_assocs) {
-			acct_association_cond_t *assoc_cond = NULL;
 			if(!user_cond->assoc_cond) {
 				user_cond->assoc_cond = xmalloc(
 					sizeof(acct_association_cond_t));
 			}
-			assoc_cond = user_cond->assoc_cond;
-			if(assoc_cond->user_list)
-				list_destroy(assoc_cond->user_list);
 
-			assoc_cond->user_list = list_create(NULL);
-			list_append(assoc_cond->user_list, user->name);
-			user->assoc_list = acct_storage_p_get_associations(
-				mysql_conn, uid, assoc_cond);
-			list_destroy(assoc_cond->user_list);
-			assoc_cond->user_list = NULL;
+			list_append(user_cond->assoc_cond->user_list,
+				    user->name);
 		}
 	}
 	mysql_free_result(result);
+
+	if(user_cond && user_cond->with_assocs) {
+		ListIterator assoc_itr = NULL;
+		acct_user_rec_t *user = NULL;
+		acct_association_rec_t *assoc = NULL;
+		List assoc_list = acct_storage_p_get_associations(
+			mysql_conn, uid, user_cond->assoc_cond);
+
+		if(!assoc_list) {
+			error("no associations");
+			return user_list;
+		}
+
+		itr = list_iterator_create(user_list);
+		assoc_itr = list_iterator_create(assoc_list);
+		while((user = list_next(itr))) {
+			while((assoc = list_next(assoc_itr))) {
+				if(strcmp(assoc->user, user->name)) 
+					continue;
+				
+				if(!user->assoc_list)
+					user->assoc_list = list_create(
+						destroy_acct_association_rec);
+				list_append(user->assoc_list, assoc);
+				list_remove(assoc_itr);
+			}
+			list_iterator_reset(assoc_itr);
+		}
+		list_iterator_destroy(itr);
+		list_iterator_destroy(assoc_itr);
+
+		list_destroy(assoc_list);
+	}
 
 	return user_list;
 #else
@@ -5308,6 +5441,16 @@ empty:
 	xfree(query);
 
 	acct_list = list_create(destroy_acct_account_rec);
+	
+	if(acct_cond && acct_cond->with_assocs) {
+		/* We are going to be freeing the inners of
+			   this list in the acct->name so we don't
+			   free it here
+			*/
+		if(acct_cond->assoc_cond->acct_list) 
+			list_destroy(acct_cond->assoc_cond->acct_list);
+		acct_cond->assoc_cond->acct_list = list_create(NULL);
+	}
 
 	while((row = mysql_fetch_row(result))) {
 		acct_account_rec_t *acct = xmalloc(sizeof(acct_account_rec_t));
@@ -5327,25 +5470,49 @@ empty:
 		}
 
 		if(acct_cond && acct_cond->with_assocs) {
-			acct_association_cond_t *assoc_cond = NULL;
 			if(!acct_cond->assoc_cond) {
 				acct_cond->assoc_cond = xmalloc(
 					sizeof(acct_association_cond_t));
 			}
-			assoc_cond = acct_cond->assoc_cond;
-			if(assoc_cond->acct_list)
-				list_destroy(assoc_cond->acct_list);
 
-			assoc_cond->acct_list = list_create(NULL);
-			list_append(assoc_cond->acct_list, acct->name);
-			acct->assoc_list = acct_storage_p_get_associations(
-				mysql_conn, uid, assoc_cond);
-			list_destroy(assoc_cond->acct_list);
-			assoc_cond->acct_list = NULL;
+			list_append(acct_cond->assoc_cond->acct_list,
+				    acct->name);
 		}
-
 	}
 	mysql_free_result(result);
+
+	if(acct_cond && acct_cond->with_assocs) {
+		ListIterator assoc_itr = NULL;
+		acct_account_rec_t *acct = NULL;
+		acct_association_rec_t *assoc = NULL;
+		List assoc_list = acct_storage_p_get_associations(
+			mysql_conn, uid, acct_cond->assoc_cond);
+
+		if(!assoc_list) {
+			error("no associations");
+			return acct_list;
+		}
+
+		itr = list_iterator_create(acct_list);
+		assoc_itr = list_iterator_create(assoc_list);
+		while((acct = list_next(itr))) {
+			while((assoc = list_next(assoc_itr))) {
+				if(strcmp(assoc->acct, acct->name)) 
+					continue;
+				
+				if(!acct->assoc_list)
+					acct->assoc_list = list_create(
+						destroy_acct_association_rec);
+				list_append(acct->assoc_list, assoc);
+				list_remove(assoc_itr);
+			}
+			list_iterator_reset(assoc_itr);
+		}
+		list_iterator_destroy(itr);
+		list_iterator_destroy(assoc_itr);
+
+		list_destroy(assoc_list);
+	}
 
 	return acct_list;
 #else
@@ -5372,12 +5539,14 @@ extern List acct_storage_p_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
 	char *cluster_req_inx[] = {
 		"name",
 		"control_host",
-		"control_port"
+		"control_port",
+		"rpc_version"
 	};
 	enum {
 		CLUSTER_REQ_NAME,
 		CLUSTER_REQ_CH,
 		CLUSTER_REQ_CP,
+		CLUSTER_REQ_VERSION,
 		CLUSTER_REQ_COUNT
 	};
 	char *assoc_req_inx[] = {
@@ -5473,6 +5642,8 @@ empty:
 
 		cluster->control_host = xstrdup(row[CLUSTER_REQ_CH]);
 		cluster->control_port = atoi(row[CLUSTER_REQ_CP]);
+		cluster->rpc_version = atoi(row[CLUSTER_REQ_VERSION]);
+
 		query = xstrdup_printf("select %s from %s where cluster='%s' "
 				       "&& acct='root'", 
 				       tmp, assoc_table, cluster->name);
@@ -6710,7 +6881,7 @@ extern int clusteracct_storage_p_node_down(mysql_conn_t *mysql_conn,
 		   "update period_end=0;",
 		   event_table, node_ptr->name, cluster, 
 		   cpus, event_time, my_reason);
-	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+	debug4("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
 
@@ -6735,7 +6906,7 @@ extern int clusteracct_storage_p_node_up(mysql_conn_t *mysql_conn,
 		"update %s set period_end=%d where cluster='%s' "
 		"and period_end=0 and node_name='%s';",
 		event_table, event_time, cluster, node_ptr->name);
-	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+	debug4("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
 	return rc;
@@ -6758,6 +6929,7 @@ extern int clusteracct_storage_p_cluster_procs(mysql_conn_t *mysql_conn,
 #ifdef HAVE_MYSQL
 	char* query;
 	int rc = SLURM_SUCCESS;
+	int first = 0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 
@@ -6767,7 +6939,7 @@ extern int clusteracct_storage_p_cluster_procs(mysql_conn_t *mysql_conn,
 	/* Record the processor count */
 	query = xstrdup_printf(
 		"select cpu_count from %s where cluster='%s' "
-		"and period_end=0 and node_name=''",
+		"and period_end=0 and node_name='' limit 1",
 		event_table, cluster);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
@@ -6780,6 +6952,21 @@ extern int clusteracct_storage_p_cluster_procs(mysql_conn_t *mysql_conn,
 	if(!(row = mysql_fetch_row(result))) {
 		debug("We don't have an entry for this machine %s "
 		      "most likely a first time running.", cluster);
+
+		/* Get all nodes in a down state and jobs pending or running.
+		 * This is for the first time a cluster registers
+		 *
+		 * This only happens here when calling the plugin directly.  If
+		 * calling this plugin throught the slurmdbd we do this in
+		 * acct_storage_p_modify_clusters.
+		 */
+		if(!slurmdbd_conf) {
+			/* We will return ACCOUNTING_FIRST_REG so this
+			   is taken care of since the message thread
+			   may not be up when we run this in the controller.
+			*/
+			first = 1;
+		}
 		goto add_it;
 	}
 
@@ -6805,9 +6992,11 @@ add_it:
 		event_table, cluster, procs, event_time);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
-
 end_it:
 	mysql_free_result(result);
+	if(first && rc == SLURM_SUCCESS)
+		rc = ACCOUNTING_FIRST_REG;
+
 	return rc;
 #else
 	return SLURM_ERROR;
@@ -7106,11 +7295,10 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 			xstrfmtcat(query, "blockid='%s', ", block_id);
 
 		xstrfmtcat(query, "start=%d, name='%s', state=%u, "
-			   "alloc_cpus=%u, associd=%u where id=%d",
+			   "alloc_cpus=%u, associd=%d where id=%d",
 			   (int)job_ptr->start_time,
 			   jname, job_ptr->job_state & (~JOB_COMPLETING),
-			   job_ptr->total_procs, nodes, 
-			   job_ptr->assoc_id,
+			   job_ptr->total_procs, job_ptr->assoc_id,
 			   job_ptr->db_index);
 		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);

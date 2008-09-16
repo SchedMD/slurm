@@ -362,7 +362,12 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 		exit_code=1;
 		fprintf(stderr, " No name given\n");
 		_destroy_sacctmgr_file_opts(file_opts);
+		file_opts = NULL;
+	} else if(exit_code) {
+		_destroy_sacctmgr_file_opts(file_opts);
+		file_opts = NULL;
 	}
+
 	return file_opts;
 }
 
@@ -890,8 +895,10 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 				   new_qos);
 			xfree(new_qos);
 			changed = 1;
-		} else 
+		} else {
 			list_destroy(mod_user.qos_list);
+			mod_user.qos_list = NULL;
+		}
 
 	} else if(file_opts->qos_list && list_count(file_opts->qos_list)) {
 		char *new_qos = get_qos_complete_str(qos_list,
@@ -1505,7 +1512,8 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 		return;
 		
 	} else {
-		if(user->admin_level < ACCT_ADMIN_SUPER_USER) {
+		if(my_uid != slurm_get_slurm_user_id() && my_uid != 0
+		   && user->admin_level < ACCT_ADMIN_SUPER_USER) {
 			exit_code=1;
 			fprintf(stderr, " Your user does not have sufficient "
 				"privileges to load files.\n");
@@ -1601,13 +1609,9 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				break;
 			} 
 		}
-		if(!object[0]) {
-			exit_code=1;
-			fprintf(stderr, " Misformatted line(%d): %s\n",
-				lc, line);
-			rc = SLURM_ERROR;
-			break;
-		} 
+		if(!object[0]) 
+			continue;
+		
 		while(line[start] != ' ' && start<len)
 			start++;
 		if(start>=len) {

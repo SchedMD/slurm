@@ -744,9 +744,19 @@ static int _load_job_state(Buf buffer)
 	job_ptr->user_id      = user_id;
 
 	bzero(&assoc_rec, sizeof(acct_association_rec_t));
-	assoc_rec.acct      = job_ptr->account;
-	assoc_rec.partition = job_ptr->partition;
-	assoc_rec.uid       = job_ptr->user_id;
+
+	/* 
+	 * For speed and accurracy we will first see if we once had an
+	 * association record.  If not look for it by
+	 * account,partition, user_id.
+	 */
+	if(job_ptr->assoc_id)
+		assoc_rec.id = job_ptr->assoc_id;
+	else {
+		assoc_rec.acct      = job_ptr->account;
+		assoc_rec.partition = job_ptr->partition;
+		assoc_rec.uid       = job_ptr->user_id;
+	}
 
 	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 				    accounting_enforce,
@@ -760,14 +770,28 @@ static int _load_job_state(Buf buffer)
 		if (IS_JOB_PENDING(job_ptr))
 			job_ptr->start_time = now;
 		job_ptr->end_time = now;
-		jobacct_storage_g_job_complete(acct_db_conn, job_ptr);
+		if(job_ptr->assoc_id)
+			jobacct_storage_g_job_complete(acct_db_conn, job_ptr);
 	} else {
 		info("Recovered job %u", job_id);
 		job_ptr->assoc_ptr = (void *) assoc_ptr;
+
+		/* make sure we have started this job in accounting */
+		if(job_ptr->assoc_id && !job_ptr->db_index && job_ptr->nodes) {
+			debug("starting job %u in accounting", job_ptr->job_id);
+			jobacct_storage_g_job_start(acct_db_conn, job_ptr);
+			if(job_ptr->job_state == JOB_SUSPENDED) 
+				jobacct_storage_g_job_suspend(acct_db_conn,
+							      job_ptr);
+		}
 	}
 
 	safe_unpack16(&step_flag, buffer);
 	while (step_flag == STEP_FLAG) {
+		/* No need to put these into accounting if they
+		 * haven't been since all information will be put in when
+		 * the job is finished.
+		 */
 		if ((error_code = load_step_state(job_ptr, buffer)))
 			goto unpack_error;
 		safe_unpack16(&step_flag, buffer);
@@ -5725,6 +5749,28 @@ extern int update_job_account(char *module, struct job_record *job_ptr,
 		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 	}
 	last_job_update = time(NULL);
+
+	return SLURM_SUCCESS;
+}
+
+extern int send_jobs_to_accounting(time_t event_time)
+{
+	ListIterator itr = NULL;
+	struct job_record *job_ptr;
+	/* send jobs in pending or running state */
+	itr = list_iterator_create(job_list);
+	while ((job_ptr = list_next(itr))) {
+		/* we only want active, un accounted for jobs */
+		if(job_ptr->db_index && job_ptr->job_state > JOB_SUSPENDED) 
+			continue;
+		debug("first reg: starting job %u in accounting",
+		      job_ptr->job_id);
+		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
+
+		if(job_ptr->job_state == JOB_SUSPENDED) 
+			jobacct_storage_g_job_suspend(acct_db_conn, job_ptr);
+	}
+	list_iterator_destroy(itr);
 
 	return SLURM_SUCCESS;
 }

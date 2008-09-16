@@ -68,5 +68,6 @@ extern int slurm_drain_nodes(char *node_list, char *reason);
  *	own locks.
  */
 extern int slurm_fail_job(uint32_t job_id);
+
 #endif /* !_HAVE_PROC_REQ_H */
 

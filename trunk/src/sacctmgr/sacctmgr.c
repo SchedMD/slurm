@@ -72,7 +72,7 @@ main (int argc, char *argv[])
 	char **input_fields;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
 	int local_exit_code = 0;
-
+	char *temp = NULL;
 	int option_index;
 	static struct option long_options[] = {
 		{"help",     0, 0, 'h'},
@@ -171,6 +171,19 @@ main (int argc, char *argv[])
 		log_alter(opts, 0, NULL);
 	}
 
+	/* Check to see if we are running a supported accounting plugin */
+	temp = slurm_get_accounting_storage_type();
+	if(strcasecmp(temp, "accounting_storage/slurmdbd")
+	   && strcasecmp(temp, "accounting_storage/mysql")) {
+		fprintf (stderr, "You are not running a supported "
+			 "accounting_storage plugin\n(%s).\n"
+			 "Only 'accounting_storage/slurmdbd' "
+			 "and 'accounting_storage/mysql' are supported.\n",
+			temp);
+		xfree(temp);
+		exit(1);
+	}
+	xfree(temp);
 	/* always do a rollback.  If you don't then if there is an
 	 * error you can not rollback ;)
 	 */
@@ -658,10 +671,14 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
      associations             when using show/list will list the           \n\
                               associations associated with the entity.     \n\
      delete <ENTITY> <SPECS>  delete the specified entity(s)               \n\
+     dump <CLUSTER> <FILE>    dump database information of the             \n\
+                              specified cluster to the flat file.          \n\
      exit                     terminate sacctmgr                           \n\
      help                     print this description of use.               \n\
      list <ENTITY> [<SPECS>]  display info of identified entity, default   \n\
                               is display all.                              \n\
+     load <FILE>              read in the file to update the database      \n\
+                              with the file contents.                      \n\
      modify <ENTITY> <SPECS>  modify entity                                \n\
      oneliner                 report output one record per line.           \n\
      parsable                 output will be | delimited with an ending '|'\n\

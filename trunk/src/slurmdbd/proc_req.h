@@ -42,15 +42,22 @@
 #include "src/common/pack.h"
 #include "src/common/slurm_protocol_defs.h"
 
+typedef struct {
+	void *db_conn; /* database connection */
+	slurm_fd newsockfd; /* socket connection descriptor */
+	uint16_t rpc_version; /* version of rpc */
+} slurmdbd_conn_t;
+
 /* Process an incoming RPC
- * orig_fd IN - originating file descriptor of the RPC
+ * slurmdbd_conn IN/OUT - in will that the newsockfd set before
+ *       calling and db_conn and rpc_version will be filled in with the init.
  * msg IN - incoming message
  * msg_size IN - size of msg in bytes
  * first IN - set if first message received on the socket
  * buffer OUT - outgoing response, must be freed by caller
  * uid IN/OUT - user ID who initiated the RPC
  * RET SLURM_SUCCESS or error code */
-extern int proc_req(void **db_conn, slurm_fd orig_fd, char *msg, 
+extern int proc_req(slurmdbd_conn_t *slurmdbd_conn, char *msg, 
 		    uint32_t msg_size, bool first, Buf *out_buffer, 
 		    uint32_t *uid);
 
