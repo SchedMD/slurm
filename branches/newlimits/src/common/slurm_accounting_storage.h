@@ -71,16 +71,42 @@ typedef enum {
 typedef struct {
 	List acct_list;		/* list of char * */
 	List cluster_list;	/* list of char * */
+
+	uint64_t grp_cpu_hours; /* max number of cpu hours the
+				     * underlying group of
+				     * associations can run for */
+	uint32_t grp_cpus; /* max number of cpus the
+				* underlying group of 
+				* associations can allocate at one time */
+	uint32_t grp_jobs;	/* max number of jobs the
+				 * underlying group of associations can run
+				 * at one time */
+	uint32_t grp_nodes; /* max number of nodes the
+				 * underlying group of
+				 * associations can allocate at once */
+	uint32_t grp_submit_jobs; /* max number of jobs the
+				       * underlying group of
+				       * associations can submit at
+				       * one time */
+	uint32_t grp_wall; /* total time in hours the 
+			    * underlying group of
+			    * associations can run for */
+
 	uint32_t fairshare;	/* fairshare number */
 	List id_list;		/* list of char */
-	uint32_t max_cpu_secs_per_job; /* max number of cpu seconds this 
-					* association can have per job */
+
+	uint64_t max_cpu_mins_pj; /* max number of cpu seconds this 
+				  * association can have per job */
+	uint32_t max_cpus_pj; /* max number of cpus this 
+				    * association can allocate per job */
 	uint32_t max_jobs;	/* max number of jobs this association can run
 				 * at one time */
-	uint32_t max_nodes_per_job; /* max number of nodes this
+	uint32_t max_nodes_pj; /* max number of nodes this
 				     * association can allocate per job */
-	uint32_t max_wall_duration_per_job; /* longest time this association
-					     * can run a job (seconds) */
+	uint32_t max_submit_jobs; /* max number of jobs that can be
+				     submitted by association */
+	uint32_t max_wall_pj; /* longest time this association
+			       * can run a job (seconds) */
 	List partition_list;	/* list of char * */
 	char *parent_acct;	/* name of parent account */
 	uint32_t usage_end; 
@@ -122,33 +148,89 @@ typedef struct {
 typedef struct acct_association_rec {
 	List accounting_list; 	/* list of acct_accounting_rec_t *'s */
 	char *acct;		/* account/project associated to association */
-	char *cluster;		/* cluster associated to association */
+	char *cluster;		/* cluster associated to association
+				 * */
+
+	uint64_t grp_cpu_hours; /* max number of cpu hours the
+				     * underlying group of
+				     * associations can run for */
+	uint32_t grp_cpus; /* max number of cpus the
+				* underlying group of 
+				* associations can allocate at one time */
+	uint32_t grp_jobs;	/* max number of jobs the
+				 * underlying group of associations can run
+				 * at one time */
+	uint32_t grp_nodes; /* max number of nodes the
+				 * underlying group of
+				 * associations can allocate at once */
+	uint32_t grp_submit_jobs; /* max number of jobs the
+				       * underlying group of
+				       * associations can submit at
+				       * one time */
+	uint32_t grp_wall; /* total time in hours the 
+			    * underlying group of
+			    * associations can run for */
+
+	uint32_t grp_used_cpu_hours; /* cpu hours the
+				      * underlying group of
+				      * associations has ran for 
+				      * (DON'T PACK) */
+	uint32_t grp_used_cpus; /* count of active jobs in the group
+				 * (DON'T PACK) */
+	uint32_t grp_used_jobs; /* count of active jobs in the group
+				 * (DON'T PACK) */
+	uint32_t grp_used_nodes; /* count of active jobs in the group
+				  * (DON'T PACK) */
+	uint32_t grp_used_submit_jobs; /* count of jobs pending or
+					* running in the group  
+					* (DON'T PACK) */
+	uint32_t grp_used_max_wall; /* group count of time used in
+				     * running jobs (DON'T PACK) */
+	
 	uint32_t fairshare;	/* fairshare number */
 	uint32_t id;		/* id identifing a combination of
 				 * user-account-cluster(-partition) */
 	uint32_t lft;		/* lft used for grouping sub
 				 * associations and jobs as a left
 				 * most container used with rgt */
-	uint32_t max_cpu_secs_per_job; /* max number of cpu seconds this 
-					   * association can have per job */
+	
+	uint32_t level_shares;  /* number of shares on this level of
+				 * the tree (DON'T PACK) */
+	
+	uint64_t max_cpu_mins_pj; /* max number of cpu seconds this 
+				   * association can have per job */
+	uint32_t max_cpus_pj; /* max number of cpus this 
+				    * association can allocate per job */
 	uint32_t max_jobs;	/* max number of jobs this association can run
 				 * at one time */
-	uint32_t max_nodes_per_job; /* max number of nodes this
+	uint32_t max_nodes_pj; /* max number of nodes this
 				     * association can allocate per job */
-	uint32_t max_wall_duration_per_job; /* longest time this
-					     * association can run a job */
+	uint32_t max_submit_jobs; /* max number of jobs that can be
+				     submitted by association */
+	uint32_t max_wall_pj; /* longest time this
+			       * association can run a job */
+	
 	char *parent_acct;	/* name of parent account */
 	struct acct_association_rec *parent_acct_ptr;	/* ptr to parent acct
-							 * set in slurmctld */
+							 * set in
+							 * slurmctld 
+							 * (DON'T PACK) */
 	uint32_t parent_id;	/* id of parent account */
 	char *partition;	/* optional partition in a cluster 
 				 * associated to association */
+
+	List qos_list;          /* list of char * */
+
 	uint32_t rgt;		/* rgt used for grouping sub
 				 * associations and jobs as a right
 				 * most container used with lft */
 	uint32_t uid;		/* user ID */
-	uint32_t used_jobs;	/* count of active jobs */
+	
+	uint32_t used_jobs;	/* count of active jobs (DON'T PACK) */
 	uint32_t used_share;	/* measure of resource usage */
+	uint32_t used_submit_jobs; /* count of jobs pending or running
+				    * (DON'T PACK) */
+	
 	char *user;		/* user associated to association */
 } acct_association_rec_t;
 
@@ -165,16 +247,23 @@ typedef struct {
 	char *control_host;
 	uint32_t control_port;
 	uint32_t default_fairshare;	/* fairshare number */
-	uint32_t default_max_cpu_secs_per_job;/* max number of cpu seconds this 
-					       * association can have per job */
+
+	uint64_t default_max_cpu_mins_pj;/* max number of cpu mins this 
+					  * association can have per job */
+	uint32_t default_max_cpus_pj; /* max number of cpus this 
+				       * association can allocate per job */
 	uint32_t default_max_jobs;/* max number of jobs this association can run
 				   * at one time */
-	uint32_t default_max_nodes_per_job; /* max number of nodes this
-					     * association can
-					     * allocate per job */
-	uint32_t default_max_wall_duration_per_job; /* longest time this
-					     * association can run a job */
+	uint32_t default_max_nodes_pj; /* max number of nodes this
+					* association can
+					* allocate per job */
+	uint32_t default_max_submit_jobs; /* max number of jobs any
+					   * user can submit */
+	uint32_t default_max_wall_pj; /* longest time in mins this
+				       * association can run a job */
+
 	char *name;
+
 	uint16_t rpc_version; /* version of rpc this cluter is running */
 } acct_cluster_rec_t;
 

@@ -969,10 +969,10 @@ extern void pack_acct_cluster_rec(void *in, uint16_t rpc_version, Buf buffer)
 		packstr(object->control_host, buffer);
 		pack32(object->control_port, buffer);
 		pack32(object->default_fairshare, buffer);
-		pack32(object->default_max_cpu_secs_per_job, buffer);
+		pack32(object->default_max_cpu_mins_pj, buffer);
 		pack32(object->default_max_jobs, buffer);
-		pack32(object->default_max_nodes_per_job, buffer);
-		pack32(object->default_max_wall_duration_per_job, buffer);
+		pack32(object->default_max_nodes_pj, buffer);
+		pack32(object->default_max_wall_pj, buffer);
 
 		packstr(object->name, buffer);
 
@@ -983,12 +983,16 @@ extern void pack_acct_cluster_rec(void *in, uint16_t rpc_version, Buf buffer)
 			pack32(NO_VAL, buffer);
 			packnull(buffer);
 			pack32(0, buffer);
+
+			pack64(0, buffer);
 			pack32(0, buffer);
 			pack32(0, buffer);
 			pack32(0, buffer);
 			pack32(0, buffer);
 			pack32(0, buffer);
+
 			packnull(buffer);
+
 			pack16(0, buffer);
 			return;
 		}
@@ -1011,10 +1015,13 @@ extern void pack_acct_cluster_rec(void *in, uint16_t rpc_version, Buf buffer)
 		packstr(object->control_host, buffer);
 		pack32(object->control_port, buffer);
 		pack32(object->default_fairshare, buffer);
-		pack32(object->default_max_cpu_secs_per_job, buffer);
+
+		pack64(object->default_max_cpu_mins_pj, buffer);
+		pack32(object->default_max_cpus_pj, buffer);
 		pack32(object->default_max_jobs, buffer);
-		pack32(object->default_max_nodes_per_job, buffer);
-		pack32(object->default_max_wall_duration_per_job, buffer);
+		pack32(object->default_max_nodes_pj, buffer);
+		pack32(object->default_max_submit_jobs, buffer);
+		pack32(object->default_max_wall_pj, buffer);
 
 		packstr(object->name, buffer);
 
@@ -1049,11 +1056,11 @@ extern int unpack_acct_cluster_rec(void **object, uint16_t rpc_version, Buf buff
 				       &uint32_tmp, buffer);
 		safe_unpack32(&object_ptr->control_port, buffer);
 		safe_unpack32(&object_ptr->default_fairshare, buffer);
-		safe_unpack32(&object_ptr->default_max_cpu_secs_per_job,
+		safe_unpack32((uint32_t *)&object_ptr->default_max_cpu_mins_pj,
 			      buffer);
 		safe_unpack32(&object_ptr->default_max_jobs, buffer);
-		safe_unpack32(&object_ptr->default_max_nodes_per_job, buffer);
-		safe_unpack32(&object_ptr->default_max_wall_duration_per_job,
+		safe_unpack32(&object_ptr->default_max_nodes_pj, buffer);
+		safe_unpack32(&object_ptr->default_max_wall_pj,
 			      buffer);
 		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
 		/* default to rpc version 2 since that was the version we had
@@ -1077,13 +1084,16 @@ extern int unpack_acct_cluster_rec(void **object, uint16_t rpc_version, Buf buff
 				       &uint32_tmp, buffer);
 		safe_unpack32(&object_ptr->control_port, buffer);
 		safe_unpack32(&object_ptr->default_fairshare, buffer);
-		safe_unpack32(&object_ptr->default_max_cpu_secs_per_job,
-			      buffer);
+
+		safe_unpack64(&object_ptr->default_max_cpu_mins_pj, buffer);
+		safe_unpack32(&object_ptr->default_max_cpus_pj, buffer);
 		safe_unpack32(&object_ptr->default_max_jobs, buffer);
-		safe_unpack32(&object_ptr->default_max_nodes_per_job, buffer);
-		safe_unpack32(&object_ptr->default_max_wall_duration_per_job,
-			      buffer);
+		safe_unpack32(&object_ptr->default_max_nodes_pj, buffer);
+		safe_unpack32(&object_ptr->default_max_submit_jobs, buffer);
+		safe_unpack32(&object_ptr->default_max_wall_pj, buffer);
+
 		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
+
 		safe_unpack16(&object_ptr->rpc_version, buffer);
 	}
 	return SLURM_SUCCESS;
@@ -1133,102 +1143,295 @@ extern void pack_acct_association_rec(void *in, uint16_t rpc_version, Buf buffer
 	acct_accounting_rec_t *acct_info = NULL;
 	ListIterator itr = NULL;
 	uint32_t count = NO_VAL;
+	char *tmp_info = NULL;
 	acct_association_rec_t *object = (acct_association_rec_t *)in;	
 	
-	if(!object) {
-		pack32(NO_VAL, buffer);
-		packnull(buffer);
-		packnull(buffer);
-		pack32(0, buffer);
-		pack32(0, buffer);
-		pack32(0, buffer);
-		pack32(0, buffer);
-		pack32(0, buffer);
-		pack32(0, buffer);
-		pack32(0, buffer);
-		packnull(buffer);
-		pack32(0, buffer);
-		packnull(buffer);
-		pack32(0, buffer);
-		pack32(0, buffer);
-		pack32(0, buffer);
-		packnull(buffer);
-		return;
-	}
- 
-	if(object->accounting_list)
-		count = list_count(object->accounting_list);
+	if(rpc_version < 3) {
+		if(!object) {
+			pack32(NO_VAL, buffer);
 
-	pack32(count, buffer);
+			packnull(buffer);
+			packnull(buffer);
 
-	if(count && count != NO_VAL) {
-		itr = list_iterator_create(object->accounting_list);
-		while((acct_info = list_next(itr))) {
-			pack_acct_accounting_rec(acct_info, 
-						 rpc_version, buffer);
+			pack32(0, buffer);
+			pack32(0, buffer);
+			pack32(0, buffer);
+			pack32(0, buffer);
+			pack32(0, buffer);
+			pack32(0, buffer);
+			pack32(0, buffer);
+
+			packnull(buffer);
+			pack32(0, buffer);
+			packnull(buffer);
+
+			pack32(0, buffer);
+			pack32(0, buffer);
+
+			pack32(0, buffer);
+
+			packnull(buffer);
+			return;
 		}
-		list_iterator_destroy(itr);
-	}
-	count = NO_VAL;
+ 
+		if(object->accounting_list)
+			count = list_count(object->accounting_list);
 
-	packstr(object->acct, buffer);
-	packstr(object->cluster, buffer);
-	pack32(object->fairshare, buffer);
-	pack32(object->id, buffer);
-	pack32(object->lft, buffer);
-	pack32(object->max_cpu_secs_per_job, buffer);
-	pack32(object->max_jobs, buffer);
-	pack32(object->max_nodes_per_job, buffer);
-	pack32(object->max_wall_duration_per_job, buffer);
-	packstr(object->parent_acct, buffer);
-	pack32(object->parent_id, buffer);
-	packstr(object->partition, buffer);
-	pack32(object->rgt, buffer);
-	pack32(object->uid, buffer);
-	pack32(object->used_share, buffer);
-	packstr(object->user, buffer);	
+		pack32(count, buffer);
+
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->accounting_list);
+			while((acct_info = list_next(itr))) {
+				pack_acct_accounting_rec(acct_info, 
+							 rpc_version, buffer);
+			}
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+
+		packstr(object->acct, buffer);
+		packstr(object->cluster, buffer);
+		pack32(object->fairshare, buffer);
+		pack32(object->id, buffer);
+		pack32(object->lft, buffer);
+		pack32(object->max_cpu_mins_pj, buffer);
+		pack32(object->max_jobs, buffer);
+		pack32(object->max_nodes_pj, buffer);
+		pack32(object->max_wall_pj, buffer);
+		packstr(object->parent_acct, buffer);
+		pack32(object->parent_id, buffer);
+		packstr(object->partition, buffer);
+		pack32(object->rgt, buffer);
+		pack32(object->uid, buffer);
+		pack32(object->used_share, buffer);
+		packstr(object->user, buffer);	
+	} else if (rpc_version >= 3) {
+		if(!object) {
+			pack32(NO_VAL, buffer);
+			packnull(buffer);
+			packnull(buffer);
+
+			pack64(0, buffer);
+			pack32(0, buffer);
+			pack32(0, buffer);
+			pack32(0, buffer);
+			pack32(0, buffer);
+			pack32(0, buffer);
+
+			pack32(0, buffer);
+			pack32(0, buffer);
+			pack32(0, buffer);
+
+			pack64(0, buffer);
+			pack32(0, buffer);
+			pack32(0, buffer);
+			pack32(0, buffer);
+			pack32(0, buffer);
+			pack32(0, buffer);
+
+			packnull(buffer);
+			pack32(0, buffer);
+			packnull(buffer);
+
+			pack32(NO_VAL, buffer);
+
+			pack32(0, buffer);
+			pack32(0, buffer);
+
+			pack32(0, buffer);
+
+			packnull(buffer);
+			return;
+		}
+ 
+		if(object->accounting_list)
+			count = list_count(object->accounting_list);
+
+		pack32(count, buffer);
+
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->accounting_list);
+			while((acct_info = list_next(itr))) {
+				pack_acct_accounting_rec(acct_info, 
+							 rpc_version, buffer);
+			}
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+
+		packstr(object->acct, buffer);
+		packstr(object->cluster, buffer);
+
+		pack64(object->grp_cpu_hours, buffer);
+		pack32(object->grp_cpus, buffer);
+		pack32(object->grp_jobs, buffer);
+		pack32(object->grp_nodes, buffer);
+		pack32(object->grp_submit_jobs, buffer);
+		pack32(object->grp_wall, buffer);
+
+		pack32(object->fairshare, buffer);
+		pack32(object->id, buffer);
+		pack32(object->lft, buffer);
+
+		pack64(object->max_cpu_mins_pj, buffer);
+		pack32(object->max_cpus_pj, buffer);
+		pack32(object->max_jobs, buffer);
+		pack32(object->max_nodes_pj, buffer);
+		pack32(object->max_submit_jobs, buffer);
+		pack32(object->max_wall_pj, buffer);
+
+		packstr(object->parent_acct, buffer);
+		pack32(object->parent_id, buffer);
+		packstr(object->partition, buffer);
+
+		if(object->qos_list)
+			count = list_count(object->qos_list);
+
+		pack32(count, buffer);
+
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->qos_list);
+			while((tmp_info = list_next(itr))) {
+				packstr(tmp_info, buffer);
+			}
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+
+		pack32(object->rgt, buffer);
+		pack32(object->uid, buffer);
+
+		pack32(object->used_share, buffer);
+
+		packstr(object->user, buffer);	
+	}
 }
 
-extern int unpack_acct_association_rec(void **object, uint16_t rpc_version, Buf buffer)
+extern int unpack_acct_association_rec(void **object, uint16_t rpc_version,
+				       Buf buffer)
 {
 	uint32_t uint32_tmp;
 	int i;
 	uint32_t count;
+	char *tmp_info = NULL;
 	acct_association_rec_t *object_ptr = 
 		xmalloc(sizeof(acct_association_rec_t));
 	acct_accounting_rec_t *acct_info = NULL;
 
 	*object = object_ptr;
 
-	safe_unpack32(&count, buffer);
-	if(count != NO_VAL) {
-		object_ptr->accounting_list =
-			list_create(destroy_acct_accounting_rec);
-		for(i=0; i<count; i++) {
-			if(unpack_acct_accounting_rec((void **)&acct_info,
-						      rpc_version, 
-						      buffer) == SLURM_ERROR)
-				goto unpack_error;
-			list_append(object_ptr->accounting_list, acct_info);
+	if(rpc_version < 3) {
+		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
+			object_ptr->accounting_list =
+				list_create(destroy_acct_accounting_rec);
+			for(i=0; i<count; i++) {
+				if(unpack_acct_accounting_rec(
+					   (void **)&acct_info,
+					   rpc_version, 
+					   buffer) == SLURM_ERROR)
+					goto unpack_error;
+				list_append(object_ptr->accounting_list, 
+					    acct_info);
+			}
 		}
-	}
-	safe_unpackstr_xmalloc(&object_ptr->acct, &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&object_ptr->cluster, &uint32_tmp, buffer);
-	safe_unpack32(&object_ptr->fairshare, buffer);
-	safe_unpack32(&object_ptr->id, buffer);
-	safe_unpack32(&object_ptr->lft, buffer);
-	safe_unpack32(&object_ptr->max_cpu_secs_per_job, buffer);
-	safe_unpack32(&object_ptr->max_jobs, buffer);
-	safe_unpack32(&object_ptr->max_nodes_per_job, buffer);
-	safe_unpack32(&object_ptr->max_wall_duration_per_job, buffer);
-	safe_unpackstr_xmalloc(&object_ptr->parent_acct, &uint32_tmp, buffer);
-	safe_unpack32(&object_ptr->parent_id, buffer);
-	safe_unpackstr_xmalloc(&object_ptr->partition, &uint32_tmp, buffer);
-	safe_unpack32(&object_ptr->rgt, buffer);
-	safe_unpack32(&object_ptr->uid, buffer);
-	safe_unpack32(&object_ptr->used_share, buffer);
-	safe_unpackstr_xmalloc(&object_ptr->user, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->acct, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->cluster, &uint32_tmp,
+				       buffer);
 
+		object_ptr->grp_cpu_hours = NO_VAL;
+		object_ptr->grp_cpus = NO_VAL;
+		object_ptr->grp_jobs = NO_VAL;
+		object_ptr->grp_nodes = NO_VAL;
+		object_ptr->grp_submit_jobs = NO_VAL;
+		object_ptr->grp_wall = NO_VAL;
+
+		safe_unpack32(&object_ptr->fairshare, buffer);
+		safe_unpack32(&object_ptr->id, buffer);
+		safe_unpack32(&object_ptr->lft, buffer);
+
+		safe_unpack32((uint32_t *)&object_ptr->max_cpu_mins_pj, buffer);
+		object_ptr->max_cpus_pj = NO_VAL;
+		safe_unpack32(&object_ptr->max_jobs, buffer);
+		safe_unpack32(&object_ptr->max_nodes_pj, buffer);
+		object_ptr->max_submit_jobs = NO_VAL;
+		safe_unpack32(&object_ptr->max_wall_pj, buffer);
+
+		safe_unpackstr_xmalloc(&object_ptr->parent_acct, &uint32_tmp,
+				       buffer);
+		safe_unpack32(&object_ptr->parent_id, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->partition, &uint32_tmp,
+				       buffer);
+		
+		object_ptr->qos_list = NULL;
+
+		safe_unpack32(&object_ptr->rgt, buffer);
+		safe_unpack32(&object_ptr->uid, buffer);
+
+		safe_unpack32(&object_ptr->used_share, buffer);
+
+		safe_unpackstr_xmalloc(&object_ptr->user, &uint32_tmp, buffer);
+	} else if (rpc_version >= 3) {
+		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
+			object_ptr->accounting_list =
+				list_create(destroy_acct_accounting_rec);
+			for(i=0; i<count; i++) {
+				if(unpack_acct_accounting_rec(
+					   (void **)&acct_info,
+					   rpc_version, 
+					   buffer) == SLURM_ERROR)
+					goto unpack_error;
+				list_append(object_ptr->accounting_list, 
+					    acct_info);
+			}
+		}
+
+		safe_unpackstr_xmalloc(&object_ptr->acct, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->cluster, &uint32_tmp,
+				       buffer);
+
+		safe_unpack64(&object_ptr->grp_cpu_hours, buffer);
+		safe_unpack32(&object_ptr->grp_cpus, buffer);
+		safe_unpack32(&object_ptr->grp_jobs, buffer);
+		safe_unpack32(&object_ptr->grp_nodes, buffer);
+		safe_unpack32(&object_ptr->grp_submit_jobs, buffer);
+		safe_unpack32(&object_ptr->grp_wall, buffer);
+
+		safe_unpack32(&object_ptr->fairshare, buffer);
+		safe_unpack32(&object_ptr->id, buffer);
+		safe_unpack32(&object_ptr->lft, buffer);
+
+		safe_unpack64(&object_ptr->max_cpu_mins_pj, buffer);
+		safe_unpack32(&object_ptr->max_cpus_pj, buffer);
+		safe_unpack32(&object_ptr->max_jobs, buffer);
+		safe_unpack32(&object_ptr->max_nodes_pj, buffer);
+		safe_unpack32(&object_ptr->max_submit_jobs, buffer);
+		safe_unpack32(&object_ptr->max_wall_pj, buffer);
+
+		safe_unpackstr_xmalloc(&object_ptr->parent_acct, &uint32_tmp,
+				       buffer);
+		safe_unpack32(&object_ptr->parent_id, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->partition, &uint32_tmp,
+				       buffer);
+
+		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
+			object_ptr->qos_list = list_create(slurm_destroy_char);
+			for(i=0; i<count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
+						       buffer);
+				list_append(object_ptr->qos_list, tmp_info);
+			}
+		}
+
+		safe_unpack32(&object_ptr->rgt, buffer);
+		safe_unpack32(&object_ptr->uid, buffer);
+
+		safe_unpack32(&object_ptr->used_share, buffer);
+
+		safe_unpackstr_xmalloc(&object_ptr->user, &uint32_tmp, buffer);
+	}
 	//log_assoc_rec(object_ptr);
 	return SLURM_SUCCESS;
 
@@ -1604,107 +1807,211 @@ extern void pack_acct_association_cond(void *in, uint16_t rpc_version, Buf buffe
 	ListIterator itr = NULL;
 	acct_association_cond_t *object = (acct_association_cond_t *)in;
 
-	if(!object) {
-		pack32(NO_VAL, buffer);
-		pack32(NO_VAL, buffer);
-		pack32(0, buffer);
-		pack32(NO_VAL, buffer);
-		pack32(0, buffer);
-		pack32(0, buffer);
-		pack32(0, buffer);
-		pack32(0, buffer);
-		pack32(NO_VAL, buffer);
-		packnull(buffer);
-		pack32(0, buffer);
-		pack32(0, buffer);
-		pack32(NO_VAL, buffer);
-		pack16(0, buffer);
-		pack16(0, buffer);
-		pack16(0, buffer);
-		pack16(0, buffer);
-		return;
-	}
-
-	if(object->acct_list)
-		count = list_count(object->acct_list);
-	
-	pack32(count, buffer);
-	if(count && count != NO_VAL) {
-		itr = list_iterator_create(object->acct_list);
-		while((tmp_info = list_next(itr))) {
-			packstr(tmp_info, buffer);
+	if(rpc_version < 3) {
+		if(!object) {
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(0, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(0, buffer);
+			pack32(0, buffer);
+			pack32(0, buffer);
+			pack32(0, buffer);
+			pack32(NO_VAL, buffer);
+			packnull(buffer);
+			pack32(0, buffer);
+			pack32(0, buffer);
+			pack32(NO_VAL, buffer);
+			pack16(0, buffer);
+			pack16(0, buffer);
+			pack16(0, buffer);
+			pack16(0, buffer);
+			return;
 		}
-		list_iterator_destroy(itr);
-	}
-	count = NO_VAL;
 
-	if(object->cluster_list)
-		count = list_count(object->cluster_list);
+		if(object->acct_list)
+			count = list_count(object->acct_list);
 	
-	pack32(count, buffer);
-	if(count && count != NO_VAL) {
-		itr = list_iterator_create(object->cluster_list);
-		while((tmp_info = list_next(itr))) {
-			packstr(tmp_info, buffer);
+		pack32(count, buffer);
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->acct_list);
+			while((tmp_info = list_next(itr))) {
+				packstr(tmp_info, buffer);
+			}
+			list_iterator_destroy(itr);
 		}
-		list_iterator_destroy(itr);
-	}
-	count = NO_VAL;
+		count = NO_VAL;
 
-	pack32(object->fairshare, buffer);
+		if(object->cluster_list)
+			count = list_count(object->cluster_list);
 	
-	if(object->id_list)
-		count = list_count(object->id_list);
-	
-	pack32(count, buffer);
-	if(count && count != NO_VAL) {
-		itr = list_iterator_create(object->id_list);
-		while((tmp_info = list_next(itr))) {
-			packstr(tmp_info, buffer);
+		pack32(count, buffer);
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->cluster_list);
+			while((tmp_info = list_next(itr))) {
+				packstr(tmp_info, buffer);
+			}
+			list_iterator_destroy(itr);
 		}
-	}
-	count = NO_VAL;
+		count = NO_VAL;
 
-	pack32(object->max_cpu_secs_per_job, buffer);
-	pack32(object->max_jobs, buffer);
-	pack32(object->max_nodes_per_job, buffer);
-	pack32(object->max_wall_duration_per_job, buffer);
-
-	if(object->partition_list)
-		count = list_count(object->partition_list);
+		pack32(object->fairshare, buffer);
 	
-	pack32(count, buffer);
-	if(count && count != NO_VAL) {
-		itr = list_iterator_create(object->partition_list);
-		while((tmp_info = list_next(itr))) {
-			packstr(tmp_info, buffer);
-		}
-		list_iterator_destroy(itr);
-	}
-	count = NO_VAL;
-
-	packstr(object->parent_acct, buffer);
-
-	pack32(object->usage_end, buffer);
-	pack32(object->usage_start, buffer);
-
-	if(object->user_list)
-		count = list_count(object->user_list);
+		if(object->id_list)
+			count = list_count(object->id_list);
 	
-	pack32(count, buffer);
-	if(count && count != NO_VAL) {
-		itr = list_iterator_create(object->user_list);
-		while((tmp_info = list_next(itr))) {
-			packstr(tmp_info, buffer);
+		pack32(count, buffer);
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->id_list);
+			while((tmp_info = list_next(itr))) {
+				packstr(tmp_info, buffer);
+			}
 		}
-		list_iterator_destroy(itr);
-	}
-	count = NO_VAL;
+		count = NO_VAL;
 
-	pack16((uint16_t)object->with_usage, buffer);
-	pack16((uint16_t)object->with_deleted, buffer);
-	pack16((uint16_t)object->without_parent_info, buffer);
-	pack16((uint16_t)object->without_parent_limits, buffer);
+		pack32(object->max_cpu_mins_pj, buffer);
+		pack32(object->max_jobs, buffer);
+		pack32(object->max_nodes_pj, buffer);
+		pack32(object->max_wall_pj, buffer);
+
+		if(object->partition_list)
+			count = list_count(object->partition_list);
+	
+		pack32(count, buffer);
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->partition_list);
+			while((tmp_info = list_next(itr))) {
+				packstr(tmp_info, buffer);
+			}
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+
+		packstr(object->parent_acct, buffer);
+
+		pack32(object->usage_end, buffer);
+		pack32(object->usage_start, buffer);
+
+		if(object->user_list)
+			count = list_count(object->user_list);
+	
+		pack32(count, buffer);
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->user_list);
+			while((tmp_info = list_next(itr))) {
+				packstr(tmp_info, buffer);
+			}
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+
+		pack16((uint16_t)object->with_usage, buffer);
+		pack16((uint16_t)object->with_deleted, buffer);
+		pack16((uint16_t)object->without_parent_info, buffer);
+		pack16((uint16_t)object->without_parent_limits, buffer);
+	} else if(rpc_version >= 3) {
+		if(!object) {
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(0, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(0, buffer);
+			pack32(0, buffer);
+			pack32(0, buffer);
+			pack32(0, buffer);
+			pack32(NO_VAL, buffer);
+			packnull(buffer);
+			pack32(0, buffer);
+			pack32(0, buffer);
+			pack32(NO_VAL, buffer);
+			pack16(0, buffer);
+			pack16(0, buffer);
+			pack16(0, buffer);
+			pack16(0, buffer);
+			return;
+		}
+
+		if(object->acct_list)
+			count = list_count(object->acct_list);
+	
+		pack32(count, buffer);
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->acct_list);
+			while((tmp_info = list_next(itr))) {
+				packstr(tmp_info, buffer);
+			}
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+
+		if(object->cluster_list)
+			count = list_count(object->cluster_list);
+	
+		pack32(count, buffer);
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->cluster_list);
+			while((tmp_info = list_next(itr))) {
+				packstr(tmp_info, buffer);
+			}
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+
+		pack32(object->fairshare, buffer);
+	
+		if(object->id_list)
+			count = list_count(object->id_list);
+	
+		pack32(count, buffer);
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->id_list);
+			while((tmp_info = list_next(itr))) {
+				packstr(tmp_info, buffer);
+			}
+		}
+		count = NO_VAL;
+
+		pack32(object->max_cpu_mins_pj, buffer);
+		pack32(object->max_jobs, buffer);
+		pack32(object->max_nodes_pj, buffer);
+		pack32(object->max_wall_pj, buffer);
+
+		if(object->partition_list)
+			count = list_count(object->partition_list);
+	
+		pack32(count, buffer);
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->partition_list);
+			while((tmp_info = list_next(itr))) {
+				packstr(tmp_info, buffer);
+			}
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+
+		packstr(object->parent_acct, buffer);
+
+		pack32(object->usage_end, buffer);
+		pack32(object->usage_start, buffer);
+
+		if(object->user_list)
+			count = list_count(object->user_list);
+	
+		pack32(count, buffer);
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->user_list);
+			while((tmp_info = list_next(itr))) {
+				packstr(tmp_info, buffer);
+			}
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+
+		pack16((uint16_t)object->with_usage, buffer);
+		pack16((uint16_t)object->with_deleted, buffer);
+		pack16((uint16_t)object->without_parent_info, buffer);
+		pack16((uint16_t)object->without_parent_limits, buffer);
+	}
 }
 
 extern int unpack_acct_association_cond(void **object, 
@@ -1716,68 +2023,150 @@ extern int unpack_acct_association_cond(void **object,
 	acct_association_cond_t *object_ptr =
 		xmalloc(sizeof(acct_association_cond_t));
 	char *tmp_info = NULL;
-
 	*object = object_ptr;
-	safe_unpack32(&count, buffer);
-	if(count != NO_VAL) {
-		object_ptr->acct_list = list_create(slurm_destroy_char);
-		for(i=0; i<count; i++) {
-			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp, buffer);
-			list_append(object_ptr->acct_list, tmp_info);
-		}
-	}
-	safe_unpack32(&count, buffer);
-	if(count != NO_VAL) {
-		object_ptr->cluster_list = list_create(slurm_destroy_char);
-		for(i=0; i<count; i++) {
-			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp, buffer);
-			list_append(object_ptr->cluster_list, tmp_info);
-		}
-	}
 
-	safe_unpack32(&object_ptr->fairshare, buffer);
-
-	safe_unpack32(&count, buffer);
-	if(count != NO_VAL) {
-		object_ptr->id_list = list_create(slurm_destroy_char);
-		for(i=0; i<count; i++) {
-			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp, buffer);
-			list_append(object_ptr->id_list, tmp_info);
+	if(rpc_version < 3) {
+		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
+			object_ptr->acct_list = list_create(slurm_destroy_char);
+			for(i=0; i<count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
+						       buffer);
+				list_append(object_ptr->acct_list, tmp_info);
+			}
 		}
-	}
+		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
+			object_ptr->cluster_list = 
+				list_create(slurm_destroy_char);
+			for(i=0; i<count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
+						       buffer);
+				list_append(object_ptr->cluster_list, tmp_info);
+			}
+		}
+
+		safe_unpack32(&object_ptr->fairshare, buffer);
+
+		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
+			object_ptr->id_list = list_create(slurm_destroy_char);
+			for(i=0; i<count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp, 
+						       buffer);
+				list_append(object_ptr->id_list, tmp_info);
+			}
+		}
 	
-	safe_unpack32(&object_ptr->max_cpu_secs_per_job, buffer);
-	safe_unpack32(&object_ptr->max_jobs, buffer);
-	safe_unpack32(&object_ptr->max_nodes_per_job, buffer);
-	safe_unpack32(&object_ptr->max_wall_duration_per_job, buffer);
+		safe_unpack32((uint32_t *)&object_ptr->max_cpu_mins_pj, buffer);
+		safe_unpack32(&object_ptr->max_jobs, buffer);
+		safe_unpack32(&object_ptr->max_nodes_pj, buffer);
+		safe_unpack32(&object_ptr->max_wall_pj, buffer);
 
-	safe_unpack32(&count, buffer);
-	if(count != NO_VAL) {
-		object_ptr->partition_list = list_create(slurm_destroy_char);
-		for(i=0; i<count; i++) {
-			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp, buffer);
-			list_append(object_ptr->partition_list, tmp_info);
+		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
+			object_ptr->partition_list = 
+				list_create(slurm_destroy_char);
+			for(i=0; i<count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
+						       buffer);
+				list_append(object_ptr->partition_list,
+					    tmp_info);
+			}
 		}
+
+		safe_unpackstr_xmalloc(&object_ptr->parent_acct, &uint32_tmp,
+				       buffer);
+
+		safe_unpack32(&object_ptr->usage_end, buffer);
+		safe_unpack32(&object_ptr->usage_start, buffer);
+
+		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
+			object_ptr->user_list = list_create(slurm_destroy_char);
+			for(i=0; i<count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
+						       buffer);
+				list_append(object_ptr->user_list, tmp_info);
+			}
+		}
+
+		safe_unpack16(&object_ptr->with_usage, buffer);
+		safe_unpack16(&object_ptr->with_deleted, buffer);
+		safe_unpack16(&object_ptr->without_parent_info, buffer);
+		safe_unpack16(&object_ptr->without_parent_limits, buffer);
+	} else if(rpc_version >= 3) {
+		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
+			object_ptr->acct_list = list_create(slurm_destroy_char);
+			for(i=0; i<count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
+						       buffer);
+				list_append(object_ptr->acct_list, tmp_info);
+			}
+		}
+		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
+			object_ptr->cluster_list = 
+				list_create(slurm_destroy_char);
+			for(i=0; i<count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
+						       buffer);
+				list_append(object_ptr->cluster_list, tmp_info);
+			}
+		}
+
+		safe_unpack32(&object_ptr->fairshare, buffer);
+
+		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
+			object_ptr->id_list = list_create(slurm_destroy_char);
+			for(i=0; i<count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp, 
+						       buffer);
+				list_append(object_ptr->id_list, tmp_info);
+			}
+		}
+	
+		safe_unpack64(&object_ptr->max_cpu_mins_pj, buffer);
+		safe_unpack32(&object_ptr->max_jobs, buffer);
+		safe_unpack32(&object_ptr->max_nodes_pj, buffer);
+		safe_unpack32(&object_ptr->max_wall_pj, buffer);
+
+		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
+			object_ptr->partition_list = 
+				list_create(slurm_destroy_char);
+			for(i=0; i<count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
+						       buffer);
+				list_append(object_ptr->partition_list,
+					    tmp_info);
+			}
+		}
+
+		safe_unpackstr_xmalloc(&object_ptr->parent_acct, &uint32_tmp,
+				       buffer);
+
+		safe_unpack32(&object_ptr->usage_end, buffer);
+		safe_unpack32(&object_ptr->usage_start, buffer);
+
+		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
+			object_ptr->user_list = list_create(slurm_destroy_char);
+			for(i=0; i<count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
+						       buffer);
+				list_append(object_ptr->user_list, tmp_info);
+			}
+		}
+
+		safe_unpack16(&object_ptr->with_usage, buffer);
+		safe_unpack16(&object_ptr->with_deleted, buffer);
+		safe_unpack16(&object_ptr->without_parent_info, buffer);
+		safe_unpack16(&object_ptr->without_parent_limits, buffer);
 	}
 
-	safe_unpackstr_xmalloc(&object_ptr->parent_acct, &uint32_tmp, buffer);
-
-	safe_unpack32(&object_ptr->usage_end, buffer);
-	safe_unpack32(&object_ptr->usage_start, buffer);
-
-	safe_unpack32(&count, buffer);
-	if(count != NO_VAL) {
-		object_ptr->user_list = list_create(slurm_destroy_char);
-		for(i=0; i<count; i++) {
-			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp, buffer);
-			list_append(object_ptr->user_list, tmp_info);
-		}
-	}
-
-	safe_unpack16(&object_ptr->with_usage, buffer);
-	safe_unpack16(&object_ptr->with_deleted, buffer);
-	safe_unpack16(&object_ptr->without_parent_info, buffer);
-	safe_unpack16(&object_ptr->without_parent_limits, buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -2430,25 +2819,25 @@ extern void log_assoc_rec(acct_association_rec_t *assoc_ptr)
 	else
 		debug2("  fairshare                 : %u",
 		       assoc_ptr->fairshare);
-	if(assoc_ptr->max_cpu_secs_per_job == INFINITE)
-		debug2("  max_cpu_secs_per_job      : NONE");
+	if(assoc_ptr->max_cpu_mins_pj == INFINITE)
+		debug2("  max_cpu_mins_per_job      : NONE");
 	else
-		debug2("  max_cpu_secs_per_job      : %d",
-		       assoc_ptr->max_cpu_secs_per_job);
+		debug2("  max_cpu_mins_per_job      : %d",
+		       assoc_ptr->max_cpu_mins_pj);
 	if(assoc_ptr->max_jobs == INFINITE)
 		debug2("  max_jobs                  : NONE");
 	else
 		debug2("  max_jobs                  : %u", assoc_ptr->max_jobs);
-	if(assoc_ptr->max_nodes_per_job == INFINITE)
+	if(assoc_ptr->max_nodes_pj == INFINITE)
 		debug2("  max_nodes_per_job         : NONE");
 	else
 		debug2("  max_nodes_per_job         : %d",
-		       assoc_ptr->max_nodes_per_job);
-	if(assoc_ptr->max_wall_duration_per_job == INFINITE)
+		       assoc_ptr->max_nodes_pj);
+	if(assoc_ptr->max_wall_pj == INFINITE)
 		debug2("  max_wall_duration_per_job : NONE");
 	else
 		debug2("  max_wall_duration_per_job : %d", 
-		       assoc_ptr->max_wall_duration_per_job);
+		       assoc_ptr->max_wall_pj);
 	debug2("  parent_acct               : %s", assoc_ptr->parent_acct);
 	debug2("  partition                 : %s", assoc_ptr->partition);
 	debug2("  user                      : %s(%u)",

@@ -560,10 +560,10 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 	if(!assoc->partition)
 		assoc->partition = ret_assoc->partition;
 	assoc->fairshare                 = ret_assoc->fairshare;
-	assoc->max_cpu_secs_per_job      = ret_assoc->max_cpu_secs_per_job;
+	assoc->max_cpu_mins_pj      = ret_assoc->max_cpu_mins_pj;
 	assoc->max_jobs                  = ret_assoc->max_jobs;
-	assoc->max_nodes_per_job         = ret_assoc->max_nodes_per_job;
-	assoc->max_wall_duration_per_job = ret_assoc->max_wall_duration_per_job;
+	assoc->max_nodes_pj         = ret_assoc->max_nodes_pj;
+	assoc->max_wall_pj = ret_assoc->max_wall_pj;
 	assoc->parent_acct_ptr           = ret_assoc->parent_acct_ptr;
 	if(assoc->parent_acct) {
 		xfree(assoc->parent_acct);
@@ -755,19 +755,18 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 				rec->max_jobs = object->max_jobs;
 			}
 
-			if(object->max_nodes_per_job != NO_VAL) {
-				rec->max_nodes_per_job =
-					object->max_nodes_per_job;
+			if(object->max_nodes_pj != NO_VAL) {
+				rec->max_nodes_pj =
+					object->max_nodes_pj;
 			}
 
-			if(object->max_wall_duration_per_job != NO_VAL) {
-				rec->max_wall_duration_per_job =
-					object->max_wall_duration_per_job;
+			if(object->max_wall_pj != NO_VAL) {
+				rec->max_wall_pj =
+					object->max_wall_pj;
 			}
 
-			if(object->max_cpu_secs_per_job != NO_VAL) {
-				rec->max_cpu_secs_per_job = 
-					object->max_cpu_secs_per_job;
+			if(object->max_cpu_mins_pj != NO_VAL) {
+				rec->max_cpu_mins_pj = object->max_cpu_mins_pj;
 			}
 
 			if(object->parent_acct) {
