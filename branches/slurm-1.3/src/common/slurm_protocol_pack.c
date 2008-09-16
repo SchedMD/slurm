@@ -4759,8 +4759,6 @@ static void _pack_accounting_update_msg(accounting_update_msg_t *msg,
 	ListIterator itr = NULL;
 	acct_update_object_t *rec = NULL;
 
-	pack16(msg->rpc_version, buffer);
-	
 	if(msg->update_list)
 		count = list_count(msg->update_list);
 
@@ -4786,17 +4784,13 @@ static int _unpack_accounting_update_msg(accounting_update_msg_t **msg,
 
 	*msg = msg_ptr;
 
-	/* This will break a controller if the slurmdbd hasn't been
-	   upgraded to version 3 of the SLURMDBD_VERSION and the
-	   controller has.
-	*/
-	safe_unpack16(&msg_ptr->rpc_version, buffer);
-	/* This went into effect in slurm 1.3.9 and is noted in NEWS */
-
 	safe_unpack32(&count, buffer);
 	msg_ptr->update_list = list_create(destroy_acct_update_object);
 	for(i=0; i<count; i++) {
-		if((unpack_acct_update_object(&rec, msg_ptr->rpc_version,
+		/* this is only ran in the slurmctld so we can just
+		   use the version here.
+		*/
+		if((unpack_acct_update_object(&rec, SLURMDBD_VERSION,
 					      buffer))
 		   == SLURM_ERROR)
 			goto unpack_error;
