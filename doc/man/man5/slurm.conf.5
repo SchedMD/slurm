@@ -1089,7 +1089,7 @@ value of \fBSwitchType\fR, records of all jobs in any state may be lost.
 \fBTaskEpilog\fR
 Fully qualified pathname of a program to be execute as the slurm job's
 owner after termination of each task.
-See \fBTaskPlugin\fR for execution order details.
+See \fBTaskProlog\fR for execution order details.
 
 .TP
 \fBTaskPlugin\fR
@@ -1107,27 +1107,6 @@ different operating systems.
 If that is the case, you may want to use Portable Linux 
 Process Affinity (PLPA, see http://www.open-mpi.org/software/plpa), 
 which is supported by SLURM.
-The order of task prolog/epilog execution is as follows:
-.RS
-.TP
-\fB1. pre_launch()\fR: function in TaskPlugin
-.TP
-\fB2. TaskProlog\fR: system\-wide per task program defined in slurm.conf
-.TP
-\fB3. user prolog\fR: job step specific task program defined using 
-\fBsrun\fR's \fB\-\-task\-prolog\fR option or \fBSLURM_TASK_PROLOG\fR 
-environment variable
-.TP
-\fB4.\fR Execute the job step's task
-.TP
-\fB5. user epilog\fR: job step specific task program defined using
-\fBsrun\fR's \fB\-\-task\-epilog\fR option or \fBSLURM_TASK_EPILOG\fR 
-environment variable
-.TP
-\fB6. TaskEpilog\fR: system\-wide per task program defined in slurm.conf
-.TP
-\fB7. post_term()\fR: function in TaskPlugin
-.RE 
 
 .TP
 \fBTaskPluginParam\fR
@@ -1152,7 +1131,27 @@ available to identify the process ID of the task being started.
 Standard output from this program of the form 
 "export NAME=value" will be used to set environment variables 
 for the task being spawned. 
-See \fBTaskPlugin\fR for execution order details.
+The order of task prolog/epilog execution is as follows:
+.RS
+.TP
+\fB1. pre_launch()\fR: function in TaskPlugin
+.TP
+\fB2. TaskProlog\fR: system\-wide per task program defined in slurm.conf
+.TP
+\fB3. user prolog\fR: job step specific task program defined using
+\fBsrun\fR's \fB\-\-task\-prolog\fR option or \fBSLURM_TASK_PROLOG\fR
+environment variable
+.TP
+\fB4.\fR Execute the job step's task
+.TP
+\fB5. user epilog\fR: job step specific task program defined using
+\fBsrun\fR's \fB\-\-task\-epilog\fR option or \fBSLURM_TASK_EPILOG\fR
+environment variable
+.TP
+\fB6. TaskEpilog\fR: system\-wide per task program defined in slurm.conf
+.TP
+\fB7. post_term()\fR: function in TaskPlugin
+.RE
 
 .TP
 \fBTmpFS\fR
