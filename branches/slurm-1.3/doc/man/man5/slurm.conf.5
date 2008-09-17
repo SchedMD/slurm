@@ -603,17 +603,37 @@ on SPANK plugins, see the \fBspank\fR(8) manual.
 \fBPrivateData\fR
 This controls what type of information is hidden from regular users.
 By default, all information is visible to all users.
-User \fBSlurmUser\fR and root can always view all information.
+User \fBSlurmUser\fR and \fBroot\fR can always view all information.
 Multiple values may be specified with a comma separator.
 Acceptable values include:
 .RS
 .TP
-\fBjobs\fR prevents users from viewing jobs or job steps belonging
-to other users.
+\fBaccounts\fR 
+(NON-SLURMDBD ACCOUNTING ONLY) prevents users from viewing any account 
+definitions unless they are coordinators of them.
 .TP
-\fBnodes\fR prevents users from viewing node state information.
+\fBjobs\fR
+prevents users from viewing jobs or job steps belonging
+to other users. (NON-SLURMDBD ACCOUNTING ONLY) prevents users from viewing 
+job records belonging to other users unless they are coordinators of 
+the association running the job when using sacct.
 .TP
-\fBpartitions\fR prevents users from viewing partition state information.
+\fBnodes\fR
+prevents users from viewing node state information.
+.TP
+\fBpartitions\fR 
+prevents users from viewing partition state information.
+.TP
+\fBusers\fR 
+(NON-SLURMDBD ACCOUNTING ONLY) prevents users from viewing 
+information of any user other than themselves, this also makes it so users can 
+only see associations they deal with.  
+Coordinators can see associations of all users they are coordinator of, 
+but can only see themselves when listing users.
+.TP
+\fBusage\fR 
+(NON-SLURMDBD ACCOUNTING ONLY) prevents users from viewing 
+usage of any other user.  This applys to sreport.
 .RE
 
 
