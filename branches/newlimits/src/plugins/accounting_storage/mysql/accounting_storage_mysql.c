@@ -1240,9 +1240,17 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "rgt", "int not null" },
 		{ "fairshare", "int default 1 not null" },
 		{ "max_jobs", "int default NULL" },
+		{ "max_submit_jobs", "int default NULL" },
+		{ "max_cpus_per_job", "int default NULL" },
 		{ "max_nodes_per_job", "int default NULL" },
 		{ "max_wall_duration_per_job", "int default NULL" },
-		{ "max_cpu_mins_per_job", "int default NULL" },
+		{ "max_cpu_mins_per_job", "bigint default NULL" },
+		{ "grp_jobs", "int default NULL" },
+		{ "grp_submit_jobs", "int default NULL" },
+		{ "grp_cpus", "int default NULL" },
+		{ "grp_nodes", "int default NULL" },
+		{ "grp_wall", "int default NULL" },
+		{ "grp_cpu_hours", "bigint default NULL" },
 		{ NULL, NULL}		
 	};
 
@@ -2245,7 +2253,7 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 				   object->default_max_cpu_mins_pj);
 			xstrfmtcat(extra, ", max_cpu_mins_per_job=%u",
 				   object->default_max_cpu_mins_pj);
-		} else if((int)object->default_max_cpu_mins_per_job 
+		} else if((int)object->default_max_cpu_mins_pj 
 			  == INFINITE) {
 			xstrcat(cols, ", max_cpu_mins_per_job");
 			xstrfmtcat(vals, ", NULL");

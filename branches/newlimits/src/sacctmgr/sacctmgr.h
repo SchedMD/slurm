@@ -145,6 +145,7 @@ extern int notice_thread_init();
 extern int notice_thread_fini();
 extern int commit_check(char *warning);
 extern int get_uint(char *in_value, uint32_t *out_value, char *type);
+extern int get_uint64(char *in_value, uint64_t *out_value, char *type);
 extern int addto_qos_char_list(List char_list, List qos_list, char *names, 
 			       int option);
 extern void sacctmgr_print_coord_list(

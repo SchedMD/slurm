@@ -414,12 +414,12 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 			field->name = xstrdup("LFT");
 			field->len = 6;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("MaxCPUSecs", object, 4)
+		} else if(!strncasecmp("MaxCPUMins", object, 4)
 			  || !strncasecmp("MaxProcSecsPerJob", object, 4)) {
 			field->type = PRINT_MAXC;
-			field->name = xstrdup("MaxCPUSecs");
+			field->name = xstrdup("MaxCPUMins");
 			field->len = 11;
-			field->print_routine = print_fields_uint;
+			field->print_routine = print_fields_uint64;
 		} else if(!strncasecmp("MaxJobs", object, 4)) {
 			field->type = PRINT_MAXJ;
 			field->name = xstrdup("MaxJobs");
@@ -550,7 +550,7 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 			case PRINT_MAXC:
 				field->print_routine(
 					field,
-					assoc->max_cpu_secs_per_job);
+					assoc->max_cpu_mins_pj);
 				break;
 			case PRINT_MAXJ:
 				field->print_routine(field, 
@@ -558,12 +558,12 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 				break;
 			case PRINT_MAXN:
 				field->print_routine(field,
-						     assoc->max_nodes_per_job);
+						     assoc->max_nodes_pj);
 				break;
 			case PRINT_MAXW:
 				field->print_routine(
 					field,
-					assoc->max_wall_duration_per_job);
+					assoc->max_wall_pj);
 				break;
 			case PRINT_PID:
 				field->print_routine(field,

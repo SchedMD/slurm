@@ -5577,9 +5577,9 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 	uint32_t time_limit;
 
 	//log_assoc_rec(assoc_ptr);
-	if ((assoc_ptr->max_wall_duration_per_job != NO_VAL) &&
-	    (assoc_ptr->max_wall_duration_per_job != INFINITE)) {
-		time_limit = assoc_ptr->max_wall_duration_per_job;
+	if ((assoc_ptr->max_wall_pj != NO_VAL) &&
+	    (assoc_ptr->max_wall_pj != INFINITE)) {
+		time_limit = assoc_ptr->max_wall_pj;
 		if (job_desc->time_limit == NO_VAL) {
 			if (part_ptr->max_time == INFINITE)
 				job_desc->time_limit = time_limit;
@@ -5595,25 +5595,25 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 		}
 	}
 
-	if ((assoc_ptr->max_nodes_per_job != NO_VAL) &&
-	    (assoc_ptr->max_nodes_per_job != INFINITE)) {
+	if ((assoc_ptr->max_nodes_pj != NO_VAL) &&
+	    (assoc_ptr->max_nodes_pj != INFINITE)) {
 		if (job_desc->max_nodes == 0)
-			job_desc->max_nodes = assoc_ptr->max_nodes_per_job;
-		else if (job_desc->max_nodes > assoc_ptr->max_nodes_per_job) {
+			job_desc->max_nodes = assoc_ptr->max_nodes_pj;
+		else if (job_desc->max_nodes > assoc_ptr->max_nodes_pj) {
 			if (job_desc->min_nodes > 
-			    assoc_ptr->max_nodes_per_job) {
+			    assoc_ptr->max_nodes_pj) {
 				info("job %u for user %u: "
 				     "node limit %u exceeds account max %u",
 				     job_desc->job_id, job_desc->user_id, 
 				     job_desc->min_nodes, 
-				     assoc_ptr->max_nodes_per_job);
+				     assoc_ptr->max_nodes_pj);
 				return false;
 			}
-			job_desc->max_nodes = assoc_ptr->max_nodes_per_job;
+			job_desc->max_nodes = assoc_ptr->max_nodes_pj;
 		}
 	}
 
-	/* NOTE: We can't enforce assoc_ptr->max_cpu_secs_per_job at this
+	/* NOTE: We can't enforce assoc_ptr->max_cpu_mins_pj at this
 	 * time because we don't have access to a CPU count for the job
 	 * due to how all of the job's specifications interact */
 

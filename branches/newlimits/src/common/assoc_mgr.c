@@ -303,7 +303,7 @@ static int _refresh_local_association_list(void *db_conn, int enforce)
 		if(!assoc) 
 			continue;
 		assoc->used_jobs = curr_assoc->used_jobs;
-		assoc->used_share = curr_assoc->used_share;
+		assoc->used_shares = curr_assoc->used_shares;
 		list_iterator_reset(local_itr);			
 	}
 	
@@ -1013,7 +1013,7 @@ extern void assoc_mgr_clear_used_info(void)
 	itr = list_iterator_create(local_association_list);
 	while((found_assoc = list_next(itr))) {
 		found_assoc->used_jobs  = 0;
-		found_assoc->used_share = 0;
+		found_assoc->used_shares = 0;
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&local_association_lock);

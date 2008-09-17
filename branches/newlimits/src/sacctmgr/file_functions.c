@@ -46,10 +46,10 @@ typedef struct {
 	char *def_acct;
 	char *desc;
 	uint32_t fairshare;
-	uint32_t max_cpu_secs_per_job; 
+	uint32_t max_cpu_mins_pj; 
 	uint32_t max_jobs;
-	uint32_t max_nodes_per_job; 
-	uint32_t max_wall_duration_per_job;
+	uint32_t max_nodes_pj; 
+	uint32_t max_wall_pj;
 	char *name;
 	char *org;
 	char *part;
@@ -208,10 +208,10 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 	char quote_c = '\0';
 	
 	file_opts->fairshare = 1;
-	file_opts->max_cpu_secs_per_job = INFINITE;
+	file_opts->max_cpu_mins_pj = INFINITE;
 	file_opts->max_jobs = INFINITE;
-	file_opts->max_nodes_per_job = INFINITE;
-	file_opts->max_wall_duration_per_job = INFINITE;
+	file_opts->max_nodes_pj = INFINITE;
+	file_opts->max_wall_pj = INFINITE;
 	file_opts->admin = ACCT_ADMIN_NOTSET;
 
 	while(options[i]) {
@@ -276,13 +276,13 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 				_destroy_sacctmgr_file_opts(file_opts);
 				break;
 			}
-		} else if (!strncasecmp (sub, "MaxCPUSec", 4)
+		} else if (!strncasecmp (sub, "MaxCPUMin", 4)
 			   || !strncasecmp (sub, "MaxProcSec", 4)) {
-			if (get_uint(option, &file_opts->max_cpu_secs_per_job,
-			    "MaxCPUSec") != SLURM_SUCCESS) {
+			if (get_uint(option, &file_opts->max_cpu_mins_pj,
+			    "MaxCPUMin") != SLURM_SUCCESS) {
 				exit_code=1;
 				fprintf(stderr, 
-					" Bad MaxCPUSec value: %s\n", option);
+					" Bad MaxCPUMin value: %s\n", option);
 				_destroy_sacctmgr_file_opts(file_opts);
 				break;
 			}
@@ -296,7 +296,7 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 				break;
 			}
 		} else if (!strncasecmp (sub, "MaxNodes", 4)) {
-			if (get_uint(option, &file_opts->max_nodes_per_job,
+			if (get_uint(option, &file_opts->max_nodes_pj,
 			    "MaxNodes") != SLURM_SUCCESS) {
 				exit_code=1;
 				fprintf(stderr, 
@@ -307,10 +307,10 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 		} else if (!strncasecmp (sub, "MaxWall", 4)) {
 			mins = time_str2mins(option);
 			if (mins >= 0) {
-				file_opts->max_wall_duration_per_job 
+				file_opts->max_wall_pj 
 					= (uint32_t) mins;
 			} else if (strcmp(option, "-1")) {
-				file_opts->max_wall_duration_per_job = INFINITE;
+				file_opts->max_wall_pj = INFINITE;
 			} else {
 				exit_code=1;
 				fprintf(stderr, 
@@ -422,9 +422,9 @@ static List _set_up_print_fields(List format_list)
 			field->name = xstrdup("ID");
 			field->len = 6;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("MaxCPUSecs", object, 4)) {
+		} else if(!strncasecmp("MaxCPUMins", object, 4)) {
 			field->type = PRINT_MAXC;
-			field->name = xstrdup("MaxCPUSecs");
+			field->name = xstrdup("MaxCPUMins");
 			field->len = 11;
 			field->print_routine = print_fields_uint;
 		} else if(!strncasecmp("MaxJobs", object, 4)) {
@@ -530,7 +530,7 @@ static int _print_out_assoc(List assoc_list, bool user)
 			case PRINT_MAXC:
 				field->print_routine(
 					field,
-					assoc->max_cpu_secs_per_job);
+					assoc->max_cpu_mins_pj);
 				break;
 			case PRINT_MAXJ:
 				field->print_routine(field, 
@@ -538,12 +538,12 @@ static int _print_out_assoc(List assoc_list, bool user)
 				break;
 			case PRINT_MAXN:
 				field->print_routine(field,
-						     assoc->max_nodes_per_job);
+						     assoc->max_nodes_pj);
 				break;
 			case PRINT_MAXW:
 				field->print_routine(
 					field,
-					assoc->max_wall_duration_per_job);
+					assoc->max_wall_pj);
 				break;
 			case PRINT_PARENT:
 				field->print_routine(field,
@@ -584,18 +584,18 @@ static int _mod_cluster(sacctmgr_file_opts_t *file_opts,
 	memset(&mod_assoc, 0, sizeof(acct_association_rec_t));
 
 	mod_assoc.fairshare = NO_VAL;
-	mod_assoc.max_cpu_secs_per_job = NO_VAL;
+	mod_assoc.max_cpu_mins_pj = NO_VAL;
 	mod_assoc.max_jobs = NO_VAL;
-	mod_assoc.max_nodes_per_job = NO_VAL;
-	mod_assoc.max_wall_duration_per_job = NO_VAL;
+	mod_assoc.max_nodes_pj = NO_VAL;
+	mod_assoc.max_wall_pj = NO_VAL;
 
 	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
 
 	assoc_cond.fairshare = NO_VAL;
-	assoc_cond.max_cpu_secs_per_job = NO_VAL;
+	assoc_cond.max_cpu_mins_pj = NO_VAL;
 	assoc_cond.max_jobs = NO_VAL;
-	assoc_cond.max_nodes_per_job = NO_VAL;
-	assoc_cond.max_wall_duration_per_job = NO_VAL;
+	assoc_cond.max_nodes_pj = NO_VAL;
+	assoc_cond.max_wall_pj = NO_VAL;
 
 	if(cluster->default_fairshare != file_opts->fairshare) {
 		mod_assoc.fairshare = file_opts->fairshare;
@@ -607,17 +607,17 @@ static int _mod_cluster(sacctmgr_file_opts_t *file_opts,
 			   cluster->default_fairshare,
 			   file_opts->fairshare); 
 	}
-	if(cluster->default_max_cpu_secs_per_job != 
-	   file_opts->max_cpu_secs_per_job) {
-		mod_assoc.max_cpu_secs_per_job = 
-			file_opts->max_cpu_secs_per_job;
+	if(cluster->default_max_cpu_mins_pj != 
+	   file_opts->max_cpu_mins_pj) {
+		mod_assoc.max_cpu_mins_pj = 
+			file_opts->max_cpu_mins_pj;
 		changed = 1;
 		xstrfmtcat(my_info, 
 			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
-			   " Changed MaxCPUSecsPerJob", "Cluster",
+			   " Changed MaxCPUMinsPerJob", "Cluster",
 			   cluster->name,
-			   cluster->default_max_cpu_secs_per_job,
-			   file_opts->max_cpu_secs_per_job);
+			   cluster->default_max_cpu_mins_pj,
+			   file_opts->max_cpu_mins_pj);
 	}
 	if(cluster->default_max_jobs != file_opts->max_jobs) {
 		mod_assoc.max_jobs = file_opts->max_jobs;
@@ -629,27 +629,27 @@ static int _mod_cluster(sacctmgr_file_opts_t *file_opts,
 			   cluster->default_max_jobs,
 			   file_opts->max_jobs);
 	}
-	if(cluster->default_max_nodes_per_job != file_opts->max_nodes_per_job) {
-		mod_assoc.max_nodes_per_job = file_opts->max_nodes_per_job;
+	if(cluster->default_max_nodes_pj != file_opts->max_nodes_pj) {
+		mod_assoc.max_nodes_pj = file_opts->max_nodes_pj;
 		changed = 1;
 		xstrfmtcat(my_info, 
 			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
 			   " Changed MaxNodesPerJob", "Cluster",
 			   cluster->name,
-			   cluster->default_max_nodes_per_job, 
-			   file_opts->max_nodes_per_job);
+			   cluster->default_max_nodes_pj, 
+			   file_opts->max_nodes_pj);
 	}
-	if(cluster->default_max_wall_duration_per_job !=
-	   file_opts->max_wall_duration_per_job) {
-		mod_assoc.max_wall_duration_per_job =
-			file_opts->max_wall_duration_per_job;
+	if(cluster->default_max_wall_pj !=
+	   file_opts->max_wall_pj) {
+		mod_assoc.max_wall_pj =
+			file_opts->max_wall_pj;
 		changed = 1;
 		xstrfmtcat(my_info, 
 			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
 			   " Changed MaxWallDurationPerJob", "Cluster",
 			   cluster->name,
-			   cluster->default_max_wall_duration_per_job,
-			   file_opts->max_wall_duration_per_job);
+			   cluster->default_max_wall_pj,
+			   file_opts->max_wall_pj);
 	}
 
 	if(changed) {
@@ -1074,18 +1074,18 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 	memset(&mod_assoc, 0, sizeof(acct_association_rec_t));
 
 	mod_assoc.fairshare = NO_VAL;
-	mod_assoc.max_cpu_secs_per_job = NO_VAL;
+	mod_assoc.max_cpu_mins_pj = NO_VAL;
 	mod_assoc.max_jobs = NO_VAL;
-	mod_assoc.max_nodes_per_job = NO_VAL;
-	mod_assoc.max_wall_duration_per_job = NO_VAL;
+	mod_assoc.max_nodes_pj = NO_VAL;
+	mod_assoc.max_wall_pj = NO_VAL;
 
 	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
 
 	assoc_cond.fairshare = NO_VAL;
-	assoc_cond.max_cpu_secs_per_job = NO_VAL;
+	assoc_cond.max_cpu_mins_pj = NO_VAL;
 	assoc_cond.max_jobs = NO_VAL;
-	assoc_cond.max_nodes_per_job = NO_VAL;
-	assoc_cond.max_wall_duration_per_job = NO_VAL;
+	assoc_cond.max_nodes_pj = NO_VAL;
+	assoc_cond.max_wall_pj = NO_VAL;
 
 	if(assoc->fairshare != file_opts->fairshare) {
 		mod_assoc.fairshare = file_opts->fairshare;
@@ -1097,16 +1097,16 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 			   assoc->fairshare,
 			   file_opts->fairshare);
 	}
-	if(assoc->max_cpu_secs_per_job != file_opts->max_cpu_secs_per_job) {
-		mod_assoc.max_cpu_secs_per_job =
-			file_opts->max_cpu_secs_per_job;
+	if(assoc->max_cpu_mins_pj != file_opts->max_cpu_mins_pj) {
+		mod_assoc.max_cpu_mins_pj =
+			file_opts->max_cpu_mins_pj;
 		changed = 1;
 		xstrfmtcat(my_info, 
 			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
-			   " Changed MaxCPUSecsPerJob",
+			   " Changed MaxCPUMinsPerJob",
 			   type, name,
-			   assoc->max_cpu_secs_per_job,
-			   file_opts->max_cpu_secs_per_job);
+			   assoc->max_cpu_mins_pj,
+			   file_opts->max_cpu_mins_pj);
 	}
 	if(assoc->max_jobs != file_opts->max_jobs) {
 		mod_assoc.max_jobs = file_opts->max_jobs;
@@ -1118,27 +1118,27 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 			   assoc->max_jobs,
 			   file_opts->max_jobs);
 	}
-	if(assoc->max_nodes_per_job != file_opts->max_nodes_per_job) {
-		mod_assoc.max_nodes_per_job = file_opts->max_nodes_per_job;
+	if(assoc->max_nodes_pj != file_opts->max_nodes_pj) {
+		mod_assoc.max_nodes_pj = file_opts->max_nodes_pj;
 		changed = 1;
 		xstrfmtcat(my_info, 
 			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
 			   " Changed MaxNodesPerJob",
 			   type, name,
-			   assoc->max_nodes_per_job, 
-			   file_opts->max_nodes_per_job);
+			   assoc->max_nodes_pj, 
+			   file_opts->max_nodes_pj);
 	}
-	if(assoc->max_wall_duration_per_job !=
-	   file_opts->max_wall_duration_per_job) {
-		mod_assoc.max_wall_duration_per_job =
-			file_opts->max_wall_duration_per_job;
+	if(assoc->max_wall_pj !=
+	   file_opts->max_wall_pj) {
+		mod_assoc.max_wall_pj =
+			file_opts->max_wall_pj;
 		changed = 1;
 		xstrfmtcat(my_info, 
 			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
 			   " Changed MaxWallDurationPerJob",
 			   type, name,
-			   assoc->max_wall_duration_per_job,
-			   file_opts->max_wall_duration_per_job);
+			   assoc->max_wall_pj,
+			   file_opts->max_wall_pj);
 	}
 
 	if(changed) {
@@ -1375,23 +1375,23 @@ static int _print_file_sacctmgr_assoc_childern(FILE *fd,
 			xstrfmtcat(line, ":Fairshare=%u", 
 				   sacctmgr_assoc->assoc->fairshare);
 		
-		if(sacctmgr_assoc->assoc->max_cpu_secs_per_job != INFINITE)
-			xstrfmtcat(line, ":MaxCPUSecs=%u",
-				   sacctmgr_assoc->assoc->max_cpu_secs_per_job);
+		if(sacctmgr_assoc->assoc->max_cpu_mins_pj != INFINITE)
+			xstrfmtcat(line, ":MaxCPUMins=%u",
+				   sacctmgr_assoc->assoc->max_cpu_mins_pj);
 		
 		if(sacctmgr_assoc->assoc->max_jobs != INFINITE) 
 			xstrfmtcat(line, ":MaxJobs=%u",
 				   sacctmgr_assoc->assoc->max_jobs);
 		
-		if(sacctmgr_assoc->assoc->max_nodes_per_job != INFINITE)
+		if(sacctmgr_assoc->assoc->max_nodes_pj != INFINITE)
 			xstrfmtcat(line, ":MaxNodes=%u",
-				   sacctmgr_assoc->assoc->max_nodes_per_job);
+				   sacctmgr_assoc->assoc->max_nodes_pj);
 		
-		if(sacctmgr_assoc->assoc->max_wall_duration_per_job 
+		if(sacctmgr_assoc->assoc->max_wall_pj 
 		   != INFINITE)
  			xstrfmtcat(line, ":MaxWallDurationPerJob=%u",
 				   sacctmgr_assoc->assoc->
-				   max_wall_duration_per_job);
+				   max_wall_pj);
 
 
 		if(fprintf(fd, "%s\n", line) < 0) {
@@ -1696,13 +1696,13 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				cluster->name = xstrdup(cluster_name);
 				cluster->default_fairshare =
 					file_opts->fairshare;		
-				cluster->default_max_cpu_secs_per_job = 
-					file_opts->max_cpu_secs_per_job;
+				cluster->default_max_cpu_mins_pj = 
+					file_opts->max_cpu_mins_pj;
 				cluster->default_max_jobs = file_opts->max_jobs;
-				cluster->default_max_nodes_per_job = 
-					file_opts->max_nodes_per_job;
-				cluster->default_max_wall_duration_per_job = 
-					file_opts->max_wall_duration_per_job;
+				cluster->default_max_nodes_pj = 
+					file_opts->max_nodes_pj;
+				cluster->default_max_wall_pj = 
+					file_opts->max_wall_pj;
 				notice_thread_init();
 				rc = acct_storage_g_add_clusters(
 					db_conn, my_uid, cluster_list);
@@ -1811,12 +1811,12 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				assoc->parent_acct = xstrdup(parent);
 				assoc->fairshare = file_opts->fairshare;
 				assoc->max_jobs = file_opts->max_jobs;
-				assoc->max_nodes_per_job =
-					file_opts->max_nodes_per_job;
-				assoc->max_wall_duration_per_job =
-					file_opts->max_wall_duration_per_job;
-				assoc->max_cpu_secs_per_job = 
-					file_opts->max_cpu_secs_per_job;
+				assoc->max_nodes_pj =
+					file_opts->max_nodes_pj;
+				assoc->max_wall_pj =
+					file_opts->max_wall_pj;
+				assoc->max_cpu_mins_pj = 
+					file_opts->max_cpu_mins_pj;
 				list_append(acct_assoc_list, assoc);
 				/* don't add anything to the
 				   curr_assoc_list */
@@ -1847,12 +1847,12 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				assoc->parent_acct = xstrdup(parent);
 				assoc->fairshare = file_opts->fairshare;
 				assoc->max_jobs = file_opts->max_jobs;
-				assoc->max_nodes_per_job =
-					file_opts->max_nodes_per_job;
-				assoc->max_wall_duration_per_job =
-					file_opts->max_wall_duration_per_job;
-				assoc->max_cpu_secs_per_job = 
-					file_opts->max_cpu_secs_per_job;
+				assoc->max_nodes_pj =
+					file_opts->max_nodes_pj;
+				assoc->max_wall_pj =
+					file_opts->max_wall_pj;
+				assoc->max_cpu_mins_pj = 
+					file_opts->max_cpu_mins_pj;
 				list_append(acct_assoc_list, assoc);
 				/* don't add anything to the
 				   curr_assoc_list */
@@ -1916,12 +1916,12 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				assoc->cluster = xstrdup(cluster_name);
 				assoc->fairshare = file_opts->fairshare;
 				assoc->max_jobs = file_opts->max_jobs;
-				assoc->max_nodes_per_job =
-					file_opts->max_nodes_per_job;
-				assoc->max_wall_duration_per_job =
-					file_opts->max_wall_duration_per_job;
-				assoc->max_cpu_secs_per_job = 
-					file_opts->max_cpu_secs_per_job;
+				assoc->max_nodes_pj =
+					file_opts->max_nodes_pj;
+				assoc->max_wall_pj =
+					file_opts->max_wall_pj;
+				assoc->max_cpu_mins_pj = 
+					file_opts->max_cpu_mins_pj;
 				assoc->partition = xstrdup(file_opts->part);
 				assoc->user = xstrdup(file_opts->name);
 				
@@ -1966,12 +1966,12 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				assoc->cluster = xstrdup(cluster_name);
 				assoc->fairshare = file_opts->fairshare;
 				assoc->max_jobs = file_opts->max_jobs;
-				assoc->max_nodes_per_job =
-					file_opts->max_nodes_per_job;
-				assoc->max_wall_duration_per_job =
-					file_opts->max_wall_duration_per_job;
-				assoc->max_cpu_secs_per_job = 
-					file_opts->max_cpu_secs_per_job;
+				assoc->max_nodes_pj =
+					file_opts->max_nodes_pj;
+				assoc->max_wall_pj =
+					file_opts->max_wall_pj;
+				assoc->max_cpu_mins_pj = 
+					file_opts->max_cpu_mins_pj;
 				assoc->partition = xstrdup(file_opts->part);
 				assoc->user = xstrdup(file_opts->name);
 				

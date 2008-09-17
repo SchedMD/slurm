@@ -556,6 +556,29 @@ extern int get_uint(char *in_value, uint32_t *out_value, char *type)
 	return SLURM_SUCCESS;
 }
 
+extern int get_uint64(char *in_value, uint64_t *out_value, char *type)
+{
+	char *ptr = NULL, *meat = NULL;
+	long long num;
+	
+	if(!(meat = strip_quotes(in_value, NULL)))
+		return SLURM_ERROR;
+
+	num = strtoll(meat, &ptr, 10);
+	if ((num == 0) && ptr && ptr[0]) {
+		error("Invalid value for %s (%s)", type, meat);
+		xfree(meat);
+		return SLURM_ERROR;
+	}
+	xfree(meat);
+	
+	if (num < 0)
+		*out_value = INFINITE;		/* flag to clear */
+	else
+		*out_value = (uint64_t) num;
+	return SLURM_SUCCESS;
+}
+
 extern int addto_qos_char_list(List char_list, List qos_list, char *names, 
 			       int option)
 {

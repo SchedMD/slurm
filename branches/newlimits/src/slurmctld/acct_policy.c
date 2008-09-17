@@ -160,9 +160,9 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 
 	/* if the association limits have changed since job
 	 * submission and job can not run, then kill it */
-	if ((assoc_ptr->max_wall_duration_per_job != NO_VAL) &&
-	    (assoc_ptr->max_wall_duration_per_job != INFINITE)) {
-		time_limit = assoc_ptr->max_wall_duration_per_job;
+	if ((assoc_ptr->max_wall_pj != NO_VAL) &&
+	    (assoc_ptr->max_wall_pj != INFINITE)) {
+		time_limit = assoc_ptr->max_wall_pj;
 		if ((job_ptr->time_limit != NO_VAL) &&
 		    (job_ptr->time_limit > time_limit)) {
 			info("job %u being cancelled, time limit exceeds "
@@ -173,20 +173,20 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 		}
 	}
 
-	if ((assoc_ptr->max_nodes_per_job != NO_VAL) &&
-	    (assoc_ptr->max_nodes_per_job != INFINITE)) {
+	if ((assoc_ptr->max_nodes_pj != NO_VAL) &&
+	    (assoc_ptr->max_nodes_pj != INFINITE)) {
 		if (job_ptr->details->min_nodes > 
-		    assoc_ptr->max_nodes_per_job) {
+		    assoc_ptr->max_nodes_pj) {
 			info("job %u being cancelled,  min node limit exceeds "
 			     "account max (%u > %u)",
 			     job_ptr->job_id, job_ptr->details->min_nodes, 
-			     assoc_ptr->max_nodes_per_job);
+			     assoc_ptr->max_nodes_pj);
 			_cancel_job(job_ptr);
 			return false;
 		}
 	}
 
-	/* NOTE: We can't enforce assoc_ptr->max_cpu_secs_per_job at this
+	/* NOTE: We can't enforce assoc_ptr->max_cpu_mins_pj at this
 	 * time because we don't have access to a CPU count for the job
 	 * due to how all of the job's specifications interact */
 

@@ -58,10 +58,10 @@ static int _set_cond(int *start, int argc, char *argv[],
 		acct_cond->assoc_cond = 
 			xmalloc(sizeof(acct_association_cond_t));
 		acct_cond->assoc_cond->fairshare = NO_VAL;
-		acct_cond->assoc_cond->max_cpu_secs_per_job = NO_VAL;
+		acct_cond->assoc_cond->max_cpu_mins_pj = NO_VAL;
 		acct_cond->assoc_cond->max_jobs = NO_VAL;
-		acct_cond->assoc_cond->max_nodes_per_job = NO_VAL;
-		acct_cond->assoc_cond->max_wall_duration_per_job = NO_VAL;
+		acct_cond->assoc_cond->max_nodes_pj = NO_VAL;
+		acct_cond->assoc_cond->max_wall_pj = NO_VAL;
 	}
 
 	for (i=(*start); i<argc; i++) {
@@ -185,22 +185,22 @@ static int _set_rec(int *start, int argc, char *argv[],
 			if (get_uint(argv[i]+end, &assoc->fairshare, 
 				     "FairShare") == SLURM_SUCCESS)
 				a_set = 1;
-		} else if (!strncasecmp (argv[i], "MaxCPUSec", 4)) {
-			if (get_uint(argv[i]+end, &assoc->max_cpu_secs_per_job,
-				     "MaxCPUSec") == SLURM_SUCCESS)
+		} else if (!strncasecmp (argv[i], "MaxCPUMin", 4)) {
+			if (get_uint64(argv[i]+end, &assoc->max_cpu_mins_pj,
+				       "MaxCPUMin") == SLURM_SUCCESS)
 				a_set = 1;
 		} else if (!strncasecmp (argv[i], "MaxJobs", 4)) {
 			if (get_uint(argv[i]+end, &assoc->max_jobs,
 				     "MaxJobs") == SLURM_SUCCESS)
 				a_set = 1;
 		} else if (!strncasecmp (argv[i], "MaxNodes", 4)) {
-			if (get_uint(argv[i]+end, &assoc->max_nodes_per_job,
+			if (get_uint(argv[i]+end, &assoc->max_nodes_pj,
 				     "MaxNodes") == SLURM_SUCCESS)
 				a_set = 1;
 		} else if (!strncasecmp (argv[i], "MaxWall", 4)) {
 			mins = time_str2mins(argv[i]+end);
 			if (mins != NO_VAL) {
-				assoc->max_wall_duration_per_job 
+				assoc->max_wall_pj 
 					= (uint32_t) mins;
 				a_set = 1;
 			} else {
@@ -310,9 +310,9 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 	List local_account_list = NULL;
 	uint32_t fairshare = NO_VAL; 
 	uint32_t max_jobs = NO_VAL;
-	uint32_t max_nodes_per_job = NO_VAL;
-	uint32_t max_wall_duration_per_job = NO_VAL;
-	uint32_t max_cpu_secs_per_job = NO_VAL;
+	uint32_t max_nodes_pj = NO_VAL;
+	uint32_t max_wall_pj = NO_VAL;
+	uint64_t max_cpu_mins_pj = NO_VAL;
 	char *acct_str = NULL;
 	char *assoc_str = NULL;
 	int limit_set = 0;
@@ -329,22 +329,22 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 			if (get_uint(argv[i]+end, &fairshare, 
 			    "FairShare") == SLURM_SUCCESS)
 				limit_set = 1;
-		} else if (!strncasecmp (argv[i], "MaxCPUSecs", 4)) {
-			if (get_uint(argv[i]+end, &max_cpu_secs_per_job, 
-			    "MaxCPUSecs") == SLURM_SUCCESS)
+		} else if (!strncasecmp (argv[i], "MaxCPUMins", 4)) {
+			if (get_uint64(argv[i]+end, &max_cpu_mins_pj, 
+			    "MaxCPUMins") == SLURM_SUCCESS)
 				limit_set = 1;
 		} else if (!strncasecmp (argv[i], "MaxJobs", 4)) {
 			if (get_uint(argv[i]+end, &max_jobs, 
 			    "MaxJobs") == SLURM_SUCCESS)
 				limit_set = 1;
 		} else if (!strncasecmp (argv[i], "MaxNodes", 4)) {
-			if (get_uint(argv[i]+end, &max_nodes_per_job, 
+			if (get_uint(argv[i]+end, &max_nodes_pj, 
 			    "MaxNodes") == SLURM_SUCCESS)
 				limit_set = 1;
 		} else if (!strncasecmp (argv[i], "MaxWall", 4)) {
 			mins = time_str2mins(argv[i]+end);
 			if (mins != NO_VAL) {
-				max_wall_duration_per_job = (uint32_t) mins;
+				max_wall_pj = (uint32_t) mins;
 				limit_set = 1;
 			} else {
 				exit_code=1;
@@ -584,11 +584,11 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 			assoc->parent_acct = xstrdup(parent);
 			assoc->fairshare = fairshare;
 			assoc->max_jobs = max_jobs;
-			assoc->max_nodes_per_job = max_nodes_per_job;
-			assoc->max_wall_duration_per_job =
-				max_wall_duration_per_job;
-			assoc->max_cpu_secs_per_job = 
-				max_cpu_secs_per_job;
+			assoc->max_nodes_pj = max_nodes_pj;
+			assoc->max_wall_pj =
+				max_wall_pj;
+			assoc->max_cpu_mins_pj = 
+				max_cpu_mins_pj;
 			if(acct) 
 				list_append(acct->assoc_list, assoc);
 			else 
@@ -654,27 +654,27 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 		else if(fairshare != NO_VAL) 
 			printf("  Fairshare       = %u\n", fairshare);
 		
-		if(max_cpu_secs_per_job == INFINITE)
-			printf("  MaxCPUSecs      = NONE\n");
-		else if(max_cpu_secs_per_job != NO_VAL) 
-			printf("  MaxCPUSecs      = %u\n",
-			       max_cpu_secs_per_job);
+		if(max_cpu_mins_pj == INFINITE)
+			printf("  MaxCPUMins      = NONE\n");
+		else if(max_cpu_mins_pj != NO_VAL) 
+			printf("  MaxCPUMins      = %llu\n",
+			       max_cpu_mins_pj);
 		
 		if(max_jobs == INFINITE) 
 			printf("  MaxJobs         = NONE\n");
 		else if(max_jobs != NO_VAL) 
 			printf("  MaxJobs         = %u\n", max_jobs);
 		
-		if(max_nodes_per_job == INFINITE)
+		if(max_nodes_pj == INFINITE)
 			printf("  MaxNodes        = NONE\n");
-		else if(max_nodes_per_job != NO_VAL)
-			printf("  MaxNodes        = %u\n", max_nodes_per_job);
+		else if(max_nodes_pj != NO_VAL)
+			printf("  MaxNodes        = %u\n", max_nodes_pj);
 		
-		if(max_wall_duration_per_job == INFINITE) 
+		if(max_wall_pj == INFINITE) 
 			printf("  MaxWall         = NONE\n");		
-		else if(max_wall_duration_per_job != NO_VAL) {
+		else if(max_wall_pj != NO_VAL) {
 			char time_buf[32];
-			mins2time_str((time_t) max_wall_duration_per_job, 
+			mins2time_str((time_t) max_wall_pj, 
 				      time_buf, sizeof(time_buf));
 			printf("  MaxWall         = %s\n", time_buf);
 		}
@@ -832,11 +832,11 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 			field->name = xstrdup("ID");
 			field->len = 6;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("MaxCPUSecs", object, 4)) {
+		} else if(!strncasecmp("MaxCPUMins", object, 4)) {
 			field->type = PRINT_MAXC;
-			field->name = xstrdup("MaxCPUSecs");
+			field->name = xstrdup("MaxCPUMins");
 			field->len = 11;
-			field->print_routine = print_fields_uint;
+			field->print_routine = print_fields_uint64;
 		} else if(!strncasecmp("MaxJobs", object, 4)) {
 			field->type = PRINT_MAXJ;
 			field->name = xstrdup("MaxJobs");
@@ -965,7 +965,7 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 					case PRINT_MAXC:
 						field->print_routine(
 							field, assoc->
-							max_cpu_secs_per_job,
+							max_cpu_mins_pj,
 							(curr_inx == 
 							 field_count));
 						break;
@@ -978,7 +978,7 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 					case PRINT_MAXN:
 						field->print_routine(
 							field, assoc->
-							max_nodes_per_job,
+							max_nodes_pj,
 							(curr_inx == 
 							 field_count));
 						break;
@@ -986,7 +986,7 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 						field->print_routine(
 							field, 
 							assoc->
-							max_wall_duration_per_job,
+							max_wall_pj,
 							(curr_inx == 
 							 field_count));
 						break;
@@ -1217,10 +1217,10 @@ extern int sacctmgr_modify_account(int argc, char *argv[])
 	List ret_list = NULL;
 
 	assoc->fairshare = NO_VAL;
-	assoc->max_cpu_secs_per_job = NO_VAL;
+	assoc->max_cpu_mins_pj = NO_VAL;
 	assoc->max_jobs = NO_VAL;
-	assoc->max_nodes_per_job = NO_VAL;
-	assoc->max_wall_duration_per_job = NO_VAL;
+	assoc->max_nodes_pj = NO_VAL;
+	assoc->max_wall_pj = NO_VAL;
 
 	for (i=0; i<argc; i++) {
 		if (!strncasecmp (argv[i], "Where", 5)) {

@@ -1203,7 +1203,7 @@ extern void pack_acct_association_rec(void *in, uint16_t rpc_version, Buf buffer
 		packstr(object->partition, buffer);
 		pack32(object->rgt, buffer);
 		pack32(object->uid, buffer);
-		pack32(object->used_share, buffer);
+		pack32(object->used_shares, buffer);
 		packstr(object->user, buffer);	
 	} else if (rpc_version >= 3) {
 		if(!object) {
@@ -1301,7 +1301,7 @@ extern void pack_acct_association_rec(void *in, uint16_t rpc_version, Buf buffer
 		pack32(object->rgt, buffer);
 		pack32(object->uid, buffer);
 
-		pack32(object->used_share, buffer);
+		pack32(object->used_shares, buffer);
 
 		packstr(object->user, buffer);	
 	}
@@ -1368,7 +1368,7 @@ extern int unpack_acct_association_rec(void **object, uint16_t rpc_version,
 		safe_unpack32(&object_ptr->rgt, buffer);
 		safe_unpack32(&object_ptr->uid, buffer);
 
-		safe_unpack32(&object_ptr->used_share, buffer);
+		safe_unpack32(&object_ptr->used_shares, buffer);
 
 		safe_unpackstr_xmalloc(&object_ptr->user, &uint32_tmp, buffer);
 	} else if (rpc_version >= 3) {
@@ -1428,7 +1428,7 @@ extern int unpack_acct_association_rec(void **object, uint16_t rpc_version,
 		safe_unpack32(&object_ptr->rgt, buffer);
 		safe_unpack32(&object_ptr->uid, buffer);
 
-		safe_unpack32(&object_ptr->used_share, buffer);
+		safe_unpack32(&object_ptr->used_shares, buffer);
 
 		safe_unpackstr_xmalloc(&object_ptr->user, &uint32_tmp, buffer);
 	}
@@ -1913,17 +1913,32 @@ extern void pack_acct_association_cond(void *in, uint16_t rpc_version, Buf buffe
 		if(!object) {
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
+
+			pack64(0, buffer);
+			pack32(0, buffer);
+			pack32(0, buffer);
+			pack32(0, buffer);
+			pack32(0, buffer);
+			pack32(0, buffer);
+
 			pack32(0, buffer);
 			pack32(NO_VAL, buffer);
+
+			pack64(0, buffer);
 			pack32(0, buffer);
 			pack32(0, buffer);
 			pack32(0, buffer);
 			pack32(0, buffer);
+			pack32(0, buffer);
+
 			pack32(NO_VAL, buffer);
 			packnull(buffer);
+
 			pack32(0, buffer);
 			pack32(0, buffer);
+
 			pack32(NO_VAL, buffer);
+
 			pack16(0, buffer);
 			pack16(0, buffer);
 			pack16(0, buffer);
@@ -1957,6 +1972,13 @@ extern void pack_acct_association_cond(void *in, uint16_t rpc_version, Buf buffe
 		}
 		count = NO_VAL;
 
+		pack64(object->grp_cpu_hours, buffer);
+		pack32(object->grp_cpus, buffer);
+		pack32(object->grp_jobs, buffer);
+		pack32(object->grp_nodes, buffer);
+		pack32(object->grp_submit_jobs, buffer);
+		pack32(object->grp_wall, buffer);
+
 		pack32(object->fairshare, buffer);
 	
 		if(object->id_list)
@@ -1971,9 +1993,11 @@ extern void pack_acct_association_cond(void *in, uint16_t rpc_version, Buf buffe
 		}
 		count = NO_VAL;
 
-		pack32(object->max_cpu_mins_pj, buffer);
+		pack64(object->max_cpu_mins_pj, buffer);
+		pack32(object->max_cpus_pj, buffer);
 		pack32(object->max_jobs, buffer);
 		pack32(object->max_nodes_pj, buffer);
+		pack32(object->max_submit_jobs, buffer);
 		pack32(object->max_wall_pj, buffer);
 
 		if(object->partition_list)
@@ -2046,6 +2070,13 @@ extern int unpack_acct_association_cond(void **object,
 			}
 		}
 
+		object_ptr->grp_cpu_hours = NO_VAL;
+		object_ptr->grp_cpus = NO_VAL;
+		object_ptr->grp_jobs = NO_VAL;
+		object_ptr->grp_nodes = NO_VAL;
+		object_ptr->grp_submit_jobs = NO_VAL;
+		object_ptr->grp_wall = NO_VAL;
+
 		safe_unpack32(&object_ptr->fairshare, buffer);
 
 		safe_unpack32(&count, buffer);
@@ -2059,8 +2090,10 @@ extern int unpack_acct_association_cond(void **object,
 		}
 	
 		safe_unpack32((uint32_t *)&object_ptr->max_cpu_mins_pj, buffer);
+		object_ptr->max_cpus_pj = NO_VAL;
 		safe_unpack32(&object_ptr->max_jobs, buffer);
 		safe_unpack32(&object_ptr->max_nodes_pj, buffer);
+		object_ptr->max_submit_jobs = NO_VAL;
 		safe_unpack32(&object_ptr->max_wall_pj, buffer);
 
 		safe_unpack32(&count, buffer);
@@ -2116,6 +2149,13 @@ extern int unpack_acct_association_cond(void **object,
 			}
 		}
 
+		safe_unpack64(&object_ptr->grp_cpu_hours, buffer);
+		safe_unpack32(&object_ptr->grp_cpus, buffer);
+		safe_unpack32(&object_ptr->grp_jobs, buffer);
+		safe_unpack32(&object_ptr->grp_nodes, buffer);
+		safe_unpack32(&object_ptr->grp_submit_jobs, buffer);
+		safe_unpack32(&object_ptr->grp_wall, buffer);
+
 		safe_unpack32(&object_ptr->fairshare, buffer);
 
 		safe_unpack32(&count, buffer);
@@ -2129,8 +2169,10 @@ extern int unpack_acct_association_cond(void **object,
 		}
 	
 		safe_unpack64(&object_ptr->max_cpu_mins_pj, buffer);
+		safe_unpack32(&object_ptr->max_cpus_pj, buffer);
 		safe_unpack32(&object_ptr->max_jobs, buffer);
 		safe_unpack32(&object_ptr->max_nodes_pj, buffer);
+		safe_unpack32(&object_ptr->max_submit_jobs, buffer);
 		safe_unpack32(&object_ptr->max_wall_pj, buffer);
 
 		safe_unpack32(&count, buffer);
@@ -2843,7 +2885,7 @@ extern void log_assoc_rec(acct_association_rec_t *assoc_ptr)
 	debug2("  user                      : %s(%u)",
 	       assoc_ptr->user, assoc_ptr->uid);
 	debug2("  used_jobs                 : %u", assoc_ptr->used_jobs);
-	debug2("  used_share                : %u", assoc_ptr->used_share);
+	debug2("  used_shares                : %u", assoc_ptr->used_shares);
 }
 
 /*
