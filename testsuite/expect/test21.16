@@ -559,7 +559,7 @@ proc _add_user { account adminlevel cluster defaultaccount fs maxcpu maxjob maxn
 		set command "$command  maxnodes=$maxnodes"
 	}
 
-	if { [string length maxwall$] } {
+	if { [string length $maxwall] } {
 		set command "$command maxwall=$maxwall"
 	}
 
