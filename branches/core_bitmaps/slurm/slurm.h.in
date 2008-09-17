@@ -770,8 +770,8 @@ typedef struct {
 	char *ckpt_path;	/* path to store checkpoint image files */
 	uint16_t verbose_level; /* for extra logging decisions in step
 				   launch api */
-
-	uint16_t mem_per_task;	/* memory required per task (MB), 0=no limit */
+	uint32_t mem_per_task;	/* memory required per task (MB), 
+				 * use job limit if 0 */
 } slurm_step_ctx_params_t;
 
 typedef struct {

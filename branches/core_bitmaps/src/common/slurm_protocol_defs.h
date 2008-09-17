@@ -400,28 +400,28 @@ typedef struct set_debug_level_msg {
 } set_debug_level_msg_t;
 
 typedef struct job_step_specs {
-	uint32_t job_id;	/* job ID */
-	uint32_t user_id;	/* user the job runs as */
-	uint32_t node_count;	/* count of required nodes */
+	uint16_t ckpt_interval;	/* checkpoint creation interval (minutes) */
+	char *ckpt_path;	/* path to store checkpoint image files */
 	uint32_t cpu_count;	/* count of required processors */
+	uint16_t exclusive;	/* 1 if CPUs not shared with other steps */
+	char *host;		/* host to contact initiating srun */
+	uint16_t immediate;	/* 1 if allocate to run or fail immediately,
+				 * 0 if to be queued awaiting resources */
+	uint32_t job_id;	/* job ID */
+	uint32_t mem_per_task;	/* MB memory required per task, 0=no limit */
+	char *name;		/* name of the job step, default "" */
+	char *network;		/* network use spec */
+	uint32_t node_count;	/* count of required nodes */
+	char *node_list;	/* list of required nodes */
 	uint32_t num_tasks;	/* number of tasks required */
-	uint16_t relative;	/* first node to use of job's allocation */
-	uint16_t task_dist;	/* see enum task_dist_state */
+	uint8_t overcommit;     /* flag, 1 to allow overcommit of processors,
+				   0 to disallow overcommit. default is 0 */
 	uint16_t plane_size;	/* plane size when task_dist =
 				   SLURM_DIST_PLANE */
 	uint16_t port;		/* port to contact initiating srun */
-	uint16_t ckpt_interval;	/* checkpoint creation interval (minutes) */
-	uint16_t exclusive;	/* 1 if CPUs not shared with other steps */
-	uint16_t immediate;	/* 1 if allocate to run or fail immediately,
-				 * 0 if to be queued awaiting resources */
-	uint16_t mem_per_task;	/* MB memory required per task, 0=no limit */
-	char *host;		/* host to contact initiating srun */
-	char *node_list;	/* list of required nodes */
-	char *network;		/* network use spec */
-	char *name;		/* name of the job step, default "" */
-	char *ckpt_path;	/* path to store checkpoint image files */
-	uint8_t overcommit;     /* flag, 1 to allow overcommit of processors,
-				   0 to disallow overcommit. default is 0 */
+	uint16_t relative;	/* first node to use of job's allocation */
+	uint16_t task_dist;	/* see enum task_dist_state */
+	uint32_t user_id;	/* user the job runs as */
 } job_step_create_request_msg_t;
 
 typedef struct job_step_create_response_msg {

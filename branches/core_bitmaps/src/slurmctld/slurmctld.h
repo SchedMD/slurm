@@ -469,7 +469,7 @@ struct 	step_record {
 	uint16_t port;			/* port for srun communications */
 	char *host;			/* host for srun communications */
 	uint16_t batch_step;		/* 1 if batch job step, 0 otherwise */
-	uint16_t mem_per_task;		/* MB memory per task, 0=no limit */
+	uint32_t mem_per_task;		/* MB memory per task, 0=no limit */
 	uint16_t ckpt_interval;		/* checkpoint interval in minutes */
 	char *ckpt_path;	        /* path to store checkpoint image files */
 	uint16_t exclusive;		/* dedicated resources for the step */
