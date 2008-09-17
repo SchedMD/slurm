@@ -712,7 +712,15 @@ extern List acct_storage_p_get_users(void *db_conn, uid_t uid,
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_GET_USERS failure: %m");
-	else if (resp.msg_type != DBD_GOT_USERS) {
+	else if (resp.msg_type == DBD_RC) {
+		dbd_rc_msg_t *msg = resp.data;
+		if(msg->return_code == SLURM_SUCCESS) {
+			info("%s", msg->comment);
+			ret_list = list_create(NULL);
+		} else
+			error("%s", msg->comment);
+		slurmdbd_free_rc_msg(SLURMDBD_VERSION, msg);
+	} else if (resp.msg_type != DBD_GOT_USERS) {
 		error("slurmdbd: response type not DBD_GOT_USERS: %u", 
 		      resp.msg_type);
 	} else {
@@ -742,7 +750,15 @@ extern List acct_storage_p_get_accts(void *db_conn, uid_t uid,
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_GET_ACCOUNTS failure: %m");
-	else if (resp.msg_type != DBD_GOT_ACCOUNTS) {
+	else if (resp.msg_type == DBD_RC) {
+		dbd_rc_msg_t *msg = resp.data;
+		if(msg->return_code == SLURM_SUCCESS) {
+			info("%s", msg->comment);
+			ret_list = list_create(NULL);
+		} else
+			error("%s", msg->comment);
+		slurmdbd_free_rc_msg(SLURMDBD_VERSION, msg);
+	} else if (resp.msg_type != DBD_GOT_ACCOUNTS) {
 		error("slurmdbd: response type not DBD_GOT_ACCOUNTS: %u", 
 		      resp.msg_type);
 	} else {
@@ -773,7 +789,15 @@ extern List acct_storage_p_get_clusters(void *db_conn, uid_t uid,
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_GET_CLUSTERS failure: %m");
-	else if (resp.msg_type != DBD_GOT_CLUSTERS) {
+	else if (resp.msg_type == DBD_RC) {
+		dbd_rc_msg_t *msg = resp.data;
+		if(msg->return_code == SLURM_SUCCESS) {
+			info("%s", msg->comment);
+			ret_list = list_create(NULL);
+		} else
+			error("%s", msg->comment);
+		slurmdbd_free_rc_msg(SLURMDBD_VERSION, msg);
+	} else if (resp.msg_type != DBD_GOT_CLUSTERS) {
 		error("slurmdbd: response type not DBD_GOT_CLUSTERS: %u", 
 		      resp.msg_type);
 	} else {
@@ -804,7 +828,15 @@ extern List acct_storage_p_get_associations(void *db_conn, uid_t uid,
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_GET_ASSOCS failure: %m");
-	else if (resp.msg_type != DBD_GOT_ASSOCS) {
+	else if (resp.msg_type == DBD_RC) {
+		dbd_rc_msg_t *msg = resp.data;
+		if(msg->return_code == SLURM_SUCCESS) {
+			info("%s", msg->comment);
+			ret_list = list_create(NULL);
+		} else
+			error("%s", msg->comment);
+		slurmdbd_free_rc_msg(SLURMDBD_VERSION, msg);
+	} else if (resp.msg_type != DBD_GOT_ASSOCS) {
 		error("slurmdbd: response type not DBD_GOT_ASSOCS: %u", 
 		      resp.msg_type);
 	} else {
@@ -834,7 +866,15 @@ extern List acct_storage_p_get_qos(void *db_conn, uid_t uid,
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_GET_QOS failure: %m");
-	else if (resp.msg_type != DBD_GOT_QOS) {
+	else if (resp.msg_type == DBD_RC) {
+		dbd_rc_msg_t *msg = resp.data;
+		if(msg->return_code == SLURM_SUCCESS) {
+			info("%s", msg->comment);
+			ret_list = list_create(NULL);
+		} else
+			error("%s", msg->comment);
+		slurmdbd_free_rc_msg(SLURMDBD_VERSION, msg);
+	} else if (resp.msg_type != DBD_GOT_QOS) {
 		error("slurmdbd: response type not DBD_GOT_QOS: %u", 
 		      resp.msg_type);
 	} else {
@@ -871,7 +911,15 @@ extern List acct_storage_p_get_txn(void *db_conn, uid_t uid,
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_GET_TXN failure: %m");
-	else if (resp.msg_type != DBD_GOT_TXN) {
+	else if (resp.msg_type == DBD_RC) {
+		dbd_rc_msg_t *msg = resp.data;
+		if(msg->return_code == SLURM_SUCCESS) {
+			info("%s", msg->comment);
+			ret_list = list_create(NULL);
+		} else
+			error("%s", msg->comment);
+		slurmdbd_free_rc_msg(SLURMDBD_VERSION, msg);
+	} else if (resp.msg_type != DBD_GOT_TXN) {
 		error("slurmdbd: response type not DBD_GOT_TXN: %u", 
 		      resp.msg_type);
 	} else {
@@ -904,7 +952,15 @@ extern int acct_storage_p_get_usage(void *db_conn, uid_t uid,
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_GET_ASSOC_USAGE failure: %m");
-	else if (resp.msg_type != DBD_GOT_ASSOC_USAGE) {
+	else if (resp.msg_type == DBD_RC) {
+		dbd_rc_msg_t *msg = resp.data;
+		if(msg->return_code == SLURM_SUCCESS) {
+			info("%s", msg->comment);
+			acct_assoc->accounting_list = list_create(NULL);
+		} else
+			error("%s", msg->comment);
+		slurmdbd_free_rc_msg(SLURMDBD_VERSION, msg);
+	} else if (resp.msg_type != DBD_GOT_ASSOC_USAGE) {
 		error("slurmdbd: response type not DBD_GOT_ASSOC_USAGE: %u", 
 		      resp.msg_type);
 	} else {
@@ -1059,7 +1115,15 @@ extern int clusteracct_storage_p_get_usage(
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_GET_CLUSTER_USAGE failure: %m");
-	else if (resp.msg_type != DBD_GOT_CLUSTER_USAGE) {
+	else if (resp.msg_type == DBD_RC) {
+		dbd_rc_msg_t *msg = resp.data;
+		if(msg->return_code == SLURM_SUCCESS) {
+			info("%s", msg->comment);
+			cluster_rec->accounting_list = list_create(NULL);
+		} else
+			error("%s", msg->comment);
+		slurmdbd_free_rc_msg(SLURMDBD_VERSION, msg);
+	} else if (resp.msg_type != DBD_GOT_CLUSTER_USAGE) {
 		error("slurmdbd: response type not DBD_GOT_CLUSTER_USAGE: %u", 
 		      resp.msg_type);
 	} else {
@@ -1390,7 +1454,15 @@ extern List jobacct_storage_p_get_jobs(void *db_conn, uid_t uid,
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_GET_JOBS failure: %m");
-	else if (resp.msg_type != DBD_GOT_JOBS) {
+	else if (resp.msg_type == DBD_RC) {
+		dbd_rc_msg_t *msg = resp.data;
+		if(msg->return_code == SLURM_SUCCESS) {
+			info("%s", msg->comment);
+			job_list = list_create(NULL);
+		} else
+			error("%s", msg->comment);
+		slurmdbd_free_rc_msg(SLURMDBD_VERSION, msg);
+	} else if (resp.msg_type != DBD_GOT_JOBS) {
 		error("slurmdbd: response type not DBD_GOT_JOBS: %u", 
 		      resp.msg_type);
 	} else {
@@ -1425,7 +1497,15 @@ extern List jobacct_storage_p_get_jobs_cond(void *db_conn, uid_t uid,
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_GET_JOBS_COND failure: %m");
-	else if (resp.msg_type != DBD_GOT_JOBS) {
+	else if (resp.msg_type == DBD_RC) {
+		dbd_rc_msg_t *msg = resp.data;
+		if(msg->return_code == SLURM_SUCCESS) {
+			info("%s", msg->comment);
+			job_list = list_create(NULL);
+		} else
+			error("%s", msg->comment);
+		slurmdbd_free_rc_msg(SLURMDBD_VERSION, msg);
+	} else if (resp.msg_type != DBD_GOT_JOBS) {
 		error("slurmdbd: response type not DBD_GOT_JOBS: %u", 
 		      resp.msg_type);
 	} else {
