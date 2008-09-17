@@ -1,9 +1,8 @@
 /*****************************************************************************\
  *  node_select.h - Define node selection plugin functions.
- *
- * $Id$
  *****************************************************************************
- *  Copyright (C) 2004-2006 The Regents of the University of California.
+ *  Copyright (C) 2004-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  LLNL-CODE-402394.
@@ -307,16 +306,6 @@ extern int  select_g_unpack_jobinfo(select_jobinfo_t jobinfo, Buf buffer);
  */
 extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 				     char *buf, size_t size, int mode);
-
-/* Prepare to start a job step, allocate memory as needed
- * RET - slurm error code
- */
-extern int select_g_step_begin(struct step_record *step_ptr);
-
-/* Prepare to terminate a job step, release memory as needed
- * RET - slurm error code
- */
-extern int select_g_step_fini(struct step_record *step_ptr);
 
 /******************************************************\
  * NODE-SELECT PLUGIN SPECIFIC INFORMATION FUNCTIONS  *

@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  select_linear.h 
  *****************************************************************************
- *  Copyright (C) 2006 Hewlett-Packard Development Company, L.P.
+ *  Copyright (C) 2006-2007 Hewlett-Packard Development Company, L.P.
  *  Written by Susanne M. Balle, <susanne.balle@hp.com>
  *  LLNL-CODE-402394.
  *  
@@ -67,15 +67,6 @@ struct node_cr_record {
 	uint32_t exclusive_jobid;	/* if the node is allocated exclusively
 					 * to some job, put its jobid here, 
 					 * otherwise value is zero */
-};
-
-/*
- * step_cr_record keeps track of the steps which have been allocated memory
- * independently of the job (ie. the job itself has no reserved memory
- */
-struct step_cr_record {
-	uint32_t job_id;
-	uint32_t step_id;
 };
 
 #endif /* !_SELECT_LINEAR_H */

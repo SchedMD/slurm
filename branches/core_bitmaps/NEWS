@@ -5,7 +5,8 @@ documents those changes that are of interest to users and admins.
 =============================
  -- Internal changes: CPUs per node changed from 32-bit to 16-bit size.
     Node count fields changed from 16-bit to 32-bit size in some structures.
- -- Remove select plugin function select_p_get_extra_jobinfo().
+ -- Remove select plugin functions select_p_get_extra_jobinfo(),
+    select_p_step_begin() and select_p_step_fini().
  -- Remove the following slurmctld job structure fields: num_cpu_groups,
     cpus_per_node, cpu_count_reps, alloc_lps_cnt, alloc_lps, and used_lps.
     Use equivalent fields in new "select_job" structure, which is filled

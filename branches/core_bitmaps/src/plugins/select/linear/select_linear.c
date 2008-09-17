@@ -75,16 +75,13 @@
 static int  _add_job_to_nodes(struct node_cr_record *node_cr_ptr,
 			      struct job_record *job_ptr, char *pre_err, 
 			      int suspended);
-static int  _add_step(struct step_record *step_ptr);
 static void _cr_job_list_del(void *x);
 static int  _cr_job_list_sort(void *x, void *y);
-static void _del_list_step(void *x);
 static void _dump_node_cr(struct node_cr_record *node_cr_ptr);
 static struct node_cr_record *_dup_node_cr(struct node_cr_record *node_cr_ptr);
 static int  _find_job_mate(struct job_record *job_ptr, bitstr_t *bitmap,
 			   uint32_t min_nodes, uint32_t max_nodes,
 			   uint32_t req_nodes);
-static int  _find_step(struct step_record *step_ptr);
 static void _free_node_cr(struct node_cr_record *node_cr_ptr);
 static void _init_node_cr(void);
 static int _job_count_bitmap(struct node_cr_record *node_cr_ptr,
@@ -94,7 +91,6 @@ static int _job_count_bitmap(struct node_cr_record *node_cr_ptr,
 static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		     uint32_t min_nodes, uint32_t max_nodes, 
 		     uint32_t req_nodes);
-static int _remove_step(struct step_record *step_ptr);
 static int _rm_job_from_nodes(struct node_cr_record *node_cr_ptr,
 			      struct job_record *job_ptr, char *pre_err, 
 			      int remove_all);
@@ -1099,11 +1095,6 @@ extern int select_p_get_select_nodeinfo (struct node_record *node_ptr,
 
 extern int select_p_update_nodeinfo (struct job_record *job_ptr)
 {
-	int i, node_inx;
-	ListIterator step_iterator;
-	struct step_record *step_ptr;
-	uint32_t step_mem;
-
 	xassert(job_ptr);
 
 	slurm_mutex_lock(&cr_mutex);
@@ -1111,39 +1102,6 @@ extern int select_p_update_nodeinfo (struct job_record *job_ptr)
 		_init_node_cr();
 	slurm_mutex_unlock(&cr_mutex);
 
-	if ((job_ptr->job_state != JOB_RUNNING)
-	&&  (job_ptr->job_state != JOB_SUSPENDED))
-		return SLURM_SUCCESS;
-	if ((cr_type != CR_MEMORY) || (job_ptr->details == NULL) || 
-	    (job_ptr->details->shared == 0) || job_ptr->details->job_min_memory)
-		return SLURM_SUCCESS;
-
-	slurm_mutex_lock(&cr_mutex);
-	step_iterator = list_iterator_create (job_ptr->step_list);
-	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
-		if ((step_ptr->step_node_bitmap == NULL) ||
-		    (step_ptr->step_layout == NULL) ||
-		    (step_ptr->mem_per_task == 0) ||
-		    (_find_step(step_ptr)))	/* already added */
-			continue;
-#if SELECT_DEBUG
-		info("select_p_update_nodeinfo: %u.%u mem:%u", 
-		     step_ptr->job_ptr->job_id, step_ptr->step_id, 
-		     step_ptr->mem_per_task);
-#endif
-		node_inx = -1;
-		for (i = 0; i < select_node_cnt; i++) {
-			if (bit_test(step_ptr->step_node_bitmap, i) == 0)
-				continue;
-			node_inx++;
-			step_mem = step_ptr->step_layout->tasks[node_inx] * 
-				   step_ptr->mem_per_task;
-			node_cr_ptr[i].alloc_memory += step_mem;
-		}
-		_add_step(step_ptr);
-	}
-	list_iterator_destroy (step_iterator);
-	slurm_mutex_unlock(&cr_mutex);
 	return SLURM_SUCCESS;
 }
 
@@ -1440,10 +1398,8 @@ static void _init_node_cr(void)
 	ListIterator part_iterator;
 	struct job_record *job_ptr;
 	ListIterator job_iterator;
-	uint32_t job_memory_cpu, job_memory_node, step_mem = 0;
-	int exclusive, i, node_inx;
-	ListIterator step_iterator;
-	struct step_record *step_ptr;
+	uint32_t job_memory_cpu, job_memory_node;
+	int exclusive, i;
 
 	if (node_cr_ptr)
 		return;
@@ -1479,10 +1435,12 @@ static void _init_node_cr(void)
 		if (job_ptr->details && 
 		    job_ptr->details->job_min_memory && (cr_type == CR_MEMORY)) {
 			if (job_ptr->details->job_min_memory & MEM_PER_CPU) {
-				job_memory_cpu = job_ptr->details->job_min_memory &
+				job_memory_cpu = job_ptr->details->
+						 job_min_memory &
 						 (~MEM_PER_CPU);
 			} else {
-				job_memory_node = job_ptr->details->job_min_memory;
+				job_memory_node = job_ptr->details->
+						  job_min_memory;
 			}
 		}
 		if (job_ptr->details->shared == 0)
@@ -1535,40 +1493,6 @@ static void _init_node_cr(void)
 					node_record_table_ptr[i].name);
 			}
 		}
-
-		if (job_ptr->details->job_min_memory || 
-		    (job_ptr->details->shared == 0) || (cr_type != CR_MEMORY))
-			continue;
-
-		step_iterator = list_iterator_create (job_ptr->step_list);
-		while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
-			if ((step_ptr->step_node_bitmap == NULL) ||
-			    (step_ptr->step_layout == NULL))
-				continue;
-
-			if (_find_step(step_ptr)) {
-				slurm_mutex_unlock(&cr_mutex);
-				error("_init_node_cr: duplicate for step %u.%u",
-				      job_ptr->job_id, step_ptr->step_id);
-				continue;
-			}
-
-			node_inx = -1;
-			for (i = 0; i < select_node_cnt; i++) {
-				if (bit_test(step_ptr->step_node_bitmap, i) == 0)
-					continue;
-				node_inx++;
-				step_mem = step_ptr->step_layout->tasks[node_inx] * 
-					   step_ptr->mem_per_task;
-				node_cr_ptr[i].alloc_memory += step_mem;
-			}
-#if SELECT_DEBUG
-			info("_init_node_cr: added %u.%u mem:%u", 
-			     job_ptr->job_id, step_ptr->step_id, step_mem);
-#endif
-			_add_step(step_ptr);
-		}
-		list_iterator_destroy (step_iterator);
 	}
 	list_iterator_destroy(job_iterator);
 	_dump_node_cr(node_cr_ptr);
@@ -1661,195 +1585,10 @@ static void _cr_job_list_del(void *x)
 {
 	xfree(x);
 }
+
 static int  _cr_job_list_sort(void *x, void *y)
 {
 	struct job_record **job1_pptr = (struct job_record **) x;
 	struct job_record **job2_pptr = (struct job_record **) y;
 	return (int) difftime(job1_pptr[0]->end_time, job2_pptr[0]->end_time);
-}
-
-extern int select_p_step_begin(struct step_record *step_ptr)
-{
-	slurm_step_layout_t *step_layout = step_ptr->step_layout;
-	int i, node_inx = -1;
-	uint32_t avail_mem, step_mem;
-
-	xassert(step_ptr->job_ptr);
-	xassert(step_ptr->job_ptr->details);
-	xassert(step_ptr->step_node_bitmap);
-
-#if SELECT_DEBUG
-	info("select_p_step_begin: mem:%u", step_ptr->mem_per_task);
-#endif
-	if (step_layout == NULL)
-		return SLURM_SUCCESS;	/* batch script */
-	/* Don't track step memory use if job has reserved memory OR
-	 * job has whole node OR we don't track memory usage */
-	if (step_ptr->job_ptr->details->job_min_memory || 
-	    (step_ptr->job_ptr->details->shared == 0) ||
-	    (cr_type != CR_MEMORY))
-		return SLURM_SUCCESS;
-
-	/* test if there is sufficient memory */
-	slurm_mutex_lock(&cr_mutex);
-	if (node_cr_ptr == NULL)
-		_init_node_cr();
-	if (_find_step(step_ptr)) {
-		slurm_mutex_unlock(&cr_mutex);
-		error("select_p_step_begin: duplicate for step %u.%u",
-		      step_ptr->job_ptr->job_id, step_ptr->step_id);
-		return SLURM_SUCCESS;
-	}
-	for (i = 0; i < select_node_cnt; i++) {
-		if (bit_test(step_ptr->step_node_bitmap, i) == 0)
-			continue;
-		node_inx++;
-		step_mem = step_layout->tasks[node_inx] * step_ptr->mem_per_task;
-		if (select_fast_schedule)
-			avail_mem = node_record_table_ptr[i].
-				    config_ptr->real_memory;
-		else
-			avail_mem = node_record_table_ptr[i].real_memory;
-#if SELECT_DEBUG
-		info("alloc %u need %u avail %u", 
-		     node_cr_ptr[i].alloc_memory, step_mem, avail_mem);
-#endif
-		if ((node_cr_ptr[i].alloc_memory + step_mem) > avail_mem) {
-			slurm_mutex_unlock(&cr_mutex);
-			return SLURM_ERROR;	/* no room */
-		}
-	}
-
-	/* reserve the memory */
-	node_inx = -1;
-	for (i = 0; i < select_node_cnt; i++) {
-		if (bit_test(step_ptr->step_node_bitmap, i) == 0)
-			continue;
-		node_inx++;
-		step_mem = step_layout->tasks[node_inx] * step_ptr->mem_per_task;
-		node_cr_ptr[i].alloc_memory += step_mem;
-	}
-	_add_step(step_ptr);
-	slurm_mutex_unlock(&cr_mutex);
-	return SLURM_SUCCESS;
-}
-
-extern int select_p_step_fini(struct step_record *step_ptr)
-{
-	slurm_step_layout_t *step_layout = step_ptr->step_layout;
-	int i, node_inx = -1;
-	uint32_t step_mem;
-
-	xassert(step_ptr->job_ptr);
-	xassert(step_ptr->job_ptr->details);
-	xassert(step_ptr->step_node_bitmap);
-
-#if SELECT_DEBUG
-	info("select_p_step_fini: mem:%u", step_ptr->mem_per_task);
-#endif
-	if (step_layout == NULL)
-		return SLURM_SUCCESS;	/* batch script */
-	/* Don't track step memory use if job has reserved memory OR
-	 * job has whole node OR we don't track memory usage */
-	if (step_ptr->job_ptr->details->job_min_memory || 
-	    (step_ptr->job_ptr->details->shared == 0) ||
-	    (cr_type != CR_MEMORY))
-		return SLURM_SUCCESS;
-
-	/* release the memory */
-	slurm_mutex_lock(&cr_mutex);
-	if (node_cr_ptr == NULL)
-		_init_node_cr();
-	if (!_find_step(step_ptr)) {
-		slurm_mutex_unlock(&cr_mutex);
-		error("select_p_step_fini: could not find step %u.%u",
-		      step_ptr->job_ptr->job_id, step_ptr->step_id);
-		return SLURM_ERROR;
-	}
-	for (i = 0; i < select_node_cnt; i++) {
-		if (bit_test(step_ptr->step_node_bitmap, i) == 0)
-			continue;
-		node_inx++;
-		step_mem = step_layout->tasks[node_inx] * step_ptr->mem_per_task;
-		if (node_cr_ptr[i].alloc_memory >= step_mem)
-			node_cr_ptr[i].alloc_memory -= step_mem;
-		else {
-			node_cr_ptr[i].alloc_memory = 0;
-			error("select_p_step_fini: alloc_memory underflow on %s",
-				node_record_table_ptr[i].name);
-		}
-	}
-	_remove_step(step_ptr);
-	slurm_mutex_unlock(&cr_mutex);
-	return SLURM_SUCCESS;
-}
-
-/* return 1 if found, 0 otherwise */
-static int _find_step(struct step_record *step_ptr)
-{
-	ListIterator step_iterator;
-	struct step_cr_record *step;
-	int found = 0;
-
-	if (!step_cr_list)
-		return found;
-	step_iterator = list_iterator_create(step_cr_list);
-	if (step_iterator == NULL) {
-		fatal("list_iterator_create: memory allocation failure");
-		return found;
-	}
-	while ((step = list_next(step_iterator))) {
-		if ((step->job_id  == step_ptr->job_ptr->job_id) &&
-		    (step->step_id == step_ptr->step_id)) {
-			found = 1;
-			break;
-		}
-	}
-	list_iterator_destroy(step_iterator);
-	return found;
-}
-static int _add_step(struct step_record *step_ptr)
-{
-	struct step_cr_record *step = xmalloc(sizeof(struct step_cr_record));
-
-	step->job_id  = step_ptr->job_ptr->job_id;
-	step->step_id = step_ptr->step_id;
-	if (!step_cr_list) {
-		step_cr_list = list_create(_del_list_step);
-		if (!step_cr_list)
-			fatal("list_create: memory allocation failure");
-	}
-	if (list_append(step_cr_list, step) == NULL) {
-		fatal("list_append: memory allocation failure");
-		return SLURM_ERROR;
-	}
-	return SLURM_SUCCESS;
-}
-static int _remove_step(struct step_record *step_ptr)
-{
-	ListIterator step_iterator;
-	struct step_cr_record *step;
-	int found = 0;
-
-	if (!step_cr_list)
-		return found;
-	step_iterator = list_iterator_create(step_cr_list);
-	if (step_iterator == NULL) {
-		fatal("list_iterator_create: memory allocation failure");
-		return found;
-	}
-	while ((step = list_next(step_iterator))) {
-		if ((step->job_id  == step_ptr->job_ptr->job_id) &&
-		    (step->step_id == step_ptr->step_id)) {
-			found = 1;
-			list_delete_item(step_iterator);
-			break;
-		}
-	}
-	list_iterator_destroy(step_iterator);
-	return found;
-}
-static void _del_list_step(void *x)
-{
-	xfree(x);
 }
