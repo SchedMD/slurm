@@ -201,8 +201,7 @@ static int _init_status_pthread(void)
 
 	slurm_mutex_lock( &thread_flag_mutex );
 	if ( xcpu_thread ) {
-		debug2("XCPU thread already running, not starting "
-			"another");
+		debug2("XCPU thread already running, not starting another");
 		slurm_mutex_unlock( &thread_flag_mutex );
 		return SLURM_ERROR;
 	}
@@ -224,11 +223,11 @@ static int _fini_status_pthread(void)
 	if ( xcpu_thread ) {
 		agent_fini = 1;
 		for (i=0; i<4; i++) {
+			sleep(1);
 			if (pthread_kill(xcpu_thread, 0)) {
 				xcpu_thread = 0;
 				break;
 			}
-			sleep(1);
 		}
 		if ( xcpu_thread ) {
 			error("could not kill XCPU agent thread");
@@ -422,6 +421,7 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap,
 	struct node_record *node_ptr;
 	uint32_t job_memory_cpu = 0, job_memory_node = 0;
 	bool memory_info = false;
+	select_job_res_t select_ptr;
 
 	if (job_ptr->details->job_min_memory  && (cr_type == CR_MEMORY)) {
 		if (job_ptr->details->job_min_memory & MEM_PER_CPU) {
@@ -438,23 +438,19 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap,
 		error("select_p_job_test: already have select_job");
 		free_select_job_res(&job_ptr->select_job);
 	}
-	job_ptr->select_job = create_select_job_res();
-	job_ptr->select_job->core_bitmap = bit_alloc(job_ptr->total_procs);
-	job_ptr->select_job->core_bitmap_used = bit_alloc(job_ptr->total_procs);
-	job_ptr->select_job->cpu_array_reps = xmalloc(sizeof(uint32_t) * 
-						      req_nodes);
-	job_ptr->select_job->cpu_array_value = xmalloc(sizeof(uint16_t) * 
-						       req_nodes);
-	job_ptr->select_job->cpus = xmalloc(sizeof(uint16_t) * req_nodes);
-	job_ptr->select_job->cpus_used = xmalloc(sizeof(uint16_t) * req_nodes);
-	job_ptr->select_job->memory_allocated = xmalloc(sizeof(uint32_t) * 
-							req_nodes);
-	job_ptr->select_job->memory_used = xmalloc(sizeof(uint32_t) * 
-						   req_nodes);
-	job_ptr->select_job->nhosts = req_nodes;
-	job_ptr->select_job->node_bitmap = bit_copy(bitmap);
-	job_ptr->select_job->nprocs = job_ptr->total_procs;
-	if (build_select_job_res(job_ptr->select_job, (void *)select_node_ptr,
+	job_ptr->select_job = select_ptr = create_select_job_res();
+	select_ptr->core_bitmap = bit_alloc(job_ptr->total_procs);
+	select_ptr->core_bitmap_used = bit_alloc(job_ptr->total_procs);
+	select_ptr->cpu_array_reps = xmalloc(sizeof(uint32_t) * req_nodes);
+	select_ptr->cpu_array_value = xmalloc(sizeof(uint16_t) * req_nodes);
+	select_ptr->cpus = xmalloc(sizeof(uint16_t) * req_nodes);
+	select_ptr->cpus_used = xmalloc(sizeof(uint16_t) * req_nodes);
+	select_ptr->memory_allocated = xmalloc(sizeof(uint32_t) * req_nodes);
+	select_ptr->memory_used = xmalloc(sizeof(uint32_t) * req_nodes);
+	select_ptr->nhosts = req_nodes;
+	select_ptr->node_bitmap = bit_copy(bitmap);
+	select_ptr->nprocs = job_ptr->total_procs;
+	if (build_select_job_res(select_ptr, (void *)select_node_ptr,
 				 select_fast_schedule))
 		error("select_p_job_test: build_select_job_res: %m");
 
@@ -466,34 +462,33 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap,
 			node_cpus = node_ptr->config_ptr->cpus;
 		else
 			node_cpus = node_ptr->cpus;
-		job_ptr->select_job->cpus[j] = node_cpus;
-		if ((k == -1) ||
-		    (job_ptr->select_job->cpu_array_value[k] != node_cpus)) {
-			job_ptr->select_job->cpu_array_cnt++;
-			job_ptr->select_job->cpu_array_reps[++k] = 1;
-			job_ptr->select_job->cpu_array_value[k] = node_cpus;
+		select_ptr->cpus[j] = node_cpus;
+		if ((k == -1) || 
+		    (select_ptr->cpu_array_value[k] != node_cpus)) {
+			select_ptr->cpu_array_cnt++;
+			select_ptr->cpu_array_reps[++k] = 1;
+			select_ptr->cpu_array_value[k] = node_cpus;
 		} else
-			job_ptr->select_job->cpu_array_reps[k]++;
+			select_ptr->cpu_array_reps[k]++;
 		total_cpus += node_cpus;
 
 		if (!memory_info)
 			;
-		else if (job_memory_node) {
-			job_ptr->select_job->memory_allocated[j] = 
-					job_memory_node;
-		} else if (job_memory_cpu) {
-			job_ptr->select_job->memory_allocated[j] = 
+		else if (job_memory_node)
+			select_ptr->memory_allocated[j] = job_memory_node;
+		else if (job_memory_cpu) {
+			select_ptr->memory_allocated[j] = 
 					job_memory_cpu * node_cpus;
 		}
 
-		if (set_select_job_res_node(job_ptr->select_job, i))
+		if (set_select_job_res_node(select_ptr, i))
 			error("select_p_job_test: set_select_job_res_node: %m");
 		if (++j == req_nodes)
 			break;
 	}
-	if (job_ptr->select_job->nprocs != total_cpus) {
+	if (select_ptr->nprocs != total_cpus) {
 		error("select_p_job_test: nprocs mismatch %u != %u",
-		      job_ptr->select_job->nprocs, total_cpus);
+		      select_ptr->nprocs, total_cpus);
 	}
 }
 
@@ -587,8 +582,8 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				continue;
 			prev_cnt = j;
 			if ((mode == SELECT_MODE_RUN_NOW) && (max_run_job > 0)) {
-				/* We need to share. 
-				 * Try to find suitable job to share nodes with */
+				/* We need to share. Try to find 
+				 * suitable job to share nodes with */
 				rc = _find_job_mate(job_ptr, bitmap, min_nodes, 
 						    max_nodes, req_nodes);
 				if (rc == SLURM_SUCCESS)
