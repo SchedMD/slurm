@@ -481,7 +481,7 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap,
 					job_memory_cpu * node_cpus;
 		}
 
-		if (set_select_job_res_node(select_ptr, i))
+		if (set_select_job_res_node(select_ptr, j))
 			error("select_p_job_test: set_select_job_res_node: %m");
 		if (++j == req_nodes)
 			break;
