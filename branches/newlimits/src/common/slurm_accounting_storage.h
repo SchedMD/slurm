@@ -72,47 +72,34 @@ typedef struct {
 	List acct_list;		/* list of char * */
 	List cluster_list;	/* list of char * */
 
-	uint64_t grp_cpu_hours; /* max number of cpu hours the
-				     * underlying group of
-				     * associations can run for */
-	uint32_t grp_cpus; /* max number of cpus the
-				* underlying group of 
-				* associations can allocate at one time */
-	uint32_t grp_jobs;	/* max number of jobs the
-				 * underlying group of associations can run
-				 * at one time */
-	uint32_t grp_nodes; /* max number of nodes the
-				 * underlying group of
-				 * associations can allocate at once */
-	uint32_t grp_submit_jobs; /* max number of jobs the
-				       * underlying group of
-				       * associations can submit at
-				       * one time */
-	uint32_t grp_wall; /* total time in hours the 
-			    * underlying group of
-			    * associations can run for */
+	List fairshare_list;	/* fairshare number */
 
-	uint32_t fairshare;	/* fairshare number */
+	List grp_cpu_hours_list; /* list of char * */
+	List grp_cpus_list; /* list of char * */
+	List grp_jobs_list;	/* list of char * */
+	List grp_nodes_list; /* list of char * */
+	List grp_submit_jobs_list; /* list of char * */
+	List grp_wall_list; /* list of char * */
+
 	List id_list;		/* list of char */
 
-	uint64_t max_cpu_mins_pj; /* max number of cpu seconds this 
-				  * association can have per job */
-	uint32_t max_cpus_pj; /* max number of cpus this 
-				    * association can allocate per job */
-	uint32_t max_jobs;	/* max number of jobs this association can run
-				 * at one time */
-	uint32_t max_nodes_pj; /* max number of nodes this
-				     * association can allocate per job */
-	uint32_t max_submit_jobs; /* max number of jobs that can be
-				     submitted by association */
-	uint32_t max_wall_pj; /* longest time this association
-			       * can run a job (seconds) */
+	List max_cpu_mins_pj_list; /* list of char * */
+	List max_cpus_pj_list; /* list of char * */
+	List max_jobs_list;	/* list of char * */
+	List max_nodes_pj_list; /* list of char * */
+	List max_submit_jobs_list; /* list of char * */
+	List max_wall_pj_list; /* list of char * */
+
 	List partition_list;	/* list of char * */
-	char *parent_acct;	/* name of parent account */
+	List parent_acct_list;	/* name of parent account */
+
 	List qos_list; /* list of char * */	
+
 	uint32_t usage_end; 
 	uint32_t usage_start; 
+
 	List user_list;		/* list of char * */
+
 	uint16_t with_usage;  /* fill in usage */
 	uint16_t with_deleted; /* return deleted associations */
 	uint16_t without_parent_info; /* don't give me parent id/name */
@@ -368,7 +355,6 @@ extern void destroy_acct_update_object(void *object);
 extern void destroy_update_shares_rec(void *object);
 
 extern void init_acct_association_rec(acct_association_rec_t *assoc);
-extern void init_acct_association_cond(acct_association_cond_t *assoc);
 
 /* pack functions */
 extern void pack_acct_user_rec(void *in, uint16_t rpc_version, Buf buffer);

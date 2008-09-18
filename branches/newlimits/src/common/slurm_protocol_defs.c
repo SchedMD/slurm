@@ -141,24 +141,23 @@ extern int slurm_addto_char_list(List char_list, char *names)
 			else if (names[i] == '\"' || names[i] == '\'')
 				names[i] = '`';
 			else if(names[i] == ',') {
-				if((i-start) > 0) {
-					name = xmalloc((i-start+1));
-					memcpy(name, names+start, (i-start));
-					//info("got %s %d", name, i-start);
-
-					while((tmp_char = list_next(itr))) {
-						if(!strcasecmp(tmp_char, name))
-							break;
-					}
-
-					if(!tmp_char) {
-						_make_lower(name);
-						list_append(char_list, name);
-						count++;
-					} else 
-						xfree(name);
-					list_iterator_reset(itr);
+				name = xmalloc((i-start+1));
+				memcpy(name, names+start, (i-start));
+				//info("got %s %d", name, i-start);
+				
+				while((tmp_char = list_next(itr))) {
+					if(!strcasecmp(tmp_char, name))
+						break;
 				}
+				
+				if(!tmp_char) {
+					_make_lower(name);
+					list_append(char_list, name);
+					count++;
+				} else 
+					xfree(name);
+				list_iterator_reset(itr);
+				
 				i++;
 				start = i;
 				if(!names[i]) {
@@ -170,21 +169,20 @@ extern int slurm_addto_char_list(List char_list, char *names)
 			}
 			i++;
 		}
-		if((i-start) > 0) {
-			name = xmalloc((i-start)+1);
-			memcpy(name, names+start, (i-start));
-			while((tmp_char = list_next(itr))) {
-				if(!strcasecmp(tmp_char, name))
-					break;
-			}
-			
-			if(!tmp_char) {
-				_make_lower(name);
-				list_append(char_list, name);
-				count++;
-			} else 
-				xfree(name);
+
+		name = xmalloc((i-start)+1);
+		memcpy(name, names+start, (i-start));
+		while((tmp_char = list_next(itr))) {
+			if(!strcasecmp(tmp_char, name))
+				break;
 		}
+		
+		if(!tmp_char) {
+			_make_lower(name);
+			list_append(char_list, name);
+			count++;
+		} else 
+			xfree(name);
 	}	
 	list_iterator_destroy(itr);
 	return count;

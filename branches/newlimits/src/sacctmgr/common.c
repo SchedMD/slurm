@@ -800,6 +800,101 @@ extern char *get_qos_complete_str(List qos_list, List num_qos_list)
 	return print_this;
 }
 
+extern void sacctmgr_print_assoc_limits(acct_association_rec_t *assoc)
+{
+	if(!assoc)
+		return;
+
+	if(assoc->fairshare == INFINITE)
+		printf("  Fairshare       = NONE\n");
+	else if(assoc->fairshare != NO_VAL) 
+		printf("  Fairshare       = %u\n", assoc->fairshare);
+
+	if(assoc->grp_cpu_hours == INFINITE)
+		printf("  GrpCPUHours      = NONE\n");
+	else if(assoc->grp_cpu_hours != NO_VAL) 
+		printf("  GrpCPUHours      = %llu\n", assoc->grp_cpu_hours);
+		
+	if(assoc->grp_cpus == INFINITE)
+		printf("  GrpCPUs      = NONE\n");
+	else if(assoc->grp_cpus != NO_VAL) 
+		printf("  GrpCPUs      = %u\n", assoc->grp_cpus);
+				
+	if(assoc->grp_jobs == INFINITE) 
+		printf("  GrpJobs         = NONE\n");
+	else if(assoc->grp_jobs != NO_VAL) 
+		printf("  GrpJobs         = %u\n", assoc->grp_jobs);
+		
+	if(assoc->grp_nodes == INFINITE)
+		printf("  GrpNodes        = NONE\n");
+	else if(assoc->grp_nodes != NO_VAL)
+		printf("  GrpNodes        = %u\n", assoc->grp_nodes);
+		
+	if(assoc->grp_submit_jobs == INFINITE) 
+		printf("  GrpSubmitJobs         = NONE\n");
+	else if(assoc->grp_submit_jobs != NO_VAL) 
+		printf("  GrpSubmitJobs         = %u\n", 
+		       assoc->grp_submit_jobs);
+		
+	if(assoc->grp_wall == INFINITE) 
+		printf("  GrpWall         = NONE\n");		
+	else if(assoc->grp_wall != NO_VAL) {
+		char time_buf[32];
+		mins2time_str((time_t) assoc->grp_wall, 
+			      time_buf, sizeof(time_buf));
+		printf("  GrpWall         = %s\n", time_buf);
+	}
+
+	if(assoc->max_cpu_mins_pj == INFINITE)
+		printf("  MaxCPUMins      = NONE\n");
+	else if(assoc->max_cpu_mins_pj != NO_VAL) 
+		printf("  MaxCPUMins      = %llu\n", assoc->max_cpu_mins_pj);
+		
+	if(assoc->max_cpus_pj == INFINITE)
+		printf("  MaxCPUs      = NONE\n");
+	else if(assoc->max_cpus_pj != NO_VAL) 
+		printf("  MaxCPUs      = %u\n", assoc->max_cpus_pj);
+				
+	if(assoc->max_jobs == INFINITE) 
+		printf("  MaxJobs         = NONE\n");
+	else if(assoc->max_jobs != NO_VAL) 
+		printf("  MaxJobs         = %u\n", assoc->max_jobs);
+		
+	if(assoc->max_nodes_pj == INFINITE)
+		printf("  MaxNodes        = NONE\n");
+	else if(assoc->max_nodes_pj != NO_VAL)
+		printf("  MaxNodes        = %u\n", assoc->max_nodes_pj);
+		
+	if(assoc->max_submit_jobs == INFINITE) 
+		printf("  MaxSubmitJobs         = NONE\n");
+	else if(assoc->max_submit_jobs != NO_VAL) 
+		printf("  MaxSubmitJobs         = %u\n", 
+		       assoc->max_submit_jobs);
+		
+	if(assoc->max_wall_pj == INFINITE) 
+		printf("  MaxWall         = NONE\n");		
+	else if(assoc->max_wall_pj != NO_VAL) {
+		char time_buf[32];
+		mins2time_str((time_t) assoc->max_wall_pj, 
+			      time_buf, sizeof(time_buf));
+		printf("  MaxWall         = %s\n", time_buf);
+	}
+
+	if(assoc->qos_list) {
+		List qos_list = acct_storage_g_get_qos(db_conn, my_uid, NULL);
+		char *temp_char = get_qos_complete_str(qos_list,
+						       assoc->qos_list);
+		if(temp_char) {		
+			printf("  Qos             = %s\n", temp_char);
+			xfree(temp_char);
+		}
+		if(qos_list)
+			list_destroy(qos_list);
+	} else {
+		printf("  Qos             = %s\n", "Normal");
+	}
+}
+
 extern int sort_coord_list(acct_coord_rec_t *coord_a, acct_coord_rec_t *coord_b)
 {
 	int diff = strcmp(coord_a->name, coord_b->name);

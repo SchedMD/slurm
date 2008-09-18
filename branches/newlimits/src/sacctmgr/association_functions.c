@@ -115,73 +115,196 @@ static char *_get_print_acct_name(char *name, char *parent, char *cluster,
 }
 
 static int _set_cond(int *start, int argc, char *argv[],
-		     acct_association_cond_t *association_cond,
+		     acct_association_cond_t *assoc_cond,
 		     List format_list)
 {
 	int i, end = 0;
 	int set = 0;
+	List qos_list = NULL;
 
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
 		if (!end && !strncasecmp (argv[i], "Tree", 4)) {
 			tree_display = 1;
 		} else if (!end && !strncasecmp (argv[i], "WithDeleted", 5)) {
-			association_cond->with_deleted = 1;
+			assoc_cond->with_deleted = 1;
 		} else if (!end && !strncasecmp (argv[i], "WOPInfo", 4)) {
-			association_cond->without_parent_info = 1;
+			assoc_cond->without_parent_info = 1;
 		} else if (!end && !strncasecmp (argv[i], "WOPLimits", 4)) {
-			association_cond->without_parent_limits = 1;
+			assoc_cond->without_parent_limits = 1;
 		} else if(!end && !strncasecmp(argv[i], "where", 5)) {
 			continue;
 		} else if(!end || !strncasecmp (argv[i], "Id", 1)
 			  || !strncasecmp (argv[i], "Associations", 2)) {
-			if(!association_cond->id_list)
-				association_cond->id_list = 
+			if(!assoc_cond->id_list)
+				assoc_cond->id_list = 
 					list_create(slurm_destroy_char);
-			slurm_addto_char_list(association_cond->id_list,
+			slurm_addto_char_list(assoc_cond->id_list,
 					      argv[i]+end);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "Users", 1)) {
-			if(!association_cond->user_list)
-				association_cond->user_list = 
-					list_create(slurm_destroy_char);
-			slurm_addto_char_list(association_cond->user_list,
-					argv[i]+end);
-			set = 1;
 		} else if (!strncasecmp (argv[i], "Accounts", 2)) {
-			if(!association_cond->acct_list)
-				association_cond->acct_list = 
+			if(!assoc_cond->acct_list)
+				assoc_cond->acct_list = 
 					list_create(slurm_destroy_char);
-			slurm_addto_char_list(association_cond->acct_list,
+			slurm_addto_char_list(assoc_cond->acct_list,
 					argv[i]+end);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Clusters", 1)) {
-			if(!association_cond->cluster_list)
-				association_cond->cluster_list = 
+			if(!assoc_cond->cluster_list)
+				assoc_cond->cluster_list = 
 					list_create(slurm_destroy_char);
-			slurm_addto_char_list(association_cond->cluster_list,
+			slurm_addto_char_list(assoc_cond->cluster_list,
 					argv[i]+end);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Format", 1)) {
 			if(format_list)
 				slurm_addto_char_list(format_list, argv[i]+end);
-		} else if (!strncasecmp (argv[i], "Partitions", 4)) {
-			if(!association_cond->partition_list)
-				association_cond->partition_list = 
+		} else if (!strncasecmp (argv[i], "FairShare", 1)) {
+			if(!assoc_cond->fairshare_list)
+				assoc_cond->fairshare_list =
 					list_create(slurm_destroy_char);
-			slurm_addto_char_list(association_cond->partition_list,
+			if(slurm_addto_char_list(assoc_cond->fairshare_list,
+					argv[i]+end))
+				set = 1;
+		} else if (!strncasecmp (argv[i], "GrpCPUHours", 7)) {
+			if(!assoc_cond->grp_cpu_hours_list)
+				assoc_cond->grp_cpu_hours_list =
+					list_create(slurm_destroy_char);
+			if(slurm_addto_char_list(assoc_cond->grp_cpu_hours_list,
+					argv[i]+end))
+				set = 1;
+		} else if (!strncasecmp (argv[i], "GrpCpus", 7)) {
+			if(!assoc_cond->grp_cpus_list)
+				assoc_cond->grp_cpus_list =
+					list_create(slurm_destroy_char);
+			if(slurm_addto_char_list(assoc_cond->grp_cpus_list,
+					argv[i]+end))
+				set = 1;
+		} else if (!strncasecmp (argv[i], "GrpJobs", 4)) {
+			if(!assoc_cond->grp_jobs_list)
+				assoc_cond->grp_jobs_list =
+					list_create(slurm_destroy_char);
+			if(slurm_addto_char_list(assoc_cond->grp_jobs_list,
+					argv[i]+end))
+				set = 1;
+		} else if (!strncasecmp (argv[i], "GrpNodes", 4)) {
+			if(!assoc_cond->grp_nodes_list)
+				assoc_cond->grp_nodes_list =
+					list_create(slurm_destroy_char);
+			if(slurm_addto_char_list(assoc_cond->grp_nodes_list,
+					argv[i]+end))
+				set = 1;
+		} else if (!strncasecmp (argv[i], "GrpSubmitJobs", 4)) {
+			if(!assoc_cond->grp_submit_jobs_list)
+				assoc_cond->grp_submit_jobs_list =
+					list_create(slurm_destroy_char);
+			if(slurm_addto_char_list(
+				   assoc_cond->grp_submit_jobs_list,
+				   argv[i]+end))
+				set = 1;
+		} else if (!strncasecmp (argv[i], "GrpWall", 4)) {
+			if(!assoc_cond->grp_wall_list)
+				assoc_cond->grp_wall_list =
+					list_create(slurm_destroy_char);
+			if(slurm_addto_char_list(
+				   assoc_cond->grp_wall_list,
+				   argv[i]+end))
+				set = 1;
+		} else if (!strncasecmp (argv[i], "MaxCPUMins", 7)) {
+			if(!assoc_cond->max_cpu_mins_pj_list)
+				assoc_cond->max_cpu_mins_pj_list =
+					list_create(slurm_destroy_char);
+			if(slurm_addto_char_list(
+				   assoc_cond->max_cpu_mins_pj_list,
+				   argv[i]+end))
+				set = 1;
+		} else if (!strncasecmp (argv[i], "MaxCpus", 7)) {
+			if(!assoc_cond->max_cpus_pj_list)
+				assoc_cond->max_cpus_pj_list =
+					list_create(slurm_destroy_char);
+			if(slurm_addto_char_list(
+				   assoc_cond->max_cpus_pj_list,
+				   argv[i]+end))
+				set = 1;
+		} else if (!strncasecmp (argv[i], "MaxJobs", 4)) {
+			if(!assoc_cond->max_jobs_list)
+				assoc_cond->max_jobs_list =
+					list_create(slurm_destroy_char);
+			if(slurm_addto_char_list(
+				   assoc_cond->max_jobs_list,
+				   argv[i]+end))
+				set = 1;
+		} else if (!strncasecmp (argv[i], "MaxNodes", 4)) {
+			if(!assoc_cond->max_nodes_pj_list)
+				assoc_cond->max_nodes_pj_list =
+					list_create(slurm_destroy_char);
+			if(slurm_addto_char_list(
+				   assoc_cond->max_nodes_pj_list,
+				   argv[i]+end))
+				set = 1;
+		} else if (!strncasecmp (argv[i], "MaxSubmitJobs", 4)) {
+			if(!assoc_cond->max_submit_jobs_list)
+				assoc_cond->max_submit_jobs_list =
+					list_create(slurm_destroy_char);
+			if(slurm_addto_char_list(
+				   assoc_cond->max_submit_jobs_list,
+				   argv[i]+end))
+				set = 1;
+		} else if (!strncasecmp (argv[i], "MaxWall", 4)) {
+			if(!assoc_cond->max_wall_pj_list)
+				assoc_cond->max_wall_pj_list =
+					list_create(slurm_destroy_char);
+			if(slurm_addto_char_list(
+				   assoc_cond->max_wall_pj_list,
+				   argv[i]+end))
+				set = 1;
+		} else if (!strncasecmp (argv[i], "Partitions", 4)) {
+			if(!assoc_cond->partition_list)
+				assoc_cond->partition_list = 
+					list_create(slurm_destroy_char);
+			slurm_addto_char_list(assoc_cond->partition_list,
 					argv[i]+end);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Parent", 4)) {
-			xfree(association_cond->parent_acct);
-			association_cond->parent_acct =
-				strip_quotes(argv[i]+end, NULL);
+			if(!assoc_cond->parent_acct_list) {
+				assoc_cond->parent_acct_list = 
+					list_create(slurm_destroy_char);
+			}
+			if(slurm_addto_char_list(assoc_cond->parent_acct_list,
+						 argv[i]+end))
+			set = 1;
+		} else if (!strncasecmp (argv[i], "QosLevel", 1)) {
+			int option = 0;
+			if(!assoc_cond->qos_list) {
+				assoc_cond->qos_list = 
+					list_create(slurm_destroy_char);
+			}
+			
+			if(!qos_list) {
+				qos_list = acct_storage_g_get_qos(
+					db_conn, my_uid, NULL);
+			}
+			
+			if(addto_qos_char_list(assoc_cond->qos_list, qos_list,
+					       argv[i]+end, option))
+				set = 1;
+			else
+				exit_code = 1;
+		} else if (!strncasecmp (argv[i], "Users", 1)) {
+			if(!assoc_cond->user_list)
+				assoc_cond->user_list = 
+					list_create(slurm_destroy_char);
+			slurm_addto_char_list(assoc_cond->user_list,
+					argv[i]+end);
 			set = 1;
 		} else {
 			exit_code = 1;
 			fprintf(stderr, " Unknown condition: %s\n", argv[i]);
 		}
 	}
+	if(qos_list)
+		list_destroy(qos_list);
+
 	(*start) = i;
 
 	return set;
@@ -729,6 +852,9 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 		list_iterator_reset(itr2);
 		printf("\n");
 	}
+
+	if(qos_list)
+		list_destroy(qos_list);
 
 	if(tree_list) 
 		list_destroy(tree_list);

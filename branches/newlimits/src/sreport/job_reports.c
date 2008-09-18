@@ -516,7 +516,8 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 	assoc_cond.id_list = job_cond->associd_list;
 	assoc_cond.cluster_list = job_cond->cluster_list;
 	assoc_cond.partition_list = job_cond->partition_list;
-	assoc_cond.parent_acct = "root";
+	assoc_cond.parent_acct_list = list_create(NULL);
+	list_append(assoc_cond.parent_acct_list, "root");
 
 	assoc_list = acct_storage_g_get_associations(db_conn, my_uid,
 						     &assoc_cond);

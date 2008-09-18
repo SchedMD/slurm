@@ -765,7 +765,7 @@ static int _mod_cluster(sacctmgr_file_opts_t *file_opts,
 	char *my_info = NULL;
 
 	init_acct_association_rec(&mod_assoc);
-	init_acct_association_cond(&assoc_cond);
+	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
 
 	if(cluster->root_assoc->fairshare != file_opts->fairshare) {
 		mod_assoc.fairshare = file_opts->fairshare;
@@ -1134,7 +1134,7 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 		break;
 	}
 	init_acct_association_rec(&mod_assoc);
-	init_acct_association_cond(&assoc_cond);
+	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
 
 	if(assoc->fairshare != file_opts->fairshare) {
 		mod_assoc.fairshare = file_opts->fairshare;

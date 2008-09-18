@@ -154,6 +154,7 @@ extern void sacctmgr_print_coord_list(
 extern void sacctmgr_print_qos_list(print_field_t *field, List qos_list,
 				    List value, int last);
 extern char *get_qos_complete_str(List qos_list, List num_qos_list);
+extern void sacctmgr_print_assoc_limits(acct_association_rec_t *assoc);
 extern int sort_coord_list(acct_coord_rec_t *coord_a,
 			   acct_coord_rec_t *coord_b);
 extern int sort_char_list(char *name_a, char *name_b);

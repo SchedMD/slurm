@@ -309,8 +309,7 @@ static int _setup_association_limits(acct_association_rec_t *assoc,
 	if(assoc->qos_list && list_count(assoc->qos_list)) {
 		char *qos_val = NULL;
 		char *tmp_char = NULL;
-		ListIterator qos_itr =
-			list_iterator_create(assoc->qos_list);
+		ListIterator qos_itr = list_iterator_create(assoc->qos_list);
 			
 		xstrcat(cols, ", qos");
 			
@@ -333,6 +332,321 @@ static int _setup_association_limits(acct_association_rec_t *assoc,
 
 }
 
+static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
+					  char **in_extra)
+{
+	char *extra = (*in_extra);
+	int set = 0;
+	ListIterator itr = NULL;
+	char *object = NULL;
+
+	if(!assoc_cond)
+		return 0;
+
+	if(assoc_cond->acct_list && list_count(assoc_cond->acct_list)) {
+		set = 0;
+		xstrcat(extra, " && (");
+		itr = list_iterator_create(assoc_cond->acct_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "acct='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+
+	if(assoc_cond->cluster_list && list_count(assoc_cond->cluster_list)) {
+		set = 0;
+		xstrcat(extra, " && (");
+		itr = list_iterator_create(assoc_cond->cluster_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "cluster='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+
+	if(assoc_cond->fairshare_list
+	   && list_count(assoc_cond->fairshare_list)) {
+		set = 0;
+		xstrcat(extra, " && (");
+		itr = list_iterator_create(assoc_cond->fairshare_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "fairshare='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+
+	if(assoc_cond->grp_cpu_hours_list
+	   && list_count(assoc_cond->grp_cpu_hours_list)) {
+		set = 0;
+		xstrcat(extra, " && (");
+		itr = list_iterator_create(assoc_cond->grp_cpu_hours_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "grp_cpu_hours='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+
+	if(assoc_cond->grp_cpus_list
+	   && list_count(assoc_cond->grp_cpus_list)) {
+		set = 0;
+		xstrcat(extra, " && (");
+		itr = list_iterator_create(assoc_cond->grp_cpus_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "grp_cpus='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+
+	if(assoc_cond->grp_jobs_list
+	   && list_count(assoc_cond->grp_jobs_list)) {
+		set = 0;
+		xstrcat(extra, " && (");
+		itr = list_iterator_create(assoc_cond->grp_jobs_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "grp_jobs='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+
+	if(assoc_cond->grp_nodes_list
+	   && list_count(assoc_cond->grp_nodes_list)) {
+		set = 0;
+		xstrcat(extra, " && (");
+		itr = list_iterator_create(assoc_cond->grp_nodes_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "grp_nodes='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+
+	if(assoc_cond->grp_submit_jobs_list
+	   && list_count(assoc_cond->grp_submit_jobs_list)) {
+		set = 0;
+		xstrcat(extra, " && (");
+		itr = list_iterator_create(assoc_cond->grp_submit_jobs_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "grp_submit_jobs='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+
+	if(assoc_cond->grp_wall_list
+	   && list_count(assoc_cond->grp_wall_list)) {
+		set = 0;
+		xstrcat(extra, " && (");
+		itr = list_iterator_create(assoc_cond->grp_wall_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "grp_wall='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+
+	if(assoc_cond->max_cpu_mins_pj_list
+	   && list_count(assoc_cond->max_cpu_mins_pj_list)) {
+		set = 0;
+		xstrcat(extra, " && (");
+		itr = list_iterator_create(assoc_cond->max_cpu_mins_pj_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "max_cpu_mins_pj='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+
+	if(assoc_cond->max_cpus_pj_list
+	   && list_count(assoc_cond->max_cpus_pj_list)) {
+		set = 0;
+		xstrcat(extra, " && (");
+		itr = list_iterator_create(assoc_cond->max_cpus_pj_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "max_cpus_pj='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+
+	if(assoc_cond->max_jobs_list
+	   && list_count(assoc_cond->max_jobs_list)) {
+		set = 0;
+		xstrcat(extra, " && (");
+		itr = list_iterator_create(assoc_cond->max_jobs_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "max_jobs='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+
+	if(assoc_cond->max_nodes_pj_list
+	   && list_count(assoc_cond->max_nodes_pj_list)) {
+		set = 0;
+		xstrcat(extra, " && (");
+		itr = list_iterator_create(assoc_cond->max_nodes_pj_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "max_nodes_pj='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+
+	if(assoc_cond->max_submit_jobs_list
+	   && list_count(assoc_cond->max_submit_jobs_list)) {
+		set = 0;
+		xstrcat(extra, " && (");
+		itr = list_iterator_create(assoc_cond->max_submit_jobs_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "max_submit_jobs='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+
+	if(assoc_cond->max_wall_pj_list
+	   && list_count(assoc_cond->max_wall_pj_list)) {
+		set = 0;
+		xstrcat(extra, " && (");
+		itr = list_iterator_create(assoc_cond->max_wall_pj_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "max_wall_pj='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+
+	if(assoc_cond->user_list && list_count(assoc_cond->user_list)) {
+		set = 0;
+		xstrcat(extra, " && (");
+		itr = list_iterator_create(assoc_cond->user_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "user='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	} else if (!assoc_cond->user_list) {
+		debug4("no user specified looking at accounts");
+		xstrcat(extra, " && user = '' ");
+	} else {
+		debug4("no user specified looking at users");
+		xstrcat(extra, " && user != '' ");
+	}
+
+	if(assoc_cond->partition_list 
+	   && list_count(assoc_cond->partition_list)) {
+		set = 0;
+		xstrcat(extra, " && (");
+		itr = list_iterator_create(assoc_cond->partition_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "partition='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+
+	if(assoc_cond->id_list && list_count(assoc_cond->id_list)) {
+		set = 0;
+		xstrcat(extra, " && (");
+		itr = list_iterator_create(assoc_cond->id_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "id=%s", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+	
+	if(assoc_cond->qos_list && list_count(assoc_cond->qos_list)) {
+		set = 0;
+		xstrcat(extra, " && (");
+		itr = list_iterator_create(assoc_cond->qos_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, 
+				   "(qos like '%%,%s' || qos like '%%,%s,%%')",
+				   object, object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+	
+	if(assoc_cond->parent_acct_list
+	   && list_count(assoc_cond->parent_acct_list)) {
+		set = 0;
+		xstrcat(extra, " && (");
+		itr = list_iterator_create(assoc_cond->parent_acct_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "parent_acct=%s", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+	return set;
+}
 /* This function will take the object given and free it later so it
  * needed to be removed from a list if in one before 
  */
@@ -3510,104 +3824,8 @@ extern List acct_storage_p_modify_associations(
 		is_admin = 1;
 	}
 
-	if(assoc_cond->acct_list && list_count(assoc_cond->acct_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(assoc_cond->acct_list);
-		while((object = list_next(itr))) {
-			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "acct='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
-	if(assoc_cond->cluster_list && list_count(assoc_cond->cluster_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(assoc_cond->cluster_list);
-		while((object = list_next(itr))) {
-			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "cluster='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
-	if(assoc_cond->user_list && list_count(assoc_cond->user_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(assoc_cond->user_list);
-		while((object = list_next(itr))) {
-			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "user='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	} else if (!assoc_cond->user_list) {
-		debug4("no user specified looking at accounts");
-		xstrcat(extra, " && user = '' ");
-	} else {
-		debug4("no user specified looking at users");
-		xstrcat(extra, " && user != '' ");
-	}
-
-	if(assoc_cond->partition_list 
-	   && list_count(assoc_cond->partition_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(assoc_cond->partition_list);
-		while((object = list_next(itr))) {
-			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "partition='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
-	if(assoc_cond->id_list && list_count(assoc_cond->id_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(assoc_cond->id_list);
-		while((object = list_next(itr))) {
-			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "id=%s", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
+	set = _setup_association_cond_limits(assoc_cond, &extra);
 	
-	if(assoc_cond->qos_list && list_count(assoc_cond->qos_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(assoc_cond->qos_list);
-		while((object = list_next(itr))) {
-			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, 
-				   "(qos like '%%,%s' || qos like '%%,%s,%%')",
-				   object, object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-	
-	if(assoc_cond->parent_acct) {
-		xstrfmtcat(extra, " && parent_acct='%s'",
-			   assoc_cond->parent_acct);
-	}
-
 	if((int)assoc->fairshare >= 0) 
 		xstrfmtcat(vals, ", fairshare=%u", assoc->fairshare);
 	else if((int)assoc->fairshare == INFINITE) {
@@ -4667,97 +4885,7 @@ extern List acct_storage_p_remove_associations(
 
 	xstrcat(extra, "where id>0 && deleted=0");
 
-	if(assoc_cond->acct_list && list_count(assoc_cond->acct_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(assoc_cond->acct_list);
-		while((object = list_next(itr))) {
-			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "acct='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
-	if(assoc_cond->cluster_list && list_count(assoc_cond->cluster_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(assoc_cond->cluster_list);
-		while((object = list_next(itr))) {
-			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "cluster='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
-	if(assoc_cond->user_list && list_count(assoc_cond->user_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(assoc_cond->user_list);
-		while((object = list_next(itr))) {
-			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "user='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
-	if(assoc_cond->partition_list 
-	   && list_count(assoc_cond->partition_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(assoc_cond->partition_list);
-		while((object = list_next(itr))) {
-			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "partition='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
-	if(assoc_cond->id_list && list_count(assoc_cond->id_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(assoc_cond->id_list);
-		while((object = list_next(itr))) {
-			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "id=%s", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-	
-	if(assoc_cond->qos_list && list_count(assoc_cond->qos_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(assoc_cond->qos_list);
-		while((object = list_next(itr))) {
-			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, 
-				   "(qos like '%%,%s' || qos like '%%,%s,%%')",
-				   object, object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
-	if(assoc_cond->parent_acct) {
-		xstrfmtcat(extra, " && parent_acct='%s'",
-			   assoc_cond->parent_acct);
-	}
+	set = _setup_association_cond_limits(assoc_cond, &extra);
 
 	for(i=0; i<RASSOC_COUNT; i++) {
 		if(i) 
@@ -5590,7 +5718,7 @@ empty:
 
 	cluster_list = list_create(destroy_acct_cluster_rec);
 
-	init_acct_association_cond(&assoc_cond);
+	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
 
 	assoc_cond.cluster_list = list_create(NULL);
 	assoc_cond.acct_list = list_create(NULL);
@@ -5671,7 +5799,6 @@ extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 	char *tmp = NULL;	
 	List assoc_list = NULL;
 	ListIterator itr = NULL;
-	char *object = NULL;
 	int set = 0;
 	int i=0, is_admin=1;
 	MYSQL_RES *result = NULL;
@@ -5799,92 +5926,7 @@ extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 	else
 		xstrcat(extra, "where deleted=0");
 
-	if(assoc_cond->acct_list && list_count(assoc_cond->acct_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(assoc_cond->acct_list);
-		while((object = list_next(itr))) {
-			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "acct='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
-	if(assoc_cond->cluster_list && list_count(assoc_cond->cluster_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(assoc_cond->cluster_list);
-		while((object = list_next(itr))) {
-			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "cluster='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
-	if(assoc_cond->user_list && list_count(assoc_cond->user_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(assoc_cond->user_list);
-		while((object = list_next(itr))) {
-			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "user='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
-	if(assoc_cond->id_list && list_count(assoc_cond->id_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(assoc_cond->id_list);
-		while((object = list_next(itr))) {
-			char *ptr = NULL;
-			long num = strtol(object, &ptr, 10);
-			if ((num == 0) && ptr && ptr[0]) {
-				error("Invalid value for assoc id (%s)",
-				      object);
-				xfree(extra);
-				list_iterator_destroy(itr);
-				return NULL;
-			}
-
-			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "id=%s", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-	
-	if(assoc_cond->qos_list && list_count(assoc_cond->qos_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(assoc_cond->qos_list);
-		while((object = list_next(itr))) {
-			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, 
-				   "(qos like '%%,%s' || qos like '%%,%s,%%')",
-				   object, object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
-	if(assoc_cond->parent_acct) {
-		xstrfmtcat(extra, " && parent_acct='%s'",
-			   assoc_cond->parent_acct);
-	}
+	set = _setup_association_cond_limits(assoc_cond, &extra);
 
 	with_usage = assoc_cond->with_usage;
 	without_parent_limits = assoc_cond->without_parent_limits;
