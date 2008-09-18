@@ -1524,6 +1524,9 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 				   " You specified Accounts in your "
 				   "request.  Did you mean "
 				   "DefaultAccounts?\n")) {
+				if(!user_cond->def_acct_list)
+					user_cond->def_acct_list = 
+						list_create(slurm_destroy_char);
 				list_transfer(user_cond->def_acct_list,
 					      user_cond->assoc_cond->acct_list);
 			}
