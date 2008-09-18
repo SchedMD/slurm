@@ -58,7 +58,9 @@
  *
  * core_bitmap		- Bitmap of allocated cores for all nodes and sockets
  * core_bitmap_used	- Bitmap of cores allocated to job steps
- * cores_per_socket	- Count of cores per socket on this node
+ * cores_per_socket	- Count of cores per socket on this node, build by 
+ *			  build_select_job_res() and insures consistent 
+ *			  interpretation of core_bitmap
  * cpus			- Count of desired/allocated CPUs per node for job/step
  * cpus_used		- For a job, count of CPUs per node used by job steps
  * cpu_array_cnt	- Count of elements in cpu_array_* below
@@ -75,8 +77,12 @@
  * node_req		- NODE_CR_RESERVED|NODE_CR_ONE_ROW|NODE_CR_AVAILABLE
  * nprocs		- Number of processors in the allocation
  * sock_core_rep_count	- How many consecutive nodes that sockets_per_node
- *			  and cores_per_socket apply to
- * sockets_per_node	- Count of sockets on this node
+ *			  and cores_per_socket apply to, build by 
+ *			  build_select_job_res() and insures consistent 
+ *			  interpretation of core_bitmap
+ * sockets_per_node	- Count of sockets on this node, build by 
+ *			  build_select_job_res() and insures consistent 
+ *			  interpretation of core_bitmap
  *
  * NOTES:
  * cpu_array_* contains the same information as "cpus", but in a more compact
