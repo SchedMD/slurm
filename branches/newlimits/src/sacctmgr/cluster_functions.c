@@ -148,10 +148,19 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 	List name_list = list_create(slurm_destroy_char);
 	List cluster_list = NULL;
 	uint32_t fairshare = NO_VAL; 
+	uint64_t grp_cpu_hours = NO_VAL;
+	uint32_t grp_cpus = NO_VAL;
+	uint32_t grp_jobs = NO_VAL;
+	uint32_t grp_nodes = NO_VAL;
+	uint32_t grp_submit_jobs = NO_VAL;
+	uint32_t grp_wall = NO_VAL;
 	uint64_t max_cpu_mins_pj = NO_VAL;
+	uint32_t max_cpus_pj = NO_VAL;
 	uint32_t max_jobs = NO_VAL;
 	uint32_t max_nodes_pj = NO_VAL;
+	uint32_t max_submit_jobs = NO_VAL;
 	uint32_t max_wall_pj = NO_VAL;
+
 	int limit_set = 0;
 	ListIterator itr = NULL, itr_c = NULL;
 	char *name = NULL;
@@ -169,8 +178,14 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 		} else if (!strncasecmp (argv[i], "MaxJobs=", 4)) {
 			max_jobs = atoi(argv[i]+end);
 			limit_set = 1;
+		} else if (!strncasecmp (argv[i], "MaxJobs=", 4)) {
+			max_jobs = atoi(argv[i]+end);
+			limit_set = 1;
 		} else if (!strncasecmp (argv[i], "MaxNodes", 4)) {
 			max_nodes_pj = atoi(argv[i]+end);
+			limit_set = 1;
+		} else if (!strncasecmp (argv[i], "MaxSubmitJobs=", 4)) {
+			max_submit_jobs = atoi(argv[i]+end);
 			limit_set = 1;
 		} else if (!strncasecmp (argv[i], "MaxWall", 4)) {
 			mins = time_str2mins(argv[i]+end);
@@ -247,16 +262,17 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 	itr = list_iterator_create(name_list);
 	while((name = list_next(itr))) {
 		cluster = xmalloc(sizeof(acct_cluster_rec_t));
-		cluster->name = xstrdup(name);
 		list_append(cluster_list, cluster);
+		cluster->name = xstrdup(name);
+		cluster->assoc = xmalloc(sizeof(acct_association_rec_t));
 
 		printf("  Name          = %s\n", cluster->name);
 
-		cluster->default_fairshare = fairshare;		
-		cluster->default_max_cpu_mins_pj = max_cpu_mins_pj;
-		cluster->default_max_jobs = max_jobs;
-		cluster->default_max_nodes_pj = max_nodes_pj;
-		cluster->default_max_wall_pj = 
+		cluster->assoc->fairshare = fairshare;		
+		cluster->assoc->max_cpu_mins_pj = max_cpu_mins_pj;
+		cluster->assoc->max_jobs = max_jobs;
+		cluster->assoc->max_nodes_pj = max_nodes_pj;
+		cluster->assoc->max_wall_pj = 
 			max_wall_pj;
 	}
 	list_iterator_destroy(itr);
@@ -473,32 +489,31 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 			case PRINT_FAIRSHARE:
 				field->print_routine(
 					field,
-					cluster->default_fairshare,
+					cluster->assoc->fairshare,
 					(curr_inx == field_count));
 				break;
 			case PRINT_MAXC:
 				field->print_routine(
 					field,
-					cluster->default_max_cpu_mins_pj,
+					cluster->assoc->max_cpu_mins_pj,
 					(curr_inx == field_count));
 				break;
 			case PRINT_MAXJ:
 				field->print_routine(
 					field, 
-					cluster->default_max_jobs,
+					cluster->assoc->max_jobs,
 					(curr_inx == field_count));
 				break;
 			case PRINT_MAXN:
 				field->print_routine(
 					field,
-					cluster->default_max_nodes_pj,
+					cluster->assoc->max_nodes_pj,
 					(curr_inx == field_count));
 				break;
 			case PRINT_MAXW:
 				field->print_routine(
 					field,
-					cluster->
-					default_max_wall_pj,
+					cluster->assoc->max_wall_pj,
 					(curr_inx == field_count));
 				break;
 			case PRINT_RPC_VERSION:

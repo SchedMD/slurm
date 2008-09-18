@@ -120,8 +120,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 			a_set = 1;
 		} else if (!strncasecmp (argv[i], "QosLevel", 1)) {
 			int option = 0;
-			if(!acct_cond->qos_list) {
-				acct_cond->qos_list = 
+			if(!acct_cond->assoc_cond->qos_list) {
+				acct_cond->assoc_cond->qos_list = 
 					list_create(slurm_destroy_char);
 			}
 			
@@ -130,7 +130,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 					db_conn, my_uid, NULL);
 			}
 			
-			addto_qos_char_list(acct_cond->qos_list, qos_list,
+			addto_qos_char_list(acct_cond->assoc_cond->qos_list,
+					    qos_list,
 					    argv[i]+end, option);
 			u_set = 1;
 		} else {
@@ -164,7 +165,6 @@ static int _set_rec(int *start, int argc, char *argv[],
 	int u_set = 0;
 	int a_set = 0;
 	int end = 0;
-	List qos_list = NULL;
 
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
@@ -215,25 +215,6 @@ static int _set_rec(int *start, int argc, char *argv[],
 		} else if (!strncasecmp (argv[i], "Parent", 1)) {
 			assoc->parent_acct = strip_quotes(argv[i]+end, NULL);
 			a_set = 1;
-		} else if (!strncasecmp (argv[i], "QosLevel=", 1)) {
-			int option = 0;
-			if(!acct->qos_list) {
-				acct->qos_list = 
-					list_create(slurm_destroy_char);
-			}
-			
-			if(!qos_list) {
-				qos_list = acct_storage_g_get_qos(
-					db_conn, my_uid, NULL);
-			}
-			if(end > 2 && argv[i][end-1] == '='
-			   && (argv[i][end-2] == '+' 
-			       || argv[i][end-2] == '-'))
-				option = (int)argv[i][end-2];
-
-			addto_qos_char_list(acct->qos_list, qos_list,
-					    argv[i]+end, option);
-			u_set = 1;
 		} else {
 			exit_code=1;
 			fprintf(stderr, " Unknown option: %s\n"
@@ -241,8 +222,6 @@ static int _set_rec(int *start, int argc, char *argv[],
 				argv[i]);
 		}
 	}
-	if(qos_list)
-		list_destroy(qos_list);
 
 	(*start) = i;
 
@@ -371,6 +350,7 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 			}
 			addto_qos_char_list(add_qos_list, qos_list,
 					    argv[i]+end, option);
+			limit_set = 1;
 		} else {
 			exit_code=1;
 			fprintf(stderr, " Unknown option: %s\n", argv[i]);
@@ -543,18 +523,7 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 				acct->organization = xstrdup(parent);
 			else
 				acct->organization = xstrdup(name);
-			if(add_qos_list && list_count(add_qos_list)) {
-				char *tmp_qos = NULL;
-				ListIterator qos_itr = 
-					list_iterator_create(add_qos_list);
-				acct->qos_list = 
-					list_create(slurm_destroy_char);
-				while((tmp_qos = list_next(qos_itr))) {
-					list_append(acct->qos_list,
-						    xstrdup(tmp_qos));
-				}
-				list_iterator_destroy(qos_itr);
-			}
+
 			xstrfmtcat(acct_str, "  %s\n", name);
 			list_append(acct_list, acct);
 		}
@@ -583,6 +552,7 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 			assoc->cluster = xstrdup(cluster);
 			assoc->parent_acct = xstrdup(parent);
 			assoc->fairshare = fairshare;
+			assoc->qos_list = copy_char_list(add_qos_list);
 			assoc->max_jobs = max_jobs;
 			assoc->max_nodes_pj = max_nodes_pj;
 			assoc->max_wall_pj =
@@ -631,14 +601,6 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 			printf("  Organization    = %s\n",
 			       "Parent/Account Name");
 
-		if(add_qos_list) {
-			char *temp_char = get_qos_complete_str(
-				qos_list, add_qos_list);
-			if(temp_char) {		
-				printf("  Qos             = %s\n", temp_char);
-				xfree(temp_char);
-			}
-		}
 		xfree(acct_str);
 	}
 
@@ -677,6 +639,16 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 			mins2time_str((time_t) max_wall_pj, 
 				      time_buf, sizeof(time_buf));
 			printf("  MaxWall         = %s\n", time_buf);
+		}
+		if(add_qos_list) {
+			char *temp_char = get_qos_complete_str(
+				qos_list, add_qos_list);
+			if(temp_char) {		
+				printf("  Qos             = %s\n", temp_char);
+				xfree(temp_char);
+			}
+		} else {
+			printf("  Qos             = %s\n", "Normal");
 		}
 	}
 	
@@ -1006,25 +978,17 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 									NULL);
 						}
 						field->print_routine(
-							field, 
+							field,
 							qos_list,
-							acct->qos_list,
+							assoc->qos_list,
 							(curr_inx == 
 							 field_count));
 						break;
 					case PRINT_QOS_RAW:
-						if(!qos_list) {
-							qos_list = 
-								acct_storage_g_get_qos(
-									db_conn,
-									my_uid,
-									NULL);
-						}
 						field->print_routine(
 							field,
-							qos_list,
-							acct->qos_list,
-							(curr_inx == 
+							assoc->qos_list,
+							(curr_inx ==
 							 field_count));
 						break;
 					case PRINT_PID:
@@ -1135,33 +1099,16 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 							 field_count));
 					break;
 				case PRINT_QOS:
-					if(!qos_list) {
-						qos_list = 
-							acct_storage_g_get_qos(
-								db_conn,
-								my_uid,
-								NULL);
-					}
 					field->print_routine(
-						field, qos_list,
-						acct->qos_list,
-							(curr_inx == 
-							 field_count));
+						field, NULL, NULL,
+						(curr_inx == field_count));
 					break;
 				case PRINT_QOS_RAW:
-					if(!qos_list) {
-						qos_list = 
-							acct_storage_g_get_qos(
-								db_conn,
-								my_uid,
-								NULL);
-					}
 					field->print_routine(
-						field, qos_list,
-						acct->qos_list,
-							(curr_inx == 
-							 field_count));
-					break;
+						field,
+						NULL,
+						(curr_inx == field_count));
+						break;
 				case PRINT_PID:
 					field->print_routine(
 						field, NULL,

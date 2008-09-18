@@ -109,6 +109,7 @@ typedef struct {
 			       * can run a job (seconds) */
 	List partition_list;	/* list of char * */
 	char *parent_acct;	/* name of parent account */
+	List qos_list; /* list of char * */	
 	uint32_t usage_end; 
 	uint32_t usage_start; 
 	List user_list;		/* list of char * */
@@ -124,7 +125,6 @@ typedef struct {
 						names */
 	List description_list; /* list of char * */
 	List organization_list; /* list of char * */
-	List qos_list; /* list of char * */	
 	uint16_t with_assocs; 
 	uint16_t with_coords; 
 	uint16_t with_deleted; 
@@ -136,7 +136,6 @@ typedef struct {
 	char *description;
 	char *name;
 	char *organization;
-	List qos_list /* list of char *'s */;
 } acct_account_rec_t;
 
 typedef struct {
@@ -244,24 +243,9 @@ typedef struct {
 
 typedef struct {
 	List accounting_list; /* list of cluster_accounting_rec_t *'s */
+	acct_association_rec_t *assoc; /* root association for cluster */
 	char *control_host;
 	uint32_t control_port;
-	uint32_t default_fairshare;	/* fairshare number */
-
-	uint64_t default_max_cpu_mins_pj;/* max number of cpu mins this 
-					  * association can have per job */
-	uint32_t default_max_cpus_pj; /* max number of cpus this 
-				       * association can allocate per job */
-	uint32_t default_max_jobs;/* max number of jobs this association can run
-				   * at one time */
-	uint32_t default_max_nodes_pj; /* max number of nodes this
-					* association can
-					* allocate per job */
-	uint32_t default_max_submit_jobs; /* max number of jobs any
-					   * user can submit */
-	uint32_t default_max_wall_pj; /* longest time in mins this
-				       * association can run a job */
-
 	char *name;
 
 	uint16_t rpc_version; /* version of rpc this cluter is running */
@@ -305,7 +289,6 @@ typedef struct {
 	acct_association_cond_t *assoc_cond; /* use user_list here for
 						names */
 	List def_acct_list; /* list of char * */
-	List qos_list; 	/* list of char * */
 	uint16_t with_assocs; 
 	uint16_t with_coords; 
 	uint16_t with_deleted; 
@@ -322,7 +305,6 @@ typedef struct {
 	List coord_accts; /* list of acct_coord_rec_t *'s */
 	char *default_acct;
 	char *name;
-	List qos_list; /* list of char * */
 	uint32_t uid;
 } acct_user_rec_t;
 

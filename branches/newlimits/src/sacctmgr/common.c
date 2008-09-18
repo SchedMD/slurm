@@ -681,7 +681,27 @@ extern int addto_qos_char_list(List char_list, List qos_list, char *names,
 end_it:
 	list_iterator_destroy(itr);
 	return count;
-} 
+}
+ 
+extern List copy_char_list(List char_list) 
+{
+	List ret_list = NULL;
+	char *tmp_char = NULL;
+	ListIterator itr = NULL;
+
+	if(!char_list || !list_count(char_list))
+		return NULL;
+
+	itr = list_iterator_create(char_list);
+	ret_list = list_create(slurm_destroy_char);
+	
+	while((tmp_char = list_next(itr))) 
+		list_append(ret_list, xstrdup(tmp_char));
+	
+	list_iterator_destroy(itr);
+	
+	return ret_list;
+}
 
 extern void sacctmgr_print_coord_list(
 	print_field_t *field, List value, int last)

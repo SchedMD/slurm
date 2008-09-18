@@ -780,6 +780,14 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 				parents_changed = 1;
 				
 			}
+
+			if(object->qos_list) {
+				if(rec->qos_list)
+					list_destroy(rec->qos_list);
+				rec->qos_list = object->qos_list;
+				object->qos_list = NULL;
+			}
+
 			log_assoc_rec(rec);
 			break;
 		case ACCT_ADD_ASSOC:
@@ -857,13 +865,6 @@ extern int assoc_mgr_update_local_users(acct_update_object_t *update)
 				xfree(rec->default_acct);
 				rec->default_acct = object->default_acct;
 				object->default_acct = NULL;
-			}
-
-			if(object->qos_list) {
-				if(rec->qos_list)
-					list_destroy(rec->qos_list);
-				rec->qos_list = object->qos_list;
-				object->qos_list = NULL;
 			}
 
 			if(object->admin_level != ACCT_ADMIN_NOTSET) 

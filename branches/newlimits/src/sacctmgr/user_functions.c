@@ -132,8 +132,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 				a_set = 1;
 		} else if (!strncasecmp (argv[i], "QosLevel", 1)) {
 			int option = 0;
-			if(!user_cond->qos_list) {
-				user_cond->qos_list = 
+			if(!user_cond->assoc_cond->qos_list) {
+				user_cond->assoc_cond->qos_list = 
 					list_create(slurm_destroy_char);
 			}
 			
@@ -142,7 +142,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 					db_conn, my_uid, NULL);
 			}
 
-			addto_qos_char_list(user_cond->qos_list, qos_list,
+			addto_qos_char_list(user_cond->assoc_cond->qos_list,
+					    qos_list,
 					    argv[i]+end, option);
 			u_set = 1;
 		} else {
@@ -176,7 +177,6 @@ static int _set_rec(int *start, int argc, char *argv[],
 	int u_set = 0;
 	int a_set = 0;
 	int end = 0;
-	List qos_list = NULL;
 
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
@@ -237,26 +237,6 @@ static int _set_rec(int *start, int argc, char *argv[],
 					" Bad MaxWall time format: %s\n", 
 					argv[i]);
 			}
-		} else if (!strncasecmp (argv[i], "QosLevel", 1)) {
-			int option = 0;
-			if(!user->qos_list) {
-				user->qos_list = 
-					list_create(slurm_destroy_char);
-			}
-			
-			if(!qos_list) {
-				qos_list = acct_storage_g_get_qos(
-					db_conn, my_uid, NULL);
-			}
-
-			if(end > 2 && argv[i][end-1] == '='
-			   && (argv[i][end-2] == '+' 
-			       || argv[i][end-2] == '-'))
-				option = (int)argv[i][end-2];
-
-			addto_qos_char_list(user->qos_list, qos_list,
-					    argv[i]+end, option);
-			u_set = 1;
 		} else {
 			exit_code=1;
 			fprintf(stderr, " Unknown option: %s\n"
@@ -264,8 +244,6 @@ static int _set_rec(int *start, int argc, char *argv[],
 				argv[i]);
 		}		
 	}	
-	if(qos_list)
-		list_destroy(qos_list);
 
 	(*start) = i;
 
@@ -502,6 +480,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 
 			addto_qos_char_list(add_qos_list, qos_list,
 					    argv[i]+end, option);
+			limit_set = 1;
 		} else {
 			exit_code=1;
 			fprintf(stderr, " Unknown option: %s\n", argv[i]);
@@ -661,19 +640,6 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 			user->name = xstrdup(name);
 			user->default_acct = xstrdup(default_acct);
 
-			if(add_qos_list && list_count(add_qos_list)) {
-				char *tmp_qos = NULL;
-				ListIterator qos_itr = 
-					list_iterator_create(add_qos_list);
-				user->qos_list = 
-					list_create(slurm_destroy_char);
-				while((tmp_qos = list_next(qos_itr))) {
-					list_append(user->qos_list,
-						    xstrdup(tmp_qos));
-				}
-				list_iterator_destroy(qos_itr);
-			}
-
 			user->admin_level = admin_level;
 			
 			xstrfmtcat(user_str, "  %s\n", name);
@@ -737,6 +703,9 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 						max_wall_pj;
 					assoc->max_cpu_mins_pj =
 						max_cpu_mins_pj;
+					assoc->qos_list = 
+						copy_char_list(add_qos_list);
+					
 					if(user) 
 						list_append(user->assoc_list,
 							    assoc);
@@ -768,10 +737,10 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 				assoc->fairshare = fairshare;
 				assoc->max_jobs = max_jobs;
 				assoc->max_nodes_pj = max_nodes_pj;
-				assoc->max_wall_pj =
-					max_wall_pj;
-				assoc->max_cpu_mins_pj =
-					max_cpu_mins_pj;
+				assoc->max_wall_pj = max_wall_pj;
+				assoc->max_cpu_mins_pj = max_cpu_mins_pj;
+				assoc->qos_list = copy_char_list(add_qos_list);
+
 				if(user) 
 					list_append(user->assoc_list, assoc);
 				else 
@@ -808,14 +777,6 @@ no_default:
 		printf(" Adding User(s)\n%s", user_str);
 		printf(" Settings =\n");
 		printf("  Default Account = %s\n", default_acct);
-		if(add_qos_list) {
-			char *temp_char = get_qos_complete_str(
-				qos_list, add_qos_list);
-			if(temp_char) {		
-				printf("  Qos             = %s\n", temp_char);
-				xfree(temp_char);
-			}
-		}
 		
 		if(admin_level != ACCT_ADMIN_NOTSET)
 			printf("  Admin Level     = %s\n", 
@@ -858,6 +819,16 @@ no_default:
 			mins2time_str((time_t) max_wall_pj, 
 				      time_buf, sizeof(time_buf));
 			printf("  MaxWall         = %s\n", time_buf);
+		}
+		if(add_qos_list) {
+			char *temp_char = get_qos_complete_str(
+				qos_list, add_qos_list);
+			if(temp_char) {		
+				printf("  Qos             = %s\n", temp_char);
+				xfree(temp_char);
+			}
+		} else {
+			printf("  Qos             = %s\n", "Normal");
 		}
 	}
 
@@ -998,10 +969,18 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 		PRINT_COORDS,
 		PRINT_DACCT,
 		PRINT_FAIRSHARE,
+		PRINT_GRPCH,
+		PRINT_GRPC,
+		PRINT_GRPJ,
+		PRINT_GRPN,
+		PRINT_GRPS,
+		PRINT_GRPW,
 		PRINT_ID,
 		PRINT_MAXC,
+		PRINT_MAXCM,
 		PRINT_MAXJ,
 		PRINT_MAXN,
+		PRINT_MAXS,
 		PRINT_MAXW,
 		PRINT_QOS,
 		PRINT_QOS_RAW,
@@ -1025,7 +1004,8 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 		slurm_addto_char_list(format_list, "U,D,Q,Ad");
 		if(user_cond->with_assocs)
 			slurm_addto_char_list(format_list,
-					"Cl,Ac,Part,F,MaxC,MaxJ,MaxN,MaxW");
+					      "Cl,Ac,Part,F,MaxCPUM,MaxCPUs,"
+					      "MaxJ,MaxN,MaxS,MaxW");
 		if(user_cond->with_coords)
 			slurm_addto_char_list(format_list, "Coord");
 	}
@@ -1081,11 +1061,16 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 			field->name = xstrdup("ID");
 			field->len = 6;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("MaxCPUMins", object, 4)) {
-			field->type = PRINT_MAXC;
+		} else if(!strncasecmp("MaxCPUMins", object, 7)) {
+			field->type = PRINT_MAXCM;
 			field->name = xstrdup("MaxCPUMins");
 			field->len = 11;
 			field->print_routine = print_fields_uint64;
+		} else if(!strncasecmp("MaxCPUs", object, 7)) {
+			field->type = PRINT_MAXC;
+			field->name = xstrdup("MaxCPUs");
+			field->len = 8;
+			field->print_routine = print_fields_uint;
 		} else if(!strncasecmp("MaxJobs", object, 4)) {
 			field->type = PRINT_MAXJ;
 			field->name = xstrdup("MaxJobs");
@@ -1095,6 +1080,11 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 			field->type = PRINT_MAXN;
 			field->name = xstrdup("MaxNodes");
 			field->len = 8;
+			field->print_routine = print_fields_uint;
+		} else if(!strncasecmp("MaxSubmitJobs", object, 4)) {
+			field->type = PRINT_MAXS;
+			field->name = xstrdup("MaxSubmit");
+			field->len = 9;
 			field->print_routine = print_fields_uint;
 		} else if(!strncasecmp("MaxWall", object, 4)) {
 			field->type = PRINT_MAXW;
@@ -1264,22 +1254,14 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 						field->print_routine(
 							field,
 							qos_list,
-							user->qos_list,
+							assoc->qos_list,
 							(curr_inx == 
 							 field_count));
 						break;
 					case PRINT_QOS_RAW:
-						if(!qos_list) {
-							qos_list = 
-								acct_storage_g_get_qos(
-									db_conn,
-									my_uid,
-									NULL);
-						}
 						field->print_routine(
 							field,
-							qos_list,
-							user->qos_list,
+							NULL,
 							(curr_inx == 
 							 field_count));
 						break;
@@ -1392,29 +1374,15 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 						(curr_inx == field_count));
 					break;
 				case PRINT_QOS:
-					if(!qos_list) {
-						qos_list = 
-							acct_storage_g_get_qos(
-								db_conn,
-								my_uid,
-								NULL);
-					}
 					field->print_routine(
-						field, qos_list,
-						user->qos_list,
+						field, NULL,
+						NULL,
 						(curr_inx == field_count));
 					break;
 				case PRINT_QOS_RAW:
-					if(!qos_list) {
-						qos_list = 
-							acct_storage_g_get_qos(
-								db_conn,
-								my_uid,
-								NULL);
-					}
 					field->print_routine(
-						field, qos_list,
-						user->qos_list,
+						field,
+						NULL,
 						(curr_inx == field_count));
 					break;
 				case PRINT_PID:

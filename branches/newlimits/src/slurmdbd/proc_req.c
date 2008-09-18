@@ -1615,8 +1615,7 @@ is_same_user:
 		/* If we add anything else here for the user we will
 		 * need to document it
 		 */
-		if((user_rec->admin_level != ACCT_ADMIN_NOTSET)
-		   || (user_rec->qos_list)) {
+		if((user_rec->admin_level != ACCT_ADMIN_NOTSET)) {
 			comment = "You can only change your own default account, nothing else";
 			error("%s", comment);
 			*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version, 
