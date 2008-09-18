@@ -2257,7 +2257,8 @@ extern void pack_acct_update_object(acct_update_object_t *object,
 		break;
 	case ACCT_UPDATE_NOTSET:
 	default:
-		error("unknown type set in update_object: %d", object->type);
+		error("pack: unknown type set in update_object: %d",
+		      object->type);
 		return;
 	}
 	if(object->objects) 
@@ -2309,7 +2310,7 @@ extern int unpack_acct_update_object(acct_update_object_t **object,
 		break;
 	case ACCT_UPDATE_NOTSET:
 	default:
-		error("unknown type set in update_object: %d",
+		error("unpack: unknown type set in update_object: %d",
 		      object_ptr->type);
 		goto unpack_error;
 	}
