@@ -243,10 +243,11 @@ typedef struct {
 
 typedef struct {
 	List accounting_list; /* list of cluster_accounting_rec_t *'s */
-	acct_association_rec_t *assoc; /* root association for cluster */
 	char *control_host;
 	uint32_t control_port;
 	char *name;
+
+	acct_association_rec_t *root_assoc; /* root association for cluster */
 
 	uint16_t rpc_version; /* version of rpc this cluter is running */
 } acct_cluster_rec_t;
@@ -366,6 +367,8 @@ extern void destroy_acct_txn_cond(void *object);
 extern void destroy_acct_update_object(void *object);
 extern void destroy_update_shares_rec(void *object);
 
+extern void init_acct_association_rec(acct_association_rec_t *assoc);
+extern void init_acct_association_cond(acct_association_cond_t *assoc);
 
 /* pack functions */
 extern void pack_acct_user_rec(void *in, uint16_t rpc_version, Buf buffer);

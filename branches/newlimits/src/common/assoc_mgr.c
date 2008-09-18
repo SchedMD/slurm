@@ -118,8 +118,9 @@ static int _post_user_list(List user_list)
 	while((user = list_next(itr))) {
 		uid_t pw_uid = uid_from_string(user->name);
 		if(pw_uid == (uid_t) -1) {
-			debug("couldn't get a uid for user %s",
-			      user->name);
+			if(slurmdbd_conf)
+				debug("couldn't get a uid for user %s",
+				      user->name);
 			user->uid = (uint32_t)NO_VAL;
 		} else
 			user->uid = pw_uid;

@@ -764,33 +764,20 @@ static int _mod_cluster(sacctmgr_file_opts_t *file_opts,
 	acct_association_cond_t assoc_cond;
 	char *my_info = NULL;
 
-	memset(&mod_assoc, 0, sizeof(acct_association_rec_t));
+	init_acct_association_rec(&mod_assoc);
+	init_acct_association_cond(&assoc_cond);
 
-	mod_assoc.fairshare = NO_VAL;
-	mod_assoc.max_cpu_mins_pj = NO_VAL;
-	mod_assoc.max_jobs = NO_VAL;
-	mod_assoc.max_nodes_pj = NO_VAL;
-	mod_assoc.max_wall_pj = NO_VAL;
-
-	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
-
-	assoc_cond.fairshare = NO_VAL;
-	assoc_cond.max_cpu_mins_pj = NO_VAL;
-	assoc_cond.max_jobs = NO_VAL;
-	assoc_cond.max_nodes_pj = NO_VAL;
-	assoc_cond.max_wall_pj = NO_VAL;
-
-	if(cluster->default_fairshare != file_opts->fairshare) {
+	if(cluster->root_assoc->fairshare != file_opts->fairshare) {
 		mod_assoc.fairshare = file_opts->fairshare;
 		changed = 1;
 		xstrfmtcat(my_info, 
 			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
 			   " Changed fairshare", "Cluster",
 			   cluster->name,
-			   cluster->default_fairshare,
+			   cluster->root_assoc->fairshare,
 			   file_opts->fairshare); 
 	}
-	if(cluster->default_max_cpu_mins_pj != 
+	if(cluster->root_assoc->max_cpu_mins_pj != 
 	   file_opts->max_cpu_mins_pj) {
 		mod_assoc.max_cpu_mins_pj = 
 			file_opts->max_cpu_mins_pj;
@@ -799,30 +786,30 @@ static int _mod_cluster(sacctmgr_file_opts_t *file_opts,
 			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
 			   " Changed MaxCPUMinsPerJob", "Cluster",
 			   cluster->name,
-			   cluster->default_max_cpu_mins_pj,
+			   cluster->root_assoc->max_cpu_mins_pj,
 			   file_opts->max_cpu_mins_pj);
 	}
-	if(cluster->default_max_jobs != file_opts->max_jobs) {
+	if(cluster->root_assoc->max_jobs != file_opts->max_jobs) {
 		mod_assoc.max_jobs = file_opts->max_jobs;
 		changed = 1;
 		xstrfmtcat(my_info, 
 			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
 			   " Changed MaxJobs", "Cluster",
 			   cluster->name,
-			   cluster->default_max_jobs,
+			   cluster->root_assoc->max_jobs,
 			   file_opts->max_jobs);
 	}
-	if(cluster->default_max_nodes_pj != file_opts->max_nodes_pj) {
+	if(cluster->root_assoc->max_nodes_pj != file_opts->max_nodes_pj) {
 		mod_assoc.max_nodes_pj = file_opts->max_nodes_pj;
 		changed = 1;
 		xstrfmtcat(my_info, 
 			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
 			   " Changed MaxNodesPerJob", "Cluster",
 			   cluster->name,
-			   cluster->default_max_nodes_pj, 
+			   cluster->root_assoc->max_nodes_pj, 
 			   file_opts->max_nodes_pj);
 	}
-	if(cluster->default_max_wall_pj !=
+	if(cluster->root_assoc->max_wall_pj !=
 	   file_opts->max_wall_pj) {
 		mod_assoc.max_wall_pj =
 			file_opts->max_wall_pj;
@@ -831,7 +818,7 @@ static int _mod_cluster(sacctmgr_file_opts_t *file_opts,
 			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
 			   " Changed MaxWallDurationPerJob", "Cluster",
 			   cluster->name,
-			   cluster->default_max_wall_pj,
+			   cluster->root_assoc->max_wall_pj,
 			   file_opts->max_wall_pj);
 	}
 
@@ -1146,38 +1133,8 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 		return 0;
 		break;
 	}
-
-	memset(&mod_assoc, 0, sizeof(acct_association_rec_t));
-
-	mod_assoc.fairshare = NO_VAL;
-	mod_assoc.grp_cpu_hours = NO_VAL;
-	mod_assoc.grp_cpus = NO_VAL;
-	mod_assoc.grp_jobs = NO_VAL;
-	mod_assoc.grp_nodes = NO_VAL;
-	mod_assoc.grp_submit_jobs = NO_VAL;
-	mod_assoc.grp_wall = NO_VAL;
-	mod_assoc.max_cpu_mins_pj = NO_VAL;
-	mod_assoc.max_cpus_pj = NO_VAL;
-	mod_assoc.max_jobs = NO_VAL;
-	mod_assoc.max_nodes_pj = NO_VAL;
-	mod_assoc.max_submit_jobs = NO_VAL;
-	mod_assoc.max_wall_pj = NO_VAL;
-
-	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
-
-	assoc_cond.fairshare = NO_VAL;
-	assoc_cond.grp_cpu_hours = NO_VAL;
-	assoc_cond.grp_cpus = NO_VAL;
-	assoc_cond.grp_jobs = NO_VAL;
-	assoc_cond.grp_nodes = NO_VAL;
-	assoc_cond.grp_submit_jobs = NO_VAL;
-	assoc_cond.grp_wall = NO_VAL;
-	assoc_cond.max_cpu_mins_pj = NO_VAL;
-	assoc_cond.max_cpus_pj = NO_VAL;
-	assoc_cond.max_jobs = NO_VAL;
-	assoc_cond.max_nodes_pj = NO_VAL;
-	assoc_cond.max_submit_jobs = NO_VAL;
-	assoc_cond.max_wall_pj = NO_VAL;
+	init_acct_association_rec(&mod_assoc);
+	init_acct_association_cond(&assoc_cond);
 
 	if(assoc->fairshare != file_opts->fairshare) {
 		mod_assoc.fairshare = file_opts->fairshare;
@@ -1946,14 +1903,14 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				cluster = xmalloc(sizeof(acct_cluster_rec_t));
 				list_append(cluster_list, cluster);
 				cluster->name = xstrdup(cluster_name);
-				cluster->default_fairshare =
+				cluster->root_assoc->fairshare =
 					file_opts->fairshare;		
-				cluster->default_max_cpu_mins_pj = 
+				cluster->root_assoc->max_cpu_mins_pj = 
 					file_opts->max_cpu_mins_pj;
-				cluster->default_max_jobs = file_opts->max_jobs;
-				cluster->default_max_nodes_pj = 
+				cluster->root_assoc->max_jobs = file_opts->max_jobs;
+				cluster->root_assoc->max_nodes_pj = 
 					file_opts->max_nodes_pj;
-				cluster->default_max_wall_pj = 
+				cluster->root_assoc->max_wall_pj = 
 					file_opts->max_wall_pj;
 				notice_thread_init();
 				rc = acct_storage_g_add_clusters(

@@ -390,8 +390,7 @@ extern void destroy_acct_cluster_rec(void *object)
 			list_destroy(acct_cluster->accounting_list);
 		xfree(acct_cluster->control_host);
 		xfree(acct_cluster->name);
-		if(acct_cluster->default_qos_list)
-			list_destroy(acct_cluster->default_qos_list);
+		destroy_acct_association_rec(acct_cluster->root_assoc);
 		xfree(acct_cluster);
 	}
 }
@@ -577,6 +576,55 @@ extern void destroy_update_shares_rec(void *object)
 	xfree(object);
 }
 
+extern void init_acct_association_rec(acct_association_rec_t *assoc)
+{
+	if(!assoc)
+		return;
+
+	memset(assoc, 0, sizeof(acct_association_rec_t));
+
+	assoc->fairshare = NO_VAL;
+
+	assoc->grp_cpu_hours = NO_VAL;
+	assoc->grp_cpus = NO_VAL;
+	assoc->grp_jobs = NO_VAL;
+	assoc->grp_nodes = NO_VAL;
+	assoc->grp_submit_jobs = NO_VAL;
+	assoc->grp_wall = NO_VAL;
+
+	assoc->max_cpu_mins_pj = NO_VAL;
+	assoc->max_cpus_pj = NO_VAL;
+	assoc->max_jobs = NO_VAL;
+	assoc->max_nodes_pj = NO_VAL;
+	assoc->max_submit_jobs = NO_VAL;
+	assoc->max_wall_pj = NO_VAL;
+}
+
+extern void init_acct_association_cond(acct_association_cond_t *assoc)
+{
+	if(!assoc)
+		return;
+	
+	memset(assoc, 0, sizeof(acct_association_cond_t));
+
+	assoc->fairshare = NO_VAL;
+
+	assoc->grp_cpu_hours = NO_VAL;
+	assoc->grp_cpus = NO_VAL;
+	assoc->grp_jobs = NO_VAL;
+	assoc->grp_nodes = NO_VAL;
+	assoc->grp_submit_jobs = NO_VAL;
+	assoc->grp_wall = NO_VAL;
+
+	assoc->max_cpu_mins_pj = NO_VAL;
+	assoc->max_cpus_pj = NO_VAL;
+	assoc->max_jobs = NO_VAL;
+	assoc->max_nodes_pj = NO_VAL;
+	assoc->max_submit_jobs = NO_VAL;
+	assoc->max_wall_pj = NO_VAL;
+}
+
+
 /****************************************************************************\
  * Pack and unpack data structures
 \****************************************************************************/
@@ -608,7 +656,8 @@ extern void pack_acct_user_rec(void *in, uint16_t rpc_version, Buf buffer)
 		if(count && count != NO_VAL) {
 			itr = list_iterator_create(object->assoc_list);
 			while((assoc = list_next(itr))) {
-				pack_acct_association_rec(assoc, rpc_version, buffer);
+				pack_acct_association_rec(assoc, rpc_version, 
+							  buffer);
 			}
 			list_iterator_destroy(itr);
 		}
@@ -1054,7 +1103,6 @@ extern void pack_acct_cluster_rec(void *in, uint16_t rpc_version, Buf buffer)
 	ListIterator itr = NULL;
 	uint32_t count = NO_VAL;
 	acct_cluster_rec_t *object = (acct_cluster_rec_t *)in;
-	char *tmp_info = NULL;
 
 	if(rpc_version < 3) {
 		if(!object) {
@@ -1088,11 +1136,19 @@ extern void pack_acct_cluster_rec(void *in, uint16_t rpc_version, Buf buffer)
 
 		packstr(object->control_host, buffer);
 		pack32(object->control_port, buffer);
-		pack32(object->default_fairshare, buffer);
-		pack32(object->default_max_cpu_mins_pj, buffer);
-		pack32(object->default_max_jobs, buffer);
-		pack32(object->default_max_nodes_pj, buffer);
-		pack32(object->default_max_wall_pj, buffer);
+		if(!object->root_assoc) {
+			pack32(0, buffer);
+			pack32(0, buffer);
+			pack32(0, buffer);
+			pack32(0, buffer);
+			pack32(0, buffer);
+		} else {
+			pack32(object->root_assoc->fairshare, buffer);
+			pack32(object->root_assoc->max_cpu_mins_pj, buffer);
+			pack32(object->root_assoc->max_jobs, buffer);
+			pack32(object->root_assoc->max_nodes_pj, buffer);
+			pack32(object->root_assoc->max_wall_pj, buffer);
+		}
 
 		packstr(object->name, buffer);
 
@@ -1126,13 +1182,13 @@ extern void pack_acct_cluster_rec(void *in, uint16_t rpc_version, Buf buffer)
 		}
 		count = NO_VAL;
 
-		pack_acct_association_rec(object->assoc, rpc_version, buffer);
-
 		packstr(object->control_host, buffer);
 		pack32(object->control_port, buffer);
-		pack32(object->default_fairshare, buffer);
 
 		packstr(object->name, buffer);
+
+		pack_acct_association_rec(object->root_assoc,
+					  rpc_version, buffer);
 
 		pack16(object->rpc_version, buffer);
 	}
@@ -1144,7 +1200,6 @@ extern int unpack_acct_cluster_rec(void **object, uint16_t rpc_version,
 	uint32_t uint32_tmp;
 	int i;
 	uint32_t count;
-	char *tmp_info = NULL;
 	acct_cluster_rec_t *object_ptr = xmalloc(sizeof(acct_cluster_rec_t));
 	cluster_accounting_rec_t *acct_info = NULL;
 
@@ -1166,12 +1221,15 @@ extern int unpack_acct_cluster_rec(void **object, uint16_t rpc_version,
 		safe_unpackstr_xmalloc(&object_ptr->control_host,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&object_ptr->control_port, buffer);
-		safe_unpack32(&object_ptr->default_fairshare, buffer);
-		safe_unpack32((uint32_t *)&object_ptr->default_max_cpu_mins_pj,
-			      buffer);
-		safe_unpack32(&object_ptr->default_max_jobs, buffer);
-		safe_unpack32(&object_ptr->default_max_nodes_pj, buffer);
-		safe_unpack32(&object_ptr->default_max_wall_pj,
+		object_ptr->root_assoc = 
+			xmalloc(sizeof(acct_association_rec_t));
+		init_acct_association_rec(object_ptr->root_assoc);
+		safe_unpack32(&object_ptr->root_assoc->fairshare, buffer);
+		safe_unpack32((uint32_t *)&object_ptr->root_assoc->
+			      max_cpu_mins_pj, buffer);
+		safe_unpack32(&object_ptr->root_assoc->max_jobs, buffer);
+		safe_unpack32(&object_ptr->root_assoc->max_nodes_pj, buffer);
+		safe_unpack32(&object_ptr->root_assoc->max_wall_pj,
 			      buffer);
 		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
 		/* default to rpc version 2 since that was the version we had
@@ -1192,16 +1250,17 @@ extern int unpack_acct_cluster_rec(void **object, uint16_t rpc_version,
 			}
 		}
 
-		if(unpack_acct_association_rec(
-			   (void *)&object->assoc, rpc_version, buffer)
-		   == SLURM_ERROR)
-			goto unpack_error;
 		safe_unpackstr_xmalloc(&object_ptr->control_host,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&object_ptr->control_port, buffer);
-		safe_unpack32(&object_ptr->default_fairshare, buffer);
 
 		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
+
+		if(unpack_acct_association_rec(
+			   (void **)&object_ptr->root_assoc, 
+			   rpc_version, buffer)
+		   == SLURM_ERROR)
+			goto unpack_error;
 
 		safe_unpack16(&object_ptr->rpc_version, buffer);
 	}
@@ -1432,6 +1491,8 @@ extern int unpack_acct_association_rec(void **object, uint16_t rpc_version,
 	*object = object_ptr;
 
 	if(rpc_version < 3) {
+		init_acct_association_rec(object_ptr);
+
 		safe_unpack32(&count, buffer);
 		if(count != NO_VAL) {
 			object_ptr->accounting_list =
@@ -1450,22 +1511,13 @@ extern int unpack_acct_association_rec(void **object, uint16_t rpc_version,
 		safe_unpackstr_xmalloc(&object_ptr->cluster, &uint32_tmp,
 				       buffer);
 
-		object_ptr->grp_cpu_hours = NO_VAL;
-		object_ptr->grp_cpus = NO_VAL;
-		object_ptr->grp_jobs = NO_VAL;
-		object_ptr->grp_nodes = NO_VAL;
-		object_ptr->grp_submit_jobs = NO_VAL;
-		object_ptr->grp_wall = NO_VAL;
-
 		safe_unpack32(&object_ptr->fairshare, buffer);
 		safe_unpack32(&object_ptr->id, buffer);
 		safe_unpack32(&object_ptr->lft, buffer);
 
 		safe_unpack32((uint32_t *)&object_ptr->max_cpu_mins_pj, buffer);
-		object_ptr->max_cpus_pj = NO_VAL;
 		safe_unpack32(&object_ptr->max_jobs, buffer);
 		safe_unpack32(&object_ptr->max_nodes_pj, buffer);
-		object_ptr->max_submit_jobs = NO_VAL;
 		safe_unpack32(&object_ptr->max_wall_pj, buffer);
 
 		safe_unpackstr_xmalloc(&object_ptr->parent_acct, &uint32_tmp,
@@ -1474,8 +1526,6 @@ extern int unpack_acct_association_rec(void **object, uint16_t rpc_version,
 		safe_unpackstr_xmalloc(&object_ptr->partition, &uint32_tmp,
 				       buffer);
 		
-		object_ptr->qos_list = NULL;
-
 		safe_unpack32(&object_ptr->rgt, buffer);
 		safe_unpack32(&object_ptr->uid, buffer);
 
@@ -2294,6 +2344,8 @@ extern int unpack_acct_association_cond(void **object,
 	*object = object_ptr;
 
 	if(rpc_version < 3) {
+		init_acct_association_cond(object_ptr);
+
 		safe_unpack32(&count, buffer);
 		if(count != NO_VAL) {
 			object_ptr->acct_list = list_create(slurm_destroy_char);
@@ -2314,13 +2366,6 @@ extern int unpack_acct_association_cond(void **object,
 			}
 		}
 
-		object_ptr->grp_cpu_hours = NO_VAL;
-		object_ptr->grp_cpus = NO_VAL;
-		object_ptr->grp_jobs = NO_VAL;
-		object_ptr->grp_nodes = NO_VAL;
-		object_ptr->grp_submit_jobs = NO_VAL;
-		object_ptr->grp_wall = NO_VAL;
-
 		safe_unpack32(&object_ptr->fairshare, buffer);
 
 		safe_unpack32(&count, buffer);
@@ -2334,10 +2379,8 @@ extern int unpack_acct_association_cond(void **object,
 		}
 	
 		safe_unpack32((uint32_t *)&object_ptr->max_cpu_mins_pj, buffer);
-		object_ptr->max_cpus_pj = NO_VAL;
 		safe_unpack32(&object_ptr->max_jobs, buffer);
 		safe_unpack32(&object_ptr->max_nodes_pj, buffer);
-		object_ptr->max_submit_jobs = NO_VAL;
 		safe_unpack32(&object_ptr->max_wall_pj, buffer);
 
 		safe_unpack32(&count, buffer);

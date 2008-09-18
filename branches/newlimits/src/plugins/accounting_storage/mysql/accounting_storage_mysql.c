@@ -2384,8 +2384,8 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrfmtcat(vals, "%d, %d, 'root', '%s'",
 			   now, now, object->name);
 		xstrfmtcat(extra, ", mod_time=%d", now);
-		if(object->assoc)
-			_setup_association_limits(object->assoc, &cols, 
+		if(object->root_assoc)
+			_setup_association_limits(object->root_assoc, &cols, 
 						  &vals, &extra, 1);
 		xstrfmtcat(query, 
 			   "insert into %s (creation_time, mod_time, name) "
@@ -5590,12 +5590,14 @@ empty:
 
 	cluster_list = list_create(destroy_acct_cluster_rec);
 
-	assoc_cond.cluster_list = list_create(NULL);
-	assoc_cond.acct_list = list_create(slurm_destroy_char);
-	list_append(assoc_cond.acct_list, xstrdup("root"));
+	init_acct_association_cond(&assoc_cond);
 
-	assoc_cond.user_list = list_create(slurm_destroy_char);
-	list_append(assoc_cond.user_list, xstrdup(""));
+	assoc_cond.cluster_list = list_create(NULL);
+	assoc_cond.acct_list = list_create(NULL);
+	list_append(assoc_cond.acct_list, "root");
+
+	assoc_cond.user_list = list_create(NULL);
+	list_append(assoc_cond.user_list, "");
 
 	while((row = mysql_fetch_row(result))) {
 		cluster = xmalloc(sizeof(acct_cluster_rec_t));
@@ -5636,12 +5638,12 @@ empty:
 			if(strcmp(assoc->cluster, cluster->name)) 
 				continue;
 			
-			if(cluster->assoc) {
+			if(cluster->root_assoc) {
 				debug("This cluster %s already has "
 				      "an association.");
 				continue;
 			}
-			cluster->assoc = assoc;
+			cluster->root_assoc = assoc;
 			list_remove(assoc_itr);
 		}
 		list_iterator_reset(assoc_itr);
