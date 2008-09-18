@@ -172,6 +172,12 @@ extern void pack_select_job_res(select_job_res_t select_job_res_ptr,
 extern int unpack_select_job_res(select_job_res_t *select_job_res_pptr, 
 				 Buf buffer);
 
+/* For a given node_id, socket_id and core_id, get it's offset within
+ * the core bitmap */
+extern int get_select_job_res_offset(select_job_res_t select_job_res_ptr, 
+				     uint32_t node_id, uint16_t socket_id, 
+				     uint16_t core_id);
+
 /* Get/set bit value at specified location.
  *	node_id, socket_id and core_id are all zero origin */
 extern int get_select_job_res_bit(select_job_res_t select_job_res_ptr, 

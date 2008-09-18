@@ -454,36 +454,39 @@ struct	depend_spec {
 };
 
 struct 	step_record {
-	struct job_record* job_ptr; 	/* ptr to the job that owns the step */
-	uint16_t step_id;		/* step number */
+	uint16_t batch_step;		/* 1 if batch job step, 0 otherwise */
+	uint16_t ckpt_interval;		/* checkpoint interval in minutes */
+	check_jobinfo_t check_job;	/* checkpoint context, opaque */
+	char *ckpt_path;	        /* path to checkpoint image files */
+	time_t ckpt_time;		/* time of last checkpoint */
+	bitstr_t *core_bitmap_job;	/* bitmap of cores allocated to this
+					 * step relative to job's nodes, 
+					 * see src/common/select_job_res.h */
 	uint16_t cyclic_alloc;		/* set for cyclic task allocation 
 					   across nodes */
+	uint16_t exclusive;		/* dedicated resources for the step */
+	uint32_t exit_code;		/* highest exit code from any task */
+	bitstr_t *exit_node_bitmap;	/* bitmap of exited nodes */
+	char *host;			/* host for srun communications */
+	struct job_record* job_ptr; 	/* ptr to the job that owns the step */
+	jobacctinfo_t *jobacct;         /* keep track of process info in the 
+					 * step */
+	uint32_t mem_per_task;		/* MB memory per task, 0=no limit */
+	char *name;			/* name of job step */
+	char *network;			/* step's network specification */
+	uint16_t port;			/* port for srun communications */
+	time_t pre_sus_time;		/* time step ran prior to last suspend */
 	time_t start_time;      	/* step allocation time */
+	uint16_t step_id;		/* step number */
+	slurm_step_layout_t *step_layout;/* info about how tasks are laid out
+					  * in the step */
+	bitstr_t *step_node_bitmap;	/* bitmap of nodes allocated to job 
+					 * step */
 /*	time_t suspend_time;		 * time step last suspended or resumed
 					 * implicitly the same as suspend_time
 					 * in the job record */
-	time_t pre_sus_time;		/* time step ran prior to last suspend */
-	time_t tot_sus_time;		/* total time in suspended state */
-	bitstr_t *step_node_bitmap;	/* bitmap of nodes allocated to job 
-					 * step */
-	uint16_t port;			/* port for srun communications */
-	char *host;			/* host for srun communications */
-	uint16_t batch_step;		/* 1 if batch job step, 0 otherwise */
-	uint32_t mem_per_task;		/* MB memory per task, 0=no limit */
-	uint16_t ckpt_interval;		/* checkpoint interval in minutes */
-	char *ckpt_path;	        /* path to store checkpoint image files */
-	uint16_t exclusive;		/* dedicated resources for the step */
-	time_t ckpt_time;		/* time of last checkpoint */
 	switch_jobinfo_t switch_job;	/* switch context, opaque */
-	check_jobinfo_t check_job;	/* checkpoint context, opaque */
-	char *name;			/* name of job step */
-	char *network;			/* step's network specification */
-	uint32_t exit_code;		/* highest exit code from any task */
-	bitstr_t *exit_node_bitmap;	/* bitmap of exited nodes */
-	jobacctinfo_t *jobacct;         /* keep track of process info in the 
-					 * step */
-	slurm_step_layout_t *step_layout;/* info about how tasks are laid out
-					  * in the step */
+	time_t tot_sus_time;		/* total time in suspended state */
 };
 
 extern List job_list;			/* list of job_record entries */

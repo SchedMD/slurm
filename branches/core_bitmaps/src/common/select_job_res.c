@@ -590,9 +590,9 @@ extern int unpack_select_job_res(select_job_res_t *select_job_res_pptr,
 	return SLURM_ERROR;
 }
 
-extern int get_select_job_res_bit(select_job_res_t select_job_res_ptr, 
-				  uint32_t node_id, uint16_t socket_id, 
-				  uint16_t core_id)
+extern int get_select_job_res_offset(select_job_res_t select_job_res_ptr, 
+				     uint32_t node_id, uint16_t socket_id, 
+				     uint16_t core_id)
 {
 	int i, bit_inx = 0;
 
@@ -604,6 +604,17 @@ extern int get_select_job_res_bit(select_job_res_t select_job_res_ptr,
 				   select_job_res_ptr->cores_per_socket[i] *
 				   select_job_res_ptr->sock_core_rep_count[i];
 			node_id -= select_job_res_ptr->sock_core_rep_count[i];
+		} else if (socket_id >= select_job_res_ptr->
+					sockets_per_node[i]) {
+			error("get_select_job_res_bit: socket_id >= socket_cnt "
+			      "(%u >= %u)", socket_id, 
+			      select_job_res_ptr->sockets_per_node[i]);
+			return -1;
+		} else if (core_id >= select_job_res_ptr->cores_per_socket[i]) {
+			error("get_select_job_res_bit: core_id >= core_cnt "
+			      "(%u >= %u)", core_id, 
+			      select_job_res_ptr->cores_per_socket[i]);
+			return -1;
 		} else {
 			bit_inx += select_job_res_ptr->sockets_per_node[i] *
 				   select_job_res_ptr->cores_per_socket[i] *
@@ -618,8 +629,20 @@ extern int get_select_job_res_bit(select_job_res_t select_job_res_ptr,
 	if (bit_inx >= i) {
 		error("get_select_job_res_bit: offset >= bitmap size "
 		      "(%d >= %d)", bit_inx, i);
-		return 0;
+		return -1;
 	}
+
+	return bit_inx;
+}
+
+extern int get_select_job_res_bit(select_job_res_t select_job_res_ptr, 
+				  uint32_t node_id, uint16_t socket_id, 
+				  uint16_t core_id)
+{
+	int bit_inx = get_select_job_res_offset(select_job_res_ptr, node_id,
+						socket_id, core_id);
+	if (bit_inx < 0)
+		return SLURM_ERROR;
 
 	return bit_test(select_job_res_ptr->core_bitmap, bit_inx);
 }
@@ -628,32 +651,10 @@ extern int set_select_job_res_bit(select_job_res_t select_job_res_ptr,
 				  uint32_t node_id, uint16_t socket_id, 
 				  uint16_t core_id)
 {
-	int i, bit_inx = 0;
-
-	xassert(select_job_res_ptr);
-
-	for (i=0; i<select_job_res_ptr->nhosts; i++) {
-		if (select_job_res_ptr->sock_core_rep_count[i] <= node_id) {
-			bit_inx += select_job_res_ptr->sockets_per_node[i] *
-				   select_job_res_ptr->cores_per_socket[i] *
-				   select_job_res_ptr->sock_core_rep_count[i];
-			node_id -= select_job_res_ptr->sock_core_rep_count[i];
-		} else {
-			bit_inx += select_job_res_ptr->sockets_per_node[i] *
-				   select_job_res_ptr->cores_per_socket[i] *
-				   node_id;
-			bit_inx += select_job_res_ptr->cores_per_socket[i] *
-				   socket_id;
-			bit_inx += core_id;
-			break;
-		}
-	}
-	i = bit_size(select_job_res_ptr->core_bitmap);
-	if (bit_inx >= i) {
-		error("set_select_job_res_bit: offset >= bitmap size "
-		      "(%d >= %d)", bit_inx, i);
+	int bit_inx = get_select_job_res_offset(select_job_res_ptr, node_id,
+						socket_id, core_id);
+	if (bit_inx < 0)
 		return SLURM_ERROR;
-	}
 
 	bit_set(select_job_res_ptr->core_bitmap, bit_inx);
 	return SLURM_SUCCESS;

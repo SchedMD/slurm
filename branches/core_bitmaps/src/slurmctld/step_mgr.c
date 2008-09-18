@@ -143,8 +143,9 @@ delete_step_records (struct job_record *job_ptr, int filter)
 		xfree(step_ptr->name);
 		slurm_step_layout_destroy(step_ptr->step_layout);
 		jobacct_gather_g_destroy(step_ptr->jobacct);
-		FREE_NULL_BITMAP(step_ptr->step_node_bitmap);
+		FREE_NULL_BITMAP(step_ptr->core_bitmap_job);
 		FREE_NULL_BITMAP(step_ptr->exit_node_bitmap);
+		FREE_NULL_BITMAP(step_ptr->step_node_bitmap);
 		if (step_ptr->network)
 			xfree(step_ptr->network);
 		xfree(step_ptr->ckpt_path);
@@ -532,14 +533,21 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			usable_mem = select_ptr->memory_allocated[node_inx] -
 				     select_ptr->memory_used[node_inx];
 			usable_mem /= step_spec->mem_per_task;
-			if (usable_mem <= 0)
+			if (usable_mem <= 0) {
+				if (step_spec->node_count == INFINITE) {
+					FREE_NULL_BITMAP(nodes_avail);
+					*return_code = 
+						ESLURM_INVALID_TASK_MEMORY;
+					return NULL;
+				}
 				bit_clear(nodes_avail, i);
+			}
 			if (++node_inx >= job_ptr->node_cnt)
 				break;
 		}
 	}
 
-	if ( step_spec->node_count == INFINITE)	/* use all nodes */
+	if (step_spec->node_count == INFINITE)	/* use all nodes */
 		return nodes_avail;
 
 	if (step_spec->node_list) {
@@ -563,7 +571,14 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			bit_free(selected_nodes);
 			goto cleanup;
 		}
-		if(step_spec->task_dist == SLURM_DIST_ARBITRARY) {
+		if (!bit_super_set(selected_nodes, nodes_avail)) {
+			info ("_pick_step_nodes: requested nodes %s "
+			      "have inadequate memory",
+			       step_spec->node_list);
+			bit_free(selected_nodes);
+			goto cleanup;
+		}
+		if (step_spec->task_dist == SLURM_DIST_ARBITRARY) {
 			/* if we are in arbitrary mode we need to make
 			 * sure we aren't running on an elan switch.
 			 * If we aren't change the number of nodes
@@ -762,6 +777,82 @@ static int _count_cpus(bitstr_t *bitmap)
 	return sum;
 }
 
+/* Update the step's core bitmaps, create as needed.
+ *	Add the specified task count for a specific node in the job's 
+ *	and step's allocation */
+static void _pick_step_cores(struct step_record *step_ptr, 
+			     select_job_res_t select_ptr, 
+			     int step_node_inx, int job_node_inx,
+			     uint16_t task_cnt)
+{
+	int bit_offset, core_inx, sock_inx;
+	uint16_t sockets, cores;
+	bool use_all_cores;
+
+	if (!step_ptr->core_bitmap_job) {
+		step_ptr->core_bitmap_job = bit_alloc(bit_size(select_ptr->
+							       core_bitmap));
+	}
+	if (get_select_job_res_cnt(select_ptr, job_node_inx, &sockets, &cores))
+		fatal("get_select_job_res_cnt");
+
+	if (task_cnt == (cores * sockets))
+		use_all_cores = true;
+	else
+		use_all_cores = false;
+
+	/* select idle cores first */
+	for (core_inx=0; core_inx<cores; core_inx++) {
+		for (sock_inx=0; sock_inx<sockets; sock_inx++) {
+			bit_offset = get_select_job_res_offset(select_ptr,
+							       job_node_inx,
+							       sock_inx, 
+							       core_inx);
+			if (bit_offset < 0)
+				fatal("get_select_job_res_offset");
+			if (!bit_test(select_ptr->core_bitmap, bit_offset))
+				continue;
+			if ((use_all_cores == false) &&
+			    bit_test(select_ptr->core_bitmap_used, bit_offset))
+				continue;
+			bit_set(select_ptr->core_bitmap_used, bit_offset);
+			bit_set(step_ptr->core_bitmap_job, bit_offset);
+#if 0
+			info("step alloc N:%d S:%dC :%d", 
+			     job_node_inx, sock_inx, core_inx);
+#endif
+			if (--task_cnt == 0)
+				return;
+		}
+	}
+	if (use_all_cores)
+		return;
+
+	/* Need to over-subscribe some cores */
+	for (core_inx=0; core_inx<cores; core_inx++) {
+		for (sock_inx=0; sock_inx<sockets; sock_inx++) {
+			bit_offset = get_select_job_res_offset(select_ptr,
+							       job_node_inx,
+							       sock_inx, 
+							       core_inx);
+			if (bit_offset < 0)
+				fatal("get_select_job_res_offset");
+			if (!bit_test(select_ptr->core_bitmap, bit_offset))
+				continue;
+			if (bit_test(step_ptr->core_bitmap_job, bit_offset))
+				continue;   /* already taken by this step */
+			bit_set(step_ptr->core_bitmap_job, bit_offset);
+#if 0
+			info("step alloc N:%d S:%dC :%d", 
+			     job_node_inx, sock_inx, core_inx);
+#endif
+			if (--task_cnt == 0)
+				return;
+		}
+	}
+}
+
+
 /* Update a job's record of allocated CPUs when a job step gets scheduled */
 extern void step_alloc_lps(struct step_record *step_ptr)
 {
@@ -769,8 +860,11 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 	select_job_res_t select_ptr = job_ptr->select_job;
 	int i_node, i_first, i_last;
 	int job_node_inx = -1, step_node_inx = -1;
+	bool reconfig = false;
 
 	xassert(select_ptr);
+	xassert(select_ptr->core_bitmap);
+	xassert(select_ptr->core_bitmap_used);
 	xassert(select_ptr->cpus);
 	xassert(select_ptr->cpus_used);
 	xassert(select_ptr->memory_allocated);
@@ -780,6 +874,9 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 	i_last  = bit_fls(job_ptr->node_bitmap);
 	if (i_first == -1)	/* empty bitmap */
 		return;
+
+	if (step_ptr->core_bitmap_job)
+		reconfig = true;
 	for (i_node = i_first; i_node <= i_last; i_node++) {
 		if (!bit_test(job_ptr->node_bitmap, i_node))
 			continue;
@@ -793,6 +890,12 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 			select_ptr->memory_used[job_node_inx] += 
 				(step_ptr->mem_per_task *
 				 step_ptr->step_layout->tasks[step_node_inx]);
+		}
+		if (!reconfig) {
+			_pick_step_cores(step_ptr, select_ptr, 
+					 step_node_inx, job_node_inx,
+					 step_ptr->step_layout->
+					 tasks[step_node_inx]);
 		}
 #if 0
 		info("step alloc of %s procs: %u of %u", 
@@ -814,6 +917,8 @@ static void _step_dealloc_lps(struct step_record *step_ptr)
 	int job_node_inx = -1, step_node_inx = -1;
 
 	xassert(select_ptr);
+	xassert(select_ptr->core_bitmap);
+	xassert(select_ptr->core_bitmap_used);
 	xassert(select_ptr->cpus);
 	xassert(select_ptr->cpus_used);
 	xassert(select_ptr->memory_allocated);
@@ -864,7 +969,14 @@ static void _step_dealloc_lps(struct step_record *step_ptr)
 		if (step_node_inx == (step_ptr->step_layout->node_cnt - 1))
 			break;
 	}
-	
+	if (step_ptr->core_bitmap_job) {
+		/* Mark the job's cores as no longer in use */
+		bit_not(step_ptr->core_bitmap_job);
+		bit_and(select_ptr->core_bitmap_used,
+			step_ptr->core_bitmap_job);
+		/* no need for bit_not(step_ptr->core_bitmap_job); */
+		FREE_NULL_BITMAP(step_ptr->core_bitmap_job);
+	}
 }
 
 /*
@@ -1104,10 +1216,6 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 			if (step_ptr->exclusive) {
 				usable_cpus = select_ptr->cpus[pos] -
 					      select_ptr->cpus_used[pos];
-				if (usable_cpus < 0) {
-					error("step_layout_create exclusive");
-					return NULL;
-				}
 				usable_cpus = MAX(usable_cpus, 
 						  (num_tasks - set_cpus));
 			} else
@@ -1117,6 +1225,10 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 					     select_ptr->memory_used[pos];
 				usable_mem /= step_ptr->mem_per_task;
 				usable_cpus = MIN(usable_cpus, usable_mem);
+			}
+			if (usable_cpus <= 0) {
+				error("step_layout_create no usable cpus");
+				return NULL;
 			}
 			debug2("step_layout cpus = %d pos = %d", 
 			       usable_cpus, pos);
@@ -1811,6 +1923,12 @@ extern void dump_job_step_state(struct step_record *step_ptr, Buf buffer)
 		pack16((uint16_t) _bitstr_bits(step_ptr->exit_node_bitmap), 
 			buffer);
 	}
+	if (step_ptr->core_bitmap_job) {
+		uint32_t core_size = bit_size(step_ptr->core_bitmap_job);
+		pack32(core_size, buffer);
+		pack_bit_fmt(step_ptr->core_bitmap_job, buffer);
+	} else
+		pack32((uint32_t) 0, buffer);
 
 	pack_time(step_ptr->start_time, buffer);
 	pack_time(step_ptr->pre_sus_time, buffer);
@@ -1830,18 +1948,19 @@ extern void dump_job_step_state(struct step_record *step_ptr, Buf buffer)
 }
 
 /*
- * Create a new job step from data in a buffer (as created by dump_job_step_state)
+ * Create a new job step from data in a buffer (as created by 
+ *	dump_job_step_state)
  * IN/OUT - job_ptr - point to a job for which the step is to be loaded.
- * IN/OUT buffer - location from which to get data, pointers automatically advanced
+ * IN/OUT buffer - location to get data from, pointers advanced
  */
 extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 {
 	struct step_record *step_ptr = NULL;
 	uint16_t step_id, cyclic_alloc, port, batch_step, bit_cnt;
 	uint16_t ckpt_interval;
-	uint32_t exit_code, mem_per_task, name_len;
+	uint32_t core_size, exit_code, mem_per_task, name_len;
 	time_t start_time, pre_sus_time, tot_sus_time, ckpt_time;
-	char *host = NULL, *ckpt_path = NULL;
+	char *host = NULL, *ckpt_path = NULL, *core_job = NULL;
 	char *name = NULL, *network = NULL, *bit_fmt = NULL;
 	switch_jobinfo_t switch_tmp = NULL;
 	check_jobinfo_t check_tmp = NULL;
@@ -1858,7 +1977,10 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 		safe_unpackstr_xmalloc(&bit_fmt, &name_len, buffer);
 		safe_unpack16(&bit_cnt, buffer);
 	}
-	
+	safe_unpack32(&core_size, buffer);
+	if (core_size)
+		safe_unpackstr_xmalloc(&core_job, &name_len, buffer);
+
 	safe_unpack_time(&start_time, buffer);
 	safe_unpack_time(&pre_sus_time, buffer);
 	safe_unpack_time(&tot_sus_time, buffer);
@@ -1930,6 +2052,14 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 		}
 		xfree(bit_fmt);
 	}
+	if (core_size) {
+		step_ptr->core_bitmap_job = bit_alloc(core_size);
+		if (bit_unfmt(step_ptr->core_bitmap_job, core_job)) {
+			error("error recovering core_bitmap_job from %s",
+			      core_job);
+		}
+		xfree(core_job);
+	}
 
 	if (step_ptr->step_layout && step_ptr->step_layout->node_list) {
 		switch_g_job_step_allocated(switch_tmp, 
@@ -1946,6 +2076,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 	xfree(network);
 	xfree(ckpt_path);
 	xfree(bit_fmt);
+	xfree(core_job);
 	if (switch_tmp)
 		switch_free_jobinfo(switch_tmp);
 	slurm_step_layout_destroy(step_layout);
