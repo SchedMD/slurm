@@ -846,7 +846,7 @@ proc _mod_user { qoslevel waccounts wcluster wnames} {
 	set scommand "set"
 
 	if { [string length $qoslevel] } {
-		set scommand "$scommand qoslevel=$qoslevel"
+		set scommand "$scommand qoslevel$qoslevel"
 		set acct_stuff 1
 	}
 
@@ -987,7 +987,7 @@ if {$matches != 3} {
 # account adminlevel cluster defaultaccount qoslevel name
 # qoslevel waccounts wcluster wnames
 #
-incr exit_code [_mod_user "$qs3" "$nm2" "$tc1,$tc2,$tc3" $us1]
+incr exit_code [_mod_user "=$qs3" "$nm2" "$tc1,$tc2,$tc3" $us1]
 if { $exit_code } {
 	_remove_user "" "$us1,$us2,$us3"
 	_remove_acct "" "$nm1,$nm2,$nm3"
@@ -1029,24 +1029,17 @@ if {$matches != 3} {
 	incr exit_code 1
 }
 
-# modify user2 QoS
+#modify user2 QoS
 # account adminlevel cluster defaultaccount qoslevel name
 # qoslevel waccounts wcluster wnames
 #
-#incr exit_code 
-set my_pid [spawn $sacctmgr -i modify user set qoslevel+=$qs3 where accounts=$nm2 cluster="$tc1,$tc2,$tc3" names=$us2]
-expect {
-	-re "Modified users" {
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
-		slow_kill $my_pid
-		incr exit_code 1
-	}
-	eof {
-		wait
-	}
+incr exit_code [_mod_user "+=$qs3" "$nm2" "$tc1,$tc2,$tc3" $us2]
+if { $exit_code } {
+	_remove_user "" "$us1,$us2,$us3"
+	_remove_acct "" "$nm1,$nm2,$nm3"
+	_remove_qos "$qs1,$qs2,$qs3"
+	_remove_cluster "$tc1,$tc2,$tc3"
+	exit $exit_code
 }
 
 #
@@ -1086,19 +1079,18 @@ if {$matches != 3} {
 	incr exit_code 1
 }
 
-set my_pid [spawn $sacctmgr -i modify user set qoslevel-=$qs1 where accounts=$nm2 cluster="$tc1,$tc2,$tc3" names=$us3]
-expect {
-	-re "Modified users" {
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
-		slow_kill $my_pid
-		incr exit_code 1
-	}
-	eof {
-		wait
-	}
+
+#modify user3 QoS
+# account adminlevel cluster defaultaccount qoslevel name
+# qoslevel waccounts wcluster wnames
+#
+incr exit_code [_mod_user "-=$qs1" "$nm2" "$tc1,$tc2,$tc3" $us3]
+if { $exit_code } {
+	_remove_user "" "$us1,$us2,$us3"
+	_remove_acct "" "$nm1,$nm2,$nm3"
+	_remove_qos "$qs1,$qs2,$qs3"
+	_remove_cluster "$tc1,$tc2,$tc3"
+	exit $exit_code
 }
 
 #
