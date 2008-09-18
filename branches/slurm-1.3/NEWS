@@ -23,6 +23,8 @@ documents those changes that are of interest to users and admins.
  -- Add support for new job dependency type: singleton. Only one job from a 
     given user with a given name will execute with this dependency type.
     From Matthieu Hautreux, CEA.
+ -- Updated contribs/python/hostlist: See "CHANGES" file in that directory
+    for details. From Kent Engstrom, NSC.
 
 * Changes in SLURM 1.3.8
 ========================
