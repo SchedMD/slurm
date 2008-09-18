@@ -34,7 +34,7 @@ host_triplet = @host@
 target_triplet = @target@
 subdir = contribs/python/hostlist
 DIST_COMMON = README $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
-	CHANGES COPYING python-hostlist.spec
+	COPYING
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/slurm.m4 \
@@ -247,7 +247,7 @@ target_vendor = @target_vendor@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 SUBDIRS = test
-EXTRA_DIST = 			\
+EXTRA_DIST = \
 	CHANGES			\
 	COPYING			\
 	hostlist.py		\
