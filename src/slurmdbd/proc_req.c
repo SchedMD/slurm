@@ -1139,13 +1139,12 @@ static int _init_conn(slurmdbd_conn_t *slurmdbd_conn,
 	char *comment = NULL;
 	int rc = SLURM_SUCCESS;
 
-	if (slurmdbd_unpack_init_msg(slurmdbd_conn->rpc_version, 
+	if ((rc = slurmdbd_unpack_init_msg(slurmdbd_conn->rpc_version, 
 				     &init_msg, in_buffer, 
-				     slurmdbd_conf->auth_info)
+					   slurmdbd_conf->auth_info))
 	    != SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_INIT message";
 		error("%s", comment);
-		rc = SLURM_ERROR;
 		goto end_it;
 	}
 	if ((init_msg->version < SLURMDBD_VERSION_MIN) ||
@@ -1155,6 +1154,7 @@ static int _init_conn(slurmdbd_conn_t *slurmdbd_conn,
 		      "(%u not between %d and %d)",
 		      init_msg->version, 
 		      SLURMDBD_VERSION_MIN, SLURMDBD_VERSION);
+		rc = SLURM_PROTOCOL_VERSION_ERROR;
 		goto end_it;
 	}
 	*uid = init_msg->uid;
@@ -1774,9 +1774,7 @@ static int   _register_ctld(slurmdbd_conn_t *slurmdbd_conn,
 {
 	dbd_register_ctld_msg_t *register_ctld_msg = NULL;
 	int rc = SLURM_SUCCESS;
-	char *comment = NULL, ip[32];
-	slurm_addr ctld_address;
-	uint16_t orig_port;
+	char *comment = NULL;
 	acct_cluster_cond_t cluster_q;
 	acct_cluster_rec_t cluster;
 	dbd_list_msg_t list_msg;
@@ -1797,15 +1795,15 @@ static int   _register_ctld(slurmdbd_conn_t *slurmdbd_conn,
 	}
 	debug2("DBD_REGISTER_CTLD: called for %s(%u)",
 	       register_ctld_msg->cluster_name, register_ctld_msg->port);
-	slurm_get_peer_addr(slurmdbd_conn->newsockfd, &ctld_address);
-	slurm_get_ip_str(&ctld_address, &orig_port, ip, sizeof(ip));
-	debug2("slurmctld at ip:%s, port:%d", ip, register_ctld_msg->port);
+
+	debug2("slurmctld at ip:%s, port:%d", slurmdbd_conn->ip,
+	       register_ctld_msg->port);
 
 	memset(&cluster_q, 0, sizeof(acct_cluster_cond_t));
 	memset(&cluster, 0, sizeof(acct_cluster_rec_t));
 	cluster_q.cluster_list = list_create(NULL);
 	list_append(cluster_q.cluster_list, register_ctld_msg->cluster_name);
-	cluster.control_host = ip;
+	cluster.control_host = slurmdbd_conn->ip;
 	cluster.control_port = register_ctld_msg->port;
 	cluster.rpc_version = slurmdbd_conn->rpc_version;
 
