@@ -1233,7 +1233,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	uint16_t tmp16 = (uint16_t)NO_VAL;
 	List block_list = NULL;
 	int blocks_added = 0;
-	int starttime = time(NULL);
+	time_t starttime = time(NULL);
 	bool test_only;
 
 	if (mode == SELECT_MODE_TEST_ONLY || mode == SELECT_MODE_WILL_RUN)
@@ -1385,7 +1385,7 @@ extern int test_job_list(List req_list)
 //	uint16_t tmp16 = (uint16_t)NO_VAL;
 	List block_list = NULL;
 	int blocks_added = 0;
-	int starttime = time(NULL);
+	time_t starttime = time(NULL);
 	ListIterator itr = NULL;
 	select_will_run_t *will_run = NULL;
 
@@ -1425,10 +1425,22 @@ extern int test_job_list(List req_list)
 		
 		if(rc == SLURM_SUCCESS) {
 			if(bg_record) {
-				if(bg_record->job_ptr
-				   && bg_record->job_ptr->end_time) {
-					starttime =
-						bg_record->job_ptr->end_time;
+				/* Here we see if there is a job running since
+				 * some jobs take awhile to finish we need to
+				 * make sure the time of the end is in the
+				 * future.  If it isn't (meaning it is in the
+				 * past or current time) we add 5 seconds to
+				 * it so we don't use the block immediately.
+				 */
+				if(bg_record->job_ptr 
+				   && bg_record->job_ptr->end_time) { 
+					if(bg_record->job_ptr->end_time <= 
+					   starttime)
+						starttime += 5;
+					else {
+						starttime = bg_record->
+							    job_ptr->end_time;
+					}
 				}
 				bg_record->job_running =
 					will_run->job_ptr->job_id;
