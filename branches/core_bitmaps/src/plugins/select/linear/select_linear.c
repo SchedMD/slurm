@@ -417,6 +417,7 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap,
 				 uint32_t req_nodes)
 {
 	int i, j, k;
+	int first_bit, last_bit;
 	uint32_t node_cpus, total_cpus = 0;
 	struct node_record *node_ptr;
 	uint32_t job_memory_cpu = 0, job_memory_node = 0;
@@ -454,7 +455,9 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap,
 				 select_fast_schedule))
 		error("select_p_job_test: build_select_job_res: %m");
 
-	for (i=0, j=0, k=-1; i<node_record_count; i++) {
+	first_bit = bit_ffs(bitmap);
+	last_bit  = bit_fls(bitmap);
+	for (i=first_bit, j=0, k=-1; i<=last_bit; i++) {
 		if (!bit_test(bitmap, i))
 			continue;
 		node_ptr = &(select_node_ptr[i]);
@@ -483,8 +486,6 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap,
 
 		if (set_select_job_res_node(select_ptr, j))
 			error("select_p_job_test: set_select_job_res_node: %m");
-		if (++j == req_nodes)
-			break;
 	}
 	if (select_ptr->nprocs != total_cpus) {
 		error("select_p_job_test: nprocs mismatch %u != %u",
