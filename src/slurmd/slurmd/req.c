@@ -3192,12 +3192,11 @@ init_gids_cache(int cache)
 	orig_gids = (gid_t *)xmalloc(ngids * sizeof(gid_t));
 	getgroups(ngids, orig_gids);
 
+	setpwent();
 #ifdef HAVE_AIX
-	setpwent(&fp);
 	while (!getpwent_r(&pw, buf, BUF_SIZE, &fp)) {
 		pwd = &pw;
 #else
-	setpwent();
 	while (!getpwent_r(&pw, buf, BUF_SIZE, &pwd)) {
 #endif
 		if (_gids_cache_lookup(pwd->pw_name, pwd->pw_gid))
