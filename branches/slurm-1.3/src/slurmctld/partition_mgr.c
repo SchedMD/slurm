@@ -1093,11 +1093,12 @@ uid_t *_get_group_members(char *group_name)
 		}
 	}
 
-	setpwent();
 #ifdef HAVE_AIX
+	setpwent_r(&fp);
 	while (!getpwent_r(&pw, pw_buffer, PW_BUF_SIZE, &fp)) {
 		pwd_result = &pw;
 #else
+	setpwent();
 	while (!getpwent_r(&pw, pw_buffer, PW_BUF_SIZE, &pwd_result)) {
 #endif
  		if (pwd_result->pw_gid != my_gid)
@@ -1106,7 +1107,11 @@ uid_t *_get_group_members(char *group_name)
  		xrealloc(group_uids, ((j+1) * sizeof(uid_t)));
 		group_uids[j-1] = pwd_result->pw_uid;
 	}
+#ifdef HAVE_AIX
+	endpwent_r(&fp);
+#else
 	endpwent();
+#endif
 
 	return group_uids;
 }

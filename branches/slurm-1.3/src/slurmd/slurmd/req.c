@@ -3193,7 +3193,7 @@ init_gids_cache(int cache)
 	getgroups(ngids, orig_gids);
 
 #ifdef HAVE_AIX
-	setpwent(&fp);
+	setpwent_r(&fp);
 	while (!getpwent_r(&pw, buf, BUF_SIZE, &fp)) {
 		pwd = &pw;
 #else
