@@ -130,8 +130,11 @@ extern void *rpc_mgr(void *no_data)
 			continue;
 		}
 		fd_set_nonblocking(newsockfd);
+	
 		conn_arg = xmalloc(sizeof(slurmdbd_conn_t));
 		conn_arg->newsockfd = newsockfd;
+		slurm_get_ip_str(&cli_addr, &conn_arg->orig_port,
+				 conn_arg->ip, sizeof(conn_arg->ip));
 		retry_cnt = 0;
 		while (pthread_create(&slave_thread_id[i],
 				      &thread_attr_rpc_req,
@@ -182,7 +185,8 @@ static void * _service_connection(void *arg)
 	Buf buffer = NULL;
 	int rc;
 			 
-	debug2("Opened connection %d", conn->newsockfd);
+	debug2("Opened connection %d from %s", conn->newsockfd,
+		conn->ip);
 	while (!fini) {
 		if (!_fd_readable(conn->newsockfd))
 			break;		/* problem with this socket */
@@ -218,9 +222,13 @@ static void * _service_connection(void *arg)
 			rc = proc_req(
 				conn, msg, msg_size, first, &buffer, &uid);
 			first = false;
-			if (rc != SLURM_SUCCESS) {
-				error("Processing message from connection %d",
-				      conn->newsockfd);
+			if (rc == ESLURM_ACCESS_DENIED
+			    || rc == SLURM_PROTOCOL_VERSION_ERROR) {
+				fini = true;
+			} else if (rc != SLURM_SUCCESS) {
+				error("Processing last message from "
+				      "connection %d(%s)",
+				      conn->newsockfd, conn->ip);
 				//fini = true;
 			}
 		} else {
@@ -235,7 +243,7 @@ static void * _service_connection(void *arg)
 
 	acct_storage_g_close_connection(&conn->db_conn);
 	if (slurm_close_accepted_conn(conn->newsockfd) < 0)
-		error("close(%d): %m",  conn->newsockfd);
+		error("close(%d): %m(%s)",  conn->newsockfd, conn->ip);
 	else
 		debug2("Closed connection %d uid(%d)", conn->newsockfd, uid);
 	xfree(conn);
