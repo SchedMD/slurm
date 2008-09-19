@@ -1538,6 +1538,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	bitstr_t *orig_map;
 	int i, rc = SLURM_ERROR;
 	int max_run_jobs = max_share - 1;	/* exclude this job */
+	time_t now = time(NULL);
 
 	orig_map = bit_copy(bitmap);
 
@@ -1596,7 +1597,10 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			       req_nodes);
 		if (rc != SLURM_SUCCESS)
 			continue;
-		job_ptr->start_time = tmp_job_ptr->end_time;
+		if (tmp_job_ptr->end_time <= now)
+			job_ptr->start_time = now + 1;
+		else
+			job_ptr->start_time = tmp_job_ptr->end_time;
 		break;
 	}
 	list_iterator_destroy(job_iterator);
