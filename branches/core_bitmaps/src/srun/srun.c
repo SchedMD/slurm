@@ -233,7 +233,7 @@ int srun(int ac, char **av)
 	} else if (opt.no_alloc) {
 		info("do not allocate resources");
 		job = job_create_noalloc(); 
-		if (create_job_step(job) < 0) {
+		if (create_job_step(job, false) < 0) {
 			exit(1);
 		}
 	} else if ((resp = existing_allocation())) {
@@ -247,7 +247,7 @@ int srun(int ac, char **av)
 		job = job_step_create_allocation(resp);
 		slurm_free_resource_allocation_response_msg(resp);
 
-		if (!job || create_job_step(job) < 0)
+		if (!job || create_job_step(job, false) < 0)
 			exit(1);
 	} else {
 		/* Combined job allocation and job step launch */
@@ -268,7 +268,7 @@ int srun(int ac, char **av)
 		job = job_create_allocation(resp);
 		
 		opt.exclusive = false;	/* not applicable for this step */
-		if (!job || create_job_step(job) < 0) {
+		if (!job || create_job_step(job, true) < 0) {
 			slurm_complete_job(job->jobid, 1);
 			exit(1);
 		}

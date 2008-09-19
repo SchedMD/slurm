@@ -462,6 +462,7 @@ struct 	step_record {
 	bitstr_t *core_bitmap_job;	/* bitmap of cores allocated to this
 					 * step relative to job's nodes, 
 					 * see src/common/select_job_res.h */
+	uint32_t cpu_count;		/* count of step's CPUs */
 	uint16_t cyclic_alloc;		/* set for cyclic task allocation 
 					   across nodes */
 	uint16_t exclusive;		/* dedicated resources for the step */

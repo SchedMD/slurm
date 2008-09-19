@@ -448,7 +448,8 @@ static srun_job_t *
 _job_create_structure(allocation_info_t *ainfo)
 {
 	srun_job_t *job = xmalloc(sizeof(srun_job_t));
-	
+	int i;
+
 	_set_nprocs(ainfo);
 	debug2("creating job with %d tasks", opt.nprocs);
 
@@ -482,6 +483,11 @@ _job_create_structure(allocation_info_t *ainfo)
 	job->jobid   = ainfo->jobid;
 	
 	job->ntasks  = opt.nprocs;
+	for (i=0; i<ainfo->nnodes; ) {
+		job->cpu_count += ainfo->cpus_per_node[i] *
+				  ainfo->cpu_count_reps[i];
+		i += ainfo->cpu_count_reps[i];
+	}
 
 	job->rc       = -1;
 	

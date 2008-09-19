@@ -865,7 +865,7 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 	select_job_res_t select_ptr = job_ptr->select_job;
 	int i_node, i_first, i_last;
 	int job_node_inx = -1, step_node_inx = -1;
-	bool reconfig = false;
+	bool pick_step_cores = true;
 
 	xassert(select_ptr);
 	xassert(select_ptr->core_bitmap);
@@ -880,8 +880,16 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 	if (i_first == -1)	/* empty bitmap */
 		return;
 
-	if (step_ptr->core_bitmap_job)
-		reconfig = true;
+	if (step_ptr->core_bitmap_job) {
+		/* "scontrol reconfig" of live system */
+		pick_step_cores = false;
+	} else if (step_ptr->cpu_count == job_ptr->total_procs) {
+		/* Step uses all of job's cores
+		 * Just copy the bitmap to save time */
+		step_ptr->core_bitmap_job = bit_copy(select_ptr->core_bitmap);
+		pick_step_cores = false;
+	}
+
 	for (i_node = i_first; i_node <= i_last; i_node++) {
 		if (!bit_test(job_ptr->node_bitmap, i_node))
 			continue;
@@ -896,7 +904,7 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 				(step_ptr->mem_per_task *
 				 step_ptr->step_layout->tasks[step_node_inx]);
 		}
-		if (!reconfig) {
+		if (pick_step_cores) {
 			_pick_step_cores(step_ptr, select_ptr, 
 					 step_node_inx, job_node_inx,
 					 step_ptr->step_layout->
@@ -1006,6 +1014,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	int node_count, ret_code;
 	time_t now = time(NULL);
 	char *step_node_list = NULL;
+	uint32_t orig_cpu_count;
 
 	*new_step_record = NULL;
 	job_ptr = find_job_record (step_specs->job_id);
@@ -1070,7 +1079,8 @@ step_create(job_step_create_request_msg_t *step_specs,
 
 	/* if the overcommit flag is checked we 0 out the cpu_count
 	 * which makes it so we don't check to see the available cpus
-	 */	 
+	 */
+	orig_cpu_count =  step_specs->cpu_count;
 	if (step_specs->overcommit)
 		step_specs->cpu_count = 0;
 
@@ -1140,6 +1150,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	step_ptr->mem_per_task = step_specs->mem_per_task;
 	step_ptr->ckpt_interval = step_specs->ckpt_interval;
 	step_ptr->ckpt_time = now;
+	step_ptr->cpu_count = orig_cpu_count;
 	step_ptr->exit_code = NO_VAL;
 	step_ptr->exclusive = step_specs->exclusive;
 	step_ptr->ckpt_path = xstrdup(step_specs->ckpt_path);
@@ -1926,6 +1937,7 @@ extern void dump_job_step_state(struct step_record *step_ptr, Buf buffer)
 	pack16(step_ptr->port, buffer);
 	pack16(step_ptr->ckpt_interval, buffer);
 
+	pack32(step_ptr->cpu_count, buffer);
 	pack32(step_ptr->mem_per_task, buffer);
 	pack32(step_ptr->exit_code, buffer);
 	if (step_ptr->exit_code != NO_VAL) {
@@ -1968,7 +1980,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 	struct step_record *step_ptr = NULL;
 	uint16_t step_id, cyclic_alloc, port, batch_step, bit_cnt;
 	uint16_t ckpt_interval;
-	uint32_t core_size, exit_code, mem_per_task, name_len;
+	uint32_t core_size, cpu_count, exit_code, mem_per_task, name_len;
 	time_t start_time, pre_sus_time, tot_sus_time, ckpt_time;
 	char *host = NULL, *ckpt_path = NULL, *core_job = NULL;
 	char *name = NULL, *network = NULL, *bit_fmt = NULL;
@@ -1981,6 +1993,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 	safe_unpack16(&port, buffer);
 	safe_unpack16(&ckpt_interval, buffer);
 
+	safe_unpack32(&cpu_count, buffer);
 	safe_unpack32(&mem_per_task, buffer);
 	safe_unpack32(&exit_code, buffer);
 	if (exit_code != NO_VAL) {
@@ -2027,6 +2040,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 
 	/* set new values */
 	step_ptr->step_id      = step_id;
+	step_ptr->cpu_count    = cpu_count;
 	step_ptr->cyclic_alloc = cyclic_alloc;
 	step_ptr->name         = name;
 	step_ptr->network      = network;
