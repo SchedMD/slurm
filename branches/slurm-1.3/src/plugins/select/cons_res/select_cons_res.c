@@ -2300,6 +2300,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	bitstr_t *orig_map;
 	int rc = SLURM_ERROR;
 	uint16_t saved_state;
+	time_t now = time(NULL);
 
 	orig_map = bit_copy(bitmap);
 
@@ -2357,7 +2358,10 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			       req_nodes, SELECT_MODE_WILL_RUN, job_node_req,
 			       exp_node_cr);
 		if (rc == SLURM_SUCCESS) {
-			job_ptr->start_time = tmp_job_ptr->end_time;
+			if (tmp_job_ptr->end_time <= now)
+				 job_ptr->start_time = now + 1;
+			else
+				job_ptr->start_time = tmp_job_ptr->end_time;
 			break;
 		}
 	}
