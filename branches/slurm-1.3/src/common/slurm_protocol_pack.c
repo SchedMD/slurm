@@ -1096,7 +1096,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 			(set_debug_level_msg_t **)&(msg->data), buffer);
 		break;
 	case ACCOUNTING_UPDATE_MSG:
-		_unpack_accounting_update_msg(
+		rc = _unpack_accounting_update_msg(
 			(accounting_update_msg_t **)&msg->data,
 			buffer);
 		break;
