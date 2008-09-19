@@ -159,151 +159,151 @@ static int _check_connection(mysql_conn_t *mysql_conn)
 }
 
 static int _setup_association_limits(acct_association_rec_t *assoc,
-				     char **in_cols, char **in_vals,
-				     char **in_extra, bool get_qos)
+				     char **cols, char **vals,
+				     char **extra, bool get_qos)
 {
-	char *cols = (*in_cols), *vals = (*in_vals), *extra = (*in_extra);
 	
 	if(!assoc)
 		return SLURM_ERROR;
-
+	
 	if((int)assoc->fairshare >= 0) {
-		xstrcat(cols, ", fairshare");
-		xstrfmtcat(vals, ", %u", assoc->fairshare);
-		xstrfmtcat(extra, ", fairshare=%u", assoc->fairshare);
+		xstrcat(*cols, ", fairshare");
+		xstrfmtcat(*vals, ", %u", assoc->fairshare);
+		xstrfmtcat(*extra, ", fairshare=%u", assoc->fairshare);
 	} else if ((int)assoc->fairshare == INFINITE) {
-		xstrcat(cols, ", fairshare");
-		xstrcat(vals, ", NULL");
-		xstrcat(extra, ", fairshare=NULL");		
+		xstrcat(*cols, ", fairshare");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", fairshare=NULL");		
 	}
 	
 	if((int)assoc->grp_cpu_hours >= 0) {
-		xstrcat(cols, ", grp_cpu_hours");
-		xstrfmtcat(vals, ", %llu", assoc->grp_cpu_hours);
-		xstrfmtcat(extra, ", grp_cpu_mins=%llu", assoc->grp_cpu_hours);
+		xstrcat(*cols, ", grp_cpu_hours");
+		xstrfmtcat(*vals, ", %llu", assoc->grp_cpu_hours);
+		xstrfmtcat(*extra, ", grp_cpu_hours=%llu",
+			   assoc->grp_cpu_hours);
 	} else if((int)assoc->grp_cpu_hours == INFINITE) {
-		xstrcat(cols, ", grp_cpu_hours");
-		xstrcat(vals, ", NULL");
-		xstrcat(extra, ", grp_cpu_mins=NULL");
+		xstrcat(*cols, ", grp_cpu_hours");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", grp_cpu_hours=NULL");
 	}
 		
 	if((int)assoc->grp_cpus >= 0) {
-		xstrcat(cols, ", grp_cpus");
-		xstrfmtcat(vals, ", %u", assoc->grp_cpus);
-		xstrfmtcat(extra, ", grp_cpus=%u", assoc->grp_cpus);
+		xstrcat(*cols, ", grp_cpus");
+		xstrfmtcat(*vals, ", %u", assoc->grp_cpus);
+		xstrfmtcat(*extra, ", grp_cpus=%u", assoc->grp_cpus);
 	} else if((int)assoc->grp_cpus == INFINITE) {
-		xstrcat(cols, ", grp_cpus");
-		xstrcat(vals, ", NULL");
-		xstrcat(extra, ", grp_cpus=NULL");
+		xstrcat(*cols, ", grp_cpus");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", grp_cpus=NULL");
 	}
 
 	if((int)assoc->grp_jobs >= 0) {
-		xstrcat(cols, ", grp_jobs");
-		xstrfmtcat(vals, ", %u", assoc->grp_jobs);
-		xstrfmtcat(extra, ", grp_jobs=%u", assoc->grp_jobs);
+		xstrcat(*cols, ", grp_jobs");
+		xstrfmtcat(*vals, ", %u", assoc->grp_jobs);
+		xstrfmtcat(*extra, ", grp_jobs=%u", assoc->grp_jobs);
 	} else if((int)assoc->grp_jobs == INFINITE) {
-		xstrcat(cols, ", grp_jobs");
-		xstrcat(vals, ", NULL");
-		xstrcat(extra, ", grp_jobs=NULL");
+		xstrcat(*cols, ", grp_jobs");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", grp_jobs=NULL");
 	}
 
 	if((int)assoc->grp_nodes >= 0) {
-		xstrcat(cols, ", grp_nodes");
-		xstrfmtcat(vals, ", %u", assoc->grp_nodes);
-		xstrfmtcat(extra, ", grp_nodes=%u", assoc->grp_nodes);
+		xstrcat(*cols, ", grp_nodes");
+		xstrfmtcat(*vals, ", %u", assoc->grp_nodes);
+		xstrfmtcat(*extra, ", grp_nodes=%u", assoc->grp_nodes);
 	} else if((int)assoc->grp_nodes == INFINITE) {
-		xstrcat(cols, ", grp_nodes");
-		xstrcat(vals, ", NULL");
-		xstrcat(extra, ", grp_nodes=NULL");
+		xstrcat(*cols, ", grp_nodes");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", grp_nodes=NULL");
 	}
 
 	if((int)assoc->grp_submit_jobs >= 0) {
-		xstrcat(cols, ", grp_submit_jobs");
-		xstrfmtcat(vals, ", %u",
+		xstrcat(*cols, ", grp_submit_jobs");
+		xstrfmtcat(*vals, ", %u",
 			   assoc->grp_submit_jobs);
-		xstrfmtcat(extra, ", grp_submit_jobs=%u",
+		xstrfmtcat(*extra, ", grp_submit_jobs=%u",
 			   assoc->grp_submit_jobs);
 	} else if((int)assoc->grp_submit_jobs == INFINITE) {
-		xstrcat(cols, ", grp_submit_jobs");
-		xstrcat(vals, ", NULL");
-		xstrcat(extra, ", grp_submit_jobs=NULL");
+		xstrcat(*cols, ", grp_submit_jobs");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", grp_submit_jobs=NULL");
 	}
 
 	if((int)assoc->grp_wall >= 0) {
-		xstrcat(cols, ", grp_wall");
-		xstrfmtcat(vals, ", %u", assoc->grp_wall);
-		xstrfmtcat(extra, ", grp_wall=%u",
+		xstrcat(*cols, ", grp_wall");
+		xstrfmtcat(*vals, ", %u", assoc->grp_wall);
+		xstrfmtcat(*extra, ", grp_wall=%u",
 			   assoc->grp_wall);
 	} else if((int)assoc->grp_wall == INFINITE) {
-		xstrcat(cols, ", grp_wall");
-		xstrcat(vals, ", NULL");
-		xstrcat(extra, ", grp_wall=NULL");
+		xstrcat(*cols, ", grp_wall");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", grp_wall=NULL");
 	}
 
 	if((int)assoc->max_cpu_mins_pj >= 0) {
-		xstrcat(cols, ", max_cpu_mins_per_job");
-		xstrfmtcat(vals, ", %llu", assoc->max_cpu_mins_pj);
-		xstrfmtcat(extra, ", max_cpu_mins_per_job=%u",
+		xstrcat(*cols, ", max_cpu_mins_per_job");
+		xstrfmtcat(*vals, ", %llu", assoc->max_cpu_mins_pj);
+		xstrfmtcat(*extra, ", max_cpu_mins_per_job=%u",
 			   assoc->max_cpu_mins_pj);
 	} else if((int)assoc->max_cpu_mins_pj == INFINITE) {
-		xstrcat(cols, ", max_cpu_mins_per_job");
-		xstrcat(vals, ", NULL");
-		xstrcat(extra, ", max_cpu_mins_per_job=NULL");
+		xstrcat(*cols, ", max_cpu_mins_per_job");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", max_cpu_mins_per_job=NULL");
 	}
 
 	if((int)assoc->max_cpus_pj >= 0) {
-		xstrcat(cols, ", max_cpus_per_job");
-		xstrfmtcat(vals, ", %u", assoc->max_cpus_pj);
-		xstrfmtcat(extra, ", max_cpus_per_job=%u",
+		xstrcat(*cols, ", max_cpus_per_job");
+		xstrfmtcat(*vals, ", %u", assoc->max_cpus_pj);
+		xstrfmtcat(*extra, ", max_cpus_per_job=%u",
 			   assoc->max_cpus_pj);
 	} else if((int)assoc->max_cpus_pj == INFINITE) {
-		xstrcat(cols, ", max_cpus_per_job");
-		xstrcat(vals, ", NULL");
-		xstrcat(extra, ", max_cpus_per_job=NULL");
+		xstrcat(*cols, ", max_cpus_per_job");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", max_cpus_per_job=NULL");
 	}
 		
 	if((int)assoc->max_jobs >= 0) {
-		xstrcat(cols, ", max_jobs");
-		xstrfmtcat(vals, ", %u", assoc->max_jobs);
-		xstrfmtcat(extra, ", max_jobs=%u",
+		xstrcat(*cols, ", max_jobs");
+		xstrfmtcat(*vals, ", %u", assoc->max_jobs);
+		xstrfmtcat(*extra, ", max_jobs=%u",
 			   assoc->max_jobs);
 	} else if((int)assoc->max_jobs == INFINITE) {
-		xstrcat(cols, ", max_jobs");
-		xstrcat(vals, ", NULL");
-		xstrcat(extra, ", max_jobs=NULL");		
+		xstrcat(*cols, ", max_jobs");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", max_jobs=NULL");		
 	}
 
 	if((int)assoc->max_nodes_pj >= 0) {
-		xstrcat(cols, ", max_nodes_per_job");
-		xstrfmtcat(vals, ", %u", assoc->max_nodes_pj);
-		xstrfmtcat(extra, ", max_nodes_per_job=%u",
+		xstrcat(*cols, ", max_nodes_per_job");
+		xstrfmtcat(*vals, ", %u", assoc->max_nodes_pj);
+		xstrfmtcat(*extra, ", max_nodes_per_job=%u",
 			   assoc->max_nodes_pj);
 	} else if((int)assoc->max_nodes_pj == INFINITE) {
-		xstrcat(cols, ", max_nodes_per_job");
-		xstrcat(vals, ", NULL");
-		xstrcat(extra, ", max_nodes_per_job=NULL");
+		xstrcat(*cols, ", max_nodes_per_job");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", max_nodes_per_job=NULL");
 	}
 
 	if((int)assoc->max_submit_jobs >= 0) {
-		xstrcat(cols, ", max_submit_jobs");
-		xstrfmtcat(vals, ", %u", assoc->max_submit_jobs);
-		xstrfmtcat(extra, ", max_submit_jobs=%u",
+		xstrcat(*cols, ", max_submit_jobs");
+		xstrfmtcat(*vals, ", %u", assoc->max_submit_jobs);
+		xstrfmtcat(*extra, ", max_submit_jobs=%u",
 			   assoc->max_submit_jobs);
 	} else if((int)assoc->max_submit_jobs == INFINITE) {
-		xstrcat(cols, ", max_submit_jobs");
-		xstrcat(vals, ", NULL");
-		xstrcat(extra, ", max_submit_jobs=NULL");
+		xstrcat(*cols, ", max_submit_jobs");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", max_submit_jobs=NULL");
 	}
 
 	if((int)assoc->max_wall_pj >= 0) {
-		xstrcat(cols, ", max_wall_duration_per_job");
-		xstrfmtcat(vals, ", %u", assoc->max_wall_pj);
-		xstrfmtcat(extra, ", max_wall_duration_per_job=%u",
+		xstrcat(*cols, ", max_wall_duration_per_job");
+		xstrfmtcat(*vals, ", %u", assoc->max_wall_pj);
+		xstrfmtcat(*extra, ", max_wall_duration_per_job=%u",
 			   assoc->max_wall_pj);
 	} else if((int)assoc->max_wall_pj == INFINITE) {
-		xstrcat(cols, ", max_wall_duration_per_job");
-		xstrcat(vals, ", NULL");
-		xstrcat(extra, ", max_wall_duration_per_job=NULL");
+		xstrcat(*cols, ", max_wall_duration_per_job");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", max_wall_duration_per_job=NULL");
 	}
 
 	if(assoc->qos_list && list_count(assoc->qos_list)) {
@@ -311,21 +311,21 @@ static int _setup_association_limits(acct_association_rec_t *assoc,
 		char *tmp_char = NULL;
 		ListIterator qos_itr = list_iterator_create(assoc->qos_list);
 			
-		xstrcat(cols, ", qos");
+		xstrcat(*cols, ", qos");
 			
 		while((tmp_char = list_next(qos_itr))) 
 			xstrfmtcat(qos_val, ",%s", tmp_char);
 			
 		list_iterator_destroy(qos_itr);
 			
-		xstrfmtcat(vals, ", '%s'", qos_val); 		
-		xstrfmtcat(extra, ", qos='%s'", qos_val); 
+		xstrfmtcat(*vals, ", '%s'", qos_val); 		
+		xstrfmtcat(*extra, ", qos='%s'", qos_val); 
 		xfree(qos_val);
 	} else if(get_qos && normal_qos_id != NO_VAL) { 
 		/* Add normal qos to the account */
-		xstrcat(cols, ", qos");
-		xstrfmtcat(vals, ", ',%d'", normal_qos_id);
-		xstrfmtcat(extra, ", qos=',%d'", normal_qos_id);
+		xstrcat(*cols, ", qos");
+		xstrfmtcat(*vals, ", ',%d'", normal_qos_id);
+		xstrfmtcat(*extra, ", qos=',%d'", normal_qos_id);
 	}
 
 	return SLURM_SUCCESS;
@@ -333,9 +333,8 @@ static int _setup_association_limits(acct_association_rec_t *assoc,
 }
 
 static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
-					  char **in_extra)
+					  char **extra)
 {
-	char *extra = (*in_extra);
 	int set = 0;
 	ListIterator itr = NULL;
 	char *object = NULL;
@@ -345,305 +344,300 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 
 	if(assoc_cond->acct_list && list_count(assoc_cond->acct_list)) {
 		set = 0;
-		xstrcat(extra, " && (");
+		xstrcat(*extra, " && (");
 		itr = list_iterator_create(assoc_cond->acct_list);
 		while((object = list_next(itr))) {
 			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "acct='%s'", object);
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "acct='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
+		xstrcat(*extra, ")");
 	}
 
 	if(assoc_cond->cluster_list && list_count(assoc_cond->cluster_list)) {
 		set = 0;
-		xstrcat(extra, " && (");
+		xstrcat(*extra, " && (");
 		itr = list_iterator_create(assoc_cond->cluster_list);
 		while((object = list_next(itr))) {
 			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "cluster='%s'", object);
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "cluster='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
+		xstrcat(*extra, ")");
 	}
 
 	if(assoc_cond->fairshare_list
 	   && list_count(assoc_cond->fairshare_list)) {
 		set = 0;
-		xstrcat(extra, " && (");
+		xstrcat(*extra, " && (");
 		itr = list_iterator_create(assoc_cond->fairshare_list);
 		while((object = list_next(itr))) {
 			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "fairshare='%s'", object);
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "fairshare='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
+		xstrcat(*extra, ")");
 	}
 
 	if(assoc_cond->grp_cpu_hours_list
 	   && list_count(assoc_cond->grp_cpu_hours_list)) {
 		set = 0;
-		xstrcat(extra, " && (");
+		xstrcat(*extra, " && (");
 		itr = list_iterator_create(assoc_cond->grp_cpu_hours_list);
 		while((object = list_next(itr))) {
 			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "grp_cpu_hours='%s'", object);
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "grp_cpu_hours='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
+		xstrcat(*extra, ")");
 	}
 
 	if(assoc_cond->grp_cpus_list
 	   && list_count(assoc_cond->grp_cpus_list)) {
 		set = 0;
-		xstrcat(extra, " && (");
+		xstrcat(*extra, " && (");
 		itr = list_iterator_create(assoc_cond->grp_cpus_list);
 		while((object = list_next(itr))) {
 			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "grp_cpus='%s'", object);
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "grp_cpus='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
+		xstrcat(*extra, ")");
 	}
 
 	if(assoc_cond->grp_jobs_list
 	   && list_count(assoc_cond->grp_jobs_list)) {
 		set = 0;
-		xstrcat(extra, " && (");
+		xstrcat(*extra, " && (");
 		itr = list_iterator_create(assoc_cond->grp_jobs_list);
 		while((object = list_next(itr))) {
 			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "grp_jobs='%s'", object);
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "grp_jobs='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
+		xstrcat(*extra, ")");
 	}
 
 	if(assoc_cond->grp_nodes_list
 	   && list_count(assoc_cond->grp_nodes_list)) {
 		set = 0;
-		xstrcat(extra, " && (");
+		xstrcat(*extra, " && (");
 		itr = list_iterator_create(assoc_cond->grp_nodes_list);
 		while((object = list_next(itr))) {
 			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "grp_nodes='%s'", object);
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "grp_nodes='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
+		xstrcat(*extra, ")");
 	}
 
 	if(assoc_cond->grp_submit_jobs_list
 	   && list_count(assoc_cond->grp_submit_jobs_list)) {
 		set = 0;
-		xstrcat(extra, " && (");
+		xstrcat(*extra, " && (");
 		itr = list_iterator_create(assoc_cond->grp_submit_jobs_list);
 		while((object = list_next(itr))) {
 			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "grp_submit_jobs='%s'", object);
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "grp_submit_jobs='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
+		xstrcat(*extra, ")");
 	}
 
 	if(assoc_cond->grp_wall_list
 	   && list_count(assoc_cond->grp_wall_list)) {
 		set = 0;
-		xstrcat(extra, " && (");
+		xstrcat(*extra, " && (");
 		itr = list_iterator_create(assoc_cond->grp_wall_list);
 		while((object = list_next(itr))) {
 			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "grp_wall='%s'", object);
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "grp_wall='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
+		xstrcat(*extra, ")");
 	}
 
 	if(assoc_cond->max_cpu_mins_pj_list
 	   && list_count(assoc_cond->max_cpu_mins_pj_list)) {
 		set = 0;
-		xstrcat(extra, " && (");
+		xstrcat(*extra, " && (");
 		itr = list_iterator_create(assoc_cond->max_cpu_mins_pj_list);
 		while((object = list_next(itr))) {
 			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "max_cpu_mins_pj='%s'", object);
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "max_cpu_mins_per_job='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
+		xstrcat(*extra, ")");
 	}
 
 	if(assoc_cond->max_cpus_pj_list
 	   && list_count(assoc_cond->max_cpus_pj_list)) {
 		set = 0;
-		xstrcat(extra, " && (");
+		xstrcat(*extra, " && (");
 		itr = list_iterator_create(assoc_cond->max_cpus_pj_list);
 		while((object = list_next(itr))) {
 			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "max_cpus_pj='%s'", object);
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "max_cpus_per_job='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
+		xstrcat(*extra, ")");
 	}
 
 	if(assoc_cond->max_jobs_list
 	   && list_count(assoc_cond->max_jobs_list)) {
 		set = 0;
-		xstrcat(extra, " && (");
+		xstrcat(*extra, " && (");
 		itr = list_iterator_create(assoc_cond->max_jobs_list);
 		while((object = list_next(itr))) {
 			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "max_jobs='%s'", object);
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "max_jobs='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
+		xstrcat(*extra, ")");
 	}
 
 	if(assoc_cond->max_nodes_pj_list
 	   && list_count(assoc_cond->max_nodes_pj_list)) {
 		set = 0;
-		xstrcat(extra, " && (");
+		xstrcat(*extra, " && (");
 		itr = list_iterator_create(assoc_cond->max_nodes_pj_list);
 		while((object = list_next(itr))) {
 			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "max_nodes_pj='%s'", object);
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "max_nodes_per_job='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
+		xstrcat(*extra, ")");
 	}
 
 	if(assoc_cond->max_submit_jobs_list
 	   && list_count(assoc_cond->max_submit_jobs_list)) {
 		set = 0;
-		xstrcat(extra, " && (");
+		xstrcat(*extra, " && (");
 		itr = list_iterator_create(assoc_cond->max_submit_jobs_list);
 		while((object = list_next(itr))) {
 			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "max_submit_jobs='%s'", object);
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "max_submit_jobs='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
+		xstrcat(*extra, ")");
 	}
 
 	if(assoc_cond->max_wall_pj_list
 	   && list_count(assoc_cond->max_wall_pj_list)) {
 		set = 0;
-		xstrcat(extra, " && (");
+		xstrcat(*extra, " && (");
 		itr = list_iterator_create(assoc_cond->max_wall_pj_list);
 		while((object = list_next(itr))) {
 			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "max_wall_pj='%s'", object);
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "max_wall_duration_per_job='%s'",
+				   object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
+		xstrcat(*extra, ")");
 	}
-
+	
 	if(assoc_cond->user_list && list_count(assoc_cond->user_list)) {
 		set = 0;
-		xstrcat(extra, " && (");
+		xstrcat(*extra, " && (");
 		itr = list_iterator_create(assoc_cond->user_list);
 		while((object = list_next(itr))) {
 			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "user='%s'", object);
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "user='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	} else if (!assoc_cond->user_list) {
-		debug4("no user specified looking at accounts");
-		xstrcat(extra, " && user = '' ");
-	} else {
-		debug4("no user specified looking at users");
-		xstrcat(extra, " && user != '' ");
+		xstrcat(*extra, ")");
 	}
 
 	if(assoc_cond->partition_list 
 	   && list_count(assoc_cond->partition_list)) {
 		set = 0;
-		xstrcat(extra, " && (");
+		xstrcat(*extra, " && (");
 		itr = list_iterator_create(assoc_cond->partition_list);
 		while((object = list_next(itr))) {
 			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "partition='%s'", object);
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "partition='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
+		xstrcat(*extra, ")");
 	}
 
 	if(assoc_cond->id_list && list_count(assoc_cond->id_list)) {
 		set = 0;
-		xstrcat(extra, " && (");
+		xstrcat(*extra, " && (");
 		itr = list_iterator_create(assoc_cond->id_list);
 		while((object = list_next(itr))) {
 			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "id=%s", object);
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "id=%s", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
+		xstrcat(*extra, ")");
 	}
 	
 	if(assoc_cond->qos_list && list_count(assoc_cond->qos_list)) {
 		set = 0;
-		xstrcat(extra, " && (");
+		xstrcat(*extra, " && (");
 		itr = list_iterator_create(assoc_cond->qos_list);
 		while((object = list_next(itr))) {
 			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, 
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, 
 				   "(qos like '%%,%s' || qos like '%%,%s,%%')",
 				   object, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
+		xstrcat(*extra, ")");
 	}
 	
 	if(assoc_cond->parent_acct_list
 	   && list_count(assoc_cond->parent_acct_list)) {
 		set = 0;
-		xstrcat(extra, " && (");
+		xstrcat(*extra, " && (");
 		itr = list_iterator_create(assoc_cond->parent_acct_list);
 		while((object = list_next(itr))) {
 			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "parent_acct=%s", object);
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "parent_acct=%s", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
+		xstrcat(*extra, ")");
 	}
 	return set;
 }
@@ -3825,7 +3819,19 @@ extern List acct_storage_p_modify_associations(
 	}
 
 	set = _setup_association_cond_limits(assoc_cond, &extra);
-	
+
+	/* This needs to be here to make sure we only modify the
+	   correct set of associations The first clause was already
+	   taken care of above */
+	if(assoc_cond->user_list && list_count(assoc_cond->user_list)) {
+	} else if (!assoc_cond->user_list) {
+		debug4("no user specified looking at accounts");
+		xstrcat(extra, " && user = '' ");
+	} else {
+		debug4("no user specified looking at users");
+		xstrcat(extra, " && user != '' ");
+	}
+
 	if((int)assoc->fairshare >= 0) 
 		xstrfmtcat(vals, ", fairshare=%u", assoc->fairshare);
 	else if((int)assoc->fairshare == INFINITE) {
@@ -5352,7 +5358,8 @@ empty:
 	}
 	mysql_free_result(result);
 
-	if(user_cond && user_cond->with_assocs) {
+	if(user_cond && user_cond->with_assocs 
+	   && list_count(user_cond->assoc_cond->user_list)) {
 		ListIterator assoc_itr = NULL;
 		acct_user_rec_t *user = NULL;
 		acct_association_rec_t *assoc = NULL;
@@ -5591,7 +5598,8 @@ empty:
 	}
 	mysql_free_result(result);
 
-	if(acct_cond && acct_cond->with_assocs) {
+	if(acct_cond && acct_cond->with_assocs
+	   && list_count(acct_cond->assoc_cond->acct_list)) {
 		ListIterator assoc_itr = NULL;
 		acct_account_rec_t *acct = NULL;
 		acct_association_rec_t *assoc = NULL;
@@ -5721,11 +5729,6 @@ empty:
 	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
 
 	assoc_cond.cluster_list = list_create(NULL);
-	assoc_cond.acct_list = list_create(NULL);
-	list_append(assoc_cond.acct_list, "root");
-
-	assoc_cond.user_list = list_create(NULL);
-	list_append(assoc_cond.user_list, "");
 
 	while((row = mysql_fetch_row(result))) {
 		cluster = xmalloc(sizeof(acct_cluster_rec_t));
@@ -5748,7 +5751,18 @@ empty:
 		cluster->rpc_version = atoi(row[CLUSTER_REQ_VERSION]);
 	}
 	mysql_free_result(result);
+
+	if(!list_count(assoc_cond.cluster_list)) {
+		list_destroy(assoc_cond.cluster_list);
+		return cluster_list;
+	}
 	
+	assoc_cond.acct_list = list_create(NULL);
+	list_append(assoc_cond.acct_list, "root");
+
+	assoc_cond.user_list = list_create(NULL);
+	list_append(assoc_cond.user_list, "");
+
 	assoc_list = acct_storage_p_get_associations(mysql_conn,
 						     uid, &assoc_cond);
 	list_destroy(assoc_cond.cluster_list);
@@ -5757,7 +5771,6 @@ empty:
 
 	if(!assoc_list) 
 		return cluster_list;
-	
 	
 	itr = list_iterator_create(cluster_list);
 	assoc_itr = list_iterator_create(assoc_list);

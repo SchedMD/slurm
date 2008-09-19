@@ -1118,11 +1118,13 @@ extern void pack_acct_cluster_rec(void *in, uint16_t rpc_version, Buf buffer)
 			pack32(NO_VAL, buffer);
 			packnull(buffer);
 			pack32(0, buffer);
-			pack32(0, buffer);
-			pack32(0, buffer);
-			pack32(0, buffer);
-			pack32(0, buffer);
-			pack32(0, buffer);
+
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+
 			packnull(buffer);
 			pack16(0, buffer);
 			return;
@@ -1146,11 +1148,11 @@ extern void pack_acct_cluster_rec(void *in, uint16_t rpc_version, Buf buffer)
 		packstr(object->control_host, buffer);
 		pack32(object->control_port, buffer);
 		if(!object->root_assoc) {
-			pack32(0, buffer);
-			pack32(0, buffer);
-			pack32(0, buffer);
-			pack32(0, buffer);
-			pack32(0, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
 		} else {
 			pack32(object->root_assoc->fairshare, buffer);
 			pack32(object->root_assoc->max_cpu_mins_pj, buffer);
@@ -1166,7 +1168,9 @@ extern void pack_acct_cluster_rec(void *in, uint16_t rpc_version, Buf buffer)
 	} else if(rpc_version >= 3) {
 		if(!object) {
 			pack32(NO_VAL, buffer);
+
 			pack_acct_association_rec(NULL, rpc_version, buffer);
+			
 			packnull(buffer);
 			pack32(0, buffer);
 
@@ -1332,13 +1336,13 @@ extern void pack_acct_association_rec(void *in, uint16_t rpc_version,
 			packnull(buffer);
 			packnull(buffer);
 
+			pack32(NO_VAL, buffer);
 			pack32(0, buffer);
 			pack32(0, buffer);
-			pack32(0, buffer);
-			pack32(0, buffer);
-			pack32(0, buffer);
-			pack32(0, buffer);
-			pack32(0, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
 
 			packnull(buffer);
 			pack32(0, buffer);
@@ -2098,12 +2102,12 @@ extern void pack_acct_association_cond(void *in, uint16_t rpc_version,
 		if(!object) {
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
-			pack32(0, buffer);
 			pack32(NO_VAL, buffer);
-			pack32(0, buffer);
-			pack32(0, buffer);
-			pack32(0, buffer);
-			pack32(0, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
 			packnull(buffer);
 			pack32(0, buffer);
@@ -2566,9 +2570,12 @@ extern int unpack_acct_association_cond(void **object,
 				list_append(object_ptr->cluster_list, tmp_info);
 			}
 		}
-
+		/* We have to check for 0 here because of a bug in
+		   version 2 that sent 0's when it should had sent
+		   NO_VAL
+		*/
 		safe_unpack32(&count, buffer);
-		if(count != NO_VAL) {
+		if(count && count != NO_VAL) {
 			object_ptr->fairshare_list = 
 				list_create(slurm_destroy_char);
 			list_append(object_ptr->fairshare_list,
@@ -2576,7 +2583,7 @@ extern int unpack_acct_association_cond(void **object,
 		}
 
 		safe_unpack32(&count, buffer);
-		if(count != NO_VAL) {
+		if(count && count != NO_VAL) {
 			object_ptr->id_list = list_create(slurm_destroy_char);
 			for(i=0; i<count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp, 
@@ -2586,7 +2593,7 @@ extern int unpack_acct_association_cond(void **object,
 		}
 	
 		safe_unpack32(&count, buffer);
-		if(count != NO_VAL) {
+		if(count && count != NO_VAL) {
 			object_ptr->max_cpu_mins_pj_list = 
 				list_create(slurm_destroy_char);
 			list_append(object_ptr->max_cpu_mins_pj_list,
@@ -2594,7 +2601,7 @@ extern int unpack_acct_association_cond(void **object,
 		}
 
 		safe_unpack32(&count, buffer);
-		if(count != NO_VAL) {
+		if(count && count != NO_VAL) {
 			object_ptr->max_jobs_list = 
 				list_create(slurm_destroy_char);
 			list_append(object_ptr->max_jobs_list,
@@ -2602,7 +2609,7 @@ extern int unpack_acct_association_cond(void **object,
 		}
 
 		safe_unpack32(&count, buffer);
-		if(count != NO_VAL) {
+		if(count && count != NO_VAL) {
 			object_ptr->max_nodes_pj_list = 
 				list_create(slurm_destroy_char);
 			list_append(object_ptr->max_nodes_pj_list,
@@ -2610,7 +2617,7 @@ extern int unpack_acct_association_cond(void **object,
 		}
 
 		safe_unpack32(&count, buffer);
-		if(count != NO_VAL) {
+		if(count && count != NO_VAL) {
 			object_ptr->max_wall_pj_list = 
 				list_create(slurm_destroy_char);
 			list_append(object_ptr->max_wall_pj_list,
