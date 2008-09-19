@@ -72,6 +72,7 @@
 #define MAX_RETRIES 10
 
 static int  _count_cpus(bitstr_t *bitmap);
+static void _free_step_rec(struct step_record *step_ptr);
 static void _pack_ctld_job_step_info(struct step_record *step, Buf buffer);
 static bitstr_t * _pick_step_nodes (struct job_record  *job_ptr, 
 				    job_step_create_request_msg_t *step_spec,
@@ -139,22 +140,26 @@ delete_step_records (struct job_record *job_ptr, int filter)
 			switch_free_jobinfo(step_ptr->switch_job);
 		}
 		checkpoint_free_jobinfo(step_ptr->check_job);
-		xfree(step_ptr->host);
-		xfree(step_ptr->name);
-		slurm_step_layout_destroy(step_ptr->step_layout);
-		jobacct_gather_g_destroy(step_ptr->jobacct);
-		FREE_NULL_BITMAP(step_ptr->core_bitmap_job);
-		FREE_NULL_BITMAP(step_ptr->exit_node_bitmap);
-		FREE_NULL_BITMAP(step_ptr->step_node_bitmap);
-		if (step_ptr->network)
-			xfree(step_ptr->network);
-		xfree(step_ptr->ckpt_path);
-		xfree(step_ptr);
+		_free_step_rec(step_ptr);
 	}		
 
 	list_iterator_destroy (step_iterator);
 }
 
+/* _free_step_rec - delete a step record's data structures */
+static void _free_step_rec(struct step_record *step_ptr)
+{
+	xfree(step_ptr->host);
+	xfree(step_ptr->name);
+	slurm_step_layout_destroy(step_ptr->step_layout);
+	jobacct_gather_g_destroy(step_ptr->jobacct);
+	FREE_NULL_BITMAP(step_ptr->core_bitmap_job);
+	FREE_NULL_BITMAP(step_ptr->exit_node_bitmap);
+	FREE_NULL_BITMAP(step_ptr->step_node_bitmap);
+	xfree(step_ptr->network);
+	xfree(step_ptr->ckpt_path);
+	xfree(step_ptr);
+}
 
 /* 
  * delete_step_record - delete record for job step for specified job_ptr 
@@ -1159,8 +1164,10 @@ step_create(job_step_create_request_msg_t *step_specs,
 					   step_specs->num_tasks,
 					   step_specs->task_dist,
 					   step_specs->plane_size);
-		if (!step_ptr->step_layout)
+		if (!step_ptr->step_layout) {
+			_free_step_rec(step_ptr);
 			return SLURM_ERROR;
+		}
 		if (switch_alloc_jobinfo (&step_ptr->switch_job) < 0)
 			fatal ("step_create: switch_alloc_jobinfo error");
 		
@@ -1196,6 +1203,7 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 	int i, usable_cpus, usable_mem;
 	int set_nodes = 0, set_cpus = 0;
 	int pos = -1;
+	int first_bit, last_bit;
 	struct job_record *job_ptr = step_ptr->job_ptr;
 	select_job_res_t select_ptr = job_ptr->select_job;
 
@@ -1207,7 +1215,9 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 
 	/* build the cpus-per-node arrays for the subset of nodes
 	 * used by this job step */
-	for (i = 0; i < node_record_count; i++) {
+	first_bit = bit_ffs(step_ptr->step_node_bitmap);
+	last_bit  = bit_fls(step_ptr->step_node_bitmap);
+	for (i = first_bit; i <= last_bit; i++) {
 		if (bit_test(step_ptr->step_node_bitmap, i)) {
 			/* find out the position in the job */
 			pos = bit_get_pos_num(job_ptr->node_bitmap, i);

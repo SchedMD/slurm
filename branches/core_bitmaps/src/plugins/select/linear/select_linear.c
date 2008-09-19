@@ -486,6 +486,7 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap,
 
 		if (set_select_job_res_node(select_ptr, j))
 			error("select_p_job_test: set_select_job_res_node: %m");
+		j++;
 	}
 	if (select_ptr->nprocs != total_cpus) {
 		error("select_p_job_test: nprocs mismatch %u != %u",
