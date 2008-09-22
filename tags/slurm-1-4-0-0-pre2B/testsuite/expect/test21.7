@@ -1,0 +1,245 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          sacctmgr list clusters
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2008 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Joseph Donaghy <donaghy1@llnl.gov>
+# LLNL-CODE-402394.
+# 
+# This file is part of SLURM, a resource management program.
+# For details, see <http://www.llnl.gov/linux/slurm/>.
+#  
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+# 
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+# 
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id     "21.7"
+set exit_code   0
+set amatches    0
+set lmatches    0
+set dmatches    0
+set not_support 0
+set add		add
+set lis		list
+set del		delete
+set mod		modify
+set nams	Names
+set nam		Name
+set fs		Fairshare
+set mc		MaxCPUSecs
+set mj		MaxJobs
+set mn		MaxNodes
+set mw		MaxWall
+set clu		cluster
+set tc1		tcluster1
+set tc2		tcluster2
+set tc3		tcluster3
+set fs1		2500
+set mc1		1000000
+set mj1		50
+set mn1		300
+set mw1		01:00:00
+set access_err  0
+
+print_header $test_id
+
+if { [test_account_storage] == 0 } {
+	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
+	exit 0
+}
+
+#
+# Verify if Administrator privileges
+#
+ if { [string compare [check_accounting_admin_level] "Administrator"] } {
+	send_user "\nWARNING: This test can't be run without being an Accounting administrator.\nUse sacctmgr mod user \$USER_NAME admin=admin.\n"
+	exit 0
+}
+
+#
+# Use sacctmgr to create a cluster
+#
+set sadd_pid [spawn $sacctmgr $add $clu $nams=$tc1,$tc2,$tc3 $fs=$fs1 $mc=$mc1 $mj=$mj1 $mn=$mn1 $mw=$mw1]
+expect {
+	-re "privilege to preform this action" {
+		set access_err 1
+		exp_continue
+	}
+	-re "Adding Cluster" {
+		incr amatches
+		exp_continue
+	}
+	-re "$nam *= $tc1" {
+		incr amatches
+		exp_continue
+	}
+	-re "$nam *= $tc2" {
+		incr amatches
+		exp_continue
+	}
+	-re "$nam *= $tc3" {
+		incr amatches
+		exp_continue
+	}
+	-re "User Defaults" {
+		incr amatches
+		exp_continue
+	}
+	-re "$fs *= $fs1" {
+		incr amatches
+		exp_continue
+	}
+	-re "$mc *= $mc1" {
+		incr amatches
+		exp_continue
+	}
+	-re "$mj *= $mj1" {
+		incr amatches
+		exp_continue
+	}
+	-re "$mn *= $mn1" {
+		incr amatches
+		exp_continue
+	}
+	-re "$mw *= $mw1" {
+		incr amatches
+		exp_continue
+	}
+	-re "Would you like to commit changes\\\? \\\(You have 30 seconds to decide\\\)" {
+		incr amatches
+		exp_continue
+	}
+	-re "\\\(N\\\/y\\\):" {
+		incr amatches
+		send "Y\r"
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $sadd_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$access_err != 0} {
+	send_user "\nWARNING: not authorized to perform this test\n"
+	exit $exit_code
+}
+if {$amatches != 12} {
+	send_user "\nFAILURE:  sacctmgr had a problem adding clusters\n"
+	set exit_code 1
+}
+if { ![check_acct_associations] } {
+	send_user "\nFAILURE:  Our associations don't line up\n"
+	set exit_code 1
+}
+
+#
+# Use sacctmgr to list the addition of cluster
+#
+set slist_pid [spawn $sacctmgr $lis $clu]
+expect {
+	-re "Cluster" {
+		incr lmatches
+		exp_continue
+	}
+	-re "$tc1" {
+		incr lmatches
+		exp_continue
+	}
+	-re "$fs1 *$mc1 *$mj1 *$mn1 *$mw1" {
+		incr lmatches
+		exp_continue
+	}
+	-re "$tc2" {
+		incr lmatches
+		exp_continue
+	}
+	-re "$fs1 *$mc1 *$mj1 *$mn1 *$mw1" {
+		incr lmatches
+		exp_continue
+	}
+	-re "$tc3" {
+		incr lmatches
+		exp_continue
+	}
+	-re "$fs1 *$mc1 *$mj1 *$mn1 *$mw1" {
+		incr lmatches
+		exp_continue
+	}
+		timeout {
+		send_user "\nFAILURE: sacctmgr list not responding\n"
+		slow_kill $slist_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# Use sacctmgr to delete the test cluster
+#
+set sadel_pid [spawn $sacctmgr $del $clu $tc1,$tc2,$tc3]
+expect {
+	-re "Deleting clusters" {
+		incr dmatches
+		exp_continue
+	}
+	-re "$tc1" {
+		incr dmatches
+		exp_continue
+	}
+	-re "Would you like to commit changes\\\? \\\(You have 30 seconds to decide\\\)" {
+		incr dmatches
+		exp_continue
+	}
+	-re "\\\(N\\\/y\\\):" {
+		incr dmatches
+		send "Y\r"
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr delete not responding\n"
+		slow_kill $sadel_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$dmatches != 4} {
+	send_user "\nFAILURE: sacctmgr had a problem deleting cluster\n"
+	set exit_code 1
+}
+if { ![check_acct_associations] } {
+	send_user "\nFAILURE:  Our associations don't line up\n"
+	set exit_code 1
+}
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+}
+
+exit $exit_code

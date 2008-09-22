@@ -1,0 +1,483 @@
+<!--#include virtual="header.txt"-->
+
+<h1><a name="top">Consumable Resources in SLURM</a></h1>
+
+<p>SLURM, using the default node allocation plug-in, allocates nodes to jobs in
+exclusive mode.  This means that even when all the resources within a node are
+not utilized by a given job, another job will not have access to these resources.
+Nodes possess resources such as processors, memory, swap, local
+disk, etc. and jobs consume these resources. The exclusive use default policy
+in SLURM can result in inefficient utilization of the cluster and of its nodes
+resources.
+
+<p>A plug-in supporting CPUs as a consumable resource is available in
+SLURM 0.5.0 and newer versions of SLURM. Information on how to use
+this plug-in is described below.
+</p>
+
+<h2>Using the Consumable Resource Node Allocation Plugin: <b>select/cons_res</b></h2>
+
+<ol start=1 type=1>
+ <li><b>SLURM v0.5 and up to SLURM v1.1: <u>ONLY</u> CPUs as a consumable resource</b></li>
+ <ul>
+  <li>Managing <b>CPUs</b> as a consumable resource means that SLURM will 
+    not overallocate CPUs. In this implementation it is possible to oversubscribe 
+    memory if co-located jobs are using more memory than is available on the node. 
+    See features for SLURM 1.2 (below) for memory as a consumable resource.</li>
+  <li>The consumable resource plugin is enabled via SelectType in the 
+    slurm.conf (e.g. <i>SelectType=select/cons_res</i>).</li>
+<pre>
+#
+# "SelectType"         : node selection logic for scheduling.
+#    "select/bluegene" : the default on BlueGene systems, aware of
+#                        system topology, manages bglblocks, etc.
+#    "select/cons_res" : allocate individual consumable resources
+#                        (i.e. processors, memory, etc.)
+#    "select/linear"   : the default on non-BlueGene systems,
+#                        no topology awareness, oriented toward
+#                        allocating nodes to jobs rather than
+#                        resources within a node (e.g. CPUs)
+#
+# SelectType=select/linear
+SelectType=select/cons_res
+</pre>
+  <li>The <b>select/cons_res</b> plug-in requires SHARED=No at the 
+    partition level.</li>
+  <li>Using the <i>--overcommit</i> or <i>-O</i> switch in the
+    <b>select/cons_res</b> environment is only possible when users
+    request dedicated nodes using <i>--exclusive</i>.</li> 
+    Overcommiting CPUs in a non-dedicated environment would impact 
+    jobs that are co-located on the nodes which is not a desirable 
+    feature. This feature is available in SLURM 1.2 (see below).</li>
+ </ul>
+ <li><b>SLURM 1.2 and newer versions of SLURM</b></li>
+  <ul>
+   <li>Consumable resources has been enhanced with several new resources 
+    --namely CPU (same as in previous version), Socket, Core, Memory 
+    as well as any combination of the logical processors with Memory:</li>
+   <ul>
+     <li><b>CPU</b> (<i>CR_CPU</i>): CPU as a consumable resource. 
+       <ul>
+       <li>No notion of sockets, cores, or threads.</li>
+       <li>On a multi-core system CPUs will be cores.</li> 
+       <li>On a multi-core/hyperthread system CPUs will be threads.</li>  
+       <li>On a single-core systems CPUs are CPUs. ;-) </li>
+       </ul>
+     <li><b>Socket</b> (<i>CR_Socket</i>): Socket as a consumable
+     resource.</li>
+     <li/><b>Core</b> (<i>CR_Core</i>): Core as a consumable
+     resource.</li>
+     <li><b>Memory</b> (<i>CR_Memory</i>) Memory <u>only</u> as a
+     consumable resource. Note! CR_Memory assumes Shared=Yes</li>
+     <li><b>Socket and Memory</b> (<i>CR_Socket_Memory</i>): Socket
+     and Memory as consumable resources.</li>
+     <li><b>Core and Memory</b> (<i>CR_Core_Memory</i>): Core and
+     Memory as consumable resources.</li>
+     <li><b>CPU and Memory</b> (<i>CR_CPU_Memory</i>) CPU and Memory
+     as consumable resources.</li>
+   </ul>
+  <li>In the cases where Memory is the consumable resource or one of 
+      the two consumable resources the <b>Memory</b> parameter which  
+      defines a node amount of real memory in slurm.conf must be 
+      set when fastschedule=1.
+  <li>srun's <i>-E</i> extension for sockets, cores, and threads are
+      ignored within the node allocation mechanism when CR_CPU or
+      CR_CPU_MEMORY is selected. It is considered to compute the total
+      number of tasks when -n is not specified. </li>
+  <li>A new srun switch <i>--job-mem=MB</i> was added to allow users
+      to specify the maximum amount of real memory per node required
+      by their application. This switch is needed in the environments
+      were Memory is a consumable resource. It is important to specify
+      enough memory since slurmd will not allow the application to use
+      more than the requested amount of real memory per node. The
+      default value for --job-mem is 1 MB. see srun man page for more
+      details.</li>
+  <li><b>All CR_s assume Shared=No</b> or Shared=Force EXCEPT for
+      <b>CR_MEMORY</b> which <b>assumes Shared=Yes</b></li>
+  <li>The consumable resource plugin is enabled via SelectType and
+      SelectTypeParameter in the slurm.conf.</li>
+<pre>
+#
+# "SelectType"         : node selection logic for scheduling.
+#    "select/bluegene" : the default on BlueGene systems, aware of
+#                        system topology, manages bglblocks, etc.
+#    "select/cons_res" : allocate individual consumable resources
+#                        (i.e. processors, memory, etc.)
+#    "select/linear"   : the default on non-BlueGene systems,
+#                        no topology awareness, oriented toward
+#                        allocating nodes to jobs rather than
+#                        resources within a node (e.g. CPUs)
+#
+# SelectType=select/linear
+SelectType=select/cons_res
+
+# o Define parameters to describe the SelectType plugin. For
+#    - select/bluegene - this parameter is currently ignored
+#    - select/linear   - this parameter is currently ignored
+#    - select/cons_res - the parameters available are
+#       - CR_CPU  (1)  - CPUs as consumable resources. 
+#                        No notion of sockets, cores, or threads. 
+#                        On a multi-core system CPUs will be cores
+#                        On a multi-core/hyperthread system CPUs 
+#                                        will be threads
+#                        On a single-core systems CPUs are CPUs.
+#      - CR_Socket (2) - Sockets as a consumable resource.
+#      - CR_Core   (3) - Cores as a consumable resource. 
+#      - CR_Memory (4) - Memory as a consumable resource. 
+#                        Note! CR_Memory assumes Shared=Yes
+#      - CR_Socket_Memory (5) - Socket and Memory as consumable 
+#                               resources.
+#      - CR_Core_Memory (6)   - Core and Memory as consumable 
+#                               resources. (Not yet implemented)
+#      - CR_CPU_Memory (7)    - CPU and Memory as consumable 
+#                               resources.
+#
+# (#) refer to the output of "scontrol show config"
+#
+# NB!:   The -E extension for sockets, cores, and threads 
+#        are ignored within the node allocation mechanism 
+#        when CR_CPU or CR_CPU_MEMORY is selected. 
+#        They are considered to compute the total number of 
+#        tasks when -n is not specified
+#
+# NB! All CR_s assume Shared=No or Shared=Force EXCEPT for 
+#        CR_MEMORY which assumes Shared=Yes
+#
+#SelectTypeParameters=CR_CPU (default)
+</pre>
+  <li>Using <i>--overcommit</i> or <i>-O</i> is allowed in this new version 
+    of consumable resources. When the process to logical processor pinning is 
+    enabled (task/affinity plug-in) the extra processes will not affect 
+    co-scheduled jobs other than other jobs started with the -O flag.
+    We are currently investigating alternative approaches of handling the 
+    pinning of jobs started with <i>--overcommit</i></li>
+  <li><i>-c</i> or <i>--cpus-per-task</i> works in this version of
+    consumable resources</li>
+ </ul>
+ <li><b>General comments</b></li>
+ <ul>
+  <li>SLURM's default <b>select/linear</b> plugin is using a best fit algorithm based on
+    number of consecutive nodes. The same node allocation approach is used in 
+    <b>select/cons_res</b> for consistency.</li>
+  <li>The <b>select/cons_res</b> plugin is enabled or disabled cluster-wide.</li>
+  <li>In the case where <b>select/cons_res</b> is not enabled, the normal SLURM behaviors 
+    are not disrupted. The only changes, users see when using the <b>select/cons_res</b> 
+    plug-in, are that jobs can be co-scheduled on nodes when resources permits it. 
+    The rest of SLURM such as srun and switches (except srun -s ...), etc. are not 
+    affected by this plugin. SLURM is, from a user point of view, working the same 
+    way as when using the default node selection scheme.</li>
+  <li>The <i>--exclusive</i> srun switch allows users to request nodes in 
+    exclusive mode even when consumable resources is enabled. see "man srun" 
+    for details. </li>        
+  <li>srun's <i>-s</i> or <i>--share</i> is incompatible with the consumable resource 
+    environment and will therefore not be honored. Since in this environment nodes 
+    are shared by default, <i>--exclusive</i> allows users to obtain dedicated nodes.</li>
+ </ul>
+</ol>
+
+<p class="footer"><a href="#top">top</a></p>
+
+<h2>Limitation and future work</h2> 
+
+<p>We are aware of several limitations with the current consumable
+resource plug-in and plan to make enhancement the plug-in as we get
+time as well as request from users to help us prioritize the features.
+
+Please send comments and requests about the consumable resources to 
+<a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.
+
+<ol start=1 type=1>
+  <li><b>Issue with --max_nodes, --max_sockets_per_node, --max_cores_per_socket and --max_threads_per_core</b></li>
+    <ul>
+      <li><b>Problem:</b> The example below was achieve when using CR_CPU
+      (default mode). The systems are all "dual socket, dual core,
+      single threaded systems (= 4 cpus per system)".</li> 
+      <li>The first 3 serial jobs are being allocated to node hydra12
+      which means that one CPU is still available on hydra12.</li>
+      <li>The 4th job "srun -N 2-2 -E 2:2 sleep 100" requires 8 CPUs
+      and since the algorithm fills up nodes in a consecutive order
+      (when not in dedicated mode) the algorithm will want to use the
+      remaining CPUs on Hydra12 first. Because the user has requested
+      a maximum of two nodes the allocation will put the job on
+      hold until hydra12 becomes available or if backfill is enabled
+      until hydra12's remaining CPU gets allocated to another job
+      which will allow the 4th job to get two dedicated nodes</li>
+      <li><b>Note!</b> This problem is fixed in SLURM version 1.3.</li>
+      <li><b>Note!</b> If you want to specify <i>--max_????</i> this
+      problem can be solved in the current implementation by asking
+      for the nodes in dedicated mode using <i>--exclusive</i></li>.
+
+<pre>
+# srun sleep 100 &
+# srun sleep 100 &
+# srun sleep 100 &
+# squeue
+JOBID PARTITION   NAME     USER  ST   TIME  NODES NODELIST(REASON)
+ 1132  allNodes  sleep   sballe   R   0:05      1 hydra12
+ 1133  allNodes  sleep   sballe   R   0:04      1 hydra12
+ 1134  allNodes  sleep   sballe   R   0:02      1 hydra12
+# srun -N 2-2 -E 2:2 sleep 100 &
+srun: job 1135 queued and waiting for resources
+#squeue
+JOBID PARTITION   NAME     USER  ST   TIME  NODES NODELIST(REASON)
+ 1135  allNodes  sleep   sballe  PD   0:00      2 (Resources)
+ 1132  allNodes  sleep   sballe   R   0:24      1 hydra12
+ 1133  allNodes  sleep   sballe   R   0:23      1 hydra12
+ 1134  allNodes  sleep   sballe   R   0:21      1 hydra12
+</pre>
+    <li><b>Proposed solution:</b> Enhance the selection mechanism to go through {node,socket,core,thread}-tuplets to find available match for specific request (bounded knapsack problem). </li>
+    </ul>
+  <li><b>Binding of processes in the case when  <i>--overcommit</i> is specified.</b></li>
+    <ul>
+      <li>In the current implementation (SLURM 1.2) we have chosen not
+      to bind process that have been started with <i>--overcommit</i>
+      flag. The reasoning behind this decision is that the Linux
+      scheduler will move non-bound processes to available resources
+      when jobs with process pinning enabled are started. The
+      non-bound jobs do not affect the bound jobs but co-scheduled
+      non-bound job would affect each others runtime. We have decided
+      that for now this is an adequate solution.
+    </ul>
+  </ul>
+</ol>
+
+<p class="footer"><a href="#top">top</a></p>
+
+<h2>Examples of CR_Memory, CR_Socket_Memory, and CR_CPU_Memory type consumable resources</h2> 
+
+<pre>
+# sinfo -lNe
+NODELIST     NODES PARTITION  STATE  CPUS  S:C:T MEMORY 
+hydra[12-16]     5 allNodes*  ...       4  2:2:1   2007 
+</pre>
+
+<p>Using select/cons_res plug-in with CR_Memory</p>
+<pre>
+Example:
+# srun -N 5 -n 20 --job-mem=1000 sleep 100 &  <-- running
+# srun -N 5 -n 20 --job-mem=10 sleep 100 &    <-- running 
+# srun -N 5 -n 10 --job-mem=1000 sleep 100 &  <-- queued and waiting for resources
+
+# squeue
+JOBID PARTITION   NAME     USER  ST   TIME  NODES NODELIST(REASON)
+ 1820  allNodes  sleep   sballe  PD   0:00      5 (Resources)
+ 1818  allNodes  sleep   sballe   R   0:17      5 hydra[12-16]
+ 1819  allNodes  sleep   sballe   R   0:11      5 hydra[12-16]
+</pre>
+
+<p>Using select/cons_res plug-in with CR_Socket_Memory (2 sockets/node)</p>
+<pre>
+Example 1:
+# srun -N 5 -n 5 --job-mem=1000 sleep 100 &        <-- running
+# srun -n 1 -w hydra12 --job-mem=2000 sleep 100 &  <-- queued and waiting for resources
+
+# squeue
+JOBID PARTITION   NAME     USER  ST   TIME  NODES NODELIST(REASON)
+ 1890  allNodes  sleep   sballe  PD   0:00      1 (Resources)
+ 1889  allNodes  sleep   sballe   R   0:08      5 hydra[12-16]
+
+Example 2:
+# srun -N 5 -n 10 --job-mem=10 sleep 100 & <-- running 
+# srun -n 1 --job-mem=10 sleep 100 & <-- queued and waiting for resourcessqueue
+
+# squeue
+JOBID PARTITION   NAME     USER  ST   TIME  NODES NODELIST(REASON)
+ 1831  allNodes  sleep   sballe  PD   0:00      1 (Resources)
+ 1830  allNodes  sleep   sballe   R   0:07      5 hydra[12-16]
+</pre>
+
+<p>Using select/cons_res plug-in with CR_CPU_Memory (4 CPUs/node)</p>
+<pre>
+Example 1:
+# srun -N 5 -n 5 --job-mem=1000 sleep 100 &  <-- running 
+# srun -N 5 -n 5 --job-mem=10 sleep 100 &    <-- running
+# srun -N 5 -n 5 --job-mem=1000 sleep 100 &  <-- queued and waiting for resources
+
+# squeue
+JOBID PARTITION   NAME     USER  ST   TIME  NODES NODELIST(REASON)
+ 1835  allNodes  sleep   sballe  PD   0:00      5 (Resources)
+ 1833  allNodes  sleep   sballe   R   0:10      5 hydra[12-16]
+ 1834  allNodes  sleep   sballe   R   0:07      5 hydra[12-16]
+
+Example 2:
+# srun -N 5 -n 20 --job-mem=10 sleep 100 & <-- running 
+# srun -n 1 --job-mem=10 sleep 100 &       <-- queued and waiting for resources
+
+# squeue
+JOBID PARTITION   NAME     USER  ST   TIME  NODES NODELIST(REASON)
+ 1837  allNodes  sleep   sballe  PD   0:00      1 (Resources)
+ 1836  allNodes  sleep   sballe   R   0:11      5 hydra[12-16]
+</pre>
+
+<p class="footer"><a href="#top">top</a></p>
+
+<h2>Example of Node Allocations Using Consumable Resource Plugin</h2>
+
+<p>The following example illustrates the different ways four jobs
+are allocated across a cluster using (1) SLURM's default allocation
+(exclusive mode) and (2) a processor as consumable resource
+approach.</p>
+
+<p>It is important to understand that the example listed below is a
+contrived example and is only given here to illustrate the use of cpu as
+consumable resources. Job 2 and Job 3 call for the node count to equal
+the processor count. This would typically be done because
+that one task per node requires all of the memory, disk space, etc. The
+bottleneck would not be processor count.</p>
+
+<p>Trying to execute more than one job per node will almost certainly severely
+impact parallel job's performance.
+The biggest beneficiary of cpus as consumable resources will be serial jobs or
+jobs with modest parallelism, which can effectively share resources. On a lot
+of systems with larger processor count, jobs typically run one fewer task than
+there are processors to minimize interference by the kernel and daemons.</p>
+
+<p>The example cluster is composed of 4 nodes (10 cpus in total):</p>
+
+<ul>
+ <li>linux01 (with 2 processors), </li>
+ <li>linux02 (with 2 processors), </li>
+ <li>linux03 (with 2 processors), and</li>
+ <li>linux04 (with 4 processors). </li>
+</ul>
+
+<p>The four jobs are the following:</p>
+
+<ul>
+ <li>[2] srun -n 4 -N 4 sleep 120 &amp;</li>
+ <li>[3] srun -n 3 -N 3 sleep 120 &amp;</li>
+ <li>[4] srun -n 1 sleep 120 &amp;</li>
+ <li>[5] srun -n 3 sleep 120 &amp;</li>
+</ul>
+
+<p>The user launches them in the same order as listed above.</p>
+
+<p class="footer"><a href="#top">top</a></p>
+
+<h2>Using SLURM's Default Node Allocation (Non-shared Mode)</h2>
+
+<p>The four jobs have been launched and 3 of the jobs are now
+pending, waiting to get resources allocated to them. Only Job 2 is running
+since it uses one cpu on all 4 nodes. This means that linux01 to linux03 each
+have one idle cpu and linux04 has 3 idle cpus.</p>
+
+<pre>
+# squeue
+JOBID PARTITION   NAME   USER  ST   TIME  NODES NODELIST(REASON)
+    3       lsf  sleep   root  PD   0:00      3 (Resources)
+    4       lsf  sleep   root  PD   0:00      1 (Resources)
+    5       lsf  sleep   root  PD   0:00      1 (Resources)
+    2       lsf  sleep   root   R   0:14      4 xc14n[13-16]
+</pre>
+
+<p>Once Job 2 is finished, Job 3 is scheduled and runs on
+linux01, linux02, and linux03. Job 3 is only using one cpu on each of the 3
+nodes. Job 4 can be allocated onto the remaining idle node (linux04) so Job 3
+and Job 4 can run concurrently on the cluster.</p>
+
+<p>Job 5 has to wait for idle nodes to be able to run.</p>
+
+<pre>
+# squeue
+JOBID PARTITION   NAME   USER  ST   TIME  NODES NODELIST(REASON)
+    5       lsf  sleep   root  PD   0:00      1 (Resources)
+    3       lsf  sleep   root   R   0:11      3 xc14n[13-15]
+    4       lsf  sleep   root   R   0:11      1 xc14n16
+</pre>
+
+<p>Once Job 3 finishes, Job 5 is allocated resources and can run.</p>
+
+<p>The advantage of the exclusive mode scheduling policy is
+that the a job gets all the resources of the assigned nodes for optimal 
+parallel performance. The drawback is
+that jobs can tie up large amount of resources that it does not use and which
+cannot be shared with other jobs.</p>
+
+<p class="footer"><a href="#top">top</a></p>
+
+<h2>Using a Processor Consumable Resource Approach</h2>
+
+<p>The output of squeue shows that we
+have 3 out of the 4 jobs allocated and running. This is a 2 running job
+increase over the default SLURM approach.</p>
+
+<p> Job 2 is running on nodes linux01
+to linux04. Job 2's allocation is the same as for SLURM's default allocation
+which is that it uses one cpu on each of the 4 nodes. Once Job 2 is scheduled
+and running, nodes linux01, linux02 and linux03 still have one idle cpu each
+and node linux04 has 3 idle cpus. The main difference between this approach and
+the exclusive mode approach described above is that idle cpus within a node
+are now allowed to be assigned to other jobs.</p>
+
+<p>It is important to note that
+<i>assigned</i> doesn't mean <i>oversubscription</i>. The consumable resource approach
+tracks how much of each available resource (in our case cpus) must be dedicated
+to a given job. This allows us to prevent per node oversubscription of
+resources (cpus).</p>
+
+<p>Once Job 2 is running, Job 3 is
+scheduled onto node linux01, linux02, and Linux03 (using one cpu on each of the
+nodes) and Job 4 is scheduled onto one of the remaining idle cpus on Linux04.</p>
+
+<p>Job 2, Job 3, and Job 4 are now running concurrently on the cluster.</p>
+
+<pre>
+
+# squeue
+JOBID PARTITION   NAME   USER  ST   TIME  NODES NODELIST(REASON)
+    5       lsf  sleep   root  PD   0:00      1 (Resources)
+    2       lsf  sleep   root   R   0:13      4 linux[01-04]
+    3       lsf  sleep   root   R   0:09      3 linux[01-03]
+    4       lsf  sleep   root   R   0:05      1 linux04
+
+# sinfo -lNe
+NODELIST     NODES PARTITION       STATE CPUS MEMORY TMP_DISK WEIGHT FEATURES REASON
+linux[01-03]     3      lsf*   allocated    2   2981        1      1   (null) none
+linux04          1      lsf*   allocated    4   3813        1      1   (null) none
+</pre>
+
+<p>Once Job 2 finishes, Job 5, which was pending, is allocated available resources and is then
+running as illustrated below:</p>
+
+<pre>
+# squeue
+JOBID PARTITION   NAME   USER  ST   TIME  NODES NODELIST(REASON)
+   3       lsf   sleep   root   R   1:58      3 linux[01-03]
+   4       lsf   sleep   root   R   1:54      1 linux04
+   5       lsf   sleep   root   R   0:02      3 linux[01-03]
+# sinfo -lNe
+NODELIST     NODES PARTITION       STATE CPUS MEMORY TMP_DISK WEIGHT FEATURES REASON
+linux[01-03]     3      lsf*   allocated    2   2981        1      1   (null) none
+linux04          1      lsf*        idle    4   3813        1      1   (null) none
+</pre>
+
+<p>Job 3, Job 4, and Job 5 are now running concurrently on the cluster.</p>
+
+<pre>
+# squeue
+JOBID PARTITION   NAME   USER  ST   TIME  NODES NODELIST(REASON)
+    5       lsf  sleep   root   R   1:52      3 linux[01-03]
+</pre>
+
+<p>Job 3 and Job 4 have finshed and Job 5 is still running on nodes linux[01-03].</p>
+
+<p>The advantage of the consumable resource scheduling policy
+is that the job throughput can increase dramatically. The overall job
+throughput/productivity of the cluster increases thereby reducing the amount of
+time users have to wait for their job to complete as well as increasing the
+overall efficiency of the use of the cluster. The drawback is that users do not
+have the entire node dedicated to their job since they have to share nodes with
+other jobs if they do not use all of the resources on the nodes.</p>
+
+<p>We have added a <i>"--exclusive"</i> switch to srun which allow users
+to specify that they would like their allocated
+nodes in exclusive mode. For more information see "man srun".
+The reason for that is if users have mpi//threaded/openMP
+programs that will take advantage of all the cpus within a node but only need
+one mpi process per node.</p>
+
+<p class="footer"><a href="#top">top</a></p>
+
+<p style="text-align:center;">Last modified 8 July 2008</p>
+
+<!--#include virtual="footer.txt"-->
