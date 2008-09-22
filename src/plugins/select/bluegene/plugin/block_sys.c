@@ -462,7 +462,7 @@ int read_bg_blocks()
 		bg_record->bg_block_id = xstrdup(block_name);
 		free(block_name);
 
-		bg_record->state = NO_VAL;
+		bg_record->state = (uint16_t) NO_VAL;
 		bg_record->quarter = (uint16_t) NO_VAL;
 		bg_record->nodecard = (uint16_t) NO_VAL;
 		bg_record->job_running = NO_JOB_RUNNING;
