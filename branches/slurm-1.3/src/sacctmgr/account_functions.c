@@ -530,7 +530,8 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 		acct = NULL;
 		if(!sacctmgr_find_account_from_list(local_account_list, name)) {
 			acct = xmalloc(sizeof(acct_account_rec_t));
-			acct->assoc_list = list_create(NULL);	
+			acct->assoc_list = 
+				list_create(destroy_acct_association_rec);	
 			acct->name = xstrdup(name);
 			if(description) 
 				acct->description = xstrdup(description);
