@@ -522,6 +522,8 @@ int main(int argc, char *argv[])
 	if (i >= 10)
 		error("Left %d agent threads active", cnt);
 
+	slurm_sched_fini();	/* Stop all scheduling */
+
 	/* Purge our local data structures */
 	job_fini();
 	part_fini();	/* part_fini() must preceed node_fini() */
@@ -529,12 +531,11 @@ int main(int argc, char *argv[])
 	trigger_fini();
 	assoc_mgr_fini(slurmctld_conf.state_save_location);
 
-	/* Plugins are needed to purge job/node data structures,
+	/* Some plugins are needed to purge job/node data structures,
 	 * unplug after other data structures are purged */
 	g_slurm_jobcomp_fini();
 	slurm_acct_storage_fini();
 	slurm_jobacct_gather_fini();
-	slurm_sched_fini();
 	slurm_select_fini();
 	checkpoint_fini();
 	slurm_auth_fini();
