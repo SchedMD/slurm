@@ -238,7 +238,7 @@ extern void parse_command_line(int argc, char *argv[])
 		} else if (params.list_reasons) {
 			params.format = params.long_output ?  
 			  "%50R %6t %N" : 
-			  "%35R %N";
+			  "%50R %N";
 
 		} else if ((env_val = getenv ("SINFO_FORMAT"))) {
 			params.format = xstrdup(env_val);

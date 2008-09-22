@@ -18,6 +18,7 @@ documents those changes that are of interest to users and admins.
     "man slurm.conf" for details.
  -- Make default CryptoType=crypto/munge. OpenSSL is now completely optional.
  -- Make default AuthType=auth/munge rather than auth/none.
+ -- Change output format of "sinfo -R" from "%35R %N" to "%50R %N".
 
 * Changes in SLURM 1.4.0-pre1
 =============================
