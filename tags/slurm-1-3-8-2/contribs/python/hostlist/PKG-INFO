@@ -1,0 +1,10 @@
+Metadata-Version: 1.0
+Name: python-hostlist
+Version: 1.0
+Summary: Python module for hostlist handling
+Home-page: http://www.nsc.liu.se/~kent/python-hostlist/
+Author: Kent Engström
+Author-email: kent@nsc.liu.se
+License: GPL2+
+Description: The hostlist.py module knows how to expand and collect LLNL hostlist expressions.
+Platform: UNKNOWN
