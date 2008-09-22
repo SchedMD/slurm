@@ -517,3 +517,4 @@ test21.16  sacctmgr add and list multiple users
 test21.17  sacctmgr modify user
 test21.18  sacctmgr modify multiple users
 test21.19  sacctmgr add and delete coordinator
+test21.20  sacctmgr add and modify QoS

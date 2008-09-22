@@ -142,8 +142,10 @@ extern int slurm_open_slurmdbd_conn(char *auth_info, bool make_agent,
 	if (slurmdbd_fd < 0)
 		_open_slurmdbd_fd();
 	slurm_mutex_unlock(&slurmdbd_lock);
-	
-	return SLURM_SUCCESS;
+	if (slurmdbd_fd < 0)
+		return SLURM_ERROR;
+	else
+		return SLURM_SUCCESS;
 }
 
 /* Close the SlurmDBD socket connection */
@@ -2303,29 +2305,34 @@ slurmdbd_unpack_init_msg(uint16_t rpc_version, dbd_init_msg_t **msg,
 
 	dbd_init_msg_t *msg_ptr = xmalloc(sizeof(dbd_init_msg_t));
 	*msg = msg_ptr;
-
+	int rc = SLURM_SUCCESS;
+		
 	safe_unpack16(&msg_ptr->rollback, buffer);
 	safe_unpack16(&msg_ptr->version, buffer);
 	auth_cred = g_slurm_auth_unpack(buffer);
 	if (auth_cred == NULL) {
 		error("Unpacking authentication credential: %s",
 		      g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));
+		rc = ESLURM_ACCESS_DENIED;
 		goto unpack_error;
 	}
 	msg_ptr->uid = g_slurm_auth_get_uid(auth_cred, auth_info);
 	if(g_slurm_auth_errno(auth_cred) != SLURM_SUCCESS) {
 		error("Bad authentication: %s",
 		      g_slurm_auth_errstr(g_slurm_auth_errno(auth_cred)));
+		rc = ESLURM_ACCESS_DENIED;
 		goto unpack_error;
 	}
 
 	g_slurm_auth_destroy(auth_cred);
-	return SLURM_SUCCESS;
+	return rc;
 
 unpack_error:
 	slurmdbd_free_init_msg(rpc_version, msg_ptr);
 	*msg = NULL;
-	return SLURM_ERROR;
+	if(rc == SLURM_SUCCESS)
+		rc = SLURM_ERROR;
+	return rc;
 }
 
 void inline 

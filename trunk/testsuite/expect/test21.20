@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          sacctmgr add multiple users
+#          sacctmgr QoS modify test
 #          
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
@@ -32,7 +32,7 @@
 ############################################################################
 source ./globals
 
-set test_id     "21.16"
+set test_id     "test21.20"
 set exit_code   0
 set tc1		tcluster1
 set tc2		tcluster2
@@ -69,7 +69,9 @@ set org		Organization
 set or1		accountorga1
 set or2		acttrg
 set qs		QosLevel
-set qs1		normal
+set qs1		tnormal
+set qs2		texpedite
+set qs3		tstandby
 set par		parent
 set usr		user
 set us1		tuser1
@@ -88,6 +90,7 @@ set mn		maxnode
 set mw		maxwall
 set dbu		debug
 set access_err  0
+
 #set user_name   "id -u -n"
 
 print_header $test_id
@@ -227,6 +230,137 @@ proc _remove_cluster {name} {
 	}
 	if {$matches != 1} {
 		send_user "\nFAILURE: sacctmgr had a problem deleting cluster got $matches\n"
+		incr exit_code 1
+	}
+	if { !$nothing } {
+		if { ![check_acct_associations] } {
+			send_user "\nFAILURE:  Our associations don't line up\n"
+			incr exit_code 1
+		}
+	}
+
+	return $exit_code
+}
+
+#
+# Use sacctmgr to create a QoS
+#	
+proc _add_qos {name} {
+        global sacctmgr timeout
+
+	set exit_code 0
+	set matches 0
+
+	if { ![string length $name] } {
+		send_user "FAILURE: Need name of qos to add\n"
+		return 1
+	}
+
+	set my_pid [spawn $sacctmgr -i add qos $name]
+	expect {
+		-re "(There was a problem|Unknown condition|Unknown field|Unknown option)" {
+			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+			incr exit_code 1
+		}
+		-re "Problem getting" {
+			send_user "FAILURE: there was a problem getting qos's from the database\n"
+			incr exit_code 1
+		}
+		-re "Problem adding" {
+			send_user "FAILURE: there was an unknown problem\n"
+			incr exit_code 1
+		}
+		-re "No associations" {
+			send_user "FAILURE: your command didn't return anything\n"
+			incr exit_code 1
+		}
+		-re "Adding QOS" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr add not responding\n"
+			slow_kill $my_pid
+			exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != 1} {
+		send_user "\nFAILURE:  sacctmgr had a problem adding QoS got $matches\n"
+		incr exit_code 1
+	}
+
+	if { ![check_acct_associations] } {
+		send_user "\nFAILURE:  Our associations don't line up\n"
+		incr exit_code 1
+	}
+	
+	return $exit_code
+}
+
+#
+# Use sacctmgr to remove the test QoS
+#
+proc _remove_qos {name} {
+        global access_err sacctmgr timeout
+
+	set exit_code 0
+	set matches 0
+	set nothing 0
+
+	if { ![string length $name] } {
+		send_user "FAILURE: we need a name to remove\n"
+		return 1
+	}
+
+	set my_pid [spawn $sacctmgr -i delete qos $name]
+	expect {
+		-re "privilege to perform this action" {
+			set access_err 1
+			exp_continue
+		}
+		-re "(There was a problem|Unknown condition|Unknown field|Unknown option)" {
+			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+			incr exit_code 1
+		}
+		-re "Problem getting" {
+			send_user "FAILURE: there was a problem getting information from the database\n"
+			incr exit_code 1
+		}
+		-re "Problem adding" {
+			send_user "FAILURE: there was an unknown problem\n"
+			incr exit_code 1
+		}
+		-re "No associations" {
+			send_user "FAILURE: your command didn't return anything\n"
+			incr exit_code 1
+		}
+		-re "Deleting QOS" {
+			incr matches
+			exp_continue
+		}
+		-re " Nothing deleted" {
+			incr matches
+			set nothing 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr delete not responding\n"
+			slow_kill $my_pid
+			incr exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$access_err != 0} {
+		return 1
+	}
+	if {$matches != 1} {
+		send_user "\nFAILURE: sacctmgr had a problem deleting QoS got $matches\n"
 		incr exit_code 1
 	}
 	if { !$nothing } {
@@ -514,7 +648,7 @@ proc _mod_acct { cluster name desc org parent fs maxcpu maxjob maxnodes maxwall 
 #
 # Use sacctmgr to add an user
 #
-proc _add_user { account adminlevel cluster defaultaccount fs maxcpu maxjob maxnodes maxwall name } {
+proc _add_user { account adminlevel cluster defaultaccount qoslevel name } {
         global sacctmgr timeout
 
 	set exit_code 0
@@ -543,24 +677,8 @@ proc _add_user { account adminlevel cluster defaultaccount fs maxcpu maxjob maxn
 		set command "$command defaultaccount=$defaultaccount"
 	}
 
-	if { [string length $fs] } {
-		set command "$command fs=$fs"
-	}
-
-	if { [string length $maxcpu] } {
-		set command "$command maxcpu=$maxcpu"
-	}
-
-	if { [string length $maxjob] } {
-		set command "$command maxjob=$maxjob"
-	}
-
-	if { [string length  $maxnodes] } {
-		set command "$command  maxnodes=$maxnodes"
-	}
-
-	if { [string length $maxwall] } {
-		set command "$command maxwall=$maxwall"
+	if { [string length $qoslevel] } {
+		set command "$command qoslevel=$qoslevel"
 	}
 
 	if { [string length $name] } {
@@ -692,9 +810,102 @@ proc _remove_user { acct user } {
 	return $exit_code
 }
 
+#
+# Use sacctmgr to modify an user
+#
+proc _mod_user { qoslevel waccounts wcluster wnames} {
+	global sacctmgr timeout
+	
+	set exit_code 0
+	set matches 0
+	set expected 0
+	set acct_stuff 0
+	set assoc_stuff 0
+
+	if { ![string length $wnames] } {
+		send_user "FAILURE: we need a name to modify\n"
+		return 1
+	}
+
+	#set up the where
+	set wcommand "where"
+
+	if { [string length $wcluster] } {
+		set wcommand "$wcommand cluster=$wcluster"
+	}
+
+	if { [string length $wnames] } {
+		set wcommand "$wcommand names='$wnames'"
+	}
+
+	if { [string length $waccounts] } {
+		set wcommand "$wcommand account='$waccounts'"
+	}
+
+	#set up the set
+	set scommand "set"
+
+	if { [string length $qoslevel] } {
+		set scommand "$scommand qoslevel$qoslevel"
+		set acct_stuff 1
+	}
+
+	incr expected $acct_stuff
+	incr expected $assoc_stuff
+
+	set my_pid [eval spawn $sacctmgr -i modify user $scommand $wcommand ]
+	expect {
+		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
+			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+			incr exit_code 1
+		}
+		-re "Problem getting" {
+			send_user "FAILURE: there was a problem getting information from the database\n"
+			incr exit_code 1
+		}
+		-re "Problem adding" {
+			send_user "FAILURE: there was an unknown problem\n"
+			incr exit_code 1
+		}
+		-re "No associations" {
+			send_user "FAILURE: your command didn't return anything\n"
+			incr exit_code 1
+		}
+		-re "Modified account associations" {
+			incr matches
+			exp_continue
+		}
+		-re "Modified users" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr modify not responding\n"
+			slow_kill $my_pid
+			incr exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != $expected} {
+		send_user "\nFAILURE:  sacctmgr had a problem modifying user.
+	got $matches needed $expected\n"
+		incr exit_code 1
+	}
+	
+	if { ![check_acct_associations] } {
+		send_user "\nFAILURE:  Our associations don't line up\n"
+		incr exit_code 1
+	}
+	return $exit_code
+}
+
 #make sure we have a clean system and permission to do this work
 _remove_user "" "$us1,$us2,$us3"
 _remove_acct "" "$nm1,$nm2,$nm3"
+_remove_qos "$qs1,$qs2,$qs3"
 _remove_cluster "$tc1,$tc2,$tc3"
 if {$access_err != 0} {
 	send_user "\nWARNING: not authorized to perform this test\n"
@@ -706,6 +917,17 @@ incr exit_code [_add_cluster "$tc1,$tc2,$tc3"]
 if { $exit_code } {
 	_remove_user "" "$us1,$us2,$us3"
 	_remove_acct "" "$nm1,$nm2,$nm3"
+	_remove_qos "$qs1,$qs2,$qs3"
+	_remove_cluster "$tc1,$tc2,$tc3"
+	exit $exit_code
+}
+
+#add qos
+incr exit_code [_add_qos "$qs1,$qs2,$qs3"]
+if { $exit_code } {
+	_remove_user "" "$us1,$us2,$us3"
+	_remove_acct "" "$nm1,$nm2,$nm3"
+	_remove_qos "$qs1,$qs2,$qs3"
 	_remove_cluster "$tc1,$tc2,$tc3"
 	exit $exit_code
 }
@@ -715,31 +937,34 @@ incr exit_code [_add_acct "$tc1,$tc2,$tc3" "$nm1,$nm2,$nm3"]
 if { $exit_code } {
 	_remove_user "" "$us1,$us2,$us3"
 	_remove_acct "" "$nm1,$nm2,$nm3"
+	_remove_qos "$qs1,$qs2,$qs3"
 	_remove_cluster "$tc1,$tc2,$tc3"
 	exit $exit_code
 }
 
 #add users
+# account adminlevel cluster defaultaccount qoslevel name
 # account adminlevel cluster defaultaccount fs maxcpu maxjob maxnodes maxwall name
-incr exit_code [_add_user "$nm1,$nm2,$nm3" "$alo" "$tc1,$tc2,$tc3" "$nm2" "$fs1" "$mc1" "$mj1" "$mn1" "$mw1" $us1,$us2,$us3]
+incr exit_code [_add_user "$nm1,$nm2,$nm3" "$alo" "$tc1,$tc2,$tc3" "$nm2" "$qs1,$qs2" $us1,$us2,$us3]
 if { $exit_code } {
 	_remove_user "" "$us1,$us2,$us3"
 	_remove_acct "" "$nm1,$nm2,$nm3"
+	_remove_qos "$qs1,$qs2,$qs3"
 	_remove_cluster "$tc1,$tc2,$tc3"
 	exit $exit_code
 }
 
 #
-# Use sacctmgr to list the test user additions
+# Use sacctmgr to list the test qos additions
 #
 set matches 0
-set my_pid [spawn $sacctmgr -n -p list user format="User,Def,Admin,clus,acc,fair,maxc,maxj,maxn,maxw"  names=$us1,$us2,$us3 withassoc]
+set my_pid [spawn $sacctmgr -n -p list user format="User,QosLevel" names=$us1,$us2,$us3]
 expect {
 	-re "There was a problem" {
 	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
-	-re "(($us1|$us2|$us3).$nm2.$alo.($tc1|$tc2|$tc3).($nm1|$nm2|$nm3).$fs1.$mc1.$mj1.$mn1.$mw1.)" {
+	-re "(($us1|$us2|$us3).($qs1|$qs2))." {
 		incr matches
 		exp_continue
 	}
@@ -753,7 +978,154 @@ expect {
 	}
 }
 
-if {$matches != 27} {
+if {$matches != 3} {
+	send_user "\nFAILURE:  Account addition 1 incorrect with only $matches.\n"
+	incr exit_code 1
+}
+
+#modify user1 QoS
+# account adminlevel cluster defaultaccount qoslevel name
+# qoslevel waccounts wcluster wnames
+#
+incr exit_code [_mod_user "=$qs3" "$nm2" "$tc1,$tc2,$tc3" $us1]
+if { $exit_code } {
+	_remove_user "" "$us1,$us2,$us3"
+	_remove_acct "" "$nm1,$nm2,$nm3"
+	_remove_qos "$qs1,$qs2,$qs3"
+	_remove_cluster "$tc1,$tc2,$tc3"
+	exit $exit_code
+}
+
+#
+# Use sacctmgr to list the test qos modifications
+#
+set matches 0
+set my_pid [spawn $sacctmgr -n -p list user format="User,QosLevel" names=$us1,$us2,$us3]
+expect {
+	-re "There was a problem" {
+	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+	    	incr exit_code 1
+	}
+	-re "$us1.$qs3." {
+		incr matches
+		exp_continue
+	}
+	-re "($us2|$us3).$qs2.$qs1." {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		slow_kill $my_pid
+		incr exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 3} {
+	send_user "\nFAILURE:  Account addition 1 incorrect with only $matches.\n"
+	incr exit_code 1
+}
+
+#modify user2 QoS
+# account adminlevel cluster defaultaccount qoslevel name
+# qoslevel waccounts wcluster wnames
+#
+incr exit_code [_mod_user "+=$qs3" "$nm2" "$tc1,$tc2,$tc3" $us2]
+if { $exit_code } {
+	_remove_user "" "$us1,$us2,$us3"
+	_remove_acct "" "$nm1,$nm2,$nm3"
+	_remove_qos "$qs1,$qs2,$qs3"
+	_remove_cluster "$tc1,$tc2,$tc3"
+	exit $exit_code
+}
+
+#
+# Use sacctmgr to list the test qos modifications
+#
+set matches 0
+set my_pid [spawn $sacctmgr -n -p list user format="User,QosLevel" names=$us1,$us2,$us3]
+expect {
+	-re "There was a problem" {
+	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+	    	incr exit_code 1
+	}
+	-re "$us1.$qs3." {
+		incr matches
+		exp_continue
+	}
+	-re "$us2.$qs2.$qs1.$qs3." {
+		incr matches
+		exp_continue
+	}
+	-re "$us3.$qs2.$qs1." {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		slow_kill $my_pid
+		incr exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 3} {
+	send_user "\nFAILURE:  Account addition 1 incorrect with only $matches.\n"
+	incr exit_code 1
+}
+
+
+#modify user3 QoS
+# account adminlevel cluster defaultaccount qoslevel name
+# qoslevel waccounts wcluster wnames
+#
+incr exit_code [_mod_user "-=$qs1" "$nm2" "$tc1,$tc2,$tc3" $us3]
+if { $exit_code } {
+	_remove_user "" "$us1,$us2,$us3"
+	_remove_acct "" "$nm1,$nm2,$nm3"
+	_remove_qos "$qs1,$qs2,$qs3"
+	_remove_cluster "$tc1,$tc2,$tc3"
+	exit $exit_code
+}
+
+#
+# Use sacctmgr to list the test qos modifications
+#
+set matches 0
+set my_pid [spawn $sacctmgr -n -p list user format="User,QosLevel" names=$us1,$us2,$us3]
+expect {
+	-re "There was a problem" {
+	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+	    	incr exit_code 1
+	}
+	-re "$us1.$qs3." {
+		incr matches
+		exp_continue
+	}
+	-re "$us2.$qs2.$qs1.$qs3." {
+		incr matches
+		exp_continue
+	}
+	-re "$us3.$qs2." {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		slow_kill $my_pid
+		incr exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 3} {
 	send_user "\nFAILURE:  Account addition 1 incorrect with only $matches.\n"
 	incr exit_code 1
 }
@@ -762,6 +1134,7 @@ if {$matches != 27} {
 
 incr exit_code [_remove_user "" "$us1,$us2,$us3"]
 incr exit_code [_remove_acct "" "$nm1,$nm2,$nm3"]
+incr exit_code [_remove_qos "$qs1,$qs2,$qs3"]
 incr exit_code [_remove_cluster "$tc1,$tc2,$tc3"]
 
 if {$exit_code == 0} {

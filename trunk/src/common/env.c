@@ -1396,6 +1396,7 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 		return NULL;
 	}
 	if (child == 0) {
+		setenv("ENVIRONMENT", "BATCH", 1);
 		setpgid(0, 0);
 		close(0);
 		open("/dev/null", O_RDONLY);

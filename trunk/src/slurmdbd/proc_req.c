@@ -739,6 +739,8 @@ static int _get_accounts(slurmdbd_conn_t *slurmdbd_conn,
 	slurmdbd_free_cond_msg(slurmdbd_conn->rpc_version, 
 			       DBD_GET_ACCOUNTS, get_msg);
 
+	if(errno == ESLURM_ACCESS_DENIED && !list_msg.my_list)
+		list_msg.my_list = list_create(NULL);
 
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_ACCOUNTS, *out_buffer);
@@ -774,6 +776,8 @@ static int _get_assocs(slurmdbd_conn_t *slurmdbd_conn,
 	slurmdbd_free_cond_msg(slurmdbd_conn->rpc_version, 
 			       DBD_GET_ASSOCS, get_msg);
 
+	if(errno == ESLURM_ACCESS_DENIED && !list_msg.my_list)
+		list_msg.my_list = list_create(NULL);
 
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_ASSOCS, *out_buffer);
@@ -809,6 +813,8 @@ static int _get_clusters(slurmdbd_conn_t *slurmdbd_conn,
 	slurmdbd_free_cond_msg(slurmdbd_conn->rpc_version, 
 			       DBD_GET_CLUSTERS, get_msg);
 
+	if(errno == ESLURM_ACCESS_DENIED && !list_msg.my_list)
+		list_msg.my_list = list_create(NULL);
 
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_CLUSTERS, *out_buffer);
@@ -861,6 +867,9 @@ static int _get_jobs(slurmdbd_conn_t *slurmdbd_conn,
 	slurmdbd_free_get_jobs_msg(slurmdbd_conn->rpc_version, 
 				   get_jobs_msg);
 
+	if(errno == ESLURM_ACCESS_DENIED && !list_msg.my_list)
+		list_msg.my_list = list_create(NULL);
+
 	if(sacct_params.opt_cluster_list)
 		list_destroy(sacct_params.opt_cluster_list);
 
@@ -895,8 +904,12 @@ static int _get_jobs_cond(slurmdbd_conn_t *slurmdbd_conn,
 	
 	list_msg.my_list = jobacct_storage_g_get_jobs_cond(
 		slurmdbd_conn->db_conn, *uid, cond_msg->cond);
+
 	slurmdbd_free_cond_msg(slurmdbd_conn->rpc_version, 
 			       DBD_GET_JOBS_COND, cond_msg);
+
+	if(errno == ESLURM_ACCESS_DENIED && !list_msg.my_list)
+		list_msg.my_list = list_create(NULL);
 
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_JOBS, *out_buffer);
@@ -932,6 +945,9 @@ static int _get_qos(slurmdbd_conn_t *slurmdbd_conn,
 	slurmdbd_free_cond_msg(slurmdbd_conn->rpc_version, 
 			       DBD_GET_QOS, cond_msg);
 
+	if(errno == ESLURM_ACCESS_DENIED && !list_msg.my_list)
+		list_msg.my_list = list_create(NULL);
+
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_QOS, *out_buffer);
 	slurmdbd_pack_list_msg(slurmdbd_conn->rpc_version, 
@@ -965,6 +981,9 @@ static int _get_txn(slurmdbd_conn_t *slurmdbd_conn,
 						  cond_msg->cond);
 	slurmdbd_free_cond_msg(slurmdbd_conn->rpc_version, 
 			       DBD_GET_TXN, cond_msg);
+
+	if(errno == ESLURM_ACCESS_DENIED && !list_msg.my_list)
+		list_msg.my_list = list_create(NULL);
 
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_TXN, *out_buffer);
@@ -1024,8 +1043,8 @@ static int _get_usage(uint16_t type, slurmdbd_conn_t *slurmdbd_conn,
 		comment = "Problem getting usage info";
 		error("%s", comment);
 		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version, 
-					      SLURM_ERROR, comment, type);
-		return SLURM_ERROR;
+					      rc, comment, type);
+		return rc;
 		
 	}
 	memset(&got_msg, 0, sizeof(dbd_usage_msg_t));
@@ -1063,6 +1082,9 @@ static int _get_users(slurmdbd_conn_t *slurmdbd_conn,
 						    *uid, get_msg->cond);
 	slurmdbd_free_cond_msg(slurmdbd_conn->rpc_version, 
 			       DBD_GET_USERS, get_msg);
+
+	if(errno == ESLURM_ACCESS_DENIED && !list_msg.my_list)
+		list_msg.my_list = list_create(NULL);
 
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_USERS, *out_buffer);
@@ -1117,13 +1139,12 @@ static int _init_conn(slurmdbd_conn_t *slurmdbd_conn,
 	char *comment = NULL;
 	int rc = SLURM_SUCCESS;
 
-	if (slurmdbd_unpack_init_msg(slurmdbd_conn->rpc_version, 
+	if ((rc = slurmdbd_unpack_init_msg(slurmdbd_conn->rpc_version, 
 				     &init_msg, in_buffer, 
-				     slurmdbd_conf->auth_info)
+					   slurmdbd_conf->auth_info))
 	    != SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_INIT message";
 		error("%s", comment);
-		rc = SLURM_ERROR;
 		goto end_it;
 	}
 	if ((init_msg->version < SLURMDBD_VERSION_MIN) ||
@@ -1133,6 +1154,7 @@ static int _init_conn(slurmdbd_conn_t *slurmdbd_conn,
 		      "(%u not between %d and %d)",
 		      init_msg->version, 
 		      SLURMDBD_VERSION_MIN, SLURMDBD_VERSION);
+		rc = SLURM_PROTOCOL_VERSION_ERROR;
 		goto end_it;
 	}
 	*uid = init_msg->uid;
@@ -1752,9 +1774,7 @@ static int   _register_ctld(slurmdbd_conn_t *slurmdbd_conn,
 {
 	dbd_register_ctld_msg_t *register_ctld_msg = NULL;
 	int rc = SLURM_SUCCESS;
-	char *comment = NULL, ip[32];
-	slurm_addr ctld_address;
-	uint16_t orig_port;
+	char *comment = NULL;
 	acct_cluster_cond_t cluster_q;
 	acct_cluster_rec_t cluster;
 	dbd_list_msg_t list_msg;
@@ -1775,15 +1795,15 @@ static int   _register_ctld(slurmdbd_conn_t *slurmdbd_conn,
 	}
 	debug2("DBD_REGISTER_CTLD: called for %s(%u)",
 	       register_ctld_msg->cluster_name, register_ctld_msg->port);
-	slurm_get_peer_addr(slurmdbd_conn->newsockfd, &ctld_address);
-	slurm_get_ip_str(&ctld_address, &orig_port, ip, sizeof(ip));
-	debug2("slurmctld at ip:%s, port:%d", ip, register_ctld_msg->port);
+
+	debug2("slurmctld at ip:%s, port:%d", slurmdbd_conn->ip,
+	       register_ctld_msg->port);
 
 	memset(&cluster_q, 0, sizeof(acct_cluster_cond_t));
 	memset(&cluster, 0, sizeof(acct_cluster_rec_t));
 	cluster_q.cluster_list = list_create(NULL);
 	list_append(cluster_q.cluster_list, register_ctld_msg->cluster_name);
-	cluster.control_host = ip;
+	cluster.control_host = slurmdbd_conn->ip;
 	cluster.control_port = register_ctld_msg->port;
 	cluster.rpc_version = slurmdbd_conn->rpc_version;
 

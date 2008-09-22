@@ -1,0 +1,17 @@
+Version 1.2 (2008-09-18)
+
+    Add "--prefix /usr" in the installation script of the spec file
+    (needed on SUSE Linux where the default is /usr/local).
+
+Version 1.1 (2008-09-17)
+
+    Move the command line utility to a separate 'hostlist' command.
+
+    Provide a python-hostlist.spec file to build RPM packages.
+    Inspired by a contribution by Dr. Holger Obermaier at
+    Rechenzentrum, Universität Karlsruhe.
+
+Version 1.0 (2008-07-25)
+
+    Initial version.
+

@@ -232,7 +232,7 @@ no_list:
 		else
 			results = list_create(NULL);
 		if (!allocate_block(request, results)) {
-			debug("allocate failure for size %d base partitions", 
+			debug2("allocate failure for size %d base partitions", 
 			       request->size);
 			rc = SLURM_ERROR;
 		}
