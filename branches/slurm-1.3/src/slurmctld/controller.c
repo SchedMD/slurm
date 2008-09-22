@@ -527,7 +527,7 @@ int main(int argc, char *argv[])
 	part_fini();	/* part_fini() must preceed node_fini() */
 	node_fini();
 	trigger_fini();
-	assoc_mgr_fini();
+	assoc_mgr_fini(slurmctld_conf.state_save_location);
 
 	/* Plugins are needed to purge job/node data structures,
 	 * unplug after other data structures are purged */
