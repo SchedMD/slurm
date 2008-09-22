@@ -273,7 +273,8 @@ typedef struct {
 } acct_qos_cond_t;
 
 typedef struct {
-	acct_admin_level_t admin_level;
+	uint16_t admin_level; /* really acct_admin_level_t but for
+				 packing purposes needs to be uint16_t */
 	acct_association_cond_t *assoc_cond; /* use user_list here for
 						names */
 	List def_acct_list; /* list of char * */
@@ -288,7 +289,8 @@ typedef struct {
  * src/slurmdbd/proc_req.c.
  */
 typedef struct {
-	acct_admin_level_t admin_level;
+	uint16_t admin_level; /* really acct_admin_level_t but for
+				 packing purposes needs to be uint16_t */
 	List assoc_list; /* list of acct_association_rec_t *'s */
 	List coord_accts; /* list of acct_coord_rec_t *'s */
 	char *default_acct;
@@ -315,7 +317,9 @@ typedef struct {
 
 typedef struct {
 	List objects; /* depending on type */ 
-	acct_update_type_t type;
+	uint16_t type; /* really acct_update_type_t but for
+				  * packing purposes needs to be a
+				  * uint16_t */
 } acct_update_object_t;
 
 typedef struct {

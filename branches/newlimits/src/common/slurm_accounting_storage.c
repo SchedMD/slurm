@@ -657,7 +657,7 @@ extern void pack_acct_user_rec(void *in, uint16_t rpc_version, Buf buffer)
 			return;
 		}
  
-		pack16((uint16_t)object->admin_level, buffer);
+		pack16(object->admin_level, buffer);
 		if(object->assoc_list)
 			count = list_count(object->assoc_list);
 	
@@ -702,7 +702,7 @@ extern void pack_acct_user_rec(void *in, uint16_t rpc_version, Buf buffer)
 			return;
 		}
  
-		pack16((uint16_t)object->admin_level, buffer);
+		pack16(object->admin_level, buffer);
 		if(object->assoc_list)
 			count = list_count(object->assoc_list);
 	
@@ -749,7 +749,7 @@ extern int unpack_acct_user_rec(void **object, uint16_t rpc_version, Buf buffer)
 	*object = object_ptr;
 	
 	if(rpc_version < 3) {
-		safe_unpack16((uint16_t *)&object_ptr->admin_level, buffer);
+		safe_unpack16(&object_ptr->admin_level, buffer);
 		safe_unpack32(&count, buffer);
 		if(count != NO_VAL) {
 			object_ptr->assoc_list =
@@ -780,7 +780,7 @@ extern int unpack_acct_user_rec(void **object, uint16_t rpc_version, Buf buffer)
 		safe_unpack32(&count, buffer);
 		safe_unpack32(&object_ptr->uid, buffer);
 	} else if(rpc_version >= 3) {
-		safe_unpack16((uint16_t *)&object_ptr->admin_level, buffer);
+		safe_unpack16(&object_ptr->admin_level, buffer);
 		safe_unpack32(&count, buffer);
 		if(count != NO_VAL) {
 			object_ptr->assoc_list =
@@ -1394,23 +1394,23 @@ extern void pack_acct_association_rec(void *in, uint16_t rpc_version,
 			packnull(buffer);
 			packnull(buffer);
 
-			pack64(0, buffer);
-			pack32(0, buffer);
-			pack32(0, buffer);
-			pack32(0, buffer);
+			pack64(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+
+			pack32(NO_VAL, buffer);
 			pack32(0, buffer);
 			pack32(0, buffer);
 
-			pack32(0, buffer);
-			pack32(0, buffer);
-			pack32(0, buffer);
-
-			pack64(0, buffer);
-			pack32(0, buffer);
-			pack32(0, buffer);
-			pack32(0, buffer);
-			pack32(0, buffer);
-			pack32(0, buffer);
+			pack64(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
 
 			packnull(buffer);
 			pack32(0, buffer);
@@ -1528,7 +1528,8 @@ extern int unpack_acct_association_rec(void **object, uint16_t rpc_version,
 		safe_unpack32(&object_ptr->id, buffer);
 		safe_unpack32(&object_ptr->lft, buffer);
 
-		safe_unpack32((uint32_t *)&object_ptr->max_cpu_mins_pj, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		object_ptr->max_cpu_mins_pj = uint32_tmp;
 		safe_unpack32(&object_ptr->max_jobs, buffer);
 		safe_unpack32(&object_ptr->max_nodes_pj, buffer);
 		safe_unpack32(&object_ptr->max_wall_pj, buffer);
@@ -1709,7 +1710,7 @@ extern void pack_acct_user_cond(void *in, uint16_t rpc_version, Buf buffer)
 			return;
 		}
  
-		pack16((uint16_t)object->admin_level, buffer);
+		pack16(object->admin_level, buffer);
 
 		pack_acct_association_cond(object->assoc_cond, 
 					   rpc_version, buffer);
@@ -1730,9 +1731,9 @@ extern void pack_acct_user_cond(void *in, uint16_t rpc_version, Buf buffer)
 
 		pack32(count, buffer); // NEEDED FOR OLD qos_list
 
-		pack16((uint16_t)object->with_assocs, buffer);
-		pack16((uint16_t)object->with_coords, buffer);
-		pack16((uint16_t)object->with_deleted, buffer);
+		pack16(object->with_assocs, buffer);
+		pack16(object->with_coords, buffer);
+		pack16(object->with_deleted, buffer);
 	} else if(rpc_version >= 3) {
 		if(!object) {
 			pack16(0, buffer);
@@ -1744,7 +1745,7 @@ extern void pack_acct_user_cond(void *in, uint16_t rpc_version, Buf buffer)
 			return;
 		}
  
-		pack16((uint16_t)object->admin_level, buffer);
+		pack16(object->admin_level, buffer);
 
 		pack_acct_association_cond(object->assoc_cond, 
 					   rpc_version, buffer);
@@ -1763,9 +1764,9 @@ extern void pack_acct_user_cond(void *in, uint16_t rpc_version, Buf buffer)
 		}
 		count = NO_VAL;
 
-		pack16((uint16_t)object->with_assocs, buffer);
-		pack16((uint16_t)object->with_coords, buffer);
-		pack16((uint16_t)object->with_deleted, buffer);
+		pack16(object->with_assocs, buffer);
+		pack16(object->with_coords, buffer);
+		pack16(object->with_deleted, buffer);
 	}
 }
 
@@ -1780,7 +1781,7 @@ extern int unpack_acct_user_cond(void **object, uint16_t rpc_version, Buf buffer
 	*object = object_ptr;
 
 	if(rpc_version < 3) {
-		safe_unpack16((uint16_t *)&object_ptr->admin_level, buffer);
+		safe_unpack16(&object_ptr->admin_level, buffer);
 		
 		if(unpack_acct_association_cond(
 			   (void **)&object_ptr->assoc_cond,
@@ -1800,11 +1801,11 @@ extern int unpack_acct_user_cond(void **object, uint16_t rpc_version, Buf buffer
 		}
 		safe_unpack32(&count, buffer);
 
-		safe_unpack16((uint16_t *)&object_ptr->with_assocs, buffer);
-		safe_unpack16((uint16_t *)&object_ptr->with_coords, buffer);
-		safe_unpack16((uint16_t *)&object_ptr->with_deleted, buffer);
+		safe_unpack16(&object_ptr->with_assocs, buffer);
+		safe_unpack16(&object_ptr->with_coords, buffer);
+		safe_unpack16(&object_ptr->with_deleted, buffer);
 	} else if(rpc_version >= 3) {
-		safe_unpack16((uint16_t *)&object_ptr->admin_level, buffer);
+		safe_unpack16(&object_ptr->admin_level, buffer);
 		
 		if(unpack_acct_association_cond(
 			   (void **)&object_ptr->assoc_cond,
@@ -1822,9 +1823,9 @@ extern int unpack_acct_user_cond(void **object, uint16_t rpc_version, Buf buffer
 					    tmp_info);
 			}
 		}
-		safe_unpack16((uint16_t *)&object_ptr->with_assocs, buffer);
-		safe_unpack16((uint16_t *)&object_ptr->with_coords, buffer);
-		safe_unpack16((uint16_t *)&object_ptr->with_deleted, buffer);
+		safe_unpack16(&object_ptr->with_assocs, buffer);
+		safe_unpack16(&object_ptr->with_coords, buffer);
+		safe_unpack16(&object_ptr->with_deleted, buffer);
 	}
 	return SLURM_SUCCESS;
 		
@@ -1886,9 +1887,9 @@ extern void pack_acct_account_cond(void *in, uint16_t rpc_version, Buf buffer)
 		
 		pack32(count, buffer);
 		
-		pack16((uint16_t)object->with_assocs, buffer);
-		pack16((uint16_t)object->with_coords, buffer);
-		pack16((uint16_t)object->with_deleted, buffer);
+		pack16(object->with_assocs, buffer);
+		pack16(object->with_coords, buffer);
+		pack16(object->with_deleted, buffer);
 	} else if(rpc_version >= 3) {
 		if(!object) {
 			pack_acct_association_cond(NULL, rpc_version, buffer);
@@ -1931,9 +1932,9 @@ extern void pack_acct_account_cond(void *in, uint16_t rpc_version, Buf buffer)
 		}
 		count = NO_VAL;
 		
-		pack16((uint16_t)object->with_assocs, buffer);
-		pack16((uint16_t)object->with_coords, buffer);
-		pack16((uint16_t)object->with_deleted, buffer);		
+		pack16(object->with_assocs, buffer);
+		pack16(object->with_coords, buffer);
+		pack16(object->with_deleted, buffer);		
 	}
 }
 
@@ -1977,9 +1978,9 @@ extern int unpack_acct_account_cond(void **object, uint16_t rpc_version,
 			}
 		}
 		safe_unpack32(&count, buffer);
-		safe_unpack16((uint16_t *)&object_ptr->with_assocs, buffer);
-		safe_unpack16((uint16_t *)&object_ptr->with_coords, buffer);
-		safe_unpack16((uint16_t *)&object_ptr->with_deleted, buffer);
+		safe_unpack16(&object_ptr->with_assocs, buffer);
+		safe_unpack16(&object_ptr->with_coords, buffer);
+		safe_unpack16(&object_ptr->with_deleted, buffer);
 	} else if (rpc_version >= 3) {
 		if(unpack_acct_association_cond(
 			   (void **)&object_ptr->assoc_cond,
@@ -2009,9 +2010,9 @@ extern int unpack_acct_account_cond(void **object, uint16_t rpc_version,
 			}
 		}
 
-		safe_unpack16((uint16_t *)&object_ptr->with_assocs, buffer);
-		safe_unpack16((uint16_t *)&object_ptr->with_coords, buffer);
-		safe_unpack16((uint16_t *)&object_ptr->with_deleted, buffer);
+		safe_unpack16(&object_ptr->with_assocs, buffer);
+		safe_unpack16(&object_ptr->with_coords, buffer);
+		safe_unpack16(&object_ptr->with_deleted, buffer);
 	}
 	return SLURM_SUCCESS;
 
@@ -2053,8 +2054,8 @@ extern void pack_acct_cluster_cond(void *in, uint16_t rpc_version, Buf buffer)
 	pack32(object->usage_end, buffer);
 	pack32(object->usage_start, buffer);
 
-	pack16((uint16_t)object->with_usage, buffer);
-	pack16((uint16_t)object->with_deleted, buffer);
+	pack16(object->with_usage, buffer);
+	pack16(object->with_deleted, buffer);
 }
 
 extern int unpack_acct_cluster_cond(void **object, uint16_t rpc_version, 
@@ -2078,8 +2079,8 @@ extern int unpack_acct_cluster_cond(void **object, uint16_t rpc_version,
 	safe_unpack32(&object_ptr->usage_end, buffer);
 	safe_unpack32(&object_ptr->usage_start, buffer);
 
-	safe_unpack16((uint16_t *)&object_ptr->with_usage, buffer);
-	safe_unpack16((uint16_t *)&object_ptr->with_deleted, buffer);
+	safe_unpack16(&object_ptr->with_usage, buffer);
+	safe_unpack16(&object_ptr->with_deleted, buffer);
 
 	return SLURM_SUCCESS;
 
@@ -2227,10 +2228,10 @@ extern void pack_acct_association_cond(void *in, uint16_t rpc_version,
 		}
 		count = NO_VAL;
 
-		pack16((uint16_t)object->with_usage, buffer);
-		pack16((uint16_t)object->with_deleted, buffer);
-		pack16((uint16_t)object->without_parent_info, buffer);
-		pack16((uint16_t)object->without_parent_limits, buffer);
+		pack16(object->with_usage, buffer);
+		pack16(object->with_deleted, buffer);
+		pack16(object->without_parent_info, buffer);
+		pack16(object->without_parent_limits, buffer);
 	} else if(rpc_version >= 3) {
 		if(!object) {
 			pack32(NO_VAL, buffer);
@@ -2532,10 +2533,10 @@ extern void pack_acct_association_cond(void *in, uint16_t rpc_version,
 		}
 		count = NO_VAL;
 
-		pack16((uint16_t)object->with_usage, buffer);
-		pack16((uint16_t)object->with_deleted, buffer);
-		pack16((uint16_t)object->without_parent_info, buffer);
-		pack16((uint16_t)object->without_parent_limits, buffer);
+		pack16(object->with_usage, buffer);
+		pack16(object->with_deleted, buffer);
+		pack16(object->without_parent_info, buffer);
+		pack16(object->without_parent_limits, buffer);
 	}
 }
 
@@ -3391,7 +3392,7 @@ extern int unpack_acct_update_object(acct_update_object_t **object,
 
 	*object = object_ptr;
 
-	safe_unpack16((uint16_t *)&object_ptr->type, buffer);
+	safe_unpack16(&object_ptr->type, buffer);
 	switch(object_ptr->type) {
 	case ACCT_MODIFY_USER:
 	case ACCT_ADD_USER:
