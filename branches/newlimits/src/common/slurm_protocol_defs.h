@@ -229,7 +229,8 @@ typedef struct forward {
 typedef struct slurm_protocol_header {
 	uint16_t version;
 	uint16_t flags;
-	slurm_msg_type_t msg_type;
+	uint16_t msg_type; /* really slurm_msg_type_t but needs to be
+			      uint16_t for packing purposes. */
 	uint32_t body_length;
 	uint16_t ret_cnt;
 	forward_t forward;
@@ -264,7 +265,8 @@ typedef struct slurm_protocol_config {
 } slurm_protocol_config_t;
 
 typedef struct slurm_msg {
-	slurm_msg_type_t msg_type;
+	uint16_t msg_type; /* really a slurm_msg_type_t but needs to be
+			    * this way for packing purposes.  message type */
 	uint16_t flags;
 	slurm_addr address;       
 	slurm_fd conn_fd;
@@ -280,7 +282,8 @@ typedef struct slurm_msg {
 } slurm_msg_t;
 
 typedef struct ret_data_info {
-	slurm_msg_type_t type; /* message type */
+	uint16_t type; /* really a slurm_msg_type_t but needs to be
+			* this way for packing purposes.  message type */
 	uint32_t err;
 	char *node_name;
 	void *data; /* used to hold the return message data (i.e. 

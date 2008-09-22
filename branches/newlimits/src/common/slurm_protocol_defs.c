@@ -79,7 +79,7 @@ extern void slurm_msg_t_init(slurm_msg_t *msg)
 {
 	memset(msg, 0, sizeof(slurm_msg_t));
 
-	msg->msg_type = (slurm_msg_type_t)NO_VAL;
+	msg->msg_type = (uint16_t)NO_VAL;
 	msg->conn_fd = -1;
 
 	forward_init(&msg->forward, NULL);
