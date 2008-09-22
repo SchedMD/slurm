@@ -5633,7 +5633,7 @@ empty:
 		cluster->name =  xstrdup(row[CLUSTER_REQ_NAME]);
 
 		/* get the usage if requested */
-		if(cluster_cond->with_usage) {
+		if(cluster_cond && cluster_cond->with_usage) {
 			clusteracct_storage_p_get_usage(
 				mysql_conn, uid, cluster,
 				cluster_cond->usage_start,
