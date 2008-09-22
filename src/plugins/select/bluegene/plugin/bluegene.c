@@ -488,7 +488,6 @@ extern bg_record_t *find_and_remove_org_from_bg_list(List my_list,
 		if(bit_equal(bg_record->bitmap, found_record->bitmap)
 		   && bit_equal(bg_record->ionode_bitmap,
 				found_record->ionode_bitmap)) {
-			
 			if(!strcmp(bg_record->bg_block_id,
 				   found_record->bg_block_id)) {
 				list_remove(itr);
@@ -542,7 +541,7 @@ extern int bg_free_block(bg_record_t *bg_record)
 		}
 		
 		slurm_mutex_lock(&block_state_mutex);			
-		if (bg_record->state != NO_VAL
+		if (bg_record->state != (uint16_t)NO_VAL
 		    && bg_record->state != RM_PARTITION_FREE 
 		    && bg_record->state != RM_PARTITION_DEALLOCATING) {
 #ifdef HAVE_BG_FILES
