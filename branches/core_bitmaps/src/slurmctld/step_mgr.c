@@ -515,7 +515,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				bit_clear(nodes_avail, i);
 			else
 				cpus_picked_cnt += avail_tasks;
-			if (++node_inx >= job_ptr->node_cnt)
+			if (++node_inx >= select_ptr->nhosts)
 				break;
 		}
 		if (cpus_picked_cnt >= step_spec->cpu_count)
@@ -897,6 +897,8 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 		if (!bit_test(step_ptr->step_node_bitmap, i_node))
 			continue;
 		step_node_inx++;
+		if (job_node_inx >= select_ptr->nhosts)
+			fatal("step_alloc_lps: node index bad");
 		select_ptr->cpus_used[job_node_inx] += 
 			step_ptr->step_layout->tasks[step_node_inx];
 		if (step_ptr->mem_per_task) {
@@ -951,6 +953,8 @@ static void _step_dealloc_lps(struct step_record *step_ptr)
 		if (!bit_test(step_ptr->step_node_bitmap, i_node))
 			continue;
 		step_node_inx++;
+		if (job_node_inx >= select_ptr->nhosts)
+			fatal("_step_dealloc_lps: node index bad");
 		if (select_ptr->cpus_used[job_node_inx] >=
 		    step_ptr->step_layout->tasks[step_node_inx]) {
 			select_ptr->cpus_used[job_node_inx] -= 
@@ -1234,6 +1238,8 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 			pos = bit_get_pos_num(job_ptr->node_bitmap, i);
 			if (pos == -1)
 				return NULL;
+			if (pos >= select_ptr->nhosts)
+				fatal("step_layout_create: node index bad");
 			if (step_ptr->exclusive) {
 				usable_cpus = select_ptr->cpus[pos] -
 					      select_ptr->cpus_used[pos];

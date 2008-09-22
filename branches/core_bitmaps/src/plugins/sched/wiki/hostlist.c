@@ -173,7 +173,7 @@ static char * _task_list(struct job_record *job_ptr)
 		return buf;
 	}
 
-	for (i=0; i<job_ptr->node_cnt; i++) {
+	for (i=0; i<select_ptr->nhosts; i++) {
 		host = hostlist_shift(hl);
 		if (host == NULL) {
 			error("bad node_cnt for job %u (%s, %d)", 
@@ -263,7 +263,7 @@ static char * _task_list_exp(struct job_record *job_ptr)
 		return buf;
 	}
 
-	for (i=0; i<job_ptr->node_cnt; i++) {
+	for (i=0; i<select_ptr->nhosts; i++) {
 		host = hostlist_shift(hl);
 		if (host == NULL) {
 			error("bad node_cnt for job %u (%s, %d)", 

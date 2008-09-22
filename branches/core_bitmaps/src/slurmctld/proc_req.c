@@ -526,7 +526,7 @@ static int _make_step_cred(struct step_record *step_rec,
 #else
 	cred_arg.hostlist = step_rec->step_layout->node_list;
 #endif
-	cred_arg.alloc_lps_cnt = job_ptr->node_cnt;
+	cred_arg.alloc_lps_cnt = select_ptr->nhosts;
 	if ((cred_arg.alloc_lps_cnt > 0) &&
 	    bit_equal(job_ptr->node_bitmap, step_rec->step_node_bitmap)) {
 		cred_arg.alloc_lps = xmalloc(cred_arg.alloc_lps_cnt *

@@ -134,7 +134,7 @@ typedef struct {
 	uid_t    uid;
 	char    *hostlist;
 	uint32_t alloc_lps_cnt;
-        uint16_t *alloc_lps;
+	uint16_t *alloc_lps;
 } slurm_cred_arg_t;
 
 /* Terminate the plugin and release all memory. */

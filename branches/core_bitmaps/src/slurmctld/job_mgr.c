@@ -1225,6 +1225,11 @@ static void _excise_node_from_job(struct job_record *job_ptr,
 {
 	int i, orig_pos = -1, new_pos = -1;
 	bitstr_t *orig_bitmap = bit_copy(job_ptr->node_bitmap);
+	select_job_res_t select_ptr = job_ptr->select_job;
+
+	xassert(select_ptr);
+	xassert(select_ptr->cpus);
+	xassert(select_ptr->cpus_used);
 
 	make_node_idle(node_ptr, job_ptr); /* updates bitmap */
 	xfree(job_ptr->nodes);
@@ -1240,13 +1245,10 @@ static void _excise_node_from_job(struct job_record *job_ptr,
 			continue;
 		memcpy(&job_ptr->node_addr[new_pos],
 		       &job_ptr->node_addr[orig_pos], sizeof(slurm_addr));
-		if (job_ptr->select_job && job_ptr->select_job->cpus &&
-		    job_ptr->select_job->cpus_used) {
-			job_ptr->select_job->cpus[new_pos] = 
-				job_ptr->select_job->cpus[orig_pos];
-			job_ptr->select_job->cpus_used[new_pos] = 
-				job_ptr->select_job->cpus_used[orig_pos];
-		}
+		job_ptr->select_job->cpus[new_pos] = 
+			job_ptr->select_job->cpus[orig_pos];
+		job_ptr->select_job->cpus_used[new_pos] = 
+			job_ptr->select_job->cpus_used[orig_pos];
 	}
 	job_ptr->node_cnt = new_pos + 1;
 }
