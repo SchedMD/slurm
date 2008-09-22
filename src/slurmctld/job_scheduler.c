@@ -132,6 +132,9 @@ extern int build_job_queue(struct job_queue **job_queue)
 	int job_buffer_size, job_queue_size;
 	struct job_queue *my_job_queue;
 
+	if (job_list == NULL)
+		return 0;
+
 	/* build list pending jobs */
 	job_buffer_size = job_queue_size = 0;
 	job_queue[0] = my_job_queue = NULL;
