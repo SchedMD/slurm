@@ -62,6 +62,7 @@
 #include "src/common/xassert.h"
 #include "src/common/forward.h"
 #include "src/common/job_options.h"
+#include "src/common/slurmdbd_defs.h"
 
 #define _pack_job_info_msg(msg,buf)		_pack_buffer_msg(msg,buf)
 #define _pack_job_step_info_msg(msg,buf)	_pack_buffer_msg(msg,buf)
@@ -1095,7 +1096,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 			(set_debug_level_msg_t **)&(msg->data), buffer);
 		break;
 	case ACCOUNTING_UPDATE_MSG:
-		_unpack_accounting_update_msg(
+		rc = _unpack_accounting_update_msg(
 			(accounting_update_msg_t **)&msg->data,
 			buffer);
 		break;
@@ -4764,8 +4765,6 @@ static void _pack_accounting_update_msg(accounting_update_msg_t *msg,
 	ListIterator itr = NULL;
 	acct_update_object_t *rec = NULL;
 
-	pack16(msg->rpc_version, buffer);
-	
 	if(msg->update_list)
 		count = list_count(msg->update_list);
 
@@ -4791,17 +4790,13 @@ static int _unpack_accounting_update_msg(accounting_update_msg_t **msg,
 
 	*msg = msg_ptr;
 
-	/* This will break a controller if the slurmdbd hasn't been
-	   upgraded to version 3 of the SLURMDBD_VERSION and the
-	   controller has.
-	*/
-	safe_unpack16(&msg_ptr->rpc_version, buffer);
-	/* This went into effect in slurm 1.3.9 and is noted in NEWS */
-
 	safe_unpack32(&count, buffer);
 	msg_ptr->update_list = list_create(destroy_acct_update_object);
 	for(i=0; i<count; i++) {
-		if((unpack_acct_update_object(&rec, msg_ptr->rpc_version,
+		/* this is only ran in the slurmctld so we can just
+		   use the version here.
+		*/
+		if((unpack_acct_update_object(&rec, SLURMDBD_VERSION,
 					      buffer))
 		   == SLURM_ERROR)
 			goto unpack_error;

@@ -17,14 +17,14 @@ LLNL hostlist expressions. Example:
 Bad hostlists or hostnames will result in the hostlist.BadHostlist
 exception being raised.
 
-If you invoke hostlist.py from the command line, it doubles as a utility
-for doing set operations on hostlists. Example:
+The 'hostlist' command is provided to expand/collect hostlists and
+perform set operations on them. Example:
 
-  % ./hostlist.py n[1-10] n[5-20]
+  % hostlist n[1-10] n[5-20]
   n[1-20]
-  % ./hostlist.py --difference n[1-10] n[5-20]
+  % hostlist --difference n[1-10] n[5-20]
   n[1-4]
-  % ./hostlist.py --expand --intersection n[1-10] n[5-20] 
+  % hostlist --expand --intersection n[1-10] n[5-20] 
   n5
   n6
   n7
@@ -37,7 +37,11 @@ Install by running
   python setup.py build   (as yourself)
   python setup.py install (as root) 
 
-or just copy the hostlist.py file to an appropriate place.
+or just copy the hostlist.py and hostlist files to appropriate places.
+
+Build RPM packages by running:
+
+  rpmbuild -ta python-hostlist-1.2.tar.gz
 
 If you have questions, suggestions, bug reports or patches, please send them
 to kent@nsc.liu.se.
