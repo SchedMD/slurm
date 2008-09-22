@@ -36,8 +36,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _CONS_RES_H
-#define _CONS_RES_H
+#ifndef _CR_JOB_TEST_H
+#define _CR_JOB_TEST_H
 
 #include <fcntl.h>
 #include <stdio.h>
@@ -45,7 +45,6 @@
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 
-#include "src/common/bitstring.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/node_select.h"
@@ -57,68 +56,13 @@
 #include "src/common/slurm_resource_info.h"
 #include "src/slurmctld/slurmctld.h"
 
-#include "src/slurmd/slurmd/slurmd.h"
 
-/*
- * node_res_record.node_state assists with the unique state of each node.
- * NOTES:
- * - If node is in use by Shared=NO part, some CPUs/memory may be available
- * - Caution with NODE_CR_AVAILABLE: a Sharing partition could be full!!
- */
-enum node_cr_state {
-	NODE_CR_RESERVED = 0, /* node is NOT available for use by other jobs */
-	NODE_CR_ONE_ROW = 1,  /* node is in use by Shared=NO part */
-	NODE_CR_AVAILABLE = 2 /* The node may be IDLE or IN USE (shared) */
-};
+/* _job_test - does most of the real work for select_p_job_test(), which 
+ *	pretty much just handles load-leveling and max_share logic */
+int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
+		uint32_t min_nodes, uint32_t max_nodes, uint32_t req_nodes,
+		int mode, select_type_plugin_info_t cr_type,
+		enum node_cr_state job_node_req, uint32_t cr_node_cnt,
+		struct part_res_record *cr_part_ptr);
 
-
-/*
- * cr_core_bitmap_offset: Provides the beginning index to the cores of each
- *                        node.
- * cr_core_bitmap_size = total_num_nodes + 1, with the last entry being the
- *                       total number of cores in the cluster.
- */
-extern uint32_t cr_core_bitmap_size;
-extern uint32_t *cr_core_bitmap_offset;
-
-
-/* a partition's per-row CPU allocation data */
-struct part_row_data {
-	bitstr_t *row_bitmap;		/* contains all jobs for this row */
-	uint32_t num_jobs;		/* Number of jobs in this row */
-	struct select_job_res **job_list;/* List of jobs in this row */
-	uint32_t job_list_size;		/* Size of job_list array */
-};
-
-/* partition CPU allocation data */
-struct part_res_record {
-	struct part_record *part_ptr;	/* Ptr to slurmctld partition record */
-	uint16_t priority;		/* Partition priority */
-	uint16_t num_rows;		/* Number of row_bitmaps */
-	struct part_row_data *row;	/* array of rows containing jobs */
-	struct part_res_record *next;	/* Ptr to next part_res_record */
-};
-
-/* node resource data, including memory allocation data */
-struct node_res_record {
-	struct node_record *node_ptr;	/* ptr to the actual node */
-	uint16_t cpus;			/* count of processors configured */
-	uint16_t sockets;		/* count of sockets configured */
-	uint16_t cores;			/* count of cores configured */
-	uint16_t vpus;			/* count of virtual cpus (hyperthreads)
-					 * configured */
-	uint32_t real_memory;		/* MB of real memory configured */
-
-	enum node_cr_state node_state;	/* see node_cr_state comments */
-	uint32_t alloc_memory;		/* real memory reserved by already
-					 * scheduled jobs */
-};
-
-extern uint16_t select_fast_schedule;
-
-extern struct node_res_record *select_node_record;
-extern struct part_res_record *select_part_record;
-
-extern void cr_sort_part_rows(struct part_res_record *p_ptr);
-
-#endif /* !_CONS_RES_H */
+#endif /* !_CR_JOB_TEST_H */
