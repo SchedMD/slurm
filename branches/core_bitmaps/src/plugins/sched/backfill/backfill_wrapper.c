@@ -84,7 +84,6 @@ int init( void )
 	}
 
 	slurm_attr_init( &attr );
-	pthread_attr_setdetachstate( &attr, PTHREAD_CREATE_DETACHED );
 	if (pthread_create( &backfill_thread, &attr, backfill_agent, NULL))
 		error("Unable to start backfill thread: %m");
 	pthread_mutex_unlock( &thread_flag_mutex );
@@ -102,6 +101,7 @@ void fini( void )
 	if ( backfill_thread ) {
 		verbose( "Backfill scheduler plugin shutting down" );
 		stop_backfill_agent();
+		pthread_join(backfill_thread, NULL);
 		backfill_thread = 0;
 	}
 	pthread_mutex_unlock( &thread_flag_mutex );
