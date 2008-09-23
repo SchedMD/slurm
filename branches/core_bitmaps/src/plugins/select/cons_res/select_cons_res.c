@@ -1,8 +1,6 @@
 /*****************************************************************************\
  *  select_cons_res.c - node selection plugin supporting consumable 
  *  resources policies.
- *
- *  $Id$
  *****************************************************************************\
  *
  *  The following example below illustrates how four jobs are allocated
@@ -59,7 +57,7 @@
  * the job throughput can increase dramatically.
  *
  *****************************************************************************
- *  Copyright (C) 2005-2006 Hewlett-Packard Development Company, L.P.
+ *  Copyright (C) 2005-2008 Hewlett-Packard Development Company, L.P.
  *  Written by Susanne M. Balle <susanne.balle@hp.com>, who borrowed heavily
  *  from select/linear 
  *  
@@ -146,7 +144,6 @@ const uint32_t pstate_version = 7;	/* version control on saved state */
 select_type_plugin_info_t cr_type = CR_CPU; /* cr_type is overwritten in init() */
 
 uint16_t select_fast_schedule;
-static pthread_mutex_t cr_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 uint32_t  cr_core_bitmap_size   = 0;
 uint32_t *cr_core_bitmap_offset = NULL;
@@ -253,7 +250,6 @@ static struct part_row_data *_dup_row_data(struct part_row_data *orig_row,
 /* Create a duplicate part_res_record list */
 static struct part_res_record *_dup_part_data(struct part_res_record *orig_ptr)
 {
-	int i, j;
 	struct part_res_record *new_part_ptr, *new_ptr;
 
 	if (orig_ptr == NULL)
@@ -854,7 +850,6 @@ static int _rm_job_from_res(struct job_record *job_ptr, int action)
 	if (action != 1) {
 		/* reconstruct rows with remaining jobs */
 		struct part_res_record *p_ptr;
-		bitstr_t *tmpbits;
 		
 		p_ptr = _get_cr_part_ptr(job_ptr->part_ptr);
 		if (!p_ptr) {
@@ -874,9 +869,10 @@ static int _rm_job_from_res(struct job_record *job_ptr, int action)
 			for (j = 0; j < p_ptr->row[i].num_jobs; j++) {
 				if (p_ptr->row[i].job_list[j] != job)
 					continue;
-					debug3("cons_res: removing job %u from part %s row %u",
-					job_ptr->job_id, p_ptr->part_ptr->name,
-					i);
+					debug3("cons_res: removing job %u from "
+					       "part %s row %u",
+					       job_ptr->job_id, 
+					       p_ptr->part_ptr->name, i);
 				for (; j < p_ptr->row[i].num_jobs-1; j++) {
 					p_ptr->row[i].job_list[j] =
 						p_ptr->row[i].job_list[j+1];

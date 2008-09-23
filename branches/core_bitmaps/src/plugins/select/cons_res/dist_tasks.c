@@ -1,10 +1,8 @@
 /*****************************************************************************\
  *  dist_tasks - Assign task count to {socket,core,thread} or CPU
  *               resources
- *
- *  $Id: dist_tasks.c,v 1.3 2006/10/31 19:31:31 palermo Exp $
  ***************************************************************************** 
- *  Copyright (C) 2006 Hewlett-Packard Development Company, L.P.
+ *  Copyright (C) 2006-2008 Hewlett-Packard Development Company, L.P.
  *  Written by Susanne M. Balle, <susanne.balle@hp.com>
  *  LLNL-CODE-402394.
  *  
@@ -102,8 +100,6 @@ int _compute_c_b_task_dist(struct job_record *job_ptr)
 	return SLURM_SUCCESS;
 }
 
-
-/* Sync up the core_bitmap with the CPU count using block distribution.
 /* sync up core bitmap with new CPU count
  *
  * The CPU array contains the distribution of CPUs, which can include
