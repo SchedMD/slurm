@@ -1209,6 +1209,64 @@ static int _sync_block_lists(List full_list, List incomp_list)
 
 #endif // HAVE_BG
 
+static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap)
+{
+	int i, j, k;
+	int first_bit, last_bit;
+	uint32_t node_cpus, total_cpus = 0, node_cnt;
+	select_job_res_t select_ptr;
+
+	if (job_ptr->select_job) {
+		error("select_p_job_test: already have select_job");
+		free_select_job_res(&job_ptr->select_job);
+	}
+
+
+	node_cnt = bit_set_count(bitmap);
+	job_ptr->select_job = select_ptr = create_select_job_res();
+	select_ptr->core_bitmap = bit_alloc(job_ptr->total_procs);
+	select_ptr->core_bitmap_used = bit_alloc(job_ptr->total_procs);
+	select_ptr->cpu_array_reps = xmalloc(sizeof(uint32_t) * node_cnt);
+	select_ptr->cpu_array_value = xmalloc(sizeof(uint16_t) * node_cnt);
+	select_ptr->cpus = xmalloc(sizeof(uint16_t) * node_cnt);
+	select_ptr->cpus_used = xmalloc(sizeof(uint16_t) * node_cnt);
+	select_ptr->nhosts = node_cnt;
+	select_ptr->node_bitmap = bit_copy(bitmap);
+	select_ptr->nprocs = job_ptr->num_procs;
+	if (build_select_job_res(select_ptr, (void *)node_record_table_ptr, 1))
+		error("select_p_job_test: build_select_job_res: %m");
+
+	if (job_ptr->num_procs <= procs_per_node)
+		node_cpus = job_ptr->num_procs;
+	else
+		node_cpus = procs_per_node;
+
+	first_bit = bit_ffs(bitmap);
+	last_bit  = bit_fls(bitmap);
+	for (i=first_bit, j=0, k=-1; i<=last_bit; i++) {
+		if (!bit_test(bitmap, i))
+			continue;
+
+		select_ptr->cpus[j] = node_cpus;
+		if ((k == -1) || 
+		    (select_ptr->cpu_array_value[k] != node_cpus)) {
+			select_ptr->cpu_array_cnt++;
+			select_ptr->cpu_array_reps[++k] = 1;
+			select_ptr->cpu_array_value[k] = node_cpus;
+		} else
+			select_ptr->cpu_array_reps[k]++;
+		total_cpus += node_cpus;
+
+		if (set_select_job_res_node(select_ptr, j))
+			error("select_p_job_test: set_select_job_res_node: %m");
+		j++;
+	}
+	if (select_ptr->nprocs != total_cpus) {
+		error("select_p_job_test: nprocs mismatch %u != %u",
+		      select_ptr->nprocs, total_cpus);
+	}
+}
+
 /*
  * Try to find resources for a given job request
  * IN job_ptr - pointer to job record in slurmctld
@@ -1356,6 +1414,10 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 				select_g_set_jobinfo(job_ptr->select_jobinfo,
 						     SELECT_DATA_CONN_TYPE, 
 						     &tmp16);
+			}
+			if (mode == SELECT_MODE_RUN_NOW) {
+				_build_select_struct(job_ptr, 
+						     slurm_block_bitmap);
 			}
 		} else {
 			error("we got a success, but no block back");

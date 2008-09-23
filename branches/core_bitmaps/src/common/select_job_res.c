@@ -370,7 +370,7 @@ extern void log_select_job_res(select_job_res_t select_job_res_ptr)
 
 	/* Can only log node_bitmap from slurmctld, so don't bother here */
 	for (node_inx=0; node_inx<select_job_res_ptr->nhosts; node_inx++) {
-		uint32_t cpus_used = 0, memory_used = 0;
+		uint32_t cpus_used = 0, memory_allocated = 0, memory_used = 0;
 		info("Node[%d]:", node_inx);
 
 		if (sock_reps >= 
@@ -384,10 +384,12 @@ extern void log_select_job_res(select_job_res_t select_job_res_ptr)
 			cpus_used = select_job_res_ptr->cpus_used[node_inx];
 		if (select_job_res_ptr->memory_used)
 			memory_used = select_job_res_ptr->memory_used[node_inx];
+		if (select_job_res_ptr->memory_allocated)
+			memory_allocated = select_job_res_ptr->
+					   memory_allocated[node_inx];
 
 		info("  Mem(MB):%u:%u  Sockets:%u  Cores:%u  CPUs:%u:%u", 
-		     select_job_res_ptr->memory_allocated[node_inx],
-		     memory_used,
+		     memory_allocated, memory_used,
 		     select_job_res_ptr->sockets_per_node[sock_inx],
 		     select_job_res_ptr->cores_per_socket[sock_inx],
 		     select_job_res_ptr->cpus[node_inx],
@@ -443,7 +445,6 @@ extern void pack_select_job_res(select_job_res_t select_job_res_ptr,
 	xassert(select_job_res_ptr->core_bitmap_used);
 	xassert(select_job_res_ptr->cores_per_socket);
 	xassert(select_job_res_ptr->cpus);
-	xassert(select_job_res_ptr->memory_allocated);
 	xassert(select_job_res_ptr->nhosts);
 	xassert(select_job_res_ptr->node_bitmap);
 	xassert(select_job_res_ptr->sock_core_rep_count);
@@ -473,8 +474,11 @@ extern void pack_select_job_res(select_job_res_t select_job_res_ptr,
 	} else
 		pack16_array(select_job_res_ptr->cpus_used, 0, buffer);
 
-	pack32_array(select_job_res_ptr->memory_allocated,  
-		     select_job_res_ptr->nhosts, buffer);
+	if (select_job_res_ptr->memory_allocated) {
+		pack32_array(select_job_res_ptr->memory_allocated,  
+			     select_job_res_ptr->nhosts, buffer);
+	} else
+		pack32_array(select_job_res_ptr->memory_allocated, 0, buffer);
 	if (select_job_res_ptr->memory_used) {
 		pack32_array(select_job_res_ptr->memory_used,  
 			     select_job_res_ptr->nhosts, buffer);
@@ -549,7 +553,9 @@ extern int unpack_select_job_res(select_job_res_t *select_job_res_pptr,
 
 	safe_unpack32_array(&select_job_res->memory_allocated,
 			    &tmp32, buffer);
-	if (tmp32 != select_job_res->nhosts)
+	if (tmp32 == 0)
+		xfree(select_job_res->memory_allocated);
+	else if (tmp32 != select_job_res->nhosts)
 		goto unpack_error;
 	safe_unpack32_array(&select_job_res->memory_used, &tmp32, buffer);
 	if (tmp32 == 0)

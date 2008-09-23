@@ -451,8 +451,6 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	xassert(select_ptr);
 	xassert(select_ptr->cpus);
 	xassert(select_ptr->cpus_used);
-	xassert(select_ptr->memory_allocated);
-	xassert(select_ptr->memory_used);
 
 	*return_code = SLURM_SUCCESS;
 	if (job_ptr->node_bitmap == NULL) {
@@ -464,6 +462,14 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	if (nodes_avail == NULL)
 		fatal("bit_copy malloc failure");
 	bit_and (nodes_avail, up_node_bitmap);
+
+	if (step_spec->mem_per_task &&
+	    ((select_ptr->memory_allocated == NULL) ||
+	     (select_ptr->memory_used == NULL))) {
+		error("_pick_step_nodes: lack memory allocation details "
+		      "to enforce memory limits for job %u", job_ptr->job_id);
+		step_spec->mem_per_task = 0;
+	}
 
 	if (job_ptr->next_step_id == 0) {
 		if (job_ptr->details && job_ptr->details->prolog_running) {
@@ -872,8 +878,6 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 	xassert(select_ptr->core_bitmap_used);
 	xassert(select_ptr->cpus);
 	xassert(select_ptr->cpus_used);
-	xassert(select_ptr->memory_allocated);
-	xassert(select_ptr->memory_used);
 
 	i_first = bit_ffs(job_ptr->node_bitmap);
 	i_last  = bit_fls(job_ptr->node_bitmap);
@@ -888,6 +892,14 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 		 * Just copy the bitmap to save time */
 		step_ptr->core_bitmap_job = bit_copy(select_ptr->core_bitmap);
 		pick_step_cores = false;
+	}
+
+	if (step_ptr->mem_per_task &&
+	    ((select_ptr->memory_allocated == NULL) ||
+	     (select_ptr->memory_used == NULL))) {
+		error("step_alloc_lps: lack memory allocation details "
+		      "to enforce memory limits for job %u", job_ptr->job_id);
+		step_ptr->mem_per_task = 0;
 	}
 
 	for (i_node = i_first; i_node <= i_last; i_node++) {
@@ -936,8 +948,6 @@ static void _step_dealloc_lps(struct step_record *step_ptr)
 	xassert(select_ptr->core_bitmap_used);
 	xassert(select_ptr->cpus);
 	xassert(select_ptr->cpus_used);
-	xassert(select_ptr->memory_allocated);
-	xassert(select_ptr->memory_used);
 
 	if (step_ptr->step_layout == NULL)	/* batch step */
 		return;
@@ -946,6 +956,15 @@ static void _step_dealloc_lps(struct step_record *step_ptr)
 	i_last  = bit_fls(job_ptr->node_bitmap);
 	if (i_first == -1)	/* empty bitmap */
 		return;
+
+	if (step_ptr->mem_per_task &&
+	    ((select_ptr->memory_allocated == NULL) ||
+	     (select_ptr->memory_used == NULL))) {
+		error("_step_dealloc_lps: lack memory allocation details "
+		      "to enforce memory limits for job %u", job_ptr->job_id);
+		step_ptr->mem_per_task = 0;
+	}
+
 	for (i_node = i_first; i_node <= i_last; i_node++) {
 		if (!bit_test(job_ptr->node_bitmap, i_node))
 			continue;
@@ -968,9 +987,10 @@ static void _step_dealloc_lps(struct step_record *step_ptr)
 			uint32_t mem_use = step_ptr->mem_per_task *
 					   step_ptr->step_layout->
 					   tasks[step_node_inx];
-			if (select_ptr->memory_used[job_node_inx] >= mem_use)
-				select_ptr->memory_used[job_node_inx] -= mem_use;
-			else {
+			if (select_ptr->memory_used[job_node_inx] >= mem_use) {
+				select_ptr->memory_used[job_node_inx] -= 
+						mem_use;
+			} else {
 				error("_step_dealloc_lps: "
 				      "mem underflow for %u.%u",
 				      job_ptr->job_id, step_ptr->step_id);
@@ -1225,8 +1245,14 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 	xassert(select_ptr);
 	xassert(select_ptr->cpus);
 	xassert(select_ptr->cpus_used);
-	xassert(select_ptr->memory_allocated);
-	xassert(select_ptr->memory_used);
+
+	if (step_ptr->mem_per_task &&
+	    ((select_ptr->memory_allocated == NULL) ||
+	     (select_ptr->memory_used == NULL))) {
+		error("step_layout_create: lack memory allocation details "
+		      "to enforce memory limits for job %u", job_ptr->job_id);
+		step_ptr->mem_per_task = 0;
+	}
 
 	/* build the cpus-per-node arrays for the subset of nodes
 	 * used by this job step */
