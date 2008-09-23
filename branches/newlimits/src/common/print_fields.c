@@ -125,15 +125,16 @@ extern void print_fields_str(print_field_t *field, char *value, int last)
 			print_this = "";
 		else
 			print_this = " ";
-	}
+	} else
+		print_this = value;
 	
 	if(print_fields_parsable_print == PRINT_FIELDS_PARSABLE_NO_ENDING
 	   && last)
-		printf("%s", value);	
+		printf("%s", print_this);	
 	else if(print_fields_parsable_print)
-		printf("%s|", value);
+		printf("%s|", print_this);
 	else {
-		if(!print_this) {
+		if(value) {
 			memcpy(&temp_char, value, field->len);
 			
 			if(strlen(value) > field->len) 
