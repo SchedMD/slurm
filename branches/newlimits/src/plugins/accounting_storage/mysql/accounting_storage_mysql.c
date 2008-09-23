@@ -6650,6 +6650,13 @@ extern List acct_storage_p_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 		xstrfmtcat(extra, "timestamp < %d)", txn_cond->time_end);
 	}
 
+	/* make sure we can get the max length out of the database
+	 * when grouping the names
+	 */
+	if(txn_cond->with_assoc_info) 
+		mysql_db_query(mysql_conn->db_conn, 
+			       "set session group_concat_max_len=65536;");
+			
 empty:
 	xfree(tmp);
 	xstrfmtcat(tmp, "%s", txn_req_inx[i]);
