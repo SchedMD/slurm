@@ -396,7 +396,7 @@ extern time_t parse_time(char *time_str, int past)
 			year = time_now_tm->tm_year + 1;
 		}
 	}
-	printf("got year of %d\n", year);
+
 	/* convert the time into time_t format */
 	bzero(&res_tm, sizeof(res_tm));
 	res_tm.tm_sec   = second;
