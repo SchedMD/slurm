@@ -285,6 +285,7 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 
 	itr = list_iterator_create(format_list);
 	while((object = list_next(itr))) {
+		char *tmp_char = NULL;
 		field = xmalloc(sizeof(print_field_t));
 		if(!strncasecmp("Description", object, 1)) {
 			field->type = PRINT_DESC;
@@ -306,6 +307,11 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 			fprintf(stderr, "Unknown field '%s'\n", object);
 			xfree(field);
 			continue;
+		}
+		if((tmp_char = strstr(object, "\%"))) {
+			int newlen = atoi(tmp_char+1);
+			if(newlen > 0) 
+				field->len = newlen;
 		}
 		list_append(print_fields_list, field);		
 	}
