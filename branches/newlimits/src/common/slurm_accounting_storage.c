@@ -1407,6 +1407,8 @@ extern void pack_acct_association_rec(void *in, uint16_t rpc_version,
 			packnull(buffer);
 			packnull(buffer);
 
+			pack32(NO_VAL, buffer);
+
 			pack64(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
@@ -1414,7 +1416,6 @@ extern void pack_acct_association_rec(void *in, uint16_t rpc_version,
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
 
-			pack32(NO_VAL, buffer);
 			pack32(0, buffer);
 			pack32(0, buffer);
 
@@ -1458,6 +1459,8 @@ extern void pack_acct_association_rec(void *in, uint16_t rpc_version,
 		packstr(object->acct, buffer);
 		packstr(object->cluster, buffer);
 
+		pack32(object->fairshare, buffer);
+
 		pack64(object->grp_cpu_hours, buffer);
 		pack32(object->grp_cpus, buffer);
 		pack32(object->grp_jobs, buffer);
@@ -1465,7 +1468,6 @@ extern void pack_acct_association_rec(void *in, uint16_t rpc_version,
 		pack32(object->grp_submit_jobs, buffer);
 		pack32(object->grp_wall, buffer);
 
-		pack32(object->fairshare, buffer);
 		pack32(object->id, buffer);
 		pack32(object->lft, buffer);
 
@@ -1579,6 +1581,8 @@ extern int unpack_acct_association_rec(void **object, uint16_t rpc_version,
 		safe_unpackstr_xmalloc(&object_ptr->cluster, &uint32_tmp,
 				       buffer);
 
+		safe_unpack32(&object_ptr->fairshare, buffer);
+
 		safe_unpack64(&object_ptr->grp_cpu_hours, buffer);
 		safe_unpack32(&object_ptr->grp_cpus, buffer);
 		safe_unpack32(&object_ptr->grp_jobs, buffer);
@@ -1586,7 +1590,6 @@ extern int unpack_acct_association_rec(void **object, uint16_t rpc_version,
 		safe_unpack32(&object_ptr->grp_submit_jobs, buffer);
 		safe_unpack32(&object_ptr->grp_wall, buffer);
 
-		safe_unpack32(&object_ptr->fairshare, buffer);
 		safe_unpack32(&object_ptr->id, buffer);
 		safe_unpack32(&object_ptr->lft, buffer);
 

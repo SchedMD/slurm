@@ -161,8 +161,7 @@ static int _check_connection(mysql_conn_t *mysql_conn)
 static int _setup_association_limits(acct_association_rec_t *assoc,
 				     char **cols, char **vals,
 				     char **extra, bool get_qos)
-{
-	
+{	
 	if(!assoc)
 		return SLURM_ERROR;
 	
@@ -174,8 +173,12 @@ static int _setup_association_limits(acct_association_rec_t *assoc,
 		xstrcat(*cols, ", fairshare");
 		xstrcat(*vals, ", NULL");
 		xstrcat(*extra, ", fairshare=NULL");		
+	} else {
+		xstrcat(*cols, ", fairshare");
+		xstrcat(*vals, ", 1");
+		xstrcat(*extra, ", fairshare=1");		
 	}
-	
+
 	if((int)assoc->grp_cpu_hours >= 0) {
 		xstrcat(*cols, ", grp_cpu_hours");
 		xstrfmtcat(*vals, ", %llu", assoc->grp_cpu_hours);
@@ -4951,6 +4954,7 @@ extern List acct_storage_p_remove_associations(
 		xfree(name_char);
 		return NULL;
 	}
+	xfree(query);
 
 	rc = 0;
 	ret_list = list_create(slurm_destroy_char);

@@ -430,7 +430,7 @@ proc _mod_acct { cluster name desc org parent fs maxcpu maxjob maxnodes maxwall 
 	}
 
 	if { [string length $maxcpu] } {
-		set scommand "$scommand maxc=$maxcpu"
+		set scommand "$scommand maxcpum=$maxcpu"
 		set assoc_stuff 1
 	}
 
@@ -721,7 +721,7 @@ proc _mod_user { adminlevel defaultaccount fs maxcpu maxjob maxnodes maxwall wac
 	}
 
 	if { [string length $maxcpu] } {
-		set scommand "$scommand maxc=$maxcpu"
+		set scommand "$scommand maxcpum=$maxcpu"
 		set assoc_stuff 1
 	}
 

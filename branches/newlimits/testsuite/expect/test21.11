@@ -47,7 +47,7 @@ set mod		modify
 set nams	Names
 set nam		Name
 set fs		Fairshare
-set mc		MaxCPUSecs
+set mc		MaxCPUMins
 set mj		MaxJobs
 set mn		MaxNodes
 set mw		MaxWall

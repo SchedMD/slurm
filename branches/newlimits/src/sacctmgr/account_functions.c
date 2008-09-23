@@ -511,6 +511,7 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 	} else {
 		acct_account_cond_t account_cond;
 		memset(&account_cond, 0, sizeof(acct_account_cond_t));
+		memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
 
 		assoc_cond.acct_list = name_list;
 		account_cond.assoc_cond = &assoc_cond;

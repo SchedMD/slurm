@@ -715,7 +715,7 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 
 	printf(" Setting\n");
 	if(rec_set) 
-		printf(" User Defaults  =\n");
+		printf(" Default Limits =\n");
 
 	if(assoc->fairshare == INFINITE)
 		printf("  Fairshare     = NONE\n");

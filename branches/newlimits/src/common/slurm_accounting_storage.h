@@ -137,6 +137,8 @@ typedef struct acct_association_rec {
 	char *cluster;		/* cluster associated to association
 				 * */
 
+	uint32_t fairshare;	/* fairshare number */
+
 	uint64_t grp_cpu_hours; /* max number of cpu hours the
 				     * underlying group of
 				     * associations can run for */
@@ -173,7 +175,6 @@ typedef struct acct_association_rec {
 	uint32_t grp_used_max_wall; /* group count of time used in
 				     * running jobs (DON'T PACK) */
 	
-	uint32_t fairshare;	/* fairshare number */
 	uint32_t id;		/* id identifing a combination of
 				 * user-account-cluster(-partition) */
 	uint32_t lft;		/* lft used for grouping sub

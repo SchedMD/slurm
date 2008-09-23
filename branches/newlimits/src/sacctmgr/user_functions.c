@@ -910,6 +910,9 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 					assoc->cluster = xstrdup(cluster);
 					assoc->partition = xstrdup(partition);
 					
+					assoc->fairshare = 
+						start_assoc.fairshare;
+
 					assoc->grp_cpu_hours = 
 						start_assoc.grp_cpu_hours;
 					assoc->grp_cpus = start_assoc.grp_cpus;
@@ -963,6 +966,8 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 				assoc->user = xstrdup(name);
 				assoc->acct = xstrdup(account);
 				assoc->cluster = xstrdup(cluster);
+
+				assoc->fairshare = start_assoc.fairshare;
 
 				assoc->grp_cpu_hours = 
 					start_assoc.grp_cpu_hours;
@@ -1426,11 +1431,18 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 							(curr_inx == 
 							 field_count));
 						break;
-					case PRINT_MAXC:
+					case PRINT_MAXCM:
 						field->print_routine(
 							field,
 							assoc->
 							max_cpu_mins_pj,
+							(curr_inx == 
+							 field_count));
+						break;
+					case PRINT_MAXC:
+						field->print_routine(
+							field,
+							assoc->max_cpus_pj,
 							(curr_inx == 
 							 field_count));
 						break;
@@ -1563,12 +1575,18 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 						NULL,
 						(curr_inx == field_count));
 					break;
-				case PRINT_MAXC:
+				case PRINT_MAXCM:
 					field->print_routine(
 						field,
 						NULL,
 						(curr_inx == field_count));
 					break;
+				case PRINT_MAXC:
+					field->print_routine(
+						field,
+						NULL,
+						(curr_inx == field_count));
+						break;
 				case PRINT_MAXJ:
 					field->print_routine(
 						field, 

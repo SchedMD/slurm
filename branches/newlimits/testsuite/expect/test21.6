@@ -44,7 +44,7 @@ set mod		modify
 set nams	Names
 set nam		Name
 set fs		Fairshare
-set mc		MaxCPUSecs
+set mc		MaxCPUMins
 set mj		MaxJobs
 set mn		MaxNodes
 set mw		MaxWall
@@ -160,7 +160,7 @@ expect {
 		incr amatches
 		exp_continue
 	}
-	-re "User Defaults" {
+	-re "Default Limits" {
 		incr amatches
 		exp_continue
 	}
@@ -207,7 +207,7 @@ if {$access_err != 0} {
 	exit $exit_code
 }
 if {$amatches != 12} {
-	send_user "\nFAILURE:  sacctmgr had a problem adding clusters\n"
+	send_user "\nFAILURE:  sacctmgr had a problem adding clusters got $amatches\n"
 	set exit_code 1
 }
 if { ![check_acct_associations] } {
