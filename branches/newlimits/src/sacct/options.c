@@ -684,7 +684,7 @@ void parse_command_line(int argc, char **argv)
 			brief_output = true;
 			break;
 		case 'B':
-			params.opt_begin = parse_time(optarg);
+			params.opt_begin = parse_time(optarg, 1);
 			break;
 		case 'c':
 			params.opt_completion = 1;
@@ -750,7 +750,7 @@ void parse_command_line(int argc, char **argv)
 		break;
 		
 		case 'E':
-			params.opt_end = parse_time(optarg);
+			params.opt_end = parse_time(optarg, 1);
 			break;
 		case 'F':
 			if(params.opt_stat)

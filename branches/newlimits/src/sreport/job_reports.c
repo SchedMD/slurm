@@ -259,7 +259,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 					argv[i]+end);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "End", 1)) {
-			job_cond->usage_end = parse_time(argv[i]+end);
+			job_cond->usage_end = parse_time(argv[i]+end, 1);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Format", 1)) {
 			if(format_list)
@@ -314,7 +314,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 					argv[i]+end);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Start", 1)) {
-			job_cond->usage_start = parse_time(argv[i]+end);
+			job_cond->usage_start = parse_time(argv[i]+end, 1);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Users", 1)) {
 			if(!job_cond->userid_list)

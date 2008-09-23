@@ -1870,9 +1870,9 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "id", "int not null auto_increment" },
 		{ "timestamp", "int unsigned default 0 not null" },
 		{ "action", "smallint not null" },
-		{ "name", "tinytext not null" },
+		{ "name", "text not null" },
 		{ "actor", "tinytext not null" },
-		{ "info", "text" },
+		{ "info", "blob" },
 		{ NULL, NULL}		
 	};
 
@@ -6364,6 +6364,8 @@ extern List acct_storage_p_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 {
 #ifdef HAVE_MYSQL
 	char *query = NULL;	
+	char *assoc_extra = NULL;	
+	char *name_extra = NULL;	
 	char *extra = NULL;	
 	char *tmp = NULL;	
 	List txn_list = NULL;
@@ -6398,6 +6400,138 @@ extern List acct_storage_p_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 
 	if(!txn_cond) 
 		goto empty;
+
+	/* handle query for associations first */
+	if(txn_cond->acct_list && list_count(txn_cond->acct_list)) {
+		set = 0;
+		if(assoc_extra)
+			xstrcat(assoc_extra, " && (");
+		else
+			xstrcat(assoc_extra, " where (");
+
+		if(name_extra)
+			xstrcat(name_extra, " && (");
+		else	
+			xstrcat(name_extra, " (");
+		itr = list_iterator_create(txn_cond->acct_list);
+		while((object = list_next(itr))) {
+			if(set) {
+				xstrcat(assoc_extra, " || ");
+				xstrcat(name_extra, " || ");
+			}
+
+			xstrfmtcat(assoc_extra, "acct='%s'", object);
+
+			xstrfmtcat(name_extra, "(name like \"%%'%s'%%\""
+				   " || name='%s')", object, object);
+
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(assoc_extra, ")");
+		xstrcat(name_extra, ")");		
+	}
+
+	if(txn_cond->cluster_list && list_count(txn_cond->cluster_list)) {
+		set = 0;
+		if(assoc_extra)
+			xstrcat(assoc_extra, " && (");
+		else
+			xstrcat(assoc_extra, " where (");
+
+		if(name_extra)
+			xstrcat(name_extra, " && (");
+		else	
+			xstrcat(name_extra, "(");
+			
+		itr = list_iterator_create(txn_cond->cluster_list);
+		while((object = list_next(itr))) {
+			if(set) { 
+				xstrcat(assoc_extra, " || ");
+				xstrcat(name_extra, " || ");
+			}
+			xstrfmtcat(assoc_extra, "cluster='%s'", object);
+
+			xstrfmtcat(name_extra, "(name like \"%%'%s'%%\""
+				   " || name='%s')", object, object);
+
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(assoc_extra, ")");
+		xstrcat(name_extra, ")");		
+	}
+
+	if(txn_cond->user_list && list_count(txn_cond->user_list)) {
+		set = 0;
+		if(assoc_extra) 
+			xstrcat(assoc_extra, " && (");
+		else
+			xstrcat(assoc_extra, " where (");
+
+		if(name_extra)
+			xstrcat(name_extra, " && (");
+		else	
+			xstrcat(name_extra, "(");
+			
+		itr = list_iterator_create(txn_cond->user_list);
+		while((object = list_next(itr))) {
+			if(set) {
+				xstrcat(assoc_extra, " || ");
+				xstrcat(name_extra, " || ");
+			}
+			xstrfmtcat(assoc_extra, "user='%s'", object);
+
+			xstrfmtcat(name_extra, "(name like \"%%'%s'%%\""
+				   " || name='%s')", object, object);
+
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(assoc_extra, ")");
+		xstrcat(name_extra, ")");		
+	}
+
+	if(assoc_extra) {
+		query = xstrdup_printf("select id from %s%s",
+				       assoc_table, assoc_extra);
+		xfree(assoc_extra);
+
+		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+		if(!(result = mysql_db_query_ret(
+			     mysql_conn->db_conn, query, 0))) {
+			xfree(query);
+			return NULL;
+		}
+		xfree(query);
+		
+		if(extra)
+			xstrcat(extra, " && (");
+		else
+			xstrcat(extra, " where (");
+
+		set = 0;
+	
+		if(name_extra) {
+			xstrfmtcat(extra, "(%s) || (", name_extra);
+			xfree(name_extra);
+		} else 
+			xstrcat(extra, "(");			
+		
+		while((row = mysql_fetch_row(result))) {
+			if(set) 
+				xstrcat(extra, " || ");
+						
+			xstrfmtcat(extra, "(name like '%%id=%s %%' "
+				   "|| name like '%%id=%s)')", row[0], row[0]);
+			set = 1;
+		}
+		mysql_free_result(result);
+		if(set)
+			xstrcat(extra, "))");
+	}
+	
+	/*******************************************/
 
 	if(txn_cond->action_list && list_count(txn_cond->action_list)) {
 		set = 0;
@@ -6460,6 +6594,40 @@ extern List acct_storage_p_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 		xstrcat(extra, ")");
 	}
 
+	if(txn_cond->info_list && list_count(txn_cond->info_list)) {
+		set = 0;
+		if(extra)
+			xstrcat(extra, " && (");
+		else
+			xstrcat(extra, " where (");
+		itr = list_iterator_create(txn_cond->info_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "info like '%%%s%%'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+	
+	if(txn_cond->name_list && list_count(txn_cond->name_list)) {
+		set = 0;
+		if(extra)
+			xstrcat(extra, " && (");
+		else
+			xstrcat(extra, " where (");
+		itr = list_iterator_create(txn_cond->name_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "name like '%%%s%%'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+
 	if(txn_cond->time_start && txn_cond->time_end) {
 		if(extra)
 			xstrcat(extra, " && (");
@@ -6481,6 +6649,7 @@ extern List acct_storage_p_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 			xstrcat(extra, " where (");
 		xstrfmtcat(extra, "timestamp < %d)", txn_cond->time_end);
 	}
+
 empty:
 	xfree(tmp);
 	xstrfmtcat(tmp, "%s", txn_req_inx[i]);
@@ -6519,6 +6688,40 @@ empty:
 		txn->set_info = xstrdup(row[TXN_REQ_INFO]);
 		txn->timestamp = atoi(row[TXN_REQ_TS]);
 		txn->where_query = xstrdup(row[TXN_REQ_NAME]);
+
+		if(txn_cond && txn_cond->with_assoc_info
+		   && (txn->action == DBD_ADD_ASSOCS
+		       || txn->action == DBD_MODIFY_ASSOCS
+		       || txn->action == DBD_REMOVE_ASSOCS)) {
+			MYSQL_RES *result2 = NULL;
+			MYSQL_ROW row2;
+			
+			query = xstrdup_printf(
+				"select "
+				"group_concat(distinct user order by user), "
+				"group_concat(distinct acct order by acct), "
+				"group_concat(distinct cluster "
+				"order by cluster) from %s where %s",
+				assoc_table, row[TXN_REQ_NAME]);
+			debug4("%d(%d) query\n%s", mysql_conn->conn, 
+			       __LINE__, query);
+			if(!(result2 = mysql_db_query_ret(
+				     mysql_conn->db_conn, query, 0))) {
+				xfree(query);
+				continue;
+			}
+			xfree(query);
+
+			if((row2 = mysql_fetch_row(result2))) {
+				if(row2[0] && row2[0][0])
+					txn->users = xstrdup(row2[0]);
+				if(row2[1] && row2[1][0])
+					txn->accts = xstrdup(row2[1]);
+				if(row2[2] && row2[2][0])
+					txn->clusters = xstrdup(row2[2]);
+			}
+			mysql_free_result(result2);			
+		}
 	}
 	mysql_free_result(result);
 

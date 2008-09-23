@@ -438,8 +438,11 @@ extern void destroy_acct_txn_rec(void *object)
 {
 	acct_txn_rec_t *acct_txn = (acct_txn_rec_t *)object;
 	if(acct_txn) {
+		xfree(acct_txn->accts);
 		xfree(acct_txn->actor_name);
+		xfree(acct_txn->clusters);
 		xfree(acct_txn->set_info);
+		xfree(acct_txn->users);
 		xfree(acct_txn->where_query);
 		xfree(acct_txn);
 	}
@@ -583,12 +586,22 @@ extern void destroy_acct_txn_cond(void *object)
 {
 	acct_txn_cond_t *acct_txn = (acct_txn_cond_t *)object;
 	if(acct_txn) {
+		if(acct_txn->acct_list)
+			list_destroy(acct_txn->acct_list);
 		if(acct_txn->action_list)
 			list_destroy(acct_txn->action_list);
 		if(acct_txn->actor_list)
 			list_destroy(acct_txn->actor_list);
+		if(acct_txn->cluster_list)
+			list_destroy(acct_txn->cluster_list);
 		if(acct_txn->id_list)
 			list_destroy(acct_txn->id_list);
+		if(acct_txn->info_list)
+			list_destroy(acct_txn->info_list);
+		if(acct_txn->name_list)
+			list_destroy(acct_txn->name_list);
+		if(acct_txn->user_list)
+			list_destroy(acct_txn->user_list);
 		xfree(acct_txn);
 	}
 }
@@ -1651,21 +1664,47 @@ unpack_error:
 extern void pack_acct_txn_rec(void *in, uint16_t rpc_version, Buf buffer)
 {
 	acct_txn_rec_t *object = (acct_txn_rec_t *)in;	
-	if(!object) {
-		pack16(0, buffer);
-		packnull(buffer);
-		pack32(0, buffer);
-		packnull(buffer);
-		pack_time(0, buffer);
-		packnull(buffer);
-		return;
+	if(rpc_version < 3) {
+		if(!object) {
+			pack16(0, buffer);
+			packnull(buffer);
+			pack32(0, buffer);
+			packnull(buffer);
+			pack_time(0, buffer);
+			packnull(buffer);
+			return;
+		}
+	
+		pack16(object->action, buffer);
+		packstr(object->actor_name, buffer);
+		pack32(object->id, buffer);
+		packstr(object->set_info, buffer);
+		pack_time(object->timestamp, buffer);
+		packstr(object->where_query, buffer);
+	} else if(rpc_version >= 3) {
+		if(!object) {
+			packnull(buffer);
+			pack16(0, buffer);
+			packnull(buffer);
+			packnull(buffer);
+			pack32(0, buffer);
+			packnull(buffer);
+			pack_time(0, buffer);
+			packnull(buffer);
+			packnull(buffer);
+			return;
+		}
+	
+		packstr(object->accts, buffer);
+		pack16(object->action, buffer);
+		packstr(object->actor_name, buffer);
+		packstr(object->clusters, buffer);
+		pack32(object->id, buffer);
+		packstr(object->set_info, buffer);
+		pack_time(object->timestamp, buffer);
+		packstr(object->users, buffer);
+		packstr(object->where_query, buffer);
 	}
-	pack16(object->action, buffer);
-	packstr(object->actor_name, buffer);
-	pack32(object->id, buffer);
-	packstr(object->set_info, buffer);
-	pack_time(object->timestamp, buffer);
-	packstr(object->where_query, buffer);
 }
 
 extern int unpack_acct_txn_rec(void **object, uint16_t rpc_version, Buf buffer)
@@ -1674,14 +1713,33 @@ extern int unpack_acct_txn_rec(void **object, uint16_t rpc_version, Buf buffer)
 	acct_txn_rec_t *object_ptr = xmalloc(sizeof(acct_txn_rec_t));
 
 	*object = object_ptr;
-
-	safe_unpack16(&object_ptr->action, buffer);
-	safe_unpackstr_xmalloc(&object_ptr->actor_name, &uint32_tmp, buffer);
-	safe_unpack32(&object_ptr->id, buffer);
-	safe_unpackstr_xmalloc(&object_ptr->set_info, &uint32_tmp, buffer);
-	safe_unpack_time(&object_ptr->timestamp, buffer);
-	safe_unpackstr_xmalloc(&object_ptr->where_query, &uint32_tmp, buffer);
-
+	if(rpc_version < 3) {
+		safe_unpack16(&object_ptr->action, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->actor_name, 
+				       &uint32_tmp, buffer);
+		safe_unpack32(&object_ptr->id, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->set_info,
+				       &uint32_tmp, buffer);
+		safe_unpack_time(&object_ptr->timestamp, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->where_query,
+				       &uint32_tmp, buffer);
+	} else if (rpc_version >= 3) {
+		safe_unpackstr_xmalloc(&object_ptr->accts, 
+				       &uint32_tmp, buffer);
+		safe_unpack16(&object_ptr->action, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->actor_name, 
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->clusters, 
+				       &uint32_tmp, buffer);
+		safe_unpack32(&object_ptr->id, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->set_info,
+				       &uint32_tmp, buffer);
+		safe_unpack_time(&object_ptr->timestamp, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->users, 
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->where_query,
+				       &uint32_tmp, buffer);		
+	}
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -3236,56 +3294,178 @@ extern void pack_acct_txn_cond(void *in, uint16_t rpc_version, Buf buffer)
 	ListIterator itr = NULL;
 	acct_txn_cond_t *object = (acct_txn_cond_t *)in;
 
-	if(!object) {
-		pack32(NO_VAL, buffer);
-		pack32(NO_VAL, buffer);
-		pack32(NO_VAL, buffer);
-		pack32(0, buffer);
-		pack32(0, buffer);
-		return;
-	}
-	if(object->action_list)
-		count = list_count(object->action_list);
+	if(rpc_version < 3) {
+		if(!object) {
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(0, buffer);
+			pack32(0, buffer);
+			return;
+		}
+		if(object->action_list)
+			count = list_count(object->action_list);
 	
-	pack32(count, buffer);
-	if(count && count != NO_VAL) {
-		itr = list_iterator_create(object->action_list);
-		while((tmp_info = list_next(itr))) {
-			packstr(tmp_info, buffer);
+		pack32(count, buffer);
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->action_list);
+			while((tmp_info = list_next(itr))) {
+				packstr(tmp_info, buffer);
+			}
+			list_iterator_destroy(itr);
 		}
-		list_iterator_destroy(itr);
-	}
-	count = NO_VAL;
+		count = NO_VAL;
 
-	if(object->actor_list) 
-		count = list_count(object->actor_list);
+		if(object->actor_list) 
+			count = list_count(object->actor_list);
 
-	pack32(count, buffer);
-	if(count && count != NO_VAL) {
-		itr = list_iterator_create(object->actor_list);
-		while((tmp_info = list_next(itr))) {
-			packstr(tmp_info, buffer);
+		pack32(count, buffer);
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->actor_list);
+			while((tmp_info = list_next(itr))) {
+				packstr(tmp_info, buffer);
+			}
+			list_iterator_destroy(itr); 
 		}
-		list_iterator_destroy(itr); 
-	}
-	count = NO_VAL;
+		count = NO_VAL;
 
-	if(object->id_list)
-		count = list_count(object->id_list);
+		if(object->id_list)
+			count = list_count(object->id_list);
 	 
-	pack32(count, buffer);
-	if(count && count != NO_VAL) {
-		itr = list_iterator_create(object->id_list);
-		while((tmp_info = list_next(itr))) {
-			packstr(tmp_info, buffer);
-		} 
-		list_iterator_destroy(itr);
+		pack32(count, buffer);
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->id_list);
+			while((tmp_info = list_next(itr))) {
+				packstr(tmp_info, buffer);
+			} 
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+
+		pack32(object->time_end, buffer);
+		pack32(object->time_start, buffer);
+	} else if(rpc_version >= 3) {
+		if(!object) {
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(0, buffer);
+			pack32(0, buffer);
+			pack32(NO_VAL, buffer);
+			pack16(0, buffer);
+			return;
+		}
+		if(object->acct_list)
+			count = list_count(object->acct_list);
+	
+		pack32(count, buffer);
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->acct_list);
+			while((tmp_info = list_next(itr))) {
+				packstr(tmp_info, buffer);
+			}
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+
+		if(object->action_list)
+			count = list_count(object->action_list);
+	
+		pack32(count, buffer);
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->action_list);
+			while((tmp_info = list_next(itr))) {
+				packstr(tmp_info, buffer);
+			}
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+
+		if(object->actor_list) 
+			count = list_count(object->actor_list);
+
+		pack32(count, buffer);
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->actor_list);
+			while((tmp_info = list_next(itr))) {
+				packstr(tmp_info, buffer);
+			}
+			list_iterator_destroy(itr); 
+		}
+		count = NO_VAL;
+
+		if(object->cluster_list)
+			count = list_count(object->cluster_list);
+	 
+		pack32(count, buffer);
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->cluster_list);
+			while((tmp_info = list_next(itr))) {
+				packstr(tmp_info, buffer);
+			} 
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+
+		if(object->id_list)
+			count = list_count(object->id_list);
+	 
+		pack32(count, buffer);
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->id_list);
+			while((tmp_info = list_next(itr))) {
+				packstr(tmp_info, buffer);
+			} 
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+
+		if(object->info_list)
+			count = list_count(object->info_list);
+	 
+		pack32(count, buffer);
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->info_list);
+			while((tmp_info = list_next(itr))) {
+				packstr(tmp_info, buffer);
+			} 
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+
+		if(object->name_list)
+			count = list_count(object->name_list);
+	 
+		pack32(count, buffer);
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->name_list);
+			while((tmp_info = list_next(itr))) {
+				packstr(tmp_info, buffer);
+			} 
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+
+		pack32(object->time_end, buffer);
+		pack32(object->time_start, buffer);
+		if(object->user_list)
+			count = list_count(object->user_list);
+	 
+		pack32(count, buffer);
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->user_list);
+			while((tmp_info = list_next(itr))) {
+				packstr(tmp_info, buffer);
+			} 
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+		
+		pack16(object->with_assoc_info, buffer);
 	}
-	count = NO_VAL;
-
-	pack32(object->time_end, buffer);
-	pack32(object->time_start, buffer);
-
 }
 
 extern int unpack_acct_txn_cond(void **object, uint16_t rpc_version, Buf buffer)
@@ -3297,36 +3477,135 @@ extern int unpack_acct_txn_cond(void **object, uint16_t rpc_version, Buf buffer)
 	char *tmp_info = NULL;
 
 	*object = object_ptr;
-	safe_unpack32(&count, buffer);
-	if(count != NO_VAL) {
-		object_ptr->action_list = list_create(slurm_destroy_char);
-		for(i=0; i<count; i++) {
-			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp, buffer);
-			list_append(object_ptr->action_list, tmp_info);
+	if(rpc_version < 3) {
+		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
+			object_ptr->action_list =
+				list_create(slurm_destroy_char);
+			for(i=0; i<count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info,
+						       &uint32_tmp, buffer);
+				list_append(object_ptr->action_list, tmp_info);
+			}
 		}
+
+		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
+			object_ptr->actor_list = 
+				list_create(slurm_destroy_char);
+			for(i=0; i<count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info,
+						       &uint32_tmp, buffer);
+				list_append(object_ptr->actor_list, tmp_info);
+			}
+		}
+
+		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
+			object_ptr->id_list = list_create(slurm_destroy_char);
+			for(i=0; i<count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info,
+						       &uint32_tmp, buffer);
+				list_append(object_ptr->id_list, tmp_info);
+			}
+		}
+
+		safe_unpack32(&object_ptr->time_end, buffer);
+		safe_unpack32(&object_ptr->time_start, buffer);
+	} else if (rpc_version >=3) {
+		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
+			object_ptr->acct_list =
+				list_create(slurm_destroy_char);
+			for(i=0; i<count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info,
+						       &uint32_tmp, buffer);
+				list_append(object_ptr->acct_list, tmp_info);
+			}
+		}
+
+		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
+			object_ptr->action_list =
+				list_create(slurm_destroy_char);
+			for(i=0; i<count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info,
+						       &uint32_tmp, buffer);
+				list_append(object_ptr->action_list, tmp_info);
+			}
+		}
+
+		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
+			object_ptr->actor_list = 
+				list_create(slurm_destroy_char);
+			for(i=0; i<count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info,
+						       &uint32_tmp, buffer);
+				list_append(object_ptr->actor_list, tmp_info);
+			}
+		}
+
+		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
+			object_ptr->cluster_list =
+				list_create(slurm_destroy_char);
+			for(i=0; i<count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info,
+						       &uint32_tmp, buffer);
+				list_append(object_ptr->cluster_list, tmp_info);
+			}
+		}
+
+		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
+			object_ptr->id_list = list_create(slurm_destroy_char);
+			for(i=0; i<count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info,
+						       &uint32_tmp, buffer);
+				list_append(object_ptr->id_list, tmp_info);
+			}
+		}
+
+		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
+			object_ptr->info_list =
+				list_create(slurm_destroy_char);
+			for(i=0; i<count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info,
+						       &uint32_tmp, buffer);
+				list_append(object_ptr->info_list, tmp_info);
+			}
+		}
+
+		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
+			object_ptr->name_list =
+				list_create(slurm_destroy_char);
+			for(i=0; i<count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info,
+						       &uint32_tmp, buffer);
+				list_append(object_ptr->name_list, tmp_info);
+			}
+		}
+
+		safe_unpack32(&object_ptr->time_end, buffer);
+		safe_unpack32(&object_ptr->time_start, buffer);
+
+		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
+			object_ptr->user_list =
+				list_create(slurm_destroy_char);
+			for(i=0; i<count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info,
+						       &uint32_tmp, buffer);
+				list_append(object_ptr->user_list, tmp_info);
+			}
+		}
+
+		safe_unpack16(&object_ptr->with_assoc_info, buffer);
 	}
 
-	safe_unpack32(&count, buffer);
-	if(count != NO_VAL) {
-		object_ptr->actor_list = list_create(slurm_destroy_char);
-		for(i=0; i<count; i++) {
-			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp, buffer);
-			list_append(object_ptr->actor_list, tmp_info);
-		}
-	}
-
-	safe_unpack32(&count, buffer);
-	if(count != NO_VAL) {
-		object_ptr->id_list = list_create(slurm_destroy_char);
-		for(i=0; i<count; i++) {
-			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp, buffer);
-			list_append(object_ptr->id_list, tmp_info);
-		}
-	}
-
-	safe_unpack32(&object_ptr->time_end, buffer);
-	safe_unpack32(&object_ptr->time_start, buffer);
-	
 	return SLURM_SUCCESS;
 
 unpack_error:

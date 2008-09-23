@@ -37,6 +37,7 @@
 \*****************************************************************************/
 
 #include "src/sacctmgr/sacctmgr.h"
+#include "src/common/slurmdbd_defs.h"
 #include <unistd.h>
 #include <termios.h>
 
@@ -619,10 +620,14 @@ extern int addto_qos_char_list(List char_list, List qos_list, char *names,
 					memcpy(name, names+start, (i-start));
 					
 					id = str_2_acct_qos(qos_list, name);
+					if(id == NO_VAL) {
+						error("You gave a bad qos'%s'.",
+						      name);
+						xfree(name);
+						break;
+					}
 					xfree(name);
-					if(id == NO_VAL) 
-						goto bad;
-
+					
 					if(option) {
 						name = xstrdup_printf(
 							"%c%u", option, id);
@@ -640,7 +645,7 @@ extern int addto_qos_char_list(List char_list, List qos_list, char *names,
 					} else 
 						xfree(name);
 				}
-			bad:
+
 				i++;
 				start = i;
 				if(!names[i]) {
@@ -657,15 +662,116 @@ extern int addto_qos_char_list(List char_list, List qos_list, char *names,
 			memcpy(name, names+start, (i-start));
 			
 			id = str_2_acct_qos(qos_list, name);
-			xfree(name);
-			if(id == NO_VAL) 
+			if(id == NO_VAL) {
+				error("You gave a bad qos'%s'.", name);
+				xfree(name);
 				goto end_it;
+			}
+			xfree(name);
 			
 			if(option) {
 				name = xstrdup_printf(
 					"%c%u", option, id);
 			} else
 				name = xstrdup_printf("%u", id);
+			while((tmp_char = list_next(itr))) {
+				if(!strcasecmp(tmp_char, name))
+					break;
+			}
+			
+			if(!tmp_char) {
+				list_append(char_list, name);
+				count++;
+			} else 
+				xfree(name);
+		}
+	}	
+end_it:
+	list_iterator_destroy(itr);
+	return count;
+}
+ 
+extern int addto_action_char_list(List char_list, char *names)
+{
+	int i=0, start=0;
+	char *name = NULL, *tmp_char = NULL;
+	ListIterator itr = NULL;
+	char quote_c = '\0';
+	int quote = 0;
+	uint32_t id=0;
+	int count = 0;
+
+	if(!char_list) {
+		error("No list was given to fill in");
+		return 0;
+	}
+
+	itr = list_iterator_create(char_list);
+	if(names) {
+		if (names[i] == '\"' || names[i] == '\'') {
+			quote_c = names[i];
+			quote = 1;
+			i++;
+		}
+		start = i;
+		while(names[i]) {
+			if(quote && names[i] == quote_c)
+				break;
+			else if (names[i] == '\"' || names[i] == '\'')
+				names[i] = '`';
+			else if(names[i] == ',') {
+				if((i-start) > 0) {
+					name = xmalloc((i-start+1));
+					memcpy(name, names+start, (i-start));
+					
+					id = str_2_slurmdbd_msg_type(name);
+					if(id == NO_VAL) {
+						error("You gave a bad action "
+						      "'%s'.", name);
+						xfree(name);
+						break;
+					}
+					xfree(name);
+
+					name = xstrdup_printf("%u", id);
+					while((tmp_char = list_next(itr))) {
+						if(!strcasecmp(tmp_char, name))
+							break;
+					}
+					list_iterator_reset(itr);
+
+					if(!tmp_char) {
+						list_append(char_list, name);
+						count++;
+					} else 
+						xfree(name);
+				}
+
+				i++;
+				start = i;
+				if(!names[i]) {
+					error("There is a problem with "
+					      "your request.  It appears you "
+					      "have spaces inside your list.");
+					break;
+				}
+			}
+			i++;
+		}
+		if((i-start) > 0) {
+			name = xmalloc((i-start)+1);
+			memcpy(name, names+start, (i-start));
+			
+			id = str_2_slurmdbd_msg_type(name);
+			if(id == NO_VAL)  {
+				error("You gave a bad action '%s'.",
+				      name);
+				xfree(name);
+				goto end_it;
+			}
+			xfree(name);
+			
+			name = xstrdup_printf("%u", id);
 			while((tmp_char = list_next(itr))) {
 				if(!strcasecmp(tmp_char, name))
 					break;

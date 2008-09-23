@@ -1175,7 +1175,7 @@ static void _set_options(int argc, char **argv)
 			opt.conn_type = verify_conn_type(optarg);
 			break;
 		case LONG_OPT_BEGIN:
-			opt.begin = parse_time(optarg);
+			opt.begin = parse_time(optarg, 0);
 			if (opt.begin == 0) {
 				fatal("Invalid time specification %s",
 				      optarg);
@@ -1391,7 +1391,7 @@ static void _set_pbs_options(int argc, char **argv)
 	      != -1) {
 		switch (opt_char) {
 		case 'a':
-			opt.begin = parse_time(optarg);			
+			opt.begin = parse_time(optarg, 0);			
 			break;
 		case 'A':
 			xfree(opt.account);

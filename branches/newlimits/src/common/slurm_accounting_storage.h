@@ -299,19 +299,28 @@ typedef struct {
 } acct_user_rec_t;
 
 typedef struct {
+	List acct_list; /* list of char * */
 	List action_list; /* list of char * */
 	List actor_list; /* list of char * */
+	List cluster_list; /* list of char * */
 	List id_list; /* list of char * */
+	List info_list; /* list of char * */
+	List name_list; /* list of char * */
 	uint32_t time_end; 
 	uint32_t time_start; 
+	List user_list; /* list of char * */
+	uint16_t with_assoc_info;
 } acct_txn_cond_t;
 
 typedef struct {
+	char *accts;
 	uint16_t action;
 	char *actor_name;
+	char *clusters;
 	uint32_t id;
 	char *set_info;
 	time_t timestamp;
+	char *users;
 	char *where_query;
 } acct_txn_rec_t;
 

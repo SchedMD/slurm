@@ -455,7 +455,7 @@ _process_command (int argc, char *argv[])
 		}
 
 		if(argc > 1)
-			my_time = parse_time(argv[1]);
+			my_time = parse_time(argv[1], 1);
 		if(acct_storage_g_roll_usage(db_conn, my_time)
 		   == SLURM_SUCCESS) {
 			if(commit_check("Would you like to commit rollup?")) {

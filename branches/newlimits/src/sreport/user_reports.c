@@ -173,13 +173,13 @@ static int _set_cond(int *start, int argc, char *argv[],
 					argv[i]+end);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "End", 1)) {
-			assoc_cond->usage_end = parse_time(argv[i]+end);
+			assoc_cond->usage_end = parse_time(argv[i]+end, 1);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Format", 1)) {
 			if(format_list)
 				slurm_addto_char_list(format_list, argv[i]+end);
 		} else if (!strncasecmp (argv[i], "Start", 1)) {
-			assoc_cond->usage_start = parse_time(argv[i]+end);
+			assoc_cond->usage_start = parse_time(argv[i]+end, 1);
 			set = 1;
 		} else {
 			exit_code=1;
