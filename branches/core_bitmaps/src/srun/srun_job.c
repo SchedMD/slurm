@@ -477,7 +477,12 @@ _job_create_structure(allocation_info_t *ainfo)
 			error("Are required nodes explicitly excluded?");
 		}
 		return NULL;
-	}	
+	}
+	if ((ainfo->cpus_per_node == NULL) || 
+	    (ainfo->cpu_count_reps == NULL)) {
+		error("cpus_per_node array is not set");
+		return NULL;
+	}
 #endif
 	job->select_jobinfo = ainfo->select_jobinfo;
 	job->jobid   = ainfo->jobid;

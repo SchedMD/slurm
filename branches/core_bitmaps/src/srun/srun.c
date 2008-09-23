@@ -269,7 +269,7 @@ int srun(int ac, char **av)
 		
 		opt.exclusive = false;	/* not applicable for this step */
 		if (!job || create_job_step(job, true) < 0) {
-			slurm_complete_job(job->jobid, 1);
+			slurm_complete_job(resp->job_id, 1);
 			exit(1);
 		}
 		

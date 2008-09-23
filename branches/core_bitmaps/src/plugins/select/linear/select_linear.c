@@ -75,6 +75,7 @@
 static int  _add_job_to_nodes(struct node_cr_record *node_cr_ptr,
 			      struct job_record *job_ptr, char *pre_err, 
 			      int suspended);
+static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap);
 static void _cr_job_list_del(void *x);
 static int  _cr_job_list_sort(void *x, void *y);
 static void _dump_node_cr(struct node_cr_record *node_cr_ptr);
@@ -413,6 +414,8 @@ static uint16_t _get_avail_cpus(struct job_record *job_ptr, int index)
 	return(avail_cpus);
 }
 
+/* Build the full select_job_res_t structure for a job based upon the nodes
+ *	allocated to it (the bitmap) and the job's memory requirement */
 static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap)
 {
 	int i, j, k;
