@@ -635,7 +635,8 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr)
 	/* test for dangling jobs */
 	for (j = 0; j < num_jobs; j++) {
 		if (tmpjobs[j]) {
-			error("cons_res: ERROR: job overflow during build_row_bitmap");
+			error("cons_res: ERROR: job overflow "
+			      "during build_row_bitmap");
 			/* just merge this job into the last row for now */
 			_add_job_to_row(tmpjobs[j],
 					&(p_ptr->row[p_ptr->num_rows-1]),0);
@@ -759,7 +760,8 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 		}
 		if (i >= p_ptr->num_rows) {
 			/* ERROR: could not find a row for this job */
-			error("cons_res: ERROR: job overflow: could not find row for job");
+			error("cons_res: ERROR: job overflow: "
+			      "could not find row for job");
 			/* just add the job to the last row for now */
 			_add_job_to_row(job, &(p_ptr->row[p_ptr->num_rows-1]), 0);
 		}
