@@ -1,0 +1,307 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Test scancel signal to batch script (--batch option)
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+#
+# Note:    This script generates and then deletes files in the working directory 
+#          named test6.12.input, test6.12.output, and test6.12.error
+############################################################################
+# Copyright (C) 2002-2006 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# LLNL-CODE-402394.
+# 
+# This file is part of SLURM, a resource management program.
+# For details, see <http://www.llnl.gov/linux/slurm/>.
+#  
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+# 
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+# 
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id     "6.12"
+set file_in     "test$test_id.input"
+set file_out    "test$test_id.output"
+set file_err    "test$test_id.error"
+
+set exit_code   0
+set job_id      0
+
+print_header $test_id
+
+if { [test_xcpu] } {
+	send_user "\nWARNING: This test is incomptabible with XCPU system\n"
+	exit 0
+}
+
+#
+# Delete left-over input script plus stdout/err files
+#
+file delete $file_out $file_err
+
+#
+# Build input script file
+#
+make_bash_script $file_in "
+$srun $bin_sleep 500 &
+
+trap /bin/true SIGINT
+
+while /bin/true; do
+	wait
+	if \[ \$? -ge 128 \]; then
+		echo \"INTerrupted wait, resuming\"
+	else
+		break
+	fi
+done
+"
+
+#
+# Spawn a sbatch job with arguments
+#
+set timeout $max_job_delay
+set sbatch_pid [spawn $sbatch --output=$file_out --error=$file_err -t2 $file_in]
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $sbatch_pid
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$job_id == 0} {
+	send_user "\nFAILURE: batch submit failure\n"
+	exit 1
+}
+
+#
+# Wait for job to start running, then signal it
+#
+if {[wait_for_job $job_id "RUNNING"] != 0} {
+	send_user "\nFAILURE: waiting for job to start running\n"
+	exit 1
+}
+exec $bin_sleep 5
+spawn $squeue --steps=$job_id.0
+expect {
+	eof {
+		wait
+	}
+}
+
+#
+# The intent of the following scancel is to send a SIGINT signal
+# to the batch script, and because srun ignores lone SIGINTs, the
+# job step should not be killed.  Our batch script, above, is crafted
+# to ignore all SIGINT and resume waiting for the child process
+# (the srun) to exit.  If it did not trap SIGINT, the "wait" would
+# be killed by the SIGINT, then the batch script would exit triggering
+# a kill of the entire job.
+# 
+spawn $scancel --batch -s INT $job_id
+expect {
+	eof {
+		wait
+	}
+}
+exec $bin_sleep 5
+
+#
+# Confirm that job step still exists.
+# If signal goes to child processes (default without --batch) then
+# sleep will exit along with the entire job.
+#
+set found_step 0
+spawn $squeue --steps=$job_id.0
+expect {
+	-re "($job_id).0" {
+		set found_step 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$found_step == 0} {
+	send_user "\nFAILURE: job step not found, apparently killed\n"
+	set exit_code 1
+}
+exec $scancel --quiet $job_id
+
+#
+# Build and run second test script
+#
+file delete $file_out $file_err
+make_bash_script $file_in "$bin_sleep 500"
+
+set job_id 0
+set sbatch_pid [spawn $sbatch --output=$file_out --error=$file_err -t2 $file_in]
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $sbatch_pid
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$job_id == 0} {
+	send_user "\nFAILURE: batch submit failure\n"
+	exit 1
+}
+
+#
+# Wait for job to start running and 
+# send SIGHUP and confirm that job gets cancelled
+#
+if {[wait_for_job $job_id "RUNNING"] != 0} {
+	send_user "\nFAILURE: waiting for job to start running\n"
+	exit 1
+}
+exec $bin_sleep 5
+spawn $squeue --jobs=$job_id
+expect {
+	eof {
+		wait
+	}
+}
+spawn $scancel --batch -s HUP $job_id
+expect {
+	eof {
+		wait
+	}
+}
+exec $bin_sleep 5
+set found_job 0
+spawn $squeue --jobs=$job_id --states=cg,cd
+expect {
+	-re "($job_id)" {
+		set found_job 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$found_job == 0} {
+	send_user "\nFAILURE: job not killed on SIGHUP\n"
+	spawn $scontrol show job $job_id
+	expect {
+		eof {
+			wait
+		}
+	}
+	exec $scancel --quiet $job_id
+	set exit_code 1
+}
+
+
+if {$exit_code != 0} {
+	exit $exit_code
+}
+
+#
+# Submit another job to be signalled with steps
+#
+set job_id      0
+file delete $file_out $file_err
+make_bash_script $file_in "$srun $bin_sleep 500"
+
+set sbatch_pid [spawn $sbatch --output=$file_out --error=$file_err -t2 $file_in]
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $sbatch_pid
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$job_id == 0} {
+	send_user "\nFAILURE: batch submit failure\n"
+	exit 1
+}
+
+#
+# Wait for job to start running
+#
+if {[wait_for_job $job_id "RUNNING"] != 0} {
+	send_user "\nFAILURE: waiting for job to start running\n"
+	exit 1
+}
+exec $bin_sleep 5
+spawn $squeue --steps=$job_id.0
+expect {
+	eof {
+		wait
+	}
+}
+spawn $scancel -s INT $job_id
+expect {
+	eof {
+		wait
+	}
+}
+exec $bin_sleep 5
+
+#
+# Confirm that job is gone
+#
+set found_step 0
+spawn $squeue --steps=$job_id.0
+expect {
+	-re "($job_id).0" {
+		set found_step 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$found_step == 1} {
+	send_user "\nFAILURE: job step found, not killed\n"
+	set exit_code 1
+}
+
+cancel_job $job_id
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+	exec $bin_rm -f $file_in $file_out $file_err
+}
+exit $exit_code
