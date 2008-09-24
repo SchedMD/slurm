@@ -1319,7 +1319,6 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_NETWORK:
 			xfree(opt.network);
 			opt.network = xstrdup(optarg);
-			setenv("SLURM_NETWORK", opt.network, 1);
 			break;
 		default:
 			fatal("Unrecognized command line parameter %c",
@@ -1738,6 +1737,8 @@ static bool _opt_verify(void)
 
 	if ((opt.job_name == NULL) && (opt.script_argc > 0))
 		opt.job_name = base_name(opt.script_argv[0]);
+	if (opt.job_name)
+		setenv("SLURM_JOB_NAME", opt.job_name, 0);
 
 	/* check for realistic arguments */
 	if (opt.nprocs <= 0) {
@@ -1899,10 +1900,9 @@ static bool _opt_verify(void)
 		setenvf(NULL, "SLURM_ACCTG_FREQ", "%d", opt.acctg_freq); 
 
 #ifdef HAVE_AIX
-	if (opt.network == NULL) {
+	if (opt.network == NULL)
 		opt.network = "us,sn_all,bulk_xfer";
-		setenv("SLURM_NETWORK", opt.network, 1);
-	}
+	setenv("SLURM_NETWORK", opt.network, 1);
 #endif
 
 	return verified;
