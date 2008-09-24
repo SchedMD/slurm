@@ -854,10 +854,11 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 		list_destroy(format_list);
 		return SLURM_ERROR;
 	} else if(!list_count(format_list)) {
-		slurm_addto_char_list(format_list, "A,D,O,Q");
+		slurm_addto_char_list(format_list, "A,D,O");
 		if(acct_cond->with_assocs)
 			slurm_addto_char_list(format_list,
-					"Cl,ParentN,U,F,MaxC,MaxJ,MaxN,MaxW");
+					      "Cl,ParentN,U,F,MaxCPUM,MaxCPUs,"
+					      "MaxJ,MaxN,MaxS,MaxW,QOS");
 			
 		if(acct_cond->with_coords)
 			slurm_addto_char_list(format_list, "Coord");

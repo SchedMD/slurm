@@ -1214,11 +1214,11 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 	}
 
 	if(!list_count(format_list)) {
-		slurm_addto_char_list(format_list, "U,D,Q,Ad");
+		slurm_addto_char_list(format_list, "U,D,Ad");
 		if(user_cond->with_assocs)
 			slurm_addto_char_list(format_list,
 					      "Cl,Ac,Part,F,MaxCPUM,MaxCPUs,"
-					      "MaxJ,MaxN,MaxS,MaxW");
+					      "MaxJ,MaxN,MaxS,MaxW,QOS");
 		if(user_cond->with_coords)
 			slurm_addto_char_list(format_list, "Coord");
 	}

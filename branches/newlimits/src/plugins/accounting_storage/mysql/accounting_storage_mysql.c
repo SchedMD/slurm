@@ -2255,8 +2255,8 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 		}
 		xfree(query);
 		while((row = mysql_fetch_row(result))) {
-			info("sending to %s at %s(%s) ver %s",
-			     row[2], row[0], row[1], row[3]);
+			debug("sending updates to %s at %s(%s) ver %s",
+			      row[2], row[0], row[1], row[3]);
 			msg.rpc_version = atoi(row[3]);
 			slurm_msg_t_init(&req);
 			slurm_set_addr_char(&req.address, atoi(row[1]), row[0]);

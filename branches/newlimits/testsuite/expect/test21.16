@@ -548,7 +548,7 @@ proc _add_user { account adminlevel cluster defaultaccount fs maxcpu maxjob maxn
 	}
 
 	if { [string length $maxcpu] } {
-		set command "$command maxcpu=$maxcpu"
+		set command "$command maxcpum=$maxcpu"
 	}
 
 	if { [string length $maxjob] } {
