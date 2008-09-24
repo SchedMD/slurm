@@ -85,8 +85,10 @@ SLURM RPM?</li>
 <li><a href="#slurmdbd">Why should I use the slurmdbd instead of the
 regular database plugins?</li>
 <li><a href="#debug">How can I build SLURM with debugging symbols?</li>
-<li><a href="#state_preserve">How can I easily preserve drained node information 
-between major SLURM updates?</li>
+<li><a href="#state_preserve">How can I easily preserve drained node 
+information between major SLURM updates?</li>
+<li><a href="#health_check">Why doesn't the <i>HealthCheckProgram</i>
+execute on DOWN nodes?</li>
 </ol>
 
 <h2>For Users</h2>
@@ -1004,8 +1006,36 @@ in a form that can be executed later to restore state.
 sinfo -t drain -h -o "scontrol update nodename='%N' state=drain reason='%E'"
 </pre>
 
+<p><a name="health_check"><b>31. Why doesn't the <i>HealthCheckProgram</i>
+execute on DOWN nodes?</b><br>
+Hierarchical communications are used for sending this message. If there
+are DOWN nodes in the communications hierarchy, messages will need to 
+be re-routed. This limits SLURM's ability to tightly synchroize the 
+execution of the <i>HealthCheckProgram</i> across the cluster, which
+could adversly impact performance of parallel applications. 
+The use of CRON or node startup scripts may be better suited to insure
+that <i>HealthCheckProgram</i> gets executed on nodes that are DOWN
+in SLURM. If you still want to have SLURM try to execute 
+<i>HealthCheckProgram</i> on DOWN nodes, apply the following patch:
+<pre>
+Index: src/slurmctld/ping_nodes.c
+===================================================================
+--- src/slurmctld/ping_nodes.c  (revision 15166)
++++ src/slurmctld/ping_nodes.c  (working copy)
+@@ -283,9 +283,6 @@
+                node_ptr   = &node_record_table_ptr[i];
+                base_state = node_ptr->node_state & NODE_STATE_BASE;
+
+-               if (base_state == NODE_STATE_DOWN)
+-                       continue;
+-
+ #ifdef HAVE_FRONT_END          /* Operate only on front-end */
+                if (i > 0)
+                        continue;
+</pre>
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 3 September 2008</p>
+<p style="text-align:center;">Last modified 24 September 2008</p>
 
 <!--#include virtual="footer.txt"-->
