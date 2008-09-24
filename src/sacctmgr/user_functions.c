@@ -657,7 +657,8 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 			}
 
 			user = xmalloc(sizeof(acct_user_rec_t));
-			user->assoc_list = list_create(NULL);
+			user->assoc_list = 
+				list_create(destroy_acct_association_rec);
 			user->name = xstrdup(name);
 			user->default_acct = xstrdup(default_acct);
 
