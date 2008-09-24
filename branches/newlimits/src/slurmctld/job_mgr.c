@@ -5665,11 +5665,12 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 			if (job_desc->min_nodes > assoc_ptr->grp_nodes) {
 				info("job submit for user %s(%u): "
 				     "node limit %u exceeds "
-				     "account max %u",
+				     "group max node limit %u for account %s",
 				     user_name,
 				     job_desc->user_id, 
 				     job_desc->min_nodes, 
-				     assoc_ptr->grp_nodes);
+				     assoc_ptr->grp_nodes,
+				     assoc_ptr->acct);
 				return false;
 			} else if (job_desc->max_nodes == 0
 				   || (max_nodes_set 
@@ -5689,8 +5690,7 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 				job_desc->max_nodes = assoc_ptr->grp_nodes;
 			}
 		}
-		info("got %u %u", assoc_ptr->used_submit_jobs,
-		     assoc_ptr->grp_submit_jobs);
+
 		if ((assoc_ptr->grp_submit_jobs != NO_VAL) &&
 		    (assoc_ptr->grp_submit_jobs != INFINITE) &&
 		    (assoc_ptr->used_submit_jobs 
@@ -5721,10 +5721,12 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 				job_desc->time_limit = time_limit;
 			} else if (job_desc->time_limit > time_limit) {
 				info("job submit for user %s(%u): "
-				     "time limit %u exceeds account max %u",
+				     "time limit %u exceeds grp time limit %u "
+				     "for account %s",
 				     user_name,
 				     job_desc->user_id, 
-				     job_desc->time_limit, time_limit);
+				     job_desc->time_limit, time_limit,
+				     assoc_ptr->acct);
 				return false;
 			}
 		}
