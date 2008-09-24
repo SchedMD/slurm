@@ -959,9 +959,7 @@ extern void sacctmgr_print_assoc_limits(acct_association_rec_t *assoc)
 		}
 		if(qos_list)
 			list_destroy(qos_list);
-	} else {
-		printf("  Qos             = %s\n", "Normal");
-	}
+	} 
 }
 
 extern int sort_coord_list(acct_coord_rec_t *coord_a, acct_coord_rec_t *coord_b)

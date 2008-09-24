@@ -764,25 +764,35 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 				break;
 			}
 			debug("updating assoc %u", rec->id);
-			if(object->fairshare != NO_VAL) {
+			if(object->fairshare != NO_VAL) 
 				rec->fairshare = object->fairshare;
-			}
-
-			if(object->max_jobs != NO_VAL) {
-				rec->max_jobs = object->max_jobs;
-			}
-
-			if(object->max_nodes_pj != NO_VAL) {
-				rec->max_nodes_pj = object->max_nodes_pj;
-			}
-
-			if(object->max_wall_pj != NO_VAL) {
-				rec->max_wall_pj = object->max_wall_pj;
-			}
-
-			if(object->max_cpu_mins_pj != NO_VAL) {
+			
+			if(object->grp_cpu_hours != NO_VAL) 
+				rec->grp_cpu_hours = object->grp_cpu_hours;
+			if(object->grp_cpus != NO_VAL) 
+				rec->grp_cpus = object->grp_cpus;
+			if(object->grp_jobs != NO_VAL) 
+				rec->grp_jobs = object->grp_jobs;
+			if(object->grp_nodes != NO_VAL) 
+				rec->grp_nodes = object->grp_nodes;
+			if(object->grp_submit_jobs != NO_VAL) 
+				rec->grp_submit_jobs = object->grp_submit_jobs;
+			if(object->grp_wall != NO_VAL) 
+				rec->grp_wall = object->grp_wall;
+			
+			if(object->max_cpu_mins_pj != NO_VAL) 
 				rec->max_cpu_mins_pj = object->max_cpu_mins_pj;
-			}
+			if(object->max_cpus_pj != NO_VAL) 
+				rec->max_cpus_pj = object->max_cpus_pj;
+			if(object->max_jobs != NO_VAL) 
+				rec->max_jobs = object->max_jobs;
+			if(object->max_nodes_pj != NO_VAL) 
+				rec->max_nodes_pj = object->max_nodes_pj;
+			if(object->max_submit_jobs != NO_VAL) 
+				rec->max_submit_jobs = object->max_submit_jobs;
+			if(object->max_wall_pj != NO_VAL) 
+				rec->max_wall_pj = object->max_wall_pj;
+			
 
 			if(object->parent_acct) {
 				xfree(rec->parent_acct);

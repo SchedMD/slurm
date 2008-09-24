@@ -386,8 +386,8 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 
 	if(!list_count(format_list)) {
 		slurm_addto_char_list(format_list, 
-				      "Cl,Controlh,Controlp,RPC,F,MaxCPUM,"
-				      "MaxCPUs,MaxJ,MaxN,MaxS,MaxW");
+				      "Cl,Controlh,Controlp,RPC,F,"
+				      "GrpJ,GrpN,GrpS,MaxJ,MaxN,MaxS,MaxW,QOS");
 	}
 
 	itr = list_iterator_create(format_list);

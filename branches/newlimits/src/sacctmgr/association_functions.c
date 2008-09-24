@@ -515,8 +515,8 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 		return SLURM_ERROR;
 	} else if(!list_count(format_list)) 
 		slurm_addto_char_list(format_list,
-				      "C,A,U,Part,F,MaxCPUM,MaxCPUs,"
-				      "MaxJ,MaxN,MaxS,MaxW,QOS");
+				      "C,A,U,Part,F,"
+				      "GrpJ,GrpN,GrpS,MaxJ,MaxN,MaxS,MaxW,QOS");
 
 	print_fields_list = list_create(destroy_print_field);
 

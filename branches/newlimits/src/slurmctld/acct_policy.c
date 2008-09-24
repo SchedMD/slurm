@@ -98,16 +98,17 @@ static bool _valid_job_assoc(struct job_record *job_ptr)
  */
 extern void acct_policy_job_begin(struct job_record *job_ptr)
 {
-	acct_association_rec_t *assoc_ptr = NULL, *parent_assoc_ptr = NULL;
+	acct_association_rec_t *assoc_ptr = NULL;
 
 	if (!accounting_enforce || !_valid_job_assoc(job_ptr))
 		return;
 
 	assoc_ptr = job_ptr->assoc_ptr;
-	assoc_ptr->used_jobs++;
-	parent_assoc_ptr = assoc_ptr->parent_assoc_ptr;
-/* 	while(parent_assoc_ptr) { */
-/* 	if( */
+	while(assoc_ptr) {
+		assoc_ptr->used_jobs++;	
+		/* now handle all the group limits of the parents */
+		assoc_ptr = assoc_ptr->parent_assoc_ptr;
+	}
 }
 
 /*
@@ -116,16 +117,19 @@ extern void acct_policy_job_begin(struct job_record *job_ptr)
  */
 extern void acct_policy_job_fini(struct job_record *job_ptr)
 {
-	acct_association_rec_t *assoc_ptr;
+	acct_association_rec_t *assoc_ptr = NULL;
 
 	if (!accounting_enforce || !_valid_job_assoc(job_ptr))
 		return;
 
 	assoc_ptr = job_ptr->assoc_ptr;
-	if (assoc_ptr->used_jobs)
-		assoc_ptr->used_jobs--;
-	else
-		error("acct_policy_job_fini: used_jobs underflow");
+	while(assoc_ptr) {
+		if (assoc_ptr->used_jobs)
+			assoc_ptr->used_jobs--;
+		else
+			error("acct_policy_job_fini: used_jobs underflow");
+		assoc_ptr = assoc_ptr->parent_assoc_ptr;
+	}
 }
 
 /*
@@ -139,6 +143,9 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 {
 	acct_association_rec_t *assoc_ptr;
 	uint32_t time_limit;
+	int parent = 0; /*flag to tell us if we are looking at the
+			 * parent or not 
+			 */
 
 	if (!accounting_enforce)
 		return true;
@@ -149,49 +156,112 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 	}
 
 	assoc_ptr = job_ptr->assoc_ptr;
+	while(assoc_ptr) {
 #if _DEBUG
-	info("acct_job_limits: %u of %u", 
-	     assoc_ptr->used_jobs, assoc_ptr->max_jobs);
-#endif
+		info("acct_job_limits: %u of %u", 
+		     assoc_ptr->used_jobs, assoc_ptr->max_jobs);
+#endif		
+		/* NOTE: We can't enforce assoc_ptr->grp_cpu_hours at this
+		 * time because we aren't keeping track of how long
+		 * jobs have been running yet */
 
-	if ((assoc_ptr->max_jobs != NO_VAL) &&
-	    (assoc_ptr->max_jobs != INFINITE) &&
-	    (assoc_ptr->used_jobs >= assoc_ptr->max_jobs)) {
-		job_ptr->state_reason = WAIT_ASSOC_LIMIT;
-		return false;
-	}
+		/* NOTE: We can't enforce assoc_ptr->grp_cpus at this
+		 * time because we don't have access to a CPU count for the job
+		 * due to how all of the job's specifications interact */
 
-	/* if the association limits have changed since job
-	 * submission and job can not run, then kill it */
-	if ((assoc_ptr->max_wall_pj != NO_VAL) &&
-	    (assoc_ptr->max_wall_pj != INFINITE)) {
-		time_limit = assoc_ptr->max_wall_pj;
-		if ((job_ptr->time_limit != NO_VAL) &&
-		    (job_ptr->time_limit > time_limit)) {
-			info("job %u being cancelled, time limit exceeds "
-			     "account max (%u > %u)",
-			     job_ptr->job_id, job_ptr->time_limit, time_limit);
-			_cancel_job(job_ptr);
+		if ((assoc_ptr->grp_jobs != NO_VAL) &&
+		    (assoc_ptr->grp_jobs != INFINITE) &&
+		    (assoc_ptr->used_jobs >= assoc_ptr->grp_jobs)) {
+			job_ptr->state_reason = WAIT_ASSOC_LIMIT;
 			return false;
 		}
-	}
+		
+		if ((assoc_ptr->grp_nodes != NO_VAL) &&
+		    (assoc_ptr->grp_nodes != INFINITE)) {
+			if (job_ptr->details->min_nodes > 
+			    assoc_ptr->grp_nodes) {
+				info("job %u being cancelled, "
+				     "min node request exceeds "
+				     "account (%s) group max nodes limit "
+				     "(%u > %u)",
+				     job_ptr->job_id, 
+				     assoc_ptr->acct,
+				     job_ptr->details->min_nodes, 
+				     assoc_ptr->grp_nodes);
+				_cancel_job(job_ptr);
+			} else if ((assoc_ptr->grp_used_nodes + 
+				    job_ptr->details->min_nodes) > 
+				   assoc_ptr->grp_nodes) {
+				job_ptr->state_reason = WAIT_ASSOC_LIMIT;
+				return false;
+			}
+		}
+		/* we don't need to check submit_jobs here */
+		
+		/* NOTE: We can't enforce assoc_ptr->grp_wall at this
+		 * time because we aren't keeping track of how long
+		 * jobs have been running yet 
+		 */
 
-	if ((assoc_ptr->max_nodes_pj != NO_VAL) &&
-	    (assoc_ptr->max_nodes_pj != INFINITE)) {
-		if (job_ptr->details->min_nodes > 
-		    assoc_ptr->max_nodes_pj) {
-			info("job %u being cancelled,  min node limit exceeds "
-			     "account max (%u > %u)",
-			     job_ptr->job_id, job_ptr->details->min_nodes, 
-			     assoc_ptr->max_nodes_pj);
-			_cancel_job(job_ptr);
+		
+		/* We don't need to look at the regular limits for
+		 * parents since we have pre-propogated them, so just
+		 * continue with the next parent
+		 */
+		if(parent) {
+			assoc_ptr = assoc_ptr->parent_assoc_ptr;
+			continue;
+		} 
+		
+		/* NOTE: We can't enforce assoc_ptr->max_cpu_mins_pj at this
+		 * time because we don't have access to a CPU count for the job
+		 * due to how all of the job's specifications interact */
+		
+		/* NOTE: We can't enforce assoc_ptr->max_cpus at this
+		 * time because we don't have access to a CPU count for the job
+		 * due to how all of the job's specifications interact */
+
+		if ((assoc_ptr->max_jobs != NO_VAL) &&
+		    (assoc_ptr->max_jobs != INFINITE) &&
+		    (assoc_ptr->used_jobs >= assoc_ptr->max_jobs)) {
+			job_ptr->state_reason = WAIT_ASSOC_LIMIT;
 			return false;
 		}
-	}
+		
+		if ((assoc_ptr->max_nodes_pj != NO_VAL) &&
+		    (assoc_ptr->max_nodes_pj != INFINITE)) {
+			if (job_ptr->details->min_nodes > 
+			    assoc_ptr->max_nodes_pj) {
+				info("job %u being cancelled, "
+				     "min node limit exceeds "
+				     "max (%u > %u)",
+				     job_ptr->job_id,
+				     job_ptr->details->min_nodes, 
+				     assoc_ptr->max_nodes_pj);
+				_cancel_job(job_ptr);
+				return false;
+			}
+		}
 
-	/* NOTE: We can't enforce assoc_ptr->max_cpu_mins_pj at this
-	 * time because we don't have access to a CPU count for the job
-	 * due to how all of the job's specifications interact */
+		/* if the association limits have changed since job
+		 * submission and job can not run, then kill it */
+		if ((assoc_ptr->max_wall_pj != NO_VAL) &&
+		    (assoc_ptr->max_wall_pj != INFINITE)) {
+			time_limit = assoc_ptr->max_wall_pj;
+			if ((job_ptr->time_limit != NO_VAL) &&
+			    (job_ptr->time_limit > time_limit)) {
+				info("job %u being cancelled, "
+				     "time limit exceeds max (%u > %u)",
+				     job_ptr->job_id, job_ptr->time_limit, 
+				     time_limit);
+				_cancel_job(job_ptr);
+				return false;
+			}
+		}		
+	
+		assoc_ptr = assoc_ptr->parent_assoc_ptr;
+		parent = 1;
+	}
 
 	return true;
 }

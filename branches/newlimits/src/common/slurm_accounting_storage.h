@@ -165,24 +165,20 @@ typedef struct acct_association_rec {
 				      * (DON'T PACK) */
 	uint32_t grp_used_cpus; /* count of active jobs in the group
 				 * (DON'T PACK) */
-	uint32_t grp_used_jobs; /* count of active jobs in the group
-				 * (DON'T PACK) */
 	uint32_t grp_used_nodes; /* count of active jobs in the group
 				  * (DON'T PACK) */
-	uint32_t grp_used_submit_jobs; /* count of jobs pending or
-					* running in the group  
-					* (DON'T PACK) */
-	uint32_t grp_used_max_wall; /* group count of time used in
+	uint32_t grp_used_wall; /* group count of time used in
 				     * running jobs (DON'T PACK) */
 	
 	uint32_t id;		/* id identifing a combination of
 				 * user-account-cluster(-partition) */
+
+	uint32_t level_shares;  /* number of shares on this level of
+				 * the tree (DON'T PACK) */
+	
 	uint32_t lft;		/* lft used for grouping sub
 				 * associations and jobs as a left
 				 * most container used with rgt */
-	
-	uint32_t level_shares;  /* number of shares on this level of
-				 * the tree (DON'T PACK) */
 	
 	uint64_t max_cpu_mins_pj; /* max number of cpu seconds this 
 				   * association can have per job */

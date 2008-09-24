@@ -857,7 +857,7 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 		slurm_addto_char_list(format_list, "A,D,O");
 		if(acct_cond->with_assocs)
 			slurm_addto_char_list(format_list,
-					      "Cl,ParentN,U,F,MaxCPUM,MaxCPUs,"
+					      "Cl,ParentN,U,F,GrpJ,GrpN,GrpS,"
 					      "MaxJ,MaxN,MaxS,MaxW,QOS");
 			
 		if(acct_cond->with_coords)
