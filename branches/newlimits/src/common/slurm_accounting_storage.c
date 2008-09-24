@@ -612,8 +612,9 @@ extern void destroy_acct_update_object(void *object)
 		(acct_update_object_t *) object;
 
 	if(acct_update) {
-		if(acct_update->objects)
+		if(acct_update->objects) 
 			list_destroy(acct_update->objects);
+		
 		xfree(acct_update);
 	}
 }
@@ -1623,7 +1624,7 @@ extern int unpack_acct_association_rec(void **object, uint16_t rpc_version,
 
 		safe_unpackstr_xmalloc(&object_ptr->user, &uint32_tmp, buffer);
 	}
-	//log_assoc_rec(object_ptr);
+
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -3808,41 +3809,143 @@ extern acct_admin_level_t str_2_acct_admin_level(char *level)
 	}	
 }
 
-extern void log_assoc_rec(acct_association_rec_t *assoc_ptr)
+extern char *get_qos_complete_str(List qos_list, List num_qos_list)
 {
-	debug2("association rec id          : %u", assoc_ptr->id);
-	debug2("  acct                      : %s", assoc_ptr->acct);
-	debug2("  cluster                   : %s", assoc_ptr->cluster);
+	List temp_list = NULL;
+	char *temp_char = NULL;
+	char *print_this = NULL;
+	ListIterator itr = NULL;
+
+	if(!qos_list || !list_count(qos_list)
+	   || !num_qos_list || !list_count(num_qos_list))
+		return xstrdup("");
+
+	temp_list = list_create(NULL);
+
+	itr = list_iterator_create(num_qos_list);
+	while((temp_char = list_next(itr))) {
+		temp_char = acct_qos_str(qos_list, atoi(temp_char));
+		if(temp_char)
+			list_append(temp_list, temp_char);
+	}
+	list_iterator_destroy(itr);
+	list_sort(temp_list, (ListCmpF)slurm_sort_char_list_asc);
+	itr = list_iterator_create(temp_list);
+	while((temp_char = list_next(itr))) {
+		if(print_this) 
+			xstrfmtcat(print_this, ",%s", temp_char);
+		else 
+			print_this = xstrdup(temp_char);
+	}
+	list_iterator_destroy(itr);
+	list_destroy(temp_list);
+
+	if(!print_this)
+		return xstrdup("");
+
+	return print_this;
+}
+
+
+extern void log_assoc_rec(acct_association_rec_t *assoc_ptr, List qos_list)
+{
+	debug2("association rec id : %u", assoc_ptr->id);
+	debug2("  acct             : %s", assoc_ptr->acct);
+	debug2("  cluster          : %s", assoc_ptr->cluster);
+
 	if(assoc_ptr->fairshare == INFINITE)
-		debug2("  fairshare                 : NONE");
-	else
-		debug2("  fairshare                 : %u",
-		       assoc_ptr->fairshare);
+		debug2("  Fairshare        : NONE");
+	else if(assoc_ptr->fairshare != NO_VAL) 
+		debug2("  Fairshare        : %u", assoc_ptr->fairshare);
+
+	if(assoc_ptr->grp_cpu_hours == INFINITE)
+		debug2("  GrpCPUHours      : NONE");
+	else if(assoc_ptr->grp_cpu_hours != NO_VAL) 
+		debug2("  GrpCPUHours      : %llu", assoc_ptr->grp_cpu_hours);
+		
+	if(assoc_ptr->grp_cpus == INFINITE)
+		debug2("  GrpCPUs          : NONE");
+	else if(assoc_ptr->grp_cpus != NO_VAL) 
+		debug2("  GrpCPUs          : %u", assoc_ptr->grp_cpus);
+				
+	if(assoc_ptr->grp_jobs == INFINITE) 
+		debug2("  GrpJobs          : NONE");
+	else if(assoc_ptr->grp_jobs != NO_VAL) 
+		debug2("  GrpJobs          : %u", assoc_ptr->grp_jobs);
+		
+	if(assoc_ptr->grp_nodes == INFINITE)
+		debug2("  GrpNodes         : NONE");
+	else if(assoc_ptr->grp_nodes != NO_VAL)
+		debug2("  GrpNodes         : %u", assoc_ptr->grp_nodes);
+		
+	if(assoc_ptr->grp_submit_jobs == INFINITE) 
+		debug2("  GrpSubmitJobs    : NONE");
+	else if(assoc_ptr->grp_submit_jobs != NO_VAL) 
+		debug2("  GrpSubmitJobs    : %u", assoc_ptr->grp_submit_jobs);
+		
+	if(assoc_ptr->grp_wall == INFINITE) 
+		debug2("  GrpWall          : NONE");		
+	else if(assoc_ptr->grp_wall != NO_VAL) {
+		char time_buf[32];
+		mins2time_str((time_t) assoc_ptr->grp_wall, 
+			      time_buf, sizeof(time_buf));
+		debug2("  GrpWall          : %s", time_buf);
+	}
+
 	if(assoc_ptr->max_cpu_mins_pj == INFINITE)
-		debug2("  max_cpu_mins_per_job      : NONE");
-	else
-		debug2("  max_cpu_mins_per_job      : %d",
-		       assoc_ptr->max_cpu_mins_pj);
-	if(assoc_ptr->max_jobs == INFINITE)
-		debug2("  max_jobs                  : NONE");
-	else
-		debug2("  max_jobs                  : %u", assoc_ptr->max_jobs);
+		debug2("  MaxCPUMins       : NONE");
+	else if(assoc_ptr->max_cpu_mins_pj != NO_VAL) 
+		debug2("  MaxCPUMins       : %llu", assoc_ptr->max_cpu_mins_pj);
+		
+	if(assoc_ptr->max_cpus_pj == INFINITE)
+		debug2("  MaxCPUs          : NONE");
+	else if(assoc_ptr->max_cpus_pj != NO_VAL) 
+		debug2("  MaxCPUs          : %u", assoc_ptr->max_cpus_pj);
+				
+	if(assoc_ptr->max_jobs == INFINITE) 
+		debug2("  MaxJobs          : NONE");
+	else if(assoc_ptr->max_jobs != NO_VAL) 
+		debug2("  MaxJobs          : %u", assoc_ptr->max_jobs);
+		
 	if(assoc_ptr->max_nodes_pj == INFINITE)
-		debug2("  max_nodes_per_job         : NONE");
-	else
-		debug2("  max_nodes_per_job         : %d",
-		       assoc_ptr->max_nodes_pj);
-	if(assoc_ptr->max_wall_pj == INFINITE)
-		debug2("  max_wall_duration_per_job : NONE");
-	else
-		debug2("  max_wall_duration_per_job : %d", 
-		       assoc_ptr->max_wall_pj);
-	debug2("  parent_acct               : %s", assoc_ptr->parent_acct);
-	debug2("  partition                 : %s", assoc_ptr->partition);
-	debug2("  user                      : %s(%u)",
-	       assoc_ptr->user, assoc_ptr->uid);
-	debug2("  used_jobs                 : %u", assoc_ptr->used_jobs);
-	debug2("  used_shares                : %u", assoc_ptr->used_shares);
+		debug2("  MaxNodes         : NONE");
+	else if(assoc_ptr->max_nodes_pj != NO_VAL)
+		debug2("  MaxNodes         : %u", assoc_ptr->max_nodes_pj);
+		
+	if(assoc_ptr->max_submit_jobs == INFINITE) 
+		debug2("  MaxSubmitJobs    : NONE");
+	else if(assoc_ptr->max_submit_jobs != NO_VAL) 
+		debug2("  MaxSubmitJobs    : %u", assoc_ptr->max_submit_jobs);
+		
+	if(assoc_ptr->max_wall_pj == INFINITE) 
+		debug2("  MaxWall          : NONE");		
+	else if(assoc_ptr->max_wall_pj != NO_VAL) {
+		char time_buf[32];
+		mins2time_str((time_t) assoc_ptr->max_wall_pj, 
+			      time_buf, sizeof(time_buf));
+		debug2("  MaxWall          : %s", time_buf);
+	}
+
+	if(assoc_ptr->qos_list) {
+		char *temp_char = get_qos_complete_str(qos_list,
+						       assoc_ptr->qos_list);
+		if(temp_char) {		
+			debug2("  Qos              : %s", temp_char);
+			xfree(temp_char);
+		}
+	} else {
+		debug2("  Qos              : %s", "Normal");
+	}
+
+	if(assoc_ptr->parent_acct)
+		debug2("  parent_acct      : %s", assoc_ptr->parent_acct);
+	if(assoc_ptr->partition)
+		debug2("  partition        : %s", assoc_ptr->partition);
+	if(assoc_ptr->user)
+		debug2("  user             : %s(%u)",
+		       assoc_ptr->user, assoc_ptr->uid);
+	debug2("  used_jobs        : %u", assoc_ptr->used_jobs);
+	debug2("  used_shares      : %u", assoc_ptr->used_shares);
 }
 
 /*

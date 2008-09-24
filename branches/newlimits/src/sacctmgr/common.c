@@ -869,43 +869,6 @@ extern void sacctmgr_print_qos_list(print_field_t *field, List qos_list,
 	xfree(print_this);
 }
 
-extern char *get_qos_complete_str(List qos_list, List num_qos_list)
-{
-	List temp_list = NULL;
-	char *temp_char = NULL;
-	char *print_this = NULL;
-	ListIterator itr = NULL;
-
-	if(!qos_list || !list_count(qos_list)
-	   || !num_qos_list || !list_count(num_qos_list))
-		return xstrdup("");
-
-	temp_list = list_create(NULL);
-
-	itr = list_iterator_create(num_qos_list);
-	while((temp_char = list_next(itr))) {
-		temp_char = acct_qos_str(qos_list, atoi(temp_char));
-		if(temp_char)
-			list_append(temp_list, temp_char);
-	}
-	list_iterator_destroy(itr);
-	list_sort(temp_list, (ListCmpF)sort_char_list);
-	itr = list_iterator_create(temp_list);
-	while((temp_char = list_next(itr))) {
-		if(print_this) 
-			xstrfmtcat(print_this, ",%s", temp_char);
-		else 
-			print_this = xstrdup(temp_char);
-	}
-	list_iterator_destroy(itr);
-	list_destroy(temp_list);
-
-	if(!print_this)
-		return xstrdup("");
-
-	return print_this;
-}
-
 extern void sacctmgr_print_assoc_limits(acct_association_rec_t *assoc)
 {
 	if(!assoc)
@@ -1012,16 +975,3 @@ extern int sort_coord_list(acct_coord_rec_t *coord_a, acct_coord_rec_t *coord_b)
 	
 	return 0;
 }
-
-extern int sort_char_list(char *name_a, char *name_b)
-{
-	int diff = strcmp(name_a, name_b);
-
-	if (diff < 0)
-		return -1;
-	else if (diff > 0)
-		return 1;
-	
-	return 0;
-}
-

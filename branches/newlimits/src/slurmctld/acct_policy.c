@@ -98,13 +98,16 @@ static bool _valid_job_assoc(struct job_record *job_ptr)
  */
 extern void acct_policy_job_begin(struct job_record *job_ptr)
 {
-	acct_association_rec_t *assoc_ptr;
+	acct_association_rec_t *assoc_ptr = NULL, *parent_assoc_ptr = NULL;
 
 	if (!accounting_enforce || !_valid_job_assoc(job_ptr))
 		return;
 
 	assoc_ptr = job_ptr->assoc_ptr;
 	assoc_ptr->used_jobs++;
+	parent_assoc_ptr = assoc_ptr->parent_assoc_ptr;
+/* 	while(parent_assoc_ptr) { */
+/* 	if( */
 }
 
 /*

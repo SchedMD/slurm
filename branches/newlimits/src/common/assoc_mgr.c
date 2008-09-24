@@ -71,7 +71,7 @@ static int _set_assoc_parent_and_user(acct_association_rec_t *assoc,
 		ListIterator itr = list_iterator_create(assoc_list);
 		while((assoc2 = list_next(itr))) {
 			if(assoc2->id == assoc->parent_id) {
-				assoc->parent_acct_ptr = assoc2;
+				assoc->parent_assoc_ptr = assoc2;
 				break;
 			}
 		}
@@ -560,17 +560,31 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 		assoc->cluster = ret_assoc->cluster;
 	if(!assoc->partition)
 		assoc->partition = ret_assoc->partition;
-	assoc->fairshare                 = ret_assoc->fairshare;
-	assoc->max_cpu_mins_pj      = ret_assoc->max_cpu_mins_pj;
-	assoc->max_jobs                  = ret_assoc->max_jobs;
-	assoc->max_nodes_pj         = ret_assoc->max_nodes_pj;
-	assoc->max_wall_pj = ret_assoc->max_wall_pj;
-	assoc->parent_acct_ptr           = ret_assoc->parent_acct_ptr;
+
+	assoc->fairshare       = ret_assoc->fairshare;
+
+	assoc->grp_cpu_hours   = ret_assoc->grp_cpu_hours;
+	assoc->grp_cpus        = ret_assoc->grp_cpus;
+	assoc->grp_jobs        = ret_assoc->grp_jobs;
+	assoc->grp_nodes       = ret_assoc->grp_nodes;
+	assoc->grp_submit_jobs = ret_assoc->grp_submit_jobs;
+	assoc->grp_wall        = ret_assoc->grp_wall;
+
+	assoc->max_cpu_mins_pj = ret_assoc->max_cpu_mins_pj;
+	assoc->max_cpus_pj     = ret_assoc->max_cpus_pj;
+	assoc->max_jobs        = ret_assoc->max_jobs;
+	assoc->max_nodes_pj    = ret_assoc->max_nodes_pj;
+	assoc->max_submit_jobs = ret_assoc->max_submit_jobs;
+	assoc->max_wall_pj     = ret_assoc->max_wall_pj;
+
 	if(assoc->parent_acct) {
 		xfree(assoc->parent_acct);
 		assoc->parent_acct       = xstrdup(ret_assoc->parent_acct);
 	} else 
 		assoc->parent_acct       = ret_assoc->parent_acct;
+
+	assoc->parent_assoc_ptr          = ret_assoc->parent_assoc_ptr;
+
 	slurm_mutex_unlock(&local_association_lock);
 
 	return SLURM_SUCCESS;
@@ -693,8 +707,10 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 	while((object = list_pop(update->objects))) {
 		if(object->cluster && local_cluster_name) {
 			/* only update the local clusters assocs */
-			if(strcasecmp(object->cluster, local_cluster_name))
+			if(strcasecmp(object->cluster, local_cluster_name)) {
+				destroy_acct_association_rec(object);	
 				continue;
+			}
 		}
 		list_iterator_reset(itr);
 		while((rec = list_next(itr))) {
@@ -757,13 +773,11 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 			}
 
 			if(object->max_nodes_pj != NO_VAL) {
-				rec->max_nodes_pj =
-					object->max_nodes_pj;
+				rec->max_nodes_pj = object->max_nodes_pj;
 			}
 
 			if(object->max_wall_pj != NO_VAL) {
-				rec->max_wall_pj =
-					object->max_wall_pj;
+				rec->max_wall_pj = object->max_wall_pj;
 			}
 
 			if(object->max_cpu_mins_pj != NO_VAL) {
@@ -788,8 +802,10 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 				rec->qos_list = object->qos_list;
 				object->qos_list = NULL;
 			}
-
-			log_assoc_rec(rec);
+			
+			slurm_mutex_lock(&local_qos_lock);
+			log_assoc_rec(rec, local_qos_list);
+			slurm_mutex_unlock(&local_qos_lock);
 			break;
 		case ACCT_ADD_ASSOC:
 			if(rec) {
@@ -797,6 +813,7 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 				break;
 			}
 			list_append(local_association_list, object);
+			object = NULL;
 			parents_changed = 1; // set since we need to
 					     // set the parent
 			break;
@@ -812,11 +829,10 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 		default:
 			break;
 		}
-		if(update->type != ACCT_ADD_ASSOC) {
-			destroy_acct_association_rec(object);			
-		}				
+		
+		destroy_acct_association_rec(object);			
 	}
-
+		
 	/* We have to do this after the entire list is processed since
 	 * we may have added the parent which wasn't in the list before
 	 */
@@ -850,10 +866,10 @@ extern int assoc_mgr_update_local_users(acct_update_object_t *update)
 	while((object = list_pop(update->objects))) {
 		list_iterator_reset(itr);
 		while((rec = list_next(itr))) {
-			if(!strcasecmp(object->name, rec->name)) {
+			if(!strcasecmp(object->name, rec->name)) 
 				break;
-			}
 		}
+
 		//info("%d user %s", update->type, object->name);
 		switch(update->type) {
 		case ACCT_MODIFY_USER:
@@ -885,6 +901,7 @@ extern int assoc_mgr_update_local_users(acct_update_object_t *update)
 			} else
 				object->uid = pw_uid;
 			list_append(local_user_list, object);
+			object = NULL;
 			break;
 		case ACCT_REMOVE_USER:
 			if(!rec) {
@@ -914,9 +931,8 @@ extern int assoc_mgr_update_local_users(acct_update_object_t *update)
 		default:
 			break;
 		}
-		if(update->type != ACCT_ADD_USER) {
-			destroy_acct_user_rec(object);			
-		}
+		
+		destroy_acct_user_rec(object);			
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&local_user_lock);
@@ -1037,8 +1053,8 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 
 	if(local_association_list) {
 		memset(&msg, 0, sizeof(dbd_list_msg_t));
-		msg.my_list = local_association_list;
 		slurm_mutex_lock(&local_association_lock);
+		msg.my_list = local_association_list;
 		/* let us know what to unpack */
 		pack16(DBD_ADD_ASSOCS, buffer);
 		slurmdbd_pack_list_msg(SLURMDBD_VERSION, 
@@ -1048,8 +1064,8 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 	
 	if(local_user_list) {
 		memset(&msg, 0, sizeof(dbd_list_msg_t));
-		msg.my_list = local_user_list;
 		slurm_mutex_lock(&local_user_lock);
+		msg.my_list = local_user_list;
 		/* let us know what to unpack */
 		pack16(DBD_ADD_USERS, buffer);
 		slurmdbd_pack_list_msg(SLURMDBD_VERSION, 
@@ -1059,8 +1075,8 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 
 	if(local_qos_list) {		
 		memset(&msg, 0, sizeof(dbd_list_msg_t));
-		msg.my_list = local_qos_list;
 		slurm_mutex_lock(&local_qos_lock);
+		msg.my_list = local_qos_list;
 		/* let us know what to unpack */
 		pack16(DBD_ADD_QOS, buffer);
 		slurmdbd_pack_list_msg(SLURMDBD_VERSION, 

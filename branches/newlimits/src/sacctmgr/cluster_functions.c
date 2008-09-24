@@ -714,39 +714,9 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 	}
 
 	printf(" Setting\n");
-	if(rec_set) 
+	if(rec_set) {
 		printf(" Default Limits =\n");
-
-	if(assoc->fairshare == INFINITE)
-		printf("  Fairshare     = NONE\n");
-	else if(assoc->fairshare != NO_VAL) 
-		printf("  Fairshare     = %u\n", assoc->fairshare);
-		
-	if(assoc->max_cpu_mins_pj == INFINITE)
-		printf("  MaxCPUMins    = NONE\n");
-	else if(assoc->max_cpu_mins_pj != NO_VAL) 
-		printf("  MaxCPUMins    = %llu\n",
-		       assoc->max_cpu_mins_pj);
-		
-	if(assoc->max_jobs == INFINITE) 
-		printf("  MaxJobs       = NONE\n");
-	else if(assoc->max_jobs != NO_VAL) 
-		printf("  MaxJobs       = %u\n", assoc->max_jobs);
-		
-	if(assoc->max_nodes_pj == INFINITE)
-		printf("  MaxNodes      = NONE\n");
-	else if(assoc->max_nodes_pj != NO_VAL)
-		printf("  MaxNodes      = %u\n",
-		       assoc->max_nodes_pj);
-		
-	if(assoc->max_wall_pj == INFINITE) 
-		printf("  MaxWall       = NONE\n");		
-	else if(assoc->max_wall_pj != NO_VAL) {
-		char time_buf[32];
-		mins2time_str((time_t) 
-			      assoc->max_wall_pj, 
-			      time_buf, sizeof(time_buf));
-		printf("  MaxWall       = %s\n", time_buf);
+		sacctmgr_print_assoc_limits(assoc);
 	}
 
 	list_append(assoc_cond->acct_list, "root");

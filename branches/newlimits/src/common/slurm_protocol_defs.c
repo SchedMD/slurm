@@ -188,6 +188,30 @@ extern int slurm_addto_char_list(List char_list, char *names)
 	return count;
 } 
 
+extern int slurm_sort_char_list_asc(char *name_a, char *name_b)
+{
+	int diff = strcmp(name_a, name_b);
+
+	if (diff < 0)
+		return -1;
+	else if (diff > 0)
+		return 1;
+	
+	return 0;
+}
+
+extern int slurm_sort_char_list_desc(char *name_a, char *name_b)
+{
+	int diff = strcmp(name_a, name_b);
+
+	if (diff > 0)
+		return -1;
+	else if (diff < 0)
+		return 1;
+	
+	return 0;
+}
+
 void slurm_free_last_update_msg(last_update_msg_t * msg)
 {
 	xfree(msg);

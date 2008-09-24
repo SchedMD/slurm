@@ -198,7 +198,7 @@ typedef struct acct_association_rec {
 			       * association can run a job */
 	
 	char *parent_acct;	/* name of parent account */
-	struct acct_association_rec *parent_acct_ptr;	/* ptr to parent acct
+	struct acct_association_rec *parent_assoc_ptr;	/* ptr to parent acct
 							 * set in
 							 * slurmctld 
 							 * (DON'T PACK) */
@@ -438,7 +438,9 @@ extern uint32_t str_2_acct_qos(List qos_list, char *level);
 extern char *acct_admin_level_str(acct_admin_level_t level);
 extern acct_admin_level_t str_2_acct_admin_level(char *level);
 
-extern void log_assoc_rec(acct_association_rec_t *assoc_ptr);
+extern char *get_qos_complete_str(List qos_list, List num_qos_list);
+
+extern void log_assoc_rec(acct_association_rec_t *assoc_ptr, List qos_list);
 
 extern int slurm_acct_storage_init(char *loc); /* load the plugin */
 extern int slurm_acct_storage_fini(void); /* unload the plugin */

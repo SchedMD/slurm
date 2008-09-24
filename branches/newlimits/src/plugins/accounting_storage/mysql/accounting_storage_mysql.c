@@ -114,6 +114,12 @@ char *user_table = "user_table";
 char *last_ran_table = "last_ran_table";
 char *suspend_table = "suspend_table";
 
+typedef enum {
+	QOS_LEVEL_NONE,
+	QOS_LEVEL_SET,
+	QOS_LEVEL_MODIFY
+} qos_level_t;
+
 static int normal_qos_id = NO_VAL;
 
 extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit);
@@ -160,7 +166,8 @@ static int _check_connection(mysql_conn_t *mysql_conn)
 
 static int _setup_association_limits(acct_association_rec_t *assoc,
 				     char **cols, char **vals,
-				     char **extra, bool get_qos)
+				     char **extra, qos_level_t qos_level,
+				     bool get_fs)
 {	
 	if(!assoc)
 		return SLURM_ERROR;
@@ -169,15 +176,11 @@ static int _setup_association_limits(acct_association_rec_t *assoc,
 		xstrcat(*cols, ", fairshare");
 		xstrfmtcat(*vals, ", %u", assoc->fairshare);
 		xstrfmtcat(*extra, ", fairshare=%u", assoc->fairshare);
-	} else if ((int)assoc->fairshare == INFINITE) {
-		xstrcat(*cols, ", fairshare");
-		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", fairshare=NULL");		
-	} else {
+	} else if (((int)assoc->fairshare == INFINITE) || get_fs) {
 		xstrcat(*cols, ", fairshare");
 		xstrcat(*vals, ", 1");
 		xstrcat(*extra, ", fairshare=1");		
-	}
+	} 
 
 	if((int)assoc->grp_cpu_hours >= 0) {
 		xstrcat(*cols, ", grp_cpu_hours");
@@ -309,22 +312,24 @@ static int _setup_association_limits(acct_association_rec_t *assoc,
 		xstrcat(*extra, ", max_wall_duration_per_job=NULL");
 	}
 
-	if(assoc->qos_list && list_count(assoc->qos_list)) {
+	if((qos_level != QOS_LEVEL_MODIFY)
+	   && assoc->qos_list && list_count(assoc->qos_list)) {
 		char *qos_val = NULL;
 		char *tmp_char = NULL;
-		ListIterator qos_itr = list_iterator_create(assoc->qos_list);
-			
+		ListIterator qos_itr = 
+			list_iterator_create(assoc->qos_list);
+		
 		xstrcat(*cols, ", qos");
-			
+		
 		while((tmp_char = list_next(qos_itr))) 
 			xstrfmtcat(qos_val, ",%s", tmp_char);
-			
+		
 		list_iterator_destroy(qos_itr);
-			
+		
 		xstrfmtcat(*vals, ", '%s'", qos_val); 		
 		xstrfmtcat(*extra, ", qos='%s'", qos_val); 
 		xfree(qos_val);
-	} else if(get_qos && normal_qos_id != NO_VAL) { 
+	} else if((qos_level == QOS_LEVEL_SET) && (normal_qos_id != NO_VAL)) { 
 		/* Add normal qos to the account */
 		xstrcat(*cols, ", qos");
 		xstrfmtcat(*vals, ", ',%d'", normal_qos_id);
@@ -2697,7 +2702,8 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrfmtcat(extra, ", mod_time=%d", now);
 		if(object->root_assoc)
 			_setup_association_limits(object->root_assoc, &cols, 
-						  &vals, &extra, 1);
+						  &vals, &extra,
+						  QOS_LEVEL_SET, 1);
 		xstrfmtcat(query, 
 			   "insert into %s (creation_time, mod_time, name) "
 			   "values (%d, %d, '%s') "
@@ -2905,7 +2911,8 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 			xstrfmtcat(update, " && partition='%s'", part);
 		}
 
-		_setup_association_limits(object, &cols, &vals, &extra, 1);
+		_setup_association_limits(object, &cols, &vals, &extra, 
+					  QOS_LEVEL_NONE, 1);
 
 		for(i=0; i<MASSOC_COUNT; i++) {
 			if(i) 
@@ -3750,6 +3757,7 @@ extern List acct_storage_p_modify_associations(
 	MYSQL_ROW row;
 	acct_user_rec_t user;
 	int replace_qos = 0;
+	char *tmp_char1=NULL, *tmp_char2=NULL;
 
 	char *massoc_req_inx[] = {
 		"id",
@@ -3835,47 +3843,10 @@ extern List acct_storage_p_modify_associations(
 		xstrcat(extra, " && user != '' ");
 	}
 
-	if((int)assoc->fairshare >= 0) 
-		xstrfmtcat(vals, ", fairshare=%u", assoc->fairshare);
-	else if((int)assoc->fairshare == INFINITE) {
-		xstrfmtcat(vals, ", fairshare=1");
-		assoc->fairshare = 1;
-	}
-	if((int)assoc->max_cpu_mins_pj >= 0) 
-		xstrfmtcat(vals, ", max_cpu_mins_per_job=%u",
-			   assoc->max_cpu_mins_pj);
-	else if((int)assoc->max_cpu_mins_pj == INFINITE) {
-		xstrfmtcat(vals, ", max_cpu_mins_per_job=NULL");
-	}
-	if((int)assoc->max_cpus_pj >= 0) 
-		xstrfmtcat(vals, ", max_cpus_per_job=%u",
-			   assoc->max_cpus_pj);
-	else if((int)assoc->max_cpus_pj == INFINITE) {
-		xstrfmtcat(vals, ", max_cpus_per_job=NULL");
-	}
-	if((int)assoc->max_jobs >= 0) 
-		xstrfmtcat(vals, ", max_jobs=%u", assoc->max_jobs);
-	else if((int)assoc->max_jobs == INFINITE) {
-		xstrfmtcat(vals, ", max_jobs=NULL");
-	}
-	if((int)assoc->max_nodes_pj >= 0) 
-		xstrfmtcat(vals, ", max_nodes_per_job=%u",
-			   assoc->max_nodes_pj);
-	else if((int)assoc->max_nodes_pj == INFINITE) {
-		xstrfmtcat(vals, ", max_nodes_per_job=NULL");
-	}
-	if((int)assoc->max_submit_jobs >= 0) 
-		xstrfmtcat(vals, ", max_submit_jobs=%u",
-			   assoc->max_submit_jobs);
-	else if((int)assoc->max_submit_jobs == INFINITE) {
-		xstrfmtcat(vals, ", max_submit_jobs=NULL");
-	}
-	if((int)assoc->max_wall_pj >= 0) 
-		xstrfmtcat(vals, ", max_wall_duration_per_job=%u",
-			   assoc->max_wall_pj);
-	else if((int)assoc->max_wall_pj == INFINITE) {
-		xstrfmtcat(vals, ", max_wall_duration_per_job=NULL");
-	}
+	_setup_association_limits(assoc, &tmp_char1, &tmp_char2,
+				  &vals, QOS_LEVEL_MODIFY, 0);
+	xfree(tmp_char1);
+	xfree(tmp_char2);
 
 	if(assoc->qos_list && list_count(assoc->qos_list)) {
 		char *tmp_qos = NULL;
@@ -4080,6 +4051,7 @@ extern List acct_storage_p_modify_associations(
 		mod_assoc->max_nodes_pj = assoc->max_nodes_pj;
 		mod_assoc->max_submit_jobs = assoc->max_submit_jobs;
 		mod_assoc->max_wall_pj = assoc->max_wall_pj;
+
 		if(!row[MASSOC_USER][0])
 			mod_assoc->parent_acct = xstrdup(assoc->parent_acct);
 		if(assoc->qos_list) {
@@ -4098,7 +4070,7 @@ extern List acct_storage_p_modify_associations(
 			while((new_qos = list_next(new_qos_itr))) {
 				char *tmp_char = NULL;
 				if(new_qos[0] == '-') {
-					tmp_char = xstrdup(object+1);
+					tmp_char = xstrdup(new_qos+1);
 					while((curr_qos =
 					       list_next(curr_qos_itr))) {
 						if(!strcmp(curr_qos,
@@ -4111,7 +4083,7 @@ extern List acct_storage_p_modify_associations(
 					xfree(tmp_char);
 					list_iterator_reset(curr_qos_itr);
 				} else if(new_qos[0] == '+') {
-					tmp_char = xstrdup(object+1);
+					tmp_char = xstrdup(new_qos+1);
 					while((curr_qos =
 					       list_next(curr_qos_itr))) {
 						if(!strcmp(curr_qos,
@@ -4127,7 +4099,7 @@ extern List acct_storage_p_modify_associations(
 					list_iterator_reset(curr_qos_itr);
 				} else {
 					list_append(mod_assoc->qos_list,
-						    xstrdup(object));
+						    xstrdup(new_qos));
 				}
 			}
 			list_iterator_destroy(curr_qos_itr);
