@@ -614,7 +614,8 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 	if (job_ptr->details->job_min_memory & MEM_PER_CPU) {
 		/* memory is per-cpu */
 		while (cpus > 0 && (req_mem * cpus) > avail_mem)
-			cpus--;		
+			cpus--;	
+	/* FIXME: do we need to recheck min_cores, etc. here? */	
 	} else {
 		/* memory is per node */
 		if (req_mem > avail_mem) {
@@ -1259,7 +1260,7 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	bitstr_t *tmpcore = NULL, *reqmap = NULL;
 	bool test_only;
 	uint32_t c, i, n, csize, total_cpus, save_mem = 0;
-
+	select_job_res_t job_res;
 	struct part_res_record *p_ptr, *jp_ptr;
 	uint16_t *cpu_count;
 
@@ -1592,19 +1593,19 @@ alloc_job:
 	}
 
 	debug3("cons_res: cr_job_test: distributing job %u", job_ptr->job_id);
-
 	/** create the struct_job_res  **/
-	select_job_res_t job_res  = create_select_job_res();
+	job_res                   = create_select_job_res();
 	job_res->node_bitmap      = bit_copy(bitmap);
 	if (job_res->node_bitmap == NULL)
 		fatal("bit_copy malloc failure");
 	job_res->nhosts           = bit_set_count(bitmap);
 	job_res->nprocs           = MAX(job_ptr->num_procs, job_res->nhosts);
 	job_res->node_req         = job_node_req;
-	
 	job_res->cpus             = cpu_count;
+	job_res->cpus_used        = xmalloc(job_res->nhosts * sizeof(uint16_t));
 	job_res->memory_allocated = xmalloc(job_res->nhosts * sizeof(uint32_t));
-	
+	job_res->memory_used      = xmalloc(job_res->nhosts * sizeof(uint32_t));
+
 	/* store the hardware data for the selected nodes */
 	error_code = build_select_job_res(job_res, node_record_table_ptr,
 					  select_fast_schedule);
@@ -1628,11 +1629,14 @@ alloc_job:
 			continue;
 		j = cr_core_bitmap_offset[n];
 		for (; j < cr_core_bitmap_offset[n+1]; j++, c++) {
-			if (bit_test(free_cores, j))
+			if (bit_test(free_cores, j)) {
+				if (c >= csize)	{
+					fatal("cons_res: cr_job_test "
+					      "core_bitmap index error");
+				}
 				bit_set(job_res->core_bitmap, c);
+			}
 		}
-		if (c > csize)
-			fatal("cons_res: cr_job_test core_bitmap index error");
 		
 		if (layout_ptr && reqmap && bit_test(reqmap, n)) {
 			job_res->cpus[i] = MIN(job_res->cpus[i],layout_ptr[ll]);
@@ -1642,7 +1646,10 @@ alloc_job:
 		total_cpus += job_res->cpus[i];
 		i++;
 	}
-	
+
+	/* translate job_res->cpus array into format with rep count */
+	build_select_job_res_cpu_array(job_res);
+
 	/* When 'srun --overcommit' is used, nprocs is set to a minimum value
 	 * in order to allocate the appropriate number of nodes based on the
 	 * job request.
@@ -1674,5 +1681,24 @@ alloc_job:
 		return error_code;
 	}
 
+	if ((cr_type != CR_CPU_MEMORY) && (cr_type != CR_CORE_MEMORY) &&
+	    (cr_type != CR_SOCKET_MEMORY) && (cr_type != CR_MEMORY))
+		return error_code;
+
+	/* load memory allocated array */
+	save_mem =job_ptr->details->job_min_memory;
+	if (save_mem & MEM_PER_CPU) {
+		/* memory is per-cpu */
+		save_mem &= (~MEM_PER_CPU);
+		for (i = 0; i < job_res->nhosts; i++) {
+			job_res->memory_allocated[i] = job_res->cpus[i] *
+						       save_mem;
+		}
+	} else {
+		/* memory is per-node */
+		for (i = 0; i < job_res->nhosts; i++) {
+			job_res->memory_allocated[i] = save_mem;
+		}
+	}
 	return error_code;
 }

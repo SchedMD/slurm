@@ -444,16 +444,14 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap)
 
 	node_cnt = bit_set_count(bitmap);
 	job_ptr->select_job = select_ptr = create_select_job_res();
-	select_ptr->core_bitmap = bit_alloc(job_ptr->total_procs);
-	select_ptr->core_bitmap_used = bit_alloc(job_ptr->total_procs);
-	select_ptr->cpu_array_reps = xmalloc(sizeof(uint32_t) * node_cnt);
-	select_ptr->cpu_array_value = xmalloc(sizeof(uint16_t) * node_cnt);
 	select_ptr->cpus = xmalloc(sizeof(uint16_t) * node_cnt);
 	select_ptr->cpus_used = xmalloc(sizeof(uint16_t) * node_cnt);
 	select_ptr->memory_allocated = xmalloc(sizeof(uint32_t) * node_cnt);
 	select_ptr->memory_used = xmalloc(sizeof(uint32_t) * node_cnt);
 	select_ptr->nhosts = node_cnt;
 	select_ptr->node_bitmap = bit_copy(bitmap);
+	if (select_ptr->node_bitmap == NULL)
+		fatal("bit_copy malloc failure");
 	select_ptr->nprocs = job_ptr->total_procs;
 	if (build_select_job_res(select_ptr, (void *)select_node_ptr,
 				 select_fast_schedule))
