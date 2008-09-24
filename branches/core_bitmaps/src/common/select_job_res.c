@@ -104,8 +104,6 @@ extern int build_select_job_res(select_job_res_t select_job_res,
 		select_job_res->sock_core_rep_count[sock_inx]++;
 		core_cnt += (cores * socks);
 	}
-	select_job_res->core_bitmap = bit_alloc(core_cnt);
-	select_job_res->core_bitmap_used = bit_alloc(core_cnt);
 	return SLURM_SUCCESS;
 }
 
