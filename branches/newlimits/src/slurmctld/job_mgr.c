@@ -1008,15 +1008,6 @@ static void _acct_add_job_submit(struct job_record *job_ptr)
 	assoc_ptr = job_ptr->assoc_ptr;
 	while(assoc_ptr) {
 		assoc_ptr->used_submit_jobs++;	
-		if(assoc_ptr->user) {
-			info("+used_submit_jobs now %u for user %s",
-			     assoc_ptr->used_submit_jobs,
-			     assoc_ptr->user);
-		} else {
-			info("+used_submit_jobs now %u for acct %s",
-			     assoc_ptr->used_submit_jobs,
-			     assoc_ptr->acct);
-		}
 		/* now handle all the group limits of the parents */
 		assoc_ptr = assoc_ptr->parent_assoc_ptr;
 	}
@@ -1038,17 +1029,7 @@ static void _acct_remove_job_submit(struct job_record *job_ptr)
 		else
 			error("_acct_remove_job_submit: "
 			      "used_submit_jobs underflow for account %s",
-				assoc_ptr->acct);
-		if(assoc_ptr->user) {
-			info("-used_submit_jobs now %u for user %s",
-			     assoc_ptr->used_submit_jobs,
-			     assoc_ptr->user);
-		} else {
-			info("-used_submit_jobs now %u for acct %s",
-			     assoc_ptr->used_submit_jobs,
-			     assoc_ptr->acct);
-		}
-	
+			      assoc_ptr->acct);
 		assoc_ptr = assoc_ptr->parent_assoc_ptr;
 	}
 }
