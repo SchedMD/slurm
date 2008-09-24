@@ -850,6 +850,8 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 {
 	acct_user_cond_t user_cond;
 	acct_user_rec_t *user = NULL;
+	sacctmgr_assoc_t *sacctmgr_assoc = NULL;
+	acct_association_rec_t *assoc = NULL;
 	acct_association_cond_t assoc_cond;
 	List assoc_list = NULL;
 	List acct_list = NULL;
@@ -858,6 +860,7 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 	char *cluster_name = NULL;
 	char *file_name = NULL;
 	char *user_name = NULL;
+	char *line = NULL;
 	int i;
 	FILE *fd = NULL;
 
@@ -960,8 +963,10 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 	if(fprintf(fd,
 		   "# To edit this file start with a cluster line "
 		   "for the new cluster\n"
-		   "# Cluster - cluster_name\n"
-		   "# Followed by Accounts you want in this fashion...\n"
+		   "# Cluster - cluster_name:MaxNodesPerJob=50\n"
+		   "# Followed by Accounts you want in this fashion "
+		   "(root is created by default)...\n"
+		   "# Parent - root\n"
 		   "# Account - cs:MaxNodesPerJob=5:MaxJobs=4:"
 		   "MaxProcSecondsPerJob=20:FairShare=399:"
 		   "MaxWallDurationPerJob=40:Description='Computer Science':"
@@ -985,11 +990,22 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 		return SLURM_ERROR;
 	}
 
-	if(fprintf(fd, "Cluster - %s\n", cluster_name) < 0) {
+	line = xstrdup_printf("Cluster - %s", cluster_name);
+
+	sacctmgr_assoc = list_peek(sacctmgr_assoc_list);
+	assoc = sacctmgr_assoc->assoc;
+	if(strcmp(assoc->acct, "root")) 
+		fprintf(stderr, "Root association not on the top it was %s\n",
+			assoc->acct);
+	else 
+		print_file_add_limits_to_line(&line, assoc);
+	
+	if(fprintf(fd, "%s\n", line) < 0) {
 		exit_code=1;
-		fprintf(stderr, "Can't write to file");
+		fprintf(stderr, " Can't write to file");
 		return SLURM_ERROR;
 	}
+	info("%s", line);
 
 	print_file_sacctmgr_assoc_list(
 		fd, sacctmgr_assoc_list, user_list, acct_list);

@@ -106,6 +106,34 @@ typedef enum {
 
 static List qos_list = NULL;
 
+static int _init_sacctmgr_file_opts(sacctmgr_file_opts_t *file_opts)
+{
+	if(!file_opts)
+		return SLURM_ERROR;
+
+	memset(file_opts, 0, sizeof(sacctmgr_file_opts_t));
+
+	file_opts->admin = ACCT_ADMIN_NOTSET;
+
+	file_opts->fairshare = 1;
+
+	file_opts->grp_cpu_hours = INFINITE;
+	file_opts->grp_cpus = INFINITE;
+	file_opts->grp_jobs = INFINITE;
+	file_opts->grp_nodes = INFINITE;
+	file_opts->grp_submit_jobs = INFINITE;
+	file_opts->grp_wall = INFINITE;
+
+	file_opts->max_cpu_mins_pj = INFINITE;
+	file_opts->max_cpus_pj = INFINITE;
+	file_opts->max_jobs = INFINITE;
+	file_opts->max_nodes_pj = INFINITE;
+	file_opts->max_submit_jobs = INFINITE;
+	file_opts->max_wall_pj = INFINITE;
+
+	return SLURM_SUCCESS;
+}
+
 static int _strip_continuation(char *buf, int len)
 {
 	char *ptr;
@@ -226,14 +254,7 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 	char *option = NULL;
 	char quote_c = '\0';
 	
-	file_opts->fairshare = 1;
-	file_opts->max_cpu_mins_pj = INFINITE;
-	file_opts->max_cpus_pj = INFINITE;
-	file_opts->max_jobs = INFINITE;
-	file_opts->max_nodes_pj = INFINITE;
-	file_opts->max_submit_jobs = INFINITE;
-	file_opts->max_wall_pj = INFINITE;
-	file_opts->admin = ACCT_ADMIN_NOTSET;
+	_init_sacctmgr_file_opts(file_opts);
 
 	while(options[i]) {
 		quote = 0;
@@ -1481,6 +1502,9 @@ static int _print_file_sacctmgr_assoc_childern(FILE *fd,
 				user_list, sacctmgr_assoc->assoc->user);
 			line = xstrdup_printf(
 				"User - %s", sacctmgr_assoc->sort_name);
+			if(sacctmgr_assoc->assoc->partition) 
+				xstrfmtcat(line, ":Partition='%s'", 
+					   sacctmgr_assoc->assoc->partition);
 			if(user_rec) {
 				xstrfmtcat(line, ":DefaultAccount='%s'",
 					   user_rec->default_acct);
@@ -1533,75 +1557,8 @@ static int _print_file_sacctmgr_assoc_childern(FILE *fd,
 					   acct_rec->organization);
 			}
 		}
-		if(sacctmgr_assoc->assoc->partition) 
-			xstrfmtcat(line, ":Partition='%s'", 
-				   sacctmgr_assoc->assoc->partition);
 			
-		if(sacctmgr_assoc->assoc->fairshare != INFINITE)
-			xstrfmtcat(line, ":Fairshare=%u", 
-				   sacctmgr_assoc->assoc->fairshare);
-		
-		if(sacctmgr_assoc->assoc->grp_cpu_hours != INFINITE)
-			xstrfmtcat(line, ":GrpCPUHours=%llu",
-				   sacctmgr_assoc->assoc->grp_cpu_hours);
-		
-		if(sacctmgr_assoc->assoc->grp_cpus != INFINITE)
-			xstrfmtcat(line, ":GrpCPUs=%u",
-				   sacctmgr_assoc->assoc->grp_cpus);
-		
-		if(sacctmgr_assoc->assoc->grp_jobs != INFINITE) 
-			xstrfmtcat(line, ":GrpJobs=%u",
-				   sacctmgr_assoc->assoc->grp_jobs);
-		
-		if(sacctmgr_assoc->assoc->grp_nodes != INFINITE)
-			xstrfmtcat(line, ":GrpNodes=%u",
-				   sacctmgr_assoc->assoc->grp_nodes);
-		
-		if(sacctmgr_assoc->assoc->grp_submit_jobs != INFINITE) 
-			xstrfmtcat(line, ":GrpSubmitJobs=%u",
-				   sacctmgr_assoc->assoc->grp_submit_jobs);
-		
-		if(sacctmgr_assoc->assoc->grp_wall != INFINITE)
- 			xstrfmtcat(line, ":GrpWall=%u",
-				   sacctmgr_assoc->assoc->grp_wall);
-
-		if(sacctmgr_assoc->assoc->max_cpu_mins_pj != INFINITE)
-			xstrfmtcat(line, ":MaxCPUMins=%llu",
-				   sacctmgr_assoc->assoc->max_cpu_mins_pj);
-		
-		if(sacctmgr_assoc->assoc->max_cpus_pj != INFINITE)
-			xstrfmtcat(line, ":MaxCPUs=%u",
-				   sacctmgr_assoc->assoc->max_cpus_pj);
-		
-		if(sacctmgr_assoc->assoc->max_jobs != INFINITE) 
-			xstrfmtcat(line, ":MaxJobs=%u",
-				   sacctmgr_assoc->assoc->max_jobs);
-		
-		if(sacctmgr_assoc->assoc->max_nodes_pj != INFINITE)
-			xstrfmtcat(line, ":MaxNodes=%u",
-				   sacctmgr_assoc->assoc->max_nodes_pj);
-		
-		if(sacctmgr_assoc->assoc->max_submit_jobs != INFINITE) 
-			xstrfmtcat(line, ":MaxSubmitJobs=%u",
-				   sacctmgr_assoc->assoc->max_submit_jobs);
-		
-		if(sacctmgr_assoc->assoc->max_wall_pj != INFINITE)
- 			xstrfmtcat(line, ":MaxWallDurationPerJob=%u",
-				   sacctmgr_assoc->assoc->max_wall_pj);
-
-		if(sacctmgr_assoc->assoc->qos_list 
-		   && list_count(sacctmgr_assoc->assoc->qos_list)) {
-			char *temp_char = NULL;
-			if(!qos_list) {
-				qos_list = acct_storage_g_get_qos(
-					db_conn, my_uid, NULL);
-			}
-			temp_char = get_qos_complete_str(
-				qos_list, sacctmgr_assoc->assoc->qos_list);
-			xstrfmtcat(line, ":QOS='%s'", temp_char);
-			xfree(temp_char);
-		}
-
+		print_file_add_limits_to_line(&line, sacctmgr_assoc->assoc);
 
 		if(fprintf(fd, "%s\n", line) < 0) {
 			exit_code=1;
@@ -1616,6 +1573,72 @@ static int _print_file_sacctmgr_assoc_childern(FILE *fd,
 
 	return SLURM_SUCCESS;
 }
+
+extern int print_file_add_limits_to_line(char **line,
+					 acct_association_rec_t *assoc)
+{
+	static List qos_list = NULL; /* This is a leak, since we never
+				      * free it, but we don't
+				      * really care since this isn't a
+				      * deamon.
+				      */
+	if(!assoc)
+		return SLURM_ERROR;
+
+	if(assoc->fairshare != INFINITE)
+		xstrfmtcat(*line, ":Fairshare=%u", assoc->fairshare);
+		
+	if(assoc->grp_cpu_hours != INFINITE)
+		xstrfmtcat(*line, ":GrpCPUHours=%llu", assoc->grp_cpu_hours);
+		
+	if(assoc->grp_cpus != INFINITE)
+		xstrfmtcat(*line, ":GrpCPUs=%u", assoc->grp_cpus);
+		
+	if(assoc->grp_jobs != INFINITE) 
+		xstrfmtcat(*line, ":GrpJobs=%u", assoc->grp_jobs);
+		
+	if(assoc->grp_nodes != INFINITE)
+		xstrfmtcat(*line, ":GrpNodes=%u", assoc->grp_nodes);
+		
+	if(assoc->grp_submit_jobs != INFINITE) 
+		xstrfmtcat(*line, ":GrpSubmitJobs=%u", assoc->grp_submit_jobs);
+		
+	if(assoc->grp_wall != INFINITE)
+		xstrfmtcat(*line, ":GrpWall=%u", assoc->grp_wall);
+
+	if(assoc->max_cpu_mins_pj != INFINITE)
+		xstrfmtcat(*line, ":MaxCPUMins=%llu", assoc->max_cpu_mins_pj);
+		
+	if(assoc->max_cpus_pj != INFINITE)
+		xstrfmtcat(*line, ":MaxCPUs=%u", assoc->max_cpus_pj);
+		
+	if(assoc->max_jobs != INFINITE) 
+		xstrfmtcat(*line, ":MaxJobs=%u", assoc->max_jobs);
+		
+	if(assoc->max_nodes_pj != INFINITE)
+		xstrfmtcat(*line, ":MaxNodes=%u", assoc->max_nodes_pj);
+		
+	if(assoc->max_submit_jobs != INFINITE) 
+		xstrfmtcat(*line, ":MaxSubmitJobs=%u", assoc->max_submit_jobs);
+		
+	if(assoc->max_wall_pj != INFINITE)
+		xstrfmtcat(*line, ":MaxWallDurationPerJob=%u",
+			   assoc->max_wall_pj);
+
+	if(assoc->qos_list && list_count(assoc->qos_list)) {
+		char *temp_char = NULL;
+		if(!qos_list) 
+			qos_list = acct_storage_g_get_qos(
+				db_conn, my_uid, NULL);
+		
+		temp_char = get_qos_complete_str(qos_list, assoc->qos_list);
+		xstrfmtcat(*line, ":QOS='%s'", temp_char);
+		xfree(temp_char);
+	}
+
+	return SLURM_SUCCESS;
+}
+
 
 extern int print_file_sacctmgr_assoc_list(FILE *fd, 
 					  List sacctmgr_assoc_list,

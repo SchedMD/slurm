@@ -192,6 +192,9 @@ extern acct_cluster_rec_t *sacctmgr_find_cluster_from_list(
 
 
 /* file_functions.c */
+extern int print_file_add_limits_to_line(char **line,
+					 acct_association_rec_t *assoc);
+
 extern int print_file_sacctmgr_assoc_list(FILE *fd, 
 					  List sacctmgr_assoc_list,
 					  List user_list,
