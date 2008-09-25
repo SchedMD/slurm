@@ -5645,7 +5645,7 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 		    (assoc_ptr->grp_nodes != INFINITE)) {
 			if (job_desc->min_nodes > assoc_ptr->grp_nodes) {
 				info("job submit for user %s(%u): "
-				     "node limit %u exceeds "
+				     "min node request %u exceeds "
 				     "group max node limit %u for account %s",
 				     user_name,
 				     job_desc->user_id, 
@@ -5702,8 +5702,8 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 				job_desc->time_limit = time_limit;
 			} else if (job_desc->time_limit > time_limit) {
 				info("job submit for user %s(%u): "
-				     "time limit %u exceeds grp time limit %u "
-				     "for account %s",
+				     "time limit %u exceeds group "
+				     "time limit %u for account %s",
 				     user_name,
 				     job_desc->user_id, 
 				     job_desc->time_limit, time_limit,
@@ -5737,7 +5737,7 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 		    (assoc_ptr->max_nodes_pj != INFINITE)) {
 			if (job_desc->min_nodes > assoc_ptr->max_nodes_pj) {
 				info("job submit for user %s(%u): "
-				     "node limit %u exceeds "
+				     "min node limit %u exceeds "
 				     "account max %u",
 				     user_name,
 				     job_desc->user_id, 
@@ -5768,7 +5768,7 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 		    (assoc_ptr->used_submit_jobs 
 		     >= assoc_ptr->max_submit_jobs)) {
 			info("job submit for user %s(%u): "
-			     "max submit job limit exceded %u",
+			     "account max submit job limit exceded %u",
 			     user_name,
 			     job_desc->user_id, 
 			     assoc_ptr->max_submit_jobs);
