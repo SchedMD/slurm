@@ -380,7 +380,7 @@ static bg_record_t *_find_matching_block(List block_list,
 	      test_only);
 		
 	itr = list_iterator_create(block_list);
-	while ((bg_record = (bg_record_t*) list_next(itr))) {		
+	while ((bg_record = list_next(itr))) {		
 		/* If test_only we want to fall through to tell the 
 		   scheduler that it is runnable just not right now. 
 		*/
@@ -636,6 +636,8 @@ static int _check_for_booted_overlapping_blocks(
 					 * bg_record
 					*/
 					list_remove(bg_record_itr);
+					slurm_mutex_lock(&block_state_mutex);
+
 					if(bg_record->original) {
 						debug3("This was a copy");
 						found_record =
@@ -651,8 +653,10 @@ static int _check_for_booted_overlapping_blocks(
 					}
 					destroy_bg_record(bg_record);
 					if(!found_record) {
-						error("1 this record wasn't "
-						      "found in the list!");
+						debug2("This record wasn't "
+						       "found in the bg_list, "
+						       "no big deal, it "
+						       "probably wasn't added");
 						//rc = SLURM_ERROR;
 					} else {
 						List temp_list =
@@ -663,6 +667,7 @@ static int _check_for_booted_overlapping_blocks(
 						free_block_list(temp_list);
 						list_destroy(temp_list);
 					}
+					slurm_mutex_unlock(&block_state_mutex);
 				} 
 				rc = 1;
 					
@@ -1228,7 +1233,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	uint16_t tmp16 = (uint16_t)NO_VAL;
 	List block_list = NULL;
 	int blocks_added = 0;
-	int starttime = time(NULL);
+	time_t starttime = time(NULL);
 	bool test_only;
 
 	if (mode == SELECT_MODE_TEST_ONLY || mode == SELECT_MODE_WILL_RUN)
@@ -1380,7 +1385,7 @@ extern int test_job_list(List req_list)
 //	uint16_t tmp16 = (uint16_t)NO_VAL;
 	List block_list = NULL;
 	int blocks_added = 0;
-	int starttime = time(NULL);
+	time_t starttime = time(NULL);
 	ListIterator itr = NULL;
 	select_will_run_t *will_run = NULL;
 
@@ -1420,10 +1425,22 @@ extern int test_job_list(List req_list)
 		
 		if(rc == SLURM_SUCCESS) {
 			if(bg_record) {
-				if(bg_record->job_ptr
-				   && bg_record->job_ptr->end_time) {
-					starttime =
-						bg_record->job_ptr->end_time;
+				/* Here we see if there is a job running since
+				 * some jobs take awhile to finish we need to
+				 * make sure the time of the end is in the
+				 * future.  If it isn't (meaning it is in the
+				 * past or current time) we add 5 seconds to
+				 * it so we don't use the block immediately.
+				 */
+				if(bg_record->job_ptr 
+				   && bg_record->job_ptr->end_time) { 
+					if(bg_record->job_ptr->end_time <= 
+					   starttime)
+						starttime += 5;
+					else {
+						starttime = bg_record->
+							    job_ptr->end_time;
+					}
 				}
 				bg_record->job_running =
 					will_run->job_ptr->job_id;
