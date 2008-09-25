@@ -1004,6 +1004,12 @@ static bool _opt_verify(void)
 	if ((opt.job_name == NULL) && (command_argc > 0))
 		opt.job_name = base_name(command_argv[0]);
 
+	if ((opt.euid != (uid_t) -1) && (opt.euid != opt.uid)) 
+		opt.uid = opt.euid;
+
+	if ((opt.egid != (gid_t) -1) && (opt.egid != opt.gid)) 
+		opt.gid = opt.egid;
+
 	if ((opt.no_shell == false) && (command_argc == 0)) {
 		/* Using default shell as the user command */
 		command_argc = 1;
@@ -1011,7 +1017,6 @@ static bool _opt_verify(void)
 		command_argv[0] = _get_shell();
 		command_argv[1] = NULL;
 	}
-
 
 	/* check for realistic arguments */
 	if (opt.nprocs <= 0) {
@@ -1057,7 +1062,8 @@ static bool _opt_verify(void)
 				info("Too few processes ((n/plane_size) %d < N %d) "
 				     "and ((N-1)*(plane_size) %d >= n %d)) ",
 				     opt.nprocs/opt.plane_size, opt.min_nodes, 
-				     (opt.min_nodes-1)*opt.plane_size, opt.nprocs);
+				     (opt.min_nodes-1)*opt.plane_size, 
+				     opt.nprocs);
 #endif
 				error("Too few processes for the requested "
 				      "{plane,node} distribution");
@@ -1139,12 +1145,6 @@ static bool _opt_verify(void)
 		if (opt.time_limit == 0)
 			opt.time_limit = INFINITE;
 	}
-
-	if ((opt.euid != (uid_t) -1) && (opt.euid != opt.uid)) 
-		opt.uid = opt.euid;
-
-	if ((opt.egid != (gid_t) -1) && (opt.egid != opt.gid)) 
-		opt.gid = opt.egid;
 
 	if (opt.immediate) {
 		char *sched_name = slurm_get_sched_type();
