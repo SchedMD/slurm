@@ -3061,7 +3061,7 @@ static int _find_yz_path(ba_node_t *ba_node, int *first,
 						port_tar = 5;
 				}
 								
-			} else {
+			} else if (count < geometry[i2]) {
 				if(conn_type == SELECT_TORUS || 
 				   (conn_type == SELECT_MESH && 
 				    (node_tar[i2] != first[i2]))) {
@@ -3088,6 +3088,11 @@ static int _find_yz_path(ba_node_t *ba_node, int *first,
 						int_wire[1].port_tar
 						= 5;
 				}
+			} else {
+				error("We were only looking for %d "
+				      "in the %d dim, but now we have %d",
+				      geometry[i2], i2, count);
+				return 0;
 			}
 		} else if(geometry[i2] == 1) {
 			/* FIX ME: This is put here because we got
