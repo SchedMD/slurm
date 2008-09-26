@@ -1484,7 +1484,7 @@ extern int step_partial_comp(step_complete_msg_t *req, int *rem,
 
 	jobacct_gather_g_aggregate(step_ptr->jobacct, req->jobacct);
 
-	if (step_ptr->exit_code == NO_VAL) {
+	if (!step_ptr->exit_node_bitmap) {
 		/* initialize the node bitmap for exited nodes */
 		nodes = bit_set_count(step_ptr->step_node_bitmap);
 		if (req->range_last >= nodes) {	/* range is zero origin */
@@ -1492,13 +1492,11 @@ extern int step_partial_comp(step_complete_msg_t *req, int *rem,
 				req->range_last, nodes);
 			return EINVAL;
 		}
-		xassert(step_ptr->exit_node_bitmap == NULL);
 		step_ptr->exit_node_bitmap = bit_alloc(nodes);
 		if (step_ptr->exit_node_bitmap == NULL)
 			fatal("bit_alloc: %m");
 		step_ptr->exit_code = req->step_rc;
 	} else {
-		xassert(step_ptr->exit_node_bitmap);
 		nodes = _bitstr_bits(step_ptr->exit_node_bitmap);
 		if (req->range_last >= nodes) {	/* range is zero origin */
 			error("step_partial_comp: last=%u, nodes=%d",
@@ -1508,8 +1506,7 @@ extern int step_partial_comp(step_complete_msg_t *req, int *rem,
 		step_ptr->exit_code = MAX(step_ptr->exit_code, req->step_rc);
 	}
 
-	bit_nset(step_ptr->exit_node_bitmap, req->range_first,
-		req->range_last);
+	bit_nset(step_ptr->exit_node_bitmap, req->range_first, req->range_last);
 	rem_nodes = bit_clear_count(step_ptr->exit_node_bitmap);
 	if (rem)
 		*rem = rem_nodes;
