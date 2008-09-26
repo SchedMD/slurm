@@ -831,10 +831,18 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 		PRINT_COORDS,
 		PRINT_DESC,
 		PRINT_FAIRSHARE,
+		PRINT_GRPCH,
+		PRINT_GRPC,
+		PRINT_GRPJ,
+		PRINT_GRPN,
+		PRINT_GRPS,
+		PRINT_GRPW,
 		PRINT_ID,
 		PRINT_MAXC,
+		PRINT_MAXCM,
 		PRINT_MAXJ,
 		PRINT_MAXN,
+		PRINT_MAXS,
 		PRINT_MAXW,
 		PRINT_ORG,
 		PRINT_QOS,
@@ -908,16 +916,51 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 			field->name = xstrdup("FairShare");
 			field->len = 9;
 			field->print_routine = print_fields_uint;
+		} else if(!strncasecmp("GrpCPUHours", object, 8)) {
+			field->type = PRINT_GRPCH;
+			field->name = xstrdup("GrpCPUHours");
+			field->len = 11;
+			field->print_routine = print_fields_uint64;
+		} else if(!strncasecmp("GrpCPUs", object, 8)) {
+			field->type = PRINT_GRPC;
+			field->name = xstrdup("GrpCPUs");
+			field->len = 8;
+			field->print_routine = print_fields_uint;
+		} else if(!strncasecmp("GrpJobs", object, 4)) {
+			field->type = PRINT_GRPJ;
+			field->name = xstrdup("GrpJobs");
+			field->len = 7;
+			field->print_routine = print_fields_uint;
+		} else if(!strncasecmp("GrpNodes", object, 4)) {
+			field->type = PRINT_GRPN;
+			field->name = xstrdup("GrpNodes");
+			field->len = 8;
+			field->print_routine = print_fields_uint;
+		} else if(!strncasecmp("GrpSubmitJobs", object, 4)) {
+			field->type = PRINT_GRPS;
+			field->name = xstrdup("GrpSubmit");
+			field->len = 9;
+			field->print_routine = print_fields_uint;
+		} else if(!strncasecmp("GrpWall", object, 4)) {
+			field->type = PRINT_GRPW;
+			field->name = xstrdup("GrpWall");
+			field->len = 11;
+			field->print_routine = print_fields_time;
 		} else if(!strncasecmp("ID", object, 1)) {
 			field->type = PRINT_ID;
 			field->name = xstrdup("ID");
 			field->len = 6;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("MaxCPUMins", object, 4)) {
-			field->type = PRINT_MAXC;
+		} else if(!strncasecmp("MaxCPUMins", object, 7)) {
+			field->type = PRINT_MAXCM;
 			field->name = xstrdup("MaxCPUMins");
 			field->len = 11;
 			field->print_routine = print_fields_uint64;
+		} else if(!strncasecmp("MaxCPUs", object, 7)) {
+			field->type = PRINT_MAXC;
+			field->name = xstrdup("MaxCPUs");
+			field->len = 8;
+			field->print_routine = print_fields_uint;
 		} else if(!strncasecmp("MaxJobs", object, 4)) {
 			field->type = PRINT_MAXJ;
 			field->name = xstrdup("MaxJobs");
@@ -927,6 +970,11 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 			field->type = PRINT_MAXN;
 			field->name = xstrdup("MaxNodes");
 			field->len = 8;
+			field->print_routine = print_fields_uint;
+		} else if(!strncasecmp("MaxSubmitJobs", object, 4)) {
+			field->type = PRINT_MAXS;
+			field->name = xstrdup("MaxSubmit");
+			field->len = 9;
 			field->print_routine = print_fields_uint;
 		} else if(!strncasecmp("MaxWall", object, 4)) {
 			field->type = PRINT_MAXW;
@@ -1042,16 +1090,66 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 							(curr_inx == 
 							 field_count));
 						break;
+					case PRINT_GRPCH:
+						field->print_routine(
+							field,
+							assoc->grp_cpu_hours,
+							(curr_inx == 
+							 field_count));
+						break;
+					case PRINT_GRPC:
+						field->print_routine(
+							field,
+							assoc->grp_cpus,
+							(curr_inx == 
+							 field_count));
+						break;
+					case PRINT_GRPJ:
+						field->print_routine(
+							field, 
+							assoc->grp_jobs,
+							(curr_inx
+							 == field_count));
+						break;
+					case PRINT_GRPN:
+						field->print_routine(
+							field,
+							assoc->grp_nodes,
+							(curr_inx
+							 == field_count));
+						break;
+					case PRINT_GRPS:
+						field->print_routine(
+							field, 
+						assoc->grp_submit_jobs,
+							(curr_inx
+							 == field_count));
+						break;
+					case PRINT_GRPW:
+						field->print_routine(
+							field,
+							assoc->grp_wall,
+							(curr_inx
+							 == field_count));
+						break;
 					case PRINT_ID:
 						field->print_routine(
 							field, assoc->id,
 							(curr_inx == 
 							 field_count));
 						break;
+					case PRINT_MAXCM:
+						field->print_routine(
+							field,
+							assoc->
+							max_cpu_mins_pj,
+							(curr_inx == 
+							 field_count));
+						break;
 					case PRINT_MAXC:
 						field->print_routine(
-							field, assoc->
-							max_cpu_mins_pj,
+							field,
+							assoc->max_cpus_pj,
 							(curr_inx == 
 							 field_count));
 						break;
@@ -1066,6 +1164,13 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 							field, assoc->
 							max_nodes_pj,
 							(curr_inx == 
+							 field_count));
+						break;
+					case PRINT_MAXS:
+						field->print_routine(
+							field, 
+							assoc->max_submit_jobs,
+							(curr_inx ==
 							 field_count));
 						break;
 					case PRINT_MAXW:
@@ -1145,15 +1250,41 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 			int curr_inx = 1;
 			while((field = list_next(itr2))) {
 				switch(field->type) {
-				case PRINT_ACCOUNT:
+					/* All the association stuff */
+				case PRINT_CLUSTER:
+				case PRINT_FAIRSHARE:
+				case PRINT_GRPCH:
+				case PRINT_GRPC:
+				case PRINT_GRPJ:
+				case PRINT_GRPN:
+				case PRINT_GRPS:
+				case PRINT_GRPW:
+				case PRINT_ID:
+				case PRINT_MAXCM:
+				case PRINT_MAXC:
+				case PRINT_MAXJ:
+				case PRINT_MAXN:
+				case PRINT_MAXS:
+				case PRINT_MAXW:
+				case PRINT_QOS_RAW:
+				case PRINT_PID:
+				case PRINT_PNAME:
+				case PRINT_PART:
+				case PRINT_USER:
 					field->print_routine(
-						field, acct->name,
+						field, NULL,
 							(curr_inx == 
 							 field_count));
 					break;
-				case PRINT_CLUSTER:
+				case PRINT_QOS:
 					field->print_routine(
 						field, NULL,
+						NULL,
+						(curr_inx == field_count));
+					break;
+				case PRINT_ACCOUNT:
+					field->print_routine(
+						field, acct->name,
 							(curr_inx == 
 							 field_count));
 					break;
@@ -1170,80 +1301,9 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 							(curr_inx == 
 							 field_count));
 					break;
-				case PRINT_FAIRSHARE:
-					field->print_routine(
-						field, NULL,
-							(curr_inx == 
-							 field_count));
-					break;
-				case PRINT_ID:
-					field->print_routine(
-						field, NULL,
-							(curr_inx == 
-							 field_count));
-					break;
-				case PRINT_MAXC:
-					field->print_routine(
-						field, NULL,
-							(curr_inx == 
-							 field_count));
-					break;
-				case PRINT_MAXJ:
-					field->print_routine(
-						field, NULL,
-							(curr_inx == 
-							 field_count));
-					break;
-				case PRINT_MAXN:
-					field->print_routine(
-						field, NULL,
-							(curr_inx == 
-							 field_count));
-					break;
-				case PRINT_MAXW:
-					field->print_routine(
-						field, NULL,
-							(curr_inx == 
-							 field_count));
-					break;
 				case PRINT_ORG:
 					field->print_routine(
 						field, acct->organization,
-							(curr_inx == 
-							 field_count));
-					break;
-				case PRINT_QOS:
-					field->print_routine(
-						field, NULL, NULL,
-						(curr_inx == field_count));
-					break;
-				case PRINT_QOS_RAW:
-					field->print_routine(
-						field,
-						NULL,
-						(curr_inx == field_count));
-						break;
-				case PRINT_PID:
-					field->print_routine(
-						field, NULL,
-							(curr_inx == 
-							 field_count));
-					break;
-				case PRINT_PNAME:
-					field->print_routine(
-						field, NULL,
-							(curr_inx == 
-							 field_count));
-					break;
-				case PRINT_PART:
-					field->print_routine(
-						field, NULL,
-							(curr_inx == 
-							 field_count));
-					break;
-				case PRINT_USER:
-					field->print_routine(
-						field, NULL,
 							(curr_inx == 
 							 field_count));
 					break;
