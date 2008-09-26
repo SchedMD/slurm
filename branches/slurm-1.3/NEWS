@@ -29,6 +29,9 @@ documents those changes that are of interest to users and admins.
  -- For use with sched/wiki2 (Moab only), set salloc's default shell based 
     upon the user who the job runs as rather than the user submitting the job 
     (user root).
+ -- Cancel a job step when one of it's nodes goes down unless the --no-kill
+    option is specified. Previously the job step would continue if the job
+    allocation was made with a --no-kill option. 
 
 * Changes in SLURM 1.3.8
 ========================
