@@ -147,8 +147,6 @@ static void _ping_handler(srun_ping_msg_t *msg)
 static void _node_fail_handler(srun_node_fail_msg_t *msg)
 {
 	error("Node failure on %s", msg->nodelist);
-	if (!opt.no_kill)
-		slurm_kill_job_step(msg->job_id, msg->step_id, SIGKILL);
 }
 
 
