@@ -1479,6 +1479,22 @@ static int _nodes_in_sets(bitstr_t *req_bitmap,
 	return error_code;
 }
 
+/* Update record of a job's allocated processors for each step */
+static void _alloc_step_cpus(struct job_record *job_ptr)
+{
+	ListIterator step_iterator;
+	struct step_record *step_ptr;
+
+	if (job_ptr->step_list == NULL)
+		return;
+
+	step_iterator = list_iterator_create(job_ptr->step_list);
+	while ((step_ptr = (struct step_record *) list_next(step_iterator))) {
+		step_alloc_lps(step_ptr);
+	}
+	list_iterator_destroy(step_iterator);
+}
+
 /*
  * build_node_details - set cpu counts and addresses for allocated nodes:
  *	cpu_count_reps, cpus_per_node, node_addr, node_cnt, num_cpu_groups
@@ -1599,6 +1615,8 @@ extern void build_node_details(struct job_record *job_ptr)
 	}
 	job_ptr->num_cpu_groups = cpu_inx + 1;
 	job_ptr->total_procs = total_procs;
+	if (job_ptr->used_lps)	/* reset counters */
+		_alloc_step_cpus(job_ptr);
 }
 
 /*
