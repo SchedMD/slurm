@@ -15,6 +15,8 @@ documents those changes that are of interest to users and admins.
     Use new "select_job" structure for the job step's memory management.
  -- Add core_bitmap_job to slurmctld's job step structure to identify
     which cores are allocated to the step.
+ -- Add new configuration option OverTimeLimit to permit jobs to exceed 
+    their (soft) time limits by a configurable amount.
 
 * Changes in SLURM 1.4.0-pre2
 =============================

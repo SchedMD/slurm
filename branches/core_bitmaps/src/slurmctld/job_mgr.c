@@ -2981,6 +2981,12 @@ void job_time_limit(void)
 	struct job_record *job_ptr;
 	time_t now = time(NULL);
 	time_t old = now - slurmctld_conf.inactive_limit;
+	time_t over_run;
+
+	if (slurmctld_conf.over_time_limit == (uint16_t) INFINITE)
+		over_run = now - (365 * 24 * 60 * 60);	/* one year */
+	else
+		over_run = now - (slurmctld_conf.over_time_limit  * 60);
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr =
@@ -3007,7 +3013,7 @@ void job_time_limit(void)
 			continue;
 		}
 		if ((job_ptr->time_limit != INFINITE)
-		    &&  (job_ptr->end_time <= now)) {
+		    &&  (job_ptr->end_time <= over_run)) {
 			last_job_update = now;
 			info("Time limit exhausted for JobId=%u",
 			     job_ptr->job_id);

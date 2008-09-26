@@ -1008,6 +1008,8 @@ typedef struct slurm_ctl_conf {
 	uint16_t msg_timeout;	/* message timeout */
 	char *node_prefix;      /* prefix of nodes in partition, only set in 
 				   bluegene clusters NULL otherwise */
+	uint16_t over_time_limit; /* job's time limit can be exceeded by this
+				   * number of minutes before cancellation */
 	char *plugindir;	/* pathname to plugins */
 	char *plugstack;        /* pathname to plugin stack config file */
 	uint16_t private_data;	/* block viewing of information, 

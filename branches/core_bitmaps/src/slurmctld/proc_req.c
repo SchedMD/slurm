@@ -411,6 +411,8 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->next_job_id         = get_next_job_id();
 	conf_ptr->node_prefix         = xstrdup(conf->node_prefix);
 
+	conf_ptr->over_time_limit     = conf->over_time_limit;
+
 	conf_ptr->plugindir           = xstrdup(conf->plugindir);
 	conf_ptr->plugstack           = xstrdup(conf->plugstack);
 	conf_ptr->private_data        = conf->private_data;

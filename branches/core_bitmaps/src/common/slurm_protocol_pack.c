@@ -2286,6 +2286,8 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	pack32(build_ptr->next_job_id, buffer);
 	packstr(build_ptr->node_prefix, buffer);
 
+	pack16(build_ptr->over_time_limit, buffer);
+
 	packstr(build_ptr->plugindir, buffer);
 	packstr(build_ptr->plugstack, buffer);
 	pack16(build_ptr->private_data, buffer);
@@ -2446,6 +2448,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 
 	safe_unpack32(&build_ptr->next_job_id, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->node_prefix, &uint32_tmp, buffer);
+
+	safe_unpack16(&build_ptr->over_time_limit, buffer);
 
 	safe_unpackstr_xmalloc(&build_ptr->plugindir, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->plugstack, &uint32_tmp, buffer);

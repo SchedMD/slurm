@@ -598,6 +598,19 @@ Currently supported versions include:
 LAM MPI and Open MPI).
 
 .TP
+\fBOverTimeLimit\fR
+Number of minutes by which a job can exceed its time limit before 
+being cancelled. 
+The configured job time limit is treated as a \fIsoft\fR limit.
+Adding \fBOverTimeLimit\fR to the \fIsoft\fR limit provides a \fIhard\fR
+limit, at which point the job is cancelled.
+This is particularly useful for backfill scheduling, which bases upon
+each job's soft time limit.
+The default value is zero.
+Man not exceed exceed 65533 minutes.
+A value of "UNLIMITED", which is represented internally as \-1.
+
+.TP
 \fBPluginDir\fR
 Identifies the places in which to look for SLURM plugins. 
 This is a colon\-separated list of directories, like the PATH 
@@ -834,7 +847,7 @@ scheduling module "sched/backfill" (see \fBSchedulerType\fR).
 .TP
 \fBSchedulerTimeSlice\fR
 Number of seconds in each time slice when \fBSchedulerType=sched/gang\fR.
-The default value is 30.
+The default value is 30 seconds.
 
 .TP
 \fBSchedulerType\fR
@@ -1260,7 +1273,7 @@ Specifies how many seconds the srun command should by default wait after
 the first task terminates before terminating all remaining tasks. The 
 "\-\-wait" option on the srun command line overrides this value. 
 If set to 0, this feature is disabled.
-May not exceed 65533.
+May not exceed 65533 seconds.
 
 .LP
 The configuration of nodes (or machines) to be managed by Slurm is 
