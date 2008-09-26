@@ -1027,9 +1027,9 @@ static void _acct_remove_job_submit(struct job_record *job_ptr)
 		if (assoc_ptr->used_submit_jobs) 
 			assoc_ptr->used_submit_jobs--;
 		else
-			error("_acct_remove_job_submit: "
-			      "used_submit_jobs underflow for account %s",
-			      assoc_ptr->acct);
+			debug2("_acct_remove_job_submit: "
+			       "used_submit_jobs underflow for account %s",
+			       assoc_ptr->acct);
 		assoc_ptr = assoc_ptr->parent_assoc_ptr;
 	}
 }
@@ -1597,7 +1597,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		slurm_sched_schedule();	/* work for external scheduler */
 	}
 
-	if (accounting_enforce)
+	if (accounting_enforce == ACCOUNTING_ENFORCE_WITH_LIMITS)
 		_acct_add_job_submit(job_ptr);
 
 	if ((error_code == ESLURM_NODES_BUSY) ||
@@ -2085,7 +2085,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	}
 	if (job_desc->account == NULL)
 		job_desc->account = xstrdup(assoc_rec.acct);
-	if (accounting_enforce &&
+	if ((accounting_enforce == ACCOUNTING_ENFORCE_WITH_LIMITS) &&
 	    (!_validate_acct_policy(job_desc, part_ptr, &assoc_rec))) {
 		info("_job_create: exceeded association's node or time limit "
 		     "for user %u", job_desc->user_id);
@@ -5055,7 +5055,7 @@ extern void job_completion_logger(struct job_record  *job_ptr)
 	int base_state;
 	xassert(job_ptr);
 
-	if (accounting_enforce)
+	if (accounting_enforce == ACCOUNTING_ENFORCE_WITH_LIMITS)
 		_acct_remove_job_submit(job_ptr);
 
 	/* make sure all parts of the job are notified */

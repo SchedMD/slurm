@@ -127,7 +127,7 @@ extern void acct_policy_job_fini(struct job_record *job_ptr)
 		if (assoc_ptr->used_jobs)
 			assoc_ptr->used_jobs--;
 		else
-			error("acct_policy_job_fini: used_jobs underflow");
+			debug2("acct_policy_job_fini: used_jobs underflow");
 		assoc_ptr = assoc_ptr->parent_assoc_ptr;
 	}
 }
@@ -147,6 +147,7 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 			 * parent or not 
 			 */
 
+	/* check to see if we are enforcing associations */
 	if (!accounting_enforce)
 		return true;
 
@@ -154,6 +155,10 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 		_cancel_job(job_ptr);
 		return false;
 	}
+
+	/* now see if we are enforcing limits */
+	if (accounting_enforce != ACCOUNTING_ENFORCE_WITH_LIMITS)
+		return true;
 
 	assoc_ptr = job_ptr->assoc_ptr;
 	while(assoc_ptr) {

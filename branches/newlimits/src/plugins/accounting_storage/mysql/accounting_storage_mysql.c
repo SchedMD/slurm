@@ -6185,11 +6185,14 @@ empty:
 			assoc->max_cpu_mins_pj = parent_mcmpj;
 
 		assoc->qos_list = list_create(slurm_destroy_char);
+
+		// do a plus 1 since a comma is the first thing there
+		// in the list
 		if(row[ASSOC_REQ_QOS][0]) 
 			slurm_addto_char_list(assoc->qos_list,
-					      row[ASSOC_REQ_QOS]);
+					      row[ASSOC_REQ_QOS]+1);
 		else if(parent_qos) 			
-			slurm_addto_char_list(assoc->qos_list, parent_qos);
+			slurm_addto_char_list(assoc->qos_list, parent_qos+1);
 		
 		/* don't do this unless this is an user association */
 		if(assoc->user && assoc->parent_id != acct_parent_id) 
