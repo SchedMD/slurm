@@ -287,10 +287,19 @@ static void _attempt_backfill(void)
 		}
 
 		/* Determine job's expected completion time */
-		if (job_ptr->time_limit == NO_VAL)
-			time_limit = part_ptr->max_time;
-		else
-			time_limit = job_ptr->time_limit;
+		if (job_ptr->time_limit == NO_VAL) {
+			if (part_ptr->max_time == INFINITE)
+				time_limit = 365 * 24 * 60; /* one year */
+			else
+				time_limit = part_ptr->max_time;
+		} else {
+			if (part_ptr->max_time == INFINITE)
+				time_limit = job_ptr->time_limit;
+			else
+				time_limit = MIN(job_ptr->time_limit,
+						 part_ptr->max_time);
+		}
+		/* Permit a bit of extra time for job clean-up */
 		end_time = (time_limit * 60) + now;
 
 		/* Identify usable nodes for this job */
