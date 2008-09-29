@@ -1199,7 +1199,15 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 				 req_nodes, mode, cr_type, job_node_req,
 				 select_node_cnt, select_part_record);
 	}
-	
+
+#if (CR_DEBUG)
+	if (job_ptr->select_job)
+		log_select_job_res(job_ptr->select_job);
+	else
+		info("no select_job_res info for job %u", 
+		     job_ptr->job_id);
+#endif
+
 	return rc;
 }
 

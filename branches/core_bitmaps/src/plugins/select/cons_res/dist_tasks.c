@@ -261,7 +261,7 @@ static void _cyclic_sync_core_bitmap(struct job_record *job_ptr)
 		cpus  = job_res->cpus[i++];
 		while (cpus > 0) {
 			uint16_t prev_cpus = cpus;
-			for (s = 0; s < sockets; s++) {
+			for (s = 0; s < sockets && cpus > 0; s++) {
 
 				while (sock_start[s] < sock_end[s] &&
 					bit_test(core_map, sock_start[s]) == 0)
