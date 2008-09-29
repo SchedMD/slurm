@@ -33,6 +33,7 @@ source ./globals
 
 set test_id     "1.43"
 set exit_code   0
+set jobs_run    0
 
 print_header $test_id
 
@@ -44,6 +45,7 @@ for {set node_cnt 1} {$node_cnt > 0} {set node_cnt [expr $node_cnt * 2]} {
 	set srun_pid [spawn $srun --test-only -N$node_cnt -t1 $bin_printenv SLURMD_NODENAME]
 	expect {
 		-re "allocation success" {
+			incr jobs_run
 			exp_continue
 		}
 		-re "allocation failure" {
@@ -64,6 +66,11 @@ for {set node_cnt 1} {$node_cnt > 0} {set node_cnt [expr $node_cnt * 2]} {
 			wait
 		}
 	}
+}
+
+if {$jobs_run == 0} {
+	send_user "\nFAILURE: No jobs run\n"
+	set exit_code 1
 }
 
 if {$exit_code == 0} {
