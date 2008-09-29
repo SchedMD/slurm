@@ -17,6 +17,8 @@ documents those changes that are of interest to users and admins.
     which cores are allocated to the step.
  -- Add new configuration option OverTimeLimit to permit jobs to exceed 
     their (soft) time limits by a configurable amount.
+ -- Remove select_g_get_job_cores(). That data is now within the slurmctld's
+    job structure.
 
 * Changes in SLURM 1.4.0-pre2
 =============================

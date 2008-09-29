@@ -714,11 +714,6 @@ extern int select_p_job_resume(struct job_record *job_ptr)
 	return ESLURM_NOT_SUPPORTED;
 }
 
-extern int select_p_get_job_cores(uint32_t job_id, int alloc_index, int s)
-{
-	return ESLURM_NOT_SUPPORTED;
-}
-
 extern int select_p_job_ready(struct job_record *job_ptr)
 {
 #ifdef HAVE_BG_FILES

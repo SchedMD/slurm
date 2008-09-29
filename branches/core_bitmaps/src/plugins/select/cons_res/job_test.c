@@ -104,6 +104,13 @@
 #include "job_test.h"
 #include "select_cons_res.h"
 
+
+/* The following variables are used to test for preemption, which
+ * requires a change to the resource selection process */
+static bool sched_gang_test = false;
+static bool sched_gang      = false;
+
+
 /* _allocate_sockets - Given the job requirements, determine which sockets
  *                     from the given node can be allocated (if any) to this
  *                     job. Returns the number of cpus that can be used by
@@ -647,6 +654,8 @@ static int _is_node_busy(struct part_res_record *p_ptr, uint32_t node_i,
 		if (sharing_only && p_ptr->num_rows < 2)
 			continue;
 		for (r = 0; r < p_ptr->num_rows; r++) {
+			if (!p_ptr->row[r].row_bitmap)
+				continue;
 			for (i = cpu_begin; i < cpu_end; i++) {
 				if (bit_test(p_ptr->row[r].row_bitmap, i))
 					return 1;
@@ -697,10 +706,26 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 			if (free_mem < min_mem)
 				goto clear_bit;
 		}
+		
+		/* sched/gang preemption test */
+		if (!sched_gang_test) {
+			char *sched_type = slurm_get_sched_type();
+			if (strcmp(sched_type, "sched/gang") == 0)
+				sched_gang = true;
+			xfree(sched_type);
+			sched_gang_test = true;
+		}
+		/* if sched/gang is configured, then preemption has been 
+		 * enabled and we cannot rule out nodes just because
+		 * Shared=NO (NODE_CR_ONE_ROW) or Shared=EXCLUSIVE
+		 * (NODE_CR_RESERVED) */
+		if (sched_gang)
+			continue;
 
 		/* exclusive node check */
 		if (select_node_record[i].node_state == NODE_CR_RESERVED) {
 			goto clear_bit;
+		
 		/* non-resource-sharing node check */
 		} else if (select_node_record[i].node_state == 
 			   NODE_CR_ONE_ROW) {
@@ -1277,7 +1302,8 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		job_ptr->details->job_min_memory = 0;
 	} else	/* SELECT_MODE_RUN_NOW || SELECT_MODE_WILL_RUN  */ 
 		test_only = false;
-
+	debug3("DEBUG: cr_job_test called with %u nodes",
+		bit_set_count(bitmap));
 	/* check node_state and update the node bitmap as necessary */
 	if (!test_only) {
 		error_code = _verify_node_state(cr_part_ptr, job_ptr, 
@@ -1297,7 +1323,8 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		job_ptr->num_procs *= MAX(1, mc_ptr->min_sockets);
 	}
 
-	debug3("cons_res: cr_job_test: evaluating job %u", job_ptr->job_id);
+	debug3("cons_res: cr_job_test: evaluating job %u on %u nodes",
+		job_ptr->job_id, bit_set_count(bitmap));
 
 	orig_map = bit_copy(bitmap);
 	avail_cores = _make_core_bitmap(bitmap);
@@ -1431,12 +1458,13 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	if (!cpu_count) {
 		/* job needs resources that are currently in use by
 		 * higher-priority jobs, so fail for now */
-		debug3("cons_res: cr_job_test: test 2 fail - too many hipri");
+		debug3("cons_res: cr_job_test: test 2 fail - "
+			"resources busy with higher priority jobs");
 		goto alloc_job;
 	}
 	xfree(cpu_count);
 	debug3("cons_res: cr_job_test: test 2 pass - "
-	       "enough priority resources");
+	       "available resources for this priority");
 
 	/*** Step 3 ***/
 	bit_copybits(bitmap, orig_map);
@@ -1468,7 +1496,7 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		goto alloc_job;
 	}
 	debug3("cons_res: cr_job_test: test 3 fail - "
-	       "no 'nuff idle in same pri");
+	       "not enough idle resources in same priority");
 	
 	
 	/*** Step 4 ***/	
@@ -1663,19 +1691,10 @@ alloc_job:
 		job_ptr->job_id, job_res->nprocs, bit_set_count(free_cores),
 		bit_set_count(job_res->core_bitmap), job_res->nhosts);
 	bit_free(free_cores);
+
 	/* distribute the tasks and clear any unused cores */
 	job_ptr->select_job = job_res;
-	if (job_ptr->details->shared == 0) {
-		/* User has specified the --exclusive switch. Nodes
-		 * need to be allocated in dedicated mode, which
-		 * means that all core bits for each allocated node
-		 * should be set. */
-		error_code = cr_exclusive_dist(job_ptr);
-	} else if (job_ptr->details->task_dist == SLURM_DIST_PLANE) {
-		error_code = cr_plane_dist(job_ptr, cr_type);
-	} else {
-		error_code = cr_dist(job_ptr, cr_type);
-	}
+	error_code = cr_dist(job_ptr, cr_type);
 	if (error_code != SLURM_SUCCESS) {
 		free_select_job_res(&job_ptr->select_job);
 		return error_code;

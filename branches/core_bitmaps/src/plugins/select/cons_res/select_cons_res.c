@@ -1185,8 +1185,8 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 
 	debug3("cons_res: select_p_job_test: job %d node_req %d, mode %d",
 	       job_ptr->job_id, job_node_req, mode);
-	debug3("cons_res: select_p_job_test: min_n %u max_n %u req_n %u",
-	       min_nodes, max_nodes, req_nodes);
+	debug3("cons_res: select_p_job_test: min_n %u max_n %u req_n %u nb %u",
+	       min_nodes, max_nodes, req_nodes, bit_set_count(bitmap));
 
 #if (CR_DEBUG)
 	_dump_state(select_part_record);
@@ -1594,11 +1594,4 @@ extern int select_p_reconfigure(void)
 	list_iterator_destroy(job_iterator);
 
 	return SLURM_SUCCESS;
-}
-
-/* FIXME: OBSOLETE NOW THAT ALLOCATION DATA IS STORED WITH JOB_RECORD */
-extern uint16_t select_p_get_job_cores(uint32_t job_id, int alloc_index, int s)
-{
-	uint16_t cpus = 0;
-	return cpus;
 }

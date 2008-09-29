@@ -58,7 +58,7 @@
  *                  job_res->cpus array is recomputed here.
  *
  */
-int _compute_c_b_task_dist(struct job_record *job_ptr)
+static int _compute_c_b_task_dist(struct job_record *job_ptr)
 {
 	bool over_subscribe = false;
 	uint32_t n, i, tid, maxtasks;
@@ -91,6 +91,61 @@ int _compute_c_b_task_dist(struct job_record *job_ptr)
 				if ((i + 1) < avail_cpus[n])
 					space_remaining = true;
 			}
+		}
+		if (!space_remaining) {
+			over_subscribe = true;
+		}
+	}
+	xfree(avail_cpus);
+	return SLURM_SUCCESS;
+}
+
+
+/* distribute blocks (planes) of tasks cyclically */
+static int _compute_plane_dist(struct job_record *job_ptr)
+{
+	bool over_subscribe = false;
+	uint32_t n, i, p, tid, maxtasks;
+	uint16_t *avail_cpus, plane_size = 1;
+	select_job_res_t job_res = job_ptr->select_job;
+	if (!job_res || !job_res->cpus) {
+		error("cons_res: _compute_plane_dist given NULL job_res");
+		return SLURM_ERROR;
+	}
+
+	maxtasks = job_res->nprocs;
+	avail_cpus = job_res->cpus;
+	
+	if (job_ptr->details && job_ptr->details->mc_ptr)
+		plane_size = job_ptr->details->mc_ptr->plane_size;
+
+	if (plane_size <= 0) {
+		error("cons_res: _compute_plane_dist received invalid plane_size");
+		return SLURM_ERROR;
+	}
+	job_res->cpus = xmalloc(job_res->nhosts * sizeof(uint16_t));
+
+	for (tid = 0, i = 0; (tid < maxtasks); i++) { /* cycle counter */
+		bool space_remaining = false;
+		if (over_subscribe) {
+			/* 'over_subscribe' is a relief valve that guards
+			 * against an infinite loop, and it *should* never
+			 * come into play because maxtasks should never be
+			 * greater than the total number of available cpus
+			 */
+			error("cons_res: _compute_plane_dist oversubscribe");
+		}
+		for (n = 0; ((n < job_res->nhosts) && (tid < maxtasks)); n++) {
+			for (p = 0; p < plane_size && (tid < maxtasks); p++) {
+				if ((job_res->cpus[n] < avail_cpus[n]) ||
+				    over_subscribe) {
+					tid++;
+					if (job_res->cpus[n] < avail_cpus[n])
+						job_res->cpus[n]++;
+				}
+			}
+			if (job_res->cpus[n] < avail_cpus[n])
+				space_remaining = true;
 		}
 		if (!space_remaining) {
 			over_subscribe = true;
@@ -274,11 +329,20 @@ extern int cr_dist(struct job_record *job_ptr,
 {
 	int error_code, cr_cpu = 1; 
 	
-	/* perform a cyclic distribution of tasks on the 'cpus' array */
-	error_code = _compute_c_b_task_dist(job_ptr);
-	if (error_code != SLURM_SUCCESS) {
-		error("cons_res: Error in _compute_c_b_task_dist from cr_dist");
-		return error_code;
+	if (job_ptr->details->task_dist == SLURM_DIST_PLANE) {
+		/* perform a plane distribution on the 'cpus' array */
+		error_code = _compute_plane_dist(job_ptr);
+		if (error_code != SLURM_SUCCESS) {
+			error("cons_res: cr_dist: Error in _compute_plane_dist");
+			return error_code;
+		}
+	} else {
+		/* perform a cyclic distribution on the 'cpus' array */
+		error_code = _compute_c_b_task_dist(job_ptr);
+		if (error_code != SLURM_SUCCESS) {
+			error("cons_res: cr_dist: Error in _compute_c_b_task_dist");
+			return error_code;
+		}
 	}
 
 	/* now sync up the core_bitmap with the allocated 'cpus' array
@@ -298,6 +362,7 @@ extern int cr_dist(struct job_record *job_ptr,
 	switch(job_ptr->details->task_dist) {
 	case SLURM_DIST_BLOCK_BLOCK:
 	case SLURM_DIST_CYCLIC_BLOCK:
+	case SLURM_DIST_PLANE:
 		_block_sync_core_bitmap(job_ptr);
 		break;
 	case SLURM_DIST_ARBITRARY:
@@ -308,111 +373,10 @@ extern int cr_dist(struct job_record *job_ptr,
 	case SLURM_DIST_UNKNOWN:
 		_cyclic_sync_core_bitmap(job_ptr); 
 		break;
-	case SLURM_DIST_PLANE:
-		fatal("cons_res: cr_dist coding error");
-		break;
 	default:
 		error("select/cons_res: invalid task_dist entry");
 		error_code = SLURM_ERROR;
 		break;
 	}
-	return SLURM_SUCCESS;
-}
-
-/* User has specified the '--exclusive' flag on the srun command line
- * which means that the job should use only dedicated nodes. In this
- * case we just need to confirm that all core bits have been set for
- * each allocated node.
- */
-extern int cr_exclusive_dist(struct job_record *job_ptr)
-{
-	uint32_t n, c, size, csize;
-	uint16_t num_bits;
-	bitstr_t *node_map, *core_map;
-
-	if (!job_ptr->select_job || !job_ptr->select_job->core_bitmap ||
-	    !job_ptr->select_job->node_bitmap) {
-	    	error("cons_res: cr_exclusive_dist given NULL job_ptr");
-		return SLURM_ERROR;
-	}
-	node_map = job_ptr->select_job->node_bitmap;
-	core_map = job_ptr->select_job->core_bitmap;
-	
-	size  = bit_size(node_map);
-	csize = bit_size(core_map);
-	for (c = 0, n = 0; n < size; n++) {
-		if (bit_test(node_map, n) == 0)
-			continue;
-		num_bits = select_node_record[n].sockets *
-				select_node_record[n].cores;
-		if ((c + num_bits) > csize)
-			fatal ("cons_res: cr_exclusive_dist index error");
-
-		for (;num_bits > 0; num_bits--) {
-			if (bit_test(core_map, c++) == 0) {
-				error("cons_res: cr_exclusive_dist clear bit");
-				return SLURM_ERROR;
-			}
-		}
-	}
-	return SLURM_SUCCESS;
-}
-
-/* FIXME! need thread support, which will depend on cr_type? */
-extern int cr_plane_dist(struct job_record *job_ptr,
-			 const select_type_plugin_info_t cr_type)
-{
-	bool over_subscribe = false;
-	uint32_t n, i, p, tid, maxtasks;
-	uint16_t *avail_cpus, plane_size = 1;
-	select_job_res_t job_res = job_ptr->select_job;
-	if (!job_res || !job_res->cpus) {
-		error("cons_res: _cr_plane_dist given NULL job_res");
-		return SLURM_ERROR;
-	}
-
-	maxtasks = job_res->nprocs;
-	avail_cpus = job_res->cpus;
-	
-	if (job_ptr->details && job_ptr->details->mc_ptr)
-		plane_size = job_ptr->details->mc_ptr->plane_size;
-
-	if (plane_size <= 0) {
-		error("cons_res: _cr_plane_dist received invalid plane_size");
-		return SLURM_ERROR;
-	}
-	job_res->cpus = xmalloc(job_res->nhosts * sizeof(uint16_t));
-
-	for (tid = 0, i = 0; (tid < maxtasks); i++) { /* cycle counter */
-		bool space_remaining = false;
-		if (over_subscribe) {
-			/* 'over_subscribe' is a relief valve that guards
-			 * against an infinite loop, and it *should* never
-			 * come into play because maxtasks should never be
-			 * greater than the total number of available cpus
-			 */
-			error("cons_res: _compute_c_b_task_dist oversubscribe");
-		}
-		for (n = 0; ((n < job_res->nhosts) && (tid < maxtasks)); n++) {
-			for (p = 0; p < plane_size && (tid < maxtasks); p++) {
-				if ((job_res->cpus[n] < avail_cpus[n]) ||
-				    over_subscribe) {
-					tid++;
-					if (job_res->cpus[n] < avail_cpus[n])
-						job_res->cpus[n]++;
-				}
-			}
-			if (job_res->cpus[n] < avail_cpus[n])
-				space_remaining = true;
-		}
-		if (!space_remaining) {
-			over_subscribe = true;
-		}
-	}
-	xfree(avail_cpus);
-
-	/* now sync up core_bitmap with 'cpus' array */
-	_block_sync_core_bitmap(job_ptr);
-
 	return SLURM_SUCCESS;
 }

@@ -237,14 +237,6 @@ extern int select_g_job_suspend(struct job_record *job_ptr);
  */
 extern int select_g_job_resume(struct job_record *job_ptr);
 
-/*
- * Get number of allocated cores per socket from a job
- * IN job_id      - identifies the job
- * IN alloc_index - allocated node index
- * IN s           - socket index
- */
-extern int select_g_get_job_cores(uint32_t job_id, int alloc_index, int s);
-
 /* allocate storage for a select job credential
  * OUT jobinfo - storage for a select job credential
  * RET         - slurm error code

@@ -1070,11 +1070,6 @@ extern int select_p_job_resume(struct job_record *job_ptr)
 	return SLURM_SUCCESS;
 }
 
-extern int select_p_get_job_cores(uint32_t job_id, int alloc_index, int s)
-{
-	return 0;
-}
-
 extern int select_p_job_ready(struct job_record *job_ptr)
 {
 	if (job_ptr->job_state != JOB_RUNNING)

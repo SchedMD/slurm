@@ -266,21 +266,6 @@ identify the nodes which were selected for this job to use.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On
 failure, the plugin should return a SLURM error code.</p>
 
-<p class="commandline">int select_p_get_job_cores (uint32_t job_id, int
-alloc_index, int s);</p>
-<p style="margin-left:.2in"><b>Description</b>: Get socket-specific core
-information from a job.</p>
-<p style="margin-left:.2in"><b>Arguments</b>:
-<span class="commandline"> job_id</span>&nbsp; &nbsp;&nbsp;(input) ID of the job
-from which to obtain the data.<br>
-<span class="commandline"> alloc_index</span>&nbsp; &nbsp;&nbsp;(input) index of
-the allocated node to the job from which to obtain the data.<br>
-<span class="commandline"> s</span>&nbsp; &nbsp;&nbsp;(input) socket index from
-which to obtain the data.</p>
-<p style="margin-left:.2in"><b>Returns</b>: the number of cores allocated to the
-given socket on the given node for the given job. On failure, the plugin should
-return zero.</p>
-
 <p class="footer"><a href="#top">top</a></p>
 
 <h3>Get/set plugin information</h3>

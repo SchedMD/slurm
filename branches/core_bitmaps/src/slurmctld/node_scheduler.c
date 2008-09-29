@@ -510,6 +510,8 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	bool runable_avail = false;	/* Job can run with available nodes */
 	bool tried_sched = false;	/* Tried to schedule with avail nodes */
 	static uint32_t cr_enabled = NO_VAL;
+	static sched_gang_test = false;
+	static sched_gang = false;
 	select_type_plugin_info_t cr_type = SELECT_TYPE_INFO_NONE; 
 	int shared = 0, select_mode;
 
@@ -592,17 +594,29 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				return ESLURM_NODES_BUSY;
 			}
 		}
-		if (shared) {
-			if (!bit_super_set(job_ptr->details->req_node_bitmap, 
-					   share_node_bitmap)) {
-				FREE_NULL_BITMAP(partially_idle_node_bitmap);
-				return ESLURM_NODES_BUSY;
-			}
-		} else {
-			if (!bit_super_set(job_ptr->details->req_node_bitmap, 
-					   idle_node_bitmap)) {
-				FREE_NULL_BITMAP(partially_idle_node_bitmap);
-				return ESLURM_NODES_BUSY;
+		/* If preemption is available via sched/gang, then
+		 * do NOT limit the set of available nodes by their
+		 * current 'sharable' or 'idle' setting */
+		if (!sched_gang_test) {
+			char *sched_type = slurm_get_sched_type();
+			if (strcmp(sched_type, "sched/gang") == 0)
+				sched_gang = true;
+			xfree(sched_type);
+			sched_gang_test = true;
+		}
+		if (!sched_gang) {
+			if (shared) {
+				if (!bit_super_set(job_ptr->details->req_node_bitmap, 
+						   share_node_bitmap)) {
+					FREE_NULL_BITMAP(partially_idle_node_bitmap);
+					return ESLURM_NODES_BUSY;
+				}
+			} else {
+				if (!bit_super_set(job_ptr->details->req_node_bitmap, 
+						   idle_node_bitmap)) {
+					FREE_NULL_BITMAP(partially_idle_node_bitmap);
+					return ESLURM_NODES_BUSY;
+				}
 			}
 		}
 
@@ -624,6 +638,9 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			max_feature = j;
 	}
 
+	debug3("_pick_best_nodes: job %u idle_nodes %u share_nodes %u",
+		job_ptr->job_id, bit_set_count(idle_node_bitmap),
+		bit_set_count(share_node_bitmap));
 	/* Accumulate resources for this job based upon its required 
 	 * features (possibly with node counts). */
 	for (j = min_feature; j <= max_feature; j++) {
@@ -646,12 +663,24 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				bit_and(node_set_ptr[i].my_bitmap,
 					partially_idle_node_bitmap);
 			}
-			if (shared) {
-				bit_and(node_set_ptr[i].my_bitmap,
-					share_node_bitmap);
-			} else {
-				bit_and(node_set_ptr[i].my_bitmap,
-					idle_node_bitmap);
+			/* If preemption is available via sched/gang, then
+			 * do NOT limit the set of available nodes by their
+			 * current 'sharable' or 'idle' setting */
+			if (!sched_gang_test) {
+				char *sched_type = slurm_get_sched_type();
+				if (strcmp(sched_type, "sched/gang") == 0)
+					sched_gang = true;
+				xfree(sched_type);
+				sched_gang_test = true;
+			}
+			if (!sched_gang) {
+				if (shared) {
+					bit_and(node_set_ptr[i].my_bitmap,
+						share_node_bitmap);
+				} else {
+					bit_and(node_set_ptr[i].my_bitmap,
+						idle_node_bitmap);
+				}
 			}
 			if (avail_bitmap)
 				bit_or(avail_bitmap, node_set_ptr[i].my_bitmap);

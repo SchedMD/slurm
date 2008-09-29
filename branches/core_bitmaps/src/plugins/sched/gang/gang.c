@@ -218,8 +218,7 @@ _get_gr_type() {
 
 static void _load_socket_cnt()
 {
-	int i, array_size = GS_CPU_ARRAY_INCREMENT;
-	uint32_t index = 0;
+	uint32_t i, index = 0, array_size = GS_CPU_ARRAY_INCREMENT;
 
 	if (gr_type != GS_SOCKET)
 		return;
@@ -274,8 +273,7 @@ static void _load_socket_cnt()
 static void
 _load_phys_res_cnt()
 {
-	int i, array_size = GS_CPU_ARRAY_INCREMENT;
-	uint32_t index = 0;
+	uint32_t i, index = 0, array_size = GS_CPU_ARRAY_INCREMENT;
 
 	xfree(gs_bits_per_node);
 	xfree(gs_bit_rep_count);
@@ -338,7 +336,7 @@ _load_phys_res_cnt()
 
 	}
 	if (gr_type == GS_SOCKET)
-		_load_socket_count();
+		_load_socket_cnt();
 }
 
 static uint16_t _get_phys_bit_cnt(int node_index)
@@ -770,7 +768,8 @@ _update_active_row(struct gs_part *p_ptr, int add_new_jobs)
 	int i;
 	struct gs_job *j_ptr;
 
-	debug3("sched/gang: update_active_row: rebuilding...");
+	debug3("sched/gang: update_active_row: rebuilding part %s...",
+		p_ptr->part_name);
 	/* rebuild the active row, starting with any shadows */
 	p_ptr->jobs_active = 0;
 	for (i = 0; p_ptr->shadow && p_ptr->shadow[i]; i++) {
@@ -869,7 +868,8 @@ _remove_job_from_part(uint32_t job_id, struct gs_part *p_ptr)
 	if (!job_id || !p_ptr)
 		return;
 
-	debug3("sched/gang: _remove_job_from_part: removing job %u", job_id);
+	debug3("sched/gang: _remove_job_from_part: removing job %u from %s",
+		job_id, p_ptr->part_name);
 	/* find the job in the job_list */
 	i = _find_job_index(p_ptr, job_id);
 	if (i < 0)
@@ -916,7 +916,8 @@ _add_job_to_part(struct gs_part *p_ptr, struct job_record *job_ptr)
 	xassert(job_ptr->select_job->node_bitmap);
 	xassert(job_ptr->select_job->core_bitmap);
 
-	debug3("sched/gang: _add_job_to_part: adding job %u", job_ptr->job_id);
+	debug3("sched/gang: _add_job_to_part: adding job %u to %s",
+		job_ptr->job_id, p_ptr->part_name);
 	_print_jobs(p_ptr);
 	
 	/* take care of any memory needs */

@@ -87,8 +87,6 @@ typedef struct slurm_select_ops {
 	int		(*job_fini)	       (struct job_record *job_ptr);
 	int		(*job_suspend)	       (struct job_record *job_ptr);
 	int		(*job_resume)	       (struct job_record *job_ptr);
-	int		(*get_job_cores)       (uint32_t job_id,
-						int alloc_index, int s);
 	int		(*pack_node_info)      (time_t last_query_time,
 						Buf *buffer_ptr);
         int             (*get_select_nodeinfo) (struct node_record *node_ptr,
@@ -173,7 +171,6 @@ static slurm_select_ops_t * _select_get_ops(slurm_select_context_t *c)
 		"select_p_job_fini",
 		"select_p_job_suspend",
 		"select_p_job_resume",
-		"select_p_get_job_cores",
 		"select_p_pack_node_info",
                 "select_p_get_select_nodeinfo",
                 "select_p_update_nodeinfo",
@@ -611,21 +608,6 @@ extern int select_g_job_resume(struct job_record *job_ptr)
 		return SLURM_ERROR;
 
 	return (*(g_select_context->ops.job_resume))(job_ptr);
-}
-
-/*
- * Get job core info. Executed from sched/gang.
- * IN job_id      - id of job from which to obtain data
- * IN alloc_index - allocated node index
- * IN s           - socket index
- * RET number of allocated cores on the given socket from the given node
- */
-extern int select_g_get_job_cores(uint32_t job_id, int alloc_index, int s)
-{
-	if (slurm_select_init() < 0)
-		return 0;
-
-	return (*(g_select_context->ops.get_job_cores))(job_id, alloc_index, s);
 }
 
 extern int select_g_pack_node_info(time_t last_query_time, Buf *buffer)

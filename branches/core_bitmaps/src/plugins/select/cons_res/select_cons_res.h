@@ -61,12 +61,15 @@
 
 /*
  * node_res_record.node_state assists with the unique state of each node.
+ * When a job is allocated, these flags provide protection for nodes in a
+ * Shared=NO or Shared=EXCLUSIVE partition from other jobs.
+ *
  * NOTES:
  * - If node is in use by Shared=NO part, some CPUs/memory may be available
  * - Caution with NODE_CR_AVAILABLE: a Sharing partition could be full!!
  */
 enum node_cr_state {
-	NODE_CR_RESERVED = 0, /* node is NOT available for use by other jobs */
+	NODE_CR_RESERVED = 0, /* node is in use by Shared=EXCLUSIVE part */
 	NODE_CR_ONE_ROW = 1,  /* node is in use by Shared=NO part */
 	NODE_CR_AVAILABLE = 2 /* The node may be IDLE or IN USE (shared) */
 };
@@ -95,7 +98,7 @@ struct node_res_record {
 	uint16_t sockets;		/* count of sockets configured */
 	uint16_t cores;			/* count of cores configured */
 	uint16_t vpus;			/* count of virtual cpus (hyperthreads)
-					 * configured */
+					 * configured per core */
 	uint32_t real_memory;		/* MB of real memory configured */
 
 	enum node_cr_state node_state;	/* see node_cr_state comments */
