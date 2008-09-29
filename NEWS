@@ -37,6 +37,8 @@ documents those changes that are of interest to users and admins.
     would continue if the job allocation was made with a --no-kill option. 
  -- Fix to sched/backfill when job specifies no time limit and the partition
     time limit is INFINITE.
+ -- Validate a job's constraints (node features) at job submit or modification 
+    time.
 
 * Changes in SLURM 1.3.8
 ========================

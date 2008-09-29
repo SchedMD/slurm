@@ -3,6 +3,7 @@
  *	Note there is a global job list (job_list)
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  LLNL-CODE-402394.
@@ -67,6 +68,9 @@
 #define MAX_RETRIES 10
 
 static void _depend_list_del(void *dep_ptr);
+static void _feature_list_delete(void *x);
+static int  _valid_feature_list(uint32_t job_id, List feature_list);
+static int  _valid_node_feature(char *feature);
 static char **_xduparray(uint16_t size, char ** array);
 
 
@@ -987,4 +991,187 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 		return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 	}
 
+}
+
+/*
+ * build_feature_list - Translate a job's feature string into a feature_list
+ * IN  details->features
+ * OUT details->feature_list
+ * RET error code
+ */
+extern int build_feature_list(struct job_record *job_ptr)
+{
+	struct job_details *detail_ptr = job_ptr->details;
+	char *tmp_requested, *str_ptr1, *str_ptr2, *feature = NULL;
+	int bracket = 0, count = 0, i;
+	bool have_count = false, have_or = false;
+	struct feature_record *feat;
+
+	if (detail_ptr->features == NULL)	/* no constraints */
+		return SLURM_SUCCESS;
+	if (detail_ptr->feature_list)		/* already processed */
+		return SLURM_SUCCESS;
+
+	tmp_requested = xstrdup(detail_ptr->features);
+	str_ptr1 = tmp_requested;
+	detail_ptr->feature_list = list_create(_feature_list_delete);
+	for (i=0; ; i++) {
+		if (tmp_requested[i] == '*') {
+			tmp_requested[i] = '\0';
+			have_count = true;
+			count = strtol(&tmp_requested[i+1], &str_ptr2, 10);
+			if ((feature == NULL) || (count <= 0)) {
+				info("Job %u invalid constraint %s", 
+					job_ptr->job_id, detail_ptr->features);
+				xfree(tmp_requested);
+				return ESLURM_INVALID_FEATURE;
+			}
+			i = str_ptr2 - tmp_requested - 1;
+		} else if (tmp_requested[i] == '&') {
+			tmp_requested[i] = '\0';
+			if ((feature == NULL) || (bracket != 0)) {
+				info("Job %u invalid constraint %s", 
+					job_ptr->job_id, detail_ptr->features);
+				xfree(tmp_requested);
+				return ESLURM_INVALID_FEATURE;
+			}
+			feat = xmalloc(sizeof(struct feature_record));
+			feat->name = xstrdup(feature);
+			feat->count = count;
+			feat->op_code = FEATURE_OP_AND;
+			list_append(detail_ptr->feature_list, feat);
+			feature = NULL;
+			count = 0;
+		} else if (tmp_requested[i] == '|') {
+			tmp_requested[i] = '\0';
+			have_or = true;
+			if (feature == NULL) {
+				info("Job %u invalid constraint %s", 
+					job_ptr->job_id, detail_ptr->features);
+				xfree(tmp_requested);
+				return ESLURM_INVALID_FEATURE;
+			}
+			feat = xmalloc(sizeof(struct feature_record));
+			feat->name = xstrdup(feature);
+			feat->count = count;
+			if (bracket)
+				feat->op_code = FEATURE_OP_XOR;
+			else
+				feat->op_code = FEATURE_OP_OR;
+			list_append(detail_ptr->feature_list, feat);
+			feature = NULL;
+			count = 0;
+		} else if (tmp_requested[i] == '[') {
+			tmp_requested[i] = '\0';
+			if ((feature != NULL) || bracket) {
+				info("Job %u invalid constraint %s", 
+					job_ptr->job_id, detail_ptr->features);
+				xfree(tmp_requested);
+				return ESLURM_INVALID_FEATURE;
+			}
+			bracket++;
+		} else if (tmp_requested[i] == ']') {
+			tmp_requested[i] = '\0';
+			if ((feature == NULL) || (bracket == 0)) {
+				info("Job %u invalid constraint %s", 
+					job_ptr->job_id, detail_ptr->features);
+				xfree(tmp_requested);
+				return ESLURM_INVALID_FEATURE;
+			}
+			bracket = 0;
+		} else if (tmp_requested[i] == '\0') {
+			if (feature) {
+				feat = xmalloc(sizeof(struct feature_record));
+				feat->name = xstrdup(feature);
+				feat->count = count;
+				feat->op_code = FEATURE_OP_END;
+				list_append(detail_ptr->feature_list, feat);
+			}
+			break;
+		} else if (feature == NULL) {
+			feature = &tmp_requested[i];
+		}
+	}
+	xfree(tmp_requested);
+	if (have_count && have_or) {
+		info("Job %u invalid constraint (OR with feature count): %s", 
+			job_ptr->job_id, detail_ptr->features);
+		return ESLURM_INVALID_FEATURE;
+	}
+
+	return _valid_feature_list(job_ptr->job_id, detail_ptr->feature_list);
+}
+
+static void _feature_list_delete(void *x)
+{
+	struct feature_record *feature = (struct feature_record *)x;
+	xfree(feature->name);
+	xfree(feature);
+}
+
+static int _valid_feature_list(uint32_t job_id, List feature_list)
+{
+	ListIterator feat_iter;
+	struct feature_record *feat_ptr;
+	char *buf = NULL, tmp[16];
+	int bracket = 0;
+	int rc = SLURM_SUCCESS;
+
+	if (feature_list == NULL) {
+		debug("Job %u feature list is empty", job_id);
+		return rc;
+	}
+
+	feat_iter = list_iterator_create(feature_list);
+	while((feat_ptr = (struct feature_record *)list_next(feat_iter))) {
+		if (feat_ptr->op_code == FEATURE_OP_XOR) {
+			if (bracket == 0)
+				xstrcat(buf, "[");
+			bracket = 1;
+		}
+		xstrcat(buf, feat_ptr->name);
+		if (rc == SLURM_SUCCESS)
+			rc = _valid_node_feature(feat_ptr->name);
+		if (feat_ptr->count) {
+			snprintf(tmp, sizeof(tmp), "*%u", feat_ptr->count);
+			xstrcat(buf, tmp);
+		}
+		if (bracket && (feat_ptr->op_code != FEATURE_OP_XOR)) {
+			xstrcat(buf, "]");
+			bracket = 0;
+		}
+		if (feat_ptr->op_code == FEATURE_OP_AND)
+			xstrcat(buf, "&");
+		else if ((feat_ptr->op_code == FEATURE_OP_OR) ||
+			 (feat_ptr->op_code == FEATURE_OP_XOR))
+			xstrcat(buf, "|");
+	}
+	list_iterator_destroy(feat_iter);
+	if (rc == SLURM_SUCCESS)
+		debug("Job %u feature list: %s", job_id, buf);
+	else
+		info("Job %u has invalid feature list: %s", job_id, buf);
+	xfree(buf);
+	return rc;
+}
+
+static int _valid_node_feature(char *feature)
+{
+	int rc = ESLURM_INVALID_FEATURE;
+	ListIterator config_iterator;
+	struct config_record *config_ptr;
+
+	config_iterator = list_iterator_create(config_list);
+	if (config_iterator == NULL)
+		fatal("list_iterator_create malloc failure");
+	while ((config_ptr = (struct config_record *) 
+			list_next(config_iterator))) {
+		if (config_ptr->feature &&
+		    (strcmp(feature, config_ptr->feature) == 0)) {
+			rc = SLURM_SUCCESS;
+			break;
+		}
+	}
+	list_iterator_destroy(config_iterator);
+	return rc;
 }

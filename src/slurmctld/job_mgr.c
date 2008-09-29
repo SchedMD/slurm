@@ -2205,6 +2205,10 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		error_code = ESLURM_DEPENDENCY;
 		goto cleanup;
 	}
+	if (build_feature_list(job_ptr)) {
+		error_code = ESLURM_INVALID_FEATURE;
+		goto cleanup;
+	}
 
 	if (job_desc->script
 	    &&  (!will_run)) {	/* don't bother with copy if just a test */
@@ -4144,16 +4148,41 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_DISABLED;
 		else if (super_user) {
-			xfree(detail_ptr->features);
 			if (job_specs->features[0] != '\0') {
+				char *old_features = detail_ptr->features;
+				List old_list = detail_ptr->feature_list;
 				detail_ptr->features = job_specs->features;
-				job_specs->features = NULL;
-				info("update_job: setting features to %s for "
-				     "job_id %u", job_specs->features, 
-				     job_specs->job_id);
+				detail_ptr->feature_list = NULL;
+				if (build_feature_list(job_ptr)) {
+					info("update_job: invalid features"
+				 	     "(%s) for job_id %u", 
+					     job_specs->features, 
+				  	     job_specs->job_id);
+					if (detail_ptr->feature_list) {
+						list_destroy(detail_ptr->
+							     feature_list);
+					}
+					detail_ptr->features = old_features;
+					detail_ptr->feature_list = old_list;
+					error_code = ESLURM_INVALID_FEATURE;
+				} else {
+					info("update_job: setting features to "
+				 	     "%s for job_id %u", 
+					     job_specs->features, 
+				  	     job_specs->job_id);
+					xfree(old_features);
+					if (old_list)
+						list_destroy(old_list);
+					job_specs->features = NULL;
+				}
 			} else {
 				info("update_job: cleared features for job %u",
 				     job_specs->job_id);
+				xfree(detail_ptr->features);
+				if (detail_ptr->feature_list) {
+					list_destroy(detail_ptr->feature_list);
+					detail_ptr->feature_list = NULL;
+				}
 			}
 		} else {
 			error("Attempt to change features for job %u",

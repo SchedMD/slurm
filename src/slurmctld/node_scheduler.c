@@ -87,11 +87,9 @@ struct node_set {		/* set of nodes with same configuration */
 	bitstr_t *my_bitmap;
 };
 
-static int  _build_feature_list(struct job_record *job_ptr);
 static int  _build_node_list(struct job_record *job_ptr, 
 			     struct node_set **node_set_pptr,
 			     int *node_set_size);
-static void _feature_list_delete(void *x);
 static void _filter_nodes_in_set(struct node_set *node_set_ptr,
 				 struct job_details *detail_ptr);
 static int _match_feature(char *seek, char *available);
@@ -104,7 +102,6 @@ static int _pick_best_nodes(struct node_set *node_set_ptr,
 			    struct part_record *part_ptr,
 			    uint32_t min_nodes, uint32_t max_nodes,
 			    uint32_t req_nodes, bool test_only);
-static void _print_feature_list(uint32_t job_id, List feature_list);
 static bitstr_t *_valid_features(struct job_details *detail_ptr, 
 				 char *available);
 
@@ -998,162 +995,6 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	return error_code;
 }
 
-static void _print_feature_list(uint32_t job_id, List feature_list)
-{
-	ListIterator feat_iter;
-	struct feature_record *feat_ptr;
-	char *buf = NULL, tmp[16];
-	int bracket = 0;
-
-	if (feature_list == NULL) {
-		info("Job %u feature list is empty", job_id);
-		return;
-	}
-
-	feat_iter = list_iterator_create(feature_list);
-	while((feat_ptr = (struct feature_record *)list_next(feat_iter))) {
-		if (feat_ptr->op_code == FEATURE_OP_XOR) {
-			if (bracket == 0)
-				xstrcat(buf, "[");
-			bracket = 1;
-		}
-		xstrcat(buf, feat_ptr->name);
-		if (feat_ptr->count) {
-			snprintf(tmp, sizeof(tmp), "*%u", feat_ptr->count);
-			xstrcat(buf, tmp);
-		}
-		if (bracket && (feat_ptr->op_code != FEATURE_OP_XOR)) {
-			xstrcat(buf, "]");
-			bracket = 0;
-		}
-		if (feat_ptr->op_code == FEATURE_OP_AND)
-			xstrcat(buf, "&");
-		else if ((feat_ptr->op_code == FEATURE_OP_OR) ||
-			 (feat_ptr->op_code == FEATURE_OP_XOR))
-			xstrcat(buf, "|");
-	}
-	list_iterator_destroy(feat_iter);
-	info("Job %u feature list: %s", job_id, buf);
-	xfree(buf);
-}
-
-static void _feature_list_delete(void *x)
-{
-	struct feature_record *feature = (struct feature_record *)x;
-	xfree(feature->name);
-	xfree(feature);
-}
-
-/*
- * _build_feature_list - Translate a job's feature string into a feature_list
- * IN  details->features
- * OUT details->feature_list
- * RET error code
- */
-static int _build_feature_list(struct job_record *job_ptr)
-{
-	struct job_details *detail_ptr = job_ptr->details;
-	char *tmp_requested, *str_ptr1, *str_ptr2, *feature = NULL;
-	int bracket = 0, count = 0, i;
-	bool have_count = false, have_or = false;
-	struct feature_record *feat;
-
-	if (detail_ptr->features == NULL)	/* no constraints */
-		return SLURM_SUCCESS;
-	if (detail_ptr->feature_list)		/* already processed */
-		return SLURM_SUCCESS;
-
-	tmp_requested = xstrdup(detail_ptr->features);
-	str_ptr1 = tmp_requested;
-	detail_ptr->feature_list = list_create(_feature_list_delete);
-	for (i=0; ; i++) {
-		if (tmp_requested[i] == '*') {
-			tmp_requested[i] = '\0';
-			have_count = true;
-			count = strtol(&tmp_requested[i+1], &str_ptr2, 10);
-			if ((feature == NULL) || (count <= 0)) {
-				info("Job %u invalid constraint %s", 
-					job_ptr->job_id, detail_ptr->features);
-				xfree(tmp_requested);
-				return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
-			}
-			i = str_ptr2 - tmp_requested - 1;
-		} else if (tmp_requested[i] == '&') {
-			tmp_requested[i] = '\0';
-			if ((feature == NULL) || (bracket != 0)) {
-				info("Job %u invalid constraint %s", 
-					job_ptr->job_id, detail_ptr->features);
-				xfree(tmp_requested);
-				return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
-			}
-			feat = xmalloc(sizeof(struct feature_record));
-			feat->name = xstrdup(feature);
-			feat->count = count;
-			feat->op_code = FEATURE_OP_AND;
-			list_append(detail_ptr->feature_list, feat);
-			feature = NULL;
-			count = 0;
-		} else if (tmp_requested[i] == '|') {
-			tmp_requested[i] = '\0';
-			have_or = true;
-			if (feature == NULL) {
-				info("Job %u invalid constraint %s", 
-					job_ptr->job_id, detail_ptr->features);
-				xfree(tmp_requested);
-				return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
-			}
-			feat = xmalloc(sizeof(struct feature_record));
-			feat->name = xstrdup(feature);
-			feat->count = count;
-			if (bracket)
-				feat->op_code = FEATURE_OP_XOR;
-			else
-				feat->op_code = FEATURE_OP_OR;
-			list_append(detail_ptr->feature_list, feat);
-			feature = NULL;
-			count = 0;
-		} else if (tmp_requested[i] == '[') {
-			tmp_requested[i] = '\0';
-			if ((feature != NULL) || bracket) {
-				info("Job %u invalid constraint %s", 
-					job_ptr->job_id, detail_ptr->features);
-				xfree(tmp_requested);
-				return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
-			}
-			bracket++;
-		} else if (tmp_requested[i] == ']') {
-			tmp_requested[i] = '\0';
-			if ((feature == NULL) || (bracket == 0)) {
-				info("Job %u invalid constraint %s", 
-					job_ptr->job_id, detail_ptr->features);
-				xfree(tmp_requested);
-				return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
-			}
-			bracket = 0;
-		} else if (tmp_requested[i] == '\0') {
-			if (feature) {
-				feat = xmalloc(sizeof(struct feature_record));
-				feat->name = xstrdup(feature);
-				feat->count = count;
-				feat->op_code = FEATURE_OP_END;
-				list_append(detail_ptr->feature_list, feat);
-			}
-			break;
-		} else if (feature == NULL) {
-			feature = &tmp_requested[i];
-		}
-	}
-	xfree(tmp_requested);
-	if (have_count && have_or) {
-		info("Job %u invalid constraint (OR with feature count): %s", 
-			job_ptr->job_id, detail_ptr->features);
-		return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
-	}
-
-	_print_feature_list(job_ptr->job_id, detail_ptr->feature_list);
-	return SLURM_SUCCESS;
-}
-
 /*
  * job_req_node_filter - job reqeust node filter.
  *	clear from a bitmap the nodes which can not be used for a job
@@ -1179,8 +1020,6 @@ extern int job_req_node_filter(struct job_record *job_ptr,
 		      job_ptr->job_id);
 		return EINVAL;
 	}
-	if (_build_feature_list(job_ptr))
-		return EINVAL;
 
 	mc_ptr = detail_ptr->mc_ptr;
 	for (i=0; i< node_record_count; i++) {
@@ -1261,11 +1100,6 @@ static int _build_node_list(struct job_record *job_ptr,
 	multi_core_data_t *mc_ptr = detail_ptr->mc_ptr;
 	bitstr_t *tmp_feature;
 
-	if (detail_ptr->features && (detail_ptr->feature_list == NULL)) {
-		int error_code = _build_feature_list(job_ptr);
-		if (error_code)
-			return error_code;
-	}
 	node_set_inx = 0;
 	node_set_ptr = (struct node_set *) 
 			xmalloc(sizeof(struct node_set) * 2);
