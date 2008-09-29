@@ -231,6 +231,7 @@ typedef struct {
 	uint32_t control_port;
 	char *name;
 
+	List valid_qos_list;
 	acct_association_rec_t *root_assoc; /* root association for cluster */
 
 	uint16_t rpc_version; /* version of rpc this cluter is running */
@@ -259,7 +260,56 @@ typedef struct {
 typedef struct {
 	char *description;
 	uint32_t id;
+	char *job_flags;
+	List job_list; /* list of job pointers to submitted/running
+			  jobs (DON'T PACK) */
+
+	uint64_t grp_cpu_hours; /* max number of cpu hours the
+				     * underlying group of
+				     * associations can run for */
+	uint32_t grp_cpus; /* max number of cpus this qos
+			      can allocate at one time */
+	uint32_t grp_jobs;	/* max number of jobs this qos can run
+				 * at one time */
+	uint32_t grp_nodes; /* max number of nodes this qos 
+			       can allocate at once */
+	uint32_t grp_submit_jobs; /* max number of jobs this qos can submit at
+				   * one time */
+	uint32_t grp_wall; /* total time in hours this qos can run for */
+
+	uint32_t grp_used_cpu_hours; /* cpu hours this qos has ran for 
+				      * (DON'T PACK) */
+	uint32_t grp_used_cpus; /* count of cpus in use in this qos
+				 * (DON'T PACK) */
+	uint32_t grp_used_jobs;	/* count of active jobs (DON'T PACK) */
+	uint32_t grp_used_nodes; /* count of nodes in use in this qos
+				  * (DON'T PACK) */
+	uint32_t grp_used_submit_jobs; /* count of jobs pending or running
+				    * (DON'T PACK) */
+	uint32_t grp_used_wall; /* group count of time (minutes) used in
+				 * running jobs (DON'T PACK) */
+
+	uint64_t max_cpu_mins_pu; /* max number of cpu mins a user can
+				   * use with this qos */
+	uint32_t max_cpus_pu; /* max number of cpus a user can
+			       * allocate with this qos */
+	uint32_t max_jobs_pu;	/* max number of jobs a user can
+				 * run with this qos at one time */
+	uint32_t max_nodes_pu; /* max number of nodes a user can
+				* allocate with this qos at one time */
+	uint32_t max_submit_jobs_pu; /* max number of jobs a user can
+				     submit with this qos at once */
+	uint32_t max_wall_pu; /* longest time this
+			       * qos can run a job */
+
 	char *name;
+	List preemptee_list; /* list of char * list of qos's that this
+				qos can preempt */
+	List preemptor_list; /* list of char * list of qos's that this
+			      * qos is preempted by */
+	uint32_t priority;  /* ranged int needs to be a unint for
+			     * heterogeneous systems */
+	List user_limit_list; /* acct_used_limits_t's */
 } acct_qos_rec_t;
 
 typedef struct {
@@ -268,6 +318,18 @@ typedef struct {
 	List name_list; /* list of char * */
 	uint16_t with_deleted; 
 } acct_qos_cond_t;
+
+/* Right now this is used in the acct_qos_rec_t structure.  In the
+ * user_limit_list. */
+typedef struct {
+ 	uint64_t cpu_mins;	/* count of cpu mins used */
+ 	uint32_t cpus;	/* count of cpus in use */
+	uint32_t jobs;	/* count of active jobs */
+	uint32_t nodes;	/* count of nodes in use */
+	uint32_t submit_jobs; /* count of jobs pending or running */
+	uint32_t wall; /* how much time this user has used */
+	uint32_t uid;
+} acct_used_limits_t;
 
 typedef struct {
 	uint16_t admin_level; /* really acct_admin_level_t but for
@@ -362,6 +424,7 @@ extern void destroy_acct_qos_cond(void *object);
 extern void destroy_acct_txn_cond(void *object);
 
 extern void destroy_acct_update_object(void *object);
+extern void destroy_acct_used_limits(void *object);
 extern void destroy_update_shares_rec(void *object);
 
 extern void init_acct_association_rec(acct_association_rec_t *assoc);
@@ -423,6 +486,10 @@ extern void pack_acct_update_object(acct_update_object_t *object,
 				    uint16_t rpc_version, Buf buffer);
 extern int unpack_acct_update_object(acct_update_object_t **object,
 				     uint16_t rpc_version, Buf buffer);
+
+extern void pack_acct_used_limits(void *in, uint16_t rpc_version, Buf buffer);
+extern int unpack_acct_used_limits(void **object,
+				   uint16_t rpc_version, Buf buffer);
 
 extern void pack_update_shares_used(void *in, uint16_t rpc_version,
 				    Buf buffer);

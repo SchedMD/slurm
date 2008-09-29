@@ -1630,6 +1630,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 				case PRINT_MAXW:
 				case PRINT_QOS_RAW:
 				case PRINT_PID:
+				case PRINT_PNAME:
 				case PRINT_PART:
 					field->print_routine(
 						field, 

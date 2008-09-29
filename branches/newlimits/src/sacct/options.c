@@ -622,7 +622,7 @@ void parse_command_line(int argc, char **argv)
 	char *dot = NULL;
 	bool brief_output = FALSE, long_output = FALSE;
 	bool all_users = 0;
-	bool all_clusters = 1;
+	bool all_clusters = 0;
 	static struct option long_options[] = {
 		{"all", 0,0, 'a'},
 		{"accounts", 1, 0, 'A'},
@@ -694,6 +694,7 @@ void parse_command_line(int argc, char **argv)
 				all_clusters = 1;
 				break;
 			}
+			all_clusters=0;
 			if(!params.opt_cluster_list) 
 				params.opt_cluster_list =
 					list_create(slurm_destroy_char);
@@ -838,6 +839,7 @@ void parse_command_line(int argc, char **argv)
 				all_users = 1;
 				break;
 			}
+			all_users = 0;
 			if(!params.opt_uid_list)
 				params.opt_uid_list = 
 					list_create(slurm_destroy_char);
