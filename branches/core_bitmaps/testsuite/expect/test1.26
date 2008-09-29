@@ -172,7 +172,7 @@ for {set inx 0} {$inx < $interations} {incr inx} {
 	set spawn_id $noalloc2
 	expect {
 		-i $noalloc2
-		-re "qsw_prog_init.*Error configuring interconnect" {
+		-re "error:.*configuring interconnect" {
 			send_user "Can't avoid this possible error\n"
 			exp_continue
 		}
@@ -194,7 +194,7 @@ for {set inx 0} {$inx < $interations} {incr inx} {
 	set spawn_id $noalloc1
 	expect {
 		-i $noalloc1
-		-re "qsw_prog_init.*Error configuring interconnect" {
+		-re "error:.*configuring interconnect" {
 			send_user "Can't avoid this possible error\n"
 			exp_continue
 		}
@@ -226,7 +226,7 @@ for {set inx 0} {$inx < $interations} {incr inx} {
 			}
 			exp_continue
 		}
-		-re "qsw_prog_init.*Error configuring interconnect" {
+		-re "error:.*configuring interconnect" {
 			send_user "Can't avoid this possible error\n"
 			exp_continue
 		}
