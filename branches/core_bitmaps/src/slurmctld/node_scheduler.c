@@ -510,8 +510,8 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	bool runable_avail = false;	/* Job can run with available nodes */
 	bool tried_sched = false;	/* Tried to schedule with avail nodes */
 	static uint32_t cr_enabled = NO_VAL;
-	static sched_gang_test = false;
-	static sched_gang = false;
+	static bool sched_gang_test = false;
+	static bool sched_gang = false;
 	select_type_plugin_info_t cr_type = SELECT_TYPE_INFO_NONE; 
 	int shared = 0, select_mode;
 
