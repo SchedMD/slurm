@@ -4,6 +4,9 @@ wiki.conf \- Slurm configuration file for wiki and wiki2 scheduler plugins
 .SH "DESCRIPTION"
 \fB/etc/wiki.conf\fP is an ASCII file which describes wiki and wiki2 
 scheduler specific SLURM configuration information. 
+The file location can be modified at system build time using the
+DEFAULT_SLURM_CONF parameter. The file will always be located in the 
+same directory as the \fBslurm.conf\fP file. 
 .LP
 Paramter names are case insensitive.
 Any text following a "#" in the configuration file is treated 
