@@ -203,4 +203,16 @@ extern int get_select_job_res_cnt(select_job_res_t select_job_res_ptr,
 				  uint16_t *socket_cnt,
  				  uint16_t *cores_per_socket_cnt);
 
+/* check if given job can fit into the given full-length core_bitmap */
+extern int can_select_job_cores_fit(select_job_res_t select_ptr,
+				    bitstr_t *full_bitmap,
+				    const uint16_t *bits_per_node,
+				    const uint32_t *bit_rep_count);
+
+/* add the given job to the given full_core_bitmap */
+extern void add_select_job_to_row(select_job_res_t select_ptr,
+				  bitstr_t **full_core_bitmap,
+				  const uint16_t *cores_per_node,
+				  const uint32_t *core_rep_count);
+
 #endif /* !_SELECT_JOB_RES_H */

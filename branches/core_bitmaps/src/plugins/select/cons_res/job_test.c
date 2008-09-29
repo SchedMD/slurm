@@ -119,8 +119,8 @@ uint16_t _allocate_sockets(struct job_record *job_ptr, bitstr_t *core_map,
 {
 	uint16_t cpu_count = 0, cpu_cnt = 0;
 	uint16_t si, cps, avail_cpus = 0, num_tasks = 0;
-	uint32_t core_begin    = cr_core_bitmap_offset[node_i];
-	uint32_t core_end      = cr_core_bitmap_offset[node_i+1];
+	uint32_t core_begin    = cr_get_coremap_offset(node_i);
+	uint32_t core_end      = cr_get_coremap_offset(node_i+1);
 	uint16_t cpus_per_task = job_ptr->details->cpus_per_task;
 	uint16_t *used_cores, *free_cores, free_core_count = 0;
 	uint16_t i, c, sockets    = select_node_record[node_i].sockets;
@@ -365,8 +365,8 @@ uint16_t _allocate_cores(struct job_record *job_ptr, bitstr_t *core_map,
 			 const uint32_t node_i, int cpu_type)
 {
 	uint16_t cpu_count = 0, avail_cpus = 0, num_tasks = 0;
-	uint32_t core_begin    = cr_core_bitmap_offset[node_i];
-	uint32_t core_end      = cr_core_bitmap_offset[node_i+1];
+	uint32_t core_begin    = cr_get_coremap_offset(node_i);
+	uint32_t core_end      = cr_get_coremap_offset(node_i+1);
 	uint16_t cpus_per_task = job_ptr->details->cpus_per_task;
 	uint16_t *free_cores, free_core_count = 0;
 	uint16_t i, c, sockets    = select_node_record[node_i].sockets;
@@ -619,8 +619,8 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 	} else {
 		/* memory is per node */
 		if (req_mem > avail_mem) {
-			bit_nclear(core_map, cr_core_bitmap_offset[node_i], 
-					(cr_core_bitmap_offset[node_i+1])-1);
+			bit_nclear(core_map, cr_get_coremap_offset(node_i), 
+					(cr_get_coremap_offset(node_i+1))-1);
 			cpus = 0;
 		}
 	}
@@ -640,8 +640,8 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 static int _is_node_busy(struct part_res_record *p_ptr, uint32_t node_i,
 			 int sharing_only)
 {
-	uint32_t r, cpu_begin = cr_core_bitmap_offset[node_i];
-	uint32_t i, cpu_end   = cr_core_bitmap_offset[node_i+1];
+	uint32_t r, cpu_begin = cr_get_coremap_offset(node_i);
+	uint32_t i, cpu_end   = cr_get_coremap_offset(node_i+1);
 
 	for (; p_ptr; p_ptr = p_ptr->next) {
 		if (sharing_only && p_ptr->num_rows < 2)
@@ -743,8 +743,8 @@ bitstr_t *_make_core_bitmap(bitstr_t *node_map)
 {
 	uint32_t n, c, nodes, size;
 
-	/* last entry in cr_core_bitmap_offset is total number of cores */
-	size = cr_core_bitmap_offset[cr_core_bitmap_size-1];
+	nodes = bit_size(node_map);
+	size = cr_get_coremap_offset(nodes+1);
 	bitstr_t *core_map = bit_alloc(size);
 	if (!core_map)
 		return NULL;
@@ -752,7 +752,7 @@ bitstr_t *_make_core_bitmap(bitstr_t *node_map)
 	nodes = bit_size(node_map);
 	for (n = 0, c = 0; n < nodes; n++) {
 		if (bit_test(node_map, n)) {
-			while (c < cr_core_bitmap_offset[n+1]) {
+			while (c < cr_get_coremap_offset(n+1)) {
 				bit_set(core_map, c++);
 			}
 		}
@@ -1208,11 +1208,11 @@ static uint16_t *_select_nodes(struct job_record *job_ptr, uint32_t min_nodes,
 		for (n = 0; n < cr_node_cnt; n++) {
 			if (bit_test(node_map, n)) {
 				cpus[a++] = cpu_cnt[i];
-				if (cr_core_bitmap_offset[n] != start) {
+				if (cr_get_coremap_offset(n) != start) {
 					bit_nclear(core_map, start, 
-						(cr_core_bitmap_offset[n])-1);
+						(cr_get_coremap_offset(n))-1);
 				}
-				start = cr_core_bitmap_offset[n+1];
+				start = cr_get_coremap_offset(n+1);
 			}
 			f++;
 			if (f >= freq[i]) {
@@ -1220,9 +1220,9 @@ static uint16_t *_select_nodes(struct job_record *job_ptr, uint32_t min_nodes,
 				i++;
 			}
 		}
-		if (cr_core_bitmap_offset[n] != start) {
+		if (cr_get_coremap_offset(n) != start) {
 			bit_nclear(core_map, start,
-						(cr_core_bitmap_offset[n])-1);
+						(cr_get_coremap_offset(n))-1);
 		}
 	}
 
@@ -1403,7 +1403,7 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	bit_copybits(free_cores, avail_cores);
 	
 	for (jp_ptr = cr_part_ptr; jp_ptr; jp_ptr = jp_ptr->next) {
-		if (jp_ptr->part_ptr == job_ptr->part_ptr)
+		if (strcmp(jp_ptr->name, job_ptr->part_ptr->name) == 0)
 			break;
 	}
 	if (!jp_ptr)
@@ -1627,8 +1627,8 @@ alloc_job:
 			ll++;
 		if (bit_test(bitmap, n) == 0)
 			continue;
-		j = cr_core_bitmap_offset[n];
-		for (; j < cr_core_bitmap_offset[n+1]; j++, c++) {
+		j = cr_get_coremap_offset(n);
+		for (; j < cr_get_coremap_offset(n+1); j++, c++) {
 			if (bit_test(free_cores, j)) {
 				if (c >= csize)	{
 					fatal("cons_res: cr_job_test "

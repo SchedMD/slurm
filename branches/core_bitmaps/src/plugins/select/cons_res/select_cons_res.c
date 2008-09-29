@@ -104,7 +104,7 @@
 #include "dist_tasks.h"
 #include "job_test.h"
 
-#if(1)
+#if(0)
 #define CR_DEBUG 1
 #endif
 
@@ -145,8 +145,8 @@ select_type_plugin_info_t cr_type = CR_CPU; /* cr_type is overwritten in init() 
 
 uint16_t select_fast_schedule;
 
-uint32_t  cr_core_bitmap_size   = 0;
-uint32_t *cr_core_bitmap_offset = NULL;
+uint16_t *cr_node_num_cores = NULL;
+uint32_t *cr_num_core_count = NULL;
 struct node_res_record *select_node_record = NULL;
 struct part_res_record *select_part_record = NULL;
 static int select_node_cnt = 0;
@@ -189,7 +189,7 @@ static void _dump_nodes()
 static void _dump_part(struct part_res_record *p_ptr)
 {
 	uint16_t i;
-	info("part:%s rows:%u pri:%u ", p_ptr->part_ptr->name, p_ptr->num_rows,
+	info("part:%s rows:%u pri:%u ", p_ptr->name, p_ptr->num_rows,
 		p_ptr->priority);
 	if (!p_ptr->row)
 		return;
@@ -217,6 +217,86 @@ static void _dump_state(struct part_res_record *p_ptr)
 	return;
 }
 #endif
+
+
+#define CR_NUM_CORE_ARRAY_INCREMENT 8
+
+/* (re)set cr_node_num_cores and cr_num_core_count arrays */
+static void _init_global_core_data(struct node_record *node_ptr, int node_cnt)
+{
+	uint32_t i, n, array_size = CR_NUM_CORE_ARRAY_INCREMENT;
+
+	xfree(cr_num_core_count);
+	xfree(cr_node_num_cores);
+	cr_node_num_cores = xmalloc(array_size * sizeof(uint16_t));
+	cr_num_core_count = xmalloc(array_size * sizeof(uint32_t));
+
+	for (i = 0, n = 0; n < node_cnt; n++) {
+		uint16_t cores;
+		if (select_fast_schedule) {
+			cores  = node_ptr[n].config_ptr->cores;
+			cores *= node_ptr[n].config_ptr->sockets;
+		} else {
+			cores  = node_ptr[n].cores;
+			cores *= node_ptr[n].sockets;
+		}
+		if (cr_node_num_cores[i] == cores) {
+			cr_num_core_count[i]++;
+			continue;
+		}
+		if (cr_num_core_count[i] > 0) {
+			i++;
+			if (i > array_size) {
+				array_size += CR_NUM_CORE_ARRAY_INCREMENT;
+				xrealloc(cr_node_num_cores,
+					array_size * sizeof(uint16_t));
+				xrealloc(cr_node_num_cores,
+					array_size * sizeof(uint16_t));
+			}
+		}
+		cr_node_num_cores[i] = cores;
+		cr_num_core_count[i] = 1;
+	}
+	/* make sure we have '0'-terminate fields at the end */
+	i++;
+	if (i > array_size) {
+		array_size += CR_NUM_CORE_ARRAY_INCREMENT;
+		xrealloc(cr_node_num_cores, array_size * sizeof(uint16_t));
+		xrealloc(cr_node_num_cores, array_size * sizeof(uint16_t));
+	}
+}
+
+
+/* return the coremap index to the first core of the given node */
+extern uint32_t cr_get_coremap_offset(uint32_t node_index)
+{
+	uint32_t i;
+	uint32_t cindex = 0;
+	uint32_t n = cr_num_core_count[0];
+	for (i = 0; cr_num_core_count[i] && node_index > n; i++) {
+		cindex += cr_node_num_cores[i] * cr_num_core_count[i];
+		n += cr_num_core_count[i+1];
+	}
+	if (!cr_num_core_count[i])
+		return cindex;
+	n -= cr_num_core_count[i];
+
+	cindex += cr_node_num_cores[i] * (node_index-n);	
+	return cindex;
+}
+
+
+/* return the total number of cores in a given node */
+extern uint32_t cr_get_node_num_cores(uint32_t node_index)
+{
+	uint32_t i = 0;
+	uint32_t pos = cr_num_core_count[i++];
+	while (node_index >= pos) {
+		pos += cr_num_core_count[i++];
+	}
+	return cr_node_num_cores[i-1];
+}
+
 
 /* Helper function for _dup_part_data: create a duplicate part_row_data array */
 static struct part_row_data *_dup_row_data(struct part_row_data *orig_row,
@@ -259,7 +339,7 @@ static struct part_res_record *_dup_part_data(struct part_res_record *orig_ptr)
 	new_ptr = new_part_ptr;
 
 	while (orig_ptr) {
-		new_ptr->part_ptr = orig_ptr->part_ptr;
+		new_ptr->name = xstrdup(orig_ptr->name);
 		new_ptr->priority = orig_ptr->priority;
 		new_ptr->num_rows = orig_ptr->num_rows;
 		new_ptr->row = _dup_row_data(orig_ptr->row, orig_ptr->num_rows);
@@ -279,7 +359,8 @@ static void _destroy_part_data(struct part_res_record *this_ptr)
 	while (this_ptr) {
 		struct part_res_record *tmp = this_ptr;
 		this_ptr = this_ptr->next;
-		tmp->part_ptr = NULL;
+		xfree(tmp->name);
+		tmp->name = NULL;
 		if (tmp->row) {
 			int i;
 			for (i = 0; i < tmp->num_rows; i++) {
@@ -327,7 +408,7 @@ static void _create_part_data()
 		fatal ("memory allocation failure");
 
 	while ((p_ptr = (struct part_record *) list_next(part_iterator))) {
-		this_ptr->part_ptr = p_ptr;
+		this_ptr->name = xstrdup(p_ptr->name);
 		this_ptr->num_rows = p_ptr->max_share;
 		if (this_ptr->num_rows & SHARED_FORCE)
 			this_ptr->num_rows &= (~SHARED_FORCE);
@@ -369,7 +450,7 @@ struct part_res_record *_get_cr_part_ptr(struct part_record *part_ptr)
 		_create_part_data();
 
 	for (p_ptr = select_part_record; p_ptr; p_ptr = p_ptr->next) {
-		if (p_ptr->part_ptr == part_ptr)
+		if (strcmp(p_ptr->name, part_ptr->name) == 0)
 			return p_ptr;
 	}
 	error("cons_res: could not find partition %s", part_ptr->name);
@@ -387,36 +468,16 @@ static void _destroy_node_data()
 
 
 static void _add_job_to_row(struct select_job_res *job,
-			    struct part_row_data *r_ptr, int first_job) {
-	uint32_t c, i, n, r, x;
-	
+			    struct part_row_data *r_ptr, int first_job)
+{
 	/* add the job to the row_bitmap */
-	if (r_ptr->row_bitmap == NULL) {
-		r_ptr->row_bitmap =
-		    bit_alloc(cr_core_bitmap_offset[cr_core_bitmap_size-1]);
-		if (!r_ptr->row_bitmap)
-			fatal("cons_res: memory error adding a row_bitmap");
-		first_job = 0;
+	if (r_ptr->row_bitmap && first_job) {
+		uint32_t size = bit_size(r_ptr->row_bitmap);
+		bit_nclear(r_ptr->row_bitmap, 0, size-1);
 	}
-	c = x = 0;
-	for (i = 0, n = 0; i < job->nhosts; n++) {
-		if (bit_test(job->node_bitmap, n) == 0)
-			continue;
-		r = cr_core_bitmap_offset[n];
-		if (first_job && x < r) {
-			bit_nclear(r_ptr->row_bitmap, x, r-1);
-		}
-		x = cr_core_bitmap_offset[n+1];
-		for (; r < x; r++, c++) {
-			if (bit_test(job->core_bitmap, c))
-				bit_set(r_ptr->row_bitmap, r);
-		}
-		i++;
-	}
-	r = cr_core_bitmap_offset[cr_core_bitmap_size-1];
-	if (first_job && x < r)
-		bit_nclear(r_ptr->row_bitmap, x, r-1);
-
+	add_select_job_to_row(job, &(r_ptr->row_bitmap), cr_node_num_cores,
+				cr_num_core_count);
+	
 	/*  add the job to the job_list */
 	if (r_ptr->num_jobs >= r_ptr->job_list_size) {
 		r_ptr->job_list_size += 8;
@@ -429,24 +490,12 @@ static void _add_job_to_row(struct select_job_res *job,
 
 /* test for conflicting core_bitmap bits */
 static int _can_job_fit_in_row(struct select_job_res *job,
-				struct part_row_data *r_ptr) {
-	uint32_t c, i, n, r;
-	
+				struct part_row_data *r_ptr)
+{
 	if (r_ptr->num_jobs == 0 || !r_ptr->row_bitmap)
 		return 1;
-	c = 0;
-	for (i = 0, n = 0; i < job->nhosts; n++) {
-		if (bit_test(job->node_bitmap, n) == 0)
-			continue;
-		r = cr_core_bitmap_offset[n];
-		for (; r < cr_core_bitmap_offset[n+1]; r++, c++) {
-			if (bit_test(r_ptr->row_bitmap, r) &&
-			    bit_test(job->core_bitmap, c))
-				return 0;
-		}
-		i++;
-	}
-	return 1;
+	return can_select_job_cores_fit(job, r_ptr->row_bitmap,
+					cr_node_num_cores, cr_num_core_count);
 }
 
 
@@ -562,7 +611,7 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr)
 			tmpjobs[x] = p_ptr->row[i].job_list[j];
 			p_ptr->row[i].job_list[j] = NULL;
 			jstart[x] = bit_ffs(tmpjobs[x]->node_bitmap);
-			jstart[x] = cr_core_bitmap_offset[jstart[x]];
+			jstart[x] = cr_get_coremap_offset(jstart[x]);
 			jstart[x] += bit_ffs(tmpjobs[x]->core_bitmap);
 			x++;
 		}
@@ -738,7 +787,7 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 			p_ptr->row = xmalloc(p_ptr->num_rows *
 						sizeof(struct part_row_data));
 			debug3("cons_res: adding job %u to part %s row 0",
-				job_ptr->job_id, p_ptr->part_ptr->name);
+				job_ptr->job_id, p_ptr->name);
 			_add_job_to_row(job, &(p_ptr->row[0]), 1);
 			goto node_st;
 		}
@@ -747,13 +796,13 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 		for (i = 0; i < p_ptr->num_rows; i++) {
 			if (p_ptr->row[i].num_jobs == 0) {
 				debug3("cons_res: adding job %u to part %s row %u",
-				job_ptr->job_id, p_ptr->part_ptr->name, i);
+				job_ptr->job_id, p_ptr->name, i);
 				_add_job_to_row(job, &(p_ptr->row[i]), 1);
 				break;
 			}
 			if (_can_job_fit_in_row(job, &(p_ptr->row[i]))) {
 				debug3("cons_res: adding job %u to part %s row %u",
-				job_ptr->job_id, p_ptr->part_ptr->name, i);
+				job_ptr->job_id, p_ptr->name, i);
 				_add_job_to_row(job, &(p_ptr->row[i]), 0);
 				break;
 			}
@@ -787,8 +836,8 @@ node_st:	for (i = 0; i < select_node_cnt; i++) {
  */
 static int _is_node_free(struct part_res_record *p_ptr, uint32_t node_i)
 {
-	uint32_t cpu_begin  = cr_core_bitmap_offset[node_i];
-	uint32_t i, cpu_end = cr_core_bitmap_offset[node_i+1];
+	uint32_t cpu_begin  = cr_get_coremap_offset(node_i);
+	uint32_t i, cpu_end = cr_get_coremap_offset(node_i+1);
 
 	for (; p_ptr; p_ptr = p_ptr->next) {
 		if (p_ptr->num_rows < 2)
@@ -873,8 +922,7 @@ static int _rm_job_from_res(struct job_record *job_ptr, int action)
 					continue;
 					debug3("cons_res: removing job %u from "
 					       "part %s row %u",
-					       job_ptr->job_id, 
-					       p_ptr->part_ptr->name, i);
+					       job_ptr->job_id, p_ptr->name, i);
 				for (; j < p_ptr->row[i].num_jobs-1; j++) {
 					p_ptr->row[i].job_list[j] =
 						p_ptr->row[i].job_list[j+1];
@@ -942,8 +990,10 @@ extern int fini(void)
 	_destroy_node_data();
 	_destroy_part_data(select_part_record);
 	select_part_record = NULL;
-	xfree(cr_core_bitmap_offset);
-	cr_core_bitmap_offset = NULL;
+	xfree(cr_node_num_cores);
+	xfree(cr_num_core_count);
+	cr_node_num_cores = NULL;
+	cr_num_core_count = NULL;
 
 	verbose("%s shutting down ...", plugin_name);
 	return SLURM_SUCCESS;
@@ -980,32 +1030,6 @@ extern int select_p_job_init(List job_list)
 {
 	/* nothing to initialize for jobs */
 	return SLURM_SUCCESS;
-}
-
-
-/* (re)set cr_core_bitmap_size and cr_core_bitmap_offset */
-static void _init_global_core_data(struct node_record *node_ptr, int node_cnt)
-{
-	uint32_t i; /* default type is CPUs*/
-
-	xfree(cr_core_bitmap_offset);
-	cr_core_bitmap_size = 0;
-	cr_core_bitmap_offset = xmalloc((node_cnt + 1) * sizeof(uint32_t));
-
-	for (i = 0; i < node_cnt; i++) {
-		uint16_t sockets, cores;
-		cr_core_bitmap_offset[i] = cr_core_bitmap_size;
-		if (select_fast_schedule) {
-			sockets = node_ptr[i].config_ptr->sockets;
-			cores   = node_ptr[i].config_ptr->cores;
-		} else {
-			sockets = node_ptr[i].sockets;
-			cores   = node_ptr[i].cores;
-		}
-		cr_core_bitmap_size += sockets * cores;
-	}
-	cr_core_bitmap_offset[node_cnt] = cr_core_bitmap_size;
-	cr_core_bitmap_size = node_cnt + 1;
 }
 
 
@@ -1361,8 +1385,8 @@ extern int select_p_get_select_nodeinfo(struct node_record *node_ptr,
 			/* did not find the node */
 			return SLURM_ERROR;
 		}
-		start = cr_core_bitmap_offset[n];
-		end = cr_core_bitmap_offset[n+1];
+		start = cr_get_coremap_offset(n);
+		end = cr_get_coremap_offset(n+1);
 		for (p_ptr = select_part_record; p_ptr; p_ptr = p_ptr->next) {
 			if (!p_ptr->row)
 				continue;
@@ -1423,15 +1447,12 @@ static uint16_t _is_node_avail(uint32_t node_i)
 	if (select_node_record[node_i].node_state == NODE_CR_RESERVED)
 		return (uint16_t) 0;
 
-	cpu_begin = cr_core_bitmap_offset[node_i];
-	cpu_end   = cr_core_bitmap_offset[node_i+1];
+	cpu_begin = cr_get_coremap_offset(node_i);
+	cpu_end   = cr_get_coremap_offset(node_i+1);
 	if (select_node_record[node_i].node_state == NODE_CR_ONE_ROW) {
 		/* check the core_bitmaps in "single-row" partitions */
 		for (p_ptr = select_part_record; p_ptr; p_ptr = p_ptr->next) {
 			if (p_ptr->num_rows > 1)
-				continue;
-			/* make sure node is in partition */
-			if (!bit_test(p_ptr->part_ptr->node_bitmap, node_i))
 				continue;
 			if (!p_ptr->row || !p_ptr->row[0].row_bitmap)
 				return (uint16_t) 1;
@@ -1443,9 +1464,6 @@ static uint16_t _is_node_avail(uint32_t node_i)
 	} else {
 		/* check the core_bitmaps in all partitions */
 		for (p_ptr = select_part_record; p_ptr; p_ptr = p_ptr->next) {
-			/* make sure node is in partition */
-			if (!bit_test(p_ptr->part_ptr->node_bitmap, node_i))
-				continue;
 			if (!p_ptr->row)
 				return (uint16_t) 1;
 			for (r = 0; r < p_ptr->num_rows; r++) {
@@ -1578,18 +1596,9 @@ extern int select_p_reconfigure(void)
 	return SLURM_SUCCESS;
 }
 
-/* FIXME: OBSOLETE NOW THAT ALLOCATION DATA IS STORED WITH JOB_RECORD
- *        need to clean this up with sched/gang
- */
-/* return the number of allocated cores
- *
- * IN:  job_id - id of the job
- * IN:  alloc_index - the index of the allocated node (allocated node number)
- * IN:  s - socket number (only valid for CR_CORE or CR_SOCKET)
- */
+/* FIXME: OBSOLETE NOW THAT ALLOCATION DATA IS STORED WITH JOB_RECORD */
 extern uint16_t select_p_get_job_cores(uint32_t job_id, int alloc_index, int s)
 {
 	uint16_t cpus = 0;
-	/* This currently breaks sched/gang */
 	return cpus;
 }

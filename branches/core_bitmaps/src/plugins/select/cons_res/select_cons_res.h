@@ -71,17 +71,6 @@ enum node_cr_state {
 	NODE_CR_AVAILABLE = 2 /* The node may be IDLE or IN USE (shared) */
 };
 
-
-/*
- * cr_core_bitmap_offset: Provides the beginning index to the cores of each
- *                        node.
- * cr_core_bitmap_size = total_num_nodes + 1, with the last entry being the
- *                       total number of cores in the cluster.
- */
-extern uint32_t cr_core_bitmap_size;
-extern uint32_t *cr_core_bitmap_offset;
-
-
 /* a partition's per-row CPU allocation data */
 struct part_row_data {
 	bitstr_t *row_bitmap;		/* contains all jobs for this row */
@@ -92,7 +81,7 @@ struct part_row_data {
 
 /* partition CPU allocation data */
 struct part_res_record {
-	struct part_record *part_ptr;	/* Ptr to slurmctld partition record */
+	char *name;			/* name of the partition */
 	uint16_t priority;		/* Partition priority */
 	uint16_t num_rows;		/* Number of row_bitmaps */
 	struct part_row_data *row;	/* array of rows containing jobs */
@@ -120,5 +109,7 @@ extern struct node_res_record *select_node_record;
 extern struct part_res_record *select_part_record;
 
 extern void cr_sort_part_rows(struct part_res_record *p_ptr);
+extern uint32_t cr_get_coremap_offset(uint32_t node_index);
+extern uint32_t cr_get_node_num_cores(uint32_t node_index);
 
 #endif /* !_CONS_RES_H */

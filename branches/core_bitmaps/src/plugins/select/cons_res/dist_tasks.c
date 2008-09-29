@@ -38,7 +38,7 @@
 #include "select_cons_res.h"
 #include "dist_tasks.h"
 
-#if(1)
+#if(0)
 #define CR_DEBUG 1
 #endif
 

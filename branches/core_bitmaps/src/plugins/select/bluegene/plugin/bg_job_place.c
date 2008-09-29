@@ -1206,8 +1206,6 @@ static int _sync_block_lists(List full_list, List incomp_list)
 	return count;
 }
 
-#endif // HAVE_BG
-
 static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap)
 {
 	int i, j, k;
@@ -1265,6 +1263,8 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap)
 		      select_ptr->nprocs, total_cpus);
 	}
 }
+
+#endif	/* ifdef HAVE_BG */
 
 /*
  * Try to find resources for a given job request

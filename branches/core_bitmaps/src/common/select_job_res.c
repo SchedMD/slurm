@@ -777,3 +777,78 @@ extern int get_select_job_res_cnt(select_job_res_t select_job_res_ptr,
 	*socket_cnt = 0;
 	return SLURM_ERROR;
 }
+
+/* Return 1 if the given job can fit into the given full-length core_bitmap,
+ * else return 0.
+ */
+extern int can_select_job_cores_fit(select_job_res_t select_ptr,
+				    bitstr_t *full_bitmap,
+				    const uint16_t *bits_per_node,
+				    const uint32_t *bit_rep_count)
+{
+	uint32_t i, n, count = 1, last_bit = 0;
+	uint32_t c = 0, j = 0, k = 0;
+	
+	if (!full_bitmap)
+		return 1;
+	
+	for (i = 0, n = 0; i < select_ptr->nhosts; n++) {
+		last_bit += bits_per_node[k];
+		if (++count > bit_rep_count[k]) {
+			k++;
+			count = 1;
+		}
+		if (bit_test(select_ptr->node_bitmap, n) == 0) {
+			c = last_bit;
+			continue;
+		}
+		for (; c < last_bit; c++, j++) {
+			if (bit_test(full_bitmap, c) &&
+			    bit_test(select_ptr->core_bitmap, j))
+				return 0;
+		}
+		i++;
+	}
+	return 1;
+}
+
+/* add the given job to the given full_core_bitmap */
+extern void add_select_job_to_row(select_job_res_t select_ptr,
+				  bitstr_t **full_core_bitmap,
+				  const uint16_t *cores_per_node,
+				  const uint32_t *core_rep_count)
+{
+	uint32_t i, n, count = 1, last_bit = 0;
+	uint32_t c = 0, j = 0, k = 0;
+	
+	if (!select_ptr->core_bitmap)
+		return;
+
+	/* add the job to the row_bitmap */
+	if (*full_core_bitmap == NULL) {
+		uint32_t size = 0;
+		for (i = 0; core_rep_count[i]; i++) {
+			size += cores_per_node[i] * core_rep_count[i];
+		}
+		*full_core_bitmap = bit_alloc(size);
+		if (!*full_core_bitmap)
+			fatal("add_select_job_to_row: bitmap memory error");
+	}
+
+	for (i = 0, n = 0; i < select_ptr->nhosts; n++) {
+		last_bit += cores_per_node[k];
+		if (++count > core_rep_count[k]) {
+			k++;
+			count = 1;
+		}
+		if (bit_test(select_ptr->node_bitmap, n) == 0) {
+			c = last_bit;
+			continue;
+		}
+		for (; c < last_bit; c++, j++) {
+			if (bit_test(select_ptr->core_bitmap, j))
+				bit_set(*full_core_bitmap, c);
+		}
+		i++;
+	}
+}
