@@ -1677,9 +1677,6 @@ alloc_job:
 		i++;
 	}
 
-	/* translate job_res->cpus array into format with rep count */
-	build_select_job_res_cpu_array(job_res);
-
 	/* When 'srun --overcommit' is used, nprocs is set to a minimum value
 	 * in order to allocate the appropriate number of nodes based on the
 	 * job request.
@@ -1701,6 +1698,9 @@ alloc_job:
 		free_select_job_res(&job_ptr->select_job);
 		return error_code;
 	}
+
+	/* translate job_res->cpus array into format with rep count */
+	build_select_job_res_cpu_array(job_res);
 
 	if ((cr_type != CR_CPU_MEMORY) && (cr_type != CR_CORE_MEMORY) &&
 	    (cr_type != CR_SOCKET_MEMORY) && (cr_type != CR_MEMORY))
