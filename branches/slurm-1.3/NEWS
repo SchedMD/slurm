@@ -26,6 +26,10 @@ documents those changes that are of interest to users and admins.
  -- Updated contribs/python/hostlist: See "CHANGES" file in that directory
     for details. From Kent Engstrom, NSC.
  -- Add SLURM_JOB_NAME environment variable for jobs submitted using sbatch.
+    In order to prevent the job steps from all having the same name as the 
+    batch job that spawned them, the SLURM_JOB_NAME environment variable is
+    ignored when setting the name of a job step from within an existing 
+    resource allocation.
  -- For use with sched/wiki2 (Moab only), set salloc's default shell based 
     upon the user who the job runs as rather than the user submitting the job 
     (user root).
