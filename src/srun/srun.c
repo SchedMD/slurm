@@ -268,6 +268,10 @@ int srun(int ac, char **av)
 		job = job_create_allocation(resp);
 		
 		opt.exclusive = false;	/* not applicable for this step */
+		if (!opt.job_name_set_cmd && opt.job_name_set_env) {
+			/* use SLURM_JOB_NAME env var */
+			opt.job_name_set_cmd = true;
+		}
 		if (!job || create_job_step(job) < 0) {
 			slurm_complete_job(job->jobid, 1);
 			exit(1);

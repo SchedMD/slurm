@@ -612,8 +612,10 @@ static void _opt_default()
 
 	opt.relative = NO_VAL;
 	opt.relative_set = false;
+	opt.cmd_name = NULL;
 	opt.job_name = NULL;
-	opt.job_name_set = false;
+	opt.job_name_set_cmd = false;
+	opt.job_name_set_env = false;
 	opt.jobid    = NO_VAL;
 	opt.jobid_set = false;
 	opt.dependency = NULL;
@@ -737,7 +739,8 @@ env_vars_t env_vars[] = {
 {"SLURM_DISTRIBUTION",  OPT_DISTRIB,    NULL,               NULL             },
 {"SLURM_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL             },
 {"SLURM_IMMEDIATE",     OPT_INT,        &opt.immediate,     NULL             },
-{"SLURM_JOB_NAME",      OPT_STRING,     &opt.job_name,      &opt.job_name_set},
+{"SLURM_JOB_NAME",      OPT_STRING,     &opt.job_name,      
+					&opt.job_name_set_env},
 {"SLURM_JOBID",         OPT_INT,        &opt.jobid,         NULL             },
 {"SLURM_KILL_BAD_EXIT", OPT_INT,        &opt.kill_bad_exit, NULL             },
 {"SLURM_LABELIO",       OPT_INT,        &opt.labelio,       NULL             },
@@ -1142,7 +1145,7 @@ static void set_options(const int argc, char **argv)
 			opt.join = true;
 			break;
 		case (int)'J':
-			opt.job_name_set = true;
+			opt.job_name_set_cmd = true;
 			xfree(opt.job_name);
 			opt.job_name = xstrdup(optarg);
 			break;
@@ -1755,8 +1758,8 @@ static bool _opt_verify(void)
 	if (opt.job_min_cpus < opt.cpus_per_task)
 		opt.job_min_cpus = opt.cpus_per_task;
 
-	if ((opt.job_name == NULL) && (opt.argc > 0))
-		opt.job_name = base_name(opt.argv[0]);
+	if (opt.argc > 0)
+		opt.cmd_name = base_name(opt.argv[0]);
 
 	if(!opt.nodelist) {
 		if((opt.nodelist = xstrdup(getenv("SLURM_HOSTFILE")))) {
