@@ -653,6 +653,8 @@ static int _is_node_busy(struct part_res_record *p_ptr, uint32_t node_i,
 	for (; p_ptr; p_ptr = p_ptr->next) {
 		if (sharing_only && p_ptr->num_rows < 2)
 			continue;
+		if (!p_ptr->row)
+			continue;
 		for (r = 0; r < p_ptr->num_rows; r++) {
 			if (!p_ptr->row[r].row_bitmap)
 				continue;
