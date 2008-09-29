@@ -81,6 +81,14 @@ This option has no effect when the
 option is also specified.
 
 .TP 
+\f3\-C \fP\f2cluster_list\fP\f3,\fP  \f3\-\-cluster\fP\f3=\fP\f2cluster_list\fP
+Displays the statistics only for the jobs started on the clusters specified by
+the \f2cluster_list\fP operand, which is a comma\-separated list of clusters.
+Space characters are not allowed in the \f2cluster_list\fP.  -1 for
+all clusters, default is current cluster you are executing the sacct
+command on\&.
+
+.TP 
 \f3\-d \fP\f3,\fP \f3\-\-dump\fP
 Displays (dumps) the raw data records.
 .IP 
@@ -162,7 +170,7 @@ COMPLETED  3.0
 The default value for the 
 \f2field_list\fP 
 operand is 
-\f3"jobid,partition,process,ncpus,status,exitcode"\fP\c
+\f3"jobid,jobname,partition,ncpus,state,exitcode"\fP\c
 \&.
 .IP 
 This option has no effect when the 
@@ -178,17 +186,20 @@ command to read job accounting data from the named
 instead of the current SLURM job accounting log file.
 
 .TP 
-\f3\-g \fP\f2gid\fP\f3,\fP  \f3\-\-gid\fP\f3=\fP\f2gid\fP
-Displays the statistics only for the jobs started with GID 
-\f2gid\fP\c
-\&. 
+\f3\-g \fP\f2gid_list\fP\f3,\fP  \f3\-\-gid\fP\f3=\fP\f2gid_list\fP
+Displays the statistics only for the jobs started with the GID
+specified by the \f2gid_list\fP operand, which is a comma\-separated
+list of gids.  Space characters are not allowed in the \f2gid_list\fP. 
+Default is no restrictions.  This is virtually the same as the --group
+option\&. 
 
 .TP 
-\f3\-g \fP\f2group\fP\f3,\fP  \f3\-\-group\fP\f3=\fP\f2group\fP
-Displays the statistics only for the jobs started by users in the
-group
-\f2group\fP\c
-\&. 
+\f3\-g \fP\f2group_list\fP\f3,\fP  \f3\-\-group\fP\f3=\fP\f2group_list\fP
+Displays the statistics only for the jobs started with the GROUP
+specified by the \f2group_list\fP operand, which is a comma\-separated
+list of groups.  Space characters are not allowed in the \f2group_list\fP. 
+Default is no restrictions.  This is virtually the same as the --gid option\&. 
+
 .TP 
 \f3\-h \fP\f3,\fP \f3\-\-help\fP
 Displays a general help message.
@@ -374,16 +385,20 @@ Displays only the cumulative statistics for each job.
 Intermediate steps are displayed by default.
 
 .TP 
-\f3\-u \fP\f2uid\fP\f3,\fP  \f3\-\-uid\fP\f3=\fP\f2uid\fP
-Displays the statistics only for the jobs started by the user whose UID is 
-\f2uid\fP\c
-\&.
+\f3\-u \fP\f2uid_list\fP\f3,\fP  \f3\-\-uid\fP\f3=\fP\f2uid_list\fP
+Displays the statistics only for the jobs started by the specified
+\f2uid_list\fP operand, which is a comma\-separated list of uids.
+Space characters are not allowed in the \f2uid_list\fP.  
+-1 for all uids, default is current uid.  If run as user root default
+is all users.  This is virtually the same as the --user option\&.
 
 .TP 
-\f3\-u \fP\f2user\fP\f3,\fP  \f3\-\-user\fP\f3=\fP\f2user\fP
-Displays the statistics only for the jobs started by user
-\f2user\fP\c
-\&.
+\f3\-u \fP\f2user_list\fP\f3,\fP  \f3\-\-user\fP\f3=\fP\f2user_list\fP
+Displays the statistics only for the jobs started by the specified
+\f2user_list\fP operand, which is a comma\-separated list of users.
+Space characters are not allowed in the \f2user_list\fP.  
+-1 for all uids, default is current uid.  If run as user root default
+is all users.  This is virtually the same as the --uid option\&.
 
 .TP 
 \f3\-\-usage\fP
