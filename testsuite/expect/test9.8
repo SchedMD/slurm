@@ -146,6 +146,7 @@ while { $matches < $desired_tasks } {
 		}
 		-re "error:" {
 			send_user "\nFAILURE: squeue error\n"
+			set exit_code 1
 			exp_continue
 		}
 		timeout {
@@ -155,6 +156,9 @@ while { $matches < $desired_tasks } {
 			wait
 			break
 		}
+	}
+	if {$matches == 0} {
+		break
 	}
 }
 if {[test_aix]} {
