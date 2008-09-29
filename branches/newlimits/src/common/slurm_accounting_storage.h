@@ -64,7 +64,8 @@ typedef enum {
 	ACCT_REMOVE_ASSOC,
 	ACCT_REMOVE_COORD,
 	ACCT_ADD_QOS,
-	ACCT_REMOVE_QOS
+	ACCT_REMOVE_QOS,
+	ACCT_MODIFY_QOS,
 } acct_update_type_t;
 
 /* Association conditions used for queries of the database */
@@ -428,6 +429,7 @@ extern void destroy_acct_used_limits(void *object);
 extern void destroy_update_shares_rec(void *object);
 
 extern void init_acct_association_rec(acct_association_rec_t *assoc);
+extern void init_acct_qos_rec(acct_qos_rec_t *qos);
 
 /* pack functions */
 extern void pack_acct_user_rec(void *in, uint16_t rpc_version, Buf buffer);
@@ -623,6 +625,16 @@ extern List acct_storage_g_modify_associations(
 	void *db_conn, uint32_t uid, 
 	acct_association_cond_t *assoc_cond,
 	acct_association_rec_t *assoc);
+
+/* 
+ * modify existing qos in the accounting system 
+ * IN:  acct_qos_cond_t *qos_cond
+ * IN:  acct_qos_rec_t *qos
+ * RET: List containing (char *'s) else NULL on error
+ */
+extern List acct_storage_g_modify_qos(void *db_conn, uint32_t uid, 
+				      acct_qos_cond_t *qos_cond,
+				      acct_qos_rec_t *qos);
 
 /* 
  * remove users from accounting system 

@@ -142,7 +142,8 @@ typedef enum {
 	DBD_ADD_QOS,		/* Add QOS information   	        */
 	DBD_GET_QOS,		/* Get QOS information   	        */
 	DBD_GOT_QOS,		/* Got QOS information   	        */
-	DBD_REMOVE_QOS		/* Remove QOS information   	        */
+	DBD_REMOVE_QOS,		/* Remove QOS information   	        */
+	DBD_MODIFY_QOS,         /* Modify existing QOS                  */
 } slurmdbd_msg_type_t;
 
 /*****************************************************************************\

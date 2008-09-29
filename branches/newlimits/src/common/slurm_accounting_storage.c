@@ -86,6 +86,9 @@ typedef struct slurm_acct_storage_ops {
 	List (*modify_associations)(void *db_conn, uint32_t uid,
 				    acct_association_cond_t *assoc_cond,
 				    acct_association_rec_t *assoc);
+	List (*modify_qos)         (void *db_conn, uint32_t uid,
+				    acct_qos_cond_t *qos_cond,
+				    acct_qos_rec_t *qos);
 	List (*remove_users)       (void *db_conn, uint32_t uid,
 				    acct_user_cond_t *user_cond);
 	List (*remove_coord)       (void *db_conn, uint32_t uid,
@@ -203,6 +206,7 @@ static slurm_acct_storage_ops_t * _acct_storage_get_ops(
 		"acct_storage_p_modify_accounts",
 		"acct_storage_p_modify_clusters",
 		"acct_storage_p_modify_associations",
+		"acct_storage_p_modify_qos",
 		"acct_storage_p_remove_users",
 		"acct_storage_p_remove_coord",
 		"acct_storage_p_remove_accts",
@@ -666,6 +670,30 @@ extern void init_acct_association_rec(acct_association_rec_t *assoc)
 	assoc->max_nodes_pj = NO_VAL;
 	assoc->max_submit_jobs = NO_VAL;
 	assoc->max_wall_pj = NO_VAL;
+}
+
+extern void init_acct_qos_rec(acct_qos_rec_t *qos)
+{
+	if(!qos)
+		return;
+
+	memset(qos, 0, sizeof(acct_qos_rec_t));
+
+	qos->priority = NO_VAL;
+
+	qos->grp_cpu_hours = NO_VAL;
+	qos->grp_cpus = NO_VAL;
+	qos->grp_jobs = NO_VAL;
+	qos->grp_nodes = NO_VAL;
+	qos->grp_submit_jobs = NO_VAL;
+	qos->grp_wall = NO_VAL;
+
+	qos->max_cpu_mins_pu = NO_VAL;
+	qos->max_cpus_pu = NO_VAL;
+	qos->max_jobs_pu = NO_VAL;
+	qos->max_nodes_pu = NO_VAL;
+	qos->max_submit_jobs_pu = NO_VAL;
+	qos->max_wall_pu = NO_VAL;
 }
 
 /****************************************************************************\
@@ -3904,6 +3932,7 @@ extern void pack_acct_update_object(acct_update_object_t *object,
 		my_function = pack_acct_association_rec;
 		break;
 	case ACCT_ADD_QOS:
+	case ACCT_MODIFY_QOS:
 	case ACCT_REMOVE_QOS:
 		my_function = pack_acct_qos_rec;
 		break;
@@ -3955,6 +3984,7 @@ extern int unpack_acct_update_object(acct_update_object_t **object,
 		my_destroy = destroy_acct_association_rec;
 		break;
 	case ACCT_ADD_QOS:
+	case ACCT_MODIFY_QOS:
 	case ACCT_REMOVE_QOS:
 		my_function = unpack_acct_qos_rec;
 		my_destroy = destroy_acct_qos_rec;
@@ -4379,6 +4409,16 @@ extern List acct_storage_g_modify_associations(
 		return NULL;
 	return (*(g_acct_storage_context->ops.modify_associations))
 		(db_conn, uid, assoc_cond, assoc);
+}
+
+extern List acct_storage_g_modify_qos(void *db_conn, uint32_t uid,
+				      acct_qos_cond_t *qos_cond,
+				      acct_qos_rec_t *qos)
+{
+	if (slurm_acct_storage_init(NULL) < 0)
+		return NULL;
+	return (*(g_acct_storage_context->ops.modify_qos))
+		(db_conn, uid, qos_cond, qos);
 }
 
 extern List acct_storage_g_remove_users(void *db_conn, uint32_t uid,

@@ -854,6 +854,7 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 			default:
 				break;
 			}
+			curr_inx++;
 		}
 		list_iterator_reset(itr2);
 		printf("\n");
