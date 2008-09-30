@@ -1284,13 +1284,18 @@ static int _update_node_features(char *node_names, char *features)
 			new_config_ptr = create_config_record();
 			if (first_new == NULL);
 				first_new = new_config_ptr;
-			memcpy(new_config_ptr, config_ptr, 
-				sizeof(struct config_record));
+			new_config_ptr->magic       = config_ptr->magic;
+			new_config_ptr->cpus        = config_ptr->cpus;
+			new_config_ptr->sockets     = config_ptr->sockets;
+			new_config_ptr->cores       = config_ptr->cores;
+			new_config_ptr->threads     = config_ptr->threads;
+			new_config_ptr->real_memory = config_ptr->real_memory;
+			new_config_ptr->tmp_disk    = config_ptr->tmp_disk;
+			new_config_ptr->weight      = config_ptr->weight;
 			if (features[0])
 				new_config_ptr->feature = xstrdup(features);
 			build_config_feature_array(new_config_ptr);
-			new_config_ptr->node_bitmap = 
-				bit_copy(tmp_bitmap);
+			new_config_ptr->node_bitmap = bit_copy(tmp_bitmap);
 			new_config_ptr->nodes = 
 				bitmap2node_name(tmp_bitmap);
 			_update_config_ptr(tmp_bitmap, new_config_ptr);
