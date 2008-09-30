@@ -53,6 +53,7 @@ if {[test_bluegene]} {
 #
 exec $bin_rm -f $file_in $file_out
 make_bash_script $file_in "
+  echo tasks_per_node=\$SLURM_TASKS_PER_NODE
   inx=0
   while \[ \$inx -lt \$SLURM_TASKS_PER_NODE \]
   do

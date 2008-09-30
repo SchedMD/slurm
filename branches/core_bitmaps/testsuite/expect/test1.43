@@ -44,7 +44,7 @@ set timeout 60
 for {set node_cnt 1} {$node_cnt > 0} {set node_cnt [expr $node_cnt * 2]} {
 	set srun_pid [spawn $srun --test-only -N$node_cnt -t1 $bin_printenv SLURMD_NODENAME]
 	expect {
-		-re "allocation success" {
+		-re "Job $number to start at" {
 			incr jobs_run
 			exp_continue
 		}
