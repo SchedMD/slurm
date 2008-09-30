@@ -110,7 +110,7 @@ extern void sreport_print_time(print_field_t *field,
 		else if(print_fields_parsable_print)
 			printf("%s|", output);	
 		else
-			printf("%-*.*s ", field->len, field->len, output);
+			printf("%*.*s ", field->len, field->len, output);
 		xfree(output);
 	}
 }
