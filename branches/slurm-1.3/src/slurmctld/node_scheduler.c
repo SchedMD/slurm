@@ -1455,7 +1455,7 @@ extern void build_node_details(struct job_record *job_ptr)
 
 /*
  * _valid_features - determine if the requested features are satisfied by
- *	those available
+ *	the available nodes
  * IN details_ptr - job requirement details, includes requested features
  * IN available - available features (on a node)
  * RET NULL if request is not satisfied, otherwise a bitmap indicating 
