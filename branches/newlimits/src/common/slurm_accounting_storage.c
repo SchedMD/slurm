@@ -58,7 +58,8 @@
  */
 
 typedef struct slurm_acct_storage_ops {
-	void *(*get_conn)          (bool make_agent, bool rollback);
+	void *(*get_conn)          (bool make_agent, int conn_num, 
+				    bool rollback);
 	int  (*close_conn)         (void **db_conn);
 	int  (*commit)             (void *db_conn, bool commit);
 	int  (*add_users)          (void *db_conn, uint32_t uid,
@@ -4309,11 +4310,13 @@ extern int slurm_acct_storage_fini(void)
 	return rc;
 }
 
-extern void *acct_storage_g_get_connection(bool make_agent, bool rollback)
+extern void *acct_storage_g_get_connection(bool make_agent, int conn_num,
+					   bool rollback)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
-	return (*(g_acct_storage_context->ops.get_conn))(make_agent, rollback);
+	return (*(g_acct_storage_context->ops.get_conn))(
+		make_agent, conn_num, rollback);
 }
 
 extern int acct_storage_g_close_connection(void **db_conn)

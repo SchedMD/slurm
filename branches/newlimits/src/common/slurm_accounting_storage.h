@@ -513,10 +513,13 @@ extern int slurm_acct_storage_fini(void); /* unload the plugin */
 /*
  * get a new connection to the storage unit
  * IN: make_agent - Make an agent to manage queued requests
+ * IN: conn_num - If running more than one connection to the database
+ *     this can be used to tell which connection is doing what
  * IN: rollback - maintain journal of changes to permit rollback
  * RET: pointer used to access db 
  */
-extern void *acct_storage_g_get_connection(bool make_agent, bool rollback);
+extern void *acct_storage_g_get_connection(bool make_agent, int conn_num,
+					   bool rollback);
 
 /*
  * release connection to the storage unit

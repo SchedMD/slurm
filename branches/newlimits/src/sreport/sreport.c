@@ -154,7 +154,7 @@ main (int argc, char *argv[])
 		}	
 	}
 
-	db_conn = acct_storage_g_get_connection(false, false);
+	db_conn = acct_storage_g_get_connection(false, 0, false);
 	my_uid = getuid();
 
 	if (input_field_count)

@@ -187,7 +187,7 @@ main (int argc, char *argv[])
 	/* always do a rollback.  If you don't then if there is an
 	 * error you can not rollback ;)
 	 */
-	db_conn = acct_storage_g_get_connection(false, 1);
+	db_conn = acct_storage_g_get_connection(false, 0, 1);
 	my_uid = getuid();
 
 	if (input_field_count)

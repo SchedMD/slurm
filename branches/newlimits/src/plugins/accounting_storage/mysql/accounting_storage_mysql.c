@@ -91,9 +91,13 @@ const uint32_t plugin_version = 100;
 
 static mysql_db_info_t *mysql_db_info = NULL;
 static char *mysql_db_name = NULL;
+static time_t global_last_rollup = 0;
+static pthread_mutex_t rollup_lock = PTHREAD_MUTEX_INITIALIZER;
 
 #define DEFAULT_ACCT_DB "slurm_acct_db"
 #define DELETE_SEC_BACK 86400
+
+
 
 char *acct_coord_table = "acct_coord_table";
 char *acct_table = "acct_table";
@@ -113,6 +117,7 @@ char *txn_table = "txn_table";
 char *user_table = "user_table";
 char *last_ran_table = "last_ran_table";
 char *suspend_table = "suspend_table";
+
 
 typedef enum {
 	QOS_LEVEL_NONE,
@@ -2395,11 +2400,12 @@ extern int fini ( void )
 #endif
 }
 
-extern void *acct_storage_p_get_connection(bool make_agent, bool rollback)
+extern void *acct_storage_p_get_connection(bool make_agent, int conn_num,
+					   bool rollback)
 {
 #ifdef HAVE_MYSQL
 	mysql_conn_t *mysql_conn = xmalloc(sizeof(mysql_conn_t));
-	static int conn = 0;
+	
 	if(!mysql_db_info)
 		init();
 
@@ -2411,7 +2417,7 @@ extern void *acct_storage_p_get_connection(bool make_agent, bool rollback)
 	if(rollback) {
 		mysql_autocommit(mysql_conn->db_conn, 0);
 	}
-	mysql_conn->conn = conn++;
+	mysql_conn->conn = conn_num;
 	mysql_conn->update_list = list_create(destroy_acct_update_object);
 	return (void *)mysql_conn;
 #else
@@ -7748,6 +7754,10 @@ extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn,
 /* 	info("hour start %s", ctime(&start_time)); */
 /* 	info("hour end %s", ctime(&end_time)); */
 /* 	info("diff is %d", end_time-start_time); */
+	
+	slurm_mutex_lock(&rollup_lock);
+	global_last_rollup = end_time;
+	slurm_mutex_unlock(&rollup_lock);
 
 	if(end_time-start_time > 0) {
 		START_TIMER;
@@ -8179,6 +8189,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 	char *block_id = NULL;
 	char *query = NULL;
 	int reinit = 0;
+	time_t check_time = job_ptr->start_time;
 
 	if (!job_ptr->details || !job_ptr->details->submit_time) {
 		error("jobacct_storage_p_job_start: "
@@ -8190,6 +8201,25 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 	
 	debug2("mysql_jobacct_job_start() called");
+	if(!check_time)
+		check_time = job_ptr->details->submit_time;
+ 
+	slurm_mutex_lock(&rollup_lock);
+	if(check_time < global_last_rollup) {
+		global_last_rollup = check_time;
+		slurm_mutex_unlock(&rollup_lock);
+		
+		query = xstrdup_printf("update %s set hourly_rollup=%d, "
+				       "daily_rollup=%d, monthly_rollup=%d",
+				       last_ran_table, check_time,
+				       check_time, check_time);
+		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+		rc = mysql_db_query(mysql_conn->db_conn, query);
+		xfree(query);
+	} else
+		slurm_mutex_unlock(&rollup_lock);
+
+
 	priority = (job_ptr->priority == NO_VAL) ?
 		-1L : (long) job_ptr->priority;
 
@@ -8226,6 +8256,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 	job_ptr->requid = -1; /* force to -1 for sacct to know this
 			       * hasn't been set yet */
 	
+
 	/* We need to put a 0 for 'end' incase of funky job state
 	 * files from a hot start of the controllers we call
 	 * job_start on jobs we may still know about after
@@ -8361,6 +8392,21 @@ extern int jobacct_storage_p_job_complete(mysql_conn_t *mysql_conn,
 		return SLURM_SUCCESS;
 	}	
 	
+	slurm_mutex_lock(&rollup_lock);
+	if(job_ptr->end_time < global_last_rollup) {
+		global_last_rollup = job_ptr->end_time;
+		slurm_mutex_unlock(&rollup_lock);
+		
+		query = xstrdup_printf("update %s set hourly_rollup=%d, "
+				       "daily_rollup=%d, monthly_rollup=%d",
+				       last_ran_table, job_ptr->end_time,
+				       job_ptr->end_time, job_ptr->end_time);
+		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+		rc = mysql_db_query(mysql_conn->db_conn, query);
+		xfree(query);
+	} else
+		slurm_mutex_unlock(&rollup_lock);
+
 	if (job_ptr->nodes && job_ptr->nodes[0])
 		nodes = job_ptr->nodes;
 	else
