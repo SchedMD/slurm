@@ -1,0 +1,199 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Test of Blue Gene specific sbatch command line options
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2004 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# LLNL-CODE-402394.
+# 
+# This file is part of SLURM, a resource management program.
+# For details, see <http://www.llnl.gov/linux/slurm/>.
+#  
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+# 
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+# 
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id     "8.1"
+set exit_code   0
+set file_in     "test$test_id.input"
+set job_id      0
+set connection  "TORUS"
+set conn_letter  "Tt"
+set geometry    "1x1x1"
+set num_nodes   512-512 
+set cycle_count 2
+
+print_header $test_id
+
+if {[test_bluegene] == 0} {
+	send_user "\nWARNING: This test is only compatable with bluegene systems\n"
+	exit $exit_code
+}
+
+#
+# Delete left-over input script files
+# Build input script file
+#
+exec $bin_rm -f $file_in
+exec echo "#!$bin_bash"         >$file_in
+exec echo "$bin_sleep 1 &"     >>$file_in
+exec $bin_chmod 700 $file_in
+
+#
+# Submit a slurm job using various sbatch options for blue gene
+#
+set timeout $max_job_delay
+
+for {set inx 0} {$inx < $cycle_count} {incr inx} {
+	set sbatch_pid [spawn $sbatch -N$num_nodes --geometry=$geometry --no-rotate --conn-type=$connection --output=/dev/null --error=/dev/null $file_in]
+	expect {
+		-re "Submitted batch job ($number)" {
+			set job_id $expect_out(1,string)
+			set inx $cycle_count
+			exp_continue
+		}
+		-re "node configuration" {
+			set connection  "MESH"
+			set conn_letter  "Mm"
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sbatch not responding\n"
+			slow_kill $sbatch_pid
+			exit 1
+		}
+		eof {
+			wait
+		}
+	}
+}
+if {$job_id == 0} {
+	send_user "\nFAILURE: batch submit failure\n"
+	exit 1
+}
+
+#
+# Confirm parameters passed into SLURM
+#
+set matches 0
+spawn $scontrol show job $job_id
+expect {
+	-re "Connection=\[$conn_letter\]" {
+		incr matches
+		exp_continue
+	}
+	-re "Rotate=\[Nn\]" {
+		incr matches
+		exp_continue
+	}
+	-re "Geometry=$geometry" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 3} {
+	send_user "got $matches\n"
+	send_user "\nFAILURE: Blue Gene option processing error\n"
+	set exit_code 1
+}
+
+#
+# Kill the job, running it is unimportant
+#
+cancel_job $job_id
+
+#
+# Run a second job
+#
+set job_id      0
+set timeout $max_job_delay
+set sbatch_pid [spawn $sbatch -N$num_nodes --geometry=$geometry --no-rotate --conn-type=$connection --output=/dev/null --error=/dev/null $file_in]
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		slow_kill $sbatch_pid
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$job_id == 0} {
+	send_user "\nFAILURE: batch submit failure\n"
+	exit 1
+}
+
+#
+# Confirm parameters passed into SLURM
+#
+set matches 0
+spawn $scontrol show job $job_id
+expect {
+	-re "Connection=\[$conn_letter\]" {
+		incr matches
+		exp_continue
+	}
+	-re "Rotate=\[Nn\]" {
+		incr matches
+		exp_continue
+	}
+	-re "Geometry=$geometry" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 3} {
+	send_user "\nFAILURE: Blue Gene option processing error\n"
+	set exit_code 1
+}
+
+#
+# Kill the job, running it is unimportant
+#
+cancel_job $job_id
+
+if {$exit_code == 0} {
+	exec $bin_rm -f $file_in
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code
+
