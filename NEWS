@@ -39,6 +39,8 @@ documents those changes that are of interest to users and admins.
     time limit is INFINITE.
  -- Validate a job's constraints (node features) at job submit or modification 
     time.
+ -- For sched/backfill, correct logic to support job constraint specification
+    (e.g. node features).
 
 * Changes in SLURM 1.3.8
 ========================
