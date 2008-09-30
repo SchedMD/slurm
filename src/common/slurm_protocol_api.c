@@ -2303,6 +2303,7 @@ int slurm_send_rc_msg(slurm_msg_t *msg, int rc)
 	resp_msg.address  = msg->address;
 	resp_msg.msg_type = RESPONSE_SLURM_RC;
 	resp_msg.data     = &rc_msg;
+	resp_msg.flags = msg->flags;
 	resp_msg.forward = msg->forward;
 	resp_msg.forward_struct = msg->forward_struct;
 	resp_msg.ret_list = msg->ret_list;

@@ -219,14 +219,12 @@ jobcomp_destroy_job(void *object)
 		xfree(job->jobname);
 		xfree(job->state);
 		xfree(job->timelimit);
-#ifdef HAVE_BG
 		xfree(job->blockid);
 		xfree(job->connection);
 		xfree(job->reboot);
 		xfree(job->rotate);
 		xfree(job->geo);
 		xfree(job->bg_start_point);
-#endif
 		xfree(job);
 	}
 }

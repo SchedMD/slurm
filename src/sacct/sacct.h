@@ -142,15 +142,16 @@ void print_usercpu(type_t type, void *object);
 void print_vsize(type_t type, void *object);
 void print_cputime(type_t type, void *object);
 void print_account(type_t type, void *object);
+void print_assoc(type_t type, void *object);
+void print_cluster(type_t type, void *object);
 
-#ifdef HAVE_BG
+
 void print_connection(type_t type, void *object);
 void print_geo(type_t type, void *object);
 void print_max_procs(type_t type, void *object);
 void print_reboot(type_t type, void *object);
 void print_rotate(type_t type, void *object);
 void print_bg_start_point(type_t type, void *object);
-#endif
 
 /* options.c */
 int decode_state_char(char *state);
