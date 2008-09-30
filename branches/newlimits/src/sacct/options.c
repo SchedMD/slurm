@@ -1137,9 +1137,6 @@ void do_dump(void)
 	
 	itr = list_iterator_create(jobs);
 	while((job = list_next(itr))) {
-		if (params.opt_uid>=0)
-			if (job->uid != params.opt_uid)
-				continue;
 		if(job->sacct.min_cpu == (float)NO_VAL)
 			job->sacct.min_cpu = 0;
 		

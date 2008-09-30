@@ -1348,6 +1348,7 @@ static int _fd_writeable(slurm_fd fd)
 	int write_timeout = 5000;
 	int rc, time_left;
 	struct timeval tstart;
+	char temp[2];
 
 	ufds.fd     = fd;
 	ufds.events = POLLOUT;
@@ -1363,7 +1364,14 @@ static int _fd_writeable(slurm_fd fd)
 		}
 		if (rc == 0)
 			return 0;
-		if (ufds.revents & POLLHUP) {
+		/*
+		 * Check here to make sure the socket really is there.
+		 * If not then exit out and notify the sender.  This
+ 		 * is here since a write doesn't always tell you the
+		 * socket is gone, but getting 0 back from a
+		 * nonblocking read means just that. 
+		 */
+		if (ufds.revents & POLLHUP || (recv(fd, &temp, 1, 0) == 0)) {
 			debug2("SlurmDBD connection is closed");
 			return -1;
 		}
