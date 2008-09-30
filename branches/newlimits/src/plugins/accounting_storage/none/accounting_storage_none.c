@@ -166,6 +166,13 @@ extern List acct_storage_p_modify_associations(void *db_conn, uint32_t uid,
 	return SLURM_SUCCESS;
 }
 
+extern List acct_storage_p_modify_qos(void *db_conn, uint32_t uid,
+				      acct_qos_cond_t *qos_cond,
+				      acct_qos_rec_t *qos)
+{
+	return SLURM_SUCCESS;
+}
+
 extern List acct_storage_p_remove_users(void *db_conn, uint32_t uid,
 				       acct_user_cond_t *user_q)
 {
