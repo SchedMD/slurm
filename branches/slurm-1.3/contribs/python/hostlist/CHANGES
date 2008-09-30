@@ -1,3 +1,13 @@
+Version 1.3 (2008-09-30)
+
+    Add -s/--separator, -p/--prepend, -a/--append and --version
+    options contributed by Pär Andersson at NSC.
+
+    Let -e be the short form of the --expand option (-w is now
+    deprecated).
+
+    Add a manual page for hostlist(1).
+
 Version 1.2 (2008-09-18)
 
     Add "--prefix /usr" in the installation script of the spec file
