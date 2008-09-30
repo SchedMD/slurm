@@ -88,11 +88,16 @@
 
 typedef enum {
 	SREPORT_TIME_SECS,
+	SREPORT_TIME_MINS,
+	SREPORT_TIME_HOURS,
 	SREPORT_TIME_PERCENT,
 	SREPORT_TIME_SECS_PER,
+	SREPORT_TIME_MINS_PER,
+	SREPORT_TIME_HOURS_PER,
 } sreport_time_format_t;
 
 extern sreport_time_format_t time_format;
+extern char *time_format_string;
 extern char *command_name;
 extern int exit_code;	/* sacctmgr's exit code, =1 on any error at any time */
 extern int exit_flag;	/* program to terminate if =1 */

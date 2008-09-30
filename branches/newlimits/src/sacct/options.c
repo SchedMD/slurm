@@ -1309,13 +1309,11 @@ void do_dump_completion(void)
 		       job->gid_name, job->node_cnt, job->nodelist, 
 		       job->jobname, job->state,
 		       job->timelimit);
-#ifdef HAVE_BG
 		if(job->blockid)
 			printf(" %s %s %s %s %u %s %s",
 			       job->blockid, job->connection, job->reboot,
 			       job->rotate, job->max_procs, job->geo,
 			       job->bg_start_point);
-#endif
 		printf("\n");
 	}
 	list_iterator_destroy(itr);
@@ -1391,6 +1389,8 @@ void do_list(void)
 			while((step = list_next(itr_step))) {
 				if(step->end == 0)
 					step->end = job->end;
+				step->associd = job->associd;
+				step->cluster = job->cluster;
 				step->account = job->account;
 				print_fields(JOBSTEP, step);
 			} 

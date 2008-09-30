@@ -219,6 +219,7 @@ static int _setup_print_fields_list(List format_list)
 
 	itr = list_iterator_create(format_list);
 	while((object = list_next(itr))) {
+		char *tmp_char = NULL;
 		field = xmalloc(sizeof(print_field_t));
 		if(!strncasecmp("Accounts", object, 1)) {
 			field->type = PRINT_USER_ACCT;
@@ -253,6 +254,11 @@ static int _setup_print_fields_list(List format_list)
 			fprintf(stderr, " Unknown field '%s'\n", object);
 			xfree(field);
 			continue;
+		}
+		if((tmp_char = strstr(object, "\%"))) {
+			int newlen = atoi(tmp_char+1);
+			if(newlen > 0) 
+				field->len = newlen;
 		}
 		list_append(print_fields_list, field);		
 	}
@@ -317,6 +323,15 @@ extern int user_top(int argc, char *argv[])
 		       top_limit, start_char, end_char, 
 		       (user_cond->assoc_cond->usage_end 
 			- user_cond->assoc_cond->usage_start));
+		
+		switch(time_format) {
+		case SREPORT_TIME_PERCENT:
+			printf("Time reported in %s\n", time_format_string);
+			break; 
+		default:
+			printf("Time reported in CPU %s\n", time_format_string);
+			break;
+		}
 		printf("----------------------------------------"
 		       "----------------------------------------\n");
 	}
@@ -411,9 +426,10 @@ extern int user_top(int argc, char *argv[])
 					    xstrdup(assoc->acct));
 			itr3 = list_iterator_create(assoc->accounting_list);
 			while((assoc_acct = list_next(itr3))) {
-				local_user->cpu_secs += assoc_acct->alloc_secs;
+				local_user->cpu_secs += 
+					(uint64_t)assoc_acct->alloc_secs;
 				local_cluster->cpu_secs += 
-					assoc_acct->alloc_secs;
+					(uint64_t)assoc_acct->alloc_secs;
 			}
 			list_iterator_destroy(itr3);
 		}

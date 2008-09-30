@@ -99,7 +99,6 @@ storage_field_t jobcomp_table_fields[] = {
 	{ "nodelist", "text" }, 
 	{ "nodecnt", "integer not null" },
 	{ "proc_cnt", "integer not null" },
-#ifdef HAVE_BG
 	{ "connect_type", "text" },
 	{ "reboot", "text" },
 	{ "rotate", "text" },
@@ -107,7 +106,6 @@ storage_field_t jobcomp_table_fields[] = {
 	{ "geometry", "text" },
 	{ "start", "text" },
 	{ "blockid", "text" },
-#endif
 	{ NULL, NULL}
 };
 
@@ -323,7 +321,6 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 #ifdef HAVE_PGSQL
 	int rc = SLURM_SUCCESS;
 	char *usr_str = NULL, *grp_str = NULL, lim_str[32];
-#ifdef HAVE_BG
 	char connect_type[128];
 	char reboot[4];
 	char rotate[4];
@@ -331,7 +328,6 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 	char geometry[20];
 	char start[20];
 	char blockid[128];
-#endif
 	enum job_states job_state;
 	char query[1024];
 
@@ -357,7 +353,6 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 	 * JOB_FAILED, JOB_TIMEOUT, etc. */
 	job_state = job_ptr->job_state & (~JOB_COMPLETING);
 
-#ifdef HAVE_BG
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo,
 		connect_type, sizeof(connect_type), SELECT_PRINT_CONNECTION);
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo,
@@ -372,30 +367,24 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 		start, sizeof(start), SELECT_PRINT_START);
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo,
 		blockid, sizeof(blockid), SELECT_PRINT_BG_ID);
-#endif
+
 	snprintf(query, sizeof(query),
 		 "insert into %s (jobid, uid, user_name, gid, group_name, "
 		 "name, state, proc_cnt, "
 		 "partition, timelimit, starttime, endtime, nodelist, nodecnt"
-#ifdef HAVE_BG
 		 ", connect_type, reboot, rotate, maxprocs, geometry, "
 		 "start, blockid"
-#endif
 		 ") values (%u, %u, '%s', %u, '%s', '%s', %d, %u, "
 		 "'%s', '%s', %u, %u, '%s', %u"
-#ifdef HAVE_BG
 		 ", '%s', '%s', '%s', %s, '%s', '%s', '%s'"
-#endif
 		 ")",
 		 jobcomp_table, job_ptr->job_id, job_ptr->user_id, usr_str,
 		 job_ptr->group_id, grp_str, job_ptr->name, job_state,
 		 job_ptr->total_procs, job_ptr->partition, lim_str,
 		 (int)job_ptr->start_time, (int)job_ptr->end_time,
 		 job_ptr->nodes, job_ptr->node_cnt
-#ifdef HAVE_BG
 		 , connect_type, reboot, rotate, maxprocs, geometry,
 		 start, blockid
-#endif
 		 );
 	//info("here is the query %s", query);
 

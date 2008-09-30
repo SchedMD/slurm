@@ -52,7 +52,8 @@ int exit_flag;		/* program to terminate if =1 */
 int input_words;	/* number of words of input permitted */
 int quiet_flag;		/* quiet=1, verbose=-1, normal=0 */
 int all_clusters_flag = 0;
-sreport_time_format_t time_format = SREPORT_TIME_SECS;
+sreport_time_format_t time_format = SREPORT_TIME_MINS;
+char *time_format_string = "Minutes";
 void *db_conn = NULL;
 uint32_t my_uid = 0;
 
@@ -478,10 +479,25 @@ static int _set_time_format(char *format)
 {
 	if (strncasecmp (format, "SecPer", 6) == 0) {
 		time_format = SREPORT_TIME_SECS_PER;
+		time_format_string = "Seconds/Percentange of Total";
+	} else if (strncasecmp (format, "MinPer", 6) == 0) {
+		time_format = SREPORT_TIME_MINS_PER;
+		time_format_string = "Minutes/Percentange of Total";
+	} else if (strncasecmp (format, "HourPer", 6) == 0) {
+		time_format = SREPORT_TIME_HOURS_PER;
+		time_format_string = "Hours/Percentange of Total";
 	} else if (strncasecmp (format, "Sec", 1) == 0) {
 		time_format = SREPORT_TIME_SECS;
+		time_format_string = "Seconds";
+	} else if (strncasecmp (format, "Min", 1) == 0) {
+		time_format = SREPORT_TIME_MINS;
+		time_format_string = "Minutes";
+	} else if (strncasecmp (format, "Hour", 1) == 0) {
+		time_format = SREPORT_TIME_HOURS;
+		time_format_string = "Hours";
 	} else if (strncasecmp (format, "Percent", 1) == 0) {
 		time_format = SREPORT_TIME_PERCENT;
+		time_format_string = "Percentange of Total";
 	} else {
 		fprintf (stderr, "unknown time format %s", format);	
 		return SLURM_ERROR;

@@ -490,7 +490,6 @@ void print_partition(type_t type, void *object)
 	} 
 }
 
-#ifdef HAVE_BG
 void print_blockid(type_t type, void *object)
 { 
 	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
@@ -529,7 +528,6 @@ void print_blockid(type_t type, void *object)
 		break;
 	} 
 }
-#endif
 
 void print_pages(type_t type, void *object)
 { 
@@ -1074,7 +1072,7 @@ void print_account(type_t type, void *object)
 
 	switch(type) {
 	case HEADLINE:
-		printf("%-16s", "account");
+		printf("%-16s", "Account");
 		break;
 	case UNDERSCORE:
 		printf("%-16s", "----------------");
@@ -1102,8 +1100,72 @@ void print_account(type_t type, void *object)
 	}
 }
 
+void print_assoc(type_t type, void *object)
+{
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 
-#ifdef HAVE_BG
+	switch(type) {
+	case HEADLINE:
+		printf("%-16s", "AssociationID");
+		break;
+	case UNDERSCORE:
+		printf("%-16s", "----------------");
+		break;
+	case JOB:
+		if(!job->associd)
+			printf("%-16s", "unknown");
+		else 
+			printf("%-16u", job->associd);
+		break;
+	case JOBSTEP:
+		if(!step->associd)
+			printf("%-16s", "unknown");
+		else 
+			printf("%-16u", step->associd);
+		break;
+	default:
+		printf("%-16s", "n/a");
+		break;
+		break;
+	}
+}
+
+void print_cluster(type_t type, void *object)
+{
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
+
+	switch(type) {
+	case HEADLINE:
+		printf("%-16s", "Cluster");
+		break;
+	case UNDERSCORE:
+		printf("%-16s", "----------------");
+		break;
+	case JOB:
+		if(!job->cluster)
+			printf("%-16s", "unknown");
+		else if(strlen(job->cluster)<17)
+			printf("%-16s", job->cluster);
+		else
+			printf("%-13.13s...", job->cluster);
+		break;
+	case JOBSTEP:
+		if(!step->cluster)
+			printf("%-16s", "unknown");
+		else if(strlen(step->cluster)<17)
+			printf("%-16s", step->cluster);
+		else
+			printf("%-13.13s...", step->cluster);
+		break;
+	default:
+		printf("%-16s", "n/a");
+		break;
+		break;
+	}
+}
+
 void print_connection(type_t type, void *object)
 {
 	jobcomp_job_rec_t *job = (jobcomp_job_rec_t *)object;
@@ -1218,5 +1280,4 @@ void print_bg_start_point(type_t type, void *object)
 		break;
 	}
 }
-#endif
 

@@ -136,6 +136,7 @@ static int _setup_print_fields_list(List format_list)
 
 	itr = list_iterator_create(format_list);
 	while((object = list_next(itr))) {
+		char *tmp_char = NULL;
 		field = xmalloc(sizeof(print_field_t));
 		if(!strncasecmp("Cluster", object, 2)) {
 			field->type = PRINT_CLUSTER_NAME;
@@ -150,7 +151,9 @@ static int _setup_print_fields_list(List format_list)
 		} else if(!strncasecmp("allocated", object, 1)) {
 			field->type = PRINT_CLUSTER_ACPU;
 			field->name = xstrdup("Allocated");
-			if(time_format == SREPORT_TIME_SECS_PER)
+			if(time_format == SREPORT_TIME_SECS_PER
+			   || time_format == SREPORT_TIME_MINS_PER
+			   || time_format == SREPORT_TIME_HOURS_PER)
 				field->len = 20;
 			else
 				field->len = 12;
@@ -158,7 +161,9 @@ static int _setup_print_fields_list(List format_list)
 		} else if(!strncasecmp("down", object, 1)) {
 			field->type = PRINT_CLUSTER_DCPU;
 			field->name = xstrdup("Down");
-			if(time_format == SREPORT_TIME_SECS_PER)
+			if(time_format == SREPORT_TIME_SECS_PER
+			   || time_format == SREPORT_TIME_MINS_PER
+			   || time_format == SREPORT_TIME_HOURS_PER)
 				field->len = 18;
 			else
 				field->len = 10;
@@ -166,7 +171,9 @@ static int _setup_print_fields_list(List format_list)
 		} else if(!strncasecmp("idle", object, 1)) {
 			field->type = PRINT_CLUSTER_ICPU;
 			field->name = xstrdup("Idle");
-			if(time_format == SREPORT_TIME_SECS_PER)
+			if(time_format == SREPORT_TIME_SECS_PER
+			   || time_format == SREPORT_TIME_MINS_PER
+			   || time_format == SREPORT_TIME_HOURS_PER)
 				field->len = 20;
 			else
 				field->len = 12;
@@ -174,7 +181,9 @@ static int _setup_print_fields_list(List format_list)
 		} else if(!strncasecmp("overcommited", object, 1)) {
 			field->type = PRINT_CLUSTER_OCPU;
 			field->name = xstrdup("Over Comm");
-			if(time_format == SREPORT_TIME_SECS_PER)
+			if(time_format == SREPORT_TIME_SECS_PER
+			   || time_format == SREPORT_TIME_MINS_PER
+			   || time_format == SREPORT_TIME_HOURS_PER)
 				field->len = 18;
 			else
 				field->len = 9;
@@ -182,7 +191,9 @@ static int _setup_print_fields_list(List format_list)
 		} else if(!strncasecmp("reported", object, 3)) {
 			field->type = PRINT_CLUSTER_TOTAL;
 			field->name = xstrdup("Reported");
-			if(time_format == SREPORT_TIME_SECS_PER)
+			if(time_format == SREPORT_TIME_SECS_PER
+			   || time_format == SREPORT_TIME_MINS_PER
+			   || time_format == SREPORT_TIME_HOURS_PER)
 				field->len = 20;
 			else
 				field->len = 12;
@@ -190,7 +201,9 @@ static int _setup_print_fields_list(List format_list)
 		} else if(!strncasecmp("reserved", object, 3)) {
 			field->type = PRINT_CLUSTER_RCPU;
 			field->name = xstrdup("Reserved");
-			if(time_format == SREPORT_TIME_SECS_PER)
+			if(time_format == SREPORT_TIME_SECS_PER
+			   || time_format == SREPORT_TIME_MINS_PER
+			   || time_format == SREPORT_TIME_HOURS_PER)
 				field->len = 18;
 			else
 				field->len = 9;
@@ -200,6 +213,11 @@ static int _setup_print_fields_list(List format_list)
 			fprintf(stderr, " Unknown field '%s'\n", object);
 			xfree(field);
 			continue;
+		}
+		if((tmp_char = strstr(object, "\%"))) {
+			int newlen = atoi(tmp_char+1);
+			if(newlen > 0) 
+				field->len = newlen;
 		}
 		list_append(print_fields_list, field);		
 	}
@@ -242,6 +260,7 @@ static List _get_cluster_list(int argc, char *argv[], uint32_t *total_time,
 		printf("%s %s - %s (%d*cpus secs)\n", 
 		       report_name, start_char, end_char, 
 		       (cluster_cond->usage_end - cluster_cond->usage_start));
+		printf("Time reported in %s\n", time_format_string);
 		printf("----------------------------------------"
 		       "----------------------------------------\n");
 	}
@@ -314,10 +333,11 @@ extern int cluster_utilization(int argc, char *argv[])
 		list_iterator_destroy(itr3);
 
 		total_acct.cpu_count /= list_count(cluster->accounting_list);
-		local_total_time = total_time * total_acct.cpu_count;
+		local_total_time =
+			(uint64_t)total_time * (uint64_t)total_acct.cpu_count;
 		total_reported = total_acct.alloc_secs + total_acct.down_secs 
 			+ total_acct.idle_secs + total_acct.resv_secs;
-		
+
 		while((field = list_next(itr2))) {
 			switch(field->type) {
 			case PRINT_CLUSTER_NAME:

@@ -362,6 +362,7 @@ static int _setup_print_fields_list(List format_list)
 
 	itr = list_iterator_create(format_list);
 	while((object = list_next(itr))) {
+		char *tmp_char = NULL;
 		field = xmalloc(sizeof(print_field_t));
 		if(!strncasecmp("Account", object, 1)) {
 			field->type = PRINT_JOB_ACCOUNT;
@@ -404,6 +405,11 @@ static int _setup_print_fields_list(List format_list)
 			xfree(field);
 			continue;
 		}
+		if((tmp_char = strstr(object, "\%"))) {
+			int newlen = atoi(tmp_char+1);
+			if(newlen > 0) 
+				field->len = newlen;
+		}
 		list_append(print_fields_list, field);		
 	}
 	list_iterator_destroy(itr);
@@ -416,8 +422,10 @@ static int _setup_grouping_print_fields_list(List grouping_list)
 	ListIterator itr = NULL;
 	print_field_t *field = NULL;
 	char *object = NULL;
+	char *last_object = NULL;
 	uint32_t last_size = 0;
 	uint32_t size = 0;
+	char *tmp_char = NULL;
 
 	if(!grouping_list || !list_count(grouping_list)) {
 		exit_code=1;
@@ -436,9 +444,21 @@ static int _setup_grouping_print_fields_list(List grouping_list)
 
 		field->type = PRINT_JOB_SIZE;
 		field->name = xstrdup_printf("%u-%u cpus", last_size, size-1);
-		field->len = 13;
+		if(time_format == SREPORT_TIME_SECS_PER
+		   || time_format == SREPORT_TIME_MINS_PER
+		   || time_format == SREPORT_TIME_HOURS_PER)
+			field->len = 20;
+		else
+			field->len = 13;
+
 		field->print_routine = sreport_print_time;
 		last_size = size;
+		last_object = object;
+		if((tmp_char = strstr(object, "\%"))) {
+			int newlen = atoi(tmp_char+1);
+			if(newlen > 0) 
+				field->len = newlen;
+		}
 		list_append(grouping_print_fields_list, field);		
 	}
 	list_iterator_destroy(itr);
@@ -447,8 +467,18 @@ static int _setup_grouping_print_fields_list(List grouping_list)
 		field = xmalloc(sizeof(print_field_t));
 		field->type = PRINT_JOB_SIZE;
 		field->name = xstrdup_printf("> %u cpus", last_size);
-		field->len = 13;
+		if(time_format == SREPORT_TIME_SECS_PER
+		   || time_format == SREPORT_TIME_MINS_PER
+		   || time_format == SREPORT_TIME_HOURS_PER)
+			field->len = 20;
+		else
+			field->len = 13;
 		field->print_routine = sreport_print_time;
+		if((tmp_char = strstr(last_object, "\%"))) {
+			int newlen = atoi(tmp_char+1);
+			if(newlen > 0) 
+				field->len = newlen;
+		}
 		list_append(grouping_print_fields_list, field);		
 	}
 
@@ -492,9 +522,10 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 
 	print_fields_list = list_create(destroy_print_field);
 
-	_set_cond(&i, argc, argv, job_cond, NULL, grouping_list);
-
-	slurm_addto_char_list(format_list, "Cl,a");
+	_set_cond(&i, argc, argv, job_cond, format_list, grouping_list);
+	
+	if(!format_list)
+		slurm_addto_char_list(format_list, "Cl,a");
 
 	if(!list_count(grouping_list)) 
 		slurm_addto_char_list(grouping_list, "50,250,500,1000");
@@ -536,6 +567,7 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 		printf("Job Sizes %s - %s (%d secs)\n", 
 		       start_char, end_char, 
 		       (job_cond->usage_end - job_cond->usage_start));
+		printf("Time reported in %s\n", time_format_string);
 		printf("----------------------------------------"
 		       "----------------------------------------\n");
 	}
@@ -611,8 +643,13 @@ no_assocs:
 
 	memset(&total_field, 0, sizeof(print_field_t));
 	total_field.type = PRINT_JOB_SIZE;
-	total_field.name = xstrdup("% of Cluster");
-	total_field.len = 12;
+	total_field.name = xstrdup_printf("Reported");
+	if(time_format == SREPORT_TIME_SECS_PER
+	   || time_format == SREPORT_TIME_MINS_PER
+	   || time_format == SREPORT_TIME_HOURS_PER)
+		total_field.len = 20;
+	else
+		total_field.len = 12;
 	total_field.print_routine = sreport_print_time;
 	list_append(header_list, &total_field);
 
@@ -696,7 +733,8 @@ no_assocs:
 				continue;
 			list_append(local_group->jobs, job);
 			local_group->count++;
-			total_secs = job->elapsed*job->alloc_cpus;
+			total_secs = (uint64_t)job->elapsed 
+				* (uint64_t)job->alloc_cpus;
 			local_group->cpu_secs += total_secs;
 			acct_group->cpu_secs += total_secs;
 			cluster_group->cpu_secs += total_secs;

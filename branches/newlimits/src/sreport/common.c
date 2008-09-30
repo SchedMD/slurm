@@ -58,10 +58,19 @@ extern void sreport_print_time(print_field_t *field,
 	} else {
 		char *output = NULL;
 		double percent = (double)value;
+		double temp_d = (double)value;
 		
 		switch(time_format) {
 		case SREPORT_TIME_SECS:
 			output = xstrdup_printf("%llu", value);
+			break;
+		case SREPORT_TIME_MINS:
+			temp_d /= 60;
+			output = xstrdup_printf("%.0lf", temp_d);
+			break;
+		case SREPORT_TIME_HOURS:
+			temp_d /= 3600;
+			output = xstrdup_printf("%.0lf", temp_d);
 			break;
 		case SREPORT_TIME_PERCENT:
 			percent /= total_time;
@@ -74,8 +83,23 @@ extern void sreport_print_time(print_field_t *field,
 			output = xstrdup_printf("%llu(%.2lf%%)",
 						value, percent);
 			break;
+		case SREPORT_TIME_MINS_PER:
+			percent /= total_time;
+			percent *= 100;
+			temp_d /= 60;
+			output = xstrdup_printf("%.0lf(%.2lf%%)",
+						temp_d, percent);
+			break;
+		case SREPORT_TIME_HOURS_PER:
+			percent /= total_time;
+			percent *= 100;
+			temp_d /= 3600;
+			output = xstrdup_printf("%.0lf(%.2lf%%)",
+						temp_d, percent);
+			break;
 		default:
-			output = xstrdup_printf("%llu", value);
+			temp_d /= 60;
+			output = xstrdup_printf("%.0lf", temp_d);
 			break;
 		}
 		
@@ -86,7 +110,7 @@ extern void sreport_print_time(print_field_t *field,
 		else if(print_fields_parsable_print)
 			printf("%s|", output);	
 		else
-			printf("%*s ", field->len, output);
+			printf("%-*.*s ", field->len, field->len, output);
 		xfree(output);
 	}
 }
