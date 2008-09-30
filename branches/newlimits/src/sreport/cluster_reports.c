@@ -260,7 +260,14 @@ static List _get_cluster_list(int argc, char *argv[], uint32_t *total_time,
 		printf("%s %s - %s (%d*cpus secs)\n", 
 		       report_name, start_char, end_char, 
 		       (cluster_cond->usage_end - cluster_cond->usage_start));
-		printf("Time reported in %s\n", time_format_string);
+		switch(time_format) {
+		case SREPORT_TIME_PERCENT:
+			printf("Time reported in %s\n", time_format_string);
+			break; 
+		default:
+			printf("Time reported in CPU %s\n", time_format_string);
+			break;
+		}
 		printf("----------------------------------------"
 		       "----------------------------------------\n");
 	}
