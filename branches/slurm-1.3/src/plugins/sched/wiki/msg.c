@@ -677,6 +677,7 @@ static void	_send_reply(slurm_fd new_fd, char *response)
 	checksum(sum, auth_key, (buf+20));   /* overwrite "CK=dummy..." above */
 	memcpy(buf, sum, 19);
 
+	i = strlen(buf) + 1;
 	(void) _send_msg(new_fd, buf, i);
 	xfree(buf);
 }
