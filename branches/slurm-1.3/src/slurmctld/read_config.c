@@ -569,6 +569,7 @@ static int _build_all_nodeline_info(slurm_ctl_conf_t *conf)
 		config_ptr->weight = node->weight;
 		if (node->feature)
 			config_ptr->feature = xstrdup(node->feature);
+		build_config_feature_array(config_ptr);
 
 		_build_single_nodeline_info(node, config_ptr, conf);
 	}

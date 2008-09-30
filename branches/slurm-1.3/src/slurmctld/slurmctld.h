@@ -184,6 +184,7 @@ struct config_record {
 	uint32_t weight;	/* arbitrary priority of node for 
 				 * scheduling work on */
 	char *feature;		/* arbitrary list of features associated */
+	char **feature_array;	/* array of feature names */
 	char *nodes;		/* name of nodes with this configuration */
 	bitstr_t *node_bitmap;	/* bitmap of nodes with this configuration */
 };
@@ -544,6 +545,10 @@ extern void abort_job_on_node(uint32_t job_id, struct job_record *job_ptr,
  * NOTE: the caller must xfree the memory at node_list when no longer required
  */
 extern char * bitmap2node_name (bitstr_t *bitmap) ;
+
+/* Given a config_record, clear any existing feature_array and
+ * if feature is set, then rebuild feature_array */
+extern void  build_config_feature_array(struct config_record *config_ptr);
 
 /*
  * create_config_record - create a config_record entry and set is values to 

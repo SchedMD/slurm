@@ -698,6 +698,7 @@ static void _list_delete_config (void *config_entry)
 	xassert(config_ptr);
 	xassert(config_ptr->magic == CONFIG_MAGIC);
 	xfree (config_ptr->feature);
+	build_config_feature_array(config_ptr);
 	xfree (config_ptr->nodes);
 	FREE_NULL_BITMAP (config_ptr->node_bitmap);
 	xfree (config_ptr);
@@ -1277,6 +1278,7 @@ static int _update_node_features(char *node_names, char *features)
 				config_ptr->feature = xstrdup(features);
 			else
 				config_ptr->feature = NULL;
+			build_config_feature_array(config_ptr);
 		} else {
 			/* partial update, split config_record */
 			new_config_ptr = create_config_record();
@@ -1286,8 +1288,7 @@ static int _update_node_features(char *node_names, char *features)
 				sizeof(struct config_record));
 			if (features[0])
 				new_config_ptr->feature = xstrdup(features);
-			else
-				config_ptr->feature = NULL;
+			build_config_feature_array(new_config_ptr);
 			new_config_ptr->node_bitmap = 
 				bit_copy(tmp_bitmap);
 			new_config_ptr->nodes = 
@@ -2469,4 +2470,32 @@ extern int send_nodes_to_accounting(time_t event_time)
 			break;
 	}
 	return rc;
+}
+
+/* Given a config_record, clear any existing feature_array and
+ * if feature is set, then rebuild feature_array */
+extern void  build_config_feature_array(struct config_record *config_ptr)
+{
+	int i;
+	char *tmp_str, *token, *last;
+
+	/* clear any old feature_array */
+	if (config_ptr->feature_array) {
+		for (i=0; config_ptr->feature_array[i]; i++)
+			xfree(config_ptr->feature_array[i]);
+		xfree(config_ptr->feature_array);
+	}
+
+	if (config_ptr->feature) {
+		i = strlen(config_ptr->feature);
+		config_ptr->feature_array = xmalloc(i * sizeof(char *));
+		tmp_str = xstrdup(config_ptr->feature);
+		i = 0;
+		token = strtok_r(tmp_str, ",", &last);
+		while (token) {
+			config_ptr->feature_array[i++] = strdup(token);
+			token = strtok_r(NULL, ",", &last);
+		}
+		xfree(tmp_str);
+	}
 }
