@@ -643,7 +643,7 @@ no_assocs:
 
 	memset(&total_field, 0, sizeof(print_field_t));
 	total_field.type = PRINT_JOB_SIZE;
-	total_field.name = xstrdup_printf("% of cluster");
+	total_field.name = xstrdup("% of cluster");
 	total_field.len = 12;
 	total_field.print_routine = sreport_print_time;
 	list_append(header_list, &total_field);
