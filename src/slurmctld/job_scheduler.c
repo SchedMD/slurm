@@ -1157,7 +1157,7 @@ static int _valid_feature_list(uint32_t job_id, List feature_list)
 
 static int _valid_node_feature(char *feature)
 {
-	int rc = ESLURM_INVALID_FEATURE;
+	int i, rc = ESLURM_INVALID_FEATURE;
 	ListIterator config_iterator;
 	struct config_record *config_ptr;
 
@@ -1166,11 +1166,18 @@ static int _valid_node_feature(char *feature)
 		fatal("list_iterator_create malloc failure");
 	while ((config_ptr = (struct config_record *) 
 			list_next(config_iterator))) {
-		if (config_ptr->feature &&
-		    (strcmp(feature, config_ptr->feature) == 0)) {
+		if (config_ptr->feature_array == NULL)
+			continue;
+		for (i=0; ; i++) {
+			if (config_ptr->feature_array[i] == NULL)
+				break;
+			if (strcmp(feature, config_ptr->feature_array[i]))
+				continue;
 			rc = SLURM_SUCCESS;
 			break;
 		}
+		if (rc == SLURM_SUCCESS)
+			break;
 	}
 	list_iterator_destroy(config_iterator);
 	return rc;

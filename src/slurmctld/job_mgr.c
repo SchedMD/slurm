@@ -2058,7 +2058,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 					      &req_bitmap);
 		if (error_code) {
 			error_code = ESLURM_INVALID_NODE_NAME;
-			goto cleanup;
+			goto cleanup_fail;
 		}
 		if (job_desc->contiguous)
 			bit_fill_gaps(req_bitmap);
@@ -2067,7 +2067,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 			     "partition %s", 
 			     job_desc->req_nodes, part_ptr->name);
 			error_code = ESLURM_REQUESTED_NODES_NOT_IN_PARTITION;
-			goto cleanup;
+			goto cleanup_fail;
 		}
 		
 		i = bit_set_count(req_bitmap);
@@ -2084,7 +2084,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 					      &exc_bitmap);
 		if (error_code) {
 			error_code = ESLURM_INVALID_NODE_NAME;
-			goto cleanup;
+			goto cleanup_fail;
 		}
 	}
 	if (exc_bitmap && req_bitmap) {
@@ -2099,7 +2099,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		if (first_set != -1) {
 			info("Job's required and excluded node lists overlap");
 			error_code = ESLURM_INVALID_NODE_NAME;
-			goto cleanup;
+			goto cleanup_fail;
 		}
 	}
 
@@ -2123,7 +2123,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 			info("MinNodes(%d) > GeometryNodes(%d)", 
 			     job_desc->min_nodes, tot);
 			error_code = ESLURM_TOO_MANY_REQUESTED_CPUS;
-			goto cleanup;
+			goto cleanup_fail;
 		}
 		job_desc->min_nodes = tot;
 	}
@@ -2158,7 +2158,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		     job_desc->num_procs, part_ptr->name, 
 		     part_ptr->total_cpus);
 		error_code = ESLURM_TOO_MANY_REQUESTED_CPUS;
-		goto cleanup;
+		goto cleanup_fail;
 	}
 	total_nodes = part_ptr->total_nodes;
 	select_g_alter_node_cnt(SELECT_APPLY_NODE_MIN_OFFSET,
@@ -2168,14 +2168,14 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		     job_desc->min_nodes, part_ptr->name, 
 		     part_ptr->total_nodes);
 		error_code = ESLURM_TOO_MANY_REQUESTED_NODES;
-		goto cleanup;
+		goto cleanup_fail;
 	}
 	if (job_desc->max_nodes && 
 	    (job_desc->max_nodes < job_desc->min_nodes)) {
 		info("Job's max_nodes(%u) < min_nodes(%u)",
 		     job_desc->max_nodes, job_desc->min_nodes);
 		error_code = ESLURM_TOO_MANY_REQUESTED_NODES;
-		goto cleanup;
+		goto cleanup_fail;
 	}
 
 	license_list = license_job_validate(job_desc->licenses, &valid);
@@ -2183,7 +2183,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		info("Job's requested licenses are invalid: %s", 
 		     job_desc->licenses);
 		error_code = ESLURM_INVALID_LICENSES;
-		goto cleanup;
+		goto cleanup_fail;
 	}
 
 	if ((error_code =_validate_job_create_req(job_desc)))
@@ -2195,7 +2195,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 						       &req_bitmap,
 						       &exc_bitmap))) {
 		error_code = ESLURM_ERROR_ON_DESC_TO_RECORD_COPY;
-		goto cleanup;
+		goto cleanup_fail;
 	}
 
 	job_ptr = *job_pptr;
@@ -2203,23 +2203,19 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	job_ptr->assoc_ptr = (void *) assoc_ptr;
 	if (update_job_dependency(job_ptr, job_desc->dependency)) {
 		error_code = ESLURM_DEPENDENCY;
-		goto cleanup;
+		goto cleanup_fail;
 	}
 	if (build_feature_list(job_ptr)) {
 		error_code = ESLURM_INVALID_FEATURE;
-		goto cleanup;
+		goto cleanup_fail;
 	}
 
 	if (job_desc->script
 	    &&  (!will_run)) {	/* don't bother with copy if just a test */
 		if ((error_code = _copy_job_desc_to_file(job_desc,
 							 job_ptr->job_id))) {
-			job_ptr->job_state = JOB_FAILED;
-			job_ptr->exit_code = 1;
-			job_ptr->state_reason = FAIL_SYSTEM;
-			job_ptr->start_time = job_ptr->end_time = time(NULL);
 			error_code = ESLURM_WRITING_TO_FILE;
-			goto cleanup;
+			goto cleanup_fail;
 		}
 		job_ptr->batch_flag = 1;
 	} else
@@ -2261,6 +2257,19 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	
 	
 cleanup:
+	if (license_list)
+		list_destroy(license_list);
+	FREE_NULL_BITMAP(req_bitmap);
+	FREE_NULL_BITMAP(exc_bitmap);
+	return error_code;
+
+cleanup_fail:
+	if (job_ptr) {
+		job_ptr->job_state = JOB_FAILED;
+		job_ptr->exit_code = 1;
+		job_ptr->state_reason = FAIL_SYSTEM;
+		job_ptr->start_time = job_ptr->end_time = time(NULL);
+	}
 	if (license_list)
 		list_destroy(license_list);
 	FREE_NULL_BITMAP(req_bitmap);
