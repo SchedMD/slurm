@@ -643,13 +643,8 @@ no_assocs:
 
 	memset(&total_field, 0, sizeof(print_field_t));
 	total_field.type = PRINT_JOB_SIZE;
-	total_field.name = xstrdup_printf("Reported");
-	if(time_format == SREPORT_TIME_SECS_PER
-	   || time_format == SREPORT_TIME_MINS_PER
-	   || time_format == SREPORT_TIME_HOURS_PER)
-		total_field.len = 20;
-	else
-		total_field.len = 12;
+	total_field.name = xstrdup_printf("% of cluster");
+	total_field.len = 12;
 	total_field.print_routine = sreport_print_time;
 	list_append(header_list, &total_field);
 
@@ -774,13 +769,17 @@ no_assocs:
 			list_iterator_reset(itr);
 			local_itr = list_iterator_create(acct_group->groups);
 			while((local_group = list_next(local_itr))) {
+				sreport_time_format_t temp_format;
 				field = list_next(itr2);
 				switch(field->type) {
 				case PRINT_JOB_SIZE:
+					temp_format = time_format;
+					time_format = SREPORT_TIME_PERCENT;
 					field->print_routine(
 						field,
 						local_group->cpu_secs,
 						acct_group->cpu_secs);
+					time_format = temp_format;
 					break;
 				default:
 					break;
