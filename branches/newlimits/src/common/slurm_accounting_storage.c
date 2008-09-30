@@ -802,6 +802,7 @@ extern void pack_acct_user_rec(void *in, uint16_t rpc_version, Buf buffer)
 extern int unpack_acct_user_rec(void **object, uint16_t rpc_version, Buf buffer)
 {
 	uint32_t uint32_tmp;
+	char *tmp_info = NULL;
 	acct_user_rec_t *object_ptr = xmalloc(sizeof(acct_user_rec_t));
 	uint32_t count = NO_VAL;
 	acct_coord_rec_t *coord = NULL;
@@ -840,6 +841,13 @@ extern int unpack_acct_user_rec(void **object, uint16_t rpc_version, Buf buffer)
 				       buffer);
 		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
 		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
+			for(i=0; i<count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info,
+						       &uint32_tmp, buffer);
+				xfree(tmp_info);
+			}
+		}
 		safe_unpack32(&object_ptr->uid, buffer);
 	} else if(rpc_version >= 3) {
 		safe_unpack16(&object_ptr->admin_level, buffer);
@@ -1058,6 +1066,7 @@ extern int unpack_acct_account_rec(void **object, uint16_t rpc_version,
 	uint32_t uint32_tmp;
 	int i;
 	uint32_t count;
+	char *tmp_info = NULL;
 	acct_coord_rec_t *coord = NULL;
 	acct_association_rec_t *assoc = NULL;
 	acct_account_rec_t *object_ptr = xmalloc(sizeof(acct_account_rec_t));
@@ -1096,6 +1105,13 @@ extern int unpack_acct_account_rec(void **object, uint16_t rpc_version,
 		safe_unpackstr_xmalloc(&object_ptr->organization,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
+			for(i=0; i<count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info,
+						       &uint32_tmp, buffer);
+				xfree(tmp_info);
+			}
+		}
 	} else if(rpc_version >= 3) {
 		safe_unpack32(&count, buffer);
 		if(count && count != NO_VAL) {
