@@ -21,8 +21,9 @@
 
 CONFDIR=/etc/slurm
 SBINDIR=/usr/sbin
+LIBDIR=/usr/lib
 
-# Source function library.
+#Source function library.
 if [ -f /etc/rc.status ]; then
    . /etc/rc.status
    SUSE=1
@@ -87,7 +88,7 @@ slurmstatus() {
     local rpid
     local pidfile
 
-    pidfile=`grep -i ${base}pid $CONFDIR/slurmdbd.conf | grep -v '^ *#'`
+    pidfile=`grep -i pidfile $CONFDIR/slurmdbd.conf | grep -v '^ *#'`
     if [ $? = 0 ]; then
         pidfile=${pidfile##*=}
         pidfile=${pidfile%#*}
@@ -108,17 +109,38 @@ slurmstatus() {
                 fi     
             done
         elif [ "$rpid" != "" -a "$pid" = "" ]; then
-            echo $"${base} is stopped"
-            return 1
+		echo $"${base} dead but pid file exists"
+		return 1
         fi 
 
     fi
-     
+
+    if [ "$base" = "slurmdbd" -a "$pid" != "" ] ; then
+        echo $"${base} (pid $pid) is running..."
+        return 0
+    fi
+    
     echo $"${base} is stopped"
     
     return 3
 }
 
+#
+# stop slurm daemons, 
+# wait for termination to complete (up to 10 seconds) before returning
+#
+slurmstop() {
+	stop $1
+	
+	for i in 1 2 3 4
+	do
+		sleep $i
+		slurmstatus $1
+		if [ $? != 0 ]; then
+			break
+		fi
+	done
+}
 #
 # The pathname substitution in daemon command assumes prefix and
 # exec_prefix are same.  This is the default, unless the user requests
@@ -131,7 +153,7 @@ case "$1" in
 	start slurmdbd
         ;;
     stop)
-	stop slurmdbd
+	slurmstop slurmdbd
         ;;
     status)
 	slurmstatus slurmdbd
