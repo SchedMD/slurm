@@ -509,6 +509,8 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 	print_field_t *field = NULL;
 	print_field_t total_field;
 	uint32_t total_time = 0;
+	sreport_time_format_t temp_format;
+	
 	List job_list = NULL;
 	List cluster_list = NULL;
 	List assoc_list = NULL;
@@ -769,17 +771,13 @@ no_assocs:
 			list_iterator_reset(itr);
 			local_itr = list_iterator_create(acct_group->groups);
 			while((local_group = list_next(local_itr))) {
-				sreport_time_format_t temp_format;
 				field = list_next(itr2);
 				switch(field->type) {
 				case PRINT_JOB_SIZE:
-					temp_format = time_format;
-					time_format = SREPORT_TIME_PERCENT;
 					field->print_routine(
 						field,
 						local_group->cpu_secs,
 						acct_group->cpu_secs);
-					time_format = temp_format;
 					break;
 				default:
 					break;
@@ -787,10 +785,13 @@ no_assocs:
 			}
 			list_iterator_reset(itr2);
 			list_iterator_destroy(local_itr);
+			
+			temp_format = time_format;
+			time_format = SREPORT_TIME_PERCENT;
 			total_field.print_routine(&total_field,
 						  acct_group->cpu_secs,
 						  cluster_group->cpu_secs, 1);
-			
+			time_format = temp_format;
 			printf("\n");
 		}
 		list_iterator_destroy(acct_itr);
