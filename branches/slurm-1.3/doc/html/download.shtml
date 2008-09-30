@@ -22,7 +22,7 @@ https://sourceforge.net/projects/slurm/</a><br>
 SLURM's PAM module has also been packaged for 
 <a href="http://packages.debian.org/src:libpam-slurm">Debian</a> and 
 <a href="http://packages.ubuntu.com/src:libpam-slurm">Ubuntu</a>
-(both named <i>libpam-slurm</i>).</p>
+(both named <i>libpam-slurm</i>).</li>
 
 <li><b>SPANK Plugins</b><br>
 SPANK provides a very generic interface for stackable plug-ins which
@@ -38,7 +38,18 @@ As assortment of SPANK plugins are available from<br>
 http://code.google.com/p/slurm-spank-plugins/</a>.<br>
 The current source for the plugins can be checked out of the subversion
 respository with the following command:<br>
-<i>svn checkout http://slurm-spank-plugins.googlecode.com/svn/trunk/ slurm-plugins</i>
+<i>svn checkout http://slurm-spank-plugins.googlecode.com/svn/trunk/ slurm-plugins</i></li>
+
+<li><b>I/O Watchdog</b><br>
+A facility for monitoring user applications, most notably parallel jobs, 
+for <i>hangs</i> which typically have a side-effect of ceasing all write 
+activity. This faciltiy attempts to monitor all write activity of an 
+application and trigger a set of user-defined actions when write activity 
+as ceased for a configurable period of time. A SPANK plugin is provided
+for use with SLURM. See the README and man page in tha package for more
+details. Download the latest source from:<br>
+<a href="http://io-watchdog.googlecode.com/files/io-watchdog-0.6.tar.bz2">
+http://io-watchdog.googlecode.com/files/io-watchdog-0.6.tar.bz2</a></li>
 
 </ul>
 <h1>Related Software</h1>
@@ -120,6 +131,6 @@ Portable Linux Processor Affinity (PLPA)</a></li>
 
 </ul>
 
-<p style="text-align:center;">Last modified 26 September 2008</p>
+<p style="text-align:center;">Last modified 30 September 2008</p>
 
 <!--#include virtual="footer.txt"-->
