@@ -524,7 +524,7 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 
 	_set_cond(&i, argc, argv, job_cond, format_list, grouping_list);
 	
-	if(!format_list)
+	if(!list_count(format_list))
 		slurm_addto_char_list(format_list, "Cl,a");
 
 	if(!list_count(grouping_list)) 
