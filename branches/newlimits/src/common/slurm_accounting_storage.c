@@ -842,7 +842,7 @@ extern int unpack_acct_user_rec(void **object, uint16_t rpc_version, Buf buffer)
 				       buffer);
 		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
 		safe_unpack32(&count, buffer);
-		if(count != NO_VAL) {
+		if(count && count != NO_VAL) {
 			for(i=0; i<count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
@@ -1106,7 +1106,7 @@ extern int unpack_acct_account_rec(void **object, uint16_t rpc_version,
 		safe_unpackstr_xmalloc(&object_ptr->organization,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&count, buffer);
-		if(count != NO_VAL) {
+		if(count && count != NO_VAL) {
 			for(i=0; i<count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
