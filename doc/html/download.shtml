@@ -24,6 +24,22 @@ SLURM's PAM module has also been packaged for
 <a href="http://packages.ubuntu.com/src:libpam-slurm">Ubuntu</a>
 (both named <i>libpam-slurm</i>).</p>
 
+<li><b>SPANK Plugins</b><br>
+SPANK provides a very generic interface for stackable plug-ins which
+may be used to dynamically modify the job launch code in SLURM. SPANK
+plugins may be built without access to SLURM source code. They need
+only be compiled against SLURM’s spank.h header file, added to the
+SPANK config file plugstack.conf, and they will be loaded at runtime
+during the next job launch. Thus, the SPANK infrastructure provides
+administrators and other developers a low cost, low effort ability to
+dynamically modify the runtime behavior of SLURM job launch.
+As assortment of SPANK plugins are available from<br>
+<a href="http://code.google.com/p/slurm-spank-plugins/">
+http://code.google.com/p/slurm-spank-plugins/</a>.<br>
+The current source for the plugins can be checked out of the subversion
+respository with the following command:<br>
+<i>svn checkout http://slurm-spank-plugins.googlecode.com/svn/trunk/ slurm-plugins</i>
+
 </ul>
 <h1>Related Software</h1>
 <ul>
@@ -104,6 +120,6 @@ Portable Linux Processor Affinity (PLPA)</a></li>
 
 </ul>
 
-<p style="text-align:center;">Last modified 25 July 2008</p>
+<p style="text-align:center;">Last modified 26 September 2008</p>
 
 <!--#include virtual="footer.txt"-->
