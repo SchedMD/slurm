@@ -3240,8 +3240,9 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 						assoc_table, incr,
 						my_left,
 						assoc_table);
-					debug3("%d query\n%s", mysql_conn->conn,
-					       up_query);
+					debug3("%d(%d) query\n%s", 
+					       mysql_conn->conn, 
+					       __LINE__, query);
 					rc = mysql_db_query(
 						mysql_conn->db_conn,
 						up_query);
@@ -3257,8 +3258,8 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 					}
 				}
 
-				debug3("%d query\n%s", mysql_conn->conn,
-				       sel_query);
+				debug3("%d(%d) query\n%s", mysql_conn->conn,
+				       __LINE__, sel_query);
 				if(!(sel_result = mysql_db_query_ret(
 					     mysql_conn->db_conn,
 					     sel_query, 0))) {

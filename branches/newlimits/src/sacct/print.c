@@ -133,7 +133,7 @@ void print_elapsed(type_t type, void *object)
 		printf("%-15s", "Elapsed");
 		break;
 	case UNDERSCORE:
-		printf("%-15s", "---------------");
+		printf("%-15.15s", "---------------");
 		break;
 	case JOB:
 		_elapsed_time(job->elapsed, 0, str);
@@ -704,7 +704,7 @@ void print_submit(type_t type, void *object)
 		printf("%-14s", "Submit Time");
 		break;
 	case UNDERSCORE:
-		printf("%-14s", "--------------");
+		printf("%-14.14s", "--------------");
 		break;
 	case JOB:
 		slurm_make_time_str(&job->submit, 
@@ -729,32 +729,32 @@ void print_start(type_t type, void *object)
 	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
 	jobcomp_job_rec_t *jobcomp = (jobcomp_job_rec_t *)object;
 	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
-	char time_str[32];
+	char time_str[19];
 	
 	switch(type) {
 	case HEADLINE:
-		printf("%-19s", "Start Time");
+		printf("%-14s", "Start Time");
 		break;
 	case UNDERSCORE:
-		printf("%-19s", "--------------------");
+		printf("%-14.14s", "-------------------");
 		break;
 	case JOB:
 		slurm_make_time_str(&job->start, 
 				    time_str, 
 				    sizeof(time_str));
-		printf("%-19s", time_str);
+		printf("%-14s", time_str);
 		break;
 	case JOBCOMP:
-		printf("%-19s", jobcomp->start_time);
+		printf("%-14s", jobcomp->start_time);
 		break;
 	case JOBSTEP:
 		slurm_make_time_str(&step->start, 
 				    time_str, 
 				    sizeof(time_str));
-		printf("%-19s", time_str);
+		printf("%-14s", time_str);
 		break;
 	default:
-		printf("%-19s", "n/a");
+		printf("%-14s", "n/a");
 		break;
 	} 
 }
@@ -788,28 +788,28 @@ void print_end(type_t type, void *object)
 	
 	switch(type) {
 	case HEADLINE:
-		printf("%-19s", "End Time");
+		printf("%-14s", "End Time");
 		break;
 	case UNDERSCORE:
-		printf("%-19s", "--------------------");
+		printf("%-14.14s", "--------------------");
 		break;
 	case JOB:
 		slurm_make_time_str(&job->end, 
 				    time_str, 
 				    sizeof(time_str));
-		printf("%-19s", time_str);
+		printf("%-14s", time_str);
 		break;
 	case JOBCOMP:
-		printf("%-19s", jobcomp->end_time);
+		printf("%-14s", jobcomp->end_time);
 		break;
 	case JOBSTEP:
 		slurm_make_time_str(&step->end, 
 				    time_str, 
 				    sizeof(time_str));
-		printf("%-19s", time_str);
+		printf("%-14s", time_str);
 		break;
 	default:
-		printf("%-19s", "n/a");
+		printf("%-14s", "n/a");
 		break;
 	} 
 }
