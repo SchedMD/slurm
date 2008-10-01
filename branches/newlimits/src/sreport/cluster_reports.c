@@ -234,6 +234,7 @@ static List _get_cluster_list(int argc, char *argv[], uint32_t *total_time,
 	int i=0;
 	List cluster_list = NULL;
 
+	cluster_cond->with_deleted = 1;
 	cluster_cond->with_usage = 1;
 
 	_set_cond(&i, argc, argv, cluster_cond, format_list);

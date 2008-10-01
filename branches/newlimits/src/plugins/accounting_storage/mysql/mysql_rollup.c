@@ -510,6 +510,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				   "over_cpu_secs=VALUES(over_cpu_secs), "
 				   "resv_cpu_secs=VALUES(resv_cpu_secs)",
 				   now);
+			debug3("%d query\n%s", mysql_conn->conn, query);
 			rc = mysql_db_query(mysql_conn->db_conn, query);
 			xfree(query);
 			if(rc != SLURM_SUCCESS) {

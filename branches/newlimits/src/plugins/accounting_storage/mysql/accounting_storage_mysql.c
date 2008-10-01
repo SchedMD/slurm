@@ -5352,9 +5352,11 @@ extern List acct_storage_p_remove_clusters(mysql_conn_t *mysql_conn,
 	/* We should not need to delete any cluster usage just set it
 	 * to deleted */
 	xstrfmtcat(query,
+		   "update %s set period_end=%d where (%s);"
 		   "update %s set mod_time=%d, deleted=1 where (%s);"
 		   "update %s set mod_time=%d, deleted=1 where (%s);"
 		   "update %s set mod_time=%d, deleted=1 where (%s);",
+		   event_table, now, assoc_char,
 		   cluster_day_table, now, assoc_char,
 		   cluster_hour_table, now, assoc_char,
 		   cluster_month_table, now, assoc_char);
@@ -7629,7 +7631,7 @@ is_user:
 		tmp, my_usage_table, assoc_table, assoc_table, end, start,
 		acct_assoc->id);
 	xfree(tmp);
-	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+	debug4("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);
@@ -8185,7 +8187,7 @@ extern int clusteracct_storage_p_get_usage(
 		tmp, my_usage_table, end, start, cluster_rec->name);
 
 	xfree(tmp);
-	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+	debug4("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);
