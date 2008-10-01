@@ -119,8 +119,10 @@ typedef struct srun_options {
         uint32_t plane_size;    /* lllp distribution -> plane_size for
 				 * when -m plane=<# of lllp per
 				 * plane> */      
+	char *cmd_name;		/* name of command to execute	*/
 	char *job_name;		/* --job-name=,     -J name	*/
-	bool job_name_set;	/* true if job_name explicitly set */
+	bool job_name_set_cmd;	/* true if job_name set by cmd line option */
+	bool job_name_set_env;	/* true if job_name set by env var */
 	unsigned int jobid;     /* --jobid=jobid                */
 	bool jobid_set;		/* true if jobid explicitly set */
 	char *mpi_type;		/* --mpi=type			*/

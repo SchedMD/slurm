@@ -2791,7 +2791,7 @@ static int _fill_in_coords(List results, List start_list,
 	list_iterator_destroy(itr);
 	
 	itr = list_iterator_create(results);
-	while((ba_node = (ba_node_t*) list_next(itr))) {	
+	while((ba_node = (ba_node_t*) list_next(itr))) {
 		if(!_find_yz_path(ba_node, 
 				  check_node->coord, 
 				  geometry, 
@@ -2976,11 +2976,21 @@ static int _find_yz_path(ba_node_t *ba_node, int *first,
 			}
 			debug4("%d %d %d %d",i2, node_tar[i2],
 			       first[i2], geometry[i2]);
-			if(node_tar[i2] < first[i2])
-				count = DIM_SIZE[i2]-first[i2]+node_tar[i2];
-			else
-				count = node_tar[i2]+first[i2];
-			if((count) == (geometry[i2])) {
+
+			/* Here we need to see where we are in
+			 * reference to the geo of this dimension.  If
+			 * we have not gotten the number we need in
+			 * the direction we just go to the next node
+			 * with 5 -> 1.  If we have all the midplanes
+			 * we need then we go through and finish the
+			 * torus if needed
+			 */			 
+			if(node_tar[i2] < first[i2]) 
+				count = node_tar[i2]+(DIM_SIZE[i2]-first[i2]);
+			else 
+				count = (node_tar[i2]-first[i2]);
+
+			if(count == geometry[i2]) {
 				debug4("found end of me %c%c%c",
 				       alpha_num[node_tar[X]],
 				       alpha_num[node_tar[Y]],
@@ -3051,7 +3061,7 @@ static int _find_yz_path(ba_node_t *ba_node, int *first,
 						port_tar = 5;
 				}
 								
-			} else {
+			} else if (count < geometry[i2]) {
 				if(conn_type == SELECT_TORUS || 
 				   (conn_type == SELECT_MESH && 
 				    (node_tar[i2] != first[i2]))) {
@@ -3078,6 +3088,11 @@ static int _find_yz_path(ba_node_t *ba_node, int *first,
 						int_wire[1].port_tar
 						= 5;
 				}
+			} else {
+				error("We were only looking for %d "
+				      "in the %d dim, but now we have %d",
+				      geometry[i2], i2, count);
+				return 0;
 			}
 		} else if(geometry[i2] == 1) {
 			/* FIX ME: This is put here because we got

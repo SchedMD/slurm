@@ -765,6 +765,7 @@ typedef struct {
 				   to a node than available processors,
 				   "false" to accept at most one task per
 				   processor. "false" by default. */
+	bool no_kill;		/* true of no kill on node failure */
 	uint16_t ckpt_interval;	/* checkpoint interval in minutes */
 	char *ckpt_path;	/* path to store checkpoint image files */
 	uint16_t verbose_level; /* for extra logging decisions in step

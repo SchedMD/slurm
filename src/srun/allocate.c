@@ -339,7 +339,10 @@ job_desc_msg_create_from_opts ()
 	j->contiguous     = opt.contiguous;
 	j->features       = opt.constraints;
 	j->immediate      = opt.immediate;
-	j->name           = opt.job_name;
+	if (opt.job_name)
+		j->name   = opt.job_name;
+	else
+		j->name   = opt.cmd_name;
 	j->req_nodes      = xstrdup(opt.nodelist);
 	
 	/* simplify the job allocation nodelist, 
@@ -543,7 +546,11 @@ create_job_step(srun_job_t *job)
 	job->ctx_params.node_list = opt.nodelist;
 	
 	job->ctx_params.network = opt.network;
-	job->ctx_params.name = opt.job_name;
+	job->ctx_params.no_kill = opt.no_kill;
+	if (opt.job_name_set_cmd && opt.job_name)
+		job->ctx_params.name = opt.job_name;
+	else
+		job->ctx_params.name = opt.cmd_name;
 	
 	debug("requesting job %u, user %u, nodes %u including (%s)", 
 	      job->ctx_params.job_id, job->ctx_params.uid,

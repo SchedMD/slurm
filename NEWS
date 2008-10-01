@@ -62,9 +62,28 @@ documents those changes that are of interest to users and admins.
  -- Add support for new job dependency type: singleton. Only one job from a 
     given user with a given name will execute with this dependency type.
     From Matthieu Hautreux, CEA.
- -- Updated contribs/python/hostlist: See "CHANGES" file in that directory
-    for details. From Kent Engstrom, NSC.
+ -- Updated contribs/python/hostlist to version 1.3: See "CHANGES" file in
+    that directory for details. From Kent Engstrom, NSC.
  -- Add SLURM_JOB_NAME environment variable for jobs submitted using sbatch.
+    In order to prevent the job steps from all having the same name as the 
+    batch job that spawned them, the SLURM_JOB_NAME environment variable is
+    ignored when setting the name of a job step from within an existing 
+    resource allocation.
+ -- For use with sched/wiki2 (Moab only), set salloc's default shell based 
+    upon the user who the job runs as rather than the user submitting the job 
+    (user root).
+ -- Fix to sched/backfill when job specifies no time limit and the partition
+    time limit is INFINITE.
+ -- Validate a job's constraints (node features) at job submit or modification 
+    time. Major re-write of resource allocation logic to support more complex
+    job feature requests.
+ -- For sched/backfill, correct logic to support job constraint specification
+    (e.g. node features).
+ -- Correct power save logic to avoid trying to wake DOWN node. From Matthieu
+    Hautreux, CEA.
+ -- Cancel a job step when one of it's nodes goes DOWN based upon the job 
+    step's --no-kill option, by default the step is killed (previously the 
+    job step remained running even without the --no-kill option).
 
 * Changes in SLURM 1.3.8
 ========================

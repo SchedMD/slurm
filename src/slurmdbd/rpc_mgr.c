@@ -227,8 +227,8 @@ static void * _service_connection(void *arg)
 				fini = true;
 			} else if (rc != SLURM_SUCCESS) {
 				error("Processing last message from "
-				      "connection %d(%s)",
-				      conn->newsockfd, conn->ip);
+				      "connection %d(%s) uid(%d)",
+				      conn->newsockfd, conn->ip, uid);
 				//fini = true;
 			}
 		} else {

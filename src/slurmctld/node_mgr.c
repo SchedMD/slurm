@@ -699,6 +699,7 @@ static void _list_delete_config (void *config_entry)
 	xassert(config_ptr);
 	xassert(config_ptr->magic == CONFIG_MAGIC);
 	xfree (config_ptr->feature);
+	build_config_feature_array(config_ptr);
 	xfree (config_ptr->nodes);
 	FREE_NULL_BITMAP (config_ptr->node_bitmap);
 	xfree (config_ptr);
@@ -1306,19 +1307,24 @@ static int _update_node_features(char *node_names, char *features)
 				config_ptr->feature = xstrdup(features);
 			else
 				config_ptr->feature = NULL;
+			build_config_feature_array(config_ptr);
 		} else {
 			/* partial update, split config_record */
 			new_config_ptr = create_config_record();
 			if (first_new == NULL);
 				first_new = new_config_ptr;
-			memcpy(new_config_ptr, config_ptr, 
-				sizeof(struct config_record));
+			new_config_ptr->magic       = config_ptr->magic;
+			new_config_ptr->cpus        = config_ptr->cpus;
+			new_config_ptr->sockets     = config_ptr->sockets;
+			new_config_ptr->cores       = config_ptr->cores;
+			new_config_ptr->threads     = config_ptr->threads;
+			new_config_ptr->real_memory = config_ptr->real_memory;
+			new_config_ptr->tmp_disk    = config_ptr->tmp_disk;
+			new_config_ptr->weight      = config_ptr->weight;
 			if (features[0])
 				new_config_ptr->feature = xstrdup(features);
-			else
-				config_ptr->feature = NULL;
-			new_config_ptr->node_bitmap = 
-				bit_copy(tmp_bitmap);
+			build_config_feature_array(new_config_ptr);
+			new_config_ptr->node_bitmap = bit_copy(tmp_bitmap);
 			new_config_ptr->nodes = 
 				bitmap2node_name(tmp_bitmap);
 			_update_config_ptr(tmp_bitmap, new_config_ptr);
@@ -2503,4 +2509,32 @@ extern int send_nodes_to_accounting(time_t event_time)
 			break;
 	}
 	return rc;
+}
+
+/* Given a config_record, clear any existing feature_array and
+ * if feature is set, then rebuild feature_array */
+extern void  build_config_feature_array(struct config_record *config_ptr)
+{
+	int i;
+	char *tmp_str, *token, *last = NULL;
+
+	/* clear any old feature_array */
+	if (config_ptr->feature_array) {
+		for (i=0; config_ptr->feature_array[i]; i++)
+			xfree(config_ptr->feature_array[i]);
+		xfree(config_ptr->feature_array);
+	}
+
+	if (config_ptr->feature) {
+		i = strlen(config_ptr->feature) + 1;	/* oversized */
+		config_ptr->feature_array = xmalloc(i * sizeof(char *));
+		tmp_str = xstrdup(config_ptr->feature);
+		i = 0;
+		token = strtok_r(tmp_str, ",", &last);
+		while (token) {
+			config_ptr->feature_array[i++] = xstrdup(token);
+			token = strtok_r(NULL, ",", &last);
+		}
+		xfree(tmp_str);
+	}
 }

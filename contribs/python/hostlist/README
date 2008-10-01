@@ -1,5 +1,5 @@
-The Python module hostlist.py knows how to expand and collect
-LLNL hostlist expressions. Example:
+The Python module hostlist.py knows how to expand and collect hostlist
+expressions. Example:
 
   % python
   Python 2.5.1 (r251:54863, Jul 10 2008, 17:24:48) 
@@ -32,16 +32,28 @@ perform set operations on them. Example:
   n9
   n10
 
-Install by running
+Install directly by running
 
   python setup.py build   (as yourself)
   python setup.py install (as root) 
 
-or just copy the hostlist.py and hostlist files to appropriate places.
+or just copy the hostlist.py, hostlist and hostlist.1 files to appropriate places.
 
 Build RPM packages by running:
 
-  rpmbuild -ta python-hostlist-1.2.tar.gz
+  rpmbuild -ta python-hostlist-VERSION.tar.gz
 
-If you have questions, suggestions, bug reports or patches, please send them
-to kent@nsc.liu.se.
+If you do not have the tar archive, build RPM packages by running:
+
+  python setup.py sdist
+  cp dist/python-hostlist-VERSION.tar.gz ~/rpmbuild/SOURCES
+  rpmbuild -ba python-hostlist.spec  
+
+You will find new releases at:
+
+  http://www.nsc.liu.se/~kent/python-hostlist/
+
+If you have questions, suggestions, bug reports or patches, please
+send them to:
+
+  kent@nsc.liu.se.

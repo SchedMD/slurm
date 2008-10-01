@@ -223,7 +223,7 @@ static void _attempt_backfill(void)
 	uint32_t end_time, end_reserve, time_limit;
 	uint32_t min_nodes, max_nodes, req_nodes;
 	uint16_t orig_shared;
-	bitstr_t *avail_bitmap = NULL;
+	bitstr_t *avail_bitmap = NULL, *tmp_bitmap;
 	time_t now = time(NULL);
 	node_space_map_t node_space[MAX_BACKFILL_JOB_CNT + 2];
 
@@ -287,10 +287,19 @@ static void _attempt_backfill(void)
 		}
 
 		/* Determine job's expected completion time */
-		if (job_ptr->time_limit == NO_VAL)
-			time_limit = part_ptr->max_time;
-		else
-			time_limit = job_ptr->time_limit;
+		if (job_ptr->time_limit == NO_VAL) {
+			if (part_ptr->max_time == INFINITE)
+				time_limit = 365 * 24 * 60; /* one year */
+			else
+				time_limit = part_ptr->max_time;
+		} else {
+			if (part_ptr->max_time == INFINITE)
+				time_limit = job_ptr->time_limit;
+			else
+				time_limit = MIN(job_ptr->time_limit,
+						 part_ptr->max_time);
+		}
+		/* Permit a bit of extra time for job clean-up */
 		end_time = (time_limit * 60) + now;
 
 		/* Identify usable nodes for this job */
@@ -324,17 +333,18 @@ static void _attempt_backfill(void)
 		 * then on shared nodes (if so configured). */
 		orig_shared = job_ptr->details->shared;
 		job_ptr->details->shared = 0;
-		j = select_g_job_test(job_ptr, avail_bitmap,
-				min_nodes, max_nodes, req_nodes, 
-				SELECT_MODE_WILL_RUN);
+		tmp_bitmap = bit_copy(avail_bitmap);
+		j = select_nodes(job_ptr, true, &avail_bitmap); 
 		job_ptr->details->shared = orig_shared;
 		if ((j != SLURM_SUCCESS) && (orig_shared != 0)) {
-			j = select_g_job_test(job_ptr, avail_bitmap,
-					min_nodes, max_nodes, req_nodes, 
-					SELECT_MODE_WILL_RUN);
-		}
+			FREE_NULL_BITMAP(avail_bitmap);
+			avail_bitmap= tmp_bitmap;
+			j = select_nodes(job_ptr, true, &avail_bitmap);
+		} else
+			FREE_NULL_BITMAP(tmp_bitmap);
 		if (j != SLURM_SUCCESS)
 			continue;	/* not runable */
+
 		if ((job_ptr->start_time <= now) &&
 		    (_start_job(job_ptr, avail_bitmap) != SLURM_SUCCESS)) {
 			/* Planned to start job, but something bad happended */

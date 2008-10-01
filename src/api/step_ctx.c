@@ -139,6 +139,7 @@ slurm_step_ctx_create (const slurm_step_ctx_params_t *step_params)
 	ctx->magic	= STEP_CTX_MAGIC;
 	ctx->job_id	= step_req->job_id;
 	ctx->user_id	= step_req->user_id;
+	ctx->no_kill	= step_params->no_kill;
 	ctx->step_req   = step_req;
 	ctx->step_resp	= step_resp;
 	ctx->verbose_level = step_params->verbose_level;
@@ -213,6 +214,7 @@ slurm_step_ctx_create_no_alloc (const slurm_step_ctx_params_t *step_params,
 	ctx->magic	= STEP_CTX_MAGIC;
 	ctx->job_id	= step_req->job_id;
 	ctx->user_id	= step_req->user_id;
+	ctx->no_kill	= step_params->no_kill;
 	ctx->step_req   = step_req;
 	ctx->step_resp	= step_resp;
 	ctx->verbose_level = step_params->verbose_level;
@@ -399,15 +401,16 @@ slurm_step_ctx_daemon_per_node_hack(slurm_step_ctx_t *ctx)
 
 	/* hack the context step layout */
 	old_layout = ctx->step_resp->step_layout;
-	new_layout = (slurm_step_layout_t *)xmalloc(sizeof(slurm_step_layout_t));
+	new_layout = (slurm_step_layout_t *)
+		     xmalloc(sizeof(slurm_step_layout_t));
 	new_layout->node_cnt = old_layout->node_cnt;
 	new_layout->task_cnt = old_layout->node_cnt;
 	new_layout->node_list = xstrdup(old_layout->node_list);
 	slurm_step_layout_destroy(old_layout);
-	new_layout->tasks =
-		(uint16_t *)xmalloc(sizeof(uint16_t) * new_layout->node_cnt);
-	new_layout->tids =
-		(uint32_t **)xmalloc(sizeof(uint32_t *) * new_layout->node_cnt);
+	new_layout->tasks = (uint16_t *) xmalloc(sizeof(uint16_t) * 
+						 new_layout->node_cnt);
+	new_layout->tids = (uint32_t **) xmalloc(sizeof(uint32_t *) * 
+						 new_layout->node_cnt);
 	for (i = 0; i < new_layout->node_cnt; i++) {
 		new_layout->tasks[i] = 1;
 		new_layout->tids[i] = (uint32_t *)xmalloc(sizeof(uint32_t));

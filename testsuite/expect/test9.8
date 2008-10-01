@@ -108,7 +108,7 @@ if {$start_cnt < $job_cnt} {
 #
 set user_name ""
 
-exec $bin_sleep [expr $delay + 6]
+exec $bin_sleep $delay
 spawn $bin_id -un
 expect {
 	-re "($alpha_numeric_under)" {
@@ -126,16 +126,18 @@ expect {
 # Determine if this is AIX (for task count, federation switch 
 # prevents each node from running more than 16 tasks)
 #
-set desired_tasks [expr $task_cnt * 2 / 3]
 if {[test_aix]} {
 	set desired_tasks 15
+} else {
+	set desired_tasks [expr $task_cnt * 2 / 3]
 }
 
-set unresponsive 1
-while { $unresponsive } {
+set matches 0
+while { $matches < $desired_tasks } {
 	log_user 0
 	set matches 0
 	set timeout 60
+	exec $bin_sleep 3
 	spawn $squeue --steps --user $user_name
 	expect {
 		-re "sleep" {
@@ -143,16 +145,25 @@ while { $unresponsive } {
 			exp_continue
 		}
 		-re "error:" {
+			send_user "\nFAILURE: squeue error\n"
+			set exit_code 1
+			exp_continue
 		}
 		timeout {
+			break
 		}
 		eof {
 			wait
-			set unresponsive 0	
+			break
 		}
 	}
+	if {$matches == 0} {
+		break
+	}
 }
-if {[test_aix]} {sleep 5}
+if {[test_aix]} {
+	sleep 5
+}
 
 log_user 1
 if {$matches < $desired_tasks} {
