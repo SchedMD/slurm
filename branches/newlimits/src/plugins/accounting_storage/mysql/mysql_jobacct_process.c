@@ -390,13 +390,6 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		xstrcat(extra, ")");
 	} 
 no_cond:	
-/* 	if(extra) */
-/* 		xstrcat(extra, " && ("); */
-/* 	else */
-/* 		xstrcat(extra, " where ("); */
-	
-/* 	xstrcat(extra, "(t1.associd=0 && t1.cluster is not null) " */
-/* 		"|| t1.associd!=0)");	 */
 
 	xfree(tmp);
 	xstrfmtcat(tmp, "%s", job_req_inx[0]);
