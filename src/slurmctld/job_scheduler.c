@@ -1118,7 +1118,7 @@ static int _valid_feature_list(uint32_t job_id, List feature_list)
 	int rc = SLURM_SUCCESS;
 
 	if (feature_list == NULL) {
-		debug("Job %u feature list is empty", job_id);
+		debug2("Job %u feature list is empty", job_id);
 		return rc;
 	}
 

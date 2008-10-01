@@ -38,7 +38,8 @@ documents those changes that are of interest to users and admins.
  -- Fix to sched/backfill when job specifies no time limit and the partition
     time limit is INFINITE.
  -- Validate a job's constraints (node features) at job submit or modification 
-    time.
+    time. Major re-write of resource allocation logic to support more complex
+    job feature requests.
  -- For sched/backfill, correct logic to support job constraint specification
     (e.g. node features).
 

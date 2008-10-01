@@ -2492,7 +2492,7 @@ extern void  build_config_feature_array(struct config_record *config_ptr)
 	}
 
 	if (config_ptr->feature) {
-		i = strlen(config_ptr->feature);
+		i = strlen(config_ptr->feature) + 1;	/* oversized */
 		config_ptr->feature_array = xmalloc(i * sizeof(char *));
 		tmp_str = xstrdup(config_ptr->feature);
 		i = 0;
