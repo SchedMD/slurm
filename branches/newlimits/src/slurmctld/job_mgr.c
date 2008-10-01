@@ -775,7 +775,8 @@ static int _load_job_state(Buf buffer)
 		/* make sure we have started this job in accounting */
 		if(job_ptr->assoc_id && !job_ptr->db_index && job_ptr->nodes) {
 			debug("starting job %u in accounting", job_ptr->job_id);
-			jobacct_storage_g_job_start(acct_db_conn, job_ptr);
+			jobacct_storage_g_job_start(
+				acct_db_conn, slurmctld_cluster_name, job_ptr);
 			if(job_ptr->job_state == JOB_SUSPENDED) 
 				jobacct_storage_g_job_suspend(acct_db_conn,
 							      job_ptr);
@@ -5081,7 +5082,8 @@ extern void job_completion_logger(struct job_record  *job_ptr)
 	 * INFINITE and the database will understand what happened.
 	 */ 
 	if(!job_ptr->nodes && !job_ptr->db_index) {
-		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
+		jobacct_storage_g_job_start(
+			acct_db_conn, slurmctld_cluster_name, job_ptr);
 	}
 
 	jobacct_storage_g_job_complete(acct_db_conn, job_ptr);
@@ -5121,7 +5123,8 @@ extern bool job_independent(struct job_record *job_ptr)
 			 * order to calculate reserved time (a measure of
 			 * system over-subscription), job really is not
 			 * starting now */
-			jobacct_storage_g_job_start(acct_db_conn, job_ptr);
+			jobacct_storage_g_job_start(
+				acct_db_conn, slurmctld_cluster_name, job_ptr);
 		}
 		return true;
 	} else if (rc == 1) {
@@ -5880,7 +5883,8 @@ extern int update_job_account(char *module, struct job_record *job_ptr,
 
 	if (job_ptr->details && job_ptr->details->begin_time) {
 		/* Update account associated with the eligible time */
-		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
+		jobacct_storage_g_job_start(
+			acct_db_conn, slurmctld_cluster_name, job_ptr);
 	}
 	last_job_update = time(NULL);
 
@@ -5899,7 +5903,8 @@ extern int send_jobs_to_accounting(time_t event_time)
 			continue;
 		debug("first reg: starting job %u in accounting",
 		      job_ptr->job_id);
-		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
+		jobacct_storage_g_job_start(
+			acct_db_conn, slurmctld_cluster_name, job_ptr);
 
 		if(job_ptr->job_state == JOB_SUSPENDED) 
 			jobacct_storage_g_job_suspend(acct_db_conn, job_ptr);

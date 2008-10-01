@@ -240,6 +240,7 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 		{ "associd", "bigint not null" },
 		{ "uid", "smallint not null" },
 		{ "gid", "smallint not null" },
+		{ "cluster", "text" },
 		{ "partition", "text not null" },
 		{ "blockid", "text" },
 		{ "account", "text" },
@@ -1122,6 +1123,7 @@ extern int clusteracct_storage_p_get_usage(
  * load into the storage the start of a job
  */
 extern int jobacct_storage_p_job_start(PGconn *acct_pgsql_db, 
+				       char *cluster_name,
 				       struct job_record *job_ptr)
 {
 #ifdef HAVE_PGSQL
@@ -1285,7 +1287,8 @@ extern int jobacct_storage_p_job_complete(PGconn *acct_pgsql_db,
 			/* If we get an error with this just fall
 			 * through to avoid an infinite loop
 			 */
-			if(jobacct_storage_p_job_start(acct_pgsql_db, job_ptr)
+			if(jobacct_storage_p_job_start(
+				   acct_pgsql_db, NULL, job_ptr)
 			   == SLURM_ERROR) {
 				error("couldn't add job %u at job completion",
 				      job_ptr->job_id);

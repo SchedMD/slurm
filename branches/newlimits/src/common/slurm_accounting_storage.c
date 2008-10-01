@@ -137,7 +137,7 @@ typedef struct slurm_acct_storage_ops {
 				    void *cluster_rec, 
 				    time_t start, time_t end);
 	int  (*register_ctld)      (char *cluster, uint16_t port);
-	int  (*job_start)          (void *db_conn,
+	int  (*job_start)          (void *db_conn, char *cluster_name,
 				    struct job_record *job_ptr);
 	int  (*job_complete)       (void *db_conn,
 				    struct job_record *job_ptr);
@@ -4622,12 +4622,13 @@ extern int clusteracct_storage_g_register_ctld(char *cluster, uint16_t port)
 /* 
  * load into the storage the start of a job
  */
-extern int jobacct_storage_g_job_start (void *db_conn,
+extern int jobacct_storage_g_job_start (void *db_conn, char *cluster_name,
 					struct job_record *job_ptr) 
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
-	return (*(g_acct_storage_context->ops.job_start))(db_conn, job_ptr);
+	return (*(g_acct_storage_context->ops.job_start))(
+		db_conn, cluster_name, job_ptr);
 }
 
 /* 

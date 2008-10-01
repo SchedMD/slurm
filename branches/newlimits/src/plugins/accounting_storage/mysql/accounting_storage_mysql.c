@@ -2034,6 +2034,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "associd", "mediumint unsigned not null" },
 		{ "uid", "smallint unsigned not null" },
 		{ "gid", "smallint unsigned not null" },
+		{ "cluster", "tinytext" },
 		{ "partition", "tinytext not null" },
 		{ "blockid", "tinytext" },
 		{ "account", "tinytext" },
@@ -8223,6 +8224,7 @@ extern int clusteracct_storage_p_get_usage(
  * load into the storage the start of a job
  */
 extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn, 
+				       char *cluster_name,
 				       struct job_record *job_ptr)
 {
 #ifdef HAVE_MYSQL
@@ -8313,6 +8315,8 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 			"(jobid, associd, uid, gid, nodelist, ",
 			job_table);
 
+		if(cluster_name) 
+			xstrcat(query, "cluster, ");
 		if(job_ptr->account) 
 			xstrcat(query, "account, ");
 		if(job_ptr->partition) 
@@ -8327,6 +8331,8 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 			   job_ptr->job_id, job_ptr->assoc_id,
 			   job_ptr->user_id, job_ptr->group_id, nodes);
 		
+		if(cluster_name) 
+			xstrfmtcat(query, "\"%s\", ", cluster_name);
 		if(job_ptr->account) 
 			xstrfmtcat(query, "\"%s\", ", job_ptr->account);
 		if(job_ptr->partition) 
@@ -8465,8 +8471,8 @@ extern int jobacct_storage_p_job_complete(mysql_conn_t *mysql_conn,
 			/* If we get an error with this just fall
 			 * through to avoid an infinite loop
 			 */
-			if(jobacct_storage_p_job_start(mysql_conn, job_ptr)
-			   == SLURM_ERROR) {
+			if(jobacct_storage_p_job_start(
+				   mysql_conn, NULL, job_ptr) == SLURM_ERROR) {
 				error("couldn't add job %u at job completion",
 				      job_ptr->job_id);
 				return SLURM_SUCCESS;
@@ -8560,8 +8566,8 @@ extern int jobacct_storage_p_step_start(mysql_conn_t *mysql_conn,
 			/* If we get an error with this just fall
 			 * through to avoid an infinite loop
 			 */
-			if(jobacct_storage_p_job_start(mysql_conn,
-						       step_ptr->job_ptr)
+			if(jobacct_storage_p_job_start(
+				   mysql_conn, NULL, step_ptr->job_ptr)
 			   == SLURM_ERROR) {
 				error("couldn't add job %u at step start",
 				      step_ptr->job_ptr->job_id);
@@ -8682,7 +8688,7 @@ extern int jobacct_storage_p_step_complete(mysql_conn_t *mysql_conn,
 			/* If we get an error with this just fall
 			 * through to avoid an infinite loop
 			 */
-			if(jobacct_storage_p_job_start(mysql_conn,
+			if(jobacct_storage_p_job_start(mysql_conn, NULL,
 						       step_ptr->job_ptr)
 			   == SLURM_ERROR) {
 				error("couldn't add job %u "
@@ -8768,8 +8774,8 @@ extern int jobacct_storage_p_suspend(mysql_conn_t *mysql_conn,
 			/* If we get an error with this just fall
 			 * through to avoid an infinite loop
 			 */
-			if(jobacct_storage_p_job_start(mysql_conn, job_ptr)
-			   == SLURM_ERROR) {
+			if(jobacct_storage_p_job_start(
+				   mysql_conn, NULL, job_ptr) == SLURM_ERROR) {
 				error("couldn't suspend job %u",
 				      job_ptr->job_id);
 				return SLURM_SUCCESS;

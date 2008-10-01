@@ -426,7 +426,7 @@ int main(int argc, char *argv[])
 
 		info("Running as primary controller");
 		clusteracct_storage_g_register_ctld(
-			slurmctld_conf.cluster_name, 
+			slurmctld_cluster_name, 
 			slurmctld_conf.slurmctld_port);
 		
 		_accounting_cluster_ready();

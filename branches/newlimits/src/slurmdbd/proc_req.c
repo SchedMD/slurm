@@ -1295,7 +1295,7 @@ static int  _job_start(slurmdbd_conn_t *slurmdbd_conn,
 		       job_start_msg->job_id, job_start_msg->name);
 	}
 	job_start_rc_msg.return_code = jobacct_storage_g_job_start(
-		slurmdbd_conn->db_conn, &job);
+		slurmdbd_conn->db_conn, job_start_msg->cluster, &job);
 	job_start_rc_msg.db_index = job.db_index;
 
 	slurmdbd_free_job_start_msg(slurmdbd_conn->rpc_version, 

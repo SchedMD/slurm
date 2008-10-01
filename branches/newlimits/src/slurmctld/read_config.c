@@ -1246,7 +1246,8 @@ static void _acct_restore_active_jobs(void)
 			jobacct_storage_g_job_suspend(acct_db_conn, job_ptr);
 		if ((job_ptr->job_state == JOB_SUSPENDED) ||
 		    (job_ptr->job_state == JOB_RUNNING)) {
-			jobacct_storage_g_job_start(acct_db_conn, job_ptr);
+			jobacct_storage_g_job_start(
+				acct_db_conn, slurmctld_cluster_name, job_ptr);
 			step_iterator = list_iterator_create(job_ptr->step_list);
 			while ((step_ptr = (struct step_record *) 
 					   list_next(step_iterator))) {

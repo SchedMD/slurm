@@ -816,7 +816,7 @@ extern int clusteracct_storage_g_get_usage(
 /* 
  * load into the storage the start of a job
  */
-extern int jobacct_storage_g_job_start (void *db_conn, 
+extern int jobacct_storage_g_job_start (void *db_conn, char *cluster_name,
 					struct job_record *job_ptr);
 
 /* 

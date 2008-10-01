@@ -1119,7 +1119,7 @@ extern int clusteracct_storage_p_get_usage(
 /* 
  * load into the storage the start of a job
  */
-extern int jobacct_storage_p_job_start(void *db_conn,
+extern int jobacct_storage_p_job_start(void *db_conn, char *cluster_name,
 				       struct job_record *job_ptr)
 {
 	slurmdbd_msg_t msg, msg_rc;
@@ -1135,6 +1135,7 @@ extern int jobacct_storage_p_job_start(void *db_conn,
 	}
 
 	req.alloc_cpus    = job_ptr->total_procs;
+	req.cluster       = cluster_name;
 	req.account       = job_ptr->account;
 	req.assoc_id      = job_ptr->assoc_id;
 #ifdef HAVE_BG
