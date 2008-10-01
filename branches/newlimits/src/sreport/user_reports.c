@@ -138,6 +138,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 	}
 	assoc_cond = user_cond->assoc_cond;
 
+	if(!assoc_cond->cluster_list)
+		assoc_cond->cluster_list = list_create(slurm_destroy_char);
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
 		if (!strncasecmp (argv[i], "Set", 3)) {
@@ -166,9 +168,6 @@ static int _set_cond(int *start, int argc, char *argv[],
 					argv[i]+end);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Clusters", 1)) {
-			if(!assoc_cond->cluster_list)
-				assoc_cond->cluster_list =
-					list_create(slurm_destroy_char);
 			slurm_addto_char_list(assoc_cond->cluster_list,
 					argv[i]+end);
 			set = 1;
