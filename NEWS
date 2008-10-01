@@ -33,8 +33,6 @@ documents those changes that are of interest to users and admins.
  -- For use with sched/wiki2 (Moab only), set salloc's default shell based 
     upon the user who the job runs as rather than the user submitting the job 
     (user root).
- -- Cancel a job step when one of it's nodes goes DOWN.  Previously the step
-    would continue if the job allocation was made with a --no-kill option. 
  -- Fix to sched/backfill when job specifies no time limit and the partition
     time limit is INFINITE.
  -- Validate a job's constraints (node features) at job submit or modification 
