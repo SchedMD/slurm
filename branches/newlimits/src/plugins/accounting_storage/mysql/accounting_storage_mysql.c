@@ -149,6 +149,30 @@ extern List acct_storage_p_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 					List acct_list,
 					acct_user_cond_t *user_cond);
 
+
+/* here to add \\ to all \" in a string */
+static char *_fix_double_quotes(char *str)
+{
+	int i=0, start=0;
+	char *fixed = NULL;
+
+	if(!str)
+		return NULL;
+	
+	while(str[i]) {
+		if(str[i] == '\\' && str[i+1] == '\"') {
+			char *tmp = xstrndup(str+start, i-start);
+			xstrfmtcat(fixed, "%s\\\"", tmp);
+			xfree(tmp);
+			i++;
+			start = i + 1;
+		} 
+		
+		i++;
+	}
+	return fixed;
+}
+
 /* This should be added to the beginning of each function to make sure
  * we have a connection to the database before we try to use it.
  */
@@ -332,7 +356,7 @@ static int _setup_association_limits(acct_association_rec_t *assoc,
 		list_iterator_destroy(qos_itr);
 		
 		xstrfmtcat(*vals, ", '%s'", qos_val); 		
-		xstrfmtcat(*extra, ", qos=\"%s\"", qos_val); 
+		xstrfmtcat(*extra, ", qos='%s'", qos_val); 
 		xfree(qos_val);
 	} else if((qos_level == QOS_LEVEL_SET) && (normal_qos_id != NO_VAL)) { 
 		/* Add normal qos to the account */
@@ -1139,6 +1163,8 @@ static int _modify_common(mysql_conn_t *mysql_conn,
 {
 	char *query = NULL;
 	int rc = SLURM_SUCCESS;
+	char *tmp_cond_char = _fix_double_quotes(cond_char);
+	char *tmp_vals = _fix_double_quotes(vals);
 
 	xstrfmtcat(query, 
 		   "update %s set mod_time=%d%s "
@@ -1150,7 +1176,9 @@ static int _modify_common(mysql_conn_t *mysql_conn,
 		   "(timestamp, action, name, actor, info) "
 		   "values (%d, %d, \"%s\", \"%s\", \"%s\");",
 		   txn_table,
-		   now, type, cond_char, user_name, vals);
+		   now, type, tmp_cond_char, user_name, tmp_vals);
+	xfree(tmp_cond_char);
+	xfree(tmp_vals);
 	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);		
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
@@ -1406,6 +1434,7 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 	MYSQL_ROW row;
 	time_t day_old = now - DELETE_SEC_BACK;
 	bool has_jobs = false;
+	char *tmp_name_char = _fix_double_quotes(name_char);
 
 	/* If we have jobs associated with this we do not want to
 	 * really delete it for accounting purposes.  This is for
@@ -1438,7 +1467,8 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 		   "insert into %s (timestamp, action, name, actor) "
 		   "values (%d, %d, \"%s\", \"%s\");",
 		   txn_table,
-		   now, type, name_char, user_name);
+		   now, type, tmp_name_char, user_name);
+	xfree(tmp_name_char);
 
 	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
@@ -2597,9 +2627,9 @@ extern int acct_storage_p_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 			continue;
 		}
 		xstrcat(cols, "creation_time, mod_time, name, default_acct");
-		xstrfmtcat(vals, "%d, %d, \"%s\", \"%s\"", 
+		xstrfmtcat(vals, "%d, %d, '%s', '%s'", 
 			   now, now, object->name, object->default_acct); 
-		xstrfmtcat(extra, ", default_acct=\"%s\"",
+		xstrfmtcat(extra, ", default_acct='%s'",
 			   object->default_acct);
 		
 		if(object->admin_level != ACCT_ADMIN_NOTSET) {
@@ -2791,7 +2821,8 @@ extern int acct_storage_p_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *cols = NULL, *vals = NULL, *query = NULL, *txn_query = NULL;
 	time_t now = time(NULL);
 	char *user_name = NULL;
-	char *extra = NULL;
+	char *extra = NULL, *tmp_extra = NULL;
+	
 	int affect_rows = 0;
 	List assoc_list = list_create(destroy_acct_association_rec);
 
@@ -2843,11 +2874,13 @@ extern int acct_storage_p_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 			continue;
 		}
 
+		tmp_extra = _fix_double_quotes(extra);
+
 		if(txn_query)
 			xstrfmtcat(txn_query, 	
 				   ", (%d, %u, \"%s\", \"%s\", \"%s\")",
 				   now, DBD_ADD_ACCOUNTS, object->name,
-				   user_name, extra);
+				   user_name, tmp_extra);
 		else
 			xstrfmtcat(txn_query, 	
 				   "insert into %s "
@@ -2855,7 +2888,8 @@ extern int acct_storage_p_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 				   "values (%d, %u, \"%s\", \"%s\", \"%s\")",
 				   txn_table,
 				   now, DBD_ADD_ACCOUNTS, object->name,
-				   user_name, extra);
+				   user_name, tmp_extra);
+		xfree(tmp_extra);
 		xfree(extra);
 		
 		if(!object->assoc_list)
@@ -3056,7 +3090,7 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 	int i=0;
 	acct_association_rec_t *object = NULL;
 	char *cols = NULL, *vals = NULL, *txn_query = NULL,
-		*extra = NULL, *query = NULL, *update = NULL;
+		*extra = NULL, *query = NULL, *update = NULL, *tmp_extra = NULL;
 	char *parent = NULL;
 	time_t now = time(NULL);
 	char *user_name = NULL;
@@ -3357,11 +3391,13 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 			list_remove(itr);
 		}
 
+		tmp_extra = _fix_double_quotes(extra);
+
 		if(txn_query)
 			xstrfmtcat(txn_query, 	
 				   ", (%d, %d, '%d', \"%s\", \"%s\")",
 				   now, DBD_ADD_ASSOCS, assoc_id, user_name,
-				   extra);
+				   tmp_extra);
 		else
 			xstrfmtcat(txn_query, 	
 				   "insert into %s "
@@ -3369,7 +3405,8 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 				   "values (%d, %d, '%d', \"%s\", \"%s\")",
 				   txn_table,
 				   now, DBD_ADD_ASSOCS, assoc_id, user_name, 
-				   extra);
+				   tmp_extra);
+		xfree(tmp_extra);
 		xfree(extra);
 	}
 	list_iterator_destroy(itr);
@@ -3437,7 +3474,8 @@ extern int acct_storage_p_add_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
 	acct_qos_rec_t *object = NULL;
-	char *cols = NULL, *extra = NULL, *vals = NULL, *query = NULL;
+	char *cols = NULL, *extra = NULL, *vals = NULL, *query = NULL,
+		*tmp_extra = NULL;
 	time_t now = time(NULL);
 	char *user_name = NULL;
 	int affect_rows = 0;
@@ -3490,14 +3528,18 @@ extern int acct_storage_p_add_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 			xfree(vals);
 			continue;
 		}
+
+		tmp_extra = _fix_double_quotes(extra);
+
 		xstrfmtcat(query,
 			   "insert into %s "
 			   "(timestamp, action, name, actor, info) "
 			   "values (%d, %u, \"%s\", \"%s\", \"%s\");",
 			   txn_table,
 			   now, DBD_ADD_QOS, object->name, user_name,
-			   extra);
+			   tmp_extra);
 
+		xfree(tmp_extra);
 		xfree(cols);
 		xfree(extra);
 		xfree(vals);
@@ -3837,7 +3879,7 @@ extern List acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "name=\"%s\"", object);
+			xstrfmtcat(extra, "name='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -3846,7 +3888,7 @@ extern List acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
 
 	set = 0;
 	if(cluster->control_host) {
-		xstrfmtcat(vals, ", control_host=\"%s\"", cluster->control_host);
+		xstrfmtcat(vals, ", control_host='%s'", cluster->control_host);
 		set++;
 	}
 
@@ -3904,10 +3946,10 @@ extern List acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
 
 		list_append(ret_list, object);
 		if(!rc) {
-			xstrfmtcat(name_char, "name=\"%s\"", object);
+			xstrfmtcat(name_char, "name='%s'", object);
 			rc = 1;
 		} else  {
-			xstrfmtcat(name_char, " || name=\"%s\"", object);
+			xstrfmtcat(name_char, " || name='%s'", object);
 		}
 	}
 	mysql_free_result(result);
@@ -4521,7 +4563,7 @@ extern List acct_storage_p_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 		list_iterator_destroy(itr);
 		if(tmp_qos) {
-			xstrfmtcat(vals, ", preemptees=\"%s\"", tmp_qos);
+			xstrfmtcat(vals, ", preemptees='%s'", tmp_qos);
 			xfree(tmp_qos);
 			replace_preemptee = 1;
 		}
@@ -4553,7 +4595,7 @@ extern List acct_storage_p_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 		list_iterator_destroy(itr);
 		if(tmp_qos) {
-			xstrfmtcat(vals, ", preemptors=\"%s\"", tmp_qos);
+			xstrfmtcat(vals, ", preemptors='%s'", tmp_qos);
 			xfree(tmp_qos);
 			replace_preemptor = 1;
 		}
@@ -4581,10 +4623,10 @@ extern List acct_storage_p_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		object = xstrdup(row[0]);
 		list_append(ret_list, object);
 		if(!rc) {
-			xstrfmtcat(name_char, "(name=\"%s\"", object);
+			xstrfmtcat(name_char, "(name='%s'", object);
 			rc = 1;
 		} else  {
-			xstrfmtcat(name_char, " || name=\"%s\"", object);
+			xstrfmtcat(name_char, " || name='%s'", object);
 		}
 		qos_rec = xmalloc(sizeof(acct_qos_rec_t));
 		qos_rec->name = xstrdup(object);

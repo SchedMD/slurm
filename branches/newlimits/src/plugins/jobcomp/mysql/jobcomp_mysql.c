@@ -298,15 +298,11 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 #ifdef HAVE_MYSQL
 	int rc = SLURM_SUCCESS;
 	char *usr_str = NULL, *grp_str = NULL, lim_str[32];
-	char connect_type[128];
-	char reboot[4];
-	char rotate[4];
-	char maxprocs[20];
-	char geometry[20];
-	char start[20];
-	char blockid[128];
+	char *connect_type = NULL, *reboot = NULL, *rotate = NULL,
+		*maxprocs = NULL, *geometry = NULL, *start = NULL,
+		*blockid = NULL;
 	enum job_states job_state;
-	char query[1024];
+	char *query = NULL;
 
 	if(!jobcomp_mysql_db || mysql_ping(jobcomp_mysql_db) != 0) {
 		char *loc = slurm_get_jobcomp_loc();
@@ -330,40 +326,84 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 	 * JOB_FAILED, JOB_TIMEOUT, etc. */
 	job_state = job_ptr->job_state & (~JOB_COMPLETING);
 
-	select_g_sprint_jobinfo(job_ptr->select_jobinfo,
-		connect_type, sizeof(connect_type), SELECT_PRINT_CONNECTION);
-	select_g_sprint_jobinfo(job_ptr->select_jobinfo,
-		reboot, sizeof(reboot), SELECT_PRINT_REBOOT);
-	select_g_sprint_jobinfo(job_ptr->select_jobinfo,
-		rotate, sizeof(rotate), SELECT_PRINT_ROTATE);
-	select_g_sprint_jobinfo(job_ptr->select_jobinfo,
-		maxprocs, sizeof(maxprocs), SELECT_PRINT_MAX_PROCS);
-	select_g_sprint_jobinfo(job_ptr->select_jobinfo,
-		geometry, sizeof(geometry), SELECT_PRINT_GEOMETRY);
-	select_g_sprint_jobinfo(job_ptr->select_jobinfo,
-		start, sizeof(start), SELECT_PRINT_START);
-	select_g_sprint_jobinfo(job_ptr->select_jobinfo,
-		blockid, sizeof(blockid), SELECT_PRINT_BG_ID);
+	connect_type = select_g_xstrdup_jobinfo(job_ptr->select_jobinfo,
+						SELECT_PRINT_CONNECTION);
+	reboot = select_g_xstrdup_jobinfo(job_ptr->select_jobinfo,
+					  SELECT_PRINT_REBOOT);
+	rotate = select_g_xstrdup_jobinfo(job_ptr->select_jobinfo,
+					  SELECT_PRINT_ROTATE);
+	maxprocs = select_g_xstrdup_jobinfo(job_ptr->select_jobinfo,
+					    SELECT_PRINT_MAX_PROCS);
+	geometry = select_g_xstrdup_jobinfo(job_ptr->select_jobinfo,
+					    SELECT_PRINT_GEOMETRY);
+	start = select_g_xstrdup_jobinfo(job_ptr->select_jobinfo,
+					 SELECT_PRINT_START);
+	blockid = select_g_xstrdup_jobinfo(job_ptr->select_jobinfo,
+					   SELECT_PRINT_BG_ID);
 
-	snprintf(query, sizeof(query),
-		 "insert into %s (jobid, uid, user_name, gid, group_name, "
-		 "name, state, proc_cnt, "
-		 "partition, timelimit, starttime, endtime, nodelist, nodecnt"
-		 ", connect_type, reboot, rotate, maxprocs, geometry, "
-		 "start, blockid"
-		 ") values (%u, %u, '%s', %u, '%s', '%s', %d, %u, "
-		 "'%s', '%s', %u, %u, '%s', %u"
-		 ", '%s', '%s', '%s', %s, '%s', '%s', '%s'"
-		 ")",
-		 jobcomp_table, job_ptr->job_id, job_ptr->user_id, usr_str,
-		 job_ptr->group_id, grp_str, job_ptr->name,
-		 job_state, job_ptr->total_procs, job_ptr->partition, lim_str,
-		 (int)job_ptr->start_time, (int)job_ptr->end_time,
-		 job_ptr->nodes, job_ptr->node_cnt
-		 , connect_type, reboot, rotate, maxprocs, geometry,
-		 start, blockid
-		);
-//	info("query = %s", query);
+	query = xstrdup_printf(
+		"insert into %s (jobid, uid, user_name, gid, group_name, "
+		"name, state, proc_cnt, partition, timelimit, "
+		"starttime, endtime, nodecnt",
+		jobcomp_table);
+
+	if(job_ptr->nodes)
+		xstrcat(query, ", nodelist");		
+	if(connect_type)
+		xstrcat(query, ", connect_type");
+	if(reboot)
+		xstrcat(query, ", reboot");
+	if(rotate)
+		xstrcat(query, ", rotate");
+	if(maxprocs)
+		xstrcat(query, ", maxprocs");
+	if(geometry)
+		xstrcat(query, ", geometry");
+	if(start)
+		xstrcat(query, ", start");
+	if(blockid)
+		xstrcat(query, ", blockid");
+	xstrfmtcat(query, ") values (%u, %u, '%s', %u, '%s', \"%s\", %d, %u, "
+		   "'%s', \"%s\", %u, %u, %u",
+		   job_ptr->job_id, job_ptr->user_id, usr_str,
+		   job_ptr->group_id, grp_str, job_ptr->name,
+		   job_state, job_ptr->total_procs, job_ptr->partition, lim_str,
+		   (int)job_ptr->start_time, (int)job_ptr->end_time,
+		   job_ptr->node_cnt);
+	
+	if(job_ptr->nodes)
+		xstrfmtcat(query, ", '%s'", job_ptr->nodes);		
+
+	if(connect_type) {
+		xstrfmtcat(query, ", '%s'", connect_type);
+		xfree(connect_type);
+	}
+	if(reboot) {
+		xstrfmtcat(query, ", '%s'", reboot);
+		xfree(reboot);
+	}
+	if(rotate) {
+		xstrfmtcat(query, ", '%s'", rotate);
+		xfree(rotate);
+	}
+	if(maxprocs) {
+		xstrfmtcat(query, ", '%s'", maxprocs);
+		xfree(maxprocs);
+	}
+	if(geometry) {
+		xstrfmtcat(query, ", '%s'", geometry);
+		xfree(geometry);
+	}
+	if(start) {
+		xstrfmtcat(query, ", '%s'", start);
+		xfree(start);
+	}
+	if(blockid) {
+		xstrfmtcat(query, ", '%s'", blockid);
+		xfree(blockid);
+	}
+	xstrcat(query, ")");
+	//info("query = %s", query);
 	rc = mysql_db_query(jobcomp_mysql_db, query);
 	xfree(usr_str);
 	xfree(grp_str);

@@ -290,6 +290,8 @@ static int _set_rec(int *start, int argc, char *argv[],
 				str_2_acct_admin_level(argv[i]+end);
 			u_set = 1;
 		} else if (!strncasecmp (argv[i], "DefaultAccount", 1)) {
+			if(user->default_acct)
+				xfree(user->default_acct);
 			user->default_acct = strip_quotes(argv[i]+end, NULL);
 			u_set = 1;
 		} else if (!strncasecmp (argv[i], "FairShare", 1)) {

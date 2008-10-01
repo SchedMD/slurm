@@ -224,9 +224,6 @@ static int _set_cond(int *start, int argc, char *argv[],
 	int end = 0;
 	int local_cluster_flag = all_clusters_flag;
 
-	if(!job_cond->cluster_list)
-		job_cond->cluster_list = list_create(slurm_destroy_char);
-
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
 		if (!strncasecmp (argv[i], "Set", 3)) {
@@ -237,8 +234,13 @@ static int _set_cond(int *start, int argc, char *argv[],
 		} else if(!end && !strncasecmp(argv[i], "all_clusters", 1)) {
 			local_cluster_flag = 1;
 			continue;
-		} else if(!end || !strncasecmp (argv[i], "Clusters", 1)) {
-			slurm_addto_char_list(job_cond->cluster_list, argv[i]);
+		} else if(!end 
+			  || !strncasecmp (argv[i], "Clusters", 1)) {
+			if(!job_cond->cluster_list)
+				job_cond->cluster_list = 
+					list_create(slurm_destroy_char);
+			slurm_addto_char_list(job_cond->cluster_list,
+					      argv[i]+end);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Accounts", 2)) {
 			if(!job_cond->acct_list)
@@ -252,10 +254,6 @@ static int _set_cond(int *start, int argc, char *argv[],
 				job_cond->associd_list =
 					list_create(slurm_destroy_char);
 			slurm_addto_char_list(job_cond->associd_list,
-					argv[i]+end);
-			set = 1;
-		} else if (!strncasecmp (argv[i], "Clusters", 1)) {
-			slurm_addto_char_list(job_cond->cluster_list,
 					argv[i]+end);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "End", 1)) {
@@ -273,7 +271,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 			set = 1;
 		} else if (!strncasecmp (argv[i], "grouping", 2)) {
 			if(grouping_list)
-				slurm_addto_char_list(grouping_list, argv[i]+end);
+				slurm_addto_char_list(grouping_list, 
+						      argv[i]+end);
 		} else if (!strncasecmp (argv[i], "Jobs", 1)) {
 			char *end_char = NULL, *start_char = argv[i]+end;
 			jobacct_selected_step_t *selected_step = NULL;

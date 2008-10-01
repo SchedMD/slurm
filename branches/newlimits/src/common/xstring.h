@@ -124,6 +124,14 @@ char *xbasename(char *path);
 */
 void _xstrsubstitute(char **str, const char *pattern, const char *replacement);
 
+/* 
+ * Remove all quotes that surround a string in the string "str",
+ *   str (IN)	        target string (pointer to in case of expansion)
+ *   increased (IN/OUT)	current position in "str"
+ *   RET char *         str returned without quotes in it. needs to be xfreed
+ */
+char *xstrstrip(char *str);
+
 /* xshort_hostname
  *   Returns an xmalloc'd string containing the hostname
  *   of the local machine.  The hostname contains only
