@@ -1207,7 +1207,9 @@ Same as \fB\-\-exclusive\fR
 Same as \fB\-g, \-\-geometry\fR=\fIX,Y,Z\fR
 .TP
 \fBSLURM_JOB_NAME\fR
-\fB\-J, \-\-job\-name\fR=\fIjobname\fR
+Same as \fB\-J, \-\-job\-name\fR=\fIjobname\fR except within an existing 
+allocation, in which case it is ignored to avoid using the batch job's name
+as the name of each job step. 
 .TP
 \fBSLURM_LABELIO\fR
 Same as \fB\-l, \-\-label\fR

@@ -119,8 +119,10 @@ Minimum size of temporary disk space (in MB) requested by the job.
 \fB%D\fR 
 Number of nodes allocated to the job or the minimum number of nodes 
 required by a pending job. The actual number of nodes allocated to a pending 
-job may exceed this number of the job specified a node range count or the 
-cluster contains nodes with varying processor counts.
+job may exceed this number if the job specified a node range count (e.g. 
+minimum and maximum node counts) or the the job specifies a processor 
+count instead of a node count and the cluster contains nodes with varying 
+processor counts.
 .TP
 \fB%e\fR 
 Time at which the job ended or is expected to end (based upon its time limit)

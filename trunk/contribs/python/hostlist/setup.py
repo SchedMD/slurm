@@ -3,9 +3,9 @@
 from distutils.core import setup
 
 setup(name         = "python-hostlist",
-      version      = "1.2", # Change in hostlist{,.py}, README, python-hostlist.spec too!
+      version      = "1.3", # Change in hostlist{,.py,.1}, python-hostlist.spec too!
       description  = "Python module for hostlist handling",
-      long_description = "The hostlist.py module knows how to expand and collect LLNL hostlist expressions.",
+      long_description = "The hostlist.py module knows how to expand and collect hostlist expressions.",
       author       = "Kent Engström",
       author_email = "kent@nsc.liu.se",
       url          = "http://www.nsc.liu.se/~kent/python-hostlist/",
@@ -19,4 +19,5 @@ setup(name         = "python-hostlist",
                       ],
       py_modules   = ["hostlist"],
       scripts      = ["hostlist"],
+      data_files   = [("share/man/man1", ["hostlist.1"])],
       )

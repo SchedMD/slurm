@@ -1,7 +1,7 @@
 %{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 
 Name:           python-hostlist
-Version:        1.2
+Version:        1.3
 Release:        1
 Summary:        Python module for hostlist handling
 Vendor:         NSC
@@ -16,9 +16,10 @@ BuildArch:      noarch
 BuildRequires:  python-devel
 
 %description
-The hostlist.py module knows how to expand and collect LLNL hostlist
-expressions. The package also includes the 'hostlist' binary which can be
-used to collect/expand hostlists and perform set operations on them.
+The hostlist.py module knows how to expand and collect hostlist
+expressions. The package also includes the 'hostlist' binary which can
+be used to collect/expand hostlists and perform set operations on
+them.
 
 %prep
 %setup -q
@@ -44,4 +45,5 @@ rm -rf $RPM_BUILD_ROOT
 %doc CHANGES
 %{python_sitelib}/*
 /usr/bin/hostlist
+/usr/share/man/man1/hostlist.1.gz
 %changelog

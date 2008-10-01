@@ -54,7 +54,8 @@ struct slurm_step_ctx_struct {
 	/* Used by slurm_step_launch() */
 	struct step_launch_state *launch_state;
 	uint16_t verbose_level; /* for extra logging decisions in step
-				   launch api */
+				 * launch api */
+	bool no_kill;		/* if set, don't kill step on node DOWN */
 };
 
 #endif /* _STEP_CTX_H */

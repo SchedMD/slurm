@@ -51,7 +51,7 @@ set host_0      ""
 set timeout $max_job_delay
 set srun_pid [spawn $srun -N1 -l --constraint=invalid,constraint -t1 $bin_printenv SLURMD_NODENAME]
 expect {
-	-re "configuration is not available" {
+	-re "error:.*Invalid feature specification" {
 		send_user "This error is expected, no worries\n"
 		set err_msg 1
 		exp_continue

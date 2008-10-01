@@ -599,11 +599,12 @@ int setup_env(env_t *env)
 	}
 	
 	if (env->comm_port
-	    && setenvf (&env->env, "SLURM_SRUN_COMM_PORT", "%u", env->comm_port)) {
+	    && setenvf (&env->env, "SLURM_SRUN_COMM_PORT", "%u", 
+			env->comm_port)) {
 		error ("Can't set SLURM_SRUN_COMM_PORT env variable");
 		rc = SLURM_FAILURE;
 	}
-		
+
 	if (env->cli) {
 		
 		slurm_print_slurm_addr (env->cli, addrbuf, INET_ADDRSTRLEN);
@@ -768,12 +769,11 @@ extern char *uint32_compressed_to_str(uint32_t array_len,
  *	LOADLBATCH (AIX only)
  *	MPIRUN_PARTITION, MPIRUN_NOFREE, and MPIRUN_NOALLOCATE (BGL only)
  *
- * Sets OBSOLETE variables:
+ * Sets OBSOLETE variables (needed for MPI, do not remove):
  *	SLURM_JOBID
  *	SLURM_NNODES
  *	SLURM_NODELIST
  *	SLURM_TASKS_PER_NODE <- poorly named, really CPUs per node
- *	? probably only needed for users...
  */
 void
 env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc)
@@ -805,7 +805,7 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc)
 		env_array_overwrite_fmt(dest, "MPIRUN_NOALLOCATE", "%d", 1);
 	}
 
-	/* obsolete */
+	/* OBSOLETE, but needed by MPI, do not remove */
 	env_array_overwrite_fmt(dest, "SLURM_JOBID", "%u", alloc->job_id);
 	env_array_overwrite_fmt(dest, "SLURM_NNODES", "%u", alloc->node_cnt);
 	env_array_overwrite_fmt(dest, "SLURM_NODELIST", "%s", alloc->node_list);
@@ -830,12 +830,11 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc)
  *	HOSTNAME
  *	LOADLBATCH (AIX only)
  *
- * Sets OBSOLETE variables:
+ * Sets OBSOLETE variables (needed for MPI, do not remove):
  *	SLURM_JOBID
  *	SLURM_NNODES
  *	SLURM_NODELIST
  *	SLURM_TASKS_PER_NODE <- poorly named, really CPUs per node
- *	? probably only needed for users...
  */
 extern void
 env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
@@ -866,7 +865,7 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 	env_array_overwrite(dest, "LOADLBATCH", "yes");
 #endif
 
-	/* OBSOLETE */
+	/* OBSOLETE, but needed by MPI, do not remove */
 	env_array_overwrite_fmt(dest, "SLURM_JOBID", "%u", batch->job_id);
 	env_array_overwrite_fmt(dest, "SLURM_NNODES", "%u", num_nodes);
 	env_array_overwrite_fmt(dest, "SLURM_NODELIST", "%s", batch->nodes);
@@ -913,22 +912,22 @@ env_array_for_step(char ***dest,
 	env_array_overwrite_fmt(dest, "SLURM_STEP_NODELIST",
 				"%s", step->step_layout->node_list);
 	env_array_overwrite_fmt(dest, "SLURM_STEP_NUM_NODES",
-			 "%hu", step->step_layout->node_cnt);
+				"%hu", step->step_layout->node_cnt);
 	env_array_overwrite_fmt(dest, "SLURM_STEP_NUM_TASKS",
-			 "%u", step->step_layout->task_cnt);
+				"%u", step->step_layout->task_cnt);
 	env_array_overwrite_fmt(dest, "SLURM_STEP_TASKS_PER_NODE", "%s", tmp);
 	env_array_overwrite_fmt(dest, "SLURM_STEP_LAUNCHER_PORT",
-			 "%hu", launcher_port);
+				"%hu", launcher_port);
 
-	/* OBSOLETE */
+	/* OBSOLETE, but needed by MPI, do not remove */
 	env_array_overwrite_fmt(dest, "SLURM_STEPID", "%u", step->job_step_id);
 	env_array_overwrite_fmt(dest, "SLURM_NNODES",
-			 "%hu", step->step_layout->node_cnt);
+				"%hu", step->step_layout->node_cnt);
 	env_array_overwrite_fmt(dest, "SLURM_NPROCS",
-			 "%u", step->step_layout->task_cnt);
+				"%u", step->step_layout->task_cnt);
 	env_array_overwrite_fmt(dest, "SLURM_TASKS_PER_NODE", "%s", tmp);
 	env_array_overwrite_fmt(dest, "SLURM_SRUN_COMM_PORT",
-			 "%hu", launcher_port);
+				"%hu", launcher_port);
 
 	xfree(tmp);
 }
