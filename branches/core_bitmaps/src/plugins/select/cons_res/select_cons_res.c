@@ -830,23 +830,26 @@ node_st:	for (i = 0; i < select_node_cnt; i++) {
 
 
 /* Helper function for _rm_job_from_res:
- *        - return 1 if node is available for general use, else return 0.
- * Note that this function only checks single-row partitions (multi-row
- * partitions are always considered generally available)
+ * - return 1 if node is available for general use, else return 0.
+ *   if 'free' then the node can be NODE_CR_AVAILABLE. Otherwise,
+ *   there's an existing job that may make the node either
+ *   NODE_CR_RESERVED or NODE_CR_ONE_ROW.
  */
 static int _is_node_free(struct part_res_record *p_ptr, uint32_t node_i)
 {
-	uint32_t cpu_begin  = cr_get_coremap_offset(node_i);
-	uint32_t i, cpu_end = cr_get_coremap_offset(node_i+1);
+	uint32_t c, cpu_begin = cr_get_coremap_offset(node_i);
+	uint32_t i, cpu_end   = cr_get_coremap_offset(node_i+1);
 
 	for (; p_ptr; p_ptr = p_ptr->next) {
-		if (p_ptr->num_rows > 1)
+		if (!p_ptr->row)
 			continue;
-		if (!p_ptr->row || !p_ptr->row[0].row_bitmap)
-			continue;
-		for (i = cpu_begin; i < cpu_end; i++) {
-			if (bit_test(p_ptr->row[0].row_bitmap, i))
-				return 0;
+		for (i = 0; i < p_ptr->num_rows; i++) {
+			if (!p_ptr->row[i].row_bitmap)
+				continue;
+			for (c = cpu_begin; c < cpu_end; c++) {
+				if (bit_test(p_ptr->row[i].row_bitmap, c))
+					return 0;
+			}
 		}
 	}
 	return 1;

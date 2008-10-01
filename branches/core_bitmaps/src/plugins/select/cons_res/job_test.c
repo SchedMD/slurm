@@ -632,8 +632,11 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 		}
 	}
 	
-	debug3("cons_res: _can_job_run_on_node: %u cpus on %s", cpus,
-		select_node_record[node_i].node_ptr->name);
+	debug3("cons_res: _can_job_run_on_node: %u cpus on %s(%d), mem %u/%u",
+		cpus, select_node_record[node_i].node_ptr->name,
+		select_node_record[node_i].node_state,
+		select_node_record[node_i].alloc_memory,
+		select_node_record[node_i].real_memory);
 	
 	return cpus;
 }
@@ -705,8 +708,12 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 		     (cr_type == CR_MEMORY) || (cr_type == CR_SOCKET_MEMORY))) {
 			free_mem  = select_node_record[i].real_memory;
 			free_mem -= select_node_record[i].alloc_memory;
-			if (free_mem < min_mem)
+			if (free_mem < min_mem) {
+				debug3("cons_res: _vns: node %s no mem %u < %u",
+					select_node_record[i].node_ptr->name,
+					free_mem, min_mem);
 				goto clear_bit;
+			}
 		}
 		
 		/* sched/gang preemption test */
@@ -726,29 +733,43 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 
 		/* exclusive node check */
 		if (select_node_record[i].node_state == NODE_CR_RESERVED) {
+			debug3("cons_res: _vns: node %s in exclusive use",
+				select_node_record[i].node_ptr->name);
 			goto clear_bit;
 		
 		/* non-resource-sharing node check */
 		} else if (select_node_record[i].node_state == 
 			   NODE_CR_ONE_ROW) {
 			if ((job_node_req == NODE_CR_RESERVED) ||
-			    (job_node_req == NODE_CR_AVAILABLE))
+			    (job_node_req == NODE_CR_AVAILABLE)) {
+				debug3("cons_res: _vns: node %s non-sharing",
+					select_node_record[i].node_ptr->name);
 				goto clear_bit;
+			}
 			/* cannot use this node if it is running jobs
 			 * in sharing partitions */
-			if ( _is_node_busy(cr_part_ptr, i, 1) )
+			if ( _is_node_busy(cr_part_ptr, i, 1) ) {
+				debug3("cons_res: _vns: node %s sharing?",
+					select_node_record[i].node_ptr->name);
 				goto clear_bit;
+			}
 		
 		/* node is NODE_CR_AVAILABLE - check job request */
 		} else {
 			if (job_node_req == NODE_CR_RESERVED) {
-				if ( _is_node_busy(cr_part_ptr, i, 0) )
+				if ( _is_node_busy(cr_part_ptr, i, 0) ) {
+					debug3("cons_res: _vns: node %s busy",
+					  select_node_record[i].node_ptr->name);
 					goto clear_bit;
+				}
 			} else if (job_node_req == NODE_CR_ONE_ROW) {
 				/* cannot use this node if it is running jobs
 				 * in sharing partitions */
-				if ( _is_node_busy(cr_part_ptr, i, 1) )
+				if ( _is_node_busy(cr_part_ptr, i, 1) ) {
+					debug3("cons_res: _vns: node %s vbusy",
+					  select_node_record[i].node_ptr->name);
 					goto clear_bit;
+				}
 			}
 		}
 		continue;	/* node is usable, test next node */
@@ -1304,8 +1325,7 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		job_ptr->details->job_min_memory = 0;
 	} else	/* SELECT_MODE_RUN_NOW || SELECT_MODE_WILL_RUN  */ 
 		test_only = false;
-	debug3("DEBUG: cr_job_test called with %u nodes",
-		bit_set_count(bitmap));
+
 	/* check node_state and update the node bitmap as necessary */
 	if (!test_only) {
 		error_code = _verify_node_state(cr_part_ptr, job_ptr, 
