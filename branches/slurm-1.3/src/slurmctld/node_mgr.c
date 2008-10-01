@@ -2498,7 +2498,7 @@ extern void  build_config_feature_array(struct config_record *config_ptr)
 		i = 0;
 		token = strtok_r(tmp_str, ",", &last);
 		while (token) {
-			config_ptr->feature_array[i++] = strdup(token);
+			config_ptr->feature_array[i++] = xstrdup(token);
 			token = strtok_r(NULL, ",", &last);
 		}
 		xfree(tmp_str);
