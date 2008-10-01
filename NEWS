@@ -42,6 +42,8 @@ documents those changes that are of interest to users and admins.
     job feature requests.
  -- For sched/backfill, correct logic to support job constraint specification
     (e.g. node features).
+ -- Correct power save logic to avoid trying to wake DOWN node. From Matthieu
+    Hautreux, CEA.
 
 * Changes in SLURM 1.3.8
 ========================

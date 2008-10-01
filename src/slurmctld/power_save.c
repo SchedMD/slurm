@@ -173,6 +173,7 @@ static void _re_wake(void)
 	struct node_record *node_ptr;
 	bitstr_t *wake_node_bitmap = NULL;
 	int i, lim = MIN(node_record_count, 20);
+	uint16_t base_state, susp_state;
 
 	/* Run at most once per minute */
 	if ((now - last_wakeup) < 60)
@@ -181,7 +182,12 @@ static void _re_wake(void)
 
 	for (i=0; i<lim; i++) {
 		node_ptr = &node_record_table_ptr[last_inx];
-		if ((node_ptr->node_state & NODE_STATE_POWER_SAVE) == 0) {
+		base_state = node_ptr->node_state & NODE_STATE_BASE;
+		susp_state = node_ptr->node_state & NODE_STATE_POWER_SAVE;
+
+		if ((susp_state == 0) &&
+		    ((base_state == NODE_STATE_ALLOCATED) ||
+		     (base_state == NODE_STATE_IDLE))) {
 			if (wake_node_bitmap == NULL)
 				wake_node_bitmap = bit_alloc(node_record_count);
 			bit_set(wake_node_bitmap, last_inx);
