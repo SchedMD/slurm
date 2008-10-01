@@ -60,7 +60,7 @@ set err_msg     0
 set timeout $max_job_delay
 spawn $sbatch -N1 --constraint=invalid,constraint -t1 $file_in  
 expect {
-	-re "configuration is not available" {
+	-re "error:.*Invalid feature specification" {
 		send_user "This error is expected, no worries\n"
 		set err_msg 1
 		exp_continue
