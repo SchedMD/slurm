@@ -550,6 +550,7 @@ create_job_step(srun_job_t *job)
 	job->ctx_params.node_list = opt.nodelist;
 	
 	job->ctx_params.network = opt.network;
+	job->ctx_params.no_kill = opt.no_kill;
 	if (opt.job_name_set_cmd && opt.job_name)
 		job->ctx_params.name = opt.job_name;
 	else
@@ -584,7 +585,7 @@ create_job_step(srun_job_t *job)
 		}
 		
 		if (i == 0) {
-			info("Job step creation temporarily disabled, retrying");	
+			info("Job step creation temporarily disabled, retrying");
 			ointf  = xsignal(SIGINT,  _intr_handler);
 			otermf  = xsignal(SIGTERM, _intr_handler);
 			oquitf  = xsignal(SIGQUIT, _intr_handler);
