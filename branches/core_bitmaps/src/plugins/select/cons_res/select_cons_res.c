@@ -1137,7 +1137,7 @@ static enum node_cr_state _get_job_node_req(struct job_record *job_ptr)
 	if (job_ptr->details->shared == 0)
 		/* user has requested exclusive nodes */
 		return NODE_CR_RESERVED;
-	if ((max_share > 1) && (job_ptr->details->shared == 1))
+	if ((max_share > 1) && (job_ptr->details->shared == 2))
 		/* part allows sharing, and
 		 * the user has requested it */
 		return NODE_CR_AVAILABLE;

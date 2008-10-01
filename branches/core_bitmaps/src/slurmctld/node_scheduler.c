@@ -306,6 +306,8 @@ _resolve_shared_status(uint16_t user_flag, uint16_t part_max_share,
 		/* sharing unless user requested exclusive */
 		if (user_flag == 0)
 			return 0;
+		if (user_flag == 1)
+			return 2;
 		return 1;
 	} else {
 		/* no sharing if part=NO */
