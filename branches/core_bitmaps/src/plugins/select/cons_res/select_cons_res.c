@@ -840,7 +840,7 @@ static int _is_node_free(struct part_res_record *p_ptr, uint32_t node_i)
 	uint32_t i, cpu_end = cr_get_coremap_offset(node_i+1);
 
 	for (; p_ptr; p_ptr = p_ptr->next) {
-		if (p_ptr->num_rows < 2)
+		if (p_ptr->num_rows > 1)
 			continue;
 		if (!p_ptr->row || !p_ptr->row[0].row_bitmap)
 			continue;
