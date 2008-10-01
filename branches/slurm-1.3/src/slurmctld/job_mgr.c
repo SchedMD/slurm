@@ -1177,7 +1177,8 @@ extern int kill_running_job_by_node_name(char *node_name, bool step_test)
 						job_ptr->suspend_time;
 					job_ptr->tot_sus_time += 
 						difftime(now,
-							 job_ptr->suspend_time);
+							 job_ptr->
+							 suspend_time);
 				} else
 					job_ptr->end_time = now;
 				

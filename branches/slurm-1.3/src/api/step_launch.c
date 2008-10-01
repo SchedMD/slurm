@@ -317,7 +317,8 @@ int slurm_step_launch_wait_start(slurm_step_ctx_t *ctx)
 		if (sls->abort) {
 			if (!sls->abort_action_taken) {
 				slurm_kill_job_step(ctx->job_id,
-						    ctx->step_resp->job_step_id,
+						    ctx->step_resp->
+						    job_step_id,
 						    SIGKILL);
 				sls->abort_action_taken = true;
 			}
@@ -366,7 +367,8 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 		} else {
 			if (!sls->abort_action_taken) {
 				slurm_kill_job_step(ctx->job_id,
-						    ctx->step_resp->job_step_id,
+						    ctx->step_resp->
+						    job_step_id,
 						    SIGKILL);
 				sls->abort_action_taken = true;
 			}
@@ -399,14 +401,18 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 					ctx->job_id,
 					ctx->step_resp->job_step_id,
 					SIGKILL);
-				if (!sls->user_managed_io)
-					client_io_handler_abort(sls->io.normal);
+				if (!sls->user_managed_io) {
+					client_io_handler_abort(sls->
+								io.normal);
+				}
 				break;
 			} else if (errnum != 0) {
 				error("Error waiting on condition in"
 				      " slurm_step_launch_wait_finish: %m");
-				if (!sls->user_managed_io)
-					client_io_handler_abort(sls->io.normal);
+				if (!sls->user_managed_io) {
+					client_io_handler_abort(sls->
+								io.normal);
+				}
 				break;
 			}
 		}
@@ -565,6 +571,7 @@ struct step_launch_state *step_launch_state_create(slurm_step_ctx_t *ctx)
 	sls->resp_port = NULL;
 	sls->abort = false;
 	sls->abort_action_taken = false;
+	sls->no_kill = ctx->no_kill;
 	sls->mpi_info->jobid = ctx->step_req->job_id;
 	sls->mpi_info->stepid = ctx->step_resp->job_step_id;
 	sls->mpi_info->step_layout = layout;
@@ -627,7 +634,8 @@ static int _msg_thr_create(struct step_launch_state *sls, int num_nodes)
 	sls->resp_port = xmalloc(sizeof(uint16_t) * sls->num_resp_port);
 	for (i = 0; i < sls->num_resp_port; i++) {
 		if (net_stream_listen(&sock, &port) < 0) {
-			error("unable to intialize step launch listening socket: %m");
+			error("unable to intialize step launch listening "
+			      "socket: %m");
 			return SLURM_ERROR;
 		}
 		sls->resp_port[i] = port;
@@ -848,6 +856,11 @@ _node_fail_handler(struct step_launch_state *sls, slurm_msg_t *fail_msg)
 	int node_id, num_tasks;
 
 	error("Node failure on %s", nf->nodelist);
+	if (!sls->no_kill) {
+		info("Cancelling job step %u.%u", nf->job_id, nf->step_id);
+		slurm_kill_job_step(nf->job_id, nf->step_id, SIGKILL);
+	}
+
 	fail_nodes = hostset_create(nf->nodelist);
 	fail_itr = hostset_iterator_create(fail_nodes);
 	num_node_ids = hostset_count(fail_nodes);

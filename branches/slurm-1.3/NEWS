@@ -42,6 +42,9 @@ documents those changes that are of interest to users and admins.
     (e.g. node features).
  -- Correct power save logic to avoid trying to wake DOWN node. From Matthieu
     Hautreux, CEA.
+ -- Cancel a job step when one of it's nodes goes DOWN based upon the job 
+    step's --no-kill option, by default the step is killed (previously the 
+    job step remained running even without the --no-kill option).
 
 * Changes in SLURM 1.3.8
 ========================
