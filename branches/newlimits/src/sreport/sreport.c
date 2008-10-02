@@ -233,11 +233,13 @@ static void _user_rep (int argc, char *argv[])
 
 	if (strncasecmp (argv[0], "Top", 1) == 0) {
 		error_code = user_top((argc - 1), &argv[1]);
+	} else if (strncasecmp (argv[0], "AccountUsagePerCluster", 1) == 0) {
+		error_code = user_acct_usage((argc - 1), &argv[1]);
 	} else {
 		exit_code = 1;
 		fprintf(stderr, "Not valid report %s\n", argv[0]);
 		fprintf(stderr, "Valid user reports are, ");
-		fprintf(stderr, "\"Top\"\n");
+		fprintf(stderr, "\"Top\", and \"AccountUsagePerCluster\"\n");
 	}	
 	
 	if (error_code) {

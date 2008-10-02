@@ -44,18 +44,22 @@ enum {
 	PRINT_USER_CLUSTER,
 	PRINT_USER_LOGIN,
 	PRINT_USER_PROPER,
-	PRINT_USER_USED
+	PRINT_USER_USED,
+	PRINT_USER_USER,
 };
 
 
 typedef struct {
+	char *acct;
 	List acct_list; /* list of char *'s */
+	List assoc_list; /* list of acct_association_rec_t's */
 	uint64_t cpu_secs;
 	char *name;
 	uid_t uid;
 } local_user_rec_t;
 
 typedef struct {
+	uint32_t cpu_count;
 	uint64_t cpu_secs;
 	char *name;
 	List user_list; /* list of local_user_rec_t *'s */
@@ -69,8 +73,10 @@ static void _destroy_local_user_rec(void *object)
 {
 	local_user_rec_t *local_user = (local_user_rec_t *)object;
 	if(local_user) {
+		xfree(local_user->acct);
 		if(local_user->acct_list)
 			list_destroy(local_user->acct_list);
+		xfree(local_user->name);
 		xfree(local_user);
 	}
 }
@@ -222,7 +228,7 @@ static int _setup_print_fields_list(List format_list)
 		field = xmalloc(sizeof(print_field_t));
 		if(!strncasecmp("Accounts", object, 1)) {
 			field->type = PRINT_USER_ACCT;
-			field->name = xstrdup("Account(s)");
+			field->name = xstrdup("Account");
 			field->len = 15;
 			field->print_routine = print_fields_str;
 		} else if(!strncasecmp("Cluster", object, 1)) {
@@ -243,7 +249,9 @@ static int _setup_print_fields_list(List format_list)
 		} else if(!strncasecmp("Used", object, 1)) {
 			field->type = PRINT_USER_USED;
 			field->name = xstrdup("Used");
-			if(time_format == SREPORT_TIME_SECS_PER)
+			if(time_format == SREPORT_TIME_SECS_PER
+			   || time_format == SREPORT_TIME_MINS_PER
+			   || time_format == SREPORT_TIME_HOURS_PER)
 				field->len = 18;
 			else
 				field->len = 10;
@@ -280,7 +288,6 @@ extern int user_top(int argc, char *argv[])
 	char *object = NULL;
 
 	int i=0;
-	uint32_t total_time = 0;
 	acct_user_rec_t *user = NULL;
 	acct_association_rec_t *assoc = NULL;
 	acct_accounting_rec_t *assoc_acct = NULL;
@@ -334,8 +341,6 @@ extern int user_top(int argc, char *argv[])
 		printf("----------------------------------------"
 		       "----------------------------------------\n");
 	}
-	total_time = user_cond->assoc_cond->usage_end 
-		- user_cond->assoc_cond->usage_start;
 
 	itr = list_iterator_create(user_list);
 	cluster_itr = list_iterator_create(cluster_list);
@@ -534,6 +539,288 @@ end_it:
 	if(cluster_list) {
 		list_destroy(cluster_list);
 		cluster_list = NULL;
+	}
+	
+	if(print_fields_list) {
+		list_destroy(print_fields_list);
+		print_fields_list = NULL;
+	}
+
+	return rc;
+}
+
+extern int user_acct_usage(int argc, char *argv[])
+{
+	int rc = SLURM_SUCCESS;
+	acct_user_cond_t *user_cond = xmalloc(sizeof(acct_user_cond_t));
+	acct_cluster_cond_t cluster_cond;
+	ListIterator itr = NULL;
+	ListIterator itr2 = NULL;
+	ListIterator assoc_itr = NULL;
+	ListIterator cluster_itr = NULL;
+	List format_list = list_create(slurm_destroy_char);
+	List assoc_list = NULL;
+	List cluster_list = NULL;
+	List local_cluster_list = list_create(_destroy_local_cluster_rec);
+	int i=0;
+	acct_cluster_rec_t *cluster = NULL;
+	acct_association_rec_t *assoc = NULL;
+	local_user_rec_t *local_user = NULL;
+	local_cluster_rec_t *local_cluster = NULL;
+	print_field_t *field = NULL;
+	int field_count = 0;
+
+	print_fields_list = list_create(destroy_print_field);
+
+	bzero(&cluster_cond, sizeof(acct_cluster_cond_t));
+
+	_set_cond(&i, argc, argv, user_cond, format_list);
+
+	if(!list_count(format_list)) 
+		slurm_addto_char_list(format_list, "Cluster,L,P,A,Used");
+
+	_setup_print_fields_list(format_list);
+	list_destroy(format_list);
+
+	cluster_cond.with_deleted = 1;
+	cluster_cond.with_usage = 1;
+	cluster_cond.usage_end = user_cond->assoc_cond->usage_end;
+	cluster_cond.usage_start = user_cond->assoc_cond->usage_start;
+	cluster_cond.cluster_list = user_cond->assoc_cond->cluster_list;
+	cluster_list = acct_storage_g_get_clusters(
+		db_conn, my_uid, &cluster_cond);
+
+	if(!cluster_list) {
+		exit_code=1;
+		fprintf(stderr, " Problem with cluster query.\n");
+		goto end_it;
+	}
+	assoc_list = acct_storage_g_get_associations(db_conn, my_uid,
+						     user_cond->assoc_cond);
+	if(!assoc_list) {
+		exit_code=1;
+		fprintf(stderr, " Problem with assoc query.\n");
+		goto end_it;
+	}
+
+	/* set up the structures for easy reteval later */
+	itr = list_iterator_create(cluster_list);
+	assoc_itr = list_iterator_create(assoc_list);
+	while((cluster = list_next(itr))) {
+		cluster_accounting_rec_t *accting = NULL;
+
+		/* check to see if this cluster is around during the
+		   time we are looking at */
+		if(!cluster->accounting_list
+		   || !list_count(cluster->accounting_list))
+			continue;
+
+		local_cluster = xmalloc(sizeof(local_cluster_rec_t));
+
+		list_append(local_cluster_list, local_cluster);
+
+		local_cluster->name = xstrdup(cluster->name);
+		local_cluster->user_list = list_create(_destroy_local_user_rec);
+
+		/* get the amount of time and the average cpu count
+		   during the time we are looking at */
+		itr2 = list_iterator_create(cluster->accounting_list);
+		while((accting = list_next(itr2))) {
+			local_cluster->cpu_secs += accting->alloc_secs 
+				+ accting->down_secs + accting->idle_secs 
+				+ accting->resv_secs;
+			local_cluster->cpu_count += accting->cpu_count;
+		}
+		list_iterator_destroy(itr2);
+
+		local_cluster->cpu_count /= 
+			list_count(cluster->accounting_list);
+		
+		/* now add the associations of interest here by user */
+		while((assoc = list_next(assoc_itr))) {
+			struct passwd *passwd_ptr = NULL;
+			uid_t uid = NO_VAL;
+			ListIterator user_itr = NULL;
+			acct_accounting_rec_t *accting2 = NULL;
+
+			if(!assoc->accounting_list
+			   || !list_count(assoc->accounting_list)
+			   || !assoc->user) {
+				list_delete_item(assoc_itr);
+				continue;
+			}
+
+			if(strcmp(cluster->name, assoc->cluster)) 
+				continue;
+
+			/* make sure we add all associations to this
+			   user rec because we could have some in
+			   partitions which would create another
+			   record otherwise
+			*/
+			user_itr = list_iterator_create(
+				local_cluster->user_list); 
+			while((local_user = list_next(user_itr))) {
+				if(!strcmp(local_user->acct, assoc->acct)) 
+					break;				
+			}
+			list_iterator_destroy(user_itr);
+
+			if(!local_user) {
+				passwd_ptr = getpwnam(assoc->user);
+				if(passwd_ptr) 
+					uid = passwd_ptr->pw_uid;
+				/* In this report we are using the local user
+				   structure to store the information we want
+				   since it is already avaliable and will do
+				   pretty much what we want.
+				*/
+				local_user = xmalloc(sizeof(local_user_rec_t));
+				local_user->name = xstrdup(assoc->user);
+				local_user->uid = uid;
+				local_user->acct = xstrdup(assoc->acct);
+	
+				list_append(local_cluster->user_list,
+					    local_user);
+			}
+			/* get the amount of time this assoc used
+			   during the time we are looking at */
+			itr2 = list_iterator_create(assoc->accounting_list);
+			while((accting2 = list_next(itr2))) {
+				local_user->cpu_secs += 
+					(uint64_t)accting2->alloc_secs;
+			}
+			list_iterator_destroy(itr2);
+			list_delete_item(assoc_itr);
+		}
+		list_iterator_reset(assoc_itr);
+	}
+	list_iterator_destroy(assoc_itr);
+	list_iterator_destroy(itr);
+
+	list_destroy(cluster_list);
+	cluster_list = NULL;
+	list_destroy(assoc_list);
+	assoc_list = NULL;
+
+	if(print_fields_have_header) {
+		char start_char[20];
+		char end_char[20];
+		time_t my_end = user_cond->assoc_cond->usage_end-1;
+		
+		slurm_make_time_str(
+			(time_t *)&user_cond->assoc_cond->usage_start, 
+			start_char, sizeof(start_char));
+		slurm_make_time_str(&my_end, end_char, sizeof(end_char));
+		printf("----------------------------------------"
+		       "----------------------------------------\n");
+		printf("User Acct Utilization by Cluster %s - %s (%d secs)\n", 
+		       start_char, end_char, 
+		       (user_cond->assoc_cond->usage_end 
+			- user_cond->assoc_cond->usage_start));
+		
+		switch(time_format) {
+		case SREPORT_TIME_PERCENT:
+			printf("Time reported in %s\n", time_format_string);
+			break; 
+		default:
+			printf("Time reported in CPU %s\n", time_format_string);
+			break;
+		}
+		printf("----------------------------------------"
+		       "----------------------------------------\n");
+	}
+
+	itr2 = list_iterator_create(print_fields_list);
+	print_fields_header(print_fields_list);
+
+	field_count = list_count(print_fields_list);
+	cluster_itr = list_iterator_create(local_cluster_list);
+	while((local_cluster = list_next(cluster_itr))) {
+		list_sort(local_cluster->user_list, (ListCmpF)_sort_user_dec);
+	
+		itr = list_iterator_create(local_cluster->user_list);
+		while((local_user = list_next(itr))) {
+			int count = 0;
+			int curr_inx = 1;
+	
+			while((field = list_next(itr2))) {
+				char *tmp_char = NULL;
+				struct passwd *pwd = NULL;
+				switch(field->type) {
+				case PRINT_USER_ACCT:
+					field->print_routine(
+						field,
+						local_user->acct,
+						(curr_inx == field_count));
+					break;
+				case PRINT_USER_CLUSTER:
+					field->print_routine(
+						field,
+						local_cluster->name,
+						(curr_inx == field_count));
+					break;
+				case PRINT_USER_LOGIN:
+					field->print_routine(field,
+							     local_user->name,
+							     (curr_inx == 
+							      field_count));
+					break;
+				case PRINT_USER_PROPER:
+					pwd = getpwnam(local_user->name);
+					if(pwd) {
+						tmp_char = strtok(pwd->pw_gecos,
+								  ",");
+						if(!tmp_char)
+							tmp_char = 
+								pwd->pw_gecos;
+					}
+					field->print_routine(field,
+							     tmp_char,
+							     (curr_inx == 
+							      field_count));
+					break;
+				case PRINT_USER_USED:
+					field->print_routine(
+						field,
+						local_user->cpu_secs,
+						local_cluster->cpu_secs,
+						(curr_inx == field_count));
+					break;
+				default:
+					break;
+				}
+				curr_inx++;
+			}
+			list_iterator_reset(itr2);
+			printf("\n");
+			count++;
+			if(count >= top_limit)
+				break;
+		}
+		list_iterator_destroy(itr);
+	}
+	list_iterator_destroy(cluster_itr);
+end_it:
+	/* group_accts could be set in the set_cond function and needs
+	 * to be cleared here, or anytime _set_cond is called.
+	 */
+	group_accts = 0;
+	destroy_acct_user_cond(user_cond);
+	
+	if(assoc_list) {
+		list_destroy(assoc_list);
+		assoc_list = NULL;
+	}
+	
+	if(cluster_list) {
+		list_destroy(cluster_list);
+		cluster_list = NULL;
+	}
+	
+	if(local_cluster_list) {
+		list_destroy(local_cluster_list);
+		local_cluster_list = NULL;
 	}
 	
 	if(print_fields_list) {

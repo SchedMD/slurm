@@ -43,5 +43,5 @@
 #include "sreport.h"
 
 extern int user_top(int argc, char *argv[]);
-
+extern int user_acct_usage(int argc, char *argv[]);
 #endif

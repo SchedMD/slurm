@@ -500,6 +500,9 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 		limit_set = _set_rec(&i, argc, argv, name_list, cluster_list,
 				     start_acct, start_assoc);
 
+	if(exit_code) 
+		return SLURM_ERROR;
+
 	if(!name_list || !list_count(name_list)) {
 		list_destroy(name_list);
 		list_destroy(cluster_list);
@@ -1352,7 +1355,12 @@ extern int sacctmgr_modify_account(int argc, char *argv[])
 		}
 	}
 
-	if(!rec_set) {
+	if(exit_code) {
+		destroy_acct_account_cond(acct_cond);
+		destroy_acct_account_rec(acct);
+		destroy_acct_association_rec(assoc);
+		return SLURM_ERROR;
+	} else if(!rec_set) {
 		exit_code=1;
 		fprintf(stderr, " You didn't give me anything to set\n");
 		destroy_acct_account_cond(acct_cond);
@@ -1475,6 +1483,10 @@ extern int sacctmgr_delete_account(int argc, char *argv[])
 		return SLURM_ERROR;
 	}
 
+	if(exit_code) {
+		destroy_acct_account_cond(acct_cond);
+		return SLURM_ERROR;
+	}
 	/* check to see if person is trying to remove root account.  This is
 	 * bad, and should not be allowed outside of deleting a cluster.
 	 */
