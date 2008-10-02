@@ -270,13 +270,16 @@ g_slurm_jobcomp_init( char *jobcomp_loc )
 extern int
 g_slurm_jobcomp_fini(void)
 {
-	int rc;
+	slurm_mutex_lock( &context_lock );
 
 	if ( !g_context)
-		return SLURM_SUCCESS;
+		goto done;
 
-	rc = _slurm_jobcomp_context_destroy ( g_context );
+	_slurm_jobcomp_context_destroy ( g_context );
 	g_context = NULL;
+
+  done:
+	slurm_mutex_unlock( &context_lock );
 	return SLURM_SUCCESS;
 }
 

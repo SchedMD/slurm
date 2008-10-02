@@ -2,6 +2,7 @@
  *  sched_wiki.c - Wiki plugin for Moab and Maui schedulers.
  *****************************************************************************
  *  Copyright (C) 2006-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  LLNL-CODE-402394.
@@ -140,7 +141,9 @@ void slurm_sched_plugin_job_is_pending( void )
 /**************************************************************************/
 int slurm_sched_plugin_reconfig( void )
 {
-	return parse_wiki_config();
+	int rc = parse_wiki_config();
+	(void) event_notify(1235, "Partition change");
+	return rc;
 }
 
 /**************************************************************************/

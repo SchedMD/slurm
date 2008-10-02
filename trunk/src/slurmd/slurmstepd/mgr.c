@@ -1188,9 +1188,10 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 			}
 		}
 		if (t != NULL) {
-			verbose("task %lu (%lu) exited status 0x%04x %M",
+			verbose("task %lu (%lu) exited status %d:%d %M",
 				(unsigned long)job->task[i]->gtid,
-				(unsigned long)pid, status);
+				(unsigned long)pid, 
+				WEXITSTATUS(status), WIFSIGNALED(status));
 			t->exited  = true;
 			t->estatus = status;
 			job->envtp->env = job->env;

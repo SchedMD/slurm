@@ -8,6 +8,7 @@
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
 # Copyright (C) 2002-2007 The Regents of the University of California.
+# Copyright (C) 2008 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # LLNL-CODE-402394.
@@ -44,6 +45,7 @@ print_header $test_id
 # Make sure sleep time is no larger than InactiveLimit
 set inactive_limit  $sleep_time
 set kill_wait       $sleep_time
+set over_time_limit 0
 log_user 0
 spawn $scontrol show config
 expect {
@@ -53,6 +55,14 @@ expect {
 	}
 	-re "KillWait *= ($number)" {
 		set kill_wait $expect_out(1,string)
+		exp_continue
+	}
+	-re "OverTimeLimit *= UNLIMITED" {
+		set over_time_limit 9999
+		exp_continue
+	}
+	-re "OverTimeLimit *= ($number)" {
+		set over_time_limit $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
@@ -73,6 +83,10 @@ if {$inactive_limit < 120} {
 }
 if {$kill_wait > 60} {
 	send_user "\nWARNING: KillWait ($kill_wait) is too high for this test\n"
+	exit 0
+}
+if {$over_time_limit > 0} {
+	send_user "\nWARNING: OverTimeLimit too high for this test ($over_time_limit > 0)\n"
 	exit 0
 }
 if {$inactive_limit < $sleep_time} {

@@ -330,7 +330,8 @@ struct job_details {
 	uint32_t num_tasks;		/* number of tasks to start */
 	uint8_t open_mode;		/* stdout/err append or trunctate */
 	uint8_t overcommit;		/* processors being over subscribed */
-	uint8_t prolog_running;		/* set while prolog_slurmctld is running */
+	uint8_t prolog_running;		/* set while prolog_slurmctld is 
+					 * running */
 	uint16_t acctg_freq;		/* accounting polling interval */
 	uint16_t cpus_per_task;		/* number of processors required for 
 					 * each task */
@@ -338,7 +339,8 @@ struct job_details {
 	/* job constraints: */
 	uint32_t job_min_procs;		/* minimum processors per node */
 	uint32_t job_min_memory;	/* minimum memory per node (MB) OR
-					 * memory per allocated CPU | MEM_PER_CPU */
+					 * memory per allocated 
+					 * CPU | MEM_PER_CPU */
 	uint32_t job_min_tmp_disk;	/* minimum tempdisk per node, MB */
 	char *err;			/* pathname of job's stderr file */
 	char *in;			/* pathname of job's stdin file */
@@ -424,7 +426,7 @@ struct job_record {
 	uint32_t requid;            	/* requester user ID */
 	char *resp_host;		/* host for srun communications */
 	select_jobinfo_t select_jobinfo;/* opaque data, BlueGene */
-	select_job_res_t select_job;	/* opaque data, non-BlueGene */
+	select_job_res_t select_job;	/* details of allocated cores */
 	time_t start_time;		/* time execution begins, 
 					 * actual or expected */
 	char *state_desc;		/* optional details for state_reason */
@@ -439,21 +441,6 @@ struct job_record {
 	uint32_t total_procs;		/* number of allocated processors, 
 					 * for accounting */
 	uint32_t user_id;		/* user the job runs as */
-
-	/* Per node allocation details */
-	uint16_t num_cpu_groups;	/* record count in cpus_per_node and 
-					 * cpu_count_reps */
-	uint32_t *cpus_per_node;	/* array of cpus per node allocated */
-	uint32_t *cpu_count_reps;	/* array of consecutive nodes with 
-					 * same cpu count */
-
-        uint32_t alloc_lps_cnt;		/* number of hosts in alloc_lps
-					 * or 0 if alloc_lps is not needed
-					 * for the credentials */
-        uint32_t *alloc_lps;		/* number of logical processors
-					 * allocated for this job */
-	uint32_t *used_lps;		/* number of logical processors
-					 * already allocated to job steps */
 };
 
 /* Job dependency specification, used in "depend_list" within job_record */
@@ -469,36 +456,40 @@ struct	depend_spec {
 };
 
 struct 	step_record {
-	struct job_record* job_ptr; 	/* ptr to the job that owns the step */
-	uint16_t step_id;		/* step number */
+	uint16_t batch_step;		/* 1 if batch job step, 0 otherwise */
+	uint16_t ckpt_interval;		/* checkpoint interval in minutes */
+	check_jobinfo_t check_job;	/* checkpoint context, opaque */
+	char *ckpt_path;	        /* path to checkpoint image files */
+	time_t ckpt_time;		/* time of last checkpoint */
+	bitstr_t *core_bitmap_job;	/* bitmap of cores allocated to this
+					 * step relative to job's nodes, 
+					 * see src/common/select_job_res.h */
+	uint32_t cpu_count;		/* count of step's CPUs */
 	uint16_t cyclic_alloc;		/* set for cyclic task allocation 
 					   across nodes */
+	uint16_t exclusive;		/* dedicated resources for the step */
+	uint32_t exit_code;		/* highest exit code from any task */
+	bitstr_t *exit_node_bitmap;	/* bitmap of exited nodes */
+	char *host;			/* host for srun communications */
+	struct job_record* job_ptr; 	/* ptr to the job that owns the step */
+	jobacctinfo_t *jobacct;         /* keep track of process info in the 
+					 * step */
+	uint32_t mem_per_task;		/* MB memory per task, 0=no limit */
+	char *name;			/* name of job step */
+	char *network;			/* step's network specification */
+	uint16_t port;			/* port for srun communications */
+	time_t pre_sus_time;		/* time step ran prior to last suspend */
 	time_t start_time;      	/* step allocation time */
+	uint16_t step_id;		/* step number */
+	slurm_step_layout_t *step_layout;/* info about how tasks are laid out
+					  * in the step */
+	bitstr_t *step_node_bitmap;	/* bitmap of nodes allocated to job 
+					 * step */
 /*	time_t suspend_time;		 * time step last suspended or resumed
 					 * implicitly the same as suspend_time
 					 * in the job record */
-	time_t pre_sus_time;		/* time step ran prior to last suspend */
-	time_t tot_sus_time;		/* total time in suspended state */
-	bitstr_t *step_node_bitmap;	/* bitmap of nodes allocated to job 
-					 * step */
-	uint16_t port;			/* port for srun communications */
-	char *host;			/* host for srun communications */
-	uint16_t batch_step;		/* 1 if batch job step, 0 otherwise */
-	uint16_t mem_per_task;		/* MB memory per task, 0=no limit */
-	uint16_t ckpt_interval;		/* checkpoint interval in minutes */
-	char *ckpt_path;	        /* path to store checkpoint image files */
-	uint16_t exclusive;		/* dedicated resources for the step */
-	time_t ckpt_time;		/* time of last checkpoint */
 	switch_jobinfo_t switch_job;	/* switch context, opaque */
-	check_jobinfo_t check_job;	/* checkpoint context, opaque */
-	char *name;			/* name of job step */
-	char *network;			/* step's network specification */
-	uint32_t exit_code;		/* highest exit code from any task */
-	bitstr_t *exit_node_bitmap;	/* bitmap of exited nodes */
-	jobacctinfo_t *jobacct;         /* keep track of process info in the 
-					 * step */
-	slurm_step_layout_t *step_layout;/* info about how tasks are laid out
-					  * in the step */
+	time_t tot_sus_time;		/* total time in suspended state */
 };
 
 extern List job_list;			/* list of job_record entries */
@@ -518,7 +509,6 @@ enum select_data_info {
 	SELECT_BITMAP,       /* data-> partially_idle_bitmap (CR support) */
 	SELECT_ALLOC_CPUS,   /* data-> uint16 alloc cpus (CR support) */
 	SELECT_ALLOC_LPS,    /* data-> uint32 alloc lps  (CR support) */
-	SELECT_AVAIL_CPUS,   /* data-> uint16 avail cpus (CR support) */ 
 	SELECT_AVAIL_MEMORY  /* data-> uint32 avail mem  (CR support) */ 
 } ;
 
@@ -1388,8 +1378,9 @@ extern int step_create ( job_step_create_request_msg_t *step_specs,
 
 /*
  * step_layout_create - creates a step_layout according to the inputs.
- * IN job_ptr - job record step belongs to
+ * IN step_ptr - step having tasks layed out
  * IN step_node_list - node list of hosts in step
+ * IN node_count - count of nodes in step allocation
  * IN num_tasks - number of tasks in step
  * IN task_dist - type of task distribution
  * IN plane_size - size of plane (only needed for the plane distribution)
@@ -1399,7 +1390,7 @@ extern int step_create ( job_step_create_request_msg_t *step_specs,
  */
 extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 					       char *step_node_list,
-					       uint16_t node_count,
+					       uint32_t node_count,
 					       uint32_t num_tasks,
 					       uint16_t task_dist,
 					       uint32_t plane_size);

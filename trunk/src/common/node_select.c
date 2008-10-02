@@ -8,10 +8,9 @@
  *  front-end nodes, the functions they require are here rather than within 
  *  the plugin. This is because functions required by the plugin can not be 
  *  resolved on the front-end nodes, so we can't load the plugins there.
- *
- *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  LLNL-CODE-402394.
@@ -88,14 +87,8 @@ typedef struct slurm_select_ops {
 	int		(*job_fini)	       (struct job_record *job_ptr);
 	int		(*job_suspend)	       (struct job_record *job_ptr);
 	int		(*job_resume)	       (struct job_record *job_ptr);
-	int		(*get_job_cores)       (uint32_t job_id,
-						int alloc_index, int s);
 	int		(*pack_node_info)      (time_t last_query_time,
 						Buf *buffer_ptr);
-        int             (*get_extra_jobinfo)   (struct node_record *node_ptr,
-						struct job_record *job_ptr,
-						enum select_data_info cr_info,
-						void *data);
         int             (*get_select_nodeinfo) (struct node_record *node_ptr,
 						enum select_data_info cr_info, 
 						void *data);
@@ -110,8 +103,6 @@ typedef struct slurm_select_ops {
 	int             (*alter_node_cnt)      (enum select_node_cnt type,
 						void *data);
 	int		(*reconfigure)         (void);
-	int		(*step_begin)          (struct step_record *step_ptr);
-	int		(*step_fini)           (struct step_record *step_ptr);
 } slurm_select_ops_t;
 
 typedef struct slurm_select_context {
@@ -180,9 +171,7 @@ static slurm_select_ops_t * _select_get_ops(slurm_select_context_t *c)
 		"select_p_job_fini",
 		"select_p_job_suspend",
 		"select_p_job_resume",
-		"select_p_get_job_cores",
 		"select_p_pack_node_info",
-                "select_p_get_extra_jobinfo",
                 "select_p_get_select_nodeinfo",
                 "select_p_update_nodeinfo",
 		"select_p_update_block",
@@ -190,9 +179,7 @@ static slurm_select_ops_t * _select_get_ops(slurm_select_context_t *c)
                 "select_p_get_info_from_plugin",
 		"select_p_update_node_state",
 		"select_p_alter_node_cnt",
-		"select_p_reconfigure",
-		"select_p_step_begin",
-		"select_p_step_fini",
+		"select_p_reconfigure"
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
 
@@ -394,28 +381,6 @@ extern int select_g_block_init(List block_list)
 		return SLURM_ERROR;
 
 	return (*(g_select_context->ops.block_init))(block_list);
-}
- 
-/* 
- * Get selected data from a given node for a specific job. 
- * IN node_ptr  - current node record
- * IN job_ptr   - current job record
- * IN cr_info   - type of data to get from the node record 
- *                (see enum select_data_info)
- * IN/OUT data  - the data to get from node record
- */
-extern int select_g_get_extra_jobinfo (struct node_record *node_ptr, 
-				       struct job_record *job_ptr, 
-                                       enum select_data_info cr_info,
-                                       void *data)
-{
-       if (slurm_select_init() < 0)
-               return SLURM_ERROR;
-
-       return (*(g_select_context->ops.get_extra_jobinfo))(node_ptr, 
-							   job_ptr, 
-							   cr_info, 
-							   data);
 }
 
 /* 
@@ -645,21 +610,6 @@ extern int select_g_job_resume(struct job_record *job_ptr)
 	return (*(g_select_context->ops.job_resume))(job_ptr);
 }
 
-/*
- * Get job core info. Executed from sched/gang.
- * IN job_id      - id of job from which to obtain data
- * IN alloc_index - allocated node index
- * IN s           - socket index
- * RET number of allocated cores on the given socket from the given node
- */
-extern int select_g_get_job_cores(uint32_t job_id, int alloc_index, int s)
-{
-	if (slurm_select_init() < 0)
-		return 0;
-
-	return (*(g_select_context->ops.get_job_cores))(job_id, alloc_index, s);
-}
-
 extern int select_g_pack_node_info(time_t last_query_time, Buf *buffer)
 {
 	if (slurm_select_init() < 0)
@@ -667,28 +617,6 @@ extern int select_g_pack_node_info(time_t last_query_time, Buf *buffer)
 	
 	return (*(g_select_context->ops.pack_node_info))
 		(last_query_time, buffer);
-}
-
-/* Prepare to start a job step, allocate memory as needed
- * RET - slurm error code
- */
-extern int select_g_step_begin(struct step_record *step_ptr)
-{
-	if (slurm_select_init() < 0)
-		return SLURM_ERROR;
-
-	return (*(g_select_context->ops.step_begin))(step_ptr);
-}
-
-/* Prepare to terminate a job step, release memory as needed
- * RET - slurm error code
- */
-extern int select_g_step_fini(struct step_record *step_ptr)
-{
-	if (slurm_select_init() < 0)
-		return SLURM_ERROR;
-
-	return (*(g_select_context->ops.step_fini))(step_ptr);
 }
 
 #ifdef HAVE_BG		/* node selection specific logic */

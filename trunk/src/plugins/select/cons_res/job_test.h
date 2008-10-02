@@ -1,7 +1,9 @@
 /*****************************************************************************\
- *  select_linear.h 
+ *  select_cons_res.h 
+ *
+ *  $Id: select_cons_res.h,v 1.3 2006/10/31 20:01:38 palermo Exp $
  *****************************************************************************
- *  Copyright (C) 2006-2007 Hewlett-Packard Development Company, L.P.
+ *  Copyright (C) 2006 Hewlett-Packard Development Company, L.P.
  *  Written by Susanne M. Balle, <susanne.balle@hp.com>
  *  LLNL-CODE-402394.
  *  
@@ -34,39 +36,33 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _SELECT_LINEAR_H
-#define _SELECT_LINEAR_H
+#ifndef _CR_JOB_TEST_H
+#define _CR_JOB_TEST_H
 
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <slurm/slurm.h>
+#include <slurm/slurm_errno.h>
+
+#include "src/common/list.h"
+#include "src/common/log.h"
+#include "src/common/node_select.h"
+#include "src/common/pack.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/xassert.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
+#include "src/common/slurm_resource_info.h"
 #include "src/slurmctld/slurmctld.h"
 
-/*
- * part_cr_record keeps track of the number of running jobs on 
- * this node in this partition. SLURM allows a node to be
- * assigned to more than one partition. One or more partitions
- * may be configured to share the cores with more than one job.
- */
 
-struct part_cr_record {
-	struct part_record *part_ptr;	/* pointer to partition in slurmctld */
-	uint16_t run_job_cnt;		/* number of running jobs on this node
-					 * for this partition */
-	uint16_t tot_job_cnt;		/* number of jobs allocated to this node
-					 * for this partition */
-	struct part_cr_record *next;	/* ptr to next part_cr_record */
-};
+/* _job_test - does most of the real work for select_p_job_test(), which 
+ *	pretty much just handles load-leveling and max_share logic */
+int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
+		uint32_t min_nodes, uint32_t max_nodes, uint32_t req_nodes,
+		int mode, select_type_plugin_info_t cr_type,
+		enum node_cr_state job_node_req, uint32_t cr_node_cnt,
+		struct part_res_record *cr_part_ptr);
 
-/*
- * node_cr_record keeps track of the resources within a node which 
- * have been reserved by already scheduled jobs. 
- */
-struct node_cr_record {
-	struct part_cr_record *parts;	/* ptr to singly-linked part_cr_record
-					 * list that contains alloc_core info */
-	uint32_t alloc_memory;		/* real memory reserved by already
-					 * scheduled jobs */
-	uint32_t exclusive_jobid;	/* if the node is allocated exclusively
-					 * to some job, put its jobid here, 
-					 * otherwise value is zero */
-};
-
-#endif /* !_SELECT_LINEAR_H */
+#endif /* !_CR_JOB_TEST_H */

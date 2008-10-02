@@ -106,10 +106,11 @@ uint32_t jobid_from_env(void);
 /*
  * Create a job step given the job information stored in 'j'
  * After returning, 'j' is filled in with information for job step.
+ * IN use_all_cpus - true to use every CPU allocated to the job
  *
  * Returns -1 if job step creation failure, 0 otherwise
  */
-int create_job_step(srun_job_t *j);
+int create_job_step(srun_job_t *j, bool use_all_cpus);
 
 /* set the job for debugging purpose */
 void set_allocate_job(srun_job_t *job);

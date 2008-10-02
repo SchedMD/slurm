@@ -1,9 +1,8 @@
 /*****************************************************************************\
  *  select_bluegene.c - node selection plugin for Blue Gene system.
- * 
- *  $Id$
  *****************************************************************************
- *  Copyright (C) 2004-2006 The Regents of the University of California.
+ *  Copyright (C) 2004-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Dan Phung <phung4@llnl.gov> Danny Auble <da@llnl.gov>
  *  LLNL-CODE-402394.
@@ -715,11 +714,6 @@ extern int select_p_job_resume(struct job_record *job_ptr)
 	return ESLURM_NOT_SUPPORTED;
 }
 
-extern int select_p_get_job_cores(uint32_t job_id, int alloc_index, int s)
-{
-	return ESLURM_NOT_SUPPORTED;
-}
-
 extern int select_p_job_ready(struct job_record *job_ptr)
 {
 #ifdef HAVE_BG_FILES
@@ -1116,21 +1110,6 @@ end_it:
 	return rc;
 }
 
-extern int select_p_get_extra_jobinfo (struct node_record *node_ptr, 
-				       struct job_record *job_ptr, 
-                                       enum select_data_info info,
-                                       void *data)
-{
-	if (info == SELECT_AVAIL_CPUS) {
-		/* Needed to track CPUs allocated to jobs on whole nodes
-		 * for sched/wiki2 (Moab scheduler). Small block allocations
-		 * handled through use of job_ptr->num_procs in slurmctld */
-		uint16_t *cpus_per_bp = (uint16_t *) data;
-		*cpus_per_bp = procs_per_node;
-	}
-	return SLURM_SUCCESS;
-}
-
 extern int select_p_get_info_from_plugin (enum select_data_info info, 
 					  void *data)
 {
@@ -1333,16 +1312,6 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 }
 
 extern int select_p_reconfigure(void)
-{
-	return SLURM_SUCCESS;
-}
-
-extern int select_p_step_begin(struct step_record *step_ptr)
-{
-	return SLURM_SUCCESS;
-}
-
-extern int select_p_step_fini(struct step_record *step_ptr)
 {
 	return SLURM_SUCCESS;
 }

@@ -61,7 +61,7 @@
  * NOTE: allocates memory that should be xfreed by caller
  */
 extern slurm_step_layout_t *slurm_step_layout_create(const char *tlist,
-						     uint32_t *cpus_per_node, 
+						     uint16_t *cpus_per_node, 
 						     uint32_t *cpu_count_reps,
 						     uint32_t node_cnt, 
 						     uint32_t task_cnt,
@@ -84,7 +84,7 @@ extern slurm_step_layout_t *slurm_step_layout_create(const char *tlist,
  */
 extern slurm_step_layout_t *fake_slurm_step_layout_create(
 	const char *tlist,
-	uint32_t *cpus_per_node, 
+	uint16_t *cpus_per_node, 
 	uint32_t *cpu_count_reps,
 	uint32_t node_cnt, 
 	uint32_t task_cnt);

@@ -492,8 +492,8 @@ job_desc_msg_destroy(job_desc_msg_t *j)
 	}
 }
 
-int
-create_job_step(srun_job_t *job)
+extern int
+create_job_step(srun_job_t *job, bool use_all_cpus)
 {
 	int i, rc;
 	SigFunc *oquitf = NULL, *ointf = NULL, *otermf = NULL;
@@ -510,9 +510,13 @@ create_job_step(srun_job_t *job)
 	if (!opt.nprocs_set && (opt.ntasks_per_node != NO_VAL))
 		job->ntasks = opt.nprocs = job->nhosts * opt.ntasks_per_node;
 	job->ctx_params.task_count = opt.nprocs;
-	
-	job->ctx_params.cpu_count = opt.overcommit ? job->ctx_params.node_count
-		: (opt.nprocs*opt.cpus_per_task);
+
+	if (use_all_cpus)
+		job->ctx_params.cpu_count = job->cpu_count;
+	else if (opt.overcommit)
+		job->ctx_params.cpu_count = job->ctx_params.node_count;
+	else
+		job->ctx_params.cpu_count = opt.nprocs*opt.cpus_per_task;
 	
 	job->ctx_params.relative = (uint16_t)opt.relative;
 	job->ctx_params.ckpt_interval = (uint16_t)opt.ckpt_interval;
