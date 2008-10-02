@@ -8481,9 +8481,9 @@ extern int jobacct_storage_p_job_complete(mysql_conn_t *mysql_conn,
 		}
 	}
 
-	query = xstrdup_printf("update %s set start=%u, end=%u, state=%d, "
-			       "nodelist=\"%s\", comp_code=%u, "
-			       "kill_requid=%u where id=%u",
+	query = xstrdup_printf("update %s set start=%d, end=%d, state=%d, "
+			       "nodelist=\"%s\", comp_code=%d, "
+			       "kill_requid=%d where id=%d",
 			       job_table, (int)job_ptr->start_time,
 			       (int)job_ptr->end_time, 
 			       job_ptr->job_state & (~JOB_COMPLETING),
@@ -8581,8 +8581,8 @@ extern int jobacct_storage_p_step_start(mysql_conn_t *mysql_conn,
 	query = xstrdup_printf(
 		"insert into %s (id, stepid, start, name, state, "
 		"cpus, nodelist) "
-		"values (%d, %u, %d, \"%s\", %d, %u, \"%s\") "
-		"on duplicate key update cpus=%u, end=0, state=%u",
+		"values (%d, %d, %d, \"%s\", %d, %d, \"%s\") "
+		"on duplicate key update cpus=%d, end=0, state=%d",
 		step_table, step_ptr->job_ptr->db_index,
 		step_ptr->step_id, 
 		(int)step_ptr->start_time, step_ptr->name,
@@ -8702,7 +8702,7 @@ extern int jobacct_storage_p_step_complete(mysql_conn_t *mysql_conn,
 
 	query = xstrdup_printf(
 		"update %s set end=%d, state=%d, "
-		"kill_requid=%u, comp_code=%u, "
+		"kill_requid=%d, comp_code=%d, "
 		"user_sec=%ld, user_usec=%ld, "
 		"sys_sec=%ld, sys_usec=%ld, "
 		"max_vsize=%u, max_vsize_task=%u, "
@@ -8713,7 +8713,7 @@ extern int jobacct_storage_p_step_complete(mysql_conn_t *mysql_conn,
 		"max_pages_node=%u, ave_pages=%.2f, "
 		"min_cpu=%.2f, min_cpu_task=%u, "
 		"min_cpu_node=%u, ave_cpu=%.2f "
-		"where id=%u and stepid=%u",
+		"where id=%d and stepid=%u",
 		step_table, (int)now,
 		comp_status,
 		step_ptr->job_ptr->requid, 
@@ -8789,7 +8789,7 @@ extern int jobacct_storage_p_suspend(mysql_conn_t *mysql_conn,
 
 	xstrfmtcat(query,
 		   "update %s set suspended=%d-suspended, state=%d "
-		   "where id=%u;",
+		   "where id=%d;",
 		   job_table, (int)job_ptr->suspend_time, 
 		   job_ptr->job_state & (~JOB_COMPLETING),
 		   job_ptr->db_index);

@@ -26,7 +26,12 @@ documents those changes that are of interest to users and admins.
  -- Removed Gold accounting plugin.  This plugin was to be used for accounting 
     but has seen not been maintained and is no longer needed.  If using this
     please contact slurm-dev@llnl.gov.
-
+ -- When not enforcing associations and running accounting if a user 
+    submits a job to an account that does not have an association on the 
+    cluster the account will be changed to the default account to help 
+    avoid trash in the accounting system.  If the users default account 
+    does not have an association on the cluster the requested account 
+    will be used.
 * Changes in SLURM 1.3.8
 ========================
  -- Added PrivateData flags for Users, Usage, and Accounts to Accounting. 

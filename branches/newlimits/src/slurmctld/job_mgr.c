@@ -2083,6 +2083,22 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		     job_desc->user_id, assoc_rec.acct, assoc_rec.partition);
 		error_code = ESLURM_INVALID_ACCOUNT;
 		return error_code;
+	} else if(association_based_accounting
+		  && !assoc_ptr && !accounting_enforce) {
+		/* if not enforcing associations we want to look for
+		   the default account and use it to avoid getting
+		   trash in the accounting records.
+		*/
+		assoc_rec.acct = NULL;
+		assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
+					accounting_enforce, &assoc_ptr);
+		if(assoc_ptr) {
+			info("_job_create: account '%s' has no association "
+			     "for user %u using default account '%s'",
+			     job_desc->account, job_desc->user_id,
+			     assoc_rec.acct);
+			xfree(job_desc->account);			
+		}
 	}
 	if (job_desc->account == NULL)
 		job_desc->account = xstrdup(assoc_rec.acct);
@@ -5866,8 +5882,16 @@ extern int update_job_account(char *module, struct job_record *job_ptr,
 		info("%s: invalid account %s for job_id %u",
 		     module, new_account, job_ptr->job_id);
 		return ESLURM_INVALID_ACCOUNT;
+	} else if(association_based_accounting 
+		  && !assoc_ptr && !accounting_enforce) {
+		/* if not enforcing associations we want to look for
+		   the default account and use it to avoid getting
+		   trash in the accounting records.
+		*/
+		assoc_rec.acct = NULL;
+		assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
+					accounting_enforce, &assoc_ptr);
 	}
-
 
 	xfree(job_ptr->account);
 	if (assoc_rec.acct[0] != '\0') {
