@@ -14,7 +14,7 @@ documents those changes that are of interest to users and admins.
  -- Modify mem_per_task in job step request from 16-bit to 32-bit size.
     Use new "select_job" structure for the job step's memory management.
  -- Add core_bitmap_job to slurmctld's job step structure to identify
-    which cores are allocated to the step.
+    which specific cores are allocated to the step.
  -- Add new configuration option OverTimeLimit to permit jobs to exceed 
     their (soft) time limits by a configurable amount.
  -- Remove select_g_get_job_cores(). That data is now within the slurmctld's
