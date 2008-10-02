@@ -50,7 +50,7 @@ print_header $test_id
 exec $bin_rm -f $file_in $file_out $file_err
 make_bash_script $file_in "
   for ((i = 0; i < $steps_started; i++)); do
-    j=`expr $steps_started + 10 - \$i`
+    j=`expr $steps_started + 15 - \$i`
     $srun $bin_sleep \$j &
     $bin_sleep 1
   done
