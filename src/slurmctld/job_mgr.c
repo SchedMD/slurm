@@ -2013,7 +2013,30 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		     job_desc->user_id, assoc_rec.acct, assoc_rec.partition);
 		error_code = ESLURM_INVALID_ACCOUNT;
 		return error_code;
+	} else if(!assoc_ptr && !accounting_enforce) {
+		/* if not enforcing associations we want to look for
+		   the default account and use it to avoid getting
+		   trash in the accounting records.
+		*/
+		debug2("_job_create: looking for default account for user %u "
+		       "since they do not have a valid association "
+		       "with account '%s' on this cluster",
+		       job_desc->user_id, job_desc->account);
+		assoc_rec.acct = NULL;
+		assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
+					accounting_enforce, &assoc_ptr);
+		if(!assoc_ptr) {
+			debug3("_job_create: no default association "
+			       "found for user %u", job_desc->user_id);
+		} else {
+			info("_job_create: account '%s' has no association "
+			     "for user %u using default account '%s'",
+			     job_desc->account, job_desc->user_id,
+			     assoc_rec.acct);
+			xfree(job_desc->account);			
+		}
 	}
+
 	if (job_desc->account == NULL)
 		job_desc->account = xstrdup(assoc_rec.acct);
 	if (accounting_enforce &&
