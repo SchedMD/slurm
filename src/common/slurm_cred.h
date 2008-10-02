@@ -134,7 +134,7 @@ typedef struct {
 	uid_t    uid;
 	char    *hostlist;
 	uint32_t alloc_lps_cnt;
-        uint32_t *alloc_lps;
+	uint16_t *alloc_lps;
 } slurm_cred_arg_t;
 
 /* Terminate the plugin and release all memory. */
@@ -278,7 +278,7 @@ void slurm_cred_print(slurm_cred_t cred);
  * Get count of allocated LPS (processors) by node
  */
 int slurm_cred_get_alloc_lps(slurm_cred_t cred, char **nodes, 
-			     uint32_t *alloc_lps_cnt, uint32_t **alloc_lps);
+			     uint32_t *alloc_lps_cnt, uint16_t **alloc_lps);
 #ifdef DISABLE_LOCALTIME
 extern char * timestr (const time_t *tp, char *buf, size_t n);
 #endif

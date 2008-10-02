@@ -59,6 +59,7 @@
 #include "src/common/log.h"
 #include "src/common/node_select.h"
 #include "src/common/parse_time.h"
+#include "src/common/select_job_res.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/common/xassert.h"
@@ -74,16 +75,14 @@
 static int  _add_job_to_nodes(struct node_cr_record *node_cr_ptr,
 			      struct job_record *job_ptr, char *pre_err, 
 			      int suspended);
-static int  _add_step(struct step_record *step_ptr);
+static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap);
 static void _cr_job_list_del(void *x);
 static int  _cr_job_list_sort(void *x, void *y);
-static void _del_list_step(void *x);
 static void _dump_node_cr(struct node_cr_record *node_cr_ptr);
 static struct node_cr_record *_dup_node_cr(struct node_cr_record *node_cr_ptr);
 static int  _find_job_mate(struct job_record *job_ptr, bitstr_t *bitmap,
 			   uint32_t min_nodes, uint32_t max_nodes,
 			   uint32_t req_nodes);
-static int  _find_step(struct step_record *step_ptr);
 static void _free_node_cr(struct node_cr_record *node_cr_ptr);
 static void _init_node_cr(void);
 static int _job_count_bitmap(struct node_cr_record *node_cr_ptr,
@@ -93,7 +92,6 @@ static int _job_count_bitmap(struct node_cr_record *node_cr_ptr,
 static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		     uint32_t min_nodes, uint32_t max_nodes, 
 		     uint32_t req_nodes);
-static int _remove_step(struct step_record *step_ptr);
 static int _rm_job_from_nodes(struct node_cr_record *node_cr_ptr,
 			      struct job_record *job_ptr, char *pre_err, 
 			      int remove_all);
@@ -204,8 +202,7 @@ static int _init_status_pthread(void)
 
 	slurm_mutex_lock( &thread_flag_mutex );
 	if ( xcpu_thread ) {
-		debug2("XCPU thread already running, not starting "
-			"another");
+		debug2("XCPU thread already running, not starting another");
 		slurm_mutex_unlock( &thread_flag_mutex );
 		return SLURM_ERROR;
 	}
@@ -227,11 +224,11 @@ static int _fini_status_pthread(void)
 	if ( xcpu_thread ) {
 		agent_fini = 1;
 		for (i=0; i<4; i++) {
+			sleep(1);
 			if (pthread_kill(xcpu_thread, 0)) {
 				xcpu_thread = 0;
 				break;
 			}
-			sleep(1);
 		}
 		if ( xcpu_thread ) {
 			error("could not kill XCPU agent thread");
@@ -417,6 +414,92 @@ static uint16_t _get_avail_cpus(struct job_record *job_ptr, int index)
 	return(avail_cpus);
 }
 
+/* Build the full select_job_res_t structure for a job based upon the nodes
+ *	allocated to it (the bitmap) and the job's memory requirement */
+static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap)
+{
+	int i, j, k;
+	int first_bit, last_bit;
+	uint32_t node_cpus, total_cpus = 0, node_cnt;
+	struct node_record *node_ptr;
+	uint32_t job_memory_cpu = 0, job_memory_node = 0;
+	bool memory_info = false;
+	select_job_res_t select_ptr;
+
+	if (job_ptr->details->job_min_memory  && (cr_type == CR_MEMORY)) {
+		if (job_ptr->details->job_min_memory & MEM_PER_CPU) {
+			job_memory_cpu = job_ptr->details->job_min_memory &
+					 (~MEM_PER_CPU);
+			memory_info = true;
+		} else {
+			job_memory_node = job_ptr->details->job_min_memory;
+			memory_info = true;
+		}
+	}
+
+	if (job_ptr->select_job) {
+		error("_build_select_struct: already have select_job");
+		free_select_job_res(&job_ptr->select_job);
+	}
+
+	node_cnt = bit_set_count(bitmap);
+	job_ptr->select_job = select_ptr = create_select_job_res();
+	select_ptr->cpu_array_reps = xmalloc(sizeof(uint32_t) * node_cnt);
+	select_ptr->cpu_array_value = xmalloc(sizeof(uint16_t) * node_cnt);
+	select_ptr->cpus = xmalloc(sizeof(uint16_t) * node_cnt);
+	select_ptr->cpus_used = xmalloc(sizeof(uint16_t) * node_cnt);
+	select_ptr->memory_allocated = xmalloc(sizeof(uint32_t) * node_cnt);
+	select_ptr->memory_used = xmalloc(sizeof(uint32_t) * node_cnt);
+	select_ptr->nhosts = node_cnt;
+	select_ptr->node_bitmap = bit_copy(bitmap);
+	if (select_ptr->node_bitmap == NULL)
+		fatal("bit_copy malloc failure");
+	select_ptr->nprocs = job_ptr->total_procs;
+	if (build_select_job_res(select_ptr, (void *)select_node_ptr,
+				 select_fast_schedule))
+		error("_build_select_struct: build_select_job_res: %m");
+
+	first_bit = bit_ffs(bitmap);
+	last_bit  = bit_fls(bitmap);
+	for (i=first_bit, j=0, k=-1; i<=last_bit; i++) {
+		if (!bit_test(bitmap, i))
+			continue;
+		node_ptr = &(select_node_ptr[i]);
+		if (select_fast_schedule)
+			node_cpus = node_ptr->config_ptr->cpus;
+		else
+			node_cpus = node_ptr->cpus;
+		select_ptr->cpus[j] = node_cpus;
+		if ((k == -1) || 
+		    (select_ptr->cpu_array_value[k] != node_cpus)) {
+			select_ptr->cpu_array_cnt++;
+			select_ptr->cpu_array_reps[++k] = 1;
+			select_ptr->cpu_array_value[k] = node_cpus;
+		} else
+			select_ptr->cpu_array_reps[k]++;
+		total_cpus += node_cpus;
+
+		if (!memory_info)
+			;
+		else if (job_memory_node)
+			select_ptr->memory_allocated[j] = job_memory_node;
+		else if (job_memory_cpu) {
+			select_ptr->memory_allocated[j] = 
+					job_memory_cpu * node_cpus;
+		}
+
+		if (set_select_job_res_node(select_ptr, j)) {
+			error("_build_select_struct: set_select_job_res_node: "
+			      "%m");
+		}
+		j++;
+	}
+	if (select_ptr->nprocs != total_cpus) {
+		error("_build_select_struct: nprocs mismatch %u != %u",
+		      select_ptr->nprocs, total_cpus);
+	}
+}
+
 /*
  * select_p_job_test - Given a specification of scheduling requirements, 
  *	identify the nodes which "best" satisfy the request.
@@ -507,8 +590,8 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				continue;
 			prev_cnt = j;
 			if ((mode == SELECT_MODE_RUN_NOW) && (max_run_job > 0)) {
-				/* We need to share. 
-				 * Try to find suitable job to share nodes with */
+				/* We need to share. Try to find 
+				 * suitable job to share nodes with */
 				rc = _find_job_mate(job_ptr, bitmap, min_nodes, 
 						    max_nodes, req_nodes);
 				if (rc == SLURM_SUCCESS)
@@ -523,6 +606,8 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	}
 	bit_free(orig_map);
 	slurm_mutex_unlock(&cr_mutex);
+	if ((rc == SLURM_SUCCESS) && (mode == SELECT_MODE_RUN_NOW))
+		_build_select_struct(job_ptr, bitmap);
 	if (save_mem)
 		job_ptr->details->job_min_memory = save_mem;
 	return rc;
@@ -670,6 +755,7 @@ static int _find_job_mate(struct job_record *job_ptr, bitstr_t *bitmap,
 		    (job_scan_ptr->total_procs >= job_ptr->num_procs) &&
 		    bit_super_set(job_scan_ptr->node_bitmap, bitmap)) {
 			bit_and(bitmap, job_scan_ptr->node_bitmap);
+			job_ptr->total_procs = job_scan_ptr->total_procs;
 			return SLURM_SUCCESS;
 		}
 	}
@@ -984,11 +1070,6 @@ extern int select_p_job_resume(struct job_record *job_ptr)
 	return SLURM_SUCCESS;
 }
 
-extern int select_p_get_job_cores(uint32_t job_id, int alloc_index, int s)
-{
-	return 0;
-}
-
 extern int select_p_job_ready(struct job_record *job_ptr)
 {
 	if (job_ptr->job_state != JOB_RUNNING)
@@ -1012,11 +1093,6 @@ extern int select_p_get_select_nodeinfo (struct node_record *node_ptr,
 
 extern int select_p_update_nodeinfo (struct job_record *job_ptr)
 {
-	int i, node_inx;
-	ListIterator step_iterator;
-	struct step_record *step_ptr;
-	uint32_t step_mem;
-
 	xassert(job_ptr);
 
 	slurm_mutex_lock(&cr_mutex);
@@ -1024,39 +1100,6 @@ extern int select_p_update_nodeinfo (struct job_record *job_ptr)
 		_init_node_cr();
 	slurm_mutex_unlock(&cr_mutex);
 
-	if ((job_ptr->job_state != JOB_RUNNING)
-	&&  (job_ptr->job_state != JOB_SUSPENDED))
-		return SLURM_SUCCESS;
-	if ((cr_type != CR_MEMORY) || (job_ptr->details == NULL) || 
-	    (job_ptr->details->shared == 0) || job_ptr->details->job_min_memory)
-		return SLURM_SUCCESS;
-
-	slurm_mutex_lock(&cr_mutex);
-	step_iterator = list_iterator_create (job_ptr->step_list);
-	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
-		if ((step_ptr->step_node_bitmap == NULL) ||
-		    (step_ptr->step_layout == NULL) ||
-		    (step_ptr->mem_per_task == 0) ||
-		    (_find_step(step_ptr)))	/* already added */
-			continue;
-#if SELECT_DEBUG
-		info("select_p_update_nodeinfo: %u.%u mem:%u", 
-		     step_ptr->job_ptr->job_id, step_ptr->step_id, 
-		     step_ptr->mem_per_task);
-#endif
-		node_inx = -1;
-		for (i = 0; i < select_node_cnt; i++) {
-			if (bit_test(step_ptr->step_node_bitmap, i) == 0)
-				continue;
-			node_inx++;
-			step_mem = step_ptr->step_layout->tasks[node_inx] * 
-				   step_ptr->mem_per_task;
-			node_cr_ptr[i].alloc_memory += step_mem;
-		}
-		_add_step(step_ptr);
-	}
-	list_iterator_destroy (step_iterator);
-	slurm_mutex_unlock(&cr_mutex);
 	return SLURM_SUCCESS;
 }
 
@@ -1068,42 +1111,6 @@ extern int select_p_update_block (update_part_msg_t *part_desc_ptr)
 extern int select_p_update_sub_node (update_part_msg_t *part_desc_ptr)
 {
 	return SLURM_SUCCESS;
-}
-extern int select_p_get_extra_jobinfo (struct node_record *node_ptr, 
-                                       struct job_record *job_ptr, 
-                                       enum select_data_info info,
-                                       void *data)
-{
-	int rc = SLURM_SUCCESS;
-	uint16_t *tmp_16;
-
-	xassert(job_ptr);
-	xassert(job_ptr->magic == JOB_MAGIC);
-
-	switch (info) {
-	case SELECT_AVAIL_CPUS:
-		tmp_16 = (uint16_t *) data;
-
-		if (job_ptr->details &&
-		    ((job_ptr->details->cpus_per_task > 1) ||
-		     (job_ptr->details->mc_ptr))) {
-			int index = (node_ptr - node_record_table_ptr);
-			*tmp_16 = _get_avail_cpus(job_ptr, index);
-		} else {
-			if (slurmctld_conf.fast_schedule) {
-				*tmp_16 = node_ptr->config_ptr->cpus;
-			} else {
-				*tmp_16 = node_ptr->cpus;
-			}
-		}
-		break;
-	default:
-		error("select_g_get_extra_jobinfo info %d invalid", info);
-		rc = SLURM_ERROR;
-		break;
-	}
-	
-	return rc;
 }
 
 extern int select_p_get_info_from_plugin (enum select_data_info info,
@@ -1389,10 +1396,8 @@ static void _init_node_cr(void)
 	ListIterator part_iterator;
 	struct job_record *job_ptr;
 	ListIterator job_iterator;
-	uint32_t job_memory_cpu, job_memory_node, step_mem = 0;
-	int exclusive, i, node_inx;
-	ListIterator step_iterator;
-	struct step_record *step_ptr;
+	uint32_t job_memory_cpu, job_memory_node;
+	int exclusive, i;
 
 	if (node_cr_ptr)
 		return;
@@ -1428,10 +1433,12 @@ static void _init_node_cr(void)
 		if (job_ptr->details && 
 		    job_ptr->details->job_min_memory && (cr_type == CR_MEMORY)) {
 			if (job_ptr->details->job_min_memory & MEM_PER_CPU) {
-				job_memory_cpu = job_ptr->details->job_min_memory &
+				job_memory_cpu = job_ptr->details->
+						 job_min_memory &
 						 (~MEM_PER_CPU);
 			} else {
-				job_memory_node = job_ptr->details->job_min_memory;
+				job_memory_node = job_ptr->details->
+						  job_min_memory;
 			}
 		}
 		if (job_ptr->details->shared == 0)
@@ -1484,40 +1491,6 @@ static void _init_node_cr(void)
 					node_record_table_ptr[i].name);
 			}
 		}
-
-		if (job_ptr->details->job_min_memory || 
-		    (job_ptr->details->shared == 0) || (cr_type != CR_MEMORY))
-			continue;
-
-		step_iterator = list_iterator_create (job_ptr->step_list);
-		while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
-			if ((step_ptr->step_node_bitmap == NULL) ||
-			    (step_ptr->step_layout == NULL))
-				continue;
-
-			if (_find_step(step_ptr)) {
-				slurm_mutex_unlock(&cr_mutex);
-				error("_init_node_cr: duplicate for step %u.%u",
-				      job_ptr->job_id, step_ptr->step_id);
-				continue;
-			}
-
-			node_inx = -1;
-			for (i = 0; i < select_node_cnt; i++) {
-				if (bit_test(step_ptr->step_node_bitmap, i) == 0)
-					continue;
-				node_inx++;
-				step_mem = step_ptr->step_layout->tasks[node_inx] * 
-					   step_ptr->mem_per_task;
-				node_cr_ptr[i].alloc_memory += step_mem;
-			}
-#if SELECT_DEBUG
-			info("_init_node_cr: added %u.%u mem:%u", 
-			     job_ptr->job_id, step_ptr->step_id, step_mem);
-#endif
-			_add_step(step_ptr);
-		}
-		list_iterator_destroy (step_iterator);
 	}
 	list_iterator_destroy(job_iterator);
 	_dump_node_cr(node_cr_ptr);
@@ -1614,195 +1587,10 @@ static void _cr_job_list_del(void *x)
 {
 	xfree(x);
 }
+
 static int  _cr_job_list_sort(void *x, void *y)
 {
 	struct job_record **job1_pptr = (struct job_record **) x;
 	struct job_record **job2_pptr = (struct job_record **) y;
 	return (int) difftime(job1_pptr[0]->end_time, job2_pptr[0]->end_time);
-}
-
-extern int select_p_step_begin(struct step_record *step_ptr)
-{
-	slurm_step_layout_t *step_layout = step_ptr->step_layout;
-	int i, node_inx = -1;
-	uint32_t avail_mem, step_mem;
-
-	xassert(step_ptr->job_ptr);
-	xassert(step_ptr->job_ptr->details);
-	xassert(step_ptr->step_node_bitmap);
-
-#if SELECT_DEBUG
-	info("select_p_step_begin: mem:%u", step_ptr->mem_per_task);
-#endif
-	if (step_layout == NULL)
-		return SLURM_SUCCESS;	/* batch script */
-	/* Don't track step memory use if job has reserved memory OR
-	 * job has whole node OR we don't track memory usage */
-	if (step_ptr->job_ptr->details->job_min_memory || 
-	    (step_ptr->job_ptr->details->shared == 0) ||
-	    (cr_type != CR_MEMORY))
-		return SLURM_SUCCESS;
-
-	/* test if there is sufficient memory */
-	slurm_mutex_lock(&cr_mutex);
-	if (node_cr_ptr == NULL)
-		_init_node_cr();
-	if (_find_step(step_ptr)) {
-		slurm_mutex_unlock(&cr_mutex);
-		error("select_p_step_begin: duplicate for step %u.%u",
-		      step_ptr->job_ptr->job_id, step_ptr->step_id);
-		return SLURM_SUCCESS;
-	}
-	for (i = 0; i < select_node_cnt; i++) {
-		if (bit_test(step_ptr->step_node_bitmap, i) == 0)
-			continue;
-		node_inx++;
-		step_mem = step_layout->tasks[node_inx] * step_ptr->mem_per_task;
-		if (select_fast_schedule)
-			avail_mem = node_record_table_ptr[i].
-				    config_ptr->real_memory;
-		else
-			avail_mem = node_record_table_ptr[i].real_memory;
-#if SELECT_DEBUG
-		info("alloc %u need %u avail %u", 
-		     node_cr_ptr[i].alloc_memory, step_mem, avail_mem);
-#endif
-		if ((node_cr_ptr[i].alloc_memory + step_mem) > avail_mem) {
-			slurm_mutex_unlock(&cr_mutex);
-			return SLURM_ERROR;	/* no room */
-		}
-	}
-
-	/* reserve the memory */
-	node_inx = -1;
-	for (i = 0; i < select_node_cnt; i++) {
-		if (bit_test(step_ptr->step_node_bitmap, i) == 0)
-			continue;
-		node_inx++;
-		step_mem = step_layout->tasks[node_inx] * step_ptr->mem_per_task;
-		node_cr_ptr[i].alloc_memory += step_mem;
-	}
-	_add_step(step_ptr);
-	slurm_mutex_unlock(&cr_mutex);
-	return SLURM_SUCCESS;
-}
-
-extern int select_p_step_fini(struct step_record *step_ptr)
-{
-	slurm_step_layout_t *step_layout = step_ptr->step_layout;
-	int i, node_inx = -1;
-	uint32_t step_mem;
-
-	xassert(step_ptr->job_ptr);
-	xassert(step_ptr->job_ptr->details);
-	xassert(step_ptr->step_node_bitmap);
-
-#if SELECT_DEBUG
-	info("select_p_step_fini: mem:%u", step_ptr->mem_per_task);
-#endif
-	if (step_layout == NULL)
-		return SLURM_SUCCESS;	/* batch script */
-	/* Don't track step memory use if job has reserved memory OR
-	 * job has whole node OR we don't track memory usage */
-	if (step_ptr->job_ptr->details->job_min_memory || 
-	    (step_ptr->job_ptr->details->shared == 0) ||
-	    (cr_type != CR_MEMORY))
-		return SLURM_SUCCESS;
-
-	/* release the memory */
-	slurm_mutex_lock(&cr_mutex);
-	if (node_cr_ptr == NULL)
-		_init_node_cr();
-	if (!_find_step(step_ptr)) {
-		slurm_mutex_unlock(&cr_mutex);
-		error("select_p_step_fini: could not find step %u.%u",
-		      step_ptr->job_ptr->job_id, step_ptr->step_id);
-		return SLURM_ERROR;
-	}
-	for (i = 0; i < select_node_cnt; i++) {
-		if (bit_test(step_ptr->step_node_bitmap, i) == 0)
-			continue;
-		node_inx++;
-		step_mem = step_layout->tasks[node_inx] * step_ptr->mem_per_task;
-		if (node_cr_ptr[i].alloc_memory >= step_mem)
-			node_cr_ptr[i].alloc_memory -= step_mem;
-		else {
-			node_cr_ptr[i].alloc_memory = 0;
-			error("select_p_step_fini: alloc_memory underflow on %s",
-				node_record_table_ptr[i].name);
-		}
-	}
-	_remove_step(step_ptr);
-	slurm_mutex_unlock(&cr_mutex);
-	return SLURM_SUCCESS;
-}
-
-/* return 1 if found, 0 otherwise */
-static int _find_step(struct step_record *step_ptr)
-{
-	ListIterator step_iterator;
-	struct step_cr_record *step;
-	int found = 0;
-
-	if (!step_cr_list)
-		return found;
-	step_iterator = list_iterator_create(step_cr_list);
-	if (step_iterator == NULL) {
-		fatal("list_iterator_create: memory allocation failure");
-		return found;
-	}
-	while ((step = list_next(step_iterator))) {
-		if ((step->job_id  == step_ptr->job_ptr->job_id) &&
-		    (step->step_id == step_ptr->step_id)) {
-			found = 1;
-			break;
-		}
-	}
-	list_iterator_destroy(step_iterator);
-	return found;
-}
-static int _add_step(struct step_record *step_ptr)
-{
-	struct step_cr_record *step = xmalloc(sizeof(struct step_cr_record));
-
-	step->job_id  = step_ptr->job_ptr->job_id;
-	step->step_id = step_ptr->step_id;
-	if (!step_cr_list) {
-		step_cr_list = list_create(_del_list_step);
-		if (!step_cr_list)
-			fatal("list_create: memory allocation failure");
-	}
-	if (list_append(step_cr_list, step) == NULL) {
-		fatal("list_append: memory allocation failure");
-		return SLURM_ERROR;
-	}
-	return SLURM_SUCCESS;
-}
-static int _remove_step(struct step_record *step_ptr)
-{
-	ListIterator step_iterator;
-	struct step_cr_record *step;
-	int found = 0;
-
-	if (!step_cr_list)
-		return found;
-	step_iterator = list_iterator_create(step_cr_list);
-	if (step_iterator == NULL) {
-		fatal("list_iterator_create: memory allocation failure");
-		return found;
-	}
-	while ((step = list_next(step_iterator))) {
-		if ((step->job_id  == step_ptr->job_ptr->job_id) &&
-		    (step->step_id == step_ptr->step_id)) {
-			found = 1;
-			list_delete_item(step_iterator);
-			break;
-		}
-	}
-	list_iterator_destroy(step_iterator);
-	return found;
-}
-static void _del_list_step(void *x)
-{
-	xfree(x);
 }

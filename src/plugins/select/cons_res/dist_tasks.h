@@ -49,16 +49,6 @@
 
 #include "select_cons_res.h"
 
-int cr_exclusive_dist(struct select_cr_job *job,
-		      const select_type_plugin_info_t cr_type);
-
-int cr_dist(struct select_cr_job *job, int cyclic,
-	    const select_type_plugin_info_t cr_type);
-
-int cr_plane_dist(struct select_cr_job *job, 
-		  const uint16_t plane_size,
-		  const select_type_plugin_info_t cr_type);
-
-int compute_c_b_task_dist(struct select_cr_job *job);
+int cr_dist(struct job_record *job_ptr,const select_type_plugin_info_t cr_type);
 
 #endif /* !_CONS_RES_DIST_TASKS_H */

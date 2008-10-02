@@ -110,7 +110,7 @@ if {$job_id1 == 0} {
 
 set partition "dummy"
 set waited 1
-set timeout [expr $timeout + 5]
+set timeout [expr $max_job_delay + 5]
 set srun_pid [spawn $srun -N1 --nodelist=$nodelist_name -t1 --share $scontrol -o show job $job_id1]
 expect {
 	-re "Partition=($alpha_numeric_under)" {

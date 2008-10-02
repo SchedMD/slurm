@@ -58,7 +58,9 @@
  *
  * core_bitmap		- Bitmap of allocated cores for all nodes and sockets
  * core_bitmap_used	- Bitmap of cores allocated to job steps
- * cores_per_socket	- Count of cores per socket on this node
+ * cores_per_socket	- Count of cores per socket on this node, build by 
+ *			  build_select_job_res() and insures consistent 
+ *			  interpretation of core_bitmap
  * cpus			- Count of desired/allocated CPUs per node for job/step
  * cpus_used		- For a job, count of CPUs per node used by job steps
  * cpu_array_cnt	- Count of elements in cpu_array_* below
@@ -75,8 +77,12 @@
  * node_req		- NODE_CR_RESERVED|NODE_CR_ONE_ROW|NODE_CR_AVAILABLE
  * nprocs		- Number of processors in the allocation
  * sock_core_rep_count	- How many consecutive nodes that sockets_per_node
- *			  and cores_per_socket apply to
- * sockets_per_node	- Count of sockets on this node
+ *			  and cores_per_socket apply to, build by 
+ *			  build_select_job_res() and insures consistent 
+ *			  interpretation of core_bitmap
+ * sockets_per_node	- Count of sockets on this node, build by 
+ *			  build_select_job_res() and insures consistent 
+ *			  interpretation of core_bitmap
  *
  * NOTES:
  * cpu_array_* contains the same information as "cpus", but in a more compact
@@ -166,6 +172,12 @@ extern void pack_select_job_res(select_job_res_t select_job_res_ptr,
 extern int unpack_select_job_res(select_job_res_t *select_job_res_pptr, 
 				 Buf buffer);
 
+/* For a given node_id, socket_id and core_id, get it's offset within
+ * the core bitmap */
+extern int get_select_job_res_offset(select_job_res_t select_job_res_ptr, 
+				     uint32_t node_id, uint16_t socket_id, 
+				     uint16_t core_id);
+
 /* Get/set bit value at specified location.
  *	node_id, socket_id and core_id are all zero origin */
 extern int get_select_job_res_bit(select_job_res_t select_job_res_ptr, 
@@ -190,5 +202,17 @@ extern int get_select_job_res_cnt(select_job_res_t select_job_res_ptr,
 				  uint32_t node_id,
 				  uint16_t *socket_cnt,
  				  uint16_t *cores_per_socket_cnt);
+
+/* check if given job can fit into the given full-length core_bitmap */
+extern int can_select_job_cores_fit(select_job_res_t select_ptr,
+				    bitstr_t *full_bitmap,
+				    const uint16_t *bits_per_node,
+				    const uint32_t *bit_rep_count);
+
+/* add the given job to the given full_core_bitmap */
+extern void add_select_job_to_row(select_job_res_t select_ptr,
+				  bitstr_t **full_core_bitmap,
+				  const uint16_t *cores_per_node,
+				  const uint32_t *core_rep_count);
 
 #endif /* !_SELECT_JOB_RES_H */

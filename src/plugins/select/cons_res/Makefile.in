@@ -76,7 +76,7 @@ am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 select_cons_res_la_LIBADD =
-am_select_cons_res_la_OBJECTS = select_cons_res.lo dist_tasks.lo
+am_select_cons_res_la_OBJECTS = select_cons_res.lo dist_tasks.lo job_test.lo
 select_cons_res_la_OBJECTS = $(am_select_cons_res_la_OBJECTS)
 select_cons_res_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -272,7 +272,8 @@ pkglib_LTLIBRARIES = select_cons_res.la
 
 # Consumable resources node selection plugin.
 select_cons_res_la_SOURCES = select_cons_res.c select_cons_res.h \
-                              dist_tasks.c dist_tasks.h
+                              dist_tasks.c dist_tasks.h \
+			      job_test.c job_test.h
 
 select_cons_res_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 all: all-am
@@ -345,6 +346,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dist_tasks.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_test.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/select_cons_res.Plo@am__quote@
 
 .c.o:

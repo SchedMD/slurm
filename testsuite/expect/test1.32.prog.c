@@ -76,7 +76,6 @@ main (int argc, char **argv)
 	while (!sigusr1_cnt || !sigusr2_cnt) {
 		sleep(1);
 	}
-
-	printf("FINI\n");
+	printf("FINI: sig1:%d sig2:%d\n", sigusr1_cnt, sigusr2_cnt);
 	exit(0);
 }

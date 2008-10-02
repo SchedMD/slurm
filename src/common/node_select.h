@@ -1,9 +1,8 @@
 /*****************************************************************************\
  *  node_select.h - Define node selection plugin functions.
- *
- * $Id$
  *****************************************************************************
- *  Copyright (C) 2004-2006 The Regents of the University of California.
+ *  Copyright (C) 2004-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  LLNL-CODE-402394.
@@ -238,14 +237,6 @@ extern int select_g_job_suspend(struct job_record *job_ptr);
  */
 extern int select_g_job_resume(struct job_record *job_ptr);
 
-/*
- * Get number of allocated cores per socket from a job
- * IN job_id      - identifies the job
- * IN alloc_index - allocated node index
- * IN s           - socket index
- */
-extern int select_g_get_job_cores(uint32_t job_id, int alloc_index, int s);
-
 /* allocate storage for a select job credential
  * OUT jobinfo - storage for a select job credential
  * RET         - slurm error code
@@ -282,18 +273,6 @@ extern select_jobinfo_t select_g_copy_jobinfo(select_jobinfo_t jobinfo);
  * RET         - slurm error code
  */
 extern int select_g_free_jobinfo  (select_jobinfo_t *jobinfo);
- 
-/* 
- * Get selected data from a given node for a specific job. 
- * IN node_ptr  - current node record
- * IN job_ptr   - current job record
- * IN cr_info   - type of data to get from the node record
- * IN/OUT data  - the data to get from node record
- */
-extern int select_g_get_extra_jobinfo (struct node_record *node_ptr, 
-				       struct job_record *job_ptr, 
-                                       enum select_data_info cr_info,
-                                       void *data);
 
 /* pack a select job credential into a buffer in machine independent form
  * IN jobinfo  - the select job credential to be saved
@@ -319,16 +298,6 @@ extern int  select_g_unpack_jobinfo(select_jobinfo_t jobinfo, Buf buffer);
  */
 extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 				     char *buf, size_t size, int mode);
-
-/* Prepare to start a job step, allocate memory as needed
- * RET - slurm error code
- */
-extern int select_g_step_begin(struct step_record *step_ptr);
-
-/* Prepare to terminate a job step, release memory as needed
- * RET - slurm error code
- */
-extern int select_g_step_fini(struct step_record *step_ptr);
 
 /******************************************************\
  * NODE-SELECT PLUGIN SPECIFIC INFORMATION FUNCTIONS  *

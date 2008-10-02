@@ -109,8 +109,7 @@ static int _build_part_bitmap(struct part_record *part_ptr)
 	part_ptr->total_nodes = 0;
 
 	if (part_ptr->node_bitmap == NULL) {
-		part_ptr->node_bitmap = 
-			(bitstr_t *) bit_alloc(node_record_count);
+		part_ptr->node_bitmap = bit_alloc(node_record_count);
 		if (part_ptr->node_bitmap == NULL)
 			fatal("bit_alloc malloc failure");
 		old_bitmap = NULL;
@@ -932,6 +931,9 @@ int update_part(update_part_msg_t * part_desc)
 			     part_ptr->nodes, part_desc->name);
 			xfree(backup_node_list);
 		}
+	} else if (part_ptr->node_bitmap == NULL) {
+		/* Newly created partition needs a bitmap, even if empty */
+		part_ptr->node_bitmap = bit_alloc(node_record_count);
 	}
 
 	if (error_code == SLURM_SUCCESS) {

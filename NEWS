@@ -1,6 +1,25 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.4.0-pre3
+=============================
+ -- Internal changes: CPUs per node changed from 32-bit to 16-bit size.
+    Node count fields changed from 16-bit to 32-bit size in some structures.
+ -- Remove select plugin functions select_p_get_extra_jobinfo(),
+    select_p_step_begin() and select_p_step_fini().
+ -- Remove the following slurmctld job structure fields: num_cpu_groups,
+    cpus_per_node, cpu_count_reps, alloc_lps_cnt, alloc_lps, and used_lps.
+    Use equivalent fields in new "select_job" structure, which is filled
+    in by the select plugins.
+ -- Modify mem_per_task in job step request from 16-bit to 32-bit size.
+    Use new "select_job" structure for the job step's memory management.
+ -- Add core_bitmap_job to slurmctld's job step structure to identify
+    which cores are allocated to the step.
+ -- Add new configuration option OverTimeLimit to permit jobs to exceed 
+    their (soft) time limits by a configurable amount.
+ -- Remove select_g_get_job_cores(). That data is now within the slurmctld's
+    job structure.
+
 * Changes in SLURM 1.4.0-pre2
 =============================
  -- Remove srun's --ctrl-comm-ifhn-addr option (for PMI/MPICH2). It is no

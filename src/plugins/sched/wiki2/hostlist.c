@@ -2,6 +2,7 @@
  *  hostlist.c - Convert hostlist expressions between Slurm and Moab formats
  *****************************************************************************
  *  Copyright (C) 2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  LLNL-CODE-402394.
@@ -164,22 +165,24 @@ static char * _task_list(struct job_record *job_ptr)
 	int i, j, task_cnt;
 	char *buf = NULL, *host;
 	hostlist_t hl = hostlist_create(job_ptr->nodes);
+	select_job_res_t select_ptr = job_ptr->select_job;
 
+	xassert(select_ptr && select_ptr->cpus);
 	if (hl == NULL) {
 		error("hostlist_create error for job %u, %s",
 			job_ptr->job_id, job_ptr->nodes);
 		return buf;
 	}
 
-	for (i=0; i<job_ptr->alloc_lps_cnt; i++) {
+	for (i=0; i<select_ptr->nhosts; i++) {
 		host = hostlist_shift(hl);
 		if (host == NULL) {
-			error("bad alloc_lps_cnt for job %u (%s, %d)", 
+			error("bad node_cnt for job %u (%s, %d)", 
 				job_ptr->job_id, job_ptr->nodes,
-				job_ptr->alloc_lps_cnt);
+				job_ptr->node_cnt);
 			break;
 		}
-		task_cnt = job_ptr->alloc_lps[i];
+		task_cnt = select_ptr->cpus[i];
 		if (job_ptr->details && job_ptr->details->cpus_per_task)
 			task_cnt /= job_ptr->details->cpus_per_task;
 		for (j=0; j<task_cnt; j++) {
@@ -255,23 +258,25 @@ static char * _task_list_exp(struct job_record *job_ptr)
 	char *buf = NULL, *host;
 	hostlist_t hl = hostlist_create(job_ptr->nodes);
 	hostlist_t hl_tmp = (hostlist_t) NULL;
+	select_job_res_t select_ptr = job_ptr->select_job;
 
+	xassert(select_ptr && select_ptr->cpus);
 	if (hl == NULL) {
 		error("hostlist_create error for job %u, %s",
 			job_ptr->job_id, job_ptr->nodes);
 		return buf;
 	}
 
-	for (i=0; i<job_ptr->alloc_lps_cnt; i++) {
+	for (i=0; i<select_ptr->nhosts; i++) {
 		host = hostlist_shift(hl);
 		if (host == NULL) {
-			error("bad alloc_lps_cnt for job %u (%s, %d)", 
+			error("bad node_cnt for job %u (%s, %d)", 
 				job_ptr->job_id, job_ptr->nodes,
-				job_ptr->alloc_lps_cnt);
+				job_ptr->node_cnt);
 			break;
 		}
 
-		task_cnt = job_ptr->alloc_lps[i];
+		task_cnt = select_ptr->cpus[i];
 		if (job_ptr->details && job_ptr->details->cpus_per_task)
 			task_cnt /= job_ptr->details->cpus_per_task;
 		if (reps == task_cnt) {

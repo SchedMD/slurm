@@ -147,7 +147,7 @@ struct slurm_job_credential {
 	time_t    ctime;	/* time of credential creation		*/
 	char     *nodes;	/* hostnames for which the cred is ok	*/
 	uint32_t  alloc_lps_cnt;/* Number of hosts in the list above	*/
-	uint32_t *alloc_lps;	/* Number of tasks on each host		*/
+	uint16_t *alloc_lps;	/* Number of tasks on each host		*/
 
 	char     *signature; 	/* credential signature			*/
 	unsigned int siglen;	/* signature length in bytes		*/
@@ -606,9 +606,9 @@ slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg)
         cred->alloc_lps_cnt = arg->alloc_lps_cnt;
         cred->alloc_lps  = NULL;
         if (cred->alloc_lps_cnt > 0) {
-                cred->alloc_lps =  xmalloc(cred->alloc_lps_cnt * sizeof(uint32_t));
+                cred->alloc_lps =  xmalloc(cred->alloc_lps_cnt * sizeof(uint16_t));
                 memcpy(cred->alloc_lps, arg->alloc_lps, 
-			cred->alloc_lps_cnt * sizeof(uint32_t));
+			cred->alloc_lps_cnt * sizeof(uint16_t));
         }
 	cred->ctime  = time(NULL);
 
@@ -652,9 +652,9 @@ slurm_cred_copy(slurm_cred_t cred)
 	rcred->alloc_lps_cnt = cred->alloc_lps_cnt;
 	rcred->alloc_lps  = NULL;
 	if (rcred->alloc_lps_cnt > 0) {
-		rcred->alloc_lps =  xmalloc(rcred->alloc_lps_cnt * sizeof(uint32_t));
+		rcred->alloc_lps =  xmalloc(rcred->alloc_lps_cnt * sizeof(uint16_t));
 		memcpy(rcred->alloc_lps, cred->alloc_lps, 
-		rcred->alloc_lps_cnt * sizeof(uint32_t));
+		       rcred->alloc_lps_cnt * sizeof(uint16_t));
 	}
 	rcred->ctime  = cred->ctime;
 	rcred->siglen = cred->siglen;
@@ -688,9 +688,9 @@ slurm_cred_faker(slurm_cred_arg_t *arg)
 	cred->alloc_lps_cnt = arg->alloc_lps_cnt;
 	cred->alloc_lps  = NULL;
 	if (cred->alloc_lps_cnt > 0) {
-		cred->alloc_lps =  xmalloc(cred->alloc_lps_cnt * sizeof(uint32_t));
+		cred->alloc_lps =  xmalloc(cred->alloc_lps_cnt * sizeof(uint16_t));
 		memcpy(cred->alloc_lps, arg->alloc_lps, 
-		       cred->alloc_lps_cnt * sizeof(uint32_t));
+		       cred->alloc_lps_cnt * sizeof(uint16_t));
 	}
 	cred->ctime  = time(NULL);
 	cred->siglen = SLURM_IO_KEY_SIZE;
@@ -741,9 +741,9 @@ slurm_cred_get_args(slurm_cred_t cred, slurm_cred_arg_t *arg)
 	arg->hostlist = xstrdup(cred->nodes);
 	arg->alloc_lps_cnt = cred->alloc_lps_cnt;
 	if (arg->alloc_lps_cnt > 0) {
-		arg->alloc_lps = xmalloc(arg->alloc_lps_cnt * sizeof(uint32_t));
+		arg->alloc_lps = xmalloc(arg->alloc_lps_cnt * sizeof(uint16_t));
 		memcpy(arg->alloc_lps, cred->alloc_lps, 
-		       arg->alloc_lps_cnt * sizeof(uint32_t));
+		       arg->alloc_lps_cnt * sizeof(uint16_t));
 	} else
 		arg->alloc_lps = NULL;
 	slurm_mutex_unlock(&cred->mutex);
@@ -805,9 +805,9 @@ slurm_cred_verify(slurm_cred_ctx_t ctx, slurm_cred_t cred,
 	arg->hostlist = xstrdup(cred->nodes);
 	arg->alloc_lps_cnt = cred->alloc_lps_cnt;
 	if (arg->alloc_lps_cnt > 0) {
-		arg->alloc_lps = xmalloc(arg->alloc_lps_cnt * sizeof(uint32_t));
+		arg->alloc_lps = xmalloc(arg->alloc_lps_cnt * sizeof(uint16_t));
 		memcpy(arg->alloc_lps, cred->alloc_lps, 
-		       arg->alloc_lps_cnt * sizeof(uint32_t));
+		       arg->alloc_lps_cnt * sizeof(uint16_t));
 	} else
 		arg->alloc_lps = NULL;
 
@@ -1037,7 +1037,7 @@ slurm_cred_unpack(Buf buffer)
 	safe_unpackstr_xmalloc( &cred->nodes, &len,  buffer);
 	safe_unpack32(          &cred->alloc_lps_cnt,     buffer);
         if (cred->alloc_lps_cnt > 0)
-                safe_unpack32_array(&cred->alloc_lps, &tmpint,  buffer);
+                safe_unpack16_array(&cred->alloc_lps, &tmpint,  buffer);
 	safe_unpack_time(       &cred->ctime,        buffer);
 	safe_unpackmem_xmalloc( sigp,         &len,  buffer);
 
@@ -1114,7 +1114,7 @@ slurm_cred_print(slurm_cred_t cred)
 }
 
 int slurm_cred_get_alloc_lps(slurm_cred_t cred, char **nodes,
-			     uint32_t *alloc_lps_cnt, uint32_t **alloc_lps)
+			     uint32_t *alloc_lps_cnt, uint16_t **alloc_lps)
 {
 	if ((cred == NULL) || (nodes == NULL) ||
 	    (alloc_lps_cnt == NULL) || (alloc_lps == NULL))
@@ -1319,7 +1319,7 @@ _pack_cred(slurm_cred_t cred, Buf buffer)
 	packstr(          cred->nodes,    buffer);
 	pack32(           cred->alloc_lps_cnt, buffer);
 	if (cred->alloc_lps_cnt > 0)
-		pack32_array( cred->alloc_lps, cred->alloc_lps_cnt, buffer);
+		pack16_array( cred->alloc_lps, cred->alloc_lps_cnt, buffer);
 	pack_time(        cred->ctime,  buffer);
 }
 

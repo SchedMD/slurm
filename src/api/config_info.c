@@ -148,7 +148,7 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->checkpoint_type);
 	fprintf(out, "ClusterName             = %s\n",
 		slurm_ctl_conf_ptr->cluster_name);
-	fprintf(out, "CompleteWait            = %u\n", 
+	fprintf(out, "CompleteWait            = %u sec\n", 
 		slurm_ctl_conf_ptr->complete_wait);
 	fprintf(out, "ControlAddr             = %s\n", 
 		slurm_ctl_conf_ptr->control_addr);
@@ -157,11 +157,11 @@ void slurm_print_ctl_conf ( FILE* out,
 	fprintf(out, "CryptoType              = %s\n",
 		slurm_ctl_conf_ptr->crypto_type);
 	if (slurm_ctl_conf_ptr->def_mem_per_task & MEM_PER_CPU) {
-		fprintf(out, "DefMemPerCPU            = %u\n",
+		fprintf(out, "DefMemPerCPU            = %u MB\n",
 			slurm_ctl_conf_ptr->def_mem_per_task &
 			(~MEM_PER_CPU));
 	} else if (slurm_ctl_conf_ptr->def_mem_per_task) {
-		fprintf(out, "DefMemPerNode           = %u\n",
+		fprintf(out, "DefMemPerNode           = %u MB\n",
 			slurm_ctl_conf_ptr->def_mem_per_task);
 	} else
 		fprintf(out, "DefMemPerCPU            = UNLIMITED\n");
@@ -169,33 +169,30 @@ void slurm_print_ctl_conf ( FILE* out,
 		fprintf(out, "DisableRootJobs         = YES\n");
 	else
 		fprintf(out, "DisableRootJobs         = NO\n");
-#if 0
-/* Add in Slurm v1.4 */
 	if (slurm_ctl_conf_ptr->enforce_part_limits)
 		fprintf(out, "EnforcePartLimits       = YES\n");
 	else
 		fprintf(out, "EnforcePartLimits       = NO\n");
-#endif
 	fprintf(out, "Epilog                  = %s\n",
 		slurm_ctl_conf_ptr->epilog);
-	fprintf(out, "EpilogMsgTime           = %u\n",
+	fprintf(out, "EpilogMsgTime           = %u usec\n",
 		slurm_ctl_conf_ptr->epilog_msg_time);
 	fprintf(out, "FastSchedule            = %u\n",
 		slurm_ctl_conf_ptr->fast_schedule);
 	fprintf(out, "FirstJobId              = %u\n",
 		slurm_ctl_conf_ptr->first_job_id);
-	fprintf(out, "GetEnvTimeout           = %u\n",
+	fprintf(out, "GetEnvTimeout           = %u sec\n",
 		slurm_ctl_conf_ptr->get_env_timeout);
-	fprintf(out, "HealthCheckInterval     = %u\n",
+	fprintf(out, "HealthCheckInterval     = %u sec\n",
 		slurm_ctl_conf_ptr->health_check_interval);
 	fprintf(out, "HealthCheckProgram      = %s\n",
 		slurm_ctl_conf_ptr->health_check_program);
 #ifdef HAVE_XCPU
 	fprintf(out, "HAVE_XCPU               = %d\n", HAVE_XCPU);
 #endif
-	fprintf(out, "InactiveLimit           = %u\n",
+	fprintf(out, "InactiveLimit           = %u sec\n",
 		slurm_ctl_conf_ptr->inactive_limit);
-	fprintf(out, "JobAcctGatherFrequency  = %u\n",
+	fprintf(out, "JobAcctGatherFrequency  = %u sec\n",
 		slurm_ctl_conf_ptr->job_acct_gather_freq);
 	fprintf(out, "JobAcctGatherType       = %s\n",
 		slurm_ctl_conf_ptr->job_acct_gather_type);
@@ -219,7 +216,7 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->job_file_append);
 	fprintf(out, "JobRequeue              = %u\n",
 		slurm_ctl_conf_ptr->job_requeue);
-	fprintf(out, "KillWait                = %u\n", 
+	fprintf(out, "KillWait                = %u sec\n", 
 		slurm_ctl_conf_ptr->kill_wait);
 	fprintf(out, "Licenses                = %s\n",
 		slurm_ctl_conf_ptr->licenses);
@@ -228,17 +225,17 @@ void slurm_print_ctl_conf ( FILE* out,
 	fprintf(out, "MaxJobCount             = %u\n", 
 		slurm_ctl_conf_ptr->max_job_cnt);
 	if (slurm_ctl_conf_ptr->max_mem_per_task & MEM_PER_CPU) {
-		fprintf(out, "MaxMemPerCPU            = %u\n",
+		fprintf(out, "MaxMemPerCPU            = %u MB\n",
 			slurm_ctl_conf_ptr->max_mem_per_task &
 			(~MEM_PER_CPU));
 	} else if (slurm_ctl_conf_ptr->max_mem_per_task) {
-		fprintf(out, "MaxMemPerNode           = %u\n",
+		fprintf(out, "MaxMemPerNode           = %u MB\n",
 			slurm_ctl_conf_ptr->max_mem_per_task);
 	} else
 		fprintf(out, "MaxMemPerCPU            = UNLIMITED\n");
 	fprintf(out, "MessageTimeout          = %u\n",
 		slurm_ctl_conf_ptr->msg_timeout);
-	fprintf(out, "MinJobAge               = %u\n", 
+	fprintf(out, "MinJobAge               = %u sec\n", 
 		slurm_ctl_conf_ptr->min_job_age);
 	fprintf(out, "MpiDefault              = %s\n",
 		slurm_ctl_conf_ptr->mpi_default);
@@ -247,6 +244,12 @@ void slurm_print_ctl_conf ( FILE* out,
 #endif
 	fprintf(out, "NEXT_JOB_ID             = %u\n",
 		slurm_ctl_conf_ptr->next_job_id);
+	if (slurm_ctl_conf_ptr->over_time_limit == (uint16_t) INFINITE)
+		fprintf(out, "OverTimeLimit           = UNLIMITED\n");
+	else {
+		fprintf(out, "OverTimeLimit           = %u min\n",
+			slurm_ctl_conf_ptr->over_time_limit);
+	}
 	fprintf(out, "PluginDir               = %s\n", 
 		slurm_ctl_conf_ptr->plugindir);
 	fprintf(out, "PlugStackConfig         = %s\n",
@@ -268,7 +271,7 @@ void slurm_print_ctl_conf ( FILE* out,
                 slurm_ctl_conf_ptr->propagate_rlimits_except);
 	fprintf(out, "ResumeProgram           = %s\n", 
 		slurm_ctl_conf_ptr->resume_program);
-	fprintf(out, "ResumeRate              = %u\n", 
+	fprintf(out, "ResumeRate              = %u nodes/min\n", 
 		slurm_ctl_conf_ptr->resume_rate);
 	fprintf(out, "ReturnToService         = %u\n", 
 		slurm_ctl_conf_ptr->ret2service);
@@ -278,7 +281,7 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->schedport);
 	fprintf(out, "SchedulerRootFilter     = %u\n",
 		slurm_ctl_conf_ptr->schedrootfltr);
-	fprintf(out, "SchedulerTimeSlice      = %u\n",
+	fprintf(out, "SchedulerTimeSlice      = %u sec\n",
 		slurm_ctl_conf_ptr->sched_time_slice);
 	fprintf(out, "SchedulerType           = %s\n",
 		slurm_ctl_conf_ptr->schedtype);
@@ -300,7 +303,7 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->slurmctld_pidfile);
 	fprintf(out, "SlurmctldPort           = %u\n", 
 		slurm_ctl_conf_ptr->slurmctld_port);
-	fprintf(out, "SlurmctldTimeout        = %u\n", 
+	fprintf(out, "SlurmctldTimeout        = %u sec\n", 
 		slurm_ctl_conf_ptr->slurmctld_timeout);
 	fprintf(out, "SlurmdDebug             = %u\n", 
 		slurm_ctl_conf_ptr->slurmd_debug);
@@ -314,7 +317,7 @@ void slurm_print_ctl_conf ( FILE* out,
 #endif
 	fprintf(out, "SlurmdSpoolDir          = %s\n", 
 		slurm_ctl_conf_ptr->slurmd_spooldir);
-	fprintf(out, "SlurmdTimeout           = %u\n", 
+	fprintf(out, "SlurmdTimeout           = %u sec\n", 
 		slurm_ctl_conf_ptr->slurmd_timeout);
 	fprintf(out, "SLURM_CONFIG_FILE       = %s\n", 
 		slurm_ctl_conf_ptr->slurm_conf);
@@ -353,9 +356,9 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->use_pam);
 	fprintf(out, "UnkillableStepProgram   = %s\n",
 		slurm_ctl_conf_ptr->unkillable_program);
-	fprintf(out, "UnkillableStepTimeout   = %u\n",
+	fprintf(out, "UnkillableStepTimeout   = %u sec\n",
 		slurm_ctl_conf_ptr->unkillable_timeout);
-	fprintf(out, "WaitTime                = %u\n", 
+	fprintf(out, "WaitTime                = %u sec\n", 
 		slurm_ctl_conf_ptr->wait_time);
 }
 

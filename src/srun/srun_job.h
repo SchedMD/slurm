@@ -89,6 +89,7 @@ typedef struct srun_job {
 	uint32_t jobid;		/* assigned job id 	                  */
 	uint32_t stepid;	/* assigned step id 	                  */
 
+	uint32_t cpu_count;	/* allocated CPUs */
 	uint32_t nhosts;	/* node count */
 	uint32_t ntasks;	/* task count */
 	srun_job_state_t state;	/* job state	   	                  */

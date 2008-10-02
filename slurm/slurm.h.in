@@ -649,9 +649,10 @@ typedef struct job_info {
 	uint32_t user_id;	/* user the job runs as */
 	char *work_dir;		/* pathname of working directory */
 
-	uint16_t num_cpu_groups;/* elements in below cpu arrays */
-	uint32_t *cpus_per_node;/* cpus per node */
+	uint32_t num_cpu_groups;/* elements in cpu arrays below */
+	uint16_t *cpus_per_node;/* cpus per node */
 	uint32_t *cpu_count_reps;/* how many nodes have same cpu count */
+
 	uint32_t num_procs;	/* number of processors required by job */
 	uint32_t num_nodes;	/* minimum number of nodes required by job */
 	uint32_t max_nodes;	/* maximum number of nodes usable by job */
@@ -770,8 +771,8 @@ typedef struct {
 	char *ckpt_path;	/* path to store checkpoint image files */
 	uint16_t verbose_level; /* for extra logging decisions in step
 				   launch api */
-
-	uint16_t mem_per_task;	/* memory required per task (MB), 0=no limit */
+	uint32_t mem_per_task;	/* memory required per task (MB), 
+				 * use job limit if 0 */
 } slurm_step_ctx_params_t;
 
 typedef struct {
@@ -915,8 +916,8 @@ typedef struct delete_partition_msg {
 typedef struct resource_allocation_response_msg {
 	uint32_t job_id;	/* assigned job id */
 	char *node_list;	/* assigned list of nodes */
-	uint16_t num_cpu_groups;/* elements in below cpu arrays */
-	uint32_t *cpus_per_node;/* cpus per node */
+	uint32_t num_cpu_groups;/* elements in below cpu arrays */
+	uint16_t *cpus_per_node;/* cpus per node */
 	uint32_t *cpu_count_reps;/* how many nodes have same cpu count */
 	uint32_t node_cnt;	/* count of nodes */
 	uint32_t error_code;	/* error code for warning message */
@@ -927,8 +928,8 @@ typedef struct resource_allocation_response_msg {
 typedef struct job_alloc_info_response_msg {
 	uint32_t job_id;	/* assigned job id */
 	char *node_list;	/* assigned list of nodes */
-	uint16_t num_cpu_groups;/* elements in below cpu arrays */
-	uint32_t *cpus_per_node;/* cpus per node */
+	uint32_t num_cpu_groups;/* elements in below cpu arrays */
+	uint16_t *cpus_per_node;/* cpus per node */
 	uint32_t *cpu_count_reps;/* how many nodes have same cpu count */
 	uint32_t node_cnt;	/* count of nodes */
 	slurm_addr *node_addr;	/* network addresses */
@@ -1008,6 +1009,8 @@ typedef struct slurm_ctl_conf {
 	uint16_t msg_timeout;	/* message timeout */
 	char *node_prefix;      /* prefix of nodes in partition, only set in 
 				   bluegene clusters NULL otherwise */
+	uint16_t over_time_limit; /* job's time limit can be exceeded by this
+				   * number of minutes before cancellation */
 	char *plugindir;	/* pathname to plugins */
 	char *plugstack;        /* pathname to plugin stack config file */
 	uint16_t private_data;	/* block viewing of information, 

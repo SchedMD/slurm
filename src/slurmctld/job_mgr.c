@@ -519,8 +519,8 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	packstr(dump_job_ptr->licenses, buffer);
 	packstr(dump_job_ptr->mail_user, buffer);
 
-	select_g_pack_jobinfo(dump_job_ptr->select_jobinfo,
-			      buffer);
+	select_g_pack_jobinfo(dump_job_ptr->select_jobinfo, buffer);
+	pack_select_job_res(dump_job_ptr->select_job, buffer);
 
 	/* Dump job details, if available */
 	detail_ptr = dump_job_ptr->details;
@@ -561,6 +561,7 @@ static int _load_job_state(Buf buffer)
 	struct part_record *part_ptr;
 	int error_code;
 	select_jobinfo_t select_jobinfo = NULL;
+	select_job_res_t select_job = NULL;
 	acct_association_rec_t assoc_rec, *assoc_ptr = NULL;
 
 	safe_unpack32(&assoc_id, buffer);
@@ -614,6 +615,9 @@ static int _load_job_state(Buf buffer)
 	if (select_g_alloc_jobinfo(&select_jobinfo)
 	    ||  select_g_unpack_jobinfo(select_jobinfo, buffer))
 		goto unpack_error;
+	if (unpack_select_job_res(&select_job, buffer))
+		goto unpack_error;
+
 
 	/* validity test as possible */
 	if (job_id == 0) {
@@ -732,6 +736,7 @@ static int _load_job_state(Buf buffer)
 	job_ptr->resp_host    = resp_host;
 	resp_host             = NULL;	/* reused, nothing left to free */
 	job_ptr->select_jobinfo = select_jobinfo;
+	job_ptr->select_job   = select_job;
 	job_ptr->start_time   = start_time;
 	job_ptr->state_reason = state_reason;
 	job_ptr->state_desc   = state_desc;
@@ -797,9 +802,7 @@ static int _load_job_state(Buf buffer)
 		safe_unpack16(&step_flag, buffer);
 	}
 
-	build_node_details(job_ptr);	/* set: num_cpu_groups, cpus_per_node,
-					 *  cpu_count_reps, node_cnt,
-					 *  node_addr, alloc_lps, used_lps */
+	build_node_details(job_ptr);	/* set node_addr */
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -1245,17 +1248,35 @@ extern int kill_running_job_by_node_name(char *node_name, bool step_test)
 static void _excise_node_from_job(struct job_record *job_ptr, 
 				  struct node_record *node_ptr)
 {
+	int i, orig_pos = -1, new_pos = -1;
+	bitstr_t *orig_bitmap = bit_copy(job_ptr->node_bitmap);
+	select_job_res_t select_ptr = job_ptr->select_job;
+
+	xassert(select_ptr);
+	xassert(select_ptr->cpus);
+	xassert(select_ptr->cpus_used);
+
 	make_node_idle(node_ptr, job_ptr); /* updates bitmap */
 	xfree(job_ptr->nodes);
 	job_ptr->nodes = bitmap2node_name(job_ptr->node_bitmap);
-	xfree(job_ptr->cpus_per_node);
-	xfree(job_ptr->cpu_count_reps);
-	xfree(job_ptr->node_addr);
-
-	/* build_node_details rebuilds everything from node_bitmap */
-	build_node_details(job_ptr);
+	for (i=bit_ffs(orig_bitmap); i<node_record_count; i++) {
+		if (!bit_test(orig_bitmap,i))
+			continue;
+		orig_pos++;
+		if (!bit_test(job_ptr->node_bitmap, i))
+			continue;
+		new_pos++;
+		if (orig_pos == new_pos)
+			continue;
+		memcpy(&job_ptr->node_addr[new_pos],
+		       &job_ptr->node_addr[orig_pos], sizeof(slurm_addr));
+		job_ptr->select_job->cpus[new_pos] = 
+			job_ptr->select_job->cpus[orig_pos];
+		job_ptr->select_job->cpus_used[new_pos] = 
+			job_ptr->select_job->cpus_used[orig_pos];
+	}
+	job_ptr->node_cnt = new_pos + 1;
 }
-
 
 /*
  * dump_job_desc - dump the incoming job submit request message
@@ -1484,9 +1505,6 @@ extern void rehash_jobs(void)
  * RET 0 or an error code. If the job would only be able to execute with 
  *	some change in partition configuration then 
  *	ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE is returned
- * NOTE: If allocating nodes lx[0-7] to a job and those nodes have cpu counts  
- *	of 4, 4, 4, 4, 8, 8, 4, 4 then num_cpu_groups=3, cpus_per_node={4,8,4}
- *	and cpu_count_reps={4,2,2}
  * globals: job_list - pointer to global job list 
  *	list_part - global list of partition info
  *	default_part_loc - pointer to default partition
@@ -3001,6 +3019,12 @@ void job_time_limit(void)
 	struct job_record *job_ptr;
 	time_t now = time(NULL);
 	time_t old = now - slurmctld_conf.inactive_limit;
+	time_t over_run;
+
+	if (slurmctld_conf.over_time_limit == (uint16_t) INFINITE)
+		over_run = now - (365 * 24 * 60 * 60);	/* one year */
+	else
+		over_run = now - (slurmctld_conf.over_time_limit  * 60);
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr =
@@ -3027,7 +3051,7 @@ void job_time_limit(void)
 			continue;
 		}
 		if ((job_ptr->time_limit != INFINITE)
-		    &&  (job_ptr->end_time <= now)) {
+		    &&  (job_ptr->end_time <= over_run)) {
 			last_job_update = now;
 			info("Time limit exhausted for JobId=%u",
 			     job_ptr->job_id);
@@ -3200,11 +3224,8 @@ static void _list_delete_job(void *job_entry)
 
 	delete_job_details(job_ptr);
 	xfree(job_ptr->account);
-	xfree(job_ptr->alloc_lps);
 	xfree(job_ptr->alloc_node);
 	xfree(job_ptr->comment);
-	xfree(job_ptr->cpus_per_node);
-	xfree(job_ptr->cpu_count_reps);
 	xfree(job_ptr->licenses);
 	if (job_ptr->license_list)
 		list_destroy(job_ptr->license_list);
@@ -3217,13 +3238,13 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->nodes_completing);
 	xfree(job_ptr->partition);
 	xfree(job_ptr->resp_host);
+	free_select_job_res(&job_ptr->select_job);
 	select_g_free_jobinfo(&job_ptr->select_jobinfo);
 	xfree(job_ptr->state_desc);
 	if (job_ptr->step_list) {
 		delete_step_records(job_ptr, 0);
 		list_destroy(job_ptr->step_list);
 	}
-	xfree(job_ptr->used_lps);
 	job_count--;
 	xfree(job_ptr);
 }
@@ -3401,7 +3422,6 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 {
 	struct job_details *detail_ptr;
-	uint32_t size_tmp;
 
 	pack32(dump_job_ptr->job_id, buffer);
 	pack32(dump_job_ptr->user_id, buffer);
@@ -3440,13 +3460,15 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 
 	pack32(dump_job_ptr->exit_code, buffer);
 
-	pack16(dump_job_ptr->num_cpu_groups, buffer);
-	size_tmp = dump_job_ptr->num_cpu_groups;
-	if (size_tmp < 0) {
-	    	size_tmp = 0;
-	}
-	pack32_array(dump_job_ptr->cpus_per_node, size_tmp, buffer);
-	pack32_array(dump_job_ptr->cpu_count_reps, size_tmp, buffer);
+	if (dump_job_ptr->select_job && 
+	    dump_job_ptr->select_job->cpu_array_cnt) {
+		pack32(dump_job_ptr->select_job->cpu_array_cnt, buffer);
+		pack16_array(dump_job_ptr->select_job->cpu_array_value,
+			     dump_job_ptr->select_job->cpu_array_cnt, buffer);
+		pack32_array(dump_job_ptr->select_job->cpu_array_reps,
+			     dump_job_ptr->select_job->cpu_array_cnt, buffer);
+	} else
+		pack32((uint32_t) 0, buffer);
 
 	packstr(dump_job_ptr->name, buffer);
 	packstr(dump_job_ptr->alloc_node, buffer);
@@ -3627,9 +3649,7 @@ void reset_job_bitmaps(void)
 		    	      job_ptr->nodes, job_ptr->job_id);
 			job_fail = true;
 		}
-		build_node_details(job_ptr);	/* set: num_cpu_groups, 
-						 * cpu_count_reps, node_cnt, 
-						 * cpus_per_node, node_addr */
+		build_node_details(job_ptr);	/* set node_addr */
 
 		if (_reset_detail_bitmaps(job_ptr))
 			job_fail = true;
