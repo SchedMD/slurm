@@ -91,7 +91,7 @@ struct part_res_record {
 	struct part_res_record *next;	/* Ptr to next part_res_record */
 };
 
-/* node resource data, including memory allocation data */
+/* per-node resource data */
 struct node_res_record {
 	struct node_record *node_ptr;	/* ptr to the actual node */
 	uint16_t cpus;			/* count of processors configured */
@@ -100,16 +100,21 @@ struct node_res_record {
 	uint16_t vpus;			/* count of virtual cpus (hyperthreads)
 					 * configured per core */
 	uint32_t real_memory;		/* MB of real memory configured */
+};
 
+/* per-node resource usage record */
+struct node_use_record {
 	enum node_cr_state node_state;	/* see node_cr_state comments */
 	uint32_t alloc_memory;		/* real memory reserved by already
 					 * scheduled jobs */
 };
 
+
 extern uint16_t select_fast_schedule;
 
-extern struct node_res_record *select_node_record;
 extern struct part_res_record *select_part_record;
+extern struct node_res_record *select_node_record;
+extern struct node_use_record *select_node_usage;
 
 extern void cr_sort_part_rows(struct part_res_record *p_ptr);
 extern uint32_t cr_get_coremap_offset(uint32_t node_index);
