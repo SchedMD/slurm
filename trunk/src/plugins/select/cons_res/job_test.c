@@ -1713,7 +1713,7 @@ alloc_job:
 	 * For cons_res, all available logical processors will be allocated on
 	 * each allocated node in order to accommodate the overcommit request.
 	 */
-	if (job_ptr->details->overcommit)
+	if (job_ptr->details->overcommit && job_ptr->details->num_tasks)
 		job_res->nprocs = MIN(total_cpus, job_ptr->details->num_tasks);
 
 	debug3("cons_res: cr_job_test: job %u nprocs %u cbits %u/%u nbits %u",
