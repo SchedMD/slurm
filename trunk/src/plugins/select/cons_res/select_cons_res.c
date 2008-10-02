@@ -1272,6 +1272,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			uint32_t req_nodes, enum node_cr_state job_node_req)
 {
 	struct part_res_record *future_part;
+	struct node_use_record *future_usage;
 	struct job_record *tmp_job_ptr, **tmp_job_pptr;
 	List cr_job_list;
 	ListIterator job_iterator;
