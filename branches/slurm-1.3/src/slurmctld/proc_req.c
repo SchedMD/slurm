@@ -852,7 +852,7 @@ static void _slurm_rpc_dump_nodes(slurm_msg_t * msg)
 	&&  (!validate_super_user(uid))) {
 		unlock_slurmctld(node_read_lock);
 		error("Security violation, REQUEST_NODE_INFO RPC from uid=%d", uid);
-		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
+		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
 	} else if ((node_req_msg->last_update - 1) >= last_node_update) {
 		unlock_slurmctld(node_read_lock);
 		debug2("_slurm_rpc_dump_nodes, no change");
@@ -902,7 +902,7 @@ static void _slurm_rpc_dump_partitions(slurm_msg_t * msg)
 	&&  (!validate_super_user(uid))) {
 		unlock_slurmctld(part_read_lock);
 		debug2("Security violation, PARTITION_INFO RPC from uid=%d", uid);
-		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
+		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
 	} else if ((part_req_msg->last_update - 1) >= last_part_update) {
 		unlock_slurmctld(part_read_lock);
 		debug2("_slurm_rpc_dump_partitions, no change");
@@ -2301,7 +2301,7 @@ static void  _slurm_rpc_node_select_info(slurm_msg_t * msg)
 	lock_slurmctld(config_read_lock);
 	if ((slurmctld_conf.private_data & PRIVATE_DATA_NODES)
 	&&  (!validate_super_user(uid))) {
-		error_code = ESLURM_USER_ID_MISSING;
+		error_code = ESLURM_ACCESS_DENIED;
 		error("Security violation, NODE_SELECT_INFO RPC from uid=u",
 			(unsigned int) uid);
 	} 
