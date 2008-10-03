@@ -4338,9 +4338,9 @@ extern List acct_storage_p_modify_associations(
 						   ", qos=if(qos='', '', "
 						   "replace(qos, ',%s', ''))"
 						   ", delta_qos=if(qos='', "
-						   "replace(delta_qos, "
-						   "'%s', ''), '')",
-						   new_qos+1, new_qos);
+						   "concat(replace(delta_qos, "
+						   "',%s', ''), ',%s'), '')",
+						   new_qos+1, new_qos, new_qos);
 				} else if(new_qos[0] == '+') {
 					xstrfmtcat(vals,
 						   ", qos=if(qos='', '', "
@@ -4349,7 +4349,7 @@ extern List acct_storage_p_modify_associations(
 						   "\"%s\")), delta_qos=if("
 						   "qos='', concat("
 						   "replace(delta_qos, "
-						   "'%s', ''), '%s'), '')",
+						   "',%s', ''), ',%s'), '')",
 						   new_qos+1, new_qos+1,
 						   new_qos, new_qos);
 				} else if(new_qos[0]) 
