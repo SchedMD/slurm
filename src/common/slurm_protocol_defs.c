@@ -754,6 +754,9 @@ private_data_string(uint16_t private_data, char *str, int str_len)
 		strcat(str, "accounts"); //9 len
 	}
 	// total len 42
+
+	if (str[0] == '\0')
+		strcat(str, "none");
 }
 
 char *job_state_string(enum job_states inx)
