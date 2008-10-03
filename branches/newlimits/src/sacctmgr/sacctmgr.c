@@ -699,11 +699,15 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             Organizations=, Parents=, WithCoor=,           \n\
                             and WithAssocs                                 \n\
        add account        - Clusters=, Description=, Fairshare=,           \n\
-                            MaxCPUSecs=, MaxJobs=, MaxNodes=, MaxWall=,    \n\
-                            Names=, Organization=, Parent=, and QosLevel   \n\
+                            GrpCPUHours=, GrpCPUs=, GrpJobs=, GrpNodes=,   \n\
+                            GrpSubmitJob=, GrpWall=, MaxCPUMins=, MaxJobs=,\n\
+                            MaxNodes=, MaxWall=, Names=, Organization=,    \n\
+                            Parent=, and QosLevel                          \n\
        modify account     - (set options) Description=, Fairshare=,        \n\
-                            MaxCPUSecs=, MaxJobs=, MaxNodes=, MaxWall=,    \n\
-                            Organization=, Parent=, and QosLevel=          \n\
+                            GrpCPUHours=, GrpCPUs=, GrpJobs=, GrpNodes=,   \n\
+                            GrpSubmitJob=, GrpWall=, MaxCPUMins=, MaxJobs=,\n\
+                            MaxNodes=, MaxWall=, Names=, Organization=,    \n\
+                            Parent=, and QosLevel=                         \n\
                             (where options) Clusters=, Descriptions=,      \n\
                             Names=, Organizations=, Parent=, and QosLevel= \n\
        delete account     - Clusters=, Descriptions=, Names=,              \n\
@@ -714,10 +718,13 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             WithDeleted, WOPInfo, WOPLimits                \n\
                                                                            \n\
        list cluster       - Names= Format=                                 \n\
-       add cluster        - Fairshare=, MaxCPUSecs=,                       \n\
-                            MaxJobs=, MaxNodes=, MaxWall=, and Names=      \n\
-       modify cluster     - (set options) Fairshare=, MaxCPUSecs=,         \n\
-                            MaxJobs=, MaxNodes=, and MaxWall=              \n\
+       add cluster        - Fairshare=, GrpCPUHours=, GrpCPUs=, GrpJobs=,  \n\
+                            GrpNodes=, GrpSubmitJob=, GrpWall=, MaxCPUMins=\n\
+                            MaxJobs=, MaxNodes=, MaxWall=, and Name=       \n\
+       modify cluster     - (set options) Fairshare=, GrpCPUHours=,        \n\
+                            GrpCPUs=, GrpJobs=, GrpNodes=, GrpSubmitJob=,  \n\
+                            GrpWall=, MaxCPUMins=, MaxJobs=, MaxNodes=,    \n\
+                            and MaxWall=                                   \n\
                             (where options) Names=                         \n\
        delete cluster     - Names=                                         \n\
                                                                            \n\
@@ -734,11 +741,11 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
        list user          - AdminLevel=, DefaultAccounts=, Format=, Names=,\n\
                             QosLevel=, WithCoor=, and WithAssocs           \n\
        add user           - Accounts=, AdminLevel=, Clusters=,             \n\
-                            DefaultAccount=, Fairshare=, MaxCPUSecs=,      \n\
-                            MaxJobs=, MaxNodes=, MaxWall=, Names=,         \n\
-                            Partitions=, and QosLevel=                     \n\
+                            DefaultAccount=, Fairshare=, MaxCPUMins=       \n\
+                            MaxCPUs=, MaxJobs=, MaxNodes=, MaxWall=,       \n\
+                            Names=, Partitions=, and QosLevel=             \n\
        modify user        - (set options) AdminLevel=, DefaultAccount=,    \n\
-                            Fairshare=, MaxCPUSecs=, MaxJobs=,             \n\
+                            Fairshare=, MaxCPUMins=, MaxCPUs= MaxJobs=,    \n\
                             MaxNodes=, MaxWall=, and QosLevel=             \n\
                             (where options) Accounts=, AdminLevel=,        \n\
                             Clusters=, DefaultAccounts=, Names=,           \n\
