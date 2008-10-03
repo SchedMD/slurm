@@ -18,7 +18,10 @@ complete, salloc relinquishes the job allocation.
 
 The command may be any program the user wishes.  Some typical commands are 
 xterm, a shell script containing srun commands, and srun (see the EXAMPLES 
-section). If no command is specified, the user's default shell.
+section). If no command is specified, then the value of 
+\fBSallocDefaultCommand\fR in slurm.conf is used. If 
+\fBSallocDefaultCommand\fR is not set, then \fBsalloc\fR runs the 
+user's default shell.
 
 .SH "OPTIONS"
 .LP 

@@ -1064,6 +1064,7 @@ typedef struct slurm_ctl_conf {
                                       * they are considered "unkillable". */
 	uint16_t use_pam;	/* enable/disable PAM support */
 	uint16_t wait_time;	/* default job --wait time */
+	char *salloc_default_command; /* default salloc command */
 } slurm_ctl_conf_t;
 
 typedef struct slurmd_status_msg {

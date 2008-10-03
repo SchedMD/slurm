@@ -985,6 +985,32 @@ static char *_get_shell(void)
 	return pw_ent_ptr->pw_shell;
 }
 
+static int _salloc_default_command (int *argcp, char **argvp[])
+{
+	slurm_ctl_conf_t *cf = slurm_conf_lock();
+
+	if (cf->salloc_default_command) {
+		/*
+		 *  Set argv to "/bin/sh -c 'salloc_default_command'"
+		 */
+		*argcp = 3;
+		*argvp = xmalloc (sizeof (char *) * 4);
+		(*argvp)[0] = "/bin/sh";
+		(*argvp)[1] = "-c";
+		(*argvp)[2] = xstrdup (cf->salloc_default_command);
+		(*argvp)[3] = NULL;
+	}
+	else {
+		*argcp = 1;
+		*argvp = xmalloc (sizeof (char *) * 2);
+		(*argvp)[0] = _get_shell ();
+		(*argvp)[1] = NULL;
+	}
+
+	slurm_conf_unlock();
+	return (0);
+}
+
 /* 
  * _opt_verify : perform some post option processing verification
  *
@@ -1010,13 +1036,8 @@ static bool _opt_verify(void)
 	if ((opt.egid != (gid_t) -1) && (opt.egid != opt.gid)) 
 		opt.gid = opt.egid;
 
-	if ((opt.no_shell == false) && (command_argc == 0)) {
-		/* Using default shell as the user command */
-		command_argc = 1;
-		command_argv = (char **) xmalloc(sizeof(char *) * 2);
-		command_argv[0] = _get_shell();
-		command_argv[1] = NULL;
-	}
+	if ((opt.no_shell == false) && (command_argc == 0))
+		_salloc_default_command (&command_argc, &command_argv);
 
 	/* check for realistic arguments */
 	if (opt.nprocs <= 0) {
