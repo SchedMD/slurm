@@ -598,6 +598,7 @@ extern int addto_qos_char_list(List char_list, List qos_list, char *names,
 
 	if(!qos_list || !list_count(qos_list)) {
 		debug2("No real qos_list");
+		exit_code = 1;
 		return 0;
 	}
 
@@ -623,6 +624,7 @@ extern int addto_qos_char_list(List char_list, List qos_list, char *names,
 					if(id == NO_VAL) {
 						error("You gave a bad qos'%s'.",
 						      name);
+						exit_code = 1;
 						xfree(name);
 						break;
 					}
@@ -644,14 +646,18 @@ extern int addto_qos_char_list(List char_list, List qos_list, char *names,
 						count++;
 					} else 
 						xfree(name);
+				} else if (!(i-start)) {
+					list_append(char_list, xstrdup(""));
+					count++;
 				}
 
 				i++;
 				start = i;
 				if(!names[i]) {
-					info("There is a problem with "
-					     "your request.  It appears you "
-					     "have spaces inside your list.");
+					error("There is a problem with "
+					      "your request.  It appears you "
+					      "have spaces inside your list.");
+					exit_code = 1;
 					break;
 				}
 			}
@@ -684,8 +690,16 @@ extern int addto_qos_char_list(List char_list, List qos_list, char *names,
 				count++;
 			} else 
 				xfree(name);
+		} else if (!(i-start)) {
+			list_append(char_list, xstrdup(""));
+			count++;
 		}
 	}	
+	if(!count) {
+		error("You gave me an empty qos list");
+		exit_code = 1;
+	}
+
 end_it:
 	list_iterator_destroy(itr);
 	return count;

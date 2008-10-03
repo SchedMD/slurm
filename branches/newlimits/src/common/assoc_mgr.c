@@ -57,6 +57,52 @@ static pthread_mutex_t local_qos_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t local_user_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t local_file_lock = PTHREAD_MUTEX_INITIALIZER;
 
+static int _local_update_assoc_qos_list(List curr_qos_list, List new_qos_list)
+{
+	ListIterator new_qos_itr = NULL, curr_qos_itr = NULL;
+	char *new_qos = NULL, *curr_qos = NULL;
+
+	if(!curr_qos_list || !new_qos_list) {
+		error("need both new qos_list and a current one to update");
+		return SLURM_ERROR;
+	}
+	
+	if(!list_count(new_qos_list)) {
+		list_flush(curr_qos_list);
+		return SLURM_SUCCESS;
+	}			
+
+	new_qos_itr = list_iterator_create(new_qos_list);
+	curr_qos_itr = list_iterator_create(curr_qos_list);
+	
+	while((new_qos = list_next(new_qos_itr))) {
+		if(new_qos[0] == '-') {
+			while((curr_qos = list_next(curr_qos_itr))) {
+				if(!strcmp(curr_qos, new_qos+1)) {
+					list_delete_item(curr_qos_itr);
+					break;
+				}
+			}
+
+			list_iterator_reset(curr_qos_itr);
+		} else if(new_qos[0] == '+') {
+			while((curr_qos = list_next(curr_qos_itr))) 
+				if(!strcmp(curr_qos, new_qos+1)) 
+					break;
+			
+			if(!curr_qos)
+				list_append(curr_qos_list, xstrdup(new_qos+1));
+			list_iterator_reset(curr_qos_itr);
+		} else {
+			list_append(curr_qos_list, xstrdup(new_qos));
+		}
+	}
+	list_iterator_destroy(curr_qos_itr);
+	list_iterator_destroy(new_qos_itr);
+
+	return SLURM_SUCCESS;	
+}
+
 /* locks should be put in place before calling this function */
 static int _set_assoc_parent_and_user(acct_association_rec_t *assoc,
 				      List assoc_list)
@@ -807,10 +853,14 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 			}
 
 			if(object->qos_list) {
-				if(rec->qos_list)
-					list_destroy(rec->qos_list);
-				rec->qos_list = object->qos_list;
-				object->qos_list = NULL;
+				if(rec->qos_list) {
+					_local_update_assoc_qos_list(
+						rec->qos_list,
+						object->qos_list);
+				} else {
+					rec->qos_list = object->qos_list;
+					object->qos_list = NULL;
+				}
 			}
 			
 			slurm_mutex_lock(&local_qos_lock);

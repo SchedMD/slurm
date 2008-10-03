@@ -1978,6 +1978,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "grp_wall", "int default NULL" },
 		{ "grp_cpu_hours", "bigint default NULL" },
 		{ "qos", "blob not null default ''" },
+		{ "delta_qos", "blob not null default ''" },
 		{ NULL, NULL}		
 	};
 
@@ -2165,6 +2166,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		"set @mwpj = NULL; "
 		"set @mcmpj = NULL; "
 		"set @qos = ''; "
+		"set @delta_qos = ''; "
 		"set @my_acct = acct; "
 		"if without_limits then "
 		"set @mj = 0; " 
@@ -2174,6 +2176,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		"set @mwpj = 0; "
 		"set @mcmpj = 0; "
 		"set @qos = 0; "
+		"set @delta_qos = 0; "
 		"end if; "
 		"REPEAT "
 		"set @s = 'select '; "
@@ -2199,7 +2202,8 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		"@s, '@mcmpj := max_cpu_mins_per_job, '); "
 		"end if; "
 		"if @qos = '' then set @s = CONCAT("
-		"@s, '@qos := qos, '); "
+		"@s, '@qos := qos, "
+		"@delta_qos := CONCAT(@delta_qos, delta_qos), '); "
 		"end if; "
 		"set @s = concat(@s, ' @my_acct := parent_acct from ', "
 		"my_table, ' where acct = \"', @my_acct, '\" && "
@@ -4042,8 +4046,8 @@ extern List acct_storage_p_modify_associations(
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	acct_user_rec_t user;
-	int replace_qos = 0;
 	char *tmp_char1=NULL, *tmp_char2=NULL;
+	int set_qos_vals = 0;
 
 	char *massoc_req_inx[] = {
 		"id",
@@ -4136,38 +4140,8 @@ extern List acct_storage_p_modify_associations(
 	xfree(tmp_char1);
 	xfree(tmp_char2);
 
-	if(assoc->qos_list && list_count(assoc->qos_list)) {
-		char *tmp_qos = NULL;
-		set = 0;
-		itr = list_iterator_create(assoc->qos_list);
-		while((object = list_next(itr))) {
-			/* when adding we need to make sure we don't
-			 * already have it so we remove it and then add
-			 * it.
-			 */
-			if(object[0] == '-') {
-				xstrfmtcat(vals,
-					   ", qos=replace(qos, ',%s', '')",
-					   object+1);
-			} else if(object[0] == '+') {
-				xstrfmtcat(vals,
-					   ", qos=concat_ws(',', "
-					   "replace(qos, ',%s', ''), \"%s\")",
-					   object+1, object+1);
-			} else {
-				xstrfmtcat(tmp_qos, ",%s", object);
-			}
-		}
-		list_iterator_destroy(itr);
-		if(tmp_qos) {
-			xstrfmtcat(vals, ", qos=\"%s\"", tmp_qos);
-			xfree(tmp_qos);
-			replace_qos = 1;
-		}
-	}
-
-
-	if(!extra || (!vals && !assoc->parent_acct)) {
+	if(!extra || (!vals && !assoc->parent_acct
+		      && (!assoc->qos_list || !list_count(assoc->qos_list)))) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		error("Nothing to change");
 		return NULL;
@@ -4342,56 +4316,55 @@ extern List acct_storage_p_modify_associations(
 
 		if(!row[MASSOC_USER][0])
 			mod_assoc->parent_acct = xstrdup(assoc->parent_acct);
-		if(assoc->qos_list) {
+		if(assoc->qos_list && list_count(assoc->qos_list)) {
 			ListIterator new_qos_itr = 
 				list_iterator_create(assoc->qos_list);
-			ListIterator curr_qos_itr = NULL;
-			char *new_qos = NULL, *curr_qos = NULL;
-
+			char *new_qos = NULL, *tmp_qos = NULL;
+		
 			mod_assoc->qos_list = list_create(slurm_destroy_char);
-			if(!replace_qos)
-				slurm_addto_char_list(mod_assoc->qos_list,
-						      row[MASSOC_QOS]);
-			curr_qos_itr = 
-				list_iterator_create(mod_assoc->qos_list);
 			
 			while((new_qos = list_next(new_qos_itr))) {
-				char *tmp_char = NULL;
+				list_append(mod_assoc->qos_list,
+					    xstrdup(new_qos));
+				if(set_qos_vals)
+					continue;
+				/* Now we can set up the values and
+				   make sure we aren't over writing
+				   things that are really from the
+				   parent
+				*/
 				if(new_qos[0] == '-') {
-					tmp_char = xstrdup(new_qos+1);
-					while((curr_qos =
-					       list_next(curr_qos_itr))) {
-						if(!strcmp(curr_qos,
-							   tmp_char)) {
-							list_delete_item(
-								curr_qos_itr);
-							break;
-						}
-					}
-					xfree(tmp_char);
-					list_iterator_reset(curr_qos_itr);
+					xstrfmtcat(vals,
+						   ", qos=if(qos='', '', "
+						   "replace(qos, ',%s', ''))"
+						   ", delta_qos=if(qos='', "
+						   "replace(delta_qos, "
+						   "'%s', ''), '')",
+						   new_qos+1, new_qos);
 				} else if(new_qos[0] == '+') {
-					tmp_char = xstrdup(new_qos+1);
-					while((curr_qos =
-					       list_next(curr_qos_itr))) {
-						if(!strcmp(curr_qos,
-							   tmp_char)) {
-							break;
-						}
-					}
-					if(!curr_qos)
-						list_append(mod_assoc->qos_list,
-							    tmp_char);
-					else
-						xfree(tmp_char);
-					list_iterator_reset(curr_qos_itr);
-				} else {
-					list_append(mod_assoc->qos_list,
-						    xstrdup(new_qos));
-				}
+					xstrfmtcat(vals,
+						   ", qos=if(qos='', '', "
+						   "concat_ws(',', "
+						   "replace(qos, ',%s', ''), "
+						   "\"%s\")), delta_qos=if("
+						   "qos='', concat("
+						   "replace(delta_qos, "
+						   "'%s', ''), '%s'), '')",
+						   new_qos+1, new_qos+1,
+						   new_qos, new_qos);
+				} else if(new_qos[0]) 
+					xstrfmtcat(tmp_qos, ",%s", new_qos);
+				else
+					xstrcat(tmp_qos, "");
 			}
-			list_iterator_destroy(curr_qos_itr);
-			list_iterator_destroy(new_qos_itr);			
+			list_iterator_destroy(new_qos_itr);
+
+			if(!set_qos_vals && tmp_qos) 
+				xstrfmtcat(vals, ", qos='%s', delta_qos=''",
+					   tmp_qos);	
+			xfree(tmp_qos);
+
+			set_qos_vals=1;
 		}
 
 		if(_addto_update_list(mysql_conn->update_list, 
@@ -6421,6 +6394,7 @@ extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 	char *extra = NULL;	
 	char *tmp = NULL;	
 	List assoc_list = NULL;
+	List delta_qos_list = NULL;
 	ListIterator itr = NULL;
 	int set = 0;
 	int i=0, is_admin=1;
@@ -6433,6 +6407,7 @@ extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 	uint32_t parent_mwpj = INFINITE;
 	uint64_t parent_mcmpj = INFINITE;
 	char *parent_qos = NULL;
+	char *parent_delta_qos = NULL;
 	char *last_acct = NULL;
 	char *last_acct_parent = NULL;
 	char *last_cluster = NULL;
@@ -6471,6 +6446,7 @@ extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 		"max_wall_duration_per_job",
 		"parent_acct",
 		"qos",
+		"delta_qos",
 	};
 	enum {
 		ASSOC_REQ_ID,
@@ -6495,6 +6471,7 @@ extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 		ASSOC_REQ_MWPJ,
 		ASSOC_REQ_PARENT,
 		ASSOC_REQ_QOS,
+		ASSOC_REQ_DELTA_QOS,
 		ASSOC_REQ_COUNT
 	};
 
@@ -6507,6 +6484,7 @@ extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 		ASSOC2_REQ_MWPJ,
 		ASSOC2_REQ_MCMPJ,
 		ASSOC2_REQ_QOS,
+		ASSOC2_REQ_DELTA_QOS,
 	};
 
 	if(!assoc_cond) {
@@ -6616,7 +6594,7 @@ empty:
 	xfree(query);
 
 	assoc_list = list_create(destroy_acct_association_rec);
-
+	delta_qos_list = list_create(slurm_destroy_char);
 	while((row = mysql_fetch_row(result))) {
 		acct_association_rec_t *assoc =
 			xmalloc(sizeof(acct_association_rec_t));
@@ -6718,7 +6696,7 @@ empty:
 				"call get_parent_limits(\"%s\", "
 				"\"%s\", \"%s\", %u);"
 				"select @par_id, @mj, @msj, @mcpj, "
-				"@mnpj, @mwpj, @mcmpj, @qos;", 
+				"@mnpj, @mwpj, @mcmpj, @qos, @delta_qos;", 
 				assoc_table, row[ASSOC_REQ_ACCT],
 				row[ASSOC_REQ_CLUSTER],
 				without_parent_limits);
@@ -6775,6 +6753,10 @@ empty:
 						xstrdup(row2[ASSOC2_REQ_QOS]);
 				else 
 					parent_qos = NULL;
+
+				if(row2[ASSOC2_REQ_DELTA_QOS][0])
+					xstrcat(parent_delta_qos, 
+						row2[ASSOC2_REQ_DELTA_QOS]);
 			
 				if(row2[ASSOC2_REQ_MSJ])
 					parent_msj = atoi(row2[ASSOC2_REQ_MSJ]);
@@ -6828,7 +6810,52 @@ empty:
 					      row[ASSOC_REQ_QOS]+1);
 		else if(parent_qos) 			
 			slurm_addto_char_list(assoc->qos_list, parent_qos+1);
-		
+
+		if(row[ASSOC_REQ_DELTA_QOS][0]) 
+			slurm_addto_char_list(delta_qos_list,
+					      row[ASSOC_REQ_DELTA_QOS]);
+		if(parent_delta_qos)
+			slurm_addto_char_list(delta_qos_list, parent_delta_qos);
+			
+		if(list_count(delta_qos_list)) {
+			ListIterator curr_qos_itr = 
+				list_iterator_create(assoc->qos_list);
+			ListIterator new_qos_itr = 
+				list_iterator_create(delta_qos_list);
+			char *new_qos = NULL, *curr_qos = NULL;
+			
+			while((new_qos = list_next(new_qos_itr))) {
+				if(new_qos[0] == '-') {
+					while((curr_qos =
+					       list_next(curr_qos_itr))) {
+						if(!strcmp(curr_qos,
+							   new_qos+1)) {
+							list_delete_item(
+								curr_qos_itr);
+							break;
+						}
+					}
+					list_iterator_reset(curr_qos_itr);
+				} else if(new_qos[0] == '+') {
+					while((curr_qos =
+					       list_next(curr_qos_itr))) {
+						if(!strcmp(curr_qos,
+							   new_qos+1)) {
+							break;
+						}
+					}
+					list_iterator_reset(curr_qos_itr);
+					if(!curr_qos)
+						list_append(assoc->qos_list,
+							    xstrdup(new_qos+1));
+				}
+			}
+			
+			list_iterator_destroy(new_qos_itr);
+			list_iterator_destroy(curr_qos_itr);
+			list_flush(delta_qos_list);
+		}
+
 		/* don't do this unless this is an user association */
 		if(assoc->user && assoc->parent_id != acct_parent_id) 
 			assoc->parent_id = user_parent_id;
@@ -6837,6 +6864,8 @@ empty:
 		//log_assoc_rec(assoc);
 	}
 	mysql_free_result(result);
+
+	list_destroy(delta_qos_list);
 
 	xfree(parent_qos);
 
