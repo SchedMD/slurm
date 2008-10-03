@@ -853,6 +853,28 @@ DOWN state until a system administrator explicitly changes its state
 (even if the slurmd daemon registers and resumes communications).
 
 .TP
+\fBSallocDefaultCommand\fR
+Normally, \fBsalloc\fR(1) will run the user's default shell when
+a command to execute is not specified on the \fBsalloc\fR command line.
+If \fBSallocDefaultCommand\fR is specified, \fBsalloc\fR will instead
+run the configured command. The command is passed to '/bin/sh \-c', so
+shell metacharacters are allowed, and commands with multiple arguments
+should be quoted. For instance:
+
+.nf
+    SallocDefaultCommand = "$SHELL"
+.fi
+
+would run the shell in the user's $SHELL environment variable.
+and
+
+.nf
+    SallocDefaultCommand = "xterm \-T Job_$SLURM_JOB_ID"
+.fi
+
+would run \fBxterm\fR with the title set to the SLURM jobid.
+
+.TP
 \fBSchedulerPort\fR
 The port number on which slurmctld should listen for connection requests.
 This value is only used by the Maui Scheduler (see \fBSchedulerType\fR).

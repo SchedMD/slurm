@@ -2306,6 +2306,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	pack16(build_ptr->resume_rate, buffer);
 	pack16(build_ptr->ret2service, buffer);
 
+	packstr(build_ptr->salloc_default_command, buffer);
 	packstr(build_ptr->sched_params, buffer);
 	pack16(build_ptr->schedport, buffer);
 	pack16(build_ptr->schedrootfltr, buffer);
@@ -2474,6 +2475,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpack16(&build_ptr->resume_rate, buffer);
 	safe_unpack16(&build_ptr->ret2service, buffer);
 
+	safe_unpackstr_xmalloc(&build_ptr->salloc_default_command, 
+			       &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->sched_params, &uint32_tmp, buffer);
 	safe_unpack16(&build_ptr->schedport, buffer);
 	safe_unpack16(&build_ptr->schedrootfltr, buffer);
@@ -2574,6 +2577,7 @@ unpack_error:
 	xfree(build_ptr->propagate_rlimits);
 	xfree(build_ptr->propagate_rlimits_except);
 	xfree(build_ptr->resume_program);
+	xfree(build_ptr->salloc_default_command);
 	xfree(build_ptr->sched_params);
 	xfree(build_ptr->schedtype);
 	xfree(build_ptr->select_type);

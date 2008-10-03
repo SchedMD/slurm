@@ -1,7 +1,8 @@
 /*****************************************************************************\
  *  plugstack.c -- stackable plugin architecture for node job kontrol (SPANK)
  *****************************************************************************
- *  Copyright (C) 2005 The Regents of the University of California.
+ *  Copyright (C) 2005-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  LLNL-CODE-402394.
  *
@@ -222,12 +223,6 @@ _plugin_stack_parse_line(char *line, char **plugin, int *acp, char ***argv,
 	/* Nullify any comments
 	 */
 	if ((s = strchr(line, '#')))
-		*s = '\0';
-
-	/*
-	 * Remove trailing whitespace
-	 */
-	for (s = line + strlen (line) - 1; isspace (*s) || *s == '\n'; s--)
 		*s = '\0';
 
 	if (!(option = strtok_r(line, separators, &sp)))
