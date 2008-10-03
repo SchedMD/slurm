@@ -89,7 +89,6 @@ static int _local_update_assoc_qos_list(acct_association_rec_t *assoc,
 					List new_qos_list)
 {
 	ListIterator new_qos_itr = NULL, curr_qos_itr = NULL;
-	List curr_qos_list = NULL;
 	char *new_qos = NULL, *curr_qos = NULL;
 	int flushed = 0;
 
@@ -103,10 +102,8 @@ static int _local_update_assoc_qos_list(acct_association_rec_t *assoc,
 		return SLURM_SUCCESS;
 	}			
 
-	curr_qos_list = assoc->qos_list;
-
 	new_qos_itr = list_iterator_create(new_qos_list);
-	curr_qos_itr = list_iterator_create(curr_qos_list);
+	curr_qos_itr = list_iterator_create(assoc->qos_list);
 	
 	while((new_qos = list_next(new_qos_itr))) {
 		if(new_qos[0] == '-') {
@@ -124,13 +121,14 @@ static int _local_update_assoc_qos_list(acct_association_rec_t *assoc,
 					break;
 			
 			if(!curr_qos) {
-				list_append(curr_qos_list, xstrdup(new_qos+1));
+				list_append(assoc->qos_list,
+					    xstrdup(new_qos+1));
 				list_iterator_reset(curr_qos_itr);
 			}
 		} else if(new_qos[0] == '=') {
 			if(!flushed)
-				list_flush(curr_qos_list);
-			list_append(curr_qos_list, xstrdup(new_qos+1));
+				list_flush(assoc->qos_list);
+			list_append(assoc->qos_list, xstrdup(new_qos+1));
 			flushed = 1;
 		} 
 	}
@@ -1056,6 +1054,7 @@ extern int assoc_mgr_update_local_qos(acct_update_object_t *update)
 				break;
 			}
 		}
+
 		//info("%d qos %s", update->type, object->name);
 		switch(update->type) {
 		case ACCT_ADD_QOS:
@@ -1064,6 +1063,7 @@ extern int assoc_mgr_update_local_qos(acct_update_object_t *update)
 				break;
 			}
 			list_append(local_qos_list, object);
+			object = NULL;			
 			break;
 		case ACCT_REMOVE_QOS:
 			if(!rec) {
@@ -1075,9 +1075,7 @@ extern int assoc_mgr_update_local_qos(acct_update_object_t *update)
 		default:
 			break;
 		}
-		if(update->type != ACCT_ADD_QOS) {
-			destroy_acct_qos_rec(object);			
-		}
+		destroy_acct_qos_rec(object);			
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&local_qos_lock);

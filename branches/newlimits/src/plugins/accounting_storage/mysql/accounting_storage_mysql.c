@@ -1233,6 +1233,8 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 		"max_cpus_per_job",
 		"max_wall_duration_per_job",
 		"max_cpu_mins_per_job",
+		"qos",
+		"delta_qos",
 		"lft",
 		"rgt"
 	};
@@ -1249,6 +1251,8 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 		ASSOC_MCPJ,
 		ASSOC_MWPJ,
 		ASSOC_MCMPJ,
+		ASSOC_QOS,
+		ASSOC_DELTA_QOS,
 		ASSOC_LFT,
 		ASSOC_RGT,
 		ASSOC_COUNT
@@ -1317,6 +1321,56 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 			mod_assoc->max_cpu_mins_pj = assoc->max_cpu_mins_pj;
 			modified = 1;
 		} 
+
+		if(!row[ASSOC_QOS][0] && assoc->qos_list) {
+			List delta_qos_list = NULL;
+			char *qos_char = NULL, *delta_char = NULL;
+			ListIterator delta_itr = NULL;
+			ListIterator qos_itr = 
+				list_iterator_create(assoc->qos_list);
+			if(row[ASSOC_DELTA_QOS][0]) {
+				delta_qos_list =
+					list_create(slurm_destroy_char);
+				slurm_addto_char_list(delta_qos_list,
+						      row[ASSOC_DELTA_QOS]+1);
+				delta_itr = 
+					list_iterator_create(delta_qos_list);
+			}
+
+			mod_assoc->qos_list = list_create(slurm_destroy_char);
+			/* here we are making sure a child does not
+			   have the qos added or removed before we add
+			   it to the parent.
+			*/
+			while((qos_char = list_next(qos_itr))) {
+				if(delta_itr && qos_char[0] != '=') {
+					while((delta_char = 
+					       list_next(delta_itr))) {
+						
+						if((qos_char[0] 
+						    != delta_char[0])
+						   && (!strcmp(qos_char+1, 
+							       delta_char+1))) 
+							break;			
+					}
+					list_iterator_reset(delta_itr);
+					if(delta_char)
+						continue;
+				}
+				list_append(mod_assoc->qos_list,
+					    xstrdup(qos_char));
+			}
+			list_iterator_destroy(qos_itr);
+			if(delta_itr)
+				list_iterator_destroy(delta_itr);
+			if(list_count(mod_assoc->qos_list) 
+			   || !list_count(assoc->qos_list))
+				modified = 1;
+			else {
+				list_destroy(mod_assoc->qos_list);
+				mod_assoc->qos_list = NULL;
+			}
+		}
 
 		/* We only want to add those that are modified here */
 		if(modified) {
@@ -1500,12 +1554,39 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 	}
 	
 	if(table == qos_table) {
-		/* remove this qos from all the users/accts that have it
-		 */
-		xstrfmtcat(query,
-			   "update %s set mod_time=%d, %s "
+		int pos=0, qos_num = NO_VAL;
+		char *remove_qos = NULL;
+		char *qos_line = NULL;
+		/* remove this qos from all the users/accts that have it */
+		
+		while(assoc_char[pos]) {
+			if(assoc_char[pos-1] != ',' || !assoc_char[pos]) {
+				pos++;
+				continue;
+			}
+
+			if((qos_num = atoi(assoc_char+pos)) < 0) {
+				pos++;
+				continue;
+			}
+
+			if(remove_qos)
+				xstrfmtcat(remove_qos, ",-%d", qos_num);
+			else 
+				xstrfmtcat(remove_qos, "-%d", qos_num);
+			
+			xstrfmtcat(qos_line, 
+				   ", qos=replace(qos, ',%d', '')"
+				   ", delta_qos=replace(delta_qos, ',+%d', '')"
+				   ", delta_qos=replace(delta_qos, ',-%d', '')",
+				   qos_num, qos_num, qos_num);
+			pos++;			
+		}
+
+		xstrfmtcat(query, "update %s set mod_time=%d %s "
 			   "where deleted=0;",
-			   assoc_table, now, assoc_char);
+			   assoc_table, now, qos_line);
+		xfree(qos_line);
 		debug3("%d(%d) query\n%s",
 		       mysql_conn->conn, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
@@ -1515,12 +1596,17 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 				mysql_db_rollback(mysql_conn->db_conn);
 			}
 			list_flush(mysql_conn->update_list);
-			
+			xfree(remove_qos);
+	
 			return SLURM_ERROR;
 		}
-		/* now get what we changed and set the update */
+		/* FIX ME: now get what we all associations and set the
+		 * update.  This could be changed in the future to
+		 * only modify those associations that changed, but
+		 * at this time this is the easiest since we aren't
+		 * looking for parents */
 		xstrfmtcat(query,
-			   "select id, qos from %s where "
+			   "select id, cluster from %s where "
 			   "mod_time=%d and deleted=0;",
 			   assoc_table, now);
 		if(!(result = mysql_db_query_ret(
@@ -1531,6 +1617,7 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 			}
 			list_flush(mysql_conn->update_list);
 			
+			xfree(remove_qos);
 			return SLURM_ERROR;
 		}
 		
@@ -1540,13 +1627,15 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 				xmalloc(sizeof(acct_association_rec_t));
 			init_acct_association_rec(assoc_rec);
 			assoc_rec->id = atoi(row[0]);
+			assoc_rec->cluster= xstrdup(row[1]);
 			assoc_rec->qos_list = list_create(slurm_destroy_char);
-			slurm_addto_char_list(assoc_rec->qos_list, row[1]);
+			slurm_addto_char_list(assoc_rec->qos_list, remove_qos);
 			_addto_update_list(mysql_conn->update_list,
 					   ACCT_MODIFY_ASSOC,
 					   assoc_rec);
 		}
 		mysql_free_result(result);
+		xfree(remove_qos);
 		
 		return SLURM_SUCCESS;
 	} else if(table == acct_coord_table)
@@ -3523,16 +3612,16 @@ extern int acct_storage_p_add_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 				  QOS_LEVEL_NONE);
 		xstrfmtcat(query, 
 			   "insert into %s (%s) values (%s) "
-			   "on duplicate key update deleted=0%s;",
-			   qos_table, 
-			   cols, vals, extra);
+			   "on duplicate key update deleted=0, "
+			   "id=LAST_INSERT_ID(id)%s;",
+			   qos_table, cols, vals, extra);
 
 
 		debug3("%d(%d) query\n%s",
 		       mysql_conn->conn, __LINE__, query);
-		rc = mysql_db_query(mysql_conn->db_conn, query);
+		object->id = mysql_insert_ret_id(mysql_conn->db_conn, query);
 		xfree(query);
-		if(rc != SLURM_SUCCESS) {
+		if(!object->id) {
 			error("Couldn't add qos %s", object->name);
 			added=0;
 			xfree(cols);
@@ -5716,7 +5805,7 @@ extern List acct_storage_p_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	}
 
-	query = xstrdup_printf("select id from %s %s;", qos_table, extra);
+	query = xstrdup_printf("select id, name from %s %s;", qos_table, extra);
 	xfree(extra);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
@@ -5724,25 +5813,24 @@ extern List acct_storage_p_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	}
 
-	rc = 0;
+	name_char = NULL;
 	ret_list = list_create(slurm_destroy_char);
 	while((row = mysql_fetch_row(result))) {
-		char *object = xstrdup(row[0]);
+		char *object = xstrdup(row[1]);
 		acct_qos_rec_t *qos_rec = NULL;
 
 		list_append(ret_list, object);
-		if(!rc) {
-			xstrfmtcat(name_char, "id=\"%s\"", object);
-			xstrfmtcat(assoc_char, "qos=replace(qos, ',%s', '')",
-				   object);
-			rc = 1;
-		} else  {
-			xstrfmtcat(name_char, " || id=\"%s\"", object); 
-			xstrfmtcat(assoc_char, ", qos=replace(qos, ',%s', '')",
-				   object);
-		}
+		if(!name_char)
+			xstrfmtcat(name_char, "id=\"%s\"", row[0]);
+		else
+			xstrfmtcat(name_char, " || id=\"%s\"", row[0]); 
+		
+		xstrfmtcat(assoc_char, ",%s", object);
+
 		qos_rec = xmalloc(sizeof(acct_qos_rec_t));
-		qos_rec->name = xstrdup(object);
+		init_acct_qos_rec(qos_rec);
+		qos_rec->id = atoi(row[0]);
+		qos_rec->name = xstrdup(row[1]);
 		_addto_update_list(mysql_conn->update_list, ACCT_REMOVE_QOS,
 				   qos_rec);
 	}
