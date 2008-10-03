@@ -57,20 +57,53 @@ static pthread_mutex_t local_qos_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t local_user_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t local_file_lock = PTHREAD_MUTEX_INITIALIZER;
 
-static int _local_update_assoc_qos_list(List curr_qos_list, List new_qos_list)
+static int _grab_parents_qos(acct_association_rec_t *assoc)
+{
+	acct_association_rec_t *parent_assoc = NULL;
+	char *qos_char = NULL;
+	ListIterator itr = NULL;
+
+	if(!assoc)
+		return SLURM_ERROR;
+
+	if(assoc->qos_list)
+		list_flush(assoc->qos_list);
+	else
+		assoc->qos_list = list_create(slurm_destroy_char);
+
+	parent_assoc = assoc->parent_assoc_ptr;
+
+	if(!parent_assoc || !parent_assoc->qos_list
+	   || !list_count(parent_assoc->qos_list)) 
+		return SLURM_SUCCESS;
+	
+	itr = list_iterator_create(parent_assoc->qos_list);
+	while((qos_char = list_next(itr))) 
+		list_append(assoc->qos_list, xstrdup(qos_char));
+	list_iterator_destroy(itr);
+
+	return SLURM_SUCCESS;
+}
+
+static int _local_update_assoc_qos_list(acct_association_rec_t *assoc, 
+					List new_qos_list)
 {
 	ListIterator new_qos_itr = NULL, curr_qos_itr = NULL;
+	List curr_qos_list = NULL;
 	char *new_qos = NULL, *curr_qos = NULL;
+	int flushed = 0;
 
-	if(!curr_qos_list || !new_qos_list) {
-		error("need both new qos_list and a current one to update");
+	if(!assoc || !new_qos_list) {
+		error("need both new qos_list and an association to update");
 		return SLURM_ERROR;
 	}
 	
 	if(!list_count(new_qos_list)) {
-		list_flush(curr_qos_list);
+		_grab_parents_qos(assoc);
 		return SLURM_SUCCESS;
 	}			
+
+	curr_qos_list = assoc->qos_list;
 
 	new_qos_itr = list_iterator_create(new_qos_list);
 	curr_qos_itr = list_iterator_create(curr_qos_list);
@@ -90,12 +123,16 @@ static int _local_update_assoc_qos_list(List curr_qos_list, List new_qos_list)
 				if(!strcmp(curr_qos, new_qos+1)) 
 					break;
 			
-			if(!curr_qos)
+			if(!curr_qos) {
 				list_append(curr_qos_list, xstrdup(new_qos+1));
-			list_iterator_reset(curr_qos_itr);
-		} else {
-			list_append(curr_qos_list, xstrdup(new_qos));
-		}
+				list_iterator_reset(curr_qos_itr);
+			}
+		} else if(new_qos[0] == '=') {
+			if(!flushed)
+				list_flush(curr_qos_list);
+			list_append(curr_qos_list, xstrdup(new_qos+1));
+			flushed = 1;
+		} 
 	}
 	list_iterator_destroy(curr_qos_itr);
 	list_iterator_destroy(new_qos_itr);
@@ -855,8 +892,7 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 			if(object->qos_list) {
 				if(rec->qos_list) {
 					_local_update_assoc_qos_list(
-						rec->qos_list,
-						object->qos_list);
+						rec, object->qos_list);
 				} else {
 					rec->qos_list = object->qos_list;
 					object->qos_list = NULL;

@@ -1228,7 +1228,9 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 		"cluster",
 		"partition",
 		"max_jobs",
+		"max_submit_jobs",
 		"max_nodes_per_job",
+		"max_cpus_per_job",
 		"max_wall_duration_per_job",
 		"max_cpu_mins_per_job",
 		"lft",
@@ -1242,9 +1244,11 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 		ASSOC_CLUSTER,
 		ASSOC_PART,
 		ASSOC_MJ,
+		ASSOC_MSJ,
 		ASSOC_MNPJ,
-		ASSOC_MWPJ,
 		ASSOC_MCPJ,
+		ASSOC_MWPJ,
+		ASSOC_MCMPJ,
 		ASSOC_LFT,
 		ASSOC_RGT,
 		ASSOC_COUNT
@@ -1280,39 +1284,40 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 		int modified = 0;
 
 		mod_assoc = xmalloc(sizeof(acct_association_rec_t));
+		init_acct_association_rec(mod_assoc);
+
 		mod_assoc->id = atoi(row[ASSOC_ID]);
 
 		if(!row[ASSOC_MJ] && assoc->max_jobs != NO_VAL) {
 			mod_assoc->max_jobs = assoc->max_jobs;
 			modified = 1;
-		} else
-			mod_assoc->max_jobs = NO_VAL;
-		
-		if(!row[ASSOC_MNPJ] &&
-		   assoc->max_nodes_pj != NO_VAL) {
-			mod_assoc->max_nodes_pj =
-				assoc->max_nodes_pj;
-			modified = 1;
-		} else 
-			mod_assoc->max_nodes_pj = NO_VAL;
+		}
 
-		
-		if(!row[ASSOC_MWPJ] && 
-		   assoc->max_wall_pj != NO_VAL) {
-			mod_assoc->max_wall_pj =
-				assoc->max_wall_pj;
+		if(!row[ASSOC_MSJ] && assoc->max_submit_jobs != NO_VAL) {
+			mod_assoc->max_submit_jobs = assoc->max_submit_jobs;
 			modified = 1;
-		} else 
-			mod_assoc->max_wall_pj = NO_VAL;
+		} 
+
+		if(!row[ASSOC_MNPJ] && assoc->max_nodes_pj != NO_VAL) {
+			mod_assoc->max_nodes_pj = assoc->max_nodes_pj;
+			modified = 1;
+		} 
+		
+		if(!row[ASSOC_MCPJ] && assoc->max_cpus_pj != NO_VAL) {
+			mod_assoc->max_cpus_pj = assoc->max_cpus_pj;
+			modified = 1;
+		} 
+		
+		if(!row[ASSOC_MWPJ] && assoc->max_wall_pj != NO_VAL) {
+			mod_assoc->max_wall_pj = assoc->max_wall_pj;
+			modified = 1;
+		}
 					
-		if(!row[ASSOC_MCPJ] && 
-		   assoc->max_cpu_mins_pj != NO_VAL) {
-			mod_assoc->max_cpu_mins_pj = 
-				assoc->max_cpu_mins_pj;
+		if(!row[ASSOC_MCMPJ] && assoc->max_cpu_mins_pj != NO_VAL) {
+			mod_assoc->max_cpu_mins_pj = assoc->max_cpu_mins_pj;
 			modified = 1;
-		} else
-			mod_assoc->max_cpu_mins_pj = NO_VAL;
-		
+		} 
+
 		/* We only want to add those that are modified here */
 		if(modified) {
 			/* Since we aren't really changing this non
@@ -1354,6 +1359,7 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 					      mod_assoc) != SLURM_SUCCESS) 
 				error("couldn't add to the update list");
 		} else {
+			info("assoc %s is not modified", row[ASSOC_ID]);
 			xfree(mod_assoc);
 		}
 	}
@@ -1532,6 +1538,7 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 		while((row = mysql_fetch_row(result))) {
 			acct_association_rec_t *assoc_rec = 
 				xmalloc(sizeof(acct_association_rec_t));
+			init_acct_association_rec(assoc_rec);
 			assoc_rec->id = atoi(row[0]);
 			assoc_rec->qos_list = list_create(slurm_destroy_char);
 			slurm_addto_char_list(assoc_rec->qos_list, row[1]);
@@ -3061,16 +3068,12 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		 * readd it every time here. 
 		 */
 		assoc = xmalloc(sizeof(acct_association_rec_t));
+		init_acct_association_rec(assoc);
 		list_append(assoc_list, assoc);
 		
 		assoc->cluster = xstrdup(object->name);
 		assoc->user = xstrdup("root");
 		assoc->acct = xstrdup("root");
-		assoc->fairshare = NO_VAL;
-		assoc->max_cpu_mins_pj = NO_VAL;
-		assoc->max_jobs = NO_VAL;
-		assoc->max_nodes_pj = NO_VAL;
-		assoc->max_wall_pj = NO_VAL;
 
 		if(acct_storage_p_add_associations(mysql_conn, uid, assoc_list)
 		   == SLURM_ERROR) {
@@ -4139,15 +4142,14 @@ extern List acct_storage_p_modify_associations(
 
 	/* This needs to be here to make sure we only modify the
 	   correct set of associations The first clause was already
-	   taken care of above */
-	if(assoc_cond->user_list && list_count(assoc_cond->user_list)) {
+	   taken care of above. */
+	if (assoc_cond->user_list && !list_count(assoc_cond->user_list)) {
+		debug4("no user specified looking at users");
+		xstrcat(extra, " && user != '' ");
 	} else if (!assoc_cond->user_list) {
 		debug4("no user specified looking at accounts");
 		xstrcat(extra, " && user = '' ");
-	} else {
-		debug4("no user specified looking at users");
-		xstrcat(extra, " && user != '' ");
-	}
+	} 
 
 	_setup_association_limits(assoc, &tmp_char1, &tmp_char2,
 				  &vals, QOS_LEVEL_MODIFY, 0);
@@ -4188,8 +4190,6 @@ extern List acct_storage_p_modify_associations(
 	while((row = mysql_fetch_row(result))) {
 		acct_association_rec_t *mod_assoc = NULL;
 		int account_type=0;
-/* 		MYSQL_RES *result2 = NULL; */
-/* 		MYSQL_ROW row2; */
 
 		if(!is_admin) {
 			acct_coord_rec_t *coord = NULL;
@@ -4301,15 +4301,16 @@ extern List acct_storage_p_modify_associations(
 			account_type = 1;
 		}
 		list_append(ret_list, object);
-
+	
 		if(!set) {
 			xstrfmtcat(name_char, "(id=%s", row[MASSOC_ID]);
 			set = 1;
 		} else {
 			xstrfmtcat(name_char, " || id=%s", row[MASSOC_ID]);
 		}
-		
+
 		mod_assoc = xmalloc(sizeof(acct_association_rec_t));
+		init_acct_association_rec(mod_assoc);
 		mod_assoc->id = atoi(row[MASSOC_ID]);
 
 		mod_assoc->fairshare = assoc->fairshare;
@@ -4338,8 +4339,15 @@ extern List acct_storage_p_modify_associations(
 			mod_assoc->qos_list = list_create(slurm_destroy_char);
 			
 			while((new_qos = list_next(new_qos_itr))) {
-				list_append(mod_assoc->qos_list,
-					    xstrdup(new_qos));
+				if(new_qos[0] == '-' || new_qos[0] == '+') {
+					list_append(mod_assoc->qos_list,
+						    xstrdup(new_qos));
+				} else if(new_qos[0]) {
+					list_append(mod_assoc->qos_list,
+						    xstrdup_printf("=%s",
+								   new_qos));
+				}	
+
 				if(set_qos_vals)
 					continue;
 				/* Now we can set up the values and
@@ -4370,6 +4378,7 @@ extern List acct_storage_p_modify_associations(
 					xstrfmtcat(tmp_qos, ",%s", new_qos);
 				else
 					xstrcat(tmp_qos, "");
+					
 			}
 			list_iterator_destroy(new_qos_itr);
 
@@ -5594,6 +5603,7 @@ extern List acct_storage_p_remove_associations(
 		}
 
 		rem_assoc = xmalloc(sizeof(acct_association_rec_t));
+		init_acct_association_rec(rem_assoc);
 		rem_assoc->id = atoi(row[RASSOC_ID]);
 		if(_addto_update_list(mysql_conn->update_list, 
 				      ACCT_REMOVE_ASSOC,
