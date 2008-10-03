@@ -56,6 +56,8 @@
 #include "src/common/uid.h"
 #include "filetxt_jobcomp_process.h"
 
+#define USE_ISO8601 1
+
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -208,6 +210,36 @@ extern int slurm_jobcomp_set_location ( char * location )
 	return rc;
 }
 
+/* This is a variation of slurm_make_time_str() in src/common/parse_time.h
+ * This version uses ISO8601 format by default. */
+static void _make_time_str (time_t *time, char *string, int size)
+{
+	struct tm time_tm;
+
+	localtime_r(time, &time_tm);
+	if ( *time == (time_t) 0 ) {
+		snprintf(string, size, "Unknown");
+	} else {
+#if USE_ISO8601
+		/* Format YYYY-MM-DDTHH:MM:SS, ISO8601 standard format,
+		 * NOTE: This is expected to break Maui, Moab and LSF
+		 * schedulers management of SLURM. */
+		snprintf(string, size,
+			"%4.4u-%2.2u-%2.2uT%2.2u:%2.2u:%2.2u",
+			(time_tm.tm_year + 1900), (time_tm.tm_mon+1), 
+			time_tm.tm_mday, time_tm.tm_hour, time_tm.tm_min, 
+			time_tm.tm_sec);
+#else
+		/* Format MM/DD-HH:MM:SS */
+		snprintf(string, size,
+			"%2.2u/%2.2u-%2.2u:%2.2u:%2.2u",
+			(time_tm.tm_mon+1), time_tm.tm_mday,
+			time_tm.tm_hour, time_tm.tm_min, time_tm.tm_sec);
+
+#endif
+	}
+}
+
 extern int slurm_jobcomp_log_record ( struct job_record *job_ptr )
 {
 	int rc = SLURM_SUCCESS;
@@ -236,9 +268,8 @@ extern int slurm_jobcomp_log_record ( struct job_record *job_ptr )
 	 * JOB_FAILED, JOB_TIMEOUT, etc. */
 	job_state = job_ptr->job_state & (~JOB_COMPLETING);
 
-	slurm_make_time_str(&(job_ptr->start_time),
-			    start_str, sizeof(start_str));
-	slurm_make_time_str(&(job_ptr->end_time), end_str, sizeof(end_str));
+	_make_time_str(&(job_ptr->start_time), start_str, sizeof(start_str));
+	_make_time_str(&(job_ptr->end_time), end_str, sizeof(end_str));
 
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo,
 		select_buf, sizeof(select_buf), SELECT_PRINT_MIXED);
