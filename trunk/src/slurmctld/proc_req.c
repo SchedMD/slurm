@@ -434,6 +434,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->resume_rate         = conf->resume_rate;
 	conf_ptr->ret2service         = conf->ret2service;
 
+	conf_ptr->salloc_default_command = xstrdup(conf->salloc_default_command);
 	if (conf->sched_params)
 		conf_ptr->sched_params = xstrdup(conf->sched_params);
 	else

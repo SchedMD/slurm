@@ -275,6 +275,13 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->resume_rate);
 	fprintf(out, "ReturnToService         = %u\n", 
 		slurm_ctl_conf_ptr->ret2service);
+	if (slurm_ctl_conf_ptr->salloc_default_command) {
+		fprintf(out, "SallocDefaultCommand    = \"%s\"\n",
+			slurm_ctl_conf_ptr->salloc_default_command);
+	} else {
+		fprintf(out, "SallocDefaultCommand    = %s\n",
+			slurm_ctl_conf_ptr->salloc_default_command);
+	}
 	fprintf(out, "SchedulerParameters     = %s\n",
 		slurm_ctl_conf_ptr->sched_params);
 	fprintf(out, "SchedulerPort           = %u\n",

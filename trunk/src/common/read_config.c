@@ -202,6 +202,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"ResumeProgram", S_P_STRING},
 	{"ResumeRate", S_P_UINT16},
 	{"ReturnToService", S_P_UINT16},
+	{"SallocDefaultCommand", S_P_STRING},
 	{"SchedulerAuth", S_P_STRING, defunct_option},
 	{"SchedulerParameters", S_P_STRING},
 	{"SchedulerPort", S_P_UINT16},
@@ -1171,6 +1172,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->propagate_rlimits_except);
 	xfree (ctl_conf_ptr->propagate_rlimits);
 	xfree (ctl_conf_ptr->resume_program);
+	xfree (ctl_conf_ptr->salloc_default_command);
 	xfree (ctl_conf_ptr->slurm_conf);
 	xfree (ctl_conf_ptr->sched_params);
 	xfree (ctl_conf_ptr->schedtype);
@@ -1893,6 +1895,9 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	s_p_get_string(&conf->resume_program, "ResumeProgram", hashtbl);
 	if (!s_p_get_uint16(&conf->resume_rate, "ResumeRate", hashtbl))
 		conf->resume_rate = DEFAULT_RESUME_RATE;
+
+	s_p_get_string(&conf->salloc_default_command, "SallocDefaultCommand",
+			hashtbl);
 
 	s_p_get_string(&conf->sched_params, "SchedulerParameters", hashtbl);
 
