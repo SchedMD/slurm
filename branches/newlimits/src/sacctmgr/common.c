@@ -38,6 +38,7 @@
 
 #include "src/sacctmgr/sacctmgr.h"
 #include "src/common/slurmdbd_defs.h"
+
 #include <unistd.h>
 #include <termios.h>
 
@@ -74,6 +75,27 @@ static void _nonblock(int state)
 	//set the terminal attributes.
 	tcsetattr(STDIN_FILENO, TCSANOW, &ttystate);
 
+}
+
+static char *_get_qos_list_str(List qos_list)
+{
+	char *qos_char = NULL;
+	ListIterator itr = NULL;
+	acct_qos_rec_t *qos = NULL;
+
+	if(!qos_list)
+		return NULL;
+
+	itr = list_iterator_create(qos_list);
+	while((qos = list_next(itr))) {
+		if(qos_char) 
+			xstrfmtcat(qos_char, ",%s", qos->name);
+		else
+			xstrcat(qos_char, qos->name);
+	}
+	list_iterator_destroy(itr);
+
+	return qos_char;
 }
 
 extern void destroy_sacctmgr_assoc(void *object)
@@ -622,8 +644,13 @@ extern int addto_qos_char_list(List char_list, List qos_list, char *names,
 					
 					id = str_2_acct_qos(qos_list, name);
 					if(id == NO_VAL) {
-						error("You gave a bad qos'%s'.",
-						      name);
+						char *tmp = _get_qos_list_str(
+							qos_list);
+						error("You gave a bad qos "
+						      "'%s'.  Valid QOS's are "
+						      "%s",
+						      name, tmp);
+						xfree(tmp);
 						exit_code = 1;
 						xfree(name);
 						break;
@@ -669,7 +696,12 @@ extern int addto_qos_char_list(List char_list, List qos_list, char *names,
 			
 			id = str_2_acct_qos(qos_list, name);
 			if(id == NO_VAL) {
-				error("You gave a bad qos'%s'.", name);
+				char *tmp = _get_qos_list_str(qos_list);
+				error("You gave a bad qos "
+				      "'%s'.  Valid QOS's are "
+				      "%s",
+				      name, tmp);
+				xfree(tmp);
 				xfree(name);
 				goto end_it;
 			}

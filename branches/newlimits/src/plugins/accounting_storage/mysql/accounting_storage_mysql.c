@@ -160,7 +160,7 @@ static char *_fix_double_quotes(char *str)
 		return NULL;
 	
 	while(str[i]) {
-		if(str[i] == '\\' && str[i+1] == '\"') {
+		if(str[i] == '"') {
 			char *tmp = xstrndup(str+start, i-start);
 			xstrfmtcat(fixed, "%s\\\"", tmp);
 			xfree(tmp);
@@ -170,6 +170,13 @@ static char *_fix_double_quotes(char *str)
 		
 		i++;
 	}
+	
+	if((i-start) > 0) {
+		char *tmp = xstrndup(str+start, i-start);
+		xstrcat(fixed, tmp);
+		xfree(tmp);
+	}
+
 	return fixed;
 }
 
@@ -1164,7 +1171,11 @@ static int _modify_common(mysql_conn_t *mysql_conn,
 	char *query = NULL;
 	int rc = SLURM_SUCCESS;
 	char *tmp_cond_char = _fix_double_quotes(cond_char);
-	char *tmp_vals = _fix_double_quotes(vals);
+	char *tmp_vals = _fix_double_quotes(vals+2); // there is
+						     // always a ', '
+						     // as the first 2 chars
+	if(vals[1])
+		tmp_vals = _fix_double_quotes(vals+2);
 
 	xstrfmtcat(query, 
 		   "update %s set mod_time=%d%s "
@@ -2879,7 +2890,8 @@ extern int acct_storage_p_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 			continue;
 		}
 
-		tmp_extra = _fix_double_quotes(extra);
+		/* we always have a ', ' as the first 2 chars */
+		tmp_extra = _fix_double_quotes(extra+2);
 
 		if(txn_query)
 			xstrfmtcat(txn_query, 	
@@ -3397,7 +3409,8 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 			list_remove(itr);
 		}
 
-		tmp_extra = _fix_double_quotes(extra);
+		/* we always have a ', ' as the first 2 chars */
+		tmp_extra = _fix_double_quotes(extra+2);
 
 		if(txn_query)
 			xstrfmtcat(txn_query, 	
@@ -3535,7 +3548,8 @@ extern int acct_storage_p_add_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 			continue;
 		}
 
-		tmp_extra = _fix_double_quotes(extra);
+		/* we always have a ', ' as the first 2 chars */
+		tmp_extra = _fix_double_quotes(extra+2);
 
 		xstrfmtcat(query,
 			   "insert into %s "
@@ -6808,15 +6822,20 @@ empty:
 		if(row[ASSOC_REQ_QOS][0]) 
 			slurm_addto_char_list(assoc->qos_list,
 					      row[ASSOC_REQ_QOS]+1);
-		else if(parent_qos) 			
-			slurm_addto_char_list(assoc->qos_list, parent_qos+1);
-
-		if(row[ASSOC_REQ_DELTA_QOS][0]) 
-			slurm_addto_char_list(delta_qos_list,
-					      row[ASSOC_REQ_DELTA_QOS]);
-		if(parent_delta_qos)
-			slurm_addto_char_list(delta_qos_list, parent_delta_qos);
-			
+		else if(parent_qos) {		
+			slurm_addto_char_list(assoc->qos_list,
+						      parent_qos+1);
+			/* if qos is set on the association itself do
+			   not worry about the deltas
+			*/
+			if(row[ASSOC_REQ_DELTA_QOS][0]) 
+				slurm_addto_char_list(
+					delta_qos_list,
+					row[ASSOC_REQ_DELTA_QOS]+1);
+			if(parent_delta_qos)
+				slurm_addto_char_list(delta_qos_list,
+						      parent_delta_qos+1);
+		}
 		if(list_count(delta_qos_list)) {
 			ListIterator curr_qos_itr = 
 				list_iterator_create(assoc->qos_list);
