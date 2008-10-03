@@ -1666,6 +1666,8 @@ static void _opt_args(int argc, char **argv)
 		setenv("SLURM_NETWORK", opt.network, 1);
 	}
 #endif
+	if (opt.dependency)
+		setenvfs("SLURM_JOB_DEPENDENCY=%s", opt.dependency);
 
 	if (opt.nodelist && (!opt.test_only)) {
 #ifdef HAVE_BG

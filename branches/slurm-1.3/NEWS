@@ -50,6 +50,8 @@ documents those changes that are of interest to users and admins.
     shell that salloc launches by default.
  -- When enforcing PrivateData configuration parameter, failures return 
     "Access/permission denied" rather than "Invalid user id".
+ -- From sbatch and srun, if the --dependency option is specified then set 
+    the environment variable SLURM_JOB_DEPENDENCY to the same value.
 
 * Changes in SLURM 1.3.8
 ========================
