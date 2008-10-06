@@ -67,10 +67,15 @@ static int _set_cond(int *start, int argc, char *argv[],
 		if (!strncasecmp (argv[i], "Set", 3)) {
 			i--;
 			break;
-		} else if (!strncasecmp (argv[i], "WithAssoc", 5)) {
+		} else if (!end && 
+			   !strncasecmp (argv[i], "WithAssoc", 5)) {
 			acct_cond->with_assocs = 1;
-		} else if (!strncasecmp (argv[i], "WithCoordinators", 5)) {
+		} else if (!end && 
+			   !strncasecmp (argv[i], "WithCoordinators", 5)) {
 			acct_cond->with_coords = 1;
+		} else if (!end && 
+			   !strncasecmp (argv[i], "WithSubAccounts", 5)) {
+			assoc_cond->with_sub_accts = 1;
 		} else if(!end && !strncasecmp(argv[i], "where", 5)) {
 			continue;
 		} else if(!end

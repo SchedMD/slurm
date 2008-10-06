@@ -76,7 +76,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 			break;
 		} else if (!end && !strncasecmp (argv[i], "WithAssoc", 5)) {
 			user_cond->with_assocs = 1;
-		} else if (!strncasecmp (argv[i], "WithCoordinators", 5)) {
+		} else if (!end && 
+			   !strncasecmp (argv[i], "WithCoordinators", 5)) {
 			user_cond->with_coords = 1;
 		} else if(!end && !strncasecmp(argv[i], "where", 5)) {
 			continue;

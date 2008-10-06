@@ -53,6 +53,9 @@ static int _set_cond(int *start, int argc, char *argv[],
 			tree_display = 1;
 		} else if (!end && !strncasecmp (argv[i], "WithDeleted", 5)) {
 			assoc_cond->with_deleted = 1;
+		} else if (!end && 
+			   !strncasecmp (argv[i], "WithSubAccounts", 5)) {
+			assoc_cond->with_sub_accts = 1;
 		} else if (!end && !strncasecmp (argv[i], "WOPInfo", 4)) {
 			assoc_cond->without_parent_info = 1;
 		} else if (!end && !strncasecmp (argv[i], "WOPLimits", 4)) {
