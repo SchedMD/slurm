@@ -791,14 +791,27 @@ Related configuration options include \fBResumeProgram\fR, \fBSuspendRate\fR,
 
 .TP
 \fBReturnToService\fR
-If set to 1, then a non\-responding (DOWN) node will become available 
-for use upon registration. Note that DOWN node's state will be changed 
-only if it was set DOWN due to being non\-responsive. If the node was 
-set DOWN for any other reason (low memory, prolog failure, epilog 
-failure, etc.), its state will not automatically be changed.  The 
-default value is 0, which means that a node will remain in the 
-DOWN state until a system administrator explicitly changes its state
-(even if the slurmd daemon registers and resumes communications).
+Controls when a DOWN node will be returned to service. 
+The default value is 0.
+Supported values include
+.RS
+.TP 4
+\fB0\fR
+A node will remain in the DOWN state until a system administrator
+explicitly changes its state (even if the slurmd daemon registers
+and resumes communications).
+.TP
+\fB1\fR
+A non\-responding (DOWN) node will become available for use upon
+registration. Note that DOWN node's state will be changed only if
+it was set DOWN due to being non\-responsive. If the node was
+set DOWN for any other reason (low memory, prolog failure, epilog
+failure, etc.), its state will not automatically be changed.  
+.TP
+\fB2\fR
+A DOWN node will become available for use upon registration with a
+valid configuration.  The node could have been set DOWN for any reason. 
+.RE
 
 .TP
 \fBSallocDefaultCommand\fR

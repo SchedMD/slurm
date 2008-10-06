@@ -56,6 +56,8 @@ documents those changes that are of interest to users and admins.
     YYYY-MM-DDTHH:MM:SS rather than MM/DD-HH:MM:SS). This restores the default
     behavior from Slurm version 1.2. Change the value of USE_ISO8601 in
     src/plusings/jobcomp/filetxt/jobcomp_filetxt.c to revert the behavior.
+ -- Add support for configuration option of ReturnToService=2, which will 
+    return a DOWN to use if the node was previous set DOWN for any reason.
 
 * Changes in SLURM 1.3.8
 ========================
