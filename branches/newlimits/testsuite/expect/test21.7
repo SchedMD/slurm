@@ -44,8 +44,16 @@ set mod		modify
 set nams	Names
 set nam		Name
 set fs		Fairshare
-set mc		MaxCPUMins
+set gm		GrpCPUMins
+set gc		GrpCPUs
+set gj		GrpJobs
+set gs		GrpSubmitJobs
+set gn		GrpNodes
+set gw		GrpWall
+set mm		MaxCPUMins
+set mc		MaxCPUs
 set mj		MaxJobs
+set ms		MaxSubmitJobs
 set mn		MaxNodes
 set mw		MaxWall
 set clu		cluster
@@ -53,10 +61,19 @@ set tc1		tcluster1
 set tc2		tcluster2
 set tc3		tcluster3
 set fs1		2500
-set mc1		1000000
-set mj1		50
+set gm1		1000000
+set gc1		50
+set gj1		100
+set gs1		500
+set gn1		300
+set gw1		00:45:00
+set mc1		100
+set mm1		100000
+set mj1		500
+set ms1		500
 set mn1		300
 set mw1		01:00:00
+
 set access_err  0
 
 print_header $test_id
@@ -77,7 +94,9 @@ if { [test_account_storage] == 0 } {
 #
 # Use sacctmgr to create a cluster
 #
-set sadd_pid [spawn $sacctmgr $add $clu $nams=$tc1,$tc2,$tc3 $fs=$fs1 $mc=$mc1 $mj=$mj1 $mn=$mn1 $mw=$mw1]
+set sadd_pid [spawn $sacctmgr $add $clu $nams=$tc1,$tc2,$tc3 $fs=$fs1  \
+$gm=$gm1 $gc=$gc1 $gj=$gj1 $gn=$gn1 $gs=$gs1 $gw=$gw1 $mc=$mc1 $mm=$mm1 \
+$mj=$mj1 $ms=$ms1 $mn=$mn1 $mw=$mw1]
 expect {
 	-re "privilege to preform this action" {
 		set access_err 1
@@ -107,6 +126,34 @@ expect {
 		incr amatches
 		exp_continue
 	}
+	-re "$gm *= $gm1" {
+		incr amatches
+		exp_continue
+	}
+	-re "$gc *= $gc1" {
+		incr amatches
+		exp_continue
+	}
+	-re "$gj *= $gj1" {
+		incr amatches
+		exp_continue
+	}
+	-re "$gn *= $gn1" {
+		incr amatches
+		exp_continue
+	}
+	-re "$gs *= $gs1" {
+		incr amatches
+		exp_continue
+	}
+	-re "$gw *= $gw1" {
+		incr amatches
+		exp_continue
+	}
+	-re "$mm *= $mm1" {
+		incr amatches
+		exp_continue
+	}
 	-re "$mc *= $mc1" {
 		incr amatches
 		exp_continue
@@ -116,6 +163,10 @@ expect {
 		exp_continue
 	}
 	-re "$mn *= $mn1" {
+		incr amatches
+		exp_continue
+	}
+	-re "$ms *= $ms1" {
 		incr amatches
 		exp_continue
 	}
@@ -145,7 +196,7 @@ if {$access_err != 0} {
 	send_user "\nWARNING: not authorized to perform this test\n"
 	exit $exit_code
 }
-if {$amatches != 12} {
+if {$amatches != 20} {
 	send_user "\nFAILURE:  sacctmgr had a problem adding clusters\n"
 	set exit_code 1
 }
@@ -157,7 +208,7 @@ if { ![check_acct_associations] } {
 #
 # Use sacctmgr to list the addition of cluster
 #
-set slist_pid [spawn $sacctmgr $lis $clu]
+set slist_pid [spawn $sacctmgr $lis $clu format=$fs,$gm,$gc,$gj,$gs,$gn,$gw,$mm,$mc,$mj,$ms,$mn,$mw ]
 expect {
 	-re "Cluster" {
 		incr lmatches
@@ -167,7 +218,7 @@ expect {
 		incr lmatches
 		exp_continue
 	}
-	-re "$fs1 *$mc1 *$mj1 *$mn1 *$mw1" {
+	-re "$fs1 *$gm1 *$gc1 *$gj1 *$gs1 *$gn1 *$gw1 *$mm1 *$mc1 *$mj1 *$ms1 *$mn1 *$mw1" {
 		incr lmatches
 		exp_continue
 	}
@@ -175,7 +226,7 @@ expect {
 		incr lmatches
 		exp_continue
 	}
-	-re "$fs1 *$mc1 *$mj1 *$mn1 *$mw1" {
+	-re "$fs1 *$gm1 *$gc1 *$gj1 *$gs1 *$gn1 *$gw1 *$mm1 *$mc1 *$mj1 *$ms1 *$mn1 *$mw1" {
 		incr lmatches
 		exp_continue
 	}
@@ -183,7 +234,7 @@ expect {
 		incr lmatches
 		exp_continue
 	}
-	-re "$fs1 *$mc1 *$mj1 *$mn1 *$mw1" {
+	-re "$fs1 *$gm1 *$gc1 *$gj1 *$gs1 *$gn1 *$gw1 *$mm1 *$mc1 *$mj1 *$ms1 *$mn1 *$mw1" {
 		incr lmatches
 		exp_continue
 	}
