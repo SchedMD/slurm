@@ -107,6 +107,16 @@ documents those changes that are of interest to users and admins.
  -- Fix bug in logic to remove whitespace from plugstack.conf.
  -- Add new configuration parameter SallocDefaultCommand to control what 
     shell that salloc launches by default.
+ -- When enforcing PrivateData configuration parameter, failures return 
+    "Access/permission denied" rather than "Invalid user id".
+ -- From sbatch and srun, if the --dependency option is specified then set 
+    the environment variable SLURM_JOB_DEPENDENCY to the same value.
+ -- In plugin jobcomp/filetxt, use ISO8601 formats for time by default (e.g. 
+    YYYY-MM-DDTHH:MM:SS rather than MM/DD-HH:MM:SS). This restores the default
+    behavior from Slurm version 1.2. Change the value of USE_ISO8601 in
+    src/plusings/jobcomp/filetxt/jobcomp_filetxt.c to revert the behavior.
+ -- Add support for configuration option of ReturnToService=2, which will 
+    return a DOWN to use if the node was previous set DOWN for any reason.
 
 * Changes in SLURM 1.3.8
 ========================
