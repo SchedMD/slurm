@@ -1893,6 +1893,8 @@ static bool _opt_verify(void)
 		error( "--propagate=%s is not valid.", opt.propagate );
 		verified = false;
 	}
+	if (opt.dependency)
+		setenvfs("SLURM_JOB_DEPENDENCY=%s", opt.dependency);
 
 	if (opt.acctg_freq >= 0)
 		setenvf(NULL, "SLURM_ACCTG_FREQ", "%d", opt.acctg_freq); 

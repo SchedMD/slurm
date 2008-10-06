@@ -1631,10 +1631,11 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 						      slurmctld_cluster_name,
 						      node_ptr, now);
 		} else if ((base_state == NODE_STATE_DOWN) &&
-		           (slurmctld_conf.ret2service == 1) &&
-			   (node_ptr->reason != NULL) && 
-			   (strncmp(node_ptr->reason, "Not responding", 14) 
-					== 0)) {
+			   ((slurmctld_conf.ret2service == 2) ||
+		            ((slurmctld_conf.ret2service == 1) &&
+			     (node_ptr->reason != NULL) && 
+			     (strncmp(node_ptr->reason, "Not responding", 14) 
+					== 0)))) {
 			last_node_update = time (NULL);
 			if (reg_msg->job_count) {
 				node_ptr->node_state = NODE_STATE_ALLOCATED |
