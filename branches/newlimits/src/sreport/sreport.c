@@ -491,13 +491,13 @@ static int _set_time_format(char *format)
 	} else if (strncasecmp (format, "HourPer", 6) == 0) {
 		time_format = SREPORT_TIME_HOURS_PER;
 		time_format_string = "Hours/Percentange of Total";
-	} else if (strncasecmp (format, "Sec", 1) == 0) {
+	} else if (strncasecmp (format, "Seconds", 1) == 0) {
 		time_format = SREPORT_TIME_SECS;
 		time_format_string = "Seconds";
-	} else if (strncasecmp (format, "Min", 1) == 0) {
+	} else if (strncasecmp (format, "Minutes", 1) == 0) {
 		time_format = SREPORT_TIME_MINS;
 		time_format_string = "Minutes";
-	} else if (strncasecmp (format, "Hour", 1) == 0) {
+	} else if (strncasecmp (format, "Hours", 1) == 0) {
 		time_format = SREPORT_TIME_HOURS;
 		time_format_string = "Hours";
 	} else if (strncasecmp (format, "Percent", 1) == 0) {
@@ -520,9 +520,10 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
      -a or --all_clusters: Use all clusters instead of current             \n\
      -h or --help: equivalent to \"help\" command                          \n\
      -n or --no_header: equivalent to \"no_header\" command                \n\
-     -q or --quiet: equivalent to \"quiet\" command                        \n\
      -p or --parsable: output will be '|' delimited with a '|' at the end  \n\
      -P or --parsable2: output will be '|' delimited without a '|' at the end\n\
+     -q or --quiet: equivalent to \"quiet\" command                        \n\
+     -t <time_format>: Second, Minute, Hour, Percent, SecPer, MinPer, HourPer\n\
      -v or --verbose: equivalent to \"verbose\" command                    \n\
      -V or --version: equivalent to \"version\" command                    \n\
                                                                            \n\
@@ -531,15 +532,16 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
   terminated.                                                              \n\
                                                                            \n\
     Valid <COMMAND> values are:                                            \n\
-     exit                     terminate sreport                            \n\
-     help                     print this description of use.               \n\
-     parsable                 output will be | delimited with an ending '|'\n\
-     parsable2                output will be | delimited without an ending '|'\n\
-    quiet                    print no messages other than error messages. \n\
-     quit                     terminate this command.                      \n\
-     verbose                  enable detailed logging.                     \n\
-     version                  display tool version number.                 \n\
-     !!                       Repeat the last command entered.             \n\
+     exit                Terminate sreport                                 \n\
+     help                Print this description of use.                    \n\
+     parsable            Output will be | delimited with an ending '|'     \n\
+     parsable2           Output will be | delimited without an ending '|'  \n\
+     quiet               Print no messages other than error messages.      \n\
+     quit                Terminate this command.                           \n\
+     time <time_format>  Second, Minute, Hour, Percent, SecPer, MinPer, HourPer\n\
+     verbose             Enable detailed logging.                          \n\
+     version             Display tool version number.                      \n\
+     !!                  Repeat the last command entered.                  \n\
                                                                            \n\
     Valid report types are:                                                \n\
      cluster <REPORT> <OPTIONS>                                            \n\
