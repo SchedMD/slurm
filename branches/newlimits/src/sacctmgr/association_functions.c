@@ -39,81 +39,6 @@
 #include "src/sacctmgr/sacctmgr.h"
 bool tree_display = 0;
 
-typedef struct {
-	char *name;
-	char *print_name;
-	char *spaces;
-} print_acct_t;
-
-static void _destroy_print_acct(void *object)
-{
-	print_acct_t *print_acct = (print_acct_t *)object;
-	if(print_acct) {
-		xfree(print_acct->name);
-		xfree(print_acct->print_name);
-		xfree(print_acct->spaces);
-		xfree(print_acct);
-	}
-}
-
-static char *_get_print_acct_name(char *name, char *parent, char *cluster, 
-				  List tree_list)
-{
-	ListIterator itr = NULL;
-	print_acct_t *print_acct = NULL;
-	print_acct_t *par_print_acct = NULL;
-	static char *ret_name = NULL;
-	static char *last_name = NULL, *last_cluster = NULL;
-
-
-	if(!tree_list) {
-		return NULL;
-	}
-	
-	itr = list_iterator_create(tree_list);
-	while((print_acct = list_next(itr))) {
-		if(!strcmp(name, print_acct->name)) {
-			ret_name = print_acct->print_name;
-			break;
-		} else if(parent && !strcmp(parent, print_acct->name)) {
-			par_print_acct = print_acct;
-		}
-	}
-	list_iterator_destroy(itr);
-	
-	if(parent && print_acct) {
-		return ret_name;
-	} 
-
-	print_acct = xmalloc(sizeof(print_acct_t));
-	print_acct->name = xstrdup(name);
-	if(par_print_acct) {
-		print_acct->spaces =
-			xstrdup_printf(" %s", par_print_acct->spaces);
-	} else {
-		print_acct->spaces = xstrdup("");
-	}
-
-	/* user account */
-	if(name[0] == '|')
-		print_acct->print_name = xstrdup_printf("%s%s", 
-							print_acct->spaces, 
-							parent);	
-	else
-		print_acct->print_name = xstrdup_printf("%s%s", 
-							print_acct->spaces, 
-							name);	
-	
-
-	list_append(tree_list, print_acct);
-
-	ret_name = print_acct->print_name;
-	last_name = name;
-	last_cluster = cluster;
-
-	return print_acct->print_name;
-}
-
 static int _set_cond(int *start, int argc, char *argv[],
 		     acct_association_cond_t *assoc_cond,
 		     List format_list)
@@ -158,7 +83,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Format", 1)) {
 			if(format_list)
-				slurm_addto_char_list(format_list, argv[i]+end);
+				slurm_addto_char_list(format_list,
+						      argv[i]+end);
 		} else if (!strncasecmp (argv[i], "FairShare", 1)) {
 			if(!assoc_cond->fairshare_list)
 				assoc_cond->fairshare_list =
@@ -515,8 +441,8 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 		return SLURM_ERROR;
 	} else if(!list_count(format_list)) 
 		slurm_addto_char_list(format_list,
-				      "C,A,U,Part,F,"
-				      "GrpJ,GrpN,GrpS,MaxJ,MaxN,MaxS,MaxW,QOS");
+				      "C,A,U,Part,F,GrpJ,GrpN,GrpS,"
+				      "MaxJ,MaxN,MaxS,MaxW,QOS");
 
 	print_fields_list = list_create(destroy_print_field);
 
@@ -695,7 +621,8 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 			if(tree_list) {
 				list_flush(tree_list);
 			} else {
-				tree_list = list_create(_destroy_print_acct);
+				tree_list = 
+					list_create(destroy_acct_print_tree);
 			}
 			last_cluster = assoc->cluster;
 		} 
@@ -715,7 +642,7 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 						parent_acct = 
 							assoc->parent_acct;
 					}
-					print_acct = _get_print_acct_name(
+					print_acct = get_tree_acct_name(
 						local_acct,
 						parent_acct,
 						assoc->cluster, tree_list);
@@ -723,19 +650,22 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 				} else {
 					print_acct = assoc->acct;
 				}
-				field->print_routine(field, 
-						     print_acct,
-						     (curr_inx == field_count));
+				field->print_routine(
+					field, 
+					print_acct,
+					(curr_inx == field_count));
 				break;
 			case PRINT_CLUSTER:
-				field->print_routine(field,
-						     assoc->cluster,
-						     (curr_inx == field_count));
+				field->print_routine(
+					field,
+					assoc->cluster,
+					(curr_inx == field_count));
 				break;
 			case PRINT_FAIRSHARE:
-				field->print_routine(field,
-						     assoc->fairshare,
-						     (curr_inx == field_count));
+				field->print_routine(
+					field,
+					assoc->fairshare,
+					(curr_inx == field_count));
 				break;
 			case PRINT_GRPCM:
 				field->print_routine(
