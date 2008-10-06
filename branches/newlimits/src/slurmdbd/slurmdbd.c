@@ -181,7 +181,7 @@ end_it:
 	}
 
 	assoc_mgr_fini(NULL);
-	//slurm_acct_storage_fini();
+	slurm_acct_storage_fini();
 	slurm_auth_fini();
 	log_fini();
 	free_slurmdbd_conf();

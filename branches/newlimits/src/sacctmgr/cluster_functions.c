@@ -278,13 +278,23 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 	itr = list_iterator_create(name_list);
 	while((name = list_next(itr))) {
 		cluster = xmalloc(sizeof(acct_cluster_rec_t));
+		
 		list_append(cluster_list, cluster);
 		cluster->name = xstrdup(name);
 		cluster->root_assoc = xmalloc(sizeof(acct_association_rec_t));
-
+		init_acct_association_rec(cluster->root_assoc);
 		printf("  Name          = %s\n", cluster->name);
 
 		cluster->root_assoc->fairshare = start_assoc.fairshare;		
+		
+		cluster->root_assoc->grp_cpu_mins = start_assoc.grp_cpu_mins;
+		cluster->root_assoc->grp_cpus = start_assoc.grp_cpus;
+		cluster->root_assoc->grp_jobs = start_assoc.grp_jobs;
+		cluster->root_assoc->grp_nodes = start_assoc.grp_nodes;
+		cluster->root_assoc->grp_submit_jobs =
+			start_assoc.grp_submit_jobs;
+		cluster->root_assoc->grp_wall = start_assoc.grp_wall;
+
 		cluster->root_assoc->max_cpu_mins_pj = 
 			start_assoc.max_cpu_mins_pj;
 		cluster->root_assoc->max_cpus_pj = start_assoc.max_cpus_pj;
@@ -293,6 +303,7 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 		cluster->root_assoc->max_submit_jobs =
 			start_assoc.max_submit_jobs;
 		cluster->root_assoc->max_wall_pj = start_assoc.max_wall_pj;
+
 		cluster->root_assoc->qos_list = 
 			copy_char_list(start_assoc.qos_list);
 	}

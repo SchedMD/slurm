@@ -926,9 +926,9 @@ extern void sacctmgr_print_assoc_limits(acct_association_rec_t *assoc)
 		printf("  Fairshare     = %u\n", assoc->fairshare);
 
 	if(assoc->grp_cpu_mins == INFINITE)
-		printf("  GrpCPUMins   = NONE\n");
+		printf("  GrpCPUMins    = NONE\n");
 	else if(assoc->grp_cpu_mins != NO_VAL) 
-		printf("  GrpCPUMins   = %llu\n", assoc->grp_cpu_mins);
+		printf("  GrpCPUMins    = %llu\n", assoc->grp_cpu_mins);
 		
 	if(assoc->grp_cpus == INFINITE)
 		printf("  GrpCPUs       = NONE\n");
@@ -1021,9 +1021,9 @@ extern void sacctmgr_print_qos_limits(acct_qos_rec_t *qos)
 		printf("  JobFlags       = %s", qos->job_flags);
 
 	if(qos->grp_cpu_mins == INFINITE)
-		printf("  GrpCPUMins    = NONE\n");
+		printf("  GrpCPUMins     = NONE\n");
 	else if(qos->grp_cpu_mins != NO_VAL) 
-		printf("  GrpCPUMins    = %llu\n", qos->grp_cpu_mins);
+		printf("  GrpCPUMins     = %llu\n", qos->grp_cpu_mins);
 		
 	if(qos->grp_cpus == INFINITE)
 		printf("  GrpCPUs        = NONE\n");
