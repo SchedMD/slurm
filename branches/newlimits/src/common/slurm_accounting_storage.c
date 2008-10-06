@@ -649,6 +649,18 @@ extern void destroy_update_shares_rec(void *object)
 	xfree(object);
 }
 
+extern void destroy_acct_print_tree(void *object)
+{
+	acct_print_tree_t *acct_print_tree = (acct_print_tree_t *)object;
+
+	if(acct_print_tree) {
+		xfree(acct_print_tree->name);
+		xfree(acct_print_tree->print_name);
+		xfree(acct_print_tree->spaces);
+		xfree(acct_print_tree);
+	}
+}
+
 extern void init_acct_association_rec(acct_association_rec_t *assoc)
 {
 	if(!assoc)
@@ -4136,6 +4148,60 @@ extern acct_admin_level_t str_2_acct_admin_level(char *level)
 	} else {
 		return ACCT_ADMIN_NOTSET;		
 	}	
+}
+
+/* IN/OUT: tree_list a list of acct_print_tree_t's */ 
+extern char *get_tree_acct_name(char *name, char *parent, char *cluster, 
+				List tree_list)
+{
+	ListIterator itr = NULL;
+	acct_print_tree_t *acct_print_tree = NULL;
+	acct_print_tree_t *par_acct_print_tree = NULL;
+	static char *ret_name = NULL;
+	static char *last_name = NULL, *last_cluster = NULL;
+
+
+	if(!tree_list) 
+		return NULL;
+		
+	itr = list_iterator_create(tree_list);
+	while((acct_print_tree = list_next(itr))) {
+		if(!strcmp(name, acct_print_tree->name)) {
+			ret_name = acct_print_tree->print_name;
+			break;
+		} else if(parent && !strcmp(parent, acct_print_tree->name)) {
+			par_acct_print_tree = acct_print_tree;
+		}
+	}
+	list_iterator_destroy(itr);
+	
+	if(parent && acct_print_tree) 
+		return ret_name;
+
+	acct_print_tree = xmalloc(sizeof(acct_print_tree_t));
+	acct_print_tree->name = xstrdup(name);
+	if(par_acct_print_tree) 
+		acct_print_tree->spaces =
+			xstrdup_printf(" %s", par_acct_print_tree->spaces);
+	else 
+		acct_print_tree->spaces = xstrdup("");
+	
+	/* user account */
+	if(name[0] == '|')
+		acct_print_tree->print_name = xstrdup_printf(
+			"%s%s", acct_print_tree->spaces, parent);	
+	else
+		acct_print_tree->print_name = xstrdup_printf(
+			"%s%s", acct_print_tree->spaces, name);	
+	
+
+	list_append(tree_list, acct_print_tree);
+
+	ret_name = acct_print_tree->print_name;
+	last_name = name;
+	last_cluster = cluster;
+
+	return acct_print_tree->print_name;
 }
 
 extern char *get_qos_complete_str(List qos_list, List num_qos_list)

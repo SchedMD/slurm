@@ -407,6 +407,13 @@ typedef struct {
 	uint64_t resv_secs; /* number of cpu seconds reserved */	
 } cluster_accounting_rec_t;
 
+
+typedef struct {
+	char *name;
+	char *print_name;
+	char *spaces;
+} acct_print_tree_t;
+
 extern void destroy_acct_user_rec(void *object);
 extern void destroy_acct_account_rec(void *object);
 extern void destroy_acct_coord_rec(void *object);
@@ -428,6 +435,7 @@ extern void destroy_acct_txn_cond(void *object);
 extern void destroy_acct_update_object(void *object);
 extern void destroy_acct_used_limits(void *object);
 extern void destroy_update_shares_rec(void *object);
+extern void destroy_acct_print_tree(void *object);
 
 extern void init_acct_association_rec(acct_association_rec_t *assoc);
 extern void init_acct_qos_rec(acct_qos_rec_t *qos);
@@ -503,6 +511,10 @@ extern char *acct_qos_str(List qos_list, uint32_t level);
 extern uint32_t str_2_acct_qos(List qos_list, char *level);
 extern char *acct_admin_level_str(acct_admin_level_t level);
 extern acct_admin_level_t str_2_acct_admin_level(char *level);
+
+/* IN/OUT: tree_list a list of acct_print_tree_t's */ 
+extern char *get_tree_acct_name(char *name, char *parent, char *cluster, 
+				List tree_list);
 
 extern char *get_qos_complete_str(List qos_list, List num_qos_list);
 
