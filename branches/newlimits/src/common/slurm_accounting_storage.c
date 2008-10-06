@@ -2521,7 +2521,8 @@ extern void pack_acct_association_cond(void *in, uint16_t rpc_version,
 
 		if(object->fairshare_list 
 		   && list_count(object->fairshare_list)) 
-			pack32(atoi(list_peek(object->fairshare_list)), buffer);
+			pack32(atoi(list_peek(object->fairshare_list)), 
+			       buffer);
 		else 
 			pack32(count, buffer);
 	
@@ -2637,6 +2638,7 @@ extern void pack_acct_association_cond(void *in, uint16_t rpc_version,
 
 			pack32(NO_VAL, buffer);
 
+			pack16(0, buffer);
 			pack16(0, buffer);
 			pack16(0, buffer);
 			pack16(0, buffer);
@@ -2907,6 +2909,7 @@ extern void pack_acct_association_cond(void *in, uint16_t rpc_version,
 
 		pack16(object->with_usage, buffer);
 		pack16(object->with_deleted, buffer);
+		pack16(object->with_sub_accts, buffer);
 		pack16(object->without_parent_info, buffer);
 		pack16(object->without_parent_limits, buffer);
 	}
@@ -2926,7 +2929,8 @@ extern int unpack_acct_association_cond(void **object,
 	if(rpc_version < 3) {
 		safe_unpack32(&count, buffer);
 		if(count != NO_VAL) {
-			object_ptr->acct_list = list_create(slurm_destroy_char);
+			object_ptr->acct_list = 
+				list_create(slurm_destroy_char);
 			for(i=0; i<count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -2940,7 +2944,8 @@ extern int unpack_acct_association_cond(void **object,
 			for(i=0; i<count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
-				list_append(object_ptr->cluster_list, tmp_info);
+				list_append(object_ptr->cluster_list,
+					    tmp_info);
 			}
 		}
 		/* We have to check for 0 here because of a bug in
@@ -3013,7 +3018,7 @@ extern int unpack_acct_association_cond(void **object,
 		if(tmp_info) {
 			object_ptr->parent_acct_list = 
 				list_create(slurm_destroy_char);
-			list_append(object_ptr->parent_acct_list, tmp_info);	
+			list_append(object_ptr->parent_acct_list, tmp_info);
 		}
 
 		safe_unpack32(&object_ptr->usage_end, buffer);
@@ -3021,7 +3026,8 @@ extern int unpack_acct_association_cond(void **object,
 
 		safe_unpack32(&count, buffer);
 		if(count != NO_VAL) {
-			object_ptr->user_list = list_create(slurm_destroy_char);
+			object_ptr->user_list = 
+				list_create(slurm_destroy_char);
 			for(i=0; i<count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -3036,7 +3042,8 @@ extern int unpack_acct_association_cond(void **object,
 	} else if(rpc_version >= 3) {
 		safe_unpack32(&count, buffer);
 		if(count != NO_VAL) {
-			object_ptr->acct_list = list_create(slurm_destroy_char);
+			object_ptr->acct_list =
+				list_create(slurm_destroy_char);
 			for(i=0; i<count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -3050,7 +3057,8 @@ extern int unpack_acct_association_cond(void **object,
 			for(i=0; i<count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
-				list_append(object_ptr->cluster_list, tmp_info);
+				list_append(object_ptr->cluster_list, 
+					    tmp_info);
 			}
 		}
 
@@ -3061,7 +3069,8 @@ extern int unpack_acct_association_cond(void **object,
 			for(i=0; i<count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
-				list_append(object_ptr->fairshare_list, tmp_info);
+				list_append(object_ptr->fairshare_list, 
+					    tmp_info);
 			}
 		}
 
@@ -3072,7 +3081,8 @@ extern int unpack_acct_association_cond(void **object,
 			for(i=0; i<count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
-				list_append(object_ptr->grp_cpu_mins_list, tmp_info);
+				list_append(object_ptr->grp_cpu_mins_list, 
+					    tmp_info);
 			}
 		}
 		safe_unpack32(&count, buffer);
@@ -3082,7 +3092,8 @@ extern int unpack_acct_association_cond(void **object,
 			for(i=0; i<count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
-				list_append(object_ptr->grp_cpus_list, tmp_info);
+				list_append(object_ptr->grp_cpus_list, 
+					    tmp_info);
 			}
 		}
 		safe_unpack32(&count, buffer);
@@ -3092,7 +3103,8 @@ extern int unpack_acct_association_cond(void **object,
 			for(i=0; i<count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
-				list_append(object_ptr->grp_jobs_list, tmp_info);
+				list_append(object_ptr->grp_jobs_list, 
+					    tmp_info);
 			}
 		}
 		safe_unpack32(&count, buffer);
@@ -3102,7 +3114,8 @@ extern int unpack_acct_association_cond(void **object,
 			for(i=0; i<count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
-				list_append(object_ptr->grp_nodes_list, tmp_info);
+				list_append(object_ptr->grp_nodes_list,
+					    tmp_info);
 			}
 		}
 		safe_unpack32(&count, buffer);
@@ -3112,7 +3125,8 @@ extern int unpack_acct_association_cond(void **object,
 			for(i=0; i<count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
-				list_append(object_ptr->grp_submit_jobs_list, tmp_info);
+				list_append(object_ptr->grp_submit_jobs_list, 
+					    tmp_info);
 			}
 		}
 		safe_unpack32(&count, buffer);
@@ -3122,7 +3136,8 @@ extern int unpack_acct_association_cond(void **object,
 			for(i=0; i<count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
-				list_append(object_ptr->grp_wall_list, tmp_info);
+				list_append(object_ptr->grp_wall_list, 
+					    tmp_info);
 			}
 		}
 
@@ -3242,7 +3257,8 @@ extern int unpack_acct_association_cond(void **object,
 
 		safe_unpack32(&count, buffer);
 		if(count != NO_VAL) {
-			object_ptr->user_list = list_create(slurm_destroy_char);
+			object_ptr->user_list = 
+				list_create(slurm_destroy_char);
 			for(i=0; i<count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
@@ -3252,6 +3268,7 @@ extern int unpack_acct_association_cond(void **object,
 
 		safe_unpack16(&object_ptr->with_usage, buffer);
 		safe_unpack16(&object_ptr->with_deleted, buffer);
+		safe_unpack16(&object_ptr->with_sub_accts, buffer);
 		safe_unpack16(&object_ptr->without_parent_info, buffer);
 		safe_unpack16(&object_ptr->without_parent_limits, buffer);
 	}
