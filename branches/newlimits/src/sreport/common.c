@@ -273,3 +273,70 @@ extern int set_start_end_time(time_t *start, time_t *end)
 
 	return SLURM_SUCCESS;
 }
+
+extern void destroy_sreport_acct_rec(void *object)
+{
+	sreport_acct_rec_t *sreport_acct = (sreport_acct_rec_t *)object;
+	if(sreport_acct) {
+		xfree(sreport_acct->user);
+		if(sreport_acct->user_list)
+			list_destroy(sreport_acct->user_list);
+		xfree(sreport_acct->name);
+		xfree(sreport_acct);
+	}
+}
+
+extern void destroy_sreport_user_rec(void *object)
+{
+	sreport_user_rec_t *sreport_user = (sreport_user_rec_t *)object;
+	if(sreport_user) {
+		xfree(sreport_user->acct);
+		if(sreport_user->acct_list)
+			list_destroy(sreport_user->acct_list);
+		xfree(sreport_user->name);
+		xfree(sreport_user);
+	}
+}
+
+extern void destroy_sreport_cluster_rec(void *object)
+{
+	sreport_cluster_rec_t *sreport_cluster = 
+		(sreport_cluster_rec_t *)object;
+	if(sreport_cluster) {
+		if(sreport_cluster->acct_list)
+			list_destroy(sreport_cluster->acct_list);
+		xfree(sreport_cluster->name);
+		if(sreport_cluster->user_list)
+			list_destroy(sreport_cluster->user_list);
+		xfree(sreport_cluster);
+	}
+}
+
+/* 
+ * Comparator used for sorting users largest cpu to smallest cpu
+ * 
+ * returns: -1: user_a > user_b   0: user_a == user_b   1: user_a < user_b
+ * 
+ */
+extern int sort_user_dec(sreport_user_rec_t *user_a, sreport_user_rec_t *user_b)
+{
+	int diff = 0;
+
+	if (user_a->cpu_secs > user_b->cpu_secs)
+		return -1;
+	else if (user_a->cpu_secs < user_b->cpu_secs)
+		return 1;
+
+	if(!user_a->name || !user_b->name)
+		return 0;
+
+	diff = strcmp(user_a->name, user_b->name);
+
+	if (diff > 0)
+		return -1;
+	else if (diff < 0)
+		return 1;
+	
+	return 0;
+}
+

@@ -1171,9 +1171,8 @@ static int _modify_common(mysql_conn_t *mysql_conn,
 	char *query = NULL;
 	int rc = SLURM_SUCCESS;
 	char *tmp_cond_char = _fix_double_quotes(cond_char);
-	char *tmp_vals = _fix_double_quotes(vals+2); // there is
-						     // always a ', '
-						     // as the first 2 chars
+	char *tmp_vals = NULL;
+
 	if(vals[1])
 		tmp_vals = _fix_double_quotes(vals+2);
 
@@ -3286,7 +3285,7 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 						assoc_table);
 					debug3("%d(%d) query\n%s", 
 					       mysql_conn->conn, 
-					       __LINE__, query);
+					       __LINE__, up_query);
 					rc = mysql_db_query(
 						mysql_conn->db_conn,
 						up_query);
@@ -5784,6 +5783,7 @@ extern List acct_storage_p_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	user_name = uid_to_string((uid_t) uid);
 	rc = _remove_common(mysql_conn, DBD_REMOVE_ACCOUNTS, now,
 			    user_name, qos_table, name_char, assoc_char);
+	xfree(assoc_char);
 	xfree(name_char);
 	xfree(user_name);
 	if (rc == SLURM_ERROR) {

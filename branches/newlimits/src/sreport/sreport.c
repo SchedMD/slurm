@@ -233,13 +233,11 @@ static void _user_rep (int argc, char *argv[])
 
 	if (strncasecmp (argv[0], "Top", 1) == 0) {
 		error_code = user_top((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "AccountUsagePerCluster", 1) == 0) {
-		error_code = user_acct_usage((argc - 1), &argv[1]);
 	} else {
 		exit_code = 1;
 		fprintf(stderr, "Not valid report %s\n", argv[0]);
 		fprintf(stderr, "Valid user reports are, ");
-		fprintf(stderr, "\"Top\", and \"AccountUsagePerCluster\"\n");
+		fprintf(stderr, "\"Top\"\n");
 	}	
 	
 	if (error_code) {
@@ -256,13 +254,18 @@ static void _cluster_rep (int argc, char *argv[])
 {
 	int error_code = SLURM_SUCCESS;
 
-	if (strncasecmp (argv[0], "Utilization", 1) == 0) {
+	if (strncasecmp (argv[0], "AccountUtilizationByUser", 1) == 0) {
+		error_code = cluster_account_by_user((argc - 1), &argv[1]);
+	} else if (strncasecmp (argv[0], "UserUtilizationByAccount", 2) == 0) {
+		error_code = cluster_user_by_account((argc - 1), &argv[1]);
+	} else if (strncasecmp (argv[0], "Utilization", 2) == 0) {
 		error_code = cluster_utilization((argc - 1), &argv[1]);
 	} else {
 		exit_code = 1;
 		fprintf(stderr, "Not valid report %s\n", argv[0]);
 		fprintf(stderr, "Valid cluster reports are, ");
-		fprintf(stderr, "\"Utilization\"\n");
+		fprintf(stderr, "\"AccountUtilizationByUser\", "
+			"\"UserUtilizationByAccount\", and \"Utilization\"\n");
 	}
 	
 	if (error_code) {

@@ -96,6 +96,31 @@ typedef enum {
 	SREPORT_TIME_HOURS_PER,
 } sreport_time_format_t;
 
+typedef struct {
+	char *user;
+	List user_list; /* list of char *'s */
+	List assoc_list; /* list of acct_association_rec_t's */
+	uint64_t cpu_secs;
+	char *name;
+} sreport_acct_rec_t;
+
+typedef struct {
+	char *acct;
+	List acct_list; /* list of char *'s */
+	List assoc_list; /* list of acct_association_rec_t's */
+	uint64_t cpu_secs;
+	char *name;
+	uid_t uid;
+} sreport_user_rec_t;
+
+typedef struct {
+	List acct_list; /* list of sreport_acct_rec_t *'s */
+	uint32_t cpu_count;
+	uint64_t cpu_secs;
+	char *name;
+	List user_list; /* list of sreport_user_rec_t *'s */
+} sreport_cluster_rec_t;
+
 extern sreport_time_format_t time_format;
 extern char *time_format_string;
 extern char *command_name;
@@ -112,5 +137,11 @@ extern void sreport_print_time(print_field_t *field,
 extern int parse_option_end(char *option);
 extern char *strip_quotes(char *option, int *increased);
 extern int set_start_end_time(time_t *start, time_t *end);
+extern void destroy_sreport_acct_rec(void *object);
+extern void destroy_sreport_user_rec(void *object);
+extern void destroy_sreport_cluster_rec(void *object);
+extern int sort_user_dec(sreport_user_rec_t *user_a,
+			 sreport_user_rec_t *user_b);
+
 
 #endif /* HAVE_SREPORT_H */
