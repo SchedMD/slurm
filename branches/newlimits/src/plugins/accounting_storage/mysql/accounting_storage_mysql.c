@@ -1554,39 +1554,10 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 	}
 	
 	if(table == qos_table) {
-		int pos=0, qos_num = NO_VAL;
-		char *remove_qos = NULL;
-		char *qos_line = NULL;
 		/* remove this qos from all the users/accts that have it */
-		
-		while(assoc_char[pos]) {
-			if(assoc_char[pos-1] != ',' || !assoc_char[pos]) {
-				pos++;
-				continue;
-			}
-
-			if((qos_num = atoi(assoc_char+pos)) < 0) {
-				pos++;
-				continue;
-			}
-
-			if(remove_qos)
-				xstrfmtcat(remove_qos, ",-%d", qos_num);
-			else 
-				xstrfmtcat(remove_qos, "-%d", qos_num);
-			
-			xstrfmtcat(qos_line, 
-				   ", qos=replace(qos, ',%d', '')"
-				   ", delta_qos=replace(delta_qos, ',+%d', '')"
-				   ", delta_qos=replace(delta_qos, ',-%d', '')",
-				   qos_num, qos_num, qos_num);
-			pos++;			
-		}
-
 		xstrfmtcat(query, "update %s set mod_time=%d %s "
 			   "where deleted=0;",
-			   assoc_table, now, qos_line);
-		xfree(qos_line);
+			   assoc_table, now, assoc_char);
 		debug3("%d(%d) query\n%s",
 		       mysql_conn->conn, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
@@ -1596,47 +1567,12 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 				mysql_db_rollback(mysql_conn->db_conn);
 			}
 			list_flush(mysql_conn->update_list);
-			xfree(remove_qos);
-	
 			return SLURM_ERROR;
 		}
-		/* FIX ME: now get what we all associations and set the
-		 * update.  This could be changed in the future to
-		 * only modify those associations that changed, but
-		 * at this time this is the easiest since we aren't
-		 * looking for parents */
-		xstrfmtcat(query,
-			   "select id, cluster from %s where "
-			   "mod_time=%d and deleted=0;",
-			   assoc_table, now);
-		if(!(result = mysql_db_query_ret(
-			     mysql_conn->db_conn, query, 0))) {
-			xfree(query);
-			if(mysql_conn->rollback) {
-				mysql_db_rollback(mysql_conn->db_conn);
-			}
-			list_flush(mysql_conn->update_list);
-			
-			xfree(remove_qos);
-			return SLURM_ERROR;
-		}
-		
-		rc = 0;
-		while((row = mysql_fetch_row(result))) {
-			acct_association_rec_t *assoc_rec = 
-				xmalloc(sizeof(acct_association_rec_t));
-			init_acct_association_rec(assoc_rec);
-			assoc_rec->id = atoi(row[0]);
-			assoc_rec->cluster= xstrdup(row[1]);
-			assoc_rec->qos_list = list_create(slurm_destroy_char);
-			slurm_addto_char_list(assoc_rec->qos_list, remove_qos);
-			_addto_update_list(mysql_conn->update_list,
-					   ACCT_MODIFY_ASSOC,
-					   assoc_rec);
-		}
-		mysql_free_result(result);
-		xfree(remove_qos);
-		
+		/* we don't have to send anything else since removing
+		   the qos in the first place will remove it from the
+		   clusters 
+		*/		
 		return SLURM_SUCCESS;
 	} else if(table == acct_coord_table)
 		return SLURM_SUCCESS;
@@ -5816,21 +5752,22 @@ extern List acct_storage_p_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	name_char = NULL;
 	ret_list = list_create(slurm_destroy_char);
 	while((row = mysql_fetch_row(result))) {
-		char *object = xstrdup(row[1]);
 		acct_qos_rec_t *qos_rec = NULL;
 
-		list_append(ret_list, object);
+		list_append(ret_list, xstrdup(row[1]));
 		if(!name_char)
 			xstrfmtcat(name_char, "id=\"%s\"", row[0]);
 		else
 			xstrfmtcat(name_char, " || id=\"%s\"", row[0]); 
-		
-		xstrfmtcat(assoc_char, ",%s", object);
+		xstrfmtcat(assoc_char, 
+			   ", qos=replace(qos, ',%s', '')"
+			   ", delta_qos=replace(delta_qos, ',+%s', '')"
+			   ", delta_qos=replace(delta_qos, ',-%s', '')",
+			   row[0], row[0], row[0]);
 
 		qos_rec = xmalloc(sizeof(acct_qos_rec_t));
-		init_acct_qos_rec(qos_rec);
+		/* we only need id when removing no real need to init */
 		qos_rec->id = atoi(row[0]);
-		qos_rec->name = xstrdup(row[1]);
 		_addto_update_list(mysql_conn->update_list, ACCT_REMOVE_QOS,
 				   qos_rec);
 	}

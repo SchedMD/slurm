@@ -1036,10 +1036,14 @@ extern int assoc_mgr_update_local_users(acct_update_object_t *update)
 
 extern int assoc_mgr_update_local_qos(acct_update_object_t *update)
 {
-	acct_qos_rec_t * rec = NULL;
-	acct_qos_rec_t * object = NULL;
-		
-	ListIterator itr = NULL;
+	acct_qos_rec_t *rec = NULL;
+	acct_qos_rec_t *object = NULL;
+
+	char *qos_char = NULL, *tmp_char = NULL;
+
+	ListIterator itr = NULL, assoc_itr = NULL, qos_itr = NULL;
+
+	acct_association_rec_t *assoc = NULL;
 	int rc = SLURM_SUCCESS;
 
 	if(!local_qos_list)
@@ -1065,7 +1069,34 @@ extern int assoc_mgr_update_local_qos(acct_update_object_t *update)
 			list_append(local_qos_list, object);
 			object = NULL;			
 			break;
+		case ACCT_MODIFY_QOS:
+			/* FIX ME: fill in here the qos changes stuff */
+			break;
 		case ACCT_REMOVE_QOS:
+			/* Remove this qos from all the associations
+			   on this cluster.
+			*/
+			tmp_char = xstrdup_printf("%d", object->id);
+			slurm_mutex_lock(&local_association_lock);
+			assoc_itr = list_iterator_create(
+				local_association_list);
+			while((assoc = list_next(assoc_itr))) {
+				if(!assoc->qos_list
+				   || !list_count(assoc->qos_list))
+					continue;
+				qos_itr = list_iterator_create(assoc->qos_list);
+				while((qos_char = list_next(qos_itr))) {
+					if(!strcmp(qos_char, tmp_char)) {
+						list_delete_item(qos_itr);
+						break;
+					}
+				}
+				list_iterator_destroy(qos_itr);
+			}
+			list_iterator_destroy(assoc_itr);
+			slurm_mutex_unlock(&local_association_lock);
+			xfree(tmp_char);
+
 			if(!rec) {
 				//rc = SLURM_ERROR;
 				break;
