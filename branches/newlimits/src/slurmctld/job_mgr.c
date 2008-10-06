@@ -5649,7 +5649,7 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 
 	while(assoc_ptr) {
 		/* for validation we don't need to look at 
-		 * assoc_ptr->grp_cpu_hours.
+		 * assoc_ptr->grp_cpu_mins.
 		 */
 
 		/* NOTE: We can't enforce assoc_ptr->grp_cpus at this

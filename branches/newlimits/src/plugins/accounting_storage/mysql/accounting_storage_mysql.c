@@ -218,15 +218,15 @@ static int _setup_association_limits(acct_association_rec_t *assoc,
 		xstrcat(*extra, ", fairshare=1");		
 	} 
 
-	if((int)assoc->grp_cpu_hours >= 0) {
-		xstrcat(*cols, ", grp_cpu_hours");
-		xstrfmtcat(*vals, ", %llu", assoc->grp_cpu_hours);
-		xstrfmtcat(*extra, ", grp_cpu_hours=%llu",
-			   assoc->grp_cpu_hours);
-	} else if((int)assoc->grp_cpu_hours == INFINITE) {
-		xstrcat(*cols, ", grp_cpu_hours");
+	if((int)assoc->grp_cpu_mins >= 0) {
+		xstrcat(*cols, ", grp_cpu_mins");
+		xstrfmtcat(*vals, ", %llu", assoc->grp_cpu_mins);
+		xstrfmtcat(*extra, ", grp_cpu_mins=%llu",
+			   assoc->grp_cpu_mins);
+	} else if((int)assoc->grp_cpu_mins == INFINITE) {
+		xstrcat(*cols, ", grp_cpu_mins");
 		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", grp_cpu_hours=NULL");
+		xstrcat(*extra, ", grp_cpu_mins=NULL");
 	}
 		
 	if((int)assoc->grp_cpus >= 0) {
@@ -400,15 +400,15 @@ static int _setup_qos_limits(acct_qos_rec_t *qos,
 		xstrcat(*extra, ", priority=NULL");		
 	} 
 
-	if((int)qos->grp_cpu_hours >= 0) {
-		xstrcat(*cols, ", grp_cpu_hours");
-		xstrfmtcat(*vals, ", %llu", qos->grp_cpu_hours);
-		xstrfmtcat(*extra, ", grp_cpu_hours=%llu",
-			   qos->grp_cpu_hours);
-	} else if((int)qos->grp_cpu_hours == INFINITE) {
-		xstrcat(*cols, ", grp_cpu_hours");
+	if((int)qos->grp_cpu_mins >= 0) {
+		xstrcat(*cols, ", grp_cpu_mins");
+		xstrfmtcat(*vals, ", %llu", qos->grp_cpu_mins);
+		xstrfmtcat(*extra, ", grp_cpu_mins=%llu",
+			   qos->grp_cpu_mins);
+	} else if((int)qos->grp_cpu_mins == INFINITE) {
+		xstrcat(*cols, ", grp_cpu_mins");
 		xstrcat(*vals, ", NULL");
-		xstrcat(*extra, ", grp_cpu_hours=NULL");
+		xstrcat(*extra, ", grp_cpu_mins=NULL");
 	}
 		
 	if((int)qos->grp_cpus >= 0) {
@@ -632,15 +632,15 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		xstrcat(*extra, ")");
 	}
 
-	if(assoc_cond->grp_cpu_hours_list
-	   && list_count(assoc_cond->grp_cpu_hours_list)) {
+	if(assoc_cond->grp_cpu_mins_list
+	   && list_count(assoc_cond->grp_cpu_mins_list)) {
 		set = 0;
 		xstrcat(*extra, " && (");
-		itr = list_iterator_create(assoc_cond->grp_cpu_hours_list);
+		itr = list_iterator_create(assoc_cond->grp_cpu_mins_list);
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "grp_cpu_hours=\"%s\"", object);
+			xstrfmtcat(*extra, "grp_cpu_mins=\"%s\"", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -2083,7 +2083,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "grp_cpus", "int default NULL" },
 		{ "grp_nodes", "int default NULL" },
 		{ "grp_wall", "int default NULL" },
-		{ "grp_cpu_hours", "bigint default NULL" },
+		{ "grp_cpu_mins", "bigint default NULL" },
 		{ "qos", "blob not null default ''" },
 		{ "delta_qos", "blob not null default ''" },
 		{ NULL, NULL}		
@@ -2189,7 +2189,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "grp_cpus", "int default NULL" },
 		{ "grp_nodes", "int default NULL" },
 		{ "grp_wall", "int default NULL" },
-		{ "grp_cpu_hours", "bigint default NULL" },
+		{ "grp_cpu_mins", "bigint default NULL" },
 		{ "job_flags", "text" },
 		{ "preemptees", "text not null default ''" },
 		{ "preemptors", "text not null default ''" },
@@ -4405,7 +4405,7 @@ extern List acct_storage_p_modify_associations(
 		mod_assoc->fairshare = assoc->fairshare;
 
 		mod_assoc->grp_cpus = assoc->grp_cpus;
-		mod_assoc->grp_cpu_hours = assoc->grp_cpu_hours;
+		mod_assoc->grp_cpu_mins = assoc->grp_cpu_mins;
 		mod_assoc->grp_jobs = assoc->grp_jobs;
 		mod_assoc->grp_nodes = assoc->grp_nodes;
 		mod_assoc->grp_submit_jobs = assoc->grp_submit_jobs;
@@ -4719,7 +4719,7 @@ extern List acct_storage_p_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		qos_rec->name = xstrdup(object);
 
 		qos_rec->grp_cpus = qos->grp_cpus;
-		qos_rec->grp_cpu_hours = qos->grp_cpu_hours;
+		qos_rec->grp_cpu_mins = qos->grp_cpu_mins;
 		qos_rec->grp_jobs = qos->grp_jobs;
 		qos_rec->grp_nodes = qos->grp_nodes;
 		qos_rec->grp_submit_jobs = qos->grp_submit_jobs;
@@ -6544,7 +6544,7 @@ extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 		"cluster",
 		"partition",
 		"fairshare",
-		"grp_cpu_hours",
+		"grp_cpu_mins",
 		"grp_cpus",
 		"grp_jobs",
 		"grp_nodes",
@@ -6749,9 +6749,9 @@ empty:
 			assoc->grp_wall = INFINITE;
 
 		if(row[ASSOC_REQ_GCH])
-			assoc->grp_cpu_hours = atoll(row[ASSOC_REQ_GCH]);
+			assoc->grp_cpu_mins = atoll(row[ASSOC_REQ_GCH]);
 		else
-			assoc->grp_cpu_hours = INFINITE;
+			assoc->grp_cpu_mins = INFINITE;
 
 		/* get the usage if requested */
 		if(with_usage) {
@@ -7012,7 +7012,7 @@ extern List acct_storage_p_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 		"name",
 		"description",
 		"id",
-		"grp_cpu_hours",
+		"grp_cpu_mins",
 		"grp_cpus",
 		"grp_jobs",
 		"grp_nodes",
@@ -7151,9 +7151,9 @@ empty:
 		qos->job_flags =  xstrdup(row[QOS_REQ_JOBF]);
 
 		if(row[QOS_REQ_GCH])
-			qos->grp_cpu_hours = atoll(row[QOS_REQ_GCH]);
+			qos->grp_cpu_mins = atoll(row[QOS_REQ_GCH]);
 		else
-			qos->grp_cpu_hours = INFINITE;
+			qos->grp_cpu_mins = INFINITE;
 		if(row[QOS_REQ_GC])
 			qos->grp_cpus = atoi(row[QOS_REQ_GC]);
 		else

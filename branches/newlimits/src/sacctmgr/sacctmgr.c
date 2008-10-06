@@ -699,12 +699,12 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             Organizations=, Parents=, WithCoor=,           \n\
                             and WithAssocs                                 \n\
        add account        - Clusters=, Description=, Fairshare=,           \n\
-                            GrpCPUHours=, GrpCPUs=, GrpJobs=, GrpNodes=,   \n\
+                            GrpCPUMins=, GrpCPUs=, GrpJobs=, GrpNodes=,   \n\
                             GrpSubmitJob=, GrpWall=, MaxCPUMins=, MaxJobs=,\n\
                             MaxNodes=, MaxWall=, Names=, Organization=,    \n\
                             Parent=, and QosLevel                          \n\
        modify account     - (set options) Description=, Fairshare=,        \n\
-                            GrpCPUHours=, GrpCPUs=, GrpJobs=, GrpNodes=,   \n\
+                            GrpCPUMins=, GrpCPUs=, GrpJobs=, GrpNodes=,   \n\
                             GrpSubmitJob=, GrpWall=, MaxCPUMins=, MaxJobs=,\n\
                             MaxNodes=, MaxWall=, Names=, Organization=,    \n\
                             Parent=, and QosLevel=                         \n\
@@ -718,10 +718,10 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             WithDeleted, WOPInfo, WOPLimits                \n\
                                                                            \n\
        list cluster       - Names= Format=                                 \n\
-       add cluster        - Fairshare=, GrpCPUHours=, GrpCPUs=, GrpJobs=,  \n\
+       add cluster        - Fairshare=, GrpCPUMins=, GrpCPUs=, GrpJobs=,  \n\
                             GrpNodes=, GrpSubmitJob=, GrpWall=, MaxCPUMins=\n\
                             MaxJobs=, MaxNodes=, MaxWall=, and Name=       \n\
-       modify cluster     - (set options) Fairshare=, GrpCPUHours=,        \n\
+       modify cluster     - (set options) Fairshare=, GrpCPUMins=,        \n\
                             GrpCPUs=, GrpJobs=, GrpNodes=, GrpSubmitJob=,  \n\
                             GrpWall=, MaxCPUMins=, MaxJobs=, MaxNodes=,    \n\
                             and MaxWall=                                   \n\

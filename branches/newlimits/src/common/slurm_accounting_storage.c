@@ -517,8 +517,8 @@ extern void destroy_acct_association_cond(void *object)
 		if(acct_association->fairshare_list)
 			list_destroy(acct_association->fairshare_list);
 
-		if(acct_association->grp_cpu_hours_list)
-			list_destroy(acct_association->grp_cpu_hours_list);
+		if(acct_association->grp_cpu_mins_list)
+			list_destroy(acct_association->grp_cpu_mins_list);
 		if(acct_association->grp_cpus_list)
 			list_destroy(acct_association->grp_cpus_list);
 		if(acct_association->grp_jobs_list)
@@ -658,7 +658,7 @@ extern void init_acct_association_rec(acct_association_rec_t *assoc)
 
 	assoc->fairshare = NO_VAL;
 
-	assoc->grp_cpu_hours = NO_VAL;
+	assoc->grp_cpu_mins = NO_VAL;
 	assoc->grp_cpus = NO_VAL;
 	assoc->grp_jobs = NO_VAL;
 	assoc->grp_nodes = NO_VAL;
@@ -682,7 +682,7 @@ extern void init_acct_qos_rec(acct_qos_rec_t *qos)
 
 	qos->priority = NO_VAL;
 
-	qos->grp_cpu_hours = NO_VAL;
+	qos->grp_cpu_mins = NO_VAL;
 	qos->grp_cpus = NO_VAL;
 	qos->grp_jobs = NO_VAL;
 	qos->grp_nodes = NO_VAL;
@@ -1603,7 +1603,7 @@ extern void pack_acct_association_rec(void *in, uint16_t rpc_version,
 
 		pack32(object->fairshare, buffer);
 
-		pack64(object->grp_cpu_hours, buffer);
+		pack64(object->grp_cpu_mins, buffer);
 		pack32(object->grp_cpus, buffer);
 		pack32(object->grp_jobs, buffer);
 		pack32(object->grp_nodes, buffer);
@@ -1725,7 +1725,7 @@ extern int unpack_acct_association_rec(void **object, uint16_t rpc_version,
 
 		safe_unpack32(&object_ptr->fairshare, buffer);
 
-		safe_unpack64(&object_ptr->grp_cpu_hours, buffer);
+		safe_unpack64(&object_ptr->grp_cpu_mins, buffer);
 		safe_unpack32(&object_ptr->grp_cpus, buffer);
 		safe_unpack32(&object_ptr->grp_jobs, buffer);
 		safe_unpack32(&object_ptr->grp_nodes, buffer);
@@ -1826,7 +1826,7 @@ extern void pack_acct_qos_rec(void *in, uint16_t rpc_version, Buf buffer)
 		packstr(object->description, buffer);	
 		pack32(object->id, buffer);
 
-		pack64(object->grp_cpu_hours, buffer);
+		pack64(object->grp_cpu_mins, buffer);
 		pack32(object->grp_cpus, buffer);
 		pack32(object->grp_jobs, buffer);
 		pack32(object->grp_nodes, buffer);
@@ -1910,7 +1910,7 @@ extern int unpack_acct_qos_rec(void **object, uint16_t rpc_version, Buf buffer)
 				       &uint32_tmp, buffer);
 		safe_unpack32(&object_ptr->id, buffer);
 
-		safe_unpack64(&object_ptr->grp_cpu_hours, buffer);
+		safe_unpack64(&object_ptr->grp_cpu_mins, buffer);
 		safe_unpack32(&object_ptr->grp_cpus, buffer);
 		safe_unpack32(&object_ptr->grp_jobs, buffer);
 		safe_unpack32(&object_ptr->grp_nodes, buffer);
@@ -2683,12 +2683,12 @@ extern void pack_acct_association_cond(void *in, uint16_t rpc_version,
 		}
 		count = NO_VAL;
 
-		if(object->grp_cpu_hours_list)
-			count = list_count(object->grp_cpu_hours_list);
+		if(object->grp_cpu_mins_list)
+			count = list_count(object->grp_cpu_mins_list);
 	
 		pack32(count, buffer);
 		if(count && count != NO_VAL) {
-			itr = list_iterator_create(object->grp_cpu_hours_list);
+			itr = list_iterator_create(object->grp_cpu_mins_list);
 			while((tmp_info = list_next(itr))) {
 				packstr(tmp_info, buffer);
 			}
@@ -3067,12 +3067,12 @@ extern int unpack_acct_association_cond(void **object,
 
 		safe_unpack32(&count, buffer);
 		if(count != NO_VAL) {
-			object_ptr->grp_cpu_hours_list = 
+			object_ptr->grp_cpu_mins_list = 
 				list_create(slurm_destroy_char);
 			for(i=0; i<count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
-				list_append(object_ptr->grp_cpu_hours_list, tmp_info);
+				list_append(object_ptr->grp_cpu_mins_list, tmp_info);
 			}
 		}
 		safe_unpack32(&count, buffer);
@@ -4170,10 +4170,10 @@ extern void log_assoc_rec(acct_association_rec_t *assoc_ptr, List qos_list)
 	else if(assoc_ptr->fairshare != NO_VAL) 
 		debug2("  Fairshare        : %u", assoc_ptr->fairshare);
 
-	if(assoc_ptr->grp_cpu_hours == INFINITE)
-		debug2("  GrpCPUHours      : NONE");
-	else if(assoc_ptr->grp_cpu_hours != NO_VAL) 
-		debug2("  GrpCPUHours      : %llu", assoc_ptr->grp_cpu_hours);
+	if(assoc_ptr->grp_cpu_mins == INFINITE)
+		debug2("  GrpCPUMins      : NONE");
+	else if(assoc_ptr->grp_cpu_mins != NO_VAL) 
+		debug2("  GrpCPUMins      : %llu", assoc_ptr->grp_cpu_mins);
 		
 	if(assoc_ptr->grp_cpus == INFINITE)
 		debug2("  GrpCPUs          : NONE");

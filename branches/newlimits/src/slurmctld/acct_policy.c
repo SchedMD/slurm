@@ -166,7 +166,7 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 		info("acct_job_limits: %u of %u", 
 		     assoc_ptr->used_jobs, assoc_ptr->max_jobs);
 #endif		
-		/* NOTE: We can't enforce assoc_ptr->grp_cpu_hours at this
+		/* NOTE: We can't enforce assoc_ptr->grp_cpu_mins at this
 		 * time because we aren't keeping track of how long
 		 * jobs have been running yet */
 

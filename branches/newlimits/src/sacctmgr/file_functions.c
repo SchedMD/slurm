@@ -47,7 +47,7 @@ typedef struct {
 	char *desc;
 	uint32_t fairshare;
 
-	uint64_t grp_cpu_hours;
+	uint64_t grp_cpu_mins;
 	uint32_t grp_cpus;
 	uint32_t grp_jobs;
 	uint32_t grp_nodes; 
@@ -75,7 +75,7 @@ enum {
 	PRINT_DACCT,
 	PRINT_DESC,
 	PRINT_FAIRSHARE,
-	PRINT_GRPCH,
+	PRINT_GRPCM,
 	PRINT_GRPC,
 	PRINT_GRPJ,
 	PRINT_GRPN,
@@ -117,7 +117,7 @@ static int _init_sacctmgr_file_opts(sacctmgr_file_opts_t *file_opts)
 
 	file_opts->fairshare = 1;
 
-	file_opts->grp_cpu_hours = INFINITE;
+	file_opts->grp_cpu_mins = INFINITE;
 	file_opts->grp_cpus = INFINITE;
 	file_opts->grp_jobs = INFINITE;
 	file_opts->grp_nodes = INFINITE;
@@ -318,12 +318,12 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 				_destroy_sacctmgr_file_opts(file_opts);
 				break;
 			}
-		} else if (!strncasecmp (sub, "GrpCPUHours", 7)) {
-			if (get_uint64(option, &file_opts->grp_cpu_hours,
-				       "GrpCPUHours") != SLURM_SUCCESS) {
+		} else if (!strncasecmp (sub, "GrpCPUMins", 7)) {
+			if (get_uint64(option, &file_opts->grp_cpu_mins,
+				       "GrpCPUMins") != SLURM_SUCCESS) {
 				exit_code=1;
 				fprintf(stderr, 
-					" Bad GrpCPUHours value: %s\n", option);
+					" Bad GrpCPUMins value: %s\n", option);
 				_destroy_sacctmgr_file_opts(file_opts);
 				break;
 			}
@@ -537,9 +537,9 @@ static List _set_up_print_fields(List format_list)
 			field->name = xstrdup("FairShare");
 			field->len = 9;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("GrpCPUHours", object, 7)) {
-			field->type = PRINT_GRPCH;
-			field->name = xstrdup("GrpCPUHours");
+		} else if(!strncasecmp("GrpCPUMins", object, 7)) {
+			field->type = PRINT_GRPCM;
+			field->name = xstrdup("GrpCPUMins");
 			field->len = 11;
 			field->print_routine = print_fields_uint64;
 		} else if(!strncasecmp("GrpCPUs", object, 7)) {
@@ -691,10 +691,10 @@ static int _print_out_assoc(List assoc_list, bool user)
 				field->print_routine(field,
 						     assoc->fairshare);
 				break;
-			case PRINT_GRPCH:
+			case PRINT_GRPCM:
 				field->print_routine(
 					field,
-					assoc->grp_cpu_hours);
+					assoc->grp_cpu_mins);
 				break;
 			case PRINT_GRPC:
 				field->print_routine(field,
@@ -1168,15 +1168,15 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 			   file_opts->fairshare);
 	}
 
-	if(assoc->grp_cpu_hours != file_opts->grp_cpu_hours) {
-		mod_assoc.grp_cpu_hours = file_opts->grp_cpu_hours;
+	if(assoc->grp_cpu_mins != file_opts->grp_cpu_mins) {
+		mod_assoc.grp_cpu_mins = file_opts->grp_cpu_mins;
 		changed = 1;
 		xstrfmtcat(my_info, 
 			   "%-30.30s for %-7.7s %-10.10s %8ull -> %ull\n",
-			   " Changed GrpCPUHours",
+			   " Changed GrpCPUMins",
 			   type, name,
-			   assoc->grp_cpu_hours,
-			   file_opts->grp_cpu_hours);
+			   assoc->grp_cpu_mins,
+			   file_opts->grp_cpu_mins);
 	}
 
 	if(assoc->grp_cpus != file_opts->grp_cpus) {
@@ -1588,8 +1588,8 @@ extern int print_file_add_limits_to_line(char **line,
 	if(assoc->fairshare != INFINITE)
 		xstrfmtcat(*line, ":Fairshare=%u", assoc->fairshare);
 		
-	if(assoc->grp_cpu_hours != INFINITE)
-		xstrfmtcat(*line, ":GrpCPUHours=%llu", assoc->grp_cpu_hours);
+	if(assoc->grp_cpu_mins != INFINITE)
+		xstrfmtcat(*line, ":GrpCPUMins=%llu", assoc->grp_cpu_mins);
 		
 	if(assoc->grp_cpus != INFINITE)
 		xstrfmtcat(*line, ":GrpCPUs=%u", assoc->grp_cpus);

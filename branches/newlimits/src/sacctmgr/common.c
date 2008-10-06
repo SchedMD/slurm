@@ -925,10 +925,10 @@ extern void sacctmgr_print_assoc_limits(acct_association_rec_t *assoc)
 	else if(assoc->fairshare != NO_VAL) 
 		printf("  Fairshare     = %u\n", assoc->fairshare);
 
-	if(assoc->grp_cpu_hours == INFINITE)
-		printf("  GrpCPUHours   = NONE\n");
-	else if(assoc->grp_cpu_hours != NO_VAL) 
-		printf("  GrpCPUHours   = %llu\n", assoc->grp_cpu_hours);
+	if(assoc->grp_cpu_mins == INFINITE)
+		printf("  GrpCPUMins   = NONE\n");
+	else if(assoc->grp_cpu_mins != NO_VAL) 
+		printf("  GrpCPUMins   = %llu\n", assoc->grp_cpu_mins);
 		
 	if(assoc->grp_cpus == INFINITE)
 		printf("  GrpCPUs       = NONE\n");
@@ -1020,10 +1020,10 @@ extern void sacctmgr_print_qos_limits(acct_qos_rec_t *qos)
 	if(qos->job_flags)
 		printf("  JobFlags       = %s", qos->job_flags);
 
-	if(qos->grp_cpu_hours == INFINITE)
-		printf("  GrpCPUHours    = NONE\n");
-	else if(qos->grp_cpu_hours != NO_VAL) 
-		printf("  GrpCPUHours    = %llu\n", qos->grp_cpu_hours);
+	if(qos->grp_cpu_mins == INFINITE)
+		printf("  GrpCPUMins    = NONE\n");
+	else if(qos->grp_cpu_mins != NO_VAL) 
+		printf("  GrpCPUMins    = %llu\n", qos->grp_cpu_mins);
 		
 	if(qos->grp_cpus == INFINITE)
 		printf("  GrpCPUs        = NONE\n");

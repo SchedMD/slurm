@@ -127,12 +127,12 @@ static int _set_rec(int *start, int argc, char *argv[],
 				qos->job_flags =
 					strip_quotes(argv[i]+end, NULL);
 			set = 1;			
-		} else if (!strncasecmp (argv[i], "GrpCPUHours", 7)) {
+		} else if (!strncasecmp (argv[i], "GrpCPUMins", 7)) {
 			if(!qos)
 				continue;
 			if (get_uint64(argv[i]+end, 
-				       &qos->grp_cpu_hours, 
-				       "GrpCPUHours") == SLURM_SUCCESS)
+				       &qos->grp_cpu_mins, 
+				       "GrpCPUMins") == SLURM_SUCCESS)
 				set = 1;
 		} else if (!strncasecmp (argv[i], "GrpCpus", 7)) {
 			if(!qos)
@@ -338,7 +338,7 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 			else
 				qos->description = xstrdup(name);
 
-			qos->grp_cpu_hours = start_qos->grp_cpu_hours;
+			qos->grp_cpu_mins = start_qos->grp_cpu_mins;
 			qos->grp_cpus = start_qos->grp_cpus;
 			qos->grp_jobs = start_qos->grp_jobs;
 			qos->grp_nodes = start_qos->grp_nodes;
@@ -434,7 +434,7 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 		PRINT_NAME,
 		PRINT_JOBF,
 		PRINT_PRIO,
-		PRINT_GRPCH,
+		PRINT_GRPCM,
 		PRINT_GRPC,
 		PRINT_GRPJ,
 		PRINT_GRPN,
@@ -470,9 +470,9 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 			field->name = xstrdup("Descr");
 			field->len = 20;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("GrpCPUHours", object, 8)) {
-			field->type = PRINT_GRPCH;
-			field->name = xstrdup("GrpCPUHours");
+		} else if(!strncasecmp("GrpCPUMins", object, 8)) {
+			field->type = PRINT_GRPCM;
+			field->name = xstrdup("GrpCPUMins");
 			field->len = 11;
 			field->print_routine = print_fields_uint64;
 		} else if(!strncasecmp("GrpCPUs", object, 8)) {
@@ -589,10 +589,10 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 					field, qos->description,
 					(curr_inx == field_count));
 				break;
-			case PRINT_GRPCH:
+			case PRINT_GRPCM:
 				field->print_routine(
 					field,
-					qos->grp_cpu_hours,
+					qos->grp_cpu_mins,
 					(curr_inx == field_count));
 				break;
 			case PRINT_GRPC:

@@ -111,11 +111,11 @@ static int _set_cond(int *start, int argc, char *argv[],
 			if(slurm_addto_char_list(assoc_cond->fairshare_list,
 					argv[i]+end))
 				a_set = 1;
-		} else if (!strncasecmp (argv[i], "GrpCPUHours", 7)) {
-			if(!assoc_cond->grp_cpu_hours_list)
-				assoc_cond->grp_cpu_hours_list =
+		} else if (!strncasecmp (argv[i], "GrpCPUMins", 7)) {
+			if(!assoc_cond->grp_cpu_mins_list)
+				assoc_cond->grp_cpu_mins_list =
 					list_create(slurm_destroy_char);
-			if(slurm_addto_char_list(assoc_cond->grp_cpu_hours_list,
+			if(slurm_addto_char_list(assoc_cond->grp_cpu_mins_list,
 					argv[i]+end))
 				a_set = 1;
 		} else if (!strncasecmp (argv[i], "GrpCpus", 7)) {
@@ -297,12 +297,12 @@ static int _set_rec(int *start, int argc, char *argv[],
 			if (get_uint(argv[i]+end, &assoc->fairshare, 
 				     "FairShare") == SLURM_SUCCESS)
 				a_set = 1;
-		} else if (!strncasecmp (argv[i], "GrpCPUHours", 7)) {
+		} else if (!strncasecmp (argv[i], "GrpCPUMins", 7)) {
 			if(!assoc)
 				continue;
 			if (get_uint64(argv[i]+end, 
-				       &assoc->grp_cpu_hours, 
-				       "GrpCPUHours") == SLURM_SUCCESS)
+				       &assoc->grp_cpu_mins, 
+				       "GrpCPUMins") == SLURM_SUCCESS)
 				a_set = 1;
 		} else if (!strncasecmp (argv[i], "GrpCpus", 7)) {
 			if(!assoc)
@@ -691,7 +691,7 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 			assoc->parent_acct = xstrdup(start_assoc->parent_acct);
 			assoc->fairshare = start_assoc->fairshare;
 
-			assoc->grp_cpu_hours = start_assoc->grp_cpu_hours;
+			assoc->grp_cpu_mins = start_assoc->grp_cpu_mins;
 			assoc->grp_cpus = start_assoc->grp_cpus;
 			assoc->grp_jobs = start_assoc->grp_jobs;
 			assoc->grp_nodes = start_assoc->grp_nodes;
@@ -834,7 +834,7 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 		PRINT_COORDS,
 		PRINT_DESC,
 		PRINT_FAIRSHARE,
-		PRINT_GRPCH,
+		PRINT_GRPCM,
 		PRINT_GRPC,
 		PRINT_GRPJ,
 		PRINT_GRPN,
@@ -919,9 +919,9 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 			field->name = xstrdup("FairShare");
 			field->len = 9;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("GrpCPUHours", object, 8)) {
-			field->type = PRINT_GRPCH;
-			field->name = xstrdup("GrpCPUHours");
+		} else if(!strncasecmp("GrpCPUMins", object, 8)) {
+			field->type = PRINT_GRPCM;
+			field->name = xstrdup("GrpCPUMins");
 			field->len = 11;
 			field->print_routine = print_fields_uint64;
 		} else if(!strncasecmp("GrpCPUs", object, 8)) {
@@ -1093,10 +1093,10 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 							(curr_inx == 
 							 field_count));
 						break;
-					case PRINT_GRPCH:
+					case PRINT_GRPCM:
 						field->print_routine(
 							field,
-							assoc->grp_cpu_hours,
+							assoc->grp_cpu_mins,
 							(curr_inx == 
 							 field_count));
 						break;
@@ -1256,7 +1256,7 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 					/* All the association stuff */
 				case PRINT_CLUSTER:
 				case PRINT_FAIRSHARE:
-				case PRINT_GRPCH:
+				case PRINT_GRPCM:
 				case PRINT_GRPC:
 				case PRINT_GRPJ:
 				case PRINT_GRPN:

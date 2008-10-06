@@ -644,7 +644,7 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 
 	assoc->fairshare       = ret_assoc->fairshare;
 
-	assoc->grp_cpu_hours   = ret_assoc->grp_cpu_hours;
+	assoc->grp_cpu_mins   = ret_assoc->grp_cpu_mins;
 	assoc->grp_cpus        = ret_assoc->grp_cpus;
 	assoc->grp_jobs        = ret_assoc->grp_jobs;
 	assoc->grp_nodes       = ret_assoc->grp_nodes;
@@ -848,8 +848,8 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 			if(object->fairshare != NO_VAL) 
 				rec->fairshare = object->fairshare;
 			
-			if(object->grp_cpu_hours != NO_VAL) 
-				rec->grp_cpu_hours = object->grp_cpu_hours;
+			if(object->grp_cpu_mins != NO_VAL) 
+				rec->grp_cpu_mins = object->grp_cpu_mins;
 			if(object->grp_cpus != NO_VAL) 
 				rec->grp_cpus = object->grp_cpus;
 			if(object->grp_jobs != NO_VAL) 

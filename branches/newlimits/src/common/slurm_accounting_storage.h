@@ -75,7 +75,7 @@ typedef struct {
 
 	List fairshare_list;	/* fairshare number */
 
-	List grp_cpu_hours_list; /* list of char * */
+	List grp_cpu_mins_list; /* list of char * */
 	List grp_cpus_list; /* list of char * */
 	List grp_jobs_list;	/* list of char * */
 	List grp_nodes_list; /* list of char * */
@@ -140,7 +140,7 @@ typedef struct acct_association_rec {
 
 	uint32_t fairshare;	/* fairshare number */
 
-	uint64_t grp_cpu_hours; /* max number of cpu hours the
+	uint64_t grp_cpu_mins; /* max number of cpu hours the
 				     * underlying group of
 				     * associations can run for */
 	uint32_t grp_cpus; /* max number of cpus the
@@ -160,7 +160,7 @@ typedef struct acct_association_rec {
 			    * underlying group of
 			    * associations can run for */
 
-	uint32_t grp_used_cpu_hours; /* cpu hours the
+	uint32_t grp_used_cpu_mins; /* cpu hours the
 				      * underlying group of
 				      * associations has ran for 
 				      * (DON'T PACK) */
@@ -265,7 +265,7 @@ typedef struct {
 	List job_list; /* list of job pointers to submitted/running
 			  jobs (DON'T PACK) */
 
-	uint64_t grp_cpu_hours; /* max number of cpu hours the
+	uint64_t grp_cpu_mins; /* max number of cpu hours the
 				     * underlying group of
 				     * associations can run for */
 	uint32_t grp_cpus; /* max number of cpus this qos
@@ -278,7 +278,7 @@ typedef struct {
 				   * one time */
 	uint32_t grp_wall; /* total time in hours this qos can run for */
 
-	uint32_t grp_used_cpu_hours; /* cpu hours this qos has ran for 
+	uint32_t grp_used_cpu_mins; /* cpu hours this qos has ran for 
 				      * (DON'T PACK) */
 	uint32_t grp_used_cpus; /* count of cpus in use in this qos
 				 * (DON'T PACK) */

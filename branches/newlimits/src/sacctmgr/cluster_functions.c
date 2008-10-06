@@ -102,10 +102,10 @@ static int _set_rec(int *start, int argc, char *argv[],
 			if (get_uint(argv[i]+end, &assoc->fairshare, 
 			    "FairShare") == SLURM_SUCCESS)
 				set = 1;
-		} else if (!strncasecmp (argv[i], "GrpCPUHours", 7)) {
+		} else if (!strncasecmp (argv[i], "GrpCPUMins", 7)) {
 			if (get_uint64(argv[i]+end, 
-				       &assoc->grp_cpu_hours, 
-				       "GrpCPUHours") == SLURM_SUCCESS)
+				       &assoc->grp_cpu_mins, 
+				       "GrpCPUMins") == SLURM_SUCCESS)
 				set = 1;
 		} else if (!strncasecmp (argv[i], "GrpCpus", 7)) {
 			if (get_uint(argv[i]+end, &assoc->grp_cpus,
@@ -356,7 +356,7 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 		PRINT_CHOST,
 		PRINT_CPORT,
 		PRINT_FAIRSHARE,
-		PRINT_GRPCH,
+		PRINT_GRPCM,
 		PRINT_GRPC,
 		PRINT_GRPJ,
 		PRINT_GRPN,
@@ -415,9 +415,9 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 			field->name = xstrdup("FairShare");
 			field->len = 9;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("GrpCPUHours", object, 8)) {
-			field->type = PRINT_GRPCH;
-			field->name = xstrdup("GrpCPUHours");
+		} else if(!strncasecmp("GrpCPUMins", object, 8)) {
+			field->type = PRINT_GRPCM;
+			field->name = xstrdup("GrpCPUMins");
 			field->len = 11;
 			field->print_routine = print_fields_uint64;
 		} else if(!strncasecmp("GrpCPUs", object, 8)) {
@@ -555,10 +555,10 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 					cluster->root_assoc->fairshare,
 					(curr_inx == field_count));
 				break;
-			case PRINT_GRPCH:
+			case PRINT_GRPCM:
 				field->print_routine(
 					field,
-					assoc->grp_cpu_hours,
+					assoc->grp_cpu_mins,
 					(curr_inx == field_count));
 				break;
 			case PRINT_GRPC:
