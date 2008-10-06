@@ -410,7 +410,7 @@ extern int cluster_utilization(int argc, char *argv[])
 		goto end_it;
 
 	if(!list_count(format_list)) 
-		slurm_addto_char_list(format_list, "Cl,a,d,i,res,rep");
+		slurm_addto_char_list(format_list, "Cl,al,d,i,res,rep");
 
 	_setup_print_fields_list(format_list);
 	list_destroy(format_list);
@@ -563,7 +563,7 @@ extern int cluster_user_by_account(int argc, char *argv[])
 	_set_assoc_cond(&i, argc, argv, assoc_cond, format_list);
 
 	if(!list_count(format_list)) 
-		slurm_addto_char_list(format_list, "Cluster,L,P,A,Used");
+		slurm_addto_char_list(format_list, "Cluster,L,P,Ac,Used");
 
 	_setup_print_fields_list(format_list);
 	list_destroy(format_list);
@@ -711,7 +711,8 @@ extern int cluster_user_by_account(int argc, char *argv[])
 			printf("Time reported in %s\n", time_format_string);
 			break; 
 		default:
-			printf("Time reported in CPU %s\n", time_format_string);
+			printf("Time reported in CPU %s\n", 
+			       time_format_string);
 			break;
 		}
 		printf("----------------------------------------"
@@ -729,7 +730,11 @@ extern int cluster_user_by_account(int argc, char *argv[])
 		itr = list_iterator_create(sreport_cluster->user_list);
 		while((sreport_user = list_next(itr))) {
 			int curr_inx = 1;
-	
+
+			/* we don't care if they didn't use any time */
+			if(!sreport_user->cpu_secs)
+				continue;
+
 			while((field = list_next(itr2))) {
 				char *tmp_char = NULL;
 				struct passwd *pwd = NULL;
@@ -747,16 +752,17 @@ extern int cluster_user_by_account(int argc, char *argv[])
 						(curr_inx == field_count));
 					break;
 				case PRINT_CLUSTER_USER_LOGIN:
-					field->print_routine(field,
-							     sreport_user->name,
-							     (curr_inx == 
-							      field_count));
+					field->print_routine(
+						field,
+						sreport_user->name,
+						(curr_inx == field_count));
 					break;
 				case PRINT_CLUSTER_USER_PROPER:
 					pwd = getpwnam(sreport_user->name);
 					if(pwd) {
-						tmp_char = strtok(pwd->pw_gecos,
-								  ",");
+						tmp_char = 
+							strtok(pwd->pw_gecos,
+							       ",");
 						if(!tmp_char)
 							tmp_char = 
 								pwd->pw_gecos;
@@ -839,7 +845,7 @@ extern int cluster_account_by_user(int argc, char *argv[])
 	_set_assoc_cond(&i, argc, argv, assoc_cond, format_list);
 
 	if(!list_count(format_list)) 
-		slurm_addto_char_list(format_list, "Cluster,A,L,P,Used");
+		slurm_addto_char_list(format_list, "Cluster,Ac,L,P,Used");
 
 	_setup_print_fields_list(format_list);
 	list_destroy(format_list);
@@ -938,7 +944,8 @@ extern int cluster_account_by_user(int argc, char *argv[])
 				   since it is already avaliable and will do
 				   pretty much what we want.
 				*/
-				sreport_user = xmalloc(sizeof(sreport_user_rec_t));
+				sreport_user = 
+					xmalloc(sizeof(sreport_user_rec_t));
 				sreport_user->name = xstrdup(assoc->user);
 				sreport_user->uid = uid;
 				sreport_user->acct = xstrdup(assoc->acct);
@@ -1004,7 +1011,8 @@ extern int cluster_account_by_user(int argc, char *argv[])
 		itr = list_iterator_create(sreport_cluster->user_list);
 		while((sreport_user = list_next(itr))) {
 			int curr_inx = 1;
-	
+			if(!sreport_user->cpu_secs)
+				continue;
 			while((field = list_next(itr2))) {
 				char *tmp_char = NULL;
 				struct passwd *pwd = NULL;
