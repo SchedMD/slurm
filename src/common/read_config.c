@@ -1170,6 +1170,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->propagate_rlimits_except);
 	xfree (ctl_conf_ptr->propagate_rlimits);
 	xfree (ctl_conf_ptr->resume_program);
+	xfree (ctl_conf_ptr->salloc_default_command);
 	xfree (ctl_conf_ptr->slurm_conf);
 	xfree (ctl_conf_ptr->sched_params);
 	xfree (ctl_conf_ptr->schedtype);
@@ -1192,7 +1193,6 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->task_prolog);
 	xfree (ctl_conf_ptr->tmp_fs);
 	xfree (ctl_conf_ptr->unkillable_program);
-	xfree (ctl_conf_ptr->salloc_default_command);
 
 	if (purge_node_hash)
 		_free_name_hashtbl();
@@ -1267,6 +1267,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->resume_program);
 	ctl_conf_ptr->resume_rate		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->ret2service		= (uint16_t) NO_VAL;
+	xfree( ctl_conf_ptr->salloc_default_command);
 	xfree( ctl_conf_ptr->sched_params );
 	ctl_conf_ptr->sched_time_slice		= (uint16_t) NO_VAL;
 	xfree( ctl_conf_ptr->schedtype );
