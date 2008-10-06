@@ -594,7 +594,7 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 	if(assoc_cond->with_sub_accts) {
 		prefix = "t2";
 		xstrfmtcat(*extra, ", %s as t2 where "
-			   "(t1.lft between t2.lft and t2.rgt) && ",
+			   "(t1.lft between t2.lft and t2.rgt) &&",
 			   assoc_table);
 	} else 
 		xstrcat(*extra, " where");
