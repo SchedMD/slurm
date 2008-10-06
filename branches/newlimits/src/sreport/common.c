@@ -42,7 +42,7 @@
 extern void sreport_print_time(print_field_t *field,
 			       uint64_t value, uint64_t total_time, int last)
 {
-	if(!total_time)
+	if(!total_time) 
 		total_time = 1;
 
 	/* (value == unset)  || (value == cleared) */
@@ -274,15 +274,15 @@ extern int set_start_end_time(time_t *start, time_t *end)
 	return SLURM_SUCCESS;
 }
 
-extern void destroy_sreport_acct_rec(void *object)
+extern void destroy_sreport_assoc_rec(void *object)
 {
-	sreport_acct_rec_t *sreport_acct = (sreport_acct_rec_t *)object;
-	if(sreport_acct) {
-		xfree(sreport_acct->user);
-		if(sreport_acct->user_list)
-			list_destroy(sreport_acct->user_list);
-		xfree(sreport_acct->name);
-		xfree(sreport_acct);
+	sreport_assoc_rec_t *sreport_assoc = (sreport_assoc_rec_t *)object;
+	if(sreport_assoc) {
+		xfree(sreport_assoc->acct);
+		xfree(sreport_assoc->cluster);
+		xfree(sreport_assoc->parent_acct);
+		xfree(sreport_assoc->user);
+		xfree(sreport_assoc);
 	}
 }
 
@@ -303,8 +303,8 @@ extern void destroy_sreport_cluster_rec(void *object)
 	sreport_cluster_rec_t *sreport_cluster = 
 		(sreport_cluster_rec_t *)object;
 	if(sreport_cluster) {
-		if(sreport_cluster->acct_list)
-			list_destroy(sreport_cluster->acct_list);
+		if(sreport_cluster->assoc_list)
+			list_destroy(sreport_cluster->assoc_list);
 		xfree(sreport_cluster->name);
 		if(sreport_cluster->user_list)
 			list_destroy(sreport_cluster->user_list);
@@ -337,6 +337,73 @@ extern int sort_user_dec(sreport_user_rec_t *user_a, sreport_user_rec_t *user_b)
 	else if (diff < 0)
 		return 1;
 	
+	return 0;
+}
+
+/* 
+ * Comparator used for sorting clusters alphabetically
+ * 
+ * returns: -1: cluster_a > cluster_b   
+ *           0: cluster_a == cluster_b
+ *           1: cluster_a < cluster_b
+ * 
+ */
+extern int sort_cluster_dec(sreport_cluster_rec_t *cluster_a,
+			    sreport_cluster_rec_t *cluster_b)
+{
+	int diff = 0;
+
+	if(!cluster_a->name || !cluster_b->name)
+		return 0;
+
+	diff = strcmp(cluster_a->name, cluster_b->name);
+
+	if (diff > 0)
+		return -1;
+	else if (diff < 0)
+		return 1;
+	
+	return 0;
+}
+
+/* 
+ * Comparator used for sorting assocs alphabetically by acct and then
+ * by user.  The association with a total count of time is at the top
+ * of the accts.
+ * 
+ * returns: -1: assoc_a > assoc_b   
+ *           0: assoc_a == assoc_b
+ *           1: assoc_a < assoc_b
+ * 
+ */
+extern int sort_assoc_dec(sreport_assoc_rec_t *assoc_a,
+			  sreport_assoc_rec_t *assoc_b)
+{
+	int diff = 0;
+
+	if(!assoc_a->acct || !assoc_b->acct)
+		return 0;
+
+	diff = strcmp(assoc_a->acct, assoc_b->acct);
+
+	if (diff > 0)
+		return -1;
+	else if (diff < 0)
+		return 1;
+	
+	if(!assoc_a->user && assoc_b->user)
+		return -1;
+	else if(!assoc_b->user)
+		return 1;
+
+	diff = strcmp(assoc_a->user, assoc_b->user);
+
+	if (diff > 0)
+		return -1;
+	else if (diff < 0)
+		return 1;
+	
+
 	return 0;
 }
 
