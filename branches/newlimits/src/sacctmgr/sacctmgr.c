@@ -697,14 +697,14 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
   <SPECS> are different for each command entity pair.                      \n\
        list account       - Clusters=, Descriptions=, Format=, Names=,     \n\
                             Organizations=, Parents=, WithCoor=,           \n\
-                            and WithAssocs                                 \n\
+                            WithSubAccounts, and WithAssocs                \n\
        add account        - Clusters=, Description=, Fairshare=,           \n\
-                            GrpCPUMins=, GrpCPUs=, GrpJobs=, GrpNodes=,   \n\
+                            GrpCPUMins=, GrpCPUs=, GrpJobs=, GrpNodes=,    \n\
                             GrpSubmitJob=, GrpWall=, MaxCPUMins=, MaxJobs=,\n\
                             MaxNodes=, MaxWall=, Names=, Organization=,    \n\
                             Parent=, and QosLevel                          \n\
        modify account     - (set options) Description=, Fairshare=,        \n\
-                            GrpCPUMins=, GrpCPUs=, GrpJobs=, GrpNodes=,   \n\
+                            GrpCPUMins=, GrpCPUs=, GrpJobs=, GrpNodes=,    \n\
                             GrpSubmitJob=, GrpWall=, MaxCPUMins=, MaxJobs=,\n\
                             MaxNodes=, MaxWall=, Names=, Organization=,    \n\
                             Parent=, and QosLevel=                         \n\
@@ -715,13 +715,14 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                                                                            \n\
        list associations  - Accounts=, Clusters=, Format=, ID=,            \n\
                             Partitions=, Parent=, Tree, Users=,            \n\
-                            WithDeleted, WOPInfo, WOPLimits                \n\
+                            WithSubAccounts, WithDeleted, WOPInfo,         \n\
+                            and WOPLimits                                  \n\
                                                                            \n\
        list cluster       - Names= Format=                                 \n\
        add cluster        - Fairshare=, GrpCPUMins=, GrpCPUs=, GrpJobs=,  \n\
                             GrpNodes=, GrpSubmitJob=, GrpWall=, MaxCPUMins=\n\
                             MaxJobs=, MaxNodes=, MaxWall=, and Name=       \n\
-       modify cluster     - (set options) Fairshare=, GrpCPUMins=,        \n\
+       modify cluster     - (set options) Fairshare=, GrpCPUMins=,         \n\
                             GrpCPUs=, GrpJobs=, GrpNodes=, GrpSubmitJob=,  \n\
                             GrpWall=, MaxCPUMins=, MaxJobs=, MaxNodes=,    \n\
                             and MaxWall=                                   \n\
@@ -755,12 +756,14 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                                                                            \n\
   Format options are different for listing each entity pair.               \n\
                                                                            \n\
-       Account            - Account, Cluster, CoordinatorList,             \n\
-                            Description, Organization, QOS, QOSRAW         \n\
+       Account            - Account, CoordinatorList, Description,         \n\
+                            Organization                                   \n\
                                                                            \n\
-       Association        - Account, Cluster, Fairshare, ID, LFT,          \n\
-                            MaxCPUSecs, MaxJobs, MaxNodes, MaxWall,        \n\
-                            ParentID, ParentName, Partition, RGT, User     \n\
+       Association        - Account, Cluster, Fairshare, GrpCPUMins,       \n\
+                            GrpCPUs, GrpJobs, GrpNodes, GrpSubmitJob,      \n\
+                            GrpWall, ID, LFT, MaxCPUSecs, MaxJobs,         \n\
+                            MaxNodes, MaxWall, QOS, ParentID,              \n\
+                            ParentName, Partition, RGT, User               \n\
                                                                            \n\
        Cluster            - Cluster, ControlHost, ControlPort, Fairshare   \n\
                             MaxCPUSecs, MaxJobs, MaxNodes, MaxWall         \n\
@@ -769,8 +772,8 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                                                                            \n\
        Transactions       - Action, Actor, ID, Info, TimeStamp, Where      \n\
                                                                            \n\
-       User               - Account, AdminLevel, Cluster, CoordinatorList, \n\
-                            DefaultAccount, QOS, QOSRAW, User              \n\
+       User               - AdminLevel, CoordinatorList, DefaultAccount,   \n\
+                            User                                           \n\
                                                                            \n\
                                                                            \n\
   All commands entitys, and options are case-insensitive.               \n\n");
