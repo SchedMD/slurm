@@ -850,6 +850,8 @@ extern int cluster_account_by_user(int argc, char *argv[])
 
 	bzero(&cluster_cond, sizeof(acct_cluster_cond_t));
 
+	assoc_cond->with_sub_accts = 1;
+
 	_set_assoc_cond(&i, argc, argv, assoc_cond, format_list);
 
 	if(!list_count(format_list)) 

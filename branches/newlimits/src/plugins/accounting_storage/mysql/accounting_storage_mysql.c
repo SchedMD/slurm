@@ -579,15 +579,31 @@ static int _setup_qos_limits(acct_qos_rec_t *qos,
 
 }
 
+/* when doing a select on this all the select should have a prefix of
+ * t1. */
 static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 					  char **extra)
 {
 	int set = 0;
 	ListIterator itr = NULL;
 	char *object = NULL;
-
+	char *prefix = "t1";
 	if(!assoc_cond)
 		return 0;
+
+	if(assoc_cond->with_sub_accts) {
+		prefix = "t2";
+		xstrfmtcat(*extra, ", %s as t2 where "
+			   "(t1.lft between t2.lft and t2.rgt) && ",
+			   assoc_table);
+	} else 
+		xstrcat(*extra, " where");
+	
+	if(assoc_cond->with_deleted) 
+		xstrfmtcat(*extra, " (%s.deleted=0 || %s.deleted=1)",
+			prefix, prefix);
+	else 
+		xstrfmtcat(*extra, " %s.deleted=0", prefix);
 
 	if(assoc_cond->acct_list && list_count(assoc_cond->acct_list)) {
 		set = 0;
@@ -596,7 +612,7 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "acct=\"%s\"", object);
+			xstrfmtcat(*extra, "%s.acct=\"%s\"", prefix, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -610,7 +626,7 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "cluster=\"%s\"", object);
+			xstrfmtcat(*extra, "%s.cluster=\"%s\"", prefix, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -625,7 +641,8 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "fairshare=\"%s\"", object);
+			xstrfmtcat(*extra, "%s.fairshare=\"%s\"", 
+				   prefix, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -640,7 +657,8 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "grp_cpu_mins=\"%s\"", object);
+			xstrfmtcat(*extra, "%s.grp_cpu_mins=\"%s\"", 
+				   prefix, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -655,7 +673,8 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "grp_cpus=\"%s\"", object);
+			xstrfmtcat(*extra, "%s.grp_cpus=\"%s\"", 
+				   prefix, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -670,7 +689,8 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "grp_jobs=\"%s\"", object);
+			xstrfmtcat(*extra, "%s.grp_jobs=\"%s\"",
+				   prefix, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -685,7 +705,8 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "grp_nodes=\"%s\"", object);
+			xstrfmtcat(*extra, "%s.grp_nodes=\"%s\"",
+				   prefix, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -700,7 +721,8 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "grp_submit_jobs=\"%s\"", object);
+			xstrfmtcat(*extra, "%s.grp_submit_jobs=\"%s\"",
+				   prefix, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -715,7 +737,8 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "grp_wall=\"%s\"", object);
+			xstrfmtcat(*extra, "%s.grp_wall=\"%s\"", 
+				   prefix, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -730,8 +753,8 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "max_cpu_mins_per_job=\"%s\"", 
-				   object);
+			xstrfmtcat(*extra, "%s.max_cpu_mins_per_job=\"%s\"", 
+				   prefix, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -746,7 +769,8 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "max_cpus_per_job=\"%s\"", object);
+			xstrfmtcat(*extra, "%s.max_cpus_per_job=\"%s\"", 
+				   prefix, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -761,7 +785,8 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "max_jobs=\"%s\"", object);
+			xstrfmtcat(*extra, "%s.max_jobs=\"%s\"", 
+				   prefix, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -776,7 +801,8 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "max_nodes_per_job=\"%s\"", object);
+			xstrfmtcat(*extra, "%s.max_nodes_per_job=\"%s\"", 
+				   prefix, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -791,7 +817,8 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "max_submit_jobs=\"%s\"", object);
+			xstrfmtcat(*extra, "%s.max_submit_jobs=\"%s\"", 
+				   prefix, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -806,8 +833,9 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "max_wall_duration_per_job=\"%s\"",
-				   object);
+			xstrfmtcat(*extra,
+				   "%s.max_wall_duration_per_job=\"%s\"",
+				   prefix, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -821,7 +849,7 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "user=\"%s\"", object);
+			xstrfmtcat(*extra, "%s.user=\"%s\"", prefix, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -836,7 +864,8 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "partition=\"%s\"", object);
+			xstrfmtcat(*extra, "%s.partition=\"%s\"",
+				   prefix, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -850,7 +879,7 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "id=%s", object);
+			xstrfmtcat(*extra, "%s.id=%s", prefix, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -865,8 +894,12 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 			if(set) 
 				xstrcat(*extra, " || ");
 			xstrfmtcat(*extra, 
-				   "(qos like '%%,%s' || qos like '%%,%s,%%')",
-				   object, object);
+				   "(%s.qos like '%%,%s' "
+				   "|| %s.qos like '%%,%s,%%' "
+				   "|| %s.delta_qos like '%%,+%s' "
+				   "|| %s.delta_qos like '%%,+%s,%%')",
+				   prefix, object, prefix, object,
+				   prefix, object, prefix, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -881,7 +914,7 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "parent_acct=%s", object);
+			xstrfmtcat(*extra, "%s.parent_acct=%s", prefix, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -4190,10 +4223,10 @@ extern List acct_storage_p_modify_associations(
 	for(i=0; i<MASSOC_COUNT; i++) {
 		if(i) 
 			xstrcat(object, ", ");
-		xstrcat(object, massoc_req_inx[i]);
+		xstrfmtcat(object, "t1.%s", massoc_req_inx[i]);
 	}
 
-	query = xstrdup_printf("select distinct %s from %s where deleted=0%s "
+	query = xstrdup_printf("select distinct %s from %s as t1%s "
 			       "order by lft FOR UPDATE;",
 			       object, assoc_table, extra);
 	xfree(object);
@@ -5503,8 +5536,6 @@ extern List acct_storage_p_remove_associations(
 		is_admin = 1;
 	}
 
-	xstrcat(extra, "where id>0 && deleted=0");
-
 	set = _setup_association_cond_limits(assoc_cond, &extra);
 
 	for(i=0; i<RASSOC_COUNT; i++) {
@@ -5513,8 +5544,8 @@ extern List acct_storage_p_remove_associations(
 		xstrcat(object, rassoc_req_inx[i]);
 	}
 
-	query = xstrdup_printf("select lft, rgt from %s %s order by lft "
-			       "FOR UPDATE;",
+	query = xstrdup_printf("select distinct t1.lft, t1.rgt from %s as t1%s "
+			       "order by lft FOR UPDATE;",
 			       assoc_table, extra);
 	xfree(extra);
 	if(!(result = mysql_db_query_ret(
@@ -6364,7 +6395,7 @@ empty:
 		list_append(assoc_cond.cluster_list, cluster->name);
 
 		/* get the usage if requested */
-		if(cluster_cond->with_usage) {
+		if(cluster_cond && cluster_cond->with_usage) {
 			clusteracct_storage_p_get_usage(
 				mysql_conn, uid, cluster,
 				cluster_cond->usage_start,
@@ -6571,11 +6602,6 @@ extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 		}
 	}
 
-	if(assoc_cond->with_deleted) 
-		xstrcat(extra, "where (deleted=0 || deleted=1)");
-	else
-		xstrcat(extra, "where deleted=0");
-
 	set = _setup_association_cond_limits(assoc_cond, &extra);
 
 	with_usage = assoc_cond->with_usage;
@@ -6583,9 +6609,9 @@ extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 	without_parent_info = assoc_cond->without_parent_info;
 empty:
 	xfree(tmp);
-	xstrfmtcat(tmp, "%s", assoc_req_inx[i]);
+	xstrfmtcat(tmp, "t1.%s", assoc_req_inx[i]);
 	for(i=1; i<ASSOC_REQ_COUNT; i++) {
-		xstrfmtcat(tmp, ", %s", assoc_req_inx[i]);
+		xstrfmtcat(tmp, ", t1.%s", assoc_req_inx[i]);
 	}
 	
 	/* this is here to make sure we are looking at only this user
@@ -6630,7 +6656,8 @@ empty:
 		mysql_free_result(result);
 	}
 	
-	query = xstrdup_printf("select %s from %s %s order by lft;", 
+	query = xstrdup_printf("select distinct %s from %s as t1%s "
+			       "order by lft;", 
 			       tmp, assoc_table, extra);
 	xfree(tmp);
 	xfree(extra);
@@ -6721,10 +6748,12 @@ empty:
 					break;
 				}
 				xfree(query);
-				row2 = mysql_fetch_row(result2);
-				last_acct_parent = row[ASSOC_REQ_PARENT];
-				last_cluster = row[ASSOC_REQ_CLUSTER];
-				acct_parent_id = atoi(row2[0]);	
+				if((row2 = mysql_fetch_row(result2))) {
+					last_acct_parent = 
+						row[ASSOC_REQ_PARENT];
+					last_cluster = row[ASSOC_REQ_CLUSTER];
+					acct_parent_id = atoi(row2[0]);	
+				}
 				mysql_free_result(result2);
 			}
 			assoc->parent_acct = xstrdup(row[ASSOC_REQ_PARENT]);
@@ -6758,7 +6787,11 @@ empty:
 			}
 			xfree(query);
 			
-			row2 = mysql_fetch_row(result2);
+			if(!(row2 = mysql_fetch_row(result2))) {
+				user_parent_id = 0;
+				goto no_parent_limits;
+			}
+
 			user_parent_id = atoi(row2[ASSOC2_REQ_PARENT_ID]);
 			if(!without_parent_limits) {
 				if(row2[ASSOC2_REQ_MCMPJ])
@@ -6814,6 +6847,7 @@ empty:
 			}
 			last_acct = row[ASSOC_REQ_ACCT];
 			last_cluster2 = row[ASSOC_REQ_CLUSTER];
+		no_parent_limits:
 			mysql_free_result(result2);
 		}
 		if(row[ASSOC_REQ_MJ])
