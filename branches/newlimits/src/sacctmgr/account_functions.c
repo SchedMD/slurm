@@ -686,6 +686,7 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 			}
 
 			assoc = xmalloc(sizeof(acct_association_rec_t));
+			init_acct_association_rec(assoc);
 			assoc->acct = xstrdup(name);
 			assoc->cluster = xstrdup(cluster);
 			assoc->parent_acct = xstrdup(start_assoc->parent_acct);

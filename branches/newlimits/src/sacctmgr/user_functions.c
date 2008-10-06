@@ -907,6 +907,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 						continue;
 					assoc = xmalloc(
 						sizeof(acct_association_rec_t));
+					init_acct_association_rec(assoc);
 					assoc->user = xstrdup(name);
 					assoc->acct = xstrdup(account);
 					assoc->cluster = xstrdup(cluster);
@@ -965,6 +966,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 				}		
 			
 				assoc = xmalloc(sizeof(acct_association_rec_t));
+				init_acct_association_rec(assoc);
 				assoc->user = xstrdup(name);
 				assoc->acct = xstrdup(account);
 				assoc->cluster = xstrdup(cluster);
