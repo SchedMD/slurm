@@ -562,7 +562,6 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 	char *default_acct = NULL;
 	acct_association_cond_t *assoc_cond = NULL;
 	acct_association_cond_t query_assoc_cond;
-	List add_qos_list = NULL;
 	List qos_list = NULL;
 	acct_admin_level_t admin_level = ACCT_ADMIN_NOTSET;
 	char *name = NULL, *account = NULL, *cluster = NULL, *partition = NULL;
@@ -686,13 +685,18 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 		} else if (!strncasecmp (argv[i], "QosLevel", 1)) {
 			int option = 0;
 			if(!start_assoc.qos_list) 
-				add_qos_list = 
+				start_assoc.qos_list = 
 					list_create(slurm_destroy_char);
 			
 			if(!qos_list) 
 				qos_list = acct_storage_g_get_qos(
 					db_conn, my_uid, NULL);
 			
+			if(end > 2 && argv[i][end-1] == '='
+			   && (argv[i][end-2] == '+' 
+			       || argv[i][end-2] == '-'))
+				option = (int)argv[i][end-2];
+
 			if(addto_qos_char_list(start_assoc.qos_list, qos_list,
 					       argv[i]+end, option))
 				limit_set = 1;
@@ -847,7 +851,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 					xfree(warning);
 					rc = SLURM_ERROR;
 					list_flush(user_list);
-					goto no_default;
+					goto end_it;
 				}
 				xfree(warning);
 			}
@@ -1083,8 +1087,6 @@ no_default:
 	}
 
 end_it:
-	if(add_qos_list)
-		list_destroy(add_qos_list);
 	list_destroy(user_list);
 	list_destroy(assoc_list);
 	xfree(default_acct);

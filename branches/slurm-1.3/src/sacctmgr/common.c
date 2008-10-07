@@ -482,13 +482,19 @@ extern acct_qos_rec_t *sacctmgr_find_qos_from_list(
 {
 	ListIterator itr = NULL;
 	acct_qos_rec_t *qos = NULL;
+	char *working_name = NULL;
 	
 	if(!name || !qos_list)
 		return NULL;
+
+	if(name[0] == '+' || name[0] == '-')
+		working_name = name+1;
+	else
+		working_name = name;
 	
 	itr = list_iterator_create(qos_list);
 	while((qos = list_next(itr))) {
-		if(!strcasecmp(name, qos->name))
+		if(!strcasecmp(working_name, qos->name))
 			break;
 	}
 	list_iterator_destroy(itr);
@@ -612,6 +618,8 @@ extern int addto_qos_char_list(List char_list, List qos_list, char *names,
 	int quote = 0;
 	uint32_t id=0;
 	int count = 0;
+	int equal_set = 0;
+	int add_set = 0;
 
 	if(!char_list) {
 		error("No list was given to fill in");
@@ -639,6 +647,12 @@ extern int addto_qos_char_list(List char_list, List qos_list, char *names,
 				names[i] = '`';
 			else if(names[i] == ',') {
 				if((i-start) > 0) {
+					int tmp_option = option;
+					if(names[start] == '+' 
+					   || names[start] == '-') {
+						tmp_option = names[start];
+						start++;
+					}
 					name = xmalloc((i-start+1));
 					memcpy(name, names+start, (i-start));
 					
@@ -657,11 +671,36 @@ extern int addto_qos_char_list(List char_list, List qos_list, char *names,
 					}
 					xfree(name);
 					
-					if(option) {
+					if(tmp_option) {
+						if(equal_set) {
+							error("You can't set "
+							      "qos equal to "
+							      "something and "
+							      "then add or "
+							      "subtract from "
+							      "it in the same "
+							      "line");
+							exit_code = 1;
+							break;
+						}
+						add_set = 1;
 						name = xstrdup_printf(
-							"%c%u", option, id);
-					} else
+							"%c%u", tmp_option, id);
+					} else {
+						if(add_set) {
+							error("You can't set "
+							      "qos equal to "
+							      "something and "
+							      "then add or "
+							      "subtract from "
+							      "it in the same "
+							      "line");
+							exit_code = 1;
+							break;
+						}
+						equal_set = 1;
 						name = xstrdup_printf("%u", id);
+					}
 					while((tmp_char = list_next(itr))) {
 						if(!strcasecmp(tmp_char, name))
 							break;
@@ -691,6 +730,11 @@ extern int addto_qos_char_list(List char_list, List qos_list, char *names,
 			i++;
 		}
 		if((i-start) > 0) {
+			int tmp_option = option;
+			if(names[start] == '+' || names[start] == '-') {
+				tmp_option = names[start];
+				start++;
+			}
 			name = xmalloc((i-start)+1);
 			memcpy(name, names+start, (i-start));
 			
@@ -706,12 +750,35 @@ extern int addto_qos_char_list(List char_list, List qos_list, char *names,
 				goto end_it;
 			}
 			xfree(name);
-			
-			if(option) {
+
+			if(tmp_option) {
+				if(equal_set) {
+					error("You can't set "
+					      "qos equal to "
+					      "something and "
+					      "then add or "
+					      "subtract from "
+					      "it in the same "
+					      "line");
+					exit_code = 1;
+					goto end_it;
+				}
 				name = xstrdup_printf(
-					"%c%u", option, id);
-			} else
+					"%c%u", tmp_option, id);
+			} else {
+				if(add_set) {
+					error("You can't set "
+					      "qos equal to "
+					      "something and "
+					      "then add or "
+					      "subtract from "
+					      "it in the same "
+					      "line");
+					exit_code = 1;
+					goto end_it;
+				}
 				name = xstrdup_printf("%u", id);
+			}
 			while((tmp_char = list_next(itr))) {
 				if(!strcasecmp(tmp_char, name))
 					break;
