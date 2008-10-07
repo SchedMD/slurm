@@ -102,28 +102,6 @@ extern int fini (void)
 	return SLURM_SUCCESS;
 }
 
-/*
- * _isvalue_task
- * returns 1 is the argument appears to be a value, 0 otherwise
- * this should be identical to _isvalue in src/srun/opt.c
- */
-static int _isvalue_task(char *arg)
-{
-    	if (isdigit(*arg)) {		/* decimal values and 0x.. hex values */
-	    	return 1;
-	}
-
-	while (isxdigit(*arg)) {	/* hex values not preceded by 0x */
-		arg++;
-	}
-
-	if ((*arg == ',') || (*arg == '\0')) { /* end of field or string */
-	    	return 1;
-	}
-
-	return 0;			/* not a value */
-}
-
 /* cpu bind enforcement, update binding type based upon the
  *	TaskPluginParam configuration parameter */
 static void _update_bind_type(launch_tasks_request_msg_t *req)
