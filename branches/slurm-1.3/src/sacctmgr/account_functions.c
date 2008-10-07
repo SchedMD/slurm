@@ -543,6 +543,7 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 		start_assoc->parent_acct = xstrdup("root");
 
 	if(!cluster_list || !list_count(cluster_list)) {
+		acct_cluster_rec_t *cluster_rec = NULL;
 		List tmp_list =
 			acct_storage_g_get_clusters(db_conn, my_uid, NULL);
 		if(!tmp_list) {
@@ -571,8 +572,17 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 			list_destroy(local_account_list);
 			return SLURM_ERROR; 
 		}
-		list_destroy(cluster_list);
-		cluster_list = tmp_list;
+		if(!cluster_list)
+			list_create(slurm_destroy_char);
+		else
+			list_flush(cluster_list);
+
+		itr_c = list_iterator_create(tmp_list);
+		while((cluster_rec = list_next(itr_c))) {
+			list_append(cluster_list, xstrdup(cluster_rec->name));
+		}
+		list_iterator_destroy(itr_c);
+		list_destroy(tmp_list);
 	} else {
 		List temp_list = NULL;
 		acct_cluster_cond_t cluster_cond;
