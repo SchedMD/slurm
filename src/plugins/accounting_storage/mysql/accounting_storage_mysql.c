@@ -6501,6 +6501,7 @@ extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 	uint16_t without_parent_info = 0;
 	uint16_t without_parent_limits = 0;
 	uint16_t with_usage = 0;
+	uint16_t with_raw_qos = 0;
 
 	/* if this changes you will need to edit the corresponding enum */
 	char *assoc_req_inx[] = {
@@ -6604,6 +6605,7 @@ extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 
 	set = _setup_association_cond_limits(assoc_cond, &extra);
 
+	with_raw_qos = assoc_cond->with_raw_qos;
 	with_usage = assoc_cond->with_usage;
 	without_parent_limits = assoc_cond->without_parent_limits;
 	without_parent_info = assoc_cond->without_parent_info;
@@ -6886,13 +6888,17 @@ empty:
 
 		assoc->qos_list = list_create(slurm_destroy_char);
 
-		// do a plus 1 since a comma is the first thing there
-		// in the list
+		/* do a plus 1 since a comma is the first thing there
+		 * in the list.  Also you can never have both a qos
+		 * and a delta qos so if you have a qos don't worry
+		 * about the delta.
+		 */
 		if(row[ASSOC_REQ_QOS][0]) 
 			slurm_addto_char_list(assoc->qos_list,
 					      row[ASSOC_REQ_QOS]+1);
-		else if(parent_qos) {		
-			slurm_addto_char_list(assoc->qos_list,
+		else {
+			if(parent_qos) 
+				slurm_addto_char_list(assoc->qos_list,
 						      parent_qos+1);
 			/* if qos is set on the association itself do
 			   not worry about the deltas
@@ -6905,7 +6911,14 @@ empty:
 				slurm_addto_char_list(delta_qos_list,
 						      parent_delta_qos+1);
 		}
-		if(list_count(delta_qos_list)) {
+
+		/* Sometimes we want to see exactly what is here in
+		   the database instead of a complete list.  This will
+		   give it to us.
+		*/
+		if(with_raw_qos && list_count(delta_qos_list)) {
+			list_transfer(assoc->qos_list, delta_qos_list);
+		} else if(list_count(delta_qos_list)) {
 			ListIterator curr_qos_itr = 
 				list_iterator_create(assoc->qos_list);
 			ListIterator new_qos_itr = 

@@ -2655,6 +2655,7 @@ extern void pack_acct_association_cond(void *in, uint16_t rpc_version,
 			pack16(0, buffer);
 			pack16(0, buffer);
 			pack16(0, buffer);
+			pack16(0, buffer);
 			return;
 		}
 
@@ -2921,6 +2922,7 @@ extern void pack_acct_association_cond(void *in, uint16_t rpc_version,
 
 		pack16(object->with_usage, buffer);
 		pack16(object->with_deleted, buffer);
+		pack16(object->with_raw_qos, buffer);
 		pack16(object->with_sub_accts, buffer);
 		pack16(object->without_parent_info, buffer);
 		pack16(object->without_parent_limits, buffer);
@@ -3280,6 +3282,7 @@ extern int unpack_acct_association_cond(void **object,
 
 		safe_unpack16(&object_ptr->with_usage, buffer);
 		safe_unpack16(&object_ptr->with_deleted, buffer);
+		safe_unpack16(&object_ptr->with_raw_qos, buffer);
 		safe_unpack16(&object_ptr->with_sub_accts, buffer);
 		safe_unpack16(&object_ptr->without_parent_info, buffer);
 		safe_unpack16(&object_ptr->without_parent_limits, buffer);

@@ -103,6 +103,7 @@ typedef struct {
 
 	uint16_t with_usage;  /* fill in usage */
 	uint16_t with_deleted; /* return deleted associations */
+	uint16_t with_raw_qos; /* return a raw qos or delta_qos */
 	uint16_t with_sub_accts; /* return sub acct information also */
 	uint16_t without_parent_info; /* don't give me parent id/name */
 	uint16_t without_parent_limits; /* don't give me limits from
