@@ -1922,7 +1922,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	enum job_state_reason fail_reason;
 	struct part_record *part_ptr;
 	bitstr_t *req_bitmap = NULL, *exc_bitmap = NULL;
-	struct job_record *job_ptr;
+	struct job_record *job_ptr = NULL;
 	uint32_t total_nodes, max_procs;
 	acct_association_rec_t assoc_rec, *assoc_ptr;
 	List license_list = NULL;
