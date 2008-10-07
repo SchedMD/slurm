@@ -750,7 +750,7 @@ memory and failing.
 <b>Use this method with caution.</b>
 <ol>
 <li>Execute the <i>configure</i> program with your normal options
-plus <i>--enable-front-end (this will define HAVE_FRONT_END in
+plus <i>--enable-front-end</i> (this will define HAVE_FRONT_END in
 the resulting <i>config.h</i> file.</li>
 <li>Build and install SLURM in the usual manner.</li>
 <li>In <i>slurm.conf</i> define the desired node names (arbitrary
