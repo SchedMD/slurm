@@ -222,7 +222,12 @@ is not in the database, then set this to "1".
 user names and optional partition name.)
 Without AccountingStorageEnforce being set (the default behavior) 
 jobs will be executed based upon policies configured in SLURM on each cluster. 
-This option will prevent users from accessing invalid accounts.</li>
+This option will prevent users from accessing invalid accounts.  
+Setting this to "2" will also cause association limits to be
+enforced.  When set to "1" association limits will not be
+enforced.  It is a good idea to run in this mode when running a
+scheduler on top of slurm, like Moab, that does not update in real
+time their limits per association.</li>
 
 <li><b>AccountingStorageHost</b>: The name or address of the host where 
 SlurmDBD executes</li>
