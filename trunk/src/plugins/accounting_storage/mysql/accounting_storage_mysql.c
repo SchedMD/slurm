@@ -350,20 +350,29 @@ static int _setup_association_limits(acct_association_rec_t *assoc,
 
 	if((qos_level != QOS_LEVEL_MODIFY)
 	   && assoc->qos_list && list_count(assoc->qos_list)) {
+		char *qos_type = "qos";
 		char *qos_val = NULL;
 		char *tmp_char = NULL;
+		int set = 0;
 		ListIterator qos_itr = 
 			list_iterator_create(assoc->qos_list);
 		
-		xstrcat(*cols, ", qos");
-		
-		while((tmp_char = list_next(qos_itr))) 
+		while((tmp_char = list_next(qos_itr))) {
+			if(!set) {
+				if(tmp_char[0] == '+' || tmp_char[0] == '-')
+					qos_type = "delta_qos";
+				set = 1;
+			}
 			xstrfmtcat(qos_val, ",%s", tmp_char);
-		
+		}
+
 		list_iterator_destroy(qos_itr);
+
+		xstrfmtcat(*cols, ", %s", qos_type);
+		
 		
 		xstrfmtcat(*vals, ", '%s'", qos_val); 		
-		xstrfmtcat(*extra, ", qos='%s'", qos_val); 
+		xstrfmtcat(*extra, ", %s='%s'", qos_type, qos_val); 
 		xfree(qos_val);
 	} else if((qos_level == QOS_LEVEL_SET) && (normal_qos_id != NO_VAL)) { 
 		/* Add normal qos to the account */

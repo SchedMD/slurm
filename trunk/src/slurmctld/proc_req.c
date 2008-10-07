@@ -2951,7 +2951,10 @@ inline static void  _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 	START_TIMER;
 	debug2("Processing RPC: ACCOUNTING_UPDATE_MSG from uid=%u",
 		(unsigned int) uid);
-	if (!validate_super_user(uid)) {
+
+	if (!validate_super_user(uid) 
+	    && (assoc_mgr_get_admin_level(acct_db_conn, uid)
+		< ACCT_ADMIN_SUPER_USER)) {
 		error("Update Association request from non-super user uid=%d", 
 		      uid);
 		slurm_send_rc_msg(msg, EACCES);

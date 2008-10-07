@@ -170,8 +170,9 @@ Update <b>Makefile.am</b> files as needed then execute
 
 <h2>Tricks of the Trade</h2>
 <h3>HAVE_FRONT_END</h3>
-<p>You can make a single node appear to SLURM as a Linux cluster by manually 
-defining <b>HAVE_FRONT_END</b> to have a non-zero value in the file <b>config.h</b>.
+<p>You can make a single node appear to SLURM as a Linux cluster by running
+<i>configure</i> with the <i>--enable-front-end</i> option. This 
+defines b>HAVE_FRONT_END</b> with a non-zero value in the file <b>config.h</b>.
 All (fake) nodes should be defined in the <b>slurm.conf</b> file.
 These nodes should be configured with a single <b>NodeAddr</b> value
 indicating the node on which single <span class="commandline">slurmd</span> daemon 
@@ -229,6 +230,6 @@ host1> slurmd -N foo21
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 20 May 2008</p>
+<p style="text-align:center;">Last modified 7 October 2008</p>
 
 <!--#include virtual="footer.txt"-->
