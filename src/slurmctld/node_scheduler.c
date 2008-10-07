@@ -1016,7 +1016,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	if (job_ptr->mail_type & MAIL_JOB_BEGIN)
 		mail_job_info(job_ptr, MAIL_JOB_BEGIN);
 
-	jobacct_storage_g_job_start(acct_db_conn, job_ptr);
+	jobacct_storage_g_job_start(
+		acct_db_conn, slurmctld_cluster_name, job_ptr);
 
 	slurm_sched_newalloc(job_ptr);
 

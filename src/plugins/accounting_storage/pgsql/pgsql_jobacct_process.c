@@ -74,6 +74,7 @@ extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
 		"t1.gid",
 		"t1.partition",
 		"t1.blockid",
+		"t1.cluster",
 		"t1.account",
 		"t1.eligible",
 		"t1.submit",
@@ -138,6 +139,7 @@ extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
 		JOB_REQ_GID,
 		JOB_REQ_PARTITION,
 		JOB_REQ_BLOCKID,
+		JOB_REQ_CLUSTER1,
 		JOB_REQ_ACCOUNT,
 		JOB_REQ_ELIGIBLE,
 		JOB_REQ_SUBMIT,
@@ -212,7 +214,7 @@ extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
 		table_level="t3";
 		/* just incase the association is gone */
 		if(set) 
-			xstrcat(extra, " || ");
+			xstrcat(extra, " or ");
 		xstrfmtcat(extra, "t3.id is null) and "
 			   "(t2.lft between t3.lft and t3.rgt "
 			   "or t2.lft is null)");
@@ -255,14 +257,14 @@ extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
 	if(job_cond->userid_list && list_count(job_cond->userid_list)) {
 		set = 0;
 		if(extra)
-			xstrcat(extra, " && (");
+			xstrcat(extra, " and (");
 		else
 			xstrcat(extra, " where (");
 
 		itr = list_iterator_create(job_cond->userid_list);
 		while((object = list_next(itr))) {
 			if(set) 
-				xstrcat(extra, " || ");
+				xstrcat(extra, " or ");
 			xstrfmtcat(extra, "t1.uid='%s'", object);
 			set = 1;
 		}
@@ -321,14 +323,14 @@ extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
 	if(job_cond->state_list && list_count(job_cond->state_list)) {
 		set = 0;
 		if(extra)
-			xstrcat(extra, " && (");
+			xstrcat(extra, " and (");
 		else
 			xstrcat(extra, " where (");
 
 		itr = list_iterator_create(job_cond->state_list);
 		while((object = list_next(itr))) {
 			if(set) 
-				xstrcat(extra, " || ");
+				xstrcat(extra, " or ");
 			xstrfmtcat(extra, "t1.state='%s'", object);
 			set = 1;
 		}
@@ -348,15 +350,12 @@ extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " or ");
-			xstrfmtcat(extra, "%s.cluster='%s'", 
-				   table_level, object);
+			xstrfmtcat(extra,
+				   "(t1.cluster='%s' or %s.cluster='%s')", 
+				   object, table_level, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
-		/* just incase the association is gone */
-		if(set) 
-			xstrcat(extra, " or ");
-		xstrfmtcat(extra, "%s.cluster is null)", table_level);
 	}
 
 no_cond:	
@@ -405,9 +404,13 @@ no_cond:
 						  JOB_REQ_ALLOC_CPUS));
 		job->associd = atoi(PQgetvalue(result, i, JOB_REQ_ASSOCID));
 		job->cluster = xstrdup(PQgetvalue(result, i, JOB_REQ_CLUSTER));
-		if(job->cluster && !job->cluster[0]) 
+		if(job->cluster && !job->cluster[0]) {
 			xfree(job->cluster);
-
+			job->cluster = xstrdup(
+				PQgetvalue(result, i, JOB_REQ_CLUSTER1));
+			if(job->cluster && !job->cluster[0]) 
+				xfree(job->cluster);
+		}
 		job->user =  xstrdup(PQgetvalue(result, i, JOB_REQ_USER_NAME));
 		if(!job->user || !job->user[0]) 
 			job->uid = atoi(PQgetvalue(result, i, JOB_REQ_UID));
@@ -455,8 +458,8 @@ no_cond:
 				/* get the suspended time for this job */
 				query = xstrdup_printf(
 					"select start, end from %s where "
-					"(start < %d && (end >= %d "
-					"|| end = 0)) && id=%s "
+					"(start < %d and (end >= %d "
+					"and end = 0)) && id=%s "
 					"order by start",
 					suspend_table,
 					job_cond->usage_end, 

@@ -1412,7 +1412,7 @@ static void set_options(const int argc, char **argv)
 			opt.epilog = xstrdup(optarg);
 			break;
 		case LONG_OPT_BEGIN:
-			opt.begin = parse_time(optarg);
+			opt.begin = parse_time(optarg, 0);
 			if (opt.begin == 0) {
 				fatal("Invalid time specification %s",
 				      optarg);

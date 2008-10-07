@@ -180,7 +180,6 @@ extern List mysql_jobcomp_process_get_jobs(List selected_steps,
 			job->state = xstrdup(job_state_string(i));
 		}
 		job->timelimit = xstrdup(row[JOBCOMP_REQ_TIMELIMIT]);
-#ifdef HAVE_BG
 		if(row[JOBCOMP_REQ_MAXPROCS])
 			job->max_procs = atoi(row[JOBCOMP_REQ_MAXPROCS]);
 		job->connection = xstrdup(row[JOBCOMP_REQ_CONNECTION]);
@@ -189,7 +188,6 @@ extern List mysql_jobcomp_process_get_jobs(List selected_steps,
 		job->geo = xstrdup(row[JOBCOMP_REQ_GEOMETRY]);
 		job->bg_start_point = xstrdup(row[JOBCOMP_REQ_START]);
 		job->blockid = xstrdup(row[JOBCOMP_REQ_BLOCKID]);
-#endif
 		list_append(job_list, job);
 	}
 		

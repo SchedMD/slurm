@@ -315,8 +315,6 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_affinity.so &&
    echo %{_libdir}/slurm/task_affinity.so >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/crypto_openssl.so &&
    echo %{_libdir}/slurm/crypto_openssl.so >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/accounting_storage_gold.so
-   echo %{_libdir}/slurm/accounting_storage_gold.so >> $LIST
 
 
 #############################################################################

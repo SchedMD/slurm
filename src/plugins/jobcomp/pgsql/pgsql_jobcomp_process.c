@@ -188,7 +188,6 @@ extern List pgsql_jobcomp_process_get_jobs(List selected_steps,
 		}
 		job->timelimit =
 			xstrdup(PQgetvalue(result, i, JOBCOMP_REQ_TIMELIMIT));
-#ifdef HAVE_BG
 		if(PQgetvalue(result, i, JOBCOMP_REQ_MAXPROCS))
 			job->max_procs =
 				atoi(PQgetvalue(result, i, 
@@ -205,9 +204,7 @@ extern List pgsql_jobcomp_process_get_jobs(List selected_steps,
 			xstrdup(PQgetvalue(result, i, JOBCOMP_REQ_GEOMETRY));
 		job->bg_start_point =
 			xstrdup(PQgetvalue(result, i, JOBCOMP_REQ_START));
-#endif
 		list_append(job_list, job);
-
 	}
 	
 	PQclear(result);

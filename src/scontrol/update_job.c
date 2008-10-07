@@ -452,7 +452,7 @@ scontrol_update_job (int argc, char *argv[])
 			update_cnt++;
 		}
 		else if (strncasecmp(argv[i], "StartTime=", 10) == 0) {
-			job_msg.begin_time = parse_time(&argv[i][10]);
+			job_msg.begin_time = parse_time(&argv[i][10], 0);
 			update_cnt++;
 		}
 		else {

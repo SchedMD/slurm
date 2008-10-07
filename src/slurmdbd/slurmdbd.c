@@ -138,7 +138,7 @@ int main(int argc, char *argv[])
 		fatal("pthread_create %m");
 	slurm_attr_destroy(&thread_attr);
 
-	db_conn = acct_storage_g_get_connection(false, false);
+	db_conn = acct_storage_g_get_connection(false, 0, false);
 	
 	memset(&assoc_init_arg, 0, sizeof(assoc_init_args_t));
 	assoc_init_arg.cache_level = ASSOC_MGR_CACHE_USER;

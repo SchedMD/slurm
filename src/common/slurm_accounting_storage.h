@@ -64,30 +64,46 @@ typedef enum {
 	ACCT_REMOVE_ASSOC,
 	ACCT_REMOVE_COORD,
 	ACCT_ADD_QOS,
-	ACCT_REMOVE_QOS
+	ACCT_REMOVE_QOS,
+	ACCT_MODIFY_QOS,
 } acct_update_type_t;
 
 /* Association conditions used for queries of the database */
 typedef struct {
 	List acct_list;		/* list of char * */
 	List cluster_list;	/* list of char * */
-	uint32_t fairshare;	/* fairshare number */
+
+	List fairshare_list;	/* fairshare number */
+
+	List grp_cpu_mins_list; /* list of char * */
+	List grp_cpus_list; /* list of char * */
+	List grp_jobs_list;	/* list of char * */
+	List grp_nodes_list; /* list of char * */
+	List grp_submit_jobs_list; /* list of char * */
+	List grp_wall_list; /* list of char * */
+
 	List id_list;		/* list of char */
-	uint32_t max_cpu_secs_per_job; /* max number of cpu seconds this 
-					* association can have per job */
-	uint32_t max_jobs;	/* max number of jobs this association can run
-				 * at one time */
-	uint32_t max_nodes_per_job; /* max number of nodes this
-				     * association can allocate per job */
-	uint32_t max_wall_duration_per_job; /* longest time this association
-					     * can run a job (seconds) */
+
+	List max_cpu_mins_pj_list; /* list of char * */
+	List max_cpus_pj_list; /* list of char * */
+	List max_jobs_list;	/* list of char * */
+	List max_nodes_pj_list; /* list of char * */
+	List max_submit_jobs_list; /* list of char * */
+	List max_wall_pj_list; /* list of char * */
+
 	List partition_list;	/* list of char * */
-	char *parent_acct;	/* name of parent account */
+	List parent_acct_list;	/* name of parent account */
+
+	List qos_list; /* list of char * */	
+
 	uint32_t usage_end; 
 	uint32_t usage_start; 
+
 	List user_list;		/* list of char * */
+
 	uint16_t with_usage;  /* fill in usage */
 	uint16_t with_deleted; /* return deleted associations */
+	uint16_t with_sub_accts; /* return sub acct information also */
 	uint16_t without_parent_info; /* don't give me parent id/name */
 	uint16_t without_parent_limits; /* don't give me limits from
 					 * parents */
@@ -98,7 +114,6 @@ typedef struct {
 						names */
 	List description_list; /* list of char * */
 	List organization_list; /* list of char * */
-	List qos_list; /* list of char * */	
 	uint16_t with_assocs; 
 	uint16_t with_coords; 
 	uint16_t with_deleted; 
@@ -110,7 +125,6 @@ typedef struct {
 	char *description;
 	char *name;
 	char *organization;
-	List qos_list /* list of char *'s */;
 } acct_account_rec_t;
 
 typedef struct {
@@ -122,33 +136,86 @@ typedef struct {
 typedef struct acct_association_rec {
 	List accounting_list; 	/* list of acct_accounting_rec_t *'s */
 	char *acct;		/* account/project associated to association */
-	char *cluster;		/* cluster associated to association */
+	char *cluster;		/* cluster associated to association
+				 * */
+
 	uint32_t fairshare;	/* fairshare number */
+
+	uint64_t grp_cpu_mins; /* max number of cpu hours the
+				     * underlying group of
+				     * associations can run for */
+	uint32_t grp_cpus; /* max number of cpus the
+				* underlying group of 
+				* associations can allocate at one time */
+	uint32_t grp_jobs;	/* max number of jobs the
+				 * underlying group of associations can run
+				 * at one time */
+	uint32_t grp_nodes; /* max number of nodes the
+				 * underlying group of
+				 * associations can allocate at once */
+	uint32_t grp_submit_jobs; /* max number of jobs the
+				       * underlying group of
+				       * associations can submit at
+				       * one time */
+	uint32_t grp_wall; /* total time in hours the 
+			    * underlying group of
+			    * associations can run for */
+
+	uint32_t grp_used_cpu_mins; /* cpu hours the
+				      * underlying group of
+				      * associations has ran for 
+				      * (DON'T PACK) */
+	uint32_t grp_used_cpus; /* count of active jobs in the group
+				 * (DON'T PACK) */
+	uint32_t grp_used_nodes; /* count of active jobs in the group
+				  * (DON'T PACK) */
+	uint32_t grp_used_wall; /* group count of time used in
+				     * running jobs (DON'T PACK) */
+	
 	uint32_t id;		/* id identifing a combination of
 				 * user-account-cluster(-partition) */
+
+	uint32_t level_shares;  /* number of shares on this level of
+				 * the tree (DON'T PACK) */
+	
 	uint32_t lft;		/* lft used for grouping sub
 				 * associations and jobs as a left
 				 * most container used with rgt */
-	uint32_t max_cpu_secs_per_job; /* max number of cpu seconds this 
-					   * association can have per job */
+	
+	uint64_t max_cpu_mins_pj; /* max number of cpu seconds this 
+				   * association can have per job */
+	uint32_t max_cpus_pj; /* max number of cpus this 
+				    * association can allocate per job */
 	uint32_t max_jobs;	/* max number of jobs this association can run
 				 * at one time */
-	uint32_t max_nodes_per_job; /* max number of nodes this
+	uint32_t max_nodes_pj; /* max number of nodes this
 				     * association can allocate per job */
-	uint32_t max_wall_duration_per_job; /* longest time this
-					     * association can run a job */
+	uint32_t max_submit_jobs; /* max number of jobs that can be
+				     submitted by association */
+	uint32_t max_wall_pj; /* longest time this
+			       * association can run a job */
+	
 	char *parent_acct;	/* name of parent account */
-	struct acct_association_rec *parent_acct_ptr;	/* ptr to parent acct
-							 * set in slurmctld */
+	struct acct_association_rec *parent_assoc_ptr;	/* ptr to parent acct
+							 * set in
+							 * slurmctld 
+							 * (DON'T PACK) */
 	uint32_t parent_id;	/* id of parent account */
 	char *partition;	/* optional partition in a cluster 
 				 * associated to association */
+
+	List qos_list;          /* list of char * */
+
 	uint32_t rgt;		/* rgt used for grouping sub
 				 * associations and jobs as a right
 				 * most container used with lft */
 	uint32_t uid;		/* user ID */
-	uint32_t used_jobs;	/* count of active jobs */
-	uint32_t used_share;	/* measure of resource usage */
+	
+	uint32_t used_jobs;	/* count of active jobs (DON'T PACK) */
+	uint32_t used_shares;	/* measure of resource usage */
+	uint32_t used_submit_jobs; /* count of jobs pending or running
+				    * (DON'T PACK) */
+	
 	char *user;		/* user associated to association */
 } acct_association_rec_t;
 
@@ -164,17 +231,11 @@ typedef struct {
 	List accounting_list; /* list of cluster_accounting_rec_t *'s */
 	char *control_host;
 	uint32_t control_port;
-	uint32_t default_fairshare;	/* fairshare number */
-	uint32_t default_max_cpu_secs_per_job;/* max number of cpu seconds this 
-					       * association can have per job */
-	uint32_t default_max_jobs;/* max number of jobs this association can run
-				   * at one time */
-	uint32_t default_max_nodes_per_job; /* max number of nodes this
-					     * association can
-					     * allocate per job */
-	uint32_t default_max_wall_duration_per_job; /* longest time this
-					     * association can run a job */
 	char *name;
+
+	List valid_qos_list;
+	acct_association_rec_t *root_assoc; /* root association for cluster */
+
 	uint16_t rpc_version; /* version of rpc this cluter is running */
 } acct_cluster_rec_t;
 
@@ -201,7 +262,56 @@ typedef struct {
 typedef struct {
 	char *description;
 	uint32_t id;
+	char *job_flags;
+	List job_list; /* list of job pointers to submitted/running
+			  jobs (DON'T PACK) */
+
+	uint64_t grp_cpu_mins; /* max number of cpu hours the
+				     * underlying group of
+				     * associations can run for */
+	uint32_t grp_cpus; /* max number of cpus this qos
+			      can allocate at one time */
+	uint32_t grp_jobs;	/* max number of jobs this qos can run
+				 * at one time */
+	uint32_t grp_nodes; /* max number of nodes this qos 
+			       can allocate at once */
+	uint32_t grp_submit_jobs; /* max number of jobs this qos can submit at
+				   * one time */
+	uint32_t grp_wall; /* total time in hours this qos can run for */
+
+	uint32_t grp_used_cpu_mins; /* cpu hours this qos has ran for 
+				      * (DON'T PACK) */
+	uint32_t grp_used_cpus; /* count of cpus in use in this qos
+				 * (DON'T PACK) */
+	uint32_t grp_used_jobs;	/* count of active jobs (DON'T PACK) */
+	uint32_t grp_used_nodes; /* count of nodes in use in this qos
+				  * (DON'T PACK) */
+	uint32_t grp_used_submit_jobs; /* count of jobs pending or running
+				    * (DON'T PACK) */
+	uint32_t grp_used_wall; /* group count of time (minutes) used in
+				 * running jobs (DON'T PACK) */
+
+	uint64_t max_cpu_mins_pu; /* max number of cpu mins a user can
+				   * use with this qos */
+	uint32_t max_cpus_pu; /* max number of cpus a user can
+			       * allocate with this qos */
+	uint32_t max_jobs_pu;	/* max number of jobs a user can
+				 * run with this qos at one time */
+	uint32_t max_nodes_pu; /* max number of nodes a user can
+				* allocate with this qos at one time */
+	uint32_t max_submit_jobs_pu; /* max number of jobs a user can
+				     submit with this qos at once */
+	uint32_t max_wall_pu; /* longest time this
+			       * qos can run a job */
+
 	char *name;
+	List preemptee_list; /* list of char * list of qos's that this
+				qos can preempt */
+	List preemptor_list; /* list of char * list of qos's that this
+			      * qos is preempted by */
+	uint32_t priority;  /* ranged int needs to be a unint for
+			     * heterogeneous systems */
+	List user_limit_list; /* acct_used_limits_t's */
 } acct_qos_rec_t;
 
 typedef struct {
@@ -211,12 +321,24 @@ typedef struct {
 	uint16_t with_deleted; 
 } acct_qos_cond_t;
 
+/* Right now this is used in the acct_qos_rec_t structure.  In the
+ * user_limit_list. */
 typedef struct {
-	acct_admin_level_t admin_level;
+ 	uint64_t cpu_mins;	/* count of cpu mins used */
+ 	uint32_t cpus;	/* count of cpus in use */
+	uint32_t jobs;	/* count of active jobs */
+	uint32_t nodes;	/* count of nodes in use */
+	uint32_t submit_jobs; /* count of jobs pending or running */
+	uint32_t wall; /* how much time this user has used */
+	uint32_t uid;
+} acct_used_limits_t;
+
+typedef struct {
+	uint16_t admin_level; /* really acct_admin_level_t but for
+				 packing purposes needs to be uint16_t */
 	acct_association_cond_t *assoc_cond; /* use user_list here for
 						names */
 	List def_acct_list; /* list of char * */
-	List qos_list; 	/* list of char * */
 	uint16_t with_assocs; 
 	uint16_t with_coords; 
 	uint16_t with_deleted; 
@@ -228,35 +350,46 @@ typedef struct {
  * src/slurmdbd/proc_req.c.
  */
 typedef struct {
-	acct_admin_level_t admin_level;
+	uint16_t admin_level; /* really acct_admin_level_t but for
+				 packing purposes needs to be uint16_t */
 	List assoc_list; /* list of acct_association_rec_t *'s */
 	List coord_accts; /* list of acct_coord_rec_t *'s */
 	char *default_acct;
 	char *name;
-	List qos_list; /* list of char * */
 	uint32_t uid;
 } acct_user_rec_t;
 
 typedef struct {
+	List acct_list; /* list of char * */
 	List action_list; /* list of char * */
 	List actor_list; /* list of char * */
+	List cluster_list; /* list of char * */
 	List id_list; /* list of char * */
+	List info_list; /* list of char * */
+	List name_list; /* list of char * */
 	uint32_t time_end; 
 	uint32_t time_start; 
+	List user_list; /* list of char * */
+	uint16_t with_assoc_info;
 } acct_txn_cond_t;
 
 typedef struct {
+	char *accts;
 	uint16_t action;
 	char *actor_name;
+	char *clusters;
 	uint32_t id;
 	char *set_info;
 	time_t timestamp;
+	char *users;
 	char *where_query;
 } acct_txn_rec_t;
 
 typedef struct {
 	List objects; /* depending on type */ 
-	acct_update_type_t type;
+	uint16_t type; /* really acct_update_type_t but for
+				  * packing purposes needs to be a
+				  * uint16_t */
 } acct_update_object_t;
 
 typedef struct {
@@ -273,6 +406,13 @@ typedef struct {
 	time_t period_start; /* when this record was started */
 	uint64_t resv_secs; /* number of cpu seconds reserved */	
 } cluster_accounting_rec_t;
+
+
+typedef struct {
+	char *name;
+	char *print_name;
+	char *spaces;
+} acct_print_tree_t;
 
 extern void destroy_acct_user_rec(void *object);
 extern void destroy_acct_account_rec(void *object);
@@ -293,8 +433,12 @@ extern void destroy_acct_qos_cond(void *object);
 extern void destroy_acct_txn_cond(void *object);
 
 extern void destroy_acct_update_object(void *object);
+extern void destroy_acct_used_limits(void *object);
 extern void destroy_update_shares_rec(void *object);
+extern void destroy_acct_print_tree(void *object);
 
+extern void init_acct_association_rec(acct_association_rec_t *assoc);
+extern void init_acct_qos_rec(acct_qos_rec_t *qos);
 
 /* pack functions */
 extern void pack_acct_user_rec(void *in, uint16_t rpc_version, Buf buffer);
@@ -354,6 +498,10 @@ extern void pack_acct_update_object(acct_update_object_t *object,
 extern int unpack_acct_update_object(acct_update_object_t **object,
 				     uint16_t rpc_version, Buf buffer);
 
+extern void pack_acct_used_limits(void *in, uint16_t rpc_version, Buf buffer);
+extern int unpack_acct_used_limits(void **object,
+				   uint16_t rpc_version, Buf buffer);
+
 extern void pack_update_shares_used(void *in, uint16_t rpc_version,
 				    Buf buffer);
 extern int unpack_update_shares_used(void **object, uint16_t rpc_version, 
@@ -364,7 +512,13 @@ extern uint32_t str_2_acct_qos(List qos_list, char *level);
 extern char *acct_admin_level_str(acct_admin_level_t level);
 extern acct_admin_level_t str_2_acct_admin_level(char *level);
 
-extern void log_assoc_rec(acct_association_rec_t *assoc_ptr);
+/* IN/OUT: tree_list a list of acct_print_tree_t's */ 
+extern char *get_tree_acct_name(char *name, char *parent, char *cluster, 
+				List tree_list);
+
+extern char *get_qos_complete_str(List qos_list, List num_qos_list);
+
+extern void log_assoc_rec(acct_association_rec_t *assoc_ptr, List qos_list);
 
 extern int slurm_acct_storage_init(char *loc); /* load the plugin */
 extern int slurm_acct_storage_fini(void); /* unload the plugin */
@@ -372,10 +526,13 @@ extern int slurm_acct_storage_fini(void); /* unload the plugin */
 /*
  * get a new connection to the storage unit
  * IN: make_agent - Make an agent to manage queued requests
+ * IN: conn_num - If running more than one connection to the database
+ *     this can be used to tell which connection is doing what
  * IN: rollback - maintain journal of changes to permit rollback
  * RET: pointer used to access db 
  */
-extern void *acct_storage_g_get_connection(bool make_agent, bool rollback);
+extern void *acct_storage_g_get_connection(bool make_agent, int conn_num,
+					   bool rollback);
 
 /*
  * release connection to the storage unit
@@ -484,6 +641,16 @@ extern List acct_storage_g_modify_associations(
 	void *db_conn, uint32_t uid, 
 	acct_association_cond_t *assoc_cond,
 	acct_association_rec_t *assoc);
+
+/* 
+ * modify existing qos in the accounting system 
+ * IN:  acct_qos_cond_t *qos_cond
+ * IN:  acct_qos_rec_t *qos
+ * RET: List containing (char *'s) else NULL on error
+ */
+extern List acct_storage_g_modify_qos(void *db_conn, uint32_t uid, 
+				      acct_qos_cond_t *qos_cond,
+				      acct_qos_rec_t *qos);
 
 /* 
  * remove users from accounting system 
@@ -662,7 +829,7 @@ extern int clusteracct_storage_g_get_usage(
 /* 
  * load into the storage the start of a job
  */
-extern int jobacct_storage_g_job_start (void *db_conn, 
+extern int jobacct_storage_g_job_start (void *db_conn, char *cluster_name,
 					struct job_record *job_ptr);
 
 /* 

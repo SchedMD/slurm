@@ -143,6 +143,7 @@ int bg_recover = DEFAULT_RECOVER;
 char *slurmctld_cluster_name = NULL; /* name of cluster */
 void *acct_db_conn = NULL;
 int accounting_enforce = 0;
+int association_based_accounting = 0;
 bool ping_nodes_now = false;
 
 /* Local variables */
@@ -302,8 +303,10 @@ int main(int argc, char *argv[])
 	 * memory, it will report 'HashBase' if it is not duped
 	 */
 	slurmctld_cluster_name = xstrdup(slurmctld_conf.cluster_name);
+	association_based_accounting =
+		slurm_get_is_association_based_accounting();
 	accounting_enforce = slurmctld_conf.accounting_storage_enforce;
-	acct_db_conn = acct_storage_g_get_connection(true, false);
+	acct_db_conn = acct_storage_g_get_connection(true, 0, false);
 
 	memset(&assoc_init_arg, 0, sizeof(assoc_init_args_t));
 	assoc_init_arg.enforce = accounting_enforce;
@@ -410,7 +413,7 @@ int main(int argc, char *argv[])
 
 		if(!acct_db_conn) {
 			acct_db_conn = 
-				acct_storage_g_get_connection(true, false);
+				acct_storage_g_get_connection(true, 0, false);
 			/* We only send in a variable the first time
 			   we call this since we are setting up static
 			   variables inside the function sending a
@@ -426,7 +429,7 @@ int main(int argc, char *argv[])
 
 		info("Running as primary controller");
 		clusteracct_storage_g_register_ctld(
-			slurmctld_conf.cluster_name, 
+			slurmctld_cluster_name, 
 			slurmctld_conf.slurmctld_port);
 		
 		_accounting_cluster_ready();

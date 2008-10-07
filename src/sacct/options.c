@@ -622,7 +622,7 @@ void parse_command_line(int argc, char **argv)
 	char *dot = NULL;
 	bool brief_output = FALSE, long_output = FALSE;
 	bool all_users = 0;
-	bool all_clusters = 1;
+	bool all_clusters = 0;
 	static struct option long_options[] = {
 		{"all", 0,0, 'a'},
 		{"accounts", 1, 0, 'A'},
@@ -684,7 +684,7 @@ void parse_command_line(int argc, char **argv)
 			brief_output = true;
 			break;
 		case 'B':
-			params.opt_begin = parse_time(optarg);
+			params.opt_begin = parse_time(optarg, 1);
 			break;
 		case 'c':
 			params.opt_completion = 1;
@@ -694,6 +694,7 @@ void parse_command_line(int argc, char **argv)
 				all_clusters = 1;
 				break;
 			}
+			all_clusters=0;
 			if(!params.opt_cluster_list) 
 				params.opt_cluster_list =
 					list_create(slurm_destroy_char);
@@ -750,7 +751,7 @@ void parse_command_line(int argc, char **argv)
 		break;
 		
 		case 'E':
-			params.opt_end = parse_time(optarg);
+			params.opt_end = parse_time(optarg, 1);
 			break;
 		case 'F':
 			if(params.opt_stat)
@@ -838,6 +839,7 @@ void parse_command_line(int argc, char **argv)
 				all_users = 1;
 				break;
 			}
+			all_users = 0;
 			if(!params.opt_uid_list)
 				params.opt_uid_list = 
 					list_create(slurm_destroy_char);
@@ -925,7 +927,7 @@ void parse_command_line(int argc, char **argv)
 		xfree(acct_type);
 	} else {
 		slurm_acct_storage_init(params.opt_filein);
-		acct_db_conn = acct_storage_g_get_connection(false, false);
+		acct_db_conn = acct_storage_g_get_connection(false, 0, false);
 		
 		acct_type = slurm_get_accounting_storage_type();
 		if ((strcmp(acct_type, "accounting_storage/none") == 0)
@@ -1135,9 +1137,6 @@ void do_dump(void)
 	
 	itr = list_iterator_create(jobs);
 	while((job = list_next(itr))) {
-		if (params.opt_uid>=0)
-			if (job->uid != params.opt_uid)
-				continue;
 		if(job->sacct.min_cpu == (float)NO_VAL)
 			job->sacct.min_cpu = 0;
 		
@@ -1310,13 +1309,11 @@ void do_dump_completion(void)
 		       job->gid_name, job->node_cnt, job->nodelist, 
 		       job->jobname, job->state,
 		       job->timelimit);
-#ifdef HAVE_BG
 		if(job->blockid)
 			printf(" %s %s %s %s %u %s %s",
 			       job->blockid, job->connection, job->reboot,
 			       job->rotate, job->max_procs, job->geo,
 			       job->bg_start_point);
-#endif
 		printf("\n");
 	}
 	list_iterator_destroy(itr);
@@ -1392,6 +1389,8 @@ void do_list(void)
 			while((step = list_next(itr_step))) {
 				if(step->end == 0)
 					step->end = job->end;
+				step->associd = job->associd;
+				step->cluster = job->cluster;
 				step->account = job->account;
 				print_fields(JOBSTEP, step);
 			} 

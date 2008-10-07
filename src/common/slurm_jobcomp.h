@@ -68,7 +68,6 @@ typedef struct {
 	char *jobname;
 	char *state;
 	char *timelimit;
-#ifdef HAVE_BG
 	char *blockid;
 	char *connection;
 	char *reboot;
@@ -76,7 +75,6 @@ typedef struct {
 	uint32_t max_procs;
 	char *geo;
 	char *bg_start_point;
-#endif
 } jobcomp_job_rec_t;
 
 typedef struct slurm_jobcomp_context * slurm_jobcomp_context_t;

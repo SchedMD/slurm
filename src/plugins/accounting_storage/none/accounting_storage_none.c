@@ -87,7 +87,8 @@ extern int fini ( void )
 	return SLURM_SUCCESS;
 }
 
-extern void * acct_storage_p_get_connection(bool make_agent, bool rollback)
+extern void * acct_storage_p_get_connection(bool make_agent, int conn_num,
+					    bool rollback)
 {
 	return NULL;
 }
@@ -162,6 +163,13 @@ extern List acct_storage_p_modify_clusters(void *db_conn, uint32_t uid,
 extern List acct_storage_p_modify_associations(void *db_conn, uint32_t uid,
 					      acct_association_cond_t *assoc_q,
 					      acct_association_rec_t *assoc)
+{
+	return SLURM_SUCCESS;
+}
+
+extern List acct_storage_p_modify_qos(void *db_conn, uint32_t uid,
+				      acct_qos_cond_t *qos_cond,
+				      acct_qos_rec_t *qos)
 {
 	return SLURM_SUCCESS;
 }
@@ -296,7 +304,7 @@ extern int clusteracct_storage_p_get_usage(
 /* 
  * load into the storage the start of a job
  */
-extern int jobacct_storage_p_job_start(void *db_conn,
+extern int jobacct_storage_p_job_start(void *db_conn, char *cluster_name,
 				       struct job_record *job_ptr)
 {
 	return SLURM_SUCCESS;

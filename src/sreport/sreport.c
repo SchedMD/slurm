@@ -52,7 +52,8 @@ int exit_flag;		/* program to terminate if =1 */
 int input_words;	/* number of words of input permitted */
 int quiet_flag;		/* quiet=1, verbose=-1, normal=0 */
 int all_clusters_flag = 0;
-sreport_time_format_t time_format = SREPORT_TIME_SECS;
+sreport_time_format_t time_format = SREPORT_TIME_MINS;
+char *time_format_string = "Minutes";
 void *db_conn = NULL;
 uint32_t my_uid = 0;
 
@@ -153,7 +154,7 @@ main (int argc, char *argv[])
 		}	
 	}
 
-	db_conn = acct_storage_g_get_connection(false, false);
+	db_conn = acct_storage_g_get_connection(false, 0, false);
 	my_uid = getuid();
 
 	if (input_field_count)
@@ -253,13 +254,18 @@ static void _cluster_rep (int argc, char *argv[])
 {
 	int error_code = SLURM_SUCCESS;
 
-	if (strncasecmp (argv[0], "Utilization", 1) == 0) {
+	if (strncasecmp (argv[0], "AccountUtilizationByUser", 1) == 0) {
+		error_code = cluster_account_by_user((argc - 1), &argv[1]);
+	} else if (strncasecmp (argv[0], "UserUtilizationByAccount", 2) == 0) {
+		error_code = cluster_user_by_account((argc - 1), &argv[1]);
+	} else if (strncasecmp (argv[0], "Utilization", 2) == 0) {
 		error_code = cluster_utilization((argc - 1), &argv[1]);
 	} else {
 		exit_code = 1;
 		fprintf(stderr, "Not valid report %s\n", argv[0]);
 		fprintf(stderr, "Valid cluster reports are, ");
-		fprintf(stderr, "\"Utilization\"\n");
+		fprintf(stderr, "\"AccountUtilizationByUser\", "
+			"\"UserUtilizationByAccount\", and \"Utilization\"\n");
 	}
 	
 	if (error_code) {
@@ -478,10 +484,25 @@ static int _set_time_format(char *format)
 {
 	if (strncasecmp (format, "SecPer", 6) == 0) {
 		time_format = SREPORT_TIME_SECS_PER;
-	} else if (strncasecmp (format, "Sec", 1) == 0) {
+		time_format_string = "Seconds/Percentange of Total";
+	} else if (strncasecmp (format, "MinPer", 6) == 0) {
+		time_format = SREPORT_TIME_MINS_PER;
+		time_format_string = "Minutes/Percentange of Total";
+	} else if (strncasecmp (format, "HourPer", 6) == 0) {
+		time_format = SREPORT_TIME_HOURS_PER;
+		time_format_string = "Hours/Percentange of Total";
+	} else if (strncasecmp (format, "Seconds", 1) == 0) {
 		time_format = SREPORT_TIME_SECS;
+		time_format_string = "Seconds";
+	} else if (strncasecmp (format, "Minutes", 1) == 0) {
+		time_format = SREPORT_TIME_MINS;
+		time_format_string = "Minutes";
+	} else if (strncasecmp (format, "Hours", 1) == 0) {
+		time_format = SREPORT_TIME_HOURS;
+		time_format_string = "Hours";
 	} else if (strncasecmp (format, "Percent", 1) == 0) {
 		time_format = SREPORT_TIME_PERCENT;
+		time_format_string = "Percentange of Total";
 	} else {
 		fprintf (stderr, "unknown time format %s", format);	
 		return SLURM_ERROR;
@@ -499,9 +520,10 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
      -a or --all_clusters: Use all clusters instead of current             \n\
      -h or --help: equivalent to \"help\" command                          \n\
      -n or --no_header: equivalent to \"no_header\" command                \n\
-     -q or --quiet: equivalent to \"quiet\" command                        \n\
      -p or --parsable: output will be '|' delimited with a '|' at the end  \n\
      -P or --parsable2: output will be '|' delimited without a '|' at the end\n\
+     -q or --quiet: equivalent to \"quiet\" command                        \n\
+     -t <time_format>: Second, Minute, Hour, Percent, SecPer, MinPer, HourPer\n\
      -v or --verbose: equivalent to \"verbose\" command                    \n\
      -V or --version: equivalent to \"version\" command                    \n\
                                                                            \n\
@@ -510,15 +532,16 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
   terminated.                                                              \n\
                                                                            \n\
     Valid <COMMAND> values are:                                            \n\
-     exit                     terminate sreport                            \n\
-     help                     print this description of use.               \n\
-     parsable                 output will be | delimited with an ending '|'\n\
-     parsable2                output will be | delimited without an ending '|'\n\
-    quiet                    print no messages other than error messages. \n\
-     quit                     terminate this command.                      \n\
-     verbose                  enable detailed logging.                     \n\
-     version                  display tool version number.                 \n\
-     !!                       Repeat the last command entered.             \n\
+     exit                Terminate sreport                                 \n\
+     help                Print this description of use.                    \n\
+     parsable            Output will be | delimited with an ending '|'     \n\
+     parsable2           Output will be | delimited without an ending '|'  \n\
+     quiet               Print no messages other than error messages.      \n\
+     quit                Terminate this command.                           \n\
+     time <time_format>  Second, Minute, Hour, Percent, SecPer, MinPer, HourPer\n\
+     verbose             Enable detailed logging.                          \n\
+     version             Display tool version number.                      \n\
+     !!                  Repeat the last command entered.                  \n\
                                                                            \n\
     Valid report types are:                                                \n\
      cluster <REPORT> <OPTIONS>                                            \n\

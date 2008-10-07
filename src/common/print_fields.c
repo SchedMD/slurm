@@ -125,15 +125,16 @@ extern void print_fields_str(print_field_t *field, char *value, int last)
 			print_this = "";
 		else
 			print_this = " ";
-	}
+	} else
+		print_this = value;
 	
 	if(print_fields_parsable_print == PRINT_FIELDS_PARSABLE_NO_ENDING
 	   && last)
-		printf("%s", value);	
+		printf("%s", print_this);	
 	else if(print_fields_parsable_print)
-		printf("%s|", value);
+		printf("%s|", print_this);
 	else {
-		if(!print_this) {
+		if(value) {
 			memcpy(&temp_char, value, field->len);
 			
 			if(strlen(value) > field->len) 
@@ -141,6 +142,30 @@ extern void print_fields_str(print_field_t *field, char *value, int last)
 			print_this = temp_char;
 		}
 		printf("%-*.*s ", field->len, field->len, print_this);
+	}
+}
+
+extern void print_fields_int(print_field_t *field, int value, int last)
+{
+	/* (value == unset)  || (value == cleared) */
+	if((value == NO_VAL) || (value == INFINITE)) {
+		if(print_fields_parsable_print 
+		   == PRINT_FIELDS_PARSABLE_NO_ENDING
+		   && last)
+			;
+		else if(print_fields_parsable_print)
+			printf("|");	
+		else				
+			printf("%*s ", field->len, " ");
+	} else {
+		if(print_fields_parsable_print
+		   == PRINT_FIELDS_PARSABLE_NO_ENDING
+		   && last)
+			printf("%d", value);	
+		else if(print_fields_parsable_print)
+			printf("%d|", value);	
+		else
+			printf("%*d ", field->len, value);
 	}
 }
 
