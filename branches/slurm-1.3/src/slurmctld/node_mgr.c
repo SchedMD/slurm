@@ -2483,7 +2483,7 @@ extern int send_nodes_to_accounting(time_t event_time)
 extern void  build_config_feature_array(struct config_record *config_ptr)
 {
 	int i;
-	char *tmp_str, *token, *last;
+	char *tmp_str, *token, *last = NULL;
 
 	/* clear any old feature_array */
 	if (config_ptr->feature_array) {

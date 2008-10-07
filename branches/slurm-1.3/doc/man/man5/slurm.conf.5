@@ -40,7 +40,9 @@ The overall configuration parameters available include:
 \fBAccountingStorageEnforce\fR
 If set to a non-zero value and the user, partition, account association is not 
 defined for a job in the accounting database then prevent the job from being 
-executed.
+executed. This needs to be set to '2' if you the association limits will also 
+be enforced.  If set to anything else limits of associations will not be 
+enforced.
 The default value is zero.
 
 .TP

@@ -832,7 +832,7 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		break;
 #endif
 	case SORTID_START_TIME:
-		job_msg->begin_time = parse_time((char *)new_text);
+		job_msg->begin_time = parse_time((char *)new_text, 0);
 		type = "start time";
 		break;
 	default:

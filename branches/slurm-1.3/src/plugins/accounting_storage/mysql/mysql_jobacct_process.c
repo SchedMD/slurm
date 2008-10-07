@@ -78,6 +78,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		"t1.gid",
 		"t1.partition",
 		"t1.blockid",
+		"t1.cluster",
 		"t1.account",
 		"t1.eligible",
 		"t1.submit",
@@ -142,6 +143,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		JOB_REQ_GID,
 		JOB_REQ_PARTITION,
 		JOB_REQ_BLOCKID,
+		JOB_REQ_CLUSTER1,
 		JOB_REQ_ACCOUNT,
 		JOB_REQ_ELIGIBLE,
 		JOB_REQ_SUBMIT,
@@ -259,7 +261,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "t1.acct='%s'", object);
+			xstrfmtcat(extra, "t1.account='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -379,17 +381,14 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "%s.cluster='%s'", 
-				   table_level, object);
+			xstrfmtcat(extra, 
+				   "(t1.cluster='%s' || %s.cluster='%s')", 
+				   object, table_level, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
-		/* just incase the association is gone */
-		if(set) 
-			xstrcat(extra, " || ");
-		xstrfmtcat(extra, "%s.cluster is null)", table_level);
-	}
-
+		xstrcat(extra, ")");
+	} 
 no_cond:	
 
 	xfree(tmp);
@@ -463,7 +462,7 @@ no_cond:
 	if(job_cond && !job_cond->duplicates) 
 		xstrcat(query, " order by jobid, submit desc");
 
-	debug3("%d query\n%s", mysql_conn->conn, query);
+	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);
@@ -487,9 +486,11 @@ no_cond:
 		job->alloc_cpus = atoi(row[JOB_REQ_ALLOC_CPUS]);
 		job->associd = atoi(row[JOB_REQ_ASSOCID]);
 
-		if(row[JOB_REQ_CLUSTER])
+		if(row[JOB_REQ_CLUSTER] && row[JOB_REQ_CLUSTER][0])
 			job->cluster = xstrdup(row[JOB_REQ_CLUSTER]);
-
+		else if(row[JOB_REQ_CLUSTER1] && row[JOB_REQ_CLUSTER1][0])
+			job->cluster = xstrdup(row[JOB_REQ_CLUSTER1]);
+			
 		if(row[JOB_REQ_USER_NAME]) 
 			job->user = xstrdup(row[JOB_REQ_USER_NAME]);
 		else 
@@ -534,7 +535,8 @@ no_cond:
 					job_cond->usage_start,
 					id);
 				
-				debug4("%d query\n%s", mysql_conn->conn, query);
+				debug4("%d(%d) query\n%s", 
+				       mysql_conn->conn, __LINE__, query);
 				if(!(result2 = mysql_db_query_ret(
 					     mysql_conn->db_conn,
 					     query, 0))) {

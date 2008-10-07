@@ -88,11 +88,41 @@
 
 typedef enum {
 	SREPORT_TIME_SECS,
+	SREPORT_TIME_MINS,
+	SREPORT_TIME_HOURS,
 	SREPORT_TIME_PERCENT,
 	SREPORT_TIME_SECS_PER,
+	SREPORT_TIME_MINS_PER,
+	SREPORT_TIME_HOURS_PER,
 } sreport_time_format_t;
 
+typedef struct {
+	char *acct;
+	char *cluster;
+	uint64_t cpu_secs;
+	char *parent_acct;
+	char *user;
+} sreport_assoc_rec_t;
+
+typedef struct {
+	char *acct;
+	List acct_list; /* list of char *'s */
+	List assoc_list; /* list of acct_association_rec_t's */
+	uint64_t cpu_secs;
+	char *name;
+	uid_t uid;
+} sreport_user_rec_t;
+
+typedef struct {
+	List assoc_list; /* list of sreport_assoc_rec_t *'s */
+	uint32_t cpu_count;
+	uint64_t cpu_secs;
+	char *name;
+	List user_list; /* list of sreport_user_rec_t *'s */
+} sreport_cluster_rec_t;
+
 extern sreport_time_format_t time_format;
+extern char *time_format_string;
 extern char *command_name;
 extern int exit_code;	/* sacctmgr's exit code, =1 on any error at any time */
 extern int exit_flag;	/* program to terminate if =1 */
@@ -107,5 +137,15 @@ extern void sreport_print_time(print_field_t *field,
 extern int parse_option_end(char *option);
 extern char *strip_quotes(char *option, int *increased);
 extern int set_start_end_time(time_t *start, time_t *end);
+extern void destroy_sreport_assoc_rec(void *object);
+extern void destroy_sreport_user_rec(void *object);
+extern void destroy_sreport_cluster_rec(void *object);
+extern int sort_user_dec(sreport_user_rec_t *user_a,
+			 sreport_user_rec_t *user_b);
+extern int sort_cluster_dec(sreport_cluster_rec_t *cluster_a,
+			    sreport_cluster_rec_t *cluster_b);
+extern int sort_assoc_dec(sreport_assoc_rec_t *assoc_a,
+			  sreport_assoc_rec_t *assoc_b);
+
 
 #endif /* HAVE_SREPORT_H */

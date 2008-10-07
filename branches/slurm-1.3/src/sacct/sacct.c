@@ -153,6 +153,8 @@ void _print_header(void);
  */
 sacct_parameters_t params;
 fields_t fields[] = {{"account", print_account},
+		     {"associd", print_assoc},
+		     {"cluster", print_cluster},
 		     {"cpu", print_cpu},
 		     {"cputime", print_cputime}, 
 		     {"elapsed", print_elapsed},
@@ -183,7 +185,6 @@ fields_t fields[] = {{"account", print_account},
 		     {"user", print_user}, 
 		     {"usercpu", print_usercpu}, 
 		     {"vsize", print_vsize}, 
-#ifdef HAVE_BG
 		     {"blockid", print_blockid}, 
 		     {"connection", print_connection}, 
 		     {"geo", print_geo}, 
@@ -191,7 +192,6 @@ fields_t fields[] = {{"account", print_account},
 		     {"reboot", print_reboot}, 
 		     {"rotate", print_rotate}, 
 		     {"bg_start_point", print_bg_start_point}, 		     
-#endif
 		     {NULL, NULL}};
 
 List jobs = NULL;

@@ -1,4 +1,4 @@
-.TH SREPORT "1" "May 2008" "sreport 1.3" "Slurm components"
+.TH SREPORT "1" "October 2008" "sreport 1.3" "Slurm components"
 
 .SH "NAME"
 sreport \- Used to generate reports from the slurm accounting data.
@@ -18,6 +18,7 @@ being provided by the \fBslurmdbd\fR (Slurm Database daemon).
 \fB\-a\fR, \fB\-\-all_clusters\fR
 Use all clusters instead of only cluster from where the command was run.
 
+.TP
 \fB\-h\fR, \fB\-\-help\fR
 Print a help message describing the usage of \fBssreport\fR.
 This is equivalent to the \fBhelp\fR command.
@@ -27,17 +28,24 @@ This is equivalent to the \fBhelp\fR command.
 Don't display header when listing results.
 
 .TP
-\fB\-q\fR, \fB\-\-quiet\fR
-Print no warning or informational messages, only error messages.
-This is equivalent to the \fBquiet\fR command.
-
-.TP
 \fB\-p\fR, \fB\-\-parsable\fR
 Output will be '|' delimited with a '|' at the end.
 
 .TP
 \fB\-P\fR, \fB\-\-parsable2\fR
 Output will be '|' delimited without a '|' at the end.
+
+.TP
+\fB\-q\fR, \fB\-\-quiet\fR
+Print no warning or informational messages, only error messages.
+This is equivalent to the \fBquiet\fR command.
+
+.TP
+\fB\-t <format>\fR
+Specify the output time format. 
+Time format options are case insensitive and may be abbreviated.
+The default format is Minutes.
+Supported time format options are listed with the \fBtime\fP command below.
 
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
@@ -70,6 +78,36 @@ Terminate the execution of sreport.
 Identical to the \fBexit\fR command.
 
 .TP
+\fBtime <time_format>\fP
+Specify the output time format. 
+Time format options are case insensitive and may be abbreviated.
+The default format is Minutes.
+Supported time format options include:
+.RS
+.TP 10
+\fBSecPer\fR
+Seconds/Percentage of Total
+.TP
+\fBMinPer\fR
+Minutes/Percentage of Total
+.TP
+\fBHourPer\fR
+Hours/Percentage of Total
+.TP
+\fBSeconds\fR
+Seconds
+.TP
+\fBMinutes\fR
+Minutes
+.TP
+\fBHours\fR
+Hours
+.TP
+\fBPercent\fR
+Percentage of Total
+.RE
+
+.TP
 \fBverbose\fP
 Print detailed event logging. 
 This includes time\-stamps on data structures, record counts, etc.
@@ -78,6 +116,7 @@ This is an independent command with no options meant for use in interactive mode
 .TP
 \fBversion\fP
 Display the version number of sreport being executed.
+     -q or --quiet: equivalent to \"quiet\" command                        \n\
 
 .TP
 \fB!!\fP
@@ -191,4 +230,4 @@ FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.
 
 .SH "SEE ALSO"
-\fBslurmdbd\fR(8)
+\fBsacct\fR(1), \fBslurmdbe\fR(8)

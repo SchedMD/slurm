@@ -309,7 +309,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/Makefile
 		 src/plugins/accounting_storage/Makefile
 		 src/plugins/accounting_storage/filetxt/Makefile
-		 src/plugins/accounting_storage/gold/Makefile
 		 src/plugins/accounting_storage/mysql/Makefile
 		 src/plugins/accounting_storage/pgsql/Makefile
 		 src/plugins/accounting_storage/none/Makefile

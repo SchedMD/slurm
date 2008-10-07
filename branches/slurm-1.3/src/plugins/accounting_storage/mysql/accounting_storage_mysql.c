@@ -91,9 +91,13 @@ const uint32_t plugin_version = 100;
 
 static mysql_db_info_t *mysql_db_info = NULL;
 static char *mysql_db_name = NULL;
+static time_t global_last_rollup = 0;
+static pthread_mutex_t rollup_lock = PTHREAD_MUTEX_INITIALIZER;
 
 #define DEFAULT_ACCT_DB "slurm_acct_db"
 #define DELETE_SEC_BACK 86400
+
+
 
 char *acct_coord_table = "acct_coord_table";
 char *acct_table = "acct_table";
@@ -113,6 +117,13 @@ char *txn_table = "txn_table";
 char *user_table = "user_table";
 char *last_ran_table = "last_ran_table";
 char *suspend_table = "suspend_table";
+
+
+typedef enum {
+	QOS_LEVEL_NONE,
+	QOS_LEVEL_SET,
+	QOS_LEVEL_MODIFY
+} qos_level_t;
 
 static int normal_qos_id = NO_VAL;
 
@@ -138,6 +149,37 @@ extern List acct_storage_p_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 					List acct_list,
 					acct_user_cond_t *user_cond);
 
+
+/* here to add \\ to all \" in a string */
+static char *_fix_double_quotes(char *str)
+{
+	int i=0, start=0;
+	char *fixed = NULL;
+
+	if(!str)
+		return NULL;
+	
+	while(str[i]) {
+		if(str[i] == '"') {
+			char *tmp = xstrndup(str+start, i-start);
+			xstrfmtcat(fixed, "%s\\\"", tmp);
+			xfree(tmp);
+			i++;
+			start = i + 1;
+		} 
+		
+		i++;
+	}
+	
+	if((i-start) > 0) {
+		char *tmp = xstrndup(str+start, i-start);
+		xstrcat(fixed, tmp);
+		xfree(tmp);
+	}
+
+	return fixed;
+}
+
 /* This should be added to the beginning of each function to make sure
  * we have a connection to the database before we try to use it.
  */
@@ -158,6 +200,728 @@ static int _check_connection(mysql_conn_t *mysql_conn)
 	return SLURM_SUCCESS;
 }
 
+static int _setup_association_limits(acct_association_rec_t *assoc,
+				     char **cols, char **vals,
+				     char **extra, qos_level_t qos_level,
+				     bool get_fs)
+{	
+	if(!assoc)
+		return SLURM_ERROR;
+	
+	if((int)assoc->fairshare >= 0) {
+		xstrcat(*cols, ", fairshare");
+		xstrfmtcat(*vals, ", %u", assoc->fairshare);
+		xstrfmtcat(*extra, ", fairshare=%u", assoc->fairshare);
+	} else if (((int)assoc->fairshare == INFINITE) || get_fs) {
+		xstrcat(*cols, ", fairshare");
+		xstrcat(*vals, ", 1");
+		xstrcat(*extra, ", fairshare=1");		
+	} 
+
+	if((int)assoc->grp_cpu_mins >= 0) {
+		xstrcat(*cols, ", grp_cpu_mins");
+		xstrfmtcat(*vals, ", %llu", assoc->grp_cpu_mins);
+		xstrfmtcat(*extra, ", grp_cpu_mins=%llu",
+			   assoc->grp_cpu_mins);
+	} else if((int)assoc->grp_cpu_mins == INFINITE) {
+		xstrcat(*cols, ", grp_cpu_mins");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", grp_cpu_mins=NULL");
+	}
+		
+	if((int)assoc->grp_cpus >= 0) {
+		xstrcat(*cols, ", grp_cpus");
+		xstrfmtcat(*vals, ", %u", assoc->grp_cpus);
+		xstrfmtcat(*extra, ", grp_cpus=%u", assoc->grp_cpus);
+	} else if((int)assoc->grp_cpus == INFINITE) {
+		xstrcat(*cols, ", grp_cpus");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", grp_cpus=NULL");
+	}
+
+	if((int)assoc->grp_jobs >= 0) {
+		xstrcat(*cols, ", grp_jobs");
+		xstrfmtcat(*vals, ", %u", assoc->grp_jobs);
+		xstrfmtcat(*extra, ", grp_jobs=%u", assoc->grp_jobs);
+	} else if((int)assoc->grp_jobs == INFINITE) {
+		xstrcat(*cols, ", grp_jobs");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", grp_jobs=NULL");
+	}
+
+	if((int)assoc->grp_nodes >= 0) {
+		xstrcat(*cols, ", grp_nodes");
+		xstrfmtcat(*vals, ", %u", assoc->grp_nodes);
+		xstrfmtcat(*extra, ", grp_nodes=%u", assoc->grp_nodes);
+	} else if((int)assoc->grp_nodes == INFINITE) {
+		xstrcat(*cols, ", grp_nodes");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", grp_nodes=NULL");
+	}
+
+	if((int)assoc->grp_submit_jobs >= 0) {
+		xstrcat(*cols, ", grp_submit_jobs");
+		xstrfmtcat(*vals, ", %u",
+			   assoc->grp_submit_jobs);
+		xstrfmtcat(*extra, ", grp_submit_jobs=%u",
+			   assoc->grp_submit_jobs);
+	} else if((int)assoc->grp_submit_jobs == INFINITE) {
+		xstrcat(*cols, ", grp_submit_jobs");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", grp_submit_jobs=NULL");
+	}
+
+	if((int)assoc->grp_wall >= 0) {
+		xstrcat(*cols, ", grp_wall");
+		xstrfmtcat(*vals, ", %u", assoc->grp_wall);
+		xstrfmtcat(*extra, ", grp_wall=%u",
+			   assoc->grp_wall);
+	} else if((int)assoc->grp_wall == INFINITE) {
+		xstrcat(*cols, ", grp_wall");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", grp_wall=NULL");
+	}
+
+	if((int)assoc->max_cpu_mins_pj >= 0) {
+		xstrcat(*cols, ", max_cpu_mins_per_job");
+		xstrfmtcat(*vals, ", %llu", assoc->max_cpu_mins_pj);
+		xstrfmtcat(*extra, ", max_cpu_mins_per_job=%u",
+			   assoc->max_cpu_mins_pj);
+	} else if((int)assoc->max_cpu_mins_pj == INFINITE) {
+		xstrcat(*cols, ", max_cpu_mins_per_job");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", max_cpu_mins_per_job=NULL");
+	}
+
+	if((int)assoc->max_cpus_pj >= 0) {
+		xstrcat(*cols, ", max_cpus_per_job");
+		xstrfmtcat(*vals, ", %u", assoc->max_cpus_pj);
+		xstrfmtcat(*extra, ", max_cpus_per_job=%u",
+			   assoc->max_cpus_pj);
+	} else if((int)assoc->max_cpus_pj == INFINITE) {
+		xstrcat(*cols, ", max_cpus_per_job");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", max_cpus_per_job=NULL");
+	}
+		
+	if((int)assoc->max_jobs >= 0) {
+		xstrcat(*cols, ", max_jobs");
+		xstrfmtcat(*vals, ", %u", assoc->max_jobs);
+		xstrfmtcat(*extra, ", max_jobs=%u",
+			   assoc->max_jobs);
+	} else if((int)assoc->max_jobs == INFINITE) {
+		xstrcat(*cols, ", max_jobs");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", max_jobs=NULL");		
+	}
+
+	if((int)assoc->max_nodes_pj >= 0) {
+		xstrcat(*cols, ", max_nodes_per_job");
+		xstrfmtcat(*vals, ", %u", assoc->max_nodes_pj);
+		xstrfmtcat(*extra, ", max_nodes_per_job=%u",
+			   assoc->max_nodes_pj);
+	} else if((int)assoc->max_nodes_pj == INFINITE) {
+		xstrcat(*cols, ", max_nodes_per_job");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", max_nodes_per_job=NULL");
+	}
+
+	if((int)assoc->max_submit_jobs >= 0) {
+		xstrcat(*cols, ", max_submit_jobs");
+		xstrfmtcat(*vals, ", %u", assoc->max_submit_jobs);
+		xstrfmtcat(*extra, ", max_submit_jobs=%u",
+			   assoc->max_submit_jobs);
+	} else if((int)assoc->max_submit_jobs == INFINITE) {
+		xstrcat(*cols, ", max_submit_jobs");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", max_submit_jobs=NULL");
+	}
+
+	if((int)assoc->max_wall_pj >= 0) {
+		xstrcat(*cols, ", max_wall_duration_per_job");
+		xstrfmtcat(*vals, ", %u", assoc->max_wall_pj);
+		xstrfmtcat(*extra, ", max_wall_duration_per_job=%u",
+			   assoc->max_wall_pj);
+	} else if((int)assoc->max_wall_pj == INFINITE) {
+		xstrcat(*cols, ", max_wall_duration_per_job");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", max_wall_duration_per_job=NULL");
+	}
+
+	if((qos_level != QOS_LEVEL_MODIFY)
+	   && assoc->qos_list && list_count(assoc->qos_list)) {
+		char *qos_val = NULL;
+		char *tmp_char = NULL;
+		ListIterator qos_itr = 
+			list_iterator_create(assoc->qos_list);
+		
+		xstrcat(*cols, ", qos");
+		
+		while((tmp_char = list_next(qos_itr))) 
+			xstrfmtcat(qos_val, ",%s", tmp_char);
+		
+		list_iterator_destroy(qos_itr);
+		
+		xstrfmtcat(*vals, ", '%s'", qos_val); 		
+		xstrfmtcat(*extra, ", qos='%s'", qos_val); 
+		xfree(qos_val);
+	} else if((qos_level == QOS_LEVEL_SET) && (normal_qos_id != NO_VAL)) { 
+		/* Add normal qos to the account */
+		xstrcat(*cols, ", qos");
+		xstrfmtcat(*vals, ", ',%d'", normal_qos_id);
+		xstrfmtcat(*extra, ", qos=',%d'", normal_qos_id);
+	}
+
+	return SLURM_SUCCESS;
+
+}
+
+static int _setup_qos_limits(acct_qos_rec_t *qos,
+			     char **cols, char **vals,
+			     char **extra, qos_level_t qos_level)
+{	
+	if(!qos)
+		return SLURM_ERROR;
+	
+	if(qos->description) {
+		xstrcat(*cols, ", description");
+		xstrfmtcat(*vals, ", \"%s\"", qos->description);
+		xstrfmtcat(*extra, ", description=\"%s\"",
+			   qos->description);
+
+	}
+	if((int)qos->priority >= 0) {
+		xstrcat(*cols, ", priority");
+		xstrfmtcat(*vals, ", %d", qos->priority);
+		xstrfmtcat(*extra, ", priority=%d", qos->priority);
+	} else if ((int)qos->priority == INFINITE) {
+		xstrcat(*cols, ", priority");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", priority=NULL");		
+	} 
+
+	if((int)qos->grp_cpu_mins >= 0) {
+		xstrcat(*cols, ", grp_cpu_mins");
+		xstrfmtcat(*vals, ", %llu", qos->grp_cpu_mins);
+		xstrfmtcat(*extra, ", grp_cpu_mins=%llu",
+			   qos->grp_cpu_mins);
+	} else if((int)qos->grp_cpu_mins == INFINITE) {
+		xstrcat(*cols, ", grp_cpu_mins");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", grp_cpu_mins=NULL");
+	}
+		
+	if((int)qos->grp_cpus >= 0) {
+		xstrcat(*cols, ", grp_cpus");
+		xstrfmtcat(*vals, ", %u", qos->grp_cpus);
+		xstrfmtcat(*extra, ", grp_cpus=%u", qos->grp_cpus);
+	} else if((int)qos->grp_cpus == INFINITE) {
+		xstrcat(*cols, ", grp_cpus");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", grp_cpus=NULL");
+	}
+
+	if((int)qos->grp_jobs >= 0) {
+		xstrcat(*cols, ", grp_jobs");
+		xstrfmtcat(*vals, ", %u", qos->grp_jobs);
+		xstrfmtcat(*extra, ", grp_jobs=%u", qos->grp_jobs);
+	} else if((int)qos->grp_jobs == INFINITE) {
+		xstrcat(*cols, ", grp_jobs");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", grp_jobs=NULL");
+	}
+
+	if((int)qos->grp_nodes >= 0) {
+		xstrcat(*cols, ", grp_nodes");
+		xstrfmtcat(*vals, ", %u", qos->grp_nodes);
+		xstrfmtcat(*extra, ", grp_nodes=%u", qos->grp_nodes);
+	} else if((int)qos->grp_nodes == INFINITE) {
+		xstrcat(*cols, ", grp_nodes");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", grp_nodes=NULL");
+	}
+
+	if((int)qos->grp_submit_jobs >= 0) {
+		xstrcat(*cols, ", grp_submit_jobs");
+		xstrfmtcat(*vals, ", %u",
+			   qos->grp_submit_jobs);
+		xstrfmtcat(*extra, ", grp_submit_jobs=%u",
+			   qos->grp_submit_jobs);
+	} else if((int)qos->grp_submit_jobs == INFINITE) {
+		xstrcat(*cols, ", grp_submit_jobs");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", grp_submit_jobs=NULL");
+	}
+
+	if((int)qos->grp_wall >= 0) {
+		xstrcat(*cols, ", grp_wall");
+		xstrfmtcat(*vals, ", %u", qos->grp_wall);
+		xstrfmtcat(*extra, ", grp_wall=%u",
+			   qos->grp_wall);
+	} else if((int)qos->grp_wall == INFINITE) {
+		xstrcat(*cols, ", grp_wall");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", grp_wall=NULL");
+	}
+
+	if((int)qos->max_cpu_mins_pu >= 0) {
+		xstrcat(*cols, ", max_cpu_mins_per_user");
+		xstrfmtcat(*vals, ", %llu", qos->max_cpu_mins_pu);
+		xstrfmtcat(*extra, ", max_cpu_mins_per_user=%u",
+			   qos->max_cpu_mins_pu);
+	} else if((int)qos->max_cpu_mins_pu == INFINITE) {
+		xstrcat(*cols, ", max_cpu_mins_per_user");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", max_cpu_mins_per_user=NULL");
+	}
+
+	if((int)qos->max_cpus_pu >= 0) {
+		xstrcat(*cols, ", max_cpus_per_user");
+		xstrfmtcat(*vals, ", %u", qos->max_cpus_pu);
+		xstrfmtcat(*extra, ", max_cpus_per_user=%u",
+			   qos->max_cpus_pu);
+	} else if((int)qos->max_cpus_pu == INFINITE) {
+		xstrcat(*cols, ", max_cpus_per_user");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", max_cpus_per_user=NULL");
+	}
+		
+	if((int)qos->max_jobs_pu >= 0) {
+		xstrcat(*cols, ", max_jobs_per_user");
+		xstrfmtcat(*vals, ", %u", qos->max_jobs_pu);
+		xstrfmtcat(*extra, ", max_jobs_per_user=%u",
+			   qos->max_jobs_pu);
+	} else if((int)qos->max_jobs_pu == INFINITE) {
+		xstrcat(*cols, ", max_jobs_per_user");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", max_jobs_per_user=NULL");		
+	}
+
+	if((int)qos->max_nodes_pu >= 0) {
+		xstrcat(*cols, ", max_nodes_per_user");
+		xstrfmtcat(*vals, ", %u", qos->max_nodes_pu);
+		xstrfmtcat(*extra, ", max_nodes_per_user=%u",
+			   qos->max_nodes_pu);
+	} else if((int)qos->max_nodes_pu == INFINITE) {
+		xstrcat(*cols, ", max_nodes_per_user");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", max_nodes_per_user=NULL");
+	}
+
+	if((int)qos->max_submit_jobs_pu >= 0) {
+		xstrcat(*cols, ", max_submit_jobs_per_user");
+		xstrfmtcat(*vals, ", %u", qos->max_submit_jobs_pu);
+		xstrfmtcat(*extra, ", max_submit_jobs_per_user=%u",
+			   qos->max_submit_jobs_pu);
+	} else if((int)qos->max_submit_jobs_pu == INFINITE) {
+		xstrcat(*cols, ", max_submit_jobs_per_user");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", max_submit_jobs_per_user=NULL");
+	}
+
+	if((int)qos->max_wall_pu >= 0) {
+		xstrcat(*cols, ", max_wall_duration_per_user");
+		xstrfmtcat(*vals, ", %u", qos->max_wall_pu);
+		xstrfmtcat(*extra, ", max_wall_duration_per_user=%u",
+			   qos->max_wall_pu);
+	} else if((int)qos->max_wall_pu == INFINITE) {
+		xstrcat(*cols, ", max_wall_duration_per_user");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", max_wall_duration_per_user=NULL");
+	}
+
+	if((qos_level != QOS_LEVEL_MODIFY)
+	   && qos->preemptee_list && list_count(qos->preemptee_list)) {
+		char *qos_val = NULL;
+		char *tmp_char = NULL;
+		ListIterator qos_itr = 
+			list_iterator_create(qos->preemptee_list);
+		
+		xstrcat(*cols, ", qos");
+		
+		while((tmp_char = list_next(qos_itr))) 
+			xstrfmtcat(qos_val, ",%s", tmp_char);
+		
+		list_iterator_destroy(qos_itr);
+		
+		xstrfmtcat(*vals, ", \"%s\"", qos_val); 		
+		xstrfmtcat(*extra, ", preemptees=\"%s\"", qos_val); 
+		xfree(qos_val);
+	} 
+
+	if((qos_level != QOS_LEVEL_MODIFY)
+	   && qos->preemptor_list && list_count(qos->preemptor_list)) {
+		char *qos_val = NULL;
+		char *tmp_char = NULL;
+		ListIterator qos_itr = 
+			list_iterator_create(qos->preemptor_list);
+		
+		xstrcat(*cols, ", qos");
+		
+		while((tmp_char = list_next(qos_itr))) 
+			xstrfmtcat(qos_val, ",%s", tmp_char);
+		
+		list_iterator_destroy(qos_itr);
+		
+		xstrfmtcat(*vals, ", \"%s\"", qos_val); 		
+		xstrfmtcat(*extra, ", preemptors=\"%s\"", qos_val); 
+		xfree(qos_val);
+	} 
+	
+	if(qos->job_flags) {
+		xstrcat(*cols, ", job_flags");
+		xstrfmtcat(*vals, ", \"%s\"", qos->job_flags);
+		xstrfmtcat(*extra, ", job_flags=\"%s\"",
+			   qos->job_flags);
+	}
+
+	return SLURM_SUCCESS;
+
+}
+
+/* when doing a select on this all the select should have a prefix of
+ * t1. */
+static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
+					  char **extra)
+{
+	int set = 0;
+	ListIterator itr = NULL;
+	char *object = NULL;
+	char *prefix = "t1";
+	if(!assoc_cond)
+		return 0;
+
+	if(assoc_cond->with_sub_accts) {
+		prefix = "t2";
+		xstrfmtcat(*extra, ", %s as t2 where "
+			   "(t1.lft between t2.lft and t2.rgt) &&",
+			   assoc_table);
+	} else 
+		xstrcat(*extra, " where");
+	
+	if(assoc_cond->with_deleted) 
+		xstrfmtcat(*extra, " (%s.deleted=0 || %s.deleted=1)",
+			prefix, prefix);
+	else 
+		xstrfmtcat(*extra, " %s.deleted=0", prefix);
+
+	if(assoc_cond->acct_list && list_count(assoc_cond->acct_list)) {
+		set = 0;
+		xstrcat(*extra, " && (");
+		itr = list_iterator_create(assoc_cond->acct_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "%s.acct=\"%s\"", prefix, object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+
+	if(assoc_cond->cluster_list && list_count(assoc_cond->cluster_list)) {
+		set = 0;
+		xstrcat(*extra, " && (");
+		itr = list_iterator_create(assoc_cond->cluster_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "%s.cluster=\"%s\"", prefix, object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+
+	if(assoc_cond->fairshare_list
+	   && list_count(assoc_cond->fairshare_list)) {
+		set = 0;
+		xstrcat(*extra, " && (");
+		itr = list_iterator_create(assoc_cond->fairshare_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "%s.fairshare=\"%s\"", 
+				   prefix, object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+
+	if(assoc_cond->grp_cpu_mins_list
+	   && list_count(assoc_cond->grp_cpu_mins_list)) {
+		set = 0;
+		xstrcat(*extra, " && (");
+		itr = list_iterator_create(assoc_cond->grp_cpu_mins_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "%s.grp_cpu_mins=\"%s\"", 
+				   prefix, object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+
+	if(assoc_cond->grp_cpus_list
+	   && list_count(assoc_cond->grp_cpus_list)) {
+		set = 0;
+		xstrcat(*extra, " && (");
+		itr = list_iterator_create(assoc_cond->grp_cpus_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "%s.grp_cpus=\"%s\"", 
+				   prefix, object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+
+	if(assoc_cond->grp_jobs_list
+	   && list_count(assoc_cond->grp_jobs_list)) {
+		set = 0;
+		xstrcat(*extra, " && (");
+		itr = list_iterator_create(assoc_cond->grp_jobs_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "%s.grp_jobs=\"%s\"",
+				   prefix, object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+
+	if(assoc_cond->grp_nodes_list
+	   && list_count(assoc_cond->grp_nodes_list)) {
+		set = 0;
+		xstrcat(*extra, " && (");
+		itr = list_iterator_create(assoc_cond->grp_nodes_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "%s.grp_nodes=\"%s\"",
+				   prefix, object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+
+	if(assoc_cond->grp_submit_jobs_list
+	   && list_count(assoc_cond->grp_submit_jobs_list)) {
+		set = 0;
+		xstrcat(*extra, " && (");
+		itr = list_iterator_create(assoc_cond->grp_submit_jobs_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "%s.grp_submit_jobs=\"%s\"",
+				   prefix, object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+
+	if(assoc_cond->grp_wall_list
+	   && list_count(assoc_cond->grp_wall_list)) {
+		set = 0;
+		xstrcat(*extra, " && (");
+		itr = list_iterator_create(assoc_cond->grp_wall_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "%s.grp_wall=\"%s\"", 
+				   prefix, object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+
+	if(assoc_cond->max_cpu_mins_pj_list
+	   && list_count(assoc_cond->max_cpu_mins_pj_list)) {
+		set = 0;
+		xstrcat(*extra, " && (");
+		itr = list_iterator_create(assoc_cond->max_cpu_mins_pj_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "%s.max_cpu_mins_per_job=\"%s\"", 
+				   prefix, object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+
+	if(assoc_cond->max_cpus_pj_list
+	   && list_count(assoc_cond->max_cpus_pj_list)) {
+		set = 0;
+		xstrcat(*extra, " && (");
+		itr = list_iterator_create(assoc_cond->max_cpus_pj_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "%s.max_cpus_per_job=\"%s\"", 
+				   prefix, object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+
+	if(assoc_cond->max_jobs_list
+	   && list_count(assoc_cond->max_jobs_list)) {
+		set = 0;
+		xstrcat(*extra, " && (");
+		itr = list_iterator_create(assoc_cond->max_jobs_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "%s.max_jobs=\"%s\"", 
+				   prefix, object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+
+	if(assoc_cond->max_nodes_pj_list
+	   && list_count(assoc_cond->max_nodes_pj_list)) {
+		set = 0;
+		xstrcat(*extra, " && (");
+		itr = list_iterator_create(assoc_cond->max_nodes_pj_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "%s.max_nodes_per_job=\"%s\"", 
+				   prefix, object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+
+	if(assoc_cond->max_submit_jobs_list
+	   && list_count(assoc_cond->max_submit_jobs_list)) {
+		set = 0;
+		xstrcat(*extra, " && (");
+		itr = list_iterator_create(assoc_cond->max_submit_jobs_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "%s.max_submit_jobs=\"%s\"", 
+				   prefix, object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+
+	if(assoc_cond->max_wall_pj_list
+	   && list_count(assoc_cond->max_wall_pj_list)) {
+		set = 0;
+		xstrcat(*extra, " && (");
+		itr = list_iterator_create(assoc_cond->max_wall_pj_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra,
+				   "%s.max_wall_duration_per_job=\"%s\"",
+				   prefix, object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+	
+	if(assoc_cond->user_list && list_count(assoc_cond->user_list)) {
+		set = 0;
+		xstrcat(*extra, " && (");
+		itr = list_iterator_create(assoc_cond->user_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "%s.user=\"%s\"", prefix, object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+
+	if(assoc_cond->partition_list 
+	   && list_count(assoc_cond->partition_list)) {
+		set = 0;
+		xstrcat(*extra, " && (");
+		itr = list_iterator_create(assoc_cond->partition_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "%s.partition=\"%s\"",
+				   prefix, object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+
+	if(assoc_cond->id_list && list_count(assoc_cond->id_list)) {
+		set = 0;
+		xstrcat(*extra, " && (");
+		itr = list_iterator_create(assoc_cond->id_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "%s.id=%s", prefix, object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+	
+	if(assoc_cond->qos_list && list_count(assoc_cond->qos_list)) {
+		set = 0;
+		xstrcat(*extra, " && (");
+		itr = list_iterator_create(assoc_cond->qos_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, 
+				   "(%s.qos like '%%,%s' "
+				   "|| %s.qos like '%%,%s,%%' "
+				   "|| %s.delta_qos like '%%,+%s' "
+				   "|| %s.delta_qos like '%%,+%s,%%')",
+				   prefix, object, prefix, object,
+				   prefix, object, prefix, object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+	
+	if(assoc_cond->parent_acct_list
+	   && list_count(assoc_cond->parent_acct_list)) {
+		set = 0;
+		xstrcat(*extra, " && (");
+		itr = list_iterator_create(assoc_cond->parent_acct_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "%s.parent_acct=%s", prefix, object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+	return set;
+}
 /* This function will take the object given and free it later so it
  * needed to be removed from a list if in one before 
  */
@@ -203,6 +967,7 @@ static int _addto_update_list(List update_list, acct_update_type_t type,
 			destroy_acct_association_rec);
 		break;
 	case ACCT_ADD_QOS:
+	case ACCT_MODIFY_QOS:
 	case ACCT_REMOVE_QOS:
 		update_object->objects = list_create(
 			destroy_acct_qos_rec);
@@ -231,7 +996,7 @@ static int _move_account(mysql_conn_t *mysql_conn, uint32_t lft, uint32_t rgt,
 	int width = 0;
 	char *query = xstrdup_printf(
 		"SELECT lft from %s " 
-		"where cluster='%s' && acct='%s' && user='';",
+		"where cluster=\"%s\" && acct=\"%s\" && user='';",
 		assoc_table,
 		cluster, parent);
 	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
@@ -295,7 +1060,7 @@ static int _move_account(mysql_conn_t *mysql_conn, uint32_t lft, uint32_t rgt,
 		   "update %s set deleted = deleted - 2 WHERE deleted > 1;",
 		   assoc_table);
 	xstrfmtcat(query,
-		   "update %s set parent_acct='%s' where id = %s;",
+		   "update %s set parent_acct=\"%s\" where id = %s;",
 		   assoc_table, parent, id);
 	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
@@ -328,7 +1093,7 @@ static int _move_parent(mysql_conn_t *mysql_conn, uid_t uid,
 	 */
 	query = xstrdup_printf(
 		"select id, lft, rgt from %s where lft between %d and %d "
-		"&& acct='%s' && user='' order by lft;",
+		"&& acct=\"%s\" && user='' order by lft;",
 		assoc_table, lft, rgt,
 		new_parent);
 	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
@@ -438,6 +1203,11 @@ static int _modify_common(mysql_conn_t *mysql_conn,
 {
 	char *query = NULL;
 	int rc = SLURM_SUCCESS;
+	char *tmp_cond_char = _fix_double_quotes(cond_char);
+	char *tmp_vals = NULL;
+
+	if(vals[1])
+		tmp_vals = _fix_double_quotes(vals+2);
 
 	xstrfmtcat(query, 
 		   "update %s set mod_time=%d%s "
@@ -447,9 +1217,11 @@ static int _modify_common(mysql_conn_t *mysql_conn,
 	xstrfmtcat(query, 	
 		   "insert into %s "
 		   "(timestamp, action, name, actor, info) "
-		   "values (%d, %d, \"%s\", '%s', \"%s\");",
+		   "values (%d, %d, \"%s\", \"%s\", \"%s\");",
 		   txn_table,
-		   now, type, cond_char, user_name, vals);
+		   now, type, tmp_cond_char, user_name, tmp_vals);
+	xfree(tmp_cond_char);
+	xfree(tmp_vals);
 	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);		
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
@@ -488,9 +1260,13 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 		"cluster",
 		"partition",
 		"max_jobs",
+		"max_submit_jobs",
 		"max_nodes_per_job",
+		"max_cpus_per_job",
 		"max_wall_duration_per_job",
-		"max_cpu_secs_per_job",
+		"max_cpu_mins_per_job",
+		"qos",
+		"delta_qos",
 		"lft",
 		"rgt"
 	};
@@ -502,9 +1278,13 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 		ASSOC_CLUSTER,
 		ASSOC_PART,
 		ASSOC_MJ,
+		ASSOC_MSJ,
 		ASSOC_MNPJ,
-		ASSOC_MWPJ,
 		ASSOC_MCPJ,
+		ASSOC_MWPJ,
+		ASSOC_MCMPJ,
+		ASSOC_QOS,
+		ASSOC_DELTA_QOS,
 		ASSOC_LFT,
 		ASSOC_RGT,
 		ASSOC_COUNT
@@ -522,8 +1302,8 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 	/* We want all the sub accounts and user accounts */
 	query = xstrdup_printf("select distinct %s from %s where deleted=0 "
 			       "&& lft between %d and %d && "
-			       "((user = '' && parent_acct = '%s') || "
-			       "(user != '' && acct = '%s')) "
+			       "((user = '' && parent_acct = \"%s\") || "
+			       "(user != '' && acct = \"%s\")) "
 			       "order by lft;",
 			       object, assoc_table, lft, rgt, acct, acct);
 	xfree(object);
@@ -540,39 +1320,90 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 		int modified = 0;
 
 		mod_assoc = xmalloc(sizeof(acct_association_rec_t));
+		init_acct_association_rec(mod_assoc);
+
 		mod_assoc->id = atoi(row[ASSOC_ID]);
 
 		if(!row[ASSOC_MJ] && assoc->max_jobs != NO_VAL) {
 			mod_assoc->max_jobs = assoc->max_jobs;
 			modified = 1;
-		} else
-			mod_assoc->max_jobs = NO_VAL;
-		
-		if(!row[ASSOC_MNPJ] &&
-		   assoc->max_nodes_per_job != NO_VAL) {
-			mod_assoc->max_nodes_per_job =
-				assoc->max_nodes_per_job;
-			modified = 1;
-		} else 
-			mod_assoc->max_nodes_per_job = NO_VAL;
+		}
 
-		
-		if(!row[ASSOC_MWPJ] && 
-		   assoc->max_wall_duration_per_job != NO_VAL) {
-			mod_assoc->max_wall_duration_per_job =
-				assoc->max_wall_duration_per_job;
+		if(!row[ASSOC_MSJ] && assoc->max_submit_jobs != NO_VAL) {
+			mod_assoc->max_submit_jobs = assoc->max_submit_jobs;
 			modified = 1;
-		} else 
-			mod_assoc->max_wall_duration_per_job = NO_VAL;
+		} 
+
+		if(!row[ASSOC_MNPJ] && assoc->max_nodes_pj != NO_VAL) {
+			mod_assoc->max_nodes_pj = assoc->max_nodes_pj;
+			modified = 1;
+		} 
+		
+		if(!row[ASSOC_MCPJ] && assoc->max_cpus_pj != NO_VAL) {
+			mod_assoc->max_cpus_pj = assoc->max_cpus_pj;
+			modified = 1;
+		} 
+		
+		if(!row[ASSOC_MWPJ] && assoc->max_wall_pj != NO_VAL) {
+			mod_assoc->max_wall_pj = assoc->max_wall_pj;
+			modified = 1;
+		}
 					
-		if(!row[ASSOC_MCPJ] && 
-		   assoc->max_cpu_secs_per_job != NO_VAL) {
-			mod_assoc->max_cpu_secs_per_job = 
-				assoc->max_cpu_secs_per_job;
+		if(!row[ASSOC_MCMPJ] && assoc->max_cpu_mins_pj != NO_VAL) {
+			mod_assoc->max_cpu_mins_pj = assoc->max_cpu_mins_pj;
 			modified = 1;
-		} else
-			mod_assoc->max_cpu_secs_per_job = NO_VAL;
-		
+		} 
+
+		if(!row[ASSOC_QOS][0] && assoc->qos_list) {
+			List delta_qos_list = NULL;
+			char *qos_char = NULL, *delta_char = NULL;
+			ListIterator delta_itr = NULL;
+			ListIterator qos_itr = 
+				list_iterator_create(assoc->qos_list);
+			if(row[ASSOC_DELTA_QOS][0]) {
+				delta_qos_list =
+					list_create(slurm_destroy_char);
+				slurm_addto_char_list(delta_qos_list,
+						      row[ASSOC_DELTA_QOS]+1);
+				delta_itr = 
+					list_iterator_create(delta_qos_list);
+			}
+
+			mod_assoc->qos_list = list_create(slurm_destroy_char);
+			/* here we are making sure a child does not
+			   have the qos added or removed before we add
+			   it to the parent.
+			*/
+			while((qos_char = list_next(qos_itr))) {
+				if(delta_itr && qos_char[0] != '=') {
+					while((delta_char = 
+					       list_next(delta_itr))) {
+						
+						if((qos_char[0] 
+						    != delta_char[0])
+						   && (!strcmp(qos_char+1, 
+							       delta_char+1))) 
+							break;			
+					}
+					list_iterator_reset(delta_itr);
+					if(delta_char)
+						continue;
+				}
+				list_append(mod_assoc->qos_list,
+					    xstrdup(qos_char));
+			}
+			list_iterator_destroy(qos_itr);
+			if(delta_itr)
+				list_iterator_destroy(delta_itr);
+			if(list_count(mod_assoc->qos_list) 
+			   || !list_count(assoc->qos_list))
+				modified = 1;
+			else {
+				list_destroy(mod_assoc->qos_list);
+				mod_assoc->qos_list = NULL;
+			}
+		}
+
 		/* We only want to add those that are modified here */
 		if(modified) {
 			/* Since we aren't really changing this non
@@ -614,6 +1445,7 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 					      mod_assoc) != SLURM_SUCCESS) 
 				error("couldn't add to the update list");
 		} else {
+			info("assoc %s is not modified", row[ASSOC_ID]);
 			xfree(mod_assoc);
 		}
 	}
@@ -705,6 +1537,7 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 	MYSQL_ROW row;
 	time_t day_old = now - DELETE_SEC_BACK;
 	bool has_jobs = false;
+	char *tmp_name_char = _fix_double_quotes(name_char);
 
 	/* If we have jobs associated with this we do not want to
 	 * really delete it for accounting purposes.  This is for
@@ -735,9 +1568,10 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 	
 	xstrfmtcat(query, 	
 		   "insert into %s (timestamp, action, name, actor) "
-		   "values (%d, %d, \"%s\", '%s');",
+		   "values (%d, %d, \"%s\", \"%s\");",
 		   txn_table,
-		   now, type, name_char, user_name);
+		   now, type, tmp_name_char, user_name);
+	xfree(tmp_name_char);
 
 	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
@@ -752,16 +1586,10 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 	}
 	
 	if(table == qos_table) {
-		/* remove this qos from all the users/accts that have it
-		 */
-		xstrfmtcat(query,
-			   "update %s set mod_time=%d, %s "
+		/* remove this qos from all the users/accts that have it */
+		xstrfmtcat(query, "update %s set mod_time=%d %s "
 			   "where deleted=0;",
-			   user_table, now, assoc_char);
-		xstrfmtcat(query,
-			   "update %s set mod_time=%d, %s "
-			   "where deleted=0;",
-			   acct_table, now, assoc_char);
+			   assoc_table, now, assoc_char);
 		debug3("%d(%d) query\n%s",
 		       mysql_conn->conn, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
@@ -771,38 +1599,12 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 				mysql_db_rollback(mysql_conn->db_conn);
 			}
 			list_flush(mysql_conn->update_list);
-			
 			return SLURM_ERROR;
 		}
-		/* now get what we changed and set the update */
-		xstrfmtcat(query,
-			   "select name, qos from %s where "
-			   "mod_time=%d and deleted=0;",
-			   user_table, now);
-		if(!(result = mysql_db_query_ret(
-			     mysql_conn->db_conn, query, 0))) {
-			xfree(query);
-			if(mysql_conn->rollback) {
-				mysql_db_rollback(mysql_conn->db_conn);
-			}
-			list_flush(mysql_conn->update_list);
-			
-			return SLURM_ERROR;
-		}
-		
-		rc = 0;
-		while((row = mysql_fetch_row(result))) {
-			acct_user_rec_t *user_rec = 
-				xmalloc(sizeof(acct_user_rec_t));
-			user_rec->name = xstrdup(row[0]);
-			user_rec->qos_list = list_create(slurm_destroy_char);
-			slurm_addto_char_list(user_rec->qos_list, row[1]);
-			_addto_update_list(mysql_conn->update_list,
-					   ACCT_MODIFY_USER,
-					   user_rec);
-		}
-		mysql_free_result(result);
-		
+		/* we don't have to send anything else since removing
+		   the qos in the first place will remove it from the
+		   clusters 
+		*/		
 		return SLURM_SUCCESS;
 	} else if(table == acct_coord_table)
 		return SLURM_SUCCESS;
@@ -994,7 +1796,7 @@ just_update:
 			       "fairshare=1, max_jobs=NULL, "
 			       "max_nodes_per_job=NULL, "
 			       "max_wall_duration_per_job=NULL, "
-			       "max_cpu_secs_per_job=NULL "
+			       "max_cpu_mins_per_job=NULL "
 			       "where (%s);",
 			       assoc_table, now,
 			       loc_assoc_char);
@@ -1035,7 +1837,7 @@ static int _get_account_coords(mysql_conn_t *mysql_conn,
 		acct->coordinators = list_create(destroy_acct_coord_rec);
 			
 	query = xstrdup_printf(
-		"select user from %s where acct='%s' && deleted=0",
+		"select user from %s where acct=\"%s\" && deleted=0",
 		acct_coord_table, acct->name);
 			
 	if(!(result =
@@ -1055,8 +1857,8 @@ static int _get_account_coords(mysql_conn_t *mysql_conn,
 	query = xstrdup_printf("select distinct t0.user from %s as t0, "
 			       "%s as t1, %s as t2 where t0.acct=t1.acct && "
 			       "t1.lft<t2.lft && t1.rgt>t2.lft && "
-			       "t1.user='' && t2.acct='%s' && t1.acct!='%s' && "
-			       "!t0.deleted;",
+			       "t1.user='' && t2.acct=\"%s\" "
+			       "&& t1.acct!=\"%s\" && !t0.deleted;",
 			       acct_coord_table, assoc_table, assoc_table,
 			       acct->name, acct->name);
 	if(!(result =
@@ -1094,7 +1896,7 @@ static int _get_user_coords(mysql_conn_t *mysql_conn, acct_user_rec_t *user)
 		user->coord_accts = list_create(destroy_acct_coord_rec);
 			
 	query = xstrdup_printf(
-		"select acct from %s where user='%s' && deleted=0",
+		"select acct from %s where user=\"%s\" && deleted=0",
 		acct_coord_table, user->name);
 			
 	if(!(result =
@@ -1119,10 +1921,10 @@ static int _get_user_coords(mysql_conn_t *mysql_conn, acct_user_rec_t *user)
 		 * account back since we want to keep
 		 * track of the sub-accounts.
 		 */
-		xstrfmtcat(query, "(t2.acct='%s' "
+		xstrfmtcat(query, "(t2.acct=\"%s\" "
 			   "&& t1.lft between t2.lft "
 			   "and t2.rgt && t1.user='' "
-			   "&& t1.acct!='%s')",
+			   "&& t1.acct!=\"%s\")",
 			   coord->name, coord->name);
 	}
 	mysql_free_result(result);
@@ -1222,7 +2024,6 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "name", "tinytext not null" },
 		{ "description", "text not null" },
 		{ "organization", "text not null" },
-		{ "qos", "blob not null default ''" },
 		{ NULL, NULL}		
 	};
 
@@ -1240,9 +2041,19 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "rgt", "int not null" },
 		{ "fairshare", "int default 1 not null" },
 		{ "max_jobs", "int default NULL" },
+		{ "max_submit_jobs", "int default NULL" },
+		{ "max_cpus_per_job", "int default NULL" },
 		{ "max_nodes_per_job", "int default NULL" },
 		{ "max_wall_duration_per_job", "int default NULL" },
-		{ "max_cpu_secs_per_job", "int default NULL" },
+		{ "max_cpu_mins_per_job", "bigint default NULL" },
+		{ "grp_jobs", "int default NULL" },
+		{ "grp_submit_jobs", "int default NULL" },
+		{ "grp_cpus", "int default NULL" },
+		{ "grp_nodes", "int default NULL" },
+		{ "grp_wall", "int default NULL" },
+		{ "grp_cpu_mins", "bigint default NULL" },
+		{ "qos", "blob not null default ''" },
+		{ "delta_qos", "blob not null default ''" },
 		{ NULL, NULL}		
 	};
 
@@ -1264,6 +2075,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "control_host", "tinytext not null default ''" },
 		{ "control_port", "mediumint not null default 0" },
 		{ "rpc_version", "mediumint not null default 0" },
+		{ "valid_qos", "blob" },
 		{ NULL, NULL}		
 	};
 
@@ -1298,6 +2110,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "associd", "mediumint unsigned not null" },
 		{ "uid", "smallint unsigned not null" },
 		{ "gid", "smallint unsigned not null" },
+		{ "cluster", "tinytext" },
 		{ "partition", "tinytext not null" },
 		{ "blockid", "tinytext" },
 		{ "account", "tinytext" },
@@ -1333,6 +2146,22 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "id", "int not null auto_increment" },
 		{ "name", "tinytext not null" }, 
 		{ "description", "text" }, 
+		{ "max_jobs_per_user", "int default NULL" },
+		{ "max_submit_jobs_per_user", "int default NULL" },
+		{ "max_cpus_per_user", "int default NULL" },
+		{ "max_nodes_per_user", "int default NULL" },
+		{ "max_wall_duration_per_user", "int default NULL" },
+		{ "max_cpu_mins_per_user", "bigint default NULL" },
+		{ "grp_jobs", "int default NULL" },
+		{ "grp_submit_jobs", "int default NULL" },
+		{ "grp_cpus", "int default NULL" },
+		{ "grp_nodes", "int default NULL" },
+		{ "grp_wall", "int default NULL" },
+		{ "grp_cpu_mins", "bigint default NULL" },
+		{ "job_flags", "text" },
+		{ "preemptees", "text not null default ''" },
+		{ "preemptors", "text not null default ''" },
+		{ "priority", "int default 0" },
 		{ NULL, NULL}		
 	};
 
@@ -1383,9 +2212,9 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "id", "int not null auto_increment" },
 		{ "timestamp", "int unsigned default 0 not null" },
 		{ "action", "smallint not null" },
-		{ "name", "tinytext not null" },
+		{ "name", "text not null" },
 		{ "actor", "tinytext not null" },
-		{ "info", "text" },
+		{ "info", "blob" },
 		{ NULL, NULL}		
 	};
 
@@ -1395,7 +2224,6 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "deleted", "tinyint default 0" },
 		{ "name", "tinytext not null" },
 		{ "default_acct", "tinytext not null" },
-		{ "qos", "blob not null default ''" },
 		{ "admin_level", "smallint default 1 not null" },
 		{ NULL, NULL}		
 	};
@@ -1407,15 +2235,23 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		"begin "
 		"set @par_id = NULL; "
 		"set @mj = NULL; "
+		"set @msj = NULL; "
+		"set @mcpj = NULL; "
 		"set @mnpj = NULL; "
 		"set @mwpj = NULL; "
-		"set @mcpj = NULL; "
+		"set @mcmpj = NULL; "
+		"set @qos = ''; "
+		"set @delta_qos = ''; "
 		"set @my_acct = acct; "
 		"if without_limits then "
 		"set @mj = 0; " 
+		"set @msj = 0; " 
+		"set @mcpj = 0; "
 		"set @mnpj = 0; "
 		"set @mwpj = 0; "
-		"set @mcpj = 0; "
+		"set @mcmpj = 0; "
+		"set @qos = 0; "
+		"set @delta_qos = 0; "
 		"end if; "
 		"REPEAT "
 		"set @s = 'select '; "
@@ -1425,14 +2261,24 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		"if @mj is NULL then set @s = CONCAT("
 		"@s, '@mj := max_jobs, '); "
 		"end if; "
+		"if @msj is NULL then set @s = CONCAT("
+		"@s, '@msj := max_submit_jobs, '); "
+		"end if; "
+		"if @mcpj is NULL then set @s = CONCAT("
+		"@s, '@mcpj := max_cpus_per_job, ') ;"
+		"end if; "
 		"if @mnpj is NULL then set @s = CONCAT("
 		"@s, '@mnpj := max_nodes_per_job, ') ;"
 		"end if; "
 		"if @mwpj is NULL then set @s = CONCAT("
 		"@s, '@mwpj := max_wall_duration_per_job, '); "
 		"end if; "
-		"if @mcpj is NULL then set @s = CONCAT("
-		"@s, '@mcpj := max_cpu_secs_per_job, '); "
+		"if @mcmpj is NULL then set @s = CONCAT("
+		"@s, '@mcmpj := max_cpu_mins_per_job, '); "
+		"end if; "
+		"if @qos = '' then set @s = CONCAT("
+		"@s, '@qos := qos, "
+		"@delta_qos := CONCAT(@delta_qos, delta_qos), '); "
 		"end if; "
 		"set @s = concat(@s, ' @my_acct := parent_acct from ', "
 		"my_table, ' where acct = \"', @my_acct, '\" && "
@@ -1440,8 +2286,9 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		"prepare query from @s; "
 		"execute query; "
 		"deallocate prepare query; "
-		"UNTIL (@mj != -1 && @mnpj != -1 && @mwpj != -1 "
-		"&& @mcpj != -1) || @my_acct = '' END REPEAT; "
+		"UNTIL (@mj != -1 && @msj != -1 && @mcpj != -1 "
+		"&& @mnpj != -1 && @mwpj != -1 "
+		"&& @mcmpj != -1 && @qos != '') || @my_acct = '' END REPEAT; "
 		"END;";
 	char *query = NULL;
 	time_t now = time(NULL);
@@ -1477,9 +2324,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 	if(mysql_db_create_table(db_conn, assoc_table, assoc_table_fields,
 				 ", primary key (id), "
 				 " unique index (user(20), acct(20), "
-				 "cluster(20), partition(20)))"
-/* 				 " unique index (lft), " */
-				 /* 				 " unique index (rgt))" */)
+				 "cluster(20), partition(20)))")
 	   == SLURM_ERROR)
 		return SLURM_ERROR;
 
@@ -1665,11 +2510,12 @@ extern int fini ( void )
 #endif
 }
 
-extern void *acct_storage_p_get_connection(bool make_agent, bool rollback)
+extern void *acct_storage_p_get_connection(bool make_agent, int conn_num,
+					   bool rollback)
 {
 #ifdef HAVE_MYSQL
 	mysql_conn_t *mysql_conn = xmalloc(sizeof(mysql_conn_t));
-	static int conn = 0;
+	
 	if(!mysql_db_info)
 		init();
 
@@ -1681,7 +2527,7 @@ extern void *acct_storage_p_get_connection(bool make_agent, bool rollback)
 	if(rollback) {
 		mysql_autocommit(mysql_conn->db_conn, 0);
 	}
-	mysql_conn->conn = conn++;
+	mysql_conn->conn = conn_num;
 	mysql_conn->update_list = list_create(destroy_acct_update_object);
 	return (void *)mysql_conn;
 #else
@@ -1750,8 +2596,8 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 		}
 		xfree(query);
 		while((row = mysql_fetch_row(result))) {
-			info("sending to %s at %s(%s) ver %s",
-			     row[2], row[0], row[1], row[3]);
+			debug("sending updates to %s at %s(%s) ver %s",
+			      row[2], row[0], row[1], row[3]);
 			msg.rpc_version = atoi(row[3]);
 			slurm_msg_t_init(&req);
 			slurm_set_addr_char(&req.address, atoi(row[1]), row[0]);
@@ -1811,6 +2657,7 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 				rc = assoc_mgr_update_local_assocs(object);
 				break;
 			case ACCT_ADD_QOS:
+			case ACCT_MODIFY_QOS:
 			case ACCT_REMOVE_QOS:
 				rc = assoc_mgr_update_local_qos(object);
 				break;
@@ -1862,26 +2709,9 @@ extern int acct_storage_p_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrcat(cols, "creation_time, mod_time, name, default_acct");
 		xstrfmtcat(vals, "%d, %d, '%s', '%s'", 
 			   now, now, object->name, object->default_acct); 
-		xstrfmtcat(extra, ", default_acct='%s'", object->default_acct);
-		if(object->qos_list && list_count(object->qos_list)) {
-			char *qos_val = NULL;
-			char *tmp_char = NULL;
-			ListIterator qos_itr =
-				list_iterator_create(object->qos_list);
-			xstrcat(cols, ", qos");
-			while((tmp_char = list_next(qos_itr))) {
-				xstrfmtcat(qos_val, ",%s", tmp_char);
-			}
-
-			xstrfmtcat(vals, ", '%s'", qos_val); 		
-			xstrfmtcat(extra, ", qos='%s'", qos_val); 		
-		} else if(normal_qos_id != NO_VAL) { 
-			/* Add normal qos to the user */
-			xstrcat(cols, ", qos");
-			xstrfmtcat(vals, ", ',%d'", normal_qos_id);
-			xstrfmtcat(extra, ", qos=',%d'", normal_qos_id);
-		}
-
+		xstrfmtcat(extra, ", default_acct='%s'",
+			   object->default_acct);
+		
 		if(object->admin_level != ACCT_ADMIN_NOTSET) {
 			xstrcat(cols, ", admin_level");
 			xstrfmtcat(vals, ", %u", object->admin_level);
@@ -1919,14 +2749,14 @@ extern int acct_storage_p_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		if(txn_query)
 			xstrfmtcat(txn_query, 	
-				   ", (%d, %u, '%s', '%s', \"%s\")",
+				   ", (%d, %u, \"%s\", \"%s\", \"%s\")",
 				   now, DBD_ADD_USERS, object->name,
 				   user_name, extra);
 		else
 			xstrfmtcat(txn_query, 	
 				   "insert into %s "
 				   "(timestamp, action, name, actor, info) "
-				   "values (%d, %u, '%s', '%s', \"%s\")",
+				   "values (%d, %u, \"%s\", \"%s\", \"%s\")",
 				   txn_table,
 				   now, DBD_ADD_USERS, object->name,
 				   user_name, extra);
@@ -1997,19 +2827,19 @@ extern int acct_storage_p_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 	while((user = list_next(itr))) {
 		while((acct = list_next(itr2))) {
 			if(query) 
-				xstrfmtcat(query, ", (%d, %d, '%s', '%s')",
+				xstrfmtcat(query, ", (%d, %d, \"%s\", \"%s\")",
 					   now, now, acct, user);
 			else
 				query = xstrdup_printf(
 					"insert into %s (creation_time, "
 					"mod_time, acct, user) values "
-					"(%d, %d, '%s', '%s')",
+					"(%d, %d, \"%s\", \"%s\")",
 					acct_coord_table, 
 					now, now, acct, user); 
 
 			if(txn_query)
 				xstrfmtcat(txn_query, 	
-					   ", (%d, %u, '%s', '%s', '%s')",
+					   ", (%d, %u, \"%s\", \"%s\", \"%s\")",
 					   now, DBD_ADD_ACCOUNT_COORDS, user,
 					   user_name, acct);
 			else
@@ -2017,8 +2847,8 @@ extern int acct_storage_p_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 					   "insert into %s "
 					   "(timestamp, action, name, "
 					   "actor, info) "
-					   "values (%d, %u, '%s', "
-					   "'%s', \"%s\")",
+					   "values (%d, %u, \"%s\", "
+					   "\"%s\", \"%s\")",
 					   txn_table,
 					   now, DBD_ADD_ACCOUNT_COORDS, user,
 					   user_name, acct);
@@ -2071,7 +2901,8 @@ extern int acct_storage_p_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *cols = NULL, *vals = NULL, *query = NULL, *txn_query = NULL;
 	time_t now = time(NULL);
 	char *user_name = NULL;
-	char *extra = NULL;
+	char *extra = NULL, *tmp_extra = NULL;
+	
 	int affect_rows = 0;
 	List assoc_list = list_create(destroy_acct_association_rec);
 
@@ -2092,31 +2923,12 @@ extern int acct_storage_p_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 		xstrcat(cols, "creation_time, mod_time, name, "
 			"description, organization");
-		xstrfmtcat(vals, "%d, %d, '%s', '%s', '%s'", 
+		xstrfmtcat(vals, "%d, %d, \"%s\", \"%s\", \"%s\"", 
 			   now, now, object->name, 
 			   object->description, object->organization); 
-		xstrfmtcat(extra, ", description='%s', organization='%s'",
+		xstrfmtcat(extra, ", description=\"%s\", organization=\"%s\"",
 			   object->description, object->organization); 		
 		
-		if(object->qos_list && list_count(object->qos_list)) {
-			char *qos_val = NULL;
-			char *tmp_char = NULL;
-			ListIterator qos_itr =
-				list_iterator_create(object->qos_list);
-			xstrcat(cols, ", qos");
-			while((tmp_char = list_next(qos_itr))) {
-				xstrfmtcat(qos_val, ",%s", tmp_char);
-			}
-
-			xstrfmtcat(vals, ", '%s'", qos_val); 		
-			xstrfmtcat(extra, ", qos='%s'", qos_val); 		
-		} else if(normal_qos_id != NO_VAL) { 
-			/* Add normal qos to the account */
-			xstrcat(cols, ", qos");
-			xstrfmtcat(vals, ", ',%d'", normal_qos_id);
-			xstrfmtcat(extra, ", qos=',%d'", normal_qos_id);
-		}
-
 		query = xstrdup_printf(
 			"insert into %s (%s) values (%s) "
 			"on duplicate key update deleted=0, mod_time=%d %s;",
@@ -2142,19 +2954,23 @@ extern int acct_storage_p_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 			continue;
 		}
 
+		/* we always have a ', ' as the first 2 chars */
+		tmp_extra = _fix_double_quotes(extra+2);
+
 		if(txn_query)
 			xstrfmtcat(txn_query, 	
-				   ", (%d, %u, '%s', '%s', \"%s\")",
+				   ", (%d, %u, \"%s\", \"%s\", \"%s\")",
 				   now, DBD_ADD_ACCOUNTS, object->name,
-				   user_name, extra);
+				   user_name, tmp_extra);
 		else
 			xstrfmtcat(txn_query, 	
 				   "insert into %s "
 				   "(timestamp, action, name, actor, info) "
-				   "values (%d, %u, '%s', '%s', \"%s\")",
+				   "values (%d, %u, \"%s\", \"%s\", \"%s\")",
 				   txn_table,
 				   now, DBD_ADD_ACCOUNTS, object->name,
-				   user_name, extra);
+				   user_name, tmp_extra);
+		xfree(tmp_extra);
 		xfree(extra);
 		
 		if(!object->assoc_list)
@@ -2224,73 +3040,16 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 
 		xstrcat(cols, "creation_time, mod_time, acct, cluster");
-		xstrfmtcat(vals, "%d, %d, 'root', '%s'",
+		xstrfmtcat(vals, "%d, %d, 'root', \"%s\"",
 			   now, now, object->name);
 		xstrfmtcat(extra, ", mod_time=%d", now);
-	
-		if((int)object->default_fairshare >= 0) {
-			xstrcat(cols, ", fairshare");
-			xstrfmtcat(vals, ", %u", object->default_fairshare);
-			xstrfmtcat(extra, ", fairshare=%u",
-				   object->default_fairshare);
-		} else if ((int)object->default_fairshare == INFINITE) {
-			xstrcat(cols, ", fairshare");
-			xstrfmtcat(vals, ", NULL");
-			xstrfmtcat(extra, ", fairshare=NULL");		
-		}
-
-		if((int)object->default_max_cpu_secs_per_job >= 0) {
-			xstrcat(cols, ", max_cpu_secs_per_job");
-			xstrfmtcat(vals, ", %u",
-				   object->default_max_cpu_secs_per_job);
-			xstrfmtcat(extra, ", max_cpu_secs_per_job=%u",
-				   object->default_max_cpu_secs_per_job);
-		} else if((int)object->default_max_cpu_secs_per_job 
-			  == INFINITE) {
-			xstrcat(cols, ", max_cpu_secs_per_job");
-			xstrfmtcat(vals, ", NULL");
-			xstrfmtcat(extra, ", max_cpu_secs_per_job=NULL");
-		}
-		
-		if((int)object->default_max_jobs >= 0) {
-			xstrcat(cols, ", max_jobs");
-			xstrfmtcat(vals, ", %u", object->default_max_jobs);
-			xstrfmtcat(extra, ", max_jobs=%u",
-				   object->default_max_jobs);
-		} else if((int)object->default_max_jobs == INFINITE) {
-			xstrcat(cols, ", max_jobs");
-			xstrfmtcat(vals, ", NULL");
-			xstrfmtcat(extra, ", max_jobs=NULL");		
-		}
-
-		if((int)object->default_max_nodes_per_job >= 0) {
-			xstrcat(cols, ", max_nodes_per_job");
-			xstrfmtcat(vals, ", %u", 
-				   object->default_max_nodes_per_job);
-			xstrfmtcat(extra, ", max_nodes_per_job=%u",
-				   object->default_max_nodes_per_job);
-		} else if((int)object->default_max_nodes_per_job == INFINITE) {
-			xstrcat(cols, ", max_nodes_per_job");
-			xstrfmtcat(vals, ", NULL");
-			xstrfmtcat(extra, ", max_nodes_per_job=NULL");
-		}
-
-		if((int)object->default_max_wall_duration_per_job >= 0) {
-			xstrcat(cols, ", max_wall_duration_per_job");
-			xstrfmtcat(vals, ", %u",
-				   object->default_max_wall_duration_per_job);
-			xstrfmtcat(extra, ", max_wall_duration_per_job=%u",
-				   object->default_max_wall_duration_per_job);
-		} else if((int)object->default_max_wall_duration_per_job
-			  == INFINITE) {
-			xstrcat(cols, ", max_wall_duration_per_job");
-			xstrfmtcat(vals, ", NULL");
-			xstrfmtcat(extra, ", max_wall_duration_per_job=NULL");
-		}
-
+		if(object->root_assoc)
+			_setup_association_limits(object->root_assoc, &cols, 
+						  &vals, &extra,
+						  QOS_LEVEL_SET, 1);
 		xstrfmtcat(query, 
 			   "insert into %s (creation_time, mod_time, name) "
-			   "values (%d, %d, '%s') "
+			   "values (%d, %d, \"%s\") "
 			   "on duplicate key update deleted=0, mod_time=%d, "
 			   "control_host='', control_port=0;",
 			   cluster_table, 
@@ -2349,7 +3108,7 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrfmtcat(query,
 			   "insert into %s "
 			   "(timestamp, action, name, actor, info) "
-			   "values (%d, %u, '%s', '%s', \"%s\");",
+			   "values (%d, %u, \"%s\", \"%s\", \"%s\");",
 			   txn_table, now, DBD_ADD_CLUSTERS, 
 			   object->name, user_name, extra);
 		xfree(extra);			
@@ -2366,16 +3125,12 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		 * readd it every time here. 
 		 */
 		assoc = xmalloc(sizeof(acct_association_rec_t));
+		init_acct_association_rec(assoc);
 		list_append(assoc_list, assoc);
 		
 		assoc->cluster = xstrdup(object->name);
 		assoc->user = xstrdup("root");
 		assoc->acct = xstrdup("root");
-		assoc->fairshare = NO_VAL;
-		assoc->max_cpu_secs_per_job = NO_VAL;
-		assoc->max_jobs = NO_VAL;
-		assoc->max_nodes_per_job = NO_VAL;
-		assoc->max_wall_duration_per_job = NO_VAL;
 
 		if(acct_storage_p_add_associations(mysql_conn, uid, assoc_list)
 		   == SLURM_ERROR) {
@@ -2412,7 +3167,7 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 	int i=0;
 	acct_association_rec_t *object = NULL;
 	char *cols = NULL, *vals = NULL, *txn_query = NULL,
-		*extra = NULL, *query = NULL, *update = NULL;
+		*extra = NULL, *query = NULL, *update = NULL, *tmp_extra = NULL;
 	char *parent = NULL;
 	time_t now = time(NULL);
 	char *user_name = NULL;
@@ -2467,22 +3222,22 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 		}
 
 		xstrcat(cols, "creation_time, mod_time, cluster, acct");
-		xstrfmtcat(vals, "%d, %d, '%s', '%s'", 
+		xstrfmtcat(vals, "%d, %d, \"%s\", \"%s\"", 
 			   now, now, object->cluster, object->acct); 
-		xstrfmtcat(update, "where id>=0 && cluster='%s' && acct='%s'",
+		xstrfmtcat(update, "where id>=0 && cluster=\"%s\" && acct=\"%s\"",
 			   object->cluster, object->acct); 
 
 		xstrfmtcat(extra, ", mod_time=%d", now);
 		if(!object->user) {
 			xstrcat(cols, ", parent_acct");
-			xstrfmtcat(vals, ", '%s'", parent);
-			xstrfmtcat(extra, ", parent_acct='%s'", parent);
+			xstrfmtcat(vals, ", \"%s\"", parent);
+			xstrfmtcat(extra, ", parent_acct=\"%s\"", parent);
 			xstrfmtcat(update, " && user=''"); 
 		} else {
 			char *part = object->partition;
 			xstrcat(cols, ", user");
-			xstrfmtcat(vals, ", '%s'", object->user); 		
-			xstrfmtcat(update, " && user='%s'",
+			xstrfmtcat(vals, ", \"%s\"", object->user); 		
+			xstrfmtcat(update, " && user=\"%s\"",
 				   object->user); 
 
 			/* We need to give a partition wiether it be
@@ -2491,45 +3246,12 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 			if(!part)
 				part = "";
 			xstrcat(cols, ", partition");
-			xstrfmtcat(vals, ", '%s'", part);
-			xstrfmtcat(update, " && partition='%s'", part);
+			xstrfmtcat(vals, ", \"%s\"", part);
+			xstrfmtcat(update, " && partition=\"%s\"", part);
 		}
 
-		if((int)object->fairshare >= 0) {
-			xstrcat(cols, ", fairshare");
-			xstrfmtcat(vals, ", %d", object->fairshare);
-			xstrfmtcat(extra, ", fairshare=%d",
-				   object->fairshare);
-		}
-
-		if((int)object->max_jobs >= 0) {
-			xstrcat(cols, ", max_jobs");
-			xstrfmtcat(vals, ", %d", object->max_jobs);
-			xstrfmtcat(extra, ", max_jobs=%d",
-				   object->max_jobs);
-		}
-
-		if((int)object->max_nodes_per_job >= 0) {
-			xstrcat(cols, ", max_nodes_per_job");
-			xstrfmtcat(vals, ", %d", object->max_nodes_per_job);
-			xstrfmtcat(extra, ", max_nodes_per_job=%d",
-				   object->max_nodes_per_job);
-		}
-
-		if((int)object->max_wall_duration_per_job >= 0) {
-			xstrcat(cols, ", max_wall_duration_per_job");
-			xstrfmtcat(vals, ", %d",
-				   object->max_wall_duration_per_job);
-			xstrfmtcat(extra, ", max_wall_duration_per_job=%d",
-				   object->max_wall_duration_per_job);
-		}
-
-		if((int)object->max_cpu_secs_per_job >= 0) {
-			xstrcat(cols, ", max_cpu_secs_per_job");
-			xstrfmtcat(vals, ", %d", object->max_cpu_secs_per_job);
-			xstrfmtcat(extra, ", max_cpu_secs_per_job=%d",
-				   object->max_cpu_secs_per_job);
-		}
+		_setup_association_limits(object, &cols, &vals, &extra, 
+					  QOS_LEVEL_NONE, 1);
 
 		for(i=0; i<MASSOC_COUNT; i++) {
 			if(i) 
@@ -2574,7 +3296,7 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 			   || strcasecmp(object->cluster, old_cluster)) {
 				char *sel_query = xstrdup_printf(
 					"SELECT lft FROM %s WHERE "
-					"acct = '%s' and cluster = '%s' "
+					"acct = \"%s\" and cluster = \"%s\" "
 					"and user = '' order by lft;",
 					assoc_table,
 					parent, object->cluster);
@@ -2594,8 +3316,9 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 						assoc_table, incr,
 						my_left,
 						assoc_table);
-					debug3("%d query\n%s", mysql_conn->conn,
-					       up_query);
+					debug3("%d(%d) query\n%s", 
+					       mysql_conn->conn, 
+					       __LINE__, up_query);
 					rc = mysql_db_query(
 						mysql_conn->db_conn,
 						up_query);
@@ -2611,8 +3334,8 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 					}
 				}
 
-				debug3("%d query\n%s", mysql_conn->conn,
-				       sel_query);
+				debug3("%d(%d) query\n%s", mysql_conn->conn,
+				       __LINE__, sel_query);
 				if(!(sel_result = mysql_db_query_ret(
 					     mysql_conn->db_conn,
 					     sel_query, 0))) {
@@ -2658,8 +3381,8 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 			/* definantly works but slow */
 /* 			xstrfmtcat(query, */
 /* 				   "SELECT @myLeft := lft FROM %s WHERE " */
-/* 				   "acct = '%s' " */
-/* 				   "and cluster = '%s' and user = '';", */
+/* 				   "acct = \"%s\" " */
+/* 				   "and cluster = \"%s\" and user = '';", */
 /* 				   assoc_table, */
 /* 				   parent, */
 /* 				   object->cluster); */
@@ -2746,19 +3469,23 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 			list_remove(itr);
 		}
 
+		/* we always have a ', ' as the first 2 chars */
+		tmp_extra = _fix_double_quotes(extra+2);
+
 		if(txn_query)
 			xstrfmtcat(txn_query, 	
-				   ", (%d, %d, '%d', '%s', \"%s\")",
+				   ", (%d, %d, '%d', \"%s\", \"%s\")",
 				   now, DBD_ADD_ASSOCS, assoc_id, user_name,
-				   extra);
+				   tmp_extra);
 		else
 			xstrfmtcat(txn_query, 	
 				   "insert into %s "
 				   "(timestamp, action, name, actor, info) "
-				   "values (%d, %d, '%d', '%s', \"%s\")",
+				   "values (%d, %d, '%d', \"%s\", \"%s\")",
 				   txn_table,
 				   now, DBD_ADD_ASSOCS, assoc_id, user_name, 
-				   extra);
+				   tmp_extra);
+		xfree(tmp_extra);
 		xfree(extra);
 	}
 	list_iterator_destroy(itr);
@@ -2826,7 +3553,8 @@ extern int acct_storage_p_add_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
 	acct_qos_rec_t *object = NULL;
-	char *query = NULL;
+	char *cols = NULL, *extra = NULL, *vals = NULL, *query = NULL,
+		*tmp_extra = NULL;
 	time_t now = time(NULL);
 	char *user_name = NULL;
 	int affect_rows = 0;
@@ -2843,22 +3571,30 @@ extern int acct_storage_p_add_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 			rc = SLURM_ERROR;
 			continue;
 		}
+		xstrcat(cols, "creation_time, mod_time, name");
+		xstrfmtcat(vals, "%d, %d, \"%s\"", 
+			   now, now, object->name); 
+		xstrfmtcat(extra, ", mod_time=%d", now);
 
+		_setup_qos_limits(object, &cols, &vals, &extra, 
+				  QOS_LEVEL_NONE);
 		xstrfmtcat(query, 
-			   "insert into %s (creation_time, mod_time, "
-			   "name, description) "
-			   "values (%d, %d, '%s', '%s') "
-			   "on duplicate key update deleted=0, mod_time=%d;",
-			   qos_table, 
-			   now, now, object->name, object->description,
-			   now);
+			   "insert into %s (%s) values (%s) "
+			   "on duplicate key update deleted=0, "
+			   "id=LAST_INSERT_ID(id)%s;",
+			   qos_table, cols, vals, extra);
+
+
 		debug3("%d(%d) query\n%s",
 		       mysql_conn->conn, __LINE__, query);
-		rc = mysql_db_query(mysql_conn->db_conn, query);
+		object->id = mysql_insert_ret_id(mysql_conn->db_conn, query);
 		xfree(query);
-		if(rc != SLURM_SUCCESS) {
+		if(!object->id) {
 			error("Couldn't add qos %s", object->name);
 			added=0;
+			xfree(cols);
+			xfree(extra);
+			xfree(vals);
 			break;
 		}
 
@@ -2866,16 +3602,27 @@ extern int acct_storage_p_add_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		if(!affect_rows) {
 			debug2("nothing changed %d", affect_rows);
+			xfree(cols);
+			xfree(extra);
+			xfree(vals);
 			continue;
 		}
+
+		/* we always have a ', ' as the first 2 chars */
+		tmp_extra = _fix_double_quotes(extra+2);
+
 		xstrfmtcat(query,
 			   "insert into %s "
 			   "(timestamp, action, name, actor, info) "
-			   "values (%d, %u, '%s', '%s', \"%s\");",
+			   "values (%d, %u, \"%s\", \"%s\", \"%s\");",
 			   txn_table,
 			   now, DBD_ADD_QOS, object->name, user_name,
-			   object->description);
+			   tmp_extra);
 
+		xfree(tmp_extra);
+		xfree(cols);
+		xfree(extra);
+		xfree(vals);
 		debug4("query\n%s",query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 		xfree(query);
@@ -2921,9 +3668,8 @@ extern List acct_storage_p_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	int set = 0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	int replace_qos = 0;
 
-	if(!user_cond) {
+	if(!user_cond || !user) {
 		error("we need something to change");
 		return NULL;
 	}
@@ -2940,7 +3686,7 @@ extern List acct_storage_p_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "name='%s'", object);
+			xstrfmtcat(extra, "name=\"%s\"", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -2954,65 +3700,19 @@ extern List acct_storage_p_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "default_acct='%s'", object);
+			xstrfmtcat(extra, "default_acct=\"%s\"", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
 		xstrcat(extra, ")");
 	}
 	
-	if(user_cond->qos_list && list_count(user_cond->qos_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(user_cond->qos_list);
-		while((object = list_next(itr))) {
-			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, 
-				   "(qos like '%%,%s' || qos like '%%,%s,%%')",
-				   object, object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
 	if(user_cond->admin_level != ACCT_ADMIN_NOTSET) {
 		xstrfmtcat(extra, " && admin_level=%u", user_cond->admin_level);
 	}
 
 	if(user->default_acct)
-		xstrfmtcat(vals, ", default_acct='%s'", user->default_acct);
-
-	if(user->qos_list && list_count(user->qos_list)) {
-		char *tmp_qos = NULL;
-		set = 0;
-		itr = list_iterator_create(user->qos_list);
-		while((object = list_next(itr))) {
-			/* when adding we need to make sure we don't
-			 * already have it so we remove it and then add
-			 * it.
-			 */
-			if(object[0] == '-') {
-				xstrfmtcat(vals,
-					   ", qos=replace(qos, ',%s', '')",
-					   object+1);
-			} else if(object[0] == '+') {
-				xstrfmtcat(vals,
-					   ", qos=concat_ws(',', "
-					   "replace(qos, ',%s', ''), '%s')",
-					   object+1, object+1);
-			} else {
-				xstrfmtcat(tmp_qos, ",%s", object);
-			}
-		}
-		list_iterator_destroy(itr);
-		if(tmp_qos) {
-			xstrfmtcat(vals, ", qos='%s'", tmp_qos);
-			xfree(tmp_qos);
-			replace_qos = 1;
-		}
-	}
+		xstrfmtcat(vals, ", default_acct=\"%s\"", user->default_acct);
 
 	if(user->admin_level != ACCT_ADMIN_NOTSET)
 		xstrfmtcat(vals, ", admin_level=%u", user->admin_level);
@@ -3022,7 +3722,7 @@ extern List acct_storage_p_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		error("Nothing to change");
 		return NULL;
 	}
-	query = xstrdup_printf("select name, qos from %s %s;",
+	query = xstrdup_printf("select name from %s %s;",
 			       user_table, extra);
 	xfree(extra);
 	if(!(result = mysql_db_query_ret(
@@ -3039,65 +3739,15 @@ extern List acct_storage_p_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		object = xstrdup(row[0]);
 		list_append(ret_list, object);
 		if(!rc) {
-			xstrfmtcat(name_char, "(name='%s'", object);
+			xstrfmtcat(name_char, "(name=\"%s\"", object);
 			rc = 1;
 		} else  {
-			xstrfmtcat(name_char, " || name='%s'", object);
+			xstrfmtcat(name_char, " || name=\"%s\"", object);
 		}
 		user_rec = xmalloc(sizeof(acct_user_rec_t));
 		user_rec->name = xstrdup(object);
 		user_rec->default_acct = xstrdup(user->default_acct);
 		user_rec->admin_level = user->admin_level;
-		if(user->qos_list) {
-			ListIterator new_qos_itr = 
-				list_iterator_create(user->qos_list);
-			ListIterator curr_qos_itr = NULL;
-			char *new_qos = NULL, *curr_qos = NULL;
-
-			user_rec->qos_list = list_create(slurm_destroy_char);
-			if(!replace_qos)
-				slurm_addto_char_list(user_rec->qos_list,
-						      row[1]);
-			curr_qos_itr = list_iterator_create(user_rec->qos_list);
-
-			while((new_qos = list_next(new_qos_itr))) {
-				char *tmp_char = NULL;
-				if(new_qos[0] == '-') {
-					tmp_char = xstrdup(object+1);
-					while((curr_qos =
-					       list_next(curr_qos_itr))) {
-						if(!strcmp(curr_qos,
-							   tmp_char)) {
-							list_delete_item(
-								curr_qos_itr);
-							break;
-						}
-					}
-					xfree(tmp_char);
-					list_iterator_reset(curr_qos_itr);
-				} else if(new_qos[0] == '+') {
-					tmp_char = xstrdup(object+1);
-					while((curr_qos =
-					       list_next(curr_qos_itr))) {
-						if(!strcmp(curr_qos,
-							   tmp_char)) {
-							break;
-						}
-					}
-					if(!curr_qos)
-						list_append(user_rec->qos_list,
-							    tmp_char);
-					else
-						xfree(tmp_char);
-					list_iterator_reset(curr_qos_itr);
-				} else {
-					list_append(user_rec->qos_list,
-						    xstrdup(object));
-				}
-			}
-			list_iterator_destroy(curr_qos_itr);
-			list_iterator_destroy(new_qos_itr);			
-		}
 		_addto_update_list(mysql_conn->update_list, ACCT_MODIFY_USER,
 				   user_rec);
 	}
@@ -3148,7 +3798,7 @@ extern List acct_storage_p_modify_accounts(
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 
-	if(!acct_cond) {
+	if(!acct_cond || !acct) {
 		error("we need something to change");
 		return NULL;
 	}
@@ -3166,7 +3816,7 @@ extern List acct_storage_p_modify_accounts(
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "name='%s'", object);
+			xstrfmtcat(extra, "name=\"%s\"", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -3181,7 +3831,7 @@ extern List acct_storage_p_modify_accounts(
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "description='%s'", object);
+			xstrfmtcat(extra, "description=\"%s\"", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -3196,62 +3846,17 @@ extern List acct_storage_p_modify_accounts(
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "organization='%s'", object);
+			xstrfmtcat(extra, "organization=\"%s\"", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
 		xstrcat(extra, ")");
 	}
 	
-	if(acct_cond->qos_list && list_count(acct_cond->qos_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(acct_cond->qos_list);
-		while((object = list_next(itr))) {
-			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, 
-				   "(qos like '%%,%s' || qos like '%%,%s,%%')",
-				   object, object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
 	if(acct->description)
-		xstrfmtcat(vals, ", description='%s'", acct->description);
+		xstrfmtcat(vals, ", description=\"%s\"", acct->description);
 	if(acct->organization)
-		xstrfmtcat(vals, ", organization='%s'", acct->organization);
-
-	if(acct->qos_list && list_count(acct->qos_list)) {
-		char *tmp_qos = NULL;
-		set = 0;
-		itr = list_iterator_create(acct->qos_list);
-		while((object = list_next(itr))) {
-			/* when adding we need to make sure we don't
-			 * already have it so we remove it and then add
-			 * it.
-			 */
-			if(object[0] == '-') {
-				xstrfmtcat(vals,
-					   ", qos=replace(qos, ',%s', '')",
-					   object+1);
-			} else if(object[0] == '+') {
-				xstrfmtcat(vals,
-					   ", qos=concat_ws(',', "
-					   "replace(qos, ',%s', ''), '%s')",
-					   object+1, object+1);
-			} else {
-				xstrfmtcat(tmp_qos, ",%s", object);
-			}
-		}
-		list_iterator_destroy(itr);
-		if(tmp_qos) {
-			xstrfmtcat(vals, ", qos='%s'", tmp_qos);
-			xfree(tmp_qos);
-		}
-	}
+		xstrfmtcat(vals, ", organization=\"%s\"", acct->organization);
 
 	if(!extra || !vals) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
@@ -3275,10 +3880,10 @@ extern List acct_storage_p_modify_accounts(
 		object = xstrdup(row[0]);
 		list_append(ret_list, object);
 		if(!rc) {
-			xstrfmtcat(name_char, "(name='%s'", object);
+			xstrfmtcat(name_char, "(name=\"%s\"", object);
 			rc = 1;
 		} else  {
-			xstrfmtcat(name_char, " || name='%s'", object);
+			xstrfmtcat(name_char, " || name=\"%s\"", object);
 		}
 
 	}
@@ -3337,7 +3942,7 @@ extern List acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
 	 * the controller when it loads 
 	 */
 
-	if(!cluster_cond) {
+	if(!cluster_cond || !cluster) {
 		error("we need something to change");
 		return NULL;
 	}
@@ -3515,6 +4120,8 @@ extern List acct_storage_p_modify_associations(
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	acct_user_rec_t user;
+	char *tmp_char1=NULL, *tmp_char2=NULL;
+	int set_qos_vals = 0;
 
 	char *massoc_req_inx[] = {
 		"id",
@@ -3524,7 +4131,8 @@ extern List acct_storage_p_modify_associations(
 		"user",
 		"partition",
 		"lft",
-		"rgt"
+		"rgt",
+		"qos",
 	};
 	
 	enum {
@@ -3536,10 +4144,11 @@ extern List acct_storage_p_modify_associations(
 		MASSOC_PART,
 		MASSOC_LFT,
 		MASSOC_RGT,
+		MASSOC_QOS,
 		MASSOC_COUNT
 	};
 
-	if(!assoc_cond) {
+	if(!assoc_cond || !assoc) {
 		error("we need something to change");
 		return NULL;
 	}
@@ -3586,118 +4195,26 @@ extern List acct_storage_p_modify_associations(
 		is_admin = 1;
 	}
 
-	if(assoc_cond->acct_list && list_count(assoc_cond->acct_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(assoc_cond->acct_list);
-		while((object = list_next(itr))) {
-			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "acct='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
+	set = _setup_association_cond_limits(assoc_cond, &extra);
 
-	if(assoc_cond->cluster_list && list_count(assoc_cond->cluster_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(assoc_cond->cluster_list);
-		while((object = list_next(itr))) {
-			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "cluster='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
-	if(assoc_cond->user_list && list_count(assoc_cond->user_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(assoc_cond->user_list);
-		while((object = list_next(itr))) {
-			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "user='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
+	/* This needs to be here to make sure we only modify the
+	   correct set of associations The first clause was already
+	   taken care of above. */
+	if (assoc_cond->user_list && !list_count(assoc_cond->user_list)) {
+		debug4("no user specified looking at users");
+		xstrcat(extra, " && user != '' ");
 	} else if (!assoc_cond->user_list) {
 		debug4("no user specified looking at accounts");
 		xstrcat(extra, " && user = '' ");
-	} else {
-		debug4("no user specified looking at users");
-		xstrcat(extra, " && user != '' ");
-	}
+	} 
 
-	if(assoc_cond->partition_list 
-	   && list_count(assoc_cond->partition_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(assoc_cond->partition_list);
-		while((object = list_next(itr))) {
-			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "partition='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
+	_setup_association_limits(assoc, &tmp_char1, &tmp_char2,
+				  &vals, QOS_LEVEL_MODIFY, 0);
+	xfree(tmp_char1);
+	xfree(tmp_char2);
 
-	if(assoc_cond->id_list && list_count(assoc_cond->id_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(assoc_cond->id_list);
-		while((object = list_next(itr))) {
-			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "id=%s", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-	
-	if(assoc_cond->parent_acct) {
-		xstrfmtcat(extra, " && parent_acct='%s'",
-			   assoc_cond->parent_acct);
-	}
-
-	if((int)assoc->fairshare >= 0) 
-		xstrfmtcat(vals, ", fairshare=%u", assoc->fairshare);
-	else if((int)assoc->fairshare == INFINITE) {
-		xstrfmtcat(vals, ", fairshare=1");
-		assoc->fairshare = 1;
-	}
-	if((int)assoc->max_cpu_secs_per_job >= 0) 
-		xstrfmtcat(vals, ", max_cpu_secs_per_job=%u",
-			   assoc->max_cpu_secs_per_job);
-	else if((int)assoc->max_cpu_secs_per_job == INFINITE) {
-		xstrfmtcat(vals, ", max_cpu_secs_per_job=NULL");
-	}
-	if((int)assoc->max_jobs >= 0) 
-		xstrfmtcat(vals, ", max_jobs=%u", assoc->max_jobs);
-	else if((int)assoc->max_jobs == INFINITE) {
-		xstrfmtcat(vals, ", max_jobs=NULL");
-	}
-	if((int)assoc->max_nodes_per_job >= 0) 
-		xstrfmtcat(vals, ", max_nodes_per_job=%u",
-			   assoc->max_nodes_per_job);
-	else if((int)assoc->max_nodes_per_job == INFINITE) {
-		xstrfmtcat(vals, ", max_nodes_per_job=NULL");
-	}
-	if((int)assoc->max_wall_duration_per_job >= 0) 
-		xstrfmtcat(vals, ", max_wall_duration_per_job=%u",
-			   assoc->max_wall_duration_per_job);
-	else if((int)assoc->max_wall_duration_per_job == INFINITE) {
-		xstrfmtcat(vals, ", max_wall_duration_per_job=NULL");
-	}
-	if(!extra || (!vals && !assoc->parent_acct)) {
+	if(!extra || (!vals && !assoc->parent_acct
+		      && (!assoc->qos_list || !list_count(assoc->qos_list)))) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		error("Nothing to change");
 		return NULL;
@@ -3706,10 +4223,10 @@ extern List acct_storage_p_modify_associations(
 	for(i=0; i<MASSOC_COUNT; i++) {
 		if(i) 
 			xstrcat(object, ", ");
-		xstrcat(object, massoc_req_inx[i]);
+		xstrfmtcat(object, "t1.%s", massoc_req_inx[i]);
 	}
 
-	query = xstrdup_printf("select distinct %s from %s where deleted=0%s "
+	query = xstrdup_printf("select distinct %s from %s as t1%s "
 			       "order by lft FOR UPDATE;",
 			       object, assoc_table, extra);
 	xfree(object);
@@ -3730,8 +4247,6 @@ extern List acct_storage_p_modify_associations(
 	while((row = mysql_fetch_row(result))) {
 		acct_association_rec_t *mod_assoc = NULL;
 		int account_type=0;
-/* 		MYSQL_RES *result2 = NULL; */
-/* 		MYSQL_ROW row2; */
 
 		if(!is_admin) {
 			acct_coord_rec_t *coord = NULL;
@@ -3776,7 +4291,7 @@ extern List acct_storage_p_modify_associations(
 					error("User %s(%d) can not modify "
 					      "account (%s) because they "
 					      "are not coordinators of "
-					      "parent account '%s'.",
+					      "parent account \"%s\".",
 					      user.name, user.uid,
 					      row[MASSOC_ACCT], 
 					      row[MASSOC_PACCT]);
@@ -3843,25 +4358,94 @@ extern List acct_storage_p_modify_associations(
 			account_type = 1;
 		}
 		list_append(ret_list, object);
-
+	
 		if(!set) {
 			xstrfmtcat(name_char, "(id=%s", row[MASSOC_ID]);
 			set = 1;
 		} else {
 			xstrfmtcat(name_char, " || id=%s", row[MASSOC_ID]);
 		}
-		
+
 		mod_assoc = xmalloc(sizeof(acct_association_rec_t));
+		init_acct_association_rec(mod_assoc);
 		mod_assoc->id = atoi(row[MASSOC_ID]);
 
-		mod_assoc->max_cpu_secs_per_job = assoc->max_cpu_secs_per_job;
 		mod_assoc->fairshare = assoc->fairshare;
+
+		mod_assoc->grp_cpus = assoc->grp_cpus;
+		mod_assoc->grp_cpu_mins = assoc->grp_cpu_mins;
+		mod_assoc->grp_jobs = assoc->grp_jobs;
+		mod_assoc->grp_nodes = assoc->grp_nodes;
+		mod_assoc->grp_submit_jobs = assoc->grp_submit_jobs;
+		mod_assoc->grp_wall = assoc->grp_wall;
+
+		mod_assoc->max_cpus_pj = assoc->max_cpus_pj;
+		mod_assoc->max_cpu_mins_pj = assoc->max_cpu_mins_pj;
 		mod_assoc->max_jobs = assoc->max_jobs;
-		mod_assoc->max_nodes_per_job = assoc->max_nodes_per_job;
-		mod_assoc->max_wall_duration_per_job = 
-			assoc->max_wall_duration_per_job;
+		mod_assoc->max_nodes_pj = assoc->max_nodes_pj;
+		mod_assoc->max_submit_jobs = assoc->max_submit_jobs;
+		mod_assoc->max_wall_pj = assoc->max_wall_pj;
+
 		if(!row[MASSOC_USER][0])
 			mod_assoc->parent_acct = xstrdup(assoc->parent_acct);
+		if(assoc->qos_list && list_count(assoc->qos_list)) {
+			ListIterator new_qos_itr = 
+				list_iterator_create(assoc->qos_list);
+			char *new_qos = NULL, *tmp_qos = NULL;
+		
+			mod_assoc->qos_list = list_create(slurm_destroy_char);
+			
+			while((new_qos = list_next(new_qos_itr))) {
+				if(new_qos[0] == '-' || new_qos[0] == '+') {
+					list_append(mod_assoc->qos_list,
+						    xstrdup(new_qos));
+				} else if(new_qos[0]) {
+					list_append(mod_assoc->qos_list,
+						    xstrdup_printf("=%s",
+								   new_qos));
+				}	
+
+				if(set_qos_vals)
+					continue;
+				/* Now we can set up the values and
+				   make sure we aren't over writing
+				   things that are really from the
+				   parent
+				*/
+				if(new_qos[0] == '-') {
+					xstrfmtcat(vals,
+						   ", qos=if(qos='', '', "
+						   "replace(qos, ',%s', ''))"
+						   ", delta_qos=if(qos='', "
+						   "concat(replace(delta_qos, "
+						   "',%s', ''), ',%s'), '')",
+						   new_qos+1, new_qos, new_qos);
+				} else if(new_qos[0] == '+') {
+					xstrfmtcat(vals,
+						   ", qos=if(qos='', '', "
+						   "concat_ws(',', "
+						   "replace(qos, ',%s', ''), "
+						   "\"%s\")), delta_qos=if("
+						   "qos='', concat("
+						   "replace(delta_qos, "
+						   "',%s', ''), ',%s'), '')",
+						   new_qos+1, new_qos+1,
+						   new_qos, new_qos);
+				} else if(new_qos[0]) 
+					xstrfmtcat(tmp_qos, ",%s", new_qos);
+				else
+					xstrcat(tmp_qos, "");
+					
+			}
+			list_iterator_destroy(new_qos_itr);
+
+			if(!set_qos_vals && tmp_qos) 
+				xstrfmtcat(vals, ", qos='%s', delta_qos=''",
+					   tmp_qos);	
+			xfree(tmp_qos);
+
+			set_qos_vals=1;
+		}
 
 		if(_addto_update_list(mysql_conn->update_list, 
 				      ACCT_MODIFY_ASSOC,
@@ -3930,6 +4514,335 @@ end_it:
 #endif
 }
 
+extern List acct_storage_p_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid, 
+					acct_qos_cond_t *qos_cond,
+					acct_qos_rec_t *qos)
+{
+#ifdef HAVE_MYSQL
+	ListIterator itr = NULL;
+	List ret_list = NULL;
+	int rc = SLURM_SUCCESS;
+	char *object = NULL;
+	char *vals = NULL, *extra = NULL, *query = NULL, *name_char = NULL;
+	time_t now = time(NULL);
+	char *user_name = NULL;
+	int set = 0;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	char *tmp_char1=NULL, *tmp_char2=NULL;
+	int replace_preemptor = 0, replace_preemptee = 0;
+
+	if(!qos_cond || !qos) {
+		error("we need something to change");
+		return NULL;
+	}
+
+	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
+		return NULL;
+
+	xstrcat(extra, "where deleted=0");
+	
+	if(qos_cond->description_list 
+	   && list_count(qos_cond->description_list)) {
+		set = 0;
+		xstrcat(extra, " && (");
+		itr = list_iterator_create(qos_cond->description_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "description=\"%s\"", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+
+	if(qos_cond->id_list 
+	   && list_count(qos_cond->id_list)) {
+		set = 0;
+		xstrcat(extra, " && (");
+		itr = list_iterator_create(qos_cond->id_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "id=\"%s\"", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+	
+	if(qos_cond->name_list
+	   && list_count(qos_cond->name_list)) {
+		set = 0;
+		xstrcat(extra, " && (");
+		itr = list_iterator_create(qos_cond->name_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "name=\"%s\"", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+	
+	_setup_qos_limits(qos, &tmp_char1, &tmp_char2,
+			  &vals, QOS_LEVEL_MODIFY);
+	xfree(tmp_char1);
+	xfree(tmp_char2);
+
+	if(qos->preemptee_list && list_count(qos->preemptee_list)) {
+		char *tmp_qos = NULL;
+		set = 0;
+		itr = list_iterator_create(qos->preemptee_list);
+		while((object = list_next(itr))) {
+			/* when adding we need to make sure we don't
+			 * already have it so we remove it and then add
+			 * it.
+			 */
+			if(object[0] == '-') {
+				xstrfmtcat(vals,
+					   ", preemptees="
+					   "replace(qos, ',%s', '')",
+					   object+1);
+			} else if(object[0] == '+') {
+				xstrfmtcat(vals,
+					   ", preemptees=concat_ws(',', "
+					   "replace(preemptees, ',%s', ''), "
+					   "\"%s\")",
+					   object+1, object+1);
+			} else {
+				xstrfmtcat(tmp_qos, ",%s", object);
+			}
+		}
+		list_iterator_destroy(itr);
+		if(tmp_qos) {
+			xstrfmtcat(vals, ", preemptees='%s'", tmp_qos);
+			xfree(tmp_qos);
+			replace_preemptee = 1;
+		}
+	}
+
+	if(qos->preemptor_list && list_count(qos->preemptor_list)) {
+		char *tmp_qos = NULL;
+		set = 0;
+		itr = list_iterator_create(qos->preemptor_list);
+		while((object = list_next(itr))) {
+			/* when adding we need to make sure we don't
+			 * already have it so we remove it and then add
+			 * it.
+			 */
+			if(object[0] == '-') {
+				xstrfmtcat(vals,
+					   ", preemptors="
+					   "replace(qos, ',%s', '')",
+					   object+1);
+			} else if(object[0] == '+') {
+				xstrfmtcat(vals,
+					   ", preemptors=concat_ws(',', "
+					   "replace(preemptors, ',%s', ''), "
+					   "\"%s\")",
+					   object+1, object+1);
+			} else {
+				xstrfmtcat(tmp_qos, ",%s", object);
+			}
+		}
+		list_iterator_destroy(itr);
+		if(tmp_qos) {
+			xstrfmtcat(vals, ", preemptors='%s'", tmp_qos);
+			xfree(tmp_qos);
+			replace_preemptor = 1;
+		}
+	}
+
+	if(!extra || !vals) {
+		errno = SLURM_NO_CHANGE_IN_DATA;
+		error("Nothing to change");
+		return NULL;
+	}
+	query = xstrdup_printf("select name, preemptees, preemptors "
+			       "from %s %s;", qos_table, extra);
+	xfree(extra);
+	if(!(result = mysql_db_query_ret(
+		     mysql_conn->db_conn, query, 0))) {
+		xfree(query);
+		return NULL;
+	}
+
+	rc = 0;
+	ret_list = list_create(slurm_destroy_char);
+	while((row = mysql_fetch_row(result))) {
+		acct_qos_rec_t *qos_rec = NULL;
+		
+		object = xstrdup(row[0]);
+		list_append(ret_list, object);
+		if(!rc) {
+			xstrfmtcat(name_char, "(name='%s'", object);
+			rc = 1;
+		} else  {
+			xstrfmtcat(name_char, " || name='%s'", object);
+		}
+		qos_rec = xmalloc(sizeof(acct_qos_rec_t));
+		qos_rec->name = xstrdup(object);
+
+		qos_rec->grp_cpus = qos->grp_cpus;
+		qos_rec->grp_cpu_mins = qos->grp_cpu_mins;
+		qos_rec->grp_jobs = qos->grp_jobs;
+		qos_rec->grp_nodes = qos->grp_nodes;
+		qos_rec->grp_submit_jobs = qos->grp_submit_jobs;
+		qos_rec->grp_wall = qos->grp_wall;
+
+		qos_rec->max_cpus_pu = qos->max_cpus_pu;
+		qos_rec->max_cpu_mins_pu = qos->max_cpu_mins_pu;
+		qos_rec->max_jobs_pu  = qos->max_jobs_pu;
+		qos_rec->max_nodes_pu = qos->max_nodes_pu;
+		qos_rec->max_submit_jobs_pu  = qos->max_submit_jobs_pu;
+		qos_rec->max_wall_pu = qos->max_wall_pu;
+
+		qos_rec->priority = qos->priority;
+
+		if(qos->preemptee_list) {
+			ListIterator new_qos_itr = 
+				list_iterator_create(qos->preemptee_list);
+			ListIterator curr_qos_itr = NULL;
+			char *new_qos = NULL, *curr_qos = NULL;
+
+			qos_rec->preemptee_list = 
+				list_create(slurm_destroy_char);
+			if(!replace_preemptee)
+				slurm_addto_char_list(qos_rec->preemptee_list,
+						      row[1]);
+			curr_qos_itr = 
+				list_iterator_create(qos_rec->preemptee_list);
+			
+			while((new_qos = list_next(new_qos_itr))) {
+				char *tmp_char = NULL;
+				if(new_qos[0] == '-') {
+					tmp_char = xstrdup(new_qos+1);
+					while((curr_qos =
+					       list_next(curr_qos_itr))) {
+						if(!strcmp(curr_qos,
+							   tmp_char)) {
+							list_delete_item(
+								curr_qos_itr);
+							break;
+						}
+					}
+					xfree(tmp_char);
+					list_iterator_reset(curr_qos_itr);
+				} else if(new_qos[0] == '+') {
+					tmp_char = xstrdup(new_qos+1);
+					while((curr_qos =
+					       list_next(curr_qos_itr))) {
+						if(!strcmp(curr_qos,
+							   tmp_char)) {
+							break;
+						}
+					}
+					if(!curr_qos)
+						list_append(
+							qos_rec->preemptee_list,
+							tmp_char);
+					else
+						xfree(tmp_char);
+					list_iterator_reset(curr_qos_itr);
+				} else {
+					list_append(qos_rec->preemptee_list,
+						    xstrdup(new_qos));
+				}
+			}
+			list_iterator_destroy(curr_qos_itr);
+			list_iterator_destroy(new_qos_itr);			
+		}
+
+		if(qos->preemptor_list) {
+			ListIterator new_qos_itr = 
+				list_iterator_create(qos->preemptor_list);
+			ListIterator curr_qos_itr = NULL;
+			char *new_qos = NULL, *curr_qos = NULL;
+
+			qos_rec->preemptor_list = 
+				list_create(slurm_destroy_char);
+			if(!replace_preemptor)
+				slurm_addto_char_list(qos_rec->preemptor_list,
+						      row[2]);
+			curr_qos_itr = 
+				list_iterator_create(qos_rec->preemptor_list);
+			
+			while((new_qos = list_next(new_qos_itr))) {
+				char *tmp_char = NULL;
+				if(new_qos[0] == '-') {
+					tmp_char = xstrdup(new_qos+1);
+					while((curr_qos =
+					       list_next(curr_qos_itr))) {
+						if(!strcmp(curr_qos,
+							   tmp_char)) {
+							list_delete_item(
+								curr_qos_itr);
+							break;
+						}
+					}
+					xfree(tmp_char);
+					list_iterator_reset(curr_qos_itr);
+				} else if(new_qos[0] == '+') {
+					tmp_char = xstrdup(new_qos+1);
+					while((curr_qos =
+					       list_next(curr_qos_itr))) {
+						if(!strcmp(curr_qos,
+							   tmp_char)) {
+							break;
+						}
+					}
+					if(!curr_qos)
+						list_append(
+							qos_rec->preemptor_list,
+							tmp_char);
+					else
+						xfree(tmp_char);
+					list_iterator_reset(curr_qos_itr);
+				} else {
+					list_append(qos_rec->preemptor_list,
+						    xstrdup(new_qos));
+				}
+			}
+			list_iterator_destroy(curr_qos_itr);
+			list_iterator_destroy(new_qos_itr);			
+		}
+
+		_addto_update_list(mysql_conn->update_list, ACCT_MODIFY_QOS,
+				   qos_rec);
+	}
+	mysql_free_result(result);
+
+	if(!list_count(ret_list)) {
+		errno = SLURM_NO_CHANGE_IN_DATA;
+		debug3("didn't effect anything\n%s", query);
+		xfree(vals);
+		xfree(query);
+		return ret_list;
+	}
+	xfree(query);
+	xstrcat(name_char, ")");
+
+	user_name = uid_to_string((uid_t) uid);
+	rc = _modify_common(mysql_conn, DBD_MODIFY_QOS, now,
+			    user_name, qos_table, name_char, vals);
+	xfree(user_name);
+	xfree(name_char);
+	xfree(vals);
+	if (rc == SLURM_ERROR) {
+		error("Couldn't modify qos");
+		list_destroy(ret_list);
+		ret_list = NULL;
+	}
+				
+	return ret_list;
+#else
+	return NULL;
+#endif
+}
+
 extern List acct_storage_p_remove_users(mysql_conn_t *mysql_conn, uint32_t uid, 
 					acct_user_cond_t *user_cond)
 {
@@ -3967,7 +4880,7 @@ extern List acct_storage_p_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "name='%s'", object);
+			xstrfmtcat(extra, "name=\"%s\"", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -3981,29 +4894,13 @@ extern List acct_storage_p_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "default_acct='%s'", object);
+			xstrfmtcat(extra, "default_acct=\"%s\"", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
 		xstrcat(extra, ")");
 	}
 	
-	if(user_cond->qos_list && list_count(user_cond->qos_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(user_cond->qos_list);
-		while((object = list_next(itr))) {
-			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, 
-				   "(qos like '%%,%s' || qos like '%%,%s,%%')",
-				   object, object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
 	if(user_cond->admin_level != ACCT_ADMIN_NOTSET) {
 		xstrfmtcat(extra, " && admin_level=%u", user_cond->admin_level);
 	}
@@ -4039,12 +4936,12 @@ extern List acct_storage_p_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		list_append(assoc_cond.user_list, object);
 
 		if(!rc) {
-			xstrfmtcat(name_char, "name='%s'", object);
-			xstrfmtcat(assoc_char, "t2.user='%s'", object);
+			xstrfmtcat(name_char, "name=\"%s\"", object);
+			xstrfmtcat(assoc_char, "t2.user=\"%s\"", object);
 			rc = 1;
 		} else {
-			xstrfmtcat(name_char, " || name='%s'", object);
-			xstrfmtcat(assoc_char, " || t2.user='%s'", object);
+			xstrfmtcat(name_char, " || name=\"%s\"", object);
+			xstrfmtcat(assoc_char, " || t2.user=\"%s\"", object);
 		}
 		user_rec = xmalloc(sizeof(acct_user_rec_t));
 		user_rec->name = xstrdup(object);
@@ -4179,7 +5076,7 @@ extern List acct_storage_p_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "user='%s'", object);
+			xstrfmtcat(extra, "user=\"%s\"", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -4197,7 +5094,7 @@ extern List acct_storage_p_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "acct='%s'", object);
+			xstrfmtcat(extra, "acct=\"%s\"", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -4331,7 +5228,7 @@ extern List acct_storage_p_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "name='%s'", object);
+			xstrfmtcat(extra, "name=\"%s\"", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -4346,7 +5243,7 @@ extern List acct_storage_p_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "description='%s'", object);
+			xstrfmtcat(extra, "description=\"%s\"", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -4361,29 +5258,13 @@ extern List acct_storage_p_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "organization='%s'", object);
+			xstrfmtcat(extra, "organization=\"%s\"", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
 		xstrcat(extra, ")");
 	}
 	
-	if(acct_cond->qos_list && list_count(acct_cond->qos_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(acct_cond->qos_list);
-		while((object = list_next(itr))) {
-			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, 
-				   "(qos like '%%,%s' || qos like '%%,%s,%%')",
-				   object, object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
 	if(!extra) {
 		error("Nothing to remove");
 		return NULL;
@@ -4403,12 +5284,12 @@ extern List acct_storage_p_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		char *object = xstrdup(row[0]);
 		list_append(ret_list, object);
 		if(!rc) {
-			xstrfmtcat(name_char, "name='%s'", object);
-			xstrfmtcat(assoc_char, "t2.acct='%s'", object);
+			xstrfmtcat(name_char, "name=\"%s\"", object);
+			xstrfmtcat(assoc_char, "t2.acct=\"%s\"", object);
 			rc = 1;
 		} else  {
-			xstrfmtcat(name_char, " || name='%s'", object);
-			xstrfmtcat(assoc_char, " || t2.acct='%s'", object);
+			xstrfmtcat(name_char, " || name=\"%s\"", object);
+			xstrfmtcat(assoc_char, " || t2.acct=\"%s\"", object);
 		}
 	}
 	mysql_free_result(result);
@@ -4478,7 +5359,7 @@ extern List acct_storage_p_remove_clusters(mysql_conn_t *mysql_conn,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "name='%s'", object);
+			xstrfmtcat(extra, "name=\"%s\"", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -4503,14 +5384,14 @@ extern List acct_storage_p_remove_clusters(mysql_conn_t *mysql_conn,
 		char *object = xstrdup(row[0]);
 		list_append(ret_list, object);
 		if(!rc) {
-			xstrfmtcat(name_char, "name='%s'", object);
-			xstrfmtcat(extra, "t2.cluster='%s'", object);
-			xstrfmtcat(assoc_char, "cluster='%s'", object);
+			xstrfmtcat(name_char, "name=\"%s\"", object);
+			xstrfmtcat(extra, "t2.cluster=\"%s\"", object);
+			xstrfmtcat(assoc_char, "cluster=\"%s\"", object);
 			rc = 1;
 		} else  {
-			xstrfmtcat(name_char, " || name='%s'", object);
-			xstrfmtcat(extra, " || t2.cluster='%s'", object);
-			xstrfmtcat(assoc_char, " || cluster='%s'", object);
+			xstrfmtcat(name_char, " || name=\"%s\"", object);
+			xstrfmtcat(extra, " || t2.cluster=\"%s\"", object);
+			xstrfmtcat(assoc_char, " || cluster=\"%s\"", object);
 		}
 	}
 	mysql_free_result(result);
@@ -4526,9 +5407,11 @@ extern List acct_storage_p_remove_clusters(mysql_conn_t *mysql_conn,
 	/* We should not need to delete any cluster usage just set it
 	 * to deleted */
 	xstrfmtcat(query,
+		   "update %s set period_end=%d where (%s);"
 		   "update %s set mod_time=%d, deleted=1 where (%s);"
 		   "update %s set mod_time=%d, deleted=1 where (%s);"
 		   "update %s set mod_time=%d, deleted=1 where (%s);",
+		   event_table, now, assoc_char,
 		   cluster_day_table, now, assoc_char,
 		   cluster_hour_table, now, assoc_char,
 		   cluster_month_table, now, assoc_char);
@@ -4653,83 +5536,7 @@ extern List acct_storage_p_remove_associations(
 		is_admin = 1;
 	}
 
-	xstrcat(extra, "where id>0 && deleted=0");
-
-	if(assoc_cond->acct_list && list_count(assoc_cond->acct_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(assoc_cond->acct_list);
-		while((object = list_next(itr))) {
-			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "acct='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
-	if(assoc_cond->cluster_list && list_count(assoc_cond->cluster_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(assoc_cond->cluster_list);
-		while((object = list_next(itr))) {
-			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "cluster='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
-	if(assoc_cond->user_list && list_count(assoc_cond->user_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(assoc_cond->user_list);
-		while((object = list_next(itr))) {
-			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "user='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
-	if(assoc_cond->partition_list 
-	   && list_count(assoc_cond->partition_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(assoc_cond->partition_list);
-		while((object = list_next(itr))) {
-			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "partition='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
-	if(assoc_cond->id_list && list_count(assoc_cond->id_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(assoc_cond->id_list);
-		while((object = list_next(itr))) {
-			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "id=%s", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-	
-	if(assoc_cond->parent_acct) {
-		xstrfmtcat(extra, " && parent_acct='%s'",
-			   assoc_cond->parent_acct);
-	}
+	set = _setup_association_cond_limits(assoc_cond, &extra);
 
 	for(i=0; i<RASSOC_COUNT; i++) {
 		if(i) 
@@ -4737,8 +5544,8 @@ extern List acct_storage_p_remove_associations(
 		xstrcat(object, rassoc_req_inx[i]);
 	}
 
-	query = xstrdup_printf("select lft, rgt from %s %s order by lft "
-			       "FOR UPDATE;",
+	query = xstrdup_printf("select distinct t1.lft, t1.rgt from %s as t1%s "
+			       "order by lft FOR UPDATE;",
 			       assoc_table, extra);
 	xfree(extra);
 	if(!(result = mysql_db_query_ret(
@@ -4789,6 +5596,7 @@ extern List acct_storage_p_remove_associations(
 		xfree(name_char);
 		return NULL;
 	}
+	xfree(query);
 
 	rc = 0;
 	ret_list = list_create(slurm_destroy_char);
@@ -4850,6 +5658,7 @@ extern List acct_storage_p_remove_associations(
 		}
 
 		rem_assoc = xmalloc(sizeof(acct_association_rec_t));
+		init_acct_association_rec(rem_assoc);
 		rem_assoc->id = atoi(row[RASSOC_ID]);
 		if(_addto_update_list(mysql_conn->update_list, 
 				      ACCT_REMOVE_ASSOC,
@@ -4920,7 +5729,7 @@ extern List acct_storage_p_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "description='%s'", object);
+			xstrfmtcat(extra, "description=\"%s\"", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -4935,7 +5744,7 @@ extern List acct_storage_p_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "id='%s'", object);
+			xstrfmtcat(extra, "id=\"%s\"", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -4950,7 +5759,7 @@ extern List acct_storage_p_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "name='%s'", object);
+			xstrfmtcat(extra, "name=\"%s\"", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -4962,7 +5771,7 @@ extern List acct_storage_p_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	}
 
-	query = xstrdup_printf("select id from %s %s;", qos_table, extra);
+	query = xstrdup_printf("select id, name from %s %s;", qos_table, extra);
 	xfree(extra);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
@@ -4970,25 +5779,25 @@ extern List acct_storage_p_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	}
 
-	rc = 0;
+	name_char = NULL;
 	ret_list = list_create(slurm_destroy_char);
 	while((row = mysql_fetch_row(result))) {
-		char *object = xstrdup(row[0]);
 		acct_qos_rec_t *qos_rec = NULL;
 
-		list_append(ret_list, object);
-		if(!rc) {
-			xstrfmtcat(name_char, "id='%s'", object);
-			xstrfmtcat(assoc_char, "qos=replace(qos, ',%s', '')",
-				   object);
-			rc = 1;
-		} else  {
-			xstrfmtcat(name_char, " || id='%s'", object); 
-			xstrfmtcat(assoc_char, ", qos=replace(qos, ',%s', '')",
-				   object);
-		}
+		list_append(ret_list, xstrdup(row[1]));
+		if(!name_char)
+			xstrfmtcat(name_char, "id=\"%s\"", row[0]);
+		else
+			xstrfmtcat(name_char, " || id=\"%s\"", row[0]); 
+		xstrfmtcat(assoc_char, 
+			   ", qos=replace(qos, ',%s', '')"
+			   ", delta_qos=replace(delta_qos, ',+%s', '')"
+			   ", delta_qos=replace(delta_qos, ',-%s', '')",
+			   row[0], row[0], row[0]);
+
 		qos_rec = xmalloc(sizeof(acct_qos_rec_t));
-		qos_rec->name = xstrdup(object);
+		/* we only need id when removing no real need to init */
+		qos_rec->id = atoi(row[0]);
 		_addto_update_list(mysql_conn->update_list, ACCT_REMOVE_QOS,
 				   qos_rec);
 	}
@@ -5005,6 +5814,7 @@ extern List acct_storage_p_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	user_name = uid_to_string((uid_t) uid);
 	rc = _remove_common(mysql_conn, DBD_REMOVE_ACCOUNTS, now,
 			    user_name, qos_table, name_char, assoc_char);
+	xfree(assoc_char);
 	xfree(name_char);
 	xfree(user_name);
 	if (rc == SLURM_ERROR) {
@@ -5039,13 +5849,11 @@ extern List acct_storage_p_get_users(mysql_conn_t *mysql_conn, uid_t uid,
 	char *user_req_inx[] = {
 		"name",
 		"default_acct",
-		"qos",
 		"admin_level"
 	};
 	enum {
 		USER_REQ_NAME,
 		USER_REQ_DA,
-		USER_REQ_QOS,
 		USER_REQ_AL,
 		USER_REQ_COUNT
 	};
@@ -5100,7 +5908,7 @@ extern List acct_storage_p_get_users(mysql_conn_t *mysql_conn, uid_t uid,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "name='%s'", object);
+			xstrfmtcat(extra, "name=\"%s\"", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -5114,29 +5922,13 @@ extern List acct_storage_p_get_users(mysql_conn_t *mysql_conn, uid_t uid,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "default_acct='%s'", object);
+			xstrfmtcat(extra, "default_acct=\"%s\"", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
 		xstrcat(extra, ")");
 	}
 	
-	if(user_cond->qos_list && list_count(user_cond->qos_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(user_cond->qos_list);
-		while((object = list_next(itr))) {
-			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, 
-				   "(qos like '%%,%s' || qos like '%%,%s,%%')",
-				   object, object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
 	if(user_cond->admin_level != ACCT_ADMIN_NOTSET) {
 		xstrfmtcat(extra, " && admin_level=%u",
 			   user_cond->admin_level);
@@ -5146,7 +5938,7 @@ empty:
 	 * if this flag is set. 
 	 */
 	if(!is_admin && (private_data & PRIVATE_DATA_USERS)) {
-		xstrfmtcat(extra, " && name='%s'", user.name);
+		xstrfmtcat(extra, " && name=\"%s\"", user.name);
 	}
 
 	xfree(tmp);
@@ -5187,12 +5979,7 @@ empty:
 		user->name =  xstrdup(row[USER_REQ_NAME]);
 		user->default_acct = xstrdup(row[USER_REQ_DA]);
 		user->admin_level = atoi(row[USER_REQ_AL]);
-		if(row[USER_REQ_QOS] && row[USER_REQ_QOS][0]) {
-			user->qos_list = list_create(slurm_destroy_char);
-			slurm_addto_char_list(user->qos_list,
-					      row[USER_REQ_QOS]);
-		}
-
+		
 		/* user id will be set on the client since this could be on a
 		 * different machine where this user may not exist or
 		 * may have a different uid
@@ -5219,7 +6006,8 @@ empty:
 	}
 	mysql_free_result(result);
 
-	if(user_cond && user_cond->with_assocs) {
+	if(user_cond && user_cond->with_assocs 
+	   && list_count(user_cond->assoc_cond->user_list)) {
 		ListIterator assoc_itr = NULL;
 		acct_user_rec_t *user = NULL;
 		acct_association_rec_t *assoc = NULL;
@@ -5245,6 +6033,8 @@ empty:
 				list_remove(assoc_itr);
 			}
 			list_iterator_reset(assoc_itr);
+			if(!user->assoc_list)
+				list_remove(itr);
 		}
 		list_iterator_destroy(itr);
 		list_iterator_destroy(assoc_itr);
@@ -5279,13 +6069,11 @@ extern List acct_storage_p_get_accts(mysql_conn_t *mysql_conn, uid_t uid,
 	char *acct_req_inx[] = {
 		"name",
 		"description",
-		"qos",
 		"organization"
 	};
 	enum {
 		ACCT_REQ_NAME,
 		ACCT_REQ_DESC,
-		ACCT_REQ_QOS,
 		ACCT_REQ_ORG,
 		ACCT_REQ_COUNT
 	};
@@ -5346,7 +6134,7 @@ extern List acct_storage_p_get_accts(mysql_conn_t *mysql_conn, uid_t uid,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "name='%s'", object);
+			xstrfmtcat(extra, "name=\"%s\"", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -5361,7 +6149,7 @@ extern List acct_storage_p_get_accts(mysql_conn_t *mysql_conn, uid_t uid,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "description='%s'", object);
+			xstrfmtcat(extra, "description=\"%s\"", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -5376,29 +6164,13 @@ extern List acct_storage_p_get_accts(mysql_conn_t *mysql_conn, uid_t uid,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "organization='%s'", object);
+			xstrfmtcat(extra, "organization=\"%s\"", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
 		xstrcat(extra, ")");
 	}
 	
-	if(acct_cond->qos_list && list_count(acct_cond->qos_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(acct_cond->qos_list);
-		while((object = list_next(itr))) {
-			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, 
-				   "(qos like '%%,%s' || qos like '%%,%s,%%')",
-				   object, object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
 empty:
 
 	xfree(tmp);
@@ -5417,10 +6189,12 @@ empty:
 		itr = list_iterator_create(user.coord_accts);
 		while((coord = list_next(itr))) {
 			if(set) {
-				xstrfmtcat(extra, " || name='%s'", coord->name);
+				xstrfmtcat(extra, " || name=\"%s\"",
+					   coord->name);
 			} else {
 				set = 1;
-				xstrfmtcat(extra, " && (name='%s'",coord->name);
+				xstrfmtcat(extra, " && (name=\"%s\"",
+					   coord->name);
 			}
 		}		
 		list_iterator_destroy(itr);
@@ -5459,11 +6233,6 @@ empty:
 		acct->name =  xstrdup(row[ACCT_REQ_NAME]);
 		acct->description = xstrdup(row[ACCT_REQ_DESC]);
 		acct->organization = xstrdup(row[ACCT_REQ_ORG]);
-		if(row[ACCT_REQ_QOS] && row[ACCT_REQ_QOS][0]) {
-			acct->qos_list = list_create(slurm_destroy_char);
-			slurm_addto_char_list(acct->qos_list,
-					      row[ACCT_REQ_QOS]);
-		}
 
 		if(acct_cond && acct_cond->with_coords) {
 			_get_account_coords(mysql_conn, acct);
@@ -5481,7 +6250,8 @@ empty:
 	}
 	mysql_free_result(result);
 
-	if(acct_cond && acct_cond->with_assocs) {
+	if(acct_cond && acct_cond->with_assocs
+	   && list_count(acct_cond->assoc_cond->acct_list)) {
 		ListIterator assoc_itr = NULL;
 		acct_account_rec_t *acct = NULL;
 		acct_association_rec_t *assoc = NULL;
@@ -5507,6 +6277,8 @@ empty:
 				list_remove(assoc_itr);
 			}
 			list_iterator_reset(assoc_itr);
+			if(!acct->assoc_list)
+				list_remove(itr);
 		}
 		list_iterator_destroy(itr);
 		list_iterator_destroy(assoc_itr);
@@ -5534,35 +6306,27 @@ extern List acct_storage_p_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
 	int i=0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
+	acct_association_cond_t assoc_cond;
+	ListIterator assoc_itr = NULL;
+	acct_cluster_rec_t *cluster = NULL;
+	acct_association_rec_t *assoc = NULL;
+	List assoc_list = NULL;
 
 	/* if this changes you will need to edit the corresponding enum */
 	char *cluster_req_inx[] = {
 		"name",
 		"control_host",
 		"control_port",
-		"rpc_version"
+		"rpc_version",
+		"valid_qos",
 	};
 	enum {
 		CLUSTER_REQ_NAME,
 		CLUSTER_REQ_CH,
 		CLUSTER_REQ_CP,
 		CLUSTER_REQ_VERSION,
+		CLUSTER_REQ_VALID_QOS,
 		CLUSTER_REQ_COUNT
-	};
-	char *assoc_req_inx[] = {
-		"fairshare",
-		"max_jobs",
-		"max_nodes_per_job",
-		"max_wall_duration_per_job",
-		"max_cpu_secs_per_job",
-	};
-	enum {
-		ASSOC_REQ_FS,
-		ASSOC_REQ_MJ,
-		ASSOC_REQ_MNPJ,
-		ASSOC_REQ_MWPJ,
-		ASSOC_REQ_MCPJ,
-		ASSOC_REQ_COUNT
 	};
 
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
@@ -5579,14 +6343,15 @@ extern List acct_storage_p_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
 	else
 		xstrcat(extra, "where deleted=0");
 
-	if(cluster_cond->cluster_list && list_count(cluster_cond->cluster_list)) {
+	if(cluster_cond->cluster_list 
+	   && list_count(cluster_cond->cluster_list)) {
 		set = 0;
 		xstrcat(extra, " && (");
 		itr = list_iterator_create(cluster_cond->cluster_list);
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "name='%s'", object);
+			xstrfmtcat(extra, "name=\"%s\"", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -5615,22 +6380,19 @@ empty:
 	}
 	xfree(query);
 
-	i=0;
-	xstrfmtcat(tmp, "%s", assoc_req_inx[i]);
-	for(i=1; i<ASSOC_REQ_COUNT; i++) {
-		xstrfmtcat(tmp, ", %s", assoc_req_inx[i]);
-	}
-
 	cluster_list = list_create(destroy_acct_cluster_rec);
 
+	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
+
+	assoc_cond.cluster_list = list_create(NULL);
+
 	while((row = mysql_fetch_row(result))) {
-		acct_cluster_rec_t *cluster =
-			xmalloc(sizeof(acct_cluster_rec_t));
-		MYSQL_RES *result2 = NULL;
-		MYSQL_ROW row2;
+		cluster = xmalloc(sizeof(acct_cluster_rec_t));
 		list_append(cluster_list, cluster);
 
-		cluster->name =  xstrdup(row[CLUSTER_REQ_NAME]);
+		cluster->name = xstrdup(row[CLUSTER_REQ_NAME]);
+
+		list_append(assoc_cond.cluster_list, cluster->name);
 
 		/* get the usage if requested */
 		if(cluster_cond && cluster_cond->with_usage) {
@@ -5643,49 +6405,59 @@ empty:
 		cluster->control_host = xstrdup(row[CLUSTER_REQ_CH]);
 		cluster->control_port = atoi(row[CLUSTER_REQ_CP]);
 		cluster->rpc_version = atoi(row[CLUSTER_REQ_VERSION]);
+		cluster->valid_qos_list = list_create(slurm_destroy_char);
 
-		query = xstrdup_printf("select %s from %s where cluster='%s' "
-				       "&& acct='root'", 
-				       tmp, assoc_table, cluster->name);
-		if(!(result2 = mysql_db_query_ret(mysql_conn->db_conn,
-						  query, 1))) {
-			xfree(query);
-			break;
-		}
-		xfree(query);
-		row2 = mysql_fetch_row(result2);
-
-		if(row2 && row2[ASSOC_REQ_FS])
-			cluster->default_fairshare = atoi(row2[ASSOC_REQ_FS]);
-		else
-			cluster->default_fairshare = 1;
-
-		if(row2 && row2[ASSOC_REQ_MJ])
-			cluster->default_max_jobs = atoi(row2[ASSOC_REQ_MJ]);
-		else
-			cluster->default_max_jobs = INFINITE;
-		
-		if(row2 && row2[ASSOC_REQ_MNPJ])
-			cluster->default_max_nodes_per_job =
-				atoi(row2[ASSOC_REQ_MNPJ]);
-		else
-			cluster->default_max_nodes_per_job = INFINITE;
-		
-		if(row2 && row2[ASSOC_REQ_MWPJ])
-			cluster->default_max_wall_duration_per_job = 
-				atoi(row2[ASSOC_REQ_MWPJ]);
-		else
-			cluster->default_max_wall_duration_per_job = INFINITE;
-		
-		if(row2 && row2[ASSOC_REQ_MCPJ])
-			cluster->default_max_cpu_secs_per_job = 
-				atoi(row2[ASSOC_REQ_MCPJ]);
+		if(row[CLUSTER_REQ_VALID_QOS] && row[CLUSTER_REQ_VALID_QOS][0])
+			slurm_addto_char_list(assoc->qos_list,
+					      row[CLUSTER_REQ_VALID_QOS]+1);
 		else 
-			cluster->default_max_cpu_secs_per_job = INFINITE;
-		mysql_free_result(result2);
+			list_append(cluster->valid_qos_list, xstrdup("all"));
 	}
 	mysql_free_result(result);
-	xfree(tmp);
+
+	if(!list_count(assoc_cond.cluster_list)) {
+		list_destroy(assoc_cond.cluster_list);
+		return cluster_list;
+	}
+	
+	assoc_cond.acct_list = list_create(NULL);
+	list_append(assoc_cond.acct_list, "root");
+
+	assoc_cond.user_list = list_create(NULL);
+	list_append(assoc_cond.user_list, "");
+
+	assoc_list = acct_storage_p_get_associations(mysql_conn,
+						     uid, &assoc_cond);
+	list_destroy(assoc_cond.cluster_list);
+	list_destroy(assoc_cond.acct_list);
+	list_destroy(assoc_cond.user_list);
+
+	if(!assoc_list) 
+		return cluster_list;
+	
+	itr = list_iterator_create(cluster_list);
+	assoc_itr = list_iterator_create(assoc_list);
+	while((cluster = list_next(itr))) {
+		while((assoc = list_next(assoc_itr))) {
+			if(strcmp(assoc->cluster, cluster->name)) 
+				continue;
+			
+			if(cluster->root_assoc) {
+				debug("This cluster %s already has "
+				      "an association.");
+				continue;
+			}
+			cluster->root_assoc = assoc;
+			list_remove(assoc_itr);
+		}
+		list_iterator_reset(assoc_itr);
+	}
+	list_iterator_destroy(itr);
+	list_iterator_destroy(assoc_itr);
+	if(list_count(assoc_list))
+		info("I have %d left over associations", 
+		     list_count(assoc_list));
+	list_destroy(assoc_list);
 
 	return cluster_list;
 #else
@@ -5702,16 +6474,20 @@ extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 	char *extra = NULL;	
 	char *tmp = NULL;	
 	List assoc_list = NULL;
+	List delta_qos_list = NULL;
 	ListIterator itr = NULL;
-	char *object = NULL;
 	int set = 0;
 	int i=0, is_admin=1;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	int parent_mj = INFINITE;
-	int parent_mnpj = INFINITE;
-	int parent_mwpj = INFINITE;
-	int parent_mcpj = INFINITE;
+	uint32_t parent_mj = INFINITE;
+        uint32_t parent_msj = INFINITE;
+	uint32_t parent_mcpj = INFINITE;
+	uint32_t parent_mnpj = INFINITE;
+	uint32_t parent_mwpj = INFINITE;
+	uint64_t parent_mcmpj = INFINITE;
+	char *parent_qos = NULL;
+	char *parent_delta_qos = NULL;
 	char *last_acct = NULL;
 	char *last_acct_parent = NULL;
 	char *last_cluster = NULL;
@@ -5735,12 +6511,22 @@ extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 		"acct",
 		"cluster",
 		"partition",
-		"parent_acct",
 		"fairshare",
+		"grp_cpu_mins",
+		"grp_cpus",
+		"grp_jobs",
+		"grp_nodes",
+		"grp_submit_jobs",
+		"grp_wall",
+		"max_cpu_mins_per_job",
+		"max_cpus_per_job",
 		"max_jobs",
 		"max_nodes_per_job",
+		"max_submit_jobs",
 		"max_wall_duration_per_job",
-		"max_cpu_secs_per_job",
+		"parent_acct",
+		"qos",
+		"delta_qos",
 	};
 	enum {
 		ASSOC_REQ_ID,
@@ -5750,20 +6536,35 @@ extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 		ASSOC_REQ_ACCT,
 		ASSOC_REQ_CLUSTER,
 		ASSOC_REQ_PART,
-		ASSOC_REQ_PARENT,
 		ASSOC_REQ_FS,
+		ASSOC_REQ_GCH,
+		ASSOC_REQ_GC,
+		ASSOC_REQ_GJ,
+		ASSOC_REQ_GN,
+		ASSOC_REQ_GSJ,
+		ASSOC_REQ_GW,
+		ASSOC_REQ_MCMPJ,
+		ASSOC_REQ_MCPJ,
 		ASSOC_REQ_MJ,
 		ASSOC_REQ_MNPJ,
+		ASSOC_REQ_MSJ,
 		ASSOC_REQ_MWPJ,
-		ASSOC_REQ_MCPJ,
+		ASSOC_REQ_PARENT,
+		ASSOC_REQ_QOS,
+		ASSOC_REQ_DELTA_QOS,
 		ASSOC_REQ_COUNT
 	};
+
 	enum {
 		ASSOC2_REQ_PARENT_ID,
 		ASSOC2_REQ_MJ,
+		ASSOC2_REQ_MSJ,
+		ASSOC2_REQ_MCPJ,
 		ASSOC2_REQ_MNPJ,
 		ASSOC2_REQ_MWPJ,
-		ASSOC2_REQ_MCPJ
+		ASSOC2_REQ_MCMPJ,
+		ASSOC2_REQ_QOS,
+		ASSOC2_REQ_DELTA_QOS,
 	};
 
 	if(!assoc_cond) {
@@ -5801,90 +6602,16 @@ extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 		}
 	}
 
-	if(assoc_cond->with_deleted) 
-		xstrcat(extra, "where (deleted=0 || deleted=1)");
-	else
-		xstrcat(extra, "where deleted=0");
-
-	if(assoc_cond->acct_list && list_count(assoc_cond->acct_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(assoc_cond->acct_list);
-		while((object = list_next(itr))) {
-			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "acct='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
-	if(assoc_cond->cluster_list && list_count(assoc_cond->cluster_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(assoc_cond->cluster_list);
-		while((object = list_next(itr))) {
-			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "cluster='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
-	if(assoc_cond->user_list && list_count(assoc_cond->user_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(assoc_cond->user_list);
-		while((object = list_next(itr))) {
-			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "user='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
-	if(assoc_cond->id_list && list_count(assoc_cond->id_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(assoc_cond->id_list);
-		while((object = list_next(itr))) {
-			char *ptr = NULL;
-			long num = strtol(object, &ptr, 10);
-			if ((num == 0) && ptr && ptr[0]) {
-				error("Invalid value for assoc id (%s)",
-				      object);
-				xfree(extra);
-				list_iterator_destroy(itr);
-				return NULL;
-			}
-
-			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "id=%s", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-	
-	if(assoc_cond->parent_acct) {
-		xstrfmtcat(extra, " && parent_acct='%s'",
-			   assoc_cond->parent_acct);
-	}
+	set = _setup_association_cond_limits(assoc_cond, &extra);
 
 	with_usage = assoc_cond->with_usage;
 	without_parent_limits = assoc_cond->without_parent_limits;
 	without_parent_info = assoc_cond->without_parent_info;
 empty:
 	xfree(tmp);
-	xstrfmtcat(tmp, "%s", assoc_req_inx[i]);
+	xstrfmtcat(tmp, "t1.%s", assoc_req_inx[i]);
 	for(i=1; i<ASSOC_REQ_COUNT; i++) {
-		xstrfmtcat(tmp, ", %s", assoc_req_inx[i]);
+		xstrfmtcat(tmp, ", t1.%s", assoc_req_inx[i]);
 	}
 	
 	/* this is here to make sure we are looking at only this user
@@ -5892,13 +6619,13 @@ empty:
 	 * coordinator of.
 	 */
 	if(!is_admin && (private_data & PRIVATE_DATA_USERS)) {
-		query = xstrdup_printf("select lft from %s where user='%s'", 
+		query = xstrdup_printf("select lft from %s where user=\"%s\"", 
 				       assoc_table, user.name);
 		if(user.coord_accts) {
 			acct_coord_rec_t *coord = NULL;
 			itr = list_iterator_create(user.coord_accts);
 			while((coord = list_next(itr))) {
-				xstrfmtcat(query, " || acct='%s'",
+				xstrfmtcat(query, " || acct=\"%s\"",
 					   coord->name);
 			}
 			list_iterator_destroy(itr);
@@ -5929,7 +6656,8 @@ empty:
 		mysql_free_result(result);
 	}
 	
-	query = xstrdup_printf("select %s from %s %s order by lft;", 
+	query = xstrdup_printf("select distinct %s from %s as t1%s "
+			       "order by lft;", 
 			       tmp, assoc_table, extra);
 	xfree(tmp);
 	xfree(extra);
@@ -5942,7 +6670,7 @@ empty:
 	xfree(query);
 
 	assoc_list = list_create(destroy_acct_association_rec);
-
+	delta_qos_list = list_create(slurm_destroy_char);
 	while((row = mysql_fetch_row(result))) {
 		acct_association_rec_t *assoc =
 			xmalloc(sizeof(acct_association_rec_t));
@@ -5959,7 +6687,36 @@ empty:
 			assoc->user = xstrdup(row[ASSOC_REQ_USER]);
 		assoc->acct = xstrdup(row[ASSOC_REQ_ACCT]);
 		assoc->cluster = xstrdup(row[ASSOC_REQ_CLUSTER]);
-			
+
+		if(row[ASSOC_REQ_GJ])
+			assoc->grp_jobs = atoi(row[ASSOC_REQ_GJ]);
+		else
+			assoc->grp_jobs = INFINITE;
+
+		if(row[ASSOC_REQ_GSJ])
+			assoc->grp_submit_jobs = atoi(row[ASSOC_REQ_GSJ]);
+		else
+			assoc->grp_submit_jobs = INFINITE;
+
+		if(row[ASSOC_REQ_GC])
+			assoc->grp_cpus = atoi(row[ASSOC_REQ_GC]);
+		else
+			assoc->grp_cpus = INFINITE;
+
+		if(row[ASSOC_REQ_GN])
+			assoc->grp_nodes = atoi(row[ASSOC_REQ_GN]);
+		else
+			assoc->grp_nodes = INFINITE;
+		if(row[ASSOC_REQ_GW])
+			assoc->grp_wall = atoi(row[ASSOC_REQ_GW]);
+		else
+			assoc->grp_wall = INFINITE;
+
+		if(row[ASSOC_REQ_GCH])
+			assoc->grp_cpu_mins = atoll(row[ASSOC_REQ_GCH]);
+		else
+			assoc->grp_cpu_mins = INFINITE;
+
 		/* get the usage if requested */
 		if(with_usage) {
 			acct_storage_p_get_usage(mysql_conn, uid, assoc,
@@ -5977,8 +6734,8 @@ empty:
 			   || strcmp(row[ASSOC_REQ_CLUSTER], last_cluster)) {
 				query = xstrdup_printf(
 					"select id from %s where user='' "
-					"and deleted = 0 and acct='%s' "
-					"and cluster='%s';", 
+					"and deleted = 0 and acct=\"%s\" "
+					"and cluster=\"%s\";", 
 					assoc_table, row[ASSOC_REQ_PARENT],
 					row[ASSOC_REQ_CLUSTER]);
 				debug4("%d(%d) query\n%s",
@@ -5991,10 +6748,12 @@ empty:
 					break;
 				}
 				xfree(query);
-				row2 = mysql_fetch_row(result2);
-				last_acct_parent = row[ASSOC_REQ_PARENT];
-				last_cluster = row[ASSOC_REQ_CLUSTER];
-				acct_parent_id = atoi(row2[0]);	
+				if((row2 = mysql_fetch_row(result2))) {
+					last_acct_parent = 
+						row[ASSOC_REQ_PARENT];
+					last_cluster = row[ASSOC_REQ_CLUSTER];
+					acct_parent_id = atoi(row2[0]);	
+				}
 				mysql_free_result(result2);
 			}
 			assoc->parent_acct = xstrdup(row[ASSOC_REQ_PARENT]);
@@ -6012,8 +6771,10 @@ empty:
 		    || strcmp(row[ASSOC_REQ_ACCT], last_acct)
 		    || strcmp(row[ASSOC_REQ_CLUSTER], last_cluster2))) {
 			query = xstrdup_printf(
-				"call get_parent_limits('%s', '%s', '%s', %u);"
-				"select @par_id, @mj, @mnpj, @mwpj, @mcpj;", 
+				"call get_parent_limits(\"%s\", "
+				"\"%s\", \"%s\", %u);"
+				"select @par_id, @mj, @msj, @mcpj, "
+				"@mnpj, @mwpj, @mcmpj, @qos, @delta_qos;", 
 				assoc_table, row[ASSOC_REQ_ACCT],
 				row[ASSOC_REQ_CLUSTER],
 				without_parent_limits);
@@ -6026,9 +6787,25 @@ empty:
 			}
 			xfree(query);
 			
-			row2 = mysql_fetch_row(result2);
+			if(!(row2 = mysql_fetch_row(result2))) {
+				user_parent_id = 0;
+				goto no_parent_limits;
+			}
+
 			user_parent_id = atoi(row2[ASSOC2_REQ_PARENT_ID]);
 			if(!without_parent_limits) {
+				if(row2[ASSOC2_REQ_MCMPJ])
+					parent_mcmpj =
+						atoi(row2[ASSOC2_REQ_MCMPJ]);
+				else
+					parent_mcmpj = INFINITE;
+				
+				if(row2[ASSOC2_REQ_MCPJ])
+					parent_mcpj =
+						atoi(row2[ASSOC2_REQ_MCPJ]);
+				else
+					parent_mcpj = INFINITE;
+				
 				if(row2[ASSOC2_REQ_MJ])
 					parent_mj = atoi(row2[ASSOC2_REQ_MJ]);
 				else
@@ -6046,35 +6823,126 @@ empty:
 				else
 					parent_mwpj = INFINITE;
 				
-				if(row2[ASSOC2_REQ_MCPJ])
-					parent_mcpj =
-						atoi(row2[ASSOC2_REQ_MCPJ]);
+				if(row2[ASSOC2_REQ_MCMPJ])
+					parent_mcmpj =
+						atoll(row2[ASSOC2_REQ_MCMPJ]);
 				else 
-					parent_mcpj = INFINITE;
+					parent_mcmpj = INFINITE;
+
+				xfree(parent_qos);
+				if(row2[ASSOC2_REQ_QOS][0])
+					parent_qos =
+						xstrdup(row2[ASSOC2_REQ_QOS]);
+				else 
+					parent_qos = NULL;
+
+				if(row2[ASSOC2_REQ_DELTA_QOS][0])
+					xstrcat(parent_delta_qos, 
+						row2[ASSOC2_REQ_DELTA_QOS]);
+			
+				if(row2[ASSOC2_REQ_MSJ])
+					parent_msj = atoi(row2[ASSOC2_REQ_MSJ]);
+				else
+					parent_msj = INFINITE;
 			}
 			last_acct = row[ASSOC_REQ_ACCT];
 			last_cluster2 = row[ASSOC_REQ_CLUSTER];
+		no_parent_limits:
 			mysql_free_result(result2);
 		}
 		if(row[ASSOC_REQ_MJ])
 			assoc->max_jobs = atoi(row[ASSOC_REQ_MJ]);
 		else
 			assoc->max_jobs = parent_mj;
-		if(row[ASSOC_REQ_MNPJ])
-			assoc->max_nodes_per_job = 
-				atoi(row[ASSOC_REQ_MNPJ]);
+
+		if(row[ASSOC_REQ_MSJ])
+			assoc->max_submit_jobs = atoi(row[ASSOC_REQ_MSJ]);
 		else
-			assoc->max_nodes_per_job = parent_mnpj;
-		if(row[ASSOC_REQ_MWPJ])
-			assoc->max_wall_duration_per_job = 
-				atoi(row[ASSOC_REQ_MWPJ]);
-		else
-			assoc->max_wall_duration_per_job = parent_mwpj;
+			assoc->max_submit_jobs = parent_msj;
+
 		if(row[ASSOC_REQ_MCPJ])
-			assoc->max_cpu_secs_per_job = 
+			assoc->max_cpus_pj = 
 				atoi(row[ASSOC_REQ_MCPJ]);
 		else
-			assoc->max_cpu_secs_per_job = parent_mcpj;
+			assoc->max_cpus_pj = parent_mcpj;
+
+		if(row[ASSOC_REQ_MNPJ])
+			assoc->max_nodes_pj = 
+				atoi(row[ASSOC_REQ_MNPJ]);
+		else
+			assoc->max_nodes_pj = parent_mnpj;
+
+		if(row[ASSOC_REQ_MWPJ])
+			assoc->max_wall_pj = 
+				atoi(row[ASSOC_REQ_MWPJ]);
+		else
+			assoc->max_wall_pj = parent_mwpj;
+
+		if(row[ASSOC_REQ_MCMPJ])
+			assoc->max_cpu_mins_pj = 
+				atoi(row[ASSOC_REQ_MCMPJ]);
+		else
+			assoc->max_cpu_mins_pj = parent_mcmpj;
+
+		assoc->qos_list = list_create(slurm_destroy_char);
+
+		// do a plus 1 since a comma is the first thing there
+		// in the list
+		if(row[ASSOC_REQ_QOS][0]) 
+			slurm_addto_char_list(assoc->qos_list,
+					      row[ASSOC_REQ_QOS]+1);
+		else if(parent_qos) {		
+			slurm_addto_char_list(assoc->qos_list,
+						      parent_qos+1);
+			/* if qos is set on the association itself do
+			   not worry about the deltas
+			*/
+			if(row[ASSOC_REQ_DELTA_QOS][0]) 
+				slurm_addto_char_list(
+					delta_qos_list,
+					row[ASSOC_REQ_DELTA_QOS]+1);
+			if(parent_delta_qos)
+				slurm_addto_char_list(delta_qos_list,
+						      parent_delta_qos+1);
+		}
+		if(list_count(delta_qos_list)) {
+			ListIterator curr_qos_itr = 
+				list_iterator_create(assoc->qos_list);
+			ListIterator new_qos_itr = 
+				list_iterator_create(delta_qos_list);
+			char *new_qos = NULL, *curr_qos = NULL;
+			
+			while((new_qos = list_next(new_qos_itr))) {
+				if(new_qos[0] == '-') {
+					while((curr_qos =
+					       list_next(curr_qos_itr))) {
+						if(!strcmp(curr_qos,
+							   new_qos+1)) {
+							list_delete_item(
+								curr_qos_itr);
+							break;
+						}
+					}
+					list_iterator_reset(curr_qos_itr);
+				} else if(new_qos[0] == '+') {
+					while((curr_qos =
+					       list_next(curr_qos_itr))) {
+						if(!strcmp(curr_qos,
+							   new_qos+1)) {
+							break;
+						}
+					}
+					list_iterator_reset(curr_qos_itr);
+					if(!curr_qos)
+						list_append(assoc->qos_list,
+							    xstrdup(new_qos+1));
+				}
+			}
+			
+			list_iterator_destroy(new_qos_itr);
+			list_iterator_destroy(curr_qos_itr);
+			list_flush(delta_qos_list);
+		}
 
 		/* don't do this unless this is an user association */
 		if(assoc->user && assoc->parent_id != acct_parent_id) 
@@ -6084,6 +6952,10 @@ empty:
 		//log_assoc_rec(assoc);
 	}
 	mysql_free_result(result);
+
+	list_destroy(delta_qos_list);
+
+	xfree(parent_qos);
 
 	return assoc_list;
 #else
@@ -6110,12 +6982,44 @@ extern List acct_storage_p_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 	char *qos_req_inx[] = {
 		"name",
 		"description",
-		"id"
+		"id",
+		"grp_cpu_mins",
+		"grp_cpus",
+		"grp_jobs",
+		"grp_nodes",
+		"grp_submit_jobs",
+		"grp_wall",
+		"max_cpu_mins_per_user",
+		"max_cpus_per_user",
+		"max_jobs_per_user",
+		"max_nodes_per_user",
+		"max_submit_jobs_per_user",
+		"max_wall_duration_per_user",
+		"job_flags",
+		"preemptees",
+		"preemptors",
+		"priority",
 	};
 	enum {
 		QOS_REQ_NAME,
 		QOS_REQ_DESC,
 		QOS_REQ_ID,
+		QOS_REQ_GCH,
+		QOS_REQ_GC,
+		QOS_REQ_GJ,
+		QOS_REQ_GN,
+		QOS_REQ_GSJ,
+		QOS_REQ_GW,
+		QOS_REQ_MCMPU,
+		QOS_REQ_MCPU,
+		QOS_REQ_MJPU,
+		QOS_REQ_MNPU,
+		QOS_REQ_MSJPU,
+		QOS_REQ_MWPU,
+		QOS_REQ_JOBF,
+		QOS_REQ_PREE,
+		QOS_REQ_PREO,
+		QOS_REQ_PRIO,
 		QOS_REQ_COUNT
 	};
 
@@ -6143,7 +7047,7 @@ extern List acct_storage_p_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "description='%s'", object);
+			xstrfmtcat(extra, "description=\"%s\"", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -6158,7 +7062,7 @@ extern List acct_storage_p_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "id='%s'", object);
+			xstrfmtcat(extra, "id=\"%s\"", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -6173,7 +7077,7 @@ extern List acct_storage_p_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "name='%s'", object);
+			xstrfmtcat(extra, "name=\"%s\"", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -6206,9 +7110,81 @@ empty:
 		acct_qos_rec_t *qos = xmalloc(sizeof(acct_qos_rec_t));
 		list_append(qos_list, qos);
 
-		qos->description = xstrdup(row[QOS_REQ_DESC]);
+		if(row[QOS_REQ_DESC] && row[QOS_REQ_DESC][0])
+			qos->description = xstrdup(row[QOS_REQ_DESC]);
+
 		qos->id = atoi(row[QOS_REQ_ID]);
-		qos->name =  xstrdup(row[QOS_REQ_NAME]);
+
+		if(row[QOS_REQ_NAME] && row[QOS_REQ_NAME][0])
+			qos->name =  xstrdup(row[QOS_REQ_NAME]);
+
+		if(row[QOS_REQ_JOBF] && row[QOS_REQ_JOBF][0])
+		qos->job_flags =  xstrdup(row[QOS_REQ_JOBF]);
+
+		if(row[QOS_REQ_GCH])
+			qos->grp_cpu_mins = atoll(row[QOS_REQ_GCH]);
+		else
+			qos->grp_cpu_mins = INFINITE;
+		if(row[QOS_REQ_GC])
+			qos->grp_cpus = atoi(row[QOS_REQ_GC]);
+		else
+			qos->grp_cpus = INFINITE;
+		if(row[QOS_REQ_GJ])
+			qos->grp_jobs = atoi(row[QOS_REQ_GJ]);
+		else
+			qos->grp_jobs = INFINITE;
+		if(row[QOS_REQ_GN])
+			qos->grp_nodes = atoi(row[QOS_REQ_GN]);
+		else
+			qos->grp_nodes = INFINITE;
+		if(row[QOS_REQ_GSJ])
+			qos->grp_submit_jobs = atoi(row[QOS_REQ_GSJ]);
+		else
+			qos->grp_submit_jobs = INFINITE;
+		if(row[QOS_REQ_GW])
+			qos->grp_wall = atoi(row[QOS_REQ_GW]);
+		else
+			qos->grp_wall = INFINITE;
+
+		if(row[QOS_REQ_MCMPU])
+			qos->max_cpu_mins_pu = atoi(row[QOS_REQ_MCMPU]);
+		else
+			qos->max_cpu_mins_pu = INFINITE;
+		if(row[QOS_REQ_MCPU])
+			qos->max_cpus_pu = atoi(row[QOS_REQ_MCPU]);
+		else
+			qos->max_cpus_pu = INFINITE;
+		if(row[QOS_REQ_MJPU])
+			qos->max_jobs_pu = atoi(row[QOS_REQ_MJPU]);
+		else
+			qos->max_jobs_pu = INFINITE;
+		if(row[QOS_REQ_MNPU])
+			qos->max_nodes_pu = atoi(row[QOS_REQ_MNPU]);
+		else
+			qos->max_nodes_pu = INFINITE;
+		if(row[QOS_REQ_MSJPU])
+			qos->max_submit_jobs_pu = atoi(row[QOS_REQ_MSJPU]);
+		else
+			qos->max_submit_jobs_pu = INFINITE;
+		if(row[QOS_REQ_MWPU])
+			qos->max_wall_pu = atoi(row[QOS_REQ_MWPU]);
+		else
+			qos->max_wall_pu = INFINITE;
+
+		if(row[QOS_REQ_PREE] && row[QOS_REQ_PREE][0]) {
+			qos->preemptee_list = list_create(slurm_destroy_char);
+			slurm_addto_char_list(qos->preemptee_list,
+					      row[QOS_REQ_PREE]+1);
+		} 
+
+		if(row[QOS_REQ_PREE] && row[QOS_REQ_PREE][0]) {
+			qos->preemptee_list = list_create(slurm_destroy_char);
+			slurm_addto_char_list(qos->preemptee_list,
+					      row[QOS_REQ_PREE]+1);
+		} 
+
+		if(row[QOS_REQ_PRIO])
+			qos->priority = atoi(row[QOS_REQ_PRIO]);
 	}
 	mysql_free_result(result);
 
@@ -6223,6 +7199,8 @@ extern List acct_storage_p_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 {
 #ifdef HAVE_MYSQL
 	char *query = NULL;	
+	char *assoc_extra = NULL;	
+	char *name_extra = NULL;	
 	char *extra = NULL;	
 	char *tmp = NULL;	
 	List txn_list = NULL;
@@ -6258,6 +7236,138 @@ extern List acct_storage_p_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 	if(!txn_cond) 
 		goto empty;
 
+	/* handle query for associations first */
+	if(txn_cond->acct_list && list_count(txn_cond->acct_list)) {
+		set = 0;
+		if(assoc_extra)
+			xstrcat(assoc_extra, " && (");
+		else
+			xstrcat(assoc_extra, " where (");
+
+		if(name_extra)
+			xstrcat(name_extra, " && (");
+		else	
+			xstrcat(name_extra, " (");
+		itr = list_iterator_create(txn_cond->acct_list);
+		while((object = list_next(itr))) {
+			if(set) {
+				xstrcat(assoc_extra, " || ");
+				xstrcat(name_extra, " || ");
+			}
+
+			xstrfmtcat(assoc_extra, "acct=\"%s\"", object);
+
+			xstrfmtcat(name_extra, "(name like \"%%\"%s\"%%\""
+				   " || name=\"%s\")", object, object);
+
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(assoc_extra, ")");
+		xstrcat(name_extra, ")");		
+	}
+
+	if(txn_cond->cluster_list && list_count(txn_cond->cluster_list)) {
+		set = 0;
+		if(assoc_extra)
+			xstrcat(assoc_extra, " && (");
+		else
+			xstrcat(assoc_extra, " where (");
+
+		if(name_extra)
+			xstrcat(name_extra, " && (");
+		else	
+			xstrcat(name_extra, "(");
+			
+		itr = list_iterator_create(txn_cond->cluster_list);
+		while((object = list_next(itr))) {
+			if(set) { 
+				xstrcat(assoc_extra, " || ");
+				xstrcat(name_extra, " || ");
+			}
+			xstrfmtcat(assoc_extra, "cluster=\"%s\"", object);
+
+			xstrfmtcat(name_extra, "(name like \"%%\"%s\"%%\""
+				   " || name=\"%s\")", object, object);
+
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(assoc_extra, ")");
+		xstrcat(name_extra, ")");		
+	}
+
+	if(txn_cond->user_list && list_count(txn_cond->user_list)) {
+		set = 0;
+		if(assoc_extra) 
+			xstrcat(assoc_extra, " && (");
+		else
+			xstrcat(assoc_extra, " where (");
+
+		if(name_extra)
+			xstrcat(name_extra, " && (");
+		else	
+			xstrcat(name_extra, "(");
+			
+		itr = list_iterator_create(txn_cond->user_list);
+		while((object = list_next(itr))) {
+			if(set) {
+				xstrcat(assoc_extra, " || ");
+				xstrcat(name_extra, " || ");
+			}
+			xstrfmtcat(assoc_extra, "user=\"%s\"", object);
+
+			xstrfmtcat(name_extra, "(name like \"%%\"%s\"%%\""
+				   " || name=\"%s\")", object, object);
+
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(assoc_extra, ")");
+		xstrcat(name_extra, ")");		
+	}
+
+	if(assoc_extra) {
+		query = xstrdup_printf("select id from %s%s",
+				       assoc_table, assoc_extra);
+		xfree(assoc_extra);
+
+		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+		if(!(result = mysql_db_query_ret(
+			     mysql_conn->db_conn, query, 0))) {
+			xfree(query);
+			return NULL;
+		}
+		xfree(query);
+		
+		if(extra)
+			xstrcat(extra, " && (");
+		else
+			xstrcat(extra, " where (");
+
+		set = 0;
+	
+		if(name_extra) {
+			xstrfmtcat(extra, "(%s) || (", name_extra);
+			xfree(name_extra);
+		} else 
+			xstrcat(extra, "(");			
+		
+		while((row = mysql_fetch_row(result))) {
+			if(set) 
+				xstrcat(extra, " || ");
+						
+			xstrfmtcat(extra, "(name like '%%id=%s %%' "
+				   "|| name like '%%id=%s)')", row[0], row[0]);
+			set = 1;
+		}
+		mysql_free_result(result);
+		if(set)
+			xstrcat(extra, "))");
+	}
+	
+	/*******************************************/
+
 	if(txn_cond->action_list && list_count(txn_cond->action_list)) {
 		set = 0;
 		if(extra)
@@ -6268,7 +7378,7 @@ extern List acct_storage_p_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "action='%s'", object);
+			xstrfmtcat(extra, "action=\"%s\"", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -6285,7 +7395,7 @@ extern List acct_storage_p_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "actor='%s'", object);
+			xstrfmtcat(extra, "actor=\"%s\"", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -6319,6 +7429,40 @@ extern List acct_storage_p_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 		xstrcat(extra, ")");
 	}
 
+	if(txn_cond->info_list && list_count(txn_cond->info_list)) {
+		set = 0;
+		if(extra)
+			xstrcat(extra, " && (");
+		else
+			xstrcat(extra, " where (");
+		itr = list_iterator_create(txn_cond->info_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "info like '%%%s%%'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+	
+	if(txn_cond->name_list && list_count(txn_cond->name_list)) {
+		set = 0;
+		if(extra)
+			xstrcat(extra, " && (");
+		else
+			xstrcat(extra, " where (");
+		itr = list_iterator_create(txn_cond->name_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "name like '%%%s%%'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+
 	if(txn_cond->time_start && txn_cond->time_end) {
 		if(extra)
 			xstrcat(extra, " && (");
@@ -6340,6 +7484,14 @@ extern List acct_storage_p_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 			xstrcat(extra, " where (");
 		xstrfmtcat(extra, "timestamp < %d)", txn_cond->time_end);
 	}
+
+	/* make sure we can get the max length out of the database
+	 * when grouping the names
+	 */
+	if(txn_cond->with_assoc_info) 
+		mysql_db_query(mysql_conn->db_conn, 
+			       "set session group_concat_max_len=65536;");
+			
 empty:
 	xfree(tmp);
 	xstrfmtcat(tmp, "%s", txn_req_inx[i]);
@@ -6378,6 +7530,40 @@ empty:
 		txn->set_info = xstrdup(row[TXN_REQ_INFO]);
 		txn->timestamp = atoi(row[TXN_REQ_TS]);
 		txn->where_query = xstrdup(row[TXN_REQ_NAME]);
+
+		if(txn_cond && txn_cond->with_assoc_info
+		   && (txn->action == DBD_ADD_ASSOCS
+		       || txn->action == DBD_MODIFY_ASSOCS
+		       || txn->action == DBD_REMOVE_ASSOCS)) {
+			MYSQL_RES *result2 = NULL;
+			MYSQL_ROW row2;
+			
+			query = xstrdup_printf(
+				"select "
+				"group_concat(distinct user order by user), "
+				"group_concat(distinct acct order by acct), "
+				"group_concat(distinct cluster "
+				"order by cluster) from %s where %s",
+				assoc_table, row[TXN_REQ_NAME]);
+			debug4("%d(%d) query\n%s", mysql_conn->conn, 
+			       __LINE__, query);
+			if(!(result2 = mysql_db_query_ret(
+				     mysql_conn->db_conn, query, 0))) {
+				xfree(query);
+				continue;
+			}
+			xfree(query);
+
+			if((row2 = mysql_fetch_row(result2))) {
+				if(row2[0] && row2[0][0])
+					txn->users = xstrdup(row2[0]);
+				if(row2[1] && row2[1][0])
+					txn->accts = xstrdup(row2[1]);
+				if(row2[2] && row2[2][0])
+					txn->clusters = xstrdup(row2[2]);
+			}
+			mysql_free_result(result2);			
+		}
 	}
 	mysql_free_result(result);
 
@@ -6564,7 +7750,7 @@ is_user:
 		tmp, my_usage_table, assoc_table, assoc_table, end, start,
 		acct_assoc->id);
 	xfree(tmp);
-	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+	debug4("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);
@@ -6731,6 +7917,10 @@ extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn,
 /* 	info("hour start %s", ctime(&start_time)); */
 /* 	info("hour end %s", ctime(&end_time)); */
 /* 	info("diff is %d", end_time-start_time); */
+	
+	slurm_mutex_lock(&rollup_lock);
+	global_last_rollup = end_time;
+	slurm_mutex_unlock(&rollup_lock);
 
 	if(end_time-start_time > 0) {
 		START_TIMER;
@@ -6863,8 +8053,8 @@ extern int clusteracct_storage_p_node_down(mysql_conn_t *mysql_conn,
 	debug2("inserting %s(%s) with %u cpus", node_ptr->name, cluster, cpus);
 
 	query = xstrdup_printf(
-		"update %s set period_end=%d where cluster='%s' "
-		"and period_end=0 and node_name='%s';",
+		"update %s set period_end=%d where cluster=\"%s\" "
+		"and period_end=0 and node_name=\"%s\";",
 		event_table, event_time, cluster, node_ptr->name);
 	/* If you are clean-restarting the controller over and over again you
 	 * could get records that are duplicates in the database.  If
@@ -6877,7 +8067,7 @@ extern int clusteracct_storage_p_node_down(mysql_conn_t *mysql_conn,
 	xstrfmtcat(query,
 		   "insert into %s "
 		   "(node_name, cluster, cpu_count, period_start, reason) "
-		   "values ('%s', '%s', %u, %d, \"%s\") on duplicate key "
+		   "values (\"%s\", \"%s\", %u, %d, \"%s\") on duplicate key "
 		   "update period_end=0;",
 		   event_table, node_ptr->name, cluster, 
 		   cpus, event_time, my_reason);
@@ -6903,8 +8093,8 @@ extern int clusteracct_storage_p_node_up(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 
 	query = xstrdup_printf(
-		"update %s set period_end=%d where cluster='%s' "
-		"and period_end=0 and node_name='%s';",
+		"update %s set period_end=%d where cluster=\"%s\" "
+		"and period_end=0 and node_name=\"%s\";",
 		event_table, event_time, cluster, node_ptr->name);
 	debug4("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
@@ -6938,7 +8128,7 @@ extern int clusteracct_storage_p_cluster_procs(mysql_conn_t *mysql_conn,
 
 	/* Record the processor count */
 	query = xstrdup_printf(
-		"select cpu_count from %s where cluster='%s' "
+		"select cpu_count from %s where cluster=\"%s\" "
 		"and period_end=0 and node_name='' limit 1",
 		event_table, cluster);
 	if(!(result = mysql_db_query_ret(
@@ -6978,7 +8168,7 @@ extern int clusteracct_storage_p_cluster_procs(mysql_conn_t *mysql_conn,
 	debug("%s has changed from %s cpus to %u", cluster, row[0], procs);   
 
 	query = xstrdup_printf(
-		"update %s set period_end=%d where cluster='%s' "
+		"update %s set period_end=%d where cluster=\"%s\" "
 		"and period_end=0 and node_name=''",
 		event_table, event_time, cluster);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
@@ -6988,7 +8178,7 @@ extern int clusteracct_storage_p_cluster_procs(mysql_conn_t *mysql_conn,
 add_it:
 	query = xstrdup_printf(
 		"insert into %s (cluster, cpu_count, period_start, reason) "
-		"values ('%s', %u, %d, 'Cluster processor count')",
+		"values (\"%s\", %u, %d, 'Cluster processor count')",
 		event_table, cluster, procs, event_time);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
@@ -7112,11 +8302,11 @@ extern int clusteracct_storage_p_get_usage(
 
 	query = xstrdup_printf(
 		"select %s from %s where (period_start < %d "
-		"&& period_start >= %d) and cluster='%s'",
+		"&& period_start >= %d) and cluster=\"%s\"",
 		tmp, my_usage_table, end, start, cluster_rec->name);
 
 	xfree(tmp);
-	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+	debug4("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
 		     mysql_conn->db_conn, query, 0))) {
 		xfree(query);
@@ -7152,6 +8342,7 @@ extern int clusteracct_storage_p_get_usage(
  * load into the storage the start of a job
  */
 extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn, 
+				       char *cluster_name,
 				       struct job_record *job_ptr)
 {
 #ifdef HAVE_MYSQL
@@ -7162,6 +8353,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 	char *block_id = NULL;
 	char *query = NULL;
 	int reinit = 0;
+	time_t check_time = job_ptr->start_time;
 
 	if (!job_ptr->details || !job_ptr->details->submit_time) {
 		error("jobacct_storage_p_job_start: "
@@ -7173,6 +8365,25 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 	
 	debug2("mysql_jobacct_job_start() called");
+	if(!check_time)
+		check_time = job_ptr->details->submit_time;
+ 
+	slurm_mutex_lock(&rollup_lock);
+	if(check_time < global_last_rollup) {
+		global_last_rollup = check_time;
+		slurm_mutex_unlock(&rollup_lock);
+		
+		query = xstrdup_printf("update %s set hourly_rollup=%d, "
+				       "daily_rollup=%d, monthly_rollup=%d",
+				       last_ran_table, check_time,
+				       check_time, check_time);
+		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+		rc = mysql_db_query(mysql_conn->db_conn, query);
+		xfree(query);
+	} else
+		slurm_mutex_unlock(&rollup_lock);
+
+
 	priority = (job_ptr->priority == NO_VAL) ?
 		-1L : (long) job_ptr->priority;
 
@@ -7209,6 +8420,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 	job_ptr->requid = -1; /* force to -1 for sacct to know this
 			       * hasn't been set yet */
 	
+
 	/* We need to put a 0 for 'end' incase of funky job state
 	 * files from a hot start of the controllers we call
 	 * job_start on jobs we may still know about after
@@ -7221,6 +8433,8 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 			"(jobid, associd, uid, gid, nodelist, ",
 			job_table);
 
+		if(cluster_name) 
+			xstrcat(query, "cluster, ");
 		if(job_ptr->account) 
 			xstrcat(query, "account, ");
 		if(job_ptr->partition) 
@@ -7231,19 +8445,21 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 		xstrfmtcat(query, 
 			   "eligible, submit, start, name, track_steps, "
 			   "state, priority, req_cpus, alloc_cpus) "
-			   "values (%u, %u, %u, %u, '%s', ",
+			   "values (%u, %u, %u, %u, \"%s\", ",
 			   job_ptr->job_id, job_ptr->assoc_id,
 			   job_ptr->user_id, job_ptr->group_id, nodes);
 		
+		if(cluster_name) 
+			xstrfmtcat(query, "\"%s\", ", cluster_name);
 		if(job_ptr->account) 
-			xstrfmtcat(query, "'%s', ", job_ptr->account);
+			xstrfmtcat(query, "\"%s\", ", job_ptr->account);
 		if(job_ptr->partition) 
-			xstrfmtcat(query, "'%s', ", job_ptr->partition);
+			xstrfmtcat(query, "\"%s\", ", job_ptr->partition);
 		if(block_id) 
-			xstrfmtcat(query, "'%s', ", block_id);
+			xstrfmtcat(query, "\"%s\", ", block_id);
 		
 		xstrfmtcat(query, 
-			   "%d, %d, %d, '%s', %u, %u, %u, %u, %u) "
+			   "%d, %d, %d, \"%s\", %u, %u, %u, %u, %u) "
 			   "on duplicate key update "
 			   "id=LAST_INSERT_ID(id), state=%u, associd=%u",
 			   (int)job_ptr->details->begin_time,
@@ -7257,12 +8473,12 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 			   job_ptr->assoc_id);
 
 		if(job_ptr->account) 
-			xstrfmtcat(query, ", account='%s'", job_ptr->account);
+			xstrfmtcat(query, ", account=\"%s\"", job_ptr->account);
 		if(job_ptr->partition) 
-			xstrfmtcat(query, ", partition='%s'",
+			xstrfmtcat(query, ", partition=\"%s\"",
 				   job_ptr->partition);
 		if(block_id)
-			xstrfmtcat(query, ", blockid='%s'", block_id);
+			xstrfmtcat(query, ", blockid=\"%s\"", block_id);
 		
 		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	try_again:
@@ -7282,19 +8498,19 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 				rc = SLURM_ERROR;
 		}
 	} else {
-		query = xstrdup_printf("update %s set nodelist='%s', ", 
+		query = xstrdup_printf("update %s set nodelist=\"%s\", ", 
 				       job_table, nodes);
 
 		if(job_ptr->account) 
-			xstrfmtcat(query, "account='%s', ",
+			xstrfmtcat(query, "account=\"%s\", ",
 				   job_ptr->account);
 		if(job_ptr->partition) 
-			xstrfmtcat(query, "partition='%s', ",
+			xstrfmtcat(query, "partition=\"%s\", ",
 				   job_ptr->partition);
 		if(block_id)
-			xstrfmtcat(query, "blockid='%s', ", block_id);
+			xstrfmtcat(query, "blockid=\"%s\", ", block_id);
 
-		xstrfmtcat(query, "start=%d, name='%s', state=%u, "
+		xstrfmtcat(query, "start=%d, name=\"%s\", state=%u, "
 			   "alloc_cpus=%u, associd=%d where id=%d",
 			   (int)job_ptr->start_time,
 			   jname, job_ptr->job_state & (~JOB_COMPLETING),
@@ -7344,6 +8560,21 @@ extern int jobacct_storage_p_job_complete(mysql_conn_t *mysql_conn,
 		return SLURM_SUCCESS;
 	}	
 	
+	slurm_mutex_lock(&rollup_lock);
+	if(job_ptr->end_time < global_last_rollup) {
+		global_last_rollup = job_ptr->end_time;
+		slurm_mutex_unlock(&rollup_lock);
+		
+		query = xstrdup_printf("update %s set hourly_rollup=%d, "
+				       "daily_rollup=%d, monthly_rollup=%d",
+				       last_ran_table, job_ptr->end_time,
+				       job_ptr->end_time, job_ptr->end_time);
+		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+		rc = mysql_db_query(mysql_conn->db_conn, query);
+		xfree(query);
+	} else
+		slurm_mutex_unlock(&rollup_lock);
+
 	if (job_ptr->nodes && job_ptr->nodes[0])
 		nodes = job_ptr->nodes;
 	else
@@ -7358,8 +8589,8 @@ extern int jobacct_storage_p_job_complete(mysql_conn_t *mysql_conn,
 			/* If we get an error with this just fall
 			 * through to avoid an infinite loop
 			 */
-			if(jobacct_storage_p_job_start(mysql_conn, job_ptr)
-			   == SLURM_ERROR) {
+			if(jobacct_storage_p_job_start(
+				   mysql_conn, NULL, job_ptr) == SLURM_ERROR) {
 				error("couldn't add job %u at job completion",
 				      job_ptr->job_id);
 				return SLURM_SUCCESS;
@@ -7367,9 +8598,9 @@ extern int jobacct_storage_p_job_complete(mysql_conn_t *mysql_conn,
 		}
 	}
 
-	query = xstrdup_printf("update %s set start=%u, end=%u, state=%d, "
-			       "nodelist='%s', comp_code=%u, "
-			       "kill_requid=%u where id=%u",
+	query = xstrdup_printf("update %s set start=%d, end=%d, state=%d, "
+			       "nodelist=\"%s\", comp_code=%d, "
+			       "kill_requid=%d where id=%d",
 			       job_table, (int)job_ptr->start_time,
 			       (int)job_ptr->end_time, 
 			       job_ptr->job_state & (~JOB_COMPLETING),
@@ -7453,8 +8684,8 @@ extern int jobacct_storage_p_step_start(mysql_conn_t *mysql_conn,
 			/* If we get an error with this just fall
 			 * through to avoid an infinite loop
 			 */
-			if(jobacct_storage_p_job_start(mysql_conn,
-						       step_ptr->job_ptr)
+			if(jobacct_storage_p_job_start(
+				   mysql_conn, NULL, step_ptr->job_ptr)
 			   == SLURM_ERROR) {
 				error("couldn't add job %u at step start",
 				      step_ptr->job_ptr->job_id);
@@ -7467,8 +8698,8 @@ extern int jobacct_storage_p_step_start(mysql_conn_t *mysql_conn,
 	query = xstrdup_printf(
 		"insert into %s (id, stepid, start, name, state, "
 		"cpus, nodelist) "
-		"values (%d, %u, %d, '%s', %d, %u, '%s') "
-		"on duplicate key update cpus=%u, end=0, state=%u",
+		"values (%d, %d, %d, \"%s\", %d, %d, \"%s\") "
+		"on duplicate key update cpus=%d, end=0, state=%d",
 		step_table, step_ptr->job_ptr->db_index,
 		step_ptr->step_id, 
 		(int)step_ptr->start_time, step_ptr->name,
@@ -7575,7 +8806,7 @@ extern int jobacct_storage_p_step_complete(mysql_conn_t *mysql_conn,
 			/* If we get an error with this just fall
 			 * through to avoid an infinite loop
 			 */
-			if(jobacct_storage_p_job_start(mysql_conn,
+			if(jobacct_storage_p_job_start(mysql_conn, NULL,
 						       step_ptr->job_ptr)
 			   == SLURM_ERROR) {
 				error("couldn't add job %u "
@@ -7588,7 +8819,7 @@ extern int jobacct_storage_p_step_complete(mysql_conn_t *mysql_conn,
 
 	query = xstrdup_printf(
 		"update %s set end=%d, state=%d, "
-		"kill_requid=%u, comp_code=%u, "
+		"kill_requid=%d, comp_code=%d, "
 		"user_sec=%ld, user_usec=%ld, "
 		"sys_sec=%ld, sys_usec=%ld, "
 		"max_vsize=%u, max_vsize_task=%u, "
@@ -7599,7 +8830,7 @@ extern int jobacct_storage_p_step_complete(mysql_conn_t *mysql_conn,
 		"max_pages_node=%u, ave_pages=%.2f, "
 		"min_cpu=%.2f, min_cpu_task=%u, "
 		"min_cpu_node=%u, ave_cpu=%.2f "
-		"where id=%u and stepid=%u",
+		"where id=%d and stepid=%u",
 		step_table, (int)now,
 		comp_status,
 		step_ptr->job_ptr->requid, 
@@ -7661,8 +8892,8 @@ extern int jobacct_storage_p_suspend(mysql_conn_t *mysql_conn,
 			/* If we get an error with this just fall
 			 * through to avoid an infinite loop
 			 */
-			if(jobacct_storage_p_job_start(mysql_conn, job_ptr)
-			   == SLURM_ERROR) {
+			if(jobacct_storage_p_job_start(
+				   mysql_conn, NULL, job_ptr) == SLURM_ERROR) {
 				error("couldn't suspend job %u",
 				      job_ptr->job_id);
 				return SLURM_SUCCESS;
@@ -7675,7 +8906,7 @@ extern int jobacct_storage_p_suspend(mysql_conn_t *mysql_conn,
 
 	xstrfmtcat(query,
 		   "update %s set suspended=%d-suspended, state=%d "
-		   "where id=%u;",
+		   "where id=%d;",
 		   job_table, (int)job_ptr->suspend_time, 
 		   job_ptr->job_state & (~JOB_COMPLETING),
 		   job_ptr->db_index);
@@ -7817,10 +9048,11 @@ extern int acct_storage_p_flush_jobs_on_cluster(
 	/* First we need to get the id's and states so we can clean up
 	 * the suspend table and the step table 
 	 */
-	query = xstrdup_printf("select t1.id, t1.state from %s as t1, %s as t2 "
-			       "where ((t2.id=t1.associd and t2.cluster='%s') "
-			       "|| !t1.associd) && t1.end=0;",
-			       job_table, assoc_table, cluster);
+	query = xstrdup_printf(
+		"select t1.id, t1.state from %s as t1, %s as t2 "
+		"where ((t2.id=t1.associd and t2.cluster=\"%s\") "
+		"|| !t1.associd) && t1.end=0;",
+		job_table, assoc_table, cluster);
 	if(!(result =
 	     mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
 		xfree(query);
@@ -7867,7 +9099,7 @@ extern int acct_storage_p_flush_jobs_on_cluster(
 	}
 /* 	query = xstrdup_printf("update %s as t1, %s as t2 set " */
 /* 			       "t1.state=%u, t1.end=%u where " */
-/* 			       "t2.id=t1.associd and t2.cluster='%s' " */
+/* 			       "t2.id=t1.associd and t2.cluster=\"%s\" " */
 /* 			       "&& t1.end=0;", */
 /* 			       job_table, assoc_table, JOB_CANCELLED,  */
 /* 			       event_time, cluster); */

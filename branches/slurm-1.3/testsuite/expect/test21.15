@@ -429,7 +429,7 @@ proc _mod_acct { cluster name desc org parent fs maxcpu maxjob maxnodes maxwall 
 	}
 
 	if { [string length $maxcpu] } {
-		set scommand "$scommand maxc=$maxcpu"
+		set scommand "$scommand maxcpum=$maxcpu"
 		set assoc_stuff 1
 	}
 
@@ -548,7 +548,7 @@ proc _add_user { account adminlevel cluster defaultaccount fs maxcpu maxjob maxn
 	}
 
 	if { [string length $maxcpu] } {
-		set command "$command maxcpu=$maxcpu"
+		set command "$command maxcpum=$maxcpu"
 	}
 
 	if { [string length $maxjob] } {
@@ -738,7 +738,7 @@ if { $exit_code } {
 # Use sacctmgr to list the test user additions
 #
 set matches 0
-set my_pid [spawn $sacctmgr -n -p list user format="User,Def,Admin,clus,acc,fair,maxc,maxj,maxn,maxw"  names=$us1 withassoc]
+set my_pid [spawn $sacctmgr -n -p list user format="User,Def,Admin,clus,acc,fair,maxcpum,maxj,maxn,maxw"  names=$us1 withassoc]
 expect {
 	-re "There was a problem" {
 	        send_user "FAILURE: there was a problem with the sacctmgr command\n"

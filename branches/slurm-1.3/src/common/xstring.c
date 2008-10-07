@@ -82,6 +82,7 @@ strong_alias(xstrdup_printf,	slurm_xstrdup_printf);
 strong_alias(xstrndup,		slurm_xstrndup);
 strong_alias(xbasename,		slurm_xbasename);
 strong_alias(_xstrsubstitute,   slurm_xstrsubstitute);
+strong_alias(xstrstrip,         slurm_xstrstrip);
 strong_alias(xshort_hostname,   slurm_xshort_hostname);
 strong_alias(xstring_is_whitespace, slurm_xstring_is_whitespace);
 
@@ -400,6 +401,47 @@ void _xstrsubstitute(char **str, const char *pattern, const char *replacement)
 	strcpy((*str)+pat_offset+rep_len, end_copy);
 	xfree(end_copy);
 }
+
+/* 
+ * Remove first instance of quotes that surround a string in "str",
+ *   and return the result without the quotes
+ *   str (IN)	        target string (pointer to in case of expansion)
+ *   increased (IN/OUT)	current position in "str"
+ *   RET char *         str returned without quotes in it. needs to be xfreed
+ */
+char *xstrstrip(char *str)
+{
+	int i=0, start=0, found = 0;
+	char *meat = NULL;
+	char quote_c = '\0';
+	int quote = 0;
+
+	if(!str)
+		return NULL;
+
+	/* first strip off the ("|')'s */
+	if (str[i] == '\"' || str[i] == '\'') {
+		quote_c = str[i];
+		quote = 1;
+		i++;
+	}
+	start = i;
+
+	while(str[i]) {
+		if(quote && str[i] == quote_c) {
+			found = 1;
+			break;		
+		}
+		i++;
+	}
+	if(found) {
+		meat = xmalloc((i-start)+1);
+		memcpy(meat, str+start, (i-start));
+	} else
+		meat = xstrdup(str);
+	return meat;
+}
+
 
 /* xshort_hostname
  *   Returns an xmalloc'd string containing the hostname

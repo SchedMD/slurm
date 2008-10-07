@@ -310,15 +310,23 @@ extern int  select_g_pack_jobinfo  (select_jobinfo_t jobinfo, Buf buffer);
  */
 extern int  select_g_unpack_jobinfo(select_jobinfo_t jobinfo, Buf buffer);
 
-/* write select job credential to a string
+/* write select job info to a string
  * IN jobinfo - a select job credential
- * OUT buf    - location to write job credential contents
+ * OUT buf    - location to write job info contents
  * IN size    - byte size of buf
  * IN mode    - print mode, see enum select_print_mode
  * RET        - the string, same as buf
  */
 extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 				     char *buf, size_t size, int mode);
+
+/* write select job info to a string
+ * IN jobinfo - a select job credential
+ * OUT buf    - location to write job info contents
+ * IN mode    - print mode, see enum select_print_mode
+ * RET        - the string, same as buf
+ */
+extern char *select_g_xstrdup_jobinfo(select_jobinfo_t jobinfo, int mode);
 
 /* Prepare to start a job step, allocate memory as needed
  * RET - slurm error code
