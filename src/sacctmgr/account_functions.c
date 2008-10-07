@@ -74,6 +74,13 @@ static int _set_cond(int *start, int argc, char *argv[],
 			   !strncasecmp (argv[i], "WithCoordinators", 5)) {
 			acct_cond->with_coords = 1;
 		} else if (!end && 
+			   !strncasecmp (argv[i], "WithRawQOS", 5)) {
+			assoc_cond->with_raw_qos = 1;
+		} else if (!end && !strncasecmp (argv[i], "WOPInfo", 4)) {
+			assoc_cond->without_parent_info = 1;
+		} else if (!end && !strncasecmp (argv[i], "WOPLimits", 4)) {
+			assoc_cond->without_parent_limits = 1;
+		} else if (!end && 
 			   !strncasecmp (argv[i], "WithSubAccounts", 5)) {
 			assoc_cond->with_sub_accts = 1;
 		} else if(!end && !strncasecmp(argv[i], "where", 5)) {

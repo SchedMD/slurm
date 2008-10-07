@@ -1067,7 +1067,7 @@ extern void sacctmgr_print_assoc_limits(acct_association_rec_t *assoc)
 		char *temp_char = get_qos_complete_str(qos_list,
 						       assoc->qos_list);
 		if(temp_char) {		
-			printf("  Qos           = %s\n", temp_char);
+			printf("  QOS           = %s\n", temp_char);
 			xfree(temp_char);
 		}
 		if(qos_list)
