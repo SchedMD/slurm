@@ -430,7 +430,7 @@ proc _mod_acct { cluster name desc org parent fs maxcpu maxjob maxnodes maxwall 
 	}
 
 	if { [string length $maxcpu] } {
-		set scommand "$scommand maxc=$maxcpu"
+		set scommand "$scommand maxcpum=$maxcpu"
 		set assoc_stuff 1
 	}
 
@@ -721,7 +721,7 @@ proc _mod_user { adminlevel defaultaccount fs maxcpu maxjob maxnodes maxwall wac
 	}
 
 	if { [string length $maxcpu] } {
-		set scommand "$scommand maxc=$maxcpu"
+		set scommand "$scommand maxcpum=$maxcpu"
 		set assoc_stuff 1
 	}
 
@@ -1002,7 +1002,7 @@ expect {
 	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
-	-re "($us1.$nm1.$qs1.$aln.$nm1.|($us2|$us3).$nm1.$qs1.$aln..)" {
+	-re "($us1.$nm1.$aln.$nm1.|($us2|$us3).$nm1.$aln..)" {
 		incr matches
 		exp_continue
 	}
@@ -1040,7 +1040,7 @@ expect {
 	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
-	-re "($us1.$nm1.$qs1.$aln.$nm1.|($us2|$us3).$nm1.$qs1.$aln.$nm1,$nm3)" {
+	-re "($us1.$nm1.$aln.$nm1.|($us2|$us3).$nm1.$aln.$nm1,$nm3)" {
 		incr matches
 		exp_continue
 	}

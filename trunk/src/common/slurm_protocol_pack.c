@@ -362,7 +362,7 @@ pack_header(header_t * header, Buf buffer)
 	
 	pack16((uint16_t)header->version, buffer);
 	pack16((uint16_t)header->flags, buffer);
-	pack16((uint16_t) header->msg_type, buffer);
+	pack16((uint16_t)header->msg_type, buffer);
 	pack32((uint32_t)header->body_length, buffer);
 	pack16((uint16_t)header->forward.cnt, buffer);
 	if (header->forward.cnt > 0) {
@@ -387,7 +387,6 @@ pack_header(header_t * header, Buf buffer)
 int
 unpack_header(header_t * header, Buf buffer)
 {
-	uint16_t uint16_tmp;
 	uint32_t uint32_tmp = 0;
 
 	memset(header, 0, sizeof(header_t));
@@ -395,8 +394,7 @@ unpack_header(header_t * header, Buf buffer)
 	header->ret_list = NULL;
 	safe_unpack16(&header->version, buffer);
 	safe_unpack16(&header->flags, buffer);
-	safe_unpack16(&uint16_tmp, buffer);
-	header->msg_type = (slurm_msg_type_t) uint16_tmp;
+	safe_unpack16(&header->msg_type, buffer);
 	safe_unpack32(&header->body_length, buffer);
 	safe_unpack16(&header->forward.cnt, buffer);
 	if (header->forward.cnt > 0) {		
@@ -3772,7 +3770,6 @@ _unpack_ret_list(List *ret_list,
 		 uint16_t size_val, Buf buffer)
 {
 	int i = 0;
-	uint16_t uint16_tmp;
 	uint32_t uint32_tmp;
 	ret_data_info_t *ret_data_info = NULL;
 	slurm_msg_t msg;
@@ -3783,8 +3780,7 @@ _unpack_ret_list(List *ret_list,
 		list_push(*ret_list, ret_data_info);
 		
 		safe_unpack32((uint32_t *)&ret_data_info->err, buffer);
-		safe_unpack16(&uint16_tmp, buffer);
-		ret_data_info->type = (slurm_msg_type_t)uint16_tmp;
+		safe_unpack16(&ret_data_info->type, buffer);
 		safe_unpackstr_xmalloc(&ret_data_info->node_name, 
 				       &uint32_tmp, buffer);
 		msg.msg_type = ret_data_info->type;

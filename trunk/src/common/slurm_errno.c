@@ -218,7 +218,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "The node configuration changes that were made require restart "
 	  "of the slurmctld daemon to take effect"},
 	{ ESLURM_ACCOUNTING_POLICY,
-	  "Job violates accounting policy (the user's size and/or time limits)"},
+	  "Job violates accounting policy (job submit limit, the user's size and/or time limits)"},
 	{ ESLURM_INVALID_TIME_LIMIT,
 	  "Requested time limit exceeds partition limit"	},
 

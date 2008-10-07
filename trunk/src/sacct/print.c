@@ -133,7 +133,7 @@ void print_elapsed(type_t type, void *object)
 		printf("%-15s", "Elapsed");
 		break;
 	case UNDERSCORE:
-		printf("%-15s", "---------------");
+		printf("%-15.15s", "---------------");
 		break;
 	case JOB:
 		_elapsed_time(job->elapsed, 0, str);
@@ -490,7 +490,6 @@ void print_partition(type_t type, void *object)
 	} 
 }
 
-#ifdef HAVE_BG
 void print_blockid(type_t type, void *object)
 { 
 	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
@@ -529,7 +528,6 @@ void print_blockid(type_t type, void *object)
 		break;
 	} 
 }
-#endif
 
 void print_pages(type_t type, void *object)
 { 
@@ -706,7 +704,7 @@ void print_submit(type_t type, void *object)
 		printf("%-14s", "Submit Time");
 		break;
 	case UNDERSCORE:
-		printf("%-14s", "--------------");
+		printf("%-14.14s", "--------------");
 		break;
 	case JOB:
 		slurm_make_time_str(&job->submit, 
@@ -731,32 +729,32 @@ void print_start(type_t type, void *object)
 	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
 	jobcomp_job_rec_t *jobcomp = (jobcomp_job_rec_t *)object;
 	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
-	char time_str[32];
+	char time_str[19];
 	
 	switch(type) {
 	case HEADLINE:
-		printf("%-19s", "Start Time");
+		printf("%-14s", "Start Time");
 		break;
 	case UNDERSCORE:
-		printf("%-19s", "--------------------");
+		printf("%-14.14s", "-------------------");
 		break;
 	case JOB:
 		slurm_make_time_str(&job->start, 
 				    time_str, 
 				    sizeof(time_str));
-		printf("%-19s", time_str);
+		printf("%-14s", time_str);
 		break;
 	case JOBCOMP:
-		printf("%-19s", jobcomp->start_time);
+		printf("%-14s", jobcomp->start_time);
 		break;
 	case JOBSTEP:
 		slurm_make_time_str(&step->start, 
 				    time_str, 
 				    sizeof(time_str));
-		printf("%-19s", time_str);
+		printf("%-14s", time_str);
 		break;
 	default:
-		printf("%-19s", "n/a");
+		printf("%-14s", "n/a");
 		break;
 	} 
 }
@@ -790,28 +788,28 @@ void print_end(type_t type, void *object)
 	
 	switch(type) {
 	case HEADLINE:
-		printf("%-19s", "End Time");
+		printf("%-14s", "End Time");
 		break;
 	case UNDERSCORE:
-		printf("%-19s", "--------------------");
+		printf("%-14.14s", "--------------------");
 		break;
 	case JOB:
 		slurm_make_time_str(&job->end, 
 				    time_str, 
 				    sizeof(time_str));
-		printf("%-19s", time_str);
+		printf("%-14s", time_str);
 		break;
 	case JOBCOMP:
-		printf("%-19s", jobcomp->end_time);
+		printf("%-14s", jobcomp->end_time);
 		break;
 	case JOBSTEP:
 		slurm_make_time_str(&step->end, 
 				    time_str, 
 				    sizeof(time_str));
-		printf("%-19s", time_str);
+		printf("%-14s", time_str);
 		break;
 	default:
-		printf("%-19s", "n/a");
+		printf("%-14s", "n/a");
 		break;
 	} 
 }
@@ -1074,7 +1072,7 @@ void print_account(type_t type, void *object)
 
 	switch(type) {
 	case HEADLINE:
-		printf("%-16s", "account");
+		printf("%-16s", "Account");
 		break;
 	case UNDERSCORE:
 		printf("%-16s", "----------------");
@@ -1102,8 +1100,72 @@ void print_account(type_t type, void *object)
 	}
 }
 
+void print_assoc(type_t type, void *object)
+{
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 
-#ifdef HAVE_BG
+	switch(type) {
+	case HEADLINE:
+		printf("%-16s", "AssociationID");
+		break;
+	case UNDERSCORE:
+		printf("%-16s", "----------------");
+		break;
+	case JOB:
+		if(!job->associd)
+			printf("%-16s", "unknown");
+		else 
+			printf("%-16u", job->associd);
+		break;
+	case JOBSTEP:
+		if(!step->associd)
+			printf("%-16s", "unknown");
+		else 
+			printf("%-16u", step->associd);
+		break;
+	default:
+		printf("%-16s", "n/a");
+		break;
+		break;
+	}
+}
+
+void print_cluster(type_t type, void *object)
+{
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
+
+	switch(type) {
+	case HEADLINE:
+		printf("%-16s", "Cluster");
+		break;
+	case UNDERSCORE:
+		printf("%-16s", "----------------");
+		break;
+	case JOB:
+		if(!job->cluster)
+			printf("%-16s", "unknown");
+		else if(strlen(job->cluster)<17)
+			printf("%-16s", job->cluster);
+		else
+			printf("%-13.13s...", job->cluster);
+		break;
+	case JOBSTEP:
+		if(!step->cluster)
+			printf("%-16s", "unknown");
+		else if(strlen(step->cluster)<17)
+			printf("%-16s", step->cluster);
+		else
+			printf("%-13.13s...", step->cluster);
+		break;
+	default:
+		printf("%-16s", "n/a");
+		break;
+		break;
+	}
+}
+
 void print_connection(type_t type, void *object)
 {
 	jobcomp_job_rec_t *job = (jobcomp_job_rec_t *)object;
@@ -1218,5 +1280,4 @@ void print_bg_start_point(type_t type, void *object)
 		break;
 	}
 }
-#endif
 

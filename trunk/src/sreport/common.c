@@ -42,7 +42,7 @@
 extern void sreport_print_time(print_field_t *field,
 			       uint64_t value, uint64_t total_time, int last)
 {
-	if(!total_time)
+	if(!total_time) 
 		total_time = 1;
 
 	/* (value == unset)  || (value == cleared) */
@@ -58,10 +58,19 @@ extern void sreport_print_time(print_field_t *field,
 	} else {
 		char *output = NULL;
 		double percent = (double)value;
+		double temp_d = (double)value;
 		
 		switch(time_format) {
 		case SREPORT_TIME_SECS:
 			output = xstrdup_printf("%llu", value);
+			break;
+		case SREPORT_TIME_MINS:
+			temp_d /= 60;
+			output = xstrdup_printf("%.0lf", temp_d);
+			break;
+		case SREPORT_TIME_HOURS:
+			temp_d /= 3600;
+			output = xstrdup_printf("%.0lf", temp_d);
 			break;
 		case SREPORT_TIME_PERCENT:
 			percent /= total_time;
@@ -74,8 +83,23 @@ extern void sreport_print_time(print_field_t *field,
 			output = xstrdup_printf("%llu(%.2lf%%)",
 						value, percent);
 			break;
+		case SREPORT_TIME_MINS_PER:
+			percent /= total_time;
+			percent *= 100;
+			temp_d /= 60;
+			output = xstrdup_printf("%.0lf(%.2lf%%)",
+						temp_d, percent);
+			break;
+		case SREPORT_TIME_HOURS_PER:
+			percent /= total_time;
+			percent *= 100;
+			temp_d /= 3600;
+			output = xstrdup_printf("%.0lf(%.2lf%%)",
+						temp_d, percent);
+			break;
 		default:
-			output = xstrdup_printf("%llu", value);
+			temp_d /= 60;
+			output = xstrdup_printf("%.0lf", temp_d);
 			break;
 		}
 		
@@ -86,7 +110,7 @@ extern void sreport_print_time(print_field_t *field,
 		else if(print_fields_parsable_print)
 			printf("%s|", output);	
 		else
-			printf("%*s ", field->len, output);
+			printf("%*.*s ", field->len, field->len, output);
 		xfree(output);
 	}
 }
@@ -249,3 +273,137 @@ extern int set_start_end_time(time_t *start, time_t *end)
 
 	return SLURM_SUCCESS;
 }
+
+extern void destroy_sreport_assoc_rec(void *object)
+{
+	sreport_assoc_rec_t *sreport_assoc = (sreport_assoc_rec_t *)object;
+	if(sreport_assoc) {
+		xfree(sreport_assoc->acct);
+		xfree(sreport_assoc->cluster);
+		xfree(sreport_assoc->parent_acct);
+		xfree(sreport_assoc->user);
+		xfree(sreport_assoc);
+	}
+}
+
+extern void destroy_sreport_user_rec(void *object)
+{
+	sreport_user_rec_t *sreport_user = (sreport_user_rec_t *)object;
+	if(sreport_user) {
+		xfree(sreport_user->acct);
+		if(sreport_user->acct_list)
+			list_destroy(sreport_user->acct_list);
+		xfree(sreport_user->name);
+		xfree(sreport_user);
+	}
+}
+
+extern void destroy_sreport_cluster_rec(void *object)
+{
+	sreport_cluster_rec_t *sreport_cluster = 
+		(sreport_cluster_rec_t *)object;
+	if(sreport_cluster) {
+		if(sreport_cluster->assoc_list)
+			list_destroy(sreport_cluster->assoc_list);
+		xfree(sreport_cluster->name);
+		if(sreport_cluster->user_list)
+			list_destroy(sreport_cluster->user_list);
+		xfree(sreport_cluster);
+	}
+}
+
+/* 
+ * Comparator used for sorting users largest cpu to smallest cpu
+ * 
+ * returns: -1: user_a > user_b   0: user_a == user_b   1: user_a < user_b
+ * 
+ */
+extern int sort_user_dec(sreport_user_rec_t *user_a, sreport_user_rec_t *user_b)
+{
+	int diff = 0;
+
+	if (user_a->cpu_secs > user_b->cpu_secs)
+		return -1;
+	else if (user_a->cpu_secs < user_b->cpu_secs)
+		return 1;
+
+	if(!user_a->name || !user_b->name)
+		return 0;
+
+	diff = strcmp(user_a->name, user_b->name);
+
+	if (diff > 0)
+		return -1;
+	else if (diff < 0)
+		return 1;
+	
+	return 0;
+}
+
+/* 
+ * Comparator used for sorting clusters alphabetically
+ * 
+ * returns: -1: cluster_a > cluster_b   
+ *           0: cluster_a == cluster_b
+ *           1: cluster_a < cluster_b
+ * 
+ */
+extern int sort_cluster_dec(sreport_cluster_rec_t *cluster_a,
+			    sreport_cluster_rec_t *cluster_b)
+{
+	int diff = 0;
+
+	if(!cluster_a->name || !cluster_b->name)
+		return 0;
+
+	diff = strcmp(cluster_a->name, cluster_b->name);
+
+	if (diff > 0)
+		return -1;
+	else if (diff < 0)
+		return 1;
+	
+	return 0;
+}
+
+/* 
+ * Comparator used for sorting assocs alphabetically by acct and then
+ * by user.  The association with a total count of time is at the top
+ * of the accts.
+ * 
+ * returns: -1: assoc_a > assoc_b   
+ *           0: assoc_a == assoc_b
+ *           1: assoc_a < assoc_b
+ * 
+ */
+extern int sort_assoc_dec(sreport_assoc_rec_t *assoc_a,
+			  sreport_assoc_rec_t *assoc_b)
+{
+	int diff = 0;
+
+	if(!assoc_a->acct || !assoc_b->acct)
+		return 0;
+
+	diff = strcmp(assoc_a->acct, assoc_b->acct);
+
+	if (diff > 0)
+		return -1;
+	else if (diff < 0)
+		return 1;
+	
+	if(!assoc_a->user && assoc_b->user)
+		return -1;
+	else if(!assoc_b->user)
+		return 1;
+
+	diff = strcmp(assoc_a->user, assoc_b->user);
+
+	if (diff > 0)
+		return -1;
+	else if (diff < 0)
+		return 1;
+	
+
+	return 0;
+}
+

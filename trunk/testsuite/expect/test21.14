@@ -403,7 +403,7 @@ proc _mod_acct { cluster name desc org parent fs maxcpu maxjob maxnodes maxwall 
 	}
 
 	if { [string length $maxcpu] } {
-		set scommand "$scommand maxc=$maxcpu"
+		set scommand "$scommand maxcpum=$maxcpu"
 		set assoc_stuff 1
 	}
 
@@ -556,7 +556,7 @@ if { $exit_code } {
 # Use sacctmgr to list the test account modifications
 #
 set matches 0
-set my_pid [spawn $sacctmgr -n -p list assoc acc=$nm1,$nm2,$nm3 format="Account,Cluster,Fairshare,MaxC,MaxJ,MaxN,MaxW"]
+set my_pid [spawn $sacctmgr -n -p list assoc acc=$nm1,$nm2,$nm3 format="Account,Cluster,Fairshare,MaxCPUM,MaxJ,MaxN,MaxW"]
 expect {
 	-re "There was a problem" {
 	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
@@ -592,7 +592,7 @@ if { $exit_code } {
 # Use sacctmgr to list the test account modifications
 #
 set matches 0
-set my_pid [eval spawn $sacctmgr -n -p list acct withassoc acc=$nm1,$nm2,$nm3 format="Account,Desc,Org,Cluster,Fairshare,MaxC,MaxJ,MaxN,MaxW"]
+set my_pid [eval spawn $sacctmgr -n -p list acct withassoc acc=$nm1,$nm2,$nm3 format="Account,Desc,Org,Cluster,Fairshare,MaxCPUM,MaxJ,MaxN,MaxW"]
 expect {
 	-re "There was a problem" {
 	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
@@ -631,7 +631,7 @@ if { $exit_code } {
 # Use sacctmgr to list the test account modifications
 #
 set matches 0
-set my_pid [eval spawn $sacctmgr -n -p list assoc acc=$nm3 format="Account,ParentN,Cluster,Fairshare,MaxC,MaxJ,MaxN,MaxW"]
+set my_pid [eval spawn $sacctmgr -n -p list assoc acc=$nm3 format="Account,ParentN,Cluster,Fairshare,MaxCPUM,MaxJ,MaxN,MaxW"]
 expect {
 	-re "There was a problem" {
 	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
@@ -672,7 +672,7 @@ if { $exit_code } {
 # Use sacctmgr to list the test account modifications
 #
 set matches 0
-set my_pid [eval spawn $sacctmgr -n -p list assoc acc=$nm3,$nm2 format="Account,ParentN,Cluster,Fairshare,MaxC,MaxJ,MaxN,MaxW"]
+set my_pid [eval spawn $sacctmgr -n -p list assoc acc=$nm3,$nm2 format="Account,ParentN,Cluster,Fairshare,MaxCPUM,MaxJ,MaxN,MaxW"]
 expect {
 	-re "There was a problem" {
 	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
@@ -710,7 +710,7 @@ if { $exit_code } {
 # Use sacctmgr to list the test account modifications
 #
 set matches 0
-set my_pid [eval spawn $sacctmgr -n -p list assoc acc=$nm3,$nm2 format="Account,ParentN,Cluster,Fairshare,MaxC,MaxJ,MaxN,MaxW"]
+set my_pid [eval spawn $sacctmgr -n -p list assoc acc=$nm3,$nm2 format="Account,ParentN,Cluster,Fairshare,MaxCPUM,MaxJ,MaxN,MaxW"]
 expect {
 	-re "There was a problem" {
 	        send_user "FAILURE: there was a problem with the sacctmgr command\n"

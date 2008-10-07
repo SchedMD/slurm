@@ -98,68 +98,207 @@ static int _set_cond(int *start, int argc, char *argv[],
 	return set;
 }
 
-/* static int _set_rec(int *start, int argc, char *argv[], */
-/* 		    acct_qos_rec_t *qos) */
-/* { */
-/* 	int i; */
-/* 	int set = 0; */
-/* 	int end = 0; */
+static int _set_rec(int *start, int argc, char *argv[],
+		    List qos_list,
+		    acct_qos_rec_t *qos)
+{
+	int i, mins;
+	int set = 0;
+	int end = 0;
 
-/* 	for (i=(*start); i<argc; i++) { */
-/* 		end = parse_option_end(argv[i]); */
-/* 		if (!strncasecmp (argv[i], "Where", 5)) { */
-/* 			i--; */
-/* 			break; */
-/* 		} else if(!end && !strncasecmp(argv[i], "set", 3)) { */
-/* 			continue; */
-/* 		} else if(!end) { */
-/* 			printf(" Bad format on %s: End your option with " */
-/* 			       "an '=' sign\n", argv[i]); */
-/* 		} else if (!strncasecmp (argv[i], "Description", 1)) { */
-/* 			if(!qos->description) */
-/* 				qos->description = */
-/* 					strip_quotes(argv[i]+end, NULL); */
-/* 			set = 1; */
-/* 		} else if (!strncasecmp (argv[i], "Name", 1)) { */
-/* 			if(!qos->name) */
-/* 				qos->name = strip_quotes(argv[i]+end, NULL); */
-/* 			set = 1; */
-/* 		} else { */
-/* 			printf(" Unknown option: %s\n" */
-/* 			       " Use keyword 'where' to modify condition\n", */
-/* 			       argv[i]); */
-/* 		} */
-/* 	} */
+	for (i=(*start); i<argc; i++) {
+		end = parse_option_end(argv[i]);
+		if (!strncasecmp (argv[i], "Where", 5)) {
+			i--;
+			break;
+		} else if(!end && !strncasecmp(argv[i], "set", 3)) {
+			continue;
+		} else if(!end
+			  || !strncasecmp (argv[i], "Name", 1)) {
+			if(qos_list) 
+				slurm_addto_char_list(qos_list, argv[i]+end);
+		} else if (!strncasecmp (argv[i], "Description", 1)) {
+			if(!qos->description)
+				qos->description =
+					strip_quotes(argv[i]+end, NULL);
+			set = 1;
+		} else if (!strncasecmp (argv[i], "JobFlags", 1)) {
+			if(!qos->job_flags)
+				qos->job_flags =
+					strip_quotes(argv[i]+end, NULL);
+			set = 1;			
+		} else if (!strncasecmp (argv[i], "GrpCPUMins", 7)) {
+			if(!qos)
+				continue;
+			if (get_uint64(argv[i]+end, 
+				       &qos->grp_cpu_mins, 
+				       "GrpCPUMins") == SLURM_SUCCESS)
+				set = 1;
+		} else if (!strncasecmp (argv[i], "GrpCpus", 7)) {
+			if(!qos)
+				continue;
+			if (get_uint(argv[i]+end, &qos->grp_cpus,
+			    "GrpCpus") == SLURM_SUCCESS)
+				set = 1;
+		} else if (!strncasecmp (argv[i], "GrpJobs", 4)) {
+			if(!qos)
+				continue;
+			if (get_uint(argv[i]+end, &qos->grp_jobs,
+			    "GrpJobs") == SLURM_SUCCESS)
+				set = 1;
+		} else if (!strncasecmp (argv[i], "GrpNodes", 4)) {
+			if(!qos)
+				continue;
+			if (get_uint(argv[i]+end, &qos->grp_nodes,
+			    "GrpNodes") == SLURM_SUCCESS)
+				set = 1;
+		} else if (!strncasecmp (argv[i], "GrpSubmitJobs", 4)) {
+			if(!qos)
+				continue;
+			if (get_uint(argv[i]+end, &qos->grp_submit_jobs,
+			    "GrpSubmitJobs") == SLURM_SUCCESS)
+				set = 1;
+		} else if (!strncasecmp (argv[i], "GrpWall", 4)) {
+			if(!qos)
+				continue;
+			mins = time_str2mins(argv[i]+end);
+			if (mins != NO_VAL) {
+				qos->grp_wall	= (uint32_t) mins;
+				set = 1;
+			} else {
+				exit_code=1;
+				fprintf(stderr, 
+					" Bad GrpWall time format: %s\n", 
+					argv[i]);
+			}
+		} else if (!strncasecmp (argv[i], "MaxCPUMins", 7)) {
+			if(!qos)
+				continue;
+			if (get_uint64(argv[i]+end, 
+				       &qos->max_cpu_mins_pu, 
+				       "MaxCPUMins") == SLURM_SUCCESS)
+				set = 1;
+		} else if (!strncasecmp (argv[i], "MaxCpus", 7)) {
+			if(!qos)
+				continue;
+			if (get_uint(argv[i]+end, &qos->max_cpus_pu,
+			    "MaxCpus") == SLURM_SUCCESS)
+				set = 1;
+		} else if (!strncasecmp (argv[i], "MaxJobs", 4)) {
+			if(!qos)
+				continue;
+			if (get_uint(argv[i]+end, &qos->max_jobs_pu,
+			    "MaxJobs") == SLURM_SUCCESS)
+				set = 1;
+		} else if (!strncasecmp (argv[i], "MaxNodes", 4)) {
+			if(!qos)
+				continue;
+			if (get_uint(argv[i]+end, 
+			    &qos->max_nodes_pu,
+			    "MaxNodes") == SLURM_SUCCESS)
+				set = 1;
+		} else if (!strncasecmp (argv[i], "MaxSubmitJobs", 4)) {
+			if(!qos)
+				continue;
+			if (get_uint(argv[i]+end, &qos->max_submit_jobs_pu,
+			    "MaxSubmitJobs") == SLURM_SUCCESS)
+				set = 1;
+		} else if (!strncasecmp (argv[i], "MaxWall", 4)) {
+			if(!qos)
+				continue;
+			mins = time_str2mins(argv[i]+end);
+			if (mins != NO_VAL) {
+				qos->max_wall_pu = (uint32_t) mins;
+				set = 1;
+			} else {
+				exit_code=1;
+				fprintf(stderr, 
+					" Bad MaxWall time format: %s\n", 
+					argv[i]);
+			}
+		} else if (!strncasecmp (argv[i], "Preemptee", 9)) {
+			int option = 0;
+			if(!qos)
+				continue;
 
-/* 	(*start) = i; */
+			if(!qos->preemptee_list) 
+				qos->preemptee_list = 
+					list_create(slurm_destroy_char);
+						
+			if(!qos_list) 
+				qos_list = acct_storage_g_get_qos(
+					db_conn, my_uid, NULL);
+						
+			if(end > 2 && argv[i][end-1] == '='
+			   && (argv[i][end-2] == '+' 
+			       || argv[i][end-2] == '-'))
+				option = (int)argv[i][end-2];
 
-/* 	return set; */
-/* } */
+			if(addto_qos_char_list(qos->preemptee_list,
+					       qos_list, argv[i]+end, option))
+				set = 1;
+			else
+				exit_code = 1;
+		} else if (!strncasecmp (argv[i], "Preemptor", 9)) {
+			int option = 0;
+			if(!qos)
+				continue;
+
+			if(!qos->preemptor_list) 
+				qos->preemptor_list = 
+					list_create(slurm_destroy_char);
+						
+			if(!qos_list) 
+				qos_list = acct_storage_g_get_qos(
+					db_conn, my_uid, NULL);
+						
+			if(end > 2 && argv[i][end-1] == '='
+			   && (argv[i][end-2] == '+' 
+			       || argv[i][end-2] == '-'))
+				option = (int)argv[i][end-2];
+
+			if(addto_qos_char_list(qos->preemptor_list,
+					       qos_list, argv[i]+end, option))
+				set = 1;
+			else
+				exit_code = 1;
+		} else if (!strncasecmp (argv[i], "Priority", 3)) {
+			if(!qos)
+				continue;
+			
+			if (get_uint(argv[i]+end, &qos->priority,
+			    "Priority") == SLURM_SUCCESS)
+				set = 1;
+		} else {
+			printf(" Unknown option: %s\n"
+			       " Use keyword 'where' to modify condition\n",
+			       argv[i]);
+		}
+	}
+
+	(*start) = i;
+
+	return set;
+}
 
 extern int sacctmgr_add_qos(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	int i=0;
+	int i=0, limit_set=0;
 	ListIterator itr = NULL;
 	acct_qos_rec_t *qos = NULL;
+	acct_qos_rec_t *start_qos = xmalloc(sizeof(acct_qos_rec_t));
 	List name_list = list_create(slurm_destroy_char);
 	char *description = NULL;
 	char *name = NULL;
 	List qos_list = NULL;
 	List local_qos_list = NULL;
 	char *qos_str = NULL;
-	
-	for (i=0; i<argc; i++) {
-		int end = parse_option_end(argv[i]);
-		if(!end || !strncasecmp (argv[i], "Names", 1)) {
-			slurm_addto_char_list(name_list, argv[i]+end);
-		} else if (!strncasecmp (argv[i], "Description", 1)) {
-			description = strip_quotes(argv[i]+end, NULL);
-		} else {
-			exit_code=1;
-			fprintf(stderr, " Unknown option: %s\n", argv[i]);
-		}		
-	}
+
+	init_acct_qos_rec(start_qos);
+
+	for (i=0; i<argc; i++) 
+		limit_set = _set_rec(&i, argc, argv, name_list, start_qos);
 
 	if(exit_code) {
 		list_destroy(name_list);
@@ -167,7 +306,7 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 		return SLURM_ERROR;
 	} else if(!list_count(name_list)) {
 		list_destroy(name_list);
-		xfree(description);
+		destroy_acct_qos_rec(start_qos);
 		exit_code=1;
 		fprintf(stderr, " Need name of qos to add.\n"); 
 		return SLURM_SUCCESS;
@@ -193,10 +332,30 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 		if(!sacctmgr_find_qos_from_list(local_qos_list, name)) {
 			qos = xmalloc(sizeof(acct_qos_rec_t));
 			qos->name = xstrdup(name);
-			if(description) 
-				qos->description = xstrdup(description);
+			if(start_qos->description) 
+				qos->description =
+					xstrdup(start_qos->description);
 			else
 				qos->description = xstrdup(name);
+
+			qos->grp_cpu_mins = start_qos->grp_cpu_mins;
+			qos->grp_cpus = start_qos->grp_cpus;
+			qos->grp_jobs = start_qos->grp_jobs;
+			qos->grp_nodes = start_qos->grp_nodes;
+			qos->grp_submit_jobs = start_qos->grp_submit_jobs;
+			qos->grp_wall = start_qos->grp_wall;
+
+			qos->max_cpu_mins_pu = start_qos->max_cpu_mins_pu;
+			qos->max_cpus_pu = start_qos->max_cpus_pu;
+			qos->max_jobs_pu = start_qos->max_jobs_pu;
+			qos->max_nodes_pu = start_qos->max_nodes_pu;
+			qos->max_submit_jobs_pu = start_qos->max_submit_jobs_pu;
+			qos->max_wall_pu = start_qos->max_wall_pu;
+
+			if(start_qos->job_flags)
+				qos->job_flags = start_qos->job_flags;
+
+			qos->priority = start_qos->priority;
 
 			xstrfmtcat(qos_str, "  %s\n", name);
 			list_append(qos_list, qos);
@@ -215,9 +374,12 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 		printf(" Adding QOS(s)\n%s", qos_str);
 		printf(" Settings\n");
 		if(description)
-			printf("  Description     = %s\n", description);
+			printf("  Description    = %s\n", description);
 		else
-			printf("  Description     = %s\n", "QOS Name");
+			printf("  Description    = %s\n", "QOS Name");
+
+		sacctmgr_print_qos_limits(start_qos);
+
 		xfree(qos_str);
 	}
 	
@@ -259,6 +421,7 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 	acct_qos_rec_t *qos = NULL;
 	char *object;
 	List qos_list = NULL;
+	int field_count = 0;
 
 	print_field_t *field = NULL;
 
@@ -268,7 +431,21 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 	enum {
 		PRINT_DESC,
 		PRINT_ID,
-		PRINT_NAME
+		PRINT_NAME,
+		PRINT_JOBF,
+		PRINT_PRIO,
+		PRINT_GRPCM,
+		PRINT_GRPC,
+		PRINT_GRPJ,
+		PRINT_GRPN,
+		PRINT_GRPS,
+		PRINT_GRPW,
+		PRINT_MAXC,
+		PRINT_MAXCM,
+		PRINT_MAXJ,
+		PRINT_MAXN,
+		PRINT_MAXS,
+		PRINT_MAXW,
 	};
 
 	_set_cond(&i, argc, argv, qos_cond, format_list);
@@ -278,34 +455,106 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 		list_destroy(format_list);		
 		return SLURM_ERROR;
 	} else if(!list_count(format_list)) {
-		slurm_addto_char_list(format_list, "N");
+		slurm_addto_char_list(format_list, "N,Prio,JobF,"
+				      "GrpJ,GrpN,GrpS,MaxJ,MaxN,MaxS,MaxW");
 	}
 
 	print_fields_list = list_create(destroy_print_field);
 
 	itr = list_iterator_create(format_list);
 	while((object = list_next(itr))) {
+		char *tmp_char = NULL;
 		field = xmalloc(sizeof(print_field_t));
 		if(!strncasecmp("Description", object, 1)) {
 			field->type = PRINT_DESC;
 			field->name = xstrdup("Descr");
 			field->len = 20;
 			field->print_routine = print_fields_str;
+		} else if(!strncasecmp("GrpCPUMins", object, 8)) {
+			field->type = PRINT_GRPCM;
+			field->name = xstrdup("GrpCPUMins");
+			field->len = 11;
+			field->print_routine = print_fields_uint64;
+		} else if(!strncasecmp("GrpCPUs", object, 8)) {
+			field->type = PRINT_GRPC;
+			field->name = xstrdup("GrpCPUs");
+			field->len = 8;
+			field->print_routine = print_fields_uint;
+		} else if(!strncasecmp("GrpJobs", object, 4)) {
+			field->type = PRINT_GRPJ;
+			field->name = xstrdup("GrpJobs");
+			field->len = 7;
+			field->print_routine = print_fields_uint;
+		} else if(!strncasecmp("GrpNodes", object, 4)) {
+			field->type = PRINT_GRPN;
+			field->name = xstrdup("GrpNodes");
+			field->len = 8;
+			field->print_routine = print_fields_uint;
+		} else if(!strncasecmp("GrpSubmitJobs", object, 4)) {
+			field->type = PRINT_GRPS;
+			field->name = xstrdup("GrpSubmit");
+			field->len = 9;
+			field->print_routine = print_fields_uint;
 		} else if(!strncasecmp("ID", object, 1)) {
 			field->type = PRINT_ID;
 			field->name = xstrdup("ID");
 			field->len = 6;
 			field->print_routine = print_fields_uint;
+		} else if(!strncasecmp("JobFlags", object, 1)) {
+			field->type = PRINT_JOBF;
+			field->name = xstrdup("JobFlags");
+			field->len = 20;
+			field->print_routine = print_fields_str;
+		} else if(!strncasecmp("MaxCPUMins", object, 7)) {
+			field->type = PRINT_MAXCM;
+			field->name = xstrdup("MaxCPUMins");
+			field->len = 11;
+			field->print_routine = print_fields_uint64;
+		} else if(!strncasecmp("MaxCPUs", object, 7)) {
+			field->type = PRINT_MAXC;
+			field->name = xstrdup("MaxCPUs");
+			field->len = 8;
+			field->print_routine = print_fields_uint;
+		} else if(!strncasecmp("MaxJobs", object, 4)) {
+			field->type = PRINT_MAXJ;
+			field->name = xstrdup("MaxJobs");
+			field->len = 7;
+			field->print_routine = print_fields_uint;
+		} else if(!strncasecmp("MaxNodes", object, 4)) {
+			field->type = PRINT_MAXN;
+			field->name = xstrdup("MaxNodes");
+			field->len = 8;
+			field->print_routine = print_fields_uint;
+		} else if(!strncasecmp("MaxSubmitJobs", object, 4)) {
+			field->type = PRINT_MAXS;
+			field->name = xstrdup("MaxSubmit");
+			field->len = 9;
+			field->print_routine = print_fields_uint;
+		} else if(!strncasecmp("MaxWall", object, 4)) {
+			field->type = PRINT_MAXW;
+			field->name = xstrdup("MaxWall");
+			field->len = 11;
+			field->print_routine = print_fields_time;
 		} else if(!strncasecmp("Name", object, 1)) {
 			field->type = PRINT_NAME;
 			field->name = xstrdup("NAME");
 			field->len = 10;
 			field->print_routine = print_fields_str;
+		} else if(!strncasecmp("Priority", object, 1)) {
+			field->type = PRINT_PRIO;
+			field->name = xstrdup("Priority");
+			field->len = 10;
+			field->print_routine = print_fields_int;
 		} else {
 			exit_code=1;
 			fprintf(stderr, "Unknown field '%s'\n", object);
 			xfree(field);
 			continue;
+		}
+		if((tmp_char = strstr(object, "\%"))) {
+			int newlen = atoi(tmp_char+1);
+			if(newlen > 0) 
+				field->len = newlen;
 		}
 		list_append(print_fields_list, field);		
 	}
@@ -329,24 +578,105 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 	itr2 = list_iterator_create(print_fields_list);
 	print_fields_header(print_fields_list);
 
+	field_count = list_count(print_fields_list);
+
 	while((qos = list_next(itr))) {
+		int curr_inx = 1;
 		while((field = list_next(itr2))) {
 			switch(field->type) {
 			case PRINT_DESC:
 				field->print_routine(
-					field, qos->description);
+					field, qos->description,
+					(curr_inx == field_count));
+				break;
+			case PRINT_GRPCM:
+				field->print_routine(
+					field,
+					qos->grp_cpu_mins,
+					(curr_inx == field_count));
+				break;
+			case PRINT_GRPC:
+				field->print_routine(field,
+						     qos->grp_cpus,
+						     (curr_inx == field_count));
+				break;
+			case PRINT_GRPJ:
+				field->print_routine(field, 
+						     qos->grp_jobs,
+						     (curr_inx == field_count));
+				break;
+			case PRINT_GRPN:
+				field->print_routine(field,
+						     qos->grp_nodes,
+						     (curr_inx == field_count));
+				break;
+			case PRINT_GRPS:
+				field->print_routine(field, 
+						     qos->grp_submit_jobs,
+						     (curr_inx == field_count));
+				break;
+			case PRINT_GRPW:
+				field->print_routine(
+					field,
+					qos->grp_wall,
+					(curr_inx == field_count));
 				break;
 			case PRINT_ID:
 				field->print_routine(
-					field, qos->id);
+					field, qos->id,
+					(curr_inx == field_count));
+				break;
+			case PRINT_JOBF:
+				field->print_routine(
+					field, qos->job_flags,
+					(curr_inx == field_count));
+				break;
+			case PRINT_MAXCM:
+				field->print_routine(
+					field,
+					qos->max_cpu_mins_pu,
+					(curr_inx == field_count));
+				break;
+			case PRINT_MAXC:
+				field->print_routine(field,
+						     qos->max_cpus_pu,
+						     (curr_inx == field_count));
+				break;
+			case PRINT_MAXJ:
+				field->print_routine(field, 
+						     qos->max_jobs_pu,
+						     (curr_inx == field_count));
+				break;
+			case PRINT_MAXN:
+				field->print_routine(field,
+						     qos->max_nodes_pu,
+						     (curr_inx == field_count));
+				break;
+			case PRINT_MAXS:
+				field->print_routine(field, 
+						     qos->max_submit_jobs_pu,
+						     (curr_inx == field_count));
+				break;
+			case PRINT_MAXW:
+				field->print_routine(
+					field,
+					qos->max_wall_pu,
+					(curr_inx == field_count));
 				break;
 			case PRINT_NAME:
 				field->print_routine(
-					field, qos->name);
+					field, qos->name,
+					(curr_inx == field_count));
+				break;
+			case PRINT_PRIO:
+				field->print_routine(
+					field, qos->priority,
+					(curr_inx == field_count));
 				break;
 			default:
 				break;
 			}
+			curr_inx++;
 		}
 		list_iterator_reset(itr2);
 		printf("\n");
@@ -355,6 +685,90 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 	list_iterator_destroy(itr);
 	list_destroy(qos_list);
 	list_destroy(print_fields_list);
+
+	return rc;
+}
+
+extern int sacctmgr_modify_qos(int argc, char *argv[])
+{
+	int rc = SLURM_SUCCESS;
+	acct_qos_cond_t *qos_cond = xmalloc(sizeof(acct_qos_cond_t));
+	acct_qos_rec_t *qos = xmalloc(sizeof(acct_qos_rec_t));
+	int i=0;
+	int cond_set = 0, rec_set = 0, set = 0;
+	List ret_list = NULL;
+
+	init_acct_qos_rec(qos);
+
+	for (i=0; i<argc; i++) {
+		if (!strncasecmp (argv[i], "Where", 5)) {
+			i++;
+			cond_set = _set_cond(&i, argc, argv, qos_cond, NULL);
+			      
+		} else if (!strncasecmp (argv[i], "Set", 3)) {
+			i++;
+			rec_set = _set_rec(&i, argc, argv, NULL, qos);
+		} else {
+			cond_set = _set_cond(&i, argc, argv, qos_cond, NULL);
+		}
+	}
+
+	if(exit_code) {
+		destroy_acct_qos_cond(qos_cond);
+		destroy_acct_qos_rec(qos);
+		return SLURM_ERROR;
+	} else if(!rec_set) {
+		exit_code=1;
+		fprintf(stderr, " You didn't give me anything to set\n");
+		destroy_acct_qos_cond(qos_cond);
+		destroy_acct_qos_rec(qos);
+		return SLURM_ERROR;
+	} else if(!cond_set) {
+		if(!commit_check("You didn't set any conditions with 'WHERE'.\n"
+				 "Are you sure you want to continue?")) {
+			printf("Aborted\n");
+			destroy_acct_qos_cond(qos_cond);
+			destroy_acct_qos_rec(qos);
+			return SLURM_SUCCESS;
+		}		
+	}
+
+	notice_thread_init();		
+	
+	ret_list = acct_storage_g_modify_qos(db_conn, my_uid, qos_cond, qos);
+	if(ret_list && list_count(ret_list)) {
+		char *object = NULL;
+		ListIterator itr = list_iterator_create(ret_list);
+		printf(" Modified qos...\n");
+		while((object = list_next(itr))) {
+			printf("  %s\n", object);
+		}
+		list_iterator_destroy(itr);
+		set = 1;
+	} else if(ret_list) {
+		printf(" Nothing modified\n");
+	} else {
+		exit_code=1;
+		fprintf(stderr, " Error with request\n");
+		rc = SLURM_ERROR;
+	}
+	
+	if(ret_list)
+		list_destroy(ret_list);
+
+	notice_thread_fini();
+
+	if(set) {
+		if(commit_check("Would you like to commit changes?")) 
+			acct_storage_g_commit(db_conn, 1);
+		else {
+			printf(" Changes Discarded\n");
+			acct_storage_g_commit(db_conn, 0);
+		}
+	}
+
+	destroy_acct_qos_cond(qos_cond);
+	destroy_acct_qos_rec(qos);	
 
 	return rc;
 }

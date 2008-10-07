@@ -254,12 +254,15 @@ static int _get_date(char *time_str, int *pos, int *month, int *mday, int *year)
  *   midnight, noon, teatime (4PM)
  *   HH:MM[:SS] [AM|PM]
  *   MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]
+ *   MM/DD[/YY]-HH:MM[:SS]
  *   now + count [minutes | hours | days | weeks]
  * 
  * Invalid input results in message to stderr and return value of zero
  * NOTE: not thread safe
+ * NOTE: by default this will look into the future for the next time.
+ * if you want to look in the past set the past flag.
  */
-extern time_t parse_time(char *time_str)
+extern time_t parse_time(char *time_str, int past)
 {
 	int    hour = -1, minute = -1, second = 0;
 	int    month = -1, mday = -1, year = -1;
@@ -338,6 +341,7 @@ extern time_t parse_time(char *time_str)
 			second   = later_tm->tm_sec;
 			continue;
 		}
+
 		if ((time_str[pos] < '0') || (time_str[pos] > '9'))	/* invalid */
 			goto prob;
 		/* We have some numeric value to process */
@@ -358,9 +362,11 @@ extern time_t parse_time(char *time_str)
 		hour = 0;
 		minute = 0;
 	}
-	else if ((hour != -1) && (month == -1)) {	/* time, no date implies soonest day */
-		if ((hour >  time_now_tm->tm_hour)
-		||  ((hour == time_now_tm->tm_hour) && (minute > time_now_tm->tm_min))) {
+	else if ((hour != -1) && (month == -1)) {	
+		/* time, no date implies soonest day */
+		if (past || (hour >  time_now_tm->tm_hour)
+		    ||  ((hour == time_now_tm->tm_hour) 
+			 && (minute > time_now_tm->tm_min))) {
 			/* today */
 			month = time_now_tm->tm_mon;
 			mday  = time_now_tm->tm_mday;
@@ -371,16 +377,19 @@ extern time_t parse_time(char *time_str)
 			month = later_tm->tm_mon;
 			mday  = later_tm->tm_mday;
 			year  = later_tm->tm_year;
-
 		}
 	}
 	if (year == -1) {
-		if ((month  >  time_now_tm->tm_mon)
-		||  ((month == time_now_tm->tm_mon) && (mday >  time_now_tm->tm_mday))
-		||  ((month == time_now_tm->tm_mon) && (mday == time_now_tm->tm_mday)
-		  && (hour >  time_now_tm->tm_hour)) 
-		||  ((month == time_now_tm->tm_mon) && (mday == time_now_tm->tm_mday)
-		  && (hour == time_now_tm->tm_hour) && (minute > time_now_tm->tm_min))) {
+		if (past || (month  >  time_now_tm->tm_mon)
+		    ||  ((month == time_now_tm->tm_mon) 
+			 && (mday >  time_now_tm->tm_mday))
+		    ||  ((month == time_now_tm->tm_mon) 
+			 && (mday == time_now_tm->tm_mday)
+			 && (hour >  time_now_tm->tm_hour)) 
+		    ||  ((month == time_now_tm->tm_mon) 
+			 && (mday == time_now_tm->tm_mday)
+			 && (hour == time_now_tm->tm_hour) 
+			 && (minute > time_now_tm->tm_min))) {
 			/* this year */
 			year = time_now_tm->tm_year;
 		} else {
