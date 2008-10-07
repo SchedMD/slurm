@@ -250,16 +250,21 @@ char *slurm_get_accounting_storage_user(void);
  */
 char *slurm_get_accounting_storage_host(void);
 
+/* slurm_get_accounting_storage_enforce
+ * returns what level to enforce associations at
+ */
+int slurm_get_accounting_storage_enforce(void);
+
+/* slurm_get_is_association_based_accounting
+ * returns if we are doing accounting by associations
+ */
+int slurm_get_is_association_based_accounting(void);
+
 /* slurm_get_accounting_storage_pass
  * returns the storage password from slurmctld_conf object
  * RET char *    - storage location,  MUST be xfreed by caller
  */
 char *slurm_get_accounting_storage_loc(void);
-
-/* slurm_get_accounting_storage_enforce
- * returns whether or not to enforce associations
- */
-int slurm_get_accounting_storage_enforce(void);
 
 /* slurm_set_accounting_storage_loc
  * IN: char *loc (name of file or database)

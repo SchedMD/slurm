@@ -130,7 +130,8 @@ extern int fini ( void )
 	return SLURM_SUCCESS;
 }
 
-extern void *acct_storage_p_get_connection(bool make_agent, bool rollback)
+extern void *acct_storage_p_get_connection(bool make_agent, int conn_num,
+					   bool rollback)
 {
 	if(!slurmdbd_auth_info)	
 		init();
@@ -430,6 +431,46 @@ extern List acct_storage_p_modify_associations(
 
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_MODIFY_ASSOCS failure: %m");
+	else if (resp.msg_type == DBD_RC) {
+		dbd_rc_msg_t *msg = resp.data;
+		if(msg->return_code == SLURM_SUCCESS) {
+			info("%s", msg->comment);
+			ret_list = list_create(NULL);
+		} else
+			error("%s", msg->comment);
+		slurmdbd_free_rc_msg(SLURMDBD_VERSION, msg);
+	} else if (resp.msg_type != DBD_GOT_LIST) {
+		error("slurmdbd: response type not DBD_GOT_LIST: %u", 
+		      resp.msg_type);
+	} else {
+		got_msg = (dbd_list_msg_t *) resp.data;
+		ret_list = got_msg->my_list;
+		got_msg->my_list = NULL;
+		slurmdbd_free_list_msg(SLURMDBD_VERSION, got_msg);
+	}
+
+	return ret_list;
+}
+
+extern List acct_storage_p_modify_qos(void *db_conn, uint32_t uid,
+				      acct_qos_cond_t *qos_cond,
+				      acct_qos_rec_t *qos)
+{
+	slurmdbd_msg_t req, resp;
+	dbd_modify_msg_t get_msg;
+	dbd_list_msg_t *got_msg;
+	List ret_list = NULL;
+	int rc;
+
+	get_msg.cond = qos_cond;
+	get_msg.rec = qos;
+
+	req.msg_type = DBD_MODIFY_QOS;
+	req.data = &get_msg;
+	rc = slurm_send_recv_slurmdbd_msg(SLURMDBD_VERSION, &req, &resp);
+
+	if (rc != SLURM_SUCCESS)
+		error("slurmdbd: DBD_MODIFY_QOS failure: %m");
 	else if (resp.msg_type == DBD_RC) {
 		dbd_rc_msg_t *msg = resp.data;
 		if(msg->return_code == SLURM_SUCCESS) {
@@ -1142,7 +1183,7 @@ extern int clusteracct_storage_p_get_usage(
 /* 
  * load into the storage the start of a job
  */
-extern int jobacct_storage_p_job_start(void *db_conn,
+extern int jobacct_storage_p_job_start(void *db_conn, char *cluster_name,
 				       struct job_record *job_ptr)
 {
 	slurmdbd_msg_t msg, msg_rc;
@@ -1158,6 +1199,7 @@ extern int jobacct_storage_p_job_start(void *db_conn,
 	}
 
 	req.alloc_cpus    = job_ptr->total_procs;
+	req.cluster       = cluster_name;
 	req.account       = job_ptr->account;
 	req.assoc_id      = job_ptr->assoc_id;
 #ifdef HAVE_BG

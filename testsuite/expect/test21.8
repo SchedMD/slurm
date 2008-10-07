@@ -45,8 +45,16 @@ set mod		modify
 set nams	Names
 set nam		Name
 set fs		Fairshare
-set mc		MaxCPUSecs
+set gm		GrpCPUMins
+set gc		GrpCPUs
+set gj		GrpJobs
+set gs		GrpSubmitJobs
+set gn		GrpNodes
+set gw		GrpWall
+set mm		MaxCPUMins
+set mc		MaxCPUs
 set mj		MaxJobs
+set ms		MaxSubmitJobs
 set mn		MaxNodes
 set mw		MaxWall
 set clu		cluster
@@ -55,14 +63,31 @@ set tc2		tcluster2
 set tc3		tcluster3
 set fs1		2500
 set fs2		1375
-set mc1		1000000
-set mc2		200000
-set mj1		50
-set mj2		9
-set mn1		300
-set mn2		125
+set gm1		1000
+set gc1		20
+set gj1		100
+set gs1		300
+set gn1		100
+set gw1		00:45:00
+set mc1		200
+set mm1		100000
+set mj1		500
+set ms1		400
+set mn1		200
 set mw1		01:00:00
+set gm2		2000
+set gc2		50
+set gj2		200
+set gs2		400
+set gn2		150
+set gw2		00:45:00
+set mc2		100
+set mm2		20000
+set mj2		600
+set ms2		700
+set mn2		300
 set mw2		12:00:00
+
 set access_err  0
 
 print_header $test_id
@@ -83,7 +108,9 @@ if { [test_account_storage] == 0 } {
 #
 # Use sacctmgr to create a cluster
 #
-set sadd_pid [spawn $sacctmgr $add $clu $nams=$tc1,$tc2,$tc3 $fs=$fs1 $mc=$mc1 $mj=$mj1 $mn=$mn1 $mw=$mw1]
+set sadd_pid [spawn $sacctmgr $add $clu $nams=$tc1,$tc2,$tc3 $fs=$fs1  \
+$gm=$gm1 $gc=$gc1 $gj=$gj1 $gn=$gn1 $gs=$gs1 $gw=$gw1 $mc=$mc1 $mm=$mm1 \
+$mj=$mj1 $ms=$ms1 $mn=$mn1 $mw=$mw1]
 expect {
 	-re "privilege to preform this action" {
 		set access_err 1
@@ -105,11 +132,39 @@ expect {
 		incr amatches
 		exp_continue
 	}
-	-re "User Defaults" {
+	-re "Default Limits" {
 		incr amatches
 		exp_continue
 	}
 	-re "$fs *= $fs1" {
+		incr amatches
+		exp_continue
+	}
+	-re "$gm *= $gm1" {
+		incr amatches
+		exp_continue
+	}
+	-re "$gc *= $gc1" {
+		incr amatches
+		exp_continue
+	}
+	-re "$gj *= $gj1" {
+		incr amatches
+		exp_continue
+	}
+	-re "$gn *= $gn1" {
+		incr amatches
+		exp_continue
+	}
+	-re "$gs *= $gs1" {
+		incr amatches
+		exp_continue
+	}
+	-re "$gw *= $gw1" {
+		incr amatches
+		exp_continue
+	}
+	-re "$mm *= $mm1" {
 		incr amatches
 		exp_continue
 	}
@@ -122,6 +177,10 @@ expect {
 		exp_continue
 	}
 	-re "$mn *= $mn1" {
+		incr amatches
+		exp_continue
+	}
+	-re "$ms *= $ms1" {
 		incr amatches
 		exp_continue
 	}
@@ -151,7 +210,7 @@ if {$access_err != 0} {
 	send_user "\nWARNING: not authorized to perform this test\n"
 	exit $exit_code
 }
-if {$amatches != 12} {
+if {$amatches != 20} {
 	send_user "\nFAILURE:  sacctmgr had a problem adding clusters\n"
 	set exit_code 1
 }
@@ -163,17 +222,47 @@ if { ![check_acct_associations] } {
 #
 # Use sacctmgr to modify one cluster
 #
-set smod_pid [spawn $sacctmgr $mod $clu set $fs=$fs2 $mc=$mc2 $mj=$mj2 $mn=$mn2 $mw=$mw2 where $nams=$tc2]
+set smod_pid [spawn $sacctmgr $mod $clu set $fs=$fs2   \
+$gm=$gm2 $gc=$gc2 $gj=$gj2 $gn=$gn2 $gs=$gs2 $gw=$gw2 $mc=$mc2 $mm=$mm2 \
+$mj=$mj2 $ms=$ms2 $mn=$mn2 $mw=$mw2 where $nams=$tc2]
 expect {
 	-re "Setting" {
 		incr mmatches
 		exp_continue
 	}
-	-re "User Defaults" {
+	-re "Default Limits" {
 		incr mmatches
 		exp_continue
 	}
 	-re "$fs *= $fs2" {
+		incr mmatches
+		exp_continue
+	}
+	-re "$gm *= $gm2" {
+		incr mmatches
+		exp_continue
+	}
+	-re "$gc *= $gc2" {
+		incr mmatches
+		exp_continue
+	}
+	-re "$gj *= $gj2" {
+		incr mmatches
+		exp_continue
+	}
+	-re "$gn *= $gn2" {
+		incr mmatches
+		exp_continue
+	}
+	-re "$gs *= $gs2" {
+		incr mmatches
+		exp_continue
+	}
+	-re "$gw *= $gw2" {
+		incr mmatches
+		exp_continue
+	}
+	-re "$mm *= $mm2" {
 		incr mmatches
 		exp_continue
 	}
@@ -186,6 +275,10 @@ expect {
 		exp_continue
 	}
 	-re "$mn *= $mn2" {
+		incr mmatches
+		exp_continue
+	}
+	-re "$ms *= $ms2" {
 		incr mmatches
 		exp_continue
 	}
@@ -212,7 +305,7 @@ expect {
 	}
 }
 
-if {$mmatches != 9} {
+if {$mmatches != 17} {
 	send_user "\nFAILURE:  sacctmgr had a problem modifying clusters\n"
 	set exit_code 1
 }
@@ -224,7 +317,7 @@ if { ![check_acct_associations] } {
 #
 # Use sacctmgr to list the addition of cluster
 #
-set slist_pid [spawn $sacctmgr $lis $clu]
+set slist_pid [spawn $sacctmgr $lis $clu format=$fs,$gm,$gc,$gj,$gs,$gn,$gw,$mm,$mc,$mj,$ms,$mn,$mw]
 expect {
 	-re "Cluster" {
 		incr lmatches
@@ -234,7 +327,7 @@ expect {
 		incr lmatches
 		exp_continue
 	}
-	-re "$fs1 *$mc1 *$mj1 *$mn1 *$mw1" {
+	-re "$fs1 *$gm1 *$gc1 *$gj1 *$gs1 *$gn1 *$gw1 *$mm1 *$mc1 *$mj1 *$ms1 *$mn1 *$mw1" {
 		incr lmatches
 		exp_continue
 	}
@@ -242,7 +335,7 @@ expect {
 		incr lmatches
 		exp_continue
 	}
-	-re "$fs2 *$mc2 *$mj2 *$mn2 *$mw2" {
+	-re "$fs2 *$gm2 *$gc2 *$gj2 *$gs2 *$gn2 *$gw2 *$mm2 *$mc2 *$mj2 *$ms2 *$mn2 *$mw2" {
 		incr lmatches
 		exp_continue
 	}
@@ -250,7 +343,7 @@ expect {
 		incr lmatches
 		exp_continue
 	}
-	-re "$fs1 *$mc1 *$mj1 *$mn1 *$mw1" {
+	-re "$fs1 *$gm1 *$gc1 *$gj1 *$gs1 *$gn1 *$gw1 *$mm1 *$mc1 *$mj1 *$ms1 *$mn1 *$mw1" {
 		incr lmatches
 		exp_continue
 	}

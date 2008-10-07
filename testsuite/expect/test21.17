@@ -716,7 +716,7 @@ proc _mod_user { adminlevel defaultaccount fs maxcpu maxjob maxnodes maxwall wac
 	}
 
 	if { [string length $maxcpu] } {
-		set scommand "$scommand maxc=$maxcpu"
+		set scommand "$scommand maxcpum=$maxcpu"
 		set assoc_stuff 1
 	}
 
@@ -877,7 +877,7 @@ if { $exit_code } {
 # Use sacctmgr to list the test user modifications
 #
 set matches 0
-set my_pid [spawn $sacctmgr -n -p list assoc users=$us1,$us2,$us3 format="User,Cluster,Fairshare,MaxC,MaxJ,MaxN,MaxW"]
+set my_pid [spawn $sacctmgr -n -p list assoc users=$us1,$us2,$us3 format="User,Cluster,Fairshare,Maxcpum,MaxJ,MaxN,MaxW"]
 expect {
 	-re "There was a problem" {
 	        send_user "FAILURE: there was a problem with the sacctmgr command\n"

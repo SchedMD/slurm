@@ -82,9 +82,9 @@ documents those changes that are of interest to users and admins.
     from the controller the first time accounting is turned on.
  -- Correct srun logic to support --tasks-per-node option without task count.
  -- Logic in place to handle multiple versions of RPCs within the slurmdbd. 
-    THE SLURMDBD MUST BE UPGRADED TO THIS VERSION OR IT WILL NOT WORK TALK WITH
-    THE SLURMCTLD.  Older versions of the slurmctld will continue to talk to 
-    the new slurmdbd.
+    THE SLURMDBD MUST BE UPGRADED TO THIS VERSION BEFORE UPGRADING THE 
+    SLURMCTLD OR THEY WILL NOT TALK.  
+    Older versions of the slurmctld will continue to talk to the new slurmdbd.
  -- Add support for new job dependency type: singleton. Only one job from a 
     given user with a given name will execute with this dependency type.
     From Matthieu Hautreux, CEA.
@@ -123,6 +123,15 @@ documents those changes that are of interest to users and admins.
     src/plusings/jobcomp/filetxt/jobcomp_filetxt.c to revert the behavior.
  -- Add support for configuration option of ReturnToService=2, which will 
     return a DOWN to use if the node was previous set DOWN for any reason.
+ -- Removed Gold accounting plugin.  This plugin was to be used for accounting 
+    but has seen not been maintained and is no longer needed.  If using this
+    please contact slurm-dev@llnl.gov.
+ -- When not enforcing associations and running accounting if a user 
+    submits a job to an account that does not have an association on the 
+    cluster the account will be changed to the default account to help 
+    avoid trash in the accounting system.  If the users default account 
+    does not have an association on the cluster the requested account 
+    will be used.
 
 * Changes in SLURM 1.3.8
 ========================

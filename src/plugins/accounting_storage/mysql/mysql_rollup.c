@@ -114,7 +114,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		"t1.id",
 		"jobid",
 		"associd",
-		"cluster",
+		"t2.cluster",
 		"eligible",
 		"start",
 		"end",
@@ -187,7 +187,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				       event_str, event_table,
 				       curr_end, curr_start);
 
-		debug3("%d query\n%s", mysql_conn->conn, query);
+		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 		if(!(result = mysql_db_query_ret(
 			     mysql_conn->db_conn, query, 0))) {
 			xfree(query);
@@ -510,6 +510,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				   "over_cpu_secs=VALUES(over_cpu_secs), "
 				   "resv_cpu_secs=VALUES(resv_cpu_secs)",
 				   now);
+			debug3("%d query\n%s", mysql_conn->conn, query);
 			rc = mysql_db_query(mysql_conn->db_conn, query);
 			xfree(query);
 			if(rc != SLURM_SUCCESS) {

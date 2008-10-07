@@ -50,7 +50,13 @@ extern char *default_slurm_config_file;
 extern char *default_plugin_path;
 extern char *default_plugstack;
 
-#define DEFAULT_ACCOUNTING_ENFORCE  0
+enum {
+	ACCOUNTING_ENFORCE_NONE,
+	ACCOUNTING_ENFORCE_YES,
+	ACCOUNTING_ENFORCE_WITH_LIMITS
+};
+
+#define DEFAULT_ACCOUNTING_ENFORCE  ACCOUNTING_ENFORCE_NONE
 #define DEFAULT_ACCOUNTING_STORAGE_TYPE "accounting_storage/none"
 #define DEFAULT_AUTH_TYPE          "auth/munge"
 #define DEFAULT_CACHE_GROUPS        0

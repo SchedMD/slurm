@@ -237,8 +237,10 @@ static int _set_cond(int *start, int argc, char *argv[],
 		} else if(!end && !strncasecmp(argv[i], "all_clusters", 1)) {
 			local_cluster_flag = 1;
 			continue;
-		} else if(!end || !strncasecmp (argv[i], "Clusters", 1)) {
-			slurm_addto_char_list(job_cond->cluster_list, argv[i]);
+		} else if(!end 
+			  || !strncasecmp (argv[i], "Clusters", 1)) {
+			slurm_addto_char_list(job_cond->cluster_list,
+					      argv[i]+end);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Accounts", 2)) {
 			if(!job_cond->acct_list)
@@ -254,12 +256,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 			slurm_addto_char_list(job_cond->associd_list,
 					argv[i]+end);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "Clusters", 1)) {
-			slurm_addto_char_list(job_cond->cluster_list,
-					argv[i]+end);
-			set = 1;
 		} else if (!strncasecmp (argv[i], "End", 1)) {
-			job_cond->usage_end = parse_time(argv[i]+end);
+			job_cond->usage_end = parse_time(argv[i]+end, 1);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Format", 1)) {
 			if(format_list)
@@ -273,7 +271,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 			set = 1;
 		} else if (!strncasecmp (argv[i], "grouping", 2)) {
 			if(grouping_list)
-				slurm_addto_char_list(grouping_list, argv[i]+end);
+				slurm_addto_char_list(grouping_list, 
+						      argv[i]+end);
 		} else if (!strncasecmp (argv[i], "Jobs", 1)) {
 			char *end_char = NULL, *start_char = argv[i]+end;
 			jobacct_selected_step_t *selected_step = NULL;
@@ -314,7 +313,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 					argv[i]+end);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Start", 1)) {
-			job_cond->usage_start = parse_time(argv[i]+end);
+			job_cond->usage_start = parse_time(argv[i]+end, 1);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Users", 1)) {
 			if(!job_cond->userid_list)
@@ -362,6 +361,7 @@ static int _setup_print_fields_list(List format_list)
 
 	itr = list_iterator_create(format_list);
 	while((object = list_next(itr))) {
+		char *tmp_char = NULL;
 		field = xmalloc(sizeof(print_field_t));
 		if(!strncasecmp("Account", object, 1)) {
 			field->type = PRINT_JOB_ACCOUNT;
@@ -404,6 +404,11 @@ static int _setup_print_fields_list(List format_list)
 			xfree(field);
 			continue;
 		}
+		if((tmp_char = strstr(object, "\%"))) {
+			int newlen = atoi(tmp_char+1);
+			if(newlen > 0) 
+				field->len = newlen;
+		}
 		list_append(print_fields_list, field);		
 	}
 	list_iterator_destroy(itr);
@@ -416,8 +421,10 @@ static int _setup_grouping_print_fields_list(List grouping_list)
 	ListIterator itr = NULL;
 	print_field_t *field = NULL;
 	char *object = NULL;
+	char *last_object = NULL;
 	uint32_t last_size = 0;
 	uint32_t size = 0;
+	char *tmp_char = NULL;
 
 	if(!grouping_list || !list_count(grouping_list)) {
 		exit_code=1;
@@ -436,9 +443,21 @@ static int _setup_grouping_print_fields_list(List grouping_list)
 
 		field->type = PRINT_JOB_SIZE;
 		field->name = xstrdup_printf("%u-%u cpus", last_size, size-1);
-		field->len = 13;
+		if(time_format == SREPORT_TIME_SECS_PER
+		   || time_format == SREPORT_TIME_MINS_PER
+		   || time_format == SREPORT_TIME_HOURS_PER)
+			field->len = 20;
+		else
+			field->len = 13;
+
 		field->print_routine = sreport_print_time;
 		last_size = size;
+		last_object = object;
+		if((tmp_char = strstr(object, "\%"))) {
+			int newlen = atoi(tmp_char+1);
+			if(newlen > 0) 
+				field->len = newlen;
+		}
 		list_append(grouping_print_fields_list, field);		
 	}
 	list_iterator_destroy(itr);
@@ -447,8 +466,18 @@ static int _setup_grouping_print_fields_list(List grouping_list)
 		field = xmalloc(sizeof(print_field_t));
 		field->type = PRINT_JOB_SIZE;
 		field->name = xstrdup_printf("> %u cpus", last_size);
-		field->len = 13;
+		if(time_format == SREPORT_TIME_SECS_PER
+		   || time_format == SREPORT_TIME_MINS_PER
+		   || time_format == SREPORT_TIME_HOURS_PER)
+			field->len = 20;
+		else
+			field->len = 13;
 		field->print_routine = sreport_print_time;
+		if((tmp_char = strstr(last_object, "\%"))) {
+			int newlen = atoi(tmp_char+1);
+			if(newlen > 0) 
+				field->len = newlen;
+		}
 		list_append(grouping_print_fields_list, field);		
 	}
 
@@ -479,6 +508,8 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 	print_field_t *field = NULL;
 	print_field_t total_field;
 	uint32_t total_time = 0;
+	sreport_time_format_t temp_format;
+	
 	List job_list = NULL;
 	List cluster_list = NULL;
 	List assoc_list = NULL;
@@ -492,9 +523,10 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 
 	print_fields_list = list_create(destroy_print_field);
 
-	_set_cond(&i, argc, argv, job_cond, NULL, grouping_list);
-
-	slurm_addto_char_list(format_list, "Cl,a");
+	_set_cond(&i, argc, argv, job_cond, format_list, grouping_list);
+	
+	if(!list_count(format_list))
+		slurm_addto_char_list(format_list, "Cl,a");
 
 	if(!list_count(grouping_list)) 
 		slurm_addto_char_list(grouping_list, "50,250,500,1000");
@@ -516,7 +548,8 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 	assoc_cond.id_list = job_cond->associd_list;
 	assoc_cond.cluster_list = job_cond->cluster_list;
 	assoc_cond.partition_list = job_cond->partition_list;
-	assoc_cond.parent_acct = "root";
+	assoc_cond.parent_acct_list = list_create(NULL);
+	list_append(assoc_cond.parent_acct_list, "root");
 
 	assoc_list = acct_storage_g_get_associations(db_conn, my_uid,
 						     &assoc_cond);
@@ -535,6 +568,7 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 		printf("Job Sizes %s - %s (%d secs)\n", 
 		       start_char, end_char, 
 		       (job_cond->usage_end - job_cond->usage_start));
+		printf("Time reported in %s\n", time_format_string);
 		printf("----------------------------------------"
 		       "----------------------------------------\n");
 	}
@@ -610,7 +644,7 @@ no_assocs:
 
 	memset(&total_field, 0, sizeof(print_field_t));
 	total_field.type = PRINT_JOB_SIZE;
-	total_field.name = xstrdup("% of Cluster");
+	total_field.name = xstrdup("% of cluster");
 	total_field.len = 12;
 	total_field.print_routine = sreport_print_time;
 	list_append(header_list, &total_field);
@@ -695,7 +729,8 @@ no_assocs:
 				continue;
 			list_append(local_group->jobs, job);
 			local_group->count++;
-			total_secs = job->elapsed*job->alloc_cpus;
+			total_secs = (uint64_t)job->elapsed 
+				* (uint64_t)job->alloc_cpus;
 			local_group->cpu_secs += total_secs;
 			acct_group->cpu_secs += total_secs;
 			cluster_group->cpu_secs += total_secs;
@@ -749,10 +784,13 @@ no_assocs:
 			}
 			list_iterator_reset(itr2);
 			list_iterator_destroy(local_itr);
+			
+			temp_format = time_format;
+			time_format = SREPORT_TIME_PERCENT;
 			total_field.print_routine(&total_field,
 						  acct_group->cpu_secs,
 						  cluster_group->cpu_secs, 1);
-			
+			time_format = temp_format;
 			printf("\n");
 		}
 		list_iterator_destroy(acct_itr);

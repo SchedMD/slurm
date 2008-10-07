@@ -142,7 +142,8 @@ typedef enum {
 	DBD_ADD_QOS,		/* Add QOS information   	        */
 	DBD_GET_QOS,		/* Get QOS information   	        */
 	DBD_GOT_QOS,		/* Got QOS information   	        */
-	DBD_REMOVE_QOS		/* Remove QOS information   	        */
+	DBD_REMOVE_QOS,		/* Remove QOS information   	        */
+	DBD_MODIFY_QOS,         /* Modify existing QOS                  */
 } slurmdbd_msg_type_t;
 
 /*****************************************************************************\
@@ -224,6 +225,7 @@ typedef struct dbd_job_start_msg {
 				 * with associations */
 	uint32_t alloc_cpus;	/* count of allocated processors */
 	uint32_t assoc_id;	/* accounting association id */
+	char *   cluster;       /* cluster job is being ran on */
 	char *   block_id;      /* Bluegene block id */
 	uint32_t db_index;	/* index into the db for this job */
 	time_t   eligible_time;	/* time job becomes eligible to run */

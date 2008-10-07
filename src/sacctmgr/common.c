@@ -37,6 +37,8 @@
 \*****************************************************************************/
 
 #include "src/sacctmgr/sacctmgr.h"
+#include "src/common/slurmdbd_defs.h"
+
 #include <unistd.h>
 #include <termios.h>
 
@@ -73,6 +75,27 @@ static void _nonblock(int state)
 	//set the terminal attributes.
 	tcsetattr(STDIN_FILENO, TCSANOW, &ttystate);
 
+}
+
+static char *_get_qos_list_str(List qos_list)
+{
+	char *qos_char = NULL;
+	ListIterator itr = NULL;
+	acct_qos_rec_t *qos = NULL;
+
+	if(!qos_list)
+		return NULL;
+
+	itr = list_iterator_create(qos_list);
+	while((qos = list_next(itr))) {
+		if(qos_char) 
+			xstrfmtcat(qos_char, ",%s", qos->name);
+		else
+			xstrcat(qos_char, qos->name);
+	}
+	list_iterator_destroy(itr);
+
+	return qos_char;
 }
 
 extern void destroy_sacctmgr_assoc(void *object)
@@ -556,6 +579,29 @@ extern int get_uint(char *in_value, uint32_t *out_value, char *type)
 	return SLURM_SUCCESS;
 }
 
+extern int get_uint64(char *in_value, uint64_t *out_value, char *type)
+{
+	char *ptr = NULL, *meat = NULL;
+	long long num;
+	
+	if(!(meat = strip_quotes(in_value, NULL)))
+		return SLURM_ERROR;
+
+	num = strtoll(meat, &ptr, 10);
+	if ((num == 0) && ptr && ptr[0]) {
+		error("Invalid value for %s (%s)", type, meat);
+		xfree(meat);
+		return SLURM_ERROR;
+	}
+	xfree(meat);
+	
+	if (num < 0)
+		*out_value = INFINITE;		/* flag to clear */
+	else
+		*out_value = (uint64_t) num;
+	return SLURM_SUCCESS;
+}
+
 extern int addto_qos_char_list(List char_list, List qos_list, char *names, 
 			       int option)
 {
@@ -574,6 +620,7 @@ extern int addto_qos_char_list(List char_list, List qos_list, char *names,
 
 	if(!qos_list || !list_count(qos_list)) {
 		debug2("No real qos_list");
+		exit_code = 1;
 		return 0;
 	}
 
@@ -596,10 +643,20 @@ extern int addto_qos_char_list(List char_list, List qos_list, char *names,
 					memcpy(name, names+start, (i-start));
 					
 					id = str_2_acct_qos(qos_list, name);
+					if(id == NO_VAL) {
+						char *tmp = _get_qos_list_str(
+							qos_list);
+						error("You gave a bad qos "
+						      "'%s'.  Valid QOS's are "
+						      "%s",
+						      name, tmp);
+						xfree(tmp);
+						exit_code = 1;
+						xfree(name);
+						break;
+					}
 					xfree(name);
-					if(id == NO_VAL) 
-						goto bad;
-
+					
 					if(option) {
 						name = xstrdup_printf(
 							"%c%u", option, id);
@@ -616,14 +673,18 @@ extern int addto_qos_char_list(List char_list, List qos_list, char *names,
 						count++;
 					} else 
 						xfree(name);
+				} else if (!(i-start)) {
+					list_append(char_list, xstrdup(""));
+					count++;
 				}
-			bad:
+
 				i++;
 				start = i;
 				if(!names[i]) {
-					info("There is a problem with "
-					     "your request.  It appears you "
-					     "have spaces inside your list.");
+					error("There is a problem with "
+					      "your request.  It appears you "
+					      "have spaces inside your list.");
+					exit_code = 1;
 					break;
 				}
 			}
@@ -634,9 +695,17 @@ extern int addto_qos_char_list(List char_list, List qos_list, char *names,
 			memcpy(name, names+start, (i-start));
 			
 			id = str_2_acct_qos(qos_list, name);
-			xfree(name);
-			if(id == NO_VAL) 
+			if(id == NO_VAL) {
+				char *tmp = _get_qos_list_str(qos_list);
+				error("You gave a bad qos "
+				      "'%s'.  Valid QOS's are "
+				      "%s",
+				      name, tmp);
+				xfree(tmp);
+				xfree(name);
 				goto end_it;
+			}
+			xfree(name);
 			
 			if(option) {
 				name = xstrdup_printf(
@@ -653,12 +722,138 @@ extern int addto_qos_char_list(List char_list, List qos_list, char *names,
 				count++;
 			} else 
 				xfree(name);
+		} else if (!(i-start)) {
+			list_append(char_list, xstrdup(""));
+			count++;
+		}
+	}	
+	if(!count) {
+		error("You gave me an empty qos list");
+		exit_code = 1;
+	}
+
+end_it:
+	list_iterator_destroy(itr);
+	return count;
+}
+ 
+extern int addto_action_char_list(List char_list, char *names)
+{
+	int i=0, start=0;
+	char *name = NULL, *tmp_char = NULL;
+	ListIterator itr = NULL;
+	char quote_c = '\0';
+	int quote = 0;
+	uint32_t id=0;
+	int count = 0;
+
+	if(!char_list) {
+		error("No list was given to fill in");
+		return 0;
+	}
+
+	itr = list_iterator_create(char_list);
+	if(names) {
+		if (names[i] == '\"' || names[i] == '\'') {
+			quote_c = names[i];
+			quote = 1;
+			i++;
+		}
+		start = i;
+		while(names[i]) {
+			if(quote && names[i] == quote_c)
+				break;
+			else if (names[i] == '\"' || names[i] == '\'')
+				names[i] = '`';
+			else if(names[i] == ',') {
+				if((i-start) > 0) {
+					name = xmalloc((i-start+1));
+					memcpy(name, names+start, (i-start));
+					
+					id = str_2_slurmdbd_msg_type(name);
+					if(id == NO_VAL) {
+						error("You gave a bad action "
+						      "'%s'.", name);
+						xfree(name);
+						break;
+					}
+					xfree(name);
+
+					name = xstrdup_printf("%u", id);
+					while((tmp_char = list_next(itr))) {
+						if(!strcasecmp(tmp_char, name))
+							break;
+					}
+					list_iterator_reset(itr);
+
+					if(!tmp_char) {
+						list_append(char_list, name);
+						count++;
+					} else 
+						xfree(name);
+				}
+
+				i++;
+				start = i;
+				if(!names[i]) {
+					error("There is a problem with "
+					      "your request.  It appears you "
+					      "have spaces inside your list.");
+					break;
+				}
+			}
+			i++;
+		}
+		if((i-start) > 0) {
+			name = xmalloc((i-start)+1);
+			memcpy(name, names+start, (i-start));
+			
+			id = str_2_slurmdbd_msg_type(name);
+			if(id == NO_VAL)  {
+				error("You gave a bad action '%s'.",
+				      name);
+				xfree(name);
+				goto end_it;
+			}
+			xfree(name);
+			
+			name = xstrdup_printf("%u", id);
+			while((tmp_char = list_next(itr))) {
+				if(!strcasecmp(tmp_char, name))
+					break;
+			}
+			
+			if(!tmp_char) {
+				list_append(char_list, name);
+				count++;
+			} else 
+				xfree(name);
 		}
 	}	
 end_it:
 	list_iterator_destroy(itr);
 	return count;
-} 
+}
+ 
+extern List copy_char_list(List char_list) 
+{
+	List ret_list = NULL;
+	char *tmp_char = NULL;
+	ListIterator itr = NULL;
+
+	if(!char_list || !list_count(char_list))
+		return NULL;
+
+	itr = list_iterator_create(char_list);
+	ret_list = list_create(slurm_destroy_char);
+	
+	while((tmp_char = list_next(itr))) 
+		list_append(ret_list, xstrdup(tmp_char));
+	
+	list_iterator_destroy(itr);
+	
+	return ret_list;
+}
 
 extern void sacctmgr_print_coord_list(
 	print_field_t *field, List value, int last)
@@ -720,41 +915,205 @@ extern void sacctmgr_print_qos_list(print_field_t *field, List qos_list,
 	xfree(print_this);
 }
 
-extern char *get_qos_complete_str(List qos_list, List num_qos_list)
+extern void sacctmgr_print_assoc_limits(acct_association_rec_t *assoc)
 {
-	List temp_list = NULL;
-	char *temp_char = NULL;
-	char *print_this = NULL;
-	ListIterator itr = NULL;
+	if(!assoc)
+		return;
 
-	if(!qos_list || !list_count(qos_list)
-	   || !num_qos_list || !list_count(num_qos_list))
-		return xstrdup("");
+	if(assoc->fairshare == INFINITE)
+		printf("  Fairshare     = NONE\n");
+	else if(assoc->fairshare != NO_VAL) 
+		printf("  Fairshare     = %u\n", assoc->fairshare);
 
-	temp_list = list_create(NULL);
-
-	itr = list_iterator_create(num_qos_list);
-	while((temp_char = list_next(itr))) {
-		temp_char = acct_qos_str(qos_list, atoi(temp_char));
-		if(temp_char)
-			list_append(temp_list, temp_char);
+	if(assoc->grp_cpu_mins == INFINITE)
+		printf("  GrpCPUMins    = NONE\n");
+	else if(assoc->grp_cpu_mins != NO_VAL) 
+		printf("  GrpCPUMins    = %llu\n", assoc->grp_cpu_mins);
+		
+	if(assoc->grp_cpus == INFINITE)
+		printf("  GrpCPUs       = NONE\n");
+	else if(assoc->grp_cpus != NO_VAL) 
+		printf("  GrpCPUs       = %u\n", assoc->grp_cpus);
+				
+	if(assoc->grp_jobs == INFINITE) 
+		printf("  GrpJobs       = NONE\n");
+	else if(assoc->grp_jobs != NO_VAL) 
+		printf("  GrpJobs       = %u\n", assoc->grp_jobs);
+		
+	if(assoc->grp_nodes == INFINITE)
+		printf("  GrpNodes      = NONE\n");
+	else if(assoc->grp_nodes != NO_VAL)
+		printf("  GrpNodes      = %u\n", assoc->grp_nodes);
+		
+	if(assoc->grp_submit_jobs == INFINITE) 
+		printf("  GrpSubmitJobs = NONE\n");
+	else if(assoc->grp_submit_jobs != NO_VAL) 
+		printf("  GrpSubmitJobs = %u\n", 
+		       assoc->grp_submit_jobs);
+		
+	if(assoc->grp_wall == INFINITE) 
+		printf("  GrpWall       = NONE\n");		
+	else if(assoc->grp_wall != NO_VAL) {
+		char time_buf[32];
+		mins2time_str((time_t) assoc->grp_wall, 
+			      time_buf, sizeof(time_buf));
+		printf("  GrpWall       = %s\n", time_buf);
 	}
-	list_iterator_destroy(itr);
-	list_sort(temp_list, (ListCmpF)sort_char_list);
-	itr = list_iterator_create(temp_list);
-	while((temp_char = list_next(itr))) {
-		if(print_this) 
-			xstrfmtcat(print_this, ",%s", temp_char);
-		else 
-			print_this = xstrdup(temp_char);
+
+	if(assoc->max_cpu_mins_pj == INFINITE)
+		printf("  MaxCPUMins    = NONE\n");
+	else if(assoc->max_cpu_mins_pj != NO_VAL) 
+		printf("  MaxCPUMins    = %llu\n", assoc->max_cpu_mins_pj);
+		
+	if(assoc->max_cpus_pj == INFINITE)
+		printf("  MaxCPUs       = NONE\n");
+	else if(assoc->max_cpus_pj != NO_VAL) 
+		printf("  MaxCPUs       = %u\n", assoc->max_cpus_pj);
+				
+	if(assoc->max_jobs == INFINITE) 
+		printf("  MaxJobs       = NONE\n");
+	else if(assoc->max_jobs != NO_VAL) 
+		printf("  MaxJobs       = %u\n", assoc->max_jobs);
+		
+	if(assoc->max_nodes_pj == INFINITE)
+		printf("  MaxNodes      = NONE\n");
+	else if(assoc->max_nodes_pj != NO_VAL)
+		printf("  MaxNodes      = %u\n", assoc->max_nodes_pj);
+		
+	if(assoc->max_submit_jobs == INFINITE) 
+		printf("  MaxSubmitJobs = NONE\n");
+	else if(assoc->max_submit_jobs != NO_VAL) 
+		printf("  MaxSubmitJobs = %u\n", 
+		       assoc->max_submit_jobs);
+		
+	if(assoc->max_wall_pj == INFINITE) 
+		printf("  MaxWall       = NONE\n");		
+	else if(assoc->max_wall_pj != NO_VAL) {
+		char time_buf[32];
+		mins2time_str((time_t) assoc->max_wall_pj, 
+			      time_buf, sizeof(time_buf));
+		printf("  MaxWall       = %s\n", time_buf);
 	}
-	list_iterator_destroy(itr);
-	list_destroy(temp_list);
 
-	if(!print_this)
-		return xstrdup("");
+	if(assoc->qos_list) {
+		List qos_list = acct_storage_g_get_qos(db_conn, my_uid, NULL);
+		char *temp_char = get_qos_complete_str(qos_list,
+						       assoc->qos_list);
+		if(temp_char) {		
+			printf("  Qos           = %s\n", temp_char);
+			xfree(temp_char);
+		}
+		if(qos_list)
+			list_destroy(qos_list);
+	} 
+}
 
-	return print_this;
+extern void sacctmgr_print_qos_limits(acct_qos_rec_t *qos)
+{
+	List qos_list = NULL;
+	if(!qos)
+		return;
+
+	if(qos->preemptee_list || qos->preemptor_list)
+		qos_list = acct_storage_g_get_qos(db_conn, my_uid, NULL);
+
+	if(qos->job_flags)
+		printf("  JobFlags       = %s", qos->job_flags);
+
+	if(qos->grp_cpu_mins == INFINITE)
+		printf("  GrpCPUMins     = NONE\n");
+	else if(qos->grp_cpu_mins != NO_VAL) 
+		printf("  GrpCPUMins     = %llu\n", qos->grp_cpu_mins);
+		
+	if(qos->grp_cpus == INFINITE)
+		printf("  GrpCPUs        = NONE\n");
+	else if(qos->grp_cpus != NO_VAL) 
+		printf("  GrpCPUs        = %u\n", qos->grp_cpus);
+				
+	if(qos->grp_jobs == INFINITE) 
+		printf("  GrpJobs        = NONE\n");
+	else if(qos->grp_jobs != NO_VAL) 
+		printf("  GrpJobs        = %u\n", qos->grp_jobs);
+		
+	if(qos->grp_nodes == INFINITE)
+		printf("  GrpNodes       = NONE\n");
+	else if(qos->grp_nodes != NO_VAL)
+		printf("  GrpNodes       = %u\n", qos->grp_nodes);
+		
+	if(qos->grp_submit_jobs == INFINITE) 
+		printf("  GrpSubmitJobs  = NONE\n");
+	else if(qos->grp_submit_jobs != NO_VAL) 
+		printf("  GrpSubmitJobs  = %u\n", 
+		       qos->grp_submit_jobs);
+		
+	if(qos->grp_wall == INFINITE) 
+		printf("  GrpWall        = NONE\n");		
+	else if(qos->grp_wall != NO_VAL) {
+		char time_buf[32];
+		mins2time_str((time_t) qos->grp_wall, 
+			      time_buf, sizeof(time_buf));
+		printf("  GrpWall        = %s\n", time_buf);
+	}
+
+	if(qos->max_cpu_mins_pu == INFINITE)
+		printf("  MaxCPUMins     = NONE\n");
+	else if(qos->max_cpu_mins_pu != NO_VAL) 
+		printf("  MaxCPUMins     = %llu\n", qos->max_cpu_mins_pu);
+		
+	if(qos->max_cpus_pu == INFINITE)
+		printf("  MaxCPUs        = NONE\n");
+	else if(qos->max_cpus_pu != NO_VAL) 
+		printf("  MaxCPUs        = %u\n", qos->max_cpus_pu);
+				
+	if(qos->max_jobs_pu == INFINITE) 
+		printf("  MaxJobs        = NONE\n");
+	else if(qos->max_jobs_pu != NO_VAL) 
+		printf("  MaxJobs        = %u\n", qos->max_jobs_pu);
+		
+	if(qos->max_nodes_pu == INFINITE)
+		printf("  MaxNodes       = NONE\n");
+	else if(qos->max_nodes_pu != NO_VAL)
+		printf("  MaxNodes       = %u\n", qos->max_nodes_pu);
+		
+	if(qos->max_submit_jobs_pu == INFINITE) 
+		printf("  MaxSubmitJobs  = NONE\n");
+	else if(qos->max_submit_jobs_pu != NO_VAL) 
+		printf("  MaxSubmitJobs  = %u\n", 
+		       qos->max_submit_jobs_pu);
+		
+	if(qos->max_wall_pu == INFINITE) 
+		printf("  MaxWall        = NONE\n");		
+	else if(qos->max_wall_pu != NO_VAL) {
+		char time_buf[32];
+		mins2time_str((time_t) qos->max_wall_pu, 
+			      time_buf, sizeof(time_buf));
+		printf("  MaxWall        = %s\n", time_buf);
+	}
+
+	if(qos->preemptee_list) {
+		char *temp_char = get_qos_complete_str(qos_list,
+						       qos->preemptee_list);
+		if(temp_char) {		
+			printf("  Preemptable by = %s\n", temp_char);
+			xfree(temp_char);
+		}
+	}
+	if(qos->preemptor_list) {
+		char *temp_char = get_qos_complete_str(qos_list,
+						       qos->preemptee_list);
+		if(temp_char) {		
+			printf("  Can Preempt    = %s\n", temp_char);
+			xfree(temp_char);
+		}
+	} 
+
+	if(qos->priority == INFINITE)
+		printf("  Priority       = NONE\n");
+	else if(qos->priority != NO_VAL) 
+		printf("  Priority       = %d\n", qos->priority);
+
+	if(qos_list)
+		list_destroy(qos_list);
 }
 
 extern int sort_coord_list(acct_coord_rec_t *coord_a, acct_coord_rec_t *coord_b)
@@ -768,16 +1127,3 @@ extern int sort_coord_list(acct_coord_rec_t *coord_a, acct_coord_rec_t *coord_b)
 	
 	return 0;
 }
-
-extern int sort_char_list(char *name_a, char *name_b)
-{
-	int diff = strcmp(name_a, name_b);
-
-	if (diff < 0)
-		return -1;
-	else if (diff > 0)
-		return 1;
-	
-	return 0;
-}
-

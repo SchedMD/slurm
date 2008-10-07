@@ -46,10 +46,21 @@ typedef struct {
 	char *def_acct;
 	char *desc;
 	uint32_t fairshare;
-	uint32_t max_cpu_secs_per_job; 
+
+	uint64_t grp_cpu_mins;
+	uint32_t grp_cpus;
+	uint32_t grp_jobs;
+	uint32_t grp_nodes; 
+	uint32_t grp_submit_jobs;
+	uint32_t grp_wall;
+
+	uint64_t max_cpu_mins_pj; 
+	uint32_t max_cpus_pj; 
 	uint32_t max_jobs;
-	uint32_t max_nodes_per_job; 
-	uint32_t max_wall_duration_per_job;
+	uint32_t max_nodes_pj; 
+	uint32_t max_submit_jobs;
+	uint32_t max_wall_pj;
+
 	char *name;
 	char *org;
 	char *part;
@@ -64,10 +75,18 @@ enum {
 	PRINT_DACCT,
 	PRINT_DESC,
 	PRINT_FAIRSHARE,
+	PRINT_GRPCM,
+	PRINT_GRPC,
+	PRINT_GRPJ,
+	PRINT_GRPN,
+	PRINT_GRPS,
+	PRINT_GRPW,
 	PRINT_ID,
 	PRINT_MAXC,
+	PRINT_MAXCM,
 	PRINT_MAXJ,
 	PRINT_MAXN,
+	PRINT_MAXS,
 	PRINT_MAXW,
 	PRINT_NAME,
 	PRINT_ORG,
@@ -86,6 +105,34 @@ typedef enum {
 } sacctmgr_mod_type_t;
 
 static List qos_list = NULL;
+
+static int _init_sacctmgr_file_opts(sacctmgr_file_opts_t *file_opts)
+{
+	if(!file_opts)
+		return SLURM_ERROR;
+
+	memset(file_opts, 0, sizeof(sacctmgr_file_opts_t));
+
+	file_opts->admin = ACCT_ADMIN_NOTSET;
+
+	file_opts->fairshare = 1;
+
+	file_opts->grp_cpu_mins = INFINITE;
+	file_opts->grp_cpus = INFINITE;
+	file_opts->grp_jobs = INFINITE;
+	file_opts->grp_nodes = INFINITE;
+	file_opts->grp_submit_jobs = INFINITE;
+	file_opts->grp_wall = INFINITE;
+
+	file_opts->max_cpu_mins_pj = INFINITE;
+	file_opts->max_cpus_pj = INFINITE;
+	file_opts->max_jobs = INFINITE;
+	file_opts->max_nodes_pj = INFINITE;
+	file_opts->max_submit_jobs = INFINITE;
+	file_opts->max_wall_pj = INFINITE;
+
+	return SLURM_SUCCESS;
+}
 
 static int _strip_continuation(char *buf, int len)
 {
@@ -207,12 +254,7 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 	char *option = NULL;
 	char quote_c = '\0';
 	
-	file_opts->fairshare = 1;
-	file_opts->max_cpu_secs_per_job = INFINITE;
-	file_opts->max_jobs = INFINITE;
-	file_opts->max_nodes_per_job = INFINITE;
-	file_opts->max_wall_duration_per_job = INFINITE;
-	file_opts->admin = ACCT_ADMIN_NOTSET;
+	_init_sacctmgr_file_opts(file_opts);
 
 	while(options[i]) {
 		quote = 0;
@@ -276,19 +318,88 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 				_destroy_sacctmgr_file_opts(file_opts);
 				break;
 			}
-		} else if (!strncasecmp (sub, "MaxCPUSec", 4)
-			   || !strncasecmp (sub, "MaxProcSec", 4)) {
-			if (get_uint(option, &file_opts->max_cpu_secs_per_job,
-			    "MaxCPUSec") != SLURM_SUCCESS) {
+		} else if (!strncasecmp (sub, "GrpCPUMins", 7)) {
+			if (get_uint64(option, &file_opts->grp_cpu_mins,
+				       "GrpCPUMins") != SLURM_SUCCESS) {
 				exit_code=1;
 				fprintf(stderr, 
-					" Bad MaxCPUSec value: %s\n", option);
+					" Bad GrpCPUMins value: %s\n", option);
+				_destroy_sacctmgr_file_opts(file_opts);
+				break;
+			}
+		} else if (!strncasecmp (sub, "GrpCPUs", 7)) {
+			if (get_uint(option, &file_opts->grp_cpus,
+				     "GrpCPUs") != SLURM_SUCCESS) {
+				exit_code=1;
+				fprintf(stderr, 
+					" Bad GrpCPUs value: %s\n", option);
+				_destroy_sacctmgr_file_opts(file_opts);
+				break;
+			}
+		} else if (!strncasecmp (sub, "GrpJobs", 4)) {
+			if (get_uint(option, &file_opts->grp_jobs,
+				     "GrpJobs") != SLURM_SUCCESS) {
+				exit_code=1;
+				fprintf(stderr, 
+					" Bad GrpJobs value: %s\n", option);
+				_destroy_sacctmgr_file_opts(file_opts);
+				break;
+			}
+		} else if (!strncasecmp (sub, "GrpNodes", 4)) {
+			if (get_uint(option, &file_opts->grp_nodes,
+				     "GrpNodes") != SLURM_SUCCESS) {
+				exit_code=1;
+				fprintf(stderr, 
+					" Bad GrpNodes value: %s\n", option);
+				_destroy_sacctmgr_file_opts(file_opts);
+				break;
+			}
+		} else if (!strncasecmp (sub, "GrpSubmitJobs", 4)) {
+			if (get_uint(option, &file_opts->grp_submit_jobs,
+				     "GrpSubmitJobs") != SLURM_SUCCESS) {
+				exit_code=1;
+				fprintf(stderr, 
+					" Bad GrpJobs value: %s\n", option);
+				_destroy_sacctmgr_file_opts(file_opts);
+				break;
+			}
+		} else if (!strncasecmp (sub, "GrpWall", 4)) {
+			mins = time_str2mins(option);
+			if (mins >= 0) {
+				file_opts->grp_wall 
+					= (uint32_t) mins;
+			} else if (strcmp(option, "-1")) {
+				file_opts->grp_wall = INFINITE;
+			} else {
+				exit_code=1;
+				fprintf(stderr, 
+					" Bad GrpWall time format: %s\n", 
+					option);
+				_destroy_sacctmgr_file_opts(file_opts);
+				break;
+			}
+		} else if (!strncasecmp (sub, "MaxCPUMins", 7)
+			   || !strncasecmp (sub, "MaxProcSec", 4)) {
+			if (get_uint64(option, &file_opts->max_cpu_mins_pj,
+				       "MaxCPUMins") != SLURM_SUCCESS) {
+				exit_code=1;
+				fprintf(stderr, 
+					" Bad MaxCPUMins value: %s\n", option);
+				_destroy_sacctmgr_file_opts(file_opts);
+				break;
+			}
+		} else if (!strncasecmp (sub, "MaxCPUs", 7)) {
+			if (get_uint(option, &file_opts->max_cpus_pj,
+				     "MaxCPUs") != SLURM_SUCCESS) {
+				exit_code=1;
+				fprintf(stderr, 
+					" Bad MaxCPUs value: %s\n", option);
 				_destroy_sacctmgr_file_opts(file_opts);
 				break;
 			}
 		} else if (!strncasecmp (sub, "MaxJobs", 4)) {
 			if (get_uint(option, &file_opts->max_jobs,
-			    "MaxJobs") != SLURM_SUCCESS) {
+				     "MaxJobs") != SLURM_SUCCESS) {
 				exit_code=1;
 				fprintf(stderr, 
 					" Bad MaxJobs value: %s\n", option);
@@ -296,21 +407,30 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 				break;
 			}
 		} else if (!strncasecmp (sub, "MaxNodes", 4)) {
-			if (get_uint(option, &file_opts->max_nodes_per_job,
-			    "MaxNodes") != SLURM_SUCCESS) {
+			if (get_uint(option, &file_opts->max_nodes_pj,
+				     "MaxNodes") != SLURM_SUCCESS) {
 				exit_code=1;
 				fprintf(stderr, 
 					" Bad MaxNodes value: %s\n", option);
 				_destroy_sacctmgr_file_opts(file_opts);
 				break;
 			}
+		} else if (!strncasecmp (sub, "MaxSubmitJobs", 4)) {
+			if (get_uint(option, &file_opts->max_submit_jobs,
+				     "MaxSubmitJobs") != SLURM_SUCCESS) {
+				exit_code=1;
+				fprintf(stderr, 
+					" Bad MaxJobs value: %s\n", option);
+				_destroy_sacctmgr_file_opts(file_opts);
+				break;
+			}
 		} else if (!strncasecmp (sub, "MaxWall", 4)) {
 			mins = time_str2mins(option);
 			if (mins >= 0) {
-				file_opts->max_wall_duration_per_job 
+				file_opts->max_wall_pj 
 					= (uint32_t) mins;
 			} else if (strcmp(option, "-1")) {
-				file_opts->max_wall_duration_per_job = INFINITE;
+				file_opts->max_wall_pj = INFINITE;
 			} else {
 				exit_code=1;
 				fprintf(stderr, 
@@ -417,15 +537,50 @@ static List _set_up_print_fields(List format_list)
 			field->name = xstrdup("FairShare");
 			field->len = 9;
 			field->print_routine = print_fields_uint;
+		} else if(!strncasecmp("GrpCPUMins", object, 7)) {
+			field->type = PRINT_GRPCM;
+			field->name = xstrdup("GrpCPUMins");
+			field->len = 11;
+			field->print_routine = print_fields_uint64;
+		} else if(!strncasecmp("GrpCPUs", object, 7)) {
+			field->type = PRINT_GRPC;
+			field->name = xstrdup("GrpCPUs");
+			field->len = 8;
+			field->print_routine = print_fields_uint;
+		} else if(!strncasecmp("GrpJobs", object, 4)) {
+			field->type = PRINT_GRPJ;
+			field->name = xstrdup("GrpJobs");
+			field->len = 7;
+			field->print_routine = print_fields_uint;
+		} else if(!strncasecmp("GrpNodes", object, 4)) {
+			field->type = PRINT_GRPN;
+			field->name = xstrdup("GrpNodes");
+			field->len = 8;
+			field->print_routine = print_fields_uint;
+		} else if(!strncasecmp("GrpSubmitJobs", object, 4)) {
+			field->type = PRINT_GRPS;
+			field->name = xstrdup("GrpSubmit");
+			field->len = 9;
+			field->print_routine = print_fields_uint;
+		} else if(!strncasecmp("GrpWall", object, 4)) {
+			field->type = PRINT_GRPW;
+			field->name = xstrdup("GrpWall");
+			field->len = 11;
+			field->print_routine = print_fields_time;
 		} else if(!strncasecmp("ID", object, 1)) {
 			field->type = PRINT_ID;
 			field->name = xstrdup("ID");
 			field->len = 6;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("MaxCPUSecs", object, 4)) {
-			field->type = PRINT_MAXC;
-			field->name = xstrdup("MaxCPUSecs");
+		} else if(!strncasecmp("MaxCPUMins", object, 7)) {
+			field->type = PRINT_MAXCM;
+			field->name = xstrdup("MaxCPUMins");
 			field->len = 11;
+			field->print_routine = print_fields_uint64;
+		} else if(!strncasecmp("MaxCPUs", object, 7)) {
+			field->type = PRINT_MAXC;
+			field->name = xstrdup("MaxCPUs");
+			field->len = 8;
 			field->print_routine = print_fields_uint;
 		} else if(!strncasecmp("MaxJobs", object, 4)) {
 			field->type = PRINT_MAXJ;
@@ -436,6 +591,11 @@ static List _set_up_print_fields(List format_list)
 			field->type = PRINT_MAXN;
 			field->name = xstrdup("MaxNodes");
 			field->len = 8;
+			field->print_routine = print_fields_uint;
+		} else if(!strncasecmp("MaxSubmitJobs", object, 4)) {
+			field->type = PRINT_MAXS;
+			field->name = xstrdup("MaxSubmit");
+			field->len = 9;
 			field->print_routine = print_fields_uint;
 		} else if(!strncasecmp("MaxWall", object, 4)) {
 			field->type = PRINT_MAXW;
@@ -504,10 +664,14 @@ static int _print_out_assoc(List assoc_list, bool user)
 	format_list = list_create(slurm_destroy_char);
 	if(user)
 		slurm_addto_char_list(format_list,
-				"User,Account,F,MaxC,MaxJ,MaxN,MaxW");
+				      "User,Account,F,GrpCH,GrpC,"
+				      "GrpJ,GrpN,GrpS,GrpW,MaxCPUM,MaxCPUs,"
+				      "MaxJ,MaxS,MaxN,MaxW,QOS");
 	else 
 		slurm_addto_char_list(format_list,
-				"Account,Parent,F,MaxC,MaxJ,MaxN,MaxW");
+				      "Account,Parent,F,GrpCH,GrpC,"
+				      "GrpJ,GrpN,GrpS,GrpW,MaxCPUM,MaxCPUs,"
+				      "MaxJ,MaxS,MaxN,MaxW,QOS");
 	
 	print_fields_list = _set_up_print_fields(format_list);
 	list_destroy(format_list);
@@ -527,10 +691,40 @@ static int _print_out_assoc(List assoc_list, bool user)
 				field->print_routine(field,
 						     assoc->fairshare);
 				break;
-			case PRINT_MAXC:
+			case PRINT_GRPCM:
 				field->print_routine(
 					field,
-					assoc->max_cpu_secs_per_job);
+					assoc->grp_cpu_mins);
+				break;
+			case PRINT_GRPC:
+				field->print_routine(field,
+						     assoc->grp_cpus);
+				break;
+			case PRINT_GRPJ:
+				field->print_routine(field, 
+						     assoc->grp_jobs);
+				break;
+			case PRINT_GRPN:
+				field->print_routine(field,
+						     assoc->grp_nodes);
+				break;
+			case PRINT_GRPS:
+				field->print_routine(field, 
+						     assoc->grp_submit_jobs);
+				break;
+			case PRINT_GRPW:
+				field->print_routine(
+					field,
+					assoc->grp_wall);
+				break;
+			case PRINT_MAXCM:
+				field->print_routine(
+					field,
+					assoc->max_cpu_mins_pj);
+				break;
+			case PRINT_MAXC:
+				field->print_routine(field,
+						     assoc->max_cpus_pj);
 				break;
 			case PRINT_MAXJ:
 				field->print_routine(field, 
@@ -538,12 +732,16 @@ static int _print_out_assoc(List assoc_list, bool user)
 				break;
 			case PRINT_MAXN:
 				field->print_routine(field,
-						     assoc->max_nodes_per_job);
+						     assoc->max_nodes_pj);
+				break;
+			case PRINT_MAXS:
+				field->print_routine(field, 
+						     assoc->max_submit_jobs);
 				break;
 			case PRINT_MAXW:
 				field->print_routine(
 					field,
-					assoc->max_wall_duration_per_job);
+					assoc->max_wall_pj);
 				break;
 			case PRINT_PARENT:
 				field->print_routine(field,
@@ -552,6 +750,12 @@ static int _print_out_assoc(List assoc_list, bool user)
 			case PRINT_PART:
 				field->print_routine(field,
 						     assoc->partition);
+				break;
+			case PRINT_QOS:
+				field->print_routine(
+					field,
+					qos_list,
+					assoc->qos_list);
 				break;
 			case PRINT_USER:
 				field->print_routine(field, 
@@ -581,75 +785,62 @@ static int _mod_cluster(sacctmgr_file_opts_t *file_opts,
 	acct_association_cond_t assoc_cond;
 	char *my_info = NULL;
 
-	memset(&mod_assoc, 0, sizeof(acct_association_rec_t));
-
-	mod_assoc.fairshare = NO_VAL;
-	mod_assoc.max_cpu_secs_per_job = NO_VAL;
-	mod_assoc.max_jobs = NO_VAL;
-	mod_assoc.max_nodes_per_job = NO_VAL;
-	mod_assoc.max_wall_duration_per_job = NO_VAL;
-
+	init_acct_association_rec(&mod_assoc);
 	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
 
-	assoc_cond.fairshare = NO_VAL;
-	assoc_cond.max_cpu_secs_per_job = NO_VAL;
-	assoc_cond.max_jobs = NO_VAL;
-	assoc_cond.max_nodes_per_job = NO_VAL;
-	assoc_cond.max_wall_duration_per_job = NO_VAL;
-
-	if(cluster->default_fairshare != file_opts->fairshare) {
+	if(cluster->root_assoc->fairshare != file_opts->fairshare) {
 		mod_assoc.fairshare = file_opts->fairshare;
 		changed = 1;
 		xstrfmtcat(my_info, 
 			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
 			   " Changed fairshare", "Cluster",
 			   cluster->name,
-			   cluster->default_fairshare,
+			   cluster->root_assoc->fairshare,
 			   file_opts->fairshare); 
 	}
-	if(cluster->default_max_cpu_secs_per_job != 
-	   file_opts->max_cpu_secs_per_job) {
-		mod_assoc.max_cpu_secs_per_job = 
-			file_opts->max_cpu_secs_per_job;
+	if(cluster->root_assoc->max_cpu_mins_pj != 
+	   file_opts->max_cpu_mins_pj) {
+		mod_assoc.max_cpu_mins_pj = 
+			file_opts->max_cpu_mins_pj;
 		changed = 1;
 		xstrfmtcat(my_info, 
 			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
-			   " Changed MaxCPUSecsPerJob", "Cluster",
+			   " Changed MaxCPUMinsPerJob", "Cluster",
 			   cluster->name,
-			   cluster->default_max_cpu_secs_per_job,
-			   file_opts->max_cpu_secs_per_job);
+			   cluster->root_assoc->max_cpu_mins_pj,
+			   file_opts->max_cpu_mins_pj);
 	}
-	if(cluster->default_max_jobs != file_opts->max_jobs) {
+	if(cluster->root_assoc->max_jobs != file_opts->max_jobs) {
 		mod_assoc.max_jobs = file_opts->max_jobs;
 		changed = 1;
 		xstrfmtcat(my_info, 
 			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
 			   " Changed MaxJobs", "Cluster",
 			   cluster->name,
-			   cluster->default_max_jobs,
+			   cluster->root_assoc->max_jobs,
 			   file_opts->max_jobs);
 	}
-	if(cluster->default_max_nodes_per_job != file_opts->max_nodes_per_job) {
-		mod_assoc.max_nodes_per_job = file_opts->max_nodes_per_job;
+	if(cluster->root_assoc->max_nodes_pj != file_opts->max_nodes_pj) {
+		mod_assoc.max_nodes_pj = file_opts->max_nodes_pj;
 		changed = 1;
 		xstrfmtcat(my_info, 
 			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
 			   " Changed MaxNodesPerJob", "Cluster",
 			   cluster->name,
-			   cluster->default_max_nodes_per_job, 
-			   file_opts->max_nodes_per_job);
+			   cluster->root_assoc->max_nodes_pj, 
+			   file_opts->max_nodes_pj);
 	}
-	if(cluster->default_max_wall_duration_per_job !=
-	   file_opts->max_wall_duration_per_job) {
-		mod_assoc.max_wall_duration_per_job =
-			file_opts->max_wall_duration_per_job;
+	if(cluster->root_assoc->max_wall_pj !=
+	   file_opts->max_wall_pj) {
+		mod_assoc.max_wall_pj =
+			file_opts->max_wall_pj;
 		changed = 1;
 		xstrfmtcat(my_info, 
 			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
 			   " Changed MaxWallDurationPerJob", "Cluster",
 			   cluster->name,
-			   cluster->default_max_wall_duration_per_job,
-			   file_opts->max_wall_duration_per_job);
+			   cluster->root_assoc->max_wall_pj,
+			   file_opts->max_wall_pj);
 	}
 
 	if(changed) {
@@ -734,56 +925,6 @@ static int _mod_acct(sacctmgr_file_opts_t *file_opts,
 		changed = 1;
 	} else
 		xfree(org);
-
-	if(acct->qos_list && list_count(acct->qos_list)
-	   && file_opts->qos_list && list_count(file_opts->qos_list)) {
-		ListIterator now_qos_itr = list_iterator_create(acct->qos_list),
-			new_qos_itr = list_iterator_create(file_opts->qos_list);
-		char *now_qos = NULL, *new_qos = NULL;
-
-		if(!mod_acct.qos_list)
-			mod_acct.qos_list = list_create(slurm_destroy_char);
-		while((new_qos = list_next(new_qos_itr))) {
-			while((now_qos = list_next(now_qos_itr))) {
-				if(!strcmp(new_qos, now_qos))
-					break;
-			}
-			list_iterator_reset(now_qos_itr);
-			if(!now_qos) 
-				list_append(mod_acct.qos_list,
-					    xstrdup(new_qos));
-		}
-		list_iterator_destroy(new_qos_itr);
-		list_iterator_destroy(now_qos_itr);
-		if(mod_acct.qos_list && list_count(mod_acct.qos_list))
-			new_qos = get_qos_complete_str(qos_list,
-						       mod_acct.qos_list);
-		if(new_qos) {
-			xstrfmtcat(my_info, 
-				   " Adding QOS for account '%s' '%s'\n",
-				   acct->name,
-				   new_qos);
-			xfree(new_qos);
-			changed = 1;
-		} else {
-			list_destroy(mod_acct.qos_list);
-			mod_acct.qos_list = NULL;
-		}
-	} else if(file_opts->qos_list && list_count(file_opts->qos_list)) {
-		char *new_qos = get_qos_complete_str(qos_list,
-						     file_opts->qos_list);
-		
-		if(new_qos) {
-			xstrfmtcat(my_info, 
-				   " Adding QOS for account '%s' '%s'\n",
-				   acct->name,
-				   new_qos);
-			xfree(new_qos);
-			mod_acct.qos_list = file_opts->qos_list;
-			file_opts->qos_list = NULL;
-			changed = 1;
-		}
-	}
 									
 	if(changed) {
 		List ret_list = NULL;
@@ -799,9 +940,6 @@ static int _mod_acct(sacctmgr_file_opts_t *file_opts,
 		notice_thread_fini();
 	
 		list_destroy(assoc_cond.acct_list);
-
-		if(mod_acct.qos_list)
-			list_destroy(mod_acct.qos_list);
 
 /* 		if(ret_list && list_count(ret_list)) { */
 /* 			char *object = NULL; */
@@ -864,57 +1002,6 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 		changed = 1;
 	} else
 		xfree(def_acct);
-				
-	if(user->qos_list && list_count(user->qos_list)
-	   && file_opts->qos_list && list_count(file_opts->qos_list)) {
-		ListIterator now_qos_itr = list_iterator_create(user->qos_list),
-			new_qos_itr = list_iterator_create(file_opts->qos_list);
-		char *now_qos = NULL, *new_qos = NULL;
-
-		if(!mod_user.qos_list)
-			mod_user.qos_list = list_create(slurm_destroy_char);
-		while((new_qos = list_next(new_qos_itr))) {
-			while((now_qos = list_next(now_qos_itr))) {
-				if(!strcmp(new_qos, now_qos))
-					break;
-			}
-			list_iterator_reset(now_qos_itr);
-			if(!now_qos) 
-				list_append(mod_user.qos_list,
-					    xstrdup(new_qos));
-		}
-		list_iterator_destroy(new_qos_itr);
-		list_iterator_destroy(now_qos_itr);
-		if(mod_user.qos_list && list_count(mod_user.qos_list))
-			new_qos = get_qos_complete_str(qos_list,
-						       mod_user.qos_list);
-		if(new_qos) {
-			xstrfmtcat(my_info, 
-				   " Adding QOS for user '%s' '%s'\n",
-				   user->name,
-				   new_qos);
-			xfree(new_qos);
-			changed = 1;
-		} else {
-			list_destroy(mod_user.qos_list);
-			mod_user.qos_list = NULL;
-		}
-
-	} else if(file_opts->qos_list && list_count(file_opts->qos_list)) {
-		char *new_qos = get_qos_complete_str(qos_list,
-						     file_opts->qos_list);
-		
-		if(new_qos) {
-			xstrfmtcat(my_info, 
-				   " Adding QOS for user '%s' '%s'\n",
-				   user->name,
-				   new_qos);
-			xfree(new_qos);
-			mod_user.qos_list = file_opts->qos_list;
-			file_opts->qos_list = NULL;
-			changed = 1;
-		}
-	}
 									
 	if(user->admin_level != ACCT_ADMIN_NOTSET
 	   && file_opts->admin != ACCT_ADMIN_NOTSET
@@ -938,9 +1025,6 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 			&user_cond, 
 			&mod_user);
 		notice_thread_fini();
-
-		if(mod_user.qos_list)
-			list_destroy(mod_user.qos_list);
 					
 /* 		if(ret_list && list_count(ret_list)) { */
 /* 			char *object = NULL; */
@@ -1070,22 +1154,8 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 		return 0;
 		break;
 	}
-
-	memset(&mod_assoc, 0, sizeof(acct_association_rec_t));
-
-	mod_assoc.fairshare = NO_VAL;
-	mod_assoc.max_cpu_secs_per_job = NO_VAL;
-	mod_assoc.max_jobs = NO_VAL;
-	mod_assoc.max_nodes_per_job = NO_VAL;
-	mod_assoc.max_wall_duration_per_job = NO_VAL;
-
+	init_acct_association_rec(&mod_assoc);
 	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
-
-	assoc_cond.fairshare = NO_VAL;
-	assoc_cond.max_cpu_secs_per_job = NO_VAL;
-	assoc_cond.max_jobs = NO_VAL;
-	assoc_cond.max_nodes_per_job = NO_VAL;
-	assoc_cond.max_wall_duration_per_job = NO_VAL;
 
 	if(assoc->fairshare != file_opts->fairshare) {
 		mod_assoc.fairshare = file_opts->fairshare;
@@ -1097,17 +1167,96 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 			   assoc->fairshare,
 			   file_opts->fairshare);
 	}
-	if(assoc->max_cpu_secs_per_job != file_opts->max_cpu_secs_per_job) {
-		mod_assoc.max_cpu_secs_per_job =
-			file_opts->max_cpu_secs_per_job;
+
+	if(assoc->grp_cpu_mins != file_opts->grp_cpu_mins) {
+		mod_assoc.grp_cpu_mins = file_opts->grp_cpu_mins;
+		changed = 1;
+		xstrfmtcat(my_info, 
+			   "%-30.30s for %-7.7s %-10.10s %8ull -> %ull\n",
+			   " Changed GrpCPUMins",
+			   type, name,
+			   assoc->grp_cpu_mins,
+			   file_opts->grp_cpu_mins);
+	}
+
+	if(assoc->grp_cpus != file_opts->grp_cpus) {
+		mod_assoc.grp_cpus = file_opts->grp_cpus;
 		changed = 1;
 		xstrfmtcat(my_info, 
 			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
-			   " Changed MaxCPUSecsPerJob",
+			   " Changed GrpCpus",
 			   type, name,
-			   assoc->max_cpu_secs_per_job,
-			   file_opts->max_cpu_secs_per_job);
+			   assoc->grp_cpus, 
+			   file_opts->grp_cpus);
 	}
+
+	if(assoc->grp_jobs != file_opts->grp_jobs) {
+		mod_assoc.grp_jobs = file_opts->grp_jobs;
+		changed = 1;
+		xstrfmtcat(my_info, 
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
+			   " Changed GrpJobs",
+			   type, name,
+			   assoc->grp_jobs,
+			   file_opts->grp_jobs);
+	}
+
+	if(assoc->grp_nodes != file_opts->grp_nodes) {
+		mod_assoc.grp_nodes = file_opts->grp_nodes;
+		changed = 1;
+		xstrfmtcat(my_info, 
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
+			   " Changed GrpNodes",
+			   type, name,
+			   assoc->grp_nodes, 
+			   file_opts->grp_nodes);
+	}
+
+	if(assoc->grp_submit_jobs != file_opts->grp_submit_jobs) {
+		mod_assoc.grp_submit_jobs = file_opts->grp_submit_jobs;
+		changed = 1;
+		xstrfmtcat(my_info, 
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
+			   " Changed GrpSubmitJobs",
+			   type, name,
+			   assoc->grp_submit_jobs,
+			   file_opts->grp_submit_jobs);
+	}
+
+	if(assoc->grp_wall != file_opts->grp_wall) {
+		mod_assoc.grp_wall = file_opts->grp_wall;
+		changed = 1;
+		xstrfmtcat(my_info, 
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
+			   " Changed GrpWallDuration",
+			   type, name,
+			   assoc->grp_wall,
+			   file_opts->grp_wall);
+	}
+
+	if(assoc->max_cpu_mins_pj != file_opts->max_cpu_mins_pj) {
+		mod_assoc.max_cpu_mins_pj =
+			file_opts->max_cpu_mins_pj;
+		changed = 1;
+		xstrfmtcat(my_info, 
+			   "%-30.30s for %-7.7s %-10.10s %8ull -> %ull\n",
+			   " Changed MaxCPUMinsPerJob",
+			   type, name,
+			   assoc->max_cpu_mins_pj,
+			   file_opts->max_cpu_mins_pj);
+	}
+
+	if(assoc->max_cpus_pj != file_opts->max_cpus_pj) {
+		mod_assoc.max_cpus_pj = file_opts->max_cpus_pj;
+		changed = 1;
+		xstrfmtcat(my_info, 
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
+			   " Changed MaxCpusPerJob",
+			   type, name,
+			   assoc->max_cpus_pj, 
+			   file_opts->max_cpus_pj);
+	}
+
 	if(assoc->max_jobs != file_opts->max_jobs) {
 		mod_assoc.max_jobs = file_opts->max_jobs;
 		changed = 1;
@@ -1118,27 +1267,91 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 			   assoc->max_jobs,
 			   file_opts->max_jobs);
 	}
-	if(assoc->max_nodes_per_job != file_opts->max_nodes_per_job) {
-		mod_assoc.max_nodes_per_job = file_opts->max_nodes_per_job;
+
+	if(assoc->max_nodes_pj != file_opts->max_nodes_pj) {
+		mod_assoc.max_nodes_pj = file_opts->max_nodes_pj;
 		changed = 1;
 		xstrfmtcat(my_info, 
 			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
 			   " Changed MaxNodesPerJob",
 			   type, name,
-			   assoc->max_nodes_per_job, 
-			   file_opts->max_nodes_per_job);
+			   assoc->max_nodes_pj, 
+			   file_opts->max_nodes_pj);
 	}
-	if(assoc->max_wall_duration_per_job !=
-	   file_opts->max_wall_duration_per_job) {
-		mod_assoc.max_wall_duration_per_job =
-			file_opts->max_wall_duration_per_job;
+
+	if(assoc->max_submit_jobs != file_opts->max_submit_jobs) {
+		mod_assoc.max_submit_jobs = file_opts->max_submit_jobs;
+		changed = 1;
+		xstrfmtcat(my_info, 
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
+			   " Changed MaxSubmitJobs",
+			   type, name,
+			   assoc->max_submit_jobs,
+			   file_opts->max_submit_jobs);
+	}
+
+	if(assoc->max_wall_pj != file_opts->max_wall_pj) {
+		mod_assoc.max_wall_pj =	file_opts->max_wall_pj;
 		changed = 1;
 		xstrfmtcat(my_info, 
 			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
 			   " Changed MaxWallDurationPerJob",
 			   type, name,
-			   assoc->max_wall_duration_per_job,
-			   file_opts->max_wall_duration_per_job);
+			   assoc->max_wall_pj,
+			   file_opts->max_wall_pj);
+	}
+
+	if(assoc->qos_list && list_count(assoc->qos_list)
+	   && file_opts->qos_list && list_count(file_opts->qos_list)) {
+		ListIterator now_qos_itr =
+			list_iterator_create(assoc->qos_list),
+			new_qos_itr = list_iterator_create(file_opts->qos_list);
+		char *now_qos = NULL, *new_qos = NULL;
+
+		if(!mod_assoc.qos_list)
+			mod_assoc.qos_list = list_create(slurm_destroy_char);
+		while((new_qos = list_next(new_qos_itr))) {
+			while((now_qos = list_next(now_qos_itr))) {
+				if(!strcmp(new_qos, now_qos))
+					break;
+			}
+			list_iterator_reset(now_qos_itr);
+			if(!now_qos) 
+				list_append(mod_assoc.qos_list,
+					    xstrdup(new_qos));
+		}
+		list_iterator_destroy(new_qos_itr);
+		list_iterator_destroy(now_qos_itr);
+		if(mod_assoc.qos_list && list_count(mod_assoc.qos_list))
+			new_qos = get_qos_complete_str(qos_list,
+						       mod_assoc.qos_list);
+		if(new_qos) {
+			xstrfmtcat(my_info, 
+				   "%-30.30s for %-7.7s %-10.10s %8s\n",
+				   " Added QOS",
+				   type, name,
+				   new_qos);
+			xfree(new_qos);
+			changed = 1;
+		} else {
+			list_destroy(mod_assoc.qos_list);
+			mod_assoc.qos_list = NULL;
+		}
+	} else if(file_opts->qos_list && list_count(file_opts->qos_list)) {
+		char *new_qos = get_qos_complete_str(qos_list,
+						     file_opts->qos_list);
+		
+		if(new_qos) {
+			xstrfmtcat(my_info, 
+				   "%-30.30s for %-7.7s %-10.10s %8s\n",
+				   " Added QOS",
+				   type, name,
+				   new_qos);
+			xfree(new_qos);
+			mod_assoc.qos_list = file_opts->qos_list;
+			file_opts->qos_list = NULL;
+			changed = 1;
+		}
 	}
 
 	if(changed) {
@@ -1169,6 +1382,9 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 			&mod_assoc);
 		notice_thread_fini();
 					
+		if(mod_assoc.qos_list)
+			list_destroy(mod_assoc.qos_list);
+
 		list_destroy(assoc_cond.cluster_list);
 		list_destroy(assoc_cond.acct_list);
 		if(assoc_cond.user_list)
@@ -1210,8 +1426,6 @@ static acct_user_rec_t *_set_user_up(sacctmgr_file_opts_t *file_opts,
 	else
 		user->default_acct = xstrdup(parent);
 	
-	user->qos_list = file_opts->qos_list;
-	file_opts->qos_list = NULL;
 	user->admin_level = file_opts->admin;
 	
 	if(file_opts->coord_list) {
@@ -1266,8 +1480,6 @@ static acct_account_rec_t *_set_acct_up(sacctmgr_file_opts_t *file_opts,
 	/* info("adding acct %s (%s) (%s)", */
 /* 	        acct->name, acct->description, */
 /* 		acct->organization); */
-	acct->qos_list = file_opts->qos_list;
-	file_opts->qos_list = NULL;
 
 	return acct;
 }
@@ -1290,6 +1502,9 @@ static int _print_file_sacctmgr_assoc_childern(FILE *fd,
 				user_list, sacctmgr_assoc->assoc->user);
 			line = xstrdup_printf(
 				"User - %s", sacctmgr_assoc->sort_name);
+			if(sacctmgr_assoc->assoc->partition) 
+				xstrfmtcat(line, ":Partition='%s'", 
+					   sacctmgr_assoc->assoc->partition);
 			if(user_rec) {
 				xstrfmtcat(line, ":DefaultAccount='%s'",
 					   user_rec->default_acct);
@@ -1298,22 +1513,6 @@ static int _print_file_sacctmgr_assoc_childern(FILE *fd,
 						   acct_admin_level_str(
 							   user_rec->
 							   admin_level));
-				if(user_rec->qos_list 
-				   && list_count(user_rec->qos_list)) {
-					char *temp_char = NULL;
-					if(!qos_list) {
-						qos_list = 
-							acct_storage_g_get_qos(
-								db_conn, my_uid,
-								NULL);
-					}
-					temp_char = get_qos_complete_str(
-						qos_list, user_rec->qos_list);
-					xstrfmtcat(line, ":QOS='%s'",
-						   temp_char);
-					xfree(temp_char);
-				}
-
 				if(user_rec->coord_accts
 				   && list_count(user_rec->coord_accts)) {
 					ListIterator itr2 = NULL;
@@ -1356,43 +1555,10 @@ static int _print_file_sacctmgr_assoc_childern(FILE *fd,
 					   acct_rec->description);
 				xstrfmtcat(line, ":Organization='%s'",
 					   acct_rec->organization);
-				if(acct_rec->qos_list) {
-					char *temp_char = get_qos_complete_str(
-						qos_list, acct_rec->qos_list);
-					if(temp_char) {			
-						xstrfmtcat(line, ":QOS='%s'",
-							   temp_char);
-						xfree(temp_char);
-					}
-				}
 			}
 		}
-		if(sacctmgr_assoc->assoc->partition) 
-			xstrfmtcat(line, ":Partition='%s'", 
-				   sacctmgr_assoc->assoc->partition);
 			
-		if(sacctmgr_assoc->assoc->fairshare != INFINITE)
-			xstrfmtcat(line, ":Fairshare=%u", 
-				   sacctmgr_assoc->assoc->fairshare);
-		
-		if(sacctmgr_assoc->assoc->max_cpu_secs_per_job != INFINITE)
-			xstrfmtcat(line, ":MaxCPUSecs=%u",
-				   sacctmgr_assoc->assoc->max_cpu_secs_per_job);
-		
-		if(sacctmgr_assoc->assoc->max_jobs != INFINITE) 
-			xstrfmtcat(line, ":MaxJobs=%u",
-				   sacctmgr_assoc->assoc->max_jobs);
-		
-		if(sacctmgr_assoc->assoc->max_nodes_per_job != INFINITE)
-			xstrfmtcat(line, ":MaxNodes=%u",
-				   sacctmgr_assoc->assoc->max_nodes_per_job);
-		
-		if(sacctmgr_assoc->assoc->max_wall_duration_per_job 
-		   != INFINITE)
- 			xstrfmtcat(line, ":MaxWallDurationPerJob=%u",
-				   sacctmgr_assoc->assoc->
-				   max_wall_duration_per_job);
-
+		print_file_add_limits_to_line(&line, sacctmgr_assoc->assoc);
 
 		if(fprintf(fd, "%s\n", line) < 0) {
 			exit_code=1;
@@ -1407,6 +1573,72 @@ static int _print_file_sacctmgr_assoc_childern(FILE *fd,
 
 	return SLURM_SUCCESS;
 }
+
+extern int print_file_add_limits_to_line(char **line,
+					 acct_association_rec_t *assoc)
+{
+	static List qos_list = NULL; /* This is a leak, since we never
+				      * free it, but we don't
+				      * really care since this isn't a
+				      * deamon.
+				      */
+	if(!assoc)
+		return SLURM_ERROR;
+
+	if(assoc->fairshare != INFINITE)
+		xstrfmtcat(*line, ":Fairshare=%u", assoc->fairshare);
+		
+	if(assoc->grp_cpu_mins != INFINITE)
+		xstrfmtcat(*line, ":GrpCPUMins=%llu", assoc->grp_cpu_mins);
+		
+	if(assoc->grp_cpus != INFINITE)
+		xstrfmtcat(*line, ":GrpCPUs=%u", assoc->grp_cpus);
+		
+	if(assoc->grp_jobs != INFINITE) 
+		xstrfmtcat(*line, ":GrpJobs=%u", assoc->grp_jobs);
+		
+	if(assoc->grp_nodes != INFINITE)
+		xstrfmtcat(*line, ":GrpNodes=%u", assoc->grp_nodes);
+		
+	if(assoc->grp_submit_jobs != INFINITE) 
+		xstrfmtcat(*line, ":GrpSubmitJobs=%u", assoc->grp_submit_jobs);
+		
+	if(assoc->grp_wall != INFINITE)
+		xstrfmtcat(*line, ":GrpWall=%u", assoc->grp_wall);
+
+	if(assoc->max_cpu_mins_pj != INFINITE)
+		xstrfmtcat(*line, ":MaxCPUMins=%llu", assoc->max_cpu_mins_pj);
+		
+	if(assoc->max_cpus_pj != INFINITE)
+		xstrfmtcat(*line, ":MaxCPUs=%u", assoc->max_cpus_pj);
+		
+	if(assoc->max_jobs != INFINITE) 
+		xstrfmtcat(*line, ":MaxJobs=%u", assoc->max_jobs);
+		
+	if(assoc->max_nodes_pj != INFINITE)
+		xstrfmtcat(*line, ":MaxNodes=%u", assoc->max_nodes_pj);
+		
+	if(assoc->max_submit_jobs != INFINITE) 
+		xstrfmtcat(*line, ":MaxSubmitJobs=%u", assoc->max_submit_jobs);
+		
+	if(assoc->max_wall_pj != INFINITE)
+		xstrfmtcat(*line, ":MaxWallDurationPerJob=%u",
+			   assoc->max_wall_pj);
+
+	if(assoc->qos_list && list_count(assoc->qos_list)) {
+		char *temp_char = NULL;
+		if(!qos_list) 
+			qos_list = acct_storage_g_get_qos(
+				db_conn, my_uid, NULL);
+		
+		temp_char = get_qos_complete_str(qos_list, assoc->qos_list);
+		xstrfmtcat(*line, ":QOS='%s'", temp_char);
+		xfree(temp_char);
+	}
+
+	return SLURM_SUCCESS;
+}
+
 
 extern int print_file_sacctmgr_assoc_list(FILE *fd, 
 					  List sacctmgr_assoc_list,
@@ -1694,15 +1926,15 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				cluster = xmalloc(sizeof(acct_cluster_rec_t));
 				list_append(cluster_list, cluster);
 				cluster->name = xstrdup(cluster_name);
-				cluster->default_fairshare =
+				cluster->root_assoc->fairshare =
 					file_opts->fairshare;		
-				cluster->default_max_cpu_secs_per_job = 
-					file_opts->max_cpu_secs_per_job;
-				cluster->default_max_jobs = file_opts->max_jobs;
-				cluster->default_max_nodes_per_job = 
-					file_opts->max_nodes_per_job;
-				cluster->default_max_wall_duration_per_job = 
-					file_opts->max_wall_duration_per_job;
+				cluster->root_assoc->max_cpu_mins_pj = 
+					file_opts->max_cpu_mins_pj;
+				cluster->root_assoc->max_jobs = file_opts->max_jobs;
+				cluster->root_assoc->max_nodes_pj = 
+					file_opts->max_nodes_pj;
+				cluster->root_assoc->max_wall_pj = 
+					file_opts->max_wall_pj;
 				notice_thread_init();
 				rc = acct_storage_g_add_clusters(
 					db_conn, my_uid, cluster_list);
@@ -1811,12 +2043,12 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				assoc->parent_acct = xstrdup(parent);
 				assoc->fairshare = file_opts->fairshare;
 				assoc->max_jobs = file_opts->max_jobs;
-				assoc->max_nodes_per_job =
-					file_opts->max_nodes_per_job;
-				assoc->max_wall_duration_per_job =
-					file_opts->max_wall_duration_per_job;
-				assoc->max_cpu_secs_per_job = 
-					file_opts->max_cpu_secs_per_job;
+				assoc->max_nodes_pj =
+					file_opts->max_nodes_pj;
+				assoc->max_wall_pj =
+					file_opts->max_wall_pj;
+				assoc->max_cpu_mins_pj = 
+					file_opts->max_cpu_mins_pj;
 				list_append(acct_assoc_list, assoc);
 				/* don't add anything to the
 				   curr_assoc_list */
@@ -1847,12 +2079,12 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				assoc->parent_acct = xstrdup(parent);
 				assoc->fairshare = file_opts->fairshare;
 				assoc->max_jobs = file_opts->max_jobs;
-				assoc->max_nodes_per_job =
-					file_opts->max_nodes_per_job;
-				assoc->max_wall_duration_per_job =
-					file_opts->max_wall_duration_per_job;
-				assoc->max_cpu_secs_per_job = 
-					file_opts->max_cpu_secs_per_job;
+				assoc->max_nodes_pj =
+					file_opts->max_nodes_pj;
+				assoc->max_wall_pj =
+					file_opts->max_wall_pj;
+				assoc->max_cpu_mins_pj = 
+					file_opts->max_cpu_mins_pj;
 				list_append(acct_assoc_list, assoc);
 				/* don't add anything to the
 				   curr_assoc_list */
@@ -1916,12 +2148,12 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				assoc->cluster = xstrdup(cluster_name);
 				assoc->fairshare = file_opts->fairshare;
 				assoc->max_jobs = file_opts->max_jobs;
-				assoc->max_nodes_per_job =
-					file_opts->max_nodes_per_job;
-				assoc->max_wall_duration_per_job =
-					file_opts->max_wall_duration_per_job;
-				assoc->max_cpu_secs_per_job = 
-					file_opts->max_cpu_secs_per_job;
+				assoc->max_nodes_pj =
+					file_opts->max_nodes_pj;
+				assoc->max_wall_pj =
+					file_opts->max_wall_pj;
+				assoc->max_cpu_mins_pj = 
+					file_opts->max_cpu_mins_pj;
 				assoc->partition = xstrdup(file_opts->part);
 				assoc->user = xstrdup(file_opts->name);
 				
@@ -1966,12 +2198,12 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				assoc->cluster = xstrdup(cluster_name);
 				assoc->fairshare = file_opts->fairshare;
 				assoc->max_jobs = file_opts->max_jobs;
-				assoc->max_nodes_per_job =
-					file_opts->max_nodes_per_job;
-				assoc->max_wall_duration_per_job =
-					file_opts->max_wall_duration_per_job;
-				assoc->max_cpu_secs_per_job = 
-					file_opts->max_cpu_secs_per_job;
+				assoc->max_nodes_pj =
+					file_opts->max_nodes_pj;
+				assoc->max_wall_pj =
+					file_opts->max_wall_pj;
+				assoc->max_cpu_mins_pj = 
+					file_opts->max_cpu_mins_pj;
 				assoc->partition = xstrdup(file_opts->part);
 				assoc->user = xstrdup(file_opts->name);
 				
@@ -2057,12 +2289,6 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 					field->print_routine(
 						field, acct->organization);
 					break;
-				case PRINT_QOS:
-					field->print_routine(
-						field,
-						qos_list,
-						acct->qos_list);
-					break;
 				default:
 					break;
 				}
@@ -2118,12 +2344,6 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				case PRINT_NAME:
 					field->print_routine(
 						field, user->name);
-					break;
-				case PRINT_QOS:
-					field->print_routine(
-						field,
-						qos_list,
-						user->qos_list);
 					break;
 				default:
 					break;

@@ -1161,7 +1161,7 @@ static int _init_conn(slurmdbd_conn_t *slurmdbd_conn,
 	
 	debug("DBD_INIT: VERSION:%u UID:%u", init_msg->version, init_msg->uid);
 	slurmdbd_conn->db_conn = acct_storage_g_get_connection(
-		false, init_msg->rollback);
+		false, slurmdbd_conn->newsockfd, init_msg->rollback);
 	slurmdbd_conn->rpc_version = init_msg->version;
 
 end_it:
@@ -1317,7 +1317,7 @@ static int  _job_start(slurmdbd_conn_t *slurmdbd_conn,
 		       job_start_msg->job_id, job_start_msg->name);
 	}
 	job_start_rc_msg.return_code = jobacct_storage_g_job_start(
-		slurmdbd_conn->db_conn, &job);
+		slurmdbd_conn->db_conn, job_start_msg->cluster, &job);
 	job_start_rc_msg.db_index = job.db_index;
 
 	slurmdbd_free_job_start_msg(slurmdbd_conn->rpc_version, 
@@ -1637,8 +1637,7 @@ is_same_user:
 		/* If we add anything else here for the user we will
 		 * need to document it
 		 */
-		if((user_rec->admin_level != ACCT_ADMIN_NOTSET)
-		   || (user_rec->qos_list)) {
+		if((user_rec->admin_level != ACCT_ADMIN_NOTSET)) {
 			comment = "You can only change your own default account, nothing else";
 			error("%s", comment);
 			*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version, 

@@ -47,7 +47,7 @@ set mod		modify
 set nams	Names
 set nam		Name
 set fs		Fairshare
-set mc		MaxCPUSecs
+set mc		MaxCPUMins
 set mj		MaxJobs
 set mn		MaxNodes
 set mw		MaxWall
@@ -70,7 +70,7 @@ set or1		"Account Org A1"
 set qs		QosLevel
 set qs1		normal
 set access_err  0
-
+set timeout 60
 print_header $test_id
 
 if { [test_account_storage] == 0 } {
