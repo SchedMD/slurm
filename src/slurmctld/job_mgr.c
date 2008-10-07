@@ -2082,19 +2082,9 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		return error_code;
 	}
 
-	debug3("before alteration asking for nodes %u-%u procs %u", 
-	       job_desc->min_nodes, job_desc->max_nodes,
-	       job_desc->num_procs);
-	select_g_alter_node_cnt(SELECT_SET_NODE_CNT, job_desc);
-	select_g_get_jobinfo(job_desc->select_jobinfo,
-			     SELECT_DATA_MAX_PROCS, &max_procs);
-	debug3("after alteration asking for nodes %u-%u procs %u-%u", 
-	       job_desc->min_nodes, job_desc->max_nodes,
-	       job_desc->num_procs, max_procs);
-	
 	if ((error_code = _validate_job_desc(job_desc, allocate, submit_uid)))
 		return error_code;
- 
+
 	if ((job_desc->user_id == 0) && part_ptr->disable_root_jobs) {
 		error("Security violation, SUBMIT_JOB for user root disabled");
 		return ESLURM_USER_ID_MISSING;
@@ -2154,6 +2144,19 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		return error_code;
 	}
 
+	/* This needs to be done after the association acct policy check since
+	 * it looks at unaltered nodes for bluegene systems
+	 */
+	debug3("before alteration asking for nodes %u-%u procs %u", 
+	       job_desc->min_nodes, job_desc->max_nodes,
+	       job_desc->num_procs);
+	select_g_alter_node_cnt(SELECT_SET_NODE_CNT, job_desc);
+	select_g_get_jobinfo(job_desc->select_jobinfo,
+			     SELECT_DATA_MAX_PROCS, &max_procs);
+	debug3("after alteration asking for nodes %u-%u procs %u-%u", 
+	       job_desc->min_nodes, job_desc->max_nodes,
+	       job_desc->num_procs, max_procs);
+	
 	/* check if select partition has sufficient resources to satisfy
 	 * the request */
 

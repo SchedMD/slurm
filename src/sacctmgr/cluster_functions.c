@@ -913,6 +913,7 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 
 	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
 	assoc_cond.without_parent_limits = 1;
+	assoc_cond.with_raw_qos = 1;
 	assoc_cond.cluster_list = list_create(NULL);
 	list_append(assoc_cond.cluster_list, cluster_name);
 

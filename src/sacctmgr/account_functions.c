@@ -236,6 +236,11 @@ static int _set_cond(int *start, int argc, char *argv[],
 					db_conn, my_uid, NULL);
 			}
 			
+			if(end > 2 && argv[i][end-1] == '='
+			   && (argv[i][end-2] == '+' 
+			       || argv[i][end-2] == '-'))
+				option = (int)argv[i][end-2];
+
 			if(addto_qos_char_list(assoc_cond->qos_list, qos_list,
 					       argv[i]+end, option))
 				a_set = 1;

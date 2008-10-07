@@ -737,25 +737,7 @@ of the node that it is supposed to serve on the execute line.</li>
 for this due to it's improved support for multiple slurmd daemons.
 See the
 <a href="programmer_guide.shtml#multiple_slurmd_support">Programmers Guide</a>
-for more details about configuring multiple slurmd support.
-<p>In order to emulate a really large cluster, it can be more 
-convenient to use a single <i>slurmd</i> daemon. 
-That daemon will not be able to launch many tasks, but can 
-suffice for developing or testing scheduling software.
-<ol>
-<li>Execute the <i>configure</i> program with your normal options.</li>
-<li>Add the line "<i>#define HAVE_FRONT_END 1</i>" to the resulting
-<i>config.h</i> file.</li>
-<li>Build and install SLURM in the usual manner.</li>
-<li>In <i>slurm.conf</i> define the desired node names (arbitrary
-names used only by SLURM) as <i>NodeName</i> along with the actual
-address of the <b>one</b> physical node in <i>NodeHostname</i>.
-Up to 64k nodes can be configured in this virtual cluster.</li>
-<li>Start your <i>slurmctld</i> and one <i>slurmd</i> daemon.</li>
-<li>Create job allocations as desired, but <b>do not run job steps
-with more than a couple of tasks.</b> Doing so may result in the 
-<i>slurmd</i> daemon exhausting its memory and failing.</li>
-</ol>
+for more details about configuring multiple slurmd support.</p>
 
 <p>In order to emulate a really large cluster, it can be more 
 convenient to use a single <i>slurmd</i> daemon. 
@@ -767,9 +749,9 @@ Doing so may result in the <i>slurmd</i> daemon exhausting its
 memory and failing. 
 <b>Use this method with caution.</b>
 <ol>
-<li>Execute the <i>configure</i> program with your normal options.</li>
-<li>Append the line "<i>#define HAVE_FRONT_END 1</i>" to the resulting
-<i>config.h</i> file.</li>
+<li>Execute the <i>configure</i> program with your normal options
+plus <i>--enable-front-end</i> (this will define HAVE_FRONT_END in
+the resulting <i>config.h</i> file.</li>
 <li>Build and install SLURM in the usual manner.</li>
 <li>In <i>slurm.conf</i> define the desired node names (arbitrary
 names used only by SLURM) as <i>NodeName</i> along with the actual
@@ -783,9 +765,9 @@ Be sure to use the "-c" option when switch from this mode too.</li>
 <li>Create job allocations as desired, but do not run job steps
 with more than a couple of tasks.</li>
 </ol>
+
 <pre>
-$ ./configure --enable-debug --prefix=... --sysconfdir=...
-$ echo "#define HAVE_FRONT_END 1" >>config.h
+$ ./configure --enable-debug --enable-front-end --prefix=... --sysconfdir=...
 $ make install
 $ grep NodeHostName slurm.conf
 <i>NodeName=dummy[1-1200] NodeHostName=localhost NodeAddr=127.0.0.1</i>
@@ -1036,6 +1018,6 @@ Index: src/slurmctld/ping_nodes.c
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 24 September 2008</p>
+<p style="text-align:center;">Last modified 7 October 2008</p>
 
 <!--#include virtual="footer.txt"-->

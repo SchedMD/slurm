@@ -40,7 +40,14 @@ In order to enforce scheduling policy, set the value of
 <b>AccountingStorageEnforce</b> to "1" in <b>slurm.conf</b>.
 This prevents users from running any jobs without an valid
 <i>association</i> record in the database and enforces scheduling 
-policy limits that have been configured.</p>
+policy limits that have been configured.  
+In order to enforce association limits along with scheduling policy,
+set the value of <b>AccountingStorageEnforce</b> to "2"
+in <b>slurm.conf</b>.  When set to "1" association limits will not be
+enforced.  It is a good idea to run in this mode when running a
+scheduler on top of slurm, like Moab, that does not update in real
+time their limits per association.
+</p>
 
 <h2>Tools</h2>
 

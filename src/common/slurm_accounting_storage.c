@@ -4094,7 +4094,8 @@ extern uint32_t str_2_acct_qos(List qos_list, char *level)
 {
 	ListIterator itr = NULL;
 	acct_qos_rec_t *qos = NULL;
-	
+	char *working_level = NULL;
+
 	if(!qos_list) {
 		error("We need a qos list to translate");
 		return NO_VAL;
@@ -4102,11 +4103,15 @@ extern uint32_t str_2_acct_qos(List qos_list, char *level)
 		debug2("no level");
 		return 0;
 	}
-
+	if(level[0] == '+' || level[0] == '-')
+		working_level = level+1;
+	else
+		working_level = level;
 
 	itr = list_iterator_create(qos_list);
 	while((qos = list_next(itr))) {
-		if(!strncasecmp(level, qos->name, strlen(level)))
+		if(!strncasecmp(working_level, qos->name, 
+				strlen(working_level)))
 			break;
 	}
 	list_iterator_destroy(itr);
@@ -4214,18 +4219,29 @@ extern char *get_qos_complete_str(List qos_list, List num_qos_list)
 	char *temp_char = NULL;
 	char *print_this = NULL;
 	ListIterator itr = NULL;
+	int option = 0;
 
 	if(!qos_list || !list_count(qos_list)
 	   || !num_qos_list || !list_count(num_qos_list))
 		return xstrdup("");
 
-	temp_list = list_create(NULL);
+	temp_list = list_create(slurm_destroy_char);
 
 	itr = list_iterator_create(num_qos_list);
 	while((temp_char = list_next(itr))) {
+		option = 0;
+		if(temp_char[0] == '+' || temp_char[0] == '-') {
+			option = temp_char[0];
+			temp_char++;
+		}
 		temp_char = acct_qos_str(qos_list, atoi(temp_char));
-		if(temp_char)
-			list_append(temp_list, temp_char);
+		if(temp_char) {
+			if(option) 
+				list_append(temp_list, xstrdup_printf(
+						    "%c%s", option, temp_char));
+			else 
+				list_append(temp_list, xstrdup(temp_char));
+		}
 	}
 	list_iterator_destroy(itr);
 	list_sort(temp_list, (ListCmpF)slurm_sort_char_list_asc);

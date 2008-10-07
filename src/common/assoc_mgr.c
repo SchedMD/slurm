@@ -385,6 +385,7 @@ static int _refresh_local_association_list(void *db_conn, int enforce)
 		if(!assoc) 
 			continue;
 		assoc->used_jobs = curr_assoc->used_jobs;
+		assoc->used_submit_jobs = curr_assoc->used_submit_jobs;
 		assoc->used_shares = curr_assoc->used_shares;
 		list_iterator_reset(local_itr);			
 	}
