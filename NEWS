@@ -67,6 +67,9 @@ documents those changes that are of interest to users and admins.
     avoid trash in the accounting system.  If the users default account 
     does not have an association on the cluster the requested account 
     will be used.
+ -- Add configuration parameter "--have-front-end" to define HAVE_FRONT_END 
+    in config.h and run slurmd only on a front end (suitable only for SLURM
+    development and testing).
 
 * Changes in SLURM 1.3.8
 ========================
