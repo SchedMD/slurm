@@ -231,7 +231,7 @@ extern void pack_jobacct_job_rec(void *object, uint16_t rpc_version, Buf buffer)
 	_pack_sacct(&job->sacct, buffer);
 	pack32(job->show_full, buffer);
 	pack_time(job->start, buffer);
-	pack16(job->state, buffer);
+	pack16((uint16_t)job->state, buffer);
 	if(job->steps)
 		count = list_count(job->steps);
 	pack32(count, buffer);
@@ -262,6 +262,7 @@ extern int unpack_jobacct_job_rec(void **job, uint16_t rpc_version, Buf buffer)
 	jobacct_step_rec_t *step = NULL;
 	uint32_t count = 0;
 	uint32_t uint32_tmp;
+	uint16_t uint16_tmp;
 
 	*job = job_ptr;
 
@@ -273,21 +274,24 @@ extern int unpack_jobacct_job_rec(void **job, uint16_t rpc_version, Buf buffer)
 	safe_unpack32(&job_ptr->elapsed, buffer);
 	safe_unpack_time(&job_ptr->eligible, buffer);
 	safe_unpack_time(&job_ptr->end, buffer);
-	safe_unpack32((uint32_t *)&job_ptr->exitcode, buffer);
+	safe_unpack32(&uint32_tmp, buffer);
+	job_ptr->exitcode = (int32_t)uint32_tmp;
 	safe_unpack32(&job_ptr->gid, buffer);
 	safe_unpack32(&job_ptr->jobid, buffer);
 	safe_unpackstr_xmalloc(&job_ptr->jobname, &uint32_tmp, buffer);
 	safe_unpack32(&job_ptr->lft, buffer);
 	safe_unpackstr_xmalloc(&job_ptr->partition, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&job_ptr->nodes, &uint32_tmp, buffer);
-	safe_unpack32((uint32_t *)&job_ptr->priority, buffer);
+	safe_unpack32(&uint32_tmp, buffer);
+	job_ptr->priority = (int32_t)uint32_tmp;
 	safe_unpack16(&job_ptr->qos, buffer);
 	safe_unpack32(&job_ptr->req_cpus, buffer);
 	safe_unpack32(&job_ptr->requid, buffer);
 	_pack_sacct(&job_ptr->sacct, buffer);
 	safe_unpack32(&job_ptr->show_full, buffer);
 	safe_unpack_time(&job_ptr->start, buffer);
-	safe_unpack16((uint16_t *)&job_ptr->state, buffer);
+	safe_unpack16(&uint16_tmp, buffer);
+	job_ptr->state = uint16_tmp;
 	safe_unpack32(&count, buffer);
 
 	job_ptr->steps = list_create(destroy_jobacct_step_rec);
@@ -345,20 +349,23 @@ extern int unpack_jobacct_step_rec(jobacct_step_rec_t **step,
 				   uint16_t rpc_version, Buf buffer)
 {
 	uint32_t uint32_tmp;
+	uint16_t uint16_tmp;
 	jobacct_step_rec_t *step_ptr = xmalloc(sizeof(jobacct_step_rec_t));
 
 	*step = step_ptr;
 
 	safe_unpack32(&step_ptr->elapsed, buffer);
 	safe_unpack_time(&step_ptr->end, buffer);
-	safe_unpack32((uint32_t *)&step_ptr->exitcode, buffer);
+	safe_unpack32(&uint32_tmp, buffer);
+	step_ptr->exitcode = (int32_t)uint32_tmp;
 	safe_unpack32(&step_ptr->jobid, buffer);
 	safe_unpack32(&step_ptr->ncpus, buffer);
         safe_unpackstr_xmalloc(&step_ptr->nodes, &uint32_tmp, buffer);
 	safe_unpack32(&step_ptr->requid, buffer);
 	_unpack_sacct(&step_ptr->sacct, buffer);
 	safe_unpack_time(&step_ptr->start, buffer);
-	safe_unpack16((uint16_t *)&step_ptr->state, buffer);
+	safe_unpack16(&uint16_tmp, buffer);
+	step_ptr->state = uint16_tmp;
 	safe_unpack32(&step_ptr->stepid, buffer);	/* job's step number */
 	safe_unpackstr_xmalloc(&step_ptr->stepname, &uint32_tmp, buffer);
 	safe_unpack32(&step_ptr->suspended, buffer);
