@@ -624,12 +624,17 @@ search_path(char *cwd, char *cmd, bool check_current_dir, int access_mode)
 char *print_commandline(const int script_argc, char **script_argv)
 {
 	int i;
-	char buf[256];
+	char tmp[256], *out_buf = NULL, *prefix;
 
-	buf[0] = '\0';
-	for (i = 0; i < script_argc; i++)
-		snprintf(buf, 256,  "%s", script_argv[i]);
-	return xstrdup(buf);
+	for (i = 0; i < script_argc; i++) {
+		if (out_buf)
+			prefix = " ";
+		else
+			prefix = "";
+		snprintf(tmp, 256,  "%s%s", prefix, script_argv[i]);
+		xstrcat(out_buf, tmp);
+	}
+	return out_buf;
 }
 
 char *print_geometry(const uint16_t *geometry)
