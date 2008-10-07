@@ -1146,7 +1146,10 @@ static int _move_parent(mysql_conn_t *mysql_conn, uid_t uid,
 	/* now we need to send the update of the new parents and
 	 * limits, so just to be safe, send the whole tree
 	 */
-	assoc_list = acct_storage_p_get_associations(mysql_conn, uid, NULL);
+	if(!(assoc_list = acct_storage_p_get_associations(
+		     mysql_conn, uid, NULL)))
+		return SLURM_ERROR;
+		
 	/* NOTE: you can not use list_pop, or list_push
 	   anywhere either, since mysql is
 	   exporting something of the same type as a macro,
@@ -6568,7 +6571,7 @@ extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 	};
 
 	if(!assoc_cond) {
-		xstrcat(extra, "where deleted=0");
+		xstrcat(extra, " where deleted=0");
 		goto empty;
 	}
 
