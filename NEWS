@@ -1,6 +1,12 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.4.0-pre4
+=============================
+ -- For task/affinity, force jobs to use a particular task binding by setting
+    the TaskPluginParam configuration parameter rather than slurmd's
+    SLURM_ENFORCED_CPU_BIND environment variable.
+
 * Changes in SLURM 1.4.0-pre3
 =============================
  -- Internal changes: CPUs per node changed from 32-bit to 16-bit size.

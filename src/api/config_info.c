@@ -49,6 +49,7 @@
 #include "src/common/parse_time.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_resource_info.h"
 
 /*
  * slurm_api_version - Return a single number reflecting the SLURM API's 
@@ -82,20 +83,6 @@ _select_info(uint16_t select_type_param)
 			return "CR_CORE_MEMORY";
 		case CR_CPU_MEMORY:
 			return "CR_CPU_MEMORY";
-		default:
-			return "unknown";
-	}
-}
-
-static char *_task_plugin_param(uint16_t task_plugin_param)
-{
-	switch(task_plugin_param) {
-		case TASK_PARAM_NONE:
-			return "none";
-		case TASK_PARAM_CPUSETS:
-			return "cpusets";
-		case TASK_PARAM_SCHED:
-			return "sched";
 		default:
 			return "unknown";
 	}
@@ -351,8 +338,9 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->task_epilog);
 	fprintf(out, "TaskPlugin              = %s\n",
 		 slurm_ctl_conf_ptr->task_plugin);
-	fprintf(out, "TaskPluginParam         = %s\n",
-		_task_plugin_param(slurm_ctl_conf_ptr->task_plugin_param));
+	slurm_sprint_cpu_bind_type(tmp_str, 
+				   slurm_ctl_conf_ptr->task_plugin_param);
+	fprintf(out, "TaskPluginParam         = %s\n", tmp_str);
 	fprintf(out, "TaskProlog              = %s\n",
 		slurm_ctl_conf_ptr->task_prolog);
 	fprintf(out, "TmpFS                   = %s\n", 

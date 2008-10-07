@@ -121,7 +121,8 @@ typedef struct slurmd_config {
 	pthread_mutex_t config_mutex;	/* lock for slurmd_config access   */
 	uint16_t        job_acct_gather_freq;
 	uint16_t	use_pam;
-	uint16_t	use_cpusets;	/* Use cpusets, if available       */
+	uint16_t	task_plugin_param; /* TaskPluginParams, expressed
+					 * using cpu_bind_type_t flags */
 	uint16_t	propagate_prio;	/* PropagatePrioProcess flag       */
 } slurmd_conf_t;
 

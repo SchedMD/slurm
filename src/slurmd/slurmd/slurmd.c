@@ -652,9 +652,7 @@ _read_config()
 	if (cf->slurmctld_port == 0)
 		fatal("Unable to establish controller port");
 	conf->use_pam = cf->use_pam;
-
-	if (cf->task_plugin_param & TASK_PARAM_CPUSETS)
-		conf->use_cpusets = 1;
+	conf->task_plugin_param = cf->task_plugin_param;
 
 	slurm_mutex_unlock(&conf->config_mutex);
 	slurm_conf_unlock();
@@ -748,7 +746,7 @@ _print_conf()
 	debug3("Slurm UID   = %u",       conf->slurm_user_id);
 	debug3("TaskProlog  = `%s'",     conf->task_prolog);
 	debug3("TaskEpilog  = `%s'",     conf->task_epilog);
-	debug3("Use CPUSETS = %u",       conf->use_cpusets);
+	debug3("TaskPluginParam = %u",   conf->task_plugin_param);
 	debug3("Use PAM     = %u",       conf->use_pam);
 	slurm_conf_unlock();
 }
@@ -790,7 +788,7 @@ _init_conf()
 	conf->pidfile     = xstrdup(DEFAULT_SLURMD_PIDFILE);
 	conf->spooldir	  = xstrdup(DEFAULT_SPOOLDIR);
 	conf->use_pam	  =  0;
-	conf->use_cpusets =  0;
+	conf->task_plugin_param = 0;
 
 	slurm_mutex_init(&conf->config_mutex);
 	return;

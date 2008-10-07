@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "September 2008" "slurm.conf 1.4" "Slurm configuration file"
+.TH "slurm.conf" "5" "October 2008" "slurm.conf 1.4" "Slurm configuration file"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
@@ -1220,15 +1220,40 @@ which is supported by SLURM.
 .TP
 \fBTaskPluginParam\fR
 Optional parameters for the task plugin.
+Multiple options should be comma separated
+If \fBNone\fR, \fBSockets\fR, \fBCores\fR, \fBThreads\fR,
+and/or \fBVerbose\fR are specified, they will override
+the \fB\-\-cpu_bind\fR option specified by the user
+in the \fBsrun\fR command.
+\fBNone\fR, \fBSockets\fR, \fBCores\fR and \fBThreads\fR
+are mutually exclusive (select only one of them).
+\fBCpusets\fR and \fBSched\fR
+are mutually exclusive (select only one of them).
+
 .RS
 .TP 10
+\fBCores\fR
+Always bind to cores.
+.TP
 \fBCpusets\fR
-Use cpusets to perform task affinity functions
+Use cpusets to perform task affinity functions.
+By default, \fBSched\fR task binding is performed.
+.TP
+\fBNone\fR
+Perform no task binding.
 .TP
 \fBSched\fR
 Use \fIsched_setaffinity\fR or \fIplpa_sched_setaffinity\fR
 (if available) to bind tasks to processors.
-This is the default mode of operation is no parameters are specified.
+.TP
+\fBSockets\fR
+Always bind to sockets.
+.TP
+\fBThreads\fR
+Always bind to threads.
+.TP
+\fBVerbose\fR
+Verbosely report binding before tasks run.
 .RE
 
 .TP
@@ -1930,12 +1955,14 @@ SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.
+
 .SH "FILES"
 /etc/slurm.conf
+
 .SH "SEE ALSO"
 .LP
 \fBbluegene.conf\fR(5), \fBgethostbyname\fR(3), 
 \fBgetrlimit\fR(2), \fBgroup\fR(5), \fBhostname\fR(1), 
 \fBscontrol\fR(1), \fBslurmctld\fR(8), \fBslurmd\fR(8), 
-\fBslurmdbd\fR(8), \fBslurmdbd.conf\fR(5), \fBspank(8)\fR,
-\fBsyslog\fR(2), \fBwiki.conf\fR(5)
+\fBslurmdbd\fR(8), \fBslurmdbd.conf\fR(5), \fBsrun(1)\fR, 
+\fBspank(8)\fR, \fBsyslog\fR(2), \fBwiki.conf\fR(5)

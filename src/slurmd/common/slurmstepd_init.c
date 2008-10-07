@@ -55,7 +55,7 @@ extern void pack_slurmd_conf_lite(slurmd_conf_t *conf, Buf buffer)
 	pack32(conf->daemonize, buffer);
 	pack32((uint32_t)conf->slurm_user_id, buffer);
 	pack16(conf->use_pam, buffer);
-	pack16(conf->use_cpusets, buffer);
+	pack16(conf->task_plugin_param, buffer);
 }
 
 extern int unpack_slurmd_conf_lite_no_alloc(slurmd_conf_t *conf, Buf buffer)
@@ -80,7 +80,7 @@ extern int unpack_slurmd_conf_lite_no_alloc(slurmd_conf_t *conf, Buf buffer)
 	safe_unpack32(&uint32_tmp, buffer);
 	conf->slurm_user_id = (uid_t)uint32_tmp;
 	safe_unpack16(&conf->use_pam, buffer);
-	safe_unpack16(&conf->use_cpusets, buffer);
+	safe_unpack16(&conf->task_plugin_param, buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:
