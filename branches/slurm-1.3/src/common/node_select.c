@@ -717,7 +717,8 @@ static int _unpack_node_info(bg_info_record_t *bg_info_record, Buf buffer)
 	char *bp_inx_str;
 	
 	safe_unpackstr_xmalloc(&(bg_info_record->nodes), &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&(bg_info_record->ionodes), &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&(bg_info_record->ionodes), 
+			       &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&bg_info_record->owner_name,
 			       &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&bg_info_record->bg_block_id,
