@@ -2019,13 +2019,46 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->task_plugin = xstrdup(DEFAULT_TASK_PLUGIN);
 
 	if (s_p_get_string(&temp_str, "TaskPluginParam", hashtbl)) {
-		if (strcasecmp(temp_str, "cpusets") == 0)
-			conf->task_plugin_param = TASK_PARAM_CPUSETS;
-		else if (strcasecmp(temp_str, "sched") == 0)
-			conf->task_plugin_param = TASK_PARAM_SCHED;
-		else {
-			fatal("Bad TaskPluginParam: %s", temp_str);
-			conf->task_plugin_param = TASK_PARAM_NONE;
+		char *last = NULL, *tok;
+		bool set_mode = false, set_unit = false;
+		tok = strtok_r(temp_str, ",", &last);
+		while (tok) {
+			if (strcasecmp(tok, "none") == 0) {
+				if (set_unit)
+					fatal("Bad TaskPluginParam: %s", tok);
+				set_unit = true;
+				conf->task_plugin_param |= CPU_BIND_NONE;
+			} else if (strcasecmp(tok, "sockets") == 0) {
+				if (set_unit)
+					fatal("Bad TaskPluginParam: %s", tok);
+				set_unit = true;
+				conf->task_plugin_param |= CPU_BIND_TO_SOCKETS;
+			} else if (strcasecmp(tok, "cores") == 0) {
+				if (set_unit)
+					fatal("Bad TaskPluginParam: %s", tok);
+				set_unit = true;
+				conf->task_plugin_param |= CPU_BIND_TO_CORES;
+			} else if (strcasecmp(tok, "threads") == 0) {
+				if (set_unit)
+					fatal("Bad TaskPluginParam: %s", tok);
+				set_unit = true;
+				conf->task_plugin_param |= CPU_BIND_TO_THREADS;
+			} else if (strcasecmp(tok, "cpusets") == 0) {
+				if (set_mode)
+					fatal("Bad TaskPluginParam: %s", tok);
+				set_mode = true;
+				conf->task_plugin_param |= CPU_BIND_CPUSETS;
+			} else if (strcasecmp(tok, "sched") == 0) {
+				if (set_mode)
+					fatal("Bad TaskPluginParam: %s", tok);
+				set_mode = true;
+				/* No change to task_plugin_param, 
+				 * this is the default */
+			} else if (strcasecmp(tok, "verbose") == 0) {
+				conf->task_plugin_param |= CPU_BIND_VERBOSE;
+			} else
+				fatal("Bad TaskPluginParam: %s", tok);
+			tok = strtok_r(NULL, ",", &last);
 		}
 		xfree(temp_str);
 	}

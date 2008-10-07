@@ -365,7 +365,10 @@ typedef enum cpu_bind_type {	/* cpu binding type from --cpu_bind=... */
 	CPU_BIND_NONE	   = 0x10, /* =no */
 	CPU_BIND_RANK  	   = 0x20, /* =rank */
 	CPU_BIND_MAP	   = 0x40, /* =map_cpu:<list of CPU IDs> */
-	CPU_BIND_MASK	   = 0x80  /* =mask_cpu:<list of CPU masks> */
+	CPU_BIND_MASK	   = 0x80, /* =mask_cpu:<list of CPU masks> */
+	/* the following is used only as a flag for expressing 
+	 * the contents of TaskPluginParams */
+	CPU_BIND_CPUSETS   = 0x8000
 } cpu_bind_type_t;
 
 typedef enum mem_bind_type {    /* memory binding type from --mem_bind=... */
@@ -445,11 +448,6 @@ typedef enum select_type_plugin_info {
 	CR_CORE_MEMORY,   /* Core and Memory are CRs */
 	CR_CPU_MEMORY     /* CPU and Memory are CRs */
 } select_type_plugin_info_t ;
-
-/* Values for slurm_ctl_conf.task_plugin_param */
-#define TASK_PARAM_NONE    0x0000
-#define TASK_PARAM_CPUSETS 0x0001
-#define TASK_PARAM_SCHED   0x0002
 
 #define MEM_PER_CPU  0x80000000
 #define SHARED_FORCE 0x8000

@@ -115,6 +115,7 @@ by the slurm job manager.
 .TP
 \fB\-\-cpu_bind\fR=[{\fIquiet,verbose\fR},]\fItype\fR
 Bind tasks to CPUs. Used only when the task/affinity plugin is enabled.
+The configuration parameter \fBTaskPluginParam\fR may override these options.
 NOTE: To have SLURM always report on the selected CPU binding for all
 commands executed in a shell, you can enable verbose mode by setting
 the SLURM_CPU_BIND environment variable value to "verbose".
