@@ -54,6 +54,9 @@ static int _set_cond(int *start, int argc, char *argv[],
 		} else if (!end && !strncasecmp (argv[i], "WithDeleted", 5)) {
 			assoc_cond->with_deleted = 1;
 		} else if (!end && 
+			   !strncasecmp (argv[i], "WithRawQOS", 5)) {
+			assoc_cond->with_raw_qos = 1;
+		} else if (!end && 
 			   !strncasecmp (argv[i], "WithSubAccounts", 5)) {
 			assoc_cond->with_sub_accts = 1;
 		} else if (!end && !strncasecmp (argv[i], "WOPInfo", 4)) {
