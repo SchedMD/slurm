@@ -75,6 +75,7 @@ static int _set_assoc_cond(int *start, int argc, char *argv[],
 	int set = 0;
 	int end = 0;
 	int local_cluster_flag = all_clusters_flag;
+	time_t start_time, end_time;
 	
 	if(!assoc_cond) {
 		error("We need an acct_association_cond to call this");
@@ -140,8 +141,15 @@ static int _set_assoc_cond(int *start, int argc, char *argv[],
 			list_append(assoc_cond->cluster_list, temp);
 	}
 
-	set_start_end_time((time_t *)&assoc_cond->usage_start,
-			   (time_t *)&assoc_cond->usage_end);
+	/* This needs to be done on some systems to make sure
+	   cluster_cond isn't messed.  This has happened on some 64
+	   bit machines and this is here to be on the safe side.
+	*/
+	start_time = assoc_cond->usage_start;
+	end_time = assoc_cond->usage_end;
+	set_start_end_time(&start_time, &end_time);
+	assoc_cond->usage_start = start_time;
+	assoc_cond->usage_end = end_time;
 
 	return set;
 }
@@ -154,6 +162,15 @@ static int _set_cluster_cond(int *start, int argc, char *argv[],
 	int set = 0;
 	int end = 0;
 	int local_cluster_flag = all_clusters_flag;
+	time_t start_time, end_time;
+
+	if(!cluster_cond) {
+		error("We need an acct_cluster_cond to call this");
+		return SLURM_ERROR;
+	}
+
+	cluster_cond->with_deleted = 1;
+	cluster_cond->with_usage = 1;
 
 	if(!cluster_cond->cluster_list)
 		cluster_cond->cluster_list = list_create(slurm_destroy_char);
@@ -166,7 +183,6 @@ static int _set_cluster_cond(int *start, int argc, char *argv[],
 			continue;
 		} else if(!end && !strncasecmp(argv[i], "all_clusters", 1)) {
 			local_cluster_flag = 1;
-			continue;
 		} else if(!end
 			  || !strncasecmp (argv[i], "Clusters", 1)
 			  || !strncasecmp (argv[i], "Names", 1)) {
@@ -178,7 +194,8 @@ static int _set_cluster_cond(int *start, int argc, char *argv[],
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Format", 1)) {
 			if(format_list)
-				slurm_addto_char_list(format_list, argv[i]+end);
+				slurm_addto_char_list(format_list,
+						      argv[i]+end);
 		} else if (!strncasecmp (argv[i], "Start", 1)) {
 			cluster_cond->usage_start = parse_time(argv[i]+end, 1);
 			set = 1;
@@ -196,8 +213,15 @@ static int _set_cluster_cond(int *start, int argc, char *argv[],
 			list_append(cluster_cond->cluster_list, temp);
 	}
 
-	set_start_end_time((time_t *)&cluster_cond->usage_start,
-			   (time_t *)&cluster_cond->usage_end);
+	/* This needs to be done on some systems to make sure
+	   cluster_cond isn't messed.  This has happened on some 64
+	   bit machines and this is here to be on the safe side.
+	*/
+	start_time = cluster_cond->usage_start;
+	end_time = cluster_cond->usage_end;
+	set_start_end_time(&start_time, &end_time);
+	cluster_cond->usage_start = start_time;
+	cluster_cond->usage_end = end_time;
 
 	return set;
 }
@@ -362,9 +386,10 @@ static List _get_cluster_list(int argc, char *argv[], uint32_t *total_time,
 	if(print_fields_have_header) {
 		char start_char[20];
 		char end_char[20];
+		time_t my_start = cluster_cond->usage_start;
 		time_t my_end = cluster_cond->usage_end-1;
 
-		slurm_make_time_str((time_t *)&cluster_cond->usage_start, 
+		slurm_make_time_str(&my_start, 
 				    start_char, sizeof(start_char));
 		slurm_make_time_str(&my_end,
 				    end_char, sizeof(end_char));
@@ -453,6 +478,7 @@ extern int cluster_utilization(int argc, char *argv[])
 		list_iterator_destroy(itr3);
 
 		total_acct.cpu_count /= list_count(cluster->accounting_list);
+		
 		local_total_time =
 			(uint64_t)total_time * (uint64_t)total_acct.cpu_count;
 		total_reported = total_acct.alloc_secs + total_acct.down_secs 
@@ -700,11 +726,10 @@ extern int cluster_user_by_account(int argc, char *argv[])
 	if(print_fields_have_header) {
 		char start_char[20];
 		char end_char[20];
+		time_t my_start = assoc_cond->usage_start;
 		time_t my_end = assoc_cond->usage_end-1;
 		
-		slurm_make_time_str(
-			(time_t *)&assoc_cond->usage_start, 
-			start_char, sizeof(start_char));
+		slurm_make_time_str(&my_start, start_char, sizeof(start_char));
 		slurm_make_time_str(&my_end, end_char, sizeof(end_char));
 		printf("----------------------------------------"
 		       "----------------------------------------\n");
@@ -961,11 +986,10 @@ extern int cluster_account_by_user(int argc, char *argv[])
 	if(print_fields_have_header) {
 		char start_char[20];
 		char end_char[20];
+		time_t my_start = assoc_cond->usage_start;
 		time_t my_end = assoc_cond->usage_end-1;
 		
-		slurm_make_time_str(
-			(time_t *)&assoc_cond->usage_start, 
-			start_char, sizeof(start_char));
+		slurm_make_time_str(&my_start, start_char, sizeof(start_char));
 		slurm_make_time_str(&my_end, end_char, sizeof(end_char));
 		printf("----------------------------------------"
 		       "----------------------------------------\n");

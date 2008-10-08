@@ -223,20 +223,24 @@ extern void addto_char_list(List char_list, char *names)
 extern int set_start_end_time(time_t *start, time_t *end)
 {
 	time_t my_time = time(NULL);
+	time_t temp_time;
 	struct tm start_tm;
 	struct tm end_tm;
+	int sent_start = (*start), sent_end = (*end);
 
+//	info("now got %d and %d sent", (*start), (*end));
 	/* Default is going to be the last day */
-	if(!(*end)) {
+	if(!sent_end) {
 		if(!localtime_r(&my_time, &end_tm)) {
 			error("Couldn't get localtime from end %d",
 			      my_time);
 			return SLURM_ERROR;
 		}
 		end_tm.tm_hour = 0;
-		(*end) = mktime(&end_tm);		
+		//(*end) = mktime(&end_tm);		
 	} else {
-		if(!localtime_r(end, &end_tm)) {
+		temp_time = sent_end;
+		if(!localtime_r(&temp_time, &end_tm)) {
 			error("Couldn't get localtime from user end %d",
 			      my_time);
 			return SLURM_ERROR;
@@ -247,7 +251,7 @@ extern int set_start_end_time(time_t *start, time_t *end)
 	end_tm.tm_isdst = -1;
 	(*end) = mktime(&end_tm);		
 
-	if(!(*start)) {
+	if(!sent_start) {
 		if(!localtime_r(&my_time, &start_tm)) {
 			error("Couldn't get localtime from start %d",
 			      my_time);
@@ -255,9 +259,10 @@ extern int set_start_end_time(time_t *start, time_t *end)
 		}
 		start_tm.tm_hour = 0;
 		start_tm.tm_mday--;
-		(*start) = mktime(&start_tm);		
+		//(*start) = mktime(&start_tm);		
 	} else {
-		if(!localtime_r(start, &start_tm)) {
+		temp_time = sent_start;
+		if(!localtime_r(&temp_time, &start_tm)) {
 			error("Couldn't get localtime from user start %d",
 			      my_time);
 			return SLURM_ERROR;
@@ -270,6 +275,7 @@ extern int set_start_end_time(time_t *start, time_t *end)
 
 	if((*end)-(*start) < 3600) 
 		(*end) = (*start) + 3600;
+//	info("now got %d and %d sent", (*start), (*end));
 
 	return SLURM_SUCCESS;
 }
