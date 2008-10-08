@@ -130,7 +130,12 @@ static int _local_update_assoc_qos_list(acct_association_rec_t *assoc,
 				list_flush(assoc->qos_list);
 			list_append(assoc->qos_list, xstrdup(new_qos+1));
 			flushed = 1;
-		} 
+		} else if(new_qos[0]) {
+			if(!flushed)
+				list_flush(assoc->qos_list);
+			list_append(assoc->qos_list, xstrdup(new_qos));
+			flushed = 1;			
+		}
 	}
 	list_iterator_destroy(curr_qos_itr);
 	list_iterator_destroy(new_qos_itr);
