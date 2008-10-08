@@ -127,11 +127,9 @@ static int    _tot_wait (struct timeval *start_time);
 extern int slurm_open_slurmdbd_conn(char *auth_info, bool make_agent, 
 				    bool rollback)
 {
-	slurm_mutex_lock(&agent_lock);
-	if (make_agent && ((agent_tid == 0) || (agent_list == NULL)))
-		_create_agent();
-	slurm_mutex_unlock(&agent_lock);
-
+	/* we need to set this up before we make the agent or we will
+	   get a threading issue.
+	*/
 	slurm_mutex_lock(&slurmdbd_lock);
 	xfree(slurmdbd_auth_info);
 	if (auth_info)
@@ -142,6 +140,12 @@ extern int slurm_open_slurmdbd_conn(char *auth_info, bool make_agent,
 	if (slurmdbd_fd < 0)
 		_open_slurmdbd_fd();
 	slurm_mutex_unlock(&slurmdbd_lock);
+
+	slurm_mutex_lock(&agent_lock);
+	if (make_agent && ((agent_tid == 0) || (agent_list == NULL)))
+		_create_agent();
+	slurm_mutex_unlock(&agent_lock);
+
 	if (slurmdbd_fd < 0)
 		return SLURM_ERROR;
 	else
@@ -1482,7 +1486,7 @@ static void *_agent(void *x)
 
 		slurm_mutex_lock(&slurmdbd_lock);
 		if ((slurmdbd_fd < 0) && 
-		    (difftime(time(NULL), fail_time) >= 10)) {
+		    (difftime(time(NULL), fail_time) >= 10)) {			
 			/* The connection to Slurm DBD is not open */
 			_open_slurmdbd_fd();
 			if (slurmdbd_fd < 0)
