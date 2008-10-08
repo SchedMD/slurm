@@ -223,6 +223,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 	int set = 0;
 	int end = 0;
 	int local_cluster_flag = all_clusters_flag;
+	time_t start_time, end_time;
 
 	if(!job_cond->cluster_list)
 		job_cond->cluster_list = list_create(slurm_destroy_char);
@@ -336,8 +337,15 @@ static int _set_cond(int *start, int argc, char *argv[],
 			list_append(job_cond->cluster_list, temp);
 	}
 
-	set_start_end_time((time_t *)&job_cond->usage_start,
-			   (time_t *)&job_cond->usage_end);
+	/* This needs to be done on some systems to make sure
+	   cluster_cond isn't messed.  This has happened on some 64
+	   bit machines and this is here to be on the safe side.
+	*/
+	start_time = job_cond->usage_start;
+	end_time = job_cond->usage_end;
+	set_start_end_time(&start_time, &end_time);
+	job_cond->usage_start = start_time;
+	job_cond->usage_end = end_time;
 
 	return set;
 }
@@ -557,12 +565,11 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 	if(print_fields_have_header) {
 		char start_char[20];
 		char end_char[20];
+		time_t my_start = job_cond->usage_start;
 		time_t my_end = job_cond->usage_end-1;
 
-		slurm_make_time_str((time_t *)&job_cond->usage_start, 
-				    start_char, sizeof(start_char));
-		slurm_make_time_str(&my_end,
-				    end_char, sizeof(end_char));
+		slurm_make_time_str(&my_start, start_char, sizeof(start_char));
+		slurm_make_time_str(&my_end, end_char, sizeof(end_char));
 		printf("----------------------------------------"
 		       "----------------------------------------\n");
 		printf("Job Sizes %s - %s (%d secs)\n", 

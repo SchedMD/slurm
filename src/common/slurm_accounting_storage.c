@@ -2434,6 +2434,7 @@ extern void pack_acct_cluster_cond(void *in, uint16_t rpc_version, Buf buffer)
 		}
 		list_iterator_destroy(itr);
 	}
+	count = NO_VAL;
 
 	pack32(object->usage_end, buffer);
 	pack32(object->usage_start, buffer);

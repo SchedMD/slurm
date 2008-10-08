@@ -59,6 +59,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 	int end = 0;
 	int local_cluster_flag = all_clusters_flag;
 	acct_association_cond_t *assoc_cond = NULL;
+	time_t start_time, end_time;
 	
 	if(!user_cond) {
 		error("We need an acct_user_cond to call this");
@@ -130,8 +131,15 @@ static int _set_cond(int *start, int argc, char *argv[],
 			list_append(assoc_cond->cluster_list, temp);
 	}
 
-	set_start_end_time((time_t *)&assoc_cond->usage_start,
-			   (time_t *)&assoc_cond->usage_end);
+	/* This needs to be done on some systems to make sure
+	   cluster_cond isn't messed.  This has happened on some 64
+	   bit machines and this is here to be on the safe side.
+	*/
+	start_time = assoc_cond->usage_start;
+	end_time = assoc_cond->usage_end;
+	set_start_end_time(&start_time, &end_time);
+	assoc_cond->usage_start = start_time;
+	assoc_cond->usage_end = end_time;
 
 	return set;
 }
@@ -246,13 +254,11 @@ extern int user_top(int argc, char *argv[])
 	if(print_fields_have_header) {
 		char start_char[20];
 		char end_char[20];
+		time_t my_start = user_cond->assoc_cond->usage_start;
 		time_t my_end = user_cond->assoc_cond->usage_end-1;
 
-		slurm_make_time_str(
-			(time_t *)&user_cond->assoc_cond->usage_start, 
-			start_char, sizeof(start_char));
-		slurm_make_time_str(&my_end,
-				    end_char, sizeof(end_char));
+		slurm_make_time_str(&my_start, start_char, sizeof(start_char));
+		slurm_make_time_str(&my_end, end_char, sizeof(end_char));
 		printf("----------------------------------------"
 		       "----------------------------------------\n");
 		printf("Top %u Users %s - %s (%d secs)\n", 
