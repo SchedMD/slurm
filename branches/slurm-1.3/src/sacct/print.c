@@ -257,19 +257,19 @@ void print_job(type_t type, void *object)
 
 	switch(type) {
 	case HEADLINE:
-		printf("%-8s", "Job");
+		printf("%-12s", "Job");
 		break;
 	case UNDERSCORE:
-		printf("%-8s", "--------");
+		printf("%-12s", "------------");
 		break;
 	case JOB:
-		printf("%-8u", job->jobid);
+		printf("%-12u", job->jobid);
 		break;
 	case JOBSTEP:
-		printf("%-8s", " ");
+		printf("%-12s", " ");
 		break;
 	default:
-		printf("%-8s", "n/a");
+		printf("%-12s", "n/a");
 		break;
 	} 
 }
