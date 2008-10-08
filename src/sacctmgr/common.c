@@ -995,7 +995,8 @@ extern void sacctmgr_print_assoc_limits(acct_association_rec_t *assoc)
 	if(assoc->grp_cpu_mins == INFINITE)
 		printf("  GrpCPUMins    = NONE\n");
 	else if(assoc->grp_cpu_mins != NO_VAL) 
-		printf("  GrpCPUMins    = %llu\n", assoc->grp_cpu_mins);
+		printf("  GrpCPUMins    = %llu\n", 
+		       (long long unsigned)assoc->grp_cpu_mins);
 		
 	if(assoc->grp_cpus == INFINITE)
 		printf("  GrpCPUs       = NONE\n");
@@ -1030,7 +1031,8 @@ extern void sacctmgr_print_assoc_limits(acct_association_rec_t *assoc)
 	if(assoc->max_cpu_mins_pj == INFINITE)
 		printf("  MaxCPUMins    = NONE\n");
 	else if(assoc->max_cpu_mins_pj != NO_VAL) 
-		printf("  MaxCPUMins    = %llu\n", assoc->max_cpu_mins_pj);
+		printf("  MaxCPUMins    = %llu\n", 
+		       (long long unsigned)assoc->max_cpu_mins_pj);
 		
 	if(assoc->max_cpus_pj == INFINITE)
 		printf("  MaxCPUs       = NONE\n");
@@ -1090,7 +1092,8 @@ extern void sacctmgr_print_qos_limits(acct_qos_rec_t *qos)
 	if(qos->grp_cpu_mins == INFINITE)
 		printf("  GrpCPUMins     = NONE\n");
 	else if(qos->grp_cpu_mins != NO_VAL) 
-		printf("  GrpCPUMins     = %llu\n", qos->grp_cpu_mins);
+		printf("  GrpCPUMins     = %llu\n", 
+		       (long long unsigned)qos->grp_cpu_mins);
 		
 	if(qos->grp_cpus == INFINITE)
 		printf("  GrpCPUs        = NONE\n");
@@ -1125,7 +1128,8 @@ extern void sacctmgr_print_qos_limits(acct_qos_rec_t *qos)
 	if(qos->max_cpu_mins_pu == INFINITE)
 		printf("  MaxCPUMins     = NONE\n");
 	else if(qos->max_cpu_mins_pu != NO_VAL) 
-		printf("  MaxCPUMins     = %llu\n", qos->max_cpu_mins_pu);
+		printf("  MaxCPUMins     = %llu\n", 
+		       (long long unsigned)qos->max_cpu_mins_pu);
 		
 	if(qos->max_cpus_pu == INFINITE)
 		printf("  MaxCPUs        = NONE\n");
