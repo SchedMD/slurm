@@ -191,15 +191,6 @@ int main(int argc, char *argv[])
 		slurm_allocation_msg_thr_destroy(msg_thr);
 		exit(1);
 	}
-	after = time(NULL);
-
-	xsignal(SIGHUP, _exit_on_signal);
-	xsignal(SIGINT, _ignore_signal);
-	xsignal(SIGQUIT, _ignore_signal);
-	xsignal(SIGPIPE, _ignore_signal);
-	xsignal(SIGTERM, _ignore_signal);
-	xsignal(SIGUSR1, _ignore_signal);
-	xsignal(SIGUSR2, _ignore_signal);
 
 	/*
 	 * Allocation granted!
@@ -212,6 +203,16 @@ int main(int argc, char *argv[])
 	}
 
 #endif
+	after = time(NULL);
+
+	xsignal(SIGHUP, _exit_on_signal);
+	xsignal(SIGINT, _ignore_signal);
+	xsignal(SIGQUIT, _ignore_signal);
+	xsignal(SIGPIPE, _ignore_signal);
+	xsignal(SIGTERM, _ignore_signal);
+	xsignal(SIGUSR1, _ignore_signal);
+	xsignal(SIGUSR2, _ignore_signal);
+
 	if (opt.bell == BELL_ALWAYS
 	    || (opt.bell == BELL_AFTER_DELAY
 		&& ((after - before) > DEFAULT_BELL_DELAY))) {
