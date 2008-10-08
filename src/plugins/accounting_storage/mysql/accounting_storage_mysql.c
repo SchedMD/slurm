@@ -6918,10 +6918,13 @@ empty:
 				else 
 					parent_qos = NULL;
 
+				xfree(parent_delta_qos);
 				if(row2[ASSOC2_REQ_DELTA_QOS][0])
 					xstrcat(parent_delta_qos, 
 						row2[ASSOC2_REQ_DELTA_QOS]);
-			
+				else
+					parent_delta_qos = NULL;
+
 				if(row2[ASSOC2_REQ_MSJ])
 					parent_msj = atoi(row2[ASSOC2_REQ_MSJ]);
 				else
@@ -7048,6 +7051,7 @@ empty:
 
 	list_destroy(delta_qos_list);
 
+	xfree(parent_delta_qos);
 	xfree(parent_qos);
 
 	return assoc_list;
