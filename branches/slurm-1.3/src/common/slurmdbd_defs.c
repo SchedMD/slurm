@@ -75,7 +75,7 @@
 #define DBD_MAGIC		0xDEAD3219
 #define MAX_AGENT_QUEUE		10000
 #define MAX_DBD_MSG_LEN		16384
-#define SLURMDBD_TIMEOUT	60	/* Seconds SlurmDBD for response */
+#define SLURMDBD_TIMEOUT	300	/* Seconds SlurmDBD for response */
 
 bool running_cache = 0;
 
