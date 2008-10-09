@@ -71,22 +71,23 @@
 
 #include "src/common/list.h"
 #include "src/common/log.h"
+#include "src/common/mpi.h"
+#include "src/common/optz.h"
 #include "src/common/parse_time.h"
+#include "src/common/plugstack.h"
 #include "src/common/proc_args.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_interface.h"
+#include "src/common/slurm_rlimits_info.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/slurm_rlimits_info.h"
-#include "src/common/plugstack.h"
-#include "src/common/optz.h"
+
 #include "src/api/pmi_server.h"
 
 #include "src/srun/multi_prog.h"
 #include "src/srun/opt.h"
 #include "src/srun/debugger.h"
-#include "src/common/mpi.h"
 
 /* generic OPT_ definitions -- mainly for use with env vars  */
 #define OPT_NONE        0x00
@@ -200,7 +201,6 @@ static bool _opt_verify(void);
 static void _process_env_var(env_vars_t *e, const char *val);
 
 static bool  _under_parallel_debugger(void);
-
 static void  _usage(void);
 static bool  _valid_node_list(char **node_list_pptr);
 static int   _verify_cpu_bind(const char *arg, char **cpu_bind,
@@ -340,10 +340,40 @@ static int _verify_cpu_bind(const char *arg, char **cpu_bind,
 		CPU_BIND_NONE|CPU_BIND_RANK|CPU_BIND_MAP|CPU_BIND_MASK;
 	int bind_to_bits =
 		CPU_BIND_TO_SOCKETS|CPU_BIND_TO_CORES|CPU_BIND_TO_THREADS;
+	uint16_t task_plugin_param = slurm_get_task_plugin_param();
 
 	if (arg == NULL) {
+		if ((*flags != 0) || 		/* already set values */
+		    (task_plugin_param == 0))	/* no system defaults */
+			return 0;
+
+		/* set system defaults */
+		xfree(*cpu_bind);
+		if (task_plugin_param & CPU_BIND_NONE) {
+			*flags = CPU_BIND_NONE;
+		} else if (task_plugin_param & CPU_BIND_TO_SOCKETS) {
+			*flags = CPU_BIND_TO_SOCKETS;
+			*cpu_bind = xstrdup("sockets");
+		} else if (task_plugin_param & CPU_BIND_TO_CORES) {
+			*flags = CPU_BIND_TO_CORES;
+			*cpu_bind = xstrdup("cores");
+		} else if (task_plugin_param & CPU_BIND_TO_THREADS) {
+			*flags |= CPU_BIND_TO_THREADS;
+			*cpu_bind = xstrdup("threads");
+		}
+		if (task_plugin_param & CPU_BIND_VERBOSE) {
+			*flags |= CPU_BIND_VERBOSE;
+			if (*cpu_bind)
+				xstrcat(*cpu_bind, ",verbose");
+			else
+				*cpu_bind = xstrdup("verbose");
+		}
 	    	return 0;
 	}
+
+	/* Start with system default verbose flag (if set) */
+	if (task_plugin_param & CPU_BIND_VERBOSE)
+		*flags |= CPU_BIND_VERBOSE;
 
     	buf = xstrdup(arg);
     	p = buf;
@@ -399,28 +429,52 @@ static int _verify_cpu_bind(const char *arg, char **cpu_bind,
 			} else {
 				error("missing list for \"--cpu_bind=mask_cpu:<list>\"");
 				xfree(buf);
-				return 1;
+				return -1;
 			}
 		} else if ((strcasecmp(tok, "socket") == 0) ||
 		           (strcasecmp(tok, "sockets") == 0)) {
+			if (task_plugin_param & 
+			    (CPU_BIND_NONE | CPU_BIND_TO_CORES | 
+			     CPU_BIND_TO_THREADS)) {
+				error("--cpu_bind=sockets incompatable with "
+				      "TaskPluginParam configuration "
+				      "parameter");
+				return -1;
+			}
 			clear_then_set((int *)flags, bind_to_bits,
 				       CPU_BIND_TO_SOCKETS);
 		} else if ((strcasecmp(tok, "core") == 0) ||
 		           (strcasecmp(tok, "cores") == 0)) {
+			if (task_plugin_param & 
+			    (CPU_BIND_NONE | CPU_BIND_TO_SOCKETS | 
+			     CPU_BIND_TO_THREADS)) {
+				error("--cpu_bind=cores incompatable with "
+				      "TaskPluginParam configuration "
+				      "parameter");
+				return -1;
+			}
 			clear_then_set((int *)flags, bind_to_bits,
 				       CPU_BIND_TO_CORES);
 		} else if ((strcasecmp(tok, "thread") == 0) ||
 		           (strcasecmp(tok, "threads") == 0)) {
+			if (task_plugin_param & 
+			    (CPU_BIND_NONE | CPU_BIND_TO_SOCKETS | 
+			     CPU_BIND_TO_CORES)) {
+				error("--cpu_bind=threads incompatable with "
+				      "TaskPluginParam configuration "
+				      "parameter");
+				return -1;
+			}
 			clear_then_set((int *)flags, bind_to_bits,
 				       CPU_BIND_TO_THREADS);
 		} else {
 			error("unrecognized --cpu_bind argument \"%s\"", tok);
 			xfree(buf);
-			return 1;
+			return -1;
 		}
 	}
-
 	xfree(buf);
+
 	return 0;
 }
 
@@ -1517,7 +1571,8 @@ static void set_options(const int argc, char **argv)
 			opt.reboot = true;
 			break;
 		case LONG_OPT_GET_USER_ENV:
-			error("--get-user-env is no longer supported in srun, use sbatch");
+			error("--get-user-env is no longer supported in srun, "
+			      "use sbatch");
 			break;
 		case LONG_OPT_PTY:
 #ifdef HAVE_PTY_H
@@ -2017,6 +2072,10 @@ static bool _opt_verify(void)
 		}
 		xfree(sched_name);
 	}
+
+	 if (_verify_cpu_bind(NULL, &opt.cpu_bind,
+			      &opt.cpu_bind_type))
+		exit(1);
 
 	return verified;
 }

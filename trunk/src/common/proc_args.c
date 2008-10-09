@@ -408,10 +408,12 @@ bool verify_socket_core_thread_count(const char *arg,
 
  	for (j=0;j<3;j++) {	
 		for (i=0;i<47;i++) {
-			if (*cur_ptr == '\0' || *cur_ptr ==':') break;
+			if (*cur_ptr == '\0' || *cur_ptr ==':')
+				break;
 			buf[j][i] = *cur_ptr++;
 		}
-		if (*cur_ptr == '\0') break;
+		if (*cur_ptr == '\0')
+			break;
 		xassert(*cur_ptr == ':');
 		buf[j][i] = '\0';
 		cur_ptr++;
@@ -499,7 +501,8 @@ bool verify_hint(const char *arg, int *min_sockets, int *max_sockets,
 		        *max_threads = 1;
 			*cpu_bind_type |= CPU_BIND_TO_THREADS;
 		} else {
-			error("unrecognized --hint argument \"%s\", see --hint=help", tok);
+			error("unrecognized --hint argument \"%s\", "
+			      "see --hint=help", tok);
 			xfree(buf);
 			return 1;
 		}
