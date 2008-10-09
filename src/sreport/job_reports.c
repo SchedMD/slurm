@@ -676,7 +676,6 @@ no_assocs:
 	while((job = list_next(itr))) {
 		char *local_cluster = "UNKNOWN";
 		char *local_account = "UNKNOWN";
-		char *group;
 
 		if(!job->elapsed) {
 			/* here we don't care about jobs that didn't
@@ -722,6 +721,7 @@ no_assocs:
 		list_iterator_destroy(acct_itr);		
 			
 		if(!acct_group) {
+			//char *group = NULL;
 			//uint32_t last_size = 0;
 			/* here we are only looking for groups that
 			 * were added with the associations above
