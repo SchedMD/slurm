@@ -522,6 +522,8 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 	List cluster_list = NULL;
 	List assoc_list = NULL;
 
+	List tmp_acct_list = NULL;
+
 	List format_list = list_create(slurm_destroy_char);
 	List grouping_list = list_create(slurm_destroy_char);
 
@@ -544,7 +546,16 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 
 	_setup_grouping_print_fields_list(grouping_list);
 
+	/* we don't want to actually query by accounts in the jobs
+	   here since we may be looking for sub accounts of a specific
+	   account.
+	*/
+	tmp_acct_list = job_cond->acct_list;
+	job_cond->acct_list = NULL;
 	job_list = jobacct_storage_g_get_jobs_cond(db_conn, my_uid, job_cond);
+	job_cond->acct_list = tmp_acct_list;
+	tmp_acct_list = NULL;
+
 	if(!job_list) {
 		exit_code=1;
 		fprintf(stderr, " Problem with job query.\n");
@@ -552,12 +563,15 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 	}
 
 	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
-	assoc_cond.acct_list = job_cond->acct_list;
 	assoc_cond.id_list = job_cond->associd_list;
 	assoc_cond.cluster_list = job_cond->cluster_list;
 	assoc_cond.partition_list = job_cond->partition_list;
-	assoc_cond.parent_acct_list = list_create(NULL);
-	list_append(assoc_cond.parent_acct_list, "root");
+	if(!job_cond->acct_list || !list_count(job_cond->acct_list)) {
+		job_cond->acct_list = list_create(NULL);
+		list_append(job_cond->acct_list, "root");
+	}
+	assoc_cond.parent_acct_list = job_cond->acct_list;	
+	
 
 	assoc_list = acct_storage_g_get_associations(db_conn, my_uid,
 						     &assoc_cond);
@@ -674,17 +688,22 @@ no_assocs:
 		if(job->account) 
 			local_account = job->account;
 
+		list_iterator_reset(cluster_itr);
 		while((cluster_group = list_next(cluster_itr))) {
 			if(!strcmp(local_cluster, cluster_group->cluster)) 
 				break;
 		}
 		if(!cluster_group) {
-			cluster_group = 
-				xmalloc(sizeof(cluster_grouping_t));
-			cluster_group->cluster = xstrdup(local_cluster);
-			cluster_group->acct_list =
-				list_create(_destroy_acct_grouping);
-			list_append(cluster_list, cluster_group);
+			/* here we are only looking for groups that
+			 * were added with the associations above
+			 */
+			continue;
+/* 			cluster_group =  */
+/* 				xmalloc(sizeof(cluster_grouping_t)); */
+/* 			cluster_group->cluster = xstrdup(local_cluster); */
+/* 			cluster_group->acct_list = */
+/* 				list_create(_destroy_acct_grouping); */
+/* 			list_append(cluster_list, cluster_group); */
 		}
 
 		acct_itr = list_iterator_create(cluster_group->acct_list);
@@ -703,29 +722,33 @@ no_assocs:
 		list_iterator_destroy(acct_itr);		
 			
 		if(!acct_group) {
-			uint32_t last_size = 0;
-			acct_group = xmalloc(sizeof(acct_grouping_t));
-			acct_group->acct = xstrdup(local_account);
-			acct_group->groups =
-				list_create(_destroy_local_grouping);
-			list_append(cluster_group->acct_list, acct_group);
+			//uint32_t last_size = 0;
+			/* here we are only looking for groups that
+			 * were added with the associations above
+			 */
+			continue;
+/* 			acct_group = xmalloc(sizeof(acct_grouping_t)); */
+/* 			acct_group->acct = xstrdup(local_account); */
+/* 			acct_group->groups = */
+/* 				list_create(_destroy_local_grouping); */
+/* 			list_append(cluster_group->acct_list, acct_group); */
 
-			while((group = list_next(group_itr))) {
-				local_group = xmalloc(sizeof(local_grouping_t));
-				local_group->jobs = list_create(NULL);
-				local_group->min_size = last_size;
-				last_size = atoi(group);
-				local_group->max_size = last_size-1;
-				list_append(acct_group->groups, local_group);
-			}
-			if(last_size) {
-				local_group = xmalloc(sizeof(local_grouping_t));
-				local_group->jobs = list_create(NULL);
-				local_group->min_size = last_size;
-				local_group->max_size = INFINITE;
-				list_append(acct_group->groups, local_group);
-			}
-			list_iterator_reset(group_itr);
+/* 			while((group = list_next(group_itr))) { */
+/* 				local_group = xmalloc(sizeof(local_grouping_t)); */
+/* 				local_group->jobs = list_create(NULL); */
+/* 				local_group->min_size = last_size; */
+/* 				last_size = atoi(group); */
+/* 				local_group->max_size = last_size-1; */
+/* 				list_append(acct_group->groups, local_group); */
+/* 			} */
+/* 			if(last_size) { */
+/* 				local_group = xmalloc(sizeof(local_grouping_t)); */
+/* 				local_group->jobs = list_create(NULL); */
+/* 				local_group->min_size = last_size; */
+/* 				local_group->max_size = INFINITE; */
+/* 				list_append(acct_group->groups, local_group); */
+/* 			} */
+/* 			list_iterator_reset(group_itr); */
 		}
 
 		local_itr = list_iterator_create(acct_group->groups);
@@ -743,8 +766,6 @@ no_assocs:
 			cluster_group->cpu_secs += total_secs;
 		}
 		list_iterator_destroy(local_itr);		
-
-		list_iterator_reset(cluster_itr);
 	}
 	list_iterator_destroy(group_itr);
 	list_destroy(grouping_list);
@@ -754,6 +775,7 @@ no_assocs:
 	
 	itr = list_iterator_create(print_fields_list);
 	itr2 = list_iterator_create(grouping_print_fields_list);
+	list_iterator_reset(cluster_itr);
 	while((cluster_group = list_next(cluster_itr))) {
 		acct_itr = list_iterator_create(cluster_group->acct_list);
 		while((acct_group = list_next(acct_itr))) {
