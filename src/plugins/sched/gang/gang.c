@@ -868,14 +868,14 @@ _remove_job_from_part(uint32_t job_id, struct gs_part *p_ptr)
 	if (!job_id || !p_ptr)
 		return;
 
-	debug3("sched/gang: _remove_job_from_part: removing job %u from %s",
-		job_id, p_ptr->part_name);
 	/* find the job in the job_list */
 	i = _find_job_index(p_ptr, job_id);
 	if (i < 0)
 		/* job not found */
 		return;
 
+	debug3("sched/gang: _remove_job_from_part: removing job %u from %s",
+		job_id, p_ptr->part_name);
 	j_ptr = p_ptr->job_list[i];
 	
 	/* remove any shadow first */
@@ -918,7 +918,6 @@ _add_job_to_part(struct gs_part *p_ptr, struct job_record *job_ptr)
 
 	debug3("sched/gang: _add_job_to_part: adding job %u to %s",
 		job_ptr->job_id, p_ptr->part_name);
-	_print_jobs(p_ptr);
 	
 	/* take care of any memory needs */
 	if (!p_ptr->job_list) {
@@ -962,7 +961,7 @@ _add_job_to_part(struct gs_part *p_ptr, struct job_record *job_ptr)
 	
 	/* determine the immediate fate of this job (run or suspend) */
 	if (_job_fits_in_active_row(job_ptr, p_ptr)) {
-		debug3("sched/gang: _add_job_to_part: adding job %u to active row", 
+		debug3("sched/gang: _add_job_to_part: job %u remains running", 
 			job_ptr->job_id);
 		_add_job_to_active(job_ptr, p_ptr);
 		/* note that this job is a "filler" for this row */
@@ -1380,7 +1379,6 @@ _cycle_job_list(struct gs_part *p_ptr)
 	struct gs_job *j_ptr;
 	
 	debug3("sched/gang: entering _cycle_job_list");
-	_print_jobs(p_ptr);
 	/* re-prioritize the job_list and set all row_states to GS_NO_ACTIVE */
 	for (i = 0; i < p_ptr->num_jobs; i++) {
 		while (p_ptr->job_list[i]->row_state == GS_ACTIVE) {
@@ -1397,7 +1395,6 @@ _cycle_job_list(struct gs_part *p_ptr)
 			
 	}
 	debug3("sched/gang: _cycle_job_list reordered job list:");
-	_print_jobs(p_ptr);
 	/* Rebuild the active row. */
 	_build_active_row(p_ptr);
 	debug3("sched/gang: _cycle_job_list new active job list:");

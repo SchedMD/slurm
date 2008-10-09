@@ -98,6 +98,7 @@ typedef struct slurm_select_ops {
         int             (*update_sub_node)     (update_part_msg_t
 						*part_desc_ptr);
 	int             (*get_info_from_plugin)(enum select_data_info cr_info,
+						struct job_record *job_ptr,
 						void *data);
 	int             (*update_node_state)   (int index, uint16_t state);
 	int             (*alter_node_cnt)      (enum select_node_cnt type,
@@ -448,12 +449,14 @@ extern int select_g_update_sub_node (update_part_msg_t *part_desc_ptr)
  * IN/OUT data  - the data to get from node record
  */
 extern int select_g_get_info_from_plugin (enum select_data_info cr_info, 
+					  struct job_record *job_ptr,
 					  void *data)
 {
        if (slurm_select_init() < 0)
                return SLURM_ERROR;
 
-       return (*(g_select_context->ops.get_info_from_plugin))(cr_info, data);
+       return (*(g_select_context->ops.get_info_from_plugin))(cr_info, job_ptr,
+       								data);
 }
 
 /* 

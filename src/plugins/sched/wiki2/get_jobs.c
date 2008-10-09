@@ -124,7 +124,7 @@ extern int	get_jobs(char *cmd_ptr, int *err_code, char **err_msg)
 	int job_rec_cnt = 0, buf_size = 0;
 
 	if (cr_test == 0) {
-		select_g_get_info_from_plugin(SELECT_CR_PLUGIN,
+		select_g_get_info_from_plugin(SELECT_CR_PLUGIN, NULL,
 					      &cr_enabled);
 		cr_test = 1;
 	}

@@ -127,9 +127,11 @@ extern int select_g_update_sub_node (update_part_msg_t *part_desc_ptr);
  * IN node_pts  - current node record
  * IN cr_info   - type of data to get from the node record 
  *                (see enum select_data_info)
+ * IN job_ptr   - pointer to the job that's related to this query (may be NULL)
  * IN/OUT data  - the data to get from node record
  */
 extern int select_g_get_info_from_plugin (enum select_data_info cr_info, 
+					  struct job_record *job_ptr,
 					  void *data);
 
 /* 

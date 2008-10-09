@@ -82,7 +82,7 @@ extern char * moab2slurm_task_list(char *moab_tasklist, int *task_cnt)
 	static uint32_t cr_test = 0, cr_enabled = 0;
 
 	if (cr_test == 0) {
-		select_g_get_info_from_plugin(SELECT_CR_PLUGIN,
+		select_g_get_info_from_plugin(SELECT_CR_PLUGIN, NULL,
 						&cr_enabled);
 		cr_test = 1;
 	}

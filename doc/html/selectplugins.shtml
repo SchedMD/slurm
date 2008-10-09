@@ -291,11 +291,14 @@ to the node for which information is requested.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR.</p>
 
-<p class="commandline">int select_p_get_info_from_plugin(enum select_data_info info, void *data);</p>
+<p class="commandline">int select_p_get_info_from_plugin(enum select_data_info info,
+struct node_record *node_ptr, void *data);</p>
 <p style="margin-left:.2in"><b>Description</b>: Get plugin-specific information.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
 <span class="commandline"> info</span>&nbsp; &nbsp;&nbsp;(input) identifies 
 the type of data to be updated.<br>
+<span class="commandline"> job_ptr</span>&nbsp; &nbsp;&nbsp;(input) pointer to
+the job related to the query (if applicable; may be NULL).<br>
 <span class="commandline"> data</span>&nbsp; &nbsp;&nbsp;(output) the requested data.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR.</p>

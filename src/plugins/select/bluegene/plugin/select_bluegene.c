@@ -1111,6 +1111,7 @@ end_it:
 }
 
 extern int select_p_get_info_from_plugin (enum select_data_info info, 
+					  struct job_record *job_ptr,
 					  void *data)
 {
 	return SLURM_SUCCESS;
