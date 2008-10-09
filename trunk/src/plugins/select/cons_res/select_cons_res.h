@@ -66,12 +66,16 @@
  *
  * NOTES:
  * - If node is in use by Shared=NO part, some CPUs/memory may be available
- * - Caution with NODE_CR_AVAILABLE: a Sharing partition could be full!!
+ * - Caution with NODE_CR_AVAILABLE: a Sharing partition could be full.
+ *
+ * - these values are staggered so that they can be incremented as multiple
+ * jobs are allocated to each node. This is needed to be able to support
+ * preemption, which can override these protections.
  */
 enum node_cr_state {
-	NODE_CR_RESERVED = 0, /* node is in use by Shared=EXCLUSIVE part */
-	NODE_CR_ONE_ROW = 1,  /* node is in use by Shared=NO part */
-	NODE_CR_AVAILABLE = 2 /* The node may be IDLE or IN USE (shared) */
+	NODE_CR_AVAILABLE = 0,  /* The node may be IDLE or IN USE (shared) */
+	NODE_CR_ONE_ROW = 1,    /* node is in use by Shared=NO part */
+	NODE_CR_RESERVED = 100, /* node is in use by Shared=EXCLUSIVE part */
 };
 
 /* a partition's per-row CPU allocation data */
@@ -104,7 +108,7 @@ struct node_res_record {
 
 /* per-node resource usage record */
 struct node_use_record {
-	enum node_cr_state node_state;	/* see node_cr_state comments */
+	uint16_t node_state;		/* see node_cr_state comments */
 	uint32_t alloc_memory;		/* real memory reserved by already
 					 * scheduled jobs */
 };
@@ -119,5 +123,6 @@ extern struct node_use_record *select_node_usage;
 extern void cr_sort_part_rows(struct part_res_record *p_ptr);
 extern uint32_t cr_get_coremap_offset(uint32_t node_index);
 extern uint32_t cr_get_node_num_cores(uint32_t node_index);
+extern bool cr_priority_selection_enabled();
 
 #endif /* !_CONS_RES_H */

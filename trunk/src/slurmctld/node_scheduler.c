@@ -289,15 +289,15 @@ _resolve_shared_status(uint16_t user_flag, uint16_t part_max_share,
 		return 0;
 	/* sharing if part=FORCE */
 	if (part_max_share & SHARED_FORCE)
-		return 1;
+		return 2;
 
 	if (cons_res_flag) {
 		/* sharing unless user requested exclusive */
 		if (user_flag == 0)
 			return 0;
 		if (user_flag == 1)
-			return 2;
-		return 1;
+			return 1;
+		return 2;
 	} else {
 		/* no sharing if part=NO */
 		if (part_max_share == 1)
@@ -557,7 +557,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	if (cr_enabled == NO_VAL) {
 		cr_enabled = 0;	/* select/linear and bluegene are no-ops */
 		error_code = select_g_get_info_from_plugin (SELECT_CR_PLUGIN, 
-							    &cr_enabled);
+							    NULL, &cr_enabled);
 		if (error_code != SLURM_SUCCESS) {
 			cr_enabled = NO_VAL;
 			return error_code;
@@ -585,7 +585,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			/* Update partially_idle_node_bitmap to reflect the
 			 * idle and partially idle nodes */
 			error_code = select_g_get_info_from_plugin (
-					SELECT_BITMAP, 
+					SELECT_BITMAP, job_ptr,
 					&partially_idle_node_bitmap);
 			if (error_code != SLURM_SUCCESS) {
 				FREE_NULL_BITMAP(partially_idle_node_bitmap);

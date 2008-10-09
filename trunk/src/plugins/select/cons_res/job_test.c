@@ -105,12 +105,6 @@
 #include "select_cons_res.h"
 
 
-/* The following variables are used to test for preemption, which
- * requires a change to the resource selection process */
-static bool sched_gang_test = false;
-static bool sched_gang      = false;
-
-
 /* _allocate_sockets - Given the job requirements, determine which sockets
  *                     from the given node can be allocated (if any) to this
  *                     job. Returns the number of cpus that can be used by
@@ -695,8 +689,7 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 			      struct node_use_record *node_usage,
 			      enum node_cr_state job_node_req)
 {
-	int i;
-	uint32_t free_mem, min_mem, size;
+	uint32_t i, free_mem, min_mem, size;
 
 	min_mem = job_ptr->details->job_min_memory & (~MEM_PER_CPU);
 	size = bit_size(bitmap);
@@ -718,30 +711,21 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 			}
 		}
 		
-		/* sched/gang preemption test */
-		if (!sched_gang_test) {
-			char *sched_type = slurm_get_sched_type();
-			if (strcmp(sched_type, "sched/gang") == 0)
-				sched_gang = true;
-			xfree(sched_type);
-			sched_gang_test = true;
-		}
-		/* if sched/gang is configured, then preemption has been 
-		 * enabled and we cannot rule out nodes just because
-		 * Shared=NO (NODE_CR_ONE_ROW) or Shared=EXCLUSIVE
-		 * (NODE_CR_RESERVED) */
-		if (sched_gang)
+		/* if priority_selection (sched/gang) has been configured,
+		 * then we cannot rule out nodes just because Shared=NO
+		 * (NODE_CR_ONE_ROW) or Shared=EXCLUSIVE(NODE_CR_RESERVED)
+		 */
+		if (cr_priority_selection_enabled())
 			continue;
 
 		/* exclusive node check */
-		if (node_usage[i].node_state == NODE_CR_RESERVED) {
+		if (node_usage[i].node_state >= NODE_CR_RESERVED) {
 			debug3("cons_res: _vns: node %s in exclusive use",
 				select_node_record[i].node_ptr->name);
 			goto clear_bit;
 		
 		/* non-resource-sharing node check */
-		} else if (node_usage[i].node_state == 
-			   NODE_CR_ONE_ROW) {
+		} else if (node_usage[i].node_state >= NODE_CR_ONE_ROW) {
 			if ((job_node_req == NODE_CR_RESERVED) ||
 			    (job_node_req == NODE_CR_AVAILABLE)) {
 				debug3("cons_res: _vns: node %s non-sharing",
@@ -776,7 +760,7 @@ static int _verify_node_state(struct part_res_record *cr_part_ptr,
 		}
 		continue;	/* node is usable, test next node */
 
- clear_bit:	/* This node is not usable by this job */
+clear_bit:	/* This node is not usable by this job */
 		bit_clear(bitmap, i);
 		if (job_ptr->details->req_node_bitmap &&
 		    bit_test(job_ptr->details->req_node_bitmap, i))
@@ -1169,7 +1153,7 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 			 req_nodes, cr_node_cnt, cpu_cnt, freq, size);
 
 	if (ec == SLURM_SUCCESS) {
-		bit_free(origmap);
+		FREE_NULL_BITMAP(origmap);
 		return ec;
 	}
 
@@ -1209,11 +1193,11 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 		ec = _eval_nodes(job_ptr, node_map, min_nodes, max_nodes,
 				 req_nodes, cr_node_cnt, cpu_cnt, freq, size);
 		if (ec == SLURM_SUCCESS) {
-			bit_free(origmap);
+			FREE_NULL_BITMAP(origmap);
 			return ec;
 		}
 	}
-	bit_free(origmap);
+	FREE_NULL_BITMAP(origmap);
 	return ec;
 }
 
@@ -1368,9 +1352,9 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				   node_usage, cr_type);
 	if (cpu_count == NULL) {
 		/* job cannot fit */
-		bit_free(orig_map);
-		bit_free(free_cores);
-		bit_free(avail_cores);
+		FREE_NULL_BITMAP(orig_map);
+		FREE_NULL_BITMAP(free_cores);
+		FREE_NULL_BITMAP(avail_cores);
 		if (save_mem)
 			job_ptr->details->job_min_memory = save_mem;
 		debug3("cons_res: cr_job_test: test 0 fail: "
@@ -1379,9 +1363,9 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	} else if (test_only) {
 		/* FIXME: does "test_only" expect struct_job_res
 		 * to be filled out? For now we assume NO */
-		bit_free(orig_map);
-		bit_free(free_cores);
-		bit_free(avail_cores);
+		FREE_NULL_BITMAP(orig_map);
+		FREE_NULL_BITMAP(free_cores);
+		FREE_NULL_BITMAP(avail_cores);
 		xfree(cpu_count);
 		if (save_mem)
 			job_ptr->details->job_min_memory = save_mem;
@@ -1556,7 +1540,10 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	}
 
 	cr_sort_part_rows(jp_ptr);
-	for (i = 0; i < jp_ptr->num_rows; i++) {
+	c = jp_ptr->num_rows;
+	if (job_node_req != NODE_CR_AVAILABLE)
+		c = 1;
+	for (i = 0; i < c; i++) {
 		if (!jp_ptr->row[i].row_bitmap)
 			break;
 		bit_copybits(bitmap, orig_map);
@@ -1574,7 +1561,7 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		debug3("cons_res: cr_job_test: test 4 fail - row %i", i);
 	}
 
-	if (i < jp_ptr->num_rows && !jp_ptr->row[i].row_bitmap) {
+	if (i < c && !jp_ptr->row[i].row_bitmap) {
 		/* we've found an empty row, so use it */
 		bit_copybits(bitmap, orig_map);
 		bit_copybits(free_cores, avail_cores);
@@ -1609,13 +1596,12 @@ alloc_job:
 	 * create the select_job_res struct,
 	 * distribute the job on the bits, and exit
 	 */
-	bit_free(orig_map);
-	bit_free(avail_cores);
-	if (tmpcore)
-		bit_free(tmpcore);
+	FREE_NULL_BITMAP(orig_map);
+	FREE_NULL_BITMAP(avail_cores);
+	FREE_NULL_BITMAP(tmpcore);
 	if (!cpu_count) {
 		/* we were sent here to cleanup and exit */
-		bit_free(free_cores);
+		FREE_NULL_BITMAP(free_cores);
 		debug3("cons_res: exiting cr_job_test with no allocation");
 		return SLURM_ERROR;
 	}
@@ -1648,7 +1634,7 @@ alloc_job:
 		}
 	}
 	if ((error_code != SLURM_SUCCESS) || (mode != SELECT_MODE_RUN_NOW)) {
-		bit_free(free_cores);
+		FREE_NULL_BITMAP(free_cores);
 		return error_code;
 	}
 
@@ -1671,7 +1657,7 @@ alloc_job:
 					  select_fast_schedule);
 	if (error_code != SLURM_SUCCESS) {
 		free_select_job_res(&job_res);		
-		bit_free(free_cores);
+		FREE_NULL_BITMAP(free_cores);
 		return error_code;
 	}
 
@@ -1719,7 +1705,7 @@ alloc_job:
 	debug3("cons_res: cr_job_test: job %u nprocs %u cbits %u/%u nbits %u",
 		job_ptr->job_id, job_res->nprocs, bit_set_count(free_cores),
 		bit_set_count(job_res->core_bitmap), job_res->nhosts);
-	bit_free(free_cores);
+	FREE_NULL_BITMAP(free_cores);
 
 	/* distribute the tasks and clear any unused cores */
 	job_ptr->select_job = job_res;
