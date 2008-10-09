@@ -727,8 +727,8 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             WithSubAccounts, WithDeleted, WOPInfo,         \n\
                             and WOPLimits                                  \n\
                                                                            \n\
-       list cluster       - Names= Format=                                 \n\
-       add cluster        - Fairshare=, GrpCPUMins=, GrpCPUs=, GrpJobs=,  \n\
+       list cluster       - Format=, Names=                                \n\
+       add cluster        - Fairshare=, GrpCPUMins=, GrpCPUs=, GrpJobs=,   \n\
                             GrpNodes=, GrpSubmitJob=, GrpWall=, MaxCPUMins=\n\
                             MaxJobs=, MaxNodes=, MaxWall=, and Name=       \n\
        modify cluster     - (set options) Fairshare=, GrpCPUMins=,         \n\
@@ -741,8 +741,12 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
        add coordinator    - Accounts=, and Names=                          \n\
        delete coordinator - Accounts=, and Names=                          \n\
                                                                            \n\
-       list qos           - Descriptions=, Ids=, Names=, and WithDeleted   \n\
-       add qos            - Description=, and Names=                       \n\
+       list qos           - Descriptions=, Format=, Ids=, Names=,          \n\
+                            and WithDeleted                                \n\
+       add qos            - Description=, GrpCPUMins=, GrpCPUs=, GrpJobs=, \n\
+                            GrpNodes=, GrpSubmitJob=, GrpWall=, JobFlags=, \n\
+                            MaxCPUMins=, MaxJobs=, MaxNodes=, MaxWall=,    \n\
+                            Preemptee=, Preemptor=, Priority=, and Names=  \n\
        delete qos         - Descriptions=, Ids=, and Names=                \n\
                                                                            \n\
        list transactions  - Actor=, EndTime,                               \n\

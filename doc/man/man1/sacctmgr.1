@@ -315,11 +315,15 @@ Name of SLURM partition these limits apply to.
 
 .TP
 \fIQosLevel\fP<operator><comma separated list of qos names>
-Specify Quality of Service that jobs are to run at for this account.
-Now consisting of Normal, Standby, Expedite, and Exempt.
-This is overridden if set directly on a user. 
-Setting an account's QosLevel to '' (two single quotes with nothing 
-between them) restores it's default setting.
+(For use with MOAB only.)
+Specify the default Quality of Service's that jobs are able to run at
+for this account.  To get a list of vaild QOS's use 'sacctmgr list qos'. 
+This value will override it's parents value and push down to it's
+childern as the new default.  Setting a QosLevel to '' (two single
+quotes with nothing between them) restores it's default setting.  You
+can also use the modifier += and -= to add or remove certain QOS's
+from a QOS list.
+
 Valid <operator> values include:
 .RS
 .TP 5
@@ -425,11 +429,13 @@ configuration file for some Slurm\-managed cluster.
 
 .TP
 \fIQosLevel\fP<operator><comma separated list of qos names>
-Specify Quality of Service that jobs are to run at for this account.
-Now consisting of Normal, Standby, Expedite, and Exempt.
-This is overridden if set directly on an account user. 
-Setting an account's QosLevel to '' (two single quotes with nothing 
-between them) restores it's default setting.
+(For use with MOAB only.)
+Specify the default Quality of Service's that jobs are able to run at
+for this cluster.  To get a list of vaild QOS's use 'sacctmgr list qos'. 
+This value is overridden if a child has a QOS value directly set.
+Setting a QosLevel to '' (two single quotes with nothing between them)
+restores it's default setting.  You can also use the modifier += and
+-= to add or remove certain QOS's from a QOS list.
 Valid <operator> values include:
 .RS
 .TP 5
@@ -533,12 +539,13 @@ Name of SLURM partition these limits apply to.
 
 .TP
 \fIQosLevel\fP<operator><comma separated list of qos names>
-Specify Quality of Service that jobs are to run at for this account.
-Now consisting of Normal, Standby, Expedite, and Exempt.
-This is overridden if set directly on an account user. 
-Setting an account's QosLevel to '' (two single quotes with nothing 
-between them) restores it's default setting.
-Valid <operator> values include:
+(For use with MOAB only.)
+Specify the default Quality of Service's that jobs are able to run at
+for this user.  To get a list of vaild QOS's use 'sacctmgr list qos'. 
+This value will override it's parents value.
+Setting a QosLevel to '' (two single quotes with nothing between them)
+restores it's default setting.  You can also use the modifier += and
+-= to add or remove certain QOS's from a QOS list.
 .RS
 .TP 5
 \fB=\fR

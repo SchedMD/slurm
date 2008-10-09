@@ -3644,7 +3644,9 @@ extern int acct_storage_p_add_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 			xfree(vals);
 			continue;
 		}
-
+		/* FIX ME: we have to edit all the other qos's to set
+		   there preemptee or preemptor based on what is here.
+		*/
 		/* we always have a ', ' as the first 2 chars */
 		tmp_extra = _fix_double_quotes(extra+2);
 
