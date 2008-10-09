@@ -923,7 +923,8 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.parent_acct=%s", prefix, object);
+			xstrfmtcat(*extra, "%s.parent_acct=\"%s\"",
+				   prefix, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
