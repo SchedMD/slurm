@@ -102,11 +102,11 @@ static int _set_cond(int *start, int argc, char *argv[],
 				assoc_cond->acct_list =
 					list_create(slurm_destroy_char);
 			slurm_addto_char_list(assoc_cond->acct_list,
-					argv[i]+end);
+					      argv[i]+end);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Clusters", 1)) {
 			slurm_addto_char_list(assoc_cond->cluster_list,
-					argv[i]+end);
+					      argv[i]+end);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "End", 1)) {
 			assoc_cond->usage_end = parse_time(argv[i]+end, 1);
@@ -120,7 +120,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 		} else {
 			exit_code=1;
 			fprintf(stderr, " Unknown condition: %s\n"
-			       "Use keyword set to modify value\n", argv[i]);
+				"Use keyword set to modify value\n", argv[i]);
 		}
 	}
 	(*start) = i;

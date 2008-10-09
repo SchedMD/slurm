@@ -128,9 +128,45 @@ Repeat the last command executed.
 
 .TP
 Various reports are as follows...
-     cluster - Utilization
+     cluster - AccountUtilizationByUser, UserUtilizationByAccount, Utilization
      job     - Sizes
      user    - TopUsage
+
+.TP
+
+.TP
+REPORT DESCRIPTION
+.RS
+.TP
+.B cluster AccountUtilizationByUser 
+This report will display account utilization as it appears on the
+hierarchical tree.  Starting with the specified account or the
+root account by default this report will list the underlying
+usage with a sum on each level.  Use the 'tree' option to span
+the tree for better visibility.
+.TP 
+.B cluster UserUtilizationByAccount
+This report will display users by account in order of utilization without
+grouping multiple accounts by user into one, but displaying them
+on separate lines.
+.TP
+.B cluster Utilization
+This report will display total usage divided by Allocated, Down,
+Idle, and resrved time for selected clusters.  Reserved time
+refers to time that a job was waiting for resources after the job
+had become eligible.  If the value is not of importance for you
+the number should be grouped with idle time.
+
+.TP
+.B job Sizes
+This report will dispay the amount of time for specified ranges of
+jobs ran during the time period.
+
+.TP
+.B user TopUsage
+Displays the top users on a cluster.  Use the group option to group
+accounts together.  The default is to have a different line for each
+user account combination.  
 
 .TP
 Each report type has various options...
