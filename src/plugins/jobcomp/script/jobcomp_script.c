@@ -64,6 +64,7 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/common/node_select.h"
 #include "src/common/list.h"
 #include "src/slurmctld/slurmctld.h"
 
@@ -164,7 +165,7 @@ struct jobcomp_info {
 	char *rotate;
 	char *maxprocs;
 	char *geometry;
-	char *start;
+	char *block_start;
 	char *blockid;
 #endif
 };
@@ -198,19 +199,19 @@ static struct jobcomp_info * _jobcomp_info_create (struct job_record *job)
 	j->nnodes = job->node_cnt;
 	j->account = job->account ? xstrdup (job->account) : NULL;
 #ifdef HAVE_BG
-	j->connect_type = select_g_xstrdup_jobinfo(job_ptr->select_jobinfo,
+	j->connect_type = select_g_xstrdup_jobinfo(job->select_jobinfo,
 						   SELECT_PRINT_CONNECTION);
-	j->reboot = select_g_xstrdup_jobinfo(job_ptr->select_jobinfo,
+	j->reboot = select_g_xstrdup_jobinfo(job->select_jobinfo,
 					     SELECT_PRINT_REBOOT);
-	j->rotate = select_g_xstrdup_jobinfo(job_ptr->select_jobinfo,
+	j->rotate = select_g_xstrdup_jobinfo(job->select_jobinfo,
 					     SELECT_PRINT_ROTATE);
-	j->maxprocs = select_g_xstrdup_jobinfo(job_ptr->select_jobinfo,
+	j->maxprocs = select_g_xstrdup_jobinfo(job->select_jobinfo,
 					       SELECT_PRINT_MAX_PROCS);
-	j->geometry = select_g_xstrdup_jobinfo(job_ptr->select_jobinfo,
+	j->geometry = select_g_xstrdup_jobinfo(job->select_jobinfo,
 					       SELECT_PRINT_GEOMETRY);
-	j->start = select_g_xstrdup_jobinfo(job_ptr->select_jobinfo,
-					    SELECT_PRINT_START);
-	j->blockid = select_g_xstrdup_jobinfo(job_ptr->select_jobinfo,
+	j->block_start = select_g_xstrdup_jobinfo(job->select_jobinfo,
+						  SELECT_PRINT_START);
+	j->blockid = select_g_xstrdup_jobinfo(job->select_jobinfo,
 					      SELECT_PRINT_BG_ID);
 #endif
 	return (j);
@@ -231,7 +232,7 @@ static void _jobcomp_info_destroy (struct jobcomp_info *j)
 	xfree (j->rotate);
 	xfree (j->maxprocs);
 	xfree (j->geometry);
-	xfree (j->start);
+	xfree (j->block_start);
 	xfree (j->blockid);
 #endif
 	xfree (j);
@@ -344,7 +345,7 @@ static char ** _create_environment (struct jobcomp_info *job)
 	_env_append (&env, "ROTATE",       job->rotate);
 	_env_append (&env, "MAXPROCS",     job->maxprocs);
 	_env_append (&env, "GEOMETRY",     job->geometry);
-	_env_append (&env, "START",        job->start);
+	_env_append (&env, "BLOCK_START",  job->block_start);
 	_env_append (&env, "BLOCKID",      job->blockid);
 #endif
 
