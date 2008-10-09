@@ -286,7 +286,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 			       && start_char) {
 				*end_char = 0;
 				while (isspace(*start_char))
-					start_char++;	/* discard whitespace */
+					start_char++;  /* discard whitespace */
 				if(!(int)*start_char)
 					continue;
 				selected_step = xmalloc(
@@ -401,12 +401,12 @@ static int _setup_print_fields_list(List format_list)
 			field->name = xstrdup("Node Count");
 			field->len = 9;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("User", object, 1)) {
-			field->type = PRINT_JOB_USER;
-			field->name = xstrdup("User");
-			field->len = 9;
-			field->print_routine = print_fields_str;
-		} else {
+		} /* else if(!strncasecmp("User", object, 1)) { */
+/* 			field->type = PRINT_JOB_USER; */
+/* 			field->name = xstrdup("User"); */
+/* 			field->len = 9; */
+/* 			field->print_routine = print_fields_str; */
+/* 		} */ else {
 			exit_code=1;
 			fprintf(stderr, " Unknown field '%s'\n", object);
 			xfree(field);
@@ -768,10 +768,6 @@ no_assocs:
 				case PRINT_JOB_ACCOUNT:
 					field->print_routine(field,
 							     acct_group->acct,
-							     0);
-				case PRINT_JOB_USER:
-					field->print_routine(field,
-							     acct_group->user,
 							     0);
 					break;
 				default:
