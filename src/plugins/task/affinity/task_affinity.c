@@ -136,7 +136,9 @@ static void _update_bind_type(launch_tasks_request_msg_t *req)
 
 	if (conf->task_plugin_param & CPU_BIND_VERBOSE) {
 		req->cpu_bind_type |= CPU_BIND_VERBOSE;
+		set_bind = true;
 	}
+
 	if (set_bind) {
 		char bind_str[128];
 		slurm_sprint_cpu_bind_type(bind_str, req->cpu_bind_type);
