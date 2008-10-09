@@ -858,7 +858,7 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 			_add_job_to_row(job, &(p_ptr->row[p_ptr->num_rows-1]));
 		}
 		/* update the node state */
-node_st:	for (i = 0; i < select_node_cnt; i++) {
+		for (i = 0; i < select_node_cnt; i++) {
 			if (bit_test(job->node_bitmap, i))
 				select_node_usage[i].node_state +=job->node_req;
 		}
