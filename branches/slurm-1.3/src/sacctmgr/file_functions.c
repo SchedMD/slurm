@@ -762,6 +762,8 @@ static int _print_out_assoc(List assoc_list, bool user)
 						     assoc->user);
 				break;
 			default:
+				field->print_routine(
+					field, NULL);
 				break;
 			}
 		}
@@ -2291,6 +2293,8 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 						field, acct->organization);
 					break;
 				default:
+					field->print_routine(
+						field, NULL);
 					break;
 				}
 			}
@@ -2347,6 +2351,8 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 						field, user->name);
 					break;
 				default:
+					field->print_routine(
+						field, NULL);
 					break;
 				}
 			}

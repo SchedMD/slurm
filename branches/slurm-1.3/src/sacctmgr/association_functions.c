@@ -788,6 +788,9 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 						     (curr_inx == field_count));
 				break;
 			default:
+				field->print_routine(
+					field, NULL,
+					(curr_inx == field_count));
 				break;
 			}
 			curr_inx++;
