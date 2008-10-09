@@ -381,14 +381,14 @@ static int _setup_print_fields_list(List format_list)
 			field->name = xstrdup("Cluster");
 			field->len = 9;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("Count", object, 2)) {
-			field->type = PRINT_JOB_COUNT;
-			field->name = xstrdup("Job Count");
-			field->len = 9;
-			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("cpu_count", object, 2)) {
+		} else if(!strncasecmp("CpuCount", object, 2)) {
 			field->type = PRINT_JOB_CPUS;
 			field->name = xstrdup("CPU Count");
+			field->len = 9;
+			field->print_routine = print_fields_uint;
+		} else if(!strncasecmp("JobCount", object, 2)) {
+			field->type = PRINT_JOB_COUNT;
+			field->name = xstrdup("Job Count");
 			field->len = 9;
 			field->print_routine = print_fields_uint;
 		} else if(!strncasecmp("Duration", object, 1)) {
@@ -396,17 +396,17 @@ static int _setup_print_fields_list(List format_list)
 			field->name = xstrdup("Duration");
 			field->len = 12;
 			field->print_routine = print_fields_time;
-		} else if(!strncasecmp("node_count", object, 2)) {
+		} else if(!strncasecmp("NodeCount", object, 2)) {
 			field->type = PRINT_JOB_NODES;
 			field->name = xstrdup("Node Count");
 			field->len = 9;
 			field->print_routine = print_fields_uint;
-		} /* else if(!strncasecmp("User", object, 1)) { */
-/* 			field->type = PRINT_JOB_USER; */
-/* 			field->name = xstrdup("User"); */
-/* 			field->len = 9; */
-/* 			field->print_routine = print_fields_str; */
-/* 		} */ else {
+		} else if(!strncasecmp("User", object, 1)) {
+			field->type = PRINT_JOB_USER;
+			field->name = xstrdup("User");
+			field->len = 9;
+			field->print_routine = print_fields_str;
+		} else {
 			exit_code=1;
 			fprintf(stderr, " Unknown field '%s'\n", object);
 			xfree(field);
@@ -793,6 +793,9 @@ no_assocs:
 							     0);
 					break;
 				default:
+					field->print_routine(field,
+							     NULL,
+							     0);
 					break;
 				}
 			}
@@ -808,6 +811,9 @@ no_assocs:
 						acct_group->cpu_secs);
 					break;
 				default:
+					field->print_routine(field,
+							     NULL,
+							     0);
 					break;
 				}
 			}

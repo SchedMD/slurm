@@ -1614,6 +1614,10 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 							 field_count));
 						break;
 					default:
+						field->print_routine(
+							field, NULL,
+							(curr_inx ==
+							 field_count));
 						break;
 					}
 					curr_inx++;
@@ -1684,6 +1688,9 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 						(curr_inx == field_count));
 					break;
 				default:
+					field->print_routine(
+						field, NULL,
+						(curr_inx == field_count));
 					break;
 				}
 			curr_inx++;
