@@ -158,6 +158,15 @@ struct jobcomp_info {
 	char *partition;
 	char *jobstate;
 	char *account;
+#ifdef HAVE_BG
+	char *connect_type;
+	char *reboot;
+	char *rotate;
+	char *maxprocs;
+	char *geometry;
+	char *start;
+	char *blockid;
+#endif
 };
 
 static struct jobcomp_info * _jobcomp_info_create (struct job_record *job)
@@ -188,7 +197,22 @@ static struct jobcomp_info * _jobcomp_info_create (struct job_record *job)
 	j->nprocs = job->total_procs;
 	j->nnodes = job->node_cnt;
 	j->account = job->account ? xstrdup (job->account) : NULL;
-
+#ifdef HAVE_BG
+	j->connect_type = select_g_xstrdup_jobinfo(job_ptr->select_jobinfo,
+						   SELECT_PRINT_CONNECTION);
+	j->reboot = select_g_xstrdup_jobinfo(job_ptr->select_jobinfo,
+					     SELECT_PRINT_REBOOT);
+	j->rotate = select_g_xstrdup_jobinfo(job_ptr->select_jobinfo,
+					     SELECT_PRINT_ROTATE);
+	j->maxprocs = select_g_xstrdup_jobinfo(job_ptr->select_jobinfo,
+					       SELECT_PRINT_MAX_PROCS);
+	j->geometry = select_g_xstrdup_jobinfo(job_ptr->select_jobinfo,
+					       SELECT_PRINT_GEOMETRY);
+	j->start = select_g_xstrdup_jobinfo(job_ptr->select_jobinfo,
+					    SELECT_PRINT_START);
+	j->blockid = select_g_xstrdup_jobinfo(job_ptr->select_jobinfo,
+					      SELECT_PRINT_BG_ID);
+#endif
 	return (j);
 }
 
@@ -201,6 +225,15 @@ static void _jobcomp_info_destroy (struct jobcomp_info *j)
 	xfree (j->nodes);
 	xfree (j->jobstate);
 	xfree (j->account);
+#ifdef HAVE_BG
+	xfree (j->connect_type);
+	xfree (j->reboot);
+	xfree (j->rotate);
+	xfree (j->maxprocs);
+	xfree (j->geometry);
+	xfree (j->start);
+	xfree (j->blockid);
+#endif
 	xfree (j);
 }
 
@@ -305,6 +338,16 @@ static char ** _create_environment (struct jobcomp_info *job)
 	_env_append (&env, "JOBSTATE",  job->jobstate);
 	_env_append (&env, "PARTITION", job->partition);
 	
+#ifdef HAVE_BG
+	_env_append (&env, "CONNECT_TYPE", job->connect_type);
+	_env_append (&env, "REBOOT",       job->reboot);
+	_env_append (&env, "ROTATE",       job->rotate);
+	_env_append (&env, "MAXPROCS",     job->maxprocs);
+	_env_append (&env, "GEOMETRY",     job->geometry);
+	_env_append (&env, "START",        job->start);
+	_env_append (&env, "BLOCKID",      job->blockid);
+#endif
+
 	if (job->limit == INFINITE)
 		_env_append (&env, "LIMIT", "UNLIMITED");
 	else 
@@ -317,6 +360,7 @@ static char ** _create_environment (struct jobcomp_info *job)
 #else
 	_env_append (&env, "PATH", "/bin:/usr/bin");
 #endif
+
 	return (env);
 }
 
