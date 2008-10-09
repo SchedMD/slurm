@@ -248,14 +248,14 @@ static int _set_cond(int *start, int argc, char *argv[],
 				job_cond->acct_list =
 					list_create(slurm_destroy_char);
 			slurm_addto_char_list(job_cond->acct_list,
-					argv[i]+end);
+					      argv[i]+end);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Associations", 2)) {
 			if(!job_cond->associd_list)
 				job_cond->associd_list =
 					list_create(slurm_destroy_char);
 			slurm_addto_char_list(job_cond->associd_list,
-					argv[i]+end);
+					      argv[i]+end);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "End", 1)) {
 			job_cond->usage_end = parse_time(argv[i]+end, 1);
@@ -268,7 +268,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 				job_cond->groupid_list =
 					list_create(slurm_destroy_char);
 			slurm_addto_char_list(job_cond->groupid_list,
-					argv[i]+end);
+					      argv[i]+end);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "grouping", 2)) {
 			if(grouping_list)
@@ -311,7 +311,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 				job_cond->partition_list =
 					list_create(slurm_destroy_char);
 			slurm_addto_char_list(job_cond->partition_list,
-					argv[i]+end);
+					      argv[i]+end);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Start", 1)) {
 			job_cond->usage_start = parse_time(argv[i]+end, 1);
@@ -326,7 +326,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 		} else {
 			exit_code=1;
 			fprintf(stderr, " Unknown condition: %s\n"
-			       "Use keyword set to modify value\n", argv[i]);
+				"Use keyword set to modify value\n", argv[i]);
 		}
 	}
 	(*start) = i;
@@ -768,6 +768,10 @@ no_assocs:
 				case PRINT_JOB_ACCOUNT:
 					field->print_routine(field,
 							     acct_group->acct,
+							     0);
+				case PRINT_JOB_USER:
+					field->print_routine(field,
+							     acct_group->user,
 							     0);
 					break;
 				default:

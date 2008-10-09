@@ -671,14 +671,23 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
      associations             when using show/list will list the           \n\
                               associations associated with the entity.     \n\
      delete <ENTITY> <SPECS>  delete the specified entity(s)               \n\
-     dump <CLUSTER> <FILE>    dump database information of the             \n\
+     dump <CLUSTER> [<FILE>]  dump database information of the             \n\
                               specified cluster to the flat file.          \n\
+                              Will default to clustername.cfg if no file   \n\
+                              is given.
      exit                     terminate sacctmgr                           \n\
      help                     print this description of use.               \n\
      list <ENTITY> [<SPECS>]  display info of identified entity, default   \n\
                               is display all.                              \n\
-     load <FILE>              read in the file to update the database      \n\
-                              with the file contents.                      \n\
+     load <FILE> [<SPECS>]    read in the file to update the database      \n\
+                              with the file contents. <SPECS> here consist \n\
+                              of 'cluster=', and 'clean'.  The 'cluster='  \n\
+                              will override the cluster name given in the  \n\
+                              file.  The 'clean' option will remove what is\n\
+                              already in the system for this cluster and   \n\
+                              replace it with the file.  If the clean option\n\
+                              is not given only new additions or           \n\
+                              modifications will be done, no deletions.    \n\
      modify <ENTITY> <SPECS>  modify entity                                \n\
      oneliner                 report output one record per line.           \n\
      parsable                 output will be | delimited with an ending '|'\n\

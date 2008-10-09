@@ -733,7 +733,7 @@ extern int cluster_user_by_account(int argc, char *argv[])
 		slurm_make_time_str(&my_end, end_char, sizeof(end_char));
 		printf("----------------------------------------"
 		       "----------------------------------------\n");
-		printf("User Acct Utilization by Cluster %s - %s (%d secs)\n", 
+		printf("Cluster/User/Account Utilization %s - %s (%d secs)\n", 
 		       start_char, end_char, 
 		       (assoc_cond->usage_end - assoc_cond->usage_start));
 		
@@ -993,7 +993,7 @@ extern int cluster_account_by_user(int argc, char *argv[])
 		slurm_make_time_str(&my_end, end_char, sizeof(end_char));
 		printf("----------------------------------------"
 		       "----------------------------------------\n");
-		printf("Acct User Utilization by Cluster %s - %s (%d secs)\n", 
+		printf("Cluster/Account/User Utilization %s - %s (%d secs)\n", 
 		       start_char, end_char, 
 		       (assoc_cond->usage_end - assoc_cond->usage_start));
 		

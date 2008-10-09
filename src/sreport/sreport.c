@@ -549,7 +549,7 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
      user <REPORT> <OPTIONS>                                               \n\
                                                                            \n\
   <REPORT> is different for each report type.                              \n\
-     cluster - Utilization                                                 \n\
+     cluster - AccountUtilizationByUser, UserUtilizationByAccount, Utilization\n\
      job     - Sizes                                                       \n\
      user    - TopUsage                                                    \n\
                                                                            \n\
@@ -567,6 +567,9 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
                                                                            \n\
      cluster - Names=<OPT>      - List of clusters to include in report    \n\
                                   Default is local cluster.                \n\
+               Tree             - When used with the AccountUtilizationByUser\n\
+                                  report will span the accounts as they    \n\
+                                  in the hierarchy.                        \n\
                                                                            \n\
      job     - Accounts=<OPT>   - List of accounts to use for the report   \n\
                                   Default is all.                          \n\
@@ -584,7 +587,9 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
              - Users=<OPT>      - List of users jobs to include in report. \n\
                                   Default is all.                          \n\
                                                                            \n\
-     user    - Clusters=<OPT>   - List of clusters to include in report.   \n\
+     user    - Accounts=<OPT>   - List of accounts to use for the report   \n\
+                                  Default is all.                          \n\
+             - Clusters=<OPT>   - List of clusters to include in report.   \n\
                                   Default is local cluster.                \n\
              - Group            - Group all accounts together for each user.\n\
                                   Default is a separate entry for each user\n\
