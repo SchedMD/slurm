@@ -674,7 +674,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
      dump <CLUSTER> [<FILE>]  dump database information of the             \n\
                               specified cluster to the flat file.          \n\
                               Will default to clustername.cfg if no file   \n\
-                              is given.
+                              is given.                                    \n\
      exit                     terminate sacctmgr                           \n\
      help                     print this description of use.               \n\
      list <ENTITY> [<SPECS>]  display info of identified entity, default   \n\
