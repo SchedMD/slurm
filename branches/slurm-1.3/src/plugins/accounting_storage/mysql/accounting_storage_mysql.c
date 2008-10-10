@@ -3116,7 +3116,7 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		/* Add user root by default to run from the root
 		 * association.  This gets popped off so we need to
-		 * readd it every time here. 
+		 * read it every time here. 
 		 */
 		assoc = xmalloc(sizeof(acct_association_rec_t));
 		init_acct_association_rec(assoc);
