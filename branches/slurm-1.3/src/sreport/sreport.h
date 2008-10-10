@@ -96,6 +96,11 @@ typedef enum {
 	SREPORT_TIME_HOURS_PER,
 } sreport_time_format_t;
 
+typedef enum {
+	SREPORT_SORT_TIME,
+	SREPORT_SORT_NAME
+} sreport_sort_t;
+
 typedef struct {
 	char *acct;
 	char *cluster;
@@ -131,6 +136,7 @@ extern int quiet_flag;	/* quiet=1, verbose=-1, normal=0 */
 extern void *db_conn;
 extern uint32_t my_uid;
 extern int all_clusters_flag;
+extern sreport_sort_t sort_flag;
 
 extern void sreport_print_time(print_field_t *field,
 			       uint64_t value, uint64_t total_time, int last);
