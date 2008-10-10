@@ -197,6 +197,10 @@ CLUSTER
 .TP
 .B Names=<OPT>
 List of clusters to include in report.  Default is local cluster.
+.TP
+.B Tree
+When used with the AccountUtilizationByUser report will span the
+accounts as they in the hierarchy.
 .RE
 
 .TP
@@ -220,6 +224,10 @@ List of jobs/steps to include in report.  Default is all.
 .TP
 .B Partitions=<OPT>
 List of partitions jobs ran on to include in report.  Default is all.
+.TP
+.B PrintJobCount
+When used with the Sizes report will print number of jobs ran instead
+of time used.  
 .TP
 .B Users=<OPT>
 List of users jobs to include in report.  Default is all.

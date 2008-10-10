@@ -80,6 +80,7 @@ enum {
 
 static List print_fields_list = NULL; /* types are of print_field_t */
 static List grouping_print_fields_list = NULL; /* types are of print_field_t */
+static int print_job_count = 0;
 
 static void _destroy_local_grouping(void *object)
 {
@@ -238,6 +239,9 @@ static int _set_cond(int *start, int argc, char *argv[],
 		} else if(!end && !strncasecmp(argv[i], "all_clusters", 1)) {
 			local_cluster_flag = 1;
 			continue;
+		} else if(!end && !strncasecmp(argv[i], "PrintJobCount", 2)) {
+			print_job_count = 1;
+			continue;
 		} else if(!end 
 			  || !strncasecmp (argv[i], "Clusters", 1)) {
 			slurm_addto_char_list(job_cond->cluster_list,
@@ -306,7 +310,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 			}
 			
 			set = 1;
-		} else if (!strncasecmp (argv[i], "Partitions", 1)) {
+		} else if (!strncasecmp (argv[i], "Partitions", 2)) {
 			if(!job_cond->partition_list)
 				job_cond->partition_list =
 					list_create(slurm_destroy_char);
@@ -386,16 +390,16 @@ static int _setup_print_fields_list(List format_list)
 			field->name = xstrdup("CPU Count");
 			field->len = 9;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("JobCount", object, 2)) {
-			field->type = PRINT_JOB_COUNT;
-			field->name = xstrdup("Job Count");
-			field->len = 9;
-			field->print_routine = print_fields_uint;
 		} else if(!strncasecmp("Duration", object, 1)) {
 			field->type = PRINT_JOB_DUR;
 			field->name = xstrdup("Duration");
 			field->len = 12;
 			field->print_routine = print_fields_time;
+		} else if(!strncasecmp("JobCount", object, 2)) {
+			field->type = PRINT_JOB_COUNT;
+			field->name = xstrdup("Job Count");
+			field->len = 9;
+			field->print_routine = print_fields_uint;
 		} else if(!strncasecmp("NodeCount", object, 2)) {
 			field->type = PRINT_JOB_NODES;
 			field->name = xstrdup("Node Count");
@@ -448,8 +452,10 @@ static int _setup_grouping_print_fields_list(List grouping_list)
 	while((object = list_next(itr))) {
 		field = xmalloc(sizeof(print_field_t));
 		size = atoi(object);
-
-		field->type = PRINT_JOB_SIZE;
+		if(print_job_count)
+			field->type = PRINT_JOB_COUNT;
+		else
+			field->type = PRINT_JOB_SIZE;
 		field->name = xstrdup_printf("%u-%u cpus", last_size, size-1);
 		if(time_format == SREPORT_TIME_SECS_PER
 		   || time_format == SREPORT_TIME_MINS_PER
@@ -458,7 +464,10 @@ static int _setup_grouping_print_fields_list(List grouping_list)
 		else
 			field->len = 13;
 
-		field->print_routine = sreport_print_time;
+		if(print_job_count)
+			field->print_routine = print_fields_uint;
+		else
+			field->print_routine = sreport_print_time;
 		last_size = size;
 		last_object = object;
 		if((tmp_char = strstr(object, "\%"))) {
@@ -472,7 +481,10 @@ static int _setup_grouping_print_fields_list(List grouping_list)
 
 	if(last_size) {
 		field = xmalloc(sizeof(print_field_t));
-		field->type = PRINT_JOB_SIZE;
+		if(print_job_count)
+			field->type = PRINT_JOB_COUNT;
+		else
+			field->type = PRINT_JOB_SIZE;
 		field->name = xstrdup_printf("> %u cpus", last_size);
 		if(time_format == SREPORT_TIME_SECS_PER
 		   || time_format == SREPORT_TIME_MINS_PER
@@ -480,7 +492,10 @@ static int _setup_grouping_print_fields_list(List grouping_list)
 			field->len = 20;
 		else
 			field->len = 13;
-		field->print_routine = sreport_print_time;
+		if(print_job_count)
+			field->print_routine = print_fields_uint;
+		else
+			field->print_routine = sreport_print_time;
 		if((tmp_char = strstr(last_object, "\%"))) {
 			int newlen = atoi(tmp_char+1);
 			if(newlen > 0) 
@@ -589,7 +604,10 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 		printf("Job Sizes %s - %s (%d secs)\n", 
 		       start_char, end_char, 
 		       (job_cond->usage_end - job_cond->usage_start));
-		printf("Time reported in %s\n", time_format_string);
+		if(print_job_count)
+			printf("Units are in number of jobs ran\n");
+		else
+			printf("Time reported in %s\n", time_format_string);
 		printf("----------------------------------------"
 		       "----------------------------------------\n");
 	}
@@ -808,7 +826,14 @@ no_assocs:
 					field->print_routine(
 						field,
 						local_group->cpu_secs,
-						acct_group->cpu_secs);
+						acct_group->cpu_secs,
+						0);
+					break;
+				case PRINT_JOB_COUNT:
+					field->print_routine(
+						field,
+						local_group->count,
+						0);
 					break;
 				default:
 					field->print_routine(field,
@@ -835,6 +860,8 @@ no_assocs:
 //	time_format = temp_time_format;
 
 end_it:
+	if(print_job_count)
+		print_job_count = 0;
 
 	destroy_acct_job_cond(job_cond);
 	
