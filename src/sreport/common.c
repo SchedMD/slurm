@@ -321,17 +321,19 @@ extern void destroy_sreport_cluster_rec(void *object)
 /* 
  * Comparator used for sorting users largest cpu to smallest cpu
  * 
- * returns: -1: user_a > user_b   0: user_a == user_b   1: user_a < user_b
+ * returns: 1: user_a > user_b   0: user_a == user_b   -1: user_a < user_b
  * 
  */
 extern int sort_user_dec(sreport_user_rec_t *user_a, sreport_user_rec_t *user_b)
 {
 	int diff = 0;
 
-	if (user_a->cpu_secs > user_b->cpu_secs)
-		return -1;
-	else if (user_a->cpu_secs < user_b->cpu_secs)
-		return 1;
+	if(sort_flag == SREPORT_SORT_TIME) {
+		if (user_a->cpu_secs > user_b->cpu_secs)
+			return -1;
+		else if (user_a->cpu_secs < user_b->cpu_secs)
+			return 1;
+	}
 
 	if(!user_a->name || !user_b->name)
 		return 0;
@@ -339,9 +341,9 @@ extern int sort_user_dec(sreport_user_rec_t *user_a, sreport_user_rec_t *user_b)
 	diff = strcmp(user_a->name, user_b->name);
 
 	if (diff > 0)
-		return -1;
-	else if (diff < 0)
 		return 1;
+	else if (diff < 0)
+		return -1;
 	
 	return 0;
 }
@@ -349,9 +351,9 @@ extern int sort_user_dec(sreport_user_rec_t *user_a, sreport_user_rec_t *user_b)
 /* 
  * Comparator used for sorting clusters alphabetically
  * 
- * returns: -1: cluster_a > cluster_b   
+ * returns: 1: cluster_a > cluster_b   
  *           0: cluster_a == cluster_b
- *           1: cluster_a < cluster_b
+ *           -1: cluster_a < cluster_b
  * 
  */
 extern int sort_cluster_dec(sreport_cluster_rec_t *cluster_a,
@@ -365,9 +367,9 @@ extern int sort_cluster_dec(sreport_cluster_rec_t *cluster_a,
 	diff = strcmp(cluster_a->name, cluster_b->name);
 
 	if (diff > 0)
-		return -1;
-	else if (diff < 0)
 		return 1;
+	else if (diff < 0)
+		return -1;
 	
 	return 0;
 }
@@ -393,21 +395,21 @@ extern int sort_assoc_dec(sreport_assoc_rec_t *assoc_a,
 	diff = strcmp(assoc_a->acct, assoc_b->acct);
 
 	if (diff > 0)
-		return -1;
-	else if (diff < 0)
 		return 1;
+	else if (diff < 0)
+		return -1;
 	
 	if(!assoc_a->user && assoc_b->user)
-		return -1;
-	else if(!assoc_b->user)
 		return 1;
+	else if(!assoc_b->user)
+		return -1;
 
 	diff = strcmp(assoc_a->user, assoc_b->user);
 
 	if (diff > 0)
-		return -1;
-	else if (diff < 0)
 		return 1;
+	else if (diff < 0)
+		return -1;
 	
 
 	return 0;

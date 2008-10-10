@@ -683,7 +683,8 @@ extern int cluster_user_by_account(int argc, char *argv[])
 			user_itr = list_iterator_create(
 				sreport_cluster->user_list); 
 			while((sreport_user = list_next(user_itr))) {
-				if(!strcmp(sreport_user->acct, assoc->acct)) 
+				if(!strcmp(sreport_user->name, assoc->user)
+				   && !strcmp(sreport_user->acct, assoc->acct))
 					break;				
 			}
 			list_iterator_destroy(user_itr);
@@ -705,7 +706,8 @@ extern int cluster_user_by_account(int argc, char *argv[])
 	
 				list_append(sreport_cluster->user_list,
 					    sreport_user);
-			}
+			} 
+
 			/* get the amount of time this assoc used
 			   during the time we are looking at */
 			itr2 = list_iterator_create(assoc->accounting_list);
