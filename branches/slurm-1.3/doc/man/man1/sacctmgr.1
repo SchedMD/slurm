@@ -333,7 +333,7 @@ for this account.  To get a list of vaild QOS's use 'sacctmgr list qos'.
 This value will override it's parents value and push down to it's
 childern as the new default.  Setting a QosLevel to '' (two single
 quotes with nothing between them) restores it's default setting.  You
-can also use the modifier += and -= to add or remove certain QOS's
+can also use the operator += and \-= to add or remove certain QOS's
 from a QOS list.
 
 Valid <operator> values include:
@@ -465,8 +465,8 @@ Specify the default Quality of Service's that jobs are able to run at
 for this cluster.  To get a list of vaild QOS's use 'sacctmgr list qos'. 
 This value is overridden if a child has a QOS value directly set.
 Setting a QosLevel to '' (two single quotes with nothing between them)
-restores it's default setting.  You can also use the modifier += and
--= to add or remove certain QOS's from a QOS list.
+restores it's default setting.  You can also use the operator += and
+\-= to add or remove certain QOS's from a QOS list.
 Valid <operator> values include:
 .RS
 .TP 5
@@ -581,8 +581,8 @@ Specify the default Quality of Service's that jobs are able to run at
 for this user.  To get a list of vaild QOS's use 'sacctmgr list qos'. 
 This value will override it's parents value.
 Setting a QosLevel to '' (two single quotes with nothing between them)
-restores it's default setting.  You can also use the modifier += and
--= to add or remove certain QOS's from a QOS list.
+restores it's default setting.  You can also use the operator += and
+\-= to add or remove certain QOS's from a QOS list.
 .RS
 .TP 5
 \fB=\fR
@@ -635,71 +635,180 @@ is always a default for any cluster and does not need to be defined.
 
 To edit/create a file start with a cluster line for the new cluster
 
-\fBCluster\ \-\ cluster_name\fP
+\fBCluster\ \-\ cluster_name:MaxNodesPerJob=15\fP
+
+Anything included on this line will be the defaults for all
+associations on this cluster.  These options are as follows...
+.TP
+GrpCPUMins=  
+Maximum number of CPU hours running jobs are able to
+be allocated in aggregate for this association and all association
+which are children of this association. (NOTE: this limit is not
+currently enforced in SLURM. You can still set this, but have to wait
+for future versions of SLURM before it is enforced.)
+.TP
+GrpCPUs= 
+Maximum number of CPUs running jobs are able to be
+allocated in aggregate for this association and all association which
+are children of this association. (NOTE: this limit is not currently
+enforced in SLURM. You can still set this, but have to wait for future
+versions of SLURM before it is enforced.)
+.TP
+GrpJobs= 
+Maximum number of running jobs in aggregate for this
+association and all association which are children of this association.
+.TP
+GrpNodes= 
+Maximum number of nodes running jobs are able to be
+allocated in aggregate for this association and all association which
+are children of this association.
+.TP
+GrpSubmitJobs= 
+Maximum number of jobs which can be in a pending or
+running state at any time in aggregate for this association and all
+association which are children of this association. 
+.TP
+GrpWall= 
+Maximum wall clock time running jobs are able to be
+allocated in aggregate for this association and all association which
+are children of this association. 
+.TP
+FairShare= 
+To be used with a scheduler like MOAB to determine priority.
+.TP
+MaxJobs= 
+Maximum number of jobs the children of this account can run.
+.TP
+MaxNodesPerJob= 
+Maximum number of nodes per job the children of this account can run.
+.TP
+MaxProcSecondsPerJob= 
+Maximum cpu seconds children of this accounts jobs can run.
+.TP
+MaxWallDurationPerJob= 
+Maximum time (not related to job size) children of this accounts jobs can run.
+.TP
+QOS= 
+Comma separated list of Quality of Service names (Defined in sacctmgr).
+.TP
 
 Followed by Accounts you want in this fashion...
 
-\fBAccount\ \-\ cs:MaxNodesPerJob=5:MaxJobs=4:MaxProcSecondsPerJob=20:FairShare=399:MaxWallDurationPerJob=40:Description='Computer Science':Organization='LC'\fP
+\fBParent\ \-\ root\fP (Defined by default)
+.br
+\fBAccount\ \-\ cs\fP:MaxNodesPerJob=5:MaxJobs=4:MaxProcSecondsPerJob=20:FairShare=399:MaxWallDurationPerJob=40:Description='Computer Science':Organization='LC'
+.br
+\fBParent\ \-\ cs\fP
+.br
+\fBAccount\ \-\ test\fP:MaxNodesPerJob=1:MaxJobs=1:MaxProcSecondsPerJob=1:FairShare=1:MaxWallDurationPerJob=1:Description='Test Account':Organization='Test'
 
+.TP
 Any of the options after a ':' can be left out and they can be in any order.
 If you want to add any sub accounts just list the Parent THAT HAS ALREADY 
 BEEN CREATED before the account line in this fashion...
-
+.TP
 All account options are
-.br
-Description= \- a brief description of the account
-.br
-FairShare= \- to be used with a scheduler like MOAB to determine priority
-.br
-MaxJobs= \- maximum number of jobs the children of this account can run
-.br
-MaxNodesPerJob= \- maximum number of nodes per job the children of this
-account can run
-.br
-MaxProcSecondsPerJob= \- maximum cpu seconds children of this accounts
-jobs can run
-.br
-MaxWallDurationPerJob= \- maximum time (not related to job size)
-children of this accounts jobs can run
-.br
-Organization= \- Name of organization that owns this account
-.br
-QOS= \- Comma separated list of Quality of Service names (Defined in sacctmgr)
-.br
+.TP
+Description= 
+A brief description of the account.
+.TP
+GrpCPUMins=  
+Maximum number of CPU hours running jobs are able to
+be allocated in aggregate for this association and all association
+which are children of this association. (NOTE: this limit is not
+currently enforced in SLURM. You can still set this, but have to wait
+for future versions of SLURM before it is enforced.)
+.TP
+GrpCPUs= 
+Maximum number of CPUs running jobs are able to be
+allocated in aggregate for this association and all association which
+are children of this association. (NOTE: this limit is not currently
+enforced in SLURM. You can still set this, but have to wait for future
+versions of SLURM before it is enforced.)
+.TP
+GrpJobs= 
+Maximum number of running jobs in aggregate for this
+association and all association which are children of this association.
+.TP
+GrpNodes= 
+Maximum number of nodes running jobs are able to be
+allocated in aggregate for this association and all association which
+are children of this association.
+.TP
+GrpSubmitJobs= 
+Maximum number of jobs which can be in a pending or
+running state at any time in aggregate for this association and all
+association which are children of this association. 
+.TP
+GrpWall= 
+Maximum wall clock time running jobs are able to be
+allocated in aggregate for this association and all association which
+are children of this association. 
+.TP
+FairShare= 
+To be used with a scheduler like MOAB to determine priority.
+.TP
+MaxJobs= 
+Maximum number of jobs the children of this account can run.
+.TP
+MaxNodesPerJob= 
+Maximum number of nodes per job the children of this account can run.
+.TP
+MaxProcSecondsPerJob= 
+Maximum cpu seconds children of this accounts jobs can run.
+.TP
+MaxWallDurationPerJob= 
+Maximum time (not related to job size) children of this accounts jobs can run.
+.TP
+Organization= 
+Name of organization that owns this account.
+.TP
+QOS(=,+=,\-=) 
+Comma separated list of Quality of Service names (Defined in sacctmgr).
+.TP
 
-\fBParent\ \-\ cs
-.br
-Account\ \-\ test:MaxNodesPerJob=1:MaxJobs=1:MaxProcSecondsPerJob=1:FairShare=1:MaxWallDurationPerJob=1:Description='Test Account':Organization='Test'\fP
-
+.TP
 To add users to a account add a line like this after a Parent \- line
+\fBParent\ \-\ test\fP
+.br
+\fBUser\ \-\ adam\fP:MaxNodesPerJob=2:MaxJobs=3:MaxProcSecondsPerJob=4:FairShare=1:MaxWallDurationPerJob=1:AdminLevel=Operator:Coordinator='test'
 
-\fBUser\ \-\ lipari:MaxNodesPerJob=2:MaxJobs=3:MaxProcSecondsPerJob=4:FairShare=1:MaxWallDurationPerJob=1:AdminLevel=Operator:Coordinator='test'\fP
-
+.TP
 All user options are
+.TP
+AdminLevel=
+Type of admin this user is (Administrator, Operator)
 .br
-AdminLevel= \- Type of admin this user is (Administrator, Operator)
 \fBMust be defined on the first occurrence of the user.\fP
+.TP
+Coordinator=
+Comma separated list of accounts this user is coordinator over
 .br
-Coordinator= \- Comma separated list of accounts this user is
-coordinator over \fBMust be defined on the first occurrence of the user.\fP
-.br
-DefaultAccount= \- system wide default account name
 \fBMust be defined on the first occurrence of the user.\fP
+.TP
+DefaultAccount=
+system wide default account name
 .br
-FairShare= \- to be used with a scheduler like MOAB to determine priority
-.br
-MaxJobs= \- maximum number of jobs this user can run
-.br
-MaxNodesPerJob= \- maximum number of nodes per job this user can run
-.br
-MaxProcSecondsPerJob= \- maximum cpu seconds this user can run per job
-.br
-MaxWallDurationPerJob= \- maximum time (not related to job size) this
-user can run
-.br
-QOS= \- Comma separated list of Quality of Service names (Defined in sacctmgr)
 \fBMust be defined on the first occurrence of the user.\fP
-.br
+.TP
+FairShare= 
+To be used with a scheduler like MOAB to determine priority.
+.TP
+MaxJobs= 
+Maximum number of jobs this user can run.
+.TP
+MaxNodesPerJob= 
+Maximum number of nodes per job this user can run.
+.TP
+MaxProcSecondsPerJob= 
+Maximum cpu seconds this user can run per job.
+.TP
+MaxWallDurationPerJob= 
+Maximum time (not related to job size) this user can run.
+.TP
+QOS(=,+=,\-=) 
+Comma separated list of Quality of Service names (Defined in sacctmgr).
+.RE
 
 
 .SH "EXAMPLES"
@@ -715,12 +824,44 @@ QOS= \- Comma separated list of Quality of Service names (Defined in sacctmgr)
 .br
 > sacctmgr create user name=adam cluster=tux account=physics fairshare=10
 .br
-> sacctmgr modify user with name=adam cluster=tux account=physics set
+> sacctmgr modify user name=adam cluster=tux account=physics set
   maxjobs=2 maxtime=30:00
 .br
 > sacctmgr dump cluster=tux tux_data_file
 .br
 > sacctmgr load tux_data_file
+.br
+
+.br
+When modifying an object placing the key words 'set' and the
+optional 'where' is crtical to perform correctly below are examples to
+produce correct results.  As a rule of thumb any thing you put infront
+of the set will be used as a quantifier.  If you want to put a
+quantifier after the key word 'set' you should use the key
+word 'where'.
+.br
+
+.br
+wrong> sacctmgr modify user name=adam set fairshare=10 cluster=tux
+.br
+
+.br
+This will produce an error as the above line reads modify user adam
+set fairshare=10 and cluster=tux.  
+.br
+
+.br
+right> sacctmgr modify user name=adam cluster=tux set fairshare=10
+.br
+right> sacctmgr modify user name=adam set fairshare=10 where cluster=tux 
+.br
+
+.br
+(For use with MOAB only)
+When changing qos for something only use the '=' operator when wanting
+to explitally set the qos to something.  In most cases you will want
+to use the '+=' or '-=' operator to either add to or remove from the
+existing qos already in place.
 .br
 .ec
 

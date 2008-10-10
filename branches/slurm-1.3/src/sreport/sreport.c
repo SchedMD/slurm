@@ -567,7 +567,7 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
                                                                            \n\
      cluster - Names=<OPT>      - List of clusters to include in report    \n\
                                   Default is local cluster.                \n\
-               Tree             - When used with the AccountUtilizationByUser\n\
+             - Tree             - When used with the AccountUtilizationByUser\n\
                                   report will span the accounts as they    \n\
                                   in the hierarchy.                        \n\
                                                                            \n\
@@ -584,6 +584,8 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
                                   Default is all.                          \n\
              - Partitions=<OPT> - List of partitions jobs ran on to include\n\
                                   in report.  Default is all.              \n\
+             - PrintJobCount    - When used with the Sizes report will print\n\
+                                  number of jobs ran instead of time used. \n\
              - Users=<OPT>      - List of users jobs to include in report. \n\
                                   Default is all.                          \n\
                                                                            \n\
