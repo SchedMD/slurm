@@ -83,7 +83,7 @@ static bg_record_t *_find_matching_block(List block_list,
 					 bitstr_t* slurm_block_bitmap,
 					 ba_request_t *request,
 					 uint32_t max_procs,
-					 int allow, int check_image,
+					 int *allow, int check_image,
 					 int overlap_check,
 					 List overlapped_list,
 					 bool test_only);
@@ -365,7 +365,7 @@ static bg_record_t *_find_matching_block(List block_list,
 					 bitstr_t* slurm_block_bitmap,
 					 ba_request_t *request,
 					 uint32_t max_procs,
-					 int allow, int check_image,
+					 int *allow, int check_image,
 					 int overlap_check,
 					 List overlapped_list,
 					 bool test_only)
@@ -454,22 +454,22 @@ static bg_record_t *_find_matching_block(List block_list,
 			if(request->blrtsimage &&
 			   strcasecmp(request->blrtsimage,
 				      bg_record->blrtsimage)) {
-				allow = 1;
+				*allow = 1;
 				continue;
 			} else if(request->linuximage &&
 			   strcasecmp(request->linuximage,
 				      bg_record->linuximage)) {
-				allow = 1;
+				*allow = 1;
 				continue;
 			} else if(request->mloaderimage &&
 			   strcasecmp(request->mloaderimage, 
 				      bg_record->mloaderimage)) {
-				allow = 1;
+				*allow = 1;
 				continue;
 			} else if(request->ramdiskimage &&
 			   strcasecmp(request->ramdiskimage,
 				      bg_record->ramdiskimage)) {
-				allow = 1;
+				*allow = 1;
 				continue;
 			}			
 		}
@@ -982,7 +982,7 @@ static int _find_best_block_match(List block_list,
 						 slurm_block_bitmap,
 						 &request,
 						 max_procs,
-						 allow, check_image,
+						 &allow, check_image,
 						 overlap_check, 
 						 overlapped_list,
 						 test_only);
