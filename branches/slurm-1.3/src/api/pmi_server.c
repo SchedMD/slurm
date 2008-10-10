@@ -168,8 +168,8 @@ static void *_msg_thread(void *x)
 
 	slurm_mutex_lock(&agent_mutex);
 	agent_cnt--;
-	slurm_mutex_unlock(&agent_mutex);
 	pthread_cond_signal(&agent_cond);
+	slurm_mutex_unlock(&agent_mutex);
 	xfree(x);
 	return NULL;
 }

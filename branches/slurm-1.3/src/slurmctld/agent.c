@@ -984,8 +984,8 @@ cleanup:
 						 thread_ptr->start_time);
 	/* Signal completion so another thread can replace us */
 	(*threads_active_ptr)--;
-	slurm_mutex_unlock(thread_mutex_ptr);
 	pthread_cond_signal(thread_cond_ptr);
+	slurm_mutex_unlock(thread_mutex_ptr);
 	return (void *) NULL;
 }
 
