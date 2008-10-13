@@ -76,7 +76,8 @@ am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 select_cons_res_la_LIBADD =
-am_select_cons_res_la_OBJECTS = select_cons_res.lo dist_tasks.lo job_test.lo
+am_select_cons_res_la_OBJECTS = select_cons_res.lo dist_tasks.lo \
+	job_test.lo
 select_cons_res_la_OBJECTS = $(am_select_cons_res_la_OBJECTS)
 select_cons_res_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
