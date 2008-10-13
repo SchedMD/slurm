@@ -863,6 +863,26 @@ to explitally set the qos to something.  In most cases you will want
 to use the '+=' or '-=' operator to either add to or remove from the
 existing qos already in place.
 .br
+
+.br
+If a user already has qos of normal,standby for a parent or it was
+explicitly set you should use qos+=expedite to add this to the list in
+this fashon.
+.br
+
+.br
+> sacctmgr modify user name=adam set qos+=expedite
+.br
+
+.br
+If you are looking to only add the qos expedite to only a certain
+accoun and or cluster you can do that by specifing them in the
+sacctmgr line.
+.br
+
+.br
+> sacctmgr modify user name=adam acct=this cluster=tux set qos+=expedite
+.br
 .ec
 
 .SH "COPYING"
