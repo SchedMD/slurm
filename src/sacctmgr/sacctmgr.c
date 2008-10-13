@@ -671,14 +671,23 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
      associations             when using show/list will list the           \n\
                               associations associated with the entity.     \n\
      delete <ENTITY> <SPECS>  delete the specified entity(s)               \n\
-     dump <CLUSTER> <FILE>    dump database information of the             \n\
+     dump <CLUSTER> [<FILE>]  dump database information of the             \n\
                               specified cluster to the flat file.          \n\
+                              Will default to clustername.cfg if no file   \n\
+                              is given.                                    \n\
      exit                     terminate sacctmgr                           \n\
      help                     print this description of use.               \n\
      list <ENTITY> [<SPECS>]  display info of identified entity, default   \n\
                               is display all.                              \n\
-     load <FILE>              read in the file to update the database      \n\
-                              with the file contents.                      \n\
+     load <FILE> [<SPECS>]    read in the file to update the database      \n\
+                              with the file contents. <SPECS> here consist \n\
+                              of 'cluster=', and 'clean'.  The 'cluster='  \n\
+                              will override the cluster name given in the  \n\
+                              file.  The 'clean' option will remove what is\n\
+                              already in the system for this cluster and   \n\
+                              replace it with the file.  If the clean option\n\
+                              is not given only new additions or           \n\
+                              modifications will be done, no deletions.    \n\
      modify <ENTITY> <SPECS>  modify entity                                \n\
      oneliner                 report output one record per line.           \n\
      parsable                 output will be | delimited with an ending '|'\n\
@@ -718,8 +727,8 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             WithSubAccounts, WithDeleted, WOPInfo,         \n\
                             and WOPLimits                                  \n\
                                                                            \n\
-       list cluster       - Names= Format=                                 \n\
-       add cluster        - Fairshare=, GrpCPUMins=, GrpCPUs=, GrpJobs=,  \n\
+       list cluster       - Format=, Names=                                \n\
+       add cluster        - Fairshare=, GrpCPUMins=, GrpCPUs=, GrpJobs=,   \n\
                             GrpNodes=, GrpSubmitJob=, GrpWall=, MaxCPUMins=\n\
                             MaxJobs=, MaxNodes=, MaxWall=, and Name=       \n\
        modify cluster     - (set options) Fairshare=, GrpCPUMins=,         \n\
@@ -732,8 +741,12 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
        add coordinator    - Accounts=, and Names=                          \n\
        delete coordinator - Accounts=, and Names=                          \n\
                                                                            \n\
-       list qos           - Descriptions=, Ids=, Names=, and WithDeleted   \n\
-       add qos            - Description=, and Names=                       \n\
+       list qos           - Descriptions=, Format=, Ids=, Names=,          \n\
+                            and WithDeleted                                \n\
+       add qos            - Description=, GrpCPUMins=, GrpCPUs=, GrpJobs=, \n\
+                            GrpNodes=, GrpSubmitJob=, GrpWall=, JobFlags=, \n\
+                            MaxCPUMins=, MaxJobs=, MaxNodes=, MaxWall=,    \n\
+                            Preemptee=, Preemptor=, Priority=, and Names=  \n\
        delete qos         - Descriptions=, Ids=, and Names=                \n\
                                                                            \n\
        list transactions  - Actor=, EndTime,                               \n\

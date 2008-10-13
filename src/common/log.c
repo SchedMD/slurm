@@ -362,7 +362,7 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 	size_t      len = (size_t) 0;
 	char        tmp[LINEBUFSIZE];
 	int         unprocessed = 0;
-
+	int         long_long = 0;
 
 	while (*fmt != '\0') {
 
@@ -436,24 +436,76 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 					xstrcat(buf, "%u");
 				break;
 			case 'l':
+				if((unprocessed == 0) && (*(p+1) == 'l')) {
+					long_long = 1;
+					p++;
+				}
+				
 				if ((unprocessed == 0) && (*(p+1) == 'u')) {
-					snprintf(tmp, sizeof(tmp), "%lu",
-						va_arg(ap, long unsigned));
+					if(long_long) {
+						snprintf(tmp, sizeof(tmp),
+							"%llu", 
+							 va_arg(ap,
+								long long unsigned));
+						long_long = 0;
+					} else 
+						snprintf(tmp, sizeof(tmp),
+							 "%lu",
+							 va_arg(ap,
+								long unsigned));
 					xstrcat(buf, tmp);
 					p++;
 				} else if ((unprocessed==0) && (*(p+1)=='d')) {
-					snprintf(tmp, sizeof(tmp), "%ld",
-						va_arg(ap, long int));
+					if(long_long) {
+						snprintf(tmp, sizeof(tmp),
+							"%lld", 
+							 va_arg(ap,
+								long long int));
+						long_long = 0;
+					} else
+						snprintf(tmp, sizeof(tmp),
+							 "%ld",
+							 va_arg(ap, long int));
+					xstrcat(buf, tmp);
+					p++;
+				} else if ((unprocessed==0) && (*(p+1)=='f')) {
+					if(long_long) {
+						xstrcat(buf, "%llf");
+						long_long = 0;
+					} else 
+						snprintf(tmp, sizeof(tmp),
+							 "%lf",
+							 va_arg(ap, double));
 					xstrcat(buf, tmp);
 					p++;
 				} else if ((unprocessed==0) && (*(p+1)=='x')) {
-					snprintf(tmp, sizeof(tmp), "%lx",
-						va_arg(ap, long int));
+					if(long_long) {
+						snprintf(tmp, sizeof(tmp),
+							 "%llx", 
+							 va_arg(ap,
+								long long int));
+						long_long = 0;
+					} else
+						snprintf(tmp, sizeof(tmp),
+							 "%lx",
+							 va_arg(ap, long int));
 					xstrcat(buf, tmp);
 					p++;
+				} else if(long_long) {
+					xstrcat(buf, "%ll");
+					long_long = 0;
 				} else
 					xstrcat(buf, "%l");
 				break; 
+			case 'L':
+				if ((unprocessed==0) && (*(p+1)=='f')) {
+					snprintf(tmp, sizeof(tmp), "%Lf", 
+						 va_arg(ap, long double));
+					xstrcat(buf, tmp);
+					p++;
+				} else
+					xstrcat(buf, "%L");
+				break;
 			default:	/* try to handle the rest  */
 				xstrcatchar(buf, '%');
 				xstrcatchar(buf, *p);

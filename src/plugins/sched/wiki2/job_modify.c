@@ -235,7 +235,7 @@ host_fini:	if (rc) {
 /* Modify a job:
  *	CMD=MODIFYJOB ARG=<jobid> PARTITION=<name> NODES=<number>
  *		DEPEND=afterany:<jobid> TIMELIMT=<seconds> BANK=<name>
- *		MINSTARTTIME=<uts> RFEATURES=<features>
+ *		JOBNAME=<name> MINSTARTTIME=<uts> RFEATURES=<features>
  * RET 0 on success, -1 on failure */
 extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 {

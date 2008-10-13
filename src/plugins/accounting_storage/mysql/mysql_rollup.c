@@ -288,7 +288,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				       job_str, job_table, assoc_table,
 				       curr_end, curr_start, curr_start);
 
-		debug3("%d query\n%s", mysql_conn->conn, query);
+		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 		if(!(result = mysql_db_query_ret(
 			     mysql_conn->db_conn, query, 0))) {
 			xfree(query);
@@ -342,7 +342,8 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					curr_end, curr_start,
 					row[JOB_REQ_DB_INX]);
 				
-				debug4("%d query\n%s", mysql_conn->conn, query);
+				debug4("%d(%d) query\n%s",
+				       mysql_conn->conn, __LINE__, query);
 				if(!(result2 = mysql_db_query_ret(
 					     mysql_conn->db_conn,
 					     query, 0))) {
@@ -369,8 +370,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					
 					seconds -= (local_end - local_start);
 				}
-				mysql_free_result(result2);			
-
+				mysql_free_result(result2);
 			}
 			if(seconds < 1) {
 				debug4("This job (%u) was suspended "
@@ -451,13 +451,13 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			 * commit field
 			 */
 			
-			if(c_usage->i_cpu < 0) {
+			if((int64_t)c_usage->i_cpu < 0) {
 /* 				info("got %d %d %d", c_usage->r_cpu, */
 /* 				     c_usage->i_cpu, c_usage->o_cpu); */
 				c_usage->r_cpu += c_usage->i_cpu;
 				c_usage->o_cpu -= c_usage->i_cpu;
 				c_usage->i_cpu = 0;
-				if(c_usage->r_cpu < 0)
+				if((int64_t)c_usage->r_cpu < 0)
 					c_usage->r_cpu = 0;
 			}
 			
@@ -510,7 +510,8 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				   "over_cpu_secs=VALUES(over_cpu_secs), "
 				   "resv_cpu_secs=VALUES(resv_cpu_secs)",
 				   now);
-			debug3("%d query\n%s", mysql_conn->conn, query);
+			debug3("%d(%d) query\n%s",
+			       mysql_conn->conn, __LINE__, query);
 			rc = mysql_db_query(mysql_conn->db_conn, query);
 			xfree(query);
 			if(rc != SLURM_SUCCESS) {
@@ -548,7 +549,8 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				   "alloc_cpu_secs=VALUES(alloc_cpu_secs)",
 				   now);
 					   	
-			debug3("%d query\n%s", mysql_conn->conn, query);
+			debug3("%d(%d) query\n%s",
+			       mysql_conn->conn, __LINE__, query);
 			rc = mysql_db_query(mysql_conn->db_conn, query);
 			xfree(query);
 			if(rc != SLURM_SUCCESS) {
@@ -633,7 +635,7 @@ extern int mysql_daily_rollup(mysql_conn_t *mysql_conn,
 			   cluster_day_table, now, now, curr_start,
 			   cluster_hour_table,
 			   curr_end, curr_start, now);
-		debug3("%d query\n%s", mysql_conn->conn, query);
+		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
@@ -729,7 +731,7 @@ extern int mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 			   cluster_month_table, now, now, curr_start,
 			   cluster_day_table,
 			   curr_end, curr_start, now);
-		debug3("%d query\n%s", mysql_conn->conn, query);
+		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {

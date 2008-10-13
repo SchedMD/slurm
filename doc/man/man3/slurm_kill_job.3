@@ -1,6 +1,8 @@
 .TH "Slurm API" "3" "November 2003" "Morris Jette" "Slurm job signal calls"
 .SH "NAME"
-slurm_kill_job, slurm_kill_job_step \- Slurm job signal calls
+slurm_kill_job, slurm_kill_job_step,
+slurm_signal_job, slurm_signal_job_step,
+slurm_terminate_job, slurm_terminate_job_step \- Slurm job signal calls
 .SH "SYNTAX"
 .LP 
 #include <slurm/slurm.h>
@@ -22,6 +24,38 @@ int \fBslurm_kill_job_step\fR (
 	uint32_t \fIjob_step_id\fP,
 .br 
 	uint16_t \fIsignal\fP
+.br 
+);
+.LP
+int \fBslurm_signal_job\fR (
+.br 
+	uint32_t \fIjob_id\fP,
+.br 
+	uint16_t \fIsignal\fP
+.br 
+);
+.LP
+int \fBslurm_signal_job_step\fR (
+.br 
+	uint32_t \fIjob_id\fP,
+.br 
+	uint32_t \fIjob_step_id\fP,
+.br 
+	uint16_t \fIsignal\fP
+.br 
+);
+.LP
+int \fBslurm_terminate_job\fR (
+.br 
+	uint32_t \fIjob_id\fP,
+.br 
+);
+.LP
+int \fBslurm_terminate_job_step\fR (
+.br 
+	uint32_t \fIjob_id\fP,
+.br 
+	uint32_t \fIjob_step_id\fP,
 .br 
 );
 .SH "ARGUMENTS"
@@ -46,6 +80,18 @@ This function may only be successfully executed by the job's owner or user root.
 .LP 
 \fBslurm_kill_job_step\fR Request that a signal be sent to a specific job step. 
 This function may only be successfully executed by the job's owner or user root.
+\fBslurm_signal_job\fR Request that send the specified signal to all
+steps of an existing job. 
+\fBslurm_signal_job_step\fR Request that send the specified signal to
+an existing job step. 
+\fBslurm_terminate_job\fR Request that terminates all steps of an
+existing job by sending a REQUEST_TERMINATE_JOB rpc to all slurmd in
+the the job allocation, and then calls slurm_complete_job(). 
+\fBslurm_signal_job_step\fR Request that terminates a job step by
+sending a REQUEST_TERMINATE_TASKS rpc to all slurmd of a job step, and
+then calls slurm_complete_job_step() after verifying that all nodes in
+the job step no longer have running tasks from the job step.  (May
+take over 35 seconds to return.) 
 .SH "RETURN VALUE"
 .LP
 On success, zero is returned. On error, \-1 is returned, and Slurm error code is set appropriately.

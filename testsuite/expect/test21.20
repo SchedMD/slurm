@@ -89,6 +89,7 @@ set mj		maxjob
 set mn		maxnode
 set mw		maxwall
 set dbu		debug
+set was		withassoc
 set access_err  0
 
 #set user_name   "id -u -n"
@@ -958,7 +959,7 @@ if { $exit_code } {
 # Use sacctmgr to list the test qos additions
 #
 set matches 0
-set my_pid [spawn $sacctmgr -n -p list user format="User,QosLevel" names=$us1,$us2,$us3]
+set my_pid [spawn $sacctmgr -n -p list user format="User,QosLevel" names=$us1,$us2,$us3 $was]
 expect {
 	-re "There was a problem" {
 	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
@@ -978,7 +979,7 @@ expect {
 	}
 }
 
-if {$matches != 3} {
+if {$matches != 27} {
 	send_user "\nFAILURE:  Account addition 1 incorrect with only $matches.\n"
 	incr exit_code 1
 }
@@ -1000,7 +1001,7 @@ if { $exit_code } {
 # Use sacctmgr to list the test qos modifications
 #
 set matches 0
-set my_pid [spawn $sacctmgr -n -p list user format="User,QosLevel" names=$us1,$us2,$us3]
+set my_pid [spawn $sacctmgr -n -p list user format="User,QosLevel" names=$us1,$us2,$us3 $was]
 expect {
 	-re "There was a problem" {
 	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
@@ -1024,7 +1025,7 @@ expect {
 	}
 }
 
-if {$matches != 3} {
+if {$matches != 21} {
 	send_user "\nFAILURE:  Account addition 1 incorrect with only $matches.\n"
 	incr exit_code 1
 }
@@ -1046,7 +1047,7 @@ if { $exit_code } {
 # Use sacctmgr to list the test qos modifications
 #
 set matches 0
-set my_pid [spawn $sacctmgr -n -p list user format="User,QosLevel" names=$us1,$us2,$us3]
+set my_pid [spawn $sacctmgr -n -p list user format="User,QosLevel" names=$us1,$us2,$us3 $was]
 expect {
 	-re "There was a problem" {
 	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
@@ -1074,7 +1075,7 @@ expect {
 	}
 }
 
-if {$matches != 3} {
+if {$matches != 15} {
 	send_user "\nFAILURE:  Account addition 1 incorrect with only $matches.\n"
 	incr exit_code 1
 }
@@ -1084,7 +1085,7 @@ if {$matches != 3} {
 # account adminlevel cluster defaultaccount qoslevel name
 # qoslevel waccounts wcluster wnames
 #
-incr exit_code [_mod_user "-=$qs1" "$nm2" "$tc1,$tc2,$tc3" $us3]
+incr exit_code [_mod_user "-=$qs2" "$nm2" "$tc1,$tc2,$tc3" $us3]
 if { $exit_code } {
 	_remove_user "" "$us1,$us2,$us3"
 	_remove_acct "" "$nm1,$nm2,$nm3"
@@ -1097,7 +1098,7 @@ if { $exit_code } {
 # Use sacctmgr to list the test qos modifications
 #
 set matches 0
-set my_pid [spawn $sacctmgr -n -p list user format="User,QosLevel" names=$us1,$us2,$us3]
+set my_pid [spawn $sacctmgr -n -p list user format="User,QosLevel" names=$us1,$us2,$us3 $was]
 expect {
 	-re "There was a problem" {
 	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
@@ -1111,7 +1112,7 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "$us3.$qs2." {
+	-re "$us3.$qs1." {
 		incr matches
 		exp_continue
 	}
@@ -1125,7 +1126,7 @@ expect {
 	}
 }
 
-if {$matches != 3} {
+if {$matches != 9} {
 	send_user "\nFAILURE:  Account addition 1 incorrect with only $matches.\n"
 	incr exit_code 1
 }

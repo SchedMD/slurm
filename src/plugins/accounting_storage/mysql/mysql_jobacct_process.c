@@ -97,6 +97,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		"t1.qos",
 		"t2.user",
 		"t2.cluster",
+		"t2.acct",
 		"t2.lft"
 	};
 
@@ -144,7 +145,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		JOB_REQ_PARTITION,
 		JOB_REQ_BLOCKID,
 		JOB_REQ_CLUSTER1,
-		JOB_REQ_ACCOUNT,
+		JOB_REQ_ACCOUNT1,
 		JOB_REQ_ELIGIBLE,
 		JOB_REQ_SUBMIT,
 		JOB_REQ_START,
@@ -162,6 +163,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		JOB_REQ_QOS,
 		JOB_REQ_USER_NAME,
 		JOB_REQ_CLUSTER,
+		JOB_REQ_ACCOUNT,
 		JOB_REQ_LFT,
 		JOB_REQ_COUNT		
 	};
@@ -499,8 +501,10 @@ no_cond:
 		if(row[JOB_REQ_LFT])
 			job->lft = atoi(row[JOB_REQ_LFT]);
 
-		if(row[JOB_REQ_ACCOUNT])
+		if(row[JOB_REQ_ACCOUNT] && row[JOB_REQ_ACCOUNT][0])
 			job->account = xstrdup(row[JOB_REQ_ACCOUNT]);
+		else if(row[JOB_REQ_ACCOUNT1] && row[JOB_REQ_ACCOUNT1][0])
+			job->account = xstrdup(row[JOB_REQ_ACCOUNT1]);
 
 		if(row[JOB_REQ_BLOCKID])
 			job->blockid = xstrdup(row[JOB_REQ_BLOCKID]);

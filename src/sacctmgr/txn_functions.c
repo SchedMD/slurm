@@ -132,6 +132,7 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
 	char *object = NULL;
+	int field_count = 0;
 
 	print_field_t *field = NULL;
 
@@ -250,47 +251,62 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 	itr2 = list_iterator_create(print_fields_list);
 	print_fields_header(print_fields_list);
 
+	field_count = list_count(print_fields_list);
+
 	while((txn = list_next(itr))) {
+		int curr_inx = 1;
 		while((field = list_next(itr2))) {
 			switch(field->type) {
 			case PRINT_ACCT:
-				field->print_routine(field, txn->accts);
+				field->print_routine(field, txn->accts,
+						     (curr_inx == field_count));
 				break;
 			case PRINT_ACTION:
 				field->print_routine(
 					field, 
 					slurmdbd_msg_type_2_str(txn->action,
-								0));
+								0),
+					(curr_inx == field_count));
 				break;
 			case PRINT_ACTOR:
 				field->print_routine(field,
-						     txn->actor_name);
+						     txn->actor_name,
+						     (curr_inx == field_count));
 				break;
 			case PRINT_CLUSTER:
-				field->print_routine(field, txn->clusters);
+				field->print_routine(field, txn->clusters,
+						     (curr_inx == field_count));
 				break;
 			case PRINT_ID:
 				field->print_routine(field,
-						     txn->id);
+						     txn->id,
+						     (curr_inx == field_count));
 				break;
 			case PRINT_INFO:
 				field->print_routine(field, 
-						     txn->set_info);
+						     txn->set_info,
+						     (curr_inx == field_count));
 				break;
 			case PRINT_TS:
 				field->print_routine(field,
-						     txn->timestamp);
+						     txn->timestamp,
+						     (curr_inx == field_count));
 				break;
 			case PRINT_USER:
-				field->print_routine(field, txn->users);
+				field->print_routine(field, txn->users,
+						     (curr_inx == field_count));
 				break;
 			case PRINT_WHERE:
 				field->print_routine(field, 
-						     txn->where_query);
+						     txn->where_query,
+						     (curr_inx == field_count));
 				break;
 			default:
-				break;
+				field->print_routine(field, NULL,
+						     (curr_inx == field_count));
+					break;
 			}
+			curr_inx++;
 		}
 		list_iterator_reset(itr2);
 		printf("\n");

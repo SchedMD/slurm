@@ -112,9 +112,8 @@ extern int init ( void )
 			      plugin_name);
 		xfree(cluster_name);
 		slurmdbd_auth_info = slurm_get_accounting_storage_pass();
-		if(!slurmdbd_auth_info)			
-			verbose("%s loaded AuthInfo=%s",
-				plugin_name, slurmdbd_auth_info);
+		verbose("%s loaded with AuthInfo=%s",
+			plugin_name, slurmdbd_auth_info);
 		first = 0;
 	} else {
 		debug4("%s loaded", plugin_name);

@@ -541,7 +541,7 @@ extern int bg_free_block(bg_record_t *bg_record)
 		}
 		
 		slurm_mutex_lock(&block_state_mutex);			
-		if (bg_record->state != (uint16_t)NO_VAL
+		if (bg_record->state != NO_VAL
 		    && bg_record->state != RM_PARTITION_FREE 
 		    && bg_record->state != RM_PARTITION_DEALLOCATING) {
 #ifdef HAVE_BG_FILES

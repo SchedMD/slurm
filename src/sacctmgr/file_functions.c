@@ -649,7 +649,7 @@ static List _set_up_print_fields(List format_list)
 	return print_fields_list;
 }
 
-static int _print_out_assoc(List assoc_list, bool user)
+static int _print_out_assoc(List assoc_list, bool user, bool add)
 {
 	List format_list = NULL;
 	List print_fields_list = NULL;
@@ -664,12 +664,12 @@ static int _print_out_assoc(List assoc_list, bool user)
 	format_list = list_create(slurm_destroy_char);
 	if(user)
 		slurm_addto_char_list(format_list,
-				      "User,Account,F,GrpCH,GrpC,"
+				      "User,Account,F,GrpCPUM,GrpCPUs,"
 				      "GrpJ,GrpN,GrpS,GrpW,MaxCPUM,MaxCPUs,"
 				      "MaxJ,MaxS,MaxN,MaxW,QOS");
 	else 
 		slurm_addto_char_list(format_list,
-				      "Account,Parent,F,GrpCH,GrpC,"
+				      "Account,Parent,F,GrpCPUM,GrpCPUs,"
 				      "GrpJ,GrpN,GrpS,GrpW,MaxCPUM,MaxCPUs,"
 				      "MaxJ,MaxS,MaxN,MaxW,QOS");
 	
@@ -762,6 +762,8 @@ static int _print_out_assoc(List assoc_list, bool user)
 						     assoc->user);
 				break;
 			default:
+				field->print_routine(
+					field, NULL);
 				break;
 			}
 		}
@@ -771,8 +773,10 @@ static int _print_out_assoc(List assoc_list, bool user)
 	list_iterator_destroy(itr);
 	list_iterator_destroy(itr2);
 	list_destroy(print_fields_list);
-	rc = acct_storage_g_add_associations(db_conn, my_uid, assoc_list);
-	printf("---------------------------------------------------\n\n");
+	if(add)
+		rc = acct_storage_g_add_associations(db_conn, 
+						     my_uid, assoc_list);
+	printf("--------------------------------------------------------------\n\n");
 
 	return rc;
 }
@@ -1484,6 +1488,70 @@ static acct_account_rec_t *_set_acct_up(sacctmgr_file_opts_t *file_opts,
 	return acct;
 }
 
+static acct_association_rec_t *_set_assoc_up(sacctmgr_file_opts_t *file_opts,
+					     sacctmgr_mod_type_t mod_type,
+					     char *cluster, char *parent)
+{
+	acct_association_rec_t *assoc = NULL;
+
+	if(!cluster) {
+		error("No cluster name was given for _set_assoc_up");
+		return NULL;
+	}
+
+	if(!parent && (mod_type != MOD_CLUSTER)) {
+		error("No parent was given for _set_assoc_up");
+		return NULL;
+	}
+
+	assoc = xmalloc(sizeof(acct_association_rec_t));
+	init_acct_association_rec(assoc);
+
+	switch(mod_type) {
+	case MOD_CLUSTER:
+		assoc->acct = xstrdup(parent);
+		assoc->cluster = xstrdup(cluster);
+		break;
+	case MOD_ACCT:
+		assoc->acct = xstrdup(file_opts->name);
+		assoc->cluster = xstrdup(cluster);
+		assoc->parent_acct = xstrdup(parent);
+		break;
+	case MOD_USER:
+		assoc->acct = xstrdup(parent);
+		assoc->cluster = xstrdup(cluster);
+		assoc->partition = xstrdup(file_opts->part);
+		assoc->user = xstrdup(file_opts->name);
+		break;
+	default:
+		error("Unknown mod type for _set_assoc_up %d", mod_type);
+		destroy_acct_association_rec(assoc);
+		assoc = NULL;
+		break;
+	}
+
+	
+	assoc->fairshare = file_opts->fairshare;
+	
+	assoc->grp_cpu_mins = file_opts->grp_cpu_mins;
+	assoc->grp_cpus = file_opts->grp_cpus;
+	assoc->grp_jobs = file_opts->grp_jobs;
+	assoc->grp_nodes = file_opts->grp_nodes;
+	assoc->grp_submit_jobs = file_opts->grp_submit_jobs;
+	assoc->grp_wall = file_opts->grp_wall;
+	
+	assoc->max_jobs = file_opts->max_jobs;
+	assoc->max_nodes_pj = file_opts->max_nodes_pj;
+	assoc->max_wall_pj = file_opts->max_wall_pj;
+	assoc->max_cpu_mins_pj = file_opts->max_cpu_mins_pj;
+
+	if(file_opts->qos_list && list_count(file_opts->qos_list)) 
+		assoc->qos_list = copy_char_list(file_opts->qos_list);
+
+
+	return assoc;
+}
+
 static int _print_file_sacctmgr_assoc_childern(FILE *fd, 
 					       List sacctmgr_assoc_list,
 					       List user_list,
@@ -1921,21 +1989,23 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 
 			if(!(cluster = sacctmgr_find_cluster_from_list(
 				     curr_cluster_list, cluster_name))) {
+				List temp_assoc_list = list_create(NULL);
 				List cluster_list =
 					list_create(destroy_acct_cluster_rec);
+
 				cluster = xmalloc(sizeof(acct_cluster_rec_t));
 				list_append(cluster_list, cluster);
 				cluster->name = xstrdup(cluster_name);
-				cluster->root_assoc->fairshare =
-					file_opts->fairshare;		
-				cluster->root_assoc->max_cpu_mins_pj = 
-					file_opts->max_cpu_mins_pj;
-				cluster->root_assoc->max_jobs = file_opts->max_jobs;
-				cluster->root_assoc->max_nodes_pj = 
-					file_opts->max_nodes_pj;
-				cluster->root_assoc->max_wall_pj = 
-					file_opts->max_wall_pj;
+				cluster->root_assoc = _set_assoc_up(
+					file_opts, MOD_CLUSTER,
+					cluster_name, "root");
+				list_append(temp_assoc_list,
+					    cluster->root_assoc);
+				
+				rc = _print_out_assoc(temp_assoc_list, 0, 0);
+				list_destroy(temp_assoc_list);
 				notice_thread_init();
+				
 				rc = acct_storage_g_add_clusters(
 					db_conn, my_uid, cluster_list);
 				notice_thread_fini();
@@ -2038,18 +2108,9 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				/* don't add anything to the
 				   curr_acct_list */
 
-				assoc = xmalloc(sizeof(acct_association_rec_t));
-				assoc->acct = xstrdup(file_opts->name);
-				assoc->cluster = xstrdup(cluster_name);
-				assoc->parent_acct = xstrdup(parent);
-				assoc->fairshare = file_opts->fairshare;
-				assoc->max_jobs = file_opts->max_jobs;
-				assoc->max_nodes_pj =
-					file_opts->max_nodes_pj;
-				assoc->max_wall_pj =
-					file_opts->max_wall_pj;
-				assoc->max_cpu_mins_pj = 
-					file_opts->max_cpu_mins_pj;
+				assoc = _set_assoc_up(file_opts, MOD_ACCT,
+						      cluster_name, parent);
+
 				list_append(acct_assoc_list, assoc);
 				/* don't add anything to the
 				   curr_assoc_list */
@@ -2074,18 +2135,10 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				} else {
 					debug2("already modified this account");
 				}
-				assoc = xmalloc(sizeof(acct_association_rec_t));
-				assoc->acct = xstrdup(file_opts->name);
-				assoc->cluster = xstrdup(cluster_name);
-				assoc->parent_acct = xstrdup(parent);
-				assoc->fairshare = file_opts->fairshare;
-				assoc->max_jobs = file_opts->max_jobs;
-				assoc->max_nodes_pj =
-					file_opts->max_nodes_pj;
-				assoc->max_wall_pj =
-					file_opts->max_wall_pj;
-				assoc->max_cpu_mins_pj = 
-					file_opts->max_cpu_mins_pj;
+
+				assoc = _set_assoc_up(file_opts, MOD_ACCT,
+						      cluster_name, parent);
+
 				list_append(acct_assoc_list, assoc);
 				/* don't add anything to the
 				   curr_assoc_list */
@@ -2112,6 +2165,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				if(!assoc2) {
 					assoc2 = xmalloc(
 						sizeof(acct_association_rec_t));
+					init_acct_association_rec(assoc2);
 					list_append(mod_assoc_list, assoc2);
 					assoc2->cluster = xstrdup(cluster_name);
 					assoc2->acct = xstrdup(file_opts->name);
@@ -2144,20 +2198,9 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				/* don't add anything to the
 				   curr_user_list */
 
-				assoc = xmalloc(sizeof(acct_association_rec_t));
-				assoc->acct = xstrdup(parent);
-				assoc->cluster = xstrdup(cluster_name);
-				assoc->fairshare = file_opts->fairshare;
-				assoc->max_jobs = file_opts->max_jobs;
-				assoc->max_nodes_pj =
-					file_opts->max_nodes_pj;
-				assoc->max_wall_pj =
-					file_opts->max_wall_pj;
-				assoc->max_cpu_mins_pj = 
-					file_opts->max_cpu_mins_pj;
-				assoc->partition = xstrdup(file_opts->part);
-				assoc->user = xstrdup(file_opts->name);
-				
+				assoc = _set_assoc_up(file_opts, MOD_USER,
+						      cluster_name, parent);
+
 				list_append(user_assoc_list, assoc);
 				/* don't add anything to the
 				   curr_assoc_list */
@@ -2194,20 +2237,9 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 					debug2("already modified this user");
 				}
 			new_association:
-				assoc = xmalloc(sizeof(acct_association_rec_t));
-				assoc->acct = xstrdup(parent);
-				assoc->cluster = xstrdup(cluster_name);
-				assoc->fairshare = file_opts->fairshare;
-				assoc->max_jobs = file_opts->max_jobs;
-				assoc->max_nodes_pj =
-					file_opts->max_nodes_pj;
-				assoc->max_wall_pj =
-					file_opts->max_wall_pj;
-				assoc->max_cpu_mins_pj = 
-					file_opts->max_cpu_mins_pj;
-				assoc->partition = xstrdup(file_opts->part);
-				assoc->user = xstrdup(file_opts->name);
-				
+				assoc = _set_assoc_up(file_opts, MOD_USER,
+						      cluster_name, parent);
+
 				list_append(user_assoc_list, assoc);
 				/* don't add anything to the
 				   curr_assoc_list */
@@ -2234,6 +2266,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				if(!assoc2) {
 					assoc2 = xmalloc(
 						sizeof(acct_association_rec_t));
+					init_acct_association_rec(assoc2);
 					list_append(mod_assoc_list, assoc2);
 					assoc2->cluster = xstrdup(cluster_name);
 					assoc2->acct = xstrdup(parent);
@@ -2291,6 +2324,8 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 						field, acct->organization);
 					break;
 				default:
+					field->print_routine(
+						field, NULL);
 					break;
 				}
 			}
@@ -2308,7 +2343,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 	
 	if(rc == SLURM_SUCCESS && list_count(acct_assoc_list)) {
 		printf("Account Associations\n");
-		_print_out_assoc(acct_assoc_list, 0);
+		rc = _print_out_assoc(acct_assoc_list, 0, 1);
 		set = 1;
 	}
 	if(rc == SLURM_SUCCESS && list_count(user_list)) {
@@ -2347,6 +2382,8 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 						field, user->name);
 					break;
 				default:
+					field->print_routine(
+						field, NULL);
 					break;
 				}
 			}
@@ -2365,7 +2402,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 	
 	if(rc == SLURM_SUCCESS && list_count(user_assoc_list)) {
 		printf("User Associations\n");
-		_print_out_assoc(user_assoc_list, 1);
+		rc = _print_out_assoc(user_assoc_list, 1, 1);
 		set = 1;
 	}
 	END_TIMER2("add cluster");
