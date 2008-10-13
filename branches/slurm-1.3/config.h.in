@@ -273,6 +273,9 @@
 /* Enable multiple slurmd on one node */
 #undef MULTIPLE_SLURMD
 
+/* Define to 1 if with non thread-safe code */
+#undef MYSQL_NOT_THREAD_SAFE
+
 /* Define to 1 if you are building a production release. */
 #undef NDEBUG
 

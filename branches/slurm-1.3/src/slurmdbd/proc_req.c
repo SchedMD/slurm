@@ -1159,7 +1159,9 @@ static int _init_conn(slurmdbd_conn_t *slurmdbd_conn,
 	}
 	*uid = init_msg->uid;
 	
-	debug("DBD_INIT: VERSION:%u UID:%u", init_msg->version, init_msg->uid);
+	debug("DBD_INIT: VERSION:%u UID:%u IP:%s CONN:%u",
+	      init_msg->version, init_msg->uid, 
+	      slurmdbd_conn->ip, slurmdbd_conn->newsockfd);
 	slurmdbd_conn->db_conn = acct_storage_g_get_connection(
 		false, slurmdbd_conn->newsockfd, init_msg->rollback);
 	slurmdbd_conn->rpc_version = init_msg->version;
