@@ -1,7 +1,9 @@
 .TH "Slurm API" "3" "March 2007" "Morris Jette" "Slurm job step context functions"
 
 .SH "NAME"
-slurm_step_ctx_create, slurm_step_ctx_get, slurm_jobinfo_ctx_get,
+slurm_step_ctx_create, slurm_step_ctx_create_no_alloc,
+slurm_step_ctx_daemon_per_node_hack, slurm_step_ctx_get,
+slurm_step_ctx_params_t_init, slurm_jobinfo_ctx_get,
 slurm_spawn_kill, slurm_step_ctx_destroy \- Slurm task spawn functions
 
 .SH "SYNTAX"
@@ -11,13 +13,25 @@ slurm_spawn_kill, slurm_step_ctx_destroy \- Slurm task spawn functions
 .LP
 slurm_step_ctx \fBslurm_step_ctx_create\fR (
 .br
-	job_step_create_request_msg_t *\fIstep_req\fP 
+	slurm_step_ctx_params_t *\fIstep_req\fP 
+.br
+);
+.LP
+slurm_step_ctx \fBslurm_step_ctx_create_no_alloc\fR (
+.br
+	slurm_step_ctx_params_t *\fIstep_req\fP 
+.br
+);
+.LP
+int \fBslurm_step_ctx_daemon_per_node_hack\fR (
+.br
+	slurm_step_ctx_t *\fIctx\fP
 .br
 );
 .LP
 int \fBslurm_step_ctx_get\fR (
 .br
-	slurm_step_ctx \fIctx\fP,
+	slurm_step_ctx_t *\fIctx\fP,
 .br
 	int \fIctx_key\fP,
 .br
@@ -32,6 +46,12 @@ int \fBslurm_jobinfo_ctx_get\fR (
 	int \fIdata_type\fP, 
 .br
 	void *\fIdata\fP
+.br
+);
+.LP
+void \fBslurm_step_ctx_params_t_init\fR (
+.br
+	slurm_step_ctx_params_t *\fIstep_req\fP 
 .br
 );
 .LP
@@ -64,7 +84,8 @@ Specifies the pointer to the structure with job step request specification. See
 slurm.h for full details on the data structure's contents.
 .TP
 \fIctx\fP
-Job step context. Created by \fBslurm_step_ctx_create\fR, used in subsequent
+Job step context. Created by \fBslurm_step_ctx_create\fR, or
+\fBslurm_step_ctx_create_no_alloc\fR used in subsequent
 function calls, and destroyed by \fBslurm_step_ctx_destroy\fR.
 .TP
 \fIctx_key\fP
@@ -99,10 +120,21 @@ finished. NOTE: this function creates a slurm job step. Call \fBslurm_spawn\fR
 in a timely fashion to avoid having job step credentials time out. If
 \fBslurm_spawn\fR is not used, explicitly cancel the job step. 
 .LP
+\fBslurm_step_ctx_create_no_alloc\fR Same as above, only no
+allocation is made. To avoid memory leaks call
+\fBslurm_step_ctx_destroy\fR when the use of this context is finished.
+.LP
+\fBslurm_step_ctx_daemon_per_node_hack\fR Hack the step context to run
+a single process per node, regardless of the settings selected at
+slurm_step_ctx_create time. 
+.LP
 \fBslurm_step_ctx_get\fR Get values from a job step context.
 \fIctx_key\fP identifies the fields to be gathered from the job step context.
 Subsequent arguments to this function are dependent upon the value
 of \fIctx_key\fP. See the \fBCONTEXT KEYS\fR section for details.
+.LP
+\fBslurm_step_ctx_params_t_init\fR This initializes parameters in the
+structure that you will pass to slurm_step_ctx_create().
 .LP
 \fBslurm_spawn\fR Spawn tasks based upon a job step context
 and establish communications with the tasks using the socket 

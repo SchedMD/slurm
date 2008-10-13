@@ -2,7 +2,8 @@
 
 .SH "NAME"
 
-slurm_step_launch_params_t_init, slurm_step_launch, slurm_step_launch_wait_start,
+slurm_step_launch_params_t_init, slurm_step_launch,
+slurm_step_launch_fwd_signal, slurm_step_launch_wait_start,
 slurm_step_launch_wait_finish, slurm_step_launch_abort \- Slurm job step launch functions
 
 .SH "SYNTAX"
@@ -25,6 +26,14 @@ int \fBslurm_step_launch\fR (
 	const slurm_step_launch_params_t *\fIlaunch_req\fP,
 .br
 	const slurm_step_launch_callbacks_t \fIcallbacks\fP
+.br
+);
+.LP
+void \fBslurm_step_launch_fwd_signal\fR (
+.br
+	slurm_step_ctx \fIctx\fP,
+.br
+	int \fIsigno\fP
 .br
 );
 .LP
@@ -73,6 +82,9 @@ slurm_step_launch_params_t structure with default values.
 default values.  This function will NOT allocate any new memory.
 .LP
 \fBslurm_step_launch\fR Launch a parallel job step.
+.LP
+\fBslurm_step_launch_fwd_signal\fR Forward a signal to all those nodes
+with running tasks.
 .LP
 \fBslurm_step_launch_wait_start\fR Block until all tasks have started.
 .LP

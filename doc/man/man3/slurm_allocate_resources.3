@@ -1,9 +1,11 @@
 .TH "Slurm API" "3" "April 2006" "Morris Jette" "Slurm job initiation functions"
 .SH "NAME"
-slurm_allocate_resources, 
-slurm_allocation_lookup, slurm_confirm_allocation, 
+slurm_allocate_resources, slurm_allocate_resources_blocking,
+slurm_allocation_msg_thr_create, slurm_allocation_msg_thr_destroy,
+slurm_allocation_lookup, slurm_allocation_lookup_lite,
+slurm_confirm_allocation, 
 slurm_free_submit_response_response_msg, slurm_init_job_desc_msg, 
-slurm_job_will_run, slurm_submit_batch_job
+slurm_job_will_run, slurm_read_hostfile, slurm_submit_batch_job
 \- Slurm job initiation functions
 .SH "SYNTAX"
 .LP 
@@ -47,6 +49,14 @@ int \fBslurm_allocation_lookup\fR {
 .br
 );
 .LP 
+int \fBslurm_allocation_lookup_lite\fR {
+.br
+	uint32_t \fIjobid\fP,
+.br
+	resource_allocation_response_msg_t **\fIslurm_alloc_msg_pptr\fP
+.br
+);
+.LP 
 int \fBslurm_confirm_allocation\fR (
 .br 
 	old_job_alloc_msg_t *\fIold_job_desc_msg_ptr\fP,
@@ -76,6 +86,12 @@ void \fBslurm_init_job_desc_msg\fR (
 int \fBslurm_job_will_run\fR (
 .br 
 	job_desc_msg_t *\fIjob_desc_msg_ptr\fP,
+.br 
+);
+.LP
+int \fBslurm_read_hostfile\fR (
+.br 
+	char *\fIfilename\fP, int \fIn\fP
 .br 
 );
 .LP
@@ -109,7 +125,9 @@ structure's contents.
 .TP 
 \fIslurm_alloc_msg_ptr\fP
 Specifies the pointer to the structure to be created and filled in by the function 
-\fIslurm_allocate_resources\fP, \fIslurm_allocation_lookup\fP, 
+\fIslurm_allocate_resources\fP,
+\fIslurm_allocate_resources_blocking\fP,
+\fIslurm_allocation_lookup\fP, \fIslurm_allocation_lookup_lite\fP, 
 \fIslurm_confirm_allocation\fP or \fIslurm_job_will_run\fP.
 .TP 
 \fIslurm_alloc_msg_thr_ptr\fP
@@ -167,8 +185,8 @@ instead.\fR This function may only be successfully executed by the job's
 owner or user root.
 .LP 
 \fBslurm_free_resource_allocation_response_msg\fR Release the storage generated in response 
-to a call of the function \fBslurm_allocate_resources\fR, or
-\fBslurm_allocation_lookup\fR.
+to a call of the function \fBslurm_allocate_resources\fR, 
+\fBslurm_allocation_lookup\fR, or \fBslurm_allocation_lookup_lite\fR.
 .LP 
 \fBslurm_free_submit_response_msg\fR Release the storage generated in response 
 to a call of the function \fBslurm_submit_batch_job\fR.
@@ -177,6 +195,13 @@ to a call of the function \fBslurm_submit_batch_job\fR.
 Execute this function before issuing a request to submit or modify a job.
 .LP 
 \fBslurm_job_will_run\fR Determine if the supplied job description could be executed immediately. 
+.LP 
+\fBslurm_read_hostfile\fR Read a SLURM hostfile specified by
+"filename".  "filename" must contain a list of SLURM NodeNames, one
+per line.  Reads up to "n" number of hostnames from the file. Returns
+a string representing a hostlist ranged string of the contents
+of the file.  This is a helper function, it does not contact any SLURM
+daemons.   
 .LP 
 \fBslurm_submit_batch_job\fR Submit a job for later execution. Note that if 
 the job's requested node count or time allocation are outside of the partition's limits then a job entry will be created, a warning indication will be placed in the \fIerror_code\fP field of the response message, and the job will be left queued until the partition's limits are changed and resources are available.  Always release the response message when no 
