@@ -1,6 +1,10 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.3.10
+=========================
+
+
 * Changes in SLURM 1.3.9
 ========================
  -- Fix jobs being cancelled by ctrl-C to have correct cancelled state in 
