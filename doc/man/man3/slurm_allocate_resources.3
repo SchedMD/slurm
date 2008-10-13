@@ -151,7 +151,11 @@ to become avaliable.  On failure NULL is returned and errno is set.
 talking with the controller dealing with messages from the controller
 during an allocation. Callback functions are declared in the
 \fIcallbacks\fP parameter and will be called when a corresponding
-message is recieved from the controller.
+message is recieved from the controller.  This message thread is
+needed to receive messages from the controller about node failure in
+an allocation and other important messages.  Although technically not
+required, it could be very helpful to inform about problems with the
+allocation. 
 .LP
 \fBslurm_allocation_msg_thr_destroy\fR Shutdown the message handler
  talking with the controller dealing with messages from the controller during
