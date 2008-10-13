@@ -674,6 +674,9 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 					(curr_inx == field_count));
 				break;
 			default:
+				field->print_routine(
+					field, NULL,
+					(curr_inx == field_count));
 				break;
 			}
 			curr_inx++;

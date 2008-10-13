@@ -858,6 +858,10 @@ _node_fail_handler(struct step_launch_state *sls, slurm_msg_t *fail_msg)
 	if (!sls->no_kill) {
 		info("Cancelling job step %u.%u", nf->job_id, nf->step_id);
 		slurm_kill_job_step(nf->job_id, nf->step_id, SIGKILL);
+		/* In an ideal world, we close the socket to this node and
+		 * normally terminate the remaining tasks. In practice this
+		 * is very difficult. The exercise is left to the reader. */
+		exit(1);
 	}
 
 	fail_nodes = hostset_create(nf->nodelist);

@@ -1,9 +1,11 @@
 .TH "Slurm API" "3" "April 2006" "Morris Jette" "Slurm job initiation functions"
 .SH "NAME"
-slurm_allocate_resources, 
-slurm_allocation_lookup, slurm_confirm_allocation, 
+slurm_allocate_resources, slurm_allocate_resources_blocking,
+slurm_allocation_msg_thr_create, slurm_allocation_msg_thr_destroy,
+slurm_allocation_lookup, slurm_allocation_lookup_lite,
+slurm_confirm_allocation, 
 slurm_free_submit_response_response_msg, slurm_init_job_desc_msg, 
-slurm_job_will_run, slurm_submit_batch_job
+slurm_job_will_run, slurm_read_hostfile, slurm_submit_batch_job
 \- Slurm job initiation functions
 .SH "SYNTAX"
 .LP 
@@ -17,7 +19,37 @@ int \fBslurm_allocate_resources\fR (
 .br 
 );
 .LP 
+resource_allocation_response_msg_t *\fBslurm_allocate_resources_blocking\fR (
+.br 
+	job_desc_msg_t *\fIjob_desc_msg_ptr\fP,
+.br 
+	time_t \fItimeout\fP, void \fI(*pending_callback)(uint32_t job_id)\fP
+.br 
+);
+.LP 
+allocation_msg_thread_t *\fBslurm_allocation_msg_thr_create\fR (
+.br 
+	uint16_t *\fIport\fP,
+.br 
+	slurm_allocation_callbacks_t *\fIcallbacks\fP
+.br 
+);
+.LP 
+void *\fBslurm_allocation_msg_thr_destroy\fR (
+.br 
+	allocation_msg_thread_t *\fIslurm_alloc_msg_thr_ptr\fP
+.br 
+);
+.LP 
 int \fBslurm_allocation_lookup\fR {
+.br
+	uint32_t \fIjobid\fP,
+.br
+	resource_allocation_response_msg_t **\fIslurm_alloc_msg_pptr\fP
+.br
+);
+.LP 
+int \fBslurm_allocation_lookup_lite\fR {
 .br
 	uint32_t \fIjobid\fP,
 .br
@@ -57,6 +89,12 @@ int \fBslurm_job_will_run\fR (
 .br 
 );
 .LP
+int \fBslurm_read_hostfile\fR (
+.br 
+	char *\fIfilename\fP, int \fIn\fP
+.br 
+);
+.LP
 int \fBslurm_submit_batch_job\fR (
 .br 
 	job_desc_msg_t *\fIjob_desc_msg_ptr\fP,
@@ -70,6 +108,10 @@ int \fBslurm_submit_batch_job\fR (
 \fIjob_desc_msg_ptr\fP
 Specifies the pointer to a job request specification. See slurm.h for full details 
 on the data structure's contents. 
+.TP
+\fIcallbacks\fP
+Specifies the pointer to a allocation callbacks structure.  See
+slurm.h for full details on the data structure's contents.
 .TP 
 \fIold_job_desc_msg_ptr\fP
 Specifies the pointer to a description of an existing job. See slurm.h for 
@@ -83,13 +125,21 @@ structure's contents.
 .TP 
 \fIslurm_alloc_msg_ptr\fP
 Specifies the pointer to the structure to be created and filled in by the function 
-\fIslurm_allocate_resources\fP, \fIslurm_allocation_lookup\fP, 
+\fIslurm_allocate_resources\fP,
+\fIslurm_allocate_resources_blocking\fP,
+\fIslurm_allocation_lookup\fP, \fIslurm_allocation_lookup_lite\fP, 
 \fIslurm_confirm_allocation\fP or \fIslurm_job_will_run\fP.
+.TP 
+\fIslurm_alloc_msg_thr_ptr\fP
+Specigies the pointer to the structure created and returned by the
+function \fIslurm_allocation_msg_thr_create\fP.  Must be destroyed
+with function \fIslurm_allocation_msg_thr_destroy\fP.
 .TP 
 \fIslurm_submit_msg_pptr\fP
 Specifies the double pointer to the structure to be created and filled with a description 
-of the created job: job ID, etc. See slurm.h for full details on the data structure's contents. 
-.TP 
+of the created job: job ID, etc. See slurm.h for full details on the
+data structure's contents. 
+.TP
 \fIslurm_submit_msg_ptr\fP
 Specifies the pointer to the structure to be created and filled in by the function \fIslurm_submit_batch_job\fP.
 .SH "DESCRIPTION"
@@ -100,16 +150,43 @@ count or time allocation are outside of the partition's limits then a job
 entry will be created, a warning indication will be placed in the \fIerror_code\fP field of the response message, and the job will be left 
 queued until the partition's limits are changed.
 Always release the response message when no longer required using 
-the function \fBslurm_free_resource_allocation_response_msg\fR.
-.LP 
+the function \fBslurm_free_resource_allocation_response_msg\fR.  This
+function only makes the request once.  If the allocation is not
+avaliable immediately the node_cnt variable in the resp will be 0.  If
+you want a function that will block until either an error is recieved
+or an allocation is granted you can use the
+\fIslurm_allocate_resources_blocking\fP function described below. 
+.LP
+\fBslurm_allocate_resources_blocking\fR Request a resource allocation for a
+job.  This call will block until the allocation is granted, an error
+occurs, or the specified timeout limit is reached.  The \fIpending_callback\fP
+parameter will be called if the allocation is not avaliable
+immediately and the immedite flag is not set in the request.  This can
+be used to get the jobid of the job while waiting for the allocation
+to become avaliable.  On failure NULL is returned and errno is set.
+.LP
+\fBslurm_allocation_msg_thr_create\fR Startup a message handler
+talking with the controller dealing with messages from the controller
+during an allocation. Callback functions are declared in the
+\fIcallbacks\fP parameter and will be called when a corresponding
+message is recieved from the controller.  This message thread is
+needed to receive messages from the controller about node failure in
+an allocation and other important messages.  Although technically not
+required, it could be very helpful to inform about problems with the
+allocation. 
+.LP
+\fBslurm_allocation_msg_thr_destroy\fR Shutdown the message handler
+ talking with the controller dealing with messages from the controller during
+ an allocation. 
+.LP
 \fBslurm_confirm_allocation\fR Return detailed information on a specific 
 existing job allocation. \fBOBSOLETE FUNCTION: Use slurm_allocation_lookup
 instead.\fR This function may only be successfully executed by the job's 
 owner or user root.
 .LP 
 \fBslurm_free_resource_allocation_response_msg\fR Release the storage generated in response 
-to a call of the function \fBslurm_allocate_resources\fR, or
-\fBslurm_allocation_lookup\fR.
+to a call of the function \fBslurm_allocate_resources\fR, 
+\fBslurm_allocation_lookup\fR, or \fBslurm_allocation_lookup_lite\fR.
 .LP 
 \fBslurm_free_submit_response_msg\fR Release the storage generated in response 
 to a call of the function \fBslurm_submit_batch_job\fR.
@@ -118,6 +195,13 @@ to a call of the function \fBslurm_submit_batch_job\fR.
 Execute this function before issuing a request to submit or modify a job.
 .LP 
 \fBslurm_job_will_run\fR Determine if the supplied job description could be executed immediately. 
+.LP 
+\fBslurm_read_hostfile\fR Read a SLURM hostfile specified by
+"filename".  "filename" must contain a list of SLURM NodeNames, one
+per line.  Reads up to "n" number of hostnames from the file. Returns
+a string representing a hostlist ranged string of the contents
+of the file.  This is a helper function, it does not contact any SLURM
+daemons.   
 .LP 
 \fBslurm_submit_batch_job\fR Submit a job for later execution. Note that if 
 the job's requested node count or time allocation are outside of the partition's limits then a job entry will be created, a warning indication will be placed in the \fIerror_code\fP field of the response message, and the job will be left queued until the partition's limits are changed and resources are available.  Always release the response message when no 
@@ -186,9 +270,13 @@ the partition's time limit.
 .LP
 \fBSLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT\fR Timeout in communicating with 
 SLURM controller.
-.SH "EXAMPLE"
+.SH "NON-BLOCKING EXAMPLE"
 .LP 
 #include <stdio.h>
+.br
+#include <stdlib.h>
+.br
+#include <signal.h>
 .br
 #include <slurm/slurm.h>
 .br
@@ -202,16 +290,20 @@ int main (int argc, char *argv[])
 .br 
 	resource_allocation_response_msg_t* slurm_alloc_msg_ptr ;
 .LP 
-	slurm_init_job_desc_msg( &job_mesg );
+	slurm_init_job_desc_msg( &job_desc_msg );
 .br 
-	job_mesg. name = ("job01\0");
+	job_desc_msg. name = ("job01\0");
 .br 
-	job_mesg. min_memory = 1024;
+	job_desc_msg. job_min_memory = 1024;
 .br 
-	job_mesg. time_limit = 200;
+	job_desc_msg. time_limit = 200;
 .br 
-	job_mesg. num_nodes = 400;
+	job_desc_msg. min_nodes = 400;
 .br 
+	job_desc_msg. user_id = getuid();
+.br
+	job_desc_msg. group_id = getgid();
+.br
 	if (slurm_allocate_resources(&job_desc_msg,
 .br
 	                             &slurm_alloc_msg_ptr)) {
@@ -228,9 +320,77 @@ int main (int argc, char *argv[])
 .br
 	        slurm_alloc_msg_ptr\->job_id );
 .br 
-	if (slurm_job_kill(slurm_alloc_msg_ptr\->
+	if (slurm_kill_job(slurm_alloc_msg_ptr\->job_id, SIGKILL, 0)) {
+.br 
+		printf ("kill errno %d\\n", slurm_get_errno());
+.br 
+		exit (1);
+.br 
+	}
 .br
-	                     job_id, SIGKILL)) {
+	printf ("canceled job_id %u\\n", 
+.br
+	        slurm_alloc_msg_ptr\->job_id );
+.br 
+	slurm_free_resource_allocation_response_msg(
+.br
+			slurm_alloc_msg_ptr);
+.br 
+	exit (0);
+.br 
+}
+
+.SH "BLOCKING EXAMPLE"
+.LP 
+#include <stdio.h>
+.br
+#include <stdlib.h>
+.br
+#include <signal.h>
+.br
+#include <slurm/slurm.h>
+.br
+#include <slurm/slurm_errno.h>
+.LP 
+int main (int argc, char *argv[])
+.br 
+{
+.br 
+	job_desc_msg_t job_desc_msg;
+.br 
+	resource_allocation_response_msg_t* slurm_alloc_msg_ptr ;
+.LP 
+	slurm_init_job_desc_msg( &job_desc_msg );
+.br 
+	job_desc_msg. name = ("job01\0");
+.br 
+	job_desc_msg. job_min_memory = 1024;
+.br 
+	job_desc_msg. time_limit = 200;
+.br 
+	job_desc_msg. min_nodes = 400;
+.br 
+	job_desc_msg. user_id = getuid();
+.br
+	job_desc_msg. group_id = getgid();
+.br
+	if (!(slurm_alloc_msg_ptr = 
+.br
+	      slurm_allocate_resources_blocking(&job_desc_msg, 0, NULL))) {
+.br
+		slurm_perror ("slurm_allocate_resources_blocking error");
+.br
+		exit (1);
+.br
+	}
+.br 
+	printf ("Allocated nodes %s to job_id %u\\n", 
+.br 
+	        slurm_alloc_msg_ptr\->node_list, 
+.br
+	        slurm_alloc_msg_ptr\->job_id );
+.br 
+	if (slurm_kill_job(slurm_alloc_msg_ptr\->job_id, SIGKILL, 0)) {
 .br 
 		printf ("kill errno %d\\n", slurm_get_errno());
 .br 

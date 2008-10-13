@@ -25634,6 +25634,11 @@ echo "${ECHO_T}MySQL (non-threaded) test program built properly." >&6; }
 
 
 cat >>confdefs.h <<\_ACEOF
+#define MYSQL_NOT_THREAD_SAFE 1
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_MYSQL 1
 _ACEOF
 

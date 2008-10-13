@@ -56,6 +56,7 @@ sreport_time_format_t time_format = SREPORT_TIME_MINS;
 char *time_format_string = "Minutes";
 void *db_conn = NULL;
 uint32_t my_uid = 0;
+sreport_sort_t sort_flag = SREPORT_SORT_TIME;
 
 static void	_job_rep (int argc, char *argv[]);
 static void	_user_rep (int argc, char *argv[]);
@@ -65,6 +66,7 @@ static int	_get_command (int *argc, char *argv[]);
 static void     _print_version( void );
 static int	_process_command (int argc, char *argv[]);
 static int      _set_time_format(char *format);
+static int      _set_sort(char *format);
 static void	_usage ();
 
 int 
@@ -83,6 +85,7 @@ main (int argc, char *argv[])
 		{"parsable", 0, 0, 'p'},
 		{"parsable2", 0, 0, 'P'},
 		{"quiet",    0, 0, 'q'},
+		{"sort",    0, 0, 's'},
 		{"usage",    0, 0, 'h'},
 		{"verbose",  0, 0, 'v'},
 		{"version",  0, 0, 'V'},
@@ -96,7 +99,7 @@ main (int argc, char *argv[])
 	quiet_flag        = 0;
 	log_init("sreport", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
-	while((opt_char = getopt_long(argc, argv, "ahnpPqt:vV",
+	while((opt_char = getopt_long(argc, argv, "ahnpPqs:t:vV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -124,6 +127,9 @@ main (int argc, char *argv[])
 			break;
 		case (int)'q':
 			quiet_flag = 1;
+			break;
+		case (int)'s':
+			_set_sort(optarg);
 			break;
 		case (int)'t':
 			_set_time_format(optarg);
@@ -439,6 +445,14 @@ _process_command (int argc, char *argv[])
 				 argv[0]);
 		}
 		exit_flag = 1;
+	} else if (strncasecmp (argv[0], "sort", 1) == 0) {
+		if (argc < 2) {
+			exit_code = 1;
+			fprintf (stderr,
+				 "too few arguments for keyword:%s\n",
+				 argv[0]);
+		} else		
+			_set_sort(argv[1]);
 	} else if (strncasecmp (argv[0], "time", 1) == 0) {
 		if (argc < 2) {
 			exit_code = 1;
@@ -511,6 +525,20 @@ static int _set_time_format(char *format)
 	return SLURM_SUCCESS;
 }
 
+static int _set_sort(char *format)
+{
+	if (strncasecmp (format, "Name", 1) == 0) {
+		sort_flag = SREPORT_SORT_NAME;
+	} else if (strncasecmp (format, "Time", 6) == 0) {
+		sort_flag = SREPORT_SORT_TIME;
+	} else {
+		fprintf (stderr, "unknown timesort format %s", format);	
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+}
+
 
 /* _usage - show the valid sreport commands */
 void _usage () {
@@ -549,7 +577,7 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
      user <REPORT> <OPTIONS>                                               \n\
                                                                            \n\
   <REPORT> is different for each report type.                              \n\
-     cluster - Utilization                                                 \n\
+     cluster - AccountUtilizationByUser, UserUtilizationByAccount, Utilization\n\
      job     - Sizes                                                       \n\
      user    - TopUsage                                                    \n\
                                                                            \n\
@@ -567,6 +595,9 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
                                                                            \n\
      cluster - Names=<OPT>      - List of clusters to include in report    \n\
                                   Default is local cluster.                \n\
+             - Tree             - When used with the AccountUtilizationByUser\n\
+                                  report will span the accounts as they    \n\
+                                  in the hierarchy.                        \n\
                                                                            \n\
      job     - Accounts=<OPT>   - List of accounts to use for the report   \n\
                                   Default is all.                          \n\
@@ -581,10 +612,14 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
                                   Default is all.                          \n\
              - Partitions=<OPT> - List of partitions jobs ran on to include\n\
                                   in report.  Default is all.              \n\
+             - PrintJobCount    - When used with the Sizes report will print\n\
+                                  number of jobs ran instead of time used. \n\
              - Users=<OPT>      - List of users jobs to include in report. \n\
                                   Default is all.                          \n\
                                                                            \n\
-     user    - Clusters=<OPT>   - List of clusters to include in report.   \n\
+     user    - Accounts=<OPT>   - List of accounts to use for the report   \n\
+                                  Default is all.                          \n\
+             - Clusters=<OPT>   - List of clusters to include in report.   \n\
                                   Default is local cluster.                \n\
              - Group            - Group all accounts together for each user.\n\
                                   Default is a separate entry for each user\n\

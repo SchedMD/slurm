@@ -2434,6 +2434,7 @@ extern void pack_acct_cluster_cond(void *in, uint16_t rpc_version, Buf buffer)
 		}
 		list_iterator_destroy(itr);
 	}
+	count = NO_VAL;
 
 	pack32(object->usage_end, buffer);
 	pack32(object->usage_start, buffer);
@@ -2967,7 +2968,7 @@ extern int unpack_acct_association_cond(void **object,
 		   NO_VAL
 		*/
 		safe_unpack32(&count, buffer);
-		if(count != NO_VAL) {
+		if(count && count != NO_VAL) {
 			object_ptr->fairshare_list = 
 				list_create(slurm_destroy_char);
 			list_append(object_ptr->fairshare_list,
@@ -2975,7 +2976,7 @@ extern int unpack_acct_association_cond(void **object,
 		}
 
 		safe_unpack32(&count, buffer);
-		if(count != NO_VAL) {
+		if(count && count != NO_VAL) {
 			object_ptr->id_list = list_create(slurm_destroy_char);
 			for(i=0; i<count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp, 
@@ -2985,7 +2986,7 @@ extern int unpack_acct_association_cond(void **object,
 		}
 	
 		safe_unpack32(&count, buffer);
-		if(count != NO_VAL) {
+		if(count && count != NO_VAL) {
 			object_ptr->max_cpu_mins_pj_list = 
 				list_create(slurm_destroy_char);
 			list_append(object_ptr->max_cpu_mins_pj_list,
@@ -2993,7 +2994,7 @@ extern int unpack_acct_association_cond(void **object,
 		}
 
 		safe_unpack32(&count, buffer);
-		if(count != NO_VAL) {
+		if(count && count != NO_VAL) {
 			object_ptr->max_jobs_list = 
 				list_create(slurm_destroy_char);
 			list_append(object_ptr->max_jobs_list,
@@ -3001,7 +3002,7 @@ extern int unpack_acct_association_cond(void **object,
 		}
 
 		safe_unpack32(&count, buffer);
-		if(count != NO_VAL) {
+		if(count && count != NO_VAL) {
 			object_ptr->max_nodes_pj_list = 
 				list_create(slurm_destroy_char);
 			list_append(object_ptr->max_nodes_pj_list,
@@ -3009,7 +3010,7 @@ extern int unpack_acct_association_cond(void **object,
 		}
 
 		safe_unpack32(&count, buffer);
-		if(count != NO_VAL) {
+		if(count && count != NO_VAL) {
 			object_ptr->max_wall_pj_list = 
 				list_create(slurm_destroy_char);
 			list_append(object_ptr->max_wall_pj_list,

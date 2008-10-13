@@ -79,6 +79,13 @@ static int _set_cond(int *start, int argc, char *argv[],
 		} else if (!end && 
 			   !strncasecmp (argv[i], "WithCoordinators", 5)) {
 			user_cond->with_coords = 1;
+		} else if (!end && 
+			   !strncasecmp (argv[i], "WithRawQOS", 5)) {
+			assoc_cond->with_raw_qos = 1;
+		} else if (!end && !strncasecmp (argv[i], "WOPInfo", 4)) {
+			assoc_cond->without_parent_info = 1;
+		} else if (!end && !strncasecmp (argv[i], "WOPLimits", 4)) {
+			assoc_cond->without_parent_limits = 1;
 		} else if(!end && !strncasecmp(argv[i], "where", 5)) {
 			continue;
 		} else if(!end
@@ -1607,6 +1614,10 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 							 field_count));
 						break;
 					default:
+						field->print_routine(
+							field, NULL,
+							(curr_inx ==
+							 field_count));
 						break;
 					}
 					curr_inx++;
@@ -1677,6 +1688,9 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 						(curr_inx == field_count));
 					break;
 				default:
+					field->print_routine(
+						field, NULL,
+						(curr_inx == field_count));
 					break;
 				}
 			curr_inx++;

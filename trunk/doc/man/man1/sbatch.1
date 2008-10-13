@@ -90,6 +90,11 @@ The \fIlist\fR of constraints may include multiple features separated
 by ampersand (AND) and/or vertical bar (OR) operators.
 For example: \fB\-\-constraint="opteron&video"\fR or 
 \fB\-\-constraint="fast|faster"\fR.
+In the first example, only nodes having both the feature "opteron" AND
+the feature "video" will be used.
+There is no mechanism to specify that you want one node with feature
+"opteron" and another node with feature "video" in that case that no
+node has both features.
 If only one of a set of possible options should be used for all allocated 
 nodes, then use the OR operator and enclose the options within square brackets. 
 For example: "\fB\-\-constraint="[rack1|rack2|rack3|rack4]"\fR might 

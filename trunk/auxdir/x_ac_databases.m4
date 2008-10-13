@@ -93,6 +93,7 @@ AC_DEFUN([X_AC_DATABASES],
             				AC_MSG_RESULT([MySQL (non-threaded) test program built properly.])
             				AC_SUBST(MYSQL_LIBS)
 					AC_SUBST(MYSQL_CFLAGS)
+					AC_DEFINE(MYSQL_NOT_THREAD_SAFE, 1, [Define to 1 if with non thread-safe code])
 					AC_DEFINE(HAVE_MYSQL, 1, [Define to 1 if using MySQL libaries])
 				else
 					MYSQL_CFLAGS=""

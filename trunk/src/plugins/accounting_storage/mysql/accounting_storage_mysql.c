@@ -923,7 +923,8 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.parent_acct=%s", prefix, object);
+			xstrfmtcat(*extra, "%s.parent_acct=\"%s\"",
+				   prefix, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -995,7 +996,7 @@ static int _addto_update_list(List update_list, acct_update_type_t type,
  */
 static int _move_account(mysql_conn_t *mysql_conn, uint32_t lft, uint32_t rgt,
 			 char *cluster,
-			 char *id, char *parent)
+			 char *id, char *parent, time_t now)
 {
 	int rc = SLURM_SUCCESS;
 	MYSQL_RES *result = NULL;
@@ -1036,41 +1037,43 @@ static int _move_account(mysql_conn_t *mysql_conn, uint32_t lft, uint32_t rgt,
 	/* every thing below needs to be a %d not a %u because we are
 	   looking for -1 */
 	xstrfmtcat(query,
-		   "update %s set deleted = deleted + 2, "
+		   "update %s set mod_time=%d, deleted = deleted + 2, "
 		   "lft = lft + %d, rgt = rgt + %d "
 		   "WHERE lft BETWEEN %d AND %d;",
-		   assoc_table, diff, diff, lft, rgt);
+		   assoc_table, now, diff, diff, lft, rgt);
 
 	xstrfmtcat(query,
-		   "UPDATE %s SET rgt = rgt + %d WHERE "
+		   "UPDATE %s SET mod_time=%d, rgt = rgt + %d WHERE "
 		   "rgt > %d && deleted < 2;"
-		   "UPDATE %s SET lft = lft + %d WHERE "
+		   "UPDATE %s SET mod_time=%d, lft = lft + %d WHERE "
 		   "lft > %d && deleted < 2;",
-		   assoc_table, width,
+		   assoc_table, now, width,
 		   par_left,
-		   assoc_table, width,
+		   assoc_table, now, width,
 		   par_left);
 
 	xstrfmtcat(query,
-		   "UPDATE %s SET rgt = rgt - %d WHERE "
+		   "UPDATE %s SET mod_time=%d, rgt = rgt - %d WHERE "
 		   "(%d < 0 && rgt > %d && deleted < 2) "
 		   "|| (%d > 0 && rgt > %d);"
-		   "UPDATE %s SET lft = lft - %d WHERE "
+		   "UPDATE %s SET mod_time=%d, lft = lft - %d WHERE "
 		   "(%d < 0 && lft > %d && deleted < 2) "
 		   "|| (%d > 0 && lft > %d);",
-		   assoc_table, width,
+		   assoc_table, now, width,
 		   diff, rgt,
 		   diff, lft,
-		   assoc_table, width,
+		   assoc_table, now, width,
 		   diff, rgt,
 		   diff, lft);
 
 	xstrfmtcat(query,
-		   "update %s set deleted = deleted - 2 WHERE deleted > 1;",
-		   assoc_table);
+		   "update %s set mod_time=%d, "
+		   "deleted = deleted - 2 WHERE deleted > 1;",
+		   assoc_table, now);
 	xstrfmtcat(query,
-		   "update %s set parent_acct=\"%s\" where id = %s;",
-		   assoc_table, parent, id);
+		   "update %s set mod_time=%d, "
+		   "parent_acct=\"%s\" where id = %s;",
+		   assoc_table, now, parent, id);
 	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
@@ -1086,15 +1089,13 @@ static int _move_account(mysql_conn_t *mysql_conn, uint32_t lft, uint32_t rgt,
 static int _move_parent(mysql_conn_t *mysql_conn, uid_t uid,
 			uint32_t lft, uint32_t rgt,
 			char *cluster,
-			char *id, char *old_parent, char *new_parent)
+			char *id, char *old_parent, char *new_parent,
+			time_t now)
 {
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	char *query = NULL;
 	int rc = SLURM_SUCCESS;
-	List assoc_list = NULL;
-	ListIterator itr = NULL;
-	acct_association_rec_t *assoc = NULL;
 		
 	/* first we need to see if we are going to make a child of this
 	 * account the new parent.  If so we need to move that child to this
@@ -1117,7 +1118,7 @@ static int _move_parent(mysql_conn_t *mysql_conn, uid_t uid,
 		debug4("%s(%s) %s,%s is a child of %s",
 		       new_parent, row[0], row[1], row[2], id);
 		rc = _move_account(mysql_conn, atoi(row[1]), atoi(row[2]),
-				   cluster, row[0], old_parent);
+				   cluster, row[0], old_parent, now);
 	}
 
 	mysql_free_result(result);
@@ -1142,7 +1143,7 @@ static int _move_parent(mysql_conn_t *mysql_conn, uid_t uid,
 
 	if((row = mysql_fetch_row(result))) {
 		rc = _move_account(mysql_conn, atoi(row[0]), atoi(row[1]),
-				   cluster, id, new_parent);
+				   cluster, id, new_parent, now);
 	} else {
 		error("can't find parent? we were able to a second ago.");
 		rc = SLURM_ERROR;
@@ -1152,26 +1153,6 @@ static int _move_parent(mysql_conn_t *mysql_conn, uid_t uid,
 	if(rc == SLURM_ERROR) 
 		return rc;
 	
-	/* now we need to send the update of the new parents and
-	 * limits, so just to be safe, send the whole tree
-	 */
-	assoc_list = acct_storage_p_get_associations(mysql_conn, uid, NULL);
-	/* NOTE: you can not use list_pop, or list_push
-	   anywhere either, since mysql is
-	   exporting something of the same type as a macro,
-	   which messes everything up (my_list.h is the bad boy).
-	   So we are just going to delete each item as it
-	   comes out since we are moving it to the update_list.
-	*/
-	itr = list_iterator_create(assoc_list);
-	while((assoc = list_next(itr))) {
-		if(_addto_update_list(mysql_conn->update_list, 
-				      ACCT_MODIFY_ASSOC,
-				      assoc) == SLURM_SUCCESS) 
-			list_remove(itr);
-	}
-	list_iterator_destroy(itr);
-	list_destroy(assoc_list);
 	return rc;
 }
 
@@ -1255,7 +1236,7 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 			       acct_association_rec_t *assoc,
 			       char *acct,
 			       uint32_t lft, uint32_t rgt,
-			       List ret_list)
+			       List ret_list, int moved_parent)
 {
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
@@ -1427,7 +1408,7 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 						    row[ASSOC_ACCT],
 						    atoi(row[ASSOC_LFT]),
 						    atoi(row[ASSOC_RGT]),
-						    ret_list);
+						    ret_list, moved_parent);
 				destroy_acct_association_rec(mod_assoc);
 				continue;
 			}
@@ -1448,15 +1429,19 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 			}
 			
 			list_append(ret_list, object);
-			
-			if(_addto_update_list(mysql_conn->update_list, 
-					      ACCT_MODIFY_ASSOC,
-					      mod_assoc) != SLURM_SUCCESS) 
-				error("couldn't add to the update list");
-		} else {
-			info("assoc %s is not modified", row[ASSOC_ID]);
-			xfree(mod_assoc);
-		}
+
+			if(moved_parent)
+				destroy_acct_association_rec(mod_assoc);
+			else
+				if(_addto_update_list(mysql_conn->update_list, 
+						      ACCT_MODIFY_ASSOC,
+						      mod_assoc)
+				   != SLURM_SUCCESS) 
+					error("couldn't add to "
+					      "the update list");
+		} else 
+			destroy_acct_association_rec(mod_assoc);
+		
 	}
 	mysql_free_result(result);
 
@@ -3131,7 +3116,7 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		/* Add user root by default to run from the root
 		 * association.  This gets popped off so we need to
-		 * readd it every time here. 
+		 * read it every time here. 
 		 */
 		assoc = xmalloc(sizeof(acct_association_rec_t));
 		init_acct_association_rec(assoc);
@@ -3184,6 +3169,7 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 	int assoc_id = 0;
 	int incr = 0, my_left = 0;
 	int affect_rows = 0;
+	int moved_parent = 0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	char *old_parent = NULL, *old_cluster = NULL;
@@ -3233,7 +3219,8 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 		xstrcat(cols, "creation_time, mod_time, cluster, acct");
 		xstrfmtcat(vals, "%d, %d, \"%s\", \"%s\"", 
 			   now, now, object->cluster, object->acct); 
-		xstrfmtcat(update, "where id>=0 && cluster=\"%s\" && acct=\"%s\"",
+		xstrfmtcat(update, 
+			   "where cluster=\"%s\" && acct=\"%s\"",
 			   object->cluster, object->acct); 
 
 		xstrfmtcat(extra, ", mod_time=%d", now);
@@ -3434,9 +3421,10 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 						object->cluster,
 						row[MASSOC_ID],
 						row[MASSOC_PACCT],
-						object->parent_acct)
+						object->parent_acct, now)
 				   == SLURM_ERROR)
 					continue;
+				moved_parent = 1;
 			}
 
 
@@ -3472,7 +3460,7 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 		}
 
 		object->id = assoc_id;
-
+		
 		if(_addto_update_list(mysql_conn->update_list, ACCT_ADD_ASSOC,
 				      object) == SLURM_SUCCESS) {
 			list_remove(itr);
@@ -3527,6 +3515,10 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 	}
 
 end_it:
+
+	xfree(old_parent);
+	xfree(old_cluster);
+
 	if(rc != SLURM_ERROR) {
 		if(txn_query) {
 			xstrcat(txn_query, ";");
@@ -3538,6 +3530,45 @@ end_it:
 				rc = SLURM_SUCCESS;
 			}
 		}
+		if(moved_parent) {
+			List assoc_list = NULL;
+			ListIterator itr = NULL;
+			acct_association_rec_t *assoc = NULL;
+			//acct_association_cond_t assoc_cond;
+			/* now we need to send the update of the new parents and
+			 * limits, so just to be safe, send the whole
+			 * tree because we could have some limits that
+			 * were affected but not noticed.
+			 */
+			/* we can probably just look at the mod time now but
+			 * we will have to wait for the next revision number
+			 * since you can't query on mod time here and I don't
+			 * want to rewrite code to make it happen
+			 */
+			//bzero(&assoc_cond, sizeof(acct_association_cond_t));
+			
+			if(!(assoc_list = 
+			     acct_storage_p_get_associations(mysql_conn,
+							     uid, NULL)))
+				return rc;
+			/* NOTE: you can not use list_pop, or list_push
+			   anywhere either, since mysql is
+			   exporting something of the same type as a macro,
+			   which messes everything up (my_list.h is
+			   the bad boy).
+			   So we are just going to delete each item as it
+			   comes out since we are moving it to the update_list.
+			*/
+			itr = list_iterator_create(assoc_list);
+			while((assoc = list_next(itr))) {
+				if(_addto_update_list(mysql_conn->update_list, 
+						      ACCT_MODIFY_ASSOC,
+						      assoc) == SLURM_SUCCESS) 
+					list_remove(itr);
+			}
+			list_iterator_destroy(itr);
+			list_destroy(assoc_list);
+		}
 	} else {
 		xfree(txn_query);
 		if(mysql_conn->rollback) {
@@ -3545,9 +3576,6 @@ end_it:
 		}
 		list_flush(mysql_conn->update_list);
 	}
-
-	xfree(old_parent);
-	xfree(old_cluster);
 					
 	return rc;
 #else
@@ -3616,7 +3644,9 @@ extern int acct_storage_p_add_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 			xfree(vals);
 			continue;
 		}
-
+		/* FIX ME: we have to edit all the other qos's to set
+		   there preemptee or preemptor based on what is here.
+		*/
 		/* we always have a ', ' as the first 2 chars */
 		tmp_extra = _fix_double_quotes(extra+2);
 
@@ -4131,6 +4161,7 @@ extern List acct_storage_p_modify_associations(
 	acct_user_rec_t user;
 	char *tmp_char1=NULL, *tmp_char2=NULL;
 	int set_qos_vals = 0;
+	int moved_parent = 0;
 
 	char *massoc_req_inx[] = {
 		"id",
@@ -4360,9 +4391,11 @@ extern List acct_storage_p_modify_associations(
 						row[MASSOC_CLUSTER],
 						row[MASSOC_ID],
 						row[MASSOC_PACCT],
-						assoc->parent_acct)
+						assoc->parent_acct,
+						now)
 				   == SLURM_ERROR)
 					break;
+				moved_parent = 1;
 			}
 			account_type = 1;
 		}
@@ -4466,7 +4499,8 @@ extern List acct_storage_p_modify_associations(
 					    row[MASSOC_ACCT],
 					    atoi(row[MASSOC_LFT]),
 					    atoi(row[MASSOC_RGT]),
-					    ret_list);
+					    ret_list,
+					    moved_parent);
 		}
 	}
 	mysql_free_result(result);
@@ -4512,7 +4546,47 @@ extern List acct_storage_p_modify_associations(
 			goto end_it;
 		}
 	}
+	if(moved_parent) {
+		List local_assoc_list = NULL;
+		ListIterator local_itr = NULL;
+		acct_association_rec_t *local_assoc = NULL;
+		//acct_association_cond_t local_assoc_cond;
+		/* now we need to send the update of the new parents and
+		 * limits, so just to be safe, send the whole
+		 * tree because we could have some limits that
+		 * were affected but not noticed.
+		 */
+		/* we can probably just look at the mod time now but
+		 * we will have to wait for the next revision number
+		 * since you can't query on mod time here and I don't
+		 * want to rewrite code to make it happen
+		 */
 
+		//bzero(&local_assoc_cond, sizeof(acct_association_cond_t));
+		
+		if(!(local_assoc_list = 
+		     acct_storage_p_get_associations(mysql_conn,
+						     uid, NULL)))
+			return ret_list;
+		/* NOTE: you can not use list_pop, or list_push
+		   anywhere either, since mysql is
+		   exporting something of the same type as a macro,
+		   which messes everything up (my_list.h is
+		   the bad boy).
+		   So we are just going to delete each item as it
+		   comes out since we are moving it to the update_list.
+		*/
+		local_itr = list_iterator_create(local_assoc_list);
+		while((local_assoc = list_next(local_itr))) {
+			if(_addto_update_list(mysql_conn->update_list, 
+					      ACCT_MODIFY_ASSOC,
+					      local_assoc) == SLURM_SUCCESS) 
+				list_remove(local_itr);
+		}
+		list_iterator_destroy(local_itr);
+		list_destroy(local_assoc_list);		
+	}
+	
 end_it:
 	xfree(name_char);
 	xfree(vals);
@@ -6578,7 +6652,7 @@ extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 	};
 
 	if(!assoc_cond) {
-		xstrcat(extra, "where deleted=0");
+		xstrcat(extra, " where deleted=0");
 		goto empty;
 	}
 
@@ -6847,10 +6921,13 @@ empty:
 				else 
 					parent_qos = NULL;
 
+				xfree(parent_delta_qos);
 				if(row2[ASSOC2_REQ_DELTA_QOS][0])
 					xstrcat(parent_delta_qos, 
 						row2[ASSOC2_REQ_DELTA_QOS]);
-			
+				else
+					parent_delta_qos = NULL;
+
 				if(row2[ASSOC2_REQ_MSJ])
 					parent_msj = atoi(row2[ASSOC2_REQ_MSJ]);
 				else
@@ -6977,6 +7054,7 @@ empty:
 
 	list_destroy(delta_qos_list);
 
+	xfree(parent_delta_qos);
 	xfree(parent_qos);
 
 	return assoc_list;

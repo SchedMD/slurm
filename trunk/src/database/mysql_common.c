@@ -43,7 +43,9 @@
 #include "src/common/timers.h"
 #include "src/common/slurm_protocol_api.h"
 
+#ifdef MYSQL_NOT_THREAD_SAFE
 pthread_mutex_t mysql_lock = PTHREAD_MUTEX_INITIALIZER;
+#endif
 
 #ifdef HAVE_MYSQL
 
@@ -184,7 +186,9 @@ static int _create_db(char *db_name, mysql_db_info_t *db_info)
 	char create_line[50];
 	MYSQL *mysql_db = NULL;
 
-//	slurm_mutex_lock(&mysql_lock);
+#ifdef MYSQL_NOT_THREAD_SAFE
+	slurm_mutex_lock(&mysql_lock);
+#endif
 	if(!(mysql_db = mysql_init(mysql_db)))
 		fatal("mysql_init failed: %s", mysql_error(mysql_db));
 	
@@ -203,12 +207,16 @@ static int _create_db(char *db_name, mysql_db_info_t *db_info)
 		     "user = %s pass = %s port = %u",
 		     db_info->host, db_info->user,
 		     db_info->pass, db_info->port);
+#ifdef MYSQL_NOT_THREAD_SAFE
 		slurm_mutex_unlock(&mysql_lock);
+#endif
 		fatal("mysql_real_connect failed: %d %s\n",
 		      mysql_errno(mysql_db),
 		      mysql_error(mysql_db));
 	}
-//	slurm_mutex_unlock(&mysql_lock);
+#ifdef MYSQL_NOT_THREAD_SAFE
+	slurm_mutex_unlock(&mysql_lock);
+#endif
 	return SLURM_SUCCESS;
 }
 
@@ -292,8 +300,9 @@ extern int mysql_db_query(MYSQL *mysql_db, char *query)
 {
 	if(!mysql_db)
 		fatal("You haven't inited this storage yet.");
+#ifdef MYSQL_NOT_THREAD_SAFE
 	slurm_mutex_lock(&mysql_lock);
-
+#endif
 	/* clear out the old results so we don't get a 2014 error */
 	_clear_results(mysql_db);		
 //try_again:
@@ -306,11 +315,15 @@ extern int mysql_db_query(MYSQL *mysql_db, char *query)
 		      mysql_errno(mysql_db),
 		      mysql_error(mysql_db), query);
 		errno = mysql_errno(mysql_db);
+#ifdef MYSQL_NOT_THREAD_SAFE
 		slurm_mutex_unlock(&mysql_lock);
+#endif
 		return SLURM_ERROR;
 	}
-	slurm_mutex_unlock(&mysql_lock);
 
+#ifdef MYSQL_NOT_THREAD_SAFE
+	slurm_mutex_unlock(&mysql_lock);
+#endif
 	return SLURM_SUCCESS;
 }
 
@@ -323,8 +336,9 @@ extern int mysql_db_ping(MYSQL *mysql_db)
 
 extern int mysql_db_commit(MYSQL *mysql_db)
 {
-	//slurm_mutex_lock(&mysql_lock);
-
+#ifdef MYSQL_NOT_THREAD_SAFE
+	slurm_mutex_lock(&mysql_lock);
+#endif
 	/* clear out the old results so we don't get a 2014 error */
 	_clear_results(mysql_db);		
 	if(mysql_commit(mysql_db)) {
@@ -332,18 +346,22 @@ extern int mysql_db_commit(MYSQL *mysql_db)
 		      mysql_errno(mysql_db),
 		      mysql_error(mysql_db));
 		errno = mysql_errno(mysql_db);
-		//slurm_mutex_unlock(&mysql_lock);
+#ifdef MYSQL_NOT_THREAD_SAFE
+		slurm_mutex_unlock(&mysql_lock);
+#endif
 		return SLURM_ERROR;
 	}
-	//slurm_mutex_unlock(&mysql_lock);
-
+#ifdef MYSQL_NOT_THREAD_SAFE
+	slurm_mutex_unlock(&mysql_lock);
+#endif
 	return SLURM_SUCCESS;
 }
 
 extern int mysql_db_rollback(MYSQL *mysql_db)
 {
-	//slurm_mutex_lock(&mysql_lock);
-
+#ifdef MYSQL_NOT_THREAD_SAFE
+	slurm_mutex_lock(&mysql_lock);
+#endif
 	/* clear out the old results so we don't get a 2014 error */
 	_clear_results(mysql_db);		
 	if(mysql_rollback(mysql_db)) {
@@ -351,12 +369,15 @@ extern int mysql_db_rollback(MYSQL *mysql_db)
 		      mysql_errno(mysql_db),
 		      mysql_error(mysql_db));
 		errno = mysql_errno(mysql_db);
-		//slurm_mutex_unlock(&mysql_lock);
+#ifdef MYSQL_NOT_THREAD_SAFE
+		slurm_mutex_unlock(&mysql_lock);
+#endif
 		return SLURM_ERROR;
 	}
 	//mysql_db_query(mysql_db, "unlock tables;");
-	//slurm_mutex_unlock(&mysql_lock);
-
+#ifdef MYSQL_NOT_THREAD_SAFE
+	slurm_mutex_unlock(&mysql_lock);
+#endif
 	return SLURM_SUCCESS;
 
 }

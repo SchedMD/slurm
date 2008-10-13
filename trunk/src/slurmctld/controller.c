@@ -354,16 +354,12 @@ int main(int argc, char *argv[])
 	/*
 	 * Initialize plugins.
 	 */
-	if ( slurm_select_init() != SLURM_SUCCESS )
-		fatal( "failed to initialize node selection plugin" );
-	if ( checkpoint_init(slurmctld_conf.checkpoint_type) != 
-			SLURM_SUCCESS )
-		fatal( "failed to initialize checkpoint plugin" );
 	if (slurm_select_init() != SLURM_SUCCESS )
-		fatal( "failed to initialize node selection plugin");
+		fatal( "failed to initialize node selection plugin" );
+	if (checkpoint_init(slurmctld_conf.checkpoint_type) != SLURM_SUCCESS )
+		fatal( "failed to initialize checkpoint plugin" );
 	if (slurm_acct_storage_init(NULL) != SLURM_SUCCESS )
 		fatal( "failed to initialize accounting_storage plugin");
-
 	if (slurm_jobacct_gather_init() != SLURM_SUCCESS )
 		fatal( "failed to initialize jobacct_gather plugin");
 
