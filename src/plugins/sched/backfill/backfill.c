@@ -217,7 +217,7 @@ static void _attempt_backfill(void)
 {
 	bool filter_root = false;
 	struct job_queue *job_queue = NULL;
-	int i, j,job_queue_size, node_space_recs = 0;
+	int i, j,job_queue_size, node_space_recs;
 	struct job_record *job_ptr;
 	struct part_record *part_ptr;
 	uint32_t end_time, end_reserve, time_limit;
@@ -238,9 +238,9 @@ static void _attempt_backfill(void)
 
 	node_space[0].begin_time = now;
 	node_space[0].end_time = now + BACKFILL_WINDOW;
-	node_space[0].avail_bitmap = bit_alloc(node_record_count);
-	bit_or(node_space[0].avail_bitmap, avail_node_bitmap);
+	node_space[0].avail_bitmap = bit_copy(avail_node_bitmap);
 	node_space[0].next = 0;
+	node_space_recs = 1;
 #if __DEBUG
 	_dump_node_space_table(node_space);
 #endif
@@ -248,6 +248,10 @@ static void _attempt_backfill(void)
 	for (i = 0; i < job_queue_size; i++) {
 		job_ptr = job_queue[i].job_ptr;
 		part_ptr = job_ptr->part_ptr;
+#if __DEBUG
+		info("backfill test for job %u", job_ptr->job_id);
+#endif
+
 		if (part_ptr == NULL) {
 			part_ptr = find_part_record(job_ptr->partition);
 			xassert(part_ptr);
@@ -299,7 +303,6 @@ static void _attempt_backfill(void)
 				time_limit = MIN(job_ptr->time_limit,
 						 part_ptr->max_time);
 		}
-		/* Permit a bit of extra time for job clean-up */
 		end_time = (time_limit * 60) + now;
 
 		/* Identify usable nodes for this job */
@@ -307,10 +310,11 @@ static void _attempt_backfill(void)
 		avail_bitmap = bit_copy(part_ptr->node_bitmap);
 		bit_and(avail_bitmap, up_node_bitmap);
 		for (j=0; ; ) {
-			if (node_space[j].end_time <= end_time) {
+			if (node_space[j].begin_time <= end_time) {
 				bit_and(avail_bitmap, 
 					node_space[j].avail_bitmap);
-			}
+			} else
+				break;
 			if ((j = node_space[j].next) == 0)
 				break;
 		}
@@ -327,19 +331,23 @@ static void _attempt_backfill(void)
 				    avail_bitmap)))
 			continue;	/* required nodes missing */
 		if (bit_set_count(avail_bitmap) < min_nodes)
-			continue;	/* no nodes remain */
+			continue;	/* insufficient nodes remain */
 
 		/* Try to schedule the job. First on dedicated nodes
 		 * then on shared nodes (if so configured). */
 		orig_shared = job_ptr->details->shared;
 		job_ptr->details->shared = 0;
 		tmp_bitmap = bit_copy(avail_bitmap);
-		j = select_nodes(job_ptr, true, &avail_bitmap); 
+		j = select_g_job_test(job_ptr, avail_bitmap, min_nodes,
+				      max_nodes, req_nodes,
+				      SELECT_MODE_WILL_RUN);
 		job_ptr->details->shared = orig_shared;
 		if ((j != SLURM_SUCCESS) && (orig_shared != 0)) {
 			FREE_NULL_BITMAP(avail_bitmap);
 			avail_bitmap= tmp_bitmap;
-			j = select_nodes(job_ptr, true, &avail_bitmap);
+			j = select_g_job_test(job_ptr, avail_bitmap, min_nodes,
+					      max_nodes, req_nodes,
+					      SELECT_MODE_WILL_RUN);
 		} else
 			FREE_NULL_BITMAP(tmp_bitmap);
 		if (j != SLURM_SUCCESS)
@@ -487,50 +495,10 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 			break;
 	}
 
-#if 0
-	/* This records end of reservation so we maintain a full map
-	 * of when jobs start and end. Since we only care about starting 
-	 * jobs right now, the end of reservation time is not very useful
-	 * unless we want to track expected job initiation time, which 
-	 * would necessitate additional logic. */
-	for (j=0; ; ) {
-		if ((node_space[j].begin_time < end_reserve) &&
-		    (node_space[j].end_time   > end_reserve)) {
-			/* insert end entry record */
-			i = *node_space_recs;
-			node_space[i].begin_time = node_space[j].begin_time;
-			node_space[j].begin_time = end_reserve;
-			node_space[i].end_time = end_reserve;
-			node_space[i].avail_bitmap = 
-				bit_copy(node_space[j].avail_bitmap);
-			node_space[i].next = j;
-			node_space[previous].next = i;
-			(*node_space_recs)++;
-			break;
-		}
-		if (node_space[j].end_time == end_reserve) {
-			/* no need to insert end entry record */
-			break;
-		}
-		previous = j;
-		if ((j = node_space[j].next) == 0)
-			break;
-	}
-
-	for (j=0; ; ) {
-		if ((node_space[j].begin_time >= start_time) &&
-		    (node_space[j].end_time   <= end_reserve)) {
-			bit_and(node_space[j].avail_bitmap, res_bitmap);
-		}
-		if ((j = node_space[j].next) == 0)
-			break;
-	}
-#else
 	for (j=0; ; ) {
 		if (node_space[j].begin_time >= start_time)
 			bit_and(node_space[j].avail_bitmap, res_bitmap);
 		if ((j = node_space[j].next) == 0)
 			break;
 	}
-#endif
 }
