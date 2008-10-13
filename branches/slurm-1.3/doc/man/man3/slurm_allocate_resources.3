@@ -17,6 +17,14 @@ int \fBslurm_allocate_resources\fR (
 .br 
 );
 .LP 
+resource_allocation_response_msg_t *\fBslurm_allocate_resources_blocking\fR (
+.br 
+	job_desc_msg_t *\fIjob_desc_msg_ptr\fP,
+.br 
+	time_t \fItimeout\fP, void \fI(*pending_callback)(uint32_t job_id)\fP
+.br 
+);
+.LP 
 int \fBslurm_allocation_lookup\fR {
 .br
 	uint32_t \fIjobid\fP,
@@ -100,7 +108,20 @@ count or time allocation are outside of the partition's limits then a job
 entry will be created, a warning indication will be placed in the \fIerror_code\fP field of the response message, and the job will be left 
 queued until the partition's limits are changed.
 Always release the response message when no longer required using 
-the function \fBslurm_free_resource_allocation_response_msg\fR.
+the function \fBslurm_free_resource_allocation_response_msg\fR.  This
+function only makes the request once.  If the allocation is not
+avaliable immediately the node_cnt variable in the resp will be 0.  If
+you want a function that will block until either an error is recieved
+or an allocation is granted you can use the
+\fIslurm_allocate_resources_blocking\fP function described below. 
+.LP
+\fBslurm_allocate_resources_blocking\fR Request a resource allocation for a
+job.  This call will block until the allocation is granted, an error
+occurs, or the specified timeout limit is reached.  The \fIpending_callback\fP
+parameter will be called if the allocation is not avaliable
+immediately and the immedite flag is not set in the request.  This can
+be used to get the jobid of the job while waiting for the allocation
+to become avaliable.  On failure NULL is returned and errno is set.
 .LP 
 \fBslurm_confirm_allocation\fR Return detailed information on a specific 
 existing job allocation. \fBOBSOLETE FUNCTION: Use slurm_allocation_lookup
