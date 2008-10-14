@@ -49,7 +49,7 @@ if { [test_account_storage] == 0 } {
 
 if { [string compare [check_accounting_admin_level] "Administrator"] } {
 	send_user "\nWARNING: This test can't be run without being an Accounting administrator.\nUse sacctmgr mod user \$USER_NAME admin=admin.\n"
-#	exit 0
+	exit 0
 }
 
 #
@@ -109,7 +109,7 @@ expect {
 }
 if {$aamatches != 1} {
 	send_user "\nFAILURE:  sacctmgr had a problem adding account.\n"
-	set exit_code 1
+	exit 1
 }
 
 #
@@ -125,6 +125,40 @@ expect {
 	eof {
 		wait
 	}
+}
+
+#
+# Spawn a job via salloc using this account
+#
+set job_id    0
+set matches   0
+set timeout   $max_job_delay
+spawn $salloc -N1 --account=$test_acct
+expect {
+	-re "Granted job allocation ($number)" {
+		set job_id $expect_out(1,string)
+		send "$scontrol show job $job_id\n"
+		send "exit\n"
+		exp_continue
+	}
+	-re "Account=$test_acct" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: salloc not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	send_user "\nFAILURE: salloc failed to initiate job\n"
+	set exit_code 1
+} elseif {$matches != 1} {
+	send_user "\nFAILURE: salloc failed to use desired account\n"
+	set exit_code 1
 }
 
 #
@@ -147,7 +181,7 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	send_user "\nFAILURE: did not get job_id\n"
+	send_user "\nFAILURE: did not get sbatch job_id\n"
 	set exit_code 1
 } else {
 	set matches 0
@@ -157,7 +191,7 @@ if {$job_id == 0} {
 			incr matches
 			exp_continue
 		}
-		 timeout {
+		timeout {
 			send_user "\nFAILURE: scontrol not responding\n"
 			set exit_code 1
 		}
@@ -167,6 +201,49 @@ if {$job_id == 0} {
 	}
 	if {$matches != 1} {
 		send_user "\nFAILURE: sbatch failed to use specified account\n"
+		set exit_code 1
+	}
+}
+
+#
+# Spawn a job via srun using this account
+#
+set job_id 0
+spawn $srun -N1 -v --account=$test_acct $bin_id
+expect {
+	-re "launching ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	send_user "\nFAILURE: did not get srun job_id\n"
+	set exit_code 1
+} else {
+	set matches 0
+	spawn $scontrol show job $job_id
+	expect {
+		 -re "Account=$test_acct" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 1} {
+		send_user "\nFAILURE: srun failed to use specified account\n"
 		set exit_code 1
 	}
 }
