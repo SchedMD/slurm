@@ -2,7 +2,7 @@
 ############################################################################
 # Purpose: Test of SLURM functionality
 #          Verify environment variables controlling salloc are processed:
-#          SALLOC_ACCOUNT, SALLOC_DEBUG and SALLOC_TIMELIMIT
+#          SALLOC_DEBUG and SALLOC_TIMELIMIT
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -36,7 +36,6 @@ set test_id          "15.23"
 set exit_code        0
 set job_id           0
 set timeout          $max_job_delay
-set job_acct    "TEST_ACCT"
 
 print_header $test_id
 
@@ -49,7 +48,6 @@ if {[test_assoc_enforced]} {
 # Set target environment variables
 #
 global env
-set env(SALLOC_ACCOUNT)       $job_acct
 set env(SALLOC_DEBUG)         2
 set env(SALLOC_TIMELIMIT)     2
 
@@ -66,6 +64,7 @@ expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
 		send "$scontrol show job $job_id\n"
+		send "exit\n"
 		exp_continue
 	}
 	-re "TimeLimit=($number):($number):" {
@@ -76,11 +75,6 @@ expect {
 			send_user "FAILURE: TimeLimit not set\n"
 			set exit_code 1
 		}
-		exp_continue
-	}
-	-re "Account=$job_acct" {
-		incr matches
-		send "exit\n"
 		exp_continue
 	}
 	timeout {
@@ -100,8 +94,8 @@ if {$job_id == 0} {
 	send_user "\nFAILURE: did not get job_id\n" 
 	exit 1
 }
-if {$matches != 3} {
-	send_user "\nFAILURE: processed $matches of 3 environment variables\n"
+if {$matches != 2} {
+	send_user "\nFAILURE: processed $matches of 2 environment variables\n"
 	set exit_code 1
 }
 

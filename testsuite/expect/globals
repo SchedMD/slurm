@@ -1141,9 +1141,10 @@ proc check_acct_associations { } {
 # 
 ################################################################
 proc check_accounting_admin_level { } {
-        global sacctmgr alpha alpha_numeric_under bin_id
+	global sacctmgr alpha alpha_numeric_under bin_id
 
-        set admin_level ""
+	set admin_level ""
+	set user_name ""
 
 	log_user 0
 
