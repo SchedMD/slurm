@@ -134,10 +134,9 @@ test1.37   Test of srun --tasks-per-node option.
 test1.38   Test srun handling of SIGINT to get task status or kill the job
            (--quit-on-interrupt option).
 test1.39   Test of linux light-weight core files.
-test1.40   REMOVED
+test1.40   Test of job account (--account option).
 test1.41   Validate SLURM debugger infrastructure (--debugger-test option).
-test1.42   Test of account number and job dependencies (--account,
-           and --depedency options).
+test1.42   Test of job dependencies (--dependency option).
 test1.43   Test of slurm_job_will_run API, (srun --test-only option).
 test1.44   Read srun's stdout slowly and test for lost data.   
 test1.45   REMOVED
