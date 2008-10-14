@@ -40,6 +40,8 @@
 #ifndef _HOSTLIST_H
 #define _HOSTLIST_H
 
+#include <unistd.h>		/* load ssize_t definition */
+
 /* max size of internal hostrange buffer */
 #define MAXHOSTRANGELEN 8192
 
@@ -433,6 +435,12 @@ int hostset_insert(hostset_t set, const char *hosts);
  */
 int hostset_delete(hostset_t set, const char *hosts);
 
+/* hostset_intersects():
+ * Return 1 if any of the hosts specified by "hosts" are within the hostset "set"
+ * Return 0 if all host in "hosts" is not in the hostset "set"
+ */
+int hostset_intersects(hostset_t set, const char *hosts);
+
 /* hostset_within():
  * Return 1 if all hosts specified by "hosts" are within the hostset "set"
  * Retrun 0 if every host in "hosts" is not in the hostset "set"
@@ -443,6 +451,11 @@ int hostset_within(hostset_t set, const char *hosts);
  * hostset equivalent to hostlist_shift()
  */
 char * hostset_shift(hostset_t set);
+
+/* hostset_pop():
+ * hostset equivalent to hostlist_pop()
+ */
+char *hostset_pop(hostset_t set);
 
 /* hostset_shift_range():
  * hostset eqivalent to hostlist_shift_range()
@@ -464,5 +477,10 @@ int hostset_count(hostset_t set);
 int hostset_find(hostset_t set, const char *hostname);
 
 char * hostset_nth(hostset_t set, int n);
+
+/* hostset_ranged_string():
+ * hostset equivelent to hostlist_ranged_string();
+ */
+ssize_t hostset_ranged_string(hostset_t set, size_t n, char *buf);
 
 #endif /* !_HOSTLIST_H */

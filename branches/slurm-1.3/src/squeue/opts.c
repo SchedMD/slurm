@@ -64,7 +64,7 @@
 /* getopt_long options, integers but not characters */
 #define OPT_LONG_HELP  0x100
 #define OPT_LONG_USAGE 0x101
-#define OPT_LONG_HIDE	0x102
+#define OPT_LONG_HIDE  0x102
 
 /* FUNCTIONS */
 static List  _build_job_list( char* str );
@@ -92,7 +92,6 @@ parse_command_line( int argc, char* argv[] )
 	char *env_val = NULL;
 	int opt_char;
 	int option_index;
-	hostlist_t host_list;
 	static struct option long_options[] = {
 		{"all",        no_argument,       0, 'a'},
 		{"noheader",   no_argument,       0, 'h'},
@@ -100,6 +99,7 @@ parse_command_line( int argc, char* argv[] )
 		{"jobs",       optional_argument, 0, 'j'},
 		{"long",       no_argument,       0, 'l'},
 		{"node",       required_argument, 0, 'n'},
+		{"nodes",      required_argument, 0, 'n'},
 		{"format",     required_argument, 0, 'o'},
 		{"partitions", required_argument, 0, 'p'},
 		{"steps",      optional_argument, 0, 's'},
@@ -154,15 +154,15 @@ parse_command_line( int argc, char* argv[] )
 				params.long_list = true;
 				break;
 			case (int) 'n':
-				xfree(params.node);
-				params.node = xstrdup(optarg);
-				host_list = hostlist_create(params.node);
-				if (!host_list) {
-					error("'%s' invalid entry for --node",
-						optarg);
+				if (params.nodes)
+					hostset_destroy(params.nodes);
+
+				params.nodes = hostset_create(optarg);
+				if (params.nodes == NULL) {
+					error("'%s' invalid entry for --nodes",
+					      optarg);
 					exit(1);
 				}
-				hostlist_destroy(host_list);
 				break;
 			case (int) 'o':
 				xfree(params.format);
@@ -236,18 +236,36 @@ parse_command_line( int argc, char* argv[] )
 		exit(1);
 	}
 
-	if ( params.node ) {
+	if ( params.nodes ) {
 		char *name1 = NULL;
-		if (strcasecmp("localhost", params.node) == 0) {
-			xfree(params.node);
-			params.node = xmalloc(128);
-			gethostname_short(params.node, 128);
+		char *name2 = NULL;
+		hostset_t nodenames = hostset_create(NULL);
+		if (nodenames == NULL)
+			fatal("malloc failure");
+
+		while ( hostset_count(params.nodes) > 0 ) {
+			name1 = hostset_pop(params.nodes);
+			
+			/* localhost = use current host name */
+			if ( strcasecmp("localhost", name1) == 0 ) {
+				name2 = xmalloc(128);
+				gethostname_short(name2, 128);
+			} else {
+				/* translate NodeHostName to NodeName */
+				name2 = slurm_conf_get_nodename(name1);
+
+				/* use NodeName if translation failed */
+				if ( name2 == NULL )
+					name2 = xstrdup(name1);
+			}
+			hostset_insert(nodenames, name2);
+			free(name1);
+			xfree(name2);
 		}
-		name1 = slurm_conf_get_nodename(params.node);
-		if (name1) {
-			xfree(params.node);
-			params.node = xstrdup(name1);
-		}
+		
+		/* Replace params.nodename with the new one */
+		hostset_destroy(params.nodes);
+		params.nodes = nodenames;
 	}
 
 	if ( ( params.partitions == NULL ) && 
@@ -706,6 +724,9 @@ _print_options()
 	enum job_states *state_id;
 	squeue_job_step_t *job_step_id;
 	uint32_t *job_id;
+	char hostlist[8192];
+
+	hostset_ranged_string (params.nodes, sizeof(hostlist)-1, hostlist);
 
 	printf( "-----------------------------\n" );
 	printf( "all        = %s\n", params.all_flag ? "true" : "false");
@@ -714,7 +735,7 @@ _print_options()
 	printf( "job_flag   = %d\n", params.job_flag );
 	printf( "jobs       = %s\n", params.jobs );
 	printf( "max_procs  = %d\n", params.max_procs ) ;
-	printf( "node       = %s\n", params.node ) ;
+	printf( "nodes      = %s\n", hostlist ) ;
 	printf( "partitions = %s\n", params.partitions ) ;
 	printf( "sort       = %s\n", params.sort ) ;
 	printf( "states     = %s\n", params.states ) ;
@@ -994,7 +1015,7 @@ Usage: squeue [OPTIONS]\n\
   -j, --jobs                      comma separated list of jobs\n\
                                   to view, default is all\n\
   -l, --long                      long report\n\
-  -n, --node=node_name            name of single node to view, default is \n\
+  -n, --nodes=hostlist            list of nodes to view, default is \n\
                                   all nodes\n\
   -o, --format=format             format specification\n\
   -p, --partitions=partitions     comma separated list of partitions\n\
