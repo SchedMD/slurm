@@ -394,8 +394,7 @@ test15.10  Confirm that a job allocates the proper procesor count (--tasks)
 test15.11  Test of --nice and --job-name options.
 test15.12  Verify node configuration specification (--constraint option).
 test15.13  Verify the appropriate job environment variables are set
-test15.14  Test of account number and job dependencies (--account
-           and --depedency options).
+test15.14  Test of job dependencies (--depedency option).
 test15.15  Test of user signal upon allocation (--bell and --no-bell options)
 test15.16  Verify that SLURM directed environment variables are processed:
            SALLOC_BELL and SALLOC_NO_BELL (can't really confirm from Expect)
@@ -412,7 +411,7 @@ test15.22  Test of partition specification on job submission (--partition
 test15.23  Test of environment variables that control salloc actions: 
            SALLOC_ACCOUNT, SALLOC_DEBUG and SALLOC_TIMELIMIT
 test15.24  Test of --overcommit option.
-
+test15.25  Test of job account(--account option).
 
 test16.#   Testing of sattach options.
 ======================================
