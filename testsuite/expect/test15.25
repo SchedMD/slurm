@@ -44,10 +44,10 @@ if {[test_assoc_enforced]} {
 	send_user "\nWARNING: This test will not work when associations are enforced.\n"
 	exit $exit_code
 }
-#if {[test_account_storage]} {
-#	send_user "\nWARNING: This test will not work when invalid account names are #subject to change.\n"
-#	exit $exit_code
-#}
+if {[test_account_storage]} {
+	send_user "\nWARNING: This test will not work when invalid account names are subject to change.\n"
+	exit $exit_code
+}
 
 global env
 set env(SALLOC_ACCOUNT) QA_ACCT
