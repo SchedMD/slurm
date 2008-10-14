@@ -3,7 +3,11 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.3.10
 =========================
-
+ -- Fix several bugs in the hostlist functions:
+    - Fix hostset_insert_range() to do proper accounting of hl->nhosts (count).
+    - Avoid assertion failure when callinsg hostset_create(NULL).
+    - Rewrite of hostrange_hn_within(), avoids reporting "tst0" in the hostlist 
+      "tst".
 
 * Changes in SLURM 1.3.9
 ========================
