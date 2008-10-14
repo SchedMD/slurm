@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          isacctmgr add an account to this cluster and try using it with
+#          sacctmgr add an account to this cluster and try using it with
 #          salloc, sbatch and srun.
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
