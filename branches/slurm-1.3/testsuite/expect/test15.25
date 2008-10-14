@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Test of job dependencies (--depedency option).
+#          Test of job account(--account option).
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -31,7 +31,7 @@
 ############################################################################
 source ./globals
 
-set test_id     "15.14"
+set test_id     "15.25"
 set file_in     "test$test_id.input"
 set exit_code   0
 set job_id1     0
@@ -39,6 +39,18 @@ set job_id2     0
 set job_acct    "TEST_ACCT"
 
 print_header $test_id
+
+if {[test_assoc_enforced]} {
+	send_user "\nWARNING: This test will not work when associations are enforced.\n"
+	exit $exit_code
+}
+#if {[test_account_storage]} {
+#	send_user "\nWARNING: This test will not work when invalid account names are #subject to change.\n"
+#	exit $exit_code
+#}
+
+global env
+set env(SALLOC_ACCOUNT) QA_ACCT
 
 #
 # Build input script file
@@ -49,7 +61,7 @@ make_bash_script $file_in "$bin_sleep 10"
 # Spawn a srun batch job that just sleeps for a while
 #
 set timeout $max_job_delay
-set sbatch_pid [spawn $sbatch --output=/dev/null --error=/dev/null -t1 $file_in]
+set sbatch_pid [spawn $sbatch --output=/dev/null --error=/dev/null --account=MY_ACCT -t1 $file_in]
 expect {
 	 -re "Submitted batch job ($number)" {
 		set job_id1 $expect_out(1,string)
@@ -70,17 +82,17 @@ if {$job_id1 == 0} {
 }
 
 #
-# Submit a dependent job
+# Submit a second job that gets account from SALLOC_ACCOUNT environment variable
 #
-set match_state 0
+set match_acct  0
 set salloc_pid [spawn $salloc --dependency=afterany:$job_id1 $srun $scontrol show job $job_id1]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id2 $expect_out(1,string)
 		exp_continue
 	}
-	-re "JobState=COMPLETED" {
-		set match_state 1
+	-re "Account=$job_acct" {
+		set match_acct 1
 		exp_continue
 	}
 	timeout {
@@ -95,19 +107,19 @@ expect {
 		wait
 	}
 }
-if {$match_state == 0} {
-	send_user "\nFAILURE: Dependent job not completed\n"
+if {$match_acct == 0} {
+	send_user "\nFAILURE: Account information not processed\n"
 	set exit_code 1
 }
 
 #
-# Confirm dependency info within second job
+# Confirm  second job's as account name
 #
-set match_jobid 0
+set match_acct 0
 spawn $scontrol show job $job_id2
 expect {
-	-re "Dependency=afterany:($number)" {
-		set match_jobid $expect_out(1,string)
+	-re "Account=QA_ACCT" {
+		set match_acct 1
 		exp_continue
 	}
 	timeout {
@@ -118,8 +130,8 @@ expect {
 		wait
 	}
 }
-if {$match_jobid != $job_id1} {
-	send_user "\nFAILURE: Dependency information not processed\n"
+if {$match_acct == 0} {
+	send_user "\nFAILURE: Account information not processed\n"
 	set exit_code 1
 }
 

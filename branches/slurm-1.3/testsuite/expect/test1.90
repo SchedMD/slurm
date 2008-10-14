@@ -554,6 +554,7 @@ if {$exit_code == 0} {
 } else {
 	send_user "\nNOTE: This test can fail if the node configuration in slurm.conf \n"
 	send_user "  (sockets, cores, threads) differs from the actual configuration\n"
+	send_user "  SPANK plugins (e.g. auto-affinity.so)\n"
 }
 exit $exit_code
 
