@@ -2291,7 +2291,7 @@ void hostlist_uniq(hostlist_t hl)
 }
 
 
-size_t hostlist_deranged_string(hostlist_t hl, size_t n, char *buf)
+ssize_t hostlist_deranged_string(hostlist_t hl, size_t n, char *buf)
 {
 	int i;
 	int len = 0;
@@ -2545,7 +2545,7 @@ _test_box(void)
 }
 #endif
 
-size_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
+ssize_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 {
 	int i = 0;
 	int len = 0;
@@ -3007,12 +3007,12 @@ int hostset_count(hostset_t set)
 	return hostlist_count(set->hl);
 }
 
-size_t hostset_ranged_string(hostset_t set, size_t n, char *buf)
+ssize_t hostset_ranged_string(hostset_t set, size_t n, char *buf)
 {
 	return hostlist_ranged_string(set->hl, n, buf);
 }
 
-size_t hostset_deranged_string(hostset_t set, size_t n, char *buf)
+ssize_t hostset_deranged_string(hostset_t set, size_t n, char *buf)
 {
 	return hostlist_deranged_string(set->hl, n, buf);
 }
