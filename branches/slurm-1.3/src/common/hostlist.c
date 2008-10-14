@@ -2251,6 +2251,7 @@ static void hostlist_coalesce(hostlist_t hl)
 /* attempt to join ranges at loc and loc-1 in a hostlist  */
 /* delete duplicates, return the number of hosts deleted  */
 /* assumes that the hostlist hl has been locked by caller */
+/* returns -1 if no range join occured */
 static int _attempt_range_join(hostlist_t hl, int loc)
 {
 	int ndup;
@@ -2857,12 +2858,14 @@ void hostset_destroy(hostset_t set)
 
 /* inserts a single range object into a hostset 
  * Assumes that the set->hl lock is already held
+ * Updates hl->nhosts
  */
 static int hostset_insert_range(hostset_t set, hostrange_t hr)
 {
-	int i, n = 0;
+	int i = 0;
 	int inserted = 0;
-	int retval = 0;
+	int nhosts = 0;
+	int ndups = 0;
 	hostlist_t hl;
 
 	hl = set->hl;
@@ -2870,24 +2873,25 @@ static int hostset_insert_range(hostset_t set, hostrange_t hr)
 	if (hl->size == hl->nranges && !hostlist_expand(hl))
 		return 0;
 
-	retval = hostrange_count(hr);
+	nhosts = hostrange_count(hr);
 
 	for (i = 0; i < hl->nranges; i++) {
 		if (hostrange_cmp(hr, hl->hr[i]) <= 0) {
-			n = hostrange_join(hr, hl->hr[i]);
 
-			if (n >= 0) {
+			if ((ndups = hostrange_join(hr, hl->hr[i])) >= 0) 
 				hostlist_delete_range(hl, i);
-				hl->nhosts -= n;
-			}
+			else if (ndups < 0)
+				ndups = 0;
 
 			hostlist_insert_range(hl, hr, i);
 
 			/* now attempt to join hr[i] and hr[i-1] */
 			if (i > 0) {
-				int m = _attempt_range_join(hl, i);
-				n += m;
+				int m;
+				if ((m = _attempt_range_join(hl, i)) > 0)
+					ndups += m;
 			}
+			hl->nhosts += nhosts - ndups;
 			inserted = 1;
 			break;
 		}
@@ -2895,10 +2899,17 @@ static int hostset_insert_range(hostset_t set, hostrange_t hr)
 
 	if (inserted == 0) {
 		hl->hr[hl->nranges++] = hostrange_copy(hr);
-		n = _attempt_range_join(hl, hl->nranges - 1);
+		hl->nhosts += nhosts;
+		if (hl->nranges > 1) {
+			if ((ndups = _attempt_range_join(hl, hl->nranges - 1)) <= 0)
+				ndups = 0;
+		}
 	}
 
-	return retval - n;
+	/*
+	 *  Return the number of unique hosts inserted
+	 */
+	return nhosts - ndups;
 }
 
 int hostset_insert(hostset_t set, const char *hosts)
