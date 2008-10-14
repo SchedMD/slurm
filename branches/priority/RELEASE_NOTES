@@ -1,0 +1,45 @@
+RELEASE NOTES FOR SLURM VERSION 1.4
+6 October 2008
+
+
+IMPORTANT NOTE:
+SLURM state files in version 1.4 are different from those of version 1.3.
+After installing SLURM version 1.4, plan to restart without preserving 
+jobs or other state information. While SLURM version 1.3 is still running, 
+cancel all pending and running jobs (e.g.
+"scancel --state=pending; scancel --state=running"). Then stop and restart 
+daemons with the "-c" option or use "/etc/init.d/slurm startclean".
+
+There are substantial changes in the slurm.conf configuration file. It 
+is recommended that you rebuild your configuration file using the tool
+doc/html/configurator.html that comes with the distribution.
+
+HIGHLIGHTS
+* Idle nodes can now be completely powered down when idle and automatically
+  restarted when their is work available. For more information see:
+  https://computing.llnl.gov/linux/slurm/power_save.html
+* SLURM has been modified to allocate specific cores to jobs and job steps in
+  order to effectively preempt or gang schedule jobs.
+* A new configuration parameter, PrologSlurmctld, can be used to support the 
+  booting of different operating systems for each job.
+
+CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
+* DefMemPerTask has been removed. Use DefMemPerCPU or DefMemPerNode instead.
+* Added new node state of "FUTURE". These node records are created in SLURM
+  tables for future use without a reboot of the SLURM daemons, but are not
+   reported by any SLURM commands or APIs.
+* Default AuthType is now "auth/munge" rather than auth/none.
+* Default CryptoType is now "crypto/munge". OpenSSL is no longer required by
+  SLURM in the default configuration.
+* CompleteTime has been added to control how long to wait for a job's 
+  completion before allocating already released resources to pending jobs.
+* OverTimeLimit added to permit jobs to exceed their (soft) time limit by a
+  configurable amount. Backfill scheduling will be based upon the soft time
+  limit.
+* PrologSlurmctld has been aded and can be used to boot nodes into a particular
+  state for each job.
+
+COMMAND CHANGES (see man pages for details)
+* --task-mem and --job-mem options have been removed from sall,c sbatch and
+  srun. Use --mem-per-cpu or --mem instead.
+* --ctrl-comm-ifhn-addr option has been removed from the srun comma.d
