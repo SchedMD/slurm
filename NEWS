@@ -11,7 +11,10 @@ documents those changes that are of interest to users and admins.
     - Add check for NULL return from hostlist_create().
     - Rewrite of hostrange_hn_within(), avoids reporting "tst0" in the hostlist 
       "tst".
-
+ -- Modify squeue to accept "--nodes=<hostlist>" rather than 
+    "--node=<node_name>" and report all jobs with any jobs on the set of nodes
+    identified. From Par Anderson, National Supercomputer Centre, Sweden.
+ 
 * Changes in SLURM 1.3.9
 ========================
  -- Fix jobs being cancelled by ctrl-C to have correct cancelled state in 

@@ -2979,6 +2979,30 @@ static int hostset_find_host(hostset_t set, const char *host)
 	return retval;
 }
 
+int hostset_intersects(hostset_t set, const char *hosts)
+{
+	int retval = 0;
+	hostlist_t hl;
+	char *hostname;
+
+	assert(set->hl->magic == HOSTLIST_MAGIC);
+
+	hl = hostlist_create(hosts);
+	if (!hl)    /* malloc failure */
+		return retval;
+
+	while ((hostname = hostlist_pop(hl)) != NULL) {
+		retval += hostset_find_host(set, hostname);
+		free(hostname);
+		if (retval)
+			break;
+	}
+
+	hostlist_destroy(hl);
+
+	return retval;
+}
+
 int hostset_within(hostset_t set, const char *hosts)
 {
 	int nhosts, nfound;
