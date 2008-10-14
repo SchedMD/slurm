@@ -380,8 +380,12 @@ static int _refresh_local_association_list(void *db_conn, int enforce)
 	
 	curr_itr = list_iterator_create(current_assocs);
 	local_itr = list_iterator_create(local_association_list);
-	/* add limitss */
+	
+	/* add used limits We only look for the user associations to
+	 * do the parents since a parent may have moved */
 	while((curr_assoc = list_next(curr_itr))) {
+		if(!curr_assoc->user)
+			continue;
 		while((assoc = list_next(local_itr))) {
 			if(assoc->id == curr_assoc->id) 
 				break;
@@ -389,9 +393,13 @@ static int _refresh_local_association_list(void *db_conn, int enforce)
 		
 		if(!assoc) 
 			continue;
-		assoc->used_jobs = curr_assoc->used_jobs;
-		assoc->used_submit_jobs = curr_assoc->used_submit_jobs;
-		assoc->used_shares = curr_assoc->used_shares;
+
+		while(assoc->parent_assoc_ptr) {
+			assoc->used_jobs += curr_assoc->used_jobs;
+			assoc->used_submit_jobs += curr_assoc->used_submit_jobs;
+			assoc->used_shares += curr_assoc->used_shares;
+			assoc = assoc->parent_assoc_ptr;
+		}
 		list_iterator_reset(local_itr);			
 	}
 	
@@ -938,9 +946,35 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 	 */
 	if(parents_changed) {
 		list_iterator_reset(itr);
-		while((object = list_next(itr))) 
+		while((object = list_next(itr))) {
+			/* reset the limits because since a parent
+			   changed we could have different usage
+			*/
+			if(!object->user) {
+				object->used_jobs = 0;
+				object->used_submit_jobs = 0;
+				object->used_shares = 0;
+			}
 			_set_assoc_parent_and_user(
 				object, local_association_list);
+		}
+		/* Now that we have set up the parents correctly we
+		   can update the used limits
+		*/
+		list_iterator_reset(itr);
+		while((object = list_next(itr))) {			
+			if(!object->user)
+				continue;
+
+			rec = object;
+			while(object->parent_assoc_ptr) {
+				object->used_jobs += rec->used_jobs;
+				object->used_submit_jobs +=
+					rec->used_submit_jobs;
+				object->used_shares += rec->used_shares;
+				object = object->parent_assoc_ptr;
+			}
+		}
 	}
 
 	list_iterator_destroy(itr);
