@@ -8,6 +8,7 @@ documents those changes that are of interest to users and admins.
     - Avoid assertion failure when callinsg hostset_create(NULL).
     - Fix return type of hostlist and hostset string functions from size_t to
       ssize_t.
+    - Add check for NULL return from hostlist_create().
     - Rewrite of hostrange_hn_within(), avoids reporting "tst0" in the hostlist 
       "tst".
 

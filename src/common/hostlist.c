@@ -2958,7 +2958,8 @@ int hostset_within(hostset_t set, const char *hosts)
 
 	assert(set->hl->magic == HOSTLIST_MAGIC);
 
-	hl = hostlist_create(hosts);
+	if (!(hl = hostlist_create(hosts)))
+        return (0);
 	nhosts = hostlist_count(hl);
 	nfound = 0;
 
