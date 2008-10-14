@@ -409,7 +409,7 @@ test15.21  Test of contiguous option with multiple nodes (--contiguous option).
 test15.22  Test of partition specification on job submission (--partition  
            option).
 test15.23  Test of environment variables that control salloc actions: 
-           SALLOC_ACCOUNT, SALLOC_DEBUG and SALLOC_TIMELIMIT
+           SALLOC_DEBUG and SALLOC_TIMELIMIT
 test15.24  Test of --overcommit option.
 test15.25  Test of job account(--account option).
 
