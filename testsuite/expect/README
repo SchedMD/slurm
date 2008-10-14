@@ -453,8 +453,8 @@ test17.15  Verify that user user limits are propagated to the job
 test17.16  Verify that command line arguments get forwarded to job script
 test17.17  Confirm that node sharing flags are respected  (--nodelist and
            --share options)
-test17.18  Test of account number and job dependencies (--account, --begin
-           and --depedency options)
+test17.18  Test of job dependencies and deferred begin time (--depedency 
+           and --begin options).
 test17.19  Test the launch of a batch job within an existing job allocation.
            This logic is used by LSF
 test17.20  Test of mail options (--mail-type and --mail-user options)
