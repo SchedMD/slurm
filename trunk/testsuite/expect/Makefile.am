@@ -29,6 +29,8 @@ EXTRA_DIST = \
 	test1.14			\
 	test1.15			\
 	test1.16			\
+	test1.17			\
+	test1.18			\
 	test1.19			\
 	test1.20			\
 	test1.21			\
@@ -46,16 +48,19 @@ EXTRA_DIST = \
 	test1.32			\
 	test1.32.prog.c			\
 	test1.33			\
+	test1.34			\
 	test1.35			\
 	test1.36			\
 	test1.38			\
 	test1.39			\
 	test1.39.prog.c			\
+	test1.40			\
 	test1.41			\
 	test1.42			\
 	test1.43			\
 	test1.44			\
 	test1.46			\
+	test1.47			\
 	test1.48			\
 	test1.49			\
 	test1.50			\
@@ -65,6 +70,8 @@ EXTRA_DIST = \
 	test1.55			\
 	test1.56			\
 	test1.57			\
+	test1.58			\
+	test1.59			\
 	test1.80			\
 	test1.81			\
 	test1.82			\
@@ -81,7 +88,7 @@ EXTRA_DIST = \
 	test1.91			\
 	test1.91.prog.c			\
 	test1.92			\
-	test1.92.bash			\
+	test1.93			\
 	test2.1				\
 	test2.2				\
 	test2.3				\
@@ -156,6 +163,8 @@ EXTRA_DIST = \
 	test7.9				\
 	test7.9.prog.c			\
 	test7.10			\
+	test7.11			\
+	test7.11.prog.c			\
 	test8.1				\
 	test8.2				\
 	test8.3				\
@@ -231,6 +240,7 @@ EXTRA_DIST = \
 	test15.22			\
 	test15.23			\
 	test15.24			\
+	test15.25			\
 	test16.1			\
 	test16.2			\
 	test16.3			\
@@ -268,6 +278,7 @@ EXTRA_DIST = \
 	test17.29			\
 	test17.31			\
 	test17.32			\
+	test17.33			\
 	test19.1			\
 	test19.2			\
 	test19.3			\
@@ -275,6 +286,27 @@ EXTRA_DIST = \
 	test19.5			\
 	test19.6			\
 	test19.7			\
+	test21.1			\
+	test21.2			\
+	test21.3			\
+	test21.4			\
+	test21.5			\
+	test21.6			\
+	test21.7			\
+	test21.8			\
+	test21.9			\
+	test21.10			\
+	test21.11			\
+	test21.12			\
+	test21.13			\
+	test21.14			\
+	test21.15			\
+	test21.16			\
+	test21.17			\
+	test21.18			\
+	test21.19			\
+	test21.20			\
+	test21.21			\
 	usleep
 
 distclean-local:

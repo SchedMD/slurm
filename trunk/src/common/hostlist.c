@@ -1016,19 +1016,48 @@ static hostrange_t hostrange_intersect(hostrange_t h1, hostrange_t h2)
  */
 static int hostrange_hn_within(hostrange_t hr, hostname_t hn)
 {
-	int retval = 0;
+	if (hr->singlehost) {
+		/*  
+		 *  If the current hostrange [hr] is a `singlehost' (no valid 
+		 *   numeric suffix (lo and hi)), then the hostrange [hr]
+		 *   stores just one host with name == hr->prefix.
+		 *  
+		 *  Thus the full hostname in [hn] must match hr->prefix, in
+		 *   which case we return true. Otherwise, there is no 
+		 *   possibility that [hn] matches [hr].
+		 */
+		if (strcmp (hn->hostname, hr->prefix) == 0)
+			return 1;
+		else 
+			return 0;
+	}
 
-	if (strcmp(hr->prefix, hn->prefix) == 0) {
-		if (!hostname_suffix_is_valid(hn)) {
-			if (hr->singlehost)
-			retval = 1;
-		} else if (hn->num <= hr->hi && hn->num >= hr->lo) {
+	/*
+	 *  Now we know [hr] is not a "singlehost", so hostname
+	 *   better have a valid numeric suffix, or there is no 
+	 *   way we can match
+	 */
+	if (!hostname_suffix_is_valid (hn))
+		return 0;
+
+	/*
+	 *  If hostrange and hostname prefixes don't match, then
+	 *   there is way the hostname falls within the range [hr].
+	 */
+	if (strcmp(hr->prefix, hn->prefix) != 0) 
+		return 0;
+
+	/*
+	 *  Finally, check whether [hn], with a valid numeric suffix,
+	 *   falls within the range of [hr].
+	 */
+	if (hn->num <= hr->hi && hn->num >= hr->lo) {
 			int width = hostname_suffix_width(hn);
 			int num = hn->num;
-			retval = _width_equiv(hr->lo, &hr->width, num, &width);
-		}
+		return (_width_equiv(hr->lo, &hr->width, num, &width));
 	}
-	return retval;
+
+	return 0;
 }
 
 
@@ -2251,6 +2280,7 @@ static void hostlist_coalesce(hostlist_t hl)
 /* attempt to join ranges at loc and loc-1 in a hostlist  */
 /* delete duplicates, return the number of hosts deleted  */
 /* assumes that the hostlist hl has been locked by caller */
+/* returns -1 if no range join occured */
 static int _attempt_range_join(hostlist_t hl, int loc)
 {
 	int ndup;
@@ -2290,7 +2320,7 @@ void hostlist_uniq(hostlist_t hl)
 }
 
 
-size_t hostlist_deranged_string(hostlist_t hl, size_t n, char *buf)
+ssize_t hostlist_deranged_string(hostlist_t hl, size_t n, char *buf)
 {
 	int i;
 	int len = 0;
@@ -2544,7 +2574,7 @@ _test_box(void)
 }
 #endif
 
-size_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
+ssize_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 {
 	int i = 0;
 	int len = 0;
@@ -2857,12 +2887,14 @@ void hostset_destroy(hostset_t set)
 
 /* inserts a single range object into a hostset 
  * Assumes that the set->hl lock is already held
+ * Updates hl->nhosts
  */
 static int hostset_insert_range(hostset_t set, hostrange_t hr)
 {
-	int i, n = 0;
+	int i = 0;
 	int inserted = 0;
-	int retval = 0;
+	int nhosts = 0;
+	int ndups = 0;
 	hostlist_t hl;
 
 	hl = set->hl;
@@ -2870,24 +2902,25 @@ static int hostset_insert_range(hostset_t set, hostrange_t hr)
 	if (hl->size == hl->nranges && !hostlist_expand(hl))
 		return 0;
 
-	retval = hostrange_count(hr);
+	nhosts = hostrange_count(hr);
 
 	for (i = 0; i < hl->nranges; i++) {
 		if (hostrange_cmp(hr, hl->hr[i]) <= 0) {
-			n = hostrange_join(hr, hl->hr[i]);
 
-			if (n >= 0) {
+			if ((ndups = hostrange_join(hr, hl->hr[i])) >= 0) 
 				hostlist_delete_range(hl, i);
-				hl->nhosts -= n;
-			}
+			else if (ndups < 0)
+				ndups = 0;
 
 			hostlist_insert_range(hl, hr, i);
 
 			/* now attempt to join hr[i] and hr[i-1] */
 			if (i > 0) {
-				int m = _attempt_range_join(hl, i);
-				n += m;
+				int m;
+				if ((m = _attempt_range_join(hl, i)) > 0)
+					ndups += m;
 			}
+			hl->nhosts += nhosts - ndups;
 			inserted = 1;
 			break;
 		}
@@ -2895,10 +2928,17 @@ static int hostset_insert_range(hostset_t set, hostrange_t hr)
 
 	if (inserted == 0) {
 		hl->hr[hl->nranges++] = hostrange_copy(hr);
-		n = _attempt_range_join(hl, hl->nranges - 1);
+		hl->nhosts += nhosts;
+		if (hl->nranges > 1) {
+			if ((ndups = _attempt_range_join(hl, hl->nranges - 1)) <= 0)
+				ndups = 0;
+		}
 	}
 
-	return retval - n;
+	/*
+	 *  Return the number of unique hosts inserted
+	 */
+	return nhosts - ndups;
 }
 
 int hostset_insert(hostset_t set, const char *hosts)
@@ -2947,7 +2987,8 @@ int hostset_within(hostset_t set, const char *hosts)
 
 	assert(set->hl->magic == HOSTLIST_MAGIC);
 
-	hl = hostlist_create(hosts);
+	if (!(hl = hostlist_create(hosts)))
+        return (0);
 	nhosts = hostlist_count(hl);
 	nfound = 0;
 
@@ -2996,12 +3037,12 @@ int hostset_count(hostset_t set)
 	return hostlist_count(set->hl);
 }
 
-size_t hostset_ranged_string(hostset_t set, size_t n, char *buf)
+ssize_t hostset_ranged_string(hostset_t set, size_t n, char *buf)
 {
 	return hostlist_ranged_string(set->hl, n, buf);
 }
 
-size_t hostset_deranged_string(hostset_t set, size_t n, char *buf)
+ssize_t hostset_deranged_string(hostset_t set, size_t n, char *buf)
 {
 	return hostlist_deranged_string(set->hl, n, buf);
 }

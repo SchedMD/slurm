@@ -36,20 +36,13 @@ set test_id     "17.21"
 set exit_code   0
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
-set job_acct    "TEST_ACCT"
 set job_name    "TEST_NAME"
 set delay       10
 
 print_header $test_id
 
-if {[test_assoc_enforced]} {
-	send_user "\nWARNING: Using users default account instead of $job_acct since associations are enforced.\n"
-	set job_acct [get_default_acct 0]
-}
-
 make_bash_script $file_in "
 #SBATCH --job-name=$job_name
-#SBATCH --account=$job_acct
 $bin_sleep $delay
 "
 
@@ -76,10 +69,6 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "Account=$job_acct" {
-		incr matches
-		exp_continue
-	}
 	timeout {
 		send_user "\nFAILURE: scontrol not responding\n"
 		set exit_code 1
@@ -90,8 +79,8 @@ expect {
 	}
 }
 cancel_job $job_id
-if {$matches != 2} {
-	send_user "\nFAILURE: did not set job name and account from batch script\n"
+if {$matches != 1} {
+	send_user "\nFAILURE: did not set job name from batch script\n"
 	set exit_code 1
 }
 
