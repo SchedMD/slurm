@@ -84,7 +84,7 @@ option is also specified.
 \f3\-C \fP\f2cluster_list\fP\f3,\fP  \f3\-\-cluster\fP\f3=\fP\f2cluster_list\fP
 Displays the statistics only for the jobs started on the clusters specified by
 the \f2cluster_list\fP operand, which is a comma\-separated list of clusters.
-Space characters are not allowed in the \f2cluster_list\fP.  -1 for
+Space characters are not allowed in the \f2cluster_list\fP. \-1 for
 all clusters, default is current cluster you are executing the sacct
 command on\&.
 
@@ -190,7 +190,7 @@ instead of the current SLURM job accounting log file.
 Displays the statistics only for the jobs started with the GID
 specified by the \f2gid_list\fP operand, which is a comma\-separated
 list of gids.  Space characters are not allowed in the \f2gid_list\fP. 
-Default is no restrictions.  This is virtually the same as the --group
+Default is no restrictions.  This is virtually the same as the \-\-group
 option\&. 
 
 .TP 
@@ -198,7 +198,7 @@ option\&.
 Displays the statistics only for the jobs started with the GROUP
 specified by the \f2group_list\fP operand, which is a comma\-separated
 list of groups.  Space characters are not allowed in the \f2group_list\fP. 
-Default is no restrictions.  This is virtually the same as the --gid option\&. 
+Default is no restrictions.  This is virtually the same as the \-\-gid option\&. 
 
 .TP 
 \f3\-h \fP\f3,\fP \f3\-\-help\fP
@@ -389,16 +389,16 @@ Intermediate steps are displayed by default.
 Displays the statistics only for the jobs started by the specified
 \f2uid_list\fP operand, which is a comma\-separated list of uids.
 Space characters are not allowed in the \f2uid_list\fP.  
--1 for all uids, default is current uid.  If run as user root default
-is all users.  This is virtually the same as the --user option\&.
+\-1 for all uids, default is current uid.  If run as user root default
+is all users.  This is virtually the same as the \-\-user option\&.
 
 .TP 
 \f3\-u \fP\f2user_list\fP\f3,\fP  \f3\-\-user\fP\f3=\fP\f2user_list\fP
 Displays the statistics only for the jobs started by the specified
 \f2user_list\fP operand, which is a comma\-separated list of users.
 Space characters are not allowed in the \f2user_list\fP.  
--1 for all uids, default is current uid.  If run as user root default
-is all users.  This is virtually the same as the --uid option\&.
+\-1 for all uids, default is current uid.  If run as user root default
+is all users.  This is virtually the same as the \-\-uid option\&.
 
 .TP 
 \f3\-\-usage\fP

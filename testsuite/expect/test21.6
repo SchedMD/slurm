@@ -97,7 +97,7 @@ if { [string compare [check_accounting_admin_level] "Administrator"] } {
 	set nothing 0
 	set matches 0
 
-set sadel_pid [spawn $sacctmgr -i $del $clu $tc1,$tc2,$tc3]
+set my_pid [spawn $sacctmgr -i $del $clu $tc1,$tc2,$tc3]
 
 	expect {
 		-re "privilege to perform this action" {
