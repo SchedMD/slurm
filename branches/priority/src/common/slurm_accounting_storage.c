@@ -421,6 +421,8 @@ extern void destroy_acct_association_rec(void *object)
 		if(acct_association->accounting_list)
 			list_destroy(acct_association->accounting_list);
 		xfree(acct_association->acct);
+		if(acct_association->childern_list)
+			list_destroy(acct_association->childern_list);
 		xfree(acct_association->cluster);
 		xfree(acct_association->parent_acct);
 		xfree(acct_association->partition);
@@ -677,12 +679,16 @@ extern void init_acct_association_rec(acct_association_rec_t *assoc)
 	assoc->grp_submit_jobs = NO_VAL;
 	assoc->grp_wall = NO_VAL;
 
+	assoc->level_shares = NO_VAL;
+
 	assoc->max_cpu_mins_pj = NO_VAL;
 	assoc->max_cpus_pj = NO_VAL;
 	assoc->max_jobs = NO_VAL;
 	assoc->max_nodes_pj = NO_VAL;
 	assoc->max_submit_jobs = NO_VAL;
 	assoc->max_wall_pj = NO_VAL;
+
+	assoc->norm_shares = NO_VAL;
 }
 
 extern void init_acct_qos_rec(acct_qos_rec_t *qos)
@@ -4274,10 +4280,16 @@ extern void log_assoc_rec(acct_association_rec_t *assoc_ptr, List qos_list)
 	else if(assoc_ptr->fairshare != NO_VAL) 
 		debug2("  Fairshare        : %u", assoc_ptr->fairshare);
 
+	if(assoc_ptr->level_shares != NO_VAL) 
+		debug2("  LevelShares      : %u", assoc_ptr->level_shares);
+	
+	if(assoc_ptr->norm_shares != NO_VAL) 
+		debug2("  NormalizedShares : %f", assoc_ptr->norm_shares);
+	
 	if(assoc_ptr->grp_cpu_mins == INFINITE)
-		debug2("  GrpCPUMins      : NONE");
+		debug2("  GrpCPUMins       : NONE");
 	else if(assoc_ptr->grp_cpu_mins != NO_VAL) 
-		debug2("  GrpCPUMins      : %llu", assoc_ptr->grp_cpu_mins);
+		debug2("  GrpCPUMins       : %llu", assoc_ptr->grp_cpu_mins);
 		
 	if(assoc_ptr->grp_cpus == INFINITE)
 		debug2("  GrpCPUs          : NONE");

@@ -192,6 +192,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"OverTimeLimit", S_P_UINT16},
 	{"PluginDir", S_P_STRING},
 	{"PlugStackConfig", S_P_STRING},
+	{"PriorityType", S_P_STRING},
 	{"PrivateData", S_P_STRING},
 	{"ProctrackType", S_P_STRING},
 	{"Prolog", S_P_STRING},
@@ -1833,6 +1834,9 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_string(&conf->switch_type, "SwitchType", hashtbl))
 		conf->switch_type = xstrdup(DEFAULT_SWITCH_TYPE);
+
+	if (!s_p_get_string(&conf->priority_type, "PriorityType", hashtbl))
+		conf->priority_type = xstrdup(DEFAULT_PRIORITY_TYPE);
 
 	if (!s_p_get_string(&conf->proctrack_type, "ProctrackType", hashtbl)) {
 		if (!strcmp(conf->switch_type,"switch/elan"))

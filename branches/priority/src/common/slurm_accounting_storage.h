@@ -137,6 +137,8 @@ typedef struct {
 typedef struct acct_association_rec {
 	List accounting_list; 	/* list of acct_accounting_rec_t *'s */
 	char *acct;		/* account/project associated to association */
+	List childern_list;     /* list of childern associations
+				 * (DON'T PACK) */
 	char *cluster;		/* cluster associated to association
 				 * */
 
@@ -195,7 +197,7 @@ typedef struct acct_association_rec {
 				     submitted by association */
 	uint32_t max_wall_pj; /* longest time this
 			       * association can run a job */
-	
+	double norm_shares;     /* normalized shares (DON'T PACK) */
 	char *parent_acct;	/* name of parent account */
 	struct acct_association_rec *parent_assoc_ptr;	/* ptr to parent acct
 							 * set in

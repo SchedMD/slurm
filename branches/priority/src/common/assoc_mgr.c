@@ -49,6 +49,7 @@ static List local_association_list = NULL;
 static List local_qos_list = NULL;
 static List local_user_list = NULL;
 static char *local_cluster_name = NULL;
+static int setup_childern = 0;
 
 void (*remove_assoc_notify) (acct_association_rec_t *rec) = NULL;
 
@@ -158,6 +159,12 @@ static int _set_assoc_parent_and_user(acct_association_rec_t *assoc,
 		while((assoc2 = list_next(itr))) {
 			if(assoc2->id == assoc->parent_id) {
 				assoc->parent_assoc_ptr = assoc2;
+				if(!setup_childern)
+					break;
+				if(!assoc2->childern_list) 
+					assoc2->childern_list = 
+						list_create(NULL);
+				list_append(assoc2->childern_list, assoc);
 				break;
 			}
 		}
@@ -191,6 +198,38 @@ static int _post_association_list(List assoc_list)
 	//START_TIMER;
 	while((assoc = list_next(itr))) 
 		_set_assoc_parent_and_user(assoc, assoc_list);
+
+	if(setup_childern) {
+		acct_association_rec_t *assoc2 = NULL;
+		ListIterator itr2 = NULL;
+		/* Now set the shares on each level */
+		list_iterator_reset(itr);
+		while((assoc = list_next(itr))) {
+			int count = 0;
+			if(!assoc->childern_list
+			   || !list_count(assoc->childern_list))
+				continue;
+			itr2 = list_iterator_create(assoc->childern_list);
+			while((assoc2 = list_next(itr2))) 
+				count += assoc2->fairshare;
+			list_iterator_reset(itr2);
+			while((assoc2 = list_next(itr2))) 
+				assoc2->level_shares = count;
+			list_iterator_destroy(itr2);
+		}	
+		/* Now normilize the static shares */
+		list_iterator_reset(itr);
+		while((assoc = list_next(itr))) {
+			assoc2 = assoc;
+			assoc2->norm_shares = 1;
+			while(assoc->parent_assoc_ptr) {
+				assoc2->norm_shares *= 
+					(double)assoc->fairshare /
+					(double)assoc->level_shares;
+				assoc = assoc->parent_assoc_ptr;
+			}
+		}
+	}
 	list_iterator_destroy(itr);
 	//END_TIMER2("load_associations");
 	return SLURM_SUCCESS;
@@ -478,6 +517,15 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args)
 {
 	static uint16_t enforce = 0;
 	static uint16_t cache_level = ASSOC_MGR_CACHE_ALL;
+	static uint16_t checked_prio = 0;
+
+	if(!checked_prio) {
+		char *prio = slurm_get_priority_type();
+		if(prio && !strcmp(prio, "priority/fairshare")) 
+			setup_childern = 1;
+		xfree(prio);
+		checked_prio = 1;
+	}
 
 	if(args) {
 		enforce = args->enforce;
@@ -510,7 +558,14 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args)
 	if((!local_user_list) && (cache_level & ASSOC_MGR_CACHE_USER))
 		if(_get_local_user_list(db_conn, enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
-
+	if(local_association_list) {
+		acct_association_rec_t *assoc = NULL;
+		ListIterator itr = list_iterator_create(local_association_list);
+		while((assoc = list_next(itr))) {
+			log_assoc_rec(assoc, local_qos_list);
+		}
+		list_iterator_destroy(itr);
+	}
 	return SLURM_SUCCESS;
 }
 
@@ -962,7 +1017,23 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 		   can update the used limits
 		*/
 		list_iterator_reset(itr);
-		while((object = list_next(itr))) {			
+		while((object = list_next(itr))) {
+			if(setup_childern) {
+				int count = 0;
+				ListIterator itr2 = NULL;
+				if(!object->childern_list
+				   || !list_count(object->childern_list))
+					continue;
+				itr2 = list_iterator_create(
+					object->childern_list);
+				while((rec = list_next(itr2))) 
+					count += rec->fairshare;
+				list_iterator_reset(itr2);
+				while((rec = list_next(itr2))) 
+					rec->level_shares = count;
+				list_iterator_destroy(itr2);
+			}
+				
 			if(!object->user)
 				continue;
 
@@ -973,6 +1044,20 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 					rec->used_submit_jobs;
 				object->used_shares += rec->used_shares;
 				object = object->parent_assoc_ptr;
+			}
+		}
+		if(setup_childern) {
+			/* Now normilize the static shares */
+			list_iterator_reset(itr);
+			while((object = list_next(itr))) {
+				rec = object;
+				rec->norm_shares = 1;
+				while(object->parent_assoc_ptr) {
+					rec->norm_shares *= 
+						(double)object->fairshare /
+						(double)object->level_shares;
+					object = object->parent_assoc_ptr;
+				}
 			}
 		}
 	}
