@@ -136,7 +136,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: sacctmgr add not responding\n"
-		slow_kill $sadd_pid
+		slow_kill $sadel_pid
 		set exit_code 1
 	}
 	eof {
