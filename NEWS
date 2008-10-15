@@ -14,6 +14,8 @@ documents those changes that are of interest to users and admins.
  -- Modify squeue to accept "--nodes=<hostlist>" rather than 
     "--node=<node_name>" and report all jobs with any jobs on the set of nodes
     identified. From Par Anderson, National Supercomputer Centre, Sweden.
+ -- Fix bug preventing use of TotalView debugger with TaskProlog configured or 
+    or srun's --task-prolog option.
  
 * Changes in SLURM 1.3.9
 ========================
