@@ -1540,10 +1540,12 @@ static acct_association_rec_t *_set_assoc_up(sacctmgr_file_opts_t *file_opts,
 	assoc->grp_submit_jobs = file_opts->grp_submit_jobs;
 	assoc->grp_wall = file_opts->grp_wall;
 	
+	assoc->max_cpu_mins_pj = file_opts->max_cpu_mins_pj;
+	assoc->max_cpus_pj = file_opts->max_cpus_pj;
 	assoc->max_jobs = file_opts->max_jobs;
 	assoc->max_nodes_pj = file_opts->max_nodes_pj;
+	assoc->max_submit_jobs = file_opts->max_submit_jobs;
 	assoc->max_wall_pj = file_opts->max_wall_pj;
-	assoc->max_cpu_mins_pj = file_opts->max_cpu_mins_pj;
 
 	if(file_opts->qos_list && list_count(file_opts->qos_list)) 
 		assoc->qos_list = copy_char_list(file_opts->qos_list);
