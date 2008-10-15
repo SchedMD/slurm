@@ -45,6 +45,8 @@
 #include "src/common/xstring.h"
 #include "src/slurmdbd/read_config.h"
 
+acct_association_rec_t *root_assoc = NULL;
+
 static List local_association_list = NULL;
 static List local_qos_list = NULL;
 static List local_user_list = NULL;
@@ -169,7 +171,9 @@ static int _set_assoc_parent_and_user(acct_association_rec_t *assoc,
 			}
 		}
 		list_iterator_destroy(itr);
-	}
+	} else 
+		root_assoc = assoc;
+	
 
 	if(assoc->user) {
 		uid_t pw_uid = uid_from_string(assoc->user);

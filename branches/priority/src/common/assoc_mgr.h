@@ -61,6 +61,8 @@ typedef struct {
  	void (*remove_assoc_notify) (acct_association_rec_t *rec);
 } assoc_init_args_t;
 
+extern acct_association_rec_t *root_assoc;
+
 /* 
  * get info from the storage 
  * IN/OUT:  user - acct_user_rec_t with the name set of the user.

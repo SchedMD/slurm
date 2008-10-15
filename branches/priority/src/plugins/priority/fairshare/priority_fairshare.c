@@ -50,6 +50,7 @@
 #include <slurm/slurm_errno.h>
 
 #include "src/common/slurm_priority.h"
+#include "src/common/assoc_mgr.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -105,6 +106,33 @@ int fini ( void )
 
 int priority_p_set( struct job_record *job_ptr )
 {
+	acct_association_rec_t *assoc = 
+		(acct_association_rec_t *)job_ptr->assoc_ptr;
+	acct_association_rec_t *first_assoc = assoc;
+	double usage = 0;
+
+	xassert(root_assoc);
+
+	if(!assoc) {
+		error("Job %u has no association.  Unable to "
+		      "compute fairshare.");
+		job_ptr->priority = NO_VAL;
+		return SLURM_ERROR;
+	}
+	
+	while(assoc->parent_assoc_ptr) {
+		usage += ((assoc->parent_assoc_ptr->used_shares
+			   + assoc->used_shares) / assoc->level_shares)
+			* assoc->fairshare;
+		assoc = assoc->parent_assoc_ptr;
+	}
+
+	if(root_assoc->used_shares)
+		usage /= root_assoc->used_shares;
+
+	job_ptr->priority = first_assoc->norm_shares - usage;
+	debug("job %u has a priority of %f", 
+	      job_ptr->job_id, job_ptr->priority);
 	return SLURM_SUCCESS;
 }
 

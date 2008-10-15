@@ -215,7 +215,7 @@ typedef struct acct_association_rec {
 	uint32_t uid;		/* user ID */
 	
 	uint32_t used_jobs;	/* count of active jobs (DON'T PACK) */
-	uint32_t used_shares;	/* measure of resource usage */
+	uint64_t used_shares;	/* measure of resource usage */
 	uint32_t used_submit_jobs; /* count of jobs pending or running
 				    * (DON'T PACK) */
 	

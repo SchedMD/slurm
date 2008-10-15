@@ -1499,6 +1499,7 @@ extern void pack_acct_association_rec(void *in, uint16_t rpc_version,
 	acct_accounting_rec_t *acct_info = NULL;
 	ListIterator itr = NULL;
 	uint32_t count = NO_VAL;
+	uint32_t uint32_tmp;
 	char *tmp_info = NULL;
 	acct_association_rec_t *object = (acct_association_rec_t *)in;	
 	
@@ -1559,9 +1560,12 @@ extern void pack_acct_association_rec(void *in, uint16_t rpc_version,
 		packstr(object->partition, buffer);
 		pack32(object->rgt, buffer);
 		pack32(object->uid, buffer);
-		pack32(object->used_shares, buffer);
+
+		uint32_tmp = (uint32_t)object->used_shares;
+		pack32(uint32_tmp, buffer);
+
 		packstr(object->user, buffer);	
-	} else if (rpc_version >= 3) {
+	} else if (rpc_version == 3) {
 		if(!object) {
 			pack32(NO_VAL, buffer);
 			packnull(buffer);
@@ -1659,7 +1663,109 @@ extern void pack_acct_association_rec(void *in, uint16_t rpc_version,
 		pack32(object->rgt, buffer);
 		pack32(object->uid, buffer);
 
-		pack32(object->used_shares, buffer);
+		uint32_tmp = (uint32_t)object->used_shares;
+		pack32(uint32_tmp, buffer);
+
+		packstr(object->user, buffer);	
+	} else if (rpc_version >= 4) {
+		if(!object) {
+			pack32(NO_VAL, buffer);
+			packnull(buffer);
+			packnull(buffer);
+
+			pack32(NO_VAL, buffer);
+
+			pack64(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+
+			pack32(0, buffer);
+			pack32(0, buffer);
+
+			pack64(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+
+			packnull(buffer);
+			pack32(0, buffer);
+			packnull(buffer);
+
+			pack32(NO_VAL, buffer);
+
+			pack32(0, buffer);
+			pack32(0, buffer);
+
+			pack64(0, buffer);
+
+			packnull(buffer);
+			return;
+		}
+ 
+		if(object->accounting_list)
+			count = list_count(object->accounting_list);
+
+		pack32(count, buffer);
+
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->accounting_list);
+			while((acct_info = list_next(itr))) {
+				pack_acct_accounting_rec(acct_info, 
+							 rpc_version, buffer);
+			}
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+
+		packstr(object->acct, buffer);
+		packstr(object->cluster, buffer);
+
+		pack32(object->fairshare, buffer);
+
+		pack64(object->grp_cpu_mins, buffer);
+		pack32(object->grp_cpus, buffer);
+		pack32(object->grp_jobs, buffer);
+		pack32(object->grp_nodes, buffer);
+		pack32(object->grp_submit_jobs, buffer);
+		pack32(object->grp_wall, buffer);
+
+		pack32(object->id, buffer);
+		pack32(object->lft, buffer);
+
+		pack64(object->max_cpu_mins_pj, buffer);
+		pack32(object->max_cpus_pj, buffer);
+		pack32(object->max_jobs, buffer);
+		pack32(object->max_nodes_pj, buffer);
+		pack32(object->max_submit_jobs, buffer);
+		pack32(object->max_wall_pj, buffer);
+
+		packstr(object->parent_acct, buffer);
+		pack32(object->parent_id, buffer);
+		packstr(object->partition, buffer);
+
+		if(object->qos_list)
+			count = list_count(object->qos_list);
+
+		pack32(count, buffer);
+
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->qos_list);
+			while((tmp_info = list_next(itr))) {
+				packstr(tmp_info, buffer);
+			}
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+
+		pack32(object->rgt, buffer);
+		pack32(object->uid, buffer);
+
+		pack64(object->used_shares, buffer);
 
 		packstr(object->user, buffer);	
 	}
@@ -1718,10 +1824,75 @@ extern int unpack_acct_association_rec(void **object, uint16_t rpc_version,
 		safe_unpack32(&object_ptr->rgt, buffer);
 		safe_unpack32(&object_ptr->uid, buffer);
 
-		safe_unpack32(&object_ptr->used_shares, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		object_ptr->used_shares = (uint64_t)uint32_tmp;
 
 		safe_unpackstr_xmalloc(&object_ptr->user, &uint32_tmp, buffer);
-	} else if (rpc_version >= 3) {
+	} else if (rpc_version == 3) {
+		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
+			object_ptr->accounting_list =
+				list_create(destroy_acct_accounting_rec);
+			for(i=0; i<count; i++) {
+				if(unpack_acct_accounting_rec(
+					   (void **)&acct_info,
+					   rpc_version, 
+					   buffer) == SLURM_ERROR)
+					goto unpack_error;
+				list_append(object_ptr->accounting_list, 
+					    acct_info);
+			}
+		}
+
+		safe_unpackstr_xmalloc(&object_ptr->acct, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->cluster, &uint32_tmp,
+				       buffer);
+
+		safe_unpack32(&object_ptr->fairshare, buffer);
+
+		safe_unpack64(&object_ptr->grp_cpu_mins, buffer);
+		safe_unpack32(&object_ptr->grp_cpus, buffer);
+		safe_unpack32(&object_ptr->grp_jobs, buffer);
+		safe_unpack32(&object_ptr->grp_nodes, buffer);
+		safe_unpack32(&object_ptr->grp_submit_jobs, buffer);
+		safe_unpack32(&object_ptr->grp_wall, buffer);
+
+		safe_unpack32(&object_ptr->id, buffer);
+		safe_unpack32(&object_ptr->lft, buffer);
+
+		safe_unpack64(&object_ptr->max_cpu_mins_pj, buffer);
+		safe_unpack32(&object_ptr->max_cpus_pj, buffer);
+		safe_unpack32(&object_ptr->max_jobs, buffer);
+		safe_unpack32(&object_ptr->max_nodes_pj, buffer);
+		safe_unpack32(&object_ptr->max_submit_jobs, buffer);
+		safe_unpack32(&object_ptr->max_wall_pj, buffer);
+
+		safe_unpackstr_xmalloc(&object_ptr->parent_acct, &uint32_tmp,
+				       buffer);
+		safe_unpack32(&object_ptr->parent_id, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->partition, &uint32_tmp,
+				       buffer);
+
+		safe_unpack32(&count, buffer);
+		/* This needs to look for zero to tell if something
+		   has changed */
+		if(count != NO_VAL) {
+			object_ptr->qos_list = list_create(slurm_destroy_char);
+			for(i=0; i<count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
+						       buffer);
+				list_append(object_ptr->qos_list, tmp_info);
+			}
+		}
+
+		safe_unpack32(&object_ptr->rgt, buffer);
+		safe_unpack32(&object_ptr->uid, buffer);
+		
+		safe_unpack32(&uint32_tmp, buffer);
+		object_ptr->used_shares = (uint64_t)uint32_tmp;
+
+		safe_unpackstr_xmalloc(&object_ptr->user, &uint32_tmp, buffer);
+	} else if (rpc_version >= 4) {
 		safe_unpack32(&count, buffer);
 		if(count != NO_VAL) {
 			object_ptr->accounting_list =
@@ -1781,7 +1952,7 @@ extern int unpack_acct_association_rec(void **object, uint16_t rpc_version,
 		safe_unpack32(&object_ptr->rgt, buffer);
 		safe_unpack32(&object_ptr->uid, buffer);
 
-		safe_unpack32(&object_ptr->used_shares, buffer);
+		safe_unpack64(&object_ptr->used_shares, buffer);
 
 		safe_unpackstr_xmalloc(&object_ptr->user, &uint32_tmp, buffer);
 	}
@@ -4373,7 +4544,7 @@ extern void log_assoc_rec(acct_association_rec_t *assoc_ptr, List qos_list)
 		debug2("  user             : %s(%u)",
 		       assoc_ptr->user, assoc_ptr->uid);
 	debug2("  used_jobs        : %u", assoc_ptr->used_jobs);
-	debug2("  used_shares      : %u", assoc_ptr->used_shares);
+	debug2("  used_shares      : %llu", assoc_ptr->used_shares);
 }
 
 /*
