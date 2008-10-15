@@ -91,6 +91,17 @@ const uint32_t plugin_version	= 100;
  */
 int init ( void )
 {
+	if(!slurm_get_accounting_storage_enforce()) {
+		fatal("In order to run the %s you must enforce "
+		      "associations with the 'AccountingStorageEnforce=' "
+		      "option", plugin_name);
+	} else if(!slurm_get_is_association_based_accounting()) {
+		fatal("In order to run the %s you must run with "
+		      "association based accounting "
+		      "use either 'accounting_storage/slurmdbd' "
+		      "or 'accounting_storage/mysql' as your "
+		      "'AccountingStorageType' option", plugin_name);		
+	}
 	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
