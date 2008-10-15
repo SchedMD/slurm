@@ -1013,6 +1013,7 @@ typedef struct slurm_ctl_conf {
 				   * number of minutes before cancellation */
 	char *plugindir;	/* pathname to plugins */
 	char *plugstack;        /* pathname to plugin stack config file */
+	char *priority_type;    /* priority type plugin */
 	uint16_t private_data;	/* block viewing of information, 
 				 * see PRIVATE_DATA_* */
 	char *proctrack_type;	/* process tracking plugin type */

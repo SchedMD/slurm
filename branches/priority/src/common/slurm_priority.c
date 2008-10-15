@@ -41,7 +41,7 @@
 #include "src/common/xstring.h"
 
 typedef struct slurm_priority_ops {
-	int          (*set) ( struct job_record *job_ptr);
+	int          (*set) (struct job_record *job_ptr);
 } slurm_priority_ops_t;
 
 typedef struct slurm_priority_context {
@@ -98,7 +98,7 @@ static slurm_priority_ops_t * _priority_get_ops(
 			error( "cannot create plugin manager" );
 			return NULL;
 		}
-		plugrack_set_major_type( c->plugin_list, "accounting_storage" );
+		plugrack_set_major_type( c->plugin_list, "priority" );
 		plugrack_set_paranoia( c->plugin_list,
 				       PLUGRACK_PARANOIA_NONE,
 				       0 );
@@ -175,7 +175,7 @@ static int _priority_context_destroy(slurm_priority_context_t *c)
 /*
  * Initialize context for priority plugin
  */
-extern int slurm_priority_init(char *loc)
+extern int slurm_priority_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *priority_type = NULL;
@@ -184,13 +184,10 @@ extern int slurm_priority_init(char *loc)
 
 	if ( g_priority_context )
 		goto done;
-	if(loc)
-		slurm_set_accounting_storage_loc(loc);
 	
-	priority_type = slurm_get_accounting_storage_type();
+	priority_type = slurm_get_priority_type();
 	
-	g_priority_context = _priority_context_create(
-		priority_type);
+	g_priority_context = _priority_context_create(priority_type);
 	if ( g_priority_context == NULL ) {
 		error( "cannot create priority context for %s",
 		       priority_type );
@@ -225,7 +222,7 @@ extern int slurm_priority_fini(void)
 
 extern int priority_g_set(struct job_record *job_ptr)
 {
-	if (slurm_priority_init(NULL) < 0)
+	if (slurm_priority_init() < 0)
 		return SLURM_ERROR;
 
 	return (*(g_priority_context->ops.set))(job_ptr);

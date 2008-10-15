@@ -332,6 +332,25 @@ char *slurm_get_plugin_dir(void)
 	return plugin_dir;
 }
 
+/* slurm_get_priority_type
+ * returns the priority type from slurmctld_conf object
+ * RET char *    - priority type, MUST be xfreed by caller
+ */
+char *slurm_get_priority_type(void)
+{
+	char *priority_type = NULL;
+	slurm_ctl_conf_t *conf;
+
+	if(slurmdbd_conf) {		
+	} else {
+		conf = slurm_conf_lock();
+		priority_type = xstrdup(conf->priority_type);
+		slurm_conf_unlock();
+	}
+
+	return priority_type;
+}
+
 /* slurm_get_private_data
  * get private data from slurmctld_conf object
  */

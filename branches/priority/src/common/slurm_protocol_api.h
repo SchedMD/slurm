@@ -156,23 +156,17 @@ void inline slurm_api_clear_config(void);
  */
 char *slurm_get_health_check_program(void);
 
-/* slurm_get_slurmdbd_addr
- * get slurm_dbd_addr from slurmctld_conf object from slurmctld_conf object
- * RET char *   - slurmdbd_addr, MUST be xfreed by caller
- */
-char *slurm_get_slurmdbd_addr(void);
-
-/* slurm_get_slurmdbd_port
- * get slurm_dbd_port from slurmctld_conf object from slurmctld_conf object
- * RET uint16_t   - dbd_port
- */
-uint16_t slurm_get_slurmdbd_port(void);
-
 /* slurm_get_plugin_dir
  * get plugin directory from slurmctld_conf object from slurmctld_conf object 
  * RET char *   - plugin directory, MUST be xfreed by caller
  */
 char *slurm_get_plugin_dir(void);
+
+/* slurm_get_priority_type
+ * returns the priority type from slurmctld_conf object
+ * RET char *    - priority type, MUST be xfreed by caller
+ */
+char *slurm_get_priority_type(void);
 
 /* slurm_get_private_data
  * get private data from slurmctld_conf object

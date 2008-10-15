@@ -2292,6 +2292,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 
 	packstr(build_ptr->plugindir, buffer);
 	packstr(build_ptr->plugstack, buffer);
+	packstr(build_ptr->priority_type, buffer);
 	pack16(build_ptr->private_data, buffer);
 	packstr(build_ptr->proctrack_type, buffer);
 	packstr(build_ptr->prolog, buffer);
@@ -2456,6 +2457,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 
 	safe_unpackstr_xmalloc(&build_ptr->plugindir, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->plugstack, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->priority_type, &uint32_tmp, 
+			       buffer);
 	safe_unpack16(&build_ptr->private_data, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->proctrack_type, &uint32_tmp, 
 			       buffer);
@@ -2569,6 +2572,7 @@ unpack_error:
 	xfree(build_ptr->node_prefix);
 	xfree(build_ptr->plugindir);
 	xfree(build_ptr->plugstack);
+	xfree(build_ptr->priority_type);
 	xfree(build_ptr->proctrack_type);
 	xfree(build_ptr->prolog);
 	xfree(build_ptr->prolog_slurmctld);
