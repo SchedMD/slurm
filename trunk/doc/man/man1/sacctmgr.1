@@ -694,6 +694,7 @@ Comma separated list of Quality of Service names (Defined in sacctmgr).
 
 Followed by Accounts you want in this fashion...
 
+.na
 \fBParent\ \-\ root\fP (Defined by default)
 .br
 \fBAccount\ \-\ cs\fP:MaxNodesPerJob=5:MaxJobs=4:MaxProcSecondsPerJob=20:FairShare=399:MaxWallDurationPerJob=40:Description='Computer Science':Organization='LC'
@@ -701,6 +702,7 @@ Followed by Accounts you want in this fashion...
 \fBParent\ \-\ cs\fP
 .br
 \fBAccount\ \-\ test\fP:MaxNodesPerJob=1:MaxJobs=1:MaxProcSecondsPerJob=1:FairShare=1:MaxWallDurationPerJob=1:Description='Test Account':Organization='Test'
+.ad
 
 .TP
 Any of the options after a ':' can be left out and they can be in any order.
@@ -771,7 +773,9 @@ Comma separated list of Quality of Service names (Defined in sacctmgr).
 To add users to a account add a line like this after a Parent \- line
 \fBParent\ \-\ test\fP
 .br
+.na
 \fBUser\ \-\ adam\fP:MaxNodesPerJob=2:MaxJobs=3:MaxProcSecondsPerJob=4:FairShare=1:MaxWallDurationPerJob=1:AdminLevel=Operator:Coordinator='test'
+.ad
 
 .TP
 All user options are

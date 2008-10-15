@@ -40,7 +40,7 @@
 #ifndef _HOSTLIST_H
 #define _HOSTLIST_H
 
-#include <unistd.h>		/* load ssize_t definition */
+#include <sys/types.h>		/* load ssize_t definition */
 
 /* max size of internal hostrange buffer */
 #define MAXHOSTRANGELEN 8192
