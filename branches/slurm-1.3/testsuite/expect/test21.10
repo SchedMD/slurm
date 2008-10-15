@@ -106,7 +106,7 @@ if { [string compare [check_accounting_admin_level] "Administrator"] } {
 	set nothing 0
 	set matches 0
 
-set sadel_pid [spawn $sacctmgr -i $del $clu $tc1]
+set my_pid [spawn $sacctmgr -i $del $clu $tc1]
 
 	expect {
 		-re "privilege to perform this action" {
@@ -269,7 +269,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: sacctmgr add not responding\n"
-		slow_kill $sadd_pid
+		slow_kill $sadel_pid
 		set exit_code 1
 	}
 	eof {
