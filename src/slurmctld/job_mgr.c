@@ -766,8 +766,7 @@ static int _load_job_state(Buf buffer)
 		if (IS_JOB_PENDING(job_ptr))
 			job_ptr->start_time = now;
 		job_ptr->end_time = now;
-		if(job_ptr->assoc_id)
-			jobacct_storage_g_job_complete(acct_db_conn, job_ptr);
+		job_completion_logger(job_ptr);
 	} else {
 		info("Recovered job %u", job_id);
 		job_ptr->assoc_ptr = (void *) assoc_ptr;
@@ -5112,6 +5111,7 @@ void job_fini (void)
 extern void job_completion_logger(struct job_record  *job_ptr)
 {
 	int base_state;
+
 	xassert(job_ptr);
 
 	if (accounting_enforce == ACCOUNTING_ENFORCE_WITH_LIMITS)
@@ -5133,6 +5133,24 @@ extern void job_completion_logger(struct job_record  *job_ptr)
 	}
 
 	g_slurm_jobcomp_write(job_ptr);
+
+	if(!job_ptr->assoc_id) {
+		acct_association_rec_t assoc_rec;
+		/* Just incase we turned on accounting after we
+		   started the job
+		*/
+		bzero(&assoc_rec, sizeof(acct_association_rec_t));
+		assoc_rec.acct      = job_ptr->account;
+		assoc_rec.partition = job_ptr->partition;
+		assoc_rec.uid       = job_ptr->user_id;
+
+		if(!(assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
+					     accounting_enforce, 
+					     (acct_association_rec_t **)
+					     &job_ptr->assoc_ptr))) {
+			job_ptr->assoc_id = assoc_rec.id;
+		}
+	}
 
 	/* 
 	 * This means the job wasn't ever eligible, but we want to
