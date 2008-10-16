@@ -115,7 +115,7 @@ static int _init_sacctmgr_file_opts(sacctmgr_file_opts_t *file_opts)
 
 	file_opts->admin = ACCT_ADMIN_NOTSET;
 
-	file_opts->fairshare = 1;
+	file_opts->fairshare = NO_VAL;
 
 	file_opts->grp_cpu_mins = NO_VAL;
 	file_opts->grp_cpus = NO_VAL;
