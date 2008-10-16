@@ -606,7 +606,7 @@ no_cond:
 			
 		job->track_steps = atoi(row[JOB_REQ_TRACKSTEPS]);
 		job->state = atoi(row[JOB_REQ_STATE]);
-		job->priority = atoi(row[JOB_REQ_PRIORITY]);
+		job->priority = atof(row[JOB_REQ_PRIORITY]);
 		job->req_cpus = atoi(row[JOB_REQ_REQ_CPUS]);
 		job->requid = atoi(row[JOB_REQ_KILL_REQUID]);
 		job->qos = atoi(row[JOB_REQ_QOS]);

@@ -2117,7 +2117,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "track_steps", "tinyint not null" },
 		{ "state", "smallint not null" }, 
 		{ "comp_code", "int default 0 not null" },
-		{ "priority", "int unsigned not null" },
+		{ "priority", "double not null" },
 		{ "req_cpus", "mediumint unsigned not null" }, 
 		{ "alloc_cpus", "mediumint unsigned not null" }, 
 		{ "nodelist", "text" },
@@ -8448,7 +8448,6 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 #ifdef HAVE_MYSQL
 	int	rc=SLURM_SUCCESS;
 	char	*jname = NULL, *nodes = NULL;
-	long	priority;
 	int track_steps = 0;
 	char *block_id = NULL;
 	char *query = NULL;
@@ -8483,9 +8482,6 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 	} else
 		slurm_mutex_unlock(&rollup_lock);
 
-
-	priority = (job_ptr->priority == NO_VAL) ?
-		-1L : (long) job_ptr->priority;
 
 	if (job_ptr->name && job_ptr->name[0]) {
 		int i;
@@ -8559,7 +8555,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 			xstrfmtcat(query, "\"%s\", ", block_id);
 		
 		xstrfmtcat(query, 
-			   "%d, %d, %d, \"%s\", %u, %u, %u, %u, %u) "
+			   "%d, %d, %d, \"%s\", %u, %u, %f, %u, %u) "
 			   "on duplicate key update "
 			   "id=LAST_INSERT_ID(id), state=%u, associd=%u",
 			   (int)job_ptr->details->begin_time,
@@ -8567,7 +8563,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 			   (int)job_ptr->start_time,
 			   jname, track_steps,
 			   job_ptr->job_state & (~JOB_COMPLETING),
-			   priority, job_ptr->num_procs,
+			   job_ptr->priority, job_ptr->num_procs,
 			   job_ptr->total_procs, 
 			   job_ptr->job_state & (~JOB_COMPLETING),
 			   job_ptr->assoc_id);

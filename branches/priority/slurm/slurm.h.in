@@ -629,7 +629,7 @@ typedef struct job_info {
 	uint16_t ntasks_per_socket;/* number of tasks to invoke on each socket */
 	char *partition;	/* name of assigned partition */
 	time_t pre_sus_time;	/* time job ran prior to last suspend */
-	uint32_t priority;	/* relative priority of the job, 
+	double priority;	/* relative priority of the job, 
 				 * 0=held, 1=required nodes DOWN/DRAINED */
 	char *req_nodes;	/* comma separated list of required nodes */
 	int *req_node_inx;	/* required list index pairs into node_table: 

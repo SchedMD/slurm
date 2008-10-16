@@ -142,6 +142,8 @@ typedef struct acct_association_rec {
 	char *cluster;		/* cluster associated to association
 				 * */
 
+	uint64_t cpu_shares;	/* how many cpu shares available from
+				 * the system (DON'T PACK) */
 	uint32_t fairshare;	/* fairshare number */
 
 	uint64_t grp_cpu_mins; /* max number of cpu hours the

@@ -2087,6 +2087,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 	uint32_t uint32_tmp;
 	char *node_inx_str;
 	multi_core_data_t *mc_ptr;
+	double tmp_prio;
 
 	safe_unpack32(&job->job_id, buffer);
 	safe_unpack32(&job->user_id, buffer);
@@ -2104,7 +2105,11 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 	safe_unpack_time(&job->end_time, buffer);
 	safe_unpack_time(&job->suspend_time, buffer);
 	safe_unpack_time(&job->pre_sus_time, buffer);
-	safe_unpack32(&job->priority, buffer);
+
+	safe_unpack32(&uint32_tmp, buffer);
+	tmp_prio = (double)uint32_tmp / (double)1000000;
+	tmp_prio -= (double)200;
+	job->priority = tmp_prio;
 
 	safe_unpackstr_xmalloc(&job->nodes, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&job->partition, &uint32_tmp, buffer);
