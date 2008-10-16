@@ -47,9 +47,11 @@
 
 #include "src/api/job_info.h"
 #include "src/common/parse_time.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_resource_info.h"
+#include "src/common/xmalloc.h"
 
 /*
  * slurm_api_version - Return a single number reflecting the SLURM API's 
@@ -97,7 +99,7 @@ _select_info(uint16_t select_type_param)
 void slurm_print_ctl_conf ( FILE* out, 
                             slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr )
 {
-	char time_str[32], tmp_str[128];
+	char time_str[32], tmp_str[128], *xbuf;
 
 	if ( slurm_ctl_conf_ptr == NULL )
 		return ;
@@ -143,6 +145,7 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->control_machine);
 	fprintf(out, "CryptoType              = %s\n",
 		slurm_ctl_conf_ptr->crypto_type);
+
 	if (slurm_ctl_conf_ptr->def_mem_per_task & MEM_PER_CPU) {
 		fprintf(out, "DefMemPerCPU            = %u MB\n",
 			slurm_ctl_conf_ptr->def_mem_per_task &
@@ -152,10 +155,16 @@ void slurm_print_ctl_conf ( FILE* out,
 			slurm_ctl_conf_ptr->def_mem_per_task);
 	} else
 		fprintf(out, "DefMemPerCPU            = UNLIMITED\n");
+
+	xbuf = debug_flags2str(slurm_ctl_conf_ptr->debug_flags);
+	fprintf(out, "DebugFlags              = %s\n", xbuf);
+	xfree(xbuf);
+
 	if (slurm_ctl_conf_ptr->disable_root_jobs)
 		fprintf(out, "DisableRootJobs         = YES\n");
 	else
 		fprintf(out, "DisableRootJobs         = NO\n");
+
 	if (slurm_ctl_conf_ptr->enforce_part_limits)
 		fprintf(out, "EnforcePartLimits       = YES\n");
 	else

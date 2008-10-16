@@ -8,6 +8,8 @@ documents those changes that are of interest to users and admins.
     SLURM_ENFORCED_CPU_BIND environment variable.
  -- Enable full preemption of jobs by partition with select/cons_res 
     (cons_res_preempt.patch from Chris Holmes, HP).
+ -- Add configuration parameter DebugFlags to provide detailed logging for
+    specific subsystems.
 
 * Changes in SLURM 1.4.0-pre3
 =============================

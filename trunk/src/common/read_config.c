@@ -142,6 +142,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"ControlAddr", S_P_STRING},
 	{"ControlMachine", S_P_STRING},
 	{"CryptoType", S_P_STRING},
+	{"DebugFlags", S_P_STRING},
 	{"DefaultStorageHost", S_P_STRING},
 	{"DefaultStorageLoc", S_P_STRING},
 	{"DefaultStoragePass", S_P_STRING},
@@ -1228,6 +1229,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->control_machine);
 	xfree (ctl_conf_ptr->crypto_type);
 	ctl_conf_ptr->def_mem_per_task          = 0;
+	ctl_conf_ptr->debug_flags		= 0;
 	ctl_conf_ptr->disable_root_jobs         = 0;
 	ctl_conf_ptr->enforce_part_limits       = 0;
 	xfree (ctl_conf_ptr->epilog);
@@ -1564,7 +1566,7 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	s_p_get_string(&default_storage_host, "DefaultStorageHost", hashtbl);
 	s_p_get_string(&default_storage_user, "DefaultStorageUser", hashtbl);
 	s_p_get_string(&default_storage_pass, "DefaultStoragePass", hashtbl);
-	s_p_get_string(&default_storage_loc,  "DefaultStorageLoc", hashtbl);
+	s_p_get_string(&default_storage_loc,  "DefaultStorageLoc",  hashtbl);
 	s_p_get_uint32(&default_storage_port, "DefaultStoragePort", hashtbl);
 	s_p_get_string(&conf->job_credential_private_key,
 		       "JobCredentialPrivateKey", hashtbl);
@@ -1599,6 +1601,13 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	else if (!s_p_get_uint32(&conf->def_mem_per_task, "DefMemPerNode", 
 				 hashtbl))
 		conf->def_mem_per_task = DEFAULT_MEM_PER_CPU;
+
+	if (s_p_get_string(&temp_str, "DebugFlags", hashtbl)) {
+		conf->debug_flags = debug_str2flags(temp_str);
+		if (conf->debug_flags == NO_VAL)
+			fatal("DebugFlags invalid: %s", temp_str);
+		xfree(temp_str);
+	}
 
 	if (!s_p_get_boolean((bool *) &conf->disable_root_jobs, 
 			     "DisableRootJobs", hashtbl))
@@ -2120,4 +2129,63 @@ slurm_conf_expand_slurmd_path(const char *path, const char *node_name)
 	xstrsubstitute(dir, "%n", node_name);
 	
 	return dir;
+}
+
+/*
+ * debug_flags2str - convert a DebugFlags uint32_t to the equivalent string
+ */
+extern char * debug_flags2str(uint32_t debug_flags)
+{
+	char *rc = NULL;
+
+	if (debug_flags & DEBUG_FLAG_SELECT_TYPE) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "SelectType");
+	}
+	if (debug_flags & DEBUG_FLAG_STEPS) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "Steps");
+	}
+	if (debug_flags & DEBUG_FLAG_TRIGGERS) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "Triggers");
+	}
+		
+	return rc;
+}
+
+/*
+ * debug_str2flags - Convert a DebugFlags string to the equivalent uint32_t
+ * Returns NO_VAL if invalid
+ */
+extern uint32_t debug_str2flags(char *debug_flags)
+{
+	uint32_t rc = 0;
+	char *tmp_str, *tok, *last;
+
+	if (!debug_flags)
+		return rc;
+
+	tmp_str = xstrdup(debug_flags);
+	tok = strtok_r(tmp_str, ",", &last);
+	while (tok) {
+		if      (strcasecmp(tok, "SelectType") == 0)
+			rc |= DEBUG_FLAG_SELECT_TYPE;
+		else if (strcasecmp(tok, "Steps") == 0)
+			rc |= DEBUG_FLAG_STEPS;
+		else if (strcasecmp(tok, "Triggers") == 0)
+			rc |= DEBUG_FLAG_TRIGGERS;
+		else {
+			error("Invalid DebugFlag: %s", tok);
+			rc = NO_VAL;
+			break;
+		}
+		tok = strtok_r(NULL, ",", &last);
+	}
+	xfree(tmp_str);
+
+	return rc;
 }

@@ -2244,6 +2244,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	packstr(build_ptr->crypto_type, buffer);
 
 	pack32(build_ptr->def_mem_per_task, buffer);
+	pack32(build_ptr->debug_flags, buffer);
 	pack16(build_ptr->disable_root_jobs, buffer);
 
 	packstr(build_ptr->epilog, buffer);
@@ -2403,6 +2404,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 			       buffer);
 
 	safe_unpack32(&build_ptr->def_mem_per_task, buffer);
+	safe_unpack32(&build_ptr->debug_flags, buffer);
 	safe_unpack16(&build_ptr->disable_root_jobs, buffer);
 
 	safe_unpackstr_xmalloc(&build_ptr->epilog, &uint32_tmp, buffer);
