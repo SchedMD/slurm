@@ -979,7 +979,8 @@ _rpc_batch_job(slurm_msg_t *msg)
 	if (slurm_cred_revoked(conf->vctx, req->cred)) {
 		error("Job %u already killed, do not launch batch job",
 			req->job_id);
-		 rc = ESLURMD_CREDENTIAL_REVOKED;	/* job already ran */
+		rc = ESLURMD_CREDENTIAL_REVOKED;	/* job already ran */
+		goto done;
 	}
 
 	if ((req->step_id != SLURM_BATCH_SCRIPT) && (req->step_id != 0))
@@ -992,20 +993,29 @@ _rpc_batch_job(slurm_msg_t *msg)
 	if (first_job_run) {
 		slurm_cred_insert_jobid(conf->vctx, req->job_id);
 
+		/* BlueGene prolog waits for partition boot and is very slow.
+		 * On any system we might need to load environment variables
+		 * for Moab (see --get-user-env), which could also be slow.
+		 * Just reply now and send a separate kill job request if the 
+		 * prolog or launch fail. */
+		replied = true;
+		if (slurm_send_rc_msg(msg, rc) < 1) {
+			/* The slurmctld is no longer waiting for a reply.
+			 * This typically indicates that the slurmd was
+			 * block from memory and/or CPUs and the slurmctld
+			 * has requeued the batch job request. */
+			error("Could not confirm batch launch for job %u, "
+			      "aborting request", req->job_id);
+			rc = SLURM_COMMUNICATIONS_SEND_ERROR;
+			goto done;
+		}
+
 		/* 
 	 	 * Run job prolog on this node
 	 	 */
 		select_g_get_jobinfo(req->select_jobinfo, 
 				     SELECT_DATA_BLOCK_ID, 
 				     &bg_part_id);
-
-		/* BlueGene prolog waits for partition boot and is very slow.
-		 * On any system we might need to load environment variables
-		 * for Moab (see --get-user-env), which could also be slow.
-		 * Just reply now and send a separate kill job request if the 
-		 * prolog or launch fail. */
-		slurm_send_rc_msg(msg, rc);
-		replied = true;
 
 		rc = _run_prolog(req->job_id, req->uid, bg_part_id);
 		xfree(bg_part_id);
@@ -1055,9 +1065,16 @@ _rpc_batch_job(slurm_msg_t *msg)
 	slurm_mutex_unlock(&launch_mutex);
 
     done:
-	if (!replied)
-		slurm_send_rc_msg(msg, rc);
-	else if (rc != 0) {
+	if ((!replied) && (slurm_send_rc_msg(msg, rc) < 1)) {
+		/* The slurmctld is no longer waiting for a reply.
+		 * This typically indicates that the slurmd was
+		 * block from memory and/or CPUs and the slurmctld
+		 * has requeued the batch job request. */
+		error("Could not confirm batch launch for job %u, "
+		      "aborting request", req->job_id);
+		rc = SLURM_COMMUNICATIONS_SEND_ERROR;
+	}
+	if (rc != 0) {
 		/* prolog or job launch failure, 
 		 * tell slurmctld that the job failed */
 		if (req->step_id == SLURM_BATCH_SCRIPT)
@@ -1067,9 +1084,11 @@ _rpc_batch_job(slurm_msg_t *msg)
 	}
 
 	/*
-	 *  If job prolog failed, indicate failure to slurmctld
+	 *  If job prolog failed or we could not reply, 
+	 *  initiate message to slurmctld with current state
 	 */
-	if (rc == ESLURMD_PROLOG_FAILED)
+	if ((rc == ESLURMD_PROLOG_FAILED) || 
+	    (rc == SLURM_COMMUNICATIONS_SEND_ERROR))
 		send_registration_msg(rc, false);
 }
 
