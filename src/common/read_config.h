@@ -335,4 +335,16 @@ extern int gethostname_short (char *name, size_t len);
 extern char *slurm_conf_expand_slurmd_path(const char *path,
 					   const char *node_name);
 
+/*
+ * debug_flags2str - convert a DebugFlags uint32_t to the equivalent string
+ * Returns an xmalloc()ed string which the caller must free with xfree().
+ */
+extern char *debug_flags2str(uint32_t debug_flags);
+
+/*
+ * debug_str2flags - Convert a DebugFlags string to the equivalent uint32_t
+ * Returns NO_VAL if invalid
+ */
+extern uint32_t debug_str2flags(char *debug_flags);
+
 #endif /* !_READ_CONFIG_H */

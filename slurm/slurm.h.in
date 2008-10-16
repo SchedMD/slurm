@@ -944,6 +944,11 @@ typedef struct partition_info_msg {
 	partition_info_t *partition_array; /* the partition records */
 } partition_info_msg_t;
 
+#define DEBUG_FLAG_SELECT_TYPE	0x00000001	/* SelectType plugin */
+#define DEBUG_FLAG_STEPS	0x00000002	/* slurmctld steps */
+#define DEBUG_FLAG_TRIGGERS	0x00000004	/* slurmctld triggers */
+
+
 typedef struct slurm_ctl_conf {
 	time_t last_update;	/* last update time of the build parameters */
 	uint16_t accounting_storage_enforce; /* job requires valid association:
@@ -968,6 +973,7 @@ typedef struct slurm_ctl_conf {
 	char *control_addr;	/* comm path of slurmctld primary server */
 	char *control_machine;	/* name of slurmctld primary server */
 	char *crypto_type;	/* cryptographic signature plugin */
+	uint32_t debug_flags;	/* see DEBUG_FLAG_* above for values */
 	uint32_t def_mem_per_task; /* default MB memory per spawned task */
 	uint16_t disable_root_jobs; /* if set then user root can't run jobs */
 	uint16_t enforce_part_limits;	/* if set, reject job exceeding 

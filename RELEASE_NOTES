@@ -36,6 +36,7 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 * OverTimeLimit added to permit jobs to exceed their (soft) time limit by a
   configurable amount. Backfill scheduling will be based upon the soft time
   limit.
+* DebugFlags added to provide detailed logging for specific subsystems.
 * PrologSlurmctld has been aded and can be used to boot nodes into a particular
   state for each job.
 

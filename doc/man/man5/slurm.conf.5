@@ -225,6 +225,23 @@ Acceptable values at present include "crypto/munge" and "crypto/openssl".
 The default value is "crypto/munge".
 
 .TP
+\fBDebugFlags\fR
+Define specific subsystems which should provide more detailed event logging.
+Multiple subsystems can be specified with comma separators. 
+Valid subsystems include:
+.RS
+.TP 15
+\fBSelectType\fR
+SelectType plugin (under development)
+.TP
+\fBTriggers\fR
+Slurmctld triggers
+.TP
+\fBSteps\fR
+Slurmctld resource allocation for job steps
+.RE
+
+.TP
 \fBDefMemPerCPU\fR
 Default real memory size available per allocated CPU in MegaBytes. 
 Used to avoid over\-subscribing memory and causing paging.

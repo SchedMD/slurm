@@ -228,6 +228,7 @@ function displayfile()
    "AccountingStorageType=accounting_storage/" + get_accounting_storage_type_field(get_radio_value(document.config.job_acct_gather_type), document.config.accounting_storage_type) + "<br>" +
    get_field("AccountingStorageUser",document.config.accounting_storage_user) + "<br>" +
    get_field("ClusterName",document.config.cluster_name) + "<br>" +
+   "#DebugFlags= <br>" +
    get_field("JobCompHost",document.config.job_comp_host) + "<br>" +
    get_field("JobCompLoc",document.config.job_comp_loc) + "<br>" +
    get_field("JobCompPass",document.config.job_comp_pass) + "<br>" +
