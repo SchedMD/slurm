@@ -1132,7 +1132,8 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 
 static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 		      acct_association_rec_t *assoc,
-		      sacctmgr_mod_type_t mod_type)
+		      sacctmgr_mod_type_t mod_type,
+		      char *parent)
 {
 	int changed = 0;
 	acct_association_rec_t mod_assoc;
@@ -1303,6 +1304,16 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 			   type, name,
 			   assoc->max_wall_pj,
 			   file_opts->max_wall_pj);
+	}
+	if(assoc->parent_acct && strcmp(assoc->parent_acct, parent)) {
+		mod_assoc.parent_acct = parent;
+		changed = 1;
+		xstrfmtcat(my_info, 
+			   "%-30.30s for %-7.7s %-10.10s %8s -> %s\n",
+			   " Changed Parent",
+			   type, name,
+			   assoc->parent_acct,
+			   parent);
 	}
 
 	if(assoc->qos_list && list_count(assoc->qos_list)
@@ -2123,7 +2134,6 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				  !sacctmgr_find_account_base_assoc_from_list(
 					  acct_assoc_list, file_opts->name,
 					  cluster_name)) {
-
 				acct2 = sacctmgr_find_account_from_list(
 					mod_acct_list, file_opts->name);
 
@@ -2158,6 +2168,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				} else {
 					debug2("already modified this account");
 				}
+
 				assoc2 = sacctmgr_find_association_from_list(
 					mod_assoc_list,
 					NULL, file_opts->name,
@@ -2171,8 +2182,10 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 					list_append(mod_assoc_list, assoc2);
 					assoc2->cluster = xstrdup(cluster_name);
 					assoc2->acct = xstrdup(file_opts->name);
+					assoc2->parent_acct = 
+						xstrdup(assoc->parent_acct);
 					if(_mod_assoc(file_opts, 
-						      assoc, MOD_ACCT))
+						      assoc, MOD_ACCT, parent))
 						set = 1;
 				} else {
 					debug2("already modified this assoc");
@@ -2276,7 +2289,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 					assoc2->partition =
 						xstrdup(file_opts->part);
 					if(_mod_assoc(file_opts, 
-						      assoc, MOD_USER))
+						      assoc, MOD_USER, parent))
 						set = 1;
 				} else {
 					debug2("already modified this assoc");
