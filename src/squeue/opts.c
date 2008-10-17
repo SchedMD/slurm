@@ -726,7 +726,11 @@ _print_options()
 	uint32_t *job_id;
 	char hostlist[8192];
 
-	hostset_ranged_string (params.nodes, sizeof(hostlist)-1, hostlist);
+	if (params.nodes) {
+		hostset_ranged_string(params.nodes, sizeof(hostlist)-1, 
+				      hostlist);
+	} else
+		hostlist[0] = '\0';
 
 	printf( "-----------------------------\n" );
 	printf( "all        = %s\n", params.all_flag ? "true" : "false");
