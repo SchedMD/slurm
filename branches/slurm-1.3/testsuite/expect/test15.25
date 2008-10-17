@@ -50,7 +50,7 @@ if {[test_account_storage]} {
 }
 
 global env
-set env(SALLOC_ACCOUNT) QA_ACCT
+set env(SALLOC_ACCOUNT) $job_acct
 
 #
 # Build input script file
@@ -61,7 +61,7 @@ make_bash_script $file_in "$bin_sleep 10"
 # Spawn a srun batch job that just sleeps for a while
 #
 set timeout $max_job_delay
-set sbatch_pid [spawn $sbatch --output=/dev/null --error=/dev/null --account=MY_ACCT -t1 $file_in]
+set sbatch_pid [spawn $sbatch --output=/dev/null --error=/dev/null --account=$job_acct -t1 $file_in]
 expect {
 	 -re "Submitted batch job ($number)" {
 		set job_id1 $expect_out(1,string)
@@ -118,7 +118,7 @@ if {$match_acct == 0} {
 set match_acct 0
 spawn $scontrol show job $job_id2
 expect {
-	-re "Account=QA_ACCT" {
+	-re "Account=$job_acct" {
 		set match_acct 1
 		exp_continue
 	}
