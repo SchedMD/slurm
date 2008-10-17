@@ -6,7 +6,7 @@ AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
 bin_PROGRAMS = strigger
 
-strigger_LDADD = $(top_builddir)/src/api/libslurm.o -ldl
+strigger_LDADD = $(top_builddir)/src/api/libslurm.o -ldl -lm
 
 noinst_HEADERS = strigger.h
 strigger_SOURCES = strigger.c opts.c

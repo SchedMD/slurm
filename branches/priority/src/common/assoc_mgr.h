@@ -109,6 +109,23 @@ extern int assoc_mgr_is_user_acct_coord(void *db_conn, uint32_t uid,
 extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args);
 extern int assoc_mgr_fini(char *state_save_location);
 
+/*
+ * apply decay factor to all associations used_shares
+ * IN: time_delta - amount of time that has past since last decay application.
+ * RET: SLURM_SUCCESS on SUCCESS, SLURM_ERROR else.
+ */
+extern int assoc_mgr_apply_decay(uint32_t time_delta);
+
+/*
+ * set up the cpu shares for the associations.  This can only be done
+ * after we get a correct proc count for the system.
+ * IN: procs - number of proccessors on the system
+ * IN: half_life - time half_life is in seconds.
+ * RET: SLURM_SUCCESS on SUCCESS, SLURM_ERROR else.
+ */
+extern int assoc_mgr_set_cpu_shares(uint32_t procs, uint64_t half_life);
+
+
 /* 
  * update associations in local cache 
  * IN:  acct_update_object_t *object

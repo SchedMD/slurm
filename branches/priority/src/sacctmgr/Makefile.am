@@ -8,7 +8,7 @@ INCLUDES = -I$(top_srcdir)
 bin_PROGRAMS = sacctmgr
 
 sacctmgr_LDADD =  \
-	$(top_builddir)/src/api/libslurm.o -ldl\
+	$(top_builddir)/src/api/libslurm.o -ldl -lm\
 	$(READLINE_LIBS)
 
 sacctmgr_SOURCES =	\

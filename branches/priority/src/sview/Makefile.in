@@ -286,7 +286,7 @@ AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
 @HAVE_GTK_TRUE@sview_LDADD = \
 @HAVE_GTK_TRUE@	$(top_builddir)/src/plugins/select/bluegene/block_allocator/libbluegene_block_allocator.la  \
-@HAVE_GTK_TRUE@	$(top_builddir)/src/api/libslurm.o -ldl
+@HAVE_GTK_TRUE@	$(top_builddir)/src/api/libslurm.o -ldl -lm
 
 @HAVE_GTK_TRUE@noinst_HEADERS = sview.h
 @HAVE_GTK_TRUE@sview_SOURCES = sview.c popups.c grid.c part_info.c job_info.c \

@@ -15,7 +15,7 @@ bin_PROGRAMS = smap
 
 smap_LDADD = \
 	$(top_builddir)/src/plugins/select/bluegene/block_allocator/libbluegene_block_allocator.la \
-	$(top_builddir)/src/api/libslurm.o -ldl
+	$(top_builddir)/src/api/libslurm.o -ldl -lm
 
 noinst_HEADERS = smap.h 
 smap_SOURCES = smap.c \

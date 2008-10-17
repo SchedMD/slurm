@@ -162,6 +162,12 @@ char *slurm_get_health_check_program(void);
  */
 char *slurm_get_plugin_dir(void);
 
+/* slurm_get_priority_decay_hl
+ * returns the priority decay half life in seconds from slurmctld_conf object
+ * RET uint32_t - decay_hl in secs.
+ */
+uint32_t slurm_get_priority_decay_hl(void);
+
 /* slurm_get_priority_type
  * returns the priority type from slurmctld_conf object
  * RET char *    - priority type, MUST be xfreed by caller

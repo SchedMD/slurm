@@ -7,7 +7,7 @@ INCLUDES = -I$(top_srcdir)
 
 bin_PROGRAMS = squeue
 
-squeue_LDADD = 	$(top_builddir)/src/api/libslurm.o -ldl
+squeue_LDADD = 	$(top_builddir)/src/api/libslurm.o -ldl -lm
 
 noinst_HEADERS = squeue.h print.h
 squeue_SOURCES = squeue.c print.c opts.c sort.c

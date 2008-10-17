@@ -670,6 +670,8 @@ extern void init_acct_association_rec(acct_association_rec_t *assoc)
 
 	memset(assoc, 0, sizeof(acct_association_rec_t));
 
+	assoc->cpu_shares = NO_VAL;
+
 	assoc->fairshare = NO_VAL;
 
 	assoc->grp_cpu_mins = NO_VAL;
@@ -680,6 +682,7 @@ extern void init_acct_association_rec(acct_association_rec_t *assoc)
 	assoc->grp_wall = NO_VAL;
 
 	assoc->level_shares = NO_VAL;
+	assoc->level_cpu_shares = NO_VAL;
 
 	assoc->max_cpu_mins_pj = NO_VAL;
 	assoc->max_cpus_pj = NO_VAL;
@@ -1500,6 +1503,8 @@ extern void pack_acct_association_rec(void *in, uint16_t rpc_version,
 	ListIterator itr = NULL;
 	uint32_t count = NO_VAL;
 	uint32_t uint32_tmp;
+	uint64_t uint64_tmp;
+	long double ld_tmp;
 	char *tmp_info = NULL;
 	acct_association_rec_t *object = (acct_association_rec_t *)in;	
 	
@@ -1765,7 +1770,9 @@ extern void pack_acct_association_rec(void *in, uint16_t rpc_version,
 		pack32(object->rgt, buffer);
 		pack32(object->uid, buffer);
 
-		pack64(object->used_shares, buffer);
+		ld_tmp = object->used_shares * (long double)1000000;
+		uint64_tmp = (uint64_t)ld_tmp;
+		pack64(uint64_tmp, buffer);
 
 		packstr(object->user, buffer);	
 	}
@@ -1774,6 +1781,7 @@ extern void pack_acct_association_rec(void *in, uint16_t rpc_version,
 extern int unpack_acct_association_rec(void **object, uint16_t rpc_version,
 				       Buf buffer)
 {
+	uint64_t uint64_tmp;
 	uint32_t uint32_tmp;
 	int i;
 	uint32_t count;
@@ -1784,9 +1792,9 @@ extern int unpack_acct_association_rec(void **object, uint16_t rpc_version,
 
 	*object = object_ptr;
 
-	if(rpc_version < 3) {
-		init_acct_association_rec(object_ptr);
+	init_acct_association_rec(object_ptr);
 
+	if(rpc_version < 3) {
 		safe_unpack32(&count, buffer);
 		if(count != NO_VAL) {
 			object_ptr->accounting_list =
@@ -1952,7 +1960,8 @@ extern int unpack_acct_association_rec(void **object, uint16_t rpc_version,
 		safe_unpack32(&object_ptr->rgt, buffer);
 		safe_unpack32(&object_ptr->uid, buffer);
 
-		safe_unpack64(&object_ptr->used_shares, buffer);
+		safe_unpack64(&uint64_tmp, buffer);
+		object_ptr->used_shares = (long double)uint64_tmp / 1000000;
 
 		safe_unpackstr_xmalloc(&object_ptr->user, &uint32_tmp, buffer);
 	}
@@ -4456,7 +4465,14 @@ extern void log_assoc_rec(acct_association_rec_t *assoc_ptr, List qos_list)
 	
 	if(assoc_ptr->norm_shares != NO_VAL) 
 		debug2("  NormalizedShares : %f", assoc_ptr->norm_shares);
+
+	if(assoc_ptr->cpu_shares != NO_VAL) 
+		debug2("  CPUShares        : %Lf", assoc_ptr->cpu_shares);
 	
+	if(assoc_ptr->level_cpu_shares != NO_VAL) 
+		debug2("  LevelCPUShares   : %Lf",
+		       assoc_ptr->level_cpu_shares);
+		
 	if(assoc_ptr->grp_cpu_mins == INFINITE)
 		debug2("  GrpCPUMins       : NONE");
 	else if(assoc_ptr->grp_cpu_mins != NO_VAL) 
@@ -4544,7 +4560,7 @@ extern void log_assoc_rec(acct_association_rec_t *assoc_ptr, List qos_list)
 		debug2("  user             : %s(%u)",
 		       assoc_ptr->user, assoc_ptr->uid);
 	debug2("  used_jobs        : %u", assoc_ptr->used_jobs);
-	debug2("  used_shares      : %llu", assoc_ptr->used_shares);
+	debug2("  used_shares      : %Lf", assoc_ptr->used_shares);
 }
 
 /*

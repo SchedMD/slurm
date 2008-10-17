@@ -2297,6 +2297,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 
 	packstr(build_ptr->plugindir, buffer);
 	packstr(build_ptr->plugstack, buffer);
+	pack32(build_ptr->priority_decay_hl, buffer);
 	packstr(build_ptr->priority_type, buffer);
 	pack16(build_ptr->private_data, buffer);
 	packstr(build_ptr->proctrack_type, buffer);
@@ -2462,6 +2463,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 
 	safe_unpackstr_xmalloc(&build_ptr->plugindir, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->plugstack, &uint32_tmp, buffer);
+	safe_unpack32(&build_ptr->priority_decay_hl, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->priority_type, &uint32_tmp, 
 			       buffer);
 	safe_unpack16(&build_ptr->private_data, buffer);

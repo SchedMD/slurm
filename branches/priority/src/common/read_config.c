@@ -193,6 +193,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"PluginDir", S_P_STRING},
 	{"PlugStackConfig", S_P_STRING},
 	{"PriorityType", S_P_STRING},
+	{"PriorityDecayHalfLife", S_P_STRING},
 	{"PrivateData", S_P_STRING},
 	{"ProctrackType", S_P_STRING},
 	{"Prolog", S_P_STRING},
@@ -1835,6 +1836,28 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_string(&conf->switch_type, "SwitchType", hashtbl))
 		conf->switch_type = xstrdup(DEFAULT_SWITCH_TYPE);
 
+	if (s_p_get_string(&temp_str, "PriorityDecayHalfLife", hashtbl)) {
+		conf->priority_decay_hl = atoi(temp_str);
+
+		if(!conf->priority_decay_hl) {
+			fatal("Bad option given for PriorityDecayHalfLife "
+			      "'%s'.  Format should be number with Day, Hour, "
+			      "or Minute directly afterward.  (i.e. 7Days)",
+			      temp_str);
+		}
+
+		/* now convert to seconds */
+		if(strchr(temp_str, 'D') || strchr(temp_str, 'd')) {
+			conf->priority_decay_hl *= 86400;
+		} else if(strchr(temp_str, 'H') || strchr(temp_str, 'h')) {
+			conf->priority_decay_hl *= 3600;
+		} else if(strchr(temp_str, 'M') || strchr(temp_str, 'm')) {
+			conf->priority_decay_hl *= 60;
+		} 
+
+		xfree(temp_str);
+	} else 
+		conf->priority_decay_hl = DEFAULT_PRIORITY_DECAY;
 	if (!s_p_get_string(&conf->priority_type, "PriorityType", hashtbl))
 		conf->priority_type = xstrdup(DEFAULT_PRIORITY_TYPE);
 

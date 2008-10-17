@@ -11,7 +11,7 @@ INCLUDES = -I$(top_srcdir)
 
 slurmd_LDADD = 					   \
 	$(top_builddir)/src/common/libdaemonize.la \
-	$(top_builddir)/src/api/libslurm.o -ldl	   \
+	$(top_builddir)/src/api/libslurm.o -ldl -lm	   \
 	$(PLPA_LIBS) 
 
 slurmd_test_LDADD = $(slurmd_LDADD)

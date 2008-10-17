@@ -6,7 +6,7 @@ INCLUDES = -I$(top_srcdir)
 
 bin_PROGRAMS = sstat
 
-sstat_LDADD = $(top_builddir)/src/api/libslurm.o -ldl
+sstat_LDADD = $(top_builddir)/src/api/libslurm.o -ldl -lm
 
 
 noinst_HEADERS = sstat.c 

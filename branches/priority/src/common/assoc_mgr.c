@@ -40,6 +40,7 @@
 #include <sys/types.h>
 #include <pwd.h>
 #include <fcntl.h>
+#include <math.h>
 
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
@@ -52,6 +53,7 @@ static List local_qos_list = NULL;
 static List local_user_list = NULL;
 static char *local_cluster_name = NULL;
 static int setup_childern = 0;
+static double decay_factor = 0.0;
 
 void (*remove_assoc_notify) (acct_association_rec_t *rec) = NULL;
 
@@ -232,6 +234,13 @@ static int _post_association_list(List assoc_list)
 					(double)assoc->level_shares;
 				assoc = assoc->parent_assoc_ptr;
 			}
+			if((root_assoc->cpu_shares == NO_VAL)
+			   || (assoc2 == root_assoc))
+				continue;
+			assoc2->cpu_shares = root_assoc->cpu_shares * 
+				(long double)assoc2->norm_shares;
+			assoc2->level_cpu_shares = assoc2->cpu_shares * 
+				(long double)assoc2->level_shares;
 		}
 	}
 	list_iterator_destroy(itr);
@@ -592,6 +601,70 @@ extern int assoc_mgr_fini(char *state_save_location)
 	return SLURM_SUCCESS;
 }
 
+extern int assoc_mgr_apply_decay(uint32_t time_delta)
+{
+	ListIterator itr = NULL;
+	acct_association_rec_t *assoc = NULL;
+	double real_decay;
+
+	if(!setup_childern)
+		return SLURM_SUCCESS;
+
+	if(!decay_factor || !local_association_list)
+		return SLURM_ERROR;
+	
+	real_decay = pow(decay_factor, (double)time_delta);
+	debug("decay factor goes from %f to %f over %u secs", 
+	      decay_factor, real_decay, time_delta);
+	slurm_mutex_lock(&local_association_lock);
+	itr = list_iterator_create(local_association_list);
+	while((assoc = list_next(itr))) 
+		assoc->used_shares *= real_decay;
+	
+	list_iterator_destroy(itr);
+	slurm_mutex_unlock(&local_association_lock);
+
+	return SLURM_SUCCESS;
+}
+
+extern int assoc_mgr_set_cpu_shares(uint32_t procs, uint64_t half_life) 
+{
+	ListIterator itr = NULL;
+	acct_association_rec_t *assoc = NULL;
+	
+	if(!setup_childern)
+		return SLURM_SUCCESS;
+
+	xassert(root_assoc);
+	xassert(local_association_list);
+
+	/* get the total decay for the entire cluster */
+	root_assoc->cpu_shares = 
+		(long double)procs * (long double)half_life * (long double)2;
+	debug("total cpu shares on the system is %.0Lf",
+	      procs, half_life, root_assoc->cpu_shares);
+	decay_factor = 1 - (0.693 / (double)half_life);
+
+	debug("Decay factor is set at %.15f", decay_factor);
+
+	slurm_mutex_lock(&local_association_lock);
+	itr = list_iterator_create(local_association_list);
+	while((assoc = list_next(itr))) {
+		if(assoc == root_assoc)
+			continue;
+
+		assoc->cpu_shares = root_assoc->cpu_shares * 
+			(long double)assoc->norm_shares;
+		assoc->level_cpu_shares = 
+			assoc->cpu_shares * (long double)assoc->level_shares;
+		log_assoc_rec(assoc, local_qos_list);
+	}
+	list_iterator_destroy(itr);
+	slurm_mutex_unlock(&local_association_lock);
+
+	return SLURM_SUCCESS;
+}
+
 extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 				   int enforce, 
 				   acct_association_rec_t **assoc_pptr)
@@ -918,9 +991,17 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 				break;
 			}
 			debug("updating assoc %u", rec->id);
-			if(object->fairshare != NO_VAL) 
+			if(object->fairshare != NO_VAL) {
 				rec->fairshare = object->fairshare;
-			
+				if(setup_childern) {
+					/* we need to update the shares on
+					   each sibling and child
+					   association now 
+					*/
+					parents_changed = 1;
+				}
+			}
+
 			if(object->grp_cpu_mins != NO_VAL) 
 				rec->grp_cpu_mins = object->grp_cpu_mins;
 			if(object->grp_cpus != NO_VAL) 
@@ -957,7 +1038,6 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 				// after all new parents have been set we will
 				// reset the parent pointers below
 				parents_changed = 1;
-				
 			}
 
 			if(object->qos_list) {
@@ -1062,6 +1142,13 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 						(double)object->level_shares;
 					object = object->parent_assoc_ptr;
 				}
+				if((root_assoc->cpu_shares == NO_VAL)
+				   || (rec == root_assoc))
+					continue;
+				rec->cpu_shares = root_assoc->cpu_shares * 
+					(long double)rec->norm_shares;
+				rec->level_cpu_shares = rec->cpu_shares * 
+					(long double)rec->level_shares;
 			}
 		}
 	}

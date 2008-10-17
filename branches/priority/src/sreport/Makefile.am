@@ -16,7 +16,7 @@ sreport_SOURCES =	\
 	common.c
 
 sreport_LDADD =  \
-	$(top_builddir)/src/api/libslurm.o -ldl\
+	$(top_builddir)/src/api/libslurm.o -ldl -lm\
 	$(READLINE_LIBS)
 
 sreport_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)

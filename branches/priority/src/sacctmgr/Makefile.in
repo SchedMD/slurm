@@ -270,7 +270,7 @@ AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.*
 INCLUDES = -I$(top_srcdir)
 sacctmgr_LDADD = \
-	$(top_builddir)/src/api/libslurm.o -ldl\
+	$(top_builddir)/src/api/libslurm.o -ldl -lm\
 	$(READLINE_LIBS)
 
 sacctmgr_SOURCES = \

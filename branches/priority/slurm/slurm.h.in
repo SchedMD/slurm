@@ -1012,7 +1012,10 @@ typedef struct slurm_ctl_conf {
 	uint16_t over_time_limit; /* job's time limit can be exceeded by this
 				   * number of minutes before cancellation */
 	char *plugindir;	/* pathname to plugins */
-	char *plugstack;        /* pathname to plugin stack config file */
+	char *plugstack;        /* pathname to plugin stack config
+				 * file */
+	uint32_t priority_decay_hl; /* priority decay half life in
+				     * seconds */
 	char *priority_type;    /* priority type plugin */
 	uint16_t private_data;	/* block viewing of information, 
 				 * see PRIVATE_DATA_* */
