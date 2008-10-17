@@ -381,8 +381,6 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 			log_fini();
 			exit(1);
 		}
-
-		pdebug_stop_current(job);
 	}
 
 #ifdef HAVE_PTY_H
@@ -417,6 +415,8 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 					job->task_prolog, job); 
 	}
 
+	if (!job->batch)
+		pdebug_stop_current(job);
 	if (job->env == NULL) {
 		debug("job->env is NULL");
 		job->env = (char **)xmalloc(sizeof(char *));
