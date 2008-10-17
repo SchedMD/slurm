@@ -1069,6 +1069,8 @@ _rpc_batch_job(slurm_msg_t *msg)
 	if (slurm_cred_revoked(conf->vctx, req->cred)) {
 		info("Job %u killed while launch was in progress", 
 		     req->job_id);
+		sleep(1);	/* give slurmstepd time to create 
+				 * the communication socket */
 		_terminate_all_steps(req->job_id, true);
 		rc = ESLURMD_CREDENTIAL_REVOKED;
 		goto done;
