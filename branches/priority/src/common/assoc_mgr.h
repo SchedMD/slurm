@@ -89,6 +89,14 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 				   int enforce,
 				   acct_association_rec_t **assoc_pptr);
 
+
+/* 
+ * get info from the storage 
+ * IN/OUT:  qos - acct_qos_rec_t with the id set of the qos.
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int assoc_mgr_fill_in_qos(void *db_conn, acct_qos_rec_t *qos,
+				 int enforce);
 /* 
  * get admin_level of uid 
  * IN: uid - uid of user to check admin_level of.

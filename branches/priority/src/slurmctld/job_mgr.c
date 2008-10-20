@@ -567,6 +567,7 @@ static int _load_job_state(Buf buffer)
 	select_jobinfo_t select_jobinfo = NULL;
 	select_job_res_t select_job = NULL;
 	acct_association_rec_t assoc_rec, *assoc_ptr = NULL;
+	acct_qos_rec_t qos_rec, *qos_ptr = NULL;
 
 	safe_unpack32(&assoc_id, buffer);
 	safe_unpack32(&job_id, buffer);
@@ -594,6 +595,7 @@ static int _load_job_state(Buf buffer)
 	safe_unpack16(&batch_flag, buffer);
 	safe_unpack16(&mail_type, buffer);
 	safe_unpack16(&qos, buffer);
+
 	safe_unpack16(&state_reason, buffer);
 
 	safe_unpackstr_xmalloc(&state_desc, &name_len, buffer);
@@ -655,6 +657,17 @@ static int _load_job_state(Buf buffer)
 			partition, job_id);
 		/* not a fatal error, partition could have been removed, 
 		 * reset_job_bitmaps() will clean-up this job */
+	}
+
+	if(qos) {
+		bzero(&qos_rec, sizeof(acct_qos_rec_t));
+		if((assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec,
+					  accounting_enforce))
+		   != SLURM_SUCCESS) {
+			verbose("Invalid qos (%u) for job_id %u", qos, job_id);
+			/* not a fatal error, qos could have been removed */
+		} else 
+			qos_ptr = &qos_rec;
 	}
 
 	job_ptr = find_job_record(job_id);
@@ -736,6 +749,7 @@ static int _load_job_state(Buf buffer)
 	job_ptr->pre_sus_time = pre_sus_time;
 	job_ptr->priority     = priority;
 	job_ptr->qos          = qos;
+	job_ptr->qos_ptr      = qos_ptr;
 	xfree(job_ptr->resp_host);
 	job_ptr->resp_host    = resp_host;
 	resp_host             = NULL;	/* reused, nothing left to free */

@@ -47,6 +47,7 @@
 #include "src/slurmdbd/read_config.h"
 
 acct_association_rec_t *root_assoc = NULL;
+uint32_t qos_max_priority = 0;
 
 static List local_association_list = NULL;
 static List local_qos_list = NULL;
@@ -340,6 +341,23 @@ static int _get_local_qos_list(void *db_conn, int enforce)
 		} else {
 			return SLURM_SUCCESS;
 		}		
+	} else {
+		ListIterator itr = list_iterator_create(local_qos_list);
+		acct_qos_rec_t *qos = NULL;
+		while((qos = list_next(itr))) {
+			if(qos->priority > qos_max_priority) 
+				qos_max_priority = qos->priority;
+		}
+
+		if(qos_max_priority) {
+			list_iterator_reset(itr);
+			
+			while((qos = list_next(itr))) {
+				qos->norm_priority = (double)qos->priority 
+					/ (double)qos_max_priority;
+			}
+		}
+		list_iterator_destroy(itr);
 	}
 
 	slurm_mutex_unlock(&local_qos_lock);
@@ -844,6 +862,36 @@ extern int assoc_mgr_fill_in_user(void *db_conn, acct_user_rec_t *user,
 		return SLURM_SUCCESS;
 	}
 	slurm_mutex_unlock(&local_user_lock);
+	return SLURM_ERROR;
+}
+
+extern int assoc_mgr_fill_in_qos(void *db_conn, acct_qos_rec_t *qos,
+				 int enforce)
+{
+	ListIterator itr = NULL;
+	acct_qos_rec_t * found_qos = NULL;
+
+	if(!local_qos_list) 
+		if(_get_local_qos_list(db_conn, enforce) == SLURM_ERROR)
+			return SLURM_ERROR;
+
+	if((!local_qos_list || !list_count(local_qos_list)) && !enforce) 
+		return SLURM_SUCCESS;
+
+	slurm_mutex_lock(&local_qos_lock);
+	itr = list_iterator_create(local_qos_list);
+	while((found_qos = list_next(itr))) {
+		if(qos->id == found_qos->id) 
+			break;
+	}
+	list_iterator_destroy(itr);
+
+	if(found_qos) {
+		memcpy(qos, found_qos, sizeof(acct_qos_rec_t));		
+		slurm_mutex_unlock(&local_qos_lock);
+		return SLURM_SUCCESS;
+	}
+	slurm_mutex_unlock(&local_qos_lock);
 	return SLURM_ERROR;
 }
 

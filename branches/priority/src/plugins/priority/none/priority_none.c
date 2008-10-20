@@ -102,9 +102,3 @@ int fini ( void )
 /*
  * The remainder of this file implements the standard SLURM priority API.
  */
-
-int priority_p_set( struct job_record *job_ptr )
-{
-	return SLURM_SUCCESS;
-}
-

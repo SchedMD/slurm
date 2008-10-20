@@ -168,11 +168,59 @@ char *slurm_get_plugin_dir(void);
  */
 uint32_t slurm_get_priority_decay_hl(void);
 
+/* slurm_get_priority_favor_small
+ * returns weither or not we are favoring small jobs from slurmctld_conf object
+ * RET bool - true if favor small, false else.
+ */
+bool slurm_get_priority_favor_small(void);
+
+/* slurm_get_priority_max_age
+ * returns the priority age max in seconds from slurmctld_conf object
+ * RET uint32_t - max_age in secs.
+ */
+uint32_t slurm_get_priority_max_age(void);
+
 /* slurm_get_priority_type
  * returns the priority type from slurmctld_conf object
  * RET char *    - priority type, MUST be xfreed by caller
  */
 char *slurm_get_priority_type(void);
+
+/* slurm_get_priority_weight_age
+ * returns the priority weight for age from slurmctld_conf object
+ * RET uint32_t - factor weight.
+ */
+uint32_t slurm_get_priority_weight_age(void);
+
+/* slurm_get_priority_weight_fairshare
+ * returns the priority weight for fairshare from slurmctld_conf object
+ * RET uint32_t - factor weight.
+ */
+uint32_t slurm_get_priority_weight_fairshare(void);
+
+/* slurm_get_priority_weight_job_size
+ * returns the priority weight for job size from slurmctld_conf object
+ * RET uint32_t - factor weight.
+ */
+uint32_t slurm_get_priority_weight_job_size(void);
+
+/* slurm_get_priority_weight_nice
+ * returns the priority weight for nice from slurmctld_conf object
+ * RET uint32_t - factor weight.
+ */
+uint32_t slurm_get_priority_weight_nice(void);
+
+/* slurm_get_priority_weight_partition
+ * returns the priority weight for partitions from slurmctld_conf object
+ * RET uint32_t - factor weight.
+ */
+uint32_t slurm_get_priority_weight_partition(void);
+
+/* slurm_get_priority_weight_qos
+ * returns the priority weight for QOS from slurmctld_conf object
+ * RET uint32_t - factor weight.
+ */
+uint32_t slurm_get_priority_weight_qos(void);
 
 /* slurm_get_private_data
  * get private data from slurmctld_conf object

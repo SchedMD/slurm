@@ -264,6 +264,8 @@ struct part_record {
 	uint16_t root_only;	/* 1 if allocate/submit RPC can only be 
 				   issued by user root */
 	uint16_t max_share;	/* number of jobs to gang schedule */
+	double   norm_priority;	/* normalized scheduling priority for
+				 * jobs (DON'T PACK) */
 	uint16_t priority;	/* scheduling priority for jobs */
 	uint16_t state_up;	/* 1 if state is up, 0 if down */
 	char *nodes;		/* comma delimited list names of nodes */
@@ -278,6 +280,7 @@ extern time_t last_part_update;		/* time of last part_list update */
 extern struct part_record default_part;	/* default configuration values */
 extern char *default_part_name;		/* name of default partition */
 extern struct part_record *default_part_loc;	/* default partition ptr */
+extern uint16_t part_max_priority;      /* max priority in all partitions */
 
 /*****************************************************************************\
  *  JOB parameters and data structures
@@ -424,6 +427,12 @@ struct job_record {
 					 * zero == held (don't initiate) */
 	uint16_t qos;			/* quality of service, 
 					 * used only by Moab */
+	void *qos_ptr;	                /* pointer to the quality of
+					 * service record used for this job, 
+					 * used only by Moab, it is
+					 * void* because of interdependencies
+					 * in the header files, confirm the 
+					 * value before use*/
 	uint32_t requid;            	/* requester user ID */
 	char *resp_host;		/* host for srun communications */
 	select_jobinfo_t select_jobinfo;/* opaque data, BlueGene */

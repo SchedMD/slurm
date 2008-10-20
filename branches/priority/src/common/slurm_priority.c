@@ -41,7 +41,6 @@
 #include "src/common/xstring.h"
 
 typedef struct slurm_priority_ops {
-	int          (*set) (struct job_record *job_ptr);
 } slurm_priority_ops_t;
 
 typedef struct slurm_priority_context {
@@ -76,7 +75,6 @@ static slurm_priority_ops_t * _priority_get_ops(
 	 * Must be synchronized with slurm_priority_ops_t above.
 	 */
 	static const char *syms[] = {
-		"priority_p_set",
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
 
@@ -218,12 +216,4 @@ extern int slurm_priority_fini(void)
 	rc = _priority_context_destroy( g_priority_context );
 	g_priority_context = NULL;
 	return rc;
-}
-
-extern int priority_g_set(struct job_record *job_ptr)
-{
-	if (slurm_priority_init() < 0)
-		return SLURM_ERROR;
-
-	return (*(g_priority_context->ops.set))(job_ptr);
 }

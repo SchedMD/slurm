@@ -98,6 +98,15 @@ const uint32_t plugin_version	= 100;
 static pthread_t decay_handler_thread;
 static pthread_mutex_t decay_lock = PTHREAD_MUTEX_INITIALIZER;
 static int running_decay = 0;
+static bool favor_small; /* favor small jobs over large */
+static uint32_t max_age; /* time when not to add any more
+			  * priority to a job if reached */
+static uint32_t weight_age; /* weight for age factor */
+static uint32_t weight_fs; /* weight for Fairshare factor */
+static uint32_t weight_js; /* weight for Job Size factor */
+static uint32_t weight_nice; /* weight for Nice factor */
+static uint32_t weight_part; /* weight for Partition factor */
+static uint32_t weight_qos; /* weight for QOS factor */
 
 static time_t _read_last_decay_ran()
 {
@@ -217,7 +226,7 @@ static int _write_last_decay_ran(time_t last_ran)
 /* job_ptr should already have the partition priority and such added
  * here before had we will be adding to it
  */
-static int _add_fairshare_priority( struct job_record *job_ptr )
+static double _get_fairshare_priority( struct job_record *job_ptr )
 {
 	acct_association_rec_t *assoc = 
 		(acct_association_rec_t *)job_ptr->assoc_ptr;
@@ -229,8 +238,8 @@ static int _add_fairshare_priority( struct job_record *job_ptr )
 	if(!assoc) {
 		error("Job %u has no association.  Unable to "
 		      "compute fairshare.");
-		job_ptr->priority = NO_VAL;
-		return SLURM_ERROR;
+		job_ptr->priority = 0;
+		return NO_VAL;
 	}
 	
 	while(assoc->parent_assoc_ptr) {
@@ -244,10 +253,10 @@ static int _add_fairshare_priority( struct job_record *job_ptr )
 		usage /= root_assoc->used_shares;
 
 	// Priority is 0 -> 1
-	job_ptr->priority += ((first_assoc->norm_shares - usage) + 1) / 2;
-	debug("job %u has a priority of %f", 
-	      job_ptr->job_id, job_ptr->priority);
-	return SLURM_SUCCESS;
+	usage = ((first_assoc->norm_shares - usage) + 1) / 2;
+	debug("job %u has a fairshare priority of %f", 
+	      job_ptr->job_id, usage);
+	return usage;
 }
 
 
@@ -256,7 +265,6 @@ static int _add_fairshare_priority( struct job_record *job_ptr )
 static void *_decay_thread(void *no_data)
 {
 	struct job_record *job_ptr = NULL;
-	struct part_record *part_ptr = NULL;
 	ListIterator itr;
 	time_t start_time = time(NULL);
 	time_t next_time;
@@ -300,10 +308,13 @@ static void *_decay_thread(void *no_data)
 		lock_slurmctld(job_write_lock);
 		itr = list_iterator_create(job_list);
 		while ((job_ptr = list_next(itr))) {
+			double priority = 0;
+			acct_qos_rec_t *qos_ptr =
+				(acct_qos_rec_t *)job_ptr->qos_ptr;
 			/* 
 			 * This means the job is held
 			 */ 
-			if(job_ptr->priority == NO_VAL)
+			if(job_ptr->priority == 0)
 				continue;
 			/* 
 			 * This means the job is not eligible yet
@@ -338,15 +349,57 @@ static void *_decay_thread(void *no_data)
 				continue;
 
 			/* figure out the priority */
-			job_ptr->priority = 0;
 
-			part_ptr = job_ptr->part_ptr;
 
-			if(part_ptr->priority)
-				job_ptr->priority += part_ptr->priority;
 
-			if(job_ptr->assoc_ptr)
-				_add_fairshare_priority(job_ptr);		
+			if(weight_age) {
+				uint32_t diff = start_time 
+					- job_ptr->details->begin_time; 
+				double norm_diff =
+					(double)diff / (double)max_age;
+
+				if(norm_diff > 0) 
+					priority += norm_diff
+						* (double)weight_age;
+			}
+
+			if(job_ptr->assoc_ptr && weight_fs) {
+				priority += _get_fairshare_priority(job_ptr) 
+					* (double)weight_fs;
+			}
+
+			if(weight_js) {
+				double norm_js = 0;
+				if(favor_small) {
+					norm_js = 
+						(double)(node_record_count 
+							 - job_ptr->node_cnt)
+						/ (double)node_record_count;
+				} else 
+					norm_js = (double)job_ptr->node_cnt
+						/ (double)node_record_count;
+				if(norm_js > 0)
+					priority += norm_js * (double)weight_js;
+			}
+
+			/* FIXME: we need to figure out what to do
+			 * with NICE here 
+			 */
+
+			if(job_ptr->part_ptr->priority && weight_part) {
+				priority += job_ptr->part_ptr->norm_priority 
+					* (double)weight_part;
+			}
+
+			if(qos_ptr->priority && weight_qos) {
+				priority += qos_ptr->norm_priority 
+					* (double)weight_qos;
+			}
+
+			job_ptr->priority = (uint32_t)priority;
+
+			debug("priority for job %u is now %u", 
+			      job_ptr->job_id, job_ptr->priority);
 		}
 		unlock_slurmctld(job_write_lock);
 
@@ -376,6 +429,15 @@ static void *_decay_thread(void *no_data)
 int init ( void )
 {
 	pthread_attr_t thread_attr;
+
+	favor_small = slurm_get_priority_favor_small();
+	max_age = slurm_get_priority_max_age();
+	weight_age = slurm_get_priority_weight_age(); 
+	weight_fs = slurm_get_priority_weight_fairshare(); 
+	weight_js = slurm_get_priority_weight_job_size();
+	weight_nice = slurm_get_priority_weight_nice();
+	weight_part = slurm_get_priority_weight_partition();
+	weight_qos = slurm_get_priority_weight_qos();
 
 	slurm_attr_init(&thread_attr);
 	if (pthread_create(&decay_handler_thread, &thread_attr,

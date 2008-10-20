@@ -75,6 +75,7 @@ List part_list = NULL;			/* partition list */
 char *default_part_name = NULL;		/* name of default partition */
 struct part_record *default_part_loc = NULL; /* default partition location */
 time_t last_part_update;	/* time of last update to partition records */
+uint16_t part_max_priority = 0;         /* max priority in all partitions */
 
 static int    _build_part_bitmap(struct part_record *part_ptr);
 static int    _delete_part_record(char *name);
@@ -229,6 +230,9 @@ struct part_record *create_part_record(void)
 	part_ptr->state_up          = default_part.state_up;
 	part_ptr->max_share         = default_part.max_share;
 	part_ptr->priority          = default_part.priority;
+	if(part_max_priority)
+		part_ptr->norm_priority = (double)default_part.priority 
+			/ (double)part_max_priority;
 	part_ptr->node_bitmap       = NULL;
 
 	if (default_part.allow_groups)
@@ -466,6 +470,9 @@ int load_all_part_state(void)
 		safe_unpack16(&max_share, buffer);
 		safe_unpack16(&priority,  buffer);
 
+		if(priority > part_max_priority) 
+			part_max_priority = priority;
+
 		safe_unpack16(&state_up, buffer);
 		safe_unpackstr_xmalloc(&allow_groups, &name_len, buffer);
 		safe_unpackstr_xmalloc(&nodes, &name_len, buffer);
@@ -505,6 +512,12 @@ int load_all_part_state(void)
 			part_ptr->root_only      = root_only;
 			part_ptr->max_share      = max_share;
 			part_ptr->priority       = priority;
+
+			if(part_max_priority) 
+				part_ptr->norm_priority = 
+					(double)part_ptr->priority 
+					/ (double)part_max_priority;
+
 			part_ptr->state_up       = state_up;
 			xfree(part_ptr->allow_groups);
 			part_ptr->allow_groups   = allow_groups;
@@ -566,6 +579,7 @@ int init_part_conf(void)
 	default_part.state_up       = 1;
 	default_part.max_share      = 1;
 	default_part.priority       = 1;
+	default_part.norm_priority  = 0;
 	default_part.total_nodes    = 0;
 	default_part.total_cpus     = 0;
 	xfree(default_part.nodes);
@@ -710,7 +724,8 @@ extern void pack_all_part(char **buffer_ptr, int *buffer_size,
 	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
 		xassert (part_ptr->magic == PART_MAGIC);
 		if (((show_flags & SHOW_ALL) == 0) && (uid != 0) &&
-		    ((part_ptr->hidden) || (validate_group (part_ptr, uid) == 0)))
+		    ((part_ptr->hidden) 
+		     || (validate_group (part_ptr, uid) == 0)))
 			continue;
 		pack_part(part_ptr, buffer);
 		parts_packed++;
@@ -798,8 +813,7 @@ int update_part(update_part_msg_t * part_desc)
 	}
 
 	error_code = SLURM_SUCCESS;
-	part_ptr = list_find_first(part_list, &list_find_part, 
-					part_desc->name);
+	part_ptr = list_find_first(part_list, &list_find_part, part_desc->name);
 
 	if (part_ptr == NULL) {
 		info("update_part: partition %s does not exist, "
@@ -874,6 +888,26 @@ int update_part(update_part_msg_t * part_desc)
 		info("update_part: setting priority to %u for partition %s",
 		     part_desc->priority, part_desc->name);
 		part_ptr->priority = part_desc->priority;
+		
+		/* If the max_priority changes we need to change all
+		   the normalized priorities of all the other
+		   partitions.  If not then just set this partitions.
+		*/
+		if(part_ptr->priority > part_max_priority) {
+			ListIterator itr = list_iterator_create(part_list);
+			struct part_record *part2 = NULL;
+
+			part_max_priority = part_ptr->priority;
+
+			while((part2 = list_next(itr))) {
+				part2->norm_priority = (double)part2->priority 
+					/ (double)part_max_priority;
+			}
+			list_iterator_destroy(itr);
+		} else {
+			part_ptr->norm_priority = (double)part_ptr->priority 
+				/ (double)part_max_priority;
+		}
 	}
 
 	if (part_desc->default_part == 1) {

@@ -312,6 +312,7 @@ typedef struct {
 			       * qos can run a job */
 
 	char *name;
+	double norm_priority;/* normalized priority (DON'T PACK) */
 	List preemptee_list; /* list of char * list of qos's that this
 				qos can preempt */
 	List preemptor_list; /* list of char * list of qos's that this
@@ -414,12 +415,13 @@ typedef struct {
 	uint64_t resv_secs; /* number of cpu seconds reserved */	
 } cluster_accounting_rec_t;
 
-
 typedef struct {
 	char *name;
 	char *print_name;
 	char *spaces;
 } acct_print_tree_t;
+
+extern uint32_t qos_max_priority; /* max priority in all qos's */
 
 extern void destroy_acct_user_rec(void *object);
 extern void destroy_acct_account_rec(void *object);

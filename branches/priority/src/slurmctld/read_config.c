@@ -686,7 +686,8 @@ static int _build_all_partitionline_info()
 	slurm_conf_partition_t *part, **ptr_array;
 	int count;
 	int i;
-
+	ListIterator itr = NULL;
+			
 	count = slurm_conf_partition_array(&ptr_array);
 	if (count == 0)
 		fatal("No PartitionName information available!");
@@ -695,7 +696,22 @@ static int _build_all_partitionline_info()
 		part = ptr_array[i];
 
 		_build_single_partitionline_info(part);
+		if(part->priority > part_max_priority) 
+			part_max_priority = part->priority;
 	}
+
+	/* set up the normalized priority of the partitions */
+	if(part_max_priority) {
+		struct part_record *part_ptr = NULL;
+
+		itr = list_iterator_create(part_list);
+		while((part_ptr = list_next(itr))) {
+			part_ptr->norm_priority = (double)part_ptr->priority 
+				/ (double)part_max_priority;
+		}
+		list_iterator_destroy(itr);
+	}
+
 	return SLURM_SUCCESS;
 }
 
