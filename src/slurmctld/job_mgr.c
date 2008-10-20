@@ -5951,10 +5951,21 @@ extern int update_job_account(char *module, struct job_record *job_ptr,
 		assoc_rec.acct = NULL;
 		assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 					accounting_enforce, &assoc_ptr);
+		if(!assoc_ptr) {
+			debug("%s: we didn't have an association for account "
+			      "'%s' and user '%s', and we can't seem to find "
+			      "a default one either.  Keeping new account "
+			      "'%s'.  This will produce trash in accounting.  "
+			      "If this is not what you desire please put "
+			      "AccountStorageEnforce=1 in your slurm.conf "
+			      "file.", module, new_account,
+			      job_ptr->user_id, new_account);
+			assoc_rec.acct = new_account;
+		}
 	}
 
 	xfree(job_ptr->account);
-	if (assoc_rec.acct[0] != '\0') {
+	if (assoc_rec.acct && assoc_rec.acct[0] != '\0') {
 		job_ptr->account = xstrdup(assoc_rec.acct);
 		info("%s: setting account to %s for job_id %u",
 		     module, assoc_rec.acct, job_ptr->job_id);
