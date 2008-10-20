@@ -91,8 +91,8 @@
  * minimum versions for their plugins as the job completion logging API 
  * matures.
  */
-const char plugin_name[]       	= "Priority FAIRSHARE plugin";
-const char plugin_type[]       	= "priority/fairshare";
+const char plugin_name[]       	= "Priority MULTIFACTOR plugin";
+const char plugin_type[]       	= "priority/multifactor";
 const uint32_t plugin_version	= 100;
 
 static pthread_t decay_handler_thread;
@@ -318,7 +318,7 @@ static void *_decay_thread(void *no_data)
 			}
 
 			/* apply new usage */
-			if(job_ptr->start_time) {
+			if(job_ptr->start_time && job_ptr->assoc_ptr) {
 				acct_association_rec_t *assoc =
 					(acct_association_rec_t *)
 					job_ptr->assoc_ptr;
@@ -341,9 +341,12 @@ static void *_decay_thread(void *no_data)
 			job_ptr->priority = 0;
 
 			part_ptr = job_ptr->part_ptr;
+
 			if(part_ptr->priority)
 				job_ptr->priority += part_ptr->priority;
-			_add_fairshare_priority(job_ptr);		
+
+			if(job_ptr->assoc_ptr)
+				_add_fairshare_priority(job_ptr);		
 		}
 		unlock_slurmctld(job_write_lock);
 
@@ -373,17 +376,7 @@ static void *_decay_thread(void *no_data)
 int init ( void )
 {
 	pthread_attr_t thread_attr;
-	if(!slurm_get_accounting_storage_enforce()) {
-		fatal("In order to run the %s you must enforce "
-		      "associations with the 'AccountingStorageEnforce=' "
-		      "option", plugin_name);
-	} else if(!slurm_get_is_association_based_accounting()) {
-		fatal("In order to run the %s you must run with "
-		      "association based accounting "
-		      "use either 'accounting_storage/slurmdbd' "
-		      "or 'accounting_storage/mysql' as your "
-		      "'AccountingStorageType' option", plugin_name);		
-	}
+
 	slurm_attr_init(&thread_attr);
 	if (pthread_create(&decay_handler_thread, &thread_attr,
 			   _decay_thread, NULL))
@@ -405,40 +398,3 @@ int fini ( void )
 
 	return SLURM_SUCCESS;
 }
-
-/*
- * The remainder of this file implements the standard SLURM priority API.
- */
-
-int priority_p_set( struct job_record *job_ptr )
-{
-	acct_association_rec_t *assoc = 
-		(acct_association_rec_t *)job_ptr->assoc_ptr;
-	acct_association_rec_t *first_assoc = assoc;
-	double usage = 0;
-
-	xassert(root_assoc);
-
-	if(!assoc) {
-		error("Job %u has no association.  Unable to "
-		      "compute fairshare.");
-		job_ptr->priority = NO_VAL;
-		return SLURM_ERROR;
-	}
-	
-	while(assoc->parent_assoc_ptr) {
-		usage += ((assoc->parent_assoc_ptr->used_shares
-			   + assoc->used_shares) / assoc->level_shares)
-			* assoc->fairshare;
-		assoc = assoc->parent_assoc_ptr;
-	}
-
-	if(root_assoc->used_shares)
-		usage /= root_assoc->used_shares;
-
-	job_ptr->priority = first_assoc->norm_shares - usage;
-	debug("job %u has a priority of %f", 
-	      job_ptr->job_id, job_ptr->priority);
-	return SLURM_SUCCESS;
-}
-

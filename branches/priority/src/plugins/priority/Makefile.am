@@ -1,1 +1,1 @@
-SUBDIRS = fairshare none
+SUBDIRS = multifactor none
