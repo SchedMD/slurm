@@ -1607,7 +1607,8 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		if (conf->debug_flags == NO_VAL)
 			fatal("DebugFlags invalid: %s", temp_str);
 		xfree(temp_str);
-	}
+	} else	/* Default: no DebugFlags */
+		conf->debug_flags = 0;
 
 	if (!s_p_get_boolean((bool *) &conf->disable_root_jobs, 
 			     "DisableRootJobs", hashtbl))
@@ -1752,8 +1753,10 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if ((s_p_get_uint32(&conf->max_mem_per_task, "MaxMemPerCPU", hashtbl)) ||
 	    (s_p_get_uint32(&conf->max_mem_per_task, "MaxMemPerTask", hashtbl)))
 		conf->max_mem_per_task |= MEM_PER_CPU;
-	else if (!s_p_get_uint32(&conf->max_mem_per_task, "MaxMemPerNode", hashtbl))
+	else if (!s_p_get_uint32(&conf->max_mem_per_task, 
+				 "MaxMemPerNode", hashtbl)) {
 		conf->max_mem_per_task = DEFAULT_MAX_MEM_PER_CPU;
+	}
 
 	if (!s_p_get_uint16(&conf->msg_timeout, "MessageTimeout", hashtbl))
 		conf->msg_timeout = DEFAULT_MSG_TIMEOUT;

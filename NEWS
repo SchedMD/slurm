@@ -9,7 +9,7 @@ documents those changes that are of interest to users and admins.
  -- Enable full preemption of jobs by partition with select/cons_res 
     (cons_res_preempt.patch from Chris Holmes, HP).
  -- Add configuration parameter DebugFlags to provide detailed logging for
-    specific subsystems.
+    specific subsystems (steps and triggers so far).
 
 * Changes in SLURM 1.4.0-pre3
 =============================

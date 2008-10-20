@@ -776,7 +776,8 @@ int read_slurm_conf(int recover)
 
 	if (node_record_count < 1) {
 		error("read_slurm_conf: no nodes configured.");
-		_purge_old_node_state(old_node_table_ptr, old_node_record_count);
+		_purge_old_node_state(old_node_table_ptr, 
+				      old_node_record_count);
 		return EINVAL;
 	}
 
