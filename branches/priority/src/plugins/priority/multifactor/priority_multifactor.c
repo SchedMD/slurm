@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  priority_none.c - NO-OP slurm priority plugin.
+ *  priority_multifactor.c - slurm multifactor priority plugin.
  *****************************************************************************
  *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -358,7 +358,7 @@ static void *_decay_thread(void *no_data)
 		running_decay = 0;
 		slurm_mutex_unlock(&decay_lock);
 
-		/* sleep for 5 minutes */
+		/* sleep for DECAY_INTERVAL secs */
 		tm.tm_sec += DECAY_INTERVAL;
 		tm.tm_isdst = -1;
 		next_time = mktime(&tm);
