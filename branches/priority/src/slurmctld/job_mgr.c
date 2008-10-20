@@ -469,8 +469,6 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	struct job_details *detail_ptr;
 	ListIterator step_iterator;
 	struct step_record *step_ptr;
-	double tmp_prio;
-	uint32_t pack_prio;
 
 	/* Dump basic job info */
 	pack32(dump_job_ptr->assoc_id, buffer);
@@ -478,10 +476,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack32(dump_job_ptr->user_id, buffer);
 	pack32(dump_job_ptr->group_id, buffer);
 	pack32(dump_job_ptr->time_limit, buffer);
-	tmp_prio = dump_job_ptr->priority + (double)200;
-	tmp_prio *= (double)1000000;
-	pack_prio = (uint32_t)tmp_prio;
-	pack32(pack_prio, buffer);
+	pack32(dump_job_ptr->priority, buffer);
 	pack32(dump_job_ptr->alloc_sid, buffer);
 	pack32(dump_job_ptr->num_procs, buffer);
 	pack32(dump_job_ptr->total_procs, buffer);
@@ -572,18 +567,13 @@ static int _load_job_state(Buf buffer)
 	select_jobinfo_t select_jobinfo = NULL;
 	select_job_res_t select_job = NULL;
 	acct_association_rec_t assoc_rec, *assoc_ptr = NULL;
-	double tmp_prio;
 
 	safe_unpack32(&assoc_id, buffer);
 	safe_unpack32(&job_id, buffer);
 	safe_unpack32(&user_id, buffer);
 	safe_unpack32(&group_id, buffer);
 	safe_unpack32(&time_limit, buffer);
-
 	safe_unpack32(&priority, buffer);
-	tmp_prio = (double)priority / (double)1000000;
-	tmp_prio -= (double)200;
-
 	safe_unpack32(&alloc_sid, buffer);
 	safe_unpack32(&num_procs, buffer);
 	safe_unpack32(&total_procs, buffer);
@@ -679,8 +669,8 @@ static int _load_job_state(Buf buffer)
 		_add_job_hash(job_ptr);
 	}
 
-	if ((maximum_prio >= tmp_prio))
-		maximum_prio = tmp_prio;
+	if ((maximum_prio >= priority) && (priority > 1))
+		maximum_prio = priority;
 	if (job_id_sequence <= job_id)
 		job_id_sequence = job_id + 1;
 
@@ -744,7 +734,7 @@ static int _load_job_state(Buf buffer)
 	partition             = NULL;	/* reused, nothing left to free */
 	job_ptr->part_ptr = part_ptr;
 	job_ptr->pre_sus_time = pre_sus_time;
-	job_ptr->priority     = tmp_prio;
+	job_ptr->priority     = priority;
 	job_ptr->qos          = qos;
 	xfree(job_ptr->resp_host);
 	job_ptr->resp_host    = resp_host;
@@ -3496,8 +3486,6 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 {
 	struct job_details *detail_ptr;
-	double tmp_prio;
-	uint32_t pack_prio;
 
 	pack32(dump_job_ptr->job_id, buffer);
 	pack32(dump_job_ptr->user_id, buffer);
@@ -3524,10 +3512,7 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 	pack_time(dump_job_ptr->end_time, buffer);
 	pack_time(dump_job_ptr->suspend_time, buffer);
 	pack_time(dump_job_ptr->pre_sus_time, buffer);
-	tmp_prio = dump_job_ptr->priority + (double)200;
-	tmp_prio *= (double)1000000;
-	pack_prio = (uint32_t)tmp_prio;
-	pack32(pack_prio, buffer);
+	pack32(dump_job_ptr->priority, buffer);
 
 	packstr(dump_job_ptr->nodes, buffer);
 	packstr(dump_job_ptr->partition, buffer);

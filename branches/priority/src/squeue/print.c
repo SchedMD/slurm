@@ -537,7 +537,7 @@ int _print_job_priority_long(job_info_t * job, int width, bool right, char* suff
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("PRIORITY", width, right, true);
 	else {
-		sprintf(temp, "%f", job->priority);
+		sprintf(temp, "%u", job->priority);
 		_print_str(temp, width, right, true);
 	}
 	if (suffix)

@@ -192,8 +192,16 @@ s_p_options_t slurm_conf_options[] = {
 	{"OverTimeLimit", S_P_UINT16},
 	{"PluginDir", S_P_STRING},
 	{"PlugStackConfig", S_P_STRING},
-	{"PriorityType", S_P_STRING},
 	{"PriorityDecayHalfLife", S_P_STRING},
+	{"PriorityFavorSmall", S_P_BOOLEAN},
+	{"PriorityMaxAge", S_P_STRING},
+	{"PriorityType", S_P_STRING},
+	{"PriorityWeightAge", S_P_UINT32},
+	{"PriorityWeightFairshare", S_P_UINT32},
+	{"PriorityWeightJobSize", S_P_UINT32},
+	{"PriorityWeightNice", S_P_UINT32},
+	{"PriorityWeightPartition", S_P_UINT32},
+	{"PriorityWeightQOS", S_P_UINT32},
 	{"PrivateData", S_P_STRING},
 	{"ProctrackType", S_P_STRING},
 	{"Prolog", S_P_STRING},
@@ -1837,29 +1845,47 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->switch_type = xstrdup(DEFAULT_SWITCH_TYPE);
 
 	if (s_p_get_string(&temp_str, "PriorityDecayHalfLife", hashtbl)) {
-		conf->priority_decay_hl = atoi(temp_str);
-
-		if(!conf->priority_decay_hl) {
-			fatal("Bad option given for PriorityDecayHalfLife "
-			      "'%s'.  Format should be number with Day, Hour, "
-			      "or Minute directly afterward.  (i.e. 7Days)",
+		int max_time = time_str2mins(temp_str);
+		if ((max_time < 0) && (max_time != INFINITE)) {
+			fatal("Bad value \"%s\" for PriorityDecayHalfLife",
 			      temp_str);
 		}
-
-		/* now convert to seconds */
-		if(strchr(temp_str, 'D') || strchr(temp_str, 'd')) {
-			conf->priority_decay_hl *= 86400;
-		} else if(strchr(temp_str, 'H') || strchr(temp_str, 'h')) {
-			conf->priority_decay_hl *= 3600;
-		} else if(strchr(temp_str, 'M') || strchr(temp_str, 'm')) {
-			conf->priority_decay_hl *= 60;
-		} 
-
+		conf->priority_decay_hl = max_time * 60;
 		xfree(temp_str);
 	} else 
 		conf->priority_decay_hl = DEFAULT_PRIORITY_DECAY;
+
+	if (s_p_get_boolean(&truth, "PriorityFavorSmall", hashtbl) && truth) 
+		conf->priority_favor_small = 1;
+	else 
+		conf->priority_favor_small = 0;
+	
+	if (s_p_get_string(&temp_str, "PriorityMaxAge", hashtbl)) {
+		int max_time = time_str2mins(temp_str);
+		if ((max_time < 0) && (max_time != INFINITE)) {
+			fatal("Bad value \"%s\" for PriorityMaxAge",
+			      temp_str);
+		}
+		conf->priority_max_age = max_time * 60;
+		xfree(temp_str);
+	} else 
+		conf->priority_max_age = DEFAULT_PRIORITY_DECAY;
+
 	if (!s_p_get_string(&conf->priority_type, "PriorityType", hashtbl))
 		conf->priority_type = xstrdup(DEFAULT_PRIORITY_TYPE);
+
+	s_p_get_uint32(&conf->priority_weight_age,
+		       "PriorityWeightAge", hashtbl);
+	s_p_get_uint32(&conf->priority_weight_fs,
+		       "PriorityWeightFairshare", hashtbl);
+	s_p_get_uint32(&conf->priority_weight_js,
+		       "PriorityWeightJobSize", hashtbl);
+	s_p_get_uint32(&conf->priority_weight_nice,
+		       "PriorityWeightNice", hashtbl);
+	s_p_get_uint32(&conf->priority_weight_part,
+		       "PriorityWeightPartition", hashtbl);
+	s_p_get_uint32(&conf->priority_weight_qos,
+		       "PriorityWeightQOS", hashtbl);
 
 	if (!s_p_get_string(&conf->proctrack_type, "ProctrackType", hashtbl)) {
 		if (!strcmp(conf->switch_type,"switch/elan"))

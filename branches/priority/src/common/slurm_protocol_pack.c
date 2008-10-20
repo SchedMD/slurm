@@ -2087,7 +2087,6 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 	uint32_t uint32_tmp;
 	char *node_inx_str;
 	multi_core_data_t *mc_ptr;
-	double tmp_prio;
 
 	safe_unpack32(&job->job_id, buffer);
 	safe_unpack32(&job->user_id, buffer);
@@ -2106,10 +2105,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 	safe_unpack_time(&job->suspend_time, buffer);
 	safe_unpack_time(&job->pre_sus_time, buffer);
 
-	safe_unpack32(&uint32_tmp, buffer);
-	tmp_prio = (double)uint32_tmp / (double)1000000;
-	tmp_prio -= (double)200;
-	job->priority = tmp_prio;
+	safe_unpack32(&job->priority, buffer);
 
 	safe_unpackstr_xmalloc(&job->nodes, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&job->partition, &uint32_tmp, buffer);
@@ -2297,8 +2293,18 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 
 	packstr(build_ptr->plugindir, buffer);
 	packstr(build_ptr->plugstack, buffer);
+
 	pack32(build_ptr->priority_decay_hl, buffer);
+	pack16(build_ptr->priority_favor_small, buffer);
+	pack32(build_ptr->priority_max_age, buffer);
 	packstr(build_ptr->priority_type, buffer);
+	pack32(build_ptr->priority_weight_age, buffer);
+	pack32(build_ptr->priority_weight_fs, buffer);
+	pack32(build_ptr->priority_weight_js, buffer);
+	pack32(build_ptr->priority_weight_nice, buffer);
+	pack32(build_ptr->priority_weight_part, buffer);
+	pack32(build_ptr->priority_weight_qos, buffer);
+
 	pack16(build_ptr->private_data, buffer);
 	packstr(build_ptr->proctrack_type, buffer);
 	packstr(build_ptr->prolog, buffer);
@@ -2463,9 +2469,19 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 
 	safe_unpackstr_xmalloc(&build_ptr->plugindir, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->plugstack, &uint32_tmp, buffer);
+
 	safe_unpack32(&build_ptr->priority_decay_hl, buffer);
+	safe_unpack16(&build_ptr->priority_favor_small, buffer);
+	safe_unpack32(&build_ptr->priority_max_age, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->priority_type, &uint32_tmp, 
 			       buffer);
+	safe_unpack32(&build_ptr->priority_weight_age, buffer);
+	safe_unpack32(&build_ptr->priority_weight_fs, buffer);
+	safe_unpack32(&build_ptr->priority_weight_js, buffer);
+	safe_unpack32(&build_ptr->priority_weight_nice, buffer);
+	safe_unpack32(&build_ptr->priority_weight_part, buffer);
+	safe_unpack32(&build_ptr->priority_weight_qos, buffer);
+
 	safe_unpack16(&build_ptr->private_data, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->proctrack_type, &uint32_tmp, 
 			       buffer);

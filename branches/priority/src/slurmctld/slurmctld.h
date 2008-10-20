@@ -420,8 +420,8 @@ struct job_record {
 	char *partition;		/* name of the partition */
 	struct part_record *part_ptr;	/* pointer to the partition record */
 	time_t pre_sus_time;		/* time job ran prior to last suspend */
-	double priority;		/* relative priority of the job,
-					 * NO_VAL == held (don't initiate) */
+	uint32_t priority;		/* relative priority of the job,
+					 * zero == held (don't initiate) */
 	uint16_t qos;			/* quality of service, 
 					 * used only by Moab */
 	uint32_t requid;            	/* requester user ID */

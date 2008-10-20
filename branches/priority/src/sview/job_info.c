@@ -1151,7 +1151,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_NAME), 
 				   job_ptr->name);
 	
-	sprintf(tmp_char, "%f", job_ptr->priority);
+	sprintf(tmp_char, "%u", job_ptr->priority);
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
 						 SORTID_PRIORITY),
@@ -1683,7 +1683,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_DEPENDENCY, job_ptr->dependency, -1);
 
-	sprintf(tmp_char, "%f", job_ptr->priority);
+	sprintf(tmp_char, "%u", job_ptr->priority);
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_PRIORITY, tmp_char, -1);
 	

@@ -73,6 +73,7 @@
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_jobcomp.h"
+#include "src/common/slurm_priority.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/switch.h"
 #include "src/common/uid.h"
@@ -429,8 +430,13 @@ int main(int argc, char *argv[])
 			slurmctld_conf.slurmctld_port);
 		
 		_accounting_cluster_ready();
+
+		if (slurm_priority_init() != SLURM_SUCCESS)
+			fatal("failed to initialize priority plugin");
+
 		if (slurm_sched_init() != SLURM_SUCCESS)
 			fatal("failed to initialize scheduling plugin");
+
 
 		/*
 		 * create attached thread to process RPCs
@@ -946,7 +952,7 @@ static int _accounting_cluster_ready()
 	}
 
 	assoc_mgr_set_cpu_shares(procs, slurmctld_conf.priority_decay_hl);
-
+	
 	return rc;
 }
 

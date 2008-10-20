@@ -168,9 +168,9 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 
 	/****** Line 3 ******/
 	snprintf(tmp_line, sizeof(tmp_line), 
-		"Priority=%f Partition=%s BatchFlag=%u", 
-		job_ptr->priority, job_ptr->partition, 
-		job_ptr->batch_flag);
+		 "Priority=%u Partition=%s BatchFlag=%u", 
+		 job_ptr->priority, job_ptr->partition, 
+		 job_ptr->batch_flag);
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");

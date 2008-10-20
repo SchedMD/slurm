@@ -629,7 +629,7 @@ typedef struct job_info {
 	uint16_t ntasks_per_socket;/* number of tasks to invoke on each socket */
 	char *partition;	/* name of assigned partition */
 	time_t pre_sus_time;	/* time job ran prior to last suspend */
-	double priority;	/* relative priority of the job, 
+	uint32_t priority;	/* relative priority of the job, 
 				 * 0=held, 1=required nodes DOWN/DRAINED */
 	char *req_nodes;	/* comma separated list of required nodes */
 	int *req_node_inx;	/* required list index pairs into node_table: 
@@ -1016,7 +1016,16 @@ typedef struct slurm_ctl_conf {
 				 * file */
 	uint32_t priority_decay_hl; /* priority decay half life in
 				     * seconds */
+	uint16_t priority_favor_small; /* favor small jobs over large */
+	uint32_t priority_max_age; /* time when not to add any more
+				    * priority to a job if reached */
 	char *priority_type;    /* priority type plugin */
+	uint32_t priority_weight_age; /* weight for age factor */
+	uint32_t priority_weight_fs; /* weight for Fairshare factor */
+	uint32_t priority_weight_js; /* weight for Job Size factor */
+	uint32_t priority_weight_nice; /* weight for Nice factor */
+	uint32_t priority_weight_part; /* weight for Partition factor */
+	uint32_t priority_weight_qos; /* weight for QOS factor */
 	uint16_t private_data;	/* block viewing of information, 
 				 * see PRIVATE_DATA_* */
 	char *proctrack_type;	/* process tracking plugin type */
