@@ -102,6 +102,11 @@ inline slurm_protocol_config_t *slurm_get_api_config();
  */
 uint16_t slurm_get_complete_wait(void);
 
+/* slurm_get_debug_flags
+ * RET DebugFlags value from slurm.conf
+ */
+uint32_t slurm_get_debug_flags(void);
+
 /* slurm_get_def_mem_per_task
  * RET DefMemPerTask value from slurm.conf
  */

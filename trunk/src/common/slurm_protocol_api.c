@@ -223,6 +223,23 @@ uint32_t slurm_get_def_mem_per_task(void)
 	return mem_per_task;
 }
 
+/* slurm_get_debug_flags
+ * RET DebugFlags value from slurm.conf
+ */
+uint32_t slurm_get_debug_flags(void)
+{
+	uint32_t debug_flags = 0;
+	slurm_ctl_conf_t *conf;
+
+	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		debug_flags = conf->debug_flags;
+		slurm_conf_unlock();
+	}
+	return debug_flags;
+}
+
 /* slurm_get_max_mem_per_task
  * RET MaxMemPerTask value from slurm.conf
  */

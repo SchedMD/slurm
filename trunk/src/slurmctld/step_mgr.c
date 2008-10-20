@@ -68,7 +68,6 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/srun_comm.h"
 
-#define STEP_DEBUG 0
 #define MAX_RETRIES 10
 
 static int  _count_cpus(bitstr_t *bitmap);
@@ -444,9 +443,6 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	ListIterator step_iterator;
 	struct step_record *step_p;
 	select_job_res_t select_ptr = job_ptr->select_job;
-#if STEP_DEBUG
-	char *temp;
-#endif
 
 	xassert(select_ptr);
 	xassert(select_ptr->cpus);
@@ -563,9 +559,8 @@ _pick_step_nodes (struct job_record  *job_ptr,
 
 	if (step_spec->node_list) {
 		bitstr_t *selected_nodes = NULL;
-#if STEP_DEBUG
-		info("selected nodelist is %s", step_spec->node_list);
-#endif
+		if (slurm_get_debug_flags() & DEBUG_FLAG_STEPS)
+			info("selected nodelist is %s", step_spec->node_list);
 		error_code = node_name2bitmap(step_spec->node_list, false, 
 					      &selected_nodes);
 		
@@ -668,25 +663,29 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		while ((step_p = (struct step_record *)
 			list_next(step_iterator))) {
 			bit_or(nodes_idle, step_p->step_node_bitmap);
-#if STEP_DEBUG
-			temp = bitmap2node_name(step_p->step_node_bitmap);
-			info("step %d has nodes %s", step_p->step_id, temp);
-			xfree(temp);
-#endif
+			if (slurm_get_debug_flags() & DEBUG_FLAG_STEPS) {
+				char *temp;
+				temp = bitmap2node_name(step_p->
+							step_node_bitmap);
+				info("step %d has nodes %s", 
+				     step_p->step_id, temp);
+				xfree(temp);
+			}
 		} 
 		list_iterator_destroy (step_iterator);
 		bit_not(nodes_idle);
 		bit_and(nodes_idle, nodes_avail);
 	}
 
-#if STEP_DEBUG
-	temp = bitmap2node_name(nodes_avail);
-	info("can pick from %s %d", temp, step_spec->node_count);
-	xfree(temp);
-	temp = bitmap2node_name(nodes_idle);
-	info("can pick from %s", temp);
-	xfree(temp);
-#endif
+	if (slurm_get_debug_flags() & DEBUG_FLAG_STEPS) {
+		char *temp;
+		temp = bitmap2node_name(nodes_avail);
+		info("can pick from %s %d", temp, step_spec->node_count);
+		xfree(temp);
+		temp = bitmap2node_name(nodes_idle);
+		info("can pick from %s", temp);
+		xfree(temp);
+	}
 
 	/* if user specifies step needs a specific processor count and 
 	 * all nodes have the same processor count, just translate this to
@@ -704,9 +703,10 @@ _pick_step_nodes (struct job_record  *job_ptr,
 
 	if (step_spec->node_count) {
 		nodes_picked_cnt = bit_set_count(nodes_picked);
-#if STEP_DEBUG
-		info("got %u %d", step_spec->node_count, nodes_picked_cnt);
-#endif
+		if (slurm_get_debug_flags() & DEBUG_FLAG_STEPS) {
+			info("got %u %d", step_spec->node_count, 
+			     nodes_picked_cnt);
+		}
 		if (nodes_idle 
 		    && (bit_set_count(nodes_idle) >= step_spec->node_count)
 		    && (step_spec->node_count > nodes_picked_cnt)) {
@@ -924,12 +924,12 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 					 step_ptr->step_layout->
 					 tasks[step_node_inx]);
 		}
-#if 0
-		info("step alloc of %s procs: %u of %u", 
-		     node_record_table_ptr[i_node].name,
-		     select_ptr->cpus_used[job_node_inx],
-		     select_ptr->cpus[job_node_inx]);
-#endif
+		if (slurm_get_debug_flags() & DEBUG_FLAG_STEPS) {
+			info("step alloc of %s procs: %u of %u", 
+			     node_record_table_ptr[i_node].name,
+			     select_ptr->cpus_used[job_node_inx],
+			     select_ptr->cpus[job_node_inx]);
+		}
 		if (step_node_inx == (step_ptr->step_layout->node_cnt - 1))
 			break;
 	}
@@ -997,12 +997,12 @@ static void _step_dealloc_lps(struct step_record *step_ptr)
 				select_ptr->memory_used[job_node_inx] = 0;
 			}
 		}
-#if 0
-		info("step dealloc of %s procs: %u of %u", 
-		     node_record_table_ptr[i_node].name,
-		     select_ptr->cpus_used[job_node_inx],
-		     select_ptr->cpus[job_node_inx]);
-#endif
+		if (slurm_get_debug_flags() & DEBUG_FLAG_STEPS) {
+			info("step dealloc of %s procs: %u of %u", 
+			     node_record_table_ptr[i_node].name,
+			     select_ptr->cpus_used[job_node_inx],
+			     select_ptr->cpus[job_node_inx]);
+		}
 		if (step_node_inx == (step_ptr->step_layout->node_cnt - 1))
 			break;
 	}

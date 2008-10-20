@@ -2886,7 +2886,8 @@ inline static void  _slurm_rpc_set_debug_level(slurm_msg_t *msg)
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	slurmctld_lock_t config_read_lock =
 		{ READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
-	set_debug_level_msg_t *request_msg = (set_debug_level_msg_t *) msg->data;
+	set_debug_level_msg_t *request_msg = 
+		(set_debug_level_msg_t *) msg->data;
 	log_options_t log_opts = LOG_OPTS_INITIALIZER;
 	slurm_ctl_conf_t *conf;
 
