@@ -649,12 +649,21 @@ extern int assoc_mgr_set_cpu_shares(uint32_t procs, uint64_t half_life)
 {
 	ListIterator itr = NULL;
 	acct_association_rec_t *assoc = NULL;
-	
+	static uint32_t last_procs = 0;
+	static uint64_t last_half_life = 0;
+
 	if(!setup_childern)
+		return SLURM_SUCCESS;
+
+	/* No need to do this if nothing has changed so just return */
+	if((procs == last_procs) && (half_life == last_half_life))
 		return SLURM_SUCCESS;
 
 	xassert(root_assoc);
 	xassert(local_association_list);
+
+	last_procs = procs;
+	last_half_life = half_life;
 
 	/* get the total decay for the entire cluster */
 	root_assoc->cpu_shares = 
@@ -675,7 +684,10 @@ extern int assoc_mgr_set_cpu_shares(uint32_t procs, uint64_t half_life)
 			(long double)assoc->norm_shares;
 		assoc->level_cpu_shares = 
 			assoc->cpu_shares * (long double)assoc->level_shares;
+		
+		slurm_mutex_lock(&local_qos_lock);
 		log_assoc_rec(assoc, local_qos_list);
+		slurm_mutex_unlock(&local_qos_lock);		
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&local_association_lock);
