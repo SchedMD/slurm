@@ -552,7 +552,7 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args)
 
 	if(!checked_prio) {
 		char *prio = slurm_get_priority_type();
-		if(prio && !strcmp(prio, "priority/fairshare")) 
+		if(prio && !strcmp(prio, "priority/multifactor")) 
 			setup_childern = 1;
 		xfree(prio);
 		checked_prio = 1;
@@ -660,7 +660,7 @@ extern int assoc_mgr_set_cpu_shares(uint32_t procs, uint64_t half_life)
 	root_assoc->cpu_shares = 
 		(long double)procs * (long double)half_life * (long double)2;
 	debug("total cpu shares on the system is %.0Lf",
-	      procs, half_life, root_assoc->cpu_shares);
+	      root_assoc->cpu_shares);
 	decay_factor = 1 - (0.693 / (double)half_life);
 
 	debug("Decay factor is set at %.15f", decay_factor);
@@ -1172,10 +1172,11 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 					object->qos_list = NULL;
 				}
 			}
-			
-			slurm_mutex_lock(&local_qos_lock);
-			log_assoc_rec(rec, local_qos_list);
-			slurm_mutex_unlock(&local_qos_lock);
+			if(!parents_changed) {
+				slurm_mutex_lock(&local_qos_lock);
+				log_assoc_rec(rec, local_qos_list);
+				slurm_mutex_unlock(&local_qos_lock);
+			}
 			break;
 		case ACCT_ADD_ASSOC:
 			if(rec) {
@@ -1194,6 +1195,11 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 			}
 			if (remove_assoc_notify)
 				remove_assoc_notify(rec);
+			if(setup_childern)
+				parents_changed = 1; /* set since we need to
+							set the shares
+							of surrounding childern
+						     */
 			list_delete_item(itr);
 			break;
 		default:
@@ -1208,6 +1214,14 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 	 */
 	if(parents_changed) {
 		list_iterator_reset(itr);
+		/* flush the childern lists */
+		if(setup_childern) {
+			while((object = list_next(itr))) {
+				if(object->childern_list)
+					list_flush(object->childern_list);
+			}
+			list_iterator_reset(itr);
+		}
 		while((object = list_next(itr))) {
 			/* reset the limits because since a parent
 			   changed we could have different usage
@@ -1272,6 +1286,10 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 					(long double)rec->norm_shares;
 				rec->level_cpu_shares = rec->cpu_shares * 
 					(long double)rec->level_shares;
+
+				slurm_mutex_lock(&local_qos_lock);
+				log_assoc_rec(rec, local_qos_list);
+				slurm_mutex_unlock(&local_qos_lock);
 			}
 		}
 	}
