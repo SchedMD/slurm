@@ -268,6 +268,9 @@ static uint32_t _get_priority_internal(time_t start_time,
 	double priority = 0;
 	acct_qos_rec_t *qos_ptr = (acct_qos_rec_t *)job_ptr->qos_ptr;
 
+	if(job_ptr->direct_set_prio)
+		return job_ptr->priority;
+
 	if(!job_ptr->details) {
 		error("_get_priority_internal: job %u does not have a "
 		      "details symbol set, can't set priority");
@@ -371,12 +374,6 @@ static void *_decay_thread(void *no_data)
 		lock_slurmctld(job_write_lock);
 		itr = list_iterator_create(job_list);
 		while ((job_ptr = list_next(itr))) {
-			/* 
-			 * This means the job is held
-			 */ 
-			if(job_ptr->priority == 0)
-				continue;
-	
 			/* apply new usage */
 			if(job_ptr->start_time && job_ptr->assoc_ptr) {
 				acct_association_rec_t *assoc =	
@@ -396,11 +393,17 @@ static void *_decay_thread(void *no_data)
 				}
 			}
 
-			if(!IS_JOB_PENDING(job_ptr))
+			/* 
+			 * This means the job is held, 0, or a system
+			 * hold, 1. Continue also if the job is not
+			 * pending.  There is no reason to set the
+			 * priority if the job isn't pending.
+			 */ 
+			if((job_ptr->priority <= 1) || !IS_JOB_PENDING(job_ptr))
 				continue;
 	
-			job_ptr->priority = _get_priority_internal(
-				start_time, job_ptr);
+			job_ptr->priority =
+				_get_priority_internal(start_time, job_ptr);
 
 			debug("priority for job %u is now %u", 
 			      job_ptr->job_id, job_ptr->priority);

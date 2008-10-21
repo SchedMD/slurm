@@ -4072,7 +4072,13 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if (job_specs->priority != NO_VAL) {
 		if (super_user
 		    ||  (job_ptr->priority > job_specs->priority)) {
-			job_ptr->priority = job_specs->priority;
+			if(job_specs->priority == INFINITE) {
+				job_ptr->direct_set_prio = 0;
+				_set_job_prio(job_ptr);
+			} else {
+				job_ptr->direct_set_prio = 1;
+				job_ptr->priority = job_specs->priority;
+			}
 			info("update_job: setting priority to %u for "
 			     "job_id %u", job_ptr->priority, 
 			     job_specs->job_id);

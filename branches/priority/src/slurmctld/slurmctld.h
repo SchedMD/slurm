@@ -390,6 +390,9 @@ struct job_record {
 	uint32_t db_index;              /* used only for database
 					 * plugins */
 	struct job_details *details;	/* job details */
+	uint16_t direct_set_prio;	/* Priority set directly if
+					 * set the system will not
+					 * change the priority any further. */
 	time_t end_time;		/* time of termination, 
 					 * actual or expected */
 	uint32_t exit_code;		/* exit code for job (status from 
