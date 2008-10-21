@@ -52,5 +52,6 @@
 
 extern int slurm_priority_init(void);
 extern int slurm_priority_fini(void);
+extern uint32_t priority_g_set(uint32_t last_prio, struct job_record *job_ptr);
 
 #endif /*_SLURM_PRIORIY_H */

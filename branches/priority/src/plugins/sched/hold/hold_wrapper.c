@@ -46,6 +46,7 @@
 #include "src/common/plugin.h"
 #include "src/common/log.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/common/slurm_priority.h"
 
 const char		plugin_name[]	= "SLURM Hold Scheduler plugin";
 const char		plugin_type[]	= "sched/hold";
@@ -119,10 +120,7 @@ slurm_sched_plugin_initial_priority( u_int32_t last_prio,
 	if (stat("/etc/slurm.hold", &buf) == 0)
 		return 0;	/* hold all new jobs */
 
-	if (last_prio >= 2)
-		return (last_prio - 1);
-	else
-		return 1;
+	return priority_g_set(last_prio, job_ptr);
 }
 
 /**************************************************************************/

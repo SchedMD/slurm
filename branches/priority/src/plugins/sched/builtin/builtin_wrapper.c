@@ -41,6 +41,7 @@
 #include "src/common/plugin.h"
 #include "src/common/log.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/common/slurm_priority.h"
 
 const char		plugin_name[]	= "SLURM Built-in Scheduler plugin";
 const char		plugin_type[]	= "sched/builtin";
@@ -109,10 +110,7 @@ u_int32_t
 slurm_sched_plugin_initial_priority( u_int32_t last_prio,
 				     struct job_record *job_ptr )
 {
-	if (last_prio >= 2)
-		return (last_prio - 1);
-	else
-		return 1;
+	return priority_g_set(last_prio, job_ptr);
 }
 
 /**************************************************************************/

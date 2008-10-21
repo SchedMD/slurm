@@ -856,6 +856,7 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 	pack16(detail_ptr->acctg_freq, buffer);
 	pack16(detail_ptr->contiguous, buffer);
 	pack16(detail_ptr->cpus_per_task, buffer);
+	pack16(detail_ptr->nice, buffer);
 	pack16(detail_ptr->ntasks_per_node, buffer);
 	pack16(detail_ptr->requeue, buffer);
 	pack16(detail_ptr->shared, buffer);
@@ -896,7 +897,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	uint32_t job_min_procs;
 	uint32_t job_min_memory, job_min_tmp_disk;
 	uint32_t num_tasks, name_len, argc = 0;
-	uint16_t shared, contiguous, ntasks_per_node;
+	uint16_t shared, contiguous, nice, ntasks_per_node;
 	uint16_t acctg_freq, cpus_per_task, requeue, task_dist;
 	uint8_t open_mode, overcommit, prolog_running;
 	time_t begin_time, submit_time;
@@ -911,6 +912,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	safe_unpack16(&acctg_freq, buffer);
 	safe_unpack16(&contiguous, buffer);
 	safe_unpack16(&cpus_per_task, buffer);
+	safe_unpack16(&nice, buffer);
 	safe_unpack16(&ntasks_per_node, buffer);
 	safe_unpack16(&requeue, buffer);
 	safe_unpack16(&shared, buffer);
@@ -978,6 +980,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	job_ptr->details->contiguous = contiguous;
 	job_ptr->details->cpus_per_task = cpus_per_task;
 	job_ptr->details->task_dist = task_dist;
+	job_ptr->details->nice = nice;
 	job_ptr->details->ntasks_per_node = ntasks_per_node;
 	job_ptr->details->job_min_procs = job_min_procs;
 	job_ptr->details->job_min_memory = job_min_memory;
@@ -2930,12 +2933,6 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		else
 			job_ptr->qos = QOS_NORMAL;
 	}
-	if (job_desc->priority != NO_VAL) /* already confirmed submit_uid==0 */
-		job_ptr->priority = job_desc->priority;
-	else {
-		_set_job_prio(job_ptr);
-		job_ptr->priority -= ((int)job_desc->nice - NICE_OFFSET);
-	}
 
 	if (job_desc->kill_on_node_fail != (uint16_t) NO_VAL)
 		job_ptr->kill_on_node_fail = job_desc->kill_on_node_fail;
@@ -2957,6 +2954,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_desc->argv   = (char **) NULL; /* nothing left */
 	job_desc->argc   = 0;		   /* nothing left */
 	detail_ptr->acctg_freq = job_desc->acctg_freq;
+	detail_ptr->nice       = job_desc->nice;
 	detail_ptr->open_mode  = job_desc->open_mode;
 	detail_ptr->min_nodes  = job_desc->min_nodes;
 	detail_ptr->max_nodes  = job_desc->max_nodes;
@@ -3012,6 +3010,16 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		detail_ptr->begin_time = job_desc->begin_time;
 	job_ptr->select_jobinfo = 
 		select_g_copy_jobinfo(job_desc->select_jobinfo);
+
+	/* The priority needs to be set at the end of the details
+	   since we use things like nice and begin_time
+	*/
+	if (job_desc->priority != NO_VAL) /* already confirmed submit_uid==0 */
+		job_ptr->priority = job_desc->priority;
+	else {
+		_set_job_prio(job_ptr);
+	}
+
 	detail_ptr->mc_ptr = _set_multi_core_data(job_desc);	
 	*job_rec_ptr = job_ptr;
 	return SLURM_SUCCESS;
@@ -4079,8 +4087,9 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		if (!IS_JOB_PENDING(job_ptr)) 
 			error_code = ESLURM_DISABLED;
 		else if (super_user || (job_specs->nice < NICE_OFFSET)) {
-			job_ptr->priority -= ((int)job_specs->nice - 
-					      NICE_OFFSET);
+			job_ptr->details->nice = job_specs->nice;
+			_set_job_prio(job_ptr);
+			
 			info("update_job: setting priority to %u for "
 			     "job_id %u", job_ptr->priority,
 			     job_specs->job_id);

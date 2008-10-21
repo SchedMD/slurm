@@ -331,6 +331,8 @@ struct job_details {
 	uint16_t task_dist;		/* task layout for this job. Only
 					 * useful when Consumable Resources
                                          * is enabled */
+	uint16_t nice;		        /* requested priority change, 
+					 * NICE_OFFSET == no change */
 	uint32_t num_tasks;		/* number of tasks to start */
 	uint8_t open_mode;		/* stdout/err append or trunctate */
 	uint8_t overcommit;		/* processors being over subscribed */

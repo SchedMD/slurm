@@ -336,8 +336,8 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/jobcomp/mysql/Makefile
 		 src/plugins/jobcomp/pgsql/Makefile
 		 src/plugins/priority/Makefile
+		 src/plugins/priority/basic/Makefile
 		 src/plugins/priority/multifactor/Makefile
-		 src/plugins/priority/none/Makefile
 		 src/plugins/proctrack/Makefile
 		 src/plugins/proctrack/aix/Makefile
 		 src/plugins/proctrack/pgid/Makefile
