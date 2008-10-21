@@ -988,6 +988,13 @@ incr exit_code [_remove_acct "" "$nm1,$nm2,$nm3"]
 incr exit_code [_remove_cluster "$cl1"]
 
 #
+# Delete left-over input script files
+#
+exec $bin_rm -f $file_in
+exec $bin_rm -f $file_in2
+exec $bin_rm -f $file_in3
+
+#
 # Use sacctmgr to delete the test account
 #
 set damatches 0
