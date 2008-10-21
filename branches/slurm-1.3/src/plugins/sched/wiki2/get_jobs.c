@@ -92,13 +92,14 @@ reject_msg_t reject_msgs[REJECT_MSG_MAX];
  *					NOTE: OR operator not supported
  *	[HOSTLIST=<node1:node2>;]	list of required nodes, if any
  *	[STARTDATE=<uts>;]		earliest start time, if any
+ *	[MAXNODES=<nodes>;]		maximum number of nodes, 0 if no limit
  *	[TASKLIST=<node1:node2>;]	nodes in use, if running or completing
  *	[REJMESSAGE=<str>;]		reason job is not running, if any
  *	UPDATETIME=<uts>;		time last active
  *	[FLAGS=INTERACTIVE;]		set if interactive (not batch) job
  *	WCLIMIT=<secs>;			wall clock time limit, seconds
  *	TASKS=<cpus>;			CPUs required
- *	NODES=<nodes>;			count of nodes required
+ *	NODES=<nodes>;			count of nodes required or allocated
  *	DPROCS=<cpus_per_task>;		count of CPUs required per task
  *	QUEUETIME=<uts>;		submission time
  *	STARTTIME=<uts>;		time execution started
@@ -268,6 +269,11 @@ static char *	_dump_job(struct job_record *job_ptr, time_t update_time)
 			snprintf(tmp, sizeof(tmp),
 				"STARTDATE=%u;", (uint32_t)
 				job_ptr->details->begin_time);
+			xstrcat(buf, tmp);
+		}
+		if (job_ptr->details) {
+			snprintf(tmp, sizeof(tmp),
+				"MAXNODES=%u;", job_ptr->details->max_nodes);
 			xstrcat(buf, tmp);
 		}
 	} else if (!IS_JOB_FINISHED(job_ptr)) {
