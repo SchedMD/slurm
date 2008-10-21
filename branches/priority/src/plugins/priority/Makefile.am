@@ -1,1 +1,1 @@
-SUBDIRS = multifactor none
+SUBDIRS = basic multifactor

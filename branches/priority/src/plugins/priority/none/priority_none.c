@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  priority_none.c - NO-OP slurm priority plugin.
+ *  priority_basic.c - NO-OP slurm priority plugin.
  *****************************************************************************
  *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -80,8 +80,8 @@
  * minimum versions for their plugins as the job completion logging API 
  * matures.
  */
-const char plugin_name[]       	= "Priority NONE plugin";
-const char plugin_type[]       	= "priority/none";
+const char plugin_name[]       	= "Priority BASIC plugin";
+const char plugin_type[]       	= "priority/basic";
 const uint32_t plugin_version	= 100;
 
 /*
@@ -102,3 +102,21 @@ int fini ( void )
 /*
  * The remainder of this file implements the standard SLURM priority API.
  */
+
+extern uint32_t priority_p_set(uint32_t last_prio, struct job_record *job_ptr)
+{
+	uint32_t new_prio = 1;
+
+	if (last_prio >= 2)
+		new_prio = (last_prio - 1);
+
+	if(!job_ptr->details)
+		return new_prio;
+
+	new_prio -= (job_ptr->details->nice - NICE_OFFSET);
+
+	if(new_prio < 1)
+		new_prio = 1;
+
+	return new_prio;
+}

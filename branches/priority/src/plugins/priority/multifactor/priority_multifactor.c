@@ -123,6 +123,7 @@ static time_t _read_last_decay_ran()
 	state_fd = open(state_file, O_RDONLY);
 	if (state_fd < 0) {
 		info("No last decay (%s) to recover", state_file);
+		unlock_state_files();
 		return 0;
 	} else {
 		data_allocated = BUF_SIZE;
@@ -179,12 +180,12 @@ static int _write_last_decay_ran(time_t last_ran)
 	state_file = xstrdup(slurmctld_conf.state_save_location);
 	xstrcat(state_file, "/priority_last_decay_ran");
 	new_file = xstrdup(slurmctld_conf.state_save_location);
-	xstrcat(state_file, "/priority_last_decay_ran.new");
+	xstrcat(new_file, "/priority_last_decay_ran.new");
 
 	lock_state_files();
 	state_fd = creat(new_file, 0600);
 	if (state_fd < 0) {
-		error("Can't save state, create file %s error %m",
+		error("Can't save decay state, create file %s error %m",
 		      new_file);
 		error_code = errno;
 	} else {
@@ -204,6 +205,7 @@ static int _write_last_decay_ran(time_t last_ran)
 		fsync(state_fd);
 		close(state_fd);
 	}
+
 	if (error_code != SLURM_SUCCESS)
 		(void) unlink(new_file);
 	else {			/* file shuffle */
@@ -216,8 +218,9 @@ static int _write_last_decay_ran(time_t last_ran)
 	xfree(old_file);
 	xfree(state_file);
 	xfree(new_file);
-	unlock_state_files();
 
+	unlock_state_files();
+	info("done writing time %d", last_ran);
 	free_buf(buffer);
 
 	return error_code;
@@ -259,8 +262,68 @@ static double _get_fairshare_priority( struct job_record *job_ptr )
 	return usage;
 }
 
+static uint32_t _get_priority_internal(time_t start_time,
+				       struct job_record *job_ptr)
+{
+	double priority = 0;
+	acct_qos_rec_t *qos_ptr = (acct_qos_rec_t *)job_ptr->qos_ptr;
 
+	if(!job_ptr->details) {
+		error("_get_priority_internal: job %u does not have a "
+		      "details symbol set, can't set priority");
+		return 0;
+	}
+	/* 
+	 * This means the job is not eligible yet
+	 */ 
+	if(!job_ptr->details->begin_time > start_time)
+		return 1;
 
+	/* figure out the priority */
+	
+	if(weight_age) {
+		uint32_t diff = start_time - job_ptr->details->begin_time; 
+		double norm_diff = (double)diff / (double)max_age;
+		
+		if(norm_diff > 0) 
+			priority += norm_diff * (double)weight_age;
+	}
+	
+	if(job_ptr->assoc_ptr && weight_fs) {
+		priority += _get_fairshare_priority(job_ptr) 
+			* (double)weight_fs;
+	}
+	
+	if(weight_js) {
+		double norm_js = 0;
+		if(favor_small) {
+			norm_js = (double)(node_record_count 
+					   - job_ptr->details->min_nodes)
+				/ (double)node_record_count;
+		} else 
+			norm_js = (double)job_ptr->details->min_nodes
+				/ (double)node_record_count;
+		if(norm_js > 0)
+			priority += norm_js * (double)weight_js;
+	}
+	
+	if(job_ptr->part_ptr->priority && weight_part) {
+		priority += job_ptr->part_ptr->norm_priority 
+			* (double)weight_part;
+	}
+	
+	if(qos_ptr && qos_ptr->priority && weight_qos) {
+		priority += qos_ptr->norm_priority 
+			* (double)weight_qos;
+	}
+
+	priority -= ((double)job_ptr->details->nice - (double)NICE_OFFSET);
+
+	if(priority < 1) 
+		priority = 1;
+
+	return (uint32_t)priority;
+}
 
 static void *_decay_thread(void *no_data)
 {
@@ -308,95 +371,36 @@ static void *_decay_thread(void *no_data)
 		lock_slurmctld(job_write_lock);
 		itr = list_iterator_create(job_list);
 		while ((job_ptr = list_next(itr))) {
-			double priority = 0;
-			acct_qos_rec_t *qos_ptr =
-				(acct_qos_rec_t *)job_ptr->qos_ptr;
 			/* 
 			 * This means the job is held
 			 */ 
 			if(job_ptr->priority == 0)
 				continue;
-			/* 
-			 * This means the job is not eligible yet
-			 */ 
-			if(!job_ptr->nodes && !job_ptr->db_index)
-				continue;
-
-			if(!job_ptr->details) {
-				error("priority: job %u does not have a "
-				      "details symbol set");
-				continue;
-			}
-
+	
 			/* apply new usage */
 			if(job_ptr->start_time && job_ptr->assoc_ptr) {
-				acct_association_rec_t *assoc =
+				acct_association_rec_t *assoc =	
 					(acct_association_rec_t *)
 					job_ptr->assoc_ptr;
 				time_t end_period = start_time;
+				
 				if(job_ptr->end_time) 
 					end_period = job_ptr->end_time;
+				
 				run_delta = end_period - job_ptr->start_time;
 				run_delta *= job_ptr->total_procs;
 				while(assoc->parent_assoc_ptr) {
-					assoc->used_shares += 
+					assoc->used_shares +=
 						(long double)run_delta;
 					assoc = assoc->parent_assoc_ptr;
 				}
 			}
 
-			if(job_ptr->job_state != JOB_PENDING)
+			if(!IS_JOB_PENDING(job_ptr))
 				continue;
-
-			/* figure out the priority */
-
-
-
-			if(weight_age) {
-				uint32_t diff = start_time 
-					- job_ptr->details->begin_time; 
-				double norm_diff =
-					(double)diff / (double)max_age;
-
-				if(norm_diff > 0) 
-					priority += norm_diff
-						* (double)weight_age;
-			}
-
-			if(job_ptr->assoc_ptr && weight_fs) {
-				priority += _get_fairshare_priority(job_ptr) 
-					* (double)weight_fs;
-			}
-
-			if(weight_js) {
-				double norm_js = 0;
-				if(favor_small) {
-					norm_js = 
-						(double)(node_record_count 
-							 - job_ptr->node_cnt)
-						/ (double)node_record_count;
-				} else 
-					norm_js = (double)job_ptr->node_cnt
-						/ (double)node_record_count;
-				if(norm_js > 0)
-					priority += norm_js * (double)weight_js;
-			}
-
-			/* FIXME: we need to figure out what to do
-			 * with NICE here 
-			 */
-
-			if(job_ptr->part_ptr->priority && weight_part) {
-				priority += job_ptr->part_ptr->norm_priority 
-					* (double)weight_part;
-			}
-
-			if(qos_ptr->priority && weight_qos) {
-				priority += qos_ptr->norm_priority 
-					* (double)weight_qos;
-			}
-
-			job_ptr->priority = (uint32_t)priority;
+	
+			job_ptr->priority = _get_priority_internal(
+				start_time, job_ptr);
 
 			debug("priority for job %u is now %u", 
 			      job_ptr->job_id, job_ptr->priority);
@@ -453,10 +457,15 @@ int fini ( void )
 {
 	/* Daemon termination handled here */
 	if(running_decay)
-		debug("Waiting for rollup thread to finish.");
+		debug("Waiting for decay thread to finish.");
 	slurm_mutex_lock(&decay_lock);
 	pthread_cancel(decay_handler_thread);
 	slurm_mutex_unlock(&decay_lock);
 
 	return SLURM_SUCCESS;
+}
+
+extern uint32_t priority_p_set(uint32_t last_prio, struct job_record *job_ptr)
+{
+	return _get_priority_internal(time(NULL), job_ptr);
 }
