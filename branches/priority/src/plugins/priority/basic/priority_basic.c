@@ -107,7 +107,7 @@ extern uint32_t priority_p_set(uint32_t last_prio, struct job_record *job_ptr)
 {
 	uint32_t new_prio = 1;
 
-	if(job_ptr->direct_set_priority)
+	if(job_ptr->direct_set_prio)
 		return job_ptr->priority;
 
 	if (last_prio >= 2)

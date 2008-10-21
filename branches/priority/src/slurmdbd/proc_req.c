@@ -353,7 +353,8 @@ static int _add_accounts(slurmdbd_conn_t *slurmdbd_conn,
 
 		memset(&user, 0, sizeof(acct_user_rec_t));
 		user.uid = *uid;
-		if(assoc_mgr_fill_in_user(slurmdbd_conn->db_conn, &user, 1)
+		if(assoc_mgr_fill_in_user(
+			   slurmdbd_conn->db_conn, &user, 1, NULL)
 		   != SLURM_SUCCESS) {
 			comment = "Your user has not been added to the accounting system yet.";
 			error("%s", comment);
@@ -420,7 +421,8 @@ static int _add_account_coords(slurmdbd_conn_t *slurmdbd_conn,
 
 		memset(&user, 0, sizeof(acct_user_rec_t));
 		user.uid = *uid;
-		if(assoc_mgr_fill_in_user(slurmdbd_conn->db_conn, &user, 1) 
+		if(assoc_mgr_fill_in_user(
+			   slurmdbd_conn->db_conn, &user, 1, NULL) 
 		   != SLURM_SUCCESS) {
 			comment = "Your user has not been added to the accounting system yet.";
 			error("%s", comment);
@@ -496,7 +498,8 @@ static int _add_assocs(slurmdbd_conn_t *slurmdbd_conn,
 
 		memset(&user, 0, sizeof(acct_user_rec_t));
 		user.uid = *uid;
-		if(assoc_mgr_fill_in_user(slurmdbd_conn->db_conn, &user, 1)
+		if(assoc_mgr_fill_in_user(
+			   slurmdbd_conn->db_conn, &user, 1, NULL)
 		   != SLURM_SUCCESS) {
 			comment = "Your user has not been added to the accounting system yet.";
 			error("%s", comment);
@@ -637,7 +640,8 @@ static int _add_users(slurmdbd_conn_t *slurmdbd_conn,
 
 		memset(&user, 0, sizeof(acct_user_rec_t));
 		user.uid = *uid;
-		if(assoc_mgr_fill_in_user(slurmdbd_conn->db_conn, &user, 1) 
+		if(assoc_mgr_fill_in_user(
+			   slurmdbd_conn->db_conn, &user, 1, NULL) 
 		   != SLURM_SUCCESS) {
 			comment = "Your user has not been added to the accounting system yet.";
 			error("%s", comment);

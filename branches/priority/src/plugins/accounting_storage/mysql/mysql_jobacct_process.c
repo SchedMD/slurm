@@ -223,7 +223,8 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 			   >= ACCT_ADMIN_OPERATOR) 
 				is_admin = 1;	
 			else {
-				assoc_mgr_fill_in_user(mysql_conn, &user, 1);
+				assoc_mgr_fill_in_user(mysql_conn, &user, 1,
+						       NULL);
 			}
 		}
 	}
@@ -606,7 +607,7 @@ no_cond:
 			
 		job->track_steps = atoi(row[JOB_REQ_TRACKSTEPS]);
 		job->state = atoi(row[JOB_REQ_STATE]);
-		job->priority = atof(row[JOB_REQ_PRIORITY]);
+		job->priority = atoi(row[JOB_REQ_PRIORITY]);
 		job->req_cpus = atoi(row[JOB_REQ_REQ_CPUS]);
 		job->requid = atoi(row[JOB_REQ_KILL_REQUID]);
 		job->qos = atoi(row[JOB_REQ_QOS]);

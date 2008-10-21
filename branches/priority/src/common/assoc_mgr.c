@@ -717,7 +717,8 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 			}
 			memset(&user, 0, sizeof(acct_user_rec_t));
 			user.uid = assoc->uid;
-			if(assoc_mgr_fill_in_user(db_conn, &user, enforce) 
+			if(assoc_mgr_fill_in_user(db_conn, &user,
+						  enforce, NULL) 
 			   == SLURM_ERROR) {
 				if(enforce) 
 					return SLURM_ERROR;
@@ -836,13 +837,16 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 }
 
 extern int assoc_mgr_fill_in_user(void *db_conn, acct_user_rec_t *user,
-				  int enforce)
+				  int enforce,
+				 acct_user_rec_t **user_pptr)
 {
 	ListIterator itr = NULL;
 	acct_user_rec_t * found_user = NULL;
 
+	if(user_pptr)
+		*user_pptr = NULL;
 	if(!local_user_list) 
-		if(_get_local_user_list(db_conn, enforce) == SLURM_ERROR)
+		if(_get_local_user_list(db_conn, enforce) == SLURM_ERROR) 
 			return SLURM_ERROR;
 
 	if((!local_user_list || !list_count(local_user_list)) && !enforce) 
@@ -853,24 +857,46 @@ extern int assoc_mgr_fill_in_user(void *db_conn, acct_user_rec_t *user,
 	while((found_user = list_next(itr))) {
 		if(user->uid == found_user->uid) 
 			break;
+		else if(user->name && !strcasecmp(user->name, found_user->name))
+			break;
 	}
 	list_iterator_destroy(itr);
 
-	if(found_user) {
-		memcpy(user, found_user, sizeof(acct_user_rec_t));		
+	if(!found_user) {
 		slurm_mutex_unlock(&local_user_lock);
-		return SLURM_SUCCESS;
+		if(enforce) 
+			return SLURM_ERROR;
+		else
+			return SLURM_SUCCESS;
 	}
+
+	debug3("found correct user");	
+	if(user_pptr)
+		*user_pptr = found_user;
+	user->admin_level = found_user->admin_level;
+	if(!user->assoc_list)
+		user->assoc_list = found_user->assoc_list;
+	if(!user->coord_accts)
+		user->coord_accts = found_user->coord_accts;
+	if(!user->default_acct)
+		user->default_acct = found_user->default_acct;
+	if(!user->name)
+		user->name = found_user->name;
+
 	slurm_mutex_unlock(&local_user_lock);
-	return SLURM_ERROR;
+	return SLURM_SUCCESS;
+
 }
 
 extern int assoc_mgr_fill_in_qos(void *db_conn, acct_qos_rec_t *qos,
-				 int enforce)
+				 int enforce,
+				 acct_qos_rec_t **qos_pptr)
 {
 	ListIterator itr = NULL;
 	acct_qos_rec_t * found_qos = NULL;
 
+	if(qos_pptr)
+		*qos_pptr = NULL;
 	if(!local_qos_list) 
 		if(_get_local_qos_list(db_conn, enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
@@ -883,14 +909,63 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, acct_qos_rec_t *qos,
 	while((found_qos = list_next(itr))) {
 		if(qos->id == found_qos->id) 
 			break;
+		else if(qos->name && strcasecmp(qos->name, found_qos->name))
+			break;
 	}
 	list_iterator_destroy(itr);
-
-	if(found_qos) {
-		memcpy(qos, found_qos, sizeof(acct_qos_rec_t));		
+	
+	if(!found_qos) {
 		slurm_mutex_unlock(&local_qos_lock);
-		return SLURM_SUCCESS;
+		if(enforce) 
+			return SLURM_ERROR;
+		else
+			return SLURM_SUCCESS;
 	}
+
+	debug3("found correct qos");
+	if (qos_pptr)
+		*qos_pptr = found_qos;
+
+	if(!qos->description)
+		qos->description = found_qos->description;
+
+	qos->id = found_qos->id;
+
+	if(!qos->job_flags)
+		qos->job_flags = found_qos->job_flags;
+
+	if(!qos->job_list)
+		qos->job_list = found_qos->job_list;
+
+	qos->grp_cpu_mins    = found_qos->grp_cpu_mins;
+	qos->grp_cpus        = found_qos->grp_cpus;
+	qos->grp_jobs        = found_qos->grp_jobs;
+	qos->grp_nodes       = found_qos->grp_nodes;
+	qos->grp_submit_jobs = found_qos->grp_submit_jobs;
+	qos->grp_wall        = found_qos->grp_wall;
+
+	qos->max_cpu_mins_pu = found_qos->max_cpu_mins_pu;
+	qos->max_cpus_pu     = found_qos->max_cpus_pu;
+	qos->max_jobs_pu     = found_qos->max_jobs_pu;
+	qos->max_nodes_pu    = found_qos->max_nodes_pu;
+	qos->max_submit_jobs_pu = found_qos->max_submit_jobs_pu;
+	qos->max_wall_pu     = found_qos->max_wall_pu;
+
+	if(!qos->name) 
+		qos->name = found_qos->name;
+
+	qos->norm_priority = found_qos->norm_priority;
+
+	if(!qos->preemptee_list)
+		qos->preemptee_list = found_qos->preemptee_list;
+	if(!qos->preemptor_list)
+		qos->preemptor_list = found_qos->preemptor_list;
+
+	qos->priority = found_qos->priority;
+
+	if(!qos->user_limit_list)
+		qos->user_limit_list = found_qos->user_limit_list;
+
 	slurm_mutex_unlock(&local_qos_lock);
 	return SLURM_ERROR;
 }

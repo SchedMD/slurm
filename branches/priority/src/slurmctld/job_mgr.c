@@ -490,6 +490,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack_time(dump_job_ptr->pre_sus_time, buffer);
 	pack_time(dump_job_ptr->tot_sus_time, buffer);
 
+	pack16(dump_job_ptr->direct_set_prio, buffer);
 	pack16(dump_job_ptr->job_state, buffer);
 	pack16(dump_job_ptr->next_step_id, buffer);
 	pack16(dump_job_ptr->kill_on_node_fail, buffer);
@@ -555,7 +556,7 @@ static int _load_job_state(Buf buffer)
 	time_t start_time, end_time, suspend_time, pre_sus_time, tot_sus_time;
 	time_t now = time(NULL);
 	uint16_t job_state, next_step_id, details, batch_flag, step_flag;
-	uint16_t kill_on_node_fail, kill_on_step_done, qos;
+	uint16_t kill_on_node_fail, kill_on_step_done, direct_set_prio, qos;
 	uint16_t alloc_resp_port, other_port, mail_type, state_reason;
 	char *nodes = NULL, *partition = NULL, *name = NULL, *resp_host = NULL;
 	char *account = NULL, *network = NULL, *mail_user = NULL;
@@ -588,6 +589,7 @@ static int _load_job_state(Buf buffer)
 	safe_unpack_time(&pre_sus_time, buffer);
 	safe_unpack_time(&tot_sus_time, buffer);
 
+	safe_unpack16(&direct_set_prio, buffer);
 	safe_unpack16(&job_state, buffer);
 	safe_unpack16(&next_step_id, buffer);
 	safe_unpack16(&kill_on_node_fail, buffer);
@@ -661,13 +663,13 @@ static int _load_job_state(Buf buffer)
 
 	if(qos) {
 		bzero(&qos_rec, sizeof(acct_qos_rec_t));
+		qos_rec.id = qos;
 		if((assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec,
-					  accounting_enforce))
+					  accounting_enforce, &qos_ptr))
 		   != SLURM_SUCCESS) {
 			verbose("Invalid qos (%u) for job_id %u", qos, job_id);
 			/* not a fatal error, qos could have been removed */
-		} else 
-			qos_ptr = &qos_rec;
+		} 
 	}
 
 	job_ptr = find_job_record(job_id);
@@ -711,6 +713,7 @@ static int _load_job_state(Buf buffer)
 	xfree(job_ptr->comment);
 	job_ptr->comment      = comment;
 	comment               = NULL;  /* reused, nothing left to free */
+	job_ptr->direct_set_prio = direct_set_prio;
 	job_ptr->db_index     = db_index;
 	job_ptr->end_time     = end_time;
 	job_ptr->exit_code    = exit_code;
@@ -2926,12 +2929,25 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	}
 	if (wiki_sched && job_ptr->comment &&
 	    strstr(job_ptr->comment, "QOS:")) {
+		acct_qos_rec_t qos_rec;
+
 		if (strstr(job_ptr->comment, "FLAGS:PREEMPTOR"))
 			job_ptr->qos = QOS_EXPEDITE;
 		else if (strstr(job_ptr->comment, "FLAGS:PREEMPTEE"))
 			job_ptr->qos = QOS_STANDBY;
 		else
 			job_ptr->qos = QOS_NORMAL;
+		
+		bzero(&qos_rec, sizeof(acct_qos_rec_t));
+		qos_rec.id = job_ptr->qos;
+		if((assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec,
+					  accounting_enforce,
+					  (acct_qos_rec_t **)&job_ptr->qos_ptr))
+		   != SLURM_SUCCESS) {
+			verbose("Invalid qos (%u) for job_id %u", 
+				job_ptr->qos, job_ptr->job_id);
+			/* not a fatal error, qos could have been removed */
+		} 
 	}
 
 	if (job_desc->kill_on_node_fail != (uint16_t) NO_VAL)
@@ -4377,12 +4393,26 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		     job_ptr->comment, job_specs->job_id);
 
 		if (wiki_sched && strstr(job_ptr->comment, "QOS:")) {
+			acct_qos_rec_t qos_rec;
 			if (strstr(job_ptr->comment, "FLAGS:PREEMPTOR"))
 				job_ptr->qos = QOS_EXPEDITE;
 			else if (strstr(job_ptr->comment, "FLAGS:PREEMPTEE"))
 				job_ptr->qos = QOS_STANDBY;
 			else
 				job_ptr->qos = QOS_NORMAL;
+			
+			bzero(&qos_rec, sizeof(acct_qos_rec_t));
+			qos_rec.id = job_ptr->qos;
+			if((assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec,
+						  accounting_enforce,
+						  (acct_qos_rec_t **)
+						  &job_ptr->qos_ptr))
+			   != SLURM_SUCCESS) {
+				verbose("Invalid qos (%u) for job_id %u",
+					job_ptr->qos, job_ptr->job_id);
+				/* not a fatal error, qos could have
+				 * been removed */
+			} 
 		}
 	}
 

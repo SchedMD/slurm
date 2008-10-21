@@ -2117,7 +2117,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "track_steps", "tinyint not null" },
 		{ "state", "smallint not null" }, 
 		{ "comp_code", "int default 0 not null" },
-		{ "priority", "double not null" },
+		{ "priority", "int not null" },
 		{ "req_cpus", "mediumint unsigned not null" }, 
 		{ "alloc_cpus", "mediumint unsigned not null" }, 
 		{ "nodelist", "text" },
@@ -4215,7 +4215,7 @@ extern List acct_storage_p_modify_associations(
 		   >= ACCT_ADMIN_OPERATOR) 
 			is_admin = 1;	
 		else {
-			if(assoc_mgr_fill_in_user(mysql_conn, &user, 1)
+			if(assoc_mgr_fill_in_user(mysql_conn, &user, 1, NULL)
 			   != SLURM_SUCCESS) {
 				error("couldn't get information for this user");
 				errno = SLURM_ERROR;
@@ -5126,7 +5126,7 @@ extern List acct_storage_p_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 		   >= ACCT_ADMIN_OPERATOR) 
 			is_admin = 1;	
 		else {
-			if(assoc_mgr_fill_in_user(mysql_conn, &user, 1)
+			if(assoc_mgr_fill_in_user(mysql_conn, &user, 1, NULL)
 			   != SLURM_SUCCESS) {
 				error("couldn't get information for this user");
 				errno = SLURM_ERROR;
@@ -5599,7 +5599,7 @@ extern List acct_storage_p_remove_associations(
 		   >= ACCT_ADMIN_OPERATOR) 
 			is_admin = 1;	
 		else {
-			if(assoc_mgr_fill_in_user(mysql_conn, &user, 1)
+			if(assoc_mgr_fill_in_user(mysql_conn, &user, 1, NULL)
 			   != SLURM_SUCCESS) {
 				error("couldn't get information for this user");
 				errno = SLURM_ERROR;
@@ -5966,7 +5966,8 @@ extern List acct_storage_p_get_users(mysql_conn_t *mysql_conn, uid_t uid,
 			   >= ACCT_ADMIN_OPERATOR) 
 				is_admin = 1;	
 			else {
-				assoc_mgr_fill_in_user(mysql_conn, &user, 1);
+				assoc_mgr_fill_in_user(mysql_conn, &user, 1,
+						       NULL);
 			}
 		}
 	}
@@ -6187,7 +6188,8 @@ extern List acct_storage_p_get_accts(mysql_conn_t *mysql_conn, uid_t uid,
 			   >= ACCT_ADMIN_OPERATOR) 
 				is_admin = 1;	
 			else {
-				assoc_mgr_fill_in_user(mysql_conn, &user, 1);
+				assoc_mgr_fill_in_user(mysql_conn, &user, 1,
+						       NULL);
 			}
 
 			if(!is_admin && (!user.coord_accts 
@@ -6681,7 +6683,8 @@ extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 			   >= ACCT_ADMIN_OPERATOR) 
 				is_admin = 1;	
 			else {
-				assoc_mgr_fill_in_user(mysql_conn, &user, 1);
+				assoc_mgr_fill_in_user(mysql_conn, &user, 1,
+						       NULL);
 			}
 		}
 	}
@@ -7734,7 +7737,8 @@ extern int acct_storage_p_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 			   >= ACCT_ADMIN_OPERATOR) 
 				is_admin = 1;	
 			else {
-				assoc_mgr_fill_in_user(mysql_conn, &user, 1);
+				assoc_mgr_fill_in_user(mysql_conn, &user, 1,
+						       NULL);
 			}
 			
 			if(!is_admin) {
@@ -8555,7 +8559,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 			xstrfmtcat(query, "\"%s\", ", block_id);
 		
 		xstrfmtcat(query, 
-			   "%d, %d, %d, \"%s\", %u, %u, %f, %u, %u) "
+			   "%d, %d, %d, \"%s\", %u, %u, %u, %u, %u) "
 			   "on duplicate key update "
 			   "id=LAST_INSERT_ID(id), state=%u, associd=%u",
 			   (int)job_ptr->details->begin_time,

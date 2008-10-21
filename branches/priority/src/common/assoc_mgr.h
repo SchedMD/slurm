@@ -68,10 +68,14 @@ extern acct_association_rec_t *root_assoc;
  * IN/OUT:  user - acct_user_rec_t with the name set of the user.
  *                 "default_account" will be filled in on
  *                 successful return DO NOT FREE.
+ * IN/OUT: user_pptr - if non-NULL then return a pointer to the 
+ *		       acct_user record in cache on success
+ *                     DO NOT FREE.
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int assoc_mgr_fill_in_user(void *db_conn, acct_user_rec_t *user,
-				  int enforce);
+				  int enforce,
+				  acct_user_rec_t **user_pptr);
 
 /* 
  * get info from the storage 
@@ -82,6 +86,7 @@ extern int assoc_mgr_fill_in_user(void *db_conn, acct_user_rec_t *user,
  * IN: enforce - return an error if no such association exists
  * IN/OUT: assoc_pptr - if non-NULL then return a pointer to the 
  *			acct_association record in cache on success
+ *                      DO NOT FREE.
  * RET: SLURM_SUCCESS on success, else SLURM_ERROR
  */
 extern int assoc_mgr_fill_in_assoc(void *db_conn,
@@ -93,10 +98,14 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 /* 
  * get info from the storage 
  * IN/OUT:  qos - acct_qos_rec_t with the id set of the qos.
+ * IN/OUT:  qos_pptr - if non-NULL then return a pointer to the 
+ *		       acct_qos record in cache on success
+ *                     DO NOT FREE.
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int assoc_mgr_fill_in_qos(void *db_conn, acct_qos_rec_t *qos,
-				 int enforce);
+				 int enforce,
+				 acct_qos_rec_t **qos_pptr);
 /* 
  * get admin_level of uid 
  * IN: uid - uid of user to check admin_level of.
