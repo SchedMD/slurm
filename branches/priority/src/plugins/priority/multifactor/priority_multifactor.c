@@ -96,6 +96,7 @@ const char plugin_type[]       	= "priority/multifactor";
 const uint32_t plugin_version	= 100;
 
 static pthread_t decay_handler_thread;
+static pthread_t cleanup_handler_thread;
 static pthread_mutex_t decay_lock = PTHREAD_MUTEX_INITIALIZER;
 static int running_decay = 0;
 static bool favor_small; /* favor small jobs over large */
@@ -429,6 +430,13 @@ static void *_decay_thread(void *no_data)
 	return NULL;
 }
 
+static void *_cleanup_thread(void *no_data)
+{
+	pthread_join(decay_handler_thread, NULL);
+	return NULL;
+}
+
+
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
@@ -450,6 +458,16 @@ int init ( void )
 	if (pthread_create(&decay_handler_thread, &thread_attr,
 			   _decay_thread, NULL))
 		fatal("pthread_create error %m");
+
+	/* This is here to join the decay thread so we don't core
+	   dump if in the sleep, since there is no other place to join
+	   we have to create another thread to do it.
+	*/
+	slurm_attr_init(&thread_attr);
+	if (pthread_create(&cleanup_handler_thread, &thread_attr,
+			   _cleanup_thread, NULL))
+		fatal("pthread_create error %m");
+	
 	slurm_attr_destroy(&thread_attr);
 
 	verbose("%s loaded", plugin_name);
@@ -461,8 +479,13 @@ int fini ( void )
 	/* Daemon termination handled here */
 	if(running_decay)
 		debug("Waiting for decay thread to finish.");
+
 	slurm_mutex_lock(&decay_lock);
+	
+	/* cancel the decay thread and then join the cleanup thread */
 	pthread_cancel(decay_handler_thread);
+	pthread_join(cleanup_handler_thread, NULL);
+
 	slurm_mutex_unlock(&decay_lock);
 
 	return SLURM_SUCCESS;

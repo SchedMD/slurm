@@ -2931,23 +2931,24 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	    strstr(job_ptr->comment, "QOS:")) {
 		acct_qos_rec_t qos_rec;
 
-		if (strstr(job_ptr->comment, "FLAGS:PREEMPTOR"))
-			job_ptr->qos = QOS_EXPEDITE;
-		else if (strstr(job_ptr->comment, "FLAGS:PREEMPTEE"))
-			job_ptr->qos = QOS_STANDBY;
-		else
-			job_ptr->qos = QOS_NORMAL;
-		
 		bzero(&qos_rec, sizeof(acct_qos_rec_t));
-		qos_rec.id = job_ptr->qos;
+
+		if (strstr(job_ptr->comment, "FLAGS:PREEMPTOR"))
+			qos_rec.name = "expedite";
+		else if (strstr(job_ptr->comment, "FLAGS:PREEMPTEE"))
+			qos_rec.name = "standby";
+		else
+			qos_rec.name = "normal";
+		
 		if((assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec,
 					  accounting_enforce,
 					  (acct_qos_rec_t **)&job_ptr->qos_ptr))
 		   != SLURM_SUCCESS) {
-			verbose("Invalid qos (%u) for job_id %u", 
-				job_ptr->qos, job_ptr->job_id);
+			verbose("Invalid qos (%s) for job_id %u", 
+				qos_rec.name, job_ptr->job_id);
 			/* not a fatal error, qos could have been removed */
-		} 
+		} else 
+			job_ptr->qos = qos_rec.id;
 	}
 
 	if (job_desc->kill_on_node_fail != (uint16_t) NO_VAL)
@@ -4376,15 +4377,6 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		error("Attempt to change comment for job %u",
 		      job_specs->job_id);
 		error_code = ESLURM_ACCESS_DENIED;
-#if 0
-		if (wiki_sched && strstr(job_ptr->comment, "QOS:")) {
-			if (strstr(job_ptr->comment, "FLAGS:PREEMPTOR"))
-				job_ptr->qos = QOS_EXPEDITE;
-			else if (strstr(job_ptr->comment, "FLAGS:PREEMPTEE"))
-				job_ptr->qos = QOS_STANDBY;
-			else
-				job_ptr->qos = QOS_NORMAL;
-#endif
 	} else if (job_specs->comment) {
 		xfree(job_ptr->comment);
 		job_ptr->comment = job_specs->comment;
@@ -4394,25 +4386,27 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 
 		if (wiki_sched && strstr(job_ptr->comment, "QOS:")) {
 			acct_qos_rec_t qos_rec;
-			if (strstr(job_ptr->comment, "FLAGS:PREEMPTOR"))
-				job_ptr->qos = QOS_EXPEDITE;
-			else if (strstr(job_ptr->comment, "FLAGS:PREEMPTEE"))
-				job_ptr->qos = QOS_STANDBY;
-			else
-				job_ptr->qos = QOS_NORMAL;
-			
+
 			bzero(&qos_rec, sizeof(acct_qos_rec_t));
-			qos_rec.id = job_ptr->qos;
+
+			if (strstr(job_ptr->comment, "FLAGS:PREEMPTOR"))
+				qos_rec.name = "expedite";
+			else if (strstr(job_ptr->comment, "FLAGS:PREEMPTEE"))
+				qos_rec.name = "standby";
+			else
+				qos_rec.name = "normal";
+			
 			if((assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec,
 						  accounting_enforce,
 						  (acct_qos_rec_t **)
 						  &job_ptr->qos_ptr))
 			   != SLURM_SUCCESS) {
-				verbose("Invalid qos (%u) for job_id %u",
-					job_ptr->qos, job_ptr->job_id);
+				verbose("Invalid qos (%s) for job_id %u",
+					qos_rec.name, job_ptr->job_id);
 				/* not a fatal error, qos could have
 				 * been removed */
-			} 
+			} else 
+				job_ptr->qos = qos_rec.id;
 		}
 	}
 

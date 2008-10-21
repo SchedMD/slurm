@@ -287,14 +287,6 @@ extern uint16_t part_max_priority;      /* max priority in all partitions */
 \*****************************************************************************/
 extern time_t last_job_update;	/* time of last update to part records */
 
-/* Used for Moab
- * These QOS values only apply to LLNL's configuration
- * Other values may apply at other sites,
- * These may be mapped to partition priorities in the future */
-#define QOS_EXPEDITE	300
-#define QOS_NORMAL 	200
-#define	QOS_STANDBY	100
-
 #define DETAILS_MAGIC 0xdea84e7
 #define JOB_MAGIC 0xf0b7392c
 #define STEP_MAGIC 0xce593bc1
