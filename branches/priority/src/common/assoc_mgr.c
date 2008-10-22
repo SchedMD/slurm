@@ -179,7 +179,6 @@ static int _set_assoc_parent_and_user(acct_association_rec_t *assoc,
 	} else 
 		root_assoc = assoc;
 	
-
 	if(assoc->user) {
 		uid_t pw_uid = uid_from_string(assoc->user);
 		if(pw_uid == (uid_t) -1) 
@@ -231,6 +230,8 @@ static int _post_association_list(List assoc_list)
 		while((assoc = list_next(itr))) {
 			assoc2 = assoc;
 			assoc2->norm_shares = 1;
+			/* we don't need to do this for root so stop
+			   there */
 			while(assoc->parent_assoc_ptr) {
 				assoc2->norm_shares *= 
 					(double)assoc->fairshare /
@@ -442,7 +443,7 @@ static int _refresh_local_association_list(void *db_conn, int enforce)
 		      "no new list given back keeping cached one.");
 		return SLURM_ERROR;
 	}
- 
+
 	_post_association_list(local_association_list);
 	
 	if(!current_assocs) {
@@ -466,7 +467,7 @@ static int _refresh_local_association_list(void *db_conn, int enforce)
 		if(!assoc) 
 			continue;
 
-		while(assoc->parent_assoc_ptr) {
+		while(assoc) {
 			assoc->used_jobs += curr_assoc->used_jobs;
 			assoc->used_submit_jobs += curr_assoc->used_submit_jobs;
 			assoc->used_shares += curr_assoc->used_shares;
@@ -1278,6 +1279,9 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 				continue;
 
 			rec = object;
+			/* look for a parent since we are starting at
+			   the parent instead of the child
+			*/
 			while(object->parent_assoc_ptr) {
 				/* we need to get the parent first
 				   here since we start at the child
@@ -1646,12 +1650,17 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 	if(local_association_list) {
 		ListIterator itr = NULL;
 		acct_association_rec_t *assoc = NULL;
+		long double ld_tmp = 0;
+		uint64_t uint64_tmp = 0;
 
 		slurm_mutex_lock(&local_association_lock);
 		itr = list_iterator_create(local_association_list);
 		while((assoc = list_next(itr))) {
-			long double ld_tmp = assoc->used_shares * FLOAT_MULT;
-			uint64_t uint64_tmp = (uint64_t)ld_tmp;
+			if(!assoc->user)
+				continue;
+			
+			ld_tmp = assoc->used_shares * FLOAT_MULT;
+			uint64_tmp = (uint64_t)ld_tmp;
 			pack32(assoc->id, buffer);
 			pack64(uint64_tmp, buffer);			
 		}
@@ -1787,7 +1796,7 @@ extern int load_assoc_usage(char *state_save_location)
 				break;
 		}
 		if(assoc) {
-			while(assoc->parent_assoc_ptr) {
+			while(assoc) {
 				assoc->used_shares += 
 					(long double)uint64_tmp / FLOAT_MULT;
 				assoc = assoc->parent_assoc_ptr;
@@ -1798,7 +1807,6 @@ extern int load_assoc_usage(char *state_save_location)
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&local_association_lock);
 			
-	running_cache = 1;
 	free_buf(buffer);
 	return SLURM_SUCCESS;
 
@@ -1957,11 +1965,11 @@ extern int assoc_mgr_refresh_lists(void *db_conn, assoc_init_args_t *args)
 		return SLURM_SUCCESS;
 	}
 
-	if(cache_level & ASSOC_MGR_CACHE_ASSOC) 
+	if(cache_level & ASSOC_MGR_CACHE_ASSOC) {
 		if(_refresh_local_association_list(db_conn, enforce)
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
-
+	}
 	if(cache_level & ASSOC_MGR_CACHE_QOS)
 		if(_refresh_local_qos_list(db_conn, enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
@@ -1971,7 +1979,7 @@ extern int assoc_mgr_refresh_lists(void *db_conn, assoc_init_args_t *args)
 			return SLURM_ERROR;
 
 	running_cache = 0;
-	
-	return SLURM_SUCCESS;
+
+	return SLURM_SUCCESS;	
 }
 

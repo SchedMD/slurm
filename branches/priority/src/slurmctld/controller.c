@@ -186,6 +186,7 @@ static void *       _slurmctld_signal_hand(void *no_data);
 inline static void  _update_cred_key(void);
 inline static void  _usage(char *prog_name);
 static bool         _wait_for_server_thread(void);
+static void *       _assoc_cache_mgr(void *no_data);
 
 typedef struct connection_arg {
 	int newsockfd;
@@ -201,7 +202,7 @@ int main(int argc, char *argv[])
 	slurmctld_lock_t config_write_lock = {
 		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK };
 	assoc_init_args_t assoc_init_arg;
-
+	pthread_t assoc_cache_thread;
 	/*
 	 * Establish initial configuration
 	 */
@@ -331,8 +332,19 @@ int main(int argc, char *argv[])
 		}
 	} else 
 		load_assoc_usage(slurmctld_conf.state_save_location);
-	
 
+	/* this thread is looking for when we get correct data from
+	   the database so we can update the assoc_ptr's in the jobs
+	*/
+	if(running_cache) {
+		slurm_attr_init(&thread_attr);
+		if (pthread_create(
+			    &assoc_cache_thread, 
+			    &thread_attr, _assoc_cache_mgr, NULL))
+			fatal("pthread_create error %m");
+		slurm_attr_destroy(&thread_attr);
+	}
+	
 	info("slurmctld version %s started on cluster %s",
 	     SLURM_VERSION, slurmctld_cluster_name);
 
@@ -494,6 +506,15 @@ int main(int argc, char *argv[])
 		pthread_join(slurmctld_config.thread_id_rpc,  NULL);
 		pthread_join(slurmctld_config.thread_id_save, NULL);
 		pthread_join(slurmctld_config.thread_id_power,NULL);
+		if(assoc_cache_thread) {
+			/* end the thread here just say we aren't
+			 * running cache so it ends */
+			slurm_mutex_lock(&assoc_cache_mutex);
+			running_cache = (uint16_t)NO_VAL;
+			pthread_cond_signal(&assoc_cache_cond);
+			slurm_mutex_unlock(&assoc_cache_mutex);
+			pthread_join(assoc_cache_thread, NULL);
+		}
 		if (select_g_state_save(slurmctld_conf.state_save_location)
 				!= SLURM_SUCCESS )
 			error("failed to save node selection state");
@@ -1562,4 +1583,72 @@ set_slurmctld_state_loc(void)
 		fatal("State save loc: %s: Not a directory!", path);
 	else if (access(path, R_OK|W_OK|X_OK) < 0)
 		fatal("Incorrect permissions on state save loc: %s", path);
+}
+
+/* _assoc_cache_mgr - hold out until we have real data from the
+ * database so we can reset the job ptr's assoc ptr's */
+static void *_assoc_cache_mgr(void *no_data)
+{
+	ListIterator itr = NULL;
+	struct job_record *job_ptr = NULL;
+	acct_qos_rec_t qos_rec;
+	acct_association_rec_t assoc_rec;
+	slurmctld_lock_t job_write_lock =
+		{ READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
+
+	while(running_cache == 1) {
+		slurm_mutex_lock(&assoc_cache_mutex);
+		pthread_cond_wait(&assoc_cache_cond, &assoc_cache_mutex);
+		/* This is here to see if we are exiting.  If we get
+		   NO_VAL then just return since we are closing down.
+		*/
+		if(running_cache == (uint16_t)NO_VAL) {
+			slurm_mutex_unlock(&assoc_cache_mutex);
+			return NULL;
+		}
+		lock_slurmctld(job_write_lock);
+		assoc_mgr_refresh_lists(acct_db_conn, NULL);		
+		if(running_cache)
+			unlock_slurmctld(job_write_lock);
+		slurm_mutex_unlock(&assoc_cache_mutex);
+	}
+	
+	info("got real data from the database "
+	     "refreshing the association ptr's %d", list_count(job_list));
+	itr = list_iterator_create(job_list);
+	while ((job_ptr = list_next(itr))) {
+		if(job_ptr->qos) {
+			bzero(&qos_rec, sizeof(acct_qos_rec_t));
+			qos_rec.id = job_ptr->qos;
+			if((assoc_mgr_fill_in_qos(
+				    acct_db_conn, &qos_rec,
+				    accounting_enforce,
+				    (acct_qos_rec_t **)&job_ptr->qos_ptr))
+			   != SLURM_SUCCESS) {
+				verbose("Invalid qos (%u) for job_id %u",
+					job_ptr->qos, job_ptr->job_id);
+				/* not a fatal error, qos could have
+				 * been removed */
+			} 
+		}
+		if(job_ptr->assoc_id) {
+			bzero(&assoc_rec, sizeof(acct_association_rec_t));
+			assoc_rec.id = job_ptr->assoc_id;
+
+			if (assoc_mgr_fill_in_assoc(
+				    acct_db_conn, &assoc_rec,
+				    accounting_enforce, 
+				    (acct_association_rec_t **)
+				    &job_ptr->assoc_ptr)) {
+				verbose("Invalid association id %u "
+					"for job id %u",
+					job_ptr->assoc_id, job_ptr->job_id);
+				/* not a fatal error, association could have
+				 * been removed */
+			}
+		}
+	}
+	list_iterator_destroy(itr);
+	unlock_slurmctld(job_write_lock);
+	return NULL;
 }

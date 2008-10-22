@@ -797,7 +797,7 @@ static int _load_job_state(Buf buffer)
 		if(job_ptr->assoc_id)
 			jobacct_storage_g_job_complete(acct_db_conn, job_ptr);
 	} else {
-		info("Recovered job %u", job_id);
+		info("Recovered job %u %u", job_id, assoc_ptr->id);
 		job_ptr->assoc_ptr = (void *) assoc_ptr;
 
 		/* make sure we have started this job in accounting */
@@ -2287,6 +2287,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	}
 
 	job_ptr = *job_pptr;
+	
 	job_ptr->assoc_id = assoc_rec.id;
 	job_ptr->assoc_ptr = (void *) assoc_ptr;
 	if (update_job_dependency(job_ptr, job_desc->dependency)) {

@@ -67,7 +67,7 @@ static bool _valid_job_assoc(struct job_record *job_ptr)
 {
 	acct_association_rec_t assoc_rec, *assoc_ptr;
 
-	assoc_ptr = job_ptr->assoc_ptr;
+	assoc_ptr = (acct_association_rec_t *)job_ptr->assoc_ptr;
 	if ((assoc_ptr == NULL) ||
 	    (assoc_ptr->id  != job_ptr->assoc_id) ||
 	    (assoc_ptr->uid != job_ptr->user_id)) {
