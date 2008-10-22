@@ -57,6 +57,7 @@
 #include "src/common/slurm_priority.h"
 #include "src/common/xstring.h"
 #include "src/common/assoc_mgr.h"
+#include "src/common/parse_time.h"
 
 #include "src/slurmctld/locks.h"
 
@@ -287,7 +288,10 @@ static uint32_t _get_priority_internal(time_t start_time,
 	
 	if(weight_age) {
 		uint32_t diff = start_time - job_ptr->details->begin_time; 
-		double norm_diff = (double)diff / (double)max_age;
+		double norm_diff = 1;
+
+		if(diff < max_age)
+			norm_diff = (double)diff / (double)max_age;
 		
 		if(norm_diff > 0) 
 			priority += norm_diff * (double)weight_age;
@@ -390,6 +394,10 @@ static void *_decay_thread(void *no_data)
 				while(assoc->parent_assoc_ptr) {
 					assoc->used_shares +=
 						(long double)run_delta;
+					info("adding %u new usage to %u "
+					     "used_shares is now %u",
+					     run_delta, assoc->id,
+					     assoc->used_shares);
 					assoc = assoc->parent_assoc_ptr;
 				}
 			}
@@ -453,6 +461,12 @@ int init ( void )
 	weight_nice = slurm_get_priority_weight_nice();
 	weight_part = slurm_get_priority_weight_partition();
 	weight_qos = slurm_get_priority_weight_qos();
+	info("Max Age is %u", max_age);
+	info("Weight Age is %u", weight_age);
+	info("Weight Fairshare is %u", weight_fs);
+	info("Weight JobSize is %u", weight_js);
+	info("Weight Part is %u", weight_part);
+	info("Weight QOS is %u", weight_qos);
 
 	slurm_attr_init(&thread_attr);
 	if (pthread_create(&decay_handler_thread, &thread_attr,

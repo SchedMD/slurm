@@ -468,6 +468,8 @@ static int _refresh_local_association_list(void *db_conn, int enforce)
 			assoc->used_jobs += curr_assoc->used_jobs;
 			assoc->used_submit_jobs += curr_assoc->used_submit_jobs;
 			assoc->used_shares += curr_assoc->used_shares;
+			/* get the parent last since this pointer is
+			   different than the one we are updating from */
 			assoc = assoc->parent_assoc_ptr;
 		}
 		list_iterator_reset(local_itr);			
@@ -636,9 +638,11 @@ extern int assoc_mgr_apply_decay(uint32_t time_delta)
 	      decay_factor, real_decay, time_delta);
 	slurm_mutex_lock(&local_association_lock);
 	itr = list_iterator_create(local_association_list);
-	while((assoc = list_next(itr))) 
+	while((assoc = list_next(itr))) {
 		assoc->used_shares *= real_decay;
-	
+		info("assoc %u used_shares is %Lf",
+		     assoc->id, assoc->used_shares);
+	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&local_association_lock);
 
@@ -1272,11 +1276,14 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 
 			rec = object;
 			while(object->parent_assoc_ptr) {
+				/* we need to get the parent first
+				   here since we start at the child
+				*/
+				object = object->parent_assoc_ptr;
 				object->used_jobs += rec->used_jobs;
 				object->used_submit_jobs +=
 					rec->used_submit_jobs;
 				object->used_shares += rec->used_shares;
-				object = object->parent_assoc_ptr;
 			}
 		}
 		if(setup_childern) {
@@ -1286,10 +1293,13 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 				rec = object;
 				rec->norm_shares = 1;
 				while(object->parent_assoc_ptr) {
+					/* we need to get the parent first
+					   here since we start at the child
+					*/
+					object = object->parent_assoc_ptr;
 					rec->norm_shares *= 
 						(double)object->fairshare /
 						(double)object->level_shares;
-					object = object->parent_assoc_ptr;
 				}
 				if((root_assoc->cpu_shares == NO_VAL)
 				   || (rec == root_assoc))
@@ -1525,7 +1535,7 @@ extern void assoc_mgr_clear_used_info(void)
 	itr = list_iterator_create(local_association_list);
 	while((found_assoc = list_next(itr))) {
 		found_assoc->used_jobs  = 0;
-		found_assoc->used_shares = 0;
+		found_assoc->used_submit_jobs = 0;
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&local_association_lock);

@@ -69,6 +69,7 @@
 #include "src/common/xstring.h"
 #include "src/common/assoc_mgr.h"
 
+#include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
@@ -106,9 +107,6 @@ static bool     wiki_sched_test = false;
 
 /* Local functions */
 static void _add_job_hash(struct job_record *job_ptr);
-
-static void _acct_add_job_submit(struct job_record *job_ptr);
-static void _acct_remove_job_submit(struct job_record *job_ptr);
 
 static int  _copy_job_desc_to_file(job_desc_msg_t * job_desc,
 				   uint32_t job_id);
@@ -1037,43 +1035,6 @@ void _add_job_hash(struct job_record *job_ptr)
 	job_hash[inx] = job_ptr;
 }
 
-/*
- * _acct_add_job_submit - Note that a job has been submitted
- *      for accounting policy purposes.
- */
-static void _acct_add_job_submit(struct job_record *job_ptr)
-{
-	acct_association_rec_t *assoc_ptr = NULL;
-
-	assoc_ptr = job_ptr->assoc_ptr;
-	while(assoc_ptr) {
-		assoc_ptr->used_submit_jobs++;	
-		/* now handle all the group limits of the parents */
-		assoc_ptr = assoc_ptr->parent_assoc_ptr;
-	}
-}
-
-/*
- * _acct_remove_job_submit - Note that a job has finished (might
- *      not had started or been allocated resources) for accounting
- *      policy purposes.
- */
-static void _acct_remove_job_submit(struct job_record *job_ptr)
-{
-	acct_association_rec_t *assoc_ptr = NULL;
-
-	assoc_ptr = job_ptr->assoc_ptr;
-	while(assoc_ptr) {
-		if (assoc_ptr->used_submit_jobs) 
-			assoc_ptr->used_submit_jobs--;
-		else
-			debug2("_acct_remove_job_submit: "
-			       "used_submit_jobs underflow for account %s",
-			       assoc_ptr->acct);
-		assoc_ptr = assoc_ptr->parent_assoc_ptr;
-	}
-}
-
 
 /* 
  * find_job_record - return a pointer to the job record with the given job_id
@@ -1657,8 +1618,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		slurm_sched_schedule();	/* work for external scheduler */
 	}
 
-	if (accounting_enforce == ACCOUNTING_ENFORCE_WITH_LIMITS)
-		_acct_add_job_submit(job_ptr);
+	acct_policy_add_job_submit(job_ptr);
 
 	if ((error_code == ESLURM_NODES_BUSY) ||
 	    (error_code == ESLURM_JOB_HELD) ||
@@ -5231,8 +5191,7 @@ extern void job_completion_logger(struct job_record  *job_ptr)
 	int base_state;
 	xassert(job_ptr);
 
-	if (accounting_enforce == ACCOUNTING_ENFORCE_WITH_LIMITS)
-		_acct_remove_job_submit(job_ptr);
+	acct_policy_remove_job_submit(job_ptr);
 
 	/* make sure all parts of the job are notified */
 	srun_job_complete(job_ptr);
