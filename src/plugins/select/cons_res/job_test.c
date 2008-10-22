@@ -1614,7 +1614,7 @@ alloc_job:
 
 	if ((mode != SELECT_MODE_WILL_RUN) && (job_ptr->part_ptr == NULL))
 		error_code = EINVAL;
-	if ((error_code == SLURM_SUCCESS) && (mode == SELECT_MODE_WILL_RUN)) {
+	if (error_code == SLURM_SUCCESS) {
 		if (job_ptr->details->shared == 0) {
 			job_ptr->total_procs = 0;
 			for (i = 0; i < cr_node_cnt; i++) {
