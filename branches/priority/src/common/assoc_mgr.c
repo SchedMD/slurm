@@ -46,6 +46,8 @@
 #include "src/common/xstring.h"
 #include "src/slurmdbd/read_config.h"
 
+#define ASSOC_USAGE_VERSION 1
+
 acct_association_rec_t *root_assoc = NULL;
 uint32_t qos_max_priority = 0;
 
@@ -583,6 +585,7 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args)
 	if((!local_association_list) && (cache_level & ASSOC_MGR_CACHE_ASSOC)) 
 		if(_get_local_association_list(db_conn, enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
+		
 
 	if((!local_qos_list) && (cache_level & ASSOC_MGR_CACHE_QOS))
 		if(_get_local_qos_list(db_conn, enforce) == SLURM_ERROR)
@@ -1631,12 +1634,178 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 	xfree(old_file);
 	xfree(reg_file);
 	xfree(new_file);
+
+	free_buf(buffer);
+	/* now make a file for assoc_usage */
+
+	buffer = init_buf(high_buffer_size);
+	/* write header: version, time */
+	pack16(ASSOC_USAGE_VERSION, buffer);
+	pack_time(time(NULL), buffer);
+
+	if(local_association_list) {
+		ListIterator itr = NULL;
+		acct_association_rec_t *assoc = NULL;
+
+		slurm_mutex_lock(&local_association_lock);
+		itr = list_iterator_create(local_association_list);
+		while((assoc = list_next(itr))) {
+			long double ld_tmp = assoc->used_shares * FLOAT_MULT;
+			uint64_t uint64_tmp = (uint64_t)ld_tmp;
+			pack32(assoc->id, buffer);
+			pack64(uint64_tmp, buffer);			
+		}
+		list_iterator_destroy(itr);
+		slurm_mutex_unlock(&local_association_lock);
+	}
+
+	old_file = xstrdup(state_save_location);
+	xstrcat(old_file, "/assoc_usage.old");
+	reg_file = xstrdup(state_save_location);
+	xstrcat(reg_file, "/assoc_usage");
+	new_file = xstrdup(state_save_location);
+	xstrcat(new_file, "/assoc_usage.new");
+	
+	log_fd = creat(new_file, 0600);
+	if (log_fd == 0) {
+		error("Can't save state, create file %s error %m",
+		      new_file);
+		error_code = errno;
+	} else {
+		int pos = 0, nwrite = get_buf_offset(buffer), amount;
+		char *data = (char *)get_buf_data(buffer);
+		high_buffer_size = MAX(nwrite, high_buffer_size);
+		while (nwrite > 0) {
+			amount = write(log_fd, &data[pos], nwrite);
+			if ((amount < 0) && (errno != EINTR)) {
+				error("Error writing file %s, %m", new_file);
+				error_code = errno;
+				break;
+			}
+			nwrite -= amount;
+			pos    += amount;
+		}
+		fsync(log_fd);
+		close(log_fd);
+	}
+	if (error_code)
+		(void) unlink(new_file);
+	else {			/* file shuffle */
+		(void) unlink(old_file);
+		(void) link(reg_file, old_file);
+		(void) unlink(reg_file);
+		(void) link(new_file, reg_file);
+		(void) unlink(new_file);
+	}
+	xfree(old_file);
+	xfree(reg_file);
+	xfree(new_file);
 	slurm_mutex_unlock(&local_file_lock);
 	
 	free_buf(buffer);
 	END_TIMER2("dump_assoc_mgr_state");
 	return error_code;
 
+}
+
+extern int load_assoc_usage(char *state_save_location)
+{
+	int data_allocated, data_read = 0, error_code = SLURM_SUCCESS;
+	uint32_t data_size = 0;
+	uint16_t ver = 0;
+	int state_fd;
+	char *data = NULL, *state_file;
+	Buf buffer;
+	time_t buf_time;
+	ListIterator itr = NULL;
+
+	if(!local_association_list)
+		return SLURM_SUCCESS;
+
+	/* read the file */
+	state_file = xstrdup(state_save_location);
+	xstrcat(state_file, "/assoc_usage");
+	//info("looking at the %s file", state_file);
+	slurm_mutex_lock(&local_file_lock);
+	state_fd = open(state_file, O_RDONLY);
+	if (state_fd < 0) {
+		info("No Assoc usage file (%s) to recover", state_file);
+		error_code = ENOENT;
+	} else {
+		data_allocated = BUF_SIZE;
+		data = xmalloc(data_allocated);
+		while (1) {
+			data_read = read(state_fd, &data[data_size],
+					 BUF_SIZE);
+			if (data_read < 0) {
+				if (errno == EINTR)
+					continue;
+				else {
+					error("Read error on %s: %m", 
+					      state_file);
+					break;
+				}
+			} else if (data_read == 0)	/* eof */
+				break;
+			data_size      += data_read;
+			data_allocated += data_read;
+			xrealloc(data, data_allocated);
+		}
+		close(state_fd);
+	}
+	xfree(state_file);
+	slurm_mutex_unlock(&local_file_lock);
+
+	buffer = create_buf(data, data_size);
+
+	safe_unpack16(&ver, buffer);
+	debug3("Version in assoc_mgr_state header is %u", ver);
+	if (ver != ASSOC_USAGE_VERSION) {
+		error("***********************************************");
+		error("Can not recover usage_mgr state, incompatable version, "
+		      "got %u need %u", ver, ASSOC_USAGE_VERSION);
+		error("***********************************************");
+		free_buf(buffer);
+		return EFAULT;
+	}
+
+	safe_unpack_time(&buf_time, buffer);
+	
+	slurm_mutex_lock(&local_association_lock);
+	itr = list_iterator_create(local_association_list);
+	while (remaining_buf(buffer) > 0) {
+		uint32_t assoc_id = 0;
+		uint64_t uint64_tmp = 0;
+		acct_association_rec_t *assoc = NULL;
+
+		safe_unpack32(&assoc_id, buffer);
+		safe_unpack64(&uint64_tmp, buffer);
+		while((assoc = list_next(itr))) {
+			if(!assoc->user)
+				continue;
+			if(assoc->id == assoc_id)
+				break;
+		}
+		if(assoc) {
+			while(assoc->parent_assoc_ptr) {
+				assoc->used_shares += 
+					(long double)uint64_tmp / FLOAT_MULT;
+				assoc = assoc->parent_assoc_ptr;
+			}
+		}
+		list_iterator_reset(itr);
+	}
+	list_iterator_destroy(itr);
+	slurm_mutex_unlock(&local_association_lock);
+			
+	running_cache = 1;
+	free_buf(buffer);
+	return SLURM_SUCCESS;
+
+unpack_error:
+	if(buffer)
+		free_buf(buffer);
+	return SLURM_ERROR;
 }
 
 extern int load_assoc_mgr_state(char *state_save_location)
@@ -1658,7 +1827,7 @@ extern int load_assoc_mgr_state(char *state_save_location)
 	slurm_mutex_lock(&local_file_lock);
 	state_fd = open(state_file, O_RDONLY);
 	if (state_fd < 0) {
-		info("No job state file (%s) to recover", state_file);
+		info("No association state file (%s) to recover", state_file);
 		error_code = ENOENT;
 	} else {
 		data_allocated = BUF_SIZE;
@@ -1691,7 +1860,9 @@ extern int load_assoc_mgr_state(char *state_save_location)
 	debug3("Version in assoc_mgr_state header is %u", ver);
 	if (ver > SLURMDBD_VERSION || ver < SLURMDBD_VERSION_MIN) {
 		error("***********************************************");
-		error("Can not recover assoc_mgr state, incompatable version, got %u need > %u <= %u", ver, SLURMDBD_VERSION_MIN, SLURMDBD_VERSION);
+		error("Can not recover assoc_mgr state, incompatable version, "
+		      "got %u need > %u <= %u", ver,
+		      SLURMDBD_VERSION_MIN, SLURMDBD_VERSION);
 		error("***********************************************");
 		free_buf(buffer);
 		return EFAULT;

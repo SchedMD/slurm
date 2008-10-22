@@ -104,7 +104,7 @@ extern void acct_policy_add_job_submit(struct job_record *job_ptr)
 	if (accounting_enforce != ACCOUNTING_ENFORCE_WITH_LIMITS)
 		return;
 
-	assoc_ptr = job_ptr->assoc_ptr;
+	assoc_ptr = (acct_association_rec_t *)job_ptr->assoc_ptr;
 	while(assoc_ptr) {
 		assoc_ptr->used_submit_jobs++;	
 		/* now handle all the group limits of the parents */
@@ -124,7 +124,7 @@ extern void acct_policy_remove_job_submit(struct job_record *job_ptr)
 	if (accounting_enforce != ACCOUNTING_ENFORCE_WITH_LIMITS)
 		return;
 
-	assoc_ptr = job_ptr->assoc_ptr;
+	assoc_ptr = (acct_association_rec_t *)job_ptr->assoc_ptr;
 	while(assoc_ptr) {
 		if (assoc_ptr->used_submit_jobs) 
 			assoc_ptr->used_submit_jobs--;
@@ -148,7 +148,7 @@ extern void acct_policy_job_begin(struct job_record *job_ptr)
 	    || !_valid_job_assoc(job_ptr))
 		return;
 
-	assoc_ptr = job_ptr->assoc_ptr;
+	assoc_ptr = (acct_association_rec_t *)job_ptr->assoc_ptr;
 	while(assoc_ptr) {
 		assoc_ptr->used_jobs++;	
 		/* now handle all the group limits of the parents */
@@ -168,7 +168,7 @@ extern void acct_policy_job_fini(struct job_record *job_ptr)
 	    || !_valid_job_assoc(job_ptr))
 		return;
 
-	assoc_ptr = job_ptr->assoc_ptr;
+	assoc_ptr = (acct_association_rec_t *)job_ptr->assoc_ptr;
 	while(assoc_ptr) {
 		if (assoc_ptr->used_jobs)
 			assoc_ptr->used_jobs--;

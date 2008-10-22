@@ -390,12 +390,15 @@ static void *_decay_thread(void *no_data)
 					end_period = job_ptr->end_time;
 				
 				run_delta = end_period - job_ptr->start_time;
+				info("run_delta is %u", run_delta);
+					
 				run_delta *= job_ptr->total_procs;
+				info("run_delta is now %u", run_delta);
 				while(assoc->parent_assoc_ptr) {
 					assoc->used_shares +=
 						(long double)run_delta;
 					info("adding %u new usage to %u "
-					     "used_shares is now %u",
+					     "used_shares is now %Lf",
 					     run_delta, assoc->id,
 					     assoc->used_shares);
 					assoc = assoc->parent_assoc_ptr;

@@ -189,6 +189,12 @@ extern void assoc_mgr_clear_used_info(void);
 extern int dump_assoc_mgr_state(char *state_save_location);
 
 /*
+ * Read in the usage for association if the database
+ * is up when starting.
+ */
+extern int load_assoc_usage(char *state_save_location);
+
+/*
  * Read in the information of the association mgr if the database
  * isn't up when starting.
  */

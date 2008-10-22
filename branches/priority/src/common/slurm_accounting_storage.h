@@ -46,6 +46,8 @@
 #include <sys/types.h>
 #include <pwd.h>
 
+#define FLOAT_MULT 1000000
+
 typedef enum {
 	ACCT_ADMIN_NOTSET,
 	ACCT_ADMIN_NONE,

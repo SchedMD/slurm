@@ -329,7 +329,9 @@ int main(int argc, char *argv[])
 			fatal("slurmdbd and/or database must be up at "
 			      "slurmctld start time");
 		}
-	}
+	} else 
+		load_assoc_usage(slurmctld_conf.state_save_location);
+	
 
 	info("slurmctld version %s started on cluster %s",
 	     SLURM_VERSION, slurmctld_cluster_name);

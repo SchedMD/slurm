@@ -1566,7 +1566,8 @@ extern void pack_acct_association_rec(void *in, uint16_t rpc_version,
 		pack32(object->rgt, buffer);
 		pack32(object->uid, buffer);
 
-		uint32_tmp = (uint32_t)object->used_shares;
+		ld_tmp = object->used_shares * FLOAT_MULT;
+		uint32_tmp = (uint32_t)ld_tmp;
 		pack32(uint32_tmp, buffer);
 
 		packstr(object->user, buffer);	
@@ -1668,7 +1669,8 @@ extern void pack_acct_association_rec(void *in, uint16_t rpc_version,
 		pack32(object->rgt, buffer);
 		pack32(object->uid, buffer);
 
-		uint32_tmp = (uint32_t)object->used_shares;
+		ld_tmp = object->used_shares * FLOAT_MULT;
+		uint32_tmp = (uint32_t)ld_tmp;
 		pack32(uint32_tmp, buffer);
 
 		packstr(object->user, buffer);	
@@ -1770,7 +1772,7 @@ extern void pack_acct_association_rec(void *in, uint16_t rpc_version,
 		pack32(object->rgt, buffer);
 		pack32(object->uid, buffer);
 
-		ld_tmp = object->used_shares * (long double)1000000;
+		ld_tmp = object->used_shares * FLOAT_MULT;
 		uint64_tmp = (uint64_t)ld_tmp;
 		pack64(uint64_tmp, buffer);
 
@@ -1833,7 +1835,7 @@ extern int unpack_acct_association_rec(void **object, uint16_t rpc_version,
 		safe_unpack32(&object_ptr->uid, buffer);
 
 		safe_unpack32(&uint32_tmp, buffer);
-		object_ptr->used_shares = (uint64_t)uint32_tmp;
+		object_ptr->used_shares = (long double)uint32_tmp / FLOAT_MULT;
 
 		safe_unpackstr_xmalloc(&object_ptr->user, &uint32_tmp, buffer);
 	} else if (rpc_version == 3) {
@@ -1897,7 +1899,7 @@ extern int unpack_acct_association_rec(void **object, uint16_t rpc_version,
 		safe_unpack32(&object_ptr->uid, buffer);
 		
 		safe_unpack32(&uint32_tmp, buffer);
-		object_ptr->used_shares = (uint64_t)uint32_tmp;
+		object_ptr->used_shares = (long double)uint32_tmp / FLOAT_MULT;
 
 		safe_unpackstr_xmalloc(&object_ptr->user, &uint32_tmp, buffer);
 	} else if (rpc_version >= 4) {
@@ -1961,7 +1963,7 @@ extern int unpack_acct_association_rec(void **object, uint16_t rpc_version,
 		safe_unpack32(&object_ptr->uid, buffer);
 
 		safe_unpack64(&uint64_tmp, buffer);
-		object_ptr->used_shares = (long double)uint64_tmp / 1000000;
+		object_ptr->used_shares = (long double)uint64_tmp / FLOAT_MULT;
 
 		safe_unpackstr_xmalloc(&object_ptr->user, &uint32_tmp, buffer);
 	}
