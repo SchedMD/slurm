@@ -269,10 +269,6 @@ static double _get_fairshare_priority( struct job_record *job_ptr )
 	}
 
 	tmp_usage2 = usage;
-/* 	if(root_assoc->used_shares) */
-/* 		usage /= root_assoc->used_shares; */
-/* 	info("Normilized usage = %Lf / %Lf = %Lf",  */
-/* 	     tmp_usage2, root_assoc->used_shares, usage); */
 	if(root_assoc->cpu_shares)
 		usage /= root_assoc->cpu_shares;
 	info("Normilized usage = %Lf / %Lf = %Lf", 
@@ -319,13 +315,9 @@ static uint32_t _get_priority_internal(time_t start_time,
 			priority += norm_diff * (double)weight_age;
 	}
 	
-	if(job_ptr->assoc_ptr && weight_fs) {
-		info("getting fairshare");
+	if(job_ptr->assoc_ptr && weight_fs) 
 		priority += _get_fairshare_priority(job_ptr) 
 			* (double)weight_fs;
-	} else {
-		info("no assoc ptr");
-	}
 	
 	if(weight_js) {
 		double norm_js = 0;
@@ -411,28 +403,21 @@ static void *_decay_thread(void *no_data)
 					job_ptr->assoc_ptr;
 				time_t end_period = start_time;
 				
-				if(end_period > job_ptr->end_time) {
-					info("job has ended %u", 
-					     job_ptr->end_time);
+				if(job_ptr->end_time 
+				   && (end_period > job_ptr->end_time)) 
 					end_period = job_ptr->end_time;
-				}
+
 				run_delta = end_period - job_ptr->start_time;
 
-				info("got job %u run_delta is %d-%d = %d",
-				     job_ptr->job_id, end_period,
-				     job_ptr->start_time, run_delta);
 				if(run_delta < 0) {
 					error("priority: some how we have "
 					      "negative time %d for job %u",
 					      run_delta, job_ptr->job_id);
 					continue;
 				} else if(!run_delta)
-					run_delta = 1;
-
-				info("run_delta is %d", run_delta);
+					continue;
 
 				run_delta *= job_ptr->total_procs;
-				info("run_delta is now %d", run_delta);
 				while(assoc) {
 					assoc->used_shares +=
 						(long double)run_delta;
