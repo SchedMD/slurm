@@ -2301,7 +2301,6 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	pack32(build_ptr->priority_weight_age, buffer);
 	pack32(build_ptr->priority_weight_fs, buffer);
 	pack32(build_ptr->priority_weight_js, buffer);
-	pack32(build_ptr->priority_weight_nice, buffer);
 	pack32(build_ptr->priority_weight_part, buffer);
 	pack32(build_ptr->priority_weight_qos, buffer);
 
@@ -2478,7 +2477,6 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpack32(&build_ptr->priority_weight_age, buffer);
 	safe_unpack32(&build_ptr->priority_weight_fs, buffer);
 	safe_unpack32(&build_ptr->priority_weight_js, buffer);
-	safe_unpack32(&build_ptr->priority_weight_nice, buffer);
 	safe_unpack32(&build_ptr->priority_weight_part, buffer);
 	safe_unpack32(&build_ptr->priority_weight_qos, buffer);
 

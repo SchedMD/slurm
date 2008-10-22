@@ -1023,7 +1023,6 @@ typedef struct slurm_ctl_conf {
 	uint32_t priority_weight_age; /* weight for age factor */
 	uint32_t priority_weight_fs; /* weight for Fairshare factor */
 	uint32_t priority_weight_js; /* weight for Job Size factor */
-	uint32_t priority_weight_nice; /* weight for Nice factor */
 	uint32_t priority_weight_part; /* weight for Partition factor */
 	uint32_t priority_weight_qos; /* weight for QOS factor */
 	uint16_t private_data;	/* block viewing of information, 

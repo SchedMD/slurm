@@ -199,7 +199,6 @@ s_p_options_t slurm_conf_options[] = {
 	{"PriorityWeightAge", S_P_UINT32},
 	{"PriorityWeightFairshare", S_P_UINT32},
 	{"PriorityWeightJobSize", S_P_UINT32},
-	{"PriorityWeightNice", S_P_UINT32},
 	{"PriorityWeightPartition", S_P_UINT32},
 	{"PriorityWeightQOS", S_P_UINT32},
 	{"PrivateData", S_P_STRING},
@@ -1880,8 +1879,6 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		       "PriorityWeightFairshare", hashtbl);
 	s_p_get_uint32(&conf->priority_weight_js,
 		       "PriorityWeightJobSize", hashtbl);
-	s_p_get_uint32(&conf->priority_weight_nice,
-		       "PriorityWeightNice", hashtbl);
 	s_p_get_uint32(&conf->priority_weight_part,
 		       "PriorityWeightPartition", hashtbl);
 	s_p_get_uint32(&conf->priority_weight_qos,

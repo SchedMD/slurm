@@ -106,7 +106,6 @@ static uint32_t max_age; /* time when not to add any more
 static uint32_t weight_age; /* weight for age factor */
 static uint32_t weight_fs; /* weight for Fairshare factor */
 static uint32_t weight_js; /* weight for Job Size factor */
-static uint32_t weight_nice; /* weight for Nice factor */
 static uint32_t weight_part; /* weight for Partition factor */
 static uint32_t weight_qos; /* weight for QOS factor */
 
@@ -486,7 +485,6 @@ int init ( void )
 	weight_age = slurm_get_priority_weight_age(); 
 	weight_fs = slurm_get_priority_weight_fairshare(); 
 	weight_js = slurm_get_priority_weight_job_size();
-	weight_nice = slurm_get_priority_weight_nice();
 	weight_part = slurm_get_priority_weight_partition();
 	weight_qos = slurm_get_priority_weight_qos();
 	info("Max Age is %u", max_age);

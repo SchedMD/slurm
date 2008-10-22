@@ -204,12 +204,6 @@ uint32_t slurm_get_priority_weight_fairshare(void);
  */
 uint32_t slurm_get_priority_weight_job_size(void);
 
-/* slurm_get_priority_weight_nice
- * returns the priority weight for nice from slurmctld_conf object
- * RET uint32_t - factor weight.
- */
-uint32_t slurm_get_priority_weight_nice(void);
-
 /* slurm_get_priority_weight_partition
  * returns the priority weight for partitions from slurmctld_conf object
  * RET uint32_t - factor weight.

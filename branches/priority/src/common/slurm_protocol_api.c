@@ -468,27 +468,6 @@ uint32_t slurm_get_priority_weight_job_size(void)
 	return factor;
 }
 
-
-/* slurm_get_priority_weight_nice
- * returns the priority weight for nice from slurmctld_conf object
- * RET uint32_t - factor weight.
- */
-uint32_t slurm_get_priority_weight_nice(void)
-{
-	uint32_t factor = NO_VAL;
-	slurm_ctl_conf_t *conf;
-
-	if(slurmdbd_conf) {		
-	} else {
-		conf = slurm_conf_lock();
-		factor = conf->priority_weight_nice;
-		slurm_conf_unlock();
-	}
-
-	return factor;
-}
-
-
 /* slurm_get_priority_weight_partition
  * returns the priority weight for partitions from slurmctld_conf object
  * RET uint32_t - factor weight.
