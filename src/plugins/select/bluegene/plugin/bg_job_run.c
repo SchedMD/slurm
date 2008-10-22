@@ -989,6 +989,7 @@ extern int start_job(struct job_record *job_ptr)
 		slurm_mutex_lock(&block_state_mutex);
 		job_ptr->num_procs = (bg_record->cpus_per_bp *
 				      bg_record->bp_count);
+		job_ptr->total_procs = job_ptr->num_procs;
 		bg_record->job_running = bg_update_ptr->job_ptr->job_id;
 		bg_record->job_ptr = bg_update_ptr->job_ptr;
 		if(!block_exist_in_list(bg_job_block_list, bg_record)) {
