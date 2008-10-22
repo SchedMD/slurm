@@ -114,7 +114,7 @@ char *
 slurm_sprint_node_table (node_info_t * node_ptr, int one_liner )
 {
 	uint16_t my_state = node_ptr->node_state;
-	char *comp_str = "", *drain_str = "";
+	char *comp_str = "", *drain_str = "", *power_str = "";
 	char tmp_line[512];
 	char *out = NULL;
 
@@ -126,13 +126,18 @@ slurm_sprint_node_table (node_info_t * node_ptr, int one_liner )
 		my_state &= (~NODE_STATE_DRAIN);
 		drain_str = "+DRAIN";
 	}
+	if (my_state & NODE_STATE_POWER_SAVE) {
+		my_state &= (~NODE_STATE_POWER_SAVE);
+		power_str = "+POWER";
+	}
 
 	/****** Line 1 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
-		"NodeName=%s State=%s%s%s Procs=%u AllocProcs=%u "
+		"NodeName=%s State=%s%s%s%s Procs=%u AllocProcs=%u "
 		"RealMemory=%u TmpDisk=%u",
 		node_ptr->name, node_state_string(my_state),
-		comp_str, drain_str, node_ptr->cpus, node_ptr->used_cpus,
+		comp_str, drain_str, power_str,
+		node_ptr->cpus, node_ptr->used_cpus,
 		node_ptr->real_memory, node_ptr->tmp_disk);
 	xstrcat(out, tmp_line);
 	if (one_liner)
