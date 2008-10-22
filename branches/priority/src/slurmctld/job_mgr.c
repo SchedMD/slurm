@@ -2290,6 +2290,14 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	
 	job_ptr->assoc_id = assoc_rec.id;
 	job_ptr->assoc_ptr = (void *) assoc_ptr;
+
+	/* This must be done after we have the assoc_ptr set */
+	if (job_desc->priority != NO_VAL) /* already confirmed submit_uid==0 */
+		job_ptr->priority = job_desc->priority;
+	else {
+		_set_job_prio(job_ptr);
+	}
+
 	if (update_job_dependency(job_ptr, job_desc->dependency)) {
 		error_code = ESLURM_DEPENDENCY;
 		goto cleanup_fail;
@@ -2863,6 +2871,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 
 	job_ptr->partition = xstrdup(part_ptr->name);
 	job_ptr->part_ptr = part_ptr;
+	
 	if (job_desc->job_id != NO_VAL)		/* already confirmed unique */
 		job_ptr->job_id = job_desc->job_id;
 	else
@@ -2989,14 +2998,9 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_ptr->select_jobinfo = 
 		select_g_copy_jobinfo(job_desc->select_jobinfo);
 
-	/* The priority needs to be set at the end of the details
-	   since we use things like nice and begin_time
+	/* The priority needs to be set after this since we don't have
+	   an association rec yet
 	*/
-	if (job_desc->priority != NO_VAL) /* already confirmed submit_uid==0 */
-		job_ptr->priority = job_desc->priority;
-	else {
-		_set_job_prio(job_ptr);
-	}
 
 	detail_ptr->mc_ptr = _set_multi_core_data(job_desc);	
 	*job_rec_ptr = job_ptr;
