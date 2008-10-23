@@ -192,17 +192,7 @@ delete_step_record (struct job_record *job_ptr, uint32_t step_id)
 				switch_free_jobinfo (step_ptr->switch_job);
 			}
 			checkpoint_free_jobinfo (step_ptr->check_job);
-
-			xfree(step_ptr->host);
-			xfree(step_ptr->name);
-			slurm_step_layout_destroy(step_ptr->step_layout);
-			jobacct_gather_g_destroy(step_ptr->jobacct);
-			FREE_NULL_BITMAP(step_ptr->step_node_bitmap);
-			FREE_NULL_BITMAP(step_ptr->exit_node_bitmap);
-			if (step_ptr->network)
-				xfree(step_ptr->network);
-			xfree(step_ptr->ckpt_path);
-			xfree(step_ptr);
+			_free_step_rec(step_ptr);
 			error_code = 0;
 			break;
 		}
@@ -1200,7 +1190,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 					   step_specs->task_dist,
 					   step_specs->plane_size);
 		if (!step_ptr->step_layout) {
-			_free_step_rec(step_ptr);
+			delete_step_record (job_ptr, step_ptr->step_id);
 			return SLURM_ERROR;
 		}
 		if (switch_alloc_jobinfo (&step_ptr->switch_job) < 0)
