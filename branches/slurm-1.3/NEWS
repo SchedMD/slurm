@@ -22,7 +22,11 @@ documents those changes that are of interest to users and admins.
     MessageTimeout value but less than the SlurmdTimeout value).
  -- In sched/wiki2 (Moab) report a job's MAXNODES (maximum number of permitted
     nodes).
- 
+ -- Fixed SLURM_TASKS_PER_NODE to live up more to it's name on an allocation. 
+    Will now contain the number of tasks per node instead of the number of cpus
+    per node.  This is only for an allocation not a step which this is 
+    already set correctly.
+
 * Changes in SLURM 1.3.9
 ========================
  -- Fix jobs being cancelled by ctrl-C to have correct cancelled state in 

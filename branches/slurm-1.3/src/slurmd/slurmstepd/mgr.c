@@ -184,7 +184,6 @@ static int  _wait_for_any_task(slurmd_job_t *job, bool waitflag);
 static void _setargs(slurmd_job_t *job);
 
 static void _random_sleep(slurmd_job_t *job);
-static char *_sprint_task_cnt(batch_job_launch_msg_t *msg);
 static int  _run_script_as_user(const char *name, const char *path,
 				slurmd_job_t *job, int max_wait, char **env);
 
@@ -285,12 +284,6 @@ slurmd_job_t *
 mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg, slurm_addr *cli)
 {
 	slurmd_job_t *job = NULL;
-	char       buf[MAXHOSTRANGELEN];
-	hostlist_t hl = hostlist_create(msg->nodes);
-	if (!hl)
-		return NULL;
-		
-	hostlist_ranged_string(hl, MAXHOSTRANGELEN, buf);
 	
 	if (!(job = job_batch_job_create(msg))) {
 		error("job_batch_job_create() failed: %m");
@@ -314,14 +307,11 @@ mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg, slurm_addr *cli)
 	/* this is the new way of setting environment variables */
 	env_array_for_batch_job(&job->env, msg, conf->node_name);
 
-	/* this is the old way of setting environment variables */
-	job->envtp->nprocs = msg->nprocs;
+	/* this is the old way of setting environment variables (but
+	 * needed) */
 	job->envtp->overcommit = msg->overcommit;
 	job->envtp->select_jobinfo = msg->select_jobinfo;
-	job->envtp->nhosts = hostlist_count(hl);
-	hostlist_destroy(hl);
-	job->envtp->nodelist = xstrdup(buf);
-	job->envtp->task_count = _sprint_task_cnt(msg);
+	
 	return job;
 
 cleanup2:
@@ -1386,26 +1376,6 @@ _make_batch_script(batch_job_launch_msg_t *msg, char *path)
   error:
 	return NULL;
 
-}
-
-static char *
-_sprint_task_cnt(batch_job_launch_msg_t *msg)
-{
-        int i;
-        char *task_str = xstrdup("");
-        char tmp[16], *comma = "";
-	for (i=0; i<msg->num_cpu_groups; i++) {
-		if (i == 1)
-			comma = ",";
-		if (msg->cpu_count_reps[i] > 1)
-			sprintf(tmp, "%s%d(x%d)", comma, msg->cpus_per_node[i],
-				msg->cpu_count_reps[i]);
-		else
-			sprintf(tmp, "%s%d", comma, msg->cpus_per_node[i]);
-		xstrcat(task_str, tmp);
-	}
-	
-        return task_str;
 }
 
 static void
