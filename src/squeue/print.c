@@ -489,8 +489,6 @@ int _print_job_time_start(job_info_t * job, int width, bool right,
 {
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("START", width, right, true);
-	else if (job->job_state == JOB_PENDING)
-		_print_time((time_t) 0, 0, width, right);
 	else
 		_print_time(job->start_time, 0, width, right);
 	if (suffix)
