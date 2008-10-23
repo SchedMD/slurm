@@ -232,7 +232,7 @@ int main(int argc, char *argv[])
 	/*
 	 * Run the user's command.
 	 */
-	env_array_for_job(&env, alloc);
+	env_array_for_job(&env, alloc, &desc);
 	/* Add default task count for srun, if not already set */
 	if (opt.nprocs_set)
 		env_array_append_fmt(&env, "SLURM_NPROCS", "%d", opt.nprocs);
@@ -246,6 +246,7 @@ int main(int argc, char *argv[])
 	}
 	if (opt.network)
 		env_array_append_fmt(&env, "SLURM_NETWORK", "%s", opt.network);
+	
 	env_array_set_environment(env);
 	env_array_free(env);
 	pthread_mutex_lock(&allocation_state_lock);

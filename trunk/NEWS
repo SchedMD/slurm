@@ -82,17 +82,24 @@ documents those changes that are of interest to users and admins.
     - Fix return type of hostlist and hostset string functions from size_t to
       ssize_t.
     - Add check for NULL return from hostlist_create().
-    - Rewrite of hostrange_hn_within(), avoids reporting "tst0" in the hostlist 
+    - Rewrite of hostrange_hn_within(), avoids reporting "tst0" in the hostlist
       "tst".
  -- Modify squeue to accept "--nodes=<hostlist>" rather than 
-    "--node=<node_name>" and report all jobs with any jobs on the set of nodes
-    identified. From Par Anderson, National Supercomputer Centre, Sweden.
+    "--node=<node_name>" and report all jobs with any allocated nodes from set
+    of nodes specified. From Par Anderson, National Supercomputer Centre, 
+    Sweden.
  -- Fix bug preventing use of TotalView debugger with TaskProlog configured or 
     or srun's --task-prolog option.
  -- Improve reliability of batch job requeue logic in the event that the slurmd
     daemon is temporarily non-responsive (for longer than the configured
     MessageTimeout value but less than the SlurmdTimeout value).
- 
+ -- In sched/wiki2 (Moab) report a job's MAXNODES (maximum number of permitted
+    nodes).
+ -- Fixed SLURM_TASKS_PER_NODE to live up more to it's name on an allocation. 
+    Will now contain the number of tasks per node instead of the number of cpus
+    per node.  This is only for an allocation not a step which this is 
+    already set correctly.
+
 * Changes in SLURM 1.3.9
 ========================
  -- Fix jobs being cancelled by ctrl-C to have correct cancelled state in 
