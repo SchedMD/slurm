@@ -210,21 +210,24 @@ delete_step_record (struct job_record *job_ptr, uint32_t step_id)
 void
 dump_step_desc(job_step_create_request_msg_t *step_spec)
 {
-	if (step_spec == NULL) 
+	if ((step_spec == NULL) ||
+	    ((slurm_get_debug_flags() & DEBUG_FLAG_STEPS) == 0))
 		return;
 
-	debug3("StepDesc: user_id=%u job_id=%u node_count=%u, cpu_count=%u", 
-		step_spec->user_id, step_spec->job_id, 
-		step_spec->node_count, step_spec->cpu_count);
-	debug3("   num_tasks=%u relative=%u task_dist=%u node_list=%s", 
-		step_spec->num_tasks, step_spec->relative, 
-		step_spec->task_dist, step_spec->node_list);
-	debug3("   host=%s port=%u name=%s network=%s checkpoint=%u", 
-		step_spec->host, step_spec->port, step_spec->name,
-		step_spec->network, step_spec->ckpt_interval);
-	debug3("   checkpoint-path=%s exclusive=%u immediate=%u mem_per_task=%u",
-	        step_spec->ckpt_path, step_spec->exclusive, 
-		step_spec->immediate, step_spec->mem_per_task);
+	info("StepDesc: user_id=%u job_id=%u node_count=%u, cpu_count=%u", 
+	     step_spec->user_id, step_spec->job_id, 
+	     step_spec->node_count, step_spec->cpu_count);
+	info("   num_tasks=%u relative=%u task_dist=%u node_list=%s", 
+	     step_spec->num_tasks, step_spec->relative, 
+	     step_spec->task_dist, step_spec->node_list);
+	info("   host=%s port=%u name=%s network=%s exclusive=%u", 
+	     step_spec->host, step_spec->port, step_spec->name,
+	     step_spec->network, step_spec->exclusive);
+	info("   checkpoint-path=%s checkpoint_int=%u",
+	     step_spec->ckpt_path, step_spec->ckpt_interval);
+	info("   mem_per_task=%u immediate=%u no_kill=%u",
+	     step_spec->mem_per_task, step_spec->immediate, 
+	     step_spec->no_kill);
 }
 
 
@@ -657,8 +660,8 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				char *temp;
 				temp = bitmap2node_name(step_p->
 							step_node_bitmap);
-				info("step %d has nodes %s", 
-				     step_p->step_id, temp);
+				info("step %u.%u has nodes %s", 
+				     job_ptr->job_id, step_p->step_id, temp);
 				xfree(temp);
 			}
 		} 
@@ -668,13 +671,13 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	}
 
 	if (slurm_get_debug_flags() & DEBUG_FLAG_STEPS) {
-		char *temp;
-		temp = bitmap2node_name(nodes_avail);
-		info("can pick from %s %d", temp, step_spec->node_count);
-		xfree(temp);
-		temp = bitmap2node_name(nodes_idle);
-		info("can pick from %s", temp);
-		xfree(temp);
+		char *temp1, *temp2;
+		temp1 = bitmap2node_name(nodes_avail);
+		temp2 = bitmap2node_name(nodes_idle);
+		info("step pick %u nodes, avail:%s idle:%s", 
+		     step_spec->node_count, temp1, temp2);
+		xfree(temp1);
+		xfree(temp2);
 	}
 
 	/* if user specifies step needs a specific processor count and 
@@ -694,8 +697,8 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	if (step_spec->node_count) {
 		nodes_picked_cnt = bit_set_count(nodes_picked);
 		if (slurm_get_debug_flags() & DEBUG_FLAG_STEPS) {
-			info("got %u %d", step_spec->node_count, 
-			     nodes_picked_cnt);
+			verbose("got %u %d", step_spec->node_count, 
+			        nodes_picked_cnt);
 		}
 		if (nodes_idle 
 		    && (bit_set_count(nodes_idle) >= step_spec->node_count)
@@ -1097,6 +1100,8 @@ step_create(job_step_create_request_msg_t *step_specs,
 	orig_cpu_count =  step_specs->cpu_count;
 	if (step_specs->overcommit)
 		step_specs->cpu_count = 0;
+	if (step_specs->no_kill > 1)
+		step_specs->no_kill = 1;
 
 	if (job_ptr->kill_on_step_done)
 		/* Don't start more steps, job already being cancelled */
@@ -1141,10 +1146,10 @@ step_create(job_step_create_request_msg_t *step_specs,
 		xfree(step_specs->node_list);
 		step_specs->node_list = xstrdup(step_node_list);
 	}
-#if STEP_DEBUG
-	info("got %s and %s looking for %d nodes", step_node_list,
-	     step_specs->node_list, step_specs->node_count);
-#endif
+	if (slurm_get_debug_flags() & DEBUG_FLAG_STEPS) {
+		verbose("got %s and %s looking for %d nodes", step_node_list,
+		        step_specs->node_list, step_specs->node_count);
+	}
 	step_ptr->step_node_bitmap = nodeset;
 	
 	switch(step_specs->task_dist) {
@@ -1168,6 +1173,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	step_ptr->exit_code = NO_VAL;
 	step_ptr->exclusive = step_specs->exclusive;
 	step_ptr->ckpt_path = xstrdup(step_specs->ckpt_path);
+	step_ptr->no_kill   = step_specs->no_kill;
 
 	/* step's name and network default to job's values if not 
 	 * specified in the step specification */
@@ -1450,29 +1456,35 @@ extern int pack_ctld_job_step_info_response_msg(uint32_t job_id,
 }
 
 /* 
- * step_on_node - determine if the specified job has any job steps allocated to 
- * 	the specified node 
+ * kill_step_on_node - determine if the specified job has any job steps
+ *	allocated to the specified node and kill them unless no_kill flag
+ *	is set on the step
  * IN job_ptr - pointer to an active job record
  * IN node_ptr - pointer to a node record
- * RET true of job has step on the node, false otherwise 
+ * RET count of killed job steps
  */
-bool step_on_node(struct job_record  *job_ptr, struct node_record *node_ptr)
+extern int kill_step_on_node(struct job_record  *job_ptr, 
+			     struct node_record *node_ptr)
 {
 	ListIterator step_iterator;
 	struct step_record *step_ptr;
-	bool found = false;
+	int found = 0;
 	int bit_position;
 
 	if ((job_ptr == NULL) || (node_ptr == NULL))
-		return false;
+		return found;
 
 	bit_position = node_ptr - node_record_table_ptr;
 	step_iterator = list_iterator_create (job_ptr->step_list);	
 	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
-		if (bit_test(step_ptr->step_node_bitmap, bit_position)) {
-			found = true;
-			break;
-		}
+		if (step_ptr->no_kill ||
+		    (bit_test(step_ptr->step_node_bitmap, bit_position) == 0))
+			continue;
+		info("killing step %u.%u on down node %s", 
+		     job_ptr->job_id, step_ptr->step_id, node_ptr->name);
+		srun_step_complete(step_ptr);
+		signal_step_tasks(step_ptr, SIGKILL);
+		found++;
 	}		
 
 	list_iterator_destroy (step_iterator);
@@ -1956,6 +1968,8 @@ extern void dump_job_step_state(struct step_record *step_ptr, Buf buffer)
 	pack16(step_ptr->port, buffer);
 	pack16(step_ptr->ckpt_interval, buffer);
 
+	pack8(step_ptr->no_kill, buffer);
+
 	pack32(step_ptr->cpu_count, buffer);
 	pack32(step_ptr->mem_per_task, buffer);
 	pack32(step_ptr->exit_code, buffer);
@@ -1997,6 +2011,7 @@ extern void dump_job_step_state(struct step_record *step_ptr, Buf buffer)
 extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 {
 	struct step_record *step_ptr = NULL;
+	uint8_t no_kill;
 	uint16_t step_id, cyclic_alloc, port, batch_step, bit_cnt;
 	uint16_t ckpt_interval;
 	uint32_t core_size, cpu_count, exit_code, mem_per_task, name_len;
@@ -2011,6 +2026,8 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 	safe_unpack16(&cyclic_alloc, buffer);
 	safe_unpack16(&port, buffer);
 	safe_unpack16(&ckpt_interval, buffer);
+
+	safe_unpack8(&no_kill, buffer);
 
 	safe_unpack32(&cpu_count, buffer);
 	safe_unpack32(&mem_per_task, buffer);
@@ -2050,6 +2067,11 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 		      job_ptr->job_id, step_id, cyclic_alloc);
 		goto unpack_error;
 	}
+	if (no_kill > 1) {
+		error("Invalid data for job %u.%u: no_kill=%u",
+		      job_ptr->job_id, step_id, no_kill);
+		goto unpack_error;
+	}
 
 	step_ptr = find_step_record(job_ptr, step_id);
 	if (step_ptr == NULL)
@@ -2063,13 +2085,14 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 	step_ptr->cyclic_alloc = cyclic_alloc;
 	step_ptr->name         = name;
 	step_ptr->network      = network;
+	step_ptr->no_kill      = no_kill;
 	step_ptr->ckpt_path    = ckpt_path;
 	step_ptr->port         = port;
 	step_ptr->ckpt_interval= ckpt_interval;
 	step_ptr->mem_per_task = mem_per_task;
 	step_ptr->host         = host;
-	step_ptr->batch_step   = batch_step;
 	host                   = NULL;  /* re-used, nothing left to free */
+	step_ptr->batch_step   = batch_step;
 	step_ptr->start_time   = start_time;
 	step_ptr->pre_sus_time = pre_sus_time;
 	step_ptr->tot_sus_time = tot_sus_time;

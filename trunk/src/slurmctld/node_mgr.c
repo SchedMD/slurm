@@ -1112,8 +1112,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 				/* We must set node DOWN before killing 
 				 * its jobs */
 				_make_node_down(node_ptr, now);
-				kill_running_job_by_node_name (this_node_name,
-							       false);
+				kill_running_job_by_node_name (this_node_name);
 			}
 			else if (state_val == NODE_STATE_IDLE) {
 				/* assume they want to clear DRAIN and
@@ -2129,7 +2128,7 @@ void set_node_down (char *name, char *reason)
 		xstrcat(node_ptr->reason, time_buf);
 	}
 	_make_node_down(node_ptr, now);
-	(void) kill_running_job_by_node_name(name, false);
+	(void) kill_running_job_by_node_name(name);
 
 	return;
 }

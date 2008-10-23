@@ -416,6 +416,7 @@ typedef struct job_step_specs {
 	char *name;		/* name of the job step, default "" */
 	char *network;		/* network use spec */
 	uint32_t node_count;	/* count of required nodes */
+	uint8_t no_kill;	/* 1 if no kill on node failure */
 	char *node_list;	/* list of required nodes */
 	uint32_t num_tasks;	/* number of tasks required */
 	uint8_t overcommit;     /* flag, 1 to allow overcommit of processors,

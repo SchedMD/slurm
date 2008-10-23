@@ -478,6 +478,7 @@ struct 	step_record {
 	uint32_t mem_per_task;		/* MB memory per task, 0=no limit */
 	char *name;			/* name of job step */
 	char *network;			/* step's network specification */
+	uint8_t no_kill;		/* 1 if no kill on node failure */
 	uint16_t port;			/* port for srun communications */
 	time_t pre_sus_time;		/* time step ran prior to last suspend */
 	time_t start_time;      	/* step allocation time */
@@ -1023,13 +1024,23 @@ extern void kill_job_on_node(uint32_t job_id, struct job_record *job_ptr,
 			     struct node_record *node_ptr);
 
 /*
- * kill_running_job_by_node_name - Given a node name, deallocate jobs 
- *	from the node or kill them 
+ * kill_running_job_by_node_name - Given a node name, deallocate RUNNING 
+ *	or COMPLETING jobs from the node or kill them 
  * IN node_name - name of a node
- * IN step_test - if true, only kill the job if a step is running on the node
  * RET number of killed jobs
  */
-extern int kill_running_job_by_node_name(char *node_name, bool step_test);
+extern int kill_running_job_by_node_name(char *node_name);
+
+/* 
+ * kill_step_on_node - determine if the specified job has any job steps
+ *	allocated to the specified node and kill them unless no_kill flag
+ *	is set on the step
+ * IN job_ptr - pointer to an active job record
+ * IN node_ptr - pointer to a node record
+ * RET count of killed job steps
+ */
+extern int kill_step_on_node(struct job_record  *job_ptr, 
+			     struct node_record *node_ptr);
 
 /* list_compare_config - compare two entry from the config list based upon 
  *	weight, see common/list.h for documentation */
@@ -1404,16 +1415,6 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
  */
 extern int step_epilog_complete(struct job_record  *job_ptr, 
 	char *node_name);
-
-/* 
- * step_on_node - determine if the specified job has any job steps allocated to 
- * 	the specified node 
- * IN job_ptr - pointer to an active job record
- * IN node_ptr - pointer to a node record
- * RET true of job has step on the node, false otherwise 
- */
-extern bool step_on_node(struct job_record  *job_ptr, 
-			 struct node_record *node_ptr);
 
 /*
  * step_partial_comp - Note the completion of a job step on at least

@@ -58,7 +58,6 @@ struct step_launch_state {
 	bitstr_t *tasks_exited;  /* or never started correctly */
 	bool abort;
 	bool abort_action_taken;
-	bool no_kill;
 
 	/* message thread variables */
 	eio_handle_t *msg_handle;

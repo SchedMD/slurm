@@ -1602,6 +1602,7 @@ _pack_job_step_create_request_msg(job_step_create_request_msg_t
 	packstr(msg->node_list, buffer);
 	packstr(msg->ckpt_path, buffer);
 
+	pack8(msg->no_kill, buffer);
 	pack8(msg->overcommit, buffer);
 }
 
@@ -1638,6 +1639,7 @@ _unpack_job_step_create_request_msg(job_step_create_request_msg_t ** msg,
 	safe_unpackstr_xmalloc(&(tmp_ptr->node_list), &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&(tmp_ptr->ckpt_path), &uint32_tmp, buffer);
 
+	safe_unpack8(&(tmp_ptr->no_kill), buffer);
 	safe_unpack8(&(tmp_ptr->overcommit), buffer);
 
 	return SLURM_SUCCESS;

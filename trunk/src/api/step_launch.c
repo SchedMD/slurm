@@ -570,7 +570,6 @@ struct step_launch_state *step_launch_state_create(slurm_step_ctx_t *ctx)
 	sls->resp_port = NULL;
 	sls->abort = false;
 	sls->abort_action_taken = false;
-	sls->no_kill = ctx->no_kill;
 	sls->mpi_info->jobid = ctx->step_req->job_id;
 	sls->mpi_info->stepid = ctx->step_resp->job_step_id;
 	sls->mpi_info->step_layout = layout;
@@ -855,14 +854,6 @@ _node_fail_handler(struct step_launch_state *sls, slurm_msg_t *fail_msg)
 	int node_id, num_tasks;
 
 	error("Node failure on %s", nf->nodelist);
-	if (!sls->no_kill) {
-		info("Cancelling job step %u.%u", nf->job_id, nf->step_id);
-		slurm_kill_job_step(nf->job_id, nf->step_id, SIGKILL);
-		/* In an ideal world, we close the socket to this node and
-		 * normally terminate the remaining tasks. In practice this
-		 * is very difficult. The exercise is left to the reader. */
-		exit(1);
-	}
 
 	fail_nodes = hostset_create(nf->nodelist);
 	fail_itr = hostset_iterator_create(fail_nodes);

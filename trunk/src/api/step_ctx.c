@@ -88,6 +88,7 @@ static job_step_create_request_msg_t *_create_step_request(
 	step_req->node_list = xstrdup(step_params->node_list);
 	step_req->network = xstrdup(step_params->network);
 	step_req->name = xstrdup(step_params->name);
+	step_req->no_kill = step_params->no_kill;
 	step_req->overcommit = step_params->overcommit ? 1 : 0;
 	step_req->mem_per_task = step_params->mem_per_task;
 
@@ -139,7 +140,6 @@ slurm_step_ctx_create (const slurm_step_ctx_params_t *step_params)
 	ctx->magic	= STEP_CTX_MAGIC;
 	ctx->job_id	= step_req->job_id;
 	ctx->user_id	= step_req->user_id;
-	ctx->no_kill	= step_params->no_kill;
 	ctx->step_req   = step_req;
 	ctx->step_resp	= step_resp;
 	ctx->verbose_level = step_params->verbose_level;
@@ -214,7 +214,6 @@ slurm_step_ctx_create_no_alloc (const slurm_step_ctx_params_t *step_params,
 	ctx->magic	= STEP_CTX_MAGIC;
 	ctx->job_id	= step_req->job_id;
 	ctx->user_id	= step_req->user_id;
-	ctx->no_kill	= step_params->no_kill;
 	ctx->step_req   = step_req;
 	ctx->step_resp	= step_resp;
 	ctx->verbose_level = step_params->verbose_level;
