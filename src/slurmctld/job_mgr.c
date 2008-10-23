@@ -1152,10 +1152,9 @@ extern int kill_job_by_part_name(char *part_name)
  * kill_running_job_by_node_name - Given a node name, deallocate RUNNING 
  *	or COMPLETING jobs from the node or kill them 
  * IN node_name - name of a node
- * IN step_test - if true, only kill the job if a step is running on the node
  * RET number of killed jobs
  */
-extern int kill_running_job_by_node_name(char *node_name, bool step_test)
+extern int kill_running_job_by_node_name(char *node_name)
 {
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
@@ -1206,10 +1205,6 @@ extern int kill_running_job_by_node_name(char *node_name, bool step_test)
 				      "JobId=%u", 
 				      node_ptr->name, job_ptr->job_id);
 		} else if ((job_ptr->job_state == JOB_RUNNING) || suspended) {
-			if (step_test && 
-			    (step_on_node(job_ptr, node_ptr) == 0))
-				continue;
-
 			job_count++;
 			if ((job_ptr->details) &&
 			    (job_ptr->kill_on_node_fail == 0) &&
@@ -1218,6 +1213,7 @@ extern int kill_running_job_by_node_name(char *node_name, bool step_test)
 				srun_node_fail(job_ptr->job_id, node_name);
 				error("Removing failed node %s from job_id %u",
 				      node_name, job_ptr->job_id);
+				kill_step_on_node(job_ptr, node_ptr);
 				_excise_node_from_job(job_ptr, node_ptr);
 			} else if (job_ptr->batch_flag && job_ptr->details &&
 			           (job_ptr->details->requeue > 0)) {

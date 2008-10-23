@@ -10,6 +10,10 @@ documents those changes that are of interest to users and admins.
     (cons_res_preempt.patch from Chris Holmes, HP).
  -- Add configuration parameter DebugFlags to provide detailed logging for
     specific subsystems (steps and triggers so far).
+ -- srun's --no-kill option is passed to slurmctld so that a job step is 
+    killed even if the node where srun executes goes down (unless the 
+    --no-kill option is used, previous termination logic would fail if 
+    srun was not responding).
 
 * Changes in SLURM 1.4.0-pre3
 =============================
