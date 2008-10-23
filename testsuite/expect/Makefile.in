@@ -540,6 +540,7 @@ EXTRA_DIST = \
 	test21.19			\
 	test21.20			\
 	test21.21			\
+	test21.22			\
 	usleep
 
 all: all-am
