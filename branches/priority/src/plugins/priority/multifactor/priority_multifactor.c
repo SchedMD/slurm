@@ -247,10 +247,32 @@ static int _set_childern_eusage(List childern_list)
 	}
 	itr = list_iterator_create(childern_list);
 	while((assoc = list_next(itr))) {
-		if(assoc->user) {
+		if (assoc->parent_assoc_ptr == assoc_mgr_root_assoc) {
+			assoc->eused_shares = assoc->used_shares;
+			if(assoc->user) {
+				if(assoc->eused_shares
+				   > assoc_mgr_root_assoc->cpu_shares)
+					assoc->eused_shares = 1;
+				else
+					assoc->eused_shares /=
+						assoc_mgr_root_assoc->
+						cpu_shares;
+
+				assoc->eused_shares = 
+					((assoc->norm_shares
+					  - assoc->eused_shares) + 1) / 2;
+				info("eusage for user %s %Lf",
+				     assoc->user, assoc->eused_shares);
+			} else {
+				info("eusage for %s %Lf",
+				     assoc->acct, assoc->eused_shares);
+				_set_childern_eusage(assoc->childern_list);
+			}
+			continue;
+		} else if(assoc->user) {
 			assoc->eused_shares = NO_VAL;
 			continue;
-		}
+		} 
 
 		assoc->eused_shares = assoc->used_shares 
 			+ ((assoc->parent_assoc_ptr->eused_shares
