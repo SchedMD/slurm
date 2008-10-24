@@ -61,7 +61,11 @@ typedef struct {
  	void (*remove_assoc_notify) (acct_association_rec_t *rec);
 } assoc_init_args_t;
 
-extern acct_association_rec_t *root_assoc;
+extern acct_association_rec_t *assoc_mgr_root_assoc;
+extern pthread_mutex_t assoc_mgr_association_lock;
+extern pthread_mutex_t assoc_mgr_qos_lock;
+extern pthread_mutex_t assoc_mgr_user_lock;
+extern pthread_mutex_t assoc_mgr_file_lock;
 
 /* 
  * get info from the storage 
@@ -144,25 +148,25 @@ extern int assoc_mgr_set_cpu_shares(uint32_t procs, uint64_t half_life);
 
 
 /* 
- * update associations in local cache 
+ * update associations in cache 
  * IN:  acct_update_object_t *object
  * RET: SLURM_SUCCESS on success (or not found) SLURM_ERROR else
  */
-extern int assoc_mgr_update_local_assocs(acct_update_object_t *update);
+extern int assoc_mgr_update_assocs(acct_update_object_t *update);
 
 /* 
- * update qos in local cache 
+ * update qos in cache 
  * IN:  acct_update_object_t *object
  * RET: SLURM_SUCCESS on success (or not found) SLURM_ERROR else
  */
-extern int assoc_mgr_update_local_qos(acct_update_object_t *update);
+extern int assoc_mgr_update_qos(acct_update_object_t *update);
 
 /* 
- * update users in local cache 
+ * update users in cache 
  * IN:  acct_update_object_t *object
  * RET: SLURM_SUCCESS on success (or not found) SLURM_ERROR else
  */
-extern int assoc_mgr_update_local_users(acct_update_object_t *update);
+extern int assoc_mgr_update_users(acct_update_object_t *update);
 
 /* 
  * validate that an association ID is still valid 

@@ -565,8 +565,8 @@ static int _load_job_state(Buf buffer)
 	int error_code;
 	select_jobinfo_t select_jobinfo = NULL;
 	select_job_res_t select_job = NULL;
-	acct_association_rec_t assoc_rec, *assoc_ptr = NULL;
-	acct_qos_rec_t qos_rec, *qos_ptr = NULL;
+	acct_association_rec_t assoc_rec;
+	acct_qos_rec_t qos_rec;
 
 	safe_unpack32(&assoc_id, buffer);
 	safe_unpack32(&job_id, buffer);
@@ -659,17 +659,6 @@ static int _load_job_state(Buf buffer)
 		 * reset_job_bitmaps() will clean-up this job */
 	}
 
-	if(qos) {
-		bzero(&qos_rec, sizeof(acct_qos_rec_t));
-		qos_rec.id = qos;
-		if((assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec,
-					  accounting_enforce, &qos_ptr))
-		   != SLURM_SUCCESS) {
-			verbose("Invalid qos (%u) for job_id %u", qos, job_id);
-			/* not a fatal error, qos could have been removed */
-		} 
-	}
-
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {
 		job_ptr = create_job_record(&error_code);
@@ -680,6 +669,18 @@ static int _load_job_state(Buf buffer)
 		}
 		job_ptr->job_id = job_id;
 		_add_job_hash(job_ptr);
+	}
+
+	if(qos) {
+		bzero(&qos_rec, sizeof(acct_qos_rec_t));
+		qos_rec.id = qos;
+		if((assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec,
+					  accounting_enforce, 
+					  (acct_qos_rec_t **)&job_ptr->qos_ptr))
+		   != SLURM_SUCCESS) {
+			verbose("Invalid qos (%u) for job_id %u", qos, job_id);
+			/* not a fatal error, qos could have been removed */
+		} 
 	}
 
 	if ((maximum_prio >= priority) && (priority > 1))
@@ -750,7 +751,6 @@ static int _load_job_state(Buf buffer)
 	job_ptr->pre_sus_time = pre_sus_time;
 	job_ptr->priority     = priority;
 	job_ptr->qos          = qos;
-	job_ptr->qos_ptr      = qos_ptr;
 	xfree(job_ptr->resp_host);
 	job_ptr->resp_host    = resp_host;
 	resp_host             = NULL;	/* reused, nothing left to free */
@@ -784,7 +784,8 @@ static int _load_job_state(Buf buffer)
 
 	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 				    accounting_enforce,
-				    &assoc_ptr) &&
+				    (acct_association_rec_t **)
+				    &job_ptr->assoc_ptr) &&
 	    accounting_enforce && (!IS_JOB_FINISHED(job_ptr))) {
 		info("Cancelling job %u with invalid association",
 		     job_id);
@@ -797,8 +798,7 @@ static int _load_job_state(Buf buffer)
 		if(job_ptr->assoc_id)
 			jobacct_storage_g_job_complete(acct_db_conn, job_ptr);
 	} else {
-		info("Recovered job %u %u", job_id, assoc_ptr->id);
-		job_ptr->assoc_ptr = (void *) assoc_ptr;
+		info("Recovered job %u %u", job_id, job_ptr->assoc_id);
 
 		/* make sure we have started this job in accounting */
 		if(job_ptr->assoc_id && !job_ptr->db_index && job_ptr->nodes) {
@@ -4396,24 +4396,24 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		else if (tmp_part_ptr == NULL)
 			error_code = ESLURM_INVALID_PARTITION_NAME;
 		else if (super_user) {
-			acct_association_rec_t assoc_rec, *assoc_ptr;
+			acct_association_rec_t assoc_rec;
 			bzero(&assoc_rec, sizeof(acct_association_rec_t));
 			assoc_rec.uid       = job_ptr->user_id;
 			assoc_rec.partition = job_specs->partition;
 			assoc_rec.acct      = job_ptr->account;
 			if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
-						    accounting_enforce, 
-						    &assoc_ptr)) {
+						    accounting_enforce,
+						    (acct_association_rec_t **)
+						    &job_ptr->assoc_ptr)) {
 				info("job_update: invalid account %s "
 				     "for job %u",
 				     job_specs->account, job_ptr->job_id);
 				error_code = ESLURM_INVALID_ACCOUNT;
 				/* Let update proceed. Note there is an invalid
 				 * association ID for accounting purposes */
-			} else {
+			} else 
 				job_ptr->assoc_id = assoc_rec.id;
-				job_ptr->assoc_ptr = (void *) assoc_ptr;
-			}
+
 			xfree(job_ptr->partition);
 			job_ptr->partition = xstrdup(job_specs->partition);
 			job_ptr->part_ptr = tmp_part_ptr;
@@ -5994,7 +5994,7 @@ extern int job_cancel_by_assoc_id(uint32_t assoc_id)
 extern int update_job_account(char *module, struct job_record *job_ptr, 
 			      char *new_account)
 {
-	acct_association_rec_t assoc_rec, *assoc_ptr;
+	acct_association_rec_t assoc_rec;
 
 	if ((!IS_JOB_PENDING(job_ptr)) || (job_ptr->details == NULL)) {
 		info("%s: attempt to modify account for non-pending "
@@ -6008,19 +6008,23 @@ extern int update_job_account(char *module, struct job_record *job_ptr,
 	assoc_rec.partition = job_ptr->partition;
 	assoc_rec.acct      = new_account;
 	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
-				    accounting_enforce, &assoc_ptr)) {
+				    accounting_enforce,
+				    (acct_association_rec_t **)
+				    &job_ptr->assoc_ptr)) {
 		info("%s: invalid account %s for job_id %u",
 		     module, new_account, job_ptr->job_id);
 		return ESLURM_INVALID_ACCOUNT;
 	} else if(association_based_accounting 
-		  && !assoc_ptr && !accounting_enforce) {
+		  && !job_ptr->assoc_ptr && !accounting_enforce) {
 		/* if not enforcing associations we want to look for
 		   the default account and use it to avoid getting
 		   trash in the accounting records.
 		*/
 		assoc_rec.acct = NULL;
 		assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
-					accounting_enforce, &assoc_ptr);
+					accounting_enforce, 
+					(acct_association_rec_t **)
+					&job_ptr->assoc_ptr);
 	}
 
 	xfree(job_ptr->account);
@@ -6033,7 +6037,6 @@ extern int update_job_account(char *module, struct job_record *job_ptr,
 		     module, job_ptr->job_id);
 	}
 	job_ptr->assoc_id = assoc_rec.id;
-	job_ptr->assoc_ptr = (void *) assoc_ptr;
 
 	if (job_ptr->details && job_ptr->details->begin_time) {
 		/* Update account associated with the eligible time */

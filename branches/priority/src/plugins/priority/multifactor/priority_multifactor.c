@@ -227,6 +227,48 @@ static int _write_last_decay_ran(time_t last_ran)
 	return error_code;
 }
 
+/* This should initially get the childern list from
+ * assoc_mgr_root_assoc.  Since our algorythm goes from top down we
+ * calculate all the non-user associations now.  When a user submits a
+ * job that norm_fairshare is calculated.  Here we will set the
+ * norm_fairshare to NO_VAL for users to not have to calculate a bunch
+ * of things that will never be used. 
+ *
+ * NOTE: acct_mgr_association_lock must be locked before this is called.
+ */
+static int _set_childern_eusage(List childern_list)
+{
+	acct_association_rec_t *assoc = NULL;
+	ListIterator itr = NULL;
+
+	if(!childern_list || !list_count(childern_list)) {
+		info("no childern");
+		return SLURM_SUCCESS;
+	}
+	itr = list_iterator_create(childern_list);
+	while((assoc = list_next(itr))) {
+		if(assoc->user) {
+			assoc->eused_shares = NO_VAL;
+			continue;
+		}
+
+		assoc->eused_shares = assoc->used_shares 
+			+ ((assoc->parent_assoc_ptr->eused_shares
+			    - assoc->used_shares) 
+			   * assoc->cpu_shares / assoc->level_cpu_shares);
+		info("eusage for %s %Lf + ((%Lf - %Lf) * %Lf / %Lf) = %Lf",
+		     assoc->acct, assoc->used_shares, 
+		     assoc->parent_assoc_ptr->eused_shares,
+		     assoc->used_shares, assoc->cpu_shares, 
+		     assoc->level_cpu_shares,
+		     assoc->eused_shares);
+
+		_set_childern_eusage(assoc->childern_list);
+	}
+	list_iterator_destroy(itr);
+	return SLURM_SUCCESS;
+}
+
 /* job_ptr should already have the partition priority and such added
  * here before had we will be adding to it
  */
@@ -234,51 +276,58 @@ static double _get_fairshare_priority( struct job_record *job_ptr )
 {
 	acct_association_rec_t *assoc = 
 		(acct_association_rec_t *)job_ptr->assoc_ptr;
-	acct_association_rec_t *first_assoc = assoc;
 	long double usage = 0;
-	long double tmp_usage1 = 0;
-	long double tmp_usage2 = 0;
 
-	xassert(root_assoc);
+	xassert(assoc_mgr_root_assoc);
+	xassert(assoc_mgr_root_assoc->cpu_shares);
 
 	if(!assoc) {
 		error("Job %u has no association.  Unable to "
 		      "compute fairshare.");
-		job_ptr->priority = 0;
-		return NO_VAL;
+		return 0;
 	}
 	
-	/* only go to the root since we do things different at the
-	 * top */
-	while(assoc->parent_assoc_ptr) {
-		char *tmp_char = assoc->user;
-		if(!tmp_char)
-			tmp_char = assoc->acct;
-		tmp_usage1 = ((assoc->parent_assoc_ptr->used_shares
-			       + assoc->used_shares) / assoc->level_cpu_shares)
-			* assoc->cpu_shares;
-		tmp_usage2 = usage;
-		usage += tmp_usage1;
-		info("at %s ((%Lf + %Lf) / %Lf) * %Lf = %Lf + %Lf = %Lf",
-		     tmp_char, 
-		     assoc->parent_assoc_ptr->used_shares,
-		     assoc->used_shares, assoc->level_cpu_shares,
-		     assoc->cpu_shares, tmp_usage1, tmp_usage2, usage);
-		assoc = assoc->parent_assoc_ptr;
-	}
+	slurm_mutex_lock(&assoc_mgr_association_lock);
+	if(assoc->eused_shares == NO_VAL) {
+		xassert(assoc->parent_assoc_ptr);
+		usage = assoc->used_shares 
+			+ ((assoc->parent_assoc_ptr->eused_shares
+			    - assoc->used_shares) 
+			   * assoc->cpu_shares / assoc->level_cpu_shares);
+		assoc->eused_shares = usage;
+		info("eusage for user %s %Lf + ((%Lf - %Lf) * %Lf / %Lf) = %Lf",
+		     assoc->user, assoc->used_shares, 
+		     assoc->parent_assoc_ptr->eused_shares,
+		     assoc->used_shares, assoc->cpu_shares, 
+		     assoc->level_cpu_shares,
+		     assoc->eused_shares);
+		/* This is needed incase someone changes the halflife on the
+		   fly and now we have used more time that we have now
+		*/
+		if(usage > assoc_mgr_root_assoc->cpu_shares)
+			usage = 1;
+		else
+			usage /= assoc_mgr_root_assoc->cpu_shares;
+		info("Normilized usage = %Lf / %Lf = %Lf", 
+		     assoc->eused_shares, assoc_mgr_root_assoc->cpu_shares,
+		     usage);
+		
+		// Priority is 0 -> 1
+		assoc->eused_shares = 
+			((assoc->norm_shares - usage) + 1) / 2;
+		info("((%f - %Lf) + 1) / 2 = %Lf", assoc->norm_shares,
+		     usage, assoc->eused_shares);
+		debug("job %u has a fairshare priority of %Lf", 
+		      job_ptr->job_id, assoc->eused_shares);
+	} 
+	
+	usage = assoc->eused_shares;
+	slurm_mutex_unlock(&assoc_mgr_association_lock);
 
-	tmp_usage2 = usage;
-	if(root_assoc->cpu_shares)
-		usage /= root_assoc->cpu_shares;
-	info("Normilized usage = %Lf / %Lf = %Lf", 
-	     tmp_usage2, root_assoc->cpu_shares, usage);
-	// Priority is 0 -> 1
-	tmp_usage1 = ((first_assoc->norm_shares - usage) + 1) / 2;
-	info("((%f - %Lf) + 1) / 2 = %Lf", first_assoc->norm_shares,
-	     usage, tmp_usage1);
 	debug("job %u has a fairshare priority of %Lf", 
-	      job_ptr->job_id, tmp_usage1);
-	return (double)tmp_usage1;
+	      job_ptr->job_id, usage);
+
+	return (double)usage;
 }
 
 static uint32_t _get_priority_internal(time_t start_time,
@@ -396,7 +445,8 @@ static void *_decay_thread(void *no_data)
 		itr = list_iterator_create(job_list);
 		while ((job_ptr = list_next(itr))) {
 			/* apply new usage */
-			if(job_ptr->start_time && job_ptr->assoc_ptr) {
+			if(!IS_JOB_PENDING(job_ptr) &&
+			   job_ptr->start_time && job_ptr->assoc_ptr) {
 				acct_association_rec_t *assoc =	
 					(acct_association_rec_t *)
 					job_ptr->assoc_ptr;
@@ -417,6 +467,7 @@ static void *_decay_thread(void *no_data)
 					continue;
 
 				run_delta *= job_ptr->total_procs;
+				slurm_mutex_lock(&assoc_mgr_association_lock);
 				while(assoc) {
 					assoc->used_shares +=
 						(long double)run_delta;
@@ -427,6 +478,7 @@ static void *_decay_thread(void *no_data)
 					     assoc->used_shares);
 					assoc = assoc->parent_assoc_ptr;
 				}
+				slurm_mutex_unlock(&assoc_mgr_association_lock);
 			}
 
 			/* 
@@ -444,8 +496,16 @@ static void *_decay_thread(void *no_data)
 			debug("priority for job %u is now %u", 
 			      job_ptr->job_id, job_ptr->priority);
 		}
+		list_iterator_destroy(itr);
 		unlock_slurmctld(job_write_lock);
 
+		/* now calculate all the normilized usage here */
+		slurm_mutex_lock(&assoc_mgr_association_lock);
+		assoc_mgr_root_assoc->eused_shares =
+			assoc_mgr_root_assoc->used_shares;
+		_set_childern_eusage(assoc_mgr_root_assoc->childern_list);
+		slurm_mutex_unlock(&assoc_mgr_association_lock);
+	
 	sleep_now:
 		last_ran = start_time;
 

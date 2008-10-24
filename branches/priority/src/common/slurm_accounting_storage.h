@@ -146,6 +146,7 @@ typedef struct acct_association_rec {
 
 	long double cpu_shares;	/* how many cpu shares available for
 				 * this association (DON'T PACK) */
+	long double eused_shares; /* Effective used shares (DON'T PACK) */
 	uint32_t fairshare;	/* fairshare number */
 
 	uint64_t grp_cpu_mins; /* max number of cpu hours the

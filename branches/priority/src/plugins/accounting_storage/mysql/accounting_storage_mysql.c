@@ -2643,17 +2643,17 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 			case ACCT_REMOVE_USER:
 			case ACCT_ADD_COORD:
 			case ACCT_REMOVE_COORD:
-				rc = assoc_mgr_update_local_users(object);
+				rc = assoc_mgr_update_users(object);
 				break;
 			case ACCT_ADD_ASSOC:
 			case ACCT_MODIFY_ASSOC:
 			case ACCT_REMOVE_ASSOC:
-				rc = assoc_mgr_update_local_assocs(object);
+				rc = assoc_mgr_update_assocs(object);
 				break;
 			case ACCT_ADD_QOS:
 			case ACCT_MODIFY_QOS:
 			case ACCT_REMOVE_QOS:
-				rc = assoc_mgr_update_local_qos(object);
+				rc = assoc_mgr_update_qos(object);
 				break;
 			case ACCT_UPDATE_NOTSET:
 			default:
