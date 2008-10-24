@@ -26,6 +26,9 @@ documents those changes that are of interest to users and admins.
     Will now contain the number of tasks per node instead of the number of cpus
     per node.  This is only for an allocation not a step which this is 
     already set correctly.
+ -- Configuration parameter PropagateResourceLimits has new option of "NONE".
+ -- User's --propagate options take precidence over PropagateResourceLimits
+    configuration parameter in both srun and sbatch commands.
 
 * Changes in SLURM 1.3.9
 ========================
