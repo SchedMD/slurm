@@ -317,8 +317,6 @@ static double _get_fairshare_priority( struct job_record *job_ptr )
 			((assoc->norm_shares - usage) + 1) / 2;
 		info("((%f - %Lf) + 1) / 2 = %Lf", assoc->norm_shares,
 		     usage, assoc->eused_shares);
-		debug("job %u has a fairshare priority of %Lf", 
-		      job_ptr->job_id, assoc->eused_shares);
 	} 
 	
 	usage = assoc->eused_shares;
