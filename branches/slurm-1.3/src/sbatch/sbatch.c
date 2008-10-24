@@ -469,7 +469,14 @@ static int _set_rlimit_env(void)
 	slurm_conf_lock();
 	slurm_conf_unlock();
 
+	/* Modify limits with any command-line options */
+	if (opt.propagate && parse_rlimits( opt.propagate, PROPAGATE_RLIMITS))
+		fatal( "--propagate=%s is not valid.", opt.propagate );
+
 	for (rli = get_slurm_rlimits_info(); rli->name != NULL; rli++ ) {
+
+		if (rli->propagate_flag != PROPAGATE_RLIMITS)
+			continue;
 
 		if (getrlimit (rli->resource, rlim) < 0) {
 			error ("getrlimit (RLIMIT_%s): %m", rli->name);
