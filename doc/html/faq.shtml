@@ -27,6 +27,8 @@ allocated to a SLURM job?</a></li>
 30s ago&quot; followed by &quot;srun Job Failed&quot;?</a></li>
 <li><a href="#memlock">Why is my MPI job  failing due to the locked memory 
 (memlock) limit being too low?</a></li>
+<li><a href="#inactive">Why is my batch job that launches no job steps being 
+killed?</a></li>
 </ol>
 <h2>For Administrators</h2>
 <ol>
@@ -489,7 +491,7 @@ to execute a parallel job when one of the tasks has exited is
 not normally productive. This behavior can be changed using srun's
 <i>--wait=&lt;time&gt;</i> option to either change the timeout
 period or disable the timeout altogether. See srun's man page
-for details.
+for details.</p>
 
 <p><a name="memlock"><b>18. Why is my MPI job  failing due to the 
 locked memory (memlock) limit being too low?</b></a><br>
@@ -510,7 +512,18 @@ locked memory limit limit to be unlimited on the compute nodes (see
 full advantage of this limit (e.g. by adding something like
 <i>"ulimit -l unlimited"</i> to the <i>/etc/init.d/slurm</i>
 script used to initiate <i>slurmd</i>). 
-Related information about <a href="#pam">PAM</a> is also available.
+Related information about <a href="#pam">PAM</a> is also available.</p>
+
+<p><a name="inactive"><b>19. Why is my batch job that launches no 
+job steps being killed?</b></a><br>
+SLURM has a configuration parameter <i>InactiveLimit</i> intended 
+to kill jobs that do not spawn any job steps for a configurable
+period of time. Your system administrator may modify the <i>InactiveLimit</i>
+to satisfy your needs. Alternatly, you can just spawn a job step
+at the beginning of your script to execute in the background. It
+will be purged when your script exits or your job otherwise terminates.
+A line of this sort near the beginning of your script should suffice:<br>
+<i>srun -N1 -n1 sleep 999999 &</i></p>
 
 <p class="footer"><a href="#top">top</a></p>
 
@@ -1018,6 +1031,6 @@ Index: src/slurmctld/ping_nodes.c
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 7 October 2008</p>
+<p style="text-align:center;">Last modified 24 October 2008</p>
 
 <!--#include virtual="footer.txt"-->
