@@ -671,6 +671,7 @@ extern void init_acct_association_rec(acct_association_rec_t *assoc)
 	memset(assoc, 0, sizeof(acct_association_rec_t));
 
 	assoc->cpu_shares = NO_VAL;
+	assoc->eused_shares = NO_VAL;
 
 	assoc->fairshare = NO_VAL;
 

@@ -1661,10 +1661,11 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 			if(!assoc->user)
 				continue;
 			
+			pack32(assoc->id, buffer);
+
 			ld_tmp = assoc->used_shares * FLOAT_MULT;
 			uint64_tmp = (uint64_t)ld_tmp;
-			pack32(assoc->id, buffer);
-			pack64(uint64_tmp, buffer);			
+			pack64(uint64_tmp, buffer);
 		}
 		list_iterator_destroy(itr);
 		slurm_mutex_unlock(&assoc_mgr_association_lock);
