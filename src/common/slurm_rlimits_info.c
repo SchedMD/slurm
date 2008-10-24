@@ -107,6 +107,7 @@ get_slurm_rlimits_info( void )
 #define RLIMIT_         "RLIMIT_"
 #define LEN_RLIMIT_     (sizeof( RLIMIT_ ) - 1)
 #define RLIMIT_DELIMS   ", \t\n"
+
 /*
  * Parse a comma separated list of RLIMIT names.
  *
@@ -119,11 +120,17 @@ parse_rlimits( char *rlimits_str, int propagate_flag )
 	slurm_rlimits_info_t *rli;	/* ptr iterator for rlimits_info[] */
         char		     *tp;	/* token ptr */
         bool		     found;
+	bool		     propagate_none = false;
 	char		     *rlimits_str_dup;
 
 	xassert( rlimits_str );
 
-        if (strcmp( rlimits_str, "ALL" ) == 0) {
+	if (strcmp(rlimits_str, "NONE") == 0) {
+		propagate_none = true;
+		propagate_flag = !propagate_flag;
+	}
+
+        if (propagate_none || strcmp( rlimits_str, "ALL" ) == 0) {
                 /*
                  * Propagate flag value applies to all rlimits
                  */
