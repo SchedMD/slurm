@@ -2,7 +2,8 @@
  *  srun.c - user interface to allocate resources, submit jobs, and execute 
  *	parallel jobs.
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona@llnl.gov>, et. al.
  *  LLNL-CODE-402394.
@@ -618,7 +619,14 @@ static int _set_rlimit_env(void)
 	char                 name[64], *format;
 	slurm_rlimits_info_t *rli;
 
+	/* Modify limits with any command-line options */
+	if (opt.propagate && parse_rlimits( opt.propagate, PROPAGATE_RLIMITS))
+		fatal( "--propagate=%s is not valid.", opt.propagate );
+
 	for (rli = get_slurm_rlimits_info(); rli->name != NULL; rli++ ) {
+
+		if (rli->propagate_flag != PROPAGATE_RLIMITS)
+			continue;
 
 		if (getrlimit (rli->resource, rlim) < 0) {
 			error ("getrlimit (RLIMIT_%s): %m", rli->name);
