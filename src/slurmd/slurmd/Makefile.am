@@ -4,7 +4,6 @@
 AUTOMAKE_OPTIONS = foreign
 
 sbin_PROGRAMS = slurmd
-noinst_PROGRAMS = slurmd.test
 
 CPPFLAGS =  -DLIBSLURM_SO=\"$(libdir)/libslurm.so\"
 INCLUDES = -I$(top_srcdir)
@@ -13,8 +12,6 @@ slurmd_LDADD = 					   \
 	$(top_builddir)/src/common/libdaemonize.la \
 	$(top_builddir)/src/api/libslurm.o -ldl	   \
 	$(PLPA_LIBS) 
-
-slurmd_test_LDADD = $(slurmd_LDADD)
 
 SLURMD_SOURCES = \
 	slurmd.c slurmd.h \
@@ -39,10 +36,6 @@ slurmd_SOURCES = \
     $(SLURMD_SOURCES) \
 	config.c
 
-slurmd_test_SOURCES = \
-    $(SLURMD_SOURCES) \
-	testconfig.c
-
 if HAVE_AIX
 # We need to set maxdata back to 0 because this effects the "max memory size"
 # ulimit, and the ulimit is inherited by child processes.
@@ -51,17 +44,9 @@ else
 slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 endif
 
-slurmd_test_LDFLAGS = $(slurmd_LDFLAGS)
-
-
 config.c: Makefile
 	@( echo "char *slurm_stepd_path = \"$(prefix)/sbin/slurmstepd\";"\
 	 ) > config.c
-
-testconfig.c: Makefile
-	@( stepdir=`cd $(top_builddir)/src/slurmd/slurmstepd && pwd`;\
-	   echo "char *slurm_stepd_path = \"$$stepdir/slurmstepd\";"\
-	 ) > testconfig.c
 
 force:
 $(slurmd_LDADD) : force

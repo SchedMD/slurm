@@ -37,7 +37,6 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 sbin_PROGRAMS = slurmd$(EXEEXT)
-noinst_PROGRAMS = slurmd.test$(EXEEXT)
 subdir = src/slurmd/slurmd
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -71,7 +70,7 @@ CONFIG_HEADER = $(top_builddir)/config.h $(top_builddir)/slurm/slurm.h
 CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(sbindir)"
 sbinPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
-PROGRAMS = $(noinst_PROGRAMS) $(sbin_PROGRAMS)
+PROGRAMS = $(sbin_PROGRAMS)
 am__objects_1 = slurmd.$(OBJEXT) req.$(OBJEXT) get_mach_stat.$(OBJEXT) \
 	read_proc.$(OBJEXT) reverse_tree_math.$(OBJEXT) xcpu.$(OBJEXT) \
 	proctrack.$(OBJEXT) setproctitle.$(OBJEXT) \
@@ -85,14 +84,6 @@ slurmd_DEPENDENCIES = $(top_builddir)/src/common/libdaemonize.la \
 slurmd_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(slurmd_LDFLAGS) \
 	$(LDFLAGS) -o $@
-am_slurmd_test_OBJECTS = $(am__objects_1) testconfig.$(OBJEXT)
-slurmd_test_OBJECTS = $(am_slurmd_test_OBJECTS)
-am__DEPENDENCIES_2 = $(top_builddir)/src/common/libdaemonize.la \
-	$(top_builddir)/src/api/libslurm.o $(am__DEPENDENCIES_1)
-slurmd_test_DEPENDENCIES = $(am__DEPENDENCIES_2)
-slurmd_test_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(slurmd_test_LDFLAGS) $(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -105,8 +96,8 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(slurmd_SOURCES) $(slurmd_test_SOURCES)
-DIST_SOURCES = $(slurmd_SOURCES) $(slurmd_test_SOURCES)
+SOURCES = $(slurmd_SOURCES)
+DIST_SOURCES = $(slurmd_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -284,7 +275,6 @@ slurmd_LDADD = \
 	$(top_builddir)/src/api/libslurm.o -ldl	   \
 	$(PLPA_LIBS) 
 
-slurmd_test_LDADD = $(slurmd_LDADD)
 SLURMD_SOURCES = \
 	slurmd.c slurmd.h \
 	req.c req.h \
@@ -308,16 +298,11 @@ slurmd_SOURCES = \
     $(SLURMD_SOURCES) \
 	config.c
 
-slurmd_test_SOURCES = \
-    $(SLURMD_SOURCES) \
-	testconfig.c
-
 @HAVE_AIX_FALSE@slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 
 # We need to set maxdata back to 0 because this effects the "max memory size"
 # ulimit, and the ulimit is inherited by child processes.
 @HAVE_AIX_TRUE@slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) -Wl,-bmaxdata:0x0 
-slurmd_test_LDFLAGS = $(slurmd_LDFLAGS)
 all: all-am
 
 .SUFFIXES:
@@ -351,13 +336,6 @@ $(top_srcdir)/configure: @MAINTAINER_MODE_TRUE@ $(am__configure_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
-
-clean-noinstPROGRAMS:
-	@list='$(noinst_PROGRAMS)'; for p in $$list; do \
-	  f=`echo $$p|sed 's/$(EXEEXT)$$//'`; \
-	  echo " rm -f $$p $$f"; \
-	  rm -f $$p $$f ; \
-	done
 install-sbinPROGRAMS: $(sbin_PROGRAMS)
 	@$(NORMAL_INSTALL)
 	test -z "$(sbindir)" || $(MKDIR_P) "$(DESTDIR)$(sbindir)"
@@ -389,9 +367,6 @@ clean-sbinPROGRAMS:
 slurmd$(EXEEXT): $(slurmd_OBJECTS) $(slurmd_DEPENDENCIES) 
 	@rm -f slurmd$(EXEEXT)
 	$(slurmd_LINK) $(slurmd_OBJECTS) $(slurmd_LDADD) $(LIBS)
-slurmd.test$(EXEEXT): $(slurmd_test_OBJECTS) $(slurmd_test_DEPENDENCIES) 
-	@rm -f slurmd.test$(EXEEXT)
-	$(slurmd_test_LINK) $(slurmd_test_OBJECTS) $(slurmd_test_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -410,7 +385,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmd.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmstepd_init.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/task_plugin.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testconfig.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xcpu.Po@am__quote@
 
 .c.o:
@@ -616,8 +590,8 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-generic clean-libtool clean-noinstPROGRAMS \
-	clean-sbinPROGRAMS mostlyclean-am
+clean-am: clean-generic clean-libtool clean-sbinPROGRAMS \
+	mostlyclean-am
 
 distclean: distclean-am
 	-rm -rf ./$(DEPDIR)
@@ -676,15 +650,15 @@ uninstall-am: uninstall-sbinPROGRAMS
 .MAKE: install-am install-strip
 
 .PHONY: CTAGS GTAGS all all-am check check-am clean clean-generic \
-	clean-libtool clean-noinstPROGRAMS clean-sbinPROGRAMS ctags \
-	distclean distclean-compile distclean-generic \
-	distclean-libtool distclean-tags distdir dvi dvi-am html \
-	html-am info info-am install install-am install-data \
-	install-data-am install-dvi install-dvi-am install-exec \
-	install-exec-am install-html install-html-am install-info \
-	install-info-am install-man install-pdf install-pdf-am \
-	install-ps install-ps-am install-sbinPROGRAMS install-strip \
-	installcheck installcheck-am installdirs maintainer-clean \
+	clean-libtool clean-sbinPROGRAMS ctags distclean \
+	distclean-compile distclean-generic distclean-libtool \
+	distclean-tags distdir dvi dvi-am html html-am info info-am \
+	install install-am install-data install-data-am install-dvi \
+	install-dvi-am install-exec install-exec-am install-html \
+	install-html-am install-info install-info-am install-man \
+	install-pdf install-pdf-am install-ps install-ps-am \
+	install-sbinPROGRAMS install-strip installcheck \
+	installcheck-am installdirs maintainer-clean \
 	maintainer-clean-generic mostlyclean mostlyclean-compile \
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
 	tags uninstall uninstall-am uninstall-sbinPROGRAMS
@@ -693,11 +667,6 @@ uninstall-am: uninstall-sbinPROGRAMS
 config.c: Makefile
 	@( echo "char *slurm_stepd_path = \"$(prefix)/sbin/slurmstepd\";"\
 	 ) > config.c
-
-testconfig.c: Makefile
-	@( stepdir=`cd $(top_builddir)/src/slurmd/slurmstepd && pwd`;\
-	   echo "char *slurm_stepd_path = \"$$stepdir/slurmstepd\";"\
-	 ) > testconfig.c
 
 force:
 $(slurmd_LDADD) : force
