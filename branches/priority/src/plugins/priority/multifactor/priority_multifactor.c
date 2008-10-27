@@ -471,6 +471,8 @@ static void *_decay_thread(void *no_data)
 		/* first apply decay to used time */
 		if(assoc_mgr_apply_decay(real_decay) != SLURM_SUCCESS) {
 			error("problem applying decay");
+			running_decay = 0;
+			slurm_mutex_unlock(&decay_lock);
 			break;
 		}
 
@@ -483,13 +485,17 @@ static void *_decay_thread(void *no_data)
 				acct_association_rec_t *assoc =	
 					(acct_association_rec_t *)
 					job_ptr->assoc_ptr;
+				time_t start_period = last_ran;
 				time_t end_period = start_time;
 				
+				if(job_ptr->start_time > start_period) 
+					start_period = job_ptr->start_time;
+
 				if(job_ptr->end_time 
 				   && (end_period > job_ptr->end_time)) 
 					end_period = job_ptr->end_time;
 
-				run_delta = end_period - job_ptr->start_time;
+				run_delta = (int)end_period - (int)start_period;
 
 				if(run_delta < 0) {
 					error("priority: some how we have "
@@ -499,18 +505,20 @@ static void *_decay_thread(void *no_data)
 				} else if(!run_delta)
 					continue;
 
-				real_decay = pow(decay_factor,
-						 (double)run_delta);
+				/* figure out the decayed new usage to
+				   add */
+				real_decay = ((double)run_delta 
+					      * (double)job_ptr->total_procs)
+					* pow(decay_factor, (double)run_delta);
 
-				run_delta *= job_ptr->total_procs * real_decay;
 				slurm_mutex_lock(&assoc_mgr_association_lock);
 				while(assoc) {
 					assoc->used_shares +=
-						(long double)run_delta;
-					info("adding %u new usage to %u"
+						(long double)real_decay;
+					info("adding %f new usage to %u"
 					     "(acct='%s') "
 					     "used_shares is now %Lf",
-					     run_delta, assoc->id, assoc->acct,
+					     real_decay, assoc->id, assoc->acct,
 					     assoc->used_shares);
 					assoc = assoc->parent_assoc_ptr;
 				}
