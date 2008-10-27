@@ -137,7 +137,7 @@ int main(int argc, char *argv[])
 		}
 		env = env_array_user_default(pw->pw_name,
 					     opt.get_user_env_time,
-					     opt.get_user_env_mode, NULL);
+					     opt.get_user_env_mode);
 		if (env == NULL)
 			exit(1);    /* error already logged */
 	}

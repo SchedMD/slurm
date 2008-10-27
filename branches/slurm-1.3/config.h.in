@@ -361,6 +361,9 @@
 /* Define the project's minor version. */
 #undef SLURM_MINOR
 
+/* Define Slurm installation prefix */
+#undef SLURM_PREFIX
+
 /* Define the project's version string. */
 #undef SLURM_VERSION
 
