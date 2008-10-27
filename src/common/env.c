@@ -1388,14 +1388,14 @@ static char **_load_env_cache(const char *username)
  * NOTE: The calling process must have an effective uid of root for
  * this function to succeed.
  */
-char **env_array_user_default(const char *username, int timeout, int mode,
-			      char *stepd_path)
+char **env_array_user_default(const char *username, int timeout, int mode)
 {
-	char *line = NULL, *last = NULL, name[512], *value, *buffer;
+	char *line = NULL, *last = NULL, name[MAXPATHLEN], *value, *buffer;
 	char **env = NULL;
 	char *starttoken = "XXXXSLURMSTARTPARSINGHEREXXXX";
 	char *stoptoken  = "XXXXSLURMSTOPPARSINGHEREXXXXX";
 	char cmdstr[256], *env_loc = NULL;
+	char stepd_path[MAXPATHLEN];
 	int fildes[2], found, fval, len, rc, timeleft;
 	int buf_read, buf_rem, config_timeout;
 	pid_t child;
@@ -1408,6 +1408,8 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 		return NULL;
 	}
 
+	snprintf(stepd_path, sizeof(stepd_path), "%s/sbin/slurmstepd", 
+		 SLURM_PREFIX);
 	config_timeout = slurm_get_env_timeout();
 	if (config_timeout == 0)	/* just read directly from cache */
 		 return _load_env_cache(username);
@@ -1416,7 +1418,7 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 		fatal("Could not locate command: /bin/su");
 	if (stat("/bin/echo", &buf))
 		fatal("Could not locate command: /bin/echo");
-	if (stepd_path && (stat(stepd_path, &buf) == 0)) {
+	if (stat(stepd_path, &buf) == 0) {
 		snprintf(name, sizeof(name), "%s getenv", stepd_path);
 		env_loc = name;
 	} else if (stat("/bin/env", &buf) == 0)

@@ -32,9 +32,7 @@ SLURMD_SOURCES = \
 	$(top_builddir)/src/slurmd/common/task_plugin.h \
 	$(top_builddir)/src/slurmd/common/reverse_tree.h
 
-slurmd_SOURCES = \
-    $(SLURMD_SOURCES) \
-	config.c
+slurmd_SOURCES = $(SLURMD_SOURCES)
 
 if HAVE_AIX
 # We need to set maxdata back to 0 because this effects the "max memory size"
@@ -43,10 +41,6 @@ slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) -Wl,-bmaxdata:0x0
 else
 slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 endif
-
-config.c: Makefile
-	@( echo "char *slurm_stepd_path = \"$(prefix)/sbin/slurmstepd\";"\
-	 ) > config.c
 
 force:
 $(slurmd_LDADD) : force

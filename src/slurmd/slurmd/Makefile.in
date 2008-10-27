@@ -76,7 +76,7 @@ am__objects_1 = slurmd.$(OBJEXT) req.$(OBJEXT) get_mach_stat.$(OBJEXT) \
 	proctrack.$(OBJEXT) setproctitle.$(OBJEXT) \
 	slurmstepd_init.$(OBJEXT) run_script.$(OBJEXT) \
 	task_plugin.$(OBJEXT)
-am_slurmd_OBJECTS = $(am__objects_1) config.$(OBJEXT)
+am_slurmd_OBJECTS = $(am__objects_1)
 slurmd_OBJECTS = $(am_slurmd_OBJECTS)
 am__DEPENDENCIES_1 =
 slurmd_DEPENDENCIES = $(top_builddir)/src/common/libdaemonize.la \
@@ -205,6 +205,7 @@ SLURM_API_VERSION = @SLURM_API_VERSION@
 SLURM_MAJOR = @SLURM_MAJOR@
 SLURM_MICRO = @SLURM_MICRO@
 SLURM_MINOR = @SLURM_MINOR@
+SLURM_PREFIX = @SLURM_PREFIX@
 SLURM_VERSION = @SLURM_VERSION@
 SO_LDFLAGS = @SO_LDFLAGS@
 SSL_CPPFLAGS = @SSL_CPPFLAGS@
@@ -294,10 +295,7 @@ SLURMD_SOURCES = \
 	$(top_builddir)/src/slurmd/common/task_plugin.h \
 	$(top_builddir)/src/slurmd/common/reverse_tree.h
 
-slurmd_SOURCES = \
-    $(SLURMD_SOURCES) \
-	config.c
-
+slurmd_SOURCES = $(SLURMD_SOURCES)
 @HAVE_AIX_FALSE@slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 
 # We need to set maxdata back to 0 because this effects the "max memory size"
@@ -374,7 +372,6 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/config.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/get_mach_stat.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proctrack.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/read_proc.Po@am__quote@
@@ -663,10 +660,6 @@ uninstall-am: uninstall-sbinPROGRAMS
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
 	tags uninstall uninstall-am uninstall-sbinPROGRAMS
 
-
-config.c: Makefile
-	@( echo "char *slurm_stepd_path = \"$(prefix)/sbin/slurmstepd\";"\
-	 ) > config.c
 
 force:
 $(slurmd_LDADD) : force
