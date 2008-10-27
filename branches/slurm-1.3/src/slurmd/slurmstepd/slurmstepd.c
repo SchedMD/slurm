@@ -48,6 +48,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/slurm_jobacct_gather.h"
+#include "src/common/slurm_rlimits_info.h"
 #include "src/common/switch.h"
 #include "src/common/stepd_api.h"
 
@@ -64,6 +65,7 @@ static int _init_from_slurmd(int sock, char **argv, slurm_addr **_cli,
 			     slurm_addr **_self, slurm_msg_t **_msg,
 			     int *_ngids, gid_t **_gids);
 
+static void _dump_user_env(void);
 static void _send_ok_to_slurmd(int sock);
 static void _send_fail_to_slurmd(int sock);
 static slurmd_job_t *_step_setup(slurm_addr *cli, slurm_addr *self,
@@ -76,6 +78,7 @@ int slurmstepd_blocked_signals[] = {
 
 /* global variable */
 slurmd_conf_t * conf;
+extern char  ** environ;
 
 int 
 main (int argc, char *argv[])
@@ -87,6 +90,12 @@ main (int argc, char *argv[])
 	int ngids;
 	gid_t *gids;
 	int rc = 0;
+
+	if ((argc == 2) && (strcmp(argv[1], "getenv") == 0)) {
+		print_rlimits();
+		_dump_user_env();
+		exit(0);
+	}
 
 	xsignal_block(slurmstepd_blocked_signals);
 	conf = xmalloc(sizeof(*conf));
@@ -370,4 +379,12 @@ _step_cleanup(slurmd_job_t *job, slurm_msg_t *msg, int rc)
 	jobacct_gather_g_destroy(step_complete.jobacct);
 	
 	xfree(msg);
+}
+
+static void _dump_user_env(void)
+{
+	int i;
+
+	for (i=0; environ[i]; i++)
+		printf("%s\n",environ[i]);
 }

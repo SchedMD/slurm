@@ -254,12 +254,17 @@ void env_array_set_environment(char **env_array);
  *
  * timeout value is in seconds or zero for default (8 secs)
  * mode is 1 for short ("su <user>"), 2 for long ("su - <user>")
+ * stepd_path is the pathname of slurmstepd or NULL, slurmstepd
+ *	with the argument of "getenv" prints all environment 
+ *	variables PLUS resource limits. If stepd_path is NULL, 
+ *	then just use /usr/bin/env.
  * On error, returns NULL.
  *
  * NOTE: The calling process must have an effective uid of root for
  * this function to succeed.
  */
-char **env_array_user_default(const char *username, int timeout, int mode);
+char **env_array_user_default(const char *username, int timeout, int mode,
+			      char *stepd_path);
 
 /*
  * The cpus-per-node representation in SLURM (and perhaps tasks-per-node

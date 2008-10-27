@@ -919,7 +919,8 @@ _get_user_env(batch_job_launch_msg_t *req)
 	} else {
 		verbose("get env for user %s here", pwd.pw_name);
 		/* Permit up to 120 second delay before using cache file */
-		new_env = env_array_user_default(pwd.pw_name, 120, 0);
+		new_env = env_array_user_default(pwd.pw_name, 120, 0,
+						 slurm_stepd_path);
 		if (new_env) {
 			env_array_merge(&new_env, 
 					(const char **) req->environment);

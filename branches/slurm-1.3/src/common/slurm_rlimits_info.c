@@ -185,3 +185,16 @@ parse_rlimits( char *rlimits_str, int propagate_flag )
 	rlimits_were_parsed = TRUE;
 	return( 0 );
 }
+
+extern void print_rlimits(void)
+{
+	slurm_rlimits_info_t *rli;	/* ptr iterator for rlimits_info[] */
+	struct rlimit rlp;
+
+	for (rli = rlimits_info; rli->name; rli++) {
+		if (getrlimit(rli->resource, &rlp) == 0) {
+			printf("SLURM_RLIMIT_%s=%lu\n", rli->name,
+			       (unsigned long) rlp.rlim_cur);
+		}
+	}
+}
