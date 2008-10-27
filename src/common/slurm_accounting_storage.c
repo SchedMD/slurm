@@ -929,7 +929,7 @@ extern void pack_acct_used_limits(void *in, uint16_t rpc_version, Buf buffer)
 extern int unpack_acct_used_limits(void **object,
 				   uint16_t rpc_version, Buf buffer)
 {
-	acct_used_limits_t *object_ptr = xmalloc(sizeof(shares_used_object_t));
+	acct_used_limits_t *object_ptr = xmalloc(sizeof(acct_used_limits_t));
 
 	*object = (void *)object_ptr;
 
