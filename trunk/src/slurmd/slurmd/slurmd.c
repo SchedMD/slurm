@@ -95,7 +95,6 @@
 /* global, copied to STDERR_FILENO in tasks before the exec */
 int devnull = -1;
 slurmd_conf_t * conf;
-extern char *slurm_stepd_path;
 
 /*
  * count of active threads
@@ -893,7 +892,7 @@ _slurmd_init()
 	struct rlimit rlim;
 	slurm_ctl_conf_t *cf;
 	struct stat stat_buf;
-
+	char slurm_stepd_path[MAXPATHLEN];
 	/*
 	 * Process commandline arguments first, since one option may be
 	 * an alternate location for the slurm config file.
@@ -975,6 +974,8 @@ _slurmd_init()
 	fd_set_close_on_exec(devnull);
 
 	/* make sure we have slurmstepd installed */
+	snprintf(slurm_stepd_path, sizeof(slurm_stepd_path),
+		 "%s/sbin/slurmstepd", SLURM_PREFIX);
 	if (stat(slurm_stepd_path, &stat_buf)) {
 		fatal("Unable to find slurmstepd file at %s",
 			slurm_stepd_path);

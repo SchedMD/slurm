@@ -41,11 +41,12 @@
 
 #include <slurm/slurm.h>
 
-#include "src/common/xstring.h"
+#include "src/common/env.h"
+#include "src/common/read_config.h"
+#include "src/common/slurm_rlimits_info.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
-#include "src/common/read_config.h"
-#include "src/common/env.h"
+#include "src/common/xstring.h"
 
 #include "src/salloc/salloc.h"
 #include "src/salloc/opt.h"
@@ -79,6 +80,7 @@ static void _ignore_signal(int signo);
 static void _exit_on_signal(int signo);
 static void _signal_while_allocating(int signo);
 static void _job_complete_handler(srun_job_complete_msg_t *msg);
+static void _set_rlimits(char **env);
 static void _timeout_handler(srun_timeout_msg_t *msg);
 static void _user_msg_handler(srun_user_msg_t *msg);
 static void _ping_handler(srun_ping_msg_t *msg);
@@ -140,6 +142,7 @@ int main(int argc, char *argv[])
 					     opt.get_user_env_mode);
 		if (env == NULL)
 			exit(1);    /* error already logged */
+		_set_rlimits(env);
 	}
 
 	/*
@@ -148,6 +151,14 @@ int main(int argc, char *argv[])
 	slurm_init_job_desc_msg(&desc);
 	if (fill_job_desc_from_opts(&desc) == -1) {
 		exit(1);
+	}
+	if (opt.gid != (gid_t) -1) {
+		if (setgid(opt.gid) < 0)
+			fatal("setgid: %m");
+	}
+	if (opt.uid != (uid_t) -1) {
+		if (setuid(opt.uid) < 0)
+			fatal("setuid: %m");
 	}
 
 	callbacks.ping = _ping_handler;
@@ -546,6 +557,43 @@ static void _ping_handler(srun_ping_msg_t *msg)
 static void _node_fail_handler(srun_node_fail_msg_t *msg)
 {
 	error("Node failure on %s", msg->nodelist);
+}
+
+static void _set_rlimits(char **env)
+{
+	slurm_rlimits_info_t *rli;
+	char env_name[25] = "SLURM_RLIMIT_";
+	char *env_value, *p;
+	struct rlimit r;
+	//unsigned long env_num;
+	rlim_t env_num;
+
+	for (rli=get_slurm_rlimits_info(); rli->name; rli++) {
+		if (rli->propagate_flag != PROPAGATE_RLIMITS)
+			continue;
+		strcpy(&env_name[sizeof("SLURM_RLIMIT_")-1], rli->name);
+		env_value = getenvp(env, env_name);
+		if (env_value == NULL)
+			continue;
+		unsetenvp(env, env_name);
+		if (getrlimit(rli->resource, &r) < 0) {
+			error("getrlimit(%s): %m", env_name+6);
+			continue;
+		}
+		env_num = strtol(env_value, &p, 10);
+		if (p && (p[0] != '\0')) {
+			error("Invalid environment %s value %s", 
+			      env_name, env_value);
+			continue;
+		}
+		if (r.rlim_cur == env_num)
+			continue;
+		r.rlim_cur = (rlim_t) env_num;
+		if (setrlimit(rli->resource, &r) < 0) {
+			error("setrlimit(%s): %m", env_name+6);
+			continue;
+		}
+	}
 }
 
 #ifdef HAVE_BG
