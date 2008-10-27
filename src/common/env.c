@@ -852,6 +852,7 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
  *	SLURM_JOBID
  *	SLURM_NNODES
  *	SLURM_NODELIST
+ *	SLURM_NPROCS
  *	SLURM_TASKS_PER_NODE 
  */
 extern void
@@ -876,7 +877,6 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 					batch->cpus_per_node,
 					batch->cpu_count_reps);
 	env_array_overwrite_fmt(dest, "SLURM_JOB_CPUS_PER_NODE", "%s", tmp);
-	xfree(tmp);
 
 	env_array_overwrite_fmt(dest, "ENVIRONMENT", "BATCH");
 	if (node_name)
@@ -890,18 +890,22 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 	env_array_overwrite_fmt(dest, "SLURM_JOBID", "%u", batch->job_id);
 	env_array_overwrite_fmt(dest, "SLURM_NNODES", "%u", num_nodes);
 	env_array_overwrite_fmt(dest, "SLURM_NODELIST", "%s", batch->nodes);
-	env_array_overwrite_fmt(dest, "SLURM_NPROCS", "%u", batch->nprocs);
-
-	step_layout = slurm_step_layout_create(batch->nodes,
-					       batch->cpus_per_node,
-					       batch->cpu_count_reps,
-					       num_nodes,
-					       batch->nprocs,
-					       (uint16_t)SLURM_DIST_BLOCK,
-					       (uint16_t)NO_VAL);
-	tmp = _uint16_array_to_str(step_layout->node_cnt,
-				   step_layout->tasks);
-	slurm_step_layout_destroy(step_layout);
+	if(batch->nprocs) {
+		xfree(tmp);
+		env_array_overwrite_fmt(dest, "SLURM_NPROCS", "%u", 
+					batch->nprocs);
+		step_layout = slurm_step_layout_create(batch->nodes,
+						       batch->cpus_per_node,
+						       batch->cpu_count_reps,
+						       num_nodes,
+						       batch->nprocs,
+						       (uint16_t)
+						       SLURM_DIST_BLOCK,
+						       (uint16_t)NO_VAL);
+		tmp = _uint16_array_to_str(step_layout->node_cnt,
+					   step_layout->tasks);
+		slurm_step_layout_destroy(step_layout);
+	}
 	env_array_overwrite_fmt(dest, "SLURM_TASKS_PER_NODE", "%s", tmp);
 	xfree(tmp);
 }
@@ -1380,11 +1384,12 @@ static char **_load_env_cache(const char *username)
  */
 char **env_array_user_default(const char *username, int timeout, int mode)
 {
-	char *line = NULL, *last = NULL, name[128], *value, *buffer;
+	char *line = NULL, *last = NULL, name[MAXPATHLEN], *value, *buffer;
 	char **env = NULL;
 	char *starttoken = "XXXXSLURMSTARTPARSINGHEREXXXX";
 	char *stoptoken  = "XXXXSLURMSTOPPARSINGHEREXXXXX";
 	char cmdstr[256], *env_loc = NULL;
+	char stepd_path[MAXPATHLEN];
 	int fildes[2], found, fval, len, rc, timeleft;
 	int buf_read, buf_rem, config_timeout;
 	pid_t child;
@@ -1397,6 +1402,8 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 		return NULL;
 	}
 
+	snprintf(stepd_path, sizeof(stepd_path), "%s/sbin/slurmstepd", 
+		 SLURM_PREFIX);
 	config_timeout = slurm_get_env_timeout();
 	if (config_timeout == 0)	/* just read directly from cache */
 		 return _load_env_cache(username);
@@ -1405,7 +1412,10 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 		fatal("Could not locate command: /bin/su");
 	if (stat("/bin/echo", &buf))
 		fatal("Could not locate command: /bin/echo");
-	if (stat("/bin/env", &buf) == 0)
+	if (stat(stepd_path, &buf) == 0) {
+		snprintf(name, sizeof(name), "%s getenv", stepd_path);
+		env_loc = name;
+	} else if (stat("/bin/env", &buf) == 0)
 		env_loc = "/bin/env";
 	else if (stat("/usr/bin/env", &buf) == 0)
 		env_loc = "/usr/bin/env";

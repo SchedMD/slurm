@@ -89,7 +89,13 @@ int main(int argc, char *argv[])
 		fatal("sbatch parameter parsing");
 	}
 
-	(void) _set_rlimit_env();
+	if (opt.get_user_env_time < 0) {
+		/* Moab does not propage the user's resource limits, so 
+		 * slurmd determines the values at the same time that it 
+		 * gets the user's default environment variables. */
+		(void) _set_rlimit_env();
+	}
+
 	set_prio_process_env();
 	set_umask_env();
 	slurm_init_job_desc_msg(&desc);
@@ -473,7 +479,14 @@ static int _set_rlimit_env(void)
 	slurm_conf_lock();
 	slurm_conf_unlock();
 
+	/* Modify limits with any command-line options */
+	if (opt.propagate && parse_rlimits( opt.propagate, PROPAGATE_RLIMITS))
+		fatal( "--propagate=%s is not valid.", opt.propagate );
+
 	for (rli = get_slurm_rlimits_info(); rli->name != NULL; rli++ ) {
+
+		if (rli->propagate_flag != PROPAGATE_RLIMITS)
+			continue;
 
 		if (getrlimit (rli->resource, rlim) < 0) {
 			error ("getrlimit (RLIMIT_%s): %m", rli->name);
@@ -509,7 +522,7 @@ static int _set_rlimit_env(void)
 	if (rlim->rlim_cur < rlim->rlim_max) {
 		rlim->rlim_cur = rlim->rlim_max;
 		if (setrlimit (RLIMIT_NOFILE, rlim) < 0) 
-			return (error ("Unable to increase max no. files: %m"));
+			return (error("Unable to increase max no. files: %m"));
 	}
 
 	return rc;

@@ -1889,10 +1889,6 @@ static bool _opt_verify(void)
 		else
 			setenvf(NULL, "SLURM_OPEN_MODE", "t");
 	}
-	if (opt.propagate && parse_rlimits( opt.propagate, PROPAGATE_RLIMITS)) {
-		error( "--propagate=%s is not valid.", opt.propagate );
-		verified = false;
-	}
 	if (opt.dependency)
 		setenvfs("SLURM_JOB_DEPENDENCY=%s", opt.dependency);
 

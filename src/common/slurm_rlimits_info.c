@@ -107,6 +107,7 @@ get_slurm_rlimits_info( void )
 #define RLIMIT_         "RLIMIT_"
 #define LEN_RLIMIT_     (sizeof( RLIMIT_ ) - 1)
 #define RLIMIT_DELIMS   ", \t\n"
+
 /*
  * Parse a comma separated list of RLIMIT names.
  *
@@ -117,21 +118,27 @@ int
 parse_rlimits( char *rlimits_str, int propagate_flag )
 {
 	slurm_rlimits_info_t *rli;	/* ptr iterator for rlimits_info[] */
-        char		     *tp;	/* token ptr */
-        bool		     found;
+	char		     *tp;	/* token ptr */
+	bool		     found;
+	bool		     propagate_none = false;
 	char		     *rlimits_str_dup;
 
 	xassert( rlimits_str );
 
-        if (strcmp( rlimits_str, "ALL" ) == 0) {
-                /*
-                 * Propagate flag value applies to all rlimits
-                 */
-                for (rli = rlimits_info; rli->name; rli++)
+	if (strcmp(rlimits_str, "NONE") == 0) {
+		propagate_none = true;
+		propagate_flag = !propagate_flag;
+	}
+
+	if (propagate_none || strcmp( rlimits_str, "ALL" ) == 0) {
+		/*
+		 * Propagate flag value applies to all rlimits
+		 */
+		for (rli = rlimits_info; rli->name; rli++)
 			rli->propagate_flag = propagate_flag;
 		rlimits_were_parsed = TRUE;
-                return( 0 );
-        }
+		return( 0 );
+	}
 
 	/*
 	 * Since parse_rlimits may be called multiple times, we 
@@ -142,39 +149,52 @@ parse_rlimits( char *rlimits_str, int propagate_flag )
 		for (rli = rlimits_info; rli->name; rli++)
 			rli->propagate_flag = -1;
 
-        rlimits_str_dup = xstrdup( rlimits_str );
-        if ((tp = strtok( rlimits_str_dup, RLIMIT_DELIMS )) != NULL) {
-                do {
-                        found = FALSE;
-                        for (rli = rlimits_info; rli->name; rli++) {
-                                /*
-                                 * Accept either "RLIMIT_CORE" or "CORE"
-                                 */
-                                if (strncmp( tp, RLIMIT_, LEN_RLIMIT_ ) == 0)
-                                        tp += LEN_RLIMIT_;
-                                if (strcmp( tp, rli->name ))
-                                        continue;
-                                rli->propagate_flag = propagate_flag;
-                                found = TRUE;
-                                break;
-                        }
-                        if (found == FALSE) {
-                                error( "Bad rlimit name: %s\n", tp );
+	rlimits_str_dup = xstrdup( rlimits_str );
+	if ((tp = strtok( rlimits_str_dup, RLIMIT_DELIMS )) != NULL) {
+		do {
+			found = FALSE;
+			for (rli = rlimits_info; rli->name; rli++) {
+				/*
+				 * Accept either "RLIMIT_CORE" or "CORE"
+				 */
+				if (strncmp( tp, RLIMIT_, LEN_RLIMIT_ ) == 0)
+					tp += LEN_RLIMIT_;
+				if (strcmp( tp, rli->name ))
+					continue;
+				rli->propagate_flag = propagate_flag;
+				found = TRUE;
+				break;
+			}
+			if (found == FALSE) {
+				error( "Bad rlimit name: %s\n", tp );
 				xfree( rlimits_str_dup );
-                                return( -1 );
-                        }
-                } while ((tp = strtok( NULL, RLIMIT_DELIMS )));
-        }
+				return( -1 );
+			}
+		} while ((tp = strtok( NULL, RLIMIT_DELIMS )));
+	}
 	xfree( rlimits_str_dup );
 
-        /*
-         * Any rlimits that weren't in the 'rlimits_str' parameter get the
+	/*
+	 * Any rlimits that weren't in the 'rlimits_str' parameter get the
 	 * opposite propagate flag value.
-         */
+	 */
 	for (rli = rlimits_info; rli->name; rli++)
 		if (rli->propagate_flag == -1)
-		  rli->propagate_flag = ( ! propagate_flag );
+			rli->propagate_flag = ( ! propagate_flag );
 
 	rlimits_were_parsed = TRUE;
 	return( 0 );
+}
+
+extern void print_rlimits(void)
+{
+	slurm_rlimits_info_t *rli;	/* ptr iterator for rlimits_info[] */
+	struct rlimit rlp;
+
+	for (rli = rlimits_info; rli->name; rli++) {
+		if (getrlimit(rli->resource, &rlp) == 0) {
+			printf("SLURM_RLIMIT_%s=%lu\n", rli->name,
+			       (unsigned long) rlp.rlim_cur);
+		}
+	}
 }

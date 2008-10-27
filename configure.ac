@@ -169,6 +169,15 @@ dnl
 X_AC_SLURM_PORTS([6817], [6818], [6819])
 
 
+dnl add SLURM_PREFIX to config.h
+dnl
+if test "x$prefix" == "xNONE" ; then
+  AC_DEFINE_UNQUOTED(SLURM_PREFIX, "/usr/local", [Define Slurm installation prefix])
+else
+  AC_DEFINE_UNQUOTED(SLURM_PREFIX, "$prefix", [Define Slurm installation prefix])
+fi
+AC_SUBST(SLURM_PREFIX)
+
 dnl check for whether to include Elan support
 dnl
 X_AC_ELAN

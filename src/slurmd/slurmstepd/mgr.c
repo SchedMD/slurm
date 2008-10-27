@@ -1343,7 +1343,7 @@ _make_batch_script(batch_job_launch_msg_t *msg, char *path)
 	FILE *fp = NULL;
 	char  script[MAXPATHLEN];
 
-	snprintf(script, 1024, "%s/%s", path, "script"); 
+	snprintf(script, 1024, "%s/%s", path, "slurm_script"); 
 
   again:
 	if ((fp = safeopen(script, "w", SAFEOPEN_CREATE_ONLY)) == NULL) {

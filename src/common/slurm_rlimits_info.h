@@ -58,5 +58,6 @@ extern slurm_rlimits_info_t *get_slurm_rlimits_info( void );
 
 extern int parse_rlimits( char *rlimits_str, int propagate_flag );
 
+extern void print_rlimits( void );
 
 #endif /*__SLURM_RLIMITS_INFO_H__*/

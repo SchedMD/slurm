@@ -2058,11 +2058,6 @@ static bool _opt_verify(void)
 	if ((opt.egid != (gid_t) -1) && (opt.egid != opt.gid)) 
 		opt.gid = opt.egid;
 
-	if (opt.propagate && parse_rlimits( opt.propagate, PROPAGATE_RLIMITS)) {
-		error( "--propagate=%s is not valid.", opt.propagate );
-		verified = false;
-	}
-
 	if (opt.immediate) {
 		char *sched_name = slurm_get_sched_type();
 		if (strcmp(sched_name, "sched/wiki") == 0) {

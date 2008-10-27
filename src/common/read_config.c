@@ -2167,7 +2167,7 @@ extern char * debug_flags2str(uint32_t debug_flags)
 extern uint32_t debug_str2flags(char *debug_flags)
 {
 	uint32_t rc = 0;
-	char *tmp_str, *tok, *last;
+	char *tmp_str, *tok, *last = NULL;
 
 	if (!debug_flags)
 		return rc;
