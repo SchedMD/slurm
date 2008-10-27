@@ -149,6 +149,14 @@ int main(int argc, char *argv[])
 	if (fill_job_desc_from_opts(&desc) == -1) {
 		exit(1);
 	}
+	if (opt.gid != (gid_t) -1) {
+		if (setgid(opt.gid) < 0)
+			fatal("setgid: %m");
+	}
+	if (opt.uid != (uid_t) -1) {
+		if (setuid(opt.uid) < 0)
+			fatal("setuid: %m");
+	}
 
 	callbacks.ping = _ping_handler;
 	callbacks.timeout = _timeout_handler;
