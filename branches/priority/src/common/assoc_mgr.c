@@ -40,7 +40,6 @@
 #include <sys/types.h>
 #include <pwd.h>
 #include <fcntl.h>
-#include <math.h>
 
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
@@ -56,7 +55,6 @@ static List assoc_mgr_qos_list = NULL;
 static List assoc_mgr_user_list = NULL;
 static char *assoc_mgr_cluster_name = NULL;
 static int setup_childern = 0;
-static double decay_factor = 0.0;
 
 void (*remove_assoc_notify) (acct_association_rec_t *rec) = NULL;
 
@@ -625,11 +623,10 @@ extern int assoc_mgr_fini(char *state_save_location)
 	return SLURM_SUCCESS;
 }
 
-extern int assoc_mgr_apply_decay(uint32_t time_delta)
+extern int assoc_mgr_apply_decay(double decay_factor)
 {
 	ListIterator itr = NULL;
 	acct_association_rec_t *assoc = NULL;
-	double real_decay;
 
 	if(!setup_childern)
 		return SLURM_SUCCESS;
@@ -637,13 +634,10 @@ extern int assoc_mgr_apply_decay(uint32_t time_delta)
 	if(!decay_factor || !assoc_mgr_association_list)
 		return SLURM_ERROR;
 	
-	real_decay = pow(decay_factor, (double)time_delta);
-	debug("decay factor goes from %f to %f over %u secs", 
-	      decay_factor, real_decay, time_delta);
 	slurm_mutex_lock(&assoc_mgr_association_lock);
 	itr = list_iterator_create(assoc_mgr_association_list);
 	while((assoc = list_next(itr))) {
-		assoc->used_shares *= real_decay;
+		assoc->used_shares *= decay_factor;
 		info("assoc %u used_shares is %Lf",
 		     assoc->id, assoc->used_shares);
 	}
@@ -653,12 +647,12 @@ extern int assoc_mgr_apply_decay(uint32_t time_delta)
 	return SLURM_SUCCESS;
 }
 
-extern int assoc_mgr_set_cpu_shares(uint32_t procs, uint64_t half_life) 
+extern int assoc_mgr_set_cpu_shares(uint32_t procs, uint32_t half_life) 
 {
 	ListIterator itr = NULL;
 	acct_association_rec_t *assoc = NULL;
 	static uint32_t last_procs = 0;
-	static uint64_t last_half_life = 0;
+	static uint32_t last_half_life = 0;
 
 	if(!setup_childern)
 		return SLURM_SUCCESS;
@@ -678,9 +672,6 @@ extern int assoc_mgr_set_cpu_shares(uint32_t procs, uint64_t half_life)
 		(long double)procs * (long double)half_life * (long double)2;
 	debug("total cpu shares on the system is %.0Lf",
 	      assoc_mgr_root_assoc->cpu_shares);
-	decay_factor = 1 - (0.693 / (double)half_life);
-
-	debug("Decay factor is set at %.15f", decay_factor);
 
 	slurm_mutex_lock(&assoc_mgr_association_lock);
 	itr = list_iterator_create(assoc_mgr_association_list);

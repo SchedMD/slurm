@@ -132,10 +132,12 @@ extern int assoc_mgr_fini(char *state_save_location);
 
 /*
  * apply decay factor to all associations used_shares
- * IN: time_delta - amount of time that has past since last decay application.
+ * IN: decay_factor - decay to be applied to each associations' used
+ * shares.  This should already be modified with the amount of delta
+ * time from last application..
  * RET: SLURM_SUCCESS on SUCCESS, SLURM_ERROR else.
  */
-extern int assoc_mgr_apply_decay(uint32_t time_delta);
+extern int assoc_mgr_apply_decay(double decay_factor);
 
 /*
  * set up the cpu shares for the associations.  This can only be done
@@ -144,7 +146,7 @@ extern int assoc_mgr_apply_decay(uint32_t time_delta);
  * IN: half_life - time half_life is in seconds.
  * RET: SLURM_SUCCESS on SUCCESS, SLURM_ERROR else.
  */
-extern int assoc_mgr_set_cpu_shares(uint32_t procs, uint64_t half_life);
+extern int assoc_mgr_set_cpu_shares(uint32_t procs, uint32_t half_life);
 
 
 /* 

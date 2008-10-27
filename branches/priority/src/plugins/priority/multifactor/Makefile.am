@@ -10,4 +10,4 @@ pkglib_LTLIBRARIES = priority_multifactor.la
 
 # Null priority logging plugin.
 priority_multifactor_la_SOURCES = priority_multifactor.c
-priority_multifactor_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+priority_multifactor_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) -lm

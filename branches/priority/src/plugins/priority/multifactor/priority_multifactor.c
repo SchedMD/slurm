@@ -53,6 +53,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <slurm/slurm_errno.h>
+#include <math.h>
 
 #include "src/common/slurm_priority.h"
 #include "src/common/xstring.h"
@@ -427,6 +428,9 @@ static void *_decay_thread(void *no_data)
 /* 	int sigarray[] = {SIGUSR1, 0}; */
 	struct tm tm;
 	time_t last_ran = 0;
+	double decay_factor = 
+		1 - (0.693 / (double)slurm_get_priority_decay_hl());
+
 	slurmctld_lock_t job_write_lock =
 		{ READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
 
@@ -440,10 +444,13 @@ static void *_decay_thread(void *no_data)
 		return NULL;
 	}
 
+	debug("Decay factor is set at %.15f", decay_factor);
+
 	last_ran = _read_last_decay_ran();
 
 	while(1) {
 		int run_delta = 0;
+		double real_decay = 0.0;
 
 		slurm_mutex_lock(&decay_lock);
 		running_decay = 1;
@@ -455,8 +462,14 @@ static void *_decay_thread(void *no_data)
 				
 		if(run_delta <= 0)
 			goto sleep_now;
+
+		real_decay = pow(decay_factor, (double)run_delta);
+
+		debug("Decay factor over %d seconds goes from %.15f -> %.15f",
+		      run_delta, decay_factor, real_decay);
+
 		/* first apply decay to used time */
-		if(assoc_mgr_apply_decay(run_delta) != SLURM_SUCCESS) {
+		if(assoc_mgr_apply_decay(real_decay) != SLURM_SUCCESS) {
 			error("problem applying decay");
 			break;
 		}
@@ -486,7 +499,10 @@ static void *_decay_thread(void *no_data)
 				} else if(!run_delta)
 					continue;
 
-				run_delta *= job_ptr->total_procs;
+				real_decay = pow(decay_factor,
+						 (double)run_delta);
+
+				run_delta *= job_ptr->total_procs * real_decay;
 				slurm_mutex_lock(&assoc_mgr_association_lock);
 				while(assoc) {
 					assoc->used_shares +=
