@@ -882,7 +882,6 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 					batch->cpus_per_node,
 					batch->cpu_count_reps);
 	env_array_overwrite_fmt(dest, "SLURM_JOB_CPUS_PER_NODE", "%s", tmp);
-	xfree(tmp);
 
 	env_array_overwrite_fmt(dest, "ENVIRONMENT", "BATCH");
 	if (node_name)
@@ -897,17 +896,20 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 	env_array_overwrite_fmt(dest, "SLURM_NNODES", "%u", num_nodes);
 	env_array_overwrite_fmt(dest, "SLURM_NODELIST", "%s", batch->nodes);
 	env_array_overwrite_fmt(dest, "SLURM_NPROCS", "%u", batch->nprocs);
-
-	step_layout = slurm_step_layout_create(batch->nodes,
-					       batch->cpus_per_node,
-					       batch->cpu_count_reps,
-					       num_nodes,
-					       batch->nprocs,
-					       (uint16_t)SLURM_DIST_BLOCK,
-					       (uint16_t)NO_VAL);
-	tmp = _uint16_array_to_str(step_layout->node_cnt,
-				   step_layout->tasks);
-	slurm_step_layout_destroy(step_layout);
+	if(batch->nprocs) {
+		xfree(tmp);
+		step_layout = slurm_step_layout_create(batch->nodes,
+						       batch->cpus_per_node,
+						       batch->cpu_count_reps,
+						       num_nodes,
+						       batch->nprocs,
+						       (uint16_t)
+						       SLURM_DIST_BLOCK,
+						       (uint16_t)NO_VAL);
+		tmp = _uint16_array_to_str(step_layout->node_cnt,
+					   step_layout->tasks);
+		slurm_step_layout_destroy(step_layout);
+	}
 	env_array_overwrite_fmt(dest, "SLURM_TASKS_PER_NODE", "%s", tmp);
 	xfree(tmp);
 }
