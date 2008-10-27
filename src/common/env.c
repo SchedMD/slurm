@@ -858,6 +858,7 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
  *	SLURM_JOBID
  *	SLURM_NNODES
  *	SLURM_NODELIST
+ *	SLURM_NPROCS
  *	SLURM_TASKS_PER_NODE 
  */
 extern void
@@ -895,9 +896,10 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 	env_array_overwrite_fmt(dest, "SLURM_JOBID", "%u", batch->job_id);
 	env_array_overwrite_fmt(dest, "SLURM_NNODES", "%u", num_nodes);
 	env_array_overwrite_fmt(dest, "SLURM_NODELIST", "%s", batch->nodes);
-	env_array_overwrite_fmt(dest, "SLURM_NPROCS", "%u", batch->nprocs);
 	if(batch->nprocs) {
 		xfree(tmp);
+		env_array_overwrite_fmt(dest, "SLURM_NPROCS", "%u", 
+					batch->nprocs);
 		step_layout = slurm_step_layout_create(batch->nodes,
 						       batch->cpus_per_node,
 						       batch->cpu_count_reps,
