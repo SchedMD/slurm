@@ -11,7 +11,7 @@ bin_PROGRAMS = sview
 
 sview_LDADD =					  \
 	$(top_builddir)/src/plugins/select/bluegene/block_allocator/libbluegene_block_allocator.la  \
-	$(top_builddir)/src/api/libslurm.o -ldl -lm
+	$(top_builddir)/src/api/libslurm.o -ldl
 
 noinst_HEADERS = sview.h
 sview_SOURCES = sview.c popups.c grid.c part_info.c job_info.c \

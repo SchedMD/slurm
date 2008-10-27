@@ -9,7 +9,7 @@ bin_PROGRAMS = salloc
 
 salloc_SOURCES = salloc.c salloc.h opt.c opt.h
 
-convenience_libs = $(top_builddir)/src/api/libslurm.o -ldl -lm
+convenience_libs = $(top_builddir)/src/api/libslurm.o -ldl
 
 salloc_LDADD = \
 	$(convenience_libs) 

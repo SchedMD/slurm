@@ -10,7 +10,7 @@ sbin_PROGRAMS = slurmdbd
 
 slurmdbd_LDADD = 					\
 	$(top_builddir)/src/common/libdaemonize.la \
-	$(top_builddir)/src/api/libslurm.o -ldl -lm
+	$(top_builddir)/src/api/libslurm.o -ldl
 
 
 slurmdbd_SOURCES = 		\

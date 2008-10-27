@@ -3,7 +3,7 @@
 # anything else that will need variables here link to 
 # $(top_builddir)/src/common/libcommon.la
 # if you are linking to a stand alone program that needs all symbols link to
-# $(top_builddir)/src/common/libcommon.o with -ldl -lm added 
+# $(top_builddir)/src/common/libcommon.o with -ldl added 
 # This avoids having multiple symbols running around when there should 
 # only be 1 address per symbol.  If you link to the libcommon.la in
 # a plugin you will get 2 addresses for one symbol which could lead to problems.
@@ -117,7 +117,7 @@ libspank_la_SOURCES = \
 	plugstack.c plugstack.h \
 	optz.c      optz.h
 
-libcommon_la_LIBADD   = -ldl -lm 
+libcommon_la_LIBADD   = -ldl 
 
 libcommon_la_LDFLAGS  = $(LIB_LDFLAGS) -module --export-dynamic
 

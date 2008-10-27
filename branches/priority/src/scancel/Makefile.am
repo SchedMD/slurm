@@ -6,7 +6,7 @@ INCLUDES = -I$(top_srcdir)
 
 bin_PROGRAMS = scancel
 
-scancel_LDADD = $(top_builddir)/src/api/libslurm.o -ldl -lm
+scancel_LDADD = $(top_builddir)/src/api/libslurm.o -ldl
 
 noinst_HEADERS  = scancel.h
 scancel_SOURCES = scancel.c opt.c

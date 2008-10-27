@@ -75,7 +75,7 @@ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-priority_multifactor_la_LIBADD =
+priority_multifactor_la_DEPENDENCIES =
 am_priority_multifactor_la_OBJECTS = priority_multifactor.lo
 priority_multifactor_la_OBJECTS =  \
 	$(am_priority_multifactor_la_OBJECTS)
@@ -274,6 +274,7 @@ pkglib_LTLIBRARIES = priority_multifactor.la
 # Null priority logging plugin.
 priority_multifactor_la_SOURCES = priority_multifactor.c
 priority_multifactor_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+priority_multifactor_la_LIBADD = -lm
 all: all-am
 
 .SUFFIXES:
