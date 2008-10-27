@@ -148,6 +148,13 @@ extern int assoc_mgr_apply_decay(double decay_factor);
  */
 extern int assoc_mgr_set_cpu_shares(uint32_t procs, uint32_t half_life);
 
+/*
+ * get the share information from the association list in the form of
+ * a list containing association_share_object_t's 
+ * IN: acct_list: char * list of accounts you want (NULL for all)
+ * IN: user_list: char * list of user names you want (NULL for all)
+ */
+extern List assoc_mgr_get_shares(List acct_list, List user_list);
 
 /* 
  * update associations in cache 

@@ -96,6 +96,7 @@ inline static void  _slurm_rpc_complete_batch_script(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_conf(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_jobs(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_job_single(slurm_msg_t * msg);
+inline static void  _slurm_rpc_get_shares(slurm_msg_t *msg);
 inline static void  _slurm_rpc_dump_nodes(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_partitions(slurm_msg_t * msg);
 inline static void  _slurm_rpc_epilog_complete(slurm_msg_t * msg);
@@ -162,6 +163,10 @@ void slurmctld_req (slurm_msg_t * msg)
 	case REQUEST_JOB_INFO_SINGLE:
 		_slurm_rpc_dump_job_single(msg);
 		slurm_free_job_id_msg(msg->data);
+		break;
+	case REQUEST_SHARE_INFO:
+		_slurm_rpc_get_shares(msg);
+		slurm_free_shares_request_msg(msg->data);
 		break;
 	case REQUEST_JOB_END_TIME:
 		_slurm_rpc_end_time(msg);
@@ -812,6 +817,32 @@ static void _slurm_rpc_dump_job_single(slurm_msg_t * msg)
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
 	}
 	xfree(dump);
+}
+
+static void  _slurm_rpc_get_shares(slurm_msg_t *msg)
+{
+	DEF_TIMERS;
+	shares_request_msg_t *req_msg = (shares_request_msg_t *) msg->data;
+	shares_response_msg_t resp_msg;
+	slurm_msg_t response_msg;
+	
+	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+
+	START_TIMER;
+	debug2("Processing RPC: REQUEST GET SHARES from uid=%u",
+	       (unsigned int)uid);
+	resp_msg.tot_shares = assoc_mgr_root_assoc->cpu_shares;
+	resp_msg.assoc_shares_list = assoc_mgr_get_shares(req_msg->acct_list, 
+							  req_msg->user_list);
+	slurm_msg_t_init(&response_msg);
+	response_msg.address  = msg->address;
+	response_msg.msg_type = RESPONSE_SHARE_INFO;
+	response_msg.data     = &resp_msg;
+	slurm_send_node_msg(msg->conn_fd, &response_msg);
+	if(resp_msg.assoc_shares_list)
+		list_destroy(resp_msg.assoc_shares_list);
+	END_TIMER2("_slurm_rpc_get_share");
+	debug2("_slurm_rpc_get_shares %s", TIME_STR);
 }
 
 /* _slurm_rpc_end_time - Process RPC for job end time */

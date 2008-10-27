@@ -117,6 +117,8 @@ typedef enum {
 	REQUEST_TRIGGER_CLEAR,
 	RESPONSE_TRIGGER_GET,
 	REQUEST_JOB_INFO_SINGLE,
+	REQUEST_SHARE_INFO,
+	RESPONSE_SHARE_INFO,
 
 	REQUEST_UPDATE_JOB = 3001,
 	REQUEST_UPDATE_NODE,
@@ -293,6 +295,33 @@ typedef struct ret_data_info {
 /*****************************************************************************\
  * Slurm Protocol Data Structures
 \*****************************************************************************/
+
+typedef struct association_shares_object {
+	uint32_t assoc_id;	/* association ID */
+
+	char *cluster;          /* cluster name */
+
+	uint64_t eused_shares;   /* measure of effective resource usage */
+	uint32_t fairshare;     /* non-normilized shares */
+	double norm_shares;     /* normilized shares */
+
+	char *name;             /* name */
+	char *parent;           /* parent name */
+
+	uint64_t used_shares;   /* measure of resource usage */
+	uint16_t user;          /* 1 if user association 0 if account
+				 * association */
+} association_shares_object_t;
+
+typedef struct shares_request_msg {
+	List acct_list;
+	List user_list;
+} shares_request_msg_t;
+
+typedef struct shares_response_msg {
+	List assoc_shares_list; /* list of association_shares_object_t *'s */
+	uint64_t tot_shares;
+} shares_response_msg_t;
 
 typedef struct job_step_kill_msg {
 	uint32_t job_id;
@@ -770,6 +799,9 @@ void inline slurm_free_job_step_info_request_msg(
 void inline slurm_free_node_info_request_msg(node_info_request_msg_t *msg);
 void inline slurm_free_part_info_request_msg(part_info_request_msg_t *msg);
 void inline slurm_free_set_debug_level_msg(set_debug_level_msg_t *msg);
+void inline slurm_destroy_association_shares_object(void *object);
+void inline slurm_free_shares_request_msg(shares_request_msg_t *msg);
+void inline slurm_free_shares_response_msg(shares_response_msg_t *msg);
 
 #define	slurm_free_timelimit_msg(msg) \
 	slurm_free_kill_job_msg(msg)

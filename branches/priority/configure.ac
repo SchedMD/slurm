@@ -289,6 +289,7 @@ AC_CONFIG_FILES([Makefile
 		 src/sacctmgr/Makefile
 		 src/sreport/Makefile
 		 src/sstat/Makefile
+		 src/sshare/Makefile
 		 src/salloc/Makefile 
 		 src/sbatch/Makefile 
 		 src/sattach/Makefile

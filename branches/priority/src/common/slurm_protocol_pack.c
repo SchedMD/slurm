@@ -69,6 +69,14 @@
 #define _pack_node_select_info_msg(msg,buf)	_pack_buffer_msg(msg,buf)
 #define _pack_node_info_msg(msg,buf)		_pack_buffer_msg(msg,buf)
 
+static void _pack_assoc_shares_object(void *in, Buf buffer);
+static int _unpack_assoc_shares_object(void **object, Buf buffer);
+static void _pack_shares_request_msg(shares_request_msg_t * msg, Buf buffer);
+static int _unpack_shares_request_msg(shares_request_msg_t ** msg, Buf buffer);
+static void _pack_shares_response_msg(shares_response_msg_t * msg, Buf buffer);
+static int _unpack_shares_response_msg(shares_response_msg_t ** msg,
+				       Buf buffer);
+
 static void _pack_update_node_msg(update_node_msg_t * msg, Buf buffer);
 static int _unpack_update_node_msg(update_node_msg_t ** msg, Buf buffer);
 
@@ -697,6 +705,15 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		_pack_job_ready_msg((job_id_msg_t *)msg->data, buffer);
 		break;
 
+	case REQUEST_SHARE_INFO:
+		_pack_shares_request_msg((shares_request_msg_t *)msg->data,
+					 buffer);
+		break;
+	case RESPONSE_SHARE_INFO:
+		_pack_shares_response_msg((shares_response_msg_t *)msg->data,
+					  buffer);
+		break;
+
 	case REQUEST_NODE_SELECT_INFO:
 		_pack_node_select_info_req_msg(
 			(node_info_select_request_msg_t *) msg->data, buffer);
@@ -1049,6 +1066,16 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		rc = _unpack_job_ready_msg((job_id_msg_t **)
 					   & msg->data, buffer);
 		break;
+	case REQUEST_SHARE_INFO:
+		rc = _unpack_shares_request_msg(
+			(shares_request_msg_t **)&msg->data,
+			buffer);
+		break;
+	case RESPONSE_SHARE_INFO:
+		rc = _unpack_shares_response_msg(
+			(shares_response_msg_t **)&msg->data,
+			buffer);
+		break;
 	case REQUEST_NODE_SELECT_INFO:
 		rc = _unpack_node_select_info_req_msg(
 			(node_info_select_request_msg_t **) &msg->data,
@@ -1107,6 +1134,201 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	if (rc)
 		error("Malformed RPC of type %u received", msg->msg_type);
 	return rc;
+}
+
+static void _pack_assoc_shares_object(void *in, Buf buffer)
+{
+	association_shares_object_t *object = (association_shares_object_t *)in;
+
+	if(!object) {
+		pack32(0, buffer);
+
+		packnull(buffer);
+
+		pack64(0, buffer);
+		pack32(0, buffer);
+		packdouble(0, buffer);
+
+		packnull(buffer);
+		packnull(buffer);
+
+		pack64(0, buffer);
+		pack16(0, buffer);
+		
+		return;
+	}
+
+	pack32(object->assoc_id, buffer);
+
+	packstr(object->cluster, buffer);
+
+	pack64(object->eused_shares, buffer);
+	pack32(object->fairshare, buffer);
+	packdouble(object->norm_shares, buffer);
+
+	packstr(object->name, buffer);
+	packstr(object->parent, buffer);
+
+	pack64(object->used_shares, buffer);
+	pack16(object->user, buffer);
+}
+
+static int _unpack_assoc_shares_object(void **object, Buf buffer)
+{
+	uint32_t uint32_tmp;
+	association_shares_object_t *object_ptr =
+		xmalloc(sizeof(association_shares_object_t));
+
+	*object = (void *) object_ptr;
+	safe_unpack32(&object_ptr->assoc_id, buffer);
+	
+	safe_unpackstr_xmalloc(&object_ptr->cluster, &uint32_tmp, buffer);
+
+	safe_unpack64(&object_ptr->eused_shares, buffer);
+	safe_unpack32(&object_ptr->fairshare, buffer);
+	safe_unpackdouble(&object_ptr->norm_shares, buffer);
+
+	safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&object_ptr->parent, &uint32_tmp, buffer);
+
+	safe_unpack64(&object_ptr->used_shares, buffer);
+	safe_unpack16(&object_ptr->user, buffer);
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	destroy_update_shares_rec(object_ptr);
+	*object = NULL;
+	return SLURM_ERROR;
+}
+
+static void _pack_shares_request_msg(shares_request_msg_t * msg, Buf buffer)
+{
+	uint32_t count = NO_VAL;
+	char *tmp_info = NULL;
+	ListIterator itr = NULL;
+
+	xassert(msg != NULL);
+
+	if(msg->acct_list) 
+		count = list_count(msg->acct_list);
+	pack32(count, buffer);
+	if(count && count != NO_VAL) {
+		itr = list_iterator_create(msg->acct_list);
+		while((tmp_info = list_next(itr))) {
+			packstr(tmp_info, buffer);
+		}
+		list_iterator_destroy(itr);
+	}
+	count = NO_VAL;
+
+
+	if(msg->user_list) 
+		count = list_count(msg->user_list);
+	pack32(count, buffer);
+	if(count && count != NO_VAL) {
+		itr = list_iterator_create(msg->user_list);
+		while((tmp_info = list_next(itr))) {
+			packstr(tmp_info, buffer);
+		}
+		list_iterator_destroy(itr);
+	}
+	count = NO_VAL;
+}
+
+static int _unpack_shares_request_msg(shares_request_msg_t ** msg, Buf buffer)
+{
+	uint32_t uint32_tmp;
+	uint32_t count = NO_VAL;
+	int i;
+	char *tmp_info = NULL;
+	shares_request_msg_t *object_ptr = NULL;
+
+	xassert(msg != NULL);
+
+	object_ptr = xmalloc(sizeof(shares_request_msg_t));
+	*msg = object_ptr;
+
+	safe_unpack32(&count, buffer);
+	if(count != NO_VAL) {
+		object_ptr->acct_list = list_create(slurm_destroy_char);
+		for(i=0; i<count; i++) {
+			safe_unpackstr_xmalloc(&tmp_info,
+					       &uint32_tmp, buffer);
+			list_append(object_ptr->acct_list, tmp_info);
+		}
+	}
+
+	safe_unpack32(&count, buffer);
+	if(count != NO_VAL) {
+		object_ptr->user_list = list_create(slurm_destroy_char);
+		for(i=0; i<count; i++) {
+			safe_unpackstr_xmalloc(&tmp_info,
+					       &uint32_tmp, buffer);
+			list_append(object_ptr->user_list, tmp_info);
+		}
+	}
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_shares_request_msg(object_ptr);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
+static void _pack_shares_response_msg(shares_response_msg_t * msg, Buf buffer)
+{
+	ListIterator itr = NULL;
+	association_shares_object_t *share = NULL;
+	uint32_t count = NO_VAL;
+
+	xassert(msg != NULL);
+	if(msg->assoc_shares_list) 
+		count = list_count(msg->assoc_shares_list);
+	pack32(count, buffer);
+	if(count && count != NO_VAL) {
+		itr = list_iterator_create(msg->assoc_shares_list);
+		while((share = list_next(itr))) 
+			_pack_assoc_shares_object(share, buffer);
+		list_iterator_destroy(itr);
+	}
+	count = NO_VAL;
+	pack64(msg->tot_shares, buffer);
+
+}
+
+static int _unpack_shares_response_msg(shares_response_msg_t ** msg,
+				       Buf buffer)
+{
+	uint32_t count = NO_VAL;
+	int i = 0;
+	void *tmp_info = NULL;
+	shares_response_msg_t *object_ptr = NULL;
+	xassert(msg != NULL);
+
+	object_ptr = xmalloc(sizeof(shares_response_msg_t));
+	*msg = object_ptr;
+
+	safe_unpack32(&count, buffer);
+	if(count != NO_VAL) {
+		object_ptr->assoc_shares_list = 
+			list_create(slurm_destroy_association_shares_object);
+		for(i=0; i<count; i++) {
+			if(_unpack_assoc_shares_object(&tmp_info, buffer) 
+			   != SLURM_SUCCESS)
+				goto unpack_error;
+			list_append(object_ptr->assoc_shares_list, tmp_info);
+		}
+	}
+
+	safe_unpack64(&object_ptr->tot_shares, buffer);
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_shares_response_msg(object_ptr);
+	*msg = NULL;
+	return SLURM_ERROR;
+
 }
 
 static void

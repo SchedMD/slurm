@@ -940,7 +940,7 @@ extern void pack_acct_used_limits(void *in, uint16_t rpc_version, Buf buffer)
 extern int unpack_acct_used_limits(void **object,
 				   uint16_t rpc_version, Buf buffer)
 {
-	acct_used_limits_t *object_ptr = xmalloc(sizeof(shares_used_object_t));
+	acct_used_limits_t *object_ptr = xmalloc(sizeof(acct_used_limits_t));
 
 	*object = (void *)object_ptr;
 
@@ -959,37 +959,6 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-
-extern void pack_update_shares_used(void *in, uint16_t rpc_version, Buf buffer)
-{
-	shares_used_object_t *object = (shares_used_object_t *)in;
-
-	if(!object) {
-		pack32(0, buffer);
-		pack32(0, buffer);
-		return;
-	}
-
-	pack32(object->assoc_id, buffer);
-	pack32(object->shares_used, buffer);
-}
-
-extern int unpack_update_shares_used(void **object, uint16_t rpc_version, Buf buffer)
-{
-	shares_used_object_t *object_ptr =
-		xmalloc(sizeof(shares_used_object_t));
-
-	*object = (void *) object_ptr;
-	safe_unpack32(&object_ptr->assoc_id, buffer);
-	safe_unpack32(&object_ptr->shares_used, buffer);
-
-	return SLURM_SUCCESS;
-
-unpack_error:
-	destroy_update_shares_rec(object_ptr);
-	*object = NULL;
-	return SLURM_ERROR;
-}
 extern void pack_acct_account_rec(void *in, uint16_t rpc_version, Buf buffer)
 {
 	acct_coord_rec_t *coord = NULL;
@@ -1504,9 +1473,6 @@ extern void pack_acct_association_rec(void *in, uint16_t rpc_version,
 	acct_accounting_rec_t *acct_info = NULL;
 	ListIterator itr = NULL;
 	uint32_t count = NO_VAL;
-	uint32_t uint32_tmp;
-	uint64_t uint64_tmp;
-	long double ld_tmp;
 	char *tmp_info = NULL;
 	acct_association_rec_t *object = (acct_association_rec_t *)in;	
 	
@@ -1568,9 +1534,8 @@ extern void pack_acct_association_rec(void *in, uint16_t rpc_version,
 		pack32(object->rgt, buffer);
 		pack32(object->uid, buffer);
 
-		ld_tmp = object->used_shares * FLOAT_MULT;
-		uint32_tmp = (uint32_t)ld_tmp;
-		pack32(uint32_tmp, buffer);
+		/* used shares which is taken out in 4 */
+		pack32(0, buffer);
 
 		packstr(object->user, buffer);	
 	} else if (rpc_version == 3) {
@@ -1671,9 +1636,8 @@ extern void pack_acct_association_rec(void *in, uint16_t rpc_version,
 		pack32(object->rgt, buffer);
 		pack32(object->uid, buffer);
 
-		ld_tmp = object->used_shares * FLOAT_MULT;
-		uint32_tmp = (uint32_t)ld_tmp;
-		pack32(uint32_tmp, buffer);
+		/* used shares which is taken out in 4 */
+		pack32(0, buffer);
 
 		packstr(object->user, buffer);	
 	} else if (rpc_version >= 4) {
@@ -1709,8 +1673,6 @@ extern void pack_acct_association_rec(void *in, uint16_t rpc_version,
 
 			pack32(0, buffer);
 			pack32(0, buffer);
-
-			pack64(0, buffer);
 
 			packnull(buffer);
 			return;
@@ -1774,10 +1736,6 @@ extern void pack_acct_association_rec(void *in, uint16_t rpc_version,
 		pack32(object->rgt, buffer);
 		pack32(object->uid, buffer);
 
-		ld_tmp = object->used_shares * FLOAT_MULT;
-		uint64_tmp = (uint64_t)ld_tmp;
-		pack64(uint64_tmp, buffer);
-
 		packstr(object->user, buffer);	
 	}
 }
@@ -1785,7 +1743,6 @@ extern void pack_acct_association_rec(void *in, uint16_t rpc_version,
 extern int unpack_acct_association_rec(void **object, uint16_t rpc_version,
 				       Buf buffer)
 {
-	uint64_t uint64_tmp;
 	uint32_t uint32_tmp;
 	int i;
 	uint32_t count;
@@ -1836,9 +1793,9 @@ extern int unpack_acct_association_rec(void **object, uint16_t rpc_version,
 		safe_unpack32(&object_ptr->rgt, buffer);
 		safe_unpack32(&object_ptr->uid, buffer);
 
+		/* used shares which is taken out in 4 */
 		safe_unpack32(&uint32_tmp, buffer);
-		object_ptr->used_shares = (long double)uint32_tmp / FLOAT_MULT;
-
+		
 		safe_unpackstr_xmalloc(&object_ptr->user, &uint32_tmp, buffer);
 	} else if (rpc_version == 3) {
 		safe_unpack32(&count, buffer);
@@ -1900,9 +1857,9 @@ extern int unpack_acct_association_rec(void **object, uint16_t rpc_version,
 		safe_unpack32(&object_ptr->rgt, buffer);
 		safe_unpack32(&object_ptr->uid, buffer);
 		
+		/* used shares which is taken out in 4 */
 		safe_unpack32(&uint32_tmp, buffer);
-		object_ptr->used_shares = (long double)uint32_tmp / FLOAT_MULT;
-
+		
 		safe_unpackstr_xmalloc(&object_ptr->user, &uint32_tmp, buffer);
 	} else if (rpc_version >= 4) {
 		safe_unpack32(&count, buffer);
@@ -1963,9 +1920,6 @@ extern int unpack_acct_association_rec(void **object, uint16_t rpc_version,
 
 		safe_unpack32(&object_ptr->rgt, buffer);
 		safe_unpack32(&object_ptr->uid, buffer);
-
-		safe_unpack64(&uint64_tmp, buffer);
-		object_ptr->used_shares = (long double)uint64_tmp / FLOAT_MULT;
 
 		safe_unpackstr_xmalloc(&object_ptr->user, &uint32_tmp, buffer);
 	}
@@ -4351,14 +4305,13 @@ extern acct_admin_level_t str_2_acct_admin_level(char *level)
 }
 
 /* IN/OUT: tree_list a list of acct_print_tree_t's */ 
-extern char *get_tree_acct_name(char *name, char *parent, char *cluster, 
-				List tree_list)
+extern char *get_tree_acct_name(char *name, char *parent, List tree_list)
 {
 	ListIterator itr = NULL;
 	acct_print_tree_t *acct_print_tree = NULL;
 	acct_print_tree_t *par_acct_print_tree = NULL;
 	static char *ret_name = NULL;
-	static char *last_name = NULL, *last_cluster = NULL;
+	static char *last_name = NULL;
 
 
 	if(!tree_list) 
@@ -4399,7 +4352,6 @@ extern char *get_tree_acct_name(char *name, char *parent, char *cluster,
 
 	ret_name = acct_print_tree->print_name;
 	last_name = name;
-	last_cluster = cluster;
 
 	return acct_print_tree->print_name;
 }

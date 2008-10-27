@@ -46,8 +46,6 @@
 #include <sys/types.h>
 #include <pwd.h>
 
-#define FLOAT_MULT 1000000
-
 typedef enum {
 	ACCT_ADMIN_NOTSET,
 	ACCT_ADMIN_NONE,
@@ -222,7 +220,8 @@ typedef struct acct_association_rec {
 	uint32_t uid;		/* user ID */
 	
 	uint32_t used_jobs;	/* count of active jobs (DON'T PACK) */
-	long double used_shares;	/* measure of resource usage */
+	long double used_shares;	/* measure of resource usage 
+					   (DON'T PACK) */
 	uint32_t used_submit_jobs; /* count of jobs pending or running
 				    * (DON'T PACK) */
 	
@@ -404,11 +403,6 @@ typedef struct {
 } acct_update_object_t;
 
 typedef struct {
-	uint32_t assoc_id;	/* association ID		*/
-	uint32_t shares_used;	/* measure of recent usage	*/
-} shares_used_object_t;
-
-typedef struct {
 	uint64_t alloc_secs; /* number of cpu seconds allocated */
 	uint32_t cpu_count; /* number of cpus during time period */
 	uint64_t down_secs; /* number of cpu seconds down */
@@ -525,8 +519,7 @@ extern char *acct_admin_level_str(acct_admin_level_t level);
 extern acct_admin_level_t str_2_acct_admin_level(char *level);
 
 /* IN/OUT: tree_list a list of acct_print_tree_t's */ 
-extern char *get_tree_acct_name(char *name, char *parent, char *cluster, 
-				List tree_list);
+extern char *get_tree_acct_name(char *name, char *parent, List tree_list);
 
 extern char *get_qos_complete_str(List qos_list, List num_qos_list);
 

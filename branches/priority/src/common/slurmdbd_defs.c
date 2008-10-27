@@ -362,7 +362,6 @@ extern Buf pack_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 	case DBD_GOT_QOS:
 	case DBD_GOT_TXN:
 	case DBD_GOT_USERS:
-	case DBD_UPDATE_SHARES_USED:
 		slurmdbd_pack_list_msg(
 			rpc_version, req->msg_type, 
 			(dbd_list_msg_t *)req->data, buffer);
@@ -506,7 +505,6 @@ extern int unpack_slurmdbd_msg(uint16_t rpc_version,
 	case DBD_GOT_QOS:
 	case DBD_GOT_TXN:
 	case DBD_GOT_USERS:
-	case DBD_UPDATE_SHARES_USED:
 		rc = slurmdbd_unpack_list_msg(
 			rpc_version, resp->msg_type,
 			(dbd_list_msg_t **)&resp->data, buffer);
@@ -726,8 +724,6 @@ extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 		return DBD_STEP_COMPLETE;
 	} else if(!strcasecmp(msg_type, "Step Start")) {
 		return DBD_STEP_START;
-	} else if(!strcasecmp(msg_type, "Update Shares Used")) {
-		return DBD_UPDATE_SHARES_USED;
 	} else if(!strcasecmp(msg_type, "Get Jobs Conditional")) {
 		return DBD_GET_JOBS_COND;
 	} else if(!strcasecmp(msg_type, "Get Transations")) {
@@ -1009,12 +1005,6 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 			return "DBD_STEP_START";
 		} else
 			return "Step Start";
-		break;
-	case DBD_UPDATE_SHARES_USED:
-		if(get_enum) {
-			return "DBD_UPDATE_SHARES_USED";
-		} else
-			return "Update Shares Used";
 		break;
 	case DBD_GET_JOBS_COND:
 		if(get_enum) {
@@ -2601,9 +2591,6 @@ void inline slurmdbd_pack_list_msg(uint16_t rpc_version,
 	case DBD_GOT_TXN:
 		my_function = pack_acct_txn_rec;
 		break;
-	case DBD_UPDATE_SHARES_USED:
-		my_function = pack_update_shares_used;
-		break;
 	default:
 		fatal("Unknown pack type");
 		return;
@@ -2672,10 +2659,6 @@ int inline slurmdbd_unpack_list_msg(uint16_t rpc_version,
 	case DBD_GOT_TXN:
 		my_function = unpack_acct_txn_rec;
 		my_destroy = destroy_acct_txn_rec;
-		break;
-	case DBD_UPDATE_SHARES_USED:
-		my_function = unpack_update_shares_used;
-		my_destroy = destroy_update_shares_rec;
 		break;
 	default:
 		fatal("Unknown unpack type");

@@ -1052,6 +1052,11 @@ extern int assoc_mgr_is_user_acct_coord(void *db_conn,
 	return 0;	
 }
 
+extern List assoc_mgr_get_shares(List acct_list, List user_list)
+{
+	return NULL;
+}
+
 extern int assoc_mgr_update_assocs(acct_update_object_t *update)
 {
 	acct_association_rec_t * rec = NULL;

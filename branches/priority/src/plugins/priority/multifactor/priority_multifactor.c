@@ -497,14 +497,13 @@ static void *_decay_thread(void *no_data)
 
 				run_delta = (int)end_period - (int)start_period;
 
-				if(run_delta < 0) {
-					error("priority: some how we have "
-					      "negative time %d for job %u",
-					      run_delta, job_ptr->job_id);
-					continue;
-				} else if(!run_delta)
+				/* job already has been accounted for
+				   go to next */
+				if(run_delta < 1) 
 					continue;
 
+				info("job %u ran for %d seconds",
+				     job_ptr->job_id, run_delta);
 				/* figure out the decayed new usage to
 				   add */
 				real_decay = ((double)run_delta 

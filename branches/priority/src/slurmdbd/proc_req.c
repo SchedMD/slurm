@@ -125,8 +125,6 @@ static int   _step_complete(slurmdbd_conn_t *slurmdbd_conn,
 			    Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _step_start(slurmdbd_conn_t *slurmdbd_conn,
 			 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
-static int   _update_shares_used(slurmdbd_conn_t *slurmdbd_conn,
-				 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 
 /* Process an incoming RPC
  * slurmdbd_conn IN/OUT - in will that the newsockfd set before
@@ -314,10 +312,6 @@ proc_req(slurmdbd_conn_t *slurmdbd_conn,
 		case DBD_STEP_START:
 			rc = _step_start(slurmdbd_conn,
 					 in_buffer, out_buffer, uid);
-			break;
-		case DBD_UPDATE_SHARES_USED:
-			rc = _update_shares_used(slurmdbd_conn,
-						 in_buffer, out_buffer, uid);
 			break;
 		default:
 			comment = "Invalid RPC";
@@ -2414,49 +2408,3 @@ end_it:
 	return rc;
 }
 
-static int  _update_shares_used(slurmdbd_conn_t *slurmdbd_conn,
-				Buf in_buffer, Buf *out_buffer, uint32_t *uid)
-{
-	int rc = SLURM_SUCCESS;
-	dbd_list_msg_t *used_shares_msg = NULL;
-	char *comment = NULL;
-
-	if (*uid != slurmdbd_conf->slurm_user_id) {
-		comment = "DBD_UPDATE_SHARES_USED message from invalid uid";
-		error("%s %u", comment, *uid);
-		rc = ESLURM_ACCESS_DENIED;
-		goto end_it;
-	}
-	debug2("DBD_UPDATE_SHARES_USED");
-	if (slurmdbd_unpack_list_msg(slurmdbd_conn->rpc_version, 
-				     DBD_UPDATE_SHARES_USED, &used_shares_msg, 
-				     in_buffer) != SLURM_SUCCESS) {
-		comment = "Failed to unpack DBD_UPDATE_SHARES_USED message";
-		error("%s", comment);
-		rc = SLURM_ERROR;
-		goto end_it;
-	} else {
-#if 0
-		/* This was only added to verify the logic. 
-		 * It is not useful for production use */
-		ListIterator itr = NULL;
-		shares_used_object_t *usage;
-		itr = list_iterator_create(used_shares_msg->my_list);
-		while((usage = list_next(itr))) {
-			debug2("assoc_id:%u shares_used:%u", 
-			       usage->assoc_id, usage->shares_used);
-		}
-		list_iterator_destroy(itr);
-#endif
-	}
-
-	rc = acct_storage_g_update_shares_used(slurmdbd_conn->db_conn, 
-					       used_shares_msg->my_list);
-
-end_it:
-	slurmdbd_free_list_msg(slurmdbd_conn->rpc_version, 
-			       used_shares_msg);
-	*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version, 
-				      rc, comment, DBD_UPDATE_SHARES_USED);
-	return rc;
-}
