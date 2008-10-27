@@ -963,7 +963,8 @@ extern void pack_update_shares_used(void *in, uint16_t rpc_version, Buf buffer)
 	pack32(object->shares_used, buffer);
 }
 
-extern int unpack_update_shares_used(void **object, uint16_t rpc_version, Buf buffer)
+extern int unpack_update_shares_used(void **object, uint16_t rpc_version,
+				     Buf buffer)
 {
 	shares_used_object_t *object_ptr =
 		xmalloc(sizeof(shares_used_object_t));
