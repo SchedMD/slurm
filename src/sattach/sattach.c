@@ -1,9 +1,8 @@
 /*****************************************************************************\
  *  sattach.c - Attach to a running job step.
- *
- *  $Id: sattach.c 8447 2006-06-26 22:29:29Z morrone $
  *****************************************************************************
- *  Copyright (C) 2006 The Regents of the University of California.
+ *  Copyright (C) 2006-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Christopher J. Morrone <morrone2@llnl.gov>
  *  LLNL-CODE-402394.
@@ -67,7 +66,8 @@ static void _mpir_cleanup(void);
 static void _mpir_dump_proctable(void);
 static void print_layout_info(slurm_step_layout_t *layout);
 static slurm_cred_t _generate_fake_cred(uint32_t jobid, uint32_t stepid,
-					uid_t uid, char *nodelist);
+					uid_t uid, char *nodelist, 
+					uint32_t node_cnt);
 static uint32_t _nodeid_from_layout(slurm_step_layout_t *layout,
 				    uint32_t taskid);
 static int _attach_to_tasks(uint32_t jobid,
@@ -146,7 +146,8 @@ int sattach(int argc, char *argv[])
 	}
 
 	fake_cred = _generate_fake_cred(opt.jobid, opt.stepid,
-					opt.uid, layout->node_list);
+					opt.uid, layout->node_list,
+					layout->node_cnt);
 	
 	mts = _msg_thr_create(layout->node_cnt, layout->task_cnt);
 
@@ -217,7 +218,8 @@ static void print_layout_info(slurm_step_layout_t *layout)
 
 /* return a faked job credential */
 static slurm_cred_t _generate_fake_cred(uint32_t jobid, uint32_t stepid,
-					uid_t uid, char *nodelist)
+					uid_t uid, char *nodelist,
+					uint32_t node_cnt)
 {
 	slurm_cred_arg_t arg;
 	slurm_cred_t cred;
@@ -226,10 +228,26 @@ static slurm_cred_t _generate_fake_cred(uint32_t jobid, uint32_t stepid,
 	arg.stepid   = stepid;
 	arg.uid      = uid;
 	arg.hostlist = nodelist;
-        arg.alloc_lps_cnt = 0;    
-        arg.alloc_lps =  NULL; 
+	arg.alloc_lps_cnt = 0;    
+	arg.alloc_lps =  NULL;
+
+	arg.core_bitmap   = bit_alloc(node_cnt);
+	bit_nset(arg.core_bitmap, 0, node_cnt-1);
+	arg.cores_per_socket = xmalloc(sizeof(uint16_t));
+	arg.cores_per_socket[0] = 1;
+	arg.sockets_per_node = xmalloc(sizeof(uint16_t));
+	arg.sockets_per_node[0] = 1;
+	arg.sock_core_rep_count = xmalloc(sizeof(uint32_t));
+	arg.sock_core_rep_count[0] = node_cnt;
+	arg.job_nhosts    = node_cnt;
+	arg.job_hostlist  = nodelist;
+
 	cred = slurm_cred_faker(&arg);
 
+	bit_free(arg.core_bitmap);
+	xfree(arg.cores_per_socket);
+	xfree(arg.sockets_per_node);
+	xfree(arg.sock_core_rep_count);
 	return cred;
 }
 

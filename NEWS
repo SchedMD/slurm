@@ -14,6 +14,8 @@ documents those changes that are of interest to users and admins.
     killed even if the node where srun executes goes down (unless the 
     --no-kill option is used, previous termination logic would fail if 
     srun was not responding).
+ -- Transfer a job step's core bitmap from the slurmctld to the slurmd
+    within the job step credential.
 
 * Changes in SLURM 1.4.0-pre3
 =============================

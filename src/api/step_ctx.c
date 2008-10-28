@@ -44,20 +44,23 @@
 
 #include <slurm/slurm.h>
 
+#include "src/common/bitstring.h"
 #include "src/common/hostlist.h"
 #include "src/common/net.h"
+#include "src/common/slurm_cred.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/slurm_cred.h"
-
 #include "src/api/step_ctx.h"
 
 static void
 _job_fake_cred(struct slurm_step_ctx_struct *ctx)
 {
 	slurm_cred_arg_t arg;
+	uint32_t node_cnt = ctx->step_resp->step_layout->node_cnt;
+
 	arg.alloc_lps_cnt = 0;
 	arg.alloc_lps     = NULL;
 	arg.hostlist      = ctx->step_req->node_list;
@@ -65,6 +68,16 @@ _job_fake_cred(struct slurm_step_ctx_struct *ctx)
 	arg.jobid         = ctx->job_id;
 	arg.stepid        = ctx->step_resp->job_step_id;
 	arg.uid           = ctx->user_id;
+	arg.core_bitmap   = bit_alloc(node_cnt);
+	bit_nset(arg.core_bitmap, 0, node_cnt-1);
+	arg.cores_per_socket = xmalloc(sizeof(uint16_t));
+	arg.cores_per_socket[0] = 1;
+	arg.sockets_per_node = xmalloc(sizeof(uint16_t));
+	arg.sockets_per_node[0] = 1;
+	arg.sock_core_rep_count = xmalloc(sizeof(uint32_t));
+	arg.sock_core_rep_count[0] = node_cnt;
+	arg.job_nhosts    = node_cnt;
+	arg.job_hostlist  = ctx->step_resp->step_layout->node_list;
 	ctx->step_resp->cred = slurm_cred_faker(&arg);
 }
 
