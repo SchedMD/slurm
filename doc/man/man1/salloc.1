@@ -149,7 +149,7 @@ change directory to \fIpath\fR before beginning execution.
 .TP
 \fB\-\-exclusive\fR
 The job allocation cannot share nodes with other running jobs.  This is
-the oposite of \-\-shared, whichever option is seen last on the command line
+the oposite of \-\-share, whichever option is seen last on the command line
 will win.  (The default shared/exclusive behaviour depends on system
 configuration.)
 
@@ -510,7 +510,7 @@ Suppress informational messages from salloc. Errors will still be displayed.
 \fB\-s\fR, \fB\-\-share\fR
 The job allocation can share nodes with other running jobs.  (The default
 shared/exclusive behaviour depends on system configuration.)
-This may result the allocation being granted sooner than if the \-\-shared
+This may result the allocation being granted sooner than if the \-\-share
 option was not set and allow higher system utilization, but application
 performance will likely suffer due to competition for resources within a node.
 
