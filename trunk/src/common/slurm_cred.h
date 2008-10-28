@@ -50,6 +50,7 @@
 #  include <sys/types.h>
 #endif
 
+#include "src/common/bitstring.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
 
@@ -123,7 +124,12 @@ int  slurm_cred_ctx_unpack(slurm_cred_ctx_t ctx, Buf buffer);
 
 
 /*
- * Container for SLURM credential create and verify arguments:
+ * Container for SLURM credential create and verify arguments
+ *
+ * The core_bitmap, cores_per_socket, sockets_per_node, and 
+ * sock_core_rep_count is based upon the nodes allocated to the
+ * JOB, but the bits set in core_bitmap are those cores allocated
+ * to this STEP
  */
 typedef struct {
 	uint32_t jobid;
@@ -135,6 +141,13 @@ typedef struct {
 	char    *hostlist;
 	uint32_t alloc_lps_cnt;
 	uint16_t *alloc_lps;
+
+	bitstr_t *core_bitmap;
+	uint16_t *cores_per_socket;
+	uint16_t *sockets_per_node;
+	uint32_t *sock_core_rep_count;
+	uint32_t  job_nhosts;	/* count of nodes allocated to JOB */
+	char     *job_hostlist;	/* list of nodes allocated to JOB */
 } slurm_cred_arg_t;
 
 /* Terminate the plugin and release all memory. */

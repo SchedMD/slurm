@@ -519,26 +519,26 @@ static void _kill_job_on_msg_fail(uint32_t job_id)
 }
 
 /* create a credential for a given job step, return error code */
-static int _make_step_cred(struct step_record *step_rec, 
+static int _make_step_cred(struct step_record *step_ptr, 
 			   slurm_cred_t *slurm_cred)
 {
 	slurm_cred_arg_t cred_arg;
-	struct job_record* job_ptr = step_rec->job_ptr;
+	struct job_record* job_ptr = step_ptr->job_ptr;
 	select_job_res_t select_ptr = job_ptr->select_job;
 
 	xassert(select_ptr && select_ptr->cpus);
 	cred_arg.jobid    = job_ptr->job_id;
-	cred_arg.stepid   = step_rec->step_id;
+	cred_arg.stepid   = step_ptr->step_id;
 	cred_arg.uid      = job_ptr->user_id;
 	cred_arg.job_mem  = job_ptr->details->job_min_memory;
 #ifdef HAVE_FRONT_END
 	cred_arg.hostlist = node_record_table_ptr[0].name;
 #else
-	cred_arg.hostlist = step_rec->step_layout->node_list;
+	cred_arg.hostlist = step_ptr->step_layout->node_list;
 #endif
 	cred_arg.alloc_lps_cnt = select_ptr->nhosts;
 	if ((cred_arg.alloc_lps_cnt > 0) &&
-	    bit_equal(job_ptr->node_bitmap, step_rec->step_node_bitmap)) {
+	    bit_equal(job_ptr->node_bitmap, step_ptr->step_node_bitmap)) {
 		cred_arg.alloc_lps = xmalloc(cred_arg.alloc_lps_cnt *
 				sizeof(uint16_t));
 		memcpy(cred_arg.alloc_lps, select_ptr->cpus,
@@ -555,7 +555,7 @@ static int _make_step_cred(struct step_record *step_rec,
 			if (!bit_test(job_ptr->node_bitmap, i))
 				continue;
 			job_inx++;
-			if (!bit_test(step_rec->step_node_bitmap, i))
+			if (!bit_test(step_ptr->step_node_bitmap, i))
 				continue;
 			step_inx++;
 			cred_arg.alloc_lps[step_inx] = select_ptr->
@@ -568,6 +568,17 @@ static int _make_step_cred(struct step_record *step_rec,
 		error("No resources allocated to job %u", job_ptr->job_id);
 		cred_arg.alloc_lps = NULL;
 	}
+
+	/* Identify the cores allocated to this job step
+	 * The core_bitmap is based upon the nodes allocated to the _job_.
+	 * The slurmd must identify the appropriate cores to be used 
+	 * by each step. */
+	cred_arg.core_bitmap         = step_ptr->core_bitmap_job;
+	cred_arg.cores_per_socket    = select_ptr->cores_per_socket;
+	cred_arg.sockets_per_node    = select_ptr->sockets_per_node;
+	cred_arg.sock_core_rep_count = select_ptr->sock_core_rep_count;
+	cred_arg.job_nhosts          = select_ptr->nhosts;
+	cred_arg.job_hostlist        = job_ptr->nodes;
 
 	*slurm_cred = slurm_cred_create(slurmctld_config.cred_ctx, &cred_arg);
 	xfree(cred_arg.alloc_lps);
@@ -1241,8 +1252,8 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 	if (error_code == SLURM_SUCCESS) {
 		/* issue the RPC */
 		lock_slurmctld(job_write_lock);
-		error_code =
-			step_create(req_step_msg, &step_rec, false, false);
+		error_code = step_create(req_step_msg, &step_rec, 
+					 false, false);
 	}
 	if (error_code == SLURM_SUCCESS)
 		error_code = _make_step_cred(step_rec, &slurm_cred);
