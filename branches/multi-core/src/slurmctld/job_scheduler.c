@@ -603,6 +603,7 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
 			       struct job_record *job_ptr)
 {
 	slurm_cred_arg_t cred_arg;
+	select_job_res_t select_ptr;
 
 	cred_arg.jobid     = launch_msg_ptr->job_id;
 	cred_arg.stepid    = launch_msg_ptr->step_id;
@@ -625,6 +626,16 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
 
 	cred_arg.alloc_lps_cnt = 0;
 	cred_arg.alloc_lps = NULL;
+
+	/* Identify the cores allocated to this job. */
+	xassert(job_ptr->select_job);
+	select_ptr = job_ptr->select_job;
+	cred_arg.core_bitmap         = select_ptr->core_bitmap;
+	cred_arg.cores_per_socket    = select_ptr->cores_per_socket;
+	cred_arg.sockets_per_node    = select_ptr->sockets_per_node;
+	cred_arg.sock_core_rep_count = select_ptr->sock_core_rep_count;
+	cred_arg.job_nhosts          = select_ptr->nhosts;
+	cred_arg.job_hostlist        = job_ptr->nodes;
 
 	launch_msg_ptr->cred = slurm_cred_create(slurmctld_config.cred_ctx,
 			 &cred_arg);
