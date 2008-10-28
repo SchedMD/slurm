@@ -202,8 +202,16 @@ int unpack_time(time_t * valp, Buf buffer)
  */
 void 	packdouble(double val, Buf buffer)
 {
-	uint64_t nl =  HTON_uint64((uint64_t)(val * (double)FLOAT_MULT));
-
+	double nl1 =  (val * FLOAT_MULT) + .5; /* the .5 is here to
+						  round off.  We have
+						  found on systems
+						  going out more than
+						  15 decimals will
+						  mess things up so
+						  this is here to
+						  correct it. */
+	uint64_t nl =  HTON_uint64(nl1);
+	
 	if (remaining_buf(buffer) < sizeof(nl)) {
 		if (buffer->size > (MAX_BUF_SIZE - BUF_SIZE)) {
 			error("pack64: buffer size too large");
@@ -230,6 +238,7 @@ int	unpackdouble(double *valp, Buf buffer)
 		return SLURM_ERROR;
 	
 	memcpy(&nl, &buffer->head[buffer->processed], sizeof(nl));
+
 	*valp = (double)NTOH_uint64(nl) / (double)FLOAT_MULT;
 	buffer->processed += sizeof(nl);
 	return SLURM_SUCCESS;

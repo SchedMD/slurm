@@ -416,6 +416,8 @@ typedef struct {
 	char *name;
 	char *print_name;
 	char *spaces;
+	uint16_t user; /* set to 1 if it is a user i.e. if name[0] is
+			* '|' */
 } acct_print_tree_t;
 
 extern uint32_t qos_max_priority; /* max priority in all qos's */

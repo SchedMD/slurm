@@ -37,6 +37,53 @@
 
 #include "src/sshare/sshare.h"
 
+extern void _sshare_print_time(print_field_t *field,
+			       uint64_t value, int last)
+{
+	/* (value == unset)  || (value == cleared) */
+	if((value == NO_VAL) || (value == INFINITE)) {
+		if(print_fields_parsable_print 
+		   == PRINT_FIELDS_PARSABLE_NO_ENDING
+		   && last)
+			;
+		else if(print_fields_parsable_print)
+			printf("|");	
+		else				
+			printf("%-*s ", field->len, " ");
+	} else {
+		char *output = NULL;
+		double temp_d = (double)value;
+		
+		switch(time_format) {
+		case SSHARE_TIME_SECS:
+			output = xstrdup_printf("%llu", value);
+			break;
+		case SSHARE_TIME_MINS:
+			temp_d /= 60;
+			output = xstrdup_printf("%.0lf", temp_d);
+			break;
+		case SSHARE_TIME_HOURS:
+			temp_d /= 3600;
+			output = xstrdup_printf("%.0lf", temp_d);
+			break;
+		default:
+			temp_d /= 60;
+			output = xstrdup_printf("%.0lf", temp_d);
+			break;
+		}
+		
+		if(print_fields_parsable_print 
+		   == PRINT_FIELDS_PARSABLE_NO_ENDING
+		   && last)
+			printf("%s", output);
+		else if(print_fields_parsable_print)
+			printf("%s|", output);	
+		else
+			printf("%*.*s ", field->len, field->len, output);
+		xfree(output);
+	}
+}
+
 
 extern int process(shares_response_msg_t *resp)
 {
@@ -61,6 +108,7 @@ extern int process(shares_response_msg_t *resp)
 		PRINT_EUSED,
 		PRINT_FAIRSHARE,
 		PRINT_ID,
+		PRINT_NORME,
 		PRINT_NORMS,
 		PRINT_NORMU,
 		PRINT_USED,
@@ -72,7 +120,8 @@ extern int process(shares_response_msg_t *resp)
 
 	format_list = list_create(slurm_destroy_char);
 	slurm_addto_char_list(format_list,
-			      "A,F,User,NormShares,Used,NormUsed,EUsed");
+			      "A,User,Id,Fair,NormShares,"
+			      "Used,NormUsed,EUsed,NormEUsed");
 
 	print_fields_list = list_create(destroy_print_field);
 
@@ -94,7 +143,7 @@ extern int process(shares_response_msg_t *resp)
 			field->type = PRINT_EUSED;
 			field->name = xstrdup("Effective Used");
 			field->len = 19;
-			field->print_routine = print_fields_uint64;
+			field->print_routine = _sshare_print_time;
 		} else if(!strncasecmp("FairShare", object, 1)) {
 			field->type = PRINT_FAIRSHARE;
 			field->name = xstrdup("FairShare");
@@ -105,22 +154,27 @@ extern int process(shares_response_msg_t *resp)
 			field->name = xstrdup("ID");
 			field->len = 6;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("NormShares", object, 1)) {
+		}else if(!strncasecmp("NormEUsage", object, 5)) {
+			field->type = PRINT_NORME;
+			field->name = xstrdup("Norm EUsage");
+			field->len = 11;
+			field->print_routine = print_fields_double;
+		} else if(!strncasecmp("NormShares", object, 5)) {
 			field->type = PRINT_NORMS;
 			field->name = xstrdup("Norm Shares");
 			field->len = 11;
 			field->print_routine = print_fields_double;
-		} else if(!strncasecmp("NormUsage", object, 1)) {
+		} else if(!strncasecmp("NormUsage", object, 5)) {
 			field->type = PRINT_NORMU;
 			field->name = xstrdup("Norm Usage");
 			field->len = 11;
 			field->print_routine = print_fields_double;
-		} else if(!strncasecmp("Used", object, 1)) {
+		} else if(!strncasecmp("Used", object, 4)) {
 			field->type = PRINT_USED;
 			field->name = xstrdup("Used");
 			field->len = 19;
-			field->print_routine = print_fields_uint64;
-		} else if(!strncasecmp("User", object, 1)) {
+			field->print_routine = _sshare_print_time;
+		} else if(!strncasecmp("User", object, 4)) {
 			field->type = PRINT_USER;
 			field->name = xstrdup("User");
 			field->len = 10;
@@ -154,38 +208,27 @@ extern int process(shares_response_msg_t *resp)
 
 	if(!resp->assoc_shares_list || !list_count(resp->assoc_shares_list))
 		return SLURM_SUCCESS;
-
+	tree_list = list_create(destroy_acct_print_tree);
 	itr = list_iterator_create(resp->assoc_shares_list);
 	while((assoc = list_next(itr))) {
 		int curr_inx = 1;
 		char *tmp_char = NULL;
 		char *local_acct = NULL;
-		char *parent_acct = NULL;
-/* 		if(!last_cluster || strcmp(last_cluster, assoc->cluster)) { */
-/* 			if(tree_list) { */
-/* 				list_flush(tree_list); */
-/* 			} else { */
-/* 				tree_list =  */
-/* 					list_create(destroy_acct_print_tree); */
-/* 			} */
-/* 			last_cluster = assoc->cluster; */
-/* 		}  */
+		double tmp_double = 0.0;
+
 		while((field = list_next(itr2))) {
 			switch(field->type) {
 			case PRINT_ACCOUNT:
-				if(assoc->user) {
+				if(assoc->user) 
 					local_acct = xstrdup_printf(
-						"|%s", assoc->parent);
-					parent_acct = assoc->parent;
-				} else {
+						"|%s", assoc->name);
+				else 
 					local_acct = xstrdup(assoc->name);
-					parent_acct = assoc->parent;
-				}
+				
 				print_acct = get_tree_acct_name(
 					local_acct,
-					parent_acct, tree_list);
+					assoc->parent, tree_list);
 				xfree(local_acct);
-				
 				field->print_routine(
 					field, 
 					print_acct,
@@ -213,16 +256,26 @@ extern int process(shares_response_msg_t *resp)
 						     assoc->assoc_id,
 						     (curr_inx == field_count));
 				break;
+			case PRINT_NORME:
+				tmp_double = ((double)assoc->eused_shares
+					      / (double)resp->tot_shares);
+				field->print_routine(field, 
+						     tmp_double,
+						     (curr_inx == field_count));
+				break;
 			case PRINT_NORMS:
 				field->print_routine(field, 
 						     assoc->norm_shares,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_NORMU:
+				tmp_double = ((double)assoc->used_shares
+					      / (double)resp->tot_shares);
+/* 				info("norm used is %llu / %llu = %f", */
+/* 				     assoc->used_shares, resp->tot_shares, */
+/* 				     tmp_double); */
 				field->print_routine(field, 
-						     (double)
-						     (assoc->used_shares
-						      / resp->tot_shares),
+						     tmp_double,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_USED:

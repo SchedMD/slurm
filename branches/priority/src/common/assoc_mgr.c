@@ -63,6 +63,21 @@ pthread_mutex_t assoc_mgr_qos_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t assoc_mgr_user_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t assoc_mgr_file_lock = PTHREAD_MUTEX_INITIALIZER;
 
+/* 
+ * Comparator used for sorting assocs largest cpu to smallest cpu
+ * 
+ * returns: 1: assoc_a > assoc_b  -1: assoc_a < assoc_b
+ * 
+ */
+static int _sort_assoc_dec(acct_association_rec_t *assoc_a,
+			   acct_association_rec_t *assoc_b)
+{
+	if (assoc_a->lft > assoc_b->lft)
+		return -1;
+	
+	return 1;
+}
+
 static int _grab_parents_qos(acct_association_rec_t *assoc)
 {
 	acct_association_rec_t *parent_assoc = NULL;
@@ -227,7 +242,7 @@ static int _post_association_list(List assoc_list)
 		list_iterator_reset(itr);
 		while((assoc = list_next(itr))) {
 			assoc2 = assoc;
-			assoc2->norm_shares = 1;
+			assoc2->norm_shares = 1.0;
 			/* we don't need to do this for root so stop
 			   there */
 			while(assoc->parent_assoc_ptr) {
@@ -581,8 +596,10 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args)
 		assoc_mgr_cluster_name = slurm_get_cluster_name();
 	}
 
-	if((!assoc_mgr_association_list) && (cache_level & ASSOC_MGR_CACHE_ASSOC)) 
-		if(_get_assoc_mgr_association_list(db_conn, enforce) == SLURM_ERROR)
+	if((!assoc_mgr_association_list)
+	   && (cache_level & ASSOC_MGR_CACHE_ASSOC)) 
+		if(_get_assoc_mgr_association_list(db_conn, enforce)
+		   == SLURM_ERROR)
 			return SLURM_ERROR;
 		
 
@@ -595,7 +612,8 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args)
 			return SLURM_ERROR;
 	if(assoc_mgr_association_list) {
 		acct_association_rec_t *assoc = NULL;
-		ListIterator itr = list_iterator_create(assoc_mgr_association_list);
+		ListIterator itr =
+			list_iterator_create(assoc_mgr_association_list);
 		while((assoc = list_next(itr))) {
 			log_assoc_rec(assoc, assoc_mgr_qos_list);
 		}
@@ -1054,7 +1072,91 @@ extern int assoc_mgr_is_user_acct_coord(void *db_conn,
 
 extern List assoc_mgr_get_shares(List acct_list, List user_list)
 {
-	return NULL;
+	ListIterator itr = NULL;
+	ListIterator user_itr = NULL;
+	ListIterator acct_itr = NULL;
+	acct_association_rec_t *assoc = NULL;
+	association_shares_object_t *share = NULL;
+	List ret_list = NULL;
+	char *tmp_char = NULL;
+
+	if(!assoc_mgr_association_list
+	   || !list_count(assoc_mgr_association_list))
+		return NULL;
+	if(user_list && list_count(user_list)) 
+		user_itr = list_iterator_create(user_list);
+
+	if(acct_list && list_count(acct_list)) 
+		acct_itr = list_iterator_create(acct_list);
+	
+	ret_list = list_create(slurm_destroy_association_shares_object);
+
+	slurm_mutex_lock(&assoc_mgr_association_lock);
+	itr = list_iterator_create(assoc_mgr_association_list);
+	while((assoc = list_next(itr))) {
+		
+		if(user_itr && assoc->user) {
+			while((tmp_char = list_next(user_itr))) {
+				if(!strcasecmp(tmp_char, assoc->user))
+					break;
+			}
+			list_iterator_reset(user_itr);
+			/* not correct user */
+			if(!tmp_char)
+				continue;
+		}
+		if(acct_itr) {
+			while((tmp_char = list_next(acct_itr))) {
+				if(!strcasecmp(tmp_char, assoc->acct))
+					break;
+			}
+			list_iterator_reset(acct_itr);
+			/* not correct account */
+			if(!tmp_char)
+				continue;
+		}
+
+		share = xmalloc(sizeof(association_shares_object_t));
+		list_append(ret_list, share);
+		
+		share->assoc_id = assoc->id;
+		share->cluster = xstrdup(assoc->cluster);
+		/* This will be reset for users later since this is a
+		 * normalized usage for users */
+		if(!assoc->user)
+			share->eused_shares = (uint64_t)assoc->eused_shares;
+
+		if(assoc == assoc_mgr_root_assoc) 
+			share->fairshare = NO_VAL;
+		else 
+			share->fairshare = assoc->fairshare;
+			
+		share->norm_shares = assoc->norm_shares;
+		if(assoc->user) {
+			long double usage = assoc->used_shares 
+				+ ((assoc->parent_assoc_ptr->eused_shares
+				    - assoc->used_shares) 
+				   * assoc->cpu_shares 
+				   / assoc->level_cpu_shares);
+			share->eused_shares = (uint64_t)usage;
+			share->name = xstrdup(assoc->user);
+			share->parent = xstrdup(assoc->acct);
+			share->user = 1;
+		} else {
+			share->name = xstrdup(assoc->acct);
+			share->parent = xstrdup(assoc->parent_acct);
+		}
+		share->used_shares = assoc->used_shares;
+	}
+	list_iterator_destroy(itr);
+	slurm_mutex_unlock(&assoc_mgr_association_lock);
+	
+	if(user_itr) 
+		list_iterator_destroy(user_itr);
+	if(acct_itr) 
+		list_iterator_destroy(acct_itr);
+		
+	return ret_list;
 }
 
 extern int assoc_mgr_update_assocs(acct_update_object_t *update)
@@ -1230,6 +1332,9 @@ extern int assoc_mgr_update_assocs(acct_update_object_t *update)
 	 * we may have added the parent which wasn't in the list before
 	 */
 	if(parents_changed) {
+		list_sort(assoc_mgr_association_list, 
+			  (ListCmpF)_sort_assoc_dec);
+
 		list_iterator_reset(itr);
 		/* flush the childern lists */
 		if(setup_childern) {
@@ -1295,7 +1400,7 @@ extern int assoc_mgr_update_assocs(acct_update_object_t *update)
 			list_iterator_reset(itr);
 			while((object = list_next(itr))) {
 				rec = object;
-				rec->norm_shares = 1;
+				rec->norm_shares = 1.0;
 				while(object->parent_assoc_ptr) {
 					/* we need to get the parent first
 					   here since we start at the child
@@ -1304,6 +1409,11 @@ extern int assoc_mgr_update_assocs(acct_update_object_t *update)
 					rec->norm_shares *= 
 						(double)object->fairshare /
 						(double)object->level_shares;
+					info("%.15f / %.15f = %.15f", 
+					     (double)object->fairshare,
+					     (double)object->level_shares,
+					     (double)object->fairshare /
+					     (double)object->level_shares);
 				}
 				if((assoc_mgr_root_assoc->cpu_shares == NO_VAL)
 				   || (rec == assoc_mgr_root_assoc))
@@ -1506,10 +1616,12 @@ extern int assoc_mgr_validate_assoc_id(void *db_conn,
 	acct_association_rec_t * found_assoc = NULL;
 
 	if(!assoc_mgr_association_list) 
-		if(_get_assoc_mgr_association_list(db_conn, enforce) == SLURM_ERROR)
+		if(_get_assoc_mgr_association_list(db_conn, enforce) 
+		   == SLURM_ERROR)
 			return SLURM_ERROR;
 
-	if((!assoc_mgr_association_list || !list_count(assoc_mgr_association_list))
+	if((!assoc_mgr_association_list
+	    || !list_count(assoc_mgr_association_list))
 	   && !enforce) 
 		return SLURM_SUCCESS;
 	
@@ -1648,8 +1760,6 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 	if(assoc_mgr_association_list) {
 		ListIterator itr = NULL;
 		acct_association_rec_t *assoc = NULL;
-		long double ld_tmp = 0;
-		uint64_t uint64_tmp = 0;
 
 		slurm_mutex_lock(&assoc_mgr_association_lock);
 		itr = list_iterator_create(assoc_mgr_association_list);
@@ -1658,10 +1768,10 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 				continue;
 			
 			pack32(assoc->id, buffer);
-
-			ld_tmp = assoc->used_shares * FLOAT_MULT;
-			uint64_tmp = (uint64_t)ld_tmp;
-			pack64(uint64_tmp, buffer);
+			/* we only care about the main part here so
+			   anything under 1 we are dropping 
+			*/
+			pack64((uint64_t)assoc->used_shares, buffer);
 		}
 		list_iterator_destroy(itr);
 		slurm_mutex_unlock(&assoc_mgr_association_lock);
@@ -1796,8 +1906,7 @@ extern int load_assoc_usage(char *state_save_location)
 		}
 		if(assoc) {
 			while(assoc) {
-				assoc->used_shares += 
-					(long double)uint64_tmp / FLOAT_MULT;
+				assoc->used_shares += (long double)uint64_tmp;
 				assoc = assoc->parent_assoc_ptr;
 			}
 		}

@@ -85,11 +85,17 @@
 #define CKPT_WAIT	10
 #define	MAX_INPUT_FIELDS 128
 
+typedef enum {
+	SSHARE_TIME_SECS,
+	SSHARE_TIME_MINS,
+	SSHARE_TIME_HOURS,
+} sshare_time_format_t;
 
 extern int exit_code;	/* sshare's exit code, =1 on any error at any time */
 extern int quiet_flag;	/* quiet=1, verbose=-1, normal=0 */
 extern uint32_t my_uid;
-
+extern sshare_time_format_t time_format;
+extern char *time_format_string;
 
 extern int process(shares_response_msg_t *msg);
 

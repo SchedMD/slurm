@@ -330,10 +330,16 @@ int main(int argc, char *argv[])
 			fatal("slurmdbd and/or database must be up at "
 			      "slurmctld start time");
 		}
-	} else 
-		load_assoc_usage(slurmctld_conf.state_save_location);
+	}  
 
-	/* this thread is looking for when we get correct data from
+	/* Now load the usage from a flat file since it isn't kept in
+	   the database No need to check for an error since if this
+	   fails we will get an error message and we will go on our
+	   way.  If we get an error we can't do anything about it. 
+	*/
+	load_assoc_usage(slurmctld_conf.state_save_location);
+
+	/* This thread is looking for when we get correct data from
 	   the database so we can update the assoc_ptr's in the jobs
 	*/
 	if(running_cache) {

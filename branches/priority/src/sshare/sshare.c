@@ -45,8 +45,11 @@
 int exit_code;		/* sshare's exit code, =1 on any error at any time */
 int quiet_flag;		/* quiet=1, verbose=-1, normal=0 */
 int verbosity;		/* count of -v options */
+sshare_time_format_t time_format = SSHARE_TIME_MINS;
+char *time_format_string = "Minutes";
 uint32_t my_uid = 0;
 
+static int      _set_time_format(char *format);
 static int      _get_info(shares_request_msg_t *shares_req, 
 			  shares_response_msg_t **shares_resp);
 static int      _addto_id_char_list(List char_list, char *names, bool gid);
@@ -89,7 +92,7 @@ main (int argc, char *argv[])
 	memset(&req_msg, 0, sizeof(shares_request_msg_t));
 	log_init("sshare", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
-	while((opt_char = getopt_long(argc, argv, "aAhnpPquvV",
+	while((opt_char = getopt_long(argc, argv, "aA:hnpPqu:t:vV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -135,11 +138,14 @@ main (int argc, char *argv[])
 					list_create(slurm_destroy_char);
 			_addto_id_char_list(req_msg.user_list, optarg, 0);
 			break;
-		case (int)'v':
+		case 't':
+			_set_time_format(optarg);
+			break;
+		case 'v':
 			quiet_flag = -1;
 			verbosity++;
 			break;
-		case (int)'V':
+		case 'V':
 			_print_version();
 			exit(exit_code);
 			break;
@@ -187,6 +193,25 @@ main (int argc, char *argv[])
 	slurm_free_shares_response_msg(resp_msg);
 
 	exit(exit_code);
+}
+
+static int _set_time_format(char *format)
+{
+	if (strncasecmp (format, "Seconds", 1) == 0) {
+		time_format = SSHARE_TIME_SECS;
+		time_format_string = "Seconds";
+	} else if (strncasecmp (format, "Minutes", 1) == 0) {
+		time_format = SSHARE_TIME_MINS;
+		time_format_string = "Minutes";
+	} else if (strncasecmp (format, "Hours", 1) == 0) {
+		time_format = SSHARE_TIME_HOURS;
+		time_format_string = "Hours";
+	} else {
+		fprintf (stderr, "unknown time format %s", format);	
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
 }
 
 static int _get_info(shares_request_msg_t *shares_req, 

@@ -672,7 +672,7 @@ extern void init_acct_association_rec(acct_association_rec_t *assoc)
 
 	assoc->cpu_shares = NO_VAL;
 
-	assoc->eused_shares = NO_VAL;
+	assoc->eused_shares = 0;
 
 	assoc->fairshare = NO_VAL;
 
@@ -694,6 +694,8 @@ extern void init_acct_association_rec(acct_association_rec_t *assoc)
 	assoc->max_wall_pj = NO_VAL;
 
 	assoc->norm_shares = NO_VAL;
+	
+	assoc->used_shares = 0;
 }
 
 extern void init_acct_qos_rec(acct_qos_rec_t *qos)
@@ -4304,33 +4306,35 @@ extern acct_admin_level_t str_2_acct_admin_level(char *level)
 	}	
 }
 
-/* IN/OUT: tree_list a list of acct_print_tree_t's */ 
+/* IN/OUT: tree_list a list of acct_print_tree_t's 
+ * NOTE: don't free the returned value */ 
 extern char *get_tree_acct_name(char *name, char *parent, List tree_list)
 {
 	ListIterator itr = NULL;
 	acct_print_tree_t *acct_print_tree = NULL;
 	acct_print_tree_t *par_acct_print_tree = NULL;
-	static char *ret_name = NULL;
-	static char *last_name = NULL;
-
 
 	if(!tree_list) 
 		return NULL;
 		
 	itr = list_iterator_create(tree_list);
 	while((acct_print_tree = list_next(itr))) {
-		if(!strcmp(name, acct_print_tree->name)) {
-			ret_name = acct_print_tree->print_name;
+		/* we don't care about users in this list.  They are
+		   only there so we don't leak memory */
+		if(acct_print_tree->user)
+			continue;
+
+		if(!strcmp(name, acct_print_tree->name))
 			break;
-		} else if(parent && !strcmp(parent, acct_print_tree->name)) {
+		else if(parent && !strcmp(parent, acct_print_tree->name)) 
 			par_acct_print_tree = acct_print_tree;
-		}
+		
 	}
 	list_iterator_destroy(itr);
 	
 	if(parent && acct_print_tree) 
-		return ret_name;
-
+		return acct_print_tree->print_name;
+	
 	acct_print_tree = xmalloc(sizeof(acct_print_tree_t));
 	acct_print_tree->name = xstrdup(name);
 	if(par_acct_print_tree) 
@@ -4340,19 +4344,16 @@ extern char *get_tree_acct_name(char *name, char *parent, List tree_list)
 		acct_print_tree->spaces = xstrdup("");
 	
 	/* user account */
-	if(name[0] == '|')
+	if(name[0] == '|') {
 		acct_print_tree->print_name = xstrdup_printf(
 			"%s%s", acct_print_tree->spaces, parent);	
-	else
+		acct_print_tree->user = 1;
+	} else 
 		acct_print_tree->print_name = xstrdup_printf(
 			"%s%s", acct_print_tree->spaces, name);	
 	
-
 	list_append(tree_list, acct_print_tree);
-
-	ret_name = acct_print_tree->print_name;
-	last_name = name;
-
+	
 	return acct_print_tree->print_name;
 }
 
