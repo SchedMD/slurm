@@ -867,6 +867,7 @@ extern int cluster_account_by_user(int argc, char *argv[])
 	ListIterator cluster_itr = NULL;
 	List format_list = list_create(slurm_destroy_char);
 	List assoc_list = NULL;
+	List first_list = NULL;
 	List cluster_list = NULL;
 	List sreport_cluster_list = list_create(destroy_sreport_cluster_rec);
 	List tree_list = NULL;
@@ -913,6 +914,9 @@ extern int cluster_account_by_user(int argc, char *argv[])
 		fprintf(stderr, " Problem with assoc query.\n");
 		goto end_it;
 	}
+
+	first_list = assoc_list;
+	assoc_list = get_hierarchical_sorted_assoc_list(first_list);
 
 	/* set up the structures for easy retrieval later */
 	itr = list_iterator_create(cluster_list);
@@ -990,6 +994,8 @@ extern int cluster_account_by_user(int argc, char *argv[])
 	cluster_list = NULL;
 	list_destroy(assoc_list);
 	assoc_list = NULL;
+	list_destroy(first_list);
+	first_list = NULL;
 
 	if(print_fields_have_header) {
 		char start_char[20];
@@ -1131,6 +1137,11 @@ end_it:
 	if(assoc_list) {
 		list_destroy(assoc_list);
 		assoc_list = NULL;
+	}
+	
+	if(first_list) {
+		list_destroy(first_list);
+		first_list = NULL;
 	}
 	
 	if(cluster_list) {
