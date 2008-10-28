@@ -1470,27 +1470,28 @@ static acct_association_rec_t *_set_assoc_up(sacctmgr_file_opts_t *file_opts,
 	return assoc;
 }
 
-static int _print_file_sacctmgr_assoc_childern(FILE *fd, 
-					       List sacctmgr_assoc_list,
+static int _print_file_acct_hierarchical_rec_childern(FILE *fd, 
+					       List acct_hierarchical_rec_list,
 					       List user_list,
 					       List acct_list)
 {
 	ListIterator itr = NULL;
-	sacctmgr_assoc_t *sacctmgr_assoc = NULL;
+	acct_hierarchical_rec_t *acct_hierarchical_rec = NULL;
 	char *line = NULL;
 	acct_user_rec_t *user_rec = NULL;
 	acct_account_rec_t *acct_rec = NULL;
 
-	itr = list_iterator_create(sacctmgr_assoc_list);
-	while((sacctmgr_assoc = list_next(itr))) {
-		if(sacctmgr_assoc->assoc->user) {
+	itr = list_iterator_create(acct_hierarchical_rec_list);
+	while((acct_hierarchical_rec = list_next(itr))) {
+		if(acct_hierarchical_rec->assoc->user) {
 			user_rec = sacctmgr_find_user_from_list(
-				user_list, sacctmgr_assoc->assoc->user);
+				user_list, acct_hierarchical_rec->assoc->user);
 			line = xstrdup_printf(
-				"User - %s", sacctmgr_assoc->sort_name);
-			if(sacctmgr_assoc->assoc->partition) 
+				"User - %s", acct_hierarchical_rec->sort_name);
+			if(acct_hierarchical_rec->assoc->partition) 
 				xstrfmtcat(line, ":Partition='%s'", 
-					   sacctmgr_assoc->assoc->partition);
+					   acct_hierarchical_rec->
+					   assoc->partition);
 			if(user_rec) {
 				xstrfmtcat(line, ":DefaultAccount='%s'",
 					   user_rec->default_acct);
@@ -1533,9 +1534,10 @@ static int _print_file_sacctmgr_assoc_childern(FILE *fd,
 			}
 		} else {
 			acct_rec = sacctmgr_find_account_from_list(
-				acct_list, sacctmgr_assoc->assoc->acct);
+				acct_list, acct_hierarchical_rec->assoc->acct);
 			line = xstrdup_printf(
-				"Account - %s", sacctmgr_assoc->sort_name);
+				"Account - %s",
+				acct_hierarchical_rec->sort_name);
 			if(acct_rec) {
 				xstrfmtcat(line, ":Description='%s'",
 					   acct_rec->description);
@@ -1544,7 +1546,8 @@ static int _print_file_sacctmgr_assoc_childern(FILE *fd,
 			}
 		}
 			
-		print_file_add_limits_to_line(&line, sacctmgr_assoc->assoc);
+		print_file_add_limits_to_line(&line, 
+					      acct_hierarchical_rec->assoc);
 
 		if(fprintf(fd, "%s\n", line) < 0) {
 			exit_code=1;
@@ -1554,7 +1557,7 @@ static int _print_file_sacctmgr_assoc_childern(FILE *fd,
 		info("%s", line);
 	}
 	list_iterator_destroy(itr);
-	print_file_sacctmgr_assoc_list(fd, sacctmgr_assoc_list,
+	print_file_acct_hierarchical_rec_list(fd, acct_hierarchical_rec_list,
 				       user_list, acct_list);
 
 	return SLURM_SUCCESS;
@@ -1626,33 +1629,35 @@ extern int print_file_add_limits_to_line(char **line,
 }
 
 
-extern int print_file_sacctmgr_assoc_list(FILE *fd, 
-					  List sacctmgr_assoc_list,
+extern int print_file_acct_hierarchical_rec_list(FILE *fd, 
+					  List acct_hierarchical_rec_list,
 					  List user_list,
 					  List acct_list)
 {
 	ListIterator itr = NULL;
-	sacctmgr_assoc_t *sacctmgr_assoc = NULL;
+	acct_hierarchical_rec_t *acct_hierarchical_rec = NULL;
 
-	itr = list_iterator_create(sacctmgr_assoc_list);
-	while((sacctmgr_assoc = list_next(itr))) {
+	itr = list_iterator_create(acct_hierarchical_rec_list);
+	while((acct_hierarchical_rec = list_next(itr))) {
 /* 		info("got here %d with %d from %s %s",  */
-/* 		     depth, list_count(sacctmgr_assoc->childern), */
-/* 		     sacctmgr_assoc->assoc->acct, sacctmgr_assoc->assoc->user); */
-		if(!list_count(sacctmgr_assoc->childern))
+/* 		     depth, list_count(acct_hierarchical_rec->childern), */
+/* 		     acct_hierarchical_rec->assoc->acct,
+		     acct_hierarchical_rec->assoc->user); */
+		if(!list_count(acct_hierarchical_rec->childern))
 			continue;
 		if(fprintf(fd, "Parent - %s\n",
-			   sacctmgr_assoc->assoc->acct) < 0) {
+			   acct_hierarchical_rec->assoc->acct) < 0) {
 			error("Can't write to file");
 			return SLURM_ERROR;
 		}
 		info("%s - %s", "Parent",
-		       sacctmgr_assoc->assoc->acct);
+		       acct_hierarchical_rec->assoc->acct);
 /* 		info("sending %d from %s", */
-/* 		     list_count(sacctmgr_assoc->childern), */
-/* 		     sacctmgr_assoc->assoc->acct); */
-		_print_file_sacctmgr_assoc_childern(
-			fd, sacctmgr_assoc->childern, user_list, acct_list);
+/* 		     list_count(acct_hierarchical_rec->childern), */
+/* 		     acct_hierarchical_rec->assoc->acct); */
+		_print_file_acct_hierarchical_rec_childern(
+			fd, acct_hierarchical_rec->childern,
+			user_list, acct_list);
 	}	
 	list_iterator_destroy(itr);
 

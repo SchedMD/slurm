@@ -834,13 +834,13 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 {
 	acct_user_cond_t user_cond;
 	acct_user_rec_t *user = NULL;
-	sacctmgr_assoc_t *sacctmgr_assoc = NULL;
+	acct_hierarchical_rec_t *acct_hierarchical_rec = NULL;
 	acct_association_rec_t *assoc = NULL;
 	acct_association_cond_t assoc_cond;
 	List assoc_list = NULL;
 	List acct_list = NULL;
 	List user_list = NULL;
-	List sacctmgr_assoc_list = NULL;
+	List acct_hierarchical_rec_list = NULL;
 	char *cluster_name = NULL;
 	char *file_name = NULL;
 	char *user_name = NULL;
@@ -938,7 +938,7 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 		return SLURM_ERROR;
 	}
 
-	sacctmgr_assoc_list = sacctmgr_get_hierarchical_list(assoc_list);
+	acct_hierarchical_rec_list = get_acct_hierarchical_rec_list(assoc_list);
 
 	acct_list = acct_storage_g_get_accounts(db_conn, my_uid, NULL);
 
@@ -977,8 +977,8 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 
 	line = xstrdup_printf("Cluster - %s", cluster_name);
 
-	sacctmgr_assoc = list_peek(sacctmgr_assoc_list);
-	assoc = sacctmgr_assoc->assoc;
+	acct_hierarchical_rec = list_peek(acct_hierarchical_rec_list);
+	assoc = acct_hierarchical_rec->assoc;
 	if(strcmp(assoc->acct, "root")) 
 		fprintf(stderr, "Root association not on the top it was %s\n",
 			assoc->acct);
@@ -992,12 +992,12 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 	}
 	info("%s", line);
 
-	print_file_sacctmgr_assoc_list(
-		fd, sacctmgr_assoc_list, user_list, acct_list);
+	print_file_acct_hierarchical_rec_list(
+		fd, acct_hierarchical_rec_list, user_list, acct_list);
 
 	xfree(cluster_name);
 	xfree(file_name);
-	list_destroy(sacctmgr_assoc_list);
+	list_destroy(acct_hierarchical_rec_list);
 	list_destroy(assoc_list);
 	fclose(fd);
 

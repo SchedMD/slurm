@@ -413,7 +413,14 @@ typedef struct {
 	char *name;
 	char *print_name;
 	char *spaces;
+	uint16_t user;
 } acct_print_tree_t;
+
+typedef struct {
+	acct_association_rec_t *assoc;
+	char *sort_name;
+	List childern;
+} acct_hierarchical_rec_t;
 
 extern void destroy_acct_user_rec(void *object);
 extern void destroy_acct_account_rec(void *object);
@@ -437,6 +444,7 @@ extern void destroy_acct_update_object(void *object);
 extern void destroy_acct_used_limits(void *object);
 extern void destroy_update_shares_rec(void *object);
 extern void destroy_acct_print_tree(void *object);
+extern void destroy_acct_hierarchical_rec(void *object);
 
 extern void init_acct_association_rec(acct_association_rec_t *assoc);
 extern void init_acct_qos_rec(acct_qos_rec_t *qos);
@@ -512,6 +520,12 @@ extern char *acct_qos_str(List qos_list, uint32_t level);
 extern uint32_t str_2_acct_qos(List qos_list, char *level);
 extern char *acct_admin_level_str(acct_admin_level_t level);
 extern acct_admin_level_t str_2_acct_admin_level(char *level);
+
+/* The next two functions have pointers to assoc_list so do not
+ * destroy assoc_list before using the list returned from this function.
+ */
+extern List get_hierarchical_sorted_assoc_list(List assoc_list);
+extern List get_acct_hierarchical_rec_list(List assoc_list);
 
 /* IN/OUT: tree_list a list of acct_print_tree_t's */ 
 extern char *get_tree_acct_name(char *name, char *parent, char *cluster, 
