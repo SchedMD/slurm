@@ -38,7 +38,7 @@ set test_id      "9.8"
 set exit_code    0
 set file_in      "test$test_id.input"
 set job_cnt      10
-set delay        5
+set delay        10
 set job_name     "test$test_id"
 set sleep_time   300
 set task_cnt     60
@@ -183,8 +183,9 @@ expect {
 # If message are lost, slurmctld re-sends job kill RPC 120 seconds later
 # In any case, make sure that all jobs get completed
 #
-exec $bin_sleep 10
+exec $bin_sleep     10
 set completing_jobs 0
+set running_jobs    0
 spawn $squeue --noheader --user $user_name
 expect {
 	-re "test9.8.*$user_name *CG" {
@@ -192,11 +193,29 @@ expect {
 		exp_continue
 	}
 	-re "test9.8.*$user_name" {
-		send_user "\nFAILURE: jobs not all gone\n"
-		set exit_code 1
+		incr running_jobs
+		exp_continue
 	}
 	eof {
 		wait
+	}
+}
+#
+# The following logic handles the scancel request failing
+# due to a very busy system (reports FAILURE above)
+#
+# Increasing the MessageTimeout configuration parameter
+# should fix this problem. 
+#
+if {$running_jobs != 0} {
+	send_user "\nFAILURE: jobs not all cancelled\n"
+	set exit_code 1
+
+	spawn $scancel --quiet --user $user_name
+	expect {
+		eof {
+			wait
+		}
 	}
 }
 if {$completing_jobs != 0} {
