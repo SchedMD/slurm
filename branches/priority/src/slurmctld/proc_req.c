@@ -345,6 +345,8 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 {
 	slurm_ctl_conf_t *conf = slurm_conf_lock();
 
+	bzero(conf_ptr, sizeof(slurm_ctl_conf_t));
+
 	conf_ptr->last_update         = time(NULL);
 	conf_ptr->accounting_storage_enforce = conf->accounting_storage_enforce;
 	conf_ptr->accounting_storage_host =
@@ -425,6 +427,17 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 
 	conf_ptr->plugindir           = xstrdup(conf->plugindir);
 	conf_ptr->plugstack           = xstrdup(conf->plugstack);
+
+	conf_ptr->priority_decay_hl   = conf->priority_decay_hl;
+	conf_ptr->priority_favor_small= conf->priority_favor_small;
+	conf_ptr->priority_max_age    = conf->priority_max_age;
+	conf_ptr->priority_type       = xstrdup(conf->priority_type);
+	conf_ptr->priority_weight_age = conf->priority_weight_age;
+	conf_ptr->priority_weight_fs  = conf->priority_weight_fs;
+	conf_ptr->priority_weight_js  = conf->priority_weight_js;
+	conf_ptr->priority_weight_part= conf->priority_weight_part;
+	conf_ptr->priority_weight_qos = conf->priority_weight_qos;
+
 	conf_ptr->private_data        = conf->private_data;
 	conf_ptr->proctrack_type      = xstrdup(conf->proctrack_type);
 	conf_ptr->prolog              = xstrdup(conf->prolog);
