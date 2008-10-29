@@ -155,7 +155,7 @@ static time_t _read_last_decay_ran()
 	buffer = create_buf(data, data_size);
 	safe_unpack_time(&last_ran, buffer);
 	free_buf(buffer);
-	debug("Last ran decay on jobs at %d", last_ran);
+	debug5("Last ran decay on jobs at %d", last_ran);
 
 	return last_ran;
 
@@ -222,7 +222,7 @@ static int _write_last_decay_ran(time_t last_ran)
 	xfree(new_file);
 
 	unlock_state_files();
-	info("done writing time %d", last_ran);
+	debug5("done writing time %d", last_ran);
 	free_buf(buffer);
 
 	return error_code;
@@ -262,11 +262,11 @@ static int _set_childern_eusage(List childern_list)
 				assoc->eused_shares = 
 					((assoc->norm_shares
 					  - assoc->eused_shares) + 1) / 2;
-				info("eusage for user %s %Lf",
-				     assoc->user, assoc->eused_shares);
+				debug4("eusage for user %s %Lf",
+				       assoc->user, assoc->eused_shares);
 			} else {
-				info("eusage for %s %Lf",
-				     assoc->acct, assoc->eused_shares);
+				debug4("eusage for %s %Lf",
+				       assoc->acct, assoc->eused_shares);
 				_set_childern_eusage(assoc->childern_list);
 			}
 			continue;
@@ -279,12 +279,12 @@ static int _set_childern_eusage(List childern_list)
 			+ ((assoc->parent_assoc_ptr->eused_shares
 			    - assoc->used_shares) 
 			   * assoc->cpu_shares / assoc->level_cpu_shares);
-		info("eusage for %s %Lf + ((%Lf - %Lf) * %Lf / %Lf) = %Lf",
-		     assoc->acct, assoc->used_shares, 
-		     assoc->parent_assoc_ptr->eused_shares,
-		     assoc->used_shares, assoc->cpu_shares, 
-		     assoc->level_cpu_shares,
-		     assoc->eused_shares);
+		debug3("eusage for %s %Lf + ((%Lf - %Lf) * %Lf / %Lf) = %Lf",
+		       assoc->acct, assoc->used_shares, 
+		       assoc->parent_assoc_ptr->eused_shares,
+		       assoc->used_shares, assoc->cpu_shares, 
+		       assoc->level_cpu_shares,
+		       assoc->eused_shares);
 
 		_set_childern_eusage(assoc->childern_list);
 	}
@@ -318,12 +318,13 @@ static double _get_fairshare_priority( struct job_record *job_ptr )
 			    - assoc->used_shares) 
 			   * assoc->cpu_shares / assoc->level_cpu_shares);
 		assoc->eused_shares = usage;
-		info("eusage for user %s %Lf + ((%Lf - %Lf) * %Lf / %Lf) = %Lf",
-		     assoc->user, assoc->used_shares, 
-		     assoc->parent_assoc_ptr->eused_shares,
-		     assoc->used_shares, assoc->cpu_shares, 
-		     assoc->level_cpu_shares,
-		     assoc->eused_shares);
+		debug4("eusage for user %s %Lf "
+		       "+ ((%Lf - %Lf) * %Lf / %Lf) = %Lf",
+		       assoc->user, assoc->used_shares, 
+		       assoc->parent_assoc_ptr->eused_shares,
+		       assoc->used_shares, assoc->cpu_shares, 
+		       assoc->level_cpu_shares,
+		       assoc->eused_shares);
 		/* This is needed incase someone changes the halflife on the
 		   fly and now we have used more time that we have now
 		*/
@@ -331,21 +332,21 @@ static double _get_fairshare_priority( struct job_record *job_ptr )
 			usage = 1;
 		else
 			usage /= assoc_mgr_root_assoc->cpu_shares;
-		info("Normilized usage = %Lf / %Lf = %Lf", 
-		     assoc->eused_shares, assoc_mgr_root_assoc->cpu_shares,
-		     usage);
+		debug4("Normilized usage = %Lf / %Lf = %Lf", 
+		       assoc->eused_shares, assoc_mgr_root_assoc->cpu_shares,
+		       usage);
 		
 		// Priority is 0 -> 1
 		assoc->eused_shares = 
 			((assoc->norm_shares - usage) + 1) / 2;
-		info("((%f - %Lf) + 1) / 2 = %Lf", assoc->norm_shares,
-		     usage, assoc->eused_shares);
+		debug4("((%f - %Lf) + 1) / 2 = %Lf", assoc->norm_shares,
+		       usage, assoc->eused_shares);
 	} 
 	
 	usage = assoc->eused_shares;
 	slurm_mutex_unlock(&assoc_mgr_association_lock);
 
-	debug("job %u has a fairshare priority of %Lf", 
+	debug3("job %u has a fairshare priority of %Lf", 
 	      job_ptr->job_id, usage);
 
 	return (double)usage;
@@ -382,9 +383,9 @@ static uint32_t _get_priority_internal(time_t start_time,
 		
 		if(norm_diff > 0) {
 			priority += norm_diff * (double)weight_age;
-			info("Age priority is %f * %u = %f", 
-			     norm_diff, weight_age, 
-			     norm_diff * (double)weight_age);
+			debug3("Age priority is %f * %u = %f", 
+			       norm_diff, weight_age, 
+			       norm_diff * (double)weight_age);
 		}
 	}
 	
@@ -403,29 +404,29 @@ static uint32_t _get_priority_internal(time_t start_time,
 				/ (double)node_record_count;
 		if(norm_js > 0) {
 			priority += norm_js * (double)weight_js;
-			info("JobSize priority is %f * %u = %f", 
-			     norm_js, weight_js, norm_js * (double)weight_js);
+			debug3("JobSize priority is %f * %u = %f", 
+			       norm_js, weight_js, norm_js * (double)weight_js);
 		}
 	}
 	
 	if(job_ptr->part_ptr && job_ptr->part_ptr->priority && weight_part) {
 		priority += job_ptr->part_ptr->norm_priority 
 			* (double)weight_part;
-		info("Partition priority is %f * %u = %f", 
-		     job_ptr->part_ptr->norm_priority, weight_part,
-		     job_ptr->part_ptr->norm_priority * (double)weight_part);
+		debug3("Partition priority is %f * %u = %f", 
+		       job_ptr->part_ptr->norm_priority, weight_part,
+		       job_ptr->part_ptr->norm_priority * (double)weight_part);
 	}
 	
 	if(qos_ptr && qos_ptr->priority && weight_qos) {
 		priority += qos_ptr->norm_priority 
 			* (double)weight_qos;
-		info("QOS priority is %f * %u = %f", 
-		     qos_ptr->norm_priority, weight_qos,
-		     qos_ptr->norm_priority * (double)weight_qos);
+		debug3("QOS priority is %f * %u = %f", 
+		       qos_ptr->norm_priority, weight_qos,
+		       qos_ptr->norm_priority * (double)weight_qos);
 	}
 
 	priority -= ((double)job_ptr->details->nice - (double)NICE_OFFSET);
-	info("Nice offset is %u", job_ptr->details->nice - NICE_OFFSET);
+	debug3("Nice offset is %u", job_ptr->details->nice - NICE_OFFSET);
 
 	if(priority < 1) 
 		priority = 1;
@@ -458,8 +459,6 @@ static void *_decay_thread(void *no_data)
 		return NULL;
 	}
 
-	debug("Decay factor is set at %.15f", decay_factor);
-
 	last_ran = _read_last_decay_ran();
 
 	while(1) {
@@ -488,8 +487,8 @@ static void *_decay_thread(void *no_data)
 
 		real_decay = pow(decay_factor, (double)run_delta);
 
-		debug("Decay factor over %d seconds goes from %.15f -> %.15f",
-		      run_delta, decay_factor, real_decay);
+		debug3("Decay factor over %d seconds goes from %.15f -> %.15f",
+		       run_delta, decay_factor, real_decay);
 
 		/* first apply decay to used time */
 		if(assoc_mgr_apply_decay(real_decay) != SLURM_SUCCESS) {
@@ -525,8 +524,8 @@ static void *_decay_thread(void *no_data)
 				if(run_delta < 1) 
 					continue;
 
-				info("job %u ran for %d seconds",
-				     job_ptr->job_id, run_delta);
+				debug4("job %u ran for %d seconds",
+				       job_ptr->job_id, run_delta);
 				/* figure out the decayed new usage to
 				   add */
 				real_decay = ((double)run_delta 
@@ -537,9 +536,9 @@ static void *_decay_thread(void *no_data)
 				while(assoc) {
 					assoc->used_shares +=
 						(long double)real_decay;
-					info("adding %f new usage to %u"
-					     "(acct='%s') "
-					     "used_shares is now %Lf",
+					debug4("adding %f new usage to %u"
+					       "(acct='%s') "
+					       "used_shares is now %Lf",
 					     real_decay, assoc->id, assoc->acct,
 					     assoc->used_shares);
 					assoc = assoc->parent_assoc_ptr;
@@ -559,8 +558,8 @@ static void *_decay_thread(void *no_data)
 			job_ptr->priority =
 				_get_priority_internal(start_time, job_ptr);
 
-			debug("priority for job %u is now %u", 
-			      job_ptr->job_id, job_ptr->priority);
+			debug2("priority for job %u is now %u", 
+			       job_ptr->job_id, job_ptr->priority);
 		}
 		list_iterator_destroy(itr);
 		unlock_slurmctld(job_write_lock);
@@ -606,12 +605,12 @@ static void _internal_setup()
 	weight_js = slurm_get_priority_weight_job_size();
 	weight_part = slurm_get_priority_weight_partition();
 	weight_qos = slurm_get_priority_weight_qos();
-	info("Max Age is %u", max_age);
-	info("Weight Age is %u", weight_age);
-	info("Weight Fairshare is %u", weight_fs);
-	info("Weight JobSize is %u", weight_js);
-	info("Weight Part is %u", weight_part);
-	info("Weight QOS is %u", weight_qos);
+	debug3("priority: Max Age is %u", max_age);
+	debug3("priority: Weight Age is %u", weight_age);
+	debug3("priority: Weight Fairshare is %u", weight_fs);
+	debug3("priority: Weight JobSize is %u", weight_js);
+	debug3("priority: Weight Part is %u", weight_part);
+	debug3("priority: Weight QOS is %u", weight_qos);
 }
 
 /*
@@ -665,7 +664,7 @@ extern uint32_t priority_p_set(uint32_t last_prio, struct job_record *job_ptr)
 {
 	uint32_t priority = _get_priority_internal(time(NULL), job_ptr);
 
-	debug("initial priority for job %u is %u", job_ptr->job_id, priority);
+	debug2("initial priority for job %u is %u", job_ptr->job_id, priority);
 
 	return priority;
 }
@@ -674,7 +673,7 @@ extern void priority_p_reconfig()
 {
 	reconfig = 1;
 	_internal_setup();
-	debug("%s reconfigured", plugin_name);
+	debug2("%s reconfigured", plugin_name);
 	
 	return;
 }
