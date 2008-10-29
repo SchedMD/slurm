@@ -1398,14 +1398,13 @@ extern int assoc_mgr_update_assocs(acct_update_object_t *update)
 			while((object = list_next(itr))) {
 				rec = object;
 				rec->norm_shares = 1.0;
+				/* we don't need to do this for root so stop
+				   there */
 				while(object->parent_assoc_ptr) {
-					/* we need to get the parent first
-					   here since we start at the child
-					*/
-					object = object->parent_assoc_ptr;
 					rec->norm_shares *= 
 						(double)object->fairshare /
 						(double)object->level_shares;
+					object = object->parent_assoc_ptr;
 				}
 				if((assoc_mgr_root_assoc->cpu_shares == NO_VAL)
 				   || (rec == assoc_mgr_root_assoc))

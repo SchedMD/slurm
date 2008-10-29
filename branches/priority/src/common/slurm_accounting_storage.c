@@ -4415,10 +4415,10 @@ extern void log_assoc_rec(acct_association_rec_t *assoc_ptr, List qos_list)
 	if(assoc_ptr->fairshare == INFINITE)
 		debug2("  Fairshare        : NONE");
 	else if(assoc_ptr->fairshare != NO_VAL) 
-		debug2("  Fairshare        : %u", assoc_ptr->fairshare);
+		debug("  Fairshare        : %u", assoc_ptr->fairshare);
 
 	if(assoc_ptr->level_shares != NO_VAL) 
-		debug2("  LevelShares      : %u", assoc_ptr->level_shares);
+		debug("  LevelShares      : %u", assoc_ptr->level_shares);
 	
 	if(assoc_ptr->norm_shares != NO_VAL) 
 		debug("  NormalizedShares : %f", assoc_ptr->norm_shares);
