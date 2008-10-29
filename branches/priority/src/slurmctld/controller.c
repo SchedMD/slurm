@@ -654,7 +654,11 @@ static void  _init_config(void)
 }
 
 /* Read configuration file.
- * Same name as API function for use in accounting_storage plugin */
+ * Same name as API function for use in accounting_storage plugin.
+ * Anything you add to this function must be added to the
+ * _slurm_rpc_reconfigure_controller function inside proc_req.c try
+ * to keep these in sync.  
+ */
 extern int slurm_reconfigure(void)
 {
 	/* Locks: Write configuration, job, node, and partition */
@@ -679,6 +683,8 @@ extern int slurm_reconfigure(void)
 	trigger_reconfig();
 	slurm_sched_partition_change();	/* notify sched plugin */
 	select_g_reconfigure();		/* notify select plugin too */
+	priority_g_reconfig();          /* notify priority plugin too */
+
 	return rc;
 }
 

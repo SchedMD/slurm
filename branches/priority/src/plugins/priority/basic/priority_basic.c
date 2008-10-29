@@ -123,3 +123,9 @@ extern uint32_t priority_p_set(uint32_t last_prio, struct job_record *job_ptr)
 
 	return new_prio;
 }
+
+extern void priority_p_reconfig()
+{
+	
+	return;
+}

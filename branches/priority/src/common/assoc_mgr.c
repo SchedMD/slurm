@@ -73,9 +73,9 @@ static int _sort_assoc_dec(acct_association_rec_t *assoc_a,
 			   acct_association_rec_t *assoc_b)
 {
 	if (assoc_a->lft > assoc_b->lft)
-		return -1;
+		return 1;
 	
-	return 1;
+	return -1;
 }
 
 static int _grab_parents_qos(acct_association_rec_t *assoc)
@@ -654,11 +654,8 @@ extern int assoc_mgr_apply_decay(double decay_factor)
 	
 	slurm_mutex_lock(&assoc_mgr_association_lock);
 	itr = list_iterator_create(assoc_mgr_association_list);
-	while((assoc = list_next(itr))) {
+	while((assoc = list_next(itr))) 
 		assoc->used_shares *= decay_factor;
-		info("assoc %u used_shares is %Lf",
-		     assoc->id, assoc->used_shares);
-	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&assoc_mgr_association_lock);
 
@@ -1409,11 +1406,6 @@ extern int assoc_mgr_update_assocs(acct_update_object_t *update)
 					rec->norm_shares *= 
 						(double)object->fairshare /
 						(double)object->level_shares;
-					info("%.15f / %.15f = %.15f", 
-					     (double)object->fairshare,
-					     (double)object->level_shares,
-					     (double)object->fairshare /
-					     (double)object->level_shares);
 				}
 				if((assoc_mgr_root_assoc->cpu_shares == NO_VAL)
 				   || (rec == assoc_mgr_root_assoc))

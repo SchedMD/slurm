@@ -42,6 +42,7 @@
 
 typedef struct slurm_priority_ops {
 	uint32_t (*set)       (uint32_t last_prio, struct job_record *job_ptr);
+	void     (*reconfig)  ();
 } slurm_priority_ops_t;
 
 typedef struct slurm_priority_context {
@@ -77,6 +78,7 @@ static slurm_priority_ops_t * _priority_get_ops(
 	 */
 	static const char *syms[] = {
 		"priority_p_set",
+		"priority_p_reconfig",
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
 
@@ -226,4 +228,14 @@ extern uint32_t priority_g_set(uint32_t last_prio, struct job_record *job_ptr)
 		return 0;
 
 	return (*(g_priority_context->ops.set))(last_prio, job_ptr);
+}
+
+extern void priority_g_reconfig()
+{
+	if (slurm_priority_init() < 0)
+		return;
+
+	(*(g_priority_context->ops.reconfig))();
+
+	return;
 }

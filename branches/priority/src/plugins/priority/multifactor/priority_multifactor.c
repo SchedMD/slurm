@@ -100,7 +100,7 @@ const uint32_t plugin_version	= 100;
 static pthread_t decay_handler_thread;
 static pthread_t cleanup_handler_thread;
 static pthread_mutex_t decay_lock = PTHREAD_MUTEX_INITIALIZER;
-static int running_decay = 0;
+static bool running_decay = 0, reconfig = 0;
 static bool favor_small; /* favor small jobs over large */
 static uint32_t max_age; /* time when not to add any more
 			  * priority to a job if reached */
@@ -380,8 +380,12 @@ static uint32_t _get_priority_internal(time_t start_time,
 		if(diff < max_age)
 			norm_diff = (double)diff / (double)max_age;
 		
-		if(norm_diff > 0) 
+		if(norm_diff > 0) {
 			priority += norm_diff * (double)weight_age;
+			info("Age priority is %f * %u = %f", 
+			     norm_diff, weight_age, 
+			     norm_diff * (double)weight_age);
+		}
 	}
 	
 	if(job_ptr->assoc_ptr && weight_fs) 
@@ -397,21 +401,31 @@ static uint32_t _get_priority_internal(time_t start_time,
 		} else 
 			norm_js = (double)job_ptr->details->min_nodes
 				/ (double)node_record_count;
-		if(norm_js > 0)
+		if(norm_js > 0) {
 			priority += norm_js * (double)weight_js;
+			info("JobSize priority is %f * %u = %f", 
+			     norm_js, weight_js, norm_js * (double)weight_js);
+		}
 	}
 	
 	if(job_ptr->part_ptr && job_ptr->part_ptr->priority && weight_part) {
 		priority += job_ptr->part_ptr->norm_priority 
 			* (double)weight_part;
+		info("Partition priority is %f * %u = %f", 
+		     job_ptr->part_ptr->norm_priority, weight_part,
+		     job_ptr->part_ptr->norm_priority * (double)weight_part);
 	}
 	
 	if(qos_ptr && qos_ptr->priority && weight_qos) {
 		priority += qos_ptr->norm_priority 
 			* (double)weight_qos;
+		info("QOS priority is %f * %u = %f", 
+		     qos_ptr->norm_priority, weight_qos,
+		     qos_ptr->norm_priority * (double)weight_qos);
 	}
 
 	priority -= ((double)job_ptr->details->nice - (double)NICE_OFFSET);
+	info("Nice offset is %u", job_ptr->details->nice - NICE_OFFSET);
 
 	if(priority < 1) 
 		priority = 1;
@@ -454,6 +468,15 @@ static void *_decay_thread(void *no_data)
 
 		slurm_mutex_lock(&decay_lock);
 		running_decay = 1;
+
+		/* If reconfig is called handle all that happens
+		   outside of the loop here */
+		if(reconfig) {
+			decay_factor = 
+				1 - (0.693 
+				     / (double)slurm_get_priority_decay_hl());
+			reconfig = 0;
+		}
 
 		if(!last_ran) 
 			goto sleep_now;
@@ -574,15 +597,8 @@ static void *_cleanup_thread(void *no_data)
 	return NULL;
 }
 
-
-/*
- * init() is called when the plugin is loaded, before any other functions
- * are called.  Put global initialization here.
- */
-int init ( void )
+static void _internal_setup()
 {
-	pthread_attr_t thread_attr;
-
 	favor_small = slurm_get_priority_favor_small();
 	max_age = slurm_get_priority_max_age();
 	weight_age = slurm_get_priority_weight_age(); 
@@ -596,6 +612,17 @@ int init ( void )
 	info("Weight JobSize is %u", weight_js);
 	info("Weight Part is %u", weight_part);
 	info("Weight QOS is %u", weight_qos);
+}
+
+/*
+ * init() is called when the plugin is loaded, before any other functions
+ * are called.  Put global initialization here.
+ */
+int init ( void )
+{
+	pthread_attr_t thread_attr;
+
+	_internal_setup();
 
 	slurm_attr_init(&thread_attr);
 	if (pthread_create(&decay_handler_thread, &thread_attr,
@@ -636,5 +663,18 @@ int fini ( void )
 
 extern uint32_t priority_p_set(uint32_t last_prio, struct job_record *job_ptr)
 {
-	return _get_priority_internal(time(NULL), job_ptr);
+	uint32_t priority = _get_priority_internal(time(NULL), job_ptr);
+
+	debug("initial priority for job %u is  %u", job_ptr->job_id, priority);
+
+	return priority;
+}
+
+extern void priority_p_reconfig()
+{
+	reconfig = 1;
+	_internal_setup();
+	debug("%s reconfigured", plugin_name);
+	
+	return;
 }

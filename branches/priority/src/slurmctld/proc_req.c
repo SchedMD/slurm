@@ -60,6 +60,7 @@
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
 #include "src/common/pack.h"
+#include "src/common/slurm_priority.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_cred.h"
@@ -1668,7 +1669,11 @@ static void _slurm_rpc_ping(slurm_msg_t * msg)
 
 
 /* _slurm_rpc_reconfigure_controller - process RPC to re-initialize 
- *	slurmctld from configuration file */
+ *	slurmctld from configuration file 
+ * Anything you add to this function must be added to the
+ * slurm_reconfigure function inside controller.c try
+ * to keep these in sync.  
+ */
 static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 {
 	int error_code = SLURM_SUCCESS;
@@ -1717,6 +1722,7 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 		slurm_sched_partition_change();	/* notify sched plugin */
 		select_g_reconfigure();		/* notify select plugin too */
+		priority_g_reconfig();          /* notify priority plugin too */
 		schedule();			/* has its own locks */
 		save_all_state();
 	}
