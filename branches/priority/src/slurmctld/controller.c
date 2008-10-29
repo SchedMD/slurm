@@ -1625,12 +1625,12 @@ static void *_assoc_cache_mgr(void *no_data)
 		slurm_mutex_unlock(&assoc_cache_mutex);
 	}
 	
-	info("got real data from the database "
-	     "refreshing the association ptr's %d", list_count(job_list));
+	debug2("got real data from the database "
+	       "refreshing the association ptr's %d", list_count(job_list));
 	itr = list_iterator_create(job_list);
 	while ((job_ptr = list_next(itr))) {
 		if(job_ptr->qos) {
-			bzero(&qos_rec, sizeof(acct_qos_rec_t));
+			memset(&qos_rec, 0, sizeof(acct_qos_rec_t));
 			qos_rec.id = job_ptr->qos;
 			if((assoc_mgr_fill_in_qos(
 				    acct_db_conn, &qos_rec,
@@ -1644,7 +1644,7 @@ static void *_assoc_cache_mgr(void *no_data)
 			} 
 		}
 		if(job_ptr->assoc_id) {
-			bzero(&assoc_rec, sizeof(acct_association_rec_t));
+			memset(&assoc_rec, 0, sizeof(acct_association_rec_t));
 			assoc_rec.id = job_ptr->assoc_id;
 
 			if (assoc_mgr_fill_in_assoc(
