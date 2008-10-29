@@ -72,7 +72,7 @@ static bool _valid_job_assoc(struct job_record *job_ptr)
 	    (assoc_ptr->id  != job_ptr->assoc_id) ||
 	    (assoc_ptr->uid != job_ptr->user_id)) {
 		error("Invalid assoc_ptr for jobid=%u", job_ptr->job_id);
-		bzero(&assoc_rec, sizeof(acct_association_rec_t));
+		memset(&assoc_rec, 0, sizeof(acct_association_rec_t));
 		if(job_ptr->assoc_id)
 			assoc_rec.id = job_ptr->assoc_id;
 		else {
@@ -102,7 +102,8 @@ extern void acct_policy_add_job_submit(struct job_record *job_ptr)
 {
 	acct_association_rec_t *assoc_ptr = NULL;
 
-	if (accounting_enforce != ACCOUNTING_ENFORCE_WITH_LIMITS)
+	if (accounting_enforce != ACCOUNTING_ENFORCE_WITH_LIMITS
+	    || !_valid_job_assoc(job_ptr))
 		return;
 
 	slurm_mutex_lock(&assoc_mgr_association_lock);
@@ -124,7 +125,8 @@ extern void acct_policy_remove_job_submit(struct job_record *job_ptr)
 {
 	acct_association_rec_t *assoc_ptr = NULL;
 
-	if (accounting_enforce != ACCOUNTING_ENFORCE_WITH_LIMITS)
+	if (!job_ptr->assoc_ptr || 
+	    accounting_enforce != ACCOUNTING_ENFORCE_WITH_LIMITS)
 		return;
 
 	slurm_mutex_lock(&assoc_mgr_association_lock);
@@ -171,8 +173,8 @@ extern void acct_policy_job_fini(struct job_record *job_ptr)
 {
 	acct_association_rec_t *assoc_ptr = NULL;
 
-	if (accounting_enforce != ACCOUNTING_ENFORCE_WITH_LIMITS
-	    || !_valid_job_assoc(job_ptr))
+	if (!job_ptr->assoc_ptr || 
+	    accounting_enforce != ACCOUNTING_ENFORCE_WITH_LIMITS)
 		return;
 
 	slurm_mutex_lock(&assoc_mgr_association_lock);
