@@ -932,6 +932,41 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 	}
 	return set;
 }
+
+static uint32_t _get_parent_id(
+       mysql_conn_t *mysql_conn, char *parent, char *cluster)
+{
+       uint32_t parent_id = 0;
+       MYSQL_RES *result = NULL;
+       MYSQL_ROW row;
+       char *query = NULL;
+       
+       xassert(parent); 
+       xassert(cluster);
+
+       query = xstrdup_printf("select id from %s where user='' "
+                              "and deleted = 0 and acct=\"%s\" "
+                              "and cluster=\"%s\";", 
+                              assoc_table, parent, cluster);
+       debug4("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+       
+       if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 1))) {
+               xfree(query);
+               return 0;
+       }
+       xfree(query);
+
+       if((row = mysql_fetch_row(result))) {
+               if(row[0])
+                       parent_id = atoi(row[0]);       
+       } else 
+               error("no association for parent %s on cluster %s",
+                     parent, cluster);
+       mysql_free_result(result);
+
+       return parent_id;
+}
+
 /* This function will take the object given and free it later so it
  * needed to be removed from a list if in one before 
  */
@@ -3167,12 +3202,13 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 	char *user_name = NULL;
 	char *tmp_char = NULL;
 	int assoc_id = 0;
-	int incr = 0, my_left = 0;
+	int incr = 0, my_left = 0, my_par_id = 0;
 	int affect_rows = 0;
 	int moved_parent = 0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	char *old_parent = NULL, *old_cluster = NULL;
+	char *last_parent = NULL, *last_cluster = NULL;
 	char *massoc_req_inx[] = {
 		"id",
 		"parent_acct",
@@ -3363,8 +3399,8 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 				//info("left is %d", my_left);
 				xfree(old_parent);
 				xfree(old_cluster);
-				old_parent = xstrdup(parent);
-				old_cluster = xstrdup(object->cluster);
+				old_parent = parent;
+				old_cluster = object->cluster;
 				incr = 0;
 			}
 			incr += 2;
@@ -3461,6 +3497,26 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 
 		object->id = assoc_id;
 		
+
+               /* get the parent id only if we haven't moved the
+                * parent since we get the total list if that has
+                * happened */
+               if(!moved_parent &&
+                  (!last_parent || !last_cluster
+                   || strcmp(parent, last_parent)
+                   || strcmp(object->cluster, last_cluster))) {
+                       uint32_t tmp32 = 0;
+                       if((tmp32 = _get_parent_id(mysql_conn, 
+                                                  parent,
+                                                  object->cluster))) {
+                               my_par_id = tmp32;
+
+                               last_parent = parent;
+                               last_cluster = object->cluster;
+                       }
+               }
+               object->parent_id = my_par_id;
+
 		if(_addto_update_list(mysql_conn->update_list, ACCT_ADD_ASSOC,
 				      object) == SLURM_SUCCESS) {
 			list_remove(itr);
@@ -3515,9 +3571,6 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 	}
 
 end_it:
-
-	xfree(old_parent);
-	xfree(old_cluster);
 
 	if(rc != SLURM_ERROR) {
 		if(txn_query) {
@@ -6817,29 +6870,15 @@ empty:
 			if(!last_acct_parent || !last_cluster
 			   || strcmp(row[ASSOC_REQ_PARENT], last_acct_parent)
 			   || strcmp(row[ASSOC_REQ_CLUSTER], last_cluster)) {
-				query = xstrdup_printf(
-					"select id from %s where user='' "
-					"and deleted = 0 and acct=\"%s\" "
-					"and cluster=\"%s\";", 
-					assoc_table, row[ASSOC_REQ_PARENT],
-					row[ASSOC_REQ_CLUSTER]);
-				debug4("%d(%d) query\n%s",
-				       mysql_conn->conn, __LINE__, query);
-
-				if(!(result2 = mysql_db_query_ret(
-					     mysql_conn->db_conn,
-					     query, 1))) {
-					xfree(query);
-					break;
+				if((set = _get_parent_id(
+					    mysql_conn, 
+					    row[ASSOC_REQ_PARENT],
+					    row[ASSOC_REQ_CLUSTER]))) {
+                                        last_acct_parent = 
+                                                row[ASSOC_REQ_PARENT];
+                                        last_cluster = row[ASSOC_REQ_CLUSTER];
+					acct_parent_id = set;   
 				}
-				xfree(query);
-				if((row2 = mysql_fetch_row(result2))) {
-					last_acct_parent = 
-						row[ASSOC_REQ_PARENT];
-					last_cluster = row[ASSOC_REQ_CLUSTER];
-					acct_parent_id = atoi(row2[0]);	
-				}
-				mysql_free_result(result2);
 			}
 			assoc->parent_acct = xstrdup(row[ASSOC_REQ_PARENT]);
 			assoc->parent_id = acct_parent_id;

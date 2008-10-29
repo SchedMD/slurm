@@ -5904,6 +5904,7 @@ extern int job_cancel_by_assoc_id(uint32_t assoc_id)
 		if ((job_ptr->assoc_id != assoc_id) || 
 		    IS_JOB_FINISHED(job_ptr))
 			continue;
+		job_ptr->assoc_ptr = NULL;
 		info("Association deleted, cancelling job %u", 
 		     job_ptr->job_id);
 		job_signal(job_ptr->job_id, SIGKILL, 0, 0);
