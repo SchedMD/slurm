@@ -8250,10 +8250,57 @@ extern int clusteracct_storage_p_node_up(mysql_conn_t *mysql_conn,
 #endif
 }
 
-extern int clusteracct_storage_p_register_ctld(char *cluster,
+/* This is only called when not running from the slurmdbd so we can
+ * assumes some things like rpc_version.
+ */
+extern int clusteracct_storage_p_register_ctld(mysql_conn_t *mysql_conn, 
+					       char *cluster,
 					       uint16_t port)
 {
-	return SLURM_SUCCESS;
+#ifdef HAVE_MYSQL
+	char *query = NULL;
+	char *address = NULL;
+	char hostname[255];
+	time_t now = time(NULL);
+
+	if(slurmdbd_conf) 
+		fatal("clusteracct_storage_g_register_ctld "
+		      "should never be called from the slurmdbd.");
+	
+	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
+		return SLURM_ERROR;
+	
+	info("Registering slurmctld for cluster %s at port %u in database.",
+	     cluster, port);
+	gethostname(hostname, sizeof(hostname));
+
+	/* check if we are running on the backup controller */
+	if(slurmctld_conf.backup_controller 
+	   && !strcmp(slurmctld_conf.backup_controller, hostname)) {
+		address = slurmctld_conf.backup_addr;
+	} else
+		address = slurmctld_conf.control_addr;
+
+	query = xstrdup_printf(
+		"update %s set deleted=0, mod_time=%d, "
+		"control_host='%s', control_port=%u, rpc_version=%d "
+		"where name='%s';",
+		cluster_table, now, address, port, SLURMDBD_VERSION, cluster);
+	xstrfmtcat(query, 	
+		   "insert into %s "
+		   "(timestamp, action, name, actor, info) "
+		   "values (%d, %d, \"%s\", \"%s\", \"%s %u\");",
+		   txn_table,
+		   now, DBD_MODIFY_CLUSTERS, cluster,
+		   slurmctld_conf.slurm_user_name, address, port);
+
+	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+	
+	return mysql_db_query(mysql_conn->db_conn, query);
+	
+#else
+	return SLURM_ERROR;
+#endif
 }
 
 extern int clusteracct_storage_p_cluster_procs(mysql_conn_t *mysql_conn, 

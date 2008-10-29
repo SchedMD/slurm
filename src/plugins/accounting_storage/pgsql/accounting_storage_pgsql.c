@@ -1033,7 +1033,8 @@ extern int clusteracct_storage_p_node_up(PGconn *acct_pgsql_db,
 #endif
 }
 
-extern int clusteracct_storage_p_register_ctld(char *cluster,
+extern int clusteracct_storage_p_register_ctld(PGconn *acct_pgsql_db,
+					       char *cluster,
 					       uint16_t port)
 {
 	return SLURM_SUCCESS;
