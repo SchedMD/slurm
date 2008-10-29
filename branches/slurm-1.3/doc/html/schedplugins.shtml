@@ -14,7 +14,7 @@ The <b>wiki</b> scheduler establishes an initial priority of zero (held) for
 all jobs. These jobs only begin execution when the <b>wiki</b> scheduler 
 explicitly raises the their priority (releasing them). 
 Developers may use the model that best fits their needs. 
-Note that a separate <a href="selectplugins.html" class="nav">node selection plugin</a>
+Note that a separate <a href="selectplugins.html">node selection plugin</a>
 is available for controlling that aspect of scheduling.</p>
 
 <p>SLURM scheduler plugins are SLURM plugins that implement the SLURM scheduler
