@@ -610,7 +610,7 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args)
 	if((!assoc_mgr_user_list) && (cache_level & ASSOC_MGR_CACHE_USER))
 		if(_get_assoc_mgr_user_list(db_conn, enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
-	if(assoc_mgr_association_list) {
+	if(assoc_mgr_association_list && !setup_childern) {
 		acct_association_rec_t *assoc = NULL;
 		ListIterator itr =
 			list_iterator_create(assoc_mgr_association_list);
@@ -685,8 +685,8 @@ extern int assoc_mgr_set_cpu_shares(uint32_t procs, uint32_t half_life)
 	/* get the total decay for the entire cluster */
 	assoc_mgr_root_assoc->cpu_shares = 
 		(long double)procs * (long double)half_life * (long double)2;
-	debug("total cpu shares on the system is %.0Lf",
-	      assoc_mgr_root_assoc->cpu_shares);
+	debug2("total cpu shares on the system is %.0Lf",
+	       assoc_mgr_root_assoc->cpu_shares);
 
 	slurm_mutex_lock(&assoc_mgr_association_lock);
 	itr = list_iterator_create(assoc_mgr_association_list);
@@ -701,7 +701,7 @@ extern int assoc_mgr_set_cpu_shares(uint32_t procs, uint32_t half_life)
 		
 		slurm_mutex_lock(&assoc_mgr_qos_lock);
 		log_assoc_rec(assoc, assoc_mgr_qos_list);
-		slurm_mutex_unlock(&assoc_mgr_qos_lock);		
+		slurm_mutex_unlock(&assoc_mgr_qos_lock);
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&assoc_mgr_association_lock);
@@ -720,10 +720,12 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 	if (assoc_pptr)
 		*assoc_pptr = NULL;
 	if(!assoc_mgr_association_list) {
-		if(_get_assoc_mgr_association_list(db_conn, enforce) == SLURM_ERROR)
+		if(_get_assoc_mgr_association_list(db_conn, enforce) 
+		   == SLURM_ERROR)
 			return SLURM_ERROR;
 	}
-	if((!assoc_mgr_association_list || !list_count(assoc_mgr_association_list))
+	if((!assoc_mgr_association_list
+	    || !list_count(assoc_mgr_association_list))
 	   && !enforce) 
 		return SLURM_SUCCESS;
 
@@ -854,8 +856,8 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 		assoc->parent_acct       = xstrdup(ret_assoc->parent_acct);
 	} else 
 		assoc->parent_acct       = ret_assoc->parent_acct;
-
 	assoc->parent_assoc_ptr          = ret_assoc->parent_assoc_ptr;
+	assoc->parent_id                 = ret_assoc->parent_id;
 
 	slurm_mutex_unlock(&assoc_mgr_association_lock);
 
@@ -1838,7 +1840,7 @@ extern int load_assoc_usage(char *state_save_location)
 	slurm_mutex_lock(&assoc_mgr_file_lock);
 	state_fd = open(state_file, O_RDONLY);
 	if (state_fd < 0) {
-		info("No Assoc usage file (%s) to recover", state_file);
+		debug2("No Assoc usage file (%s) to recover", state_file);
 		error_code = ENOENT;
 	} else {
 		data_allocated = BUF_SIZE;
@@ -1934,7 +1936,7 @@ extern int load_assoc_mgr_state(char *state_save_location)
 	slurm_mutex_lock(&assoc_mgr_file_lock);
 	state_fd = open(state_file, O_RDONLY);
 	if (state_fd < 0) {
-		info("No association state file (%s) to recover", state_file);
+		debug2("No association state file (%s) to recover", state_file);
 		error_code = ENOENT;
 	} else {
 		data_allocated = BUF_SIZE;

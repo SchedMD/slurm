@@ -4408,26 +4408,26 @@ extern char *get_qos_complete_str(List qos_list, List num_qos_list)
 
 extern void log_assoc_rec(acct_association_rec_t *assoc_ptr, List qos_list)
 {
-	debug("association rec id : %u", assoc_ptr->id);
-	debug("  acct             : %s", assoc_ptr->acct);
+	debug2("association rec id : %u", assoc_ptr->id);
+	debug2("  acct             : %s", assoc_ptr->acct);
 	debug2("  cluster          : %s", assoc_ptr->cluster);
 
 	if(assoc_ptr->fairshare == INFINITE)
 		debug2("  Fairshare        : NONE");
 	else if(assoc_ptr->fairshare != NO_VAL) 
-		debug("  Fairshare        : %u", assoc_ptr->fairshare);
+		debug2("  Fairshare        : %u", assoc_ptr->fairshare);
+
+	if(assoc_ptr->norm_shares != NO_VAL) 
+		debug2("  NormalizedShares : %f", assoc_ptr->norm_shares);
 
 	if(assoc_ptr->level_shares != NO_VAL) 
-		debug("  LevelShares      : %u", assoc_ptr->level_shares);
-	
-	if(assoc_ptr->norm_shares != NO_VAL) 
-		debug("  NormalizedShares : %f", assoc_ptr->norm_shares);
+		debug2("  LevelShares      : %u", assoc_ptr->level_shares);
 
 	if(assoc_ptr->cpu_shares != NO_VAL) 
-		debug("  CPUShares        : %Lf", assoc_ptr->cpu_shares);
+		debug2("  CPUShares        : %Lf", assoc_ptr->cpu_shares);
 	
 	if(assoc_ptr->level_cpu_shares != NO_VAL) 
-		debug("  LevelCPUShares   : %Lf",
+		debug2("  LevelCPUShares   : %Lf",
 		       assoc_ptr->level_cpu_shares);
 		
 	if(assoc_ptr->grp_cpu_mins == INFINITE)
@@ -4510,14 +4510,14 @@ extern void log_assoc_rec(acct_association_rec_t *assoc_ptr, List qos_list)
 	}
 
 	if(assoc_ptr->parent_acct)
-		debug("  parent_acct      : %s", assoc_ptr->parent_acct);
+		debug2("  parent_acct      : %s", assoc_ptr->parent_acct);
 	if(assoc_ptr->partition)
 		debug2("  partition        : %s", assoc_ptr->partition);
 	if(assoc_ptr->user)
-		debug("  user             : %s(%u)",
+		debug2("  user             : %s(%u)",
 		       assoc_ptr->user, assoc_ptr->uid);
 	debug2("  used_jobs        : %u", assoc_ptr->used_jobs);
-	debug("  used_shares      : %Lf", assoc_ptr->used_shares);
+	debug2("  used_shares      : %Lf", assoc_ptr->used_shares);
 }
 
 /*
