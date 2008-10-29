@@ -2625,9 +2625,15 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 		}
 		xfree(query);
 		while((row = mysql_fetch_row(result))) {
+			msg.rpc_version = atoi(row[3]);
+			if(msg.rpc_version > SLURMDBD_VERSION) {
+				error("%s at %s(%s) ver %s > %u, can't update",
+				      row[2], row[0], row[1], row[3],
+				      SLURMDBD_VERSION);
+				continue;
+			}
 			debug("sending updates to %s at %s(%s) ver %s",
 			      row[2], row[0], row[1], row[3]);
-			msg.rpc_version = atoi(row[3]);
 			slurm_msg_t_init(&req);
 			slurm_set_addr_char(&req.address, atoi(row[1]), row[0]);
 			req.msg_type = ACCOUNTING_UPDATE_MSG;
