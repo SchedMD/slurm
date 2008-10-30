@@ -1075,7 +1075,8 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      delete <SPECIFICATIONS>  delete the specified partition, kill its jobs\n\
      exit                     terminate scontrol                           \n\
      help                     print this description of use.               \n\
-     hide                     do not display information about hidden partitions.\n\
+     hide                     do not display information about hidden      \n\
+                              partitions                                   \n\
      listpids <job_id<.step>> List pids associated with the given jobid, or\n\
                               all jobs if no id is given (This will only   \n\
                               display the processes on the node which the  \n\
