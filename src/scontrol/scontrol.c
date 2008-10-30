@@ -1090,13 +1090,12 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      quit                     terminate this command.                      \n\
      reconfigure              re-read configuration files.                 \n\
      requeue <job_id>         re-queue a batch job                         \n\
-     setdebug <LEVEL>         reset slurmctld debug level                  \n\
+     setdebug <level>         set slurmctld debug level                    \n\
      show <ENTITY> [<ID>]     display state of identified entity, default  \n\
                               is all records.                              \n\
      shutdown <OPTS>          shutdown slurm daemons                       \n\
      suspend <job_id>         susend specified job                         \n\
      resume <job_id>          resume previously suspended job              \n\
-     setdebug <level>         set slurmctld debug level                    \n\
      update <SPECIFICATIONS>  update job, node, partition, or bluegene     \n\
                               block/subbp configuration                    \n\
      verbose                  enable detailed logging.                     \n\
