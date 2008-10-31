@@ -24818,7 +24818,8 @@ _ACEOF
 
 
 
-   	if test ! -z $HAVE_BG ; then
+	# Skip if already set
+   	if test ! -z "$have_bg_files" ; then
 		bg_default_dirs=""
 	else
 		bg_default_dirs="/bgsys/drivers/ppcfloor"
@@ -24835,18 +24836,18 @@ _ACEOF
 		soloc=$bg_dir/lib64/lib$libname.so
       		# Search for required BG API libraries in the directory
       		if test -z "$have_bg_ar" -a -f "$soloc" ; then
-         		have_bg_ar=yes
+         		have_bgp_ar=yes
 			bg_ldflags="$bg_ldflags -L$bg_dir/lib64 -L/usr/lib64 -Wl,--unresolved-symbols=ignore-in-shared-libs -l$libname"
         	fi
 
       		# Search for headers in the directory
       		if test -z "$have_bg_hdr" -a -f "$bg_dir/include/rm_api.h" ; then
-         		have_bg_hdr=yes
+         		have_bgp_hdr=yes
          		bg_includes="-I$bg_dir/include"
       		fi
    	done
 
-   	if test ! -z "$have_bg_ar" -a ! -z "$have_bg_hdr" ; then
+   	if test ! -z "$have_bgp_ar" -a ! -z "$have_bgp_hdr" ; then
 
 cat >>confdefs.h <<\_ACEOF
 #define HAVE_BG 1
@@ -24894,7 +24895,7 @@ eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
 	 test ! -s conftest.err
        } && test -s conftest$ac_exeext &&
        $as_test_x conftest$ac_exeext; then
-  have_bg_files=yes
+  have_bgp_files=yes
 else
   echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
@@ -24909,7 +24910,7 @@ rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
 		LDFLAGS="$saved_LDFLAGS"
    	fi
 
-  	if test ! -z "$have_bg_files" ; then
+  	if test ! -z "$have_bgp_files" ; then
       		BG_INCLUDES="$bg_includes"
 
 cat >>confdefs.h <<\_ACEOF
