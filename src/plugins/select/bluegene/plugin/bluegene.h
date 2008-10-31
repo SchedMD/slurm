@@ -51,7 +51,11 @@ typedef enum bg_layout_type {
 
 
 /* Global variables */
+#ifdef HAVE_BGP_FILES
+extern rm_BGP_t *bg;
+#else
 extern rm_BGL_t *bg;
+#endif
 extern char *default_blrtsimage;
 extern char *default_linuximage;
 extern char *default_mloaderimage;

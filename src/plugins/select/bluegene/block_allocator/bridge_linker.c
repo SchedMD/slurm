@@ -42,7 +42,7 @@
 typedef struct {
 	/* all the rm functions */
 	status_t (*set_serial)(const rm_serial_t serial);
-	status_t (*get_BGL)(rm_BGL_t **bgl);
+	status_t (*get_bg)(my_bluegene_t **bg);
 	status_t (*add_partition)(rm_partition_t *partition);
 	status_t (*get_partition)(pm_partition_id_t pid, 
 				  rm_partition_t **partition);
@@ -66,7 +66,7 @@ typedef struct {
 	status_t (*new_partition)(rm_partition_t **partition);
 	status_t (*free_partition)(rm_partition_t *partition);
 	status_t (*free_job)(rm_job_t *job);
-	status_t (*free_bgl)(rm_BGL_t *bgl);
+	status_t (*free_bg)(my_bluegene_t *bg);
 	status_t (*free_partition_list)(rm_partition_list_t *part_list);
 	status_t (*free_job_list)(rm_job_list_t *job_list);  
 	status_t (*free_nodecard_list)(rm_nodecard_list_t *nc_list);
@@ -98,7 +98,7 @@ int _get_syms(int n_syms, const char *names[], void *ptrs[])
 {
         int i, count;
 	void *db_handle = NULL;
-	
+#ifndef HAVE_BGP_FILES	
 #ifdef BG_DB2_SO
 	db_handle = dlopen (BG_DB2_SO, RTLD_LAZY);
 	if (!db_handle) {
@@ -110,6 +110,7 @@ int _get_syms(int n_syms, const char *names[], void *ptrs[])
 #else
 	fatal("No BG_DB2_SO is set, can't run.");
 #endif
+#endif // HAVE_BGP_FILES
 
 #ifdef BG_BRIDGE_SO
 	handle = dlopen (BG_BRIDGE_SO, RTLD_LAZY);
@@ -138,6 +139,40 @@ int _get_syms(int n_syms, const char *names[], void *ptrs[])
 
 extern int bridge_init()
 {
+#ifdef HAVE_BGP_FILES
+	static const char *syms[] = {
+		"rm_set_serial",
+		"rm_get_BGP",
+		"rm_add_partition",
+		"rm_get_partition",
+		"rm_get_partition_info",
+		"rm_modify_partition",
+		"rm_set_part_owner",
+		"rm_add_part_user",
+		"rm_remove_part_user",
+		"rm_remove_partition",
+		"rm_get_partitions",
+		"rm_get_partitions_info",
+		"rm_get_job",
+		"rm_get_jobs",
+		"rm_remove_job",
+		"rm_get_nodecards",
+		"rm_new_partition",
+		"rm_free_partition",
+		"rm_free_job",
+		"rm_free_BGP",
+		"rm_free_partition_list",
+		"rm_free_job_list",
+		"rm_free_nodecard_list",
+		"rm_get_data",
+		"rm_set_data",
+		"jm_signal_job",
+		"jm_cancel_job",
+		"pm_create_partition",
+		"pm_destroy_partition",
+		"setSayMessageParams"
+	};
+#else
 	static const char *syms[] = {
 		"rm_set_serial",
 		"rm_get_BGL",
@@ -170,6 +205,7 @@ extern int bridge_init()
 		"pm_destroy_partition",
 		"setSayMessageParams"
 	};
+#endif
 	int n_syms = sizeof( syms ) / sizeof( char * );
 	int rc;
 
@@ -200,14 +236,14 @@ extern int bridge_fini()
 	return SLURM_ERROR;
 }
 
-extern status_t bridge_get_bg(rm_BGL_t **bgl)
+extern status_t bridge_get_bg(my_bluegene_t **bg)
 {
 	int rc = CONNECTION_ERROR;
 	if(!bridge_init())
 		return rc;
 
 	slurm_mutex_lock(&api_file_mutex);
-	rc = (*(bridge_api.get_BGL))(bgl);
+	rc = (*(bridge_api.get_bg))(bg);
 	slurm_mutex_unlock(&api_file_mutex);
 	return rc;
 }
@@ -440,14 +476,14 @@ extern status_t bridge_free_job(rm_job_t *job)
 
 }
 
-extern status_t bridge_free_bg(rm_BGL_t *bgl)
+extern status_t bridge_free_bg(my_bluegene_t *bg)
 {
 	int rc = CONNECTION_ERROR;
 	if(!bridge_init())
 		return rc;
 	
 	slurm_mutex_lock(&api_file_mutex);
-	rc = (*(bridge_api.free_bgl))(bgl);
+	rc = (*(bridge_api.free_bg))(bg);
 	slurm_mutex_unlock(&api_file_mutex);
 	return rc;
 

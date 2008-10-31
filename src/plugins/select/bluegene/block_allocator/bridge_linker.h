@@ -70,7 +70,7 @@ extern bool have_db2;
 extern int bridge_init();
 extern int bridge_fini();
 
-extern status_t bridge_get_bg(rm_BGL_t **bgl);
+extern status_t bridge_get_bg(my_bluegene_t **bg);
 extern status_t bridge_add_block(rm_partition_t *partition);
 extern status_t bridge_get_block(pm_partition_id_t pid, 
 				 rm_partition_t **partition);
@@ -95,7 +95,7 @@ extern status_t bridge_get_nodecards(rm_bp_id_t bpid,
 extern status_t bridge_new_block(rm_partition_t **partition);
 extern status_t bridge_free_block(rm_partition_t *partition);
 extern status_t bridge_free_job(rm_job_t *job);
-extern status_t bridge_free_bg(rm_BGL_t *bgl);
+extern status_t bridge_free_bg(my_bluegene_t *bg);
 extern status_t bridge_free_block_list(rm_partition_list_t *part_list);
 extern status_t bridge_free_job_list(rm_job_list_t *job_list);  
 extern status_t bridge_free_nodecard_list(rm_nodecard_list_t *nc_list);

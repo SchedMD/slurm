@@ -1595,6 +1595,7 @@ Optional Packages:
   --with-tags[=TAGS]      include additional configurations [automatic]
   --with-db2-dir=PATH     Specify path to DB2 library's parent directory
   --with-bg-serial=NAME   set BG_SERIAL value BGL
+  --with-bg-serial=NAME   set BG_SERIAL value BGP
   --with-xcpu=PATH        specify path to XCPU directory
   --with-pkg-config=PATH  Specify path to pkg-config binary
   --with-mysql_config=PATH
@@ -7121,7 +7122,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 7124 "configure"' > conftest.$ac_ext
+  echo '#line 7125 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -9227,11 +9228,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:9230: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:9231: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:9234: \$? = $ac_status" >&5
+   echo "$as_me:9235: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -9517,11 +9518,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:9520: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:9521: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:9524: \$? = $ac_status" >&5
+   echo "$as_me:9525: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -9621,11 +9622,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:9624: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:9625: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:9628: \$? = $ac_status" >&5
+   echo "$as_me:9629: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -11998,7 +11999,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 12001 "configure"
+#line 12002 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -12098,7 +12099,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 12101 "configure"
+#line 12102 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -14499,11 +14500,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14502: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14503: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:14506: \$? = $ac_status" >&5
+   echo "$as_me:14507: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -14603,11 +14604,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14606: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14607: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:14610: \$? = $ac_status" >&5
+   echo "$as_me:14611: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -16201,11 +16202,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:16204: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:16205: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:16208: \$? = $ac_status" >&5
+   echo "$as_me:16209: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -16305,11 +16306,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:16308: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:16309: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:16312: \$? = $ac_status" >&5
+   echo "$as_me:16313: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -18525,11 +18526,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:18528: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:18529: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:18532: \$? = $ac_status" >&5
+   echo "$as_me:18533: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -18815,11 +18816,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:18818: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:18819: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:18822: \$? = $ac_status" >&5
+   echo "$as_me:18823: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -18919,11 +18920,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:18922: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:18923: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:18926: \$? = $ac_status" >&5
+   echo "$as_me:18927: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -24768,8 +24769,8 @@ else
   echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-	{ { echo "$as_me:$LINENO: error: There is a problem linking to the bluegene api." >&5
-echo "$as_me: error: There is a problem linking to the bluegene api." >&2;}
+	{ { echo "$as_me:$LINENO: error: There is a problem linking to the BG/L api." >&5
+echo "$as_me: error: There is a problem linking to the BG/L api." >&2;}
    { (exit 1); exit 1; }; }
 fi
 
@@ -24799,6 +24800,137 @@ _ACEOF
 		{ echo "$as_me:$LINENO: checking for BG serial value" >&5
 echo $ECHO_N "checking for BG serial value... $ECHO_C" >&6; }
       		bg_serial="BGL"
+
+# Check whether --with-bg-serial was given.
+if test "${with_bg_serial+set}" = set; then
+  withval=$with_bg_serial; bg_serial="$withval"
+fi
+
+     		{ echo "$as_me:$LINENO: result: $bg_serial" >&5
+echo "${ECHO_T}$bg_serial" >&6; }
+
+cat >>confdefs.h <<_ACEOF
+#define BG_SERIAL "$bg_serial"
+_ACEOF
+
+   	fi
+
+
+
+
+   	if test ! -z $HAVE_BG ; then
+		bg_default_dirs=""
+	else
+		bg_default_dirs="/bgsys/drivers/ppcfloor"
+	fi
+
+	libname=bgpbridge
+
+   	for bg_dir in $trydb2dir "" $bg_default_dirs; do
+      	# Skip directories that don't exist
+      		if test ! -z "$bg_dir" -a ! -d "$bg_dir" ; then
+         		continue;
+      		fi
+
+		soloc=$bg_dir/lib64/lib$libname.so
+      		# Search for required BG API libraries in the directory
+      		if test -z "$have_bg_ar" -a -f "$soloc" ; then
+         		have_bg_ar=yes
+			bg_ldflags="$bg_ldflags -L$bg_dir/lib64 -L/usr/lib64 -Wl,--unresolved-symbols=ignore-in-shared-libs -l$libname"
+        	fi
+
+      		# Search for headers in the directory
+      		if test -z "$have_bg_hdr" -a -f "$bg_dir/include/rm_api.h" ; then
+         		have_bg_hdr=yes
+         		bg_includes="-I$bg_dir/include"
+      		fi
+   	done
+
+   	if test ! -z "$have_bg_ar" -a ! -z "$have_bg_hdr" ; then
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_BG 1
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_FRONT_END 1
+_ACEOF
+
+      		# ac_with_readline="no"
+		# Test to make sure the api is good
+                saved_LDFLAGS="$LDFLAGS"
+      	 	LDFLAGS="$saved_LDFLAGS $bg_ldflags"
+         	cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+ int rm_set_serial(char *);
+int
+main ()
+{
+ rm_set_serial("");
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest$ac_exeext &&
+       $as_test_x conftest$ac_exeext; then
+  have_bg_files=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	{ { echo "$as_me:$LINENO: error: There is a problem linking to the BG/P api." >&5
+echo "$as_me: error: There is a problem linking to the BG/P api." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
+      conftest$ac_exeext conftest.$ac_ext
+		LDFLAGS="$saved_LDFLAGS"
+   	fi
+
+  	if test ! -z "$have_bg_files" ; then
+      		BG_INCLUDES="$bg_includes"
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_BG_FILES 1
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_BGP_FILES 1
+_ACEOF
+
+
+
+cat >>confdefs.h <<_ACEOF
+#define BG_BRIDGE_SO "$soloc"
+_ACEOF
+
+
+		{ echo "$as_me:$LINENO: checking for BG serial value" >&5
+echo $ECHO_N "checking for BG serial value... $ECHO_C" >&6; }
+        	bg_serial="BGP"
 
 # Check whether --with-bg-serial was given.
 if test "${with_bg_serial+set}" = set; then

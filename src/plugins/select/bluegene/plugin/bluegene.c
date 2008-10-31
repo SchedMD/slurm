@@ -49,7 +49,7 @@
 char* bg_conf = NULL;
 
 /* Global variables */
-rm_BGL_t *bg = NULL;
+my_bluegene_t *bg = NULL;
 
 List bg_list = NULL;			/* total list of bg_record entries */
 List bg_curr_block_list = NULL;  	/* current bg blocks in bluegene.conf*/
@@ -111,7 +111,7 @@ extern int init_bg(void)
 	
 	info("Attempting to contact MMCS");
 	if ((rc = bridge_get_bg(&bg)) != STATUS_OK) {
-		fatal("init_bg: rm_get_BGL(): %s", bg_err_str(rc));
+		fatal("init_bg: rm_get_BG(): %s", bg_err_str(rc));
 		return SLURM_ERROR;
 	}
 	
@@ -196,7 +196,7 @@ extern void fini_bg(void)
 #ifdef HAVE_BG_FILES
 	if(bg)
 		if ((rc = bridge_free_bg(bg)) != STATUS_OK)
-			error("bridge_free_BGL(): %s", bg_err_str(rc));
+			error("bridge_free_BG(): %s", bg_err_str(rc));
 #endif	
 	ba_fini();
 }

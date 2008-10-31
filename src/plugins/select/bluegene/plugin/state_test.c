@@ -55,7 +55,7 @@
 #ifdef HAVE_BG_FILES
 
 /* Find the specified BlueGene node ID and drain it from SLURM */
-static void _configure_node_down(rm_bp_id_t bp_id, rm_BGL_t *bg)
+static void _configure_node_down(rm_bp_id_t bp_id, my_bluegene_t *bg)
 {
 	int bp_num, i, rc;
 	rm_bp_id_t bpid;
@@ -162,7 +162,7 @@ static char *_convert_bp_state(rm_BP_state_t state)
 }
 
 /* Test for nodes that are not UP in MMCS and DRAIN them in SLURM */ 
-static void _test_down_nodes(rm_BGL_t *bg)
+static void _test_down_nodes(my_bluegene_t *bg)
 {
 	int bp_num, i, rc;
 	rm_BP_t *my_bp;
@@ -246,7 +246,7 @@ static void _test_down_nodes(rm_BGL_t *bg)
 
 /* Test for switches that are not UP in MMCS, 
  * when found DRAIN them in SLURM and configure their base partition DOWN */
-static void _test_down_switches(rm_BGL_t *bg)
+static void _test_down_switches(my_bluegene_t *bg)
 {
 	int switch_num, i, rc;
 	rm_switch_t *my_switch;
@@ -331,12 +331,12 @@ extern bool node_already_down(char *node_name)
 extern void test_mmcs_failures(void)
 {
 #ifdef HAVE_BG_FILES
-	rm_BGL_t *bg;
+	my_bluegene_t *bg;
 	int rc;
 
 	if ((rc = bridge_get_bg(&bg)) != STATUS_OK) {
 		
-		error("bridge_get_BGL(): %s", bg_err_str(rc));
+		error("bridge_get_BG(): %s", bg_err_str(rc));
 		return;
 	}
 	
@@ -344,7 +344,7 @@ extern void test_mmcs_failures(void)
 	_test_down_switches(bg);
 	_test_down_nodes(bg);
 	if ((rc = bridge_free_bg(bg)) != STATUS_OK)
-		error("bridge_free_BGL(): %s", bg_err_str(rc));
+		error("bridge_free_BG(): %s", bg_err_str(rc));
 #endif
 }
 
