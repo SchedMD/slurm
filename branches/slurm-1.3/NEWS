@@ -32,6 +32,8 @@ documents those changes that are of interest to users and admins.
  -- When Moab is in use (salloc or sbatch is executed with the --get-user-env
     option to be more specific), load the user's default resource limits rather
     than propagating the Moab daemon's limits.
+ -- Fix bug in slurmctld restart logic for recovery of batch jobs that are
+    initiated as a job step rather than an independent job (used for LSF).
 
 * Changes in SLURM 1.3.9
 ========================

@@ -712,6 +712,9 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 	int i_node, i_first, i_last;
 	int job_node_inx = -1, step_node_inx = -1;
 
+	if (step_ptr->step_layout == NULL)	/* batch step */
+		return;
+
 	i_first = bit_ffs(job_ptr->node_bitmap);
 	i_last  = bit_fls(job_ptr->node_bitmap);
 	if (i_first == -1)	/* empty bitmap */
