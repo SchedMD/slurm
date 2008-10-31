@@ -380,8 +380,18 @@ job_desc_msg_create_from_opts ()
 	if (opt.nice)
 		j->nice   = NICE_OFFSET + opt.nice;
 	j->task_dist      = opt.distribution;
+
+	if (opt.cpu_bind)
+		j->cpu_bind       = opt.cpu_bind;
+	if (opt.cpu_bind_type)
+		j->cpu_bind_type  = opt.cpu_bind_type;
+	if (opt.mem_bind)
+		j->mem_bind       = opt.mem_bind;
+	if (opt.mem_bind_type)
+		j->mem_bind_type  = opt.mem_bind_type;
 	if (opt.plane_size != NO_VAL)
 		j->plane_size     = opt.plane_size;
+
 	j->group_id       = opt.gid;
 	j->mail_type      = opt.mail_type;
 

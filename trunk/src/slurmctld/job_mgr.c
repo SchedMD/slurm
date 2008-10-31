@@ -224,28 +224,31 @@ void delete_job_details(struct job_record *job_entry)
 	if (job_entry->details == NULL)
 		return;
 
-	_delete_job_desc_files(job_entry->job_id);
 	xassert (job_entry->details->magic == DETAILS_MAGIC);
+	_delete_job_desc_files(job_entry->job_id);
+
 	for (i=0; i<job_entry->details->argc; i++)
 		xfree(job_entry->details->argv[i]);
 	xfree(job_entry->details->argv);
-	xfree(job_entry->details->req_nodes);
-	xfree(job_entry->details->exc_nodes);
-	FREE_NULL_BITMAP(job_entry->details->req_node_bitmap);
-	xfree(job_entry->details->req_node_layout);
-	FREE_NULL_BITMAP(job_entry->details->exc_node_bitmap);
-	xfree(job_entry->details->features);
-	xfree(job_entry->details->err);
-	xfree(job_entry->details->in);
-	xfree(job_entry->details->out);
-	xfree(job_entry->details->work_dir);
-	xfree(job_entry->details->mc_ptr);
-	if (job_entry->details->feature_list)
-		list_destroy(job_entry->details->feature_list);
-	xfree(job_entry->details->dependency);
+	xfree(job_entry->details->cpu_bind);
 	if (job_entry->details->depend_list)
 		list_destroy(job_entry->details->depend_list);
-	xfree(job_entry->details);
+	xfree(job_entry->details->dependency);
+	xfree(job_entry->details->err);
+	FREE_NULL_BITMAP(job_entry->details->exc_node_bitmap);
+	xfree(job_entry->details->exc_nodes);
+	if (job_entry->details->feature_list)
+		list_destroy(job_entry->details->feature_list);
+	xfree(job_entry->details->features);
+	xfree(job_entry->details->in);
+	xfree(job_entry->details->mc_ptr);
+	xfree(job_entry->details->mem_bind);
+	xfree(job_entry->details->out);
+	FREE_NULL_BITMAP(job_entry->details->req_node_bitmap);
+	xfree(job_entry->details->req_node_layout);
+	xfree(job_entry->details->req_nodes);
+	xfree(job_entry->details->work_dir);
+	xfree(job_entry->details);	/* Must be last */
 }
 
 /* _delete_job_desc_files - delete job descriptor related files */
@@ -846,6 +849,12 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 	pack16(detail_ptr->shared, buffer);
 	pack16(detail_ptr->task_dist, buffer);
 
+	packstr(detail_ptr->cpu_bind,     buffer);
+	pack16(detail_ptr->cpu_bind_type, buffer);
+	packstr(detail_ptr->mem_bind,     buffer);
+	pack16(detail_ptr->mem_bind_type, buffer);
+	pack16(detail_ptr->plane_size, buffer);
+
 	pack8(detail_ptr->open_mode, buffer);
 	pack8(detail_ptr->overcommit, buffer);
 	pack8(detail_ptr->prolog_running, buffer);
@@ -874,7 +883,7 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 {
 	char *req_nodes = NULL, *exc_nodes = NULL, *features = NULL;
-	char *dependency = NULL;
+	char *cpu_bind, *dependency = NULL, *mem_bind;
 	char *err = NULL, *in = NULL, *out = NULL, *work_dir = NULL;
 	char **argv = (char **) NULL;
 	uint32_t min_nodes, max_nodes;
@@ -883,6 +892,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	uint32_t num_tasks, name_len, argc = 0;
 	uint16_t shared, contiguous, ntasks_per_node;
 	uint16_t acctg_freq, cpus_per_task, requeue, task_dist;
+	uint16_t cpu_bind_type, mem_bind_type, plane_size;
 	uint8_t open_mode, overcommit, prolog_running;
 	time_t begin_time, submit_time;
 	int i;
@@ -900,6 +910,12 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	safe_unpack16(&requeue, buffer);
 	safe_unpack16(&shared, buffer);
 	safe_unpack16(&task_dist, buffer);
+
+	safe_unpackstr_xmalloc(&cpu_bind, &name_len, buffer);
+	safe_unpack16(&cpu_bind_type, buffer);
+	safe_unpackstr_xmalloc(&mem_bind, &name_len, buffer);
+	safe_unpack16(&mem_bind_type, buffer);
+	safe_unpack16(&plane_size, buffer);
 
 	safe_unpack8(&open_mode, buffer);
 	safe_unpack8(&overcommit, buffer);
@@ -943,62 +959,75 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	}
 
 	/* free any left-over detail data */
-	xfree(job_ptr->details->req_nodes);
-	xfree(job_ptr->details->exc_nodes);
-	xfree(job_ptr->details->features);
-	xfree(job_ptr->details->err);
-	xfree(job_ptr->details->in);
-	xfree(job_ptr->details->out);
-	xfree(job_ptr->details->work_dir);
 	for (i=0; i<job_ptr->details->argc; i++)
 		xfree(job_ptr->details->argv[i]);
 	xfree(job_ptr->details->argv);
+	xfree(job_ptr->details->cpu_bind);
+	xfree(job_ptr->details->dependency);
+	xfree(job_ptr->details->err);
+	xfree(job_ptr->details->exc_nodes);
+	xfree(job_ptr->details->features);
+	xfree(job_ptr->details->in);
+	xfree(job_ptr->details->mem_bind);
+	xfree(job_ptr->details->out);
+	xfree(job_ptr->details->req_nodes);
+	xfree(job_ptr->details->work_dir);
+
 
 	/* now put the details into the job record */
-	job_ptr->details->min_nodes = min_nodes;
-	job_ptr->details->max_nodes = max_nodes;
-	job_ptr->details->num_tasks = num_tasks;
-	job_ptr->details->shared = shared;
 	job_ptr->details->acctg_freq = acctg_freq;
+	job_ptr->details->argc = argc;
+	job_ptr->details->argv = argv;
+	job_ptr->details->begin_time = begin_time;
 	job_ptr->details->contiguous = contiguous;
+	job_ptr->details->cpu_bind = cpu_bind;
+	job_ptr->details->cpu_bind_type = cpu_bind_type;
 	job_ptr->details->cpus_per_task = cpus_per_task;
-	job_ptr->details->task_dist = task_dist;
-	job_ptr->details->ntasks_per_node = ntasks_per_node;
+	job_ptr->details->dependency = dependency;
+	job_ptr->details->err = err;
+	job_ptr->details->exc_nodes = exc_nodes;
+	job_ptr->details->features = features;
+	job_ptr->details->in = in;
 	job_ptr->details->job_min_procs = job_min_procs;
 	job_ptr->details->job_min_memory = job_min_memory;
 	job_ptr->details->job_min_tmp_disk = job_min_tmp_disk;
-	job_ptr->details->requeue = requeue;
-	job_ptr->details->open_mode = open_mode;
-	job_ptr->details->overcommit = overcommit;
-	job_ptr->details->prolog_running = prolog_running;
-	job_ptr->details->begin_time = begin_time;
-	job_ptr->details->submit_time = submit_time;
-	job_ptr->details->req_nodes = req_nodes;
-	job_ptr->details->exc_nodes = exc_nodes;
-	job_ptr->details->features = features;
-	job_ptr->details->err = err;
-	job_ptr->details->in = in;
-	job_ptr->details->out = out;
-	job_ptr->details->work_dir = work_dir;
-	job_ptr->details->argc = argc;
-	job_ptr->details->argv = argv;
+	job_ptr->details->max_nodes = max_nodes;
 	job_ptr->details->mc_ptr = mc_ptr;
-	job_ptr->details->dependency = dependency;
+	job_ptr->details->mem_bind = mem_bind;
+	job_ptr->details->mem_bind_type = mem_bind_type;
+	job_ptr->details->min_nodes = min_nodes;
+	job_ptr->details->ntasks_per_node = ntasks_per_node;
+	job_ptr->details->num_tasks = num_tasks;
+	job_ptr->details->open_mode = open_mode;
+	job_ptr->details->out = out;
+	job_ptr->details->overcommit = overcommit;
+	job_ptr->details->plane_size = plane_size;
+	job_ptr->details->prolog_running = prolog_running;
+	job_ptr->details->req_nodes = req_nodes;
+	job_ptr->details->requeue = requeue;
+	job_ptr->details->shared = shared;
+	job_ptr->details->submit_time = submit_time;
+	job_ptr->details->task_dist = task_dist;
+	job_ptr->details->work_dir = work_dir;
 	
 	return SLURM_SUCCESS;
 
 unpack_error:
-	xfree(req_nodes);
-	xfree(exc_nodes);
-	xfree(features);
-	xfree(dependency);
-	xfree(err);
-	xfree(in);
-	xfree(out);
-	xfree(work_dir);
+
+
 /*	for (i=0; i<argc; i++) 
 	xfree(argv[i]);  Don't trust this on unpack error */
 	xfree(argv);
+	xfree(cpu_bind);
+	xfree(dependency);
+	xfree(err);
+	xfree(exc_nodes);
+	xfree(features);
+	xfree(in);
+	xfree(mem_bind);
+	xfree(out);
+	xfree(req_nodes);
+	xfree(work_dir);
 	return SLURM_FAILURE;
 }
 
@@ -1477,6 +1506,11 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	debug3("   ntasks_per_node=%ld ntasks_per_socket=%ld "
 	       "ntasks_per_core=%ld", 
 	       ntasks_per_node, ntasks_per_socket, ntasks_per_core);
+
+	debug3("   cpus_bind=%u:%s mem_bind=%u:%s plane_size:%u",
+	       job_specs->cpu_bind_type, job_specs->cpu_bind,
+	       job_specs->mem_bind_type, job_specs->mem_bind,
+	       job_specs->plane_size);
 
 	select_g_sprint_jobinfo(job_specs->select_jobinfo, 
 				buf, sizeof(buf), SELECT_PRINT_MIXED);

@@ -2620,7 +2620,6 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 	/* load the data values */
 	pack16(job_desc_ptr->contiguous, buffer);
 	pack16(job_desc_ptr->task_dist, buffer);
-	pack16(job_desc_ptr->plane_size, buffer);
 	pack16(job_desc_ptr->kill_on_node_fail, buffer);
 	packstr(job_desc_ptr->features, buffer);
 	pack32(job_desc_ptr->job_id, buffer);
@@ -2666,8 +2665,14 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 	pack16(job_desc_ptr->ntasks_per_node, buffer);
 	pack16(job_desc_ptr->ntasks_per_socket, buffer);
 	pack16(job_desc_ptr->ntasks_per_core, buffer);
-	pack32(job_desc_ptr->time_limit, buffer);
 
+	pack16(job_desc_ptr->plane_size, buffer);
+	pack16(job_desc_ptr->cpu_bind_type, buffer);
+	pack16(job_desc_ptr->mem_bind_type, buffer);
+	packstr(job_desc_ptr->cpu_bind, buffer);
+	packstr(job_desc_ptr->mem_bind, buffer);
+
+	pack32(job_desc_ptr->time_limit, buffer);
 	pack32(job_desc_ptr->num_procs, buffer);
 	pack32(job_desc_ptr->min_nodes, buffer);
 	pack32(job_desc_ptr->max_nodes, buffer);
@@ -2752,7 +2757,6 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 	/* load the data values */
 	safe_unpack16(&job_desc_ptr->contiguous, buffer);
 	safe_unpack16(&job_desc_ptr->task_dist, buffer);
-	safe_unpack16(&job_desc_ptr->plane_size, buffer);
 	safe_unpack16(&job_desc_ptr->kill_on_node_fail, buffer);
 	safe_unpackstr_xmalloc(&job_desc_ptr->features, &uint32_tmp, buffer);
 	safe_unpack32(&job_desc_ptr->job_id, buffer);
@@ -2798,8 +2802,14 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 	safe_unpack16(&job_desc_ptr->ntasks_per_node, buffer);
 	safe_unpack16(&job_desc_ptr->ntasks_per_socket, buffer);
 	safe_unpack16(&job_desc_ptr->ntasks_per_core, buffer);
-	safe_unpack32(&job_desc_ptr->time_limit, buffer);
 
+	safe_unpack16(&job_desc_ptr->plane_size, buffer);
+	safe_unpack16(&job_desc_ptr->cpu_bind_type, buffer);
+	safe_unpack16(&job_desc_ptr->mem_bind_type, buffer);
+	safe_unpackstr_xmalloc(&job_desc_ptr->cpu_bind, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&job_desc_ptr->mem_bind, &uint32_tmp, buffer);
+
+	safe_unpack32(&job_desc_ptr->time_limit, buffer);
 	safe_unpack32(&job_desc_ptr->num_procs, buffer);
 	safe_unpack32(&job_desc_ptr->min_nodes, buffer);
 	safe_unpack32(&job_desc_ptr->max_nodes, buffer);
@@ -2837,25 +2847,26 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 	return SLURM_SUCCESS;
 
 unpack_error:
-
-	xfree(job_desc_ptr->features);
-	xfree(job_desc_ptr->name);
-	xfree(job_desc_ptr->partition);
-	xfree(job_desc_ptr->dependency);
 	xfree(job_desc_ptr->account);
-	xfree(job_desc_ptr->comment);
-	xfree(job_desc_ptr->req_nodes);
-	xfree(job_desc_ptr->exc_nodes);
-	xfree(job_desc_ptr->environment);
-	xfree(job_desc_ptr->script);
 	xfree(job_desc_ptr->argv);
+	xfree(job_desc_ptr->comment);
+	xfree(job_desc_ptr->cpu_bind);
+	xfree(job_desc_ptr->dependency);
+	xfree(job_desc_ptr->environment);
 	xfree(job_desc_ptr->err);
+	xfree(job_desc_ptr->exc_nodes);
+	xfree(job_desc_ptr->features);
 	xfree(job_desc_ptr->in);
-	xfree(job_desc_ptr->out);
-	xfree(job_desc_ptr->work_dir);
-	xfree(job_desc_ptr->network);
 	xfree(job_desc_ptr->licenses);
 	xfree(job_desc_ptr->mail_user);
+	xfree(job_desc_ptr->mem_bind);
+	xfree(job_desc_ptr->name);
+	xfree(job_desc_ptr->network);
+	xfree(job_desc_ptr->out);
+	xfree(job_desc_ptr->partition);
+	xfree(job_desc_ptr->req_nodes);
+	xfree(job_desc_ptr->script);
+	xfree(job_desc_ptr->work_dir);
 	select_g_free_jobinfo(&job_desc_ptr->select_jobinfo);
 	xfree(job_desc_ptr);
 	*job_desc_buffer_ptr = NULL;
