@@ -1409,17 +1409,17 @@ extern void build_node_details(struct job_record *job_ptr)
 	job_ptr->node_cnt = hostlist_count(host_list);	
 
 	xrealloc(job_ptr->cpus_per_node, 
-		(sizeof(uint32_t) * job_ptr->node_cnt));
+		 (sizeof(uint32_t) * job_ptr->node_cnt));
 	xrealloc(job_ptr->cpu_count_reps, 
-		(sizeof(uint32_t) * job_ptr->node_cnt));
+		 (sizeof(uint32_t) * job_ptr->node_cnt));
 	xrealloc(job_ptr->node_addr, 
-		(sizeof(slurm_addr) * job_ptr->node_cnt));	
+		 (sizeof(slurm_addr) * job_ptr->node_cnt));	
 
 	job_ptr->alloc_lps_cnt = job_ptr->node_cnt;
 	xrealloc(job_ptr->alloc_lps,
-		(sizeof(uint32_t) * job_ptr->node_cnt));
+		 (sizeof(uint32_t) * job_ptr->node_cnt));
 	xrealloc(job_ptr->used_lps,
-		(sizeof(uint32_t) * job_ptr->node_cnt));
+		 (sizeof(uint32_t) * job_ptr->node_cnt));
 
 	while ((this_node_name = hostlist_shift(host_list))) {
 		node_ptr = find_node_record(this_node_name);
@@ -1492,8 +1492,7 @@ extern void build_node_details(struct job_record *job_ptr)
 	}
 	job_ptr->num_cpu_groups = cpu_inx + 1;
 	job_ptr->total_procs = total_procs;
-	if (job_ptr->used_lps)	/* reset counters */
-		_alloc_step_cpus(job_ptr);
+	_alloc_step_cpus(job_ptr);	/* reset counters */
 }
 
 /*
