@@ -310,55 +310,61 @@ struct feature_record {
 /* job_details - specification of a job's constraints, 
  * can be purged after initiation */
 struct job_details {
-	uint32_t magic;			/* magic cookie for data integrity */
-	uint32_t min_nodes;		/* minimum number of nodes */
-	uint32_t max_nodes;		/* maximum number of nodes */
-	char *req_nodes;		/* required nodes */
-	char *exc_nodes;		/* excluded nodes */
-	bitstr_t *req_node_bitmap;	/* bitmap of required nodes */
-	uint16_t *req_node_layout;	/* task layout for required nodes */
-	bitstr_t *exc_node_bitmap;	/* bitmap of excluded nodes */
-	char *features;			/* required features */
-	List feature_list;		/* required features with node counts */
-	uint16_t shared;		/* 1 if job can share nodes,
-					 * 0 if job cannot share nodes,
-					 * any other value accepts the default
-					 * sharing policy. */
-	uint16_t contiguous;		/* set if requires contiguous nodes */
-	uint16_t task_dist;		/* task layout for this job. Only
-					 * useful when Consumable Resources
-                                         * is enabled */
-	uint32_t num_tasks;		/* number of tasks to start */
-	uint8_t open_mode;		/* stdout/err append or trunctate */
-	uint8_t overcommit;		/* processors being over subscribed */
-	uint8_t prolog_running;		/* set while prolog_slurmctld is 
-					 * running */
 	uint16_t acctg_freq;		/* accounting polling interval */
+	uint16_t argc;			/* count of argv elements */
+	char **argv;			/* arguments for a batch job script */
+	time_t begin_time;		/* start at this time (srun --being), 
+					 * resets to time first eligible
+					 * (all dependencies satisfied) */
+	uint16_t contiguous;		/* set if requires contiguous nodes */
+	char *cpu_bind;			/* binding map for map/mask_cpu */
+	uint16_t cpu_bind_type;		/* see cpu_bind_type_t */
 	uint16_t cpus_per_task;		/* number of processors required for 
 					 * each task */
-	uint16_t ntasks_per_node;	/* number of tasks on each node */
+	List depend_list;		/* list of job_ptr:state pairs */
+	char *dependency;		/* wait for other jobs */
+	char *err;			/* pathname of job's stderr file */
+	bitstr_t *exc_node_bitmap;	/* bitmap of excluded nodes */
+	char *exc_nodes;		/* excluded nodes */
+	List feature_list;		/* required features with node counts */
+	char *features;			/* required features */
+	char *in;			/* pathname of job's stdin file */
 	/* job constraints: */
 	uint32_t job_min_procs;		/* minimum processors per node */
 	uint32_t job_min_memory;	/* minimum memory per node (MB) OR
 					 * memory per allocated 
 					 * CPU | MEM_PER_CPU */
 	uint32_t job_min_tmp_disk;	/* minimum tempdisk per node, MB */
-	char *err;			/* pathname of job's stderr file */
-	char *in;			/* pathname of job's stdin file */
+	uint32_t magic;			/* magic cookie for data integrity */
+	uint32_t max_nodes;		/* maximum number of nodes */
+	multi_core_data_t *mc_ptr;	/* multi-core specific data */
+	char *mem_bind;			/* binding map for map/mask_cpu */
+	uint16_t mem_bind_type;		/* see mem_bind_type_t */
+	uint32_t min_nodes;		/* minimum number of nodes */
+	uint16_t ntasks_per_node;	/* number of tasks on each node */
+	uint32_t num_tasks;		/* number of tasks to start */
+	uint8_t open_mode;		/* stdout/err append or trunctate */
 	char *out;			/* pathname of job's stdout file */
-	time_t submit_time;		/* time of submission */
-	time_t begin_time;		/* start at this time (srun --being), 
-					 * resets to time first eligible
-					 * (all dependencies satisfied) */
+	uint8_t overcommit;		/* processors being over subscribed */
+	uint16_t plane_size;		/* plane size when task_dist =
+					 * SLURM_DIST_PLANE */
+	uint8_t prolog_running;		/* set while prolog_slurmctld is 
+					 * running */
 	uint32_t reserved_resources;	/* CPU minutes of resources reserved
 					 * for this job while it was pending */
-	char *work_dir;			/* pathname of working directory */
-	char **argv;			/* arguments for a batch job script */
-	uint16_t argc;			/* count of argv elements */
+	bitstr_t *req_node_bitmap;	/* bitmap of required nodes */
+	uint16_t *req_node_layout;	/* task layout for required nodes */
+	char *req_nodes;		/* required nodes */
 	uint16_t requeue;		/* controls ability requeue job */
-	multi_core_data_t *mc_ptr;	/* multi-core specific data */
-	char *dependency;		/* wait for other jobs */
-	List depend_list;		/* list of job_ptr:state pairs */
+	uint16_t shared;		/* 1 if job can share nodes,
+					 * 0 if job cannot share nodes,
+					 * any other value accepts the default
+					 * sharing policy. */
+	time_t submit_time;		/* time of submission */
+	uint16_t task_dist;		/* task layout for this job. Only
+					 * useful when Consumable Resources
+                                         * is enabled */
+	char *work_dir;			/* pathname of working directory */
 };
 
 struct job_record {

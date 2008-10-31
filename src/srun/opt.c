@@ -413,7 +413,8 @@ static int _verify_cpu_bind(const char *arg, char **cpu_bind,
 			if (list && *list) {
 				*cpu_bind = xstrdup(list);
 			} else {
-				error("missing list for \"--cpu_bind=map_cpu:<list>\"");
+				error("missing list for \"--cpu_bind="
+				      "map_cpu:<list>\"");
 				xfree(buf);
 				return 1;
 			}
@@ -427,7 +428,8 @@ static int _verify_cpu_bind(const char *arg, char **cpu_bind,
 			if (list && *list) {
 				*cpu_bind = xstrdup(list);
 			} else {
-				error("missing list for \"--cpu_bind=mask_cpu:<list>\"");
+				error("missing list for \"--cpu_bind="
+				      "mask_cpu:<list>\"");
 				xfree(buf);
 				return -1;
 			}
@@ -870,8 +872,10 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_INT:
 		if (val != NULL) {
 			*((int *) e->arg) = (int) strtol(val, &end, 10);
-			if (!(end && *end == '\0')) 
-				error("%s=%s invalid. ignoring...", e->var, val);
+			if (!(end && *end == '\0')) {
+				error("%s=%s invalid. ignoring...", 
+				      e->var, val);
+			}
 		}
 		break;
 

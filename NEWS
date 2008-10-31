@@ -16,6 +16,8 @@ documents those changes that are of interest to users and admins.
     srun was not responding).
  -- Transfer a job step's core bitmap from the slurmctld to the slurmd
     within the job step credential.
+ -- Add cpu_bind, cpu_bind_type, mem_bind and mem_bind_type to job allocation
+    request and job_details structure in slurmctld.
 
 * Changes in SLURM 1.4.0-pre3
 =============================

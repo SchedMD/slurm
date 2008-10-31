@@ -67,6 +67,8 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->comment		= NULL;
 	job_desc_msg->conn_type		= (uint16_t) NO_VAL;
 	job_desc_msg->contiguous	= (uint16_t) NO_VAL;
+	job_desc_msg->cpu_bind		= NULL;
+	job_desc_msg->cpu_bind_type	= (uint16_t) NO_VAL;
 	job_desc_msg->cpus_per_task	= (uint16_t) NO_VAL;
 	job_desc_msg->dependency	= NULL;
 	job_desc_msg->environment	= ((char **) NULL);
@@ -100,6 +102,8 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->max_nodes		= NO_VAL;
 	job_desc_msg->max_sockets	= (uint16_t) NO_VAL;
 	job_desc_msg->max_threads	= (uint16_t) NO_VAL;
+	job_desc_msg->mem_bind		= NULL;
+	job_desc_msg->mem_bind_type	= (uint16_t) NO_VAL;
 	job_desc_msg->min_cores		= (uint16_t) NO_VAL;
 	job_desc_msg->min_nodes		= NO_VAL;
 	job_desc_msg->min_sockets	= (uint16_t) NO_VAL;

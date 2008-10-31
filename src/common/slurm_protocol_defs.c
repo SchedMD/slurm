@@ -285,35 +285,37 @@ void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 	int i;
 
 	if (msg) {
-		select_g_free_jobinfo(&msg->select_jobinfo);
+		xfree(msg->account);
 		xfree(msg->alloc_node);
-		for (i = 0; i < msg->env_size; i++)
-			xfree(msg->environment[i]);
-		xfree(msg->environment);
-		xfree(msg->features);
-		xfree(msg->licenses);
-		xfree(msg->mail_user);
-		xfree(msg->name);
-		xfree(msg->partition);
-		xfree(msg->req_nodes);
-		xfree(msg->exc_nodes);
-		xfree(msg->script);
 		for (i = 0; i < msg->argc; i++)
 			xfree(msg->argv[i]);
 		xfree(msg->argv);
-		xfree(msg->err);
-		xfree(msg->in);
-		xfree(msg->out);
-		xfree(msg->work_dir);
-		xfree(msg->account);
-		xfree(msg->network);
-		xfree(msg->comment);
-		xfree(msg->dependency);
-		xfree(msg->resp_host);
 		xfree(msg->blrtsimage);
+		xfree(msg->comment);
+		xfree(msg->cpu_bind);
+		xfree(msg->dependency);
+		for (i = 0; i < msg->env_size; i++)
+			xfree(msg->environment[i]);
+		xfree(msg->environment);
+		xfree(msg->err);
+		xfree(msg->exc_nodes);
+		xfree(msg->features);
+		xfree(msg->in);
+		xfree(msg->licenses);
 		xfree(msg->linuximage);
+		xfree(msg->mail_user);
+		xfree(msg->mem_bind);
 		xfree(msg->mloaderimage);
+		xfree(msg->name);
+		xfree(msg->network);
+		xfree(msg->out);
+		xfree(msg->partition);
 		xfree(msg->ramdiskimage);
+		xfree(msg->req_nodes);
+		xfree(msg->resp_host);
+		xfree(msg->script);
+		select_g_free_jobinfo(&msg->select_jobinfo);
+		xfree(msg->work_dir);
 		xfree(msg);
 	}
 }
