@@ -1,8 +1,8 @@
 /*****************************************************************************\
- * src/srun/allocate.c - srun functions for managing node allocations
- * $Id$
+ *  src/srun/allocate.c - srun functions for managing node allocations
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  LLNL-CODE-402394.
@@ -379,7 +379,6 @@ job_desc_msg_create_from_opts ()
 	j->dependency     = opt.dependency;
 	if (opt.nice)
 		j->nice   = NICE_OFFSET + opt.nice;
-	j->task_dist      = opt.distribution;
 
 	if (opt.cpu_bind)
 		j->cpu_bind       = opt.cpu_bind;
@@ -391,6 +390,7 @@ job_desc_msg_create_from_opts ()
 		j->mem_bind_type  = opt.mem_bind_type;
 	if (opt.plane_size != NO_VAL)
 		j->plane_size     = opt.plane_size;
+	j->task_dist      = opt.distribution;
 
 	j->group_id       = opt.gid;
 	j->mail_type      = opt.mail_type;

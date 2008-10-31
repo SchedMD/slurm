@@ -42,14 +42,48 @@
 #  include <string.h>
 #endif
 
+#include <ctype.h>
 #include <sys/types.h>
-#include "src/common/log.h"
 #include <slurm/slurm.h>
+
+#include "src/common/log.h"
+#include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_resource_info.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
 #if(0)
 #define DEBUG 1
 #endif
+
+/*
+ * First clear all of the bits in "*data" which are set in "clear_mask".
+ * Then set all of the bits in "*data" that are set in "set_mask".
+ */
+static void _clear_then_set(int *data, int clear_mask, int set_mask)
+{
+	*data &= ~clear_mask;
+	*data |= set_mask;
+}
+
+/*
+ * _isvalue
+ * returns 1 is the argument appears to be a value, 0 otherwise
+ */
+static int _isvalue(char *arg) {
+    	if (isdigit(*arg)) {	 /* decimal values and 0x... hex values */
+	    	return 1;
+	}
+
+	while (isxdigit(*arg)) { /* hex values not preceded by 0x */
+		arg++;
+	}
+	if (*arg == ',' || *arg == '\0') { /* end of field or string */
+	    	return 1;
+	}
+
+	return 0;	/* not a value */
+}
 
 /*
  * slurm_get_avail_procs - Get the number of "available" cpus on a node
@@ -338,4 +372,298 @@ void slurm_sprint_mem_bind_type(char *str, mem_bind_type_t mem_bind_type)
 	} else {
 	    	strcat(str, "(null type)");	/* no bits set */
 	}
+}
+
+void slurm_print_cpu_bind_help(void)
+{
+	printf(
+"CPU bind options:\n"
+"    --cpu_bind=         Bind tasks to CPUs\n"
+"        q[uiet]         quietly bind before task runs (default)\n"
+"        v[erbose]       verbosely report binding before task runs\n"
+"        no[ne]          don't bind tasks to CPUs (default)\n"
+"        rank            bind by task rank\n"
+"        map_cpu:<list>  specify a CPU ID binding for each task\n"
+"                        where <list> is <cpuid1>,<cpuid2>,...<cpuidN>\n"
+"        mask_cpu:<list> specify a CPU ID binding mask for each task\n"
+"                        where <list> is <mask1>,<mask2>,...<maskN>\n"
+"        sockets         auto-generated masks bind to sockets\n"
+"        cores           auto-generated masks bind to cores\n"
+"        threads         auto-generated masks bind to threads\n"
+"        help            show this help message\n");
+}
+
+/*
+ * verify cpu_bind arguments
+ *
+ * we support different launch policy names
+ * we also allow a verbose setting to be specified
+ *     --cpu_bind=threads
+ *     --cpu_bind=cores
+ *     --cpu_bind=sockets
+ *     --cpu_bind=v
+ *     --cpu_bind=rank,v
+ *     --cpu_bind=rank
+ *     --cpu_bind={MAP_CPU|MASK_CPU}:0,1,2,3,4
+ *
+ *
+ * returns -1 on error, 0 otherwise
+ */
+int slurm_verify_cpu_bind(const char *arg, char **cpu_bind, 
+			  cpu_bind_type_t *flags)
+{
+	char *buf, *p, *tok;
+	int bind_bits =
+		CPU_BIND_NONE|CPU_BIND_RANK|CPU_BIND_MAP|CPU_BIND_MASK;
+	int bind_to_bits =
+		CPU_BIND_TO_SOCKETS|CPU_BIND_TO_CORES|CPU_BIND_TO_THREADS;
+	uint16_t task_plugin_param = slurm_get_task_plugin_param();
+
+	if (arg == NULL) {
+		if ((*flags != 0) || 		/* already set values */
+		    (task_plugin_param == 0))	/* no system defaults */
+			return 0;
+
+		/* set system defaults */
+		xfree(*cpu_bind);
+		if (task_plugin_param & CPU_BIND_NONE) {
+			*flags = CPU_BIND_NONE;
+		} else if (task_plugin_param & CPU_BIND_TO_SOCKETS) {
+			*flags = CPU_BIND_TO_SOCKETS;
+			*cpu_bind = xstrdup("sockets");
+		} else if (task_plugin_param & CPU_BIND_TO_CORES) {
+			*flags = CPU_BIND_TO_CORES;
+			*cpu_bind = xstrdup("cores");
+		} else if (task_plugin_param & CPU_BIND_TO_THREADS) {
+			*flags |= CPU_BIND_TO_THREADS;
+			*cpu_bind = xstrdup("threads");
+		}
+		if (task_plugin_param & CPU_BIND_VERBOSE) {
+			*flags |= CPU_BIND_VERBOSE;
+			if (*cpu_bind)
+				xstrcat(*cpu_bind, ",verbose");
+			else
+				*cpu_bind = xstrdup("verbose");
+		}
+	    	return 0;
+	}
+
+	/* Start with system default verbose flag (if set) */
+	if (task_plugin_param & CPU_BIND_VERBOSE)
+		*flags |= CPU_BIND_VERBOSE;
+
+    	buf = xstrdup(arg);
+    	p = buf;
+	/* change all ',' delimiters not followed by a digit to ';'  */
+	/* simplifies parsing tokens while keeping map/mask together */
+	while (p[0] != '\0') {
+	    	if ((p[0] == ',') && (!_isvalue(&(p[1]))))
+			p[0] = ';';
+		p++;
+	}
+
+	p = buf;
+	while ((tok = strsep(&p, ";"))) {
+		if (strcasecmp(tok, "help") == 0) {
+			slurm_print_cpu_bind_help();
+			return 1;
+		} else if ((strcasecmp(tok, "q") == 0) ||
+			   (strcasecmp(tok, "quiet") == 0)) {
+		        *flags &= ~CPU_BIND_VERBOSE;
+		} else if ((strcasecmp(tok, "v") == 0) ||
+			   (strcasecmp(tok, "verbose") == 0)) {
+		        *flags |= CPU_BIND_VERBOSE;
+		} else if ((strcasecmp(tok, "no") == 0) ||
+			   (strcasecmp(tok, "none") == 0)) {
+			_clear_then_set((int *)flags, bind_bits, CPU_BIND_NONE);
+			xfree(*cpu_bind);
+		} else if (strcasecmp(tok, "rank") == 0) {
+			_clear_then_set((int *)flags, bind_bits, CPU_BIND_RANK);
+			xfree(*cpu_bind);
+		} else if ((strncasecmp(tok, "map_cpu", 7) == 0) ||
+		           (strncasecmp(tok, "mapcpu", 6) == 0)) {
+			char *list;
+			list = strsep(&tok, ":=");
+			list = strsep(&tok, ":=");
+			_clear_then_set((int *)flags, bind_bits, CPU_BIND_MAP);
+			xfree(*cpu_bind);
+			if (list && *list) {
+				*cpu_bind = xstrdup(list);
+			} else {
+				error("missing list for \"--cpu_bind="
+				      "map_cpu:<list>\"");
+				xfree(buf);
+				return 1;
+			}
+		} else if ((strncasecmp(tok, "mask_cpu", 8) == 0) ||
+		           (strncasecmp(tok, "maskcpu", 7) == 0)) {
+			char *list;
+			list = strsep(&tok, ":=");
+			list = strsep(&tok, ":=");
+			_clear_then_set((int *)flags, bind_bits, CPU_BIND_MASK);
+			xfree(*cpu_bind);
+			if (list && *list) {
+				*cpu_bind = xstrdup(list);
+			} else {
+				error("missing list for \"--cpu_bind="
+				      "mask_cpu:<list>\"");
+				xfree(buf);
+				return -1;
+			}
+		} else if ((strcasecmp(tok, "socket") == 0) ||
+		           (strcasecmp(tok, "sockets") == 0)) {
+			if (task_plugin_param & 
+			    (CPU_BIND_NONE | CPU_BIND_TO_CORES | 
+			     CPU_BIND_TO_THREADS)) {
+				error("--cpu_bind=sockets incompatable with "
+				      "TaskPluginParam configuration "
+				      "parameter");
+				return -1;
+			}
+			_clear_then_set((int *)flags, bind_to_bits,
+				       CPU_BIND_TO_SOCKETS);
+		} else if ((strcasecmp(tok, "core") == 0) ||
+		           (strcasecmp(tok, "cores") == 0)) {
+			if (task_plugin_param & 
+			    (CPU_BIND_NONE | CPU_BIND_TO_SOCKETS | 
+			     CPU_BIND_TO_THREADS)) {
+				error("--cpu_bind=cores incompatable with "
+				      "TaskPluginParam configuration "
+				      "parameter");
+				return -1;
+			}
+			_clear_then_set((int *)flags, bind_to_bits,
+				       CPU_BIND_TO_CORES);
+		} else if ((strcasecmp(tok, "thread") == 0) ||
+		           (strcasecmp(tok, "threads") == 0)) {
+			if (task_plugin_param & 
+			    (CPU_BIND_NONE | CPU_BIND_TO_SOCKETS | 
+			     CPU_BIND_TO_CORES)) {
+				error("--cpu_bind=threads incompatable with "
+				      "TaskPluginParam configuration "
+				      "parameter");
+				return -1;
+			}
+			_clear_then_set((int *)flags, bind_to_bits,
+				       CPU_BIND_TO_THREADS);
+		} else {
+			error("unrecognized --cpu_bind argument \"%s\"", tok);
+			xfree(buf);
+			return -1;
+		}
+	}
+	xfree(buf);
+
+	return 0;
+}
+
+void slurm_print_mem_bind_help(void)
+{
+			printf(
+"Memory bind options:\n"
+"    --mem_bind=         Bind memory to locality domains (ldom)\n"
+"        q[uiet]         quietly bind before task runs (default)\n"
+"        v[erbose]       verbosely report binding before task runs\n"
+"        no[ne]          don't bind tasks to memory (default)\n"
+"        rank            bind by task rank\n"
+"        local           bind to memory local to processor\n"
+"        map_mem:<list>  specify a memory binding for each task\n"
+"                        where <list> is <cpuid1>,<cpuid2>,...<cpuidN>\n"
+"        mask_mem:<list> specify a memory binding mask for each tasks\n"
+"                        where <list> is <mask1>,<mask2>,...<maskN>\n"
+"        help            show this help message\n");
+}
+
+/*
+ * verify mem_bind arguments
+ *
+ * we support different memory binding names
+ * we also allow a verbose setting to be specified
+ *     --mem_bind=v
+ *     --mem_bind=rank,v
+ *     --mem_bind=rank
+ *     --mem_bind={MAP_MEM|MASK_MEM}:0,1,2,3,4
+ *
+ * returns -1 on error, 0 otherwise
+ */
+int slurm_verify_mem_bind(const char *arg, char **mem_bind, 
+			  mem_bind_type_t *flags)
+{
+	char *buf, *p, *tok;
+	int bind_bits = MEM_BIND_NONE|MEM_BIND_RANK|MEM_BIND_LOCAL|
+		MEM_BIND_MAP|MEM_BIND_MASK;
+
+	if (arg == NULL) {
+	    	return 0;
+	}
+
+    	buf = xstrdup(arg);
+    	p = buf;
+	/* change all ',' delimiters not followed by a digit to ';'  */
+	/* simplifies parsing tokens while keeping map/mask together */
+	while (p[0] != '\0') {
+	    	if ((p[0] == ',') && (!_isvalue(&(p[1]))))
+			p[0] = ';';
+		p++;
+	}
+
+	p = buf;
+	while ((tok = strsep(&p, ";"))) {
+		if (strcasecmp(tok, "help") == 0) {
+			slurm_print_mem_bind_help();
+			return 1;
+			
+		} else if ((strcasecmp(tok, "q") == 0) ||
+			   (strcasecmp(tok, "quiet") == 0)) {
+		        *flags &= ~MEM_BIND_VERBOSE;
+		} else if ((strcasecmp(tok, "v") == 0) ||
+			   (strcasecmp(tok, "verbose") == 0)) {
+		        *flags |= MEM_BIND_VERBOSE;
+		} else if ((strcasecmp(tok, "no") == 0) ||
+			   (strcasecmp(tok, "none") == 0)) {
+			_clear_then_set((int *)flags, bind_bits, MEM_BIND_NONE);
+			xfree(*mem_bind);
+		} else if (strcasecmp(tok, "rank") == 0) {
+			_clear_then_set((int *)flags, bind_bits, MEM_BIND_RANK);
+			xfree(*mem_bind);
+		} else if (strcasecmp(tok, "local") == 0) {
+			_clear_then_set((int *)flags, bind_bits, MEM_BIND_LOCAL);
+			xfree(*mem_bind);
+		} else if ((strncasecmp(tok, "map_mem", 7) == 0) ||
+		           (strncasecmp(tok, "mapmem", 6) == 0)) {
+			char *list;
+			list = strsep(&tok, ":=");
+			list = strsep(&tok, ":=");
+			_clear_then_set((int *)flags, bind_bits, MEM_BIND_MAP);
+			xfree(*mem_bind);
+			if (list && *list) {
+				*mem_bind = xstrdup(list);
+			} else {
+				error("missing list for \"--mem_bind=map_mem:<list>\"");
+				xfree(buf);
+				return 1;
+			}
+		} else if ((strncasecmp(tok, "mask_mem", 8) == 0) ||
+		           (strncasecmp(tok, "maskmem", 7) == 0)) {
+			char *list;
+			list = strsep(&tok, ":=");
+			list = strsep(&tok, ":=");
+			_clear_then_set((int *)flags, bind_bits, MEM_BIND_MASK);
+			xfree(*mem_bind);
+			if (list && *list) {
+				*mem_bind = xstrdup(list);
+			} else {
+				error("missing list for \"--mem_bind=mask_mem:<list>\"");
+				xfree(buf);
+				return 1;
+			}
+		} else {
+			error("unrecognized --mem_bind argument \"%s\"", tok);
+			xfree(buf);
+			return 1;
+		}
+	}
+
+	xfree(buf);
+	return 0;
 }
