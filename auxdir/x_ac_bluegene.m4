@@ -92,7 +92,8 @@ AC_DEFUN([X_AC_BGL],
 
 AC_DEFUN([X_AC_BGP],
 [
-   	if test ! -z $HAVE_BG ; then 
+	# Skip if already set
+   	if test ! -z "$have_bg_files" ; then 
 		bg_default_dirs=""
 	else
 		bg_default_dirs="/bgsys/drivers/ppcfloor"
@@ -109,29 +110,29 @@ AC_DEFUN([X_AC_BGP],
 		soloc=$bg_dir/lib64/lib$libname.so
       		# Search for required BG API libraries in the directory
       		if test -z "$have_bg_ar" -a -f "$soloc" ; then
-         		have_bg_ar=yes
+         		have_bgp_ar=yes
 			bg_ldflags="$bg_ldflags -L$bg_dir/lib64 -L/usr/lib64 -Wl,--unresolved-symbols=ignore-in-shared-libs -l$libname"
         	fi
       
       		# Search for headers in the directory
       		if test -z "$have_bg_hdr" -a -f "$bg_dir/include/rm_api.h" ; then
-         		have_bg_hdr=yes
+         		have_bgp_hdr=yes
          		bg_includes="-I$bg_dir/include"
       		fi
    	done
 	
-   	if test ! -z "$have_bg_ar" -a ! -z "$have_bg_hdr" ; then
+   	if test ! -z "$have_bgp_ar" -a ! -z "$have_bgp_hdr" ; then
       		AC_DEFINE(HAVE_BG, 1, [Define to 1 if emulating or running on Blue Gene system])
       		AC_DEFINE(HAVE_FRONT_END, 1, [Define to 1 if running slurmd on front-end only])
       		# ac_with_readline="no"
 		# Test to make sure the api is good
                 saved_LDFLAGS="$LDFLAGS"
       	 	LDFLAGS="$saved_LDFLAGS $bg_ldflags"
-         	AC_LINK_IFELSE([AC_LANG_PROGRAM([[ int rm_set_serial(char *); ]], [[ rm_set_serial(""); ]])],[have_bg_files=yes],[AC_MSG_ERROR(There is a problem linking to the BG/P api.)])
+         	AC_LINK_IFELSE([AC_LANG_PROGRAM([[ int rm_set_serial(char *); ]], [[ rm_set_serial(""); ]])],[have_bgp_files=yes],[AC_MSG_ERROR(There is a problem linking to the BG/P api.)])
 		LDFLAGS="$saved_LDFLAGS"         	
    	fi
 
-  	if test ! -z "$have_bg_files" ; then
+  	if test ! -z "$have_bgp_files" ; then
       		BG_INCLUDES="$bg_includes"
 		AC_DEFINE(HAVE_BG_FILES, 1, [Define to 1 if have Blue Gene files])
 		AC_DEFINE(HAVE_BGP_FILES, 1, [Define to 1 if have BG/P files])
