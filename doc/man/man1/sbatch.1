@@ -109,6 +109,63 @@ Constraints with node counts may only be combined with AND operators.
 If no nodes have the requested features, then the job will be rejected 
 by the slurm job manager.
 
+.TP
+\fB\-\-cpu_bind\fR=[{\fIquiet,verbose\fR},]\fItype\fR
+Bind tasks to CPUs. Used only when the task/affinity plugin is enabled.
+The configuration parameter \fBTaskPluginParam\fR may override these options.
+
+The \fBSLURM_CPU_BIND\fR environment variables are set when \fB\-\-cpu_bind\fR \
+is in use.
+
+When using \fB\-\-cpus\-per\-task\fR to run multithreaded tasks, be aware that
+CPU binding is inherited from the parent of the process.  This means that
+the multithreaded task should either specify or clear the CPU binding
+itself to avoid having all threads of the multithreaded task use the same
+mask/CPU as the parent.  Alternatively, fat masks (masks which specify more 
+than one allowed CPU) could be used for the tasks in order to provide
+multiple CPUs for the multithreaded tasks.
+
+Supported options include:
+.PD 1
+.RS
+.TP
+.B q[uiet]
+quietly bind before task runs (default)
+.TP
+.B v[erbose]
+verbosely report binding before task runs
+.TP
+.B no[ne]
+don't bind tasks to CPUs (default)
+.TP
+.B rank
+bind by task rank
+.TP
+.B map_cpu:<list>
+bind by mapping CPU IDs to tasks as specified
+where <list> is <cpuid1>,<cpuid2>,...<cpuidN>.
+CPU IDs are interpreted as decimal values unless they are preceded
+with '0x' in which case they interpreted as hexadecimal values.
+.TP
+.B mask_cpu:<list>
+bind by setting CPU masks on tasks as specified
+where <list> is <mask1>,<mask2>,...<maskN>.
+CPU masks are \fBalways\fR interpreted as hexadecimal values but can be
+preceded with an optional '0x'.
+.TP
+.B sockets
+auto\-generated masks bind to sockets
+.TP
+.B cores
+auto\-generated masks bind to cores
+.TP
+.B threads
+auto\-generated masks bind to threads
+.TP
+.B help
+show this help message
+.RE
+
 .TP 
 \fB\-c\fR, \fB\-\-cpus\-per\-task\fR[=]<\fIncpus\fR>
 Advise the SLURM controller that ensuing job steps will require \fIncpus\fR 
@@ -342,6 +399,59 @@ This parameter would generally be used of whole nodes
 are allocated to jobs (\fBSelectType=select/linear\fR).
 Also see \fB\-\-mem\-per\-cpu\fR.
 \fB\-\-mem\fR and \fB\-\-mem\-per\-cpu\fR are mutually exclusive.
+
+.TP
+\fB\-\-mem_bind\fR=[{\fIquiet,verbose\fR},]\fItype\fR
+Bind tasks to memory. Used only when the task/affinity plugin is enabled 
+and the NUMA memory functions are available.
+\fBNote that the resolution of CPU and memory binding 
+may differ on some architectures.\fR For example, CPU binding may be performed 
+at the level of the cores within a processor while memory binding will 
+be performed at the level of nodes, where the definition of "nodes" 
+may differ from system to system. \fBThe use of any type other than 
+"none" or "local" is not recommended.\fR
+If you want greater control, try running a simple test code with the 
+options "\-\-cpu_bind=verbose,none \-\-mem_bind=verbose,none" to determine 
+the specific configuration.
+
+The \fBSLURM_MEM_BIND\fR environment variables is set when  \fB\-\-mem_bind\fR 
+is in use.
+
+Supported options include:
+.RS
+.TP
+.B q[uiet]
+quietly bind before task runs (default)
+.TP
+.B v[erbose]
+verbosely report binding before task runs
+.TP
+.B no[ne]
+don't bind tasks to memory (default)
+.TP
+.B rank
+bind by task rank (not recommended)
+.TP
+.B local
+Use memory local to the processor in use
+.TP
+.B map_mem:<list>
+bind by mapping a node's memory to tasks as specified
+where <list> is <cpuid1>,<cpuid2>,...<cpuidN>.
+CPU IDs are interpreted as decimal values unless they are preceded
+with '0x' in which case they interpreted as hexadecimal values
+(not recommended)
+.TP
+.B mask_mem:<list>
+bind by setting memory masks on tasks as specified
+where <list> is <mask1>,<mask2>,...<maskN>.
+memory masks are \fBalways\fR interpreted as hexadecimal values.
+Note that masks must be preceded with a '0x' if they don't begin
+with [0-9] so they are seen as numerical values by srun.
+.TP
+.B help
+show this help message
+.RE
 
 .TP
 \fB\-\-mem\-per\-cpu\fR[=]<\fIMB\fR>
@@ -729,6 +839,9 @@ Same as \fB\-\-acctg\-freq\fR.
 \fBSBATCH_CONN_TYPE\fR
 Same as \fB\-\-conn\-type\fR.
 .TP
+\fBSBATCH_CPU_BIND\fR
+Same as \fB\-\-cpu_bind\fR.
+.TP
 \fBSBATCH_DEBUG\fR
 Same as \fB\-v\fR or \fB\-\-verbose\fR.
 .TP
@@ -749,6 +862,9 @@ Same as \fB\-\-jobid\fR.
 .TP
 \fBSBATCH_JOB_NAME\fR
 Same as \fB\-J\fR or \fB\-\-job\-name\fR.
+.TP
+\fBSBATCH_MEM_BIND\fR
+Same as \fB\-\-mem_bind\fR.
 .TP
 \fBSBATCH_NETWORK\fR
 Same as \fB\-\-network\fR.
@@ -775,7 +891,9 @@ Same as \fB\-t\fR or \fB\-\-time\fR.
 .PP
 The SLURM controller will set the following variables in the environment of
 the batch script.
-
+.TP
+\fBSLURM_CPU_BIND\fR
+Set to value of the \-\-cpu_bind\fR option.
 .TP
 \fBSLURM_JOB_ID\fR (and \fBSLURM_JOBID\fR for backwards compatibility)
 The ID of the job allocation.
@@ -799,6 +917,9 @@ List of nodes allocated to the job.
 .TP
 \fBSLURM_JOB_NUM_NODES\fR (and \fBSLURM_NNODES\fR for backwards compatibility)
 Total number of nodes in the job's resource allocation.
+.TP
+\fBSLURM_MEM_BIND\fR
+Set to value of the \-\-mem_bind\fR option.
 .TP
 \fBSLURM_TASKS_PER_NODE\fR
 Number of tasks to be initiated on each node. Values are

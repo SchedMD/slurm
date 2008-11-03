@@ -125,17 +125,8 @@ NOTE: To have SLURM always report on the selected CPU binding for all
 commands executed in a shell, you can enable verbose mode by setting
 the SLURM_CPU_BIND environment variable value to "verbose".
 
-Note that the SLURM_CPU_BIND environment variable will propagate into the
-tasks' environment in order to perform binding in batch submissions.
-If you do not wish to propagate \-\-cpu_bind to successive srun commands,
-simply clear the variable in the task's script before executing srun:
-
-.nf
-        unsetenv SLURM_CPU_BIND
-.fi
-
-In addition, to SLURM_CPU_BIND, the following informational environment
-variables are also set when SLURM_CPU_BIND is in use:
+The following informational environment variables are set when \fB\-\-cpu_bind\fR
+is in use:
 .nf
         SLURM_CPU_BIND_VERBOSE
         SLURM_CPU_BIND_TYPE
@@ -145,7 +136,7 @@ variables are also set when SLURM_CPU_BIND is in use:
 See the \fBENVIRONMENT VARIABLE\fR section for a more detailed description 
 of the individual SLURM_CPU_BIND* variables.
 
-When using \-\-cpus\-per\-task to run multithreaded tasks, be aware that
+When using \fB\-\-cpus\-per\-task\fR to run multithreaded tasks, be aware that
 CPU binding is inherited from the parent of the process.  This means that
 the multithreaded task should either specify or clear the CPU binding
 itself to avoid having all threads of the multithreaded task use the same
@@ -458,17 +449,8 @@ NOTE: To have SLURM always report on the selected memory binding for
 all commands executed in a shell, you can enable verbose mode by 
 setting the SLURM_MEM_BIND environment variable value to "verbose".
 
-Note that the SLURM_MEM_BIND environment variable will propagate into the
-tasks' environment in order to perform binding in batch submissions.
-If you do not wish to propagate \-\-mem_bind to successive srun commands,
-simply clear the variable in the task's script before executing srun:
-
-.nf
-        unsetenv SLURM_MEM_BIND
-.fi
-
-In addition, to SLURM_MEM_BIND, the following informational environment
-variables are also set when SLURM_MEM_BIND is in use:
+The following informational environment variables are set when \fB\-\-mem_bind\
+is in use:
 
 .nf
         SLURM_MEM_BIND_VERBOSE

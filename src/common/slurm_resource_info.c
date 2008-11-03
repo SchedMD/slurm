@@ -316,28 +316,29 @@ void slurm_sprint_cpu_bind_type(char *str, cpu_bind_type_t cpu_bind_type)
 
 	str[0] = '\0';
 
-	if (cpu_bind_type & CPU_BIND_CPUSETS)
-		strcat(str, "cpusets");
-	else
-		strcat(str, "sched");
+	if (cpu_bind_type & CPU_BIND_VERBOSE)
+		strcat(str, "verbose,");
 
 	if (cpu_bind_type & CPU_BIND_TO_THREADS)
-		strcat(str, ",threads");
+		strcat(str, "threads,");
 	if (cpu_bind_type & CPU_BIND_TO_CORES)
-		strcat(str, ",cores");
+		strcat(str, "cores,");
 	if (cpu_bind_type & CPU_BIND_TO_SOCKETS)
-		strcat(str, ",sockets");
+		strcat(str, "sockets,");
 	if (cpu_bind_type & CPU_BIND_NONE)
-		strcat(str, ",none");
+		strcat(str, "none,");
 	if (cpu_bind_type & CPU_BIND_RANK)
-		strcat(str, ",rank");
+		strcat(str, "rank,");
 	if (cpu_bind_type & CPU_BIND_MAP)
-		strcat(str, ",mapcpu");
+		strcat(str, "map_cpu,");
 	if (cpu_bind_type & CPU_BIND_MASK)
-		strcat(str, ",maskcpu");
+		strcat(str, "mask_cpu,");
 
-	if (cpu_bind_type & CPU_BIND_VERBOSE)
-		strcat(str, ",verbose");
+	if (*str) {
+		str[strlen(str)-1] = '\0';	/* remove trailing ',' */
+	} else {
+	    	strcat(str, "(null type)");	/* no bits set */
+	}
 }
 
 /*
@@ -356,6 +357,7 @@ void slurm_sprint_mem_bind_type(char *str, mem_bind_type_t mem_bind_type)
 
 	if (mem_bind_type & MEM_BIND_VERBOSE)
 		strcat(str, "verbose,");
+
 	if (mem_bind_type & MEM_BIND_NONE)
 		strcat(str, "none,");
 	if (mem_bind_type & MEM_BIND_RANK)
@@ -363,9 +365,9 @@ void slurm_sprint_mem_bind_type(char *str, mem_bind_type_t mem_bind_type)
 	if (mem_bind_type & MEM_BIND_LOCAL)
 		strcat(str, "local,");
 	if (mem_bind_type & MEM_BIND_MAP)
-		strcat(str, "mapmem,");
+		strcat(str, "map_mem,");
 	if (mem_bind_type & MEM_BIND_MASK)
-		strcat(str, "maskmem,");
+		strcat(str, "mask_mem,");
 
 	if (*str) {
 		str[strlen(str)-1] = '\0';	/* remove trailing ',' */
