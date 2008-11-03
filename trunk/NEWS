@@ -18,7 +18,7 @@ documents those changes that are of interest to users and admins.
     within the job step credential.
  -- Add cpu_bind, cpu_bind_type, mem_bind and mem_bind_type to job allocation
     request and job_details structure in slurmctld. Add support to --cpu_bind
-    and --mem_bind options from sbatch command.
+    and --mem_bind options from salloc and sbatch commands.
 
 * Changes in SLURM 1.4.0-pre3
 =============================

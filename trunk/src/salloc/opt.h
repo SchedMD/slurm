@@ -72,6 +72,9 @@ typedef struct salloc_options {
 	int ntasks_per_socket; /* --ntasks-per-socket=n     */
 	int ntasks_per_core;   /* --ntasks-per-core=n	    */
 	cpu_bind_type_t cpu_bind_type; /* --cpu_bind=           */
+	char *cpu_bind;		/* binding map for map/mask_cpu */
+	mem_bind_type_t mem_bind_type; /* --mem_bind=		*/
+	char *mem_bind;		/* binding map for map/mask_mem	*/
 	bool extra_set;		/* true if extra node info explicitly set */
 	int  time_limit;	/* --time,   -t	(int minutes)	*/
 	char *time_limit_str;	/* --time,   -t (string)	*/

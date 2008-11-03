@@ -64,6 +64,7 @@
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h" /* contains getnodename() */
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_resource_info.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
@@ -77,20 +78,24 @@
 #define OPT_INT         0x01
 #define OPT_STRING      0x02
 #define OPT_DEBUG       0x03
-#define OPT_NODES       0x05
-#define OPT_BOOL        0x06
-#define OPT_CORE        0x07
-#define OPT_CONN_TYPE	0x08
-#define OPT_NO_ROTATE	0x0a
-#define OPT_GEOMETRY	0x0b
-#define OPT_BELL        0x0f
-#define OPT_NO_BELL     0x10
-#define OPT_JOBID       0x11
-#define OPT_EXCLUSIVE   0x12
-#define OPT_OVERCOMMIT  0x13
-#define OPT_ACCTG_FREQ  0x14
+#define OPT_NODES       0x04
+#define OPT_BOOL        0x05
+#define OPT_CORE        0x06
+#define OPT_CONN_TYPE	0x07
+#define OPT_NO_ROTATE	0x08
+#define OPT_GEOMETRY	0x09
+#define OPT_BELL        0x0a
+#define OPT_NO_BELL     0x0b
+#define OPT_JOBID       0x0c
+#define OPT_EXCLUSIVE   0x0d
+#define OPT_OVERCOMMIT  0x0e
+#define OPT_ACCTG_FREQ  0x0f
+#define OPT_CPU_BIND    0x10
+#define OPT_MEM_BIND    0x11
 
 /* generic getopt_long flags, integers and *not* valid characters */
+#define LONG_OPT_CPU_BIND    0x101
+#define LONG_OPT_MEM_BIND    0x102
 #define LONG_OPT_JOBID       0x105
 #define LONG_OPT_TMP         0x106
 #define LONG_OPT_MEM         0x107
@@ -236,7 +241,10 @@ static void _opt_default()
 	opt.ntasks_per_node      = NO_VAL; /* ntask max limits */
 	opt.ntasks_per_socket    = NO_VAL;
 	opt.ntasks_per_core      = NO_VAL;
-	opt.cpu_bind_type = 0;		/* local dummy variable for now */
+	opt.cpu_bind_type = 0;
+	opt.cpu_bind = NULL;
+	opt.mem_bind_type = 0;
+	opt.mem_bind = NULL;
 	opt.time_limit = NO_VAL;
 	opt.time_limit_str = NULL;
 	opt.partition = NULL;
@@ -313,21 +321,23 @@ struct env_vars {
 
 env_vars_t env_vars[] = {
   {"SALLOC_ACCOUNT",       OPT_STRING,     &opt.account,       NULL           },
+  {"SALLOC_ACCTG_FREQ",    OPT_INT,        &opt.acctg_freq,    NULL           },
+  {"SALLOC_BELL",          OPT_BELL,       NULL,               NULL           },
   {"SALLOC_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL           },
+  {"SALLOC_CPU_BIND",      OPT_CPU_BIND,   NULL,               NULL           },
   {"SALLOC_DEBUG",         OPT_DEBUG,      NULL,               NULL           },
+  {"SALLOC_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL           },
   {"SALLOC_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL           },
   {"SALLOC_IMMEDIATE",     OPT_BOOL,       &opt.immediate,     NULL           },
   {"SALLOC_JOBID",         OPT_JOBID,      NULL,               NULL           },
+  {"SALLOC_MEM_BIND",      OPT_MEM_BIND,   NULL,               NULL           },
+  {"SALLOC_NETWORK",       OPT_STRING    , &opt.network,       NULL           },
+  {"SALLOC_NO_BELL",       OPT_NO_BELL,    NULL,               NULL           },
   {"SALLOC_NO_ROTATE",     OPT_NO_ROTATE,  NULL,               NULL           },
+  {"SALLOC_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL           },
   {"SALLOC_PARTITION",     OPT_STRING,     &opt.partition,     NULL           },
   {"SALLOC_TIMELIMIT",     OPT_STRING,     &opt.time_limit_str,NULL           },
   {"SALLOC_WAIT",          OPT_INT,        &opt.max_wait,      NULL           },
-  {"SALLOC_BELL",          OPT_BELL,       NULL,               NULL           },
-  {"SALLOC_NO_BELL",       OPT_NO_BELL,    NULL,               NULL           },
-  {"SALLOC_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL           },
-  {"SALLOC_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL           },
-  {"SALLOC_ACCTG_FREQ",    OPT_INT,        &opt.acctg_freq,    NULL           },
-  {"SALLOC_NETWORK",       OPT_STRING    , &opt.network,       NULL           },
   {NULL, 0, NULL, NULL}
 };
 
@@ -439,6 +449,16 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_OVERCOMMIT:
 		opt.overcommit = true;
 		break;
+	case OPT_CPU_BIND:
+		if (slurm_verify_cpu_bind(val, &opt.cpu_bind,
+					  &opt.cpu_bind_type))
+			exit(1);
+		break;
+	case OPT_MEM_BIND:
+		if (slurm_verify_mem_bind(val, &opt.mem_bind,
+					  &opt.mem_bind_type))
+			exit(1);
+		break;
 	default:
 		/* do nothing */
 		break;
@@ -542,6 +562,8 @@ void set_options(const int argc, char **argv)
 		{"no-shell",      no_argument,       0, LONG_OPT_NOSHELL},
 		{"get-user-env",  optional_argument, 0, LONG_OPT_GET_USER_ENV},
 		{"network",       required_argument, 0, LONG_OPT_NETWORK},
+		{"cpu_bind",      required_argument, 0, LONG_OPT_CPU_BIND},
+		{"mem_bind",      required_argument, 0, LONG_OPT_MEM_BIND},
 		{NULL,            0,                 0, 0}
 	};
 	char *opt_string = "+a:B:c:C:d:D:F:g:hHIJ:kK:L:m:n:N:Op:P:qR:st:uU:vVw:W:x:";
@@ -918,6 +940,16 @@ void set_options(const int argc, char **argv)
 			xfree(opt.network);
 			opt.network = xstrdup(optarg);
 			break;
+		case LONG_OPT_CPU_BIND:
+			if (slurm_verify_cpu_bind(optarg, &opt.cpu_bind,
+						  &opt.cpu_bind_type))
+				exit(1);
+			break;
+		case LONG_OPT_MEM_BIND:
+			if (slurm_verify_mem_bind(optarg, &opt.mem_bind,
+						  &opt.mem_bind_type))
+				exit(1);
+			break;
 		default:
 			fatal("Unrecognized command line parameter %c",
 			      opt_char);
@@ -1180,6 +1212,30 @@ static bool _opt_verify(void)
 		opt.network = "us,sn_all,bulk_xfer";
 #endif
 
+	if (slurm_verify_cpu_bind(NULL, &opt.cpu_bind,
+				  &opt.cpu_bind_type))
+		exit(1);
+	if (opt.cpu_bind_type && (getenv("SLURM_CPU_BIND") == NULL)) {
+		char tmp[64];
+		slurm_sprint_cpu_bind_type(tmp, opt.cpu_bind_type);
+		if (opt.cpu_bind) {
+			setenvf(NULL, "SLURM_CPU_BIND", "%s:%s", 
+				tmp, opt.cpu_bind);
+		} else {
+			setenvf(NULL, "SLURM_CPU_BIND", "%s", tmp);
+		}
+	}
+	if (opt.mem_bind_type && (getenv("SLURM_MEM_BIND") == NULL)) {
+		char tmp[64];
+		slurm_sprint_mem_bind_type(tmp, opt.mem_bind_type);
+		if (opt.mem_bind) {
+			setenvf(NULL, "SLURM_MEM_BIND", "%s:%s", 
+				tmp, opt.mem_bind);
+		} else {
+			setenvf(NULL, "SLURM_MEM_BIND", "%s", tmp);
+		}
+	}
+
 	return verified;
 }
 
@@ -1361,6 +1417,10 @@ static void _opt_list()
 	info("ntasks-per-socket : %d", opt.ntasks_per_socket);
 	info("ntasks-per-core   : %d", opt.ntasks_per_core);
 	info("plane_size        : %u", opt.plane_size);
+	info("cpu_bind          : %s", 
+	     opt.cpu_bind == NULL ? "default" : opt.cpu_bind);
+	info("mem_bind          : %s",
+	     opt.mem_bind == NULL ? "default" : opt.mem_bind);
 	str = print_commandline(command_argc, command_argv);
 	info("user command   : `%s'", str);
 	xfree(str);
@@ -1387,6 +1447,7 @@ static void _usage(void)
 "              [--bell] [--no-bell] [--kill-command[=signal]]\n"
 "              [--nodefile=file] [--nodelist=hosts] [--exclude=hosts]\n"
 "              [--network=type] [--mem-per-cpu=MB]\n"
+"              [--cpu_bind=...] [--mem_bind=...]\n"
 "              [executable [args...]]\n");
 }
 
@@ -1468,7 +1529,11 @@ static void _help(void)
 	    && strcasecmp(conf->task_plugin, "task/affinity") == 0) {
 		printf(
 "      --hint=                 Bind tasks according to application hints\n"
-"                              (see \"--hint=help\" for options)\n");
+"                              (see \"--hint=help\" for options)\n"
+"      --cpu_bind=             Bind tasks to CPUs\n"
+"                              (see \"--cpu_bind=help\" for options)\n"
+"      --mem_bind=             Bind memory to locality domains (ldom)\n"
+"                              (see \"--mem_bind=help\" for options)\n");
 	}
 	slurm_conf_unlock();
 
