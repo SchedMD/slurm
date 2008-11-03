@@ -3730,24 +3730,23 @@ void reset_job_bitmaps(void)
 		FREE_NULL_BITMAP(job_ptr->node_bitmap);
 		if ((job_ptr->nodes_completing) &&
 		     (node_name2bitmap(job_ptr->nodes_completing,
-				     false,  &job_ptr->node_bitmap))) {
+				       false,  &job_ptr->node_bitmap))) {
 			error("Invalid nodes (%s) for job_id %u",
 			      job_ptr->nodes_completing,
 			      job_ptr->job_id);
 			job_fail = true;
 		} else if ((job_ptr->node_bitmap == NULL)  && job_ptr->nodes &&
 			   (node_name2bitmap(job_ptr->nodes, false,
-						 &job_ptr->node_bitmap))) {
+					     &job_ptr->node_bitmap))) {
 			error("Invalid nodes (%s) for job_id %u", 
 		    	      job_ptr->nodes, job_ptr->job_id);
 			job_fail = true;
 		}
+		_reset_step_bitmaps(job_ptr);
 		build_node_details(job_ptr);	/* set node_addr */
 
 		if (_reset_detail_bitmaps(job_ptr))
 			job_fail = true;
-
-		_reset_step_bitmaps(job_ptr);
 
 		if ((job_ptr->kill_on_step_done)
 		    &&  (list_count(job_ptr->step_list) <= 1)) {
@@ -3841,8 +3840,12 @@ static void _reset_step_bitmaps(struct job_record *job_ptr)
 			      job_ptr->job_id, step_ptr->step_id);
 			delete_step_record (job_ptr, step_ptr->step_id);
 		}
-		if (step_ptr->step_node_bitmap)
-			step_alloc_lps(step_ptr);
+		if ((step_ptr->step_node_bitmap == NULL) &&
+		    (step_ptr->batch_step == 0)) {
+			error("Missing node_list for step_id %u.%u", 
+			      job_ptr->job_id, step_ptr->step_id);
+			delete_step_record (job_ptr, step_ptr->step_id);
+		}
 	}
 
 	list_iterator_destroy (step_iterator);
@@ -6004,6 +6007,7 @@ extern int job_cancel_by_assoc_id(uint32_t assoc_id)
 		if ((job_ptr->assoc_id != assoc_id) || 
 		    IS_JOB_FINISHED(job_ptr))
 			continue;
+		job_ptr->assoc_ptr = NULL;
 		info("Association deleted, cancelling job %u", 
 		     job_ptr->job_id);
 		job_signal(job_ptr->job_id, SIGKILL, 0, 0);

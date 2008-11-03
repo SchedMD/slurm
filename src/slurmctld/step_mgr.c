@@ -872,6 +872,9 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 	xassert(select_ptr->cpus);
 	xassert(select_ptr->cpus_used);
 
+	if (step_ptr->step_layout == NULL)	/* batch step */
+		return;
+
 	i_first = bit_ffs(job_ptr->node_bitmap);
 	i_last  = bit_fls(job_ptr->node_bitmap);
 	if (i_first == -1)	/* empty bitmap */

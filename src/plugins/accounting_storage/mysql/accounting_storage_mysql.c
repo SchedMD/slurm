@@ -600,7 +600,36 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 	if(!assoc_cond)
 		return 0;
 
-	if(assoc_cond->with_sub_accts) {
+	/* we need to check this first so we can update the
+	   with_sub_accts if needed since this the qos_list is a
+	   parent thing 
+	*/
+	if(assoc_cond->qos_list && list_count(assoc_cond->qos_list)) {
+		/* we have to do the same thing as with_sub_accts does
+		   first since we are looking for something that is
+		   really most likely a parent thing */
+		assoc_cond->with_sub_accts = 1;
+		prefix = "t2";
+		xstrfmtcat(*extra, ", %s as t2 where "
+			   "(t1.lft between t2.lft and t2.rgt) && (",
+			   assoc_table);
+		set = 0;
+		itr = list_iterator_create(assoc_cond->qos_list);
+		while((object = list_next(itr))) {
+			if(set)
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra,
+				   "(%s.qos like '%%,%s' "
+				   "|| %s.qos like '%%,%s,%%' "
+				   "|| %s.delta_qos like '%%,+%s' "
+				   "|| %s.delta_qos like '%%,+%s,%%')",
+				   prefix, object, prefix, object,
+				   prefix, object, prefix, object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ") &&");
+	} else if(assoc_cond->with_sub_accts) {
 		prefix = "t2";
 		xstrfmtcat(*extra, ", %s as t2 where "
 			   "(t1.lft between t2.lft and t2.rgt) &&",
@@ -895,26 +924,6 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		xstrcat(*extra, ")");
 	}
 	
-	if(assoc_cond->qos_list && list_count(assoc_cond->qos_list)) {
-		set = 0;
-		xstrcat(*extra, " && (");
-		itr = list_iterator_create(assoc_cond->qos_list);
-		while((object = list_next(itr))) {
-			if(set) 
-				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, 
-				   "(%s.qos like '%%,%s' "
-				   "|| %s.qos like '%%,%s,%%' "
-				   "|| %s.delta_qos like '%%,+%s' "
-				   "|| %s.delta_qos like '%%,+%s,%%')",
-				   prefix, object, prefix, object,
-				   prefix, object, prefix, object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(*extra, ")");
-	}
-	
 	if(assoc_cond->parent_acct_list
 	   && list_count(assoc_cond->parent_acct_list)) {
 		set = 0;
@@ -932,6 +941,41 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 	}
 	return set;
 }
+
+static uint32_t _get_parent_id(
+       mysql_conn_t *mysql_conn, char *parent, char *cluster)
+{
+       uint32_t parent_id = 0;
+       MYSQL_RES *result = NULL;
+       MYSQL_ROW row;
+       char *query = NULL;
+       
+       xassert(parent); 
+       xassert(cluster);
+
+       query = xstrdup_printf("select id from %s where user='' "
+                              "and deleted = 0 and acct=\"%s\" "
+                              "and cluster=\"%s\";", 
+                              assoc_table, parent, cluster);
+       debug4("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+       
+       if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 1))) {
+               xfree(query);
+               return 0;
+       }
+       xfree(query);
+
+       if((row = mysql_fetch_row(result))) {
+               if(row[0])
+                       parent_id = atoi(row[0]);       
+       } else 
+               error("no association for parent %s on cluster %s",
+                     parent, cluster);
+       mysql_free_result(result);
+
+       return parent_id;
+}
+
 /* This function will take the object given and free it later so it
  * needed to be removed from a list if in one before 
  */
@@ -2590,9 +2634,15 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 		}
 		xfree(query);
 		while((row = mysql_fetch_row(result))) {
+			msg.rpc_version = atoi(row[3]);
+			if(msg.rpc_version > SLURMDBD_VERSION) {
+				error("%s at %s(%s) ver %s > %u, can't update",
+				      row[2], row[0], row[1], row[3],
+				      SLURMDBD_VERSION);
+				continue;
+			}
 			debug("sending updates to %s at %s(%s) ver %s",
 			      row[2], row[0], row[1], row[3]);
-			msg.rpc_version = atoi(row[3]);
 			slurm_msg_t_init(&req);
 			slurm_set_addr_char(&req.address, atoi(row[1]), row[0]);
 			req.msg_type = ACCOUNTING_UPDATE_MSG;
@@ -3167,12 +3217,13 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 	char *user_name = NULL;
 	char *tmp_char = NULL;
 	int assoc_id = 0;
-	int incr = 0, my_left = 0;
+	int incr = 0, my_left = 0, my_par_id = 0;
 	int affect_rows = 0;
 	int moved_parent = 0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	char *old_parent = NULL, *old_cluster = NULL;
+	char *last_parent = NULL, *last_cluster = NULL;
 	char *massoc_req_inx[] = {
 		"id",
 		"parent_acct",
@@ -3363,8 +3414,8 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 				//info("left is %d", my_left);
 				xfree(old_parent);
 				xfree(old_cluster);
-				old_parent = xstrdup(parent);
-				old_cluster = xstrdup(object->cluster);
+				old_parent = parent;
+				old_cluster = object->cluster;
 				incr = 0;
 			}
 			incr += 2;
@@ -3461,6 +3512,26 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 
 		object->id = assoc_id;
 		
+
+               /* get the parent id only if we haven't moved the
+                * parent since we get the total list if that has
+                * happened */
+               if(!moved_parent &&
+                  (!last_parent || !last_cluster
+                   || strcmp(parent, last_parent)
+                   || strcmp(object->cluster, last_cluster))) {
+                       uint32_t tmp32 = 0;
+                       if((tmp32 = _get_parent_id(mysql_conn, 
+                                                  parent,
+                                                  object->cluster))) {
+                               my_par_id = tmp32;
+
+                               last_parent = parent;
+                               last_cluster = object->cluster;
+                       }
+               }
+               object->parent_id = my_par_id;
+
 		if(_addto_update_list(mysql_conn->update_list, ACCT_ADD_ASSOC,
 				      object) == SLURM_SUCCESS) {
 			list_remove(itr);
@@ -3515,9 +3586,6 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 	}
 
 end_it:
-
-	xfree(old_parent);
-	xfree(old_cluster);
 
 	if(rc != SLURM_ERROR) {
 		if(txn_query) {
@@ -6553,6 +6621,7 @@ extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 					    acct_association_cond_t *assoc_cond)
 {
 #ifdef HAVE_MYSQL
+	//DEF_TIMERS;
 	char *query = NULL;	
 	char *extra = NULL;	
 	char *tmp = NULL;	
@@ -6569,14 +6638,12 @@ extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 	uint32_t parent_mnpj = INFINITE;
 	uint32_t parent_mwpj = INFINITE;
 	uint64_t parent_mcmpj = INFINITE;
+	char *parent_acct = NULL;
 	char *parent_qos = NULL;
 	char *parent_delta_qos = NULL;
 	char *last_acct = NULL;
-	char *last_acct_parent = NULL;
 	char *last_cluster = NULL;
-	char *last_cluster2 = NULL;
-	uint32_t user_parent_id = 0;
-	uint32_t acct_parent_id = 0;
+	uint32_t parent_id = 0;
 	uint16_t private_data = 0;
 	acct_user_rec_t user;
 
@@ -6692,6 +6759,7 @@ extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 	with_usage = assoc_cond->with_usage;
 	without_parent_limits = assoc_cond->without_parent_limits;
 	without_parent_info = assoc_cond->without_parent_info;
+
 empty:
 	xfree(tmp);
 	xstrfmtcat(tmp, "t1.%s", assoc_req_inx[i]);
@@ -6741,6 +6809,7 @@ empty:
 		mysql_free_result(result);
 	}
 	
+	//START_TIMER;
 	query = xstrdup_printf("select distinct %s from %s as t1%s "
 			       "order by lft;", 
 			       tmp, assoc_table, extra);
@@ -6761,7 +6830,7 @@ empty:
 			xmalloc(sizeof(acct_association_rec_t));
 		MYSQL_RES *result2 = NULL;
 		MYSQL_ROW row2;
-		
+
 		list_append(assoc_list, assoc);
 		
 		assoc->id = atoi(row[ASSOC_REQ_ID]);
@@ -6808,41 +6877,11 @@ empty:
 						 assoc_cond->usage_start,
 						 assoc_cond->usage_end);
 		}
-
+		parent_acct = row[ASSOC_REQ_ACCT];
 		if(!without_parent_info 
 		   && row[ASSOC_REQ_PARENT][0]) {
-/* 			info("got %s?=%s and %s?=%s", */
-/* 			     row[ASSOC_REQ_PARENT], last_acct_parent, */
-/* 			     row[ASSOC_REQ_CLUSTER], last_cluster); */
-			if(!last_acct_parent || !last_cluster
-			   || strcmp(row[ASSOC_REQ_PARENT], last_acct_parent)
-			   || strcmp(row[ASSOC_REQ_CLUSTER], last_cluster)) {
-				query = xstrdup_printf(
-					"select id from %s where user='' "
-					"and deleted = 0 and acct=\"%s\" "
-					"and cluster=\"%s\";", 
-					assoc_table, row[ASSOC_REQ_PARENT],
-					row[ASSOC_REQ_CLUSTER]);
-				debug4("%d(%d) query\n%s",
-				       mysql_conn->conn, __LINE__, query);
-
-				if(!(result2 = mysql_db_query_ret(
-					     mysql_conn->db_conn,
-					     query, 1))) {
-					xfree(query);
-					break;
-				}
-				xfree(query);
-				if((row2 = mysql_fetch_row(result2))) {
-					last_acct_parent = 
-						row[ASSOC_REQ_PARENT];
-					last_cluster = row[ASSOC_REQ_CLUSTER];
-					acct_parent_id = atoi(row2[0]);	
-				}
-				mysql_free_result(result2);
-			}
 			assoc->parent_acct = xstrdup(row[ASSOC_REQ_PARENT]);
-			assoc->parent_id = acct_parent_id;
+			parent_acct = row[ASSOC_REQ_PARENT];
 		} 
 
 		if(row[ASSOC_REQ_PART][0])
@@ -6852,15 +6891,16 @@ empty:
 		else
 			assoc->fairshare = 1;
 
-		if((!last_acct || !last_cluster2 
-		    || strcmp(row[ASSOC_REQ_ACCT], last_acct)
-		    || strcmp(row[ASSOC_REQ_CLUSTER], last_cluster2))) {
+		if(!without_parent_info && 
+		   (!last_acct || !last_cluster 
+		    || strcmp(parent_acct, last_acct)
+		    || strcmp(row[ASSOC_REQ_CLUSTER], last_cluster))) {
 			query = xstrdup_printf(
 				"call get_parent_limits(\"%s\", "
 				"\"%s\", \"%s\", %u);"
 				"select @par_id, @mj, @msj, @mcpj, "
 				"@mnpj, @mwpj, @mcmpj, @qos, @delta_qos;", 
-				assoc_table, row[ASSOC_REQ_ACCT],
+				assoc_table, parent_acct,
 				row[ASSOC_REQ_CLUSTER],
 				without_parent_limits);
 			debug4("%d(%d) query\n%s",
@@ -6873,11 +6913,11 @@ empty:
 			xfree(query);
 			
 			if(!(row2 = mysql_fetch_row(result2))) {
-				user_parent_id = 0;
+				parent_id = 0;
 				goto no_parent_limits;
 			}
 
-			user_parent_id = atoi(row2[ASSOC2_REQ_PARENT_ID]);
+			parent_id = atoi(row2[ASSOC2_REQ_PARENT_ID]);
 			if(!without_parent_limits) {
 				if(row2[ASSOC2_REQ_MCMPJ])
 					parent_mcmpj =
@@ -6933,8 +6973,8 @@ empty:
 				else
 					parent_msj = INFINITE;
 			}
-			last_acct = row[ASSOC_REQ_ACCT];
-			last_cluster2 = row[ASSOC_REQ_CLUSTER];
+			last_acct = parent_acct;
+			last_cluster = row[ASSOC_REQ_CLUSTER];
 		no_parent_limits:
 			mysql_free_result(result2);
 		}
@@ -6979,23 +7019,29 @@ empty:
 		 * and a delta qos so if you have a qos don't worry
 		 * about the delta.
 		 */
+ 
 		if(row[ASSOC_REQ_QOS][0]) 
 			slurm_addto_char_list(assoc->qos_list,
 					      row[ASSOC_REQ_QOS]+1);
 		else {
-			if(parent_qos) 
-				slurm_addto_char_list(assoc->qos_list,
-						      parent_qos+1);
 			/* if qos is set on the association itself do
 			   not worry about the deltas
 			*/
+
+			/* add the parents first */
+			if(parent_qos) 
+				slurm_addto_char_list(assoc->qos_list,
+						      parent_qos+1);
+
+			/* then add the parents delta */
+			if(parent_delta_qos)
+				slurm_addto_char_list(delta_qos_list,
+						      parent_delta_qos+1);
+			/* now add the associations */
 			if(row[ASSOC_REQ_DELTA_QOS][0]) 
 				slurm_addto_char_list(
 					delta_qos_list,
 					row[ASSOC_REQ_DELTA_QOS]+1);
-			if(parent_delta_qos)
-				slurm_addto_char_list(delta_qos_list,
-						      parent_delta_qos+1);
 		}
 
 		/* Sometimes we want to see exactly what is here in
@@ -7004,6 +7050,7 @@ empty:
 		*/
 		if(with_raw_qos && list_count(delta_qos_list)) {
 			list_transfer(assoc->qos_list, delta_qos_list);
+			list_flush(delta_qos_list);
 		} else if(list_count(delta_qos_list)) {
 			ListIterator curr_qos_itr = 
 				list_iterator_create(assoc->qos_list);
@@ -7031,21 +7078,20 @@ empty:
 							break;
 						}
 					}
-					list_iterator_reset(curr_qos_itr);
-					if(!curr_qos)
+					if(!curr_qos) {
 						list_append(assoc->qos_list,
 							    xstrdup(new_qos+1));
+					}
+					list_iterator_reset(curr_qos_itr);
 				}
 			}
-			
+
 			list_iterator_destroy(new_qos_itr);
 			list_iterator_destroy(curr_qos_itr);
 			list_flush(delta_qos_list);
 		}
 
-		/* don't do this unless this is an user association */
-		if(assoc->user && assoc->parent_id != acct_parent_id) 
-			assoc->parent_id = user_parent_id;
+		assoc->parent_id = parent_id;
 
 		//info("parent id is %d", assoc->parent_id);
 		//log_assoc_rec(assoc);
@@ -7056,7 +7102,7 @@ empty:
 
 	xfree(parent_delta_qos);
 	xfree(parent_qos);
-
+	//END_TIMER2("get_associations");
 	return assoc_list;
 #else
 	return NULL;
@@ -8205,10 +8251,57 @@ extern int clusteracct_storage_p_node_up(mysql_conn_t *mysql_conn,
 #endif
 }
 
-extern int clusteracct_storage_p_register_ctld(char *cluster,
+/* This is only called when not running from the slurmdbd so we can
+ * assumes some things like rpc_version.
+ */
+extern int clusteracct_storage_p_register_ctld(mysql_conn_t *mysql_conn, 
+					       char *cluster,
 					       uint16_t port)
 {
-	return SLURM_SUCCESS;
+#ifdef HAVE_MYSQL
+	char *query = NULL;
+	char *address = NULL;
+	char hostname[255];
+	time_t now = time(NULL);
+
+	if(slurmdbd_conf) 
+		fatal("clusteracct_storage_g_register_ctld "
+		      "should never be called from the slurmdbd.");
+	
+	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
+		return SLURM_ERROR;
+	
+	info("Registering slurmctld for cluster %s at port %u in database.",
+	     cluster, port);
+	gethostname(hostname, sizeof(hostname));
+
+	/* check if we are running on the backup controller */
+	if(slurmctld_conf.backup_controller 
+	   && !strcmp(slurmctld_conf.backup_controller, hostname)) {
+		address = slurmctld_conf.backup_addr;
+	} else
+		address = slurmctld_conf.control_addr;
+
+	query = xstrdup_printf(
+		"update %s set deleted=0, mod_time=%d, "
+		"control_host='%s', control_port=%u, rpc_version=%d "
+		"where name='%s';",
+		cluster_table, now, address, port, SLURMDBD_VERSION, cluster);
+	xstrfmtcat(query, 	
+		   "insert into %s "
+		   "(timestamp, action, name, actor, info) "
+		   "values (%d, %d, \"%s\", \"%s\", \"%s %u\");",
+		   txn_table,
+		   now, DBD_MODIFY_CLUSTERS, cluster,
+		   slurmctld_conf.slurm_user_name, address, port);
+
+	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+	
+	return mysql_db_query(mysql_conn->db_conn, query);
+	
+#else
+	return SLURM_ERROR;
+#endif
 }
 
 extern int clusteracct_storage_p_cluster_procs(mysql_conn_t *mysql_conn, 

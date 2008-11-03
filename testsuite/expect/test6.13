@@ -155,6 +155,7 @@ if {[wait_for_file $file_out] == 0} {
 #
 exec rm -f $file_in $file_out
 make_bash_script $file_in "
+ echo BEGIN
  $bin_sleep 10
  $bin_sleep 10
  echo FINI
@@ -230,6 +231,7 @@ if {[wait_for_job $job_id DONE] != 0} {
 # Test output file
 #
 if {[wait_for_file $file_out] == 0} {
+	set matches 0
 	spawn cat $file_out
 	expect {
 		-re "FINI" {
@@ -237,9 +239,17 @@ if {[wait_for_file $file_out] == 0} {
 			set exit_code 1
 			exp_continue
 		}
+		-re "CANCELLED" {
+			set matches 1
+			exp_continue
+		}
 		eof {
 			wait
 		}
+	}
+	if {$matches != 1} {
+		send_user "\nFAILURE: Missing JOB CANCELLED error message\n"
+		set exit_code 1
 	}
 } else {
 	set exit_code 1

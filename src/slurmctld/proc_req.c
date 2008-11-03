@@ -1971,8 +1971,9 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 
 		if (job_ptr) {	/* Active job allocation */
 #ifdef HAVE_FRONT_END	/* Limited job step support */
-			/* Non-super users not permitted to run job steps on front-end.
-	 		 * A single slurmd can not handle a heavy load. */
+			/* Non-super users not permitted to run job steps on 
+			 * front-end. A single slurmd can not handle a heavy 
+			 * load. */
 			if (!validate_super_user(uid)) {
 				info("Attempt to execute batch job step by uid=%u",
 					(unsigned int) uid);

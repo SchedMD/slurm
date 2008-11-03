@@ -774,8 +774,8 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                                                                            \n\
        Association        - Account, Cluster, Fairshare, GrpCPUMins,       \n\
                             GrpCPUs, GrpJobs, GrpNodes, GrpSubmitJob,      \n\
-                            GrpWall, ID, LFT, MaxCPUSecs, MaxJobs,         \n\
-                            MaxNodes, MaxWall, QOS, ParentID,              \n\
+                            GrpWall, ID, LFT, MaxCPUs, MaxCPUMins,         \n\
+                            MaxJobs, MaxNodes, MaxWall, QOS, ParentID,     \n\
                             ParentName, Partition, RGT, User               \n\
                                                                            \n\
        Cluster            - Cluster, ControlHost, ControlPort, Fairshare   \n\

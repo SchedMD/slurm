@@ -425,6 +425,7 @@ int main(int argc, char *argv[])
 
 		info("Running as primary controller");
 		clusteracct_storage_g_register_ctld(
+			acct_db_conn,
 			slurmctld_cluster_name, 
 			slurmctld_conf.slurmctld_port);
 		
