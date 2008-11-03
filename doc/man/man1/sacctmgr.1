@@ -351,6 +351,7 @@ Add the specified <qos> value to the current \fIQosLevel\fP .
 Remove the specified <qos> value from the current \fIQosLevel\fP.
 .RE
 
+
 .TP
 \fBSPECIFICATIONS TO LIST/SHOW ASSOCIATIONS\fR
 
@@ -406,6 +407,7 @@ parent account name)
 display information without hierarchical parent limits. (i.e. will
 only display limits where they are set instead of propogating them
 from the parent)
+.RE
 
 
 .TP
@@ -547,6 +549,7 @@ Account name to add this user as a coordinator to.
 .TP
 \fINames\fP=<comma separated list of user names>
 Names of coordinators.
+.RE
 
 
 .TP
@@ -557,6 +560,31 @@ An arbitrary string describing an account.
 .TP
 \fINames\fP=<qos>
 Names of qos.
+.RE
+
+
+.TP
+\fBSPECIFICATIONS TO LIST/SHOW TRANSACTIONS\fR
+
+.TP
+\fIStartTime\fP=<Date and time where list should begin>
+
+.TP
+\fIEndTime\fP=<Date and time where list should end>
+
+.TP
+\fIAction\fP=<Specific action the list will display>
+
+.TP
+\fIActor\fP=<Specific name the list will display>
+
+.TP
+
+The list can return information with the following headings when using the format= option:
+
+Action,Actor,ID,Info,TimeStamp,Where
+
+.RE
 
 .TP
 \fBSPECIFICATIONS FOR USERS\fR
@@ -891,7 +919,8 @@ Comma separated list of Quality of Service names (Defined in sacctmgr).
 .br
 > sacctmgr list associations cluster=tux format=Account,Cluster,User,Fairshare tree withd
 .br
-> sacctmgr dump cluster=tux tux_data_file
+> sacctmgr list transactions StartTime=11/03-10:30:00 format=Timestamp,Action,Actor
+.br> sacctmgr dump cluster=tux tux_data_file
 .br
 > sacctmgr load tux_data_file
 .br
