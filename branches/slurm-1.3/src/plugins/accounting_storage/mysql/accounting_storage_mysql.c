@@ -600,7 +600,36 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 	if(!assoc_cond)
 		return 0;
 
-	if(assoc_cond->with_sub_accts) {
+	/* we need to check this first so we can update the
+	   with_sub_accts if needed since this the qos_list is a
+	   parent thing 
+	*/
+	if(assoc_cond->qos_list && list_count(assoc_cond->qos_list)) {
+		/* we have to do the same thing as with_sub_accts does
+		   first since we are looking for something that is
+		   really most likely a parent thing */
+		assoc_cond->with_sub_accts = 1;
+		prefix = "t2";
+		xstrfmtcat(*extra, ", %s as t2 where "
+			   "(t1.lft between t2.lft and t2.rgt) && (",
+			   assoc_table);
+		set = 0;
+		itr = list_iterator_create(assoc_cond->qos_list);
+		while((object = list_next(itr))) {
+			if(set)
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra,
+				   "(%s.qos like '%%,%s' "
+				   "|| %s.qos like '%%,%s,%%' "
+				   "|| %s.delta_qos like '%%,+%s' "
+				   "|| %s.delta_qos like '%%,+%s,%%')",
+				   prefix, object, prefix, object,
+				   prefix, object, prefix, object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ") &&");
+	} else if(assoc_cond->with_sub_accts) {
 		prefix = "t2";
 		xstrfmtcat(*extra, ", %s as t2 where "
 			   "(t1.lft between t2.lft and t2.rgt) &&",
@@ -889,26 +918,6 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 			if(set) 
 				xstrcat(*extra, " || ");
 			xstrfmtcat(*extra, "%s.id=%s", prefix, object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(*extra, ")");
-	}
-	
-	if(assoc_cond->qos_list && list_count(assoc_cond->qos_list)) {
-		set = 0;
-		xstrcat(*extra, " && (");
-		itr = list_iterator_create(assoc_cond->qos_list);
-		while((object = list_next(itr))) {
-			if(set) 
-				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, 
-				   "(%s.qos like '%%,%s' "
-				   "|| %s.qos like '%%,%s,%%' "
-				   "|| %s.delta_qos like '%%,+%s' "
-				   "|| %s.delta_qos like '%%,+%s,%%')",
-				   prefix, object, prefix, object,
-				   prefix, object, prefix, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -6751,6 +6760,7 @@ extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 	with_usage = assoc_cond->with_usage;
 	without_parent_limits = assoc_cond->without_parent_limits;
 	without_parent_info = assoc_cond->without_parent_info;
+
 empty:
 	xfree(tmp);
 	xstrfmtcat(tmp, "t1.%s", assoc_req_inx[i]);
@@ -7082,7 +7092,7 @@ empty:
 							    xstrdup(new_qos+1));
 				}
 			}
-			
+
 			list_iterator_destroy(new_qos_itr);
 			list_iterator_destroy(curr_qos_itr);
 			list_flush(delta_qos_list);
