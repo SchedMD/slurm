@@ -349,6 +349,15 @@ Add the specified <qos> value to the current \fIQosLevel\fP .
 .TP
 \fB\-=\fR
 Remove the specified <qos> value from the current \fIQosLevel\fP.
+
+.TP
+
+The list/show options include withcoor and withassoc and can return information with the following headings when using the format= option:
+
+Account,Cluster,Fairshare,GrpCPUMins,GrpCPUs,GrpJobs,GrpNodes,GrpSubmitJob,
+GrpWall,ID,MaxCPUs,MaxCPUMins,MaxJobs,MaxNodes,MaxWall,QOS,ParentID,
+ParentName,User,Coordinators Description
+
 .RE
 
 
@@ -372,6 +381,7 @@ List the associations of the user(s).
 List the associations of the partition(s).
 
 .TP
+
 The list can return information with the following headings when using the format= option:
 
 Account, Cluster, Fairshare, GrpCPUMins, GrpCPUs, GrpJobs, GrpNodes, 
@@ -538,6 +548,14 @@ Add the specified <qos> value to the current \fIQosLevel\fP .
 .TP
 \fB\-=\fR
 Remove the specified <qos> value from the current \fIQosLevel\fP.
+
+.TP
+
+The list/show options include withassoc and can return information with the following headings when using the format= option:
+
+Cluster,Fairshare,GrpCPUMins,GrpCPUs,GrpJobs,GrpNodes,GrpSubmitJob,
+GrpWall,MaxCPUs,MaxCPUMins,MaxJobs,MaxNodes,MaxWall,QOS,RPC
+
 .RE
 
 
@@ -580,9 +598,9 @@ Names of qos.
 
 .TP
 
-The list can return information with the following headings when using the format= option:
+The list/show can return information with the following headings when using the format= option:
 
-Action,Actor,ID,Info,TimeStamp,Where
+Action,Actor,ID,Info,TimeStamp,Where,User
 
 .RE
 
@@ -679,6 +697,16 @@ Add the specified <qos> value to the current \fIQosLevel\fP .
 .TP
 \fB\-=\fR
 Remove the specified <qos> value from the current \fIQosLevel\fP.
+
+
+.TP
+
+The list/show options include withcoor and withassoc and can return information with the following headings when using the format= option:
+
+Account,Cluster,Fairshare,GrpCPUMins,GrpCPUs,GrpJobs,GrpNodes,GrpSubmit,
+GrpWall,ID,MaxCPUs,MaxCPUMins,MaxJobs,MaxNodes,MaxWall,QOS,ParentID,
+Partition,User,defaultaccount Coordinator,defaultaccount
+
 .RE
 
 
