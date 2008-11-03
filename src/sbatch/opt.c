@@ -1935,8 +1935,8 @@ static bool _opt_verify(void)
 	setenv("SLURM_NETWORK", opt.network, 1);
 #endif
 
-	 if (slurm_verify_cpu_bind(NULL, &opt.cpu_bind,
-				   &opt.cpu_bind_type))
+	if (slurm_verify_cpu_bind(NULL, &opt.cpu_bind,
+				  &opt.cpu_bind_type))
 		exit(1);
 	if (opt.cpu_bind_type && (getenv("SLURM_CPU_BIND") == NULL)) {
 		char tmp[64];

@@ -342,9 +342,21 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->group_id = opt.gid;
 	if (opt.dependency)
 		desc->dependency = xstrdup(opt.dependency);
+
+	if (opt.cpu_bind)
+		desc->cpu_bind       = opt.cpu_bind;
+	if (opt.cpu_bind_type)
+		desc->cpu_bind_type  = opt.cpu_bind_type;
+	if (opt.mem_bind)
+		desc->mem_bind       = opt.mem_bind;
+	if (opt.mem_bind_type)
+		desc->mem_bind_type  = opt.mem_bind_type;
+	if (opt.plane_size != NO_VAL)
+		desc->plane_size     = opt.plane_size;
 	desc->task_dist  = opt.distribution;
 	if (opt.plane_size != NO_VAL)
 		desc->plane_size = opt.plane_size;
+
 	if (opt.licenses)
 		desc->licenses = xstrdup(opt.licenses);
 	desc->network = opt.network;
