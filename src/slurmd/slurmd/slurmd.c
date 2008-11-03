@@ -525,16 +525,11 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	return;
 }
 
-static inline int
+static inline void
 _free_and_set(char **confvar, char *newval)
 {
-	if (newval) {
-		if (*confvar)
-			xfree(*confvar);
-		*confvar = newval;
-		return 1;
-	} else
-		return 0;
+	xfree(*confvar);
+	*confvar = newval;
 }
 
 /* Replace first "%h" in path string with actual hostname.
