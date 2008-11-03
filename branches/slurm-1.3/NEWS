@@ -34,6 +34,8 @@ documents those changes that are of interest to users and admins.
     than propagating the Moab daemon's limits.
  -- Fix bug in slurmctld restart logic for recovery of batch jobs that are
     initiated as a job step rather than an independent job (used for LSF).
+ -- Fix bug that can cause slurmctld restart to fail, bug introduced in SLURM
+    version 1.3.9. From Eygene Ryabinkin, Kurchatov Institute, Russia.
 
 * Changes in SLURM 1.3.9
 ========================

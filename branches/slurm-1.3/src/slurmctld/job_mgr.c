@@ -3653,14 +3653,13 @@ void reset_job_bitmaps(void)
 		    	      job_ptr->nodes, job_ptr->job_id);
 			job_fail = true;
 		}
+		_reset_step_bitmaps(job_ptr);
 		build_node_details(job_ptr);	/* set: num_cpu_groups, 
 						 * cpu_count_reps, node_cnt, 
 						 * cpus_per_node, node_addr */
 
 		if (_reset_detail_bitmaps(job_ptr))
 			job_fail = true;
-
-		_reset_step_bitmaps(job_ptr);
 
 		if ((job_ptr->kill_on_step_done)
 		    &&  (list_count(job_ptr->step_list) <= 1)) {
@@ -3753,9 +3752,8 @@ static void _reset_step_bitmaps(struct job_record *job_ptr)
 			      job_ptr->job_id, step_ptr->step_id);
 			delete_step_record (job_ptr, step_ptr->step_id);
 		}
-		if (step_ptr->step_node_bitmap)
-			step_alloc_lps(step_ptr);
-		else if (step_ptr->batch_step == 0) {
+		if ((step_ptr->step_node_bitmap == NULL) &&
+		    (step_ptr->batch_step == 0)) {
 			error("Missing node_list for step_id %u.%u", 
 			      job_ptr->job_id, step_ptr->step_id);
 			delete_step_record (job_ptr, step_ptr->step_id);
