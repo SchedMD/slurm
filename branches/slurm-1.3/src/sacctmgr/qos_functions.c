@@ -451,7 +451,7 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 	_set_cond(&i, argc, argv, qos_cond, format_list);
 
 	if(exit_code) {
-		destroy_acct_txn_cond(qos_cond);
+		destroy_acct_qos_cond(qos_cond);
 		list_destroy(format_list);		
 		return SLURM_ERROR;
 	} else if(!list_count(format_list)) {
