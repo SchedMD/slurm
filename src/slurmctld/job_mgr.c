@@ -3641,14 +3641,14 @@ void reset_job_bitmaps(void)
 		FREE_NULL_BITMAP(job_ptr->node_bitmap);
 		if ((job_ptr->nodes_completing) &&
 		     (node_name2bitmap(job_ptr->nodes_completing,
-				     false,  &job_ptr->node_bitmap))) {
+				       false,  &job_ptr->node_bitmap))) {
 			error("Invalid nodes (%s) for job_id %u",
 			      job_ptr->nodes_completing,
 			      job_ptr->job_id);
 			job_fail = true;
 		} else if ((job_ptr->node_bitmap == NULL)  && job_ptr->nodes &&
 			   (node_name2bitmap(job_ptr->nodes, false,
-						 &job_ptr->node_bitmap))) {
+					     &job_ptr->node_bitmap))) {
 			error("Invalid nodes (%s) for job_id %u", 
 		    	      job_ptr->nodes, job_ptr->job_id);
 			job_fail = true;
