@@ -6621,6 +6621,7 @@ extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 					    acct_association_cond_t *assoc_cond)
 {
 #ifdef HAVE_MYSQL
+	//DEF_TIMERS;
 	char *query = NULL;	
 	char *extra = NULL;	
 	char *tmp = NULL;	
@@ -6637,14 +6638,12 @@ extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 	uint32_t parent_mnpj = INFINITE;
 	uint32_t parent_mwpj = INFINITE;
 	uint64_t parent_mcmpj = INFINITE;
+	char *parent_acct = NULL;
 	char *parent_qos = NULL;
 	char *parent_delta_qos = NULL;
 	char *last_acct = NULL;
-	char *last_acct_parent = NULL;
 	char *last_cluster = NULL;
-	char *last_cluster2 = NULL;
-	uint32_t user_parent_id = 0;
-	uint32_t acct_parent_id = 0;
+	uint32_t parent_id = 0;
 	uint16_t private_data = 0;
 	acct_user_rec_t user;
 
@@ -6810,6 +6809,7 @@ empty:
 		mysql_free_result(result);
 	}
 	
+	//START_TIMER;
 	query = xstrdup_printf("select distinct %s from %s as t1%s "
 			       "order by lft;", 
 			       tmp, assoc_table, extra);
@@ -6830,7 +6830,7 @@ empty:
 			xmalloc(sizeof(acct_association_rec_t));
 		MYSQL_RES *result2 = NULL;
 		MYSQL_ROW row2;
-		
+
 		list_append(assoc_list, assoc);
 		
 		assoc->id = atoi(row[ASSOC_REQ_ID]);
@@ -6877,27 +6877,11 @@ empty:
 						 assoc_cond->usage_start,
 						 assoc_cond->usage_end);
 		}
-
+		parent_acct = row[ASSOC_REQ_ACCT];
 		if(!without_parent_info 
 		   && row[ASSOC_REQ_PARENT][0]) {
-/* 			info("got %s?=%s and %s?=%s", */
-/* 			     row[ASSOC_REQ_PARENT], last_acct_parent, */
-/* 			     row[ASSOC_REQ_CLUSTER], last_cluster); */
-			if(!last_acct_parent || !last_cluster
-			   || strcmp(row[ASSOC_REQ_PARENT], last_acct_parent)
-			   || strcmp(row[ASSOC_REQ_CLUSTER], last_cluster)) {
-				if((set = _get_parent_id(
-					    mysql_conn, 
-					    row[ASSOC_REQ_PARENT],
-					    row[ASSOC_REQ_CLUSTER]))) {
-                                        last_acct_parent = 
-                                                row[ASSOC_REQ_PARENT];
-                                        last_cluster = row[ASSOC_REQ_CLUSTER];
-					acct_parent_id = set;   
-				}
-			}
 			assoc->parent_acct = xstrdup(row[ASSOC_REQ_PARENT]);
-			assoc->parent_id = acct_parent_id;
+			parent_acct = row[ASSOC_REQ_PARENT];
 		} 
 
 		if(row[ASSOC_REQ_PART][0])
@@ -6907,15 +6891,16 @@ empty:
 		else
 			assoc->fairshare = 1;
 
-		if((!last_acct || !last_cluster2 
-		    || strcmp(row[ASSOC_REQ_ACCT], last_acct)
-		    || strcmp(row[ASSOC_REQ_CLUSTER], last_cluster2))) {
+		if(!without_parent_info && 
+		   (!last_acct || !last_cluster 
+		    || strcmp(parent_acct, last_acct)
+		    || strcmp(row[ASSOC_REQ_CLUSTER], last_cluster))) {
 			query = xstrdup_printf(
 				"call get_parent_limits(\"%s\", "
 				"\"%s\", \"%s\", %u);"
 				"select @par_id, @mj, @msj, @mcpj, "
 				"@mnpj, @mwpj, @mcmpj, @qos, @delta_qos;", 
-				assoc_table, row[ASSOC_REQ_ACCT],
+				assoc_table, parent_acct,
 				row[ASSOC_REQ_CLUSTER],
 				without_parent_limits);
 			debug4("%d(%d) query\n%s",
@@ -6928,11 +6913,11 @@ empty:
 			xfree(query);
 			
 			if(!(row2 = mysql_fetch_row(result2))) {
-				user_parent_id = 0;
+				parent_id = 0;
 				goto no_parent_limits;
 			}
 
-			user_parent_id = atoi(row2[ASSOC2_REQ_PARENT_ID]);
+			parent_id = atoi(row2[ASSOC2_REQ_PARENT_ID]);
 			if(!without_parent_limits) {
 				if(row2[ASSOC2_REQ_MCMPJ])
 					parent_mcmpj =
@@ -6988,8 +6973,8 @@ empty:
 				else
 					parent_msj = INFINITE;
 			}
-			last_acct = row[ASSOC_REQ_ACCT];
-			last_cluster2 = row[ASSOC_REQ_CLUSTER];
+			last_acct = parent_acct;
+			last_cluster = row[ASSOC_REQ_CLUSTER];
 		no_parent_limits:
 			mysql_free_result(result2);
 		}
@@ -7034,23 +7019,29 @@ empty:
 		 * and a delta qos so if you have a qos don't worry
 		 * about the delta.
 		 */
+ 
 		if(row[ASSOC_REQ_QOS][0]) 
 			slurm_addto_char_list(assoc->qos_list,
 					      row[ASSOC_REQ_QOS]+1);
 		else {
-			if(parent_qos) 
-				slurm_addto_char_list(assoc->qos_list,
-						      parent_qos+1);
 			/* if qos is set on the association itself do
 			   not worry about the deltas
 			*/
+
+			/* add the parents first */
+			if(parent_qos) 
+				slurm_addto_char_list(assoc->qos_list,
+						      parent_qos+1);
+
+			/* then add the parents delta */
+			if(parent_delta_qos)
+				slurm_addto_char_list(delta_qos_list,
+						      parent_delta_qos+1);
+			/* now add the associations */
 			if(row[ASSOC_REQ_DELTA_QOS][0]) 
 				slurm_addto_char_list(
 					delta_qos_list,
 					row[ASSOC_REQ_DELTA_QOS]+1);
-			if(parent_delta_qos)
-				slurm_addto_char_list(delta_qos_list,
-						      parent_delta_qos+1);
 		}
 
 		/* Sometimes we want to see exactly what is here in
@@ -7059,6 +7050,7 @@ empty:
 		*/
 		if(with_raw_qos && list_count(delta_qos_list)) {
 			list_transfer(assoc->qos_list, delta_qos_list);
+			list_flush(delta_qos_list);
 		} else if(list_count(delta_qos_list)) {
 			ListIterator curr_qos_itr = 
 				list_iterator_create(assoc->qos_list);
@@ -7086,10 +7078,11 @@ empty:
 							break;
 						}
 					}
-					list_iterator_reset(curr_qos_itr);
-					if(!curr_qos)
+					if(!curr_qos) {
 						list_append(assoc->qos_list,
 							    xstrdup(new_qos+1));
+					}
+					list_iterator_reset(curr_qos_itr);
 				}
 			}
 
@@ -7098,9 +7091,7 @@ empty:
 			list_flush(delta_qos_list);
 		}
 
-		/* don't do this unless this is an user association */
-		if(assoc->user && assoc->parent_id != acct_parent_id) 
-			assoc->parent_id = user_parent_id;
+		assoc->parent_id = parent_id;
 
 		//info("parent id is %d", assoc->parent_id);
 		//log_assoc_rec(assoc);
@@ -7111,7 +7102,7 @@ empty:
 
 	xfree(parent_delta_qos);
 	xfree(parent_qos);
-
+	//END_TIMER2("get_associations");
 	return assoc_list;
 #else
 	return NULL;
