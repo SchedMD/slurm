@@ -64,6 +64,7 @@
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h" /* contains getnodename() */
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_resource_info.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
@@ -76,23 +77,27 @@
 #define OPT_INT         0x01
 #define OPT_STRING      0x02
 #define OPT_DEBUG       0x03
-#define OPT_NODES       0x05
-#define OPT_BOOL        0x06
-#define OPT_CORE        0x07
-#define OPT_CONN_TYPE	0x08
-#define OPT_DISTRIB	0x09
-#define OPT_NO_ROTATE	0x0a
-#define OPT_GEOMETRY	0x0b
-#define OPT_MULTI	0x0f
-#define OPT_EXCLUSIVE	0x10
-#define OPT_OVERCOMMIT	0x11
-#define OPT_OPEN_MODE	0x12
-#define OPT_ACCTG_FREQ  0x13
-#define OPT_NO_REQUEUE  0x14
-#define OPT_REQUEUE     0x15
+#define OPT_NODES       0x04
+#define OPT_BOOL        0x05
+#define OPT_CORE        0x06
+#define OPT_CONN_TYPE	0x07
+#define OPT_DISTRIB	0x08
+#define OPT_NO_ROTATE	0x09
+#define OPT_GEOMETRY	0x0a
+#define OPT_MULTI	0x0b
+#define OPT_EXCLUSIVE	0x0c
+#define OPT_OVERCOMMIT	0x0d
+#define OPT_OPEN_MODE	0x0e
+#define OPT_ACCTG_FREQ  0x0f
+#define OPT_NO_REQUEUE  0x10
+#define OPT_REQUEUE     0x11
+#define OPT_CPU_BIND    0x12
+#define OPT_MEM_BIND    0x13
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_PROPAGATE   0x100
+#define LONG_OPT_CPU_BIND    0x101
+#define LONG_OPT_MEM_BIND    0x102
 #define LONG_OPT_JOBID       0x105
 #define LONG_OPT_TMP         0x106
 #define LONG_OPT_MEM         0x107
@@ -239,7 +244,10 @@ static void _opt_default()
 	opt.ntasks_per_node      = 0;      /* ntask max limits */
 	opt.ntasks_per_socket    = NO_VAL;
 	opt.ntasks_per_core      = NO_VAL;
-	opt.cpu_bind_type = 0;		/* local dummy variable for now */
+	opt.cpu_bind_type = 0;
+	opt.cpu_bind = NULL;
+	opt.mem_bind_type = 0;
+	opt.mem_bind = NULL;
 	opt.time_limit = NO_VAL;
 	opt.partition = NULL;
 
@@ -319,27 +327,29 @@ struct env_vars {
 
 env_vars_t env_vars[] = {
   {"SBATCH_ACCOUNT",       OPT_STRING,     &opt.account,       NULL           },
+  {"SBATCH_ACCTG_FREQ",    OPT_INT,        &opt.acctg_freq,    NULL           },
   {"SBATCH_BLRTS_IMAGE",   OPT_STRING,     &opt.blrtsimage,    NULL           },
   {"SBATCH_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL           },
+  {"SBATCH_CPU_BIND",      OPT_CPU_BIND,   NULL,               NULL           },
   {"SBATCH_DEBUG",         OPT_DEBUG,      NULL,               NULL           },
   {"SBATCH_DISTRIBUTION",  OPT_DISTRIB ,   NULL,               NULL           },
+  {"SBATCH_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL           },
   {"SBATCH_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL           },
   {"SBATCH_IMMEDIATE",     OPT_BOOL,       &opt.immediate,     NULL           },
   {"SBATCH_JOBID",         OPT_INT,        &opt.jobid,         NULL           },
   {"SBATCH_JOB_NAME",      OPT_STRING,     &opt.job_name,      NULL           },
   {"SBATCH_LINUX_IMAGE",   OPT_STRING,     &opt.linuximage,    NULL           },
+  {"SBATCH_MEM_BIND",      OPT_MEM_BIND,   NULL,               NULL           },
   {"SBATCH_MLOADER_IMAGE", OPT_STRING,     &opt.mloaderimage,  NULL           },
+  {"SBATCH_NETWORK",       OPT_STRING,     &opt.network,       NULL           },
   {"SBATCH_NO_REQUEUE",    OPT_NO_REQUEUE, NULL,               NULL           },
-  {"SBATCH_REQUEUE",       OPT_REQUEUE,    NULL,               NULL           },
   {"SBATCH_NO_ROTATE",     OPT_BOOL,       &opt.no_rotate,     NULL           },
+  {"SBATCH_OPEN_MODE",     OPT_OPEN_MODE,  NULL,               NULL           },
   {"SBATCH_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL           },
   {"SBATCH_PARTITION",     OPT_STRING,     &opt.partition,     NULL           },
   {"SBATCH_RAMDISK_IMAGE", OPT_STRING,     &opt.ramdiskimage,  NULL           },
   {"SBATCH_TIMELIMIT",     OPT_STRING,     &opt.time_limit_str,NULL           },
-  {"SBATCH_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL           },
-  {"SBATCH_OPEN_MODE",     OPT_OPEN_MODE,  NULL,               NULL           },
-  {"SBATCH_ACCTG_FREQ",    OPT_INT,        &opt.acctg_freq,    NULL           },
-  {"SBATCH_NETWORK",       OPT_STRING,     &opt.network,       NULL           },
+  {"SBATCH_REQUEUE",       OPT_REQUEUE,    NULL,               NULL           },
   {NULL, 0, NULL, NULL}
 };
 
@@ -408,6 +418,18 @@ _process_env_var(env_vars_t *e, const char *val)
 			if (!(end && *end == '\0')) 
 				error("%s=%s invalid", e->var, val);
 		}
+		break;
+
+	case OPT_CPU_BIND:
+		if (slurm_verify_cpu_bind(val, &opt.cpu_bind,
+					  &opt.cpu_bind_type))
+			exit(1);
+		break;
+
+	case OPT_MEM_BIND:
+		if (slurm_verify_mem_bind(val, &opt.mem_bind,
+					  &opt.mem_bind_type))
+			exit(1);
 		break;
 
 	case OPT_DISTRIB:
@@ -554,6 +576,8 @@ static struct option long_options[] = {
 	{"acctg-freq",    required_argument, 0, LONG_OPT_ACCTG_FREQ},
 	{"propagate",     optional_argument, 0, LONG_OPT_PROPAGATE},
 	{"network",       required_argument, 0, LONG_OPT_NETWORK},
+	{"cpu_bind",      required_argument, 0, LONG_OPT_CPU_BIND},
+	{"mem_bind",      required_argument, 0, LONG_OPT_MEM_BIND},
 	{NULL,            0,                 0, 0}
 };
 
@@ -1096,6 +1120,16 @@ static void _set_options(int argc, char **argv)
                 case LONG_OPT_EXCLUSIVE:
                         opt.shared = 0;
                         break;
+                case LONG_OPT_CPU_BIND:
+			if (slurm_verify_cpu_bind(optarg, &opt.cpu_bind,
+						  &opt.cpu_bind_type))
+				exit(1);
+			break;
+		case LONG_OPT_MEM_BIND:
+			if (slurm_verify_mem_bind(optarg, &opt.mem_bind,
+						  &opt.mem_bind_type))
+				exit(1);
+			break;
 		case LONG_OPT_MINCPU:
 			opt.mincpus = _get_int(optarg, "mincpus");
 			if (opt.mincpus < 0) {
@@ -1901,6 +1935,30 @@ static bool _opt_verify(void)
 	setenv("SLURM_NETWORK", opt.network, 1);
 #endif
 
+	 if (slurm_verify_cpu_bind(NULL, &opt.cpu_bind,
+				   &opt.cpu_bind_type))
+		exit(1);
+	if (opt.cpu_bind_type && (getenv("SLURM_CPU_BIND") == NULL)) {
+		char tmp[64];
+		slurm_sprint_cpu_bind_type(tmp, opt.cpu_bind_type);
+		if (opt.cpu_bind) {
+			setenvf(NULL, "SLURM_CPU_BIND", "%s:%s", 
+				tmp, opt.cpu_bind);
+		} else {
+			setenvf(NULL, "SLURM_CPU_BIND", "%s", tmp);
+		}
+	}
+	if (opt.mem_bind_type && (getenv("SLURM_MEM_BIND") == NULL)) {
+		char tmp[64];
+		slurm_sprint_mem_bind_type(tmp, opt.mem_bind_type);
+		if (opt.mem_bind) {
+			setenvf(NULL, "SLURM_MEM_BIND", "%s:%s", 
+				tmp, opt.mem_bind);
+		} else {
+			setenvf(NULL, "SLURM_MEM_BIND", "%s", tmp);
+		}
+	}
+
 	return verified;
 }
 
@@ -2092,8 +2150,8 @@ static void _opt_list()
 		slurm_make_time_str(&opt.begin, time_str, sizeof(time_str));
 		info("begin          : %s", time_str);
 	}
-	info("mail_type      : %s", print_mail_type(opt.mail_type));
-	info("mail_user      : %s", opt.mail_user);
+	info("mail_type         : %s", print_mail_type(opt.mail_type));
+	info("mail_user         : %s", opt.mail_user);
 	info("sockets-per-node  : %d - %d", opt.min_sockets_per_node,
 					    opt.max_sockets_per_node);
 	info("cores-per-socket  : %d - %d", opt.min_cores_per_socket,
@@ -2103,11 +2161,15 @@ static void _opt_list()
 	info("ntasks-per-node   : %d", opt.ntasks_per_node);
 	info("ntasks-per-socket : %d", opt.ntasks_per_socket);
 	info("ntasks-per-core   : %d", opt.ntasks_per_core);
+	info("cpu_bind          : %s", 
+	     opt.cpu_bind == NULL ? "default" : opt.cpu_bind);
+	info("mem_bind          : %s",
+	     opt.mem_bind == NULL ? "default" : opt.mem_bind);
 	info("plane_size        : %u", opt.plane_size);
-	info("propagate      : %s",
+	info("propagate         : %s",
 	     opt.propagate == NULL ? "NONE" : opt.propagate);
 	str = print_commandline(opt.script_argc, opt.script_argv);
-	info("remote command : `%s'", str);
+	info("remote command    : `%s'", str);
 	xfree(str);
 
 }
@@ -2133,6 +2195,7 @@ static void _usage(void)
 "              [--requeue] [--no-requeue] [--ntasks-per-node=n] [--propagate]\n"
 "              [--nodefile=file] [--nodelist=hosts] [--exclude=hosts]\n"
 "              [--network=type] [--mem-per-cpu=MB]\n"
+"              [--cpu_bind=...] [--mem_bind=...]\n"
 "              executable [args...]\n");
 }
 
@@ -2215,7 +2278,11 @@ static void _help(void)
 	    && strcasecmp(conf->task_plugin, "task/affinity") == 0) {
 		printf(
 "      --hint=                 Bind tasks according to application hints\n"
-"                              (see \"--hint=help\" for options)\n");
+"                              (see \"--hint=help\" for options)\n"
+"      --cpu_bind=             Bind tasks to CPUs\n"
+"                              (see \"--cpu_bind=help\" for options)\n"
+"      --mem_bind=             Bind memory to locality domains (ldom)\n"
+"                              (see \"--mem_bind=help\" for options)\n");
 	}
 	slurm_conf_unlock();
 
