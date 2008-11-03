@@ -120,7 +120,7 @@ extern void acct_policy_job_fini(struct job_record *job_ptr)
 {
 	acct_association_rec_t *assoc_ptr = NULL;
 
-	if (!accounting_enforce || !_valid_job_assoc(job_ptr))
+	if (!job_ptr->assoc_ptr || !accounting_enforce)
 		return;
 
 	assoc_ptr = job_ptr->assoc_ptr;

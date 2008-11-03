@@ -136,7 +136,8 @@ typedef struct slurm_acct_storage_ops {
 	int  (*c_get_usage)        (void *db_conn, uint32_t uid,
 				    void *cluster_rec, 
 				    time_t start, time_t end);
-	int  (*register_ctld)      (char *cluster, uint16_t port);
+	int  (*register_ctld)      (void *db_conn, char *cluster,
+				    uint16_t port);
 	int  (*job_start)          (void *db_conn, char *cluster_name,
 				    struct job_record *job_ptr);
 	int  (*job_complete)       (void *db_conn,
@@ -328,6 +329,88 @@ static int _acct_storage_context_destroy(slurm_acct_storage_context_t *c)
 
 	xfree( c->acct_storage_type );
 	xfree( c );
+
+	return SLURM_SUCCESS;
+}
+
+/* 
+ * Comparator used for sorting immediate childern of acct_hierarchical_recs
+ * 
+ * returns: -1: assoc_a > assoc_b   0: assoc_a == assoc_b   1: assoc_a < assoc_b
+ * 
+ */
+
+static int _sort_childern_list(acct_hierarchical_rec_t *assoc_a,
+			       acct_hierarchical_rec_t *assoc_b)
+{
+	int diff = 0;
+
+	/* first just check the lfts and rgts if a lft is inside of the
+	 * others lft and rgt just return it is less
+	 */ 
+	if(assoc_a->assoc->lft > assoc_b->assoc->lft 
+	   && assoc_a->assoc->lft < assoc_b->assoc->rgt)
+		return 1;
+
+	/* check to see if this is a user association or an account.
+	 * We want the accounts at the bottom 
+	 */
+	if(assoc_a->assoc->user && !assoc_b->assoc->user)
+		return -1;
+	else if(!assoc_a->assoc->user && assoc_b->assoc->user)
+		return 1;
+
+	diff = strcmp(assoc_a->sort_name, assoc_b->sort_name);
+	if (diff < 0)
+		return -1;
+	else if (diff > 0)
+		return 1;
+	
+	return 0;
+
+}
+
+static int _sort_acct_hierarchical_rec_list(List acct_hierarchical_rec_list)
+{
+	acct_hierarchical_rec_t *acct_hierarchical_rec = NULL;
+	ListIterator itr;
+
+	if(!list_count(acct_hierarchical_rec_list))
+		return SLURM_SUCCESS;
+
+	list_sort(acct_hierarchical_rec_list, (ListCmpF)_sort_childern_list);
+
+	itr = list_iterator_create(acct_hierarchical_rec_list);
+	while((acct_hierarchical_rec = list_next(itr))) {
+		if(list_count(acct_hierarchical_rec->childern))
+			_sort_acct_hierarchical_rec_list(acct_hierarchical_rec->childern);
+	}
+	list_iterator_destroy(itr);
+
+	return SLURM_SUCCESS;
+}
+
+static int _append_hierarchical_childern_ret_list(
+	List ret_list, List acct_hierarchical_rec_list)
+{
+	acct_hierarchical_rec_t *acct_hierarchical_rec = NULL;
+	ListIterator itr;
+
+	if(!ret_list)
+		return SLURM_ERROR;
+
+	if(!list_count(acct_hierarchical_rec_list))
+		return SLURM_SUCCESS;
+
+	itr = list_iterator_create(acct_hierarchical_rec_list);
+	while((acct_hierarchical_rec = list_next(itr))) {
+		list_append(ret_list, acct_hierarchical_rec->assoc);
+
+		if(list_count(acct_hierarchical_rec->childern)) 
+			_append_hierarchical_childern_ret_list(
+				ret_list, acct_hierarchical_rec->childern);
+	}
+	list_iterator_destroy(itr);
 
 	return SLURM_SUCCESS;
 }
@@ -658,6 +741,21 @@ extern void destroy_acct_print_tree(void *object)
 		xfree(acct_print_tree->print_name);
 		xfree(acct_print_tree->spaces);
 		xfree(acct_print_tree);
+	}
+}
+
+extern void destroy_acct_hierarchical_rec(void *object)
+{
+	/* Most of this is pointers to something else that will be
+	 * destroyed elsewhere.
+	 */
+	acct_hierarchical_rec_t *acct_hierarchical_rec = 
+		(acct_hierarchical_rec_t *)object;
+	if(acct_hierarchical_rec) {
+		if(acct_hierarchical_rec->childern) {
+			list_destroy(acct_hierarchical_rec->childern);
+		}
+		xfree(acct_hierarchical_rec);
 	}
 }
 
@@ -4161,6 +4259,79 @@ extern acct_admin_level_t str_2_acct_admin_level(char *level)
 	}	
 }
 
+/* This reorders the list into a alphabetical hierarchy returned in a
+ * separate list.  The orginal list is not affected */
+extern List get_hierarchical_sorted_assoc_list(List assoc_list)
+{
+	List acct_hierarchical_rec_list =
+		get_acct_hierarchical_rec_list(assoc_list);
+	List ret_list = list_create(NULL);
+
+	_append_hierarchical_childern_ret_list(ret_list,
+					       acct_hierarchical_rec_list);
+	list_destroy(acct_hierarchical_rec_list);
+	
+	return ret_list;
+}
+
+extern List get_acct_hierarchical_rec_list(List assoc_list)
+{
+	acct_hierarchical_rec_t *par_arch_rec = NULL;
+	acct_hierarchical_rec_t *arch_rec = NULL;
+	acct_association_rec_t *assoc = NULL;
+	List total_assoc_list = list_create(NULL);
+	List arch_rec_list = 
+		list_create(destroy_acct_hierarchical_rec);
+	ListIterator itr, itr2;
+
+	itr = list_iterator_create(assoc_list);
+	itr2 = list_iterator_create(total_assoc_list);
+	
+	while((assoc = list_next(itr))) {
+		arch_rec = 
+			xmalloc(sizeof(acct_hierarchical_rec_t));
+		arch_rec->childern = 
+			list_create(destroy_acct_hierarchical_rec);
+		arch_rec->assoc = assoc;
+	
+		if(!assoc->parent_id) {
+			arch_rec->sort_name = assoc->cluster;
+
+			list_append(arch_rec_list, arch_rec);
+			list_append(total_assoc_list, arch_rec);
+
+			list_iterator_reset(itr2);
+			continue;
+		}
+
+		while((par_arch_rec = list_next(itr2))) {
+			if(assoc->parent_id == par_arch_rec->assoc->id) 
+				break;
+		}
+
+		if(assoc->user)
+			arch_rec->sort_name = assoc->user;
+		else
+			arch_rec->sort_name = assoc->acct;
+
+		if(!par_arch_rec) 
+			list_append(arch_rec_list, arch_rec);
+		else
+			list_append(par_arch_rec->childern, arch_rec);
+
+		list_append(total_assoc_list, arch_rec);
+		list_iterator_reset(itr2);
+	}
+	list_iterator_destroy(itr);
+	list_iterator_destroy(itr2);
+
+	list_destroy(total_assoc_list);
+//	info("got %d", list_count(arch_rec_list));
+	_sort_acct_hierarchical_rec_list(arch_rec_list);
+
+	return arch_rec_list;
+}
+
 /* IN/OUT: tree_list a list of acct_print_tree_t's */ 
 extern char *get_tree_acct_name(char *name, char *parent, char *cluster, 
 				List tree_list)
@@ -4168,27 +4339,28 @@ extern char *get_tree_acct_name(char *name, char *parent, char *cluster,
 	ListIterator itr = NULL;
 	acct_print_tree_t *acct_print_tree = NULL;
 	acct_print_tree_t *par_acct_print_tree = NULL;
-	static char *ret_name = NULL;
-	static char *last_name = NULL, *last_cluster = NULL;
-
 
 	if(!tree_list) 
 		return NULL;
 		
 	itr = list_iterator_create(tree_list);
 	while((acct_print_tree = list_next(itr))) {
-		if(!strcmp(name, acct_print_tree->name)) {
-			ret_name = acct_print_tree->print_name;
+		/* we don't care about users in this list.  They are
+		   only there so we don't leak memory */
+		if(acct_print_tree->user)
+			continue;
+
+		if(!strcmp(name, acct_print_tree->name))
 			break;
-		} else if(parent && !strcmp(parent, acct_print_tree->name)) {
+		else if(parent && !strcmp(parent, acct_print_tree->name)) 
 			par_acct_print_tree = acct_print_tree;
-		}
+		
 	}
 	list_iterator_destroy(itr);
 	
 	if(parent && acct_print_tree) 
-		return ret_name;
-
+		return acct_print_tree->print_name;
+	
 	acct_print_tree = xmalloc(sizeof(acct_print_tree_t));
 	acct_print_tree->name = xstrdup(name);
 	if(par_acct_print_tree) 
@@ -4198,20 +4370,16 @@ extern char *get_tree_acct_name(char *name, char *parent, char *cluster,
 		acct_print_tree->spaces = xstrdup("");
 	
 	/* user account */
-	if(name[0] == '|')
+	if(name[0] == '|') {
 		acct_print_tree->print_name = xstrdup_printf(
 			"%s%s", acct_print_tree->spaces, parent);	
-	else
+		acct_print_tree->user = 1;
+	} else 
 		acct_print_tree->print_name = xstrdup_printf(
 			"%s%s", acct_print_tree->spaces, name);	
 	
-
 	list_append(tree_list, acct_print_tree);
-
-	ret_name = acct_print_tree->print_name;
-	last_name = name;
-	last_cluster = cluster;
-
+	
 	return acct_print_tree->print_name;
 }
 
@@ -4719,11 +4887,13 @@ extern int clusteracct_storage_g_get_usage(
 		(db_conn, uid, cluster_rec, start, end);
 }
 
-extern int clusteracct_storage_g_register_ctld(char *cluster, uint16_t port)
+extern int clusteracct_storage_g_register_ctld(
+	void *db_conn, char *cluster, uint16_t port)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
- 	return (*(g_acct_storage_context->ops.register_ctld))(cluster, port);
+ 	return (*(g_acct_storage_context->ops.register_ctld))
+		(db_conn, cluster, port);
 }
 
 /* 

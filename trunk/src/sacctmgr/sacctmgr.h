@@ -86,13 +86,6 @@
 #define CKPT_WAIT	10
 #define	MAX_INPUT_FIELDS 128
 
-typedef struct {
-	acct_association_rec_t *assoc;
-	char *sort_name;
-	List childern;
-} sacctmgr_assoc_t;
-
-
 extern char *command_name;
 extern int exit_code;	/* sacctmgr's exit code, =1 on any error at any time */
 extern int exit_flag;	/* program to terminate if =1 */
@@ -130,15 +123,9 @@ extern int sacctmgr_delete_cluster(int argc, char *argv[]);
 extern int sacctmgr_delete_coord(int argc, char *argv[]);
 extern int sacctmgr_delete_qos(int argc, char *argv[]);
 
-/* this has pointers to assoc_list so do not destroy assoc_list before
- * using the list returned from this function.
- */
-extern List sacctmgr_get_hierarchical_list(List assoc_list);
-
 extern int sacctmgr_dump_cluster(int argc, char *argv[]);
 
 /* common.c */
-extern void destroy_sacctmgr_assoc(void *object);
 extern int parse_option_end(char *option);
 extern char *strip_quotes(char *option, int *increased);
 extern int notice_thread_init();
@@ -195,8 +182,8 @@ extern acct_cluster_rec_t *sacctmgr_find_cluster_from_list(
 extern int print_file_add_limits_to_line(char **line,
 					 acct_association_rec_t *assoc);
 
-extern int print_file_sacctmgr_assoc_list(FILE *fd, 
-					  List sacctmgr_assoc_list,
+extern int print_file_acct_hierarchical_rec_list(FILE *fd, 
+					  List acct_hierarchical_rec_list,
 					  List user_list,
 					  List acct_list);
 

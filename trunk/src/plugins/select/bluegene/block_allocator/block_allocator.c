@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  block_allocator.c - Assorted functions for layout of bglblocks, 
+ *  block_allocator.c - Assorted functions for layout of bluegene blocks, 
  *	 wiring, mapping for smap, etc.
  *  $Id$
  *****************************************************************************
@@ -808,7 +808,7 @@ extern void ba_init(node_info_msg_t *node_info_ptr)
 	int end[BA_SYSTEM_DIMENSIONS];
 	
 #ifdef HAVE_BG_FILES
-	rm_BGL_t *bg = NULL;
+	my_bluegene_t *bg = NULL;
 	rm_size3D_t bp_size;
 	int rc = 0;
 #endif /* HAVE_BG_FILES */
@@ -907,7 +907,7 @@ node_info_error:
 	if (have_db2
 	    && ((DIM_SIZE[X]==0) || (DIM_SIZE[Y]==0) || (DIM_SIZE[Z]==0))) {
 		if ((rc = bridge_get_bg(&bg)) != STATUS_OK) {
-			error("bridge_get_BGL(): %d", rc);
+			error("bridge_get_BG(): %d", rc);
 			return;
 		}
 		
@@ -921,7 +921,7 @@ node_info_error:
 			error("bridge_get_data(RM_Msize): %d", rc);	
 		}
 		if ((rc = bridge_free_bg(bg)) != STATUS_OK)
-			error("bridge_free_BGL(): %d", rc);
+			error("bridge_free_BG(): %d", rc);
 	}
 #endif
 
@@ -1906,7 +1906,7 @@ extern char *bg_err_str(status_t inx)
 extern int set_bp_map(void)
 {
 #ifdef HAVE_BG_FILES
-	static rm_BGL_t *bg = NULL;
+	static my_bluegene_t *bg = NULL;
 	int rc;
 	rm_BP_t *my_bp = NULL;
 	ba_bp_map_t *bp_map = NULL;
@@ -1932,7 +1932,7 @@ extern int set_bp_map(void)
 	}
 	
 	if ((rc = bridge_get_bg(&bg)) != STATUS_OK) {
-		error("bridge_get_BGL(): %d", rc);
+		error("bridge_get_BG(): %d", rc);
 		return -1;
 	}
 	
@@ -2001,7 +2001,7 @@ extern int set_bp_map(void)
 	}
 
 	if ((rc = bridge_free_bg(bg)) != STATUS_OK)
-		error("bridge_free_BGL(): %s", rc);	
+		error("bridge_free_BG(): %s", rc);	
 	
 #endif
 	_bp_map_initialized = true;
@@ -3586,7 +3586,7 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 			       ba_node_t* target)
 {
 #ifdef HAVE_BG_FILES
-	rm_BGL_t *bg = NULL;
+	my_bluegene_t *bg = NULL;
 	int rc;
 	int i;
 	rm_wire_t *my_wire = NULL;
@@ -3604,7 +3604,7 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 	}
 	
 	if ((rc = bridge_get_bg(&bg)) != STATUS_OK) {
-		error("bridge_get_BGL(): %d", rc);
+		error("bridge_get_BG(): %d", rc);
 		return -1;
 	}
 		
@@ -3747,7 +3747,7 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 		       _port_enum(to_port));
 	}
 	if ((rc = bridge_free_bg(bg)) != STATUS_OK)
-		error("bridge_free_BGL(): %s", rc);
+		error("bridge_free_BG(): %s", rc);
 	
 #else
 

@@ -273,7 +273,7 @@ extern int select_p_state_save(char *dir_name)
 	slurm_mutex_lock(&block_state_mutex);
 	itr = list_iterator_create(bg_list);
 	while((bg_record = list_next(itr))) {
-		/* on real bgl systems we only want to keep track of
+		/* on real bluegene systems we only want to keep track of
 		 * the blocks in an error state
 		 */
 #ifdef HAVE_BG_FILES

@@ -110,9 +110,10 @@ Identical to the \fBquit\fR command.
 Display a description of sacctmgr options and commands.
 
 .TP
-\fBlist\fR <\fIENTITY\fR> [with <\fISPECS\fR>]
-Display information about the specified entities.
-By default, all entities are displayed.
+\fBlist\fR <\fIENTITY\fR> [<\fISPECS\fR>]
+Display information about the specified entity.
+By default, all entries are displayed, you can narrow results by
+specifing SPECS in your query.
 Identical to the \fBshow\fR command.
 
 .TP
@@ -137,9 +138,10 @@ Terminate the execution of sacctmgr.
 Identical to the \fBexit\fR command.
 
 .TP
-\fBshow\fR <\fIENTITY\fR> [with <\fISPECS\fR>]
-Display information about the specified entities.
-By default, all entities are displayed.
+\fBshow\fR <\fIENTITY\fR> [<\fISPECS\fR>]
+Display information about the specified entity.
+By default, all entries are displayed, you can narrow results by
+specifing SPECS in your query.
 Identical to the \fBlist\fR command.
 
 .TP
@@ -351,6 +353,64 @@ Remove the specified <qos> value from the current \fIQosLevel\fP.
 
 
 .TP
+\fBSPECIFICATIONS TO LIST/SHOW ASSOCIATIONS\fR
+
+.TP
+\fICluster\fP=<comma separated list of cluster names>
+List the associations of the cluster(s).
+
+.TP
+\fIAccount\fP=<comma separated list of account names>
+List the associations of the account(s).
+
+.TP
+\fIUser\fP=<comma separated list of user names>
+List the associations of the user(s).
+
+.TP
+\fIPartition\fP=<comma separated list of partition names>
+List the associations of the partition(s).
+
+.TP
+The list can return information with the following headings when using the format= option:
+
+Account, Cluster, Fairshare, GrpCPUMins, GrpCPUs, GrpJobs, GrpNodes, 
+GrpSubmitJob, GrpWall, ID, LFT, MaxCPUs, MaxCPUMins, MaxJobs, 
+MaxNodes, MaxWall, QOS, ParentID, ParentName, Partition, RGT, User
+
+.TP
+Other available options:
+
+withd tree withsubaccounts wopinfo woplimits
+
+.TP
+\fItree\fP
+display information using tree mode.
+
+.TP
+\fIwithd\fP
+display information with previously deleted data.
+
+.TP
+\fIwithsubaccounts\fP
+display information with subaccounts.  Only really valuable when used
+with the account= option.  This will display all the subaccount
+associations along with the accounts listed in the option.
+              
+.TP
+\fIwopinfo\fP
+display information without parent information. (i.e. parent id, and
+parent account name)
+              
+.TP
+\fIwoplimits\fP
+display information without hierarchical parent limits. (i.e. will
+only display limits where they are set instead of propogating them
+from the parent)
+.RE
+
+
+.TP
 \fBSPECIFICATIONS FOR CLUSTERS\fR
 
 .TP
@@ -489,6 +549,7 @@ Account name to add this user as a coordinator to.
 .TP
 \fINames\fP=<comma separated list of user names>
 Names of coordinators.
+.RE
 
 
 .TP
@@ -499,6 +560,31 @@ An arbitrary string describing an account.
 .TP
 \fINames\fP=<qos>
 Names of qos.
+.RE
+
+
+.TP
+\fBSPECIFICATIONS TO LIST/SHOW TRANSACTIONS\fR
+
+.TP
+\fIStartTime\fP=<Date and time where list should begin>
+
+.TP
+\fIEndTime\fP=<Date and time where list should end>
+
+.TP
+\fIAction\fP=<Specific action the list will display>
+
+.TP
+\fIActor\fP=<Specific name the list will display>
+
+.TP
+
+The list can return information with the following headings when using the format= option:
+
+Action,Actor,ID,Info,TimeStamp,Where
+
+.RE
 
 .TP
 \fBSPECIFICATIONS FOR USERS\fR
@@ -831,7 +917,10 @@ Comma separated list of Quality of Service names (Defined in sacctmgr).
 > sacctmgr modify user name=adam cluster=tux account=physics set
   maxjobs=2 maxtime=30:00
 .br
-> sacctmgr dump cluster=tux tux_data_file
+> sacctmgr list associations cluster=tux format=Account,Cluster,User,Fairshare tree withd
+.br
+> sacctmgr list transactions StartTime=11/03-10:30:00 format=Timestamp,Action,Actor
+.br> sacctmgr dump cluster=tux tux_data_file
 .br
 > sacctmgr load tux_data_file
 .br

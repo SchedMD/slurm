@@ -98,20 +98,6 @@ static char *_get_qos_list_str(List qos_list)
 	return qos_char;
 }
 
-extern void destroy_sacctmgr_assoc(void *object)
-{
-	/* Most of this is pointers to something else that will be
-	 * destroyed elsewhere.
-	 */
-	sacctmgr_assoc_t *sacctmgr_assoc = (sacctmgr_assoc_t *)object;
-	if(sacctmgr_assoc) {
-		if(sacctmgr_assoc->childern) {
-			list_destroy(sacctmgr_assoc->childern);
-		}
-		xfree(sacctmgr_assoc);
-	}
-}
-
 extern int parse_option_end(char *option)
 {
 	int end = 0;
@@ -308,9 +294,6 @@ extern acct_association_rec_t *sacctmgr_find_account_base_assoc(char *account,
 	assoc_cond.user_list = list_create(NULL);
 	list_append(assoc_cond.user_list, "");
 
-//	info("looking for %s %s in %d", account, cluster,
-//	     list_count(sacctmgr_association_list));
-	
 	assoc_list = acct_storage_g_get_associations(db_conn, my_uid,
 						     &assoc_cond);
 
