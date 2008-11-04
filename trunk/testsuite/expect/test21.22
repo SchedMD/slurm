@@ -190,7 +190,7 @@ set mn6		670
 set mw6		2880
 set mt6		2-00:00:00
 set access_err  0
-
+set timeout     60
 #set user_name   "id -u -n"
 
 print_header $test_id

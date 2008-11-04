@@ -361,6 +361,7 @@ static int _sort_childern_list(acct_hierarchical_rec_t *assoc_a,
 		return 1;
 
 	diff = strcmp(assoc_a->sort_name, assoc_b->sort_name);
+
 	if (diff < 0)
 		return -1;
 	else if (diff > 0)
@@ -383,7 +384,8 @@ static int _sort_acct_hierarchical_rec_list(List acct_hierarchical_rec_list)
 	itr = list_iterator_create(acct_hierarchical_rec_list);
 	while((acct_hierarchical_rec = list_next(itr))) {
 		if(list_count(acct_hierarchical_rec->childern))
-			_sort_acct_hierarchical_rec_list(acct_hierarchical_rec->childern);
+			_sort_acct_hierarchical_rec_list(
+				acct_hierarchical_rec->childern);
 	}
 	list_iterator_destroy(itr);
 
@@ -4277,6 +4279,8 @@ extern List get_hierarchical_sorted_assoc_list(List assoc_list)
 extern List get_acct_hierarchical_rec_list(List assoc_list)
 {
 	acct_hierarchical_rec_t *par_arch_rec = NULL;
+	acct_hierarchical_rec_t *last_acct_parent = NULL;
+	acct_hierarchical_rec_t *last_parent = NULL;
 	acct_hierarchical_rec_t *arch_rec = NULL;
 	acct_association_rec_t *assoc = NULL;
 	List total_assoc_list = list_create(NULL);
@@ -4294,33 +4298,56 @@ extern List get_acct_hierarchical_rec_list(List assoc_list)
 			list_create(destroy_acct_hierarchical_rec);
 		arch_rec->assoc = assoc;
 	
+		/* To speed things up we are first looking if we have
+		   a parent_id to look for.  If that doesn't work see
+		   if the last parent we had was what we are looking
+		   for.  Then if that isn't panning out look at the
+		   last account parent.  If still we don't have it we
+		   will look for it in the list.  If it isn't there we
+		   will just add it to the parent and call it good 
+		*/
 		if(!assoc->parent_id) {
 			arch_rec->sort_name = assoc->cluster;
 
 			list_append(arch_rec_list, arch_rec);
 			list_append(total_assoc_list, arch_rec);
 
-			list_iterator_reset(itr2);
 			continue;
-		}
-
-		while((par_arch_rec = list_next(itr2))) {
-			if(assoc->parent_id == par_arch_rec->assoc->id) 
-				break;
-		}
-
-		if(assoc->user)
+		} 
+		
+		if(assoc->user) 
 			arch_rec->sort_name = assoc->user;
-		else
-			arch_rec->sort_name = assoc->acct;
+		else 
+			arch_rec->sort_name = assoc->acct;		
 
-		if(!par_arch_rec) 
+		if(last_parent && assoc->parent_id == last_parent->assoc->id) {
+			par_arch_rec = last_parent;
+		} else if(last_acct_parent 
+			  && assoc->parent_id == last_acct_parent->assoc->id) {
+			par_arch_rec = last_acct_parent;
+		} else {
+			list_iterator_reset(itr2);
+			while((par_arch_rec = list_next(itr2))) {
+				if(assoc->parent_id 
+				   == par_arch_rec->assoc->id) {
+					if(assoc->user) 
+						last_parent = par_arch_rec;	
+					else 
+						last_parent 
+							= last_acct_parent
+							= par_arch_rec;
+					break;
+				}
+			}
+		}
+
+		if(!par_arch_rec) {
 			list_append(arch_rec_list, arch_rec);
-		else
+			last_parent = last_acct_parent = arch_rec;
+		} else 
 			list_append(par_arch_rec->childern, arch_rec);
-
+		
 		list_append(total_assoc_list, arch_rec);
-		list_iterator_reset(itr2);
 	}
 	list_iterator_destroy(itr);
 	list_iterator_destroy(itr2);
