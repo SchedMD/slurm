@@ -750,7 +750,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
        delete qos         - Descriptions=, Ids=, and Names=                \n\
                                                                            \n\
        list transactions  - Accounts=, Action=, Actor=, Clusters=, End=,   \n\
-                            Format=, ID=, Start=, User=, and WithAssocInfo \n\
+                            Format=, ID=, Start=, User=, and WithAssoc     \n\
                                                                            \n\
        list user          - AdminLevel=, DefaultAccounts=, Format=, Names=,\n\
                             QosLevel=, WithAssocs, WithCoordinators,       \n\
@@ -787,8 +787,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                                                                            \n\
        QOS                - Description, ID, Name                          \n\
                                                                            \n\
-       Transactions       - Account, Action, Actor, TimeStamp, Info, User, \n\
-                            Where                                          \n\
+       Transactions       - Action, Actor, Info, TimeStamp, Where          \n\
                                                                            \n\
        User               - AdminLevel, CoordinatorList, DefaultAccount,   \n\
                             User                                           \n\
