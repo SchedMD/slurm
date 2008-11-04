@@ -250,7 +250,7 @@ extern int parse_blockreq(void **dest, slurm_parser_enum_t type,
 		{"BlrtsImage", S_P_STRING},
 		{"LinuxImage", S_P_STRING},
 		{"RamDiskImage", S_P_STRING},
-#lse
+#else
 		{"CnloadImage", S_P_STRING},
 		{"IoloadImage", S_P_STRING},
 #endif
