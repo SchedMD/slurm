@@ -1005,12 +1005,14 @@ static void _acct_add_job_submit(struct job_record *job_ptr)
 {
 	acct_association_rec_t *assoc_ptr = NULL;
 
+	slurm_mutex_lock(&assoc_mgr_association_lock);
 	assoc_ptr = job_ptr->assoc_ptr;
 	while(assoc_ptr) {
 		assoc_ptr->used_submit_jobs++;	
 		/* now handle all the group limits of the parents */
 		assoc_ptr = assoc_ptr->parent_assoc_ptr;
 	}
+	slurm_mutex_unlock(&assoc_mgr_association_lock);
 }
 
 /*
@@ -1022,6 +1024,7 @@ static void _acct_remove_job_submit(struct job_record *job_ptr)
 {
 	acct_association_rec_t *assoc_ptr = NULL;
 
+	slurm_mutex_lock(&assoc_mgr_association_lock);
 	assoc_ptr = job_ptr->assoc_ptr;
 	while(assoc_ptr) {
 		if (assoc_ptr->used_submit_jobs) 
@@ -1032,6 +1035,7 @@ static void _acct_remove_job_submit(struct job_record *job_ptr)
 			       assoc_ptr->acct);
 		assoc_ptr = assoc_ptr->parent_assoc_ptr;
 	}
+	slurm_mutex_unlock(&assoc_mgr_association_lock);
 }
 
 

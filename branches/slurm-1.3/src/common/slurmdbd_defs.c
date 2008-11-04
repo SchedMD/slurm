@@ -77,9 +77,10 @@
 #define MAX_DBD_MSG_LEN		16384
 #define SLURMDBD_TIMEOUT	300	/* Seconds SlurmDBD for response */
 
-bool running_cache = 0;
+uint16_t running_cache = 0;
+pthread_mutex_t assoc_cache_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t assoc_cache_cond = PTHREAD_COND_INITIALIZER;
 
-static pthread_mutex_t replace_cache = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t agent_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  agent_cond = PTHREAD_COND_INITIALIZER;
 static List      agent_list     = (List) NULL;
@@ -1518,15 +1519,11 @@ static void *_agent(void *x)
 		if (buffer == NULL) {
 			slurm_mutex_unlock(&slurmdbd_lock);
 
-			slurm_mutex_lock(&replace_cache);
-			/* It is ok to send a NULL as the first value since
-			 * this will most likely only happen when talking with
-			 * the DBD 
-			 */
+			slurm_mutex_lock(&assoc_cache_mutex);
 			if(slurmdbd_fd >= 0 && running_cache)
-				assoc_mgr_refresh_lists(NULL, NULL);		
-			slurm_mutex_unlock(&replace_cache);
-			
+				pthread_cond_signal(&assoc_cache_cond);
+			slurm_mutex_unlock(&assoc_cache_mutex);
+
 			continue;
 		}
 
@@ -1549,14 +1546,10 @@ static void *_agent(void *x)
 		}
 		slurm_mutex_unlock(&slurmdbd_lock);
 		
-		slurm_mutex_lock(&replace_cache);
-		/* It is ok to send a NULL as the first value since
-		 * this will most likely only happen when talking with
-		 * the DBD 
-		 */
+		slurm_mutex_lock(&assoc_cache_mutex);
 		if(slurmdbd_fd >= 0 && running_cache)
-			assoc_mgr_refresh_lists(NULL, NULL);		
-		slurm_mutex_unlock(&replace_cache);
+			pthread_cond_signal(&assoc_cache_cond);
+		slurm_mutex_unlock(&assoc_cache_mutex);
 
 		slurm_mutex_lock(&agent_lock);
 		if (agent_list && (rc == SLURM_SUCCESS)) {

@@ -66,12 +66,12 @@ static bool _valid_job_assoc(struct job_record *job_ptr)
 {
 	acct_association_rec_t assoc_rec, *assoc_ptr;
 
-	assoc_ptr = job_ptr->assoc_ptr;
+	assoc_ptr = (acct_association_rec_t *)job_ptr->assoc_ptr;
 	if ((assoc_ptr == NULL) ||
 	    (assoc_ptr->id  != job_ptr->assoc_id) ||
 	    (assoc_ptr->uid != job_ptr->user_id)) {
 		error("Invalid assoc_ptr for jobid=%u", job_ptr->job_id);
-		bzero(&assoc_rec, sizeof(acct_association_rec_t));
+		memset(&assoc_rec, 0, sizeof(acct_association_rec_t));
 		if(job_ptr->assoc_id)
 			assoc_rec.id = job_ptr->assoc_id;
 		else {
@@ -80,14 +80,15 @@ static bool _valid_job_assoc(struct job_record *job_ptr)
 			assoc_rec.acct      = job_ptr->account;
 		}
 		if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
-					    accounting_enforce, &assoc_ptr)) {
+					    accounting_enforce, 
+					    (acct_association_rec_t **)
+					    &job_ptr->assoc_ptr)) {
 			info("_validate_job_assoc: invalid account or "
 			     "partition for uid=%u jobid=%u",
 			     job_ptr->user_id, job_ptr->job_id);
 			return false;
 		}
 		job_ptr->assoc_id = assoc_rec.id;
-		job_ptr->assoc_ptr = (void *) assoc_ptr;
 	}
 	return true;
 }
@@ -100,15 +101,18 @@ extern void acct_policy_job_begin(struct job_record *job_ptr)
 {
 	acct_association_rec_t *assoc_ptr = NULL;
 
-	if (!accounting_enforce || !_valid_job_assoc(job_ptr))
+	if (accounting_enforce != ACCOUNTING_ENFORCE_WITH_LIMITS
+	    || !_valid_job_assoc(job_ptr))
 		return;
 
+	slurm_mutex_lock(&assoc_mgr_association_lock);
 	assoc_ptr = job_ptr->assoc_ptr;
 	while(assoc_ptr) {
 		assoc_ptr->used_jobs++;	
 		/* now handle all the group limits of the parents */
 		assoc_ptr = assoc_ptr->parent_assoc_ptr;
 	}
+	slurm_mutex_unlock(&assoc_mgr_association_lock);
 }
 
 /*
@@ -119,9 +123,11 @@ extern void acct_policy_job_fini(struct job_record *job_ptr)
 {
 	acct_association_rec_t *assoc_ptr = NULL;
 
-	if (!job_ptr->assoc_ptr || !accounting_enforce)
+	if (accounting_enforce != ACCOUNTING_ENFORCE_WITH_LIMITS
+	    || !job_ptr->assoc_ptr)
 		return;
 
+	slurm_mutex_lock(&assoc_mgr_association_lock);
 	assoc_ptr = job_ptr->assoc_ptr;
 	while(assoc_ptr) {
 		if (assoc_ptr->used_jobs)
@@ -130,6 +136,7 @@ extern void acct_policy_job_fini(struct job_record *job_ptr)
 			debug2("acct_policy_job_fini: used_jobs underflow");
 		assoc_ptr = assoc_ptr->parent_assoc_ptr;
 	}
+	slurm_mutex_unlock(&assoc_mgr_association_lock);
 }
 
 /*
@@ -143,6 +150,7 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 {
 	acct_association_rec_t *assoc_ptr;
 	uint32_t time_limit;
+	bool rc = true;
 	int parent = 0; /*flag to tell us if we are looking at the
 			 * parent or not 
 			 */
@@ -160,6 +168,7 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 	if (accounting_enforce != ACCOUNTING_ENFORCE_WITH_LIMITS)
 		return true;
 
+	slurm_mutex_lock(&assoc_mgr_association_lock);
 	assoc_ptr = job_ptr->assoc_ptr;
 	while(assoc_ptr) {
 #if _DEBUG
@@ -178,7 +187,8 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 		    (assoc_ptr->grp_jobs != INFINITE) &&
 		    (assoc_ptr->used_jobs >= assoc_ptr->grp_jobs)) {
 			job_ptr->state_reason = WAIT_ASSOC_LIMIT;
-			return false;
+			rc = false;
+			goto end_it;
 		}
 		
 		if ((assoc_ptr->grp_nodes != NO_VAL) &&
@@ -196,7 +206,8 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 				    job_ptr->details->min_nodes) > 
 				   assoc_ptr->grp_nodes) {
 				job_ptr->state_reason = WAIT_ASSOC_LIMIT;
-				return false;
+				rc = false;
+				goto end_it;
 			}
 		}
 
@@ -219,7 +230,8 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 				     job_ptr->job_id, job_ptr->time_limit, 
 				     time_limit, assoc_ptr->acct);
 				_cancel_job(job_ptr);
-				return false;
+				rc = false;
+				goto end_it;
 			}
 		}
 
@@ -245,7 +257,8 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 		    (assoc_ptr->max_jobs != INFINITE) &&
 		    (assoc_ptr->used_jobs >= assoc_ptr->max_jobs)) {
 			job_ptr->state_reason = WAIT_ASSOC_LIMIT;
-			return false;
+			rc = false;
+			goto end_it;
 		}
 		
 		if ((assoc_ptr->max_nodes_pj != NO_VAL) &&
@@ -259,7 +272,8 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 				     job_ptr->details->min_nodes, 
 				     assoc_ptr->max_nodes_pj);
 				_cancel_job(job_ptr);
-				return false;
+				rc = false;
+				goto end_it;
 			}
 		}
 
@@ -277,15 +291,17 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 				     job_ptr->job_id, job_ptr->time_limit, 
 				     time_limit);
 				_cancel_job(job_ptr);
-				return false;
+				rc = false;
+				goto end_it;
 			}
 		}		
 	
 		assoc_ptr = assoc_ptr->parent_assoc_ptr;
 		parent = 1;
 	}
-
-	return true;
+end_it:
+	slurm_mutex_unlock(&assoc_mgr_association_lock);
+	return rc;
 }
 
 /* FIX ME: This function should be called every so often to update time, and
@@ -294,9 +310,11 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 extern void acct_policy_update_running_job_usage(struct job_record *job_ptr)
 {
 	acct_association_rec_t *assoc_ptr;
+	slurm_mutex_lock(&assoc_mgr_association_lock);
 	assoc_ptr = job_ptr->assoc_ptr;
 	while(assoc_ptr) {
 
 		assoc_ptr = assoc_ptr->parent_assoc_ptr;
 	}
+	slurm_mutex_unlock(&assoc_mgr_association_lock);
 }

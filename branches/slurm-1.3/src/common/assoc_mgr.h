@@ -61,6 +61,8 @@ typedef struct {
  	void (*remove_assoc_notify) (acct_association_rec_t *rec);
 } assoc_init_args_t;
 
+extern pthread_mutex_t assoc_mgr_association_lock;
+
 /* 
  * get info from the storage 
  * IN/OUT:  user - acct_user_rec_t with the name set of the user.
