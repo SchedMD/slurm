@@ -60,10 +60,10 @@
 
 #endif
 
-#ifdef HAVE_BGP_FILES
-typedef rm_BG_t my_bluegene_t;
-#else
+#ifdef HAVE_BGL
 typedef rm_BGL_t my_bluegene_t;
+#else
+typedef rm_BG_t my_bluegene_t;
 #endif
 
 #endif	/* #ifndef ATTACH_BG_H */
