@@ -75,9 +75,15 @@ static int _get_user_groups(uint32_t user_id, uint32_t group_id,
 			     gid_t *groups, int max_groups, int *ngroups);
 static int _test_image_perms(char *image_name, List image_list, 
 			      struct job_record* job_ptr);
+#ifdef HAVE_BGL
 static int _check_images(struct job_record* job_ptr,
 			 char **blrtsimage, char **linuximage,
 			 char **mloaderimage, char **ramdiskimage);
+#else
+static int _check_images(struct job_record* job_ptr,
+			 char **linuximage,
+			 char **mloaderimage, char **ramdiskimage);
+#endif
 static bg_record_t *_find_matching_block(List block_list, 
 					 struct job_record* job_ptr, 
 					 bitstr_t* slurm_block_bitmap,
@@ -297,12 +303,19 @@ static int _test_image_perms(char *image_name, List image_list,
 	return allow;
 }
 
+#ifdef HAVE_BGL
 static int _check_images(struct job_record* job_ptr,
 			 char **blrtsimage, char **linuximage,
 			 char **mloaderimage, char **ramdiskimage)
+#else
+static int _check_images(struct job_record* job_ptr,
+			 char **linuximage,
+			 char **mloaderimage, char **ramdiskimage)
+#endif
 {
 	int allow = 0;
 
+#ifdef HAVE_BGL
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 			     SELECT_DATA_BLRTS_IMAGE, blrtsimage);
 	
@@ -311,12 +324,13 @@ static int _check_images(struct job_record* job_ptr,
 					  job_ptr);
 		if (!allow) {
 			error("User %u:%u is not allowed to use BlrtsImage %s",
-			      job_ptr->user_id, job_ptr->group_id, *blrtsimage);
+			      job_ptr->user_id, job_ptr->group_id,
+			      *blrtsimage);
 			return SLURM_ERROR;
 		       
 		}
 	}
-
+#endif
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 			     SELECT_DATA_LINUX_IMAGE, linuximage);
 	if (*linuximage) {
@@ -451,22 +465,29 @@ static bg_record_t *_find_matching_block(List block_list,
 			continue;
 		
 		if(check_image) {
+#ifdef HAVE_BGL
 			if(request->blrtsimage &&
 			   strcasecmp(request->blrtsimage,
 				      bg_record->blrtsimage)) {
 				*allow = 1;
 				continue;
-			} else if(request->linuximage &&
+			} 
+#endif
+			if(request->linuximage &&
 			   strcasecmp(request->linuximage,
 				      bg_record->linuximage)) {
 				*allow = 1;
 				continue;
-			} else if(request->mloaderimage &&
+			}
+
+			if(request->mloaderimage &&
 			   strcasecmp(request->mloaderimage, 
 				      bg_record->mloaderimage)) {
 				*allow = 1;
 				continue;
-			} else if(request->ramdiskimage &&
+			}
+
+			if(request->ramdiskimage &&
 			   strcasecmp(request->ramdiskimage,
 				      bg_record->ramdiskimage)) {
 				*allow = 1;
@@ -815,7 +836,9 @@ static int _find_best_block_match(List block_list,
 	char tmp_char[256];
 	int start_req = 0;
 	static int total_cpus = 0;
+#ifdef HAVE_BGL
 	char *blrtsimage = NULL;        /* BlrtsImage for this request */
+#endif
 	char *linuximage = NULL;        /* LinuxImage for this request */
 	char *mloaderimage = NULL;      /* mloaderImage for this request */
 	char *ramdiskimage = NULL;      /* RamDiskImage for this request */
@@ -860,9 +883,15 @@ static int _find_best_block_match(List block_list,
 			     SELECT_DATA_MAX_PROCS, &max_procs);
 
 	
+#ifdef HAVE_BGL
 	if((rc = _check_images(job_ptr, &blrtsimage, &linuximage,
 			       &mloaderimage, &ramdiskimage)) == SLURM_ERROR)
 		goto end_it;
+#else
+	if((rc = _check_images(job_ptr, &linuximage,
+			       &mloaderimage, &ramdiskimage)) == SLURM_ERROR)
+		goto end_it;
+#endif
 	
 	if(req_geometry[X] != 0 && req_geometry[X] != (uint16_t)NO_VAL) {
 		target_size = 1;
@@ -950,7 +979,9 @@ static int _find_best_block_match(List block_list,
 	request.rotate = rotate;
 	request.elongate = true;
 	request.start_req = start_req;
+#ifdef HAVE_BGL
 	request.blrtsimage = blrtsimage;
+#endif
 	request.linuximage = linuximage;
 	request.mloaderimage = mloaderimage;
 	request.ramdiskimage = ramdiskimage;
@@ -1164,7 +1195,9 @@ no_match:
 	rc = SLURM_ERROR;
 
 end_it:
+#ifdef HAVE_BGL
 	xfree(blrtsimage);
+#endif
 	xfree(linuximage);
 	xfree(mloaderimage);
 	xfree(ramdiskimage);
@@ -1254,17 +1287,27 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	      buf, min_nodes, req_nodes, max_nodes);
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo, buf, sizeof(buf), 
 				SELECT_PRINT_BLRTS_IMAGE);
+#ifdef HAVE_BGL
 	debug2("BlrtsImage=%s", buf);
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo, buf, sizeof(buf), 
 				SELECT_PRINT_LINUX_IMAGE);
+#endif
+#ifdef HAVE_BGL
 	debug2("LinuxImage=%s", buf);
+#else
+	debug2("ComputNodeImage=%s", buf);
+#endif
+
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo, buf, sizeof(buf), 
 				SELECT_PRINT_MLOADER_IMAGE);
 	debug2("MloaderImage=%s", buf);
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo, buf, sizeof(buf), 
 				SELECT_PRINT_RAMDISK_IMAGE);
+#ifdef HAVE_BGL
 	debug2("RamDiskImage=%s", buf);
-	
+#else
+	debug2("RamDiskIoLoadImage=%s", buf);
+#endif	
 	slurm_mutex_lock(&block_state_mutex);
 	block_list = copy_bg_list(bg_list);
 	slurm_mutex_unlock(&block_state_mutex);

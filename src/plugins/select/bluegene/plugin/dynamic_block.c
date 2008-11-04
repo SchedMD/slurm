@@ -245,7 +245,9 @@ no_list:
 	new_blocks = list_create(destroy_bg_record);
 	
 	blockreq.block = request->save_name;
+#ifdef HAVE_BGL
 	blockreq.blrtsimage = request->blrtsimage;
+#endif
 	blockreq.linuximage = request->linuximage;
 	blockreq.mloaderimage = request->mloaderimage;
 	blockreq.ramdiskimage = request->ramdiskimage;
@@ -311,7 +313,9 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 		found_record->bp_count = 1;
 	}
 	found_record->nodes = xstrdup(bg_record->nodes);
+#ifdef HAVE_BGL
 	found_record->blrtsimage = xstrdup(bg_record->blrtsimage);
+#endif
 	found_record->linuximage = xstrdup(bg_record->linuximage);
 	found_record->mloaderimage = xstrdup(bg_record->mloaderimage);
 	found_record->ramdiskimage = xstrdup(bg_record->ramdiskimage);
@@ -320,7 +324,9 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 				
 	found_record->conn_type = SELECT_SMALL;
 				
+#ifdef HAVE_BGL
 	found_record->node_use = SELECT_COPROCESSOR_MODE;
+#endif
 	if(nodecard != (uint16_t) NO_VAL)
 		small_size = 16;
 	found_record->cpus_per_bp = procs_per_node/small_size;

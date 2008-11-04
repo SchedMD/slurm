@@ -104,6 +104,7 @@ static void _pre_allocate(bg_record_t *bg_record)
 	int rc;
 	int send_psets=bluegene_numpsets;
 
+#ifdef HAVE_BGL
 	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionBlrtsImg,   
 				  bg_record->blrtsimage)) != STATUS_OK)
 		error("bridge_set_data(RM_PartitionBlrtsImg)", bg_err_str(rc));
@@ -112,14 +113,26 @@ static void _pre_allocate(bg_record_t *bg_record)
 				  bg_record->linuximage)) != STATUS_OK) 
 		error("bridge_set_data(RM_PartitionLinuxImg)", bg_err_str(rc));
 
-	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionMloaderImg, 
-				  bg_record->mloaderimage)) != STATUS_OK)
-		error("bridge_set_data(RM_PartitionMloaderImg)", 
-		      bg_err_str(rc));
-
 	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionRamdiskImg, 
 				  bg_record->ramdiskimage)) != STATUS_OK)
 		error("bridge_set_data(RM_PartitionRamdiskImg)", 
+		      bg_err_str(rc));
+#else
+	if ((rc = bridge_set_data(bg_record->bg_block,
+				  RM_PartitionCnloadImg,
+				  bg_record->linuximage)) != STATUS_OK) 
+		error("bridge_set_data(RM_PartitionLinuxCnloadImg)",
+		      bg_err_str(rc));
+
+	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionIoloadImg, 
+				  bg_record->ramdiskimage)) != STATUS_OK)
+		error("bridge_set_data(RM_PartitionIoloadImg)", 
+		      bg_err_str(rc));
+
+#endif
+	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionMloaderImg, 
+				  bg_record->mloaderimage)) != STATUS_OK)
+		error("bridge_set_data(RM_PartitionMloaderImg)", 
 		      bg_err_str(rc));
 
 	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionConnection, 
@@ -635,13 +648,14 @@ int read_bg_blocks()
 		// need to get the 000x000 range for nodes
 		// also need to get coords
 		
+#ifdef HAVE_BGL
 		if ((rc = bridge_get_data(block_ptr, RM_PartitionMode,
 					  &bg_record->node_use))
 		    != STATUS_OK) {
 			error("bridge_get_data(RM_PartitionMode): %s",
 			      bg_err_str(rc));
 		}
-			
+#endif			
 		if ((rc = bridge_get_data(block_ptr, RM_PartitionState,
 					  &bg_record->state)) != STATUS_OK) {
 			error("bridge_get_data(RM_PartitionState): %s",
@@ -717,6 +731,7 @@ int read_bg_blocks()
 			} 
 		}
 		
+#ifdef HAVE_BGL
 		/* get the images of the block */
 		if ((rc = bridge_get_data(block_ptr, 
 					  RM_PartitionBlrtsImg, 
@@ -745,6 +760,47 @@ int read_bg_blocks()
 		bg_record->linuximage = xstrdup(user_name);
 
 		if ((rc = bridge_get_data(block_ptr, 
+					  RM_PartitionRamdiskImg, 
+					  &user_name)) 
+		    != STATUS_OK) {
+			error("bridge_get_data(RM_PartitionRamdiskImg): %s",
+			      bg_err_str(rc));
+		}
+		if(!user_name) {
+			error("No RamdiskImg was returned from database");
+			goto clean_up;
+		}
+		bg_record->ramdiskimage = xstrdup(user_name);
+
+#else
+		if ((rc = bridge_get_data(block_ptr, 
+					  RM_PartitionCnloadImg, 
+					  &user_name)) 
+		    != STATUS_OK) {
+			error("bridge_get_data(RM_PartitionCnloadImg): %s",
+			      bg_err_str(rc));
+		}
+		if(!user_name) {
+			error("No CnloadImg was returned from database");
+			goto clean_up;
+		}
+		bg_record->linuximage = xstrdup(user_name);
+
+		if ((rc = bridge_get_data(block_ptr, 
+					  RM_PartitionIoloadImg, 
+					  &user_name)) 
+		    != STATUS_OK) {
+			error("bridge_get_data(RM_PartitionIoloadImg): %s",
+			      bg_err_str(rc));
+		}
+		if(!user_name) {
+			error("No IoloadImg was returned from database");
+			goto clean_up;
+		}
+		bg_record->ramdiskimage = xstrdup(user_name);
+
+#endif
+		if ((rc = bridge_get_data(block_ptr, 
 					  RM_PartitionMloaderImg, 
 					  &user_name)) 
 		    != STATUS_OK) {
@@ -757,19 +813,7 @@ int read_bg_blocks()
 		}
 		bg_record->mloaderimage = xstrdup(user_name);
 
-		if ((rc = bridge_get_data(block_ptr, 
-					  RM_PartitionRamdiskImg, 
-					  &user_name)) 
-		    != STATUS_OK) {
-			error("bridge_get_data(RM_PartitionRamdiskImg): %s",
-			      bg_err_str(rc));
-		}
-		if(!user_name) {
-			error("No RamdiskImg was returned from database");
-			goto clean_up;
-		}
-		bg_record->ramdiskimage = xstrdup(user_name);
-						
+					
 	clean_up:	
 		if (bg_recover
 		    &&  ((rc = bridge_free_block(block_ptr)) 

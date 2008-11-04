@@ -38,7 +38,9 @@ typedef struct {
 	char *slurm_part_name;
 	char *nodes;
 	enum connection_type bg_conn_type;
+#ifdef HAVE_BGL
 	enum node_use_type bg_node_use;
+#endif
 	rm_partition_state_t state;
 	int size;
 	int node_cnt;	
@@ -47,7 +49,9 @@ typedef struct {
 				 * start_range_2, .., -1  */
 	bool printed;
 	char *color;
+#ifdef HAVE_BGL
 	char *blrtsimage;       /* BlrtsImage for this block */
+#endif
 	char *linuximage;       /* LinuxImage for this block */
 	char *mloaderimage;     /* mloaderImage for this block */
 	char *ramdiskimage;     /* RamDiskImage for this block */
@@ -56,7 +60,9 @@ typedef struct {
 enum { 
 	SORTID_POS = POS_LOC,
 	SORTID_BLOCK,
+#ifdef HAVE_BGL
 	SORTID_BLRTSIMAGE,
+#endif
 	SORTID_CONN,
 	SORTID_LINUXIMAGE,
 	SORTID_MLOADERIMAGE,
@@ -86,20 +92,27 @@ static display_data_t display_data_block[] = {
 	{G_TYPE_STRING, SORTID_CONN, "Connection Type", 
 	 TRUE, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
-	{G_TYPE_STRING, SORTID_USE, "Node Use", TRUE, EDIT_NONE, refresh_block,
-	 create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_NODELIST, "BP List", TRUE, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_PARTITION, "Partition", 
 	 TRUE, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
+#ifdef HAVE_BGL
+	{G_TYPE_STRING, SORTID_USE, "Node Use", TRUE, EDIT_NONE, refresh_block,
+	 create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_BLRTSIMAGE, "Blrts Image",
 	 FALSE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_LINUXIMAGE, "linux Image",
 	 FALSE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
-	{G_TYPE_STRING, SORTID_MLOADERIMAGE, "Mloader Image",
-	 FALSE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_RAMDISKIMAGE, "Ramdisk Image",
+	 FALSE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
+#else
+	{G_TYPE_STRING, SORTID_LINUXIMAGE, "Cnload Image",
+	 FALSE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
+	{G_TYPE_STRING, SORTID_RAMDISKIMAGE, "Ioload Image",
+	 FALSE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
+#endif
+	{G_TYPE_STRING, SORTID_MLOADERIMAGE, "Mloader Image",
 	 FALSE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
 	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
@@ -123,7 +136,9 @@ static display_data_t options_data_block[] = {
 static display_data_t *local_display_data = NULL;
 
 static char* _convert_conn_type(enum connection_type conn_type);
+#ifdef HAVE_BGL
 static char* _convert_node_use(enum node_use_type node_use);
+#endif
 static int _in_slurm_partition(int *part_inx, int *block_inx);
 static void _append_block_record(sview_block_info_t *block_ptr,
 				 GtkTreeStore *treestore, GtkTreeIter *iter, 
@@ -138,7 +153,9 @@ static void _block_list_del(void *object)
 		xfree(block_ptr->bg_block_name);
 		xfree(block_ptr->slurm_part_name);
 		xfree(block_ptr->nodes);
+#ifdef HAVE_BGL
 		xfree(block_ptr->blrtsimage);
+#endif
 		xfree(block_ptr->linuximage);
 		xfree(block_ptr->mloaderimage);
 		xfree(block_ptr->ramdiskimage);
@@ -190,6 +207,7 @@ static char* _convert_conn_type(enum connection_type conn_type)
 	return "?";
 }
 
+#ifdef HAVE_BGL
 static char* _convert_node_use(enum node_use_type node_use)
 {
 	switch (node_use) {
@@ -202,6 +220,7 @@ static char* _convert_node_use(enum node_use_type node_use)
 	}
 	return "?";
 }
+#endif
 
 static void _layout_block_record(GtkTreeView *treeview,
 				 sview_block_info_t *block_ptr, 
@@ -233,11 +252,12 @@ static void _layout_block_record(GtkTreeView *treeview,
 						 SORTID_CONN),
 				   _convert_conn_type(
 					   block_ptr->bg_conn_type));
+#ifdef HAVE_BGL
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_block,
 						 SORTID_USE),
 				   _convert_node_use(block_ptr->bg_node_use));
-	
+#endif	
 	convert_num_unit((float)block_ptr->node_cnt, tmp_cnt, sizeof(tmp_cnt),
 			 UNIT_NONE);
 	add_display_treestore_line(update, treestore, &iter, 
@@ -249,10 +269,12 @@ static void _layout_block_record(GtkTreeView *treeview,
 				   find_col_name(display_data_block,
 						 SORTID_NODELIST),
 				   block_ptr->nodes);
+#ifdef HAVE_BGL
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_block,
 						 SORTID_BLRTSIMAGE),
 				   block_ptr->blrtsimage);
+#endif
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_block,
 						 SORTID_LINUXIMAGE),
@@ -282,9 +304,10 @@ static void _update_block_record(sview_block_info_t *block_ptr,
 			   block_ptr->bg_user_name, -1);
 	gtk_tree_store_set(treestore, iter, SORTID_CONN, 
 			   _convert_conn_type(block_ptr->bg_conn_type), -1);
+#ifdef HAVE_BGL
 	gtk_tree_store_set(treestore, iter, SORTID_USE, 
 			   _convert_node_use(block_ptr->bg_node_use), -1);
-	
+#endif	
 	convert_num_unit((float)block_ptr->node_cnt, tmp_cnt, sizeof(tmp_cnt),
 			 UNIT_NONE);
 	gtk_tree_store_set(treestore, iter, SORTID_NODES, tmp_cnt, -1);
@@ -292,8 +315,10 @@ static void _update_block_record(sview_block_info_t *block_ptr,
 	gtk_tree_store_set(treestore, iter, SORTID_NODELIST,
 			   block_ptr->nodes, -1);
 
+#ifdef HAVE_BGL
 	gtk_tree_store_set(treestore, iter, SORTID_BLRTSIMAGE,
 			   block_ptr->blrtsimage, -1);
+#endif
 	gtk_tree_store_set(treestore, iter, SORTID_LINUXIMAGE,
 			   block_ptr->linuximage, -1);
 	gtk_tree_store_set(treestore, iter, SORTID_MLOADERIMAGE,
@@ -440,8 +465,10 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 		block_ptr->bg_user_name 
 			= xstrdup(node_select_ptr->
 				  bg_info_array[i].owner_name);
+#ifdef HAVE_BGL
 		block_ptr->blrtsimage = xstrdup(
 			node_select_ptr->bg_info_array[i].blrtsimage);
+#endif
 		block_ptr->linuximage = xstrdup(
 			node_select_ptr->bg_info_array[i].linuximage);
 		block_ptr->mloaderimage = xstrdup(
@@ -453,9 +480,10 @@ static List _create_block_list(partition_info_msg_t *part_info_ptr,
 			= node_select_ptr->bg_info_array[i].state;
 		block_ptr->bg_conn_type 
 			= node_select_ptr->bg_info_array[i].conn_type;
+#ifdef HAVE_BGL
 		block_ptr->bg_node_use 
 			= node_select_ptr->bg_info_array[i].node_use;
-
+#endif
 		block_ptr->node_cnt 
 			= node_select_ptr->bg_info_array[i].node_cnt;
 		block_ptr->bp_inx 
