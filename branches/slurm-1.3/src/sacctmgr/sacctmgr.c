@@ -705,8 +705,8 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                                                                            \n\
   <SPECS> are different for each command entity pair.                      \n\
        list account       - Clusters=, Descriptions=, Format=, Names=,     \n\
-                            Organizations=, Parents=, WithCoor=,           \n\
-                            WithSubAccounts, and WithAssocs                \n\
+                            Organizations=, Parents=, WithAssocs,          \n\
+                            WithCoordinators, WithRawQOS, and WOPLimits    \n\
        add account        - Clusters=, Description=, Fairshare=,           \n\
                             GrpCPUMins=, GrpCPUs=, GrpJobs=, GrpNodes=,    \n\
                             GrpSubmitJob=, GrpWall=, MaxCPUMins=, MaxJobs=,\n\
@@ -749,11 +749,12 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             Preemptee=, Preemptor=, Priority=, and Names=  \n\
        delete qos         - Descriptions=, Ids=, and Names=                \n\
                                                                            \n\
-       list transactions  - Actor=, EndTime,                               \n\
-                            Format=, ID=, and Start=                       \n\
+       list transactions  - Accounts=, Action=, Actor=, Clusters=, End=,   \n\
+                            Format=, ID=, Start=, User=, and WithAssocInfo \n\
                                                                            \n\
        list user          - AdminLevel=, DefaultAccounts=, Format=, Names=,\n\
-                            QosLevel=, WithCoor=, and WithAssocs           \n\
+                            QosLevel=, WithAssocs, WithCoordinators,       \n\
+                            WithRawQOS, and WOPLimits                      \n\
        add user           - Accounts=, AdminLevel=, Clusters=,             \n\
                             DefaultAccount=, Fairshare=, MaxCPUMins=       \n\
                             MaxCPUs=, MaxJobs=, MaxNodes=, MaxWall=,       \n\
@@ -775,18 +776,25 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
        Association        - Account, Cluster, Fairshare, GrpCPUMins,       \n\
                             GrpCPUs, GrpJobs, GrpNodes, GrpSubmitJob,      \n\
                             GrpWall, ID, LFT, MaxCPUs, MaxCPUMins,         \n\
-                            MaxJobs, MaxNodes, MaxWall, QOS, ParentID,     \n\
-                            ParentName, Partition, RGT, User               \n\
+                            MaxJobs, MaxNodes, MaxSubmitJobs, MaxWall, QOS,\n\
+                            ParentID, ParentName, Partition, RawQOS, RGT,  \n\
+                            User                                           \n\
                                                                            \n\
        Cluster            - Cluster, ControlHost, ControlPort, Fairshare   \n\
-                            MaxCPUSecs, MaxJobs, MaxNodes, MaxWall         \n\
+                            GrpCPUMins, GrpCPUs, GrpJobs, GrpNodes,        \n\
+                            GrpSubmitJob, GrpWall, MaxCPUs, MaxCPUMins,    \n\
+                            MaxJobs, MaxNodes, MaxSubmitJobs, MaxWall      \n\
                                                                            \n\
        QOS                - Description, ID, Name                          \n\
                                                                            \n\
-       Transactions       - Action, Actor, ID, Info, TimeStamp, Where      \n\
+       Transactions       - Account, Action, Actor, TimeStamp, Info, User, \n\
+                            Where                                          \n\
                                                                            \n\
        User               - AdminLevel, CoordinatorList, DefaultAccount,   \n\
                             User                                           \n\
+                                                                           \n\
+       Account/User WithAssoc option will also honor                       \n\
+       all of the options for Association.                                 \n\
                                                                            \n\
                                                                            \n\
   All commands entitys, and options are case-insensitive.               \n\n");
