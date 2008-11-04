@@ -321,7 +321,11 @@ typedef struct dbd_step_start_msg {
 
 /* flag to let us know if we are running on cache or from the actual
  * database */
-extern bool running_cache;
+extern uint16_t running_cache;
+/* mutex and signal to let us know if associations have been reset so we need to
+ * redo all the pointers to the associations */
+extern pthread_mutex_t assoc_cache_mutex; /* assoc cache mutex */
+extern pthread_cond_t assoc_cache_cond; /* assoc cache condition */
 
 /*****************************************************************************\
  * Slurm DBD message processing functions
