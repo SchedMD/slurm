@@ -184,6 +184,11 @@ static int _set_assoc_parent_and_user(acct_association_rec_t *assoc,
 			}
 			list_iterator_destroy(itr);
 		}
+		if(assoc == assoc->parent_assoc_ptr) {
+			assoc->parent_assoc_ptr = NULL;
+			error("association %u was pointing to "
+			      "itself as it's parent");
+		}
 	}
 
 	if(assoc->user) {
