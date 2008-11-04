@@ -18,8 +18,11 @@
 /* Define to 1 if emulating or running on Blue Gene system */
 #undef HAVE_BG
 
-/* Define to 1 if have BG/P files */
-#undef HAVE_BGP_FILES
+/* Define to 1 if emulating or running on Blue Gene/L system */
+#undef HAVE_BGL
+
+/* Define to 1 if emulating or running on Blue Gene/P system */
+#undef HAVE_BGP
 
 /* Define to 1 if have Blue Gene files */
 #undef HAVE_BG_FILES
