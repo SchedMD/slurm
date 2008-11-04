@@ -80,7 +80,9 @@ typedef struct {
  */
 typedef struct {
 	bitstr_t *avail_node_bitmap;   /* pointer to available nodes */	
+#ifdef HAVE_BGL
 	char *blrtsimage;              /* BlrtsImage for this block */
+#endif
 	int conn_type;                 /* mesh, torus, or small */
 	bool elongate;                 /* whether allow elongation or not */
 	int elongate_count;            /* place in elongate_geos list
@@ -117,7 +119,9 @@ typedef struct {
 	char *block;                   /* Hostlist of midplanes in the
 					  block */
 	int conn_type;                 /* mesh, torus, or small */
+#ifdef HAVE_BGL
 	char *blrtsimage;              /* BlrtsImage for this block */
+#endif
 	char *linuximage;              /* LinuxImage for this block */
 	char *mloaderimage;            /* mloaderImage for this block */
 	uint16_t nodecards;            /* number of nodecards in

@@ -44,7 +44,7 @@
 static int _get_bp_by_location(my_bluegene_t* my_bg, 
 			       int* curr_coord, 
 			       rm_BP_t** bp);
-static int _get_switches_by_bpid(my_blugene_t* my_bg, const char *bpid,
+static int _get_switches_by_bpid(my_bluegene_t* my_bg, const char *bpid,
 				 rm_switch_t **curr_switch);
 
 //static int _set_switch(rm_switch_t* curr_switch, ba_connection_t *int_wire);

@@ -779,7 +779,12 @@ extern void create_search_popup(GtkAction *action, gpointer user_data)
 			{G_TYPE_NONE, RM_PARTITION_CONFIGURING, "Configuring",
 			 TRUE, -1},
 			{G_TYPE_NONE, RM_PARTITION_READY, "Ready", TRUE, -1},
+#ifdef HAVE_BGL
 			{G_TYPE_NONE, RM_PARTITION_BUSY, "Busy", TRUE, -1},
+#else
+			{G_TYPE_NONE, RM_PARTITION_REBOOTING, "Rebooting",
+			 TRUE, -1},
+#endif
 			{G_TYPE_NONE, RM_PARTITION_DEALLOCATING,
 			 "Deallocating", TRUE, -1},
 			{G_TYPE_NONE, RM_PARTITION_ERROR, "Error", TRUE, -1},

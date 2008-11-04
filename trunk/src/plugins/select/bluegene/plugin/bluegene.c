@@ -57,11 +57,16 @@ List bg_job_block_list = NULL;  	/* jobs running in these blocks */
 List bg_booted_block_list = NULL;  	/* blocks that are booted */
 List bg_freeing_list = NULL;  	        /* blocks that being freed */
 
+#ifdef HAVE_BGL
 List bg_blrtsimage_list = NULL;
+#endif
 List bg_linuximage_list = NULL;
 List bg_mloaderimage_list = NULL;
 List bg_ramdiskimage_list = NULL;
-char *default_blrtsimage = NULL, *default_linuximage = NULL;
+#ifdef HAVE_BGL
+char *default_blrtsimage = NULL;
+#endif
+char *default_linuximage = NULL;
 char *default_mloaderimage = NULL, *default_ramdiskimage = NULL;
 char *bridge_api_file = NULL; 
 bg_layout_t bluegene_layout_mode = NO_VAL;
@@ -166,11 +171,12 @@ extern void fini_bg(void)
 	while(destroy_cnt > 0)
 		usleep(1000);
 	
+#ifdef HAVE_BGL
 	if(bg_blrtsimage_list) {
 		list_destroy(bg_blrtsimage_list);
 		bg_blrtsimage_list = NULL;
 	}
-	
+#endif	
 	if(bg_linuximage_list) {
 		list_destroy(bg_linuximage_list);
 		bg_linuximage_list = NULL;
@@ -186,7 +192,9 @@ extern void fini_bg(void)
 		bg_ramdiskimage_list = NULL;
 	}
 
+#ifdef HAVE_BGL
 	xfree(default_blrtsimage);
+#endif
 	xfree(default_linuximage);
 	xfree(default_mloaderimage);
 	xfree(default_ramdiskimage);
@@ -374,6 +382,7 @@ extern char* convert_conn_type(rm_connection_type_t conn_type)
 	return "";
 }
 
+#ifdef HAVE_BGL
 extern char* convert_node_use(rm_partition_mode_t pt)
 {
 	switch (pt) {
@@ -386,6 +395,7 @@ extern char* convert_node_use(rm_partition_mode_t pt)
 	}
 	return "";
 }
+#endif
 
 /** 
  * sort the partitions by increasing size
@@ -865,6 +875,7 @@ extern int read_bg_conf(void)
 		      "conf file");
 	
 	_set_bg_lists();	
+#ifdef HAVE_BGL
 	if (s_p_get_array((void ***)&image_array, 
 			  &count, "AltBlrtsImage", tbl)) {
 		for (i = 0; i < count; i++) {
@@ -924,36 +935,6 @@ extern int read_bg_conf(void)
 	}
 
 	if (s_p_get_array((void ***)&image_array, 
-			  &count, "AltMloaderImage", tbl)) {
-		for (i = 0; i < count; i++) {
-			list_append(bg_mloaderimage_list, image_array[i]);
-			image_array[i] = NULL;
-		}
-	}
-	if (!s_p_get_string(&default_mloaderimage,
-			    "MloaderImage", tbl)) {
-		if(!list_count(bg_mloaderimage_list))
-			fatal("MloaderImage not configured "
-			      "in bluegene.conf");
-		itr = list_iterator_create(bg_mloaderimage_list);
-		image = list_next(itr);
-		image->def = true;
-		list_iterator_destroy(itr);
-		default_mloaderimage = xstrdup(image->name);
-		info("Warning: using %s as the default MloaderImage.  "
-		     "If this isn't correct please set MloaderImage",
-		     default_mloaderimage); 
-	} else {
-		debug3("default MloaderImage %s", default_mloaderimage);
-		image = xmalloc(sizeof(image_t));
-		image->name = xstrdup(default_mloaderimage);
-		image->def = true;
-		image->groups = NULL;
-		/* we want it to be first */
-		list_push(bg_mloaderimage_list, image);		
-	}
-
-	if (s_p_get_array((void ***)&image_array, 
 			  &count, "AltRamDiskImage", tbl)) {
 		for (i = 0; i < count; i++) {
 			list_append(bg_ramdiskimage_list, image_array[i]);
@@ -981,6 +962,97 @@ extern int read_bg_conf(void)
 		image->groups = NULL;
 		/* we want it to be first */
 		list_push(bg_ramdiskimage_list, image);		
+	}
+#else
+
+	if (s_p_get_array((void ***)&image_array, 
+			  &count, "AltCnloadImage", tbl)) {
+		for (i = 0; i < count; i++) {
+			list_append(bg_linuximage_list, image_array[i]);
+			image_array[i] = NULL;
+		}
+	}
+	if (!s_p_get_string(&default_linuximage, "CnloadImage", tbl)) {
+		if(!list_count(bg_linuximage_list))
+			fatal("CnloadImage not configured "
+			      "in bluegene.conf");
+		itr = list_iterator_create(bg_linuximage_list);
+		image = list_next(itr);
+		image->def = true;
+		list_iterator_destroy(itr);
+		default_linuximage = xstrdup(image->name);
+		info("Warning: using %s as the default CnloadImage.  "
+		     "If this isn't correct please set CnloadImage",
+		     default_linuximage); 
+	} else {
+		debug3("default CnloadImage %s", default_linuximage);
+		image = xmalloc(sizeof(image_t));
+		image->name = xstrdup(default_linuximage);
+		image->def = true;
+		image->groups = NULL;
+		/* we want it to be first */
+		list_push(bg_linuximage_list, image);		
+	}
+
+	if (s_p_get_array((void ***)&image_array, 
+			  &count, "AltIoloadImage", tbl)) {
+		for (i = 0; i < count; i++) {
+			list_append(bg_ramdiskimage_list, image_array[i]);
+			image_array[i] = NULL;
+		}
+	}
+	if (!s_p_get_string(&default_ramdiskimage,
+			    "IoloadImage", tbl)) {
+		if(!list_count(bg_ramdiskimage_list))
+			fatal("IoloadImage not configured "
+			      "in bluegene.conf");
+		itr = list_iterator_create(bg_ramdiskimage_list);
+		image = list_next(itr);
+		image->def = true;
+		list_iterator_destroy(itr);
+		default_ramdiskimage = xstrdup(image->name);
+		info("Warning: using %s as the default IoloadImage.  "
+		     "If this isn't correct please set IoloadImage",
+		     default_ramdiskimage); 
+	} else {
+		debug3("default IoloadImage %s", default_ramdiskimage);
+		image = xmalloc(sizeof(image_t));
+		image->name = xstrdup(default_ramdiskimage);
+		image->def = true;
+		image->groups = NULL;
+		/* we want it to be first */
+		list_push(bg_ramdiskimage_list, image);		
+	}
+
+#endif
+	if (s_p_get_array((void ***)&image_array, 
+			  &count, "AltMloaderImage", tbl)) {
+		for (i = 0; i < count; i++) {
+			list_append(bg_mloaderimage_list, image_array[i]);
+			image_array[i] = NULL;
+		}
+	}
+	if (!s_p_get_string(&default_mloaderimage,
+			    "MloaderImage", tbl)) {
+		if(!list_count(bg_mloaderimage_list))
+			fatal("MloaderImage not configured "
+			      "in bluegene.conf");
+		itr = list_iterator_create(bg_mloaderimage_list);
+		image = list_next(itr);
+		image->def = true;
+		list_iterator_destroy(itr);
+		default_mloaderimage = xstrdup(image->name);
+		info("Warning: using %s as the default MloaderImage.  "
+		     "If this isn't correct please set MloaderImage",
+		     default_mloaderimage); 
+	} else {
+		debug3("default MloaderImage %s", default_mloaderimage);
+		image = xmalloc(sizeof(image_t));
+		image->name = xstrdup(default_mloaderimage);
+		image->def = true;
+		image->groups = NULL;
+		/* we want it to be first */
+		list_push(bg_mloaderimage_list, image);		
 	}
 
 	if (!s_p_get_uint16(&bluegene_numpsets, "Numpsets", tbl))
@@ -1119,9 +1191,11 @@ static void _set_bg_lists()
 
 	slurm_mutex_unlock(&block_state_mutex);	
 	
+#ifdef HAVE_BGL
 	if(bg_blrtsimage_list)
 		list_destroy(bg_blrtsimage_list);
 	bg_blrtsimage_list = list_create(destroy_image);
+#endif
 	if(bg_linuximage_list)
 		list_destroy(bg_linuximage_list);
 	bg_linuximage_list = list_create(destroy_image);
@@ -1153,7 +1227,6 @@ static int _validate_config_nodes(List *bg_found_block_list)
 	int full_created = 0;
 	ListIterator itr_conf;
 	ListIterator itr_curr;
-	rm_partition_mode_t node_use;
 	char tmp_char[256];
 
 	/* read current bg block info into bg_curr_block_list */
@@ -1181,7 +1254,6 @@ static int _validate_config_nodes(List *bg_found_block_list)
 		   string for consistent format
 		   search here 
 		*/
-		node_use = SELECT_COPROCESSOR_MODE; 
 		list_iterator_reset(itr_curr);
 		while ((init_bg_record = list_next(itr_curr))) {
 			if (strcasecmp(bg_record->nodes, 
@@ -1196,10 +1268,12 @@ static int _validate_config_nodes(List *bg_found_block_list)
 			if(bg_record->nodecard !=
 			   init_bg_record->nodecard)
 				continue; /* wrong nodecard */
+#ifdef HAVE_BGL
 			if(bg_record->blrtsimage &&
 			   strcasecmp(bg_record->blrtsimage,
 				      init_bg_record->blrtsimage)) 
 				continue;
+#endif
 			if(bg_record->linuximage &&
 			   strcasecmp(bg_record->linuximage,
 				      init_bg_record->linuximage))

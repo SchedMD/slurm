@@ -97,9 +97,9 @@ void *handle = NULL;
 int _get_syms(int n_syms, const char *names[], void *ptrs[])
 {
         int i, count;
-	void *db_handle = NULL;
-#ifndef HAVE_BGP_FILES	
+#ifdef HAVE_BGL	
 #ifdef BG_DB2_SO
+	void *db_handle = NULL;
 	db_handle = dlopen (BG_DB2_SO, RTLD_LAZY);
 	if (!db_handle) {
 		have_db2 = false;
@@ -110,7 +110,7 @@ int _get_syms(int n_syms, const char *names[], void *ptrs[])
 #else
 	fatal("No BG_DB2_SO is set, can't run.");
 #endif
-#endif // HAVE_BGP_FILES
+#endif // HAVE_BGL
 
 #ifdef BG_BRIDGE_SO
 	handle = dlopen (BG_BRIDGE_SO, RTLD_LAZY);
@@ -139,7 +139,7 @@ int _get_syms(int n_syms, const char *names[], void *ptrs[])
 
 extern int bridge_init()
 {
-#ifdef HAVE_BGP_FILES
+#ifdef HAVE_BGP
 	static const char *syms[] = {
 		"rm_set_serial",
 		"rm_get_BGP",
@@ -172,7 +172,9 @@ extern int bridge_init()
 		"pm_destroy_partition",
 		"setSayMessageParams"
 	};
-#else
+#endif
+
+#ifdef HAVE_BGL
 	static const char *syms[] = {
 		"rm_set_serial",
 		"rm_get_BGL",

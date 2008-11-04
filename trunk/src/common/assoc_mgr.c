@@ -211,10 +211,16 @@ static int _set_assoc_parent_and_user(acct_association_rec_t *assoc,
 					list_create(NULL);
 			list_append(assoc->parent_assoc_ptr->childern_list,
 				    assoc);
-		}				
+		}	
+			
+		if(assoc == assoc->parent_assoc_ptr) {
+			assoc->parent_assoc_ptr = NULL;
+			error("association %u was pointing to "
+			      "itself as it's parent");
+		}
 	} else 
 		assoc_mgr_root_assoc = assoc;
-	
+
 	if(assoc->user) {
 		uid_t pw_uid = uid_from_string(assoc->user);
 		if(pw_uid == (uid_t) -1) 

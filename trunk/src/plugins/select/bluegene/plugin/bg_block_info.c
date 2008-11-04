@@ -213,13 +213,17 @@ extern void pack_block(bg_record_t *bg_record, Buf buffer)
 	packstr(bg_record->bg_block_id, buffer);
 	pack16((uint16_t)bg_record->state, buffer);
 	pack16((uint16_t)bg_record->conn_type, buffer);
+#ifdef HAVE_BGL
 	pack16((uint16_t)bg_record->node_use, buffer);	
+#endif
 	pack16((uint16_t)bg_record->quarter, buffer);	
 	pack16((uint16_t)bg_record->nodecard, buffer);	
 	pack32((uint32_t)bg_record->node_cnt, buffer);
 	pack_bit_fmt(bg_record->bitmap, buffer);
 	pack_bit_fmt(bg_record->ionode_bitmap, buffer);
+#ifdef HAVE_BGL
 	packstr(bg_record->blrtsimage, buffer);
+#endif
 	packstr(bg_record->linuximage, buffer);
 	packstr(bg_record->mloaderimage, buffer);
 	packstr(bg_record->ramdiskimage, buffer);
@@ -231,7 +235,9 @@ extern int update_block_list()
 #ifdef HAVE_BG_FILES
 	int rc;
 	rm_partition_t *block_ptr = NULL;
+#ifdef HAVE_BGL
 	rm_partition_mode_t node_use;
+#endif
 	rm_partition_state_t state;
 	char *name = NULL;
 	bg_record_t *bg_record = NULL;
@@ -277,6 +283,7 @@ extern int update_block_list()
 			continue;
 		}
 				
+#ifdef HAVE_BGL
 		if ((rc = bridge_get_data(block_ptr, RM_PartitionMode,
 					  &node_use))
 		    != STATUS_OK) {
@@ -293,7 +300,7 @@ extern int update_block_list()
 			bg_record->node_use = node_use;
 			updated = 1;
 		}
-		
+#endif		
 		if ((rc = bridge_get_data(block_ptr, RM_PartitionState,
 					  &state))
 		    != STATUS_OK) {
