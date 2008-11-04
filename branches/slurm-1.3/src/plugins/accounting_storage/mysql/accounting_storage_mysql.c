@@ -6880,7 +6880,8 @@ empty:
 		   && row[ASSOC_REQ_PARENT][0]) {
 			assoc->parent_acct = xstrdup(row[ASSOC_REQ_PARENT]);
 			parent_acct = row[ASSOC_REQ_PARENT];
-		} 
+		} else if(!assoc->user)
+			parent_acct = NULL;
 
 		if(row[ASSOC_REQ_PART][0])
 			assoc->partition = xstrdup(row[ASSOC_REQ_PART]);
@@ -6889,7 +6890,7 @@ empty:
 		else
 			assoc->fairshare = 1;
 
-		if(!without_parent_info && 
+		if(!without_parent_info && parent_acct &&
 		   (!last_acct || !last_cluster 
 		    || strcmp(parent_acct, last_acct)
 		    || strcmp(row[ASSOC_REQ_CLUSTER], last_cluster))) {
