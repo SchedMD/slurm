@@ -44,6 +44,7 @@
 #include "src/common/slurm_protocol_util.h"
 #include "src/common/log.h"
 #include "src/common/xmalloc.h"
+#include "src/slurmdbd/read_config.h"
 
 /* 
  * check_header_version checks to see that the specified header was sent 
@@ -53,7 +54,11 @@
  */
 int check_header_version(header_t * header)
 {
-	if (header->version != SLURM_PROTOCOL_VERSION)
+	if(slurmdbd_conf) {
+		if (header->version != SLURM_PROTOCOL_VERSION
+		    && header->version != SLURM_1_3_PROTOCOL_VERSION)
+			slurm_seterrno_ret(SLURM_PROTOCOL_VERSION_ERROR);
+	} else if (header->version != SLURM_PROTOCOL_VERSION)
 		slurm_seterrno_ret(SLURM_PROTOCOL_VERSION_ERROR);
 
 	return SLURM_PROTOCOL_SUCCESS;
@@ -70,7 +75,20 @@ void init_header(header_t *header, slurm_msg_t *msg,
 		 uint16_t flags)
 {
 	memset(header, 0, sizeof(header));
-	header->version = SLURM_PROTOCOL_VERSION;
+	/* Since the slurmdbd could talk to a host of different
+	   versions of slurm this needs to be kept current when the
+	   protocol version changes. */
+	if(msg->msg_type == ACCOUNTING_UPDATE_MSG
+	   || msg->msg_type == ACCOUNTING_FIRST_REG) {
+		uint32_t rpc_version =
+			((accounting_update_msg_t *)msg->data)->rpc_version;
+		if(rpc_version < 4)
+			header->version = SLURM_1_3_PROTOCOL_VERSION;
+		else if(rpc_version >= 4)
+			header->version = SLURM_PROTOCOL_VERSION;
+	} else 
+		header->version = SLURM_PROTOCOL_VERSION;
+	
 	header->flags = flags;
 	header->msg_type = msg->msg_type;
 	header->body_length = 0;	/* over-written later */

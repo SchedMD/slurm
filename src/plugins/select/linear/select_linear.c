@@ -1225,9 +1225,17 @@ static int _rm_job_from_nodes(struct node_cr_record *node_cr_ptr,
 			break;
 		}
 		if (part_cr_ptr == NULL) {
-			error("%s: could not find partition %s for node %s",
-				pre_err, job_ptr->part_ptr->name,
-				node_record_table_ptr[i].name);
+			if(job_ptr->part_ptr)
+				error("%s: could not find partition "
+				      "%s for node %s",
+				      pre_err, job_ptr->part_ptr->name,
+				      node_record_table_ptr[i].name);
+			else
+				error("%s: no partition ptr given for "
+				      "job %u and node %s",
+				      pre_err, job_ptr->job_id,
+				      node_record_table_ptr[i].name);
+				
 			rc = SLURM_ERROR;
 		}
 	}

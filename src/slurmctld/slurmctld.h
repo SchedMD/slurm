@@ -264,6 +264,8 @@ struct part_record {
 	uint16_t root_only;	/* 1 if allocate/submit RPC can only be 
 				   issued by user root */
 	uint16_t max_share;	/* number of jobs to gang schedule */
+	double   norm_priority;	/* normalized scheduling priority for
+				 * jobs (DON'T PACK) */
 	uint16_t priority;	/* scheduling priority for jobs */
 	uint16_t state_up;	/* 1 if state is up, 0 if down */
 	char *nodes;		/* comma delimited list names of nodes */
@@ -278,19 +280,12 @@ extern time_t last_part_update;		/* time of last part_list update */
 extern struct part_record default_part;	/* default configuration values */
 extern char *default_part_name;		/* name of default partition */
 extern struct part_record *default_part_loc;	/* default partition ptr */
+extern uint16_t part_max_priority;      /* max priority in all partitions */
 
 /*****************************************************************************\
  *  JOB parameters and data structures
 \*****************************************************************************/
 extern time_t last_job_update;	/* time of last update to part records */
-
-/* Used for Moab
- * These QOS values only apply to LLNL's configuration
- * Other values may apply at other sites,
- * These may be mapped to partition priorities in the future */
-#define QOS_EXPEDITE	300
-#define QOS_NORMAL 	200
-#define	QOS_STANDBY	100
 
 #define DETAILS_MAGIC 0xdea84e7
 #define JOB_MAGIC 0xf0b7392c
@@ -341,6 +336,8 @@ struct job_details {
 	char *mem_bind;			/* binding map for map/mask_cpu */
 	uint16_t mem_bind_type;		/* see mem_bind_type_t */
 	uint32_t min_nodes;		/* minimum number of nodes */
+	uint16_t nice;		        /* requested priority change, 
+					 * NICE_OFFSET == no change */
 	uint16_t ntasks_per_node;	/* number of tasks on each node */
 	uint32_t num_tasks;		/* number of tasks to start */
 	uint8_t open_mode;		/* stdout/err append or trunctate */
@@ -391,6 +388,9 @@ struct job_record {
 	uint32_t db_index;              /* used only for database
 					 * plugins */
 	struct job_details *details;	/* job details */
+	uint16_t direct_set_prio;	/* Priority set directly if
+					 * set the system will not
+					 * change the priority any further. */
 	time_t end_time;		/* time of termination, 
 					 * actual or expected */
 	uint32_t exit_code;		/* exit code for job (status from 
@@ -430,6 +430,12 @@ struct job_record {
 					 * zero == held (don't initiate) */
 	uint16_t qos;			/* quality of service, 
 					 * used only by Moab */
+	void *qos_ptr;	                /* pointer to the quality of
+					 * service record used for this job, 
+					 * used only by Moab, it is
+					 * void* because of interdependencies
+					 * in the header files, confirm the 
+					 * value before use*/
 	uint32_t requid;            	/* requester user ID */
 	char *resp_host;		/* host for srun communications */
 	select_jobinfo_t select_jobinfo;/* opaque data, BlueGene */

@@ -42,6 +42,7 @@
 #include "src/common/log.h"
 #include "src/slurmctld/slurmctld.h"
 #include "./msg.h"
+#include "src/common/slurm_priority.h"
 
 const char		plugin_name[]	= "Wiki (Maui) Scheduler plugin";
 const char		plugin_type[]	= "sched/wiki";
@@ -117,12 +118,9 @@ slurm_sched_plugin_initial_priority( uint32_t last_prio,
 		return 0;
 	}
 
-	if (init_prio_mode == PRIO_DECREMENT) {
-		if (last_prio >= 2)
-			return (last_prio - 1);
-		else
-			return 1;
-	}
+	if (init_prio_mode == PRIO_DECREMENT) 
+		return priority_g_set(last_prio, job_ptr);
+
 	return 0;
 }
 

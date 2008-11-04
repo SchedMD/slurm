@@ -218,6 +218,56 @@ extern void print_fields_uint64(print_field_t *field, uint64_t value, int last)
 	}
 }
 
+extern void print_fields_double(print_field_t *field, double value, int last)
+{
+	/* (value == unset)  || (value == cleared) */
+	if((value == NO_VAL) || (value == INFINITE)) {
+		if(print_fields_parsable_print 
+		   == PRINT_FIELDS_PARSABLE_NO_ENDING
+		   && last)
+			;
+		else if(print_fields_parsable_print)
+			printf("|");	
+		else				
+			printf("%*s ", field->len, " ");
+	} else {
+		if(print_fields_parsable_print
+		   == PRINT_FIELDS_PARSABLE_NO_ENDING
+		   && last)
+			printf("%f", value);	
+		else if(print_fields_parsable_print)
+			printf("%f|", value);	
+		else
+			printf("%*f ", field->len, value);
+	}
+}
+
+extern void print_fields_long_double(
+	print_field_t *field, long double value, int last)
+{
+	/* (value == unset)  || (value == cleared) */
+	if((value == NO_VAL) || (value == INFINITE)) {
+		if(print_fields_parsable_print 
+		   == PRINT_FIELDS_PARSABLE_NO_ENDING
+		   && last)
+			;
+		else if(print_fields_parsable_print)
+			printf("|");	
+		else				
+			printf("%*s ", field->len, " ");
+	} else {
+		if(print_fields_parsable_print
+		   == PRINT_FIELDS_PARSABLE_NO_ENDING
+		   && last)
+			printf("%Lf", value);	
+		else if(print_fields_parsable_print)
+			printf("%Lf|", value);	
+		else
+			printf("%*Lf ", field->len, value);
+	}
+
+}
+
 extern void print_fields_time(print_field_t *field, uint32_t value, int last)
 {
 	/* (value == unset)  || (value == cleared) */

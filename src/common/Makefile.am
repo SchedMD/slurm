@@ -56,6 +56,8 @@ libcommon_la_SOURCES = 			\
 	slurm_cred.h       		\
 	slurm_cred.c			\
 	slurm_errno.c			\
+	slurm_priority.c		\
+	slurm_priority.h		\
 	slurm_protocol_api.c		\
 	slurm_protocol_api.h		\
 	slurm_protocol_pack.c		\

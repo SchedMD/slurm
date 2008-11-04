@@ -1163,7 +1163,7 @@ void do_dump(void)
 			       job->blockid,	/* block id */
 			       "-");	/* reserved 1 */
 
-			printf("JOB_START 1 16 %d %d %s %d %d %d %s %s\n", 
+			printf("JOB_START 1 16 %d %d %s %d %f %d %s %s\n", 
 			       job->uid,
 			       job->gid,
 			       job->jobname,

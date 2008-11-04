@@ -60,6 +60,7 @@
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
 #include "src/common/pack.h"
+#include "src/common/slurm_priority.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_cred.h"
@@ -96,6 +97,7 @@ inline static void  _slurm_rpc_complete_batch_script(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_conf(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_jobs(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_job_single(slurm_msg_t * msg);
+inline static void  _slurm_rpc_get_shares(slurm_msg_t *msg);
 inline static void  _slurm_rpc_dump_nodes(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_partitions(slurm_msg_t * msg);
 inline static void  _slurm_rpc_epilog_complete(slurm_msg_t * msg);
@@ -162,6 +164,10 @@ void slurmctld_req (slurm_msg_t * msg)
 	case REQUEST_JOB_INFO_SINGLE:
 		_slurm_rpc_dump_job_single(msg);
 		slurm_free_job_id_msg(msg->data);
+		break;
+	case REQUEST_SHARE_INFO:
+		_slurm_rpc_get_shares(msg);
+		slurm_free_shares_request_msg(msg->data);
 		break;
 	case REQUEST_JOB_END_TIME:
 		_slurm_rpc_end_time(msg);
@@ -340,6 +346,8 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 {
 	slurm_ctl_conf_t *conf = slurm_conf_lock();
 
+	bzero(conf_ptr, sizeof(slurm_ctl_conf_t));
+
 	conf_ptr->last_update         = time(NULL);
 	conf_ptr->accounting_storage_enforce = conf->accounting_storage_enforce;
 	conf_ptr->accounting_storage_host =
@@ -421,6 +429,17 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 
 	conf_ptr->plugindir           = xstrdup(conf->plugindir);
 	conf_ptr->plugstack           = xstrdup(conf->plugstack);
+
+	conf_ptr->priority_decay_hl   = conf->priority_decay_hl;
+	conf_ptr->priority_favor_small= conf->priority_favor_small;
+	conf_ptr->priority_max_age    = conf->priority_max_age;
+	conf_ptr->priority_type       = xstrdup(conf->priority_type);
+	conf_ptr->priority_weight_age = conf->priority_weight_age;
+	conf_ptr->priority_weight_fs  = conf->priority_weight_fs;
+	conf_ptr->priority_weight_js  = conf->priority_weight_js;
+	conf_ptr->priority_weight_part= conf->priority_weight_part;
+	conf_ptr->priority_weight_qos = conf->priority_weight_qos;
+
 	conf_ptr->private_data        = conf->private_data;
 	conf_ptr->proctrack_type      = xstrdup(conf->proctrack_type);
 	conf_ptr->prolog              = xstrdup(conf->prolog);
@@ -824,6 +843,32 @@ static void _slurm_rpc_dump_job_single(slurm_msg_t * msg)
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
 	}
 	xfree(dump);
+}
+
+static void  _slurm_rpc_get_shares(slurm_msg_t *msg)
+{
+	DEF_TIMERS;
+	shares_request_msg_t *req_msg = (shares_request_msg_t *) msg->data;
+	shares_response_msg_t resp_msg;
+	slurm_msg_t response_msg;
+	
+	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+
+	START_TIMER;
+	debug2("Processing RPC: REQUEST GET SHARES from uid=%u",
+	       (unsigned int)uid);
+	resp_msg.tot_shares = assoc_mgr_root_assoc->cpu_shares;
+	resp_msg.assoc_shares_list = assoc_mgr_get_shares(req_msg->acct_list, 
+							  req_msg->user_list);
+	slurm_msg_t_init(&response_msg);
+	response_msg.address  = msg->address;
+	response_msg.msg_type = RESPONSE_SHARE_INFO;
+	response_msg.data     = &resp_msg;
+	slurm_send_node_msg(msg->conn_fd, &response_msg);
+	if(resp_msg.assoc_shares_list)
+		list_destroy(resp_msg.assoc_shares_list);
+	END_TIMER2("_slurm_rpc_get_share");
+	debug2("_slurm_rpc_get_shares %s", TIME_STR);
 }
 
 /* _slurm_rpc_end_time - Process RPC for job end time */
@@ -1636,7 +1681,11 @@ static void _slurm_rpc_ping(slurm_msg_t * msg)
 
 
 /* _slurm_rpc_reconfigure_controller - process RPC to re-initialize 
- *	slurmctld from configuration file */
+ *	slurmctld from configuration file 
+ * Anything you add to this function must be added to the
+ * slurm_reconfigure function inside controller.c try
+ * to keep these in sync.  
+ */
 static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 {
 	int error_code = SLURM_SUCCESS;
@@ -1685,6 +1734,7 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 		slurm_sched_partition_change();	/* notify sched plugin */
 		select_g_reconfigure();		/* notify select plugin too */
+		priority_g_reconfig();          /* notify priority plugin too */
 		schedule();			/* has its own locks */
 		save_all_state();
 	}
@@ -2985,17 +3035,17 @@ inline static void  _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 			case ACCT_REMOVE_USER:
 			case ACCT_ADD_COORD:
 			case ACCT_REMOVE_COORD:
-				rc = assoc_mgr_update_local_users(object);
+				rc = assoc_mgr_update_users(object);
 				break;
 			case ACCT_ADD_ASSOC:
 			case ACCT_MODIFY_ASSOC:
 			case ACCT_REMOVE_ASSOC:
-				rc = assoc_mgr_update_local_assocs(object);
+				rc = assoc_mgr_update_assocs(object);
 				break;
 			case ACCT_ADD_QOS:
 			case ACCT_MODIFY_QOS:
 			case ACCT_REMOVE_QOS:
-				rc = assoc_mgr_update_local_qos(object);
+				rc = assoc_mgr_update_qos(object);
 				break;
 			case ACCT_UPDATE_NOTSET:
 			default:

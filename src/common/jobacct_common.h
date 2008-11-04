@@ -133,7 +133,7 @@ typedef struct {
 	uint32_t lft;
 	char	*partition;
 	char	*nodes;
-	int32_t priority;
+	double priority;
 	uint16_t qos;
 	uint32_t req_cpus;
 	uint32_t requid;

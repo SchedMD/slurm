@@ -35,6 +35,7 @@
 \*****************************************************************************/
 
 #include "./gang.h"
+#include "src/common/slurm_priority.h"
 
 const char		plugin_name[]	= "Gang Scheduler plugin";
 const char		plugin_type[]	= "sched/gang";
@@ -111,10 +112,7 @@ slurm_sched_plugin_initial_priority( uint32_t last_prio,
 {
 	/* ignored for timeslicing, but will be used to support priority */
 
-	if (last_prio >= 2)
-		return (last_prio - 1);
-	else
-		return 1;
+	return priority_g_set(last_prio, job_ptr);
 }
 
 /**************************************************************************/

@@ -84,7 +84,7 @@
  *	communicating with it (e.g. it will not accept messages with a
  *	version higher than SLURMDBD_VERSION).
  */
-#define SLURMDBD_VERSION	03
+#define SLURMDBD_VERSION	04
 #define SLURMDBD_VERSION_MIN	02
 
 /* SLURM DBD message types */
@@ -135,7 +135,6 @@ typedef enum {
 	DBD_ROLL_USAGE,         /* Roll up usage                        */
 	DBD_STEP_COMPLETE,	/* Record step completion		*/
 	DBD_STEP_START,		/* Record step starting			*/
-	DBD_UPDATE_SHARES_USED,	/* Record current share usage		*/
 	DBD_GET_JOBS_COND, 	/* Get job information with a condition */
 	DBD_GET_TXN,		/* Get transaction information		*/
 	DBD_GOT_TXN,		/* Got transaction information		*/
@@ -321,7 +320,11 @@ typedef struct dbd_step_start_msg {
 
 /* flag to let us know if we are running on cache or from the actual
  * database */
-extern bool running_cache;
+extern uint16_t running_cache;
+/* mutex and signal to let us know if associations have been reset so we need to
+ * redo all the pointers to the associations */
+extern pthread_mutex_t assoc_cache_mutex; /* assoc cache mutex */
+extern pthread_cond_t assoc_cache_cond; /* assoc cache condition */
 
 /*****************************************************************************\
  * Slurm DBD message processing functions

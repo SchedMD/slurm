@@ -503,8 +503,7 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 					}
 					print_acct = get_tree_acct_name(
 						local_acct,
-						parent_acct,
-						assoc->cluster, tree_list);
+						parent_acct, tree_list);
 					xfree(local_acct);
 				} else {
 					print_acct = assoc->acct;

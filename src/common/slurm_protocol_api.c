@@ -349,6 +349,182 @@ char *slurm_get_plugin_dir(void)
 	return plugin_dir;
 }
 
+/* slurm_get_priority_decay_hl
+ * returns the priority decay half life in seconds from slurmctld_conf object
+ * RET uint32_t - decay_hl in secs.
+ */
+uint32_t slurm_get_priority_decay_hl(void)
+{
+	uint32_t priority_hl = NO_VAL;
+	slurm_ctl_conf_t *conf;
+
+	if(slurmdbd_conf) {		
+	} else {
+		conf = slurm_conf_lock();
+		priority_hl = conf->priority_decay_hl;
+		slurm_conf_unlock();
+	}
+
+	return priority_hl;
+}
+
+/* slurm_get_priority_favor_small
+ * returns weither or not we are favoring small jobs from slurmctld_conf object
+ * RET bool - true if favor small, false else.
+ */
+bool slurm_get_priority_favor_small(void)
+{
+	bool factor = 0;
+	slurm_ctl_conf_t *conf;
+
+	if(slurmdbd_conf) {		
+	} else {
+		conf = slurm_conf_lock();
+		factor = conf->priority_favor_small;
+		slurm_conf_unlock();
+	}
+
+	return factor;
+}
+
+
+/* slurm_get_priority_max_age
+ * returns the priority age max in seconds from slurmctld_conf object
+ * RET uint32_t - age_max in secs.
+ */
+uint32_t slurm_get_priority_max_age(void)
+{
+	uint32_t age = NO_VAL;
+	slurm_ctl_conf_t *conf;
+
+	if(slurmdbd_conf) {		
+	} else {
+		conf = slurm_conf_lock();
+		age = conf->priority_max_age;
+		slurm_conf_unlock();
+	}
+
+	return age;
+}
+
+/* slurm_get_priority_type
+ * returns the priority type from slurmctld_conf object
+ * RET char *    - priority type, MUST be xfreed by caller
+ */
+char *slurm_get_priority_type(void)
+{
+	char *priority_type = NULL;
+	slurm_ctl_conf_t *conf;
+
+	if(slurmdbd_conf) {		
+	} else {
+		conf = slurm_conf_lock();
+		priority_type = xstrdup(conf->priority_type);
+		slurm_conf_unlock();
+	}
+
+	return priority_type;
+}
+
+/* slurm_get_priority_weight_age
+ * returns the priority weight for age from slurmctld_conf object
+ * RET uint32_t - factor weight.
+ */
+uint32_t slurm_get_priority_weight_age(void)
+{
+	uint32_t factor = NO_VAL;
+	slurm_ctl_conf_t *conf;
+
+	if(slurmdbd_conf) {		
+	} else {
+		conf = slurm_conf_lock();
+		factor = conf->priority_weight_age;
+		slurm_conf_unlock();
+	}
+
+	return factor;
+}
+
+
+/* slurm_get_priority_weight_fairshare
+ * returns the priority weight for fairshare from slurmctld_conf object
+ * RET uint32_t - factor weight.
+ */
+uint32_t slurm_get_priority_weight_fairshare(void)
+{
+	uint32_t factor = NO_VAL;
+	slurm_ctl_conf_t *conf;
+
+	if(slurmdbd_conf) {		
+	} else {
+		conf = slurm_conf_lock();
+		factor = conf->priority_weight_fs;
+		slurm_conf_unlock();
+	}
+
+	return factor;
+}
+
+
+/* slurm_get_priority_weight_job_size
+ * returns the priority weight for job size from slurmctld_conf object
+ * RET uint32_t - factor weight.
+ */
+uint32_t slurm_get_priority_weight_job_size(void)
+{
+	uint32_t factor = NO_VAL;
+	slurm_ctl_conf_t *conf;
+
+	if(slurmdbd_conf) {		
+	} else {
+		conf = slurm_conf_lock();
+		factor = conf->priority_weight_js;
+		slurm_conf_unlock();
+	}
+
+	return factor;
+}
+
+/* slurm_get_priority_weight_partition
+ * returns the priority weight for partitions from slurmctld_conf object
+ * RET uint32_t - factor weight.
+ */
+uint32_t slurm_get_priority_weight_partition(void)
+{
+	uint32_t factor = NO_VAL;
+	slurm_ctl_conf_t *conf;
+
+	if(slurmdbd_conf) {		
+	} else {
+		conf = slurm_conf_lock();
+		factor = conf->priority_weight_part;
+		slurm_conf_unlock();
+	}
+
+	return factor;
+}
+
+
+/* slurm_get_priority_weight_qos
+ * returns the priority weight for QOS from slurmctld_conf object
+ * RET uint32_t - factor weight.
+ */
+uint32_t slurm_get_priority_weight_qos(void)
+{
+	uint32_t factor = NO_VAL;
+	slurm_ctl_conf_t *conf;
+
+	if(slurmdbd_conf) {		
+	} else {
+		conf = slurm_conf_lock();
+		factor = conf->priority_weight_qos;
+		slurm_conf_unlock();
+	}
+
+	return factor;
+}
+
+
 /* slurm_get_private_data
  * get private data from slurmctld_conf object
  */
