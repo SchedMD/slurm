@@ -1908,8 +1908,10 @@ extern char *bg_err_str(status_t inx)
 		return "Base partition not found";
 	case SWITCH_NOT_FOUND:
 		return "Switch not found";
+#ifndef HAVE_BGL
 	case PARTITION_ALREADY_DEFINED:
 		return "Partition already defined";
+#endif
 	case JOB_ALREADY_DEFINED:
 		return "Job already defined";
 	case CONNECTION_ERROR:
