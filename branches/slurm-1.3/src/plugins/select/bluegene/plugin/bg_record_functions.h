@@ -76,7 +76,9 @@ typedef struct bg_record {
 	int start[BA_SYSTEM_DIMENSIONS];/* start node */
 	uint16_t geo[BA_SYSTEM_DIMENSIONS];  /* geometry */
 	rm_connection_type_t conn_type;  /* MESH or Torus or NAV */
+#ifdef HAVE_BGL
 	rm_partition_mode_t node_use;	 /* either COPROCESSOR or VIRTUAL */
+#endif
 	rm_partition_t *bg_block;       /* structure to hold info from db2 */
 	List bg_block_list;             /* node list of blocks in block */
 	int bp_count;                   /* size */
@@ -102,10 +104,14 @@ typedef struct bg_record {
 					   determine quarter of BP */
 	uint16_t nodecard;              /* used for small blocks 
 					   determine nodecard of quarter */
+#ifdef HAVE_BGL
 	char *blrtsimage;              /* BlrtsImage for this block */
-	char *linuximage;              /* LinuxImage for this block */
+#endif
+	char *linuximage;              /* LinuxImage/CnloadImage for
+					* this block */
 	char *mloaderimage;            /* mloaderImage for this block */
-	char *ramdiskimage;            /* RamDiskImage for this block */
+	char *ramdiskimage;            /* RamDiskImage/IoloadImg for
+					* this block */
 	struct bg_record *original;    /* if this is a copy this is a
 					  pointer to the original */
 } bg_record_t;

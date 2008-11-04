@@ -97,9 +97,9 @@ void *handle = NULL;
 int _get_syms(int n_syms, const char *names[], void *ptrs[])
 {
         int i, count;
-	void *db_handle = NULL;
 #ifndef HAVE_BGP_FILES	
 #ifdef BG_DB2_SO
+	void *db_handle = NULL;
 	db_handle = dlopen (BG_DB2_SO, RTLD_LAZY);
 	if (!db_handle) {
 		have_db2 = false;

@@ -122,9 +122,11 @@ extern int init ( void )
 	||  (SELECT_NAV   != RM_NAV))
 		fatal("enum conn_type out of sync with rm_api.h");
 
+#ifdef HAVE_BGL
 	if ((SELECT_COPROCESSOR_MODE  != RM_PARTITION_COPROCESSOR_MODE)
 	||  (SELECT_VIRTUAL_NODE_MODE != RM_PARTITION_VIRTUAL_NODE_MODE))
 		fatal("enum node_use_type out of sync with rm_api.h");
+#endif
 	
 #endif
 
@@ -530,7 +532,9 @@ extern int select_p_state_restore(char *dir_name)
 			} else {
 				bg_record->cpus_per_bp = procs_per_node;
 			}
+#ifdef HAVE_BGL
 			bg_record->node_use = bg_info_record->node_use;
+#endif
 			bg_record->conn_type = bg_info_record->conn_type;
 			bg_record->boot_state = 0;
 
@@ -550,8 +554,10 @@ extern int select_p_state_restore(char *dir_name)
 				bg_record->user_uid = my_uid;
 			} 
 				
+#ifdef HAVE_BGL
 			bg_record->blrtsimage =
 				xstrdup(bg_info_record->blrtsimage);
+#endif
 			bg_record->linuximage = 
 				xstrdup(bg_info_record->linuximage);
 			bg_record->mloaderimage =
@@ -956,7 +962,9 @@ extern int select_p_update_sub_node (update_part_msg_t *part_desc_ptr)
 	requests = list_create(destroy_bg_record);
 	
 	blockreq.block = coord;
+#ifdef HAVE_BGL
 	blockreq.blrtsimage = NULL;
+#endif
 	blockreq.linuximage = NULL;
 	blockreq.mloaderimage = NULL;
 	blockreq.ramdiskimage = NULL;

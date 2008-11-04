@@ -319,7 +319,9 @@ extern int create_full_system_block(List bg_found_block_list)
 
 	records = list_create(destroy_bg_record);
 	blockreq.block = name;
+#ifdef HAVE_BGL
 	blockreq.blrtsimage = NULL;
+#endif
 	blockreq.linuximage = NULL;
 	blockreq.mloaderimage = NULL;
 	blockreq.ramdiskimage = NULL;

@@ -61,7 +61,7 @@
 #endif
 
 #ifdef HAVE_BGP_FILES
-typedef rm_BGP_t my_bluegene_t;
+typedef rm_BG_t my_bluegene_t;
 #else
 typedef rm_BGL_t my_bluegene_t;
 #endif

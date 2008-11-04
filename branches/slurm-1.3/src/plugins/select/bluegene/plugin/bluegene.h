@@ -51,12 +51,11 @@ typedef enum bg_layout_type {
 
 
 /* Global variables */
-#ifdef HAVE_BGP_FILES
-extern rm_BGP_t *bg;
-#else
-extern rm_BGL_t *bg;
-#endif
+
+extern my_bluegene_t *bg;
+#ifdef HAVE_BGL
 extern char *default_blrtsimage;
+#endif
 extern char *default_linuximage;
 extern char *default_mloaderimage;
 extern char *default_ramdiskimage;
@@ -76,7 +75,9 @@ extern List bg_list;			/* List of configured BG blocks */
 extern List bg_job_block_list;  	/* jobs running in these blocks */
 extern List bg_booted_block_list;  	/* blocks that are booted */
 extern List bg_freeing_list;  	        /* blocks that being freed */
+#ifdef HAVE_BGL
 extern List bg_blrtsimage_list;
+#endif
 extern List bg_linuximage_list;
 extern List bg_mloaderimage_list;
 extern List bg_ramdiskimage_list;
@@ -124,8 +125,9 @@ extern int set_block_user(bg_record_t *bg_record);
 
 /* Return strings representing blue gene data types */
 extern char *convert_conn_type(rm_connection_type_t conn_type);
+#ifdef HAVE_BGL
 extern char *convert_node_use(rm_partition_mode_t pt);
-
+#endif
 /* sort a list of bg_records by size (node count) */
 extern void sort_bg_record_inc_size(List records);
 

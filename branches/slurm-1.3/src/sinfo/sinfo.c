@@ -168,8 +168,13 @@ static char *_part_state_str(int state)
 
 #ifdef HAVE_BG
 	switch (state) {
-		case RM_PARTITION_BUSY:
+#ifdef HAVE_BGL
+		case RM_PARTITION_BUSY: 
 			return "BUSY";
+#else
+		case RM_PARTITION_REBOOTING: 
+			return "REBOOTING";
+#endif
 		case RM_PARTITION_CONFIGURING:
 			return "CONFIG";
 		case RM_PARTITION_DEALLOCATING:
