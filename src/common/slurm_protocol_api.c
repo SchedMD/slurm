@@ -2649,11 +2649,13 @@ List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg,
 		
 		if(slurm_conf_get_addr(name, &msg->address) == SLURM_ERROR) {
 			if (quiet) {
-				debug("slurm_send_recv_msgs: can't get addr "
-				      "for host %s", name);
+				debug("slurm_send_recv_msgs: can't find "
+				      "address for host %s, check slurm.conf", 
+				      name);
 			} else {
-				error("slurm_send_recv_msgs: can't get addr "
-				      "for host %s", name);
+				error("slurm_send_recv_msgs: can't find "
+				      "address for host %s, check slurm.conf", 
+				      name);
 			}
 			mark_as_failed_forward(&tmp_ret_list, name, 
 					SLURM_COMMUNICATIONS_CONNECTION_ERROR);
