@@ -29,8 +29,9 @@ Then build Maui from its source distribution. This is a two step process:</p>
 <li>./configure --with-key=42 --with-wiki
 <li>gmake
 </ol>
-<p>The key of 42 is arbitrary. You can use any value, but will need to 
-specify the same value as a SLURM configuration parameter.
+<p>The key of 42 is arbitrary. You can use any value, but it will need to 
+be a number no larger than 4,294,967,295 (2^32) and specify the same 
+value as a SLURM configuration parameter described below.
 Maui developers have assured us the authenticaion key will eventually be 
 set in a configuration file rather than at build time.</p>
 
@@ -41,7 +42,7 @@ paramters to maui.conf:</p>
 RMCFG[host]       TYPE=WIKI
 RMPORT            7321            # selected port
 RMHOST            host
-RMAUTHTYPE[host]  NONE
+RMAUTHTYPE[host]  CHECKSUM
 </pre>
 <p><i>host</i> is the hostname where the SLURM controller is running. 
 This must match the value of <i>ControlMachine</i> configured in 
@@ -161,6 +162,6 @@ HidePartitionJobs=debug
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 19 September 2007</p>
+<p style="text-align:center;">Last modified 4 November 2008</p>
 
 <!--#include virtual="footer.txt"-->
