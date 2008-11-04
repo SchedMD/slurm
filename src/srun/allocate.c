@@ -601,7 +601,7 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 			otermf  = xsignal(SIGTERM, _intr_handler);
 			oquitf  = xsignal(SIGQUIT, _intr_handler);
 		} else
-			info("Job step creation still disabled, retrying");
+			verbose("Job step creation still disabled, retrying");
 		sleep(MIN((i*10), 60));
 	}
 	if (i > 0) {

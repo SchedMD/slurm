@@ -3412,8 +3412,6 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 				my_left = atoi(row[0]);
 				mysql_free_result(sel_result);
 				//info("left is %d", my_left);
-				xfree(old_parent);
-				xfree(old_cluster);
 				old_parent = parent;
 				old_cluster = object->cluster;
 				incr = 0;
@@ -6811,7 +6809,7 @@ empty:
 	
 	//START_TIMER;
 	query = xstrdup_printf("select distinct %s from %s as t1%s "
-			       "order by lft;", 
+			       "order by cluster,lft;", 
 			       tmp, assoc_table, extra);
 	xfree(tmp);
 	xfree(extra);

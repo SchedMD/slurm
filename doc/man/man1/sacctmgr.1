@@ -158,8 +158,7 @@ Display the version number of sacctmgr.
 \fB!!\fP
 Repeat the last command.
 
-.TP
-\fBENTITIES\fR
+.SH "ENTITIES"
 
 .TP
 \fIaccount\fP
@@ -199,17 +198,7 @@ List of transactions that have occurred during a given time period.
 \fIuser\fR
 The login name.
 
-
-.TP
-\fBSPECIFICATIONS FOR ACCOUNTS\fR
-
-.TP
-\fICluster\fP=<cluster>
-Specific cluster to add account to.  Default is all in system.
-
-.TP
-\fIDescription\fP=<description>
-An arbitrary string describing an account.
+.SH "GENERAL SPECIFICATIONS FOR ASSOCIATION BASED ENTITIES"
 
 .TP
 \fIFairshare\fP=<fairshare>
@@ -221,7 +210,7 @@ To clear a previously set value use the modify command with a new value of \-1.
 Maximum number of CPU hours running jobs are able to be allocated in aggregate for 
 this association and all association which are children of this association.
 To clear a previously set value use the modify command with a new
-value of \-1.  (NOTE: this limit is not currently enforced in SLURM.
+value of \-1.  (NOTE: This limit is not currently enforced in SLURM.
 You can still set this, but have to wait for future versions of SLURM
 before it is enforced.)
 
@@ -230,7 +219,7 @@ before it is enforced.)
 Maximum number of CPUs running jobs are able to be allocated in aggregate for 
 this association and all association which are children of this association.
 To clear a previously set value use the modify command with a new
-value of \-1.  (NOTE: this limit is not currently enforced in SLURM.
+value of \-1.  (NOTE: This limit is not currently enforced in SLURM.
 You can still set this, but have to wait for future versions of SLURM
 before it is enforced.)
 
@@ -265,7 +254,7 @@ Maximum number of CPU minutes each job is able to use in this account.
 This is overridden if set directly on a user. 
 Default is the cluster's limit.
 To clear a previously set value use the modify command with a new
-value of \-1.  (NOTE: this limit is not currently enforced in SLURM.
+value of \-1.  (NOTE: This limit is not currently enforced in SLURM.
 You can still set this, but have to wait for future versions of SLURM
 before it is enforced.)
 
@@ -275,7 +264,7 @@ Maximum number of CPUs each job is able to use in this account.
 This is overridden if set directly on a user. 
 Default is the cluster's limit.
 To clear a previously set value use the modify command with a new
-value of \-1.  (NOTE: this limit is not currently enforced in SLURM.
+value of \-1.  (NOTE: This limit is not currently enforced in SLURM.
 You can still set this, but have to wait for future versions of SLURM
 before it is enforced.)
 
@@ -312,28 +301,12 @@ The value is recorded in minutes with rounding as needed.
 To clear a previously set value use the modify command with a new value of \-1.
 
 .TP
-\fIName\fP=<name>
-The name of a bank account.
-
-.TP
-\fIOrganization\fP=<org>
-Organization to which the account belongs.
-
-.TP
-\fIParent\fP=<parent>
-Parent account of this account. Default is no parent, a top level account.
-
-.TP
-\fIPartition\fP=<name>
-Name of SLURM partition these limits apply to.
-
-.TP
 \fIQosLevel\fP<operator><comma separated list of qos names>
 (For use with MOAB only.)
 Specify the default Quality of Service's that jobs are able to run at
-for this account.  To get a list of vaild QOS's use 'sacctmgr list qos'. 
+for this account.  To get a list of valid QOS's use 'sacctmgr list qos'. 
 This value will override it's parents value and push down to it's
-childern as the new default.  Setting a QosLevel to '' (two single
+children as the new default.  Setting a QosLevel to '' (two single
 quotes with nothing between them) restores it's default setting.  You
 can also use the operator += and \-= to add or remove certain QOS's
 from a QOS list.
@@ -351,9 +324,65 @@ Add the specified <qos> value to the current \fIQosLevel\fP .
 Remove the specified <qos> value from the current \fIQosLevel\fP.
 .RE
 
+.SH "SPECIFICATIONS FOR ACCOUNTS"
 
 .TP
-\fBSPECIFICATIONS TO LIST/SHOW ASSOCIATIONS\fR
+\fICluster\fP=<cluster>
+Specific cluster to add account to.  Default is all in system.
+
+.TP
+\fIDescription\fP=<description>
+An arbitrary string describing an account.
+
+.TP
+\fIName\fP=<name>
+The name of a bank account.
+
+.TP
+\fIOrganization\fP=<org>
+Organization to which the account belongs.
+
+.TP
+\fIParent\fP=<parent>
+Parent account of this account. Default is the root account, a top
+level account.
+
+.SH ""
+NOTE: If using the WithAssoc option you can also query against
+association specific information to view only certain associations
+this account may have.  These extra options can be found in the
+\fISPECIFICATIONS FOR ASSOCIATIONS\fP section.  You can also use the
+general specifications list above in the \fIGENERAL SPECIFICATIONS FOR
+ASSOCIATION BASED ENTITIES\fP section.
+
+.SH "LIST/SHOW ACCOUNTS FORMAT OPTIONS"
+
+.TP
+\fIAccount\fP
+The name of a bank account.
+
+.TP
+\fIDescription\fP
+An arbitrary string describing an account.
+
+.TP
+\fIOrganization\fP
+Organization to which the account belongs.
+
+.TP
+\fICoordinators\fP
+List of users that are a coordinator of the account. (Only filled in
+when using the WithCoordinator option.)
+
+.SH ""
+NOTE: If using the WithAssoc option you can also view the information
+about the various associations the account may have on all the
+clusters in the system.  The Association format fields are described
+in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
+.RE
+
+
+.SH "SPECIFICATIONS FOR ASSOCIATIONS"
 
 .TP
 \fICluster\fP=<comma separated list of cluster names>
@@ -371,146 +400,41 @@ List the associations of the user(s).
 \fIPartition\fP=<comma separated list of partition names>
 List the associations of the partition(s).
 
-.TP
-The list can return information with the following headings when using the format= option:
+.SH ""
+NOTE: You can also use the general specifications list above in the
+\fIGENERAL SPECIFICATIONS FOR ASSOCIATION BASED ENTITIES\fP section.
 
-Account, Cluster, Fairshare, GrpCPUMins, GrpCPUs, GrpJobs, GrpNodes, 
-GrpSubmitJob, GrpWall, ID, LFT, MaxCPUs, MaxCPUMins, MaxJobs, 
-MaxNodes, MaxWall, QOS, ParentID, ParentName, Partition, RGT, User
-
-.TP
-Other available options:
-
-withd tree withsubaccounts wopinfo woplimits
+\fBOther options unique for listing associations:\fP
 
 .TP
-\fItree\fP
-display information using tree mode.
+\fITree\fP
+Display account names in a hierarchical fashion.
 
 .TP
-\fIwithd\fP
-display information with previously deleted data.
+\fIWithDeleted\fP
+Display information with previously deleted data.
 
 .TP
-\fIwithsubaccounts\fP
-display information with subaccounts.  Only really valuable when used
+\fIWithSubAccounts\fP
+Display information with subaccounts.  Only really valuable when used
 with the account= option.  This will display all the subaccount
 associations along with the accounts listed in the option.
               
 .TP
-\fIwopinfo\fP
-display information without parent information. (i.e. parent id, and
-parent account name)
+\fIWOPInfo\fP
+Display information without parent information. (i.e. parent id, and
+parent account name.) This option also invokes WOPLIMITS.
               
 .TP
-\fIwoplimits\fP
-display information without hierarchical parent limits. (i.e. will
-only display limits where they are set instead of propogating them
-from the parent)
+\fIWOPLimits\fP
+Display information without hierarchical parent limits. (i.e. will
+only display limits where they are set instead of propagating them
+from the parent.)
+
 .RE
 
 
-.TP
-\fBSPECIFICATIONS FOR CLUSTERS\fR
-
-.TP
-\fIFairshare\fP=<fairshare>
-Number used in conjunction with other accounts to determine job priority.
-To clear a previously set value use the modify command with a new value of \-1.
-
-.TP
-\fIGrpCPUMins\fP=<max cpu hours> 
-Maximum number of CPU hours running jobs are able to be allocated in aggregate for 
-this association and all association which are children of this association.
-To clear a previously set value use the modify command with a new
-value of \-1.  (NOTE: this limit is not currently enforced in SLURM.
-You can still set this, but have to wait for future versions of SLURM
-before it is enforced.)
-
-.TP
-\fIGrpCPUs\fP=<max cpus>
-Maximum number of CPUs running jobs are able to be allocated in aggregate for 
-this association and all association which are children of this association.
-To clear a previously set value use the modify command with a new
-value of \-1.  (NOTE: this limit is not currently enforced in SLURM.
-You can still set this, but have to wait for future versions of SLURM
-before it is enforced.)
-
-.TP
-\fIGrpJobs\fP=<max cpus>
-Maximum number of running jobs in aggregate for 
-this association and all association which are children of this association.
-To clear a previously set value use the modify command with a new value of \-1.
-
-.TP
-\fIGrpNodes\fP=<max nodes>
-Maximum number of nodes running jobs are able to be allocated in aggregate for 
-this association and all association which are children of this association.
-To clear a previously set value use the modify command with a new value of \-1.
-
-.TP
-\fIGrpSubmitJobs\fP=<max jobs>
-Maximum number of jobs which can be in a pending or running state at any time 
-in aggregate for this association and all association which are children of 
-this association.
-To clear a previously set value use the modify command with a new value of \-1.
-
-.TP
-\fIGrpWall\fP=<max wall>
-Maximum wall clock time running jobs are able to be allocated in aggregate for 
-this association and all association which are children of this association.
-To clear a previously set value use the modify command with a new value of \-1.
-
-.TP
-\fIMaxCPUMins\fP=<max cpu minutes> 
-Maximum number of CPU minutes each job is able to use in this account.
-This is overridden if set directly on an account or user. 
-Default is no limit.
-To clear a previously set value use the modify command with a new
-value of \-1.  (NOTE: this limit is not currently enforced in SLURM.
-You can still set this, but have to wait for future versions of SLURM
-before it is enforced.)
- 
-.TP
-\fIMaxCPUs\fP=<max cpus>
-Maximum number of cpus each job is able to use in this account.
-This is overridden if set directly on an account or user. 
-Default is no limit.
-To clear a previously set value use the modify command with a new
-value of \-1.  (NOTE: this limit is not currently enforced in SLURM.
-You can still set this, but have to wait for future versions of SLURM
-before it is enforced.)
-
-.TP
-\fIMaxJobs\fP=<max jobs>
-Maximum number of jobs each user is allowed to run at one time in this account.
-This is overridden if set directly on an account or user. 
-Default is no limit.
-To clear a previously set value use the modify command with a new value of \-1.
-
-.TP
-\fIMaxNodes\fP=<max nodes>
-Maximum number of nodes each job is able to use in this account.
-This is overridden if set directly on an account or user. 
-Default is no limit.
-To clear a previously set value use the modify command with a new value of \-1.
-This is a c\-node limit on BlueGene systems.
-
-.TP
-\fIMaxSubmitJobs\fP=<max jobs>
-Maximum number of jobs which can this account can have in a pending or running
-state at any time.
-To clear a previously set value use the modify command with a new value of \-1.
-
-.TP
-\fIMaxWall\fP=<max wall>
-Maximum wall clock time each job is able to use in this account.
-This is overridden if set directly on an account or user. 
-Default is no limit.
-<max wall> format is <min> or <min>:<sec> or <hr>:<min>:<sec> or 
-<days>\-<hr>:<min>:<sec> or <days>\-<hr>.
-The value is recorded in minutes with rounding as needed.
-To clear a previously set value use the modify command with a new value of \-1.
+.SH "SPECIFICATIONS FOR CLUSTERS"
 
 .TP
 \fIName\fP=<name>
@@ -518,42 +442,55 @@ The name of a cluster.
 This should be equal to the \fIClusterName\fR parameter in the \fIslurm.conf\fR 
 configuration file for some Slurm\-managed cluster. 
 
+.SH ""
+NOTE: You can also use the general specifications list above in the
+\fIGENERAL SPECIFICATIONS FOR ASSOCIATION BASED ENTITIES\fP section.
+
+.RE
+
+.SH "LIST/SHOW CLUSTER FORMAT OPTIONS"
+
 .TP
-\fIQosLevel\fP<operator><comma separated list of qos names>
-(For use with MOAB only.)
-Specify the default Quality of Service's that jobs are able to run at
-for this cluster.  To get a list of vaild QOS's use 'sacctmgr list qos'. 
-This value is overridden if a child has a QOS value directly set.
-Setting a QosLevel to '' (two single quotes with nothing between them)
-restores it's default setting.  You can also use the operator += and
-\-= to add or remove certain QOS's from a QOS list.
-Valid <operator> values include:
-.RS
-.TP 5
-\fB=\fR
-Set \fIQosLevel\fP to the specified value.
+\fICluster\fP
+The name of the cluster.
+
 .TP
-\fB+=\fR
-Add the specified <qos> value to the current \fIQosLevel\fP .
+\fIControl Host\fP
+When a slurmctld registers with the database the ip address of the
+controller is placed here.
+
 .TP
-\fB\-=\fR
-Remove the specified <qos> value from the current \fIQosLevel\fP.
+\fIControl Port\fP
+When a slurmctld registers with the database the port the controller
+is listening on is placed here.
+
+.TP
+\fIRPC\fP
+When a slurmctld registers with the database the rpc version the controller
+is running is placed here.
+
+.SH ""
+NOTE: You can also view the information about the root association for
+the cluster.  The Association format fields are described
+in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
 .RE
 
 
-.TP
-\fBSPECIFICATIONS FOR COORDINATOR\fR
+.SH "SPECIFICATIONS FOR COORDINATOR"
 .TP
 \fIAccounts\fP=<comma separated list of account names>
 Account name to add this user as a coordinator to.
 .TP
 \fINames\fP=<comma separated list of user names>
 Names of coordinators.
+
+.SH ""
+NOTE: To list coordinators use the WithCoordinator options with list
+account or list user.
 .RE
 
 
-.TP
-\fBSPECIFICATIONS FOR QOS\fR
+.SH "SPECIFICATIONS FOR QOS"
 .TP
 \fIDescription\fP=<description>
 An arbitrary string describing an account.
@@ -563,14 +500,11 @@ Names of qos.
 .RE
 
 
-.TP
-\fBSPECIFICATIONS TO LIST/SHOW TRANSACTIONS\fR
+.SH "SPECIFICATIONS FOR TRANSACTIONS"
 
 .TP
-\fIStartTime\fP=<Date and time where list should begin>
-
-.TP
-\fIEndTime\fP=<Date and time where list should end>
+\fIAccounts\fP=<comma separated list of account names>
+Only print out the transactions affecting specified accounts.
 
 .TP
 \fIAction\fP=<Specific action the list will display>
@@ -579,15 +513,49 @@ Names of qos.
 \fIActor\fP=<Specific name the list will display>
 
 .TP
-
-The list can return information with the following headings when using the format= option:
-
-Action,Actor,ID,Info,TimeStamp,Where
-
-.RE
+\fIClusters\fP=<comma separated list of cluster names>
+Only print out the transactions affecting specified clusters.
 
 .TP
-\fBSPECIFICATIONS FOR USERS\fR
+\fIEndTime\fP=<Date and time where list should end>
+
+.TP
+\fIStartTime\fP=<Date and time where list should begin>
+
+.TP
+\fIUsers\fP=<comma separated list of user names>
+Only print out the transactions affecting specified users.
+
+.TP
+\fIWithAssoc\fP
+Get information about which associations were affected by the transactions.
+.RE
+
+.SH "LIST/SHOW TRANSACTIONS FORMAT OPTIONS"
+
+.TP
+\fIAction\fP
+
+.TP
+\fIActor\fP
+
+.TP
+\fIInfo\fP
+
+.TP
+\fITimeStamp\fP
+
+.TP
+\fIWhere\fP
+
+.SH ""
+NOTE: If using the WithAssoc option you can also view the information
+about the various associations the transaction effected.  The
+Association format fields are described 
+in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
+.RE
+
+.SH "SPECIFICATIONS FOR USERS"
 
 .TP
 \fIAccount\fP=<account>
@@ -607,52 +575,6 @@ Identify the default bank account name to be used for a job if none is
 specified at submission time.
 
 .TP
-\fIFairshare\fP=<fairshare>
-Number used in conjunction with other users in the same account to
-determine job priority.
-To clear a previously set value use the modify command with a new value of \-1.
-
-.TP
-\fIMaxCPUMins\fP=<max cpu minutes> 
-Maximum number of CPU minutes each job is able to use for this user.
-To clear a previously set value use the modify command with a new
-value of \-1.  (NOTE: this limit is not currently enforced in SLURM.
-You can still set this, but have to wait for future versions of SLURM
-before it is enforced.)
-
-.TP
-\fIMaxCPUs\fP=<max cpus>
-Maximum number of CPUs each job is able to use for this user.
-Default is the account's limit.
-To clear a previously set value use the modify command with a new
-value of \-1.  (NOTE: this limit is not currently enforced in SLURM.
-You can still set this, but have to wait for future versions of SLURM
-before it is enforced.)
-
-.TP
-\fIMaxJobs\fP=<max jobs>
-Maximum number of jobs each user is allowed to run at one time for this user.
-Default is the account's limit.
-To clear a previously set value use the modify command with a new value of \-1.
-
-.TP
-\fIMaxNodes\fP=<max nodes>
-Maximum number of nodes this user can allocate in each job using the
-account specified. 
-Default is the account's limit.
-This is a c\-node limit on BlueGene systems.
-
-.TP
-\fIMaxWall\fP=<max wall>
-Maximum wall clock time this user can use in each job using the
-account specified.
-Default is the account's limit.
-<max wall> format is <min> or <min>:<sec> or <hr>:<min>:<sec> or 
-<days>\-<hr>:<min>:<sec> or <days>\-<hr>.
-The is recorded in minutes with rounding as needed.
-To clear a previously set value use the modify command with a new value of \-1.
-
-.TP
 \fIName\fP=<name>
 Name of user.
 
@@ -660,27 +582,40 @@ Name of user.
 \fIPartition\fP=<name>
 Name of SLURM partition these limits apply to.
 
-.TP
-\fIQosLevel\fP<operator><comma separated list of qos names>
-(For use with MOAB only.)
-Specify the default Quality of Service's that jobs are able to run at
-for this user.  To get a list of vaild QOS's use 'sacctmgr list qos'. 
-This value will override it's parents value.
-Setting a QosLevel to '' (two single quotes with nothing between them)
-restores it's default setting.  You can also use the operator += and
-\-= to add or remove certain QOS's from a QOS list.
-.RS
-.TP 5
-\fB=\fR
-Set \fIQosLevel\fP to the specified value.
-.TP
-\fB+=\fR
-Add the specified <qos> value to the current \fIQosLevel\fP .
-.TP
-\fB\-=\fR
-Remove the specified <qos> value from the current \fIQosLevel\fP.
+.SH ""
+NOTE: If using the WithAssoc option you can also query against
+association specific information to view only certain associations
+this account may have.  These extra options can be found in the
+\fISPECIFICATIONS FOR ASSOCIATIONS\fP section.  You can also use the
+general specifications list above in the \fIGENERAL SPECIFICATIONS FOR
+ASSOCIATION BASED ENTITIES\fP section.
 .RE
 
+.SH "LIST/SHOW USER FORMAT OPTIONS"
+
+.TP
+\fIAdminLevel\fP
+Admin level of user. 
+
+.TP
+\fIDefaultAccount\fP
+An the users default account.
+
+.TP
+\fICoordinators\fP
+List of users that are a coordinator of the account. (Only filled in
+when using the WithCoordinator option.)
+
+.TP
+\fIUser\fP
+The name of a user.
+
+.SH ""
+NOTE: If using the WithAssoc option you can also view the information
+about the various associations the user may have on all the
+clusters in the system.  The Association format fields are described
+in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
+.RE
 
 .SH "FLAT FILE DUMP AND LOAD"
 sacctmgr has the capability to load and dump SLURM association data to and
@@ -726,55 +661,55 @@ To edit/create a file start with a cluster line for the new cluster
 Anything included on this line will be the defaults for all
 associations on this cluster.  These options are as follows...
 .TP
-GrpCPUMins=  
+\fIGrpCPUMins=\fP
 Maximum number of CPU hours running jobs are able to
 be allocated in aggregate for this association and all association
-which are children of this association. (NOTE: this limit is not
+which are children of this association. (NOTE: This limit is not
 currently enforced in SLURM. You can still set this, but have to wait
 for future versions of SLURM before it is enforced.)
 .TP
-GrpCPUs= 
+\fIGrpCPUs=\fP
 Maximum number of CPUs running jobs are able to be
 allocated in aggregate for this association and all association which
-are children of this association. (NOTE: this limit is not currently
+are children of this association. (NOTE: This limit is not currently
 enforced in SLURM. You can still set this, but have to wait for future
 versions of SLURM before it is enforced.)
 .TP
-GrpJobs= 
+\fIGrpJobs=\fP
 Maximum number of running jobs in aggregate for this
 association and all association which are children of this association.
 .TP
-GrpNodes= 
+\fIGrpNodes=\fP
 Maximum number of nodes running jobs are able to be
 allocated in aggregate for this association and all association which
 are children of this association.
 .TP
-GrpSubmitJobs= 
+\fIGrpSubmitJobs=\fP
 Maximum number of jobs which can be in a pending or
 running state at any time in aggregate for this association and all
 association which are children of this association. 
 .TP
-GrpWall= 
+\fIGrpWall=\fP
 Maximum wall clock time running jobs are able to be
 allocated in aggregate for this association and all association which
 are children of this association. 
 .TP
-FairShare= 
+\fIFairShare=\fP
 To be used with a scheduler like MOAB to determine priority.
 .TP
-MaxJobs= 
+\fIMaxJobs=\fP
 Maximum number of jobs the children of this account can run.
 .TP
-MaxNodesPerJob= 
+\fIMaxNodesPerJob=\fP
 Maximum number of nodes per job the children of this account can run.
 .TP
-MaxProcSecondsPerJob= 
+\fIMaxProcSecondsPerJob=\fP
 Maximum cpu seconds children of this accounts jobs can run.
 .TP
-MaxWallDurationPerJob= 
+\fIMaxWallDurationPerJob=\fP
 Maximum time (not related to job size) children of this accounts jobs can run.
 .TP
-QOS= 
+\fIQOS=\fP
 Comma separated list of Quality of Service names (Defined in sacctmgr).
 .TP
 
@@ -797,61 +732,61 @@ BEEN CREATED before the account line in this fashion...
 .TP
 All account options are
 .TP
-Description= 
+\fIDescription=\fP
 A brief description of the account.
 .TP
-GrpCPUMins=  
+\fIGrpCPUMins=\fP
 Maximum number of CPU hours running jobs are able to
 be allocated in aggregate for this association and all association
-which are children of this association. (NOTE: this limit is not
+which are children of this association. (NOTE: This limit is not
 currently enforced in SLURM. You can still set this, but have to wait
 for future versions of SLURM before it is enforced.)
 .TP
-GrpCPUs= 
+\fIGrpCPUs=\fP
 Maximum number of CPUs running jobs are able to be
 allocated in aggregate for this association and all association which
-are children of this association. (NOTE: this limit is not currently
+are children of this association. (NOTE: This limit is not currently
 enforced in SLURM. You can still set this, but have to wait for future
 versions of SLURM before it is enforced.)
 .TP
-GrpJobs= 
+\fIGrpJobs=\fP
 Maximum number of running jobs in aggregate for this
 association and all association which are children of this association.
 .TP
-GrpNodes= 
+\fIGrpNodes=\fP
 Maximum number of nodes running jobs are able to be
 allocated in aggregate for this association and all association which
 are children of this association.
 .TP
-GrpSubmitJobs= 
+\fIGrpSubmitJobs=\fP
 Maximum number of jobs which can be in a pending or
 running state at any time in aggregate for this association and all
 association which are children of this association. 
 .TP
-GrpWall= 
+\fIGrpWall=\fP
 Maximum wall clock time running jobs are able to be
 allocated in aggregate for this association and all association which
 are children of this association. 
 .TP
-FairShare= 
+\fIFairShare=\fP
 To be used with a scheduler like MOAB to determine priority.
 .TP
-MaxJobs= 
+\fIMaxJobs=\fP
 Maximum number of jobs the children of this account can run.
 .TP
-MaxNodesPerJob= 
+\fIMaxNodesPerJob=\fP
 Maximum number of nodes per job the children of this account can run.
 .TP
-MaxProcSecondsPerJob= 
+\fIMaxProcSecondsPerJob=\fP
 Maximum cpu seconds children of this accounts jobs can run.
 .TP
-MaxWallDurationPerJob= 
+\fIMaxWallDurationPerJob=\fP
 Maximum time (not related to job size) children of this accounts jobs can run.
 .TP
-Organization= 
+\fIOrganization= 
 Name of organization that owns this account.
 .TP
-QOS(=,+=,\-=) 
+\fI\fIQOS(=,+=,\-=)\fP
 Comma separated list of Quality of Service names (Defined in sacctmgr).
 .TP
 
@@ -866,37 +801,37 @@ To add users to a account add a line like this after a Parent \- line
 .TP
 All user options are
 .TP
-AdminLevel=
+\fIAdminLevel=\fP
 Type of admin this user is (Administrator, Operator)
 .br
 \fBMust be defined on the first occurrence of the user.\fP
 .TP
-Coordinator=
+\fICoordinator=\fP
 Comma separated list of accounts this user is coordinator over
 .br
 \fBMust be defined on the first occurrence of the user.\fP
 .TP
-DefaultAccount=
+\fIDefaultAccount=\fP
 system wide default account name
 .br
 \fBMust be defined on the first occurrence of the user.\fP
 .TP
-FairShare= 
+\fIFairShare=\fP
 To be used with a scheduler like MOAB to determine priority.
 .TP
-MaxJobs= 
+\fIMaxJobs=\fP
 Maximum number of jobs this user can run.
 .TP
-MaxNodesPerJob= 
+\fIMaxNodesPerJob=\fP
 Maximum number of nodes per job this user can run.
 .TP
-MaxProcSecondsPerJob= 
+\fIMaxProcSecondsPerJob= 
 Maximum cpu seconds this user can run per job.
 .TP
-MaxWallDurationPerJob= 
+\fIMaxWallDurationPerJob=\fP
 Maximum time (not related to job size) this user can run.
 .TP
-QOS(=,+=,\-=) 
+\fIQOS(=,+=,\-=)\fP
 Comma separated list of Quality of Service names (Defined in sacctmgr).
 .RE
 
@@ -919,7 +854,7 @@ Comma separated list of Quality of Service names (Defined in sacctmgr).
 .br
 > sacctmgr list associations cluster=tux format=Account,Cluster,User,Fairshare tree withd
 .br
-> sacctmgr list transactions StartTime=11/03-10:30:00 format=Timestamp,Action,Actor
+> sacctmgr list transactions StartTime=11/03\-10:30:00 format=Timestamp,Action,Actor
 .br> sacctmgr dump cluster=tux tux_data_file
 .br
 > sacctmgr load tux_data_file
@@ -927,8 +862,8 @@ Comma separated list of Quality of Service names (Defined in sacctmgr).
 
 .br
 When modifying an object placing the key words 'set' and the
-optional 'where' is crtical to perform correctly below are examples to
-produce correct results.  As a rule of thumb any thing you put infront
+optional 'where' is critical to perform correctly below are examples to
+produce correct results.  As a rule of thumb any thing you put in front
 of the set will be used as a quantifier.  If you want to put a
 quantifier after the key word 'set' you should use the key
 word 'where'.
@@ -952,15 +887,15 @@ right> sacctmgr modify user name=adam set fairshare=10 where cluster=tux
 .br
 (For use with MOAB only)
 When changing qos for something only use the '=' operator when wanting
-to explitally set the qos to something.  In most cases you will want
-to use the '+=' or '-=' operator to either add to or remove from the
+to explicitly set the qos to something.  In most cases you will want
+to use the '+=' or '\-=' operator to either add to or remove from the
 existing qos already in place.
 .br
 
 .br
 If a user already has qos of normal,standby for a parent or it was
 explicitly set you should use qos+=expedite to add this to the list in
-this fashon.
+this fashion.
 .br
 
 .br
@@ -969,7 +904,7 @@ this fashon.
 
 .br
 If you are looking to only add the qos expedite to only a certain
-accoun and or cluster you can do that by specifing them in the
+account and or cluster you can do that by specifing them in the
 sacctmgr line.
 .br
 

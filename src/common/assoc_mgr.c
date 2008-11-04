@@ -147,21 +147,43 @@ static int _local_update_assoc_qos_list(acct_association_rec_t *assoc,
 static int _set_assoc_parent_and_user(acct_association_rec_t *assoc,
 				      List assoc_list)
 {
+	static acct_association_rec_t *last_acct_parent = NULL;
+	static acct_association_rec_t *last_parent = NULL;
+
 	if(!assoc || !assoc_list) {
 		error("you didn't give me an association");
 		return SLURM_ERROR;
 	}
 
 	if(assoc->parent_id) {
-		acct_association_rec_t *assoc2 = NULL;
-		ListIterator itr = list_iterator_create(assoc_list);
-		while((assoc2 = list_next(itr))) {
-			if(assoc2->id == assoc->parent_id) {
-				assoc->parent_assoc_ptr = assoc2;
-				break;
+		/* To speed things up we are first looking if we have
+		   a parent_id to look for.  If that doesn't work see
+		   if the last parent we had was what we are looking
+		   for.  Then if that isn't panning out look at the
+		   last account parent.  If still we don't have it we
+		   will look for it in the list.  If it isn't there we
+		   will just add it to the parent and call it good 
+		*/
+		if(last_parent && assoc->parent_id == last_parent->id) {
+			assoc->parent_assoc_ptr = last_parent;
+		} else if(last_acct_parent 
+			  && assoc->parent_id == last_acct_parent->id) {
+			assoc->parent_assoc_ptr = last_acct_parent;
+		} else {
+			acct_association_rec_t *assoc2 = NULL;
+			ListIterator itr = list_iterator_create(assoc_list);
+			while((assoc2 = list_next(itr))) {
+				if(assoc2->id == assoc->parent_id) {
+					assoc->parent_assoc_ptr = assoc2;
+					if(assoc->user) 
+						last_parent = assoc2;
+					else
+						last_acct_parent = assoc2;
+					break;
+				}
 			}
+			list_iterator_destroy(itr);
 		}
-		list_iterator_destroy(itr);
 	}
 
 	if(assoc->user) {
