@@ -304,9 +304,9 @@ To clear a previously set value use the modify command with a new value of \-1.
 \fIQosLevel\fP<operator><comma separated list of qos names>
 (For use with MOAB only.)
 Specify the default Quality of Service's that jobs are able to run at
-for this account.  To get a list of vaild QOS's use 'sacctmgr list qos'. 
+for this account.  To get a list of valid QOS's use 'sacctmgr list qos'. 
 This value will override it's parents value and push down to it's
-childern as the new default.  Setting a QosLevel to '' (two single
+children as the new default.  Setting a QosLevel to '' (two single
 quotes with nothing between them) restores it's default setting.  You
 can also use the operator += and \-= to add or remove certain QOS's
 from a QOS list.
@@ -379,7 +379,7 @@ when using the WithCoordinator option.)
 .TP
 NOTE: If using the WithAssoc option you can also view the information
 about the various associations the account may have on all the
-clusters in the system.  The Association format fields are discribed
+clusters in the system.  The Association format fields are described
 in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
 .RE
 
@@ -407,7 +407,7 @@ NOTE: You can also use the general specifications list above in the
 \fIGENERAL SPECIFICATIONS FOR ASSOCIATION BASED ENTITIES\fP section.
 
 .TP
-\fBOther options unqiue for listing associations:\fP
+\fBOther options unique for listing associations:\fP
 
 .TP
 \fITree\fP
@@ -431,7 +431,7 @@ parent account name.) This option also invokes WOPLIMITS.
 .TP
 \fIWOPLimits\fP
 Display information without hierarchical parent limits. (i.e. will
-only display limits where they are set instead of propogating them
+only display limits where they are set instead of propagating them
 from the parent.)
 
 .RE
@@ -474,7 +474,7 @@ is running is placed here.
 
 .TP
 NOTE: You can also view the information about the root association for
-the cluster.  The Association format fields are discribed
+the cluster.  The Association format fields are described
 in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
 .RE
 
@@ -554,7 +554,7 @@ Get information about which associations were affected by the transactions.
 .TP
 NOTE: If using the WithAssoc option you can also view the information
 about the various associations the transaction effected.  The
-Association format fields are discribed 
+Association format fields are described 
 in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
 .RE
 
@@ -616,7 +616,7 @@ The name of a user.
 .TP
 NOTE: If using the WithAssoc option you can also view the information
 about the various associations the user may have on all the
-clusters in the system.  The Association format fields are discribed
+clusters in the system.  The Association format fields are described
 in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
 .RE
 
@@ -865,8 +865,8 @@ Comma separated list of Quality of Service names (Defined in sacctmgr).
 
 .br
 When modifying an object placing the key words 'set' and the
-optional 'where' is crtical to perform correctly below are examples to
-produce correct results.  As a rule of thumb any thing you put infront
+optional 'where' is critical to perform correctly below are examples to
+produce correct results.  As a rule of thumb any thing you put in front
 of the set will be used as a quantifier.  If you want to put a
 quantifier after the key word 'set' you should use the key
 word 'where'.
@@ -890,7 +890,7 @@ right> sacctmgr modify user name=adam set fairshare=10 where cluster=tux
 .br
 (For use with MOAB only)
 When changing qos for something only use the '=' operator when wanting
-to explitally set the qos to something.  In most cases you will want
+to explicitly set the qos to something.  In most cases you will want
 to use the '+=' or '\-=' operator to either add to or remove from the
 existing qos already in place.
 .br
@@ -898,7 +898,7 @@ existing qos already in place.
 .br
 If a user already has qos of normal,standby for a parent or it was
 explicitly set you should use qos+=expedite to add this to the list in
-this fashon.
+this fashion.
 .br
 
 .br
@@ -907,7 +907,7 @@ this fashon.
 
 .br
 If you are looking to only add the qos expedite to only a certain
-accoun and or cluster you can do that by specifing them in the
+account and or cluster you can do that by specifing them in the
 sacctmgr line.
 .br
 
