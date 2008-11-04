@@ -1,18 +1,21 @@
-/* Wrapper for rm_api.h */
+/* We can not include IBM's attach_bgl.h or attach_bg.h file due to problems
+ * in compiling it with gcc and missing externals in that file, so we define
+ * our own version of the header here and define critical variable. We also 
+ * "#define ATTACH_BGL_H" and "define ATTACH_BG_H" to avoid having IBM's 
+ * header files loaded for BGL and BGP systems respectively.*/
 
-#ifndef ATTACH_BGL_H
-#define ATTACH_BGL_H
+#ifndef ATTACH_BGL_H	/* Test for attach_bgl.h on BGL */
+#ifndef ATTACH_BG_H	/* Test for attach_bg.h on BGP */
+#define ATTACH_BGL_H	/* Replacement for attach_bgl.h on BGL */
+#define ATTACH_BG_H	/* Replacement for attach_bg.h on BGP */
 
 #if HAVE_CONFIG_H
 #  include "config.h"
 #endif
 
 #ifdef HAVE_BG_FILES
-  /* Over-ride attach_bg.h inclusion due to problems in compiling it 
-   * with gcc and missing externals in that file */
 
   /* MPI Debug support */
-
   typedef struct {
     const char * host_name;        /* Something we can pass to inet_addr */
     const char * executable_name;  /* The name of the image */
@@ -63,4 +66,5 @@ typedef rm_BGP_t my_bluegene_t;
 typedef rm_BGL_t my_bluegene_t;
 #endif
 
-#endif
+#endif	/* #ifndef ATTACH_BG_H */
+#endif	/* #ifndef ATTACH_BGL_H */
