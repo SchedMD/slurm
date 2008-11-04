@@ -1,8 +1,8 @@
 /*****************************************************************************\
  *  forward.c - forward RPCs through hierarchical slurmd communications
- *  $Id$
  *****************************************************************************
- *  Copyright (C) 2006 The Regents of the University of California.
+ *  Copyright (C) 2006-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <auble1@llnl.gov>.
  *  LLNL-CODE-402394.
@@ -79,11 +79,11 @@ void *_forward_thread(void *arg)
 	/* repeat until we are sure the message was sent */ 
 	while((name = hostlist_shift(hl))) {
 		if(slurm_conf_get_addr(name, &addr) == SLURM_ERROR) {
-			error("forward_thread: can't get addr for host %s",
-			      name);
+			error("forward_thread: can't find address for host "
+			      "%s, check slurm.conf", name);
 			slurm_mutex_lock(fwd_msg->forward_mutex);
 			mark_as_failed_forward(&fwd_msg->ret_list, name,
-					       SLURM_COMMUNICATIONS_CONNECTION_ERROR);
+					SLURM_COMMUNICATIONS_CONNECTION_ERROR);
  			free(name);
 			if (hostlist_count(hl) > 0) {
 				slurm_mutex_unlock(fwd_msg->forward_mutex);
@@ -96,7 +96,7 @@ void *_forward_thread(void *arg)
 
 			slurm_mutex_lock(fwd_msg->forward_mutex);
 			mark_as_failed_forward(&fwd_msg->ret_list, name,
-					       SLURM_COMMUNICATIONS_CONNECTION_ERROR);
+					SLURM_COMMUNICATIONS_CONNECTION_ERROR);
 			free(name);
 			if (hostlist_count(hl) > 0) {
 				slurm_mutex_unlock(fwd_msg->forward_mutex);
