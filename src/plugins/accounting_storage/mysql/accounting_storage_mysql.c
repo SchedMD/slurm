@@ -6811,7 +6811,7 @@ empty:
 	
 	//START_TIMER;
 	query = xstrdup_printf("select distinct %s from %s as t1%s "
-			       "order by lft;", 
+			       "order by cluster,lft;", 
 			       tmp, assoc_table, extra);
 	xfree(tmp);
 	xfree(extra);
