@@ -172,7 +172,7 @@ extern int bridge_init()
 		"pm_destroy_partition",
 		"setSayMessageParams"
 	};
-#elseif HAVE_BGL
+#elseifdef HAVE_BGL
 	static const char *syms[] = {
 		"rm_set_serial",
 		"rm_get_BGL",
