@@ -100,7 +100,9 @@ extern void destroy_bg_record(void *object)
 		FREE_NULL_BITMAP(bg_record->bitmap);
 		FREE_NULL_BITMAP(bg_record->ionode_bitmap);
 
+#ifdef HAVE_BGL
 		xfree(bg_record->blrtsimage);
+#endif
 		xfree(bg_record->linuximage);
 		xfree(bg_record->mloaderimage);
 		xfree(bg_record->ramdiskimage);
@@ -363,8 +365,10 @@ extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
 	xfree(sec_record->target_name);
 	sec_record->target_name = xstrdup(fir_record->target_name);
 
+#ifdef HAVE_BGL
 	xfree(sec_record->blrtsimage);
 	sec_record->blrtsimage = xstrdup(fir_record->blrtsimage);
+#endif
 	xfree(sec_record->linuximage);
 	sec_record->linuximage = xstrdup(fir_record->linuximage);
 	xfree(sec_record->mloaderimage);
@@ -375,7 +379,9 @@ extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
 	sec_record->user_uid = fir_record->user_uid;
 	sec_record->state = fir_record->state;
 	sec_record->conn_type = fir_record->conn_type;
+#ifdef HAVE_BGL
 	sec_record->node_use = fir_record->node_use;
+#endif
 	sec_record->bp_count = fir_record->bp_count;
 	sec_record->switch_count = fir_record->switch_count;
 	sec_record->boot_state = fir_record->boot_state;
@@ -682,17 +688,20 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq)
 	
 	process_nodes(bg_record, false);
 	
+#ifdef HAVE_BGL
 	bg_record->node_use = SELECT_COPROCESSOR_MODE;
+#endif
 	bg_record->conn_type = blockreq->conn_type;
 	bg_record->cpus_per_bp = procs_per_node;
 	bg_record->node_cnt = bluegene_bp_node_cnt * bg_record->bp_count;
 	bg_record->job_running = NO_JOB_RUNNING;
 
+#ifdef HAVE_BGL
 	if(blockreq->blrtsimage)
 		bg_record->blrtsimage = xstrdup(blockreq->blrtsimage);
 	else
 		bg_record->blrtsimage = xstrdup(default_blrtsimage);
-
+#endif
 	if(blockreq->linuximage)
 		bg_record->linuximage = xstrdup(blockreq->linuximage);
 	else

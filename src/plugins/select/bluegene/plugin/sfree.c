@@ -17,7 +17,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -56,8 +56,8 @@ typedef struct bg_records {
 	int state;
 } delete_record_t; 
 
-static int num_block_to_free = 0;
-static int num_block_freed = 0;
+int num_block_to_free = 0;
+int num_block_freed = 0;
 static pthread_mutex_t freed_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 static List delete_record_list = NULL;
 
@@ -488,6 +488,10 @@ static char *_bg_err_str(status_t inx)
 		return "Base partition not found";
 	case SWITCH_NOT_FOUND:
 		return "Switch not found";
+#ifndef HAVE_BGL
+	case PARTITION_ALREADY_DEFINED:
+		return "Partition already defined";
+#endif
 	case JOB_ALREADY_DEFINED:
 		return "Job already defined";
 	case CONNECTION_ERROR:

@@ -51,7 +51,9 @@ typedef struct {
 	char *nodes;
 	char *ionodes;
 	enum connection_type bg_conn_type;
+#ifdef HAVE_BGL
 	enum node_use_type bg_node_use;
+#endif
 	rm_partition_state_t state;
 	int letter_num;
 	List nodelist;
@@ -66,7 +68,9 @@ static List block_list = NULL;
 #endif
 
 static char* _convert_conn_type(enum connection_type conn_type);
+#ifdef HAVE_BGL
 static char* _convert_node_use(enum node_use_type node_use);
+#endif
 #ifdef HAVE_BG
 static int _marknodes(db2_block_info_t *block_ptr, int count);
 #endif
@@ -270,8 +274,10 @@ extern void get_bg_part()
 			= new_bg_ptr->bg_info_array[i].state;
 		block_ptr->bg_conn_type 
 			= new_bg_ptr->bg_info_array[i].conn_type;
+#ifdef HAVE_BGL
 		block_ptr->bg_node_use 
 			= new_bg_ptr->bg_info_array[i].node_use;
+#endif
 		block_ptr->ionodes 
 			= xstrdup(new_bg_ptr->bg_info_array[i].ionodes);
 		block_ptr->node_cnt 
@@ -469,10 +475,12 @@ static void _print_header_part(void)
 				  main_ycord,
 				  main_xcord, "CONN");
 			main_xcord += 7;
+#ifdef HAVE_BGL
 			mvwprintw(text_win, 
 				  main_ycord,
 				  main_xcord, "NODE_USE");
 			main_xcord += 10;
+#endif
 		}
 
 		mvwprintw(text_win, main_ycord,
@@ -497,7 +505,9 @@ static void _print_header_part(void)
 			printf("STATE ");
 			printf("    USER ");
 			printf(" CONN ");
+#ifdef HAVE_BGL
 			printf(" NODE_USE ");
+#endif
 		}
 
 		printf("NODES ");
@@ -601,12 +611,14 @@ static int _print_text_part(partition_info_t *part_ptr,
 						  db2_info_ptr->
 						  bg_conn_type));
 				main_xcord += 7;
+#ifdef HAVE_BGL
 				mvwprintw(text_win,
 					  main_ycord,
 					  main_xcord, "%.9s",
 					  _convert_node_use(
 						  db2_info_ptr->bg_node_use));
 				main_xcord += 10;
+#endif
 			} else {
 				mvwprintw(text_win, 
 					  main_ycord,
@@ -718,8 +730,10 @@ static int _print_text_part(partition_info_t *part_ptr,
 				
 				printf("%5.5s ", _convert_conn_type(
 					       db2_info_ptr->bg_conn_type));
+#ifdef HAVE_BGL
 				printf("%9.9s ",  _convert_node_use(
 					       db2_info_ptr->bg_node_use));
+#endif
 			} 
 		}
 		
@@ -939,6 +953,7 @@ static char* _convert_conn_type(enum connection_type conn_type)
 	return "?";
 }
 
+#ifdef HAVE_BGL
 static char* _convert_node_use(enum node_use_type node_use)
 {
 	switch (node_use) {
@@ -951,4 +966,4 @@ static char* _convert_node_use(enum node_use_type node_use)
 	}
 	return "?";
 }
-
+#endif

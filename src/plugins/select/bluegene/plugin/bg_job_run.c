@@ -445,6 +445,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 	}
 
 	rc = 0;
+#ifdef HAVE_BGL
 	if(bg_update_ptr->blrtsimage 
 	   && strcasecmp(bg_update_ptr->blrtsimage, bg_record->blrtsimage)) {
 		debug3("changing BlrtsImage from %s to %s",
@@ -453,10 +454,16 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		bg_record->blrtsimage = xstrdup(bg_update_ptr->blrtsimage);
 		rc = 1;
 	}
+#endif
 	if(bg_update_ptr->linuximage
 	   && strcasecmp(bg_update_ptr->linuximage, bg_record->linuximage)) {
+#ifdef HAVE_BGL
 		debug3("changing LinuxImage from %s to %s",
 		       bg_record->linuximage, bg_update_ptr->linuximage);
+#else
+		debug3("changing CnloadImage from %s to %s",
+		       bg_record->linuximage, bg_update_ptr->linuximage);
+#endif
 		xfree(bg_record->linuximage);
 		bg_record->linuximage = xstrdup(bg_update_ptr->linuximage);
 		rc = 1;
@@ -473,8 +480,13 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 	if(bg_update_ptr->ramdiskimage
 	   && strcasecmp(bg_update_ptr->ramdiskimage,
 			 bg_record->ramdiskimage)) {
+#ifdef HAVE_BGL
 		debug3("changing RamDiskImage from %s to %s",
 		       bg_record->ramdiskimage, bg_update_ptr->ramdiskimage);
+#else
+		debug3("changing IoloadImage from %s to %s",
+		       bg_record->ramdiskimage, bg_update_ptr->ramdiskimage);
+#endif
 		xfree(bg_record->ramdiskimage);
 		bg_record->ramdiskimage = xstrdup(bg_update_ptr->ramdiskimage);
 		rc = 1;
@@ -488,6 +500,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 			
 		bg_free_block(bg_record);
 #ifdef HAVE_BG_FILES
+#ifdef HAVE_BGL
 		if ((rc = bridge_modify_block(bg_record->bg_block_id,
 					      RM_MODIFY_BlrtsImg,   
 					      bg_record->blrtsimage))
@@ -503,18 +516,35 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 			      bg_err_str(rc));
 		
 		if ((rc = bridge_modify_block(bg_record->bg_block_id,
+					      RM_MODIFY_RamdiskImg, 
+					      bg_record->ramdiskimage))
+		    != STATUS_OK)
+			error("bridge_modify_block(RM_MODIFY_RamdiskImg)", 
+			      bg_err_str(rc));
+
+#else
+		if ((rc = bridge_modify_block(bg_record->bg_block_id,
+					      RM_MODIFY_CnloadImg,   
+					      bg_record->linuximage))
+		    != STATUS_OK) 
+			error("bridge_modify_block(RM_MODIFY_CnloadImg)",
+			      bg_err_str(rc));
+		
+		if ((rc = bridge_modify_block(bg_record->bg_block_id,
+					      RM_MODIFY_IoloadImg, 
+					      bg_record->ramdiskimage))
+		    != STATUS_OK)
+			error("bridge_modify_block(RM_MODIFY_IoloadImg)", 
+			      bg_err_str(rc));
+
+#endif
+		if ((rc = bridge_modify_block(bg_record->bg_block_id,
 					      RM_MODIFY_MloaderImg, 
 					      bg_record->mloaderimage))
 		    != STATUS_OK)
 			error("bridge_modify_block(RM_MODIFY_MloaderImg)", 
 			      bg_err_str(rc));
 		
-		if ((rc = bridge_modify_block(bg_record->bg_block_id,
-					      RM_MODIFY_RamdiskImg, 
-					      bg_record->ramdiskimage))
-		    != STATUS_OK)
-			error("bridge_modify_block(RM_MODIFY_RamdiskImg)", 
-			      bg_err_str(rc));
 #endif
 		slurm_mutex_lock(&block_state_mutex);
 		bg_record->modifying = 0;		
@@ -950,12 +980,14 @@ extern int start_job(struct job_record *job_ptr)
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 			     SELECT_DATA_REBOOT, 
 			     &(bg_update_ptr->reboot));
+#ifdef HAVE_BGL
 	if(!bg_update_ptr->blrtsimage) {
 		bg_update_ptr->blrtsimage = xstrdup(default_blrtsimage);
 		select_g_set_jobinfo(job_ptr->select_jobinfo,
 				     SELECT_DATA_BLRTS_IMAGE, 
 				     bg_update_ptr->blrtsimage);
 	}
+#endif
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 			     SELECT_DATA_LINUX_IMAGE, 
 			     &(bg_update_ptr->linuximage));
@@ -1075,9 +1107,11 @@ extern int sync_jobs(List job_list)
 			select_g_get_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_BLOCK_ID, 
 					     &(bg_update_ptr->bg_block_id));
+#ifdef HAVE_BGL
 			select_g_get_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_BLRTS_IMAGE, 
 					     &(bg_update_ptr->blrtsimage));
+#endif
 			select_g_get_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_LINUX_IMAGE, 
 					     &(bg_update_ptr->linuximage));
