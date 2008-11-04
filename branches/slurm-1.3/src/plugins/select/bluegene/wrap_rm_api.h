@@ -42,7 +42,11 @@
   enum rm_partition_state {RM_PARTITION_FREE,
 			   RM_PARTITION_CONFIGURING,
 			   RM_PARTITION_READY,
+#ifdef HAVE_BGL
 			   RM_PARTITION_BUSY,
+#else
+			   RM_PARTITION_REBOOTING,
+#endif
 			   RM_PARTITION_DEALLOCATING,
 			   RM_PARTITION_ERROR,
 			   RM_PARTITION_NAV};
@@ -52,6 +56,9 @@
 		       BP_NOT_FOUND = -3,
 		       SWITCH_NOT_FOUND = -4,
 		       JOB_ALREADY_DEFINED=-5,
+#ifndef HAVE_BGL
+		       PARTITION_ALREADY_DEFINED=-6,
+#endif
 		       CONNECTION_ERROR=-10,
 		       INTERNAL_ERROR = -11,
 		       INVALID_INPUT=-12,
