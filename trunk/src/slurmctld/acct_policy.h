@@ -39,6 +39,19 @@
 #define _HAVE_ACCT_POLICY_H
 
 /*
+ * acct_policy_add_job_submit - Note that a job has been submitted for
+ *	accounting policy purposes.
+ */
+extern void acct_policy_add_job_submit(struct job_record *job_ptr);
+
+/*
+ * acct_policy_remove_job_submit - Note that a job has finished (might
+ *      not had started or been allocated resources) for accounting
+ *      policy purposes.
+ */
+extern void acct_policy_remove_job_submit(struct job_record *job_ptr);
+
+/*
  * acct_policy_job_begin - Note that a job is starting for accounting
  *	policy purposes.
  */

@@ -1022,7 +1022,19 @@ typedef struct slurm_ctl_conf {
 	uint16_t over_time_limit; /* job's time limit can be exceeded by this
 				   * number of minutes before cancellation */
 	char *plugindir;	/* pathname to plugins */
-	char *plugstack;        /* pathname to plugin stack config file */
+	char *plugstack;        /* pathname to plugin stack config
+				 * file */
+	uint32_t priority_decay_hl; /* priority decay half life in
+				     * seconds */
+	uint16_t priority_favor_small; /* favor small jobs over large */
+	uint32_t priority_max_age; /* time when not to add any more
+				    * priority to a job if reached */
+	char *priority_type;    /* priority type plugin */
+	uint32_t priority_weight_age; /* weight for age factor */
+	uint32_t priority_weight_fs; /* weight for Fairshare factor */
+	uint32_t priority_weight_js; /* weight for Job Size factor */
+	uint32_t priority_weight_part; /* weight for Partition factor */
+	uint32_t priority_weight_qos; /* weight for QOS factor */
 	uint16_t private_data;	/* block viewing of information, 
 				 * see PRIVATE_DATA_* */
 	char *proctrack_type;	/* process tracking plugin type */

@@ -77,9 +77,10 @@
 #define MAX_DBD_MSG_LEN		16384
 #define SLURMDBD_TIMEOUT	300	/* Seconds SlurmDBD for response */
 
-bool running_cache = 0;
+uint16_t running_cache = 0;
+pthread_mutex_t assoc_cache_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t assoc_cache_cond = PTHREAD_COND_INITIALIZER;
 
-static pthread_mutex_t replace_cache = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t agent_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  agent_cond = PTHREAD_COND_INITIALIZER;
 static List      agent_list     = (List) NULL;
@@ -361,7 +362,6 @@ extern Buf pack_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 	case DBD_GOT_QOS:
 	case DBD_GOT_TXN:
 	case DBD_GOT_USERS:
-	case DBD_UPDATE_SHARES_USED:
 		slurmdbd_pack_list_msg(
 			rpc_version, req->msg_type, 
 			(dbd_list_msg_t *)req->data, buffer);
@@ -505,7 +505,6 @@ extern int unpack_slurmdbd_msg(uint16_t rpc_version,
 	case DBD_GOT_QOS:
 	case DBD_GOT_TXN:
 	case DBD_GOT_USERS:
-	case DBD_UPDATE_SHARES_USED:
 		rc = slurmdbd_unpack_list_msg(
 			rpc_version, resp->msg_type,
 			(dbd_list_msg_t **)&resp->data, buffer);
@@ -725,8 +724,6 @@ extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 		return DBD_STEP_COMPLETE;
 	} else if(!strcasecmp(msg_type, "Step Start")) {
 		return DBD_STEP_START;
-	} else if(!strcasecmp(msg_type, "Update Shares Used")) {
-		return DBD_UPDATE_SHARES_USED;
 	} else if(!strcasecmp(msg_type, "Get Jobs Conditional")) {
 		return DBD_GET_JOBS_COND;
 	} else if(!strcasecmp(msg_type, "Get Transations")) {
@@ -1008,12 +1005,6 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 			return "DBD_STEP_START";
 		} else
 			return "Step Start";
-		break;
-	case DBD_UPDATE_SHARES_USED:
-		if(get_enum) {
-			return "DBD_UPDATE_SHARES_USED";
-		} else
-			return "Update Shares Used";
 		break;
 	case DBD_GET_JOBS_COND:
 		if(get_enum) {
@@ -1518,14 +1509,10 @@ static void *_agent(void *x)
 		if (buffer == NULL) {
 			slurm_mutex_unlock(&slurmdbd_lock);
 
-			slurm_mutex_lock(&replace_cache);
-			/* It is ok to send a NULL as the first value since
-			 * this will most likely only happen when talking with
-			 * the DBD 
-			 */
+			slurm_mutex_lock(&assoc_cache_mutex);
 			if(slurmdbd_fd >= 0 && running_cache)
-				assoc_mgr_refresh_lists(NULL, NULL);		
-			slurm_mutex_unlock(&replace_cache);
+				pthread_cond_signal(&assoc_cache_cond);
+			slurm_mutex_unlock(&assoc_cache_mutex);
 			
 			continue;
 		}
@@ -1549,14 +1536,10 @@ static void *_agent(void *x)
 		}
 		slurm_mutex_unlock(&slurmdbd_lock);
 		
-		slurm_mutex_lock(&replace_cache);
-		/* It is ok to send a NULL as the first value since
-		 * this will most likely only happen when talking with
-		 * the DBD 
-		 */
+		slurm_mutex_lock(&assoc_cache_mutex);
 		if(slurmdbd_fd >= 0 && running_cache)
-			assoc_mgr_refresh_lists(NULL, NULL);		
-		slurm_mutex_unlock(&replace_cache);
+			pthread_cond_signal(&assoc_cache_cond);
+		slurm_mutex_unlock(&assoc_cache_mutex);
 
 		slurm_mutex_lock(&agent_lock);
 		if (agent_list && (rc == SLURM_SUCCESS)) {
@@ -2608,9 +2591,6 @@ void inline slurmdbd_pack_list_msg(uint16_t rpc_version,
 	case DBD_GOT_TXN:
 		my_function = pack_acct_txn_rec;
 		break;
-	case DBD_UPDATE_SHARES_USED:
-		my_function = pack_update_shares_used;
-		break;
 	default:
 		fatal("Unknown pack type");
 		return;
@@ -2679,10 +2659,6 @@ int inline slurmdbd_unpack_list_msg(uint16_t rpc_version,
 	case DBD_GOT_TXN:
 		my_function = unpack_acct_txn_rec;
 		my_destroy = destroy_acct_txn_rec;
-		break;
-	case DBD_UPDATE_SHARES_USED:
-		my_function = unpack_update_shares_used;
-		my_destroy = destroy_update_shares_rec;
 		break;
 	default:
 		fatal("Unknown unpack type");

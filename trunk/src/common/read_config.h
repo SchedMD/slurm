@@ -92,6 +92,8 @@ enum {
 #  define DEFAULT_CHECKPOINT_TYPE   "checkpoint/none"
 #  define DEFAULT_PROCTRACK_TYPE    "proctrack/pgid"
 #endif
+#define DEFAULT_PRIORITY_DECAY      604800 /* 7 days */
+#define DEFAULT_PRIORITY_TYPE       "priority/basic"
 #define DEFAULT_PROPAGATE_PRIO_PROCESS 0
 #define DEFAULT_RETURN_TO_SERVICE   0
 #define DEFAULT_RESUME_RATE         300

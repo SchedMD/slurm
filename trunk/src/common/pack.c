@@ -196,6 +196,55 @@ int unpack_time(time_t * valp, Buf buffer)
 
 
 /*
+ * Given a double, multiple by FLOAT_MULT and then
+ * typecast to a uint64_t in host byte order, convert to network byte order
+ * store in buffer, and adjust buffer counters.
+ */
+void 	packdouble(double val, Buf buffer)
+{
+	double nl1 =  (val * FLOAT_MULT) + .5; /* the .5 is here to
+						  round off.  We have
+						  found on systems
+						  going out more than
+						  15 decimals will
+						  mess things up so
+						  this is here to
+						  correct it. */
+	uint64_t nl =  HTON_uint64(nl1);
+	
+	if (remaining_buf(buffer) < sizeof(nl)) {
+		if (buffer->size > (MAX_BUF_SIZE - BUF_SIZE)) {
+			error("pack64: buffer size too large");
+			return;
+		}
+		buffer->size += BUF_SIZE;
+		xrealloc(buffer->head, buffer->size);
+	}
+
+	memcpy(&buffer->head[buffer->processed], &nl, sizeof(nl));
+	buffer->processed += sizeof(nl);
+
+}
+
+/*
+ * Given a buffer containing a network byte order 64-bit integer,
+ * typecast as double, and  divide by FLOAT_MULT 
+ * store a host double at 'valp', and adjust buffer counters.
+ */
+int	unpackdouble(double *valp, Buf buffer)
+{
+	uint64_t nl;
+	if (remaining_buf(buffer) < sizeof(nl))
+		return SLURM_ERROR;
+	
+	memcpy(&nl, &buffer->head[buffer->processed], sizeof(nl));
+
+	*valp = (double)NTOH_uint64(nl) / (double)FLOAT_MULT;
+	buffer->processed += sizeof(nl);
+	return SLURM_SUCCESS;
+}
+
+/*
  * Given a 64-bit integer in host byte order, convert to network byte order
  * store in buffer, and adjust buffer counters.
  */

@@ -215,8 +215,10 @@ static int _setup_association_limits(acct_association_rec_t *assoc,
 	} else if (((int)assoc->fairshare == INFINITE) || get_fs) {
 		xstrcat(*cols, ", fairshare");
 		xstrcat(*vals, ", 1");
-		xstrcat(*extra, ", fairshare=1");		
-	} 
+		xstrcat(*extra, ", fairshare=1");
+		assoc->fairshare = 1;
+	} else 
+		assoc->fairshare = 1;
 
 	if((int)assoc->grp_cpu_mins >= 0) {
 		xstrcat(*cols, ", grp_cpu_mins");
@@ -943,37 +945,70 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 }
 
 static uint32_t _get_parent_id(
-       mysql_conn_t *mysql_conn, char *parent, char *cluster)
+	mysql_conn_t *mysql_conn, char *parent, char *cluster)
 {
-       uint32_t parent_id = 0;
-       MYSQL_RES *result = NULL;
-       MYSQL_ROW row;
-       char *query = NULL;
-       
-       xassert(parent); 
-       xassert(cluster);
+	uint32_t parent_id = 0;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	char *query = NULL;
+	
+	xassert(parent); 
+	xassert(cluster);
 
-       query = xstrdup_printf("select id from %s where user='' "
-                              "and deleted = 0 and acct=\"%s\" "
-                              "and cluster=\"%s\";", 
-                              assoc_table, parent, cluster);
-       debug4("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
-       
-       if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 1))) {
-               xfree(query);
-               return 0;
-       }
-       xfree(query);
+	query = xstrdup_printf("select id from %s where user='' "
+			       "and deleted = 0 and acct=\"%s\" "
+			       "and cluster=\"%s\";", 
+			       assoc_table, parent, cluster);
+	debug4("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+	
+	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 1))) {
+		xfree(query);
+		return 0;
+	}
+	xfree(query);
 
-       if((row = mysql_fetch_row(result))) {
-               if(row[0])
-                       parent_id = atoi(row[0]);       
-       } else 
-               error("no association for parent %s on cluster %s",
-                     parent, cluster);
-       mysql_free_result(result);
+	if((row = mysql_fetch_row(result))) {
+		if(row[0])
+			parent_id = atoi(row[0]);	
+	} else 
+		error("no association for parent %s on cluster %s",
+		      parent, cluster);
+	mysql_free_result(result);
 
-       return parent_id;
+	return parent_id;
+}
+
+static int _set_assoc_lft_rgt(
+	mysql_conn_t *mysql_conn, acct_association_rec_t *assoc)
+{
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	char *query = NULL;
+	int rc = SLURM_ERROR;
+
+	xassert(assoc->id);
+
+	query = xstrdup_printf("select lft, rgt from %s where id=%u;", 
+			       assoc_table, assoc->id);
+	debug4("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+	
+	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 1))) {
+		xfree(query);
+		return 0;
+	}
+	xfree(query);
+
+	if((row = mysql_fetch_row(result))) {
+		if(row[0])
+			assoc->lft = atoi(row[0]);	
+		if(row[1])
+			assoc->rgt = atoi(row[1]);	
+		rc = SLURM_SUCCESS;
+	} else 
+		error("no association (%u)", assoc->id);
+	mysql_free_result(result);
+
+	return rc;
 }
 
 /* This function will take the object given and free it later so it
@@ -2161,7 +2196,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "track_steps", "tinyint not null" },
 		{ "state", "smallint not null" }, 
 		{ "comp_code", "int default 0 not null" },
-		{ "priority", "int unsigned not null" },
+		{ "priority", "int not null" },
 		{ "req_cpus", "mediumint unsigned not null" }, 
 		{ "alloc_cpus", "mediumint unsigned not null" }, 
 		{ "nodelist", "text" },
@@ -2693,17 +2728,17 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 			case ACCT_REMOVE_USER:
 			case ACCT_ADD_COORD:
 			case ACCT_REMOVE_COORD:
-				rc = assoc_mgr_update_local_users(object);
+				rc = assoc_mgr_update_users(object);
 				break;
 			case ACCT_ADD_ASSOC:
 			case ACCT_MODIFY_ASSOC:
 			case ACCT_REMOVE_ASSOC:
-				rc = assoc_mgr_update_local_assocs(object);
+				rc = assoc_mgr_update_assocs(object);
 				break;
 			case ACCT_ADD_QOS:
 			case ACCT_MODIFY_QOS:
 			case ACCT_REMOVE_QOS:
-				rc = assoc_mgr_update_local_qos(object);
+				rc = assoc_mgr_update_qos(object);
 				break;
 			case ACCT_UPDATE_NOTSET:
 			default:
@@ -3474,8 +3509,10 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 				   == SLURM_ERROR)
 					continue;
 				moved_parent = 1;
+			} else {
+				object->lft = atoi(row[MASSOC_LFT]);
+				object->rgt = atoi(row[MASSOC_RGT]);
 			}
-
 
 			affect_rows = 2;
 			xstrfmtcat(query,
@@ -3509,7 +3546,29 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 		}
 
 		object->id = assoc_id;
-		
+
+		/* get the parent id only if we haven't moved the
+		 * parent since we get the total list if that has
+		 * happened */
+		if(!moved_parent &&
+		   (!last_parent || !last_cluster
+		    || strcmp(parent, last_parent)
+		    || strcmp(object->cluster, last_cluster))) {
+			uint32_t tmp32 = 0;
+			if((tmp32 = _get_parent_id(mysql_conn, 
+						   parent,
+						   object->cluster))) {
+				my_par_id = tmp32;
+
+				last_parent = parent;
+				last_cluster = object->cluster;
+			}
+		}
+		object->parent_id = my_par_id;
+
+		if(!moved_parent && !object->lft)
+			_set_assoc_lft_rgt(mysql_conn, object);
+
 
                /* get the parent id only if we haven't moved the
                 * parent since we get the total list if that has
@@ -4281,7 +4340,7 @@ extern List acct_storage_p_modify_associations(
 		   >= ACCT_ADMIN_OPERATOR) 
 			is_admin = 1;	
 		else {
-			if(assoc_mgr_fill_in_user(mysql_conn, &user, 1)
+			if(assoc_mgr_fill_in_user(mysql_conn, &user, 1, NULL)
 			   != SLURM_SUCCESS) {
 				error("couldn't get information for this user");
 				errno = SLURM_ERROR;
@@ -4493,6 +4552,9 @@ extern List acct_storage_p_modify_associations(
 		mod_assoc->max_nodes_pj = assoc->max_nodes_pj;
 		mod_assoc->max_submit_jobs = assoc->max_submit_jobs;
 		mod_assoc->max_wall_pj = assoc->max_wall_pj;
+
+		/* no need to get the parent id since if we moved
+		 * parent id's we will get it when we send the total list */
 
 		if(!row[MASSOC_USER][0])
 			mod_assoc->parent_acct = xstrdup(assoc->parent_acct);
@@ -5192,7 +5254,7 @@ extern List acct_storage_p_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 		   >= ACCT_ADMIN_OPERATOR) 
 			is_admin = 1;	
 		else {
-			if(assoc_mgr_fill_in_user(mysql_conn, &user, 1)
+			if(assoc_mgr_fill_in_user(mysql_conn, &user, 1, NULL)
 			   != SLURM_SUCCESS) {
 				error("couldn't get information for this user");
 				errno = SLURM_ERROR;
@@ -5665,7 +5727,7 @@ extern List acct_storage_p_remove_associations(
 		   >= ACCT_ADMIN_OPERATOR) 
 			is_admin = 1;	
 		else {
-			if(assoc_mgr_fill_in_user(mysql_conn, &user, 1)
+			if(assoc_mgr_fill_in_user(mysql_conn, &user, 1, NULL)
 			   != SLURM_SUCCESS) {
 				error("couldn't get information for this user");
 				errno = SLURM_ERROR;
@@ -6032,7 +6094,8 @@ extern List acct_storage_p_get_users(mysql_conn_t *mysql_conn, uid_t uid,
 			   >= ACCT_ADMIN_OPERATOR) 
 				is_admin = 1;	
 			else {
-				assoc_mgr_fill_in_user(mysql_conn, &user, 1);
+				assoc_mgr_fill_in_user(mysql_conn, &user, 1,
+						       NULL);
 			}
 		}
 	}
@@ -6253,7 +6316,8 @@ extern List acct_storage_p_get_accts(mysql_conn_t *mysql_conn, uid_t uid,
 			   >= ACCT_ADMIN_OPERATOR) 
 				is_admin = 1;	
 			else {
-				assoc_mgr_fill_in_user(mysql_conn, &user, 1);
+				assoc_mgr_fill_in_user(mysql_conn, &user, 1,
+						       NULL);
 			}
 
 			if(!is_admin && (!user.coord_accts 
@@ -6746,7 +6810,8 @@ extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 			   >= ACCT_ADMIN_OPERATOR) 
 				is_admin = 1;	
 			else {
-				assoc_mgr_fill_in_user(mysql_conn, &user, 1);
+				assoc_mgr_fill_in_user(mysql_conn, &user, 1,
+						       NULL);
 			}
 		}
 	}
@@ -7778,7 +7843,8 @@ extern int acct_storage_p_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 			   >= ACCT_ADMIN_OPERATOR) 
 				is_admin = 1;	
 			else {
-				assoc_mgr_fill_in_user(mysql_conn, &user, 1);
+				assoc_mgr_fill_in_user(mysql_conn, &user, 1,
+						       NULL);
 			}
 			
 			if(!is_admin) {
@@ -8539,7 +8605,6 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 #ifdef HAVE_MYSQL
 	int	rc=SLURM_SUCCESS;
 	char	*jname = NULL, *nodes = NULL;
-	long	priority;
 	int track_steps = 0;
 	char *block_id = NULL;
 	char *query = NULL;
@@ -8574,9 +8639,6 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 	} else
 		slurm_mutex_unlock(&rollup_lock);
 
-
-	priority = (job_ptr->priority == NO_VAL) ?
-		-1L : (long) job_ptr->priority;
 
 	if (job_ptr->name && job_ptr->name[0]) {
 		int i;
@@ -8658,7 +8720,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 			   (int)job_ptr->start_time,
 			   jname, track_steps,
 			   job_ptr->job_state & (~JOB_COMPLETING),
-			   priority, job_ptr->num_procs,
+			   job_ptr->priority, job_ptr->num_procs,
 			   job_ptr->total_procs, 
 			   job_ptr->job_state & (~JOB_COMPLETING),
 			   job_ptr->assoc_id);
@@ -9216,8 +9278,7 @@ extern void jobacct_storage_p_archive(mysql_conn_t *mysql_conn,
 extern int acct_storage_p_update_shares_used(mysql_conn_t *mysql_conn, 
 					     List shares_used)
 {
-	/* This definitely needs to be fleshed out.
-	 * Go through the list of shares_used_object_t objects and store them */
+	/* No plans to have the database hold the used shares */
 	return SLURM_SUCCESS;
 }
 

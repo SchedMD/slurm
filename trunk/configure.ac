@@ -299,6 +299,7 @@ AC_CONFIG_FILES([Makefile
 		 src/sacctmgr/Makefile
 		 src/sreport/Makefile
 		 src/sstat/Makefile
+		 src/sshare/Makefile
 		 src/salloc/Makefile 
 		 src/sbatch/Makefile 
 		 src/sattach/Makefile
@@ -345,6 +346,9 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/jobcomp/script/Makefile
 		 src/plugins/jobcomp/mysql/Makefile
 		 src/plugins/jobcomp/pgsql/Makefile
+		 src/plugins/priority/Makefile
+		 src/plugins/priority/basic/Makefile
+		 src/plugins/priority/multifactor/Makefile
 		 src/plugins/proctrack/Makefile
 		 src/plugins/proctrack/aix/Makefile
 		 src/plugins/proctrack/pgid/Makefile

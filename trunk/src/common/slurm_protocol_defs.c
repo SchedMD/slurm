@@ -1337,6 +1337,40 @@ void slurm_free_set_debug_level_msg(set_debug_level_msg_t *msg)
 	xfree(msg);
 }
 
+void inline slurm_destroy_association_shares_object(void *object) 
+{
+	association_shares_object_t *obj_ptr = 
+		(association_shares_object_t *)object;
+	
+	if(obj_ptr) {
+		xfree(obj_ptr->cluster);
+		xfree(obj_ptr->name);
+		xfree(obj_ptr->parent);
+		xfree(obj_ptr);
+	}
+}
+
+void inline slurm_free_shares_request_msg(shares_request_msg_t *msg)
+{
+	if(msg) {
+		if(msg->acct_list)
+			list_destroy(msg->acct_list);
+		if(msg->user_list)
+			list_destroy(msg->user_list);
+		xfree(msg);
+	}
+}
+
+void inline slurm_free_shares_response_msg(shares_response_msg_t *msg)
+{
+	if(msg) {
+		if(msg->assoc_shares_list)
+			list_destroy(msg->assoc_shares_list);
+		xfree(msg);
+	}
+}
+
+
 
 void inline slurm_free_accounting_update_msg(accounting_update_msg_t *msg)
 {
@@ -1424,6 +1458,12 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_JOB_REQUEUE:
 	case REQUEST_JOB_INFO_SINGLE:
 		slurm_free_job_id_msg(data);
+		break;
+	case REQUEST_SHARE_INFO:
+		slurm_free_shares_request_msg(data);
+		break;
+	case RESPONSE_SHARE_INFO:
+		slurm_free_shares_response_msg(data);
 		break;
 	case REQUEST_NODE_SELECT_INFO:
 		slurm_free_node_select_msg(data);

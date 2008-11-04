@@ -61,15 +61,25 @@ typedef struct {
  	void (*remove_assoc_notify) (acct_association_rec_t *rec);
 } assoc_init_args_t;
 
+extern acct_association_rec_t *assoc_mgr_root_assoc;
+extern pthread_mutex_t assoc_mgr_association_lock;
+extern pthread_mutex_t assoc_mgr_qos_lock;
+extern pthread_mutex_t assoc_mgr_user_lock;
+extern pthread_mutex_t assoc_mgr_file_lock;
+
 /* 
  * get info from the storage 
  * IN/OUT:  user - acct_user_rec_t with the name set of the user.
  *                 "default_account" will be filled in on
  *                 successful return DO NOT FREE.
+ * IN/OUT: user_pptr - if non-NULL then return a pointer to the 
+ *		       acct_user record in cache on success
+ *                     DO NOT FREE.
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int assoc_mgr_fill_in_user(void *db_conn, acct_user_rec_t *user,
-				  int enforce);
+				  int enforce,
+				  acct_user_rec_t **user_pptr);
 
 /* 
  * get info from the storage 
@@ -80,6 +90,7 @@ extern int assoc_mgr_fill_in_user(void *db_conn, acct_user_rec_t *user,
  * IN: enforce - return an error if no such association exists
  * IN/OUT: assoc_pptr - if non-NULL then return a pointer to the 
  *			acct_association record in cache on success
+ *                      DO NOT FREE.
  * RET: SLURM_SUCCESS on success, else SLURM_ERROR
  */
 extern int assoc_mgr_fill_in_assoc(void *db_conn,
@@ -87,6 +98,18 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 				   int enforce,
 				   acct_association_rec_t **assoc_pptr);
 
+
+/* 
+ * get info from the storage 
+ * IN/OUT:  qos - acct_qos_rec_t with the id set of the qos.
+ * IN/OUT:  qos_pptr - if non-NULL then return a pointer to the 
+ *		       acct_qos record in cache on success
+ *                     DO NOT FREE.
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int assoc_mgr_fill_in_qos(void *db_conn, acct_qos_rec_t *qos,
+				 int enforce,
+				 acct_qos_rec_t **qos_pptr);
 /* 
  * get admin_level of uid 
  * IN: uid - uid of user to check admin_level of.
@@ -107,26 +130,52 @@ extern int assoc_mgr_is_user_acct_coord(void *db_conn, uint32_t uid,
 extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args);
 extern int assoc_mgr_fini(char *state_save_location);
 
-/* 
- * update associations in local cache 
- * IN:  acct_update_object_t *object
- * RET: SLURM_SUCCESS on success (or not found) SLURM_ERROR else
+/*
+ * apply decay factor to all associations used_shares
+ * IN: decay_factor - decay to be applied to each associations' used
+ * shares.  This should already be modified with the amount of delta
+ * time from last application..
+ * RET: SLURM_SUCCESS on SUCCESS, SLURM_ERROR else.
  */
-extern int assoc_mgr_update_local_assocs(acct_update_object_t *update);
+extern int assoc_mgr_apply_decay(double decay_factor);
+
+/*
+ * set up the cpu shares for the associations.  This can only be done
+ * after we get a correct proc count for the system.
+ * IN: procs - number of proccessors on the system
+ * IN: half_life - time half_life is in seconds.
+ * RET: SLURM_SUCCESS on SUCCESS, SLURM_ERROR else.
+ */
+extern int assoc_mgr_set_cpu_shares(uint32_t procs, uint32_t half_life);
+
+/*
+ * get the share information from the association list in the form of
+ * a list containing association_share_object_t's 
+ * IN: acct_list: char * list of accounts you want (NULL for all)
+ * IN: user_list: char * list of user names you want (NULL for all)
+ */
+extern List assoc_mgr_get_shares(List acct_list, List user_list);
 
 /* 
- * update qos in local cache 
+ * update associations in cache 
  * IN:  acct_update_object_t *object
  * RET: SLURM_SUCCESS on success (or not found) SLURM_ERROR else
  */
-extern int assoc_mgr_update_local_qos(acct_update_object_t *update);
+extern int assoc_mgr_update_assocs(acct_update_object_t *update);
 
 /* 
- * update users in local cache 
+ * update qos in cache 
  * IN:  acct_update_object_t *object
  * RET: SLURM_SUCCESS on success (or not found) SLURM_ERROR else
  */
-extern int assoc_mgr_update_local_users(acct_update_object_t *update);
+extern int assoc_mgr_update_qos(acct_update_object_t *update);
+
+/* 
+ * update users in cache 
+ * IN:  acct_update_object_t *object
+ * RET: SLURM_SUCCESS on success (or not found) SLURM_ERROR else
+ */
+extern int assoc_mgr_update_users(acct_update_object_t *update);
 
 /* 
  * validate that an association ID is still valid 
@@ -151,6 +200,12 @@ extern void assoc_mgr_clear_used_info(void);
  * database isn't up next time we run.
  */
 extern int dump_assoc_mgr_state(char *state_save_location);
+
+/*
+ * Read in the usage for association if the database
+ * is up when starting.
+ */
+extern int load_assoc_usage(char *state_save_location);
 
 /*
  * Read in the information of the association mgr if the database

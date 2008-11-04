@@ -69,6 +69,7 @@
 #include "src/common/xstring.h"
 #include "src/common/assoc_mgr.h"
 
+#include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
@@ -106,9 +107,6 @@ static bool     wiki_sched_test = false;
 
 /* Local functions */
 static void _add_job_hash(struct job_record *job_ptr);
-
-static void _acct_add_job_submit(struct job_record *job_ptr);
-static void _acct_remove_job_submit(struct job_record *job_ptr);
 
 static int  _copy_job_desc_to_file(job_desc_msg_t * job_desc,
 				   uint32_t job_id);
@@ -493,6 +491,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack_time(dump_job_ptr->pre_sus_time, buffer);
 	pack_time(dump_job_ptr->tot_sus_time, buffer);
 
+	pack16(dump_job_ptr->direct_set_prio, buffer);
 	pack16(dump_job_ptr->job_state, buffer);
 	pack16(dump_job_ptr->next_step_id, buffer);
 	pack16(dump_job_ptr->kill_on_node_fail, buffer);
@@ -558,7 +557,7 @@ static int _load_job_state(Buf buffer)
 	time_t start_time, end_time, suspend_time, pre_sus_time, tot_sus_time;
 	time_t now = time(NULL);
 	uint16_t job_state, next_step_id, details, batch_flag, step_flag;
-	uint16_t kill_on_node_fail, kill_on_step_done, qos;
+	uint16_t kill_on_node_fail, kill_on_step_done, direct_set_prio, qos;
 	uint16_t alloc_resp_port, other_port, mail_type, state_reason;
 	char *nodes = NULL, *partition = NULL, *name = NULL, *resp_host = NULL;
 	char *account = NULL, *network = NULL, *mail_user = NULL;
@@ -569,7 +568,8 @@ static int _load_job_state(Buf buffer)
 	int error_code;
 	select_jobinfo_t select_jobinfo = NULL;
 	select_job_res_t select_job = NULL;
-	acct_association_rec_t assoc_rec, *assoc_ptr = NULL;
+	acct_association_rec_t assoc_rec;
+	acct_qos_rec_t qos_rec;
 
 	safe_unpack32(&assoc_id, buffer);
 	safe_unpack32(&job_id, buffer);
@@ -590,6 +590,7 @@ static int _load_job_state(Buf buffer)
 	safe_unpack_time(&pre_sus_time, buffer);
 	safe_unpack_time(&tot_sus_time, buffer);
 
+	safe_unpack16(&direct_set_prio, buffer);
 	safe_unpack16(&job_state, buffer);
 	safe_unpack16(&next_step_id, buffer);
 	safe_unpack16(&kill_on_node_fail, buffer);
@@ -597,6 +598,7 @@ static int _load_job_state(Buf buffer)
 	safe_unpack16(&batch_flag, buffer);
 	safe_unpack16(&mail_type, buffer);
 	safe_unpack16(&qos, buffer);
+
 	safe_unpack16(&state_reason, buffer);
 
 	safe_unpackstr_xmalloc(&state_desc, &name_len, buffer);
@@ -672,6 +674,18 @@ static int _load_job_state(Buf buffer)
 		_add_job_hash(job_ptr);
 	}
 
+	if(qos) {
+		bzero(&qos_rec, sizeof(acct_qos_rec_t));
+		qos_rec.id = qos;
+		if((assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec,
+					  accounting_enforce, 
+					  (acct_qos_rec_t **)&job_ptr->qos_ptr))
+		   != SLURM_SUCCESS) {
+			verbose("Invalid qos (%u) for job_id %u", qos, job_id);
+			/* not a fatal error, qos could have been removed */
+		} 
+	}
+
 	if ((maximum_prio >= priority) && (priority > 1))
 		maximum_prio = priority;
 	if (job_id_sequence <= job_id)
@@ -701,6 +715,7 @@ static int _load_job_state(Buf buffer)
 	xfree(job_ptr->comment);
 	job_ptr->comment      = comment;
 	comment               = NULL;  /* reused, nothing left to free */
+	job_ptr->direct_set_prio = direct_set_prio;
 	job_ptr->db_index     = db_index;
 	job_ptr->end_time     = end_time;
 	job_ptr->exit_code    = exit_code;
@@ -772,7 +787,8 @@ static int _load_job_state(Buf buffer)
 
 	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 				    accounting_enforce,
-				    &assoc_ptr) &&
+				    (acct_association_rec_t **)
+				    &job_ptr->assoc_ptr) &&
 	    accounting_enforce && (!IS_JOB_FINISHED(job_ptr))) {
 		info("Cancelling job %u with invalid association",
 		     job_id);
@@ -784,8 +800,7 @@ static int _load_job_state(Buf buffer)
 		job_ptr->end_time = now;
 		job_completion_logger(job_ptr);
 	} else {
-		info("Recovered job %u", job_id);
-		job_ptr->assoc_ptr = (void *) assoc_ptr;
+		info("Recovered job %u %u", job_id, job_ptr->assoc_id);
 
 		/* make sure we have started this job in accounting */
 		if(job_ptr->assoc_id && !job_ptr->db_index && job_ptr->nodes) {
@@ -844,6 +859,7 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 	pack16(detail_ptr->acctg_freq, buffer);
 	pack16(detail_ptr->contiguous, buffer);
 	pack16(detail_ptr->cpus_per_task, buffer);
+	pack16(detail_ptr->nice, buffer);
 	pack16(detail_ptr->ntasks_per_node, buffer);
 	pack16(detail_ptr->requeue, buffer);
 	pack16(detail_ptr->shared, buffer);
@@ -890,7 +906,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	uint32_t job_min_procs;
 	uint32_t job_min_memory, job_min_tmp_disk;
 	uint32_t num_tasks, name_len, argc = 0;
-	uint16_t shared, contiguous, ntasks_per_node;
+	uint16_t shared, contiguous, nice, ntasks_per_node;
 	uint16_t acctg_freq, cpus_per_task, requeue, task_dist;
 	uint16_t cpu_bind_type, mem_bind_type, plane_size;
 	uint8_t open_mode, overcommit, prolog_running;
@@ -906,6 +922,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	safe_unpack16(&acctg_freq, buffer);
 	safe_unpack16(&contiguous, buffer);
 	safe_unpack16(&cpus_per_task, buffer);
+	safe_unpack16(&nice, buffer);
 	safe_unpack16(&ntasks_per_node, buffer);
 	safe_unpack16(&requeue, buffer);
 	safe_unpack16(&shared, buffer);
@@ -996,6 +1013,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	job_ptr->details->mem_bind = mem_bind;
 	job_ptr->details->mem_bind_type = mem_bind_type;
 	job_ptr->details->min_nodes = min_nodes;
+	job_ptr->details->nice = nice;
 	job_ptr->details->ntasks_per_node = ntasks_per_node;
 	job_ptr->details->num_tasks = num_tasks;
 	job_ptr->details->open_mode = open_mode;
@@ -1043,43 +1061,6 @@ void _add_job_hash(struct job_record *job_ptr)
 	inx = JOB_HASH_INX(job_ptr->job_id);
 	job_ptr->job_next = job_hash[inx];
 	job_hash[inx] = job_ptr;
-}
-
-/*
- * _acct_add_job_submit - Note that a job has been submitted
- *      for accounting policy purposes.
- */
-static void _acct_add_job_submit(struct job_record *job_ptr)
-{
-	acct_association_rec_t *assoc_ptr = NULL;
-
-	assoc_ptr = job_ptr->assoc_ptr;
-	while(assoc_ptr) {
-		assoc_ptr->used_submit_jobs++;	
-		/* now handle all the group limits of the parents */
-		assoc_ptr = assoc_ptr->parent_assoc_ptr;
-	}
-}
-
-/*
- * _acct_remove_job_submit - Note that a job has finished (might
- *      not had started or been allocated resources) for accounting
- *      policy purposes.
- */
-static void _acct_remove_job_submit(struct job_record *job_ptr)
-{
-	acct_association_rec_t *assoc_ptr = NULL;
-
-	assoc_ptr = job_ptr->assoc_ptr;
-	while(assoc_ptr) {
-		if (assoc_ptr->used_submit_jobs) 
-			assoc_ptr->used_submit_jobs--;
-		else
-			debug2("_acct_remove_job_submit: "
-			       "used_submit_jobs underflow for account %s",
-			       assoc_ptr->acct);
-		assoc_ptr = assoc_ptr->parent_assoc_ptr;
-	}
 }
 
 
@@ -1666,8 +1647,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		slurm_sched_schedule();	/* work for external scheduler */
 	}
 
-	if (accounting_enforce == ACCOUNTING_ENFORCE_WITH_LIMITS)
-		_acct_add_job_submit(job_ptr);
+	acct_policy_add_job_submit(job_ptr);
 
 	if ((error_code == ESLURM_NODES_BUSY) ||
 	    (error_code == ESLURM_JOB_HELD) ||
@@ -2336,8 +2316,17 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	}
 
 	job_ptr = *job_pptr;
+	
 	job_ptr->assoc_id = assoc_rec.id;
 	job_ptr->assoc_ptr = (void *) assoc_ptr;
+
+	/* This must be done after we have the assoc_ptr set */
+	if (job_desc->priority != NO_VAL) /* already confirmed submit_uid==0 */
+		job_ptr->priority = job_desc->priority;
+	else {
+		_set_job_prio(job_ptr);
+	}
+
 	if (update_job_dependency(job_ptr, job_desc->dependency)) {
 		error_code = ESLURM_DEPENDENCY;
 		goto cleanup_fail;
@@ -2911,6 +2900,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 
 	job_ptr->partition = xstrdup(part_ptr->name);
 	job_ptr->part_ptr = part_ptr;
+	
 	if (job_desc->job_id != NO_VAL)		/* already confirmed unique */
 		job_ptr->job_id = job_desc->job_id;
 	else
@@ -2938,18 +2928,26 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	}
 	if (wiki_sched && job_ptr->comment &&
 	    strstr(job_ptr->comment, "QOS:")) {
+		acct_qos_rec_t qos_rec;
+
+		bzero(&qos_rec, sizeof(acct_qos_rec_t));
+
 		if (strstr(job_ptr->comment, "FLAGS:PREEMPTOR"))
-			job_ptr->qos = QOS_EXPEDITE;
+			qos_rec.name = "expedite";
 		else if (strstr(job_ptr->comment, "FLAGS:PREEMPTEE"))
-			job_ptr->qos = QOS_STANDBY;
+			qos_rec.name = "standby";
 		else
-			job_ptr->qos = QOS_NORMAL;
-	}
-	if (job_desc->priority != NO_VAL) /* already confirmed submit_uid==0 */
-		job_ptr->priority = job_desc->priority;
-	else {
-		_set_job_prio(job_ptr);
-		job_ptr->priority -= ((int)job_desc->nice - NICE_OFFSET);
+			qos_rec.name = "normal";
+		
+		if((assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec,
+					  accounting_enforce,
+					  (acct_qos_rec_t **)&job_ptr->qos_ptr))
+		   != SLURM_SUCCESS) {
+			verbose("Invalid qos (%s) for job_id %u", 
+				qos_rec.name, job_ptr->job_id);
+			/* not a fatal error, qos could have been removed */
+		} else 
+			job_ptr->qos = qos_rec.id;
 	}
 
 	if (job_desc->kill_on_node_fail != (uint16_t) NO_VAL)
@@ -2972,6 +2970,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_desc->argv   = (char **) NULL; /* nothing left */
 	job_desc->argc   = 0;		   /* nothing left */
 	detail_ptr->acctg_freq = job_desc->acctg_freq;
+	detail_ptr->nice       = job_desc->nice;
 	detail_ptr->open_mode  = job_desc->open_mode;
 	detail_ptr->min_nodes  = job_desc->min_nodes;
 	detail_ptr->max_nodes  = job_desc->max_nodes;
@@ -3027,6 +3026,11 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		detail_ptr->begin_time = job_desc->begin_time;
 	job_ptr->select_jobinfo = 
 		select_g_copy_jobinfo(job_desc->select_jobinfo);
+
+	/* The priority needs to be set after this since we don't have
+	   an association rec yet
+	*/
+
 	detail_ptr->mc_ptr = _set_multi_core_data(job_desc);	
 	*job_rec_ptr = job_ptr;
 	return SLURM_SUCCESS;
@@ -4082,7 +4086,13 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if (job_specs->priority != NO_VAL) {
 		if (super_user
 		    ||  (job_ptr->priority > job_specs->priority)) {
-			job_ptr->priority = job_specs->priority;
+			if(job_specs->priority == INFINITE) {
+				job_ptr->direct_set_prio = 0;
+				_set_job_prio(job_ptr);
+			} else {
+				job_ptr->direct_set_prio = 1;
+				job_ptr->priority = job_specs->priority;
+			}
 			info("update_job: setting priority to %u for "
 			     "job_id %u", job_ptr->priority, 
 			     job_specs->job_id);
@@ -4097,8 +4107,9 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		if (!IS_JOB_PENDING(job_ptr)) 
 			error_code = ESLURM_DISABLED;
 		else if (super_user || (job_specs->nice < NICE_OFFSET)) {
-			job_ptr->priority -= ((int)job_specs->nice - 
-					      NICE_OFFSET);
+			job_ptr->details->nice = job_specs->nice;
+			_set_job_prio(job_ptr);
+			
 			info("update_job: setting priority to %u for "
 			     "job_id %u", job_ptr->priority,
 			     job_specs->job_id);
@@ -4363,15 +4374,6 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		error("Attempt to change comment for job %u",
 		      job_specs->job_id);
 		error_code = ESLURM_ACCESS_DENIED;
-#if 0
-		if (wiki_sched && strstr(job_ptr->comment, "QOS:")) {
-			if (strstr(job_ptr->comment, "FLAGS:PREEMPTOR"))
-				job_ptr->qos = QOS_EXPEDITE;
-			else if (strstr(job_ptr->comment, "FLAGS:PREEMPTEE"))
-				job_ptr->qos = QOS_STANDBY;
-			else
-				job_ptr->qos = QOS_NORMAL;
-#endif
 	} else if (job_specs->comment) {
 		xfree(job_ptr->comment);
 		job_ptr->comment = job_specs->comment;
@@ -4380,12 +4382,28 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		     job_ptr->comment, job_specs->job_id);
 
 		if (wiki_sched && strstr(job_ptr->comment, "QOS:")) {
+			acct_qos_rec_t qos_rec;
+
+			bzero(&qos_rec, sizeof(acct_qos_rec_t));
+
 			if (strstr(job_ptr->comment, "FLAGS:PREEMPTOR"))
-				job_ptr->qos = QOS_EXPEDITE;
+				qos_rec.name = "expedite";
 			else if (strstr(job_ptr->comment, "FLAGS:PREEMPTEE"))
-				job_ptr->qos = QOS_STANDBY;
+				qos_rec.name = "standby";
 			else
-				job_ptr->qos = QOS_NORMAL;
+				qos_rec.name = "normal";
+			
+			if((assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec,
+						  accounting_enforce,
+						  (acct_qos_rec_t **)
+						  &job_ptr->qos_ptr))
+			   != SLURM_SUCCESS) {
+				verbose("Invalid qos (%s) for job_id %u",
+					qos_rec.name, job_ptr->job_id);
+				/* not a fatal error, qos could have
+				 * been removed */
+			} else 
+				job_ptr->qos = qos_rec.id;
 		}
 	}
 
@@ -4410,24 +4428,24 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		else if (tmp_part_ptr == NULL)
 			error_code = ESLURM_INVALID_PARTITION_NAME;
 		else if (super_user) {
-			acct_association_rec_t assoc_rec, *assoc_ptr;
+			acct_association_rec_t assoc_rec;
 			bzero(&assoc_rec, sizeof(acct_association_rec_t));
 			assoc_rec.uid       = job_ptr->user_id;
 			assoc_rec.partition = job_specs->partition;
 			assoc_rec.acct      = job_ptr->account;
 			if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
-						    accounting_enforce, 
-						    &assoc_ptr)) {
+						    accounting_enforce,
+						    (acct_association_rec_t **)
+						    &job_ptr->assoc_ptr)) {
 				info("job_update: invalid account %s "
 				     "for job %u",
 				     job_specs->account, job_ptr->job_id);
 				error_code = ESLURM_INVALID_ACCOUNT;
 				/* Let update proceed. Note there is an invalid
 				 * association ID for accounting purposes */
-			} else {
+			} else 
 				job_ptr->assoc_id = assoc_rec.id;
-				job_ptr->assoc_ptr = (void *) assoc_ptr;
-			}
+
 			xfree(job_ptr->partition);
 			job_ptr->partition = xstrdup(job_specs->partition);
 			job_ptr->part_ptr = tmp_part_ptr;
@@ -5211,8 +5229,7 @@ extern void job_completion_logger(struct job_record  *job_ptr)
 
 	xassert(job_ptr);
 
-	if (accounting_enforce == ACCOUNTING_ENFORCE_WITH_LIMITS)
-		_acct_remove_job_submit(job_ptr);
+	acct_policy_remove_job_submit(job_ptr);
 
 	/* make sure all parts of the job are notified */
 	srun_job_complete(job_ptr);
@@ -6007,6 +6024,9 @@ extern int job_cancel_by_assoc_id(uint32_t assoc_id)
 		if ((job_ptr->assoc_id != assoc_id) || 
 		    IS_JOB_FINISHED(job_ptr))
 			continue;
+		/* This needs to be set since there are locks already
+		   in place that if the assoc_ptr was there we would
+		   have some problems */
 		job_ptr->assoc_ptr = NULL;
 		info("Association deleted, cancelling job %u", 
 		     job_ptr->job_id);
@@ -6029,7 +6049,7 @@ extern int job_cancel_by_assoc_id(uint32_t assoc_id)
 extern int update_job_account(char *module, struct job_record *job_ptr, 
 			      char *new_account)
 {
-	acct_association_rec_t assoc_rec, *assoc_ptr;
+	acct_association_rec_t assoc_rec;
 
 	if ((!IS_JOB_PENDING(job_ptr)) || (job_ptr->details == NULL)) {
 		info("%s: attempt to modify account for non-pending "
@@ -6043,20 +6063,24 @@ extern int update_job_account(char *module, struct job_record *job_ptr,
 	assoc_rec.partition = job_ptr->partition;
 	assoc_rec.acct      = new_account;
 	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
-				    accounting_enforce, &assoc_ptr)) {
+				    accounting_enforce,
+				    (acct_association_rec_t **)
+				    &job_ptr->assoc_ptr)) {
 		info("%s: invalid account %s for job_id %u",
 		     module, new_account, job_ptr->job_id);
 		return ESLURM_INVALID_ACCOUNT;
 	} else if(association_based_accounting 
-		  && !assoc_ptr && !accounting_enforce) {
+		  && !job_ptr->assoc_ptr && !accounting_enforce) {
 		/* if not enforcing associations we want to look for
 		   the default account and use it to avoid getting
 		   trash in the accounting records.
 		*/
 		assoc_rec.acct = NULL;
 		assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
-					accounting_enforce, &assoc_ptr);
-		if(!assoc_ptr) {
+					accounting_enforce, 
+					(acct_association_rec_t **)
+					&job_ptr->assoc_ptr);
+		if(!job_ptr->assoc_ptr) {
 			debug("%s: we didn't have an association for account "
 			      "'%s' and user '%s', and we can't seem to find "
 			      "a default one either.  Keeping new account "
@@ -6079,7 +6103,6 @@ extern int update_job_account(char *module, struct job_record *job_ptr,
 		     module, job_ptr->job_id);
 	}
 	job_ptr->assoc_id = assoc_rec.id;
-	job_ptr->assoc_ptr = (void *) assoc_ptr;
 
 	if (job_ptr->details && job_ptr->details->begin_time) {
 		/* Update account associated with the eligible time */

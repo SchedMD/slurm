@@ -88,10 +88,11 @@ am__libcommon_la_SOURCES_DIST = assoc_mgr.c assoc_mgr.h xmalloc.c \
 	parse_spec.h plugin.c plugin.h plugrack.c plugrack.h \
 	print_fields.c print_fields.h read_config.c read_config.h \
 	node_select.c node_select.h env.c env.h slurm_cred.h \
-	slurm_cred.c slurm_errno.c slurm_protocol_api.c \
-	slurm_protocol_api.h slurm_protocol_pack.c \
-	slurm_protocol_pack.h slurm_protocol_util.c \
-	slurm_protocol_util.h slurm_protocol_socket_implementation.c \
+	slurm_cred.c slurm_errno.c slurm_priority.c slurm_priority.h \
+	slurm_protocol_api.c slurm_protocol_api.h \
+	slurm_protocol_pack.c slurm_protocol_pack.h \
+	slurm_protocol_util.c slurm_protocol_util.h \
+	slurm_protocol_socket_implementation.c \
 	slurm_protocol_socket_common.h slurm_protocol_common.h \
 	slurm_protocol_interface.h slurm_protocol_defs.c \
 	slurm_protocol_defs.h slurm_rlimits_info.h \
@@ -115,17 +116,17 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo xmalloc.lo xassert.lo \
 	fd.lo log.lo cbuf.lo safeopen.lo bitstring.lo mpi.lo pack.lo \
 	parse_config.lo parse_spec.lo plugin.lo plugrack.lo \
 	print_fields.lo read_config.lo node_select.lo env.lo \
-	slurm_cred.lo slurm_errno.lo slurm_protocol_api.lo \
-	slurm_protocol_pack.lo slurm_protocol_util.lo \
-	slurm_protocol_socket_implementation.lo slurm_protocol_defs.lo \
-	slurm_rlimits_info.lo slurmdbd_defs.lo uid.lo util-net.lo \
-	slurm_auth.lo jobacct_common.lo slurm_accounting_storage.lo \
-	slurm_jobacct_gather.lo slurm_jobcomp.lo switch.lo arg_desc.lo \
-	malloc.lo getopt.lo getopt1.lo $(am__objects_1) \
-	slurm_selecttype_info.lo slurm_resource_info.lo hostlist.lo \
-	slurm_step_layout.lo checkpoint.lo select_job_res.lo \
-	parse_time.lo job_options.lo global_defaults.lo timers.lo \
-	stepd_api.lo proc_args.lo
+	slurm_cred.lo slurm_errno.lo slurm_priority.lo \
+	slurm_protocol_api.lo slurm_protocol_pack.lo \
+	slurm_protocol_util.lo slurm_protocol_socket_implementation.lo \
+	slurm_protocol_defs.lo slurm_rlimits_info.lo slurmdbd_defs.lo \
+	uid.lo util-net.lo slurm_auth.lo jobacct_common.lo \
+	slurm_accounting_storage.lo slurm_jobacct_gather.lo \
+	slurm_jobcomp.lo switch.lo arg_desc.lo malloc.lo getopt.lo \
+	getopt1.lo $(am__objects_1) slurm_selecttype_info.lo \
+	slurm_resource_info.lo hostlist.lo slurm_step_layout.lo \
+	checkpoint.lo select_job_res.lo parse_time.lo job_options.lo \
+	global_defaults.lo timers.lo stepd_api.lo proc_args.lo
 am__EXTRA_libcommon_la_SOURCES_DIST = unsetenv.c unsetenv.h
 libcommon_la_OBJECTS = $(am_libcommon_la_OBJECTS)
 libcommon_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -382,6 +383,8 @@ libcommon_la_SOURCES = \
 	slurm_cred.h       		\
 	slurm_cred.c			\
 	slurm_errno.c			\
+	slurm_priority.c		\
+	slurm_priority.h		\
 	slurm_protocol_api.c		\
 	slurm_protocol_api.h		\
 	slurm_protocol_pack.c		\
@@ -561,6 +564,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_errno.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_jobacct_gather.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_jobcomp.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_priority.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_protocol_api.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_protocol_defs.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_protocol_pack.Plo@am__quote@

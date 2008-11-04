@@ -1068,7 +1068,6 @@ extern int cluster_account_by_user(int argc, char *argv[])
 						print_acct = get_tree_acct_name(
 							local_acct,
 							parent_acct,
-							sreport_cluster->name,
 							tree_list);
 						xfree(local_acct);
 					} else {

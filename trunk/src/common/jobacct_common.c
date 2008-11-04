@@ -208,6 +208,8 @@ extern void pack_jobacct_job_rec(void *object, uint16_t rpc_version, Buf buffer)
 	ListIterator itr = NULL;
 	jobacct_step_rec_t *step = NULL;
 	uint32_t count = 0;
+	double tmp_prio;
+	uint32_t pack_prio;
 
 	pack32(job->alloc_cpus, buffer);
 	pack32(job->associd, buffer);
@@ -224,7 +226,12 @@ extern void pack_jobacct_job_rec(void *object, uint16_t rpc_version, Buf buffer)
 	pack32(job->lft, buffer);
 	packstr(job->partition, buffer);
 	packstr(job->nodes, buffer);
-	pack32(job->priority, buffer);
+
+	tmp_prio = job->priority + 200;
+	tmp_prio *= 1000000;
+	pack_prio = (uint32_t)tmp_prio;
+
+	pack32(pack_prio, buffer);
 	pack16(job->qos, buffer);
 	pack32(job->req_cpus, buffer);
 	pack32(job->requid, buffer);
@@ -263,6 +270,7 @@ extern int unpack_jobacct_job_rec(void **job, uint16_t rpc_version, Buf buffer)
 	uint32_t count = 0;
 	uint32_t uint32_tmp;
 	uint16_t uint16_tmp;
+	double tmp_prio;
 
 	*job = job_ptr;
 
@@ -282,8 +290,12 @@ extern int unpack_jobacct_job_rec(void **job, uint16_t rpc_version, Buf buffer)
 	safe_unpack32(&job_ptr->lft, buffer);
 	safe_unpackstr_xmalloc(&job_ptr->partition, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&job_ptr->nodes, &uint32_tmp, buffer);
+
 	safe_unpack32(&uint32_tmp, buffer);
-	job_ptr->priority = (int32_t)uint32_tmp;
+	tmp_prio = (double)uint32_tmp / (double)1000000;
+	tmp_prio -= (double)200;
+	job_ptr->priority = (int32_t)tmp_prio;
+
 	safe_unpack16(&job_ptr->qos, buffer);
 	safe_unpack32(&job_ptr->req_cpus, buffer);
 	safe_unpack32(&job_ptr->requid, buffer);

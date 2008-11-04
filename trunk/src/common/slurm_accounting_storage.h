@@ -137,9 +137,14 @@ typedef struct {
 typedef struct acct_association_rec {
 	List accounting_list; 	/* list of acct_accounting_rec_t *'s */
 	char *acct;		/* account/project associated to association */
+	List childern_list;     /* list of childern associations
+				 * (DON'T PACK) */
 	char *cluster;		/* cluster associated to association
 				 * */
 
+	long double cpu_shares;	/* how many cpu shares available for
+				 * this association (DON'T PACK) */
+	long double eused_shares; /* Effective used shares (DON'T PACK) */
 	uint32_t fairshare;	/* fairshare number */
 
 	uint64_t grp_cpu_mins; /* max number of cpu hours the
@@ -179,6 +184,8 @@ typedef struct acct_association_rec {
 	uint32_t level_shares;  /* number of shares on this level of
 				 * the tree (DON'T PACK) */
 	
+	long double level_cpu_shares; /* how many cpu shares available at
+				       * this level (DON'T PACK) */
 	uint32_t lft;		/* lft used for grouping sub
 				 * associations and jobs as a left
 				 * most container used with rgt */
@@ -195,7 +202,7 @@ typedef struct acct_association_rec {
 				     submitted by association */
 	uint32_t max_wall_pj; /* longest time this
 			       * association can run a job */
-	
+	double norm_shares;     /* normalized shares (DON'T PACK) */
 	char *parent_acct;	/* name of parent account */
 	struct acct_association_rec *parent_assoc_ptr;	/* ptr to parent acct
 							 * set in
@@ -213,7 +220,8 @@ typedef struct acct_association_rec {
 	uint32_t uid;		/* user ID */
 	
 	uint32_t used_jobs;	/* count of active jobs (DON'T PACK) */
-	uint32_t used_shares;	/* measure of resource usage */
+	long double used_shares;	/* measure of resource usage 
+					   (DON'T PACK) */
 	uint32_t used_submit_jobs; /* count of jobs pending or running
 				    * (DON'T PACK) */
 	
@@ -306,6 +314,7 @@ typedef struct {
 			       * qos can run a job */
 
 	char *name;
+	double norm_priority;/* normalized priority (DON'T PACK) */
 	List preemptee_list; /* list of char * list of qos's that this
 				qos can preempt */
 	List preemptor_list; /* list of char * list of qos's that this
@@ -394,11 +403,6 @@ typedef struct {
 } acct_update_object_t;
 
 typedef struct {
-	uint32_t assoc_id;	/* association ID		*/
-	uint32_t shares_used;	/* measure of recent usage	*/
-} shares_used_object_t;
-
-typedef struct {
 	uint64_t alloc_secs; /* number of cpu seconds allocated */
 	uint32_t cpu_count; /* number of cpus during time period */
 	uint64_t down_secs; /* number of cpu seconds down */
@@ -408,12 +412,12 @@ typedef struct {
 	uint64_t resv_secs; /* number of cpu seconds reserved */	
 } cluster_accounting_rec_t;
 
-
 typedef struct {
 	char *name;
 	char *print_name;
 	char *spaces;
-	uint16_t user;
+	uint16_t user; /* set to 1 if it is a user i.e. if name[0] is
+			* '|' */
 } acct_print_tree_t;
 
 typedef struct {
@@ -421,6 +425,8 @@ typedef struct {
 	char *sort_name;
 	List childern;
 } acct_hierarchical_rec_t;
+
+extern uint32_t qos_max_priority; /* max priority in all qos's */
 
 extern void destroy_acct_user_rec(void *object);
 extern void destroy_acct_account_rec(void *object);
@@ -528,8 +534,7 @@ extern List get_hierarchical_sorted_assoc_list(List assoc_list);
 extern List get_acct_hierarchical_rec_list(List assoc_list);
 
 /* IN/OUT: tree_list a list of acct_print_tree_t's */ 
-extern char *get_tree_acct_name(char *name, char *parent, char *cluster, 
-				List tree_list);
+extern char *get_tree_acct_name(char *name, char *parent, List tree_list);
 
 extern char *get_qos_complete_str(List qos_list, List num_qos_list);
 
