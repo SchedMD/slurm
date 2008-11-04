@@ -227,8 +227,8 @@ static int _signal_batch_script_step(
 	msg.data = &rpc;
 	if(slurm_conf_get_addr(name, &msg.address) == SLURM_ERROR) {
 		error("_signal_batch_script_step: "
-		      "can't get address for "
-		      "host %s", name);
+		      "can't find address for host %s, check slurm.conf", 
+		      name);
 		free(name);
 		return -1;
 	}
@@ -391,8 +391,8 @@ static int _terminate_batch_script_step(
 
 	if(slurm_conf_get_addr(name, &msg.address) == SLURM_ERROR) {
 		error("_signal_batch_script_step: "
-		      "can't get address for "
-		      "host %s", name);
+		      "can't find address for host %s, check slurm.conf", 
+		      name);
 		free(name);
 		return -1;
 	}
