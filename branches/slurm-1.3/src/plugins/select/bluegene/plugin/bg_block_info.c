@@ -404,6 +404,12 @@ extern int update_block_list()
 				       "free state.",
 				       bg_record->bg_block_id);
 				break;
+#ifndef HAVE_BGL
+			case RM_PARTITION_REBOOTING:
+				debug2("Block %s is rebooting.",
+				       bg_record->bg_block_id);
+				break;
+#endif
 			default:
 				debug("Hey the state of block "
 				      "%s is %d(%s) doing nothing.",
