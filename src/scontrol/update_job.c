@@ -258,6 +258,7 @@ scontrol_update_job (int argc, char *argv[])
 						(char **) NULL, 10);
 			update_cnt++;
 		}
+		/* MinNodes was replaced by ReqNodes in SLURM version 1.2 */
 		else if ((strncasecmp(argv[i], "MinNodes=", 9) == 0) ||
 		         (strncasecmp(argv[i], "ReqNodes=", 9) == 0)) {
 			char *tmp;
