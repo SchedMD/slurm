@@ -69,6 +69,8 @@ char *default_blrtsimage = NULL;
 char *default_linuximage = NULL;
 char *default_mloaderimage = NULL, *default_ramdiskimage = NULL;
 char *bridge_api_file = NULL; 
+char *bg_slurm_user_name = NULL;
+char *bg_slurm_node_prefix = NULL;
 bg_layout_t bluegene_layout_mode = NO_VAL;
 uint16_t bluegene_numpsets = 0;
 uint16_t bluegene_bp_node_cnt = 0;
@@ -131,6 +133,17 @@ extern int init_bg(void)
 	DIM_SIZE[Z]=bp_size.Z;
 #endif
 	ba_init(NULL);
+
+	xfree(bg_slurm_user_name);
+	xfree(bg_slurm_node_prefix);
+
+	slurm_conf_lock();
+	xassert(slurmctld_conf.slurm_user_name);
+	xassert(slurmctld_conf.node_prefix);
+	bg_slurm_user_name = xstrdup(slurmctld_conf.slurm_user_name);
+	bg_slurm_node_prefix = xstrdup(slurmctld_conf.node_prefix);
+	slurm_conf_unlock();	
+	
 	info("BlueGene plugin loaded successfully");
 
 	return SLURM_SUCCESS;
@@ -200,6 +213,8 @@ extern void fini_bg(void)
 	xfree(default_ramdiskimage);
 	xfree(bridge_api_file);
 	xfree(bg_conf);
+	xfree(bg_slurm_user_name);
+	xfree(bg_slurm_node_prefix);
 	
 #ifdef HAVE_BG_FILES
 	if(bg)
@@ -307,7 +322,7 @@ extern int remove_all_users(char *bg_block_id, char *user_name)
 			error("No user was returned from database");
 			continue;
 		}
-		if(!strcmp(user, slurmctld_conf.slurm_user_name)) {
+		if(!strcmp(user, bg_slurm_user_name)) {
 			free(user);
 			continue;
 		}
@@ -348,7 +363,7 @@ extern int set_block_user(bg_record_t *bg_record)
 	      bg_record->bg_block_id);
 	bg_record->boot_state = 0;
 	bg_record->boot_count = 0;
-	slurm_conf_lock();
+
 	if((rc = update_block_user(bg_record, 1)) == 1) {
 		last_bg_update = time(NULL);
 		rc = SLURM_SUCCESS;
@@ -359,9 +374,8 @@ extern int set_block_user(bg_record_t *bg_record)
 		rc = SLURM_ERROR;
 	}	
 	xfree(bg_record->target_name);
-	bg_record->target_name = 
-		xstrdup(slurmctld_conf.slurm_user_name);
-	slurm_conf_unlock();	
+	bg_record->target_name = xstrdup(bg_slurm_user_name);
+
 	return rc;
 }
 
@@ -594,6 +608,69 @@ extern int bg_free_block(bg_record_t *bg_record)
 		
 	return SLURM_SUCCESS;
 }
+
+#ifndef HAVE_BGL
+/* This function not available in bgl land */
+extern int bg_reboot_block(bg_record_t *bg_record)
+{
+#ifdef HAVE_BG_FILES
+	int rc;
+#endif
+	if(!bg_record) {
+		error("bg_reboot_block: there was no bg_record");
+		return SLURM_ERROR;
+	}
+	
+	while (1) {
+		if(!bg_record) {
+			error("bg_reboot_block: there was no bg_record");
+			return SLURM_ERROR;
+		}
+		
+		slurm_mutex_lock(&block_state_mutex);			
+		if (bg_record->state != NO_VAL
+		    && bg_record->state != RM_PARTITION_REBOOTING) {
+#ifdef HAVE_BG_FILES
+			debug2("bridge_reboot %s", bg_record->bg_block_id);
+			
+			rc = bridge_reboot_block(bg_record->bg_block_id);
+			if (rc != STATUS_OK) {
+				if(rc == PARTITION_NOT_FOUND) {
+					debug("block %s is not found",
+					      bg_record->bg_block_id);
+					break;
+				} else if(rc == INCOMPATIBLE_STATE) {
+					debug2("bridge_reboot_partition"
+					       "(%s): %s State = %d",
+					       bg_record->bg_block_id, 
+					       bg_err_str(rc), 
+					       bg_record->state);
+				} else {
+					error("bridge_reboot_partition"
+					      "(%s): %s State = %d",
+					      bg_record->bg_block_id, 
+					      bg_err_str(rc), 
+					      bg_record->state);
+				}
+			}
+#else
+			bg_record->state = RM_PARTITION_READY;	
+			break;
+#endif
+		}
+		
+		if ((bg_record->state == RM_PARTITION_CONFIGURING)
+		    ||  (bg_record->state == RM_PARTITION_ERROR)) {
+			break;
+		}
+		slurm_mutex_unlock(&block_state_mutex);			
+		sleep(3);
+	}
+	slurm_mutex_unlock(&block_state_mutex);			
+		
+	return SLURM_SUCCESS;
+}
+#endif
 
 /* Free multiple blocks in parallel */
 extern void *mult_free_block(void *args)

@@ -148,12 +148,12 @@ static void _pre_allocate(bg_record_t *bg_record)
 				  &send_psets)) != STATUS_OK)
 		error("bridge_set_data(RM_PartitionPsetsPerBP)", 
 		      bg_err_str(rc));
-	slurm_conf_lock();
+	
 	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionUserName, 
-				  slurmctld_conf.slurm_user_name)) 
+				  bg_slurm_user_name)) 
 	    != STATUS_OK)
 		error("bridge_set_data(RM_PartitionUserName)", bg_err_str(rc));
-	slurm_conf_unlock();
+	
 /* 	info("setting it here"); */
 /* 	bg_record->bg_block_id = "RMP101"; */
 /* 	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionID,  */
@@ -213,14 +213,14 @@ static int _post_allocate(bg_record_t *bg_record)
 		
 		xfree(bg_record->target_name);
 
-		slurm_conf_lock();
+		
 		bg_record->target_name = 
-			xstrdup(slurmctld_conf.slurm_user_name);
+			xstrdup(bg_slurm_user_name);
 
 		xfree(bg_record->user_name);
 		bg_record->user_name = 
-			xstrdup(slurmctld_conf.slurm_user_name);
-		slurm_conf_unlock();
+			xstrdup(bg_slurm_user_name);
+		
 
 		my_uid = uid_from_string(bg_record->user_name);
 		if (my_uid == (uid_t) -1) {
@@ -625,14 +625,14 @@ int read_bg_blocks()
 			}
 			free(bpid);
 
-			slurm_conf_lock();
+			
 			snprintf(node_name_tmp, 
 				 sizeof(node_name_tmp),
 				 "%s%c%c%c", 
-				 slurmctld_conf.node_prefix,
+				 bg_slurm_node_prefix,
 				 alpha_num[coord[X]], alpha_num[coord[Y]],
 				 alpha_num[coord[Z]]);
-			slurm_conf_unlock();
+			
 			
 			hostlist_push(hostlist, node_name_tmp);
 		}	
@@ -683,14 +683,12 @@ int read_bg_blocks()
 			      bg_err_str(rc));
 		} else {
 			if(bp_cnt==0) {
-				slurm_conf_lock();
+				
 				bg_record->user_name = 
-					xstrdup(slurmctld_conf.
-						slurm_user_name);
+					xstrdup(bg_slurm_user_name);
 				bg_record->target_name = 
-					xstrdup(slurmctld_conf.
-						slurm_user_name);
-				slurm_conf_unlock();
+					xstrdup(bg_slurm_user_name);
+				
 			} else {
 				user_name = NULL;
 				if ((rc = bridge_get_data(
@@ -710,11 +708,10 @@ int read_bg_blocks()
 				bg_record->user_name = xstrdup(user_name);
 			
 				if(!bg_record->boot_state) {
-					slurm_conf_lock();
+					
 					bg_record->target_name = 
-						xstrdup(slurmctld_conf.
-							slurm_user_name);
-					slurm_conf_unlock();
+						xstrdup(bg_slurm_user_name);
+					
 				} else
 					bg_record->target_name = 
 						xstrdup(user_name);

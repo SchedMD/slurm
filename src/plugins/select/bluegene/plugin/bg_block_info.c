@@ -88,15 +88,15 @@ static int _block_is_deallocating(bg_record_t *bg_record)
 	if(bg_record->modifying)
 		return SLURM_SUCCESS;
 
-	slurm_conf_lock();
-	user_name = xstrdup(slurmctld_conf.slurm_user_name);
+	
+	user_name = xstrdup(bg_slurm_user_name);
 	if(remove_all_users(bg_record->bg_block_id, NULL) 
 	   == REMOVE_USER_ERR) {
 		error("Something happened removing "
 		      "users from block %s", 
 		      bg_record->bg_block_id);
 	} 
-	slurm_conf_unlock();
+	
 	
 	if(bg_record->target_name && bg_record->user_name) {
 		if(!strcmp(bg_record->target_name, user_name)) {
@@ -344,10 +344,10 @@ extern int update_block_list()
 				debug3("checking to make sure user %s "
 				       "is the user.",
 				       bg_record->target_name);
-				slurm_conf_lock();
+				
 				if(update_block_user(bg_record, 0) == 1)
 					last_bg_update = time(NULL);
-				slurm_conf_unlock();
+				
 				break;
 			case RM_PARTITION_ERROR:
 				error("block in an error state");

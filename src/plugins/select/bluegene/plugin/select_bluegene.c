@@ -298,12 +298,15 @@ extern int select_p_state_save(char *dir_name)
 	\* unlock_slurmctld(part_read_lock);          - see below      */
 
 	/* write the buffer to file */
+	slurm_conf_lock();
 	old_file = xstrdup(slurmctld_conf.state_save_location);
 	xstrcat(old_file, "/block_state.old");
 	reg_file = xstrdup(slurmctld_conf.state_save_location);
 	xstrcat(reg_file, "/block_state");
 	new_file = xstrdup(slurmctld_conf.state_save_location);
 	xstrcat(new_file, "/block_state.new");
+	slurm_conf_unlock();
+
 	log_fd = creat(new_file, 0600);
 	if (log_fd == 0) {
 		error("Can't save state, error creating file %s, %m",
@@ -540,12 +543,12 @@ extern int select_p_state_restore(char *dir_name)
 
 			process_nodes(bg_record, true);
 
-			slurm_conf_lock();
+			
 			bg_record->target_name = 
-				xstrdup(slurmctld_conf.slurm_user_name);
+				xstrdup(bg_slurm_user_name);
 			bg_record->user_name = 
-				xstrdup(slurmctld_conf.slurm_user_name);
-			slurm_conf_unlock();
+				xstrdup(bg_slurm_user_name);
+			
 			my_uid = uid_from_string(bg_record->user_name);
 			if (my_uid == (uid_t) -1) {
 				error("uid_from_strin(%s): %m", 
@@ -582,11 +585,11 @@ extern int select_p_state_restore(char *dir_name)
 				continue;
 			}
 
-			slurm_conf_lock();
+			
 			snprintf(temp, sizeof(temp), "%s%s",
-				 slurmctld_conf.node_prefix,
+				 bg_slurm_node_prefix,
 				 name);
-			slurm_conf_unlock();
+			
 
 			xfree(name);
 			if(strcmp(temp, bg_record->nodes)) {
