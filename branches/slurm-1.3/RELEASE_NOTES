@@ -94,6 +94,10 @@ COMMAND CHANGES
   days-hours, days-hours:minutes, days-hours:minutes:seconds or "UNLIMITED".
   This new format also applies to partition MaxTime in the slurm.conf file.
 
+* scontrol now shows job required nodes using the format of 
+  ReqNodes=<min>[-<max>] rather than MinNodes=<min> (and no maximum
+  node count reported).
+
 * scontrol "notify" command added to send message to stdout of srun for 
   specified job id. 
 
