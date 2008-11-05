@@ -119,12 +119,12 @@ static void _configure_node_down(rm_bp_id_t bp_id, my_bluegene_t *bg)
 			error("bridge_get_data(RM_BPLoc): %s", bg_err_str(rc));
 			continue;
 		}
-		slurm_conf_lock();
+		
 		snprintf(bg_down_node, sizeof(bg_down_node), "%s%c%c%c", 
-			 slurmctld_conf.node_prefix,
+			 bg_slurm_node_prefix,
 			 alpha_num[bp_loc.X], alpha_num[bp_loc.Y],
 			 alpha_num[bp_loc.Z]);
-		slurm_conf_unlock();
+		
 	
 		if (node_already_down(bg_down_node))
 			break;
@@ -212,12 +212,12 @@ static void _test_down_nodes(my_bluegene_t *bg)
 			continue;
 		}
 
-		slurm_conf_lock();
+		
 		snprintf(bg_down_node, sizeof(bg_down_node), "%s%c%c%c", 
-			 slurmctld_conf.node_prefix,
+			 bg_slurm_node_prefix,
 			 alpha_num[bp_loc.X], alpha_num[bp_loc.Y],
 			 alpha_num[bp_loc.Z]);
-		slurm_conf_unlock();
+		
 	
 		if (node_already_down(bg_down_node))
 			continue;
@@ -425,12 +425,12 @@ extern int check_block_bp_states(char *bg_block_id)
 			      "BP ID %s", (char *) bpid);
 		}
 		free(bpid);
-		slurm_conf_lock();
+		
 		snprintf(bg_down_node, sizeof(bg_down_node), "%s%c%c%c", 
-			 slurmctld_conf.node_prefix,
+			 bg_slurm_node_prefix,
 			 alpha_num[coord[X]], alpha_num[coord[Y]],
 			 alpha_num[coord[Z]]);
-		slurm_conf_unlock();
+		
 	
 		if (node_already_down(bg_down_node))
 			continue;

@@ -929,16 +929,16 @@ static int _find_best_block_match(List block_list,
 				tmp_record = xmalloc(sizeof(bg_record_t));
 				tmp_record->bg_block_list =
 					list_create(destroy_ba_node);
-				slurm_conf_lock();
-				len += strlen(slurmctld_conf.node_prefix)+1;
+				
+				len += strlen(bg_slurm_node_prefix)+1;
 				tmp_record->nodes = xmalloc(len);
 				
 				snprintf(tmp_record->nodes,
 					 len,
 					 "%s%s", 
-					 slurmctld_conf.node_prefix, 
+					 bg_slurm_node_prefix, 
 					 tmp_nodes+i);
-				slurm_conf_unlock();
+				
 			
 				process_nodes(tmp_record, false);
 				for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) {

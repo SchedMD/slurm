@@ -60,6 +60,8 @@ extern char *default_linuximage;
 extern char *default_mloaderimage;
 extern char *default_ramdiskimage;
 extern char *bridge_api_file;
+extern char *bg_slurm_user_name;
+extern char *bg_slurm_node_prefix;
 extern bg_layout_t bluegene_layout_mode;
 extern uint16_t bluegene_numpsets;
 extern uint16_t bluegene_bp_node_cnt;
@@ -136,6 +138,11 @@ extern void sort_bg_record_inc_size(List records);
 extern void *bluegene_agent(void *args);
 
 extern int bg_free_block(bg_record_t *bg_record);
+
+#ifndef HAVE_BGL
+extern int bg_reboot_block(bg_record_t *bg_record);
+#endif
+
 extern int remove_from_bg_list(List my_bg_list, bg_record_t *bg_record);
 extern bg_record_t *find_and_remove_org_from_bg_list(List my_list, 
 						     bg_record_t *bg_record);
