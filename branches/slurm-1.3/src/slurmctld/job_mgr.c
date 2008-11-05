@@ -2919,7 +2919,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	if (job_desc->task_dist != (uint16_t) NO_VAL)
 		detail_ptr->task_dist = job_desc->task_dist;
 	if (job_desc->cpus_per_task != (uint16_t) NO_VAL)
-		detail_ptr->cpus_per_task = MIN(job_desc->cpus_per_task, 1);
+		detail_ptr->cpus_per_task = MAX(job_desc->cpus_per_task, 1);
 	if (job_desc->ntasks_per_node != (uint16_t) NO_VAL)
 		detail_ptr->ntasks_per_node = job_desc->ntasks_per_node;
 	if (job_desc->requeue != (uint16_t) NO_VAL)

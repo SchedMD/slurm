@@ -255,7 +255,6 @@ int slurm_get_avail_procs(const uint16_t max_sockets,
 	
 	/*** factor cpus_per_task into max_cpus ***/
 	max_cpus *= cpus_per_task; 
-
 	/*** round down available based on cpus_per_task ***/
 	avail_cpus = (*cpus / cpus_per_task) * cpus_per_task;
 	avail_cpus = MIN(avail_cpus, max_cpus);

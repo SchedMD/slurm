@@ -740,8 +740,8 @@ static char *_uint16_array_to_str(int array_len, const uint16_t *array)
  * array.  Free with xfree().
  */
 extern char *uint32_compressed_to_str(uint32_t array_len,
-				       const uint32_t *array,
-				       const uint32_t *array_reps)
+				      const uint32_t *array,
+				      const uint32_t *array_reps)
 {
 	int i;
 	char *sep = ","; /* seperator */
@@ -784,7 +784,7 @@ extern char *uint32_compressed_to_str(uint32_t array_len,
  */
 void
 env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
-		  job_desc_msg_t *desc)
+		  const job_desc_msg_t *desc)
 {
 	char *bgl_part_id = NULL, *tmp;
 	slurm_step_layout_t *step_layout = NULL;
@@ -822,13 +822,14 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 	env_array_overwrite_fmt(dest, "SLURM_NNODES", "%u", alloc->node_cnt);
 	env_array_overwrite_fmt(dest, "SLURM_NODELIST", "%s", alloc->node_list);
 	
-	if(num_tasks == NO_VAL) 
+	if(num_tasks == NO_VAL)
 		num_tasks = desc->num_procs;
 	step_layout = slurm_step_layout_create(alloc->node_list,
 					       alloc->cpus_per_node,
 					       alloc->cpu_count_reps,
 					       alloc->node_cnt,
 					       num_tasks,
+					       desc->cpus_per_task,
 					       desc->task_dist,
 					       desc->plane_size);
 	tmp = _uint16_array_to_str(step_layout->node_cnt,
@@ -867,13 +868,17 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 {
 	char *tmp;
 	uint32_t num_nodes = 0;
+	uint32_t num_cpus = 0;
 	int i;
 	slurm_step_layout_t *step_layout = NULL;
 
-	/* there is no explicit node count in the batch structure,
-	   so we need to calculate the node count */
+	/* There is no explicit node count in the batch structure,
+	   so we need to calculate the node count. We also need to
+	   figure out the explicit cpu count so we can figure out the
+	   cpus_per_task. */
 	for (i = 0; i < batch->num_cpu_groups; i++) {
 		num_nodes += batch->cpu_count_reps[i];
+		num_cpus += batch->cpu_count_reps[i] * batch->cpus_per_node[i];
 	}
 
 	env_array_overwrite_fmt(dest, "SLURM_JOB_ID", "%u", batch->job_id);
@@ -897,6 +902,14 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 	env_array_overwrite_fmt(dest, "SLURM_NNODES", "%u", num_nodes);
 	env_array_overwrite_fmt(dest, "SLURM_NODELIST", "%s", batch->nodes);
 	if(batch->nprocs) {
+		/* we can figure out the cpus_per_task here by
+		   reversing what happens in sbatch */
+		int cpus_per_task = num_cpus / batch->nprocs;
+/* 		info(" we have %u / %u = %u", num_cpus, */
+/* 		     batch->nprocs, cpus_per_task); */
+		if(cpus_per_task < 1)
+			cpus_per_task = 1;
+
 		xfree(tmp);
 		env_array_overwrite_fmt(dest, "SLURM_NPROCS", "%u", 
 					batch->nprocs);
@@ -905,6 +918,7 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 						       batch->cpu_count_reps,
 						       num_nodes,
 						       batch->nprocs,
+						       (uint16_t)cpus_per_task,
 						       (uint16_t)
 						       SLURM_DIST_BLOCK,
 						       (uint16_t)NO_VAL);
@@ -913,6 +927,7 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 		slurm_step_layout_destroy(step_layout);
 	}
 	env_array_overwrite_fmt(dest, "SLURM_TASKS_PER_NODE", "%s", tmp);
+
 	xfree(tmp);
 }
 
