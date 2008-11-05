@@ -242,10 +242,9 @@ static int _set_childern_eusage(List childern_list)
 	acct_association_rec_t *assoc = NULL;
 	ListIterator itr = NULL;
 
-	if(!childern_list || !list_count(childern_list)) {
-		info("no childern");
+	if(!childern_list || !list_count(childern_list)) 
 		return SLURM_SUCCESS;
-	}
+
 	itr = list_iterator_create(childern_list);
 	while((assoc = list_next(itr))) {
 		if (assoc->parent_assoc_ptr == assoc_mgr_root_assoc) {
