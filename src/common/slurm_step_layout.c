@@ -56,6 +56,7 @@
 static int _init_task_layout(slurm_step_layout_t *step_layout, 
 			     const char *arbitrary_nodes, 
 			     uint32_t *cpus_per_node, uint32_t *cpu_count_reps,
+			     uint16_t cpus_per_task,
 			     uint16_t task_dist, uint16_t plane_size);
 
 static int _task_layout_block(slurm_step_layout_t *step_layout, 
@@ -80,6 +81,7 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout,
  * IN cpu_count_reps - how many nodes have same cpu count
  * IN num_hosts - number of hosts we have 
  * IN num_tasks - number of tasks to distribute across these cpus
+ * IN cpus_per_task - number of cpus per task
  * IN task_dist - type of distribution we are using 
  * IN plane_size - plane size (only needed for the plane distribution)
  * RET a pointer to an slurm_step_layout_t structure
@@ -90,6 +92,7 @@ slurm_step_layout_t *slurm_step_layout_create(
 	uint32_t *cpus_per_node, uint32_t *cpu_count_reps, 
 	uint32_t num_hosts, 
 	uint32_t num_tasks,
+	uint16_t cpus_per_task,
 	uint16_t task_dist,
 	uint16_t plane_size)
 {
@@ -127,6 +130,7 @@ slurm_step_layout_t *slurm_step_layout_create(
 
 	if(_init_task_layout(step_layout, arbitrary_nodes, 
 			     cpus_per_node, cpu_count_reps, 
+			     cpus_per_task,
 			     task_dist, plane_size) 
 	   != SLURM_SUCCESS) {
 		slurm_step_layout_destroy(step_layout);
@@ -390,6 +394,7 @@ char *slurm_step_layout_host_name (slurm_step_layout_t *s, int taskid)
 static int _init_task_layout(slurm_step_layout_t *step_layout,
 			     const char *arbitrary_nodes,
 			     uint32_t *cpus_per_node, uint32_t *cpu_count_reps,
+			     uint16_t cpus_per_task,
 			     uint16_t task_dist, uint16_t plane_size)
 {
 	int cpu_cnt = 0, cpu_inx = 0, i;
@@ -401,7 +406,10 @@ static int _init_task_layout(slurm_step_layout_t *step_layout,
 		return SLURM_ERROR;
 	if (step_layout->tasks)	/* layout already completed */
 		return SLURM_SUCCESS;
-	
+
+	if((int)cpus_per_task < 1 || cpus_per_task == (uint16_t)NO_VAL)
+		cpus_per_task = 1;
+
 	step_layout->plane_size = plane_size;
 
 	step_layout->tasks = xmalloc(sizeof(uint16_t) 
@@ -423,7 +431,7 @@ static int _init_task_layout(slurm_step_layout_t *step_layout,
 		hostlist_destroy(hl);
 		return SLURM_ERROR;
 	}
-	
+
 	for (i=0; i<step_layout->node_cnt; i++) {
 /* 		name = hostlist_shift(hl); */
 /* 		if(!name) { */
@@ -433,7 +441,7 @@ static int _init_task_layout(slurm_step_layout_t *step_layout,
 /* 		} */							
 /* 		debug2("host %d = %s", i, name); */
 /* 		free(name); */
-		cpus[i] = cpus_per_node[cpu_inx];
+		cpus[i] = (cpus_per_node[cpu_inx] / cpus_per_task);
 		//info("got %d cpus", cpus[i]);
 		if ((++cpu_cnt) >= cpu_count_reps[cpu_inx]) {
 			/* move to next record */
