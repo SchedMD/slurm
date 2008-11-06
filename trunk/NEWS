@@ -3,10 +3,11 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.4.0-pre5
 =============================
- -- Correction inf setting of SLURM_CPU_BIND environment variable.
+ -- Correction in setting of SLURM_CPU_BIND environment variable.
  -- Rebuild slurmctld's job select_jobinfo->node_bitmap on restart/reconfigure
     of the daemon rather than restoring the bitmap since the nodes in a system
     can change (be added or removed).
+ -- Add configuration option "--with-cpusetdir=PATH" for non-standard locations.
 
 * Changes in SLURM 1.4.0-pre4
 =============================
