@@ -219,6 +219,16 @@ extern int fini ( void )
  */
  extern int select_p_block_init(List part_list)
 {
+	xfree(bg_slurm_user_name);
+	xfree(bg_slurm_node_prefix);
+
+	slurm_conf_lock();
+	xassert(slurmctld_conf.slurm_user_name);
+	xassert(slurmctld_conf.node_prefix);
+	bg_slurm_user_name = xstrdup(slurmctld_conf.slurm_user_name);
+	bg_slurm_node_prefix = xstrdup(slurmctld_conf.node_prefix);
+	slurm_conf_unlock();	
+
 #ifdef HAVE_BG
 	if(read_bg_conf() == SLURM_ERROR) {
 		fatal("Error, could not read the file");
