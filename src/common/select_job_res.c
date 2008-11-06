@@ -56,7 +56,18 @@ extern select_job_res_t create_select_job_res(void)
 	return select_job_res;
 }
 
-
+/* Set the socket and core counts associated with a set of selected
+ * nodes of a select_job_res data structure based upon slurmctld state.
+ * (sets cores_per_socket, sockets_per_node, and sock_core_rep_count based
+ * upon the value of node_bitmap, also creates core_bitmap based upon
+ * the total number of cores in the allocation). Call this ONLY from 
+ * slurmctld. Example of use:
+ *
+ * select_job_res_t select_job_res_ptr = create_select_job_res();
+ * node_name2bitmap("dummy[2,5,12,16]", true, &(select_res_ptr->node_bitmap));
+ * rc = build_select_job_res(select_job_res_ptr, node_record_table_ptr,
+ *			     slurmctld_conf.fast_schedule);
+ */
 extern int build_select_job_res(select_job_res_t select_job_res,
 				void *node_rec_table,
 				uint16_t fast_schedule)
@@ -196,6 +207,23 @@ extern int build_select_job_res_cpus_array(select_job_res_t select_job_res_ptr)
 		return SLURM_ERROR;
 	}
 	return SLURM_SUCCESS;
+}
+
+/* Reset the node_bitmap in a select_job_res data structure
+ * This is needed after a restart/reconfiguration since nodes can 
+ * be added or removed from the system resulting in changing in 
+ * the bitmap size or bit positions */
+extern void reset_node_bitmap(select_job_res_t select_job_res_ptr,
+			      bitstr_t *new_node_bitmap)
+{
+	if (select_job_res_ptr) {
+		if (select_job_res_ptr->node_bitmap)
+			bit_free(select_job_res_ptr->node_bitmap);
+		if (new_node_bitmap) {
+			select_job_res_ptr->node_bitmap =
+				bit_copy(new_node_bitmap);
+		}
+	}
 }
 
 extern int valid_select_job_res(select_job_res_t select_job_res,
@@ -482,7 +510,7 @@ extern void pack_select_job_res(select_job_res_t select_job_res_ptr,
 				Buf buffer)
 {
 	int i;
-	uint32_t core_cnt = 0, host_cnt = 0, sock_recs = 0;
+	uint32_t core_cnt = 0, sock_recs = 0;
 
 	if (select_job_res_ptr == NULL) {
 		uint32_t empty = NO_VAL;
@@ -555,18 +583,15 @@ extern void pack_select_job_res(select_job_res_t select_job_res_ptr,
 	pack_bit_fmt(select_job_res_ptr->core_bitmap, buffer);
 	xassert(core_cnt == bit_size(select_job_res_ptr->core_bitmap_used));
 	pack_bit_fmt(select_job_res_ptr->core_bitmap_used, buffer);
-	host_cnt = bit_size(select_job_res_ptr->node_bitmap);
-	/* FIXME: don't pack the node_bitmap, but rebuild it based upon 
-	 * select_job_res_ptr->node_list */
-	pack32(host_cnt, buffer);
-	pack_bit_fmt(select_job_res_ptr->node_bitmap, buffer);
+	/* Do not pack the node_bitmap, but rebuild it in reset_node_bitmap()
+	 * based upon job_ptr->nodes and the current node table */
 }
 
 extern int unpack_select_job_res(select_job_res_t *select_job_res_pptr, 
 				 Buf buffer)
 {
 	char *bit_fmt = NULL;
-	uint32_t core_cnt, empty, host_cnt, tmp32;
+	uint32_t core_cnt, empty, tmp32;
 	select_job_res_t select_job_res;
 
 	xassert(select_job_res_pptr);
@@ -626,15 +651,9 @@ extern int unpack_select_job_res(select_job_res_t *select_job_res_pptr,
 	if (bit_unfmt(select_job_res->core_bitmap_used, bit_fmt))
 		goto unpack_error;
 	xfree(bit_fmt);
+	/* node_bitmap is not packed, but rebuilt in reset_node_bitmap()
+	 * based upon job_ptr->nodes and the current node table */
 
-	/* FIXME: but recreate node_bitmap based upon 
-	 * select_job_res_ptr->node_list */
-	safe_unpack32(&host_cnt, buffer);    /* NOTE: Not part of struct */
-	safe_unpackstr_xmalloc(&bit_fmt, &tmp32, buffer);
-	select_job_res->node_bitmap = bit_alloc((bitoff_t) host_cnt);
-	if (bit_unfmt(select_job_res->node_bitmap, bit_fmt))
-		goto unpack_error;
-	xfree(bit_fmt);
 	*select_job_res_pptr = select_job_res;
 	return SLURM_SUCCESS;
 

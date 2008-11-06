@@ -3746,6 +3746,8 @@ void reset_job_bitmaps(void)
 		    	      job_ptr->nodes, job_ptr->job_id);
 			job_fail = true;
 		}
+		reset_node_bitmap(job_ptr->select_job,
+				  job_ptr->node_bitmap);
 		_reset_step_bitmaps(job_ptr);
 		build_node_details(job_ptr);	/* set node_addr */
 
