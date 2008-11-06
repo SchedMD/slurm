@@ -428,25 +428,16 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 
 		/* set system defaults */
 		xfree(*cpu_bind);
-		if (task_plugin_param & CPU_BIND_NONE) {
+		if (task_plugin_param & CPU_BIND_NONE)
 			*flags = CPU_BIND_NONE;
-		} else if (task_plugin_param & CPU_BIND_TO_SOCKETS) {
+		else if (task_plugin_param & CPU_BIND_TO_SOCKETS)
 			*flags = CPU_BIND_TO_SOCKETS;
-			*cpu_bind = xstrdup("sockets");
-		} else if (task_plugin_param & CPU_BIND_TO_CORES) {
+		else if (task_plugin_param & CPU_BIND_TO_CORES)
 			*flags = CPU_BIND_TO_CORES;
-			*cpu_bind = xstrdup("cores");
-		} else if (task_plugin_param & CPU_BIND_TO_THREADS) {
+		else if (task_plugin_param & CPU_BIND_TO_THREADS)
 			*flags |= CPU_BIND_TO_THREADS;
-			*cpu_bind = xstrdup("threads");
-		}
-		if (task_plugin_param & CPU_BIND_VERBOSE) {
+		if (task_plugin_param & CPU_BIND_VERBOSE)
 			*flags |= CPU_BIND_VERBOSE;
-			if (*cpu_bind)
-				xstrcat(*cpu_bind, ",verbose");
-			else
-				*cpu_bind = xstrdup("verbose");
-		}
 	    	return 0;
 	}
 
