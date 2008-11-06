@@ -7,6 +7,8 @@ documents those changes that are of interest to users and admins.
  -- Fix infinite loop when using accounting_storage/mysql plugin either from
     the slurmctld or slurmdbd daemon.
  -- Added more thread safety for assoc_mgr in the controller.
+ -- For sched/wiki2 (Moab), permit clearing of a job's dependencies with the 
+    JOB_MODIFY option "DEPEND=0".
 
 * Changes in SLURM 1.3.10
 =========================
