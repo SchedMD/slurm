@@ -60,16 +60,19 @@ AC_DEFUN([X_AC_AFFINITY], [
   fi
 
 #
-# Test for cpusets
+# Test for cpuset directory
 #
-  if test -d "/dev/cpuset" ; then
-     have_sched_setaffinity=yes
-  fi
-
-#
-# Test for other affinity functions as appropriate
-# TBD
-#
+  cpuset_default_dir="/dev/cpuset"
+  AC_ARG_WITH([cpusetdir],
+              AS_HELP_STRING(--with-cpusetdir=PATH,specify path to cpuset directory default is /dev/cpuset),
+              [try_path=$withval])
+  for cpuset_dir in $try_path "" $cpuset_default_dir; do
+    if test -d "$cpuset_dir" ; then
+      AC_DEFINE_UNQUOTED(CPUSET_DIR, "$cpuset_dir", [Define location of cpuset directory])
+      have_sched_setaffinity=yes
+      break
+    fi
+  done
 
 #
 # Set HAVE_SCHED_SETAFFINITY if any task affinity supported
