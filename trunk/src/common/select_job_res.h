@@ -176,6 +176,13 @@ extern void pack_select_job_res(select_job_res_t select_job_res_ptr,
 extern int unpack_select_job_res(select_job_res_t *select_job_res_pptr, 
 				 Buf buffer);
 
+/* Reset the node_bitmap in a select_job_res data structure
+ * This is needed after a restart/reconfiguration since nodes can 
+ * be added or removed from the system resulting in changing in 
+ * the bitmap size or bit positions */
+extern void reset_node_bitmap(select_job_res_t select_job_res_ptr,
+			      bitstr_t *new_node_bitmap);
+
 /* For a given node_id, socket_id and core_id, get it's offset within
  * the core bitmap */
 extern int get_select_job_res_offset(select_job_res_t select_job_res_ptr, 
