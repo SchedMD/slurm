@@ -139,6 +139,10 @@ extern int build_select_job_res(select_job_res_t select_job_res_ptr,
  * values of cpus in an existing data structure */
 extern int build_select_job_res_cpu_array(select_job_res_t select_job_res_ptr);
 
+/* Rebuild cpus array based upon the values of nhosts, cpu_array_value and
+ * cpu_array_reps in an existing data structure */
+extern int build_select_job_res_cpus_array(select_job_res_t select_job_res_ptr);
+
 /* Validate a select_job_res data structure originally built using
  * build_select_job_res() is still valid based upon slurmctld state.
  * NOTE: Reset the node_bitmap field before calling this function.
