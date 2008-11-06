@@ -134,16 +134,6 @@ extern int init_bg(void)
 #endif
 	ba_init(NULL);
 
-	xfree(bg_slurm_user_name);
-	xfree(bg_slurm_node_prefix);
-
-	slurm_conf_lock();
-	xassert(slurmctld_conf.slurm_user_name);
-	xassert(slurmctld_conf.node_prefix);
-	bg_slurm_user_name = xstrdup(slurmctld_conf.slurm_user_name);
-	bg_slurm_node_prefix = xstrdup(slurmctld_conf.node_prefix);
-	slurm_conf_unlock();	
-	
 	info("BlueGene plugin loaded successfully");
 
 	return SLURM_SUCCESS;

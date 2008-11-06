@@ -1587,10 +1587,12 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		      "JobCredentialPublicCertificate be set");
 	}
 
-	if ((s_p_get_uint32(&conf->def_mem_per_task, "DefMemPerCPU", hashtbl)) ||
+	if ((s_p_get_uint32(&conf->def_mem_per_task,
+			    "DefMemPerCPU", hashtbl)) ||
 	    (s_p_get_uint32(&conf->def_mem_per_task, "DefMemPerTask", hashtbl)))
 		conf->def_mem_per_task |= MEM_PER_CPU;
-	else if (!s_p_get_uint32(&conf->def_mem_per_task, "DefMemPerNode", hashtbl))
+	else if (!s_p_get_uint32(&conf->def_mem_per_task,
+				 "DefMemPerNode", hashtbl))
 		conf->def_mem_per_task = DEFAULT_MEM_PER_CPU;
 
 	if (!s_p_get_boolean((bool *) &conf->disable_root_jobs, 
@@ -1717,8 +1719,10 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_uint16(&conf->get_env_timeout, "GetEnvTimeout", hashtbl))
 		conf->get_env_timeout = DEFAULT_GET_ENV_TIMEOUT;
 
-	s_p_get_uint16(&conf->health_check_interval, "HealthCheckInterval", hashtbl);
-	s_p_get_string(&conf->health_check_program, "HealthCheckProgram", hashtbl);
+	s_p_get_uint16(&conf->health_check_interval,
+		       "HealthCheckInterval", hashtbl);
+	s_p_get_string(&conf->health_check_program,
+		       "HealthCheckProgram", hashtbl);
 
 	if (!s_p_get_uint16(&conf->kill_wait, "KillWait", hashtbl))
 		conf->kill_wait = DEFAULT_KILL_WAIT;
@@ -1731,10 +1735,12 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_uint16(&conf->max_job_cnt, "MaxJobCount", hashtbl))
 		conf->max_job_cnt = DEFAULT_MAX_JOB_COUNT;
 
-	if ((s_p_get_uint32(&conf->max_mem_per_task, "MaxMemPerCPU", hashtbl)) ||
+	if ((s_p_get_uint32(&conf->max_mem_per_task,
+			    "MaxMemPerCPU", hashtbl)) ||
 	    (s_p_get_uint32(&conf->max_mem_per_task, "MaxMemPerTask", hashtbl)))
 		conf->max_mem_per_task |= MEM_PER_CPU;
-	else if (!s_p_get_uint32(&conf->max_mem_per_task, "MaxMemPerNode", hashtbl))
+	else if (!s_p_get_uint32(&conf->max_mem_per_task,
+				 "MaxMemPerNode", hashtbl))
 		conf->max_mem_per_task = DEFAULT_MAX_MEM_PER_CPU;
 
 	if (!s_p_get_uint16(&conf->msg_timeout, "MessageTimeout", hashtbl))
