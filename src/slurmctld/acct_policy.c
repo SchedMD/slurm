@@ -187,6 +187,12 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 		    (assoc_ptr->grp_jobs != INFINITE) &&
 		    (assoc_ptr->used_jobs >= assoc_ptr->grp_jobs)) {
 			job_ptr->state_reason = WAIT_ASSOC_LIMIT;
+			debug2("job %u being held, "
+			       "assoc %u is at or exceeds "
+			       "group max jobs limit %u with %u for account %s",
+			       job_ptr->job_id, assoc_ptr->id,
+			       assoc_ptr->grp_jobs, 
+			       assoc_ptr->used_jobs, assoc_ptr->acct);		
 			rc = false;
 			goto end_it;
 		}
@@ -206,6 +212,16 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 				    job_ptr->details->min_nodes) > 
 				   assoc_ptr->grp_nodes) {
 				job_ptr->state_reason = WAIT_ASSOC_LIMIT;
+				debug2("job %u being held, "
+				       "assoc %u is at or exceeds "
+				       "group max node limit %u "
+				       "with already used %u + requested %u "
+				       "for account %s",
+				       job_ptr->job_id, assoc_ptr->id,
+				       assoc_ptr->grp_nodes, 
+				       assoc_ptr->grp_used_nodes,
+				       job_ptr->details->min_nodes, 
+				       assoc_ptr->acct);
 				rc = false;
 				goto end_it;
 			}
@@ -257,6 +273,12 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 		    (assoc_ptr->max_jobs != INFINITE) &&
 		    (assoc_ptr->used_jobs >= assoc_ptr->max_jobs)) {
 			job_ptr->state_reason = WAIT_ASSOC_LIMIT;
+			debug2("job %u being held, "
+			       "assoc %u is at or exceeds "
+			       "max jobs limit %u with %u for account %s",
+			       job_ptr->job_id, assoc_ptr->id,
+			       assoc_ptr->max_jobs, 
+			       assoc_ptr->used_jobs, assoc_ptr->acct);		
 			rc = false;
 			goto end_it;
 		}
