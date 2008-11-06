@@ -135,6 +135,9 @@ typedef enum {
 	DBD_ROLL_USAGE,         /* Roll up usage                        */
 	DBD_STEP_COMPLETE,	/* Record step completion		*/
 	DBD_STEP_START,		/* Record step starting			*/
+	DBD_UPDATE_SHARES_USED,	/* Doesn't do anything but
+				 * needs to be here for
+				 * history sake		*/
 	DBD_GET_JOBS_COND, 	/* Get job information with a condition */
 	DBD_GET_TXN,		/* Get transaction information		*/
 	DBD_GOT_TXN,		/* Got transaction information		*/
