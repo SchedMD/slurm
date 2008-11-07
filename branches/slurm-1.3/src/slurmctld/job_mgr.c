@@ -3957,8 +3957,10 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		mc_ptr = detail_ptr->mc_ptr;
 	last_job_update = now;
 
-	if ((job_specs->time_limit != NO_VAL) && (!IS_JOB_FINISHED(job_ptr))) {
-		if (job_ptr->time_limit == job_specs->time_limit) {
+	if (job_specs->time_limit != NO_VAL) {
+		if (IS_JOB_FINISHED(job_ptr)) 
+			error_code = ESLURM_DISABLED;
+		else if (job_ptr->time_limit == job_specs->time_limit) {
 			verbose("update_job: new time limit identical to old "
 				"time limit %u", job_specs->job_id);
 		} else if (super_user ||
@@ -3967,21 +3969,26 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			if (old_time == INFINITE)	/* one year in mins */
 				old_time = (365 * 24 * 60);
 			job_ptr->time_limit = job_specs->time_limit;
-			if (job_ptr->time_limit == INFINITE) {	/* one year */
-				job_ptr->end_time = now +
-					(365 * 24 * 60 * 60);
-			} else {
-				/* Update end_time based upon change
-				 * to preserve suspend time info */
-				job_ptr->end_time = job_ptr->end_time +
-					((job_ptr->time_limit -
-					  old_time) * 60);
+			if ((job_ptr->job_state == JOB_RUNNING) ||
+			    (job_ptr->job_state == JOB_SUSPENDED)) {
+				if (job_ptr->time_limit == INFINITE) {
+					/* Set end time in one year */
+					job_ptr->end_time = now +
+						(365 * 24 * 60 * 60);
+				} else {
+					/* Update end_time based upon change
+					 * to preserve suspend time info */
+					job_ptr->end_time = job_ptr->end_time +
+						((job_ptr->time_limit -
+						  old_time) * 60);
+				}
+				if (job_ptr->end_time < now)
+					job_ptr->end_time = now;
+				if ((job_ptr->job_state == JOB_RUNNING) &&
+				    (list_is_empty(job_ptr->step_list) == 0)) {
+					_xmit_new_end_time(job_ptr);
+				}
 			}
-			if (job_ptr->end_time < now)
-				job_ptr->end_time = now;
-			if ((job_ptr->job_state == JOB_RUNNING) &&
-			    (list_is_empty(job_ptr->step_list) == 0))
-				_xmit_new_end_time(job_ptr);
 			info("update_job: setting time_limit to %u for "
 			     "job_id %u", job_specs->time_limit, 
 			     job_specs->job_id);

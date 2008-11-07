@@ -9,7 +9,9 @@ documents those changes that are of interest to users and admins.
  -- Added more thread safety for assoc_mgr in the controller.
  -- For sched/wiki2 (Moab), permit clearing of a job's dependencies with the 
     JOB_MODIFY option "DEPEND=0".
-
+ -- Do not set a running or pending job's EndTime when changing it's time 
+    limit.
+ 
 * Changes in SLURM 1.3.10
 =========================
  -- Fix several bugs in the hostlist functions:
