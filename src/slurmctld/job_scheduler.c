@@ -838,7 +838,7 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 		if ((sep_ptr == NULL) && (job_id == 0)) {
 			job_id = strtol(tok, &sep_ptr, 10);
 			if ((sep_ptr == NULL) || (sep_ptr[0] != '\0') ||
-			    (job_id <= 0) || (job_id == job_ptr->job_id)) {
+			    (job_id < 0) || (job_id == job_ptr->job_id)) {
 				rc = EINVAL;
 				break;
 			}
@@ -874,7 +874,7 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 		while (rc == SLURM_SUCCESS) {
 			job_id = strtol(sep_ptr, &sep_ptr2, 10);
 			if ((sep_ptr2 == NULL) || 
-			    (job_id <= 0) || (job_id == job_ptr->job_id) ||
+			    (job_id < 0) || (job_id == job_ptr->job_id) ||
 			    ((sep_ptr2[0] != '\0') && (sep_ptr2[0] != ',') && 
 			     (sep_ptr2[0] != ':'))) {
 				rc = EINVAL;

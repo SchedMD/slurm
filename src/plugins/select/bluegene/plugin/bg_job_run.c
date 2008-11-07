@@ -197,21 +197,20 @@ static int _reset_block(bg_record_t *bg_record)
 		}
 		/* remove user from list */
 		
-		slurm_conf_lock();
+		
 		if(bg_record->target_name) {
 			if(strcmp(bg_record->target_name, 
-				  slurmctld_conf.slurm_user_name)) {
+				  bg_slurm_user_name)) {
 				xfree(bg_record->target_name);
 				bg_record->target_name = 
-					xstrdup(slurmctld_conf.
-						slurm_user_name);
+					xstrdup(bg_slurm_user_name);
 			}
 			update_block_user(bg_record, 1);
 		} else {
 			bg_record->target_name = 
-				xstrdup(slurmctld_conf.slurm_user_name);
+				xstrdup(bg_slurm_user_name);
 		}	
-		slurm_conf_unlock();
+		
 			
 		bg_record->boot_state = 0;
 		bg_record->boot_count = 0;
@@ -550,8 +549,12 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		bg_record->modifying = 0;		
 		slurm_mutex_unlock(&block_state_mutex);		
 	} else if(bg_update_ptr->reboot) 
+#ifdef HAVE_BGL
 		bg_free_block(bg_record);
-	
+#else
+		bg_reboot_block(bg_record);
+#endif
+
 	if(bg_record->state == RM_PARTITION_FREE) {
 		if((rc = boot_block(bg_record)) != SLURM_SUCCESS) {
 			slurm_mutex_lock(&block_state_mutex);
@@ -1195,25 +1198,19 @@ extern int sync_jobs(List job_list)
 extern int boot_block(bg_record_t *bg_record)
 {
 #ifdef HAVE_BG_FILES
-	int rc;
-	
-	
-	slurm_conf_lock();
+	int rc;	
+		
 	if ((rc = bridge_set_block_owner(bg_record->bg_block_id, 
-					 slurmctld_conf.slurm_user_name)) 
+					 bg_slurm_user_name)) 
 	    != STATUS_OK) {
 		error("bridge_set_part_owner(%s,%s): %s", 
 		      bg_record->bg_block_id, 
-		      slurmctld_conf.slurm_user_name,
+		      bg_slurm_user_name,
 		      bg_err_str(rc));
-		slurm_conf_unlock();
-		
 		return SLURM_ERROR;
-	}
-	slurm_conf_unlock();
+	}	
 			
-	info("Booting block %s", 
-	     bg_record->bg_block_id);
+	info("Booting block %s", bg_record->bg_block_id);
 	if ((rc = bridge_create_block(bg_record->bg_block_id)) 
 	    != STATUS_OK) {
 		error("bridge_create_block(%s): %s",

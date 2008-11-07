@@ -1191,11 +1191,20 @@ step_create(job_step_create_request_msg_t *step_specs,
 	
 	/* a batch script does not need switch info */
 	if (!batch_step) {
+		/* we can figure out the cpus_per_task here by
+		   reversing what happens in srun */
+		int cpus_per_task = step_specs->cpu_count / 
+			step_specs->num_tasks;
+/* 		info(" we have %u / %u = %u", step_specs->cpu_count, */
+/* 		     step_specs->num_tasks, cpus_per_task); */
+		if(cpus_per_task < 1)
+			cpus_per_task = 1;
 		step_ptr->step_layout = 
 			step_layout_create(step_ptr,
 					   step_node_list,
 					   step_specs->node_count,
 					   step_specs->num_tasks,
+					   (uint16_t)cpus_per_task,
 					   step_specs->task_dist,
 					   step_specs->plane_size);
 		if (!step_ptr->step_layout) {
@@ -1228,6 +1237,7 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 					       char *step_node_list,
 					       uint32_t node_count,
 					       uint32_t num_tasks,
+					       uint16_t cpus_per_task,
 					       uint16_t task_dist,
 					       uint32_t plane_size)
 {
@@ -1299,11 +1309,13 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 				break;
 		}
 	}
-
+	
 	/* layout the tasks on the nodes */
 	return slurm_step_layout_create(step_node_list,
 					cpus_per_node, cpu_count_reps, 
-					node_count, num_tasks, task_dist,
+					node_count, num_tasks,
+					cpus_per_task,
+					task_dist,
 					plane_size);
 }
 
