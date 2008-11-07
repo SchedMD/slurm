@@ -749,7 +749,7 @@ slurm_cred_faker(slurm_cred_arg_t *arg)
 	}
 #ifndef HAVE_BG
 {
-	int i, sock_recs = 0
+	int i, sock_recs = 0;
 	for (i=0; i<arg->job_nhosts; i++) {
 		sock_recs += arg->sock_core_rep_count[i];
 		if (sock_recs >= arg->job_nhosts)
