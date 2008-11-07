@@ -1465,8 +1465,11 @@ _slurm_cred_sign(slurm_cred_ctx_t ctx, slurm_cred_t cred)
 			&cred->signature, &cred->siglen);
 	free_buf(buffer);
 
-	if (rc)
+	if (rc) {
+		error("Credential sign: %s", 
+		      (*(g_crypto_context->ops.crypto_str_error))());
 		return SLURM_ERROR;
+	}
 	return SLURM_SUCCESS;
 }
 
@@ -1491,8 +1494,8 @@ _slurm_cred_verify_signature(slurm_cred_ctx_t ctx, slurm_cred_t cred)
 	free_buf(buffer);
 
 	if (rc) {
-		info("Credential signature check: %s", 
-			(*(g_crypto_context->ops.crypto_str_error))());
+		error("Credential signature check: %s", 
+		      (*(g_crypto_context->ops.crypto_str_error))());
 		return SLURM_ERROR;
 	}
 	return SLURM_SUCCESS;
