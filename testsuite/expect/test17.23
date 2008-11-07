@@ -176,12 +176,12 @@ if {$job_prio1 == 0 || $job_prio2 == 0 || $job_prio3 == 0} {
 	set diff3 [expr $job_prio1 - $job_prio3]
 #	Target for diff2 is 101
 	if {$diff2 < 91 || $diff2 > 111} {
-		send_user "\nFAILURE: job2 priority delta bad $diff2\n"
+		send_user "\nFAILURE: job2 priority delta bad ($diff2, target is 101)\n"
 		set exit_code 1
 	}
 #	Target for diff3 is 202
 	if {$diff3 < 192 || $diff3 > 212} {
-		send_user "\nFAILURE: job3 priority delta bad $diff3\n"
+		send_user "\nFAILURE: job3 priority delta bad ($diff3, target is 202)\n"
 		set exit_code 1
 	}
 }
