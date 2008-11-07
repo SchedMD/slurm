@@ -1,4 +1,4 @@
-.TH SCANCEL "1" "August 2007" "scancel 1.2" "Slurm components"
+.TH SCANCEL "1" "November 2008" "scancel 1.2" "Slurm components"
 
 .SH "NAME"
 scancel \- Used to signal jobs or job steps that are under the control of Slurm.
@@ -20,6 +20,10 @@ be printed and the job will not be signaled.
 \fB\-b\fR, \fB\-\-batch\fR
 Signal the batch job shell and its child processes.
 This is not applicable if \fIstep_id\fR is specified.
+NOTE: The shell itself may exit upon receipt of many signals.
+You may avoid this by explicitly trap signals within the shell
+script (e.g. "trap <arg> <signals>"). See the shell documentation 
+for details.
 
 .TP
 \fB-\-ctld\fR

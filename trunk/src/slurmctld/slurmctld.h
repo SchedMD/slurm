@@ -1406,6 +1406,7 @@ extern int step_create ( job_step_create_request_msg_t *step_specs,
  * IN step_node_list - node list of hosts in step
  * IN node_count - count of nodes in step allocation
  * IN num_tasks - number of tasks in step
+ * IN cpus_per_task - number of cpus per task
  * IN task_dist - type of task distribution
  * IN plane_size - size of plane (only needed for the plane distribution)
  * RET - NULL or slurm_step_layout_t *
@@ -1416,6 +1417,7 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 					       char *step_node_list,
 					       uint32_t node_count,
 					       uint32_t num_tasks,
+					       uint16_t cpus_per_task,
 					       uint16_t task_dist,
 					       uint32_t plane_size);
 /*

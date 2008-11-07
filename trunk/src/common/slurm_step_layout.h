@@ -55,6 +55,7 @@
  * IN cpu_count_reps - how many nodes have same cpu count
  * IN node_cnt - number of nodes we have 
  * IN task_cnt - number of tasks to distribute across these cpus
+ * IN cpus_per_task - number of cpus per task
  * IN task_dist - type of distribution we are using 
  * IN plane_size - plane size (only needed for the plane distribution)
  * RET a pointer to an slurm_step_layout_t structure
@@ -65,6 +66,7 @@ extern slurm_step_layout_t *slurm_step_layout_create(const char *tlist,
 						     uint32_t *cpu_count_reps,
 						     uint32_t node_cnt, 
 						     uint32_t task_cnt,
+						     uint16_t cpus_per_task,
 						     uint16_t task_dist,
 						     uint16_t plane_size);
 

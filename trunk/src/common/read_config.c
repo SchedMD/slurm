@@ -1760,10 +1760,12 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_uint16(&conf->max_job_cnt, "MaxJobCount", hashtbl))
 		conf->max_job_cnt = DEFAULT_MAX_JOB_COUNT;
 
-	if ((s_p_get_uint32(&conf->max_mem_per_task, "MaxMemPerCPU", hashtbl)) ||
-	    (s_p_get_uint32(&conf->max_mem_per_task, "MaxMemPerTask", hashtbl)))
+	if ((s_p_get_uint32(&conf->max_mem_per_task, 
+			    "MaxMemPerCPU", hashtbl)) ||
+	    (s_p_get_uint32(&conf->max_mem_per_task, 
+			    "MaxMemPerTask", hashtbl))) {
 		conf->max_mem_per_task |= MEM_PER_CPU;
-	else if (!s_p_get_uint32(&conf->max_mem_per_task, 
+	} else if (!s_p_get_uint32(&conf->max_mem_per_task, 
 				 "MaxMemPerNode", hashtbl)) {
 		conf->max_mem_per_task = DEFAULT_MAX_MEM_PER_CPU;
 	}

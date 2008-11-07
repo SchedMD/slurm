@@ -81,6 +81,9 @@ typedef struct {
   
 	/* all the pm functions */
 	status_t (*create_partition)(pm_partition_id_t pid);
+#ifndef HAVE_BGL
+	status_t (*reboot_partition)(pm_partition_id_t pid);
+#endif
 	status_t (*destroy_partition)(pm_partition_id_t pid);
 	
 	/* set say message stuff */
@@ -169,6 +172,7 @@ extern int bridge_init()
 		"jm_signal_job",
 		"jm_cancel_job",
 		"pm_create_partition",
+		"pm_reboot_partition",
 		"pm_destroy_partition",
 		"setSayMessageParams"
 	};
@@ -598,6 +602,21 @@ extern status_t bridge_create_block(pm_partition_id_t pid)
 	return rc;
 
 }
+
+#ifndef HAVE_BGL
+extern status_t bridge_reboot_block(pm_partition_id_t pid)
+{
+	int rc = CONNECTION_ERROR;
+	if(!bridge_init())
+		return rc;
+	
+	slurm_mutex_lock(&api_file_mutex);
+	rc = (*(bridge_api.reboot_partition))(pid);
+	slurm_mutex_unlock(&api_file_mutex);
+	return rc;
+
+}
+#endif
 
 extern status_t bridge_destroy_block(pm_partition_id_t pid)
 {

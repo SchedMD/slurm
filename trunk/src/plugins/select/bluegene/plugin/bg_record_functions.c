@@ -469,7 +469,7 @@ extern int update_block_user(bg_record_t *bg_record, int set)
 	}
 	if(!bg_record->user_name) {
 		error("No user_name");
-		bg_record->user_name = xstrdup(slurmctld_conf.slurm_user_name);
+		bg_record->user_name = xstrdup(bg_slurm_user_name);
 	}
 #ifdef HAVE_BG_FILES
 	int rc=0;	
@@ -483,7 +483,7 @@ extern int update_block_user(bg_record_t *bg_record, int set)
 			return -1;
 		} else if (rc == REMOVE_USER_NONE) {
 			if (strcmp(bg_record->target_name, 
-				   slurmctld_conf.slurm_user_name)) {
+				   bg_slurm_user_name)) {
 				info("Adding user %s to Block %s",
 				     bg_record->target_name, 
 				     bg_record->bg_block_id);
@@ -636,12 +636,12 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq)
 	}
 	bg_record = (bg_record_t*) xmalloc(sizeof(bg_record_t));
 	
-	slurm_conf_lock();
+	
 	bg_record->user_name = 
-		xstrdup(slurmctld_conf.slurm_user_name);
+		xstrdup(bg_slurm_user_name);
 	bg_record->target_name = 
-		xstrdup(slurmctld_conf.slurm_user_name);
-	slurm_conf_unlock();
+		xstrdup(bg_slurm_user_name);
+	
 	pw_uid = uid_from_string(bg_record->user_name);
 	if(pw_uid == (uid_t) -1) {
 		error("No such user: %s", bg_record->user_name);
@@ -676,12 +676,12 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq)
 	
 	if(i<len) {
 		len -= i;
-		slurm_conf_lock();
-		len += strlen(slurmctld_conf.node_prefix)+1;
+		
+		len += strlen(bg_slurm_node_prefix)+1;
 		bg_record->nodes = xmalloc(len);
 		snprintf(bg_record->nodes, len, "%s%s", 
-			slurmctld_conf.node_prefix, blockreq->block+i);
-		slurm_conf_unlock();
+			bg_slurm_node_prefix, blockreq->block+i);
+		
 			
 	} else 
 		fatal("BPs=%s is in a weird format", blockreq->block); 
@@ -850,13 +850,13 @@ static int _addto_node_list(bg_record_t *bg_record, int *start, int *end)
 	for (x = start[X]; x <= end[X]; x++) {
 		for (y = start[Y]; y <= end[Y]; y++) {
 			for (z = start[Z]; z <= end[Z]; z++) {
-				slurm_conf_lock();
+				
 				snprintf(node_name_tmp, sizeof(node_name_tmp),
 					 "%s%c%c%c", 
-					 slurmctld_conf.node_prefix,
+					 bg_slurm_node_prefix,
 					 alpha_num[x], alpha_num[y],
 					 alpha_num[z]);		
-				slurm_conf_unlock();
+				
 				ba_node = ba_copy_node(
 					&ba_system_ptr->grid[x][y][z]);
 				ba_node->used = 1;

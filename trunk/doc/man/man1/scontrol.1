@@ -304,9 +304,6 @@ Set the job's minimum number of cores per socket to the specified value.
 \fIMinMemory\fP=<megabytes>
 Set the job's minimum real memory required per nodes to the specified value.
 .TP
-\fIMinNodes\fP=<min_count>[-<max_count>]
-Set the job's minimum and optionally maximum count of nodes to be allocated.
-.TP
 \fIMinProcs\fP=<count>
 Set the job's minimum number of processors per nodes to the specified value.
 .TP
@@ -342,8 +339,8 @@ Set the job's list of required node. Multiple node names may be specified using
 simple node range expressions (e.g. "lx[10\-20]"). 
 Value may be cleared with blank data value, "ReqNodeList=".
 .TP
-\fIReqNodes\fP=<count>
-Set the job's count of required nodes to the specified value.
+\fIReqNodes\fP=<min_count>[-<max_count>]
+Set the job's minimum and optionally maximum count of nodes to be allocated.
 .TP
 \fIReqSockets\fP=<count>
 Set the job's count of required sockets to the specified value.
