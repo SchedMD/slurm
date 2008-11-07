@@ -8,6 +8,7 @@ documents those changes that are of interest to users and admins.
     of the daemon rather than restoring the bitmap since the nodes in a system
     can change (be added or removed).
  -- Add configuration option "--with-cpusetdir=PATH" for non-standard locations.
+ -- Get new multi-core data structures working on BlueGene systems.
 
 * Changes in SLURM 1.4.0-pre4
 =============================
