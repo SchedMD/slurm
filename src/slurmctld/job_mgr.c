@@ -3918,9 +3918,11 @@ static void _set_job_prio(struct job_record *job_ptr)
 {
 	xassert(job_ptr);
 	xassert (job_ptr->magic == JOB_MAGIC);
+	if (IS_JOB_FINISHED(job_ptr))
+		return;
 	job_ptr->priority = slurm_sched_initial_priority(maximum_prio,
 							 job_ptr);
-	if (job_ptr->priority > 0)
+	if ((job_ptr->priority > 1) && (job_ptr->direct_set_prio == 0))
 		maximum_prio = MIN(job_ptr->priority, maximum_prio);
 }
 
@@ -3935,7 +3937,7 @@ void reset_job_priority(void)
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if (job_ptr->priority == 1) {
+		if ((job_ptr->priority == 1) && (!IS_JOB_FINISHED(job_ptr))) {
 			_set_job_prio(job_ptr);
 			count++;
 		}
@@ -4086,8 +4088,10 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	}
 
 	if (job_specs->priority != NO_VAL) {
-		if (super_user
-		    ||  (job_ptr->priority > job_specs->priority)) {
+		if (IS_JOB_FINISHED(job_ptr))
+			error_code = ESLURM_DISABLED;
+		else if (super_user ||
+		         (job_ptr->priority > job_specs->priority)) {
 			if(job_specs->priority == INFINITE) {
 				job_ptr->direct_set_prio = 0;
 				_set_job_prio(job_ptr);
@@ -4106,7 +4110,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	}
 
 	if (job_specs->nice != NICE_OFFSET) {
-		if (!IS_JOB_PENDING(job_ptr)) 
+		if (IS_JOB_FINISHED(job_ptr)) 
 			error_code = ESLURM_DISABLED;
 		else if (super_user || (job_specs->nice < NICE_OFFSET)) {
 			job_ptr->details->nice = job_specs->nice;
