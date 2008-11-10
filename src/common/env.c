@@ -822,8 +822,23 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 	env_array_overwrite_fmt(dest, "SLURM_NNODES", "%u", alloc->node_cnt);
 	env_array_overwrite_fmt(dest, "SLURM_NODELIST", "%s", alloc->node_list);
 	
-	if(num_tasks == NO_VAL)
-		num_tasks = desc->num_procs;
+	if(num_tasks == NO_VAL) {
+		int i=0;
+		/* If no tasks were given we can figure it out here
+		 * by totalling up the cpus and then dividing by the
+		 * number of cpus per task */
+		
+		num_tasks = 0;
+		for (i = 0; i < alloc->num_cpu_groups; i++) {
+			num_tasks += alloc->cpu_count_reps[i] 
+				* alloc->cpus_per_node[i];
+		}
+		if((int)desc->cpus_per_task > 1 
+		   && desc->cpus_per_task != (uint16_t)NO_VAL)
+			num_tasks /= desc->cpus_per_task;
+		//num_tasks = desc->num_procs;
+	}
+	//info("got %d and %d", num_tasks,  desc->cpus_per_task);
 	step_layout = slurm_step_layout_create(alloc->node_list,
 					       alloc->cpus_per_node,
 					       alloc->cpu_count_reps,
