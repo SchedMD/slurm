@@ -57,7 +57,7 @@ extern List create_dynamic_block(List block_list,
 	bg_record_t *bg_record = NULL;
 	List results = NULL;
 	List new_blocks = NULL;
-	uint16_t num_quarter=0, num_nodecard=0;
+	uint16_t num_small128=0, num_small32=0;
 	bitstr_t *my_bitmap = NULL;
 	int geo[BA_SYSTEM_DIMENSIONS];
 	int i;
@@ -135,8 +135,8 @@ extern List create_dynamic_block(List block_list,
 				goto finished;
 			}
 
-			num_nodecard=4;
-			num_quarter=3;
+			num_small32=4;
+			num_small128=3;
 		} else {
 			if(!bluegene_quarter_ionode_cnt) {
 				error("can't create this size %d "
@@ -145,7 +145,7 @@ extern List create_dynamic_block(List block_list,
 				      bluegene_numpsets);
 				goto finished;
 			}
-			num_quarter=4;
+			num_small128=4;
 		}
 		new_blocks = list_create(destroy_bg_record);
 		if(_breakup_blocks(block_list, new_blocks, 
@@ -243,7 +243,8 @@ no_list:
 	
 	/*set up bg_record(s) here */
 	new_blocks = list_create(destroy_bg_record);
-	
+	memset(&blockreq, 0, sizeof(blockreq_t));
+
 	blockreq.block = request->save_name;
 #ifdef HAVE_BGL
 	blockreq.blrtsimage = request->blrtsimage;
@@ -252,8 +253,8 @@ no_list:
 	blockreq.mloaderimage = request->mloaderimage;
 	blockreq.ramdiskimage = request->ramdiskimage;
 	blockreq.conn_type = request->conn_type;
-	blockreq.nodecards = num_nodecard;
-	blockreq.quarters = num_quarter;
+	blockreq.small32 = num_small32;
+	blockreq.small128 = num_small128;
 
 	add_bg_record(new_blocks, results, &blockreq);
 

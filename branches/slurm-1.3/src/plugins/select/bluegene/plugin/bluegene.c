@@ -1124,6 +1124,17 @@ extern int read_bg_conf(void)
 
 	if (!s_p_get_uint16(&bluegene_numpsets, "Numpsets", tbl))
 		fatal("Warning: Numpsets not configured in bluegene.conf");
+
+	if(bluegene_numpsets) {
+		bluegene_quarter_ionode_cnt = bluegene_numpsets/4;
+		bluegene_nodecard_ionode_cnt = bluegene_quarter_ionode_cnt/4;
+		if((int)bluegene_nodecard_ionode_cnt < 1) {
+			bluegene_nodecard_ionode_cnt = 0;
+		}
+	} else {
+		fatal("your numpsets is 0");
+	}
+
 	if (!s_p_get_uint16(&bridge_api_verb, "BridgeAPIVerbose", tbl))
 		info("Warning: BridgeAPIVerbose not configured "
 		     "in bluegene.conf");
@@ -1172,15 +1183,6 @@ extern int read_bg_conf(void)
 	if(bluegene_nodecard_node_cnt<=0)
 		fatal("You should have more than 0 nodes per nodecard");
 
-	if(bluegene_numpsets) {
-		bluegene_quarter_ionode_cnt = bluegene_numpsets/4;
-		bluegene_nodecard_ionode_cnt = bluegene_quarter_ionode_cnt/4;
-		if((int)bluegene_nodecard_ionode_cnt < 1) {
-			bluegene_nodecard_ionode_cnt = 0;
-		}
-	} else {
-		fatal("your numpsets is 0");
-	}
 
 	/* add blocks defined in file */
 	if(bluegene_layout_mode != LAYOUT_DYNAMIC) {

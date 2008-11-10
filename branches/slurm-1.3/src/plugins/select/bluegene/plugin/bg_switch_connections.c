@@ -390,7 +390,7 @@ extern int configure_small_block(bg_record_t *bg_record)
 	}
 	
 	
-	/* find the bp_id of the bp to get the nodecards */
+	/* find the bp_id of the bp to get the small32 */
 	if ((rc = bridge_get_data(curr_bp, RM_BPID, &bp_id))
 	    != STATUS_OK) {
 		error("bridge_get_data(): %d", rc);
