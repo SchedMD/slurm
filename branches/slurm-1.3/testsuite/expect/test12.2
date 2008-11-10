@@ -52,6 +52,79 @@ if {[test_bluegene] != 0} {
 	send_user "\nWARNING: This test is incompatable with bluegene systems\n"
 	exit 0
 }
+
+proc _get_mem {prog} {
+	global sstat float number mem_size job_id
+
+	set mem_used -1
+	set mem_task -1
+	set ave_used -1
+	set exit_code 0
+
+	spawn $prog --noheader --job=$job_id.0 --fields vsize
+	expect {
+		-re "($float)(\[KMG\]*)/.*:($number) - ($float)(\[KMG\]*)" {
+			set mem_used  $expect_out(1,string)
+			set scale1    $expect_out(2,string)
+			set mem_task  $expect_out(3,string)
+			set ave_used  $expect_out(4,string)
+			set scale2    $expect_out(5,string)
+			if {[string compare $scale1 "G"] == 0} {
+				set mem_used [expr $mem_used * 1024 * 1024]
+			} elseif {[string compare $scale1 "M"] == 0} {
+				set mem_used [expr $mem_used * 1024]
+			} elseif {[string compare $scale1 "K"] == 0} {
+				set mem_used [expr $mem_used * 1]
+			} else {
+				set mem_used [expr $mem_used / 1024]
+			}
+			if {[string compare $scale2 "G"] == 0} {
+				set ave_used [expr $ave_used * 1024 * 1024]
+			} elseif {[string compare $scale2 "M"] == 0} {
+				set ave_used [expr $ave_used * 1024]
+			} elseif {[string compare $scale2 "K"] == 0} {
+				set ave_used [expr $ave_used * 1]
+			} else {
+				set ave_used [expr $ave_used / 1024]
+			}
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sstat not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if { $exit_code } {
+		return 1
+	}
+
+	if { $mem_used == -1 } {
+		send_user "\nFAILURE: sstat stat memory not found\n"
+		return 1
+	} elseif { $mem_task == -1 } {
+		send_user "\nFAILURE: sstat stat memory task not found\n"
+		return 1
+	} elseif { $ave_used != $mem_used } {
+		send_user "\nFAILURE: sstat stat memory task not equal to ave memory\n"
+		return 1	
+	}
+	# Compute error in KB
+	set diff_mem [expr $mem_used - $mem_size]
+	set error_mem [expr abs($diff_mem)]
+	if {$error_mem > 4000} {
+		send_user "\nFAILURE: sstat memory use discrepancy of $error_mem KB\n"
+		send_user "  Wanted $mem_size KB, got $mem_used KB\n"
+		return 1
+	} else {
+		send_user "\nSUCCESS: sstat memory use discrepancy of $error_mem KB\n"
+	}
+	return 0
+}
+
 #
 # Check if accounting is enabled
 #
@@ -140,65 +213,8 @@ if {[wait_for_job $job_id "RUNNING"] != 0} {
 # Wait for data to get logged
 exec $bin_sleep 5
 
-set mem_used -1
-set mem_task -1
-set ave_used -1
-spawn $sstat --noheader --job=$job_id.0 --fields vsize
-expect {
-	-re "($float)(\[KMG\]*)/.*($number) - ($float)(\[KMG\]*)" {
-		set mem_used  $expect_out(1,string)
-		set scale1    $expect_out(2,string)
-		set mem_task  $expect_out(3,string)
-		set ave_used  $expect_out(4,string)
-		set scale2    $expect_out(5,string)
-		if {[string compare $scale1 "G"] == 0} {
-			 set mem_used [expr $mem_used * 1024 * 1024]
-		} elseif {[string compare $scale1 "M"] == 0} {
-			set mem_used [expr $mem_used * 1024]
-		} elseif {[string compare $scale1 "K"] == 0} {
-			set mem_used [expr $mem_used * 1]
-		} else {
-			 set mem_used [expr $mem_used / 1024]
-		}
-		if {[string compare $scale2 "G"] == 0} {
-			set ave_used [expr $ave_used * 1024 * 1024]
-		} elseif {[string compare $scale2 "M"] == 0} {
-			set ave_used [expr $ave_used * 1024]
-		} elseif {[string compare $scale2 "K"] == 0} {
-                        set ave_used [expr $ave_used * 1]
-		} else {
-			set ave_used [expr $ave_used / 1024]
-		}
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sstat not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-if { $mem_used == -1 } {
-	send_user "\nFAILURE: sstat stat memory not found\n"
+if {[_get_mem $sstat] != 0} {
 	set exit_code 1
-} elseif { $mem_task != 0 } {
-	send_user "\nFAILURE: sstat stat memory task not found\n"
-	set exit_code 1	
-} elseif { $ave_used != $mem_used } {
-	send_user "\nFAILURE: sstat stat memory task not equal to ave memory\n"
-	set exit_code 1	
-}
-# Compute error in KB
-set diff_mem [expr $mem_used - $mem_size]
-set error_mem [expr abs($diff_mem)]
-if {$error_mem > 4000} {
-	send_user "\nFAILURE: sstat memory use discrepancy of $error_mem KB\n"
-	send_user "  Wanted $mem_size KB, got $mem_used KB\n"
-	set exit_code 1
-} else {
-	send_user "\nSUCCESS: sstat memory use discrepancy of $error_mem KB\n"
 }
 
 #
@@ -279,66 +295,8 @@ if {$error_time > 5} {
 	send_user "\nSUCCESS: sacct elapsed time discrepancy of $error_time secs\n"
 }
 
-set mem_used -1
-set mem_task -1
-set ave_used -1
-spawn $sacct --noheader  --job=$job_id.0 --fields vsize
-expect {
-	-re "($float)(\[KMG\]*)/.*($number) - ($float)(\[KMG\]*)" {
-		set mem_used  $expect_out(1,string)
-		set scale1    $expect_out(2,string)
-		set mem_task  $expect_out(3,string)
-		set ave_used  $expect_out(4,string)
-		set scale2    $expect_out(5,string)
-		if {[string compare $scale1 "G"] == 0} {
-			set mem_used [expr $mem_used * 1024 * 1024]
-		} elseif {[string compare $scale1 "M"] == 0} {
-			set mem_used [expr $mem_used * 1024]
-		} elseif {[string compare $scale1 "K"] == 0} {
-			set mem_used [expr $mem_used * 1]
-		} else {
-			 set mem_used [expr $mem_used / 1024]
-		}
-		if {[string compare $scale2 "G"] == 0} {
-			set ave_used [expr $ave_used * 1024 * 1024]
-		} elseif {[string compare $scale2 "M"] == 0} {
-			set ave_used [expr $ave_used * 1024]
-		} elseif {[string compare $scale2 "K"] == 0} {
-                        set ave_used [expr $ave_used * 1]
-		} else {
-			set ave_used [expr $ave_used / 1024]
-		}
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacct not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-if { $mem_used == -1 } {
-	send_user "\nFAILURE: sacct memory not found\n"
+if {[_get_mem $sacct] != 0} {
 	set exit_code 1
-} elseif { $mem_task != 0 } {
-	send_user "\nFAILURE: sacct memory task not found\n"
-	set exit_code 1	
-} elseif { $ave_used != $mem_used } {
-	send_user "\nFAILURE: sacct memory task not equal to ave memory\n"
-	set exit_code 1	
-}
-
-# Compute error in KB
-set diff_mem [expr $mem_used - $mem_size]
-set error_mem [expr abs($diff_mem)]
-if {$error_mem > 4000} {
-	send_user "\nFAILURE: sacct memory use discrepancy of $error_mem KB\n"
-	send_user "  Wanted $mem_size KB, got $mem_used KB\n"
-	set exit_code 1
-} else {
-	send_user "\nSUCCESS: sacct memory use discrepancy of $error_mem KB\n"
 }
 
 if {$aix == 1 && $exit_code == 1} {
