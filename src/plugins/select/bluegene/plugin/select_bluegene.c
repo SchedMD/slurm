@@ -982,8 +982,8 @@ extern int select_p_update_sub_node (update_part_msg_t *part_desc_ptr)
 	blockreq.mloaderimage = NULL;
 	blockreq.ramdiskimage = NULL;
 	blockreq.conn_type = SELECT_SMALL;
-	blockreq.nodecards = 16;
-	blockreq.quarters = 0;
+	blockreq.small32 = 16;
+	blockreq.small128 = 0;
 	add_bg_record(requests, NULL, &blockreq);
 	
 	delete_list = list_create(NULL);

@@ -199,7 +199,7 @@ static int _set_nodecard_cnt(char *com)
 
 static int _create_allocation(char *com, List allocated_blocks)
 {
-	int i=6, geoi=-1, starti=-1, i2=0, nodecards=-1, quarters=-1;
+	int i=6, geoi=-1, starti=-1, i2=0, small32=-1, small128=-1;
 	int len = strlen(com);
 	allocated_block_t *allocated_block = NULL;
 	ba_request_t *request = (ba_request_t*) xmalloc(sizeof(ba_request_t)); 
@@ -211,8 +211,8 @@ static int _create_allocation(char *com, List allocated_blocks)
 	request->elongate = false;
 	request->start_req=0;
 	request->size = 0;
-	request->nodecards = 0;
-	request->quarters = 0;
+	request->small32 = 0;
+	request->small128 = 0;
 	request->passthrough = false;
 	request->avail_node_bitmap = NULL;
 
@@ -224,10 +224,10 @@ static int _create_allocation(char *com, List allocated_blocks)
 			request->conn_type = SELECT_SMALL;
 			i+=5;
 		} else if(!strncasecmp(com+i, "nodecard", 8)) {
-			nodecards=0;
+			small32=0;
 			i+=5;
 		} else if(!strncasecmp(com+i, "quarter", 7)) {
-			quarters=0;
+			small128=0;
 			i+=6;
 		} else if(!strncasecmp(com+i, "rotate", 6)) {
 			request->rotate=true;
@@ -244,11 +244,11 @@ static int _create_allocation(char *com, List allocated_blocks)
 			      || (com[i] >= 'A' && com[i] <= 'Z'))) {
 			starti=i;
 			i++;
-		} else if(nodecards == 0 && (com[i] < 58 && com[i] > 47)) {
-			nodecards=i;
+		} else if(small32 == 0 && (com[i] < 58 && com[i] > 47)) {
+			small32=i;
 			i++;
-		} else if(quarters == 0 && (com[i] < 58 && com[i] > 47)) {
-			quarters=i;
+		} else if(small128 == 0 && (com[i] < 58 && com[i] > 47)) {
+			small128=i;
 			i++;
 		} else if(geoi<0 && ((com[i] >= '0' && com[i] <= '9')
 				     || (com[i] >= 'A' && com[i] <= 'Z'))) {
@@ -261,32 +261,32 @@ static int _create_allocation(char *com, List allocated_blocks)
 	}		
 	
 	if(request->conn_type == SELECT_SMALL) {
-		if(nodecards > 0) {
-			request->nodecards = atoi(&com[nodecards]);
-			nodecards = request->nodecards/4;
-			request->nodecards = nodecards*4;
+		if(small32 > 0) {
+			request->small32 = atoi(&com[small32]);
+			small32 = request->small32/4;
+			request->small32 = small32*4;
 		}
 
-		request->quarters = 4;
+		request->small128 = 4;
 		
-		if(request->nodecards > 0)
-			request->quarters -= nodecards;
+		if(request->small32 > 0)
+			request->small128 -= small32;
 
-		if(request->quarters > 4) {
-			request->quarters = 4;
-			request->nodecards = 0;
-		} else if(request->nodecards > 16) {
-			request->quarters = 0;
-			request->nodecards = 16;
+		if(request->small128 > 4) {
+			request->small128 = 4;
+			request->small32 = 0;
+		} else if(request->small32 > 16) {
+			request->small128 = 0;
+			request->small32 = 16;
 		}
 		
-		quarters = request->quarters*4;
-		nodecards = request->nodecards;
-		if((quarters+nodecards) > 16) {
+		small128 = request->small128*4;
+		small32 = request->small32;
+		if((small128+small32) > 16) {
 			sprintf(error_string, 
 				"please specify a complete split of a "
 				"Base Partion\n"
-				"(i.e. nodecards=4)");
+				"(i.e. small32=4)");
 			geoi = -1;
 		}
 		request->size = 1;
@@ -858,8 +858,8 @@ static int _copy_allocation(char *com, List allocated_blocks)
 		request->conn_type=allocated_block->request->conn_type;
 		request->rotate =allocated_block->request->rotate;
 		request->elongate = allocated_block->request->elongate;
-		request->nodecards = allocated_block->request->nodecards;
-		request->quarters = allocated_block->request->quarters;
+		request->small32 = allocated_block->request->small32;
+		request->small128 = allocated_block->request->small128;
 				
 		request->rotate_count= 0;
 		request->elongate_count = 0;
@@ -962,8 +962,8 @@ static int _save_allocation(char *com, List allocated_blocks)
 			else {
 				conn_type = "SMALL";
 				xstrfmtcat(extra, " NodeCards=%d Quarters=%d",
-					   allocated_block->request->nodecards,
-					   allocated_block->request->quarters);
+					   allocated_block->request->small32,
+					   allocated_block->request->small128);
 			}
 			xstrfmtcat(save_string, "BPs=%s Type=%s", 
 				   allocated_block->request->save_name, 
@@ -1116,10 +1116,10 @@ static int _add_bg_record(blockreq_t *blockreq, List allocated_blocks)
 	}
 	memset(com,0,255);
 	sprintf(com,"create %dx%dx%d %s start %dx%dx%d "
-		"nodecards=%d quarters=%d",
+		"small32=%d small128=%d",
 		geo[X], geo[Y], geo[Z], conn_type, 
 		start1[X], start1[Y], start1[Z],
-		blockreq->nodecards, blockreq->quarters);
+		blockreq->small32, blockreq->small128);
 	if(!strcasecmp(layout_mode, "OVERLAP")) 
 		reset_ba_system(false);
 	
@@ -1285,11 +1285,11 @@ static void _print_text_command(allocated_block_t *allocated_block)
 	if(allocated_block->request->conn_type == SELECT_SMALL) {
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "%d", 
-			  allocated_block->request->nodecards);
+			  allocated_block->request->small32);
 		main_xcord += 11;
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "%d", 
-			  allocated_block->request->quarters);
+			  allocated_block->request->small128);
 		main_xcord += 10;
 		
 	} else
