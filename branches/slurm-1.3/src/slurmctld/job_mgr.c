@@ -1642,9 +1642,11 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	   system and divide it by the cpus_per_task.  This is already
 	   checked to not be 0 earlier.
 	*/
-	if(!job_ptr->details->num_tasks) 
-		job_ptr->details->num_tasks = job_ptr->total_procs 
-			/ job_ptr->details->cpus_per_task;
+	/* if(!job_ptr->details->num_tasks) {  */
+/* 		job_ptr->details->num_tasks = job_ptr->total_procs  */
+/* 			/ job_ptr->details->cpus_per_task; */
+/* 		info("got num_tasks of %d", job_ptr->details->num_tasks); */
+/* 	} */
 
 	if (will_run) {		/* job would run, flag job destruction */
 		job_ptr->job_state  = JOB_FAILED;
