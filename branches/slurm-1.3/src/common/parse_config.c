@@ -473,7 +473,7 @@ static int _handle_uint16(s_p_values_t *v,
 		} else if (errno == ERANGE) {
 			error("%s value (%s) is out of range", v->key, value);
 			return -1;
-		} else if (value[0] == "-") {
+		} else if (value[0] == '-') {
 			error("%s value (%s) is less than zero", v->key, value);
 			return -1;
 		} else if (num > 0xffff) {
@@ -528,7 +528,7 @@ static int _handle_uint32(s_p_values_t *v,
 		} else if (errno == ERANGE) {
 			error("%s value (%s) is out of range", v->key, value);
 			return -1;
-		} else if (value[0] == "-") {
+		} else if (value[0] == '-') {
 			error("%s value (%s) is less than zero", v->key, value);
 			return -1;
 		} else if (num > 0xffffffff) {
