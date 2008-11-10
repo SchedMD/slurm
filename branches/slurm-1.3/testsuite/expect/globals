@@ -510,7 +510,7 @@ proc wait_for_step { step_id } {
 # This is based upon 
 # the value of AccountingStorageEnforce in the slurm.conf.
 #
-# Returns 1 if the system is enforcing associations, 0 otherwise
+# Returns level of association enforcement, 0 if none
 #
 ################################################################
 proc test_assoc_enforced { } {
