@@ -12,6 +12,7 @@ documents those changes that are of interest to users and admins.
  -- Do not set a running or pending job's EndTime when changing it's time 
     limit.
  -- Fix bug in use of "include" parameter within the plugstack.conf file.
+ -- Fix bug in the parsing of negative numeric values in configuration files.
  
 * Changes in SLURM 1.3.10
 =========================
