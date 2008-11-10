@@ -2520,8 +2520,11 @@ extern int init ( void )
 
 	debug2("mysql_connect() called for db %s", mysql_db_name);
 	
-	mysql_get_db_connection(&db_conn, mysql_db_name, mysql_db_info);
-		
+	if(mysql_get_db_connection(&db_conn, mysql_db_name, mysql_db_info) 
+	   != SLURM_SUCCESS)
+		fatal("The database must be up when starting "
+		      "the MYSQL plugin.");
+
 	rc = _mysql_acct_check_tables(db_conn);
 
 	mysql_close_db_connection(&db_conn);
@@ -8620,6 +8623,9 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 	 * them by zeroing out the end.
 	 */
 	if(!job_ptr->db_index) {
+		if(!job_ptr->details->begin_time)
+			job_ptr->details->begin_time = 
+				job_ptr->details->submit_time;
 		query = xstrdup_printf(
 			"insert into %s "
 			"(jobid, associd, uid, gid, nodelist, ",
