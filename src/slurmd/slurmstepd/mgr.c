@@ -1235,23 +1235,19 @@ _wait_for_all_tasks(slurmd_job_t *job)
 			tasks_left, job->ntasks);
 
 	for (i = 0; i < tasks_left; ) {
-		int rc, wait_for_task = 1;
+		int rc;
 		rc = _wait_for_any_task(job, true);
 		if (rc != -1) {
 			i += rc;
 			if (i < job->ntasks) {
+				/* To limit the amount of traffic back 
+				 * we will sleep a bit to make sure we
+				 * have most if not all the tasks
+				 * completed before we return */
+				usleep(100000);	/* 100 msec */
 				rc = _wait_for_any_task(job, false);
 				if (rc != -1)
 					i += rc;
-				else if (wait_for_task) {
-					/* To limit the amount of traffic back 
-					 * we will sleep a bit to make sure we
-					 * have most if not all the tasks
-					 * completed before we return */
-					wait_for_task = 0;
-					usleep(10000);	/* 10 msec */
-				} else
-					break;
 			}
 		}
 
