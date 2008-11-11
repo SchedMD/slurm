@@ -1641,7 +1641,9 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 
 	no_alloc = test_only || too_fragmented || 
 		(!top_prio) || (!independent);
+
 	error_code = select_nodes(job_ptr, no_alloc, NULL);
+
 	if (!test_only) {
 		last_job_update = now;
 		slurm_sched_schedule();	/* work for external scheduler */
@@ -1679,6 +1681,18 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		job_completion_logger(job_ptr);
 		return error_code;
 	}
+	
+	/* To be able to set TASKS_PER_NODE correctly in the env we
+	   need to know how may tasks we are going to run.  If tasks
+	   isn't specified we will take the number of procs on the
+	   system and divide it by the cpus_per_task.  This is already
+	   checked to not be 0 earlier.
+	*/
+	/* if(!job_ptr->details->num_tasks) {  */
+/* 		job_ptr->details->num_tasks = job_ptr->total_procs  */
+/* 			/ job_ptr->details->cpus_per_task; */
+/* 		info("got num_tasks of %d", job_ptr->details->num_tasks); */
+/* 	} */
 
 	if (will_run) {		/* job would run, flag job destruction */
 		job_ptr->job_state  = JOB_FAILED;
@@ -2382,7 +2396,6 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		xfree(job_ptr->state_desc);
 	}
 	
-	
 cleanup:
 	if (license_list)
 		list_destroy(license_list);
@@ -2996,6 +3009,8 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		detail_ptr->task_dist = job_desc->task_dist;
 	if (job_desc->cpus_per_task != (uint16_t) NO_VAL)
 		detail_ptr->cpus_per_task = MAX(job_desc->cpus_per_task, 1);
+	else
+		detail_ptr->cpus_per_task = 1;
 	if (job_desc->ntasks_per_node != (uint16_t) NO_VAL)
 		detail_ptr->ntasks_per_node = job_desc->ntasks_per_node;
 	if (job_desc->requeue != (uint16_t) NO_VAL)
@@ -4056,8 +4071,10 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		mc_ptr = detail_ptr->mc_ptr;
 	last_job_update = now;
 
-	if ((job_specs->time_limit != NO_VAL) && (!IS_JOB_FINISHED(job_ptr))) {
-		if (job_ptr->time_limit == job_specs->time_limit) {
+	if (job_specs->time_limit != NO_VAL) {
+		if (IS_JOB_FINISHED(job_ptr)) 
+			error_code = ESLURM_DISABLED;
+		else if (job_ptr->time_limit == job_specs->time_limit) {
 			verbose("update_job: new time limit identical to old "
 				"time limit %u", job_specs->job_id);
 		} else if (super_user ||
@@ -4066,21 +4083,26 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			if (old_time == INFINITE)	/* one year in mins */
 				old_time = (365 * 24 * 60);
 			job_ptr->time_limit = job_specs->time_limit;
-			if (job_ptr->time_limit == INFINITE) {	/* one year */
-				job_ptr->end_time = now +
-					(365 * 24 * 60 * 60);
-			} else {
-				/* Update end_time based upon change
-				 * to preserve suspend time info */
-				job_ptr->end_time = job_ptr->end_time +
-					((job_ptr->time_limit -
-					  old_time) * 60);
+			if ((job_ptr->job_state == JOB_RUNNING) ||
+			    (job_ptr->job_state == JOB_SUSPENDED)) {
+				if (job_ptr->time_limit == INFINITE) {
+					/* Set end time in one year */
+					job_ptr->end_time = now +
+						(365 * 24 * 60 * 60);
+				} else {
+					/* Update end_time based upon change
+					 * to preserve suspend time info */
+					job_ptr->end_time = job_ptr->end_time +
+						((job_ptr->time_limit -
+						  old_time) * 60);
+				}
+				if (job_ptr->end_time < now)
+					job_ptr->end_time = now;
+				if ((job_ptr->job_state == JOB_RUNNING) &&
+				    (list_is_empty(job_ptr->step_list) == 0)) {
+					_xmit_new_end_time(job_ptr);
+				}
 			}
-			if (job_ptr->end_time < now)
-				job_ptr->end_time = now;
-			if ((job_ptr->job_state == JOB_RUNNING) &&
-			    (list_is_empty(job_ptr->step_list) == 0))
-				_xmit_new_end_time(job_ptr);
 			info("update_job: setting time_limit to %u for "
 			     "job_id %u", job_specs->time_limit, 
 			     job_specs->job_id);

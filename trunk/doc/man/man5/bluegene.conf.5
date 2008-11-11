@@ -122,12 +122,15 @@ is usually 32)
 
 .TP
 \fBNumPsets\fR
-The Numpsets used for creation of all bgblocks  equals this value 
-multiplied by the number of  base partitions in the bgblock.
+The Numpsets used for creation of all bgblocks.  This value really means the
+number of IOnodes on a base partition.  This number must be the smallest
+number if you have a heterogeneous system.
 There is no default value and this must be specified.  The typical settings
 for bgl systems goes as follows... For IO rich systems 64 is the value that 
 should be used to create small blocks.  For systems that are not IO rich, or 
 you do not wish to create small blocks, 8 is usually the number to use.
+For bgp IO rich systems 32 is the value that should be used to create small 
+blocks since you can only have 2 ionodes per nodecard instead of 4 like on bgl.
 
 .TP
 \fBRamDiskImage\fR

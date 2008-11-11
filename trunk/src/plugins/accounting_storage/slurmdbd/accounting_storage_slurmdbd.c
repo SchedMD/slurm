@@ -1254,6 +1254,8 @@ extern int jobacct_storage_p_job_start(void *db_conn, char *cluster_name,
 	} else {
 		resp = (dbd_job_start_rc_msg_t *) msg_rc.data;
 		job_ptr->db_index = resp->db_index;
+		rc = resp->return_code;
+		//info("here got %d for return code", resp->return_code);
 		slurmdbd_free_job_start_rc_msg(SLURMDBD_VERSION, resp);
 	}
 	xfree(block_id);

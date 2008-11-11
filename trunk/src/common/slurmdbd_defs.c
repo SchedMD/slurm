@@ -252,6 +252,10 @@ extern int slurm_send_recv_slurmdbd_msg(uint16_t rpc_version,
 		
 	rc = unpack_slurmdbd_msg(rpc_version, resp, buffer);
 
+	/* check for the rc of the start job message */
+	if (rc == SLURM_SUCCESS && resp->msg_type == DBD_JOB_START_RC) 
+		rc = ((dbd_job_start_rc_msg_t *)resp->data)->return_code;
+	
 	free_buf(buffer);
 	slurm_mutex_unlock(&slurmdbd_lock);
 	

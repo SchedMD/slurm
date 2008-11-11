@@ -218,6 +218,12 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 	if (accounting_enforce != ACCOUNTING_ENFORCE_WITH_LIMITS)
 		return true;
 
+	/* clear old state reason */
+        if ((job_ptr->state_reason == WAIT_ASSOC_JOB_LIMIT) ||
+	    (job_ptr->state_reason == WAIT_ASSOC_RESOURCE_LIMIT) ||
+	    (job_ptr->state_reason == WAIT_ASSOC_TIME_LIMIT))
+                job_ptr->state_reason = WAIT_NO_REASON;
+
 	slurm_mutex_lock(&assoc_mgr_association_lock);
 	assoc_ptr = job_ptr->assoc_ptr;
 	while(assoc_ptr) {

@@ -401,8 +401,6 @@ static int _spank_stack_create(const char *path, List * listp)
 	char buf[4096];
 	FILE *fp;
 
-	*listp = NULL;
-
 	verbose("spank: opening plugin stack %s\n", path);
 
 	if (!(fp = safeopen(path, "r", SAFEOPEN_NOCREATE))) {

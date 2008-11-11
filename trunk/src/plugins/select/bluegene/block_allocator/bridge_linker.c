@@ -142,42 +142,6 @@ int _get_syms(int n_syms, const char *names[], void *ptrs[])
 
 extern int bridge_init()
 {
-#ifdef HAVE_BGP
-	static const char *syms[] = {
-		"rm_set_serial",
-		"rm_get_BGP",
-		"rm_add_partition",
-		"rm_get_partition",
-		"rm_get_partition_info",
-		"rm_modify_partition",
-		"rm_set_part_owner",
-		"rm_add_part_user",
-		"rm_remove_part_user",
-		"rm_remove_partition",
-		"rm_get_partitions",
-		"rm_get_partitions_info",
-		"rm_get_job",
-		"rm_get_jobs",
-		"rm_remove_job",
-		"rm_get_nodecards",
-		"rm_new_partition",
-		"rm_free_partition",
-		"rm_free_job",
-		"rm_free_BGP",
-		"rm_free_partition_list",
-		"rm_free_job_list",
-		"rm_free_nodecard_list",
-		"rm_get_data",
-		"rm_set_data",
-		"jm_signal_job",
-		"jm_cancel_job",
-		"pm_create_partition",
-		"pm_reboot_partition",
-		"pm_destroy_partition",
-		"setSayMessageParams"
-	};
-#endif
-
 #ifdef HAVE_BGL
 	static const char *syms[] = {
 		"rm_set_serial",
@@ -208,6 +172,40 @@ extern int bridge_init()
 		"jm_signal_job",
 		"jm_cancel_job",
 		"pm_create_partition",
+		"pm_destroy_partition",
+		"setSayMessageParams"
+	};
+#else
+	static const char *syms[] = {
+		"rm_set_serial",
+		"rm_get_BG",
+		"rm_add_partition",
+		"rm_get_partition",
+		"rm_get_partition_info",
+		"rm_modify_partition",
+		"rm_set_part_owner",
+		"rm_add_part_user",
+		"rm_remove_part_user",
+		"rm_remove_partition",
+		"rm_get_partitions",
+		"rm_get_partitions_info",
+		"rm_get_job",
+		"rm_get_jobs",
+		"rm_remove_job",
+		"rm_get_nodecards",
+		"rm_new_partition",
+		"rm_free_partition",
+		"rm_free_job",
+		"rm_free_BG",
+		"rm_free_partition_list",
+		"rm_free_job_list",
+		"rm_free_nodecard_list",
+		"rm_get_data",
+		"rm_set_data",
+		"jm_signal_job",
+		"jm_cancel_job",
+		"pm_create_partition",
+		"pm_reboot_partition",
 		"pm_destroy_partition",
 		"setSayMessageParams"
 	};
