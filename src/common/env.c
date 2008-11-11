@@ -942,9 +942,7 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 	tmp = _uint16_array_to_str(step_layout->node_cnt,
 				   step_layout->tasks);
 	slurm_step_layout_destroy(step_layout);
-
 	env_array_overwrite_fmt(dest, "SLURM_TASKS_PER_NODE", "%s", tmp);
-
 	xfree(tmp);
 }
 
