@@ -197,6 +197,9 @@ per node, a job request for 4 nodes and 3 CPUs per task may be
 allocated 3 or 6 CPUs per node (1 or 2 tasks per node) depending 
 upon resource consumption by other jobs. Such a job may be 
 unable to execute more than a total of 4 tasks. 
+This option may also be useful to spawn tasks without allocating
+resources to the job step from the job's allocation when running 
+multiple job steps with the \fB\-\-exclusive\fR option.
 
 .TP
 \fB\-\-comment\fR=<\fIstring\fR>

@@ -822,7 +822,7 @@ static void set_options(const int argc, char **argv)
 		case (int)'c':
 			opt.cpus_set = true;
 			opt.cpus_per_task = 
-				_get_int(optarg, "cpus-per-task", true);
+				_get_int(optarg, "cpus-per-task", false);
 			break;
 		case (int)'C':
 			xfree(opt.constraints);
@@ -1550,7 +1550,7 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
-	if (opt.cpus_per_task <= 0) {
+	if (opt.cpus_per_task < 0) {
 		error("%s: invalid number of cpus per task (-c %d)\n",
 		      opt.progname, opt.cpus_per_task);
 		verified = false;

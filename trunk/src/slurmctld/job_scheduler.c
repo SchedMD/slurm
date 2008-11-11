@@ -85,7 +85,7 @@ static char **	_xduparray(uint16_t size, char ** array);
  * RET number of entries in job_queue
  * NOTE: the buffer at *job_queue must be xfreed by the caller
  */
-static int _build_user_job_list(uint32_t user_id,char* job_name,
+static int _build_user_job_list(uint32_t user_id, char* job_name,
 			        struct job_queue **job_queue)
 {
 	ListIterator job_iterator;
@@ -102,7 +102,8 @@ static int _build_user_job_list(uint32_t user_id,char* job_name,
 		xassert (job_ptr->magic == JOB_MAGIC);
 		if (job_ptr->user_id != user_id)
 			continue;
-		if (job_name && strcmp(job_name,job_ptr->name))
+		if (job_name && job_ptr->name &&
+		    strcmp(job_name, job_ptr->name))
 			continue;
 		if (job_buffer_size <= job_queue_size) {
 			job_buffer_size += 200;
