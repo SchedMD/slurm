@@ -467,7 +467,8 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			avail = job_ptr->alloc_lps[j] - job_ptr->used_lps[j];
 			tot_cpus += job_ptr->alloc_lps[j];
 			if ((avail <= 0) ||
-			    (cpus_picked_cnt >= step_spec->cpu_count))
+			    ((cpus_picked_cnt > 0) &&
+			     (cpus_picked_cnt >= step_spec->cpu_count)))
 				bit_clear(nodes_avail, i);
 			else
 				cpus_picked_cnt += avail;
@@ -726,8 +727,10 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 		if (!bit_test(step_ptr->step_node_bitmap, i_node))
 			continue;
 		step_node_inx++;
-		job_ptr->used_lps[job_node_inx] += 
-			step_ptr->step_layout->tasks[step_node_inx];
+		if (step_ptr->cpus_per_task) {
+			job_ptr->used_lps[job_node_inx] +=
+				step_ptr->step_layout->tasks[step_node_inx];
+		}
 #if 0
 		info("step alloc of %s procs: %u of %u", 
 			node_record_table_ptr[i_node].name,
@@ -760,7 +763,9 @@ static void _step_dealloc_lps(struct step_record *step_ptr)
 		if (!bit_test(step_ptr->step_node_bitmap, i_node))
 			continue;
 		step_node_inx++;
-		if (job_ptr->used_lps[job_node_inx] >=
+		if (step_ptr->cpus_per_task == 0)
+			;	/* no CPUs allocated */
+		else if (job_ptr->used_lps[job_node_inx] >=
 		    step_ptr->step_layout->tasks[step_node_inx]) {
 			job_ptr->used_lps[job_node_inx] -= 
 				step_ptr->step_layout->tasks[step_node_inx];
@@ -966,13 +971,17 @@ step_create(job_step_create_request_msg_t *step_specs,
 	/* a batch script does not need switch info */
 	if (!batch_step) {
 		/* we can figure out the cpus_per_task here by
-		   reversing what happens in srun */
+		 * reversing what happens in srun, record
+		 * argument, plus save/restore in slurm v1.4 */
 		int cpus_per_task = step_specs->cpu_count / 
 			step_specs->num_tasks;
-/* 		info(" we have %u / %u = %u", step_specs->cpu_count, */
-/* 		     step_specs->num_tasks, cpus_per_task); */
-		if(cpus_per_task < 1)
+		if (cpus_per_task < 1)
 			cpus_per_task = 1;
+		if (step_specs->cpu_count)
+			step_ptr->cpus_per_task = cpus_per_task;
+		else
+			step_ptr->cpus_per_task = 0;
+
 		step_ptr->step_layout = 
 			step_layout_create(step_ptr,
 					   step_node_list,
@@ -1837,6 +1846,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 	step_ptr->pre_sus_time = pre_sus_time;
 	step_ptr->tot_sus_time = tot_sus_time;
 	step_ptr->ckpt_time    = ckpt_time;
+	step_ptr->cpus_per_task = 1;	/* Need to save/restore in v1.4 */
 
 	slurm_step_layout_destroy(step_ptr->step_layout);
 	step_ptr->step_layout  = step_layout;

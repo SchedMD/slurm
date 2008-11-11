@@ -16,6 +16,9 @@ documents those changes that are of interest to users and admins.
  -- Propagate --cpus-per-task parameter from salloc or sbatch input line to
     the SLURM_CPUS_PER_TASK environment variable in the spawned shell for 
     srun to use.
+ -- Add support for srun --cpus-per-task=0. This can be used to spawn tasks
+    without allocating resouces for the job step from the job's allocation
+    when running multiple job steps with the --exclusive option.
  
 * Changes in SLURM 1.3.10
 =========================

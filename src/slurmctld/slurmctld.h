@@ -489,6 +489,7 @@ struct 	step_record {
 	check_jobinfo_t check_job;	/* checkpoint context, opaque */
 	char *name;			/* name of job step */
 	char *network;			/* step's network specification */
+	uint16_t cpus_per_task;		/* cpus per task initiated */
 	uint32_t exit_code;		/* highest exit code from any task */
 	bitstr_t *exit_node_bitmap;	/* bitmap of exited nodes */
 	jobacctinfo_t *jobacct;         /* keep track of process info in the 
