@@ -266,8 +266,7 @@ static void _attempt_backfill(void)
 			continue;
 
 		if ((!job_independent(job_ptr)) ||
-		    (license_job_test(job_ptr) != SLURM_SUCCESS) ||
-		    (!acct_policy_job_runnable(job_ptr)))
+		    (license_job_test(job_ptr) != SLURM_SUCCESS))
 			continue;
 
 		/* Determine minimum and maximum node counts */
