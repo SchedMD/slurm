@@ -318,16 +318,11 @@ extern int create_full_system_block(List bg_found_block_list)
 	}
 
 	records = list_create(destroy_bg_record);
+
+	memset(&blockreq, 0, sizeof(blockreq_t));
 	blockreq.block = name;
-#ifdef HAVE_BGL
-	blockreq.blrtsimage = NULL;
-#endif
-	blockreq.linuximage = NULL;
-	blockreq.mloaderimage = NULL;
-	blockreq.ramdiskimage = NULL;
 	blockreq.conn_type = SELECT_TORUS;
-	blockreq.nodecards = 0;
-	blockreq.quarters = 0;
+
 	add_bg_record(records, NULL, &blockreq);
 	xfree(name);
 	

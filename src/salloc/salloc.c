@@ -247,6 +247,10 @@ int main(int argc, char *argv[])
 	/* Add default task count for srun, if not already set */
 	if (opt.nprocs_set)
 		env_array_append_fmt(&env, "SLURM_NPROCS", "%d", opt.nprocs);
+	if (opt.cpus_per_task > 1) {
+		env_array_append_fmt(&env, "SLURM_CPUS_PER_TASK", "%d",
+				     opt.cpus_per_task);
+	}
 	if (opt.overcommit) {
 		env_array_append_fmt(&env, "SLURM_OVERCOMMIT", "%d", 
 			opt.overcommit);

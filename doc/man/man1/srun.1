@@ -188,11 +188,15 @@ show this help message
 .TP
 \fB\-c\fR, \fB\-\-cpus\-per\-task\fR=\fIncpus\fR
 Request that \fIncpus\fR be allocated \fBper process\fR. This may be
-useful if the job is multithreaded and requires more than one cpu
-per task for optimal performance. The default is one cpu per process.
-If \fB\-c\fR is specified without \fB\-n\fR as many 
+useful if the job is multithreaded and requires more than one CPU
+per task for optimal performance. The default is one CPU per process.
+If \fB\-c\fR is specified without \fB\-n\fR, as many 
 tasks will be allocated per node as possible while satisfying
-the \fB\-c\fR restriction. 
+the \fB\-c\fR restriction. For instance on a cluster with 8 CPUs
+per node, a job request for 4 nodes and 3 CPUs per task may be 
+allocated 3 or 6 CPUs per node (1 or 2 tasks per node) depending 
+upon resource consumption by other jobs. Such a job may be 
+unable to execute more than a total of 4 tasks. 
 
 .TP
 \fB\-\-comment\fR=<\fIstring\fR>

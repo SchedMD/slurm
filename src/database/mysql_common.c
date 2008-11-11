@@ -185,39 +185,48 @@ static int _create_db(char *db_name, mysql_db_info_t *db_info)
 {
 	char create_line[50];
 	MYSQL *mysql_db = NULL;
+	int rc = SLURM_ERROR;
 
+	while(rc == SLURM_ERROR) {
+		rc = SLURM_SUCCESS;
 #ifdef MYSQL_NOT_THREAD_SAFE
-	slurm_mutex_lock(&mysql_lock);
+		slurm_mutex_lock(&mysql_lock);
 #endif
-	if(!(mysql_db = mysql_init(mysql_db)))
-		fatal("mysql_init failed: %s", mysql_error(mysql_db));
-	
-	if(mysql_real_connect(mysql_db, db_info->host, db_info->user,
-			      db_info->pass, NULL, db_info->port, NULL, 0)) {
-		snprintf(create_line, sizeof(create_line),
-			 "create database %s", db_name);
-		if(mysql_query(mysql_db, create_line)) {
-			fatal("mysql_real_query failed: %d %s\n%s",
+		if(!(mysql_db = mysql_init(mysql_db)))
+			fatal("mysql_init failed: %s", mysql_error(mysql_db));
+		
+		if(mysql_real_connect(mysql_db, 
+				      db_info->host, db_info->user,
+				      db_info->pass, NULL, 
+				      db_info->port, NULL, 0)) {
+			snprintf(create_line, sizeof(create_line),
+				 "create database %s", db_name);
+			if(mysql_query(mysql_db, create_line)) {
+				fatal("mysql_real_query failed: %d %s\n%s",
+				      mysql_errno(mysql_db),
+				      mysql_error(mysql_db), create_line);
+			}
+			mysql_close_db_connection(&mysql_db);
+		} else {
+			info("Connection failed to host = %s "
+			     "user = %s pass = %s port = %u",
+			     db_info->host, db_info->user,
+			     db_info->pass, db_info->port);
+#ifdef MYSQL_NOT_THREAD_SAFE
+			slurm_mutex_unlock(&mysql_lock);
+#endif
+			error("mysql_real_connect failed: %d %s\n",
 			      mysql_errno(mysql_db),
-			      mysql_error(mysql_db), create_line);
+			      mysql_error(mysql_db));
+			rc = SLURM_ERROR;
 		}
-		mysql_close_db_connection(&mysql_db);
-	} else {
-		info("Connection failed to host = %s "
-		     "user = %s pass = %s port = %u",
-		     db_info->host, db_info->user,
-		     db_info->pass, db_info->port);
 #ifdef MYSQL_NOT_THREAD_SAFE
 		slurm_mutex_unlock(&mysql_lock);
 #endif
-		fatal("mysql_real_connect failed: %d %s\n",
-		      mysql_errno(mysql_db),
-		      mysql_error(mysql_db));
+		if(rc == SLURM_ERROR)
+			sleep(3);
 	}
-#ifdef MYSQL_NOT_THREAD_SAFE
-	slurm_mutex_unlock(&mysql_lock);
-#endif
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 extern int *destroy_mysql_db_info(mysql_db_info_t *db_info)
@@ -255,12 +264,14 @@ extern int mysql_get_db_connection(MYSQL **mysql_db, char *db_name,
 				if(mysql_errno(*mysql_db) == ER_BAD_DB_ERROR) {
 					debug("Database %s not created.  "
 					      "Creating", db_name);
-					_create_db(db_name, db_info);
+					rc = _create_db(db_name, db_info);
 				} else {
-					fatal("mysql_real_connect failed: "
+					error("mysql_real_connect failed: "
 					      "%d %s",
 					      mysql_errno(*mysql_db),
 					      mysql_error(*mysql_db));
+					rc = SLURM_ERROR;
+					break;
 				}
 			} else {
 				storage_init = true;

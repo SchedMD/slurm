@@ -244,13 +244,18 @@ extern int parse_blockreq(void **dest, slurm_parser_enum_t type,
 {
 	s_p_options_t block_options[] = {
 		{"Type", S_P_STRING},
+		{"32CNBlocks", S_P_UINT16},
+		{"128CNBlocks", S_P_UINT16},
+#ifdef HAVE_BGL
 		{"Nodecards", S_P_UINT16},
 		{"Quarters", S_P_UINT16},
-#ifdef HAVE_BGL
 		{"BlrtsImage", S_P_STRING},
 		{"LinuxImage", S_P_STRING},
 		{"RamDiskImage", S_P_STRING},
 #else
+		{"16CNBlocks", S_P_UINT16},
+		{"64CNBlocks", S_P_UINT16},
+		{"256CNBlocks", S_P_UINT16},
 		{"CnloadImage", S_P_STRING},
 		{"IoloadImage", S_P_STRING},
 #endif
@@ -292,10 +297,27 @@ extern int parse_blockreq(void **dest, slurm_parser_enum_t type,
 		n->conn_type = SELECT_SMALL;
 	xfree(tmp);
 	
-	if (!s_p_get_uint16(&n->nodecards, "Nodecards", tbl))
-		n->nodecards = 0;
-	if (!s_p_get_uint16(&n->quarters, "Quarters", tbl))
-		n->quarters = 0;
+	if (!s_p_get_uint16(&n->small32, "32CNBlocks", tbl)) {
+#ifdef HAVE_BGL
+		s_p_get_uint16(&n->small32, "Nodecards", tbl);
+#else
+		;
+#endif
+	}
+
+	if (!s_p_get_uint16(&n->small128, "128CNBlocks", tbl)) {
+#ifdef HAVE_BGL
+		s_p_get_uint16(&n->small128, "Quarters", tbl);
+#else
+		;
+#endif
+	}
+
+#ifndef HAVE_BGL
+	s_p_get_uint16(&n->small16, "16CNBlocks", tbl);
+	s_p_get_uint16(&n->small64, "64CNBlocks", tbl);
+	s_p_get_uint16(&n->small256, "256CNBlocks", tbl);
+#endif
 
 	s_p_hashtbl_destroy(tbl);
 

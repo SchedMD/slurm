@@ -663,9 +663,18 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq)
 	}
 	/* bg_record->boot_state = 0; 	Implicit */
 	/* bg_record->state = 0;	Implicit */
+#ifdef HAVE_BGL
 	debug2("asking for %s %d %d %s", 
-	       blockreq->block, blockreq->quarters, blockreq->nodecards,
+	       blockreq->block, blockreq->small128, blockreq->small32,
 	       convert_conn_type(blockreq->conn_type));
+#else
+	debug2("asking for %s %d %d %d %d %d %s", 
+	       blockreq->block, blockreq->small256, 
+	       blockreq->small128, blockreq->small64,
+	       blockreq->small32, blockreq->small16, 
+	       convert_conn_type(blockreq->conn_type));
+#endif
+
 	len = strlen(blockreq->block);
 	i=0;
 	while(i<len 
@@ -681,8 +690,6 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq)
 		bg_record->nodes = xmalloc(len);
 		snprintf(bg_record->nodes, len, "%s%s", 
 			bg_slurm_node_prefix, blockreq->block+i);
-		
-			
 	} else 
 		fatal("BPs=%s is in a weird format", blockreq->block); 
 	
@@ -731,11 +738,12 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq)
 		}
 	} else {
 		debug("adding a small block");
-		/* if the ionode cnt for nodecards is 0 then don't
+#ifdef HAVE_BGL
+		/* if the ionode cnt for small32 is 0 then don't
 		   allow a nodecard allocation 
 		*/
 		if(!bluegene_nodecard_ionode_cnt) {
-			if(blockreq->nodecards) 
+			if(blockreq->small32) 
 				fatal("There is an error in your "
 				      "bluegene.conf file.\n"
 				      "Can't create a 32 node block with "
@@ -743,23 +751,22 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq)
 				      bluegene_numpsets);
 		}
 
-		if(blockreq->nodecards==0 && blockreq->quarters==0) {
+		if(blockreq->small32==0 && blockreq->small128==0) {
 			info("No specs given for this small block, "
-			     "I am spliting this block into 4 quarters");
-			blockreq->quarters=4;
+			     "I am spliting this block into 4 small128");
+			blockreq->small128=4;
 		}		
 
-		i = (blockreq->nodecards*bluegene_nodecard_node_cnt) + 
-			(blockreq->quarters*bluegene_quarter_node_cnt);
+		i = (blockreq->small32*bluegene_nodecard_node_cnt) + 
+			(blockreq->small128*bluegene_quarter_node_cnt);
 		if(i != bluegene_bp_node_cnt)
 			fatal("There is an error in your bluegene.conf file.\n"
 			      "I am unable to request %d nodes consisting of "
-			      "%u nodecards and\n%u quarters in one "
+			      "%u small32 and\n%u small128 in one "
 			      "base partition with %u nodes.", 
 			      i, bluegene_bp_node_cnt, 
-			      blockreq->nodecards, blockreq->quarters);
-		small_count = blockreq->nodecards+blockreq->quarters; 
-		
+			      blockreq->small32, blockreq->small128);
+		small_count = blockreq->small32+blockreq->small128; 
 		/* Automatically create 4-way split if 
 		 * conn_type == SELECT_SMALL in bluegene.conf
 		 * Here we go through each node listed and do the same thing
@@ -773,7 +780,7 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq)
 			quarter = 0;
 			nodecard = 0;
 			for(i=0; i<small_count; i++) {
-				if(i == blockreq->nodecards) {
+				if(i == blockreq->small32) {
 					/* break base partition 
 					   up into 4 parts */
 					small_size = 4;
@@ -800,6 +807,101 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq)
 		}
 		list_iterator_destroy(itr);
 		destroy_bg_record(bg_record);
+#else
+		/* if the ionode cnt for small32 is 0 then don't
+		   allow a sub quarter allocation 
+		*/
+		if(!bluegene_nodecard_ionode_cnt) {
+			if(blockreq->small16) 
+				fatal("There is an error in your "
+				      "bluegene.conf file.\n"
+				      "Can't create a 16 node block with "
+				      "Numpsets=%u. (Try setting it to 32)",
+				      bluegene_numpsets);
+			if(blockreq->small32) 
+				fatal("There is an error in your "
+				      "bluegene.conf file.\n"
+				      "Can't create a 32 node block with "
+				      "Numpsets=%u. (Try setting it to 32)",
+				      bluegene_numpsets);
+			if(blockreq->small64) 
+				fatal("There is an error in your "
+				      "bluegene.conf file.\n"
+				      "Can't create a 64 node block with "
+				      "Numpsets=%u. (Try setting it to 32)",
+				      bluegene_numpsets);
+		}
+
+		if(!blockreq->small16 && !blockreq->small32 
+		   && !blockreq->small64 && !blockreq->small128 
+		   && !blockreq->small256) {
+			info("No specs given for this small block, "
+			     "I am spliting this block into 2 256CnBlocks");
+			blockreq->small256=2;
+		}		
+
+		i = (blockreq->small16*16) 
+			+ (blockreq->small32*32) 
+			+ (blockreq->small64*64) 
+			+ (blockreq->small128*128)
+			+ (blockreq->small256*256);
+		if(i != bluegene_bp_node_cnt)
+			fatal("There is an error in your bluegene.conf file.\n"
+			      "I am unable to request %d nodes consisting of "
+			      "%u 16CNBlocks, %u 32CNBlocks,\n"
+			      "%u 64CNBlocks, %u 128CNBlocks, "
+			      "and %u 256CNBlocks\n"
+			      "in one base partition with %u nodes.", 
+			      i, bluegene_bp_node_cnt, 
+			      blockreq->small16, blockreq->small32, 
+			      blockreq->small64, blockreq->small128, 
+			      blockreq->small256);
+		small_count = blockreq->small16
+			+ blockreq->small32
+			+ blockreq->small64
+			+ blockreq->small128
+			+ blockreq->small256; 
+		/* Automatically create 2-way split if 
+		 * conn_type == SELECT_SMALL in bluegene.conf
+		 * Here we go through each node listed and do the same thing
+		 * for each node.
+		 */
+		itr = list_iterator_create(bg_record->bg_block_list);
+		while ((ba_node = list_next(itr)) != NULL) {
+			/* break base partition up into 16 parts */
+			small_size = 16;
+			node_cnt = 0;
+			quarter = 0;
+			nodecard = 0;
+			for(i=0; i<small_count; i++) {
+				if(i == blockreq->small32) {
+					/* break base partition 
+					   up into 4 parts */
+					small_size = 4;
+				}
+									
+				if(small_size == 4)
+					nodecard = (uint16_t)NO_VAL;
+				else
+					nodecard = i%4; 
+				found_record = create_small_record(bg_record,
+								   quarter,
+								   nodecard);
+								 
+				/* this needs to be an append so we
+				   keep things in the order we got
+				   them, they will be sorted later */
+				list_append(records, found_record);
+				node_cnt += bluegene_bp_node_cnt/small_size;
+				if(node_cnt == 128) {
+					node_cnt = 0;
+					quarter++;
+				}
+			}
+		}
+		list_iterator_destroy(itr);
+		destroy_bg_record(bg_record);
+#endif
 	} 
 	return SLURM_SUCCESS;
 }
