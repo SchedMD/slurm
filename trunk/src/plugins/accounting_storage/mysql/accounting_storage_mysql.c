@@ -4246,9 +4246,17 @@ extern List acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
 			error("can not open socket back to slurmctld");
 		} else {
 			slurm_msg_t out_msg;
+			accounting_update_msg_t update;
+			/* We have to put this update message here so
+			   we can tell the sender to send the correct
+			   RPC version.
+			*/
+			memset(&update, 0, sizeof(accounting_update_msg_t));
+			update.rpc_version = cluster->rpc_version;
 			slurm_msg_t_init(&out_msg);
 			out_msg.msg_type = ACCOUNTING_FIRST_REG;
 			out_msg.flags = SLURM_GLOBAL_AUTH_KEY;
+			out_msg.data = &update;
 			slurm_send_node_msg(fd, &out_msg);
 			/* We probably need to add matching recv_msg function
 			 * for an arbitray fd or should these be fire
