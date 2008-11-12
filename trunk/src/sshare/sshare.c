@@ -372,17 +372,17 @@ static void _print_version(void)
 /* _usage - show the valid sshare commands */
 void _usage () {
 	printf ("\
-sshare [<OPTION>] [<COMMAND>]                                            \n\
+sshare [<OPTION>] [<COMMAND>]                                              \n\
     Valid <OPTION> values are:                                             \n\
-     -h or --help: equivalent to \"help\" command                          \n\
-     -i or --immediate: commit changes immediately                         \n\
+     -a or --all: equivalent to \"help\" command                           \n\
+     -A or --accounts: equivalent to \"help\" command                      \n\
+     -h or --help or --usage: equivalent to \"help\" command               \n\
      -n or --no_header: no header will be added to the beginning of output \n\
-     -o or --oneliner: equivalent to \"oneliner\" command                  \n\
      -p or --parsable: output will be '|' delimited with a '|' at the end  \n\
      -P or --parsable2: output will be '|' delimited without a '|' at the end\n\
      -q or --quiet: equivalent to \"quiet\" command                        \n\
-     -r or --readonly: equivalent to \"readonly\" command                  \n\
-     -s or --associations: equivalent to \"associations\" command          \n\
+     -u or --uid: equivalent to \"readonly\" command                       \n\
+     -t or --associations: equivalent to \"associations\" command          \n\
      -v or --verbose: equivalent to \"verbose\" command                    \n\
      -V or --version: equivalent to \"version\" command                    \n\
                                                                            \n\
@@ -391,34 +391,12 @@ sshare [<OPTION>] [<COMMAND>]                                            \n\
   terminated.                                                              \n\
                                                                            \n\
     Valid <COMMAND> values are:                                            \n\
-     add <ENTITY> <SPECS>     add entity                                   \n\
      associations             when using show/list will list the           \n\
                               associations associated with the entity.     \n\
-     delete <ENTITY> <SPECS>  delete the specified entity(s)               \n\
-     dump <CLUSTER> [<FILE>]  dump database information of the             \n\
-                              specified cluster to the flat file.          \n\
-                              Will default to clustername.cfg if no file   \n\
-                              is given.                                    \n\
-     exit                     terminate sshare                             \n\
      help                     print this description of use.               \n\
-     list <ENTITY> [<SPECS>]  display info of identified entity, default   \n\
-                              is display all.                              \n\
-     load <FILE> [<SPECS>]    read in the file to update the database      \n\
-                              with the file contents. <SPECS> here consist \n\
-                              of 'cluster=', and 'clean'.  The 'cluster='  \n\
-                              will override the cluster name given in the  \n\
-                              file.  The 'clean' option will remove what is\n\
-                              already in the system for this cluster and   \n\
-                              replace it with the file.  If the clean option\n\
-                              is not given only new additions or           \n\
-                              modifications will be done, no deletions.    \n\
-     modify <ENTITY> <SPECS>  modify entity                                \n\
-     oneliner                 report output one record per line.           \n\
      parsable                 output will be | delimited with an ending '|'\n\
      parsable2                output will be | delimited without an ending '|'\n\
-     readonly                 makes it so no modification can happen.      \n\
      quiet                    print no messages other than error messages. \n\
-     quit                     terminate this command.                      \n\
      show                     same as list                                 \n\
      verbose                  enable detailed logging.                     \n\
      version                  display tool version number.                 \n\
@@ -431,65 +409,19 @@ sshare [<OPTION>] [<COMMAND>]                                            \n\
        list account       - Clusters=, Descriptions=, Format=, Names=,     \n\
                             Organizations=, Parents=, WithCoor=,           \n\
                             WithSubAccounts, and WithAssocs                \n\
-       add account        - Clusters=, Description=, Fairshare=,           \n\
-                            GrpCPUMins=, GrpCPUs=, GrpJobs=, GrpNodes=,    \n\
-                            GrpSubmitJob=, GrpWall=, MaxCPUMins=, MaxJobs=,\n\
-                            MaxNodes=, MaxWall=, Names=, Organization=,    \n\
-                            Parent=, and QosLevel                          \n\
-       modify account     - (set options) Description=, Fairshare=,        \n\
-                            GrpCPUMins=, GrpCPUs=, GrpJobs=, GrpNodes=,    \n\
-                            GrpSubmitJob=, GrpWall=, MaxCPUMins=, MaxJobs=,\n\
-                            MaxNodes=, MaxWall=, Names=, Organization=,    \n\
-                            Parent=, and QosLevel=                         \n\
-                            (where options) Clusters=, Descriptions=,      \n\
-                            Names=, Organizations=, Parent=, and QosLevel= \n\
-       delete account     - Clusters=, Descriptions=, Names=,              \n\
-                            Organizations=, and Parents=                   \n\
-                                                                           \n\
        list associations  - Accounts=, Clusters=, Format=, ID=,            \n\
                             Partitions=, Parent=, Tree, Users=,            \n\
                             WithSubAccounts, WithDeleted, WOPInfo,         \n\
                             and WOPLimits                                  \n\
                                                                            \n\
        list cluster       - Format=, Names=                                \n\
-       add cluster        - Fairshare=, GrpCPUMins=, GrpCPUs=, GrpJobs=,   \n\
-                            GrpNodes=, GrpSubmitJob=, GrpWall=, MaxCPUMins=\n\
-                            MaxJobs=, MaxNodes=, MaxWall=, and Name=       \n\
-       modify cluster     - (set options) Fairshare=, GrpCPUMins=,         \n\
-                            GrpCPUs=, GrpJobs=, GrpNodes=, GrpSubmitJob=,  \n\
-                            GrpWall=, MaxCPUMins=, MaxJobs=, MaxNodes=,    \n\
-                            and MaxWall=                                   \n\
-                            (where options) Names=                         \n\
-       delete cluster     - Names=                                         \n\
-                                                                           \n\
-       add coordinator    - Accounts=, and Names=                          \n\
-       delete coordinator - Accounts=, and Names=                          \n\
-                                                                           \n\
        list qos           - Descriptions=, Format=, Ids=, Names=,          \n\
                             and WithDeleted                                \n\
-       add qos            - Description=, GrpCPUMins=, GrpCPUs=, GrpJobs=, \n\
-                            GrpNodes=, GrpSubmitJob=, GrpWall=, JobFlags=, \n\
-                            MaxCPUMins=, MaxJobs=, MaxNodes=, MaxWall=,    \n\
-                            Preemptee=, Preemptor=, Priority=, and Names=  \n\
-       delete qos         - Descriptions=, Ids=, and Names=                \n\
-                                                                           \n\
        list transactions  - Actor=, EndTime,                               \n\
                             Format=, ID=, and Start=                       \n\
                                                                            \n\
        list user          - AdminLevel=, DefaultAccounts=, Format=, Names=,\n\
                             QosLevel=, WithCoor=, and WithAssocs           \n\
-       add user           - Accounts=, AdminLevel=, Clusters=,             \n\
-                            DefaultAccount=, Fairshare=, MaxCPUMins=       \n\
-                            MaxCPUs=, MaxJobs=, MaxNodes=, MaxWall=,       \n\
-                            Names=, Partitions=, and QosLevel=             \n\
-       modify user        - (set options) AdminLevel=, DefaultAccount=,    \n\
-                            Fairshare=, MaxCPUMins=, MaxCPUs= MaxJobs=,    \n\
-                            MaxNodes=, MaxWall=, and QosLevel=             \n\
-                            (where options) Accounts=, AdminLevel=,        \n\
-                            Clusters=, DefaultAccounts=, Names=,           \n\
-                            Partitions=, and QosLevel=                     \n\
-       delete user        - Accounts=, AdminLevel=, Clusters=,             \n\
-                            DefaultAccounts=, and Names=                   \n\
                                                                            \n\
   Format options are different for listing each entity pair.               \n\
                                                                            \n\
