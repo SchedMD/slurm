@@ -267,6 +267,7 @@ extern int parse_blockreq(void **dest, slurm_parser_enum_t type,
 	blockreq_t *n = NULL;
 	hostlist_t hl = NULL;
 	char temp[BUFSIZE];
+
 	tbl = s_p_hashtbl_create(block_options);
 	s_p_parse_line(tbl, *leftover, leftover);
 	if(!value) {
@@ -304,7 +305,6 @@ extern int parse_blockreq(void **dest, slurm_parser_enum_t type,
 		;
 #endif
 	}
-
 	if (!s_p_get_uint16(&n->small128, "128CNBlocks", tbl)) {
 #ifdef HAVE_BGL
 		s_p_get_uint16(&n->small128, "Quarters", tbl);

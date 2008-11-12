@@ -44,6 +44,12 @@
 extern List create_dynamic_block(List block_list,
 				 ba_request_t *request, List my_block_list);
 
+#ifdef HAVE_BGL 
 extern bg_record_t *create_small_record(bg_record_t *bg_record, 
 					uint16_t quarter, uint16_t nodecard);
+#else
+extern bg_record_t *create_small_record(bg_record_t *bg_record, 
+					bitstr_t *ionodes, int size);
+#endif
+
 #endif /* _BLUEGENE_DYNAMIC_BLOCK_H_ */
