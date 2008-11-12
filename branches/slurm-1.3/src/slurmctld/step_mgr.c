@@ -805,7 +805,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	struct step_record *step_ptr;
 	struct job_record  *job_ptr;
 	bitstr_t *nodeset;
-	int cpus_per_task_work, cpus_per_task_step, node_count, ret_code;
+	int cpus_per_task, node_count, ret_code;
 	time_t now = time(NULL);
 	char *step_node_list = NULL;
 
@@ -883,13 +883,15 @@ step_create(job_step_create_request_msg_t *step_specs,
 
 	/* we can figure out the cpus_per_task here by reversing what happens
 	 * in srun, record argument, plus save/restore in slurm v1.4 */
-	cpus_per_task_work = step_specs->cpu_count / step_specs->num_tasks;
-	if (cpus_per_task_work < 1)
-		cpus_per_task_work = 1;
-	if (step_specs->cpu_count)
-		cpus_per_task_step = cpus_per_task_work;
-	else
-		cpus_per_task_step = 0;
+	if (step_specs->cpu_count == 0)
+		cpus_per_task = 0;
+	else if (step_specs->num_tasks < 1)
+		cpus_per_task = 1;
+	else {
+		cpus_per_task = step_specs->cpu_count / step_specs->num_tasks;
+		if (cpus_per_task < 1)
+			cpus_per_task = 1;
+	}
 
 	/* if the overcommit flag is checked we 0 out the cpu_count
 	 * which makes it so we don't check to see the available cpus
@@ -960,7 +962,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	step_ptr->port = step_specs->port;
 	step_ptr->host = xstrdup(step_specs->host);
 	step_ptr->batch_step = batch_step;
-	step_ptr->cpus_per_task = cpus_per_task_step;
+	step_ptr->cpus_per_task = cpus_per_task;
 	step_ptr->mem_per_task = step_specs->mem_per_task;
 	step_ptr->ckpt_interval = step_specs->ckpt_interval;
 	step_ptr->ckpt_time = now;
@@ -986,7 +988,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 					   step_node_list,
 					   step_specs->node_count,
 					   step_specs->num_tasks,
-					   (uint16_t)cpus_per_task_work,
+					   (uint16_t)cpus_per_task,
 					   step_specs->task_dist,
 					   step_specs->plane_size);
 		if (!step_ptr->step_layout)
