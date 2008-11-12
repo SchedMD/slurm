@@ -7,8 +7,12 @@ documents those changes that are of interest to users and admins.
  -- Rebuild slurmctld's job select_jobinfo->node_bitmap on restart/reconfigure
     of the daemon rather than restoring the bitmap since the nodes in a system
     can change (be added or removed).
- -- Add configuration option "--with-cpusetdir=PATH" for non-standard locations.
+ -- Add configuration option "--with-cpusetdir=PATH" for non-standard 
+    locations.
  -- Get new multi-core data structures working on BlueGene systems.
+ -- Modify PMI_Get_clique_ranks() to return an array of integers rather 
+    than a char * to satisfy PMI standard. Correct logic in 
+    PMI_Get_clique_size() for when srun --overcommit option is used.
 
 * Changes in SLURM 1.4.0-pre4
 =============================

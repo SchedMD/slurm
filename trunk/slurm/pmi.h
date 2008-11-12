@@ -389,7 +389,7 @@ communicate through IPC mechanisms (e.g., shared memory) and other network
 mechanisms.
 
 @*/
-int PMI_Get_clique_ranks( char ranks[], int length);
+int PMI_Get_clique_ranks( int ranks[], int length);
 
 /*@
 PMI_Abort - abort the process group associated with this process
