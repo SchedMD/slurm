@@ -1099,9 +1099,9 @@ _send_pending_exit_msgs(slurmd_job_t *job)
 	for (i = 0; i < job->ntasks; i++) {
 		slurmd_task_info_t *t = job->task[i];
 
-		if (!t->exited || t->esent)
+		if (!t->exited || t->esent) 
 			continue;
-
+		
 		if (!set) { 
 			status = t->estatus;
 			set    = true;
@@ -1111,7 +1111,7 @@ _send_pending_exit_msgs(slurmd_job_t *job)
 		tid[nsent++] = t->gtid;
 		t->esent = true;
 	}
-
+	
 	if (nsent) {
 		debug2("Aggregated %d task exit messages", nsent);
 		_send_exit_msg(job, tid, nsent, status);
@@ -1241,10 +1241,14 @@ _wait_for_all_tasks(slurmd_job_t *job)
 		if (rc != -1) {
 			i += rc;
 			if (i < job->ntasks) {
+				/* To limit the amount of traffic back 
+				 * we will sleep a bit to make sure we
+				 * have most if not all the tasks
+				 * completed before we return */
+				usleep(100000);	/* 100 msec */
 				rc = _wait_for_any_task(job, false);
-				if (rc != -1) {
+				if (rc != -1)
 					i += rc;
-				}
 			}
 		}
 
