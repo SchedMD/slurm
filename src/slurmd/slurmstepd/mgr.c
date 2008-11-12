@@ -1239,7 +1239,7 @@ _wait_for_all_tasks(slurmd_job_t *job)
 		rc = _wait_for_any_task(job, true);
 		if (rc != -1) {
 			i += rc;
-			if (i < job->ntasks) {
+			if (i < tasks_left) {
 				/* To limit the amount of traffic back 
 				 * we will sleep a bit to make sure we
 				 * have most if not all the tasks
