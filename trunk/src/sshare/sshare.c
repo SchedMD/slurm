@@ -375,13 +375,14 @@ void _usage () {
 sshare [<OPTION>] [<COMMAND>]                                              \n\
     Valid <OPTION> values are:                                             \n\
      -a or --all: equivalent to \"help\" command                           \n\
-     -A or --accounts: equivalent to \"accounts\" command                      \n\
+     -A or --accounts: equivalent to \"accounts\" command                  \n\
+     -C or --cluster: equivalent to \"cluster\" command                    \n\
      -h or --help or --usage: equivalent to \"help\" command               \n\
      -n or --no_header: no header will be added to the beginning of output \n\
      -p or --parsable: output will be '|' delimited with a '|' at the end  \n\
      -P or --parsable2: output will be '|' delimited without a '|' at the end\n\
      -q or --quiet: equivalent to \"quiet\" command                        \n\
-     -u or --uid: equivalent to \"readonly\" command                       \n\
+     -u or --uid: equivalent to \"user\" command                           \n\
      -t or --associations: equivalent to \"associations\" command          \n\
      -v or --verbose: equivalent to \"verbose\" command                    \n\
      -V or --version: equivalent to \"version\" command                    \n\
@@ -391,58 +392,21 @@ sshare [<OPTION>] [<COMMAND>]                                              \n\
   terminated.                                                              \n\
                                                                            \n\
     Valid <COMMAND> values are:                                            \n\
-     associations             when using show/list will list the           \n\
-                              associations associated with the entity.     \n\
+     all                      list all                                     \n\
+     accounts                 list accounts                                \n\
+     cluster                  list cluster                                 \n\
      help                     print this description of use.               \n\
+     no_header                output without a header                      \n\
      parsable                 output will be | delimited with an ending '|'\n\
      parsable2                output will be | delimited without an ending '|'\n\
      quiet                    print no messages other than error messages. \n\
-     show                     same as list                                 \n\
+     uid                      list help                                    \n\
+     usage                    show help                                    \n\
+     user                     list user                                    \n\
      verbose                  enable detailed logging.                     \n\
      version                  display tool version number.                 \n\
-     !!                       Repeat the last command entered.             \n\
                                                                            \n\
-  <ENTITY> may be \"account\", \"association\", \"cluster\",               \n\
-                  \"coordinator\", \"qos\", \"transaction\", or \"user\".  \n\
                                                                            \n\
-  <SPECS> are different for each command entity pair.                      \n\
-       list account       - Clusters=, Descriptions=, Format=, Names=,     \n\
-                            Organizations=, Parents=, WithCoor=,           \n\
-                            WithSubAccounts, and WithAssocs                \n\
-       list associations  - Accounts=, Clusters=, Format=, ID=,            \n\
-                            Partitions=, Parent=, Tree, Users=,            \n\
-                            WithSubAccounts, WithDeleted, WOPInfo,         \n\
-                            and WOPLimits                                  \n\
-                                                                           \n\
-       list cluster       - Format=, Names=                                \n\
-       list qos           - Descriptions=, Format=, Ids=, Names=,          \n\
-                            and WithDeleted                                \n\
-       list transactions  - Actor=, EndTime,                               \n\
-                            Format=, ID=, and Start=                       \n\
-                                                                           \n\
-       list user          - AdminLevel=, DefaultAccounts=, Format=, Names=,\n\
-                            QosLevel=, WithCoor=, and WithAssocs           \n\
-                                                                           \n\
-  Format options are different for listing each entity pair.               \n\
-                                                                           \n\
-       Account            - Account, CoordinatorList, Description,         \n\
-                            Organization                                   \n\
-                                                                           \n\
-       Association        - Account, Cluster, Fairshare, GrpCPUMins,       \n\
-                            GrpCPUs, GrpJobs, GrpNodes, GrpSubmitJob,      \n\
-                            GrpWall, ID, LFT, MaxCPUSecs, MaxJobs,         \n\
-                            MaxNodes, MaxWall, QOS, ParentID,              \n\
-                            ParentName, Partition, RGT, User               \n\
-                                                                           \n\
-       Cluster            - Cluster, ControlHost, ControlPort, Fairshare   \n\
-                            MaxCPUSecs, MaxJobs, MaxNodes, MaxWall         \n\
-                                                                           \n\
-       QOS                - Description, ID, Name                          \n\
-                                                                           \n\
-       Transactions       - Action, Actor, ID, Info, TimeStamp, Where      \n\
-                                                                           \n\
-       User               - AdminLevel, CoordinatorList, DefaultAccount,   \n\
-                            User                                           \n\
                                                                            \n\
                                                                            \n\
   All commands entitys, and options are case-insensitive.               \n\n");
