@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 1.4
-6 October 2008
+12 November 2008 (after SLURM 1.4.0-pre4 released)
 
 
 IMPORTANT NOTE:
@@ -22,6 +22,11 @@ HIGHLIGHTS
   order to effectively preempt or gang schedule jobs.
 * A new configuration parameter, PrologSlurmctld, can be used to support the 
   booting of different operating systems for each job.
+* Preemption of jobs from lower priority partitions in order to execute jobs
+  in higher priority partitions is now supported. The jobs from the lower 
+  priority partition will resume once preempting job completes. 
+  NOTE: Supported only in SelectType=select/cons_res only as of 12 November 
+  2008.
 
 CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 * DefMemPerTask has been removed. Use DefMemPerCPU or DefMemPerNode instead.
@@ -44,3 +49,7 @@ COMMAND CHANGES (see man pages for details)
 * --task-mem and --job-mem options have been removed from sall,c sbatch and
   srun. Use --mem-per-cpu or --mem instead.
 * --ctrl-comm-ifhn-addr option has been removed from the srun comma.d
+
+OTHER CHANGES
+* The libpmi function PMI_Get_clique_ranks() has been changed to return an
+  array of integers rather than a string to satisfy PMI standard.

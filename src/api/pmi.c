@@ -711,9 +711,14 @@ int PMI_Get_clique_size( int *size )
 	if (size == NULL)
 		return PMI_ERR_INVALID_ARG;
 
-	env = getenv("SLURM_CPUS_ON_NODE");
+	env = getenv("SLURM_GTIDS");
 	if (env) {
-		*size = atoi(env);
+		int i, tids=1;
+		for (i=0; env[i]; i++) {
+			if (env[i] == ',')
+				tids++;
+		}
+		*size = tids;
 		return PMI_SUCCESS;
 	}
 	return PMI_FAIL;
@@ -742,7 +747,7 @@ communicate through IPC mechanisms (e.g., shared memory) and other network
 mechanisms.
 
 @*/
-int PMI_Get_clique_ranks( char ranks[], int length )
+int PMI_Get_clique_ranks( int ranks[], int length )
 {
 	char *env;
 
@@ -754,7 +759,19 @@ int PMI_Get_clique_ranks( char ranks[], int length )
 
 	env = getenv("SLURM_GTIDS");
 	if (env) {
-		strcpy(ranks, env);
+		int i = 0;
+		char *tid, *tids, *last;
+		tids = strdup(env);
+		tid = strtok_r(tids, ",", &last);
+		while (tid) {
+			if (i >= length) {
+				free(tids);
+				return PMI_ERR_INVALID_LENGTH;
+			}
+			ranks[i++] = atoi(tid);
+			tid = strtok_r(NULL, ",", &last);
+		}
+		free(tids);
 		return PMI_SUCCESS;
 	}
 

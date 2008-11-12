@@ -50,6 +50,7 @@ main (int argc, char **argv)
 {
 	int i, j, rc;
 	int nprocs, procid;
+	int clique_size, *clique_ranks = NULL;
 	char *nprocs_ptr, *procid_ptr;
 	int pmi_rank, pmi_size, kvs_name_len, key_len, val_len;
 	PMI_BOOL initialized;
@@ -119,6 +120,24 @@ main (int argc, char **argv)
 			pmi_size, nprocs, pmi_rank);
 		exit(1);
 	}
+
+	if ((rc = PMI_Get_clique_size(&clique_size)) != PMI_SUCCESS) {
+		printf("FAILURE: PMI_Get_clique_size: %d, task %d\n",
+			rc, pmi_rank);
+		exit(1);
+	}
+	clique_ranks = malloc(sizeof(int) * clique_size);
+	if ((rc = PMI_Get_clique_ranks(clique_ranks, clique_size)) !=
+	     PMI_SUCCESS) {
+		printf("FAILURE: PMI_Get_clique_ranks: %d, task %d\n",
+			rc, pmi_rank);
+		exit(1);
+	}
+#if _DEBUG
+	for (i=0; i<clique_size; i++)
+		printf("PMI_Get_clique_ranks[%d]=%d\n", i, clique_ranks[i]);
+#endif
+	free(clique_ranks);
 
 	if ((rc = PMI_KVS_Get_name_length_max(&kvs_name_len)) != PMI_SUCCESS) {
 		printf("FAILURE: PMI_KVS_Get_name_length_max: %d, task %d\n", 
