@@ -375,7 +375,7 @@ void _usage () {
 sshare [<OPTION>] [<COMMAND>]                                              \n\
     Valid <OPTION> values are:                                             \n\
      -a or --all: equivalent to \"help\" command                           \n\
-     -A or --accounts: equivalent to \"help\" command                      \n\
+     -A or --accounts: equivalent to \"accounts\" command                      \n\
      -h or --help or --usage: equivalent to \"help\" command               \n\
      -n or --no_header: no header will be added to the beginning of output \n\
      -p or --parsable: output will be '|' delimited with a '|' at the end  \n\
