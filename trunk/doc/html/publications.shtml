@@ -7,12 +7,17 @@
 <h2>Presentations</h2>
 
 <ul>
-<li><a href="slurm_v1.3.pdf">SLURM Version 1.3</a> (May 2008)</li>
-<li><a href="slurm_moab.pdf">Managing Clusters with Moab and SLURM</a> (May 2008)</li>
-<li><a href="slurm_v1.2.pdf">Resource Management at LLNL, SLURM Version 1.2</a>
-(April 2007)</li>
 <li><a href="lci.7.tutorial.pdf">Resource Management Using SLURM</a>,
 (Tutorial, The 7th International Conference on Linux Clusters, May 2006)</li>
+<li><a href="slurm_v1.2.pdf">Resource Management at LLNL, SLURM Version 1.2</a>
+(April 2007)</li>
+<li><a href="slurm_v1.3.pdf">SLURM Version 1.3</a> (May 2008)</li>
+<li><a href="slurm_moab.pdf">Managing Clusters with Moab and SLURM</a> 
+(May 2008)</li>
+<li><a href="slurm.sc08.bof.pdf">High Scalability Resource Management with 
+SLURM</a> (Supercomputing 2008, November 2008)</li>
+<li><a href="slurm.sc08.status.pdf">SLURM Status Report</a>
+(Supercomputing 2008, November 2008)</li>
 </ul>
 
 <h2>Publications</h2>
@@ -34,6 +39,6 @@ volume 2862 of <i>Lecture Notes in Computer Science</i>,
 pages 44-60,
 Springer-Verlag, 2003.</p>
 
-<p style="text-align:center;">Last modified 3 June 2008</p>
+<p style="text-align:center;">Last modified 12 November 2008</p>
 
 <!--#include virtual="footer.txt"-->
