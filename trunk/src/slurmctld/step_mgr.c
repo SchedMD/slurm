@@ -1103,7 +1103,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 		return ESLURM_PATHNAME_TOO_LONG;
 
 	/* we can figure out the cpus_per_task here by reversing what happens
-	 * in srun, record argument, plus save/restore in slurm v1.4 */
+	 * in srun, record argument in slurm v1.4 */
 	cpus_per_task_work = step_specs->cpu_count / step_specs->num_tasks;
 	if (cpus_per_task_work < 1)
 		cpus_per_task_work = 1;
@@ -1990,6 +1990,7 @@ extern void dump_job_step_state(struct step_record *step_ptr, Buf buffer)
 	pack16(step_ptr->cyclic_alloc, buffer);
 	pack16(step_ptr->port, buffer);
 	pack16(step_ptr->ckpt_interval, buffer);
+	pack16(step_ptr->cpus_per_task, buffer);
 
 	pack8(step_ptr->no_kill, buffer);
 
@@ -2036,7 +2037,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 	struct step_record *step_ptr = NULL;
 	uint8_t no_kill;
 	uint16_t step_id, cyclic_alloc, port, batch_step, bit_cnt;
-	uint16_t ckpt_interval;
+	uint16_t ckpt_interval, cpus_per_task;
 	uint32_t core_size, cpu_count, exit_code, mem_per_task, name_len;
 	time_t start_time, pre_sus_time, tot_sus_time, ckpt_time;
 	char *host = NULL, *ckpt_path = NULL, *core_job = NULL;
@@ -2049,6 +2050,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 	safe_unpack16(&cyclic_alloc, buffer);
 	safe_unpack16(&port, buffer);
 	safe_unpack16(&ckpt_interval, buffer);
+	safe_unpack16(&cpus_per_task, buffer);
 
 	safe_unpack8(&no_kill, buffer);
 
@@ -2105,6 +2107,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 	/* set new values */
 	step_ptr->step_id      = step_id;
 	step_ptr->cpu_count    = cpu_count;
+	step_ptr->cpus_per_task= cpus_per_task;
 	step_ptr->cyclic_alloc = cyclic_alloc;
 	step_ptr->name         = name;
 	step_ptr->network      = network;
@@ -2120,7 +2123,6 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 	step_ptr->pre_sus_time = pre_sus_time;
 	step_ptr->tot_sus_time = tot_sus_time;
 	step_ptr->ckpt_time    = ckpt_time;
-	step_ptr->cpus_per_task = 1;	/* Need to save/restore in v1.4 */
 
 	slurm_step_layout_destroy(step_ptr->step_layout);
 	step_ptr->step_layout  = step_layout;
