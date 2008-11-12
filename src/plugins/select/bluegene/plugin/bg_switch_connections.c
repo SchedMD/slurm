@@ -315,8 +315,10 @@ static int _used_switches(ba_node_t* ba_node)
 	}
 	return switch_count;
 }
+
+#ifdef HAVE_BGL
 extern int configure_small_block(bg_record_t *bg_record)
-	{
+{
 	int rc = SLURM_SUCCESS;
 #ifdef HAVE_BG_FILES	
 	bool small = true;
@@ -347,6 +349,8 @@ extern int configure_small_block(bg_record_t *bg_record)
 	}
 
 	num_ncards = bg_record->node_cnt/bluegene_nodecard_node_cnt;
+	if(num_ncards < 1)
+		num_ncards = 1;
 
 	if ((rc = bridge_set_data(bg_record->bg_block,
 				  RM_PartitionNodeCardNum,
@@ -493,6 +497,224 @@ cleanup:
 	debug2("making the small block");
 	return rc;
 }
+
+#else
+
+extern int configure_small_block(bg_record_t *bg_record)
+{
+	int rc = SLURM_SUCCESS;
+#ifdef HAVE_BG_FILES	
+	bool small = true;
+	ListIterator itr;
+	ba_node_t* ba_node = NULL;
+	rm_BP_t *curr_bp = NULL;
+	rm_bp_id_t bp_id = NULL;
+	rm_nodecard_id_t nc_char = NULL;
+	int nc_id = 0;
+	int num_ncards = 0, sub_nodecard = 0, ionode_card = 0;
+	rm_nodecard_t *ncard;
+	rm_nodecard_list_t *ncard_list = NULL;
+	rm_quarter_t quarter;
+	int num, i;
+	int use_nc[16];
+	double nc_pos = 0;
+#endif
+	xassert(bg_record->ionode_bitmap);
+	if(bg_record->bp_count != 1) {
+		error("Requesting small block with %d bps, needs to be 1.",
+		      bg_record->bp_count);
+		return SLURM_ERROR;
+	}
+	
+#ifdef HAVE_BG_FILES	
+	/* set that we are doing a small block */
+	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionSmall, 
+				  &small)) != STATUS_OK) {
+		
+		fatal("bridge_set_data(RM_PartitionPsetsPerBP)", 
+		      bg_err_str(rc));
+	}
+
+	num_ncards = bg_record->node_cnt/bluegene_nodecard_node_cnt;
+	if(num_ncards < 1) {
+		num_ncards = 1;
+		sub_nodecard = 1;
+	}
+	memset(use_nc, 0, sizeof(use_nc));
+
+	/* find out how many nodecards to get for each ionode */
+		
+	for(i = 0; i<bluegene_numpsets; i++) {
+		if(bit_test(bg_record->ionode_bitmap, i)) {
+			if(bluegene_nc_ratio > 1) {
+				for(j=0; j<bluegene_nc_ratio; j++)
+					use_nc[(int)nc_pos+j] = 1;
+			} else {
+				use_nc[(int)nc_pos] = 1;
+				if(i%2)
+					ionode_card = 1;
+			}
+		}
+		nc_pos += bluegene_nc_ratio;
+	}
+
+	if ((rc = bridge_set_data(bg_record->bg_block,
+				  RM_PartitionNodeCardNum,
+				  &num_ncards))
+	    != STATUS_OK) {
+		
+		fatal("bridge_set_data: RM_PartitionBPNum: %s", 
+		      bg_err_str(rc));
+	}
+	
+			
+	itr = list_iterator_create(bg_record->bg_block_list);
+	ba_node = list_next(itr);
+	list_iterator_destroy(itr);
+
+	if (_get_bp_by_location(bg, ba_node->coord, &curr_bp) 
+	    == SLURM_ERROR) {
+		fatal("_get_bp_by_location()");
+	}
+	
+	/* Set the one BP */
+	
+	if ((rc = bridge_set_data(bg_record->bg_block,
+				  RM_PartitionBPNum,
+				  &bg_record->bp_count)) 
+	    != STATUS_OK) {
+		
+		fatal("bridge_set_data: RM_PartitionBPNum: %s", 
+		      bg_err_str(rc));
+		return SLURM_ERROR;
+	}	
+	if ((rc = bridge_set_data(bg_record->bg_block,
+				  RM_PartitionFirstBP, 
+				  curr_bp)) 
+	    != STATUS_OK) {
+		
+		fatal("bridge_set_data("
+		      "BRIDGE_PartitionFirstBP): %s", 
+		      bg_err_str(rc));
+		return SLURM_ERROR;
+	}
+	
+	
+	/* find the bp_id of the bp to get the small32 */
+	if ((rc = bridge_get_data(curr_bp, RM_BPID, &bp_id))
+	    != STATUS_OK) {
+		error("bridge_get_data(): %d", rc);
+		return SLURM_ERROR;
+	}
+
+	
+	if(!bp_id) {
+		error("No BP ID was returned from database");
+		return SLURM_ERROR;
+	}
+
+	if ((rc = bridge_get_nodecards(bp_id, &ncard_list))
+	    != STATUS_OK) {
+		error("bridge_get_nodecards(%s): %d",
+		      bp_id, rc);
+		free(bp_id);
+		return SLURM_ERROR;
+	}
+	free(bp_id);
+		
+			
+	if((rc = bridge_get_data(ncard_list, RM_NodeCardListSize, &num))
+	   != STATUS_OK) {
+		error("bridge_get_data(RM_NodeCardListSize): %s",
+		      bg_err_str(rc));
+		return SLURM_ERROR;
+	}
+	num_ncards = 0;
+	for(i=0; i<num; i++) {
+		if (i) {
+			if ((rc = bridge_get_data(ncard_list, 
+						  RM_NodeCardListNext, 
+						  &ncard)) != STATUS_OK) {
+				error("bridge_get_data"
+				      "(RM_NodeCardListNext): %s",
+				      rc);
+				rc = SLURM_ERROR;
+				goto cleanup;
+			}
+		} else {
+			if ((rc = bridge_get_data(ncard_list, 
+						  RM_NodeCardListFirst, 
+						  &ncard)) != STATUS_OK) {
+				error("bridge_get_data"
+				      "(RM_NodeCardListFirst): %s",
+				      rc);
+				rc = SLURM_ERROR;
+				goto cleanup;
+			}
+		}
+		
+		if ((rc = bridge_get_data(ncard, 
+					  RM_NodeCardID, 
+					  &nc_char)) != STATUS_OK) {
+			error("bridge_get_data(RM_NodeCardID): %d",rc);
+			rc = SLURM_ERROR;
+			goto cleanup;
+		}
+
+		if(!nc_char) {
+			error("No NodeCard ID was returned from database");
+			return SLURM_ERROR;
+		}
+
+		nc_id = atoi((char*)nc_char+1);
+		free(nc_char);
+
+		if(!use_nc[nc_id])
+			continue;
+	
+		if (num_ncards) {
+			if ((rc = bridge_set_data(bg_record->bg_block,
+						  RM_PartitionNextNodeCard, 
+						  ncard)) 
+			    != STATUS_OK) {
+				
+				fatal("bridge_set_data("
+				      "RM_PartitionNextNodeCard): %s", 
+				      bg_err_str(rc));
+			}
+		} else {
+			if ((rc = bridge_set_data(bg_record->bg_block,
+						  RM_PartitionFirstNodeCard, 
+						  ncard)) 
+			    != STATUS_OK) {
+				
+				fatal("bridge_set_data("
+				      "RM_PartitionFirstNodeCard): %s", 
+				      bg_err_str(rc));
+			}
+		}
+		
+		num_ncards++;
+		
+		if(!sub_nodecard) 
+			continue;
+		/* FIX ME: we need to put the correct IO node here but
+		   there is no documentation to do that yet, so we
+		   don't have the ability to do that just yet */
+		error("We don't have the logic to make sub nodecard blocks");
+		rc = SLURM_ERROR;
+		goto cleanup;
+	}
+cleanup:
+	if ((rc = bridge_free_nodecard_list(ncard_list)) != STATUS_OK) {
+		error("bridge_free_nodecard_list(): %s", bg_err_str(rc));
+		return SLURM_ERROR;
+	}
+#endif
+	debug2("making the small block");
+	return rc;
+}
+#endif
 
 /**
  * connect the given switch up with the given connections

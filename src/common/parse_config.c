@@ -67,7 +67,7 @@
 static regex_t keyvalue_re;
 static char *keyvalue_pattern =
 	"^[[:space:]]*"
-	"([[:alpha:]]+)" /* key */
+	"([[:alnum:]]+)" /* key */
 	"[[:space:]]*=[[:space:]]*"
 	"((\"([^\"]*)\")|([^[:space:]]+))" /* value: quoted with whitespace,
 					    * or unquoted and no whitespace */
@@ -235,6 +235,7 @@ static int _keyvalue_regex(const char *line,
 	*value = NULL;
 	*remaining = (char *)line;
 	memset(pmatch, 0, sizeof(regmatch_t)*nmatch);
+	
 	if (regexec(&keyvalue_re, line, nmatch, pmatch, 0)
 	    == REG_NOMATCH) {
 		return -1;
@@ -242,7 +243,6 @@ static int _keyvalue_regex(const char *line,
 
 	*key = (char *)(xstrndup(line + pmatch[1].rm_so,
 				 pmatch[1].rm_eo - pmatch[1].rm_so));
-
 
 	if (pmatch[4].rm_so != -1) {
 		*value = (char *)(xstrndup(line + pmatch[4].rm_so,

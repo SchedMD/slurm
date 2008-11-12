@@ -66,12 +66,19 @@ List bg_ramdiskimage_list = NULL;
 #ifdef HAVE_BGL
 char *default_blrtsimage = NULL;
 #endif
+List bg_valid_small32 = NULL;
+List bg_valid_small64 = NULL;
+List bg_valid_small128 = NULL;
+List bg_valid_small256 = NULL;
 char *default_linuximage = NULL;
 char *default_mloaderimage = NULL, *default_ramdiskimage = NULL;
 char *bridge_api_file = NULL; 
 char *bg_slurm_user_name = NULL;
 char *bg_slurm_node_prefix = NULL;
 bg_layout_t bluegene_layout_mode = NO_VAL;
+double bluegene_io_ratio = 0.0;
+double bluegene_nc_ratio = 0.0;
+uint16_t bluegene_proc_ratio = 0;
 uint16_t bluegene_numpsets = 0;
 uint16_t bluegene_bp_node_cnt = 0;
 uint16_t bluegene_quarter_node_cnt = 0;
@@ -108,6 +115,7 @@ static int  _bg_record_cmpf_inc(bg_record_t *rec_a, bg_record_t *rec_b);
 static int _delete_old_blocks(List bg_found_block_list);
 static char *_get_bg_conf(void);
 static int  _reopen_bridge_log(void);
+static void _destroy_bitmap(void *object);
 
 /* Initialize all plugin variables */
 extern int init_bg(void)
@@ -193,6 +201,23 @@ extern void fini_bg(void)
 	if(bg_ramdiskimage_list) {
 		list_destroy(bg_ramdiskimage_list);
 		bg_ramdiskimage_list = NULL;
+	}
+	
+	if(bg_valid_small32) {
+		list_destroy(bg_valid_small32);
+		bg_valid_small32 = NULL;
+	}
+	if(bg_valid_small64) {
+		list_destroy(bg_valid_small64);
+		bg_valid_small64 = NULL;
+	}
+	if(bg_valid_small128) {
+		list_destroy(bg_valid_small128);
+		bg_valid_small128 = NULL;
+	}
+	if(bg_valid_small256) {
+		list_destroy(bg_valid_small256);
+		bg_valid_small256 = NULL;
 	}
 
 #ifdef HAVE_BGL
@@ -649,8 +674,13 @@ extern int bg_reboot_block(bg_record_t *bg_record)
 #endif
 		}
 		
-		if ((bg_record->state == RM_PARTITION_CONFIGURING)
-		    ||  (bg_record->state == RM_PARTITION_ERROR)) {
+		if (bg_record->state == RM_PARTITION_CONFIGURING) {
+			if(!block_exist_in_list(bg_booted_block_list,
+						bg_record))
+				list_push(bg_booted_block_list, bg_record);
+			break;
+		} else if (bg_record->state == RM_PARTITION_ERROR) {
+			remove_from_bg_list(bg_booted_block_list, bg_record);
 			break;
 		}
 		slurm_mutex_unlock(&block_state_mutex);			
@@ -1122,15 +1152,112 @@ extern int read_bg_conf(void)
 		list_push(bg_mloaderimage_list, image);		
 	}
 
+	if (!s_p_get_uint16(
+		    &bluegene_bp_node_cnt, "BasePartitionNodeCnt", tbl)) {
+		error("BasePartitionNodeCnt not configured in bluegene.conf "
+		      "defaulting to 512 as BasePartitionNodeCnt");
+		bluegene_bp_node_cnt = 512;
+		bluegene_quarter_node_cnt = 128;
+	} else {
+		if(bluegene_bp_node_cnt<=0)
+			fatal("You should have more than 0 nodes "
+			      "per base partition");
+
+		bluegene_quarter_node_cnt = bluegene_bp_node_cnt/4;
+	}
+
+	/* select_p_node_init needs to be called before this to set
+	   this up correctly
+	*/
+	bluegene_proc_ratio = procs_per_node/bluegene_bp_node_cnt;
+	if(!bluegene_proc_ratio)
+		fatal("We appear to have less than 1 proc on a cnode.  "
+		      "You specified %u for BasePartitionNodeCnt "
+		      "in the blugene.conf and %u procs "
+		      "for each node in the slurm.conf",
+		      bluegene_bp_node_cnt, procs_per_node);
+
+	if (!s_p_get_uint16(
+		    &bluegene_nodecard_node_cnt, "NodeCardNodeCnt", tbl)) {
+		error("NodeCardNodeCnt not configured in bluegene.conf "
+		      "defaulting to 32 as NodeCardNodeCnt");
+		bluegene_nodecard_node_cnt = 32;
+	}
+	
+	if(bluegene_nodecard_node_cnt<=0)
+		fatal("You should have more than 0 nodes per nodecard");
+
 	if (!s_p_get_uint16(&bluegene_numpsets, "Numpsets", tbl))
 		fatal("Warning: Numpsets not configured in bluegene.conf");
 
 	if(bluegene_numpsets) {
+		bitstr_t *tmp_bitmap = NULL;
+		int small_size = 1;
+
 		bluegene_quarter_ionode_cnt = bluegene_numpsets/4;
 		bluegene_nodecard_ionode_cnt = bluegene_quarter_ionode_cnt/4;
+
+		bluegene_nc_ratio = 
+			((double)bluegene_bp_node_cnt 
+			 / (double)bluegene_nodecard_node_cnt) 
+			/ (double)bluegene_numpsets;
+		bluegene_io_ratio = 
+			(double)bluegene_numpsets /
+			((double)bluegene_bp_node_cnt 
+			 / (double)bluegene_nodecard_node_cnt);
+
+		/* below we are creating all the possible bitmaps for
+		 * each size of small block
+		 */
 		if((int)bluegene_nodecard_ionode_cnt < 1) {
 			bluegene_nodecard_ionode_cnt = 0;
+		} else {
+			bg_valid_small32 = list_create(_destroy_bitmap);
+			if((small_size = bluegene_nodecard_ionode_cnt))
+				small_size--;
+			i = 0;
+			while(i<bluegene_numpsets) {
+				tmp_bitmap = bit_alloc(bluegene_numpsets);
+				bit_nset(tmp_bitmap, i, i+small_size);
+				i += small_size+1;
+				list_append(bg_valid_small32, tmp_bitmap);
+			}
 		}
+
+		bg_valid_small128 = list_create(_destroy_bitmap);
+		if((small_size = bluegene_quarter_ionode_cnt))
+			small_size--;
+		i = 0;
+		while(i<bluegene_numpsets) {
+			tmp_bitmap = bit_alloc(bluegene_numpsets);
+			bit_nset(tmp_bitmap, i, i+small_size);
+			i += small_size+1;
+			list_append(bg_valid_small128, tmp_bitmap);
+		}
+
+#ifndef HAVE_BGL
+		bg_valid_small64 = list_create(_destroy_bitmap);
+		if((small_size = bluegene_nodecard_ionode_cnt * 2))
+			small_size--;
+		i = 0;
+		while(i<bluegene_numpsets) {
+			tmp_bitmap = bit_alloc(bluegene_numpsets);
+			bit_nset(tmp_bitmap, i, i+small_size);
+			i += small_size+1;
+			list_append(bg_valid_small64, tmp_bitmap);
+		}
+
+		bg_valid_small256 = list_create(_destroy_bitmap);
+		if((small_size = bluegene_quarter_ionode_cnt * 2))
+			small_size--;
+		i = 0;
+		while(i<bluegene_numpsets) {
+			tmp_bitmap = bit_alloc(bluegene_numpsets);
+			bit_nset(tmp_bitmap, i, i+small_size);
+			i += small_size+1;
+			list_append(bg_valid_small256, tmp_bitmap);
+		}
+#endif			
 	} else {
 		fatal("your numpsets is 0");
 	}
@@ -1159,30 +1286,11 @@ extern int read_bg_conf(void)
 		}
 		xfree(layout);
 	}
-	if (!s_p_get_uint16(
-		    &bluegene_bp_node_cnt, "BasePartitionNodeCnt", tbl)) {
-		error("BasePartitionNodeCnt not configured in bluegene.conf "
-		      "defaulting to 512 as BasePartitionNodeCnt");
-		bluegene_bp_node_cnt = 512;
-		bluegene_quarter_node_cnt = 128;
-	} else {
-		if(bluegene_bp_node_cnt<=0)
-			fatal("You should have more than 0 nodes "
-			      "per base partition");
 
-		bluegene_quarter_node_cnt = bluegene_bp_node_cnt/4;
-	}
-
-	if (!s_p_get_uint16(
-		    &bluegene_nodecard_node_cnt, "NodeCardNodeCnt", tbl)) {
-		error("NodeCardNodeCnt not configured in bluegene.conf "
-		      "defaulting to 32 as NodeCardNodeCnt");
-		bluegene_nodecard_node_cnt = 32;
-	}
-	
-	if(bluegene_nodecard_node_cnt<=0)
-		fatal("You should have more than 0 nodes per nodecard");
-
+#ifndef HAVE_BGL
+	if(bluegene_layout_mode == LAYOUT_DYNAMIC)
+		fatal("Dynamic layout mode is only supported on a BGL system.");
+#endif
 
 	/* add blocks defined in file */
 	if(bluegene_layout_mode != LAYOUT_DYNAMIC) {
@@ -1615,3 +1723,11 @@ static int _reopen_bridge_log(void)
 	return rc;
 }
 
+static void _destroy_bitmap(void *object)
+{
+	bitstr_t *bitstr = (bitstr_t *)object;
+
+	if(bitstr) {
+		FREE_NULL_BITMAP(bitstr);
+	}
+}
