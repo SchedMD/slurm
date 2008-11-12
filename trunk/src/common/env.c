@@ -877,21 +877,16 @@ extern void
 env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 			const char *node_name)
 {
-	char *tmp = getenvp(batch->environment, "SLURM_CPUS_PER_TASK");
+	char *tmp;
 	uint32_t num_nodes = 0;
 	uint32_t num_cpus = 0;
 	int i;
 	slurm_step_layout_t *step_layout = NULL;
-	int cpus_per_task = 1;
 	uint32_t num_tasks = batch->nprocs;
+	uint16_t cpus_per_task;
 
-	if(tmp) 
-		cpus_per_task = atoi(tmp);
-	
 	/* There is no explicit node count in the batch structure,
-	 * so we need to calculate the node count. We also need to
-	 * figure out the explicit cpu count so we can figure out the
-	 * cpus_per_task. */
+	 * so we need to calculate the node count. */
 	for (i = 0; i < batch->num_cpu_groups; i++) {
 		num_nodes += batch->cpu_count_reps[i];
 		num_cpus += batch->cpu_count_reps[i] * batch->cpus_per_node[i];
@@ -921,17 +916,25 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 	if(num_tasks) 
 		env_array_overwrite_fmt(dest, "SLURM_NPROCS", "%u", 
 					num_tasks);
-	else 
-		num_tasks = num_cpus / cpus_per_task;
+
+	if((batch->cpus_per_task != 0) &&
+	   (batch->cpus_per_task != (uint16_t) NO_VAL))
+		cpus_per_task = batch->cpus_per_task;
+	else
+		cpus_per_task = 1;	/* default value */
+	if (cpus_per_task > 1) {
+		env_array_overwrite_fmt(dest, "SLURM_CPUS_PER_TASK", "%u",
+					cpus_per_task);
+	}
+	num_tasks = num_cpus / cpus_per_task;
 	
 	step_layout = slurm_step_layout_create(batch->nodes,
 					       batch->cpus_per_node,
 					       batch->cpu_count_reps,
 					       num_nodes,
 					       num_tasks,
-					       (uint16_t)cpus_per_task,
-					       (uint16_t)
-					       SLURM_DIST_BLOCK,
+					       cpus_per_task,
+					       (uint16_t)SLURM_DIST_BLOCK,
 					       (uint16_t)NO_VAL);
 	tmp = _uint16_array_to_str(step_layout->node_cnt,
 				   step_layout->tasks);

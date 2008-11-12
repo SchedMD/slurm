@@ -1923,8 +1923,6 @@ static bool _opt_verify(void)
 		else
 			setenvf(NULL, "SLURM_OPEN_MODE", "t");
 	}
-	if (opt.cpus_per_task > 1)
-		setenvfs("SLURM_CPUS_PER_TASK=%d", opt.cpus_per_task); 
 	if (opt.dependency)
 		setenvfs("SLURM_JOB_DEPENDENCY=%s", opt.dependency);
 

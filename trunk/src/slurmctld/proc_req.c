@@ -2802,6 +2802,7 @@ int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 						 job_desc_msg->environment);
 	launch_msg_ptr->envc = job_desc_msg->env_size;
 	launch_msg_ptr->job_mem = job_desc_msg->job_min_memory;
+	launch_msg_ptr->cpus_per_task = job_desc_msg->cpus_per_task;
 
 	/* _max_nprocs() represents the total number of CPUs available
 	 * for this step (overcommit not supported yet). If job_desc_msg

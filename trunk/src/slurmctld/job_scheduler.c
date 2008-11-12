@@ -526,6 +526,7 @@ extern void launch_job(struct job_record *job_ptr)
 	launch_msg_ptr->overcommit = job_ptr->details->overcommit;
 	launch_msg_ptr->open_mode  = job_ptr->details->open_mode;
 	launch_msg_ptr->acctg_freq = job_ptr->details->acctg_freq;
+	launch_msg_ptr->cpus_per_task = job_ptr->details->cpus_per_task;
 
 	if (make_batch_job_cred(launch_msg_ptr, job_ptr)) {
 		error("aborting batch job %u", job_ptr->job_id);
