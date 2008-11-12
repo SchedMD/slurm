@@ -76,27 +76,48 @@ This is equivalent to the \fBversion\fR command.
 .SH "COMMANDS"
 
 .TP
-\fBassociations\fR
-Use with show or list to display associations with the entity.
+\fBall\fR
+Display associations.
+
+.TP
+\fBaccounts\fR
+Display accounts.
+
+.TP
+\fBcluster\fR
+Display cluster.
 
 .TP
 \fBhelp\fP
 Display a description of sshare options and commands.
 
 .TP
-\fBlist\fR <\fIENTITY\fR> [<\fISPECS\fR>]
-Display information about the specified entity.
-By default, all entries are displayed, you can narrow results by
-specifing SPECS in your query.
-Identical to the \fBshow\fR command.
+\fBno_header\fP
+Display output without the header.
 
 .TP
-\fBoneliner\fP
-Output one record per line.
+\fBparsable\fP
+Display output will be '|' delimited with a '|' at the end.
+
+.TP
+\fBparsable2\fP
+Display output will be '|' delimited without a '|' at the end.
 
 .TP
 \fBquiet\fP
 Print no messages other than error messages.
+
+.TP
+\fBuid\fP
+Display user.
+
+.TP
+\fBusage\fP
+Display a description of sshare options and commands.
+
+.TP
+\fBuser\fP
+Display user.
 
 .TP
 \fBverbose\fP
@@ -109,38 +130,6 @@ This is an independent command with no options meant for use in interactive mode
 Display the version number of sshare.
 
 
-.SH "ENTITIES"
-
-.TP
-\fIaccount\fP
-A bank account, typically specified at job submit time using the 
-\fI\-\-account=\fR option.
-These may be arranged in a hierarchical fashion, for example
-accounts \fIchemistry\fR and \fIphysics\fR may be children of
-the account \fIscience\fR. 
-The hierarchy may have an arbitrary depth.
-
-.TP
-\fIassociation\fP
-The entity used to group information consisting of four parameters:
-\fIaccount\fR, \fIcluster\fR, \fIpartition (optional)\fR, and \fIuser\fR.
-
-.TP
-\fIcluster\fP
-The \fIClusterName\fR parameter in the \fIslurm.conf\fR configuration
-file, used to differentiate accounts from on different machines. 
-
-.TP
-\fIuser\fR
-The login name.
-
-.SH "GENERAL SPECIFICATIONS FOR ASSOCIATION BASED ENTITIES"
-
-.TP
-\fIFairshare\fP=<fairshare>
-Number used in conjunction with other accounts to determine job priority.
-To clear a previously set value use the modify command with a new value of \-1.
-
 
 .SH "LIST/SHOW ACCOUNTS FORMAT OPTIONS"
 
@@ -148,24 +137,6 @@ To clear a previously set value use the modify command with a new value of \-1.
 \fIAccount\fP
 The name of a bank account.
 
-.TP
-\fIDescription\fP
-An arbitrary string describing an account.
-
-.TP
-\fIOrganization\fP
-Organization to which the account belongs.
-
-.TP
-\fICoordinators\fP
-List of users that are a coordinator of the account. (Only filled in
-when using the WithCoordinator option.)
-
-.SH ""
-NOTE: If using the WithAssoc option you can also view the information
-about the various associations the account may have on all the
-clusters in the system.  The Association format fields are described
-in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
 .RE
 
 .SH "LIST/SHOW CLUSTER FORMAT OPTIONS"
@@ -174,75 +145,14 @@ in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
 \fICluster\fP
 The name of the cluster.
 
-.TP
-\fIControl Host\fP
-When a slurmctld registers with the database the ip address of the
-controller is placed here.
-
-.TP
-\fIControl Port\fP
-When a slurmctld registers with the database the port the controller
-is listening on is placed here.
-
-.TP
-\fIRPC\fP
-When a slurmctld registers with the database the rpc version the controller
-is running is placed here.
-
-.SH ""
-NOTE: You can also view the information about the root association for
-the cluster.  The Association format fields are described
-in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
-.RE
-
-.SH "LIST/SHOW TRANSACTIONS FORMAT OPTIONS"
-
-.TP
-\fIAction\fP
-
-.TP
-\fIActor\fP
-
-.TP
-\fIInfo\fP
-
-.TP
-\fITimeStamp\fP
-
-.TP
-\fIWhere\fP
-
-.SH ""
-NOTE: If using the WithAssoc option you can also view the information
-about the various associations the transaction effected.  The
-Association format fields are described 
-in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
 .RE
 
 .SH "LIST/SHOW USER FORMAT OPTIONS"
 
 .TP
-\fIAdminLevel\fP
-Admin level of user. 
-
-.TP
-\fIDefaultAccount\fP
-An the users default account.
-
-.TP
-\fICoordinators\fP
-List of users that are a coordinator of the account. (Only filled in
-when using the WithCoordinator option.)
-
-.TP
 \fIUser\fP
 The name of a user.
 
-.SH ""
-NOTE: If using the WithAssoc option you can also view the information
-about the various associations the user may have on all the
-clusters in the system.  The Association format fields are described
-in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
 .RE
 
 .SH "EXAMPLES"
