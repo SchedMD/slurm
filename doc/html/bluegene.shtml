@@ -88,7 +88,7 @@ configured with <i>small blocks</i> (any block less than a full base partition) 
 into the base partition notation.  For example, if there were 64 psets in the
 configuration, bg012[0-15] represents
 the first quarter or first 16 ionodes of a midplane.  In BlueGene/L
-this would be 128 c-node block.  To represent the first nodecar in the
+this would be 128 c-node block.  To represent the first nodecard in the
 second quarter or ionodes 16-19 the notation would be bg012[16-19], or
 a 32 c-node block.
 Since jobs must allocate consecutive base partitions in all three dimensions, we have developed 
@@ -100,8 +100,8 @@ with endpoints bg620 and bg731 (bg620, bg621, bg630, bg631, bg720, bg721,
 bg730 and bg731).</p></a>
 
 <p>
-<b>IMPORTANT:</b> As of SLURM version 1.2 SLURM can handle a bluegene
-system of size 36x36x36.  To try to keep with the 'three-digit suffix  
+<b>IMPORTANT:</b> SLURM version 1.2 or higher can handle a bluegene system of 
+sizes up to 36x36x36.  To try to keep with the 'three-digit suffix  
 representing the its coordinates in the X, Y and Z dimensions with a
 zero origin', we now support A-Z as valid numbers.  This makes it so
 the prefix <b>must always be lower case</b>, and any letters in the 
@@ -118,7 +118,7 @@ invalid: BGL[000xC44] BglC00 bglb00 Bglzzz
 </p>
 
 <p>One new tool provided is <i>smap</i>. 
-As of SLURM verison 1.2, <i>sview</i> is
+As of SLURM version 1.2, <i>sview</i> is
 another new tool offering even more viewing and configuring options.
 Smap is aware of system topography and provides a map of what base partitions 
 are allocated to jobs, partitions, etc. 
@@ -216,7 +216,7 @@ calls only available on the SN.</p>
 to configure and build two sets of files for installation. 
 One set will be for the Service Node (SN), which has direct access to the 
 Bridge APIs. 
-The second set will be for the Front End Nodes (FEN), whick lack access to the 
+The second set will be for the Front End Nodes (FEN), which lack access to the 
 Bridge APIs and interact with using Remote Procedure Calls to the slurmctld 
 daemon.
 You should see "#define HAVE_BG 1" and "#define HAVE_FRONT_END 1" in the "config.h" 
@@ -319,7 +319,7 @@ so as to maximize its performance and minimize other risk factors.</p>
 
 <a name="bluegene-conf"><h2>Bluegene.conf File Creation</h2></a>
 <p>In addition to the normal <i>slurm.conf</i> file, a new 
-<i>bluegene.conf</i> configuration file is required with information pertainate 
+<i>bluegene.conf</i> configuration file is required with information pertinent 
 to the sytem.
 Put <i>bluegene.conf</i> into the SLURM configuration directory with
 <i>slurm.conf</i>.
@@ -374,18 +374,18 @@ Dynamic partitioning was developed primarily for smaller BlueGene systems,
 but can be used on larger systems.
 Dynamic partitioning may introduce fragmentation of resources.
 This fragementaiton may be severe since SLURM will run a job anywhere 
-resources are avaliable with little thought of the future.  
+resources are available with little thought of the future.  
 As with overlap partitioning, <b>use dynamic partitioning with 
 caution!</b>  
 This mode can result in job starvation since smaller jobs will run 
-if resources are avaliable and prevent larger jobs from running.
+if resources are available and prevent larger jobs from running.
 Bgblocks need not be assigned in the <i>bluegene.conf</i> file 
 for this mode.</p>
 
 <p>Blocks can be freed or set in an error state with scontrol,
 (i.e. "<i>scontrol update BlockName=RMP0 state=error</i>").
 This will end any job on the block and set the state of the block to ERROR
-making it so no job will run on the block.  To set it back to a usuable 
+making it so no job will run on the block.  To set it back to a useable 
 state set the state to free (i.e. 
 "<i>scontrol update BlockName=RMP0 state=free</i>"). 
 
@@ -395,7 +395,7 @@ need, you can set a set of ionodes into an error state with scontrol,
 (i.e. "<i>scontrol update subbpname=bg000[0-3] state=error</i>").
 This will end any job on the nodes listed, create a block there, and set 
 the state of the block to ERROR making it so no job will run on the
-block.  To set it back to a usuable state set the state to free (i.e. 
+block.  To set it back to a useable state set the state to free (i.e. 
 "<i>scontrol update BlockName=RMP0 state=free</i>" or
  "<i>scontrol update subbpname=bg000[0-3] state=free</i>"). This is
  helpful to allow other jobs to run on the unaffected nodes in
@@ -637,6 +637,6 @@ scheduling logic, etc. </p>
  
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 9 September 2008</p>
+<p style="text-align:center;">Last modified 13 November 2008</p>
 
 <!--#include virtual="footer.txt"-->

@@ -37,7 +37,7 @@ As assortment of SPANK plugins are available from<br>
 <a href="http://code.google.com/p/slurm-spank-plugins/">
 http://code.google.com/p/slurm-spank-plugins/</a>.<br>
 The current source for the plugins can be checked out of the subversion
-respository with the following command:<br>
+repository with the following command:<br>
 <i>svn checkout http://slurm-spank-plugins.googlecode.com/svn/trunk/ slurm-plugins</i></li>
 
 <li><b>I/O Watchdog</b><br>
@@ -46,7 +46,7 @@ for <i>hangs</i> which typically have a side-effect of ceasing all write
 activity. This faciltiy attempts to monitor all write activity of an 
 application and trigger a set of user-defined actions when write activity 
 as ceased for a configurable period of time. A SPANK plugin is provided
-for use with SLURM. See the README and man page in tha package for more
+for use with SLURM. See the README and man page in the package for more
 details. Download the latest source from:<br>
 <a href="http://io-watchdog.googlecode.com/files/io-watchdog-0.6.tar.bz2">
 http://io-watchdog.googlecode.com/files/io-watchdog-0.6.tar.bz2</a></li>
@@ -71,19 +71,17 @@ See our <a href="accounting.html">Accounting</a> web page for more information.<
 <ul>
 <li><a href="http://www.mysql.com/">MySQL</a> (recommended)</li>
 <li><a href="http://www.postgresql.org/">PostgreSQL</a></li>
-<li><a href="http://www.clusterresources.com/pages/products/gold-allocation-manager.php">Gold</a></li>
 </ul>
 
 <li>Digital signatures (Cypto plugin) are used to insure message are not altered.</li>
 <ul>
-<li><b>OpenSSL</b><br>
-OpenSSL is recommended for generation of digital signatures.
-Download it from <a href="http://www.openssl.org/">http://www.openssl.org/</a>.</li>
-<li><b>Munge</b><br>
+<li><b>Munge</b> (recommended)<br>
 Munge can be used at an alternative to OpenSSL. 
-Munge is available under the Gnu General Public License, but is slower than 
-OpenSSL for the generation of digital signatures. See Munge download 
-information above.</li>
+Munge is available under the Gnu General Public License.
+See Munge download information above.</li>
+<li><b>OpenSSL</b><br>
+OpenSSL may be used as an alternative to Munge for generation of digital signatures.
+Download it from <a href="http://www.openssl.org/">http://www.openssl.org/</a>.</li>
 </ul> 
 
 <li>Interconnect plugins (Switch plugin)</li>
@@ -114,7 +112,7 @@ https://sourceforge.net/projects/slurm/</a>.
 <li><a href="http://www.quadrics.com/">Quadrics MPI</a></li>
 </ul>
 
-<li>Schedulers offering greater control over the workload</li>
+<li>External schedulers offering control over the workload</li>
 <ul>
 <li><a href="http://www.platform.com/">Load Sharing Facility (LSF)</a></li>
 <li><a href="http://www.clusterresources.com/pages/products/maui-cluster-scheduler.php">
@@ -131,6 +129,6 @@ Portable Linux Processor Affinity (PLPA)</a></li>
 
 </ul>
 
-<p style="text-align:center;">Last modified 30 September 2008</p>
+<p style="text-align:center;">Last modified 13 November 2008</p>
 
 <!--#include virtual="footer.txt"-->
