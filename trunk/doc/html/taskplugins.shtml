@@ -18,7 +18,7 @@ abbreviation for the type of task management. We recommend, for example:</p>
 <ul>
 <li><b>affinity</b>&#151;A plugin that implements task binding to processors.
 The actual mechanism used to task binding is dependent upon the available
-infrastruture as determined by the "configure" program when SLURM is built
+infrastructure as determined by the "configure" program when SLURM is built
 and the value of the <b>TaskPluginParam</b> as defined in the <b>slurm.conf</b>
 (SLURM configuration file).</li>
 <li><b>none</b>&#151;A plugin that implements the API without providing any
@@ -148,7 +148,7 @@ appropriate value to indicate the reason for failure.</p>
 <p style="margin-left:.2in"><b>Description</b>: task_term() is called 
 after termination of job step.
 Executed by the <b>slurmstepd</b> program as the job's owner.
-It is preceeded by <b>--task-epilog</b> (from <b>srun</b> command line)
+It is preceded by <b>--task-epilog</b> (from <b>srun</b> command line)
 followed by <b>TaskEpilog</b> program (as configured in <b>slurm.conf</b>).</p>
 <p style="margin-left:.2in"><b>Arguments</b>:
 <span class="commandline">job</span>&nbsp;&nbsp;&nbsp;(input)

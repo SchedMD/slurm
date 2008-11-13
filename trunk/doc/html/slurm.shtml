@@ -35,7 +35,7 @@ including many of the most powerful computers in the world:
 <li><a href="https://asc.llnl.gov/computing_resources/bluegenel/">BlueGene/L</a> 
 at LLNL with 106,496 dual-core processors</li>
 <li><a href="http://c-r-labs.com/">EKA</a> at Computational Research Laboratories, 
-India with 14,240 Xeon processoers and Infiniband interconnect</li>
+India with 14,240 Xeon processors and Infiniband interconnect</li>
 <li><a href="https://asc.llnl.gov/computing_resources/purple/">ASC Purple</a>
 an IBM SP/AIX cluster at LLNL with 12,208 Power5 processors and a Federation switch</li>
 <li><a href="http://www.bsc.es/plantillaA.php?cat_id=5">MareNostrum</a>

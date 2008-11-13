@@ -70,17 +70,17 @@ wait for slurmctld shutdown request
 </pre>
 <p>Depending upon failure modes, it is possible that 
 <span class="commandline">select_p_state_save()</span>
-will not be called at slurmctld terminatation.
+will not be called at slurmctld termination.
 When slurmctld is restarted, other function calls may be replayed.
 <span class="commandline">select_p_node_init()</span> may be used 
-to syncronize the plugin's state with that of slurmctld.</p>
+to synchronize the plugin's state with that of slurmctld.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
 <h2>Data Objects</h2>
 <p> These functions are expected to read and/or modify data structures directly in 
 the slurmctld daemon's memory. Slurmctld is a multi-threaded program with independent 
-read and write locks on each data structure type. Thererfore the type of operations 
+read and write locks on each data structure type. Therefore the type of operations 
 permitted on various data structures is identified for each function.</p>
 
 <p>These functions make use of bitmaps corresponding to the nodes in a table. 
@@ -124,7 +124,7 @@ structure. This function is called when the node records are initially establish
 when any nodes are added to or removed from the data structure. </p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
 <span class="commandline"> node_ptr</span>&nbsp;&nbsp;&nbsp;(input) pointer 
-to the node data records. Data in these records can read. Nodes deleted after initiialization 
+to the node data records. Data in these records can read. Nodes deleted after initialization 
 may have their the <i>name</i> field in the record cleared (zero length) rather than 
 rebuilding the node records and bitmaps. <br>
 <span class="commandline"> node_cnt</span>&nbsp; &nbsp;&nbsp;(input) number 
@@ -146,7 +146,7 @@ the plugin should return SLURM_ERROR, causing slurmctld to exit.</p>
 <p class="commandline">int select_p_update_block (update_part_msg_t *part_desc_ptr);</p>
 <p style="margin-left:.2in"><b>Description</b>: This function is called when the admin needs to manually update the state of a block. </p>
 <p style="margin-left:.2in"><b>Arguments</b>:
-<span class="commandline"> part_desc_ptr</span>&nbsp;&nbsp;&nbsp;(input) partitition
+<span class="commandline"> part_desc_ptr</span>&nbsp;&nbsp;&nbsp;(input) partition
 description variable.  Containing the block name and the state to set the block.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure, 
 the plugin should return SLURM_ERROR.</p>
@@ -169,7 +169,7 @@ SLURM_NO_CHANGE_IN_DATA if data has not changed since last packed, otherwise SLU
 bitstr_t *bitmap, int min_nodes, int max_nodes, int req_nodes, bool test_only);</p>
 <p style="margin-left:.2in"><b>Description</b>: Given a job's scheduling requirement 
 specification and a set of nodes which might  be used to satisfy the request, identify 
-the nodes which "best" satify the request. Note that nodes being considered for allocation 
+the nodes which "best" satisfy the request. Note that nodes being considered for allocation 
 to the job may include nodes already allocated to other jobs, even if node sharing is 
 not permitted. This is done to ascertain whether or not job may be allocated resources 
 at some later time (when the other jobs complete). This permits SLURM to reject 
@@ -179,7 +179,7 @@ the job with appropriate constraints.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
 <span class="commandline"> job_ptr</span>&nbsp; &nbsp;&nbsp;(input) pointer 
 to the job being considered for scheduling. Data in this job record may safely be read.
-Data of particular interst include <i>details->contiguous</i> (set if allocated nodes 
+Data of particular interest include <i>details->contiguous</i> (set if allocated nodes 
 should be contiguous), <i>num_procs</i> (minimum processors in allocation) and 
 <i>details->req_node_bitmap</i> (specific required nodes).<br>
 <span class="commandline"> bitmap</span>&nbsp; &nbsp;&nbsp;(input/output) 
@@ -200,7 +200,7 @@ the requested (desired)  of nodes to allocate to this job. This reflects job's
 maximum node specification (if supplied).<br>
 <span class="commandline"> test_only</span>&nbsp; &nbsp;&nbsp;(input)
 if set then we only want to test our ability to run the job at some time, 
-not necesarily now with currently available resources.<br>
+not necessarily now with currently available resources.<br>
 </p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR and future attempts may be made to schedule 
@@ -209,7 +209,7 @@ the job.</p>
 <p class="commandline">int select_p_job_begin (struct job_record *job_ptr);</p>
 <p style="margin-left:.2in"><b>Description</b>: Note the initiation of the specified job
 is about to begin. This function is called immediately after 
-<span class="commandline">select_p_job_test()</span> sucessfully completes for this job.
+<span class="commandline">select_p_job_test()</span> successfully completes for this job.
 <p style="margin-left:.2in"><b>Arguments</b>:
 <span class="commandline"> job_ptr</span>&nbsp; &nbsp;&nbsp;(input) pointer 
 to the job being initialized. Data in this job record may safely be read or written.
@@ -305,7 +305,7 @@ the plugin should return SLURM_ERROR.</p>
 
 <p class="commandline">int select_p_job_init(List job_list);<p>
 <p style="margin-left:.2in"><b>Description</b>: Used at slurm startup to 
-syncrhonize plugin (and node) state with that of currectly active jobs.</p>
+synchronize plugin (and node) state with that of currently active jobs.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:
 <span class="commandline"> job_list</span>&nbsp; &nbsp;&nbsp;(input) 
 list of slurm jobs from slurmctld job records.</p>
@@ -331,7 +331,7 @@ a Bluegene system where SLURM sees 1 node where many nodes really
 exists, in Bluegene's case 1 node reflects 512 nodes in real live, but
 since usually 512 is the smallest allocatable block slurm only handles
 it as 1 node.  This is a function so the user can issue a 'real'
-number and the fuction will alter it so slurm can understand what the
+number and the function will alter it so slurm can understand what the
 user really means in slurm terms.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:
 <span class="commandline"> type</span>&nbsp;&nbsp;&nbsp;(input) enum

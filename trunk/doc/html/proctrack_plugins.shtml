@@ -74,7 +74,7 @@ be stubbed.</p>
 <p style="margin-left:.2in"><b>Description</b>: Create a container.
 The container should be valid   
 <span class="commandline">slurm_container_destroy()</span> is called.
-This function must put the container ID directoy in the job structure's 
+This function must put the container ID directory in the job structure's 
 variable <i>cont_id</i>.</p>
 <p style="margin-left:.2in"><b>Argument</b>: 
 <span class="commandline"> job</span>&nbsp; &nbsp;&nbsp;(input/output) 

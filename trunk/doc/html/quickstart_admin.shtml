@@ -17,7 +17,7 @@ authentication.</li>
 <i>./configure</i> with appropriate options, typically <i>--prefix=</i> 
 and <i>--sysconfdir=</i></li>
 <li>Type <i>make</i> to compile SLURM.</li>
-<li>Type <i>make install</i> to install the programs, documentation, libaries,
+<li>Type <i>make install</i> to install the programs, documentation, libraries,
 header files, etc.</li>
 <li>Build a configuration file using your favorite web browser and
 <i>doc/html/configurator.html</i>.<br>
@@ -48,7 +48,7 @@ See the README and INSTALL files in the source distribution for more details.
 <li><i>cd</i> to the directory containing the SLURM source and type 
 <i>./configure</i> with appropriate options (see below).</li>
 <li>Type <i>make</i> to compile SLURM.</li>
-<li>Type <i>make install</i> to install the programs, documentation, libaries, 
+<li>Type <i>make install</i> to install the programs, documentation, libraries, 
 header files, etc.</li>
 </ol>
 <p>A full list of <i>configure</i> options will be returned by the command
@@ -78,7 +78,7 @@ and commands are denoted below.
                   the libauth library and its dependency libe are installed. 
 		  </li>
 <li> <b>Federation</b> The switch/federation plugin will be built and installed
-		  if the IBM Federation switch libary is installed.
+		  if the IBM Federation switch library is installed.
 <li> <b>QsNet</b> support in the form of the switch/elan plugin requires
                   that the qsnetlibs package (from Quadrics) be installed along
 		  with its development counterpart (i.e. the qsnetheaders
@@ -127,7 +127,7 @@ Some macro definitions that may be used in building SLURM include:
 <dt>with_proctrack
 <dd>Specifies AIX process tracking kernel extension header file location
 <dt>with_ssl
-<dd>Specifies SSL libary installation location
+<dd>Specifies SSL library installation location
 </dl>
 <p>To build SLURM on our AIX system, the following .rpmmacros file is used:
 <pre>
@@ -276,7 +276,7 @@ This is meant to be exploited by any parallel debugger (notably, TotalView),
 and support is unconditionally compiled into SLURM code. 
 </p>
 <p>We use a patched version of TotalView that looks for a "totalview_jobid" 
-symbol in <b>srun</b> that it then uses (configurably) to perform a bulk 
+symbol in <b>srun</b> that it then uses (per configuration) to perform a bulk 
 launch of the <b>tvdsvr</b> daemons via a subsequent <b>srun</b>. Otherwise
 it is difficult to get TotalView to use <b>srun</b> for a bulk launch, since 
 <b>srun</b> will be unable to determine for which job it is launching tasks.
@@ -411,7 +411,7 @@ PartitionName=pbatch Nodes=mcr[192-1151]
 </pre>
  
 <h2>Security</h2>
-<p>Besides authentication of SLURM comunications based upon the value
+<p>Besides authentication of SLURM communications based upon the value
 of the <b>AuthType</b>, digital signatures are used in job step 
 credentials. 
 This signature is used by <i>slurmctld</i> to construct a job step

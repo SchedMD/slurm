@@ -1,21 +1,16 @@
 <!--#include virtual="header.txt"-->
 
 <h1>Power Saving Guide</h1>
-<p>SLURM provides an integrated power saving mechanism beginning with 
-version 1.2.7.
-Beginning with version 1.4.0, nodes can be fully powered down rather 
-than only having their power consumption reduced.
+<p>SLURM provides an integrated power saving mechanism for idle nodes.
 Nodes that remain idle for an configurable period of time can be placed 
 in a power saving mode. 
 The nodes will be restored to normal operation once work is assigned to them.
-Power saving can be accomplished either using a <i>cpufreq</i> governor 
-that can change CPU frequency and voltage or by powering down the node.
-Note that the <i>cpufreq</i> driver must be enabled in the Linux kernel 
-configuration. 
-While the "ondemand" governor can be configured to operate at all
-times to automatically alter the CPU performance based upon workload, 
-SLURM provides somewhat greater flexibility for power management on a
-cluster. 
+Beginning with version 1.4.0, nodes can be fully powered down.
+Earlier releases of SLURM do not support the powering down of nodes, 
+only support of reducing their performance and thus their power consumption.
+For example, power saving can be accomplished using a <i>cpufreq</i> governor 
+that can change CPU frequency and voltage (note that the <i>cpufreq</i> driver
+must be enabled in the Linux kernel configuration).
 Of particular note, SLURM can power nodes up or down 
 at a configurable rate to prevent rapid changes in power demands. 
 For example, starting a 1000 node job on an idle cluster could result 
@@ -26,11 +21,11 @@ SLURM's support to increase power demands in a gradual fashion.</p>
 <h2>Configuration</h2>
 <p>A great deal of flexibility is offered in terms of when and 
 how idle nodes are put into or removed from power save mode.
-The following configuration paramters are available:
+The following configuration parameters are available:
 <ul>
 
 <li><b>SuspendTime</b>:
-Nodes becomes elligible for power saving mode after being idle 
+Nodes becomes eligible for power saving mode after being idle 
 for this number of seconds. 
 A negative number disables power saving mode.
 The default value is -1 (disabled).</li>
@@ -47,7 +42,7 @@ Maximum number of nodes to be removed from power saving mode
 per minute. 
 A value of zero results in no limits being imposed.
 The default value is 300.
-Use this to prevent rapid increasses in power requirements.</li>
+Use this to prevent rapid increases in power requirements.</li>
 
 <li><b>SuspendProgram</b>:
 Program to be executed to place nodes into power saving mode.
@@ -119,6 +114,6 @@ nodes are in power save mode using messages of this sort:
 You can also configure SLURM without SuspendProgram or ResumeProgram values
 to assess the potential impact of power saving mode before enabling it.</p>
 
-<p style="text-align:center;">Last modified 29 August 2008</p>
+<p style="text-align:center;">Last modified 13 November 2008</p>
 
 <!--#include virtual="footer.txt"-->
