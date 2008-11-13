@@ -12,8 +12,8 @@ The sshare information is maintained within a database with the interface
 being provided by \fBslurmdbd\fR (Slurm Database daemon).
 This database can serve as a central storehouse of user and 
 computer information for multiple computers at a single site.
-sshare provides Slurm share information of Account, User, ID, FairShare,
-Normal Shares, Used, Normal Usage, Effective Used, Norm Effective Usage
+sshare provides Slurm share information of Account, User, ID,
+FairShare, Normal Shares, Used, Normal Usage, Effective Used, Normal Effective Usage.
 
 
 .SH "OPTIONS"
@@ -69,57 +69,57 @@ This is equivalent to the \fBversion\fR command.
 .SH "COMMANDS"
 
 .TP
-\fBall\fR
+\fB\-\-all\fR
 Display associations.
 
 .TP
-\fBaccounts\fR <\fIaccountName\fR> 
+\fB\-\-accounts\fR <\fIAccount\fR> 
 Display accounts.
 
 .TP
-\fBcluster\fR <\fIclustername\fR> 
+\fB\-\-cluster\fR <\fICluster\fR> 
 Display cluster.
 
 .TP
-\fBhelp\fP
+\fB\-\-help\fP
 Display a description of sshare options and commands.
 
 .TP
-\fBno_header\fP
+\fB\-\-no_header\fP
 Display output without the header.
 
 .TP
-\fBparsable\fP
+\fB\-\-parsable\fP
 Display output will be '|' delimited with a '|' at the end.
 
 .TP
-\fBparsable2\fP
+\fB\-\-parsable2\fP
 Display output will be '|' delimited without a '|' at the end.
 
 .TP
-\fBquiet\fP
+\fB\-\-quiet\fP
 Print no messages other than error messages.
 
 .TP
-\fBuid\fP
+\fB\-\-uid\fP <\fIUser\fR>
 Display user.
 
 .TP
-\fBusage\fP
+\fB\-\-usage\fP
 Display a description of sshare options and commands.
 
 .TP
-\fBuser\fP <\fIuserName\fR> 
+\fB\-\-user\fP <\fIUser\fR> 
 Display user.
 
 .TP
-\fBverbose\fP
+\fB\-\-verbose\fP
 Enable detailed logging. 
 This includes time\-stamps on data structures, record counts, etc.
 This is an independent command with no options meant for use in interactive mode.
 
 .TP
-\fBversion\fP
+\fB\-\-version\fP
 Display the version number of sshare.
 
 
@@ -150,10 +150,10 @@ The name of a user.
 .SH "EXAMPLES"
 .eo
 .br
-> sshare -A <accountName>
+> sshare -A <Account>
 .br
 .br
-> sshare --parsable --user <userName>
+> sshare --parsable --user <User>
 .br
 
 .ec
