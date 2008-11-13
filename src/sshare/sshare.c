@@ -391,8 +391,8 @@ sshare [<OPTION>] [<COMMAND>]                                              \n\
                                                                            \n\
     Valid <COMMAND> values are:                                            \n\
      --all                      list all                                     \n\
-     --accounts <accountName>   list accounts                                \n\
-     --cluster <clusterName>    list cluster                                 \n\
+     --accounts <Account>       list accounts                                \n\
+     --cluster <Cluster>        list cluster                                 \n\
      --help                     print this description of use.               \n\
      --no_header                output without a header                      \n\
      --parsable                 output will be | delimited with an ending '|'\n\
@@ -400,8 +400,8 @@ sshare [<OPTION>] [<COMMAND>]                                              \n\
      --quiet                    print no messages other than error messages. \n\
      --uid                      list help                                    \n\
      --usage                    show help                                    \n\
-     --user <userName>          list user                                    \n\
-     --verbose                  enable detailed logging.                     \n\
+     --user <User>              list user                                    \n\
+     --verbose                  wordy and windy output.                      \n\
      --version                  display tool version number.                 \n\
                                                                            \n\
                                                                            \n\
