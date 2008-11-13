@@ -658,8 +658,10 @@ static int _unpack_node_info(bg_info_record_t *bg_info_record, Buf buffer)
 	bg_info_record->state     = (int) uint16_tmp;
 	safe_unpack16(&uint16_tmp, buffer);
 	bg_info_record->conn_type = (int) uint16_tmp;
+#ifdef HAVE_BGL
 	safe_unpack16(&uint16_tmp, buffer);
 	bg_info_record->node_use = (int) uint16_tmp;
+#endif
 	safe_unpack16(&uint16_tmp, buffer);
 	bg_info_record->quarter = (int) uint16_tmp;
 	safe_unpack16(&uint16_tmp, buffer);
@@ -680,8 +682,10 @@ static int _unpack_node_info(bg_info_record_t *bg_info_record, Buf buffer)
 		bg_info_record->ionode_inx = bitfmt2int(bp_inx_str);
 		xfree(bp_inx_str);
 	}
+#ifdef HAVE_BGL
 	safe_unpackstr_xmalloc(&bg_info_record->blrtsimage,   &uint32_tmp, 
 			       buffer);
+#endif
 	safe_unpackstr_xmalloc(&bg_info_record->linuximage,   &uint32_tmp, 
 			       buffer);
 	safe_unpackstr_xmalloc(&bg_info_record->mloaderimage, &uint32_tmp, 

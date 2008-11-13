@@ -961,6 +961,29 @@ uint32_t slurm_get_accounting_storage_port(void)
 	
 }
 
+/* slurm_set_accounting_storage_port
+ * sets the storage port in slurmctld_conf object
+ * RET 0 or error code
+ */
+int slurm_set_accounting_storage_port(uint32_t storage_port)
+{
+	slurm_ctl_conf_t *conf;
+
+	if(slurmdbd_conf) {
+		slurmdbd_conf->storage_port = storage_port;
+	} else {
+		conf = slurm_conf_lock();
+		if (storage_port == 0) {
+			error("can't have storage port of 0");
+			return SLURM_ERROR;
+		}
+		
+		conf->accounting_storage_port = storage_port;
+		slurm_conf_unlock();
+	}
+	return 0;	
+}
+
 /* slurm_get_jobacct_gather_type
  * returns the job accounting type from the slurmctld_conf object
  * RET char *    - job accounting type,  MUST be xfreed by caller
@@ -1104,6 +1127,28 @@ uint32_t slurm_get_jobcomp_port(void)
 	}
 	return storage_port;
 	
+}
+
+/* slurm_set_jobcomp_port
+ * sets the jobcomp port in slurmctld_conf object
+ * RET 0 or error code
+ */
+int slurm_set_jobcomp_port(uint32_t port)
+{
+	slurm_ctl_conf_t *conf;
+
+	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		if (port == 0) {
+			error("can't have jobcomp port of 0");
+			return SLURM_ERROR;
+		}
+		
+		conf->job_comp_port = port;
+		slurm_conf_unlock();
+	}
+	return 0;
 }
 
 /* slurm_get_proctrack_type

@@ -760,7 +760,7 @@ int PMI_Get_clique_ranks( int ranks[], int length )
 	env = getenv("SLURM_GTIDS");
 	if (env) {
 		int i = 0;
-		char *tid, *tids, *last;
+		char *tid, *tids, *last = NULL;
 		tids = strdup(env);
 		tid = strtok_r(tids, ",", &last);
 		while (tid) {

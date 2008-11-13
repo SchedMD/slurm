@@ -627,10 +627,14 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq)
 	int i, len;
 	int small_size = 0;
 	int small_count = 0;
+#ifdef HAVE_BGL
+	int node_cnt = 0;
 	uint16_t quarter = 0;
 	uint16_t nodecard = 0;
-	int node_cnt = 0;
-	
+#else
+	bitstr_t *ionodes = bit_alloc(bluegene_numpsets);
+	int start=0;
+#endif
 	if(!records) {
 		fatal("add_bg_record: no records list given");
 	}
@@ -738,7 +742,9 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq)
 		}
 	} else {
 		debug("adding a small block");
-#ifdef HAVE_BGL
+#ifdef HAVE_BGL // remove this clause when other works.  Only here to
+		// perserve old code 
+
 		/* if the ionode cnt for small32 is 0 then don't
 		   allow a nodecard allocation 
 		*/
@@ -753,7 +759,7 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq)
 
 		if(blockreq->small32==0 && blockreq->small128==0) {
 			info("No specs given for this small block, "
-			     "I am spliting this block into 4 small128");
+			     "I am spliting this block into 4 128CnBlocks");
 			blockreq->small128=4;
 		}		
 
@@ -762,7 +768,7 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq)
 		if(i != bluegene_bp_node_cnt)
 			fatal("There is an error in your bluegene.conf file.\n"
 			      "I am unable to request %d nodes consisting of "
-			      "%u small32 and\n%u small128 in one "
+			      "%u 32CnBlocks and\n%u 128CnBlocks in one "
 			      "base partition with %u nodes.", 
 			      i, bluegene_bp_node_cnt, 
 			      blockreq->small32, blockreq->small128);
@@ -807,31 +813,55 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq)
 		}
 		list_iterator_destroy(itr);
 		destroy_bg_record(bg_record);
-#else
+#else // remove this when testing.  Only here to perserve old code the
+      // code below is already for bgl
 		/* if the ionode cnt for small32 is 0 then don't
 		   allow a sub quarter allocation 
 		*/
-		if(!bluegene_nodecard_ionode_cnt) {
+		if(bluegene_nodecard_ionode_cnt < 2) {
+			if(!bluegene_nodecard_ionode_cnt && blockreq->small32) 
+				fatal("There is an error in your "
+				      "bluegene.conf file.\n"
+				      "Can't create a 32 node block with "
+				      "Numpsets=%u. (Try setting it "
+				      "to at least 16)",
+				      bluegene_numpsets);
+#ifndef HAVE_BGL
 			if(blockreq->small16) 
 				fatal("There is an error in your "
 				      "bluegene.conf file.\n"
 				      "Can't create a 16 node block with "
-				      "Numpsets=%u. (Try setting it to 32)",
+				      "Numpsets=%u. (Try setting it to "
+				      "at least 32)",
 				      bluegene_numpsets);
-			if(blockreq->small32) 
-				fatal("There is an error in your "
-				      "bluegene.conf file.\n"
-				      "Can't create a 32 node block with "
-				      "Numpsets=%u. (Try setting it to 32)",
-				      bluegene_numpsets);
-			if(blockreq->small64) 
+			if((bluegene_io_ratio < 0.5) && blockreq->small64) 
 				fatal("There is an error in your "
 				      "bluegene.conf file.\n"
 				      "Can't create a 64 node block with "
-				      "Numpsets=%u. (Try setting it to 32)",
+				      "Numpsets=%u. (Try setting it "
+				      "to at least 8)",
 				      bluegene_numpsets);
+#endif
 		}
 
+#ifdef HAVE_BGL
+		if(blockreq->small32==0 && blockreq->small128==0) {
+			info("No specs given for this small block, "
+			     "I am spliting this block into 4 128CnBlocks");
+			blockreq->small128=4;
+		}		
+
+		i = (blockreq->small32*bluegene_nodecard_node_cnt) + 
+			(blockreq->small128*bluegene_quarter_node_cnt);
+		if(i != bluegene_bp_node_cnt)
+			fatal("There is an error in your bluegene.conf file.\n"
+			      "I am unable to request %d nodes consisting of "
+			      "%u 32CnBlocks and\n%u 128CnBlocks in one "
+			      "base partition with %u nodes.", 
+			      i, blockreq->small32, blockreq->small128,
+			      bluegene_bp_node_cnt);
+		small_count = blockreq->small32+blockreq->small128; 
+#else
 		if(!blockreq->small16 && !blockreq->small32 
 		   && !blockreq->small64 && !blockreq->small128 
 		   && !blockreq->small256) {
@@ -852,15 +882,15 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq)
 			      "%u 64CNBlocks, %u 128CNBlocks, "
 			      "and %u 256CNBlocks\n"
 			      "in one base partition with %u nodes.", 
-			      i, bluegene_bp_node_cnt, 
-			      blockreq->small16, blockreq->small32, 
+			      i, blockreq->small16, blockreq->small32, 
 			      blockreq->small64, blockreq->small128, 
-			      blockreq->small256);
+			      blockreq->small256, bluegene_bp_node_cnt);
 		small_count = blockreq->small16
 			+ blockreq->small32
 			+ blockreq->small64
 			+ blockreq->small128
 			+ blockreq->small256; 
+#endif
 		/* Automatically create 2-way split if 
 		 * conn_type == SELECT_SMALL in bluegene.conf
 		 * Here we go through each node listed and do the same thing
@@ -868,41 +898,87 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq)
 		 */
 		itr = list_iterator_create(bg_record->bg_block_list);
 		while ((ba_node = list_next(itr)) != NULL) {
-			/* break base partition up into 16 parts */
-			small_size = 16;
-			node_cnt = 0;
-			quarter = 0;
-			nodecard = 0;
-			for(i=0; i<small_count; i++) {
-				if(i == blockreq->small32) {
-					/* break base partition 
-					   up into 4 parts */
-					small_size = 4;
-				}
-									
-				if(small_size == 4)
-					nodecard = (uint16_t)NO_VAL;
-				else
-					nodecard = i%4; 
+#ifndef HAVE_BGL
+			for(i=0; i<blockreq->small16; i++) {
+				bit_nset(ionodes, start, start);
 				found_record = create_small_record(bg_record,
-								   quarter,
-								   nodecard);
-								 
+								   ionodes, 16);
 				/* this needs to be an append so we
 				   keep things in the order we got
 				   them, they will be sorted later */
 				list_append(records, found_record);
-				node_cnt += bluegene_bp_node_cnt/small_size;
-				if(node_cnt == 128) {
-					node_cnt = 0;
-					quarter++;
-				}
+				bit_nclear(ionodes, start, start);
+				start++;
 			}
+#endif
+			if((small_size = bluegene_nodecard_ionode_cnt))
+				small_size--;
+			for(i=0; i<blockreq->small32; i++) {
+				bit_nset(ionodes, start, start+small_size);
+				found_record = create_small_record(bg_record,
+								   ionodes, 32);
+				/* this needs to be an append so we
+				   keep things in the order we got
+				   them, they will be sorted later */
+				list_append(records, found_record);
+				bit_nclear(ionodes, start, start+small_size);
+				start+=small_size+1;
+			}
+
+#ifndef HAVE_BGL
+			if((small_size = bluegene_nodecard_ionode_cnt * 2))
+				small_size--;
+			for(i=0; i<blockreq->small64; i++) {
+				bit_nset(ionodes, start, start+small_size);
+				found_record = create_small_record(bg_record,
+								   ionodes, 64);
+				/* this needs to be an append so we
+				   keep things in the order we got
+				   them, they will be sorted later */
+				list_append(records, found_record);
+				bit_nclear(ionodes, start, start+small_size);
+				start+=small_size+1;
+			}
+#endif
+			if((small_size = bluegene_quarter_ionode_cnt))
+				small_size--;
+			for(i=0; i<blockreq->small128; i++) {
+				bit_nset(ionodes, start, start+small_size);
+				found_record = create_small_record(
+					bg_record, ionodes, 128);
+				/* this needs to be an append so we
+				   keep things in the order we got
+				   them, they will be sorted later */
+				list_append(records, found_record);
+				bit_nclear(ionodes, start, start+small_size);
+				start+=small_size+1;
+			}
+
+#ifndef HAVE_BGL
+			if((small_size = bluegene_quarter_ionode_cnt * 2))
+				small_size--;
+			for(i=0; i<blockreq->small256; i++) {
+				bit_nset(ionodes, start, start+small_size);
+				found_record = create_small_record(
+					bg_record, ionodes, 256);
+				/* this needs to be an append so we
+				   keep things in the order we got
+				   them, they will be sorted later */
+				list_append(records, found_record);
+				bit_nclear(ionodes, start, start+small_size);
+				start+=small_size+1;
+			}
+#endif
 		}
 		list_iterator_destroy(itr);
 		destroy_bg_record(bg_record);
-#endif
+#endif // remove this when done testing
 	} 
+
+#ifndef HAVE_BGL
+	FREE_NULL_BITMAP(ionodes);
+#endif
+	
 	return SLURM_SUCCESS;
 }
 

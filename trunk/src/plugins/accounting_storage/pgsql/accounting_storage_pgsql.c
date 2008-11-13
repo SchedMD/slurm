@@ -136,8 +136,10 @@ static pgsql_db_info_t *_pgsql_acct_create_db_info()
 	db_info->port = slurm_get_accounting_storage_port();
 	/* it turns out it is better if using defaults to let postgres
 	   handle them on it's own terms */
-	if(!db_info->port)
+	if(!db_info->port) {
 		db_info->port = 5432;
+		slurm_set_accounting_storage_port(db_info->port);
+	}
 	db_info->host = slurm_get_accounting_storage_host();
 	if(!db_info->host)
 		db_info->host = xstrdup("localhost");
