@@ -106,7 +106,7 @@ static int _isvalue(char *arg) {
  * IN alloc_cores    - Allocated cores (per socket) count to other jobs
  * IN cr_type        - Consumable Resource type
  *
- * Note: used in both the select/{linear,cons_res} plugins.
+ * Note: currently only used in the select/linear plugin.
  */
 int slurm_get_avail_procs(const uint16_t max_sockets,
 			  const uint16_t max_cores,
@@ -324,6 +324,8 @@ void slurm_sprint_cpu_bind_type(char *str, cpu_bind_type_t cpu_bind_type)
 		strcat(str, "cores,");
 	if (cpu_bind_type & CPU_BIND_TO_SOCKETS)
 		strcat(str, "sockets,");
+	if (cpu_bind_type & CPU_BIND_TO_LDOMS)
+		strcat(str, "ldoms,");
 	if (cpu_bind_type & CPU_BIND_NONE)
 		strcat(str, "none,");
 	if (cpu_bind_type & CPU_BIND_RANK)
@@ -332,6 +334,12 @@ void slurm_sprint_cpu_bind_type(char *str, cpu_bind_type_t cpu_bind_type)
 		strcat(str, "map_cpu,");
 	if (cpu_bind_type & CPU_BIND_MASK)
 		strcat(str, "mask_cpu,");
+	if (cpu_bind_type & CPU_BIND_LDRANK)
+		strcat(str, "rank_ldom,");
+	if (cpu_bind_type & CPU_BIND_LDMAP)
+		strcat(str, "map_ldom,");
+	if (cpu_bind_type & CPU_BIND_LDMASK)
+		strcat(str, "mask_ldom,");
 
 	if (*str) {
 		str[strlen(str)-1] = '\0';	/* remove trailing ',' */
@@ -388,9 +396,15 @@ void slurm_print_cpu_bind_help(void)
 "                        where <list> is <cpuid1>,<cpuid2>,...<cpuidN>\n"
 "        mask_cpu:<list> specify a CPU ID binding mask for each task\n"
 "                        where <list> is <mask1>,<mask2>,...<maskN>\n"
+"        rank_ldom       bind task by rank to CPUs in a NUMA locality domain\n"
+"        map_ldom:<list> specify a NUMA locality domain ID for each task\n"
+"                        where <list> is <ldom1>,<ldom2>,...<ldomN>\n"
+"        mask_ldom:<list>specify a NUMA locality domain ID mask for each task\n"
+"                        where <list> is <mask1>,<mask2>,...<maskN>\n"
 "        sockets         auto-generated masks bind to sockets\n"
 "        cores           auto-generated masks bind to cores\n"
 "        threads         auto-generated masks bind to threads\n"
+"        ldoms           auto-generated masks bind to NUMA locality domains\n"
 "        help            show this help message\n");
 }
 
@@ -420,6 +434,9 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 		CPU_BIND_TO_SOCKETS|CPU_BIND_TO_CORES|CPU_BIND_TO_THREADS;
 	uint16_t task_plugin_param = slurm_get_task_plugin_param();
 
+	bind_bits    |= CPU_BIND_LDRANK|CPU_BIND_LDMAP|CPU_BIND_LDMASK;
+	bind_to_bits |= CPU_BIND_TO_LDOMS;
+
 	if (arg == NULL) {
 		if ((*flags != 0) || 		/* already set values */
 		    (task_plugin_param == 0))	/* no system defaults */
@@ -435,6 +452,8 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 			*flags = CPU_BIND_TO_CORES;
 		else if (task_plugin_param & CPU_BIND_TO_THREADS)
 			*flags |= CPU_BIND_TO_THREADS;
+		else if (task_plugin_param & CPU_BIND_TO_LDOMS)
+			*flags |= CPU_BIND_TO_LDOMS;
 		if (task_plugin_param & CPU_BIND_VERBOSE)
 			*flags |= CPU_BIND_VERBOSE;
 	    	return 0;
@@ -502,11 +521,47 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 				xfree(buf);
 				return -1;
 			}
+		} else if (strcasecmp(tok, "rank_ldom") == 0) {
+			_clear_then_set((int *)flags, bind_bits,
+					CPU_BIND_LDRANK);
+			xfree(*cpu_bind);
+		} else if ((strncasecmp(tok, "map_ldom", 8) == 0) ||
+		           (strncasecmp(tok, "mapldom", 7) == 0)) {
+			char *list;
+			list = strsep(&tok, ":=");
+			list = strsep(&tok, ":=");
+			_clear_then_set((int *)flags, bind_bits,
+					CPU_BIND_LDMAP);
+			xfree(*cpu_bind);
+			if (list && *list) {
+				*cpu_bind = xstrdup(list);
+			} else {
+				error("missing list for \"--cpu_bind="
+				      "map_ldom:<list>\"");
+				xfree(buf);
+				return 1;
+			}
+		} else if ((strncasecmp(tok, "mask_ldom", 9) == 0) ||
+		           (strncasecmp(tok, "maskldom", 8) == 0)) {
+			char *list;
+			list = strsep(&tok, ":=");
+			list = strsep(&tok, ":=");
+			_clear_then_set((int *)flags, bind_bits,
+					CPU_BIND_LDMASK);
+			xfree(*cpu_bind);
+			if (list && *list) {
+				*cpu_bind = xstrdup(list);
+			} else {
+				error("missing list for \"--cpu_bind="
+				      "mask_ldom:<list>\"");
+				xfree(buf);
+				return -1;
+			}
 		} else if ((strcasecmp(tok, "socket") == 0) ||
 		           (strcasecmp(tok, "sockets") == 0)) {
 			if (task_plugin_param & 
 			    (CPU_BIND_NONE | CPU_BIND_TO_CORES | 
-			     CPU_BIND_TO_THREADS)) {
+			     CPU_BIND_TO_THREADS | CPU_BIND_TO_LDOMS)) {
 				error("--cpu_bind=sockets incompatable with "
 				      "TaskPluginParam configuration "
 				      "parameter");
@@ -518,7 +573,7 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 		           (strcasecmp(tok, "cores") == 0)) {
 			if (task_plugin_param & 
 			    (CPU_BIND_NONE | CPU_BIND_TO_SOCKETS | 
-			     CPU_BIND_TO_THREADS)) {
+			     CPU_BIND_TO_THREADS | CPU_BIND_TO_LDOMS)) {
 				error("--cpu_bind=cores incompatable with "
 				      "TaskPluginParam configuration "
 				      "parameter");
@@ -530,7 +585,7 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 		           (strcasecmp(tok, "threads") == 0)) {
 			if (task_plugin_param & 
 			    (CPU_BIND_NONE | CPU_BIND_TO_SOCKETS | 
-			     CPU_BIND_TO_CORES)) {
+			     CPU_BIND_TO_CORES | CPU_BIND_TO_LDOMS)) {
 				error("--cpu_bind=threads incompatable with "
 				      "TaskPluginParam configuration "
 				      "parameter");
@@ -538,6 +593,18 @@ int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 			}
 			_clear_then_set((int *)flags, bind_to_bits,
 				       CPU_BIND_TO_THREADS);
+		} else if ((strcasecmp(tok, "ldom") == 0) ||
+		           (strcasecmp(tok, "ldoms") == 0)) {
+			if (task_plugin_param & 
+			    (CPU_BIND_NONE | CPU_BIND_TO_SOCKETS | 
+			     CPU_BIND_TO_CORES | CPU_BIND_TO_THREADS)) {
+				error("--cpu_bind=threads incompatable with "
+				      "TaskPluginParam configuration "
+				      "parameter");
+				return -1;
+			}
+			_clear_then_set((int *)flags, bind_to_bits,
+				       CPU_BIND_TO_LDOMS);
 		} else {
 			error("unrecognized --cpu_bind argument \"%s\"", tok);
 			xfree(buf);

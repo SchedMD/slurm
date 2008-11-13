@@ -238,4 +238,81 @@ int get_memset(nodemask_t *mask, slurmd_job_t *job)
 	return false;
 }
 
+
+static uint16_t *numa_array = NULL;
+
+/* helper function */
+static void _add_numa_mask_to_array(unsigned long *cpu_mask, int size,
+					uint16_t maxcpus, uint16_t nnode_id)
+{
+	unsigned long count = 1;
+	int i, j, x = sizeof(unsigned long) * 8;
+	for (i = 0; i < size; i++) {
+		/* iterate over each bit of this unsigned long */
+		for (j = 0, count = 1; j < x; j++, count *= 2) {
+			if (count & cpu_mask[i]) {
+				/* this bit in the cpu_mask is set */
+				int cpu = i * sizeof(unsigned long) + j;
+				if (cpu < maxcpus) {
+					numa_array[cpu] = nnode_id;
+				}
+			}
+		}
+	}
+}
+
+/* return the numa node for the given cpuid */
+extern uint16_t slurm_get_numa_node(uint16_t cpuid)
+{
+	uint16_t maxcpus = 0, nnid = 0;
+	int size, retry, max_node;
+	unsigned long *cpu_mask;
+	
+	maxcpus = conf->sockets * conf->cores * conf->threads;
+	if (cpuid >= maxcpus)
+		return 0;
+		
+	if (numa_array) {
+		return numa_array[cpuid];
+	}
+	
+	/* need to load the numa_array */
+	max_node = numa_max_node();
+
+	/* The required size of the mask buffer for numa_node_to_cpus()
+	 * is goofed up. The third argument is supposed to be the size
+	 * of the mask, which is an array of unsigned longs. The *unit*
+	 * of the third argument is unclear - should it be in bytes or
+	 * in unsigned longs??? Since I don't know, I'm using this retry
+	 * loop to try and determine an acceptable size. If anyone can
+	 * fix this interaction, please do!!
+	 */
+	size = 8;
+	cpu_mask = xmalloc(sizeof(unsigned long) * size);
+	retry = 0;
+	while (retry++ < 8 && numa_node_to_cpus(nnid, cpu_mask, size) < 0) {
+		size *= 2;
+		xrealloc(cpu_mask, sizeof(unsigned long) * size);
+	}
+	if (retry >= 8) {
+		xfree(cpu_mask);
+		error("NUMA problem with numa_node_to_cpus arguments");
+		return 0;
+	}
+	numa_array = xmalloc(sizeof(uint16_t) * maxcpus);
+	_add_numa_mask_to_array(cpu_mask, size, maxcpus, nnid);
+	while (nnid++ < max_node) {
+		if (numa_node_to_cpus(nnid, cpu_mask, size) < 0) {
+			error("NUMA problem - numa_node_to_cpus 2nd call fail");
+			xfree(cpu_mask);
+			xfree(numa_array);
+			numa_array = NULL;
+			return 0;
+		}
+		_add_numa_mask_to_array(cpu_mask, size, maxcpus, nnid);
+	}
+	xfree(cpu_mask);
+	return numa_array[cpuid];
+}
+
 #endif	/* HAVE_NUMA */

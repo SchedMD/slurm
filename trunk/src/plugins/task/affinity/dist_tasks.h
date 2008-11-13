@@ -35,73 +35,9 @@
 #ifndef _SLURMSTEPD_DIST_TASKS_H
 #define _SLURMSTEPD_DIST_TASKS_H
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#include <stdint.h>
+#include "src/common/slurm_protocol_defs.h"
 
-#if HAVE_STRING_H
-#  include <string.h>
-#endif
-
-#include <signal.h>
-#include <sys/types.h>
-#include <grp.h>
-#include <stdlib.h>
-
-#include "src/common/xmalloc.h"
-#include "src/common/xassert.h"
-#include "src/common/xstring.h"
-#include "src/common/fd.h"
-#include "src/common/log.h"
-#include "src/common/eio.h"
-#include "src/common/slurm_protocol_api.h"
-#include "src/common/slurm_resource_info.h"
-
-#include "src/common/bitstring.h"
-
-#include "src/slurmd/slurmd/slurmd.h"
-
-/* Structures to create an object oriented version of a 4-D 
-   infrastructure --> task id mapping [node][cpu][core][taskid] = tid
-*/
-struct thread_gids {
-  int *gids;  /* Taskids for a specific thread */
-  int tasks;  /* Number of tasks for a specific thread */
-};
-
-struct core_gids {
-  struct thread_gids *threads; /* Taskids for a specific thread */
-};
-
-struct socket_gids {
-  struct core_gids *cores; /* Taskids for a specific core */
-};
-
-struct node_gids {
-  struct socket_gids *sockets; /* Taskids for a specific CPU */
-};
-
-struct slurm_lllp_context {
-#ifndef NDEBUG
-#  define LLLP_CTX_MAGIC 0x0d0d0d
-        int magic;
-#endif
-#if WITH_PTHREADS  
-        pthread_mutex_t mutex;
-#endif
-        List           job_list;   /* List of job bindings */
-};
-typedef struct slurm_lllp_context slurm_lllp_ctx_t;
-
-void cr_reserve_lllp(uint32_t job_id,
-			launch_tasks_request_msg_t *req, uint32_t node_id);
-void cr_release_lllp(uint32_t job_id);
 void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id);
-void lllp_ctx_destroy(void);
-void lllp_ctx_alloc(void);
-void get_bitmap_from_cpu_bind(bitstr_t *bitmap_test,
-			      cpu_bind_type_t cpu_bind_type, 
-			      char *cpu_bind, uint32_t numtasks);
 
 #endif /* !_SLURMSTEPD_DIST_TASKS_H */
-

@@ -407,6 +407,8 @@ int setup_env(env_t *env)
 			xstrcat(str_bind_type, "cores,");
 		} else if (env->cpu_bind_type & CPU_BIND_TO_SOCKETS) {
 			xstrcat(str_bind_type, "sockets,");
+		} else if (env->cpu_bind_type & CPU_BIND_TO_LDOMS) {
+			xstrcat(str_bind_type, "ldoms,");
 		}
 		if (env->cpu_bind_type & CPU_BIND_NONE) {
 			xstrcat(str_bind_type, "none");
@@ -416,6 +418,12 @@ int setup_env(env_t *env)
 			xstrcat(str_bind_type, "map_cpu:");
 		} else if (env->cpu_bind_type & CPU_BIND_MASK) {
 			xstrcat(str_bind_type, "mask_cpu:");
+		} else if (env->cpu_bind_type & CPU_BIND_LDRANK) {
+			xstrcat(str_bind_type, "rank_ldom");
+		} else if (env->cpu_bind_type & CPU_BIND_LDMAP) {
+			xstrcat(str_bind_type, "map_ldom:");
+		} else if (env->cpu_bind_type & CPU_BIND_LDMASK) {
+			xstrcat(str_bind_type, "mask_ldom:");
 		}
 		len = strlen(str_bind_type);
 		if (len) {		/* remove a possible trailing ',' */

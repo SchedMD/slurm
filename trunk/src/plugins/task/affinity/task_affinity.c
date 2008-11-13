@@ -86,7 +86,6 @@ const uint32_t plugin_version   = 100;
  */
 extern int init (void)
 {
-	lllp_ctx_alloc();
 	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
@@ -97,7 +96,6 @@ extern int init (void)
  */
 extern int fini (void)
 {
-	lllp_ctx_destroy();
 	verbose("%s unloaded", plugin_name);
 	return SLURM_SUCCESS;
 }
@@ -113,24 +111,35 @@ static void _update_bind_type(launch_tasks_request_msg_t *req)
 		req->cpu_bind_type &= (~CPU_BIND_TO_SOCKETS);
 		req->cpu_bind_type &= (~CPU_BIND_TO_CORES);
 		req->cpu_bind_type &= (~CPU_BIND_TO_THREADS);
+		req->cpu_bind_type &= (~CPU_BIND_TO_LDOMS);
 		set_bind = true;
 	} else if (conf->task_plugin_param & CPU_BIND_TO_SOCKETS) {
 		req->cpu_bind_type &= (~CPU_BIND_NONE);
 		req->cpu_bind_type |= CPU_BIND_TO_SOCKETS;
 		req->cpu_bind_type &= (~CPU_BIND_TO_CORES);
 		req->cpu_bind_type &= (~CPU_BIND_TO_THREADS);
+		req->cpu_bind_type &= (~CPU_BIND_TO_LDOMS);
 		set_bind = true;
 	} else if (conf->task_plugin_param & CPU_BIND_TO_CORES) {
 		req->cpu_bind_type &= (~CPU_BIND_NONE);
 		req->cpu_bind_type &= (~CPU_BIND_TO_SOCKETS);
 		req->cpu_bind_type |= CPU_BIND_TO_CORES;
 		req->cpu_bind_type &= (~CPU_BIND_TO_THREADS);
+		req->cpu_bind_type &= (~CPU_BIND_TO_LDOMS);
 		set_bind = true;
 	} else if (conf->task_plugin_param & CPU_BIND_TO_THREADS) {
 		req->cpu_bind_type &= (~CPU_BIND_NONE);
 		req->cpu_bind_type &= (~CPU_BIND_TO_SOCKETS);
 		req->cpu_bind_type &= (~CPU_BIND_TO_CORES);
 		req->cpu_bind_type |= CPU_BIND_TO_THREADS;
+		req->cpu_bind_type &= (~CPU_BIND_TO_LDOMS);
+		set_bind = true;
+	} else if (conf->task_plugin_param & CPU_BIND_TO_LDOMS) {
+		req->cpu_bind_type &= (~CPU_BIND_NONE);
+		req->cpu_bind_type &= (~CPU_BIND_TO_SOCKETS);
+		req->cpu_bind_type &= (~CPU_BIND_TO_CORES);
+		req->cpu_bind_type &= (~CPU_BIND_TO_THREADS);
+		req->cpu_bind_type &= CPU_BIND_TO_LDOMS;
 		set_bind = true;
 	}
 
@@ -191,7 +200,6 @@ extern int task_slurmd_reserve_resources (uint32_t job_id,
 					  uint32_t node_id)
 {
 	debug("task_slurmd_reserve_resources: %u", job_id);
-	cr_reserve_lllp(job_id, req, node_id);
 	return SLURM_SUCCESS;
 }
 
@@ -219,7 +227,6 @@ extern int task_slurmd_resume_job (uint32_t job_id)
 extern int task_slurmd_release_resources (uint32_t job_id)
 {
 	debug("task_slurmd_release_resources: %u", job_id);
-	cr_release_lllp(job_id);
 	return SLURM_SUCCESS;
 }
 
