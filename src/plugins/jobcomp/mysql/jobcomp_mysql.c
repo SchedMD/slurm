@@ -132,8 +132,10 @@ static mysql_db_info_t *_mysql_jobcomp_create_db_info()
 {
 	mysql_db_info_t *db_info = xmalloc(sizeof(mysql_db_info_t));
 	db_info->port = slurm_get_jobcomp_port();
-	if(!db_info->port) 
+	if(!db_info->port) {
 		db_info->port = 3306;
+		slurm_set_jobcomp_port(db_info->port);
+	}
 	db_info->host = slurm_get_jobcomp_host();	
 	db_info->user = slurm_get_jobcomp_user();	
 	db_info->pass = slurm_get_jobcomp_pass();	
