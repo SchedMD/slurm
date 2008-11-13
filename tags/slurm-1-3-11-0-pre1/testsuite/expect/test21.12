@@ -1,0 +1,314 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          sacctmgr list accounts
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2008 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Joseph Donaghy <donaghy1@llnl.gov>
+# LLNL-CODE-402394.
+# 
+# This file is part of SLURM, a resource management program.
+# For details, see <http://www.llnl.gov/linux/slurm/>.
+#  
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+# 
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+# 
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id     "21.12"
+set exit_code   0
+set acmatches   0
+set aamatches   0
+set almatches   0
+set aclmatches  0
+set lmatches    0
+set damatches   0
+set dcmatches   0
+set not_support 0
+set add		add
+set lis		list
+set del		delete
+set mod		modify
+set nams	Names
+set nam		Name
+set fs		Fairshare
+set mc		MaxCPUMins
+set mj		MaxJobs
+set mn		MaxNodes
+set mw		MaxWall
+set clu		cluster
+set tc1		tcluster1
+set tc2		tcluster2
+set fs1		2500
+set mc1		1000000
+set mj1		50
+set mn1		300
+set mw1		01:00:00
+set acc		account
+set ass		associations
+set nm1		testaccta1
+set nm2		testaccta2
+set des		Description
+set ds1		testaccounta1
+set org		Organization
+set or1		accountorga1
+set qs		QosLevel
+set qs1		normal
+set access_err  0
+set timeout 60
+
+print_header $test_id
+
+if { [test_account_storage] == 0 } {
+	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
+	exit 0
+}
+ 
+#
+# Verify if Administrator privileges
+#
+ if { [string compare [check_accounting_admin_level] "Administrator"] } {
+	send_user "\nWARNING: This test can't be run without being an Accounting administrator.\nUse sacctmgr mod user \$USER_NAME admin=admin.\n"
+	exit 0
+}
+
+#
+# Use sacctmgr to create a cluster
+#
+set sadd_pid [spawn $sacctmgr -i add $clu $nams=$tc1,$tc2 $fs=$fs1 $mc=$mc1 $mj=$mj1 $mn=$mn1 $mw=$mw1]
+expect {
+	-re "privilege to preform this action" {
+		set access_err 1
+		exp_continue
+	}
+	-re "Adding Cluster" {
+		incr acmatches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $sadd_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$access_err != 0} {
+	send_user "\nWARNING: not authorized to perform this test\n"
+	exit $exit_code
+}
+if {$acmatches != 1} {
+	send_user "\nFAILURE:  sacctmgr had a problem adding clusters
+	got $acmatches\n"
+	set exit_code 1
+}
+
+if { ![check_acct_associations] } {
+	send_user "\nFAILURE:  Our associations don't line up\n"
+	set exit_code 1
+}
+
+#
+# Use sacctmgr to add an account
+#
+set sadel_pid [spawn $sacctmgr -i $add $acc $clu=$tc1 $des="$ds1" $fs=$fs1 $mc=$mc1 $mj=$mj1 $mn=$mn1 $mw=$mw1 $nams=$nm1,$nm2 $org="$or1" $qs=$qs1]
+expect {
+	-re "Adding Account" {
+		incr aamatches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $sadel_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$aamatches != 1} {
+	send_user "\nFAILURE:  sacctmgr had a problem adding account.
+	got $aamatches\n"
+	set exit_code 1
+}
+
+#
+# Use sacctmgr to list the test associations
+#
+set as_list_pid [spawn $sacctmgr list $ass]
+expect {
+	-re "$tc1 *$nm1" {
+		incr almatches
+		exp_continue
+	}
+	-re "$tc1 *$nm2" {
+		incr almatches
+		exp_continue
+	}
+	-re "$tc2 *$nm1" {
+		set exit_code 1
+		send_user "\nFAILURE: $nm1 account erroneously added to $tc2\n"
+		exp_continue
+	}
+	-re "$tc2 *$nm2" {
+		exp_continue
+		send_user "\nFAILURE: $nm2 account erroneously added to $tc2\n"
+		set exit_code 1
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		slow_kill $as_list_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$almatches != 2} {
+	send_user "\nFAILURE: Added associations not found.\n"
+	send_user "\n Need 2 matches and got $almatches instead.\n"
+	set exit_code 1
+}
+
+if { ![check_acct_associations] } {
+	send_user "\nFAILURE:  Our associations don't line up\n"
+	set exit_code 1
+}
+
+#
+# Use sacctmgr to list the test accounts
+#
+set ac_list_pid [spawn $sacctmgr -n list $acc]
+expect {
+	-re "$nm1 *$ds1 *$or1" {
+		incr aclmatches
+		exp_continue
+	}
+	-re "$nm2 *$ds1 *$or1" {
+		incr aclmatches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		slow_kill $ac_list_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$aclmatches != 2} {
+	send_user "\nFAILURE: Added account incorrect.\n"
+	send_user "\n Need 2 matches and got $aclmatches instead.\n"
+	set exit_code 1
+}
+
+#
+# Use sacctmgr to delete the test account
+#
+set sadel_pid [spawn $sacctmgr -i $del $acc $nm1,$nm2]
+expect {
+	-re "Deleting account" {
+		incr damatches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr delete not responding\n"
+		slow_kill $sadel_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$damatches != 1} {
+	send_user "\nFAILURE: sacctmgr had a problem deleting cluster got $damatches\n"
+	set exit_code 1
+}
+
+if { ![check_acct_associations] } {
+	send_user "\nFAILURE:  Our associations don't line up\n"
+	set exit_code 1
+}
+
+#
+# Use sacctmgr to delete the test cluster
+#
+set sadel_pid [spawn $sacctmgr -i $del $clu $tc1,$tc2]
+expect {
+	-re "Deleting clusters" {
+		incr dcmatches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr delete not responding\n"
+		slow_kill $sadel_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$dcmatches != 1} {
+	send_user "\nFAILURE: sacctmgr had a problem deleting cluster got $dcmatches\n"
+	set exit_code 1
+}
+
+#
+# Use sacctmgr to list the test associations
+#
+set as2_list_pid [spawn $sacctmgr list $ass $clu=$tc1 ]
+expect {
+	-re "$tc1 *$nm1" {
+		exp_continue
+		send_user "\nFAILURE: test associations still exist.\n"
+		set exit_code 1
+	}
+	-re "$tc1 *$nm2" {
+		exp_continue
+		send_user "\nFAILURE: test associations still exist.\n"
+		set exit_code 1
+	}
+	timeout {
+		send_user "\nTest associations delete verified.\n"
+		slow_kill $as2_list_pid
+	}
+	eof {
+		wait
+	}
+}
+
+if { ![check_acct_associations] } {
+	send_user "\nFAILURE:  Our associations don't line up\n"
+	set exit_code 1
+}
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+		} else {
+	send_user "\nFAILURE\n"
+		}
+
+exit $exit_code
