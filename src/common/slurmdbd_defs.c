@@ -324,9 +324,10 @@ static void _open_slurmdbd_fd(void)
 	if (slurmdbd_host == NULL)
 		slurmdbd_host = xstrdup(DEFAULT_STORAGE_HOST);
 	
-	if (slurmdbd_port == 0) 
+	if (slurmdbd_port == 0) {
 		slurmdbd_port = SLURMDBD_PORT;
-	
+		slurm_set_accounting_storage_port(slurmdbd_port);
+	}
 	slurm_set_addr(&dbd_addr, slurmdbd_port, slurmdbd_host);
 	if (dbd_addr.sin_port == 0)
 		error("Unable to locate SlurmDBD host %s:%u", 
@@ -1571,6 +1572,8 @@ static void _save_dbd_state(void)
 	char *dbd_fname;
 	Buf buffer;
 	int fd, rc, wrote = 0;
+	uint16_t msg_type;
+	uint32_t offset;
 
 	dbd_fname = slurm_get_state_save_location();
 	xstrcat(dbd_fname, "/dbd.messages");
@@ -1579,6 +1582,24 @@ static void _save_dbd_state(void)
 		error("slurmdbd: Creating state save file %s", dbd_fname);
 	} else if (agent_list) {
 		while ((buffer = list_dequeue(agent_list))) {
+			/* We do not want to store registration
+			   messages.  If an admin puts in an incorrect
+			   cluster name we can get a deadlock unless
+			   they add the bogus cluster name to the
+			   accounting system.
+			*/
+			offset = get_buf_offset(buffer);
+			if (offset < 2) {
+				free_buf(buffer);
+				continue;
+			}
+			set_buf_offset(buffer, 0);
+			unpack16(&msg_type, buffer);
+			set_buf_offset(buffer, offset);
+			if(msg_type == DBD_REGISTER_CTLD) {
+				free_buf(buffer);
+				continue;
+			}
 			rc = _save_dbd_rec(fd, buffer);
 			free_buf(buffer);
 			if (rc != SLURM_SUCCESS)

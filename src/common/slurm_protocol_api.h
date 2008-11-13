@@ -331,6 +331,12 @@ char *slurm_get_accounting_storage_pass(void);
  */
 uint32_t slurm_get_accounting_storage_port(void);
 
+/* slurm_set_accounting_storage_port
+ * sets the storage port in slurmctld_conf object
+ * RET 0 or error code
+ */
+int slurm_set_accounting_storage_port(uint32_t storage_port);
+
 /* slurm_get_jobacct_gather_type
  * returns the job accounting type from slurmctld_conf object
  * RET char *    - job accounting type,  MUST be xfreed by caller
@@ -378,6 +384,13 @@ char *slurm_get_jobcomp_pass(void);
  * RET uint32_t   - storage port
  */
 uint32_t slurm_get_jobcomp_port(void);
+
+/* slurm_set_jobcomp_port
+ * sets the jobcomp port in slurmctld_conf object
+ * RET 0 or error code
+ */
+int slurm_set_jobcomp_port(uint32_t port);
+
 
 /* slurm_get_propagate_prio_process
  * return the PropagatePrioProcess flag from slurmctld_conf object

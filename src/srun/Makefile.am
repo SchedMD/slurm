@@ -35,10 +35,10 @@ force:
 $(convenience_libs) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
-# debugging information is required for symbols in the attach 
-# module so that a debugger can attach to spawned tasks
-attach.o : attach.c
-	$(COMPILE) -c -g -o attach.o $(srcdir)/attach.c 
+# debugging information is required for symbols in the debugger 
+# module so that a debugger can debugger to spawned tasks
+debugger.o : debugger.c
+	$(COMPILE) -c -g -o debugger.o $(srcdir)/debugger.c 
 
 install-exec-local:
 	umask 022; \

@@ -7,6 +7,8 @@ PLUGIN_FLAGS = -module -avoid-version --export-dynamic -lm
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common $(BG_INCLUDES)
 
+if BLUEGENE_LOADED
+
 pkglib_LTLIBRARIES = select_bluegene.la libsched_if64.la
 
 # Blue Gene node selection plugin.
@@ -51,3 +53,20 @@ slurm_epilog_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 force:
 $(select_bluegene_la_LIBADD) $(sfree_LDADD) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
+
+else
+EXTRA_select_bluegene_la_SOURCES = select_bluegene.c \
+				bg_boot_time.h \
+				bg_job_place.c bg_job_place.h \
+				bg_job_run.c bg_job_run.h \
+				bg_block_info.c bg_block_info.h \
+				bg_record_functions.c bg_record_functions.h \
+				bluegene.c bluegene.h \
+				state_test.c state_test.h \
+				bg_switch_connections.c \
+				block_sys.c \
+				dynamic_block.c dynamic_block.h \
+				defined_block.c defined_block.h \
+				../wrap_rm_api.h
+
+endif
