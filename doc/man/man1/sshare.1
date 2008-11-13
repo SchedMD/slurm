@@ -7,8 +7,8 @@ sshare \- Tool for listing the shares of associations to a cluster.
 \fBsshare\fR [\fIOPTIONS\fR...] [\fICOMMAND\fR...]
 
 .SH "DESCRIPTION"
-\fBsshare\fR is used to view Slurm account information.
-The account information is maintained within a database with the interface 
+\fBsshare\fR is used to view Slurm share information.
+The share information is maintained within a database with the interface 
 being provided by \fBslurmdbd\fR (Slurm Database daemon).
 This database can serve as a central storehouse of user and 
 computer information for multiple computers at a single site.
@@ -30,7 +30,7 @@ List all information.
 
 .TP
 \fB\-A\fR, \fB\-\-accounts\fR
-List accounts.
+List accounts information.
 
 .TP
 \fB\-h\fR, \fB\-\-help\fR
@@ -59,9 +59,9 @@ This is equivalent to the \fBquiet\fR command.
 This is equivalent to the \fBreadonly\fR command.
 
 .TP
-\fB\-t\fR, \fB\-\-associations\fR
-Use with show or list to display associations with the entity.
-This is equivalent to the \fBassociations\fR command.
+\fB\-t\fR, \fB\-\-time\fR
+Set time format.
+This is equivalent to the \fBtime\fR command.
 
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
@@ -131,7 +131,7 @@ Display the version number of sshare.
 
 
 
-.SH "LIST/SHOW ACCOUNTS FORMAT OPTIONS"
+.SH " ACCOUNTS "
 
 .TP
 \fIAccount\fP
@@ -139,7 +139,7 @@ The name of a bank account.
 
 .RE
 
-.SH "LIST/SHOW CLUSTER FORMAT OPTIONS"
+.SH "CLUSTER "
 
 .TP
 \fICluster\fP
@@ -147,7 +147,7 @@ The name of the cluster.
 
 .RE
 
-.SH "LIST/SHOW USER FORMAT OPTIONS"
+.SH " USER "
 
 .TP
 \fIUser\fP
@@ -158,10 +158,10 @@ The name of a user.
 .SH "EXAMPLES"
 .eo
 .br
-> sshare -a cluster
+> sshare -a
 .br
 .br
-> sshare -a account
+> sshare --parsable
 .br
 
 .ec
