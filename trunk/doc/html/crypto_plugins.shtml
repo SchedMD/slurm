@@ -12,7 +12,7 @@ This is version 0 of the API.</p>
 <p>SLURM cryptographic plugins are SLURM plugins that implement 
 a digital signature mechanism. 
 The slurmctld daemon generates a job step credential, signs it, 
-and tranmits it to an srun program. 
+and transmits it to an srun program. 
 The srun program then transmits it to the slurmd daemons directly. 
 The slurmctld daemon does not communicate directly with the slurmd 
 daemons at this time for performance reasons, but the job step 

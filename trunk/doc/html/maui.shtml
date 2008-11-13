@@ -32,12 +32,12 @@ Then build Maui from its source distribution. This is a two step process:</p>
 <p>The key of 42 is arbitrary. You can use any value, but it will need to 
 be a number no larger than 4,294,967,295 (2^32) and specify the same 
 value as a SLURM configuration parameter described below.
-Maui developers have assured us the authenticaion key will eventually be 
+Maui developers have assured us the authentication key will eventually be 
 set in a configuration file rather than at build time.</p>
 
 <p>Update the Maui configuration file <i>maui.conf</i> (Copy the file
 maui-3.2.6p9/maui.cfg.dist to maui.conf). Add the following configuration 
-paramters to maui.conf:</p>
+parameters to maui.conf:</p>
 <pre>
 RMCFG[host]       TYPE=WIKI
 RMPORT            7321            # selected port
@@ -94,7 +94,7 @@ SchedulerPort=7321
 SchedulerAuth=42 (for Slurm version 1.1 and earlier only)
 </pre>
 <p>In this case, "SchedulerAuth" has been set to 42, which was the 
-authenticaiton key specified when Maui was configured above. 
+authentication key specified when Maui was configured above. 
 Just make sure the numbers match.</p>
 
 <p>For Slurm version 1.2 or higher, the authentication key 

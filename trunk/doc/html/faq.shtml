@@ -121,7 +121,7 @@ associated with it terminate before setting it DOWN and re-booting.</p>
 <p>Note that SLURM has two configuration parameters that may be used to 
 automate some of this process.
 <i>UnkillableStepProgram</i> specifies a program to execute when 
-non-killable proceses are identified.
+non-killable processes are identified.
 <i>UnkillableStepTimeout</i> specifies how long to wait for processes
 to terminate. 
 See the "man slurm.conf" for more information about these parameters.</p>
@@ -140,14 +140,14 @@ the slurmd daemon is initiated by the init daemon with the operating
 system default limits. This may be address either through use of the 
 ulimit command in the /etc/sysconfig/slurm file or enabling
 <a href="#pam">PAM in SLURM</a>.</li>
-<li>The user's hard resource limits on the allocated node sre lower than 
-the same user's soft  hard resource limits on the node from which the 
+<li>The user's hard resource limits on the allocated node are lower than 
+the same user's soft hard resource limits on the node from which the 
 job was submitted. It is recommended that the system administrator 
 establish uniform hard resource limits for users on all nodes 
 within a cluster to prevent this from occurring.</li>
 </ul></p>
 <p>NOTE: This may produce the error message &quot;Can't propagate RLIMIT_...&quot;.
-The error message is printed only if the user explicity specifies that
+The error message is printed only if the user explicitly specifies that
 the resource limit should be propagated or the srun command is running
 with verbose logging of actions from the slurmd daemon (e.g. "srun -d6 ...").</p>
 
@@ -241,7 +241,7 @@ There are significant limitations in the current backfill scheduler plugin.
 It was designed to perform backfill node scheduling for a homogeneous cluster.
 It does not manage scheduling on individual processors (or other consumable 
 resources). It also does not update the required or excluded node list of 
-individual jobs. These are the current limiations. You can use the 
+individual jobs. These are the current limitations. You can use the 
 scontrol show command to check if these conditions apply.</p> 
 <ul>
 <li>Partition: State=UP</li>
@@ -519,7 +519,7 @@ job steps being killed?</b></a><br>
 SLURM has a configuration parameter <i>InactiveLimit</i> intended 
 to kill jobs that do not spawn any job steps for a configurable
 period of time. Your system administrator may modify the <i>InactiveLimit</i>
-to satisfy your needs. Alternatly, you can just spawn a job step
+to satisfy your needs. Alternately, you can just spawn a job step
 at the beginning of your script to execute in the background. It
 will be purged when your script exits or your job otherwise terminates.
 A line of this sort near the beginning of your script should suffice:<br>
@@ -572,7 +572,7 @@ Set its value to one in order for DOWN nodes to automatically be
 returned to service once the <i>slurmd</i> daemon registers 
 with a valid node configuration.
 A value of zero is the default and results in a node staying DOWN 
-until an administrator explicity returns it to service using 
+until an administrator explicitly returns it to service using 
 the command &quot;scontrol update NodeName=whatever State=RESUME&quot;.
 See &quot;man slurm.conf&quot; and &quot;man scontrol&quot; for more 
 details.</p>
@@ -599,7 +599,7 @@ configure <i>SelectType=select/linear</i>.
 Each partition also has a configuration parameter <i>Shared</i>
 that enables more than one job to execute on each node. 
 See <i>man slurm.conf</i> for more information about these 
-configuration paramters.</p>
+configuration parameters.</p>
 
 <p><a name="inc_plugin"><b>6. When the SLURM daemon starts, it 
 prints &quot;cannot resolve X plugin operations&quot; and exits. 
@@ -647,7 +647,7 @@ For example, to set the locked memory limit to unlimited for all users:</p>
 </pre>
 <p>Finally, you need to disable SLURM's forwarding of the limits from the 
 session from which the <i>srun</i> initiating the job ran. By default 
-all resource limits are propogated from that session. For example, adding 
+all resource limits are propagated from that session. For example, adding 
 the following line to <i>slurm.conf</i> will prevent the locked memory 
 limit from being propagated:<i>PropagateResourceLimitsExcept=MEMLOCK</i>.</p>
 
@@ -813,7 +813,7 @@ any desired node resource specifications (<i>Procs</i>, <i>Sockets</i>,
 <i>CoresPerSocket</i>, <i>ThreadsPerCore</i>, and/or <i>TmpDisk</i>).
 SLURM will use the resource specification for each node that is 
 given in <i>slurm.conf</i> and will not check these specifications 
-against those actaully found on the node.
+against those actually found on the node.
 
 <p><a name="credential_replayed"><b>16. What does a 
 &quot;credential replayed&quot; 
@@ -967,7 +967,7 @@ in the SLURM distribution for a list of other options.
 <p><a name="slurmdbd"><b>28. Why should I use the slurmdbd instead of the
 regular database plugins?</b><br>
 While the normal storage plugins will work fine without the added
-layer of the slurmdbd there are some great benifits to using the
+layer of the slurmdbd there are some great benefits to using the
 slurmdbd.
 
 1. Added security.  Using the slurmdbd you can have an authenticated
@@ -1007,7 +1007,7 @@ Hierarchical communications are used for sending this message. If there
 are DOWN nodes in the communications hierarchy, messages will need to 
 be re-routed. This limits SLURM's ability to tightly synchroize the 
 execution of the <i>HealthCheckProgram</i> across the cluster, which
-could adversly impact performance of parallel applications. 
+could adversely impact performance of parallel applications. 
 The use of CRON or node startup scripts may be better suited to insure
 that <i>HealthCheckProgram</i> gets executed on nodes that are DOWN
 in SLURM. If you still want to have SLURM try to execute 

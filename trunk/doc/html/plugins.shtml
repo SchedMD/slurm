@@ -101,7 +101,7 @@ are not available, so it is the installer's job to make sure the specified libra
 are available.</p>
 <h2>Performance</h2>
 <p>All plugin functions are expected to execute very quickly. If any function 
-entails delays (e.g. transations with other systems), it should be written to 
+entails delays (e.g. transactions with other systems), it should be written to 
 utilize a thread for that functionality. This thread may be created by the 
 <span class="commandline">init()</span> function and deleted by the 
 <span class="commandline">fini()</span> functions. See <b>plugins/sched/backfill</b>

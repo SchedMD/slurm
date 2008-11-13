@@ -79,7 +79,7 @@ to dedicate to a job (minimum or range)
 </td></tr>
 <tr>
     <td> -B <i>S[:C[:T]]</i></td>
-    <td> Combined shorcut option for --sockets-per-node, --cores-per_cpu, --threads-per_core
+    <td> Combined shortcut option for --sockets-per-node, --cores-per_cpu, --threads-per_core
 </td></tr>
 <tr><td colspan=2>
 <b><a href="#srun_dist">New Distributions</b>
@@ -356,7 +356,7 @@ via <a href="configurator.html">configurator.html</a>.
 <p>The <tt>--ntasks-per-{node,socket,core}=<i>ntasks</i></tt> flags
 allow the user to request that no more than <tt><i>ntasks</i></tt>
 be invoked on each node, socket, or core.
-This is similiar to using <tt>--cpus-per-task=<i>ncpus</i></tt>
+This is similar to using <tt>--cpus-per-task=<i>ncpus</i></tt>
 but does not require knowledge of the actual number of cpus on
 each node.  In some cases, it is more convenient to be able to
 request that no more than a specific number of ntasks be invoked
@@ -896,7 +896,7 @@ JOBID ST TIME NODES MIN_PROCS MIN_SOCKETS MIN_CORES MIN_THREADS
 
 <p>The 'scontrol show job' command can be used to display
 the number of allocated CPUs per node as well as the socket, cores,
-and threads specified in the request and contraints.
+and threads specified in the request and constraints.
 
 <PRE>
 % srun -N 2 -B 2:1-1 sleep 100 &

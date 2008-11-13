@@ -459,7 +459,7 @@ JOBID PARTITION   NAME   USER  ST   TIME  NODES NODELIST(REASON)
     5       lsf  sleep   root   R   1:52      3 linux[01-03]
 </pre>
 
-<p>Job 3 and Job 4 have finshed and Job 5 is still running on nodes linux[01-03].</p>
+<p>Job 3 and Job 4 have finished and Job 5 is still running on nodes linux[01-03].</p>
 
 <p>The advantage of the consumable resource scheduling policy
 is that the job throughput can increase dramatically. The overall job

@@ -11,8 +11,8 @@ distributions using i386, ia64, and x86_64 architectures.</li>
 </ul>
 <h2>Interconnects</h2>
 <ul>
-<li><b>Blue Gene</b>&#151;SLURM support for IBM's Blue Gene system has been
-thoroughly tested.</li>
+<li><b>BlueGene</b>&#151;SLURM support for IBM's BlueGene/L and BlueGene/P 
+systems has been thoroughly tested.</li>
 <li><b>Ethernet</b>&#151;Ethernet requires no special support from SLURM and has 
 been thoroughly tested.</li>
 <li><b>IBM Federation</b>&#151;SLURM support for IBM's Federation Switch 
@@ -24,6 +24,6 @@ are available in all versions of SLURM and have been thoroughly tested.</li>
 <li><b>Other</b>&#151;SLURM ports to other systems will be gratefully accepted.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 15 June 2007</p>
+<p style="text-align:center;">Last modified 13 November 2008</p>
 
 <!--#include virtual="footer.txt"-->
