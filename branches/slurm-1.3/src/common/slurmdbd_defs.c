@@ -324,9 +324,10 @@ static void _open_slurmdbd_fd(void)
 	if (slurmdbd_host == NULL)
 		slurmdbd_host = xstrdup(DEFAULT_STORAGE_HOST);
 	
-	if (slurmdbd_port == 0) 
+	if (slurmdbd_port == 0) {
 		slurmdbd_port = SLURMDBD_PORT;
-	
+		slurm_set_accounting_storage_port(slurmdbd_port);
+	}
 	slurm_set_addr(&dbd_addr, slurmdbd_port, slurmdbd_host);
 	if (dbd_addr.sin_port == 0)
 		error("Unable to locate SlurmDBD host %s:%u", 
