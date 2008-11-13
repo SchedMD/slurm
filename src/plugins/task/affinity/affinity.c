@@ -67,6 +67,8 @@ void slurm_chkaffinity(cpu_set_t *mask, slurmd_job_t *job, int statval)
 			units = "_cores";
 		else if (job->cpu_bind_type & CPU_BIND_TO_SOCKETS)
 			units = "_sockets";
+		else if (job->cpu_bind_type & CPU_BIND_TO_LDOMS)
+			units = "_ldoms";
 		else
 			units = "";
 		if (job->cpu_bind_type & CPU_BIND_RANK) {
@@ -75,6 +77,12 @@ void slurm_chkaffinity(cpu_set_t *mask, slurmd_job_t *job, int statval)
 			bind_type = "MAP ";
 		} else if (job->cpu_bind_type & CPU_BIND_MASK) {
 			bind_type = "MASK";
+		} else if (job->cpu_bind_type & CPU_BIND_LDRANK) {
+			bind_type = "LDRANK";
+		} else if (job->cpu_bind_type & CPU_BIND_LDMAP) {
+			bind_type = "LDMAP ";
+		} else if (job->cpu_bind_type & CPU_BIND_LDMASK) {
+			bind_type = "LDMASK";
 		} else if (job->cpu_bind_type & (~CPU_BIND_VERBOSE)) {
 			bind_type = "UNK ";
 		} else {
@@ -95,12 +103,42 @@ void slurm_chkaffinity(cpu_set_t *mask, slurmd_job_t *job, int statval)
 			status);
 }
 
+/* If HAVE_NUMA, create mask for given ldom.
+ * Otherwise create mask for given socket
+ */
+static int _bind_ldom(uint32_t ldom, cpu_set_t *mask)
+{
+#ifdef HAVE_NUMA
+	int c, maxcpus, nnid = 0;
+	int nmax = numa_max_node();
+	if (nmax > 0)
+		nnid = ldom % (nmax+1);
+	debug3("task/affinity: binding to NUMA node %d", nnid);
+	maxcpus = conf->sockets * conf->cores * conf->threads;
+	for (c = 0; c < maxcpus; c++) {
+		if (slurm_get_numa_node(c) == nnid)
+			CPU_SET(c, mask);
+	}
+	return true;
+#else
+	uint16_t s, sid  = ldom % conf->sockets;
+	uint16_t i, cpus = conf->cores * conf->threads;
+	if (!conf->block_map)
+		return false;
+	for (s = sid * cpus; s < (sid+1) * cpus; s++) {
+		i = s % conf->block_map_size;
+		CPU_SET(conf->block_map[i], mask);
+	}
+	return true;
+#endif
+}
+
 int get_cpuset(cpu_set_t *mask, slurmd_job_t *job)
 {
 	int nummasks, maskid, i;
 	char *curstr, *selstr;
 	char mstr[1 + CPU_SETSIZE / 4];
-	int local_id = job->envtp->localid;
+	uint32_t local_id = job->envtp->localid;
 	char buftype[1024];
 
 	slurm_sprint_cpu_bind_type(buftype, job->cpu_bind_type);
@@ -115,6 +153,13 @@ int get_cpuset(cpu_set_t *mask, slurmd_job_t *job)
 	if (job->cpu_bind_type & CPU_BIND_RANK) {
 		CPU_SET(job->envtp->localid % job->cpus, mask);
 		return true;
+	}
+	
+	if (job->cpu_bind_type & CPU_BIND_LDRANK) {
+		/* if HAVE_NUMA then bind this task ID to it's corresponding
+		 * locality domain ID. Otherwise, bind this task ID to it's
+		 * corresponding socket ID */
+		return _bind_ldom(local_id, mask);
 	}
 
 	if (!job->cpu_bind)
@@ -179,6 +224,50 @@ int get_cpuset(cpu_set_t *mask, slurmd_job_t *job)
 		}
 		CPU_SET(mycpu, mask);
 		return true;
+	}
+	
+	if (job->cpu_bind_type & CPU_BIND_LDMASK) {
+		/* if HAVE_NUMA bind this task to the locality domains
+		 * identified in mstr. Otherwise bind this task to the
+		 * sockets identified in mstr */
+		int len = strlen(mstr);
+		char *ptr = mstr + len - 1;
+		uint32_t base = 0;
+
+		curstr = mstr;
+		/* skip 0x, it's all hex anyway */
+		if (len > 1 && !memcmp(mstr, "0x", 2L))
+			curstr += 2;
+		while (ptr >= curstr) {
+			char val = char_to_val(*ptr);
+			if (val == (char) -1)
+				return false;
+			if (val & 1)
+				_bind_ldom(base, mask);
+			if (val & 2)
+				_bind_ldom(base + 1, mask);
+			if (val & 4)
+				_bind_ldom(base + 2, mask);
+			if (val & 8)
+				_bind_ldom(base + 3, mask);
+			len--;
+			ptr--;
+			base += 4;
+		}
+		return true;
+	}
+	
+	if (job->cpu_bind_type & CPU_BIND_LDMAP) {
+		/* if HAVE_NUMA bind this task to the given locality
+		 * domain. Otherwise bind this task to the given
+		 * socket */
+		uint32_t myldom = 0;
+		if (strncmp(mstr, "0x", 2) == 0) {
+			myldom = strtoul (&(mstr[2]), NULL, 16);
+		} else {
+			myldom = strtoul (mstr, NULL, 10);
+		}
+		return _bind_ldom(myldom, mask);
 	}
 
 	return false;

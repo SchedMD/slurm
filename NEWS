@@ -15,6 +15,10 @@ documents those changes that are of interest to users and admins.
     PMI_Get_clique_size() for when srun --overcommit option is used.
  -- Fix bug in select/cons_res, allocated a job all of the processors on a 
     node when the --exclusive option is specified as a job submit option.
+ -- Add NUMA cpu_bind support to the task affinity plugin. Binds tasks to
+    a set of CPUs that belong NUMA locality domain with the appropriate
+    --cpu-bind option (ldoms, rank_ldom, map_ldom, and mask_ldom), see
+    "man srun" for more information.
 
 * Changes in SLURM 1.4.0-pre4
 =============================

@@ -375,6 +375,7 @@ int srun(int ac, char **av)
 	launch_params.ntasks_per_node   = opt.ntasks_per_node;
 	launch_params.ntasks_per_socket = opt.ntasks_per_socket;
 	launch_params.ntasks_per_core   = opt.ntasks_per_core;
+	launch_params.task_dist         = opt.distribution;
 	launch_params.ckpt_path		= xstrdup(opt.ckpt_path);
 	/* job structure should now be filled in */
 	_setup_signals();

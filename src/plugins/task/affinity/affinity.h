@@ -114,8 +114,9 @@ int	slurm_set_cpuset(char *base, char *path, pid_t pid, size_t size,
 
 /*** from numa.c ***/
 #ifdef HAVE_NUMA
-int	get_memset(nodemask_t *mask, slurmd_job_t *job);
-void	slurm_chk_memset(nodemask_t *mask, slurmd_job_t *job);
+int	 get_memset(nodemask_t *mask, slurmd_job_t *job);
+void	 slurm_chk_memset(nodemask_t *mask, slurmd_job_t *job);
+uint16_t slurm_get_numa_node(uint16_t cpuid);
 #endif
 
 /*** from schedutils.c ***/

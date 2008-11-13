@@ -356,18 +356,23 @@ typedef enum task_dist_states {
 #define OPEN_MODE_TRUNCATE	2
 
 typedef enum cpu_bind_type {	/* cpu binding type from --cpu_bind=... */
-	/* the following auto-binding flags are mutually exclusive */
-	CPU_BIND_TO_THREADS= 0x01, /* =threads */ 
-	CPU_BIND_TO_CORES  = 0x02, /* =cores */
-	CPU_BIND_TO_SOCKETS= 0x04, /* =sockets */
 	/* verbose can be set with any other flag */
-	CPU_BIND_VERBOSE   = 0x08, /* =v, */
+	CPU_BIND_VERBOSE   = 0x01, /* =v, */
+	/* the following auto-binding flags are mutually exclusive */
+	CPU_BIND_TO_THREADS= 0x02, /* =threads */ 
+	CPU_BIND_TO_CORES  = 0x04, /* =cores */
+	CPU_BIND_TO_SOCKETS= 0x08, /* =sockets */
+	CPU_BIND_TO_LDOMS  = 0x10, /* locality domains */
 	/* the following manual binding flags are mutually exclusive */
-	/* CPU_BIND_NONE needs to be the first in this sub-list */
-	CPU_BIND_NONE	   = 0x10, /* =no */
-	CPU_BIND_RANK  	   = 0x20, /* =rank */
-	CPU_BIND_MAP	   = 0x40, /* =map_cpu:<list of CPU IDs> */
-	CPU_BIND_MASK	   = 0x80, /* =mask_cpu:<list of CPU masks> */
+	/* CPU_BIND_NONE needs to be the lowest value among manual bindings */
+	CPU_BIND_NONE	   = 0x20, /* =no */
+	CPU_BIND_RANK  	   = 0x40, /* =rank */
+	CPU_BIND_MAP	   = 0x80, /* =map_cpu:<list of CPU IDs> */
+	CPU_BIND_MASK	   = 0x100,/* =mask_cpu:<list of CPU masks> */
+	CPU_BIND_LDRANK    = 0x200,/* =locality domain rank */
+	CPU_BIND_LDMAP	   = 0x400,/* =map_ldom:<list of locality domains> */
+	CPU_BIND_LDMASK	   = 0x800,/* =mask_ldom:<list of ldom masks> */
+	
 	/* the following is used only as a flag for expressing 
 	 * the contents of TaskPluginParams */
 	CPU_BIND_CPUSETS   = 0x8000

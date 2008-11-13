@@ -144,6 +144,11 @@ mask/CPU as the parent.  Alternatively, fat masks (masks which specify more
 than one allowed CPU) could be used for the tasks in order to provide
 multiple CPUs for the multithreaded tasks.
 
+Binding a task to a NUMA locality domain means to bind the task to the set of
+CPUs that belong to the NUMA locality domain or "NUMA node".
+If NUMA locality domain options are used on systems with no NUMA support, then
+each socket is considered a locality domain.
+
 Supported options include:
 .PD 1
 .RS
@@ -164,13 +169,28 @@ bind by task rank
 bind by mapping CPU IDs to tasks as specified
 where <list> is <cpuid1>,<cpuid2>,...<cpuidN>.
 CPU IDs are interpreted as decimal values unless they are preceded
-with '0x' in which case they interpreted as hexadecimal values.
+with '0x' in which case they are interpreted as hexadecimal values.
 .TP
 .B mask_cpu:<list>
 bind by setting CPU masks on tasks as specified
 where <list> is <mask1>,<mask2>,...<maskN>.
 CPU masks are \fBalways\fR interpreted as hexadecimal values but can be
 preceded with an optional '0x'.
+.TP
+.B rank_ldom
+bind to a NUMA locality domain by rank
+.TP
+.B map_ldom:<list>
+bind by mapping NUMA locality domain IDs to tasks as specified where
+<list> is <ldom1>,<ldom2>,...<ldomN>.
+The locality domain IDs are interpreted as decimal values unless they are
+preceded with '0x' in which case they areinterpreted as hexadecimal values.
+.TP
+.B mask_ldom:<list>
+bind by setting NUMA locality domain masks on tasks as specified
+where <list> is <mask1>,<mask2>,...<maskN>.
+NUMA locality domain masks are \fBalways\fR interpreted as hexadecimal
+values but can be preceded with an optional '0x'.
 .TP
 .B sockets
 auto\-generated masks bind to sockets
@@ -180,6 +200,9 @@ auto\-generated masks bind to cores
 .TP
 .B threads
 auto\-generated masks bind to threads
+.TP
+.B ldoms
+auto\-generated masks bind to NUMA locality domains
 .TP
 .B help
 show this help message
@@ -360,7 +383,7 @@ Multiple license names should be comma separated (e.g.
 "\-\-licenses=foo*4,bar").
 
 .TP
-\fB\-m\fR, \fB\-\-relative\fR
+\fB\-m\fR, \fB\-\-distribution\fR
 (\fIblock\fR|\fIcyclic\fR|\fIarbitrary\fR|\fIplane=<options>\fR)
 Specify an alternate distribution method for remote processes.
 .RS
