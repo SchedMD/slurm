@@ -8,18 +8,12 @@ sshare \- Tool for listing the shares of associations to a cluster.
 
 .SH "DESCRIPTION"
 \fBsshare\fR is used to view Slurm share information.
-The share information is maintained within a database with the interface 
+The sshare information is maintained within a database with the interface 
 being provided by \fBslurmdbd\fR (Slurm Database daemon).
 This database can serve as a central storehouse of user and 
 computer information for multiple computers at a single site.
-Slurm account information is recorded based upon four parameters
-that form what is referred to as an \fIassociation\fR. 
-These parameters are \fIuser\fR, \fIcluster\fR, \fIpartition\fR, and 
-\fIaccount\fR. \fIuser\fR is the login name.
-\fIcluster\fR is the name of a Slurm managed cluster as specified by 
-the \fIClusterName\fR parameter in the \fIslurm.conf\fR configuration file. 
-\fIpartition\fR is the name of a Slurm partition on that cluster.
-\fIaccount\fR is the bank account for a job.
+sshare provides Slurm share information of Account, User, ID, FairShare,
+Normal Shares, Used, Normal Usage, Effective Used, Norm Effective Usage
 
 
 .SH "OPTIONS"
@@ -35,7 +29,7 @@ List accounts information.
 .TP
 \fB\-h\fR, \fB\-\-help\fR
 Print a help message describing the usage of \fBssshare\fR.
-This is equivalent to the \fBhelp\fR command.
+This is equivalent to the \fBusage\fR command.
 
 .TP
 \fB\-n\fR, \fB\-\-no_header\fR
@@ -56,12 +50,11 @@ This is equivalent to the \fBquiet\fR command.
 
 .TP
 \fB\-u\fR, \fB\-\-uid\fR
-This is equivalent to the \fBreadonly\fR command.
+This is equivalent to the \fBuser\fR command.
 
 .TP
 \fB\-t\fR, \fB\-\-time\fR
 Set time format.
-This is equivalent to the \fBtime\fR command.
 
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
@@ -80,11 +73,11 @@ This is equivalent to the \fBversion\fR command.
 Display associations.
 
 .TP
-\fBaccounts\fR
+\fBaccounts\fR <\fIaccountName\fR> 
 Display accounts.
 
 .TP
-\fBcluster\fR
+\fBcluster\fR <\fIclustername\fR> 
 Display cluster.
 
 .TP
@@ -116,7 +109,7 @@ Display user.
 Display a description of sshare options and commands.
 
 .TP
-\fBuser\fP
+\fBuser\fP <\fIuserName\fR> 
 Display user.
 
 .TP
@@ -128,7 +121,6 @@ This is an independent command with no options meant for use in interactive mode
 .TP
 \fBversion\fP
 Display the version number of sshare.
-
 
 
 .SH " ACCOUNTS "
@@ -158,10 +150,10 @@ The name of a user.
 .SH "EXAMPLES"
 .eo
 .br
-> sshare -a
+> sshare -A <accountName>
 .br
 .br
-> sshare --parsable
+> sshare --parsable --user <userName>
 .br
 
 .ec
