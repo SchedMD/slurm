@@ -215,7 +215,7 @@ suited for use with the <CODE>select/cons_res</CODE> plugin which can
 allocate individual CPUs to jobs.</P>
 
 <P>Default and maximum values for memory on a per node or per CPU basis can 
-be configued using the following options: <CODE>DefMemPerCPU</CODE>,
+be configured using the following options: <CODE>DefMemPerCPU</CODE>,
 <CODE>DefMemPerNode</CODE>, <CODE>MaxMemPerCPU</CODE> and <CODE>MaxMemPerNode</CODE>.
 Users can use the <CODE>--mem</CODE> or <CODE>--mem-per-cpu</CODE> option
 at job submission time to specify their memory requirements.

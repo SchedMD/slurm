@@ -15,8 +15,7 @@ it arbitrates contention for resources by managing a queue of pending work.</p>
 <a href="https://www.llnl.gov/">Lawrence Livermore National Laboratory (LLNL)</a>,
 <a href="http://www.hp.com/">Hewlett-Packard</a>, 
 <a href="http://www.bull.com/">Bull</a>,
-<a href="http://www.lnxi.com/">Linux NetworX</a> and many other contributors.
-HP distributes and supports SLURM as a component in their XC System Software.</p>
+<a href="http://www.lnxi.com/">Linux NetworX</a> and many other contributors.</p>
 
 <h2>Architecture</h2>
 <p>SLURM has a centralized manager, <b>slurmctld</b>, to monitor resources and 
@@ -24,18 +23,22 @@ work. There may also be a backup manager to assume those responsibilities in the
 event of failure. Each compute server (node) has a <b>slurmd</b> daemon, which 
 can be compared to a remote shell: it waits for work, executes that work, returns 
 status, and waits for more work. 
-The <b>slurmd</b> daemons provide fault-tolerant hierarchical communciations.
+The <b>slurmd</b> daemons provide fault-tolerant hierarchical communications.
 There is an optional <b>slurmdbd</b> (Slurm DataBase Daemon) which can be used
 to record accounting information for multiple Slurm-managed clusters in a 
 single database.
 User tools include <b>srun</b> to initiate jobs, 
-<b>scancel</b> to terminate queued or running jobs, <b>sinfo</b> to report system 
-status, <b>squeue</b> to report the status of jobs, <b>sacct</b> to get information 
-about jobs and job steps that are running or have completed. 
+<b>scancel</b> to terminate queued or running jobs, 
+<b>sinfo</b> to report system status, 
+<b>squeue</b> to report the status of jobs, and 
+<b>sacct</b> to get information about jobs and job steps that are running or have completed.
 The <b>smap</b> and <b>sview</b> commands graphically reports system and 
-job status including network topology. There is also an administrative 
-tool <b>scontrol</b> available to monitor and/or modify configuration and state 
-information. APIs are available for all functions.</p>
+job status including network topology. 
+There is an administrative tool <b>scontrol</b> available to monitor 
+and/or modify configuration and state information on the cluster. 
+The administrative tool used to manage the database is <b>sacctmgr</b>.
+It can be used to identify the clusters, valid users, valid bank accounts, etc.
+APIs are available for all functions.</p>
 
 <div class="figure">
   <img src="arch.gif" width="550"><br>
@@ -167,6 +170,6 @@ PartitionName=DEFAULT MaxTime=UNLIMITED MaxNodes=4096
 PartitionName=batch Nodes=lx[0041-9999]
 </pre>
 
-<p style="text-align:center;">Last modified 11 March 2008</p>
+<p style="text-align:center;">Last modified 13 November 2008</p>
 
 <!--#include virtual="footer.txt"-->

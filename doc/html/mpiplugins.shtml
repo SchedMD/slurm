@@ -34,7 +34,7 @@ srun calls
 <br>
 <i>mpi_p_thr_create((srun_job_t *)job);</i>
 <br>
-which will set up the correct enviornment for the specified mpi.
+which will set up the correct environment for the specified mpi.
 <br>
 slurmd daemon runs
 <br>
@@ -48,7 +48,7 @@ which will set configure the slurmd to use the correct mpi as well to interact w
 <h2>Data Objects</h2>
 <p> These functions are expected to read and/or modify data structures directly in 
 the slurmd daemon's and srun memory. Slurmd is a multi-threaded program with independent 
-read and write locks on each data structure type. Thererfore the type of operations 
+read and write locks on each data structure type. Therefore the type of operations 
 permitted on various data structures is identified for each function.</p>
 
 <p class="footer"><a href="#top">top</a></p>
@@ -63,14 +63,14 @@ to that of the correct mpi.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br><span class="commandline"> job</span>&nbsp; 
 &nbsp;&nbsp;(input) Pointer to the slurmd_job that is running.  Cannot be NULL.<br>
 <span class="commandline"> rank</span>&nbsp;
-&nbsp;&nbsp;(input) Primarially there for MVAPICH.  Used to send the rank fo the mpirun job. 
+&nbsp;&nbsp;(input) Primarily there for MVAPICH.  Used to send the rank fo the mpirun job. 
 This can be 0 if no rank information is needed for the mpi type.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure, 
 the plugin should return SLURM_ERROR.</p>
 
 <p class="commandline">int mpi_p_thr_create (srun_job_t *job);</p>
 <p style="margin-left:.2in"><b>Description</b>: Used by srun to spawn the thread for the mpi processes. 
-Most all the real proccessing happens here.</p>
+Most all the real processing happens here.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<span class="commandline"> job</span>&nbsp; 
 &nbsp;&nbsp;(input) Pointer to the srun_job that is running.  Cannot be NULL.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure, 

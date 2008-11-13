@@ -62,15 +62,15 @@ SLURM_SUCCESS. </p>
 <p style="margin-left:.2in"><b>Description</b>: Specify the location to be used for job logging.</p>
 <p style="margin-left:.2in"><b>Argument</b>:<span class="commandline"> location</span>&nbsp; 
 &nbsp;&nbsp;(input) specification of where logging should be done. The interpretation of 
-this string is at the discression of the plugin implementation.</p>
+this string is at the discresion of the plugin implementation.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure, 
 the plugin should return SLURM_ERROR and set the errno to an appropriate value 
 to indicate the reason for failure.</p>
 <p class="footer"><a href="#top">top</a></p>
 
 <p class="commandline">int slurm_jobcomp_log_record (struct job_record *job_ptr);</p>
-<p style="margin-left:.2in"><b>Description</b>: Note termation of a job with the specified 
-characteristics.</p>
+<p style="margin-left:.2in"><b>Description</b>: Note termin ation of a job 
+with the specified characteristics.</p>
 <p style="margin-left:.2in"><b>Argument</b>: <br>
 <span class="commandline"> job_ptr</span>&nbsp;&nbsp;&nbsp;(input) Pointer to job record as defined
 in <i>src/slurmctld/slurmctld.h</i></p>

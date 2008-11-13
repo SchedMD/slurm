@@ -30,7 +30,7 @@ prior to launching tasks.</p>
 <p>Each poe invocation (or SLURM job step) can have it's own network 
 specification.
 For example one poe may use IP mode communications and the next use
-User Space (US) mode communcations. 
+User Space (US) mode communications. 
 This enhancement to normal poe functionality may be accomplished by 
 setting the SLURM_NETWORK environment variable.
 The format of SLURM_NETWORK is "network.[protocol],[type],[usage],[mode]". 
@@ -46,7 +46,7 @@ One file is written for each node on which the job is executing, plus
 another for the script executing poe.a
 By default, the checkpoint files will be written to the current working
 directory of the job.
-Names and locations of these files can be controled using the 
+Names and locations of these files can be controlled using the 
 environment variables <b>MP_CKPTFILE</b> and <b>MP_CKPTDIR</b>.
 Use the squeue command to identify the job and job step of interest. 
 To initiate a checkpoint in which the job step will continue execution, 
@@ -61,11 +61,11 @@ use the command: <br>
 <p>Three unique components are required to use SLURM on an IBM system.</p>
 <ol>
 <li>The Federation switch plugin is required.  
-This component is packaged with the SLURM distrbution.</li>
+This component is packaged with the SLURM distribution.</li>
 <li>There is a process tracking kernel extension required. 
 This is used to insure that all processes associated with a job 
 are tracked.
-SLURM normatlly uses session ID and process group ID on Linux systems,
+SLURM normally uses session ID and process group ID on Linux systems,
 but these mechanisms can not prevent user processes from establishing 
 their own session or process group and thus "escape" from SLURM 
 tracking.

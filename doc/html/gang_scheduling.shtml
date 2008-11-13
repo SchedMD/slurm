@@ -131,7 +131,7 @@ the "active bitmap".
 </P>
 <P>
 This <I>timeslicer thread</I> algorithm for rotating jobs is designed to prevent
-jobs from starving (remaining in the suspended state indefinitly) and to be as
+jobs from starving (remaining in the suspended state indefinitely) and to be as
 fair as possible in the distribution of runtime while still keeping all of the
 resources as busy as possible.
 </P>

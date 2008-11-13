@@ -22,8 +22,8 @@ Major enhancements include:
 <li>Support for binding tasks to the memory on a processor.</li>
 <li>The configuration parameter <i>HeartbeatInterval</i> is defunct.
 Half the values of configuration parameters <i>SlurmdTimeout</i> and 
-<i>SlurmctldTimeout</i> are used as the commununication frequency for 
-the slurmctld and slurmd daemons respecitively.</li>
+<i>SlurmctldTimeout</i> are used as the communication frequency for 
+the slurmctld and slurmd daemons respectively.</li>
 <li>Support for PAM to control resource limits by user on each 
 compute node used. See <i>UsePAM</i> configuration parameter.</li>
 <li>Support added for <i>xcpu</i> job launch.</li>
@@ -66,7 +66,7 @@ task launch directly from the <i>srun</i> command.</li>
 </ul>
 
 <h2><a name="13">Major Updates in SLURM Version 1.3</a></h2>
-<p>SLURM Version 1.3 was relased in March 2008.
+<p>SLURM Version 1.3 was released in March 2008.
 Major enhancements include:
 <ul>
 <li>Job accounting and completion data can be stored in a database 
@@ -77,22 +77,25 @@ database support across multiple clusters.</li>
 without an external scheduler).</li>
 <li>Cryptography logic moved to a separate plugin with the 
 option of using OpenSSL (default) or Munge (GPL).</li>
-<li>Improved scheduling of multple job steps within a job's allocation.</li>
+<li>Improved scheduling of multiple job steps within a job's allocation.</li>
 <li>Support for job specification of node features with node counts.</li> 
 <li><i>srun</i>'s --alloc, --attach, and --batch options removed (use 
 <i>salloc</i>, <i>sattach</i> or <i>sbatch</i> commands instead).</li>
-<li><i>srun --pty</i> option added to support remote pseudo terminial for 
+<li><i>srun --pty</i> option added to support remote pseudo terminal for 
 spawned tasks.</li>
 <li>Support added for a much richer job dependency specification
 including testing of exit codes and multiple dependencies.</li>
 </ul>
 
 <h2><a name="14">Major Updates in SLURM Version 1.4</a></h2>
-<p>SLURM Version 1.4 is scheduled for relased in May 2009.
+<p>SLURM Version 1.4 is scheduled for released in May 2009.
 Major enhancements include:
 <ul>
 <li>Idle nodes can now be completely powered down when idle and automatically
 restarted when their is work available.</li>
+<li>Jobs in higher priority partitions (queues) can automatically preempt jobs
+in lower priority queues. The preempted jobs will automatically resume execution
+upon completion of the higher priority job.</li>
 <li>Specific cores are allocated to jobs and jobs steps in order to effective
 preempt or gang schedule jobs.</li>
 <li>A new configuration parameter, <i>PrologSlurmctld</i>, can be used to 
@@ -103,13 +106,13 @@ support the booting of different operating systems for each job.</li>
 <p> Detailed plans for release dates and contents of future SLURM releases have 
 not been finalized. Anyone desiring to perform SLURM development should notify
 <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>
-to coordinate activies. Future development plans includes:
+to coordinate activities. Future development plans includes:
 <ul>
 <li>Permit resource allocations (jobs) to change size.</li>
 <li>Add Kerberos credential support including credential forwarding 
 and refresh.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 6 October 2008</p>
+<p style="text-align:center;">Last modified 13 November 2008</p>
 
 <!--#include virtual="footer.txt"-->
