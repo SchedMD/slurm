@@ -797,7 +797,7 @@ static int _split_block(List block_list, List new_blocks,
 	uint16_t nodecard = 0;
 	int cnodes = procs / bluegene_proc_ratio;
 	bitstr_t *ionodes = bit_alloc(bluegene_numpsets);
-	
+	blockreq_t blockreq;
 	
 	switch(bg_record->node_cnt) {
 	case 16:
@@ -817,7 +817,7 @@ static int _split_block(List block_list, List new_blocks,
 		
 		break;
 	default:
-		full_bp;
+		full_bp = true;
 		break;
 	}
 		
@@ -827,7 +827,6 @@ static int _split_block(List block_list, List new_blocks,
 	if(procs == (procs_per_node/16) && bluegene_nodecard_ionode_cnt) {
 		switch(cnodes) {
 		case 16:
-			request->small16 = 1;
 			
 			blockreq.small16 = 2;
 			blockreq.small32 = 1;
@@ -836,7 +835,6 @@ static int _split_block(List block_list, List new_blocks,
 			blockreq.small256 = 1;
 			break;
 		case 32:
-			request->small32 = 1;
 			
 			blockreq.small32 = 2;
 			blockreq.small64 = 1;
@@ -844,20 +842,16 @@ static int _split_block(List block_list, List new_blocks,
 			blockreq.small256 = 1;
 			break;
 		case 64:
-			request->small64 = 1;
-			
 			blockreq.small64 = 2;
 			blockreq.small128 = 1;
 			blockreq.small256 = 1;
 			break;
 		case 128:
-			request->small128 = 1;
-			
+				
 			blockreq.small128 = 2;
 			blockreq.small256 = 1;
 			break;
 		case 256:
-			request->small256 = 1;
 			
 			blockreq.small256 = 2;
 			break;
