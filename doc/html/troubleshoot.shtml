@@ -150,7 +150,7 @@ either fix the node or change <i>slurm.conf</i>.</li>
 between the control machine and the DOWN node using the command
 "<i>ping &lt;address&gt;</i>" being sure to specify the 
 NodeAddr values configured in <i>slurm.conf</i>. 
-If ping fails, then fix the network or addressses in <i>slurm.conf</i>.</li>
+If ping fails, then fix the network or addresses in <i>slurm.conf</i>.</li>
 
 <li>Next, login to a node that SLURM considers to be in a DOWN 
 state and check if the slurmd daemon is running with the command
@@ -222,7 +222,7 @@ file) for an indication of why it is failing. (grep for update_block:)</li>
 <li>If the reason was something that happened to the system like a
 failed boot or a nodecard going bad or something like that you will
 need to fix the problem and then 
-<a href="#bluegene-block-free">maunally set the block to free</a>.</li>
+<a href="#bluegene-block-free">manually set the block to free</a>.</li>
 </ol>
 <p class="footer"><a href="#top">top</a></p>
 
@@ -233,7 +233,7 @@ will run on a block</a></h2>
 <li><a href="#bluegene-error-state">Set the block state to be in error
 manually</a>.</li>
 <li>When you are ready to run jobs again on the block <a
-href="#bluegene-block-free">maunally set the block to free</a>.</li>
+href="#bluegene-block-free">manually set the block to free</a>.</li>
 </ol>
 <p class="footer"><a href="#top">top</a></p>
 

@@ -36,7 +36,7 @@ by all of the different infrastructures of a particular variety. When a SLURM
 daemon is initiated, it reads the configuration file to determine which of the 
 available plugins should be used. A <a href="plugins.html">plugin developer's 
 guide</a> is available with general information about plugins. Most plugin 
-types also have their own documenation available, such as 
+types also have their own documentation available, such as 
 <a href="authplugins.html">SLURM Authentication Plugin API</a> and
 <a href="jobcompplugins.html">SLURM Job Completion Logging API</a>.</p>
 
@@ -153,7 +153,7 @@ and options including stress tests.  The file <b>testsuite/expect/globals</b>
 contains default paths and procedures for all of the individual tests.  At
 the very least, you will need to set the <i>slurm_dir</i> variable to the correct
 value.  To avoid conflicts with other developers, you can override variable settings
-in a seperate file named <b>testsuite/expect/globals.local</b>.</p>
+in a separate file named <b>testsuite/expect/globals.local</b>.</p>
 
 <p>Set your working directory to <b>testsuite/expect</b> before 
 starting these tests.  Tests may be executed individually by name
@@ -182,7 +182,7 @@ simultaneous job steps to avoid overloading the
 <span class="commandline">slurmd</span> daemon executing them all.</p>
 
 <h3><a name="multiple_slurmd_support">Multiple slurmd support</a></h3>
-<p>It is possible to run mutiple slurmd daemons on a single node, each using
+<p>It is possible to run multiple slurmd daemons on a single node, each using
 a different port number and NodeName alias.  This is very useful for testing
 networking and protocol changes, or anytime you want to simulate a larger
 cluster than you really have.  The author uses this on his desktop to simulate

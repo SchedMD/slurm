@@ -6,7 +6,7 @@
 <li><b>AIX</b>&#151;SLURM support for AIX has been thoroughly tested.</li>
 <li><b>Linux</b>&#151;SLURM has been thoroughly tested on most popular Linux 
 distributions using i386, ia64, and x86_64 architectures.</li>
-<li><b>OS X</b>&#151;SLURM support for OS X is available in version 1.2.</li>
+<li><b>OS X</b>&#151;SLURM support for OS X is available.</li>
 <li><b>Other</b>&#151;SLURM ports to other systems will be gratefully accepted.</li>
 </ul>
 <h2>Interconnects</h2>

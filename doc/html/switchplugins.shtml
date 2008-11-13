@@ -308,7 +308,7 @@ to indicate the reason for failure.</p>
 
 <p class="commandline">bool switch_p_part_comp (void);</p>
 <p style="margin-left:.2in"><b>Description</b>: Indicate if the switch plugin should 
-process partitial job step completions (i.e. switch_g_job_step_part_comp). Support
+process partial job step completions (i.e. switch_g_job_step_part_comp). Support
 of partition completions is compute intensive, so it should be avoided unless switch 
 resources are in short supply (e.g. switch/federation).</p>
 <p style="margin-left:.2in"><b>Returns</b>: True if partition step completions are 
@@ -472,7 +472,7 @@ jobinfo switch_job, char *nodelist);</p>
 <p style="margin-left:.2in"><b>Description</b>: Note that the identified 
 job step is active at restart time. This function can be used to 
 restore global switch state information based upon job steps known to be 
-active at restart time. Use of this function is prefered over switch state 
+active at restart time. Use of this function is preferred over switch state 
 saved and restored by the switch plugin. Direct use of job step switch 
 information eliminates the possibility of inconsistent state information 
 between the switch and job steps.
