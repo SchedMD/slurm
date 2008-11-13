@@ -329,6 +329,15 @@ extern int cr_dist(struct job_record *job_ptr,
 {
 	int error_code, cr_cpu = 1; 
 	
+	if (job_ptr->select_job->node_req == NODE_CR_RESERVED) {
+		/* the job has been allocated an EXCLUSIVE set of nodes,
+		 * so it gets all of the bits in the core_bitmap and
+		 * all of the available CPUs in the cpus array */
+		int size = bit_size(job_ptr->select_job->core_bitmap);
+		bit_nset(job_ptr->select_job->core_bitmap, 0, size-1);
+		return SLURM_SUCCESS;
+	}
+	
 	if (job_ptr->details->task_dist == SLURM_DIST_PLANE) {
 		/* perform a plane distribution on the 'cpus' array */
 		error_code = _compute_plane_dist(job_ptr);
@@ -346,7 +355,7 @@ extern int cr_dist(struct job_record *job_ptr,
 	}
 
 	/* now sync up the core_bitmap with the allocated 'cpus' array
-	 * based on the given distribution AND resource setting */
+	 * based on the given distribution AND resource setting */	
 	if ((cr_type == CR_CORE)   || (cr_type == CR_CORE_MEMORY) ||
 	    (cr_type == CR_SOCKET) || (cr_type == CR_SOCKET_MEMORY))
 		cr_cpu = 0;
@@ -375,8 +384,7 @@ extern int cr_dist(struct job_record *job_ptr,
 		break;
 	default:
 		error("select/cons_res: invalid task_dist entry");
-		error_code = SLURM_ERROR;
-		break;
+		return SLURM_ERROR;
 	}
 	return SLURM_SUCCESS;
 }
