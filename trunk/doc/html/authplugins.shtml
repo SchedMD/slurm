@@ -17,8 +17,8 @@ abbreviation for the type of authentication. We recommend, for example:</p>
 authentication service. This may be used for testing purposes, but is not suitable for 
 production use due to lack of effective security.</li>
 <li><b>authd</b>&#151;Brett Chun's Linux authd.</li>
-<li><b>munge</b>&#151;LLNL's munge protocol (recommended plugin for production use).</li>
-<li><b>krb5</b>&#151;Kerberos 5 (not implemented as of 8 June 2004).</li>
+<li><b>munge</b>&#151;LLNL's Munge protocol (recommended plugin for production use).</li>
+<li><b>krb5</b>&#151;Kerberos 5 (expected to be available in 2009).</li>
 </ul>
 <p>The <span class="commandline">plugin_name</span> and <span class="commandline">plugin_version</span> 
 symbols required by the SLURM Plugin API require no specialization for authentication. 

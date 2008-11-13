@@ -3,7 +3,7 @@
 <h2><a name="top">SLURM Switch Plugin API</a></h2>
 
 <h3>Overview</h3>
-<p>All of the SLURM commands utilize a collection of Application Progamming 
+<p>All of the SLURM commands utilize a collection of Application Programming 
 Interfaces (APIs). 
 User and system applications can directly use these APIs as desired to 
 achieve tighter integration with SLURM.
@@ -207,7 +207,7 @@ created by <i>slurm_step_ctx_create</i>.</li>
 <li><b>slurm_jobinfo_ctx_get</b>&#151;Get values from a <i>jobinfo</i>
 field as returned by <i>slurm_step_ctx_get</i>.</li>
 
-<li><b>slurm_spawn</b>&#151;Spawn tasks and establish communcations.</li>
+<li><b>slurm_spawn</b>&#151;Spawn tasks and establish communications.</li>
 
 <li><b>slurm_spawn_kill</b>&#151;Signal spawned tasks.</li>
 
@@ -243,7 +243,7 @@ job step.</li>
 <ul>
 
 <li><b>slurm_checkpoint_able</b>&#151;Note that a specific job or 
-job step is elligible for checkpoint.</li>
+job step is eligible for checkpoint.</li>
 
 <li><b>slurm_checkpoint_complete</b>&#151;Note that a requested 
 checkpoint has completed.</li>
@@ -273,7 +273,7 @@ checkpointed job resume execution.</li>
 
 
 <h3>Administrative Functions</h3>
-<p>Most of these functions can only be exected by user <i>root</i>.</p>
+<p>Most of these functions can only be executed by user <i>root</i>.</p>
 <ul>
 
 <li><b>slurm_reconfigure</b>&#151;Update slurm daemons 
@@ -326,6 +326,6 @@ allocated by <i>slurm_hostlist_create</i>.
 </ul>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 25 October 2005</p>
+<p style="text-align:center;">Last modified 13 November 2005</p>
 
 <!--#include virtual="footer.txt"-->

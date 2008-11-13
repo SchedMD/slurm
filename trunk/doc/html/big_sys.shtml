@@ -13,7 +13,7 @@ for this material.</p>
 
 <h2>Performance Results</h2>
 
-<p>SLURM has acutally been used on clusters containing up to 4,184 nodes. 
+<p>SLURM has been used on clusters containing up to 4,184 nodes. 
 At that scale, the total time to execute a simple program (resource 
 allocation, task launch, I/O processing, and cleanup, e.g. 
 "time srun -N4184 -n8368 uname") at 8,368 tasks 

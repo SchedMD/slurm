@@ -88,7 +88,7 @@ Erest Artiaga, Barcelona Supercomputing Center
 
 <i>
 "SLURM was a great help for us in implementing our own very concise 
-job management system on top of it which could be taylored precisely 
+job management system on top of it which could be tailored precisely 
 to our needs, and which at the same time is very simple to use for 
 our customers. 
 In general, we are impressed with the stability, scalability, and performance 
@@ -112,6 +112,6 @@ Bill Celmaster, XC Program Manager, Hewlett-Packard Company
 </i>
 <HR SIZE=4>
 
-<p style="text-align:center;">Last modified 28 July 2008</p>
+<p style="text-align:center;">Last modified 13 November 2008</p>
 
 <!--#include virtual="footer.txt"-->
