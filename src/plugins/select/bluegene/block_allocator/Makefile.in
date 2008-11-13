@@ -68,14 +68,20 @@ CONFIG_HEADER = $(top_builddir)/config.h $(top_builddir)/slurm/slurm.h
 CONFIG_CLEAN_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libbluegene_block_allocator_la_LIBADD =
-am_libbluegene_block_allocator_la_OBJECTS = block_allocator.lo \
-	bridge_linker.lo
+am__libbluegene_block_allocator_la_SOURCES_DIST = block_allocator.c \
+	bridge_linker.c block_allocator.h bridge_linker.h
+@BLUEGENE_LOADED_TRUE@am_libbluegene_block_allocator_la_OBJECTS =  \
+@BLUEGENE_LOADED_TRUE@	block_allocator.lo bridge_linker.lo
+am__EXTRA_libbluegene_block_allocator_la_SOURCES_DIST =  \
+	block_allocator.c bridge_linker.c block_allocator.h \
+	bridge_linker.h
 libbluegene_block_allocator_la_OBJECTS =  \
 	$(am_libbluegene_block_allocator_la_OBJECTS)
 libbluegene_block_allocator_la_LINK = $(LIBTOOL) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(AM_CFLAGS) $(CFLAGS) \
 	$(libbluegene_block_allocator_la_LDFLAGS) $(LDFLAGS) -o $@
+@BLUEGENE_LOADED_TRUE@am_libbluegene_block_allocator_la_rpath =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -88,8 +94,10 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(libbluegene_block_allocator_la_SOURCES)
-DIST_SOURCES = $(libbluegene_block_allocator_la_SOURCES)
+SOURCES = $(libbluegene_block_allocator_la_SOURCES) \
+	$(EXTRA_libbluegene_block_allocator_la_SOURCES)
+DIST_SOURCES = $(am__libbluegene_block_allocator_la_SOURCES_DIST) \
+	$(am__EXTRA_libbluegene_block_allocator_la_SOURCES_DIST)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -103,6 +111,7 @@ AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
 BG_INCLUDES = @BG_INCLUDES@
+BLUEGENE_LOADED = @BLUEGENE_LOADED@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
@@ -279,12 +288,15 @@ INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
 # CPPFLAGS = -DBUILD_EXE
 
 # making a .la
-noinst_LTLIBRARIES = libbluegene_block_allocator.la 
-libbluegene_block_allocator_la_SOURCES = \
-	block_allocator.c bridge_linker.c block_allocator.h bridge_linker.h
+@BLUEGENE_LOADED_TRUE@noinst_LTLIBRARIES = libbluegene_block_allocator.la 
+@BLUEGENE_LOADED_TRUE@libbluegene_block_allocator_la_SOURCES = \
+@BLUEGENE_LOADED_TRUE@	block_allocator.c bridge_linker.c block_allocator.h bridge_linker.h
 
-libbluegene_block_allocator_la_LDFLAGS = \
-	$(LIB_LDFLAGS) -lm    
+@BLUEGENE_LOADED_TRUE@libbluegene_block_allocator_la_LDFLAGS = \
+@BLUEGENE_LOADED_TRUE@	$(LIB_LDFLAGS) -lm    
+
+@BLUEGENE_LOADED_FALSE@EXTRA_libbluegene_block_allocator_la_SOURCES = \
+@BLUEGENE_LOADED_FALSE@	block_allocator.c bridge_linker.c block_allocator.h bridge_linker.h
 
 all: all-am
 
@@ -329,7 +341,7 @@ clean-noinstLTLIBRARIES:
 	  rm -f "$${dir}/so_locations"; \
 	done
 libbluegene_block_allocator.la: $(libbluegene_block_allocator_la_OBJECTS) $(libbluegene_block_allocator_la_DEPENDENCIES) 
-	$(libbluegene_block_allocator_la_LINK)  $(libbluegene_block_allocator_la_OBJECTS) $(libbluegene_block_allocator_la_LIBADD) $(LIBS)
+	$(libbluegene_block_allocator_la_LINK) $(am_libbluegene_block_allocator_la_rpath) $(libbluegene_block_allocator_la_OBJECTS) $(libbluegene_block_allocator_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
