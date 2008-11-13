@@ -222,14 +222,13 @@ static void * _service_connection(void *arg)
 			rc = proc_req(
 				conn, msg, msg_size, first, &buffer, &uid);
 			first = false;
-			if (rc == ESLURM_ACCESS_DENIED
-			    || rc == SLURM_PROTOCOL_VERSION_ERROR) {
-				fini = true;
-			} else if (rc != SLURM_SUCCESS) {
+			if (rc != SLURM_SUCCESS) {
 				error("Processing last message from "
 				      "connection %d(%s) uid(%d)",
 				      conn->newsockfd, conn->ip, uid);
-				//fini = true;
+				if (rc == ESLURM_ACCESS_DENIED
+				    || rc == SLURM_PROTOCOL_VERSION_ERROR) 
+					fini = true;
 			}
 		} else {
 			buffer = make_dbd_rc_msg(conn->rpc_version,

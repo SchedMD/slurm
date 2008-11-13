@@ -795,11 +795,77 @@ static int _split_block(List block_list, List new_blocks,
 	int node_cnt = 0;
 	uint16_t quarter = 0;
 	uint16_t nodecard = 0;
-
+	int cnodes = procs / bluegene_proc_ratio;
+	bitstr_t *ionodes = bit_alloc(bluegene_numpsets);
+	
+	
+	switch(bg_record->node_cnt) {
+	case 16:
+		error("We got a 16 we should never have this");
+		goto finished;
+		break;
+	case 32:
+		
+		break;
+	case 64:
+		
+		break;
+	case 128:
+		
+		break;
+	case 256:
+		
+		break;
+	default:
+		full_bp;
+		break;
+	}
+		
 	if(bg_record->quarter == (uint16_t) NO_VAL)
 		full_bp = true;
 	
 	if(procs == (procs_per_node/16) && bluegene_nodecard_ionode_cnt) {
+		switch(cnodes) {
+		case 16:
+			request->small16 = 1;
+			
+			blockreq.small16 = 2;
+			blockreq.small32 = 1;
+			blockreq.small64 = 1;
+			blockreq.small128 = 1;
+			blockreq.small256 = 1;
+			break;
+		case 32:
+			request->small32 = 1;
+			
+			blockreq.small32 = 2;
+			blockreq.small64 = 1;
+			blockreq.small128 = 1;
+			blockreq.small256 = 1;
+			break;
+		case 64:
+			request->small64 = 1;
+			
+			blockreq.small64 = 2;
+			blockreq.small128 = 1;
+			blockreq.small256 = 1;
+			break;
+		case 128:
+			request->small128 = 1;
+			
+			blockreq.small128 = 2;
+			blockreq.small256 = 1;
+			break;
+		case 256:
+			request->small256 = 1;
+			
+			blockreq.small256 = 2;
+			break;
+		default:
+			error("This size %d is unknown on this system", cnodes);
+			goto finished;
+			break;
+		}
 		num_nodecard=4;
 		if(full_bp)
 			num_quarter=3;
@@ -842,7 +908,8 @@ static int _split_block(List block_list, List new_blocks,
 			quarter++;
 		}
 	}
-		
+finished:
+	FREE_NULL_BITMAP(ionodes);
 	return SLURM_SUCCESS;
 }
 
@@ -936,16 +1003,6 @@ again:
 			case 128:
 				break;
 			case 256:
-				if((bg_record->quarter == 0
-				    && bg_record->quarter == 1)
-				   || (bg_record->quarter == 2
-				       && bg_record->quarter == 3))
-					;
-				if((bg_record->quarter != 0
-				    || bg_record->quarter != 1)
-				   && (bg_record->quarter != 2
-				       && bg_record->quarter != 3))
-					;
 				break;
 			default:
 				error("We shouldn't be here with this size %d",
