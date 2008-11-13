@@ -374,7 +374,7 @@ void _usage () {
 	printf ("\
 sshare [<OPTION>] [<COMMAND>]                                              \n\
     Valid <OPTION> values are:                                             \n\
-     -a or --all: equivalent to \"help\" command                           \n\
+     -a or --all: equivalent to \"all\" command                            \n\
      -A or --accounts: equivalent to \"accounts\" command                  \n\
      -C or --cluster: equivalent to \"cluster\" command                    \n\
      -h or --help or --usage: equivalent to \"help\" command               \n\
@@ -382,29 +382,27 @@ sshare [<OPTION>] [<COMMAND>]                                              \n\
      -p or --parsable: output will be '|' delimited with a '|' at the end  \n\
      -P or --parsable2: output will be '|' delimited without a '|' at the end\n\
      -q or --quiet: equivalent to \"quiet\" command                        \n\
-     -u or --uid: equivalent to \"user\" command                           \n\
-     -t or --associations: equivalent to \"associations\" command          \n\
+     -u or --uid or user: equivalent to \"user\" command                   \n\
+     -t or --time: equivalent to \"time\" command                          \n\
      -v or --verbose: equivalent to \"verbose\" command                    \n\
      -V or --version: equivalent to \"version\" command                    \n\
                                                                            \n\
-  <keyword> may be omitted from the execute line and sshare will execute \n\
-  in interactive mode. It will process commands as entered until explicitly\n\
-  terminated.                                                              \n\
+                                                                           \n\
                                                                            \n\
     Valid <COMMAND> values are:                                            \n\
-     all                      list all                                     \n\
-     accounts                 list accounts                                \n\
-     cluster                  list cluster                                 \n\
-     help                     print this description of use.               \n\
-     no_header                output without a header                      \n\
-     parsable                 output will be | delimited with an ending '|'\n\
-     parsable2                output will be | delimited without an ending '|'\n\
-     quiet                    print no messages other than error messages. \n\
-     uid                      list help                                    \n\
-     usage                    show help                                    \n\
-     user                     list user                                    \n\
-     verbose                  enable detailed logging.                     \n\
-     version                  display tool version number.                 \n\
+     --all                      list all                                     \n\
+     --accounts <accountName>   list accounts                                \n\
+     --cluster <clusterName>    list cluster                                 \n\
+     --help                     print this description of use.               \n\
+     --no_header                output without a header                      \n\
+     --parsable                 output will be | delimited with an ending '|'\n\
+     --parsable2                output will be | delimited without an ending '|'\n\
+     --quiet                    print no messages other than error messages. \n\
+     --uid                      list help                                    \n\
+     --usage                    show help                                    \n\
+     --user <userName>          list user                                    \n\
+     --verbose                  enable detailed logging.                     \n\
+     --version                  display tool version number.                 \n\
                                                                            \n\
                                                                            \n\
                                                                            \n\
