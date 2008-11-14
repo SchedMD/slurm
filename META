@@ -11,7 +11,7 @@
   Minor:	4
   Micro:        0
   Version:	1.4.0
-  Release:	0.pre4
+  Release:	0.pre5
 ## 
 #  When changing API_CURRENT update src/common/slurm_protocol_common.h
 #  with a new SLURM_PROTOCOL_VERSION signifing the old one and the version 
