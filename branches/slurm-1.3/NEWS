@@ -607,6 +607,8 @@ documents those changes that are of interest to users and admins.
  -- For spank_get_item(S_JOB_ARGV) for batch job with script input via STDIN,
     set argc value to 1 (rather than 2, argv[0] still set to path of generated
     script).
+ -- sacct will now display more properly allocations made with salloc with only 
+    one step.
 
 * Changes in SLURM 1.2.35
 =========================
