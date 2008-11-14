@@ -1102,6 +1102,15 @@ void do_dump(void)
 			job->sacct.ave_rss /= list_count(job->steps);
 			job->sacct.ave_vsize /= list_count(job->steps);
 			job->sacct.ave_pages /= list_count(job->steps);
+			if(!job->track_steps) {
+				if(list_count(job->steps) > 1) 
+					job->track_steps = 1;
+				else {
+					step = list_peek(job->steps);
+					if(strcmp(step->stepname, job->jobname))
+						job->track_steps = 1;
+				}
+			}
 		}
 
 		/* JOB_START */
@@ -1802,7 +1811,24 @@ void do_list(void)
 			}
 			print_fields(JOB, job);
 		}
-		
+
+		if(!job->track_steps) {
+			/* If we don't have track_steps we want to see
+			   if we have multiple steps.  If we only have
+			   1 step check the job name against the step
+			   name in most all cases it will be
+			   different.  If it is different print out
+			   the step separate.
+			*/
+			if(list_count(job->steps) > 1) 
+				job->track_steps = 1;
+			else {
+				step = list_peek(job->steps);
+				if(strcmp(step->stepname, job->jobname))
+					job->track_steps = 1;
+			}
+		}
+
 		if (do_jobsteps && (job->track_steps || !job->show_full)) {
 			itr_step = list_iterator_create(job->steps);
 			while((step = list_next(itr_step))) {
