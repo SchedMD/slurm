@@ -1,0 +1,169 @@
+<!--#include virtual="header.txt"-->
+
+<h1><a name="top">SLURM Task Plugin Programmer Guide</a></h1>
+
+<h2> Overview</h2>
+<p> This document describes SLURM task management plugins and the API 
+that defines them. It is intended as a resource to programmers wishing 
+to write their own SLURM scheduler plugins. This is version 1 of the API.</p>
+
+<p>SLURM task management plugins are SLURM plugins that implement the 
+SLURM task management API described herein. They would typically be 
+used to control task affinity (i.e. binding tasks to processors). 
+They must conform to the SLURM Plugin API with the following 
+specifications:</p>
+<p><span class="commandline">const char plugin_type[]</span><br>
+The major type must be &quot;task.&quot; The minor type can be any recognizable 
+abbreviation for the type of task management. We recommend, for example:</p>
+<ul>
+<li><b>affinity</b>&#151;A plugin that implements task binding to processors.
+The actual mechanism used to task binding is dependent upon the available
+infrastructure as determined by the "configure" program when SLURM is built
+and the value of the <b>TaskPluginParam</b> as defined in the <b>slurm.conf</b>
+(SLURM configuration file).</li>
+<li><b>none</b>&#151;A plugin that implements the API without providing any
+services. This is the default behavior and provides no task binding.</li>
+</ul>
+
+<p>The <span class="commandline">plugin_name</span> and 
+<span class="commandline">plugin_version</span> 
+symbols required by the SLURM Plugin API require no specialization 
+for task support. 
+Note carefully, however, the versioning discussion below.</p>
+
+<p class="footer"><a href="#top">top</a></p>
+
+<h2>Data Objects</h2>
+<p>The implementation must maintain (though not necessarily directly export) an
+enumerated <span class="commandline">errno</span>  to allow SLURM to discover
+as practically as possible the reason for any failed API call.
+These values must not be used as return values in integer-valued functions
+in the API. The proper error return value from integer-valued functions is 
+SLURM_ERROR.</p>
+<p class="footer"><a href="#top">top</a></p>
+
+<h2>API Functions</h2>
+<p>The following functions must appear. Functions which are not implemented should 
+be stubbed.</p>
+
+<p class="commandline">int task_slurmd_launch_request (uint32_t job_id, 
+launch_tasks_request_msg_t *req, uint32_t node_id);</p>
+<p style="margin-left:.2in"><b>Description</b>: Prepare to launch a job.
+Establish node, socket, and core resource availability for it.
+Executed by the <b>slurmd</b> daemon as user root.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline">job_id</span>&nbsp;&nbsp;&nbsp;(input) 
+ID of the job to be started.<br>
+<span class="commandline">req</span>&nbsp;&nbsp;&nbsp;(input/output)
+Task launch request specification including node, socket, and
+core specifications.
+See <b>src/common/slurm_protocol_defs.h</b> for the
+data structure definition.<br>
+<span class="commandline">node_id</span>&nbsp;&nbsp;&nbsp;(input)
+ID of the node on which resources are being acquired (zero origin).</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. 
+On failure, the plugin should return SLURM_ERROR and set the errno to an 
+appropriate value to indicate the reason for failure.</p>
+
+<p class="commandline">int task_slurmd_reserve_resources (uint32_t job_id,
+launch_tasks_request_msg_t *req, uint32_t node_id);</p>
+<p style="margin-left:.2in"><b>Description</b>: Reserve resources for 
+the initiation of a job. Executed by the <b>slurmd</b> daemon as user root.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline">job_id</span>&nbsp;&nbsp;&nbsp;(input)
+ID of the job being started.<br>
+<span class="commandline">req</span>&nbsp;&nbsp;&nbsp;(input)
+Task launch request specification including node, socket, and 
+core specifications.
+See <b>src/common/slurm_protocol_defs.h</b> for the
+data structure definition.<br>
+<span class="commandline">node_id</span>&nbsp;&nbsp;&nbsp;(input)
+ID of the node on which the resources are being acquired 
+(zero origin).</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful.
+On failure, the plugin should return SLURM_ERROR and set the errno to an
+appropriate value to indicate the reason for failure.</p>
+
+<p class="commandline">int task_slurmd_suspend_job (uint32_t job_id);</p>
+<p style="margin-left:.2in"><b>Description</b>: Temporarily release resources 
+previously reserved for a job. 
+Executed by the <b>slurmd</b> daemon as user root.</p>
+<p style="margin-left:.2in"><b>Arguments</b>: 
+<span class="commandline">job_id</span>&nbsp;&nbsp;&nbsp;(input)
+ID of the job which is being suspended.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful.
+On failure, the plugin should return SLURM_ERROR and set the errno to an
+appropriate value to indicate the reason for failure.</p>
+
+<p class="commandline">int task_slurmd_resume_job (uint32_t job_id);</p>
+<p style="margin-left:.2in"><b>Description</b>: Reclaim resources which 
+were previously released using the task_slurmd_suspend_job function.
+Executed by the <b>slurmd</b> daemon as user root.</p>
+<p style="margin-left:.2in"><b>Arguments</b>: 
+<span class="commandline">job_id</span>&nbsp;&nbsp;&nbsp;(input)
+ID of the job which is being resumed.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful.
+On failure, the plugin should return SLURM_ERROR and set the errno to an
+appropriate value to indicate the reason for failure.</p>
+
+<p class="commandline">int task_slurmd_release_resources (uint32_t job_id);</p>
+<p style="margin-left:.2in"><b>Description</b>: Release resources previously 
+reserved for a job. Executed by the <b>slurmd</b> daemon as user root.</p>
+<p style="margin-left:.2in"><b>Arguments</b>: 
+<span class="commandline">job_id</span>&nbsp;&nbsp;&nbsp;(input)
+ID of the job which has completed.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful.
+On failure, the plugin should return SLURM_ERROR and set the errno to an
+appropriate value to indicate the reason for failure.</p>
+
+<p class="commandline">int task_pre_setuid (slurmd_job_t *job);</p>
+<p style="margin-left:.2in"><b>Description</b>: task_pre_setuid() is called 
+before setting the UID for the user to launch his jobs. 
+Executed by the <b>slurmstepd</b> program as user root.</p>
+<p style="margin-left:.2in"><b>Arguments</b>: 
+<span class="commandline">job</span>&nbsp;&nbsp;&nbsp;(input)
+pointer to the job to be initiated.
+See <b>src/slurmd/slurmstepd/slurmstepd_job.h</b> for the
+data structure definition.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful.
+On failure, the plugin should return SLURM_ERROR and set the errno to an
+appropriate value to indicate the reason for failure.</p>
+
+<p class="commandline">int task_pre_launch (slurmd_job_t *job);</p>
+<p style="margin-left:.2in"><b>Description</b>: task_pre_launch() is called 
+prior to exec of application task.
+Executed by the <b>slurmstepd</b> program as the job's owner.
+It is followed by <b>TaskProlog</b> program (as configured in <b>slurm.conf</b>) 
+and <b>--task-prolog</b> (from <b>srun</b> command line).</p>
+<p style="margin-left:.2in"><b>Arguments</b>:
+<span class="commandline">job</span>&nbsp;&nbsp;&nbsp;(input)
+pointer to the job to be initiated.
+See <b>src/slurmd/slurmstepd/slurmstepd_job.h</b> for the
+data structure definition.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful.
+On failure, the plugin should return SLURM_ERROR and set the errno to an
+appropriate value to indicate the reason for failure.</p>
+
+<a name="get_errno"><p class="commandline">int task_post_term (slurmd_job_t *job);</p></a>
+<p style="margin-left:.2in"><b>Description</b>: task_term() is called 
+after termination of job step.
+Executed by the <b>slurmstepd</b> program as the job's owner.
+It is preceded by <b>--task-epilog</b> (from <b>srun</b> command line)
+followed by <b>TaskEpilog</b> program (as configured in <b>slurm.conf</b>).</p>
+<p style="margin-left:.2in"><b>Arguments</b>:
+<span class="commandline">job</span>&nbsp;&nbsp;&nbsp;(input)
+pointer to the job which has terminated.
+See <b>src/slurmd/slurmstepd/slurmstepd_job.h</b> for the 
+data structure definition.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful.
+On failure, the plugin should return SLURM_ERROR and set the errno to an
+appropriate value to indicate the reason for failure.</p>
+
+<h2>Versioning</h2>
+<p> This document describes version 1 of the SLURM Task Plugin API.
+Future releases of SLURM may revise this API.</p>
+<p class="footer"><a href="#top">top</a></p>
+
+<p style="text-align:center;">Last modified 28 May 2008</p>
+
+<!--#include virtual="footer.txt"-->
