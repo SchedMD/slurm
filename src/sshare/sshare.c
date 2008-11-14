@@ -52,8 +52,8 @@ uint32_t my_uid = 0;
 static int      _set_time_format(char *format);
 static int      _get_info(shares_request_msg_t *shares_req, 
 			  shares_response_msg_t **shares_resp);
-static int      _addto_id_char_list(List char_list, char *names, bool gid);
-static char *   _convert_to_id(char *name, bool gid);
+static int      _addto_name_char_list(List char_list, char *names, bool gid);
+static char *   _convert_to_name(int id, bool gid);
 static void     _print_version( void );
 static void	_usage ();
 
@@ -71,7 +71,6 @@ main (int argc, char *argv[])
 	static struct option long_options[] = {
 		{"all", 0,0, 'a'},
 		{"accounts", 1, 0, 'A'},
-		{"cluster", 1, 0, 'C'},
 		{"help",     0, 0, 'h'},
 		{"no_header", 0, 0, 'n'},
 		{"parsable", 0, 0, 'p'},
@@ -85,6 +84,17 @@ main (int argc, char *argv[])
 		{NULL,       0, 0, 0}
 	};
 
+	/* Check to see if we are running a supported accounting plugin */
+	temp = slurm_get_priority_type();
+	if(strcasecmp(temp, "priority/multifactor")) {
+		fprintf (stderr, "You are not running a supported "
+			 "priority plugin\n(%s).\n"
+			 "Only 'priority/multifactor' is supported.\n",
+			temp);
+		xfree(temp);
+		exit(1);
+	}
+	xfree(temp);
 
 	exit_code         = 0;
 	quiet_flag        = 0;
@@ -136,7 +146,7 @@ main (int argc, char *argv[])
 			if(!req_msg.user_list)
 				req_msg.user_list = 
 					list_create(slurm_destroy_char);
-			_addto_id_char_list(req_msg.user_list, optarg, 0);
+			_addto_name_char_list(req_msg.user_list, optarg, 0);
 			break;
 		case 't':
 			_set_time_format(optarg);
@@ -163,17 +173,49 @@ main (int argc, char *argv[])
 		log_alter(opts, 0, NULL);
 	}
 
-	/* Check to see if we are running a supported accounting plugin */
-	temp = slurm_get_priority_type();
-	if(strcasecmp(temp, "priority/multifactor")) {
-		fprintf (stderr, "You are not running a supported "
-			 "priority plugin\n(%s).\n"
-			 "Only 'priority/multifactor' is supported.\n",
-			temp);
-		xfree(temp);
-		exit(1);
+	if(all_users) {
+		if(req_msg.user_list 
+		   && list_count(req_msg.user_list)) {
+			list_destroy(req_msg.user_list);
+			req_msg.user_list = NULL;
+		}
+		if(verbosity)
+			fprintf(stderr, "Users requested:\n\t: all\n");
+	} else if (verbosity && req_msg.user_list 
+	    && list_count(req_msg.user_list)) {
+		fprintf(stderr, "Users requested:\n");
+		ListIterator itr = list_iterator_create(req_msg.user_list);
+		while((temp = list_next(itr))) 
+			fprintf(stderr, "\t: %s\n", temp);
+		list_iterator_destroy(itr);
+	} else if(!req_msg.user_list || !list_count(req_msg.user_list)) {
+		struct passwd *pwd = getpwuid(getuid());
+		if(!req_msg.user_list)
+			req_msg.user_list = list_create(slurm_destroy_char);
+		temp = xstrdup(pwd->pw_name);
+		list_append(req_msg.user_list, temp);
+		if(verbosity) {
+			fprintf(stderr, "Users requested:\n");
+			fprintf(stderr, "\t: %s\n", temp);
+		}
 	}
-	xfree(temp);
+
+	if(req_msg.acct_list && list_count(req_msg.acct_list)) {
+		fprintf(stderr, "Accounts requested:\n");
+		ListIterator itr = list_iterator_create(req_msg.acct_list);
+		while((temp = list_next(itr))) 
+			fprintf(stderr, "\t: %s\n", temp);
+		list_iterator_destroy(itr);
+	} else {
+		if(req_msg.acct_list 
+		   && list_count(req_msg.acct_list)) {
+			list_destroy(req_msg.acct_list);
+			req_msg.acct_list = NULL;
+		}
+		if(verbosity)
+			fprintf(stderr, "Accounts requested:\n\t: all\n");
+
+	}
 
 	error_code = _get_info(&req_msg, &resp_msg);
 
@@ -250,7 +292,7 @@ static int _get_info(shares_request_msg_t *shares_req,
 }
 
 /* returns number of objects added to list */
-static int _addto_id_char_list(List char_list, char *names, bool gid)
+static int _addto_name_char_list(List char_list, char *names, bool gid)
 {
 	int i=0, start=0;
 	char *name = NULL, *tmp_char = NULL;
@@ -283,9 +325,11 @@ static int _addto_id_char_list(List char_list, char *names, bool gid)
 					name = xmalloc((i-start+1));
 					memcpy(name, names+start, (i-start));
 					//info("got %s %d", name, i-start);
-					if (!isdigit((int) *name)) {
-						name = _convert_to_id(
-							name, gid);
+					if (isdigit((int) *name)) {
+						int id = atoi(name);
+						xfree(name);
+						name = _convert_to_name(
+							id, gid);
 					}
 					
 					while((tmp_char = list_next(itr))) {
@@ -315,8 +359,10 @@ static int _addto_id_char_list(List char_list, char *names, bool gid)
 			name = xmalloc((i-start)+1);
 			memcpy(name, names+start, (i-start));
 			
-			if (!isdigit((int) *name)) {
-				name = _convert_to_id(name, gid);
+			if (isdigit((int) *name)) {
+				int id = atoi(name);
+				xfree(name);
+				name = _convert_to_name(id, gid);
 			}
 			
 			while((tmp_char = list_next(itr))) {
@@ -335,24 +381,24 @@ static int _addto_id_char_list(List char_list, char *names, bool gid)
 	return count;
 } 
 
-static char *_convert_to_id(char *name, bool gid)
+static char *_convert_to_name(int id, bool gid)
 {
+	char *name = NULL;
+
 	if(gid) {
 		struct group *grp;
-		if (!(grp=getgrnam(name))) {
+		if (!(grp=getgrgid(id))) {
 			fprintf(stderr, "Invalid group id: %s\n", name);
 			exit(1);
 		}
-		xfree(name);
-		name = xstrdup_printf("%d", grp->gr_gid);
+		name = xstrdup(grp->gr_name);
 	} else {
 		struct passwd *pwd;
-		if (!(pwd=getpwnam(name))) {
+		if (!(pwd=getpwuid(id))) {
 			fprintf(stderr, "Invalid user id: %s\n", name);
 			exit(1);
 		}
-		xfree(name);
-		name = xstrdup_printf("%d", pwd->pw_uid);
+		name = xstrdup(pwd->pw_name);
 	}
 	return name;
 }
@@ -376,7 +422,6 @@ sshare [<OPTION>] [<COMMAND>]                                              \n\
     Valid <OPTION> values are:                                             \n\
      -a or --all: equivalent to \"all\" command                            \n\
      -A or --accounts: equivalent to \"accounts\" command                  \n\
-     -C or --cluster: equivalent to \"cluster\" command                    \n\
      -h or --help or --usage: equivalent to \"help\" command               \n\
      -n or --no_header: no header will be added to the beginning of output \n\
      -p or --parsable: output will be '|' delimited with a '|' at the end  \n\
@@ -390,19 +435,18 @@ sshare [<OPTION>] [<COMMAND>]                                              \n\
                                                                            \n\
                                                                            \n\
     Valid <COMMAND> values are:                                            \n\
-     --all                      list all                                     \n\
-     --accounts <Account>       list accounts                                \n\
-     --cluster <Cluster>        list cluster                                 \n\
-     --help                     print this description of use.               \n\
-     --no_header                output without a header                      \n\
+     --all                      list all                                   \n\
+     --accounts <Account>       list accounts (comma separated list)       \n\
+     --help                     print this description of use.             \n\
+     --no_header                output without a header                    \n\
      --parsable                 output will be | delimited with an ending '|'\n\
      --parsable2                output will be | delimited without an ending '|'\n\
      --quiet                    print no messages other than error messages. \n\
-     --uid                      list help                                    \n\
-     --usage                    show help                                    \n\
-     --user <User>              list user                                    \n\
-     --verbose                  wordy and windy output.                      \n\
-     --version                  display tool version number.                 \n\
+     --uid                      list uid (comma separated list)            \n\
+     --usage                    show help                                  \n\
+     --user <User>              list user (comma separated list)           \n\
+     --verbose                  wordy and windy output.                    \n\
+     --version                  display tool version number.               \n\
                                                                            \n\
                                                                            \n\
                                                                            \n\

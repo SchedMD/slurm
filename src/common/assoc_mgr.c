@@ -1098,7 +1098,8 @@ extern int assoc_mgr_is_user_acct_coord(void *db_conn,
 	return 0;	
 }
 
-extern List assoc_mgr_get_shares(List acct_list, List user_list)
+extern List assoc_mgr_get_shares(void *db_conn,
+				 uid_t uid, List acct_list, List user_list)
 {
 	ListIterator itr = NULL;
 	ListIterator user_itr = NULL;
@@ -1107,22 +1108,42 @@ extern List assoc_mgr_get_shares(List acct_list, List user_list)
 	association_shares_object_t *share = NULL;
 	List ret_list = NULL;
 	char *tmp_char = NULL;
+	acct_user_rec_t user;
+	int is_admin=1;
+	uint16_t private_data = slurm_get_private_data();
 
 	if(!assoc_mgr_association_list
 	   || !list_count(assoc_mgr_association_list))
 		return NULL;
+
+	memset(&user, 0, sizeof(acct_user_rec_t));
+	user.uid = uid;
+	
 	if(user_list && list_count(user_list)) 
 		user_itr = list_iterator_create(user_list);
 
 	if(acct_list && list_count(acct_list)) 
 		acct_itr = list_iterator_create(acct_list);
-	
+
+	if (private_data & PRIVATE_DATA_USAGE) {
+		uint32_t slurm_uid = slurm_get_slurm_user_id();
+		is_admin = 0;
+		/* Check permissions of the requesting user.
+		 */
+		if((uid == slurm_uid || uid == 0)
+		   || assoc_mgr_get_admin_level(db_conn, uid) 
+		   >= ACCT_ADMIN_OPERATOR) 
+			is_admin = 1;	
+		else {
+			assoc_mgr_fill_in_user(db_conn, &user, 1, NULL);
+		}
+	}
+
 	ret_list = list_create(slurm_destroy_association_shares_object);
 
 	slurm_mutex_lock(&assoc_mgr_association_lock);
 	itr = list_iterator_create(assoc_mgr_association_list);
-	while((assoc = list_next(itr))) {
-		
+	while((assoc = list_next(itr))) {		
 		if(user_itr && assoc->user) {
 			while((tmp_char = list_next(user_itr))) {
 				if(!strcasecmp(tmp_char, assoc->user))
@@ -1130,9 +1151,10 @@ extern List assoc_mgr_get_shares(List acct_list, List user_list)
 			}
 			list_iterator_reset(user_itr);
 			/* not correct user */
-			if(!tmp_char)
+			if(!tmp_char) 
 				continue;
 		}
+
 		if(acct_itr) {
 			while((tmp_char = list_next(acct_itr))) {
 				if(!strcasecmp(tmp_char, assoc->acct))
@@ -1140,9 +1162,46 @@ extern List assoc_mgr_get_shares(List acct_list, List user_list)
 			}
 			list_iterator_reset(acct_itr);
 			/* not correct account */
-			if(!tmp_char)
+			if(!tmp_char) 
 				continue;
 		}
+
+		if (private_data & PRIVATE_DATA_USAGE) {
+			if(!is_admin) {
+				ListIterator itr = NULL;
+				acct_coord_rec_t *coord = NULL;
+
+				if(assoc->user && 
+				   !strcmp(assoc->user, user.name)) 
+					goto is_user;
+				
+				if(!user.coord_accts) {
+					debug4("This user isn't a coord.");
+					goto bad_user;
+				}
+
+				if(!assoc->acct) {
+					debug("No account name given "
+					      "in association.");
+					goto bad_user;				
+				}
+				
+				itr = list_iterator_create(user.coord_accts);
+				while((coord = list_next(itr))) {
+					if(!strcasecmp(coord->name, 
+						       assoc->acct))
+						break;
+				}
+				list_iterator_destroy(itr);
+				
+				if(coord) 
+					goto is_user;
+				
+			bad_user:
+				continue;
+			}
+		}
+	is_user:
 
 		share = xmalloc(sizeof(association_shares_object_t));
 		list_append(ret_list, share);
