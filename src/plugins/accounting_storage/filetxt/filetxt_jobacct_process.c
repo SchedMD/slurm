@@ -911,8 +911,22 @@ static void _process_step(List job_list, char *f[], int lc,
 	step = temp;
 	temp = NULL;
 	list_append(job->steps, step);
-	if(list_count(job->steps) > 1)
-		job->track_steps = 1;
+	if(!job->track_steps) {
+		/* If we don't have track_steps we want to see
+		   if we have multiple steps.  If we only have
+		   1 step check the job name against the step
+		   name in most all cases it will be
+		   different.  If it is different print out
+		   the step separate.
+		*/
+		if(list_count(job->steps) > 1) 
+			job->track_steps = 1;
+		else if(step && step->stepname && job->jobname) {
+			if(strcmp(step->stepname, job->jobname))
+				job->track_steps = 1;
+		}
+	}
+	
 	if(job->header.timestamp == 0)
 		job->header.timestamp = step->header.timestamp;
 	job->job_step_seen = 1;
