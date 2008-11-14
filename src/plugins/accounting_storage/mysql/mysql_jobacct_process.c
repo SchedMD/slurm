@@ -733,8 +733,21 @@ no_cond:
 		}
 		mysql_free_result(step_result);
 		
-		if(list_count(job->steps) > 1)
-			job->track_steps = 1;
+		if(!job->track_steps) {
+			/* If we don't have track_steps we want to see
+			   if we have multiple steps.  If we only have
+			   1 step check the job name against the step
+			   name in most all cases it will be
+			   different.  If it is different print out
+			   the step separate.
+			*/
+			if(list_count(job->steps) > 1) 
+				job->track_steps = 1;
+			else if(step && step->stepname && job->jobname) {
+				if(strcmp(step->stepname, job->jobname))
+					job->track_steps = 1;
+			}
+               }
 	}
 	mysql_free_result(result);
 
