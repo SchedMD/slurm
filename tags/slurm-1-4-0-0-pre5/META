@@ -1,0 +1,22 @@
+##
+# $Id$
+##
+# Metadata for RPM/TAR makefile targets
+##
+# See src/api/Makefile.am for guidance on setting API_ values
+##
+  Meta:		1
+  Name:		slurm
+  Major:	1
+  Minor:	4
+  Micro:        0
+  Version:	1.4.0
+  Release:	0.pre5
+## 
+#  When changing API_CURRENT update src/common/slurm_protocol_common.h
+#  with a new SLURM_PROTOCOL_VERSION signifing the old one and the version 
+#  it was so the slurmdbd can continue to send the old protocol version.
+##
+  API_CURRENT:	14
+  API_AGE:	0
+  API_REVISION:	0
