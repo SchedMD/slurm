@@ -516,7 +516,7 @@ extern int configure_small_block(bg_record_t *bg_record)
 	rm_nodecard_list_t *ncard_list = NULL;
 	rm_quarter_t quarter;
 	int num, i;
-	int use_nc[16];
+	int use_nc[bluegene_bp_nodecard_cnt];
 	double nc_pos = 0;
 #endif
 	xassert(bg_record->ionode_bitmap);

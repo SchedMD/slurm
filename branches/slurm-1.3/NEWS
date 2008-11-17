@@ -3,8 +3,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.3.11
 =========================
- -- Bluegene/P support added (minimally tested, but builds correctly, 
-    no dynamic layout mode).
+ -- Bluegene/P support added (minimally tested, but builds correctly).
  -- Fix infinite loop when using accounting_storage/mysql plugin either from
     the slurmctld or slurmdbd daemon.
  -- Added more thread safety for assoc_mgr in the controller.
