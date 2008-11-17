@@ -1107,7 +1107,10 @@ void do_dump(void)
 					job->track_steps = 1;
 				else {
 					step = list_peek(job->steps);
-					if(strcmp(step->stepname, job->jobname))
+					if(step && step->stepname 
+					   && job->jobname
+					   && strcmp(step->stepname,
+						     job->jobname))
 						job->track_steps = 1;
 				}
 			}
@@ -1824,7 +1827,10 @@ void do_list(void)
 				job->track_steps = 1;
 			else {
 				step = list_peek(job->steps);
-				if(strcmp(step->stepname, job->jobname))
+				if(step && step->stepname 
+				   && job->jobname
+				   && strcmp(step->stepname,
+					     job->jobname))
 					job->track_steps = 1;
 			}
 		}
