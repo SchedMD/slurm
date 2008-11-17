@@ -1189,9 +1189,9 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 {
 	job_desc_msg_t *job_desc = (job_desc_msg_t *)data;
 	uint32_t *nodes = (uint32_t *)data, tmp;
-	int i, block_size=0;
+	int i;
 	uint16_t req_geometry[BA_SYSTEM_DIMENSIONS];
-	
+
 	if(!bluegene_bp_node_cnt) {
 		fatal("select_g_alter_node_cnt: This can't be called "
 		      "before select_g_block_init");
@@ -1306,13 +1306,13 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 			job_desc->num_procs = procs_per_node/tmp;
 			job_desc->min_nodes = 1;
 #else
-			block_size = bluegene_smallest_block;
-			while(block_size <= bluegene_bp_node_cnt) {
-				if(job_desc->min_nodes <= block_size) {
-					job_desc->min_nodes = block_size;
+			i = bluegene_smallest_block;
+			while(i <= bluegene_bp_node_cnt) {
+				if(job_desc->min_nodes <= i) {
+					job_desc->min_nodes = i;
 					break;
 				}
-				block_size *= 2;
+				i *= 2;
 			}
 			
 			select_g_set_jobinfo(job_desc->select_jobinfo,
@@ -1360,13 +1360,13 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 					     &tmp);
 			job_desc->max_nodes = 1;
 #else
-			block_size = bluegene_smallest_block;
-			while(block_size <= bluegene_bp_node_cnt) {
-				if(job_desc->max_nodes <= block_size) {
-					job_desc->max_nodes = block_size;
+			i = bluegene_smallest_block;
+			while(i <= bluegene_bp_node_cnt) {
+				if(job_desc->max_nodes <= i) {
+					job_desc->max_nodes = i;
 					break;
 				}
-				block_size *= 2;
+				i *= 2;
 			}
 			
 			tmp = job_desc->max_nodes * bluegene_proc_ratio;

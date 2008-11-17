@@ -952,6 +952,7 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq)
 	return SLURM_SUCCESS;
 }
 
+#ifndef HAVE_BGL
 extern int handle_small_record_request(List records, blockreq_t *blockreq,
 				       bg_record_t *bg_record, bitoff_t start)
 {
@@ -1035,6 +1036,7 @@ extern int handle_small_record_request(List records, blockreq_t *blockreq,
 
 	return SLURM_SUCCESS;
 }
+#endif
 
 extern int format_node_name(bg_record_t *bg_record, char *buf, int buf_size)
 {
