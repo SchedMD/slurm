@@ -9253,6 +9253,8 @@ extern int acct_storage_p_flush_jobs_on_cluster(
 		"where ((t2.id=t1.associd and t2.cluster=\"%s\") "
 		"|| !t1.associd) && t1.end=0;",
 		job_table, assoc_table, cluster);
+	debug3("%d(%d) query\n%s",
+	       mysql_conn->conn, __LINE__, query);
 	if(!(result =
 	     mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
 		xfree(query);
