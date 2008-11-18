@@ -1527,14 +1527,18 @@ static void *_agent(void *x)
 		 * complete. */
 		rc = _send_msg(buffer);
 		if (rc != SLURM_SUCCESS) {
-			if (agent_shutdown)
+			if (agent_shutdown) {
+				slurm_mutex_unlock(&slurmdbd_lock);
 				break;
+			}
 			error("slurmdbd: Failure sending message");
 		} else {
 			rc = _get_return_code(SLURMDBD_VERSION, read_timeout);
 			if (rc == EAGAIN) {
-				if (agent_shutdown)
+				if (agent_shutdown) {
+					slurm_mutex_unlock(&slurmdbd_lock);
 					break;
+				}
 				error("slurmdbd: Failure with "
 				      "message need to resend");
 			}

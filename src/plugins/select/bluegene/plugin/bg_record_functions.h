@@ -100,11 +100,11 @@ typedef struct bg_record {
 					 * BLOCK_ERROR_STATE */
 	int cpus_per_bp;                /* count of cpus per base part */
 	uint32_t node_cnt;              /* count of nodes per block */
+#ifdef HAVE_BGL
 	uint16_t quarter;               /* used for small blocks 
 					   determine quarter of BP */
 	uint16_t nodecard;              /* used for small blocks 
 					   determine nodecard of quarter */
-#ifdef HAVE_BGL
 	char *blrtsimage;              /* BlrtsImage for this block */
 #endif
 	char *linuximage;              /* LinuxImage/CnloadImage for
@@ -123,6 +123,7 @@ extern int block_exist_in_list(List my_list, bg_record_t *bg_record);
 extern void process_nodes(bg_record_t *bg_reord, bool startup);
 extern List copy_bg_list(List in_list);
 extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record);
+extern int bg_record_cmpf_inc(bg_record_t *rec_a, bg_record_t *rec_b);
 
 /* return bg_record from a bg_list */
 extern bg_record_t *find_bg_record_in_list(List my_list, char *bg_block_id);
@@ -133,9 +134,13 @@ extern bg_record_t *find_bg_record_in_list(List my_list, char *bg_block_id);
 extern int update_block_user(bg_record_t *bg_block_id, int set); 
 extern void drain_as_needed(bg_record_t *bg_record, char *reason);
 
+#ifdef HAVE_BGL
 extern int set_ionodes(bg_record_t *bg_record);
+#endif
 
 extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq);
+extern int handle_small_record_request(List records, blockreq_t *blockreq,
+				       bg_record_t *bg_record, bitoff_t start);
 
 extern int format_node_name(bg_record_t *bg_record, char *buf, int buf_size);
 

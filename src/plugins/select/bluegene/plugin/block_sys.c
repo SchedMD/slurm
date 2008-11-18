@@ -260,6 +260,7 @@ static int _post_allocate(bg_record_t *bg_record)
 }
 
 #ifdef HAVE_BG_FILES
+#ifdef HAVE_BGL
 static int _find_nodecard(bg_record_t *bg_record, 
 			  rm_partition_t *block_ptr)
 {
@@ -360,6 +361,7 @@ cleanup:
 	return SLURM_SUCCESS;
 }
 #endif
+#endif
 
 extern int configure_block(bg_record_t *bg_record)
 {
@@ -397,6 +399,7 @@ int read_bg_blocks()
 	int *coord = NULL;
 	int block_number, block_count;
 	char *block_name = NULL;
+	char *nc_char = NULL;
 	rm_partition_list_t *block_list = NULL;
 	rm_partition_state_flag_t state = PARTITION_ALL_FLAG;
 	rm_nodecard_t *ncard = NULL;
@@ -476,8 +479,10 @@ int read_bg_blocks()
 		free(block_name);
 
 		bg_record->state = NO_VAL;
+#ifdef HAVE_BGL
 		bg_record->quarter = (uint16_t) NO_VAL;
 		bg_record->nodecard = (uint16_t) NO_VAL;
+#endif
 		bg_record->job_running = NO_JOB_RUNNING;
 		
 		if ((rc = bridge_get_data(block_ptr, 
@@ -492,6 +497,25 @@ int read_bg_blocks()
 		if(bp_cnt==0)
 			goto clean_up;
 		bg_record->bp_count = bp_cnt;
+
+#ifndef HAVE_BGL
+		if ((rc = bridge_get_data(block_ptr, 
+					  RM_PartitionSize, 
+					  &bp_cnt)) 
+		    != STATUS_OK) {
+			error("bridge_get_data(RM_PartitionSize): %s", 
+			      bg_err_str(rc));
+			bp_cnt = 0;
+		}
+				
+		if(bp_cnt==0)
+			goto clean_up;
+
+		bg_record->node_cnt = bp_cnt;
+		bg_record->cpus_per_bp = 
+			bluegene_proc_ratio * bg_record->node_cnt;
+
+#endif
 		debug3("has %d BPs",
 		       bg_record->bp_count);
 		
@@ -505,18 +529,38 @@ int read_bg_blocks()
 		if ((rc = bridge_get_data(block_ptr, RM_PartitionSmall, 
 					  &small)) 
 		    != STATUS_OK) {
-			error("bridge_get_data(RM_BPNum): %s", bg_err_str(rc));
+			error("bridge_get_data(RM_PartitionSmall): %s",
+			      bg_err_str(rc));
 			bp_cnt = 0;
 		}
+
 		if(small) {
+			int use_nc[NUM_NODECARDS_PER_BP];
 			if((rc = bridge_get_data(block_ptr,
 						 RM_PartitionFirstNodeCard,
 						 &ncard))
 			   != STATUS_OK) {
-				error("bridge_get_data(RM_FirstCard): %s",
+				error("bridge_get_data("
+				      "RM_PartitionFirstNodeCard): %s",
 				      bg_err_str(rc));
 				bp_cnt = 0;
 			}
+			
+			bg_record->conn_type = SELECT_SMALL;
+			if((rc = bridge_get_data(block_ptr,
+						 RM_PartitionNodeCardNum,
+						 &i))
+			   != STATUS_OK) {
+				error("bridge_get_data("
+				      "RM_PartitionNodeCardNum): %s",
+				      bg_err_str(rc));
+				bp_cnt = 0;
+			}
+#ifdef HAVE_BGL
+			if(i == 1) {
+				_find_nodecard(bg_record, block_ptr);
+				i = bluegene_bp_nodecard_cnt;
+			} 
 			if ((rc = bridge_get_data(ncard, 
 						  RM_NodeCardQuarter, 
 						  &quarter)) != STATUS_OK) {
@@ -524,33 +568,46 @@ int read_bg_blocks()
 				bp_cnt = 0;
 			}
 			bg_record->quarter = quarter;
-			if((rc = bridge_get_data(block_ptr,
-						 RM_PartitionNodeCardNum,
-						 &i))
-			   != STATUS_OK) {
-				error("bridge_get_data(RM_FirstCard): %s",
-				      bg_err_str(rc));
-				bp_cnt = 0;
-			}
-			if(i == 1) {
-				_find_nodecard(bg_record, block_ptr);
-				i = 16;
-			} 
-			
-			bg_record->cpus_per_bp = procs_per_node/i;
-			bg_record->node_cnt = bluegene_bp_node_cnt/i;
-				
+
+
 			debug3("%s is in quarter %d nodecard %d",
 			       bg_record->bg_block_id,
 			       bg_record->quarter,
 			       bg_record->nodecard);
-			bg_record->conn_type = SELECT_SMALL;
+			bg_record->cpus_per_bp = procs_per_node/i;
+			bg_record->node_cnt = bluegene_bp_node_cnt/i;
+			if(set_ionodes(bg_record) == SLURM_ERROR) 
+				error("couldn't create ionode_bitmap "
+				      "for %d.%d",
+				      bg_record->quarter, bg_record->nodecard);
+#else
+			if((ionode_cnt = i * bluegene_io_ratio))
+				ionode_cnt--;
+
+			if ((rc = bridge_get_data(ncard, 
+						  RM_NodeCardID, 
+						  &nc_char)) != STATUS_OK) {
+				error("bridge_get_data(RM_NodeCardID): %d",rc);
+				bp_cnt = 0;
+			}
 			
+			if(bp_cnt==0)
+				goto clean_up;
+			
+			bp_id = atoi((char*)nc_char+1);
+			free(nc_char);
+			io_start = bp_id * bluegene_io_ratio;
+			bg_record->ionode_bitmap = bit_alloc(bluegene_numpsets);
+
+			bit_nset(bg_record->ionode_bitmap,
+				 io_start, io_start+ionode_cnt);
+#endif
 		} else {
+#ifdef HAVE_BGL
 			bg_record->cpus_per_bp = procs_per_node;
 			bg_record->node_cnt =  bluegene_bp_node_cnt
 				* bg_record->bp_count;
-
+#endif
 			if ((rc = bridge_get_data(block_ptr, 
 						  RM_PartitionConnection,
 						  &bg_record->conn_type))
@@ -559,13 +616,13 @@ int read_bg_blocks()
 				      "(RM_PartitionConnection): %s",
 				      bg_err_str(rc));
 			}
-			
+			/* Set the bitmap blank here if it is a full
+			   node we don't want anything set we also
+			   don't want the bg_record->ionodes set.
+			*/
+			bg_record->ionode_bitmap = bit_alloc(bluegene_numpsets);
 		}
 		
-		if(set_ionodes(bg_record) == SLURM_ERROR) 
-			error("couldn't create ionode_bitmap "
-			      "for %d.%d",
-			      bg_record->quarter, bg_record->nodecard);
 		
 		bg_record->bg_block_list =
 			get_and_set_block_wiring(bg_record->bg_block_id);

@@ -661,11 +661,11 @@ static int _unpack_node_info(bg_info_record_t *bg_info_record, Buf buffer)
 #ifdef HAVE_BGL
 	safe_unpack16(&uint16_tmp, buffer);
 	bg_info_record->node_use = (int) uint16_tmp;
-#endif
 	safe_unpack16(&uint16_tmp, buffer);
 	bg_info_record->quarter = (int) uint16_tmp;
 	safe_unpack16(&uint16_tmp, buffer);
 	bg_info_record->nodecard = (int) uint16_tmp;
+#endif
 	safe_unpack32(&uint32_tmp, buffer);
 	bg_info_record->node_cnt = (int) uint32_tmp;
 	safe_unpackstr_xmalloc(&bp_inx_str, &uint32_tmp, buffer);

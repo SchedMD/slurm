@@ -78,9 +78,11 @@ char *bg_slurm_node_prefix = NULL;
 bg_layout_t bluegene_layout_mode = NO_VAL;
 double bluegene_io_ratio = 0.0;
 double bluegene_nc_ratio = 0.0;
+uint32_t bluegene_smallest_block = 512;
 uint16_t bluegene_proc_ratio = 0;
 uint16_t bluegene_numpsets = 0;
 uint16_t bluegene_bp_node_cnt = 0;
+uint16_t bluegene_bp_nodecard_cnt = 0;
 uint16_t bluegene_quarter_node_cnt = 0;
 uint16_t bluegene_quarter_ionode_cnt = 0;
 uint16_t bluegene_nodecard_node_cnt = 0;
@@ -111,7 +113,6 @@ int max_dim[BA_SYSTEM_DIMENSIONS] = { 0 };
 
 static void _set_bg_lists();
 static int  _validate_config_nodes(List *bg_found_block_list);
-static int  _bg_record_cmpf_inc(bg_record_t *rec_a, bg_record_t *rec_b);
 static int _delete_old_blocks(List bg_found_block_list);
 static char *_get_bg_conf(void);
 static int  _reopen_bridge_log(void);
@@ -263,7 +264,9 @@ extern bool blocks_overlap(bg_record_t *rec_a, bg_record_t *rec_b)
 		return false;
 	}
 	FREE_NULL_BITMAP(my_bitmap);
-		
+
+#ifdef HAVE_BGL
+
 	if(rec_a->quarter != (uint16_t) NO_VAL) {
 		if(rec_b->quarter == (uint16_t) NO_VAL)
 			return true;
@@ -277,7 +280,22 @@ extern bool blocks_overlap(bg_record_t *rec_a, bg_record_t *rec_b)
 				return false;
 		}
 	}
-	
+#else
+	if((rec_a->node_cnt >= bluegene_bp_node_cnt
+	    && rec_b->node_cnt < bluegene_bp_node_cnt)
+	   ||(rec_b->node_cnt >= bluegene_bp_node_cnt
+	      && rec_a->node_cnt < bluegene_bp_node_cnt))
+		return true;
+
+	my_bitmap = bit_copy(rec_a->ionode_bitmap);
+	bit_and(my_bitmap, rec_b->ionode_bitmap);
+	if (bit_ffs(my_bitmap) == -1) {
+		FREE_NULL_BITMAP(my_bitmap);
+		return false;
+	}
+	FREE_NULL_BITMAP(my_bitmap);
+
+#endif	
 	return true;
 }
 
@@ -432,7 +450,7 @@ extern char* convert_node_use(rm_partition_mode_t pt)
 extern void sort_bg_record_inc_size(List records){
 	if (records == NULL)
 		return;
-	list_sort(records, (ListCmpF) _bg_record_cmpf_inc);
+	list_sort(records, (ListCmpF) bg_record_cmpf_inc);
 	last_bg_update = time(NULL);
 }
 
@@ -1187,6 +1205,9 @@ extern int read_bg_conf(void)
 	if(bluegene_nodecard_node_cnt<=0)
 		fatal("You should have more than 0 nodes per nodecard");
 
+	bluegene_bp_nodecard_cnt = 
+		bluegene_bp_node_cnt / bluegene_nodecard_node_cnt;
+
 	if (!s_p_get_uint16(&bluegene_numpsets, "Numpsets", tbl))
 		fatal("Warning: Numpsets not configured in bluegene.conf");
 
@@ -1197,15 +1218,43 @@ extern int read_bg_conf(void)
 		bluegene_quarter_ionode_cnt = bluegene_numpsets/4;
 		bluegene_nodecard_ionode_cnt = bluegene_quarter_ionode_cnt/4;
 
+		/* How many nodecards per ionode */
 		bluegene_nc_ratio = 
 			((double)bluegene_bp_node_cnt 
 			 / (double)bluegene_nodecard_node_cnt) 
 			/ (double)bluegene_numpsets;
+		/* How many ionodes per nodecard */
 		bluegene_io_ratio = 
 			(double)bluegene_numpsets /
 			((double)bluegene_bp_node_cnt 
 			 / (double)bluegene_nodecard_node_cnt);
-
+		//info("got %f %f", bluegene_nc_ratio, bluegene_io_ratio);
+		/* figure out the smallest block we can have on the
+		   system */
+#ifdef HAVE_BGL
+		if(bluegene_io_ratio >= 2)
+			bluegene_smallest_block=32;
+		else
+			bluegene_smallest_block=128;
+#else
+		if(bluegene_io_ratio >= 2)
+			bluegene_smallest_block=16;
+		else if(bluegene_io_ratio == 1)
+			bluegene_smallest_block=32;
+		else if(bluegene_io_ratio == .5)
+			bluegene_smallest_block=64;
+		else if(bluegene_io_ratio == .25)
+			bluegene_smallest_block=128;
+		else if(bluegene_io_ratio == .125)
+			bluegene_smallest_block=256;
+		else {
+			error("unknown ioratio %f.  Can't figure out "
+			      "smallest block size, setting it to midplane");
+			bluegene_smallest_block=512;
+		}
+#endif
+		debug("Smallest block possible on this system is %u",
+		      bluegene_smallest_block);
 		/* below we are creating all the possible bitmaps for
 		 * each size of small block
 		 */
@@ -1286,11 +1335,6 @@ extern int read_bg_conf(void)
 		}
 		xfree(layout);
 	}
-
-#ifndef HAVE_BGL
-	if(bluegene_layout_mode == LAYOUT_DYNAMIC)
-		fatal("Dynamic layout mode is only supported on a BGL system.");
-#endif
 
 	/* add blocks defined in file */
 	if(bluegene_layout_mode != LAYOUT_DYNAMIC) {
@@ -1523,40 +1567,6 @@ finished:
 #endif
 
 	return rc;
-}
-
-/* 
- * Comparator used for sorting blocks smallest to largest
- * 
- * returns: -1: rec_a >rec_b   0: rec_a == rec_b   1: rec_a < rec_b
- * 
- */
-static int _bg_record_cmpf_inc(bg_record_t* rec_a, bg_record_t* rec_b)
-{
-	int size_a = rec_a->node_cnt;
-	int size_b = rec_b->node_cnt;
-	if (size_a < size_b)
-		return -1;
-	else if (size_a > size_b)
-		return 1;
-	if(rec_a->nodes && rec_b->nodes) {
-		size_a = strcmp(rec_a->nodes, rec_b->nodes);
-		if (size_a < 0)
-			return -1;
-		else if (size_a > 0)
-			return 1;
-	}
-	if (rec_a->quarter < rec_b->quarter)
-		return -1;
-	else if (rec_a->quarter > rec_b->quarter)
-		return 1;
-
-	if(rec_a->nodecard < rec_b->nodecard)
-		return -1;
-	else if(rec_a->nodecard > rec_b->nodecard)
-		return 1;
-
-	return 0;
 }
 
 static int _delete_old_blocks(List bg_found_block_list)

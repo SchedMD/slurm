@@ -159,6 +159,8 @@ extern void acct_policy_job_begin(struct job_record *job_ptr)
 	assoc_ptr = (acct_association_rec_t *)job_ptr->assoc_ptr;
 	while(assoc_ptr) {
 		assoc_ptr->used_jobs++;	
+		assoc_ptr->grp_used_cpus += job_ptr->total_procs;
+		assoc_ptr->grp_used_nodes += job_ptr->node_cnt;
 		/* now handle all the group limits of the parents */
 		assoc_ptr = assoc_ptr->parent_assoc_ptr;
 	}
@@ -184,6 +186,19 @@ extern void acct_policy_job_fini(struct job_record *job_ptr)
 			assoc_ptr->used_jobs--;
 		else
 			debug2("acct_policy_job_fini: used_jobs underflow");
+
+		assoc_ptr->grp_used_cpus -= job_ptr->total_procs;
+		if ((int)assoc_ptr->grp_used_cpus < 0) {
+			assoc_ptr->grp_used_cpus = 0;
+			debug2("acct_policy_job_fini: grp_used_cpus underflow");
+		}
+
+		assoc_ptr->grp_used_nodes -= job_ptr->node_cnt;
+		if ((int)assoc_ptr->grp_used_nodes < 0) {
+			assoc_ptr->grp_used_nodes = 0;
+			debug2("acct_policy_job_fini: "
+			       "grp_used_nodes underflow");
+		}
 		assoc_ptr = assoc_ptr->parent_assoc_ptr;
 	}
 	slurm_mutex_unlock(&assoc_mgr_association_lock);
@@ -245,7 +260,8 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 			       "group max jobs limit %u with %u for account %s",
 			       job_ptr->job_id, assoc_ptr->id,
 			       assoc_ptr->grp_jobs, 
-			       assoc_ptr->used_jobs, assoc_ptr->acct);		
+			       assoc_ptr->used_jobs, assoc_ptr->acct);
+			
 			rc = false;
 			goto end_it;
 		}

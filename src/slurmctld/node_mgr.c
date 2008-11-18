@@ -2491,6 +2491,10 @@ extern int send_nodes_to_accounting(time_t event_time)
 {
 	int rc = SLURM_SUCCESS, i = 0;
 	struct node_record *node_ptr;
+	slurmctld_lock_t node_read_lock = { 
+		READ_LOCK, NO_LOCK, READ_LOCK, WRITE_LOCK };
+
+ 	lock_slurmctld(node_read_lock);
 	/* send nodes not in not 'up' state */
 	node_ptr = node_record_table_ptr;
 	for (i = 0; i < node_record_count; i++, node_ptr++) {
@@ -2508,6 +2512,7 @@ extern int send_nodes_to_accounting(time_t event_time)
 		   == SLURM_ERROR) 
 			break;
 	}
+	unlock_slurmctld(node_read_lock);
 	return rc;
 }
 

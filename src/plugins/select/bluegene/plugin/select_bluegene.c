@@ -528,8 +528,10 @@ extern int select_p_state_restore(char *dir_name)
 				xstrdup(bg_info_record->ionodes);
 			bg_record->ionode_bitmap = bit_copy(ionode_bitmap);
 			bg_record->state = bg_info_record->state;
+#ifdef HAVE_BGL
 			bg_record->quarter = bg_info_record->quarter;
 			bg_record->nodecard = bg_info_record->nodecard;
+#endif
 			if(bg_info_record->state == RM_PARTITION_ERROR)
 				bg_record->job_running = BLOCK_ERROR_STATE;
 			else
@@ -967,17 +969,12 @@ extern int select_p_update_sub_node (update_part_msg_t *part_desc_ptr)
 	bit_unfmt(ionode_bitmap, ionodes);		
 
 	requests = list_create(destroy_bg_record);
-	
+	memset(&blockreq, 0, sizeof(blockreq_t));
+
 	blockreq.block = coord;
-#ifdef HAVE_BGL
-	blockreq.blrtsimage = NULL;
-#endif
-	blockreq.linuximage = NULL;
-	blockreq.mloaderimage = NULL;
-	blockreq.ramdiskimage = NULL;
 	blockreq.conn_type = SELECT_SMALL;
-	blockreq.small32 = 16;
-	blockreq.small128 = 0;
+	blockreq.small32 = bluegene_bp_nodecard_cnt;
+
 	add_bg_record(requests, NULL, &blockreq);
 	
 	delete_list = list_create(NULL);
@@ -1174,7 +1171,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 	uint32_t *nodes = (uint32_t *)data, tmp;
 	int i;
 	uint16_t req_geometry[BA_SYSTEM_DIMENSIONS];
-	
+
 	if(!bluegene_bp_node_cnt) {
 		fatal("select_g_alter_node_cnt: This can't be called "
 		      "before select_g_block_init");
@@ -1267,6 +1264,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 			job_desc->min_nodes = tmp;
 			job_desc->num_procs = procs_per_node * tmp;
 		} else { 
+#ifdef HAVE_BGL
 			if(job_desc->min_nodes <= bluegene_nodecard_node_cnt
 			   && bluegene_nodecard_ionode_cnt)
 				job_desc->min_nodes = 
@@ -1287,6 +1285,24 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 			
 			job_desc->num_procs = procs_per_node/tmp;
 			job_desc->min_nodes = 1;
+#else
+			i = bluegene_smallest_block;
+			while(i <= bluegene_bp_node_cnt) {
+				if(job_desc->min_nodes <= i) {
+					job_desc->min_nodes = i;
+					break;
+				}
+				i *= 2;
+			}
+			
+			select_g_set_jobinfo(job_desc->select_jobinfo,
+					     SELECT_DATA_NODE_CNT,
+					     &job_desc->min_nodes);
+
+			job_desc->num_procs = job_desc->min_nodes 
+				* bluegene_proc_ratio;
+			job_desc->min_nodes = 1;
+#endif
 		}
 		
 		if(job_desc->max_nodes == (uint32_t) NO_VAL) 
@@ -1303,6 +1319,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 			job_desc->max_nodes = tmp;
 			tmp = NO_VAL;
 		} else {
+#ifdef HAVE_BGL
 			if(job_desc->max_nodes <= bluegene_nodecard_node_cnt
 			   && bluegene_nodecard_ionode_cnt)
 				job_desc->max_nodes = 
@@ -1322,6 +1339,23 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 					     SELECT_DATA_MAX_PROCS, 
 					     &tmp);
 			job_desc->max_nodes = 1;
+#else
+			i = bluegene_smallest_block;
+			while(i <= bluegene_bp_node_cnt) {
+				if(job_desc->max_nodes <= i) {
+					job_desc->max_nodes = i;
+					break;
+				}
+				i *= 2;
+			}
+			
+			tmp = job_desc->max_nodes * bluegene_proc_ratio;
+			select_g_set_jobinfo(job_desc->select_jobinfo,
+					     SELECT_DATA_MAX_PROCS,
+					     &tmp);
+
+			job_desc->max_nodes = 1;
+#endif
 		}
 		tmp = NO_VAL;
 			

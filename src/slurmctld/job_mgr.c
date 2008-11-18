@@ -770,7 +770,7 @@ static int _load_job_state(Buf buffer)
 	job_ptr->tot_sus_time = tot_sus_time;
 	job_ptr->user_id      = user_id;
 
-	bzero(&assoc_rec, sizeof(acct_association_rec_t));
+	memset(&assoc_rec, 0, sizeof(acct_association_rec_t));
 
 	/* 
 	 * For speed and accurracy we will first see if we once had an
@@ -800,6 +800,7 @@ static int _load_job_state(Buf buffer)
 		job_ptr->end_time = now;
 		job_completion_logger(job_ptr);
 	} else {
+		job_ptr->assoc_id = assoc_rec.id;
 		info("Recovered job %u %u", job_id, job_ptr->assoc_id);
 
 		/* make sure we have started this job in accounting */
@@ -811,6 +812,10 @@ static int _load_job_state(Buf buffer)
 				jobacct_storage_g_job_suspend(acct_db_conn,
 							      job_ptr);
 		}
+		/* make sure we have this job completed in the
+		   database */
+		if(IS_JOB_FINISHED(job_ptr))
+			jobacct_storage_g_job_complete(acct_db_conn, job_ptr);
 	}
 
 	safe_unpack16(&step_flag, buffer);
@@ -1062,7 +1067,6 @@ void _add_job_hash(struct job_record *job_ptr)
 	job_ptr->job_next = job_hash[inx];
 	job_hash[inx] = job_ptr;
 }
-
 
 /* 
  * find_job_record - return a pointer to the job record with the given job_id
@@ -1628,7 +1632,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	if (will_run && resp) {
 		job_desc_msg_t job_desc_msg;
 		int rc;
-		bzero(&job_desc_msg, sizeof(job_desc_msg_t));
+		memset(&job_desc_msg, 0, sizeof(job_desc_msg_t));
 		job_desc_msg.job_id = job_ptr->job_id;
 		rc = job_start_data(&job_desc_msg, resp);
 		job_ptr->job_state  = JOB_FAILED;
@@ -1682,18 +1686,6 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		return error_code;
 	}
 	
-	/* To be able to set TASKS_PER_NODE correctly in the env we
-	   need to know how may tasks we are going to run.  If tasks
-	   isn't specified we will take the number of procs on the
-	   system and divide it by the cpus_per_task.  This is already
-	   checked to not be 0 earlier.
-	*/
-	/* if(!job_ptr->details->num_tasks) {  */
-/* 		job_ptr->details->num_tasks = job_ptr->total_procs  */
-/* 			/ job_ptr->details->cpus_per_task; */
-/* 		info("got num_tasks of %d", job_ptr->details->num_tasks); */
-/* 	} */
-
 	if (will_run) {		/* job would run, flag job destruction */
 		job_ptr->job_state  = JOB_FAILED;
 		job_ptr->exit_code  = 1;
@@ -2128,7 +2120,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		return error_code;
 	}
 
-	bzero(&assoc_rec, sizeof(acct_association_rec_t));
+	memset(&assoc_rec, 0, sizeof(acct_association_rec_t));
 	assoc_rec.uid       = job_desc->user_id;
 	assoc_rec.partition = part_ptr->name;
 	assoc_rec.acct      = job_desc->account;
@@ -4461,7 +4453,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			error_code = ESLURM_INVALID_PARTITION_NAME;
 		else if (super_user) {
 			acct_association_rec_t assoc_rec;
-			bzero(&assoc_rec, sizeof(acct_association_rec_t));
+			memset(&assoc_rec, 0, sizeof(acct_association_rec_t));
 			assoc_rec.uid       = job_ptr->user_id;
 			assoc_rec.partition = job_specs->partition;
 			assoc_rec.acct      = job_ptr->account;
@@ -5285,7 +5277,7 @@ extern void job_completion_logger(struct job_record  *job_ptr)
 		/* Just incase we turned on accounting after we
 		   started the job
 		*/
-		bzero(&assoc_rec, sizeof(acct_association_rec_t));
+		memset(&assoc_rec, 0, sizeof(acct_association_rec_t));
 		assoc_rec.acct      = job_ptr->account;
 		assoc_rec.partition = job_ptr->partition;
 		assoc_rec.uid       = job_ptr->user_id;
@@ -5295,6 +5287,11 @@ extern void job_completion_logger(struct job_record  *job_ptr)
 					     (acct_association_rec_t **)
 					     &job_ptr->assoc_ptr))) {
 			job_ptr->assoc_id = assoc_rec.id;
+			/* we have to call job start again because the
+			   associd does not get updated in job
+			   complete */
+			jobacct_storage_g_job_start(
+				acct_db_conn, slurmctld_cluster_name, job_ptr);
 		}
 	}
 
@@ -5843,7 +5840,8 @@ extern void update_job_nodes_completing(void)
 		    (job_ptr->node_bitmap == NULL))
 			continue;
 		xfree(job_ptr->nodes_completing);
-		job_ptr->nodes_completing = bitmap2node_name(job_ptr->node_bitmap);
+		job_ptr->nodes_completing = 
+			bitmap2node_name(job_ptr->node_bitmap);
 	}
 	list_iterator_destroy(job_iterator);
 }
@@ -6090,7 +6088,7 @@ extern int update_job_account(char *module, struct job_record *job_ptr,
 	}
 
 
-	bzero(&assoc_rec, sizeof(acct_association_rec_t));
+	memset(&assoc_rec, 0, sizeof(acct_association_rec_t));
 	assoc_rec.uid       = job_ptr->user_id;
 	assoc_rec.partition = job_ptr->partition;
 	assoc_rec.acct      = new_account;
@@ -6150,12 +6148,45 @@ extern int send_jobs_to_accounting(time_t event_time)
 {
 	ListIterator itr = NULL;
 	struct job_record *job_ptr;
+	slurmctld_lock_t job_write_lock = { 
+		NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
+	time_t now = time(NULL);
+
 	/* send jobs in pending or running state */
+	lock_slurmctld(job_write_lock);
 	itr = list_iterator_create(job_list);
 	while ((job_ptr = list_next(itr))) {
+		if(!job_ptr->assoc_id) {
+			acct_association_rec_t assoc_rec;
+			memset(&assoc_rec, 0, sizeof(acct_association_rec_t));
+			assoc_rec.uid       = job_ptr->user_id;
+			assoc_rec.partition = job_ptr->partition;
+			assoc_rec.acct      = job_ptr->account;
+
+			if(assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
+						   accounting_enforce,
+						   (acct_association_rec_t **)
+						   &job_ptr->assoc_ptr) &&
+			   accounting_enforce 
+			   && (!IS_JOB_FINISHED(job_ptr))) {
+				info("Cancelling job %u with "
+				     "invalid association",
+				     job_ptr->job_id);
+				job_ptr->job_state = JOB_CANCELLED;
+				job_ptr->state_reason = FAIL_BANK_ACCOUNT;
+				if (IS_JOB_PENDING(job_ptr))
+					job_ptr->start_time = now;
+				job_ptr->end_time = now;
+				job_completion_logger(job_ptr);
+				continue;
+			} else 
+				job_ptr->assoc_id = assoc_rec.id;
+		}
+
 		/* we only want active, un accounted for jobs */
-		if(job_ptr->db_index && job_ptr->job_state > JOB_SUSPENDED) 
+		if(job_ptr->db_index || IS_JOB_FINISHED(job_ptr)) 
 			continue;
+		
 		debug("first reg: starting job %u in accounting",
 		      job_ptr->job_id);
 		jobacct_storage_g_job_start(
@@ -6165,6 +6196,7 @@ extern int send_jobs_to_accounting(time_t event_time)
 			jobacct_storage_g_job_suspend(acct_db_conn, job_ptr);
 	}
 	list_iterator_destroy(itr);
+	unlock_slurmctld(job_write_lock);
 
 	return SLURM_SUCCESS;
 }
