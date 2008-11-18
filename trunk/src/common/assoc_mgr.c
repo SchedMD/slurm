@@ -1732,7 +1732,14 @@ extern void assoc_mgr_clear_used_info(void)
 	slurm_mutex_lock(&assoc_mgr_association_lock);
 	itr = list_iterator_create(assoc_mgr_association_list);
 	while((found_assoc = list_next(itr))) {
+
+		found_assoc->grp_used_cpu_mins = 0;
+		found_assoc->grp_used_cpus = 0;
+		found_assoc->grp_used_nodes = 0;
+		found_assoc->grp_used_wall = 0;
+		
 		found_assoc->used_jobs  = 0;
+		found_assoc->used_submit_jobs = 0;
 		found_assoc->used_submit_jobs = 0;
 	}
 	list_iterator_destroy(itr);

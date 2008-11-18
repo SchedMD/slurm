@@ -83,10 +83,18 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 					
 					if ((bit_equal(bg_record->bitmap, 
 						       found_record->bitmap))
+#ifdef HAVE_BGL
 					    && (bg_record->quarter ==
 						found_record->quarter)
 					    && (bg_record->nodecard ==
-						found_record->nodecard)) {
+						found_record->nodecard)
+#else
+					    && (bit_equal(bg_record->
+							  ionode_bitmap, 
+							  found_record->
+							  ionode_bitmap))
+#endif
+						) {
 						/* don't reboot this one */
 						break;	
 					}

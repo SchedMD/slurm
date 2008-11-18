@@ -259,7 +259,9 @@ functionality based on the value of user\-provided options.
 The default \fBSPANK\fR plug\-in stack configuration file is
 \fBplugstack.conf\fR in the same directory as \fBslurm.conf\fR(5),
 though this may be changed via the SLURM config parameter
-\fIPlugStackConfig\fR. The config file lists \fBSPANK\fR plugins,
+\fIPlugStackConfig\fR.  Normally the \fBplugstack.conf\fR file 
+should be identical on all nodes of the cluster.
+The config file lists \fBSPANK\fR plugins,
 one per line, along with whether the plugin is \fIrequired\fR or
 \fIoptional\fR, and any global arguments that are to be passed to
 the plugin for runtime configuration.  Comments are preceded with '#' 

@@ -161,6 +161,7 @@ static int _bg_record_sort_aval_inc(bg_record_t* rec_a, bg_record_t* rec_b)
 		else if (size_a > 0)
 			return 1;
 	}
+#ifdef HAVE_BGL
 	if (rec_a->quarter < rec_b->quarter)
 		return -1;
 	else if (rec_a->quarter > rec_b->quarter)
@@ -170,7 +171,7 @@ static int _bg_record_sort_aval_inc(bg_record_t* rec_a, bg_record_t* rec_b)
 		return -1;
 	else if(rec_a->nodecard > rec_b->nodecard)
 		return 1;
-
+#endif
 	return 0;
 }
 
@@ -182,9 +183,6 @@ static int _bg_record_sort_aval_inc(bg_record_t* rec_a, bg_record_t* rec_b)
  */
 static int _bg_record_sort_aval_dec(bg_record_t* rec_a, bg_record_t* rec_b)
 {
-	int size_a = rec_a->node_cnt;
-	int size_b = rec_b->node_cnt;
-
 	if(rec_a->job_ptr && !rec_b->job_ptr)
 		return 1;
 	else if(!rec_a->job_ptr && rec_b->job_ptr)
@@ -196,28 +194,7 @@ static int _bg_record_sort_aval_dec(bg_record_t* rec_a, bg_record_t* rec_b)
 			return 1;
 	}
 
-	if (size_a < size_b)
-		return -1;
-	else if (size_a > size_b)
-		return 1;
-	if(rec_a->nodes && rec_b->nodes) {
-		size_a = strcmp(rec_a->nodes, rec_b->nodes);
-		if (size_a < 0)
-			return -1;
-		else if (size_a > 0)
-			return 1;
-	}
-	if (rec_a->quarter < rec_b->quarter)
-		return -1;
-	else if (rec_a->quarter > rec_b->quarter)
-		return 1;
-
-	if(rec_a->nodecard < rec_b->nodecard)
-		return -1;
-	else if(rec_a->nodecard > rec_b->nodecard)
-		return 1;
-
-	return 0;
+	return bg_record_cmpf_inc(rec_a, rec_b);
 }
 
 /*
