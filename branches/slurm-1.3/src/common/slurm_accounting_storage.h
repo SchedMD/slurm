@@ -162,7 +162,7 @@ typedef struct acct_association_rec {
 			    * underlying group of
 			    * associations can run for */
 
-	uint32_t grp_used_cpu_mins; /* cpu hours the
+	uint32_t grp_used_cpu_mins; /* cpu mins the
 				      * underlying group of
 				      * associations has ran for 
 				      * (DON'T PACK) */

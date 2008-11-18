@@ -94,6 +94,55 @@ static bool _valid_job_assoc(struct job_record *job_ptr)
 }
 
 /*
+ * acct_policy_add_job_submit - Note that a job has been submitted for
+ *	accounting policy purposes.
+ */
+extern void acct_policy_add_job_submit(struct job_record *job_ptr)
+{
+	acct_association_rec_t *assoc_ptr = NULL;
+
+	if (accounting_enforce != ACCOUNTING_ENFORCE_WITH_LIMITS
+	    || !_valid_job_assoc(job_ptr))
+		return;
+
+	slurm_mutex_lock(&assoc_mgr_association_lock);
+	assoc_ptr = (acct_association_rec_t *)job_ptr->assoc_ptr;
+	while(assoc_ptr) {
+		assoc_ptr->used_submit_jobs++;	
+		/* now handle all the group limits of the parents */
+		assoc_ptr = assoc_ptr->parent_assoc_ptr;
+	}
+	slurm_mutex_unlock(&assoc_mgr_association_lock);
+}
+
+/*
+ * acct_policy_remove_job_submit - Note that a job has finished (might
+ *      not had started or been allocated resources) for accounting
+ *      policy purposes.
+ */
+extern void acct_policy_remove_job_submit(struct job_record *job_ptr)
+{
+	acct_association_rec_t *assoc_ptr = NULL;
+
+	if (!job_ptr->assoc_ptr || 
+	    accounting_enforce != ACCOUNTING_ENFORCE_WITH_LIMITS)
+		return;
+
+	slurm_mutex_lock(&assoc_mgr_association_lock);
+	assoc_ptr = (acct_association_rec_t *)job_ptr->assoc_ptr;
+	while(assoc_ptr) {
+		if (assoc_ptr->used_submit_jobs) 
+			assoc_ptr->used_submit_jobs--;
+		else
+			debug2("_acct_remove_job_submit: "
+			       "used_submit_jobs underflow for account %s",
+			       assoc_ptr->acct);
+		assoc_ptr = assoc_ptr->parent_assoc_ptr;
+	}
+	slurm_mutex_unlock(&assoc_mgr_association_lock);
+}
+
+/*
  * acct_policy_job_begin - Note that a job is starting for accounting
  *	policy purposes.
  */
@@ -109,6 +158,8 @@ extern void acct_policy_job_begin(struct job_record *job_ptr)
 	assoc_ptr = job_ptr->assoc_ptr;
 	while(assoc_ptr) {
 		assoc_ptr->used_jobs++;	
+		assoc_ptr->grp_used_cpus += job_ptr->total_procs;
+		assoc_ptr->grp_used_nodes += job_ptr->node_cnt;
 		/* now handle all the group limits of the parents */
 		assoc_ptr = assoc_ptr->parent_assoc_ptr;
 	}
@@ -134,6 +185,19 @@ extern void acct_policy_job_fini(struct job_record *job_ptr)
 			assoc_ptr->used_jobs--;
 		else
 			debug2("acct_policy_job_fini: used_jobs underflow");
+
+		assoc_ptr->grp_used_cpus -= job_ptr->total_procs;
+		if ((int)assoc_ptr->grp_used_cpus < 0) {
+			assoc_ptr->grp_used_cpus = 0;
+			debug2("acct_policy_job_fini: grp_used_cpus underflow");
+		}
+
+		assoc_ptr->grp_used_nodes -= job_ptr->node_cnt;
+		if ((int)assoc_ptr->grp_used_nodes < 0) {
+			assoc_ptr->grp_used_nodes = 0;
+			debug2("acct_policy_job_fini: "
+			       "grp_used_nodes underflow");
+		}
 		assoc_ptr = assoc_ptr->parent_assoc_ptr;
 	}
 	slurm_mutex_unlock(&assoc_mgr_association_lock);

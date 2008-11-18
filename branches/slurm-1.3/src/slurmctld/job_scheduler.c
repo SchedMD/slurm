@@ -416,8 +416,9 @@ extern int schedule(void)
 			else
 				srun_allocate(job_ptr->job_id);
 			job_cnt++;
-		} else if (error_code !=
-		           ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) {
+		} else if ((error_code !=
+			    ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE)
+			   && (error_code != ESLURM_ACCOUNTING_POLICY)) {
 			info("schedule: JobId=%u non-runnable: %s",
 				job_ptr->job_id, 
 				slurm_strerror(error_code));
