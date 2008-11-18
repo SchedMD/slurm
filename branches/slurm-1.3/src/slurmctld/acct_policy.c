@@ -196,7 +196,8 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 			       "group max jobs limit %u with %u for account %s",
 			       job_ptr->job_id, assoc_ptr->id,
 			       assoc_ptr->grp_jobs, 
-			       assoc_ptr->used_jobs, assoc_ptr->acct);		
+			       assoc_ptr->used_jobs, assoc_ptr->acct);
+			
 			rc = false;
 			goto end_it;
 		}

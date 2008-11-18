@@ -9249,10 +9249,9 @@ extern int acct_storage_p_flush_jobs_on_cluster(
 	 * the suspend table and the step table 
 	 */
 	query = xstrdup_printf(
-		"select t1.id, t1.state from %s as t1, %s as t2 "
-		"where ((t2.id=t1.associd and t2.cluster=\"%s\") "
-		"|| !t1.associd) && t1.end=0;",
-		job_table, assoc_table, cluster);
+		"select distinct t1.id, t1.state from %s as t1 where "
+		"t1.cluster=\"%s\" && t1.end=0;",
+		job_table, cluster);
 	debug3("%d(%d) query\n%s",
 	       mysql_conn->conn, __LINE__, query);
 	if(!(result =
