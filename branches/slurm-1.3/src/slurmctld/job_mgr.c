@@ -563,7 +563,7 @@ static int _load_job_state(Buf buffer)
 	struct part_record *part_ptr;
 	int error_code;
 	select_jobinfo_t select_jobinfo = NULL;
-	acct_association_rec_t assoc_rec, *assoc_ptr = NULL;
+	acct_association_rec_t assoc_rec;
 
 	safe_unpack32(&assoc_id, buffer);
 	safe_unpack32(&job_id, buffer);
@@ -757,7 +757,8 @@ static int _load_job_state(Buf buffer)
 
 	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 				    accounting_enforce,
-				    &assoc_ptr) &&
+				    (acct_association_rec_t **)
+				    &job_ptr->assoc_ptr) &&
 	    accounting_enforce && (!IS_JOB_FINISHED(job_ptr))) {
 		info("Cancelling job %u with invalid association",
 		     job_id);
@@ -769,8 +770,7 @@ static int _load_job_state(Buf buffer)
 		job_completion_logger(job_ptr);
 	} else {
 		info("Recovered job %u", job_id);
-		job_ptr->assoc_ptr = (void *) assoc_ptr;
-
+		job_ptr->assoc_id = assoc_rec.id;
 		/* make sure we have started this job in accounting */
 		if(job_ptr->assoc_id && !job_ptr->db_index && job_ptr->nodes) {
 			debug("starting job %u in accounting", job_ptr->job_id);
@@ -780,6 +780,10 @@ static int _load_job_state(Buf buffer)
 				jobacct_storage_g_job_suspend(acct_db_conn,
 							      job_ptr);
 		}
+		/* make sure we have this job completed in the
+		   database */
+		if(IS_JOB_FINISHED(job_ptr))
+			jobacct_storage_g_job_complete(acct_db_conn, job_ptr);
 	}
 
 	safe_unpack16(&step_flag, buffer);
@@ -4345,14 +4349,15 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		else if (tmp_part_ptr == NULL)
 			error_code = ESLURM_INVALID_PARTITION_NAME;
 		else if (super_user) {
-			acct_association_rec_t assoc_rec, *assoc_ptr;
+			acct_association_rec_t assoc_rec;
 			memset(&assoc_rec, 0, sizeof(acct_association_rec_t));
 			assoc_rec.uid       = job_ptr->user_id;
 			assoc_rec.partition = job_specs->partition;
 			assoc_rec.acct      = job_ptr->account;
 			if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
-						    accounting_enforce, 
-						    &assoc_ptr)) {
+						    accounting_enforce,
+						    (acct_association_rec_t **)
+						    &job_ptr->assoc_ptr)) {
 				info("job_update: invalid account %s "
 				     "for job %u",
 				     job_specs->account, job_ptr->job_id);
@@ -4361,7 +4366,6 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				 * association ID for accounting purposes */
 			} else {
 				job_ptr->assoc_id = assoc_rec.id;
-				job_ptr->assoc_ptr = (void *) assoc_ptr;
 			}
 			xfree(job_ptr->partition);
 			job_ptr->partition = xstrdup(job_specs->partition);
@@ -5178,6 +5182,11 @@ extern void job_completion_logger(struct job_record  *job_ptr)
 					     (acct_association_rec_t **)
 					     &job_ptr->assoc_ptr))) {
 			job_ptr->assoc_id = assoc_rec.id;
+			/* we have to call job start again because the
+			   associd does not get updated in job
+			   complete */
+			jobacct_storage_g_job_start(
+				acct_db_conn, slurmctld_cluster_name, job_ptr);
 		}
 	}
 
@@ -6057,7 +6066,7 @@ extern int send_jobs_to_accounting(time_t event_time)
 		}
 
 		/* we only want active, un accounted for jobs */
-		if(job_ptr->db_index && job_ptr->job_state > JOB_SUSPENDED) 
+		if(job_ptr->db_index || IS_JOB_FINISHED(job_ptr)) 
 			continue;
 		
 		debug("first reg: starting job %u in accounting",
