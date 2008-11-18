@@ -1300,7 +1300,7 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 				error("step_layout_create no usable cpus");
 				return NULL;
 			}
-			debug2("step_layout cpus = %d pos = %d", 
+			debug3("step_layout cpus = %d pos = %d", 
 			       usable_cpus, pos);
 			
 			if ((cpu_inx == -1) ||
