@@ -125,7 +125,6 @@ extern void allocate_nodes(struct job_record *job_ptr)
 	}
 
 	license_job_get(job_ptr);
-	acct_policy_job_begin(job_ptr);
 	return;
 }
 
@@ -1015,6 +1014,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	}
 	if (job_ptr->mail_type & MAIL_JOB_BEGIN)
 		mail_job_info(job_ptr, MAIL_JOB_BEGIN);
+
+	acct_policy_job_begin(job_ptr);
 
 	jobacct_storage_g_job_start(
 		acct_db_conn, slurmctld_cluster_name, job_ptr);
