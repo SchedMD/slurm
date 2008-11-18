@@ -57,6 +57,21 @@ static pthread_mutex_t local_qos_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t local_user_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t local_file_lock = PTHREAD_MUTEX_INITIALIZER;
 
+/* 
+ * Comparator used for sorting assocs largest cpu to smallest cpu
+ * 
+ * returns: 1: assoc_a > assoc_b  -1: assoc_a < assoc_b
+ * 
+ */
+static int _sort_assoc_dec(acct_association_rec_t *assoc_a,
+			   acct_association_rec_t *assoc_b)
+{
+	if (assoc_a->lft > assoc_b->lft)
+		return 1;
+	
+	return -1;
+}
+
 static int _clear_used_info(acct_association_rec_t *assoc)
 {
 	if(!assoc)
@@ -727,6 +742,7 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 		assoc->parent_acct       = ret_assoc->parent_acct;
 
 	assoc->parent_assoc_ptr          = ret_assoc->parent_assoc_ptr;
+	assoc->parent_id                 = ret_assoc->parent_id;
 
 	slurm_mutex_unlock(&assoc_mgr_association_lock);
 
@@ -750,6 +766,8 @@ extern int assoc_mgr_fill_in_user(void *db_conn, acct_user_rec_t *user,
 	itr = list_iterator_create(local_user_list);
 	while((found_user = list_next(itr))) {
 		if(user->uid == found_user->uid) 
+			break;
+		else if(user->name && !strcasecmp(user->name, found_user->name))
 			break;
 	}
 	list_iterator_destroy(itr);
@@ -962,6 +980,7 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 			slurm_mutex_lock(&local_qos_lock);
 			log_assoc_rec(rec, local_qos_list);
 			slurm_mutex_unlock(&local_qos_lock);
+			
 			break;
 		case ACCT_ADD_ASSOC:
 			if(rec) {
@@ -993,6 +1012,9 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 	 * we may have added the parent which wasn't in the list before
 	 */
 	if(parents_changed) {
+		list_sort(local_association_list, 
+			  (ListCmpF)_sort_assoc_dec);
+
 		list_iterator_reset(itr);
 		while((object = list_next(itr))) {
 			/* reset the limits because since a parent
