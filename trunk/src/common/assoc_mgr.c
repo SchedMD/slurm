@@ -914,7 +914,7 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 
 extern int assoc_mgr_fill_in_user(void *db_conn, acct_user_rec_t *user,
 				  int enforce,
-				 acct_user_rec_t **user_pptr)
+				  acct_user_rec_t **user_pptr)
 {
 	ListIterator itr = NULL;
 	acct_user_rec_t * found_user = NULL;
@@ -925,7 +925,8 @@ extern int assoc_mgr_fill_in_user(void *db_conn, acct_user_rec_t *user,
 		if(_get_assoc_mgr_user_list(db_conn, enforce) == SLURM_ERROR) 
 			return SLURM_ERROR;
 
-	if((!assoc_mgr_user_list || !list_count(assoc_mgr_user_list)) && !enforce) 
+	if((!assoc_mgr_user_list || !list_count(assoc_mgr_user_list))
+	   && !enforce) 
 		return SLURM_SUCCESS;
 
 	slurm_mutex_lock(&assoc_mgr_user_lock);
@@ -1397,11 +1398,13 @@ extern int assoc_mgr_update_assocs(acct_update_object_t *update)
 					object->qos_list = NULL;
 				}
 			}
+
 			if(!parents_changed) {
 				slurm_mutex_lock(&assoc_mgr_qos_lock);
 				log_assoc_rec(rec, assoc_mgr_qos_list);
 				slurm_mutex_unlock(&assoc_mgr_qos_lock);
 			}
+			
 			break;
 		case ACCT_ADD_ASSOC:
 			if(rec) {
