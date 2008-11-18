@@ -78,6 +78,25 @@ static int _sort_assoc_dec(acct_association_rec_t *assoc_a,
 	return -1;
 }
 
+static int _clear_used_info(acct_association_rec_t *assoc)
+{
+	if(!assoc)
+		return SLURM_ERROR;
+
+	assoc->grp_used_cpu_mins = 0;
+	assoc->grp_used_cpus = 0;
+	assoc->grp_used_nodes = 0;
+	assoc->grp_used_wall = 0;
+	
+	assoc->used_jobs  = 0;
+	assoc->used_submit_jobs = 0;
+	/* do not reset used_shares if you need to reset it do it
+	 * else where since sometimes we call this and do not want
+	 * shares reset */
+
+	return SLURM_SUCCESS;
+}
+
 static int _grab_parents_qos(acct_association_rec_t *assoc)
 {
 	acct_association_rec_t *parent_assoc = NULL;
@@ -1436,8 +1455,7 @@ extern int assoc_mgr_update_assocs(acct_update_object_t *update)
 			   changed we could have different usage
 			*/
 			if(!object->user) {
-				object->used_jobs = 0;
-				object->used_submit_jobs = 0;
+				_clear_used_info(object);
 				object->used_shares = 0;
 			}
 			_set_assoc_parent_and_user(
@@ -1732,15 +1750,7 @@ extern void assoc_mgr_clear_used_info(void)
 	slurm_mutex_lock(&assoc_mgr_association_lock);
 	itr = list_iterator_create(assoc_mgr_association_list);
 	while((found_assoc = list_next(itr))) {
-
-		found_assoc->grp_used_cpu_mins = 0;
-		found_assoc->grp_used_cpus = 0;
-		found_assoc->grp_used_nodes = 0;
-		found_assoc->grp_used_wall = 0;
-		
-		found_assoc->used_jobs  = 0;
-		found_assoc->used_submit_jobs = 0;
-		found_assoc->used_submit_jobs = 0;
+		_clear_used_info(found_assoc);
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&assoc_mgr_association_lock);
