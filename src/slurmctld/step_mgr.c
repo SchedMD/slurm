@@ -1057,7 +1057,7 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 						  (num_tasks - set_cpus));
 			} else
 				usable_cpus = job_ptr->alloc_lps[pos];
-			debug2("step_layout cpus = %d pos = %d", 
+			debug3("step_layout cpus = %d pos = %d", 
 			       usable_cpus, pos);
 			
 			if ((cpu_inx == -1) ||

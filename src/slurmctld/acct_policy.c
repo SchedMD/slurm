@@ -184,19 +184,21 @@ extern void acct_policy_job_fini(struct job_record *job_ptr)
 		if (assoc_ptr->used_jobs)
 			assoc_ptr->used_jobs--;
 		else
-			debug2("acct_policy_job_fini: used_jobs underflow");
+			debug2("acct_policy_job_fini: used_jobs underflow "
+			       "for account %s", assoc_ptr->acct);
 
 		assoc_ptr->grp_used_cpus -= job_ptr->total_procs;
 		if ((int)assoc_ptr->grp_used_cpus < 0) {
 			assoc_ptr->grp_used_cpus = 0;
-			debug2("acct_policy_job_fini: grp_used_cpus underflow");
+			debug2("acct_policy_job_fini: grp_used_cpus underflow "
+			       "for account %s", assoc_ptr->acct);
 		}
 
 		assoc_ptr->grp_used_nodes -= job_ptr->node_cnt;
 		if ((int)assoc_ptr->grp_used_nodes < 0) {
 			assoc_ptr->grp_used_nodes = 0;
-			debug2("acct_policy_job_fini: "
-			       "grp_used_nodes underflow");
+			debug2("acct_policy_job_fini: grp_used_nodes underflow "
+			       "for account %s", assoc_ptr->acct);
 		}
 		assoc_ptr = assoc_ptr->parent_assoc_ptr;
 	}
