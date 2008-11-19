@@ -290,7 +290,7 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 		
 		option = strip_quotes(sub+end, NULL);
 		
-		command_len=strlen(sub);		
+		command_len = end - 1;		
 
 		if(!end) {
 			if(file_opts->name) {
@@ -1111,7 +1111,7 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 		mod_assoc.grp_cpu_mins = file_opts->grp_cpu_mins;
 		changed = 1;
 		xstrfmtcat(my_info, 
-			   "%-30.30s for %-7.7s %-10.10s %8ull -> %ull\n",
+			   "%-30.30s for %-7.7s %-10.10s %8llu -> %llu\n",
 			   " Changed GrpCPUMins",
 			   type, name,
 			   assoc->grp_cpu_mins,
@@ -1184,7 +1184,7 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 			file_opts->max_cpu_mins_pj;
 		changed = 1;
 		xstrfmtcat(my_info, 
-			   "%-30.30s for %-7.7s %-10.10s %8ull -> %ull\n",
+			   "%-30.30s for %-7.7s %-10.10s %8llu -> %llu\n",
 			   " Changed MaxCPUMinsPerJob",
 			   type, name,
 			   assoc->max_cpu_mins_pj,
