@@ -84,6 +84,8 @@ set srun_pid [spawn $srun -N1 -t1 --unbuffered $file_prog]
 expect {
 	-re "WAITING" {
 		incr matches
+		# sleep to make sure the process is actually running
+		sleep 1
 		exec $bin_kill -USR1 $srun_pid
 		exec $bin_sleep 1
 		exec $bin_kill -USR2 $srun_pid

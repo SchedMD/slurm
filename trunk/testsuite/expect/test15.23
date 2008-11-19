@@ -39,11 +39,6 @@ set timeout          $max_job_delay
 
 print_header $test_id
 
-if {[test_assoc_enforced]} {
-	send_user "\nWARNING: Using users default account instead of $job_acct since associations are enforced.\n"
-	set job_acct [get_default_acct 0]
-}
-
 #
 # Set target environment variables
 #
