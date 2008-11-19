@@ -592,7 +592,7 @@ if { $exit_code } {
 # Use sacctmgr to list the test account modifications
 #
 set matches 0
-set my_pid [eval spawn $sacctmgr -n -p list acct withassoc acc=$nm1,$nm2,$nm3 format="Account,Desc,Org,Cluster,Fairshare,MaxCPUM,MaxJ,MaxN,MaxW"]
+set my_pid [eval spawn $sacctmgr -n -p list account withassoc acc=$nm1,$nm2,$nm3 format="Account,Desc,Org,Cluster,Fairshare,MaxCPUM,MaxJ,MaxN,MaxW"]
 expect {
 	-re "There was a problem" {
 	        send_user "FAILURE: there was a problem with the sacctmgr command\n"

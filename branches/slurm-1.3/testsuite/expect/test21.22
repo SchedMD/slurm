@@ -81,9 +81,9 @@ set aln		None
 set ala		Administrator
 set alo		Operator
 set coo         Coordinator
-set col         CoordinatorList
+set col         Coordinator
 set dac		DefaultAccount
-set pts		Partitions
+set pts		Partition
 set pde		pdebug
 set pba		pbatch
 set fs		Fairshare
@@ -679,7 +679,7 @@ if {$matches != 7} {
 # Use sacctmgr to list the test original Admin Levels and Account Coordinators
 #
 set matches 0
-set my_pid [spawn $sacctmgr -n -p $lis $usr $fmt=$usr,$col,$ala $wco]
+set my_pid [spawn $sacctmgr -n -p $lis $usr $fmt=$usr,$col,$al $wco]
 expect {
 	-re "There was a problem" {
 	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
@@ -811,7 +811,7 @@ if {$matches != 10} {
 # Use sacctmgr to list the test modification Admin Levels and Account Coordinators
 #
 set matches 0
-set my_pid [spawn $sacctmgr -n -p $lis $usr $fmt=$usr,$col,$ala $wco]
+set my_pid [spawn $sacctmgr -n -p $lis $usr $fmt=$usr,$col,$al $wco]
 expect {
 	-re "There was a problem" {
 	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
@@ -948,7 +948,7 @@ if {$matches != 10} {
 # Use sacctmgr to list the test modification Admin Levels and Account Coordinators
 #
 set matches 0
-set my_pid [spawn $sacctmgr -n -p $lis $usr $fmt=$usr,$col,$ala $wco]
+set my_pid [spawn $sacctmgr -n -p $lis $usr $fmt=$usr,$col,$al $wco]
 expect {
 	-re "There was a problem" {
 	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
