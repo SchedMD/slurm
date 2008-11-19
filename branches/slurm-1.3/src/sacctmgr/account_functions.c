@@ -48,6 +48,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 	int end = 0;
 	List qos_list = NULL;
 	acct_association_cond_t *assoc_cond = NULL;
+	int command_len = 0;
 		     
 	if(!acct_cond) {
 		exit_code=1;
@@ -64,25 +65,37 @@ static int _set_cond(int *start, int argc, char *argv[],
 
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
-		if (!strncasecmp (argv[i], "Set", 3)) {
+		if(!end)
+			command_len=strlen(argv[i]);
+		else
+			command_len=end-1;
+
+		if (!strncasecmp (argv[i], "Set", MAX(command_len, 3))) {
 			i--;
 			break;
 		} else if (!end && 
-			   !strncasecmp (argv[i], "WithAssoc", 5)) {
+			   !strncasecmp (argv[i], "WithAssoc",
+					 MAX(command_len, 5))) {
 			acct_cond->with_assocs = 1;
 		} else if (!end && 
-			   !strncasecmp (argv[i], "WithCoordinators", 5)) {
+			   !strncasecmp (argv[i], "WithCoordinators", 
+					 MAX(command_len, 5))) {
 			acct_cond->with_coords = 1;
 		} else if (!end && 
-			   !strncasecmp (argv[i], "WithRawQOS", 5)) {
+			   !strncasecmp (argv[i], "WithRawQOS",
+					 MAX(command_len, 5))) {
 			assoc_cond->with_raw_qos = 1;
-		} else if (!end && !strncasecmp (argv[i], "WOPLimits", 4)) {
+		} else if (!end && !strncasecmp (argv[i], "WOPLimits",
+						 MAX(command_len, 4))) {
 			assoc_cond->without_parent_limits = 1;
-		} else if(!end && !strncasecmp(argv[i], "where", 5)) {
+		} else if(!end && !strncasecmp(argv[i], "where",
+					       MAX(command_len, 5))) {
 			continue;
 		} else if(!end
-			  || !strncasecmp (argv[i], "Names", 1)
-			  || !strncasecmp (argv[i], "Accouts", 1)) {
+			  || !strncasecmp (argv[i], "Names", 
+					   MAX(command_len, 1))
+			  || !strncasecmp (argv[i], "Accouts",
+					   MAX(command_len, 1))) {
 			if(!assoc_cond->acct_list) {
 				assoc_cond->acct_list = 
 					list_create(slurm_destroy_char);
@@ -91,7 +104,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 				   assoc_cond->acct_list,
 				   argv[i]+end)) 
 				u_set = 1;
-		} else if (!strncasecmp (argv[i], "Clusters", 1)) {
+		} else if (!strncasecmp (argv[i], "Clusters",
+					 MAX(command_len, 1))) {
 			if(!assoc_cond->cluster_list) {
 				assoc_cond->cluster_list = 
 					list_create(slurm_destroy_char);
@@ -100,7 +114,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 				   assoc_cond->cluster_list,
 				   argv[i]+end))
 				a_set = 1;
-		} else if (!strncasecmp (argv[i], "Descriptions", 1)) {
+		} else if (!strncasecmp (argv[i], "Descriptions", 
+					 MAX(command_len, 1))) {
 			if(!acct_cond->description_list) {
 				acct_cond->description_list = 
 					list_create(slurm_destroy_char);
@@ -108,45 +123,52 @@ static int _set_cond(int *start, int argc, char *argv[],
 			if(slurm_addto_char_list(acct_cond->description_list,
 						 argv[i]+end))
 				u_set = 1;
-		} else if (!strncasecmp (argv[i], "Format", 1)) {
+		} else if (!strncasecmp (argv[i], "Format", 
+					 MAX(command_len, 1))) {
 			if(format_list)
 				slurm_addto_char_list(format_list, argv[i]+end);
-		} else if (!strncasecmp (argv[i], "FairShare", 1)) {
+		} else if (!strncasecmp (argv[i], "FairShare", 
+					 MAX(command_len, 1))) {
 			if(!assoc_cond->fairshare_list)
 				assoc_cond->fairshare_list =
 					list_create(slurm_destroy_char);
 			if(slurm_addto_char_list(assoc_cond->fairshare_list,
 					argv[i]+end))
 				a_set = 1;
-		} else if (!strncasecmp (argv[i], "GrpCPUMins", 7)) {
+		} else if (!strncasecmp (argv[i], "GrpCPUMins",
+					 MAX(command_len, 7))) {
 			if(!assoc_cond->grp_cpu_mins_list)
 				assoc_cond->grp_cpu_mins_list =
 					list_create(slurm_destroy_char);
 			if(slurm_addto_char_list(assoc_cond->grp_cpu_mins_list,
 					argv[i]+end))
 				a_set = 1;
-		} else if (!strncasecmp (argv[i], "GrpCpus", 7)) {
+		} else if (!strncasecmp (argv[i], "GrpCpus",
+					 MAX(command_len, 7))) {
 			if(!assoc_cond->grp_cpus_list)
 				assoc_cond->grp_cpus_list =
 					list_create(slurm_destroy_char);
 			if(slurm_addto_char_list(assoc_cond->grp_cpus_list,
 					argv[i]+end))
 				a_set = 1;
-		} else if (!strncasecmp (argv[i], "GrpJobs", 4)) {
+		} else if (!strncasecmp (argv[i], "GrpJobs",
+					 MAX(command_len, 4))) {
 			if(!assoc_cond->grp_jobs_list)
 				assoc_cond->grp_jobs_list =
 					list_create(slurm_destroy_char);
 			if(slurm_addto_char_list(assoc_cond->grp_jobs_list,
 					argv[i]+end))
 				a_set = 1;
-		} else if (!strncasecmp (argv[i], "GrpNodes", 4)) {
+		} else if (!strncasecmp (argv[i], "GrpNodes",
+					 MAX(command_len, 4))) {
 			if(!assoc_cond->grp_nodes_list)
 				assoc_cond->grp_nodes_list =
 					list_create(slurm_destroy_char);
 			if(slurm_addto_char_list(assoc_cond->grp_nodes_list,
 					argv[i]+end))
 				a_set = 1;
-		} else if (!strncasecmp (argv[i], "GrpSubmitJobs", 4)) {
+		} else if (!strncasecmp (argv[i], "GrpSubmitJobs",
+					 MAX(command_len, 4))) {
 			if(!assoc_cond->grp_submit_jobs_list)
 				assoc_cond->grp_submit_jobs_list =
 					list_create(slurm_destroy_char);
@@ -154,7 +176,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 				   assoc_cond->grp_submit_jobs_list,
 				   argv[i]+end))
 				a_set = 1;
-		} else if (!strncasecmp (argv[i], "GrpWall", 4)) {
+		} else if (!strncasecmp (argv[i], "GrpWall", 
+					 MAX(command_len, 4))) {
 			if(!assoc_cond->grp_wall_list)
 				assoc_cond->grp_wall_list =
 					list_create(slurm_destroy_char);
@@ -162,7 +185,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 				   assoc_cond->grp_wall_list,
 				   argv[i]+end))
 				a_set = 1;
-		} else if (!strncasecmp (argv[i], "MaxCPUMins", 7)) {
+		} else if (!strncasecmp (argv[i], "MaxCPUMins", 
+					 MAX(command_len, 7))) {
 			if(!assoc_cond->max_cpu_mins_pj_list)
 				assoc_cond->max_cpu_mins_pj_list =
 					list_create(slurm_destroy_char);
@@ -170,7 +194,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 				   assoc_cond->max_cpu_mins_pj_list,
 				   argv[i]+end))
 				a_set = 1;
-		} else if (!strncasecmp (argv[i], "MaxCpus", 7)) {
+		} else if (!strncasecmp (argv[i], "MaxCpus", 
+					 MAX(command_len, 7))) {
 			if(!assoc_cond->max_cpus_pj_list)
 				assoc_cond->max_cpus_pj_list =
 					list_create(slurm_destroy_char);
@@ -178,7 +203,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 				   assoc_cond->max_cpus_pj_list,
 				   argv[i]+end))
 				a_set = 1;
-		} else if (!strncasecmp (argv[i], "MaxJobs", 4)) {
+		} else if (!strncasecmp (argv[i], "MaxJobs", 
+					 MAX(command_len, 4))) {
 			if(!assoc_cond->max_jobs_list)
 				assoc_cond->max_jobs_list =
 					list_create(slurm_destroy_char);
@@ -186,7 +212,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 				   assoc_cond->max_jobs_list,
 				   argv[i]+end))
 				a_set = 1;
-		} else if (!strncasecmp (argv[i], "MaxNodes", 4)) {
+		} else if (!strncasecmp (argv[i], "MaxNodes", 
+					 MAX(command_len, 4))) {
 			if(!assoc_cond->max_nodes_pj_list)
 				assoc_cond->max_nodes_pj_list =
 					list_create(slurm_destroy_char);
@@ -194,7 +221,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 				   assoc_cond->max_nodes_pj_list,
 				   argv[i]+end))
 				a_set = 1;
-		} else if (!strncasecmp (argv[i], "MaxSubmitJobs", 4)) {
+		} else if (!strncasecmp (argv[i], "MaxSubmitJobs", 
+					 MAX(command_len, 4))) {
 			if(!assoc_cond->max_submit_jobs_list)
 				assoc_cond->max_submit_jobs_list =
 					list_create(slurm_destroy_char);
@@ -202,7 +230,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 				   assoc_cond->max_submit_jobs_list,
 				   argv[i]+end))
 				a_set = 1;
-		} else if (!strncasecmp (argv[i], "MaxWall", 4)) {
+		} else if (!strncasecmp (argv[i], "MaxWall",
+					 MAX(command_len, 4))) {
 			if(!assoc_cond->max_wall_pj_list)
 				assoc_cond->max_wall_pj_list =
 					list_create(slurm_destroy_char);
@@ -210,7 +239,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 				   assoc_cond->max_wall_pj_list,
 				   argv[i]+end))
 				a_set = 1;
-		} else if (!strncasecmp (argv[i], "Organizations", 1)) {
+		} else if (!strncasecmp (argv[i], "Organizations",
+					 MAX(command_len, 1))) {
 			if(!acct_cond->organization_list) {
 				acct_cond->organization_list = 
 					list_create(slurm_destroy_char);
@@ -218,7 +248,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 			if(slurm_addto_char_list(acct_cond->organization_list,
 						 argv[i]+end))
 				u_set = 1;
-		} else if (!strncasecmp (argv[i], "Parent", 1)) {
+		} else if (!strncasecmp (argv[i], "Parent", 
+					 MAX(command_len, 1))) {
 			if(!assoc_cond->parent_acct_list) {
 				assoc_cond->parent_acct_list = 
 					list_create(slurm_destroy_char);
@@ -226,7 +257,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 			if(slurm_addto_char_list(assoc_cond->parent_acct_list,
 						 argv[i]+end))
 				a_set = 1;
-		} else if (!strncasecmp (argv[i], "QosLevel", 1)) {
+		} else if (!strncasecmp (argv[i], "QosLevel", 
+					 MAX(command_len, 1))) {
 			int option = 0;
 			if(!assoc_cond->qos_list) {
 				assoc_cond->qos_list = 
@@ -282,65 +314,83 @@ static int _set_rec(int *start, int argc, char *argv[],
 	int a_set = 0;
 	int end = 0;
 	List qos_list = NULL;
+	int command_len = 0;
 
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
-		if (!strncasecmp (argv[i], "Where", 5)) {
+		if(!end)
+			command_len=strlen(argv[i]);
+		else
+			command_len=end-1;
+
+		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))) {
 			i--;
 			break;
-		} else if(!end && !strncasecmp(argv[i], "set", 3)) {
+		} else if(!end && !strncasecmp(argv[i], "set",
+					       MAX(command_len, 3))) {
 			continue;
 		} else if(!end
-			  || !strncasecmp (argv[i], "Account", 1)
-			  || !strncasecmp (argv[i], "Names", 1)) {
+			  || !strncasecmp (argv[i], "Account",
+					   MAX(command_len, 1))
+			  || !strncasecmp (argv[i], "Names", 
+					   MAX(command_len, 1))) {
 			if(acct_list) 
 				slurm_addto_char_list(acct_list, argv[i]+end);
 				
-		} else if (!strncasecmp (argv[i], "Cluster", 1)) {
+		} else if (!strncasecmp (argv[i], "Cluster", 
+					 MAX(command_len, 1))) {
 			if(cluster_list)
 				slurm_addto_char_list(cluster_list,
 						      argv[i]+end);
-		} else if (!strncasecmp (argv[i], "Description", 1)) {
+		} else if (!strncasecmp (argv[i], "Description", 
+					 MAX(command_len, 1))) {
 			acct->description =  strip_quotes(argv[i]+end, NULL);
 			u_set = 1;
-		} else if (!strncasecmp (argv[i], "FairShare", 1)) {
+		} else if (!strncasecmp (argv[i], "FairShare", 
+					 MAX(command_len, 1))) {
 			if(!assoc)
 				continue;
 			if (get_uint(argv[i]+end, &assoc->fairshare, 
 				     "FairShare") == SLURM_SUCCESS)
 				a_set = 1;
-		} else if (!strncasecmp (argv[i], "GrpCPUMins", 7)) {
+		} else if (!strncasecmp (argv[i], "GrpCPUMins", 
+					 MAX(command_len, 7))) {
 			if(!assoc)
 				continue;
 			if (get_uint64(argv[i]+end, 
 				       &assoc->grp_cpu_mins, 
 				       "GrpCPUMins") == SLURM_SUCCESS)
 				a_set = 1;
-		} else if (!strncasecmp (argv[i], "GrpCpus", 7)) {
+		} else if (!strncasecmp (argv[i], "GrpCpus",
+					 MAX(command_len, 7))) {
 			if(!assoc)
 				continue;
 			if (get_uint(argv[i]+end, &assoc->grp_cpus,
 			    "GrpCpus") == SLURM_SUCCESS)
 				a_set = 1;
-		} else if (!strncasecmp (argv[i], "GrpJobs", 4)) {
+		} else if (!strncasecmp (argv[i], "GrpJobs", 
+					 MAX(command_len, 4))) {
 			if(!assoc)
 				continue;
 			if (get_uint(argv[i]+end, &assoc->grp_jobs,
 			    "GrpJobs") == SLURM_SUCCESS)
 				a_set = 1;
-		} else if (!strncasecmp (argv[i], "GrpNodes", 4)) {
+		} else if (!strncasecmp (argv[i], "GrpNodes",
+					 MAX(command_len, 4))) {
 			if(!assoc)
 				continue;
 			if (get_uint(argv[i]+end, &assoc->grp_nodes,
 			    "GrpNodes") == SLURM_SUCCESS)
 				a_set = 1;
-		} else if (!strncasecmp (argv[i], "GrpSubmitJobs", 4)) {
+		} else if (!strncasecmp (argv[i], "GrpSubmitJobs",
+					 MAX(command_len, 4))) {
 			if(!assoc)
 				continue;
 			if (get_uint(argv[i]+end, &assoc->grp_submit_jobs,
 			    "GrpSubmitJobs") == SLURM_SUCCESS)
 				a_set = 1;
-		} else if (!strncasecmp (argv[i], "GrpWall", 4)) {
+		} else if (!strncasecmp (argv[i], "GrpWall",
+					 MAX(command_len, 4))) {
 			if(!assoc)
 				continue;
 			mins = time_str2mins(argv[i]+end);
@@ -353,39 +403,45 @@ static int _set_rec(int *start, int argc, char *argv[],
 					" Bad GrpWall time format: %s\n", 
 					argv[i]);
 			}
-		} else if (!strncasecmp (argv[i], "MaxCPUMins", 7)) {
+		} else if (!strncasecmp (argv[i], "MaxCPUMins", 
+					 MAX(command_len, 7))) {
 			if(!assoc)
 				continue;
 			if (get_uint64(argv[i]+end, 
 				       &assoc->max_cpu_mins_pj, 
 				       "MaxCPUMins") == SLURM_SUCCESS)
 				a_set = 1;
-		} else if (!strncasecmp (argv[i], "MaxCpus", 7)) {
+		} else if (!strncasecmp (argv[i], "MaxCpus", 
+					 MAX(command_len, 7))) {
 			if(!assoc)
 				continue;
 			if (get_uint(argv[i]+end, &assoc->max_cpus_pj,
 			    "MaxCpus") == SLURM_SUCCESS)
 				a_set = 1;
-		} else if (!strncasecmp (argv[i], "MaxJobs", 4)) {
+		} else if (!strncasecmp (argv[i], "MaxJobs",
+					 MAX(command_len, 4))) {
 			if(!assoc)
 				continue;
 			if (get_uint(argv[i]+end, &assoc->max_jobs,
 			    "MaxJobs") == SLURM_SUCCESS)
 				a_set = 1;
-		} else if (!strncasecmp (argv[i], "MaxNodes", 4)) {
+		} else if (!strncasecmp (argv[i], "MaxNodes", 
+					 MAX(command_len, 4))) {
 			if(!assoc)
 				continue;
 			if (get_uint(argv[i]+end, 
 			    &assoc->max_nodes_pj,
 			    "MaxNodes") == SLURM_SUCCESS)
 				a_set = 1;
-		} else if (!strncasecmp (argv[i], "MaxSubmitJobs", 4)) {
+		} else if (!strncasecmp (argv[i], "MaxSubmitJobs", 
+					 MAX(command_len, 4))) {
 			if(!assoc)
 				continue;
 			if (get_uint(argv[i]+end, &assoc->max_submit_jobs,
 			    "MaxSubmitJobs") == SLURM_SUCCESS)
 				a_set = 1;
-		} else if (!strncasecmp (argv[i], "MaxWall", 4)) {
+		} else if (!strncasecmp (argv[i], "MaxWall", 
+					 MAX(command_len, 4))) {
 			if(!assoc)
 				continue;
 			mins = time_str2mins(argv[i]+end);
@@ -398,15 +454,18 @@ static int _set_rec(int *start, int argc, char *argv[],
 					" Bad MaxWall time format: %s\n", 
 					argv[i]);
 			}
-		} else if (!strncasecmp (argv[i], "Organization", 1)) {
+		} else if (!strncasecmp (argv[i], "Organization", 
+					 MAX(command_len, 1))) {
 			acct->organization = strip_quotes(argv[i]+end, NULL);
 			u_set = 1;
-		} else if (!strncasecmp (argv[i], "Parent", 1)) {
+		} else if (!strncasecmp (argv[i], "Parent",
+					 MAX(command_len, 1))) {
 			if(!assoc)
 				continue;
 			assoc->parent_acct = strip_quotes(argv[i]+end, NULL);
 			a_set = 1;
-		} else if (!strncasecmp (argv[i], "QosLevel", 1)) {
+		} else if (!strncasecmp (argv[i], "QosLevel", 
+					 MAX(command_len, 1))) {
 			int option = 0;
 			if(!assoc)
 				continue;
@@ -916,124 +975,146 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 	itr = list_iterator_create(format_list);
 	while((object = list_next(itr))) {
 		char *tmp_char = NULL;
+		int command_len = strlen(object);
+
 		field = xmalloc(sizeof(print_field_t));
-		if(!strncasecmp("Account", object, 1)
-		   || !strncasecmp("Name", object, 2)) {
+		if(!strncasecmp("Account", object, MAX(command_len, 1))
+		   || !strncasecmp("Name", object, MAX(command_len, 2))) {
 			field->type = PRINT_ACCOUNT;
 			field->name = xstrdup("Account");
 			field->len = 10;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("Cluster", object, 2)) {
+		} else if(!strncasecmp("Cluster", object, 
+				       MAX(command_len, 2))) {
 			field->type = PRINT_CLUSTER;
 			field->name = xstrdup("Cluster");
 			field->len = 10;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("Coordinators", object, 2)) {
+		} else if(!strncasecmp("Coordinators", object, 
+				       MAX(command_len, 2))) {
 			field->type = PRINT_COORDS;
 			field->name = xstrdup("Coordinators");
 			field->len = 20;
 			field->print_routine = sacctmgr_print_coord_list;
-		} else if(!strncasecmp("Description", object, 1)) {
+		} else if(!strncasecmp("Description", object, 
+				       MAX(command_len, 1))) {
 			field->type = PRINT_DESC;
 			field->name = xstrdup("Descr");
 			field->len = 20;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("FairShare", object, 1)) {
+		} else if(!strncasecmp("FairShare", object,
+				       MAX(command_len, 1))) {
 			field->type = PRINT_FAIRSHARE;
 			field->name = xstrdup("FairShare");
 			field->len = 9;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("GrpCPUMins", object, 8)) {
+		} else if(!strncasecmp("GrpCPUMins", object, 
+				       MAX(command_len, 8))) {
 			field->type = PRINT_GRPCM;
 			field->name = xstrdup("GrpCPUMins");
 			field->len = 11;
 			field->print_routine = print_fields_uint64;
-		} else if(!strncasecmp("GrpCPUs", object, 8)) {
+		} else if(!strncasecmp("GrpCPUs", object, 
+				       MAX(command_len, 8))) {
 			field->type = PRINT_GRPC;
 			field->name = xstrdup("GrpCPUs");
 			field->len = 8;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("GrpJobs", object, 4)) {
+		} else if(!strncasecmp("GrpJobs", object, 
+				       MAX(command_len, 4))) {
 			field->type = PRINT_GRPJ;
 			field->name = xstrdup("GrpJobs");
 			field->len = 7;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("GrpNodes", object, 4)) {
+		} else if(!strncasecmp("GrpNodes", object, 
+				       MAX(command_len, 4))) {
 			field->type = PRINT_GRPN;
 			field->name = xstrdup("GrpNodes");
 			field->len = 8;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("GrpSubmitJobs", object, 4)) {
+		} else if(!strncasecmp("GrpSubmitJobs", object, 
+				       MAX(command_len, 4))) {
 			field->type = PRINT_GRPS;
 			field->name = xstrdup("GrpSubmit");
 			field->len = 9;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("GrpWall", object, 4)) {
+		} else if(!strncasecmp("GrpWall", object,
+				       MAX(command_len, 4))) {
 			field->type = PRINT_GRPW;
 			field->name = xstrdup("GrpWall");
 			field->len = 11;
 			field->print_routine = print_fields_time;
-		} else if(!strncasecmp("ID", object, 1)) {
+		} else if(!strncasecmp("ID", object, MAX(command_len, 1))) {
 			field->type = PRINT_ID;
 			field->name = xstrdup("ID");
 			field->len = 6;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("MaxCPUMins", object, 7)) {
+		} else if(!strncasecmp("MaxCPUMins", object, 
+				       MAX(command_len, 7))) {
 			field->type = PRINT_MAXCM;
 			field->name = xstrdup("MaxCPUMins");
 			field->len = 11;
 			field->print_routine = print_fields_uint64;
-		} else if(!strncasecmp("MaxCPUs", object, 7)) {
+		} else if(!strncasecmp("MaxCPUs", object, 
+				       MAX(command_len, 7))) {
 			field->type = PRINT_MAXC;
 			field->name = xstrdup("MaxCPUs");
 			field->len = 8;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("MaxJobs", object, 4)) {
+		} else if(!strncasecmp("MaxJobs", object, 
+				       MAX(command_len, 4))) {
 			field->type = PRINT_MAXJ;
 			field->name = xstrdup("MaxJobs");
 			field->len = 7;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("MaxNodes", object, 4)) {
+		} else if(!strncasecmp("MaxNodes", object, 
+				       MAX(command_len, 4))) {
 			field->type = PRINT_MAXN;
 			field->name = xstrdup("MaxNodes");
 			field->len = 8;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("MaxSubmitJobs", object, 4)) {
+		} else if(!strncasecmp("MaxSubmitJobs", object, 
+				       MAX(command_len, 4))) {
 			field->type = PRINT_MAXS;
 			field->name = xstrdup("MaxSubmit");
 			field->len = 9;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("MaxWall", object, 4)) {
+		} else if(!strncasecmp("MaxWall", object,
+				       MAX(command_len, 4))) {
 			field->type = PRINT_MAXW;
 			field->name = xstrdup("MaxWall");
 			field->len = 11;
 			field->print_routine = print_fields_time;
-		} else if(!strncasecmp("Organization", object, 1)) {
+		} else if(!strncasecmp("Organization", object,
+				       MAX(command_len, 1))) {
 			field->type = PRINT_ORG;
 			field->name = xstrdup("Org");
 			field->len = 20;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("QOSRAW", object, 4)) {
+		} else if(!strncasecmp("QOSRAW", object, 
+				       MAX(command_len, 4))) {
 			field->type = PRINT_QOS_RAW;
 			field->name = xstrdup("QOS_RAW");
 			field->len = 10;
 			field->print_routine = print_fields_char_list;
-		} else if(!strncasecmp("QOS", object, 1)) {
+		} else if(!strncasecmp("QOS", object, MAX(command_len, 1))) {
 			field->type = PRINT_QOS;
 			field->name = xstrdup("QOS");
 			field->len = 20;
 			field->print_routine = sacctmgr_print_qos_list;
-		} else if(!strncasecmp("ParentID", object, 7)) {
+		} else if(!strncasecmp("ParentID", object, 
+				       MAX(command_len, 7))) {
 			field->type = PRINT_PID;
 			field->name = xstrdup("Par ID");
 			field->len = 6;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("ParentName", object, 7)) {
+		} else if(!strncasecmp("ParentName", object, 
+				       MAX(command_len, 7))) {
 			field->type = PRINT_PNAME;
 			field->name = xstrdup("Par Name");
 			field->len = 10;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("User", object, 1)) {
+		} else if(!strncasecmp("User", object, MAX(command_len, 1))) {
 			field->type = PRINT_USER;
 			field->name = xstrdup("User");
 			field->len = 10;
@@ -1374,10 +1455,11 @@ extern int sacctmgr_modify_account(int argc, char *argv[])
 	init_acct_association_rec(assoc);
 
 	for (i=0; i<argc; i++) {
-		if (!strncasecmp (argv[i], "Where", 5)) {
+		int command_len = strlen(argv[i]);
+		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))) {
 			i++;
 			cond_set = _set_cond(&i, argc, argv, acct_cond, NULL);
-		} else if (!strncasecmp (argv[i], "Set", 3)) {
+		} else if (!strncasecmp (argv[i], "Set", MAX(command_len, 3))) {
 			i++;
 			rec_set = _set_rec(&i, argc, argv, NULL, NULL, 
 					   acct, assoc);

@@ -261,7 +261,10 @@ _get_command (int *argc, char **argv)
 #endif
 	if (in_line == NULL)
 		return 0;
-	else if (strcmp (in_line, "!!") == 0) {
+	else if (strncmp (in_line, "#", 1) == 0) {
+		free (in_line);
+		return 0;
+	} else if (strcmp (in_line, "!!") == 0) {
 		free (in_line);
 		in_line = last_in_line;
 		in_line_size = last_in_line_size;
@@ -335,13 +338,19 @@ static void _print_version(void)
 static int
 _process_command (int argc, char *argv[]) 
 {
+	int command_len = 0;
 	if (argc < 1) {
 		exit_code = 1;
 		if (quiet_flag == -1)
 			fprintf(stderr, "no input");
-	} else if (strncasecmp (argv[0], "associations", 3) == 0) {
+		return 0;
+	} 
+
+	command_len = strlen(argv[0]);
+
+	if (strncasecmp (argv[0], "associations", MAX(command_len, 3)) == 0) {
 		with_assoc_flag = 1;
-	} else if (strncasecmp (argv[0], "dump", 3) == 0) {
+	} else if (strncasecmp (argv[0], "dump", MAX(command_len, 3)) == 0) {
 		if (argc < 2) {
 			exit_code = 1;
 			if (quiet_flag != 1)
@@ -350,7 +359,7 @@ _process_command (int argc, char *argv[])
 				        argv[0]);
 		} else
 			sacctmgr_dump_cluster((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "help", 2) == 0) {
+	} else if (strncasecmp (argv[0], "help", MAX(command_len, 2)) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr, 
@@ -358,7 +367,7 @@ _process_command (int argc, char *argv[])
 				 argv[0]);
 		}
 		_usage ();
-	} else if (strncasecmp (argv[0], "load", 2) == 0) {
+	} else if (strncasecmp (argv[0], "load", MAX(command_len, 2)) == 0) {
 		if (argc < 2) {
 			exit_code = 1;
 			if (quiet_flag != 1)
@@ -367,7 +376,8 @@ _process_command (int argc, char *argv[])
 				        argv[0]);
 		} else
 			load_sacctmgr_cfg_file((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "oneliner", 1) == 0) {
+	} else if (strncasecmp (argv[0], "oneliner", 
+				MAX(command_len, 1)) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr, 
@@ -375,16 +385,16 @@ _process_command (int argc, char *argv[])
 				 argv[0]);
 		}
 		one_liner = 1;
-	} else if (strncasecmp (argv[0], "quiet", 4) == 0) {
+	} else if (strncasecmp (argv[0], "quiet", MAX(command_len, 4)) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr, "too many arguments for keyword:%s\n",
 				 argv[0]);
 		}
 		quiet_flag = 1;
-	} else if ((strncasecmp (argv[0], "exit", 4) == 0) ||
-		   (strncasecmp (argv[0], "\\q", 2) == 0) ||
-		   (strncasecmp (argv[0], "quit", 4) == 0)) {
+	} else if ((strncasecmp (argv[0], "exit", MAX(command_len, 4)) == 0) ||
+		   (strncasecmp (argv[0], "\\q", MAX(command_len, 2)) == 0) ||
+		   (strncasecmp (argv[0], "quit", MAX(command_len, 4)) == 0)) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr, 
@@ -392,8 +402,9 @@ _process_command (int argc, char *argv[])
 				 argv[0]);
 		}
 		exit_flag = 1;
-	} else if ((strncasecmp (argv[0], "add", 3) == 0) ||
-		   (strncasecmp (argv[0], "create", 3) == 0)) {
+	} else if ((strncasecmp (argv[0], "add", MAX(command_len, 3)) == 0) ||
+		   (strncasecmp (argv[0], "create",
+				 MAX(command_len, 3)) == 0)) {
 		if (argc < 2) {
 			exit_code = 1;
 			if (quiet_flag != 1)
@@ -402,8 +413,8 @@ _process_command (int argc, char *argv[])
 				        argv[0]);
 		} else
 			_add_it((argc - 1), &argv[1]);
-	} else if ((strncasecmp (argv[0], "show", 3) == 0) ||
-		   (strncasecmp (argv[0], "list", 3) == 0)) {
+	} else if ((strncasecmp (argv[0], "show", MAX(command_len, 3)) == 0) ||
+		   (strncasecmp (argv[0], "list", MAX(command_len, 3)) == 0)) {
 		if (argc < 2) {
 			exit_code = 1;
 			if (quiet_flag != 1)
@@ -412,7 +423,7 @@ _process_command (int argc, char *argv[])
 				        argv[0]);
 		} else 
 			_show_it((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "modify", 1) == 0) {
+	} else if (strncasecmp (argv[0], "modify", MAX(command_len, 1)) == 0) {
 		if (argc < 2) {
 			exit_code = 1;
 			fprintf (stderr, "too few arguments for %s keyword\n",
@@ -420,8 +431,10 @@ _process_command (int argc, char *argv[])
 			return 0;
 		} else 		
 			_modify_it((argc - 1), &argv[1]);
-	} else if ((strncasecmp (argv[0], "delete", 3) == 0) ||
-		   (strncasecmp (argv[0], "remove", 3) == 0)) {
+	} else if ((strncasecmp (argv[0], "delete",
+				 MAX(command_len, 3)) == 0) ||
+		   (strncasecmp (argv[0], "remove",
+				 MAX(command_len, 3)) == 0)) {
 		if (argc < 2) {
 			exit_code = 1;
 			fprintf (stderr, "too few arguments for %s keyword\n",
@@ -429,7 +442,7 @@ _process_command (int argc, char *argv[])
 			return 0;
 		} else 
 			_delete_it((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "verbose", 4) == 0) {
+	} else if (strncasecmp (argv[0], "verbose", MAX(command_len, 4)) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr,
@@ -437,7 +450,8 @@ _process_command (int argc, char *argv[])
 				 argv[0]);
 		}		
 		quiet_flag = -1;
-	} else if (strncasecmp (argv[0], "readonly", 4) == 0) {
+	} else if (strncasecmp (argv[0], "readonly",
+				MAX(command_len, 4)) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr,
@@ -445,7 +459,7 @@ _process_command (int argc, char *argv[])
 				 argv[0]);
 		}		
 		readonly_flag = 1;
-	} else if (strncasecmp (argv[0], "rollup", 2) == 0) {
+	} else if (strncasecmp (argv[0], "rollup", MAX(command_len, 2)) == 0) {
 		time_t my_time = 0;
 		if (argc > 2) {
 			exit_code = 1;
@@ -465,7 +479,7 @@ _process_command (int argc, char *argv[])
 				acct_storage_g_commit(db_conn, 0);
 			}
 		}
-	} else if (strncasecmp (argv[0], "version", 4) == 0) {
+	} else if (strncasecmp (argv[0], "version", MAX(command_len, 4)) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr,
@@ -489,6 +503,7 @@ _process_command (int argc, char *argv[])
 static void _add_it (int argc, char *argv[]) 
 {
 	int error_code = SLURM_SUCCESS;
+	int command_len = strlen(argv[0]);
 
 	if(readonly_flag) {
 		exit_code = 1;
@@ -500,15 +515,16 @@ static void _add_it (int argc, char *argv[])
 	acct_storage_g_commit(db_conn, 0);
 
 	/* First identify the entity to add */
-	if (strncasecmp (argv[0], "Account", 1) == 0) {
+	if (strncasecmp (argv[0], "Account", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_add_account((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "Cluster", 2) == 0) {
+	} else if (strncasecmp (argv[0], "Cluster", MAX(command_len, 2)) == 0) {
 		error_code = sacctmgr_add_cluster((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "Coordinator", 2) == 0) {
+	} else if (strncasecmp (argv[0], "Coordinator",
+				MAX(command_len, 2)) == 0) {
 		error_code = sacctmgr_add_coord((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "QOS", 1) == 0) {
+	} else if (strncasecmp (argv[0], "QOS", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_add_qos((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "User", 1) == 0) {
+	} else if (strncasecmp (argv[0], "User", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_add_user((argc - 1), &argv[1]);
 	} else {
 		exit_code = 1;
@@ -533,22 +549,25 @@ static void _add_it (int argc, char *argv[])
 static void _show_it (int argc, char *argv[]) 
 {
 	int error_code = SLURM_SUCCESS;
+	int command_len = strlen(argv[0]);
 		
 	/* reset the connection to get the most recent stuff */
 	acct_storage_g_commit(db_conn, 0);
 
 	/* First identify the entity to list */
-	if (strncasecmp (argv[0], "Account", 2) == 0) {
+	if (strncasecmp (argv[0], "Account", MAX(command_len, 2)) == 0) {
 		error_code = sacctmgr_list_account((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "Association", 2) == 0) {
+	} else if (strncasecmp (argv[0], "Association",
+				MAX(command_len, 2)) == 0) {
 		error_code = sacctmgr_list_association((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "Cluster", 1) == 0) {
+	} else if (strncasecmp (argv[0], "Cluster", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_list_cluster((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "QOS", 1) == 0) {
+	} else if (strncasecmp (argv[0], "QOS", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_list_qos((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "Transactions", 1) == 0) {
+	} else if (strncasecmp (argv[0], "Transactions", 
+				MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_list_txn((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "User", 1) == 0) {
+	} else if (strncasecmp (argv[0], "User", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_list_user((argc - 1), &argv[1]);
 	} else {
 		exit_code = 1;
@@ -572,7 +591,7 @@ static void _show_it (int argc, char *argv[])
 static void _modify_it (int argc, char *argv[]) 
 {
 	int error_code = SLURM_SUCCESS;
-
+	int command_len = strlen(argv[0]);
 
 	if(readonly_flag) {
 		exit_code = 1;
@@ -584,11 +603,11 @@ static void _modify_it (int argc, char *argv[])
 	acct_storage_g_commit(db_conn, 0);
 
 	/* First identify the entity to modify */
-	if (strncasecmp (argv[0], "Account", 1) == 0) {
+	if (strncasecmp (argv[0], "Account", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_modify_account((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "Cluster", 1) == 0) {
+	} else if (strncasecmp (argv[0], "Cluster", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_modify_cluster((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "User", 1) == 0) {
+	} else if (strncasecmp (argv[0], "User", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_modify_user((argc - 1), &argv[1]);
 	} else {
 		exit_code = 1;
@@ -611,6 +630,7 @@ static void _modify_it (int argc, char *argv[])
 static void _delete_it (int argc, char *argv[]) 
 {
 	int error_code = SLURM_SUCCESS;
+	int command_len = strlen(argv[0]);
 
 	if(readonly_flag) {
 		exit_code = 1;
@@ -622,15 +642,16 @@ static void _delete_it (int argc, char *argv[])
 	acct_storage_g_commit(db_conn, 0);
 
 	/* First identify the entity to delete */
-	if (strncasecmp (argv[0], "Account", 1) == 0) {
+	if (strncasecmp (argv[0], "Account", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_delete_account((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "Cluster", 2) == 0) {
+	} else if (strncasecmp (argv[0], "Cluster", MAX(command_len, 2)) == 0) {
 		error_code = sacctmgr_delete_cluster((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "Coordinator", 2) == 0) {
+	} else if (strncasecmp (argv[0], "Coordinator", 
+				MAX(command_len, 2)) == 0) {
 		error_code = sacctmgr_delete_coord((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "QOS", 2) == 0) {
+	} else if (strncasecmp (argv[0], "QOS", MAX(command_len, 2)) == 0) {
 		error_code = sacctmgr_delete_qos((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "User", 1) == 0) {
+	} else if (strncasecmp (argv[0], "User", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_delete_user((argc - 1), &argv[1]);
 	} else {
 		exit_code = 1;
