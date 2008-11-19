@@ -193,7 +193,7 @@ for {set i 0} {$i<4} {incr i} {
 		-re $prompt {
 			#send_user "srun completed\n"
 		}
-		-re "slurm job ($number)" {
+		-re "Granted job allocation ($number)" {
 			set job_id $expect_out(1,string)
 			exp_continue
 		}
