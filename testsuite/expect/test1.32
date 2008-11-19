@@ -85,9 +85,8 @@ expect {
 	-re "WAITING" {
 		incr matches
 		# sleep to make sure the process is actually running
-		sleep 1
-		exec $bin_kill -USR1 $srun_pid
 		exec $bin_sleep 1
+		exec $bin_kill -USR1 $srun_pid
 		exec $bin_kill -USR2 $srun_pid
 		send_user "\nSent signals USR1 and USR2\n"
 		exp_continue
