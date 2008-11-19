@@ -403,7 +403,11 @@ int read_bg_blocks()
 	rm_partition_list_t *block_list = NULL;
 	rm_partition_state_flag_t state = PARTITION_ALL_FLAG;
 	rm_nodecard_t *ncard = NULL;
+#ifdef HAVE_BGL
 	rm_quarter_t quarter;
+#else
+	int nc_id, io_start;
+#endif
 	bool small = false;
 	hostlist_t hostlist;		/* expanded form of hosts */
 
@@ -580,8 +584,9 @@ int read_bg_blocks()
 				      "for %d.%d",
 				      bg_record->quarter, bg_record->nodecard);
 #else
-			if((ionode_cnt = i * bluegene_io_ratio))
-				ionode_cnt--;
+			/* Translate nodecard count to ionode count */
+			if((i *= bluegene_io_ratio))
+				i--;
 
 			if ((rc = bridge_get_data(ncard, 
 						  RM_NodeCardID, 
@@ -593,13 +598,17 @@ int read_bg_blocks()
 			if(bp_cnt==0)
 				goto clean_up;
 			
-			bp_id = atoi((char*)tmp_char+1);
+			/* From the first nodecard id we can figure
+			   out where to start from with the alloc of ionodes.
+			*/
+			nc_id = atoi((char*)tmp_char+1);
 			free(tmp_char);
-			io_start = bp_id * bluegene_io_ratio;
+			io_start = nc_id * bluegene_io_ratio;
 			bg_record->ionode_bitmap = bit_alloc(bluegene_numpsets);
-
+			/* Set the correct ionodes being used in this
+			   block */
 			bit_nset(bg_record->ionode_bitmap,
-				 io_start, io_start+ionode_cnt);
+				 io_start, io_start+i);
 #endif
 		} else {
 #ifdef HAVE_BGL

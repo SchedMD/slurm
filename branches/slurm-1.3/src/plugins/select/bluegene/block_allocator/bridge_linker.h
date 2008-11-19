@@ -110,6 +110,11 @@ extern status_t bridge_cancel_job(db_job_id_t);
 
 /* all the pm functions */
 extern status_t bridge_create_block(pm_partition_id_t pid);
+
+#ifndef HAVE_BGL
+extern status_t bridge_reboot_block(pm_partition_id_t pid);
+#endif
+
 extern status_t bridge_destroy_block(pm_partition_id_t pid);
 
 /* say message */

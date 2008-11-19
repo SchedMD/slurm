@@ -514,7 +514,9 @@ extern int configure_small_block(bg_record_t *bg_record)
 	int num_ncards = 0, sub_nodecard = 0, ionode_card = 0;
 	rm_nodecard_t *ncard;
 	rm_nodecard_list_t *ncard_list = NULL;
+#ifdef HAVE_BGL
 	rm_quarter_t quarter;
+#endif
 	int num, i;
 	int use_nc[bluegene_bp_nodecard_cnt];
 	double nc_pos = 0;
@@ -547,6 +549,7 @@ extern int configure_small_block(bg_record_t *bg_record)
 	for(i = 0; i<bluegene_numpsets; i++) {
 		if(bit_test(bg_record->ionode_bitmap, i)) {
 			if(bluegene_nc_ratio > 1) {
+				int j=0;
 				for(j=0; j<bluegene_nc_ratio; j++)
 					use_nc[(int)nc_pos+j] = 1;
 			} else {
