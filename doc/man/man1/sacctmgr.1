@@ -97,7 +97,7 @@ Identical to the \fBadd\fR command.
 Delete the specified entities.
 
 .TP
-\fBdump\fR <\fIENTITY\fR> with <\fIFILENAME\fR>
+\fBdump\fR <\fIENTITY\fR> with <\fIFile=FILENAME\fR>
 Dump cluster data to the specified file.
 
 .TP
@@ -856,7 +856,7 @@ Comma separated list of Quality of Service names (Defined in sacctmgr).
 .br
 > sacctmgr list transactions StartTime=11/03\-10:30:00 format=Timestamp,Action,Actor
 .br
-> sacctmgr dump cluster=tux tux_data_file
+> sacctmgr dump cluster=tux file=tux_data_file
 .br
 > sacctmgr load tux_data_file
 .br
