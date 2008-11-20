@@ -46,17 +46,27 @@ static int _set_cond(int *start, int argc, char *argv[],
 {
 	int i, end = 0;
 	int set = 0;
+	int command_len = 0;
 
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
-		if(!end && !strncasecmp(argv[i], "where", 5)) {
+		if(!end)
+			command_len=strlen(argv[i]);
+		else
+			command_len=end-1;
+
+		if(!end && !strncasecmp(argv[i], "where",
+					MAX(command_len, 5))) {
 			continue;
-		} if(!end && !strncasecmp(argv[i], "withassocinfo", 5)) {
+		} if(!end && !strncasecmp(argv[i], "withassocinfo",
+					  MAX(command_len, 5))) {
 			txn_cond->with_assoc_info = 1;
 			set = 1;
 		} else if(!end
-			  || (!strncasecmp (argv[i], "Id", 1))
-			  || (!strncasecmp (argv[i], "Txn", 1))) {
+			  || (!strncasecmp (argv[i], "Id",
+					    MAX(command_len, 1)))
+			  || (!strncasecmp (argv[i], "Txn",
+					    MAX(command_len, 1)))) {
 			if(!txn_cond->id_list)
 				txn_cond->id_list = 
 					list_create(slurm_destroy_char);
@@ -64,14 +74,16 @@ static int _set_cond(int *start, int argc, char *argv[],
 			if(slurm_addto_char_list(txn_cond->id_list, 
 						 argv[i]+end))
 				set = 1;
-		} else if (!strncasecmp (argv[i], "Accounts", 3)) {
+		} else if (!strncasecmp (argv[i], "Accounts",
+					 MAX(command_len, 3))) {
 			if(!txn_cond->acct_list)
 				txn_cond->acct_list =
 					list_create(slurm_destroy_char);
 			if(slurm_addto_char_list(txn_cond->acct_list,
 						 argv[i]+end))
 				set = 1;
-		} else if (!strncasecmp (argv[i], "Action", 4)) {
+		} else if (!strncasecmp (argv[i], "Action",
+					 MAX(command_len, 4))) {
 			if(!txn_cond->action_list)
 				txn_cond->action_list =
 					list_create(slurm_destroy_char);
@@ -81,30 +93,35 @@ static int _set_cond(int *start, int argc, char *argv[],
 				set = 1;
 			else
 				exit_code=1;
-		} else if (!strncasecmp (argv[i], "Actors", 4)) {
+		} else if (!strncasecmp (argv[i], "Actors",
+					 MAX(command_len, 4))) {
 			if(!txn_cond->actor_list)
 				txn_cond->actor_list =
 					list_create(slurm_destroy_char);
 			if(slurm_addto_char_list(txn_cond->actor_list,
 						 argv[i]+end))
 				set = 1;
-		} else if (!strncasecmp (argv[i], "Clusters", 3)) {
+		} else if (!strncasecmp (argv[i], "Clusters",
+					 MAX(command_len, 3))) {
 			if(!txn_cond->cluster_list)
 				txn_cond->cluster_list =
 					list_create(slurm_destroy_char);
 			if(slurm_addto_char_list(txn_cond->cluster_list,
 						 argv[i]+end))
 				set = 1;
-		} else if (!strncasecmp (argv[i], "End", 1)) {
+		} else if (!strncasecmp (argv[i], "End", MAX(command_len, 1))) {
 			txn_cond->time_end = parse_time(argv[i]+end, 1);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "Format", 1)) {
+		} else if (!strncasecmp (argv[i], "Format",
+					 MAX(command_len, 1))) {
 			if(format_list)
 				slurm_addto_char_list(format_list, argv[i]+end);
-		} else if (!strncasecmp (argv[i], "Start", 1)) {
+		} else if (!strncasecmp (argv[i], "Start", 
+					 MAX(command_len, 1))) {
 			txn_cond->time_start = parse_time(argv[i]+end, 1);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "User", 1)) {
+		} else if (!strncasecmp (argv[i], "User",
+					 MAX(command_len, 1))) {
 			if(!txn_cond->user_list)
 				txn_cond->user_list =
 					list_create(slurm_destroy_char);
@@ -171,48 +188,53 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 	itr = list_iterator_create(format_list);
 	while((object = list_next(itr))) {
 		char *tmp_char = NULL;
+		int command_len = strlen(object);
+
 		field = xmalloc(sizeof(print_field_t));
-		if(!strncasecmp("Accounts", object, 3)) {
+		if(!strncasecmp("Accounts", object, MAX(command_len, 3))) {
 			field->type = PRINT_ACCT;
 			field->name = xstrdup("Accounts");
 			field->len = 20;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("Action", object, 4)) {
+		} else if(!strncasecmp("Action", object, MAX(command_len, 4))) {
 			field->type = PRINT_ACTION;
 			field->name = xstrdup("Action");
 			field->len = 20;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("Actor", object, 4)) {
+		} else if(!strncasecmp("Actor", object,
+				       MAX(command_len, 4))) {
 			field->type = PRINT_ACTOR;
 			field->name = xstrdup("Actor");
 			field->len = 10;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("Clusters", object, 4)) {
+		} else if(!strncasecmp("Clusters", object, 
+				       MAX(command_len, 4))) {
 			field->type = PRINT_CLUSTER;
 			field->name = xstrdup("Clusters");
 			field->len = 20;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("ID", object, 2)) {
+		} else if(!strncasecmp("ID", object, MAX(command_len, 2))) {
 			field->type = PRINT_ID;
 			field->name = xstrdup("ID");
 			field->len = 6;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("Info", object, 2)) {
+		} else if(!strncasecmp("Info", object, MAX(command_len, 2))) {
 			field->type = PRINT_INFO;
 			field->name = xstrdup("Info");
 			field->len = 20;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("TimeStamp", object, 1)) {
+		} else if(!strncasecmp("TimeStamp", object, 
+				       MAX(command_len, 1))) {
 			field->type = PRINT_TS;
 			field->name = xstrdup("Time");
 			field->len = 15;
 			field->print_routine = print_fields_date;
-		} else if(!strncasecmp("Users", object, 4)) {
+		} else if(!strncasecmp("Users", object, MAX(command_len, 4))) {
 			field->type = PRINT_USER;
 			field->name = xstrdup("Users");
 			field->len = 20;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("Where", object, 1)) {
+		} else if(!strncasecmp("Where", object, MAX(command_len, 1))) {
 			field->type = PRINT_WHERE;
 			field->name = xstrdup("Where");
 			field->len = 20;

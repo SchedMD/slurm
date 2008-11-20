@@ -225,60 +225,75 @@ static int _set_cond(int *start, int argc, char *argv[],
 	int end = 0;
 	int local_cluster_flag = all_clusters_flag;
 	time_t start_time, end_time;
+	int command_len = 0;
 
 	if(!job_cond->cluster_list)
 		job_cond->cluster_list = list_create(slurm_destroy_char);
 
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
-		if (!strncasecmp (argv[i], "Set", 3)) {
+		if(!end)
+			command_len=strlen(argv[i]);
+		else
+			command_len=end-1;
+
+		if (!strncasecmp (argv[i], "Set", MAX(command_len, 3))) {
 			i--;
 			break;
-		} else if(!end && !strncasecmp(argv[i], "where", 5)) {
+		} else if(!end && !strncasecmp(argv[i], "where", 
+					       MAX(command_len, 5))) {
 			continue;
-		} else if(!end && !strncasecmp(argv[i], "all_clusters", 1)) {
+		} else if(!end && !strncasecmp(argv[i], "all_clusters",
+					       MAX(command_len, 1))) {
 			local_cluster_flag = 1;
 			continue;
-		} else if(!end && !strncasecmp(argv[i], "PrintJobCount", 2)) {
+		} else if(!end && !strncasecmp(argv[i], "PrintJobCount",
+					       MAX(command_len, 2))) {
 			print_job_count = 1;
 			continue;
 		} else if(!end 
-			  || !strncasecmp (argv[i], "Clusters", 1)) {
+			  || !strncasecmp (argv[i], "Clusters",
+					   MAX(command_len, 1))) {
 			slurm_addto_char_list(job_cond->cluster_list,
 					      argv[i]+end);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "Accounts", 2)) {
+		} else if (!strncasecmp (argv[i], "Accounts", 
+					 MAX(command_len, 2))) {
 			if(!job_cond->acct_list)
 				job_cond->acct_list =
 					list_create(slurm_destroy_char);
 			slurm_addto_char_list(job_cond->acct_list,
 					      argv[i]+end);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "Associations", 2)) {
+		} else if (!strncasecmp (argv[i], "Associations",
+					 MAX(command_len, 2))) {
 			if(!job_cond->associd_list)
 				job_cond->associd_list =
 					list_create(slurm_destroy_char);
 			slurm_addto_char_list(job_cond->associd_list,
 					      argv[i]+end);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "End", 1)) {
+		} else if (!strncasecmp (argv[i], "End", MAX(command_len, 1))) {
 			job_cond->usage_end = parse_time(argv[i]+end, 1);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "Format", 1)) {
+		} else if (!strncasecmp (argv[i], "Format",
+					 MAX(command_len, 1))) {
 			if(format_list)
 				slurm_addto_char_list(format_list, argv[i]+end);
-		} else if (!strncasecmp (argv[i], "Gid", 2)) {
+		} else if (!strncasecmp (argv[i], "Gid", MAX(command_len, 2))) {
 			if(!job_cond->groupid_list)
 				job_cond->groupid_list =
 					list_create(slurm_destroy_char);
 			slurm_addto_char_list(job_cond->groupid_list,
 					      argv[i]+end);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "grouping", 2)) {
+		} else if (!strncasecmp (argv[i], "grouping",
+					 MAX(command_len, 2))) {
 			if(grouping_list)
 				slurm_addto_char_list(grouping_list, 
 						      argv[i]+end);
-		} else if (!strncasecmp (argv[i], "Jobs", 1)) {
+		} else if (!strncasecmp (argv[i], "Jobs",
+					 MAX(command_len, 1))) {
 			char *end_char = NULL, *start_char = argv[i]+end;
 			jobacct_selected_step_t *selected_step = NULL;
 			char *dot = NULL;
@@ -310,17 +325,20 @@ static int _set_cond(int *start, int argc, char *argv[],
 			}
 			
 			set = 1;
-		} else if (!strncasecmp (argv[i], "Partitions", 2)) {
+		} else if (!strncasecmp (argv[i], "Partitions",
+					 MAX(command_len, 2))) {
 			if(!job_cond->partition_list)
 				job_cond->partition_list =
 					list_create(slurm_destroy_char);
 			slurm_addto_char_list(job_cond->partition_list,
 					      argv[i]+end);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "Start", 1)) {
+		} else if (!strncasecmp (argv[i], "Start",
+					 MAX(command_len, 1))) {
 			job_cond->usage_start = parse_time(argv[i]+end, 1);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "Users", 1)) {
+		} else if (!strncasecmp (argv[i], "Users",
+					 MAX(command_len, 1))) {
 			if(!job_cond->userid_list)
 				job_cond->userid_list =
 					list_create(slurm_destroy_char);
@@ -374,38 +392,46 @@ static int _setup_print_fields_list(List format_list)
 	itr = list_iterator_create(format_list);
 	while((object = list_next(itr))) {
 		char *tmp_char = NULL;
+		int command_len = strlen(object);
+
 		field = xmalloc(sizeof(print_field_t));
-		if(!strncasecmp("Account", object, 1)) {
+		if(!strncasecmp("Account", object, MAX(command_len, 1))) {
 			field->type = PRINT_JOB_ACCOUNT;
 			field->name = xstrdup("Account");
 			field->len = 9;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("Cluster", object, 2)) {
+		} else if(!strncasecmp("Cluster", object,
+				       MAX(command_len, 2))) {
 			field->type = PRINT_JOB_CLUSTER;
 			field->name = xstrdup("Cluster");
 			field->len = 9;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("CpuCount", object, 2)) {
+		} else if(!strncasecmp("CpuCount", object, 
+				       MAX(command_len, 2))) {
 			field->type = PRINT_JOB_CPUS;
 			field->name = xstrdup("CPU Count");
 			field->len = 9;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("Duration", object, 1)) {
+		} else if(!strncasecmp("Duration", object,
+				       MAX(command_len, 1))) {
 			field->type = PRINT_JOB_DUR;
 			field->name = xstrdup("Duration");
 			field->len = 12;
 			field->print_routine = print_fields_time;
-		} else if(!strncasecmp("JobCount", object, 2)) {
+		} else if(!strncasecmp("JobCount", object,
+				       MAX(command_len, 2))) {
 			field->type = PRINT_JOB_COUNT;
 			field->name = xstrdup("Job Count");
 			field->len = 9;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("NodeCount", object, 2)) {
+		} else if(!strncasecmp("NodeCount", object,
+				       MAX(command_len, 2))) {
 			field->type = PRINT_JOB_NODES;
 			field->name = xstrdup("Node Count");
 			field->len = 9;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("User", object, 1)) {
+		} else if(!strncasecmp("User", object,
+				       MAX(command_len, 1))) {
 			field->type = PRINT_JOB_USER;
 			field->name = xstrdup("User");
 			field->len = 9;

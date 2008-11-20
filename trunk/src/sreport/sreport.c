@@ -315,7 +315,10 @@ _get_command (int *argc, char **argv)
 #endif
 	if (in_line == NULL)
 		return 0;
-	else if (strcmp (in_line, "!!") == 0) {
+	else if (strncmp (in_line, "#", 1) == 0) {
+		free (in_line);
+		return 0;
+	} else if (strcmp (in_line, "!!") == 0) {
 		free (in_line);
 		in_line = last_in_line;
 		in_line_size = last_in_line_size;
@@ -389,11 +392,18 @@ static void _print_version(void)
 static int
 _process_command (int argc, char *argv[]) 
 {
+	int command_len = 0;
+
 	if (argc < 1) {
 		exit_code = 1;
 		if (quiet_flag == -1)
 			fprintf(stderr, "no input");
-	} else if ((strncasecmp (argv[0], "association", 1) == 0)) {
+		return 0;
+	}
+	
+	command_len = strlen(argv[0]);
+
+	if ((strncasecmp (argv[0], "association", MAX(command_len, 1)) == 0)) {
 		if (argc < 2) {
 			exit_code = 1;
 			if (quiet_flag != 1)
@@ -402,7 +412,8 @@ _process_command (int argc, char *argv[])
 				        argv[0]);
 		} else 
 			_assoc_rep((argc - 1), &argv[1]);
-	} else if ((strncasecmp (argv[0], "cluster", 2) == 0)) {
+	} else if ((strncasecmp (argv[0], "cluster",
+				 MAX(command_len, 2)) == 0)) {
 		if (argc < 2) {
 			exit_code = 1;
 			if (quiet_flag != 1)
@@ -411,7 +422,7 @@ _process_command (int argc, char *argv[])
 				        argv[0]);
 		} else 
 			_cluster_rep((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "help", 2) == 0) {
+	} else if (strncasecmp (argv[0], "help", MAX(command_len, 2)) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr, 
@@ -419,7 +430,7 @@ _process_command (int argc, char *argv[])
 				 argv[0]);
 		}
 		_usage ();
-	} else if ((strncasecmp (argv[0], "job", 1) == 0)) {
+	} else if ((strncasecmp (argv[0], "job", MAX(command_len, 1)) == 0)) {
 		if (argc < 2) {
 			exit_code = 1;
 			if (quiet_flag != 1)
@@ -428,16 +439,16 @@ _process_command (int argc, char *argv[])
 				        argv[0]);
 		} else 
 			_job_rep((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "quiet", 4) == 0) {
+	} else if (strncasecmp (argv[0], "quiet", MAX(command_len, 4)) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr, "too many arguments for keyword:%s\n",
 				 argv[0]);
 		}
 		quiet_flag = 1;
-	} else if ((strncasecmp (argv[0], "exit", 1) == 0) ||
-		   (strncasecmp (argv[0], "\\q", 2) == 0) ||
-		   (strncasecmp (argv[0], "quit", 4) == 0)) {
+	} else if ((strncasecmp (argv[0], "exit", MAX(command_len, 1)) == 0) ||
+		   (strncasecmp (argv[0], "\\q", MAX(command_len, 2)) == 0) ||
+		   (strncasecmp (argv[0], "quit", MAX(command_len, 4)) == 0)) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr, 
@@ -445,7 +456,7 @@ _process_command (int argc, char *argv[])
 				 argv[0]);
 		}
 		exit_flag = 1;
-	} else if (strncasecmp (argv[0], "sort", 1) == 0) {
+	} else if (strncasecmp (argv[0], "sort", MAX(command_len, 1)) == 0) {
 		if (argc < 2) {
 			exit_code = 1;
 			fprintf (stderr,
@@ -453,7 +464,7 @@ _process_command (int argc, char *argv[])
 				 argv[0]);
 		} else		
 			_set_sort(argv[1]);
-	} else if (strncasecmp (argv[0], "time", 1) == 0) {
+	} else if (strncasecmp (argv[0], "time", MAX(command_len, 1)) == 0) {
 		if (argc < 2) {
 			exit_code = 1;
 			fprintf (stderr,
@@ -461,7 +472,7 @@ _process_command (int argc, char *argv[])
 				 argv[0]);
 		} else		
 			_set_time_format(argv[1]);
-	} else if (strncasecmp (argv[0], "verbose", 4) == 0) {
+	} else if (strncasecmp (argv[0], "verbose", MAX(command_len, 4)) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr,
@@ -469,7 +480,7 @@ _process_command (int argc, char *argv[])
 				 argv[0]);
 		}		
 		quiet_flag = -1;
-	} else if (strncasecmp (argv[0], "version", 4) == 0) {
+	} else if (strncasecmp (argv[0], "version", MAX(command_len, 4)) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr,
@@ -477,7 +488,7 @@ _process_command (int argc, char *argv[])
 				 argv[0]);
 		}		
 		_print_version();
-	} else if ((strncasecmp (argv[0], "user", 1) == 0)) {
+	} else if ((strncasecmp (argv[0], "user", MAX(command_len, 1)) == 0)) {
 		if (argc < 2) {
 			exit_code = 1;
 			if (quiet_flag != 1)
@@ -496,25 +507,27 @@ _process_command (int argc, char *argv[])
 
 static int _set_time_format(char *format)
 {
-	if (strncasecmp (format, "SecPer", 6) == 0) {
+	int command_len = strlen(format);
+
+	if (strncasecmp (format, "SecPer", MAX(command_len, 6)) == 0) {
 		time_format = SREPORT_TIME_SECS_PER;
 		time_format_string = "Seconds/Percentange of Total";
-	} else if (strncasecmp (format, "MinPer", 6) == 0) {
+	} else if (strncasecmp (format, "MinPer", MAX(command_len, 6)) == 0) {
 		time_format = SREPORT_TIME_MINS_PER;
 		time_format_string = "Minutes/Percentange of Total";
-	} else if (strncasecmp (format, "HourPer", 6) == 0) {
+	} else if (strncasecmp (format, "HourPer", MAX(command_len, 6)) == 0) {
 		time_format = SREPORT_TIME_HOURS_PER;
 		time_format_string = "Hours/Percentange of Total";
-	} else if (strncasecmp (format, "Seconds", 1) == 0) {
+	} else if (strncasecmp (format, "Seconds", MAX(command_len, 1)) == 0) {
 		time_format = SREPORT_TIME_SECS;
 		time_format_string = "Seconds";
-	} else if (strncasecmp (format, "Minutes", 1) == 0) {
+	} else if (strncasecmp (format, "Minutes", MAX(command_len, 1)) == 0) {
 		time_format = SREPORT_TIME_MINS;
 		time_format_string = "Minutes";
-	} else if (strncasecmp (format, "Hours", 1) == 0) {
+	} else if (strncasecmp (format, "Hours", MAX(command_len, 1)) == 0) {
 		time_format = SREPORT_TIME_HOURS;
 		time_format_string = "Hours";
-	} else if (strncasecmp (format, "Percent", 1) == 0) {
+	} else if (strncasecmp (format, "Percent", MAX(command_len, 1)) == 0) {
 		time_format = SREPORT_TIME_PERCENT;
 		time_format_string = "Percentange of Total";
 	} else {
@@ -527,9 +540,11 @@ static int _set_time_format(char *format)
 
 static int _set_sort(char *format)
 {
-	if (strncasecmp (format, "Name", 1) == 0) {
+	int command_len = strlen(format);
+
+	if (strncasecmp (format, "Name", MAX(command_len, 1)) == 0) {
 		sort_flag = SREPORT_SORT_NAME;
-	} else if (strncasecmp (format, "Time", 6) == 0) {
+	} else if (strncasecmp (format, "Time", MAX(command_len, 6)) == 0) {
 		sort_flag = SREPORT_SORT_TIME;
 	} else {
 		fprintf (stderr, "unknown timesort format %s", format);	

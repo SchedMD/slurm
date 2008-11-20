@@ -60,7 +60,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 	int local_cluster_flag = all_clusters_flag;
 	acct_association_cond_t *assoc_cond = NULL;
 	time_t start_time, end_time;
-	
+	int command_len = 0;
+
 	if(!user_cond) {
 		error("We need an acct_user_cond to call this");
 		return SLURM_ERROR;
@@ -79,42 +80,55 @@ static int _set_cond(int *start, int argc, char *argv[],
 		assoc_cond->cluster_list = list_create(slurm_destroy_char);
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
-		if (!strncasecmp (argv[i], "Set", 3)) {
+		if(!end)
+			command_len=strlen(argv[i]);
+		else
+			command_len=end-1;
+
+		if (!strncasecmp (argv[i], "Set", MAX(command_len, 3))) {
 			i--;
 			break;
-		} else if(!end && !strncasecmp(argv[i], "where", 5)) {
+		} else if(!end && !strncasecmp(argv[i], "where",
+					       MAX(command_len, 5))) {
 			continue;
-		} else if(!end && !strncasecmp(argv[i], "all_clusters", 1)) {
+		} else if(!end && !strncasecmp(argv[i], "all_clusters", 
+					       MAX(command_len, 1))) {
 			local_cluster_flag = 1;
 			continue;
-		} else if (!end && !strncasecmp(argv[i], "group", 1)) {
+		} else if (!end && !strncasecmp(argv[i], "group",
+						MAX(command_len, 1))) {
 			group_accts = 1;
 		} else if(!end
-			  || !strncasecmp (argv[i], "Users", 1)) {
+			  || !strncasecmp (argv[i], "Users", 
+					   MAX(command_len, 1))) {
 			if(!assoc_cond->user_list)
 				assoc_cond->user_list = 
 					list_create(slurm_destroy_char);
 			slurm_addto_char_list(assoc_cond->user_list,
 					      argv[i]+end);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "Accounts", 2)) {
+		} else if (!strncasecmp (argv[i], "Accounts",
+					 MAX(command_len, 2))) {
 			if(!assoc_cond->acct_list)
 				assoc_cond->acct_list =
 					list_create(slurm_destroy_char);
 			slurm_addto_char_list(assoc_cond->acct_list,
 					      argv[i]+end);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "Clusters", 1)) {
+		} else if (!strncasecmp (argv[i], "Clusters",
+					 MAX(command_len, 1))) {
 			slurm_addto_char_list(assoc_cond->cluster_list,
 					      argv[i]+end);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "End", 1)) {
+		} else if (!strncasecmp (argv[i], "End", MAX(command_len, 1))) {
 			assoc_cond->usage_end = parse_time(argv[i]+end, 1);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "Format", 1)) {
+		} else if (!strncasecmp (argv[i], "Format", 
+					 MAX(command_len, 1))) {
 			if(format_list)
 				slurm_addto_char_list(format_list, argv[i]+end);
-		} else if (!strncasecmp (argv[i], "Start", 1)) {
+		} else if (!strncasecmp (argv[i], "Start",
+					 MAX(command_len, 1))) {
 			assoc_cond->usage_start = parse_time(argv[i]+end, 1);
 			set = 1;
 		} else {
@@ -163,28 +177,31 @@ static int _setup_print_fields_list(List format_list)
 	itr = list_iterator_create(format_list);
 	while((object = list_next(itr))) {
 		char *tmp_char = NULL;
+		int command_len = strlen(object);
+
 		field = xmalloc(sizeof(print_field_t));
-		if(!strncasecmp("Accounts", object, 1)) {
+		if(!strncasecmp("Accounts", object, MAX(command_len, 1))) {
 			field->type = PRINT_USER_ACCT;
 			field->name = xstrdup("Account");
 			field->len = 15;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("Cluster", object, 1)) {
+		} else if(!strncasecmp("Cluster", object,
+				       MAX(command_len, 1))) {
 			field->type = PRINT_USER_CLUSTER;
 			field->name = xstrdup("Cluster");
 			field->len = 9;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("Login", object, 1)) {
+		} else if(!strncasecmp("Login", object, MAX(command_len, 1))) {
 			field->type = PRINT_USER_LOGIN;
 			field->name = xstrdup("Login");
 			field->len = 9;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("Proper", object, 1)) {
+		} else if(!strncasecmp("Proper", object, MAX(command_len, 1))) {
 			field->type = PRINT_USER_PROPER;
 			field->name = xstrdup("Proper Name");
 			field->len = 15;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("Used", object, 1)) {
+		} else if(!strncasecmp("Used", object, MAX(command_len, 1))) {
 			field->type = PRINT_USER_USED;
 			field->name = xstrdup("Used");
 			if(time_format == SREPORT_TIME_SECS_PER
