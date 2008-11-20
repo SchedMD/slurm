@@ -72,6 +72,24 @@ static int _sort_assoc_dec(acct_association_rec_t *assoc_a,
 	return -1;
 }
 
+static int _addto_used_info(acct_association_rec_t *assoc1,
+			    acct_association_rec_t *assoc2)
+{
+	if(!assoc1 || !assoc2)
+		return SLURM_ERROR;
+
+	assoc1->grp_used_cpu_mins += assoc2->grp_used_cpu_mins;
+	assoc1->grp_used_cpus += assoc2->grp_used_cpus;
+	assoc1->grp_used_nodes += assoc2->grp_used_nodes;
+	assoc1->grp_used_wall += assoc2->grp_used_wall;
+	
+	assoc1->used_jobs += assoc2->used_jobs;
+	assoc1->used_submit_jobs += assoc2->used_submit_jobs;
+	assoc1->used_shares += assoc2->used_shares;
+
+	return SLURM_SUCCESS;
+}
+
 static int _clear_used_info(acct_association_rec_t *assoc)
 {
 	if(!assoc)
@@ -456,9 +474,7 @@ static int _refresh_local_association_list(void *db_conn, int enforce)
 			continue;
 
 		while(assoc) {
-			assoc->used_jobs += curr_assoc->used_jobs;
-			assoc->used_submit_jobs += curr_assoc->used_submit_jobs;
-			assoc->used_shares += curr_assoc->used_shares;
+			_addto_used_info(assoc, curr_assoc);
 			/* get the parent last since this pointer is
 			   different than the one we are updating from */
 			assoc = assoc->parent_assoc_ptr;
@@ -1041,10 +1057,8 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 				   here since we start at the child
 				*/
 				object = object->parent_assoc_ptr;
-				object->used_jobs += rec->used_jobs;
-				object->used_submit_jobs +=
-					rec->used_submit_jobs;
-				object->used_shares += rec->used_shares;
+
+				_addto_used_info(object, rec);
 			}
 		}
 	}
