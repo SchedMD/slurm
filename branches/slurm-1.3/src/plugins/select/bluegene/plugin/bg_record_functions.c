@@ -414,7 +414,7 @@ extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
 		itr = list_iterator_create(fir_record->bg_block_list);
 		while((ba_node = list_next(itr))) {
 			new_ba_node = ba_copy_node(ba_node);
-			list_push(sec_record->bg_block_list, new_ba_node);
+			list_append(sec_record->bg_block_list, new_ba_node);
 		}
 		list_iterator_destroy(itr);
 	}
