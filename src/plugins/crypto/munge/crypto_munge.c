@@ -176,8 +176,24 @@ crypto_verify_sign(void * key, char *buffer, unsigned int buf_size,
 				 &buf_out, &buf_out_size, 
 				 &uid, &gid);
 
-	if (munge_err != EMUNGE_SUCCESS)
+	if (munge_err != EMUNGE_SUCCESS) {
+#ifdef MULTIPLE_SLURMD
+		/* In multple slurmd mode this will happen all the
+		 * time since we are authenticating with the same
+		 * munged.
+		 */
+		if (munge_err != EMUNGE_CRED_REPLAYED) {
+			return SLURM_ERROR;
+		} else {
+			debug2("We had a replayed crypto, "
+			       "but this is expected in multiple "
+			       "slurmd mode.");
+			munge_err = 0;
+		}
+#else
 		return SLURM_ERROR;
+#endif
+	}
 
 	if (!got_slurm_user) {
 		slurm_user = slurm_get_slurm_user_id();
