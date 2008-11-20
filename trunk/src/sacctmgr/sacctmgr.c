@@ -695,7 +695,8 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
      associations             when using show/list will list the           \n\
                               associations associated with the entity.     \n\
      delete <ENTITY> <SPECS>  delete the specified entity(s)               \n\
-     dump <CLUSTER> [File=<FILENAME>]  dump database information of the             \n\
+     dump <CLUSTER> [File=<FILENAME>]  
+                              dump database information of the             \n\
                               specified cluster to the flat file.          \n\
                               Will default to clustername.cfg if no file   \n\
                               is given.                                    \n\
