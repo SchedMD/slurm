@@ -124,6 +124,8 @@ documents those changes that are of interest to users and admins.
  -- Correction to build like for srun debugger (export symbols).
  -- sacct will now display more properly allocations made with salloc with only 
     one step.
+ -- altered sacctmgr, sreport to look at complete option before applying. 
+    Before we would only look at the first determined significant characters.
 
 * Changes in SLURM 1.3.10
 =========================

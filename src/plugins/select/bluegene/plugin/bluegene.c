@@ -1483,16 +1483,20 @@ static int _validate_config_nodes(List *bg_found_block_list)
 			if (bg_record->conn_type 
 			    != init_bg_record->conn_type)
 				continue; /* wrong conn_type */
+#ifdef HAVE_BGL
 			if(bg_record->quarter !=
 			   init_bg_record->quarter)
 				continue; /* wrong quart */
 			if(bg_record->nodecard !=
 			   init_bg_record->nodecard)
 				continue; /* wrong nodecard */
-#ifdef HAVE_BGL
 			if(bg_record->blrtsimage &&
 			   strcasecmp(bg_record->blrtsimage,
 				      init_bg_record->blrtsimage)) 
+				continue;
+#else
+			if(!bit_equal(bg_record->ionode_bitmap,
+				     init_bg_record->ionode_bitmap))
 				continue;
 #endif
 			if(bg_record->linuximage &&

@@ -29,6 +29,8 @@ allocated to a SLURM job?</a></li>
 (memlock) limit being too low?</a></li>
 <li><a href="#inactive">Why is my batch job that launches no job steps being 
 killed?</a></li>
+<li><a href="#arbitrary">How do I run specific tasks on certain nodes
+in my allocation?</a></li> 
 </ol>
 <h2>For Administrators</h2>
 <ol>
@@ -524,6 +526,54 @@ at the beginning of your script to execute in the background. It
 will be purged when your script exits or your job otherwise terminates.
 A line of this sort near the beginning of your script should suffice:<br>
 <i>srun -N1 -n1 sleep 999999 &</i></p>
+
+<p><a name="arbitrary"><b>20. How do I run specific tasks on certain nodes
+in my allocation?</b></a><br>
+One of the distribution methods for srun '<b>-m</b>
+or <b>--distribution</b>' is 'arbitrary'.  This means you can tell slurm to  
+layout your tasks in any fashion you want.  For instance if I had an
+allocation of 2 nodes and wanted to run 4 tasks on the first node and
+1 task on the second and my nodes allocated from SLURM_NODELIST
+where tux[0-1] my srun line would look like this.<p>
+<i>srun -n5 -m arbitrary -w tux[0,0,0,0,1] hostname</i><p>
+If I wanted something similar but wanted the third task to be on tux 1
+I could run this...<p>
+<i>srun -n5 -m arbitrary -w tux[0,0,1,0,0] hostname</i><p> 
+Here is a simple perl script named arbitrary.pl that can be ran to easily lay
+out tasks on nodes as they are in SLURM_NODELIST<p>
+<pre>
+#!/usr/bin/perl
+my @tasks = split(',', $ARGV[0]);
+my @nodes = `scontrol show hostnames $SLURM_NODELIST`;
+my $node_cnt = $#nodes + 1;
+my $task_cnt = $#tasks + 1;
+
+if ($node_cnt < $task_cnt) {
+	print STDERR "ERROR: You only have $node_cnt nodes, but requested layout on $task_cnt nodes.\n";
+	$task_cnt = $node_cnt;
+}
+
+my $cnt = 0;
+my $layout;
+foreach my $task (@tasks) {
+	my $node = $nodes[$cnt];
+	last if !$node;
+	chomp($node);
+	for(my $i=0; $i < $task; $i++) {
+		$layout .= "," if $layout;
+		$layout .= "$node";
+	}
+	$cnt++;
+}
+print $layout;
+</pre>
+
+We can now use this script in our srun line in this fashion.<p>
+<i>srun -m arbitrary -n5 -w `arbitrary.pl 4,1` -l hostname</i><p>
+This will layout 4 tasks on the first node in the allocation and 1
+task on the second node.  
+
+</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
