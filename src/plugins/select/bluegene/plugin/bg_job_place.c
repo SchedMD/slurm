@@ -1237,7 +1237,6 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 {
 	int rc = SLURM_SUCCESS;
 #ifdef HAVE_BG
-	int i=0;
 	bg_record_t* bg_record = NULL;
 	char buf[100];
 	uint16_t tmp16 = (uint16_t)NO_VAL;
