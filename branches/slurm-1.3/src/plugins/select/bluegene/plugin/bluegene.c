@@ -281,12 +281,10 @@ extern bool blocks_overlap(bg_record_t *rec_a, bg_record_t *rec_b)
 		}
 	}
 #else
-	if((rec_a->node_cnt >= bluegene_bp_node_cnt
-	    && rec_b->node_cnt < bluegene_bp_node_cnt)
-	   ||(rec_b->node_cnt >= bluegene_bp_node_cnt
-	      && rec_a->node_cnt < bluegene_bp_node_cnt))
+	if((rec_a->node_cnt >= bluegene_bp_node_cnt)
+	   || (rec_b->node_cnt >= bluegene_bp_node_cnt))
 		return true;
-
+	
 	my_bitmap = bit_copy(rec_a->ionode_bitmap);
 	bit_and(my_bitmap, rec_b->ionode_bitmap);
 	if (bit_ffs(my_bitmap) == -1) {
@@ -294,7 +292,6 @@ extern bool blocks_overlap(bg_record_t *rec_a, bg_record_t *rec_b)
 		return false;
 	}
 	FREE_NULL_BITMAP(my_bitmap);
-
 #endif	
 	return true;
 }
