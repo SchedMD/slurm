@@ -49,7 +49,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 	List qos_list = NULL;
 	acct_association_cond_t *assoc_cond = NULL;
 	int command_len = 0;
-		     
+	int option = 0;
+
 	if(!acct_cond) {
 		exit_code=1;
 		fprintf(stderr, "No acct_cond given");
@@ -67,9 +68,14 @@ static int _set_cond(int *start, int argc, char *argv[],
 		end = parse_option_end(argv[i]);
 		if(!end)
 			command_len=strlen(argv[i]);
-		else
+		else {
 			command_len=end-1;
-
+			if(argv[i][end] == '=') {
+				option = (int)argv[i][end-1];
+				end++;
+			}
+		}
+		
 		if (!strncasecmp (argv[i], "Set", MAX(command_len, 3))) {
 			i--;
 			break;
@@ -82,7 +88,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 					 MAX(command_len, 5))) {
 			acct_cond->with_coords = 1;
 		} else if (!end && 
-			   !strncasecmp (argv[i], "WithRawQOS",
+			   !strncasecmp (argv[i], "WithRawQOSLevel",
 					 MAX(command_len, 5))) {
 			assoc_cond->with_raw_qos = 1;
 		} else if (!end && !strncasecmp (argv[i], "WOPLimits",
@@ -259,7 +265,6 @@ static int _set_cond(int *start, int argc, char *argv[],
 				a_set = 1;
 		} else if (!strncasecmp (argv[i], "QosLevel", 
 					 MAX(command_len, 1))) {
-			int option = 0;
 			if(!assoc_cond->qos_list) {
 				assoc_cond->qos_list = 
 					list_create(slurm_destroy_char);
@@ -269,11 +274,6 @@ static int _set_cond(int *start, int argc, char *argv[],
 				qos_list = acct_storage_g_get_qos(
 					db_conn, my_uid, NULL);
 			}
-			
-			if(end > 2 && argv[i][end-1] == '='
-			   && (argv[i][end-2] == '+' 
-			       || argv[i][end-2] == '-'))
-				option = (int)argv[i][end-2];
 
 			if(addto_qos_char_list(assoc_cond->qos_list, qos_list,
 					       argv[i]+end, option))
@@ -315,13 +315,19 @@ static int _set_rec(int *start, int argc, char *argv[],
 	int end = 0;
 	List qos_list = NULL;
 	int command_len = 0;
+	int option = 0;
 
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
 		if(!end)
 			command_len=strlen(argv[i]);
-		else
+		else {
 			command_len=end-1;
+			if(argv[i][end] == '=') {
+				option = (int)argv[i][end-1];
+				end++;
+			}
+		}
 
 		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))) {
 			i--;
@@ -466,7 +472,6 @@ static int _set_rec(int *start, int argc, char *argv[],
 			a_set = 1;
 		} else if (!strncasecmp (argv[i], "QosLevel", 
 					 MAX(command_len, 1))) {
-			int option = 0;
 			if(!assoc)
 				continue;
 			if(!assoc->qos_list) 
@@ -476,11 +481,6 @@ static int _set_rec(int *start, int argc, char *argv[],
 			if(!qos_list) 
 				qos_list = acct_storage_g_get_qos(
 					db_conn, my_uid, NULL);
-						
-			if(end > 2 && argv[i][end-1] == '='
-			   && (argv[i][end-2] == '+' 
-			       || argv[i][end-2] == '-'))
-				option = (int)argv[i][end-2];
 
 			if(addto_qos_char_list(assoc->qos_list,
 					       qos_list, argv[i]+end, option))
@@ -1091,13 +1091,14 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 			field->name = xstrdup("Org");
 			field->len = 20;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("QOSRAW", object, 
+		} else if(!strncasecmp("QOSRAWLevel", object, 
 				       MAX(command_len, 4))) {
 			field->type = PRINT_QOS_RAW;
 			field->name = xstrdup("QOS_RAW");
 			field->len = 10;
 			field->print_routine = print_fields_char_list;
-		} else if(!strncasecmp("QOS", object, MAX(command_len, 1))) {
+		} else if(!strncasecmp("QOSLevel", object, 
+				       MAX(command_len, 1))) {
 			field->type = PRINT_QOS;
 			field->name = xstrdup("QOS");
 			field->len = 20;

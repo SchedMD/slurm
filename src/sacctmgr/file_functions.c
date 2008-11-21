@@ -254,6 +254,7 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 	char *option = NULL;
 	char quote_c = '\0';
 	int command_len = 0;
+	int option2 = 0;
 
 	_init_sacctmgr_file_opts(file_opts);
 
@@ -287,10 +288,13 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 
 		sub = xstrndup(options+start, i-start);
 		end = parse_option_end(sub);
+		command_len = end - 1;		
+		if(sub[end] == '=') {
+			option2 = (int)sub[end-1];
+			end++;
+		}
 		
 		option = strip_quotes(sub+end, NULL);
-		
-		command_len = end - 1;		
 
 		if(!end) {
 			if(file_opts->name) {
@@ -460,7 +464,6 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 		} else if (!strncasecmp (sub, "QosLevel", MAX(command_len, 1))
 			   || !strncasecmp (sub, "Expedite",
 					    MAX(command_len, 1))) {
-			int option2 = 0;
 			if(!file_opts->qos_list) {
 				file_opts->qos_list = 
 					list_create(slurm_destroy_char);
@@ -470,10 +473,6 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 				qos_list = acct_storage_g_get_qos(
 					db_conn, my_uid, NULL);
 			}
-			if(end > 2 && sub[end-1] == '='
-			   && (sub[end-2] == '+' 
-			       || sub[end-2] == '-'))
-				option2 = (int)sub[end-2];
 
 			addto_qos_char_list(file_opts->qos_list, qos_list,
 					    option, option2);
@@ -649,12 +648,14 @@ static List _set_up_print_fields(List format_list)
 			field->name = xstrdup("Org");
 			field->len = 20;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("QOSRAW", object, MAX(command_len, 4))) {
+		} else if(!strncasecmp("QOSRAWLevel", object, 
+				       MAX(command_len, 4))) {
 			field->type = PRINT_QOS_RAW;
 			field->name = xstrdup("QOS_RAW");
 			field->len = 7;
 			field->print_routine = print_fields_char_list;
-		} else if(!strncasecmp("QOS", object, MAX(command_len, 1))) {
+		} else if(!strncasecmp("QOSLevel", object,
+				       MAX(command_len, 1))) {
 			field->type = PRINT_QOS;
 			field->name = xstrdup("QOS");
 			field->len = 9;
@@ -1787,12 +1788,17 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 	xfree(user_name);
 
 	for (i=0; i<argc; i++) {
+		int option = 0;
 		int end = parse_option_end(argv[i]);
 		if(!end)
 			command_len=strlen(argv[i]);
-		else
+		else {
 			command_len=end-1;
-
+			if(argv[i][end] == '=') {
+				option = (int)argv[i][end-1];
+				end++;
+			}
+		}
 		if(!end && !strncasecmp(argv[i], "clean",
 					MAX(command_len, 3))) {
 			start_clean = 1;
