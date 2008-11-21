@@ -544,7 +544,7 @@ proc _add_user { account adminlevel cluster defaultaccount fs maxcpu maxjob maxn
 	}
 
 	if { [string length $fs] } {
-		set command "$command fs=$fs"
+		set command "$command fairshare=$fs"
 	}
 
 	if { [string length $maxcpu] } {
