@@ -482,7 +482,17 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 				
 #ifdef HAVE_BGL
 	found_record->node_use = SELECT_COPROCESSOR_MODE;
-#endif
+	if(nodecard != (uint16_t) NO_VAL)
+		small_size = bluegene_bp_nodecard_cnt;
+	found_record->cpus_per_bp = procs_per_node/small_size;
+	found_record->node_cnt = bluegene_bp_node_cnt/small_size;
+	found_record->quarter = quarter; 
+	found_record->nodecard = nodecard;
+	
+	if(set_ionodes(found_record) == SLURM_ERROR) 
+		error("couldn't create ionode_bitmap for %d.%d",
+		      found_record->quarter, found_record->nodecard);
+#else
 	xassert(bluegene_proc_ratio);
 	found_record->cpus_per_bp = bluegene_proc_ratio * size;
 	found_record->node_cnt = size;
@@ -490,6 +500,7 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 	found_record->ionode_bitmap = bit_copy(ionodes);
 	bit_fmt(bitstring, BITSIZE, found_record->ionode_bitmap);
 	found_record->ionodes = xstrdup(bitstring);
+#endif
 	return found_record;
 }
 #endif
