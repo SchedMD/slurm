@@ -1333,13 +1333,16 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 				select_g_set_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_BLOCK_ID,
 					     "unassigned");
-				if(job_ptr->num_procs < bluegene_bp_node_cnt 
-				   && job_ptr->num_procs > 0) {
-					i = procs_per_node/job_ptr->num_procs;
-					debug2("divide by %d", i);
-				} else 
-					i = 1;
-				min_nodes *= bluegene_bp_node_cnt/i;
+				/* if(job_ptr->num_procs < bluegene_bp_node_cnt  */
+/* 				   && job_ptr->num_procs > 0) { */
+/* 					i = procs_per_node/job_ptr->num_procs; */
+/* 					debug2("divide by %d", i); */
+/* 				} else  */
+/* 					i = 1; */
+/* 				min_nodes *= bluegene_bp_node_cnt/i; */
+				/* this seems to do the same thing as
+				 * above */
+				min_nodes = bg_record->node_cnt;
 				select_g_set_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_NODE_CNT,
 					     &min_nodes);
