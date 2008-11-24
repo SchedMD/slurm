@@ -26,6 +26,8 @@ documents those changes that are of interest to users and admins.
     one step.
  -- altered sacctmgr, sreport to look at complete option before applying. 
     Before we would only look at the first determined significant characters.
+ -- BLUGENE - in overlap mode marking a block to error state will now end
+    jobs on overlapping blocks and free them.
 
 * Changes in SLURM 1.3.10
 =========================
