@@ -833,7 +833,6 @@ extern int select_p_update_block (update_part_msg_t *part_desc_ptr)
 	bg_record_t *bg_record = NULL;
 	time_t now;
 	char reason[128], tmp[64], time_str[32];
-	List delete_list = NULL;
 
 	bg_record = find_bg_record_in_list(bg_list, part_desc_ptr->name);
 	if(!bg_record)
@@ -848,9 +847,7 @@ extern int select_p_update_block (update_part_msg_t *part_desc_ptr)
 		 bg_record->bg_block_id, 
 		 _block_state_str(part_desc_ptr->state_up), tmp); 
 	
-	delete_list = list_create(NULL);
-	slurm_mutex_lock(&block_state_mutex);
-	
+	/* First fail any job running on this block */
 	if(bg_record->job_running > NO_JOB_RUNNING) {
 		slurm_fail_job(bg_record->job_running);	
 		/* need to set the job_ptr to NULL
@@ -859,16 +856,17 @@ extern int select_p_update_block (update_part_msg_t *part_desc_ptr)
 		   with a job in it.
 		*/
 		bg_record->job_ptr = NULL;
-		list_push(delete_list, bg_record);
-		num_block_to_free++;
 	} 
 	
+	/* Free all overlapping blocks and kill any jobs only
+	 * if we are going into an error state */ 
 	if (bluegene_layout_mode != LAYOUT_DYNAMIC
 	    && !part_desc_ptr->state_up) {
-		/* Free all overlapping blocks and kill any jobs only
-		 * if we are going into an error state */ 
 		bg_record_t *found_record = NULL;
 		ListIterator itr;
+		List delete_list = list_create(NULL);
+		
+		slurm_mutex_lock(&block_state_mutex);
 		itr = list_iterator_create(bg_list);
 		while ((found_record = list_next(itr))) {
 			if (bg_record == found_record)
@@ -907,14 +905,16 @@ extern int select_p_update_block (update_part_msg_t *part_desc_ptr)
 			num_block_to_free++;
 		}		
 		list_iterator_destroy(itr);
+		free_block_list(delete_list);
+		list_destroy(delete_list);
+		slurm_mutex_unlock(&block_state_mutex);
 	}
-	free_block_list(delete_list);
-	list_destroy(delete_list);
-	slurm_mutex_unlock(&block_state_mutex);
 
 	if(!part_desc_ptr->state_up) {
-		/* since we are putting this block in an error state we need
-		   to wait for it and then put the block into an error state */
+		/* Since we are putting this block in an error state we need
+		   to wait for the job to be removed.  We don't really
+		   need to free the block though since we may just
+		   want it to be in an error state for some reason. */
 		while(bg_record->job_running > NO_JOB_RUNNING) 
 			sleep(1);
 		
