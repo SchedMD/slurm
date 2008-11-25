@@ -210,24 +210,20 @@ delete_step_record (struct job_record *job_ptr, uint32_t step_id)
 void
 dump_step_desc(job_step_create_request_msg_t *step_spec)
 {
-	if ((step_spec == NULL) ||
-	    ((slurm_get_debug_flags() & DEBUG_FLAG_STEPS) == 0))
-		return;
-
-	info("StepDesc: user_id=%u job_id=%u node_count=%u, cpu_count=%u", 
-	     step_spec->user_id, step_spec->job_id, 
-	     step_spec->node_count, step_spec->cpu_count);
-	info("   num_tasks=%u relative=%u task_dist=%u node_list=%s", 
-	     step_spec->num_tasks, step_spec->relative, 
-	     step_spec->task_dist, step_spec->node_list);
-	info("   host=%s port=%u name=%s network=%s exclusive=%u", 
-	     step_spec->host, step_spec->port, step_spec->name,
-	     step_spec->network, step_spec->exclusive);
-	info("   checkpoint-path=%s checkpoint_int=%u",
-	     step_spec->ckpt_path, step_spec->ckpt_interval);
-	info("   mem_per_task=%u immediate=%u no_kill=%u",
-	     step_spec->mem_per_task, step_spec->immediate, 
-	     step_spec->no_kill);
+	debug3("StepDesc: user_id=%u job_id=%u node_count=%u cpu_count=%u", 
+	       step_spec->user_id, step_spec->job_id, 
+	       step_spec->node_count, step_spec->cpu_count);
+	debug3("   num_tasks=%u relative=%u task_dist=%u node_list=%s", 
+	       step_spec->num_tasks, step_spec->relative, 
+	       step_spec->task_dist, step_spec->node_list);
+	debug3("   host=%s port=%u name=%s network=%s exclusive=%u", 
+	       step_spec->host, step_spec->port, step_spec->name,
+	       step_spec->network, step_spec->exclusive);
+	debug3("   checkpoint-path=%s checkpoint_int=%u",
+	       step_spec->ckpt_path, step_spec->ckpt_interval);
+	debug3("   mem_per_task=%u immediate=%u no_kill=%u",
+	       step_spec->mem_per_task, step_spec->immediate, 
+	       step_spec->no_kill);
 }
 
 
