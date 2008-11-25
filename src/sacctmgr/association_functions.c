@@ -47,13 +47,18 @@ static int _set_cond(int *start, int argc, char *argv[],
 	int set = 0;
 	List qos_list = NULL;
 	int command_len = 0;
-
+	int option = 0;
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
 		if(!end)
 			command_len=strlen(argv[i]);
-		else
+		else {
 			command_len=end-1;
+			if(argv[i][end] == '=') {
+				option = (int)argv[i][end-1];
+				end++;
+			}
+		}
 
 		if (!end && !strncasecmp (argv[i], "Tree", 
 					  MAX(command_len, 4))) {
@@ -62,7 +67,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 						 MAX(command_len, 5))) {
 			assoc_cond->with_deleted = 1;
 		} else if (!end && 
-			   !strncasecmp (argv[i], "WithRawQOS",
+			   !strncasecmp (argv[i], "WithRawQOSLevel",
 					 MAX(command_len, 5))) {
 			assoc_cond->with_raw_qos = 1;
 		} else if (!end && 
@@ -240,7 +245,6 @@ static int _set_cond(int *start, int argc, char *argv[],
 			set = 1;
 		} else if (!strncasecmp (argv[i], "QosLevel",
 					 MAX(command_len, 1))) {
-			int option = 0;
 			if(!assoc_cond->qos_list) {
 				assoc_cond->qos_list = 
 					list_create(slurm_destroy_char);
@@ -449,12 +453,14 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 			field->name = xstrdup("MaxWall");
 			field->len = 11;
 			field->print_routine = print_fields_time;
-		} else if(!strncasecmp("QOSRAW", object, MAX(command_len, 4))) {
+		} else if(!strncasecmp("QOSRAWLevel", object,
+				       MAX(command_len, 4))) {
 			field->type = PRINT_QOS_RAW;
 			field->name = xstrdup("QOS_RAW");
 			field->len = 10;
 			field->print_routine = print_fields_char_list;
-		} else if(!strncasecmp("QOS", object, MAX(command_len, 1))) {
+		} else if(!strncasecmp("QOSLevel", object,
+				       MAX(command_len, 1))) {
 			field->type = PRINT_QOS;
 			field->name = xstrdup("QOS");
 			field->len = 20;

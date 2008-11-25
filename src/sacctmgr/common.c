@@ -105,7 +105,9 @@ extern int parse_option_end(char *option)
 	if(!option)
 		return 0;
 
-	while(option[end] && option[end] != '=')
+	while(option[end] && (option[end] != '=' 
+			      && option[end] != '+' 
+			      && option[end] != '-'))
 		end++;
 
 	if(!option[end])

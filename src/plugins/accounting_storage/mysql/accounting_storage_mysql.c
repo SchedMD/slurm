@@ -6958,8 +6958,12 @@ empty:
 		   && row[ASSOC_REQ_PARENT][0]) {
 			assoc->parent_acct = xstrdup(row[ASSOC_REQ_PARENT]);
 			parent_acct = row[ASSOC_REQ_PARENT];
-		} else if(!assoc->user)
+		} else if(!assoc->user) {
+			/* This is the root association so we have no
+			   parent id */
 			parent_acct = NULL;
+			parent_id = 0;
+		}
 
 		if(row[ASSOC_REQ_PART][0])
 			assoc->partition = xstrdup(row[ASSOC_REQ_PART]);

@@ -441,7 +441,7 @@ extern int select_p_state_restore(char *dir_name)
 		return EFAULT;
 	}
 	xfree(ver_str);
-	if(select_g_unpack_node_info(&node_select_ptr, buffer) == SLURM_ERROR) { 
+	if(select_g_unpack_node_info(&node_select_ptr, buffer) == SLURM_ERROR) {
 		error("select_p_state_restore: problem unpacking node_info");
 		goto unpack_error;
 	}
@@ -831,6 +831,7 @@ extern int select_p_update_block (update_part_msg_t *part_desc_ptr)
 	bg_record = find_bg_record_in_list(bg_list, part_desc_ptr->name);
 	if(!bg_record)
 		return SLURM_ERROR;
+
 	now = time(NULL);
 	slurm_make_time_str(&now, time_str, sizeof(time_str));
 	snprintf(tmp, sizeof(tmp), "[SLURM@%s]", time_str);
@@ -839,12 +840,78 @@ extern int select_p_update_block (update_part_msg_t *part_desc_ptr)
 		 "Admin set block %s state to %s %s",
 		 bg_record->bg_block_id, 
 		 _block_state_str(part_desc_ptr->state_up), tmp); 
+	
+	/* First fail any job running on this block */
 	if(bg_record->job_running > NO_JOB_RUNNING) {
 		slurm_fail_job(bg_record->job_running);	
+		/* need to set the job_ptr to NULL
+		   here or we will get error message
+		   about us trying to free this block
+		   with a job in it.
+		*/
+		bg_record->job_ptr = NULL;
+	} 
+	
+	/* Free all overlapping blocks and kill any jobs only
+	 * if we are going into an error state */ 
+	if (bluegene_layout_mode != LAYOUT_DYNAMIC
+	    && !part_desc_ptr->state_up) {
+		bg_record_t *found_record = NULL;
+		ListIterator itr;
+		List delete_list = list_create(NULL);
+		
+		slurm_mutex_lock(&block_state_mutex);
+		itr = list_iterator_create(bg_list);
+		while ((found_record = list_next(itr))) {
+			if (bg_record == found_record)
+				continue;
+			
+			if(!blocks_overlap(bg_record, found_record)) {
+				debug2("block %s isn't part of errored %s",
+				       found_record->bg_block_id, 
+				       bg_record->bg_block_id);
+				continue;
+			}
+			if(found_record->job_running > NO_JOB_RUNNING) {
+				info("Failing job %u block %s "
+				     "failed because overlapping block %s "
+				     "is in an error state.", 
+				     found_record->job_running, 
+				     found_record->bg_block_id,
+				     bg_record->bg_block_id);
+				/* We need to fail this job first to
+				   get the correct result even though
+				   we are freeing the block later */
+				slurm_fail_job(found_record->job_running);
+				/* need to set the job_ptr to NULL
+				   here or we will get error message
+				   about us trying to free this block
+				   with a job in it.
+				*/
+				found_record->job_ptr = NULL;
+			} else {
+				debug2("block %s is part of errored %s "
+				       "but no running job",
+				       found_record->bg_block_id, 
+				       bg_record->bg_block_id);	
+			}
+			list_push(delete_list, found_record);
+			num_block_to_free++;
+		}		
+		list_iterator_destroy(itr);
+		free_block_list(delete_list);
+		list_destroy(delete_list);
+		slurm_mutex_unlock(&block_state_mutex);
+	}
+
+	if(!part_desc_ptr->state_up) {
+		/* Since we are putting this block in an error state we need
+		   to wait for the job to be removed.  We don't really
+		   need to free the block though since we may just
+		   want it to be in an error state for some reason. */
 		while(bg_record->job_running > NO_JOB_RUNNING) 
 			sleep(1);
-	}
-	if(!part_desc_ptr->state_up) {
+		
 		slurm_mutex_lock(&block_state_mutex);
 		bg_record->job_running = BLOCK_ERROR_STATE;
 		bg_record->state = RM_PARTITION_ERROR;
@@ -858,7 +925,8 @@ extern int select_p_update_block (update_part_msg_t *part_desc_ptr)
 	} else {
 		return rc;
 	}
-	info("%s",reason);
+				
+	info("%s", reason);
 	last_bg_update = time(NULL);
 	return rc;
 }

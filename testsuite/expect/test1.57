@@ -7,7 +7,8 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2002-2006 The Regents of the University of California.
+# Copyright (C) 2002-2007 The Regents of the University of California.
+# Copyright (C) 2008 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # LLNL-CODE-402394.
@@ -37,14 +38,39 @@ set exit_code            0
 print_header $test_id
 
 set super_user [test_super_user]
+
+#
+# Generate a pseudo-random job_id based upon the time
+# The odd looking calculation avoid errors trying to perform
+# arithmetic with an invalid octal number (e.g. hours = "09")
+#
+set hours   0
+set minutes 0
+set seconds 0
+spawn $bin_date
+expect {
+	-re "($number)($number):($number)($number):($number)($number)" {
+		set hours   [expr 10 * $expect_out(1,string) + $expect_out(2,string)]
+		set minutes [expr 10 * $expect_out(3,string) + $expect_out(4,string)] 
+		set seconds [expr 10 * $expect_out(5,string) + $expect_out(6,string)]
+	}
+	eof {
+		wait
+	}
+}
+# set jobid        999HHMMSS
+set   job_id [expr 999000000 + 10000 * $hours + 100 * $minutes + $seconds]
+
 #
 # Submit a slurm job that will execute 'id'
+# Use a really large job id to (hopefully) avoid future failure:
+# "error: Invalid job credential from <UID>@<IP>: Job credential replayed"
 #
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N1 --jobid=66000 -t1 $bin_id]
+set srun_pid [spawn $srun -N1 --jobid=$job_id -t1 $bin_id]
 expect {
 	-re "Invalid job id specified" {
-		if {[test_super_user] != 0} {
+		if {$super_user != 0} {
 			send_user "\nFAILURE: failed to set jobid\n"
 			set exit_code 1
 		} else {
@@ -58,7 +84,7 @@ expect {
 		exp_continue
 	}
 	-re "uid=" {
-		if {[test_super_user] == 0} {
+		if {$super_user == 0} {
 			send_user "\nFAILURE: no error for regular user setting jobid\n"
 			set exit_code 1
 		}

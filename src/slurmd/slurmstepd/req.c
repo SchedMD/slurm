@@ -1168,7 +1168,6 @@ _handle_completion(int fd, slurmd_job_t *job, uid_t uid)
 	int last;
 	jobacctinfo_t *jobacct = NULL;
 	int step_rc;
-/* 	char bits_string[128]; */
 
 	debug("_handle_completion for job %u.%u",
 	      job->jobid, job->stepid);
@@ -1201,16 +1200,26 @@ _handle_completion(int fd, slurmd_job_t *job, uid_t uid)
 		goto timeout;
 	}
 
-/* 	debug2("Setting range %d(bit %d) through %d(bit %d)", */
-/* 	       first, first-(step_complete.rank+1), */
-/* 	       last, last-(step_complete.rank+1)); */
-/* 	bit_fmt(bits_string, 128, step_complete.bits); */
-/* 	debug2("  before bits: %s", bits_string); */
-	bit_nset(step_complete.bits,
-		 first - (step_complete.rank+1),
-		 last - (step_complete.rank+1));
-/* 	bit_fmt(bits_string, 128, step_complete.bits); */
-/* 	debug2("  after bits: %s", bits_string); */
+	/* SlurmUser or root can craft a launch without a valid credential
+	 * ("srun --no-alloc ...") and no tree information can be built
+	 *  without the hostlist from the credential. */
+	if (step_complete.rank >= 0) {
+#if 0
+		char bits_string[128];
+		debug2("Setting range %d (bit %d) through %d(bit %d)",
+		       first, first-(step_complete.rank+1),
+		       last, last-(step_complete.rank+1));
+		bit_fmt(bits_string, sizeof(bits_string), step_complete.bits);
+		debug2("  before bits: %s", bits_string);
+#endif
+		bit_nset(step_complete.bits,
+			 first - (step_complete.rank+1),
+			 last - (step_complete.rank+1));
+#if 0
+		bit_fmt(bits_string, sizeof(bits_string), step_complete.bits);
+		debug2("  after bits: %s", bits_string);
+#endif
+	}
 	step_complete.step_rc = MAX(step_complete.step_rc, step_rc);
 	
 	/************* acct stuff ********************/

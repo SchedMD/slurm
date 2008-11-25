@@ -68,9 +68,11 @@
 #include "src/common/slurm_cred.h"
 
 /* 
- * Default credential information expiration window:
+ * Default credential information expiration window.
+ * Long enough for loading user environment, running prolog, 
+ * and dealing with the slurmd getting paged out of memory.
  */
-#define DEFAULT_EXPIRATION_WINDOW 600
+#define DEFAULT_EXPIRATION_WINDOW 1800
 
 #define MAX_TIME 0x7fffffff
 
