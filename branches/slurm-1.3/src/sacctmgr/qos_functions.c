@@ -95,6 +95,10 @@ static int _set_cond(int *start, int argc, char *argv[],
 						 argv[i]+end))
 				set = 1;
 		} else if(!strncasecmp (argv[i], "Ids", MAX(command_len, 1))) {
+			ListIterator itr = NULL;
+			char *temp = NULL;
+			uint32_t id = 0;
+
 			if(!qos_cond->id_list) {
 				qos_cond->id_list = 
 					list_create(slurm_destroy_char);
@@ -102,6 +106,17 @@ static int _set_cond(int *start, int argc, char *argv[],
 			if(slurm_addto_char_list(qos_cond->id_list, 
 						 argv[i]+end))
 				set = 1;
+
+			/* check to make sure user gave ints here */
+			itr = list_iterator_create(qos_cond->id_list);
+			while ((temp = list_next(itr))) {
+				if (get_uint(temp, &id, "QOS ID")
+				    != SLURM_SUCCESS) {
+					exit_code = 1;
+					list_delete_item(itr);
+				}
+			}
+			list_iterator_destroy(itr);
 		} else {
 			exit_code=1;
 			fprintf(stderr, " Unknown condition: %s\n"
