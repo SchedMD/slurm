@@ -69,7 +69,7 @@
 /* 
  * Default credential information expiration window:
  */
-#define DEFAULT_EXPIRATION_WINDOW 600
+#define DEFAULT_EXPIRATION_WINDOW 1800
 
 #define MAX_TIME 0x7fffffff
 
