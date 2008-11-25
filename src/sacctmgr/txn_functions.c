@@ -73,6 +73,10 @@ static int _set_cond(int *start, int argc, char *argv[],
 					    MAX(command_len, 1)))
 			  || (!strncasecmp (argv[i], "Txn",
 					    MAX(command_len, 1)))) {
+			ListIterator itr = NULL;
+			char *temp = NULL;
+			uint32_t id = 0;
+
 			if(!txn_cond->id_list)
 				txn_cond->id_list = 
 					list_create(slurm_destroy_char);
@@ -80,6 +84,17 @@ static int _set_cond(int *start, int argc, char *argv[],
 			if(slurm_addto_char_list(txn_cond->id_list, 
 						 argv[i]+end))
 				set = 1;
+
+			/* check to make sure user gave ints here */
+			itr = list_iterator_create(txn_cond->id_list);
+			while ((temp = list_next(itr))) {
+				if (get_uint(temp, &id, "Transaction ID")
+				    != SLURM_SUCCESS) {
+					exit_code = 1;
+					list_delete_item(itr);
+				}
+			}
+			list_iterator_destroy(itr);
 		} else if (!strncasecmp (argv[i], "Accounts",
 					 MAX(command_len, 3))) {
 			if(!txn_cond->acct_list)
