@@ -81,6 +81,7 @@
 #include "src/slurmctld/srun_comm.h"
 #include "src/slurmctld/trigger_mgr.h"
 
+#define BATCH_JOB_LAUNCH_TIME 1200	/* seconds for prolog & env var load */
 #define DETAILS_FLAG 0xdddd
 #define MAX_RETRIES  10
 #define SLURM_CREATE_JOB_FLAG_NO_ALLOCATE_0 0
@@ -4717,6 +4718,7 @@ static void _purge_lost_batch_jobs(int node_inx, time_t now)
 {
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
+	time_t recent = now - BATCH_JOB_LAUNCH_TIME;
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
@@ -4725,10 +4727,11 @@ static void _purge_lost_batch_jobs(int node_inx, time_t now)
 		if ((!job_active)                       ||
 		    (job_ptr->batch_flag == 0)          ||
 		    (job_ptr->time_last_active == now)  ||
+		    (job_ptr->start_time >= recent)     ||
 		    (node_inx != bit_ffs(job_ptr->node_bitmap)))
 			continue;
 
-		info("Master node lost JobId=%u, killing it", 
+		info("Batch JobId=%u missing from master node, killing it", 
 			job_ptr->job_id);
 		job_complete(job_ptr->job_id, 0, false, 0);
 	}
