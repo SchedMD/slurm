@@ -2148,6 +2148,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "id", "int not null auto_increment" },
 		{ "jobid", "mediumint unsigned not null" },
 		{ "associd", "mediumint unsigned not null" },
+		{ "wckey", "tinytext not null default ''" },
 		{ "uid", "smallint unsigned not null" },
 		{ "gid", "smallint unsigned not null" },
 		{ "cluster", "tinytext" },
@@ -8553,6 +8554,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 	int track_steps = 0;
 	char *block_id = NULL;
 	char *query = NULL;
+	char *wckey = NULL;
 	int reinit = 0;
 	time_t check_time = job_ptr->start_time;
 
@@ -8590,13 +8592,22 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 
 	if (job_ptr->name && job_ptr->name[0]) {
 		int i;
-		jname = xmalloc(strlen(job_ptr->name) + 1);
+		char *temp_jname = xstrdup(job_ptr->name);
+		char *temp = strchr(temp_jname, '\"');
+		if(temp) {
+			temp[0] = '\0';
+			temp++;
+			wckey = xstrdup(temp);
+		} 
+
+		jname = xmalloc(strlen(temp_jname) + 1);
 		for (i=0; job_ptr->name[i]; i++) {
-			if (isalnum(job_ptr->name[i]))
-				jname[i] = job_ptr->name[i];
+			if (isalnum(temp_jname[i]))
+				jname[i] = temp_jname[i];
 			else
 				jname[i] = '_';
 		}
+		xfree(temp_jname);
 	} else {
 		jname = xstrdup("allocation");
 		track_steps = 1;
@@ -8645,6 +8656,8 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 			xstrcat(query, "partition, ");
 		if(block_id) 
 			xstrcat(query, "blockid, ");
+		if(wckey) 
+			xstrcat(query, "wckey, ");
 		
 		xstrfmtcat(query, 
 			   "eligible, submit, start, name, track_steps, "
@@ -8661,6 +8674,8 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 			xstrfmtcat(query, "\"%s\", ", job_ptr->partition);
 		if(block_id) 
 			xstrfmtcat(query, "\"%s\", ", block_id);
+		if(wckey) 
+			xstrfmtcat(query, "\"%s\", ", wckey);
 		
 		xstrfmtcat(query, 
 			   "%d, %d, %d, \"%s\", %u, %u, %u, %u, %u) "
@@ -8683,6 +8698,8 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 				   job_ptr->partition);
 		if(block_id)
 			xstrfmtcat(query, ", blockid=\"%s\"", block_id);
+		if(wckey) 
+			xstrfmtcat(query, ", wckey=\"%s\"", wckey);
 		
 		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	try_again:
@@ -8706,13 +8723,14 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 				       job_table, nodes);
 
 		if(job_ptr->account) 
-			xstrfmtcat(query, "account=\"%s\", ",
-				   job_ptr->account);
+			xstrfmtcat(query, "account=\"%s\", ", job_ptr->account);
 		if(job_ptr->partition) 
 			xstrfmtcat(query, "partition=\"%s\", ",
 				   job_ptr->partition);
 		if(block_id)
 			xstrfmtcat(query, "blockid=\"%s\", ", block_id);
+		if(wckey) 
+			xstrfmtcat(query, "wckey=\"%s\", ", wckey);
 
 		xstrfmtcat(query, "start=%d, name=\"%s\", state=%u, "
 			   "alloc_cpus=%u, associd=%d where id=%d",
@@ -8726,6 +8744,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 
 	xfree(block_id);
 	xfree(jname);
+	xfree(wckey);
 
 	xfree(query);
 
