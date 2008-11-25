@@ -32,6 +32,10 @@ documents those changes that are of interest to users and admins.
     killing it (long delay could result from slurmd being paged out). Changed
     the log message from "Master node lost JobId=%u, killing it" to "Batch 
     JobId=%u missing from master node, killing it".
+ -- Avoid "Invalid node id" error when a job step within an existing job 
+    allocation specifies a node count which is less than the node count
+    allocated in order to satisfy the task count specification (e.g. 
+    "srun -n16 -N1 hostname" on allocation of 16 one-CPU nodes).
 
 * Changes in SLURM 1.3.10
 =========================
