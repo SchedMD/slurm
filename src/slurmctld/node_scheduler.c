@@ -278,6 +278,13 @@ static int _match_feature(char *seek, struct node_set *node_set_ptr)
  *	(uint16_t)NO_VAL	= default
  *	0			= exclusive
  *	1			= share=yes
+ *
+ * Return values:
+ *	0 = no sharing
+ *	1 = user requested sharing
+ *	2 = sharing enforced (either by partition or cons_res)
+ * (cons_res plugin needs to distinguish between "enforced" and
+ *  "requested" sharing)
  */
 static int
 _resolve_shared_status(uint16_t user_flag, uint16_t part_max_share,

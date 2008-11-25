@@ -228,7 +228,7 @@ extern bool cr_priority_selection_enabled()
 		if (strcmp(sched_type, "sched/gang") == 0)
 			cr_priority_selection = true;
 		xfree(sched_type);
-		cr_priority_selection = true;
+		cr_priority_test = true;
 	}
 	return cr_priority_selection;
 	
