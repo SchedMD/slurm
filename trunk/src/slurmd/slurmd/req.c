@@ -636,7 +636,7 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 	 */
 	if ((rc = slurm_cred_verify(conf->vctx, cred, &arg)) < 0) {
 		verified = false;
-		if (!user_ok)
+		if ((!user_ok) || (errno != ESLURMD_INVALID_JOB_CREDENTIAL))
 			return SLURM_ERROR;
 		else {
 			debug("_check_job_credential slurm_cred_verify failed:"

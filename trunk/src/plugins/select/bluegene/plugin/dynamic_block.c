@@ -350,7 +350,6 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 {
 	bg_record_t *found_record = NULL;
 	int small_size = 4;
-	ListIterator itr = NULL;
 	ba_node_t *new_ba_node = NULL;
 	ba_node_t *ba_node = NULL;
 	found_record = (bg_record_t*) xmalloc(sizeof(bg_record_t));
@@ -359,12 +358,16 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 	found_record->user_name = xstrdup(bg_record->user_name);
 	found_record->user_uid = bg_record->user_uid;
 	found_record->bg_block_list = list_create(destroy_ba_node);
-	itr = list_iterator_create(bg_record->bg_block_list);
-	ba_node = list_next(itr);
-	list_iterator_destroy(itr);
-	if(!ba_node)
-		error("you gave me a list with no ba_nodes");
-	else {
+	ba_node = list_peek(bg_record->bg_block_list);
+	if(!ba_node) {
+		hostlist_t hl = hostlist_create(bg_record->nodes);
+		char *host = hostlist_shift(hl);
+		hostlist_destroy(hl);
+		found_record->nodes = xstrdup(host);
+		free(host);
+		error("you gave me a list with no ba_nodes using %s", 
+		      found_record->nodes);
+	} else {
 		int i=0,j=0;
 		new_ba_node = ba_copy_node(ba_node);
 		for (i=0; i<BA_SYSTEM_DIMENSIONS; i++){
@@ -382,8 +385,13 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 		}
 		list_append(found_record->bg_block_list, new_ba_node);
 		found_record->bp_count = 1;
+		found_record->nodes = xstrdup_printf(
+			"%s%c%c%c", 
+			bg_slurm_node_prefix, 
+			alpha_num[ba_node->coord[X]],
+			alpha_num[ba_node->coord[Y]],
+			alpha_num[ba_node->coord[Z]]);
 	}
-	found_record->nodes = xstrdup(bg_record->nodes);
 
 	found_record->blrtsimage = xstrdup(bg_record->blrtsimage);
 	found_record->linuximage = xstrdup(bg_record->linuximage);
@@ -414,22 +422,29 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 					bitstr_t *ionodes, int size)
 {
 	bg_record_t *found_record = NULL;
-	ListIterator itr = NULL;
 	ba_node_t *new_ba_node = NULL;
 	ba_node_t *ba_node = NULL;
+#ifdef HAVE_BGL
+	int small_size = 4;
+#else
 	char bitstring[BITSIZE];
+#endif
 	found_record = (bg_record_t*) xmalloc(sizeof(bg_record_t));
 				
 	found_record->job_running = NO_JOB_RUNNING;
 	found_record->user_name = xstrdup(bg_record->user_name);
 	found_record->user_uid = bg_record->user_uid;
 	found_record->bg_block_list = list_create(destroy_ba_node);
-	itr = list_iterator_create(bg_record->bg_block_list);
-	ba_node = list_next(itr);
-	list_iterator_destroy(itr);
-	if(!ba_node)
-		error("you gave me a list with no ba_nodes");
-	else {
+	ba_node = list_peek(bg_record->bg_block_list);
+	if(!ba_node) {
+		hostlist_t hl = hostlist_create(bg_record->nodes);
+		char *host = hostlist_shift(hl);
+		hostlist_destroy(hl);
+		found_record->nodes = xstrdup(host);
+		free(host);
+		error("you gave me a list with no ba_nodes using %s", 
+		      found_record->nodes);
+	} else {
 		int i=0,j=0;
 		new_ba_node = ba_copy_node(ba_node);
 		for (i=0; i<BA_SYSTEM_DIMENSIONS; i++){
@@ -447,8 +462,13 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 		}
 		list_append(found_record->bg_block_list, new_ba_node);
 		found_record->bp_count = 1;
+		found_record->nodes = xstrdup_printf(
+			"%s%c%c%c", 
+			bg_slurm_node_prefix, 
+			alpha_num[ba_node->coord[X]],
+			alpha_num[ba_node->coord[Y]],
+			alpha_num[ba_node->coord[Z]]);
 	}
-	found_record->nodes = xstrdup(bg_record->nodes);
 #ifdef HAVE_BGL
 	found_record->blrtsimage = xstrdup(bg_record->blrtsimage);
 #endif
@@ -462,7 +482,17 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 				
 #ifdef HAVE_BGL
 	found_record->node_use = SELECT_COPROCESSOR_MODE;
-#endif
+	if(nodecard != (uint16_t) NO_VAL)
+		small_size = bluegene_bp_nodecard_cnt;
+	found_record->cpus_per_bp = procs_per_node/small_size;
+	found_record->node_cnt = bluegene_bp_node_cnt/small_size;
+	found_record->quarter = quarter; 
+	found_record->nodecard = nodecard;
+	
+	if(set_ionodes(found_record) == SLURM_ERROR) 
+		error("couldn't create ionode_bitmap for %d.%d",
+		      found_record->quarter, found_record->nodecard);
+#else
 	xassert(bluegene_proc_ratio);
 	found_record->cpus_per_bp = bluegene_proc_ratio * size;
 	found_record->node_cnt = size;
@@ -470,6 +500,7 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 	found_record->ionode_bitmap = bit_copy(ionodes);
 	bit_fmt(bitstring, BITSIZE, found_record->ionode_bitmap);
 	found_record->ionodes = xstrdup(bitstring);
+#endif
 	return found_record;
 }
 #endif

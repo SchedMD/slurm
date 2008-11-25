@@ -1455,7 +1455,7 @@ static void _set_pbs_options(int argc, char **argv)
 			break;
 		case 'm':
 			opt.mail_type |= _parse_pbs_mail_type(optarg);
-			if (opt.mail_type == 0)
+			if ((opt.mail_type == 0) && strcasecmp(optarg, "n"))
 				fatal("-m=%s invalid", optarg);
 			break;
 		case 'M':

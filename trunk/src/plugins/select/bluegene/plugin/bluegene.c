@@ -245,8 +245,6 @@ extern void fini_bg(void)
  */
 extern bool blocks_overlap(bg_record_t *rec_a, bg_record_t *rec_b)
 {
-	bitstr_t *my_bitmap = NULL;
-
 	if((rec_a->bp_count > 1) && (rec_b->bp_count > 1)) {
 		/* Test for conflicting passthroughs */
 		reset_ba_system(false);
@@ -257,13 +255,8 @@ extern bool blocks_overlap(bg_record_t *rec_a, bg_record_t *rec_b)
 	}
 	
 	
-	my_bitmap = bit_copy(rec_a->bitmap);
-	bit_and(my_bitmap, rec_b->bitmap);
-	if (bit_ffs(my_bitmap) == -1) {
-		FREE_NULL_BITMAP(my_bitmap);
+	if (!bit_overlap(rec_a->bitmap, rec_b->bitmap)) 
 		return false;
-	}
-	FREE_NULL_BITMAP(my_bitmap);
 
 #ifdef HAVE_BGL
 
@@ -281,20 +274,12 @@ extern bool blocks_overlap(bg_record_t *rec_a, bg_record_t *rec_b)
 		}
 	}
 #else
-	if((rec_a->node_cnt >= bluegene_bp_node_cnt
-	    && rec_b->node_cnt < bluegene_bp_node_cnt)
-	   ||(rec_b->node_cnt >= bluegene_bp_node_cnt
-	      && rec_a->node_cnt < bluegene_bp_node_cnt))
+	if((rec_a->node_cnt >= bluegene_bp_node_cnt)
+	   || (rec_b->node_cnt >= bluegene_bp_node_cnt))
 		return true;
-
-	my_bitmap = bit_copy(rec_a->ionode_bitmap);
-	bit_and(my_bitmap, rec_b->ionode_bitmap);
-	if (bit_ffs(my_bitmap) == -1) {
-		FREE_NULL_BITMAP(my_bitmap);
+	
+	if (!bit_overlap(rec_a->ionode_bitmap, rec_b->ionode_bitmap)) 
 		return false;
-	}
-	FREE_NULL_BITMAP(my_bitmap);
-
 #endif	
 	return true;
 }

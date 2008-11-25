@@ -112,8 +112,7 @@ Buf create_buf(char *data, int size)
 void free_buf(Buf my_buf)
 {
 	assert(my_buf->magic == BUF_MAGIC);
-	if (my_buf->head)
-		xfree(my_buf->head);
+	xfree(my_buf->head);
 	xfree(my_buf);
 }
 
@@ -144,7 +143,6 @@ Buf init_buf(int size)
 	my_buf->size = size;
 	my_buf->processed = 0;
 	my_buf->head = xmalloc(sizeof(char)*size);
-	memset(my_buf->head, 0, size);
 	return my_buf;
 }
 

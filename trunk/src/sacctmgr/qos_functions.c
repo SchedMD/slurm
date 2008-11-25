@@ -46,6 +46,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 	int set = 0;
 	int end = 0;
 	int command_len = 0;
+	int option = 0;
 
 	if(!qos_cond) {
 		error("No qos_cond given");
@@ -56,8 +57,13 @@ static int _set_cond(int *start, int argc, char *argv[],
 		end = parse_option_end(argv[i]);
 		if(!end)
 			command_len=strlen(argv[i]);
-		else
+		else {
 			command_len=end-1;
+			if(argv[i][end] == '=') {
+				option = (int)argv[i][end-1];
+				end++;
+			}
+		}
 
 		if (!strncasecmp (argv[i], "Set", MAX(command_len, 3))) {
 			i--;
@@ -70,7 +76,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 		} else if(!end
 			  || !strncasecmp (argv[i], "Names",
 					   MAX(command_len, 1))
-			  || !strncasecmp (argv[i], "QOS",
+			  || !strncasecmp (argv[i], "QOSLevel",
 					   MAX(command_len, 1))) {
 			if(!qos_cond->name_list) {
 				qos_cond->name_list = 
@@ -117,13 +123,19 @@ static int _set_rec(int *start, int argc, char *argv[],
 	int set = 0;
 	int end = 0;
 	int command_len = 0;
+	int option = 0;
 
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
 		if(!end)
 			command_len=strlen(argv[i]);
-		else
+		else {
 			command_len=end-1;
+			if(argv[i][end] == '=') {
+				option = (int)argv[i][end-1];
+				end++;
+			}
+		}
 
 		if (!strncasecmp (argv[i], "Where", MAX(command_len, 5))) {
 			i--;
@@ -251,7 +263,6 @@ static int _set_rec(int *start, int argc, char *argv[],
 			}
 		} else if (!strncasecmp (argv[i], "Preemptee", 
 					 MAX(command_len, 9))) {
-			int option = 0;
 			if(!qos)
 				continue;
 
@@ -263,11 +274,6 @@ static int _set_rec(int *start, int argc, char *argv[],
 				qos_list = acct_storage_g_get_qos(
 					db_conn, my_uid, NULL);
 						
-			if(end > 2 && argv[i][end-1] == '='
-			   && (argv[i][end-2] == '+' 
-			       || argv[i][end-2] == '-'))
-				option = (int)argv[i][end-2];
-
 			if(addto_qos_char_list(qos->preemptee_list,
 					       qos_list, argv[i]+end, option))
 				set = 1;
@@ -275,7 +281,6 @@ static int _set_rec(int *start, int argc, char *argv[],
 				exit_code = 1;
 		} else if (!strncasecmp (argv[i], "Preemptor",
 					 MAX(command_len, 9))) {
-			int option = 0;
 			if(!qos)
 				continue;
 
@@ -287,11 +292,6 @@ static int _set_rec(int *start, int argc, char *argv[],
 				qos_list = acct_storage_g_get_qos(
 					db_conn, my_uid, NULL);
 						
-			if(end > 2 && argv[i][end-1] == '='
-			   && (argv[i][end-2] == '+' 
-			       || argv[i][end-2] == '-'))
-				option = (int)argv[i][end-2];
-
 			if(addto_qos_char_list(qos->preemptor_list,
 					       qos_list, argv[i]+end, option))
 				set = 1;

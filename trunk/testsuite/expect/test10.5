@@ -83,10 +83,6 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "NODE_USE" {
-		incr matches
-		exp_continue
-	}
 	-re "NODES" {
 		incr matches
 		exp_continue
@@ -127,7 +123,7 @@ if {$non_bg != 0} {
 	send_user "\nWARNING: Must be on a BG SYSTEM to run this command\n"
 	exit 0
 }
-if {$matches != 9} {
+if {$matches != 8} {
 	send_user "\nFAILURE: smap bg partition display in curses mode\n"
 	set exit_code 1
 }

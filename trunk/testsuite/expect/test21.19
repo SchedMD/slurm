@@ -809,7 +809,7 @@ proc _add_coor { accounts names } {
 	set command "$names"
 
 	if { [string length $accounts] } {
-		set command "$command accounts=$accounts"
+		set command "$command account=$accounts"
 	}
 
 #	if { [string length $names] } {
