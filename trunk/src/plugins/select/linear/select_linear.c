@@ -135,6 +135,8 @@ static struct node_record *select_node_ptr = NULL;
 static int select_node_cnt = 0;
 static uint16_t select_fast_schedule;
 static uint16_t cr_type;
+static bool cr_priority_test      = false;
+static bool cr_priority_selection = false;
 
 static struct node_cr_record *node_cr_ptr = NULL;
 static pthread_mutex_t cr_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -239,6 +241,19 @@ static int _fini_status_pthread(void)
 	return rc;
 }
 #endif
+
+static inline bool _cr_priority_selection_enabled(void)
+{
+	if (!cr_priority_test) {
+		char *sched_type = slurm_get_sched_type();
+		if (strcmp(sched_type, "sched/gang") == 0)
+			cr_priority_selection = true;
+		xfree(sched_type);
+		cr_priority_test = true;
+	}
+	return cr_priority_selection;
+	
+}
 
 static bool _enough_nodes(int avail_nodes, int rem_nodes, 
 		uint32_t min_nodes, uint32_t req_nodes)
@@ -556,7 +571,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	}
 
 	if (mode != SELECT_MODE_TEST_ONLY) {
-		if (job_ptr->details->shared == 1) {
+		if (job_ptr->details->shared) {
 			max_share = job_ptr->part_ptr->max_share & 
 					~SHARED_FORCE;
 		} else	/* ((shared == 0) || (shared == (uint16_t) NO_VAL)) */
@@ -575,6 +590,8 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		job_ptr->details->job_min_memory = 0;
 	}
 
+	debug3("select/linear: job_test: job %u max_share %d avail nodes %u",
+		job_ptr->job_id, max_share, bit_set_count(bitmap));
 	orig_map = bit_copy(bitmap);
 	for (max_run_job=min_share; max_run_job<max_share; max_run_job++) {
 		bool last_iteration = (max_run_job == (max_share -1));
@@ -586,6 +603,8 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 					      orig_map, bitmap, 
 					      max_run_job, 
 					      max_run_job + sus_jobs);
+			debug3("select/linear: job_test: found %d nodes for %u",
+				j, job_ptr->job_id);
 			if ((j == prev_cnt) || (j < min_nodes))
 				continue;
 			prev_cnt = j;
@@ -697,9 +716,59 @@ static int _job_count_bitmap(struct node_cr_record *node_cr_ptr,
 		}
 
 		if ((run_job_cnt != NO_SHARE_LIMIT) &&
+		    (!_cr_priority_selection_enabled()) &&
 		    (node_cr_ptr[i].exclusive_jobid != 0)) {
 			/* already reserved by some exclusive job */
 			bit_clear(jobmap, i);
+			continue;
+		}
+
+		if (_cr_priority_selection_enabled()) {
+			/* clear this node if any higher-priority
+			 * partitions have existing allocations */
+			total_jobs = 0;
+			part_cr_ptr = node_cr_ptr[i].parts;
+			for( ;part_cr_ptr; part_cr_ptr = part_cr_ptr->next) {
+				if (part_cr_ptr->part_ptr->priority <=
+				    job_ptr->part_ptr->priority)
+					continue;
+				total_jobs += part_cr_ptr->tot_job_cnt;
+			}
+			if ((run_job_cnt != NO_SHARE_LIMIT) &&
+			    (total_jobs > 0)) {
+				bit_clear(jobmap, i);
+				continue;
+			}
+			/* if not sharing, then check with other partitions
+			 * of equal priority. Otherwise, load-balance within
+			 * the local partition */
+			total_jobs = 0;
+			total_run_jobs = 0;
+			part_cr_ptr = node_cr_ptr[i].parts;
+			for( ; part_cr_ptr; part_cr_ptr = part_cr_ptr->next) {
+				if (part_cr_ptr->part_ptr->priority !=
+				    job_ptr->part_ptr->priority)
+					continue;
+				if (!job_ptr->details->shared) {
+					total_run_jobs +=
+						      part_cr_ptr->run_job_cnt;
+					total_jobs += part_cr_ptr->tot_job_cnt;
+					continue;
+				}
+				if (part_cr_ptr->part_ptr == job_ptr->part_ptr){
+					total_run_jobs +=
+						      part_cr_ptr->run_job_cnt;
+					total_jobs += part_cr_ptr->tot_job_cnt;
+					break;
+				}
+			}
+			if ((total_run_jobs <= run_job_cnt) &&
+			    (total_jobs     <= tot_job_cnt)) {
+				bit_set(jobmap, i);
+				count++;
+			} else {
+				bit_clear(jobmap, i);
+			}
 			continue;
 		}
 

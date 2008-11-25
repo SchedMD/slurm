@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.4.0-pre6
 =============================
+ -- Fix job preemption when sched/gang and select/linear are configured with
+    non-sharing partitions.
 
 * Changes in SLURM 1.4.0-pre5
 =============================
