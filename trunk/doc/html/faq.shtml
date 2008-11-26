@@ -32,6 +32,7 @@ killed?</a></li>
 <li><a href="#arbitrary">How do I run specific tasks on certain nodes
 in my allocation?</a></li> 
 </ol>
+
 <h2>For Administrators</h2>
 <ol>
 <li><a href="#suspend">How is job suspend/resume useful?</a></li>
@@ -93,7 +94,10 @@ regular database plugins?</li>
 information between major SLURM updates?</li>
 <li><a href="#health_check">Why doesn't the <i>HealthCheckProgram</i>
 execute on DOWN nodes?</li>
+<li><a href="#batch_lost">What is the meaning of the error 
+&quot;Batch JobId=# missing from master node, killing it&quot;?</a></li>
 </ol>
+
 
 <h2>For Users</h2>
 <p><a name="comp"><b>1. Why is my job/node in COMPLETING state?</b></a><br>
@@ -1079,8 +1083,21 @@ Index: src/slurmctld/ping_nodes.c
                         continue;
 </pre>
 
+<p><a name="batch_lost"><b>32. What is the meaning of the error 
+&quot;Batch JobId=# missing from master node, killing it&quot;?</b><br>
+A shell is launched on node zero of a job's allocation to execute
+the submitted program. The <i>slurmd</i> daemon executing on each compute
+node will periodically report to the <i>slurmctld</i> what programs it
+is executing. If a batch program is expected to be running on some
+node (i.e. node zero of the job's allocation) and is not found, the
+message above will be logged and the job cancelled. This typically is 
+associated with exhausting memory on the node or some other critical 
+failure that can not be recovered from. The equivalent message in 
+earlier releases of slurm is 
+&quot;Master node lost JobId=#, killing it&quot;.
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 24 October 2008</p>
+<p style="text-align:center;">Last modified 26 November 2008</p>
 
 <!--#include virtual="footer.txt"-->
