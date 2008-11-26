@@ -59,9 +59,6 @@
 /* Request that nodes re-register at most every MAX_REG_FREQUENCY pings */
 #define MAX_REG_FREQUENCY 20
 
-/* Spawn no more than MAX_REG_THREADS for node re-registration */
-#define MAX_REG_THREADS   DEFAULT_TREE_WIDTH
-
 static pthread_mutex_t lock_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int ping_count = 0;
 
@@ -120,6 +117,10 @@ void ping_end (void)
 void ping_nodes (void)
 {
 	static int offset = 0;	/* mutex via node table write lock on entry */
+	static int max_reg_threads = 0;	/* max node registration threads
+					 * this can include DOWN nodes, so 
+					 * limit the number to avoid huge
+					 * communication delays */
 	int i;
 	time_t now, still_live_time, node_dead_time;
 	static time_t last_ping_time = (time_t) 0;
@@ -161,9 +162,12 @@ void ping_nodes (void)
 	still_live_time = now - (slurmctld_conf.slurmd_timeout / 3);
 	last_ping_time  = now;
 
-	offset += MAX_REG_THREADS;
+	if (max_reg_threads == 0) {
+		max_reg_threads = MAX(slurm_get_tree_width(), 1);
+	}
+	offset += max_reg_threads;
 	if ((offset > node_record_count) && 
-	    (offset >= (MAX_REG_THREADS * MAX_REG_FREQUENCY)))
+	    (offset >= (max_reg_threads * MAX_REG_FREQUENCY)))
 		offset = 0;
 
 	for (i = 0; i < node_record_count; i++) {
@@ -210,7 +214,7 @@ void ping_nodes (void)
 		 * once in a while). We limit these requests since they 
 		 * can generate a flood of incomming RPCs. */
 		if ((base_state == NODE_STATE_UNKNOWN) || restart_flag ||
-		    ((i >= offset) && (i < (offset + MAX_REG_THREADS)))) {
+		    ((i >= offset) && (i < (offset + max_reg_threads)))) {
 			hostlist_push(reg_agent_args->hostlist, 
 				      node_ptr->name);
 			reg_agent_args->node_count++;
