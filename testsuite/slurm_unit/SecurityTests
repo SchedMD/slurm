@@ -103,6 +103,34 @@ $ scontrol update jobid=1784601 timelimit=4
 slurm_update error: Invalid user id
 
 
+Test 2.2.4   Verify SLURM's wiki interface is secure
+====================================================
+SLURM's wiki interface is used by Moab to start and modify user jobs and is 
+protected by a digital signature. This test confirms that attempts to use the 
+wiki interface without the proper signature will fail. First we need to build
+the test then execute it. The build lines vary by architecture.
+NOTE: Insure the event is logged in SlurmctldLogFile for test 2.4 verification.
+For BlueGene:
+$ gcc -m64 -L/usr/lib64 -lslurm -osecurity_2_2_4 security_2_2_4.c
+For peleton:
+$ cc -L/usr/lib64 -lslurm -osecurity_2_2_4 security_2_2_4.c
+For other Linux systems:
+$ cc -lslurm -osecurity_2_2_4 security_2_2_4.c
+Then execute thus:
+$ ./security_2_2_4
+Bad checksum reported
+SUCCESS
+
+For AIX only (I am having linking problems. This work-around will work):
+$ export OBJECT_MODE=32
+$ AIX=1 gcc -I/opt/freeware/include -L/opt/freeware/lib -lslurm -osecurity_2_2_4 -pthread security_2_2_4.c
+$ scontrol show config | grep ControlAddr  (substitute the value in execution below)
+Then execute thus:
+$ ./security_2_2_4 <ControlAddr>
+Bad checksum reported
+SUCCESS
+
+
 Test 2.3     Verify that trigger program runs a the proper user
 ===============================================================
 Since SlurmUser is not root at LLNL, this is a no-op for now. Test by 
@@ -131,4 +159,7 @@ From test 2.2.2:
 From test 2.2.3:
 [Dec 01 11:56:21] error: Security violation, JOB_CANCEL RPC from uid 7558
 [Dec 01 11:57:35] error: Security violation, JOB_UPDATE RPC from uid 7558
+
+From test 2.2.4:
+[Dec 01 12:24:55] error: wiki: message checksum error
 
