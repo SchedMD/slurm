@@ -1,0 +1,59 @@
+LLNL Security Tests
+1 December 2008
+
+Unless otherwise noted. Tests are run as normal user (not user root or
+SlurmUser).
+
+
+Test 1.1     Verify file permissions
+Execute "slurmctld/security_1_1.py" and check for errors. If the installation
+directory is not "/usr" and the configuration directory not "/etc/slurm" then
+specify the appropriate locations using the "--prefix" and "--sysconfdir" 
+options. It's last line will be "SUCCESS" if there were no errors and 
+"FAILURE" otherwise. File which do not exist or their directories can not
+be read are noted as "WARNING:". Some warnings are expected unless a complete
+SLURM installation (all RPMs) is performed and the test is executed as user
+root. The output near the top with a prefix of "NOTE:" describes these cases.
+$ ./slurmctld/security_1_1.py --prefix=/usr --sysconfdir=/etc/slurm
+NOTE: slurm_epilog and slurm_prolog only exist on BlueGene systems
+NOTE: federation.conf only exists on AIX systems
+NOTE: sview, slurmdbd and slurmdbd.conf exists only on selected systems
+NOTE: JobCredentialPrivateKey, SlurmctldLogFile, and StateSaveLocation only on control host
+NOTE: SlurmdLogFile and SlurmdSpoolDir only exist on compute servers
+Ensuring the following are not world writable:
+OK: 755 /etc/slurm
+OK: 444 /etc/slurm/slurm.conf
+WARNING: Unable to stat /etc/slurm/bluegene.conf
+...
+OK: 755 /usr/lib/slurm/proctrack_sgi_job.so
+OK: 755 /usr/lib/slurm/checkpoint_ompi.so
+Ensuring the following are not world readable:
+WARNING: Unable to stat /etc/slurm/slurm.private.key  < only on control hosts
+WARNING: Unable to stat /etc/slurm/slurmdbd.conf      < only on slurmdbd host
+WARNING: Unable to stat /etc/slurm/wiki.conf          < only on control host
+SUCCESS
+
+
+Test 1.2     Verify that SlurmUser is unique
+Execute "slurmctld/security_1_2.bash" and check for errors. Make sure that the
+"scontrol" program is in your default search path or modify the script. It's 
+last line of output will be "SUCCESS" if there were no errors and "FAILURE" 
+otherwise.
+$ ./slurmctld/security_1_2.bash
+slurm:x:97:97:Slurm user:/var/slurm:/bin/false
+SUCCESS
+
+
+Test 2.1     Verify that unauthenticated requests are rejected
+Execute "slurmctld/security_2_1.bash" and check for errors. Make sure that the
+"scontrol" program is in your default search path or modify the script. It's 
+last line of output will be "SUCCESS" if there were no errors and "FAILURE" 
+otherwise. Note that srun errors are expected due to authentication failure.
+$ ./slurmctld/security_2_1.bash
+srun: warning: auth/dummy plugin selected
+srun: warning: auth/dummy plugin selected
+srun: warning: auth/dummy plugin selected
+srun: error: slurm_receive_msg: Zero Bytes were transmitted or received
+srun: error: Unable to allocate resources: Zero Bytes were transmitted or received
+srun errors above are expected
+SUCCESS
