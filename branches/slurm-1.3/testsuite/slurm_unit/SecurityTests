@@ -1,11 +1,12 @@
 LLNL Security Tests
 1 December 2008
 
-Unless otherwise noted. Tests are run as normal user (not user root or
+Unless otherwise noted. Run all tests as a normal user (not user root or
 SlurmUser).
 
 
 Test 1.1     Verify file permissions
+====================================
 Execute "slurmctld/security_1_1.py" and check for errors. If the installation
 directory is not "/usr" and the configuration directory not "/etc/slurm" then
 specify the appropriate locations using the "--prefix" and "--sysconfdir" 
@@ -35,6 +36,7 @@ SUCCESS
 
 
 Test 1.2     Verify that SlurmUser is unique
+============================================
 Execute "slurmctld/security_1_2.bash" and check for errors. Make sure that the
 "scontrol" program is in your default search path or modify the script. It's 
 last line of output will be "SUCCESS" if there were no errors and "FAILURE" 
@@ -45,10 +47,12 @@ SUCCESS
 
 
 Test 2.1     Verify that unauthenticated requests are rejected
+==============================================================
 Execute "slurmctld/security_2_1.bash" and check for errors. Make sure that the
 "scontrol" program is in your default search path or modify the script. It's 
 last line of output will be "SUCCESS" if there were no errors and "FAILURE" 
 otherwise. Note that srun errors are expected due to authentication failure.
+NOTE: Insure the event is logged in SlurmctldLogFile for test 2.4 verification.
 $ ./slurmctld/security_2_1.bash
 srun: warning: auth/dummy plugin selected
 srun: warning: auth/dummy plugin selected
@@ -57,3 +61,74 @@ srun: error: slurm_receive_msg: Zero Bytes were transmitted or received
 srun: error: Unable to allocate resources: Zero Bytes were transmitted or received
 srun errors above are expected
 SUCCESS
+
+
+Test 2.2.1   Verify that normal user can't reconfigure the system
+=================================================================
+Execute "scontrol reconfig".
+NOTE: Insure the event is logged in SlurmctldLogFile for test 2.4 verification.
+$ scontrol reconfig
+slurm_reconfigure error: Invalid user id
+
+
+Test 2.2.2   Verify that jobs can't be run as another user
+==========================================================
+First run a job as ourself and they try to do so as another user. On some
+systems the pdebug partition should be specified. On BlueGene systems a 
+batch script must be submitted (use "sbatch --partition=pdebug security_2_2_2.sh")
+NOTE: Insure the event is logged in SlurmctldLogFile for test 2.4 verification.
+
+Linux/AIX example:
+$ srun --partition=pdebug id
+uid=5136(jette) gid=5136(jette) groups=902(pcs),1153(bgldev),1310(aixdev),5136(jette)
+$ srun --partition=pdebug --uid=0 id
+srun: error: Unable to allocate resources: Invalid user id
+
+BlueGene example:
+$ sbatch --partition=pdebug security_2_2_2.sh
+sbatch: Submitted batch job 1784597
+$ sbatch --partition=pdebug --uid=0 security_2_2_2.sh
+sbatch: error: Batch job submission failed: Invalid user id
+
+
+Test 2.2.3   Verify that one user can't modify another user's job
+=================================================================
+Submit a job as one user then try to cancel or modify it as another user:
+$ sbatch --partition=pdebug security_2_2_2.sh
+sbatch: Submitted batch job 1784601
+FROM A DIFFERENT USER (NOT root or SlurmUser):
+$ scancel 1784601
+scancel: error: Kill job error on job id 1784601: Access denied
+$ scontrol update jobid=1784601 timelimit=4
+slurm_update error: Invalid user id
+
+
+Test 2.3     Verify that trigger program runs a the proper user
+===============================================================
+Since SlurmUser is not root at LLNL, this is a no-op for now. Test by 
+executing "slurmctld/security_2_3.sh".
+$ slurmctld/security_2_3.sh
+Executing:
+strigger --set --idle --offset=0 --program=/g/g0/jette/slurm-1.3.way/testsuite/slurm_unit/slurmctld/security_2_3_in
+slurm_set_trigger: Operation not permitted
+If this failure is a security violation, that's fine
+
+
+Test 2.4     Verify security violations are logged
+==================================================
+From test 2.1:
+[Dec 01 11:41:23] error: authentication: authentication type mismatch
+[Dec 01 11:41:23] error: slurm_receive_msg: Header lengths are longer than data received
+[Dec 01 11:41:23] error: slurm_receive_msg: Header lengths are longer than data received
+
+From test 2.2.1:
+[Dec 01 11:41:45] error: Security violation, RECONFIGURE RPC from uid=5136
+[Dec 01 11:41:45] error: _slurm_rpc_reconfigure_controller: Invalid user id
+
+From test 2.2.2:
+[Dec 01 11:47:06] error: Security violation, RESOURCE_ALLOCATE from uid=5136
+
+From test 2.2.3:
+[Dec 01 11:56:21] error: Security violation, JOB_CANCEL RPC from uid 7558
+[Dec 01 11:57:35] error: Security violation, JOB_UPDATE RPC from uid 7558
+
