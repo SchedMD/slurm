@@ -805,6 +805,7 @@ static void _lllp_generate_cpu_bind(launch_tasks_request_msg_t *req,
 	req->cpu_bind_type &= ~CPU_BIND_TO_THREADS;
 	req->cpu_bind_type &= ~CPU_BIND_TO_CORES;
 	req->cpu_bind_type &= ~CPU_BIND_TO_SOCKETS;
+	req->cpu_bind_type &= ~CPU_BIND_TO_LDOMS;
 
 	slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
 	info("_lllp_generate_cpu_bind jobid [%u]: %s, %s",
