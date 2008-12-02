@@ -397,6 +397,10 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 
 
 			a_usage->a_cpu += seconds * row_acpu;
+
+			/* do the wckey calculation */
+			if(!row[JOB_REQ_WCKEY] || !row[JOB_REQ_WCKEY][0]) 
+				goto calc_cluster;
 			
 			list_iterator_reset(w_itr);
 			while((w_usage = list_next(w_itr))) 
@@ -408,10 +412,12 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				w_usage->wckey = xstrdup(row[JOB_REQ_WCKEY]);
 				list_append(wckey_usage_list, w_usage);
 			}
+
 			w_usage->a_cpu += seconds * row_acpu;
 
+			/* do the cluster allocated calculation */
 		calc_cluster:
-			if(!row[JOB_REQ_CLUSTER]) 
+			if(!row[JOB_REQ_CLUSTER] || !row[JOB_REQ_CLUSTER][0]) 
 				continue;
 			
 			list_iterator_reset(c_itr);
