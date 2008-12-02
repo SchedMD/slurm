@@ -521,15 +521,15 @@ static int _check_coord_request(acct_user_cond_t *user_cond, bool check)
 		return SLURM_ERROR;
 	}
 
-	if(!check && (!user_cond->assoc_cond->user_list
-		      || !list_count(user_cond->assoc_cond->user_list))) {
+	if(check && (!user_cond->assoc_cond->user_list
+		     || !list_count(user_cond->assoc_cond->user_list))) {
 		exit_code=1;
 		fprintf(stderr, " You need to specify a user list here.\n"); 
 		return SLURM_ERROR;	
 	}
-
-	if(!check && (!user_cond->assoc_cond->acct_list
-		      || !list_count(user_cond->assoc_cond->acct_list))) {
+	
+	if(check && (!user_cond->assoc_cond->acct_list
+		     || !list_count(user_cond->assoc_cond->acct_list))) {
 		exit_code=1;
 		fprintf(stderr, " You need to specify a account list here.\n"); 
 		return SLURM_ERROR;	
