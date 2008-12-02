@@ -1189,7 +1189,9 @@ static void *_slurmctld_background(void *no_data)
 				unlock_slurmctld(node_write_lock);
 			} else if (!msg_sent) {
 				/* log failure once per ping_nodes() call */
-				error("Node ping may be hung");
+				error("Node ping apparently hung, "
+				      "many nodes may be DOWN or configured "
+				      "SlurmdTimeout should be increased");
 				msg_sent = true;
 			}
 		}

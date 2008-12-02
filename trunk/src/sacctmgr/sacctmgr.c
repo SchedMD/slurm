@@ -575,7 +575,8 @@ static void _show_it (int argc, char *argv[])
 		fprintf(stderr, "No valid entity in list command\n");
 		fprintf(stderr, "Input line must include ");
 		fprintf(stderr, "\"Account\", \"Association\", ");
-		fprintf(stderr, "\"Cluster\", \"QOS\", or \"User\"\n");
+		fprintf(stderr, "\"Cluster\", \"QOS\", \"Transaction\", ");
+		fprintf(stderr, "or \"User\"\n");
 	} 
 	
 	if (error_code == SLURM_ERROR) {
@@ -615,8 +616,7 @@ static void _modify_it (int argc, char *argv[])
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in modify command\n");
 		fprintf(stderr, "Input line must include ");
-		fprintf(stderr, "\"Account\", ");
-		fprintf(stderr, "\"Cluster\", or \"User\"\n");
+		fprintf(stderr, "\"Account\", \"Cluster\", or \"User\"\n");
 	}
 
 	if (error_code == SLURM_ERROR) {

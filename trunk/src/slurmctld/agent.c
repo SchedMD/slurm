@@ -474,6 +474,8 @@ static void _update_wdog_state(thd_t *thread_ptr,
 			       thread_ptr->thread);
 			if (pthread_kill(thread_ptr->thread, SIGUSR1) == ESRCH)
 				*state = DSH_NO_RESP;
+			else
+				thread_ptr->end_time += COMMAND_TIMEOUT;
 		}
 		break;
 	case DSH_NEW:

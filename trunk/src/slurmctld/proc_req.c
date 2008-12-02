@@ -1951,9 +1951,14 @@ static void _slurm_rpc_step_layout(slurm_msg_t *msg)
 	/* return result */
 	if (error_code || (job_ptr == NULL)) {
 		unlock_slurmctld(job_read_lock);
-		debug2("_slurm_rpc_step_layout: JobId=%u, uid=%u: %s",
-			req->job_id, uid, 
-			slurm_strerror(error_code));
+		if (error_code == ESLURM_ACCESS_DENIED) {
+			error("Security vioation, REQUEST_STEP_LAYOUT for "
+			      "JobId=%u from uid=%u", req->job_id, uid);
+		} else {
+			debug2("_slurm_rpc_step_layout: JobId=%u, uid=%u: %s",
+				req->job_id, uid, 
+				slurm_strerror(error_code));
+		}
 		slurm_send_rc_msg(msg, error_code);
 		return;
 	}

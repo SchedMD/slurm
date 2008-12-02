@@ -79,8 +79,8 @@ run_script(const char *name, const char *path, uint32_t jobid,
 		debug("attempting to run %s [%s]", name, path);
 
 	if (access(path, R_OK | X_OK) < 0) {
-		debug("Not running %s [%s]: %m", name, path);
-		return 0;
+		error("Can not run %s [%s]: %m", name, path);
+		return -1;
 	}
 
 	if ((cpid = fork()) < 0) {

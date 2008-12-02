@@ -234,13 +234,26 @@ extern time_t last_bitmap_update;	/* time of last node creation or
 					 * deletion */
 extern time_t last_node_update;		/* time of last node record update */
 extern int node_record_count;		/* count in node_record_table_ptr */
-extern bitstr_t *avail_node_bitmap;	/* bitmap of available nodes, 
-					 * not DOWN, DRAINED or DRAINING */
 extern uint32_t total_cpus;		/* count of CPUs in the entire cluster */
+extern bool ping_nodes_now;		/* if set, ping nodes immediately */
+
+/*****************************************************************************\
+ *  NODE states and bitmaps
+ *  
+ *  avail_node_bitmap       Set if node's state is not DOWN, DRAINING/DRAINED, 
+ *                          FAILING or NO_RESPOND (i.e. available to run a job)
+ *  idle_node_bitmap        Set if node has no jobs allocated to it
+ *  share_node_bitmap       Set if any job allocated resources on that node
+ *                          is configured to not share the node with other 
+ *                          jobs (--exclusive option specified by job or
+ *                          Shared=NO configured for the job's partition)
+ *  up_node_bitmap          Set if the node's state is not DOWN
+\*****************************************************************************/
+extern bitstr_t *avail_node_bitmap;	/* bitmap of available nodes, 
+					 * state not DOWN, DRAIN or FAILING */
 extern bitstr_t *idle_node_bitmap;	/* bitmap of idle nodes */
 extern bitstr_t *share_node_bitmap;	/* bitmap of sharable nodes */
 extern bitstr_t *up_node_bitmap;	/* bitmap of up nodes, not DOWN */
-extern bool ping_nodes_now;		/* if set, ping nodes immediately */
 
 /*****************************************************************************\
  *  PARTITION parameters and data structures

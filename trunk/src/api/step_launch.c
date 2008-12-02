@@ -253,7 +253,7 @@ int slurm_step_launch (slurm_step_ctx_t *ctx,
 		ctx->launch_state->io.normal =
 			client_io_handler_create(params->local_fds,
 						 ctx->step_req->num_tasks,
-						 ctx->step_req->node_count,
+						 launch.nnodes,
 						 ctx->step_resp->cred,
 						 params->labelio);
 		if (ctx->launch_state->io.normal == NULL) {
