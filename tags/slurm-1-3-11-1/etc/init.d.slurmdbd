@@ -1,0 +1,180 @@
+#!/bin/bash
+#
+# chkconfig: 345 90 10
+# description: SLURMDBD is a database server interface for \
+#              SLURM (Simple Linux Utility for Resource Management).
+#
+# processname: /usr/sbin/slurmdbd
+# pidfile: /var/run/slurmdbd.pid
+#
+# config: /etc/sysconfig/slurm
+#
+### BEGIN INIT INFO
+# Provides:          slurmbd
+# Required-Start:    $local_fs $syslog $network $named munge
+# Required-Stop:     $local_fs $syslog $network $named munge
+# Default-Start:     3 5
+# Default-Stop:      0 1 2 6
+# Short-Description: SLURM database daemon
+# Description:       Start slurm to provide database server for SLURM
+### END INIT INFO
+
+CONFDIR=/etc/slurm
+SBINDIR=/usr/sbin
+LIBDIR=/usr/lib
+
+#Source function library.
+if [ -f /etc/rc.status ]; then
+   . /etc/rc.status
+   SUSE=1
+   STARTPROC=startproc
+
+   rc_reset
+else
+   [ -f /etc/rc.d/init.d/functions ] || exit 0
+   . /etc/rc.d/init.d/functions
+   SUSE=0
+   STARTPROC=daemon
+
+   function rc_status() {
+      RETVAL=$?
+   }
+   function rc_exit () {
+      exit $RETVAL
+   }
+   RETVAL=0
+fi
+
+# We can not use a starter program without losing environment 
+# variables that are critical on Blue Gene systems
+if [ -d /bgl/BlueLight/ppcfloor ]; then
+   STARTPROC=""
+fi
+
+# Source slurm specific configuration
+if [ -f /etc/sysconfig/slurm ] ; then
+    . /etc/sysconfig/slurm
+else
+    SLURMDBD_OPTIONS=""
+fi
+
+[ -f $CONFDIR/slurmdbd.conf ] || exit 1
+
+# setup library paths for slurm and munge support
+export LD_LIBRARY_PATH="$LIBDIR:$LD_LIBRARY_PATH"
+
+start() {
+    prog=$1
+    shift
+    echo -n "starting $prog: " 
+    unset HOME MAIL USER USERNAME 
+    $STARTPROC $SBINDIR/$prog $SLURMDBD_OPTIONS
+    rc_status -v
+    echo
+    touch /var/lock/subsys/slurmdbd
+}
+
+stop() { 
+    echo -n "stopping $1: "
+    killproc $1 -TERM
+    rc_status -v
+    echo
+    rm -f /var/lock/subsys/slurmdbd
+}
+
+slurmstatus() {
+    local base=${1##*/}
+    local pid
+    local rpid
+    local pidfile
+
+    pidfile=`grep -i pidfile $CONFDIR/slurmdbd.conf | grep -v '^ *#'`
+    if [ $? = 0 ]; then
+        pidfile=${pidfile##*=}
+        pidfile=${pidfile%#*}
+    else
+        pidfile=/var/run/slurmdbd.pid
+    fi
+
+   pid=`pidof -o $$ -o $$PPID -o %PPID -x $1 || \
+         pidof -o $$ -o $$PPID -o %PPID -x ${base}`
+
+    if [ -f $pidfile ]; then
+        read rpid < $pidfile
+        if [ "$rpid" != "" -a "$pid" != "" ]; then
+            for i in $pid ; do
+                if [ "$i" = "$rpid" ]; then 
+                    echo $"${base} (pid $pid) is running..."
+                    return 0
+                fi     
+            done
+        elif [ "$rpid" != "" -a "$pid" = "" ]; then
+		echo $"${base} dead but pid file exists"
+		return 1
+        fi 
+
+    fi
+
+    if [ "$base" = "slurmdbd" -a "$pid" != "" ] ; then
+        echo $"${base} (pid $pid) is running..."
+        return 0
+    fi
+    
+    echo $"${base} is stopped"
+    
+    return 3
+}
+
+#
+# stop slurm daemons, 
+# wait for termination to complete (up to 10 seconds) before returning
+#
+slurmstop() {
+	stop $1
+	
+	for i in 1 2 3 4
+	do
+		sleep $i
+		slurmstatus $1
+		if [ $? != 0 ]; then
+			break
+		fi
+	done
+}
+#
+# The pathname substitution in daemon command assumes prefix and
+# exec_prefix are same.  This is the default, unless the user requests
+# otherwise.
+#
+# Any node can be a slurm controller and/or server.
+#
+case "$1" in
+    start)
+	start slurmdbd
+        ;;
+    stop)
+	slurmstop slurmdbd
+        ;;
+    status)
+	slurmstatus slurmdbd
+        ;;
+    restart)
+	$0 stop
+	$0 start
+        ;;
+    condrestart)
+        if [ -f /var/lock/subsys/slurm ]; then
+                 stop slurmdbd
+                 start slurmdbd
+        fi
+        ;;
+    reconfig)
+	killproc slurmdbd -HUP
+	;;
+    *)
+        echo "Usage: $0 {start|stop|status|restart|condrestart|reconfig}"
+        exit 1
+        ;;
+esac
+
+rc_exit
