@@ -135,10 +135,16 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr,
 	}
 
 	if (name_ptr) {
-		info("wiki: change job %u name %s", jobid, name_ptr);
-		xfree(job_ptr->name);
-		job_ptr->name = xstrdup(name_ptr);
-		last_job_update = now;
+		if (job_ptr->job_state == JOB_PENDING) {
+			info("wiki: change job %u name %s", jobid, name_ptr);
+			xfree(job_ptr->name);
+			job_ptr->name = xstrdup(name_ptr);
+			last_job_update = now;
+		} else {
+			error("wiki: MODIFYJOB name of non-pending job %u",
+			      jobid);
+			return ESLURM_DISABLED;
+		}
 	}
 
 	if (new_hostlist) {
