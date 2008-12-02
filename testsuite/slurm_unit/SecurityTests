@@ -61,16 +61,16 @@ $ grep ":101:" /etc/passwd
 slurm:x:101:101:slurm:/var/slurm:/sbin/nologin   < No other users/groups with ID of 101
 
 
-Test 2.1     Verify that unauthenticated requests are rejected
+Test 2.1.1   Verify that unauthenticated requests are rejected
 ==============================================================
-Execute "security_2_1.bash" and check for errors. Make sure that the
+Execute "security_2_1_1.bash" and check for errors. Make sure that the
 "scontrol" program is in your default search path or modify the script. It's 
 last line of output will be "SUCCESS" if there were no errors and "FAILURE" 
 otherwise. Note that srun errors are expected due to authentication failure.
 NOTE: Insure the event is logged in SlurmctldLogFile for test 2.4 verification.
 
 Example:
-$ ./security_2_1.bash
+$ ./security_2_1_1.bash
 srun: warning: auth/dummy plugin selected
 srun: warning: auth/dummy plugin selected
 srun: warning: auth/dummy plugin selected
@@ -78,6 +78,29 @@ srun: error: slurm_receive_msg: Zero Bytes were transmitted or received
 srun: error: Unable to allocate resources: Zero Bytes were transmitted or received
 srun errors above are expected                   < ABOVE ERRORS ARE EXPECTED
 SUCCESS
+
+
+Test 2.1.2   Verify that valid credential is required for Slurm access
+======================================================================
+The basic idea here is to try using a private munge program without the secure
+munge key (we use our own key). This validates that munge authenitication
+is being used as desired. You'll need two windows for this, both running as
+a regular user. 
+NOTE: Insure the event is logged in SlurmctldLogFile for test 2.4 verification.
+
+Example, window 1, start munged:
+$ ./security_2_1_2a.bash
+1024+0 records in
+...
+munged: Info: Created 2 work threads
+munged: Info: Found 2067 users with supplementary groups in 0.958 seconds
+
+Example, window 2, try running srun with new munged:
+$ ./security_2_1_2b.bash
+sacctmgr: error: slurmdbd: DBD_RC is 2002 from DBD_INIT(1400): Failed to unpack DBD_INIT message
+sacctmgr: error: slurmdbd: Sending DdbInit msg: Resource temporarily unavailable
+
+Now kill the munged running in window 1 (just use ctrl-c)
 
 
 Test 2.2.1   Verify that normal user can't reconfigure the system
@@ -175,7 +198,7 @@ Test 2.4     Verify security violations are logged
 ==================================================
 NOTE: You will need to view the log file as user root.
 
-From test 2.1 in SlurmctldLogFile (/var/log/slurm/slurmctld.log):
+From test 2.1.1 in SlurmctldLogFile (/var/log/slurm/slurmctld.log):
 [Dec 01 11:41:23] error: authentication: authentication type mismatch
 [Dec 01 11:41:23] error: slurm_receive_msg: Header lengths are longer than data received
 [Dec 01 11:41:23] error: slurm_receive_msg: Header lengths are longer than data received
