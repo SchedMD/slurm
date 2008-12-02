@@ -1,6 +1,14 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.3.12
+=========================
+ -- Added support for Workload Characteristic Key (WCKey) in accounting.  The
+    WCkey is something that can be used in accounting to group associations
+    together across clusters or within clusters that are not related.  Use 
+    the --wckey option in srun, sbatch or salloc or set the SLURM_WCKEY env
+    var to have this set. Use sreport with the wckey option to view reports.
+
 * Changes in SLURM 1.3.11
 =========================
  -- Bluegene/P support added (minimally tested, but builds correctly).

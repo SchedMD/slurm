@@ -89,6 +89,7 @@
 #define OPT_EXCLUSIVE   0x12
 #define OPT_OVERCOMMIT  0x13
 #define OPT_ACCTG_FREQ  0x14
+#define OPT_WCKEY       0x15
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_JOBID       0x105
@@ -128,6 +129,7 @@
 #define LONG_OPT_MEM_PER_CPU     0x13a
 #define LONG_OPT_HINT            0x13b
 #define LONG_OPT_ACCTG_FREQ      0x13c
+#define LONG_OPT_WCKEY           0x13d
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -291,6 +293,7 @@ static void _opt_default()
 	opt.no_shell	    = false;
 	opt.get_user_env_time = -1;
 	opt.get_user_env_mode = -1;
+	opt.wckey = NULL;
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -327,7 +330,8 @@ env_vars_t env_vars[] = {
   {"SALLOC_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL           },
   {"SALLOC_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL           },
   {"SALLOC_ACCTG_FREQ",    OPT_INT,        &opt.acctg_freq,    NULL           },
-  {"SALLOC_NETWORK",       OPT_STRING    , &opt.network,       NULL           },
+  {"SALLOC_NETWORK",       OPT_STRING,     &opt.network,       NULL           },
+  {"SALLOC_WCKEY",         OPT_STRING,     &opt.wckey,         NULL           },
   {NULL, 0, NULL, NULL}
 };
 
@@ -439,6 +443,10 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_OVERCOMMIT:
 		opt.overcommit = true;
 		break;
+	case OPT_WCKEY:
+		xfree(opt.wckey);
+		opt.wckey = xstrdup(optarg);
+		break;
 	default:
 		/* do nothing */
 		break;
@@ -544,6 +552,7 @@ void set_options(const int argc, char **argv)
 		{"no-shell",      no_argument,       0, LONG_OPT_NOSHELL},
 		{"get-user-env",  optional_argument, 0, LONG_OPT_GET_USER_ENV},
 		{"network",       required_argument, 0, LONG_OPT_NETWORK},
+		{"wckey",         required_argument, 0, LONG_OPT_WCKEY},
 		{NULL,            0,                 0, 0}
 	};
 	char *opt_string = "+a:B:c:C:d:D:F:g:hHIJ:kK:L:m:n:N:Op:P:qR:st:uU:vVw:W:x:";
@@ -919,6 +928,10 @@ void set_options(const int argc, char **argv)
 		case LONG_OPT_NETWORK:
 			xfree(opt.network);
 			opt.network = xstrdup(optarg);
+			break;
+		case LONG_OPT_WCKEY:
+			xfree(opt.wckey);
+			opt.wckey = xstrdup(optarg);
 			break;
 		default:
 			fatal("Unrecognized command line parameter %c",
@@ -1309,6 +1322,7 @@ static void _opt_list()
 	info("partition      : %s",
 		opt.partition == NULL ? "default" : opt.partition);
 	info("job name       : `%s'", opt.job_name);
+	info("wckey          : `%s'", opt.wckey);
 	if (opt.jobid != NO_VAL)
 		info("jobid          : %u", opt.jobid);
 	info("distribution   : %s", format_task_dist_states(opt.distribution));

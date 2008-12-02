@@ -111,12 +111,15 @@ char *cluster_month_table = "cluster_month_usage_table";
 char *cluster_table = "cluster_table";
 char *event_table = "cluster_event_table";
 char *job_table = "job_table";
+char *last_ran_table = "last_ran_table";
 char *qos_table = "qos_table";
 char *step_table = "step_table";
 char *txn_table = "txn_table";
 char *user_table = "user_table";
-char *last_ran_table = "last_ran_table";
 char *suspend_table = "suspend_table";
+char *wckey_day_table = "wckey_day_usage_table";
+char *wckey_hour_table = "wckey_hour_usage_table";
+char *wckey_month_table = "wckey_month_usage_table";
 
 
 typedef enum {
@@ -2148,6 +2151,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "id", "int not null auto_increment" },
 		{ "jobid", "mediumint unsigned not null" },
 		{ "associd", "mediumint unsigned not null" },
+		{ "wckey", "tinytext not null default ''" },
 		{ "uid", "smallint unsigned not null" },
 		{ "gid", "smallint unsigned not null" },
 		{ "cluster", "tinytext" },
@@ -2265,6 +2269,16 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "name", "tinytext not null" },
 		{ "default_acct", "tinytext not null" },
 		{ "admin_level", "smallint default 1 not null" },
+		{ NULL, NULL}		
+	};
+
+	storage_field_t wckey_usage_table_fields[] = {
+		{ "creation_time", "int unsigned not null" },
+		{ "mod_time", "int unsigned default 0 not null" },
+		{ "deleted", "tinyint default 0" },
+		{ "wckey", "tinytext not null" },
+		{ "period_start", "int unsigned not null" },
+		{ "alloc_cpu_secs", "bigint default 0" },
 		{ NULL, NULL}		
 	};
 
@@ -2442,6 +2456,24 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 
 	if(mysql_db_create_table(db_conn, user_table, user_table_fields,
 				 ", primary key (name(20)))") == SLURM_ERROR)
+		return SLURM_ERROR;
+
+	if(mysql_db_create_table(db_conn, wckey_day_table,
+				 wckey_usage_table_fields,
+				 ", primary key (wckey(50), period_start))")
+	   == SLURM_ERROR)
+		return SLURM_ERROR;
+
+	if(mysql_db_create_table(db_conn, wckey_hour_table,
+				 wckey_usage_table_fields,
+				 ", primary key (wckey(50), period_start))")
+	   == SLURM_ERROR)
+		return SLURM_ERROR;
+
+	if(mysql_db_create_table(db_conn, wckey_month_table,
+				 wckey_usage_table_fields,
+				 ", primary key (wckey(50), period_start))") 
+	   == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	rc = mysql_db_query(db_conn, get_parent_proc);
@@ -8553,6 +8585,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 	int track_steps = 0;
 	char *block_id = NULL;
 	char *query = NULL;
+	char *wckey = NULL;
 	int reinit = 0;
 	time_t check_time = job_ptr->start_time;
 
@@ -8589,19 +8622,29 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 		-1L : (long) job_ptr->priority;
 
 	if (job_ptr->name && job_ptr->name[0]) {
-		int i;
-		jname = xmalloc(strlen(job_ptr->name) + 1);
-		for (i=0; job_ptr->name[i]; i++) {
-			if (isalnum(job_ptr->name[i]))
-				jname[i] = job_ptr->name[i];
-			else
-				jname[i] = '_';
+		char *temp = NULL;
+		/* first set the jname to the job_ptr->name */
+		jname = xstrdup(job_ptr->name);
+		/* then grep for " since that is the delimiter for
+		   the wckey */
+		temp = strchr(jname, '\"');
+		if(temp) {
+			/* if we have a wckey set the " to NULL to
+			 * end the jname */
+			temp[0] = '\0';
+			/* increment and copy the remainder */
+			temp++;
+			wckey = xstrdup(temp);
 		}
-	} else {
+	}
+
+	if(!jname || !jname[0]) {
+		/* free jname if something is allocated here */
+		xfree(jname);
 		jname = xstrdup("allocation");
 		track_steps = 1;
 	}
-
+	
 	if (job_ptr->nodes && job_ptr->nodes[0])
 		nodes = job_ptr->nodes;
 	else
@@ -8645,6 +8688,8 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 			xstrcat(query, "partition, ");
 		if(block_id) 
 			xstrcat(query, "blockid, ");
+		if(wckey) 
+			xstrcat(query, "wckey, ");
 		
 		xstrfmtcat(query, 
 			   "eligible, submit, start, name, track_steps, "
@@ -8661,6 +8706,8 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 			xstrfmtcat(query, "\"%s\", ", job_ptr->partition);
 		if(block_id) 
 			xstrfmtcat(query, "\"%s\", ", block_id);
+		if(wckey) 
+			xstrfmtcat(query, "\"%s\", ", wckey);
 		
 		xstrfmtcat(query, 
 			   "%d, %d, %d, \"%s\", %u, %u, %u, %u, %u) "
@@ -8683,6 +8730,8 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 				   job_ptr->partition);
 		if(block_id)
 			xstrfmtcat(query, ", blockid=\"%s\"", block_id);
+		if(wckey) 
+			xstrfmtcat(query, ", wckey=\"%s\"", wckey);
 		
 		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	try_again:
@@ -8706,13 +8755,14 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 				       job_table, nodes);
 
 		if(job_ptr->account) 
-			xstrfmtcat(query, "account=\"%s\", ",
-				   job_ptr->account);
+			xstrfmtcat(query, "account=\"%s\", ", job_ptr->account);
 		if(job_ptr->partition) 
 			xstrfmtcat(query, "partition=\"%s\", ",
 				   job_ptr->partition);
 		if(block_id)
 			xstrfmtcat(query, "blockid=\"%s\", ", block_id);
+		if(wckey) 
+			xstrfmtcat(query, "wckey=\"%s\", ", wckey);
 
 		xstrfmtcat(query, "start=%d, name=\"%s\", state=%u, "
 			   "alloc_cpus=%u, associd=%d where id=%d",
@@ -8726,6 +8776,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 
 	xfree(block_id);
 	xfree(jname);
+	xfree(wckey);
 
 	xfree(query);
 

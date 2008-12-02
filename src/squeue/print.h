@@ -91,6 +91,8 @@ int job_format_add_function(List list, int width, bool right_justify,
 	job_format_add_function(list,wid,right,prefix,_print_job_reason_list)
 #define job_format_add_name(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_name)
+#define job_format_add_wckey(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_wckey)
 #define job_format_add_user_name(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_user_name)
 #define job_format_add_user_id(list,wid,right,suffix) \
@@ -182,6 +184,8 @@ int _print_job_reason(job_info_t * job, int width, bool right_justify,
 int _print_job_reason_list(job_info_t * job, int width, bool right_justify,
 			char* suffix);
 int _print_job_name(job_info_t * job, int width, bool right_justify, 
+			char* suffix);
+int _print_job_wckey(job_info_t * job, int width, bool right_justify, 
 			char* suffix);
 int _print_job_user_id(job_info_t * job, int width, bool right_justify, 
 			char* suffix);
