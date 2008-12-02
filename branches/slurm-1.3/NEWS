@@ -1,11 +1,6 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
-* Changes in SLURM 1.3.12
-=========================
- -- For sched/wiki2 (Moab) disable changing a job's name after it has begun
-    execution.
-
 * Changes in SLURM 1.3.11
 =========================
  -- Bluegene/P support added (minimally tested, but builds correctly).
@@ -41,6 +36,8 @@ documents those changes that are of interest to users and admins.
     allocation specifies a node count which is less than the node count
     allocated in order to satisfy the task count specification (e.g. 
     "srun -n16 -N1 hostname" on allocation of 16 one-CPU nodes).
+ -- For sched/wiki2 (Moab) disable changing a job's name after it has begun
+    execution.
 
 * Changes in SLURM 1.3.10
 =========================
