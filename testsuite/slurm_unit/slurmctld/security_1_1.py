@@ -101,7 +101,11 @@ def main(argv=None):
     append_file(files, confpairs, 'PluginDir')
     append_dir(files, confpairs, 'PluginDir')
 
-    pwname = pwd.getpwnam(confpairs['SlurmUser'])
+    try:
+        pwname = pwd.getpwnam(confpairs['SlurmUser'])
+    except:
+        pwname = pwd.getpwnam('slurm')
+
     for fname in files:
         rc = verify_perms(fname, S_IWOTH, pwname)
         if rc is False:
