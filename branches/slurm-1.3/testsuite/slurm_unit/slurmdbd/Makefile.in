@@ -34,7 +34,7 @@ host_triplet = @host@
 target_triplet = @target@
 TESTS =
 check_PROGRAMS = $(am__EXEEXT_1)
-subdir = testsuite/slurm_unit/slurmd
+subdir = testsuite/slurm_unit/slurmdbd
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
@@ -257,9 +257,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  testsuite/slurm_unit/slurmd/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  testsuite/slurm_unit/slurmdbd/Makefile'; \
 	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign  testsuite/slurm_unit/slurmd/Makefile
+	  $(AUTOMAKE) --foreign  testsuite/slurm_unit/slurmdbd/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
