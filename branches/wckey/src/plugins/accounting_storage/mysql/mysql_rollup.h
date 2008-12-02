@@ -53,6 +53,9 @@ extern char *cluster_hour_table;
 extern char *cluster_month_table;
 extern char *event_table;
 extern char *suspend_table;
+extern char *wckey_day_table;
+extern char *wckey_hour_table;
+extern char *wckey_month_table;
 
 extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			       time_t start, time_t end);

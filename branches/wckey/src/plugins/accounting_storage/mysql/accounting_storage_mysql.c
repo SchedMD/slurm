@@ -111,12 +111,15 @@ char *cluster_month_table = "cluster_month_usage_table";
 char *cluster_table = "cluster_table";
 char *event_table = "cluster_event_table";
 char *job_table = "job_table";
+char *last_ran_table = "last_ran_table";
 char *qos_table = "qos_table";
 char *step_table = "step_table";
 char *txn_table = "txn_table";
 char *user_table = "user_table";
-char *last_ran_table = "last_ran_table";
 char *suspend_table = "suspend_table";
+char *wckey_day_table = "wckey_day_usage_table";
+char *wckey_hour_table = "wckey_hour_usage_table";
+char *wckey_month_table = "wckey_month_usage_table";
 
 
 typedef enum {
@@ -2269,6 +2272,16 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ NULL, NULL}		
 	};
 
+	storage_field_t wckey_usage_table_fields[] = {
+		{ "creation_time", "int unsigned not null" },
+		{ "mod_time", "int unsigned default 0 not null" },
+		{ "deleted", "tinyint default 0" },
+		{ "wckey", "tinytext not null" },
+		{ "period_start", "int unsigned not null" },
+		{ "alloc_cpu_secs", "bigint default 0" },
+		{ NULL, NULL}		
+	};
+
 	char *get_parent_proc = 
 		"drop procedure if exists get_parent_limits; "
 		"create procedure get_parent_limits("
@@ -2443,6 +2456,24 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 
 	if(mysql_db_create_table(db_conn, user_table, user_table_fields,
 				 ", primary key (name(20)))") == SLURM_ERROR)
+		return SLURM_ERROR;
+
+	if(mysql_db_create_table(db_conn, wckey_day_table,
+				 wckey_usage_table_fields,
+				 ", primary key (wckey(50), period_start))")
+	   == SLURM_ERROR)
+		return SLURM_ERROR;
+
+	if(mysql_db_create_table(db_conn, wckey_hour_table,
+				 wckey_usage_table_fields,
+				 ", primary key (wckey(50), period_start))")
+	   == SLURM_ERROR)
+		return SLURM_ERROR;
+
+	if(mysql_db_create_table(db_conn, wckey_month_table,
+				 wckey_usage_table_fields,
+				 ", primary key (wckey(50), period_start))") 
+	   == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	rc = mysql_db_query(db_conn, get_parent_proc);
