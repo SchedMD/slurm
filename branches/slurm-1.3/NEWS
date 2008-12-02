@@ -1,6 +1,11 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.3.12
+=========================
+ -- For sched/wiki2 (Moab) disable changing a job's name after it has begun
+    execution.
+
 * Changes in SLURM 1.3.11
 =========================
  -- Bluegene/P support added (minimally tested, but builds correctly).
@@ -21,7 +26,7 @@ documents those changes that are of interest to users and admins.
     when running multiple job steps with the --exclusive option.
  -- Remove registration messages from saved messages when bringing down cluster.
     Without causes deadlock if wrong cluster name is given.
- -- Correction to build like for srun debugger (export symbols).
+ -- Correction to build for srun debugger (export symbols).
  -- sacct will now display more properly allocations made with salloc with only 
     one step.
  -- Altered sacctmgr, sreport to look at complete option before applying. 
