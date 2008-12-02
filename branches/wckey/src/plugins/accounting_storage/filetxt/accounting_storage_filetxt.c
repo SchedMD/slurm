@@ -502,12 +502,9 @@ extern int jobacct_storage_p_job_start(void *db_conn, char *cluster_name,
 			wckey = xstrdup(temp);
 		}
 
-		for (i=0; jname[i]; i++) {
-			if (isspace(job_ptr->name[i]))
+		for (i=0; jname[i]; i++) 
+			if (isspace(jname[i]))
 				jname[i]='_';
-			else
-				jname[i]=job_ptr->name[i];
-		}
 	}
 
 	if(!jname || !jname[0]) {
