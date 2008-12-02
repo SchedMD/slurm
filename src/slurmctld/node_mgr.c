@@ -1119,8 +1119,8 @@ int update_node ( update_node_msg_t * update_node_msg )
 			else if (state_val == NODE_STATE_ALLOCATED) {
 				if (!(node_ptr->node_state & (NODE_STATE_DRAIN
 						| NODE_STATE_FAIL)))
-					bit_set (up_node_bitmap, node_inx);
-				bit_set   (avail_node_bitmap, node_inx);
+					bit_set(avail_node_bitmap, node_inx);
+				bit_set (up_node_bitmap, node_inx);
 				bit_clear (idle_node_bitmap, node_inx);
 			}
 			else if (state_val == NODE_STATE_DRAIN) {
