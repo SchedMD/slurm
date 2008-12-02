@@ -8591,28 +8591,29 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 		-1L : (long) job_ptr->priority;
 
 	if (job_ptr->name && job_ptr->name[0]) {
-		int i;
-		char *temp_jname = xstrdup(job_ptr->name);
-		char *temp = strchr(temp_jname, '\"');
+		char *temp = NULL;
+		/* first set the jname to the job_ptr->name */
+		jname = xstrdup(job_ptr->name);
+		/* then grep for " since that is the delimiter for
+		   the wckey */
+		temp = strchr(jname, '\"');
 		if(temp) {
+			/* if we have a wckey set the " to NULL to
+			 * end the jname */
 			temp[0] = '\0';
+			/* increment and copy the remainder */
 			temp++;
 			wckey = xstrdup(temp);
-		} 
-
-		jname = xmalloc(strlen(temp_jname) + 1);
-		for (i=0; job_ptr->name[i]; i++) {
-			if (isalnum(temp_jname[i]))
-				jname[i] = temp_jname[i];
-			else
-				jname[i] = '_';
 		}
-		xfree(temp_jname);
-	} else {
+	}
+
+	if(!jname || !jname[0]) {
+		/* free jname if something is allocated here */
+		xfree(jname);
 		jname = xstrdup("allocation");
 		track_steps = 1;
 	}
-
+	
 	if (job_ptr->nodes && job_ptr->nodes[0])
 		nodes = job_ptr->nodes;
 	else

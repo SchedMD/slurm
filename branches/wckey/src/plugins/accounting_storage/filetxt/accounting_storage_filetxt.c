@@ -462,9 +462,9 @@ extern int jobacct_storage_p_job_start(void *db_conn, char *cluster_name,
 				       struct job_record *job_ptr)
 {
 	int	i,
-		rc=SLURM_SUCCESS,
-		tmp;
+		rc=SLURM_SUCCESS;
 	char	buf[BUFFER_SIZE], *jname, *account, *nodes;
+	char    *wckey = NULL;
 	long	priority;
 	int track_steps = 0;
 
@@ -486,15 +486,33 @@ extern int jobacct_storage_p_job_start(void *db_conn, char *cluster_name,
 	priority = (job_ptr->priority == NO_VAL) ?
 		-1L : (long) job_ptr->priority;
 
-	if (job_ptr->name && (tmp = strlen(job_ptr->name))) {
-		jname = xmalloc(++tmp);
-		for (i=0; i<tmp; i++) {
+	if (job_ptr->name && job_ptr->name[0]) {
+		char *temp = NULL;
+		/* first set the jname to the job_ptr->name */
+		jname = xstrdup(job_ptr->name);
+		/* then grep for " since that is the delimiter for
+		   the wckey */
+		temp = strchr(jname, '\"');
+		if(temp) {
+			/* if we have a wckey set the " to NULL to
+			 * end the jname */
+			temp[0] = '\0';
+			/* increment and copy the remainder */
+			temp++;
+			wckey = xstrdup(temp);
+		}
+
+		for (i=0; jname[i]; i++) {
 			if (isspace(job_ptr->name[i]))
 				jname[i]='_';
 			else
 				jname[i]=job_ptr->name[i];
 		}
-	} else {
+	}
+
+	if(!jname || !jname[0]) {
+		/* free jname if something is allocated here */
+		xfree(jname);
 		jname = xstrdup("allocation");
 		track_steps = 1;
 	}
@@ -514,15 +532,16 @@ extern int jobacct_storage_p_job_start(void *db_conn, char *cluster_name,
 	job_ptr->requid = -1; /* force to -1 for sacct to know this
 			       * hasn't been set yet */
 
-	tmp = snprintf(buf, BUFFER_SIZE,
-		       "%d %s %d %ld %u %s %s",
-		       JOB_START, jname,
-		       track_steps, priority, job_ptr->total_procs,
-		       nodes, account);
+	snprintf(buf, BUFFER_SIZE,
+		 "%d %s %d %ld %u %s %s",
+		 JOB_START, jname,
+		 track_steps, priority, job_ptr->total_procs,
+		 nodes, account);
 
 	rc = _print_record(job_ptr, job_ptr->start_time, buf);
 	
 	xfree(jname);
+	xfree(wckey);
 	return rc;
 }
 
