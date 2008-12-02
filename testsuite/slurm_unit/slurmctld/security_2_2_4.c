@@ -1,15 +1,15 @@
 /*
- * security_2_8.c
+ * security_2_2_4.c
  * LLNL security test to validate SLURM's wiki interface security
  *
  * Compilation line varies by system.
  * For Peleton:
- *   cc -L/usr/lib64 -lslurm -osecurity_2_8 security_2_8.c
+ *   cc -L/usr/lib64 -lslurm -osecurity_2_2_4 security_2_2_4.c
  * For most Linux system:
- *   cc -lslurm -osecurity_2_8 security_2_8.c
+ *   cc -lslurm -osecurity_2_8 security_2_2_4.c
  *
  * Execute line:
- *   ./security_2_8
+ *   ./security_2_2_4
  *
  * Expected response:
  *   Bad checksum reported
@@ -145,6 +145,15 @@ main(int argc, char **argv)
 	/*
 	 * Get current SLURM configuration
 	 */
+#ifdef AIX
+	if (argc == 1) {
+		printf("Usage: %s <ControlAddr>\n");
+		exit(1);
+	}
+	strcpy(control_addr, argv[1]);
+	sched_port = 7321;
+	wiki = 1;
+#else
 	slurm_ctl_conf_t *conf_ptr;
 	slurm_load_ctl_conf((time_t) 0, &conf_ptr);
 	if (strcasecmp(conf_ptr->schedtype, "sched/wiki2") == 0)
@@ -152,6 +161,7 @@ main(int argc, char **argv)
 	strncpy(control_addr, conf_ptr->control_addr, sizeof(control_addr));
 	sched_port = conf_ptr->schedport;
 	slurm_free_ctl_conf(conf_ptr);
+#endif
 
 	if (wiki == 0) {
 		printf("SLURM's Wiki2 plugin not configured, nothing to test\n");

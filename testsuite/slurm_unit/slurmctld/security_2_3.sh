@@ -4,8 +4,8 @@
 
 # Build the script
 wd=`pwd`
-tst_in=$wd/security_2_7_in
-tst_out=$wd/security_2_7_out
+tst_in=$wd/security_2_3_in
+tst_out=$wd/security_2_3_out
 rm -f $tst_in $tst_out
 echo '#!/bin/sh'     >$tst_in
 echo "id >$tst_out" >>$tst_in

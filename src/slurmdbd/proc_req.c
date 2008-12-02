@@ -321,6 +321,10 @@ proc_req(slurmdbd_conn_t *slurmdbd_conn,
 				slurmdbd_conn->rpc_version, rc, comment, 0);
 			break;
 		}
+
+		if(rc == ESLURM_ACCESS_DENIED) 
+			error("Security violation, %s",
+			      slurmdbd_msg_type_2_str(msg_type, 1));
 	}
 
 	xfer_buf_data(in_buffer);	/* delete in_buffer struct without 

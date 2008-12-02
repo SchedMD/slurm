@@ -26,10 +26,10 @@ def main(argv=None):
                       help="slurm install directory prefix", metavar="DIR")
     (options, args) = parser.parse_args(args=argv)
     if options.prefix is None:
-        options.prefix = '/usr/local'
+        options.prefix = '/usr'
         print 'Assuming installation prefix is "%s"' % (options.prefix)
     if options.sysconfdir is None:
-        options.sysconfdir = options.prefix + '/etc'
+        options.sysconfdir = '/etc/slurm'
 	options.conf = options.sysconfdir + '/slurm.conf'
         print 'Assuming slurm conf file is "%s"' % (options.conf)
     else:
@@ -101,7 +101,11 @@ def main(argv=None):
     append_file(files, confpairs, 'PluginDir')
     append_dir(files, confpairs, 'PluginDir')
 
-    pwname = pwd.getpwnam(confpairs['SlurmUser'])
+    try:
+        pwname = pwd.getpwnam(confpairs['SlurmUser'])
+    except:
+        pwname = pwd.getpwnam('slurm')
+
     for fname in files:
         rc = verify_perms(fname, S_IWOTH, pwname)
         if rc is False:
@@ -124,9 +128,9 @@ def main(argv=None):
 
     print
     if error:
-        print 'FAILURE! Some file permissions were incorrect.'
+        print 'FAILURE. Some file permissions were incorrect.'
     else:
-        print 'SUCCESS.'
+        print 'SUCCESS'
 
     return error
 
