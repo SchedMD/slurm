@@ -317,7 +317,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 
 			if(last_id != assoc_id) {
 				a_usage =
-					xmalloc(sizeof(local_cluster_usage_t));
+					xmalloc(sizeof(local_assoc_usage_t));
 				a_usage->assoc_id = assoc_id;
 				list_append(assoc_usage_list, a_usage);
 				last_id = assoc_id;
