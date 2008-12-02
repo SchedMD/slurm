@@ -7,7 +7,7 @@ slurm_uid=`${slurm_bin}scontrol show config | awk '{ if ( $1 ~ /SlurmUser/ ) { i
 
 # Find this UID/GID in /etc/passwd
 rm -f tmp.$$
-grep ":${slurm_uid}:${slurm_uid}:" /etc/passwd >tmp.$$
+grep ":${slurm_uid}:" /etc/passwd >tmp.$$
 cat tmp.$$
 
 # Make sure there is just one entry
