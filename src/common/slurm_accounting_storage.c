@@ -75,6 +75,8 @@ typedef struct slurm_acct_storage_ops {
 				    List association_list);
 	int  (*add_qos)            (void *db_conn, uint32_t uid,
 				    List qos_list);
+	int  (*add_wckey)          (void *db_conn, uint32_t uid,
+				    List wckey_list);
 	List (*modify_users)       (void *db_conn, uint32_t uid,
 				    acct_user_cond_t *user_cond,
 				    acct_user_rec_t *user);
@@ -90,6 +92,9 @@ typedef struct slurm_acct_storage_ops {
 	List (*modify_qos)         (void *db_conn, uint32_t uid,
 				    acct_qos_cond_t *qos_cond,
 				    acct_qos_rec_t *qos);
+	List (*modify_wckey)       (void *db_conn, uint32_t uid,
+				    acct_wckey_cond_t *wckey_cond,
+				    acct_wckey_rec_t *wckey);
 	List (*remove_users)       (void *db_conn, uint32_t uid,
 				    acct_user_cond_t *user_cond);
 	List (*remove_coord)       (void *db_conn, uint32_t uid,
@@ -103,6 +108,8 @@ typedef struct slurm_acct_storage_ops {
 				    acct_association_cond_t *assoc_cond);
 	List (*remove_qos)         (void *db_conn, uint32_t uid,
 				    acct_qos_cond_t *qos_cond);
+	List (*remove_wckey)       (void *db_conn, uint32_t uid,
+				    acct_wckey_cond_t *wckey_cond);
 	List (*get_users)          (void *db_conn, uint32_t uid,
 				    acct_user_cond_t *user_cond);
 	List (*get_accts)          (void *db_conn, uint32_t uid,
@@ -113,6 +120,8 @@ typedef struct slurm_acct_storage_ops {
 				    acct_association_cond_t *assoc_cond);
 	List (*get_qos)            (void *db_conn, uint32_t uid,
 				    acct_qos_cond_t *qos_cond);
+	List (*get_wckey)          (void *db_conn, uint32_t uid,
+				    acct_wckey_cond_t *wckey_cond);
 	List (*get_txn)            (void *db_conn, uint32_t uid,
 				    acct_txn_cond_t *txn_cond);
 	int  (*get_usage)          (void *db_conn, uint32_t uid,
@@ -204,22 +213,26 @@ static slurm_acct_storage_ops_t * _acct_storage_get_ops(
 		"acct_storage_p_add_clusters",
 		"acct_storage_p_add_associations",
 		"acct_storage_p_add_qos",
+		"acct_storage_p_add_wckey",
 		"acct_storage_p_modify_users",
 		"acct_storage_p_modify_accounts",
 		"acct_storage_p_modify_clusters",
 		"acct_storage_p_modify_associations",
 		"acct_storage_p_modify_qos",
+		"acct_storage_p_modify_wckey",
 		"acct_storage_p_remove_users",
 		"acct_storage_p_remove_coord",
 		"acct_storage_p_remove_accts",
 		"acct_storage_p_remove_clusters",
 		"acct_storage_p_remove_associations",
 		"acct_storage_p_remove_qos",
+		"acct_storage_p_remove_wckey",
 		"acct_storage_p_get_users",
 		"acct_storage_p_get_accts",
 		"acct_storage_p_get_clusters",
 		"acct_storage_p_get_associations",
 		"acct_storage_p_get_qos",
+		"acct_storage_p_get_wckey",
 		"acct_storage_p_get_txn",
 		"acct_storage_p_get_usage",
 		"acct_storage_p_roll_usage",
@@ -427,7 +440,10 @@ extern void destroy_acct_user_rec(void *object)
 		if(acct_user->coord_accts)
 			list_destroy(acct_user->coord_accts);
 		xfree(acct_user->default_acct);
+		xfree(acct_user->default_wckey);
 		xfree(acct_user->name);
+		if(acct_user->wckey_list)
+			list_destroy(acct_user->wckey_list);
 		xfree(acct_user);
 	}
 }
@@ -571,6 +587,8 @@ extern void destroy_acct_user_cond(void *object)
 		destroy_acct_association_cond(acct_user->assoc_cond);
 		if(acct_user->def_acct_list)
 			list_destroy(acct_user->def_acct_list);
+		if(acct_user->def_wckey_list)
+			list_destroy(acct_user->def_wckey_list);
 		xfree(acct_user);
 	}
 }
@@ -852,8 +870,70 @@ extern void pack_acct_user_rec(void *in, uint16_t rpc_version, Buf buffer)
 	uint32_t count = NO_VAL;
 	acct_coord_rec_t *coord = NULL;
 	acct_association_rec_t *assoc = NULL;
+	acct_wckey_rec_t *wckey = NULL;
 
-	if(rpc_version >= 3) {
+	if(rpc_version >= 4) {
+		if(!object) {
+			pack16(0, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			packnull(buffer);
+			packnull(buffer);
+			packnull(buffer);
+			pack32(0, buffer);
+			pack32(NO_VAL, buffer);
+			return;
+		}
+ 
+		pack16(object->admin_level, buffer);
+
+		if(object->assoc_list)
+			count = list_count(object->assoc_list);
+	
+		pack32(count, buffer);
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->assoc_list);
+			while((assoc = list_next(itr))) {
+				pack_acct_association_rec(assoc, rpc_version,
+							  buffer);
+			}
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+
+		if(object->coord_accts)
+			count = list_count(object->coord_accts);
+	
+		pack32(count, buffer);
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->coord_accts);
+			while((coord = list_next(itr))) {
+				pack_acct_coord_rec(coord, rpc_version, buffer);
+			}
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+
+		packstr(object->default_acct, buffer);
+		packstr(object->default_wckey, buffer);
+		packstr(object->name, buffer);
+
+		pack32(object->uid, buffer);	
+
+		if(object->wckey_list)
+			count = list_count(object->wckey_list);
+	
+		pack32(count, buffer);
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->wckey_list);
+			while((wckey = list_next(itr))) {
+				pack_acct_wckey_rec(wckey, rpc_version,
+						    buffer);
+			}
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+	} else if(rpc_version >= 3) {
 		if(!object) {
 			pack16(0, buffer);
 			pack32(NO_VAL, buffer);
@@ -953,11 +1033,57 @@ extern int unpack_acct_user_rec(void **object, uint16_t rpc_version, Buf buffer)
 	uint32_t count = NO_VAL;
 	acct_coord_rec_t *coord = NULL;
 	acct_association_rec_t *assoc = NULL;
+	acct_wckey_rec_t *wckey = NULL;
 	int i;
 
 	*object = object_ptr;
 	
-	if(rpc_version >= 3) {
+	if(rpc_version >= 4) {
+		safe_unpack16(&object_ptr->admin_level, buffer);
+		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
+			object_ptr->assoc_list =
+				list_create(destroy_acct_association_rec);
+			for(i=0; i<count; i++) {
+				if(unpack_acct_association_rec(
+					   (void *)&assoc, rpc_version, buffer)
+				   == SLURM_ERROR)
+					goto unpack_error;
+				list_append(object_ptr->assoc_list, assoc);
+			}
+		}
+		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
+			object_ptr->coord_accts =
+				list_create(destroy_acct_coord_rec);
+			for(i=0; i<count; i++) {
+				if(unpack_acct_coord_rec((void *)&coord, 
+							 rpc_version, buffer)
+				   == SLURM_ERROR)
+					goto unpack_error;
+				list_append(object_ptr->coord_accts, coord);
+			}
+		}
+		safe_unpackstr_xmalloc(&object_ptr->default_acct, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&object_ptr->default_wckey, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
+		safe_unpack32(&object_ptr->uid, buffer);
+		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
+			object_ptr->wckey_list =
+				list_create(destroy_acct_wckey_rec);
+			for(i=0; i<count; i++) {
+				if(unpack_acct_wckey_rec(
+					   (void *)&wckey, rpc_version, buffer)
+				   == SLURM_ERROR)
+					goto unpack_error;
+				list_append(object_ptr->wckey_list, wckey);
+			}
+		}
+		
+	} else if(rpc_version >= 3) {
 		safe_unpack16(&object_ptr->admin_level, buffer);
 		safe_unpack32(&count, buffer);
 		if(count != NO_VAL) {
@@ -2463,7 +2589,57 @@ extern void pack_acct_user_cond(void *in, uint16_t rpc_version, Buf buffer)
 	acct_user_cond_t *object = (acct_user_cond_t *)in;
 	uint32_t count = NO_VAL;
 
-	if(rpc_version >= 3) {
+	if(rpc_version >= 4) {
+		if(!object) {
+			pack16(0, buffer);
+			pack_acct_association_cond(NULL, rpc_version, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack16(0, buffer);
+			pack16(0, buffer);
+			pack16(0, buffer);
+			pack16(0, buffer);
+			return;
+		}
+ 
+		pack16(object->admin_level, buffer);
+
+		pack_acct_association_cond(object->assoc_cond, 
+					   rpc_version, buffer);
+	
+		if(object->def_acct_list)
+			count = list_count(object->def_acct_list);
+
+		pack32(count, buffer);
+
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->def_acct_list);
+			while((tmp_info = list_next(itr))) {
+				packstr(tmp_info, buffer);
+			}
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+
+		if(object->def_wckey_list)
+			count = list_count(object->def_wckey_list);
+
+		pack32(count, buffer);
+
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->def_wckey_list);
+			while((tmp_info = list_next(itr))) {
+				packstr(tmp_info, buffer);
+			}
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+
+		pack16(object->with_assocs, buffer);
+		pack16(object->with_coords, buffer);
+		pack16(object->with_deleted, buffer);
+		pack16(object->with_wckeys, buffer);
+	} else if(rpc_version >= 3) {
 		if(!object) {
 			pack16(0, buffer);
 			pack_acct_association_cond(NULL, rpc_version, buffer);
@@ -2535,7 +2711,8 @@ extern void pack_acct_user_cond(void *in, uint16_t rpc_version, Buf buffer)
 	} 
 }
 
-extern int unpack_acct_user_cond(void **object, uint16_t rpc_version, Buf buffer)
+extern int unpack_acct_user_cond(void **object, uint16_t rpc_version, 
+				 Buf buffer)
 {
 	uint32_t uint32_tmp;
 	int i;
@@ -2545,7 +2722,42 @@ extern int unpack_acct_user_cond(void **object, uint16_t rpc_version, Buf buffer
 
 	*object = object_ptr;
 
-	if(rpc_version >= 3) {
+	if(rpc_version >= 4) {
+		safe_unpack16(&object_ptr->admin_level, buffer);
+		
+		if(unpack_acct_association_cond(
+			   (void **)&object_ptr->assoc_cond,
+			   rpc_version, buffer) == SLURM_ERROR)
+			goto unpack_error;
+		
+		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
+			object_ptr->def_acct_list = 
+				list_create(slurm_destroy_char);
+			for(i=0; i<count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info,
+						       &uint32_tmp, buffer);
+				list_append(object_ptr->def_acct_list,
+					    tmp_info);
+			}
+		}
+
+		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
+			object_ptr->def_wckey_list = 
+				list_create(slurm_destroy_char);
+			for(i=0; i<count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info,
+						       &uint32_tmp, buffer);
+				list_append(object_ptr->def_wckey_list,
+					    tmp_info);
+			}
+		}
+		safe_unpack16(&object_ptr->with_assocs, buffer);
+		safe_unpack16(&object_ptr->with_coords, buffer);
+		safe_unpack16(&object_ptr->with_deleted, buffer);
+		safe_unpack16(&object_ptr->with_wckeys, buffer);
+	} else if(rpc_version >= 3) {
 		safe_unpack16(&object_ptr->admin_level, buffer);
 		
 		if(unpack_acct_association_cond(
@@ -5382,6 +5594,15 @@ extern int acct_storage_g_add_qos(void *db_conn, uint32_t uid,
 		(db_conn, uid, qos_list);
 }
 
+extern int acct_storage_g_add_wckey(void *db_conn, uint32_t uid,
+				  List wckey_list)
+{
+	if (slurm_acct_storage_init(NULL) < 0)
+		return SLURM_ERROR;
+	return (*(g_acct_storage_context->ops.add_wckey))
+		(db_conn, uid, wckey_list);
+}
+
 extern List acct_storage_g_modify_users(void *db_conn, uint32_t uid,
 					acct_user_cond_t *user_cond,
 					acct_user_rec_t *user)
@@ -5431,6 +5652,16 @@ extern List acct_storage_g_modify_qos(void *db_conn, uint32_t uid,
 		return NULL;
 	return (*(g_acct_storage_context->ops.modify_qos))
 		(db_conn, uid, qos_cond, qos);
+}
+
+extern List acct_storage_g_modify_wckey(void *db_conn, uint32_t uid,
+				      acct_wckey_cond_t *wckey_cond,
+				      acct_wckey_rec_t *wckey)
+{
+	if (slurm_acct_storage_init(NULL) < 0)
+		return NULL;
+	return (*(g_acct_storage_context->ops.modify_wckey))
+		(db_conn, uid, wckey_cond, wckey);
 }
 
 extern List acct_storage_g_remove_users(void *db_conn, uint32_t uid,
@@ -5489,6 +5720,15 @@ extern List acct_storage_g_remove_qos(void *db_conn, uint32_t uid,
 		(db_conn, uid, qos_cond);
 }
 
+extern List acct_storage_g_remove_wckey(void *db_conn, uint32_t uid,
+				      acct_wckey_cond_t *wckey_cond)
+{
+	if (slurm_acct_storage_init(NULL) < 0)
+		return NULL;
+	return (*(g_acct_storage_context->ops.remove_wckey))
+		(db_conn, uid, wckey_cond);
+}
+
 extern List acct_storage_g_get_users(void *db_conn, uint32_t uid,
 				     acct_user_cond_t *user_cond)
 {
@@ -5531,6 +5771,15 @@ extern List acct_storage_g_get_qos(void *db_conn, uint32_t uid,
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
 	return (*(g_acct_storage_context->ops.get_qos))(db_conn, uid, qos_cond);
+}
+
+extern List acct_storage_g_get_wckey(void *db_conn, uint32_t uid, 
+				     acct_wckey_cond_t *wckey_cond)
+{
+	if (slurm_acct_storage_init(NULL) < 0)
+		return NULL;
+	return (*(g_acct_storage_context->ops.get_wckey))(db_conn, uid,
+							  wckey_cond);
 }
 
 extern List acct_storage_g_get_txn(void *db_conn,  uint32_t uid, 
