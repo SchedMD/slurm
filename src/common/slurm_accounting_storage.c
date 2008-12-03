@@ -1869,6 +1869,8 @@ extern int unpack_acct_association_rec(void **object, uint16_t rpc_version,
 
 	*object = object_ptr;
 
+	init_acct_association_rec(object_ptr);
+
 	if (rpc_version >= 4) {
 		safe_unpack32(&count, buffer);
 		if(count != NO_VAL) {
