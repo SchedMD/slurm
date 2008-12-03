@@ -135,6 +135,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"AuthType", S_P_STRING},
 	{"BackupAddr", S_P_STRING},
 	{"BackupController", S_P_STRING},
+	{"BatchStartTimeout", S_P_UINT16},
 	{"CheckpointType", S_P_STRING},
 	{"CacheGroups", S_P_UINT16},
 	{"ClusterName", S_P_STRING},
@@ -1231,6 +1232,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->authtype);
 	xfree (ctl_conf_ptr->backup_addr);
 	xfree (ctl_conf_ptr->backup_controller);
+	ctl_conf_ptr->batch_start_timeout	= 0;
 	ctl_conf_ptr->cache_groups		= 0;
 	xfree (ctl_conf_ptr->checkpoint_type);
 	xfree (ctl_conf_ptr->cluster_name);
@@ -1545,6 +1547,10 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		if (conf->backup_controller != NULL)
 			conf->backup_addr = xstrdup(conf->backup_controller);
 	}
+
+	if (!s_p_get_uint16(&conf->batch_start_timeout, "BatchStartTimeout", 
+			    hashtbl))
+		conf->batch_start_timeout = DEFAULT_BATCH_START_TIMEOUT;
 
 	s_p_get_string(&conf->cluster_name, "ClusterName", hashtbl);
 

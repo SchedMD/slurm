@@ -973,6 +973,7 @@ typedef struct slurm_ctl_conf {
 	char *authtype;		/* authentication type */
 	char *backup_addr;	/* comm path of slurmctld secondary server */
 	char *backup_controller;/* name of slurmctld secondary server */
+	uint16_t batch_start_timeout;	/* max secs for batch job to start */
 	time_t boot_time;	/* time slurmctld last booted */
 	uint16_t cache_groups;	/* cache /etc/groups to avoid initgroups(2) */
 	char *checkpoint_type;	/* checkpoint plugin type */

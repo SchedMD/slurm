@@ -114,7 +114,7 @@ int slurm_set_api_config(slurm_protocol_config_t * protocol_conf)
  * returns a pointer to the current slurm_protocol_config object
  * RET slurm_protocol_config_t  - current slurm_protocol_config object
  */
-slurm_protocol_config_t *slurm_get_api_config()
+slurm_protocol_config_t *slurm_get_api_config(void)
 {
 	return proto_conf;
 }
@@ -134,7 +134,7 @@ extern void  slurm_api_set_conf_file(char *pathname)
  *	the compiled in default slurm_protocol_config object is initialized
  * RET int		 - return code
  */
-int slurm_api_set_default_config()
+int slurm_api_set_default_config(void)
 {
 	int rc = SLURM_SUCCESS;
 	slurm_ctl_conf_t *conf;
@@ -205,6 +205,23 @@ uint16_t slurm_get_complete_wait(void)
 /* 	slurm_api_set_default_config(); */
 /* 	slurm_mutex_lock(&config_lock); */
 /* } */
+
+/* slurm_get_batch_start_timeout
+ * RET BatchStartTimeout value from slurm.conf
+ */
+uint16_t slurm_get_batch_start_timeout(void)
+{
+	uint16_t batch_start_timeout = 0;
+	slurm_ctl_conf_t *conf;
+
+	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		batch_start_timeout = conf->batch_start_timeout;
+		slurm_conf_unlock();
+	}
+	return batch_start_timeout;
+}
 
 /* slurm_get_def_mem_per_task
  * RET DefMemPerTask value from slurm.conf
