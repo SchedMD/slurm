@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "October 2008" "slurm.conf 1.4" "Slurm configuration file"
+.TH "slurm.conf" "5" "December 2008" "slurm.conf 1.4" "Slurm configuration file"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
@@ -164,8 +164,6 @@ allocation. The default value is 10 (seconds). Larger values may
 be required if more time is required to execute the \fBProlog\fR, 
 loading user environment variables (for Moab spawned jobs), or the 
 slurmd daemon gets paged from memory.
-NOTE: The value will not be reported by "scontrol show config" command 
-until SLURM version 1.4.
 
 .TP
 \fBCacheGroups\fR

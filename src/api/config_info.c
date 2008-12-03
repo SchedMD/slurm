@@ -127,6 +127,8 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->backup_addr);
 	fprintf(out, "BackupController        = %s\n", 
 		slurm_ctl_conf_ptr->backup_controller);
+	fprintf(out, "BatchStartTime          = %u\n", 
+		slurm_ctl_conf_ptr->batch_start_timeout);
 	slurm_make_time_str ((time_t *)&slurm_ctl_conf_ptr->boot_time,
 			     time_str, sizeof(time_str));
 	fprintf(out, "BOOT_TIME               = %s\n",
