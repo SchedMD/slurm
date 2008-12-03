@@ -157,6 +157,17 @@ While not essential, it is recommended that you specify a backup controller.
 See  the \fBRELOCATING CONTROLLERS\fR section if you change this.
 
 .TP
+\fBBatchStartTimeout\fR
+The maximum time (in seconds) that a batch job is permitted for 
+launching before being considered missing and releasing the 
+allocation. The default value is 10 (seconds). Larger values may 
+be required if more time is required to execute the \fBProlog\fR, 
+loading user environment variables (for Moab spawned jobs), or the 
+slurmd daemon gets paged from memory.
+NOTE: The value will not be reported by "scontrol show config" command 
+until SLURM version 1.4.
+
+.TP
 \fBCacheGroups\fR
 If set to 1, the slurmd daemon will  cache /etc/groups entries.
 This can improve performance for highly parallel jobs if NIS servers
