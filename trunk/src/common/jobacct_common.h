@@ -153,6 +153,7 @@ typedef struct {
 	char    *user;
 	uint32_t user_cpu_sec;
 	uint32_t user_cpu_usec;
+	char    *wckey;
 } jobacct_job_rec_t;
 
 typedef struct {

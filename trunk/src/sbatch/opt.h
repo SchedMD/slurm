@@ -143,6 +143,7 @@ typedef struct sbatch_options {
 	char *efname;		/* error file name		*/
 	int get_user_env_time;	/* --get-user-env[=timeout]	*/
 	int get_user_env_mode;	/* --get-user-env=[S|L]         */
+	char *wckey;            /* --wckey workload characterization key */
 } opt_t;
 
 extern opt_t opt;

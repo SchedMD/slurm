@@ -384,7 +384,9 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 {
 	char *type = NULL;
 	int temp_int = 0;
-	
+
+	errno = 0;
+
 	if(!part_msg)
 		return NULL;
 	
@@ -1885,8 +1887,6 @@ extern void admin_edit_part(GtkCellRendererText *cell,
 	if(column != SORTID_STATE && column != SORTID_FEATURES ) {
 		if(old_text && !strcmp(old_text, new_text)) {
 			temp = g_strdup_printf("No change in value.");
-			display_edit_note(temp);
-			g_free(temp);	
 		} else if(slurm_update_partition(part_msg) == SLURM_SUCCESS) {
 			gtk_tree_store_set(treestore, &iter, column,
 					   new_text, -1);
@@ -1894,8 +1894,6 @@ extern void admin_edit_part(GtkCellRendererText *cell,
 					       part_msg->name,
 					       type,
 					       new_text);
-			display_edit_note(temp);
-			g_free(temp);
 		} else {
 		print_error:
 			temp = g_strdup_printf("Partition %s %s can't be "
@@ -1903,9 +1901,9 @@ extern void admin_edit_part(GtkCellRendererText *cell,
 					       part_msg->name,
 					       type,
 					       new_text);
-			display_edit_note(temp);
-			g_free(temp);
 		}
+		display_edit_note(temp);
+		g_free(temp);	
 	}
 no_input:
 	slurm_free_update_part_msg(part_msg);

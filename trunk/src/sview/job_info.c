@@ -137,6 +137,7 @@ enum {
 	SORTID_TIME,
 	SORTID_TIMELIMIT,
 	SORTID_TMP_DISK,
+	SORTID_WCKEY,
 	SORTID_UPDATED,
 	SORTID_USER, 
 	SORTID_CNT
@@ -181,6 +182,8 @@ static display_data_t display_data_job[] = {
 	{G_TYPE_STRING, SORTID_USER, "User", TRUE, EDIT_NONE, refresh_job,
 	 create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_GROUP, "Group", FALSE, EDIT_NONE, refresh_job,
+	 create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_WCKEY, "WCKey", FALSE, EDIT_TEXTBOX, refresh_job,
 	 create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_NAME, "Name", TRUE, EDIT_TEXTBOX, refresh_job,
 	 create_model_job, admin_edit_job},
@@ -559,6 +562,9 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 	char* geometry_tmp = xstrdup(new_text);
 	char* original_ptr = geometry_tmp;
 #endif
+	/* need to clear errno here (just in case) */
+	errno = 0;
+
 	if(!job_msg)
 		return NULL;
 	
@@ -655,6 +661,10 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 	case SORTID_NAME:		
 		job_msg->name = xstrdup(new_text);
 		type = "name";
+		break;
+	case SORTID_WCKEY:		
+		xstrfmtcat(job_msg->name, "\"%s", new_text);
+		type = "wckey";
 		break;
 	case SORTID_SHARED:
 		if (!strcasecmp(new_text, "yes")) {
@@ -1028,7 +1038,8 @@ static void _layout_job_record(GtkTreeView *treeview,
 			       sview_job_info_t *sview_job_info_ptr, 
 			       int update)
 {
-	char *nodes = NULL, *reason, *uname = NULL;
+	char *nodes = NULL, *reason = NULL, 
+		*uname = NULL, *jname = NULL, *wckey = NULL;
 	char tmp_char[50];
 	time_t now_time = time(NULL);
 	job_info_t *job_ptr = sview_job_info_ptr->job_ptr;
@@ -1038,6 +1049,24 @@ static void _layout_job_record(GtkTreeView *treeview,
 	GtkTreeIter iter;
 	GtkTreeStore *treestore = 
 		GTK_TREE_STORE(gtk_tree_view_get_model(treeview));
+
+	if (job_ptr->name && job_ptr->name[0]) {
+		char *temp = NULL;
+		/* first set the jname to the job_ptr->name */
+		jname = xstrdup(job_ptr->name);
+		/* then grep for " since that is the delimiter for
+		   the wckey */
+		temp = strchr(jname, '\"');
+		if(temp) {
+			/* if we have a wckey set the " to NULL to
+			 * end the jname */
+			temp[0] = '\0';
+			/* increment and copy the remainder */
+			temp++;
+			wckey = xstrdup(temp);
+		}
+	}
+	
 
 	if(!treestore)
 		return;
@@ -1149,7 +1178,12 @@ static void _layout_job_record(GtkTreeView *treeview,
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
 						 SORTID_NAME), 
-				   job_ptr->name);
+				   jname);
+	
+	add_display_treestore_line(update, treestore, &iter, 
+				   find_col_name(display_data_job,
+						 SORTID_WCKEY), 
+				   wckey);
 	
 	sprintf(tmp_char, "%u", job_ptr->priority);
 	add_display_treestore_line(update, treestore, &iter, 
@@ -1417,13 +1451,16 @@ static void _layout_job_record(GtkTreeView *treeview,
 				   find_col_name(display_data_job,
 						 SORTID_COMMENT),
 				   job_ptr->comment);
+	xfree(jname);
+	xfree(wckey);
 }
 
 static void _update_job_record(sview_job_info_t *sview_job_info_ptr, 
 			       GtkTreeStore *treestore,
 			       GtkTreeIter *iter)
 {
-	char *nodes = NULL, *reason, *uname = NULL;
+	char *nodes = NULL, *reason = NULL, *jname = NULL,
+		*wckey = NULL, *uname = NULL;
 	char tmp_char[50];
 	time_t now_time = time(NULL);
 	GtkTreeIter step_iter;
@@ -1431,6 +1468,23 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	job_info_t *job_ptr = sview_job_info_ptr->job_ptr;
 	struct group *group_info = NULL;
 	uint16_t term_sig = 0;
+     
+	if (job_ptr->name && job_ptr->name[0]) {
+		char *temp = NULL;
+		/* first set the jname to the job_ptr->name */
+		jname = xstrdup(job_ptr->name);
+		/* then grep for " since that is the delimiter for
+		   the wckey */
+		temp = strchr(jname, '\"');
+		if(temp) {
+			/* if we have a wckey set the " to NULL to
+			 * end the jname */
+			temp[0] = '\0';
+			/* increment and copy the remainder */
+			temp++;
+			wckey = xstrdup(temp);
+		}
+	}
 	
 	gtk_tree_store_set(treestore, iter, SORTID_UPDATED, 1, -1);
 	if(!job_ptr->nodes || !strcasecmp(job_ptr->nodes,"waiting...")) {
@@ -1578,7 +1632,8 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 			   SORTID_GROUP, 
 			   tmp_char, -1);
 		
-	gtk_tree_store_set(treestore, iter, SORTID_NAME, job_ptr->name, -1);
+	gtk_tree_store_set(treestore, iter, SORTID_NAME, jname, -1);
+	gtk_tree_store_set(treestore, iter, SORTID_WCKEY, wckey, -1);
 	gtk_tree_store_set(treestore, iter, 
 			   SORTID_STATE, 
 			   job_state_string(job_ptr->job_state), -1);
@@ -1720,6 +1775,8 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 		_update_info_step(sview_job_info_ptr, 
 				  GTK_TREE_MODEL(treestore), NULL, iter);
 		
+	xfree(jname);
+	xfree(wckey);
 	return;
 }
 
@@ -2551,7 +2608,7 @@ extern void admin_edit_job(GtkCellRendererText *cell,
 	}
 	
 	type = _set_job_msg(job_msg, new_text, column);
-	if(errno)
+	if(errno) 
 		goto print_error;
 	
 	if(got_edit_signal) {
@@ -2565,16 +2622,15 @@ extern void admin_edit_job(GtkCellRendererText *cell,
 
 	if(old_text && !strcmp(old_text, new_text)) {
 		temp = g_strdup_printf("No change in value.");
-		display_edit_note(temp);
-		g_free(temp);	
 	} else if(slurm_update_job(job_msg) == SLURM_SUCCESS) {
 		gtk_tree_store_set(treestore, &iter, column, new_text, -1);
 		temp = g_strdup_printf("Job %d %s changed to %s",
 				       job_msg->job_id,
 				       type,
 				       new_text);
-		display_edit_note(temp);
-		g_free(temp);
+	} else if(errno == ESLURM_DISABLED) {
+		temp = g_strdup_printf(
+			"Can only edit %s on pending jobs.", type);
 	} else {
 	print_error:
 		temp = g_strdup_printf("Job %d %s can't be "
@@ -2582,9 +2638,10 @@ extern void admin_edit_job(GtkCellRendererText *cell,
 				       job_msg->job_id,
 				       type,
 				       new_text);
-		display_edit_note(temp);
-		g_free(temp);
 	}
+	
+	display_edit_note(temp);
+	g_free(temp);
 
 no_input:
 	slurm_free_job_desc_msg(job_msg);
@@ -3271,6 +3328,11 @@ extern void admin_job(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 			if(slurm_update_job(job_msg) == SLURM_SUCCESS) {
 				tmp_char_ptr = g_strdup_printf(
 					"Job %u updated successfully",
+					jobid);
+			} else if(errno == ESLURM_DISABLED) {
+				tmp_char_ptr = g_strdup_printf(
+					"Can't edit that part of non-pending "
+					"job %u.",
 					jobid);
 			} else {
 				tmp_char_ptr = g_strdup_printf(

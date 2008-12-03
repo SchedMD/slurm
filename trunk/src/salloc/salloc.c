@@ -335,7 +335,11 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->contiguous = opt.contiguous ? 1 : 0;
 	desc->features = opt.constraints;
 	desc->immediate = opt.immediate ? 1 : 0;
-	desc->name = opt.job_name;
+	desc->name = xstrdup(opt.job_name);
+
+	if(opt.wckey)
+ 		xstrfmtcat(desc->name, "\"%s", opt.wckey);
+
 	desc->req_nodes = opt.nodelist;
 	desc->exc_nodes = opt.exc_nodes;
 	desc->partition = opt.partition;

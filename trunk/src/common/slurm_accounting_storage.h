@@ -265,6 +265,7 @@ typedef struct {
 	uint32_t usage_end; 
 	uint32_t usage_start; 
 	List userid_list;		/* list of char * */
+	List wckey_list;		/* list of char * */
 	uint16_t without_steps; /* don't give me step info */
 } acct_job_cond_t;
 

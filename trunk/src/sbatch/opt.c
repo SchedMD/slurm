@@ -93,6 +93,7 @@
 #define OPT_REQUEUE     0x11
 #define OPT_CPU_BIND    0x12
 #define OPT_MEM_BIND    0x13
+#define OPT_WCKEY       0x14
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_PROPAGATE   0x100
@@ -136,6 +137,7 @@
 #define LONG_OPT_GET_USER_ENV    0x146
 #define LONG_OPT_OPEN_MODE       0x147
 #define LONG_OPT_ACCTG_FREQ      0x148
+#define LONG_OPT_WCKEY           0x149
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -304,6 +306,7 @@ static void _opt_default()
 	opt.get_user_env_time = -1;
 	opt.get_user_env_mode = -1;
 	opt.acctg_freq        = -1;
+	opt.wckey = NULL;
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -350,6 +353,7 @@ env_vars_t env_vars[] = {
   {"SBATCH_RAMDISK_IMAGE", OPT_STRING,     &opt.ramdiskimage,  NULL           },
   {"SBATCH_TIMELIMIT",     OPT_STRING,     &opt.time_limit_str,NULL           },
   {"SBATCH_REQUEUE",       OPT_REQUEUE,    NULL,               NULL           },
+  {"SBATCH_WCKEY",         OPT_STRING,     &opt.wckey,         NULL           },
   {NULL, 0, NULL, NULL}
 };
 
@@ -490,7 +494,10 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_REQUEUE:
 		opt.requeue = 1;
 		break;
-
+	case OPT_WCKEY:
+		xfree(opt.wckey);
+		opt.wckey = xstrdup(optarg);
+		break;
 	default:
 		/* do nothing */
 		break;
@@ -578,6 +585,7 @@ static struct option long_options[] = {
 	{"network",       required_argument, 0, LONG_OPT_NETWORK},
 	{"cpu_bind",      required_argument, 0, LONG_OPT_CPU_BIND},
 	{"mem_bind",      required_argument, 0, LONG_OPT_MEM_BIND},
+	{"wckey",         required_argument, 0, LONG_OPT_WCKEY},
 	{NULL,            0,                 0, 0}
 };
 
@@ -1352,6 +1360,10 @@ static void _set_options(int argc, char **argv)
 			xfree(opt.network);
 			opt.network = xstrdup(optarg);
 			break;
+		case LONG_OPT_WCKEY:
+			xfree(opt.wckey);
+			opt.wckey = xstrdup(optarg);
+			break;
 		default:
 			fatal("Unrecognized command line parameter %c",
 			      opt_char);
@@ -2107,6 +2119,7 @@ static void _opt_list()
 	info("partition      : %s",
 		opt.partition == NULL ? "default" : opt.partition);
 	info("job name       : `%s'", opt.job_name);
+	info("wckey          : `%s'", opt.wckey);
 	info("distribution   : %s", format_task_dist_states(opt.distribution));
 	if(opt.distribution == SLURM_DIST_PLANE)
 		info("plane size   : %u", opt.plane_size);
