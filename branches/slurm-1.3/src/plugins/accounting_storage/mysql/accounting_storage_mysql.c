@@ -122,7 +122,6 @@ char *wckey_hour_table = "wckey_hour_usage_table";
 char *wckey_month_table = "wckey_month_usage_table";
 char *wckey_table = "wckey_table";
 
-
 typedef enum {
 	QOS_LEVEL_NONE,
 	QOS_LEVEL_SET,
@@ -1029,6 +1028,12 @@ static int _addto_update_list(List update_list, acct_update_type_t type,
 	case ACCT_REMOVE_QOS:
 		update_object->objects = list_create(
 			destroy_acct_qos_rec);
+		break;
+	case ACCT_ADD_WCKEY:
+	case ACCT_MODIFY_WCKEY:
+	case ACCT_REMOVE_WCKEY:
+		update_object->objects = list_create(
+			destroy_acct_wckey_rec);
 		break;
 	case ACCT_UPDATE_NOTSET:
 	default:
@@ -2743,6 +2748,13 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 			case ACCT_REMOVE_QOS:
 				rc = assoc_mgr_update_local_qos(object);
 				break;
+			case ACCT_ADD_WCKEY:
+			case ACCT_MODIFY_WCKEY:
+			case ACCT_REMOVE_WCKEY:
+				/* FIX ME: this needs to do something
+				 * probably */
+				//rc = assoc_mgr_update_local_wckey(object);
+				break;
 			case ACCT_UPDATE_NOTSET:
 			default:
 				error("unknown type set in "
@@ -3794,6 +3806,12 @@ extern int acct_storage_p_add_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 #else
 	return SLURM_ERROR;
 #endif
+}
+
+extern int acct_storage_p_add_wckey(mysql_conn_t *mysql_conn, uint32_t uid, 
+				    List wckey_list)
+{
+	return SLURM_SUCCESS;
 }
 
 extern List acct_storage_p_modify_users(mysql_conn_t *mysql_conn, uint32_t uid, 
@@ -5030,6 +5048,13 @@ extern List acct_storage_p_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 #endif
 }
 
+extern List acct_storage_p_modify_wckey(mysql_conn_t *mysql_conn, uint32_t uid, 
+					acct_wckey_cond_t *wckey_cond,
+					acct_wckey_rec_t *wckey)
+{
+	return NULL;
+}
+
 extern List acct_storage_p_remove_users(mysql_conn_t *mysql_conn, uint32_t uid, 
 					acct_user_cond_t *user_cond)
 {
@@ -6013,6 +6038,12 @@ extern List acct_storage_p_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 #else
 	return NULL;
 #endif
+}
+
+extern List acct_storage_p_remove_wckey(mysql_conn_t *mysql_conn, uint32_t uid, 
+				      acct_wckey_cond_t *wckey_cond)
+{
+	return NULL;
 }
 
 extern List acct_storage_p_get_users(mysql_conn_t *mysql_conn, uid_t uid, 
@@ -7379,6 +7410,12 @@ empty:
 #else
 	return NULL;
 #endif
+}
+
+extern List acct_storage_p_get_wckey(mysql_conn_t *mysql_conn, uid_t uid,
+				     acct_wckey_cond_t *wckey_cond)
+{
+	return NULL;
 }
 
 extern List acct_storage_p_get_txn(mysql_conn_t *mysql_conn, uid_t uid,

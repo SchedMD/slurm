@@ -66,6 +66,9 @@ typedef enum {
 	ACCT_ADD_QOS,
 	ACCT_REMOVE_QOS,
 	ACCT_MODIFY_QOS,
+	ACCT_ADD_WCKEY,
+	ACCT_REMOVE_WCKEY,
+	ACCT_MODIFY_WCKEY,
 } acct_update_type_t;
 
 /* Association conditions used for queries of the database */
@@ -224,8 +227,8 @@ typedef struct {
 	List cluster_list; /* list of char * */
 	uint32_t usage_end; 
 	uint32_t usage_start; 
-	uint16_t with_usage; 
 	uint16_t with_deleted; 
+	uint16_t with_usage; 
 } acct_cluster_cond_t;
 
 typedef struct {
@@ -341,14 +344,16 @@ typedef struct {
 	acct_association_cond_t *assoc_cond; /* use user_list here for
 						names */
 	List def_acct_list; /* list of char * */
+	List def_wckey_list; /* list of char * */
 	uint16_t with_assocs; 
 	uint16_t with_coords; 
 	uint16_t with_deleted; 
+	uint16_t with_wckeys; 
 } acct_user_cond_t;
 
 /* If there is something that can be altered here it will need to
  * added as something to check for when modifying a user since a user
- * can modify there default account but nothing else in
+ * can modify there default account, and default wckey but nothing else in
  * src/slurmdbd/proc_req.c.
  */
 typedef struct {
@@ -357,8 +362,10 @@ typedef struct {
 	List assoc_list; /* list of acct_association_rec_t *'s */
 	List coord_accts; /* list of acct_coord_rec_t *'s */
 	char *default_acct;
+	char *default_wckey;
 	char *name;
 	uint32_t uid;
+	List wckey_list; /* list of acct_wckey_rec_t *'s */
 } acct_user_rec_t;
 
 typedef struct {
@@ -653,6 +660,14 @@ extern int acct_storage_g_add_qos(void *db_conn, uint32_t uid,
 				  List qos_list);
 
 /* 
+ * add wckey's to accounting system 
+ * IN:  wckey_list List of acct_wckey_rec_t *
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int acct_storage_g_add_wckey(void *db_conn, uint32_t uid, 
+				    List wckey_list);
+
+/* 
  * modify existing users in the accounting system 
  * IN:  acct_user_cond_t *user_cond
  * IN:  acct_user_rec_t *user
@@ -702,6 +717,16 @@ extern List acct_storage_g_modify_associations(
 extern List acct_storage_g_modify_qos(void *db_conn, uint32_t uid, 
 				      acct_qos_cond_t *qos_cond,
 				      acct_qos_rec_t *qos);
+
+/* 
+ * modify existing wckey in the accounting system 
+ * IN:  acct_wckey_cond_t *wckey_cond
+ * IN:  acct_wckey_rec_t *wckey
+ * RET: List containing (char *'s) else NULL on error
+ */
+extern List acct_storage_g_modify_wckey(void *db_conn, uint32_t uid, 
+				      acct_wckey_cond_t *wckey_cond,
+				      acct_wckey_rec_t *wckey);
 
 /* 
  * remove users from accounting system 
@@ -754,6 +779,14 @@ extern List acct_storage_g_remove_qos(
 	void *db_conn, uint32_t uid, acct_qos_cond_t *qos_cond);
 
 /* 
+ * remove wckey from accounting system 
+ * IN:  acct_wckey_cond_t *assoc_wckey
+ * RET: List containing (char *'s) else NULL on error
+ */
+extern List acct_storage_g_remove_wckey(
+	void *db_conn, uint32_t uid, acct_wckey_cond_t *wckey_cond);
+
+/* 
  * get info from the storage 
  * IN:  acct_user_cond_t *
  * IN:  params void *
@@ -801,6 +834,15 @@ extern List acct_storage_g_get_associations(
  */
 extern List acct_storage_g_get_qos(void *db_conn, uint32_t uid,
 				   acct_qos_cond_t *qos_cond);
+
+/* 
+ * get info from the storage 
+ * IN:  acct_wckey_cond_t *
+ * RET: List of acct_wckey_rec_t *
+ * note List needs to be freed when called
+ */
+extern List acct_storage_g_get_wckey(void *db_conn, uint32_t uid,
+				     acct_wckey_cond_t *wckey_cond);
 
 /* 
  * get info from the storage 
