@@ -228,13 +228,13 @@ mgr_launch_tasks_setup(launch_tasks_request_msg_t *msg, slurm_addr *cli,
 	return job;
 }
 
-static void
-_batch_finish(slurmd_job_t *job, int rc)
+extern void
+batch_finish(slurmd_job_t *job, int rc)
 {
 	int i;
 	for (i = 0; i < job->ntasks; i++) {
 		/* If signalled we only need to check one and then
-		   break out of the loop */ 
+		 * break out of the loop */ 
 		if(WIFSIGNALED(job->task[i]->estatus)) {
 			switch(WTERMSIG(job->task[i]->estatus)) {
 			case SIGTERM:
@@ -840,9 +840,7 @@ job_manager(slurmd_job_t *job)
 
 	if (job->aborted)
 		info("job_manager exiting with aborted job");
-	else if (job->batch) {
-		_batch_finish(job, rc); /* sends batch complete message */
-	} else if (step_complete.rank > -1) {
+	else if (!job->batch && (step_complete.rank > -1)) {
 		_wait_for_children_slurmstepd(job);
 		_send_step_complete_msgs(job);
 	}
