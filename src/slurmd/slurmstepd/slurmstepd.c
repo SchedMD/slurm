@@ -136,7 +136,11 @@ main (int argc, char *argv[])
 	eio_signal_shutdown(job->msg_handle);
 	pthread_join(job->msgid, NULL);
 
+	if (job->batch)
+		batch_finish(job, rc); /* sends batch complete message */
+
 ending:
+#ifdef MEMORY_LEAK_DEBUG
 	_step_cleanup(job, msg, rc);
 
 	xfree(cli);
@@ -146,6 +150,7 @@ ending:
 	xfree(conf->node_name);
 	xfree(conf->logfile);
 	xfree(conf);
+#endif
 	info("done with job");
 	return rc;
 }
