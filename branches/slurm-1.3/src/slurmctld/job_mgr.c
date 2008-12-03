@@ -4783,7 +4783,7 @@ static void _purge_lost_batch_jobs(int node_inx, time_t now)
 
 		info("Batch JobId=%u missing from master node, killing it", 
 			job_ptr->job_id);
-		job_complete(job_ptr->job_id, 0, false, 0);
+		job_complete(job_ptr->job_id, 0, false, NO_VAL);
 	}
 	list_iterator_destroy(job_iterator);
 }
