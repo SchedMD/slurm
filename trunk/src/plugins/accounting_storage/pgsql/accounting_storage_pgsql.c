@@ -1138,6 +1138,7 @@ extern int jobacct_storage_p_job_start(PGconn *acct_pgsql_db,
 	char *block_id = NULL;
 	char *query = NULL;
 	int reinit = 0;
+	char *wckey = NULL;
 
 	if (!job_ptr->details || !job_ptr->details->submit_time) {
 		error("jobacct_storage_p_job_start: "
