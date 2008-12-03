@@ -92,6 +92,7 @@
 #define OPT_ACCTG_FREQ  0x0f
 #define OPT_CPU_BIND    0x10
 #define OPT_MEM_BIND    0x11
+#define OPT_WCKEY       0x15
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_CPU_BIND    0x101
@@ -133,6 +134,7 @@
 #define LONG_OPT_MEM_PER_CPU     0x13a
 #define LONG_OPT_HINT            0x13b
 #define LONG_OPT_ACCTG_FREQ      0x13c
+#define LONG_OPT_WCKEY           0x13d
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -299,6 +301,7 @@ static void _opt_default()
 	opt.no_shell	    = false;
 	opt.get_user_env_time = -1;
 	opt.get_user_env_mode = -1;
+	opt.wckey = NULL;
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -338,6 +341,7 @@ env_vars_t env_vars[] = {
   {"SALLOC_PARTITION",     OPT_STRING,     &opt.partition,     NULL           },
   {"SALLOC_TIMELIMIT",     OPT_STRING,     &opt.time_limit_str,NULL           },
   {"SALLOC_WAIT",          OPT_INT,        &opt.max_wait,      NULL           },
+  {"SALLOC_WCKEY",         OPT_STRING,     &opt.wckey,         NULL           },
   {NULL, 0, NULL, NULL}
 };
 
@@ -459,6 +463,10 @@ _process_env_var(env_vars_t *e, const char *val)
 					  &opt.mem_bind_type))
 			exit(1);
 		break;
+	case OPT_WCKEY:
+		xfree(opt.wckey);
+		opt.wckey = xstrdup(optarg);
+		break;
 	default:
 		/* do nothing */
 		break;
@@ -564,6 +572,7 @@ void set_options(const int argc, char **argv)
 		{"network",       required_argument, 0, LONG_OPT_NETWORK},
 		{"cpu_bind",      required_argument, 0, LONG_OPT_CPU_BIND},
 		{"mem_bind",      required_argument, 0, LONG_OPT_MEM_BIND},
+		{"wckey",         required_argument, 0, LONG_OPT_WCKEY},
 		{NULL,            0,                 0, 0}
 	};
 	char *opt_string = "+a:B:c:C:d:D:F:g:hHIJ:kK:L:m:n:N:Op:P:qR:st:uU:vVw:W:x:";
@@ -949,6 +958,10 @@ void set_options(const int argc, char **argv)
 			if (slurm_verify_mem_bind(optarg, &opt.mem_bind,
 						  &opt.mem_bind_type))
 				exit(1);
+			break;
+		case LONG_OPT_WCKEY:
+			xfree(opt.wckey);
+			opt.wckey = xstrdup(optarg);
 			break;
 		default:
 			fatal("Unrecognized command line parameter %c",
@@ -1363,6 +1376,7 @@ static void _opt_list()
 	info("partition      : %s",
 		opt.partition == NULL ? "default" : opt.partition);
 	info("job name       : `%s'", opt.job_name);
+	info("wckey          : `%s'", opt.wckey);
 	if (opt.jobid != NO_VAL)
 		info("jobid          : %u", opt.jobid);
 	info("distribution   : %s", format_task_dist_states(opt.distribution));

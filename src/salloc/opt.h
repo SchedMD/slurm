@@ -138,6 +138,7 @@ typedef struct salloc_options {
 	int get_user_env_time;	/* --get-user-env[=secs]	*/
 	int get_user_env_mode; 	/* --get-user-env=[S|L]		*/
 	char *cwd;		/* current working directory	*/
+	char *wckey;            /* --wckey workload characterization key */
 } opt_t;
 
 extern opt_t opt;

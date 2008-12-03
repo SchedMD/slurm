@@ -208,6 +208,7 @@ typedef struct srun_options {
 	bool pty;		/* --pty			*/
 	int argc;		/* length of argv array		*/
 	char **argv;		/* left over on command line	*/
+	char *wckey;            /* --wckey workload characterization key */
 } opt_t;
 
 extern opt_t opt;

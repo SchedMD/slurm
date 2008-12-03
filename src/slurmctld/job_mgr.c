@@ -4433,11 +4433,61 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	}
 
 	if (job_specs->name) {
-		xfree(job_ptr->name);
-		job_ptr->name = job_specs->name;
-		job_specs->name = NULL;		/* Nothing left to free */
-		info("update_job: setting name to %s for job_id %u",
-		     job_ptr->name, job_specs->job_id);
+		if (!IS_JOB_PENDING(job_ptr))
+			error_code = ESLURM_DISABLED;
+		else {
+			char *jname = NULL, *wckey = NULL;
+			char *jname_new = NULL;
+			char *temp = NULL;
+			
+			/* first set the jname to the job_ptr->name */
+			jname = xstrdup(job_ptr->name);
+			/* then grep for " since that is the delimiter for
+			   the wckey */
+			temp = strchr(jname, '\"');
+			if(temp) {
+				/* if we have a wckey set the " to NULL to
+				 * end the jname */
+				temp[0] = '\0';
+				/* increment and copy the remainder */
+				temp++;
+				wckey = xstrdup(temp);
+			}
+			
+			/* first set the jname to the job_specs->name */
+			jname_new = xstrdup(job_specs->name);
+			/* then grep for " since that is the delimiter for
+			   the wckey */
+			temp = strchr(jname_new, '\"');
+			if(temp) {
+				/* if we have a wckey set the " to NULL to
+				 * end the jname */
+				temp[0] = '\0';
+				/* increment and copy the remainder */
+				temp++;
+				xfree(wckey);
+				wckey = xstrdup(temp);
+			}
+			
+			if(jname_new && jname_new[0]) {
+				xfree(jname);
+				jname = jname_new;
+			}
+			
+			xfree(job_ptr->name);		
+			if(jname) {
+				xstrfmtcat(job_ptr->name,"%s", jname);
+				xfree(jname);
+			} 
+			
+			if(wckey) {
+				xstrfmtcat(job_ptr->name,"\"%s", wckey);
+				xfree(wckey);			
+			}
+
+			info("update_job: setting name to %s for job_id %u",
+			     job_ptr->name, job_specs->job_id);
+		}
 	}
 
 	if (job_specs->requeue != (uint16_t) NO_VAL) {
