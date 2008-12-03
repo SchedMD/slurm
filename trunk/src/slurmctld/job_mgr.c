@@ -4923,12 +4923,13 @@ extern void validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 }
 
 /* Purge any batch job that should have its script running on node 
- * node_inx, but is not. Allow BATCH_START_TIME secs for startup. */
+ * node_inx, but is not. Allow "batch_start_timeout" secs for startup. */
 static void _purge_lost_batch_jobs(int node_inx, time_t now)
 {
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
-	time_t recent = now - slurm_get_batch_start_timeout();
+	uint16_t batch_start_timeout = slurm_get_batch_start_timeout();
+	time_t recent = now - batch_start_timeout;
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
@@ -4936,14 +4937,14 @@ static void _purge_lost_batch_jobs(int node_inx, time_t now)
 				   (job_ptr->job_state == JOB_SUSPENDED));
 		if ((!job_active)                           ||
 		    (job_ptr->batch_flag == 0)              ||
-		    ((job_ptr->time_last_active + BATCH_START_TIME) > now) ||
+		    ((job_ptr->time_last_active+batch_start_timeout) > now) ||
 		    (job_ptr->start_time >= recent)     ||
 		    (node_inx != bit_ffs(job_ptr->node_bitmap)))
 			continue;
 
 		info("Batch JobId=%u missing from master node, killing it", 
 			job_ptr->job_id);
-		job_complete(job_ptr->job_id, 0, false, 0);
+		job_complete(job_ptr->job_id, 0, false, NO_VAL);
 	}
 	list_iterator_destroy(job_iterator);
 }

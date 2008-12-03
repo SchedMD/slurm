@@ -36,6 +36,8 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 * Default AuthType is now "auth/munge" rather than auth/none.
 * Default CryptoType is now "crypto/munge". OpenSSL is no longer required by
   SLURM in the default configuration.
+* BatchStartTime has been added to control how long to wait for a batch job
+  to start (complete Prolog, load environment for Moab, etc.).
 * CompleteTime has been added to control how long to wait for a job's 
   completion before allocating already released resources to pending jobs.
 * OverTimeLimit added to permit jobs to exceed their (soft) time limit by a

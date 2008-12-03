@@ -366,6 +366,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 
 	conf_ptr->backup_addr         = xstrdup(conf->backup_addr);
 	conf_ptr->backup_controller   = xstrdup(conf->backup_controller);
+	conf_ptr->batch_start_timeout = conf->batch_start_timeout;
 	conf_ptr->boot_time           = slurmctld_config.boot_time;
 
 	conf_ptr->cache_groups        = conf->cache_groups;
