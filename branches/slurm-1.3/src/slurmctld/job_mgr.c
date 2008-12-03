@@ -81,7 +81,6 @@
 #include "src/slurmctld/srun_comm.h"
 #include "src/slurmctld/trigger_mgr.h"
 
-#define BATCH_JOB_LAUNCH_TIME 1200	/* seconds for prolog & env var load */
 #define DETAILS_FLAG 0xdddd
 #define MAX_RETRIES  10
 #define SLURM_CREATE_JOB_FLAG_NO_ALLOCATE_0 0
@@ -4733,7 +4732,8 @@ extern void validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 			error("Registered PENDING job %u.%u on node %s ",
 				reg_msg->job_id[i], reg_msg->step_id[i], 
 				reg_msg->node_name);
-			abort_job_on_node(reg_msg->job_id[i], job_ptr, node_ptr);
+			abort_job_on_node(reg_msg->job_id[i], job_ptr, 
+					  node_ptr);
 		}
 
 		else {		/* else job is supposed to be done */
@@ -4768,7 +4768,7 @@ static void _purge_lost_batch_jobs(int node_inx, time_t now)
 {
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
-	time_t recent = now - BATCH_JOB_LAUNCH_TIME;
+	time_t recent = now - slurm_get_batch_start_timeout();
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
