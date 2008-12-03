@@ -395,6 +395,33 @@ typedef struct {
 } acct_update_object_t;
 
 typedef struct {
+	List cluster_list;	/* list of char * */
+	List id_list;		/* list of char * */
+
+	uint32_t usage_end; 
+	uint32_t usage_start; 
+
+	List user_list;		/* list of char * */
+	List wckey_list;        /* list of char * */
+
+	uint16_t with_usage;  /* fill in usage */
+	uint16_t with_deleted; /* return deleted associations */
+} acct_wckey_cond_t;
+
+typedef struct {
+	List accounting_list; 	/* list of acct_accounting_rec_t *'s */
+
+	char *cluster;		/* cluster associated */
+
+	uint32_t id;		/* id identifing a combination of
+				 * user-wckey-cluster */
+	uint32_t uid;		/* user ID */
+
+	char *user;		/* user associated */
+	char *wckey;		/* wckey name */
+} acct_wckey_rec_t;
+
+typedef struct {
 	uint32_t assoc_id;	/* association ID		*/
 	uint32_t shares_used;	/* measure of recent usage	*/
 } shares_used_object_t;
@@ -432,6 +459,7 @@ extern void destroy_acct_accounting_rec(void *object);
 extern void destroy_acct_association_rec(void *object);
 extern void destroy_acct_qos_rec(void *object);
 extern void destroy_acct_txn_rec(void *object);
+extern void destroy_acct_wckey_rec(void *object);
 
 extern void destroy_acct_user_cond(void *object);
 extern void destroy_acct_account_cond(void *object);
@@ -440,6 +468,7 @@ extern void destroy_acct_association_cond(void *object);
 extern void destroy_acct_job_cond(void *object);
 extern void destroy_acct_qos_cond(void *object);
 extern void destroy_acct_txn_cond(void *object);
+extern void destroy_acct_wckey_cond(void *object);
 
 extern void destroy_acct_update_object(void *object);
 extern void destroy_acct_used_limits(void *object);
@@ -479,6 +508,9 @@ extern void pack_acct_qos_rec(void *in, uint16_t rpc_version, Buf buffer);
 extern int unpack_acct_qos_rec(void **object, uint16_t rpc_version, Buf buffer);
 extern void pack_acct_txn_rec(void *in, uint16_t rpc_version, Buf buffer);
 extern int unpack_acct_txn_rec(void **object, uint16_t rpc_version, Buf buffer);
+extern void pack_acct_wckey_rec(void *in, uint16_t rpc_version, Buf buffer);
+extern int unpack_acct_wckey_rec(void **object, uint16_t rpc_version,
+				 Buf buffer);
 
 extern void pack_acct_user_cond(void *in, uint16_t rpc_version, Buf buffer);
 extern int unpack_acct_user_cond(void **object, uint16_t rpc_version,
@@ -502,6 +534,9 @@ extern int unpack_acct_qos_cond(void **object, uint16_t rpc_version,
 extern void pack_acct_txn_cond(void *in, uint16_t rpc_version, Buf buffer);
 extern int unpack_acct_txn_cond(void **object, uint16_t rpc_version,
 				Buf buffer);
+extern void pack_acct_wckey_cond(void *in, uint16_t rpc_version, Buf buffer);
+extern int unpack_acct_wckey_cond(void **object, uint16_t rpc_version,
+				  Buf buffer);
 
 extern void pack_acct_update_object(acct_update_object_t *object, 
 				    uint16_t rpc_version, Buf buffer);

@@ -120,6 +120,7 @@ char *suspend_table = "suspend_table";
 char *wckey_day_table = "wckey_day_usage_table";
 char *wckey_hour_table = "wckey_hour_usage_table";
 char *wckey_month_table = "wckey_month_usage_table";
+char *wckey_table = "wckey_table";
 
 
 typedef enum {
