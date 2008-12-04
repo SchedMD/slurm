@@ -222,6 +222,11 @@ extern char *slurm_get_crypto_type(void);
  */
 extern uint16_t slurm_get_fast_schedule(void);
 
+/* slurm_get_track_wckey
+ * returns the value of track_wckey in slurmctld_conf object
+ */
+extern uint16_t slurm_get_track_wckey(void);
+
 /* slurm_set_tree_width
  * sets the value of tree_width in slurmctld_conf object
  * RET 0 or error code

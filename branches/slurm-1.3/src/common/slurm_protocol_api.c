@@ -475,6 +475,24 @@ extern uint16_t slurm_get_fast_schedule(void)
 	return fast_val;
 }
 
+/* slurm_get_track_wckey
+ * returns the value of track_wckey in slurmctld_conf object
+ */
+extern uint16_t slurm_get_track_wckey(void)
+{
+	uint16_t track_wckey = 0;
+	slurm_ctl_conf_t *conf;
+
+	if(slurmdbd_conf) {
+		track_wckey = slurmdbd_conf->track_wckey;
+	} else {
+		conf = slurm_conf_lock();
+		track_wckey = conf->track_wckey;
+		slurm_conf_unlock();
+	}
+	return track_wckey;
+}
+
 /* slurm_set_tree_width
  * sets the value of tree_width in slurmctld_conf object
  * RET 0 or error code

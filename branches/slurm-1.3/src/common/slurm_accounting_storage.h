@@ -405,11 +405,12 @@ typedef struct {
 	List cluster_list;	/* list of char * */
 	List id_list;		/* list of char * */
 
+	List name_list;        /* list of char * */
+
 	uint32_t usage_end; 
 	uint32_t usage_start; 
 
 	List user_list;		/* list of char * */
-	List wckey_list;        /* list of char * */
 
 	uint16_t with_usage;  /* fill in usage */
 	uint16_t with_deleted; /* return deleted associations */

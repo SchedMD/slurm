@@ -1041,10 +1041,10 @@ static int _setup_wckey_cond_limits(acct_wckey_cond_t *wckey_cond,
 	else 
 		xstrfmtcat(*extra, " where %s.deleted=0", prefix);
 
-	if(wckey_cond->wckey_list && list_count(wckey_cond->wckey_list)) {
+	if(wckey_cond->name_list && list_count(wckey_cond->name_list)) {
 		set = 0;
 		xstrcat(*extra, " && (");
-		itr = list_iterator_create(wckey_cond->wckey_list);
+		itr = list_iterator_create(wckey_cond->name_list);
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(*extra, " || ");
@@ -9028,6 +9028,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 	char *wckey = NULL;
 	int reinit = 0;
 	time_t check_time = job_ptr->start_time;
+	uint16_t track_wckey = slurm_get_track_wckey();
 
 	if (!job_ptr->details || !job_ptr->details->submit_time) {
 		error("jobacct_storage_p_job_start: "
@@ -9067,7 +9068,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 		jname = xstrdup(job_ptr->name);
 		/* then grep for " since that is the delimiter for
 		   the wckey */
-		if((temp = strchr(jname, '\"')) {
+		if((temp = strchr(jname, '\"'))) {
 			/* if we have a wckey set the " to NULL to
 			 * end the jname */
 			temp[0] = '\0';
@@ -9214,7 +9215,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 		 * controller.
 		 */
 		
-		if(slurmdbd_conf && slurmdbd_conf->track_wckey) {
+		if(track_wckey) {
 			acct_wckey_rec_t wckey_rec;
 
 			memset(&wckey_rec, 0, sizeof(acct_wckey_rec_t));
