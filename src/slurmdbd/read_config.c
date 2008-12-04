@@ -220,6 +220,10 @@ extern int read_slurmdbd_conf(void)
 		s_p_get_string(&slurmdbd_conf->storage_user,
 				"StorageUser", tbl);
 
+		if(!s_p_get_boolean((bool *)&slurmdbd_conf->track_wckey, 
+				    "TrackWCKey", tbl))
+			slurmdbd_conf->track_wckey = false;
+
 		s_p_hashtbl_destroy(tbl);
 	}
 
@@ -253,10 +257,6 @@ extern int read_slurmdbd_conf(void)
 	if (slurmdbd_conf->storage_type == NULL)
 		fatal("StorageType must be specified");
 				
-	if(!s_p_get_boolean((bool *)&slurmdbd_conf->track_wckey, 
-			    "TrackWCKey", tbl))
-		slurmdbd_conf->track_wckey = false;
-
 	slurm_mutex_unlock(&conf_mutex);
 	return SLURM_SUCCESS;
 }
