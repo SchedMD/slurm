@@ -499,7 +499,8 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				tot_cpus += job_ptr->alloc_lps[j];
 			}
 			if ((avail <= 0) ||
-			    ((cpus_picked_cnt > 0) &&
+			    ((selected_nodes == NULL) &&
+			     (cpus_picked_cnt > 0) &&
 			     (cpus_picked_cnt >= step_spec->cpu_count)))
 				bit_clear(nodes_avail, i);
 			else
