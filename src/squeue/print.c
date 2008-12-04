@@ -348,16 +348,14 @@ int _print_job_name(job_info_t * job, int width, bool right, char* suffix)
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("NAME", width, right, true);
 	else {
-		char *temp = NULL;
-		/* first set the jname to the job_ptr->name */
-		char *jname = xstrdup(job->name);
-		/* then grep for " since that is the delimiter for
-		   the wckey */
-		temp = strchr(jname, '\"');
-		if(temp) {
-			/* if we have a wckey set the " to NULL to
-			 * end the jname */
-			temp[0] = '\0';
+		char *temp = NULL, *jname = NULL;
+		if (job->name) {
+			/* first set the jname to the job_ptr->name */
+			jname = xstrdup(job->name);
+			/* then grep for " since that is the delimiter
+			 * for the wckey and set to NULL */
+			if((temp = strchr(jname, '\"')))
+				temp[0] = '\0';
 		}
 		
 		_print_str(jname, width, right, true);
