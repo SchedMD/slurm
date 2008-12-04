@@ -131,6 +131,8 @@ scontrol_update_node (int argc, char *argv[])
 						         node_state_string(k));
 					}
 					fprintf (stderr, "\n");
+					fprintf (stderr, "Not all states are valid given a "
+						 "node's prior state\n");
 					goto done;
 				}
 			}

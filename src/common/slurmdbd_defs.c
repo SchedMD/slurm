@@ -365,6 +365,8 @@ extern Buf pack_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 	case DBD_GOT_LIST:
 	case DBD_ADD_QOS:
 	case DBD_GOT_QOS:
+	case DBD_ADD_WCKEY:
+	case DBD_GOT_WCKEY:
 	case DBD_GOT_TXN:
 	case DBD_GOT_USERS:
 		slurmdbd_pack_list_msg(
@@ -388,12 +390,14 @@ extern Buf pack_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 	case DBD_GET_CLUSTERS:
 	case DBD_GET_JOBS_COND:
 	case DBD_GET_QOS:
+	case DBD_GET_WCKEY:
 	case DBD_GET_TXN:
 	case DBD_GET_USERS:
 	case DBD_REMOVE_ACCOUNTS:
 	case DBD_REMOVE_ASSOCS:
 	case DBD_REMOVE_CLUSTERS:
 	case DBD_REMOVE_QOS:
+	case DBD_REMOVE_WCKEY:
 	case DBD_REMOVE_USERS:
 		slurmdbd_pack_cond_msg(
 			rpc_version, req->msg_type,
@@ -508,6 +512,8 @@ extern int unpack_slurmdbd_msg(uint16_t rpc_version,
 	case DBD_GOT_LIST:
 	case DBD_ADD_QOS:
 	case DBD_GOT_QOS:
+	case DBD_ADD_WCKEY:
+	case DBD_GOT_WCKEY:
 	case DBD_GOT_TXN:
 	case DBD_GOT_USERS:
 		rc = slurmdbd_unpack_list_msg(
@@ -532,11 +538,13 @@ extern int unpack_slurmdbd_msg(uint16_t rpc_version,
 	case DBD_GET_JOBS_COND:
 	case DBD_GET_USERS:
 	case DBD_GET_QOS:
+	case DBD_GET_WCKEY:
 	case DBD_GET_TXN:
 	case DBD_REMOVE_ACCOUNTS:
 	case DBD_REMOVE_ASSOCS:
 	case DBD_REMOVE_CLUSTERS:
 	case DBD_REMOVE_QOS:
+	case DBD_REMOVE_WCKEY:
 	case DBD_REMOVE_USERS:
 		rc = slurmdbd_unpack_cond_msg(
 			rpc_version, resp->msg_type,
@@ -743,6 +751,14 @@ extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 		return DBD_GOT_QOS;
 	} else if(!strcasecmp(msg_type, "Remove QOS")) {
 		return DBD_REMOVE_QOS;
+	} else if(!strcasecmp(msg_type, "Add WCKEY")) {
+		return DBD_ADD_WCKEY;
+	} else if(!strcasecmp(msg_type, "Get WCKEY")) {
+		return DBD_GET_WCKEY;
+	} else if(!strcasecmp(msg_type, "Got WCKEY")) {
+		return DBD_GOT_WCKEY;
+	} else if(!strcasecmp(msg_type, "Remove WCKEY")) {
+		return DBD_REMOVE_WCKEY;
 	} else {
 		return NO_VAL;		
 	}
@@ -1052,6 +1068,30 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 			return "DBD_REMOVE_QOS";
 		} else
 			return "Remove QOS";
+		break;
+	case DBD_ADD_WCKEY:
+		if(get_enum) {
+			return "DBD_ADD_WCKEY";
+		} else
+			return "Add WCKEY";
+		break;
+	case DBD_GET_WCKEY:
+		if(get_enum) {
+			return "DBD_GET_WCKEY";
+		} else
+			return "Get WCKEY";
+		break;
+	case DBD_GOT_WCKEY:
+		if(get_enum) {
+			return "DBD_GOT_WCKEY";
+		} else
+			return "Got WCKEY";
+		break;
+	case DBD_REMOVE_WCKEY:
+		if(get_enum) {
+			return "DBD_REMOVE_WCKEY";
+		} else
+			return "Remove WCKEY";
 		break;
 	default:
 		return "Unknown";
@@ -1820,6 +1860,10 @@ void inline slurmdbd_free_cond_msg(uint16_t rpc_version,
 		case DBD_REMOVE_QOS:
 			my_destroy = destroy_acct_qos_cond;
 			break;
+		case DBD_GET_WCKEY:
+		case DBD_REMOVE_WCKEY:
+			my_destroy = destroy_acct_wckey_cond;
+			break;
 		case DBD_GET_TXN:
 			my_destroy = destroy_acct_txn_cond;
 			break;
@@ -2139,6 +2183,10 @@ void inline slurmdbd_pack_cond_msg(uint16_t rpc_version,
 	case DBD_REMOVE_QOS:
 		my_function = pack_acct_qos_cond;
 		break;
+	case DBD_GET_WCKEY:
+	case DBD_REMOVE_WCKEY:
+		my_function = pack_acct_wckey_cond;
+		break;
 	case DBD_GET_USERS:
 	case DBD_REMOVE_USERS:
 		my_function = pack_acct_user_cond;
@@ -2180,6 +2228,10 @@ int inline slurmdbd_unpack_cond_msg(uint16_t rpc_version,
 	case DBD_GET_QOS:
 	case DBD_REMOVE_QOS:
 		my_function = unpack_acct_qos_cond;
+		break;
+	case DBD_GET_WCKEY:
+	case DBD_REMOVE_WCKEY:
+		my_function = unpack_acct_wckey_cond;
 		break;
 	case DBD_GET_USERS:
 	case DBD_REMOVE_USERS:
@@ -2613,6 +2665,10 @@ void inline slurmdbd_pack_list_msg(uint16_t rpc_version,
 	case DBD_GOT_QOS:
 		my_function = pack_acct_qos_rec;
 		break;
+	case DBD_ADD_WCKEY:
+	case DBD_GOT_WCKEY:
+		my_function = pack_acct_wckey_rec;
+		break;
 	case DBD_ADD_USERS:
 	case DBD_GOT_USERS:
 		my_function = pack_acct_user_rec;
@@ -2679,6 +2735,11 @@ int inline slurmdbd_unpack_list_msg(uint16_t rpc_version,
 	case DBD_GOT_QOS:
 		my_function = unpack_acct_qos_rec;
 		my_destroy = destroy_acct_qos_rec;
+		break;
+	case DBD_ADD_WCKEY:
+	case DBD_GOT_WCKEY:
+		my_function = unpack_acct_wckey_rec;
+		my_destroy = destroy_acct_wckey_rec;
 		break;
 	case DBD_ADD_USERS:
 	case DBD_GOT_USERS:
