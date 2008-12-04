@@ -144,11 +144,13 @@ typedef enum {
 	DBD_GOT_QOS,		/* Got QOS information   	        */
 	DBD_REMOVE_QOS,		/* Remove QOS information   	        */
 	DBD_MODIFY_QOS,         /* Modify existing QOS                  */
-	DBD_ADD_WCKEY,		/* Add WCKEY information   	        */
-	DBD_GET_WCKEY,		/* Get WCKEY information   	        */
-	DBD_GOT_WCKEY,		/* Got WCKEY information   	        */
-	DBD_REMOVE_WCKEY,	/* Remove WCKEY information   	        */
-	DBD_MODIFY_WCKEY,       /* Modify existing WCKEY                  */
+	DBD_ADD_WCKEYS,		/* Add WCKEY information   	        */
+	DBD_GET_WCKEYS,		/* Get WCKEY information   	        */
+	DBD_GOT_WCKEYS,		/* Got WCKEY information   	        */
+	DBD_REMOVE_WCKEYS,	/* Remove WCKEY information   	        */
+	DBD_MODIFY_WCKEYS,      /* Modify existing WCKEY                */
+	DBD_GET_WCKEY_USAGE,  	/* Get wckey usage information  	*/
+	DBD_GOT_WCKEY_USAGE,  	/* Get wckey usage information  	*/
 } slurmdbd_msg_type_t;
 
 /*****************************************************************************\

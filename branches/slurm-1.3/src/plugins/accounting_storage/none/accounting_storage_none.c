@@ -139,7 +139,7 @@ extern int acct_storage_p_add_qos(void *db_conn, uint32_t uid,
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_add_wckey(void *db_conn, uint32_t uid, 
+extern int acct_storage_p_add_wckeys(void *db_conn, uint32_t uid, 
 				  List wckey_list)
 {
 	return SLURM_SUCCESS;
@@ -180,7 +180,7 @@ extern List acct_storage_p_modify_qos(void *db_conn, uint32_t uid,
 	return SLURM_SUCCESS;
 }
 
-extern List acct_storage_p_modify_wckey(void *db_conn, uint32_t uid,
+extern List acct_storage_p_modify_wckeys(void *db_conn, uint32_t uid,
 				      acct_wckey_cond_t *wckey_cond,
 				      acct_wckey_rec_t *wckey)
 {
@@ -224,7 +224,7 @@ extern List acct_storage_p_remove_qos(void *db_conn, uint32_t uid,
 	return NULL;
 }
 
-extern List acct_storage_p_remove_wckey(void *db_conn, uint32_t uid, 
+extern List acct_storage_p_remove_wckeys(void *db_conn, uint32_t uid, 
 				      acct_wckey_cond_t *wckey_cond)
 {
 	return NULL;
@@ -260,8 +260,8 @@ extern List acct_storage_p_get_qos(void *db_conn, uid_t uid,
 	return NULL;
 }
 
-extern List acct_storage_p_get_wckey(void *db_conn, uid_t uid,
-				   acct_wckey_cond_t *wckey_cond)
+extern List acct_storage_p_get_wckeys(void *db_conn, uid_t uid,
+				      acct_wckey_cond_t *wckey_cond)
 {
 	return NULL;
 }
@@ -273,7 +273,7 @@ extern List acct_storage_p_get_txn(void *db_conn, uid_t uid,
 }
 
 extern int acct_storage_p_get_usage(void *db_conn, uid_t uid,
-				    acct_association_rec_t *acct_assoc,
+				    void *in, int type,
 				    time_t start, time_t end)
 {
 	int rc = SLURM_SUCCESS;
@@ -321,7 +321,7 @@ extern int clusteracct_storage_p_cluster_procs(void *db_conn,
 
 extern int clusteracct_storage_p_get_usage(
 	void *db_conn, uid_t uid,
-	acct_cluster_rec_t *cluster_rec, time_t start, time_t end)
+	acct_cluster_rec_t *cluster_rec, int type, time_t start, time_t end)
 {
 
 	return SLURM_SUCCESS;
