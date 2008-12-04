@@ -47,7 +47,7 @@
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 /*
- * Send batch exit code to slurmctld
+ * Send batch exit code to slurmctld. Non-zero rc will DRAIN the node.
  */
 void batch_finish(slurmd_job_t *job, int rc);
 
@@ -68,8 +68,13 @@ slurmd_job_t *mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg,
  */
 void mgr_launch_batch_job_cleanup(slurmd_job_t *job, int rc);
 
-/*
- * Launch and manage the tasks in a job step.
+/* 
+ * Executes the functions of the slurmd job manager process,
+ * which runs as root and performs shared memory and interconnect
+ * initialization, etc.
+ *
+ * Returns 0 if job ran and completed successfully.
+ * Returns errno if job startup failed. NOTE: This will DRAIN the node.
  */
 int job_manager(slurmd_job_t *job);
 
