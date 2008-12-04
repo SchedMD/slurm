@@ -462,9 +462,6 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		int i, j=0, avail, tot_cpus = 0;
 		bitstr_t *selected_nodes = NULL;
 
-		if (step_spec->node_count == INFINITE)
-			step_spec->node_count = 1;	/* ignore */
-
 		if (step_spec->node_list) {
 			error_code = node_name2bitmap(step_spec->node_list, 
 						      false,
@@ -511,7 +508,14 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			if (++j >= job_ptr->node_cnt)
 				break;
 		}
-		FREE_NULL_BITMAP(selected_nodes);
+		if (selected_nodes) {
+			if (!bit_equal(selected_nodes, nodes_avail)) {
+				/* some required nodes have no available
+				 * processors, defer request */
+				cpus_picked_cnt = 0;
+			}
+			bit_free(selected_nodes);
+		}
 		if (cpus_picked_cnt >= step_spec->cpu_count)
 			return nodes_avail;
 
