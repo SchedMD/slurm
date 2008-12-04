@@ -171,13 +171,16 @@ static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
 	list_iterator_destroy(itr);
 	list_destroy(columns);
 	query[strlen(query)-1] = ';';
+	//info("%d query\n%s", __LINE__, query);
+	
 	if(mysql_db_query(mysql_db, query)) {
 		xfree(query);
 		return SLURM_ERROR;
 	}
 	xfree(query);
-	
-	END_TIMER2("make table current");
+	query = xstrdup_printf("make table current %s", table_name);
+	END_TIMER2(query);
+	xfree(query);
 	return SLURM_SUCCESS;
 }
 
