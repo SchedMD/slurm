@@ -1234,7 +1234,9 @@ no_default:
 		printf(" Adding User(s)\n%s", user_str);
 		printf(" Settings =\n");
 		printf("  Default Account = %s\n", default_acct);
-		
+		if(track_wckey)
+		printf("  Default WCKey = %s\n", default_wckey);
+			
 		if(admin_level != ACCT_ADMIN_NOTSET)
 			printf("  Admin Level     = %s\n", 
 			       acct_admin_level_str(admin_level));
@@ -1401,6 +1403,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 		PRINT_CLUSTER,
 		PRINT_COORDS,
 		PRINT_DACCT,
+		PRINT_DWCKEY,
 		PRINT_FAIRSHARE,
 		PRINT_GRPCM,
 		PRINT_GRPC,
@@ -1434,7 +1437,11 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 	}
 
 	if(!list_count(format_list)) {
-		slurm_addto_char_list(format_list, "U,D,Ad");
+		if(slurm_get_track_wckey()) 
+			slurm_addto_char_list(format_list, 
+					      "U,DefaultA,DefaultW,Ad");
+		else
+			slurm_addto_char_list(format_list, "U,DefaultA,Ad");
 		if(user_cond->with_assocs)
 			slurm_addto_char_list(format_list,
 					      "Cl,Ac,Part,F,"
@@ -1485,10 +1492,16 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 			field->name = xstrdup("Coord Accounts");
 			field->len = 20;
 			field->print_routine = sacctmgr_print_coord_list;
-		} else if(!strncasecmp("Default", object,
-				       MAX(command_len, 1))) {
+		} else if(!strncasecmp("DefaultAccount", object,
+				       MAX(command_len, 8))) {
 			field->type = PRINT_DACCT;
 			field->name = xstrdup("Def Acct");
+			field->len = 10;
+			field->print_routine = print_fields_str;
+		} else if(!strncasecmp("DefaultWCKey", object,
+				       MAX(command_len, 8))) {
+			field->type = PRINT_DWCKEY;
+			field->name = xstrdup("Def WCKey");
 			field->len = 10;
 			field->print_routine = print_fields_str;
 		} else if(!strncasecmp("FairShare", object,
@@ -1686,6 +1699,15 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 						field->print_routine(
 							field,
 							user->default_acct,
+							(curr_inx == 
+							 field_count),
+							(curr_inx == 
+							 field_count));
+						break;
+					case PRINT_DWCKEY:
+						field->print_routine(
+							field,
+							user->default_wckey,
 							(curr_inx == 
 							 field_count),
 							(curr_inx == 
@@ -1908,6 +1930,12 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 					field->print_routine(
 						field,
 						user->default_acct,
+						(curr_inx == field_count));
+					break;
+				case PRINT_DWCKEY:
+					field->print_routine(
+						field,
+						user->default_wckey,
 						(curr_inx == field_count));
 					break;
 				case PRINT_USER:
