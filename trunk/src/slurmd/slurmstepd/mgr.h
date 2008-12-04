@@ -47,6 +47,11 @@
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 /*
+ * Send batch exit code to slurmctld
+ */
+void batch_finish(slurmd_job_t *job, int rc);
+
+/*
  * Initialize a slurmd_job_t structure for a launch tasks
  */
 slurmd_job_t *mgr_launch_tasks_setup(launch_tasks_request_msg_t *msg,

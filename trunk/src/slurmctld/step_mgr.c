@@ -483,6 +483,34 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	 * unused memory */
 	if (step_spec->exclusive) {
 		int avail_tasks, node_inx = 0, tot_tasks = 0, usable_mem;
+		bitstr_t *selected_nodes = NULL;
+
+		if (step_spec->node_list) {
+			error_code = node_name2bitmap(step_spec->node_list, 
+						      false,
+						      &selected_nodes);
+			if (error_code) {
+				info("_pick_step_nodes: invalid node list %s",
+				     step_spec->node_list);
+				bit_free(selected_nodes);
+				goto cleanup;
+			}
+			if (!bit_super_set(selected_nodes,
+					   job_ptr->node_bitmap)) {
+				info("_pick_step_nodes: selected node is not "
+				     "in job %u", step_spec->node_list,
+				     job_ptr->job_id);
+				bit_free(selected_nodes);
+				goto cleanup;
+			}
+			if (!bit_super_set(selected_nodes, up_node_bitmap)) {
+				info("_pick_step_nodes: selected node is DOWN",
+				     step_spec->node_list);
+				bit_free(selected_nodes);
+				goto cleanup;
+			}
+		}
+
 		for (i=bit_ffs(job_ptr->node_bitmap); i<node_record_count; 
 		     i++) {
 			if (!bit_test(job_ptr->node_bitmap, i))
@@ -502,13 +530,22 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				tot_tasks = MIN(tot_tasks, usable_mem);
 			}
 			if ((avail_tasks <= 0) ||
-			    ((cpus_picked_cnt > 0) &&
+			    ((selected_nodes == NULL) &&
+			     (cpus_picked_cnt > 0) &&
 			     (cpus_picked_cnt >= step_spec->cpu_count)))
 				bit_clear(nodes_avail, i);
 			else
 				cpus_picked_cnt += avail_tasks;
 			if (++node_inx >= select_ptr->nhosts)
 				break;
+		}
+		if (selected_nodes) {
+			if (!bit_equal(selected_nodes, nodes_avail)) {
+				/* some required nodes have no available
+				 * processors, defer request */
+				cpus_picked_cnt = 0;
+			}
+			bit_free(selected_nodes);
 		}
 		if (cpus_picked_cnt >= step_spec->cpu_count)
 			return nodes_avail;

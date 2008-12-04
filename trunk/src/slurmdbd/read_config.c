@@ -130,6 +130,7 @@ extern int read_slurmdbd_conf(void)
 		{"StoragePort", S_P_UINT16},
 		{"StorageType", S_P_STRING},
 		{"StorageUser", S_P_STRING},
+		{"TrackWCKey", S_P_BOOLEAN},
 		{NULL} };
 	s_p_hashtbl_t *tbl = NULL;
 	char *conf_path = NULL;
@@ -219,6 +220,10 @@ extern int read_slurmdbd_conf(void)
 		s_p_get_string(&slurmdbd_conf->storage_user,
 				"StorageUser", tbl);
 
+		if(!s_p_get_boolean((bool *)&slurmdbd_conf->track_wckey, 
+				    "TrackWCKey", tbl))
+			slurmdbd_conf->track_wckey = false;
+
 		s_p_hashtbl_destroy(tbl);
 	}
 
@@ -292,6 +297,7 @@ extern void log_config(void)
 	debug2("StoragePort       = %u", slurmdbd_conf->storage_port);
 	debug2("StorageType       = %s", slurmdbd_conf->storage_type);
 	debug2("StorageUser       = %s", slurmdbd_conf->storage_user);
+	debug2("TrackWCKey        = %u", slurmdbd_conf->track_wckey);
 }
 
 /* Return the DbdPort value */

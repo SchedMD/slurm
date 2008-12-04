@@ -844,6 +844,12 @@ extern int acct_storage_p_add_qos(PGconn *acct_pgsql_db, uint32_t uid,
 	return SLURM_SUCCESS;
 }
 
+extern int acct_storage_p_add_wckey(PGconn *acct_pgsql_db, uint32_t uid, 
+				  List wckey_list)
+{
+	return SLURM_SUCCESS;
+}
+
 extern List acct_storage_p_modify_users(PGconn *acct_pgsql_db, uint32_t uid,
 					acct_user_cond_t *user_cond,
 					acct_user_rec_t *user)
@@ -876,6 +882,13 @@ extern List acct_storage_p_modify_associations(
 extern List acct_storage_p_modify_qos(PGconn *acct_pgsql_db, uint32_t uid,
 				      acct_qos_cond_t *qos_cond,
 				      acct_qos_rec_t *qos)
+{
+	return SLURM_SUCCESS;
+}
+
+extern List acct_storage_p_modify_wckey(PGconn *acct_pgsql_db, uint32_t uid,
+				      acct_wckey_cond_t *wckey_cond,
+				      acct_wckey_rec_t *wckey)
 {
 	return SLURM_SUCCESS;
 }
@@ -918,6 +931,12 @@ extern List acct_storage_p_remove_qos(void *db_conn, uint32_t uid,
 	return NULL;
 }
 
+extern List acct_storage_p_remove_wckey(void *db_conn, uint32_t uid, 
+				      acct_wckey_cond_t *wckey_cond)
+{
+	return NULL;
+}
+
 extern List acct_storage_p_get_users(PGconn *acct_pgsql_db, uid_t uid,
 				     acct_user_cond_t *user_cond)
 {
@@ -944,6 +963,12 @@ extern List acct_storage_p_get_associations(PGconn *acct_pgsql_db, uid_t uid,
 
 extern List acct_storage_p_get_qos(void *db_conn, uid_t uid,
 				   acct_qos_cond_t *qos_cond)
+{
+	return NULL;
+}
+
+extern List acct_storage_p_get_wckey(void *db_conn, uid_t uid,
+				   acct_wckey_cond_t *wckey_cond)
 {
 	return NULL;
 }

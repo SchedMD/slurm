@@ -412,11 +412,13 @@ Any previously identified features will be overwritten with the new value.
 the values specified in slurm.conf (if any) upon slurmctld restart 
 or reconfiguration.
 Update slurm.conf with any changes meant to be persistent.
+
 .TP
 \fIReason\fP=<reason>
 Identify the reason the node is in a "DOWN" or "DRAINED", "DRAINING", 
 "FAILING" or "FAIL" state.
 Use quotes to enclose a reason having more than one word.
+
 .TP
 \fIState\fP=<state>
 Identify the state to be assigned to the node. Possible values are  "NoResp", 
@@ -431,6 +433,9 @@ it's state to "DRAIN".
 seek to relinquish those nodes before the job completes.
 The "NoResp" state will only set the "NoResp" flag for a node without
 changing its underlying state.
+While all of the above states are valid, some of them are not valid new
+node states given their prior state. 
+Generally only "DRAIN", "FAIL" and "RESUME" should be used.
 
 .TP
 \fBSPECIFICATIONS FOR UPDATE AND DELETE COMMANDS, PARTITIONS\fR
@@ -469,24 +474,31 @@ the next minute.
 \fIMinNodes\fP=<count>
 Set the minimum number of nodes which will be allocated to any single job 
 in the partition.   (On a Bluegene type system this represents a c-node count.)
+
 .TP
 \fINodes\fP=<name>
 Identify the node(s) to be associated with this partition. Multiple node names 
 may be specified using simple node range expressions (e.g. "lx[10\-20]"). 
 Note that jobs may only be associated with one partition at any time.
 Specify a blank data value to remove all nodes from a partition: "Nodes=".
+
 .TP
 \fIPartitionName\fP=<name>
 Identify the partition to be updated. This specification is required.
+
 .TP
 \fIRootOnly\fP=<yes|no>
 Specify if only allocation requests initiated by user root will be satisfied. 
 This can be used to restrict control of the partition to some meta\-scheduler. 
-Possible values are"YES" and "NO".
+Possible values are "YES" and "NO".
+
 .TP
-\fIShared\fP=<yes|no|exclusive|force>
+\fIShared\fP=<yes|no|exclusive|force>[:<job_count>]
 Specify if nodes in this partition can be shared by multiple jobs. 
-Possible values are"YES", "NO", "EXCLUSIVE" and "FORCE".
+Possible values are "YES", "NO", "EXCLUSIVE" and "FORCE".
+An optional job count specifies how many jobs can be allocated to use
+each resource.
+
 .TP
 \fIState\fP=<up|down>
 Specify if jobs can be allocated nodes in this partition. 
@@ -494,6 +506,7 @@ Possible values are"UP" and "DOWN".
 If a partition allocated nodes to running jobs, those jobs will continue 
 execution even after the partition's state is set to "DOWN". The jobs 
 must be explicitly canceled to force their termination.
+
 .TP
 \fBSPECIFICATIONS FOR UPDATE, BLOCK \fR
 .TP

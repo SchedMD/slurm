@@ -70,7 +70,9 @@ static void _send_ok_to_slurmd(int sock);
 static void _send_fail_to_slurmd(int sock);
 static slurmd_job_t *_step_setup(slurm_addr *cli, slurm_addr *self,
 				 slurm_msg_t *msg);
+#ifdef MEMORY_LEAK_DEBUG
 static void _step_cleanup(slurmd_job_t *job, slurm_msg_t *msg, int rc);
+#endif
 
 int slurmstepd_blocked_signals[] = {
 	SIGPIPE, 0
@@ -136,7 +138,11 @@ main (int argc, char *argv[])
 	eio_signal_shutdown(job->msg_handle);
 	pthread_join(job->msgid, NULL);
 
+	if (job->batch)
+		batch_finish(job, rc); /* sends batch complete message */
+
 ending:
+#ifdef MEMORY_LEAK_DEBUG
 	_step_cleanup(job, msg, rc);
 
 	xfree(cli);
@@ -146,6 +152,7 @@ ending:
 	xfree(conf->node_name);
 	xfree(conf->logfile);
 	xfree(conf);
+#endif
 	info("done with job");
 	return rc;
 }
@@ -354,6 +361,7 @@ _step_setup(slurm_addr *cli, slurm_addr *self, slurm_msg_t *msg)
 	return job;
 }
 
+#ifdef MEMORY_LEAK_TEST
 static void
 _step_cleanup(slurmd_job_t *job, slurm_msg_t *msg, int rc)
 {
@@ -380,6 +388,7 @@ _step_cleanup(slurmd_job_t *job, slurm_msg_t *msg, int rc)
 	
 	xfree(msg);
 }
+#endif
 
 static void _dump_user_env(void)
 {

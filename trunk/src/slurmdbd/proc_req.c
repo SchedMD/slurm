@@ -1636,13 +1636,14 @@ static int   _modify_users(slurmdbd_conn_t *slurmdbd_conn,
 
 is_same_user:
 	
-	/* same_user can only alter the default account nothing else */ 
+	/* same_user can only alter the default account, default wckey
+	 * nothing else */ 
 	if(same_user) {
 		/* If we add anything else here for the user we will
 		 * need to document it
 		 */
 		if((user_rec->admin_level != ACCT_ADMIN_NOTSET)) {
-			comment = "You can only change your own default account, nothing else";
+			comment = "You can only change your own default account, default wckey nothing else";
 			error("%s", comment);
 			*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version, 
 						      ESLURM_ACCESS_DENIED,
