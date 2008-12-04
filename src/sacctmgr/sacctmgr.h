@@ -176,6 +176,8 @@ extern acct_account_rec_t *sacctmgr_find_account_from_list(
 	List acct_list, char *name);
 extern acct_cluster_rec_t *sacctmgr_find_cluster_from_list(
 	List cluster_list, char *name);
+extern acct_wckey_rec_t *sacctmgr_find_wckey_from_list(
+	List wckey_list, char *user, char *name, char *cluster);
 
 
 /* file_functions.c */

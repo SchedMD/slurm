@@ -750,10 +750,10 @@ extern void destroy_acct_wckey_cond(void *object)
 			list_destroy(wckey->cluster_list);
 		if(wckey->id_list)
 			list_destroy(wckey->id_list);
+		if(wckey->name_list)
+			list_destroy(wckey->name_list);
 		if(wckey->user_list)
 			list_destroy(wckey->user_list);
-		if(wckey->wckey_list)
-			list_destroy(wckey->wckey_list);
 		xfree(wckey);
 	}
 }
@@ -4871,6 +4871,19 @@ extern void pack_acct_wckey_cond(void *in, uint16_t rpc_version, Buf buffer)
 	}
 	count = NO_VAL;
 
+	if(object->name_list)
+		count = list_count(object->name_list);
+	
+	pack32(count, buffer);
+	if(count && count != NO_VAL) {
+		itr = list_iterator_create(object->name_list);
+		while((tmp_info = list_next(itr))) {
+			packstr(tmp_info, buffer);
+		}
+		list_iterator_destroy(itr);
+	}
+	count = NO_VAL;
+
 	pack32(object->usage_end, buffer);
 	pack32(object->usage_start, buffer);
 
@@ -4880,19 +4893,6 @@ extern void pack_acct_wckey_cond(void *in, uint16_t rpc_version, Buf buffer)
 	pack32(count, buffer);
 	if(count && count != NO_VAL) {
 		itr = list_iterator_create(object->user_list);
-		while((tmp_info = list_next(itr))) {
-			packstr(tmp_info, buffer);
-		}
-		list_iterator_destroy(itr);
-	}
-	count = NO_VAL;
-
-	if(object->wckey_list)
-		count = list_count(object->wckey_list);
-	
-	pack32(count, buffer);
-	if(count && count != NO_VAL) {
-		itr = list_iterator_create(object->wckey_list);
 		while((tmp_info = list_next(itr))) {
 			packstr(tmp_info, buffer);
 		}
@@ -4937,6 +4937,17 @@ extern int unpack_acct_wckey_cond(void **object, uint16_t rpc_version,
 		}
 	}
 	
+	safe_unpack32(&count, buffer);
+	if(count != NO_VAL) {
+		object_ptr->name_list = 
+			list_create(slurm_destroy_char);
+		for(i=0; i<count; i++) {
+			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
+					       buffer);
+			list_append(object_ptr->name_list, tmp_info);
+		}
+	}
+
 	safe_unpack32(&object_ptr->usage_end, buffer);
 	safe_unpack32(&object_ptr->usage_start, buffer);
 
@@ -4948,17 +4959,6 @@ extern int unpack_acct_wckey_cond(void **object, uint16_t rpc_version,
 			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 					       buffer);
 			list_append(object_ptr->user_list, tmp_info);
-		}
-	}
-
-	safe_unpack32(&count, buffer);
-	if(count != NO_VAL) {
-		object_ptr->wckey_list = 
-			list_create(slurm_destroy_char);
-		for(i=0; i<count; i++) {
-			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-					       buffer);
-			list_append(object_ptr->wckey_list, tmp_info);
 		}
 	}
 

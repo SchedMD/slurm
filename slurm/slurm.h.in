@@ -1057,6 +1057,7 @@ typedef struct slurm_ctl_conf {
 	uint16_t task_plugin_param;	/* see TASK_PARAM_* */
 	char *task_prolog;	/* pathname of task launch prolog */
 	char *tmp_fs;		/* pathname of temporary file system */
+	uint16_t track_wckey;    /* see if we are using wckey or not */
 	uint16_t tree_width;    /* number of threads per node to span */
 	char *unkillable_program; /* program run by the slurmstepd when
                                    * processes in a job step are unkillable */

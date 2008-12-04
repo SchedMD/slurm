@@ -1193,7 +1193,7 @@ extern int jobacct_storage_p_job_start(PGconn *acct_pgsql_db,
 		jname = xstrdup(job_ptr->name);
 		/* then grep for " since that is the delimiter for
 		   the wckey */
-		if((temp = strchr(jname, '\"')) {
+		if((temp = strchr(jname, '\"'))) {
 			/* if we have a wckey set the " to NULL to
 			 * end the jname */
 			temp[0] = '\0';
