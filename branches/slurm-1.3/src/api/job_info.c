@@ -174,8 +174,12 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 			wckey = xstrdup(temp);
 		}
 	}
-
-	snprintf(tmp_line, sizeof(tmp_line), "Name=%s", jname);
+	if(slurm_get_track_wckey())
+		snprintf(tmp_line, sizeof(tmp_line), "Name=%s WCKey=%s",
+			 jname, wckey);
+	else
+		snprintf(tmp_line, sizeof(tmp_line), "Name=%s", jname);
+		
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");
