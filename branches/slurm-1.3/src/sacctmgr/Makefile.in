@@ -74,7 +74,7 @@ am_sacctmgr_OBJECTS = account_functions.$(OBJEXT) \
 	association_functions.$(OBJEXT) cluster_functions.$(OBJEXT) \
 	common.$(OBJEXT) file_functions.$(OBJEXT) sacctmgr.$(OBJEXT) \
 	qos_functions.$(OBJEXT) txn_functions.$(OBJEXT) \
-	user_functions.$(OBJEXT)
+	user_functions.$(OBJEXT) wckey_functions.$(OBJEXT)
 sacctmgr_OBJECTS = $(am_sacctmgr_OBJECTS)
 am__DEPENDENCIES_1 =
 sacctmgr_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o \
@@ -284,7 +284,8 @@ sacctmgr_SOURCES = \
 	sacctmgr.c sacctmgr.h	\
 	qos_functions.c		\
 	txn_functions.c		\
-	user_functions.c	
+	user_functions.c	\
+	wckey_functions.c
 
 sacctmgr_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 all: all-am
@@ -367,6 +368,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sacctmgr.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/txn_functions.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/user_functions.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/wckey_functions.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

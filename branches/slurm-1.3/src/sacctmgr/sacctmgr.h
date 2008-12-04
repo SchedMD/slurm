@@ -110,6 +110,7 @@ extern int sacctmgr_list_user(int argc, char *argv[]);
 extern int sacctmgr_list_account(int argc, char *argv[]);
 extern int sacctmgr_list_cluster(int argc, char *argv[]);
 extern int sacctmgr_list_qos(int argc, char *argv[]);
+extern int sacctmgr_list_wckey(int argc, char *argv[]);
 
 extern int sacctmgr_modify_association(int argc, char *argv[]);
 extern int sacctmgr_modify_user(int argc, char *argv[]);
