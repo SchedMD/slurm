@@ -881,8 +881,6 @@ static void _step_opt_exclusive(void)
 		fatal("--relative disabled, incompatible with --exclusive");
 	if (opt.exc_nodes)
 		fatal("--exclude is incompatible with --exclusive");
-	if (opt.nodelist)
-		fatal("--nodelist is incompatible with --exclusive");
 }
 
 static void

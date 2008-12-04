@@ -456,18 +456,54 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		fatal("bit_copy malloc failure");
 	bit_and (nodes_avail, up_node_bitmap);
 
-	/* In exclusive mode, just satisfy the processor count.
+	/* In exclusive mode, satisfy the processor count.
 	 * Do not use nodes that have no unused CPUs */
 	if (step_spec->exclusive) {
 		int i, j=0, avail, tot_cpus = 0;
-		for (i=bit_ffs(job_ptr->node_bitmap); i<node_record_count; 
+		bitstr_t *selected_nodes = NULL;
+
+		if (step_spec->node_count == INFINITE)
+			step_spec->node_count = 1;	/* ignore */
+
+		if (step_spec->node_list) {
+			error_code = node_name2bitmap(step_spec->node_list, 
+						      false,
+						      &selected_nodes);
+			if (error_code) {
+				info("_pick_step_nodes: invalid node list %s",
+				     step_spec->node_list);
+				bit_free(selected_nodes);
+				goto cleanup;
+			}
+			if (!bit_super_set(selected_nodes,
+					   job_ptr->node_bitmap)) {
+				info("_pick_step_nodes: selected node is not "
+				     "in job %u", step_spec->node_list,
+				     job_ptr->job_id);
+				bit_free(selected_nodes);
+				goto cleanup;
+			}
+			if (!bit_super_set(selected_nodes, up_node_bitmap)) {
+				info("_pick_step_nodes: selected node is DOWN",
+				     step_spec->node_list);
+				bit_free(selected_nodes);
+				goto cleanup;
+			}
+		}
+		for (i=bit_ffs(job_ptr->node_bitmap); i<node_record_count;
 		     i++) {
 			if (!bit_test(job_ptr->node_bitmap, i))
 				continue;
-			avail = job_ptr->alloc_lps[j] - job_ptr->used_lps[j];
-			tot_cpus += job_ptr->alloc_lps[j];
+			if (selected_nodes && (!bit_test(selected_nodes, i)))
+				avail = 0;
+			else {
+				avail = job_ptr->alloc_lps[j] - 
+					job_ptr->used_lps[j];
+				tot_cpus += job_ptr->alloc_lps[j];
+			}
 			if ((avail <= 0) ||
-			    ((cpus_picked_cnt > 0) &&
+			    ((selected_nodes == NULL) &&
+			     (cpus_picked_cnt > 0) &&
 			     (cpus_picked_cnt >= step_spec->cpu_count)))
 				bit_clear(nodes_avail, i);
 			else
@@ -475,6 +511,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			if (++j >= job_ptr->node_cnt)
 				break;
 		}
+		FREE_NULL_BITMAP(selected_nodes);
 		if (cpus_picked_cnt >= step_spec->cpu_count)
 			return nodes_avail;
 
@@ -507,6 +544,12 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			info ("_pick_step_nodes: requested nodes %s not part "
 				"of job %u", 
 				step_spec->node_list, job_ptr->job_id);
+			bit_free(selected_nodes);
+			goto cleanup;
+		}
+		if (!bit_super_set(selected_nodes, nodes_avail)) {
+			info ("_pick_step_nodes: requested nodes %s are DOWN",
+			      step_spec->node_list);
 			bit_free(selected_nodes);
 			goto cleanup;
 		}
