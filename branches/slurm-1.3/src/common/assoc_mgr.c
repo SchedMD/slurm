@@ -1161,7 +1161,7 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 				rc = SLURM_ERROR;
 				break;
 			}
-			debug("updating assoc %u", rec->id);
+
 			if(object->fairshare != NO_VAL) 
 				rec->fairshare = object->fairshare;
 			
@@ -1213,11 +1213,12 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 					object->qos_list = NULL;
 				}
 			}
-			
-			slurm_mutex_lock(&local_qos_lock);
-			log_assoc_rec(rec, local_qos_list);
-			slurm_mutex_unlock(&local_qos_lock);
-			
+			if(!slurmdbd_conf) {
+				debug("updating assoc %u", rec->id);
+				slurm_mutex_lock(&local_qos_lock);
+				log_assoc_rec(rec, local_qos_list);
+				slurm_mutex_unlock(&local_qos_lock);
+			}
 			break;
 		case ACCT_ADD_ASSOC:
 			if(rec) {

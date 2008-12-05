@@ -9369,26 +9369,39 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 						   1, NULL) != SLURM_SUCCESS) {
 				List wckey_list = NULL;
 				acct_wckey_rec_t *wckey_ptr = NULL;
-				acct_association_rec_t assoc_rec;
+				char *assoc_query = NULL;
+				MYSQL_RES *result = NULL;
+				MYSQL_ROW row;
 
-				memset(&assoc_rec, 0, 
-				       sizeof(acct_association_rec_t));
-				/* We have to get the user name from
-				   the association just in case we
-				   don't have uid's constant across
-				   the system. */
-				assoc_rec.id = job_ptr->assoc_id;
-				if(assoc_mgr_fill_in_assoc(
-					   mysql_conn, &assoc_rec, 1, NULL)
-				   != SLURM_SUCCESS)
+				/* Just so we don't have to keep a
+				   cache of the associations around we
+				   will just query the db for the user
+				   name of the association id.  Since
+				   this should sort of be a rare case
+				   this isn't too bad.
+				*/
+				assoc_query = xstrdup_printf(
+					"select user from %s where id=%u",
+					assoc_table, job_ptr->assoc_id);
+				debug3("%d(%d) query\n%s",
+				       mysql_conn->conn, __LINE__, assoc_query);
+				if(!(result = 
+				     mysql_db_query_ret(mysql_conn->db_conn,
+							assoc_query, 0))) {
+					xfree(assoc_query);
+					goto end_it;
+				}
+				xfree(assoc_query);
+				
+				if(!(row = mysql_fetch_row(result))) 
 					goto no_wckeyid;
-
+				
 				wckey_list = list_create(
 					destroy_acct_wckey_rec);
 
 				wckey_ptr = xmalloc(sizeof(acct_wckey_rec_t));
 				wckey_ptr->name = xstrdup(wckey);
-				wckey_ptr->user = xstrdup(assoc_rec.user);
+				wckey_ptr->user = xstrdup(row[0]);
 				wckey_ptr->cluster = xstrdup(cluster_name);
 				list_append(wckey_list, wckey_ptr);
 				/* we have already checked to make
@@ -9403,6 +9416,8 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 					assoc_mgr_fill_in_wckey(
 						mysql_conn, &wckey_rec,
 						1, NULL);
+				
+				mysql_free_result(result);
 				list_destroy(wckey_list);
 			}
 			wckeyid = wckey_rec.id;
@@ -9418,6 +9433,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 	}
 
+end_it:
 	xfree(block_id);
 	xfree(jname);
 	xfree(wckey);

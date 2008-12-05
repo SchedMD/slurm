@@ -313,7 +313,8 @@ int main(int argc, char *argv[])
 	memset(&assoc_init_arg, 0, sizeof(assoc_init_args_t));
 	assoc_init_arg.enforce = accounting_enforce;
 	assoc_init_arg.remove_assoc_notify = _remove_assoc;
-	assoc_init_arg.cache_level = ASSOC_MGR_CACHE_ALL;
+	assoc_init_arg.cache_level = ASSOC_MGR_CACHE_ASSOC |
+		ASSOC_MGR_CACHE_USER | ASSOC_MGR_CACHE_QOS;
 
 	if (assoc_mgr_init(acct_db_conn, &assoc_init_arg)) {
 		if(accounting_enforce) 
