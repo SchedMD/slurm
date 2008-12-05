@@ -1,0 +1,56 @@
+This is the contribs dir for SLURM.  
+
+SOURCE DISTRIBUTION HIERARCHY
+-----------------------------
+
+Subdirectories contain the source-code for the various contributations for
+SLURM as their documentation. A quick description of the subdirectories
+of the SLURM contribs distribution follows:
+
+  env_cache_builder.c [C program]
+     This program will build an environment variable cache file for specific 
+     users or all users on the system. This can be used to prevent the aborting 
+     of jobs submitted by Moab using the srun/sbatch --get-user-env option.
+     Build with "make -f /dev/null env_cache_builder" and execute as user root
+     on the node where the moab daemon runs.
+
+  perlapi/           [ Perl API to SLURM source ]
+     API to SLURM using perl.  Making available all SLURM command that exist
+     in the SLURM proper API.
+
+  python/            [Python modules]
+     Directory for Python modules.
+
+  time_login.c       [ C program ]
+     This program will report how long a pseudo-login will take for specific
+     users or all users on the system. Users identified by this program 
+     will not have their environment properly set for jobs submitted through
+     Moab. Build with "make -f /dev/null time_login" and execute as user root. 
+
+  torque/            [ Wrapper Scripts for Torque migration to SLURM ]
+     Helpful scripts to make transition to SLURM easier from PBS or Torque.  
+     These scripts are easily updatable if there is functionality missing.
+
+  make.slurm.patch   [ Patch to "make" command for parallel build ]
+     This patch will use SLURM to launch tasks across a job's current resource
+     allocation. Depending upon the size of modules to be compiled, this may
+     or may not improve performance. If most modules are thousands of lines
+     long, the use of additional resources should more than compensate for the
+     overhead of SLURM's task launch. Use with make's "-j" option within an
+     existing SLURM allocation. Outside of a SLURM allocation, make's behavior
+     will be unchanged. Designed for GNU make-3.81.
+
+  mpich1.slurm.patch [ Patch to mpich1/p4 library for SLURM job task launch ]
+     For SLURM based job initiations (from srun command), get the parameters 
+     from environment variables as needed. This allows for a truly parallel 
+     job launch using the existing "execer" mode of operation with slight 
+     modification.  
+ 
+ ptrace.patch       [ Linux Kernel patch required to for TotalView use ]
+     0. This has been fixed on most recent Linux kernels. Older versions of
+     Linux may need this patch support TotalView.
+     1. gdb and other tools cannot attach to a stopped process. The wait that 
+     follows the PTRACE_ATTACH will block indefinitely.
+     2. It is not possible to use PTRACE_DETACH to leave a process stopped, 
+     because ptrace ignores SIGSTOPs sent by the tracing process.
+ 
