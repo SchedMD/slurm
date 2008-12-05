@@ -3,12 +3,16 @@
 <H1>Gang Scheduling</H1>
 
 <P>
-SLURM version 1.2 and earlier supported dedication of resources
-to jobs.
-Beginning in SLURM version 1.3, gang scheduling is supported. 
-Gang scheduling is when two or more jobs are allocated to the same resources 
-and these jobs are alternately suspended to let all of the tasks of each 
-job have full access to the shared resources for a period of time.
+SLURM version 1.2 and earlier supported dedication of resources to jobs.
+Beginning in SLURM version 1.3, timesliced gang scheduling is supported. 
+Timesliced gang scheduling is when two or more jobs are allocated to the same
+resources and these jobs are alternately suspended to let one job at a time have
+dedicated access to the resources for a configured period of time.
+</P>
+<P>
+Preemptive priority job scheduling is another form of gang-scheduling that is
+supported by SLURM. See the <a href="preempt.html">Preemption</a> document for
+more information.
 </P>
 <P>
 A resource manager that supports timeslicing can improve it's responsiveness
@@ -87,7 +91,8 @@ the overhead of gang scheduling.
 The <I>FORCE</I> option now supports an additional parameter that controls 
 how many jobs can share a resource (FORCE[:max_share]). By default the 
 max_share value is 4. To allow up to 6 jobs from this partition to be 
-allocated to a common resource, set <I>Shared=FORCE:6</I>.
+allocated to a common resource, set <I>Shared=FORCE:6</I>. To only let 2 jobs
+timeslice on the same resources, set <I>Shared=FORCE:2</I>.
 </LI>
 </UL>
 <P>
@@ -490,10 +495,6 @@ around on the cores to maximize performance. This is different than when
 <H2>Future Work</H2>
 
 <P>
-Priority scheduling and preemptive scheduling are other forms of gang
-scheduling that are currently under development for SLURM.
-</P>
-<P>
 <B>Making use of swap space</B>: (note that this topic is not currently
 scheduled for development, unless someone would like to pursue this) It should
 be noted that timeslicing does provide an interesting mechanism for high
@@ -508,6 +509,6 @@ For now this idea could be experimented with by disabling memory support in the
 selector and submitting appropriately sized jobs.
 </P>
 
-<p style="text-align:center;">Last modified 7 July 2008</p>
+<p style="text-align:center;">Last modified 5 December 2008</p>
 
 <!--#include virtual="footer.txt"-->
