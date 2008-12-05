@@ -4986,6 +4986,11 @@ extern void pack_acct_update_object(acct_update_object_t *object,
 	case ACCT_REMOVE_QOS:
 		my_function = pack_acct_qos_rec;
 		break;
+	case ACCT_ADD_WCKEY:
+	case ACCT_MODIFY_WCKEY:
+	case ACCT_REMOVE_WCKEY:
+		my_function = pack_acct_wckey_rec;
+		break;
 	case ACCT_UPDATE_NOTSET:
 	default:
 		error("pack: unknown type set in update_object: %d",
@@ -5039,6 +5044,12 @@ extern int unpack_acct_update_object(acct_update_object_t **object,
 	case ACCT_REMOVE_QOS:
 		my_function = unpack_acct_qos_rec;
 		my_destroy = destroy_acct_qos_rec;
+		break;
+	case ACCT_ADD_WCKEY:
+	case ACCT_MODIFY_WCKEY:
+	case ACCT_REMOVE_WCKEY:
+		my_function = unpack_acct_wckey_rec;
+		my_destroy = destroy_acct_wckey_rec;
 		break;
 	case ACCT_UPDATE_NOTSET:
 	default:

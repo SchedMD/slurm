@@ -127,7 +127,7 @@ int main(int argc, char *argv[])
 		_daemonize();
 	_init_pidfile();
 	log_config();
-	info("slurmdbd version %s started", SLURM_VERSION);
+
 	if (xsignal_block(dbd_sigarray) < 0)
 		error("Unable to block signals");
 
@@ -175,6 +175,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* Daemon is fully operational here */
+	info("slurmdbd version %s started", SLURM_VERSION);
 
 	/* Daemon termination handled here */
 	if(rollup_handler_thread)
