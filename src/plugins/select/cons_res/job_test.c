@@ -1245,22 +1245,30 @@ static uint16_t *_select_nodes(struct job_record *job_ptr, uint32_t min_nodes,
 	size = _get_res_usage(job_ptr, node_map, core_map, cr_node_cnt,
 				node_usage, cr_type, &cpu_cnt, &freq);
 
-	/* check required nodes to make sure they have usable resources */
-	if (req_map) {
-		i = f = 0;
-		for (n = 0; n < cr_node_cnt; n++) {
-			if (bit_test(req_map, n) && cpu_cnt[i] == 0) {
-				/* no resources are available for this node */
+	/* clear all nodes that do not have any
+	 * usable resources for this job */
+	i = f = 0;
+	for (n = 0; n < cr_node_cnt; n++) {
+		if (bit_test(node_map, n) && cpu_cnt[i] == 0) {
+			/* no resources are available for this node */
+			if (req_map && bit_test(req_map, n)) {
+				/* cannot clear a required node! */
 				xfree(cpu_cnt);
 				xfree(freq);
 				return NULL;
 			}
-			f++;
-			if (f >= freq[i]) {
-				f = 0;
-				i++;
-			}
+			bit_clear(node_map, n);
 		}
+		f++;
+		if (f >= freq[i]) {
+			f = 0;
+			i++;
+		}
+	}
+	if (bit_set_count(node_map) < min_nodes) {
+		xfree(cpu_cnt);
+		xfree(freq);
+		return NULL;
 	}
 
 	/* choose the best nodes for the job */
