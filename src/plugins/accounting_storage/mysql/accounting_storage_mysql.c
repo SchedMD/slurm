@@ -219,7 +219,8 @@ static int _set_usage_information(char **usage_table, slurmdbd_msg_type_t type,
 	/* check to see if we are off day boundaries or on month
 	 * boundaries other wise use the day table.
 	 */
-	if(start_tm.tm_hour || end_tm.tm_hour || (end-start < 86400)) {
+	if(start_tm.tm_hour || end_tm.tm_hour || (end-start < 86400)
+	   || end > my_time) {
 		switch (type) {
 		case DBD_GET_ASSOC_USAGE:
 			my_usage_table = assoc_hour_table;
@@ -2595,7 +2596,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 
 	if(mysql_db_create_table(db_conn, cluster_month_table,
 				 cluster_usage_table_fields,
-				 ", primary key (cluster(20), period_start))")
+				 ", primary key (cluster(21), period_start))")
 	   == SLURM_ERROR)
 		return SLURM_ERROR;
 
@@ -7888,6 +7889,7 @@ empty:
 	xfree(query);
 
 	wckey_list = list_create(destroy_acct_wckey_rec);
+	
 	while((row = mysql_fetch_row(result))) {
 		acct_wckey_rec_t *wckey = xmalloc(sizeof(acct_wckey_rec_t));
 		list_append(wckey_list, wckey);
@@ -8349,7 +8351,7 @@ extern int acct_storage_p_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 	}
 
 	if(!id) {
-		error("We need an id to set data for");
+		error("We need an id to set data for getting usage");
 		return SLURM_ERROR;
 	}
 
@@ -8388,7 +8390,7 @@ extern int acct_storage_p_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 				if(username && 
 				   !strcmp(acct_assoc->user, user.name)) 
 					goto is_user;
-
+				
 				if(type != DBD_GET_ASSOC_USAGE)
 					goto bad_user;
 

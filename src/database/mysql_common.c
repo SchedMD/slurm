@@ -49,6 +49,8 @@ pthread_mutex_t mysql_lock = PTHREAD_MUTEX_INITIALIZER;
 
 #ifdef HAVE_MYSQL
 
+static char *table_defs_table = "table_defs_table";
+
 static int _clear_results(MYSQL *mysql_db)
 {
 	MYSQL_RES *result = NULL;
@@ -107,7 +109,7 @@ static MYSQL_RES *_get_last_result(MYSQL *mysql_db)
 }
 
 static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
-				     storage_field_t *fields)
+				     storage_field_t *fields, char *ending)
 {
 	char *query = NULL;
 	MYSQL_RES *result = NULL;
@@ -116,7 +118,31 @@ static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
 	List columns = NULL;
 	ListIterator itr = NULL;
 	char *col = NULL;
+	int adding = 0;
+	int run_update = 0;
+	char *primary_key = NULL;
+	char *unique_index = NULL;
+	int old_primary = 0;
+	char *old_index = NULL;
+	char *temp = NULL;
+
 	DEF_TIMERS;
+	
+	query = xstrdup_printf("show index from %s", table_name);
+
+	if(!(result = mysql_db_query_ret(mysql_db, query, 0))) {
+		xfree(query);
+		return SLURM_ERROR;
+	}
+	xfree(query);
+	columns = list_create(slurm_destroy_char);
+	while((row = mysql_fetch_row(result))) {
+		// row[2] is the key name
+		if(!strcasecmp(row[2], "PRIMARY"))
+			old_primary = 1;
+		else if(!old_index)
+			old_index = xstrdup(row[2]);
+	}
 
 	query = xstrdup_printf("show columns from %s", table_name);
 
@@ -149,34 +175,135 @@ static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
 		}
 		if(!found) {
 			if(i) {
-				info("adding column %s after %s",
+				info("adding column %s after %s in table %s",
 				     fields[i].name,
-				     fields[i-1].name);
+				     fields[i-1].name,
+				     table_name);
 				xstrfmtcat(query, " add %s %s after %s,",
 					   fields[i].name,
 					   fields[i].options,
 					   fields[i-1].name);
 			} else {
-				info("adding column %s at the beginning",
+				info("adding column %s at the beginning "
+				     "of table %s",
 				     fields[i].name,
-				     fields[i-1].name);
+				     fields[i-1].name,
+				     table_name);
 				xstrfmtcat(query, " add %s %s first,",
 					   fields[i].name,
 					   fields[i].options);
 			}
+			adding = 1;
 		}
 
 		i++;
 	}
+
+	list_iterator_reset(itr);
+	while((col = list_next(itr))) {
+		adding = 1;
+		info("dropping column %s from table %s", col, table_name);
+		xstrfmtcat(query, " drop %s,", col);
+	}
+	
 	list_iterator_destroy(itr);
 	list_destroy(columns);
+	
+	if((temp = strstr(ending, "primary key ("))) {
+		int open = 0, close =0;
+		int end = 0;
+		while(temp[end++]) {
+			if(temp[end] == '(')
+				open++;
+			else if(temp[end] == ')')
+				close++;
+			else
+				continue;
+			if(open == close)
+				break;
+		}
+		if(temp[end]) {
+			end++;
+			primary_key = xstrndup(temp, end);
+			if(old_primary)
+				xstrcat(query, " drop primary key,");
+			xstrfmtcat(query, " add %s,",  primary_key);
+			xfree(primary_key);
+		}
+	}
+
+	if((temp = strstr(ending, "unique index ("))) {
+		int open = 0, close =0;
+		int end = 0;
+		while(temp[end++]) {
+			if(temp[end] == '(')
+				open++;
+			else if(temp[end] == ')')
+				close++;
+			else
+				continue;
+			if(open == close)
+				break;
+		}
+		if(temp[end]) {
+			end++;
+			unique_index = xstrndup(temp, end);
+			if(old_index)
+				xstrfmtcat(query, " drop index %s,",
+					   old_index);
+			xstrfmtcat(query, " add %s,", unique_index);
+			xfree(unique_index);
+		}
+	}
+	xfree(old_index);
+
 	query[strlen(query)-1] = ';';
 	//info("%d query\n%s", __LINE__, query);
-	
-	if(mysql_db_query(mysql_db, query)) {
-		xfree(query);
-		return SLURM_ERROR;
+
+	/* see if we have already done this definition */
+	if(!adding) {
+		char *query2 = xstrdup_printf("select table_name from "
+					      "%s where definition=\"%s\"",
+					      table_defs_table, query);
+		MYSQL_RES *result = NULL;
+		MYSQL_ROW row;
+		
+		run_update = 1;
+		
+		if((result = mysql_db_query_ret(mysql_db, query2, 0))) {
+			if((row = mysql_fetch_row(result)))
+				run_update = 0;
+			mysql_free_result(result);
+		}
+		xfree(query2);
 	}
+
+	/* if something has changed run the alter line */
+	if(run_update || adding) {
+		time_t now = time(NULL);
+		char *query2 = NULL;
+	
+		debug("Running update for table %s has changed.  "
+		      "Updating...", table_name);
+		if(mysql_db_query(mysql_db, query)) {
+			xfree(query);
+			return SLURM_ERROR;
+		}
+		
+		query2 = xstrdup_printf("insert into %s (creation_time, "
+					"mod_time, table_name, definition) "
+					"values (%d, %d, \"%s\", \"%s\") "
+					"on duplicate key update "
+					"definition=\"%s\", mod_time=%d;",
+					table_defs_table, now, now,
+					table_name, query, query, now);
+		if(mysql_db_query(mysql_db, query2)) {
+			xfree(query2);
+			return SLURM_ERROR;
+		}
+		xfree(query2);
+	}
+	
 	xfree(query);
 	query = xstrdup_printf("make table current %s", table_name);
 	END_TIMER2(query);
@@ -444,6 +571,25 @@ extern int mysql_db_create_table(MYSQL *mysql_db, char *table_name,
 		return SLURM_ERROR;
 	}
 
+	/* We have an internal table called table_defs_table which
+	 * contains the definition of each table in the database.  To
+	 * speed things up we just check against that to see if
+	 * anything has changed.
+	 */
+	query = xstrdup_printf("create table if not exists %s "
+			       "(creation_time int unsigned not null, "
+			       "mod_time int unsigned default 0 not null, "
+			       "table_name text not null, "
+			       "definition text not null, "
+			       "primary key (table_name(50))) engine='innodb'",
+			       table_defs_table);
+
+	if(mysql_db_query(mysql_db, query) == SLURM_ERROR) {
+		xfree(query);
+		return SLURM_ERROR;
+	}
+	xfree(query);	
+
 	query = xstrdup_printf("create table if not exists %s (%s %s",
 			       table_name, fields->name, fields->options);
 	i=1;
@@ -465,7 +611,8 @@ extern int mysql_db_create_table(MYSQL *mysql_db, char *table_name,
 	}
 	xfree(query);	
 	
-	return _mysql_make_table_current(mysql_db, table_name, first_field);
+	return _mysql_make_table_current(mysql_db, table_name,
+					 first_field, ending);
 }
 
 
