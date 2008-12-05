@@ -437,7 +437,7 @@ static char * _next_tok(char *sep, char **str)
 	char *tok;
 
 	/* push str past any leading separators */
-	while (**str != '\0' && strchr(sep, **str) != '\0')
+	while ((**str != '\0') && (strchr(sep, **str) != NULL))
 		(*str)++;
 
 	if (**str == '\0')
@@ -447,20 +447,34 @@ static char * _next_tok(char *sep, char **str)
 	tok = *str;
 
 	/* push str past token and leave pointing to first separator */
-	while (**str != '\0' && strchr(sep, **str) == '\0')
+	while ((**str != '\0') && (strchr(sep, **str) == NULL))
 		(*str)++;
 
-	/* if _single_ opening bracket exists b/w tok and str, push str
-	 * past first closing bracket */
-	if (   memchr(tok, '[', *str - tok) != NULL
-	&& memchr(tok, ']', *str - tok) == NULL ) {
+	/* if _single_ opening bracket exists b/w tok and str,
+	 * push str past first closing bracket */
+	if ((memchr(tok, '[', *str - tok) != NULL) &&
+	    (memchr(tok, ']', *str - tok) == NULL)) {
 		char *q = strchr(*str, ']');
-		if (q && memchr(*str, '[', q - *str) == NULL)
-			*str = q + 1;
+		if (q && (memchr(*str, '[', q - *str) == NULL))
+			*str = ++q;
+
+		/* push str past token and leave pointing to next separator */
+		while ((**str != '\0') && (strchr(sep, **str) == NULL))
+			(*str)++;
+
+		/* if _second_ opening bracket exists b/w tok and str,
+		 * push str past second closing bracket */
+		if ((**str != '\0') &&
+		    (memchr(tok, '[', *str - q) != NULL) &&
+		    (memchr(tok, ']', *str - q) == NULL)) {
+			q = strchr(*str, ']');
+			if (q && (memchr(*str, '[', q - *str) == NULL))
+				*str = q + 1;
+		}
 	}
 
 	/* nullify consecutive separators and push str beyond them */
-	while (**str != '\0' && strchr(sep, **str) != '\0')
+	while ((**str != '\0') && (strchr(sep, **str) != '\0'))
 		*(*str)++ = '\0';
 
 	return tok;
@@ -1657,16 +1671,52 @@ static int _parse_range_list(char *str, struct _range *ranges, int len)
 	return count;
 }
 
-static void
-_push_range_list(hostlist_t hl, char *pfx, struct _range *rng,
-	int n)
+/* Validate prefix and push with the numeric suffix onto the hostlist
+ * The prefix can contain a up to one range expresseion (e.g. "rack[1-4]_").
+ * RET 0 on success, -1 on failure (invalid prefix) */
+static int
+_push_range_list(hostlist_t hl, char *prefix, struct _range *range,
+		 int n)
 {
-	int i;
-	
-	for (i = 0; i < n; i++) {
-		hostlist_push_hr(hl, pfx, rng->lo, rng->hi, rng->width);
-		rng++;
+	int i, j, k, nr;
+	char *p, *q;
+	char new_prefix[1024], tmp_prefix[1024];
+
+	strncpy(tmp_prefix, prefix, sizeof(tmp_prefix));
+	if (((p = strrchr(tmp_prefix, '[')) != NULL) &&
+	    ((q = strrchr(p, ']')) != NULL)) {
+		struct _range prefix_range[MAX_RANGES];
+		struct _range *saved_range = range, *pre_range = prefix_range;
+		*p++ = '\0';
+		*q++ = '\0';
+		if (strrchr(tmp_prefix, '[') != NULL)
+			return -1;	/* third range is illegal */
+		nr = _parse_range_list(p, prefix_range, MAX_RANGES);
+		if (nr < 0)
+			return -1;	/* bad numeric expression */
+		for (i = 0; i < nr; i++) {
+			for (j = pre_range->lo; j <= pre_range->hi; j++) {
+				snprintf(new_prefix, sizeof(new_prefix),
+					 "%s%d%s", tmp_prefix, j, q);
+				range = saved_range;
+				for (k = 0; k < n; k++) {
+					hostlist_push_hr(hl, new_prefix,
+							 range->lo, range->hi,
+							 range->width);
+					range++;
+				}
+			}
+			pre_range++;
+		}
+		return 0;
 	}
+
+	for (k = 0; k < n; k++) {
+		hostlist_push_hr(hl, prefix, 
+				 range->lo, range->hi, range->width);
+		range++;
+	}
+	return 0;
 }
 
 /*
@@ -1693,7 +1743,7 @@ _hostlist_create_bracketed(const char *hostlist, char *sep, char *r_op)
 	while ((tok = _next_tok(sep, &str)) != NULL) {
 		strncpy(cur_tok, tok, 1024);
 
-		if ((p = strchr(tok, '[')) != NULL) {
+		if ((p = strrchr(tok, '[')) != NULL) {
 			char *q, *prefix = tok;
 			*p++ = '\0';
 
@@ -1706,7 +1756,8 @@ _hostlist_create_bracketed(const char *hostlist, char *sep, char *r_op)
 				nr = _parse_range_list(p, ranges, MAX_RANGES);
 				if (nr < 0) 
 					goto error;
-				_push_range_list(new, prefix, ranges, nr);
+				if (_push_range_list(new, prefix, ranges, nr))
+					goto error;
 
                 
 			} else {

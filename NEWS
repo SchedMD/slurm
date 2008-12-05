@@ -120,6 +120,8 @@ documents those changes that are of interest to users and admins.
  -- Fix bug in select/cons_res that would incorrectly satify a tasks's
     --cpus-per-task specification by allocating the task CPUs on more than
     one node.
+ -- Add support for hostlist expressions containing up to two numeric 
+    expressions (e.g. "rack[0-15]_blade[0-41]").
 
 * Changes in SLURM 1.3.11
 =========================

@@ -156,6 +156,9 @@ extern List acct_storage_p_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 					List acct_list,
 					acct_user_cond_t *user_cond);
 
+extern List acct_storage_p_remove_wckeys(mysql_conn_t *mysql_conn,
+					 uint32_t uid, 
+					 acct_wckey_cond_t *wckey_cond);
 
 static int _set_usage_information(char **usage_table, slurmdbd_msg_type_t type,
 				  time_t *usage_start, time_t *usage_end)
@@ -1806,7 +1809,9 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 	 * really delete it for accounting purposes.  This is for
 	 * corner cases most of the time this won't matter.
 	 */
-	if(table == acct_coord_table || table == qos_table) {
+	if((table == acct_coord_table) 
+	   || (table == qos_table)
+	   || (table == wckey_table)) {
 		/* This doesn't apply for these tables since we are
 		 * only looking for association type tables.
 		 */
@@ -1869,7 +1874,8 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 		   clusters 
 		*/		
 		return SLURM_SUCCESS;
-	} else if(table == acct_coord_table)
+	} else if((table == acct_coord_table)
+		  || (table == wckey_table))
 		return SLURM_SUCCESS;
 
 	/* mark deleted=1 or remove completely the
@@ -3029,6 +3035,7 @@ extern int acct_storage_p_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *extra = NULL;
 	int affect_rows = 0;
 	List assoc_list = list_create(destroy_acct_association_rec);
+	List wckey_list = list_create(destroy_acct_wckey_rec);
 
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return SLURM_ERROR;
@@ -3057,7 +3064,7 @@ extern int acct_storage_p_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		if(object->default_wckey) {
 			xstrcat(cols, ", default_wckey");
-			xstrfmtcat(vals, ", %u", object->default_wckey);
+			xstrfmtcat(vals, ", \"%s\"", object->default_wckey);
 			xstrfmtcat(extra, ", default_wckey=\"%s\"", 
 				   object->default_wckey);
 		}
@@ -3105,10 +3112,11 @@ extern int acct_storage_p_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 				   user_name, extra);
 		xfree(extra);
 		
-		if(!object->assoc_list)
-			continue;
+		if(object->assoc_list)
+			list_transfer(assoc_list, object->assoc_list);
 
-		list_transfer(assoc_list, object->assoc_list);
+		if(object->wckey_list)
+			list_transfer(wckey_list, object->wckey_list);
 	}
 	list_iterator_destroy(itr);
 	xfree(user_name);
@@ -3135,6 +3143,15 @@ extern int acct_storage_p_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 	}
 	list_destroy(assoc_list);
+
+	if(list_count(wckey_list)) {
+		if(acct_storage_p_add_wckeys(mysql_conn, uid, wckey_list)
+		   == SLURM_ERROR) {
+			error("Problem adding user wckeys");
+			rc = SLURM_ERROR;
+		}
+	}
+	list_destroy(wckey_list);
 
 	return rc;
 #else
@@ -5482,6 +5499,7 @@ extern List acct_storage_p_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	MYSQL_ROW row;
 	acct_user_cond_t user_coord_cond;
 	acct_association_cond_t assoc_cond;
+	acct_wckey_cond_t wckey_cond;
 
 	if(!user_cond) {
 		error("we need something to remove");
@@ -5600,6 +5618,15 @@ extern List acct_storage_p_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		mysql_conn, uid, NULL, &user_coord_cond);
 	if(coord_list)
 		list_destroy(coord_list);
+
+	/* We need to remove these users from the wckey table */
+	memset(&wckey_cond, 0, sizeof(acct_wckey_cond_t));
+	wckey_cond.user_list = assoc_cond.user_list;
+	coord_list = acct_storage_p_remove_wckeys(
+		mysql_conn, uid, &wckey_cond);
+	if(coord_list)
+		list_destroy(coord_list);
+
 	list_destroy(assoc_cond.user_list);
 
 	user_name = uid_to_string((uid_t) uid);
@@ -5967,6 +5994,7 @@ extern List acct_storage_p_remove_clusters(mysql_conn_t *mysql_conn,
 #ifdef HAVE_MYSQL
 	ListIterator itr = NULL;
 	List ret_list = NULL;
+	List tmp_list = NULL;
 	int rc = SLURM_SUCCESS;
 	char *object = NULL;
 	char *extra = NULL, *query = NULL,
@@ -5974,6 +6002,7 @@ extern List acct_storage_p_remove_clusters(mysql_conn_t *mysql_conn,
 	time_t now = time(NULL);
 	char *user_name = NULL;
 	int set = 0;
+	acct_wckey_cond_t wckey_cond;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 
@@ -6038,6 +6067,14 @@ extern List acct_storage_p_remove_clusters(mysql_conn_t *mysql_conn,
 		return ret_list;
 	}
 	xfree(query);
+
+	/* We need to remove these clusters from the wckey table */
+	memset(&wckey_cond, 0, sizeof(acct_wckey_cond_t));
+	wckey_cond.cluster_list = ret_list;
+	tmp_list = acct_storage_p_remove_wckeys(
+		mysql_conn, uid, &wckey_cond);
+	if(tmp_list)
+		list_destroy(tmp_list);
 
 	/* We should not need to delete any cluster usage just set it
 	 * to deleted */
@@ -6447,7 +6484,7 @@ extern List acct_storage_p_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	xfree(query);
 
 	user_name = uid_to_string((uid_t) uid);
-	rc = _remove_common(mysql_conn, DBD_REMOVE_ACCOUNTS, now,
+	rc = _remove_common(mysql_conn, DBD_REMOVE_QOS, now,
 			    user_name, qos_table, name_char, assoc_char);
 	xfree(assoc_char);
 	xfree(name_char);
@@ -6467,7 +6504,84 @@ extern List acct_storage_p_remove_wckeys(mysql_conn_t *mysql_conn,
 					 uint32_t uid, 
 					 acct_wckey_cond_t *wckey_cond)
 {
+#ifdef HAVE_MYSQL
+	List ret_list = NULL;
+	int rc = SLURM_SUCCESS;
+	char *extra = NULL, *query = NULL,
+		*name_char = NULL, *assoc_char = NULL;
+	time_t now = time(NULL);
+	char *user_name = NULL;
+	int set = 0;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+
+	if(!wckey_cond) {
+		xstrcat(extra, " where deleted=0");
+		goto empty;
+	}
+
+	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
+		return NULL;
+
+	set = _setup_wckey_cond_limits(wckey_cond, &extra);
+
+empty:
+	if(!extra) {
+		error("Nothing to remove");
+		return NULL;
+	}
+
+	query = xstrdup_printf("select t1.id, t1.name from %s as t1%s;",
+			       wckey_table, extra);
+	xfree(extra);
+	if(!(result = mysql_db_query_ret(
+		     mysql_conn->db_conn, query, 0))) {
+		xfree(query);
+		return NULL;
+	}
+
+	name_char = NULL;
+	ret_list = list_create(slurm_destroy_char);
+	while((row = mysql_fetch_row(result))) {
+		acct_wckey_rec_t *wckey_rec = NULL;
+
+		list_append(ret_list, xstrdup(row[1]));
+		if(!name_char)
+			xstrfmtcat(name_char, "id=\"%s\"", row[0]);
+		else
+			xstrfmtcat(name_char, " || id=\"%s\"", row[0]); 
+		
+		wckey_rec = xmalloc(sizeof(acct_wckey_rec_t));
+		/* we only need id when removing no real need to init */
+		wckey_rec->id = atoi(row[0]);
+		_addto_update_list(mysql_conn->update_list, ACCT_REMOVE_WCKEY,
+				   wckey_rec);
+	}
+	mysql_free_result(result);
+
+	if(!list_count(ret_list)) {
+		errno = SLURM_NO_CHANGE_IN_DATA;
+		debug3("didn't effect anything\n%s", query);
+		xfree(query);
+		return ret_list;
+	}
+	xfree(query);
+
+	user_name = uid_to_string((uid_t) uid);
+	rc = _remove_common(mysql_conn, DBD_REMOVE_WCKEYS, now,
+			    user_name, wckey_table, name_char, NULL);
+	xfree(assoc_char);
+	xfree(name_char);
+	xfree(user_name);
+	if (rc == SLURM_ERROR) {
+		list_destroy(ret_list);
+		return NULL;
+	}
+
+	return ret_list;
+#else
 	return NULL;
+#endif
 }
 
 extern List acct_storage_p_get_users(mysql_conn_t *mysql_conn, uid_t uid, 
@@ -9326,26 +9440,39 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 						   1, NULL) != SLURM_SUCCESS) {
 				List wckey_list = NULL;
 				acct_wckey_rec_t *wckey_ptr = NULL;
-				acct_association_rec_t assoc_rec;
+				char *assoc_query = NULL;
+				MYSQL_RES *result = NULL;
+				MYSQL_ROW row;
 
-				memset(&assoc_rec, 0, 
-				       sizeof(acct_association_rec_t));
-				/* We have to get the user name from
-				   the association just in case we
-				   don't have uid's constant across
-				   the system. */
-				assoc_rec.id = job_ptr->assoc_id;
-				if(assoc_mgr_fill_in_assoc(
-					   mysql_conn, &assoc_rec, 1, NULL)
-				   != SLURM_SUCCESS)
+				/* Just so we don't have to keep a
+				   cache of the associations around we
+				   will just query the db for the user
+				   name of the association id.  Since
+				   this should sort of be a rare case
+				   this isn't too bad.
+				*/
+				assoc_query = xstrdup_printf(
+					"select user from %s where id=%u",
+					assoc_table, job_ptr->assoc_id);
+				debug3("%d(%d) query\n%s",
+				       mysql_conn->conn, __LINE__, assoc_query);
+				if(!(result = 
+				     mysql_db_query_ret(mysql_conn->db_conn,
+							assoc_query, 0))) {
+					xfree(assoc_query);
+					goto end_it;
+				}
+				xfree(assoc_query);
+				
+				if(!(row = mysql_fetch_row(result))) 
 					goto no_wckeyid;
-
+				
 				wckey_list = list_create(
 					destroy_acct_wckey_rec);
 
 				wckey_ptr = xmalloc(sizeof(acct_wckey_rec_t));
 				wckey_ptr->name = xstrdup(wckey);
-				wckey_ptr->user = xstrdup(assoc_rec.user);
+				wckey_ptr->user = xstrdup(row[0]);
 				wckey_ptr->cluster = xstrdup(cluster_name);
 				list_append(wckey_list, wckey_ptr);
 				/* we have already checked to make
@@ -9360,6 +9487,8 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 					assoc_mgr_fill_in_wckey(
 						mysql_conn, &wckey_rec,
 						1, NULL);
+				
+				mysql_free_result(result);
 				list_destroy(wckey_list);
 			}
 			wckeyid = wckey_rec.id;
@@ -9375,6 +9504,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 	}
 
+end_it:
 	xfree(block_id);
 	xfree(jname);
 	xfree(wckey);
