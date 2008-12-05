@@ -1135,8 +1135,24 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 			 uint32_t req_nodes, uint32_t cr_node_cnt,
 			 uint16_t *cpu_cnt, uint32_t *freq, uint32_t size)
 {
-	int i, node_boundary, count, ec, most_cpus = 0;
+	int i, b, node_boundary, count, ec, most_cpus = 0;
 	bitstr_t *origmap, *reqmap = NULL;
+
+	if (job_ptr->details->req_node_bitmap)
+		reqmap = job_ptr->details->req_node_bitmap;
+
+	/* clear nodes from the bitmap that don't have available resources */
+	for (i = 0, b = 0; i < size; i++) {
+		for (count = 0; count < freq[i]; count++, b++) {
+			if (bit_test(node_map, b) && cpu_cnt[i] < 1) {
+				if (reqmap && bit_test(reqmap, b)) {
+					/* can't clear a required node! */
+					return SLURM_ERROR;
+				}
+				bit_clear(node_map, b); 
+			}
+		}
+	}
 
 	/* allocated node count should never exceed num_procs, right? 
 	 * if so, then this should be done earlier and max_nodes
@@ -1166,9 +1182,6 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 			most_cpus = cpu_cnt[i];
 	}
 
-	if (job_ptr->details->req_node_bitmap)
-		reqmap = job_ptr->details->req_node_bitmap;
-	
 	for (count = 1; count < most_cpus; count++) {
 		int nochange = 1;
 		bit_or(node_map, origmap);
