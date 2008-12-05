@@ -3000,6 +3000,7 @@ extern int acct_storage_p_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *extra = NULL;
 	int affect_rows = 0;
 	List assoc_list = list_create(destroy_acct_association_rec);
+	List wckey_list = list_create(destroy_acct_wckey_rec);
 
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return SLURM_ERROR;
@@ -3028,7 +3029,7 @@ extern int acct_storage_p_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		if(object->default_wckey) {
 			xstrcat(cols, ", default_wckey");
-			xstrfmtcat(vals, ", %u", object->default_wckey);
+			xstrfmtcat(vals, ", \"%s\"", object->default_wckey);
 			xstrfmtcat(extra, ", default_wckey=\"%s\"", 
 				   object->default_wckey);
 		}
@@ -3076,10 +3077,11 @@ extern int acct_storage_p_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 				   user_name, extra);
 		xfree(extra);
 		
-		if(!object->assoc_list)
-			continue;
+		if(object->assoc_list)
+			list_transfer(assoc_list, object->assoc_list);
 
-		list_transfer(assoc_list, object->assoc_list);
+		if(object->wckey_list)
+			list_transfer(wckey_list, object->wckey_list);
 	}
 	list_iterator_destroy(itr);
 	xfree(user_name);
@@ -3106,6 +3108,15 @@ extern int acct_storage_p_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 	}
 	list_destroy(assoc_list);
+
+	if(list_count(wckey_list)) {
+		if(acct_storage_p_add_wckeys(mysql_conn, uid, wckey_list)
+		   == SLURM_ERROR) {
+			error("Problem adding user wckeys");
+			rc = SLURM_ERROR;
+		}
+	}
+	list_destroy(wckey_list);
 
 	return rc;
 #else

@@ -996,7 +996,7 @@ if { $exit_code } {
 # Use sacctmgr to list the test user modification
 #
 set matches 0
-set my_pid [spawn $sacctmgr -n -p list user names=$us1,$us2,$us3 withcoor]
+set my_pid [spawn $sacctmgr -n -p list user names=$us1,$us2,$us3 withcoor format=user,DefaultAccount,Admin,Coord]
 expect {
 	-re "There was a problem" {
 	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
@@ -1034,7 +1034,7 @@ if { $exit_code } {
 # Use sacctmgr to list the test coordinator additions
 #
 set matches 0
-set my_pid [spawn $sacctmgr -n -p list user names=$us1,$us2,$us3 withcoor]
+set my_pid [spawn $sacctmgr -n -p list user names=$us1,$us2,$us3 withcoor format=user,DefaultAccount,Admin,Coord]
 expect {
 	-re "There was a problem" {
 	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
