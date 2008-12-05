@@ -3056,6 +3056,11 @@ inline static void  _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 			case ACCT_REMOVE_QOS:
 				rc = assoc_mgr_update_qos(object);
 				break;
+			case ACCT_ADD_WCKEY:
+			case ACCT_MODIFY_WCKEY:
+			case ACCT_REMOVE_WCKEY:
+				rc = assoc_mgr_update_wckeys(object);
+				break;
 			case ACCT_UPDATE_NOTSET:
 			default:
 				error("unknown type set in update_object: %d",

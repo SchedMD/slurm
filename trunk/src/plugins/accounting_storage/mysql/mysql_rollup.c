@@ -95,6 +95,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 	List assoc_usage_list = list_create(_destroy_local_id_usage);
 	List cluster_usage_list = list_create(_destroy_local_cluster_usage);
 	List wckey_usage_list = list_create(_destroy_local_id_usage);
+	uint16_t track_wckey = slurm_get_track_wckey();
 
 	char *event_req_inx[] = {
 		"node_name",
@@ -322,29 +323,6 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			if(!row_end || row_end > curr_end) 
 				row_end = curr_end;
 
-			if(last_id != assoc_id) {
-				a_usage = xmalloc(sizeof(local_id_usage_t));
-				a_usage->id = assoc_id;
-				list_append(assoc_usage_list, a_usage);
-				last_id = assoc_id;
-			}
-
-			if(last_wckeyid != wckey_id) {
-				list_iterator_reset(w_itr);
-				while((w_usage = list_next(w_itr))) 
-					if(w_usage->id == wckey_id) 
-						break;
-				
-				if(!w_usage) {
-					w_usage = xmalloc(
-						sizeof(local_id_usage_t));
-					w_usage->id = wckey_id;
-					list_append(wckey_usage_list, w_usage);
-				}
-
-				last_id = wckey_id;
-			}
-
 			if(!row_start || ((row_end - row_start) < 1)) 
 				goto calc_cluster;
 
@@ -400,11 +378,37 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			}
 
 
+			if(last_id != assoc_id) {
+				a_usage = xmalloc(sizeof(local_id_usage_t));
+				a_usage->id = assoc_id;
+				list_append(assoc_usage_list, a_usage);
+				last_id = assoc_id;
+			}
+			
 			a_usage->a_cpu += seconds * row_acpu;
 
-			/* do the wckey calculation */
-			w_usage->a_cpu += seconds * row_acpu;
+			if(!track_wckey) 
+				goto calc_cluster;
 
+			/* do the wckey calculation */
+			if(last_wckeyid != wckey_id) {
+				list_iterator_reset(w_itr);
+				while((w_usage = list_next(w_itr))) 
+					if(w_usage->id == wckey_id) 
+						break;
+				
+				if(!w_usage) {
+					w_usage = xmalloc(
+						sizeof(local_id_usage_t));
+					w_usage->id = wckey_id;
+					list_append(wckey_usage_list,
+						    w_usage);
+				}
+				
+				last_id = wckey_id;
+			}
+			w_usage->a_cpu += seconds * row_acpu;
+			
 			/* do the cluster allocated calculation */
 		calc_cluster:
 			if(!row[JOB_REQ_CLUSTER] || !row[JOB_REQ_CLUSTER][0]) 
@@ -586,6 +590,8 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			}
 		}
 
+		if(!track_wckey)
+			goto end_loop;
 
 		list_iterator_reset(w_itr);
 		while((w_usage = list_next(w_itr))) {
@@ -601,7 +607,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			} else {
 				xstrfmtcat(query, 
 					   "insert into %s (creation_time, "
-					   "mod_time, wckey, period_start, "
+					   "mod_time, id, period_start, "
 					   "alloc_cpu_secs) values "
 					   "(%d, %d, %d, %d, %llu)",
 					   wckey_hour_table, now, now, 
@@ -625,7 +631,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				goto end_it;
 			}
 		}
-
+	end_loop:
 		list_flush(assoc_usage_list);
 		list_flush(cluster_usage_list);
 		list_flush(wckey_usage_list);
@@ -659,6 +665,7 @@ extern int mysql_daily_rollup(mysql_conn_t *mysql_conn,
 	time_t curr_end;
 	time_t now = time(NULL);
 	char *query = NULL;
+	uint16_t track_wckey = slurm_get_track_wckey();
 
 	if(!localtime_r(&curr_start, &start_tm)) {
 		error("Couldn't get localtime from day start %d", curr_start);
@@ -706,16 +713,20 @@ extern int mysql_daily_rollup(mysql_conn_t *mysql_conn,
 			   cluster_day_table, now, now, curr_start,
 			   cluster_hour_table,
 			   curr_end, curr_start, now);
-		xstrfmtcat(query,
-			   "insert into %s (creation_time, mod_time, wckey, "
-			   "period_start, alloc_cpu_secs) select %d, %d, "
-			   "wckey, %d, @ASUM:=SUM(alloc_cpu_secs) from %s "
-			   "where (period_start < %d && period_start >= %d) "
-			   "group by wckey on duplicate key update "
-			   "mod_time=%d, alloc_cpu_secs=@ASUM;",
-			   wckey_day_table, now, now, curr_start,
-			   wckey_hour_table,
-			   curr_end, curr_start, now);
+		if(track_wckey) {
+			xstrfmtcat(query,
+				   "insert into %s (creation_time, "
+				   "mod_time, id, period_start, "
+				   "alloc_cpu_secs) select %d, %d, "
+				   "id, %d, @ASUM:=SUM(alloc_cpu_secs) from %s "
+				   "where (period_start < %d && "
+				   "period_start >= %d) "
+				   "group by id on duplicate key update "
+				   "mod_time=%d, alloc_cpu_secs=@ASUM;",
+				   wckey_day_table, now, now, curr_start,
+				   wckey_hour_table,
+				   curr_end, curr_start, now);
+		}
 		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 		xfree(query);
@@ -764,6 +775,7 @@ extern int mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 	time_t curr_end;
 	time_t now = time(NULL);
 	char *query = NULL;
+	uint16_t track_wckey = slurm_get_track_wckey();
 
 	if(!localtime_r(&curr_start, &start_tm)) {
 		error("Couldn't get localtime from month start %d", curr_start);
@@ -812,16 +824,20 @@ extern int mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 			   cluster_month_table, now, now, curr_start,
 			   cluster_day_table,
 			   curr_end, curr_start, now);
-		xstrfmtcat(query,
-			   "insert into %s (creation_time, mod_time, wckey, "
-			   "period_start, alloc_cpu_secs) select %d, %d, "
-			   "wckey, %d, @ASUM:=SUM(alloc_cpu_secs) from %s "
-			   "where (period_start < %d && period_start >= %d) "
-			   "group by wckey on duplicate key update "
-			   "mod_time=%d, alloc_cpu_secs=@ASUM;",
-			   wckey_month_table, now, now, curr_start,
-			   wckey_day_table,
-			   curr_end, curr_start, now);
+		if(track_wckey) {
+			xstrfmtcat(query,
+				   "insert into %s (creation_time, mod_time, "
+				   "id, "
+				   "period_start, alloc_cpu_secs) select %d, "
+				   "%d, id, %d, @ASUM:=SUM(alloc_cpu_secs) "
+				   "from %s where (period_start < %d && "
+				   "period_start >= %d) "
+				   "group by id on duplicate key update "
+				   "mod_time=%d, alloc_cpu_secs=@ASUM;",
+				   wckey_month_table, now, now, curr_start,
+				   wckey_day_table,
+				   curr_end, curr_start, now);
+		}
 		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 		xfree(query);
