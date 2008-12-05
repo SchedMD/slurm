@@ -116,6 +116,7 @@ documents those changes that are of interest to users and admins.
     See "man slurm.conf" for details.
  -- For a job step, add support for srun's --nodelist and --exclusive options
     to be used together.
+ -- On slurmstepd failure, set node state to DRAIN rather than DOWN.
 
 * Changes in SLURM 1.3.11
 =========================

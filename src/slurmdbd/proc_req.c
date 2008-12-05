@@ -61,6 +61,8 @@ static int   _add_qos(slurmdbd_conn_t *slurmdbd_conn,
 		      Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _add_users(slurmdbd_conn_t *slurmdbd_conn,
 			Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _add_wckeys(slurmdbd_conn_t *slurmdbd_conn,
+			 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _cluster_procs(slurmdbd_conn_t *slurmdbd_conn,
 			    Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _get_accounts(slurmdbd_conn_t *slurmdbd_conn,
@@ -81,6 +83,8 @@ static int   _get_usage(uint16_t type, slurmdbd_conn_t *slurmdbd_conn,
 			Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _get_users(slurmdbd_conn_t *slurmdbd_conn,
 			Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _get_wckeys(slurmdbd_conn_t *slurmdbd_conn,
+			 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _flush_jobs(slurmdbd_conn_t *slurmdbd_conn,
 			 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _init_conn(slurmdbd_conn_t *slurmdbd_conn, 
@@ -99,8 +103,12 @@ static int   _modify_assocs(slurmdbd_conn_t *slurmdbd_conn,
 			    Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _modify_clusters(slurmdbd_conn_t *slurmdbd_conn,
 			      Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _modify_qos(slurmdbd_conn_t *slurmdbd_conn,
+			 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _modify_users(slurmdbd_conn_t *slurmdbd_conn,
 			   Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _modify_wckeys(slurmdbd_conn_t *slurmdbd_conn,
+			    Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _node_state(slurmdbd_conn_t *slurmdbd_conn,
 			 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static char *_node_state_string(uint16_t node_state);
@@ -119,6 +127,8 @@ static int   _remove_qos(slurmdbd_conn_t *slurmdbd_conn,
 			 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _remove_users(slurmdbd_conn_t *slurmdbd_conn,
 			   Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _remove_wckeys(slurmdbd_conn_t *slurmdbd_conn,
+			    Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _roll_usage(slurmdbd_conn_t *slurmdbd_conn,
 			 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _step_complete(slurmdbd_conn_t *slurmdbd_conn,
@@ -180,6 +190,10 @@ proc_req(slurmdbd_conn_t *slurmdbd_conn,
 			rc = _add_users(slurmdbd_conn, 
 					in_buffer, out_buffer, uid);
 			break;
+		case DBD_ADD_WCKEYS:
+			rc = _add_wckeys(slurmdbd_conn, 
+					 in_buffer, out_buffer, uid);
+			break;
 		case DBD_CLUSTER_PROCS:
 			rc = _cluster_procs(slurmdbd_conn,
 					    in_buffer, out_buffer, uid);
@@ -216,6 +230,10 @@ proc_req(slurmdbd_conn_t *slurmdbd_conn,
 		case DBD_GET_TXN:
 			rc = _get_txn(slurmdbd_conn,
 				      in_buffer, out_buffer, uid);
+			break;
+		case DBD_GET_WCKEYS:
+			rc = _get_wckeys(slurmdbd_conn, 
+					 in_buffer, out_buffer, uid);
 			break;
 		case DBD_GET_USERS:
 			rc = _get_users(slurmdbd_conn,
@@ -265,9 +283,17 @@ proc_req(slurmdbd_conn_t *slurmdbd_conn,
 			rc = _modify_clusters(slurmdbd_conn,
 					      in_buffer, out_buffer, uid);
 			break;
+		case DBD_MODIFY_QOS:
+			rc = _modify_qos(slurmdbd_conn,
+					 in_buffer, out_buffer, uid);
+			break;
 		case DBD_MODIFY_USERS:
 			rc = _modify_users(slurmdbd_conn,
 					   in_buffer, out_buffer, uid);
+			break;
+		case DBD_MODIFY_WCKEYS:
+			rc = _modify_wckeys(slurmdbd_conn, 
+					 in_buffer, out_buffer, uid);
 			break;
 		case DBD_NODE_STATE:
 			rc = _node_state(slurmdbd_conn,
@@ -300,6 +326,10 @@ proc_req(slurmdbd_conn_t *slurmdbd_conn,
 		case DBD_REMOVE_USERS:
 			rc = _remove_users(slurmdbd_conn,
 					   in_buffer, out_buffer, uid);
+			break;
+		case DBD_REMOVE_WCKEYS:
+			rc = _remove_wckeys(slurmdbd_conn, 
+					    in_buffer, out_buffer, uid);
 			break;
 		case DBD_ROLL_USAGE:
 			rc = _roll_usage(slurmdbd_conn, 
@@ -679,6 +709,43 @@ end_it:
 	return rc;
 }
 
+static int _add_wckeys(slurmdbd_conn_t *slurmdbd_conn,
+		      Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	int rc = SLURM_SUCCESS;
+	dbd_list_msg_t *get_msg = NULL;
+	char *comment = NULL;
+
+	debug2("DBD_ADD_WCKEYS: called");
+	if((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)
+	   && assoc_mgr_get_admin_level(slurmdbd_conn->db_conn, *uid) 
+	   < ACCT_ADMIN_SUPER_USER) {
+		comment = "Your user doesn't have privilege to preform this action";
+		error("%s", comment);
+		rc = ESLURM_ACCESS_DENIED;
+		goto end_it;			
+	}
+
+	if (slurmdbd_unpack_list_msg(slurmdbd_conn->rpc_version, 
+				     DBD_ADD_WCKEYS, &get_msg, in_buffer) !=
+	    SLURM_SUCCESS) {
+		comment = "Failed to unpack DBD_ADD_WCKEYS message";
+		error("%s", comment);
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+	
+	rc = acct_storage_g_add_wckeys(slurmdbd_conn->db_conn, *uid, 
+				      get_msg->my_list);
+
+end_it:
+	slurmdbd_free_list_msg(slurmdbd_conn->rpc_version, 
+			       get_msg);
+	*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version, 
+				      rc, comment, DBD_ADD_WCKEYS);
+	return rc;
+}
+
 static int _cluster_procs(slurmdbd_conn_t *slurmdbd_conn,
 			  Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
@@ -1003,7 +1070,7 @@ static int _get_usage(uint16_t type, slurmdbd_conn_t *slurmdbd_conn,
 	dbd_usage_msg_t *get_msg = NULL;
 	dbd_usage_msg_t got_msg;
 	uint16_t ret_type = 0;
-	int (*my_function) (void *db_conn, uid_t uid, void *object,
+	int (*my_function) (void *db_conn, uid_t uid, void *object, int type,
 			    time_t start, time_t end);
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
@@ -1024,6 +1091,10 @@ static int _get_usage(uint16_t type, slurmdbd_conn_t *slurmdbd_conn,
 		ret_type = DBD_GOT_ASSOC_USAGE;
 		my_function = acct_storage_g_get_usage;
 		break;
+	case DBD_GET_WCKEY_USAGE:
+		ret_type = DBD_GOT_WCKEY_USAGE;
+		my_function = acct_storage_g_get_usage;
+		break;
 	case DBD_GET_CLUSTER_USAGE:
 		ret_type = DBD_GOT_CLUSTER_USAGE;
 		my_function = clusteracct_storage_g_get_usage;
@@ -1036,7 +1107,7 @@ static int _get_usage(uint16_t type, slurmdbd_conn_t *slurmdbd_conn,
 		return SLURM_ERROR;
 	}		
 
-	rc = (*(my_function))(slurmdbd_conn->db_conn, *uid, get_msg->rec,
+	rc = (*(my_function))(slurmdbd_conn->db_conn, *uid, get_msg->rec, type,
 			      get_msg->start, get_msg->end);
 	slurmdbd_free_usage_msg(slurmdbd_conn->rpc_version, 
 				type, get_msg);
@@ -1092,6 +1163,55 @@ static int _get_users(slurmdbd_conn_t *slurmdbd_conn,
 	pack16((uint16_t) DBD_GOT_USERS, *out_buffer);
 	slurmdbd_pack_list_msg(slurmdbd_conn->rpc_version, 
 			       DBD_GOT_USERS, &list_msg, *out_buffer);
+	if(list_msg.my_list)
+		list_destroy(list_msg.my_list);
+	
+	return SLURM_SUCCESS;
+}
+
+static int _get_wckeys(slurmdbd_conn_t *slurmdbd_conn, 
+		       Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	dbd_cond_msg_t *get_msg = NULL;
+	dbd_list_msg_t list_msg;
+	char *comment = NULL;
+
+	debug2("DBD_GET_WCKEYS: called");
+
+	if((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)
+	   && assoc_mgr_get_admin_level(slurmdbd_conn->db_conn, *uid) 
+	   < ACCT_ADMIN_SUPER_USER) {
+		comment = "Your user doesn't have privilege to preform this action";
+		error("%s", comment);
+		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version, 
+					      ESLURM_ACCESS_DENIED, comment,
+					      DBD_GET_WCKEYS);
+		return ESLURM_ACCESS_DENIED;
+	}
+
+	if (slurmdbd_unpack_cond_msg(slurmdbd_conn->rpc_version, 
+				     DBD_GET_WCKEYS, &get_msg, in_buffer) !=
+	    SLURM_SUCCESS) {
+		comment = "Failed to unpack DBD_GET_WCKEYS message";
+		error("%s", comment);
+		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version, 
+					      SLURM_ERROR, comment,
+					      DBD_GET_WCKEYS);
+		return SLURM_ERROR;
+	}
+	
+	list_msg.my_list = acct_storage_g_get_wckeys(slurmdbd_conn->db_conn,
+						     *uid, get_msg->cond);
+	slurmdbd_free_cond_msg(slurmdbd_conn->rpc_version, 
+			       DBD_GET_WCKEYS, get_msg);
+
+	if(errno == ESLURM_ACCESS_DENIED && !list_msg.my_list)
+		list_msg.my_list = list_create(NULL);
+
+	*out_buffer = init_buf(1024);
+	pack16((uint16_t) DBD_GOT_WCKEYS, *out_buffer);
+	slurmdbd_pack_list_msg(slurmdbd_conn->rpc_version, 
+			       DBD_GOT_WCKEYS, &list_msg, *out_buffer);
 	if(list_msg.my_list)
 		list_destroy(list_msg.my_list);
 	
@@ -1584,6 +1704,75 @@ static int   _modify_clusters(slurmdbd_conn_t *slurmdbd_conn,
 	return rc;
 }
 
+static int   _modify_qos(slurmdbd_conn_t *slurmdbd_conn,
+			      Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	dbd_list_msg_t list_msg;
+	int rc = SLURM_SUCCESS;
+	dbd_modify_msg_t *get_msg = NULL;
+	char *comment = NULL;
+
+	if((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)
+	   && assoc_mgr_get_admin_level(slurmdbd_conn->db_conn, *uid)
+	   < ACCT_ADMIN_SUPER_USER) {
+		comment = "Your user doesn't have privilege to preform this action";
+		error("%s", comment);
+		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version, 
+					      ESLURM_ACCESS_DENIED,
+					      comment, DBD_MODIFY_QOS);
+
+		return ESLURM_ACCESS_DENIED;
+	}
+
+	if (slurmdbd_unpack_modify_msg(slurmdbd_conn->rpc_version, 
+				       DBD_MODIFY_QOS, &get_msg,
+				       in_buffer) != SLURM_SUCCESS) {
+		comment = "Failed to unpack DBD_MODIFY_QOS message";
+		error("%s", comment);
+		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version, 
+					      SLURM_ERROR,
+					      comment, DBD_MODIFY_QOS);
+		return SLURM_ERROR;
+	}
+	
+	debug2("DBD_MODIFY_QOS: called");
+
+	if(!(list_msg.my_list = acct_storage_g_modify_qos(
+		     slurmdbd_conn->db_conn, *uid, get_msg->cond,
+		     get_msg->rec))) {
+		if(errno == ESLURM_ACCESS_DENIED) {
+			comment = "Your user doesn't have privilege to preform this action";
+			rc = ESLURM_ACCESS_DENIED;
+		} else if(errno == SLURM_ERROR) {
+			comment = "Something was wrong with your query";
+			rc = SLURM_ERROR;
+		} else if(errno == SLURM_NO_CHANGE_IN_DATA) {
+			comment = "Request didn't affect anything";
+			rc = SLURM_SUCCESS;
+		} else {
+			comment = "Unknown issue";
+			rc = SLURM_ERROR;
+		}
+		error("%s", comment);
+		slurmdbd_free_modify_msg(slurmdbd_conn->rpc_version, 
+					 DBD_MODIFY_QOS, get_msg);
+		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version, 
+					      rc, comment, DBD_MODIFY_QOS);
+		return rc;
+	}
+
+	slurmdbd_free_modify_msg(slurmdbd_conn->rpc_version, 
+				 DBD_MODIFY_QOS, get_msg);
+	*out_buffer = init_buf(1024);
+	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
+	slurmdbd_pack_list_msg(slurmdbd_conn->rpc_version, 
+			       DBD_GOT_LIST, &list_msg, *out_buffer);
+	if(list_msg.my_list)
+		list_destroy(list_msg.my_list);
+
+	return rc;
+}
+
 static int   _modify_users(slurmdbd_conn_t *slurmdbd_conn,
 			   Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
@@ -1686,6 +1875,75 @@ is_same_user:
 
 	slurmdbd_free_modify_msg(slurmdbd_conn->rpc_version, 
 				 DBD_MODIFY_USERS, get_msg);
+	*out_buffer = init_buf(1024);
+	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
+	slurmdbd_pack_list_msg(slurmdbd_conn->rpc_version, 
+			       DBD_GOT_LIST, &list_msg, *out_buffer);
+	if(list_msg.my_list)
+		list_destroy(list_msg.my_list);
+
+	return rc;
+}
+
+static int   _modify_wckeys(slurmdbd_conn_t *slurmdbd_conn,
+			      Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	dbd_list_msg_t list_msg;
+	int rc = SLURM_SUCCESS;
+	dbd_modify_msg_t *get_msg = NULL;
+	char *comment = NULL;
+
+	if((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)
+	   && assoc_mgr_get_admin_level(slurmdbd_conn->db_conn, *uid)
+	   < ACCT_ADMIN_SUPER_USER) {
+		comment = "Your user doesn't have privilege to preform this action";
+		error("%s", comment);
+		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version, 
+					      ESLURM_ACCESS_DENIED,
+					      comment, DBD_MODIFY_WCKEYS);
+
+		return ESLURM_ACCESS_DENIED;
+	}
+
+	if (slurmdbd_unpack_modify_msg(slurmdbd_conn->rpc_version, 
+				       DBD_MODIFY_WCKEYS, &get_msg,
+				       in_buffer) != SLURM_SUCCESS) {
+		comment = "Failed to unpack DBD_MODIFY_WCKEYS message";
+		error("%s", comment);
+		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version, 
+					      SLURM_ERROR,
+					      comment, DBD_MODIFY_WCKEYS);
+		return SLURM_ERROR;
+	}
+	
+	debug2("DBD_MODIFY_WCKEYS: called");
+
+	if(!(list_msg.my_list = acct_storage_g_modify_wckeys(
+		     slurmdbd_conn->db_conn, *uid, get_msg->cond,
+		     get_msg->rec))) {
+		if(errno == ESLURM_ACCESS_DENIED) {
+			comment = "Your user doesn't have privilege to preform this action";
+			rc = ESLURM_ACCESS_DENIED;
+		} else if(errno == SLURM_ERROR) {
+			comment = "Something was wrong with your query";
+			rc = SLURM_ERROR;
+		} else if(errno == SLURM_NO_CHANGE_IN_DATA) {
+			comment = "Request didn't affect anything";
+			rc = SLURM_SUCCESS;
+		} else {
+			comment = "Unknown issue";
+			rc = SLURM_ERROR;
+		}
+		error("%s", comment);
+		slurmdbd_free_modify_msg(slurmdbd_conn->rpc_version, 
+					 DBD_MODIFY_WCKEYS, get_msg);
+		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version, 
+					      rc, comment, DBD_MODIFY_WCKEYS);
+		return rc;
+	}
+
+	slurmdbd_free_modify_msg(slurmdbd_conn->rpc_version, 
+				 DBD_MODIFY_WCKEYS, get_msg);
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
 	slurmdbd_pack_list_msg(slurmdbd_conn->rpc_version, 
@@ -2247,6 +2505,74 @@ static int   _remove_users(slurmdbd_conn_t *slurmdbd_conn,
 
 	slurmdbd_free_cond_msg(slurmdbd_conn->rpc_version, 
 			       DBD_REMOVE_USERS, get_msg);
+	*out_buffer = init_buf(1024);
+	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
+	slurmdbd_pack_list_msg(slurmdbd_conn->rpc_version, 
+			       DBD_GOT_LIST, &list_msg, *out_buffer);
+	if(list_msg.my_list)
+		list_destroy(list_msg.my_list);
+
+	return rc;
+}
+
+static int   _remove_wckeys(slurmdbd_conn_t *slurmdbd_conn,
+			      Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	int rc = SLURM_SUCCESS;
+	dbd_cond_msg_t *get_msg = NULL;
+	dbd_list_msg_t list_msg;
+	char *comment = NULL;
+
+	debug2("DBD_REMOVE_WCKEYS: called");
+
+	if((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)
+	   && assoc_mgr_get_admin_level(slurmdbd_conn->db_conn, *uid) 
+	   < ACCT_ADMIN_SUPER_USER) {
+		comment = "Your user doesn't have privilege to preform this action";
+		error("%s", comment);
+		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version, 
+					      ESLURM_ACCESS_DENIED,
+					      comment, DBD_REMOVE_WCKEYS);
+
+		return ESLURM_ACCESS_DENIED;
+	}
+
+	if (slurmdbd_unpack_cond_msg(slurmdbd_conn->rpc_version, 
+				     DBD_REMOVE_WCKEYS, &get_msg, 
+				     in_buffer) != SLURM_SUCCESS) {
+		comment = "Failed to unpack DBD_REMOVE_WCKEYS message";
+		error("%s", comment);
+		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version, 
+					      SLURM_ERROR,
+					      comment, DBD_REMOVE_WCKEYS);
+		return SLURM_ERROR;
+	}
+	
+	if(!(list_msg.my_list = acct_storage_g_remove_wckeys(
+		     slurmdbd_conn->db_conn, *uid, get_msg->cond))) {
+		if(errno == ESLURM_ACCESS_DENIED) {
+			comment = "Your user doesn't have privilege to preform this action";
+			rc = ESLURM_ACCESS_DENIED;
+		} else if(errno == SLURM_ERROR) {
+			comment = "Something was wrong with your query";
+			rc = SLURM_ERROR;
+		} else if(errno == SLURM_NO_CHANGE_IN_DATA) {
+			comment = "Request didn't affect anything";
+			rc = SLURM_SUCCESS;
+		} else {
+			comment = "Unknown issue";
+			rc = SLURM_ERROR;
+		}
+		error("%s", comment);
+		slurmdbd_free_cond_msg(slurmdbd_conn->rpc_version, 
+				       DBD_REMOVE_WCKEYS, get_msg);
+		*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version, 
+					      rc, comment, DBD_REMOVE_WCKEYS);
+		return rc;		
+	}
+
+	slurmdbd_free_cond_msg(slurmdbd_conn->rpc_version, 
+			       DBD_REMOVE_WCKEYS, get_msg);
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_LIST, *out_buffer);
 	slurmdbd_pack_list_msg(slurmdbd_conn->rpc_version, 

@@ -286,7 +286,7 @@ extern int acct_storage_p_add_qos(void *db_conn, uint32_t uid,
 	return rc;
 }
 
-extern int acct_storage_p_add_wckey(void *db_conn, uint32_t uid,
+extern int acct_storage_p_add_wckeys(void *db_conn, uint32_t uid,
 				  List wckey_list)
 {
 	slurmdbd_msg_t req;
@@ -295,7 +295,7 @@ extern int acct_storage_p_add_wckey(void *db_conn, uint32_t uid,
 
 	get_msg.my_list = wckey_list;
 
-	req.msg_type = DBD_ADD_WCKEY;
+	req.msg_type = DBD_ADD_WCKEYS;
 	req.data = &get_msg;
 	rc = slurm_send_slurmdbd_recv_rc_msg(SLURMDBD_VERSION,
 					     &req, &resp_code);
@@ -511,7 +511,7 @@ extern List acct_storage_p_modify_qos(void *db_conn, uint32_t uid,
 	return ret_list;
 }
 
-extern List acct_storage_p_modify_wckey(void *db_conn, uint32_t uid,
+extern List acct_storage_p_modify_wckeys(void *db_conn, uint32_t uid,
 				      acct_wckey_cond_t *wckey_cond,
 				      acct_wckey_rec_t *wckey)
 {
@@ -524,12 +524,12 @@ extern List acct_storage_p_modify_wckey(void *db_conn, uint32_t uid,
 	get_msg.cond = wckey_cond;
 	get_msg.rec = wckey;
 
-	req.msg_type = DBD_MODIFY_WCKEY;
+	req.msg_type = DBD_MODIFY_WCKEYS;
 	req.data = &get_msg;
 	rc = slurm_send_recv_slurmdbd_msg(SLURMDBD_VERSION, &req, &resp);
 
 	if (rc != SLURM_SUCCESS)
-		error("slurmdbd: DBD_MODIFY_WCKEY failure: %m");
+		error("slurmdbd: DBD_MODIFY_WCKEYS failure: %m");
 	else if (resp.msg_type == DBD_RC) {
 		dbd_rc_msg_t *msg = resp.data;
 		if(msg->return_code == SLURM_SUCCESS) {
@@ -795,7 +795,7 @@ extern List acct_storage_p_remove_qos(
 	return ret_list;
 }
 
-extern List acct_storage_p_remove_wckey(
+extern List acct_storage_p_remove_wckeys(
 	void *db_conn, uint32_t uid,
 	acct_wckey_cond_t *wckey_cond)
 {
@@ -809,12 +809,12 @@ extern List acct_storage_p_remove_wckey(
 
 	get_msg.cond = wckey_cond;
 
-	req.msg_type = DBD_REMOVE_WCKEY;
+	req.msg_type = DBD_REMOVE_WCKEYS;
 	req.data = &get_msg;
 	rc = slurm_send_recv_slurmdbd_msg(SLURMDBD_VERSION, &req, &resp);
 
 	if (rc != SLURM_SUCCESS)
-		error("slurmdbd: DBD_REMOVE_WCKEY failure: %m");
+		error("slurmdbd: DBD_REMOVE_WCKEYS failure: %m");
 	else if (resp.msg_type == DBD_RC) {
 		dbd_rc_msg_t *msg = resp.data;
 		if(msg->return_code == SLURM_SUCCESS) {
@@ -1035,8 +1035,8 @@ extern List acct_storage_p_get_qos(void *db_conn, uid_t uid,
 	return ret_list;
 }
 
-extern List acct_storage_p_get_wckey(void *db_conn, uid_t uid,
-				   acct_wckey_cond_t *wckey_cond)
+extern List acct_storage_p_get_wckeys(void *db_conn, uid_t uid,
+				      acct_wckey_cond_t *wckey_cond)
 {
 	slurmdbd_msg_t req, resp;
 	dbd_cond_msg_t get_msg;
@@ -1046,12 +1046,12 @@ extern List acct_storage_p_get_wckey(void *db_conn, uid_t uid,
 
 	get_msg.cond = wckey_cond;
 
-	req.msg_type = DBD_GET_WCKEY;
+	req.msg_type = DBD_GET_WCKEYS;
 	req.data = &get_msg;
 	rc = slurm_send_recv_slurmdbd_msg(SLURMDBD_VERSION, &req, &resp);
 
 	if (rc != SLURM_SUCCESS)
-		error("slurmdbd: DBD_GET_WCKEY failure: %m");
+		error("slurmdbd: DBD_GET_WCKEYS failure: %m");
 	else if (resp.msg_type == DBD_RC) {
 		dbd_rc_msg_t *msg = resp.data;
 		if(msg->return_code == SLURM_SUCCESS) {
@@ -1060,8 +1060,8 @@ extern List acct_storage_p_get_wckey(void *db_conn, uid_t uid,
 		} else
 			error("%s", msg->comment);
 		slurmdbd_free_rc_msg(SLURMDBD_VERSION, msg);
-	} else if (resp.msg_type != DBD_GOT_WCKEY) {
-		error("slurmdbd: response type not DBD_GOT_WCKEY: %u", 
+	} else if (resp.msg_type != DBD_GOT_WCKEYS) {
+		error("slurmdbd: response type not DBD_GOT_WCKEYS: %u", 
 		      resp.msg_type);
 	} else {
 		got_msg = (dbd_list_msg_t *) resp.data;
@@ -1119,19 +1119,34 @@ extern List acct_storage_p_get_txn(void *db_conn, uid_t uid,
 }
 
 extern int acct_storage_p_get_usage(void *db_conn, uid_t uid,
-				    acct_association_rec_t *acct_assoc,
+				    void *in, slurmdbd_msg_type_t type,
 				    time_t start, time_t end)
 {
 	slurmdbd_msg_t req, resp;
 	dbd_usage_msg_t get_msg;
 	dbd_usage_msg_t *got_msg;
-	acct_association_rec_t *got_rec;
+	acct_association_rec_t *got_assoc = (acct_association_rec_t *)in;
+	acct_wckey_rec_t *got_wckey = (acct_wckey_rec_t *)in;
+	List *my_list = NULL;
 	int rc;
 
-	get_msg.rec = acct_assoc;
+	get_msg.rec = in;
 	get_msg.start = start;
 	get_msg.end = end;
-	req.msg_type = DBD_GET_ASSOC_USAGE;
+	req.msg_type = type;
+		
+	switch (type) {
+	case DBD_GET_ASSOC_USAGE:
+		my_list = &got_assoc->accounting_list;
+		break;
+	case DBD_GET_WCKEY_USAGE:
+		my_list = &got_wckey->accounting_list;
+		break;
+	default:
+		error("slurmdbd: Unknown usage type %d", type);
+		return SLURM_ERROR;
+		break;
+	}
 	
 	req.data = &get_msg;
 	rc = slurm_send_recv_slurmdbd_msg(SLURMDBD_VERSION, &req, &resp);
@@ -1142,22 +1157,36 @@ extern int acct_storage_p_get_usage(void *db_conn, uid_t uid,
 		dbd_rc_msg_t *msg = resp.data;
 		if(msg->return_code == SLURM_SUCCESS) {
 			info("%s", msg->comment);
-			acct_assoc->accounting_list = list_create(NULL);
+			(*my_list) = list_create(NULL);
 		} else
 			error("%s", msg->comment);
 		slurmdbd_free_rc_msg(SLURMDBD_VERSION, msg);
-	} else if (resp.msg_type != DBD_GOT_ASSOC_USAGE) {
+	} else if (resp.msg_type != DBD_GOT_ASSOC_USAGE 
+		   && resp.msg_type != DBD_GOT_WCKEY_USAGE) {
 		error("slurmdbd: response type not DBD_GOT_ASSOC_USAGE: %u", 
 		      resp.msg_type);
 	} else {
 		got_msg = (dbd_usage_msg_t *) resp.data;
-		got_rec = (acct_association_rec_t *)got_msg->rec;
-		acct_assoc->accounting_list = got_rec->accounting_list;
-		got_rec->accounting_list = NULL;
+		switch (type) {
+		case DBD_GET_ASSOC_USAGE:
+			got_assoc = (acct_association_rec_t *)got_msg->rec;
+			(*my_list) = got_assoc->accounting_list;
+			got_assoc->accounting_list = NULL;
+			break;
+		case DBD_GET_WCKEY_USAGE:
+			got_wckey = (acct_wckey_rec_t *)got_msg->rec;
+			(*my_list) = got_wckey->accounting_list;
+			got_wckey->accounting_list = NULL;
+			break;
+		default:
+			error("slurmdbd: Unknown usage type %d", type);
+			rc = SLURM_ERROR;
+			break;
+		}
+
 		slurmdbd_free_usage_msg(SLURMDBD_VERSION,
 					resp.msg_type, got_msg);
 	}
-
 
 	return rc;
 }
@@ -1282,7 +1311,7 @@ extern int clusteracct_storage_p_register_ctld(void *db_conn,
 
 extern int clusteracct_storage_p_get_usage(
 	void *db_conn, uid_t uid,
-	acct_cluster_rec_t *cluster_rec,
+	acct_cluster_rec_t *cluster_rec, int type,
 	time_t start, time_t end)
 {
 	slurmdbd_msg_t req, resp;

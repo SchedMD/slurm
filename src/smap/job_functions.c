@@ -257,14 +257,14 @@ static int _print_text_job(job_info_t * job_ptr)
 	time_t now_time = time(NULL);
 	char *temp = NULL;
 	/* first set the jname to the job_ptr->name */
-	char *jname = xstrdup(job_ptr->name);
-	/* then grep for " since that is the delimiter for
-	   the wckey */
-	temp = strchr(jname, '\"');
-	if(temp) {
-		/* if we have a wckey set the " to NULL to
-		 * end the jname */
-		temp[0] = '\0';
+	char *jname = NULL;
+
+	if(job_ptr->name) {
+		jname = xstrdup(job_ptr->name);
+		/* then grep for " since that is the delimiter for
+		   the wckey */
+		if((temp = strchr(jname, '\"')))
+			temp[0] = '\0';
 	}
 
 #ifdef HAVE_BG

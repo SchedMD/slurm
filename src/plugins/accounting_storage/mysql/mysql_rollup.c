@@ -43,9 +43,9 @@
 #ifdef HAVE_MYSQL
 
 typedef struct {
-	int assoc_id;
+	int id;
 	uint64_t a_cpu;
-} local_assoc_usage_t;
+} local_id_usage_t;
 
 typedef struct {
 	char *name;
@@ -60,14 +60,9 @@ typedef struct {
 	time_t end;
 } local_cluster_usage_t;
 
-typedef struct {
-	char *wckey;
-	uint64_t a_cpu;
-} local_wckey_usage_t;
-
-extern void _destroy_local_assoc_usage(void *object)
+extern void _destroy_local_id_usage(void *object)
 {
-	local_assoc_usage_t *a_usage = (local_assoc_usage_t *)object;
+	local_id_usage_t *a_usage = (local_id_usage_t *)object;
 	if(a_usage) {
 		xfree(a_usage);
 	}
@@ -79,15 +74,6 @@ extern void _destroy_local_cluster_usage(void *object)
 	if(c_usage) {
 		xfree(c_usage->name);
 		xfree(c_usage);
-	}
-}
-
-extern void _destroy_local_wckey_usage(void *object)
-{
-	local_wckey_usage_t *w_usage = (local_wckey_usage_t *)object;
-	if(w_usage) {
-		xfree(w_usage->wckey);
-		xfree(w_usage);
 	}
 }
 
@@ -106,9 +92,9 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 	ListIterator a_itr = NULL;
 	ListIterator c_itr = NULL;
 	ListIterator w_itr = NULL;
-	List assoc_usage_list = list_create(_destroy_local_assoc_usage);
+	List assoc_usage_list = list_create(_destroy_local_id_usage);
 	List cluster_usage_list = list_create(_destroy_local_cluster_usage);
-	List wckey_usage_list = list_create(_destroy_local_wckey_usage);
+	List wckey_usage_list = list_create(_destroy_local_id_usage);
 
 	char *event_req_inx[] = {
 		"node_name",
@@ -130,7 +116,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		"id",
 		"jobid",
 		"associd",
-		"wckey",
+		"wckeyid",
 		"cluster",
 		"eligible",
 		"start",
@@ -144,7 +130,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		JOB_REQ_DB_INX,
 		JOB_REQ_JOBID,
 		JOB_REQ_ASSOCID,
-		JOB_REQ_WCKEY,
+		JOB_REQ_WCKEYID,
 		JOB_REQ_CLUSTER,
 		JOB_REQ_ELG,
 		JOB_REQ_START,
@@ -189,11 +175,12 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 	c_itr = list_iterator_create(cluster_usage_list);
 	w_itr = list_iterator_create(wckey_usage_list);
 	while(curr_start < end) {
-		int last_id = 0;
+		int last_id = -1;
+		int last_wckeyid = -1;
 		int seconds = 0;
 		local_cluster_usage_t *c_usage = NULL;
-		local_assoc_usage_t *a_usage = NULL;
-		local_wckey_usage_t *w_usage = NULL;
+		local_id_usage_t *a_usage = NULL;
+		local_id_usage_t *w_usage = NULL;
 		debug3("curr hour is now %d-%d", curr_start, curr_end);
 /* 		info("start %s", ctime(&curr_start)); */
 /* 		info("end %s", ctime(&curr_end)); */
@@ -318,6 +305,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		while((row = mysql_fetch_row(result))) {
 			int job_id = atoi(row[JOB_REQ_JOBID]);
 			int assoc_id = atoi(row[JOB_REQ_ASSOCID]);
+			int wckey_id = atoi(row[JOB_REQ_WCKEYID]);
 			int row_eligible = atoi(row[JOB_REQ_ELG]);
 			int row_start = atoi(row[JOB_REQ_START]);
 			int row_end = atoi(row[JOB_REQ_END]);
@@ -335,10 +323,26 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				row_end = curr_end;
 
 			if(last_id != assoc_id) {
-				a_usage = xmalloc(sizeof(local_assoc_usage_t));
-				a_usage->assoc_id = assoc_id;
+				a_usage = xmalloc(sizeof(local_id_usage_t));
+				a_usage->id = assoc_id;
 				list_append(assoc_usage_list, a_usage);
 				last_id = assoc_id;
+			}
+
+			if(last_wckeyid != wckey_id) {
+				list_iterator_reset(w_itr);
+				while((w_usage = list_next(w_itr))) 
+					if(w_usage->id == wckey_id) 
+						break;
+				
+				if(!w_usage) {
+					w_usage = xmalloc(
+						sizeof(local_id_usage_t));
+					w_usage->id = wckey_id;
+					list_append(wckey_usage_list, w_usage);
+				}
+
+				last_id = wckey_id;
 			}
 
 			if(!row_start || ((row_end - row_start) < 1)) 
@@ -399,20 +403,6 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			a_usage->a_cpu += seconds * row_acpu;
 
 			/* do the wckey calculation */
-			if(!row[JOB_REQ_WCKEY] || !row[JOB_REQ_WCKEY][0]) 
-				goto calc_cluster;
-			
-			list_iterator_reset(w_itr);
-			while((w_usage = list_next(w_itr))) 
-				if(!strcmp(w_usage->wckey, row[JOB_REQ_WCKEY])) 
-					break;
-			
-			if(!w_usage) {
-				w_usage = xmalloc(sizeof(local_wckey_usage_t));
-				w_usage->wckey = xstrdup(row[JOB_REQ_WCKEY]);
-				list_append(wckey_usage_list, w_usage);
-			}
-
 			w_usage->a_cpu += seconds * row_acpu;
 
 			/* do the cluster allocated calculation */
@@ -431,7 +421,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 /* 					     "(%d)(%d-%d) * %d = %d " */
 /* 					     "to %d", */
 /* 					     job_id, */
-/* 					     a_usage->assoc_id, */
+/* 					     a_usage->id, */
 /* 					     seconds, */
 /* 					     row_end, row_start, */
 /* 					     row_acpu, */
@@ -560,13 +550,13 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		list_iterator_reset(a_itr);
 		while((a_usage = list_next(a_itr))) {
 /* 			info("association (%d) %d alloc %d", */
-/* 			     a_usage->assoc_id, last_id, */
+/* 			     a_usage->id, last_id, */
 /* 			     a_usage->a_cpu); */
 			if(query) {
 				xstrfmtcat(query, 
 					   ", (%d, %d, %d, %d, %llu)",
 					   now, now, 
-					   a_usage->assoc_id, curr_start,
+					   a_usage->id, curr_start,
 					   a_usage->a_cpu); 
 			} else {
 				xstrfmtcat(query, 
@@ -575,7 +565,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					   "alloc_cpu_secs) values "
 					   "(%d, %d, %d, %d, %llu)",
 					   assoc_hour_table, now, now, 
-					   a_usage->assoc_id, curr_start,
+					   a_usage->id, curr_start,
 					   a_usage->a_cpu); 
 			}
 		}
@@ -600,22 +590,22 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		list_iterator_reset(w_itr);
 		while((w_usage = list_next(w_itr))) {
 /* 			info("association (%d) %d alloc %d", */
-/* 			     w_usage->assoc_id, last_id, */
+/* 			     w_usage->id, last_id, */
 /* 			     w_usage->a_cpu); */
 			if(query) {
 				xstrfmtcat(query, 
-					   ", (%d, %d, '%s', %d, %llu)",
+					   ", (%d, %d, %d, %d, %llu)",
 					   now, now, 
-					   w_usage->wckey, curr_start,
+					   w_usage->id, curr_start,
 					   w_usage->a_cpu); 
 			} else {
 				xstrfmtcat(query, 
 					   "insert into %s (creation_time, "
 					   "mod_time, wckey, period_start, "
 					   "alloc_cpu_secs) values "
-					   "(%d, %d, '%s', %d, %llu)",
+					   "(%d, %d, %d, %d, %llu)",
 					   wckey_hour_table, now, now, 
-					   w_usage->wckey, curr_start,
+					   w_usage->id, curr_start,
 					   w_usage->a_cpu); 
 			}
 		}

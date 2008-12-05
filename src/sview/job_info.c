@@ -1056,8 +1056,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 		jname = xstrdup(job_ptr->name);
 		/* then grep for " since that is the delimiter for
 		   the wckey */
-		temp = strchr(jname, '\"');
-		if(temp) {
+		if((temp = strchr(jname, '\"'))) {
 			/* if we have a wckey set the " to NULL to
 			 * end the jname */
 			temp[0] = '\0';
@@ -1475,8 +1474,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 		jname = xstrdup(job_ptr->name);
 		/* then grep for " since that is the delimiter for
 		   the wckey */
-		temp = strchr(jname, '\"');
-		if(temp) {
+		if((temp = strchr(jname, '\"'))) {
 			/* if we have a wckey set the " to NULL to
 			 * end the jname */
 			temp[0] = '\0';

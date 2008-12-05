@@ -133,7 +133,7 @@ typedef struct {
 
 typedef struct {
 	uint64_t alloc_secs; /* number of cpu seconds allocated */
-	uint32_t assoc_id;	/* association ID		*/
+	uint32_t id;	/* association/wckey ID		*/
 	time_t period_start; 
 } acct_accounting_rec_t;
 
@@ -414,11 +414,12 @@ typedef struct {
 	List cluster_list;	/* list of char * */
 	List id_list;		/* list of char * */
 
+	List name_list;        /* list of char * */
+
 	uint32_t usage_end; 
 	uint32_t usage_start; 
 
 	List user_list;		/* list of char * */
-	List wckey_list;        /* list of char * */
 
 	uint16_t with_usage;  /* fill in usage */
 	uint16_t with_deleted; /* return deleted associations */
@@ -431,10 +432,10 @@ typedef struct {
 
 	uint32_t id;		/* id identifing a combination of
 				 * user-wckey-cluster */
+	char *name;		/* wckey name */
 	uint32_t uid;		/* user ID */
 
 	char *user;		/* user associated */
-	char *wckey;		/* wckey name */
 } acct_wckey_rec_t;
 
 typedef struct {
@@ -674,8 +675,8 @@ extern int acct_storage_g_add_qos(void *db_conn, uint32_t uid,
  * IN:  wckey_list List of acct_wckey_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_add_wckey(void *db_conn, uint32_t uid, 
-				    List wckey_list);
+extern int acct_storage_g_add_wckeys(void *db_conn, uint32_t uid, 
+				     List wckey_list);
 
 /* 
  * modify existing users in the accounting system 
@@ -734,9 +735,9 @@ extern List acct_storage_g_modify_qos(void *db_conn, uint32_t uid,
  * IN:  acct_wckey_rec_t *wckey
  * RET: List containing (char *'s) else NULL on error
  */
-extern List acct_storage_g_modify_wckey(void *db_conn, uint32_t uid, 
-				      acct_wckey_cond_t *wckey_cond,
-				      acct_wckey_rec_t *wckey);
+extern List acct_storage_g_modify_wckeys(void *db_conn, uint32_t uid, 
+					 acct_wckey_cond_t *wckey_cond,
+					 acct_wckey_rec_t *wckey);
 
 /* 
  * remove users from accounting system 
@@ -793,7 +794,7 @@ extern List acct_storage_g_remove_qos(
  * IN:  acct_wckey_cond_t *assoc_wckey
  * RET: List containing (char *'s) else NULL on error
  */
-extern List acct_storage_g_remove_wckey(
+extern List acct_storage_g_remove_wckeys(
 	void *db_conn, uint32_t uid, acct_wckey_cond_t *wckey_cond);
 
 /* 
@@ -851,8 +852,8 @@ extern List acct_storage_g_get_qos(void *db_conn, uint32_t uid,
  * RET: List of acct_wckey_rec_t *
  * note List needs to be freed when called
  */
-extern List acct_storage_g_get_wckey(void *db_conn, uint32_t uid,
-				     acct_wckey_cond_t *wckey_cond);
+extern List acct_storage_g_get_wckeys(void *db_conn, uint32_t uid,
+				      acct_wckey_cond_t *wckey_cond);
 
 /* 
  * get info from the storage 
@@ -865,13 +866,16 @@ extern List acct_storage_g_get_txn(void *db_conn,  uint32_t uid,
 
 /* 
  * get info from the storage 
- * IN/OUT:  assoc void * (acct_association_rec_t *) with the id set
+ * IN/OUT:  in void * (acct_association_rec_t *) or
+ *          (acct_wckey_rec_t *) with the id set
+ * IN:  type what type is 'in'
  * IN:  start time stamp for records >=
  * IN:  end time stamp for records <=
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int acct_storage_g_get_usage(
-	void *db_conn,  uint32_t uid, void *assoc, time_t start, time_t end);
+	void *db_conn,  uint32_t uid, void *in, int type,
+	time_t start, time_t end);
 /* 
  * roll up data in the storage 
  * IN: sent_start (option time to do a re-roll or start from this point)
@@ -927,7 +931,7 @@ extern int clusteracct_storage_g_register_ctld(
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int clusteracct_storage_g_get_usage(
-	void *db_conn, uint32_t uid, void *cluster_rec,
+	void *db_conn, uint32_t uid, void *cluster_rec, int type,
 	time_t start, time_t end);
 
 /* 

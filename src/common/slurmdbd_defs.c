@@ -365,8 +365,8 @@ extern Buf pack_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 	case DBD_GOT_LIST:
 	case DBD_ADD_QOS:
 	case DBD_GOT_QOS:
-	case DBD_ADD_WCKEY:
-	case DBD_GOT_WCKEY:
+	case DBD_ADD_WCKEYS:
+	case DBD_GOT_WCKEYS:
 	case DBD_GOT_TXN:
 	case DBD_GOT_USERS:
 		slurmdbd_pack_list_msg(
@@ -390,14 +390,14 @@ extern Buf pack_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 	case DBD_GET_CLUSTERS:
 	case DBD_GET_JOBS_COND:
 	case DBD_GET_QOS:
-	case DBD_GET_WCKEY:
+	case DBD_GET_WCKEYS:
 	case DBD_GET_TXN:
 	case DBD_GET_USERS:
 	case DBD_REMOVE_ACCOUNTS:
 	case DBD_REMOVE_ASSOCS:
 	case DBD_REMOVE_CLUSTERS:
 	case DBD_REMOVE_QOS:
-	case DBD_REMOVE_WCKEY:
+	case DBD_REMOVE_WCKEYS:
 	case DBD_REMOVE_USERS:
 		slurmdbd_pack_cond_msg(
 			rpc_version, req->msg_type,
@@ -407,6 +407,8 @@ extern Buf pack_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 	case DBD_GOT_ASSOC_USAGE:
 	case DBD_GET_CLUSTER_USAGE:
 	case DBD_GOT_CLUSTER_USAGE:
+	case DBD_GET_WCKEY_USAGE:
+	case DBD_GOT_WCKEY_USAGE:
 		slurmdbd_pack_usage_msg(
 			rpc_version, req->msg_type,
 			(dbd_usage_msg_t *)req->data, buffer);
@@ -512,8 +514,8 @@ extern int unpack_slurmdbd_msg(uint16_t rpc_version,
 	case DBD_GOT_LIST:
 	case DBD_ADD_QOS:
 	case DBD_GOT_QOS:
-	case DBD_ADD_WCKEY:
-	case DBD_GOT_WCKEY:
+	case DBD_ADD_WCKEYS:
+	case DBD_GOT_WCKEYS:
 	case DBD_GOT_TXN:
 	case DBD_GOT_USERS:
 		rc = slurmdbd_unpack_list_msg(
@@ -538,13 +540,13 @@ extern int unpack_slurmdbd_msg(uint16_t rpc_version,
 	case DBD_GET_JOBS_COND:
 	case DBD_GET_USERS:
 	case DBD_GET_QOS:
-	case DBD_GET_WCKEY:
+	case DBD_GET_WCKEYS:
 	case DBD_GET_TXN:
 	case DBD_REMOVE_ACCOUNTS:
 	case DBD_REMOVE_ASSOCS:
 	case DBD_REMOVE_CLUSTERS:
 	case DBD_REMOVE_QOS:
-	case DBD_REMOVE_WCKEY:
+	case DBD_REMOVE_WCKEYS:
 	case DBD_REMOVE_USERS:
 		rc = slurmdbd_unpack_cond_msg(
 			rpc_version, resp->msg_type,
@@ -554,6 +556,8 @@ extern int unpack_slurmdbd_msg(uint16_t rpc_version,
 	case DBD_GOT_ASSOC_USAGE:
 	case DBD_GET_CLUSTER_USAGE:
 	case DBD_GOT_CLUSTER_USAGE:
+	case DBD_GET_WCKEY_USAGE:
+	case DBD_GOT_WCKEY_USAGE:
 		rc = slurmdbd_unpack_usage_msg(
 			rpc_version,
 			resp->msg_type, (dbd_usage_msg_t **)&resp->data, 
@@ -751,14 +755,18 @@ extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 		return DBD_GOT_QOS;
 	} else if(!strcasecmp(msg_type, "Remove QOS")) {
 		return DBD_REMOVE_QOS;
-	} else if(!strcasecmp(msg_type, "Add WCKEY")) {
-		return DBD_ADD_WCKEY;
-	} else if(!strcasecmp(msg_type, "Get WCKEY")) {
-		return DBD_GET_WCKEY;
-	} else if(!strcasecmp(msg_type, "Got WCKEY")) {
-		return DBD_GOT_WCKEY;
-	} else if(!strcasecmp(msg_type, "Remove WCKEY")) {
-		return DBD_REMOVE_WCKEY;
+	} else if(!strcasecmp(msg_type, "Add WCKeys")) {
+		return DBD_ADD_WCKEYS;
+	} else if(!strcasecmp(msg_type, "Get WCKeys")) {
+		return DBD_GET_WCKEYS;
+	} else if(!strcasecmp(msg_type, "Got WCKeys")) {
+		return DBD_GOT_WCKEYS;
+	} else if(!strcasecmp(msg_type, "Remove WCKeys")) {
+		return DBD_REMOVE_WCKEYS;
+	} else if(!strcasecmp(msg_type, "Get WCKey Usage")) {
+		return DBD_GET_WCKEY_USAGE;
+	} else if(!strcasecmp(msg_type, "Got WCKey Usage")) {
+		return DBD_GOT_WCKEY_USAGE;
 	} else {
 		return NO_VAL;		
 	}
@@ -1069,29 +1077,41 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 		} else
 			return "Remove QOS";
 		break;
-	case DBD_ADD_WCKEY:
+	case DBD_ADD_WCKEYS:
 		if(get_enum) {
-			return "DBD_ADD_WCKEY";
+			return "DBD_ADD_WCKEYS";
 		} else
-			return "Add WCKEY";
+			return "Add WCKeys";
 		break;
-	case DBD_GET_WCKEY:
+	case DBD_GET_WCKEYS:
 		if(get_enum) {
-			return "DBD_GET_WCKEY";
+			return "DBD_GET_WCKEYS";
 		} else
-			return "Get WCKEY";
+			return "Get WCKeys";
 		break;
-	case DBD_GOT_WCKEY:
+	case DBD_GOT_WCKEYS:
 		if(get_enum) {
-			return "DBD_GOT_WCKEY";
+			return "DBD_GOT_WCKEYS";
 		} else
-			return "Got WCKEY";
+			return "Got WCKeys";
 		break;
-	case DBD_REMOVE_WCKEY:
+	case DBD_REMOVE_WCKEYS:
 		if(get_enum) {
-			return "DBD_REMOVE_WCKEY";
+			return "DBD_REMOVE_WCKEYS";
 		} else
-			return "Remove WCKEY";
+			return "Remove WCKeys";
+		break;
+	case DBD_GET_WCKEY_USAGE:
+		if(get_enum) {
+			return "DBD_GET_WCKEY_USAGE";
+		} else
+			return "Get WCKey Usage";
+		break;
+	case DBD_GOT_WCKEY_USAGE:
+		if(get_enum) {
+			return "DBD_GOT_WCKEY_USAGE";
+		} else
+			return "Got WCKey Usage";
 		break;
 	default:
 		return "Unknown";
@@ -1860,8 +1880,8 @@ void inline slurmdbd_free_cond_msg(uint16_t rpc_version,
 		case DBD_REMOVE_QOS:
 			my_destroy = destroy_acct_qos_cond;
 			break;
-		case DBD_GET_WCKEY:
-		case DBD_REMOVE_WCKEY:
+		case DBD_GET_WCKEYS:
+		case DBD_REMOVE_WCKEYS:
 			my_destroy = destroy_acct_wckey_cond;
 			break;
 		case DBD_GET_TXN:
@@ -2059,6 +2079,10 @@ void inline slurmdbd_free_usage_msg(uint16_t rpc_version,
 		case DBD_GOT_CLUSTER_USAGE:
 			destroy_rec = destroy_acct_cluster_rec;
 			break;
+		case DBD_GET_WCKEY_USAGE:
+		case DBD_GOT_WCKEY_USAGE:
+			destroy_rec = destroy_acct_wckey_rec;
+			break;
 		default:
 			fatal("Unknown usuage type");
 			return;
@@ -2183,8 +2207,8 @@ void inline slurmdbd_pack_cond_msg(uint16_t rpc_version,
 	case DBD_REMOVE_QOS:
 		my_function = pack_acct_qos_cond;
 		break;
-	case DBD_GET_WCKEY:
-	case DBD_REMOVE_WCKEY:
+	case DBD_GET_WCKEYS:
+	case DBD_REMOVE_WCKEYS:
 		my_function = pack_acct_wckey_cond;
 		break;
 	case DBD_GET_USERS:
@@ -2229,8 +2253,8 @@ int inline slurmdbd_unpack_cond_msg(uint16_t rpc_version,
 	case DBD_REMOVE_QOS:
 		my_function = unpack_acct_qos_cond;
 		break;
-	case DBD_GET_WCKEY:
-	case DBD_REMOVE_WCKEY:
+	case DBD_GET_WCKEYS:
+	case DBD_REMOVE_WCKEYS:
 		my_function = unpack_acct_wckey_cond;
 		break;
 	case DBD_GET_USERS:
@@ -2665,8 +2689,8 @@ void inline slurmdbd_pack_list_msg(uint16_t rpc_version,
 	case DBD_GOT_QOS:
 		my_function = pack_acct_qos_rec;
 		break;
-	case DBD_ADD_WCKEY:
-	case DBD_GOT_WCKEY:
+	case DBD_ADD_WCKEYS:
+	case DBD_GOT_WCKEYS:
 		my_function = pack_acct_wckey_rec;
 		break;
 	case DBD_ADD_USERS:
@@ -2736,8 +2760,8 @@ int inline slurmdbd_unpack_list_msg(uint16_t rpc_version,
 		my_function = unpack_acct_qos_rec;
 		my_destroy = destroy_acct_qos_rec;
 		break;
-	case DBD_ADD_WCKEY:
-	case DBD_GOT_WCKEY:
+	case DBD_ADD_WCKEYS:
+	case DBD_GOT_WCKEYS:
 		my_function = unpack_acct_wckey_rec;
 		my_destroy = destroy_acct_wckey_rec;
 		break;
@@ -3064,6 +3088,10 @@ void inline slurmdbd_pack_usage_msg(uint16_t rpc_version,
 	case DBD_GOT_CLUSTER_USAGE:
 		my_rec = pack_acct_cluster_rec;
 		break;
+	case DBD_GET_WCKEY_USAGE:
+	case DBD_GOT_WCKEY_USAGE:
+		my_rec = pack_acct_wckey_rec;
+		break;
 	default:
 		fatal("Unknown pack type");
 		return;
@@ -3092,6 +3120,10 @@ int inline slurmdbd_unpack_usage_msg(uint16_t rpc_version,
 	case DBD_GET_CLUSTER_USAGE:
 	case DBD_GOT_CLUSTER_USAGE:
 		my_rec = unpack_acct_cluster_rec;
+		break;
+	case DBD_GET_WCKEY_USAGE:
+	case DBD_GOT_WCKEY_USAGE:
+		my_rec = unpack_acct_wckey_rec;
 		break;
 	default:
 		fatal("Unknown pack type");

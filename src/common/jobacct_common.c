@@ -265,6 +265,7 @@ extern void pack_jobacct_job_rec(void *object, uint16_t rpc_version, Buf buffer)
 		pack32(job->user_cpu_sec, buffer);
 		pack32(job->user_cpu_usec, buffer);
 		packstr(job->wckey, buffer); /* added for rpc_version 4 */
+		pack32(job->wckeyid, buffer); /* added for rpc_version 4 */
 	} else {
 		pack32(job->alloc_cpus, buffer);
 		pack32(job->associd, buffer);
@@ -379,6 +380,7 @@ extern int unpack_jobacct_job_rec(void **job, uint16_t rpc_version, Buf buffer)
 		safe_unpack32(&job_ptr->user_cpu_sec, buffer);
 		safe_unpack32(&job_ptr->user_cpu_usec, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->wckey, &uint32_tmp, buffer);
+		safe_unpack32(&job_ptr->wckeyid, buffer);
 	} else {
 		safe_unpack32(&job_ptr->alloc_cpus, buffer);
 		safe_unpack32(&job_ptr->associd, buffer);

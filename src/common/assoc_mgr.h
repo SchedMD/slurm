@@ -53,6 +53,7 @@
 #define ASSOC_MGR_CACHE_ASSOC 0x0001
 #define ASSOC_MGR_CACHE_QOS 0x0002
 #define ASSOC_MGR_CACHE_USER 0x0004
+#define ASSOC_MGR_CACHE_WCKEY 0x0008
 #define ASSOC_MGR_CACHE_ALL 0xffff
 
 typedef struct {
@@ -66,6 +67,7 @@ extern pthread_mutex_t assoc_mgr_association_lock;
 extern pthread_mutex_t assoc_mgr_qos_lock;
 extern pthread_mutex_t assoc_mgr_user_lock;
 extern pthread_mutex_t assoc_mgr_file_lock;
+extern pthread_mutex_t assoc_mgr_wckey_lock;
 
 /* 
  * get info from the storage 
@@ -110,6 +112,21 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 extern int assoc_mgr_fill_in_qos(void *db_conn, acct_qos_rec_t *qos,
 				 int enforce,
 				 acct_qos_rec_t **qos_pptr);
+/* 
+ * get info from the storage 
+ * IN/OUT:  wckey - acct_wckey_rec_t with the name, cluster and user
+ *		    for the wckey association. 
+ *		    Sets "id" field with the wckey ID.
+ * IN: enforce - return an error if no such wckey exists
+ * IN/OUT: wckey_pptr - if non-NULL then return a pointer to the 
+ *			acct_wckey record in cache on success
+ * RET: SLURM_SUCCESS on success, else SLURM_ERROR
+ */
+extern int assoc_mgr_fill_in_wckey(void *db_conn,
+				   acct_wckey_rec_t *wckey,
+				   int enforce,
+				   acct_wckey_rec_t **wckey_pptr);
+
 /* 
  * get admin_level of uid 
  * IN: uid - uid of user to check admin_level of.
@@ -164,6 +181,13 @@ extern List assoc_mgr_get_shares(
  * RET: SLURM_SUCCESS on success (or not found) SLURM_ERROR else
  */
 extern int assoc_mgr_update_assocs(acct_update_object_t *update);
+
+/* 
+ * update wckeys in cache 
+ * IN:  acct_update_object_t *object
+ * RET: SLURM_SUCCESS on success (or not found) SLURM_ERROR else
+ */
+extern int assoc_mgr_update_wckeys(acct_update_object_t *update);
 
 /* 
  * update qos in cache 

@@ -1,6 +1,5 @@
 /*****************************************************************************\
- *  txn_functions.c - functions dealing with transactions in the
- *                        accounting system.
+ *  wckey_functions.c - functions dealing with wckeys in the accounting system.
  *****************************************************************************
  *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Copyright (C) 2002-2007 The Regents of the University of California.
@@ -38,16 +37,22 @@
 \*****************************************************************************/
 
 #include "src/sacctmgr/sacctmgr.h"
-#include "src/common/slurmdbd_defs.h"
+#include "src/common/uid.h"
 
 static int _set_cond(int *start, int argc, char *argv[],
-		     acct_txn_cond_t *txn_cond,
+		     acct_wckey_cond_t *wckey_cond,
 		     List format_list)
 {
-	int i, end = 0;
+	int i;
 	int set = 0;
+	int end = 0;
 	int command_len = 0;
 	int option = 0;
+
+	if(!wckey_cond) {
+		error("No wckey_cond given");
+		return -1;
+	}
 
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
@@ -64,74 +69,55 @@ static int _set_cond(int *start, int argc, char *argv[],
 		if(!end && !strncasecmp(argv[i], "where",
 					MAX(command_len, 5))) {
 			continue;
-		} else if(!end && !strncasecmp(argv[i], "withassocinfo",
+		} else if(!end && !strncasecmp(argv[i], "withdeleted",
 					  MAX(command_len, 5))) {
-			txn_cond->with_assoc_info = 1;
+			wckey_cond->with_deleted = 1;
 			set = 1;
 		} else if(!end
-			  || (!strncasecmp (argv[i], "Id",
-					    MAX(command_len, 1)))
-			  || (!strncasecmp (argv[i], "Txn",
-					    MAX(command_len, 1)))) {
+			  || !strncasecmp (argv[i], "WCKeys",
+					   MAX(command_len, 3))
+			  || !strncasecmp (argv[i], "Names",
+					   MAX(command_len, 3))) {
+			if(!wckey_cond->name_list)
+				wckey_cond->name_list =
+					list_create(slurm_destroy_char);
+			if(slurm_addto_char_list(wckey_cond->name_list,
+						 argv[i]+end))
+				set = 1;
+		} else if (!strncasecmp (argv[i], "Id",
+					 MAX(command_len, 1))) {
 			ListIterator itr = NULL;
 			char *temp = NULL;
 			uint32_t id = 0;
 
-			if(!txn_cond->id_list)
-				txn_cond->id_list = 
+			if(!wckey_cond->id_list)
+				wckey_cond->id_list = 
 					list_create(slurm_destroy_char);
 			
-			if(slurm_addto_char_list(txn_cond->id_list, 
+			if(slurm_addto_char_list(wckey_cond->id_list, 
 						 argv[i]+end))
 				set = 1;
 
 			/* check to make sure user gave ints here */
-			itr = list_iterator_create(txn_cond->id_list);
+			itr = list_iterator_create(wckey_cond->id_list);
 			while ((temp = list_next(itr))) {
-				if (get_uint(temp, &id, "Transaction ID")
+				if (get_uint(temp, &id, "WCKeyID")
 				    != SLURM_SUCCESS) {
 					exit_code = 1;
 					list_delete_item(itr);
 				}
 			}
 			list_iterator_destroy(itr);
-		} else if (!strncasecmp (argv[i], "Accounts",
-					 MAX(command_len, 3))) {
-			if(!txn_cond->acct_list)
-				txn_cond->acct_list =
-					list_create(slurm_destroy_char);
-			if(slurm_addto_char_list(txn_cond->acct_list,
-						 argv[i]+end))
-				set = 1;
-		} else if (!strncasecmp (argv[i], "Action",
-					 MAX(command_len, 4))) {
-			if(!txn_cond->action_list)
-				txn_cond->action_list =
-					list_create(slurm_destroy_char);
-
-			if(addto_action_char_list(txn_cond->action_list,
-						  argv[i]+end))
-				set = 1;
-			else
-				exit_code=1;
-		} else if (!strncasecmp (argv[i], "Actors",
-					 MAX(command_len, 4))) {
-			if(!txn_cond->actor_list)
-				txn_cond->actor_list =
-					list_create(slurm_destroy_char);
-			if(slurm_addto_char_list(txn_cond->actor_list,
-						 argv[i]+end))
-				set = 1;
 		} else if (!strncasecmp (argv[i], "Clusters",
 					 MAX(command_len, 3))) {
-			if(!txn_cond->cluster_list)
-				txn_cond->cluster_list =
+			if(!wckey_cond->cluster_list)
+				wckey_cond->cluster_list =
 					list_create(slurm_destroy_char);
-			if(slurm_addto_char_list(txn_cond->cluster_list,
+			if(slurm_addto_char_list(wckey_cond->cluster_list,
 						 argv[i]+end))
 				set = 1;
 		} else if (!strncasecmp (argv[i], "End", MAX(command_len, 1))) {
-			txn_cond->time_end = parse_time(argv[i]+end, 1);
+			wckey_cond->usage_end = parse_time(argv[i]+end, 1);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Format",
 					 MAX(command_len, 1))) {
@@ -139,72 +125,65 @@ static int _set_cond(int *start, int argc, char *argv[],
 				slurm_addto_char_list(format_list, argv[i]+end);
 		} else if (!strncasecmp (argv[i], "Start", 
 					 MAX(command_len, 1))) {
-			txn_cond->time_start = parse_time(argv[i]+end, 1);
+			wckey_cond->usage_start = parse_time(argv[i]+end, 1);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "User",
 					 MAX(command_len, 1))) {
-			if(!txn_cond->user_list)
-				txn_cond->user_list =
+			if(!wckey_cond->user_list)
+				wckey_cond->user_list =
 					list_create(slurm_destroy_char);
-			if(slurm_addto_char_list(txn_cond->user_list,
+			if(slurm_addto_char_list(wckey_cond->user_list,
 						 argv[i]+end))
 				set = 1;
 		} else {
 			exit_code=1;
 			fprintf(stderr, " Unknown condition: %s\n", argv[i]);
 		}
-	}
+	}	
+
 	(*start) = i;
 
 	return set;
 }
 
-
-extern int sacctmgr_list_txn(int argc, char *argv[])
+extern int sacctmgr_list_wckey(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	acct_txn_cond_t *txn_cond = xmalloc(sizeof(acct_txn_cond_t));
-	List txn_list = NULL;
-	acct_txn_rec_t *txn = NULL;
-	int i=0;
+	acct_wckey_cond_t *wckey_cond = xmalloc(sizeof(acct_wckey_cond_t));
+	List wckey_list = NULL;
+	int i=0, set=0;
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
-	char *object = NULL;
-	int field_count = 0;
+	acct_wckey_rec_t *wckey = NULL;
+	char *object;
 
 	print_field_t *field = NULL;
+	int field_count = 0;
 
 	List format_list = list_create(slurm_destroy_char);
 	List print_fields_list; /* types are of print_field_t */
 
 	enum {
-		PRINT_ACCT,
-		PRINT_ACTION,
-		PRINT_ACTOR,
 		PRINT_CLUSTER,
 		PRINT_ID,
-		PRINT_INFO,
-		PRINT_TS,
-		PRINT_USER,
-		PRINT_WHERE
+		PRINT_NAME,
+		PRINT_USER
 	};
 
-	_set_cond(&i, argc, argv, txn_cond, format_list);
+	set = _set_cond(&i, argc, argv, wckey_cond, format_list);
 
 	if(exit_code) {
-		destroy_acct_txn_cond(txn_cond);
+		destroy_acct_wckey_cond(wckey_cond);
 		list_destroy(format_list);
 		return SLURM_ERROR;
 	}
 
-	print_fields_list = list_create(destroy_print_field);
-
 	if(!list_count(format_list)) {
-		slurm_addto_char_list(format_list, "T,Action,Actor,Where,Info");
-		if(txn_cond->with_assoc_info) 
-			slurm_addto_char_list(format_list, 
-					      "User,Account,Cluster");
+		slurm_addto_char_list(format_list, 
+				      "Name,Cluster,User");
 	}
+
+	print_fields_list = list_create(destroy_print_field);
 
 	itr = list_iterator_create(format_list);
 	while((object = list_next(itr))) {
@@ -212,57 +191,31 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 		int command_len = strlen(object);
 
 		field = xmalloc(sizeof(print_field_t));
-		if(!strncasecmp("Accounts", object, MAX(command_len, 3))) {
-			field->type = PRINT_ACCT;
-			field->name = xstrdup("Accounts");
-			field->len = 20;
-			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("Action", object, MAX(command_len, 4))) {
-			field->type = PRINT_ACTION;
-			field->name = xstrdup("Action");
-			field->len = 20;
-			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("Actor", object,
-				       MAX(command_len, 4))) {
-			field->type = PRINT_ACTOR;
-			field->name = xstrdup("Actor");
+		if(!strncasecmp("WCKey", object, MAX(command_len, 1))
+		   || !strncasecmp("Name", object, MAX(command_len, 1))) {
+			field->type = PRINT_NAME;
+			field->name = xstrdup("WCKey");
 			field->len = 10;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("Clusters", object, 
-				       MAX(command_len, 4))) {
+		} else if(!strncasecmp("Cluster", object,
+				       MAX(command_len, 2))) {
 			field->type = PRINT_CLUSTER;
-			field->name = xstrdup("Clusters");
-			field->len = 20;
+			field->name = xstrdup("Cluster");
+			field->len = 10;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("ID", object, MAX(command_len, 2))) {
+		} else if(!strncasecmp("ID", object, MAX(command_len, 1))) {
 			field->type = PRINT_ID;
 			field->name = xstrdup("ID");
 			field->len = 6;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("Info", object, MAX(command_len, 2))) {
-			field->type = PRINT_INFO;
-			field->name = xstrdup("Info");
-			field->len = 20;
-			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("TimeStamp", object, 
-				       MAX(command_len, 1))) {
-			field->type = PRINT_TS;
-			field->name = xstrdup("Time");
-			field->len = 15;
-			field->print_routine = print_fields_date;
-		} else if(!strncasecmp("Users", object, MAX(command_len, 4))) {
+		} else if(!strncasecmp("User", object, MAX(command_len, 1))) {
 			field->type = PRINT_USER;
-			field->name = xstrdup("Users");
-			field->len = 20;
-			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("Where", object, MAX(command_len, 1))) {
-			field->type = PRINT_WHERE;
-			field->name = xstrdup("Where");
-			field->len = 20;
+			field->name = xstrdup("User");
+			field->len = 10;
 			field->print_routine = print_fields_str;
 		} else {
 			exit_code=1;
-			fprintf(stderr, " Unknown field '%s'\n", object);
+			fprintf(stderr, "Unknown field '%s'\n", object);
 			xfree(field);
 			continue;
 		}
@@ -277,87 +230,73 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 	list_destroy(format_list);
 
 	if(exit_code) {
+		destroy_acct_wckey_cond(wckey_cond);
 		list_destroy(print_fields_list);
 		return SLURM_ERROR;
 	}
 
-	txn_list = acct_storage_g_get_txn(db_conn, my_uid, txn_cond);
-	destroy_acct_txn_cond(txn_cond);
+	wckey_list = acct_storage_g_get_wckeys(db_conn, my_uid, wckey_cond);
+	destroy_acct_wckey_cond(wckey_cond);
 
-	if(!txn_list) {
+	if(!wckey_list) {
 		exit_code=1;
 		fprintf(stderr, " Problem with query.\n");
 		list_destroy(print_fields_list);
 		return SLURM_ERROR;
 	}
-	itr = list_iterator_create(txn_list);
+
+	itr = list_iterator_create(wckey_list);
 	itr2 = list_iterator_create(print_fields_list);
 	print_fields_header(print_fields_list);
 
 	field_count = list_count(print_fields_list);
-
-	while((txn = list_next(itr))) {
+	
+	while((wckey = list_next(itr))) {
 		int curr_inx = 1;
 		while((field = list_next(itr2))) {
 			switch(field->type) {
-			case PRINT_ACCT:
-				field->print_routine(field, txn->accts,
-						     (curr_inx == field_count));
-				break;
-			case PRINT_ACTION:
+				/* All the association stuff */
+			case PRINT_CLUSTER:
 				field->print_routine(
 					field, 
-					slurmdbd_msg_type_2_str(txn->action,
-								0),
+					wckey->cluster,
 					(curr_inx == field_count));
 				break;
-			case PRINT_ACTOR:
-				field->print_routine(field,
-						     txn->actor_name,
-						     (curr_inx == field_count));
-				break;
-			case PRINT_CLUSTER:
-				field->print_routine(field, txn->clusters,
-						     (curr_inx == field_count));
-				break;
 			case PRINT_ID:
-				field->print_routine(field,
-						     txn->id,
-						     (curr_inx == field_count));
+				field->print_routine(
+					field, 
+					wckey->id,
+					(curr_inx == field_count));
 				break;
-			case PRINT_INFO:
-				field->print_routine(field, 
-						     txn->set_info,
-						     (curr_inx == field_count));
-				break;
-			case PRINT_TS:
-				field->print_routine(field,
-						     txn->timestamp,
-						     (curr_inx == field_count));
+			case PRINT_NAME:
+				field->print_routine(
+					field, 
+					wckey->name,
+					(curr_inx == field_count));
 				break;
 			case PRINT_USER:
-				field->print_routine(field, txn->users,
-						     (curr_inx == field_count));
-				break;
-			case PRINT_WHERE:
-				field->print_routine(field, 
-						     txn->where_query,
-						     (curr_inx == field_count));
+				field->print_routine(
+					field, 
+					wckey->user,
+					(curr_inx == field_count));
 				break;
 			default:
-				field->print_routine(field, NULL,
-						     (curr_inx == field_count));
-					break;
+				field->print_routine(
+					field, NULL,
+					(curr_inx == field_count));
+				break;
 			}
 			curr_inx++;
 		}
 		list_iterator_reset(itr2);
 		printf("\n");
 	}
-			
+
+
 	list_iterator_destroy(itr2);
 	list_iterator_destroy(itr);
-	list_destroy(txn_list);
+	list_destroy(wckey_list);
 	list_destroy(print_fields_list);
+
 	return rc;
 }

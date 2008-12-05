@@ -20,7 +20,8 @@ sacctmgr_SOURCES =	\
 	sacctmgr.c sacctmgr.h	\
 	qos_functions.c		\
 	txn_functions.c		\
-	user_functions.c	
+	user_functions.c	\
+	wckey_functions.c
 
 sacctmgr_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 
