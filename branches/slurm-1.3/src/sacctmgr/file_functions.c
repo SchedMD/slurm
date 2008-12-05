@@ -394,8 +394,9 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 				_destroy_sacctmgr_file_opts(file_opts);
 				break;
 			}
-		} else if (!strncasecmp (sub, "MaxCPUMins", MAX(command_len, 7))
-			   || !strncasecmp (sub, "MaxProcSec", 
+		} else if (!strncasecmp (sub, "MaxCPUMinsPerJob",
+					 MAX(command_len, 7))
+			   || !strncasecmp (sub, "MaxProcSecPerJob", 
 					    MAX(command_len, 4))) {
 			if (get_uint64(option, &file_opts->max_cpu_mins_pj,
 				       "MaxCPUMins") != SLURM_SUCCESS) {
@@ -405,7 +406,8 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 				_destroy_sacctmgr_file_opts(file_opts);
 				break;
 			}
-		} else if (!strncasecmp (sub, "MaxCPUs", MAX(command_len, 7))) {
+		} else if (!strncasecmp (sub, "MaxCPUsPerJob",
+					 MAX(command_len, 7))) {
 			if (get_uint(option, &file_opts->max_cpus_pj,
 				     "MaxCPUs") != SLURM_SUCCESS) {
 				exit_code=1;
@@ -423,7 +425,7 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 				_destroy_sacctmgr_file_opts(file_opts);
 				break;
 			}
-		} else if (!strncasecmp (sub, "MaxNodes",
+		} else if (!strncasecmp (sub, "MaxNodesPerJob",
 					 MAX(command_len, 4))) {
 			if (get_uint(option, &file_opts->max_nodes_pj,
 				     "MaxNodes") != SLURM_SUCCESS) {
@@ -443,7 +445,8 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 				_destroy_sacctmgr_file_opts(file_opts);
 				break;
 			}
-		} else if (!strncasecmp (sub, "MaxWall", MAX(command_len, 4))) {
+		} else if (!strncasecmp (sub, "MaxWallDurationPerJob", 
+					 MAX(command_len, 4))) {
 			mins = time_str2mins(option);
 			if (mins >= 0) {
 				file_opts->max_wall_pj 
@@ -601,13 +604,13 @@ static List _set_up_print_fields(List format_list)
 			field->name = xstrdup("ID");
 			field->len = 6;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("MaxCPUMins", object,
+		} else if(!strncasecmp("MaxCPUMinsPerJob", object,
 				       MAX(command_len, 7))) {
 			field->type = PRINT_MAXCM;
 			field->name = xstrdup("MaxCPUMins");
 			field->len = 11;
 			field->print_routine = print_fields_uint64;
-		} else if(!strncasecmp("MaxCPUs", object, 
+		} else if(!strncasecmp("MaxCPUsPerJob", object, 
 				       MAX(command_len, 7))) {
 			field->type = PRINT_MAXC;
 			field->name = xstrdup("MaxCPUs");
@@ -619,7 +622,7 @@ static List _set_up_print_fields(List format_list)
 			field->name = xstrdup("MaxJobs");
 			field->len = 7;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("MaxNodes", object, 
+		} else if(!strncasecmp("MaxNodesPerJob", object, 
 				       MAX(command_len, 4))) {
 			field->type = PRINT_MAXN;
 			field->name = xstrdup("MaxNodes");
@@ -631,7 +634,7 @@ static List _set_up_print_fields(List format_list)
 			field->name = xstrdup("MaxSubmit");
 			field->len = 9;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("MaxWall", object,
+		} else if(!strncasecmp("MaxWallDurationPerJob", object,
 				       MAX(command_len, 4))) {
 			field->type = PRINT_MAXW;
 			field->name = xstrdup("MaxWall");
@@ -1635,16 +1638,17 @@ extern int print_file_add_limits_to_line(char **line,
 		xstrfmtcat(*line, ":GrpWall=%u", assoc->grp_wall);
 
 	if(assoc->max_cpu_mins_pj != INFINITE)
-		xstrfmtcat(*line, ":MaxCPUMins=%llu", assoc->max_cpu_mins_pj);
+		xstrfmtcat(*line, ":MaxCPUMinsPerJob=%llu",
+			   assoc->max_cpu_mins_pj);
 		
 	if(assoc->max_cpus_pj != INFINITE)
-		xstrfmtcat(*line, ":MaxCPUs=%u", assoc->max_cpus_pj);
+		xstrfmtcat(*line, ":MaxCPUsPerJob=%u", assoc->max_cpus_pj);
 		
 	if(assoc->max_jobs != INFINITE) 
 		xstrfmtcat(*line, ":MaxJobs=%u", assoc->max_jobs);
 		
 	if(assoc->max_nodes_pj != INFINITE)
-		xstrfmtcat(*line, ":MaxNodes=%u", assoc->max_nodes_pj);
+		xstrfmtcat(*line, ":MaxNodesPerJob=%u", assoc->max_nodes_pj);
 		
 	if(assoc->max_submit_jobs != INFINITE) 
 		xstrfmtcat(*line, ":MaxSubmitJobs=%u", assoc->max_submit_jobs);
