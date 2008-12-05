@@ -1901,9 +1901,10 @@ static int _select_nodes(struct job_record *job_ptr, bitstr_t * bitmap,
 	for (i = 0, b = 0; i < array_size; i++) {
 		for (count = 0; count < freq[i]; count++, b++) {
 			if (bit_test(bitmap, b) && task_cnt[i] < 1) {
-				if (bit_test(reqmap, b))
+				if (reqmap && bit_test(reqmap, b)) {
 					/* can't clear a required node! */
 					return SLURM_ERROR;
+				}
 				bit_clear(bitmap, b); 
 			}
 		}
