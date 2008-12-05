@@ -5,10 +5,11 @@
 <P>
 SLURM version 1.2 and earlier supported dedication of resources
 to jobs based on a simple "first come, first served" policy with backfill.
-Beginning in SLURM version 1.3, priority-based <I>preemption</I> is supported. 
-Preemption is the act of suspending one or more "low-priority" jobs to let a
-"high-priority" job run uninterrupted until it completes. Preemption provides
-the ability to prioritize the workload on a cluster.
+Beginning in SLURM version 1.3, priority partitions and priority-based
+<I>preemption</I> are supported. Preemption is the act of suspending one or more
+"low-priority" jobs to let a "high-priority" job run uninterrupted until it
+completes. Preemption provides the ability to prioritize the workload on a
+cluster.
 </P>
 <P>
 The SLURM version 1.3.1 <I>sched/gang</I> plugin supports preemption. 
@@ -30,13 +31,11 @@ There are several important configuration parameters relating to preemption:
 <LI>
 <B>SelectType</B>: The SLURM <I>sched/gang</I> plugin supports nodes 
 allocated by the <I>select/linear</I> plugin and socket/core/CPU resources 
-allocated by the <I>select/cons_res</I> plugin. 
-See <A HREF="#future_work">Future Work</A> below for more
-information on "preemption with consumable resources".
+allocated by the <I>select/cons_res</I> plugin.
 </LI>
 <LI>
 <B>SelectTypeParameter</B>: Since resources will be getting overallocated 
-with jobs (the preempted job will remain in memory), the resource selection
+with jobs (suspended jobs remain in memory), the resource selection
 plugin should be configured to track the amount of memory used by each job to
 ensure that memory page swapping does not occur. When <I>select/linear</I> is
 chosen, we recommend setting <I>SelectTypeParameter=CR_Memory</I>. When
@@ -55,12 +54,14 @@ Users can use the <I>--mem</I> or <I>--mem-per-cpu</I> option
 at job submission time to specify their memory requirements.
 </LI>
 <LI>
-<B>JobAcctGatherType and JobAcctGatherFrequency</B>:
-If you wish to enforce memory limits, accounting must be enabled
-using the <I>JobAcctGatherType</I> and <I>JobAcctGatherFrequency</I>
-parameters. If accounting is enabled and a job exceeds its configured
-memory limits, it will be canceled in order to prevent it from 
-adversely effecting other jobs sharing the same resources.
+<B>JobAcctGatherType and JobAcctGatherFrequency</B>: The "maximum data segment
+size" and "maximum virtual memory size" system limits will be configured for
+each job to ensure that the job does not exceed its requested amount of memory.
+If you wish to enable additional enforcement of memory limits, configure job
+accounting with the <I>JobAcctGatherType</I> and <I>JobAcctGatherFrequency</I>
+parameters. When accounting is enabled and a job exceeds its configured memory
+limits, it will be canceled in order to prevent it from adversely effecting
+other jobs sharing the same resources.
 </LI>
 <LI>
 <B>SchedulerType</B>: Configure the <I>sched/gang</I> plugin by setting
@@ -72,22 +73,8 @@ other partitions to control the preemptive behavior. If two jobs from two
 different partitions are allocated to the same resources, the job in the
 partition with the greater <I>Priority</I> value will preempt the job in the
 partition with the lesser <I>Priority</I> value. If the <I>Priority</I> values
-of the two partitions are equal then no preemption will occur, and the two jobs
-will run simultaneously on the same resources. The default <I>Priority</I> value
-is 1.
-</LI>
-<LI>
-<B>Shared</B>: Configure the partitions <I>Shared</I> setting to 
-<I>FORCE</I> for all partitions that will preempt or that will be preempted. The
-<I>FORCE</I> setting is required to enable the select plugins to overallocate
-resources. Jobs submitted to a partition that does not share it's resources will
-not preempt other jobs, nor will those jobs be preempted. Instead those jobs
-will wait until the resources are free for non-shared use by each job.
-<BR>
-The <I>FORCE</I> option now supports an additional parameter that controls 
-how many jobs can share a resource within the partition (FORCE[:max_share]). By
-default the max_share value is 4. To disable timeslicing within a partition but
-enable preemption with other partitions, set <I>Shared=FORCE:1</I>.
+of the two partitions are equal then no preemption will occur. The default
+<I>Priority</I> value is 1.
 </LI>
 <LI>
 <B>SchedulerTimeSlice</B>: The default timeslice interval is 30 seconds. 
@@ -113,9 +100,10 @@ SLURM requires a full restart of the daemons. If you just change the partition
 When enabled, the <I>sched/gang</I> plugin keeps track of the resources
 allocated to all jobs. For each partition an "active bitmap" is maintained that
 tracks all concurrently running jobs in the SLURM cluster. Each partition also
-maintains a job list for that partition, and a list of "shadow" jobs. These
-"shadow" jobs are running jobs from higher priority partitions that "cast
-shadows" on the active bitmaps of the lower priority partitions. 
+maintains a job list for that partition, and a list of "shadow" jobs. The
+"shadow" jobs are job allocations from higher priority partitions that "cast
+shadows" on the active bitmaps of the lower priority partitions. Jobs in lower
+priority partitions that are caught in these "shadows" will be suspended.
 </P>
 <P>
 Each time a new job is allocated to resources in a partition and begins running,
@@ -128,13 +116,22 @@ bitmaps of the lower priority partitions are rebuilt to see if any suspended
 jobs can be resumed.
 </P>
 <P>
-The gang scheduler plugin is primarily designed to be <I>reactive</I> to the
-resource allocation decisions made by the Selector plugins. This is why
-<I>Shared=FORCE</I> is required in each partition. The <I>Shared=FORCE</I>
-setting enables the <I>select/linear</I> and <I>select/cons_res</I> plugins to
-overallocate the resources between partitions. This keeps all of the node
-placement logic in the <I>select</I> plugins, and leaves the gang scheduler in
-charge of controlling which jobs should run on the overallocated resources. 
+The gang scheduler plugin is designed to be <I>reactive</I> to the resource
+allocation decisions made by the "select" plugins. The "select" plugins have
+been enhanced to recognize when "sched/gang" has been configured, and to factor
+in the priority of each partition when selecting resources for a job. When
+choosing resources for each job, the selector avoids resources that are in use
+by other jobs (unless sharing has been configured, in which case it does some
+load-balancing). However, when "sched/gang" is enabled, the select plugins may
+choose resources that are already in use by jobs from partitions with a lower
+priority setting, even when sharing is disabled in those partitions.
+</P>
+<P>
+This leaves the gang scheduler in charge of controlling which jobs should run on
+the overallocated resources. The <I>sched/gang</I> plugin suspends jobs via the
+same internal functions that support <I>scontrol suspend</I> and <I>scontrol
+resume</I>. A good way to observe the act of preemption is by running <I>watch
+squeue</I> in a terminal window.
 </P>
 <P>
 The <I>sched/gang</I> plugin suspends jobs via the same internal functions that
@@ -146,9 +143,8 @@ window.
 <H2>A Simple Example</H2>
 
 <P>
-The following example is configured with <I>select/linear</I>,
-<I>sched/gang</I>, and <I>Shared=FORCE:1</I>. This example takes place on a
-cluster of 5 nodes:
+The following example is configured with <I>select/linear</I> and
+<I>sched/gang</I>. This example takes place on a cluster of 5 nodes:
 </P>
 <PRE>
 [user@n16 ~]$ <B>sinfo</B>
@@ -161,8 +157,8 @@ Here are the Partition settings:
 </P>
 <PRE>
 [user@n16 ~]$ <B>grep PartitionName /shared/slurm/slurm.conf</B>
-PartitionName=active Priority=1 Default=YES Shared=FORCE:1 Nodes=n[12-16]
-PartitionName=hipri  Priority=2             Shared=FORCE:1 Nodes=n[12-16]
+PartitionName=active Priority=1 Default=YES Shared=NO Nodes=n[12-16]
+PartitionName=hipri  Priority=2             Shared=NO Nodes=n[12-16]
 </PRE>
 <P>
 The <I>runit.pl</I> script launches a simple load-generating app that runs
@@ -180,7 +176,7 @@ sbatch: Submitted batch job 487
 sbatch: Submitted batch job 488
 [user@n16 ~]$ <B>sbatch -N1 ./runit.pl 300</B>
 sbatch: Submitted batch job 489
-[user@n16 ~]$ <B>squeue</B>
+[user@n16 ~]$ <B>squeue -Si</B>
 JOBID PARTITION     NAME   USER  ST   TIME  NODES NODELIST
   485    active runit.pl   user   R   0:06      1 n12
   486    active runit.pl   user   R   0:06      1 n13
@@ -194,13 +190,13 @@ Now submit a short-running 3-node job to the <I>hipri</I> partition:
 <PRE>
 [user@n16 ~]$ <B>sbatch -N3 -p hipri ./runit.pl 30</B>
 sbatch: Submitted batch job 490
-[user@n16 ~]$ <B>squeue</B>
+[user@n16 ~]$ <B>squeue -Si</B>
 JOBID PARTITION     NAME   USER  ST   TIME  NODES NODELIST
-  488    active runit.pl   user   R   0:29      1 n15
-  489    active runit.pl   user   R   0:28      1 n16
   485    active runit.pl   user   S   0:27      1 n12
   486    active runit.pl   user   S   0:27      1 n13
   487    active runit.pl   user   S   0:26      1 n14
+  488    active runit.pl   user   R   0:29      1 n15
+  489    active runit.pl   user   R   0:28      1 n16
   490     hipri runit.pl   user   R   0:03      3 n[12-14]
 </PRE>
 <P>
@@ -223,26 +219,79 @@ JOBID PARTITION     NAME   USER  ST   TIME  NODES NODELIST
 </PRE>
 
 
-<H2><A NAME="future_work">Future Work</A></H2>
+<H2><A NAME="future_work">Future Ideas</A></H2>
 
 <P>
-<B>Preemption with consumable resources</B>: This implementation of preemption
-relies on intelligent job placement by the <I>select</I> plugins. As of SLURM
-1.3.1 the consumable resource <I>select/cons_res</I> plugin still needs
-additional enhancements to the job placement algorithm before it's preemption
-support can be considered "competent". The mechanics of preemption work, but the
-placement of preemptive jobs relative to any low-priority jobs may not be
-optimal. The work to improve the placement of preemptive jobs relative to
-existing jobs is currently in-progress. 
+<B>More intelligence in the select plugins</B>: This implementation of
+preemption relies on intelligent job placement by the <I>select</I> plugins. In
+SLURM 1.3.1 the <I>select/linear</I> plugin has a decent preemptive placement
+algorithm, but the consumable resource <I>select/cons_res</I> plugin had no
+preemptive placement support. In SLURM 1.4 preemptive placement support was
+added to the <I>select/cons_res</I> plugin, but there is still room for
+improvement.
+</P><P>
+Take the following example:
+</P>
+<PRE>
+[user@n8 ~]$ <B>sinfo</B>
+PARTITION AVAIL  TIMELIMIT NODES  STATE NODELIST
+active*      up   infinite     5   idle n[1-5]
+hipri        up   infinite     5   idle n[1-5]
+[user@n8 ~]$ <B>sbatch -N1 -n2 ./sleepme 60</B>
+sbatch: Submitted batch job 17
+[user@n8 ~]$ <B>sbatch -N1 -n2 ./sleepme 60</B>
+sbatch: Submitted batch job 18
+[user@n8 ~]$ <B>sbatch -N1 -n2 ./sleepme 60</B>
+sbatch: Submitted batch job 19
+[user@n8 ~]$ <B>squeue</B>
+  JOBID PARTITION     NAME     USER  ST       TIME  NODES NODELIST(REASON)
+     17    active  sleepme  cholmes   R       0:03      1 n1
+     18    active  sleepme  cholmes   R       0:03      1 n2
+     19    active  sleepme  cholmes   R       0:02      1 n3
+[user@n8 ~]$ <B>sbatch -N3 -n6 -p hipri ./sleepme 20</B>
+sbatch: Submitted batch job 20
+[user@n8 ~]$ <B>squeue -Si</B>
+  JOBID PARTITION     NAME     USER  ST       TIME  NODES NODELIST(REASON)
+     17    active  sleepme  cholmes   S       0:16      1 n1
+     18    active  sleepme  cholmes   S       0:16      1 n2
+     19    active  sleepme  cholmes   S       0:15      1 n3
+     20     hipri  sleepme  cholmes   R       0:03      3 n[1-3]
+[user@n8 ~]$ <B>sinfo</B>
+PARTITION AVAIL  TIMELIMIT NODES  STATE NODELIST
+active*      up   infinite     3  alloc n[1-3]
+active*      up   infinite     2   idle n[4-5]
+hipri        up   infinite     3  alloc n[1-3]
+hipri        up   infinite     2   idle n[4-5]
+</PRE>
+<P>
+It would be more ideal if the "hipri" job were placed on nodes n[3-5], which
+would allow jobs 17 and 18 to continue running. However, a new "intelligent"
+algorithm would have to include factors such as job size and required nodes in
+order to support ideal placements such as this, which can quickly complicate
+the design. Any and all help is welcome here!
+</P>
+<P>
+<B>Preemptive backfill</B>: the current backfill scheduler plugin
+("sched/backfill") is a nice way to make efficient use of otherwise idle
+resources. But SLURM only supports one scheduler plugin at a time. Fortunately,
+given the design of the new "sched/gang" plugin, there is no direct overlap
+between the backfill functionality and the gang-scheduling functionality. Thus,
+it's possible that these two plugins could technically be merged into a new
+scheduler plugin that supported preemption <U>and</U> backfill. <B>NOTE:</B>
+this is only an idea based on a code review so there would likely need to be
+some additional development, and plenty of testing!
+</P><P>
+
 </P>
 <P>
 <B>Requeue a preempted job</B>: In some situations is may be desirable to
 requeue a low-priority job rather than suspend it. Suspending a job leaves the
 job in memory. Requeuing a job involves terminating the job and resubmitting it
-again. This will be investigated at some point in the future. Requeuing a
-preempted job may make the most sense with <I>Shared=NO</I> partitions.
+again. The "sched/gang" plugin would need to be modified to recognize when a job
+is able to be requeued and when it can requeue a job (for preemption only, not
+for timeslicing!), and perform the requeue request.
 </P>
 
-<p style="text-align:center;">Last modified 7 July 2008</p>
+<p style="text-align:center;">Last modified 5 December 2008</p>
 
 <!--#include virtual="footer.txt"-->

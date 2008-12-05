@@ -41,8 +41,9 @@ The following table describes this new functionality in more detail:
 <TD>Whole nodes are allocated to jobs. No node will run more than one job.</TD>
 </TR><TR>
 <TD>Shared=YES</TD>
-<TD>Same as Shared=FORCE if job request specifies --shared option.
-Otherwise same as Shared=NO.</TD>
+<TD>By default same as Shared=NO. Nodes allocated to a job may be shared with
+other jobs if each job allows sharing via the <CODE>srun --shared</CODE>
+option.</TD>
 </TR><TR>
 <TD>Shared=FORCE</TD>
 <TD>Whole nodes are allocated to jobs. A node may run more than one job.</TD>
@@ -55,8 +56,9 @@ SelectTypeParameters=<B>CR_Core_Memory</B></TD>
 <TD>Cores are allocated to jobs. No core will run more than one job.</TD>
 </TR><TR>
 <TD>Shared=YES</TD>
-<TD>Allocate whole nodes if job request specifies --exclusive option.
-Otherwise same as Shared=FORCE.</TD>
+<TD>By default same as Shared=NO. Cores allocated to a job may be shared with
+other jobs if each job allows sharing via the <CODE>srun --shared</CODE>
+option.</TD>
 </TR><TR>
 <TD>Shared=FORCE</TD>
 <TD>Cores are allocated to jobs. A core may run more than one job.</TD>
@@ -69,8 +71,9 @@ SelectTypeParameters=<B>CR_CPU_Memory</B></TD>
 <TD>CPUs are allocated to jobs. No CPU will run more than one job.</TD>
 </TR><TR>
 <TD>Shared=YES</TD>
-<TD>Allocate whole nodes if job request specifies --exclusive option.
-Otherwise same as Shared=FORCE.</TD>
+<TD>By default same as Shared=NO. CPUs allocated to a job may be shared with
+other jobs if each job allows sharing via the <CODE>srun --shared</CODE>
+option.</TD>
 </TR><TR>
 <TD>Shared=FORCE</TD>
 <TD>CPUs are allocated to jobs. A CPU may run more than one job.</TD>
@@ -83,8 +86,9 @@ SelectTypeParameters=<B>CR_Socket_Memory</B></TD>
 <TD>Sockets are allocated to jobs. No socket will run more than one job.</TD>
 </TR><TR>
 <TD>Shared=YES</TD>
-<TD>Allocate whole nodes if job request specifies --exclusive option.
-Otherwise same as Shared=FORCE.</TD>
+<TD>By default same as Shared=NO. Sockets allocated to a job may be shared with
+other jobs if each job allows sharing via the <CODE>srun --shared</CODE>
+option.</TD>
 </TR><TR>
 <TD>Shared=FORCE</TD>
 <TD>Sockets are allocated to jobs. A socket may run more than one job.</TD>
@@ -110,9 +114,9 @@ busy nodes that have more than half of the CPUs available for use. The
 <CODE>select/linear</CODE> plugin simply counts jobs on nodes, and does not
 track the CPU usage on each node.
 </P><P>
-This new functionality also supports the new
-<CODE>Shared=FORCE:&lt;num&gt;</CODE> syntax. If <CODE>Shared=FORCE:3</CODE> is
-configured with <CODE>select/cons_res</CODE> and <CODE>CR_Core</CODE> or
+This new sharing functionality in the select/cons_res plugin also supports the
+new <CODE>Shared=FORCE:&lt;num&gt;</CODE> syntax. If <CODE>Shared=FORCE:3</CODE>
+is configured with <CODE>select/cons_res</CODE> and <CODE>CR_Core</CODE> or
 <CODE>CR_Core_Memory</CODE>, then the <CODE>select/cons_res</CODE> plugin will
 run up to 3 jobs on each <U>core</U> of each node in the partition. If
 <CODE>CR_Socket</CODE> or <CODE>CR_Socket_Memory</CODE> is configured, then the
@@ -122,10 +126,28 @@ of each node in the partition.
 <H3>Nodes in Multiple Partitions</H3>
 <P>
 SLURM has supported configuring nodes in more than one partition since version
-0.7.0. The <CODE>Shared=FORCE</CODE> support in the <CODE>select/cons_res</CODE>
-plugin accounts for this "multiple partition" support. Here are several
-scenarios with the <CODE>select/cons_res</CODE> plugin enabled to help
-understand how all of this works together:
+0.7.0. The following table describes how nodes configured in two partitions with
+different <CODE>Shared</CODE> settings will be allocated to jobs. Note that
+"shared" jobs are jobs that are submitted to partitions configured with
+<CODE>Shared=FORCE</CODE> or with <CODE>Shared=YES</CODE> and the job requested
+sharing with the <CODE>srun --shared</CODE> option. Conversely, "non-shared"
+jobs are jobs that are submitted to partitions configured with
+<CODE>Shared=NO</CODE> or <CODE>Shared=YES</CODE> and the job did <U>not</U>
+request sharable resources.
+</P>
+<TABLE CELLPADDING=3 CELLSPACING=1 BORDER=1>
+<TR><TH>&nbsp;</TH><TH>First job "sharable"</TH><TH>First job not
+"sharable"</TH></TR>
+<TR><TH>Second job "sharable"</TH><TD>Both jobs can run on the same nodes and may
+share resources</TD><TD>Jobs do not run on the same nodes</TD></TR>
+<TR><TH>Second job not "sharable"</TH><TD>Jobs do not run on the same nodes</TD>
+<TD>Jobs can run on the same nodes but will not share resources</TD></TR>
+</TABLE>
+<P>
+The next table contains several
+scenarios with the <CODE>select/cons_res</CODE> plugin enabled to further
+clarify how a node is used when it is configured in more than one partition and
+the partitions have different "Shared" policies:
 </P>
 <TABLE CELLPADDING=3 CELLSPACING=1 BORDER=1>
 <TR><TH>SLURM configuration</TH>
@@ -185,6 +207,12 @@ having memory pages swapped out and severely degraded performance.
 <TD>Memory allocation is not tracked. Jobs are allocated to nodes without
 considering if there is enough free memory. Swapping could occur!</TD>
 </TR><TR>
+<TD>SelectType=<B>select/linear</B> plus<BR>
+SelectTypeParameters=<B>CR_Memory</B></TD>
+<TD>Memory allocation is tracked.  Nodes that do not have enough available
+memory to meet the jobs memory requirement will not be allocated to the job.
+</TD>
+</TR><TR>
 <TD>SelectType=<B>select/cons_res</B><BR>
 Plus one of the following:<BR>
 SelectTypeParameters=<B>CR_Core</B><BR>
@@ -200,32 +228,38 @@ SelectTypeParameters=<B>CR_Core_Memory</B><BR>
 SelectTypeParameters=<B>CR_CPU_Memory</B><BR>
 SelectTypeParameters=<B>CR_Socket_Memory</B></TD>
 <TD>Memory allocation for all jobs are tracked. Nodes that do not have enough
-available memory to meet the job's memory requirement will not be allocated to
+available memory to meet the jobs memory requirement will not be allocated to
 the job.</TD>
 </TR>
 </TABLE>
-<P>Users can specify their job's memory requirements one of two ways.
-<CODE>--mem=&lt;num&gt;</CODE> can be used to specify the job's memory 
-requirement on a per allocated node basis. This option is probably best 
-suited for use with the <CODE>select/linear</CODE> plugin, which allocates 
-whole nodes to jobs. 
-<CODE>--mem-per-cpu=&lt;num&gt;</CODE> can be used to specify the job's 
-memory requirement on a per allocated CPU basis. This is probably best
-suited for use with the <CODE>select/cons_res</CODE> plugin which can 
+<P>Users can specify their job's memory requirements one of two ways. The
+<CODE>srun --mem=&lt;num&gt;</CODE> option can be used to specify the jobs
+memory requirement on a per allocated node basis. This option is recommended 
+for use with the <CODE>select/linear</CODE> plugin, which allocates 
+whole nodes to jobs. The
+<CODE>srun --mem-per-cpu=&lt;num&gt;</CODE> option can be used to specify the
+jobs memory requirement on a per allocated CPU basis. This is recommended
+for use with the <CODE>select/cons_res</CODE> plugin which can 
 allocate individual CPUs to jobs.</P>
 
 <P>Default and maximum values for memory on a per node or per CPU basis can 
-be configured using the following options: <CODE>DefMemPerCPU</CODE>,
-<CODE>DefMemPerNode</CODE>, <CODE>MaxMemPerCPU</CODE> and <CODE>MaxMemPerNode</CODE>.
+be configured by the system administrator using the following
+<CODE>slurm.conf</CODE> options: <CODE>DefMemPerCPU</CODE>,
+<CODE>DefMemPerNode</CODE>, <CODE>MaxMemPerCPU</CODE> and
+<CODE>MaxMemPerNode</CODE>.
 Users can use the <CODE>--mem</CODE> or <CODE>--mem-per-cpu</CODE> option
-at job submission time to specify their memory requirements.
-Enforcement of a job's memory allocation is performed by the accounting 
-plugin, which periodically gathers data about running jobs. Set 
+at job submission time to override the default value, but they cannot exceed
+the maximum value.
+</P><P>
+Enforcement of a jobs memory allocation is performed by setting the "maximum
+data segment size" and the "maximum virtual memory size" system limits to the
+appropriate values before launching the tasks. Enforcement is also managed by
+the accounting plugin, which periodically gathers data about running jobs. Set 
 <CODE>JobAcctGather</CODE> and <CODE>JobAcctFrequency</CODE> to 
 values suitable for your system.</P>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 8 July 2008</p>
+<p style="text-align:center;">Last modified 2 December 2008</p>
 
 <!--#include virtual="footer.txt"-->
