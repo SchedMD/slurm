@@ -1144,15 +1144,6 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 					continue;
 				}
 				
-				/* only check for on the slurmdbd */
-				if(!local_cluster_name && object->cluster
-				   && (!rec->cluster
-				       || strcasecmp(object->cluster,
-						     rec->cluster))) {
-					debug4("not the right cluster");
-					continue;
-				}
-				
 				if(object->partition
 				   && (!rec->partition 
 				       || strcasecmp(object->partition, 
@@ -1667,6 +1658,17 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 		slurm_mutex_unlock(&local_qos_lock);
 	}
 
+	if(assoc_mgr_wckey_list) {		
+		memset(&msg, 0, sizeof(dbd_list_msg_t));
+		slurm_mutex_lock(&assoc_mgr_wckey_lock);
+		msg.my_list = assoc_mgr_wckey_list;
+		/* let us know what to unpack */
+		pack16(DBD_ADD_WCKEYS, buffer);
+		slurmdbd_pack_list_msg(SLURMDBD_VERSION, 
+				       DBD_ADD_WCKEYS, &msg, buffer);	
+		slurm_mutex_unlock(&assoc_mgr_wckey_lock);
+	}
+
 	/* write the buffer to file */
 	old_file = xstrdup(state_save_location);
 	xstrcat(old_file, "/assoc_mgr_state.old");
@@ -1830,6 +1832,23 @@ extern int load_assoc_mgr_state(char *state_save_location)
 			debug("Recovered %u qos", 
 			      list_count(local_qos_list));
 			slurm_mutex_unlock(&local_qos_lock);
+			msg->my_list = NULL;
+			slurmdbd_free_list_msg(SLURMDBD_VERSION, msg);	
+			break;
+		case DBD_ADD_WCKEYS:
+			error_code = slurmdbd_unpack_list_msg(
+				SLURMDBD_VERSION, DBD_ADD_WCKEYS, &msg, buffer);
+			if (error_code != SLURM_SUCCESS)
+				goto unpack_error;
+			else if(!msg->my_list) {
+				error("No qos retrieved");
+				break;
+			}
+			slurm_mutex_lock(&assoc_mgr_wckey_lock);
+			assoc_mgr_wckey_list = msg->my_list;
+			debug("Recovered %u wckeys", 
+			      list_count(assoc_mgr_wckey_list));
+			slurm_mutex_unlock(&assoc_mgr_wckey_lock);
 			msg->my_list = NULL;
 			slurmdbd_free_list_msg(SLURMDBD_VERSION, msg);	
 			break;

@@ -128,14 +128,13 @@ static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
 
 	DEF_TIMERS;
 	
+	/* figure out the keys in the table */
 	query = xstrdup_printf("show index from %s", table_name);
-
 	if(!(result = mysql_db_query_ret(mysql_db, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
 	}
 	xfree(query);
-	columns = list_create(slurm_destroy_char);
 	while((row = mysql_fetch_row(result))) {
 		// row[2] is the key name
 		if(!strcasecmp(row[2], "PRIMARY"))
@@ -143,11 +142,13 @@ static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
 		else if(!old_index)
 			old_index = xstrdup(row[2]);
 	}
+	mysql_free_result(result);
 
+	/* figure out the existing columns in the table */
 	query = xstrdup_printf("show columns from %s", table_name);
-
 	if(!(result = mysql_db_query_ret(mysql_db, query, 0))) {
 		xfree(query);
+		xfree(old_index);
 		return SLURM_ERROR;
 	}
 	xfree(query);
@@ -157,6 +158,8 @@ static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
 		list_append(columns, col);
 	}
 	mysql_free_result(result);
+
+
 	itr = list_iterator_create(columns);
 	query = xstrdup_printf("alter table %s", table_name);
 	START_TIMER;
