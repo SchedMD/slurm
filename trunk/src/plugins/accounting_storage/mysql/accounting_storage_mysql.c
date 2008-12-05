@@ -2994,7 +2994,7 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 			case ACCT_ADD_WCKEY:
 			case ACCT_MODIFY_WCKEY:
 			case ACCT_REMOVE_WCKEY:
-				rc = assoc_mgr_update_local_wckeys(object);
+				rc = assoc_mgr_update_wckeys(object);
 				break;
 			case ACCT_UPDATE_NOTSET:
 			default:
@@ -7923,7 +7923,8 @@ extern List acct_storage_p_get_wckeys(mysql_conn_t *mysql_conn, uid_t uid,
 			   >= ACCT_ADMIN_OPERATOR) 
 				is_admin = 1;	
 			else {
-				assoc_mgr_fill_in_user(mysql_conn, &user, 1);
+				assoc_mgr_fill_in_user(mysql_conn, &user,
+						       1, NULL);
 			}
 		}
 	}
