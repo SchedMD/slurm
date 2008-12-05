@@ -191,7 +191,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 				   assoc_cond->grp_wall_list,
 				   argv[i]+end))
 				a_set = 1;
-		} else if (!strncasecmp (argv[i], "MaxCPUMins", 
+		} else if (!strncasecmp (argv[i], "MaxCPUMinsPerJob", 
 					 MAX(command_len, 7))) {
 			if(!assoc_cond->max_cpu_mins_pj_list)
 				assoc_cond->max_cpu_mins_pj_list =
@@ -200,7 +200,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 				   assoc_cond->max_cpu_mins_pj_list,
 				   argv[i]+end))
 				a_set = 1;
-		} else if (!strncasecmp (argv[i], "MaxCpus", 
+		} else if (!strncasecmp (argv[i], "MaxCpusPerJob", 
 					 MAX(command_len, 7))) {
 			if(!assoc_cond->max_cpus_pj_list)
 				assoc_cond->max_cpus_pj_list =
@@ -218,7 +218,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 				   assoc_cond->max_jobs_list,
 				   argv[i]+end))
 				a_set = 1;
-		} else if (!strncasecmp (argv[i], "MaxNodes", 
+		} else if (!strncasecmp (argv[i], "MaxNodesPerJob", 
 					 MAX(command_len, 4))) {
 			if(!assoc_cond->max_nodes_pj_list)
 				assoc_cond->max_nodes_pj_list =
@@ -236,7 +236,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 				   assoc_cond->max_submit_jobs_list,
 				   argv[i]+end))
 				a_set = 1;
-		} else if (!strncasecmp (argv[i], "MaxWall",
+		} else if (!strncasecmp (argv[i], "MaxWallDurationPerJob",
 					 MAX(command_len, 4))) {
 			if(!assoc_cond->max_wall_pj_list)
 				assoc_cond->max_wall_pj_list =
@@ -409,7 +409,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 					" Bad GrpWall time format: %s\n", 
 					argv[i]);
 			}
-		} else if (!strncasecmp (argv[i], "MaxCPUMins", 
+		} else if (!strncasecmp (argv[i], "MaxCPUMinsPerJob", 
 					 MAX(command_len, 7))) {
 			if(!assoc)
 				continue;
@@ -417,7 +417,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 				       &assoc->max_cpu_mins_pj, 
 				       "MaxCPUMins") == SLURM_SUCCESS)
 				a_set = 1;
-		} else if (!strncasecmp (argv[i], "MaxCpus", 
+		} else if (!strncasecmp (argv[i], "MaxCpusPerJob", 
 					 MAX(command_len, 7))) {
 			if(!assoc)
 				continue;
@@ -431,7 +431,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 			if (get_uint(argv[i]+end, &assoc->max_jobs,
 			    "MaxJobs") == SLURM_SUCCESS)
 				a_set = 1;
-		} else if (!strncasecmp (argv[i], "MaxNodes", 
+		} else if (!strncasecmp (argv[i], "MaxNodesPerJob", 
 					 MAX(command_len, 4))) {
 			if(!assoc)
 				continue;
@@ -446,7 +446,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 			if (get_uint(argv[i]+end, &assoc->max_submit_jobs,
 			    "MaxSubmitJobs") == SLURM_SUCCESS)
 				a_set = 1;
-		} else if (!strncasecmp (argv[i], "MaxWall", 
+		} else if (!strncasecmp (argv[i], "MaxWallDurationPerJob", 
 					 MAX(command_len, 4))) {
 			if(!assoc)
 				continue;
@@ -1049,13 +1049,13 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 			field->name = xstrdup("ID");
 			field->len = 6;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("MaxCPUMins", object, 
+		} else if(!strncasecmp("MaxCPUMinsPerJob", object, 
 				       MAX(command_len, 7))) {
 			field->type = PRINT_MAXCM;
 			field->name = xstrdup("MaxCPUMins");
 			field->len = 11;
 			field->print_routine = print_fields_uint64;
-		} else if(!strncasecmp("MaxCPUs", object, 
+		} else if(!strncasecmp("MaxCPUsPerJob", object, 
 				       MAX(command_len, 7))) {
 			field->type = PRINT_MAXC;
 			field->name = xstrdup("MaxCPUs");
@@ -1067,7 +1067,7 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 			field->name = xstrdup("MaxJobs");
 			field->len = 7;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("MaxNodes", object, 
+		} else if(!strncasecmp("MaxNodesPerJob", object, 
 				       MAX(command_len, 4))) {
 			field->type = PRINT_MAXN;
 			field->name = xstrdup("MaxNodes");
@@ -1079,7 +1079,7 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 			field->name = xstrdup("MaxSubmit");
 			field->len = 9;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("MaxWall", object,
+		} else if(!strncasecmp("MaxWallDurationPerJob", object,
 				       MAX(command_len, 4))) {
 			field->type = PRINT_MAXW;
 			field->name = xstrdup("MaxWall");
