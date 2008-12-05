@@ -794,7 +794,6 @@ extern int cluster_account_by_user(int argc, char *argv[])
 						print_acct = get_tree_acct_name(
 							local_acct,
 							parent_acct,
-							sreport_cluster->name,
 							tree_list);
 						xfree(local_acct);
 					} else {
@@ -1617,7 +1616,6 @@ extern int cluster_wckey_by_user(int argc, char *argv[])
 	sreport_cluster_rec_t *sreport_cluster = NULL;
 	print_field_t *field = NULL;
 	int field_count = 0;
-	char *print_acct = NULL;
 
 	print_fields_list = list_create(destroy_print_field);
 
@@ -1779,34 +1777,9 @@ extern int cluster_wckey_by_user(int argc, char *argv[])
 				struct passwd *pwd = NULL;
 				switch(field->type) {
 				case PRINT_CLUSTER_WCKEY:
-					if(tree_display) {
-						char *local_acct = NULL;
-						char *parent_acct = NULL;
-						if(sreport_assoc->user) {
-							local_acct =
-								xstrdup_printf(
-									"|%s", 
-									sreport_assoc->acct);
-							parent_acct =
-								sreport_assoc->acct;
-						} else {
-							local_acct = xstrdup(
-								sreport_assoc->acct);
-							parent_acct = sreport_assoc->
-								parent_acct;
-						}
-						print_acct = get_tree_acct_name(
-							local_acct,
-							parent_acct,
-							tree_list);
-						xfree(local_acct);
-					} else {
-						print_acct =
-							sreport_assoc->acct;
-					}
 					field->print_routine(
 						field, 
-						print_acct,
+						sreport_assoc->acct,
 						(curr_inx == field_count));
 					
 					break;
