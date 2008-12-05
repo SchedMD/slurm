@@ -1337,7 +1337,7 @@ extern int assoc_mgr_update_local_wckeys(acct_update_object_t *update)
 				   && (!rec->name 
 				       || strcasecmp(object->name,
 						     rec->name))) {
-					debug4("not the right account");
+					debug4("not the right wckey");
 					continue;
 				}
 				
