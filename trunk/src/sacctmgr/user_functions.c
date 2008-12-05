@@ -1218,7 +1218,8 @@ no_default:
 	list_destroy(local_user_list);
 	list_destroy(local_acct_list);
 	list_destroy(local_assoc_list);
-	list_destroy(local_wckey_list);
+	if(local_wckey_list)
+		list_destroy(local_wckey_list);
 	destroy_acct_wckey_cond(wckey_cond);
 	destroy_acct_association_cond(assoc_cond);
 
