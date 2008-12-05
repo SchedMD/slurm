@@ -75,6 +75,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		"t1.jobid",
 		"t1.associd",
 		"t1.wckey",
+		"t1.wckeyid",
 		"t1.uid",
 		"t1.gid",
 		"t1.partition",
@@ -142,6 +143,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		JOB_REQ_JOBID,
 		JOB_REQ_ASSOCID,
 		JOB_REQ_WCKEY,
+		JOB_REQ_WCKEYID,
 		JOB_REQ_UID,
 		JOB_REQ_GID,
 		JOB_REQ_PARTITION,
@@ -512,7 +514,8 @@ no_cond:
 
 		if(row[JOB_REQ_WCKEY] && row[JOB_REQ_WCKEY][0])
 			job->wckey = xstrdup(row[JOB_REQ_WCKEY]);
-		
+		job->wckeyid = atoi(row[JOB_REQ_WCKEYID]);
+
 		if(row[JOB_REQ_CLUSTER] && row[JOB_REQ_CLUSTER][0])
 			job->cluster = xstrdup(row[JOB_REQ_CLUSTER]);
 		else if(row[JOB_REQ_CLUSTER1] && row[JOB_REQ_CLUSTER1][0])

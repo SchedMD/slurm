@@ -42,8 +42,10 @@
 
 #include "sreport.h"
 
-extern int cluster_utilization(int argc, char *argv[]);
-extern int cluster_user_by_account(int argc, char *argv[]);
 extern int cluster_account_by_user(int argc, char *argv[]);
+extern int cluster_user_by_account(int argc, char *argv[]);
+extern int cluster_user_by_wckey(int argc, char *argv[]);
+extern int cluster_utilization(int argc, char *argv[]);
+extern int cluster_wckey_by_user(int argc, char *argv[]);
 
 #endif

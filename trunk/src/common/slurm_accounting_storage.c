@@ -75,7 +75,7 @@ typedef struct slurm_acct_storage_ops {
 				    List association_list);
 	int  (*add_qos)            (void *db_conn, uint32_t uid,
 				    List qos_list);
-	int  (*add_wckey)          (void *db_conn, uint32_t uid,
+	int  (*add_wckeys)         (void *db_conn, uint32_t uid,
 				    List wckey_list);
 	List (*modify_users)       (void *db_conn, uint32_t uid,
 				    acct_user_cond_t *user_cond,
@@ -92,7 +92,7 @@ typedef struct slurm_acct_storage_ops {
 	List (*modify_qos)         (void *db_conn, uint32_t uid,
 				    acct_qos_cond_t *qos_cond,
 				    acct_qos_rec_t *qos);
-	List (*modify_wckey)       (void *db_conn, uint32_t uid,
+	List (*modify_wckeys)      (void *db_conn, uint32_t uid,
 				    acct_wckey_cond_t *wckey_cond,
 				    acct_wckey_rec_t *wckey);
 	List (*remove_users)       (void *db_conn, uint32_t uid,
@@ -108,7 +108,7 @@ typedef struct slurm_acct_storage_ops {
 				    acct_association_cond_t *assoc_cond);
 	List (*remove_qos)         (void *db_conn, uint32_t uid,
 				    acct_qos_cond_t *qos_cond);
-	List (*remove_wckey)       (void *db_conn, uint32_t uid,
+	List (*remove_wckeys)      (void *db_conn, uint32_t uid,
 				    acct_wckey_cond_t *wckey_cond);
 	List (*get_users)          (void *db_conn, uint32_t uid,
 				    acct_user_cond_t *user_cond);
@@ -120,12 +120,12 @@ typedef struct slurm_acct_storage_ops {
 				    acct_association_cond_t *assoc_cond);
 	List (*get_qos)            (void *db_conn, uint32_t uid,
 				    acct_qos_cond_t *qos_cond);
-	List (*get_wckey)          (void *db_conn, uint32_t uid,
+	List (*get_wckeys)         (void *db_conn, uint32_t uid,
 				    acct_wckey_cond_t *wckey_cond);
 	List (*get_txn)            (void *db_conn, uint32_t uid,
 				    acct_txn_cond_t *txn_cond);
 	int  (*get_usage)          (void *db_conn, uint32_t uid,
-				    void *acct_assoc,
+				    void *in, int type,
 				    time_t start, 
 				    time_t end);
 	int (*roll_usage)          (void *db_conn, 
@@ -143,7 +143,7 @@ typedef struct slurm_acct_storage_ops {
 				    char *cluster,
 				    uint32_t procs, time_t event_time);
 	int  (*c_get_usage)        (void *db_conn, uint32_t uid,
-				    void *cluster_rec, 
+				    void *cluster_rec, int type,
 				    time_t start, time_t end);
 	int  (*register_ctld)      (void *db_conn, char *cluster,
 				    uint16_t port);
@@ -213,26 +213,26 @@ static slurm_acct_storage_ops_t * _acct_storage_get_ops(
 		"acct_storage_p_add_clusters",
 		"acct_storage_p_add_associations",
 		"acct_storage_p_add_qos",
-		"acct_storage_p_add_wckey",
+		"acct_storage_p_add_wckeys",
 		"acct_storage_p_modify_users",
 		"acct_storage_p_modify_accounts",
 		"acct_storage_p_modify_clusters",
 		"acct_storage_p_modify_associations",
 		"acct_storage_p_modify_qos",
-		"acct_storage_p_modify_wckey",
+		"acct_storage_p_modify_wckeys",
 		"acct_storage_p_remove_users",
 		"acct_storage_p_remove_coord",
 		"acct_storage_p_remove_accts",
 		"acct_storage_p_remove_clusters",
 		"acct_storage_p_remove_associations",
 		"acct_storage_p_remove_qos",
-		"acct_storage_p_remove_wckey",
+		"acct_storage_p_remove_wckeys",
 		"acct_storage_p_get_users",
 		"acct_storage_p_get_accts",
 		"acct_storage_p_get_clusters",
 		"acct_storage_p_get_associations",
 		"acct_storage_p_get_qos",
-		"acct_storage_p_get_wckey",
+		"acct_storage_p_get_wckeys",
 		"acct_storage_p_get_txn",
 		"acct_storage_p_get_usage",
 		"acct_storage_p_roll_usage",
@@ -575,8 +575,8 @@ extern void destroy_acct_wckey_rec(void *object)
 		if(wckey->accounting_list)
 			list_destroy(wckey->accounting_list);
 		xfree(wckey->cluster);
+		xfree(wckey->name);
 		xfree(wckey->user);
-		xfree(wckey->wckey);
 		xfree(wckey);
 	}
 }
@@ -752,10 +752,10 @@ extern void destroy_acct_wckey_cond(void *object)
 			list_destroy(wckey->cluster_list);
 		if(wckey->id_list)
 			list_destroy(wckey->id_list);
+		if(wckey->name_list)
+			list_destroy(wckey->name_list);
 		if(wckey->user_list)
 			list_destroy(wckey->user_list);
-		if(wckey->wckey_list)
-			list_destroy(wckey->wckey_list);
 		xfree(wckey);
 	}
 }
@@ -1702,7 +1702,7 @@ extern void pack_acct_accounting_rec(void *in, uint16_t rpc_version, Buf buffer)
 	}
 
 	pack64(object->alloc_secs, buffer);
-	pack32(object->assoc_id, buffer);
+	pack32(object->id, buffer);
 	pack_time(object->period_start, buffer);
 }
 
@@ -1714,7 +1714,7 @@ extern int unpack_acct_accounting_rec(void **object, uint16_t rpc_version,
 	
 	*object = object_ptr;
 	safe_unpack64(&object_ptr->alloc_secs, buffer);
-	safe_unpack32(&object_ptr->assoc_id, buffer);
+	safe_unpack32(&object_ptr->id, buffer);
 	safe_unpack_time(&object_ptr->period_start, buffer);
 
 	return SLURM_SUCCESS;
@@ -2493,9 +2493,11 @@ extern void pack_acct_wckey_rec(void *in, uint16_t rpc_version, Buf buffer)
 		packnull(buffer);
 
 		pack32(NO_VAL, buffer);
-		pack32(NO_VAL, buffer);
 
 		packnull(buffer);
+
+		pack32(NO_VAL, buffer);
+
 		packnull(buffer);
 		return;
 	}
@@ -2518,10 +2520,12 @@ extern void pack_acct_wckey_rec(void *in, uint16_t rpc_version, Buf buffer)
 	packstr(object->cluster, buffer);
 
 	pack32(object->id, buffer);
+
+	packstr(object->name, buffer);	
+
 	pack32(object->uid, buffer);
 
 	packstr(object->user, buffer);	
-	packstr(object->wckey, buffer);	
 }
 
 extern int unpack_acct_wckey_rec(void **object, uint16_t rpc_version,
@@ -2555,10 +2559,12 @@ extern int unpack_acct_wckey_rec(void **object, uint16_t rpc_version,
 			       buffer);
 	
 	safe_unpack32(&object_ptr->id, buffer);
+
+	safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
+
 	safe_unpack32(&object_ptr->uid, buffer);
 	
 	safe_unpackstr_xmalloc(&object_ptr->user, &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&object_ptr->wckey, &uint32_tmp, buffer);
 	
 	return SLURM_SUCCESS;
 
@@ -4851,6 +4857,19 @@ extern void pack_acct_wckey_cond(void *in, uint16_t rpc_version, Buf buffer)
 	}
 	count = NO_VAL;
 
+	if(object->name_list)
+		count = list_count(object->name_list);
+	
+	pack32(count, buffer);
+	if(count && count != NO_VAL) {
+		itr = list_iterator_create(object->name_list);
+		while((tmp_info = list_next(itr))) {
+			packstr(tmp_info, buffer);
+		}
+		list_iterator_destroy(itr);
+	}
+	count = NO_VAL;
+
 	pack32(object->usage_end, buffer);
 	pack32(object->usage_start, buffer);
 
@@ -4860,19 +4879,6 @@ extern void pack_acct_wckey_cond(void *in, uint16_t rpc_version, Buf buffer)
 	pack32(count, buffer);
 	if(count && count != NO_VAL) {
 		itr = list_iterator_create(object->user_list);
-		while((tmp_info = list_next(itr))) {
-			packstr(tmp_info, buffer);
-		}
-		list_iterator_destroy(itr);
-	}
-	count = NO_VAL;
-
-	if(object->wckey_list)
-		count = list_count(object->wckey_list);
-	
-	pack32(count, buffer);
-	if(count && count != NO_VAL) {
-		itr = list_iterator_create(object->wckey_list);
 		while((tmp_info = list_next(itr))) {
 			packstr(tmp_info, buffer);
 		}
@@ -4917,6 +4923,17 @@ extern int unpack_acct_wckey_cond(void **object, uint16_t rpc_version,
 		}
 	}
 	
+	safe_unpack32(&count, buffer);
+	if(count != NO_VAL) {
+		object_ptr->name_list = 
+			list_create(slurm_destroy_char);
+		for(i=0; i<count; i++) {
+			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
+					       buffer);
+			list_append(object_ptr->name_list, tmp_info);
+		}
+	}
+
 	safe_unpack32(&object_ptr->usage_end, buffer);
 	safe_unpack32(&object_ptr->usage_start, buffer);
 
@@ -4931,22 +4948,13 @@ extern int unpack_acct_wckey_cond(void **object, uint16_t rpc_version,
 		}
 	}
 
-	safe_unpack32(&count, buffer);
-	if(count != NO_VAL) {
-		object_ptr->wckey_list = 
-			list_create(slurm_destroy_char);
-		for(i=0; i<count; i++) {
-			safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
-					       buffer);
-			list_append(object_ptr->wckey_list, tmp_info);
-		}
-	}
-
 	safe_unpack16(&object_ptr->with_usage, buffer);
 	safe_unpack16(&object_ptr->with_deleted, buffer);
 
+	return SLURM_SUCCESS;
+
 unpack_error:
-	destroy_acct_association_cond(object_ptr);
+	destroy_acct_wckey_cond(object_ptr);
 	*object = NULL;
 	return SLURM_ERROR;
 }
@@ -5592,12 +5600,12 @@ extern int acct_storage_g_add_qos(void *db_conn, uint32_t uid,
 		(db_conn, uid, qos_list);
 }
 
-extern int acct_storage_g_add_wckey(void *db_conn, uint32_t uid,
-				  List wckey_list)
+extern int acct_storage_g_add_wckeys(void *db_conn, uint32_t uid,
+				     List wckey_list)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
-	return (*(g_acct_storage_context->ops.add_wckey))
+	return (*(g_acct_storage_context->ops.add_wckeys))
 		(db_conn, uid, wckey_list);
 }
 
@@ -5652,13 +5660,13 @@ extern List acct_storage_g_modify_qos(void *db_conn, uint32_t uid,
 		(db_conn, uid, qos_cond, qos);
 }
 
-extern List acct_storage_g_modify_wckey(void *db_conn, uint32_t uid,
-				      acct_wckey_cond_t *wckey_cond,
-				      acct_wckey_rec_t *wckey)
+extern List acct_storage_g_modify_wckeys(void *db_conn, uint32_t uid,
+					 acct_wckey_cond_t *wckey_cond,
+					 acct_wckey_rec_t *wckey)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
-	return (*(g_acct_storage_context->ops.modify_wckey))
+	return (*(g_acct_storage_context->ops.modify_wckeys))
 		(db_conn, uid, wckey_cond, wckey);
 }
 
@@ -5718,12 +5726,12 @@ extern List acct_storage_g_remove_qos(void *db_conn, uint32_t uid,
 		(db_conn, uid, qos_cond);
 }
 
-extern List acct_storage_g_remove_wckey(void *db_conn, uint32_t uid,
-				      acct_wckey_cond_t *wckey_cond)
+extern List acct_storage_g_remove_wckeys(void *db_conn, uint32_t uid,
+					 acct_wckey_cond_t *wckey_cond)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
-	return (*(g_acct_storage_context->ops.remove_wckey))
+	return (*(g_acct_storage_context->ops.remove_wckeys))
 		(db_conn, uid, wckey_cond);
 }
 
@@ -5771,13 +5779,13 @@ extern List acct_storage_g_get_qos(void *db_conn, uint32_t uid,
 	return (*(g_acct_storage_context->ops.get_qos))(db_conn, uid, qos_cond);
 }
 
-extern List acct_storage_g_get_wckey(void *db_conn, uint32_t uid, 
-				     acct_wckey_cond_t *wckey_cond)
+extern List acct_storage_g_get_wckeys(void *db_conn, uint32_t uid, 
+				      acct_wckey_cond_t *wckey_cond)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
-	return (*(g_acct_storage_context->ops.get_wckey))(db_conn, uid,
-							  wckey_cond);
+	return (*(g_acct_storage_context->ops.get_wckeys))(db_conn, uid,
+							   wckey_cond);
 }
 
 extern List acct_storage_g_get_txn(void *db_conn,  uint32_t uid, 
@@ -5789,13 +5797,13 @@ extern List acct_storage_g_get_txn(void *db_conn,  uint32_t uid,
 }
 
 extern int acct_storage_g_get_usage(void *db_conn,  uint32_t uid,
-				    void *acct_assoc,
+				    void *in, int type,
 				    time_t start, time_t end)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
 	return (*(g_acct_storage_context->ops.get_usage))
-		(db_conn, uid, acct_assoc, start, end);
+		(db_conn, uid, in, type, start, end);
 }
 
 extern int acct_storage_g_roll_usage(void *db_conn, 
@@ -5843,13 +5851,13 @@ extern int clusteracct_storage_g_cluster_procs(void *db_conn,
 
 
 extern int clusteracct_storage_g_get_usage(
-	void *db_conn, uint32_t uid, void *cluster_rec,
+	void *db_conn, uint32_t uid, void *cluster_rec, int type,
 	time_t start, time_t end)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
 	return (*(g_acct_storage_context->ops.c_get_usage))
-		(db_conn, uid, cluster_rec, start, end);
+		(db_conn, uid, cluster_rec, type, start, end);
 }
 
 extern int clusteracct_storage_g_register_ctld(

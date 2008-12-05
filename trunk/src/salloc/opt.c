@@ -1070,9 +1070,6 @@ static bool _opt_verify(void)
 	if (opt.mincpus < opt.cpus_per_task)
 		opt.mincpus = opt.cpus_per_task;
 
-	if ((opt.job_name == NULL) && (command_argc > 0))
-		opt.job_name = base_name(command_argv[0]);
-
 	if ((opt.euid != (uid_t) -1) && (opt.euid != opt.uid)) 
 		opt.uid = opt.euid;
 
@@ -1081,6 +1078,9 @@ static bool _opt_verify(void)
 
 	if ((opt.no_shell == false) && (command_argc == 0))
 		_salloc_default_command (&command_argc, &command_argv);
+
+	if ((opt.job_name == NULL) && (command_argc > 0))
+		opt.job_name = base_name(command_argv[0]);
 
 	/* check for realistic arguments */
 	if (opt.nprocs <= 0) {

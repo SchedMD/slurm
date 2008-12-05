@@ -131,6 +131,8 @@ int main(int argc, char *argv[])
 	if (xsignal_block(dbd_sigarray) < 0)
 		error("Unable to block signals");
 
+	db_conn = acct_storage_g_get_connection(false, 0, false);
+	
 	/* Create attached thread for signal handling */
 	slurm_attr_init(&thread_attr);
 	if (pthread_create(&signal_handler_thread, &thread_attr,
@@ -138,10 +140,15 @@ int main(int argc, char *argv[])
 		fatal("pthread_create %m");
 	slurm_attr_destroy(&thread_attr);
 
-	db_conn = acct_storage_g_get_connection(false, 0, false);
-	
 	memset(&assoc_init_arg, 0, sizeof(assoc_init_args_t));
-	assoc_init_arg.cache_level = ASSOC_MGR_CACHE_USER;
+
+	/* If we are tacking wckey we need to cache associations and
+	   wckeys if we aren't only cache the users */
+	if(slurmdbd_conf->track_wckey)
+		assoc_init_arg.cache_level = ASSOC_MGR_CACHE_ASSOC |
+			ASSOC_MGR_CACHE_USER | ASSOC_MGR_CACHE_WCKEY;
+	else
+		assoc_init_arg.cache_level = ASSOC_MGR_CACHE_USER;
 
 	if(assoc_mgr_init(db_conn, &assoc_init_arg) == SLURM_ERROR) {
 		error("Problem getting cache of data");
@@ -149,27 +156,35 @@ int main(int argc, char *argv[])
 		goto end_it;
 	}
 
-	/* Create attached thread to process incoming RPCs */
-	slurm_attr_init(&thread_attr);
-	if (pthread_create(&rpc_handler_thread, &thread_attr, rpc_mgr, NULL))
-		fatal("pthread_create error %m");
-	slurm_attr_destroy(&thread_attr);
+	if(!shutdown_time) {
+		/* Create attached thread to process incoming RPCs */
+		slurm_attr_init(&thread_attr);
+		if (pthread_create(&rpc_handler_thread, &thread_attr, 
+				   rpc_mgr, NULL))
+			fatal("pthread_create error %m");
+		slurm_attr_destroy(&thread_attr);
+	}
 
-	/* Create attached thread to do usage rollup */
-	slurm_attr_init(&thread_attr);
-	if (pthread_create(&rollup_handler_thread, &thread_attr,
-			   _rollup_handler, db_conn))
-		fatal("pthread_create error %m");
-	slurm_attr_destroy(&thread_attr);
+	if(!shutdown_time) {
+		/* Create attached thread to do usage rollup */
+		slurm_attr_init(&thread_attr);
+		if (pthread_create(&rollup_handler_thread, &thread_attr,
+				   _rollup_handler, db_conn))
+			fatal("pthread_create error %m");
+		slurm_attr_destroy(&thread_attr);
+	}
 
 	/* Daemon is fully operational here */
 
 	/* Daemon termination handled here */
-	pthread_join(rollup_handler_thread, NULL);
+	if(rollup_handler_thread)
+		pthread_join(rollup_handler_thread, NULL);
 
-	pthread_join(rpc_handler_thread, NULL);
+	if(rpc_handler_thread)
+		pthread_join(rpc_handler_thread, NULL);
 
-	pthread_join(signal_handler_thread, NULL);
+	if(signal_handler_thread)
+		pthread_join(signal_handler_thread, NULL);
 
 end_it:
 	acct_storage_g_close_connection(&db_conn);
@@ -355,7 +370,8 @@ static void _rollup_handler_cancel()
 	if(running_rollup)
 		debug("Waiting for rollup thread to finish.");
 	slurm_mutex_lock(&rollup_lock);
-	pthread_cancel(rollup_handler_thread);
+	if(rollup_handler_thread)
+		pthread_cancel(rollup_handler_thread);
 	slurm_mutex_unlock(&rollup_lock);	
 }
 

@@ -568,15 +568,17 @@ static void _show_it (int argc, char *argv[])
 	} else if (strncasecmp (argv[0], "Transactions", 
 				MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_list_txn((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "User", MAX(command_len, 1)) == 0) {
+	} else if (strncasecmp (argv[0], "Users", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_list_user((argc - 1), &argv[1]);
+	} else if (strncasecmp (argv[0], "WCKeys", MAX(command_len, 1)) == 0) {
+		error_code = sacctmgr_list_wckey((argc - 1), &argv[1]);
 	} else {
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in list command\n");
 		fprintf(stderr, "Input line must include ");
 		fprintf(stderr, "\"Account\", \"Association\", ");
 		fprintf(stderr, "\"Cluster\", \"QOS\", \"Transaction\", ");
-		fprintf(stderr, "or \"User\"\n");
+		fprintf(stderr, "\"User\", or \"WCKey\"\n");
 	} 
 	
 	if (error_code == SLURM_ERROR) {

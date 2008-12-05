@@ -136,22 +136,125 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 					   uint32_t uid, 
 					   List association_list);
 
+extern int acct_storage_p_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid, 
+				     List wckey_list);
+
 extern List acct_storage_p_get_associations(
 	mysql_conn_t *mysql_conn, uid_t uid, 
 	acct_association_cond_t *assoc_cond);
 
 extern int acct_storage_p_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
-				    acct_association_rec_t *acct_assoc,
+				    void *in, slurmdbd_msg_type_t type,
 				    time_t start, time_t end);
 
 extern int clusteracct_storage_p_get_usage(
 	mysql_conn_t *mysql_conn, uid_t uid,
-	acct_cluster_rec_t *cluster_rec, time_t start, time_t end);
+	acct_cluster_rec_t *cluster_rec,  slurmdbd_msg_type_t type,
+	time_t start, time_t end);
 
 extern List acct_storage_p_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid, 
 					List acct_list,
 					acct_user_cond_t *user_cond);
 
+
+static int _set_usage_information(char **usage_table, slurmdbd_msg_type_t type,
+				  time_t *usage_start, time_t *usage_end)
+{
+	time_t start = (*usage_start), end = (*usage_end);
+	time_t my_time = time(NULL);
+	struct tm start_tm;
+	struct tm end_tm;
+	char *my_usage_table = (*usage_table);
+
+	/* Default is going to be the last day */
+	if(!end) {
+		if(!localtime_r(&my_time, &end_tm)) {
+			error("Couldn't get localtime from end %d",
+			      my_time);
+			return SLURM_ERROR;
+		}
+		end_tm.tm_hour = 0;
+		end = mktime(&end_tm);		
+	} else {
+		if(!localtime_r(&end, &end_tm)) {
+			error("Couldn't get localtime from user end %d",
+			      my_time);
+			return SLURM_ERROR;
+		}
+	}
+	end_tm.tm_sec = 0;
+	end_tm.tm_min = 0;
+	end_tm.tm_isdst = -1;
+	end = mktime(&end_tm);		
+
+	if(!start) {
+		if(!localtime_r(&my_time, &start_tm)) {
+			error("Couldn't get localtime from start %d",
+			      my_time);
+			return SLURM_ERROR;
+		}
+		start_tm.tm_hour = 0;
+		start_tm.tm_mday--;
+		start = mktime(&start_tm);		
+	} else {
+		if(!localtime_r(&start, &start_tm)) {
+			error("Couldn't get localtime from user start %d",
+			      my_time);
+			return SLURM_ERROR;
+		}
+	}
+	start_tm.tm_sec = 0;
+	start_tm.tm_min = 0;
+	start_tm.tm_isdst = -1;
+	start = mktime(&start_tm);		
+
+	if(end-start < 3600) {
+		end = start + 3600;
+		if(!localtime_r(&end, &end_tm)) {
+			error("2 Couldn't get localtime from user end %d",
+			      my_time);
+			return SLURM_ERROR;
+		}
+	}
+	/* check to see if we are off day boundaries or on month
+	 * boundaries other wise use the day table.
+	 */
+	if(start_tm.tm_hour || end_tm.tm_hour || (end-start < 86400)) {
+		switch (type) {
+		case DBD_GET_ASSOC_USAGE:
+			my_usage_table = assoc_hour_table;
+			break;
+		case DBD_GET_WCKEY_USAGE:
+			my_usage_table = wckey_hour_table;
+			break;
+		case DBD_GET_CLUSTER_USAGE:
+			my_usage_table = cluster_hour_table;
+			break;
+		default:
+			break;
+		}
+	} else if(start_tm.tm_mday == 0 && end_tm.tm_mday == 0 
+		  && (end-start > 86400)) {
+		switch (type) {
+		case DBD_GET_ASSOC_USAGE:
+			my_usage_table = assoc_month_table;
+			break;
+		case DBD_GET_WCKEY_USAGE:
+			my_usage_table = wckey_month_table;
+			break;
+		case DBD_GET_CLUSTER_USAGE:
+			my_usage_table = cluster_month_table;
+			break;
+		default:
+			break;
+		}
+	}
+
+	(*usage_start) = start;
+	(*usage_end) = end;
+	(*usage_table) = my_usage_table;
+	return SLURM_SUCCESS;
+}
 
 /* here to add \\ to all \" in a string */
 static char *_fix_double_quotes(char *str)
@@ -944,6 +1047,83 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		list_iterator_destroy(itr);
 		xstrcat(*extra, ")");
 	}
+	return set;
+}
+
+/* when doing a select on this all the select should have a prefix of
+ * t1. */
+static int _setup_wckey_cond_limits(acct_wckey_cond_t *wckey_cond,
+				    char **extra)
+{
+	int set = 0;
+	ListIterator itr = NULL;
+	char *object = NULL;
+	char *prefix = "t1";
+	if(!wckey_cond)
+		return 0;
+
+	if(wckey_cond->with_deleted) 
+		xstrfmtcat(*extra, " where (%s.deleted=0 || %s.deleted=1)",
+			prefix, prefix);
+	else 
+		xstrfmtcat(*extra, " where %s.deleted=0", prefix);
+
+	if(wckey_cond->name_list && list_count(wckey_cond->name_list)) {
+		set = 0;
+		xstrcat(*extra, " && (");
+		itr = list_iterator_create(wckey_cond->name_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "%s.name=\"%s\"", prefix, object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+
+	if(wckey_cond->cluster_list && list_count(wckey_cond->cluster_list)) {
+		set = 0;
+		xstrcat(*extra, " && (");
+		itr = list_iterator_create(wckey_cond->cluster_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "%s.cluster=\"%s\"", prefix, object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+
+	if(wckey_cond->id_list && list_count(wckey_cond->id_list)) {
+		set = 0;
+		xstrcat(*extra, " && (");
+		itr = list_iterator_create(wckey_cond->id_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "%s.id=%s", prefix, object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+	
+	if(wckey_cond->user_list && list_count(wckey_cond->user_list)) {
+		set = 0;
+		xstrcat(*extra, " && (");
+		itr = list_iterator_create(wckey_cond->user_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "%s.user=\"%s\"", prefix, object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+
 	return set;
 }
 
@@ -2193,9 +2373,10 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "jobid", "mediumint unsigned not null" },
 		{ "associd", "mediumint unsigned not null" },
 		{ "wckey", "tinytext not null default ''" },
+		{ "wckeyid", "mediumint unsigned not null" },
 		{ "uid", "smallint unsigned not null" },
 		{ "gid", "smallint unsigned not null" },
-		{ "cluster", "tinytext" },
+		{ "cluster", "tinytext not null" },
 		{ "partition", "tinytext not null" },
 		{ "blockid", "tinytext" },
 		{ "account", "tinytext" },
@@ -2309,7 +2490,19 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "deleted", "tinyint default 0" },
 		{ "name", "tinytext not null" },
 		{ "default_acct", "tinytext not null" },
+		{ "default_wckey", "tinytext not null default ''" },
 		{ "admin_level", "smallint default 1 not null" },
+		{ NULL, NULL}		
+	};
+
+	storage_field_t wckey_table_fields[] = {
+		{ "creation_time", "int unsigned not null" },
+		{ "mod_time", "int unsigned default 0 not null" },
+		{ "deleted", "tinyint default 0" },
+		{ "id", "int not null auto_increment" },
+		{ "name", "tinytext not null default ''" },
+		{ "cluster", "tinytext not null" },
+		{ "user", "tinytext not null" },
 		{ NULL, NULL}		
 	};
 
@@ -2317,7 +2510,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "creation_time", "int unsigned not null" },
 		{ "mod_time", "int unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0" },
-		{ "wckey", "tinytext not null" },
+		{ "id", "int not null" },
 		{ "period_start", "int unsigned not null" },
 		{ "alloc_cpu_secs", "bigint default 0" },
 		{ NULL, NULL}		
@@ -2499,21 +2692,28 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 				 ", primary key (name(20)))") == SLURM_ERROR)
 		return SLURM_ERROR;
 
+	if(mysql_db_create_table(db_conn, wckey_table, wckey_table_fields,
+				 ", primary key (id), "
+				 " unique index (name(20), user(20), "
+				 "cluster(20)))")
+	   == SLURM_ERROR)
+		return SLURM_ERROR;
+
 	if(mysql_db_create_table(db_conn, wckey_day_table,
 				 wckey_usage_table_fields,
-				 ", primary key (wckey(50), period_start))")
+				 ", primary key (id, period_start))")
 	   == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	if(mysql_db_create_table(db_conn, wckey_hour_table,
 				 wckey_usage_table_fields,
-				 ", primary key (wckey(50), period_start))")
+				 ", primary key (id, period_start))")
 	   == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	if(mysql_db_create_table(db_conn, wckey_month_table,
 				 wckey_usage_table_fields,
-				 ", primary key (wckey(50), period_start))") 
+				 ", primary key (id, period_start))") 
 	   == SLURM_ERROR)
 		return SLURM_ERROR;
 
@@ -2568,6 +2768,14 @@ extern int init ( void )
 		return SLURM_SUCCESS;
 
 	first = 0;
+
+	if(!slurmdbd_conf) {
+		char *cluster_name = NULL;
+		if (!(cluster_name = slurm_get_cluster_name()))
+			fatal("%s requires ClusterName in slurm.conf",
+			      plugin_name);
+		xfree(cluster_name);
+	}
 
 #ifdef HAVE_MYSQL
 	mysql_db_info = _mysql_acct_create_db_info();
@@ -2786,9 +2994,7 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 			case ACCT_ADD_WCKEY:
 			case ACCT_MODIFY_WCKEY:
 			case ACCT_REMOVE_WCKEY:
-				/* FIX ME: this needs to do something
-				 * probably */
-				//rc = assoc_mgr_update_local_wckey(object);
+				rc = assoc_mgr_update_local_wckeys(object);
 				break;
 			case ACCT_UPDATE_NOTSET:
 			default:
@@ -2846,6 +3052,13 @@ extern int acct_storage_p_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 			xstrfmtcat(vals, ", %u", object->admin_level);
 			xstrfmtcat(extra, ", admin_level=%u", 
 				   object->admin_level); 		
+		}
+
+		if(object->default_wckey) {
+			xstrcat(cols, ", default_wckey");
+			xstrfmtcat(vals, ", %u", object->default_wckey);
+			xstrfmtcat(extra, ", default_wckey=\"%s\"", 
+				   object->default_wckey);
 		}
 
 		query = xstrdup_printf(
@@ -3867,10 +4080,116 @@ extern int acct_storage_p_add_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 #endif
 }
 
-extern int acct_storage_p_add_wckey(mysql_conn_t *mysql_conn, uint32_t uid, 
-				    List wckey_list)
+extern int acct_storage_p_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid, 
+				     List wckey_list)
 {
-	return SLURM_SUCCESS;
+#ifdef HAVE_MYSQL
+	ListIterator itr = NULL;
+	int rc = SLURM_SUCCESS;
+	acct_wckey_rec_t *object = NULL;
+	char *cols = NULL, *extra = NULL, *vals = NULL, *query = NULL,
+		*tmp_extra = NULL;
+	time_t now = time(NULL);
+	char *user_name = NULL;
+	int affect_rows = 0;
+	int added = 0;
+
+	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
+		return SLURM_ERROR;
+
+	user_name = uid_to_string((uid_t) uid);
+	itr = list_iterator_create(wckey_list);
+	while((object = list_next(itr))) {
+		if(!object->cluster || !object->user) {
+			error("We need a wckey name, cluster, "
+			      "and user to add.");
+			rc = SLURM_ERROR;
+			continue;
+		}
+		xstrcat(cols, "creation_time, mod_time, cluster, user");
+		xstrfmtcat(vals, "%d, %d, \"%s\", \"%s\"", 
+			   now, now, object->cluster, object->user); 
+		xstrfmtcat(extra, ", mod_time=%d, cluster=\"%s\", user=\"%s\"", 
+			   now, object->cluster, object->user); 
+
+		if(object->name) {
+			xstrcat(cols, ", name");
+			xstrfmtcat(vals, ", \"%s\"", object->name); 
+			xstrfmtcat(extra, ", name=\"%s\"", object->name); 
+		}
+
+		xstrfmtcat(query, 
+			   "insert into %s (%s) values (%s) "
+			   "on duplicate key update deleted=0, "
+			   "id=LAST_INSERT_ID(id)%s;",
+			   wckey_table, cols, vals, extra);
+
+		debug3("%d(%d) query\n%s",
+		       mysql_conn->conn, __LINE__, query);
+		object->id = mysql_insert_ret_id(mysql_conn->db_conn, query);
+		xfree(query);
+		if(!object->id) {
+			error("Couldn't add wckey %s", object->name);
+			added=0;
+			xfree(cols);
+			xfree(extra);
+			xfree(vals);
+			break;
+		}
+
+		affect_rows = _last_affected_rows(mysql_conn->db_conn);
+
+		if(!affect_rows) {
+			debug2("nothing changed %d", affect_rows);
+			xfree(cols);
+			xfree(extra);
+			xfree(vals);
+			continue;
+		}
+
+		/* we always have a ', ' as the first 2 chars */
+		tmp_extra = _fix_double_quotes(extra+2);
+
+		xstrfmtcat(query,
+			   "insert into %s "
+			   "(timestamp, action, name, actor, info) "
+			   "values (%d, %u, '%d', \"%s\", \"%s\");",
+			   txn_table,
+			   now, DBD_ADD_WCKEYS, object->id, user_name,
+			   tmp_extra);
+
+		xfree(tmp_extra);
+		xfree(cols);
+		xfree(extra);
+		xfree(vals);
+		debug4("query\n%s",query);
+		rc = mysql_db_query(mysql_conn->db_conn, query);
+		xfree(query);
+		if(rc != SLURM_SUCCESS) {
+			error("Couldn't add txn");
+		} else {
+			if(_addto_update_list(mysql_conn->update_list, 
+					      ACCT_ADD_WCKEY,
+					      object) == SLURM_SUCCESS) 
+				list_remove(itr);
+			added++;
+		}
+		
+	}
+	list_iterator_destroy(itr);
+	xfree(user_name);
+
+	if(!added) {
+		if(mysql_conn->rollback) {
+			mysql_db_rollback(mysql_conn->db_conn);
+		}
+		list_flush(mysql_conn->update_list);
+	}
+
+	return rc;
+#else
+	return SLURM_ERROR;
+#endif
 }
 
 extern List acct_storage_p_modify_users(mysql_conn_t *mysql_conn, uint32_t uid, 
@@ -3927,12 +4246,29 @@ extern List acct_storage_p_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrcat(extra, ")");
 	}
 	
+	if(user_cond->def_wckey_list && list_count(user_cond->def_wckey_list)) {
+		set = 0;
+		xstrcat(extra, " && (");
+		itr = list_iterator_create(user_cond->def_wckey_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "default_wckey=\"%s\"", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+	
 	if(user_cond->admin_level != ACCT_ADMIN_NOTSET) {
 		xstrfmtcat(extra, " && admin_level=%u", user_cond->admin_level);
 	}
 
 	if(user->default_acct)
 		xstrfmtcat(vals, ", default_acct=\"%s\"", user->default_acct);
+
+	if(user->default_wckey)
+		xstrfmtcat(vals, ", default_wckey=\"%s\"", user->default_wckey);
 
 	if(user->admin_level != ACCT_ADMIN_NOTSET)
 		xstrfmtcat(vals, ", admin_level=%u", user->admin_level);
@@ -3967,6 +4303,7 @@ extern List acct_storage_p_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		user_rec = xmalloc(sizeof(acct_user_rec_t));
 		user_rec->name = xstrdup(object);
 		user_rec->default_acct = xstrdup(user->default_acct);
+		user_rec->default_wckey = xstrdup(user->default_wckey);
 		user_rec->admin_level = user->admin_level;
 		_addto_update_list(mysql_conn->update_list, ACCT_MODIFY_USER,
 				   user_rec);
@@ -5118,9 +5455,10 @@ extern List acct_storage_p_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 #endif
 }
 
-extern List acct_storage_p_modify_wckey(mysql_conn_t *mysql_conn, uint32_t uid, 
-					acct_wckey_cond_t *wckey_cond,
-					acct_wckey_rec_t *wckey)
+extern List acct_storage_p_modify_wckeys(mysql_conn_t *mysql_conn,
+					 uint32_t uid, 
+					 acct_wckey_cond_t *wckey_cond,
+					 acct_wckey_rec_t *wckey)
 {
 	return NULL;
 }
@@ -5177,6 +5515,20 @@ extern List acct_storage_p_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 			if(set) 
 				xstrcat(extra, " || ");
 			xstrfmtcat(extra, "default_acct=\"%s\"", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+	
+	if(user_cond->def_wckey_list && list_count(user_cond->def_wckey_list)) {
+		set = 0;
+		xstrcat(extra, " && (");
+		itr = list_iterator_create(user_cond->def_wckey_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "default_wckey=\"%s\"", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -6110,8 +6462,9 @@ extern List acct_storage_p_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 #endif
 }
 
-extern List acct_storage_p_remove_wckey(mysql_conn_t *mysql_conn, uint32_t uid, 
-				      acct_wckey_cond_t *wckey_cond)
+extern List acct_storage_p_remove_wckeys(mysql_conn_t *mysql_conn,
+					 uint32_t uid, 
+					 acct_wckey_cond_t *wckey_cond)
 {
 	return NULL;
 }
@@ -6137,11 +6490,13 @@ extern List acct_storage_p_get_users(mysql_conn_t *mysql_conn, uid_t uid,
 	char *user_req_inx[] = {
 		"name",
 		"default_acct",
+		"default_wckey",
 		"admin_level"
 	};
 	enum {
 		USER_REQ_NAME,
 		USER_REQ_DA,
+		USER_REQ_DW,
 		USER_REQ_AL,
 		USER_REQ_COUNT
 	};
@@ -6218,6 +6573,20 @@ extern List acct_storage_p_get_users(mysql_conn_t *mysql_conn, uid_t uid,
 		xstrcat(extra, ")");
 	}
 	
+	if(user_cond->def_wckey_list && list_count(user_cond->def_wckey_list)) {
+		set = 0;
+		xstrcat(extra, " && (");
+		itr = list_iterator_create(user_cond->def_wckey_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "default_wckey=\"%s\"", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+	
 	if(user_cond->admin_level != ACCT_ADMIN_NOTSET) {
 		xstrfmtcat(extra, " && admin_level=%u",
 			   user_cond->admin_level);
@@ -6267,6 +6636,8 @@ empty:
 
 		user->name =  xstrdup(row[USER_REQ_NAME]);
 		user->default_acct = xstrdup(row[USER_REQ_DA]);
+		if(row[USER_REQ_DW] && row[USER_REQ_DW][0])
+			user->default_wckey = xstrdup(row[USER_REQ_DW]);
 		user->admin_level = atoi(row[USER_REQ_AL]);
 		
 		/* user id will be set on the client since this could be on a
@@ -6688,6 +7059,7 @@ empty:
 		if(cluster_cond && cluster_cond->with_usage) {
 			clusteracct_storage_p_get_usage(
 				mysql_conn, uid, cluster,
+				DBD_GOT_CLUSTER_USAGE,
 				cluster_cond->usage_start,
 				cluster_cond->usage_end);
 		}
@@ -7014,6 +7386,7 @@ empty:
 		/* get the usage if requested */
 		if(with_usage) {
 			acct_storage_p_get_usage(mysql_conn, uid, assoc,
+						 DBD_GET_ASSOC_USAGE,
 						 assoc_cond->usage_start,
 						 assoc_cond->usage_end);
 		}
@@ -7485,10 +7858,136 @@ empty:
 #endif
 }
 
-extern List acct_storage_p_get_wckey(mysql_conn_t *mysql_conn, uid_t uid,
-				     acct_wckey_cond_t *wckey_cond)
+extern List acct_storage_p_get_wckeys(mysql_conn_t *mysql_conn, uid_t uid,
+				      acct_wckey_cond_t *wckey_cond)
 {
+#ifdef HAVE_MYSQL
+	//DEF_TIMERS;
+	char *query = NULL;	
+	char *extra = NULL;	
+	char *tmp = NULL;	
+	List wckey_list = NULL;
+	int set = 0;
+	int i=0, is_admin=1;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	uint16_t private_data = 0;
+	acct_user_rec_t user;
+
+	/* needed if we don't have an wckey_cond */
+	uint16_t with_usage = 0;
+
+	/* if this changes you will need to edit the corresponding enum */
+	char *wckey_req_inx[] = {
+		"id",
+		"name",
+		"user",
+		"cluster",
+	};
+
+	enum {
+		WCKEY_REQ_ID,
+		WCKEY_REQ_NAME,
+		WCKEY_REQ_USER,
+		WCKEY_REQ_CLUSTER,
+		WCKEY_REQ_COUNT
+	};
+
+	if(!wckey_cond) {
+		xstrcat(extra, " where deleted=0");
+		goto empty;
+	}
+
+	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
+		return NULL;
+
+	memset(&user, 0, sizeof(acct_user_rec_t));
+	user.uid = uid;
+
+	private_data = slurm_get_private_data();
+	if (private_data & PRIVATE_DATA_USERS) {
+		/* This only works when running though the slurmdbd.
+		 * THERE IS NO AUTHENTICATION WHEN RUNNNING OUT OF THE
+		 * SLURMDBD!
+		 */
+		if(slurmdbd_conf) {
+			is_admin = 0;
+			/* we have to check the authentication here in the
+			 * plugin since we don't know what accounts are being
+			 * referenced until after the query.  Here we will
+			 * set if they are an operator or greater and then
+			 * check it below after the query.
+			 */
+			if((uid == slurmdbd_conf->slurm_user_id || uid == 0)
+			   || assoc_mgr_get_admin_level(mysql_conn, uid) 
+			   >= ACCT_ADMIN_OPERATOR) 
+				is_admin = 1;	
+			else {
+				assoc_mgr_fill_in_user(mysql_conn, &user, 1);
+			}
+		}
+	}
+
+	set = _setup_wckey_cond_limits(wckey_cond, &extra);
+
+	with_usage = wckey_cond->with_usage;
+
+empty:
+	xfree(tmp);
+	xstrfmtcat(tmp, "t1.%s", wckey_req_inx[i]);
+	for(i=1; i<WCKEY_REQ_COUNT; i++) {
+		xstrfmtcat(tmp, ", t1.%s", wckey_req_inx[i]);
+	}
+	
+	/* this is here to make sure we are looking at only this user
+	 * if this flag is set.  We also include any accounts they may be
+	 * coordinator of.
+	 */
+	if(!is_admin && (private_data & PRIVATE_DATA_USERS)) 
+		xstrfmtcat(extra, " && t1.user='%s'", user.name);
+		
+	//START_TIMER;
+	query = xstrdup_printf("select distinct %s from %s as t1%s "
+			       "order by name, cluster, user;", 
+			       tmp, wckey_table, extra);
+	xfree(tmp);
+	xfree(extra);
+	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+	if(!(result = mysql_db_query_ret(
+		     mysql_conn->db_conn, query, 0))) {
+		xfree(query);
+		return NULL;
+	}
+	xfree(query);
+
+	wckey_list = list_create(destroy_acct_wckey_rec);
+	while((row = mysql_fetch_row(result))) {
+		acct_wckey_rec_t *wckey = xmalloc(sizeof(acct_wckey_rec_t));
+		list_append(wckey_list, wckey);
+		
+		wckey->id = atoi(row[WCKEY_REQ_ID]);
+		wckey->user = xstrdup(row[WCKEY_REQ_USER]);
+
+		if(row[WCKEY_REQ_NAME] && row[WCKEY_REQ_NAME][0])
+			wckey->name = xstrdup(row[WCKEY_REQ_NAME]);
+
+		wckey->cluster = xstrdup(row[WCKEY_REQ_CLUSTER]);
+
+		/* get the usage if requested */
+		if(with_usage) {
+			acct_storage_p_get_usage(mysql_conn, uid, wckey,
+						 DBD_GET_WCKEY_USAGE,
+						 wckey_cond->usage_start,
+						 wckey_cond->usage_end);
+		}		
+	}
+	mysql_free_result(result);
+
+	//END_TIMER2("get_wckeys");
+	return wckey_list;
+#else
 	return NULL;
+#endif
 }
 
 extern List acct_storage_p_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
@@ -7871,7 +8370,7 @@ empty:
 }
 
 extern int acct_storage_p_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
-				    acct_association_rec_t *acct_assoc,
+				    void *in, slurmdbd_msg_type_t type,
 				    time_t start, time_t end)
 {
 #ifdef HAVE_MYSQL
@@ -7880,29 +8379,50 @@ extern int acct_storage_p_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	char *tmp = NULL;
-	char *my_usage_table = assoc_day_table;
-	time_t my_time = time(NULL);
-	struct tm start_tm;
-	struct tm end_tm;
+	char *my_usage_table = NULL;
+	acct_association_rec_t *acct_assoc = in;
+	acct_wckey_rec_t *acct_wckey = in;
 	char *query = NULL;
+	char *username = NULL;
 	uint16_t private_data = 0;
 	acct_user_rec_t user;
+	List *my_list;
+	uint32_t id = NO_VAL;
 
-	char *assoc_req_inx[] = {
+	char *usage_req_inx[] = {
 		"t1.id",
 		"t1.period_start",
 		"t1.alloc_cpu_secs"
 	};
 	
 	enum {
-		ASSOC_ID,
-		ASSOC_START,
-		ASSOC_ACPU,
-		ASSOC_COUNT
+		USAGE_ID,
+		USAGE_START,
+		USAGE_ACPU,
+		USAGE_COUNT
 	};
 
-	if(!acct_assoc->id) {
-		error("We need a assoc id to set data for");
+	switch (type) {
+	case DBD_GET_ASSOC_USAGE:
+		id = acct_assoc->id;
+		username = acct_assoc->user;
+		my_list = &acct_assoc->accounting_list;
+		my_usage_table = assoc_day_table;
+		break;
+	case DBD_GET_WCKEY_USAGE:
+		id = acct_wckey->id;
+		username = acct_wckey->user;
+		my_list = &acct_wckey->accounting_list;
+		my_usage_table = wckey_day_table;
+		break;
+	default:
+		error("Unknown usage type %d", type);
+		return SLURM_ERROR;
+		break;
+	}
+
+	if(!id) {
+		error("We need an id to set data for");
 		return SLURM_ERROR;
 	}
 
@@ -7939,10 +8459,13 @@ extern int acct_storage_p_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 				ListIterator itr = NULL;
 				acct_coord_rec_t *coord = NULL;
 
-				if(acct_assoc->user && 
+				if(username && 
 				   !strcmp(acct_assoc->user, user.name)) 
 					goto is_user;
-				
+
+				if(type != DBD_GET_ASSOC_USAGE)
+					goto bad_user;
+
 				if(!user.coord_accts) {
 					debug4("This user isn't a coord.");
 					goto bad_user;
@@ -7973,80 +8496,41 @@ extern int acct_storage_p_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 	}
 is_user:
 
-	/* Default is going to be the last day */
-	if(!end) {
-		if(!localtime_r(&my_time, &end_tm)) {
-			error("Couldn't get localtime from end %d",
-			      my_time);
-			return SLURM_ERROR;
-		}
-		end_tm.tm_hour = 0;
-		end = mktime(&end_tm);		
-	} else {
-		if(!localtime_r(&end, &end_tm)) {
-			error("Couldn't get localtime from user end %d",
-			      my_time);
-			return SLURM_ERROR;
-		}
+	if(_set_usage_information(&my_usage_table, type, &start, &end)
+	   != SLURM_SUCCESS) {
+		return SLURM_ERROR;
 	}
-	end_tm.tm_sec = 0;
-	end_tm.tm_min = 0;
-	end_tm.tm_isdst = -1;
-	end = mktime(&end_tm);		
 
-	if(!start) {
-		if(!localtime_r(&my_time, &start_tm)) {
-			error("Couldn't get localtime from start %d",
-			      my_time);
-			return SLURM_ERROR;
-		}
-		start_tm.tm_hour = 0;
-		start_tm.tm_mday--;
-		start = mktime(&start_tm);		
-	} else {
-		if(!localtime_r(&start, &start_tm)) {
-			error("Couldn't get localtime from user start %d",
-			      my_time);
-			return SLURM_ERROR;
-		}
-	}
-	start_tm.tm_sec = 0;
-	start_tm.tm_min = 0;
-	start_tm.tm_isdst = -1;
-	start = mktime(&start_tm);		
-
-	if(end-start < 3600) {
-		end = start + 3600;
-		if(!localtime_r(&end, &end_tm)) {
-			error("2 Couldn't get localtime from user end %d",
-			      my_time);
-			return SLURM_ERROR;
-		}
-	}
-	/* check to see if we are off day boundaries or on month
-	 * boundaries other wise use the day table.
-	 */
-	if(start_tm.tm_hour || end_tm.tm_hour || (end-start < 86400)) 
-		my_usage_table = assoc_hour_table;
-	else if(start_tm.tm_mday == 0 && end_tm.tm_mday == 0 
-		&& (end-start > 86400))
-		my_usage_table = assoc_month_table;
-		
 	xfree(tmp);
 	i=0;
-	xstrfmtcat(tmp, "%s", assoc_req_inx[i]);
-	for(i=1; i<ASSOC_COUNT; i++) {
-		xstrfmtcat(tmp, ", %s", assoc_req_inx[i]);
+	xstrfmtcat(tmp, "%s", usage_req_inx[i]);
+	for(i=1; i<USAGE_COUNT; i++) {
+		xstrfmtcat(tmp, ", %s", usage_req_inx[i]);
+	}
+	switch (type) {
+	case DBD_GET_ASSOC_USAGE:
+		query = xstrdup_printf(
+			"select %s from %s as t1, %s as t2, %s as t3 "
+			"where (t1.period_start < %d && t1.period_start >= %d) "
+			"&& t1.id=t2.id && t3.id=%d && "
+			"t2.lft between t3.lft and t3.rgt "
+			"order by t1.id, period_start;",
+			tmp, my_usage_table, assoc_table, assoc_table,
+			end, start, id);
+		break;
+	case DBD_GET_WCKEY_USAGE:
+		query = xstrdup_printf(
+			"select %s from %s as t1 "
+			"where (period_start < %d && period_start >= %d) "
+			"&& id=%d order by id, period_start;",
+			tmp, my_usage_table, end, start, id);
+		break;
+	default:
+		error("Unknown usage type %d", type);
+		return SLURM_ERROR;
+		break;
 	}
 
-	query = xstrdup_printf(
-		"select %s from %s as t1, %s as t2, %s as t3 "
-		"where (t1.period_start < %d && t1.period_start >= %d) "
-		"&& t1.id=t2.id && t3.id=%u && "
-		"t2.lft between t3.lft and t3.rgt "
-		"order by t1.id, period_start;",
-		tmp, my_usage_table, assoc_table, assoc_table, end, start,
-		acct_assoc->id);
 	xfree(tmp);
 	debug4("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
@@ -8056,17 +8540,16 @@ is_user:
 	}
 	xfree(query);
 
-	if(!acct_assoc->accounting_list)
-		acct_assoc->accounting_list =
-			list_create(destroy_acct_accounting_rec);
+	if(!(*my_list))
+		(*my_list) = list_create(destroy_acct_accounting_rec);
 
 	while((row = mysql_fetch_row(result))) {
 		acct_accounting_rec_t *accounting_rec =
 			xmalloc(sizeof(acct_accounting_rec_t));
-		accounting_rec->assoc_id = atoi(row[ASSOC_ID]);
-		accounting_rec->period_start = atoi(row[ASSOC_START]);
-		accounting_rec->alloc_secs = atoll(row[ASSOC_ACPU]);
-		list_append(acct_assoc->accounting_list, accounting_rec);
+		accounting_rec->id = atoi(row[USAGE_ID]);
+		accounting_rec->period_start = atoi(row[USAGE_START]);
+		accounting_rec->alloc_secs = atoll(row[USAGE_ACPU]);
+		list_append((*my_list), accounting_rec);
 	}
 	mysql_free_result(result);
 	
@@ -8122,6 +8605,8 @@ extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn,
 				       tmp, last_ran_table);
 		xfree(tmp);
 		
+		debug4("%d(%d) query\n%s", mysql_conn->conn, 
+		       __LINE__, query);
 		if(!(result = mysql_db_query_ret(
 			     mysql_conn->db_conn, query, 0))) {
 			xfree(query);
@@ -8540,7 +9025,8 @@ end_it:
 
 extern int clusteracct_storage_p_get_usage(
 	mysql_conn_t *mysql_conn, uid_t uid,
-	acct_cluster_rec_t *cluster_rec, time_t start, time_t end)
+	acct_cluster_rec_t *cluster_rec, slurmdbd_msg_type_t type,
+	time_t start, time_t end)
 {
 #ifdef HAVE_MYSQL
 	int rc = SLURM_SUCCESS;
@@ -8549,9 +9035,6 @@ extern int clusteracct_storage_p_get_usage(
 	MYSQL_ROW row;
 	char *tmp = NULL;
 	char *my_usage_table = cluster_day_table;
-	time_t my_time = time(NULL);
-	struct tm start_tm;
-	struct tm end_tm;
 	char *query = NULL;
 	char *cluster_req_inx[] = {
 		"alloc_cpu_secs",
@@ -8579,64 +9062,10 @@ extern int clusteracct_storage_p_get_usage(
 		return SLURM_ERROR;
 	}
 
-	/* Default is going to be the last day */
-	if(!end) {
-		if(!localtime_r(&my_time, &end_tm)) {
-			error("Couldn't get localtime from end %d",
-			      my_time);
-			return SLURM_ERROR;
-		}
-		end_tm.tm_hour = 0;
-		end = mktime(&end_tm);		
-	} else {
-		if(!localtime_r(&end, &end_tm)) {
-			error("Couldn't get localtime from user end %d",
-			      my_time);
-			return SLURM_ERROR;
-		}
+	if(_set_usage_information(&my_usage_table, type, &start, &end)
+	   != SLURM_SUCCESS) {
+		return SLURM_ERROR;
 	}
-	end_tm.tm_sec = 0;
-	end_tm.tm_min = 0;
-	end_tm.tm_isdst = -1;
-	end = mktime(&end_tm);		
-
-	if(!start) {
-		if(!localtime_r(&my_time, &start_tm)) {
-			error("Couldn't get localtime from start %d",
-			      my_time);
-			return SLURM_ERROR;
-		}
-		start_tm.tm_hour = 0;
-		start_tm.tm_mday--;
-		start = mktime(&start_tm);		
-	} else {
-		if(!localtime_r(&start, &start_tm)) {
-			error("Couldn't get localtime from user start %d",
-			      my_time);
-			return SLURM_ERROR;
-		}
-	}
-	start_tm.tm_sec = 0;
-	start_tm.tm_min = 0;
-	start_tm.tm_isdst = -1;
-	start = mktime(&start_tm);		
-
-	if(end-start < 3600) {
-		end = start + 3600;
-		if(!localtime_r(&end, &end_tm)) {
-			error("2 Couldn't get localtime from user end %d",
-			      my_time);
-			return SLURM_ERROR;
-		}
-	}
-	/* check to see if we are off day boundaries or on month
-	 * boundaries other wise use the day table.
-	 */
-	if(start_tm.tm_hour || end_tm.tm_hour || (end-start < 86400)) 
-		my_usage_table = cluster_hour_table;
-	else if(start_tm.tm_mday == 0 && end_tm.tm_mday == 0 
-		&& (end-start > 86400))
-		my_usage_table = cluster_month_table;
 
 	xfree(tmp);
 	i=0;
@@ -8699,6 +9128,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 	char *wckey = NULL;
 	int reinit = 0;
 	time_t check_time = job_ptr->start_time;
+	uint16_t track_wckey = slurm_get_track_wckey();
 
 	if (!job_ptr->details || !job_ptr->details->submit_time) {
 		error("jobacct_storage_p_job_start: "
@@ -8735,8 +9165,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 		jname = xstrdup(job_ptr->name);
 		/* then grep for " since that is the delimiter for
 		   the wckey */
-		temp = strchr(jname, '\"');
-		if(temp) {
+		if((temp = strchr(jname, '\"'))) {
 			/* if we have a wckey set the " to NULL to
 			 * end the jname */
 			temp[0] = '\0';
@@ -8859,6 +9288,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 				rc = SLURM_ERROR;
 		}
 	} else {
+		uint32_t wckeyid = 0;
 		query = xstrdup_printf("update %s set nodelist=\"%s\", ", 
 				       job_table, nodes);
 
@@ -8869,14 +9299,74 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 				   job_ptr->partition);
 		if(block_id)
 			xstrfmtcat(query, "blockid=\"%s\", ", block_id);
+
 		if(wckey) 
 			xstrfmtcat(query, "wckey=\"%s\", ", wckey);
+			
+		/* Here we are looking for the wckeyid if it doesn't
+		 * exist we will create one.  We don't need to check
+		 * if it is good or not.  Right now this is the only
+		 * place things are created. We do this only on a job
+		 * start, not on a job submit since we don't want to
+		 * slow down getting the db_index back to the
+		 * controller.
+		 */
+		
+		if(track_wckey) {
+			acct_wckey_rec_t wckey_rec;
 
+			memset(&wckey_rec, 0, sizeof(acct_wckey_rec_t));
+			wckey_rec.name = wckey;
+			wckey_rec.uid = job_ptr->user_id;
+			wckey_rec.cluster = cluster_name;
+			if(assoc_mgr_fill_in_wckey(mysql_conn, &wckey_rec,
+						   1, NULL) != SLURM_SUCCESS) {
+				List wckey_list = NULL;
+				acct_wckey_rec_t *wckey_ptr = NULL;
+				acct_association_rec_t assoc_rec;
+
+				memset(&assoc_rec, 0, 
+				       sizeof(acct_association_rec_t));
+				/* We have to get the user name from
+				   the association just in case we
+				   don't have uid's constant across
+				   the system. */
+				assoc_rec.id = job_ptr->assoc_id;
+				if(assoc_mgr_fill_in_assoc(
+					   mysql_conn, &assoc_rec, 1, NULL)
+				   != SLURM_SUCCESS)
+					goto no_wckeyid;
+
+				wckey_list = list_create(
+					destroy_acct_wckey_rec);
+
+				wckey_ptr = xmalloc(sizeof(acct_wckey_rec_t));
+				wckey_ptr->name = xstrdup(wckey);
+				wckey_ptr->user = xstrdup(assoc_rec.user);
+				wckey_ptr->cluster = xstrdup(cluster_name);
+				list_append(wckey_list, wckey_ptr);
+				/* we have already checked to make
+				sure this was the slurm user before
+				calling this */
+				if(acct_storage_p_add_wckeys(
+					   mysql_conn, 
+					   slurm_get_slurm_user_id(),
+					   wckey_list)
+				   == SLURM_SUCCESS)
+					/* If that worked lets get it */
+					assoc_mgr_fill_in_wckey(
+						mysql_conn, &wckey_rec,
+						1, NULL);
+				list_destroy(wckey_list);
+			}
+			wckeyid = wckey_rec.id;
+		}
+	no_wckeyid:
 		xstrfmtcat(query, "start=%d, name=\"%s\", state=%u, "
-			   "alloc_cpus=%u, associd=%d where id=%d",
+			   "alloc_cpus=%u, associd=%d, wckeyid=%d where id=%d",
 			   (int)job_ptr->start_time,
 			   jname, job_ptr->job_state & (~JOB_COMPLETING),
-			   job_ptr->total_procs, job_ptr->assoc_id,
+			   job_ptr->total_procs, job_ptr->assoc_id, wckeyid,
 			   job_ptr->db_index);
 		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
