@@ -6450,7 +6450,7 @@ empty:
 		return NULL;
 	}
 
-	query = xstrdup_printf("select id, name from %s %s;",
+	query = xstrdup_printf("select t1.id, t1.name from %s as t1%s;",
 			       wckey_table, extra);
 	xfree(extra);
 	if(!(result = mysql_db_query_ret(
