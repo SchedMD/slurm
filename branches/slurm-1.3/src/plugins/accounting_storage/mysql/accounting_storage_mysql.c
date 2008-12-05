@@ -157,7 +157,7 @@ extern List acct_storage_p_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 					acct_user_cond_t *user_cond);
 
 
-static int _set_usage_information(char **usage_table, 
+static int _set_usage_information(char **usage_table, slurmdbd_msg_type_t type,
 				  time_t *usage_start, time_t *usage_end)
 {
 	time_t start = (*usage_start), end = (*usage_end);
@@ -219,11 +219,36 @@ static int _set_usage_information(char **usage_table,
 	/* check to see if we are off day boundaries or on month
 	 * boundaries other wise use the day table.
 	 */
-	if(start_tm.tm_hour || end_tm.tm_hour || (end-start < 86400)) 
-		my_usage_table = cluster_hour_table;
-	else if(start_tm.tm_mday == 0 && end_tm.tm_mday == 0 
-		&& (end-start > 86400))
-		my_usage_table = cluster_month_table;
+	if(start_tm.tm_hour || end_tm.tm_hour || (end-start < 86400)) {
+		switch (type) {
+		case DBD_GET_ASSOC_USAGE:
+			my_usage_table = assoc_hour_table;
+			break;
+		case DBD_GET_WCKEY_USAGE:
+			my_usage_table = wckey_hour_table;
+			break;
+		case DBD_GET_CLUSTER_USAGE:
+			my_usage_table = cluster_hour_table;
+			break;
+		default:
+			break;
+		}
+	} else if(start_tm.tm_mday == 0 && end_tm.tm_mday == 0 
+		  && (end-start > 86400)) {
+		switch (type) {
+		case DBD_GET_ASSOC_USAGE:
+			my_usage_table = assoc_month_table;
+			break;
+		case DBD_GET_WCKEY_USAGE:
+			my_usage_table = wckey_month_table;
+			break;
+		case DBD_GET_CLUSTER_USAGE:
+			my_usage_table = cluster_month_table;
+			break;
+		default:
+			break;
+		}
+	}
 
 	(*usage_start) = start;
 	(*usage_end) = end;
@@ -7846,7 +7871,7 @@ empty:
 	 * coordinator of.
 	 */
 	if(!is_admin && (private_data & PRIVATE_DATA_USERS)) 
-		xstrfmtcat(extra, " && user='%s'", user.name);
+		xstrfmtcat(extra, " && t1.user='%s'", user.name);
 		
 	//START_TIMER;
 	query = xstrdup_printf("select distinct %s from %s as t1%s "
@@ -8281,7 +8306,7 @@ extern int acct_storage_p_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	char *tmp = NULL;
-	char *my_usage_table = assoc_day_table;
+	char *my_usage_table = NULL;
 	acct_association_rec_t *acct_assoc = in;
 	acct_wckey_rec_t *acct_wckey = in;
 	char *query = NULL;
@@ -8309,11 +8334,13 @@ extern int acct_storage_p_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 		id = acct_assoc->id;
 		username = acct_assoc->user;
 		my_list = &acct_assoc->accounting_list;
+		my_usage_table = assoc_day_table;
 		break;
 	case DBD_GET_WCKEY_USAGE:
 		id = acct_wckey->id;
 		username = acct_wckey->user;
 		my_list = &acct_wckey->accounting_list;
+		my_usage_table = wckey_day_table;
 		break;
 	default:
 		error("Unknown usage type %d", type);
@@ -8395,7 +8422,7 @@ extern int acct_storage_p_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 	}
 is_user:
 
-	if(_set_usage_information(&my_usage_table, &start, &end)
+	if(_set_usage_information(&my_usage_table, type, &start, &end)
 	   != SLURM_SUCCESS) {
 		return SLURM_ERROR;
 	}
@@ -8419,7 +8446,7 @@ is_user:
 		break;
 	case DBD_GET_WCKEY_USAGE:
 		query = xstrdup_printf(
-			"select %s from %s "
+			"select %s from %s as t1 "
 			"where (period_start < %d && period_start >= %d) "
 			"&& id=%d order by id, period_start;",
 			tmp, my_usage_table, end, start, id);
@@ -8961,7 +8988,7 @@ extern int clusteracct_storage_p_get_usage(
 		return SLURM_ERROR;
 	}
 
-	if(_set_usage_information(&my_usage_table, &start, &end)
+	if(_set_usage_information(&my_usage_table, type, &start, &end)
 	   != SLURM_SUCCESS) {
 		return SLURM_ERROR;
 	}
