@@ -100,7 +100,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 		} else if(!end
 			  || !strncasecmp (argv[i], "Names", 
 					   MAX(command_len, 1))
-			  || !strncasecmp (argv[i], "Accouts",
+			  || !strncasecmp (argv[i], "Accounts",
 					   MAX(command_len, 1))) {
 			if(!assoc_cond->acct_list) {
 				assoc_cond->acct_list = 
