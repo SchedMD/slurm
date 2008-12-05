@@ -196,8 +196,8 @@ end_it:
 			slurmdbd_conf->pid_file);
 	}
 
-	//assoc_mgr_fini(NULL);
-	//slurm_acct_storage_fini();
+	assoc_mgr_fini(NULL);
+	slurm_acct_storage_fini();
 	slurm_auth_fini();
 	log_fini();
 	free_slurmdbd_conf();
