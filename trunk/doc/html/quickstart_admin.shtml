@@ -341,8 +341,11 @@ These numbers indicate the boundaries of a rectangular prism
 (e.g. &quot;bgl[000x144,400x544]&quot;).
 See our <a href="bluegene.html">Blue Gene User and Administrator Guide</a>
 for more details.
-Presently the numeric range must be the last characters in the
-node name (e.g. &quot;unit[0-31]rack1&quot; is invalid).</p>
+Up to two numeric ranges can be included in the expression
+(e.g. &quot;rack[0-63]_blade[0-41]&quot;).
+If one or more numeric expressions are included, one of them
+must be at the end of the name (e.g. &quot;unit[0-31]rack&quot; is invalid),
+but arbitrary names can always be used in a comma separated list.</p>
 
 <p>Node names can have up to three name specifications: 
 <b>NodeName</b> is the name used by all SLURM tools when referring to the node,
