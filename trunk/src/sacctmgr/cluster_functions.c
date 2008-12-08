@@ -907,35 +907,6 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 	int i, command_len = 0;
 	FILE *fd = NULL;
 
-	memset(&user_cond, 0, sizeof(acct_user_cond_t));
-	user_cond.with_coords = 1;
-
-	user_list = acct_storage_g_get_users(db_conn, my_uid, &user_cond);
-	/* make sure this person running is an admin */
-	user_name = uid_to_string(my_uid);
-	if(!(user = sacctmgr_find_user_from_list(user_list, user_name))) {
-		exit_code=1;
-		fprintf(stderr, " Your uid (%u) is not in the "
-			"accounting system, can't dump cluster.\n", my_uid);
-		xfree(user_name);
-		if(user_list)
-			list_destroy(user_list);
-		return SLURM_ERROR;
-		
-	} else {
-		if(my_uid != slurm_get_slurm_user_id() && my_uid != 0
-		    && user->admin_level < ACCT_ADMIN_SUPER_USER) {
-			exit_code=1;
-			fprintf(stderr, " Your user does not have sufficient "
-				"privileges to dump clusters.\n");
-			if(user_list)
-				list_destroy(user_list);
-			xfree(user_name);
-			return SLURM_ERROR;
-		}
-	}
-	xfree(user_name);
-
 	for (i=0; i<argc; i++) {
 		int end = parse_option_end(argv[i]);
 		int option = 0;
@@ -986,12 +957,47 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 		printf(" No filename given, using %s.\n", file_name);
 	}
 
+	memset(&user_cond, 0, sizeof(acct_user_cond_t));
+	user_cond.with_coords = 1;
+	user_cond.with_wckeys = 1;
+
 	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
 	assoc_cond.without_parent_limits = 1;
 	assoc_cond.with_raw_qos = 1;
 	assoc_cond.cluster_list = list_create(NULL);
 	list_append(assoc_cond.cluster_list, cluster_name);
+	/* this is needed for getting the correct wckeys */
+	user_cond.assoc_cond = &assoc_cond;
 
+	user_list = acct_storage_g_get_users(db_conn, my_uid, &user_cond);
+	/* make sure this person running is an admin */
+	user_name = uid_to_string(my_uid);
+	if(!(user = sacctmgr_find_user_from_list(user_list, user_name))) {
+		exit_code=1;
+		fprintf(stderr, " Your uid (%u) is not in the "
+			"accounting system, can't dump cluster.\n", my_uid);
+		xfree(user_name);
+		if(user_list)
+			list_destroy(user_list);
+		list_destroy(assoc_cond.cluster_list);
+		return SLURM_ERROR;
+		
+	} else {
+		if(my_uid != slurm_get_slurm_user_id() && my_uid != 0
+		    && user->admin_level < ACCT_ADMIN_SUPER_USER) {
+			exit_code=1;
+			fprintf(stderr, " Your user does not have sufficient "
+				"privileges to dump clusters.\n");
+			if(user_list)
+				list_destroy(user_list);
+			xfree(user_name);
+			list_destroy(assoc_cond.cluster_list);
+			return SLURM_ERROR;
+		}
+	}
+	xfree(user_name);
+
+	/* assoc_cond is set up above */
 	assoc_list = acct_storage_g_get_associations(db_conn, my_uid,
 						     &assoc_cond);
 
@@ -1013,7 +1019,6 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 	acct_hierarchical_rec_list = get_acct_hierarchical_rec_list(assoc_list);
 
 	acct_list = acct_storage_g_get_accounts(db_conn, my_uid, NULL);
-
 	
 	fd = fopen(file_name, "w");
 	/* Add header */
@@ -1066,7 +1071,7 @@ extern int sacctmgr_dump_cluster (int argc, char *argv[])
 
 	print_file_acct_hierarchical_rec_list(
 		fd, acct_hierarchical_rec_list, user_list, acct_list);
-
+	
 	xfree(cluster_name);
 	xfree(file_name);
 	list_destroy(acct_hierarchical_rec_list);
