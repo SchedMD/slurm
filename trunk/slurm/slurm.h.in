@@ -597,13 +597,15 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 /* End of Blue Gene specific values */
 
 	select_jobinfo_t select_jobinfo; /* opaque data type,
-			* SLURM internal use only */
+					  * SLURM internal use only */
+	char *wckey;            /* wckey for job */
 } job_desc_msg_t;
 
 typedef struct job_info {
 	char *account;		/* charge to specified account */
 	char    *alloc_node;	/* local node making resource alloc */
 	uint32_t alloc_sid;	/* local sid making resource alloc */
+	uint32_t assoc_id;	/* association id for job */
 	uint16_t batch_flag;	/* 1 if batch: queued job with script */
 	char *command;		/* command to be executed */
 	char *comment;		/* arbitrary comment (used by Moab scheduler) */
@@ -671,6 +673,7 @@ typedef struct job_info {
 	uint16_t max_cores;	/* maximum number of cores per cpu */
 	uint16_t min_threads;	/* minimum number of threads per core */
 	uint16_t max_threads;	/* maximum number of threads per core */
+	char *wckey;            /* wckey for job */
 } job_info_t;
 
 typedef struct job_info_msg {

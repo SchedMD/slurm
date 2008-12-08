@@ -315,6 +315,7 @@ void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 		xfree(msg->resp_host);
 		xfree(msg->script);
 		select_g_free_jobinfo(&msg->select_jobinfo);
+		xfree(msg->wckey);
 		xfree(msg->work_dir);
 		xfree(msg);
 	}
@@ -382,6 +383,7 @@ void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->req_node_inx);
 		select_g_free_jobinfo(&job->select_jobinfo);
 		xfree(job->state_desc);
+		xfree(job->wckey);
 		xfree(job->work_dir);
 	}
 }
