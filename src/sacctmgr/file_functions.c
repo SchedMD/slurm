@@ -44,6 +44,7 @@ typedef struct {
 	acct_admin_level_t admin;
 	List coord_list; /* char *list */
 	char *def_acct;
+	char *def_wckey;
 	char *desc;
 	uint32_t fairshare;
 
@@ -65,6 +66,7 @@ typedef struct {
 	char *org;
 	char *part;
 	List qos_list;
+	List wckey_list;
 } sacctmgr_file_opts_t;
 
 enum {
@@ -73,6 +75,7 @@ enum {
 	PRINT_CLUSTER,
 	PRINT_COORDS,
 	PRINT_DACCT,
+	PRINT_DWCKEY,
 	PRINT_DESC,
 	PRINT_FAIRSHARE,
 	PRINT_GRPCM,
@@ -95,7 +98,8 @@ enum {
 	PRINT_PID,
 	PRINT_PARENT,
 	PRINT_PART,
-	PRINT_USER
+	PRINT_USER,
+	PRINT_WCKEYS
 };
 
 typedef enum {
@@ -238,10 +242,13 @@ static void _destroy_sacctmgr_file_opts(void *object)
 		if(file_opts->coord_list)
 			list_destroy(file_opts->coord_list);
 		xfree(file_opts->def_acct);
+		xfree(file_opts->def_wckey);
 		xfree(file_opts->desc);
 		xfree(file_opts->name);
 		xfree(file_opts->org);
 		xfree(file_opts->part);
+		if(file_opts->wckey_list)
+			list_destroy(file_opts->wckey_list);
 		xfree(file_opts);		
 	}
 }
@@ -316,8 +323,15 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 					list_create(slurm_destroy_char);
 			slurm_addto_char_list(file_opts->coord_list, option);
 		} else if (!strncasecmp (sub, "DefaultAccount",
-					 MAX(command_len, 3))) {
+					 MAX(command_len, 8))) {
 			file_opts->def_acct = xstrdup(option);
+		} else if (!strncasecmp (sub, "DefaultWCKey",
+					 MAX(command_len, 8))) {
+			file_opts->def_wckey = xstrdup(option);
+			if(!file_opts->wckey_list)
+				file_opts->wckey_list =
+					list_create(slurm_destroy_char);
+			slurm_addto_char_list(file_opts->wckey_list, option);
 		} else if (!strncasecmp (sub, "Description",
 					 MAX(command_len, 3))) {
 			file_opts->desc = xstrdup(option);
@@ -479,6 +493,12 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 
 			addto_qos_char_list(file_opts->qos_list, qos_list,
 					    option, option2);
+		} else if (!strncasecmp (sub, "WCKeys",
+					 MAX(command_len, 2))) {
+			if(!file_opts->wckey_list)
+				file_opts->wckey_list =
+					list_create(slurm_destroy_char);
+			slurm_addto_char_list(file_opts->wckey_list, option);
 		} else {
 			exit_code=1;
 			fprintf(stderr, " Unknown option: %s\n", sub);
@@ -679,6 +699,12 @@ static List _set_up_print_fields(List format_list)
 			field->name = xstrdup("User");
 			field->len = 10;
 			field->print_routine = print_fields_str;
+		} else if(!strncasecmp("WCKeys", object,
+				       MAX(command_len, 2))) {
+			field->type = PRINT_WCKEYS;
+			field->name = xstrdup("WCKeys");
+			field->len = 20;
+			field->print_routine = print_fields_char_list;
 		} else {
 			exit_code=1;
 			fprintf(stderr, "Unknown field '%s'\n", object);
@@ -904,12 +930,12 @@ static int _mod_acct(sacctmgr_file_opts_t *file_opts,
 }
 
 static int _mod_user(sacctmgr_file_opts_t *file_opts,
-		     acct_user_rec_t *user, char *parent)
+		     acct_user_rec_t *user, char *cluster, char *parent)
 {
 	int rc;
 	int set = 0;
 	int changed = 0;
-	char *def_acct = NULL, *my_info = NULL;
+	char *def_acct = NULL, *def_wckey = NULL, *my_info = NULL;
 	acct_user_rec_t mod_user;
 	acct_user_cond_t user_cond;
 	List ret_list = NULL;
@@ -940,9 +966,23 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 			   def_acct);
 		mod_user.default_acct = def_acct;
 		changed = 1;
-	} else
-		xfree(def_acct);
+	}
 									
+	if(file_opts->def_wckey)
+		def_wckey = xstrdup(file_opts->def_wckey);
+
+	if(def_wckey && 
+	   (!user->default_wckey || strcmp(def_wckey, user->default_wckey))) {
+		xstrfmtcat(my_info, 
+			   "%-30.30s for %-7.7s %-10.10s %8s -> %s\n",
+			   " Changed Default WCKey", "User",
+			   user->name,
+			   user->default_wckey,
+			   def_wckey);
+		mod_user.default_wckey = def_wckey;
+		changed = 1;
+	}
+								
 	if(user->admin_level != ACCT_ADMIN_NOTSET
 	   && file_opts->admin != ACCT_ADMIN_NOTSET
 	   && user->admin_level != file_opts->admin) {
@@ -984,6 +1024,7 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 		xfree(my_info);
 	}
 	xfree(def_acct);
+	xfree(def_wckey);
 
 	if((!user->coord_accts || !list_count(user->coord_accts))
 		  && (file_opts->coord_list 
@@ -1061,6 +1102,82 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 		}
 		list_destroy(add_list);
 	}
+
+	if((!user->wckey_list || !list_count(user->wckey_list))
+		  && (file_opts->wckey_list 
+		      && list_count(file_opts->wckey_list))) {
+		ListIterator wckey_itr = NULL;
+		char *temp_char = NULL;
+		acct_wckey_rec_t *wckey = NULL;
+		int first = 1;
+
+		user->wckey_list = list_create(destroy_acct_wckey_rec);
+		wckey_itr = list_iterator_create(file_opts->wckey_list);
+		printf(" Adding WCKey(s) '");
+		while((temp_char = list_next(wckey_itr))) {
+			wckey = xmalloc(sizeof(acct_wckey_rec_t));
+			wckey->name = xstrdup(temp_char);
+			wckey->cluster = xstrdup(cluster);
+			wckey->user = xstrdup(user->name);
+			list_push(user->wckey_list, wckey);
+
+			if(first) {
+				printf(" %s", temp_char);
+				first = 0;
+			} else
+				printf(", %s", temp_char);
+		}
+		list_iterator_destroy(wckey_itr);
+		printf("' for user '%s'\n", user->name);
+		set = 1;
+		notice_thread_init();
+		rc = acct_storage_g_add_wckeys(db_conn, my_uid, 
+					       user->wckey_list);
+		notice_thread_fini();
+	} else if((user->wckey_list && list_count(user->wckey_list))
+		  && (file_opts->wckey_list 
+		      && list_count(file_opts->wckey_list))) {
+		ListIterator wckey_itr = NULL;
+		ListIterator char_itr = NULL;
+		char *temp_char = NULL;
+		acct_wckey_rec_t *wckey = NULL;
+		List add_list = list_create(destroy_acct_wckey_rec);
+
+		wckey_itr = list_iterator_create(user->wckey_list);
+		char_itr = list_iterator_create(file_opts->wckey_list);
+
+		while((temp_char = list_next(char_itr))) {
+			while((wckey = list_next(wckey_itr))) {
+				if(!strcmp(wckey->name, temp_char)) 
+					break;
+			}
+			if(!wckey) {
+				printf(" Adding WCKey '%s' to User '%s'\n",
+				       temp_char, user->name);
+				wckey = xmalloc(sizeof(acct_wckey_rec_t));
+				wckey->name = xstrdup(temp_char);
+				wckey->cluster = xstrdup(cluster);
+				wckey->user = xstrdup(user->name);
+					
+				list_append(add_list, wckey);
+			}
+			list_iterator_reset(wckey_itr);
+		}
+
+		list_iterator_destroy(char_itr);
+		list_iterator_destroy(wckey_itr);
+
+		if(list_count(add_list)) {
+			notice_thread_init();
+			rc = acct_storage_g_add_wckeys(db_conn, my_uid, 
+						       add_list);
+			notice_thread_fini();
+			set = 1;
+		}
+		list_transfer(user->wckey_list, add_list);
+		list_destroy(add_list);
+	}
+
 	list_destroy(assoc_cond.user_list);
 
 	return set;
@@ -1376,7 +1493,7 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 }
 
 static acct_user_rec_t *_set_user_up(sacctmgr_file_opts_t *file_opts,
-				     char *parent)
+				     char *cluster, char *parent)
 {
 	acct_user_rec_t *user = xmalloc(sizeof(acct_user_rec_t));
 
@@ -1387,6 +1504,11 @@ static acct_user_rec_t *_set_user_up(sacctmgr_file_opts_t *file_opts,
 		user->default_acct = xstrdup(file_opts->def_acct);
 	else
 		user->default_acct = xstrdup(parent);
+	
+	if(file_opts->def_wckey)
+		user->default_wckey = xstrdup(file_opts->def_wckey);
+	else
+		user->default_wckey = xstrdup("");
 	
 	user->admin_level = file_opts->admin;
 	
@@ -1418,6 +1540,26 @@ static acct_user_rec_t *_set_user_up(sacctmgr_file_opts_t *file_opts,
 			list_push(user->coord_accts, coord);
 		}
 		list_iterator_destroy(coord_itr);
+	}
+
+	if(file_opts->wckey_list) {
+		ListIterator wckey_itr = NULL;
+		char *temp_char = NULL;
+		acct_wckey_rec_t *wckey = NULL;
+		
+		user->wckey_list = list_create(destroy_acct_wckey_rec);
+		wckey_itr = list_iterator_create(file_opts->wckey_list);
+		while((temp_char = list_next(wckey_itr))) {
+			wckey = xmalloc(sizeof(acct_wckey_rec_t));
+			wckey->name = xstrdup(temp_char);
+			wckey->user = xstrdup(user->name);
+			wckey->cluster = xstrdup(cluster);
+			list_push(user->wckey_list, wckey);
+		}
+		list_iterator_destroy(wckey_itr);
+		notice_thread_init();
+		acct_storage_g_add_wckeys(db_conn, my_uid, user->wckey_list);
+		notice_thread_fini();
 	}
 	return user;
 }
@@ -1522,6 +1664,7 @@ static int _print_file_acct_hierarchical_rec_childern(FILE *fd,
 	char *line = NULL;
 	acct_user_rec_t *user_rec = NULL;
 	acct_account_rec_t *acct_rec = NULL;
+	uint16_t track_wckey = slurm_get_track_wckey();
 
 	itr = list_iterator_create(acct_hierarchical_rec_list);
 	while((acct_hierarchical_rec = list_next(itr))) {
@@ -1537,6 +1680,10 @@ static int _print_file_acct_hierarchical_rec_childern(FILE *fd,
 			if(user_rec) {
 				xstrfmtcat(line, ":DefaultAccount='%s'",
 					   user_rec->default_acct);
+				if(track_wckey)
+					xstrfmtcat(line, ":DefaultWCKey='%s'",
+						   user_rec->default_wckey);
+					
 				if(user_rec->admin_level > ACCT_ADMIN_NONE)
 					xstrfmtcat(line, ":AdminLevel='%s'",
 						   acct_admin_level_str(
@@ -1573,6 +1720,30 @@ static int _print_file_acct_hierarchical_rec_childern(FILE *fd,
 						xstrcat(line, "'");
 					list_iterator_destroy(itr2);
 				}
+
+				if(user_rec->wckey_list
+				   && list_count(user_rec->wckey_list)) {
+					ListIterator itr2 = NULL;
+					acct_wckey_rec_t *wckey = NULL;
+					int first_wckey = 1;
+					itr2 = list_iterator_create(
+						user_rec->wckey_list);
+					while((wckey = list_next(itr2))) {
+						if(first_wckey) {
+							xstrfmtcat(
+								line,
+								":WCKeys='%s",
+								wckey->name);
+							first_wckey = 0;
+						} else {
+							xstrfmtcat(line, ",%s",
+								   wckey->name);
+						}				
+					}
+					if(!first_wckey)
+						xstrcat(line, "'");
+					list_iterator_destroy(itr2);
+				}
 			}
 		} else {
 			acct_rec = sacctmgr_find_account_from_list(
@@ -1594,9 +1765,11 @@ static int _print_file_acct_hierarchical_rec_childern(FILE *fd,
 		if(fprintf(fd, "%s\n", line) < 0) {
 			exit_code=1;
 			fprintf(stderr, " Can't write to file");
+			xfree(line);
 			return SLURM_ERROR;
 		}
 		info("%s", line);
+		xfree(line);
 	}
 	list_iterator_destroy(itr);
 	print_file_acct_hierarchical_rec_list(fd, acct_hierarchical_rec_list,
@@ -1762,35 +1935,6 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 	/* reset the connection to get the most recent stuff */
 	acct_storage_g_commit(db_conn, 0);
 
-	memset(&user_cond, 0, sizeof(acct_user_cond_t));
-	user_cond.with_coords = 1;
-	curr_user_list = acct_storage_g_get_users(db_conn, my_uid, &user_cond);
-
-	/* make sure this person running is an admin */
-	user_name = uid_to_string(my_uid);
-	if(!(user = sacctmgr_find_user_from_list(curr_user_list, user_name))) {
-		exit_code=1;
-		fprintf(stderr, " Your uid (%u) is not in the "
-			"accounting system, can't load file.\n", my_uid);
-		if(curr_user_list)
-			list_destroy(curr_user_list);
-		xfree(user_name);
-		return;
-		
-	} else {
-		if(my_uid != slurm_get_slurm_user_id() && my_uid != 0
-		   && user->admin_level < ACCT_ADMIN_SUPER_USER) {
-			exit_code=1;
-			fprintf(stderr, " Your user does not have sufficient "
-				"privileges to load files.\n");
-			if(curr_user_list)
-				list_destroy(curr_user_list);
-			xfree(user_name);
-			return;
-		}
-	}
-	xfree(user_name);
-
 	for (i=0; i<argc; i++) {
 		int option = 0;
 		int end = parse_option_end(argv[i]);
@@ -1926,6 +2070,56 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 
 			if(!cluster_name_set)
 				cluster_name = xstrdup(file_opts->name);
+			
+			/* we have to do this here since this is the
+			   first place we have the cluster_name
+			*/
+			memset(&user_cond, 0, sizeof(acct_user_cond_t));
+			user_cond.with_coords = 1;
+			user_cond.with_wckeys = 1;
+		
+			memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
+			assoc_cond.cluster_list = list_create(NULL);
+			assoc_cond.with_raw_qos = 1;
+			assoc_cond.without_parent_limits = 1;
+			list_append(assoc_cond.cluster_list, cluster_name);
+			user_cond.assoc_cond = &assoc_cond;
+
+			curr_user_list = acct_storage_g_get_users(
+				db_conn, my_uid, &user_cond);
+			user_cond.assoc_cond = NULL;
+
+			/* make sure this person running is an admin */
+			user_name = uid_to_string(my_uid);
+			if(!(user = sacctmgr_find_user_from_list(
+				     curr_user_list, user_name))) {
+				exit_code=1;
+				fprintf(stderr, " Your uid (%u) is not in the "
+					"accounting system, can't load file.\n",
+					my_uid);
+				if(curr_user_list)
+					list_destroy(curr_user_list);
+				xfree(user_name);
+				return;
+				
+			} else {
+				if(my_uid != slurm_get_slurm_user_id() 
+				   && my_uid != 0
+				   && (user->admin_level 
+				       < ACCT_ADMIN_SUPER_USER)) {
+					exit_code=1;
+					fprintf(stderr, 
+						" Your user does not have "
+						"sufficient "
+						"privileges to load files.\n");
+					if(curr_user_list)
+						list_destroy(curr_user_list);
+					xfree(user_name);
+					return;
+				}
+			}
+			xfree(user_name);
+							
 			if(start_clean) {
 				acct_cluster_cond_t cluster_cond;
 				List ret_list = NULL;
@@ -1962,9 +2156,9 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 			curr_cluster_list = acct_storage_g_get_clusters(
 				db_conn, my_uid, NULL);
 
-			if(cluster_name)
+			if(cluster_name) 
 				info("For cluster %s", cluster_name);
-
+			
 			if(!(cluster = sacctmgr_find_cluster_from_list(
 				     curr_cluster_list, cluster_name))) {
 				List temp_assoc_list = list_create(NULL);
@@ -2005,11 +2199,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 				     
 			_destroy_sacctmgr_file_opts(file_opts);
 			
-			memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
-			assoc_cond.cluster_list = list_create(NULL);
-			assoc_cond.with_raw_qos = 1;
-			assoc_cond.without_parent_limits = 1;
-			list_append(assoc_cond.cluster_list, cluster_name);
+			/* assoc_cond if set up above */
 			curr_assoc_list = acct_storage_g_get_associations(
 				db_conn, my_uid, &assoc_cond);
 			list_destroy(assoc_cond.cluster_list);
@@ -2174,7 +2364,8 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 			   && !sacctmgr_find_user_from_list(
 				   user_list, file_opts->name)) {
 
-				user = _set_user_up(file_opts, parent);
+				user = _set_user_up(file_opts, cluster_name,
+						    parent);
 				list_append(user_list, user);
 				/* don't add anything to the
 				   curr_user_list */
@@ -2212,7 +2403,8 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 						sizeof(acct_user_rec_t));
 					list_append(mod_user_list, user2);
 					user2->name = xstrdup(file_opts->name);
-					if(_mod_user(file_opts, user, parent))
+					if(_mod_user(file_opts, user,
+						     cluster_name, parent))
 						set = 1;
 				} else {
 					debug2("already modified this user");
@@ -2232,7 +2424,8 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 						sizeof(acct_user_rec_t));
 					list_append(mod_user_list, user2);
 					user2->name = xstrdup(file_opts->name);
-					if(_mod_user(file_opts, user, parent))
+					if(_mod_user(file_opts, user,
+						     cluster_name, parent))
 						set = 1;
 				} else {
 					debug2("already modified this user");
@@ -2331,7 +2524,7 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 		printf("Users\n");
 
 		slurm_addto_char_list(format_list, 
-				      "Name,Default,QOS,Admin,Coord");
+				      "Name,DefaultA,DefaultW,QOS,Admin,Coord");
 
 		print_fields_list = _set_up_print_fields(format_list);
 		list_flush(format_list);
@@ -2358,9 +2551,18 @@ extern void load_sacctmgr_cfg_file (int argc, char *argv[])
 						field,
 						user->default_acct);
 					break;
+				case PRINT_DWCKEY:
+					field->print_routine(
+						field,
+						user->default_wckey);
+					break;
 				case PRINT_NAME:
 					field->print_routine(
 						field, user->name);
+					break;
+				case PRINT_WCKEYS:
+					field->print_routine(
+						field, user->wckey_list);
 					break;
 				default:
 					field->print_routine(

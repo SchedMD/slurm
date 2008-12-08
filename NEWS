@@ -111,6 +111,9 @@ documents those changes that are of interest to users and admins.
     together across clusters or within clusters that are not related.  Use 
     the --wckey option in srun, sbatch or salloc or set the SLURM_WCKEY env
     var to have this set. Use sreport with the wckey option to view reports.
+    THIS CHANGES THE RPC LEVEL IN THE SLURMDBD.  YOU MUST UPGRADE YOUR SLURMDBD
+    BEFORE YOU UPGRADE THE REST OF YOUR CLUSTERS.  THE NEW SLURMDBD WILL TALK 
+    TO OLDER VERSIONS OF SLURM FINE.
  -- Added configuration parameter BatchStartTimeout to control how long to 
     allow for a batch job prolog and environment loading (for Moab) to run.
     See "man slurm.conf" for details.

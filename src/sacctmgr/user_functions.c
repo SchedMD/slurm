@@ -644,7 +644,6 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 	char *default_acct = NULL;
 	char *default_wckey = NULL;
 	acct_association_cond_t *assoc_cond = NULL;
-	acct_association_cond_t query_assoc_cond;
 	acct_wckey_rec_t *wckey = NULL;
 	acct_wckey_cond_t *wckey_cond = NULL;
 	List qos_list = NULL;
@@ -880,32 +879,6 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 	}
 
 
-	if(!list_count(assoc_cond->acct_list)) {
-		destroy_acct_association_cond(assoc_cond);
-		exit_code=1;
-		fprintf(stderr, " Need name of acct to add user to.\n"); 
-		return SLURM_ERROR;
-	} else {
- 		acct_account_cond_t account_cond;
-
-		memset(&account_cond, 0, sizeof(acct_account_cond_t));
-		account_cond.assoc_cond = assoc_cond;
-
-		local_acct_list = acct_storage_g_get_accounts(
-			db_conn, my_uid, &account_cond);		
-	}	
-
-	if(!local_acct_list) {
-		exit_code=1;
-		fprintf(stderr, " Problem getting accounts from database.  "
-		       "Contact your admin.\n");
-		list_destroy(local_user_list);
-		destroy_acct_wckey_cond(wckey_cond);
-		destroy_acct_association_cond(assoc_cond);
-		return SLURM_ERROR;
-	}
-	
-	
 	if(!list_count(assoc_cond->cluster_list)) {
 		List cluster_list = NULL;
 		acct_cluster_rec_t *cluster_rec = NULL;
@@ -920,7 +893,8 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 			destroy_acct_wckey_cond(wckey_cond);
 			destroy_acct_association_cond(assoc_cond);
 			list_destroy(local_user_list);
-			list_destroy(local_acct_list);
+			if(local_acct_list)
+				list_destroy(local_acct_list);
 			return SLURM_ERROR;
 		}
 
@@ -939,14 +913,105 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 			destroy_acct_wckey_cond(wckey_cond);
 			destroy_acct_association_cond(assoc_cond);
 			list_destroy(local_user_list);
-			list_destroy(local_acct_list);
+			if(local_acct_list)
+				list_destroy(local_acct_list);
+			return SLURM_ERROR; 
+		}
+	} else {
+		List temp_list = NULL;
+		acct_cluster_cond_t cluster_cond;
+
+		memset(&cluster_cond, 0, sizeof(acct_cluster_cond_t));
+		cluster_cond.cluster_list = assoc_cond->cluster_list;
+
+		temp_list = acct_storage_g_get_clusters(db_conn, my_uid,
+							&cluster_cond);
+		
+		itr_c = list_iterator_create(assoc_cond->cluster_list);
+		itr = list_iterator_create(temp_list);
+		while((cluster = list_next(itr_c))) {
+			acct_cluster_rec_t *cluster_rec = NULL;
+
+			list_iterator_reset(itr);
+			while((cluster_rec = list_next(itr))) {
+				if(!strcasecmp(cluster_rec->name, cluster))
+					break;
+			}
+			if(!cluster_rec) {
+				exit_code=1;
+				fprintf(stderr, " This cluster '%s' "
+				       "doesn't exist.\n"
+				       "        Contact your admin "
+				       "to add it to accounting.\n",
+				       cluster);
+				list_delete_item(itr_c);
+			}
+		}
+		list_iterator_destroy(itr);
+		list_iterator_destroy(itr_c);
+		list_destroy(temp_list);
+
+		if(!list_count(assoc_cond->cluster_list)) {
+			destroy_acct_wckey_cond(wckey_cond);
+			destroy_acct_association_cond(assoc_cond);
+			list_destroy(local_user_list);
+			if(local_acct_list)
+				list_destroy(local_acct_list);
 			return SLURM_ERROR; 
 		}
 	}
 
-	if(!default_acct) 
-		default_acct = xstrdup(list_peek(assoc_cond->acct_list));
+	if(!list_count(assoc_cond->acct_list)) {
+		if(!list_count(wckey_cond->name_list)) {
+			destroy_acct_wckey_cond(wckey_cond);
+			destroy_acct_association_cond(assoc_cond);
+			exit_code=1;
+			fprintf(stderr, " Need name of acct to "
+				"add user to.\n"); 
+			return SLURM_ERROR;
+		}
+	} else {
+ 		acct_account_cond_t account_cond;
+		acct_association_cond_t query_assoc_cond;
 
+		memset(&account_cond, 0, sizeof(acct_account_cond_t));
+		account_cond.assoc_cond = assoc_cond;
+
+		local_acct_list = acct_storage_g_get_accounts(
+			db_conn, my_uid, &account_cond);		
+	
+		if(!local_acct_list) {
+			exit_code=1;
+			fprintf(stderr, " Problem getting accounts "
+				"from database.  Contact your admin.\n");
+			list_destroy(local_user_list);
+			destroy_acct_wckey_cond(wckey_cond);
+			destroy_acct_association_cond(assoc_cond);
+			return SLURM_ERROR;
+		}
+		
+		if(!default_acct) 
+			default_acct = 
+				xstrdup(list_peek(assoc_cond->acct_list));
+
+		memset(&query_assoc_cond, 0, sizeof(acct_association_cond_t));
+		query_assoc_cond.acct_list = assoc_cond->acct_list;
+		query_assoc_cond.cluster_list = assoc_cond->cluster_list;
+		local_assoc_list = acct_storage_g_get_associations(
+			db_conn, my_uid, &query_assoc_cond);
+		
+		if(!local_assoc_list) {
+			exit_code=1;
+			fprintf(stderr, " Problem getting associations "
+				"from database.  Contact your admin.\n");
+			list_destroy(local_user_list);
+			list_destroy(local_acct_list);
+			destroy_acct_wckey_cond(wckey_cond);
+			destroy_acct_association_cond(assoc_cond);
+			return SLURM_ERROR;
+		}
+	}	
+	
 	if(track_wckey) {
 		/* add a blank one there for default just in case it wasn't
 		 * there before. */
@@ -969,13 +1034,6 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 	assoc_list = list_create(destroy_acct_association_rec);
 	wckey_list = list_create(destroy_acct_wckey_rec);
 
-	memset(&query_assoc_cond, 0, sizeof(acct_association_cond_t));
-	query_assoc_cond.acct_list = assoc_cond->acct_list;
-	query_assoc_cond.cluster_list = assoc_cond->cluster_list;
-	local_assoc_list = acct_storage_g_get_associations(
-		db_conn, my_uid, &query_assoc_cond);
-	
-	
 	itr = list_iterator_create(assoc_cond->user_list);
 	while((name = list_next(itr))) {
 		user = NULL;
@@ -1216,8 +1274,10 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 no_default:
 	list_iterator_destroy(itr);
 	list_destroy(local_user_list);
-	list_destroy(local_acct_list);
-	list_destroy(local_assoc_list);
+	if(local_acct_list)
+		list_destroy(local_acct_list);
+	if(local_assoc_list)
+		list_destroy(local_assoc_list);
 	if(local_wckey_list)
 		list_destroy(local_wckey_list);
 	destroy_acct_wckey_cond(wckey_cond);
@@ -1227,9 +1287,9 @@ no_default:
 	   && !list_count(wckey_list)) {
 		printf(" Nothing new added.\n");
 		goto end_it;
-	} else if(!assoc_str) {
+	} else if(!assoc_str && !wckey_str) {
 		exit_code=1;
-		fprintf(stderr, " No associations created.\n");
+		fprintf(stderr, " No associations or wckeys created.\n");
 		goto end_it;
 	}
 
@@ -1238,7 +1298,7 @@ no_default:
 		printf(" Settings =\n");
 		printf("  Default Account = %s\n", default_acct);
 		if(track_wckey)
-		printf("  Default WCKey = %s\n", default_wckey);
+			printf("  Default WCKey = %s\n", default_wckey);
 			
 		if(admin_level != ACCT_ADMIN_NOTSET)
 			printf("  Admin Level     = %s\n", 

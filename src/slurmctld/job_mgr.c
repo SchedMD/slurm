@@ -2914,6 +2914,20 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 
 	if (job_desc->name)
 		job_ptr->name = xstrdup(job_desc->name);
+
+        if(slurm_get_track_wckey() && !strchr(job_ptr->name, '\"')) {
+		/* get the default wckey for this user since none was
+		 * given */
+		acct_user_rec_t user_rec;
+		memset(&user_rec, 0, sizeof(acct_user_rec_t));
+		user_rec.uid = job_desc->user_id;
+		assoc_mgr_fill_in_user(acct_db_conn, &user_rec,
+				       accounting_enforce, NULL);
+		if(user_rec.default_wckey)
+			xstrfmtcat(job_ptr->name, "\"%s",
+				   user_rec.default_wckey);
+	}
+
 	job_ptr->user_id    = (uid_t) job_desc->user_id;
 	job_ptr->group_id   = (gid_t) job_desc->group_id;
 	job_ptr->job_state  = JOB_PENDING;
@@ -4475,12 +4489,12 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			
 			xfree(job_ptr->name);		
 			if(jname) {
-				xstrfmtcat(job_ptr->name,"%s", jname);
+				xstrfmtcat(job_ptr->name, "%s", jname);
 				xfree(jname);
 			} 
 			
 			if(wckey) {
-				xstrfmtcat(job_ptr->name,"\"%s", wckey);
+				xstrfmtcat(job_ptr->name, "\"%s", wckey);
 				xfree(wckey);			
 			}
 

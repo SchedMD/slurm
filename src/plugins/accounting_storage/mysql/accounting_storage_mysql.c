@@ -143,6 +143,9 @@ extern List acct_storage_p_get_associations(
 	mysql_conn_t *mysql_conn, uid_t uid, 
 	acct_association_cond_t *assoc_cond);
 
+extern List acct_storage_p_get_wckeys(mysql_conn_t *mysql_conn, uid_t uid,
+				      acct_wckey_cond_t *wckey_cond);
+
 extern int acct_storage_p_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 				    void *in, slurmdbd_msg_type_t type,
 				    time_t start, time_t end);
@@ -6600,6 +6603,7 @@ extern List acct_storage_p_get_users(mysql_conn_t *mysql_conn, uid_t uid,
 	MYSQL_ROW row;
 	uint16_t private_data = 0;
 	acct_user_rec_t user;
+	acct_wckey_cond_t *wckey_cond = NULL;
 
 	/* if this changes you will need to edit the corresponding enum */
 	char *user_req_inx[] = {
@@ -6739,9 +6743,26 @@ empty:
 		   this list in the user->name so we don't
 		   free it here
 		*/
+		if(!user_cond->assoc_cond) 
+			user_cond->assoc_cond = xmalloc(
+				sizeof(acct_association_cond_t));
+		
 		if(user_cond->assoc_cond->user_list)
 			list_destroy(user_cond->assoc_cond->user_list);
 		user_cond->assoc_cond->user_list = list_create(NULL);
+	}
+
+	if(user_cond && user_cond->with_wckeys) {
+		/* We are going to be freeing the inners of
+		   this list in the user->name so we don't
+		   free it here
+		*/
+		wckey_cond = xmalloc(sizeof(acct_wckey_cond_t));
+		wckey_cond->user_list = list_create(NULL);
+
+		if(user_cond->assoc_cond && user_cond->assoc_cond->cluster_list)
+			wckey_cond->cluster_list =
+				user_cond->assoc_cond->cluster_list;
 	}
 
 	while((row = mysql_fetch_row(result))) {
@@ -6751,8 +6772,11 @@ empty:
 
 		user->name =  xstrdup(row[USER_REQ_NAME]);
 		user->default_acct = xstrdup(row[USER_REQ_DA]);
-		if(row[USER_REQ_DW] && row[USER_REQ_DW][0])
+		if(row[USER_REQ_DW])
 			user->default_wckey = xstrdup(row[USER_REQ_DW]);
+		else
+			user->default_wckey = xstrdup("");
+
 		user->admin_level = atoi(row[USER_REQ_AL]);
 		
 		/* user id will be set on the client since this could be on a
@@ -6765,19 +6789,16 @@ empty:
 /* 		else */
 /* 			user->uid = passwd_ptr->pw_uid; */
 
-		if(user_cond && user_cond->with_coords) {
+		if(user_cond && user_cond->with_coords) 
 			_get_user_coords(mysql_conn, user);
-		}
+		
 
-		if(user_cond && user_cond->with_assocs) {
-			if(!user_cond->assoc_cond) {
-				user_cond->assoc_cond = xmalloc(
-					sizeof(acct_association_cond_t));
-			}
-
+		if(user_cond && user_cond->with_assocs) 
 			list_append(user_cond->assoc_cond->user_list,
 				    user->name);
-		}
+		
+		if(user_cond && user_cond->with_wckeys) 
+			list_append(wckey_cond->user_list, user->name);
 	}
 	mysql_free_result(result);
 
@@ -6791,7 +6812,7 @@ empty:
 
 		if(!assoc_list) {
 			error("no associations");
-			return user_list;
+			goto get_wckeys;
 		}
 
 		itr = list_iterator_create(user_list);
@@ -6808,13 +6829,48 @@ empty:
 				list_remove(assoc_itr);
 			}
 			list_iterator_reset(assoc_itr);
-			if(!user->assoc_list)
-				list_remove(itr);
 		}
 		list_iterator_destroy(itr);
 		list_iterator_destroy(assoc_itr);
 
 		list_destroy(assoc_list);
+	}
+
+get_wckeys:
+	if(wckey_cond) {
+		ListIterator wckey_itr = NULL;
+		acct_user_rec_t *user = NULL;
+		acct_wckey_rec_t *wckey = NULL;
+		List wckey_list = acct_storage_p_get_wckeys(
+			mysql_conn, uid, wckey_cond);
+
+		wckey_cond->cluster_list = NULL;
+		destroy_acct_wckey_cond(wckey_cond);
+
+		if(!wckey_list) {
+			error("no wckeys");
+			return user_list;
+		}
+
+		itr = list_iterator_create(user_list);
+		wckey_itr = list_iterator_create(wckey_list);
+		while((user = list_next(itr))) {
+			while((wckey = list_next(wckey_itr))) {
+				if(strcmp(wckey->user, user->name)) 
+					continue;
+				
+				if(!user->wckey_list)
+					user->wckey_list = list_create(
+						destroy_acct_wckey_rec);
+				list_append(user->wckey_list, wckey);
+				list_remove(wckey_itr);
+			}
+			list_iterator_reset(wckey_itr);
+		}
+		list_iterator_destroy(itr);
+		list_iterator_destroy(wckey_itr);
+
+		list_destroy(wckey_list);
 	}
 
 	return user_list;
@@ -8085,8 +8141,11 @@ empty:
 		wckey->id = atoi(row[WCKEY_REQ_ID]);
 		wckey->user = xstrdup(row[WCKEY_REQ_USER]);
 
-		if(row[WCKEY_REQ_NAME] && row[WCKEY_REQ_NAME][0])
+		/* we want a blank wckey if the name is null */
+		if(row[WCKEY_REQ_NAME])
 			wckey->name = xstrdup(row[WCKEY_REQ_NAME]);
+		else
+			wckey->name = xstrdup("");
 
 		wckey->cluster = xstrdup(row[WCKEY_REQ_CLUSTER]);
 
@@ -9491,6 +9550,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 				mysql_free_result(result);
 				list_destroy(wckey_list);
 			}
+			//info("got wckeyid of %d", wckey_rec.id);
 			wckeyid = wckey_rec.id;
 		}
 	no_wckeyid:
