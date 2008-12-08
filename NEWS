@@ -22,6 +22,8 @@ documents those changes that are of interest to users and admins.
     one node.
  -- Add support for hostlist expressions containing up to two numeric 
     expressions (e.g. "rack[0-15]_blade[0-41]").
+ -- Fix bug in slurmd message forwarding which left file open in the case of
+    some communication failures.
 
 * Changes in SLURM 1.3.11
 =========================
