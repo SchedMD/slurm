@@ -8011,8 +8011,11 @@ empty:
 		wckey->id = atoi(row[WCKEY_REQ_ID]);
 		wckey->user = xstrdup(row[WCKEY_REQ_USER]);
 
-		if(row[WCKEY_REQ_NAME] && row[WCKEY_REQ_NAME][0])
+		/* we want a blank wckey if the name is null */
+		if(row[WCKEY_REQ_NAME])
 			wckey->name = xstrdup(row[WCKEY_REQ_NAME]);
+		else
+			wckey->name = xstrdup("");
 
 		wckey->cluster = xstrdup(row[WCKEY_REQ_CLUSTER]);
 
@@ -9420,6 +9423,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 				mysql_free_result(result);
 				list_destroy(wckey_list);
 			}
+			//info("got wckeyid of %d", wckey_rec.id);
 			wckeyid = wckey_rec.id;
 		}
 	no_wckeyid:
