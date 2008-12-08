@@ -1522,6 +1522,7 @@ static int _print_file_acct_hierarchical_rec_childern(FILE *fd,
 	char *line = NULL;
 	acct_user_rec_t *user_rec = NULL;
 	acct_account_rec_t *acct_rec = NULL;
+	uint16_t track_wckey = slurm_get_track_wckey();
 
 	itr = list_iterator_create(acct_hierarchical_rec_list);
 	while((acct_hierarchical_rec = list_next(itr))) {
@@ -1537,6 +1538,10 @@ static int _print_file_acct_hierarchical_rec_childern(FILE *fd,
 			if(user_rec) {
 				xstrfmtcat(line, ":DefaultAccount='%s'",
 					   user_rec->default_acct);
+				if(track_wckey)
+					xstrfmtcat(line, ":DefaultWCKey='%s'",
+						   user_rec->default_wckey);
+					
 				if(user_rec->admin_level > ACCT_ADMIN_NONE)
 					xstrfmtcat(line, ":AdminLevel='%s'",
 						   acct_admin_level_str(
@@ -1573,6 +1578,30 @@ static int _print_file_acct_hierarchical_rec_childern(FILE *fd,
 						xstrcat(line, "'");
 					list_iterator_destroy(itr2);
 				}
+
+				if(user_rec->wckey_list
+				   && list_count(user_rec->wckey_list)) {
+					ListIterator itr2 = NULL;
+					acct_wckey_rec_t *wckey = NULL;
+					int first_wckey = 1;
+					itr2 = list_iterator_create(
+						user_rec->wckey_list);
+					while((wckey = list_next(itr2))) {
+						if(first_wckey) {
+							xstrfmtcat(
+								line,
+								":WCKeys='%s",
+								wckey->name);
+							first_wckey = 0;
+						} else {
+							xstrfmtcat(line, ",%s",
+								   wckey->name);
+						}				
+					}
+					if(!first_wckey)
+						xstrcat(line, "'");
+					list_iterator_destroy(itr2);
+				}
 			}
 		} else {
 			acct_rec = sacctmgr_find_account_from_list(
@@ -1594,9 +1623,11 @@ static int _print_file_acct_hierarchical_rec_childern(FILE *fd,
 		if(fprintf(fd, "%s\n", line) < 0) {
 			exit_code=1;
 			fprintf(stderr, " Can't write to file");
+			xfree(line);
 			return SLURM_ERROR;
 		}
 		info("%s", line);
+		xfree(line);
 	}
 	list_iterator_destroy(itr);
 	print_file_acct_hierarchical_rec_list(fd, acct_hierarchical_rec_list,
