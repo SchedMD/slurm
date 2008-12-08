@@ -1678,7 +1678,7 @@ static int
 _push_range_list(hostlist_t hl, char *prefix, struct _range *range,
 		 int n)
 {
-	int i, j, k, nr;
+	int i, k, nr;
 	char *p, *q;
 	char new_prefix[1024], tmp_prefix[1024];
 
@@ -1687,6 +1687,7 @@ _push_range_list(hostlist_t hl, char *prefix, struct _range *range,
 	    ((q = strrchr(p, ']')) != NULL)) {
 		struct _range prefix_range[MAX_RANGES];
 		struct _range *saved_range = range, *pre_range = prefix_range;
+		unsigned long j, prefix_cnt = 0;
 		*p++ = '\0';
 		*q++ = '\0';
 		if (strrchr(tmp_prefix, '[') != NULL)
@@ -1695,9 +1696,16 @@ _push_range_list(hostlist_t hl, char *prefix, struct _range *range,
 		if (nr < 0)
 			return -1;	/* bad numeric expression */
 		for (i = 0; i < nr; i++) {
+			prefix_cnt += pre_range->hi - pre_range->lo + 1;
+			if (prefix_cnt > MAX_PREFIX_CNT) {
+				/* Prevent overflow of memory with user input
+				 * of something like "a[0-999999999].b[0-9]" */
+				return -1;
+			}
 			for (j = pre_range->lo; j <= pre_range->hi; j++) {
 				snprintf(new_prefix, sizeof(new_prefix),
-					 "%s%d%s", tmp_prefix, j, q);
+					 "%s%0*lu%s", tmp_prefix, 
+					 pre_range->width, j, q);
 				range = saved_range;
 				for (k = 0; k < n; k++) {
 					hostlist_push_hr(hl, new_prefix,
@@ -1748,17 +1756,14 @@ _hostlist_create_bracketed(const char *hostlist, char *sep, char *r_op)
 			*p++ = '\0';
 
 			if ((q = strchr(p, ']'))) {
-				if ((q[1] != ',') && (q[1] != '\0')) {
-					errno = EINVAL; /* Invalid suffix */
+				if ((q[1] != ',') && (q[1] != '\0'))
 					goto error;
-				}
 				*q = '\0';
 				nr = _parse_range_list(p, ranges, MAX_RANGES);
 				if (nr < 0) 
 					goto error;
 				if (_push_range_list(new, prefix, ranges, nr))
 					goto error;
-
                 
 			} else {
 				/* The hostname itself contains a '['
@@ -1775,7 +1780,7 @@ _hostlist_create_bracketed(const char *hostlist, char *sep, char *r_op)
 	return new;
 
   error:
-	err = errno;
+	err = errno = EINVAL;
 	hostlist_destroy(new);
 	free(orig);
 	seterrno_ret(err, NULL);
