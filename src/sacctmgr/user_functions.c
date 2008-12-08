@@ -917,6 +917,48 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 				list_destroy(local_acct_list);
 			return SLURM_ERROR; 
 		}
+	} else {
+		List temp_list = NULL;
+		acct_cluster_cond_t cluster_cond;
+
+		memset(&cluster_cond, 0, sizeof(acct_cluster_cond_t));
+		cluster_cond.cluster_list = assoc_cond->cluster_list;
+
+		temp_list = acct_storage_g_get_clusters(db_conn, my_uid,
+							&cluster_cond);
+		
+		itr_c = list_iterator_create(assoc_cond->cluster_list);
+		itr = list_iterator_create(temp_list);
+		while((cluster = list_next(itr_c))) {
+			acct_cluster_rec_t *cluster_rec = NULL;
+
+			list_iterator_reset(itr);
+			while((cluster_rec = list_next(itr))) {
+				if(!strcasecmp(cluster_rec->name, cluster))
+					break;
+			}
+			if(!cluster_rec) {
+				exit_code=1;
+				fprintf(stderr, " This cluster '%s' "
+				       "doesn't exist.\n"
+				       "        Contact your admin "
+				       "to add it to accounting.\n",
+				       cluster);
+				list_delete_item(itr_c);
+			}
+		}
+		list_iterator_destroy(itr);
+		list_iterator_destroy(itr_c);
+		list_destroy(temp_list);
+
+		if(!list_count(assoc_cond->cluster_list)) {
+			destroy_acct_wckey_cond(wckey_cond);
+			destroy_acct_association_cond(assoc_cond);
+			list_destroy(local_user_list);
+			if(local_acct_list)
+				list_destroy(local_acct_list);
+			return SLURM_ERROR; 
+		}
 	}
 
 	if(!list_count(assoc_cond->acct_list)) {
