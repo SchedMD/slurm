@@ -766,7 +766,7 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 			}					
 			assoc->user = user.name;
 			assoc->acct = user.default_acct;
-		} 
+		}		
 		
 		if(!assoc->cluster)
 			assoc->cluster = local_cluster_name;
@@ -953,7 +953,17 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, acct_wckey_rec_t *wckey,
 			}					
 			wckey->user = user.name;
 			wckey->name = user.default_wckey;
-		} 
+		} else if(wckey->uid == (uint32_t)NO_VAL) {
+			if(enforce) {
+				error("get_wckey_id: "
+				      "Not enough info 2 to "
+				      "get an wckey");
+				return SLURM_ERROR;
+			} else {
+				return SLURM_SUCCESS;
+			}
+		}
+			
 		
 		if(!wckey->cluster)
 			wckey->cluster = local_cluster_name;
@@ -1006,7 +1016,7 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, acct_wckey_rec_t *wckey,
 		else
 			return SLURM_SUCCESS;
 	}
-	debug3("found correct wckey");
+	debug3("found correct wckey %u", ret_wckey->id);
 	if (wckey_pptr)
 		*wckey_pptr = ret_wckey;
 
