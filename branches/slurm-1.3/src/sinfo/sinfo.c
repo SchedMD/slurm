@@ -414,10 +414,12 @@ static int _build_sinfo_data(List sinfo_list,
 						 + node_ptr->used_cpus);
 					if(node_ptr->threads == node_scaling)
 						norm = 1;
-					else
-						node_ptr->node_state =
+					else {
+						node_ptr->node_state &=
+							NODE_STATE_FLAGS;
+						node_ptr->node_state |=
 							NODE_STATE_IDLE;
-					
+					}
 					break;
 				case SINFO_BG_ERROR_STATE:
 					/* get the error node count */
@@ -431,7 +433,9 @@ static int _build_sinfo_data(List sinfo_list,
 					/* get the allocated node count */
 					if(!node_ptr->used_cpus) 
 						continue;
-					node_ptr->node_state =
+					node_ptr->node_state &=
+						NODE_STATE_FLAGS;
+					node_ptr->node_state |=
 						NODE_STATE_ALLOCATED;
 					
 					node_ptr->threads =
