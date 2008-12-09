@@ -197,10 +197,13 @@ static display_data_t options_data_part[] = {
 static void _update_nodes_for_bg(int node_scaling,
 				 node_info_msg_t *node_msg,
 				 bg_info_record_t *bg_info_record);
+/* ERROR_STATE must be last since that will affect the state of the rest of the
+   midplane.
+*/
 enum {
 	SVIEW_BG_IDLE_STATE,
-	SVIEW_BG_ERROR_STATE,
-	SVIEW_BG_ALLOC_STATE
+	SVIEW_BG_ALLOC_STATE,
+	SVIEW_BG_ERROR_STATE
 };
 #endif
 
@@ -1494,6 +1497,18 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 				int norm = 0;
 				switch(j) {
 				case SVIEW_BG_IDLE_STATE:
+					/* check to see if the node is
+					 * down if so just report the
+					 * whole thing is down and break
+					 * out.
+					 */
+					if((node_ptr->node_state 
+					    & NODE_STATE_BASE)
+					   == NODE_STATE_DOWN) {
+						norm = 1;
+						break;
+					}
+
 					/* get the idle node count if
 					 * we don't have any error or
 					 * allocated nodes then we set
@@ -1512,14 +1527,6 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 							NODE_STATE_IDLE;
 					}
 					break;
-				case SVIEW_BG_ERROR_STATE:
-					/* get the error node count */
-					if(!node_ptr->cores) 
-						continue;
-					node_ptr->node_state |= 
-						NODE_STATE_DRAIN;
-					node_ptr->threads = node_ptr->cores;
-					break;
 				case SVIEW_BG_ALLOC_STATE:
 					/* get the allocated node count */
 					if(!node_ptr->used_cpus) 
@@ -1531,6 +1538,16 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 					
 					node_ptr->threads =
 						node_ptr->used_cpus;
+					break;
+				case SVIEW_BG_ERROR_STATE:
+					/* get the error node count */
+					if(!node_ptr->cores) 
+						continue;
+					node_ptr->node_state &=
+						NODE_STATE_FLAGS;
+					node_ptr->node_state |= 
+						NODE_STATE_DRAIN;
+					node_ptr->threads = node_ptr->cores;
 					break;
 				default:
 					error("unknown state");
