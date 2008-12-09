@@ -931,7 +931,7 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, acct_wckey_rec_t *wckey,
 		if(!wckey->name) {
 			acct_user_rec_t user;
 
-			if(wckey->uid == (uint32_t)NO_VAL) {
+			if(wckey->uid == (uint32_t)NO_VAL && !wckey->user) {
 				if(enforce) {
 					error("get_wckey_id: "
 					      "Not enough info to "
@@ -943,6 +943,7 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, acct_wckey_rec_t *wckey,
 			}
 			memset(&user, 0, sizeof(acct_user_rec_t));
 			user.uid = wckey->uid;
+			user.name = wckey->user;
 			if(assoc_mgr_fill_in_user(db_conn, &user, enforce) 
 			   == SLURM_ERROR) {
 				if(enforce) 
@@ -950,10 +951,11 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, acct_wckey_rec_t *wckey,
 				else {
 					return SLURM_SUCCESS;
 				}
-			}					
-			wckey->user = user.name;
+			}
+			if(!wckey->user)
+				wckey->user = user.name;
 			wckey->name = user.default_wckey;
-		} else if(wckey->uid == (uint32_t)NO_VAL) {
+		} else if(wckey->uid == (uint32_t)NO_VAL && !wckey->user) {
 			if(enforce) {
 				error("get_wckey_id: "
 				      "Not enough info 2 to "
@@ -982,11 +984,14 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, acct_wckey_rec_t *wckey,
 			}
 			continue;
 		} else {
-			if(wckey->uid != found_wckey->uid) {
+			if((wckey->uid != NO_VAL)
+			   && (wckey->uid != found_wckey->uid)) {
 				debug4("not the right user %u != %u",
 				       wckey->uid, found_wckey->uid);
 				continue;
-			}
+			 } else if(wckey->user && strcasecmp(wckey->user,
+							     found_wckey->user))
+				continue;
 			
 			if(wckey->name
 			   && (!found_wckey->name 
