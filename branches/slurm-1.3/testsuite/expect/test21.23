@@ -1,8 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          sacctmgr add an account to this cluster and try using it with
-#          salloc, sbatch and srun.
+#          sacctmgr verify wckey
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -32,7 +31,7 @@
 ############################################################################
 source ./globals
 
-set test_id     "21.wckey"
+set test_id     "21.23"
 set exit_code   0
 set file_in     "test.$test_id.input"
 set test_acct   "test_acct"
