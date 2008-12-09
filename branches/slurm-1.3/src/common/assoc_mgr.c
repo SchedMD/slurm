@@ -1166,6 +1166,15 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 					debug4("not the right partition");
 					continue;
 				}
+
+				/* only check for on the slurmdbd */
+				if(!local_cluster_name && object->cluster
+				   && (!rec->cluster
+				       || strcasecmp(object->cluster,
+						     rec->cluster))) {
+					debug4("not the right cluster");
+					continue;
+				}
 				break;
 			}			
 		}
