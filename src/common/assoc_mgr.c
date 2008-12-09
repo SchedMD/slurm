@@ -1368,7 +1368,7 @@ extern int assoc_mgr_update_local_wckeys(acct_update_object_t *update)
 				//rc = SLURM_ERROR;
 				break;
 			}
-			pw_uid = uid_from_string(object->name);
+			pw_uid = uid_from_string(object->user);
 			if(pw_uid == (uid_t) -1) {
 				debug("wckey add couldn't get a uid "
 				      "for user %s",

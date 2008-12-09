@@ -163,6 +163,92 @@ extern List acct_storage_p_remove_wckeys(mysql_conn_t *mysql_conn,
 					 uint32_t uid, 
 					 acct_wckey_cond_t *wckey_cond);
 
+static uint32_t _get_wckeyid(mysql_conn_t *mysql_conn, char *name, 
+			     uid_t uid, char *cluster, uint32_t associd)
+{
+	uint32_t wckeyid = 0;
+
+	if(slurm_get_track_wckey()) {
+		/* Here we are looking for the wckeyid if it doesn't
+		 * exist we will create one.  We don't need to check
+		 * if it is good or not.  Right now this is the only
+		 * place things are created. We do this only on a job
+		 * start, not on a job submit since we don't want to
+		 * slow down getting the db_index back to the
+		 * controller.
+		 */
+		acct_wckey_rec_t wckey_rec;
+		memset(&wckey_rec, 0, sizeof(acct_wckey_rec_t));
+		wckey_rec.name = name;
+		wckey_rec.uid = uid;
+		wckey_rec.cluster = cluster;
+		if(assoc_mgr_fill_in_wckey(mysql_conn, &wckey_rec,
+					   1, NULL) != SLURM_SUCCESS) {
+			List wckey_list = NULL;
+			acct_wckey_rec_t *wckey_ptr = NULL;
+			char *assoc_query = NULL;
+			MYSQL_RES *result = NULL;
+			MYSQL_ROW row;
+			
+			/* Just so we don't have to keep a
+			   cache of the associations around we
+			   will just query the db for the user
+			   name of the association id.  Since
+			   this should sort of be a rare case
+			   this isn't too bad.
+			*/
+			assoc_query = xstrdup_printf(
+				"select user from %s where id=%u",
+				assoc_table, associd);
+			debug3("%d(%d) query\n%s",
+			       mysql_conn->conn, __LINE__, assoc_query);
+			if(!(result = 
+			     mysql_db_query_ret(mysql_conn->db_conn,
+						assoc_query, 0))) {
+				xfree(assoc_query);
+				goto end_it;
+			}
+			xfree(assoc_query);
+			
+			if(!(row = mysql_fetch_row(result))) 
+				goto no_wckeyid;
+			
+			wckey_list = list_create(destroy_acct_wckey_rec);
+			
+			wckey_ptr = xmalloc(sizeof(acct_wckey_rec_t));
+			wckey_ptr->name = xstrdup(name);
+			wckey_ptr->user = xstrdup(row[0]);
+			wckey_ptr->cluster = xstrdup(cluster);
+			list_append(wckey_list, wckey_ptr);
+			/* info("adding wckey '%s' '%s' '%s'",  */
+/* 				     wckey_ptr->name, wckey_ptr->user, */
+/* 				     wckey_ptr->cluster); */
+			/* we have already checked to make
+			   sure this was the slurm user before
+			   calling this */
+			if(acct_storage_p_add_wckeys(
+				   mysql_conn, 
+				   slurm_get_slurm_user_id(),
+				   wckey_list)
+			   == SLURM_SUCCESS)
+				acct_storage_p_commit(mysql_conn, 1);
+			/* If that worked lets get it */
+			assoc_mgr_fill_in_wckey(
+				mysql_conn, &wckey_rec,
+				1, NULL);
+				
+			mysql_free_result(result);
+			list_destroy(wckey_list);
+		}
+		//info("got wckeyid of %d", wckey_rec.id);
+		wckeyid = wckey_rec.id;
+	}
+no_wckeyid:
+	return wckeyid;
+end_it:
+	return NO_VAL;
+}
+
 static int _set_usage_information(char **usage_table, slurmdbd_msg_type_t type,
 				  time_t *usage_start, time_t *usage_end)
 {
@@ -9230,7 +9316,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 	char *wckey = NULL;
 	int reinit = 0;
 	time_t check_time = job_ptr->start_time;
-	uint16_t track_wckey = slurm_get_track_wckey();
+	uint32_t wckeyid = 0;
 
 	if (!job_ptr->details || !job_ptr->details->submit_time) {
 		error("jobacct_storage_p_job_start: "
@@ -9306,7 +9392,13 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 	job_ptr->requid = -1; /* force to -1 for sacct to know this
 			       * hasn't been set yet */
 	
-
+	/* if there is a start_time get the wckeyid */
+	if(job_ptr->start_time) 
+		if((wckeyid = _get_wckeyid(mysql_conn, wckey,
+					   job_ptr->user_id, cluster_name,
+					   job_ptr->assoc_id)) == NO_VAL)
+			goto end_it;
+			
 	/* We need to put a 0 for 'end' incase of funky job state
 	 * files from a hot start of the controllers we call
 	 * job_start on jobs we may still know about after
@@ -9319,7 +9411,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 				job_ptr->details->submit_time;
 		query = xstrdup_printf(
 			"insert into %s "
-			"(jobid, associd, uid, gid, nodelist, ",
+			"(jobid, associd, wckeyid, uid, gid, nodelist, ",
 			job_table);
 
 		if(cluster_name) 
@@ -9336,8 +9428,8 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 		xstrfmtcat(query, 
 			   "eligible, submit, start, name, track_steps, "
 			   "state, priority, req_cpus, alloc_cpus) "
-			   "values (%u, %u, %u, %u, \"%s\", ",
-			   job_ptr->job_id, job_ptr->assoc_id,
+			   "values (%u, %u, %u, %u, %u, \"%s\", ",
+			   job_ptr->job_id, job_ptr->assoc_id, wckey,
 			   job_ptr->user_id, job_ptr->group_id, nodes);
 		
 		if(cluster_name) 
@@ -9350,11 +9442,12 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 			xstrfmtcat(query, "\"%s\", ", block_id);
 		if(wckey) 
 			xstrfmtcat(query, "\"%s\", ", wckey);
-		
+
 		xstrfmtcat(query, 
 			   "%d, %d, %d, \"%s\", %u, %u, %u, %u, %u) "
 			   "on duplicate key update "
-			   "id=LAST_INSERT_ID(id), state=%u, associd=%u",
+			   "id=LAST_INSERT_ID(id), state=%u, "
+			   "associd=%u, wckeyid=%u",
 			   (int)job_ptr->details->begin_time,
 			   (int)job_ptr->details->submit_time,
 			   (int)job_ptr->start_time,
@@ -9363,7 +9456,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 			   priority, job_ptr->num_procs,
 			   job_ptr->total_procs, 
 			   job_ptr->job_state & (~JOB_COMPLETING),
-			   job_ptr->assoc_id);
+			   job_ptr->assoc_id, wckey);
 
 		if(job_ptr->account) 
 			xstrfmtcat(query, ", account=\"%s\"", job_ptr->account);
@@ -9393,7 +9486,6 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 				rc = SLURM_ERROR;
 		}
 	} else {
-		uint32_t wckeyid = 0;
 		query = xstrdup_printf("update %s set nodelist=\"%s\", ", 
 				       job_table, nodes);
 
@@ -9407,84 +9499,9 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 
 		if(wckey) 
 			xstrfmtcat(query, "wckey=\"%s\", ", wckey);
-			
-		/* Here we are looking for the wckeyid if it doesn't
-		 * exist we will create one.  We don't need to check
-		 * if it is good or not.  Right now this is the only
-		 * place things are created. We do this only on a job
-		 * start, not on a job submit since we don't want to
-		 * slow down getting the db_index back to the
-		 * controller.
-		 */
-		
-		if(track_wckey) {
-			acct_wckey_rec_t wckey_rec;
 
-			memset(&wckey_rec, 0, sizeof(acct_wckey_rec_t));
-			wckey_rec.name = wckey;
-			wckey_rec.uid = job_ptr->user_id;
-			wckey_rec.cluster = cluster_name;
-			if(assoc_mgr_fill_in_wckey(mysql_conn, &wckey_rec,
-						   1, NULL) != SLURM_SUCCESS) {
-				List wckey_list = NULL;
-				acct_wckey_rec_t *wckey_ptr = NULL;
-				char *assoc_query = NULL;
-				MYSQL_RES *result = NULL;
-				MYSQL_ROW row;
-
-				/* Just so we don't have to keep a
-				   cache of the associations around we
-				   will just query the db for the user
-				   name of the association id.  Since
-				   this should sort of be a rare case
-				   this isn't too bad.
-				*/
-				assoc_query = xstrdup_printf(
-					"select user from %s where id=%u",
-					assoc_table, job_ptr->assoc_id);
-				debug3("%d(%d) query\n%s",
-				       mysql_conn->conn, __LINE__, assoc_query);
-				if(!(result = 
-				     mysql_db_query_ret(mysql_conn->db_conn,
-							assoc_query, 0))) {
-					xfree(assoc_query);
-					goto end_it;
-				}
-				xfree(assoc_query);
-				
-				if(!(row = mysql_fetch_row(result))) 
-					goto no_wckeyid;
-				
-				wckey_list = list_create(
-					destroy_acct_wckey_rec);
-
-				wckey_ptr = xmalloc(sizeof(acct_wckey_rec_t));
-				wckey_ptr->name = xstrdup(wckey);
-				wckey_ptr->user = xstrdup(row[0]);
-				wckey_ptr->cluster = xstrdup(cluster_name);
-				list_append(wckey_list, wckey_ptr);
-				/* we have already checked to make
-				sure this was the slurm user before
-				calling this */
-				if(acct_storage_p_add_wckeys(
-					   mysql_conn, 
-					   slurm_get_slurm_user_id(),
-					   wckey_list)
-				   == SLURM_SUCCESS)
-					/* If that worked lets get it */
-					assoc_mgr_fill_in_wckey(
-						mysql_conn, &wckey_rec,
-						1, NULL);
-				
-				mysql_free_result(result);
-				list_destroy(wckey_list);
-			}
-			//info("got wckeyid of %d", wckey_rec.id);
-			wckeyid = wckey_rec.id;
-		}
-	no_wckeyid:
 		xstrfmtcat(query, "start=%d, name=\"%s\", state=%u, "
-			   "alloc_cpus=%u, associd=%d, wckeyid=%d where id=%d",
+			   "alloc_cpus=%u, associd=%u, wckeyid=%u where id=%d",
 			   (int)job_ptr->start_time,
 			   jname, job_ptr->job_state & (~JOB_COMPLETING),
 			   job_ptr->total_procs, job_ptr->assoc_id, wckeyid,
