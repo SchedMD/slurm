@@ -52,30 +52,7 @@ if { [string compare [check_accounting_admin_level] "Administrator"] } {
 	exit 0
 }
 
-#
-# Use scontrol to find the cluster name
-#
-set matches     0
-set cs		ClusterName
-set sh		show
-set cf		configure
-set scon_pid [spawn $scontrol $sh $cf]
-expect {
-	-re "$cs *= *($alpha)" {
-		set cn $expect_out(1,string)
-		send_user "\nFOUND! cluster name is $cn\n"
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
-		slow_kill $scon_pid
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
+set cn [get_cluster_name]
 
 #
 # Identify the user and his current default account
