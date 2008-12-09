@@ -2464,7 +2464,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "track_steps", "tinyint not null" },
 		{ "state", "smallint not null" }, 
 		{ "comp_code", "int default 0 not null" },
-		{ "priority", "int unsigned not null" },
+		{ "priority", "int not null" },
 		{ "req_cpus", "mediumint unsigned not null" }, 
 		{ "alloc_cpus", "mediumint unsigned not null" }, 
 		{ "nodelist", "text" },
