@@ -1298,7 +1298,7 @@ no_default:
 		printf(" Settings =\n");
 		printf("  Default Account = %s\n", default_acct);
 		if(track_wckey)
-			printf("  Default WCKey = %s\n", default_wckey);
+			printf("  Default WCKey   = %s\n", default_wckey);
 			
 		if(admin_level != ACCT_ADMIN_NOTSET)
 			printf("  Admin Level     = %s\n", 
