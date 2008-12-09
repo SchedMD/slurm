@@ -84,7 +84,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 			if(slurm_addto_char_list(wckey_cond->name_list,
 						 argv[i]+end))
 				set = 1;
-		} else if (!strncasecmp (argv[i], "Id",
+		} else if (!strncasecmp (argv[i], "Ids",
 					 MAX(command_len, 1))) {
 			ListIterator itr = NULL;
 			char *temp = NULL;

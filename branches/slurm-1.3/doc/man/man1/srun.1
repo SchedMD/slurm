@@ -940,6 +940,11 @@ than 2 hosts in the file only the first 2 nodes will be used in the
 request list.
 
 .TP
+\fB\-\-wckey\fR=\fIwckey\fR
+Specify wckey to be used with job.  If TrackWCKey=no (default) in the
+slurm.conf this value does not get looked at. 
+
+.TP
 \fB\-X\fR, \fB\-\-disable\-status\fR
 Disable the display of task status when srun receives a single SIGINT
 (Ctrl\-C). Instead immediately forward the SIGINT to the running job.
