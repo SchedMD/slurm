@@ -1186,3 +1186,35 @@ proc check_accounting_admin_level { } {
 	log_user 1
 	return $admin_level
 }
+
+################################################################
+# 
+#
+# 
+################################################################
+proc get_cluster_name { } {
+	global scontrol alpha_numeric_under
+	#
+	# Use scontrol to find the cluster name
+	#
+	log_user 0
+	set cluster_name ""
+	set scon_pid [spawn $scontrol show config]
+	expect {
+		-re "ClusterName *= ($alpha_numeric_under)" {
+			set cluster_name $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			slow_kill $scon_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	log_user 1
+	return $cluster_name
+}
