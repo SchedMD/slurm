@@ -163,6 +163,40 @@ extern List acct_storage_p_remove_wckeys(mysql_conn_t *mysql_conn,
 					 uint32_t uid, 
 					 acct_wckey_cond_t *wckey_cond);
 
+static char *_get_user_from_associd(mysql_conn_t *mysql_conn, uint32_t associd)
+{
+	char *user = NULL;
+	char *query = NULL;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	
+	/* Just so we don't have to keep a
+	   cache of the associations around we
+	   will just query the db for the user
+	   name of the association id.  Since
+	   this should sort of be a rare case
+	   this isn't too bad.
+	*/
+	query = xstrdup_printf("select user from %s where id=%u",
+			       assoc_table, associd);
+
+	debug4("%d(%d) query\n%s",
+	       mysql_conn->conn, __LINE__, query);
+	if(!(result = 
+	     mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
+		xfree(query);
+		return NULL;
+	}
+	xfree(query);
+	
+	if((row = mysql_fetch_row(result)))
+		user = xstrdup(row[0]);
+
+	mysql_free_result(result);
+	
+	return user;
+}
+
 static uint32_t _get_wckeyid(mysql_conn_t *mysql_conn, char *name, 
 			     uid_t uid, char *cluster, uint32_t associd)
 {
@@ -178,46 +212,29 @@ static uint32_t _get_wckeyid(mysql_conn_t *mysql_conn, char *name,
 		 * controller.
 		 */
 		acct_wckey_rec_t wckey_rec;
+		char *user = NULL;
+
+		/* since we are unable to rely on uids here (someone could
+		   not have there uid in the system yet) we must
+		   first get the user name from the associd */
+		if(!(user = _get_user_from_associd(mysql_conn, associd)))
+			goto no_wckeyid;
+
 		memset(&wckey_rec, 0, sizeof(acct_wckey_rec_t));
 		wckey_rec.name = name;
-		wckey_rec.uid = uid;
+		wckey_rec.uid = NO_VAL;
+		wckey_rec.user = user;
 		wckey_rec.cluster = cluster;
 		if(assoc_mgr_fill_in_wckey(mysql_conn, &wckey_rec,
 					   1, NULL) != SLURM_SUCCESS) {
 			List wckey_list = NULL;
 			acct_wckey_rec_t *wckey_ptr = NULL;
-			char *assoc_query = NULL;
-			MYSQL_RES *result = NULL;
-			MYSQL_ROW row;
-			
-			/* Just so we don't have to keep a
-			   cache of the associations around we
-			   will just query the db for the user
-			   name of the association id.  Since
-			   this should sort of be a rare case
-			   this isn't too bad.
-			*/
-			assoc_query = xstrdup_printf(
-				"select user from %s where id=%u",
-				assoc_table, associd);
-			debug3("%d(%d) query\n%s",
-			       mysql_conn->conn, __LINE__, assoc_query);
-			if(!(result = 
-			     mysql_db_query_ret(mysql_conn->db_conn,
-						assoc_query, 0))) {
-				xfree(assoc_query);
-				goto end_it;
-			}
-			xfree(assoc_query);
-			
-			if(!(row = mysql_fetch_row(result))) 
-				goto no_wckeyid;
-			
+						
 			wckey_list = list_create(destroy_acct_wckey_rec);
 			
 			wckey_ptr = xmalloc(sizeof(acct_wckey_rec_t));
 			wckey_ptr->name = xstrdup(name);
-			wckey_ptr->user = xstrdup(row[0]);
+			wckey_ptr->user = xstrdup(user);
 			wckey_ptr->cluster = xstrdup(cluster);
 			list_append(wckey_list, wckey_ptr);
 			/* info("adding wckey '%s' '%s' '%s'",  */
@@ -233,20 +250,17 @@ static uint32_t _get_wckeyid(mysql_conn_t *mysql_conn, char *name,
 			   == SLURM_SUCCESS)
 				acct_storage_p_commit(mysql_conn, 1);
 			/* If that worked lets get it */
-			assoc_mgr_fill_in_wckey(
-				mysql_conn, &wckey_rec,
-				1, NULL);
+			assoc_mgr_fill_in_wckey(mysql_conn, &wckey_rec,
+						1, NULL);
 				
-			mysql_free_result(result);
 			list_destroy(wckey_list);
 		}
+		xfree(user);
 		//info("got wckeyid of %d", wckey_rec.id);
 		wckeyid = wckey_rec.id;
 	}
 no_wckeyid:
 	return wckeyid;
-end_it:
-	return NO_VAL;
 }
 
 static int _set_usage_information(char **usage_table, slurmdbd_msg_type_t type,
@@ -9394,10 +9408,9 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 	
 	/* if there is a start_time get the wckeyid */
 	if(job_ptr->start_time) 
-		if((wckeyid = _get_wckeyid(mysql_conn, wckey,
-					   job_ptr->user_id, cluster_name,
-					   job_ptr->assoc_id)) == NO_VAL)
-			goto end_it;
+		wckeyid = _get_wckeyid(mysql_conn, wckey,
+				       job_ptr->user_id, cluster_name,
+				       job_ptr->assoc_id);
 			
 	/* We need to put a 0 for 'end' incase of funky job state
 	 * files from a hot start of the controllers we call
@@ -9510,7 +9523,6 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 	}
 
-end_it:
 	xfree(block_id);
 	xfree(jname);
 	xfree(wckey);
