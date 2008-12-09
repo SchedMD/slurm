@@ -69,7 +69,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 			txn_cond->with_assoc_info = 1;
 			set = 1;
 		} else if(!end
-			  || (!strncasecmp (argv[i], "Id",
+			  || (!strncasecmp (argv[i], "Ids",
 					    MAX(command_len, 1)))
 			  || (!strncasecmp (argv[i], "Txn",
 					    MAX(command_len, 1)))) {

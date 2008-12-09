@@ -83,7 +83,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 		} else if(!end && !strncasecmp(argv[i], "where", 
 					       MAX(command_len, 5))) {
 			continue;
-		} else if(!end || !strncasecmp (argv[i], "Id", 
+		} else if(!end || !strncasecmp (argv[i], "Ids", 
 						MAX(command_len, 1))
 			  || !strncasecmp (argv[i], "Associations", 
 					   MAX(command_len, 2))) {

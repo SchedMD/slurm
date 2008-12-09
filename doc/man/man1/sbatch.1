@@ -652,6 +652,11 @@ The order of the node names in the list is not important; the node names
 will be sorted my SLURM.
 
 .TP
+\fB\-\-wckey\fR=\fIwckey\fR
+Specify wckey to be used with job.  If TrackWCKey=no (default) in the
+slurm.conf this value does not get looked at. 
+
+.TP
 \fB\-x\fR, \fB\-\-exclude\fR[=]<\fInode name list\fR>
 Explicitly exclude certain nodes from the resources granted to the job.
 
