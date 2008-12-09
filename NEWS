@@ -6,6 +6,7 @@ documents those changes that are of interest to users and admins.
  -- Fix job preemption when sched/gang and select/linear are configured with
     non-sharing partitions.
  -- In select/cons_res insure that required nodes have available resources.
+ -- Bug fix for preemtpion with select/cons_res when there are no idle nodes.
 
 * Changes in SLURM 1.4.0-pre5
 =============================

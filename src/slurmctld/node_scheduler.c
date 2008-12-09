@@ -581,23 +581,19 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 
 		cr_type = (select_type_plugin_info_t) slurmctld_conf.
 							select_type_param;
-                debug3("Job %u shared %d cr_enabled %d CR type %d num_procs %d", 
-		     job_ptr->job_id, shared, cr_enabled, cr_type, 
-		     job_ptr->num_procs);
 
-		if (shared == 0) {
-			partially_idle_node_bitmap = bit_copy(idle_node_bitmap);
-		} else {
-			/* Update partially_idle_node_bitmap to reflect the
-			 * idle and partially idle nodes */
-			error_code = select_g_get_info_from_plugin (
-					SELECT_BITMAP, job_ptr,
-					&partially_idle_node_bitmap);
-			if (error_code != SLURM_SUCCESS) {
-				FREE_NULL_BITMAP(partially_idle_node_bitmap);
-				return error_code;
-			}
+		/* Set the partially_idle_node_bitmap to reflect the
+		 * idle and partially idle nodes */
+		error_code = select_g_get_info_from_plugin (SELECT_BITMAP,
+					job_ptr, &partially_idle_node_bitmap);
+		if (error_code != SLURM_SUCCESS) {
+			FREE_NULL_BITMAP(partially_idle_node_bitmap);
+			return error_code;
 		}
+                debug3("Job %u shared %d CR type %d num_procs %d nbits %d", 
+		     job_ptr->job_id, shared, cr_enabled, cr_type, 
+		     job_ptr->num_procs,
+		     bit_set_count(partially_idle_node_bitmap));
         }
 
 	if (job_ptr->details->req_node_bitmap) {  /* specific nodes required */
