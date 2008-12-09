@@ -1261,6 +1261,7 @@ void print_rotate(type_t type, void *object)
 		break;
 	}
 }
+
 void print_bg_start_point(type_t type, void *object)
 {
 	jobcomp_job_rec_t *job = (jobcomp_job_rec_t *)object;
@@ -1277,6 +1278,35 @@ void print_bg_start_point(type_t type, void *object)
 		break;
 	default:
 		printf("%-14s", "n/a");
+		break;
+	}
+}
+
+void print_wckey(type_t type, void *object)
+{
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+
+	switch(type) {
+	case HEADLINE:
+		printf("%-16s", "WCKey");
+		break;
+	case UNDERSCORE:
+		printf("%-16s", "----------------");
+		break;
+	case JOB:
+		if(!job->wckey)
+			printf("%-16s", "");
+		else if(strlen(job->wckey)<17)
+			printf("%-16s", job->wckey);
+		else
+			printf("%-13.13s...", job->wckey);
+		break;
+	case JOBSTEP:
+		printf("%-16s", "");
+		break;
+	default:
+		printf("%-16s", "n/a");
+		break;
 		break;
 	}
 }
