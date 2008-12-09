@@ -128,7 +128,8 @@ Repeat the last command executed.
 
 .TP
 Various reports are as follows...
-     cluster \- AccountUtilizationByUser, UserUtilizationByAccount, Utilization
+     cluster \- AccountUtilizationByUser, UserUtilizationByAccount,
+     UserUtilizationByWckey, Utilization, WCKeyUtilizationByUser
      job     \- Sizes
      user    \- TopUsage
 
@@ -150,12 +151,21 @@ This report will display users by account in order of utilization without
 grouping multiple accounts by user into one, but displaying them
 on separate lines.
 .TP
+.B cluster UserUtilizationByWCKey
+This report will display users by wckey in order of utilization without
+grouping multiple wckey by user into one, but displaying them
+on separate lines.
+.TP
 .B cluster Utilization
 This report will display total usage divided by Allocated, Down,
 Idle, and resrved time for selected clusters.  Reserved time
 refers to time that a job was waiting for resources after the job
 had become eligible.  If the value is not of importance for you
 the number should be grouped with idle time.
+.TP
+.B cluster WCKeyUtilizationByUser
+This report will display wckey utilization sorted by WCKey name for
+each user on each cluster.  
 
 .TP
 .B job Sizes

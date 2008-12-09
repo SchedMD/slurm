@@ -1197,7 +1197,7 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, acct_wckey_rec_t *wckey,
 		if(!wckey->name) {
 			acct_user_rec_t user;
 
-			if(wckey->uid == (uint32_t)NO_VAL) {
+			if(wckey->uid == (uint32_t)NO_VAL && !wckey->user) {
 				if(enforce) {
 					error("get_wckey_id: "
 					      "Not enough info to "
@@ -1209,6 +1209,7 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, acct_wckey_rec_t *wckey,
 			}
 			memset(&user, 0, sizeof(acct_user_rec_t));
 			user.uid = wckey->uid;
+			user.name = wckey->user;
 			if(assoc_mgr_fill_in_user(db_conn, &user,
 						  enforce, NULL) 
 			   == SLURM_ERROR) {
@@ -1217,10 +1218,11 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, acct_wckey_rec_t *wckey,
 				else {
 					return SLURM_SUCCESS;
 				}
-			}					
-			wckey->user = user.name;
+			}
+			if(!wckey->user)
+				wckey->user = user.name;
 			wckey->name = user.default_wckey;
-		} else if(wckey->uid == (uint32_t)NO_VAL) {
+		} else if(wckey->uid == (uint32_t)NO_VAL && !wckey->user) {
 			if(enforce) {
 				error("get_wckey_id: "
 				      "Not enough info 2 to "
@@ -1249,11 +1251,14 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, acct_wckey_rec_t *wckey,
 			}
 			continue;
 		} else {
-			if(wckey->uid != found_wckey->uid) {
+			if((wckey->uid != NO_VAL)
+			   && (wckey->uid != found_wckey->uid)) {
 				debug4("not the right user %u != %u",
 				       wckey->uid, found_wckey->uid);
 				continue;
-			}
+			 } else if(wckey->user && strcasecmp(wckey->user,
+							     found_wckey->user))
+				continue;
 			
 			if(wckey->name
 			   && (!found_wckey->name 
@@ -1577,6 +1582,15 @@ extern int assoc_mgr_update_assocs(acct_update_object_t *update)
 					debug4("not the right partition");
 					continue;
 				}
+
+				/* only check for on the slurmdbd */
+				if(!assoc_mgr_cluster_name && object->cluster
+				   && (!rec->cluster
+				       || strcasecmp(object->cluster,
+						     rec->cluster))) {
+					debug4("not the right cluster");
+					continue;
+				}
 				break;
 			}			
 		}
@@ -1852,7 +1866,7 @@ extern int assoc_mgr_update_wckeys(acct_update_object_t *update)
 				//rc = SLURM_ERROR;
 				break;
 			}
-			pw_uid = uid_from_string(object->name);
+			pw_uid = uid_from_string(object->user);
 			if(pw_uid == (uid_t) -1) {
 				debug("wckey add couldn't get a uid "
 				      "for user %s",

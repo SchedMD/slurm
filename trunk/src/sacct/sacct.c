@@ -192,6 +192,7 @@ fields_t fields[] = {{"account", print_account},
 		     {"reboot", print_reboot}, 
 		     {"rotate", print_rotate}, 
 		     {"bg_start_point", print_bg_start_point}, 		     
+		     {"wckey", print_wckey}, 		     
 		     {NULL, NULL}};
 
 List jobs = NULL;

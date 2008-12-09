@@ -286,8 +286,7 @@ static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
 		time_t now = time(NULL);
 		char *query2 = NULL;
 	
-		debug("Running update for table %s has changed.  "
-		      "Updating...", table_name);
+		debug("Table %s has changed.  Updating...", table_name);
 		if(mysql_db_query(mysql_db, query)) {
 			xfree(query);
 			return SLURM_ERROR;

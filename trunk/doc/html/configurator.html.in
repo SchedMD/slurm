@@ -184,6 +184,7 @@ function displayfile()
    get_task_plugin_param() + "<br>" +
    get_field("TaskProlog",document.config.task_prolog) + "<br>" +
    "#TmpFs=/tmp <br>" +
+   "#TrackWCKey=no <br>" +
    "#TreeWidth= <br>" +
    "#UnkillableStepProgram= <br>" +
    "#UnkillableStepTimeout= <br>" +

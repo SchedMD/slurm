@@ -148,6 +148,8 @@ void *_forward_thread(void *arg)
 				free_buf(buffer);	
 				buffer = init_buf(0);
 				slurm_mutex_unlock(fwd_msg->forward_mutex);
+				slurm_close_accepted_conn(fd);
+				fd = -1;
 				continue;
 			}
 			goto cleanup;			
@@ -201,6 +203,8 @@ void *_forward_thread(void *arg)
 				free_buf(buffer);	
 				buffer = init_buf(0);
 				slurm_mutex_unlock(fwd_msg->forward_mutex);
+				slurm_close_accepted_conn(fd);
+				fd = -1;
 				continue;
 			}
 			goto cleanup;			

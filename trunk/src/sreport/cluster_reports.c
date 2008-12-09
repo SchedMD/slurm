@@ -1735,7 +1735,7 @@ extern int cluster_wckey_by_user(int argc, char *argv[])
 		slurm_make_time_str(&my_end, end_char, sizeof(end_char));
 		printf("----------------------------------------"
 		       "----------------------------------------\n");
-		printf("Cluster/Account/User Utilization %s - %s (%d secs)\n", 
+		printf("Cluster/WCKey/User Utilization %s - %s (%d secs)\n", 
 		       start_char, end_char, 
 		       (wckey_cond->usage_end - wckey_cond->usage_start));
 		
