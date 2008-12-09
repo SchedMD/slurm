@@ -3100,7 +3100,7 @@ extern int acct_storage_p_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *cols = NULL, *vals = NULL, *query = NULL, *txn_query = NULL;
 	time_t now = time(NULL);
 	char *user_name = NULL;
-	char *extra = NULL;
+	char *extra = NULL, *tmp_extra = NULL;
 	int affect_rows = 0;
 	List assoc_list = list_create(destroy_acct_association_rec);
 	List wckey_list = list_create(destroy_acct_wckey_rec);
@@ -3164,12 +3164,14 @@ extern int acct_storage_p_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 				      object) == SLURM_SUCCESS) 
 			list_remove(itr);
 			
+		/* we always have a ', ' as the first 2 chars */
+		tmp_extra = _fix_double_quotes(extra+2);
 
 		if(txn_query)
 			xstrfmtcat(txn_query, 	
 				   ", (%d, %u, \"%s\", \"%s\", \"%s\")",
 				   now, DBD_ADD_USERS, object->name,
-				   user_name, extra);
+				   user_name, tmp_extra);
 		else
 			xstrfmtcat(txn_query, 	
 				   "insert into %s "
@@ -3177,7 +3179,8 @@ extern int acct_storage_p_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 				   "values (%d, %u, \"%s\", \"%s\", \"%s\")",
 				   txn_table,
 				   now, DBD_ADD_USERS, object->name,
-				   user_name, extra);
+				   user_name, tmp_extra);
+		xfree(tmp_extra);
 		xfree(extra);
 		
 		if(object->assoc_list)
