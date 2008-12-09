@@ -410,8 +410,12 @@ static void *_rollup_handler(void *db_conn)
 		tm.tm_hour++;
 		tm.tm_isdst = -1;
 		next_time = mktime(&tm);
+
+		/* get the time now we have rolled usage */
+		start_time = time(NULL);
+
 		sleep((next_time-start_time));
-		start_time = next_time;
+		start_time = time(NULL);
 		/* repeat ;) */
 	}
 
