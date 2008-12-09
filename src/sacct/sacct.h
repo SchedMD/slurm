@@ -145,13 +145,13 @@ void print_account(type_t type, void *object);
 void print_assoc(type_t type, void *object);
 void print_cluster(type_t type, void *object);
 
-
 void print_connection(type_t type, void *object);
 void print_geo(type_t type, void *object);
 void print_max_procs(type_t type, void *object);
 void print_reboot(type_t type, void *object);
 void print_rotate(type_t type, void *object);
 void print_bg_start_point(type_t type, void *object);
+void print_wckey(type_t type, void *object);
 
 /* options.c */
 int decode_state_char(char *state);

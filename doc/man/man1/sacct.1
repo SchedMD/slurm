@@ -213,16 +213,17 @@ option.
 .nf 
 .ft 3
 Fields available:
-account     blockid     cpu         cputime
-elapsed     end         exitcode    gid
-group       idrss       inblock     isrss
-ixrss       job         jobid       jobname
-majflt      minflt      msgrcv      msgsnd
-ncpus       nivcsw      nodes       nprocs
-nsignals    nswap       ntasks      nvcsw
-outblocks   pages       partition   rss
-start       status      submit      systemcpu
-uid         user        usercpu     vsize
+account     associd     cluster     cpu       
+cputime     elapsed     end         exitcode  
+finished    gid         group       job       
+jobid       jobname     ncpus       nodes     
+nnodes      nprocs      ntasks      pages     
+partition   rss         start       state     
+status      submit      timelimit   submitted 
+systemcpu   uid         user        usercpu   
+vsize       blockid     connection  geo       
+max_procs   reboot      rotate      bg_start_point
+wckey     
 
 .ft 1
 .fi 
@@ -660,6 +661,11 @@ The format of the output is identical to that of the
 \f3vsize\fP
 Maximum Virtual Memory size of any process followed by its task id along with
 the average of all processes running in the step.
+
+.TP
+\f3wckey\fP
+Workload Characterization Key.  Arbitrary string for grouping
+orthogonal accounts together.
 
 .RE 
 .SH "INTERPRETING THE \-DUMP OPTION OUTPUT"

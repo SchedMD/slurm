@@ -519,3 +519,5 @@ test21.20  sacctmgr add and modify QoS
 test21.21  sacctmgr add an account to this cluster and try using it with
            salloc, sbatch and srun.
 test21.22  sacctmgr load file
+test21.23  sacctmgr wckey
+test21.24  sacctmgr dump file

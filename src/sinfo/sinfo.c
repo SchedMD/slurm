@@ -84,10 +84,13 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr);
 static void _update_nodes_for_bg(int node_scaling,
 				 node_info_msg_t *node_msg,
 				 bg_info_record_t *bg_info_record);
+/* ERROR_STATE must be last since that will affect the state of the rest of the
+   midplane.
+*/
 enum {
 	SINFO_BG_IDLE_STATE,
-	SINFO_BG_ERROR_STATE,
-	SINFO_BG_ALLOC_STATE
+	SINFO_BG_ALLOC_STATE,
+	SINFO_BG_ERROR_STATE	
 };
 #endif
 
@@ -403,6 +406,18 @@ static int _build_sinfo_data(List sinfo_list,
 				int norm = 0;
 				switch(i) {
 				case SINFO_BG_IDLE_STATE:
+					/* check to see if the node is
+					 * down if so just report the
+					 * whole thing is down and break
+					 * out.
+					 */
+					if((node_ptr->node_state 
+					    & NODE_STATE_BASE)
+					   == NODE_STATE_DOWN) {
+						norm = 1;
+						break;
+					}
+
 					/* get the idle node count if
 					 * we don't have any error or
 					 * allocated nodes then we set
@@ -412,30 +427,37 @@ static int _build_sinfo_data(List sinfo_list,
 					node_ptr->threads -=
 						(node_ptr->cores
 						 + node_ptr->used_cpus);
+					
 					if(node_ptr->threads == node_scaling)
 						norm = 1;
-					else
-						node_ptr->node_state =
+					else {
+						node_ptr->node_state &=
+							NODE_STATE_FLAGS;
+						node_ptr->node_state |=
 							NODE_STATE_IDLE;
-					
-					break;
-				case SINFO_BG_ERROR_STATE:
-					/* get the error node count */
-					if(!node_ptr->cores) 
-						continue;
-					node_ptr->node_state |= 
-						NODE_STATE_DRAIN;
-					node_ptr->threads = node_ptr->cores;
+					}
 					break;
 				case SINFO_BG_ALLOC_STATE:
 					/* get the allocated node count */
 					if(!node_ptr->used_cpus) 
 						continue;
-					node_ptr->node_state =
+					node_ptr->node_state &=
+						NODE_STATE_FLAGS;
+					node_ptr->node_state |=
 						NODE_STATE_ALLOCATED;
 					
 					node_ptr->threads =
 						node_ptr->used_cpus;
+					break;
+				case SINFO_BG_ERROR_STATE:
+					/* get the error node count */
+					if(!node_ptr->cores) 
+						continue;
+					node_ptr->node_state &=
+						NODE_STATE_FLAGS;
+					node_ptr->node_state |= 
+						NODE_STATE_DRAIN;
+					node_ptr->threads = node_ptr->cores;
 					break;
 				default:
 					error("unknown state");
