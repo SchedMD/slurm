@@ -1505,10 +1505,12 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 						 + node_ptr->used_cpus);
 					if(node_ptr->threads == node_scaling)
 						norm = 1;
-					else
-						node_ptr->node_state =
+					else {
+						node_ptr->node_state &=
+							NODE_STATE_FLAGS;
+						node_ptr->node_state |=
 							NODE_STATE_IDLE;
-					
+					}
 					break;
 				case SVIEW_BG_ERROR_STATE:
 					/* get the error node count */
@@ -1522,7 +1524,9 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 					/* get the allocated node count */
 					if(!node_ptr->used_cpus) 
 						continue;
-					node_ptr->node_state =
+					node_ptr->node_state &=
+						NODE_STATE_FLAGS;
+					node_ptr->node_state |=
 						NODE_STATE_ALLOCATED;
 					
 					node_ptr->threads =
