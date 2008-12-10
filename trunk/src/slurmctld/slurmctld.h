@@ -467,6 +467,7 @@ struct job_record {
 	uint32_t total_procs;		/* number of allocated processors, 
 					 * for accounting */
 	uint32_t user_id;		/* user the job runs as */
+	char *wckey;		        /* optional wckey */
 };
 
 /* Job dependency specification, used in "depend_list" within job_record */
