@@ -1,5 +1,5 @@
 LLNL Security Tests
-2 December 2008
+10 December 2008
 
 Unless otherwise noted. Run all tests as a normal user (not user root or
 SlurmUser).
@@ -64,12 +64,16 @@ slurm:x:101:101:slurm:/var/slurm:/sbin/nologin   < No other users/groups with ID
 Test 2.1     Verify that unauthenticated requests are rejected
 ==============================================================
 Execute "security_2_1.bash" and check for errors. Make sure that the
-"scontrol" program is in your default search path or modify the script. It's 
-last line of output will be "SUCCESS" if there were no errors and "FAILURE" 
-otherwise. Note that srun errors are expected due to authentication failure.
+"scontrol" and "srun" programs are in your default search path or modify
+the script. It's last line of output will be "SUCCESS" if there were no
+errors and "FAILURE" otherwise. Note that srun errors are expected due
+to authentication failure.
 NOTE: Insure the event is logged in SlurmctldLogFile for test 2.4 verification.
 
 Example:
+For AIX only:
+$ export PATH=/opt/freeware/bin:/opt/freeware/sbin:$PATH
+For all systems:
 $ ./security_2_1.bash
 srun: warning: auth/dummy plugin selected
 srun: warning: auth/dummy plugin selected
@@ -94,13 +98,14 @@ Test 2.2.2   Verify that jobs can't be run as another user
 ==========================================================
 First run a job as ourself and they try to do so as another user. On some
 systems the pdebug partition should be specified. On BlueGene systems a 
-batch script must be submitted (use "sbatch --partition=pdebug security_2_2_2.sh")
+batch script must be submitted (use "sbatch --partition=pdebug security_2_2_2.sh").
+The script security_2_2_2.sh just invokes "/usr/bin/id".
 NOTE: Insure the event is logged in SlurmctldLogFile for test 2.4 verification.
 
 Linux/AIX example:
-$ srun --partition=pdebug id
+$ srun --partition=pdebug security_2_2_2.sh
 uid=5136(jette) gid=5136(jette) groups=902(pcs),1153(bgldev),1310(aixdev),5136(jette)
-$ srun --partition=pdebug --uid=0 id
+$ srun --partition=pdebug --uid=0 security_2_2_2.sh
 srun: error: Unable to allocate resources: Invalid user id    < ERROR IS EXPECTED
 
 BlueGene example:
@@ -116,7 +121,7 @@ Submit a job as one user then try to cancel or modify it as another user.
 NOTE: Insure the event is logged in SlurmctldLogFile for test 2.4 verification.
 
 Example:
-$ sbatch --partition=pdebug security_2_2_2.sh
+$ sbatch --partition=pdebug security_2_2_3.sh
 sbatch: Submitted batch job 1784601
 
 FROM A DIFFERENT USER (NOT root or SlurmUser):
@@ -150,7 +155,7 @@ SUCCESS
 
 For AIX only (I am having linking problems. This work-around will work):
 $ export OBJECT_MODE=32
-$ AIX=1 gcc -I/opt/freeware/include -L/opt/freeware/lib -lslurm -osecurity_2_2_4 -pthread security_2_2_4.c
+$ gcc -DAIX=1 -I/opt/freeware/include -L/opt/freeware/lib -lslurm -osecurity_2_2_4 -pthread security_2_2_4.c
 $ scontrol show config | grep ControlAddr  (substitute the value in execution below)
 Then execute thus:
 $ ./security_2_2_4 <ControlAddr>
@@ -239,6 +244,8 @@ From test 3.1 in SlurmdLogFile on node where job tried to run (/var/log/slurm/sl
 
 From test 3.3 in SlurmctldLogFile (/var/log/slurm/slurmctld.log):
 [Dec 01 15:15:50] error: Security violation, REQUEST_STEP_LAYOUT for JobId=97700 from uid=7558
+NOTE: The above error message was added to SLURM version 1.3.12.
+Earlier versions of SLURM will not report this message.
 
 
 Test 4.1     Verify that valid credential is required for SlurmDBD access
