@@ -394,7 +394,7 @@ static int _add_accounts(slurmdbd_conn_t *slurmdbd_conn,
 			rc = SLURM_ERROR;
 			goto end_it;
 		}
-		if(!list_count(user.coord_accts)) {
+		if(!user.coord_accts || !list_count(user.coord_accts)) {
 			comment = "Your user doesn't have privilege to preform this action";
 			error("%s", comment);
 			rc = ESLURM_ACCESS_DENIED;
@@ -461,7 +461,7 @@ static int _add_account_coords(slurmdbd_conn_t *slurmdbd_conn,
 			rc = SLURM_ERROR;
 			goto end_it;
 		}
-		if(!list_count(user.coord_accts)) {
+		if(!user.coord_accts || !list_count(user.coord_accts)) {
 			comment = "Your user doesn't have privilege to preform this action";
 			error("%s", comment);
 			rc = ESLURM_ACCESS_DENIED;
@@ -678,7 +678,7 @@ static int _add_users(slurmdbd_conn_t *slurmdbd_conn,
 			rc = SLURM_ERROR;
 			goto end_it;
 		}
-		if(!list_count(user.coord_accts)) {
+		if(!user.coord_accts || !list_count(user.coord_accts)) {
 			comment = "Your user doesn't have privilege to preform this action";
 			error("%s", comment);
 			rc = ESLURM_ACCESS_DENIED;

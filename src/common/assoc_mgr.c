@@ -901,6 +901,12 @@ extern int assoc_mgr_fill_in_user(void *db_conn, acct_user_rec_t *user,
 	list_iterator_destroy(itr);
 
 	if(found_user) {
+		/* This needs to be here just incase we don't have a
+		   list since it gets checked outside here and needs
+		   to exist. */
+		if(!found_user->coord_accts)
+			found_user->coord_accts = 
+				list_create(destroy_acct_coord_rec);
 		memcpy(user, found_user, sizeof(acct_user_rec_t));		
 		slurm_mutex_unlock(&local_user_lock);
 		return SLURM_SUCCESS;
