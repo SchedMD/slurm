@@ -93,9 +93,13 @@ set dac		DefaultAccount
 set pts		Partitions
 set pde		pdebug
 set pba		pbatch
-set fs		Fairshare
 set dw		DefaultWCKey
 set wk		WCKeys
+set wk1		latch
+set wk2		stone
+set wk3		hole
+set wk4		turn
+set fs		Fairshare
 set gm		GrpCPUMins
 set gc		GrpCPUs
 set gj		GrpJobs
@@ -926,7 +930,7 @@ proc _mod_acct { cluster name desc org parent fs maxcpu maxjob maxnodes maxwall 
 #
 # Use sacctmgr to add an user
 #
-proc _add_user { name AC AL CL DA QS FS GM GC GJ GN GS GW MM MC MJ MN MS MW } {
+proc _add_user { name AC AL CL DA DK WK QS FS GM GC GJ GN GS GW MM MC MJ MN MS MW } {
         global sacctmgr timeout
 
 	set exit_code 0
@@ -953,6 +957,14 @@ proc _add_user { name AC AL CL DA QS FS GM GC GJ GN GS GW MM MC MJ MN MS MW } {
 
 	if { [string length $DA] } {
 		set ucommand "$ucommand defaultaccount=$DA"
+	}
+
+	if { [string length $DK] } {
+		set ucommand "$ucommand defaultwckey=$DK"
+	}
+
+	if { [string length $WK] } {
+		set ucommand "$ucommand wckeys=$WK"
 	}
 
 	if { [string length $QS] } {
@@ -1307,7 +1319,7 @@ if { $exit_code } {
 
 #add users
 # account adminlevel cluster defaultaccount qoslevel name Fairshare GrpCPUMins GrpCPUs GrpJobs GrpNodes GrpSubmitJobs GrpWall MaxCPUMins MaxCPUs MaxJobs MaxNodes MaxSubmitJobs MaxWallDurationPerJob 
-incr exit_code [_add_user "$us3" "$nm4" "$ala" "$tc3" "$nm3" "$qs2" "$fs3" "$gm3" "$gc3" "$gj3" "$gn3" "$gs3" "$gw3" "$mm3" "$mc3" "$mj3" "$mn3" "$ms3" "$mw3" ]
+incr exit_code [_add_user "$us3" "$nm4" "$ala" "$tc3" "$nm3" "$wk3" "$wk1,$wk2,$wk4" "$qs2" "$fs3" "$gm3" "$gc3" "$gj3" "$gn3" "$gs3" "$gw3" "$mm3" "$mc3" "$mj3" "$mn3" "$ms3" "$mw3" ]
 if { $exit_code } {
 	_remove_user "" "$us1,$us2,$us3"
 	_remove_acct "" "$nm1,$nm2,$nm3"
@@ -1316,7 +1328,7 @@ if { $exit_code } {
 	exit $exit_code
 }
 
-incr exit_code [_add_user "$us2" "$nm3" "$alo" "$tc3" "$nm2" "$qs2" "$fs2" "$gm2" "$gc2" "$gj2" "$gn2" "$gs2" "$gw2" "$mm2" "$mc2" "$mj2" "$mn2" "$ms2" "$mw2" ]
+incr exit_code [_add_user "$us2" "$nm3" "$alo" "$tc3" "$nm2" "$wk2" "$wk1,$wk3,$wk4" "$qs2" "$fs2" "$gm2" "$gc2" "$gj2" "$gn2" "$gs2" "$gw2" "$mm2" "$mc2" "$mj2" "$mn2" "$ms2" "$mw2" ]
 if { $exit_code } {
 	_remove_user "" "$us1,$us2,$us3"
 	_remove_acct "" "$nm1,$nm2,$nm3"
@@ -1325,7 +1337,7 @@ if { $exit_code } {
 	exit $exit_code
 }
 
-incr exit_code [_add_user "$us1" "$nm2" "$aln" "$tc3" "$nm2" "$qs2" "$fs1" "$gm1" "$gc1" "$gj1" "$gn1" "$gs1" "$gw1" "$mm1" "$mc1" "$mj1" "$mn1" "$ms1" "$mw1" ]
+incr exit_code [_add_user "$us1" "$nm2" "$aln" "$tc3" "$nm2" "$wk1" "$wk2,$wk3,$wk4" "$qs2" "$fs1" "$gm1" "$gc1" "$gj1" "$gn1" "$gs1" "$gw1" "$mm1" "$mc1" "$mj1" "$mn1" "$ms1" "$mw1" ]
 if { $exit_code } {
 	_remove_user "" "$us1,$us2,$us3"
 	_remove_acct "" "$nm1,$nm2,$nm3"
@@ -1381,10 +1393,9 @@ set tfile [open "$file_out4" r]
 #while {[gets $tfile line] != -1} {
 foreach line [split [read $tfile] "\n"] {
 #
-# Use cat to parse the dump file
+# Use echo to parse the dump file line by line.
 #
 #set matches 0
-exp_internal 1
 set my_pid [spawn echo "$line" ]
 expect {
 	-re "No such file or directory" {
@@ -1411,7 +1422,7 @@ expect {
 		exp_continue
 	}
 
-	-re "($usr - $us3:$dac='$nm3':$dw='':$al='$ala':$wk='':$fs=$fs3:$gm=$gm3:$gc=$gc3:$gj=$gj3:$gn=$gn3:$gs=$gs3:$gw=$gw3:$mp=$mm3:$mu=$mc3:$mj=$mj3:$mnj=$mn3:$ms=$ms3:$md=$mw3:$qs='$qs2')" {
+	-re "($usr - $us3:$dac='$nm3':$dw='$wk3':$al='$ala':$wk=',$wk3,$wk1,$wk2,$wk4':$fs=$fs3:$gm=$gm3:$gc=$gc3:$gj=$gj3:$gn=$gn3:$gs=$gs3:$gw=$gw3:$mp=$mm3:$mu=$mc3:$mj=$mj3:$mnj=$mn3:$ms=$ms3:$md=$mw3:$qs='$qs2')" {
 		incr matches
 		exp_continue
 	}
@@ -1437,12 +1448,12 @@ expect {
 		exp_continue
 	}
 
-	-re "($usr - $us1:$dac='$nm2':$dw='':$wk='':$fs=$fs1:$gm=$gm1:$gc=$gc1:$gj=$gj1:$gn=$gn1:$gs=$gs1:$gw=$gw1:$mp=$mm1:$mu=$mc1:$mj=$mj1:$mnj=$mn1:$ms=$ms1:$md=$mw1:$qs='$qs2')" {
+	-re "($usr - $us1:$dac='$nm2':$dw='$wk1':$wk=',$wk3,$wk1,$wk2,$wk4':$fs=$fs1:$gm=$gm1:$gc=$gc1:$gj=$gj1:$gn=$gn1:$gs=$gs1:$gw=$gw1:$mp=$mm1:$mu=$mc1:$mj=$mj1:$mnj=$mn1:$ms=$ms1:$md=$mw1:$qs='$qs2')" {
 		incr matches
 		exp_continue
 	}
 
-	-re "($usr - $us2:$dac='$nm2':$dw='':$al='$alo':$wk='':$fs=$fs2:$gm=$gm2:$gc=$gc2:$gj=$gj2:$gn=$gn2:$gs=$gs2:$gw=$gw2:$mp=$mm2:$mu=$mc2:$mj=$mj2:$mnj=$mn2:$ms=$ms2:$md=$mw2:$qs='$qs2')" {
+	-re "($usr - $us2:$dac='$nm2':$dw='$wk2':$al='$alo':$wk=',$wk3,$wk1,$wk2,$wk4':$fs=$fs2:$gm=$gm2:$gc=$gc2:$gj=$gj2:$gn=$gn2:$gs=$gs2:$gw=$gw2:$mp=$mm2:$mu=$mc2:$mj=$mj2:$mnj=$mn2:$ms=$ms2:$md=$mw2:$qs='$qs2')" {
 		incr matches
 		exp_continue
 	}
@@ -1457,7 +1468,6 @@ expect {
 	}
 }
 }
-exp_internal 0
 if {$matches != 14} {
 	send_user "\nFAILURE:  Parse of file for 14 entries incorrect with only $matches.\n"
 	incr exit_code 1
