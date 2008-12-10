@@ -12,5 +12,9 @@ squeue_LDADD = 	$(top_builddir)/src/api/libslurm.o -ldl
 noinst_HEADERS = squeue.h print.h
 squeue_SOURCES = squeue.c print.c opts.c sort.c
 
+force:
+$(squeue_LDADD) : force
+	@cd `dirname $@` && $(MAKE) `basename $@`
+
 squeue_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 
