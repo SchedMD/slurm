@@ -63,6 +63,12 @@ typedef struct {
 	status_t (*remove_job)(db_job_id_t jid);  
 	status_t (*get_nodecards)(rm_bp_id_t bpid,
 				  rm_nodecard_list_t **nc_list);
+	status_t (*new_nodecard)(rm_nodecard_t **nodecard);
+	status_t (*free_nodecard)(rm_nodecard_t *nodecard);
+#ifndef HAVE_BGL
+	status_t (*new_ionode)(rm_ionode_t **ionode);
+	status_t (*free_ionode)(rm_ionode_t *ionode);
+#endif
 	status_t (*new_partition)(rm_partition_t **partition);
 	status_t (*free_partition)(rm_partition_t *partition);
 	status_t (*free_job)(rm_job_t *job);
@@ -160,6 +166,8 @@ extern int bridge_init()
 		"rm_get_jobs",
 		"rm_remove_job",
 		"rm_get_nodecards",
+		"rm_new_nodecard",
+		"rm_free_nodecard",
 		"rm_new_partition",
 		"rm_free_partition",
 		"rm_free_job",
@@ -193,6 +201,10 @@ extern int bridge_init()
 		"rm_get_jobs",
 		"rm_remove_job",
 		"rm_get_nodecards",
+		"rm_new_nodecard",
+		"rm_free_nodecard",
+		"rm_new_ionode",
+		"rm_free_ionode",
 		"rm_new_partition",
 		"rm_free_partition",
 		"rm_free_job",
@@ -440,6 +452,60 @@ extern status_t bridge_get_nodecards(rm_bp_id_t bpid,
 	return rc;
 
 }
+
+extern status_t bridge_new_nodecard(rm_nodecard_t **nodecard)
+{
+	int rc = CONNECTION_ERROR;
+	if(!bridge_init())
+		return rc;
+	
+	slurm_mutex_lock(&api_file_mutex);
+	rc = (*(bridge_api.new_nodecard))(nodecard);
+	slurm_mutex_unlock(&api_file_mutex);
+	return rc;
+
+}
+
+extern status_t bridge_free_nodecard(rm_nodecard_t *nodecard)
+{
+	int rc = CONNECTION_ERROR;
+	if(!bridge_init())
+		return rc;
+	
+	slurm_mutex_lock(&api_file_mutex);
+	rc = (*(bridge_api.free_nodecard))(nodecard);
+	slurm_mutex_unlock(&api_file_mutex);
+	return rc;
+
+}
+
+#ifndef HAVE_BGL
+extern status_t bridge_new_ionode(rm_ionode_t **ionode)
+{
+	int rc = CONNECTION_ERROR;
+	if(!bridge_init())
+		return rc;
+	
+	slurm_mutex_lock(&api_file_mutex);
+	rc = (*(bridge_api.new_ionode))(ionode);
+	slurm_mutex_unlock(&api_file_mutex);
+	return rc;
+
+}
+
+extern status_t bridge_free_ionode(rm_ionode_t *ionode)
+{
+	int rc = CONNECTION_ERROR;
+	if(!bridge_init())
+		return rc;
+	
+	slurm_mutex_lock(&api_file_mutex);
+	rc = (*(bridge_api.free_ionode))(ionode);
+	slurm_mutex_unlock(&api_file_mutex);
+	return rc;
+
+}
+#endif
 
 extern status_t bridge_new_block(rm_partition_t **partition)
 {
