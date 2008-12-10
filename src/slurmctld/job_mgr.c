@@ -518,6 +518,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	packstr(dump_job_ptr->nodes, buffer);
 	packstr(dump_job_ptr->partition, buffer);
 	packstr(dump_job_ptr->name, buffer);
+	packstr(dump_job_ptr->wckey, buffer);
 	packstr(dump_job_ptr->alloc_node, buffer);
 	packstr(dump_job_ptr->account, buffer);
 	packstr(dump_job_ptr->comment, buffer);
@@ -562,7 +563,7 @@ static int _load_job_state(Buf buffer)
 	char *nodes = NULL, *partition = NULL, *name = NULL, *resp_host = NULL;
 	char *account = NULL, *network = NULL, *mail_user = NULL;
 	char *comment = NULL, *nodes_completing = NULL, *alloc_node = NULL;
-	char *licenses = NULL, *state_desc;
+	char *licenses = NULL, *state_desc = NULL, *wckey = NULL;
 	struct job_record *job_ptr;
 	struct part_record *part_ptr;
 	int error_code;
@@ -614,6 +615,7 @@ static int _load_job_state(Buf buffer)
 	safe_unpackstr_xmalloc(&nodes, &name_len, buffer);
 	safe_unpackstr_xmalloc(&partition, &name_len, buffer);
 	safe_unpackstr_xmalloc(&name, &name_len, buffer);
+	safe_unpackstr_xmalloc(&wckey, &name_len, buffer);
 	safe_unpackstr_xmalloc(&alloc_node, &name_len, buffer);
 	safe_unpackstr_xmalloc(&account, &name_len, buffer);
 	safe_unpackstr_xmalloc(&comment, &name_len, buffer);
@@ -733,6 +735,9 @@ static int _load_job_state(Buf buffer)
 	xfree(job_ptr->name);		/* in case duplicate record */
 	job_ptr->name         = name;
 	name                  = NULL;	/* reused, nothing left to free */
+	xfree(job_ptr->wckey);		/* in case duplicate record */
+	job_ptr->wckey        = wckey;
+	wckey                 = NULL;	/* reused, nothing left to free */
 	xfree(job_ptr->network);
 	job_ptr->network      = network;
 	network               = NULL;  /* reused, nothing left to free */
@@ -845,6 +850,7 @@ unpack_error:
 	xfree(nodes_completing);
 	xfree(partition);
 	xfree(state_desc);
+	xfree(wckey);
 	select_g_free_jobinfo(&select_jobinfo);
 	return SLURM_FAILURE;
 }
@@ -3589,6 +3595,7 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 		pack32((uint32_t) 0, buffer);
 
 	packstr(dump_job_ptr->name, buffer);
+	packstr(dump_job_ptr->wckey, buffer);
 	packstr(dump_job_ptr->alloc_node, buffer);
 	pack_bit_fmt(dump_job_ptr->node_bitmap, buffer);
 	pack32(dump_job_ptr->num_procs, buffer);
