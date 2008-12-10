@@ -198,6 +198,10 @@ List of transactions that have occurred during a given time period.
 \fIuser\fR
 The login name.
 
+.TP
+\fIwckeys\fR
+Workload  Characterization  Key. An arbitrary  string  for  grouping orthogonal accounts.
+
 .SH "GENERAL SPECIFICATIONS FOR ASSOCIATION BASED ENTITIES"
 
 .TP
@@ -575,12 +579,20 @@ Identify the default bank account name to be used for a job if none is
 specified at submission time.
 
 .TP
+\fIDefaultWCKey\fP=<defaultwckey>
+Identify the default Workload Characterization Key.
+
+.TP
 \fIName\fP=<name>
 Name of user.
 
 .TP
 \fIPartition\fP=<name>
-Name of SLURM partition these limits apply to.
+Workload Characterization Key values.
+
+.TP
+\fIWCKeys\fP=<wckeys>
+Name of user.
 
 .SH ""
 NOTE: If using the WithAssoc option you can also query against
@@ -609,6 +621,27 @@ when using the WithCoordinator option.)
 .TP
 \fIUser\fP
 The name of a user.
+
+.SH ""
+NOTE: If using the WithAssoc option you can also view the information
+about the various associations the user may have on all the
+clusters in the system.  The Association format fields are described
+in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
+.RE
+
+.SH "LIST/SHOW WCKey"
+
+.TP
+\fIWCKey\fP
+Workload Characterization Key. 
+
+.TP
+\fICluster\fP
+Specific cluster for the WCKey.
+
+.TP
+\fIUser\fP
+The name of a user for the WCKey.
 
 .SH ""
 NOTE: If using the WithAssoc option you can also view the information
