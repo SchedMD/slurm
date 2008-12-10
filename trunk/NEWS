@@ -7,6 +7,8 @@ documents those changes that are of interest to users and admins.
     non-sharing partitions.
  -- In select/cons_res insure that required nodes have available resources.
  -- Bug fix for preemtpion with select/cons_res when there are no idle nodes.
+ -- Bug fix for use of srun options --exclusive and --cpus-per-task together
+    for job step resource allocation (tracking of cpus in use was bad).
 
 * Changes in SLURM 1.4.0-pre5
 =============================
