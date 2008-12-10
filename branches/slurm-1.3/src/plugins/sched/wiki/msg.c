@@ -569,7 +569,8 @@ static int	_parse_msg(char *msg, char **req)
 		if (strncmp(sum, msg, 19) != 0) {
 			err_code = -422;
 			err_msg = "bad checksum";
-			error("wiki: message checksum error");
+			error("wiki: message checksum error, "
+			      "check AuthKey in wiki.conf");
 			return -1;
 		}
 	}
