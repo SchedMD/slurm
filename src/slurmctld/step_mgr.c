@@ -896,6 +896,7 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 {
 	struct job_record  *job_ptr = step_ptr->job_ptr;
 	select_job_res_t select_ptr = job_ptr->select_job;
+	int cpus_alloc;
 	int i_node, i_first, i_last;
 	int job_node_inx = -1, step_node_inx = -1;
 	bool pick_step_cores = true;
@@ -941,10 +942,11 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 		step_node_inx++;
 		if (job_node_inx >= select_ptr->nhosts)
 			fatal("step_alloc_lps: node index bad");
-		if (step_ptr->cpus_per_task) {
-			select_ptr->cpus_used[job_node_inx] += 
-				step_ptr->step_layout->tasks[step_node_inx];
-		}
+		/* NOTE: The --overcommit option can result in
+		 * cpus_used[] having a higher value than cpus[] */
+		cpus_alloc = step_ptr->step_layout->tasks[step_node_inx] *
+			     step_ptr->cpus_per_task;
+		select_ptr->cpus_used[job_node_inx] += cpus_alloc; 
 		if (step_ptr->mem_per_task) {
 			select_ptr->memory_used[job_node_inx] += 
 				(step_ptr->mem_per_task *
@@ -972,6 +974,7 @@ static void _step_dealloc_lps(struct step_record *step_ptr)
 {
 	struct job_record  *job_ptr = step_ptr->job_ptr;
 	select_job_res_t select_ptr = job_ptr->select_job;
+	int cpus_alloc;
 	int i_node, i_first, i_last;
 	int job_node_inx = -1, step_node_inx = -1;
 
@@ -1006,13 +1009,11 @@ static void _step_dealloc_lps(struct step_record *step_ptr)
 		step_node_inx++;
 		if (job_node_inx >= select_ptr->nhosts)
 			fatal("_step_dealloc_lps: node index bad");
-		if (step_ptr->cpus_per_task == 0)
-			;	/* no CPUs allocated */
-		else if (select_ptr->cpus_used[job_node_inx] >=
-			 step_ptr->step_layout->tasks[step_node_inx]) {
-			select_ptr->cpus_used[job_node_inx] -= 
-				step_ptr->step_layout->tasks[step_node_inx];
-		} else {
+		cpus_alloc = step_ptr->step_layout->tasks[step_node_inx] *
+			     step_ptr->cpus_per_task;
+		if (select_ptr->cpus_used[job_node_inx] >= cpus_alloc)
+			select_ptr->cpus_used[job_node_inx] -= cpus_alloc;
+		else {
 			error("_step_dealloc_lps: cpu underflow for %u.%u",
 				job_ptr->job_id, step_ptr->step_id);
 			select_ptr->cpus_used[job_node_inx] = 0;
