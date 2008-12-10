@@ -115,7 +115,7 @@ if {$aamatches != 1} {
 }
 
 #
-# Add self to this new account
+# Add self to this new account and wckey
 #
 set sadd_pid [spawn $sacctmgr -i create user name=$user_name account=$test_acct cluster=$cn wckeys=$wk]
 expect {
@@ -130,7 +130,7 @@ expect {
 }
 
 #
-# Spawn a job via salloc using this account
+# Spawn a job via salloc using this wckey
 #
 set job_id    0
 set matches   0
@@ -143,7 +143,7 @@ expect {
 		send "exit\n"
 		exp_continue
 	}
-	-re "Account=$test_acct" {
+	-re "WCKey=$wk" {
 		incr matches
 		exp_continue
 	}
@@ -155,16 +155,30 @@ expect {
 		wait
 	}
 }
+	spawn $sacct -j $job_id --fields=wckey
+	expect {
+		-re "$wk" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
 if {$job_id == 0} {
 	send_user "\nFAILURE: salloc failed to initiate job\n"
 	set exit_code 1
-} elseif {$matches != 1} {
-	send_user "\nFAILURE: salloc failed to use desired account\n"
+} elseif {$matches != 2} {
+	send_user "\nFAILURE: salloc failed to use desired wckey\n"
 	set exit_code 1
 }
 
 #
-# Spawn a job via sbatch using this account
+# Spawn a job via sbatch using this wckey
 #
 make_bash_script $file_in "$bin_id"
 set job_id 0
@@ -201,14 +215,28 @@ if {$job_id == 0} {
 			wait
 		}
 	}
-	if {$matches != 1} {
+	spawn $sacct -j $job_id --fields=wckey
+	expect {
+		-re "$wk" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 2} {
 		send_user "\nFAILURE: sbatch failed to use specified wckey\n"
 		set exit_code 1
 	}
 }
 
 #
-# Spawn a job via srun using this account
+# Spawn a job via srun using this wckey
 #
 set job_id 0
 spawn $srun -N1 -v --account=$test_acct --wckey=$wk $bin_id
@@ -244,7 +272,21 @@ if {$job_id == 0} {
 			wait
 		}
 	}
-	if {$matches != 1} {
+	spawn $sacct -j $job_id --fields=wckey
+	expect {
+		-re "$wk" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 2} {
 		send_user "\nFAILURE: srun failed to use specified wckey\n"
 		set exit_code 1
 	}

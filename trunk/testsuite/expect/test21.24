@@ -93,9 +93,13 @@ set dac		DefaultAccount
 set pts		Partitions
 set pde		pdebug
 set pba		pbatch
-set fs		Fairshare
 set dw		DefaultWCKey
 set wk		WCKeys
+set wk1		latch
+set wk2		stone
+set wk3		hole
+set wk4		turn
+set fs		Fairshare
 set gm		GrpCPUMins
 set gc		GrpCPUs
 set gj		GrpJobs
@@ -926,7 +930,7 @@ proc _mod_acct { cluster name desc org parent fs maxcpu maxjob maxnodes maxwall 
 #
 # Use sacctmgr to add an user
 #
-proc _add_user { name AC AL CL DA QS FS GM GC GJ GN GS GW MM MC MJ MN MS MW } {
+proc _add_user { name AC AL CL DA DK WK QS FS GM GC GJ GN GS GW MM MC MJ MN MS MW } {
         global sacctmgr timeout
 
 	set exit_code 0
@@ -953,6 +957,14 @@ proc _add_user { name AC AL CL DA QS FS GM GC GJ GN GS GW MM MC MJ MN MS MW } {
 
 	if { [string length $DA] } {
 		set ucommand "$ucommand defaultaccount=$DA"
+	}
+
+	if { [string length $DK] } {
+		set ucommand "$ucommand defaultwckey=$DK"
+	}
+
+	if { [string length $WK] } {
+		set ucommand "$ucommand wckeys=$WK"
 	}
 
 	if { [string length $QS] } {
@@ -1246,8 +1258,8 @@ proc _mod_user { qoslevel waccounts wcluster wnames} {
 }
 
 #make sure we have a clean system and permission to do this work
-_remove_user "" "$us1,$us2,$us3"
-_remove_acct "" "$nm1,$nm2,$nm3"
+_remove_user "" "$us1,$us2,$us3,$us4"
+_remove_acct "" "$nm1,$nm2,$nm3,$nm4"
 _remove_qos "$qs1,$qs2,$qs3"
 _remove_cluster "$tc1,$tc2,$tc3"
 if {$access_err != 0} {
@@ -1258,8 +1270,8 @@ if {$access_err != 0} {
 #add qos
 incr exit_code [_add_qos "$qs2"]
 if { $exit_code } {
-	_remove_user "" "$us1,$us2,$us3"
-	_remove_acct "" "$nm1,$nm2,$nm3"
+	_remove_user "" "$us1,$us2,$us3,$us4"
+	_remove_acct "" "$nm1,$nm2,$nm3,$nm4"
 	_remove_qos "$qs1,$qs2,$qs3"
 	_remove_cluster "$tc1,$tc2,$tc3"
 	exit $exit_code
@@ -1269,8 +1281,8 @@ if { $exit_code } {
 #name Fairshare GrpCPUMins GrpCPUs GrpJobs GrpNodes GrpSubmitJobs GrpWall MaxCPUMins MaxCPUs MaxJobs MaxNodes MaxSubmitJobs MaxWallDurationPerJob QOS
 incr exit_code [_add_cluster "$tc3" "$fs6" "$gm6" "$gc6" "$gj6" "$gn6" "$gs6" "$gw6" "$mm6" "$mc6" "$mj6" "$mn6" "$ms6" "$mw6" "$qs2"]
 if { $exit_code } {
-	_remove_user "" "$us1,$us2,$us3"
-	_remove_acct "" "$nm1,$nm2,$nm3"
+	_remove_user "" "$us1,$us2,$us3,$us4"
+	_remove_acct "" "$nm1,$nm2,$nm3,$nm4"
 	_remove_qos "$qs1,$qs2,$qs3"
 	_remove_cluster "$tc1,$tc2,$tc3"
 	exit $exit_code
@@ -1280,8 +1292,8 @@ if { $exit_code } {
 #name Fairshare GrpCPUMins GrpCPUs GrpJobs GrpNodes GrpSubmitJobs GrpWall MaxCPUMins MaxCPUs MaxJobs MaxNodes MaxSubmitJobs MaxWallDurationPerJob QOS parent Cluster DescriptionOrganization
 incr exit_code [_add_acct "$nm4" "$fs5" "$gm5" "$gc5" "$gj5" "$gn5" "$gs5" "$gw5" "$mm5" "$mc5" "$mj5" "$mn5" "$ms5" "$mw5" "$qs2" "$roo" "$cl3" "$ds4" "$or4" ]
 if { $exit_code } {
-	_remove_user "" "$us1,$us2,$us3"
-	_remove_acct "" "$nm1,$nm2,$nm3"
+	_remove_user "" "$us1,$us2,$us3,$us4"
+	_remove_acct "" "$nm1,$nm2,$nm3,$nm4"
 	_remove_qos "$qs1,$qs2,$qs3"
 	_remove_cluster "$tc1,$tc2,$tc3"
 	exit $exit_code
@@ -1289,8 +1301,8 @@ if { $exit_code } {
 
 incr exit_code [_add_acct "$nm3" "$fs4" "$gm4" "$gc4" "$gj4" "$gn4" "$gs4" "$gw4" "$mm4" "$mc4" "$mj4" "$mn4" "$ms4" "$mw4" "$qs2" "$nm4" "$cl3" "$ds3" "$or3" ]
 if { $exit_code } {
-	_remove_user "" "$us1,$us2,$us3"
-	_remove_acct "" "$nm1,$nm2,$nm3"
+	_remove_user "" "$us1,$us2,$us3,$us4"
+	_remove_acct "" "$nm1,$nm2,$nm3,$nm4"
 	_remove_qos "$qs1,$qs2,$qs3"
 	_remove_cluster "$tc1,$tc2,$tc3"
 	exit $exit_code
@@ -1298,8 +1310,8 @@ if { $exit_code } {
 
 incr exit_code [_add_acct "$nm2" "$fs3" "$gm3" "$gc3" "$gj3" "$gn3" "$gs3" "$gw3" "$mm3" "$mc3" "$mj3" "$mn3" "$ms3" "$mw3" "$qs2" "$nm3" "$cl3" "$ds2" "$or2" ]
 if { $exit_code } {
-	_remove_user "" "$us1,$us2,$us3"
-	_remove_acct "" "$nm1,$nm2,$nm3"
+	_remove_user "" "$us1,$us2,$us3,$us4"
+	_remove_acct "" "$nm1,$nm2,$nm3,$nm4"
 	_remove_qos "$qs1,$qs2,$qs3"
 	_remove_cluster "$tc1,$tc2,$tc3"
 	exit $exit_code
@@ -1307,28 +1319,28 @@ if { $exit_code } {
 
 #add users
 # account adminlevel cluster defaultaccount qoslevel name Fairshare GrpCPUMins GrpCPUs GrpJobs GrpNodes GrpSubmitJobs GrpWall MaxCPUMins MaxCPUs MaxJobs MaxNodes MaxSubmitJobs MaxWallDurationPerJob 
-incr exit_code [_add_user "$us3" "$nm4" "$ala" "$tc3" "$nm3" "$qs2" "$fs3" "$gm3" "$gc3" "$gj3" "$gn3" "$gs3" "$gw3" "$mm3" "$mc3" "$mj3" "$mn3" "$ms3" "$mw3" ]
+incr exit_code [_add_user "$us3" "$nm4" "$ala" "$tc3" "$nm3" "$wk3" "$wk1,$wk2,$wk4" "$qs2" "$fs3" "$gm3" "$gc3" "$gj3" "$gn3" "$gs3" "$gw3" "$mm3" "$mc3" "$mj3" "$mn3" "$ms3" "$mw3" ]
 if { $exit_code } {
-	_remove_user "" "$us1,$us2,$us3"
-	_remove_acct "" "$nm1,$nm2,$nm3"
+	_remove_user "" "$us1,$us2,$us3,$us4"
+	_remove_acct "" "$nm1,$nm2,$nm3,$nm4"
 	_remove_qos "$qs1,$qs2,$qs3"
 	_remove_cluster "$tc1,$tc2,$tc3"
 	exit $exit_code
 }
 
-incr exit_code [_add_user "$us2" "$nm3" "$alo" "$tc3" "$nm2" "$qs2" "$fs2" "$gm2" "$gc2" "$gj2" "$gn2" "$gs2" "$gw2" "$mm2" "$mc2" "$mj2" "$mn2" "$ms2" "$mw2" ]
+incr exit_code [_add_user "$us2" "$nm3" "$alo" "$tc3" "$nm2" "$wk2" "$wk1,$wk3,$wk4" "$qs2" "$fs2" "$gm2" "$gc2" "$gj2" "$gn2" "$gs2" "$gw2" "$mm2" "$mc2" "$mj2" "$mn2" "$ms2" "$mw2" ]
 if { $exit_code } {
-	_remove_user "" "$us1,$us2,$us3"
-	_remove_acct "" "$nm1,$nm2,$nm3"
+	_remove_user "" "$us1,$us2,$us3,$us4"
+	_remove_acct "" "$nm1,$nm2,$nm3,$nm4"
 	_remove_qos "$qs1,$qs2,$qs3"
 	_remove_cluster "$tc1,$tc2,$tc3"
 	exit $exit_code
 }
 
-incr exit_code [_add_user "$us1" "$nm2" "$aln" "$tc3" "$nm2" "$qs2" "$fs1" "$gm1" "$gc1" "$gj1" "$gn1" "$gs1" "$gw1" "$mm1" "$mc1" "$mj1" "$mn1" "$ms1" "$mw1" ]
+incr exit_code [_add_user "$us1" "$nm2" "$aln" "$tc3" "$nm2" "$wk1" "$wk2,$wk3,$wk4" "$qs2" "$fs1" "$gm1" "$gc1" "$gj1" "$gn1" "$gs1" "$gw1" "$mm1" "$mc1" "$mj1" "$mn1" "$ms1" "$mw1" ]
 if { $exit_code } {
-	_remove_user "" "$us1,$us2,$us3"
-	_remove_acct "" "$nm1,$nm2,$nm3"
+	_remove_user "" "$us1,$us2,$us3,$us4"
+	_remove_acct "" "$nm1,$nm2,$nm3,$nm4"
 	_remove_qos "$qs1,$qs2,$qs3"
 	_remove_cluster "$tc1,$tc2,$tc3"
 	exit $exit_code
@@ -1381,10 +1393,9 @@ set tfile [open "$file_out4" r]
 #while {[gets $tfile line] != -1} {
 foreach line [split [read $tfile] "\n"] {
 #
-# Use cat to parse the dump file
+# Use echo to parse the dump file line by line.
 #
 #set matches 0
-exp_internal 1
 set my_pid [spawn echo "$line" ]
 expect {
 	-re "No such file or directory" {
@@ -1411,7 +1422,7 @@ expect {
 		exp_continue
 	}
 
-	-re "($usr - $us3:$dac='$nm3':$dw='':$al='$ala':$wk='':$fs=$fs3:$gm=$gm3:$gc=$gc3:$gj=$gj3:$gn=$gn3:$gs=$gs3:$gw=$gw3:$mp=$mm3:$mu=$mc3:$mj=$mj3:$mnj=$mn3:$ms=$ms3:$md=$mw3:$qs='$qs2')" {
+	-re "($usr - $us3:$dac='$nm3':$dw='$wk3':$al='$ala':$wk=',$wk3,$wk1,$wk2,$wk4':$fs=$fs3:$gm=$gm3:$gc=$gc3:$gj=$gj3:$gn=$gn3:$gs=$gs3:$gw=$gw3:$mp=$mm3:$mu=$mc3:$mj=$mj3:$mnj=$mn3:$ms=$ms3:$md=$mw3:$qs='$qs2')" {
 		incr matches
 		exp_continue
 	}
@@ -1437,12 +1448,12 @@ expect {
 		exp_continue
 	}
 
-	-re "($usr - $us1:$dac='$nm2':$dw='':$wk='':$fs=$fs1:$gm=$gm1:$gc=$gc1:$gj=$gj1:$gn=$gn1:$gs=$gs1:$gw=$gw1:$mp=$mm1:$mu=$mc1:$mj=$mj1:$mnj=$mn1:$ms=$ms1:$md=$mw1:$qs='$qs2')" {
+	-re "($usr - $us1:$dac='$nm2':$dw='$wk1':$wk=',$wk3,$wk1,$wk2,$wk4':$fs=$fs1:$gm=$gm1:$gc=$gc1:$gj=$gj1:$gn=$gn1:$gs=$gs1:$gw=$gw1:$mp=$mm1:$mu=$mc1:$mj=$mj1:$mnj=$mn1:$ms=$ms1:$md=$mw1:$qs='$qs2')" {
 		incr matches
 		exp_continue
 	}
 
-	-re "($usr - $us2:$dac='$nm2':$dw='':$al='$alo':$wk='':$fs=$fs2:$gm=$gm2:$gc=$gc2:$gj=$gj2:$gn=$gn2:$gs=$gs2:$gw=$gw2:$mp=$mm2:$mu=$mc2:$mj=$mj2:$mnj=$mn2:$ms=$ms2:$md=$mw2:$qs='$qs2')" {
+	-re "($usr - $us2:$dac='$nm2':$dw='$wk2':$al='$alo':$wk=',$wk3,$wk1,$wk2,$wk4':$fs=$fs2:$gm=$gm2:$gc=$gc2:$gj=$gj2:$gn=$gn2:$gs=$gs2:$gw=$gw2:$mp=$mm2:$mu=$mc2:$mj=$mj2:$mnj=$mn2:$ms=$ms2:$md=$mw2:$qs='$qs2')" {
 		incr matches
 		exp_continue
 	}
@@ -1457,7 +1468,6 @@ expect {
 	}
 }
 }
-exp_internal 0
 if {$matches != 14} {
 	send_user "\nFAILURE:  Parse of file for 14 entries incorrect with only $matches.\n"
 	incr exit_code 1
@@ -1466,8 +1476,8 @@ if {$matches != 14} {
 #
 # This is the end below here
 
-incr exit_code [_remove_user "" "$us1,$us2,$us3"]
-incr exit_code [_remove_acct "" "$nm1,$nm2,$nm3"]
+incr exit_code [_remove_user "" "$us1,$us2,$us3,$us4"]
+incr exit_code [_remove_acct "" "$nm1,$nm2,$nm3,$nm4"]
 incr exit_code [_remove_qos "$qs1,$qs2,$qs3"]
 incr exit_code [_remove_cluster "$tc1,$tc2,$tc3"]
 
