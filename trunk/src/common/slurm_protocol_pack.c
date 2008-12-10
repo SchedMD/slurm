@@ -2280,6 +2280,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 	char *node_inx_str;
 	multi_core_data_t *mc_ptr;
 
+	safe_unpack32(&job->assoc_id, buffer);
 	safe_unpack32(&job->job_id, buffer);
 	safe_unpack32(&job->user_id, buffer);
 	safe_unpack32(&job->group_id, buffer);
@@ -2289,7 +2290,6 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 	safe_unpack16(&job->state_reason, buffer);
 
 	safe_unpack32(&job->alloc_sid,    buffer);
-	safe_unpack32(&job->assoc_id,     buffer);
 	safe_unpack32(&job->time_limit,   buffer);
 
 	safe_unpack_time(&job->submit_time, buffer);
@@ -2316,6 +2316,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 	}
 
 	safe_unpackstr_xmalloc(&job->name, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&job->wckey, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&job->alloc_node, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&node_inx_str, &uint32_tmp, buffer);
 	if (node_inx_str == NULL)
@@ -2382,7 +2383,6 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 		job->ntasks_per_core   = mc_ptr->ntasks_per_core;
 		xfree(mc_ptr);
 	}
-	safe_unpackstr_xmalloc(&job->wckey, &uint32_tmp, buffer);
 	
 	return SLURM_SUCCESS;
 
