@@ -75,7 +75,8 @@ static void _free_step_rec(struct step_record *step_ptr);
 static void _pack_ctld_job_step_info(struct step_record *step, Buf buffer);
 static bitstr_t * _pick_step_nodes (struct job_record  *job_ptr, 
 				    job_step_create_request_msg_t *step_spec,
-				    bool batch_step, int *return_code);
+				    int cpus_per_task, bool batch_step,
+				    int *return_code);
 static hostlist_t _step_range_to_hostlist(struct step_record *step_ptr,
 				uint32_t range_first, uint32_t range_last);
 static int _step_hostname_to_inx(struct step_record *step_ptr,
@@ -415,6 +416,7 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
  *	we satisfy the super-set of constraints.
  * IN job_ptr - pointer to job to have new step started
  * IN step_spec - job step specification
+ * IN cpus_per_task - NOTE could be zero
  * IN batch_step - if set then step is a batch script
  * OUT return_code - exit code or SLURM_SUCCESS
  * global: node_record_table_ptr - pointer to global node table
@@ -424,6 +426,7 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 static bitstr_t *
 _pick_step_nodes (struct job_record  *job_ptr, 
 		  job_step_create_request_msg_t *step_spec,
+		  int cpus_per_task,
 		  bool batch_step, int *return_code)
 {
 	bitstr_t *nodes_avail = NULL, *nodes_idle = NULL;
@@ -482,7 +485,9 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	 * Do not use nodes that have no unused CPUs or insufficient 
 	 * unused memory */
 	if (step_spec->exclusive) {
-		int avail_tasks, node_inx = 0, tot_tasks = 0, usable_mem;
+		int avail_cpus, avail_tasks, total_cpus, total_tasks, node_inx;
+		uint32_t avail_mem, total_mem;
+		uint32_t tasks_picked_cnt = 0, total_task_cnt = 0;
 		bitstr_t *selected_nodes = NULL;
 
 		if (step_spec->node_list) {
@@ -511,47 +516,57 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			}
 		}
 
+		node_inx = 0;
 		for (i=bit_ffs(job_ptr->node_bitmap); i<node_record_count; 
 		     i++) {
 			if (!bit_test(job_ptr->node_bitmap, i))
 				continue;
-			avail_tasks = select_ptr->cpus[node_inx] - 
-				      select_ptr->cpus_used[node_inx];
-			tot_tasks += job_ptr->select_job->cpus[node_inx];
+			avail_cpus = select_ptr->cpus[node_inx] - 
+				     select_ptr->cpus_used[node_inx];
+			total_cpus = job_ptr->select_job->cpus[node_inx];
+			if (cpus_per_task > 0) {
+				avail_tasks = avail_cpus / cpus_per_task;
+				total_tasks = total_cpus / cpus_per_task;
+			} else {
+				avail_tasks = step_spec->num_tasks;
+				total_tasks = step_spec->num_tasks;
+			}
 			if (step_spec->mem_per_task) {
-				usable_mem = select_ptr->
-					     memory_allocated[node_inx] -
-					     select_ptr->memory_used[node_inx];
-				usable_mem /= step_spec->mem_per_task;
-				avail_tasks = MIN(avail_tasks, usable_mem);
-				usable_mem = select_ptr->
-					     memory_allocated[node_inx];
-				usable_mem /= step_spec->mem_per_task;
-				tot_tasks = MIN(tot_tasks, usable_mem);
+				avail_mem = select_ptr->
+					    memory_allocated[node_inx] -
+					    select_ptr->memory_used[node_inx];
+				avail_mem /= step_spec->mem_per_task;
+				avail_tasks = MIN(avail_tasks, avail_mem);
+				total_mem = select_ptr->
+					    memory_allocated[node_inx];
+				total_mem /= step_spec->mem_per_task;
+				total_tasks = MIN(total_tasks, total_mem);
 			}
 			if ((avail_tasks <= 0) ||
 			    ((selected_nodes == NULL) &&
-			     (cpus_picked_cnt > 0) &&
-			     (cpus_picked_cnt >= step_spec->cpu_count)))
+			     (tasks_picked_cnt > 0) &&
+			     (tasks_picked_cnt >= step_spec->num_tasks)))
 				bit_clear(nodes_avail, i);
 			else
-				cpus_picked_cnt += avail_tasks;
+				tasks_picked_cnt += avail_tasks;
+			total_task_cnt += total_tasks;
 			if (++node_inx >= select_ptr->nhosts)
 				break;
 		}
+
 		if (selected_nodes) {
 			if (!bit_equal(selected_nodes, nodes_avail)) {
 				/* some required nodes have no available
 				 * processors, defer request */
-				cpus_picked_cnt = 0;
+				tasks_picked_cnt = 0;
 			}
 			bit_free(selected_nodes);
 		}
-		if (cpus_picked_cnt >= step_spec->cpu_count)
-			return nodes_avail;
 
+		if (tasks_picked_cnt >= step_spec->num_tasks)
+			return nodes_avail;
 		FREE_NULL_BITMAP(nodes_avail);
-		if (tot_tasks >= step_spec->cpu_count)
+		if (total_task_cnt >= step_spec->num_tasks)
 			*return_code = ESLURM_NODES_BUSY;
 		else
 			*return_code = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
@@ -1162,7 +1177,8 @@ step_create(job_step_create_request_msg_t *step_specs,
 	job_ptr->kill_on_step_done = kill_job_when_step_done;
 
 	job_ptr->time_last_active = now;
-	nodeset = _pick_step_nodes(job_ptr, step_specs, batch_step, &ret_code);
+	nodeset = _pick_step_nodes(job_ptr, step_specs,
+				   cpus_per_task, batch_step, &ret_code);
 	if (nodeset == NULL)
 		return ret_code;
 	node_count = bit_set_count(nodeset);
@@ -1287,7 +1303,7 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 	uint32_t cpu_count_reps[node_count];
 	int cpu_inx = -1;
 	int i, usable_cpus, usable_mem;
-	int set_nodes = 0, set_cpus = 0;
+	int set_cpus = 0, set_nodes = 0, set_tasks = 0;
 	int pos = -1;
 	int first_bit, last_bit;
 	struct job_record *job_ptr = step_ptr->job_ptr;
@@ -1321,7 +1337,7 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 				usable_cpus = select_ptr->cpus[pos] -
 					      select_ptr->cpus_used[pos];
 				usable_cpus = MAX(usable_cpus, 
-						  (num_tasks - set_cpus));
+						  (num_tasks - set_tasks));
 			} else
 				usable_cpus = select_ptr->cpus[pos];
 			if (step_ptr->mem_per_task) {
@@ -1347,6 +1363,10 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 				cpu_count_reps[cpu_inx]++;
 			set_nodes++;
 			set_cpus += usable_cpus;
+			if (cpus_per_task > 0)
+				set_tasks += usable_cpus / cpus_per_task;
+			else
+				set_tasks = num_tasks;
 			if (set_nodes == node_count)
 				break;
 		}
