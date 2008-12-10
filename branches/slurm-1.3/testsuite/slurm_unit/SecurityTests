@@ -45,13 +45,15 @@ SUCCESS
 Test 1.2     Verify that SlurmUser is unique
 ============================================
 Execute "security_1_2.bash" and check for errors. Make sure that the
-"scontrol" program is in your default search path or modify the script. It's 
-last line of output will be "SUCCESS" if there were no errors and "FAILURE" 
-otherwise. 
+"scontrol" program is in your default search path or modify the script.
+The last line of output will be "SUCCESS" if there were no errors and 
+"FAILURE" otherwise. 
+NOTE: On systems without a full slurm instalation (e.g. the slurmdbd server),
+use the second example below.
 
 Example for systems running slurmctld:
 $ ./security_1_2.bash                            < Gets UID from "scontrol show config"
-slurm:x:97:97:Slurm user:/var/slurm:/bin/false
+slurm:x:97:97:Slurm user:/var/slurm:/bin/false   < If not full slurm install, see below
 SUCCESS
 
 Example for systems running only slurmdbd:
