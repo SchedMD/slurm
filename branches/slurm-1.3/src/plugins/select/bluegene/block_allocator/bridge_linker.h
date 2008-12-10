@@ -92,6 +92,12 @@ extern status_t bridge_get_jobs(rm_job_state_flag_t flag,
 extern status_t bridge_remove_job(db_job_id_t jid);  
 extern status_t bridge_get_nodecards(rm_bp_id_t bpid, 
 				     rm_nodecard_list_t **nc_list);
+extern status_t bridge_new_nodecard(rm_nodecard_t **nodecard);
+extern status_t bridge_free_nodecard(rm_nodecard_t *nodecard);
+#ifndef HAVE_BGL
+extern status_t bridge_new_ionode(rm_ionode_t **ionode);
+extern status_t bridge_free_ionode(rm_ionode_t *ionode);
+#endif
 extern status_t bridge_new_block(rm_partition_t **partition);
 extern status_t bridge_free_block(rm_partition_t *partition);
 extern status_t bridge_free_job(rm_job_t *job);
