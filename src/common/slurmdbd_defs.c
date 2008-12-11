@@ -420,9 +420,10 @@ extern Buf pack_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 			(dbd_get_jobs_msg_t *)req->data, buffer);
 		break;
 	case DBD_INIT:
-		slurmdbd_pack_init_msg(rpc_version,
-				       (dbd_init_msg_t *)req->data, buffer, 
-				       slurmdbd_auth_info);
+		if(slurmdbd_pack_init_msg(rpc_version,
+					  (dbd_init_msg_t *)req->data, buffer, 
+					  slurmdbd_auth_info) != SLURM_SUCCESS)
+			free_buf(buffer);
 		break;
 	case DBD_FINI:
 		slurmdbd_pack_fini_msg(rpc_version,
@@ -1136,14 +1137,18 @@ static int _send_init_msg()
 	int rc, read_timeout;
 	Buf buffer;
 	dbd_init_msg_t req;
-
+	
 	buffer = init_buf(1024);
 	pack16((uint16_t) DBD_INIT, buffer);
 	req.rollback = rollback_started;
 	req.version  = SLURMDBD_VERSION;
-	slurmdbd_pack_init_msg(SLURMDBD_VERSION, &req, buffer,
-			       slurmdbd_auth_info);
-
+	if(slurmdbd_pack_init_msg(SLURMDBD_VERSION, &req, buffer,
+				  slurmdbd_auth_info) != SLURM_SUCCESS) {
+		error("slurmdbd: Creating DBD_INIT message");
+		free_buf(buffer);
+		return SLURM_ERROR;
+	}
+	
 	rc = _send_msg(buffer);
 	free_buf(buffer);
 	if (rc != SLURM_SUCCESS) {
@@ -2385,27 +2390,30 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-void inline 
+int inline 
 slurmdbd_pack_init_msg(uint16_t rpc_version, dbd_init_msg_t *msg, 
 		       Buf buffer, char *auth_info)
 {
-	int rc;
+	int rc = SLURM_SUCCESS;
 	void *auth_cred;
 
 	pack16(msg->rollback, buffer);
 	pack16(msg->version, buffer);
 	auth_cred = g_slurm_auth_create(NULL, 2, auth_info);
 	if (auth_cred == NULL) {
-		error("Creating authentication credential: %s",
-		      g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));
+		error("Creating authentication credential");
+		rc = ESLURM_ACCESS_DENIED;
 	} else {
 		rc = g_slurm_auth_pack(auth_cred, buffer);
-		(void) g_slurm_auth_destroy(auth_cred);
 		if (rc) {
 			error("Packing authentication credential: %s",
-			      g_slurm_auth_errstr(g_slurm_auth_errno(auth_cred)));
+			      g_slurm_auth_errstr(
+				      g_slurm_auth_errno(auth_cred)));
+			rc = g_slurm_auth_errno(auth_cred);
 		}
+		(void) g_slurm_auth_destroy(auth_cred);
 	}
+	return rc;
 }
 
 int inline 
