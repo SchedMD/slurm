@@ -187,7 +187,12 @@ main (int argc, char *argv[])
 	/* always do a rollback.  If you don't then if there is an
 	 * error you can not rollback ;)
 	 */
+	errno = 0;
 	db_conn = acct_storage_g_get_connection(false, 0, 1);
+	if(errno != SLURM_SUCCESS) {
+		error("sacctmgr: %m");
+		exit(1);
+	}
 	my_uid = getuid();
 
 	if (input_field_count)

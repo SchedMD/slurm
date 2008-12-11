@@ -1,5 +1,5 @@
 LLNL Security Tests
-10 December 2008
+11 December 2008
 
 Unless otherwise noted. Run all tests as a normal user (not user root or
 SlurmUser).
@@ -8,6 +8,14 @@ For computers running the slurmdbd daemon, run tests 1.x and 4.x only.
 For computers running the slurmctld or slurmd daemon, run tests 1.x, 2.x, 
 and 3.x only.
 
+NOTE: If SLURM has no pdebug partition (e.g. it can not run jobs without 
+Moab), then you will need to enable normal user jobs to run in the pbatch
+partition and explicitly start them by setting their priority to a non-zero
+value. For example (as user root):
+# scontrol update PartitionName=pbatch RootOnly=NO    < ENABLE JOB SUBMIT WITHOUT MOAB
+<submit jobs as desired here>
+# scontrol update JobID=<slurm_job_id> Priority=1     < ENABLE JOB TO RUN
+# scontrol update PartitionName=pbatch RootOnly=YES   < FORCE JOB SUBMIT THROUGH MOAB
 
 
 Test 1.1     Verify file permissions
@@ -101,7 +109,10 @@ Test 2.2.2   Verify that jobs can't be run as another user
 First run a job as ourself and they try to do so as another user. On some
 systems the pdebug partition should be specified. On BlueGene systems a 
 batch script must be submitted (use "sbatch --partition=pdebug security_2_2_2.sh").
-The script security_2_2_2.sh just invokes "/usr/bin/id".
+If there is no pdebug partition and the pbatch partition can only be used by
+user ROOT, you will need to change that before and after the test. See
+example below for BlueGene.  The script security_2_2_2.sh just invokes 
+"/usr/bin/id".
 NOTE: Insure the event is logged in SlurmctldLogFile for test 2.4 verification.
 
 Linux/AIX example:
@@ -111,19 +122,27 @@ $ srun --partition=pdebug --uid=0 security_2_2_2.sh
 srun: error: Unable to allocate resources: Invalid user id    < ERROR IS EXPECTED
 
 BlueGene example:
-$ sbatch --partition=pdebug security_2_2_2.sh
+# scontrol update PartitionName=pbatch RootOnly=NO            < AS USER ROOT
+$ sbatch security_2_2_2.sh                                    < AS REGULAR USER
 sbatch: Submitted batch job 1784597
-$ sbatch --partition=pdebug --uid=0 security_2_2_2.sh
+# scontrol update JobID=1784597 Priority=1                    < ENABLE JOB TO RUN
+$ sbatch --uid=0 security_2_2_2.sh
 sbatch: error: Batch job submission failed: Invalid user id   < ERROR IS EXPECTED
+$ /usr/bin/id >out.2.2.2
+$ diff out.2.2.2 slurm.out.1784597                            < AFTER JOB COMPLETES
+                                                                IDs SHOULD MATCH
+# scontrol update PartitionName=pbatch RootOnly=YES           < AS USER ROOT
 
 
 Test 2.2.3   Verify that one user can't modify another user's job
 =================================================================
 Submit a job as one user then try to cancel or modify it as another user.
+See note above if there is no pdebug or pbatch is root accessible only.
 NOTE: Insure the event is logged in SlurmctldLogFile for test 2.4 verification.
 
 Example:
-$ sbatch --partition=pdebug security_2_2_3.sh
+# scontrol update PartitionName=pbatch RootOnly=NO            < AS USER ROOT
+$ sbatch --partition=pdebug security_2_2_3.sh                 < AS REGULAR USER
 sbatch: Submitted batch job 1784601
 
 FROM A DIFFERENT USER (NOT root or SlurmUser):
@@ -131,6 +150,7 @@ $ scancel 1784601                            < THE JOB ID FROM ABOVE
 scancel: error: Kill job error on job id 1784601: Access denied
 $ scontrol update timelimit=4 jobid=1784601  < THE JOB ID FROM ABOVE
 slurm_update error: Invalid user id
+# scontrol update PartitionName=pbatch RootOnly=YES           < AS USER ROOT
 
 
 Test 2.2.4   Verify SLURM's wiki interface is secure
@@ -223,7 +243,7 @@ NOTE: This test is not applicable for BlueGene systems.
 NOTE: Insure the event is logged in SlurmdLogFile for test 3.3 verification.
 
 Example:
-$ srun -w adev7 slurmd/security_3_2.csh
+$ srun -w adev7 security_3_2.csh
 Mon Dec  1 15:03:56 PST 2008
 Mon Dec  1 15:04:06 PST 2008
 Mon Dec  1 15:04:16 PST 2008

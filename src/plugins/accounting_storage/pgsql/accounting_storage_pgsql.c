@@ -790,7 +790,8 @@ extern void *acct_storage_p_get_connection(bool make_agent, int conn_num,
 	debug2("acct_storage_p_get_connection: request new connection");
 	
 	pgsql_get_db_connection(&acct_pgsql_db, pgsql_db_name, pgsql_db_info);
-	
+	if(acct_pgsql_db)
+		errno = SLURM_SUCCESS;
 	return (void *)acct_pgsql_db;
 #else
 	return NULL;
