@@ -680,6 +680,10 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args)
 		local_cluster_name = slurm_get_cluster_name();
 	}
 
+	/* check if we can't talk to the db yet */
+	if(errno == ESLURM_ACCESS_DENIED)
+		return SLURM_ERROR;
+	
 	if((!local_association_list) && (cache_level & ASSOC_MGR_CACHE_ASSOC)) 
 		if(_get_local_association_list(db_conn, enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
@@ -695,7 +699,6 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args)
 	if((!assoc_mgr_wckey_list) && (cache_level & ASSOC_MGR_CACHE_WCKEY))
 		if(_get_local_wckey_list(db_conn, enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
-
 
 	return SLURM_SUCCESS;
 }
