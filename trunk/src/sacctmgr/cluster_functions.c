@@ -456,7 +456,7 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 				       MAX(command_len, 8))) {
 			field->type = PRINT_CHOST;
 			field->name = xstrdup("Control Host");
-			field->len = 12;
+			field->len = 15;
 			field->print_routine = print_fields_str;
 		} else if(!strncasecmp("ControlPort", object,
 				       MAX(command_len, 8))) {
