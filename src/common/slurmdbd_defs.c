@@ -1226,6 +1226,8 @@ static int _send_msg(Buf buffer)
 	re_open:	/* SlurmDBD shutdown, try to reopen a connection now */
 		if (retry_cnt++ > 3)
 			return EAGAIN;
+		/* if errno is ACCESS_DENIED do not try to reopen to
+		   connection just return that */
 		if(errno == ESLURM_ACCESS_DENIED)
 			return ESLURM_ACCESS_DENIED;
 		_reopen_slurmdbd_fd();
