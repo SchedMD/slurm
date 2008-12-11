@@ -11,8 +11,8 @@ grep ":${slurm_uid}:" /etc/passwd >tmp.$$
 cat tmp.$$
 
 # Make sure there is just one entry
-wc --lines tmp.$$ | awk '{ if ( $1 == 1 ) { print "SUCCESS" } } '
-wc --lines tmp.$$ | awk '{ if ( $1 != 1 ) { print "FAILURE" } } '
+wc -l tmp.$$ | awk '{ if ( $1 == 1 ) { print "SUCCESS" } } '
+wc -l tmp.$$ | awk '{ if ( $1 != 1 ) { print "FAILURE" } } '
 
 # Clean up
 rm -f tmp.$$
