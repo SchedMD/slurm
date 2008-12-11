@@ -134,8 +134,11 @@ extern void *acct_storage_p_get_connection(bool make_agent, int conn_num,
 {
 	if(!slurmdbd_auth_info)	
 		init();
-	slurm_open_slurmdbd_conn(slurmdbd_auth_info, make_agent, rollback);
 
+	if(slurm_open_slurmdbd_conn(slurmdbd_auth_info,
+				    make_agent, rollback) == SLURM_SUCCESS) 
+		errno = SLURM_SUCCESS;
+	
 	return NULL;
 }
 

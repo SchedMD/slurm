@@ -445,9 +445,9 @@ void inline slurmdbd_pack_cond_msg(uint16_t rpc_version,
 				   dbd_cond_msg_t *msg, Buf buffer);
 void inline slurmdbd_pack_get_jobs_msg(uint16_t rpc_version, 
 				       dbd_get_jobs_msg_t *msg, Buf buffer);
-int inline slurmdbd_pack_init_msg(uint16_t rpc_version, 
-				  dbd_init_msg_t *msg, Buf buffer,
-				  char *auth_info);
+void inline slurmdbd_pack_init_msg(uint16_t rpc_version, 
+				   dbd_init_msg_t *msg, Buf buffer,
+				   char *auth_info);
 void inline slurmdbd_pack_fini_msg(uint16_t rpc_version, 
 				   dbd_fini_msg_t *msg, Buf buffer);
 void inline slurmdbd_pack_job_complete_msg(uint16_t rpc_version, 

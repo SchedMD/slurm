@@ -11,7 +11,7 @@ echo "AuthType=auth/dummy" >>tmp.$$
 # Run srun using this config file
 export SLURM_CONF=tmp.$$
 touch tmp.o.$$
-${slurm_bin}srun /bin/id --output=tmp.o.$$
+${slurm_bin}salloc /bin/bash
 
 grep --quiet uid tmp.o.$$
 if [ "$?" == 1 ] ; then

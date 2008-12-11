@@ -128,6 +128,8 @@ static int    _tot_wait (struct timeval *start_time);
 extern int slurm_open_slurmdbd_conn(char *auth_info, bool make_agent, 
 				    bool rollback)
 {
+	int tmp_errno = SLURM_SUCCESS;
+
 	/* we need to set this up before we make the agent or we will
 	   get a threading issue.
 	*/
@@ -138,16 +140,21 @@ extern int slurm_open_slurmdbd_conn(char *auth_info, bool make_agent,
 
 	rollback_started = rollback;
 
-	if (slurmdbd_fd < 0)
+	if (slurmdbd_fd < 0) {
 		_open_slurmdbd_fd();
+		tmp_errno = errno;
+	}
 	slurm_mutex_unlock(&slurmdbd_lock);
 
 	slurm_mutex_lock(&agent_lock);
 	if (make_agent && ((agent_tid == 0) || (agent_list == NULL)))
 		_create_agent();
 	slurm_mutex_unlock(&agent_lock);
-
-	if (slurmdbd_fd < 0)
+	
+	if(tmp_errno) {
+		errno = tmp_errno;
+		return tmp_errno;
+	} else if (slurmdbd_fd < 0) 
 		return SLURM_ERROR;
 	else
 		return SLURM_SUCCESS;
@@ -316,6 +323,8 @@ static void _open_slurmdbd_fd(void)
 
 	if (slurmdbd_fd >= 0) {
 		debug("Attempt to re-open slurmdbd socket");
+		/* clear errno (checked after this for errors) */
+		errno = 0;
 		return;
 	}
 
@@ -339,10 +348,16 @@ static void _open_slurmdbd_fd(void)
 			error("slurmdbd: slurm_open_msg_conn: %m");
 		else {
 			fd_set_nonblocking(slurmdbd_fd);
-			if (_send_init_msg() != SLURM_SUCCESS)
+			if (_send_init_msg() != SLURM_SUCCESS)  {
 				error("slurmdbd: Sending DdbInit msg: %m");
-			else
+				_close_slurmdbd_fd();
+			} else {
 				debug("slurmdbd: Sent DbdInit msg");
+				/* clear errno (checked after this for
+				   errors)
+				*/
+				errno = 0;
+			}
 		}
 	}
 	xfree(slurmdbd_host);
@@ -419,10 +434,9 @@ extern Buf pack_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 			(dbd_get_jobs_msg_t *)req->data, buffer);
 		break;
 	case DBD_INIT:
-		if(slurmdbd_pack_init_msg(rpc_version,
-					  (dbd_init_msg_t *)req->data, buffer, 
-					  slurmdbd_auth_info) != SLURM_SUCCESS)
-			free_buf(buffer);
+		slurmdbd_pack_init_msg(rpc_version,
+				       (dbd_init_msg_t *)req->data, buffer, 
+				       slurmdbd_auth_info);
 		break;
 	case DBD_FINI:
 		slurmdbd_pack_fini_msg(rpc_version,
@@ -1127,18 +1141,18 @@ static int _send_init_msg()
 	int rc, read_timeout;
 	Buf buffer;
 	dbd_init_msg_t req;
-	
+	int tmp_errno = SLURM_SUCCESS;
+
 	buffer = init_buf(1024);
 	pack16((uint16_t) DBD_INIT, buffer);
 	req.rollback = rollback_started;
 	req.version  = SLURMDBD_VERSION;
-	if(slurmdbd_pack_init_msg(SLURMDBD_VERSION, &req, buffer,
-				  slurmdbd_auth_info) != SLURM_SUCCESS) {
-		error("slurmdbd: Creating DBD_INIT message");
-		free_buf(buffer);
-		return SLURM_ERROR;
-	}
-	
+	slurmdbd_pack_init_msg(SLURMDBD_VERSION, &req, buffer,
+			       slurmdbd_auth_info);
+	/* if we have an issue with the pack we want to log the errno,
+	   but send anyway so we get it logged on the slurmdbd also */
+	tmp_errno = errno;
+
 	rc = _send_msg(buffer);
 	free_buf(buffer);
 	if (rc != SLURM_SUCCESS) {
@@ -1148,7 +1162,8 @@ static int _send_init_msg()
 
 	read_timeout = slurm_get_msg_timeout() * 1000;
 	rc = _get_return_code(SLURMDBD_VERSION, read_timeout);
-	
+	if(tmp_errno)
+		errno = tmp_errno;
 	return rc;
 }
 
@@ -1201,6 +1216,10 @@ static int _send_msg(Buf buffer)
 	re_open:	/* SlurmDBD shutdown, try to reopen a connection now */
 		if (retry_cnt++ > 3)
 			return EAGAIN;
+		/* if errno is ACCESS_DENIED do not try to reopen to
+		   connection just return that */
+		if(errno == ESLURM_ACCESS_DENIED)
+			return ESLURM_ACCESS_DENIED;
 		_reopen_slurmdbd_fd();
 		rc = _fd_writeable(slurmdbd_fd);
 	}
@@ -2380,30 +2399,31 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-int inline 
+void inline 
 slurmdbd_pack_init_msg(uint16_t rpc_version, dbd_init_msg_t *msg, 
 		       Buf buffer, char *auth_info)
 {
-	int rc = SLURM_SUCCESS;
+	int rc;
 	void *auth_cred;
 
 	pack16(msg->rollback, buffer);
 	pack16(msg->version, buffer);
 	auth_cred = g_slurm_auth_create(NULL, 2, auth_info);
 	if (auth_cred == NULL) {
-		error("Creating authentication credential");
-		rc = ESLURM_ACCESS_DENIED;
+		error("Creating authentication credential: %s",
+		      g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));
+		errno = ESLURM_ACCESS_DENIED;
 	} else {
 		rc = g_slurm_auth_pack(auth_cred, buffer);
 		if (rc) {
 			error("Packing authentication credential: %s",
 			      g_slurm_auth_errstr(
 				      g_slurm_auth_errno(auth_cred)));
-			rc = g_slurm_auth_errno(auth_cred);
+			errno = g_slurm_auth_errno(auth_cred);
+
 		}
 		(void) g_slurm_auth_destroy(auth_cred);
 	}
-	return rc;
 }
 
 int inline 
