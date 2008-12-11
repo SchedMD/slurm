@@ -255,8 +255,7 @@ static int _print_text_job(job_info_t * job_ptr)
 	uint32_t node_cnt = 0;
 	char *ionodes = NULL, *uname;
 	time_t now_time = time(NULL);
-	char *temp = NULL;
-
+	
 #ifdef HAVE_BG
 	select_g_get_jobinfo(job_ptr->select_jobinfo, 
 			     SELECT_DATA_IONODES, 

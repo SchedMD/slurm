@@ -1736,8 +1736,6 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 		_update_info_step(sview_job_info_ptr, 
 				  GTK_TREE_MODEL(treestore), NULL, iter);
 		
-	xfree(jname);
-	xfree(wckey);
 	return;
 }
 
