@@ -1327,10 +1327,9 @@ static void _excise_node_from_job(struct job_record *job_ptr,
 			continue;
 		memcpy(&job_ptr->node_addr[new_pos],
 		       &job_ptr->node_addr[orig_pos], sizeof(slurm_addr));
-		job_ptr->select_job->cpus[new_pos] = 
-			job_ptr->select_job->cpus[orig_pos];
-		job_ptr->select_job->cpus_used[new_pos] = 
-			job_ptr->select_job->cpus_used[orig_pos];
+		/* NOTE: The job's allocation in the job_ptr->select_job
+		 * data structure is unchanged  even after a node allocated
+		 * to the job goes DOWN. */
 	}
 	job_ptr->node_cnt = new_pos + 1;
 }

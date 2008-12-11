@@ -572,7 +572,7 @@ static int _make_step_cred(struct step_record *step_ptr,
 		cred_arg.alloc_lps = xmalloc(cred_arg.alloc_lps_cnt *
 					     sizeof(uint16_t));
 		for (i=0; i<node_record_count; i++) {
-			if (!bit_test(job_ptr->node_bitmap, i))
+			if (!bit_test(select_ptr->node_bitmap, i))
 				continue;
 			job_inx++;
 			if (!bit_test(step_ptr->step_node_bitmap, i))

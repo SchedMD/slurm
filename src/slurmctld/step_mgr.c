@@ -517,13 +517,13 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		}
 
 		node_inx = 0;
-		for (i=bit_ffs(job_ptr->node_bitmap); i<node_record_count; 
+		for (i=bit_ffs(select_ptr->node_bitmap); i<node_record_count; 
 		     i++) {
-			if (!bit_test(job_ptr->node_bitmap, i))
+			if (!bit_test(select_ptr->node_bitmap, i))
 				continue;
 			avail_cpus = select_ptr->cpus[node_inx] - 
 				     select_ptr->cpus_used[node_inx];
-			total_cpus = job_ptr->select_job->cpus[node_inx];
+			total_cpus = select_ptr->cpus[node_inx];
 			if (cpus_per_task > 0) {
 				avail_tasks = avail_cpus / cpus_per_task;
 				total_tasks = total_cpus / cpus_per_task;
@@ -575,9 +575,9 @@ _pick_step_nodes (struct job_record  *job_ptr,
 
 	if (step_spec->mem_per_task) {
 		int node_inx = 0, usable_mem;
-		for (i=bit_ffs(job_ptr->node_bitmap); i<node_record_count; 
+		for (i=bit_ffs(select_ptr->node_bitmap); i<node_record_count; 
 		     i++) {
-			if (!bit_test(job_ptr->node_bitmap, i))
+			if (!bit_test(select_ptr->node_bitmap, i))
 				continue;
 			usable_mem = select_ptr->memory_allocated[node_inx] -
 				     select_ptr->memory_used[node_inx];
@@ -591,7 +591,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				}
 				bit_clear(nodes_avail, i);
 			}
-			if (++node_inx >= job_ptr->node_cnt)
+			if (++node_inx >= select_ptr->nhosts)
 				break;
 		}
 	}
@@ -835,8 +835,7 @@ static int _count_cpus(bitstr_t *bitmap)
  *	and step's allocation */
 static void _pick_step_cores(struct step_record *step_ptr, 
 			     select_job_res_t select_ptr, 
-			     int step_node_inx, int job_node_inx,
-			     uint16_t task_cnt)
+			     int job_node_inx, uint16_t task_cnt)
 {
 	int bit_offset, core_inx, sock_inx;
 	uint16_t sockets, cores;
@@ -925,8 +924,8 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 	if (step_ptr->step_layout == NULL)	/* batch step */
 		return;
 
-	i_first = bit_ffs(job_ptr->node_bitmap);
-	i_last  = bit_fls(job_ptr->node_bitmap);
+	i_first = bit_ffs(select_ptr->node_bitmap);
+	i_last  = bit_fls(select_ptr->node_bitmap);
 	if (i_first == -1)	/* empty bitmap */
 		return;
 
@@ -949,7 +948,7 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 	}
 
 	for (i_node = i_first; i_node <= i_last; i_node++) {
-		if (!bit_test(job_ptr->node_bitmap, i_node))
+		if (!bit_test(select_ptr->node_bitmap, i_node))
 			continue;
 		job_node_inx++;
 		if (!bit_test(step_ptr->step_node_bitmap, i_node))
@@ -969,7 +968,7 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 		}
 		if (pick_step_cores) {
 			_pick_step_cores(step_ptr, select_ptr, 
-					 step_node_inx, job_node_inx,
+					 job_node_inx,
 					 step_ptr->step_layout->
 					 tasks[step_node_inx]);
 		}
@@ -1002,8 +1001,8 @@ static void _step_dealloc_lps(struct step_record *step_ptr)
 	if (step_ptr->step_layout == NULL)	/* batch step */
 		return;
 
-	i_first = bit_ffs(job_ptr->node_bitmap);
-	i_last  = bit_fls(job_ptr->node_bitmap);
+	i_first = bit_ffs(select_ptr->node_bitmap);
+	i_last  = bit_fls(select_ptr->node_bitmap);
 	if (i_first == -1)	/* empty bitmap */
 		return;
 
@@ -1016,7 +1015,7 @@ static void _step_dealloc_lps(struct step_record *step_ptr)
 	}
 
 	for (i_node = i_first; i_node <= i_last; i_node++) {
-		if (!bit_test(job_ptr->node_bitmap, i_node))
+		if (!bit_test(select_ptr->node_bitmap, i_node))
 			continue;
 		job_node_inx++;
 		if (!bit_test(step_ptr->step_node_bitmap, i_node))
@@ -1371,7 +1370,7 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 				break;
 		}
 	}
-	
+
 	/* layout the tasks on the nodes */
 	return slurm_step_layout_create(step_node_list,
 					cpus_per_node, cpu_count_reps, 
