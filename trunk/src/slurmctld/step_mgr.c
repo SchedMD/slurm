@@ -486,7 +486,9 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	 * unused memory */
 	if (step_spec->exclusive) {
 		int avail_cpus, avail_tasks, total_cpus, total_tasks, node_inx;
+		int i_first, i_last;
 		uint32_t avail_mem, total_mem;
+		uint32_t nodes_picked_cnt = 0;
 		uint32_t tasks_picked_cnt = 0, total_task_cnt = 0;
 		bitstr_t *selected_nodes = NULL;
 
@@ -516,11 +518,15 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			}
 		}
 
-		node_inx = 0;
-		for (i=bit_ffs(select_ptr->node_bitmap); i<node_record_count; 
-		     i++) {
+		node_inx = -1;
+		i_first = bit_ffs(select_ptr->node_bitmap);
+		i_last  = bit_fls(select_ptr->node_bitmap);
+		for (i=i_first; i<=i_last; i++) {
 			if (!bit_test(select_ptr->node_bitmap, i))
 				continue;
+			node_inx++;
+			if (!bit_test(nodes_avail, i))
+				continue;	/* node now DOWN */
 			avail_cpus = select_ptr->cpus[node_inx] - 
 				     select_ptr->cpus_used[node_inx];
 			total_cpus = select_ptr->cpus[node_inx];
@@ -544,14 +550,15 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			}
 			if ((avail_tasks <= 0) ||
 			    ((selected_nodes == NULL) &&
+			     (nodes_picked_cnt >= step_spec->node_count) &&
 			     (tasks_picked_cnt > 0) &&
 			     (tasks_picked_cnt >= step_spec->num_tasks)))
 				bit_clear(nodes_avail, i);
-			else
+			else {
+				nodes_picked_cnt++;
 				tasks_picked_cnt += avail_tasks;
+			}
 			total_task_cnt += total_tasks;
-			if (++node_inx >= select_ptr->nhosts)
-				break;
 		}
 
 		if (selected_nodes) {
@@ -1327,7 +1334,7 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 	for (i = first_bit; i <= last_bit; i++) {
 		if (bit_test(step_ptr->step_node_bitmap, i)) {
 			/* find out the position in the job */
-			pos = bit_get_pos_num(job_ptr->node_bitmap, i);
+			pos = bit_get_pos_num(select_ptr->node_bitmap, i);
 			if (pos == -1)
 				return NULL;
 			if (pos >= select_ptr->nhosts)
@@ -1335,14 +1342,14 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 			if (step_ptr->exclusive) {
 				usable_cpus = select_ptr->cpus[pos] -
 					      select_ptr->cpus_used[pos];
-				usable_cpus = MAX(usable_cpus, 
-						  (num_tasks - set_tasks));
 			} else
 				usable_cpus = select_ptr->cpus[pos];
 			if (step_ptr->mem_per_task) {
 				usable_mem = select_ptr->memory_allocated[pos] -
 					     select_ptr->memory_used[pos];
 				usable_mem /= step_ptr->mem_per_task;
+				if (cpus_per_task > 0)
+					usable_mem *= cpus_per_task;
 				usable_cpus = MIN(usable_cpus, usable_mem);
 			}
 			if (usable_cpus <= 0) {
