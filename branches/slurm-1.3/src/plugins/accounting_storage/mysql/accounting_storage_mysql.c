@@ -2920,14 +2920,17 @@ extern void *acct_storage_p_get_connection(bool make_agent, int conn_num,
 
 	debug2("acct_storage_p_get_connection: request new connection");
 	
-	mysql_get_db_connection(&mysql_conn->db_conn,
-				mysql_db_name, mysql_db_info);
 	mysql_conn->rollback = rollback;
-	if(rollback) {
-		mysql_autocommit(mysql_conn->db_conn, 0);
-	}
 	mysql_conn->conn = conn_num;
 	mysql_conn->update_list = list_create(destroy_acct_update_object);
+
+	mysql_get_db_connection(&mysql_conn->db_conn,
+				mysql_db_name, mysql_db_info);
+	if(mysql_conn->db_conn) {
+		if(rollback) 
+			mysql_autocommit(mysql_conn->db_conn, 0);
+		errno = SLURM_SUCCESS;
+	}
 	return (void *)mysql_conn;
 #else
 	return NULL;
@@ -5536,7 +5539,7 @@ extern List acct_storage_p_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	acct_user_cond_t user_coord_cond;
 	acct_association_cond_t assoc_cond;
 	acct_wckey_cond_t wckey_cond;
-
+	
 	if(!user_cond) {
 		error("we need something to remove");
 		return NULL;
