@@ -46,7 +46,7 @@ Also see <a href="publications.html">Publications and Presentations</a>.
 <li><a href="mpiplugins.shtml">MPI Plugin Programmer Guide</a></li>
 <li><a href="proctrack_plugins.shtml">Process Tracking Plugin Programmer Guide</a></li>
 <li><a href="schedplugins.shtml">Scheduler Plugin Programmer Guide</a></li>
-<li><a href="selectplugins.shtml">Node Selection Plugin Programmer Guide</a></li>
+<li><a href="selectplugins.shtml">Resource Selection Plugin Programmer Guide</a></li>
 <li><a href="switchplugins.shtml">Switch (Interconnect) Plugin Programmer Guide</a></li>
 <li><a href="taskplugins.shtml">Task Plugin Programmer Guide</a></li>
 </ul>
