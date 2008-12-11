@@ -9400,11 +9400,10 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 {
 #ifdef HAVE_MYSQL
 	int	rc=SLURM_SUCCESS;
-	char	*jname = NULL, *nodes = NULL;
+	char	*nodes = NULL, *jname = NULL;
 	int track_steps = 0;
 	char *block_id = NULL;
 	char *query = NULL;
-	char *wckey = NULL;
 	int reinit = 0;
 	time_t check_time = job_ptr->start_time;
 	uint32_t wckeyid = 0;
@@ -9438,25 +9437,9 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 		slurm_mutex_unlock(&rollup_lock);
 
 
-	if (job_ptr->name && job_ptr->name[0]) {
-		char *temp = NULL;
-		/* first set the jname to the job_ptr->name */
+	if (job_ptr->name && job_ptr->name[0]) 
 		jname = xstrdup(job_ptr->name);
-		/* then grep for " since that is the delimiter for
-		   the wckey */
-		if((temp = strchr(jname, '\"'))) {
-			/* if we have a wckey set the " to NULL to
-			 * end the jname */
-			temp[0] = '\0';
-			/* increment and copy the remainder */
-			temp++;
-			wckey = xstrdup(temp);
-		}
-	}
-
-	if(!jname || !jname[0]) {
-		/* free jname if something is allocated here */
-		xfree(jname);
+	else {
 		jname = xstrdup("allocation");
 		track_steps = 1;
 	}
@@ -9482,7 +9465,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 	
 	/* if there is a start_time get the wckeyid */
 	if(job_ptr->start_time) 
-		wckeyid = _get_wckeyid(mysql_conn, wckey,
+		wckeyid = _get_wckeyid(mysql_conn, job_ptr->wckey,
 				       job_ptr->user_id, cluster_name,
 				       job_ptr->assoc_id);
 			
@@ -9509,7 +9492,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 			xstrcat(query, "partition, ");
 		if(block_id) 
 			xstrcat(query, "blockid, ");
-		if(wckey) 
+		if(job_ptr->wckey) 
 			xstrcat(query, "wckey, ");
 		
 		xstrfmtcat(query, 
@@ -9527,8 +9510,8 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 			xstrfmtcat(query, "\"%s\", ", job_ptr->partition);
 		if(block_id) 
 			xstrfmtcat(query, "\"%s\", ", block_id);
-		if(wckey) 
-			xstrfmtcat(query, "\"%s\", ", wckey);
+		if(job_ptr->wckey) 
+			xstrfmtcat(query, "\"%s\", ", job_ptr->wckey);
 
 		xstrfmtcat(query, 
 			   "%d, %d, %d, \"%s\", %u, %u, %u, %u, %u) "
@@ -9552,8 +9535,8 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 				   job_ptr->partition);
 		if(block_id)
 			xstrfmtcat(query, ", blockid=\"%s\"", block_id);
-		if(wckey) 
-			xstrfmtcat(query, ", wckey=\"%s\"", wckey);
+		if(job_ptr->wckey) 
+			xstrfmtcat(query, ", wckey=\"%s\"", job_ptr->wckey);
 		
 		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	try_again:
@@ -9584,8 +9567,8 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 		if(block_id)
 			xstrfmtcat(query, "blockid=\"%s\", ", block_id);
 
-		if(wckey) 
-			xstrfmtcat(query, "wckey=\"%s\", ", wckey);
+		if(job_ptr->wckey) 
+			xstrfmtcat(query, "wckey=\"%s\", ", job_ptr->wckey);
 
 		xstrfmtcat(query, "start=%d, name=\"%s\", state=%u, "
 			   "alloc_cpus=%u, associd=%u, wckeyid=%u where id=%d",
@@ -9599,8 +9582,6 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 
 	xfree(block_id);
 	xfree(jname);
-	xfree(wckey);
-
 	xfree(query);
 
 	return rc;

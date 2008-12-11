@@ -350,20 +350,9 @@ int _print_job_name(job_info_t * job, int width, bool right, char* suffix)
 {
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("NAME", width, right, true);
-	else {
-		char *temp = NULL, *jname = NULL;
-		if (job->name) {
-			/* first set the jname to the job_ptr->name */
-			jname = xstrdup(job->name);
-			/* then grep for " since that is the delimiter
-			 * for the wckey and set to NULL */
-			if((temp = strchr(jname, '\"')))
-				temp[0] = '\0';
-		}
+	else 
+		_print_str(job->name, width, right, true);
 		
-		_print_str(jname, width, right, true);
-		xfree(jname);
-	}
 	if (suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;
@@ -373,16 +362,9 @@ int _print_job_wckey(job_info_t * job, int width, bool right, char* suffix)
 {
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("WCKEY", width, right, true);
-	else {
-		char *temp = NULL;
-		/* grep for " since that is the delimiter for
-		   the wckey */
-		temp = strchr(job->name, '\"');
-		if(temp) 
-			temp++;
-				
-		_print_str(temp, width, right, true);
-	}
+	else				
+		_print_str(job->wckey, width, right, true);
+	
 	if (suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;

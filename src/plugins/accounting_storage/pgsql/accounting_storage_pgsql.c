@@ -1169,7 +1169,6 @@ extern int jobacct_storage_p_job_start(PGconn *acct_pgsql_db,
 	char *block_id = NULL;
 	char *query = NULL;
 	int reinit = 0;
-	char *wckey = NULL;
 
 	if (!job_ptr->details || !job_ptr->details->submit_time) {
 		error("jobacct_storage_p_job_start: "
@@ -1187,25 +1186,9 @@ extern int jobacct_storage_p_job_start(PGconn *acct_pgsql_db,
 	priority = (job_ptr->priority == NO_VAL) ?
 		-1L : (long) job_ptr->priority;
 
-	if (job_ptr->name && job_ptr->name[0]) {
-		char *temp = NULL;
-		/* first set the jname to the job_ptr->name */
+	if (job_ptr->name && job_ptr->name[0]) 
 		jname = xstrdup(job_ptr->name);
-		/* then grep for " since that is the delimiter for
-		   the wckey */
-		if((temp = strchr(jname, '\"'))) {
-			/* if we have a wckey set the " to NULL to
-			 * end the jname */
-			temp[0] = '\0';
-			/* increment and copy the remainder */
-			temp++;
-			wckey = xstrdup(temp);
-		}
-	}
-
-	if(!jname || !jname[0]) {
-		/* free jname if something is allocated here */
-		xfree(jname);
+	else {
 		jname = xstrdup("allocation");
 		track_steps = 1;
 	}
@@ -1242,7 +1225,7 @@ extern int jobacct_storage_p_job_start(PGconn *acct_pgsql_db,
 			xstrcat(query, "partition, ");
 		if(block_id) 
 			xstrcat(query, "blockid, ");
-		if(wckey) 
+		if(job_ptr->wckey) 
 			xstrcat(query, "wckey, ");
 		
 		xstrfmtcat(query, 
@@ -1260,8 +1243,8 @@ extern int jobacct_storage_p_job_start(PGconn *acct_pgsql_db,
 			xstrfmtcat(query, "'%s', ", job_ptr->partition);
 		if(block_id) 
 			xstrfmtcat(query, "'%s', ", block_id);
-		if(wckey) 
-			xstrfmtcat(query, "\"%s\", ", wckey);
+		if(job_ptr->wckey) 
+			xstrfmtcat(query, "\"%s\", ", job_ptr->wckey);
 		
 		xstrfmtcat(query, 
 			   "%d, %d, %d, '%s', %u, %u, %u, %u, %u)",
@@ -1300,8 +1283,8 @@ extern int jobacct_storage_p_job_start(PGconn *acct_pgsql_db,
 				   job_ptr->partition);
 		if(block_id)
 			xstrfmtcat(query, "blockid='%s', ", block_id);
-		if(wckey) 
-			xstrfmtcat(query, ", wckey=\"%s\"", wckey);
+		if(job_ptr->wckey) 
+			xstrfmtcat(query, ", wckey=\"%s\"", job_ptr->wckey);
 
 		xstrfmtcat(query, "start=%d, name='%s', state=%u, "
 			   "alloc_cpus=%u, associd=%d where id=%d",
@@ -1313,8 +1296,6 @@ extern int jobacct_storage_p_job_start(PGconn *acct_pgsql_db,
 	}
 	xfree(block_id);
 	xfree(jname);
-	xfree(wckey);
-
 	xfree(query);
 	
 	return rc;

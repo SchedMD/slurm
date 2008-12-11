@@ -1038,8 +1038,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 			       sview_job_info_t *sview_job_info_ptr, 
 			       int update)
 {
-	char *nodes = NULL, *reason = NULL, 
-		*uname = NULL, *jname = NULL, *wckey = NULL;
+	char *nodes = NULL, *reason = NULL, *uname = NULL;
 	char tmp_char[50];
 	time_t now_time = time(NULL);
 	job_info_t *job_ptr = sview_job_info_ptr->job_ptr;
@@ -1049,23 +1048,6 @@ static void _layout_job_record(GtkTreeView *treeview,
 	GtkTreeIter iter;
 	GtkTreeStore *treestore = 
 		GTK_TREE_STORE(gtk_tree_view_get_model(treeview));
-
-	if (job_ptr->name && job_ptr->name[0]) {
-		char *temp = NULL;
-		/* first set the jname to the job_ptr->name */
-		jname = xstrdup(job_ptr->name);
-		/* then grep for " since that is the delimiter for
-		   the wckey */
-		if((temp = strchr(jname, '\"'))) {
-			/* if we have a wckey set the " to NULL to
-			 * end the jname */
-			temp[0] = '\0';
-			/* increment and copy the remainder */
-			temp++;
-			wckey = xstrdup(temp);
-		}
-	}
-	
 
 	if(!treestore)
 		return;
@@ -1177,12 +1159,12 @@ static void _layout_job_record(GtkTreeView *treeview,
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
 						 SORTID_NAME), 
-				   jname);
+				   job_ptr->name);
 	
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
 						 SORTID_WCKEY), 
-				   wckey);
+				   job_ptr->wckey);
 	
 	sprintf(tmp_char, "%u", job_ptr->priority);
 	add_display_treestore_line(update, treestore, &iter, 
@@ -1450,16 +1432,13 @@ static void _layout_job_record(GtkTreeView *treeview,
 				   find_col_name(display_data_job,
 						 SORTID_COMMENT),
 				   job_ptr->comment);
-	xfree(jname);
-	xfree(wckey);
 }
 
 static void _update_job_record(sview_job_info_t *sview_job_info_ptr, 
 			       GtkTreeStore *treestore,
 			       GtkTreeIter *iter)
 {
-	char *nodes = NULL, *reason = NULL, *jname = NULL,
-		*wckey = NULL, *uname = NULL;
+	char *nodes = NULL, *reason = NULL, *uname = NULL;
 	char tmp_char[50];
 	time_t now_time = time(NULL);
 	GtkTreeIter step_iter;
@@ -1468,22 +1447,6 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	struct group *group_info = NULL;
 	uint16_t term_sig = 0;
      
-	if (job_ptr->name && job_ptr->name[0]) {
-		char *temp = NULL;
-		/* first set the jname to the job_ptr->name */
-		jname = xstrdup(job_ptr->name);
-		/* then grep for " since that is the delimiter for
-		   the wckey */
-		if((temp = strchr(jname, '\"'))) {
-			/* if we have a wckey set the " to NULL to
-			 * end the jname */
-			temp[0] = '\0';
-			/* increment and copy the remainder */
-			temp++;
-			wckey = xstrdup(temp);
-		}
-	}
-	
 	gtk_tree_store_set(treestore, iter, SORTID_UPDATED, 1, -1);
 	if(!job_ptr->nodes || !strcasecmp(job_ptr->nodes,"waiting...")) {
 		sprintf(tmp_char,"0:00:00");
@@ -1630,8 +1593,8 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 			   SORTID_GROUP, 
 			   tmp_char, -1);
 		
-	gtk_tree_store_set(treestore, iter, SORTID_NAME, jname, -1);
-	gtk_tree_store_set(treestore, iter, SORTID_WCKEY, wckey, -1);
+	gtk_tree_store_set(treestore, iter, SORTID_NAME, job_ptr->name, -1);
+	gtk_tree_store_set(treestore, iter, SORTID_WCKEY, job_ptr->wckey, -1);
 	gtk_tree_store_set(treestore, iter, 
 			   SORTID_STATE, 
 			   job_state_string(job_ptr->job_state), -1);

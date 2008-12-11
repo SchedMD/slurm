@@ -256,16 +256,6 @@ static int _print_text_job(job_info_t * job_ptr)
 	char *ionodes = NULL, *uname;
 	time_t now_time = time(NULL);
 	char *temp = NULL;
-	/* first set the jname to the job_ptr->name */
-	char *jname = NULL;
-
-	if(job_ptr->name) {
-		jname = xstrdup(job_ptr->name);
-		/* then grep for " since that is the delimiter for
-		   the wckey */
-		if((temp = strchr(jname, '\"')))
-			temp[0] = '\0';
-	}
 
 #ifdef HAVE_BG
 	select_g_get_jobinfo(job_ptr->select_jobinfo, 
@@ -311,7 +301,7 @@ static int _print_text_job(job_info_t * job_ptr)
 		xfree(uname);
 		main_xcord += 9;
 		mvwprintw(text_win, main_ycord,
-			  main_xcord, "%.9s", jname);
+			  main_xcord, "%.9s", job_ptr->name);
 		main_xcord += 10;
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "%.2s",
@@ -382,7 +372,7 @@ static int _print_text_job(job_info_t * job_ptr)
 		uname = uid_to_string((uid_t) job_ptr->user_id);
 		printf("%8.8s ", uname);
 		xfree(uname);
-		printf("%6.6s ", jname);
+		printf("%6.6s ", job_ptr->name);
 		printf("%2.2s ",
 		       job_state_string_compact(job_ptr->job_state));
 		if(!strcasecmp(job_ptr->nodes,"waiting...")) {
@@ -405,7 +395,6 @@ static int _print_text_job(job_info_t * job_ptr)
 		printf("\n");
 		
 	}
-	xfree(jname);
 
 	return printed;
 }

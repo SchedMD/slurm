@@ -489,7 +489,6 @@ extern int jobacct_storage_p_job_start(void *db_conn, char *cluster_name,
 	int	i,
 		rc=SLURM_SUCCESS;
 	char	buf[BUFFER_SIZE], *jname, *account, *nodes;
-	char    *wckey = NULL;
 	long	priority;
 	int track_steps = 0;
 
@@ -512,29 +511,11 @@ extern int jobacct_storage_p_job_start(void *db_conn, char *cluster_name,
 		-1L : (long) job_ptr->priority;
 
 	if (job_ptr->name && job_ptr->name[0]) {
-		char *temp = NULL;
-		/* first set the jname to the job_ptr->name */
 		jname = xstrdup(job_ptr->name);
-		/* then grep for " since that is the delimiter for
-		   the wckey */
-		temp = strchr(jname, '\"');
-		if(temp) {
-			/* if we have a wckey set the " to NULL to
-			 * end the jname */
-			temp[0] = '\0';
-			/* increment and copy the remainder */
-			temp++;
-			wckey = xstrdup(temp);
-		}
-
 		for (i=0; jname[i]; i++) 
 			if (isspace(jname[i]))
 				jname[i]='_';
-	}
-
-	if(!jname || !jname[0]) {
-		/* free jname if something is allocated here */
-		xfree(jname);
+	} else {
 		jname = xstrdup("allocation");
 		track_steps = 1;
 	}
@@ -563,7 +544,6 @@ extern int jobacct_storage_p_job_start(void *db_conn, char *cluster_name,
 	rc = _print_record(job_ptr, job_ptr->start_time, buf);
 	
 	xfree(jname);
-	xfree(wckey);
 	return rc;
 }
 

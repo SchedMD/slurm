@@ -126,7 +126,6 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 {
 	int i, j;
 	char time_str[32], select_buf[122], *group_name, *user_name;
-	char *wckey = NULL, *jname = NULL;
 	char tmp1[128], tmp2[128], *tmp3_ptr;
 	char tmp_line[512];
 	char *ionodes = NULL;
@@ -160,26 +159,11 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		xstrcat(out, "\n   ");
 
 	/****** Line 2 ******/
-	if (job_ptr->name && job_ptr->name[0]) {
-		char *temp = NULL;
-		/* first set the jname to the job_ptr->name */
-		jname = xstrdup(job_ptr->name);
-		/* then grep for " since that is the delimiter for
-		   the wckey */
-		if((temp = strchr(jname, '\"'))) {
-			/* if we have a wckey set the " to NULL to
-			 * end the jname */
-			temp[0] = '\0';
-			/* increment and copy the remainder */
-			temp++;
-			wckey = xstrdup(temp);
-		}
-	}
 	if(slurm_get_track_wckey())
 		snprintf(tmp_line, sizeof(tmp_line), "Name=%s WCKey=%s",
-			 jname, wckey);
+			 job_ptr->name, job_ptr->wckey);
 	else
-		snprintf(tmp_line, sizeof(tmp_line), "Name=%s", jname);
+		snprintf(tmp_line, sizeof(tmp_line), "Name=%s", job_ptr->name);
 		
 	xstrcat(out, tmp_line);
 	if (one_liner)
