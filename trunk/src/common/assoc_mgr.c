@@ -1078,6 +1078,11 @@ extern int assoc_mgr_fill_in_user(void *db_conn, acct_user_rec_t *user,
 	debug3("found correct user");	
 	if(user_pptr)
 		*user_pptr = found_user;
+
+	/* create coord_accts just incase the list does not exist */
+	if(!found_user->coord_accts)
+		found_user->coord_accts = list_create(destroy_acct_coord_rec);
+
 	user->admin_level = found_user->admin_level;
 	if(!user->assoc_list)
 		user->assoc_list = found_user->assoc_list;
@@ -1085,6 +1090,8 @@ extern int assoc_mgr_fill_in_user(void *db_conn, acct_user_rec_t *user,
 		user->coord_accts = found_user->coord_accts;
 	if(!user->default_acct)
 		user->default_acct = found_user->default_acct;
+	if(!user->default_wckey)
+		user->default_wckey = found_user->default_wckey;
 	if(!user->name)
 		user->name = found_user->name;
 
@@ -1106,7 +1113,8 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, acct_qos_rec_t *qos,
 		if(_get_assoc_mgr_qos_list(db_conn, enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
 
-	if((!assoc_mgr_qos_list || !list_count(assoc_mgr_qos_list)) && !enforce) 
+	if((!assoc_mgr_qos_list 
+	    || !list_count(assoc_mgr_qos_list)) && !enforce) 
 		return SLURM_SUCCESS;
 
 	slurm_mutex_lock(&assoc_mgr_qos_lock);

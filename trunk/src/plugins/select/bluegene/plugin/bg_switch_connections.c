@@ -666,24 +666,103 @@ extern int configure_small_block(bg_record_t *bg_record)
 
 		if(!nc_char) {
 			error("No NodeCard ID was returned from database");
-			return SLURM_ERROR;
+			rc = SLURM_ERROR;
+			goto cleanup
 		}
 
 		nc_id = atoi((char*)nc_char+1);
+		
+		if(!use_nc[nc_id]) {
+			free(nc_char);
+			continue;
+		}
+
+		if(sub_nodecard) {
+			rm_ionode_t *ionode;
+			char *ionode_id = "J00";
+
+			if((rc = bridge_new_nodecard(&ncard)) != STATUS_OK) {
+				error("bridge_new_nodecard(): %s", 
+				      bg_err_str(rc));
+				rc = SLURM_ERROR;
+				goto cleanup;
+			}
+
+			if ((rc = bridge_set_data(ncard,
+						  RM_NodeCardID, 
+						  nc_char)) 
+			    != STATUS_OK) {				
+				error("bridge_set_data("
+				      "RM_NodeCardID): %s", 
+				      bg_err_str(rc));
+				rc = SLURM_ERROR;
+				goto cleanup;
+			}
+
+			if ((rc = bridge_set_data(ncard,
+						  RM_NodeCardIONodeNum, 
+						  &sub_nodecard)) 
+			    != STATUS_OK) {				
+				error("bridge_set_data("
+				      "RM_NodeCardIONodeNum): %s", 
+				      bg_err_str(rc));
+				rc = SLURM_ERROR;
+				goto cleanup;
+			}
+			
+			if((rc = bridge_new_ionode(&ionode)) != STATUS_OK) {
+				error("bridge_new_ionode(): %s", 
+				      bg_err_str(rc));
+				rc = SLURM_ERROR;
+				goto cleanup;
+			}
+
+			if(ionode_card)
+				ionode_id = "J01";
+			
+			if ((rc = bridge_set_data(ionode,
+						  RM_IONodeID, 
+						  ionode_id)) 
+			    != STATUS_OK) {				
+				error("bridge_set_data("
+				      "RM_NodeCardIONodeNum): %s", 
+				      bg_err_str(rc));
+				rc = SLURM_ERROR;
+				goto cleanup;
+			}			
+			
+			if ((rc = bridge_set_data(ncard,
+						  RM_NodeCardFirstIONode, 
+						  ionode)) 
+			    != STATUS_OK) {				
+				error("bridge_set_data("
+				      "RM_NodeCardFirstIONode): %s", 
+				      bg_err_str(rc));
+				rc = SLURM_ERROR;
+				goto cleanup;
+			}
+			
+			if((rc = bridge_free_ionode(ionode)) != STATUS_OK) {
+				error("bridge_free_ionode(): %s", 
+				      bg_err_str(rc));
+				rc = SLURM_ERROR;
+				goto cleanup;
+			}			
+		}
 		free(nc_char);
 
-		if(!use_nc[nc_id])
-			continue;
-	
+
 		if (num_ncards) {
 			if ((rc = bridge_set_data(bg_record->bg_block,
 						  RM_PartitionNextNodeCard, 
 						  ncard)) 
 			    != STATUS_OK) {
 				
-				fatal("bridge_set_data("
+				error("bridge_set_data("
 				      "RM_PartitionNextNodeCard): %s", 
 				      bg_err_str(rc));
+				rc = SLURM_ERROR;
+				goto cleanup;
 			}
 		} else {
 			if ((rc = bridge_set_data(bg_record->bg_block,
@@ -691,22 +770,24 @@ extern int configure_small_block(bg_record_t *bg_record)
 						  ncard)) 
 			    != STATUS_OK) {
 				
-				fatal("bridge_set_data("
+				error("bridge_set_data("
 				      "RM_PartitionFirstNodeCard): %s", 
 				      bg_err_str(rc));
+				rc = SLURM_ERROR;
+				goto cleanup;
 			}
 		}
 		
 		num_ncards++;
-		
-		if(!sub_nodecard) 
-			continue;
-		/* FIX ME: we need to put the correct IO node here but
-		   there is no documentation to do that yet, so we
-		   don't have the ability to do that just yet */
-		error("We don't have the logic to make sub nodecard blocks");
-		rc = SLURM_ERROR;
-		goto cleanup;
+
+		if(sub_nodecard) {
+			if((rc = bridge_free_nodecard(ncard)) != STATUS_OK) {
+				error("bridge_free_nodecard(): %s", 
+				      bg_err_str(rc));
+				rc = SLURM_ERROR;
+				goto cleanup;
+			}
+		}
 	}
 cleanup:
 	if ((rc = bridge_free_nodecard_list(ncard_list)) != STATUS_OK) {
