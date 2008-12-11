@@ -2920,7 +2920,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	if (job_desc->name)
 		job_ptr->name = xstrdup(job_desc->name);
 
-        if(slurm_get_track_wckey() && !strchr(job_ptr->name, '\"')) {
+        if(slurm_get_track_wckey() && !job_desc->wckey) {
 		/* get the default wckey for this user since none was
 		 * given */
 		acct_user_rec_t user_rec;
@@ -2929,9 +2929,9 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		assoc_mgr_fill_in_user(acct_db_conn, &user_rec,
 				       accounting_enforce, NULL);
 		if(user_rec.default_wckey)
-			xstrfmtcat(job_ptr->name, "\"%s",
-				   user_rec.default_wckey);
-	}
+			job_ptr->wckey = xstrdup(user_rec.default_wckey);
+	} else 
+		job_ptr->wckey = xstrdup(job_desc->wckey);
 
 	job_ptr->user_id    = (uid_t) job_desc->user_id;
 	job_ptr->group_id   = (gid_t) job_desc->group_id;
@@ -4456,57 +4456,22 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		if (!IS_JOB_PENDING(job_ptr))
 			error_code = ESLURM_DISABLED;
 		else {
-			char *jname = NULL, *wckey = NULL;
-			char *jname_new = NULL;
-			char *temp = NULL;
-			
-			/* first set the jname to the job_ptr->name */
-			jname = xstrdup(job_ptr->name);
-			/* then grep for " since that is the delimiter for
-			   the wckey */
-			temp = strchr(jname, '\"');
-			if(temp) {
-				/* if we have a wckey set the " to NULL to
-				 * end the jname */
-				temp[0] = '\0';
-				/* increment and copy the remainder */
-				temp++;
-				wckey = xstrdup(temp);
-			}
-			
-			/* first set the jname to the job_specs->name */
-			jname_new = xstrdup(job_specs->name);
-			/* then grep for " since that is the delimiter for
-			   the wckey */
-			temp = strchr(jname_new, '\"');
-			if(temp) {
-				/* if we have a wckey set the " to NULL to
-				 * end the jname */
-				temp[0] = '\0';
-				/* increment and copy the remainder */
-				temp++;
-				xfree(wckey);
-				wckey = xstrdup(temp);
-			}
-			
-			if(jname_new && jname_new[0]) {
-				xfree(jname);
-				jname = jname_new;
-			}
-			
-			xfree(job_ptr->name);		
-			if(jname) {
-				xstrfmtcat(job_ptr->name, "%s", jname);
-				xfree(jname);
-			} 
-			
-			if(wckey) {
-				xstrfmtcat(job_ptr->name, "\"%s", wckey);
-				xfree(wckey);			
-			}
-
+			job_ptr->name = job_specs->name;
+			job_specs->name = NULL;
 			info("update_job: setting name to %s for job_id %u",
 			     job_ptr->name, job_specs->job_id);
+		}
+	}
+
+	if (job_specs->wckey) {
+		if (!IS_JOB_PENDING(job_ptr))
+			error_code = ESLURM_DISABLED;
+		else {
+			job_ptr->wckey = job_specs->wckey;
+			job_specs->wckey = NULL;
+
+			info("update_job: setting wckey to %s for job_id %u",
+			     job_ptr->wckey, job_specs->job_id);
 		}
 	}
 
