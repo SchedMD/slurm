@@ -9445,7 +9445,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 			   "eligible, submit, start, name, track_steps, "
 			   "state, priority, req_cpus, alloc_cpus) "
 			   "values (%u, %u, %u, %u, %u, \"%s\", ",
-			   job_ptr->job_id, job_ptr->assoc_id, wckey,
+			   job_ptr->job_id, job_ptr->assoc_id, wckeyid,
 			   job_ptr->user_id, job_ptr->group_id, nodes);
 		
 		if(cluster_name) 
@@ -9472,7 +9472,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 			   priority, job_ptr->num_procs,
 			   job_ptr->total_procs, 
 			   job_ptr->job_state & (~JOB_COMPLETING),
-			   job_ptr->assoc_id, wckey);
+			   job_ptr->assoc_id, wckeyid);
 
 		if(job_ptr->account) 
 			xstrfmtcat(query, ", account=\"%s\"", job_ptr->account);
