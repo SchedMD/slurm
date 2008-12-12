@@ -2813,8 +2813,10 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		assoc_mgr_fill_in_user(acct_db_conn, &user_rec,
 				       accounting_enforce);
 		if(user_rec.default_wckey)
-			xstrfmtcat(job_ptr->name, "\"%s",
+			xstrfmtcat(job_ptr->name, "\"%s*",
 				   user_rec.default_wckey);
+		else
+			xstrcat(job_ptr->name, "\"*");			
 	}
 
 	job_ptr->user_id    = (uid_t) job_desc->user_id;
