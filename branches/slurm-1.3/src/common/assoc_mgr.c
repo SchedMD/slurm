@@ -901,9 +901,11 @@ extern int assoc_mgr_fill_in_user(void *db_conn, acct_user_rec_t *user,
 	slurm_mutex_lock(&local_user_lock);
 	itr = list_iterator_create(local_user_list);
 	while((found_user = list_next(itr))) {
-		if(user->uid == found_user->uid) 
-			break;
-		else if(user->name && !strcasecmp(user->name, found_user->name))
+		if(user->uid != NO_VAL) {
+			if(user->uid == found_user->uid)
+				break;
+		} else if(user->name 
+			  && !strcasecmp(user->name, found_user->name))
 			break;
 	}
 	list_iterator_destroy(itr);
@@ -998,13 +1000,14 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, acct_wckey_rec_t *wckey,
 			}
 			continue;
 		} else {
-			if((wckey->uid != NO_VAL)
-			   && (wckey->uid != found_wckey->uid)) {
-				debug4("not the right user %u != %u",
-				       wckey->uid, found_wckey->uid);
-				continue;
-			 } else if(wckey->user && strcasecmp(wckey->user,
-							     found_wckey->user))
+			if(wckey->uid != NO_VAL) {
+				if(wckey->uid != found_wckey->uid) {
+					debug4("not the right user %u != %u",
+					       wckey->uid, found_wckey->uid);
+					continue;
+				}
+			} else if(wckey->user && strcasecmp(wckey->user,
+							    found_wckey->user))
 				continue;
 			
 			if(wckey->name

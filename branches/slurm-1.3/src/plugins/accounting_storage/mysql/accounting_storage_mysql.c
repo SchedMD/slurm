@@ -224,6 +224,7 @@ static uint32_t _get_wckeyid(mysql_conn_t *mysql_conn, char **name,
 		if(!*name) {
 			acct_user_rec_t user_rec;
 			memset(&user_rec, 0, sizeof(acct_user_rec_t));
+			user_rec.uid = NO_VAL;
 			user_rec.name = user;
 			if(assoc_mgr_fill_in_user(mysql_conn, &user_rec,
 						  1) != SLURM_SUCCESS) {
