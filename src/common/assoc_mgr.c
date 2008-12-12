@@ -608,9 +608,6 @@ static int _refresh_assoc_mgr_association_list(void *db_conn, int enforce)
 				break;
 		}
 		
-		if(!assoc) 
-			continue;
-
 		while(assoc) {
 			_addto_used_info(assoc, curr_assoc);
 			/* get the parent last since this pointer is
@@ -694,7 +691,7 @@ static int _refresh_assoc_mgr_user_list(void *db_conn, int enforce)
 /* This only gets a new list if available dropping the old one if
  * needed
  */
-static int _refresh_local_wckey_list(void *db_conn, int enforce)
+static int _refresh_assoc_wckey_list(void *db_conn, int enforce)
 {
 	acct_wckey_cond_t wckey_q;
 	List current_wckeys = NULL;
@@ -705,7 +702,7 @@ static int _refresh_local_wckey_list(void *db_conn, int enforce)
 		wckey_q.cluster_list = list_create(NULL);
 		list_append(wckey_q.cluster_list, assoc_mgr_cluster_name);
 	} else if(enforce && !slurmdbd_conf) {
-		error("_refresh_local_wckey_list: "
+		error("_refresh_assoc_wckey_list: "
 		      "no cluster name here going to get "
 		      "all wckeys.");
 	}
@@ -713,7 +710,7 @@ static int _refresh_local_wckey_list(void *db_conn, int enforce)
 	current_wckeys = acct_storage_g_get_wckeys(db_conn, uid, &wckey_q);
 
 	if(!current_wckeys) {
-		error("_refresh_local_wckey_list: "
+		error("_refresh_assoc_wckey_list: "
 		      "no new list given back keeping cached one.");
 		return SLURM_ERROR;
 	}
@@ -2589,7 +2586,7 @@ extern int assoc_mgr_refresh_lists(void *db_conn, assoc_init_args_t *args)
 			return SLURM_ERROR;
 
 	if(cache_level & ASSOC_MGR_CACHE_WCKEY)
-		if(_refresh_local_wckey_list(db_conn, enforce) == SLURM_ERROR)
+		if(_refresh_assoc_wckey_list(db_conn, enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
 
 	running_cache = 0;
