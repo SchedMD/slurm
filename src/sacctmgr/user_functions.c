@@ -1013,9 +1013,6 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 	}	
 	
 	if(track_wckey) {
-		/* add a blank one there for default just in case it wasn't
-		 * there before. */
-		slurm_addto_char_list(wckey_cond->name_list, "");
 		if(!default_wckey) 
 			default_wckey = 
 				xstrdup(list_peek(wckey_cond->name_list));
@@ -1529,7 +1526,15 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 	itr = list_iterator_create(format_list);
 	while((object = list_next(itr))) {
 		char *tmp_char = NULL;
-		int command_len = strlen(object);
+		int command_len = 0;
+		int newlen = 0;
+		
+		if((tmp_char = strstr(object, "\%"))) {
+			newlen = atoi(tmp_char+1);
+			tmp_char[0] = '\0';
+		} 
+
+		command_len = strlen(object);
 
 		field = xmalloc(sizeof(print_field_t));
 		if(!strncasecmp("Account", object, MAX(command_len, 2))) {
@@ -1687,11 +1692,10 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 			xfree(field);
 			continue;
 		}
-		if((tmp_char = strstr(object, "\%"))) {
-			int newlen = atoi(tmp_char+1);
-			if(newlen > 0) 
-				field->len = newlen;
-		}
+
+		if(newlen > 0) 
+			field->len = newlen;
+		
 		list_append(print_fields_list, field);		
 	}
 	list_iterator_destroy(itr);
