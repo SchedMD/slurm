@@ -725,7 +725,7 @@ static int _list_find_config (void *config_entry, void *key)
  *	representation
  * IN node_names  - list of nodes
  * IN best_effort - if set don't return an error on invalid node name entries 
- * OUT bitmap     - set to bitmap or NULL on error 
+ * OUT bitmap     - set to bitmap, may not have all bits set on error 
  * RET 0 if no error, otherwise EINVAL
  * global: node_record_table_ptr - pointer to global node table
  * NOTE: the caller must bit_free() memory at bitmap when no longer required
@@ -765,11 +765,8 @@ extern int node_name2bitmap (char *node_names, bool best_effort,
 		} else {
 			error ("node_name2bitmap: invalid node specified %s",
 			       this_node_name);
-			if (!best_effort) {
-				free (this_node_name);
+			if (!best_effort)
 				rc = EINVAL;
-				break;
-			}
 		}
 		free (this_node_name);
 	}
