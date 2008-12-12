@@ -533,9 +533,6 @@ static int _refresh_local_association_list(void *db_conn, int enforce)
 				break;
 		}
 		
-		if(!assoc) 
-			continue;
-
 		while(assoc) {
 			_addto_used_info(assoc, curr_assoc);
 			/* get the parent last since this pointer is
