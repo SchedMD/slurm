@@ -352,6 +352,10 @@ scontrol_update_job (int argc, char *argv[])
 			job_msg.name = &argv[i][5];
 			update_cnt++;
 		}
+		else if (strncasecmp(argv[i], "WCKey=", 6) == 0) {
+			job_msg.wckey = &argv[i][6];
+			update_cnt++;
+		}
 		else if (strncasecmp(argv[i], "Shared=", 7) == 0) {
 			if (strcasecmp(&argv[i][7], "YES") == 0)
 				job_msg.shared = 1;

@@ -538,7 +538,6 @@ static void *_decay_thread(void *no_data)
 
 				slurm_mutex_lock(&assoc_mgr_association_lock);
 				while(assoc) {
-					info("got assoc id of %u", assoc->id);
 					assoc->used_shares +=
 						(long double)real_decay;
 					debug4("adding %f new usage to %u"
