@@ -2929,9 +2929,11 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		assoc_mgr_fill_in_user(acct_db_conn, &user_rec,
 				       accounting_enforce, NULL);
 		if(user_rec.default_wckey)
-			job_ptr->wckey = xstrdup(user_rec.default_wckey);
-	} else 
-		job_ptr->wckey = xstrdup(job_desc->wckey);
+			xstrfmtcat(job_ptr->wckey, "\"%s*",
+				   user_rec.default_wckey);
+		else
+			xstrcat(job_ptr->wckey, "\"*");			
+	}
 
 	job_ptr->user_id    = (uid_t) job_desc->user_id;
 	job_ptr->group_id   = (gid_t) job_desc->group_id;
@@ -5946,7 +5948,7 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 		     >= assoc_ptr->grp_submit_jobs)) {
 			info("job submit for user %s(%u): "
 			     "group max submit job limit exceded %u "
-			     "for account %s",
+			     "for account '%s'",
 			     user_name,
 			     job_desc->user_id, 
 			     assoc_ptr->grp_submit_jobs,

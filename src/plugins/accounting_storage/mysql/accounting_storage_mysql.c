@@ -197,7 +197,7 @@ static char *_get_user_from_associd(mysql_conn_t *mysql_conn, uint32_t associd)
 	return user;
 }
 
-static uint32_t _get_wckeyid(mysql_conn_t *mysql_conn, char *name, 
+static uint32_t _get_wckeyid(mysql_conn_t *mysql_conn, char **name, 
 			     uid_t uid, char *cluster, uint32_t associd)
 {
 	uint32_t wckeyid = 0;
@@ -220,8 +220,25 @@ static uint32_t _get_wckeyid(mysql_conn_t *mysql_conn, char *name,
 		if(!(user = _get_user_from_associd(mysql_conn, associd)))
 			goto no_wckeyid;
 
+		/* get the default key */
+		if(!*name) {
+			acct_user_rec_t user_rec;
+			memset(&user_rec, 0, sizeof(acct_user_rec_t));
+			user_rec.name = user;
+			if(assoc_mgr_fill_in_user(mysql_conn, &user_rec,
+						  1) != SLURM_SUCCESS) {
+				error("No user by name of %s", user);
+				goto no_wckeyid;
+			}
+			if(user_rec.default_wckey)
+				*name = xstrdup_printf("%s*", 
+						       user_rec.default_wckey);
+			else
+				*name = xstrdup_printf("*");
+		}
+
 		memset(&wckey_rec, 0, sizeof(acct_wckey_rec_t));
-		wckey_rec.name = name;
+		wckey_rec.name = (*name);
 		wckey_rec.uid = NO_VAL;
 		wckey_rec.user = user;
 		wckey_rec.cluster = cluster;
@@ -233,7 +250,7 @@ static uint32_t _get_wckeyid(mysql_conn_t *mysql_conn, char *name,
 			wckey_list = list_create(destroy_acct_wckey_rec);
 			
 			wckey_ptr = xmalloc(sizeof(acct_wckey_rec_t));
-			wckey_ptr->name = xstrdup(name);
+			wckey_ptr->name = xstrdup((*name));
 			wckey_ptr->user = xstrdup(user);
 			wckey_ptr->cluster = xstrdup(cluster);
 			list_append(wckey_list, wckey_ptr);
@@ -9468,7 +9485,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 	
 	/* if there is a start_time get the wckeyid */
 	if(job_ptr->start_time) 
-		wckeyid = _get_wckeyid(mysql_conn, job_ptr->wckey,
+		wckeyid = _get_wckeyid(mysql_conn, &job_ptr->wckey,
 				       job_ptr->user_id, cluster_name,
 				       job_ptr->assoc_id);
 			
