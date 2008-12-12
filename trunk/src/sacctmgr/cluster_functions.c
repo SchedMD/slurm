@@ -443,7 +443,15 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 	itr = list_iterator_create(format_list);
 	while((object = list_next(itr))) {
 		char *tmp_char = NULL;
-		int command_len = strlen(object);
+		int command_len = 0;
+		int newlen = 0;
+		
+		if((tmp_char = strstr(object, "\%"))) {
+			newlen = atoi(tmp_char+1);
+			tmp_char[0] = '\0';
+		} 
+
+		command_len = strlen(object);
 
 		field = xmalloc(sizeof(print_field_t));
 		if(!strncasecmp("Cluster", object, MAX(command_len, 2))
@@ -565,11 +573,10 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 			xfree(field);
 			continue;
 		}
-		if((tmp_char = strstr(object, "\%"))) {
-			int newlen = atoi(tmp_char+1);
-			if(newlen > 0) 
-				field->len = newlen;
-		}
+		
+		if(newlen > 0) 
+			field->len = newlen;
+		
 		list_append(print_fields_list, field);		
 	}
 	list_iterator_destroy(itr);

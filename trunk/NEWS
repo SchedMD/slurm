@@ -138,6 +138,8 @@ documents those changes that are of interest to users and admins.
     some communication failures.
  -- Correction to sinfo node state information on BlueGene systems. DRAIN
     state was replaced with ALLOC or IDLE under some situations.
+ -- For sched/wiki2 (Moab), strip quotes embedded within job names from the
+    name reported.
 
 * Changes in SLURM 1.3.11
 =========================
