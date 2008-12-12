@@ -1795,13 +1795,20 @@ extern int step_partial_comp(step_complete_msg_t *req, int *rem,
 
 	/* find the job, step, and validate input */
 	job_ptr = find_job_record (req->job_id);
-	if (job_ptr == NULL)
+	if (job_ptr == NULL) {
+		info("step_partial_comp: JobID=%u invalid", req->job_id);
 		return ESLURM_INVALID_JOB_ID;
-	if (job_ptr->job_state == JOB_PENDING)
+	}
+	if (job_ptr->job_state == JOB_PENDING) {
+		info("step_partial_comp: JobID=%u pending", req->job_id);
 		return ESLURM_JOB_PENDING;
+	}
 	step_ptr = find_step_record(job_ptr, req->job_step_id);
-	if (step_ptr == NULL)
+	if (step_ptr == NULL) {
+		info("step_partial_comp: StepID=%u.%u invalid", 
+		     req->job_id, req->job_step_id);
 		return ESLURM_INVALID_JOB_ID;
+	}
 	if (step_ptr->batch_step) {
 		if(rem)
 			*rem = 0;
@@ -1817,8 +1824,8 @@ extern int step_partial_comp(step_complete_msg_t *req, int *rem,
 		return SLURM_SUCCESS;
 	}
 	if (req->range_last < req->range_first) {
-		error("step_partial_comp: range: %u-%u", req->range_first, 
-			req->range_last);
+		error("step_partial_comp: JobID=%u range=%u-%u", 
+		      req->job_id, req->range_first, req->range_last);
 		return EINVAL;
 	}
 
@@ -1828,8 +1835,8 @@ extern int step_partial_comp(step_complete_msg_t *req, int *rem,
 		/* initialize the node bitmap for exited nodes */
 		nodes = bit_set_count(step_ptr->step_node_bitmap);
 		if (req->range_last >= nodes) {	/* range is zero origin */
-			error("step_partial_comp: last=%u, nodes=%d",
-				req->range_last, nodes);
+			error("step_partial_comp: JobID=%u last=%u, nodes=%d",
+			      req->job_id, req->range_last, nodes);
 			return EINVAL;
 		}
 		step_ptr->exit_node_bitmap = bit_alloc(nodes);
@@ -1839,8 +1846,8 @@ extern int step_partial_comp(step_complete_msg_t *req, int *rem,
 	} else {
 		nodes = _bitstr_bits(step_ptr->exit_node_bitmap);
 		if (req->range_last >= nodes) {	/* range is zero origin */
-			error("step_partial_comp: last=%u, nodes=%d",
-				req->range_last, nodes);
+			error("step_partial_comp: JobID=%u last=%u, nodes=%d",
+			      req->job_id, req->range_last, nodes);
 			return EINVAL;
 		}
 		step_ptr->exit_code = MAX(step_ptr->exit_code, req->step_rc);
