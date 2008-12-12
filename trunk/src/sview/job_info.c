@@ -663,27 +663,23 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		type = "name";
 		break;
 	case SORTID_WCKEY:		
-		xstrfmtcat(job_msg->name, "\"%s", new_text);
+		job_msg->wckey = xstrdup(new_text);
 		type = "wckey";
 		break;
 	case SORTID_SHARED:
-		if (!strcasecmp(new_text, "yes")) {
+		if (!strcasecmp(new_text, "yes")) 
 			job_msg->shared = 1;
-			
-		} else {
+		else 
 			job_msg->shared = 0;
 			
-		}
 		type = "shared";
 		break;
 	case SORTID_CONTIGUOUS:
-		if (!strcasecmp(new_text, "yes")) {
+		if (!strcasecmp(new_text, "yes")) 
 			job_msg->contiguous = 1;
-			
-		} else {
+		else 
 			job_msg->contiguous = 0;
 			
-		}
 		type = "contiguous";	
 		break;
 	case SORTID_REQ_NODELIST:		

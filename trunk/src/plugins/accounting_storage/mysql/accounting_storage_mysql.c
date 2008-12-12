@@ -217,16 +217,18 @@ static uint32_t _get_wckeyid(mysql_conn_t *mysql_conn, char **name,
 		/* since we are unable to rely on uids here (someone could
 		   not have there uid in the system yet) we must
 		   first get the user name from the associd */
-		if(!(user = _get_user_from_associd(mysql_conn, associd)))
+		if(!(user = _get_user_from_associd(mysql_conn, associd))) {
+			error("No user for associd %u", associd);
 			goto no_wckeyid;
-
+		}
 		/* get the default key */
 		if(!*name) {
 			acct_user_rec_t user_rec;
 			memset(&user_rec, 0, sizeof(acct_user_rec_t));
+			user_rec.uid = NO_VAL;
 			user_rec.name = user;
 			if(assoc_mgr_fill_in_user(mysql_conn, &user_rec,
-						  1) != SLURM_SUCCESS) {
+						  1, NULL) != SLURM_SUCCESS) {
 				error("No user by name of %s", user);
 				goto no_wckeyid;
 			}
