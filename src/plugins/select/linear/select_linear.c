@@ -1249,6 +1249,11 @@ static int _rm_job_from_nodes(struct node_cr_record *node_cr_ptr,
 	}
 	i_first = bit_ffs(select_ptr->node_bitmap);
 	i_last  = bit_fls(select_ptr->node_bitmap);
+	if (i_first < 0) {
+		error("job %u allocated nodes which have been removed "
+		      "from slurm.conf", job_ptr->job_id);
+		return SLURM_ERROR;
+	}
 	for (i = i_first; i <= i_last; i++) {
 		if (bit_test(select_ptr->node_bitmap, i) == 0)
 			continue;
