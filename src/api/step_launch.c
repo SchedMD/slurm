@@ -195,7 +195,8 @@ int slurm_step_launch (slurm_step_ctx_t *ctx,
 		env_array_merge(&env, (const char **)params->env);
 	}
 	env_array_for_step(&env, ctx->step_resp,
-			   ctx->launch_state->resp_port[0]);
+			   ctx->launch_state->resp_port[0], 
+			   params->preserve_env);
 	env_array_merge(&env, (const char **)mpi_env);
 	env_array_free(mpi_env);
 
