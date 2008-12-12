@@ -1153,7 +1153,7 @@ extern void node_fini(void);
  *	representation
  * IN node_names  - list of nodes
  * IN best_effort - if set don't return an error on invalid node name entries 
- * OUT bitmap     - set to bitmap or NULL on error 
+ * OUT bitmap     - set to bitmap, may not have all bits set on error 
  * RET 0 if no error, otherwise EINVAL
  * global: node_record_table_ptr - pointer to global node table
  * NOTE: the caller must bit_free() memory at bitmap when no longer required
