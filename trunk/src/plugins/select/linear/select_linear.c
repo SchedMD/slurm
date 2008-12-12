@@ -1223,8 +1223,9 @@ static int _rm_job_from_nodes(struct node_cr_record *node_cr_ptr,
 			      struct job_record *job_ptr, char *pre_err, 
 			      int remove_all)
 {
-	int i, rc = SLURM_SUCCESS;
+	int i, i_first, i_last, rc = SLURM_SUCCESS;
 	struct part_cr_record *part_cr_ptr;
+	select_job_res_t select_ptr;
 	uint32_t job_memory, job_memory_cpu = 0, job_memory_node = 0;
 
 	if (node_cr_ptr == NULL) {
@@ -1241,8 +1242,15 @@ static int _rm_job_from_nodes(struct node_cr_record *node_cr_ptr,
 			job_memory_node = job_ptr->details->job_min_memory;
 	}
 
-	for (i = 0; i < select_node_cnt; i++) {
-		if (bit_test(job_ptr->node_bitmap, i) == 0)
+	if ((select_ptr = job_ptr->select_job) == NULL) {
+		error("job %u lacks a select_job_res struct",
+		      job_ptr->job_id);
+		return SLURM_ERROR;
+	}
+	i_first = bit_ffs(select_ptr->node_bitmap);
+	i_last  = bit_fls(select_ptr->node_bitmap);
+	for (i = i_first; i <= i_last; i++) {
+		if (bit_test(select_ptr->node_bitmap, i) == 0)
 			continue;
 		if (job_memory_cpu == 0)
 			job_memory = job_memory_node;
@@ -1322,8 +1330,9 @@ static int _add_job_to_nodes(struct node_cr_record *node_cr_ptr,
 			     struct job_record *job_ptr, char *pre_err, 
 			     int alloc_all)
 {
-	int i, rc = SLURM_SUCCESS, exclusive = 0;
+	int i, i_first, i_last, rc = SLURM_SUCCESS, exclusive = 0;
 	struct part_cr_record *part_cr_ptr;
+	select_job_res_t select_ptr;
 	uint32_t job_memory_cpu = 0, job_memory_node = 0;
 
 	if (node_cr_ptr == NULL) {
@@ -1343,8 +1352,15 @@ static int _add_job_to_nodes(struct node_cr_record *node_cr_ptr,
 	if (job_ptr->details->shared == 0)
 		exclusive = 1;
 
-	for (i = 0; i < select_node_cnt; i++) {
-		if (bit_test(job_ptr->node_bitmap, i) == 0)
+	if ((select_ptr = job_ptr->select_job) == NULL) {
+		error("job %u lacks a select_job_res struct",
+		      job_ptr->job_id);
+		return SLURM_ERROR;
+	}
+	i_first = bit_ffs(select_ptr->node_bitmap);
+	i_last  = bit_fls(select_ptr->node_bitmap);
+	for (i = i_first; i <= i_last; i++) {
+		if (bit_test(select_ptr->node_bitmap, i) == 0)
 			continue;
 		if (job_memory_cpu == 0)
 			node_cr_ptr[i].alloc_memory += job_memory_node;
@@ -1471,11 +1487,12 @@ static void _init_node_cr(void)
 {
 	struct part_record *part_ptr;
 	struct part_cr_record *part_cr_ptr;
+	select_job_res_t select_ptr;
 	ListIterator part_iterator;
 	struct job_record *job_ptr;
 	ListIterator job_iterator;
 	uint32_t job_memory_cpu, job_memory_node;
-	int exclusive, i;
+	int exclusive, i, i_first, i_last;
 
 	if (node_cr_ptr)
 		return;
@@ -1505,6 +1522,11 @@ static void _init_node_cr(void)
 		if ((job_ptr->job_state != JOB_RUNNING) &&
 		    (job_ptr->job_state != JOB_SUSPENDED))
 			continue;
+		if ((select_ptr = job_ptr->select_job) == NULL) {
+			error("job %u lacks a select_job_res struct",
+			      job_ptr->job_id);
+			continue;
+		}
 
 		job_memory_cpu  = 0;
 		job_memory_node = 0;
@@ -1524,10 +1546,14 @@ static void _init_node_cr(void)
 		else
 			exclusive = 0;
 
-		for (i = 0; i < select_node_cnt; i++) {
-			if (job_ptr->node_bitmap == NULL)
-				break;
-			if (!bit_test(job_ptr->node_bitmap, i))
+		/* Use select_ptr->node_bitmap rather than job_ptr->node_bitmap
+		 * which can have DOWN nodes cleared from the bitmap */
+		if (select_ptr->node_bitmap == NULL)
+			continue;
+		i_first = bit_ffs(select_ptr->node_bitmap);
+		i_last  = bit_fls(select_ptr->node_bitmap);
+		for (i = i_first; i <= i_last; i++) {
+			if (!bit_test(select_ptr->node_bitmap, i))
 				continue;
 			if (exclusive) {
 				if (node_cr_ptr[i].exclusive_jobid) {
