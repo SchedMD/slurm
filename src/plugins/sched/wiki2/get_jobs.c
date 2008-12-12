@@ -232,8 +232,8 @@ static char *   _dump_all_jobs(int *job_cnt, time_t update_time)
 
 static char *	_dump_job(struct job_record *job_ptr, time_t update_time)
 {
-	char tmp[16384], *buf = NULL;
-	char *uname, *gname;
+	char *buf = NULL, tmp[16384];
+	char *gname, *quote, *uname;
 	uint32_t end_time, suspend_time;
 	int i, rej_sent = 0;
 
@@ -366,8 +366,16 @@ static char *	_dump_job(struct job_record *job_ptr, time_t update_time)
 		xstrcat(buf, tmp);
 	}
 
-	snprintf(tmp, sizeof(tmp),
-		"NAME=\"%s\";", job_ptr->name);
+	if ((quote = strchr(job_ptr->name, (int) '\"'))) {
+		/* Moab does not like job names containing a quote */
+		*quote = '\0';
+		snprintf(tmp, sizeof(tmp),
+			"NAME=\"%s\";", job_ptr->name);
+		*quote = '\"';
+	} else {
+		snprintf(tmp, sizeof(tmp),
+			"NAME=\"%s\";", job_ptr->name);
+	}
 	xstrcat(buf, tmp);
 
 	if (job_ptr->details &&
