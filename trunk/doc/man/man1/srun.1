@@ -264,6 +264,12 @@ See \fBIO Redirection\fR below for more options.
 If the specified file already exists, it will be overwritten.
 
 .TP
+\fB\-E\fR, \fB\-\-preserve-env\fR
+Pass the current values of environment variables SLURM_NNODES and 
+SLURM_NPROCS through to the \fIexecutable\fR, rather than computing them
+from commandline parameters.
+
+.TP
 \fB\-\-epilog\fR=\fIexecutable\fR
 \fBsrun\fR will run \fIexecutable\fR just after the job step completes.
 The command line arguments for \fIexecutable\fR will be the command

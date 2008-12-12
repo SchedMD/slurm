@@ -3,9 +3,12 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.4.0-pre7
 =============================
- -- Bug fix for preemtpion with select/cons_res when there are no idle nodes.
+ -- Bug fix for preemption with select/cons_res when there are no idle nodes.
  -- Bug fix for use of srun options --exclusive and --cpus-per-task together
     for job step resource allocation (tracking of cpus in use was bad).
+ -- Added the srun option --preserve-env to pass the current values of 
+    environment variables SLURM_NNODES and SLURM_NPROCS through to the 
+    executable, rather than computing them from commandline parameters.
 
 * Changes in SLURM 1.4.0-pre6
 =============================

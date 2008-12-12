@@ -377,6 +377,7 @@ static void _opt_default()
 	opt.quit_on_intr = false;
 	opt.disable_status = false;
 	opt.test_only   = false;
+	opt.preserve_env = false;
 
 	opt.quiet = 0;
 	_verbose = 0;
@@ -679,6 +680,7 @@ static void set_options(const int argc, char **argv)
 		{"slurmd-debug",  required_argument, 0, 'd'},
 		{"chdir",         required_argument, 0, 'D'},
 		{"error",         required_argument, 0, 'e'},
+		{"preserve-env",  no_argument,       0, 'E'},
 		{"geometry",      required_argument, 0, 'g'},
 		{"hold",          no_argument,       0, 'H'},
 		{"input",         required_argument, 0, 'i'},
@@ -770,7 +772,7 @@ static void set_options(const int argc, char **argv)
 		{"wckey",            required_argument, 0, LONG_OPT_WCKEY},
 		{NULL,               0,                 0, 0}
 	};
-	char *opt_string = "+aAbB:c:C:d:D:e:g:Hi:IjJ:kKlL:m:n:N:"
+	char *opt_string = "+aAbB:c:C:d:D:e:Eg:Hi:IjJ:kKlL:m:n:N:"
 		"o:Op:P:qQr:R:st:T:uU:vVw:W:x:XZ";
 
 	struct option *optz = spank_option_table_create (long_options);
@@ -850,6 +852,9 @@ static void set_options(const int argc, char **argv)
 				opt.efname = xstrdup("/dev/null");
 			else
 				opt.efname = xstrdup(optarg);
+			break;
+		case (int)'E':
+			opt.preserve_env = true;
 			break;
 		case (int)'g':
 			if (verify_geometry(optarg, opt.geometry))
@@ -1878,6 +1883,7 @@ static void _opt_list()
 	xfree(str);
 	info("reboot         : %s", opt.reboot ? "no" : "yes");
 	info("rotate         : %s", opt.no_rotate ? "yes" : "no");
+	info("preserve_env   : %s", tf_(opt.preserve_env));
 	
 	if (opt.blrtsimage)
 		info("BlrtsImage     : %s", opt.blrtsimage);
@@ -1925,6 +1931,7 @@ static bool _under_parallel_debugger (void)
 	return (MPIR_being_debugged != 0);
 }
 
+
 static void _usage(void)
 {
  	printf(
@@ -1940,7 +1947,7 @@ static void _usage(void)
 "            [--kill-on-bad-exit] [--propagate[=rlimits] [--comment=name]\n"
 "            [--cpu_bind=...] [--mem_bind=...] [--network=type]\n"
 "            [--ntasks-per-node=n] [--ntasks-per-socket=n]\n"
-"            [--ntasks-per-core=n] [--mem-per-cpu=MB]\n"
+"            [--ntasks-per-core=n] [--mem-per-cpu=MB] [--preserve-env]\n"
 #ifdef HAVE_BG		/* Blue gene specific options */
 "            [--geometry=XxYxZ] [--conn-type=type] [--no-rotate] [--reboot]\n"
 "            [--blrts-image=path] [--linux-image=path]\n"
@@ -2015,6 +2022,7 @@ static void _help(void)
 "  -L, --licenses=names        required license, comma separated\n"
 "      --checkpoint=time       job step checkpoint interval\n"
 "      --checkpoint-path=dir   path to store job step checkpoint image files\n"
+"  -E, --preserve-env          env vars for node and task counts override command-line flags\n"
 #ifdef HAVE_PTY_H
 "      --pty                   run task zero in pseudo terminal\n"
 #endif

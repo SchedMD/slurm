@@ -165,6 +165,7 @@ typedef struct srun_options {
 	char *task_epilog;	/* --task-epilog=		*/
 	char *task_prolog;	/* --task-prolog=		*/
 	char *licenses;		/* --licenses, -L		*/
+	bool preserve_env;	/* --preserve-env		*/
 
 	/* constraint options */
 	int32_t job_min_cpus;	/* --mincpus=n			*/

@@ -956,7 +956,8 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
  * overwriting any environment variables of the same name.  If the address
  * pointed to by "dest" is NULL, memory will automatically be xmalloc'ed.
  * The array is terminated by a NULL pointer, and thus is suitable for
- * use by execle() and other env_array_* functions.
+ * use by execle() and other env_array_* functions.  If preserve_env is
+ * true, the variables SLURM_NNODES and SLURM_NPROCS remain unchanged.
  *
  * Sets variables:
  *	SLURM_STEP_ID
@@ -979,7 +980,8 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 void
 env_array_for_step(char ***dest, 
 		   const job_step_create_response_msg_t *step,
-		   uint16_t launcher_port)
+		   uint16_t launcher_port,
+		   bool preserve_env)
 {
 	char *tmp;
 
@@ -998,10 +1000,12 @@ env_array_for_step(char ***dest,
 
 	/* OBSOLETE, but needed by MPI, do not remove */
 	env_array_overwrite_fmt(dest, "SLURM_STEPID", "%u", step->job_step_id);
-	env_array_overwrite_fmt(dest, "SLURM_NNODES",
-				"%hu", step->step_layout->node_cnt);
-	env_array_overwrite_fmt(dest, "SLURM_NPROCS",
-				"%u", step->step_layout->task_cnt);
+	if (!preserve_env) {
+		env_array_overwrite_fmt(dest, "SLURM_NNODES",
+					"%hu", step->step_layout->node_cnt);
+		env_array_overwrite_fmt(dest, "SLURM_NPROCS",
+					"%u", step->step_layout->task_cnt);
+	}
 	env_array_overwrite_fmt(dest, "SLURM_TASKS_PER_NODE", "%s", tmp);
 	env_array_overwrite_fmt(dest, "SLURM_SRUN_COMM_PORT",
 				"%hu", launcher_port);

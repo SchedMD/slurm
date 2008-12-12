@@ -290,7 +290,6 @@ int srun(int ac, char **av)
 	/*
 	 *  Enhance environment for job
 	 */
-	env->nprocs = opt.nprocs;
 	env->cpus_per_task = opt.cpus_per_task;
 	if (opt.ntasks_per_node != NO_VAL)
 		env->ntasks_per_node = opt.ntasks_per_node;
@@ -315,7 +314,6 @@ int srun(int ac, char **av)
 				   &tasks);
 
 		env->select_jobinfo = job->select_jobinfo;
-		env->nhosts = job->nhosts;
 		env->nodelist = job->nodelist;
 		env->task_count = _uint16_array_to_str(
 			job->nhosts, tasks);
@@ -377,6 +375,7 @@ int srun(int ac, char **av)
 	launch_params.ntasks_per_core   = opt.ntasks_per_core;
 	launch_params.task_dist         = opt.distribution;
 	launch_params.ckpt_path		= xstrdup(opt.ckpt_path);
+	launch_params.preserve_env      = opt.preserve_env;
 	/* job structure should now be filled in */
 	_setup_signals();
 
