@@ -207,11 +207,16 @@ static int _local_update_assoc_qos_list(acct_association_rec_t *assoc,
 
 /* locks should be put in place before calling this function */
 static int _set_assoc_parent_and_user(acct_association_rec_t *assoc,
-				      List assoc_list)
+				      List assoc_list, int reset)
 {
 	static acct_association_rec_t *last_acct_parent = NULL;
 	static acct_association_rec_t *last_parent = NULL;
 
+	if(reset) {
+		last_acct_parent = NULL;
+		last_parent = NULL;
+	}
+	
 	if(!assoc || !assoc_list) {
 		error("you didn't give me an association");
 		return SLURM_ERROR;
@@ -261,7 +266,7 @@ static int _set_assoc_parent_and_user(acct_association_rec_t *assoc,
 		}
 	} else 
 		assoc_mgr_root_assoc = assoc;
-
+		
 	if(assoc->user) {
 		uid_t pw_uid = uid_from_string(assoc->user);
 		if(pw_uid == (uid_t) -1) 
@@ -280,6 +285,7 @@ static int _post_association_list(List assoc_list)
 {
 	acct_association_rec_t *assoc = NULL;
 	ListIterator itr = NULL;
+	int reset = 1;
 	//DEF_TIMERS;
 
 	if(!assoc_list)
@@ -287,8 +293,10 @@ static int _post_association_list(List assoc_list)
 
 	itr = list_iterator_create(assoc_list);
 	//START_TIMER;
-	while((assoc = list_next(itr))) 
-		_set_assoc_parent_and_user(assoc, assoc_list);
+	while((assoc = list_next(itr))) {
+		_set_assoc_parent_and_user(assoc, assoc_list, reset);
+		reset = 0;
+	}
 
 	if(setup_childern) {
 		acct_association_rec_t *assoc2 = NULL;
@@ -607,7 +615,7 @@ static int _refresh_assoc_mgr_association_list(void *db_conn, int enforce)
 			if(assoc->id == curr_assoc->id) 
 				break;
 		}
-		
+
 		while(assoc) {
 			_addto_used_info(assoc, curr_assoc);
 			/* get the parent last since this pointer is
@@ -1710,6 +1718,7 @@ extern int assoc_mgr_update_assocs(acct_update_object_t *update)
 	 * we may have added the parent which wasn't in the list before
 	 */
 	if(parents_changed) {
+		int reset = 1;
 		list_sort(assoc_mgr_association_list, 
 			  (ListCmpF)_sort_assoc_dec);
 
@@ -1731,7 +1740,8 @@ extern int assoc_mgr_update_assocs(acct_update_object_t *update)
 				object->used_shares = 0;
 			}
 			_set_assoc_parent_and_user(
-				object, assoc_mgr_association_list);
+				object, assoc_mgr_association_list, reset);
+			reset = 0;
 		}
 		/* Now that we have set up the parents correctly we
 		   can update the used limits
