@@ -825,6 +825,7 @@ typedef struct {
 	uint16_t ntasks_per_core;
 	uint16_t task_dist;
 	uint16_t plane_size;
+	uint16_t preserve_env;
 
 	char *mpi_plugin_name;
 	uint8_t open_mode;
