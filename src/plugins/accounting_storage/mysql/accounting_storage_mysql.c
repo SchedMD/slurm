@@ -9658,7 +9658,8 @@ extern int jobacct_storage_p_step_start(mysql_conn_t *mysql_conn,
 	char *ionodes = NULL;
 #endif
 	char *query = NULL;
-	
+	char *sname = NULL;
+
 	if (!step_ptr->job_ptr->db_index 
 	    && (!step_ptr->job_ptr->details
 		|| !step_ptr->job_ptr->details->submit_time)) {
@@ -9699,7 +9700,7 @@ extern int jobacct_storage_p_step_start(mysql_conn_t *mysql_conn,
 		}
 #endif
 	}
-
+	
 	step_ptr->job_ptr->requid = -1; /* force to -1 for sacct to know this
 					 * hasn't been set yet  */
 
@@ -9721,6 +9722,20 @@ extern int jobacct_storage_p_step_start(mysql_conn_t *mysql_conn,
 			}
 		}
 	}
+
+	if (step_ptr->name && step_ptr->name[0]) {
+		char *temp = NULL;
+		/* first set the jname to the job_ptr->name */
+		sname = xstrdup(step_ptr->name);
+		/* then grep for " since that is the delimiter for
+		   the wckey */
+		if((temp = strchr(sname, '\"'))) {
+			/* if we have a wckey set the " to NULL to
+			 * end the jname */
+			temp[0] = '\0';
+		}
+	}
+
 	/* we want to print a -1 for the requid so leave it a
 	   %d */
 	query = xstrdup_printf(
@@ -9730,12 +9745,12 @@ extern int jobacct_storage_p_step_start(mysql_conn_t *mysql_conn,
 		"on duplicate key update cpus=%d, end=0, state=%d",
 		step_table, step_ptr->job_ptr->db_index,
 		step_ptr->step_id, 
-		(int)step_ptr->start_time, step_ptr->name,
+		(int)step_ptr->start_time, sname,
 		JOB_RUNNING, cpus, node_list, cpus, JOB_RUNNING);
 	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
-
+	xfree(sname);
 	return rc;
 #else
 	return SLURM_ERROR;
