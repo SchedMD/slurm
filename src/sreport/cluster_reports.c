@@ -1696,6 +1696,8 @@ extern int cluster_wckey_by_user(int argc, char *argv[])
 		/* now add the wckeys of interest here by user */
 		while((wckey = list_next(wckey_itr))) {
 			acct_accounting_rec_t *accting2 = NULL;
+			sreport_assoc_rec_t *parent_assoc = NULL;
+			ListIterator par_itr = NULL;
 
 			if(!wckey->accounting_list
 			   || !list_count(wckey->accounting_list)) {
@@ -1706,6 +1708,24 @@ extern int cluster_wckey_by_user(int argc, char *argv[])
 			if(strcmp(cluster->name, wckey->cluster)) 
 				continue;
 
+			/* find the parent */
+			par_itr = list_iterator_create(
+				sreport_cluster->assoc_list);
+			while((parent_assoc = list_next(par_itr))) {
+				if(!parent_assoc->user 
+				   && !strcmp(parent_assoc->acct, wckey->name))
+					break;
+			}
+			list_iterator_destroy(par_itr);
+			if(!parent_assoc) {
+				parent_assoc = xmalloc(
+					sizeof(sreport_assoc_rec_t));
+			
+				list_append(sreport_cluster->assoc_list, 
+					    parent_assoc);
+				parent_assoc->acct = xstrdup(wckey->name);
+			}
+
 			sreport_assoc = xmalloc(sizeof(sreport_assoc_rec_t));
 			
 			list_append(sreport_cluster->assoc_list, 
@@ -1713,12 +1733,14 @@ extern int cluster_wckey_by_user(int argc, char *argv[])
 
 			sreport_assoc->acct = xstrdup(wckey->name);
 			sreport_assoc->user = xstrdup(wckey->user);
-				
+
 			/* get the amount of time this wckey used
 			   during the time we are looking at */
 			itr2 = list_iterator_create(wckey->accounting_list);
 			while((accting2 = list_next(itr2))) {
 				sreport_assoc->cpu_secs += 
+					(uint64_t)accting2->alloc_secs;
+				parent_assoc->cpu_secs += 
 					(uint64_t)accting2->alloc_secs;
 			}
 			list_iterator_destroy(itr2);
