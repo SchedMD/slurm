@@ -133,10 +133,23 @@ _filter_job_records (void)
 			continue;
 		}
 
-		if ((opt.job_name != NULL) &&
-		    (strcmp(job_ptr[i].name,opt.job_name) != 0)) {
-			job_ptr[i].job_id = 0;
-			continue;
+		if (opt.job_name != NULL) {
+			char *quote = NULL;
+			int set = 0;
+			if ((quote = strchr(job_ptr[i].name, (int) '\"'))) 
+				/* take out the wckey */
+				*quote = '\0';
+			else 
+				quote = job_ptr[i].name;
+			
+			if(strcmp(job_ptr[i].name, opt.job_name) != 0) {
+				job_ptr[i].job_id = 0;
+				if(set)
+					*quote = '\"';	
+				continue;
+			}
+			if(set)
+				*quote = '\"';					
 		}
 
 		if ((opt.partition != NULL) &&
