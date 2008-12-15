@@ -233,7 +233,7 @@ static uint32_t _get_wckeyid(mysql_conn_t *mysql_conn, char **name,
 				goto no_wckeyid;
 			}
 			if(user_rec.default_wckey)
-				*name = xstrdup_printf("%s*", 
+				*name = xstrdup_printf("*%s", 
 						       user_rec.default_wckey);
 			else
 				*name = xstrdup_printf("*");
@@ -9711,7 +9711,7 @@ extern int jobacct_storage_p_step_start(mysql_conn_t *mysql_conn,
 	char *ionodes = NULL;
 #endif
 	char *query = NULL;
-	
+
 	if (!step_ptr->job_ptr->db_index 
 	    && (!step_ptr->job_ptr->details
 		|| !step_ptr->job_ptr->details->submit_time)) {
@@ -9752,7 +9752,7 @@ extern int jobacct_storage_p_step_start(mysql_conn_t *mysql_conn,
 		}
 #endif
 	}
-
+	
 	step_ptr->job_ptr->requid = -1; /* force to -1 for sacct to know this
 					 * hasn't been set yet  */
 
@@ -9774,6 +9774,7 @@ extern int jobacct_storage_p_step_start(mysql_conn_t *mysql_conn,
 			}
 		}
 	}
+
 	/* we want to print a -1 for the requid so leave it a
 	   %d */
 	query = xstrdup_printf(

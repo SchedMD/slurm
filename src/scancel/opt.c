@@ -229,6 +229,7 @@ static void _opt_default()
 	opt.user_name	= NULL;
 	opt.user_id	= 0;
 	opt.verbose	= 0;
+	opt.wckey	= NULL;
 }
 
 /*
@@ -302,6 +303,10 @@ static void _opt_env()
 			error ("Unrecognized SCANCEL_VERBOSE value: %s",
 				val);
 	}
+
+	if ( (val=getenv("SCANCEL_WCKEY")) ) {
+		opt.wckey = xstrdup(val);
+	}
 }
 
 /*
@@ -328,7 +333,7 @@ static void _opt_args(int argc, char **argv)
 		{NULL,          0,                 0, 0}
 	};
 
-	while((opt_char = getopt_long(argc, argv, "bin:p:qs:t:u:vV",
+	while((opt_char = getopt_long(argc, argv, "bin:p:qs:t:u:vVw",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 			case (int)'?':
@@ -369,6 +374,9 @@ static void _opt_args(int argc, char **argv)
 			case (int)'V':
 				_print_version();
 				exit(0);
+			case (int)'w':
+				opt.wckey = xstrdup(optarg);
+				break;
 			case OPT_LONG_HELP:
 				_help();
 				exit(0);
@@ -454,6 +462,7 @@ _opt_verify(void)
 	    (opt.partition == NULL) &&
 	    (opt.state == JOB_END) &&
 	    (opt.user_name == NULL) &&
+	    (opt.wckey == NULL) &&
 	    (opt.job_cnt == 0)) {
 		error("No job identification provided");
 		verified = false;	/* no job specification */
@@ -478,6 +487,7 @@ static void _opt_list(void)
 	info("user_id        : %u", opt.user_id);
 	info("user_name      : %s", opt.user_name);
 	info("verbose        : %d", opt.verbose);
+	info("wckey          : %s", opt.wckey);
 
 	for (i=0; i<opt.job_cnt; i++) {
 		info("job_steps      : %u.%u ", opt.job_id[i], opt.step_id[i]);
