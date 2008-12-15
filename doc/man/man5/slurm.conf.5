@@ -360,8 +360,7 @@ If the number of node configuration entries in the configuration file
 is significantly lower than the number of nodes, setting FastSchedule to
 1 will permit much faster scheduling decisions to be made.
 (The scheduler can just check the values in a few configuration records
-instead of possibly thousands of node records. If a job can't be initiated
-immediately, the scheduler may execute these tests repeatedly.)
+instead of possibly thousands of node records.)
 Note that on systems with hyper\-threading, the processor count
 reported by the node will be twice the actually processor count.
 Consider which value you want to be used for scheduling purposes.
@@ -369,12 +368,17 @@ Consider which value you want to be used for scheduling purposes.
 .TP 5
 \fB1\fR (default)
 Consider the configuration of each node to be that specified in the
-configuration file and any node with less
-than the configured resources will be set DOWN.
+configuration file and any node with less than the configured resources 
+will be set DOWN.
 .TP
 \fB0\fR
-Base scheduling decisions upon the actual configuration of 
-each individual node. 
+Base scheduling decisions upon the actual configuration of each individual 
+node except that the node's processor count in SLURM's configuration must
+match the actual hardware configuration if \fBSchedulerType=sched/gang\fR 
+or \fBSelectType=select/cons_res\fR are configured (both of those plugins
+maintain resource allocation information using bitmaps for the cores in the
+system and must remain static, while the node's memory and disk space can
+be esblished later).
 .TP
 \fB2\fR
 Consider the configuration of each node to be that specified in the 

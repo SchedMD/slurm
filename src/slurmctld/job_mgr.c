@@ -3738,7 +3738,7 @@ void reset_job_bitmaps(void)
 	struct part_record *part_ptr;
 	bool job_fail = false;
 	time_t now = time(NULL);
-	static uint32_t cr_flag = NO_VAL;
+	static uint32_t cr_flag = NO_VAL, gang_flag = NO_VAL;
 
 	xassert(job_list);
 
@@ -3749,6 +3749,14 @@ void reset_job_bitmaps(void)
 			cr_flag = NO_VAL;	/* error */
 		}
 			
+	}
+	if (gang_flag == NO_VAL) {
+		char *sched_type = slurm_get_sched_type();
+		if (strcmp(sched_type, "sched/gang"))
+			gang_flag = 0;
+		else
+			gang_flag = 1;
+		xfree(sched_type);
 	}
 
 	job_iterator = list_iterator_create(job_list);
@@ -3789,7 +3797,7 @@ void reset_job_bitmaps(void)
 		reset_node_bitmap(job_ptr->select_job,
 				  job_ptr->node_bitmap);
 		if (!job_fail && !IS_JOB_FINISHED(job_ptr) && 
-		    job_ptr->select_job && cr_flag && 
+		    job_ptr->select_job && (cr_flag || gang_flag) && 
 		    valid_select_job_res(job_ptr->select_job, 
 					 node_record_table_ptr, 
 					 slurmctld_conf.fast_schedule)) {

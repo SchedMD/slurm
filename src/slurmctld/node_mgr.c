@@ -1490,6 +1490,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 	char *reason_down = NULL;
 	uint16_t base_state, node_flags;
 	time_t now = time(NULL);
+	static uint32_t cr_flag = NO_VAL, gang_flag = NO_VAL;
 
 	node_ptr = find_node_record (reg_msg->node_name);
 	if (node_ptr == NULL)
@@ -1530,6 +1531,22 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 	}
 	node_ptr->threads = reg_msg->threads;
 #else
+	if (cr_flag == NO_VAL) {
+		cr_flag = 0;  /* call is no-op for select/linear and bluegene */
+		if (select_g_get_info_from_plugin(SELECT_CR_PLUGIN,
+						  NULL, &cr_flag)) {
+			cr_flag = NO_VAL;	/* error */
+		}
+	}
+	if (gang_flag == NO_VAL) {
+		char *sched_type = slurm_get_sched_type();
+		if (strcmp(sched_type, "sched/gang"))
+			gang_flag = 0;
+		else
+			gang_flag = 1;
+		xfree(sched_type);
+	}
+
 	if (slurmctld_conf.fast_schedule != 2) {
 		int tot1, tot2;
 		tot1 = reg_msg->sockets * reg_msg->cores * reg_msg->threads;
@@ -1540,6 +1557,16 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 				reg_msg->node_name, tot1);
 			error_code = EINVAL;
 			reason_down = "Low socket*core*thread count";
+		} else if ((slurmctld_conf.fast_schedule == 0) &&
+			   ((cr_flag == 1) || (gang_flag == 1)) && 
+			   (tot1 > tot2)) {
+			error("Node %s has high socket*core*thread count %u, "
+			      "extra resources ignored", 
+			      reg_msg->node_name, tot1);
+			/* Preserve configured values */
+			reg_msg->sockets = config_ptr->sockets;
+			reg_msg->cores   = config_ptr->cores;
+			reg_msg->threads = config_ptr->threads;
 		}
 	}
 	node_ptr->sockets = reg_msg->sockets;

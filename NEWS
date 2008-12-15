@@ -9,9 +9,13 @@ documents those changes that are of interest to users and admins.
  -- Added the srun option --preserve-env to pass the current values of 
     environment variables SLURM_NNODES and SLURM_NPROCS through to the 
     executable, rather than computing them from commandline parameters.
- -- For select/cons_res only: Validate a job's resource allocation socket/core
-    count on each allocated node. If the node's configuration has been changed,
-    then abort the job.
+ -- For select/cons_res or sched/gang only: Validate a job's resource 
+    allocation socket and core count on each allocated node. If the node's
+    configuration has been changed, then abort the job.
+ -- For select/cons_res or sched/gang only: Disable updating a node's 
+    processor count if FastSchedule=0. Administrators must set a valid
+    processor count although the memory and disk space configuration can
+    be loaded from the compute node when it starts.
 
 * Changes in SLURM 1.4.0-pre6
 =============================

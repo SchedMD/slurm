@@ -421,6 +421,13 @@ static int parse_nodename(void **dest, slurm_parser_enum_t type,
 			}
 		}
 
+		if (n->cpus != (n->sockets * n->cores * n->threads)) {
+			error("Procs (%d) doesn't match "
+			      "Sockets*CoresPerSocket*ThreadsPerCore (%u)",
+			      n->cpus, (n->sockets * n->cores * n->threads));
+			return -1;
+		}
+
 		*dest = (void *)n;
 
 		return 1;
