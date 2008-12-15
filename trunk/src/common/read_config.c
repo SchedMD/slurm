@@ -278,6 +278,7 @@ static int parse_nodename(void **dest, slurm_parser_enum_t type,
 {
 	s_p_hashtbl_t *tbl, *dflt;
 	slurm_conf_node_t *n;
+	int computed_procs;
 	static s_p_options_t _nodename_options[] = {
 		{"CoresPerSocket", S_P_UINT16},
 		{"Feature", S_P_STRING},
@@ -421,11 +422,13 @@ static int parse_nodename(void **dest, slurm_parser_enum_t type,
 			}
 		}
 
-		if (n->cpus != (n->sockets * n->cores * n->threads)) {
+		computed_procs = n->sockets * n->cores * n->threads;
+		if (n->cpus != computed_procs) {
 			error("Procs (%d) doesn't match "
-			      "Sockets*CoresPerSocket*ThreadsPerCore (%u)",
-			      n->cpus, (n->sockets * n->cores * n->threads));
-			return -1;
+			      "Sockets*CoresPerSocket*ThreadsPerCore (%u), "
+			      "resetting Procs",
+			      n->cpus, computed_procs);
+			n->cpus = computed_procs;
 		}
 
 		*dest = (void *)n;
