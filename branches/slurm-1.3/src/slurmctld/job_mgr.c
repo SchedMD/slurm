@@ -2284,7 +2284,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		job_ptr->priority = 1;      /* Move to end of queue */
 		job_ptr->state_reason = fail_reason;
 	}
-	
+
 cleanup:
 	if (license_list)
 		list_destroy(license_list);
@@ -2803,8 +2803,9 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 
 	if (job_desc->name)
 		job_ptr->name = xstrdup(job_desc->name);
-
-        if(slurm_get_track_wckey() && !strchr(job_ptr->name, '\"')) {
+	
+        if(slurm_get_track_wckey() 
+	   && (!job_ptr->name || !strchr(job_ptr->name, '\"'))) {
 		/* get the default wckey for this user since none was
 		 * given */
 		acct_user_rec_t user_rec;
@@ -2813,10 +2814,10 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		assoc_mgr_fill_in_user(acct_db_conn, &user_rec,
 				       accounting_enforce);
 		if(user_rec.default_wckey)
-			xstrfmtcat(job_ptr->name, "\"%s*",
+			xstrfmtcat(job_ptr->name, "\"*%s",
 				   user_rec.default_wckey);
 		else
-			xstrcat(job_ptr->name, "\"*");			
+			xstrcat(job_ptr->name, "\"*");	
 	}
 
 	job_ptr->user_id    = (uid_t) job_desc->user_id;

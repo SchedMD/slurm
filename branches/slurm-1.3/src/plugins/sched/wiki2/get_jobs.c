@@ -366,7 +366,7 @@ static char *	_dump_job(struct job_record *job_ptr, time_t update_time)
 		xstrcat(buf, tmp);
 	}
 
-	if ((quote = strchr(job_ptr->name, (int) '\"'))) {
+	if (job_ptr->name && (quote = strchr(job_ptr->name, (int) '\"'))) {
 		/* Moab does not like job names containing a quote */
 		*quote = '\0';
 		snprintf(tmp, sizeof(tmp),

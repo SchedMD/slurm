@@ -232,7 +232,7 @@ static uint32_t _get_wckeyid(mysql_conn_t *mysql_conn, char **name,
 				goto no_wckeyid;
 			}
 			if(user_rec.default_wckey)
-				*name = xstrdup_printf("%s*", 
+				*name = xstrdup_printf("*%s", 
 						       user_rec.default_wckey);
 			else
 				*name = xstrdup_printf("*");
