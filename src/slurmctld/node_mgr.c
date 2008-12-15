@@ -101,8 +101,8 @@ static void 	_make_node_down(struct node_record *node_ptr,
 				time_t event_time);
 static void	_node_did_resp(struct node_record *node_ptr);
 static bool	_node_is_hidden(struct node_record *node_ptr);
-static void 	_pack_node (struct node_record *dump_node_ptr, bool cr_flag,
-				Buf buffer);
+static void 	_pack_node (struct node_record *dump_node_ptr,
+			    uint32_t cr_flag, Buf buffer);
 static void	_sync_bitmaps(struct node_record *node_ptr, int job_count);
 static void	_update_config_ptr(bitstr_t *bitmap,
 				struct config_record *config_ptr);
@@ -811,10 +811,9 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 	uint32_t nodes_packed, tmp_offset;
 	uint16_t base_state;
 	Buf buffer;
-	bool cr_flag = false;
+	static uint32_t cr_flag = NO_VAL;
 	time_t now = time(NULL);
 	struct node_record *node_ptr = node_record_table_ptr;
-	char *select_type;
 
 	/*
 	 * If Consumable Resources enabled, get allocated_cpus.
@@ -822,10 +821,13 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 	 * use dependeing upon node state (entire node is either 
 	 * allocated or not).
 	 */
-	select_type = slurm_get_select_type();
-	if (strcmp(select_type, "select/cons_res") == 0)
-		cr_flag = true;
-	xfree(select_type);
+	if (cr_flag == NO_VAL) {
+		cr_flag = 0;  /* call is no-op for select/linear and bluegene */
+		if (select_g_get_info_from_plugin(SELECT_CR_PLUGIN,
+						  NULL, &cr_flag)) {
+			cr_flag = NO_VAL;	/* error */
+		}
+	}
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
@@ -880,7 +882,7 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
  *	changes to load_node_config in api/node_info.c
  * NOTE: READ lock_slurmctld config before entry
  */
-static void _pack_node (struct node_record *dump_node_ptr, bool cr_flag,
+static void _pack_node (struct node_record *dump_node_ptr, uint32_t cr_flag,
 		Buf buffer) 
 {
 	packstr (dump_node_ptr->name, buffer);
@@ -904,7 +906,7 @@ static void _pack_node (struct node_record *dump_node_ptr, bool cr_flag,
 	}
 	pack32  (dump_node_ptr->config_ptr->weight, buffer);
 
-	if (cr_flag) {
+	if (cr_flag == 1) {
 		uint16_t allocated_cpus;
 		int error_code;
 		error_code = select_g_get_select_nodeinfo(dump_node_ptr,
