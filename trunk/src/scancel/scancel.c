@@ -133,8 +133,14 @@ _filter_job_records (void)
 			continue;
 		}
 
-		if ((opt.job_name != NULL) &&
-		    (strcmp(job_ptr[i].name,opt.job_name) != 0)) {
+		if (opt.job_name != NULL &&
+		    (strcmp(job_ptr[i].name, opt.job_name) != 0)) {
+			job_ptr[i].job_id = 0;
+			continue;
+		}
+
+		if (opt.wckey != NULL &&
+		    (strcmp(job_ptr[i].wckey, opt.wckey) != 0)) {
 			job_ptr[i].job_id = 0;
 			continue;
 		}

@@ -57,6 +57,7 @@ typedef struct scancel_options {
 	uint16_t job_cnt;	/* count of job_id's specified	*/
 	uint32_t *job_id;	/* list of job_id's		*/
 	uint32_t *step_id;	/* list of job step id's	*/
+	char *wckey;		/* --name=n, -nn		*/
 } opt_t;
 
 opt_t opt;

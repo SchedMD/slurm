@@ -2392,7 +2392,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		job_ptr->state_reason = fail_reason;
 		xfree(job_ptr->state_desc);
 	}
-	
+
 cleanup:
 	if (license_list)
 		list_destroy(license_list);
@@ -2929,10 +2929,10 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		assoc_mgr_fill_in_user(acct_db_conn, &user_rec,
 				       accounting_enforce, NULL);
 		if(user_rec.default_wckey)
-			xstrfmtcat(job_ptr->wckey, "\"%s*",
-				   user_rec.default_wckey);
+			job_ptr->wckey = xstrdup_printf(
+				"*%s", user_rec.default_wckey);
 		else
-			xstrcat(job_ptr->wckey, "\"*");			
+			job_ptr->wckey = xstrdup("*");			
 	}
 
 	job_ptr->user_id    = (uid_t) job_desc->user_id;
