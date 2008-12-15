@@ -1,0 +1,132 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Test of linux light-weight core files.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2004-2006 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# LLNL-CODE-402394.
+# 
+# This file is part of SLURM, a resource management program.
+# For details, see <http://www.llnl.gov/linux/slurm/>.
+#  
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+# 
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+# 
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id     "1.39"
+set exit_code   0
+set file_prog   "test$test_id.prog"
+
+print_header $test_id
+
+#
+# Test if "light" core file supported
+#
+set matches 0
+set srun_pid [spawn $srun --core=list]
+expect {
+	-re " light " {
+		set matches 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches == 0} {
+	send_user "\nWARNING: lightweight core files not supported\n"
+	exit 0
+}
+
+#
+# Delete left-over program and rebuild it
+#
+exec $bin_rm -f $file_prog
+exec $bin_make -f /dev/null $file_prog
+exec $bin_chmod 700 $file_prog
+
+#
+# Delete any left-over core files
+#
+foreach filename [glob -nocomplain *core.light] {
+	send_user "\nWARNING: deleting $filename\n"
+	exec $bin_rm -f $filename
+}
+
+#
+# Spawn initial program via srun
+#
+set timeout $max_job_delay
+set srun_pid [spawn $srun -N1 -t1 --core=light  $file_prog]
+expect {
+	-re "Segmentation fault" {
+		send_user "\nNo worries, this error is expected.\n"
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# Check for light-weight core file rather than full core file
+#
+set matches 0
+foreach filename [glob -nocomplain *core.light] {
+	spawn $bin_file $filename
+	expect {
+		-re "text" {
+			incr matches	
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: program file not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	exec $bin_rm $filename
+}
+if {$matches != 1} {
+	send_user "\nFAILURE: no light-weight core file produced\n"
+	set exit_code 1
+}
+
+#
+# Post-processing
+#
+if {$exit_code == 0} {
+	exec $bin_rm -f $file_prog
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code
