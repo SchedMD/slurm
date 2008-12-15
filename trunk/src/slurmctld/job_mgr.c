@@ -3738,8 +3738,18 @@ void reset_job_bitmaps(void)
 	struct part_record *part_ptr;
 	bool job_fail = false;
 	time_t now = time(NULL);
+	static uint32_t cr_flag = NO_VAL;
 
 	xassert(job_list);
+
+	if (cr_flag == NO_VAL) {
+		cr_flag = 0;  /* call is no-op for select/linear and bluegene */
+		if (select_g_get_info_from_plugin(SELECT_CR_PLUGIN,
+						  NULL, &cr_flag)) {
+			cr_flag = NO_VAL;	/* error */
+		}
+			
+	}
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
@@ -3779,7 +3789,7 @@ void reset_job_bitmaps(void)
 		reset_node_bitmap(job_ptr->select_job,
 				  job_ptr->node_bitmap);
 		if (!job_fail && !IS_JOB_FINISHED(job_ptr) && 
-		    job_ptr->select_job && 
+		    job_ptr->select_job && cr_flag && 
 		    valid_select_job_res(job_ptr->select_job, 
 					 node_record_table_ptr, 
 					 slurmctld_conf.fast_schedule)) {
