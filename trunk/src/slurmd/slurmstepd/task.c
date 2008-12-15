@@ -344,7 +344,6 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 	job->envtp->localid = task->id;
 	job->envtp->task_pid = getpid();
 	job->envtp->distribution = job->task_dist;
-	job->envtp->plane_size   = job->plane_size;
 	job->envtp->cpu_bind = xstrdup(job->cpu_bind);
 	job->envtp->cpu_bind_type = job->cpu_bind_type;
 	job->envtp->mem_bind = xstrdup(job->mem_bind);

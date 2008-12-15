@@ -124,8 +124,7 @@ typedef struct slurmd_job {
 	char         **env;    /* job environment                           */
 	char         **argv;   /* job argument vector                       */
 	char          *cwd;    /* path to current working directory         */
-       	task_dist_states_t task_dist;/* -m distribution                     */
-        uint32_t       plane_size; /* -m plane=plane_size                   */
+	task_dist_states_t task_dist;/* -m distribution                     */
 	char          *node_name; /* node name of node running job
 				   * needed for front-end systems           */
 	cpu_bind_type_t cpu_bind_type; /* --cpu_bind=                       */

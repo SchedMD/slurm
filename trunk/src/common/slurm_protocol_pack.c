@@ -3279,11 +3279,7 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer)
 	pack16(msg->max_cores, buffer);
 	pack16(msg->max_threads, buffer);
 	pack16(msg->cpus_per_task, buffer);
-	pack16(msg->ntasks_per_node, buffer);
-	pack16(msg->ntasks_per_socket, buffer);
-	pack16(msg->ntasks_per_core, buffer);
 	pack16(msg->task_dist, buffer);
-	pack16(msg->plane_size, buffer);
 
 	slurm_cred_pack(msg->cred, buffer);
 	for(i=0; i<msg->nnodes; i++) {
@@ -3353,11 +3349,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 	safe_unpack16(&msg->max_cores, buffer);
 	safe_unpack16(&msg->max_threads, buffer);
 	safe_unpack16(&msg->cpus_per_task, buffer);
-	safe_unpack16(&msg->ntasks_per_node, buffer);
-	safe_unpack16(&msg->ntasks_per_socket, buffer);
-	safe_unpack16(&msg->ntasks_per_core, buffer);
 	safe_unpack16(&msg->task_dist, buffer);
-	safe_unpack16(&msg->plane_size, buffer);
 
 	if (!(msg->cred = slurm_cred_unpack(buffer)))
 		goto unpack_error;

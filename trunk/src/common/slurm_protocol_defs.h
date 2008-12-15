@@ -486,9 +486,6 @@ typedef struct launch_tasks_request_msg {
 	uint16_t  max_cores;
 	uint16_t  max_threads;
 	uint16_t  cpus_per_task;
-	uint16_t  ntasks_per_node;
-	uint16_t  ntasks_per_socket;
-	uint16_t  ntasks_per_core;
 	char    **env;
 	char    **argv;
 	char     *cwd;
@@ -501,8 +498,6 @@ typedef struct launch_tasks_request_msg {
 
         /* Distribution at the lowest level of logical processor (lllp) */
 	uint16_t task_dist;  /* --distribution=, -m dist	*/
-	uint16_t plane_size; /* lllp distribution -> plane_size for
-			      * when -m plane=<# of lllp per plane> */      
 	uint16_t  task_flags;
 	uint32_t **global_task_ids;
 	slurm_addr orig_addr;	  /* where message really came from for io */ 

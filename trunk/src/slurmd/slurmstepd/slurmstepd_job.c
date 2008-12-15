@@ -203,7 +203,6 @@ job_create(launch_tasks_request_msg_t *msg)
 	job->gid	= (gid_t) msg->gid;
 	job->cwd	= xstrdup(msg->cwd);
 	job->task_dist	= msg->task_dist;
-	job->plane_size	= msg->plane_size;
 	
 	job->cpu_bind_type = msg->cpu_bind_type;
 	job->cpu_bind = xstrdup(msg->cpu_bind);
@@ -232,8 +231,6 @@ job_create(launch_tasks_request_msg_t *msg)
 	job->envtp->nodeid = -1;
 
 	job->envtp->distribution = 0;
-	job->envtp->plane_size = 0;
-
 	job->envtp->cpu_bind_type = 0;
 	job->envtp->cpu_bind = NULL;
 	job->envtp->mem_bind_type = 0;
@@ -356,8 +353,6 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	job->envtp->nodeid = -1;
 
 	job->envtp->distribution = 0;
-	job->envtp->plane_size = 0;
-
 	job->envtp->cpu_bind_type = 0;
 	job->envtp->cpu_bind = NULL;
 	job->envtp->mem_bind_type = 0;
