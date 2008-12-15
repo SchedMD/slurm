@@ -815,7 +815,7 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 						job->memory_allocated[n];
 			if (select_node_usage[i].alloc_memory >
 				select_node_record[i].real_memory) {
-				error("error: node %s mem is overallocated(%d)",
+				error("error: node %s mem is overallocated(%u)",
 					select_node_record[i].node_ptr->name,
 					select_node_usage[i].alloc_memory);
 				
