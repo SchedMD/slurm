@@ -370,8 +370,9 @@ Name of the one partition to be created
 <input type="text" name="max_time" value="INFINITE"> <B>MaxTime</B>: 
 Maximum time limit of jobs in minutes or INFINITE
 <P>
-The following parameters are optional,
-but can be specified when using FastSchedule=1:
+The following parameters describe a node's configuration.
+Set a value for <B>Procs</B>.
+The other parameters are optional, but provide more control over scheduled resources:
 <P>
 <input type="text" name="procs" value="1"> <B>Procs</B>: Count of processors 
 on each compute node.
@@ -817,6 +818,6 @@ before terminating all remaining tasks. A value of zero indicates unlimited wait
 </FORM>
 <HR>
 <P class="footer">LLNL-WEB-402631<BR>
-Last modified 17 July 2008</P>
+Last modified 15 December 2008</P>
 </BODY>
 
