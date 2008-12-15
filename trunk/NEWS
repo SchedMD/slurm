@@ -9,6 +9,8 @@ documents those changes that are of interest to users and admins.
  -- Added the srun option --preserve-env to pass the current values of 
     environment variables SLURM_NNODES and SLURM_NPROCS through to the 
     executable, rather than computing them from commandline parameters.
+ -- Validate a job's resource allocation socket/core count on each allocated
+    node. If the node's configuration has been changed, then abort the job.
 
 * Changes in SLURM 1.4.0-pre6
 =============================

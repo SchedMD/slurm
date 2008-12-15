@@ -3778,6 +3778,16 @@ void reset_job_bitmaps(void)
 		}
 		reset_node_bitmap(job_ptr->select_job,
 				  job_ptr->node_bitmap);
+		if (!job_fail && !IS_JOB_FINISHED(job_ptr) && 
+		    job_ptr->select_job && 
+		    valid_select_job_res(job_ptr->select_job, 
+					 node_record_table_ptr, 
+					 slurmctld_conf.fast_schedule)) {
+			error("Aborting JobID %u due to change in socket/core "
+			      "configuration of allocated nodes",
+			      job_ptr->job_id);
+			job_fail = true;
+		}
 		_reset_step_bitmaps(job_ptr);
 		build_node_details(job_ptr);	/* set node_addr */
 
