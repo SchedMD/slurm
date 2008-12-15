@@ -222,11 +222,7 @@ int slurm_step_launch (slurm_step_ctx_t *ctx,
 	launch.max_cores	= params->max_cores;
 	launch.max_threads	= params->max_threads;
 	launch.cpus_per_task	= params->cpus_per_task;
-	launch.ntasks_per_node	= params->ntasks_per_node;
-	launch.ntasks_per_socket= params->ntasks_per_socket;
-	launch.ntasks_per_core	= params->ntasks_per_core;
 	launch.task_dist	= params->task_dist;
-	launch.plane_size	= params->plane_size;
 	launch.pty              = params->pty;
 	launch.ckpt_path        = params->ckpt_path;
 	launch.acctg_freq	= params->acctg_freq;

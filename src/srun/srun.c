@@ -370,9 +370,6 @@ int srun(int ac, char **av)
 	launch_params.max_cores		= opt.max_cores_per_socket;
 	launch_params.max_threads	= opt.max_threads_per_core;
 	launch_params.cpus_per_task	= opt.cpus_per_task;
-	launch_params.ntasks_per_node   = opt.ntasks_per_node;
-	launch_params.ntasks_per_socket = opt.ntasks_per_socket;
-	launch_params.ntasks_per_core   = opt.ntasks_per_core;
 	launch_params.task_dist         = opt.distribution;
 	launch_params.ckpt_path		= xstrdup(opt.ckpt_path);
 	launch_params.preserve_env      = opt.preserve_env;

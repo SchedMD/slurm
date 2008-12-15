@@ -820,11 +820,7 @@ typedef struct {
 	uint16_t max_cores;
 	uint16_t max_threads;
 	uint16_t cpus_per_task;
-	uint16_t ntasks_per_node;
-	uint16_t ntasks_per_socket;
-	uint16_t ntasks_per_core;
 	uint16_t task_dist;
-	uint16_t plane_size;
 	bool preserve_env;
 
 	char *mpi_plugin_name;
