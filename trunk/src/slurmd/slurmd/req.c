@@ -630,6 +630,8 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 	uint32_t         jobid = req->job_id;
 	uint32_t         stepid = req->job_step_id;
 	int              tasks_to_launch = req->tasks_to_launch[node_id];
+	uint32_t         alloc_lps = 0;
+
 	/*
 	 * First call slurm_cred_verify() so that all valid
 	 * credentials are checked
@@ -683,55 +685,62 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 		goto fail;
 	}
 
-        if ((arg.alloc_lps_cnt > 0) && (tasks_to_launch > 0)) {
-                host_index = hostset_find(hset, conf->node_name);
-
-#if(0)
-		/* Left for debugging purposes */
-                if (host_index >= 0)
-                  info(" cons_res %u alloc_lps_cnt %u "
-			"task[%d] = %u = task_to_launch %d host %s ", 
-			arg.jobid, arg.alloc_lps_cnt, host_index, 
-			arg.alloc_lps[host_index], 
-			tasks_to_launch, conf->node_name);
-#endif
-
-                if (host_index < 0) { 
+        if ((arg.job_nhosts > 0) && (tasks_to_launch > 0)) {
+		uint32_t i, i_first_bit=0, i_last_bit=0;
+		host_index = hostset_find(hset, conf->node_name);
+		if ((host_index < 0) || (host_index >= arg.job_nhosts)) { 
                         error("job cr credential invalid host_index %d for "
 			      "job %u", host_index, arg.jobid);
                         goto fail; 
                 }
-		if (host_index > arg.alloc_lps_cnt)
-			error("host_index > alloc_lps_cnt in credential");
-                else if (arg.alloc_lps[host_index] == 0)
-			error("cons_res: zero processors allocated to step");
-                if (tasks_to_launch > arg.alloc_lps[host_index]) {
-			/* This is expected with the --overcommit option */
-			verbose("cons_res: More than one tasks per logical "
-				"processor (%d > %u) on host [%u.%u %ld %s] ",
-				tasks_to_launch, arg.alloc_lps[host_index], 
-				arg.jobid, arg.stepid, (long) arg.uid, 
-				arg.hostlist);
-			verbose("cons_res: Use task/affinity plug-in to bind "
-				"the tasks to the allocated resources");
+		host_index++;	/* change from 0-origin to 1-origin */
+		for (i=0; host_index; i++) {
+			if (host_index > arg.sock_core_rep_count[i]) {
+				i_first_bit += arg.sockets_per_node[i] *
+					       arg.cores_per_socket[i] *
+					       arg.sock_core_rep_count[i];
+				host_index -= arg.sock_core_rep_count[i];
+			} else {
+				i_first_bit += arg.sockets_per_node[i] *
+					       arg.cores_per_socket[i] *
+					       (host_index - 1);
+				i_last_bit = i_first_bit +
+					     arg.sockets_per_node[i] *
+					     arg.cores_per_socket[i];
+				break;
+			}
 		}
-        }
+		/* Now count the allocated processors */
+		for (i = i_first_bit; i < i_last_bit; i++) {
+			if (bit_test(arg.core_bitmap, i))
+				alloc_lps++;
+		}
+                if (alloc_lps == 0) {
+			error("cons_res: zero processors allocated to step");
+			alloc_lps = 1;
+		}
+		if (tasks_to_launch > alloc_lps) {
+			/* This is expected with the --overcommit option */
+			debug("cons_res: More than one tasks per logical "
+			      "processor (%d > %u) on host [%u.%u %ld %s] ",
+			      tasks_to_launch, alloc_lps, arg.jobid,
+			      arg.stepid, (long) arg.uid, arg.hostlist);
+		}
+        } else
+		alloc_lps = 1;
 
 	/* Overwrite any memory limits in the RPC with contents of the 
 	 * memory limit within the credential. 
 	 * Reset the CPU count on this node to correct value. */
 	if (arg.job_mem & MEM_PER_CPU) {
 		req->job_mem = arg.job_mem & (~MEM_PER_CPU);
-		if ((host_index >= 0) && (host_index < arg.alloc_lps_cnt) &&
-		    (arg.alloc_lps[host_index] > 0))
-			req->job_mem *= arg.alloc_lps[host_index];
+		req->job_mem *= alloc_lps;
 	} else
 		req->job_mem = arg.job_mem;
-	if ((host_index >= 0) && (host_index < arg.alloc_lps_cnt))
-		req->cpus_allocated[node_id] = arg.alloc_lps[host_index];
+	req->cpus_allocated[node_id] = alloc_lps;
 #if 0
 	info("mem orig:%u cpus:%u limit:%u", 
-	     arg.job_mem, arg.alloc_lps[host_index], req->job_mem);
+	     arg.job_mem, alloc_lps, req->job_mem);
 #endif
 
 	*step_hset = hset;
@@ -947,11 +956,24 @@ _set_batch_job_limits(slurm_msg_t *msg)
 
 	if (slurm_cred_get_args(req->cred, &arg) != SLURM_SUCCESS)
 		return;
-
+		
 	if (arg.job_mem & MEM_PER_CPU) {
+		int i;
+		uint32_t alloc_lps = 0, last_bit;
+		if (arg.job_nhosts > 0) {
+			last_bit = arg.sockets_per_node[0] * 
+				   arg.cores_per_socket[0];
+			for (i=0; i<last_bit; i++) {
+				if (bit_test(arg.core_bitmap, i))
+					alloc_lps++;
+			}
+		}
+		if (alloc_lps == 0) {
+			error("_set_batch_job_limit: alloc_lps is zero");
+			alloc_lps = 1;
+		}
 		req->job_mem = arg.job_mem & (~MEM_PER_CPU);
-		if (arg.alloc_lps_cnt > 1)
-			req->job_mem *= arg.alloc_lps_cnt;
+		req->job_mem *= alloc_lps;
 	} else
 		req->job_mem = arg.job_mem;
 

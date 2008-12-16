@@ -626,9 +626,6 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
 	} else
 		cred_arg.job_mem = job_ptr->details->job_min_memory;
 
-	cred_arg.alloc_lps_cnt = 0;
-	cred_arg.alloc_lps = NULL;
-
 	/* Identify the cores allocated to this job. */
 	xassert(job_ptr->select_job);
 	select_ptr = job_ptr->select_job;
