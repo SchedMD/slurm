@@ -139,8 +139,6 @@ typedef struct {
 				 * default=0 (no limit) */
 	uid_t    uid;
 	char    *hostlist;
-	uint32_t alloc_lps_cnt;
-	uint16_t *alloc_lps;
 
 	bitstr_t *core_bitmap;
 	uint16_t *cores_per_socket;
@@ -281,17 +279,11 @@ slurm_cred_t slurm_cred_unpack(Buf buffer);
  */
 int slurm_cred_get_signature(slurm_cred_t cred, char **datap, int *len);
 
-
 /*
  * Print a slurm job credential using the info() call
  */
 void slurm_cred_print(slurm_cred_t cred);
 
-/*
- * Get count of allocated LPS (processors) by node
- */
-int slurm_cred_get_alloc_lps(slurm_cred_t cred, char **nodes, 
-			     uint32_t *alloc_lps_cnt, uint16_t **alloc_lps);
 #ifdef DISABLE_LOCALTIME
 extern char * timestr (const time_t *tp, char *buf, size_t n);
 #endif

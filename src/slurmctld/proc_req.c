@@ -556,38 +556,6 @@ static int _make_step_cred(struct step_record *step_ptr,
 #else
 	cred_arg.hostlist = step_ptr->step_layout->node_list;
 #endif
-	cred_arg.alloc_lps_cnt = select_ptr->nhosts;
-	if ((cred_arg.alloc_lps_cnt > 0) &&
-	    bit_equal(job_ptr->node_bitmap, step_ptr->step_node_bitmap)) {
-		cred_arg.alloc_lps = xmalloc(cred_arg.alloc_lps_cnt *
-				sizeof(uint16_t));
-		memcpy(cred_arg.alloc_lps, select_ptr->cpus,
-		       cred_arg.alloc_lps_cnt*sizeof(uint16_t));
-        } else if (cred_arg.alloc_lps_cnt > 0) {
-		/* Construct an array of allocated CPUs per node.
-		 * Translate from array based upon job's allocation
-		 * to array based upon nodes allocated to the step. */
-		int i, job_inx = -1, step_inx = -1;
-		int job_inx_target = job_ptr->node_cnt;
-		cred_arg.alloc_lps = xmalloc(cred_arg.alloc_lps_cnt *
-					     sizeof(uint16_t));
-		for (i=0; i<node_record_count; i++) {
-			if (!bit_test(select_ptr->node_bitmap, i))
-				continue;
-			job_inx++;
-			if (!bit_test(step_ptr->step_node_bitmap, i))
-				continue;
-			step_inx++;
-			cred_arg.alloc_lps[step_inx] = select_ptr->
-						       cpus[job_inx];
-			if (job_inx == job_inx_target)
-				break;
-		}
-		cred_arg.alloc_lps_cnt = step_inx + 1;
-        } else {
-		error("No resources allocated to job %u", job_ptr->job_id);
-		cred_arg.alloc_lps = NULL;
-	}
 
 	/* Identify the cores allocated to this job step
 	 * The core_bitmap is based upon the nodes allocated to the _job_.
@@ -601,7 +569,6 @@ static int _make_step_cred(struct step_record *step_ptr,
 	cred_arg.job_hostlist        = job_ptr->nodes;
 
 	*slurm_cred = slurm_cred_create(slurmctld_config.cred_ctx, &cred_arg);
-	xfree(cred_arg.alloc_lps);
 	if (*slurm_cred == NULL) {
 		error("slurm_cred_create error");
 		return ESLURM_INVALID_JOB_CREDENTIAL;
