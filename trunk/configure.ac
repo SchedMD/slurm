@@ -92,6 +92,10 @@ dnl
 dnl Check for PAM module support
 X_AC_PAM
 
+dnl
+dnl Check for ISO compliance
+X_AC_ISO
+
 dnl Checks for types.
 dnl
 X_AC_SLURM_BIGENDIAN
