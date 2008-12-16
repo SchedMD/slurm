@@ -239,7 +239,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 	/* THIS ASSOCID CHECK ALWAYS NEEDS TO BE FIRST!!!!!!! */
 	if(job_cond->associd_list && list_count(job_cond->associd_list)) {
 		set = 0;
-		xstrfmtcat(extra, ", %s as t3 where (");
+		xstrfmtcat(extra, ", %s as t3 where (", assoc_table);
 		itr = list_iterator_create(job_cond->associd_list);
 		while((object = list_next(itr))) {
 			if(set) 

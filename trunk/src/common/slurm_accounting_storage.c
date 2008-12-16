@@ -4967,7 +4967,6 @@ extern void pack_acct_update_object(acct_update_object_t *object,
 	void *acct_object = NULL;
 	void (*my_function) (void *object, uint16_t rpc_version, Buf buffer);
 
-	pack16(object->type, buffer);
 	switch(object->type) {
 	case ACCT_MODIFY_USER:
 	case ACCT_ADD_USER:
@@ -4989,6 +4988,13 @@ extern void pack_acct_update_object(acct_update_object_t *object,
 	case ACCT_ADD_WCKEY:
 	case ACCT_MODIFY_WCKEY:
 	case ACCT_REMOVE_WCKEY:
+		if(rpc_version <= 3) {
+			/* since this wasn't introduced before version
+			   4 pack a known type with NO_VAL as the count */
+			pack16(ACCT_MODIFY_USER, buffer);
+			pack32(count, buffer);
+			return;
+		}
 		my_function = pack_acct_wckey_rec;
 		break;
 	case ACCT_UPDATE_NOTSET:
@@ -4997,6 +5003,8 @@ extern void pack_acct_update_object(acct_update_object_t *object,
 		      object->type);
 		return;
 	}
+
+	pack16(object->type, buffer);
 	if(object->objects) 
 		count = list_count(object->objects);
 			
