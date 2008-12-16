@@ -2499,6 +2499,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 
 	storage_field_t job_table_fields[] = {
 		{ "id", "int not null auto_increment" },
+		{ "deleted", "tinyint default 0" },
 		{ "jobid", "mediumint unsigned not null" },
 		{ "associd", "mediumint unsigned not null" },
 		{ "wckey", "tinytext not null default ''" },
@@ -2562,6 +2563,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 
 	storage_field_t step_table_fields[] = {
 		{ "id", "int not null" },
+		{ "deleted", "tinyint default 0" },
 		{ "stepid", "smallint not null" },
 		{ "start", "int unsigned default 0 not null" },
 		{ "end", "int unsigned default 0 not null" },
