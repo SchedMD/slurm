@@ -388,6 +388,9 @@
 /* Define slurm_ prefix function aliases for plugins */
 #undef USE_ALIAS
 
+/* define if using ISO 8601 time format */
+#undef USE_ISO_8601
+
 /* Version number of package */
 #undef VERSION
 

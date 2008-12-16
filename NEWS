@@ -16,6 +16,8 @@ documents those changes that are of interest to users and admins.
     processor count if FastSchedule=0. Administrators must set a valid
     processor count although the memory and disk space configuration can
     be loaded from the compute node when it starts.
+ -- Add configure option "--disable-iso8601" to disable SLURM use of ISO 8601
+    time format at the time of SLURM build.
 
 * Changes in SLURM 1.4.0-pre6
 =============================
