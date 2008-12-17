@@ -7,9 +7,6 @@
 #
 #  DESCRIPTION:
 #    Test for ISO compliant time support.
-#
-#  WARNINGS:
-#    This macro must be placed after AC_PROG_CC or equivalent.
 ##*****************************************************************************
 
 AC_DEFUN([X_AC_ISO], [

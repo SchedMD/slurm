@@ -96,6 +96,10 @@ dnl
 dnl Check for ISO compliance
 X_AC_ISO
 
+dnl
+dnl Check if we want to load .login with sbatch --get-user-env option
+X_AC_ENV_LOGIC
+
 dnl Checks for types.
 dnl
 X_AC_SLURM_BIGENDIAN
