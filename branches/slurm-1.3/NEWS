@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 =========================
  -- Fix bug in jobcomp/script that could cause the slurmctld daemon to exit
     upon reconfiguration ("scontrol reconfig" or SIGHUP).
+ -- Fix to sinfo, don't print a node's memory size or tmp_disk space with 
+    suffix of "K" or "M" (thousands or millions of megabytes).
 
 * Changes in SLURM 1.3.12
 =========================
