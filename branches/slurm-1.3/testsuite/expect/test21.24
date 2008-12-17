@@ -1422,7 +1422,7 @@ expect {
 		exp_continue
 	}
 
-	-re "($usr - $us3:$dac='$nm3':$dw='$wk3':$al='$ala':$wk=',$wk3,$wk1,$wk2,$wk4':$fs=$fs3:$gm=$gm3:$gc=$gc3:$gj=$gj3:$gn=$gn3:$gs=$gs3:$gw=$gw3:$mp=$mm3:$mu=$mc3:$mj=$mj3:$mnj=$mn3:$ms=$ms3:$md=$mw3:$qs='$qs2')" {
+	-re "($usr - $us3:$dac='$nm3':$dw='$wk3':$al='$ala':$wk='$wk3,$wk1,$wk2,$wk4':$fs=$fs3:$gm=$gm3:$gc=$gc3:$gj=$gj3:$gn=$gn3:$gs=$gs3:$gw=$gw3:$mp=$mm3:$mu=$mc3:$mj=$mj3:$mnj=$mn3:$ms=$ms3:$md=$mw3:$qs='$qs2')" {
 		incr matches
 		exp_continue
 	}
@@ -1448,12 +1448,12 @@ expect {
 		exp_continue
 	}
 
-	-re "($usr - $us1:$dac='$nm2':$dw='$wk1':$wk=',$wk3,$wk1,$wk2,$wk4':$fs=$fs1:$gm=$gm1:$gc=$gc1:$gj=$gj1:$gn=$gn1:$gs=$gs1:$gw=$gw1:$mp=$mm1:$mu=$mc1:$mj=$mj1:$mnj=$mn1:$ms=$ms1:$md=$mw1:$qs='$qs2')" {
+	-re "($usr - $us1:$dac='$nm2':$dw='$wk1':$wk='$wk3,$wk1,$wk2,$wk4':$fs=$fs1:$gm=$gm1:$gc=$gc1:$gj=$gj1:$gn=$gn1:$gs=$gs1:$gw=$gw1:$mp=$mm1:$mu=$mc1:$mj=$mj1:$mnj=$mn1:$ms=$ms1:$md=$mw1:$qs='$qs2')" {
 		incr matches
 		exp_continue
 	}
 
-	-re "($usr - $us2:$dac='$nm2':$dw='$wk2':$al='$alo':$wk=',$wk3,$wk1,$wk2,$wk4':$fs=$fs2:$gm=$gm2:$gc=$gc2:$gj=$gj2:$gn=$gn2:$gs=$gs2:$gw=$gw2:$mp=$mm2:$mu=$mc2:$mj=$mj2:$mnj=$mn2:$ms=$ms2:$md=$mw2:$qs='$qs2')" {
+	-re "($usr - $us2:$dac='$nm2':$dw='$wk2':$al='$alo':$wk='$wk3,$wk1,$wk2,$wk4':$fs=$fs2:$gm=$gm2:$gc=$gc2:$gj=$gj2:$gn=$gn2:$gs=$gs2:$gw=$gw2:$mp=$mm2:$mu=$mc2:$mj=$mj2:$mnj=$mn2:$ms=$ms2:$md=$mw2:$qs='$qs2')" {
 		incr matches
 		exp_continue
 	}
