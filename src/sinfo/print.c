@@ -55,7 +55,8 @@
 static int   _build_min_max_16_string(char *buffer, int buf_size, 
 				uint16_t min, uint16_t max, bool range);
 static int   _build_min_max_32_string(char *buffer, int buf_size, 
-				uint32_t min, uint32_t max, bool range);
+				uint32_t min, uint32_t max,
+				bool range, bool use_suffix);
 static int   _print_secs(long time, int width, bool right, bool cut_output);
 static int   _print_str(char *str, int width, bool right, bool cut_output);
 static void  _set_node_field_size(List sinfo_list);
@@ -192,14 +193,23 @@ _build_min_max_16_string(char *buffer, int buf_size, uint16_t min, uint16_t max,
 }
 
 static int 
-_build_min_max_32_string(char *buffer, int buf_size, uint32_t min, uint32_t max, 
-			 bool range)
+_build_min_max_32_string(char *buffer, int buf_size,
+			 uint32_t min, uint32_t max, 
+			 bool range, bool use_suffix)
 {
 	char tmp_min[8];
 	char tmp_max[8];
-	convert_num_unit((float)min, tmp_min, sizeof(tmp_min), UNIT_NONE);
-	convert_num_unit((float)max, tmp_max, sizeof(tmp_max), UNIT_NONE);
-	
+
+	if (use_suffix) {
+		convert_num_unit((float)min, tmp_min, sizeof(tmp_min),
+				 UNIT_NONE);
+		convert_num_unit((float)max, tmp_max, sizeof(tmp_max),
+				 UNIT_NONE);
+	} else {
+		snprintf(tmp_min, sizeof(tmp_min), "%u", min);
+		snprintf(tmp_max, sizeof(tmp_max), "%u", max);
+	}
+
 	if (max == min)
 		return snprintf(buffer, buf_size, "%s", tmp_max);
 	else if (range) {
@@ -292,7 +302,8 @@ int _print_cpus(sinfo_data_t * sinfo_data, int width,
 	if (sinfo_data) {
 		_build_min_max_32_string(id, FORMAT_STRING_SIZE, 
 		                      sinfo_data->min_cpus, 
-		                      sinfo_data->max_cpus, false);
+		                      sinfo_data->max_cpus, 
+				      false, true);
 		_print_str(id, width, right_justify, true);
 	} else
 		_print_str("CPUS", width, right_justify, true);
@@ -431,7 +442,8 @@ int _print_disk(sinfo_data_t * sinfo_data, int width,
 	if (sinfo_data) {
 		_build_min_max_32_string(id, FORMAT_STRING_SIZE, 
 		                      sinfo_data->min_disk, 
-		                      sinfo_data->max_disk, false);
+		                      sinfo_data->max_disk,
+				      false, false);
 		_print_str(id, width, right_justify, true);
 	} else
 		_print_str("TMP_DISK", width, right_justify, true);
@@ -480,7 +492,8 @@ int _print_memory(sinfo_data_t * sinfo_data, int width,
 	if (sinfo_data) {
 		_build_min_max_32_string(id, FORMAT_STRING_SIZE, 
 		                      sinfo_data->min_mem, 
-		                      sinfo_data->max_mem, false);
+		                      sinfo_data->max_mem,
+				      false, false);
 		_print_str(id, width, right_justify, true);
 	} else
 		_print_str("MEMORY", width, right_justify, true);
@@ -724,7 +737,7 @@ int _print_size(sinfo_data_t * sinfo_data, int width,
 			_build_min_max_32_string(id, FORMAT_STRING_SIZE, 
 					      sinfo_data->part_info->min_nodes,
 					      sinfo_data->part_info->max_nodes,
-					      true);
+					      true, true);
 			_print_str(id, width, right_justify, true);
 		}
 	} else
@@ -799,7 +812,8 @@ int _print_weight(sinfo_data_t * sinfo_data, int width,
 	if (sinfo_data) {
 		_build_min_max_32_string(id, FORMAT_STRING_SIZE, 
 		                      sinfo_data->min_weight, 
-		                      sinfo_data->max_weight, false);
+		                      sinfo_data->max_weight,
+				      false, false);
 		_print_str(id, width, right_justify, true);
 	} else
 		_print_str("WEIGHT", width, right_justify, true);
