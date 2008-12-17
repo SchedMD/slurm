@@ -124,6 +124,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.3.13
 =========================
+ -- Fix bug in jobcomp/script that could cause the slurmctld daemon to exit
+    upon reconfiguration ("scontrol reconfig" or SIGHUP).
 
 * Changes in SLURM 1.3.12
 =========================
