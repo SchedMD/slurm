@@ -400,9 +400,15 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 			case 'T': 	/* "%T" => "dd Mon yyyy hh:mm:ss off" */
 				xstrftimecat(buf, "%a %d %b %Y %H:%M:%S %z");   
 				break;
+#ifdef USE_ISO_8601
+			case 'M':       /* "%M" => "yyyy-mm-ddThh:mm:ss"          */
+				xstrftimecat(buf, "%Y-%m-%dT%T");
+				break;
+#else
 			case 'M':       /* "%M" => "Mon DD hh:mm:ss"          */
 				xstrftimecat(buf, "%b %d %T");
 				break;
+#endif
 			case 's':	/* "%s" => append string */
 				/* we deal with this case for efficiency */
 				if (unprocessed == 0) 
