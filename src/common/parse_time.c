@@ -35,6 +35,10 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#ifdef HAVE_CONFIG_H
+#  include "config.h"
+#endif
+
 #include <stdio.h>
 #include <time.h>
 #include <strings.h>
@@ -448,7 +452,7 @@ slurm_make_time_str (time_t *time, char *string, int size)
 	if ( *time == (time_t) 0 ) {
 		snprintf(string, size, "Unknown");
 	} else {
-#ifdef ISO8601
+#ifdef USE_ISO_8601
 		/* Format YYYY-MM-DDTHH:MM:SS, ISO8601 standard format,
 		 * NOTE: This is expected to break Maui, Moab and LSF
 		 * schedulers management of SLURM. */
