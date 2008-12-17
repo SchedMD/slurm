@@ -273,7 +273,7 @@
    member named physmem. */
 #undef HAVE__SYSTEM_CONFIGURATION
 
-/* Define to 1 for --get-user-env to load user environment without login. */
+/* Define to 1 for --get-user-env to load user environment without .login */
 #undef LOAD_ENV_NO_LOGIN
 
 /* Define to 1 for memory leak debugging. */
