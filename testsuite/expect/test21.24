@@ -1403,57 +1403,89 @@ expect {
 	    	incr exit_code 1
 	}
 	-re "($clu - $cl3:$fs=$fs6:$gm=$gm6:$gc=$gc6:$gj=$gj6:$gn=$gn6:$gs=$gs6:$gw=$gw6:$mp=$mm6:$mu=$mc6:$mj=$mj6:$mnj=$mn6:$ms=$ms6:$md=$mw6:$qs='$qs2')" {
+		send_user "\nmatch 1\n"
 		incr matches
 		exp_continue
 	}
 
 	-re "($par - $roo)" {
+		send_user "\nmatch 2\n"
 		incr matches
 		exp_continue
 	}
 
 	-re "($acc - $nm4:$dsc='$ds4':$org='$or4':$fs=$fs5:$gm=$gm5:$gc=$gc5:$gj=$gj5:$gn=$gn5:$gs=$gs5:$gw=$gw5:$mp=$mm5:$mu=$mc5:$mj=$mj5:$mnj=$mn5:$ms=$ms5:$md=$mw5:$qs='$qs2')" {
+		send_user "\nmatch 3\n"
 		incr matches
 		exp_continue
 	}
 
 	-re "($par - $nm4)" {
+		send_user "\nmatch 4\n"
 		incr matches
 		exp_continue
 	}
 
 	-re "($usr - $us3:$dac='$nm3':$dw='$wk3':$al='$ala':$wk='$wk3,$wk1,$wk2,$wk4':$fs=$fs3:$gm=$gm3:$gc=$gc3:$gj=$gj3:$gn=$gn3:$gs=$gs3:$gw=$gw3:$mp=$mm3:$mu=$mc3:$mj=$mj3:$mnj=$mn3:$ms=$ms3:$md=$mw3:$qs='$qs2')" {
+		send_user "\nmatch 5a\n"
+		incr matches
+		exp_continue
+	}
+
+	# Same as above, but without DefaultWCKey= or WCKeys=
+	-re "($usr - $us3:$dac='$nm3':$al='$ala':$fs=$fs3:$gm=$gm3:$gc=$gc3:$gj=$gj3:$gn=$gn3:$gs=$gs3:$gw=$gw3:$mp=$mm3:$mu=$mc3:$mj=$mj3:$mnj=$mn3:$ms=$ms3:$md=$mw3:$qs='$qs2')" {
+		send_user "\nmatch 5b\n"
 		incr matches
 		exp_continue
 	}
 
 	-re "($acc - $nm3:$dsc='$ds3':$org='$or3':$fs=$fs4:$gm=$gm4:$gc=$gc4:$gj=$gj4:$gn=$gn4:$gs=$gs4:$gw=$gw4:$mp=$mm4:$mu=$mc4:$mj=$mj4:$mnj=$mn4:$ms=$ms4:$md=$mw4:$qs='$qs2')" {
+		send_user "\nmatch 6\n"
 		incr matches
 		exp_continue
 	}
 
 	-re "($par - $nm3)" {
+		send_user "\nmatch 7\n"
 		incr matches
 		exp_continue
 	}
 
 	-re "($acc - $nm2:$dsc='$ds2':$org='$or2':$fs=$fs3:$gm=$gm3:$gc=$gc3:$gj=$gj3:$gn=$gn3:$gs=$gs3:$gw=$gw3:$mp=$mm3:$mu=$mc3:$mj=$mj3:$mnj=$mn3:$ms=$ms3:$md=$mw3:$qs='$qs2')" {
+		send_user "\nmatch 8\n"
 		incr matches
 		exp_continue
 	}
 
 
 	-re "($par - $nm2)" {
+		send_user "\nmatch 9\n"
 		incr matches
 		exp_continue
 	}
 
 	-re "($usr - $us1:$dac='$nm2':$dw='$wk1':$wk='$wk3,$wk1,$wk2,$wk4':$fs=$fs1:$gm=$gm1:$gc=$gc1:$gj=$gj1:$gn=$gn1:$gs=$gs1:$gw=$gw1:$mp=$mm1:$mu=$mc1:$mj=$mj1:$mnj=$mn1:$ms=$ms1:$md=$mw1:$qs='$qs2')" {
+		send_user "\nmatch 10a\n"
+		incr matches
+		exp_continue
+	}
+
+	# Same as above but without DefaultWCKey= or WCKeys=
+	-re "($usr - $us1:$dac='$nm2':$fs=$fs1:$gm=$gm1:$gc=$gc1:$gj=$gj1:$gn=$gn1:$gs=$gs1:$gw=$gw1:$mp=$mm1:$mu=$mc1:$mj=$mj1:$mnj=$mn1:$ms=$ms1:$md=$mw1:$qs='$qs2')" {
+		send_user "\nmatch 10b\n"
 		incr matches
 		exp_continue
 	}
 
 	-re "($usr - $us2:$dac='$nm2':$dw='$wk2':$al='$alo':$wk='$wk3,$wk1,$wk2,$wk4':$fs=$fs2:$gm=$gm2:$gc=$gc2:$gj=$gj2:$gn=$gn2:$gs=$gs2:$gw=$gw2:$mp=$mm2:$mu=$mc2:$mj=$mj2:$mnj=$mn2:$ms=$ms2:$md=$mw2:$qs='$qs2')" {
+		send_user "\nmatch 11a\n"
+		incr matches
+		exp_continue
+	}
+
+	# Same as above but without DefaultWCKey= or WCKeys=
+	-re "($usr - $us2:$dac='$nm2':$al='$alo':$fs=$fs2:$gm=$gm2:$gc=$gc2:$gj=$gj2:$gn=$gn2:$gs=$gs2:$gw=$gw2:$mp=$mm2:$mu=$mc2:$mj=$mj2:$mnj=$mn2:$ms=$ms2:$md=$mw2:$qs='$qs2')" {
+		send_user "\nmatch 11b\n"
 		incr matches
 		exp_continue
 	}
