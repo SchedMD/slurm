@@ -1398,6 +1398,7 @@ extern int jobacct_storage_p_job_start(void *db_conn, char *cluster_name,
 	req.req_cpus      = job_ptr->num_procs;
 	req.priority      = job_ptr->priority;
 	req.start_time    = job_ptr->start_time;
+	req.wckey    = job_ptr->wckey;
 	if (job_ptr->details)
 		req.submit_time   = job_ptr->details->submit_time;
 	req.uid           = job_ptr->user_id;

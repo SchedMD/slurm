@@ -1429,6 +1429,7 @@ static int  _job_start(slurmdbd_conn_t *slurmdbd_conn,
 	job.num_procs = job_start_msg->req_cpus;
 	job.priority = job_start_msg->priority;
 	job.start_time = job_start_msg->start_time;
+	job.wckey = job_start_msg->wckey;
 	details.submit_time = job_start_msg->submit_time;
 
 	job.details = &details;
