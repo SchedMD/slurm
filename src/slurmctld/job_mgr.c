@@ -6123,14 +6123,16 @@ extern int job_cancel_by_assoc_id(uint32_t assoc_id)
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (job_ptr->assoc_id != assoc_id)
 			continue;
+
 		/* move up to the parent that should still exist */
-		job_ptr->assoc_ptr = ((acct_association_rec_t *)
-				      job_ptr->assoc_ptr)->parent_assoc_ptr;
-		if(job_ptr->assoc_ptr)
-			job_ptr->assoc_id = ((acct_association_rec_t *)
-					     job_ptr->assoc_ptr)->id;
-		else
-			job_ptr->assoc_id = 0;
+		if(job_ptr->assoc_ptr) {
+			job_ptr->assoc_ptr =
+				((acct_association_rec_t *)
+				 job_ptr->assoc_ptr)->parent_assoc_ptr;
+			if(job_ptr->assoc_ptr)
+				job_ptr->assoc_id = ((acct_association_rec_t *)
+						     job_ptr->assoc_ptr)->id;
+		} 
 
 		if(IS_JOB_FINISHED(job_ptr))
 			continue;
