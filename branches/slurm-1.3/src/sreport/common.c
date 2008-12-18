@@ -245,7 +245,12 @@ extern int set_start_end_time(time_t *start, time_t *end)
 			      my_time);
 			return SLURM_ERROR;
 		}
+		if(end_tm.tm_sec >= 30)
+			end_tm.tm_min++;
+		if(end_tm.tm_min >= 30)
+			end_tm.tm_hour++;
 	}
+	
 	end_tm.tm_sec = 0;
 	end_tm.tm_min = 0;
 	end_tm.tm_isdst = -1;
@@ -267,6 +272,10 @@ extern int set_start_end_time(time_t *start, time_t *end)
 			      my_time);
 			return SLURM_ERROR;
 		}
+		if(start_tm.tm_sec >= 30)
+			start_tm.tm_min++;
+		if(start_tm.tm_min >= 30)
+			start_tm.tm_hour++;
 	}
 	start_tm.tm_sec = 0;
 	start_tm.tm_min = 0;
@@ -275,8 +284,17 @@ extern int set_start_end_time(time_t *start, time_t *end)
 
 	if((*end)-(*start) < 3600) 
 		(*end) = (*start) + 3600;
-//	info("now got %d and %d sent", (*start), (*end));
-
+/* 	info("now got %d and %d sent", (*start), (*end)); */
+/* 	char start_char[20]; */
+/* 	char end_char[20]; */
+/* 	time_t my_start = (*start); */
+/* 	time_t my_end = (*end); */
+	
+/* 	slurm_make_time_str(&my_start,  */
+/* 			    start_char, sizeof(start_char)); */
+/* 	slurm_make_time_str(&my_end, */
+/* 			    end_char, sizeof(end_char)); */
+/* 	info("which is %s - %s", start_char, end_char); */
 	return SLURM_SUCCESS;
 }
 
