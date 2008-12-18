@@ -1612,7 +1612,10 @@ static void *_assoc_cache_mgr(void *no_data)
 		if(job_ptr->assoc_id) {
 			memset(&assoc_rec, 0, sizeof(acct_association_rec_t));
 			assoc_rec.id = job_ptr->assoc_id;
-
+			debug("assoc is %x (%d) for job %u", 
+			      job_ptr->assoc_ptr, job_ptr->assoc_id, 
+			      job_ptr->job_id);
+			
 			if (assoc_mgr_fill_in_assoc(
 				    acct_db_conn, &assoc_rec,
 				    accounting_enforce, 
@@ -1624,6 +1627,9 @@ static void *_assoc_cache_mgr(void *no_data)
 				/* not a fatal error, association could have
 				 * been removed */
 			}
+			debug("now assoc is %x (%d) for job %u", 
+			      job_ptr->assoc_ptr, job_ptr->assoc_id, 
+			      job_ptr->job_id);
 		}
 	}
 	list_iterator_destroy(itr);

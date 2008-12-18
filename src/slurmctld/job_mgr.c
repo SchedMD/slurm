@@ -2231,6 +2231,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	job_ptr = *job_pptr;
 	job_ptr->assoc_id = assoc_rec.id;
 	job_ptr->assoc_ptr = (void *) assoc_ptr;
+
 	if (update_job_dependency(job_ptr, job_desc->dependency)) {
 		error_code = ESLURM_DEPENDENCY;
 		goto cleanup_fail;
@@ -5956,20 +5957,16 @@ extern int job_cancel_by_assoc_id(uint32_t assoc_id)
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (job_ptr->assoc_id != assoc_id)
 			continue;
+
 		/* move up to the parent that should still exist */
-		if(job_ptr->assoc_ptr) 
+		if(job_ptr->assoc_ptr) {
 			job_ptr->assoc_ptr =
 				((acct_association_rec_t *)
 				 job_ptr->assoc_ptr)->parent_assoc_ptr;
-		else 
-			error("Whoa! we didn't have an assoc_ptr for job %u!",
-			      job_ptr->job_id);
-
-		if(job_ptr->assoc_ptr)
-			job_ptr->assoc_id = ((acct_association_rec_t *)
-					     job_ptr->assoc_ptr)->id;
-		else
-			job_ptr->assoc_id = 0;
+			if(job_ptr->assoc_ptr)
+				job_ptr->assoc_id = ((acct_association_rec_t *)
+						     job_ptr->assoc_ptr)->id;
+		} 
 
 		if(IS_JOB_FINISHED(job_ptr))
 			continue;

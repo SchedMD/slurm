@@ -1310,7 +1310,10 @@ static int _addto_update_list(List update_list, acct_update_type_t type,
 	list_iterator_destroy(itr);
 
 	if(update_object) {
-		list_append(update_object->objects, object);
+		/* here we prepend primarly for remove association
+		   since parents need to be removed last, and they are
+		   removed first in the calling code */
+		list_prepend(update_object->objects, object);
 		return SLURM_SUCCESS;
 	} 
 	update_object = xmalloc(sizeof(acct_update_object_t));
