@@ -344,8 +344,7 @@ job_desc_msg_create_from_opts ()
 	else
 		j->name   = xstrdup(opt.cmd_name);
 
-	if (opt.wckey) 
-		xstrfmtcat(j->name, "\"%s", opt.wckey);
+	j->wckey  = xstrdup(opt.wckey);
 	
 	j->req_nodes      = xstrdup(opt.nodelist);
 	
