@@ -46,6 +46,10 @@ if { [test_account_storage] == 0 } {
 	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
 	exit 0
 }
+if { [test_track_wckey] == 0} {
+	send_user "\nWARNING: This test can't be run without TrackWCKey being set\n"
+	exit 0
+}
 
 if { [string compare [check_accounting_admin_level] "Administrator"] } {
 	send_user "\nWARNING: This test can't be run without being an Accounting administrator.\nUse sacctmgr mod user \$USER_NAME set admin=admin.\n"
@@ -133,7 +137,6 @@ expect {
 # Spawn a job via salloc using this wckey
 #
 set job_id     0
-set have_wckey 0
 set matches    0
 set timeout    $max_job_delay
 spawn $salloc -N1 --account=$test_acct --wckey=$wk
@@ -145,12 +148,7 @@ expect {
 		exp_continue
 	}
 	-re "WCKey=$wk" {
-		incr have_wckey
 		incr matches
-		exp_continue
-	}
-	-re "WCKey=" {
-		incr have_wckey
 		exp_continue
 	}
 	timeout {
@@ -160,11 +158,6 @@ expect {
 	eof {
 		wait
 	}
-}
-if {$have_wckey == 0} {
-	send_user "\nWARNING: TrackWCKey is disabled, can not continue test\n"
-	exec $sacctmgr -i delete account $test_acct
-	exit $exit_code
 }
 
 spawn $sacct -j $job_id --fields=wckey
