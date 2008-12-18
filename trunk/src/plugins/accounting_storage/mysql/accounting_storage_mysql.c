@@ -344,8 +344,9 @@ static int _set_usage_information(char **usage_table, slurmdbd_msg_type_t type,
 	/* check to see if we are off day boundaries or on month
 	 * boundaries other wise use the day table.
 	 */
+	//info("%d %d %d", start_tm.tm_hour, end_tm.tm_hour, end-start);
 	if(start_tm.tm_hour || end_tm.tm_hour || (end-start < 86400)
-	   || end > my_time) {
+	   || (end > my_time)) {
 		switch (type) {
 		case DBD_GET_ASSOC_USAGE:
 			my_usage_table = assoc_hour_table;
@@ -357,6 +358,8 @@ static int _set_usage_information(char **usage_table, slurmdbd_msg_type_t type,
 			my_usage_table = cluster_hour_table;
 			break;
 		default:
+			error("Bad type given for hour usage %d %s", type, 
+			     slurmdbd_msg_type_2_str(type, 1));
 			break;
 		}
 	} else if(start_tm.tm_mday == 0 && end_tm.tm_mday == 0 
@@ -372,6 +375,8 @@ static int _set_usage_information(char **usage_table, slurmdbd_msg_type_t type,
 			my_usage_table = cluster_month_table;
 			break;
 		default:
+			error("Bad type given for month usage %d %s", type, 
+			     slurmdbd_msg_type_2_str(type, 1));
 			break;
 		}
 	}
@@ -7357,7 +7362,7 @@ empty:
 		if(cluster_cond && cluster_cond->with_usage) {
 			clusteracct_storage_p_get_usage(
 				mysql_conn, uid, cluster,
-				DBD_GOT_CLUSTER_USAGE,
+				DBD_GET_CLUSTER_USAGE,
 				cluster_cond->usage_start,
 				cluster_cond->usage_end);
 		}

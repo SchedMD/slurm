@@ -1075,7 +1075,8 @@ static int _get_usage(uint16_t type, slurmdbd_conn_t *slurmdbd_conn,
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
 
-	info("DBD_GET_USAGE: called");
+	info("DBD_GET_USAGE: called type is %s",
+	     slurmdbd_msg_type_2_str(type, 1));
 
 	if (slurmdbd_unpack_usage_msg(slurmdbd_conn->rpc_version, 
 				      type, &get_msg, in_buffer) !=
