@@ -254,6 +254,7 @@ typedef struct dbd_job_start_msg {
 	time_t   start_time;	/* job start time */
 	time_t   submit_time;	/* job submit time */
 	uint32_t uid;	        /* user ID if associations are being used */
+	char *   wckey;		/* wckey name */
 } dbd_job_start_msg_t;
 
 typedef struct dbd_job_start_rc_msg {
