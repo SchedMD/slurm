@@ -68,6 +68,7 @@
 #define _pack_job_step_info_msg(msg,buf)	_pack_buffer_msg(msg,buf)
 #define _pack_node_select_info_msg(msg,buf)	_pack_buffer_msg(msg,buf)
 #define _pack_node_info_msg(msg,buf)		_pack_buffer_msg(msg,buf)
+#define _pack_partition_info_msg(msg,buf)	_pack_buffer_msg(msg,buf)
 
 static void _pack_assoc_shares_object(void *in, Buf buffer);
 static int _unpack_assoc_shares_object(void **object, Buf buffer);
@@ -154,7 +155,6 @@ static void _pack_part_info_request_msg(part_info_request_msg_t * msg,
 static int _unpack_part_info_request_msg(part_info_request_msg_t ** 
 					 msg, Buf buffer);
 
-static void _pack_partition_info_msg(slurm_msg_t * msg, Buf buffer);
 static int _unpack_partition_info_msg(partition_info_msg_t ** msg,
 				      Buf buffer);
 static int _unpack_partition_info_members(partition_info_t * part,
@@ -2034,14 +2034,6 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-
-static void
-_pack_partition_info_msg(slurm_msg_t * msg, Buf buffer)
-{
-	xassert(msg != NULL);
-
-	packmem_array(msg->data, msg->data_size, buffer);
-}
 
 static int
 _unpack_partition_info_msg(partition_info_msg_t ** msg, Buf buffer)
