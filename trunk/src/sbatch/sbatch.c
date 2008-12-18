@@ -146,9 +146,8 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->name = xstrdup(opt.job_name);
 	else
 		desc->name = xstrdup("sbatch");
-
-	if(opt.wckey)
- 		xstrfmtcat(desc->name, "\"%s", opt.wckey);
+	
+	desc->wckey  = xstrdup(opt.wckey);
 
 	desc->req_nodes = opt.nodelist;
 	desc->exc_nodes = opt.exc_nodes;
