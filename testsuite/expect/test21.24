@@ -220,6 +220,7 @@ if { [test_account_storage] == 0 } {
 	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
 	exit 0
 }
+set track_wckey [test_track_wckey]
 
 if { [string compare [check_accounting_admin_level] "Administrator"] } {
 	send_user "\nWARNING: This test can't be run without being an Accounting administrator.\nUse sacctmgr mod user \$USER_NAME admin=admin.\n"
@@ -1435,7 +1436,11 @@ expect {
 	# Same as above, but without DefaultWCKey= or WCKeys=
 	-re "($usr - $us3:$dac='$nm3':$al='$ala':$fs=$fs3:$gm=$gm3:$gc=$gc3:$gj=$gj3:$gn=$gn3:$gs=$gs3:$gw=$gw3:$mp=$mm3:$mu=$mc3:$mj=$mj3:$mnj=$mn3:$ms=$ms3:$md=$mw3:$qs='$qs2')" {
 		send_user "\nmatch 5b\n"
-		incr matches
+		if {$track_wckey == 0} {
+			incr matches
+		} else {
+			send_user "\nFAILURE: Missing DefaultWCKey or WCKeys\n"
+		}
 		exp_continue
 	}
 
@@ -1473,7 +1478,11 @@ expect {
 	# Same as above but without DefaultWCKey= or WCKeys=
 	-re "($usr - $us1:$dac='$nm2':$fs=$fs1:$gm=$gm1:$gc=$gc1:$gj=$gj1:$gn=$gn1:$gs=$gs1:$gw=$gw1:$mp=$mm1:$mu=$mc1:$mj=$mj1:$mnj=$mn1:$ms=$ms1:$md=$mw1:$qs='$qs2')" {
 		send_user "\nmatch 10b\n"
-		incr matches
+		if {$track_wckey == 0} {
+			incr matches
+		} else {
+			send_user "\nFAILURE: Missing DefaultWCKey or WCKeys\n"
+		}
 		exp_continue
 	}
 
@@ -1486,7 +1495,11 @@ expect {
 	# Same as above but without DefaultWCKey= or WCKeys=
 	-re "($usr - $us2:$dac='$nm2':$al='$alo':$fs=$fs2:$gm=$gm2:$gc=$gc2:$gj=$gj2:$gn=$gn2:$gs=$gs2:$gw=$gw2:$mp=$mm2:$mu=$mc2:$mj=$mj2:$mnj=$mn2:$ms=$ms2:$md=$mw2:$qs='$qs2')" {
 		send_user "\nmatch 11b\n"
-		incr matches
+		if {$track_wckey == 0} {
+			incr matches
+		} else {
+			send_user "\nFAILURE: Missing DefaultWCKey or WCKeys\n"
+		}
 		exp_continue
 	}
 
