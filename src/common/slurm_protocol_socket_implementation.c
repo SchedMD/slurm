@@ -310,14 +310,16 @@ int _slurm_send_timeout(slurm_fd fd, char *buf, size_t size,
 		if (rc < 0) {
  			if (errno == EINTR)
 				continue;
-			else {
-				debug("_slurm_send_timeout at %d of %d, "
-					"send error: %s",
-					sent, size, strerror(errno));
- 				slurm_seterrno(SLURM_COMMUNICATIONS_SEND_ERROR);
-				sent = SLURM_ERROR;
-				goto done;
+			debug("_slurm_send_timeout at %d of %d, "
+				"send error: %s",
+				sent, size, strerror(errno));
+ 			if (errno == EAGAIN) {	/* poll() lied to us */
+				usleep(10000);
+				continue;
 			}
+ 			slurm_seterrno(SLURM_COMMUNICATIONS_SEND_ERROR);
+			sent = SLURM_ERROR;
+			goto done;
 		}
 		if (rc == 0) {
 			debug("_slurm_send_timeout at %d of %d, "
