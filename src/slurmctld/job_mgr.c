@@ -2933,7 +2933,8 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 				"*%s", user_rec.default_wckey);
 		else
 			job_ptr->wckey = xstrdup("*");			
-	}
+	} else
+		job_ptr->wckey = xstrdup(job_desc->wckey);
 
 	job_ptr->user_id    = (uid_t) job_desc->user_id;
 	job_ptr->group_id   = (gid_t) job_desc->group_id;
