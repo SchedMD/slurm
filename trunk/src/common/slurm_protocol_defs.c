@@ -846,16 +846,15 @@ char *job_state_string_compact(enum job_states inx)
 
 char *node_state_string(enum node_states inx)
 {
+	int  base         = (inx & NODE_STATE_BASE);
 	bool comp_flag    = (inx & NODE_STATE_COMPLETING);
 	bool drain_flag   = (inx & NODE_STATE_DRAIN);
 	bool fail_flag    = (inx & NODE_STATE_FAIL);
 	bool no_resp_flag = (inx & NODE_STATE_NO_RESPOND);
 	bool power_flag   = (inx & NODE_STATE_POWER_SAVE);
 
-	inx = (uint16_t) (inx & NODE_STATE_BASE);
-
 	if (drain_flag) {
-		if (comp_flag || (inx == NODE_STATE_ALLOCATED)) {
+		if (comp_flag || (base == NODE_STATE_ALLOCATED)) {
 			if (no_resp_flag)
 				return "DRAINING*";
 			return "DRAINING";
@@ -866,7 +865,7 @@ char *node_state_string(enum node_states inx)
 		}
 	}
 	if (fail_flag) {
-		if (comp_flag || (inx == NODE_STATE_ALLOCATED)) {
+		if (comp_flag || (base == NODE_STATE_ALLOCATED)) {
 			if (no_resp_flag)
 				return "FAILING*";
 			return "FAILING";
@@ -876,12 +875,16 @@ char *node_state_string(enum node_states inx)
 			return "FAIL";
 		}
 	}
-	if (inx == NODE_STATE_DOWN) {
+	if (inx == NODE_STATE_POWER_SAVE)
+		return "POWER_DOWN";
+	if (inx == NODE_STATE_POWER_UP)
+		return "POWER_UP";
+	if (base == NODE_STATE_DOWN) {
 		if (no_resp_flag)
 			return "DOWN*";
 		return "DOWN";
 	}
-	if (inx == NODE_STATE_ALLOCATED) {
+	if (base == NODE_STATE_ALLOCATED) {
 		if (no_resp_flag)
 			return "ALLOCATED*";
 		if (comp_flag)
@@ -893,21 +896,21 @@ char *node_state_string(enum node_states inx)
 			return "COMPLETING*";
 		return "COMPLETING";
 	}
-	if (inx == NODE_STATE_IDLE) {
+	if (base == NODE_STATE_IDLE) {
 		if (no_resp_flag)
 			return "IDLE*";
 		if (power_flag)
 			return "IDLE~";
 		return "IDLE";
 	}
-	if (inx == NODE_STATE_FUTURE) {
+	if (base == NODE_STATE_FUTURE) {
 		if (no_resp_flag)
 			return "FUTURE*";
 		if (power_flag)
 			return "FUTURE~";
 		return "FUTURE";
 	}
-	if (inx == NODE_STATE_UNKNOWN) {
+	if (base == NODE_STATE_UNKNOWN) {
 		if (no_resp_flag)
 			return "UNKNOWN*";
 		return "UNKNOWN";

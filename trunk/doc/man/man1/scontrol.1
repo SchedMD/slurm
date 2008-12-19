@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "August 2008" "scontrol 1.3" "Slurm components"
+.TH SCONTROL "1" "December 2008" "scontrol 1.4" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -422,15 +422,19 @@ Use quotes to enclose a reason having more than one word.
 .TP
 \fIState\fP=<state>
 Identify the state to be assigned to the node. Possible values are  "NoResp", 
-"ALLOC", "ALLOCATED", "DOWN", "DRAIN", "FAIL", "FAILING", "IDLE" or "RESUME". 
-"RESUME is not an actual node state, but will return a DRAINED, DRAINING, 
-or DOWN node to service, either IDLE or ALLOCATED state as appropriate.
-Setting a node "DOWN" will cause all running and suspended jobs on that
-node to be terminated.
+"ALLOC", "ALLOCATED", "DOWN", "DRAIN", "FAIL", "FAILING", "IDLE", "POWER_DOWN",
+"POWER_UP", or "RESUME". 
 If you want to remove a node from service, you typically want to set 
 it's state to "DRAIN". 
 "FAILING" is similar to "DRAIN" except that some applications will  
 seek to relinquish those nodes before the job completes.
+"RESUME is not an actual node state, but will return a DRAINED, DRAINING, 
+or DOWN node to service, either IDLE or ALLOCATED state as appropriate.
+Setting a node "DOWN" will cause all running and suspended jobs on that
+node to be terminated.
+"POWER_DOWN" and "POWER_UP" will use the configured \fISuspendProg\fR and
+\fIResumeProg\fR programs to explicitly place a node in or out of a power 
+saving mode.
 The "NoResp" state will only set the "NoResp" flag for a node without
 changing its underlying state.
 While all of the above states are valid, some of them are not valid new
