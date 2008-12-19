@@ -1,0 +1,1535 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          sacctmgr dump test
+#          
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2008 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Joseph Donaghy <donaghy1@llnl.gov>
+# LLNL-CODE-402394.
+# 
+# This file is part of SLURM, a resource management program.
+# For details, see <http://www.llnl.gov/linux/slurm/>.
+#  
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+# 
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+# 
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id     "test21.24"
+set file_in     "test$test_id.input"
+set file_in2    "test$test_id.input2"
+set file_in3    "test$test_id.input3"
+set file_out    "test$test_id.output"
+set file_out2   "test$test_id.output2"
+set file_out3   "test$test_id.output3"
+set file_out4   "test$test_id.output4"
+set exit_code   0
+set lis		list
+set as		assoc
+set fmt		format
+set cln		clean
+set tre		tree
+set was		withassoc
+set wco		withcoordinator
+set par		Parent
+set roo		root
+set clu		Cluster
+set cl1		clust1
+set cl2		clust2
+set cl3		clust3
+set tc1		clust1
+set tc2		clust2
+set tc3		clust3
+set acc		Account
+set nams	names
+set nm1		scienceacct
+set nm2		physicsacct
+set nm3		theoryacct
+set nm4		appliedacct
+set dsc		Description
+set ds1		scienceacct
+set ds2		physicsacct
+set ds3		theoryacct
+set ds4		appliedacct
+set org		Organization
+set or1		scienceorg
+set or2		physicsorg
+set or3		theoryorg
+set or4		appliedorg
+set usr		User
+set us1		u1ser
+set us2		u2ser
+set us3		u3ser
+set us4		u4ser
+set qs		QOS
+set qs1		normal
+set qs2		runfirst
+set qs3		runlast
+set pat		parent
+set al		AdminLevel
+set aln		None
+set ala		Administrator
+set alo		Operator
+set coo         Coordinator
+set col         CoordinatorList
+set dac		DefaultAccount
+set pts		Partitions
+set pde		pdebug
+set pba		pbatch
+set dw		DefaultWCKey
+set wk		WCKeys
+set wk1		latch
+set wk2		stone
+set wk3		hole
+set wk4		turn
+set fs		Fairshare
+set gm		GrpCPUMins
+set gc		GrpCPUs
+set gj		GrpJobs
+set gs		GrpSubmitJobs
+set gn		GrpNodes
+set gw		GrpWall
+set mm		MaxCPUMins
+set mp		MaxCPUMinsPerJob
+set mc		MaxCPUs
+set mu		MaxCPUsPerJob
+set mj		MaxJobs
+set ms		MaxSubmitJobs
+set mn		MaxNodes
+set mnj		MaxNodesPerJob
+set mw		MaxWall
+set md		MaxWallDurationPerJob
+set fs1		1000
+set fs2		2375
+set fs3		3240
+set fs4		4321
+set fs5		5678
+set fs6		6789
+set gm1		1100
+set gc1		10
+set gj1		120
+set gs1		130
+set gn1		140
+set gw1		60
+set gt1		01:00:00
+set mc1		150
+set mm1		110000
+set mj1		160
+set ms1		170
+set mn1		180
+set mw1		70
+set mt1		01:10:00
+set gm2		2000
+set gc2		20
+set gj2		210
+set gs2		220
+set gn2		230
+set gw2		120
+set gt2		02:00:00
+set mc2		240
+set mm2		220000
+set mj2		250
+set ms2		260
+set mn2		270
+set mw2		140
+set mt2		02:20:00
+set gm3		3300
+set gc3		30
+set gj3		310
+set gs3		320
+set gn3		330
+set gw3		180
+set gt3		03:00:00
+set mc3		340
+set mm3		330000
+set mj3		350
+set ms3		360
+set mn3		370
+set mw3		210
+set mt3		03:30:00
+set gm4		4000
+set gc4		40
+set gj4		410
+set gs4		420
+set gn4		430
+set gw4		240
+set gt4		04:00:00
+set mc4		440
+set mm4		420000
+set mj4		450
+set ms4		460
+set mn4		470
+set mw4		280
+set mt4		04:40:00
+set gm5		5500
+set gc5		50
+set gj5		510
+set gs5		520
+set gn5		530
+set gw5		300
+set gt5		05:00:00
+set mc5		540
+set mm5		550000
+set mj5		550
+set ms5		560
+set mn5		570
+set mw5		350
+set mt5		05:50:00
+set gm6		6600
+set gc6		60
+set gj6		610
+set gs6		620
+set gn6		630
+set gw6		1440
+set gt6		1-00:00:00
+set mc6		640
+set mm6		660000
+set mj6		650
+set ms6		660
+set mn6		670
+set mw6		2880
+set mt6		2-00:00:00
+set timeout     60
+set access_err  0
+
+print_header $test_id
+
+set timeout 60
+
+#
+# Check accounting config and bail if not found.
+#
+if { [test_account_storage] == 0 } {
+	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
+	exit 0
+}
+set track_wckey [test_track_wckey]
+
+if { [string compare [check_accounting_admin_level] "Administrator"] } {
+	send_user "\nWARNING: This test can't be run without being an Accounting administrator.\nUse sacctmgr mod user \$USER_NAME admin=admin.\n"
+	exit 0
+}
+
+#
+# Use sacctmgr to create a cluster
+#	
+proc _add_cluster {name FS GM GC GJ GN GS GW MM MC MJ MN MS MW QS} {
+        global sacctmgr timeout
+
+	set exit_code 0
+	set matches 0
+	set clust_stuff 0
+	set assoc_stuff 0
+
+	if { ![string length $name] } {
+		send_user "FAILURE: we need a name to add\n"
+		return 1
+	}
+
+	#set up the add
+	set acommand ""
+
+	if { [string length $name] } {
+		set acommand "$acommand name=$name"
+		set assoc_stuff 1
+	}
+
+	if { [string length $FS] } {
+		set acommand "$acommand fairshare=$FS"
+		set assoc_stuff 1
+	}
+
+	if { [string length $GM] } {
+		set acommand "$acommand GrpCPUMins=$GM"
+		set assoc_stuff 1
+	}
+
+	if { [string length $GC] } {
+		set acommand "$acommand GrpCPUs=$GC"
+		set assoc_stuff 1
+	}
+
+	if { [string length $GJ] } {
+		set acommand "$acommand GrpJobs=$GJ"
+		set assoc_stuff 1
+	}
+
+	if { [string length $GN] } {
+		set acommand "$acommand GrpNodes=$GN"
+		set assoc_stuff 1
+	}
+
+	if { [string length $GS] } {
+		set acommand "$acommand GrpSubmitJobs=$GS"
+		set assoc_stuff 1
+	}
+
+	if { [string length $GW] } {
+		set acommand "$acommand GrpWall=$GW"
+		set assoc_stuff 1
+	}
+
+	if { [string length $MM] } {
+		set acommand "$acommand MaxCPUMins=$MM"
+		set assoc_stuff 1
+	}
+
+	if { [string length $MC] } {
+		set acommand "$acommand MaxCPUs=$MC"
+		set assoc_stuff 1
+	}
+
+	if { [string length $MJ] } {
+		set acommand "$acommand MaxJobs=$MJ"
+		set assoc_stuff 1
+	}
+
+	if { [string length $MN] } {
+		set acommand "$acommand MaxNodes=$MN"
+		set assoc_stuff 1
+	}
+
+	if { [string length $MS] } {
+		set acommand "$acommand MaxSubmitJobs=$MS"
+		set assoc_stuff 1
+	}
+
+	if { [string length $MW] } {
+		set acommand "$acommand MaxWall=$MW"
+		set assoc_stuff 1
+	}
+
+	if { [string length $QS] } {
+		set acommand "$acommand qos=$QS"
+		set assoc_stuff 1
+	}
+
+	set my_pid [eval spawn $sacctmgr -i add cluster $acommand ]
+	expect {
+		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
+			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+			incr exit_code 1
+		}
+		-re "Problem getting" {
+			send_user "FAILURE: there was a problem getting information from the database\n"
+			incr exit_code 1
+		}
+		-re "Problem adding" {
+			send_user "FAILURE: there was an unknown problem\n"
+			incr exit_code 1
+		}
+		-re "No associations" {
+			send_user "FAILURE: your command didn't return anything\n"
+			incr exit_code 1
+		}
+		-re "Adding Cluster" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr add not responding\n"
+			slow_kill $my_pid
+			exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != 1} {
+		send_user "\nFAILURE:  sacctmgr had a problem adding clusters
+	got $matches\n"
+		incr exit_code 1
+	}
+
+	if { ![check_acct_associations] } {
+		send_user "\nFAILURE:  Our associations don't line up\n"
+		incr exit_code 1
+	}
+	
+	return $exit_code
+}
+
+#
+# Use sacctmgr to remove the test cluster
+#
+proc _remove_cluster {name} {
+        global access_err sacctmgr timeout
+
+	set exit_code 0
+	set matches 0
+	set nothing 0
+
+	if { ![string length $name] } {
+		send_user "FAILURE: we need a name to remove\n"
+		return 1
+	}
+
+	set my_pid [spawn $sacctmgr -i delete cluster $name]
+	expect {
+		-re "privilege to perform this action" {
+			set access_err 1
+			exp_continue
+		}
+		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
+			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+			incr exit_code 1
+		}
+		-re "Problem getting" {
+			send_user "FAILURE: there was a problem getting information from the database\n"
+			incr exit_code 1
+		}
+		-re "Problem adding" {
+			send_user "FAILURE: there was an unknown problem\n"
+			incr exit_code 1
+		}
+		-re "No associations" {
+			send_user "FAILURE: your command didn't return anything\n"
+			incr exit_code 1
+		}
+		-re "Deleting clusters" {
+			incr matches
+			exp_continue
+		}
+		-re " Nothing deleted" {
+			incr matches
+			set nothing 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr delete not responding\n"
+			slow_kill $my_pid
+			incr exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$access_err != 0} {
+		return 1
+	}
+	if {$matches != 1} {
+		send_user "\nFAILURE: sacctmgr had a problem deleting cluster got $matches\n"
+		incr exit_code 1
+	}
+	if { !$nothing } {
+		if { ![check_acct_associations] } {
+			send_user "\nFAILURE:  Our associations don't line up\n"
+			incr exit_code 1
+		}
+	}
+
+	return $exit_code
+}
+
+#
+# Use sacctmgr to create a QoS
+#	
+proc _add_qos {name} {
+        global sacctmgr timeout
+
+	set exit_code 0
+	set matches 0
+
+	if { ![string length $name] } {
+		send_user "FAILURE: Need name of qos to add\n"
+		return 1
+	}
+
+	set my_pid [spawn $sacctmgr -i add qos $name]
+	expect {
+		-re "(There was a problem|Unknown condition|Unknown field|Unknown option)" {
+			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+			incr exit_code 1
+		}
+		-re "Problem getting" {
+			send_user "FAILURE: there was a problem getting qos's from the database\n"
+			incr exit_code 1
+		}
+		-re "Problem adding" {
+			send_user "FAILURE: there was an unknown problem\n"
+			incr exit_code 1
+		}
+		-re "No associations" {
+			send_user "FAILURE: your command didn't return anything\n"
+			incr exit_code 1
+		}
+		-re "Adding QOS" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr add not responding\n"
+			slow_kill $my_pid
+			exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != 1} {
+		send_user "\nFAILURE:  sacctmgr had a problem adding QoS got $matches\n"
+		incr exit_code 1
+	}
+
+	if { ![check_acct_associations] } {
+		send_user "\nFAILURE:  Our associations don't line up\n"
+		incr exit_code 1
+	}
+	
+	return $exit_code
+}
+
+#
+# Use sacctmgr to remove the test QoS
+#
+proc _remove_qos {name} {
+        global access_err sacctmgr timeout
+
+	set exit_code 0
+	set matches 0
+	set nothing 0
+
+	if { ![string length $name] } {
+		send_user "FAILURE: we need a name to remove\n"
+		return 1
+	}
+
+	set my_pid [spawn $sacctmgr -i delete qos $name]
+	expect {
+		-re "privilege to perform this action" {
+			set access_err 1
+			exp_continue
+		}
+		-re "(There was a problem|Unknown condition|Unknown field|Unknown option)" {
+			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+			incr exit_code 1
+		}
+		-re "Problem getting" {
+			send_user "FAILURE: there was a problem getting information from the database\n"
+			incr exit_code 1
+		}
+		-re "Problem adding" {
+			send_user "FAILURE: there was an unknown problem\n"
+			incr exit_code 1
+		}
+		-re "No associations" {
+			send_user "FAILURE: your command didn't return anything\n"
+			incr exit_code 1
+		}
+		-re "Deleting QOS" {
+			incr matches
+			exp_continue
+		}
+		-re " Nothing deleted" {
+			incr matches
+			set nothing 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr delete not responding\n"
+			slow_kill $my_pid
+			incr exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$access_err != 0} {
+		return 1
+	}
+	if {$matches != 1} {
+		send_user "\nFAILURE: sacctmgr had a problem deleting QoS got $matches\n"
+		incr exit_code 1
+	}
+	if { !$nothing } {
+		if { ![check_acct_associations] } {
+			send_user "\nFAILURE:  Our associations don't line up\n"
+			incr exit_code 1
+		}
+	}
+
+	return $exit_code
+}
+
+#
+# Use sacctmgr to add an account
+#
+proc _add_acct { name FS GM GC GJ GN GS GW MM MC MJ MN MS MW QS PA CL DS OR} {
+        global sacctmgr timeout
+
+	set exit_code 0
+	set matches 0
+
+	if { ![string length $name] } {
+		send_user "FAILURE: we need a name to add\n"
+		return 1
+	}
+
+	set command "$name"
+
+	if { [string length $FS] } {
+		set command "$command fairshare=$FS"
+		set assoc_stuff 1
+	}
+
+	if { [string length $GM] } {
+		set command "$command GrpCPUMins=$GM"
+		set assoc_stuff 1
+	}
+
+	if { [string length $GC] } {
+		set command "$command GrpCPUs=$GC"
+		set assoc_stuff 1
+	}
+
+	if { [string length $GJ] } {
+		set command "$command GrpJobs=$GJ"
+		set assoc_stuff 1
+	}
+
+	if { [string length $GN] } {
+		set command "$command GrpNodes=$GN"
+		set assoc_stuff 1
+	}
+
+	if { [string length $GS] } {
+		set command "$command GrpSubmitJobs=$GS"
+		set assoc_stuff 1
+	}
+
+	if { [string length $GW] } {
+		set command "$command GrpWall=$GW"
+		set assoc_stuff 1
+	}
+
+	if { [string length $MM] } {
+		set command "$command MaxCPUMins=$MM"
+		set assoc_stuff 1
+	}
+
+	if { [string length $MC] } {
+		set command "$command MaxCPUs=$MC"
+		set assoc_stuff 1
+	}
+
+	if { [string length $MJ] } {
+		set command "$command MaxJobs=$MJ"
+		set assoc_stuff 1
+	}
+
+	if { [string length $MN] } {
+		set command "$command MaxNodes=$MN"
+		set assoc_stuff 1
+	}
+
+	if { [string length $MS] } {
+		set command "$command MaxSubmitJobs=$MS"
+		set assoc_stuff 1
+	}
+
+	if { [string length $MW] } {
+		set command "$command MaxWall=$MW"
+		set assoc_stuff 1
+	}
+
+	if { [string length $QS] } {
+		set command "$command qos=$QS"
+		set assoc_stuff 1
+	}
+
+	if { [string length $PA] } {
+		set command "$command Parent=$PA"
+		set assoc_stuff 1
+	}
+
+	if { [string length $CL] } {
+		set command "$command Cluster=$CL"
+		set assoc_stuff 1
+	}
+
+	if { [string length $DS] } {
+		set command "$command Description=$DS"
+		set assoc_stuff 1
+	}
+
+	if { [string length $OR] } {
+		set command "$command Organization=$OR"
+		set assoc_stuff 1
+	}
+
+	set my_pid [eval spawn $sacctmgr -i add account $command]
+	expect {
+		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
+			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+			incr exit_code 1
+		}
+		-re "Problem getting" {
+			send_user "FAILURE: there was a problem getting information from the database\n"
+			incr exit_code 1
+		}
+		-re "Problem adding" {
+			send_user "FAILURE: there was an unknown problem\n"
+			incr exit_code 1
+		}
+		-re "No associations" {
+			send_user "FAILURE: your command didn't return anything\n"
+			incr exit_code 1
+		}
+		-re "Adding Account" {
+			incr matches
+			exp_continue
+		}
+		-re "Associations" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr add not responding\n"
+			slow_kill $my_pid
+			incr exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+#	if {$matches != 1} {
+#		send_user "\nFAILURE:  sacctmgr had a problem adding account.
+#	got $matches\n"
+#		incr exit_code 1
+#	}
+
+	if { ![check_acct_associations] } {
+		send_user "\nFAILURE:  Our associations don't line up\n"
+		incr exit_code 1
+	}
+	return $exit_code
+}
+
+#
+# Use sacctmgr to remove an account
+#
+proc _remove_acct { cluster name } {
+        global sacctmgr timeout
+
+	set exit_code 0
+	set matches 0
+	set nothing 1
+	set check "Deleting account"
+
+	if { ![string length $name] } {
+		send_user "FAILURE: we need a name to remove\n"
+		return 1
+	}
+
+	set command "$name"
+
+	if { [string length $cluster] } {
+		set command "$command cluster=$cluster"
+		set check "Deleting account associations"
+	}
+
+	set my_pid [eval spawn $sacctmgr -i delete account $command]
+	expect {
+		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
+			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+			incr exit_code 1
+		}
+		-re "Problem getting" {
+			send_user "FAILURE: there was a problem getting information from the database\n"
+			incr exit_code 1
+		}
+		-re "Problem adding" {
+			send_user "FAILURE: there was an unknwon problem\n"
+			incr exit_code 1
+		}
+		-re "No associations" {
+			send_user "FAILURE: your command didn't return anything\n"
+			incr exit_code 1
+		}
+		-re "$check" {
+			incr matches
+			exp_continue
+		}
+		-re " Nothing deleted" {
+			incr matches
+			set nothing 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr add not responding\n"
+			slow_kill $my_pid
+			incr exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != 1} {
+		send_user "\nFAILURE:  sacctmgr had a problem deleting account.
+	got $matches\n"
+		incr exit_code 1
+	}
+
+	if { !$nothing } {
+		if { ![check_acct_associations] } {
+			send_user "\nFAILURE:  Our associations don't line up\n"
+			incr exit_code 1
+		}
+	}
+
+	return $exit_code
+}
+
+#
+# Use sacctmgr to modify an account
+#
+proc _mod_acct { cluster name desc org parent fs maxcpu maxjob maxnodes maxwall wdesc worg} {
+	global sacctmgr timeout
+	
+	set exit_code 0
+	set matches 0
+	set expected 0
+	set acct_stuff 0
+	set assoc_stuff 0
+
+	if { ![string length $name] } {
+		send_user "FAILURE: we need a name to modify\n"
+		return 1
+	}
+
+	#set up the where
+	set wcommand "where $name"
+
+	if { [string length $cluster] } {
+		set wcommand "$wcommand cluster=$cluster"
+	}
+
+	if { [string length $wdesc] } {
+		set wcommand "$wcommand description='$wdesc'"
+	}
+
+	if { [string length $worg] } {
+		set wcommand "$wcommand organization='$worg'"
+	}
+
+	#set up the set
+	set scommand "set"
+	if { [string length $parent] } {
+		set scommand "$scommand parent=$parent"
+		set assoc_stuff 1
+	}
+
+	if { [string length $fs] } {
+		set scommand "$scommand fairshare=$fs"
+		set assoc_stuff 1
+	}
+
+	if { [string length $maxcpu] } {
+		set scommand "$scommand maxc=$maxcpu"
+		set assoc_stuff 1
+	}
+
+	if { [string length $maxjob] } {
+		set scommand "$scommand maxj=$maxjob"
+		set assoc_stuff 1
+	}
+
+	if { [string length $maxnodes] } {
+		set scommand "$scommand maxn=$maxnodes"
+		set assoc_stuff 1
+	}
+
+	if { [string length $maxwall] } {
+		set scommand "$scommand maxw=$maxwall"
+		set assoc_stuff 1
+	}
+
+	if { [string length $desc] } {
+		set scommand "$scommand description='$desc'"
+		set acct_stuff 1
+	}
+
+	if { [string length $org] } {
+		set scommand "$scommand organization='$org'"
+		set acct_stuff 1
+	}
+
+	incr expected $acct_stuff
+	incr expected $assoc_stuff
+
+	set my_pid [eval spawn $sacctmgr -i modify account $scommand $wcommand ]
+	expect {
+		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
+			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+			incr exit_code 1
+		}
+		-re "Problem getting" {
+			send_user "FAILURE: there was a problem getting information from the database\n"
+			incr exit_code 1
+		}
+		-re "Problem adding" {
+			send_user "FAILURE: there was an unknwon problem\n"
+			incr exit_code 1
+		}
+		-re "No associations" {
+			send_user "FAILURE: your command didn't return anything\n"
+			incr exit_code 1
+		}
+		-re "Modified accounts" {
+			incr matches
+			exp_continue
+		}
+		-re "Modified account associations" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr add not responding\n"
+			slow_kill $my_pid
+			incr exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != $expected} {
+		send_user "\nFAILURE:  sacctmgr had a problem modifying account.
+	got $matches needed $expected\n"
+		incr exit_code 1
+	}
+	
+	if { ![check_acct_associations] } {
+		send_user "\nFAILURE:  Our associations don't line up\n"
+		incr exit_code 1
+	}
+	return $exit_code
+}
+
+
+#
+# Use sacctmgr to add an user
+#
+proc _add_user { name AC AL CL DA DK WK QS FS GM GC GJ GN GS GW MM MC MJ MN MS MW } {
+        global sacctmgr timeout
+
+	set exit_code 0
+	set matches 0
+
+	if { ![string length $name] } {
+		send_user "FAILURE: we need a name to add\n"
+		return 1
+	}
+
+	set ucommand "$name"
+
+	if { [string length $AC] } {
+		set ucommand "$ucommand account=$AC"
+	}
+
+	if { [string length $AL] } {
+		set ucommand "$ucommand adminlevel=$AL"
+	}
+
+	if { [string length $CL] } {
+		set ucommand "$ucommand cluster=$CL"
+	}
+
+	if { [string length $DA] } {
+		set ucommand "$ucommand defaultaccount=$DA"
+	}
+
+	if { [string length $DK] } {
+		set ucommand "$ucommand defaultwckey=$DK"
+	}
+
+	if { [string length $WK] } {
+		set ucommand "$ucommand wckeys=$WK"
+	}
+
+	if { [string length $QS] } {
+		set ucommand "$ucommand qoslevel=$QS"
+	}
+
+	if { [string length $name] } {
+		set ucommand "$ucommand name=$name"
+	}
+
+	if { [string length $FS] } {
+		set ucommand "$ucommand fairshare=$FS"
+		set assoc_stuff 1
+	}
+
+	if { [string length $GM] } {
+		set ucommand "$ucommand GrpCPUMins=$GM"
+		set assoc_stuff 1
+	}
+
+	if { [string length $GC] } {
+		set ucommand "$ucommand GrpCPUs=$GC"
+		set assoc_stuff 1
+	}
+
+	if { [string length $GJ] } {
+		set ucommand "$ucommand GrpJobs=$GJ"
+		set assoc_stuff 1
+	}
+
+	if { [string length $GN] } {
+		set ucommand "$ucommand GrpNodes=$GN"
+		set assoc_stuff 1
+	}
+
+	if { [string length $GS] } {
+		set ucommand "$ucommand GrpSubmitJobs=$GS"
+		set assoc_stuff 1
+	}
+
+	if { [string length $GW] } {
+		set ucommand "$ucommand GrpWall=$GW"
+		set assoc_stuff 1
+	}
+
+	if { [string length $MM] } {
+		set ucommand "$ucommand MaxCPUMins=$MM"
+		set assoc_stuff 1
+	}
+
+	if { [string length $MC] } {
+		set ucommand "$ucommand MaxCPUs=$MC"
+		set assoc_stuff 1
+	}
+
+	if { [string length $MJ] } {
+		set ucommand "$ucommand MaxJobs=$MJ"
+		set assoc_stuff 1
+	}
+
+	if { [string length $MN] } {
+		set ucommand "$ucommand MaxNodes=$MN"
+		set assoc_stuff 1
+	}
+
+	if { [string length $MS] } {
+		set ucommand "$ucommand MaxSubmitJobs=$MS"
+		set assoc_stuff 1
+	}
+
+	if { [string length $MW] } {
+		set ucommand "$ucommand MaxWall=$MW"
+		set assoc_stuff 1
+	}
+
+	set my_pid [eval spawn $sacctmgr -i add user $ucommand]
+	expect {
+		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
+			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+			incr exit_code 1
+		}
+		-re "Problem getting" {
+			send_user "FAILURE: there was a problem getting information from the database\n"
+			incr exit_code 1
+		}
+		-re "Problem adding" {
+			send_user "FAILURE: there was an unknwon problem\n"
+			incr exit_code 1
+		}
+		-re "No associations" {
+			send_user "FAILURE: your command didn't return anything\n"
+			incr exit_code 1
+		}
+		-re "Adding User" {
+			incr matches
+			exp_continue
+		}
+		-re "Associations" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr add not responding\n"
+			slow_kill $my_pid
+			incr exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+#	if {$matches != 2} {
+#		send_user "\nFAILURE:  sacctmgr had a problem adding user.
+#	got $matches\n"
+#		incr exit_code 1
+#	}
+
+	if { ![check_acct_associations] } {
+		send_user "\nFAILURE:  Our associations don't line up\n"
+		incr exit_code 1
+	}
+	return $exit_code
+}
+
+#
+# Use sacctmgr to remove an user
+#
+proc _remove_user { acct user } {
+        global sacctmgr timeout
+
+	set exit_code 0
+	set matches 0
+	set nothing 1
+	set check "Deleting user"
+
+	if { ![string length $user] } {
+		send_user "FAILURE: we need a name to remove\n"
+		return 1
+	}
+
+	set command "$user"
+
+	if { [string length $acct] } {
+		set command "$command account=$acct"
+		set check "Deleting user associations"
+	}
+
+	set my_pid [eval spawn $sacctmgr -i delete user $command]
+	expect {
+		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
+			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+			incr exit_code 1
+		}
+		-re "Problem getting" {
+			send_user "FAILURE: there was a problem getting information from the database\n"
+			incr exit_code 1
+		}
+		-re "Problem adding" {
+			send_user "FAILURE: there was an unknown problem\n"
+			incr exit_code 1
+		}
+		-re "No associations" {
+			send_user "FAILURE: your command didn't return anything\n"
+			incr exit_code 1
+		}
+		-re "$check" {
+			incr matches
+			exp_continue
+		}
+		-re " Nothing deleted" {
+			incr matches
+			set nothing 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr delete not responding\n"
+			slow_kill $my_pid
+			incr exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != 1} {
+		send_user "\nFAILURE:  sacctmgr had a problem deleting user.
+	got $matches\n"
+		incr exit_code 1
+	}
+
+	if { !$nothing } {
+		if { ![check_acct_associations] } {
+			send_user "\nFAILURE:  Our associations don't line up\n"
+			incr exit_code 1
+		}
+	}
+
+	return $exit_code
+}
+
+#
+# Use sacctmgr to modify an user
+#
+proc _mod_user { qoslevel waccounts wcluster wnames} {
+	global sacctmgr timeout
+	
+	set exit_code 0
+	set matches 0
+	set expected 0
+	set acct_stuff 0
+	set assoc_stuff 0
+
+	if { ![string length $wnames] } {
+		send_user "FAILURE: we need a name to modify\n"
+		return 1
+	}
+
+	#set up the where
+	set wcommand "where"
+
+	if { [string length $wcluster] } {
+		set wcommand "$wcommand cluster=$wcluster"
+	}
+
+	if { [string length $wnames] } {
+		set wcommand "$wcommand names='$wnames'"
+	}
+
+	if { [string length $waccounts] } {
+		set wcommand "$wcommand account='$waccounts'"
+	}
+
+	#set up the set
+	set scommand "set"
+
+	if { [string length $qoslevel] } {
+		set scommand "$scommand qoslevel$qoslevel"
+		set acct_stuff 1
+	}
+
+	incr expected $acct_stuff
+	incr expected $assoc_stuff
+
+	set my_pid [eval spawn $sacctmgr -i modify user $scommand $wcommand ]
+	expect {
+		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
+			send_user "FAILURE: there was a problem with the sacctmgr command\n"
+			incr exit_code 1
+		}
+		-re "Problem getting" {
+			send_user "FAILURE: there was a problem getting information from the database\n"
+			incr exit_code 1
+		}
+		-re "Problem adding" {
+			send_user "FAILURE: there was an unknown problem\n"
+			incr exit_code 1
+		}
+		-re "No associations" {
+			send_user "FAILURE: your command didn't return anything\n"
+			incr exit_code 1
+		}
+		-re "Modified account associations" {
+			incr matches
+			exp_continue
+		}
+		-re "Modified users" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacctmgr modify not responding\n"
+			slow_kill $my_pid
+			incr exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != $expected} {
+		send_user "\nFAILURE:  sacctmgr had a problem modifying user.
+	got $matches needed $expected\n"
+		incr exit_code 1
+	}
+	
+	if { ![check_acct_associations] } {
+		send_user "\nFAILURE:  Our associations don't line up\n"
+		incr exit_code 1
+	}
+	return $exit_code
+}
+
+#make sure we have a clean system and permission to do this work
+_remove_user "" "$us1,$us2,$us3,$us4"
+_remove_acct "" "$nm1,$nm2,$nm3,$nm4"
+_remove_qos "$qs1,$qs2,$qs3"
+_remove_cluster "$tc1,$tc2,$tc3"
+if {$access_err != 0} {
+	send_user "\nWARNING: not authorized to perform this test\n"
+	exit $exit_code
+}
+
+#add qos
+incr exit_code [_add_qos "$qs2"]
+if { $exit_code } {
+	_remove_user "" "$us1,$us2,$us3,$us4"
+	_remove_acct "" "$nm1,$nm2,$nm3,$nm4"
+	_remove_qos "$qs1,$qs2,$qs3"
+	_remove_cluster "$tc1,$tc2,$tc3"
+	exit $exit_code
+}
+
+#add cluster
+#name Fairshare GrpCPUMins GrpCPUs GrpJobs GrpNodes GrpSubmitJobs GrpWall MaxCPUMins MaxCPUs MaxJobs MaxNodes MaxSubmitJobs MaxWallDurationPerJob QOS
+incr exit_code [_add_cluster "$tc3" "$fs6" "$gm6" "$gc6" "$gj6" "$gn6" "$gs6" "$gw6" "$mm6" "$mc6" "$mj6" "$mn6" "$ms6" "$mw6" "$qs2"]
+if { $exit_code } {
+	_remove_user "" "$us1,$us2,$us3,$us4"
+	_remove_acct "" "$nm1,$nm2,$nm3,$nm4"
+	_remove_qos "$qs1,$qs2,$qs3"
+	_remove_cluster "$tc1,$tc2,$tc3"
+	exit $exit_code
+}
+
+#add accounts
+#name Fairshare GrpCPUMins GrpCPUs GrpJobs GrpNodes GrpSubmitJobs GrpWall MaxCPUMins MaxCPUs MaxJobs MaxNodes MaxSubmitJobs MaxWallDurationPerJob QOS parent Cluster DescriptionOrganization
+incr exit_code [_add_acct "$nm4" "$fs5" "$gm5" "$gc5" "$gj5" "$gn5" "$gs5" "$gw5" "$mm5" "$mc5" "$mj5" "$mn5" "$ms5" "$mw5" "$qs2" "$roo" "$cl3" "$ds4" "$or4" ]
+if { $exit_code } {
+	_remove_user "" "$us1,$us2,$us3,$us4"
+	_remove_acct "" "$nm1,$nm2,$nm3,$nm4"
+	_remove_qos "$qs1,$qs2,$qs3"
+	_remove_cluster "$tc1,$tc2,$tc3"
+	exit $exit_code
+}
+
+incr exit_code [_add_acct "$nm3" "$fs4" "$gm4" "$gc4" "$gj4" "$gn4" "$gs4" "$gw4" "$mm4" "$mc4" "$mj4" "$mn4" "$ms4" "$mw4" "$qs2" "$nm4" "$cl3" "$ds3" "$or3" ]
+if { $exit_code } {
+	_remove_user "" "$us1,$us2,$us3,$us4"
+	_remove_acct "" "$nm1,$nm2,$nm3,$nm4"
+	_remove_qos "$qs1,$qs2,$qs3"
+	_remove_cluster "$tc1,$tc2,$tc3"
+	exit $exit_code
+}
+
+incr exit_code [_add_acct "$nm2" "$fs3" "$gm3" "$gc3" "$gj3" "$gn3" "$gs3" "$gw3" "$mm3" "$mc3" "$mj3" "$mn3" "$ms3" "$mw3" "$qs2" "$nm3" "$cl3" "$ds2" "$or2" ]
+if { $exit_code } {
+	_remove_user "" "$us1,$us2,$us3,$us4"
+	_remove_acct "" "$nm1,$nm2,$nm3,$nm4"
+	_remove_qos "$qs1,$qs2,$qs3"
+	_remove_cluster "$tc1,$tc2,$tc3"
+	exit $exit_code
+}
+
+#add users
+# account adminlevel cluster defaultaccount qoslevel name Fairshare GrpCPUMins GrpCPUs GrpJobs GrpNodes GrpSubmitJobs GrpWall MaxCPUMins MaxCPUs MaxJobs MaxNodes MaxSubmitJobs MaxWallDurationPerJob 
+incr exit_code [_add_user "$us3" "$nm4" "$ala" "$tc3" "$nm3" "$wk3" "$wk1,$wk2,$wk4" "$qs2" "$fs3" "$gm3" "$gc3" "$gj3" "$gn3" "$gs3" "$gw3" "$mm3" "$mc3" "$mj3" "$mn3" "$ms3" "$mw3" ]
+if { $exit_code } {
+	_remove_user "" "$us1,$us2,$us3,$us4"
+	_remove_acct "" "$nm1,$nm2,$nm3,$nm4"
+	_remove_qos "$qs1,$qs2,$qs3"
+	_remove_cluster "$tc1,$tc2,$tc3"
+	exit $exit_code
+}
+
+incr exit_code [_add_user "$us2" "$nm3" "$alo" "$tc3" "$nm2" "$wk2" "$wk1,$wk3,$wk4" "$qs2" "$fs2" "$gm2" "$gc2" "$gj2" "$gn2" "$gs2" "$gw2" "$mm2" "$mc2" "$mj2" "$mn2" "$ms2" "$mw2" ]
+if { $exit_code } {
+	_remove_user "" "$us1,$us2,$us3,$us4"
+	_remove_acct "" "$nm1,$nm2,$nm3,$nm4"
+	_remove_qos "$qs1,$qs2,$qs3"
+	_remove_cluster "$tc1,$tc2,$tc3"
+	exit $exit_code
+}
+
+incr exit_code [_add_user "$us1" "$nm2" "$aln" "$tc3" "$nm2" "$wk1" "$wk2,$wk3,$wk4" "$qs2" "$fs1" "$gm1" "$gc1" "$gj1" "$gn1" "$gs1" "$gw1" "$mm1" "$mc1" "$mj1" "$mn1" "$ms1" "$mw1" ]
+if { $exit_code } {
+	_remove_user "" "$us1,$us2,$us3,$us4"
+	_remove_acct "" "$nm1,$nm2,$nm3,$nm4"
+	_remove_qos "$qs1,$qs2,$qs3"
+	_remove_cluster "$tc1,$tc2,$tc3"
+	exit $exit_code
+}
+
+set matches 0
+set my_pid [spawn $sacctmgr -i dump $clu=$cl3 file=$file_out4]
+expect {
+	-re "(Cluster .* returned nothing)" {
+	        send_user "FAILURE: there was a problem with the dump\n"
+	    	incr exit_code 1
+	}
+	-re "(No filename given)" {
+	        send_user "FAILURE: there was a problem with the file name\n"
+	    	incr exit_code 1
+	}
+	-re "(Can only do one cluster at a time)" {
+	        send_user "FAILURE: there was a problem with the dump\n"
+	    	incr exit_code 1
+	}
+	-re "too few arguments for keyword" {
+	        send_user "FAILURE: there was a problem with the dump request\n"
+	    	incr exit_code 1
+	}
+	-re "Unknown option" {
+	        send_user "FAILURE: there was a problem with the request\n"
+	    	incr exit_code 1
+	}
+	-re "(sacctmgr: Cluster)" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		slow_kill $my_pid
+		incr exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 1} {
+	send_user "\nFAILURE:  File load 1 incorrect with only $matches.\n"
+	incr exit_code 1
+}
+
+set matches 0
+set tfile [open "$file_out4" r]
+#while {[gets $tfile line] != -1} {
+foreach line [split [read $tfile] "\n"] {
+#
+# Use echo to parse the dump file line by line.
+#
+#set matches 0
+set my_pid [spawn echo "$line" ]
+expect {
+	-re "No such file or directory" {
+	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+	    	incr exit_code 1
+	}
+	-re "($clu - $cl3:$fs=$fs6:$gm=$gm6:$gc=$gc6:$gj=$gj6:$gn=$gn6:$gs=$gs6:$gw=$gw6:$mp=$mm6:$mu=$mc6:$mj=$mj6:$mnj=$mn6:$ms=$ms6:$md=$mw6:$qs='$qs2')" {
+		send_user "\nmatch 1\n"
+		incr matches
+		exp_continue
+	}
+
+	-re "($par - $roo)" {
+		send_user "\nmatch 2\n"
+		incr matches
+		exp_continue
+	}
+
+	-re "($acc - $nm4:$dsc='$ds4':$org='$or4':$fs=$fs5:$gm=$gm5:$gc=$gc5:$gj=$gj5:$gn=$gn5:$gs=$gs5:$gw=$gw5:$mp=$mm5:$mu=$mc5:$mj=$mj5:$mnj=$mn5:$ms=$ms5:$md=$mw5:$qs='$qs2')" {
+		send_user "\nmatch 3\n"
+		incr matches
+		exp_continue
+	}
+
+	-re "($par - $nm4)" {
+		send_user "\nmatch 4\n"
+		incr matches
+		exp_continue
+	}
+
+	-re "($usr - $us3:$dac='$nm3':$dw='$wk3':$al='$ala':$wk='$wk3,$wk1,$wk2,$wk4':$fs=$fs3:$gm=$gm3:$gc=$gc3:$gj=$gj3:$gn=$gn3:$gs=$gs3:$gw=$gw3:$mp=$mm3:$mu=$mc3:$mj=$mj3:$mnj=$mn3:$ms=$ms3:$md=$mw3:$qs='$qs2')" {
+		send_user "\nmatch 5a\n"
+		incr matches
+		exp_continue
+	}
+
+	# Same as above, but without DefaultWCKey= or WCKeys=
+	-re "($usr - $us3:$dac='$nm3':$al='$ala':$fs=$fs3:$gm=$gm3:$gc=$gc3:$gj=$gj3:$gn=$gn3:$gs=$gs3:$gw=$gw3:$mp=$mm3:$mu=$mc3:$mj=$mj3:$mnj=$mn3:$ms=$ms3:$md=$mw3:$qs='$qs2')" {
+		send_user "\nmatch 5b\n"
+		if {$track_wckey == 0} {
+			incr matches
+		} else {
+			send_user "\nFAILURE: Missing DefaultWCKey or WCKeys\n"
+		}
+		exp_continue
+	}
+
+	-re "($acc - $nm3:$dsc='$ds3':$org='$or3':$fs=$fs4:$gm=$gm4:$gc=$gc4:$gj=$gj4:$gn=$gn4:$gs=$gs4:$gw=$gw4:$mp=$mm4:$mu=$mc4:$mj=$mj4:$mnj=$mn4:$ms=$ms4:$md=$mw4:$qs='$qs2')" {
+		send_user "\nmatch 6\n"
+		incr matches
+		exp_continue
+	}
+
+	-re "($par - $nm3)" {
+		send_user "\nmatch 7\n"
+		incr matches
+		exp_continue
+	}
+
+	-re "($acc - $nm2:$dsc='$ds2':$org='$or2':$fs=$fs3:$gm=$gm3:$gc=$gc3:$gj=$gj3:$gn=$gn3:$gs=$gs3:$gw=$gw3:$mp=$mm3:$mu=$mc3:$mj=$mj3:$mnj=$mn3:$ms=$ms3:$md=$mw3:$qs='$qs2')" {
+		send_user "\nmatch 8\n"
+		incr matches
+		exp_continue
+	}
+
+
+	-re "($par - $nm2)" {
+		send_user "\nmatch 9\n"
+		incr matches
+		exp_continue
+	}
+
+	-re "($usr - $us1:$dac='$nm2':$dw='$wk1':$wk='$wk3,$wk1,$wk2,$wk4':$fs=$fs1:$gm=$gm1:$gc=$gc1:$gj=$gj1:$gn=$gn1:$gs=$gs1:$gw=$gw1:$mp=$mm1:$mu=$mc1:$mj=$mj1:$mnj=$mn1:$ms=$ms1:$md=$mw1:$qs='$qs2')" {
+		send_user "\nmatch 10a\n"
+		incr matches
+		exp_continue
+	}
+
+	# Same as above but without DefaultWCKey= or WCKeys=
+	-re "($usr - $us1:$dac='$nm2':$fs=$fs1:$gm=$gm1:$gc=$gc1:$gj=$gj1:$gn=$gn1:$gs=$gs1:$gw=$gw1:$mp=$mm1:$mu=$mc1:$mj=$mj1:$mnj=$mn1:$ms=$ms1:$md=$mw1:$qs='$qs2')" {
+		send_user "\nmatch 10b\n"
+		if {$track_wckey == 0} {
+			incr matches
+		} else {
+			send_user "\nFAILURE: Missing DefaultWCKey or WCKeys\n"
+		}
+		exp_continue
+	}
+
+	-re "($usr - $us2:$dac='$nm2':$dw='$wk2':$al='$alo':$wk='$wk3,$wk1,$wk2,$wk4':$fs=$fs2:$gm=$gm2:$gc=$gc2:$gj=$gj2:$gn=$gn2:$gs=$gs2:$gw=$gw2:$mp=$mm2:$mu=$mc2:$mj=$mj2:$mnj=$mn2:$ms=$ms2:$md=$mw2:$qs='$qs2')" {
+		send_user "\nmatch 11a\n"
+		incr matches
+		exp_continue
+	}
+
+	# Same as above but without DefaultWCKey= or WCKeys=
+	-re "($usr - $us2:$dac='$nm2':$al='$alo':$fs=$fs2:$gm=$gm2:$gc=$gc2:$gj=$gj2:$gn=$gn2:$gs=$gs2:$gw=$gw2:$mp=$mm2:$mu=$mc2:$mj=$mj2:$mnj=$mn2:$ms=$ms2:$md=$mw2:$qs='$qs2')" {
+		send_user "\nmatch 11b\n"
+		if {$track_wckey == 0} {
+			incr matches
+		} else {
+			send_user "\nFAILURE: Missing DefaultWCKey or WCKeys\n"
+		}
+		exp_continue
+	}
+
+	timeout {
+		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		slow_kill $my_pid
+		incr exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+}
+if {$matches != 14} {
+	send_user "\nFAILURE:  Parse of file for 14 entries incorrect with only $matches.\n"
+	incr exit_code 1
+}
+
+#
+# This is the end below here
+
+incr exit_code [_remove_user "" "$us1,$us2,$us3,$us4"]
+incr exit_code [_remove_acct "" "$nm1,$nm2,$nm3,$nm4"]
+incr exit_code [_remove_qos "$qs1,$qs2,$qs3"]
+incr exit_code [_remove_cluster "$tc1,$tc2,$tc3"]
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+} else {
+	send_user "\nFAILURE\n"
+}
+exit $exit_code
+

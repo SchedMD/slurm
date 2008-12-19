@@ -1,0 +1,117 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Customer Testimonials</h1>
+
+<i>
+"Today our largest IBM computers, BlueGene/L and Purple, ranked #1 and #3 
+respectively on the November 2005 Top500 list, use SLURM.
+This decision reduces large job launch times from tens of minutes to seconds.
+This effectively provides 
+us with millions of dollars with of additional compute resources without 
+additional cost.  It also allows our computational scientists to use their 
+time more effectively.  SLURM is scalable to very large numbers of processors, 
+another essential ingredient for use at LLNL. This means larger computer 
+systems can be used than otherwise possible with a commensurate increase in 
+the scale of problems that can be solved. SLURM's scalability has eliminated 
+resource management from being a concern for computers of any foreseeable 
+size. It is one of the best things to happen to massively parallel computing."
+<br><br>
+Dona Crawford, Associate Directory Lawrence Livermore National Laboratory
+</i>
+<HR SIZE=4>
+
+<i>
+"We are extremely pleased with SLURM and strongly recommend it to others 
+because it is mature, the developers are highly responsive and 
+it just works."<br><br>
+Jeffrey M. Squyres, Pervasive Technology Labs at Indiana University
+</i>
+<HR SIZE=4>
+
+<i>
+"Thank you for SLURM! It is one of the nicest pieces of free software
+for managing HPC clusters we have come across in a long time.
+Both of our Blue Genes are running SLURM and it works fantastically 
+well."<br><br>
+Adam Todorski, Computational Center for Nanotechnology Inovations,
+Rensselaer Polytechnic Institute
+</i>
+<HR SIZE=4>
+
+<i>
+We adopted SLURM as our resource manager over two years ago when it was at
+the 0.3.x release level. Since then it has become an integral and important
+component of our production research services. Its stability, flexibility
+and performance has allowed us to significantly increase the quality of
+experience we offer to our researchers."<br><br>
+Dr. Greg Wettstein, Ph.D. North Dakota State University
+</i>
+<HR SIZE=4>
+
+<i>
+"SLURM is the coolest thing since the invention of UNIX...
+We now can control who can log into [compute nodes] or at least can control
+which ones to allow logging into.  This will be a tremendous help for users
+who are developing their apps."<br><br>
+Dennis Gurgul, Research Computing, Partners Health Care
+</i>
+<HR SIZE=4>
+
+<i>
+"SLURM is a great product that I'd recommend to anyone setting up a cluster,
+or looking to reduce their costs by abandoning an existing commercial
+resource manager."<br><br>
+Josh Lothian, National Center for Computational Sciences,
+Oak Ridge National Laboratory
+</i>
+<HR SIZE=4>
+
+<i>
+"SLURM is under active development, is easy to use, works quite well, 
+and most important to your harried author, it hasn't been a nightmare 
+to configure or manage. (Strong praise, that.) I would range SLURM as 
+the best of the three open source batching systems available, by rather 
+a large margin." <br><br>
+Bryan O'Sullivan, Pathscale
+</i>
+<HR SIZE=4>
+
+<i>
+"SLURM scales perfectly to the size of MareNostrum without noticeable
+performance degradation; the daemons running on the compute nodes are 
+light enough to not interfere with the applications' processes and the 
+status reports are accurate and concise, allowing us to spot possible 
+anomalies in a single sight." <br><br>
+Erest Artiaga, Barcelona Supercomputing Center
+</i>
+<HR SIZE=4>
+
+<i>
+"SLURM was a great help for us in implementing our own very concise 
+job management system on top of it which could be tailored precisely 
+to our needs, and which at the same time is very simple to use for 
+our customers. 
+In general, we are impressed with the stability, scalability, and performance 
+of SLURM. Furthermore, SLURM is very easy to configure and use. The fact that 
+SLURM is open-source software with a free license is also advantageous for us 
+in terms of cost-benefit considerations." <br><br>
+Dr. Wilfried Juling, Direktor, Scientific Supercomputing Center,
+University of Karlsruhe
+</i>
+<HR SIZE=4>
+
+<i>
+"SLURM has been adopted as the parallel allocation infrastructure used 
+in HP's premier cluster stack, XC System Software. SLURM has permitted 
+easy scaling of parallel applications on cluster systems with thousands
+of processors, and has also proven itself to be highly portable and 
+efficient between interconnects including Quadrics, QsNet, Myrinet, 
+Infiniband and Gigabit Ethernet."
+<br><br>
+Bill Celmaster, XC Program Manager, Hewlett-Packard Company
+</i>
+<HR SIZE=4>
+
+<p style="text-align:center;">Last modified 13 November 2008</p>
+
+<!--#include virtual="footer.txt"-->
