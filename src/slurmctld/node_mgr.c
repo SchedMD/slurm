@@ -1180,26 +1180,24 @@ int update_node ( update_node_msg_t * update_node_msg )
 				    NODE_STATE_POWER_SAVE) {
 					verbose("node %s already powered down",
 						this_node_name);
-					continue;
 				} else {
 					node_ptr->last_idle = 0;
 					info("powering down node %s",
 					     this_node_name);
-					continue;
 				}
+				continue;
 			}
 			else if (state_val == NODE_STATE_POWER_UP) {
 				if (!(node_ptr->node_state &
 				    NODE_STATE_POWER_SAVE)) {
 					verbose("node %s already powered up",
 						this_node_name);
-					continue;
 				} else {
 					node_ptr->last_idle = now;
 					info("powering up node %s",
 					     this_node_name);
-					continue;
 				}
+				continue;
 			}
 			else if (state_val == NODE_STATE_NO_RESPOND) {
 				node_ptr->node_state |= NODE_STATE_NO_RESPOND;
