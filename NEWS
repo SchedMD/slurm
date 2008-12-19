@@ -3,6 +3,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.3.13
 =========================
+ -- Improve efficiency of scheduling jobs into partitions which do not overlap.
 
 * Changes in SLURM 1.3.12
 =========================

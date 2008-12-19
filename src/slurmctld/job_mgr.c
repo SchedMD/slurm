@@ -3869,6 +3869,16 @@ static bool _top_priority(struct job_record *job_ptr)
 				continue;
 			if (!job_independent(job_ptr2))
 				continue;
+			if (job_ptr2->part_ptr == job_ptr->part_ptr) {
+				/* same partition */
+				if (job_ptr2->priority <= job_ptr->priority)
+					continue;
+				top = false;
+				break;
+			}
+			if (bit_overlap(job_ptr->part_ptr->node_bitmap,
+				        job_ptr2->part_ptr->node_bitmap) == 0)
+				continue;   /* no node overlap in partitions */
 			if ((job_ptr2->part_ptr->priority > 
 			     job_ptr ->part_ptr->priority) ||
 			    ((job_ptr2->part_ptr->priority ==
