@@ -59,6 +59,7 @@
 #include "src/common/log.h"
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
+#include "src/common/hostlist.h"
 #include "src/scancel/scancel.h"
 
 #define MAX_CANCEL_RETRY 10
@@ -89,7 +90,8 @@ main (int argc, char *argv[])
 	    (opt.job_name) ||
 	    (opt.partition) ||
 	    (opt.state != JOB_END) ||
-	    (opt.user_name)) {
+	    (opt.user_name) ||
+	    (opt.nodelist)) {
 		_load_job_records ();
 		_filter_job_records ();
 	}
@@ -163,6 +165,17 @@ _filter_job_records (void)
 			continue;
 		}
 
+		if (opt.nodelist != NULL) {
+			hostset_t hs = hostset_create(job_ptr[i].nodes);
+			if (!hostset_intersects(hs, opt.nodelist)) {
+				job_ptr[i].job_id = 0;
+				hostset_destroy(hs);
+				continue;
+			} else {
+				hostset_destroy(hs);
+			}
+		}
+
 		if (opt.job_cnt == 0)
 			continue;
 		for (j = 0; j < opt.job_cnt; j++) {
@@ -198,7 +211,7 @@ _cancel_jobs (void)
 							opt.signal);
 				else
 					_cancel_step_id (opt.job_id[j], 
-					                opt.step_id[j],
+							opt.step_id[j],
 							opt.signal);
 				break;
 			}
