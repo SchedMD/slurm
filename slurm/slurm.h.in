@@ -415,6 +415,7 @@ enum node_states {
 #define NODE_STATE_POWER_SAVE 0x1000	/* node in power save mode */
 #define NODE_STATE_FAIL       0x2000	/* node is failing, do not allocate
 					 * new work */
+#define NODE_STATE_POWER_UP   0x4000	/* restore power to a node */
 
 /* used to define the size of the credential.signature size
  * used to define the key size of the io_stream_header_t

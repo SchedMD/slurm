@@ -1175,6 +1175,32 @@ int update_node ( update_node_msg_t * update_node_msg )
 						slurmctld_cluster_name,
 						node_ptr, now, NULL);
 			}
+			else if (state_val == NODE_STATE_POWER_SAVE) {
+				if (node_ptr->node_state &
+				    NODE_STATE_POWER_SAVE) {
+					verbose("node %s already powered down",
+						this_node_name);
+					continue;
+				} else {
+					node_ptr->last_idle = 0;
+					info("powering down node %s",
+					     this_node_name);
+					continue;
+				}
+			}
+			else if (state_val == NODE_STATE_POWER_UP) {
+				if (!(node_ptr->node_state &
+				    NODE_STATE_POWER_SAVE)) {
+					verbose("node %s already powered up",
+						this_node_name);
+					continue;
+				} else {
+					node_ptr->last_idle = now;
+					info("powering up node %s",
+					     this_node_name);
+					continue;
+				}
+			}
 			else if (state_val == NODE_STATE_NO_RESPOND) {
 				node_ptr->node_state |= NODE_STATE_NO_RESPOND;
 				state_val = base_state;
@@ -1444,6 +1470,8 @@ static bool _valid_node_state_change(uint16_t old, uint16_t new)
 		case NODE_STATE_DRAIN:
 		case NODE_STATE_FAIL:
 		case NODE_STATE_NO_RESPOND:
+		case NODE_STATE_POWER_SAVE:
+		case NODE_STATE_POWER_UP:
 			return true;
 			break;
 

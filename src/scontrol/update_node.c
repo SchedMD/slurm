@@ -89,7 +89,7 @@ scontrol_update_node (int argc, char *argv[])
 			}
 			now = time(NULL);
 			slurm_make_time_str(&now, time_str, sizeof(time_str));
-			snprintf(time_buf, sizeof(time_buf), "@%s]", time_str); 
+			snprintf(time_buf, sizeof(time_buf), "@%s]", time_str);
 			xstrcat(reason_str, time_buf);
 				
 			node_msg.reason = reason_str;
@@ -111,6 +111,14 @@ scontrol_update_node (int argc, char *argv[])
 			node_msg.node_state = NODE_RESUME;
 			update_cnt++;
 		}
+		else if (strncasecmp(argv[i], "State=POWER_DOWN", 13) == 0) {
+			node_msg.node_state = NODE_STATE_POWER_SAVE;
+			update_cnt++;
+		}
+		else if (strncasecmp(argv[i], "State=POWER_UP", 13) == 0) {
+			node_msg.node_state = NODE_STATE_POWER_UP;
+			update_cnt++;
+		}
 		else if (strncasecmp(argv[i], "State=", 6) == 0) {
 			state_val = (uint16_t) NO_VAL;
 			for (j = 0; j <= NODE_STATE_END; j++) {
@@ -125,14 +133,18 @@ scontrol_update_node (int argc, char *argv[])
 						argv[i]);
 					fprintf (stderr, "Request aborted\n");
 					fprintf (stderr, "Valid states are: ");
-					fprintf (stderr, "NoResp DRAIN FAIL RESUME ");
+					fprintf (stderr,
+						 "NoResp DRAIN FAIL RESUME "
+						 "POWER_DOWN POWER_UP");
 					for (k = 0; k < NODE_STATE_END; k++) {
 						fprintf (stderr, "%s ", 
 						         node_state_string(k));
 					}
 					fprintf (stderr, "\n");
-					fprintf (stderr, "Not all states are valid given a "
-						 "node's prior state\n");
+					fprintf (stderr, 
+						 "Not all states are valid "
+						 "given a node's prior "
+						 "state\n");
 					goto done;
 				}
 			}
