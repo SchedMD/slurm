@@ -96,6 +96,9 @@ information between major SLURM updates?</li>
 execute on DOWN nodes?</li>
 <li><a href="#batch_lost">What is the meaning of the error 
 &quot;Batch JobId=# missing from master node, killing it&quot;?</a></li>
+<li><a href="#accept_again">What does the messsage
+&quot;srun: error: Unable to accept connection: Resources termporarily unavailable&quot; 
+indicate?</a></li>
 </ol>
 
 
@@ -1096,8 +1099,15 @@ failure that can not be recovered from. The equivalent message in
 earlier releases of slurm is 
 &quot;Master node lost JobId=#, killing it&quot;.
 
+<p><a name="accept_again"><b>33. What does the messsage
+&quot;srun: error: Unable to accept connection: Resources termporarily unavailable&quot; 
+indicate?</b><br>
+This has been reported on some larger clusters running Suse Linux when
+a user's resource limits are reached. You may need to increase limits
+for locked memory and stack size to resolve this problem.
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 26 November 2008</p>
+<p style="text-align:center;">Last modified 19 December 2008</p>
 
 <!--#include virtual="footer.txt"-->
