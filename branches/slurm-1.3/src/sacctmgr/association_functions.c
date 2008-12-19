@@ -429,6 +429,12 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 			field->name = xstrdup("GrpWall");
 			field->len = 11;
 			field->print_routine = print_fields_time;
+		} else if(!strncasecmp("GrpWallRaw", object,
+				       MAX(command_len, 8))) {
+			field->type = PRINT_GRPW;
+			field->name = xstrdup("GrpWall");
+			field->len = 11;
+			field->print_routine = print_fields_uint;
 		} else if(!strncasecmp("ID", object, MAX(command_len, 1))) {
 			field->type = PRINT_ID;
 			field->name = xstrdup("ID");
@@ -475,6 +481,12 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 			field->name = xstrdup("MaxWall");
 			field->len = 11;
 			field->print_routine = print_fields_time;
+		} else if(!strncasecmp("MaxWallRaw", object,
+				       MAX(command_len, 8))) {
+			field->type = PRINT_MAXW;
+			field->name = xstrdup("MaxWall");
+			field->len = 11;
+			field->print_routine = print_fields_uint;
 		} else if(!strncasecmp("QOSRAWLevel", object,
 				       MAX(command_len, 4))) {
 			field->type = PRINT_QOS_RAW;
