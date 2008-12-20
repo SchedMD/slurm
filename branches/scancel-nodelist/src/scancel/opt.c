@@ -505,9 +505,9 @@ static void _opt_list(void)
 
 static void _usage(void)
 {
-	printf("Usage: scancel [-n job_name] [-u user] [-p partition] [-q] [-s name | integer] [--batch]\n");
-	printf("               [-t PENDING | RUNNING | SUSPENDED] [--usage] [-v] [-V] [-w hosts...]\n");
-	printf("               [job_id[.step_id]]\n");
+	printf("Usage: scancel [-n job_name] [-u user] [-p partition] [-q] [-s name | integer]\n");
+	printf("               [--batch] [-t PENDING | RUNNING | SUSPENDED] [--usage] [-v] [-V]\n");
+	printf("               [-w hosts...] [job_id[.step_id]]\n");
 }
 
 static void _help(void)
