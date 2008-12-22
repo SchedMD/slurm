@@ -69,7 +69,7 @@
 #include "src/slurmctld/proc_req.h"
 #include "src/plugins/select/3d_torus/select_3d_torus.h"
 
-#define SELECT_DEBUG	1
+#define SELECT_DEBUG	0
 #define NO_SHARE_LIMIT	0xfffe
 
 static int  _add_job_to_nodes(struct node_cr_record *node_cr_ptr,
