@@ -100,7 +100,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			  int max_share, uint32_t req_nodes);
 
 struct node_select_struct {	/* Used to select nodes for a job */
-	uint16_t avail_tasks;	/* Tasks available to this job */
+	uint16_t avail_cpus;	/* Tasks available to this job */
 	int      distance;	/* Distance from focal point */
 	int      index;		/* Index into node table */
 };
@@ -352,14 +352,14 @@ extern int select_p_block_init(List part_list)
 }
 
 /*
- * _get_avail_tasks - Get the number of "available" cpus on a node
+ * _get_avail_cpus - Get the number of "available" cpus on a node
  *	given this number given the number of cpus_per_task and
  *	maximum sockets, cores, threads.  Note that the value of
  *	cpus is the lowest-level logical processor (LLLP).
  * IN job_ptr - pointer to job being scheduled
  * IN index - index of node's configuration information in select_node_ptr
  */
-static uint16_t _get_avail_tasks(struct job_record *job_ptr, int index)
+static uint16_t _get_avail_cpus(struct job_record *job_ptr, int index)
 {
 	struct node_record *node_ptr;
 	uint16_t avail_cpus;
@@ -848,8 +848,8 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			uint32_t req_nodes)
 {
 	int i, i_first, i_last;
-	int avail_tasks, alloc_tasks = 0;
-	int rem_tasks, rem_nodes;	/* remaining resources desired */
+	int avail_cpus, alloc_cpus = 0;
+	int rem_cpus, rem_nodes;	/* remaining resources desired */
 	int error_code = EINVAL;
 	int delta_x, delta_y, delta_z;
 	uint16_t focus_x, focus_y, focus_z;
@@ -861,7 +861,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	    (!bit_super_set(job_ptr->details->req_node_bitmap, bitmap)))
 		return error_code;	/* Required nodes not available now */
 
-	rem_tasks = job_ptr->num_procs;
+	rem_cpus = job_ptr->num_procs;
 	if (req_nodes > min_nodes)
 		rem_nodes = req_nodes;
 	else
@@ -890,13 +890,13 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	 * Identify distance from focus for other available nodes */
 	for (i=i_first; i<=i_last; i++) {
 		if (bit_test(bitmap, i)) {
-			avail_tasks = _get_avail_tasks(job_ptr, i);
+			avail_cpus = _get_avail_cpus(job_ptr, i);
 
 			if (job_ptr->details->req_node_bitmap &&
 			    bit_test(job_ptr->details->req_node_bitmap, i) &&
 			    (max_nodes > 0)) {
-				rem_tasks   -= avail_tasks;
-				alloc_tasks += avail_tasks;
+				rem_cpus   -= avail_cpus;
+				alloc_cpus += avail_cpus;
 				rem_nodes--;
 				max_nodes--;
 			} else {	 /* node not required (yet) */
@@ -904,7 +904,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				node_select_ptr = xmalloc(sizeof(struct 
 							  node_select_struct));
 				node_select_ptr->index = i;
-				node_select_ptr->avail_tasks = avail_tasks;
+				node_select_ptr->avail_cpus = avail_cpus;
 				if (focus_x > node_cr_ptr[i].x_coord)
 					delta_x = focus_x -
 						  node_cr_ptr[i].x_coord;
@@ -931,7 +931,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		}
 	}
 
-	if ((rem_nodes <= 0) && (rem_tasks <= 0)) {
+	if ((rem_nodes <= 0) && (rem_cpus <= 0)) {
 		error_code = SLURM_SUCCESS;
 	} else {
 		/* If nodes needed, sort available node list and
@@ -942,13 +942,13 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		       (node_select_ptr = (struct node_select_struct *) 
 					  list_next(iter))) {
 			bit_set(bitmap, node_select_ptr->index);
-			avail_tasks = _get_avail_tasks(job_ptr, 
+			avail_cpus = _get_avail_cpus(job_ptr, 
 						       node_select_ptr->index);
-			rem_tasks   -= avail_tasks;
-			alloc_tasks += avail_tasks;
+			rem_cpus   -= avail_cpus;
+			alloc_cpus += avail_cpus;
 			rem_nodes--;
 			max_nodes--;
-			if ((rem_nodes <= 0) && (rem_tasks <= 0)) {
+			if ((rem_nodes <= 0) && (rem_cpus <= 0)) {
 				error_code = SLURM_SUCCESS;
 				break;
 			}
@@ -958,7 +958,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	if (error_code == SLURM_SUCCESS) {
 		/* job's total_procs is needed for SELECT_MODE_WILL_RUN */
-		job_ptr->total_procs = alloc_tasks;
+		job_ptr->total_procs = alloc_cpus;
 	}
 	list_destroy(node_list);
 	return error_code;
