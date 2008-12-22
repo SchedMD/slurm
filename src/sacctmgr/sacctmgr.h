@@ -126,13 +126,17 @@ extern int sacctmgr_delete_qos(int argc, char *argv[]);
 
 extern int sacctmgr_dump_cluster(int argc, char *argv[]);
 
+extern int sacctmgr_archive_dump(int argc, char *argv[]);
+extern int sacctmgr_archive_load(int argc, char *argv[]);
+
 /* common.c */
 extern int parse_option_end(char *option);
-extern char *strip_quotes(char *option, int *increased);
+extern char *strip_quotes(char *option, int *increased, bool make_lower);
 extern int notice_thread_init();
 extern int notice_thread_fini();
 extern int commit_check(char *warning);
 extern int get_uint(char *in_value, uint32_t *out_value, char *type);
+extern int get_uint16(char *in_value, uint16_t *out_value, char *type);
 extern int get_uint64(char *in_value, uint64_t *out_value, char *type);
 extern int addto_qos_char_list(List char_list, List qos_list, char *names, 
 			       int option);

@@ -360,13 +360,14 @@ static int _set_rec(int *start, int argc, char *argv[],
 					 MAX(command_len, 8))) {
 			if(user->default_acct)
 				xfree(user->default_acct);
-			user->default_acct = strip_quotes(argv[i]+end, NULL);
+			user->default_acct = strip_quotes(argv[i]+end, NULL, 1);
 			u_set = 1;
 		} else if (!strncasecmp (argv[i], "DefaultWCKey",
 					 MAX(command_len, 8))) {
 			if(user->default_wckey)
 				xfree(user->default_wckey);
-			user->default_wckey = strip_quotes(argv[i]+end, NULL);
+			user->default_wckey = 
+				strip_quotes(argv[i]+end, NULL, 1);
 			u_set = 1;
 		} else if (!strncasecmp (argv[i], "FairShare",
 					 MAX(command_len, 1))) {
@@ -722,7 +723,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 				exit_code = 1;
 				continue;
 			}
-			default_acct = strip_quotes(argv[i]+end, NULL);
+			default_acct = strip_quotes(argv[i]+end, NULL, 1);
 			slurm_addto_char_list(assoc_cond->acct_list,
 					default_acct);
 		} else if (!strncasecmp (argv[i], "DefaultWCKey",
@@ -734,7 +735,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 				exit_code = 1;
 				continue;
 			}
-			default_wckey = strip_quotes(argv[i]+end, NULL);
+			default_wckey = strip_quotes(argv[i]+end, NULL, 1);
 			slurm_addto_char_list(wckey_cond->name_list,
 					      default_wckey);
 		} else if (!strncasecmp (argv[i], "FairShare",

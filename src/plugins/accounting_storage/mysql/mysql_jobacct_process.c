@@ -1240,7 +1240,7 @@ extern int mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 				       "&& end != 0",
 				       step_table, curr_end);
 		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
-		//rc = mysql_db_query(mysql_conn->db_conn, query);
+		rc = mysql_db_query(mysql_conn->db_conn, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
 			error("Couldn't remove old step data");
@@ -1420,7 +1420,7 @@ exit_steps:
 				       "&& end != 0",
 				       job_table, curr_end);
 		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
-		//rc = mysql_db_query(mysql_conn->db_conn, query);
+		rc = mysql_db_query(mysql_conn->db_conn, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
 			error("Couldn't remove old job data");

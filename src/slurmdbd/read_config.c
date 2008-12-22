@@ -268,7 +268,34 @@ extern int read_slurmdbd_conf(void)
 	}
 	if (slurmdbd_conf->storage_type == NULL)
 		fatal("StorageType must be specified");
-				
+	
+	if (slurmdbd_conf->archive_dir) {
+		if(stat(slurmdbd_conf->archive_dir, &buf) < 0) 
+			fatal("Failed to stat the archive directory %s: %m",
+			      slurmdbd_conf->archive_dir);
+		if (!(buf.st_mode & S_IFDIR)) 
+			fatal("rchive directory %s isn't a directory",
+			      slurmdbd_conf->archive_script);
+		
+		if (access(slurmdbd_conf->archive_dir, W_OK) < 0) 
+			fatal("rchive directory %s is not writable",
+			      slurmdbd_conf->archive_dir);
+	}
+
+	if (slurmdbd_conf->archive_script) {
+		if(stat(slurmdbd_conf->archive_script, &buf) < 0) 
+			fatal("Failed to stat the archive script %s: %m",
+			      slurmdbd_conf->archive_dir);
+
+		if (!(buf.st_mode & S_IFREG)) 
+			fatal("archive script %s isn't a regular file",
+			      slurmdbd_conf->archive_script);
+		
+		if (access(slurmdbd_conf->archive_script, X_OK) < 0) 
+			fatal("archive script %s is not executable",
+			      slurmdbd_conf->archive_script);
+	}
+		
 	slurm_mutex_unlock(&conf_mutex);
 	return SLURM_SUCCESS;
 }

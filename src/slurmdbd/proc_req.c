@@ -765,7 +765,7 @@ static int _archive_dump(slurmdbd_conn_t *slurmdbd_conn,
 {
 	int rc = SLURM_SUCCESS;
 	dbd_cond_msg_t *get_msg = NULL;
-	char *comment = NULL;
+	char *comment = "SUCCESS";
 	acct_archive_cond_t *arch_cond = NULL;
 
 	debug2("DBD_ARCHIVE_DUMP: called");
@@ -788,10 +788,10 @@ static int _archive_dump(slurmdbd_conn_t *slurmdbd_conn,
 	}
 	arch_cond = (acct_archive_cond_t *)get_msg->cond;
 	/* set up some defaults */
-	if(arch_cond->archive_jobs == (uint16_t)NO_VAL)
-		arch_cond->archive_jobs = slurmdbd_conf->archive_jobs;
 	if(!arch_cond->archive_dir)
 		arch_cond->archive_dir = xstrdup(slurmdbd_conf->archive_dir);
+	if(arch_cond->archive_jobs == (uint16_t)NO_VAL)
+		arch_cond->archive_jobs = slurmdbd_conf->archive_jobs;
 	if(!arch_cond->archive_script)
 		arch_cond->archive_script = 
 			xstrdup(slurmdbd_conf->archive_script);
@@ -801,7 +801,7 @@ static int _archive_dump(slurmdbd_conn_t *slurmdbd_conn,
 		arch_cond->job_purge = slurmdbd_conf->job_purge;
 	if(arch_cond->step_purge == (uint16_t)NO_VAL)
 		arch_cond->step_purge = slurmdbd_conf->step_purge;
-	
+
 	rc = jobacct_storage_g_archive(slurmdbd_conn->db_conn, arch_cond);
 
 end_it:
@@ -817,7 +817,7 @@ static int _archive_load(slurmdbd_conn_t *slurmdbd_conn,
 {
 	int rc = SLURM_SUCCESS;
 	acct_archive_rec_t *arch_rec = NULL;
-	char *comment = NULL;
+	char *comment = "SUCCESS";
 
 	debug2("DBD_ARCHIVE_LOAD: called");
 	if((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)

@@ -459,10 +459,10 @@ typedef struct {
 } acct_hierarchical_rec_t;
 
 typedef struct {
+	char *archive_dir;     /* location to place archive file */
 	uint16_t archive_jobs; /* whether or not to keep an archive
 				  file of jobs that can be loaded
 				  later */
-	char *archive_dir;     /* location to place archive file */
 	char *archive_script;  /* script to run instead of default
 				  actions */
 	uint16_t archive_steps; /* whether or not to keep an archive

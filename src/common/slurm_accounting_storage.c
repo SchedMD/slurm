@@ -5035,8 +5035,8 @@ extern void pack_acct_archive_cond(void *in, uint16_t rpc_version, Buf buffer)
 	acct_archive_cond_t *object = (acct_archive_cond_t *)in;	
 	
 	if(!object) {
-		pack16((uint16_t)NO_VAL, buffer);
 		packnull(buffer);
+		pack16((uint16_t)NO_VAL, buffer);
 		packnull(buffer);
 		pack16((uint16_t)NO_VAL, buffer);
 		pack_acct_job_cond(NULL, rpc_version, buffer);
@@ -5045,8 +5045,8 @@ extern void pack_acct_archive_cond(void *in, uint16_t rpc_version, Buf buffer)
 		return;
 	}
 
-	pack16(object->archive_jobs, buffer);
 	packstr(object->archive_dir, buffer);
+	pack16(object->archive_jobs, buffer);
 	packstr(object->archive_script, buffer);
 	pack16(object->archive_steps, buffer);
 	pack_acct_job_cond(object->job_cond, rpc_version, buffer);
@@ -5063,8 +5063,8 @@ extern int unpack_acct_archive_cond(void **object, uint16_t rpc_version,
 
 	*object = object_ptr;
 
-	safe_unpack16(&object_ptr->archive_jobs, buffer);
 	safe_unpackstr_xmalloc(&object_ptr->archive_dir, &uint32_tmp, buffer);
+	safe_unpack16(&object_ptr->archive_jobs, buffer);
 	safe_unpackstr_xmalloc(&object_ptr->archive_script,
 			       &uint32_tmp, buffer);
 	safe_unpack16(&object_ptr->archive_steps, buffer);
