@@ -350,7 +350,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 						      argv[i]+end);
 		} else if (!strncasecmp (argv[i], "Description", 
 					 MAX(command_len, 1))) {
-			acct->description =  strip_quotes(argv[i]+end, NULL);
+			acct->description =  strip_quotes(argv[i]+end, NULL, 1);
 			u_set = 1;
 		} else if (!strncasecmp (argv[i], "FairShare", 
 					 MAX(command_len, 1))) {
@@ -462,13 +462,13 @@ static int _set_rec(int *start, int argc, char *argv[],
 			}
 		} else if (!strncasecmp (argv[i], "Organization", 
 					 MAX(command_len, 1))) {
-			acct->organization = strip_quotes(argv[i]+end, NULL);
+			acct->organization = strip_quotes(argv[i]+end, NULL, 1);
 			u_set = 1;
 		} else if (!strncasecmp (argv[i], "Parent",
 					 MAX(command_len, 1))) {
 			if(!assoc)
 				continue;
-			assoc->parent_acct = strip_quotes(argv[i]+end, NULL);
+			assoc->parent_acct = strip_quotes(argv[i]+end, NULL, 1);
 			a_set = 1;
 		} else if (!strncasecmp (argv[i], "QosLevel", 
 					 MAX(command_len, 1))) {

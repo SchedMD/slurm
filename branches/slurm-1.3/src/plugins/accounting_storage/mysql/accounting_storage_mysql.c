@@ -10018,7 +10018,7 @@ extern List jobacct_storage_p_get_jobs_cond(mysql_conn_t *mysql_conn,
  * expire old info from the storage 
  */
 extern int jobacct_storage_p_archive(mysql_conn_t *mysql_conn, 
-				      acct_archive_cond_t *arch_cond)
+				     acct_archive_cond_t *arch_cond)
 {
 #ifdef HAVE_MYSQL
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)

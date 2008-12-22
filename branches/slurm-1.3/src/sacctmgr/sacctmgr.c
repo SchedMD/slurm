@@ -56,8 +56,9 @@ int with_assoc_flag = 0;
 void *db_conn = NULL;
 uint32_t my_uid = 0;
 
-static void	_show_it (int argc, char *argv[]);
 static void	_add_it (int argc, char *argv[]);
+static void	_archive_it (int argc, char *argv[]);
+static void	_show_it (int argc, char *argv[]);
 static void	_modify_it (int argc, char *argv[]);
 static void	_delete_it (int argc, char *argv[]);
 static int	_get_command (int *argc, char *argv[]);
@@ -352,18 +353,12 @@ _process_command (int argc, char *argv[])
 	} 
 
 	command_len = strlen(argv[0]);
-
-	if (strncasecmp (argv[0], "associations", MAX(command_len, 3)) == 0) {
+	
+	if (strncasecmp (argv[0], "associations", 
+			 MAX(command_len, 3)) == 0) {
 		with_assoc_flag = 1;
 	} else if (strncasecmp (argv[0], "dump", MAX(command_len, 3)) == 0) {
-		if (argc < 2) {
-			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr, 
-				        "too few arguments for keyword:%s\n", 
-				        argv[0]);
-		} else
-			sacctmgr_dump_cluster((argc - 1), &argv[1]);
+		sacctmgr_dump_cluster((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "help", MAX(command_len, 2)) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
@@ -373,14 +368,7 @@ _process_command (int argc, char *argv[])
 		}
 		_usage ();
 	} else if (strncasecmp (argv[0], "load", MAX(command_len, 2)) == 0) {
-		if (argc < 2) {
-			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr, 
-				        "too few arguments for keyword:%s\n", 
-				        argv[0]);
-		} else
-			load_sacctmgr_cfg_file((argc - 1), &argv[1]);
+		load_sacctmgr_cfg_file((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "oneliner", 
 				MAX(command_len, 1)) == 0) {
 		if (argc > 1) {
@@ -410,43 +398,20 @@ _process_command (int argc, char *argv[])
 	} else if ((strncasecmp (argv[0], "add", MAX(command_len, 3)) == 0) ||
 		   (strncasecmp (argv[0], "create",
 				 MAX(command_len, 3)) == 0)) {
-		if (argc < 2) {
-			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr, 
-				        "too few arguments for keyword:%s\n", 
-				        argv[0]);
-		} else
-			_add_it((argc - 1), &argv[1]);
+		_add_it((argc - 1), &argv[1]);
+	} else if ((strncasecmp (argv[0], "archive",
+				 MAX(command_len, 3)) == 0)) {
+		_archive_it((argc - 1), &argv[1]);
 	} else if ((strncasecmp (argv[0], "show", MAX(command_len, 3)) == 0) ||
 		   (strncasecmp (argv[0], "list", MAX(command_len, 3)) == 0)) {
-		if (argc < 2) {
-			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr, 
-				        "too few arguments for keyword:%s\n", 
-				        argv[0]);
-		} else 
-			_show_it((argc - 1), &argv[1]);
+		_show_it((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "modify", MAX(command_len, 1)) == 0) {
-		if (argc < 2) {
-			exit_code = 1;
-			fprintf (stderr, "too few arguments for %s keyword\n",
-				 argv[0]);
-			return 0;
-		} else 		
-			_modify_it((argc - 1), &argv[1]);
+		_modify_it((argc - 1), &argv[1]);
 	} else if ((strncasecmp (argv[0], "delete",
 				 MAX(command_len, 3)) == 0) ||
 		   (strncasecmp (argv[0], "remove",
 				 MAX(command_len, 3)) == 0)) {
-		if (argc < 2) {
-			exit_code = 1;
-			fprintf (stderr, "too few arguments for %s keyword\n",
-				 argv[0]);
-			return 0;
-		} else 
-			_delete_it((argc - 1), &argv[1]);
+		_delete_it((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "verbose", MAX(command_len, 4)) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
@@ -508,7 +473,7 @@ _process_command (int argc, char *argv[])
 static void _add_it (int argc, char *argv[]) 
 {
 	int error_code = SLURM_SUCCESS;
-	int command_len = strlen(argv[0]);
+	int command_len = 0;
 
 	if(readonly_flag) {
 		exit_code = 1;
@@ -516,9 +481,13 @@ static void _add_it (int argc, char *argv[])
 		return;		
 	}
 
+	if(!argv[0])
+		goto helpme;
+
+	command_len = strlen(argv[0]);
 	/* reset the connection to get the most recent stuff */
 	acct_storage_g_commit(db_conn, 0);
-
+	
 	/* First identify the entity to add */
 	if (strncasecmp (argv[0], "Account", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_add_account((argc - 1), &argv[1]);
@@ -532,11 +501,53 @@ static void _add_it (int argc, char *argv[])
 	} else if (strncasecmp (argv[0], "User", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_add_user((argc - 1), &argv[1]);
 	} else {
+	helpme:
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in add command\n");
 		fprintf(stderr, "Input line must include, ");
 		fprintf(stderr, "\"Account\", \"Cluster\", \"Coordinator\", ");
 		fprintf(stderr, "\"QOS\", or \"User\"\n");
+	}
+	
+	if (error_code == SLURM_ERROR) {
+		exit_code = 1;
+	}
+}
+
+/* 
+ * _archive_it - archive the entity per the supplied arguments 
+ * IN argc - count of arguments
+ * IN argv - list of arguments
+ */
+static void _archive_it (int argc, char *argv[]) 
+{
+	int error_code = SLURM_SUCCESS;
+	int command_len = 0;
+
+	if(readonly_flag) {
+		exit_code = 1;
+		fprintf(stderr, "Can't run this command in readonly mode.\n");
+		return;		
+	}
+
+	if(!argv[0])
+		goto helpme;
+
+	command_len = strlen(argv[0]);
+	/* reset the connection to get the most recent stuff */
+	acct_storage_g_commit(db_conn, 0);
+	
+	/* First identify the entity to add */
+	if (strncasecmp (argv[0], "dump", MAX(command_len, 1)) == 0) {
+		error_code = sacctmgr_archive_dump((argc - 1), &argv[1]);
+	} else if (strncasecmp (argv[0], "load", MAX(command_len, 1)) == 0) {
+		error_code = sacctmgr_archive_load((argc - 1), &argv[1]);
+	} else {
+	helpme:
+		exit_code = 1;
+		fprintf(stderr, "No valid entity in archive command\n");
+		fprintf(stderr, "Input line must include, ");
+		fprintf(stderr, "\"Dump\", or \"load\"\n");
 	}
 	
 	if (error_code == SLURM_ERROR) {
@@ -554,8 +565,13 @@ static void _add_it (int argc, char *argv[])
 static void _show_it (int argc, char *argv[]) 
 {
 	int error_code = SLURM_SUCCESS;
-	int command_len = strlen(argv[0]);
-		
+	int command_len = 0;
+
+	if(!argv[0])
+		goto helpme;
+
+	command_len = strlen(argv[0]);
+
 	/* reset the connection to get the most recent stuff */
 	acct_storage_g_commit(db_conn, 0);
 
@@ -578,6 +594,7 @@ static void _show_it (int argc, char *argv[])
 	} else if (strncasecmp (argv[0], "WCKeys", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_list_wckey((argc - 1), &argv[1]);
 	} else {
+	helpme:
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in list command\n");
 		fprintf(stderr, "Input line must include ");
@@ -600,7 +617,7 @@ static void _show_it (int argc, char *argv[])
 static void _modify_it (int argc, char *argv[]) 
 {
 	int error_code = SLURM_SUCCESS;
-	int command_len = strlen(argv[0]);
+	int command_len = 0;
 
 	if(readonly_flag) {
 		exit_code = 1;
@@ -608,6 +625,10 @@ static void _modify_it (int argc, char *argv[])
 		return;		
 	}
 
+	if(!argv[0])
+		goto helpme;
+
+	command_len = strlen(argv[0]);
 	/* reset the connection to get the most recent stuff */
 	acct_storage_g_commit(db_conn, 0);
 
@@ -620,6 +641,7 @@ static void _modify_it (int argc, char *argv[])
 	} else if (strncasecmp (argv[0], "Users", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_modify_user((argc - 1), &argv[1]);
 	} else {
+	helpme:
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in modify command\n");
 		fprintf(stderr, "Input line must include ");
@@ -639,7 +661,7 @@ static void _modify_it (int argc, char *argv[])
 static void _delete_it (int argc, char *argv[]) 
 {
 	int error_code = SLURM_SUCCESS;
-	int command_len = strlen(argv[0]);
+	int command_len = 0;
 
 	if(readonly_flag) {
 		exit_code = 1;
@@ -647,6 +669,10 @@ static void _delete_it (int argc, char *argv[])
 		return;		
 	}
 
+	if(!argv[0])
+		goto helpme;
+
+	command_len = strlen(argv[0]);
 	/* reset the connection to get the most recent stuff */
 	acct_storage_g_commit(db_conn, 0);
 
@@ -664,6 +690,7 @@ static void _delete_it (int argc, char *argv[])
 	} else if (strncasecmp (argv[0], "Users", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_delete_user((argc - 1), &argv[1]);
 	} else {
+	helpme:
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in delete command\n");
 		fprintf(stderr, "Input line must include ");
@@ -699,6 +726,9 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                                                                            \n\
     Valid <COMMAND> values are:                                            \n\
      add <ENTITY> <SPECS>     add entity                                   \n\
+     archive <DUMP/LOAD> <SPECS>                                           \n\
+                              Archive past jobs and/or steps, or load them \n\
+                              back into the databse.                       \n\
      associations             when using show/list will list the           \n\
                               associations associated with the entity.     \n\
      delete <ENTITY> <SPECS>  delete the specified entity(s)               \n\
@@ -806,6 +836,11 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                                                                            \n\
        list wckey         - Clusters=, End=, Format=, IDs=, Names=,        \n\
                             Start=, User=, and WCKeys=                     \n\
+                                                                           \n\
+       archive dump       - Directory=, Jobs, PurgeJobsBefore=,            \n\
+                            PurgeStepsBefore=, Script=, and Steps          \n\
+                                                                           \n\
+       archive load       - File=, or Insert=                              \n\
                                                                            \n\
   Format options are different for listing each entity pair.               \n\
                                                                            \n\

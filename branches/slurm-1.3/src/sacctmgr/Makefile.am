@@ -13,6 +13,7 @@ sacctmgr_LDADD =  \
 
 sacctmgr_SOURCES =	\
 	account_functions.c	\
+	archive_functions.c	\
 	association_functions.c	\
 	cluster_functions.c	\
 	common.c                \

@@ -121,7 +121,7 @@ extern int parse_option_end(char *option)
 }
 
 /* you need to xfree whatever is sent from here */
-extern char *strip_quotes(char *option, int *increased)
+extern char *strip_quotes(char *option, int *increased, bool make_lower)
 {
 	int end = 0;
 	int i=0, start=0;
@@ -146,7 +146,7 @@ extern char *strip_quotes(char *option, int *increased)
 			break;
 		} else if(option[i] == '\"' || option[i] == '\'')
 			option[i] = '`';
-		else {
+		else if(make_lower) {
 			char lower = tolower(option[i]);
 			if(lower != option[i])
 				option[i] = lower;
@@ -584,9 +584,10 @@ extern int get_uint(char *in_value, uint32_t *out_value, char *type)
 	char *ptr = NULL, *meat = NULL;
 	long num;
 	
-	if(!(meat = strip_quotes(in_value, NULL)))
+	if(!(meat = strip_quotes(in_value, NULL, 1))) {
+		error("Problem with strip_quotes");
 		return SLURM_ERROR;
-
+	}
 	num = strtol(meat, &ptr, 10);
 	if ((num == 0) && ptr && ptr[0]) {
 		error("Invalid value for %s (%s)", type, meat);
@@ -602,13 +603,40 @@ extern int get_uint(char *in_value, uint32_t *out_value, char *type)
 	return SLURM_SUCCESS;
 }
 
+extern int get_uint16(char *in_value, uint16_t *out_value, char *type)
+{
+	char *ptr = NULL, *meat = NULL;
+	long num;
+	
+	if(!(meat = strip_quotes(in_value, NULL, 1))) {
+		error("Problem with strip_quotes");
+		return SLURM_ERROR;
+	}
+
+	num = strtol(meat, &ptr, 10);
+	if ((num == 0) && ptr && ptr[0]) {
+		error("Invalid value for %s (%s)", type, meat);
+		xfree(meat);
+		return SLURM_ERROR;
+	}
+	xfree(meat);
+	
+	if (num < 0)
+		*out_value = (uint16_t) INFINITE; /* flag to clear */
+	else
+		*out_value = (uint16_t) num;
+	return SLURM_SUCCESS;
+}
+
 extern int get_uint64(char *in_value, uint64_t *out_value, char *type)
 {
 	char *ptr = NULL, *meat = NULL;
 	long long num;
 	
-	if(!(meat = strip_quotes(in_value, NULL)))
+	if(!(meat = strip_quotes(in_value, NULL, 1))) {
+		error("Problem with strip_quotes");
 		return SLURM_ERROR;
+	}
 
 	num = strtoll(meat, &ptr, 10);
 	if ((num == 0) && ptr && ptr[0]) {
