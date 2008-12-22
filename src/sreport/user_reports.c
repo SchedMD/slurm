@@ -408,11 +408,11 @@ extern int user_top(int argc, char *argv[])
 
 	list_iterator_reset(cluster_itr);
 	while((sreport_cluster = list_next(cluster_itr))) {
+		int count = 0;
 		list_sort(sreport_cluster->user_list, (ListCmpF)sort_user_dec);
 	
 		itr = list_iterator_create(sreport_cluster->user_list);
 		while((sreport_user = list_next(itr))) {
-			int count = 0;
 			int curr_inx = 1;
 			while((field = list_next(itr2))) {
 				char *tmp_char = NULL;

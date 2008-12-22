@@ -2231,6 +2231,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	job_ptr = *job_pptr;
 	job_ptr->assoc_id = assoc_rec.id;
 	job_ptr->assoc_ptr = (void *) assoc_ptr;
+
 	if (update_job_dependency(job_ptr, job_desc->dependency)) {
 		error_code = ESLURM_DEPENDENCY;
 		goto cleanup_fail;
@@ -3868,6 +3869,16 @@ static bool _top_priority(struct job_record *job_ptr)
 				continue;
 			if (!job_independent(job_ptr2))
 				continue;
+			if (job_ptr2->part_ptr == job_ptr->part_ptr) {
+				/* same partition */
+				if (job_ptr2->priority <= job_ptr->priority)
+					continue;
+				top = false;
+				break;
+			}
+			if (bit_overlap(job_ptr->part_ptr->node_bitmap,
+				        job_ptr2->part_ptr->node_bitmap) == 0)
+				continue;   /* no node overlap in partitions */
 			if ((job_ptr2->part_ptr->priority > 
 			     job_ptr ->part_ptr->priority) ||
 			    ((job_ptr2->part_ptr->priority ==
@@ -5954,10 +5965,22 @@ extern int job_cancel_by_assoc_id(uint32_t assoc_id)
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if ((job_ptr->assoc_id != assoc_id) || 
-		    IS_JOB_FINISHED(job_ptr))
+		if (job_ptr->assoc_id != assoc_id)
 			continue;
-		job_ptr->assoc_ptr = NULL;
+
+		/* move up to the parent that should still exist */
+		if(job_ptr->assoc_ptr) {
+			job_ptr->assoc_ptr =
+				((acct_association_rec_t *)
+				 job_ptr->assoc_ptr)->parent_assoc_ptr;
+			if(job_ptr->assoc_ptr)
+				job_ptr->assoc_id = ((acct_association_rec_t *)
+						     job_ptr->assoc_ptr)->id;
+		} 
+
+		if(IS_JOB_FINISHED(job_ptr))
+			continue;
+
 		info("Association deleted, cancelling job %u", 
 		     job_ptr->job_id);
 		job_signal(job_ptr->job_id, SIGKILL, 0, 0);
