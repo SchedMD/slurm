@@ -4,6 +4,8 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 1.3.13
 =========================
  -- Improve efficiency of scheduling jobs into partitions which do not overlap.
+ -- Fixed sreport user top report to only display the limit specified 
+    instead of all users.
 
 * Changes in SLURM 1.3.12
 =========================
