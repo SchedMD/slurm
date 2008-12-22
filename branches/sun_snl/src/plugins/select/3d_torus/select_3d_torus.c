@@ -99,6 +99,12 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			  uint32_t min_nodes, uint32_t max_nodes, 
 			  int max_share, uint32_t req_nodes);
 
+struct node_select_struct {	/* Used to select nodes for a job */
+	uint16_t avail_tasks;	/* Tasks available to this job */
+	int      distance;	/* Distance from focal point */
+	int      index;		/* Index into node table */
+};
+
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -255,19 +261,6 @@ static inline bool _cr_priority_selection_enabled(void)
 	
 }
 
-static bool _enough_nodes(int avail_nodes, int rem_nodes, 
-		uint32_t min_nodes, uint32_t req_nodes)
-{
-	int needed_nodes;
-
-	if (req_nodes > min_nodes)
-		needed_nodes = rem_nodes + min_nodes - req_nodes;
-	else
-		needed_nodes = rem_nodes;
-
-	return(avail_nodes >= needed_nodes);
-}
-
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
@@ -359,14 +352,14 @@ extern int select_p_block_init(List part_list)
 }
 
 /*
- * _get_avail_cpus - Get the number of "available" cpus on a node
+ * _get_avail_tasks - Get the number of "available" cpus on a node
  *	given this number given the number of cpus_per_task and
  *	maximum sockets, cores, threads.  Note that the value of
  *	cpus is the lowest-level logical processor (LLLP).
  * IN job_ptr - pointer to job being scheduled
  * IN index - index of node's configuration information in select_node_ptr
  */
-static uint16_t _get_avail_cpus(struct job_record *job_ptr, int index)
+static uint16_t _get_avail_tasks(struct job_record *job_ptr, int index)
 {
 	struct node_record *node_ptr;
 	uint16_t avail_cpus;
@@ -832,227 +825,142 @@ static int _find_job_mate(struct job_record *job_ptr, bitstr_t *bitmap,
 	return EINVAL;
 }
 
+static int _node_sort_by_distance(void *x, void *y)
+{
+	struct node_select_struct *x_ptr = (struct node_select_struct *) x;
+	struct node_select_struct *y_ptr = (struct node_select_struct* ) y;
+	return (int) (x_ptr->distance - y_ptr->distance);
+}
+static void _node_rec_delete(void *x)
+{
+	xfree(x);
+}
+
+
 /* _job_test - does most of the real work for select_p_job_test(), which 
- *	pretty much just handles load-leveling and max_share logic */
+ *	pretty much just handles load-leveling and max_share logic. We 
+ *	select the "best" nodes to use for this job from those currently
+ *	available. We satisfy specific nodes required by the job, minimum 
+ *	and maximum node count (try to give up to maximum if possible), 
+ *	and the processor count. */
 static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			uint32_t min_nodes, uint32_t max_nodes, 
 			uint32_t req_nodes)
 {
-	int i, index, error_code = EINVAL, sufficient;
-	int *consec_nodes;	/* how many nodes we can add from this 
-				 * consecutive set of nodes */
-	int *consec_cpus;	/* how many nodes we can add from this 
-				 * consecutive set of nodes */
-	int *consec_start;	/* where this consecutive set starts (index) */
-	int *consec_end;	/* where this consecutive set ends (index) */
-	int *consec_req;	/* are nodes from this set required 
-				 * (in req_bitmap) */
-	int consec_index, consec_size;
-	int rem_cpus, rem_nodes;	/* remaining resources desired */
-	int best_fit_nodes, best_fit_cpus, best_fit_req;
-	int best_fit_location = 0, best_fit_sufficient;
-	int avail_cpus, alloc_cpus = 0;
+	int i, i_first, i_last;
+	int avail_tasks, alloc_tasks = 0;
+	int rem_tasks, rem_nodes;	/* remaining resources desired */
+	int error_code = EINVAL;
+	int delta_x, delta_y, delta_z;
+	uint16_t focus_x, focus_y, focus_z;
+	struct node_select_struct *node_select_ptr = NULL;
+	List node_list = NULL;
+	ListIterator iter;
 
 	if ((job_ptr->details->req_node_bitmap) &&
 	    (!bit_super_set(job_ptr->details->req_node_bitmap, bitmap)))
-		return error_code;
+		return error_code;	/* Required nodes not available now */
 
-	consec_index = 0;
-	consec_size  = 50;	/* start allocation for 50 sets of 
-				 * consecutive nodes */
-	consec_cpus  = xmalloc(sizeof(int) * consec_size);
-	consec_nodes = xmalloc(sizeof(int) * consec_size);
-	consec_start = xmalloc(sizeof(int) * consec_size);
-	consec_end   = xmalloc(sizeof(int) * consec_size);
-	consec_req   = xmalloc(sizeof(int) * consec_size);
-
-
-	/* Build table with information about sets of consecutive nodes */
-	consec_cpus[consec_index] = consec_nodes[consec_index] = 0;
-	consec_req[consec_index] = -1;	/* no required nodes here by default */
-	rem_cpus = job_ptr->num_procs;
+	rem_tasks = job_ptr->num_procs;
 	if (req_nodes > min_nodes)
 		rem_nodes = req_nodes;
 	else
 		rem_nodes = min_nodes;
 
-	for (index = 0; index < select_node_cnt; index++) {
-		if (bit_test(bitmap, index)) {
-			if (consec_nodes[consec_index] == 0)
-				consec_start[consec_index] = index;
+	/* This is a very simple algorithm for now that picks one node as
+	 * a focus point, then picks additional nodes from those available
+	 * in order of minimum distance from that focus point. The focus
+	 * point will be the first required node (if any) or the first 
+	 * available node. This logic does not take into consideration 
+	 * network connections that wrap from one side of the machine
+	 * to the other (e.g. X=0 and X=7 might be logically adjacent). */
+	if (job_ptr->details->req_node_bitmap)
+		i_first = bit_ffs(job_ptr->details->req_node_bitmap);
+	else
+		i_first = bit_ffs(bitmap);
+	focus_x = node_cr_ptr[i_first].x_coord;
+	focus_y = node_cr_ptr[i_first].y_coord;
+	focus_z = node_cr_ptr[i_first].z_coord;
+	if (job_ptr->details->req_node_bitmap)
+		i_first = bit_ffs(bitmap);
+	i_last = bit_fls(bitmap);
+	node_list = list_create(_node_rec_delete);
 
-			avail_cpus = _get_avail_cpus(job_ptr, index);
+	/* Identify any specific required nodes. 
+	 * Identify distance from focus for other available nodes */
+	for (i=i_first; i<=i_last; i++) {
+		if (bit_test(bitmap, i)) {
+			avail_tasks = _get_avail_tasks(job_ptr, i);
 
-			if (job_ptr->details->req_node_bitmap
-			&&  bit_test(job_ptr->details->req_node_bitmap, index)
-			&&  (max_nodes > 0)) {
-				if (consec_req[consec_index] == -1) {
-					/* first required node in set */
-					consec_req[consec_index] = index;
-				}
-				rem_cpus   -= avail_cpus;
-				alloc_cpus += avail_cpus;
+			if (job_ptr->details->req_node_bitmap &&
+			    bit_test(job_ptr->details->req_node_bitmap, i) &&
+			    (max_nodes > 0)) {
+				rem_tasks   -= avail_tasks;
+				alloc_tasks += avail_tasks;
 				rem_nodes--;
 				max_nodes--;
 			} else {	 /* node not required (yet) */
-				bit_clear(bitmap, index); 
-				consec_cpus[consec_index] += avail_cpus;
-				consec_nodes[consec_index]++;
+				bit_clear(bitmap, i); 
+				node_select_ptr = xmalloc(sizeof(struct 
+							  node_select_struct));
+				node_select_ptr->index = i;
+				node_select_ptr->avail_tasks = avail_tasks;
+				if (focus_x > node_cr_ptr[i].x_coord)
+					delta_x = focus_x -
+						  node_cr_ptr[i].x_coord;
+				else
+					delta_x = node_cr_ptr[i].x_coord -
+						  focus_x;
+				if (focus_y > node_cr_ptr[i].y_coord)
+					delta_y = focus_y -
+						  node_cr_ptr[i].y_coord;
+				else
+					delta_y = node_cr_ptr[i].y_coord -
+						  focus_y;
+				if (focus_z > node_cr_ptr[i].z_coord)
+					delta_z = focus_z - 
+						  node_cr_ptr[i].z_coord;
+				else
+					delta_z = node_cr_ptr[i].z_coord -
+						  focus_z;
+				node_select_ptr->distance = delta_x + delta_y +
+							    delta_z;
+				if (!list_append(node_list, node_select_ptr))
+					fatal("malloc failure");
 			}
-		} else if (consec_nodes[consec_index] == 0) {
-			consec_req[consec_index] = -1;
-			/* already picked up any required nodes */
-			/* re-use this record */
-		} else {
-			consec_end[consec_index] = index - 1;
-			if (++consec_index >= consec_size) {
-				consec_size *= 2;
-				xrealloc(consec_cpus,
-					 sizeof(int) * consec_size);
-				xrealloc(consec_nodes,
-					 sizeof(int) * consec_size);
-				xrealloc(consec_start,
-					 sizeof(int) * consec_size);
-				xrealloc(consec_end,
-					 sizeof(int) * consec_size);
-				xrealloc(consec_req,
-					 sizeof(int) * consec_size);
-			}
-			consec_cpus[consec_index] = 0;
-			consec_nodes[consec_index] = 0;
-			consec_req[consec_index] = -1;
 		}
 	}
-	if (consec_nodes[consec_index] != 0)
-		consec_end[consec_index++] = index - 1;
 
-#if SELECT_DEBUG
-	/* don't compile this, slows things down too much */
-	debug3("rem_cpus=%d, rem_nodes=%d", rem_cpus, rem_nodes);
-	for (i = 0; i < consec_index; i++) {
-		if (consec_req[i] != -1)
-			debug3
-			    ("start=%s, end=%s, nodes=%d, cpus=%d, req=%s",
-			     select_node_ptr[consec_start[i]].name,
-			     select_node_ptr[consec_end[i]].name,
-			     consec_nodes[i], consec_cpus[i],
-			     select_node_ptr[consec_req[i]].name);
-		else
-			debug3("start=%s, end=%s, nodes=%d, cpus=%d",
-			       select_node_ptr[consec_start[i]].name,
-			       select_node_ptr[consec_end[i]].name,
-			       consec_nodes[i], consec_cpus[i]);
-	}
-#endif
-
-	/* accumulate nodes from these sets of consecutive nodes until */
-	/*   sufficient resources have been accumulated */
-	while (consec_index && (max_nodes > 0)) {
-		best_fit_cpus = best_fit_nodes = best_fit_sufficient = 0;
-		best_fit_req = -1;	/* first required node, -1 if none */
-		for (i = 0; i < consec_index; i++) {
-			if (consec_nodes[i] == 0)
-				continue;
-			sufficient = (consec_cpus[i] >= rem_cpus)
-			&& _enough_nodes(consec_nodes[i], rem_nodes,
-					 min_nodes, req_nodes);
-
-			/* if first possibility OR */
-			/* contains required nodes OR */
-			/* first set large enough for request OR */
-			/* tightest fit (less resource waste) OR */
-			/* nothing yet large enough, but this is biggest */
-			if ((best_fit_nodes == 0) ||	
-			    ((best_fit_req == -1) && (consec_req[i] != -1)) ||
-			    (sufficient && (best_fit_sufficient == 0)) ||
-			    (sufficient && (consec_cpus[i] < best_fit_cpus)) ||	
-			    ((sufficient == 0) && 
-			     (consec_cpus[i] > best_fit_cpus))) {
-				best_fit_cpus = consec_cpus[i];
-				best_fit_nodes = consec_nodes[i];
-				best_fit_location = i;
-				best_fit_req = consec_req[i];
-				best_fit_sufficient = sufficient;
-			}
-		}
-		if (best_fit_nodes == 0)
-			break;
-		if (job_ptr->details->contiguous && 
-		    ((best_fit_cpus < rem_cpus) ||
-		     (!_enough_nodes(best_fit_nodes, rem_nodes, 
-				     min_nodes, req_nodes))))
-			break;	/* no hole large enough */
-		if (best_fit_req != -1) {
-			/* This collection of nodes includes required ones
-			 * select nodes from this set, first working up
-			 * then down from the required nodes */
-			for (i = best_fit_req;
-			     i <= consec_end[best_fit_location]; i++) {
-				if ((max_nodes <= 0)
-				||  ((rem_nodes <= 0) && (rem_cpus <= 0)))
-					break;
-				if (bit_test(bitmap, i))
-					continue;
-				bit_set(bitmap, i);
-				rem_nodes--;
-				max_nodes--;
-				avail_cpus = _get_avail_cpus(job_ptr, i);
-				rem_cpus   -= avail_cpus;
-				alloc_cpus += avail_cpus;
-			}
-			for (i = (best_fit_req - 1);
-			     i >= consec_start[best_fit_location]; i--) {
-				if ((max_nodes <= 0)
-				||  ((rem_nodes <= 0) && (rem_cpus <= 0)))
-					break;
-				if (bit_test(bitmap, i)) 
-					continue;
-				bit_set(bitmap, i);
-				rem_nodes--;
-				max_nodes--;
-				avail_cpus = _get_avail_cpus(job_ptr, i);
-				rem_cpus   -= avail_cpus;
-				alloc_cpus += avail_cpus;
-			}
-		} else {
-			for (i = consec_start[best_fit_location];
-			     i <= consec_end[best_fit_location]; i++) {
-				if ((max_nodes <= 0)
-				||  ((rem_nodes <= 0) && (rem_cpus <= 0)))
-					break;
-				if (bit_test(bitmap, i))
-					continue;
-				bit_set(bitmap, i);
-				rem_nodes--;
-				max_nodes--;
-				avail_cpus = _get_avail_cpus(job_ptr, i);
-				rem_cpus   -= avail_cpus;
-				alloc_cpus += avail_cpus;
-			}
-		}
-		if (job_ptr->details->contiguous || 
-		    ((rem_nodes <= 0) && (rem_cpus <= 0))) {
-			error_code = SLURM_SUCCESS;
-			break;
-		}
-		consec_cpus[best_fit_location] = 0;
-		consec_nodes[best_fit_location] = 0;
-	}
-
-	if (error_code && (rem_cpus <= 0)
-	&&  _enough_nodes(0, rem_nodes, min_nodes, req_nodes)) {
+	if ((rem_nodes <= 0) && (rem_tasks <= 0)) {
 		error_code = SLURM_SUCCESS;
+	} else {
+		/* If nodes needed, sort available node list and
+		 * pick nodes based upon distance */
+		list_sort(node_list, _node_sort_by_distance);
+		iter = list_iterator_create(node_list);
+		while ((max_nodes > 0) && 
+		       (node_select_ptr = (struct node_select_struct *) 
+					  list_next(iter))) {
+			bit_set(bitmap, node_select_ptr->index);
+			avail_tasks = _get_avail_tasks(job_ptr, 
+						       node_select_ptr->index);
+			rem_tasks   -= avail_tasks;
+			alloc_tasks += avail_tasks;
+			rem_nodes--;
+			max_nodes--;
+			if ((rem_nodes <= 0) && (rem_tasks <= 0)) {
+				error_code = SLURM_SUCCESS;
+				break;
+			}
+		}
+		list_iterator_destroy (iter);
 	}
+
 	if (error_code == SLURM_SUCCESS) {
 		/* job's total_procs is needed for SELECT_MODE_WILL_RUN */
-		job_ptr->total_procs = alloc_cpus;
+		job_ptr->total_procs = alloc_tasks;
 	}
-
-	xfree(consec_cpus);
-	xfree(consec_nodes);
-	xfree(consec_start);
-	xfree(consec_end);
-	xfree(consec_req);
+	list_destroy(node_list);
 	return error_code;
 }
 
@@ -1441,7 +1349,7 @@ static inline void _dump_node_cr(struct node_cr_record *node_cr_ptr)
 		return;
 
 	for (i = 0; i < select_node_cnt; i++) {
-		info("Node:%s coordinates:%u:%u:%u"
+		info("Node:%s coordinates:%u:%u:%u "
 		     "exclusive:%u alloc_mem:%u", 
 		     node_record_table_ptr[i].name,
 		     node_cr_ptr[i].x_coord,
