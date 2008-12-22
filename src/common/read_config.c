@@ -423,7 +423,9 @@ static int parse_nodename(void **dest, slurm_parser_enum_t type,
 		}
 
 		computed_procs = n->sockets * n->cores * n->threads;
-		if (n->cpus != computed_procs) {
+		if ((n->cpus != n->sockets) &&
+		    (n->cpus != n->sockets * n->cores) &&
+		    (n->cpus != computed_procs)) {
 			error("Procs (%d) doesn't match "
 			      "Sockets*CoresPerSocket*ThreadsPerCore (%u), "
 			      "resetting Procs",
