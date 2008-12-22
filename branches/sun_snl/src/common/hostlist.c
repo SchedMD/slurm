@@ -2647,9 +2647,9 @@ ssize_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 		 * this does not necessarily contain a BlueGene
 		 * host list. It could just be numeric values */
 		if (hl->hr[0]->prefix[0]) {
-			error("This node is not in bluegene format.  "
-		 	     "The suffix was %d chars in length",
-		  	    hl->hr[0]->width);
+			debug("This node is not in bluegene format.  "
+		 	      "Prefix is %s and suffix is %d chars long",
+		  	      hl->hr[0]->prefix, hl->hr[0]->width);
 		}
 		goto notbox; 
 	}
