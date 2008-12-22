@@ -58,9 +58,7 @@ static void _do_fdump(MYSQL_ROW row, int lc)
 	return;
 }
 
-extern List mysql_jobcomp_process_get_jobs(List selected_steps,
-					   List selected_parts,
-					   sacct_parameters_t *params)
+extern List mysql_jobcomp_process_get_jobs(acct_job_cond_t *job_cond)
 {
 
 	char *query = NULL;	
@@ -78,11 +76,22 @@ extern List mysql_jobcomp_process_get_jobs(List selected_steps,
 	char time_str[32];
 	time_t temp_time;
 	List job_list = list_create(jobcomp_destroy_job);
+	int fdump_flag = 0;
+
+	/* we grab the fdump only for the filetxt plug through the
+	   FDUMP_FLAG on the job_cond->duplicates variable.  We didn't
+	   add this extra field to the structure since it only applies
+	   to this plugin.
+	*/
+	if(job_cond) {
+		fdump_flag = job_cond->duplicates & FDUMP_FLAG;
+		job_cond->duplicates &= (~FDUMP_FLAG);
+	}
 		
-	if(selected_steps && list_count(selected_steps)) {
+	if(job_cond->step_list && list_count(job_cond->step_list)) {
 		set = 0;
 		xstrcat(extra, " where (");
-		itr = list_iterator_create(selected_steps);
+		itr = list_iterator_create(job_cond->step_list);
 		while((selected_step = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
@@ -96,14 +105,14 @@ extern List mysql_jobcomp_process_get_jobs(List selected_steps,
 		xstrcat(extra, ")");
 	}
 
-	if(selected_parts && list_count(selected_parts)) {
+	if(job_cond->partition_list && list_count(job_cond->partition_list)) {
 		set = 0;
 		if(extra)
 			xstrcat(extra, " && (");
 		else
 			xstrcat(extra, " where (");
 		
-		itr = list_iterator_create(selected_parts);
+		itr = list_iterator_create(job_cond->partition_list);
 		while((selected_part = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
@@ -145,7 +154,7 @@ extern List mysql_jobcomp_process_get_jobs(List selected_steps,
 	while((row = mysql_fetch_row(result))) {
 		lc++;
 
-		if (params->opt_fdump) {
+		if (fdump_flag) {
 			_do_fdump(row, lc);
 			continue;
 		}
@@ -196,10 +205,9 @@ extern List mysql_jobcomp_process_get_jobs(List selected_steps,
 	return job_list;
 }
 
-extern void mysql_jobcomp_process_archive(List selected_parts,
-					  sacct_parameters_t *params)
+extern int mysql_jobcomp_process_archive(acct_archive_cond_t *arch_cond)
 {
-	return;
+	return SLURM_SUCCESS;
 }
 
 #endif	

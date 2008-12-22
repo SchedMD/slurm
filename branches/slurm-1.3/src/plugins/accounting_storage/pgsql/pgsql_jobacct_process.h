@@ -63,9 +63,13 @@ extern char *suspend_table;
 extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
 					   acct_job_cond_t *job_cond);
 
-extern void pgsql_jobacct_process_archive(PGconn *acct_pgsql_db,
-					  List selected_parts,
-					  sacct_parameters_t *params);
+extern int pgsql_jobacct_process_archive(PGconn *acct_pgsql_db,
+					 acct_archive_cond_t *arch_cond);
+
+extern int pgsql_jobacct_process_archive_load(PGconn *acct_pgsql_db,
+					      acct_archive_rec_t *arch_rec);
+
+
 #endif
 
 #endif

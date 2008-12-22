@@ -395,6 +395,9 @@ extern Buf pack_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 					     (dbd_acct_coord_msg_t *)req->data,
 					     buffer);
 		break;
+	case DBD_ARCHIVE_LOAD:
+		pack_acct_archive_rec(req->data, rpc_version, buffer);
+		break;
 	case DBD_CLUSTER_PROCS:
 	case DBD_FLUSH_JOBS:
 		slurmdbd_pack_cluster_procs_msg(
@@ -415,6 +418,7 @@ extern Buf pack_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 	case DBD_REMOVE_QOS:
 	case DBD_REMOVE_WCKEYS:
 	case DBD_REMOVE_USERS:
+	case DBD_ARCHIVE_DUMP:
 		slurmdbd_pack_cond_msg(
 			rpc_version, req->msg_type,
 			(dbd_cond_msg_t *)req->data, buffer);
@@ -545,6 +549,9 @@ extern int unpack_slurmdbd_msg(uint16_t rpc_version,
 			rpc_version,
 			(dbd_acct_coord_msg_t **)&resp->data, buffer);
 		break;
+	case DBD_ARCHIVE_LOAD:
+		rc = unpack_acct_archive_rec(&resp->data, rpc_version, buffer);
+		break;
 	case DBD_CLUSTER_PROCS:
 	case DBD_FLUSH_JOBS:
 		rc = slurmdbd_unpack_cluster_procs_msg(
@@ -565,6 +572,7 @@ extern int unpack_slurmdbd_msg(uint16_t rpc_version,
 	case DBD_REMOVE_QOS:
 	case DBD_REMOVE_WCKEYS:
 	case DBD_REMOVE_USERS:
+	case DBD_ARCHIVE_DUMP:
 		rc = slurmdbd_unpack_cond_msg(
 			rpc_version, resp->msg_type,
 			(dbd_cond_msg_t **)&resp->data, buffer);
@@ -746,6 +754,10 @@ extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 		return DBD_REMOVE_ACCOUNTS;
 	} else if(!strcasecmp(msg_type, "Remove Account Coords")) {
 		return DBD_REMOVE_ACCOUNT_COORDS;
+	} else if(!strcasecmp(msg_type, "Archive Dump")) {
+		return DBD_ARCHIVE_DUMP;
+	} else if(!strcasecmp(msg_type, "Archive Load")) {
+		return DBD_ARCHIVE_LOAD;
 	} else if(!strcasecmp(msg_type, "Remove Associations")) {
 		return DBD_REMOVE_ASSOCS;
 	} else if(!strcasecmp(msg_type, "Remove Clusters")) {
@@ -1017,6 +1029,18 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 			return "DBD_REMOVE_ACCOUNT_COORDS";
 		} else
 			return "Remove Account Coords";
+		break;
+	case DBD_ARCHIVE_DUMP:
+		if(get_enum) {
+			return "DBD_ARCHIVE_DUMP";
+		} else
+			return "Archive Dump";
+		break;
+	case DBD_ARCHIVE_LOAD:
+		if(get_enum) {
+			return "DBD_ARCHIVE_LOAD";
+		} else
+			return "Archive Load";
 		break;
 	case DBD_REMOVE_ASSOCS:
 		if(get_enum) {
@@ -1878,6 +1902,7 @@ void inline slurmdbd_free_acct_coord_msg(uint16_t rpc_version,
 		xfree(msg);
 	}
 }
+
 void inline slurmdbd_free_cluster_procs_msg(uint16_t rpc_version, 
 					    dbd_cluster_procs_msg_t *msg)
 {
@@ -1924,6 +1949,9 @@ void inline slurmdbd_free_cond_msg(uint16_t rpc_version,
 		case DBD_GET_USERS:
 		case DBD_REMOVE_USERS:
 			my_destroy = destroy_acct_user_cond;
+			break;
+		case DBD_ARCHIVE_DUMP:
+			my_destroy = destroy_acct_archive_cond;
 			break;
 		default:
 			fatal("Unknown cond type");
@@ -2252,6 +2280,9 @@ void inline slurmdbd_pack_cond_msg(uint16_t rpc_version,
 	case DBD_GET_TXN:
 		my_function = pack_acct_txn_cond;
 		break;
+	case DBD_ARCHIVE_DUMP:
+		my_function = pack_acct_archive_cond;
+		break;
 	default:
 		fatal("Unknown pack type");
 		return;
@@ -2297,6 +2328,9 @@ int inline slurmdbd_unpack_cond_msg(uint16_t rpc_version,
 		break;
 	case DBD_GET_TXN:
 		my_function = unpack_acct_txn_cond;
+		break;
+	case DBD_ARCHIVE_DUMP:
+		my_function = unpack_acct_archive_cond;
 		break;
 	default:
 		fatal("Unknown unpack type");

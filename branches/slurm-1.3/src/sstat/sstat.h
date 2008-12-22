@@ -84,6 +84,13 @@ typedef enum {	HEADLINE,
 		JOBCOMP
 } type_t;
 
+typedef struct {
+	char *opt_field_list;	/* --fields= */
+	int opt_help;		/* --help */
+	List opt_job_list;	/* --jobs */
+	int opt_noheader;	/* can only be cleared */
+	int opt_verbose;	/* --verbose */
+} sstat_parameters_t;
 
 typedef struct fields {
 	char *name;		/* Specified in --fields= */
@@ -91,7 +98,7 @@ typedef struct fields {
 } fields_t;
 
 extern fields_t fields[];
-extern sacct_parameters_t params;
+extern sstat_parameters_t params;
 
 extern List jobs;
 

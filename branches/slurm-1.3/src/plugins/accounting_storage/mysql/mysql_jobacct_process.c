@@ -41,10 +41,308 @@
 \*****************************************************************************/
 
 #include <stdlib.h>
+#include "src/common/env.h"
 #include "src/common/xstring.h"
 #include "mysql_jobacct_process.h"
+#include <fcntl.h>
 
 #ifdef HAVE_MYSQL
+static pthread_mutex_t local_file_lock = PTHREAD_MUTEX_INITIALIZER;
+
+static int _write_to_file(int fd, char *data)
+{
+	int pos = 0, nwrite = strlen(data), amount;
+	int rc = SLURM_SUCCESS;
+
+	while (nwrite > 0) {
+		amount = write(fd, &data[pos], nwrite);
+		if ((amount < 0) && (errno != EINTR)) {
+			error("Error writing file: %m");
+			rc = errno;
+			break;
+		}
+		nwrite -= amount;
+		pos    += amount;
+	}
+	return rc;
+}
+
+static int _archive_script(acct_archive_cond_t *arch_cond, time_t last_submit)
+{
+	char * args[] = {arch_cond->archive_script, NULL};
+	const char *tmpdir;
+	struct stat st;
+	char **env = NULL;
+	struct tm time_tm;
+	time_t curr_end;
+
+#ifdef _PATH_TMP
+	tmpdir = _PATH_TMP;
+#else
+	tmpdir = "/tmp";
+#endif
+	if (stat(arch_cond->archive_script, &st) < 0) {
+		errno = errno;
+		error("mysql_jobacct_process_run_script: failed to stat %s: %m",
+		      arch_cond->archive_script);
+		return SLURM_ERROR;
+	}
+
+	if (!(st.st_mode & S_IFREG)) {
+		errno = EACCES;
+		error("mysql_jobacct_process_run_script: "
+		      "%s isn't a regular file",
+		      arch_cond->archive_script);
+		return SLURM_ERROR;
+	}
+
+	if (access(arch_cond->archive_script, X_OK) < 0) {
+		errno = EACCES;
+		error("mysql_jobacct_process_run_script: "
+		      "%s is not executable", arch_cond->archive_script);
+		return SLURM_ERROR;
+	}
+
+	env = env_array_create();
+
+	if(arch_cond->step_purge) {
+		/* use localtime to avoid any daylight savings issues */
+		if(!localtime_r(&last_submit, &time_tm)) {
+			error("Couldn't get localtime from first step start %d",
+			      last_submit);
+			return SLURM_ERROR;
+		}
+		time_tm.tm_mon -= arch_cond->step_purge;
+		time_tm.tm_isdst = -1;
+		curr_end = mktime(&time_tm);
+		env_array_append_fmt(&env, "SLURM_ARCHIVE_STEPS", "%u",
+				     arch_cond->archive_steps);
+		env_array_append_fmt(&env, "SLURM_ARCHIVE_LAST_STEP", "%d",
+				     curr_end);
+	}
+
+	if(arch_cond->job_purge) {
+		/* use localtime to avoid any daylight savings issues */
+		if(!localtime_r(&last_submit, &time_tm)) {
+			error("Couldn't get localtime from first start %d",
+			      last_submit);
+			return SLURM_ERROR;
+		}
+		time_tm.tm_mon -= arch_cond->job_purge;
+		time_tm.tm_isdst = -1;
+		curr_end = mktime(&time_tm);
+		
+		env_array_append_fmt(&env, "SLURM_ARCHIVE_JOBS", "%u",
+				     arch_cond->archive_jobs);
+		env_array_append_fmt (&env, "SLURM_ARCHIVE_LAST_JOB", "%d",
+				      curr_end);
+	}
+
+#ifdef _PATH_STDPATH
+	env_array_append (&env, "PATH", _PATH_STDPATH);
+#else
+	env_array_append (&env, "PATH", "/bin:/usr/bin");
+#endif
+	execve(arch_cond->archive_script, args, env);
+
+	env_array_free(env);
+
+	return SLURM_SUCCESS;
+}
+
+
+extern int setup_job_cond_limits(acct_job_cond_t *job_cond, char **extra)
+{
+	int set = 0;
+	ListIterator itr = NULL;
+	char *object = NULL;
+	char *table_level = "t2";
+	jobacct_selected_step_t *selected_step = NULL;
+	time_t now = time(NULL);
+
+	if(!job_cond)
+		return 0;
+	
+	/* THIS ASSOCID CHECK ALWAYS NEEDS TO BE FIRST!!!!!!! */
+	if(job_cond->associd_list && list_count(job_cond->associd_list)) {
+		set = 0;
+		xstrfmtcat(*extra, ", %s as t3 where (", assoc_table);
+		itr = list_iterator_create(job_cond->associd_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "t3.id=%s", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+		table_level="t3";
+		/* just incase the association is gone */
+		if(set) 
+			xstrcat(*extra, " || ");
+		xstrfmtcat(*extra, "t3.id is null) && "
+			   "(t2.lft between t3.lft and t3.rgt "
+			   "|| t2.lft is null)");
+	}
+
+	if(job_cond->acct_list && list_count(job_cond->acct_list)) {
+		set = 0;
+		if(*extra)
+			xstrcat(*extra, " && (");
+		else
+			xstrcat(*extra, " where (");
+		itr = list_iterator_create(job_cond->acct_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "t1.account='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+
+	if(job_cond->userid_list && list_count(job_cond->userid_list)) {
+		set = 0;
+		if(*extra)
+			xstrcat(*extra, " && (");
+		else
+			xstrcat(*extra, " where (");
+
+		itr = list_iterator_create(job_cond->userid_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "t1.uid='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+
+	if(job_cond->groupid_list && list_count(job_cond->groupid_list)) {
+		set = 0;
+		if(*extra)
+			xstrcat(*extra, " && (");
+		else
+			xstrcat(*extra, " where (");
+		itr = list_iterator_create(job_cond->groupid_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "t1.gid=", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+
+	if(job_cond->partition_list && list_count(job_cond->partition_list)) {
+		set = 0;
+		if(*extra)
+			xstrcat(*extra, " && (");
+		else
+			xstrcat(*extra, " where (");
+		itr = list_iterator_create(job_cond->partition_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "t1.partition='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+
+	if(job_cond->step_list && list_count(job_cond->step_list)) {
+		set = 0;
+		if(*extra)
+			xstrcat(*extra, " && (");
+		else
+			xstrcat(*extra, " where (");
+		itr = list_iterator_create(job_cond->step_list);
+		while((selected_step = list_next(itr))) {
+			if(set) 
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "t1.jobid=%u", selected_step->jobid);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+
+	if(job_cond->usage_start) {
+		if(!job_cond->usage_end)
+			job_cond->usage_end = now;
+
+		if(*extra)
+			xstrcat(*extra, " && (");
+		else
+			xstrcat(*extra, " where (");
+		xstrfmtcat(*extra, 
+			   "(t1.eligible < %d "
+			   "&& (t1.end >= %d || t1.end = 0)))",
+			   job_cond->usage_end, job_cond->usage_start);
+	}
+
+	if(job_cond->state_list && list_count(job_cond->state_list)) {
+		set = 0;
+		if(*extra)
+			xstrcat(*extra, " && (");
+		else
+			xstrcat(*extra, " where (");
+
+		itr = list_iterator_create(job_cond->state_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "t1.state='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+
+	/* we need to put all the associations (t2) stuff together here */
+	if(job_cond->cluster_list && list_count(job_cond->cluster_list)) {
+		set = 0;
+		if(*extra)
+			xstrcat(*extra, " && (");
+		else
+			xstrcat(*extra, " where (");
+
+		itr = list_iterator_create(job_cond->cluster_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, 
+				   "(t1.cluster='%s' || %s.cluster='%s')", 
+				   object, table_level, object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	} 
+
+	if(job_cond->wckey_list && list_count(job_cond->wckey_list)) {
+		set = 0;
+		if(*extra)
+			xstrcat(*extra, " && (");
+		else
+			xstrcat(*extra, " where (");
+
+		itr = list_iterator_create(job_cond->wckey_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "t1.wckey='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+	return set;
+}
 
 extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 					   acct_job_cond_t *job_cond)
@@ -53,7 +351,6 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 	char *query = NULL;	
 	char *extra = NULL;	
 	char *tmp = NULL;	
-	char *object = NULL;
 	jobacct_selected_step_t *selected_step = NULL;
 	ListIterator itr = NULL;
 	int set = 0, is_admin=1;
@@ -232,189 +529,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		}
 	}
 
-	if(!job_cond)
-		goto no_cond;
-
-	/* THIS ASSOCID CHECK ALWAYS NEEDS TO BE FIRST!!!!!!! */
-	if(job_cond->associd_list && list_count(job_cond->associd_list)) {
-		set = 0;
-		xstrfmtcat(extra, ", %s as t3 where (", assoc_table);
-		itr = list_iterator_create(job_cond->associd_list);
-		while((object = list_next(itr))) {
-			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "t3.id=%s", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-		table_level="t3";
-		/* just incase the association is gone */
-		if(set) 
-			xstrcat(extra, " || ");
-		xstrfmtcat(extra, "t3.id is null) && "
-			   "(t2.lft between t3.lft and t3.rgt "
-			   "|| t2.lft is null)");
-	}
-
-	if(job_cond->acct_list && list_count(job_cond->acct_list)) {
-		set = 0;
-		if(extra)
-			xstrcat(extra, " && (");
-		else
-			xstrcat(extra, " where (");
-		itr = list_iterator_create(job_cond->acct_list);
-		while((object = list_next(itr))) {
-			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "t1.account='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
-	if(job_cond->userid_list && list_count(job_cond->userid_list)) {
-		set = 0;
-		if(extra)
-			xstrcat(extra, " && (");
-		else
-			xstrcat(extra, " where (");
-
-		itr = list_iterator_create(job_cond->userid_list);
-		while((object = list_next(itr))) {
-			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "t1.uid='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
-	if(job_cond->groupid_list && list_count(job_cond->groupid_list)) {
-		set = 0;
-		if(extra)
-			xstrcat(extra, " && (");
-		else
-			xstrcat(extra, " where (");
-		itr = list_iterator_create(job_cond->groupid_list);
-		while((object = list_next(itr))) {
-			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "t1.gid=", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
-	if(job_cond->partition_list && list_count(job_cond->partition_list)) {
-		set = 0;
-		if(extra)
-			xstrcat(extra, " && (");
-		else
-			xstrcat(extra, " where (");
-		itr = list_iterator_create(job_cond->partition_list);
-		while((object = list_next(itr))) {
-			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "t1.partition='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
-	if(job_cond->step_list && list_count(job_cond->step_list)) {
-		set = 0;
-		if(extra)
-			xstrcat(extra, " && (");
-		else
-			xstrcat(extra, " where (");
-		itr = list_iterator_create(job_cond->step_list);
-		while((selected_step = list_next(itr))) {
-			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "t1.jobid=%u", selected_step->jobid);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
-	if(job_cond->usage_start) {
-		if(!job_cond->usage_end)
-			job_cond->usage_end = now;
-
-		if(extra)
-			xstrcat(extra, " && (");
-		else
-			xstrcat(extra, " where (");
-		xstrfmtcat(extra, 
-			   "(t1.eligible < %d "
-			   "&& (t1.end >= %d || t1.end = 0)))",
-			   job_cond->usage_end, job_cond->usage_start);
-	}
-
-	if(job_cond->state_list && list_count(job_cond->state_list)) {
-		set = 0;
-		if(extra)
-			xstrcat(extra, " && (");
-		else
-			xstrcat(extra, " where (");
-
-		itr = list_iterator_create(job_cond->state_list);
-		while((object = list_next(itr))) {
-			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "t1.state='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
-	/* we need to put all the associations (t2) stuff together here */
-	if(job_cond->cluster_list && list_count(job_cond->cluster_list)) {
-		set = 0;
-		if(extra)
-			xstrcat(extra, " && (");
-		else
-			xstrcat(extra, " where (");
-
-		itr = list_iterator_create(job_cond->cluster_list);
-		while((object = list_next(itr))) {
-			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, 
-				   "(t1.cluster='%s' || %s.cluster='%s')", 
-				   object, table_level, object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	} 
-
-	if(job_cond->wckey_list && list_count(job_cond->wckey_list)) {
-		set = 0;
-		if(extra)
-			xstrcat(extra, " && (");
-		else
-			xstrcat(extra, " where (");
-
-		itr = list_iterator_create(job_cond->wckey_list);
-		while((object = list_next(itr))) {
-			if(set) 
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "t1.wckey='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
-no_cond:	
+	setup_job_cond_limits(job_cond, &extra);
 
 	xfree(tmp);
 	xstrfmtcat(tmp, "%s", job_req_inx[0]);
@@ -781,11 +896,609 @@ no_cond:
 	return job_list;
 }
 
-extern void mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
-					  List selected_parts,
-					  sacct_parameters_t *params)
+extern int mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
+					 acct_archive_cond_t *arch_cond)
 {
-	return;
+	int rc = SLURM_SUCCESS, fd = 0;
+	char *query = NULL;
+	time_t last_submit = time(NULL);
+	time_t curr_end;
+	char *tmp = NULL;
+	int i=0;
+	char *old_file = NULL, *new_file = NULL, *reg_file = NULL;
+	struct tm time_tm;
+	char start_char[32];
+	char end_char[32];
+//	DEF_TIMERS;
+
+	/* if this changes you will need to edit the corresponding 
+	 * enum below */
+	char *job_req_inx[] = {
+		"id",
+		"jobid",
+		"associd",
+		"wckey",
+		"wckeyid",
+		"uid",
+		"gid",
+		"partition",
+		"blockid",
+		"cluster",
+		"account",
+		"eligible",
+		"submit",
+		"start",
+		"end",
+		"suspended",
+		"name",
+		"track_steps",
+		"state",
+		"comp_code",
+		"priority",
+		"req_cpus",
+		"alloc_cpus",
+		"nodelist",
+		"kill_requid",
+		"qos"
+	};
+
+	/* if this changes you will need to edit the corresponding 
+	 * enum below */
+	char *step_req_inx[] = {
+		"id",
+		"stepid",
+		"start",
+		"end",
+		"suspended",
+		"name",
+		"nodelist",
+		"state",
+		"kill_requid",
+		"comp_code",
+		"cpus",
+		"user_sec",
+		"user_usec",
+		"sys_sec",
+		"sys_usec",
+		"max_vsize",
+		"max_vsize_task",
+		"max_vsize_node",
+		"ave_vsize",
+		"max_rss",
+		"max_rss_task",
+		"max_rss_node",
+		"ave_rss",
+		"max_pages",
+		"max_pages_task",
+		"max_pages_node",
+		"ave_pages",
+		"min_cpu",
+		"min_cpu_task",
+		"min_cpu_node",
+		"ave_cpu"
+	};
+
+	enum {
+		JOB_REQ_ID,
+		JOB_REQ_JOBID,
+		JOB_REQ_ASSOCID,
+		JOB_REQ_WCKEY,
+		JOB_REQ_WCKEYID,
+		JOB_REQ_UID,
+		JOB_REQ_GID,
+		JOB_REQ_PARTITION,
+		JOB_REQ_BLOCKID,
+		JOB_REQ_CLUSTER,
+		JOB_REQ_ACCOUNT,
+		JOB_REQ_ELIGIBLE,
+		JOB_REQ_SUBMIT,
+		JOB_REQ_START,
+		JOB_REQ_END,
+		JOB_REQ_SUSPENDED,
+		JOB_REQ_NAME,
+		JOB_REQ_TRACKSTEPS,
+		JOB_REQ_STATE,
+		JOB_REQ_COMP_CODE,
+		JOB_REQ_PRIORITY,
+		JOB_REQ_REQ_CPUS,
+		JOB_REQ_ALLOC_CPUS,
+		JOB_REQ_NODELIST,
+		JOB_REQ_KILL_REQUID,
+		JOB_REQ_QOS,
+		JOB_REQ_COUNT		
+	};
+	enum {
+		STEP_REQ_ID,
+		STEP_REQ_STEPID,
+		STEP_REQ_START,
+		STEP_REQ_END,
+		STEP_REQ_SUSPENDED,
+		STEP_REQ_NAME,
+		STEP_REQ_NODELIST,
+		STEP_REQ_STATE,
+		STEP_REQ_KILL_REQUID,
+		STEP_REQ_COMP_CODE,
+		STEP_REQ_CPUS,
+		STEP_REQ_USER_SEC,
+		STEP_REQ_USER_USEC,
+		STEP_REQ_SYS_SEC,
+		STEP_REQ_SYS_USEC,
+		STEP_REQ_MAX_VSIZE,
+		STEP_REQ_MAX_VSIZE_TASK,
+		STEP_REQ_MAX_VSIZE_NODE,
+		STEP_REQ_AVE_VSIZE,
+		STEP_REQ_MAX_RSS,
+		STEP_REQ_MAX_RSS_TASK,
+		STEP_REQ_MAX_RSS_NODE,
+		STEP_REQ_AVE_RSS,
+		STEP_REQ_MAX_PAGES,
+		STEP_REQ_MAX_PAGES_TASK,
+		STEP_REQ_MAX_PAGES_NODE,
+		STEP_REQ_AVE_PAGES,
+		STEP_REQ_MIN_CPU,
+		STEP_REQ_MIN_CPU_TASK,
+		STEP_REQ_MIN_CPU_NODE,
+		STEP_REQ_AVE_CPU,
+		STEP_REQ_COUNT
+	};
+
+	if(!arch_cond) {
+		error("No arch_cond was given to archive from.  returning");
+		return SLURM_ERROR;
+	}
+
+	if(!localtime_r(&last_submit, &time_tm)) {
+		error("Couldn't get localtime from first start %d",
+		      last_submit);
+		return SLURM_ERROR;
+	}
+	time_tm.tm_sec = 0;
+	time_tm.tm_min = 0;
+	time_tm.tm_hour = 0;
+	time_tm.tm_mday = 1;
+	time_tm.tm_isdst = -1;
+	last_submit = mktime(&time_tm);
+	last_submit--;
+	debug("adjusted last submit is (%d)", last_submit);
+	
+	if(arch_cond->archive_script)
+		return _archive_script(arch_cond, last_submit);
+	else if(!arch_cond->archive_dir) {
+		error("No archive dir given, can't process");
+		return SLURM_ERROR;
+	}
+
+	if(arch_cond->step_purge) {
+		/* remove all data from step table that was older than
+		 * start * arch_cond->step_purge. 
+		 */
+		/* use localtime to avoid any daylight savings issues */
+		if(!localtime_r(&last_submit, &time_tm)) {
+			error("Couldn't get localtime from first start %d",
+			      last_submit);
+			return SLURM_ERROR;
+		}
+		time_tm.tm_mon -= arch_cond->step_purge;
+		time_tm.tm_isdst = -1;
+		curr_end = mktime(&time_tm);
+
+		debug4("from %d - %d months purging steps from before %d", 
+		       last_submit, arch_cond->step_purge, curr_end);
+		
+		if(arch_cond->archive_steps) {
+			char *insert = NULL;
+			char *values = NULL;
+			int period_start = 0;
+			MYSQL_RES *result = NULL;
+			MYSQL_ROW row;
+
+			xfree(tmp);
+			xstrfmtcat(tmp, "%s", step_req_inx[0]);
+			for(i=1; i<STEP_REQ_COUNT; i++) {
+				xstrfmtcat(tmp, ", %s", step_req_inx[i]);
+			}
+
+			/* get all the steps submitted before this time
+			   listed */
+			query = xstrdup_printf("select %s from %s where "
+					       "start <= %d && end != 0 "
+					       "&& !deleted "
+					       "order by start asc",
+					       tmp, step_table, curr_end);
+
+			xstrcat(tmp, ", deleted");
+			insert = xstrdup_printf("insert into %s (%s) ",
+						step_table, tmp);
+			xfree(tmp);
+			
+//			START_TIMER;
+			debug3("%d(%d) query\n%s", mysql_conn->conn,
+			       __LINE__, query);
+			if(!(result = mysql_db_query_ret(
+				     mysql_conn->db_conn, query, 0))) {
+				xfree(insert);
+				xfree(query);
+				return SLURM_ERROR;
+			}
+			xfree(query);
+//			END_TIMER2("step query");
+//			info("step query took %s", TIME_STR);
+
+			if(!mysql_num_rows(result)) {
+				xfree(insert);
+				mysql_free_result(result);
+				goto exit_steps;
+			}
+
+//			START_TIMER;
+			slurm_mutex_lock(&local_file_lock);
+			while((row = mysql_fetch_row(result))) {
+				if(period_start) {
+					xstrcat(values, ",\n(");
+				} else {
+					period_start = 
+						atoi(row[STEP_REQ_START]);
+					localtime_r((time_t *)&period_start,
+						    &time_tm);
+					time_tm.tm_sec = 0;
+					time_tm.tm_min = 0;
+					time_tm.tm_hour = 0;
+					time_tm.tm_mday = 1;
+					time_tm.tm_isdst = -1;
+					period_start = mktime(&time_tm);
+					localtime_r((time_t *)&period_start,
+						    &time_tm);
+					snprintf(start_char, sizeof(start_char),
+						 "%4.4u-%2.2u-%2.2u"
+						 "T%2.2u:%2.2u:%2.2u",
+						 (time_tm.tm_year + 1900),
+						 (time_tm.tm_mon+1), 
+						 time_tm.tm_mday,
+						 time_tm.tm_hour,
+						 time_tm.tm_min, 
+						 time_tm.tm_sec);
+
+					localtime_r((time_t *)&curr_end,
+						    &time_tm);
+					snprintf(end_char, sizeof(end_char),
+						 "%4.4u-%2.2u-%2.2u"
+						 "T%2.2u:%2.2u:%2.2u",
+						 (time_tm.tm_year + 1900),
+						 (time_tm.tm_mon+1), 
+						 time_tm.tm_mday,
+						 time_tm.tm_hour,
+						 time_tm.tm_min, 
+						 time_tm.tm_sec);
+
+					/* write the buffer to file */
+					reg_file = xstrdup_printf(
+						"%s/step_archive_%s_%s.sql",
+						arch_cond->archive_dir,
+						start_char, end_char);
+					old_file = xstrdup_printf(
+						"%s.old", reg_file);
+					new_file = xstrdup_printf(
+						"%s.new", reg_file);
+					
+					fd = creat(new_file, 0600);
+					if (fd == 0) {
+						error("Can't save archive, "
+						      "create file %s error %m",
+						      new_file);
+						rc = errno;
+						xfree(insert);
+						break;
+					} 
+					values = xstrdup_printf("%s\nvalues\n(",
+								insert);
+					xfree(insert);
+				}
+	
+				xstrfmtcat(values, "'%s'", row[0]);
+				for(i=1; i<STEP_REQ_COUNT; i++) {
+					xstrfmtcat(values, ", '%s'", row[i]);
+				}
+				xstrcat(values, ", '1')");
+				
+				if(!fd || ((rc = _write_to_file(fd, values))
+					   != SLURM_SUCCESS)) {
+					xfree(values);
+					break;
+				}
+				xfree(values);
+			}
+			mysql_free_result(result);
+			rc = _write_to_file(
+				fd, " on duplicate key update deleted=1;");
+//			END_TIMER2("write file");
+//			info("write file took %s", TIME_STR);
+
+			fsync(fd);
+			close(fd);
+			
+			if (rc)
+				(void) unlink(new_file);
+			else {			/* file shuffle */
+				(void) unlink(old_file);
+				(void) link(reg_file, old_file);
+				(void) unlink(reg_file);
+				(void) link(new_file, reg_file);
+				(void) unlink(new_file);
+			}
+			xfree(old_file);
+			xfree(reg_file);
+			xfree(new_file);
+			slurm_mutex_unlock(&local_file_lock);
+
+			period_start = 0;
+		}
+
+		if(rc != SLURM_SUCCESS) 
+			return rc;
+
+		query = xstrdup_printf("delete from %s where start <= %d "
+				       "&& end != 0",
+				       step_table, curr_end);
+		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+		//rc = mysql_db_query(mysql_conn->db_conn, query);
+		xfree(query);
+		if(rc != SLURM_SUCCESS) {
+			error("Couldn't remove old step data");
+			return SLURM_ERROR;
+		}
+	}
+exit_steps:
+	
+	if(arch_cond->job_purge) {
+		/* remove all data from step table that was older than
+		 * last_submit * arch_cond->job_purge. 
+		 */
+		/* use localtime to avoid any daylight savings issues */
+		if(!localtime_r(&last_submit, &time_tm)) {
+			error("Couldn't get localtime from first submit %d",
+			      last_submit);
+			return SLURM_ERROR;
+		}
+		time_tm.tm_mday = 1;
+		time_tm.tm_mon -= arch_cond->job_purge;
+		time_tm.tm_isdst = -1;
+		curr_end = mktime(&time_tm);
+
+		debug4("from %d - %d months purging jobs from before %d", 
+		       last_submit, arch_cond->job_purge, curr_end);
+
+		if(arch_cond->archive_jobs) {
+			char *insert = NULL;
+			char *values = NULL;
+			int period_start = 0;
+			MYSQL_RES *result = NULL;
+			MYSQL_ROW row;
+			
+			xfree(tmp);
+			xstrfmtcat(tmp, "%s", job_req_inx[0]);
+			for(i=1; i<JOB_REQ_COUNT; i++) {
+				xstrfmtcat(tmp, ", %s", job_req_inx[i]);
+			}
+			/* get all the jobs submitted before this time
+			   listed */
+			query = xstrdup_printf("select %s from %s where "
+					       "submit < %d && end != 0 "
+					       "&& !deleted "
+					       "order by submit asc",
+					       tmp, job_table, curr_end);
+
+			xstrcat(tmp, ", deleted");
+			insert = xstrdup_printf("insert into %s (%s) ",
+						job_table, tmp);
+			xfree(tmp);
+
+//			START_TIMER;
+			debug3("%d(%d) query\n%s", mysql_conn->conn,
+			       __LINE__, query);
+			if(!(result = mysql_db_query_ret(
+				     mysql_conn->db_conn, query, 0))) {
+				xfree(insert);
+				xfree(query);
+				return SLURM_ERROR;
+			}
+			xfree(query);
+//			END_TIMER2("job query");
+//			info("job query took %s", TIME_STR);
+
+			if(!mysql_num_rows(result)) {
+				xfree(insert);
+				mysql_free_result(result);
+				goto exit_jobs;
+			}
+			
+//			START_TIMER;
+			slurm_mutex_lock(&local_file_lock);
+			while((row = mysql_fetch_row(result))) {
+				if(period_start) {
+					xstrcat(values, ",\n(");
+				} else {
+					period_start = 
+						atoi(row[JOB_REQ_SUBMIT]);
+					localtime_r((time_t *)&period_start,
+						    &time_tm);
+					time_tm.tm_sec = 0;
+					time_tm.tm_min = 0;
+					time_tm.tm_hour = 0;
+					time_tm.tm_mday = 1;
+					time_tm.tm_isdst = -1;
+					period_start = mktime(&time_tm);
+					localtime_r((time_t *)&period_start,
+						    &time_tm);
+					snprintf(start_char, sizeof(start_char),
+						 "%4.4u-%2.2u-%2.2u"
+						 "T%2.2u:%2.2u:%2.2u",
+						 (time_tm.tm_year + 1900),
+						 (time_tm.tm_mon+1), 
+						 time_tm.tm_mday,
+						 time_tm.tm_hour,
+						 time_tm.tm_min, 
+						 time_tm.tm_sec);
+
+					localtime_r((time_t *)&curr_end,
+						    &time_tm);
+
+					snprintf(end_char, sizeof(end_char),
+						 "%4.4u-%2.2u-%2.2u"
+						 "T%2.2u:%2.2u:%2.2u",
+						 (time_tm.tm_year + 1900),
+						 (time_tm.tm_mon+1), 
+						 time_tm.tm_mday,
+						 time_tm.tm_hour,
+						 time_tm.tm_min, 
+						 time_tm.tm_sec);
+
+					/* write the buffer to file */
+					reg_file = xstrdup_printf(
+						"%s/job_archive_%s_%s.sql",
+						arch_cond->archive_dir,
+						start_char, end_char);
+					old_file = xstrdup_printf(
+						"%s.old", reg_file);
+					new_file = xstrdup_printf(
+						"%s.new", reg_file);
+					
+					fd = creat(new_file, 0600);
+					if (fd == 0) {
+						error("Can't save archive, "
+						      "create file %s error %m",
+						      new_file);
+						rc = errno;
+						xfree(insert);
+						break;
+					} 
+					values = xstrdup_printf("%s\nvalues\n(",
+								insert);
+					xfree(insert);
+				}
+				
+				xstrfmtcat(values, "'%s'", row[0]);
+				for(i=1; i<JOB_REQ_COUNT; i++) {
+					xstrfmtcat(values, ", '%s'", row[i]);
+				}
+				xstrcat(values, ", '1')");
+				
+				if(!fd || ((rc = _write_to_file(fd, values))
+					   != SLURM_SUCCESS)) {
+					xfree(values);
+					break;
+				}
+				xfree(values);
+			}
+			mysql_free_result(result);
+
+			rc = _write_to_file(
+				fd, " on duplicate key update deleted=1;");
+//			END_TIMER2("write file");
+//			info("write file took %s", TIME_STR);
+			
+			
+			fsync(fd);
+			close(fd);
+
+			if (rc)
+				(void) unlink(new_file);
+			else {			/* file shuffle */
+				(void) unlink(old_file);
+				(void) link(reg_file, old_file);
+				(void) unlink(reg_file);
+				(void) link(new_file, reg_file);
+				(void) unlink(new_file);
+			}
+			xfree(old_file);
+			xfree(reg_file);
+			xfree(new_file);
+			slurm_mutex_unlock(&local_file_lock);
+
+			period_start = 0;
+		}
+		query = xstrdup_printf("delete from %s where submit <= %d "
+				       "&& end != 0",
+				       job_table, curr_end);
+		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+		//rc = mysql_db_query(mysql_conn->db_conn, query);
+		xfree(query);
+		if(rc != SLURM_SUCCESS) {
+			error("Couldn't remove old job data");
+			return SLURM_ERROR;
+		}
+	}
+exit_jobs:
+	
+	return SLURM_SUCCESS;
+}
+
+extern int mysql_jobacct_process_archive_load(mysql_conn_t *mysql_conn,
+					      acct_archive_rec_t *arch_rec)
+{
+	char *data = NULL;
+	int error_code = SLURM_SUCCESS;
+
+	if(!arch_rec) {
+		error("We need a acct_archive_rec to load anything.");
+		return SLURM_ERROR;
+	}
+
+	if(arch_rec->insert) {
+		data = xstrdup(arch_rec->insert);
+	} else if(arch_rec->archive_file) {
+		uint32_t data_size = 0;
+		int data_allocated, data_read = 0;
+		int state_fd = open(arch_rec->archive_file, O_RDONLY);
+		if (state_fd < 0) {
+			info("No archive file (%s) to recover", 
+			     arch_rec->archive_file);
+			error_code = ENOENT;
+		} else {
+			data_allocated = BUF_SIZE;
+			data = xmalloc(data_allocated);
+			while (1) {
+				data_read = read(state_fd, &data[data_size],
+						 BUF_SIZE);
+				if (data_read < 0) {
+					if (errno == EINTR)
+						continue;
+					else {
+						error("Read error on %s: %m", 
+						      arch_rec->archive_file);
+						break;
+					}
+				} else if (data_read == 0)	/* eof */
+					break;
+				data_size      += data_read;
+				data_allocated += data_read;
+				xrealloc(data, data_allocated);
+			}
+			close(state_fd);
+		}
+		if(error_code != SLURM_SUCCESS) {
+			xfree(data);
+			return error_code;
+		}
+	} else {
+		error("Nothing was set in your "
+		      "acct_archive_rec so I am unable to process.");
+		return SLURM_ERROR;
+	}
+
+	if(!data) {
+		error("It doesn't appear we have anything to load.");
+		return SLURM_ERROR;
+	}
+	
+	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, data);
+	error_code = mysql_db_query(mysql_conn->db_conn, data);
+	xfree(data);
+	if(error_code != SLURM_SUCCESS) {
+		error("Couldn't load old data");
+		return SLURM_ERROR;
+	}       
+
+	return SLURM_SUCCESS;
 }
 
 #endif	

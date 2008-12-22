@@ -48,7 +48,7 @@ int _do_stat(uint32_t jobid, uint32_t stepid);
 /*
  * Globals
  */
-	sacct_parameters_t params;
+sstat_parameters_t params;
 fields_t fields[] = {{"cputime", print_cputime}, 
 		     {"jobid", print_jobid}, 
 		     {"ntasks", print_ntasks}, 

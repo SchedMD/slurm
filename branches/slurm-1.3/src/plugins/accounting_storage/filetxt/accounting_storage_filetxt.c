@@ -883,46 +883,6 @@ extern int jobacct_storage_p_suspend(void *db_conn,
 	return _print_record(job_ptr, now, buf);
 }
 
-/* 
- * get info from the storage 
- * in/out job_list List of job_rec_t *
- * note List needs to be freed when called
- */
-extern List jobacct_storage_p_get_jobs(void *db_conn, uid_t uid,
-				       List selected_steps,
-				       List selected_parts,
-				       sacct_parameters_t *params)
-{
-	List job_list = NULL;
-	acct_job_cond_t job_cond;
-	memset(&job_cond, 0, sizeof(acct_job_cond_t));
-
-	job_cond.acct_list = selected_steps;
-	job_cond.step_list = selected_steps;
-	job_cond.partition_list = selected_parts;
-	job_cond.cluster_list = params->opt_cluster_list;
-
-	if (params->opt_uid >=0) {
-		char *temp = xstrdup_printf("%u", params->opt_uid);
-		job_cond.userid_list = list_create(NULL);
-		list_append(job_cond.userid_list, temp);
-	}	
-
-	if (params->opt_gid >=0) {
-		char *temp = xstrdup_printf("%u", params->opt_gid);
-		job_cond.groupid_list = list_create(NULL);
-		list_append(job_cond.groupid_list, temp);
-	}	
-
-	job_list = filetxt_jobacct_process_get_jobs(&job_cond);
-
-	if(job_cond.userid_list)
-		list_destroy(job_cond.userid_list);
-	if(job_cond.groupid_list)
-		list_destroy(job_cond.groupid_list);
-		
-	return job_list;
-}
 
 /* 
  * get info from the storage 
@@ -938,12 +898,20 @@ extern List jobacct_storage_p_get_jobs_cond(void *db_conn, uid_t uid,
 /* 
  * expire old info from the storage 
  */
-extern void jobacct_storage_p_archive(void *db_conn,
-				      List selected_parts,
-				      void *params)
+extern int jobacct_storage_p_archive(void *db_conn,
+				      acct_archive_cond_t *arch_cond)
 {
-	filetxt_jobacct_process_archive(selected_parts, params);
-	return;
+	return filetxt_jobacct_process_archive(arch_cond);
+	
+}
+
+/* 
+ * load old info into the storage 
+ */
+extern int jobacct_storage_p_archive_load(void *db_conn, 
+					  acct_archive_rec_t *arch_rec)
+{
+	return SLURM_ERROR;
 }
 
 extern int acct_storage_p_update_shares_used(void *db_conn,

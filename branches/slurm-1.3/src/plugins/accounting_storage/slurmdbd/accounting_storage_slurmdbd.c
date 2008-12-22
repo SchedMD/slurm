@@ -1643,65 +1643,6 @@ extern int jobacct_storage_p_suspend(void *db_conn,
  * returns List of job_rec_t *
  * note List needs to be freed when called
  */
-extern List jobacct_storage_p_get_jobs(void *db_conn, uid_t uid,
-				       List selected_steps,
-				       List selected_parts,
-				       sacct_parameters_t *params)
-{
-	slurmdbd_msg_t req, resp;
-	dbd_get_jobs_msg_t get_msg;
-	dbd_list_msg_t *got_msg;
-	int rc;
-	List job_list = NULL;
-
-	get_msg.selected_steps = selected_steps;
-	get_msg.selected_parts = selected_parts;
-	if(params->opt_cluster_list && list_count(params->opt_cluster_list)) {
-		ListIterator itr = 
-			list_iterator_create(params->opt_cluster_list);
-		get_msg.cluster_name = list_next(itr);
-		list_iterator_destroy(itr);
-	}
-	get_msg.gid = params->opt_gid;
-	
-	if (params->opt_uid >=0)
-		get_msg.user = uid_to_string((uid_t) params->opt_uid);
-	else
-		get_msg.user = NULL;
-
-	req.msg_type = DBD_GET_JOBS;
-	req.data = &get_msg;
-	rc = slurm_send_recv_slurmdbd_msg(SLURMDBD_VERSION, &req, &resp);
-	xfree(get_msg.user);
-
-	if (rc != SLURM_SUCCESS)
-		error("slurmdbd: DBD_GET_JOBS failure: %m");
-	else if (resp.msg_type == DBD_RC) {
-		dbd_rc_msg_t *msg = resp.data;
-		if(msg->return_code == SLURM_SUCCESS) {
-			info("%s", msg->comment);
-			job_list = list_create(NULL);
-		} else
-			error("%s", msg->comment);
-		slurmdbd_free_rc_msg(SLURMDBD_VERSION, msg);
-	} else if (resp.msg_type != DBD_GOT_JOBS) {
-		error("slurmdbd: response type not DBD_GOT_JOBS: %u", 
-		      resp.msg_type);
-	} else {
-		got_msg = (dbd_list_msg_t *) resp.data;
-		job_list = got_msg->my_list;
-		got_msg->my_list = NULL;
-		slurmdbd_free_list_msg(SLURMDBD_VERSION, got_msg);
-	}
-
-	return job_list;
-}
-
-/* 
- * get info from the storage 
- * returns List of job_rec_t *
- * note List needs to be freed when called
- */
 extern List jobacct_storage_p_get_jobs_cond(void *db_conn, uid_t uid,
 					    acct_job_cond_t *job_cond)
 {
@@ -1744,11 +1685,70 @@ extern List jobacct_storage_p_get_jobs_cond(void *db_conn, uid_t uid,
  * Expire old info from the storage
  * Not applicable for any database
  */
-extern void jobacct_storage_p_archive(void *db_conn,
-				      List selected_parts,
-				      void *params)
+extern int jobacct_storage_p_archive(void *db_conn,
+				     acct_archive_cond_t *arch_cond)
 {
-	return;
+	slurmdbd_msg_t req, resp;
+	dbd_cond_msg_t msg;
+	int rc = SLURM_SUCCESS;
+
+	msg.cond     = arch_cond;
+
+	req.msg_type = DBD_ARCHIVE_DUMP;
+	req.data     = &msg;
+
+	rc = slurm_send_recv_slurmdbd_msg(SLURMDBD_VERSION, &req, &resp);
+
+	if (rc != SLURM_SUCCESS)
+		error("slurmdbd: DBD_ARCHIVE_DUMP failure: %m");
+	else if (resp.msg_type == DBD_RC) {
+		dbd_rc_msg_t *msg = resp.data;
+		rc = msg->return_code;
+
+		if(msg->return_code == SLURM_SUCCESS) 
+			info("%s", msg->comment);
+		else
+			error("%s", msg->comment);
+		slurmdbd_free_rc_msg(SLURMDBD_VERSION, msg);
+	} else {
+		error("unknown return for archive_dump");
+		rc = SLURM_ERROR;
+	}
+
+	return rc;
+}
+
+/* 
+ * load old info into the storage 
+ */
+extern int jobacct_storage_p_archive_load(void *db_conn, 
+					  acct_archive_rec_t *arch_rec)
+{
+	slurmdbd_msg_t req, resp;
+	int rc = SLURM_SUCCESS;
+
+	req.msg_type = DBD_ARCHIVE_LOAD;
+	req.data     = arch_rec;
+
+	rc = slurm_send_recv_slurmdbd_msg(SLURMDBD_VERSION, &req, &resp);
+
+	if (rc != SLURM_SUCCESS)
+		error("slurmdbd: DBD_ARCHIVE_LOAD failure: %m");
+	else if (resp.msg_type == DBD_RC) {
+		dbd_rc_msg_t *msg = resp.data;
+		rc = msg->return_code;
+
+		if(msg->return_code == SLURM_SUCCESS) 
+			info("%s", msg->comment);
+		else
+			error("%s", msg->comment);
+		slurmdbd_free_rc_msg(SLURMDBD_VERSION, msg);
+	} else {
+		error("unknown return for archive_load");
+		rc = SLURM_ERROR;
+	}
+
+	return rc;
 }
 
 extern int acct_storage_p_update_shares_used(void *db_conn,

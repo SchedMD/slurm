@@ -76,18 +76,22 @@ extern void free_slurmdbd_conf(void)
 static void _clear_slurmdbd_conf(void)
 {
 	if (slurmdbd_conf) {
-		slurmdbd_conf->archive_age = 0;
+		xfree(slurmdbd_conf->archive_dir);
+		slurmdbd_conf->archive_jobs = 0;
 		xfree(slurmdbd_conf->archive_script);
+		slurmdbd_conf->archive_steps = 0;
 		xfree(slurmdbd_conf->auth_info);
 		xfree(slurmdbd_conf->auth_type);
 		xfree(slurmdbd_conf->dbd_addr);
 		xfree(slurmdbd_conf->dbd_host);
 		slurmdbd_conf->dbd_port = 0;
+		slurmdbd_conf->debug_level = 0;
 		slurmdbd_conf->job_purge = 0;
 		xfree(slurmdbd_conf->log_file);
 		xfree(slurmdbd_conf->pid_file);
 		xfree(slurmdbd_conf->plugindir);
 		slurmdbd_conf->private_data = 0;
+		slurmdbd_conf->slurm_user_id = NO_VAL;
 		xfree(slurmdbd_conf->slurm_user_name);
 		slurmdbd_conf->step_purge = 0;
 		xfree(slurmdbd_conf->storage_host);
@@ -96,6 +100,7 @@ static void _clear_slurmdbd_conf(void)
 		slurmdbd_conf->storage_port = 0;
 		xfree(slurmdbd_conf->storage_type);
 		xfree(slurmdbd_conf->storage_user);
+		slurmdbd_conf->track_wckey = 0;
 	}
 }
 
@@ -108,8 +113,10 @@ static void _clear_slurmdbd_conf(void)
 extern int read_slurmdbd_conf(void)
 {
 	s_p_options_t options[] = {
-		{"ArchiveAge", S_P_UINT16},
+		{"ArchiveJobs", S_P_BOOLEAN},
+		{"ArchiveDir", S_P_STRING},
 		{"ArchiveScript", S_P_STRING},
+		{"ArchiveSteps", S_P_BOOLEAN},
 		{"AuthInfo", S_P_STRING},
 		{"AuthType", S_P_STRING},
 		{"DbdAddr", S_P_STRING},
@@ -157,17 +164,23 @@ extern int read_slurmdbd_conf(void)
 		 	     conf_path);
 		}
 
-		s_p_get_uint16(&slurmdbd_conf->archive_age, "ArchiveAge", tbl);
+		if(!s_p_get_string(&slurmdbd_conf->archive_dir, "ArchiveDir",
+				   tbl))
+			slurmdbd_conf->archive_dir =
+				xstrdup(DEFAULT_SLURMDBD_ARCHIVE_DIR);
+		s_p_get_boolean((bool *)&slurmdbd_conf->archive_jobs,
+				"ArchiveJobs", tbl);
 		s_p_get_string(&slurmdbd_conf->archive_script, "ArchiveScript",
 			       tbl);
+		s_p_get_boolean((bool *)&slurmdbd_conf->archive_steps,
+				"ArchiveSteps", tbl);
 		s_p_get_string(&slurmdbd_conf->auth_info, "AuthInfo", tbl);
 		s_p_get_string(&slurmdbd_conf->auth_type, "AuthType", tbl);
 		s_p_get_string(&slurmdbd_conf->dbd_host, "DbdHost", tbl);
 		s_p_get_string(&slurmdbd_conf->dbd_addr, "DbdAddr", tbl);
 		s_p_get_uint16(&slurmdbd_conf->dbd_port, "DbdPort", tbl);
 		s_p_get_uint16(&slurmdbd_conf->debug_level, "DebugLevel", tbl);
-		if (!s_p_get_uint16(&slurmdbd_conf->job_purge, "JobPurge", tbl))
-			slurmdbd_conf->job_purge = DEFAULT_SLURMDBD_JOB_PURGE;
+		s_p_get_uint16(&slurmdbd_conf->job_purge, "JobPurge", tbl);
 		s_p_get_string(&slurmdbd_conf->log_file, "LogFile", tbl);
 		if (!s_p_get_uint16(&slurmdbd_conf->msg_timeout,
 				    "MessageTimeout", tbl))
@@ -204,9 +217,8 @@ extern int read_slurmdbd_conf(void)
 
 		s_p_get_string(&slurmdbd_conf->slurm_user_name, "SlurmUser",
 			       tbl);
-		if (!s_p_get_uint16(&slurmdbd_conf->step_purge, "StepPurge",
-				    tbl))
-			slurmdbd_conf->step_purge = DEFAULT_SLURMDBD_STEP_PURGE;
+		s_p_get_uint16(&slurmdbd_conf->step_purge, "StepPurge", tbl);
+
 		s_p_get_string(&slurmdbd_conf->storage_host,
 				"StorageHost", tbl);
 		s_p_get_string(&slurmdbd_conf->storage_loc,
@@ -266,11 +278,7 @@ extern void log_config(void)
 {
 	char tmp_str[128];
 
-	if (slurmdbd_conf->archive_age) {
-		debug2("ArchiveAge        = %u days", 
-		       slurmdbd_conf->archive_age);
-	} else
-		debug2("ArchiveAge        = NONE");
+	debug2("ArchiveDir        = %s", slurmdbd_conf->archive_dir);
 	debug2("ArchiveScript     = %s", slurmdbd_conf->archive_script);
 	debug2("AuthInfo          = %s", slurmdbd_conf->auth_info);
 	debug2("AuthType          = %s", slurmdbd_conf->auth_type);
@@ -278,7 +286,13 @@ extern void log_config(void)
 	debug2("DbdHost           = %s", slurmdbd_conf->dbd_host);
 	debug2("DbdPort           = %u", slurmdbd_conf->dbd_port);
 	debug2("DebugLevel        = %u", slurmdbd_conf->debug_level);
-	debug2("JobPurge          = %u days", slurmdbd_conf->job_purge);
+
+	if(slurmdbd_conf->job_purge)
+		debug2("JobPurge          = %u months",
+		       slurmdbd_conf->job_purge);
+	else
+		debug2("JobPurge          = NONE");
+		
 	debug2("LogFile           = %s", slurmdbd_conf->log_file);
 	debug2("MessageTimeout    = %u", slurmdbd_conf->msg_timeout);
 	debug2("PidFile           = %s", slurmdbd_conf->pid_file);
@@ -290,7 +304,13 @@ extern void log_config(void)
 	debug2("PrivateData       = %s", tmp_str);
 	debug2("SlurmUser         = %s(%u)", 
 		slurmdbd_conf->slurm_user_name, slurmdbd_conf->slurm_user_id);
-	debug2("StepPurge         = %u days", slurmdbd_conf->step_purge); 
+
+	if(slurmdbd_conf->step_purge)
+		debug2("StepPurge         = %u months", 
+		       slurmdbd_conf->step_purge); 
+	else
+		debug2("StepPurge         = NONE"); 
+		
 	debug2("StorageHost       = %s", slurmdbd_conf->storage_host);
 	debug2("StorageLoc        = %s", slurmdbd_conf->storage_loc);
 	debug2("StoragePass       = %s", slurmdbd_conf->storage_pass);

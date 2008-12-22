@@ -1245,17 +1245,19 @@ extern List filetxt_jobacct_process_get_jobs(acct_job_cond_t *job_cond)
 	return ret_job_list;
 }
 
-extern void filetxt_jobacct_process_archive(List selected_parts,
-					    sacct_parameters_t *params)
+extern int filetxt_jobacct_process_archive(acct_archive_cond_t *arch_cond)
 {
 	char	line[BUFFER_SIZE],
 		*f[EXPIRE_READ_LENGTH],
 		*fptr = NULL,
 		*logfile_name = NULL,
-		*old_logfile_name = NULL;
+		*old_logfile_name = NULL,
+		*filein = NULL,
+		*object = NULL;
 	int	file_err=0,
 		new_file,
-		i = 0;
+		i = 0,
+		rc = SLURM_ERROR;
 	expired_rec_t *exp_rec = NULL;
 	expired_rec_t *exp_rec2 = NULL;
 	List keep_list = list_create(_destroy_exp);
@@ -1272,41 +1274,48 @@ extern void filetxt_jobacct_process_archive(List selected_parts,
 	int rec_type = -1;
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
-	char *temp = NULL;
-
+	acct_job_cond_t *job_cond = NULL;
+	
 	/* Figure out our expiration date */
 	time_t		expiry;
 
-	if(slurmdbd_conf) {
-		params->opt_filein = slurm_get_accounting_storage_loc();
+	if(!arch_cond || !arch_cond->job_cond) {
+		error("no job_cond was given for archive");
+		return SLURM_ERROR;
 	}
 
-	expiry = time(NULL)-params->opt_expire;
-	if (params->opt_verbose)
-		fprintf(stderr, "Purging jobs completed prior to %d\n",
-			(int)expiry);
+	job_cond = arch_cond->job_cond;
+
+	if(!arch_cond->archive_script)
+		filein = slurm_get_accounting_storage_loc();
+	else
+		filein = arch_cond->archive_script;
+	
+	expiry = time(NULL) - job_cond->usage_end;
+
+	debug("Purging jobs completed prior to %d\n", (int)expiry);
 
 	/* Open the current or specified logfile, or quit */
-	fd = _open_log_file(params->opt_filein);
-	if (stat(params->opt_filein, &statbuf)) {
+	fd = _open_log_file(filein);
+	if (stat(filein, &statbuf)) {
 		perror("stat'ing logfile");
 		goto finished;
 	}
 	if ((statbuf.st_mode & S_IFLNK) == S_IFLNK) {
 		fprintf(stderr, "%s is a symbolic link; --expire requires "
-			"a hard-linked file name\n", params->opt_filein);
+			"a hard-linked file name\n", filein);
 		goto finished;
 	}
 	if (!(statbuf.st_mode & S_IFREG)) {
 		fprintf(stderr, "%s is not a regular file; --expire "
 			"only works on accounting log files\n",
-			params->opt_filein);
+			filein);
 		goto finished;
 	}
 	prot = statbuf.st_mode & 0777;
 	gid  = statbuf.st_gid;
 	uid  = statbuf.st_uid;
-	old_logfile_name = _prefix_filename(params->opt_filein, ".old.");
+	old_logfile_name = _prefix_filename(filein, ".old.");
 	if (stat(old_logfile_name, &statbuf)) {
 		if (errno != ENOENT) {
 			fprintf(stderr,"Error checking for %s: ",
@@ -1348,32 +1357,33 @@ extern void filetxt_jobacct_process_archive(List selected_parts,
 				list_append(keep_list, exp_rec);
 				continue;				
 			}
-			if (list_count(selected_parts)) {
-				itr = list_iterator_create(selected_parts);
-				while((temp = list_next(itr))) 
-					if(!strcasecmp(f[F_PARTITION], temp)) 
+			if (job_cond->partition_list
+			    && list_count(job_cond->partition_list)) {
+				itr = list_iterator_create(
+					job_cond->partition_list);
+				while((object = list_next(itr))) 
+					if (!strcasecmp(f[F_PARTITION], object))
 						break;
+				
 				list_iterator_destroy(itr);
-				if(!temp) {
-					list_append(keep_list, exp_rec);
-					continue;
-				} /* no match */
+				if(!object)
+					continue;	/* no match */
 			}
+		
 			list_append(exp_list, exp_rec);
-			if (params->opt_verbose > 2)
-				fprintf(stderr, "Selected: %8d %d\n",
-					exp_rec->job,
-					(int)exp_rec->job_submit);
+			debug2("Selected: %8d %d",
+			       exp_rec->job,
+			       (int)exp_rec->job_submit);
 		} else {
 			list_append(other_list, exp_rec);
 		}
 	}
 	if (!list_count(exp_list)) {
-		printf("No job records were purged.\n");
+		debug3("No job records were purged.");
 		goto finished;
 	}
-	logfile_name = xmalloc(strlen(params->opt_filein)+sizeof(".expired"));
-	sprintf(logfile_name, "%s.expired", params->opt_filein);
+	logfile_name = xmalloc(strlen(filein)+sizeof(".expired"));
+	sprintf(logfile_name, "%s.expired", filein);
 	new_file = stat(logfile_name, &statbuf);
 	if ((expired_logfile = fopen(logfile_name, "a"))==NULL) {
 		fprintf(stderr, "Error while opening %s", 
@@ -1389,7 +1399,7 @@ extern void filetxt_jobacct_process_archive(List selected_parts,
 	}
 	xfree(logfile_name);
 
-	logfile_name = _prefix_filename(params->opt_filein, ".new.");
+	logfile_name = _prefix_filename(filein, ".new.");
 	if ((new_logfile = fopen(logfile_name, "w"))==NULL) {
 		fprintf(stderr, "Error while opening %s",
 			logfile_name);
@@ -1410,19 +1420,19 @@ extern void filetxt_jobacct_process_archive(List selected_parts,
 	list_sort(exp_list, (ListCmpF) _cmp_jrec);
 	list_sort(keep_list, (ListCmpF) _cmp_jrec);
 	
-	if (params->opt_verbose > 2) {
-		fprintf(stderr, "--- contents of exp_list ---");
-		itr = list_iterator_create(exp_list);
-		while((exp_rec = list_next(itr))) {
-			if (!(i%5))
-				fprintf(stderr, "\n");
-			else
-				fprintf(stderr, "\t");
-			fprintf(stderr, "%d", exp_rec->job);
-		}
-		fprintf(stderr, "\n---- end of exp_list ---\n");
-		list_iterator_destroy(itr);
-	}
+	/* if (params->opt_verbose > 2) { */
+/* 		fprintf(stderr, "--- contents of exp_list ---"); */
+/* 		itr = list_iterator_create(exp_list); */
+/* 		while((exp_rec = list_next(itr))) { */
+/* 			if (!(i%5)) */
+/* 				fprintf(stderr, "\n"); */
+/* 			else */
+/* 				fprintf(stderr, "\t"); */
+/* 			fprintf(stderr, "%d", exp_rec->job); */
+/* 		} */
+/* 		fprintf(stderr, "\n---- end of exp_list ---\n"); */
+/* 		list_iterator_destroy(itr); */
+/* 	} */
 	/* write the expired file */
 	itr = list_iterator_create(exp_list);
 	while((exp_rec = list_next(itr))) {
@@ -1488,14 +1498,14 @@ extern void filetxt_jobacct_process_archive(List selected_parts,
 	}
 	list_iterator_destroy(itr);
 	
-	if (rename(params->opt_filein, old_logfile_name)) {
+	if (rename(filein, old_logfile_name)) {
 		perror("renaming logfile to .old.");
 		goto finished2;
 	}
-	if (rename(logfile_name, params->opt_filein)) {
+	if (rename(logfile_name, filein)) {
 		perror("renaming new logfile");
 		/* undo it? */
-		if (!rename(old_logfile_name, params->opt_filein)) 
+		if (!rename(old_logfile_name, filein)) 
 			fprintf(stderr, "Please correct the problem "
 				"and try again");
 		else
@@ -1503,7 +1513,7 @@ extern void filetxt_jobacct_process_archive(List selected_parts,
 				"log may have been renamed %s;\n"
 				"please rename it to \"%s\" if necessary, "
 			        "and try again\n",
-				old_logfile_name, params->opt_filein);
+				old_logfile_name, filein);
 		goto finished2;
 	}
 	fflush(new_logfile);	/* Flush the buffers before forking */
@@ -1514,7 +1524,7 @@ extern void filetxt_jobacct_process_archive(List selected_parts,
 		file_err = 1;
 		fprintf(stderr, "Error: Attempt to reconfigure "
 			"SLURM failed.\n");
-		if (rename(old_logfile_name, params->opt_filein)) {
+		if (rename(old_logfile_name, filein)) {
 			perror("renaming logfile from .old.");
 			goto finished2;
 		}
@@ -1526,7 +1536,7 @@ extern void filetxt_jobacct_process_archive(List selected_parts,
 	}
 
 	/* reopen new logfile in append mode, since slurmctld may write it */
-	if (freopen(params->opt_filein, "a", new_logfile) == NULL) {
+	if (freopen(filein, "a", new_logfile) == NULL) {
 		perror("reopening new logfile");
 		goto finished2;
 	}
@@ -1537,7 +1547,8 @@ extern void filetxt_jobacct_process_archive(List selected_parts,
 			goto finished2;
 		}
 	}
-	
+	rc = SLURM_SUCCESS;
+
 	printf("%d jobs expired.\n", list_count(exp_list));
 finished2:
 	fclose(new_logfile);
@@ -1547,13 +1558,14 @@ finished2:
 			      old_logfile_name);
 	}
 finished:
-	if(slurmdbd_conf) {
-		xfree(params->opt_filein);
-	}
+	xfree(filein);
+	
 	fclose(fd);
 	list_destroy(exp_list);
 	list_destroy(keep_list);
 	list_destroy(other_list);
 	xfree(old_logfile_name);
 	xfree(logfile_name);
+
+	return rc;
 }

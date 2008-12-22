@@ -1684,56 +1684,6 @@ extern int jobacct_storage_p_suspend(PGconn *acct_pgsql_db,
  * returns List of job_rec_t *
  * note List needs to be freed when called
  */
-extern List jobacct_storage_p_get_jobs(PGconn *acct_pgsql_db, uid_t uid,
-				       List selected_steps,
-				       List selected_parts,
-				       sacct_parameters_t *params)
-{
-	List job_list = NULL;
-#ifdef HAVE_PGSQL
-	acct_job_cond_t job_cond;
-
-	if(!acct_pgsql_db || PQstatus(acct_pgsql_db) != CONNECTION_OK) {
-		if(!pgsql_get_db_connection(&acct_pgsql_db,
-					    pgsql_db_name, pgsql_db_info))
-			return job_list;
-	}
-
-	memset(&job_cond, 0, sizeof(acct_job_cond_t));
-
-	job_cond.acct_list = selected_steps;
-	job_cond.step_list = selected_steps;
-	job_cond.partition_list = selected_parts;
-	job_cond.cluster_list = params->opt_cluster_list;
-
-	if (params->opt_uid >=0) {
-		char *temp = xstrdup_printf("%u", params->opt_uid);
-		job_cond.userid_list = list_create(NULL);
-		list_append(job_cond.userid_list, temp);
-	}	
-
-	if (params->opt_gid >=0) {
-		char *temp = xstrdup_printf("%u", params->opt_gid);
-		job_cond.groupid_list = list_create(NULL);
-		list_append(job_cond.groupid_list, temp);
-	}	
-
-	job_list = pgsql_jobacct_process_get_jobs(acct_pgsql_db, &job_cond);	
-
-	if(job_cond.userid_list)
-		list_destroy(job_cond.userid_list);
-	if(job_cond.groupid_list)
-		list_destroy(job_cond.groupid_list);
-
-#endif
-	return job_list;
-}
-
-/* 
- * get info from the storage 
- * returns List of job_rec_t *
- * note List needs to be freed when called
- */
 extern List jobacct_storage_p_get_jobs_cond(PGconn *acct_pgsql_db, uid_t uid, 
 					    acct_job_cond_t *job_cond)
 {
@@ -1753,21 +1703,30 @@ extern List jobacct_storage_p_get_jobs_cond(PGconn *acct_pgsql_db, uid_t uid,
 /* 
  * expire old info from the storage 
  */
-extern void jobacct_storage_p_archive(PGconn *acct_pgsql_db,
-				      List selected_parts,
-				      void *params)
+extern int jobacct_storage_p_archive(PGconn *acct_pgsql_db,
+				      acct_archive_cond_t *arch_cond)
 {
 #ifdef HAVE_PGSQL
 	if(!acct_pgsql_db || PQstatus(acct_pgsql_db) != CONNECTION_OK) {
 		if(!pgsql_get_db_connection(&acct_pgsql_db,
 					    pgsql_db_name, pgsql_db_info))
-			return;
+			return SLURM_ERROR;
 	}
 
-	pgsql_jobacct_process_archive(acct_pgsql_db, selected_parts, params);
+	return pgsql_jobacct_process_archive(acct_pgsql_db, arch_cond);
 #endif
-	return;
+	return SLURM_ERROR;
 }
+
+/* 
+ * load old info into the storage 
+ */
+extern int jobacct_storage_p_archive_load(void *db_conn, 
+					  acct_archive_rec_t *arch_rec)
+{
+	return SLURM_SUCCESS;
+}
+
 
 extern int acct_storage_p_update_shares_used(void *db_conn,
 					     List shares_used)

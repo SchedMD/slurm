@@ -833,6 +833,7 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 	ListIterator itr = NULL;
 	char *object = NULL;
 	char *prefix = "t1";
+
 	if(!assoc_cond)
 		return 0;
 
@@ -10000,52 +10001,6 @@ extern int jobacct_storage_p_suspend(mysql_conn_t *mysql_conn,
  * returns List of job_rec_t *
  * note List needs to be freed when called
  */
-extern List jobacct_storage_p_get_jobs(mysql_conn_t *mysql_conn, uid_t uid, 
-				       List selected_steps,
-				       List selected_parts,
-				       sacct_parameters_t *params)
-{
-	List job_list = NULL;
-#ifdef HAVE_MYSQL
-	acct_job_cond_t job_cond;
-
-	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
-		return NULL;
-	memset(&job_cond, 0, sizeof(acct_job_cond_t));
-
-	job_cond.acct_list = selected_steps;
-	job_cond.step_list = selected_steps;
-	job_cond.partition_list = selected_parts;
-	job_cond.cluster_list = params->opt_cluster_list;
-
-	if (params->opt_uid >=0) {
-		char *temp = xstrdup_printf("%u", params->opt_uid);
-		job_cond.userid_list = list_create(NULL);
-		list_append(job_cond.userid_list, temp);
-	}	
-
-	if (params->opt_gid >=0) {
-		char *temp = xstrdup_printf("%u", params->opt_gid);
-		job_cond.groupid_list = list_create(NULL);
-		list_append(job_cond.groupid_list, temp);
-	}	
-
-	job_list = mysql_jobacct_process_get_jobs(mysql_conn, uid, &job_cond);
-
-	if(job_cond.userid_list)
-		list_destroy(job_cond.userid_list);
-	if(job_cond.groupid_list)
-		list_destroy(job_cond.groupid_list);
-		
-#endif
-	return job_list;
-}
-
-/* 
- * get info from the storage 
- * returns List of job_rec_t *
- * note List needs to be freed when called
- */
 extern List jobacct_storage_p_get_jobs_cond(mysql_conn_t *mysql_conn, 
 					    uid_t uid, 
 					    acct_job_cond_t *job_cond)
@@ -10062,17 +10017,31 @@ extern List jobacct_storage_p_get_jobs_cond(mysql_conn_t *mysql_conn,
 /* 
  * expire old info from the storage 
  */
-extern void jobacct_storage_p_archive(mysql_conn_t *mysql_conn, 
-				      List selected_parts,
-				      void *params)
+extern int jobacct_storage_p_archive(mysql_conn_t *mysql_conn, 
+				      acct_archive_cond_t *arch_cond)
 {
 #ifdef HAVE_MYSQL
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
-		return;
-	mysql_jobacct_process_archive(mysql_conn,
-				      selected_parts, params);
+		return SLURM_ERROR;
+	
+	return mysql_jobacct_process_archive(mysql_conn, arch_cond);
 #endif
-	return;
+	return SLURM_ERROR;
+}
+
+/* 
+ * load old info into the storage 
+ */
+extern int jobacct_storage_p_archive_load(mysql_conn_t *mysql_conn, 
+					  acct_archive_rec_t *arch_rec)
+{
+#ifdef HAVE_MYSQL
+	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
+		return SLURM_ERROR;
+
+	return mysql_jobacct_process_archive_load(mysql_conn, arch_rec);
+#endif
+	return SLURM_ERROR;
 }
 
 extern int acct_storage_p_update_shares_used(mysql_conn_t *mysql_conn, 

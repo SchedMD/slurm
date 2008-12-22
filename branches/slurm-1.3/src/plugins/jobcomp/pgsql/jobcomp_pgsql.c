@@ -464,9 +464,7 @@ extern char *slurm_jobcomp_strerror(int errnum)
  * in/out job_list List of job_rec_t *
  * note List needs to be freed when called
  */
-extern List slurm_jobcomp_get_jobs(List selected_steps,
-				   List selected_parts,
-				   void *params)
+extern List slurm_jobcomp_get_jobs(acct_job_cond_t *job_cond)
 {
 	List job_list = NULL;
 
@@ -480,9 +478,7 @@ extern List slurm_jobcomp_get_jobs(List selected_steps,
 		xfree(loc);
 	}
 
-	job_list = pgsql_jobcomp_process_get_jobs(selected_steps,
-						  selected_parts,
-						  params);	
+	job_list = pgsql_jobcomp_process_get_jobs(job_cond);	
 #endif 
 	return job_list;
 }
@@ -490,19 +486,19 @@ extern List slurm_jobcomp_get_jobs(List selected_steps,
 /* 
  * expire old info from the storage 
  */
-extern void slurm_jobcomp_archive(List selected_parts, void *params)
+extern int slurm_jobcomp_archive(acct_archive_cond_t *arch_cond)
 {
 #ifdef HAVE_PGSQL
 	if(!jobcomp_pgsql_db || PQstatus(jobcomp_pgsql_db) != CONNECTION_OK) {
 		char *loc = slurm_get_jobcomp_loc();
 		if(slurm_jobcomp_set_location(loc) == SLURM_ERROR) {
 			xfree(loc);
-			return;
+			return SLURM_ERROR;
 		}
 		xfree(loc);
 	}
 
-	pgsql_jobcomp_process_archive(selected_parts, params);
+	return pgsql_jobcomp_process_archive(arch_cond);
 #endif 
-	return;
+	return SLURM_ERROR;
 }
