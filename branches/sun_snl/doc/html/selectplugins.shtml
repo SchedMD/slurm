@@ -19,7 +19,7 @@ abbreviation for the type of node selection algorithm. We recommend, for example
 <li><b>linear</b>&#151;A plugin that selects nodes assuming a one-dimensional 
 array of nodes. The nodes are selected so as to minimize the number of consecutive 
 sets of nodes utilizing a best-fit algorithm. While supporting shared nodes, 
-this plugin does not allocate individual processors, memory, etc. 
+this plugin does not allocate individual processors, but can allocate memory to jobs. 
 This plugin is recommended for systems without shared nodes.</li>
 <li><b>cons_res</b>&#151;A plugin that can allocate individual processors, 
 memory, etc. within nodes. This plugin is recommended for systems with 
@@ -28,6 +28,10 @@ many non-parallel programs sharing nodes. For more information see
 <li><b>bluegene</b>&#151;<a href="http://www.research.ibm.com/bluegene/">IBM Blue Gene</a>  
 node selector. Note that this plugin not only selects the nodes for a job, but performs 
 some initialization and termination functions for the job.</li>
+<li><b>3d_torus</b>&#151;A plugin that selects nodes assuming a three-dimensional
+torus architecture. The nodes are selected so as to minimize the communication
+overhead for jobs. This plugin does not allocate individual processors, 
+but can allocate memory to jobs.</li>
 </ul>
 <p>The <span class="commandline">plugin_name</span> and 
 <span class="commandline">plugin_version</span> 
@@ -359,6 +363,6 @@ to maintain data format compatibility across different versions of the plugin.</
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 10 September 2008</p>
+<p style="text-align:center;">Last modified 22 December 2008</p>
 
 <!--#include virtual="footer.txt"-->
