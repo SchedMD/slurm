@@ -94,6 +94,25 @@ typedef enum {	HEADLINE,
 		JOBCOMP
 } type_t;
 
+typedef struct {
+	acct_archive_cond_t *arch_cond;
+	int opt_completion;	/* --completion */
+	int opt_dump;		/* --dump */
+	int opt_dup;		/* --duplicates; +1 = explicitly set */
+	int opt_fdump;		/* --formattted_dump */
+	int opt_expire;		/* --expire */
+	char *opt_field_list;	/* --fields= */
+	int opt_gid;		/* running persons gid */
+	int opt_help;		/* --help */
+	int opt_long;		/* --long */
+	int opt_lowmem;		/* --low_memory */
+	int opt_noheader;	/* can only be cleared */
+	int opt_raw;		/* --raw */
+	int opt_stat;		/* --stat */
+	int opt_total;		/* --total */
+	int opt_uid;		/* running persons uid */
+	int opt_verbose;	/* --verbose */
+} sacct_parameters_t;
 
 typedef struct fields {
 	char *name;		/* Specified in --fields= */

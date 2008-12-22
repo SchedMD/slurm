@@ -63,6 +63,10 @@ static int   _add_users(slurmdbd_conn_t *slurmdbd_conn,
 			Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _add_wckeys(slurmdbd_conn_t *slurmdbd_conn,
 			 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _archive_dump(slurmdbd_conn_t *slurmdbd_conn,
+			   Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _archive_load(slurmdbd_conn_t *slurmdbd_conn,
+			   Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _cluster_procs(slurmdbd_conn_t *slurmdbd_conn,
 			    Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _get_accounts(slurmdbd_conn_t *slurmdbd_conn,
@@ -195,6 +199,14 @@ proc_req(slurmdbd_conn_t *slurmdbd_conn,
 		case DBD_ADD_WCKEYS:
 			rc = _add_wckeys(slurmdbd_conn, 
 					 in_buffer, out_buffer, uid);
+			break;
+		case DBD_ARCHIVE_DUMP:
+			rc = _archive_dump(slurmdbd_conn, 
+					   in_buffer, out_buffer, uid);
+			break;
+		case DBD_ARCHIVE_LOAD:
+			rc = _archive_load(slurmdbd_conn, 
+					   in_buffer, out_buffer, uid);
 			break;
 		case DBD_CLUSTER_PROCS:
 			rc = _cluster_procs(slurmdbd_conn,
@@ -748,6 +760,93 @@ end_it:
 	return rc;
 }
 
+static int _archive_dump(slurmdbd_conn_t *slurmdbd_conn,
+			 Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	int rc = SLURM_SUCCESS;
+	dbd_cond_msg_t *get_msg = NULL;
+	char *comment = NULL;
+	acct_archive_cond_t *arch_cond = NULL;
+
+	debug2("DBD_ARCHIVE_DUMP: called");
+	if((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)
+	   && assoc_mgr_get_admin_level(slurmdbd_conn->db_conn, *uid) 
+	   < ACCT_ADMIN_SUPER_USER) {
+		comment = "Your user doesn't have privilege to preform this action";
+		error("%s", comment);
+		rc = ESLURM_ACCESS_DENIED;
+		goto end_it;			
+	}
+
+	if (slurmdbd_unpack_cond_msg(slurmdbd_conn->rpc_version, 
+				     DBD_ARCHIVE_DUMP, &get_msg, in_buffer) !=
+	    SLURM_SUCCESS) {
+		comment = "Failed to unpack DBD_ARCHIVE_DUMP message";
+		error("%s", comment);
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+	arch_cond = (acct_archive_cond_t *)get_msg->cond;
+	/* set up some defaults */
+	if(arch_cond->archive_jobs == (uint16_t)NO_VAL)
+		arch_cond->archive_jobs = slurmdbd_conf->archive_jobs;
+	if(!arch_cond->archive_dir)
+		arch_cond->archive_dir = xstrdup(slurmdbd_conf->archive_dir);
+	if(!arch_cond->archive_script)
+		arch_cond->archive_script = 
+			xstrdup(slurmdbd_conf->archive_script);
+	if(arch_cond->archive_steps == (uint16_t)NO_VAL)
+		arch_cond->archive_steps = slurmdbd_conf->archive_steps;
+	if(arch_cond->job_purge == (uint16_t)NO_VAL)
+		arch_cond->job_purge = slurmdbd_conf->job_purge;
+	if(arch_cond->step_purge == (uint16_t)NO_VAL)
+		arch_cond->step_purge = slurmdbd_conf->step_purge;
+	
+	rc = jobacct_storage_g_archive(slurmdbd_conn->db_conn, arch_cond);
+
+end_it:
+	slurmdbd_free_cond_msg(slurmdbd_conn->rpc_version, 
+			       DBD_ARCHIVE_DUMP, get_msg);
+	*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version, 
+				      rc, comment, DBD_ARCHIVE_DUMP);
+	return rc;
+}
+
+static int _archive_load(slurmdbd_conn_t *slurmdbd_conn,
+			 Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	int rc = SLURM_SUCCESS;
+	acct_archive_rec_t *arch_rec = NULL;
+	char *comment = NULL;
+
+	debug2("DBD_ARCHIVE_LOAD: called");
+	if((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)
+	   && assoc_mgr_get_admin_level(slurmdbd_conn->db_conn, *uid) 
+	   < ACCT_ADMIN_SUPER_USER) {
+		comment = "Your user doesn't have privilege to preform this action";
+		error("%s", comment);
+		rc = ESLURM_ACCESS_DENIED;
+		goto end_it;			
+	}
+
+	if (unpack_acct_archive_rec((void *)&arch_rec, 
+				    slurmdbd_conn->rpc_version, 
+				    in_buffer) != SLURM_SUCCESS) {
+		comment = "Failed to unpack DBD_ARCHIVE_LOAD message";
+		error("%s", comment);
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+	
+	rc = jobacct_storage_g_archive_load(slurmdbd_conn->db_conn, arch_rec);
+
+end_it:
+	destroy_acct_archive_rec(arch_rec);
+	*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version, 
+				      rc, comment, DBD_ARCHIVE_LOAD);
+	return rc;
+}
+
 static int _cluster_procs(slurmdbd_conn_t *slurmdbd_conn,
 			  Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
@@ -902,8 +1001,8 @@ static int _get_jobs(slurmdbd_conn_t *slurmdbd_conn,
 {
 	dbd_get_jobs_msg_t *get_jobs_msg = NULL;
 	dbd_list_msg_t list_msg;
-	sacct_parameters_t sacct_params;
 	char *comment = NULL;
+	acct_job_cond_t job_cond;
 
 	debug2("DBD_GET_JOBS: called");
 	if (slurmdbd_unpack_get_jobs_msg(slurmdbd_conn->rpc_version, 
@@ -917,32 +1016,46 @@ static int _get_jobs(slurmdbd_conn_t *slurmdbd_conn,
 		return SLURM_ERROR;
 	}
 	
-	memset(&sacct_params, 0, sizeof(sacct_parameters_t));
-	if (get_jobs_msg->cluster_name) {
-		sacct_params.opt_cluster_list = list_create(NULL);
-		list_append(sacct_params.opt_cluster_list,
-			    get_jobs_msg->cluster_name);
+	memset(&job_cond, 0, sizeof(acct_job_cond_t));
+
+	job_cond.acct_list = get_jobs_msg->selected_steps;
+	job_cond.step_list = get_jobs_msg->selected_steps;
+	job_cond.partition_list = get_jobs_msg->selected_parts;
+
+	if (get_jobs_msg->user) {
+		uid_t pw_uid = uid_from_string(get_jobs_msg->user);
+		if (pw_uid != (uid_t) -1) {
+			char *temp = xstrdup_printf("%u", pw_uid);
+			job_cond.userid_list = list_create(slurm_destroy_char);
+			list_append(job_cond.userid_list, temp);
+		}	
+	}
+
+	if (get_jobs_msg->gid >=0) {
+		char *temp = xstrdup_printf("%u", get_jobs_msg->gid);
+		job_cond.groupid_list = list_create(slurm_destroy_char);
+		list_append(job_cond.groupid_list, temp);
 	}	
 
-	sacct_params.opt_uid = -1;
-	if(get_jobs_msg->user) {
-		uid_t pw_uid = uid_from_string(get_jobs_msg->user);
-		if (pw_uid != (uid_t) -1)
-			sacct_params.opt_uid = pw_uid;
-	}
+	if (get_jobs_msg->cluster_name) {
+		job_cond.cluster_list = list_create(NULL);
+		list_append(job_cond.cluster_list, get_jobs_msg->cluster_name);
+	}		
 		
-	list_msg.my_list = jobacct_storage_g_get_jobs(
-		slurmdbd_conn->db_conn, *uid,
-		get_jobs_msg->selected_steps, get_jobs_msg->selected_parts,
-		&sacct_params);
+	list_msg.my_list = jobacct_storage_g_get_jobs_cond(
+		slurmdbd_conn->db_conn, *uid, &job_cond);
 	slurmdbd_free_get_jobs_msg(slurmdbd_conn->rpc_version, 
 				   get_jobs_msg);
 
 	if(errno == ESLURM_ACCESS_DENIED && !list_msg.my_list)
 		list_msg.my_list = list_create(NULL);
 
-	if(sacct_params.opt_cluster_list)
-		list_destroy(sacct_params.opt_cluster_list);
+	if(job_cond.cluster_list)
+		list_destroy(job_cond.cluster_list);
+	if(job_cond.userid_list)
+		list_destroy(job_cond.userid_list);
+	if(job_cond.groupid_list)
+		list_destroy(job_cond.groupid_list);
 
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_JOBS, *out_buffer);

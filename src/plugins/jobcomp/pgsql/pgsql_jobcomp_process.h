@@ -44,8 +44,9 @@
 #define _HAVE_PGSQL_JOBCOMP_PROCESS_H
 
 #include "src/database/pgsql_common.h"
-#include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_jobcomp.h"
+#include "src/common/jobacct_common.h"
+#include "src/common/slurm_accounting_storage.h"
 
 #ifdef HAVE_PGSQL
 extern PGconn *jobcomp_pgsql_db;
@@ -81,12 +82,9 @@ enum {
 	JOBCOMP_REQ_COUNT		
 };
 
-extern List pgsql_jobcomp_process_get_jobs(List selected_steps,
-					   List selected_parts,
-					   sacct_parameters_t *params);
+extern List pgsql_jobcomp_process_get_jobs(acct_job_cond_t *job_cond);
 
-extern void pgsql_jobcomp_process_archive(List selected_parts,
-					  sacct_parameters_t *params);
+extern int pgsql_jobcomp_process_archive(acct_archive_cond_t *arch_cond);
 #endif
 
 #endif

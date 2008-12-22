@@ -759,7 +759,6 @@ extern int mysql_daily_rollup(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 	}
 			       
-
 /* 	info("stop start %s", ctime(&curr_start)); */
 /* 	info("stop end %s", ctime(&curr_end)); */
 

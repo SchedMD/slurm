@@ -59,9 +59,7 @@ static void _do_fdump(PGresult *result, int lc)
 	return;
 }
 
-extern List pgsql_jobcomp_process_get_jobs(List selected_steps,
-					   List selected_parts,
-					   sacct_parameters_t *params)
+extern List pgsql_jobcomp_process_get_jobs(acct_job_cond_t *job_cond)
 {
 
 	char *query = NULL;	
@@ -77,11 +75,22 @@ extern List pgsql_jobcomp_process_get_jobs(List selected_steps,
 	char time_str[32];
 	time_t temp_time;
 	List job_list = NULL;
+	int fdump_flag = 0;
 
-	if(selected_steps && list_count(selected_steps)) {
+	/* we grab the fdump only for the filetxt plug through the
+	   FDUMP_FLAG on the job_cond->duplicates variable.  We didn't
+	   add this extra field to the structure since it only applies
+	   to this plugin.
+	*/
+	if(job_cond) {
+		fdump_flag = job_cond->duplicates & FDUMP_FLAG;
+		job_cond->duplicates &= (~FDUMP_FLAG);
+	}
+
+	if(job_cond->step_list && list_count(job_cond->step_list)) {
 		set = 0;
 		xstrcat(extra, " where (");
-		itr = list_iterator_create(selected_steps);
+		itr = list_iterator_create(job_cond->step_list);
 		while((selected_step = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
@@ -95,14 +104,14 @@ extern List pgsql_jobcomp_process_get_jobs(List selected_steps,
 		xstrcat(extra, ")");
 	}
 
-	if(selected_parts && list_count(selected_parts)) {
+	if(job_cond->partition_list && list_count(job_cond->partition_list)) {
 		set = 0;
 		if(extra)
 			xstrcat(extra, " && (");
 		else
 			xstrcat(extra, " where (");
 		
-		itr = list_iterator_create(selected_parts);
+		itr = list_iterator_create(job_cond->partition_list);
 		while((selected_part = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
@@ -143,7 +152,7 @@ extern List pgsql_jobcomp_process_get_jobs(List selected_steps,
 	job_list = list_create(jobcomp_destroy_job);
 	for (i = 0; i < PQntuples(result); i++) {
 		
-		if (params->opt_fdump) {
+		if (fdump_flag) {
 			_do_fdump(result, i);
 			continue;
 		}
@@ -211,10 +220,9 @@ extern List pgsql_jobcomp_process_get_jobs(List selected_steps,
 	return job_list;
 }
 
-extern void pgsql_jobcomp_process_archive(List selected_parts,
-					  sacct_parameters_t *params)
+extern int pgsql_jobcomp_process_archive(acct_archive_cond_t *arch_cond)
 {
-	return;
+	return SLURM_SUCCESS;
 }
 
 #endif	

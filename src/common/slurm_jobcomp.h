@@ -53,6 +53,7 @@
 #include <unistd.h>
 
 #include "src/slurmctld/slurmctld.h"
+#include "src/common/slurm_accounting_storage.h"
 
 typedef struct {
 	uint32_t jobid;
@@ -101,14 +102,12 @@ extern char *g_slurm_jobcomp_strerror(int errnum);
  * returns List of jobcomp_job_rec_t *
  * note List needs to be freed when called
  */
-extern List g_slurm_jobcomp_get_jobs(List selected_steps,
-				     List selected_parts,
-				     void *params);
+extern List g_slurm_jobcomp_get_jobs(acct_job_cond_t *job_cond);
 
 /* 
  * expire old info from the storage 
  */
-extern void g_slurm_jobcomp_archive(List selected_parts, void *params);
+extern int g_slurm_jobcomp_archive(acct_archive_cond_t *arch_cond);
 
 #endif /*__SLURM_JOBCOMP_H__*/
 

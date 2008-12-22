@@ -181,13 +181,10 @@ static jobcomp_job_rec_t *_parse_line(List job_info_list)
 	return job;
 }
 
-extern void filetxt_jobcomp_process_get_jobs(List job_list, 
-					      List selected_steps,
-					      List selected_parts,
-					      sacct_parameters_t *params)
+extern List filetxt_jobcomp_process_get_jobs(acct_job_cond_t *job_cond)
 {
 	char line[BUFFER_SIZE];
-	char *fptr = NULL;
+	char *fptr = NULL, *filein = NULL;
 	int jobid = 0;
 	char *partition = NULL;
 	FILE *fd = NULL;
@@ -198,9 +195,22 @@ extern void filetxt_jobcomp_process_get_jobs(List job_list,
 	ListIterator itr = NULL;
 	List job_info_list = NULL;
 	filetxt_jobcomp_info_t *jobcomp_info = NULL;
+	List job_list = list_create(jobcomp_destroy_job);
+	int fdump_flag = 0;
 
-	fd = _open_log_file(params->opt_filein);
-	
+	/* we grab the fdump only for the filetxt plug through the
+	   FDUMP_FLAG on the job_cond->duplicates variable.  We didn't
+	   add this extra field to the structure since it only applies
+	   to this plugin.
+	*/
+	if(job_cond) {
+		fdump_flag = job_cond->duplicates & FDUMP_FLAG;
+		job_cond->duplicates &= (~FDUMP_FLAG);
+	}
+
+	filein = slurm_get_jobcomp_loc();
+	fd = _open_log_file(filein);	
+
 	while (fgets(line, BUFFER_SIZE, fd)) {
 		lc++;
 		fptr = line;	/* break the record into NULL-
@@ -240,10 +250,10 @@ extern void filetxt_jobcomp_process_get_jobs(List job_list,
 			}
 		}
 				
-		if (list_count(selected_steps)) {
+		if (job_cond->step_list && list_count(job_cond->step_list)) {
 			if(!jobid) 
 				continue;
-			itr = list_iterator_create(selected_steps);
+			itr = list_iterator_create(job_cond->step_list);
 			while((selected_step = list_next(itr))) {
 				if (selected_step->jobid == jobid)
 					continue;
@@ -256,10 +266,11 @@ extern void filetxt_jobcomp_process_get_jobs(List job_list,
 		}
 	foundjob:
 		
-		if (list_count(selected_parts)) {
+		if (job_cond->partition_list
+		    && list_count(job_cond->partition_list)) {
 			if(!partition) 
 				continue;
-			itr = list_iterator_create(selected_parts);
+			itr = list_iterator_create(job_cond->partition_list);
 			while((selected_part = list_next(itr))) 
 				if (!strcasecmp(selected_part, partition)) {
 					list_iterator_destroy(itr);
@@ -270,7 +281,7 @@ extern void filetxt_jobcomp_process_get_jobs(List job_list,
 		}
 	foundp:
 		
-		if (params->opt_fdump) {
+		if (fdump_flag) {
 			_do_fdump(job_info_list, lc);
 			continue;
 		}
@@ -281,20 +292,23 @@ extern void filetxt_jobcomp_process_get_jobs(List job_list,
 		if(job)
 			list_append(job_list, job);
 	}
+
 	if(job_info_list) 
 		list_destroy(job_info_list);
 	
 	if (ferror(fd)) {
-		perror(params->opt_filein);
+		perror(filein);
+		xfree(filein);
 		exit(1);
 	} 
 	fclose(fd);
+	xfree(filein);
 
-	return;
+	return job_list;
 }
 
-extern void filetxt_jobcomp_process_archive(List selected_parts,
-					     sacct_parameters_t *params)
+extern int filetxt_jobcomp_process_archive(acct_archive_cond_t *arch_cond)
 {
 	info("No code to archive jobcomp.");
+	return SLURM_SUCCESS;
 }

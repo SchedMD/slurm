@@ -3,6 +3,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.3.13
 =========================
+ -- Added ability for slurmdbd to archive and purge step and/or job records.
 
 * Changes in SLURM 1.3.12
 =========================
