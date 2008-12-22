@@ -1,5 +1,6 @@
 /*****************************************************************************\
  *  configure_functions.c - Functions related to configure mode of smap.
+ *  These functions are only used on a BlueGene computer.
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008 Lawrence Livermore National Security.
@@ -61,7 +62,7 @@ static int	_remove_allocation(char *com, List allocated_blocks);
 static int	_alter_allocation(char *com, List allocated_blocks);
 static int	_copy_allocation(char *com, List allocated_blocks);
 static int	_save_allocation(char *com, List allocated_blocks);
-static int _add_bg_record(blockreq_t *blockreq, List allocated_blocks);
+static int	_add_bg_record(blockreq_t *blockreq, List allocated_blocks);
 static int	_load_configuration(char *com, List allocated_blocks);
 static void	_print_header_command(void);
 static void	_print_text_command(allocated_block_t *allocated_block);

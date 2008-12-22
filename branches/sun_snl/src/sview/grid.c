@@ -1,7 +1,8 @@
 /****************************************************************************\
  *  grid.c - put display grid info here
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2004-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>, et. al.
  *  LLNL-CODE-402394.
@@ -540,7 +541,7 @@ extern void add_extra_cr_buttons(List *button_list, node_info_t *node_ptr)
 extern void put_buttons_in_table(GtkTable *table, List button_list)
 {
 	int table_x=0, table_y=0;
-#ifndef HAVE_BG
+#ifndef HAVE_3D
 	int coord_x=0, coord_y=0;
 #endif
 	grid_button_t *grid_button = NULL;
@@ -549,7 +550,7 @@ extern void put_buttons_in_table(GtkTable *table, List button_list)
 	
 	list_sort(button_list, (ListCmpF) _sort_button_inx);
 	
-#ifdef HAVE_BG
+#ifdef HAVE_3D
 	node_count = DIM_SIZE[X];
 	table_x = DIM_SIZE[X] + DIM_SIZE[Z];
 	table_y = (DIM_SIZE[Z] * DIM_SIZE[Y]) + DIM_SIZE[Y];
@@ -568,7 +569,7 @@ extern void put_buttons_in_table(GtkTable *table, List button_list)
 	gtk_table_resize(table, table_y, table_x);
 	itr = list_iterator_create(button_list);
 	while((grid_button = list_next(itr))) {
-#ifdef HAVE_BG
+#ifdef HAVE_3D
 		grid_button->table = table;
 		gtk_table_attach(table, grid_button->button,
 				 grid_button->table_x, 
@@ -660,7 +661,7 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 	int node_count = 0;
 	ListIterator itr = NULL;
 	sview_node_info_t *sview_node_info_ptr = NULL;
-#ifdef HAVE_BG
+#ifdef HAVE_3D
 	int y=0, z=0, x_offset=0, y_offset=0, default_y_offset=0;
 #endif
 
@@ -669,7 +670,7 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 		return SLURM_ERROR;
 	}
 	
-#ifdef HAVE_BG
+#ifdef HAVE_3D
 	node_count = DIM_SIZE[X];
 	table_x = DIM_SIZE[X] + DIM_SIZE[Z];
 	table_y = (DIM_SIZE[Z] * DIM_SIZE[Y]) + DIM_SIZE[Y];
@@ -688,7 +689,7 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 
 	gtk_table_resize(table, table_y, table_x);
 	itr = list_iterator_create(node_list);
-#ifdef HAVE_BG
+#ifdef HAVE_3D
 	/* ok this is going to look much different than smap since we
 	 * get the nodes from the controller going up from the Z dim
 	 * instead of laying these out in a nice X fashion
