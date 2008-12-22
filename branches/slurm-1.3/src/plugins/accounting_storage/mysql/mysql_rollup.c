@@ -377,7 +377,6 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				continue;
 			}
 
-
 			if(last_id != assoc_id) {
 				a_usage = xmalloc(sizeof(local_id_usage_t));
 				a_usage->id = assoc_id;
@@ -405,7 +404,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 						    w_usage);
 				}
 				
-				last_id = wckey_id;
+				last_wckeyid = wckey_id;
 			}
 			w_usage->a_cpu += seconds * row_acpu;
 			
