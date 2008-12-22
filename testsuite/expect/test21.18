@@ -384,7 +384,6 @@ proc _remove_acct { cluster name } {
 
 	return $exit_code
 }
-
 #
 # Use sacctmgr to modify an account
 #
