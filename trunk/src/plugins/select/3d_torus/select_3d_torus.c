@@ -835,10 +835,13 @@ static int _node_distance(uint16_t *focus, uint16_t *node_loc)
 			delta = focus[i] - node_loc[i];
 		else
 			delta = node_loc[i] - focus[i];
+#if 1
+		/* Comment this out for mesh rather than torus interconnect */
 		if (delta > ((max_coord[i] + 1) / 2)) {
 			/* communication wraps arounds torus */
 			delta = (max_coord[i] + 1) - delta;
 		}
+#endif
 		distance += delta;
 	}
 	return distance;
