@@ -119,7 +119,7 @@ expect {
 # NOTE: Expect parsing failures have been noted running "$srun --help" 
 #       directly, so we build a script containing a pipe to tail
 #
-make_bash_script $file_in "$srun --help | tail -n 20"
+make_bash_script $file_in "$srun --help | $bin_grep test"
 set matches 0
 set srun_pid [spawn $file_in]
 expect {
