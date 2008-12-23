@@ -335,9 +335,16 @@ extern int user_top(int argc, char *argv[])
 					while((sreport_user 
 					       = list_next(user_itr))) {
 						if(sreport_user->uid 
-						   == user->uid) {
-							break;
-						}
+						   != NO_VAL) {
+							if(sreport_user->uid 
+							   == user->uid)
+								break;
+						} else if(sreport_user->name 
+							  && !strcasecmp(
+								  sreport_user->
+								  name,
+								  user->name))
+							break;		
 					}
 					list_iterator_destroy(user_itr);
 				new_user:
