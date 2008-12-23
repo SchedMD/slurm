@@ -36,6 +36,7 @@ AC_DEFUN([X_AC_BGL],
     	esac ])	
  	
 	if test "x$bluegene_emulation" = "xyes" -o "x$bgl_emulation" = "xyes"; then
+      		AC_DEFINE(HAVE_3D, 1, [Define to 1 if 3-dimentional architecture])
 		AC_DEFINE(HAVE_BG, 1, [Define to 1 if emulating or running on Blue Gene system])
       		AC_DEFINE(HAVE_BGL, 1, [Define to 1 if emulating or running on Blue Gene/L system])
       		AC_DEFINE(HAVE_FRONT_END, 1, [Define to 1 if running slurmd on front-end only])
@@ -86,6 +87,7 @@ AC_DEFUN([X_AC_BGL],
 
   	if test ! -z "$have_bg_files" ; then
       		BG_INCLUDES="$bg_includes"
+      		AC_DEFINE(HAVE_3D, 1, [Define to 1 if 3-dimentional architecture])
       		AC_DEFINE(HAVE_BG, 1, [Define to 1 if emulating or running on Blue Gene system])
       		AC_DEFINE(HAVE_BGL, 1, [Define to 1 if emulating or running on Blue Gene/L system])
       		AC_DEFINE(HAVE_FRONT_END, 1, [Define to 1 if running slurmd on front-end only])
@@ -120,6 +122,7 @@ AC_DEFUN([X_AC_BGP],
    	if test "x$ac_bluegene_loaded" = "xyes" ; then 
 		bg_default_dirs=""
 	elif test "x$bgp_emulation" = "xyes"; then
+      		AC_DEFINE(HAVE_3D, 1, [Define to 1 if 3-dimentional architecture])
 		AC_DEFINE(HAVE_BG, 1, [Define to 1 if emulating or running on Blue Gene system])
       		AC_DEFINE(HAVE_BGP, 1, [Define to 1 if emulating or running on Blue Gene/P system])
       		AC_DEFINE(HAVE_FRONT_END, 1, [Define to 1 if running slurmd on front-end only])
@@ -164,6 +167,7 @@ AC_DEFUN([X_AC_BGP],
 
   	if test ! -z "$have_bgp_files" ; then
       		BG_INCLUDES="$bg_includes"
+      		AC_DEFINE(HAVE_3D, 1, [Define to 1 if 3-dimentional architecture])
       		AC_DEFINE(HAVE_BG, 1, [Define to 1 if emulating or running on Blue Gene system])
       		AC_DEFINE(HAVE_BGP, 1, [Define to 1 if emulating or running on Blue Gene/P system])
       		AC_DEFINE(HAVE_FRONT_END, 1, [Define to 1 if running slurmd on front-end only])

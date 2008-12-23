@@ -1,3 +1,3 @@
 # Makefile for node selection plugins
 
-SUBDIRS = bluegene cons_res linear
+SUBDIRS = 3d_torus bluegene cons_res linear

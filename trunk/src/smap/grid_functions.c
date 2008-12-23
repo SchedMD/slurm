@@ -1,7 +1,8 @@
 /*****************************************************************************\
  *  grid_functions.c - Functions related to curses display of smap.
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *
@@ -41,7 +42,7 @@
 extern int set_grid(int start, int end, int count)
 {
 	int x;
-#ifdef HAVE_BG
+#ifdef HAVE_3D
 	int y, z;
 	for (y = DIM_SIZE[Y] - 1; y >= 0; y--) {
 		for (z = 0; z < DIM_SIZE[Z]; z++) {
@@ -84,7 +85,7 @@ extern int set_grid_bg(int *start, int *end, int count, int set)
 {
 	int x=0;
 	int i = 0;
-#ifdef HAVE_BG
+#ifdef HAVE_3D
 	int y=0, z=0;
 #endif
 	assert(end[X] < DIM_SIZE[X]);
@@ -92,7 +93,7 @@ extern int set_grid_bg(int *start, int *end, int count, int set)
 	assert(count >= 0);
 	assert(set >= 0);
 	assert(set <= 2);
-#ifdef HAVE_BG
+#ifdef HAVE_3D
 	assert(end[Y] < DIM_SIZE[Y]);
 	assert(start[Y] >= 0);
 	assert(end[Z] < DIM_SIZE[Z]);
@@ -144,7 +145,7 @@ extern void print_grid(int dir)
 	int x;
 	int grid_xcord, grid_ycord = 2;
 
-#ifdef HAVE_BG
+#ifdef HAVE_3D
 	int y, z, offset = DIM_SIZE[Z];
 	for (y = DIM_SIZE[Y] - 1; y >= 0; y--) {
 		offset = DIM_SIZE[Z] + 1;

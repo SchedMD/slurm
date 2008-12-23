@@ -93,6 +93,8 @@ function set_select_type(form)
     document.config.select_type[1].click()		// linear
   } else if (form.name == "bluegene_params") {
     document.config.select_type[2].click()		// bluegene
+  } else if (form.name == "3d_torus_params") {
+    document.config.select_type[3].click()              // 3d_torus
   }
 }
 
@@ -106,6 +108,8 @@ function get_select_type_params()
   } else if (document.config.select_type[1].checked) {	// linear
     return "#SelectTypeParameters="
   } else if (document.config.select_type[2].checked) {	// bluegene
+    return "#SelectTypeParameters="
+  } else if (document.config.select_type[3].checked) {  // 3d_torus
     return "#SelectTypeParameters="
   }
 }
@@ -609,6 +613,9 @@ Select one value for <B>SelectType</B>:<BR>
 <input type="radio" name="select_type" value="linear" checked>
 <B>Linear</B>: Node-base 
 resource allocation, does not manage indivual processor allocation<BR>
+<input type="radio" name="select_type" value="3d_torus">
+<B>3D_Torus</B>: Node-base resource allocation in a three-dimensional torus,
+does not manage indivual processor allocation<BR>
 <input type="radio" name="select_type" value="bluegene">
 <B>BlueGene</B>: For IBM Blue Gene systems only<BR>
 <P>
