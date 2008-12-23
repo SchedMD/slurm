@@ -400,8 +400,7 @@ static char *_fix_double_quotes(char *str)
 			char *tmp = xstrndup(str+start, i-start);
 			xstrfmtcat(fixed, "%s\\\"", tmp);
 			xfree(tmp);
-			i++;
-			start = i + 1;
+			start = i+1;
 		} 
 		
 		i++;
@@ -3693,20 +3692,22 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 			   "where cluster=\"%s\" && acct=\"%s\"",
 			   object->cluster, object->acct); 
 
-		xstrfmtcat(extra, ", mod_time=%d", now);
+		xstrfmtcat(extra, ", mod_time=%d, cluster=\"%s\", "
+			   "acct=\"%s\"", now, object->cluster, object->acct);
 		if(!object->user) {
 			xstrcat(cols, ", parent_acct");
 			xstrfmtcat(vals, ", \"%s\"", parent);
-			xstrfmtcat(extra, ", parent_acct=\"%s\"", parent);
-			xstrfmtcat(update, " && user=''"); 
+			xstrfmtcat(extra, ", parent_acct=\"%s\", user=\"\"",
+				   parent);
+			xstrfmtcat(update, " && user=\"\""); 
 		} else {
 			char *part = object->partition;
 			xstrcat(cols, ", user");
 			xstrfmtcat(vals, ", \"%s\"", object->user); 		
-			xstrfmtcat(update, " && user=\"%s\"",
-				   object->user); 
+			xstrfmtcat(update, " && user=\"%s\"", object->user); 
+			xstrfmtcat(extra, ", user=\"%s\"", object->user);
 
-			/* We need to give a partition wiether it be
+			/* We need to give a partition whether it be
 			 * '' or the actual partition name given
 			 */
 			if(!part)
@@ -3714,6 +3715,7 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 			xstrcat(cols, ", partition");
 			xstrfmtcat(vals, ", \"%s\"", part);
 			xstrfmtcat(update, " && partition=\"%s\"", part);
+			xstrfmtcat(extra, ", partition=\"%s\"", part);
 		}
 
 		_setup_association_limits(object, &cols, &vals, &extra, 
@@ -4007,6 +4009,8 @@ end_it:
 	if(rc != SLURM_ERROR) {
 		if(txn_query) {
 			xstrcat(txn_query, ";");
+			debug4("%d(%d) query\n%s",
+			       mysql_conn->conn, __LINE__, txn_query);
 			rc = mysql_db_query(mysql_conn->db_conn,
 					    txn_query);
 			xfree(txn_query);
@@ -8290,7 +8294,7 @@ extern List acct_storage_p_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 
 			xstrfmtcat(assoc_extra, "acct=\"%s\"", object);
 
-			xstrfmtcat(name_extra, "(name like \"%%\"%s\"%%\""
+			xstrfmtcat(name_extra, "(name like \"%%\\\"%s\\\"%%\""
 				   " || name=\"%s\")", object, object);
 
 			set = 1;
@@ -8320,7 +8324,7 @@ extern List acct_storage_p_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 			}
 			xstrfmtcat(assoc_extra, "cluster=\"%s\"", object);
 
-			xstrfmtcat(name_extra, "(name like \"%%\"%s\"%%\""
+			xstrfmtcat(name_extra, "(name like \"%%\\\"%s\\\"%%\""
 				   " || name=\"%s\")", object, object);
 
 			set = 1;
@@ -8350,7 +8354,7 @@ extern List acct_storage_p_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 			}
 			xstrfmtcat(assoc_extra, "user=\"%s\"", object);
 
-			xstrfmtcat(name_extra, "(name like \"%%\"%s\"%%\""
+			xstrfmtcat(name_extra, "(name like \"%%\\\"%s\\\"%%\""
 				   " || name=\"%s\")", object, object);
 
 			set = 1;
@@ -8391,7 +8395,8 @@ extern List acct_storage_p_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 				xstrcat(extra, " || ");
 						
 			xstrfmtcat(extra, "(name like '%%id=%s %%' "
-				   "|| name like '%%id=%s)')", row[0], row[0]);
+				   "|| name like '%%id=%s)' || name=%s)",
+				   row[0], row[0], row[0]);
 			set = 1;
 		}
 		mysql_free_result(result);
