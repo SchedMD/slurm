@@ -79,7 +79,7 @@ set us2		u2ser
 set us3		u3ser
 set us4		u4ser
 set qs		QOS
-set qs1		normal
+set qs1		tnormal
 set qs2		runfirst
 set qs3		runlast
 set pat		parent
