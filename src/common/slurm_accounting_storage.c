@@ -157,14 +157,12 @@ typedef struct slurm_acct_storage_ops {
 				    struct step_record *step_ptr);
 	int  (*job_suspend)        (void *db_conn,
 				    struct job_record *job_ptr);
-	List (*get_jobs)           (void *db_conn, uint32_t uid,
-				    List selected_steps,
-				    List selected_parts,
-				    void *params);	
 	List (*get_jobs_cond)      (void *db_conn, uint32_t uid,
 				    acct_job_cond_t *job_cond);	
-	void (*job_archive)        (void *db_conn,
-				    List selected_parts, void *params);	
+	int (*archive_dump)        (void *db_conn,
+				    acct_archive_cond_t *arch_cond);	
+	int (*archive_load)        (void *db_conn,
+				    acct_archive_rec_t *arch_rec);	
 	int (*update_shares_used)  (void *db_conn,
 				    List shares_used);
 	int (*flush_jobs)          (void *db_conn,
@@ -246,9 +244,9 @@ static slurm_acct_storage_ops_t * _acct_storage_get_ops(
 		"jobacct_storage_p_step_start",
 		"jobacct_storage_p_step_complete",
 		"jobacct_storage_p_suspend",
-		"jobacct_storage_p_get_jobs",
 		"jobacct_storage_p_get_jobs_cond",
 		"jobacct_storage_p_archive",
+		"jobacct_storage_p_archive_load",
 		"acct_storage_p_update_shares_used",
 		"acct_storage_p_flush_jobs_on_cluster"
 	};
@@ -581,6 +579,17 @@ extern void destroy_acct_wckey_rec(void *object)
 	}
 }
 
+extern void destroy_acct_archive_rec(void *object)
+{
+	acct_archive_rec_t *arch_rec = (acct_archive_rec_t *)object;
+	
+	if(arch_rec) {
+		xfree(arch_rec->archive_file);
+		xfree(arch_rec->insert);
+		xfree(arch_rec);
+	}
+}
+
 extern void destroy_acct_user_cond(void *object)
 {
 	acct_user_cond_t *acct_user = (acct_user_cond_t *)object;
@@ -757,6 +766,19 @@ extern void destroy_acct_wckey_cond(void *object)
 		if(wckey->user_list)
 			list_destroy(wckey->user_list);
 		xfree(wckey);
+	}
+}
+
+extern void destroy_acct_archive_cond(void *object)
+{
+	acct_archive_cond_t *arch_cond = (acct_archive_cond_t *)object;
+
+	if(arch_cond) {
+		xfree(arch_cond->archive_dir);
+		xfree(arch_cond->archive_script);
+		destroy_acct_job_cond(arch_cond->job_cond);
+		xfree(arch_cond);
+
 	}
 }
 
@@ -2572,6 +2594,41 @@ unpack_error:
 	destroy_acct_wckey_rec(object_ptr);
 	*object = NULL;
 	return SLURM_ERROR;
+}
+
+extern void pack_acct_archive_rec(void *in, uint16_t rpc_version, Buf buffer)
+{
+	acct_archive_rec_t *object = (acct_archive_rec_t *)in;	
+	
+	if(!object) {
+		packnull(buffer);
+		packnull(buffer);
+		return;
+	}
+
+	packstr(object->archive_file, buffer);
+	packstr(object->insert, buffer);
+}
+
+extern int unpack_acct_archive_rec(void **object, uint16_t rpc_version,
+				   Buf buffer)
+{
+	uint32_t uint32_tmp;
+	acct_archive_rec_t *object_ptr = 
+		xmalloc(sizeof(acct_archive_rec_t));
+
+	*object = object_ptr;
+
+	safe_unpackstr_xmalloc(&object_ptr->archive_file, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&object_ptr->insert, &uint32_tmp, buffer);
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	destroy_acct_archive_rec(object_ptr);
+	*object = NULL;
+	return SLURM_ERROR;
+
 }
 
 extern void pack_acct_user_cond(void *in, uint16_t rpc_version, Buf buffer)
@@ -4959,6 +5016,59 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+extern void pack_acct_archive_cond(void *in, uint16_t rpc_version, Buf buffer)
+{
+	acct_archive_cond_t *object = (acct_archive_cond_t *)in;	
+	
+	if(!object) {
+		packnull(buffer);
+		pack16((uint16_t)NO_VAL, buffer);
+		packnull(buffer);
+		pack16((uint16_t)NO_VAL, buffer);
+		pack_acct_job_cond(NULL, rpc_version, buffer);
+		pack16((uint16_t)NO_VAL, buffer);
+		pack16((uint16_t)NO_VAL, buffer);
+		return;
+	}
+
+	packstr(object->archive_dir, buffer);
+	pack16(object->archive_jobs, buffer);
+	packstr(object->archive_script, buffer);
+	pack16(object->archive_steps, buffer);
+	pack_acct_job_cond(object->job_cond, rpc_version, buffer);
+	pack16(object->job_purge, buffer);
+	pack16(object->step_purge, buffer);
+}
+
+extern int unpack_acct_archive_cond(void **object, uint16_t rpc_version,
+				   Buf buffer)
+{
+	uint32_t uint32_tmp;
+	acct_archive_cond_t *object_ptr = 
+		xmalloc(sizeof(acct_archive_cond_t));
+
+	*object = object_ptr;
+
+	safe_unpackstr_xmalloc(&object_ptr->archive_dir, &uint32_tmp, buffer);
+	safe_unpack16(&object_ptr->archive_jobs, buffer);
+	safe_unpackstr_xmalloc(&object_ptr->archive_script,
+			       &uint32_tmp, buffer);
+	safe_unpack16(&object_ptr->archive_steps, buffer);
+	if(unpack_acct_job_cond((void *)&object_ptr->job_cond,
+				rpc_version, buffer) == SLURM_ERROR)
+		goto unpack_error;
+	safe_unpack16(&object_ptr->job_purge, buffer);
+	safe_unpack16(&object_ptr->step_purge, buffer);
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	destroy_acct_archive_cond(object_ptr);
+	*object = NULL;
+	return SLURM_ERROR;
+
+}
+
 extern void pack_acct_update_object(acct_update_object_t *object,
 				    uint16_t rpc_version, Buf buffer)
 {
@@ -5945,23 +6055,6 @@ extern int jobacct_storage_g_job_suspend (void *db_conn,
  	return (*(g_acct_storage_context->ops.job_suspend))(db_conn, job_ptr);
 }
 
-
-/* 
- * get info from the storage 
- * returns List of job_rec_t *
- * note List needs to be freed when called
- */
-extern List jobacct_storage_g_get_jobs(void *db_conn, uint32_t uid,
-				       List selected_steps,
-				       List selected_parts,
-				       void *params)
-{
-	if (slurm_acct_storage_init(NULL) < 0)
-		return NULL;
- 	return (*(g_acct_storage_context->ops.get_jobs))
-		(db_conn, uid, selected_steps, selected_parts, params);
-}
-
 /* 
  * get info from the storage 
  * returns List of job_rec_t *
@@ -5979,14 +6072,25 @@ extern List jobacct_storage_g_get_jobs_cond(void *db_conn, uint32_t uid,
 /* 
  * expire old info from the storage 
  */
-extern void jobacct_storage_g_archive(void *db_conn,
-				      List selected_parts, void *params)
+extern int jobacct_storage_g_archive(void *db_conn,
+				     acct_archive_cond_t *arch_cond)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
-		return;
- 	(*(g_acct_storage_context->ops.job_archive))(db_conn, selected_parts,
-						     params);
-	return;
+		return SLURM_ERROR;
+ 	return (*(g_acct_storage_context->ops.archive_dump))
+		(db_conn, arch_cond);
+}
+
+/* 
+ * load expired info into the storage 
+ */
+extern int jobacct_storage_g_archive_load(void *db_conn,
+					  acct_archive_rec_t *arch_rec)
+{
+	if (slurm_acct_storage_init(NULL) < 0)
+		return SLURM_ERROR;
+ 	return (*(g_acct_storage_context->ops.archive_load))(db_conn, arch_rec);
+	
 }
 
 /* 

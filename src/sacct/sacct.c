@@ -249,8 +249,9 @@ int main(int argc, char **argv)
 		op = SACCT_EXPIRE;
 		if (params.opt_long || params.opt_total 
 		    || params.opt_field_list || 
-		    (params.opt_gid>=0) || (params.opt_uid>=0) ||
-		    params.opt_job_list || params.opt_state_list ) {
+		    //(params.opt_gid != 0) || (params.opt_uid != 0) ||
+		    params.arch_cond->job_cond->step_list
+		    || params.arch_cond->job_cond->state_list ) {
 			if (params.opt_verbose)
 				fprintf(stderr,
 					"Switch conflict,\n"

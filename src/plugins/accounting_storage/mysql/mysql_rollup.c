@@ -377,7 +377,6 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				continue;
 			}
 
-
 			if(last_id != assoc_id) {
 				a_usage = xmalloc(sizeof(local_id_usage_t));
 				a_usage->id = assoc_id;
@@ -405,7 +404,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 						    w_usage);
 				}
 				
-				last_id = wckey_id;
+				last_wckeyid = wckey_id;
 			}
 			w_usage->a_cpu += seconds * row_acpu;
 			
@@ -760,7 +759,6 @@ extern int mysql_daily_rollup(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 	}
 			       
-
 /* 	info("stop start %s", ctime(&curr_start)); */
 /* 	info("stop end %s", ctime(&curr_end)); */
 
@@ -776,6 +774,7 @@ extern int mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 	time_t now = time(NULL);
 	char *query = NULL;
 	uint16_t track_wckey = slurm_get_track_wckey();
+	acct_archive_cond_t arch_cond;
 
 	if(!localtime_r(&curr_start, &start_tm)) {
 		error("Couldn't get localtime from month start %d", curr_start);
@@ -872,8 +871,18 @@ extern int mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 		error("Couldn't remove old event data");
 		return SLURM_ERROR;
 	}
+	if(!slurmdbd_conf) 
+		return SLURM_SUCCESS;
 
-	return SLURM_SUCCESS;
+	memset(&arch_cond, 0, sizeof(arch_cond));
+	arch_cond.archive_dir = xstrdup(slurmdbd_conf->archive_dir);
+	arch_cond.archive_jobs = slurmdbd_conf->archive_jobs;
+	arch_cond.archive_script = slurmdbd_conf->archive_script;
+	arch_cond.archive_steps = slurmdbd_conf->archive_steps;
+	arch_cond.job_purge = slurmdbd_conf->job_purge;
+	arch_cond.step_purge = slurmdbd_conf->step_purge;
+
+	return mysql_jobacct_process_archive(mysql_conn, &arch_cond);
 }
 
 #endif

@@ -48,7 +48,6 @@
 #include "src/slurmdbd/read_config.h"
 
 extern List filetxt_jobacct_process_get_jobs(acct_job_cond_t *job_cond);
-extern void filetxt_jobacct_process_archive(List selected_parts,
-					    sacct_parameters_t *params);
+extern int filetxt_jobacct_process_archive(acct_archive_cond_t *arch_cond);
 
 #endif

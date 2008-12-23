@@ -314,14 +314,14 @@ extern int user_top(int argc, char *argv[])
 			user->uid = passwd_ptr->pw_uid;
 		else
 			user->uid = (uint32_t)NO_VAL;	
-
+		
 		itr2 = list_iterator_create(user->assoc_list);
 		while((assoc = list_next(itr2))) {
 
 			if(!assoc->accounting_list
 			   || !list_count(assoc->accounting_list))
 				continue;
-			
+	
 			while((sreport_cluster = list_next(cluster_itr))) {
 				if(!strcmp(sreport_cluster->name, 
 					   assoc->cluster)) {
@@ -335,9 +335,16 @@ extern int user_top(int argc, char *argv[])
 					while((sreport_user 
 					       = list_next(user_itr))) {
 						if(sreport_user->uid 
-						   == user->uid) {
-							break;
-						}
+						   != NO_VAL) {
+							if(sreport_user->uid 
+							   == user->uid)
+								break;
+						} else if(sreport_user->name 
+							  && !strcasecmp(
+								  sreport_user->
+								  name,
+								  user->name))
+							break;		
 					}
 					list_iterator_destroy(user_itr);
 				new_user:
@@ -408,11 +415,11 @@ extern int user_top(int argc, char *argv[])
 
 	list_iterator_reset(cluster_itr);
 	while((sreport_cluster = list_next(cluster_itr))) {
+		int count = 0;
 		list_sort(sreport_cluster->user_list, (ListCmpF)sort_user_dec);
-	
+		
 		itr = list_iterator_create(sreport_cluster->user_list);
 		while((sreport_user = list_next(itr))) {
-			int count = 0;
 			int curr_inx = 1;
 			while((field = list_next(itr2))) {
 				char *tmp_char = NULL;

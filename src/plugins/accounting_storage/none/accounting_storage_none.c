@@ -374,19 +374,6 @@ extern int jobacct_storage_p_suspend(void *db_conn,
 
 /* 
  * get info from the storage 
- * returns List of job_rec_t *
- * note List needs to be freed when called
- */
-extern List jobacct_storage_p_get_jobs(void *db_conn, uid_t uid,
-				       List selected_steps,
-				       List selected_parts,
-				       void *params)
-{
-	return NULL;
-}
-
-/* 
- * get info from the storage 
  * returns List of jobacct_job_rec_t *
  * note List needs to be freed when called
  */
@@ -399,11 +386,19 @@ extern List jobacct_storage_p_get_jobs_cond(void *db_conn, uid_t uid,
 /* 
  * expire old info from the storage 
  */
-extern void jobacct_storage_p_archive(void *db_conn,
-				      List selected_parts,
-				      void *params)
+extern int jobacct_storage_p_archive(void *db_conn,
+				     acct_archive_cond_t *arch_cond)
 {
-	return;
+	return SLURM_SUCCESS;
+}
+
+/* 
+ * load old info into the storage 
+ */
+extern int jobacct_storage_p_archive_load(void *db_conn, 
+					  acct_archive_rec_t *arch_rec)
+{
+	return SLURM_SUCCESS;
 }
 
 extern int acct_storage_p_update_shares_used(void *db_conn,

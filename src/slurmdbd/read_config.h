@@ -55,15 +55,22 @@
 #include <time.h>
 
 #define DEFAULT_SLURMDBD_AUTHTYPE	"auth/none"
-#define DEFAULT_SLURMDBD_JOB_PURGE	360
+//#define DEFAULT_SLURMDBD_JOB_PURGE	12
 #define DEFAULT_SLURMDBD_PIDFILE	"/var/run/slurmdbd.pid"
-#define DEFAULT_SLURMDBD_STEP_PURGE	30
+#define DEFAULT_SLURMDBD_ARCHIVE_DIR	"/tmp"
+//#define DEFAULT_SLURMDBD_STEP_PURGE	1
 
 /* SlurmDBD configuration parameters */
 typedef struct slurm_dbd_conf {
 	time_t		last_update;	/* time slurmdbd.conf read	*/
-	uint16_t	archive_age;	/* archive data this age	*/
+	uint16_t	archive_jobs;	/* flag if we are to
+					 * archive jobs	*/
+	char *		archive_dir;    /* location to localy
+					 * store data if not
+					 * using a script               */
 	char *		archive_script;	/* script to archive old data	*/
+	uint16_t	archive_steps;	/* flag if we are to
+					 * archive steps	*/
 	char *		auth_info;	/* authentication info		*/
 	char *		auth_type;	/* authentication mechanism	*/
 	char *		dbd_addr;	/* network address of Slurm DBD	*/

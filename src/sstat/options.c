@@ -119,7 +119,7 @@ void _do_help(void)
 
 void _init_params()
 {
-	memset(&params, 0, sizeof(sacct_parameters_t));
+	memset(&params, 0, sizeof(sstat_parameters_t));
 }
 
 /* returns number of objects added to list */
@@ -279,10 +279,6 @@ void parse_command_line(int argc, char **argv)
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 
 	_init_params();
-
-	if ((i=getuid()))
-		/* default to current user unless root*/
-		params.opt_uid = i;
 
 	opterr = 1;		/* Let getopt report problems to the user */
 

@@ -1649,8 +1649,7 @@ extern int cluster_wckey_by_user(int argc, char *argv[])
 		fprintf(stderr, " Problem with cluster query.\n");
 		goto end_it;
 	}
-	wckey_list = acct_storage_g_get_wckeys(db_conn, my_uid,
-						     wckey_cond);
+	wckey_list = acct_storage_g_get_wckeys(db_conn, my_uid, wckey_cond);
 	if(!wckey_list) {
 		exit_code=1;
 		fprintf(stderr, " Problem with wckey query.\n");
