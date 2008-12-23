@@ -67,9 +67,7 @@ struct node_cr_record {
 	uint32_t exclusive_jobid;	/* if the node is allocated exclusively
 					 * to some job, put its jobid here, 
 					 * otherwise value is zero */
-	uint16_t x_coord;		/* X-dimension coordinate */
-	uint16_t y_coord;		/* Y-dimension coordinate */
-	uint16_t z_coord;		/* Z-dimension coordinate */
+	uint16_t coord[3];		/* X, Y and Z coordinates */
 };
 
 #endif /* !_SELECT_3D_TORUS_H */
