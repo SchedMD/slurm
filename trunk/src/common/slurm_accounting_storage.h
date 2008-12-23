@@ -467,6 +467,28 @@ typedef struct {
 	List childern;
 } acct_hierarchical_rec_t;
 
+typedef struct {
+	char *archive_dir;     /* location to place archive file */
+	uint16_t archive_jobs; /* whether or not to keep an archive
+				  file of jobs that can be loaded
+				  later */
+	char *archive_script;  /* script to run instead of default
+				  actions */
+	uint16_t archive_steps; /* whether or not to keep an archive
+				  file of steps that can be loaded
+				  later */
+	acct_job_cond_t *job_cond; /* conditions for the jobs to archive */
+	uint16_t job_purge; /* purge jobs older than this in months */
+	uint16_t step_purge; /* purge steps older than this in months */
+} acct_archive_cond_t;
+
+typedef struct {
+	char *archive_file;  /* archive file containing an insert line
+				of jobs since past */
+	char *insert;     /* an sql statement to be ran containing the
+			     insert of jobs since past */
+} acct_archive_rec_t;
+
 extern uint32_t qos_max_priority; /* max priority in all qos's */
 
 extern void destroy_acct_user_rec(void *object);
@@ -479,6 +501,7 @@ extern void destroy_acct_association_rec(void *object);
 extern void destroy_acct_qos_rec(void *object);
 extern void destroy_acct_txn_rec(void *object);
 extern void destroy_acct_wckey_rec(void *object);
+extern void destroy_acct_archive_rec(void *object);
 
 extern void destroy_acct_user_cond(void *object);
 extern void destroy_acct_account_cond(void *object);
@@ -488,6 +511,7 @@ extern void destroy_acct_job_cond(void *object);
 extern void destroy_acct_qos_cond(void *object);
 extern void destroy_acct_txn_cond(void *object);
 extern void destroy_acct_wckey_cond(void *object);
+extern void destroy_acct_archive_cond(void *object);
 
 extern void destroy_acct_update_object(void *object);
 extern void destroy_acct_used_limits(void *object);
@@ -530,6 +554,9 @@ extern int unpack_acct_txn_rec(void **object, uint16_t rpc_version, Buf buffer);
 extern void pack_acct_wckey_rec(void *in, uint16_t rpc_version, Buf buffer);
 extern int unpack_acct_wckey_rec(void **object, uint16_t rpc_version,
 				 Buf buffer);
+extern void pack_acct_archive_rec(void *in, uint16_t rpc_version, Buf buffer);
+extern int unpack_acct_archive_rec(void **object, uint16_t rpc_version,
+				 Buf buffer);
 
 extern void pack_acct_user_cond(void *in, uint16_t rpc_version, Buf buffer);
 extern int unpack_acct_user_cond(void **object, uint16_t rpc_version,
@@ -555,6 +582,9 @@ extern int unpack_acct_txn_cond(void **object, uint16_t rpc_version,
 				Buf buffer);
 extern void pack_acct_wckey_cond(void *in, uint16_t rpc_version, Buf buffer);
 extern int unpack_acct_wckey_cond(void **object, uint16_t rpc_version,
+				  Buf buffer);
+extern void pack_acct_archive_cond(void *in, uint16_t rpc_version, Buf buffer);
+extern int unpack_acct_archive_cond(void **object, uint16_t rpc_version,
 				  Buf buffer);
 
 extern void pack_acct_update_object(acct_update_object_t *object, 
@@ -969,24 +999,19 @@ extern int jobacct_storage_g_job_suspend (void *db_conn,
  * returns List of jobacct_job_rec_t *
  * note List needs to be freed when called
  */
-extern List jobacct_storage_g_get_jobs(void *db_conn, uint32_t uid, 
-				       List selected_steps,
-				       List selected_parts,
-				       void *params);
-
-/* 
- * get info from the storage 
- * returns List of jobacct_job_rec_t *
- * note List needs to be freed when called
- */
 extern List jobacct_storage_g_get_jobs_cond(void *db_conn, uint32_t uid, 
 					    acct_job_cond_t *job_cond);
 
 /* 
  * expire old info from the storage 
  */
-extern void jobacct_storage_g_archive(void *db_conn, 
-				      List selected_parts,
-				      void *params);
+extern int jobacct_storage_g_archive(void *db_conn, 
+				     acct_archive_cond_t *arch_cond);
+
+/* 
+ * expire old info from the storage 
+ */
+extern int jobacct_storage_g_archive_load(void *db_conn, 
+					  acct_archive_rec_t *arch_rec);
 
 #endif /*_SLURM_ACCOUNTING_STORAGE_H*/

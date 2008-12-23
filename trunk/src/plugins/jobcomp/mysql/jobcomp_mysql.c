@@ -440,9 +440,7 @@ extern char *slurm_jobcomp_strerror(int errnum)
  * in/out job_list List of job_rec_t *
  * note List needs to be freed when called
  */
-extern List slurm_jobcomp_get_jobs(List selected_steps,
-				   List selected_parts,
-				   void *params)
+extern List slurm_jobcomp_get_jobs(acct_job_cond_t *job_cond)
 {
 	List job_list = NULL;
 				   
@@ -456,9 +454,7 @@ extern List slurm_jobcomp_get_jobs(List selected_steps,
 		xfree(loc);
 	}
 
-	job_list = mysql_jobcomp_process_get_jobs(selected_steps,
-						  selected_parts,
-						  params);	
+	job_list = mysql_jobcomp_process_get_jobs(job_cond);	
 #endif 
 	return job_list;
 }
@@ -466,19 +462,19 @@ extern List slurm_jobcomp_get_jobs(List selected_steps,
 /* 
  * expire old info from the storage 
  */
-extern void slurm_jobcomp_archive(List selected_parts, void *params)
+extern int slurm_jobcomp_archive(acct_archive_cond_t *arch_cond)
 {
 #ifdef HAVE_MYSQL
 	if(!jobcomp_mysql_db || mysql_ping(jobcomp_mysql_db) != 0) {
 		char *loc = slurm_get_jobcomp_loc();
 		if(slurm_jobcomp_set_location(loc) == SLURM_ERROR) {
 			xfree(loc);
-			return;
+			return SLURM_ERROR;
 		}
 		xfree(loc);
 	}
 
-	mysql_jobcomp_process_archive(selected_parts, params);
+	return mysql_jobcomp_process_archive(arch_cond);
 #endif 
-	return;
+	return SLURM_ERROR;
 }

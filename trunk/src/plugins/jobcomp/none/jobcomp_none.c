@@ -119,16 +119,14 @@ char *slurm_jobcomp_strerror( int errnum )
 	        return NULL;
 }
 
-List slurm_jobcomp_get_jobs(List selected_steps, List selected_parts,
-			    void *params)
+List slurm_jobcomp_get_jobs(void *job_cond)
 {
 	return NULL;
 }
 
-void slurm_jobcomp_archive(List selected_parts,
-			   void *params)
+int slurm_jobcomp_archive(void *arch_cond)
 {
-	return;
+	return SLURM_SUCCESS;
 }
 
 int fini ( void )

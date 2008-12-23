@@ -129,6 +129,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.3.13
 =========================
+ -- Added ability for slurmdbd to archive and purge step and/or job records.
 
 * Changes in SLURM 1.3.12
 =========================
@@ -161,6 +162,9 @@ documents those changes that are of interest to users and admins.
     upon reconfiguration ("scontrol reconfig" or SIGHUP).
  -- Fix to sinfo, don't print a node's memory size or tmp_disk space with 
     suffix of "K" or "M" (thousands or millions of megabytes).
+ -- Improve efficiency of scheduling jobs into partitions which do not overlap.
+ -- Fixed sreport user top report to only display the limit specified 
+    instead of all users.
 
 * Changes in SLURM 1.3.11
 =========================

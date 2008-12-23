@@ -158,6 +158,9 @@ typedef enum {
 	DBD_MODIFY_WCKEYS,      /* Modify existing WCKEY                */
 	DBD_GET_WCKEY_USAGE,  	/* Get wckey usage information  	*/
 	DBD_GOT_WCKEY_USAGE,  	/* Get wckey usage information  	*/
+	DBD_ARCHIVE_DUMP,    	/* issue a request to dump jobs to
+				 * archive */
+	DBD_ARCHIVE_LOAD,    	/* load an archive file    	        */
 } slurmdbd_msg_type_t;
 
 /*****************************************************************************\

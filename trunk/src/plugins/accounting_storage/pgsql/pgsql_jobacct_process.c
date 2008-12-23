@@ -706,11 +706,16 @@ no_cond:
 	return job_list;
 }
 
-extern void pgsql_jobacct_process_archive(PGconn *acct_pgsql_db,
-					  List selected_parts,
-					  sacct_parameters_t *params)
+extern int pgsql_jobacct_process_archive(PGconn *acct_pgsql_db,
+					 acct_archive_cond_t *arch_cond)
 {
-	return;
+	return SLURM_SUCCESS;
+}
+
+extern int pgsql_jobacct_process_archive_load(PGconn *acct_pgsql_db,
+					      acct_archive_rec_t *arch_rec)
+{	
+	return SLURM_SUCCESS;
 }
 
 #endif	

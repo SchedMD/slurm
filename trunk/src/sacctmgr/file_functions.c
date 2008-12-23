@@ -301,7 +301,7 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 			end++;
 		}
 		
-		option = strip_quotes(sub+end, NULL);
+		option = strip_quotes(sub+end, NULL, 1);
 
 		if(!end) {
 			if(file_opts->name) {

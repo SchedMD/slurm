@@ -87,37 +87,6 @@ typedef struct {
 } sacct_t;
 
 typedef struct {
-	List opt_acct_list;	        /* --accounts list of char * */
-	int opt_begin;	        /* --begin */
-	List opt_cluster_list;	/* --cluster list of char * */
-	int opt_completion;	/* --completion */
-	int opt_dump;		/* --dump */
-	int opt_dup;		/* --duplicates; +1 = explicitly set */
-	int opt_end;		/* --end */
-	long opt_expire;		/* --expire= */ 
-	char *opt_expire_timespec; /* --expire= */
-	int opt_fdump;		/* --formattted_dump */
-	char *opt_field_list;	/* --fields= */
-	char *opt_filein;	/* --file */
-	int opt_gid;		/* running persons gid */
-	List opt_gid_list;	/* --gid list of char * */
-	int opt_help;		/* --help */
-	List opt_job_list;	/* --jobs */
-	int opt_long;		/* --long */
-	int opt_lowmem;		/* --low_memory */
-	int opt_noheader;	/* can only be cleared */
-	List opt_partition_list;/* --partitions */
-	int opt_purge;		/* --purge */
-	int opt_raw;		/* --raw */
-	int opt_stat;		/* --stat */
-	List opt_state_list;	/* --states */
-	int opt_total;		/* --total */
-	int opt_uid;		/* running persons uid */
-	List opt_uid_list;	/* --uid  list of char * */
-	int opt_verbose;	/* --verbose */
-} sacct_parameters_t;
-
-typedef struct {
 	uint32_t alloc_cpus;
 	uint32_t associd;
 	char    *account;

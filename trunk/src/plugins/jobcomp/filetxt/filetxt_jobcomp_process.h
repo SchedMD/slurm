@@ -44,12 +44,9 @@
 #define _HAVE_FILETXT_JOBCOMP_PROCESS_H
 
 #include "src/common/jobacct_common.h"
+#include "src/common/slurm_accounting_storage.h"
 
-extern void filetxt_jobcomp_process_get_jobs(List job_list, 
-					     List selected_steps,
-					     List selected_parts,
-					     sacct_parameters_t *params);
-extern void filetxt_jobcomp_process_archive(List selected_parts,
-					    sacct_parameters_t *params);
+extern List filetxt_jobcomp_process_get_jobs(acct_job_cond_t *job_cond);
+extern int filetxt_jobcomp_process_archive(acct_archive_cond_t *arch_cond);
 
 #endif
