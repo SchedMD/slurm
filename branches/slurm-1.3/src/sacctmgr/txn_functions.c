@@ -179,6 +179,7 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 
 	enum {
 		PRINT_ACCT,
+		PRINT_ACTIONRAW,
 		PRINT_ACTION,
 		PRINT_ACTOR,
 		PRINT_CLUSTER,
@@ -225,7 +226,14 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 			field->name = xstrdup("Accounts");
 			field->len = 20;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("Action", object, MAX(command_len, 4))) {
+		} else if(!strncasecmp("ActionRaw", object, 
+				       MAX(command_len, 7))) {
+			field->type = PRINT_ACTIONRAW;
+			field->name = xstrdup("ActionRaw");
+			field->len = 10;
+			field->print_routine = print_fields_uint;
+		} else if(!strncasecmp("ActionRaw", object, 
+				       MAX(command_len, 4))) {
 			field->type = PRINT_ACTION;
 			field->name = xstrdup("Action");
 			field->len = 20;
@@ -310,6 +318,12 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 			case PRINT_ACCT:
 				field->print_routine(field, txn->accts,
 						     (curr_inx == field_count));
+				break;
+			case PRINT_ACTIONRAW:
+				field->print_routine(
+					field, 
+					txn->action,
+					(curr_inx == field_count));
 				break;
 			case PRINT_ACTION:
 				field->print_routine(
