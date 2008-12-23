@@ -867,7 +867,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			uint32_t req_nodes)
 {
 	int i, i_first, i_last;
-	int avail_cpus, alloc_cpus = 0;
+	int avail_cpus, alloc_cpus = 0, alloc_nodes = 0;
 	int rem_cpus, rem_nodes;	/* remaining resources desired */
 	int error_code = EINVAL;
 	uint16_t focus[3];
@@ -914,6 +914,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			    (max_nodes > 0)) {
 				rem_cpus   -= avail_cpus;
 				alloc_cpus += avail_cpus;
+				alloc_nodes++;
 				rem_nodes--;
 				max_nodes--;
 			} else {	 /* node not required (yet) */
@@ -947,6 +948,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 						     node_select_ptr->index);
 			rem_cpus   -= avail_cpus;
 			alloc_cpus += avail_cpus;
+			alloc_nodes++;
 			rem_nodes--;
 			max_nodes--;
 			if ((rem_nodes <= 0) && (rem_cpus <= 0)) {
@@ -957,6 +959,9 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		list_iterator_destroy (iter);
 	}
 
+	if ((error_code != SLURM_SUCCESS) && 
+	    (rem_cpus <= 0) && (alloc_nodes >= min_nodes))
+		error_code = SLURM_SUCCESS;	/* sufficient resources */
 	if (error_code == SLURM_SUCCESS) {
 		/* job's total_procs is needed for SELECT_MODE_WILL_RUN */
 		job_ptr->total_procs = alloc_cpus;
