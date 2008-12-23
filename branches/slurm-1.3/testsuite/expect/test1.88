@@ -196,7 +196,7 @@ if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out $file_err $test_prog ${test_prog}.o
 	send_user "\nSUCCESS\n"
 } else {
-	set matches
+	set matches 0
 	spawn head $file_err
 	expect {
 		-re "Error creating CQ" {
