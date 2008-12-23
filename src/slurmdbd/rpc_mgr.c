@@ -178,12 +178,12 @@ extern void rpc_mgr_wake(void)
 static void * _service_connection(void *arg)
 {
 	slurmdbd_conn_t *conn = (slurmdbd_conn_t *) arg;
-	uint32_t nw_size, msg_size, uid;
+	uint32_t nw_size = 0, msg_size = 0, uid = NO_VAL;
 	char *msg = NULL;
-	ssize_t msg_read, offset;
+	ssize_t msg_read = 0, offset = 0;
 	bool fini = false, first = true;
 	Buf buffer = NULL;
-	int rc;
+	int rc = SLURM_SUCCESS;
 			 
 	debug2("Opened connection %d from %s", conn->newsockfd,
 		conn->ip);
