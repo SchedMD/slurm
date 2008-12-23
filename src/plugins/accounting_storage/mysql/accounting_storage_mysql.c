@@ -8295,8 +8295,9 @@ extern List acct_storage_p_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 			xstrfmtcat(assoc_extra, "acct=\"%s\"", object);
 
 			xstrfmtcat(name_extra, "(name like \"%%\\\"%s\\\"%%\""
-				   " || name=\"%s\")", object, object);
-
+				   " || name=\"%s\")"
+				   " || (info like \"%%acct=\\\"%s\\\"%%\")",
+				   object, object, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -8325,8 +8326,9 @@ extern List acct_storage_p_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 			xstrfmtcat(assoc_extra, "cluster=\"%s\"", object);
 
 			xstrfmtcat(name_extra, "(name like \"%%\\\"%s\\\"%%\""
-				   " || name=\"%s\")", object, object);
-
+				   " || name=\"%s\")"
+				   " || (info like \"%%cluster=\\\"%s\\\"%%\")",
+				   object, object, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -8355,7 +8357,9 @@ extern List acct_storage_p_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 			xstrfmtcat(assoc_extra, "user=\"%s\"", object);
 
 			xstrfmtcat(name_extra, "(name like \"%%\\\"%s\\\"%%\""
-				   " || name=\"%s\")", object, object);
+				   " || name=\"%s\")"
+				   " || (info like \"%%user=\\\"%s\\\"%%\")",
+				   object, object, object);
 
 			set = 1;
 		}
@@ -8383,25 +8387,29 @@ extern List acct_storage_p_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 			xstrcat(extra, " where (");
 
 		set = 0;
-	
-		if(name_extra) {
-			xstrfmtcat(extra, "(%s) || (", name_extra);
+
+		if(mysql_num_rows(result)) {
+			if(name_extra) {
+				xstrfmtcat(extra, "(%s) || (", name_extra);
+				xfree(name_extra);
+			} else 
+				xstrcat(extra, "(");			
+			while((row = mysql_fetch_row(result))) {
+				if(set) 
+					xstrcat(extra, " || ");
+				
+				xstrfmtcat(extra, "(name like '%%id=%s %%' "
+					   "|| name like '%%id=%s)' "
+					   "|| name=%s)",
+					   row[0], row[0], row[0]);
+				set = 1;
+			}
+			xstrcat(extra, "))");
+		} else if(name_extra) {
+			xstrfmtcat(extra, "(%s))", name_extra);
 			xfree(name_extra);
-		} else 
-			xstrcat(extra, "(");			
-		
-		while((row = mysql_fetch_row(result))) {
-			if(set) 
-				xstrcat(extra, " || ");
-						
-			xstrfmtcat(extra, "(name like '%%id=%s %%' "
-				   "|| name like '%%id=%s)' || name=%s)",
-				   row[0], row[0], row[0]);
-			set = 1;
 		}
 		mysql_free_result(result);
-		if(set)
-			xstrcat(extra, "))");
 	}
 	
 	/*******************************************/
