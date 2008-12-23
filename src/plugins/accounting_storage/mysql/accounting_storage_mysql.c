@@ -400,7 +400,6 @@ static char *_fix_double_quotes(char *str)
 			char *tmp = xstrndup(str+start, i-start);
 			xstrfmtcat(fixed, "%s\\\"", tmp);
 			xfree(tmp);
-			i++;
 			start = i + 1;
 		} 
 		
