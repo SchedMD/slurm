@@ -15,6 +15,9 @@
 /* Define to 1 if licensed under terms of the GNU General Public License. */
 #undef GPL_LICENSED
 
+/* Define to 1 if 3-dimentional architecture */
+#undef HAVE_3D
+
 /* Define to 1 for AIX operating system */
 #undef HAVE_AIX
 
@@ -199,6 +202,9 @@
 
 /* Define to 1 if you have the `strsignal' function. */
 #undef HAVE_STRSIGNAL
+
+/* define if Sun Constellation system */
+#undef HAVE_SUN_CONST
 
 /* Define to 1 if you have the `sysctlbyname' function. */
 #undef HAVE_SYSCTLBYNAME

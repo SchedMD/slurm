@@ -980,6 +980,11 @@ Note that whole nodes can be allocated to jobs for selected
 partitions by using the \fIShared=Exclusive\fR option.
 See the partition \fBShared\fR parameter for more information.
 .TP
+\fBselect/3d_torus\fR
+for allocation of entire nodes assuming a three\-dimensional array
+of nodes. The node names must contain a three\-digit suffix specifying
+the node's zero\-origin X, Y, and Z\-coordinates (e.g. "tux012").
+.TP
 \fBselect/bluegene\fR
 for a three\-dimensional BlueGene system. 
 The default value is "select/bluegene" for BlueGene systems.

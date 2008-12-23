@@ -170,7 +170,7 @@ strong_alias(hostset_nth,		slurm_hostset_nth);
 
 char *alpha_num = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-#ifdef HAVE_BG		
+#ifdef HAVE_3D		
 /* logic for block node description */
 /* We allocate space for three digits, 
  * each with values 0 to Z even if they are not all used */
@@ -549,7 +549,7 @@ static int host_prefix_end(const char *hostname)
 	assert(hostname != NULL);
 
 	len = strlen(hostname);
-#ifdef HAVE_BG
+#ifdef HAVE_3D
 	if (len < 4)
 		return -1;
 	idx = len - 4;
@@ -887,7 +887,7 @@ static char *hostrange_pop(hostrange_t hr)
 		size = strlen(hr->prefix) + hr->width + 16;    
 		if (!(host = (char *) malloc(size * sizeof(char))))
 			out_of_memory("hostrange pop");
-#ifdef HAVE_BG
+#ifdef HAVE_3D
 		if (hr->width == 3) {
 			int coord[3];
 			coord[0] = hr->hi / (HOSTLIST_BASE * HOSTLIST_BASE);
@@ -928,7 +928,7 @@ static char *hostrange_shift(hostrange_t hr)
 		size = strlen(hr->prefix) + hr->width + 16;
 		if (!(host = (char *) malloc(size * sizeof(char))))
 			out_of_memory("hostrange shift");
-#ifdef HAVE_BG
+#ifdef HAVE_3D
 		if (hr->width == 3) {
 			int coord[3];
 			coord[0] = hr->lo / (HOSTLIST_BASE * HOSTLIST_BASE);
@@ -1097,7 +1097,7 @@ hostrange_to_string(hostrange_t hr, size_t n, char *buf, char *separator)
 	for (i = hr->lo; i <= hr->hi; i++) {
 		size_t m = (n - len) <= n ? n - len : 0; /* check for < 0 */
 		int ret = 0;
-#ifdef HAVE_BG
+#ifdef HAVE_3D
 		if (hr->width == 3) {
 			int coord[3];
 			coord[0] = i / (HOSTLIST_BASE * HOSTLIST_BASE);
@@ -1146,7 +1146,7 @@ static size_t hostrange_numstr(hostrange_t hr, size_t n, char *buf)
 	if (hr->singlehost || n == 0)
 		return 0;
 
-#ifdef HAVE_BG
+#ifdef HAVE_3D
 	if (hr->width == 3) {
 		int coord[3];
 		coord[0] = hr->lo / (HOSTLIST_BASE * HOSTLIST_BASE);
@@ -1164,7 +1164,7 @@ static size_t hostrange_numstr(hostrange_t hr, size_t n, char *buf)
 
 	if ((len >= 0) && (len < n) && (hr->lo < hr->hi)) {
 		int len2 = 0;
-#ifdef HAVE_BG
+#ifdef HAVE_3D
 		if (hr->width == 3) {
 			int coord[3];
 			coord[0] = hr->hi / (HOSTLIST_BASE * HOSTLIST_BASE);
@@ -1403,9 +1403,9 @@ hostlist_t _hostlist_create(const char *hostlist, char *sep, char *r_op)
 
 	if (hostlist == NULL)
 		return new;
-#ifdef HAVE_BG
+#ifdef HAVE_3D
 	fatal("WANT_RECKLESS_HOSTRANGE_EXPANSION does not work on "
-	      "bluegene systems!!!!");
+	      "Bluegene or Sun Constellation systems!!!!");
 #endif
 	orig = str = strdup(hostlist);
 	
@@ -2096,7 +2096,7 @@ _hostrange_string(hostrange_t hr, int depth)
 	int  len = snprintf(buf, MAXHOSTNAMELEN + 15, "%s", hr->prefix);
 
 	if (!hr->singlehost) {
-#ifdef HAVE_BG
+#ifdef HAVE_3D
 		if (hr->width == 3) {
 			int coord[3];
 			int temp = hr->lo+depth;
@@ -2465,7 +2465,7 @@ _get_bracketed_list(hostlist_t hl, int *start, const size_t n, char *buf)
 	return len;
 }
 
-#ifdef HAVE_BG		
+#ifdef HAVE_3D		
 
 /* logic for block node description */
 /* write the next bracketed hostlist, i.e. prefix[n-m,k,...]
@@ -2639,7 +2639,7 @@ ssize_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
   
 	LOCK_HOSTLIST(hl);
 
-#ifdef HAVE_BG		/* logic for block node description */
+#ifdef HAVE_3D		/* logic for block node description */
 	if (hl->nranges < 1)
 		goto notbox;	/* no data */
 	if (hl->hr[0]->width != 3) {
@@ -2647,9 +2647,9 @@ ssize_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 		 * this does not necessarily contain a BlueGene
 		 * host list. It could just be numeric values */
 		if (hl->hr[0]->prefix[0]) {
-			error("This node is not in bluegene format.  "
-		 	     "The suffix was %d chars in length",
-		  	    hl->hr[0]->width);
+			debug("This node is not in bluegene format.  "
+		 	      "Prefix is %s and suffix is %d chars long",
+		  	      hl->hr[0]->prefix, hl->hr[0]->width);
 		}
 		goto notbox; 
 	}
@@ -2823,7 +2823,7 @@ char *hostlist_next(hostlist_iterator_t i)
 
 	len = snprintf(buf, MAXHOSTNAMELEN + 15, "%s", i->hr->prefix);
 	if (!i->hr->singlehost) {
-#ifdef HAVE_BG
+#ifdef HAVE_3D
 		if (i->hr->width == 3) {
 			int coord[3];
 			int temp = i->hr->lo + i->depth;

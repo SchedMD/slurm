@@ -1,8 +1,9 @@
 /*****************************************************************************\
  *  configure_functions.c - Functions related to configure mode of smap.
- *  $Id$
+ *  These functions are only used on a BlueGene computer.
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *
@@ -61,7 +62,7 @@ static int	_remove_allocation(char *com, List allocated_blocks);
 static int	_alter_allocation(char *com, List allocated_blocks);
 static int	_copy_allocation(char *com, List allocated_blocks);
 static int	_save_allocation(char *com, List allocated_blocks);
-static int _add_bg_record(blockreq_t *blockreq, List allocated_blocks);
+static int	_add_bg_record(blockreq_t *blockreq, List allocated_blocks);
 static int	_load_configuration(char *com, List allocated_blocks);
 static void	_print_header_command(void);
 static void	_print_text_command(allocated_block_t *allocated_block);
@@ -540,7 +541,7 @@ static int _change_state_all_bps(char *com, int state)
 	char allnodes[50];
 	memset(allnodes,0,50);
 		
-#ifdef HAVE_BG
+#ifdef HAVE_3D
 	sprintf(allnodes, "000x%c%c%c", 
 		alpha_num[DIM_SIZE[X]-1], alpha_num[DIM_SIZE[Y]-1],
 		alpha_num[DIM_SIZE[Z]-1]);
@@ -556,7 +557,7 @@ static int _change_state_bps(char *com, int state)
 	int i=0, x;
 	int len = strlen(com);
 	int start[SYSTEM_DIMENSIONS], end[SYSTEM_DIMENSIONS];
-#ifdef HAVE_BG
+#ifdef HAVE_3D
 	int number=0, y=0, z=0, j=0;
 #endif
 	char letter = '.';
@@ -583,7 +584,7 @@ static int _change_state_bps(char *com, int state)
 		return 0;
 	}
 		
-#ifdef HAVE_BG
+#ifdef HAVE_3D
 	if ((com[i+3] == 'x')
 	    || (com[i+3] == '-')) {
 		for(j=0; j<3; j++) {
@@ -693,7 +694,7 @@ error_message:
 		start[X],end[X]);
 #endif	
 	return 0;
-#ifdef HAVE_BG
+#ifdef HAVE_3D
 error_message2:
 	memset(error_string,0,255);
 	sprintf(error_string, 

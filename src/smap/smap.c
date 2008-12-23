@@ -1,8 +1,8 @@
 /*****************************************************************************\
  *  smap.c - Report overall state the system
- *  $Id$
  *****************************************************************************
- *  Copyright (C) 2004 The Regents of the University of California.
+ *  Copyright (C) 2004-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *
@@ -43,7 +43,7 @@
 #include <signal.h>
 #include "src/smap/smap.h"
 
-#ifdef HAVE_BG
+#ifdef HAVE_3D
 #define MIN_SCREEN_WIDTH 92
 #else
 #define MIN_SCREEN_WIDTH 72
@@ -162,7 +162,7 @@ part_fini:
 		signal(SIGWINCH, (void (*)(int))_resize_handler);
 		initscr();
 		
-#ifdef HAVE_BG
+#ifdef HAVE_3D
 		height = DIM_SIZE[Y] * DIM_SIZE[Z] + DIM_SIZE[Y] + 3;
 		width = DIM_SIZE[X] + DIM_SIZE[Z] + 3;
 		if (COLS < (MIN_SCREEN_WIDTH + width) || LINES < height) {
@@ -172,7 +172,7 @@ part_fini:
 		width = COLS;
 	        if (COLS < MIN_SCREEN_WIDTH || LINES < height) {
 			width = MIN_SCREEN_WIDTH;
-#endif			
+#endif
 			endwin();
 			error("Screen is too small make sure the screen "
 			      "is at least %dx%d\n"
@@ -198,7 +198,7 @@ part_fini:
 		max_display = grid_win->_maxy * grid_win->_maxx;
 		//scrollok(grid_win, TRUE);
 		
-#ifdef HAVE_BG
+#ifdef HAVE_3D
 		startx = width;
 		COLS -= 2;
 		width = COLS - width;
@@ -432,7 +432,7 @@ static void *_resize_handler(int sig)
 	doupdate();	/* update now to make sure we get the new size */
 	getmaxyx(stdscr,LINES,COLS);
 
-#ifdef HAVE_BG
+#ifdef HAVE_3D
 	height = DIM_SIZE[Y] * DIM_SIZE[Z] + DIM_SIZE[Y] + 3;
 	width = DIM_SIZE[X] + DIM_SIZE[Z] + 3;
 	if (COLS < (MIN_SCREEN_WIDTH + width) || LINES < height) {
@@ -455,7 +455,7 @@ static void *_resize_handler(int sig)
 	grid_win = newwin(height, width, starty, startx);
 	max_display = grid_win->_maxy * grid_win->_maxx;
 		
-#ifdef HAVE_BG
+#ifdef HAVE_3D
 	startx = width;
 	COLS -= 2;
 	width = COLS - width;

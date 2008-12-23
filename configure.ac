@@ -146,6 +146,8 @@ X_AC_BGP
 AM_CONDITIONAL(BLUEGENE_LOADED, test "x$ac_bluegene_loaded" = "xyes")
 AC_SUBST(BLUEGENE_LOADED)
 
+X_AC_SUN_CONST
+
 X_AC_CFLAGS
 X_AC_XCPU
 X_AC_SLURM_SEMAPHORE
@@ -350,11 +352,12 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/sched/wiki/Makefile
 		 src/plugins/sched/wiki2/Makefile
 		 src/plugins/select/Makefile
+		 src/plugins/select/3d_torus/Makefile
 		 src/plugins/select/bluegene/Makefile
 		 src/plugins/select/bluegene/block_allocator/Makefile
 		 src/plugins/select/bluegene/plugin/Makefile
-		 src/plugins/select/linear/Makefile
 		 src/plugins/select/cons_res/Makefile
+		 src/plugins/select/linear/Makefile
 		 src/plugins/switch/Makefile
 		 src/plugins/switch/elan/Makefile
 		 src/plugins/switch/none/Makefile
