@@ -145,6 +145,7 @@ static bool cr_priority_test      = false;
 static bool cr_priority_selection = false;
 
 static struct node_cr_record *node_cr_ptr = NULL;
+static uint16_t max_coord[3];
 static pthread_mutex_t cr_mutex = PTHREAD_MUTEX_INITIALIZER;
 static List step_cr_list = NULL;
 
@@ -825,6 +826,24 @@ static int _find_job_mate(struct job_record *job_ptr, bitstr_t *bitmap,
 	return EINVAL;
 }
 
+static int _node_distance(uint16_t *focus, uint16_t *node_loc)
+{
+	int delta, distance = 0, i;
+
+	for (i=0; i<3; i++) {
+		if (focus[i] > node_loc[i])
+			delta = focus[i] - node_loc[i];
+		else
+			delta = node_loc[i] - focus[i];
+		if (delta > ((max_coord[i] + 1) / 2)) {
+			/* communication wraps arounds torus */
+			delta = (max_coord[i] + 1) - delta;
+		}
+		distance += delta;
+	}
+	return distance;
+}
+
 static int _node_sort_by_distance(void *x, void *y)
 {
 	struct node_select_struct *x_ptr = (struct node_select_struct *) x;
@@ -851,8 +870,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	int avail_cpus, alloc_cpus = 0;
 	int rem_cpus, rem_nodes;	/* remaining resources desired */
 	int error_code = EINVAL;
-	int delta_x, delta_y, delta_z;
-	uint16_t focus_x, focus_y, focus_z;
+	uint16_t focus[3];
 	struct node_select_struct *node_select_ptr = NULL;
 	List node_list = NULL;
 	ListIterator iter;
@@ -868,26 +886,25 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		rem_nodes = min_nodes;
 
 	/* This is a very simple algorithm for now that picks one node as
-	 * a focus point, then picks additional nodes from those available
-	 * in order of minimum distance from that focus point. The focus
+	 * a focal point, then picks additional nodes from those available
+	 * in order of minimum distance from that focal point. The focal
 	 * point will be the first required node (if any) or the first 
-	 * available node. This logic does not take into consideration 
+	 * available node. This logic does take into consideration 
 	 * network connections that wrap from one side of the machine
 	 * to the other (e.g. X=0 and X=7 might be logically adjacent). */
 	if (job_ptr->details->req_node_bitmap)
 		i_first = bit_ffs(job_ptr->details->req_node_bitmap);
 	else
 		i_first = bit_ffs(bitmap);
-	focus_x = node_cr_ptr[i_first].x_coord;
-	focus_y = node_cr_ptr[i_first].y_coord;
-	focus_z = node_cr_ptr[i_first].z_coord;
+	for (i=0; i<3; i++)
+		focus[i] = node_cr_ptr[i_first].coord[i];
 	if (job_ptr->details->req_node_bitmap)
 		i_first = bit_ffs(bitmap);
 	i_last = bit_fls(bitmap);
-	node_list = list_create(_node_rec_delete);
 
-	/* Identify any specific required nodes. 
-	 * Identify distance from focus for other available nodes */
+	/* Identify any specific required nodes and allocated to this job.
+	 * For other available nodes, compute distance from focal point. */
+	node_list = list_create(_node_rec_delete);
 	for (i=i_first; i<=i_last; i++) {
 		if (bit_test(bitmap, i)) {
 			avail_cpus = _get_avail_cpus(job_ptr, i);
@@ -905,26 +922,9 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 							  node_select_struct));
 				node_select_ptr->index = i;
 				node_select_ptr->avail_cpus = avail_cpus;
-				if (focus_x > node_cr_ptr[i].x_coord)
-					delta_x = focus_x -
-						  node_cr_ptr[i].x_coord;
-				else
-					delta_x = node_cr_ptr[i].x_coord -
-						  focus_x;
-				if (focus_y > node_cr_ptr[i].y_coord)
-					delta_y = focus_y -
-						  node_cr_ptr[i].y_coord;
-				else
-					delta_y = node_cr_ptr[i].y_coord -
-						  focus_y;
-				if (focus_z > node_cr_ptr[i].z_coord)
-					delta_z = focus_z - 
-						  node_cr_ptr[i].z_coord;
-				else
-					delta_z = node_cr_ptr[i].z_coord -
-						  focus_z;
-				node_select_ptr->distance = delta_x + delta_y +
-							    delta_z;
+				node_select_ptr->distance = 
+					_node_distance(focus,
+						       node_cr_ptr[i].coord);
 				if (!list_append(node_list, node_select_ptr))
 					fatal("malloc failure");
 			}
@@ -934,8 +934,9 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	if ((rem_nodes <= 0) && (rem_cpus <= 0)) {
 		error_code = SLURM_SUCCESS;
 	} else {
-		/* If nodes needed, sort available node list and
-		 * pick nodes based upon distance */
+		/* If more resources needed, sort list of available nodes
+		 * by distance from focal point and accumulate additional
+		 * resources for the job. */
 		list_sort(node_list, _node_sort_by_distance);
 		iter = list_iterator_create(node_list);
 		while ((max_nodes > 0) && 
@@ -943,7 +944,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 					  list_next(iter))) {
 			bit_set(bitmap, node_select_ptr->index);
 			avail_cpus = _get_avail_cpus(job_ptr, 
-						       node_select_ptr->index);
+						     node_select_ptr->index);
 			rem_cpus   -= avail_cpus;
 			alloc_cpus += avail_cpus;
 			rem_nodes--;
@@ -1420,6 +1421,7 @@ static void _init_node_cr(void)
 	struct job_record *job_ptr;
 	ListIterator job_iterator;
 	uint32_t job_memory_cpu, job_memory_node;
+	uint16_t min_coord[3];
 	int exclusive, i, i_first, i_last, j;
 	char *coord_ptr;
 
@@ -1427,7 +1429,10 @@ static void _init_node_cr(void)
 		return;
 
 	node_cr_ptr = xmalloc(select_node_cnt * sizeof(struct node_cr_record));
-
+	for (j=0; j<3; j++) {
+		max_coord[j] = 0;
+		min_coord[j] = 1;
+	}
 	for (i=0; i<select_node_cnt; i++) {
 		if (select_node_ptr[i].name == NULL)
 			continue;
@@ -1435,9 +1440,20 @@ static void _init_node_cr(void)
 			continue;
 		j -=3;
 		coord_ptr = &select_node_ptr[i].name[j];
-		node_cr_ptr[i].x_coord = _alpha_to_num(coord_ptr[0]);
-		node_cr_ptr[i].y_coord = _alpha_to_num(coord_ptr[1]);
-		node_cr_ptr[i].z_coord = _alpha_to_num(coord_ptr[2]);
+		for (j=0; j<3; j++) {
+			node_cr_ptr[i].coord[j] = _alpha_to_num(coord_ptr[j]);
+			min_coord[j] = MIN(min_coord[j], 
+					   node_cr_ptr[i].coord[j]);
+			max_coord[j] = MAX(max_coord[j], 
+					   node_cr_ptr[i].coord[j]);
+		}
+	}
+	for (j=0; j<3; j++) {
+		if (min_coord[j]) {
+			/* Not fatal, but not pretty */
+			error("Node list expression is not zero origin");
+				break;
+		}
 	}
 
 	/* build partition records */
