@@ -1176,6 +1176,8 @@ extern int mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 						"%s/step_archive_%s_%s.sql",
 						arch_cond->archive_dir,
 						start_char, end_char);
+					debug("Storing step archive at %s",
+					      reg_file);
 					old_file = xstrdup_printf(
 						"%s.old", reg_file);
 					new_file = xstrdup_printf(
@@ -1358,6 +1360,8 @@ exit_steps:
 						"%s/job_archive_%s_%s.sql",
 						arch_cond->archive_dir,
 						start_char, end_char);
+					debug("Storing job archive at %s",
+					      reg_file);
 					old_file = xstrdup_printf(
 						"%s.old", reg_file);
 					new_file = xstrdup_printf(

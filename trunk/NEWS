@@ -130,6 +130,8 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 1.3.13
 =========================
  -- Added ability for slurmdbd to archive and purge step and/or job records.
+ -- Added DefaultQOS as an option to slurmdbd.conf for when clusters are 
+    added the default will be set to this if none is given in the sacctmgr line.
 
 * Changes in SLURM 1.3.12
 =========================

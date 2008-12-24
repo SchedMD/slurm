@@ -128,7 +128,7 @@ typedef enum {
 	QOS_LEVEL_MODIFY
 } qos_level_t;
 
-static int normal_qos_id = NO_VAL;
+static char *default_qos_str = NULL;
 
 extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit);
 
@@ -401,8 +401,7 @@ static char *_fix_double_quotes(char *str)
 			char *tmp = xstrndup(str+start, i-start);
 			xstrfmtcat(fixed, "%s\\\"", tmp);
 			xfree(tmp);
-			i++;
-			start = i + 1;
+			start = i+1;
 		} 
 		
 		i++;
@@ -611,13 +610,13 @@ static int _setup_association_limits(acct_association_rec_t *assoc,
 		
 		
 		xstrfmtcat(*vals, ", '%s'", qos_val); 		
-		xstrfmtcat(*extra, ", %s='%s'", qos_type, qos_val); 
+		xstrfmtcat(*extra, ", %s=\"%s\"", qos_type, qos_val); 
 		xfree(qos_val);
-	} else if((qos_level == QOS_LEVEL_SET) && (normal_qos_id != NO_VAL)) { 
-		/* Add normal qos to the account */
+	} else if((qos_level == QOS_LEVEL_SET) && default_qos_str) { 
+		/* Add default qos to the account */
 		xstrcat(*cols, ", qos");
-		xstrfmtcat(*vals, ", ',%d'", normal_qos_id);
-		xstrfmtcat(*extra, ", qos=',%d'", normal_qos_id);
+		xstrfmtcat(*vals, ", '%s'", default_qos_str);
+		xstrfmtcat(*extra, ", qos=\"%s\"", default_qos_str);
 	}
 
 	return SLURM_SUCCESS;
@@ -2803,16 +2802,54 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 	   == SLURM_ERROR)
 		return SLURM_ERROR;
 	else {
-		query = xstrdup_printf(
-			"insert into %s "
-			"(creation_time, mod_time, name, description) "
-			"values (%d, %d, 'normal', 'Normal QOS default') "
-			"on duplicate key update id=LAST_INSERT_ID(id), "
-			"deleted=0;",
-			qos_table, now, now);
-		//debug3("%s", query);
-		normal_qos_id = mysql_insert_ret_id(db_conn, query);
-		xfree(query);		
+		int qos_id = 0;
+		if(slurmdbd_conf && slurmdbd_conf->default_qos) {
+			List char_list = list_create(slurm_destroy_char);
+			char *qos = NULL;
+			ListIterator itr = NULL;
+			slurm_addto_char_list(char_list, 
+					      slurmdbd_conf->default_qos);
+			/* NOTE: you can not use list_pop, or list_push
+			   anywhere either, since mysql is
+			   exporting something of the same type as a macro,
+			   which messes everything up 
+			   (my_list.h is the bad boy).
+			*/
+			itr = list_iterator_create(char_list);
+			while((qos = list_next(itr))) {
+				query = xstrdup_printf(
+					"insert into %s "
+					"(creation_time, mod_time, name, "
+					"description) "
+					"values (%d, %d, '%s', "
+					"'Added as default') "
+					"on duplicate key update "
+					"id=LAST_INSERT_ID(id), deleted=0;",
+					qos_table, now, now, qos);
+				qos_id = mysql_insert_ret_id(db_conn, query);
+				if(!qos_id)
+					fatal("problem added qos '%s", qos);
+				xstrfmtcat(default_qos_str, ",%d", qos_id);
+				xfree(query);	
+			}			
+			list_iterator_destroy(itr);
+			list_destroy(char_list);
+		} else {
+			query = xstrdup_printf(
+				"insert into %s "
+				"(creation_time, mod_time, name, description) "
+				"values (%d, %d, 'normal', "
+				"'Normal QOS default') "
+				"on duplicate key update "
+				"id=LAST_INSERT_ID(id), deleted=0;",
+				qos_table, now, now);
+			//debug3("%s", query);
+			qos_id = mysql_insert_ret_id(db_conn, query);
+			if(!qos_id)
+				fatal("problem added qos 'normal");
+			xstrfmtcat(default_qos_str, ",%d", qos_id);
+			xfree(query);		
+		}
 	}
 	if(mysql_db_create_table(db_conn, step_table,
 				 step_table_fields, 
@@ -2967,6 +3004,7 @@ extern int fini ( void )
 #ifdef HAVE_MYSQL
 	destroy_mysql_db_info(mysql_db_info);		
 	xfree(mysql_db_name);
+	xfree(default_qos_str);
 	mysql_cleanup();
 	return SLURM_SUCCESS;
 #else
@@ -3729,20 +3767,22 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 			   "where cluster=\"%s\" && acct=\"%s\"",
 			   object->cluster, object->acct); 
 
-		xstrfmtcat(extra, ", mod_time=%d", now);
+		xstrfmtcat(extra, ", mod_time=%d, cluster=\"%s\", "
+			   "acct=\"%s\"", now, object->cluster, object->acct);
 		if(!object->user) {
 			xstrcat(cols, ", parent_acct");
 			xstrfmtcat(vals, ", \"%s\"", parent);
-			xstrfmtcat(extra, ", parent_acct=\"%s\"", parent);
-			xstrfmtcat(update, " && user=''"); 
+			xstrfmtcat(extra, ", parent_acct=\"%s\", user=\"\"",
+				   parent);
+			xstrfmtcat(update, " && user=\"\""); 
 		} else {
 			char *part = object->partition;
 			xstrcat(cols, ", user");
 			xstrfmtcat(vals, ", \"%s\"", object->user); 		
-			xstrfmtcat(update, " && user=\"%s\"",
-				   object->user); 
+			xstrfmtcat(update, " && user=\"%s\"", object->user); 
+			xstrfmtcat(extra, ", user=\"%s\"", object->user);
 
-			/* We need to give a partition wiether it be
+			/* We need to give a partition whether it be
 			 * '' or the actual partition name given
 			 */
 			if(!part)
@@ -3750,6 +3790,7 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 			xstrcat(cols, ", partition");
 			xstrfmtcat(vals, ", \"%s\"", part);
 			xstrfmtcat(update, " && partition=\"%s\"", part);
+			xstrfmtcat(extra, ", partition=\"%s\"", part);
 		}
 
 		_setup_association_limits(object, &cols, &vals, &extra, 
@@ -4067,6 +4108,8 @@ end_it:
 	if(rc != SLURM_ERROR) {
 		if(txn_query) {
 			xstrcat(txn_query, ";");
+			debug4("%d(%d) query\n%s",
+			       mysql_conn->conn, __LINE__, txn_query);
 			rc = mysql_db_query(mysql_conn->db_conn,
 					    txn_query);
 			xfree(txn_query);
@@ -8365,9 +8408,10 @@ extern List acct_storage_p_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 
 			xstrfmtcat(assoc_extra, "acct=\"%s\"", object);
 
-			xstrfmtcat(name_extra, "(name like \"%%\"%s\"%%\""
-				   " || name=\"%s\")", object, object);
-
+			xstrfmtcat(name_extra, "(name like \"%%\\\"%s\\\"%%\""
+				   " || name=\"%s\")"
+				   " || (info like \"%%acct=\\\"%s\\\"%%\")",
+				   object, object, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -8395,9 +8439,10 @@ extern List acct_storage_p_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 			}
 			xstrfmtcat(assoc_extra, "cluster=\"%s\"", object);
 
-			xstrfmtcat(name_extra, "(name like \"%%\"%s\"%%\""
-				   " || name=\"%s\")", object, object);
-
+			xstrfmtcat(name_extra, "(name like \"%%\\\"%s\\\"%%\""
+				   " || name=\"%s\")"
+				   " || (info like \"%%cluster=\\\"%s\\\"%%\")",
+				   object, object, object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -8425,8 +8470,10 @@ extern List acct_storage_p_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 			}
 			xstrfmtcat(assoc_extra, "user=\"%s\"", object);
 
-			xstrfmtcat(name_extra, "(name like \"%%\"%s\"%%\""
-				   " || name=\"%s\")", object, object);
+			xstrfmtcat(name_extra, "(name like \"%%\\\"%s\\\"%%\""
+				   " || name=\"%s\")"
+				   " || (info like \"%%user=\\\"%s\\\"%%\")",
+				   object, object, object);
 
 			set = 1;
 		}
@@ -8454,24 +8501,29 @@ extern List acct_storage_p_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 			xstrcat(extra, " where (");
 
 		set = 0;
-	
-		if(name_extra) {
-			xstrfmtcat(extra, "(%s) || (", name_extra);
+
+		if(mysql_num_rows(result)) {
+			if(name_extra) {
+				xstrfmtcat(extra, "(%s) || (", name_extra);
+				xfree(name_extra);
+			} else 
+				xstrcat(extra, "(");			
+			while((row = mysql_fetch_row(result))) {
+				if(set) 
+					xstrcat(extra, " || ");
+				
+				xstrfmtcat(extra, "(name like '%%id=%s %%' "
+					   "|| name like '%%id=%s)' "
+					   "|| name=%s)",
+					   row[0], row[0], row[0]);
+				set = 1;
+			}
+			xstrcat(extra, "))");
+		} else if(name_extra) {
+			xstrfmtcat(extra, "(%s))", name_extra);
 			xfree(name_extra);
-		} else 
-			xstrcat(extra, "(");			
-		
-		while((row = mysql_fetch_row(result))) {
-			if(set) 
-				xstrcat(extra, " || ");
-						
-			xstrfmtcat(extra, "(name like '%%id=%s %%' "
-				   "|| name like '%%id=%s)')", row[0], row[0]);
-			set = 1;
 		}
 		mysql_free_result(result);
-		if(set)
-			xstrcat(extra, "))");
 	}
 	
 	/*******************************************/
