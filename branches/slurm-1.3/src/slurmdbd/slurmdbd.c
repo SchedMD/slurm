@@ -144,11 +144,9 @@ int main(int argc, char *argv[])
 
 	/* If we are tacking wckey we need to cache associations and
 	   wckeys if we aren't only cache the users */
+	assoc_init_arg.cache_level = ASSOC_MGR_CACHE_USER;
 	if(slurmdbd_conf->track_wckey)
-		assoc_init_arg.cache_level = 
-			ASSOC_MGR_CACHE_USER | ASSOC_MGR_CACHE_WCKEY;
-	else
-		assoc_init_arg.cache_level = ASSOC_MGR_CACHE_USER;
+		assoc_init_arg.cache_level |= ASSOC_MGR_CACHE_WCKEY;
 
 	if(assoc_mgr_init(db_conn, &assoc_init_arg) == SLURM_ERROR) {
 		error("Problem getting cache of data");
