@@ -1048,7 +1048,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 	if(!treestore)
 		return;
 	if(!job_ptr->nodes || !strcasecmp(job_ptr->nodes,"waiting...")) {
-		sprintf(tmp_char,"0:00:00");
+		sprintf(tmp_char,"00:00:00");
 		nodes = "waiting...";
 	} else {
 		if (job_ptr->job_state == JOB_SUSPENDED)
