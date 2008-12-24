@@ -826,6 +826,8 @@ static int _find_job_mate(struct job_record *job_ptr, bitstr_t *bitmap,
 	return EINVAL;
 }
 
+/* Acutally the square of the distance since we take the sum of the
+ * squares of the distance in each dimension */
 static int _node_distance(uint16_t *focus, uint16_t *node_loc)
 {
 	int delta, distance = 0, i;
@@ -842,7 +844,7 @@ static int _node_distance(uint16_t *focus, uint16_t *node_loc)
 			delta = (max_coord[i] + 1) - delta;
 		}
 #endif
-		distance += delta;
+		distance += delta * delta;
 	}
 	return distance;
 }
@@ -869,7 +871,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			uint32_t min_nodes, uint32_t max_nodes, 
 			uint32_t req_nodes)
 {
-	int i, i_first, i_last;
+	int i, i_first, i_focus, i_last;
 	int avail_cpus, alloc_cpus = 0, alloc_nodes = 0;
 	int rem_cpus, rem_nodes;	/* remaining resources desired */
 	int error_code = EINVAL;
@@ -892,46 +894,44 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	 * a focal point, then picks additional nodes from those available
 	 * in order of minimum distance from that focal point. The focal
 	 * point will be the first required node (if any) or the first 
-	 * available node. This logic does take into consideration 
+	 * available node. This logic _does_ take into consideration 
 	 * network connections that wrap from one side of the machine
 	 * to the other (e.g. X=0 and X=7 might be logically adjacent). */
+	i_first = bit_ffs(bitmap);
+	i_last  = bit_fls(bitmap);
 	if (job_ptr->details->req_node_bitmap)
-		i_first = bit_ffs(job_ptr->details->req_node_bitmap);
+		i_focus = bit_ffs(job_ptr->details->req_node_bitmap);
 	else
-		i_first = bit_ffs(bitmap);
+		i_focus = bit_ffs(bitmap);
 	for (i=0; i<3; i++)
-		focus[i] = node_cr_ptr[i_first].coord[i];
-	if (job_ptr->details->req_node_bitmap)
-		i_first = bit_ffs(bitmap);
-	i_last = bit_fls(bitmap);
+		focus[i] = node_cr_ptr[i_focus].coord[i];
 
 	/* Identify any specific required nodes and allocated to this job.
 	 * For other available nodes, compute distance from focal point. */
 	node_list = list_create(_node_rec_delete);
 	for (i=i_first; i<=i_last; i++) {
-		if (bit_test(bitmap, i)) {
-			avail_cpus = _get_avail_cpus(job_ptr, i);
+		if (!bit_test(bitmap, i))
+			continue;
 
-			if (job_ptr->details->req_node_bitmap &&
-			    bit_test(job_ptr->details->req_node_bitmap, i) &&
-			    (max_nodes > 0)) {
-				rem_cpus   -= avail_cpus;
-				alloc_cpus += avail_cpus;
-				alloc_nodes++;
-				rem_nodes--;
-				max_nodes--;
-			} else {	 /* node not required (yet) */
-				bit_clear(bitmap, i); 
-				node_select_ptr = xmalloc(sizeof(struct 
-							  node_select_struct));
-				node_select_ptr->index = i;
-				node_select_ptr->avail_cpus = avail_cpus;
-				node_select_ptr->distance = 
-					_node_distance(focus,
-						       node_cr_ptr[i].coord);
-				if (!list_append(node_list, node_select_ptr))
-					fatal("malloc failure");
-			}
+		avail_cpus = _get_avail_cpus(job_ptr, i);
+		if (job_ptr->details->req_node_bitmap &&
+		    bit_test(job_ptr->details->req_node_bitmap, i) &&
+		    (max_nodes > 0)) {
+			rem_cpus   -= avail_cpus;
+			alloc_cpus += avail_cpus;
+			alloc_nodes++;
+			rem_nodes--;
+			max_nodes--;
+		} else {	 /* node not required (yet) */
+			bit_clear(bitmap, i); 
+			node_select_ptr = xmalloc(sizeof(struct 
+						  node_select_struct));
+			node_select_ptr->index = i;
+			node_select_ptr->avail_cpus = avail_cpus;
+			node_select_ptr->distance = 
+				_node_distance(focus, node_cr_ptr[i].coord);
+			if (!list_append(node_list, node_select_ptr))
+				fatal("malloc failure");
 		}
 	}
 
