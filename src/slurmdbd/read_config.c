@@ -86,6 +86,7 @@ static void _clear_slurmdbd_conf(void)
 		xfree(slurmdbd_conf->dbd_host);
 		slurmdbd_conf->dbd_port = 0;
 		slurmdbd_conf->debug_level = 0;
+		xfree(slurmdbd_conf->default_qos);
 		slurmdbd_conf->job_purge = 0;
 		xfree(slurmdbd_conf->log_file);
 		xfree(slurmdbd_conf->pid_file);
@@ -123,6 +124,7 @@ extern int read_slurmdbd_conf(void)
 		{"DbdHost", S_P_STRING},
 		{"DbdPort", S_P_UINT16},
 		{"DebugLevel", S_P_UINT16},
+		{"DefaultQOS", S_P_STRING},
 		{"JobPurge", S_P_UINT16},
 		{"LogFile", S_P_STRING},
 		{"MessageTimeout", S_P_UINT16},
@@ -180,6 +182,7 @@ extern int read_slurmdbd_conf(void)
 		s_p_get_string(&slurmdbd_conf->dbd_addr, "DbdAddr", tbl);
 		s_p_get_uint16(&slurmdbd_conf->dbd_port, "DbdPort", tbl);
 		s_p_get_uint16(&slurmdbd_conf->debug_level, "DebugLevel", tbl);
+		s_p_get_string(&slurmdbd_conf->default_qos, "DefaultQOS", tbl);
 		s_p_get_uint16(&slurmdbd_conf->job_purge, "JobPurge", tbl);
 		s_p_get_string(&slurmdbd_conf->log_file, "LogFile", tbl);
 		if (!s_p_get_uint16(&slurmdbd_conf->msg_timeout,
@@ -313,6 +316,7 @@ extern void log_config(void)
 	debug2("DbdHost           = %s", slurmdbd_conf->dbd_host);
 	debug2("DbdPort           = %u", slurmdbd_conf->dbd_port);
 	debug2("DebugLevel        = %u", slurmdbd_conf->debug_level);
+	debug2("DefaultQOS        = %s", slurmdbd_conf->default_qos);
 
 	if(slurmdbd_conf->job_purge)
 		debug2("JobPurge          = %u months",
