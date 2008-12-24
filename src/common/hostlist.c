@@ -170,7 +170,7 @@ strong_alias(hostset_nth,		slurm_hostset_nth);
 
 char *alpha_num = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-#ifdef HAVE_3D		
+#ifdef HAVE_BG		
 /* logic for block node description */
 /* We allocate space for three digits, 
  * each with values 0 to Z even if they are not all used */
@@ -2465,7 +2465,7 @@ _get_bracketed_list(hostlist_t hl, int *start, const size_t n, char *buf)
 	return len;
 }
 
-#ifdef HAVE_3D		
+#ifdef HAVE_BG
 
 /* logic for block node description */
 /* write the next bracketed hostlist, i.e. prefix[n-m,k,...]
@@ -2639,7 +2639,7 @@ ssize_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
   
 	LOCK_HOSTLIST(hl);
 
-#ifdef HAVE_3D		/* logic for block node description */
+#ifdef HAVE_BG		/* logic for block node description */
 	if (hl->nranges < 1)
 		goto notbox;	/* no data */
 	if (hl->hr[0]->width != 3) {
