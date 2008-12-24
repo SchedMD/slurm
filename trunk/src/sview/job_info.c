@@ -1445,7 +1445,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
      
 	gtk_tree_store_set(treestore, iter, SORTID_UPDATED, 1, -1);
 	if(!job_ptr->nodes || !strcasecmp(job_ptr->nodes,"waiting...")) {
-		sprintf(tmp_char,"0:00:00");
+		sprintf(tmp_char,"00:00:00");
 		nodes = "waiting...";
 	} else {
 		if (job_ptr->job_state == JOB_SUSPENDED)
@@ -1752,7 +1752,7 @@ static void _layout_step_record(GtkTreeView *treeview,
 		return;
 	if(!step_ptr->nodes 
 	   || !strcasecmp(step_ptr->nodes,"waiting...")) {
-		sprintf(tmp_time,"0:00:00");
+		sprintf(tmp_time,"00:00:00");
 		nodes = "waiting...";
 		state = JOB_PENDING;
 	} else {
@@ -1844,7 +1844,7 @@ static void _update_step_record(job_step_info_t *step_ptr,
 	gtk_tree_store_set(treestore, iter, SORTID_UPDATED, 1, -1);
 	if(!step_ptr->nodes 
 	   || !strcasecmp(step_ptr->nodes,"waiting...")) {
-		sprintf(tmp_char,"0:00:00");
+		sprintf(tmp_char,"00:00:00");
 		nodes = "waiting...";
 		state = JOB_PENDING;
 	} else {
