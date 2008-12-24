@@ -565,10 +565,16 @@ static List _set_up_print_fields(List format_list)
 			field->name = xstrdup("Coord Accounts");
 			field->len = 20;
 			field->print_routine = sacctmgr_print_coord_list;
-		} else if(!strncasecmp("Default", object, 
-				       MAX(command_len, 3))) {
+		} else if(!strncasecmp("DefaultAccount", object, 
+				       MAX(command_len, 8))) {
 			field->type = PRINT_DACCT;
 			field->name = xstrdup("Def Acct");
+			field->len = 10;
+			field->print_routine = print_fields_str;
+		} else if(!strncasecmp("DefaultWckey", object, 
+				       MAX(command_len, 8))) {
+			field->type = PRINT_DWCKEY;
+			field->name = xstrdup("Def WCKey");
 			field->len = 10;
 			field->print_routine = print_fields_str;
 		} else if(!strncasecmp("Description", object, 
