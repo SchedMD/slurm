@@ -128,7 +128,7 @@ typedef enum {
 	QOS_LEVEL_MODIFY
 } qos_level_t;
 
-static int normal_qos_id = NO_VAL;
+static char *default_qos_str = NULL;
 
 extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit);
 
@@ -607,13 +607,13 @@ static int _setup_association_limits(acct_association_rec_t *assoc,
 		
 		
 		xstrfmtcat(*vals, ", '%s'", qos_val); 		
-		xstrfmtcat(*extra, ", %s='%s'", qos_type, qos_val); 
+		xstrfmtcat(*extra, ", %s=\"%s\"", qos_type, qos_val); 
 		xfree(qos_val);
-	} else if((qos_level == QOS_LEVEL_SET) && (normal_qos_id != NO_VAL)) { 
-		/* Add normal qos to the account */
+	} else if((qos_level == QOS_LEVEL_SET) && default_qos_str) { 
+		/* Add default qos to the account */
 		xstrcat(*cols, ", qos");
-		xstrfmtcat(*vals, ", ',%d'", normal_qos_id);
-		xstrfmtcat(*extra, ", qos=',%d'", normal_qos_id);
+		xstrfmtcat(*vals, ", '%s'", default_qos_str);
+		xstrfmtcat(*extra, ", qos=\"%s\"", default_qos_str);
 	}
 
 	return SLURM_SUCCESS;
@@ -2766,16 +2766,54 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 	   == SLURM_ERROR)
 		return SLURM_ERROR;
 	else {
-		query = xstrdup_printf(
-			"insert into %s "
-			"(creation_time, mod_time, name, description) "
-			"values (%d, %d, 'normal', 'Normal QOS default') "
-			"on duplicate key update id=LAST_INSERT_ID(id), "
-			"deleted=0;",
-			qos_table, now, now);
-		//debug3("%s", query);
-		normal_qos_id = mysql_insert_ret_id(db_conn, query);
-		xfree(query);		
+		int qos_id = 0;
+		if(slurmdbd_conf && slurmdbd_conf->default_qos) {
+			List char_list = list_create(slurm_destroy_char);
+			char *qos = NULL;
+			ListIterator itr = NULL;
+			slurm_addto_char_list(char_list, 
+					      slurmdbd_conf->default_qos);
+			/* NOTE: you can not use list_pop, or list_push
+			   anywhere either, since mysql is
+			   exporting something of the same type as a macro,
+			   which messes everything up 
+			   (my_list.h is the bad boy).
+			*/
+			itr = list_iterator_create(char_list);
+			while((qos = list_next(itr))) {
+				query = xstrdup_printf(
+					"insert into %s "
+					"(creation_time, mod_time, name, "
+					"description) "
+					"values (%d, %d, '%s', "
+					"'Added as default') "
+					"on duplicate key update "
+					"id=LAST_INSERT_ID(id), deleted=0;",
+					qos_table, now, now, qos);
+				qos_id = mysql_insert_ret_id(db_conn, query);
+				if(!qos_id)
+					fatal("problem added qos '%s", qos);
+				xstrfmtcat(default_qos_str, ",%d", qos_id);
+				xfree(query);	
+			}			
+			list_iterator_destroy(itr);
+			list_destroy(char_list);
+		} else {
+			query = xstrdup_printf(
+				"insert into %s "
+				"(creation_time, mod_time, name, description) "
+				"values (%d, %d, 'normal', "
+				"'Normal QOS default') "
+				"on duplicate key update "
+				"id=LAST_INSERT_ID(id), deleted=0;",
+				qos_table, now, now);
+			//debug3("%s", query);
+			qos_id = mysql_insert_ret_id(db_conn, query);
+			if(!qos_id)
+				fatal("problem added qos 'normal");
+			xstrfmtcat(default_qos_str, ",%d", qos_id);
+			xfree(query);		
+		}
 	}
 	if(mysql_db_create_table(db_conn, step_table,
 				 step_table_fields, 
@@ -2930,6 +2968,7 @@ extern int fini ( void )
 #ifdef HAVE_MYSQL
 	destroy_mysql_db_info(mysql_db_info);		
 	xfree(mysql_db_name);
+	xfree(default_qos_str);
 	mysql_cleanup();
 	return SLURM_SUCCESS;
 #else

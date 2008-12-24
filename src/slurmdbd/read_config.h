@@ -70,13 +70,15 @@ typedef struct slurm_dbd_conf {
 					 * using a script               */
 	char *		archive_script;	/* script to archive old data	*/
 	uint16_t	archive_steps;	/* flag if we are to
-					 * archive steps	*/
+					 * archive steps	        */
 	char *		auth_info;	/* authentication info		*/
 	char *		auth_type;	/* authentication mechanism	*/
 	char *		dbd_addr;	/* network address of Slurm DBD	*/
 	char *		dbd_host;	/* hostname of Slurm DBD	*/
 	uint16_t	dbd_port;	/* port number for RPCs to DBD	*/
 	uint16_t	debug_level;	/* Debug level, default=3	*/
+	char *   	default_qos;	/* default qos setting when
+					 * adding clusters              */
 	uint16_t	job_purge;	/* purge time for job info	*/ 
 	char *		log_file;	/* Log file			*/
 	uint16_t        msg_timeout;    /* message timeout		*/   
