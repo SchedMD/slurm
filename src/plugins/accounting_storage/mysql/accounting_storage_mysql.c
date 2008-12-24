@@ -3554,7 +3554,8 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
 	acct_cluster_rec_t *object = NULL;
-	char *cols = NULL, *vals = NULL, *extra = NULL, *query = NULL;
+	char *cols = NULL, *vals = NULL, *extra = NULL, 
+		*query = NULL, *tmp_extra = NULL;
 	time_t now = time(NULL);
 	char *user_name = NULL;
 	int affect_rows = 0;
@@ -3642,14 +3643,21 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			added=0;
 			break;
 		}
+
+		/* we always have a ', ' as the first 2 chars */
+		tmp_extra = _fix_double_quotes(extra+2);
+
 		xstrfmtcat(query,
 			   "insert into %s "
 			   "(timestamp, action, name, actor, info) "
 			   "values (%d, %u, \"%s\", \"%s\", \"%s\");",
 			   txn_table, now, DBD_ADD_CLUSTERS, 
-			   object->name, user_name, extra);
+			   object->name, user_name, tmp_extra);
+		xfree(tmp_extra);			
 		xfree(extra);			
-		debug4("query\n%s",query);
+		debug4("%d(%d) query\n%s",
+		       mysql_conn->conn, __LINE__, query);
+
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
