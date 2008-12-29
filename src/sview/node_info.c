@@ -949,7 +949,7 @@ display_it:
 	if(popup_win->grid_button_list) {
 		list_destroy(popup_win->grid_button_list);
 	}	       
-#ifdef HAVE_BG
+#ifdef HAVE_3D
 	popup_win->grid_button_list = copy_main_button_list();
 #else
 	popup_win->grid_button_list = list_create(destroy_grid_button);
@@ -1023,7 +1023,7 @@ display_it:
 			continue;
 		
 		list_push(send_info_list, sview_node_info_ptr);
-#ifdef HAVE_BG
+#ifdef HAVE_3D
 		change_grid_color(popup_win->grid_button_list,
 				  i, i, 0);
 #else
