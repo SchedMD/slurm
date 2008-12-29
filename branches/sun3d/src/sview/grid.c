@@ -49,6 +49,16 @@ int sview_colors_cnt = 20;
 
 GStaticMutex blinking_mutex = G_STATIC_MUTEX_INIT;
 
+#ifdef HAVE_3D
+static int _coord(char coord)
+{
+	if ((coord >= '0') && (coord <= '9'))
+		return (coord - '0');
+	if ((coord >= 'A') && (coord <= 'Z'))
+		return (coord - 'A');
+	return -1;
+}
+#endif
 
 static void _open_node(GtkWidget *widget, GdkEventButton *event, 
 		       grid_button_t *grid_button)
@@ -656,13 +666,13 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 {
 	int error_code = SLURM_SUCCESS;
 	int x=0, table_x=0, table_y=0;
-	int coord_x=0, coord_y=0, i=0;
+	int coord_x=0, coord_y=0, inx=0;
 	grid_button_t *grid_button = NULL;
 	int node_count = 0;
 	ListIterator itr = NULL;
 	sview_node_info_t *sview_node_info_ptr = NULL;
 #ifdef HAVE_3D
-	int y=0, z=0, x_offset=0, y_offset=0, default_y_offset=0;
+	int y=0, z=0, y_offset=0, default_y_offset=0;
 #endif
 
 	if(!node_list) {
@@ -689,70 +699,64 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 
 	gtk_table_resize(table, table_y, table_x);
 	itr = list_iterator_create(node_list);
+
 #ifdef HAVE_3D
-	/* ok this is going to look much different than smap since we
-	 * get the nodes from the controller going up from the Z dim
-	 * instead of laying these out in a nice X fashion
-	 */
-	
 	default_y_offset = (DIM_SIZE[Z] * DIM_SIZE[Y]) 
 		+ (DIM_SIZE[Y] - DIM_SIZE[Z]);
 
-	for (x=0; x<DIM_SIZE[X]; x++) {
-		y_offset = default_y_offset;
-			
-		for (y=0; y<DIM_SIZE[Y]; y++) {
-			coord_y = y_offset - y;
-			x_offset = DIM_SIZE[Z] - 1;
-			for (z=0; z<DIM_SIZE[Z]; z++){
-				coord_x = x + x_offset;
-			
-				grid_button = xmalloc(sizeof(grid_button_t));
-				grid_button->inx = i++;
-				grid_button->table = table;
-				grid_button->table_x = coord_x;
-				grid_button->table_y = coord_y;
-				grid_button->button = gtk_button_new();
-				grid_button->tip = gtk_tooltips_new();
-				if(!(sview_node_info_ptr = list_next(itr))) {
-					g_print("no node for this "
-						"inx %d!!!!\n",
-						grid_button->inx);
-					goto end_it;
-				}
-			
-				grid_button->node_name = xstrdup(
-					sview_node_info_ptr->node_ptr->name);
-				
-				gtk_tooltips_set_tip(grid_button->tip,
-						     grid_button->button,
-						     grid_button->node_name,
-						     "click for node stats");
-				gtk_widget_set_size_request(
-					grid_button->button, 10, 10);
-				g_signal_connect(G_OBJECT(grid_button->button),
-						 "button-press-event",
-						 G_CALLBACK(_open_node),
-						 grid_button);
-				list_append(button_list, grid_button);
-								
-				gtk_table_attach(table, grid_button->button,
-						 coord_x, (coord_x+1),
-						 coord_y, (coord_y+1),
-						 GTK_SHRINK, GTK_SHRINK,
-						 1, 1);
-				
-				coord_y++;
-				x_offset--;
-			}
-			y_offset -= DIM_SIZE[Z];			
+	while((sview_node_info_ptr = list_next(itr))) {
+		int i = strlen(sview_node_info_ptr->node_ptr->name);
+		if (i < 4) {
+			g_error("bad node name %s\n",
+				sview_node_info_ptr->node_ptr->name);
+			goto end_it;
+		} else {
+			x = _coord(sview_node_info_ptr->node_ptr->name[i-3]);
+			y = _coord(sview_node_info_ptr->node_ptr->name[i-2]);
+			z = _coord(sview_node_info_ptr->node_ptr->name[i-1]);
 		}
-		gtk_table_set_row_spacing(table, coord_y-1, 5);
+
+		coord_x = (x + (DIM_SIZE[Z] - 1)) - z;
+
+		y_offset = default_y_offset - (DIM_SIZE[Z] * y);
+		coord_y = (y_offset - y) + z;
+
+		grid_button = xmalloc(sizeof(grid_button_t));
+		grid_button->inx = inx++;
+		grid_button->table = table;
+		grid_button->table_x = coord_x;
+		grid_button->table_y = coord_y;
+		grid_button->button = gtk_button_new();
+		grid_button->tip = gtk_tooltips_new();
+		
+		grid_button->node_name = xstrdup(
+			sview_node_info_ptr->node_ptr->name);
+		
+		gtk_tooltips_set_tip(grid_button->tip,
+				     grid_button->button,
+				     grid_button->node_name,
+				     "click for node stats");
+		gtk_widget_set_size_request(
+			grid_button->button, 10, 10);
+		g_signal_connect(G_OBJECT(grid_button->button),
+				 "button-press-event",
+				 G_CALLBACK(_open_node),
+				 grid_button);
+		list_append(button_list, grid_button);
+		
+		gtk_table_attach(table, grid_button->button,
+				 coord_x, (coord_x+1),
+				 coord_y, (coord_y+1),
+				 GTK_SHRINK, GTK_SHRINK,
+				 1, 1);
+
+		if((y == DIM_SIZE[Y]-1) && (z == DIM_SIZE[Z]-1))
+			gtk_table_set_row_spacing(table, coord_y-1, 5);
 	}
 #else
 	for (x=0; x<node_count; x++) {
 		grid_button = xmalloc(sizeof(grid_button_t));
-		grid_button->inx = i++;
+		grid_button->inx = inx++;
 		grid_button->table = table;
 		grid_button->table_x = coord_x;
 		grid_button->table_y = coord_y;
