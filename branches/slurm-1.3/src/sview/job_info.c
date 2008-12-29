@@ -2,7 +2,8 @@
  *  job_info.c - Functions related to job display 
  *  mode of sview.
  *****************************************************************************
- *  Copyright (C) 2004-2006 The Regents of the University of California.
+ *  Copyright (C) 2004-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *
@@ -1069,7 +1070,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 	if(!treestore)
 		return;
 	if(!job_ptr->nodes || !strcasecmp(job_ptr->nodes,"waiting...")) {
-		sprintf(tmp_char,"0:00:00");
+		sprintf(tmp_char,"00:00:00");
 		nodes = "waiting...";
 	} else {
 		if (job_ptr->job_state == JOB_SUSPENDED)
@@ -1481,7 +1482,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	
 	gtk_tree_store_set(treestore, iter, SORTID_UPDATED, 1, -1);
 	if(!job_ptr->nodes || !strcasecmp(job_ptr->nodes,"waiting...")) {
-		sprintf(tmp_char,"0:00:00");
+		sprintf(tmp_char,"00:00:00");
 		nodes = "waiting...";
 	} else {
 		if (job_ptr->job_state == JOB_SUSPENDED)
@@ -1786,7 +1787,7 @@ static void _layout_step_record(GtkTreeView *treeview,
 		return;
 	if(!step_ptr->nodes 
 	   || !strcasecmp(step_ptr->nodes,"waiting...")) {
-		sprintf(tmp_time,"0:00:00");
+		sprintf(tmp_time,"00:00:00");
 		nodes = "waiting...";
 		state = JOB_PENDING;
 	} else {
@@ -1878,7 +1879,7 @@ static void _update_step_record(job_step_info_t *step_ptr,
 	gtk_tree_store_set(treestore, iter, SORTID_UPDATED, 1, -1);
 	if(!step_ptr->nodes 
 	   || !strcasecmp(step_ptr->nodes,"waiting...")) {
-		sprintf(tmp_char,"0:00:00");
+		sprintf(tmp_char,"00:00:00");
 		nodes = "waiting...";
 		state = JOB_PENDING;
 	} else {
@@ -2866,7 +2867,7 @@ display_it:
 		list_destroy(popup_win->grid_button_list);
 	}	       
 	
-#ifdef HAVE_BG
+#ifdef HAVE_3D
 	popup_win->grid_button_list = copy_main_button_list();
 #else
 	popup_win->grid_button_list = list_create(destroy_grid_button);
@@ -2983,7 +2984,7 @@ display_it:
 		list_push(send_info_list, sview_job_info_ptr);
 		j=0;
 		while(job_ptr->node_inx[j] >= 0) {
-#ifdef HAVE_BG
+#ifdef HAVE_3D
 			change_grid_color(
 				popup_win->grid_button_list,
 				job_ptr->node_inx[j],

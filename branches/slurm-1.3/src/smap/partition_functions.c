@@ -2,7 +2,8 @@
  *  partition_functions.c - Functions related to partition display 
  *  mode of smap.
  *****************************************************************************
- *  Copyright (C) 2004-2006 The Regents of the University of California.
+ *  Copyright (C) 2004-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  * 
@@ -140,12 +141,15 @@ extern void get_slurm_part()
 		if (!part.nodes || (part.nodes[0] == '\0'))
 			continue;	/* empty partition */
 		
-				
+#ifdef HAVE_SUN_CONST
+		set_grid_name(part.nodes, count);
+#else		
 		while (part.node_inx[j] >= 0) {
-			set_grid(part.node_inx[j],
-				 part.node_inx[j + 1], count);
+			set_grid_inx(part.node_inx[j],
+				     part.node_inx[j + 1], count);
 			j += 2;
 		}
+#endif
 		if(!params.commandline) {
 			if(i>=text_line_cnt) {
 				part.root_only = (int) letters[count%62];

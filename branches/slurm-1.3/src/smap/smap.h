@@ -1,7 +1,8 @@
 /****************************************************************************\
  *  smap.h - definitions used for smap data functions
  *****************************************************************************
- *  Copyright (C) 2004 The Regents of the University of California.
+ *  Copyright (C) 2004-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  LLNL-CODE-402394.
@@ -145,7 +146,8 @@ extern int quiet_flag;
 
 
 extern void init_grid(node_info_msg_t *node_info_ptr);
-extern int set_grid(int start, int end, int count);
+extern int set_grid_inx(int start, int end, int count);
+extern int set_grid_name(char *nodes, int count);
 extern int set_grid_bg(int *start, int *end, int count, int set);
 extern void print_grid(int dir);
 
