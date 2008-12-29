@@ -94,9 +94,9 @@ a 32 c-node block.
 Since jobs must allocate consecutive base partitions in all three dimensions, we have developed 
 an abbreviated format for describing the base partitions in one of these three-dimensional blocks. 
 The base partition has a prefix determined from the system which is followed by the end-points 
-of the block enclosed in square-brackets. 
+of the block enclosed in square-brackets and separated by an "x".
 For example, "bg[620x731]" is used to represent the eight base partitions enclosed in a block 
-with endpoints bg620 and bg731 (bg620, bg621, bg630, bg631, bg720, bg721, 
+with end-points and bg620 and bg731 (bg620, bg621, bg630, bg631, bg720, bg721, 
 bg730 and bg731).</p></a>
 
 <p>
