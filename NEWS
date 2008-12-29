@@ -6,6 +6,9 @@ documents those changes that are of interest to users and admins.
  -- Added ability for slurmdbd to archive and purge step and/or job records.
  -- Added DefaultQOS as an option to slurmdbd.conf for when clusters are 
     added the default will be set to this if none is given in the sacctmgr line.
+ -- Added configure option --enable-sun-const for Sun Constellation system with
+    3D torus interconnect. Supports proper smap and sview displays for 3-D
+    topology. 
 
 * Changes in SLURM 1.3.12
 =========================
