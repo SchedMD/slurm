@@ -672,15 +672,8 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 	ListIterator itr = NULL;
 	sview_node_info_t *sview_node_info_ptr = NULL;
 #ifdef HAVE_3D
-	int default_y_offset=0;
-#endif
-
-	if(!node_list) {
-		g_print("setup_grid_table: no node_list given\n");
-		return SLURM_ERROR;
-	}
-	
-#ifdef HAVE_3D
+	int default_y_offset= (DIM_SIZE[Z] * DIM_SIZE[Y]) 
+		+ (DIM_SIZE[Y] - DIM_SIZE[Z]);
 	node_count = DIM_SIZE[X];
 	table_x = DIM_SIZE[X] + DIM_SIZE[Z];
 	table_y = (DIM_SIZE[Z] * DIM_SIZE[Y]) + DIM_SIZE[Y];
@@ -697,13 +690,13 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 	table_y++;
 #endif
 
+	if(!node_list) {
+		g_print("setup_grid_table: no node_list given\n");
+		return SLURM_ERROR;
+	}
+	
 	gtk_table_resize(table, table_y, table_x);
 	itr = list_iterator_create(node_list);
-
-#ifdef HAVE_3D
-	default_y_offset = (DIM_SIZE[Z] * DIM_SIZE[Y]) 
-		+ (DIM_SIZE[Y] - DIM_SIZE[Z]);
-#endif
 	while((sview_node_info_ptr = list_next(itr))) {
 #ifdef HAVE_3D
 		int i = strlen(sview_node_info_ptr->node_ptr->name);
