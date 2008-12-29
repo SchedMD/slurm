@@ -730,8 +730,8 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 		grid_button->button = gtk_button_new();
 		grid_button->tip = gtk_tooltips_new();
 
-		grid_button->node_name = xstrdup(
-			sview_node_info_ptr->node_ptr->name);
+		grid_button->node_name =
+			xstrdup(sview_node_info_ptr->node_ptr->name);
 
 		gtk_tooltips_set_tip(grid_button->tip,
 				     grid_button->button,
@@ -745,7 +745,8 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 		list_append(button_list, grid_button);
 		
 		gtk_table_attach(table, grid_button->button,
-				 coord_x, (coord_x+1), coord_y, (coord_y+1),
+				 coord_x, (coord_x+1),
+				 coord_y, (coord_y+1),
 				 GTK_SHRINK, GTK_SHRINK,
 				 1, 1);		
 #ifndef HAVE_3D
