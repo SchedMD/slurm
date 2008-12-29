@@ -749,10 +749,9 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 				 coord_y, (coord_y+1),
 				 GTK_SHRINK, GTK_SHRINK,
 				 1, 1);
-
-		if((y == DIM_SIZE[Y]-1) && (z == DIM_SIZE[Z]-1))
-			gtk_table_set_row_spacing(table, coord_y-1, 5);
 	}
+	gtk_table_set_row_spacing(table, coord_y-1, 1);
+
 #else
 	for (x=0; x<node_count; x++) {
 		grid_button = xmalloc(sizeof(grid_button_t));
