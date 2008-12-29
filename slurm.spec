@@ -262,13 +262,13 @@ SLURM process tracking plugin for SGI job containers.
 
 %build
 %configure --program-prefix=%{?_program_prefix:%{_program_prefix}} \
-    %{?slurm_with_debug:--enable-debug} \
-    %(?slurm_with_sun_const:--enable-sun-const} \
-    %{?with_proctrack}	\
-    %{?with_ssl}		\
-    %{?with_munge}      \
-    %{!?slurm_with_readline:--without-readline} \
-    %{?with_cflags}
+	%{?slurm_with_debug:--enable-debug} \
+	%(?slurm_with_sun_const:--enable-sun-const} \
+	%{?with_proctrack}	\
+	%{?with_ssl}		\
+	%{?with_munge}      \
+	%{!?slurm_with_readline:--without-readline} \
+	%{?with_cflags}
 
 make %{?_smp_mflags} 
 
