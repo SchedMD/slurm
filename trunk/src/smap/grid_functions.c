@@ -39,7 +39,61 @@
 
 #include "src/smap/smap.h"
 
-extern int set_grid(int start, int end, int count)
+#ifdef HAVE_3D
+static int _coord(char coord)
+{
+	if ((coord >= '0') && (coord <= '9'))
+		return (coord - '0');
+	if ((coord >= 'A') && (coord <= 'Z'))
+		return (coord - 'A');
+	return -1;
+}
+
+#endif
+
+/* Set grid color based upon node names containing X-, Y- and Z-
+ * coordinates in last three positions. It is not based upon the
+ * nodes in the node table being numerically ordered. */
+extern int set_grid_name(char *nodes, int count)
+{
+#ifdef HAVE_3D
+	hostlist_t hl;
+	char *node;
+	int i, x = 0, y = 0, z = 0;
+
+	if (!nodes)
+		return 1;
+
+	hl = hostlist_create(nodes);
+	while ((node = hostlist_shift(hl))) {
+		i = strlen(node);
+		if (i < 4)
+			x = -1;
+		else {
+			x = _coord(node[i-3]);
+			y = _coord(node[i-2]);
+			z = _coord(node[i-1]);
+		}
+		if ((ba_system_ptr->grid[x][y][z].state 
+				!= NODE_STATE_DOWN) &&
+		    (!(ba_system_ptr->grid[x][y][z].state 
+				& NODE_STATE_DRAIN)) &&
+		    (x >= 0) && (x < DIM_SIZE[X]) && 
+		    (y >= 0) && (y < DIM_SIZE[Y]) && 
+		    (z >= 0) && (z < DIM_SIZE[Z])) {
+			ba_system_ptr->grid[x][y][z].letter = 
+				letters[count%62];
+			ba_system_ptr->grid[x][y][z].color = 
+				colors[count%6];
+		}
+		free(node);
+	}
+	hostlist_destroy(hl);
+#endif
+	return 1;
+}
+
+extern int set_grid_inx(int start, int end, int count)
 {
 	int x;
 #ifdef HAVE_3D
@@ -81,6 +135,7 @@ extern int set_grid(int start, int end, int count)
 	return 1;
 }
 
+/* This function is only called when HAVE_BG is set */
 extern int set_grid_bg(int *start, int *end, int count, int set)
 {
 	int x=0;

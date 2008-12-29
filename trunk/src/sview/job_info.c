@@ -2,7 +2,8 @@
  *  job_info.c - Functions related to job display 
  *  mode of sview.
  *****************************************************************************
- *  Copyright (C) 2004-2006 The Regents of the University of California.
+ *  Copyright (C) 2004-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *
@@ -2832,7 +2833,7 @@ display_it:
 		list_destroy(popup_win->grid_button_list);
 	}	       
 	
-#ifdef HAVE_BG
+#ifdef HAVE_3D
 	popup_win->grid_button_list = copy_main_button_list();
 #else
 	popup_win->grid_button_list = list_create(destroy_grid_button);
@@ -2949,7 +2950,7 @@ display_it:
 		list_push(send_info_list, sview_job_info_ptr);
 		j=0;
 		while(job_ptr->node_inx[j] >= 0) {
-#ifdef HAVE_BG
+#ifdef HAVE_3D
 			change_grid_color(
 				popup_win->grid_button_list,
 				job_ptr->node_inx[j],

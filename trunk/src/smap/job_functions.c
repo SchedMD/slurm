@@ -1,7 +1,8 @@
 /*****************************************************************************\
  *  job_functions.c - Functions related to job display mode of smap.
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *
@@ -49,7 +50,7 @@ static int  _print_text_job(job_info_t * job_ptr);
 
 extern void get_job()
 {
-	int error_code = -1, i, j, recs;
+	int error_code = -1, i, recs;
 	static int printed_jobs = 0;
 	static int count = 0;
 	static job_info_msg_t *job_info_ptr = NULL, *new_job_ptr = NULL;
@@ -108,17 +109,21 @@ extern void get_job()
 			continue;	/* job has completed */
 
 		if (job.node_inx[0] != -1) {
+#ifdef HAVE_SUN_CONST
+			set_grid_name(job.nodes, count);
+#else
+			int j = 0;
 			job.num_nodes = 0;
-			j = 0;
 			while (job.node_inx[j] >= 0) {
 				job.num_nodes +=
 				    (job.node_inx[j + 1] + 1) -
 				    job.node_inx[j];
-				set_grid(job.node_inx[j],
-					 job.node_inx[j + 1], count);
+				set_grid_inx(job.node_inx[j],
+					     job.node_inx[j + 1], count);
 				j += 2;
 			}
-			
+#endif
+
 			if(!params.commandline) {
 				if((count>=text_line_cnt)
 				   && (printed_jobs 

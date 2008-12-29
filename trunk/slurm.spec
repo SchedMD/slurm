@@ -16,6 +16,7 @@
 # --without pam      %_without_pam      1    don't require pam-devel RPM to be installed
 # --without readline %_without_readline 1    don't require readline-devel RPM to be installed
 # --with sgijob      %_with_sgijob      1    build proctrack-sgi-job RPM
+# --with sun_const   %_with_sun_const   1    build for Sun Constellation system
 # --with mysql       %_with_mysql       1    require mysql support
 # --with postgres    %_with_postgres    1    require postgresql support
 
@@ -37,6 +38,7 @@
 %slurm_without_opt bluegene
 %slurm_without_opt auth_none
 %slurm_without_opt debug
+%slurm_without_opt sun_const
 
 # These options are only here to force there to be these on the build.  
 # If they are not set they will still be compiled if the packages exist.
@@ -260,11 +262,12 @@ SLURM process tracking plugin for SGI job containers.
 
 %build
 %configure --program-prefix=%{?_program_prefix:%{_program_prefix}} \
-	%{?slurm_with_debug:--enable-debug} \
+    %{?slurm_with_debug:--enable-debug} \
+    %(?slurm_with_sun_const:--enable-sun-const} \
     %{?with_proctrack}	\
     %{?with_ssl}		\
     %{?with_munge}      \
-	%{!?slurm_with_readline:--without-readline} \
+    %{!?slurm_with_readline:--without-readline} \
     %{?with_cflags}
 
 make %{?_smp_mflags} 

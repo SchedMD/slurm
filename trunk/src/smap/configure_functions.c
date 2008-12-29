@@ -1,6 +1,5 @@
 /*****************************************************************************\
  *  configure_functions.c - Functions related to configure mode of smap.
- *  These functions are only used on a BlueGene computer.
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008 Lawrence Livermore National Security.
