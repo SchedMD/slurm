@@ -46,7 +46,7 @@
 
 #define NUM_PORTS_PER_NODE 6
 
-#ifdef HAVE_BG
+#ifdef HAVE_3D
 #define BA_SYSTEM_DIMENSIONS 3
 #else
 #define BA_SYSTEM_DIMENSIONS 1
@@ -233,7 +233,7 @@ typedef struct {
 
 	/* made to hold info about a system, which right now is only a
 	 * grid of ba_nodes*/
-#ifdef HAVE_BG
+#ifdef HAVE_3D
 	ba_node_t ***grid;
 #else
 	ba_node_t *grid;
