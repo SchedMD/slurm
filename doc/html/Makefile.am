@@ -40,6 +40,7 @@ generated_html = \
 	schedplugins.html \
 	selectplugins.html \
 	slurm.html \
+	sun_const.html \
 	switchplugins.html \
 	taskplugins.html \
 	team.html \

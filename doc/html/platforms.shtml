@@ -21,9 +21,10 @@ has been thoroughly tested.</li>
 <li><b>Myrinet</b>&#151;Myrinet, MPICH-GM and MPICH-MX are supported.</li>
 <li><b>Quadrics Elan</b>&#151;SLURM support for Quadrics Elan 3 and Elan 4 switches 
 are available in all versions of SLURM and have been thoroughly tested.</li>
+<li><b>Sun Constellation</b>&#151;Three-dimensional torus interconnect.</li>
 <li><b>Other</b>&#151;SLURM ports to other systems will be gratefully accepted.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 13 November 2008</p>
+<p style="text-align:center;">Last modified 22 December 2008</p>
 
 <!--#include virtual="footer.txt"-->
