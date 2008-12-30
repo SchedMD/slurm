@@ -325,6 +325,7 @@ typedef struct {
 			      * qos is preempted by */
 	uint32_t priority;  /* ranged int needs to be a unint for
 			     * heterogeneous systems */
+	double usage_factor; /* factor to apply to usage in this qos */
 	List user_limit_list; /* acct_used_limits_t's */
 } acct_qos_rec_t;
 
