@@ -893,6 +893,8 @@ extern void init_acct_qos_rec(acct_qos_rec_t *qos)
 	qos->max_nodes_pu = NO_VAL;
 	qos->max_submit_jobs_pu = NO_VAL;
 	qos->max_wall_pu = NO_VAL;
+
+	qos->usage_factor = NO_VAL;
 }
 
 /****************************************************************************\
@@ -2218,7 +2220,105 @@ extern void pack_acct_qos_rec(void *in, uint16_t rpc_version, Buf buffer)
 	uint32_t count = NO_VAL;
 	char *tmp_info = NULL;
 
-	if(rpc_version >= 3) {
+	if(rpc_version >= 5) {
+		if(!object) {
+			packnull(buffer);
+			pack32(0, buffer);
+			packnull(buffer);
+
+			pack64(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+
+			pack64(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+
+			packnull(buffer);
+
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+
+			pack32(0, buffer);
+
+			packdouble(NO_VAL, buffer);
+
+			pack32(NO_VAL, buffer);
+			return;
+		}
+		packstr(object->description, buffer);	
+		pack32(object->id, buffer);
+
+		pack64(object->grp_cpu_mins, buffer);
+		pack32(object->grp_cpus, buffer);
+		pack32(object->grp_jobs, buffer);
+		pack32(object->grp_nodes, buffer);
+		pack32(object->grp_submit_jobs, buffer);
+		pack32(object->grp_wall, buffer);
+
+		pack64(object->max_cpu_mins_pu, buffer);
+		pack32(object->max_cpus_pu, buffer);
+		pack32(object->max_jobs_pu, buffer);
+		pack32(object->max_nodes_pu, buffer);
+		pack32(object->max_submit_jobs_pu, buffer);
+		pack32(object->max_wall_pu, buffer);
+
+		packstr(object->name, buffer);	
+
+		if(object->preemptee_list)
+			count = list_count(object->preemptee_list);
+
+		pack32(count, buffer);
+
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->preemptee_list);
+			while((tmp_info = list_next(itr))) {
+				packstr(tmp_info, buffer);
+			}
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+		
+		if(object->preemptor_list)
+			count = list_count(object->preemptor_list);
+
+		pack32(count, buffer);
+
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->preemptor_list);
+			while((tmp_info = list_next(itr))) {
+				packstr(tmp_info, buffer);
+			}
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+		
+		pack32(object->priority, buffer);
+		
+		packdouble(object->usage_factor, buffer);
+
+		if(object->user_limit_list)
+			count = list_count(object->user_limit_list);
+
+		pack32(count, buffer);
+
+		if(count && count != NO_VAL) {
+			acct_used_limits_t *used_limits = NULL;
+			itr = list_iterator_create(object->user_limit_list);
+			while((used_limits = list_next(itr))) {
+				pack_acct_used_limits(used_limits,
+						      rpc_version, buffer);
+			}
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+	} else if(rpc_version >= 3) {
 		if(!object) {
 			packnull(buffer);
 			pack32(0, buffer);
@@ -2337,7 +2437,70 @@ extern int unpack_acct_qos_rec(void **object, uint16_t rpc_version, Buf buffer)
 	
 	init_acct_qos_rec(object_ptr);
 
-	if(rpc_version >= 3) {
+	if(rpc_version >= 5) {
+		safe_unpackstr_xmalloc(&object_ptr->description,
+				       &uint32_tmp, buffer);
+		safe_unpack32(&object_ptr->id, buffer);
+
+		safe_unpack64(&object_ptr->grp_cpu_mins, buffer);
+		safe_unpack32(&object_ptr->grp_cpus, buffer);
+		safe_unpack32(&object_ptr->grp_jobs, buffer);
+		safe_unpack32(&object_ptr->grp_nodes, buffer);
+		safe_unpack32(&object_ptr->grp_submit_jobs, buffer);
+		safe_unpack32(&object_ptr->grp_wall, buffer);
+
+		safe_unpack64(&object_ptr->max_cpu_mins_pu, buffer);
+		safe_unpack32(&object_ptr->max_cpus_pu, buffer);
+		safe_unpack32(&object_ptr->max_jobs_pu, buffer);
+		safe_unpack32(&object_ptr->max_nodes_pu, buffer);
+		safe_unpack32(&object_ptr->max_submit_jobs_pu, buffer);
+		safe_unpack32(&object_ptr->max_wall_pu, buffer);
+
+		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
+
+		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
+			object_ptr->preemptee_list = 
+				list_create(slurm_destroy_char);
+			for(i=0; i<count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
+						       buffer);
+				list_append(object_ptr->preemptee_list,
+					    tmp_info);
+			}
+		}
+
+		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
+			object_ptr->preemptor_list = 
+				list_create(slurm_destroy_char);
+			for(i=0; i<count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
+						       buffer);
+				list_append(object_ptr->preemptor_list,
+					    tmp_info);
+			}
+		}
+
+		safe_unpack32(&object_ptr->priority, buffer);
+
+		safe_unpackdouble(&object_ptr->usage_factor, buffer);
+
+		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
+			void *used_limits = NULL;
+
+			object_ptr->user_limit_list = 
+				list_create(slurm_destroy_char);
+			for(i=0; i<count; i++) {
+				unpack_acct_used_limits(&used_limits,
+							rpc_version, buffer);
+				list_append(object_ptr->user_limit_list,
+					    used_limits);
+			}
+		}
+
+	} else if(rpc_version >= 3) {
 		safe_unpackstr_xmalloc(&object_ptr->description,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&object_ptr->id, buffer);
