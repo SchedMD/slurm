@@ -137,7 +137,7 @@ static void  _run_srun_epilog (srun_job_t *job);
 static int   _run_srun_script (srun_job_t *job, char *script);
 static void  _set_cpu_env_var(resource_allocation_response_msg_t *resp);
 static int   _setup_signals();
-static void  _step_opt_exclusive(void);
+static void  _step_opt_dedicate(void);
 static void  _set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds);
 static void  _set_prio_process_env(void);
 static int   _set_rlimit_env(void);
@@ -242,8 +242,8 @@ int srun(int ac, char **av)
 		job_id = resp->job_id;
 		if (opt.alloc_nodelist == NULL)
                        opt.alloc_nodelist = xstrdup(resp->node_list);
-		if (opt.exclusive)
-			_step_opt_exclusive();
+		if (opt.dedicate)
+			_step_opt_dedicate();
 		_set_cpu_env_var(resp);
 		job = job_step_create_allocation(resp);
 		slurm_free_resource_allocation_response_msg(resp);
@@ -268,7 +268,7 @@ int srun(int ac, char **av)
 		_set_cpu_env_var(resp);
 		job = job_create_allocation(resp);
 		
-		opt.exclusive = false;	/* not applicable for this step */
+		opt.dedicate = false;	/* not applicable for this step */
 		if (!opt.job_name_set_cmd && opt.job_name_set_env) {
 			/* use SLURM_JOB_NAME env var */
 			opt.job_name_set_cmd = true;
@@ -865,22 +865,22 @@ static void _pty_restore(void)
 		fprintf(stderr, "tcsetattr: %s\n", strerror(errno));
 }
 
-/* opt.exclusive is set, disable user task layout controls */
-static void _step_opt_exclusive(void)
+/* opt.dedicate is set, disable user task layout controls */
+static void _step_opt_dedicate(void)
 {
 	if (opt.nodes_set) {
 		verbose("ignoring node count set by --nodes or SLURM_NNODES");
-		verbose("  it is incompatible with --exclusive");
+		verbose("  it is incompatible with --dedicate");
 		opt.nodes_set = false;
 		opt.min_nodes = 1;
 		opt.max_nodes = 0;
 	}
 	if (!opt.nprocs_set)
-		fatal("--ntasks must be set with --exclusive");
+		fatal("--ntasks must be set with --dedicate");
 	if (opt.relative_set)
-		fatal("--relative disabled, incompatible with --exclusive");
+		fatal("--relative disabled, incompatible with --dedicate");
 	if (opt.exc_nodes)
-		fatal("--exclude is incompatible with --exclusive");
+		fatal("--exclude is incompatible with --dedicate");
 }
 
 static void

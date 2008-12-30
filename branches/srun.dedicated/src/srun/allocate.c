@@ -525,7 +525,7 @@ create_job_step(srun_job_t *job)
 	job->ctx_params.relative = (uint16_t)opt.relative;
 	job->ctx_params.ckpt_interval = (uint16_t)opt.ckpt_interval;
 	job->ctx_params.ckpt_path = opt.ckpt_path;
-	job->ctx_params.exclusive = (uint16_t)opt.exclusive;
+	job->ctx_params.exclusive = (uint16_t)opt.dedicate;
 	job->ctx_params.immediate = (uint16_t)opt.immediate;
 	job->ctx_params.verbose_level = (uint16_t)_verbose;
 	switch (opt.distribution) {

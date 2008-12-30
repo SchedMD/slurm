@@ -207,7 +207,7 @@ upon resource consumption by other jobs. Such a job may be
 unable to execute more than a total of 4 tasks. 
 This option may also be useful to spawn tasks without allocating
 resources to the job step from the job's allocation when running 
-multiple job steps with the \fB\-\-exclusive\fR option.
+multiple job steps with the \fB\-\-dedicate\fR option.
 
 .TP
 \fB\-\-comment\fR=<\fIstring\fR>
@@ -247,6 +247,18 @@ The slurmd debug information is copied onto the stderr of
 the job. By default only errors are displayed. 
 
 .TP
+\fB\-\-dedicate\fR
+When used to initiate a job step within an existing resource allocation, 
+proceed only when processors can be dedicated to the job step without 
+sharing with other job steps. This can be used to initiate many 
+job steps simultaneously within an existing job allocation and have 
+SLURM perform resource management for the job. 
+In this mode, use with the \fB\-\-ntasks\fR option and NOT the 
+\fB\-\-nodes\fR, \fB\-\-relative\fR, \fB\-\-relative\fR=\fIarbitrary\fR
+options (which provide user control over task layout).
+See \fBEXAMPLE\fR below.
+
+.TP
 \fB\-e\fR, \fB\-\-error\fR=\fImode\fR
 Specify how stderr is to be redirected. By default in interactive mode,
 .B srun
@@ -266,18 +278,14 @@ parameter in slurm.conf.
 
 .TP
 \fB\-\-exclusive\fR
-When used to initiate a job step within an existing resource allocation, 
-proceed only when processors can be dedicated to the job step without 
-sharing with other job steps. This can be used to initiate many 
-job steps simultaneously within an existing job allocation and have 
-SLURM perform resource management for the job. 
-In this mode, use with the \fB\-\-ntasks\fR option and NOT the 
-\fB\-\-nodes\fR, \fB\-\-relative\fR, \fB\-\-relative\fR=\fIarbitrary\fR
-options (which provide user control over task layout).
-See \fBEXAMPLE\fR below.
 When used to initiate a job, dedicate whole nodes to the job rather 
 than individual processors even if consumable resources are enabled 
-(e.g. \fBSelectType=select/cons_res\fR).
+(e.g. \fBSelectType=select/cons_res\fR). This is the oposite of 
+\-\-share, whichever option is seen last on the command line
+will win.  (The default shared/exclusive behaviour depends on system
+configuration.)
+Formerly used to dedicate resources to a job step.
+While still supported, the \fB\-\-dedicate\fR option is now recommended.
 
 .TP
 \fB\-\-gid\fR=\fIgroup\fR
@@ -1207,6 +1215,9 @@ Same as \fB\-\-core\fR=\fIformat\fR
 \fBSLURM_DEBUG\fR
 Same as \fB\-v, \-\-verbose\fR
 .TP
+\fBSLURM_DEDICATE\fR
+Same as \fB\-\-dedicate\fR
+.TP
 \fBSLURMD_DEBUG\fR
 Same as \fB\-d, \-\-slurmd\-debug\fR
 .TP
@@ -1644,10 +1655,10 @@ become available for their dedicated use.
 
 > cat my.script
 #!/bin/bash
-srun \-\-exclusive \-n4 prog1 &
-srun \-\-exclusive \-n3 prog2 &
-srun \-\-exclusive \-n1 prog3 &
-srun \-\-exclusive \-n1 prog4 &
+srun \-\-dedicate \-n4 prog1 &
+srun \-\-dedicate \-n3 prog2 &
+srun \-\-dedicate \-n1 prog3 &
+srun \-\-dedicate \-n1 prog4 &
 wait
 .fi
 

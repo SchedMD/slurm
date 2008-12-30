@@ -8,7 +8,14 @@ documents those changes that are of interest to users and admins.
     added the default will be set to this if none is given in the sacctmgr line.
  -- Added configure option --enable-sun-const for Sun Constellation system with
     3D torus interconnect. Supports proper smap and sview displays for 3-D
-    topology. 
+    topology.
+ -- The srun --exclusive option has been causing confusion due to two different
+    uses. It can be used to avoid sharing of resources for a job (disable gang
+    scheduling or allocating whole nodes to jobs) or to dedicate processors to
+    a job step within an existing resource allocation. In an effort to reduce
+    confusion, the srun option --dedicate has been added to dedicate processors
+    to a job step. srun's --exclusive option will continue to be supported for
+    this purpose, but the documentation has been changed.
 
 * Changes in SLURM 1.3.12
 =========================

@@ -97,6 +97,7 @@
 #define OPT_OVERCOMMIT  0x06
 #define OPT_CORE        0x07
 #define OPT_CONN_TYPE	0x08
+#define OPT_DEDICATE	0x09
 #define OPT_NO_ROTATE	0x0a
 #define OPT_GEOMETRY	0x0b
 #define OPT_MPI         0x0c
@@ -125,6 +126,7 @@
 #define LONG_OPT_UID         0x10a
 #define LONG_OPT_GID         0x10b
 #define LONG_OPT_MPI         0x10c
+#define LONG_OPT_DEDICATE    0x10d
 #define LONG_OPT_CORE	     0x10e
 #define LONG_OPT_DEBUG_TS    0x110
 #define LONG_OPT_CONNTYPE    0x111
@@ -637,7 +639,7 @@ static void _opt_default()
 	opt.unbuffered = false;
 	opt.overcommit = false;
 	opt.shared = (uint16_t)NO_VAL;
-	opt.exclusive = false;
+	opt.deducate = false;
 	opt.no_kill = false;
 	opt.kill_bad_exit = false;
 
@@ -778,6 +780,7 @@ env_vars_t env_vars[] = {
 {"SLURM_TASK_PROLOG",   OPT_STRING,     &opt.task_prolog,   NULL             },
 {"SLURM_TASK_EPILOG",   OPT_STRING,     &opt.task_epilog,   NULL             },
 {"SLURM_WORKING_DIR",   OPT_STRING,     &opt.cwd,           &opt.cwd_set     },
+{"SLURM_DEDICATE",      OPT_DEDICATE,   NULL,               NULL             },
 {"SLURM_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL             },
 {"SLURM_OPEN_MODE",     OPT_OPEN_MODE,  NULL,               NULL             },
 {"SLURM_ACCTG_FREQ",    OPT_INT,        &opt.acctg_freq,    NULL             },
@@ -866,8 +869,12 @@ _process_env_var(env_vars_t *e, const char *val)
 		opt.overcommit = true;
 		break;
 
+	case OPT_DEDICATE:
+		opt.dedicate = true;
+		break;
+
 	case OPT_EXCLUSIVE:
-		opt.exclusive = true;
+		opt.dedicate = true;	/* Eventually remove this */
 		opt.shared = 0;
 		break;
 
@@ -986,6 +993,7 @@ static void set_options(const int argc, char **argv)
 		{"disable-status", no_argument,      0, 'X'},
 		{"no-allocate",   no_argument,       0, 'Z'},
 		{"contiguous",       no_argument,       0, LONG_OPT_CONT},
+		{"dedicate",         no_argument,       0, LONG_OPT_DEDICATE},
 		{"exclusive",        no_argument,       0, LONG_OPT_EXCLUSIVE},
 		{"cpu_bind",         required_argument, 0, LONG_OPT_CPU_BIND},
 		{"mem_bind",         required_argument, 0, LONG_OPT_MEM_BIND},
@@ -1278,10 +1286,13 @@ static void set_options(const int argc, char **argv)
 		case LONG_OPT_CONT:
 			opt.contiguous = true;
 			break;
-                case LONG_OPT_EXCLUSIVE:
-			opt.exclusive = true;
-                        opt.shared = 0;
-                        break;
+		case LONG_OPT_DEDICATE:
+			opt.dedicate = true;
+			break;
+		case LONG_OPT_EXCLUSIVE:
+			opt.dedicate = true;	/* Eventually remove this */
+			opt.shared = 0;
+			break;
                 case LONG_OPT_CPU_BIND:
 			if (_verify_cpu_bind(optarg, &opt.cpu_bind,
 					     &opt.cpu_bind_type))
@@ -2138,7 +2149,7 @@ static void _opt_list()
 	info("comment        : %s", opt.comment);
 
 	info("dependency     : %s", opt.dependency);
-	info("exclusive      : %s", tf_(opt.exclusive));
+	info("dedicate       : %s", tf_(opt.dedicate));
 	if (opt.shared != (uint16_t) NO_VAL)
 		info("shared         : %u", opt.shared);
 	str = print_constraints();
@@ -2309,6 +2320,7 @@ static void _help(void)
 "  -Z, --no-allocate           don't allocate nodes (must supply -w)\n"
 "\n"
 "Consumable resources related options:\n" 
+"      --dedicate              don't share CPUs for job steps\n"
 "      --exclusive             allocate nodes in exclusive mode when\n" 
 "                              cpu consumable resource is enabled\n"
 "                              or don't share CPUs for job steps\n"

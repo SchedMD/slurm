@@ -112,7 +112,7 @@ typedef struct srun_options {
 	int  ckpt_interval;	/* --checkpoint (int minutes)	*/
 	char *ckpt_interval_str;/* --checkpoint (string)	*/
 	char *ckpt_path;	/* --checkpoint-path (string)   */
-	bool exclusive;		/* --exclusive			*/
+	bool dedicate;		/* --dedicate			*/
 	char *partition;	/* --partition=n,   -p n   	*/
 	enum task_dist_states
 	        distribution;	/* --distribution=, -m dist	*/
