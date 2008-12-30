@@ -153,5 +153,6 @@ extern int sort_cluster_dec(sreport_cluster_rec_t *cluster_a,
 extern int sort_assoc_dec(sreport_assoc_rec_t *assoc_a,
 			  sreport_assoc_rec_t *assoc_b);
 
+extern int get_uint(char *in_value, uint32_t *out_value, char *type);
 
 #endif /* HAVE_SREPORT_H */
