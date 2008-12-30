@@ -398,7 +398,7 @@ static void *_rollup_handler(void *db_conn)
 		slurm_mutex_lock(&rollup_lock);
 		running_rollup = 1;
 		debug2("running rollup at %s", ctime(&start_time));
-		acct_storage_g_roll_usage(db_conn, 0);
+		acct_storage_g_roll_usage(db_conn, 0, 0);
 		running_rollup = 0;
 		slurm_mutex_unlock(&rollup_lock);	
 

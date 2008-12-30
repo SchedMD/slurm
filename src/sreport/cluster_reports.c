@@ -569,7 +569,8 @@ static List _get_cluster_list(int argc, char *argv[], uint32_t *total_time,
 		       "----------------------------------------\n");
 		printf("%s %s - %s (%d*cpus secs)\n", 
 		       report_name, start_char, end_char, 
-		       (cluster_cond->usage_end - cluster_cond->usage_start));
+		       (int)(cluster_cond->usage_end
+			     - cluster_cond->usage_start));
 		switch(time_format) {
 		case SREPORT_TIME_PERCENT:
 			printf("Time reported in %s\n", time_format_string);
@@ -742,7 +743,7 @@ extern int cluster_account_by_user(int argc, char *argv[])
 		       "----------------------------------------\n");
 		printf("Cluster/Account/User Utilization %s - %s (%d secs)\n", 
 		       start_char, end_char, 
-		       (assoc_cond->usage_end - assoc_cond->usage_start));
+		       (int)(assoc_cond->usage_end - assoc_cond->usage_start));
 		
 		switch(time_format) {
 		case SREPORT_TIME_PERCENT:
@@ -1065,7 +1066,7 @@ extern int cluster_user_by_account(int argc, char *argv[])
 		       "----------------------------------------\n");
 		printf("Cluster/User/Account Utilization %s - %s (%d secs)\n", 
 		       start_char, end_char, 
-		       (assoc_cond->usage_end - assoc_cond->usage_start));
+		       (int)(assoc_cond->usage_end - assoc_cond->usage_start));
 		
 		switch(time_format) {
 		case SREPORT_TIME_PERCENT:
@@ -1333,7 +1334,7 @@ extern int cluster_user_by_wckey(int argc, char *argv[])
 		       "----------------------------------------\n");
 		printf("Cluster/User/WCKey Utilization %s - %s (%d secs)\n", 
 		       start_char, end_char, 
-		       (wckey_cond->usage_end - wckey_cond->usage_start));
+		       (int)(wckey_cond->usage_end - wckey_cond->usage_start));
 		
 		switch(time_format) {
 		case SREPORT_TIME_PERCENT:
@@ -1765,7 +1766,7 @@ extern int cluster_wckey_by_user(int argc, char *argv[])
 		       "----------------------------------------\n");
 		printf("Cluster/WCKey/User Utilization %s - %s (%d secs)\n", 
 		       start_char, end_char, 
-		       (wckey_cond->usage_end - wckey_cond->usage_start));
+		       (int)(wckey_cond->usage_end - wckey_cond->usage_start));
 		
 		switch(time_format) {
 		case SREPORT_TIME_PERCENT:

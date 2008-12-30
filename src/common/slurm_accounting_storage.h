@@ -99,8 +99,8 @@ typedef struct {
 
 	List qos_list; /* list of char * */	
 
-	uint32_t usage_end; 
-	uint32_t usage_start; 
+	time_t usage_end; 
+	time_t usage_start; 
 
 	List user_list;		/* list of char * */
 
@@ -233,8 +233,8 @@ typedef struct acct_association_rec {
 
 typedef struct {
 	List cluster_list; /* list of char * */
-	uint32_t usage_end; 
-	uint32_t usage_start; 
+	time_t usage_end; 
+	time_t usage_start; 
 	uint16_t with_deleted; 
 	uint16_t with_usage; 
 } acct_cluster_cond_t;
@@ -265,8 +265,8 @@ typedef struct {
 	List partition_list;	/* list of char * */
 	List step_list;         /* list of jobacct_selected_step_t */
 	List state_list;        /* list of char * */
-	uint32_t usage_end; 
-	uint32_t usage_start; 
+	time_t usage_end; 
+	time_t usage_start; 
 	List userid_list;		/* list of char * */
 	List wckey_list;		/* list of char * */
 	uint16_t without_steps; /* don't give me step info */
@@ -385,8 +385,8 @@ typedef struct {
 	List id_list; /* list of char * */
 	List info_list; /* list of char * */
 	List name_list; /* list of char * */
-	uint32_t time_end; 
-	uint32_t time_start; 
+	time_t time_end; 
+	time_t time_start; 
 	List user_list; /* list of char * */
 	uint16_t with_assoc_info;
 } acct_txn_cond_t;
@@ -416,8 +416,8 @@ typedef struct {
 
 	List name_list;        /* list of char * */
 
-	uint32_t usage_end; 
-	uint32_t usage_start; 
+	time_t usage_end; 
+	time_t usage_start; 
 
 	List user_list;		/* list of char * */
 
@@ -909,10 +909,11 @@ extern int acct_storage_g_get_usage(
 /* 
  * roll up data in the storage 
  * IN: sent_start (option time to do a re-roll or start from this point)
+ * IN: sent_end (option time to do a re-roll or end at this point)
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int acct_storage_g_roll_usage(void *db_conn, 
-				     time_t sent_start);
+				     time_t sent_start, time_t sent_end);
 /* 
  * record shares used information for backup in case slurmctld restarts 
  * IN:  account_list List of shares_used_object_t *

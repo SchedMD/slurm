@@ -347,7 +347,7 @@ extern int user_top(int argc, char *argv[])
 		       "----------------------------------------\n");
 		printf("Top %u Users %s - %s (%d secs)\n", 
 		       top_limit, start_char, end_char, 
-		       (user_cond->assoc_cond->usage_end 
+		       (int)(user_cond->assoc_cond->usage_end 
 			- user_cond->assoc_cond->usage_start));
 		
 		switch(time_format) {

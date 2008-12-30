@@ -282,7 +282,7 @@ extern int acct_storage_p_get_usage(void *db_conn, uid_t uid,
 }
 
 extern int acct_storage_p_roll_usage(void *db_conn, 
-				     time_t sent_start)
+				     time_t sent_start, time_t sent_end)
 {
 	int rc = SLURM_SUCCESS;
 
