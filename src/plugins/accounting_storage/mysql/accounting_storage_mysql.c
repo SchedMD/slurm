@@ -6723,7 +6723,6 @@ extern List acct_storage_p_get_users(mysql_conn_t *mysql_conn, uid_t uid,
 	MYSQL_ROW row;
 	uint16_t private_data = 0;
 	acct_user_rec_t user;
-	acct_wckey_cond_t *wckey_cond = NULL;
 
 	/* if this changes you will need to edit the corresponding enum */
 	char *user_req_inx[] = {
@@ -6857,29 +6856,6 @@ empty:
 
 	user_list = list_create(destroy_acct_user_rec);
 
-	if(user_cond && user_cond->with_assocs) {
-		/* Make sure we don't get any non-user associations
-		 * this is done by at least having a user_list
-		 * defined */
-		if(!user_cond->assoc_cond) 
-			user_cond->assoc_cond = 
-				xmalloc(sizeof(acct_association_cond_t));
-
-		if(!user_cond->assoc_cond->user_list) 
-			user_cond->assoc_cond->user_list = list_create(NULL);
-	}
-
-	if(user_cond && user_cond->with_wckeys) {
-		wckey_cond = xmalloc(sizeof(acct_wckey_cond_t));
-
-		if(user_cond->assoc_cond) {
-			wckey_cond->user_list =
-				user_cond->assoc_cond->user_list;
-			wckey_cond->cluster_list =
-				user_cond->assoc_cond->cluster_list;
-		}		
-	}
-
 	while((row = mysql_fetch_row(result))) {
 		acct_user_rec_t *user = xmalloc(sizeof(acct_user_rec_t));
 /* 		uid_t pw_uid; */
@@ -6913,7 +6889,19 @@ empty:
 		ListIterator assoc_itr = NULL;
 		acct_user_rec_t *user = NULL;
 		acct_association_rec_t *assoc = NULL;
-		List assoc_list = acct_storage_p_get_associations(
+		List assoc_list = NULL;
+
+		/* Make sure we don't get any non-user associations
+		 * this is done by at least having a user_list
+		 * defined */
+		if(!user_cond->assoc_cond) 
+			user_cond->assoc_cond = 
+				xmalloc(sizeof(acct_association_cond_t));
+
+		if(!user_cond->assoc_cond->user_list) 
+			user_cond->assoc_cond->user_list = list_create(NULL);
+
+		assoc_list = acct_storage_p_get_associations(
 			mysql_conn, uid, user_cond->assoc_cond);
 
 		if(!assoc_list) {
@@ -6943,16 +6931,22 @@ empty:
 	}
 
 get_wckeys:
-	if(wckey_cond) {
+	if(user_cond && user_cond->with_wckeys) {
 		ListIterator wckey_itr = NULL;
 		acct_user_rec_t *user = NULL;
 		acct_wckey_rec_t *wckey = NULL;
-		List wckey_list = acct_storage_p_get_wckeys(
-			mysql_conn, uid, wckey_cond);
+		List wckey_list = NULL;
+		acct_wckey_cond_t wckey_cond;
 
-		wckey_cond->user_list = NULL;
-		wckey_cond->cluster_list = NULL;
-		destroy_acct_wckey_cond(wckey_cond);
+		memset(&wckey_cond, 0, sizeof(acct_wckey_cond_t));
+		if(user_cond->assoc_cond) {
+			wckey_cond.user_list =
+				user_cond->assoc_cond->user_list;
+			wckey_cond.cluster_list =
+				user_cond->assoc_cond->cluster_list;
+		}		
+		wckey_list = acct_storage_p_get_wckeys(
+			mysql_conn, uid, &wckey_cond);
 
 		if(!wckey_list) {
 			error("no wckeys");
