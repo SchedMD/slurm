@@ -508,6 +508,8 @@ static void *_decay_thread(void *no_data)
 			/* apply new usage */
 			if(!IS_JOB_PENDING(job_ptr) &&
 			   job_ptr->start_time && job_ptr->assoc_ptr) {
+				acct_qos_rec_t *qos = 
+					(acct_qos_rec_t *)job_ptr->qos_ptr;
 				acct_association_rec_t *assoc =	
 					(acct_association_rec_t *)
 					job_ptr->assoc_ptr;
@@ -530,11 +532,17 @@ static void *_decay_thread(void *no_data)
 
 				debug4("job %u ran for %d seconds",
 				       job_ptr->job_id, run_delta);
+
 				/* figure out the decayed new usage to
 				   add */
 				real_decay = ((double)run_delta 
 					      * (double)job_ptr->total_procs)
 					* pow(decay_factor, (double)run_delta);
+
+				/* now apply the usage factor for this
+				   qos */
+				if(qos && qos->usage_factor > 0)
+					real_decay *= qos->usage_factor;
 
 				slurm_mutex_lock(&assoc_mgr_association_lock);
 				while(assoc) {

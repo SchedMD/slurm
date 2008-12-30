@@ -324,6 +324,14 @@ static int _set_rec(int *start, int argc, char *argv[],
 			if (get_uint(argv[i]+end, &qos->priority,
 			    "Priority") == SLURM_SUCCESS)
 				set = 1;
+		} else if (!strncasecmp (argv[i], "UsageFactor", 
+					 MAX(command_len, 3))) {
+			if(!qos)
+				continue;
+			
+			if (get_double(argv[i]+end, &qos->usage_factor,
+			    "UsageFactor") == SLURM_SUCCESS)
+				set = 1;
 		} else {
 			printf(" Unknown option: %s\n"
 			       " Use keyword 'where' to modify condition\n",
@@ -411,6 +419,8 @@ extern int sacctmgr_add_qos(int argc, char *argv[])
 				qos->job_flags = start_qos->job_flags;
 
 			qos->priority = start_qos->priority;
+
+			qos->usage_factor = start_qos->usage_factor;
 
 			xstrfmtcat(qos_str, "  %s\n", name);
 			list_append(qos_list, qos);
@@ -501,6 +511,7 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 		PRINT_MAXN,
 		PRINT_MAXS,
 		PRINT_MAXW,
+		PRINT_UF,
 	};
 
 	_set_cond(&i, argc, argv, qos_cond, format_list);
@@ -614,7 +625,7 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 			field->print_routine = print_fields_time;
 		} else if(!strncasecmp("Name", object, MAX(command_len, 1))) {
 			field->type = PRINT_NAME;
-			field->name = xstrdup("NAME");
+			field->name = xstrdup("Name");
 			field->len = 10;
 			field->print_routine = print_fields_str;
 		} else if(!strncasecmp("Priority", object,
@@ -623,6 +634,12 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 			field->name = xstrdup("Priority");
 			field->len = 10;
 			field->print_routine = print_fields_int;
+		} else if(!strncasecmp("UsageFactor", object,
+				       MAX(command_len, 1))) {
+			field->type = PRINT_UF;
+			field->name = xstrdup("UsageFactor");
+			field->len = 11;
+			field->print_routine = print_fields_double;
 		} else {
 			exit_code=1;
 			fprintf(stderr, "Unknown field '%s'\n", object);
@@ -748,6 +765,11 @@ extern int sacctmgr_list_qos(int argc, char *argv[])
 			case PRINT_PRIO:
 				field->print_routine(
 					field, qos->priority,
+					(curr_inx == field_count));
+				break;
+			case PRINT_UF:
+				field->print_routine(
+					field, qos->usage_factor,
 					(curr_inx == field_count));
 				break;
 			default:
