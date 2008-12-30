@@ -2570,6 +2570,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "preemptees", "text not null default ''" },
 		{ "preemptors", "text not null default ''" },
 		{ "priority", "int default 0" },
+		{ "usage_factor", "float default 1.0 not null" },
 		{ NULL, NULL}		
 	};
 
@@ -8007,6 +8008,7 @@ extern List acct_storage_p_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 		"preemptees",
 		"preemptors",
 		"priority",
+		"usage_factor",
 	};
 	enum {
 		QOS_REQ_NAME,
@@ -8028,6 +8030,7 @@ extern List acct_storage_p_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 		QOS_REQ_PREE,
 		QOS_REQ_PREO,
 		QOS_REQ_PRIO,
+		QOS_REQ_UF,
 		QOS_REQ_COUNT
 	};
 
@@ -8193,6 +8196,9 @@ empty:
 
 		if(row[QOS_REQ_PRIO])
 			qos->priority = atoi(row[QOS_REQ_PRIO]);
+
+		if(row[QOS_REQ_UF])
+			qos->usage_factor = atof(row[QOS_REQ_UF]);
 	}
 	mysql_free_result(result);
 
