@@ -433,3 +433,27 @@ extern int sort_assoc_dec(sreport_assoc_rec_t *assoc_a,
 	return 0;
 }
 
+extern int get_uint(char *in_value, uint32_t *out_value, char *type)
+{
+	char *ptr = NULL, *meat = NULL;
+	long num;
+	
+	if(!(meat = strip_quotes(in_value, NULL))) {
+		error("Problem with strip_quotes");
+		return SLURM_ERROR;
+	}
+	num = strtol(meat, &ptr, 10);
+	if ((num == 0) && ptr && ptr[0]) {
+		error("Invalid value for %s (%s)", type, meat);
+		xfree(meat);
+		return SLURM_ERROR;
+	}
+	xfree(meat);
+	
+	if (num < 0)
+		*out_value = INFINITE;		/* flag to clear */
+	else
+		*out_value = (uint32_t) num;
+	return SLURM_SUCCESS;
+}
+

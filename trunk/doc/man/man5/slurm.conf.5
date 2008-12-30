@@ -941,25 +941,45 @@ The default value is 30 seconds.
 
 .TP
 \fBSchedulerType\fR
-Identifies the type of scheduler to be used. Acceptable values include 
-"sched/builtin" for the built\-in FIFO scheduler, 
-"sched/backfill" for a backfill scheduling module to augment 
-the default FIFO scheduling, 
-"sched/gang" for gang scheduler (time\-slicing of parallel jobs),
-"sched/hold" to hold all newly arriving jobs if a file "/etc/slurm.hold" 
-exists otherwise use the built\-in FIFO scheduler, and 
-"sched/wiki" for the Wiki interface to the Maui Scheduler. 
-The default value is "sched/builtin".
+Identifies the type of scheduler to be used. 
+Note the \fBslurmctld\fR daemon must be restarted for a change in 
+scheduler type to become effective (reconfiguring a running daemon has
+no effect for this parameter).
+The \fBscontrol\fR command can be used to manually change job priorities
+if desired.
+Acceptable values include:
+.RS
+.TP
+\fBsched/builtin\fR
+for the built\-in FIFO (First In First Out) scheduler. 
+This is the default.
+.TP
+\fBsched/backfill\fR
+for a backfill scheduling module to augment the default FIFO scheduling.
 Backfill scheduling will initiate lower\-priority jobs if doing 
-so does not delay the expected initiation time of any higher 
+so does not delay the expected initiation time of any higher
 priority job. 
-When initially setting the value to "sched/wiki", any pending jobs 
-must have their priority set to zero (held).
-When changing the value from "sched/wiki", all pending jobs 
-should have their priority change from zero to some large number.
-The \fBscontrol\fR command can be used to change job priorities.
-The \fBslurmctld\fR daemon must be restarted for a change in 
-scheduler type to become effective.
+Effectiveness of backfill scheduling is dependent upon users specifying
+job time limits, otherwise all jobs will have the same time limit and
+backfilling is impossible.
+.TP
+\fBsched/gang\fR
+for gang scheduler (time\-slicing of parallel jobs). This also supports
+preemption of jobs in lower priority partitions (queues). 
+See the \fIPreemption\fR web page for details:
+.br
+\fIhttps://computing.llnl.gov/linux/slurm/preempt.html\fR
+.TP
+\fBsched/hold\fR
+to hold all newly arriving jobs if a file "/etc/slurm.hold" 
+exists otherwise use the built\-in FIFO scheduler
+.TP
+\fBsched/wiki\fR
+for the Wiki interface to the Maui Scheduler
+.TP
+\fBsched/wiki2\fR
+for the Wiki interface to the Moab Cluster Suite
+.RE
 
 .TP
 \fBSelectType\fR

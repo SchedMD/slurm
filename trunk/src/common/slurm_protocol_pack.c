@@ -2034,7 +2034,6 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-
 static int
 _unpack_partition_info_msg(partition_info_msg_t ** msg, Buf buffer)
 {
