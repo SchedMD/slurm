@@ -822,6 +822,16 @@ static int _setup_qos_limits(acct_qos_rec_t *qos,
 			   qos->job_flags);
 	}
 
+	if((int)qos->usage_factor >= 0) {
+		xstrcat(*cols, ", usage_factor");
+		xstrfmtcat(*vals, ", %f", qos->usage_factor);
+		xstrfmtcat(*extra, ", usage_factor=%f", qos->usage_factor);
+	} else if((int)qos->usage_factor == INFINITE) {
+		xstrcat(*cols, ", usage_factor");
+		xstrcat(*vals, ", 1");
+		xstrcat(*extra, ", usage_factor=1");
+	}
+
 	return SLURM_SUCCESS;
 
 }
