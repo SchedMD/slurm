@@ -314,7 +314,7 @@ static int _state_str2int(const char *state_str)
 	return state_val;
 }
 
-#ifdef HAVE_BG
+#ifdef HAVE_3D
 /* Used to get the general name of the machine, used primarily 
  * for bluegene systems.  Not in general use because some systems 
  * have multiple prefix's such as foo[1-1000],bar[1-1000].
@@ -392,7 +392,7 @@ static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
 		goto cleanup;
 	}
 
-#ifdef HAVE_BG
+#ifdef HAVE_3D
 	if (conf->node_prefix == NULL)
 		_set_node_prefix(node_ptr->nodenames, conf);
 #endif
@@ -574,7 +574,7 @@ static int _build_all_nodeline_info(slurm_ctl_conf_t *conf)
 		_build_single_nodeline_info(node, config_ptr, conf);
 	}
 	xfree(highest_node_name);
-#ifdef HAVE_BG
+#ifdef HAVE_3D
 {
 	char *node_000 = NULL;
 	struct node_record *node_rec = NULL;
