@@ -1128,6 +1128,10 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 		}
 		list_iterator_destroy(itr);
 		xstrcat(*extra, ")");
+	} else if(assoc_cond->user_list) {
+		/* we want all the users, but no non-user associations */
+		set = 1;
+		xstrfmtcat(*extra, " && (%s.user!='')", prefix);		
 	}
 
 	if(assoc_cond->partition_list 
@@ -6854,30 +6858,26 @@ empty:
 	user_list = list_create(destroy_acct_user_rec);
 
 	if(user_cond && user_cond->with_assocs) {
-		/* We are going to be freeing the inners of
-		   this list in the user->name so we don't
-		   free it here
-		*/
+		/* Make sure we don't get any non-user associations
+		 * this is done by at least having a user_list
+		 * defined */
 		if(!user_cond->assoc_cond) 
-			user_cond->assoc_cond = xmalloc(
-				sizeof(acct_association_cond_t));
-		
-		if(user_cond->assoc_cond->user_list)
-			list_destroy(user_cond->assoc_cond->user_list);
-		user_cond->assoc_cond->user_list = list_create(NULL);
+			user_cond->assoc_cond = 
+				xmalloc(sizeof(acct_association_cond_t));
+
+		if(!user_cond->assoc_cond->user_list) 
+			user_cond->assoc_cond->user_list = list_create(NULL);
 	}
 
 	if(user_cond && user_cond->with_wckeys) {
-		/* We are going to be freeing the inners of
-		   this list in the user->name so we don't
-		   free it here
-		*/
 		wckey_cond = xmalloc(sizeof(acct_wckey_cond_t));
-		wckey_cond->user_list = list_create(NULL);
 
-		if(user_cond->assoc_cond && user_cond->assoc_cond->cluster_list)
+		if(user_cond->assoc_cond) {
+			wckey_cond->user_list =
+				user_cond->assoc_cond->user_list;
 			wckey_cond->cluster_list =
 				user_cond->assoc_cond->cluster_list;
+		}		
 	}
 
 	while((row = mysql_fetch_row(result))) {
@@ -6906,19 +6906,10 @@ empty:
 
 		if(user_cond && user_cond->with_coords) 
 			_get_user_coords(mysql_conn, user);
-		
-
-		if(user_cond && user_cond->with_assocs) 
-			list_append(user_cond->assoc_cond->user_list,
-				    user->name);
-		
-		if(user_cond && user_cond->with_wckeys) 
-			list_append(wckey_cond->user_list, user->name);
 	}
 	mysql_free_result(result);
 
-	if(user_cond && user_cond->with_assocs 
-	   && list_count(user_cond->assoc_cond->user_list)) {
+	if(user_cond && user_cond->with_assocs) {
 		ListIterator assoc_itr = NULL;
 		acct_user_rec_t *user = NULL;
 		acct_association_rec_t *assoc = NULL;
@@ -6959,6 +6950,7 @@ get_wckeys:
 		List wckey_list = acct_storage_p_get_wckeys(
 			mysql_conn, uid, wckey_cond);
 
+		wckey_cond->user_list = NULL;
 		wckey_cond->cluster_list = NULL;
 		destroy_acct_wckey_cond(wckey_cond);
 
