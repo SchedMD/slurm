@@ -11,7 +11,7 @@ before studying the relatively few differences in Sun Constellation system
 operation described in this document.</p>
 
 <p>SLURM's primary mode of operation is designed for use on clusters with
-nodes configurated in a one-dimensional space. 
+nodes configured in a one-dimensional space. 
 Minor changes were required for the <i>smap</i> and <i>sview</i> tools 
 to map nodes in a three-dimensional space. 
 Some changes are also desirable to optimize job placement in three-dimensional 
@@ -21,7 +21,7 @@ space.</p>
 
 <p>Two variables must be defined in the <i>config.h</i> file: 
 <i>HAVE_SUN_CONST</i> and <i>HAVE_3D</i>.
-This can be accomplshed in several different ways depending upon how 
+This can be accomplished in several different ways depending upon how 
 SLURM is being built.
 <ol>
 <li>Execute the <i>configure</i> command with the option 
@@ -37,12 +37,15 @@ file):
 <ol>
 <li><b>select/3d_torus</b> - Uses a very simple algorithm to minimize
 communication distance in a three-dimensional torus. This allocates whole
-nodes to jobs and may prove satisfactory for smaller systesm</li>
+nodes to jobs and is provided primarily as a framework for researchers
+who wish to experiment with packing algorithms. Contributions from
+researchers are invited.  Support for this plugin may be discontinued 
+in the future.</li>
 <li><b>select/cons_res</b> - Performs a best-fit algorithm based upon a 
 one-dimensional space to allocate whole nodes, sockets, or cores to jobs
-based upon other configuration parameters</li>
+based upon other configuration parameters.</li>
 <li><b>select/linear</b> - Performs a best-fit algorithm based upon a 
-one-dimensional space to allocate whole nodes to jobs</li>
+one-dimensional space to allocate whole nodes to jobs.</li>
 </ol>
 
 <p>Node names should have a three-digit suffix describing their zero-origin
@@ -73,9 +76,11 @@ space) are also nearby in the physical three-dimensional space. The
 is a recommended for this purpose with systems which are cubic in shape 
 with a power of two size (e.g. 4x4x4). Systems of different dimensions
 will require use of another space-filling curve. The generation of 
-the configuration file describing the nodes is presently a manual operation.
+the configuration file describing the node locations is presently 
+a manual operation.
 SLURM partitions should contain nodes which are defined sequentially
-(e.g. "tux000" and "tux100" rather than "tux000" and "tux001").
+(e.g. "tux000" and "tux100" rather than "tux000" and "tux001") for 
+optimal performance.
 An excerpt of a configuration file for use with a 4x4x4 system is shown
 below. Note that each node is listed exactly once and consecutive
 nodes are adjacent in three-dimensional space. Also note that 
@@ -103,6 +108,6 @@ PartitionName=debug Nodes=tux[000x333] Default=Yes State=UP
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 29 December 2008</p></td>
+<p style="text-align:center;">Last modified 30 December 2008</p></td>
 
 <!--#include virtual="footer.txt"-->
