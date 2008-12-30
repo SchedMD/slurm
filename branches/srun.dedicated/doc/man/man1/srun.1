@@ -250,9 +250,10 @@ the job. By default only errors are displayed.
 \fB\-\-dedicate\fR
 When used to initiate a job step within an existing resource allocation, 
 proceed only when processors can be dedicated to the job step without 
-sharing with other job steps. This can be used to initiate many 
-job steps simultaneously within an existing job allocation and have 
-SLURM perform resource management for the job. 
+sharing with other job steps. This can be used to initiate more than one
+job step simultaneously within an existing job allocation and have 
+SLURM perform resource management for the job. Do not use this option
+unless you concurrently execute multiple job steps within a job allocation.
 In this mode, use with the \fB\-\-ntasks\fR option and NOT the 
 \fB\-\-nodes\fR, \fB\-\-relative\fR, \fB\-\-relative\fR=\fIarbitrary\fR
 options (which provide user control over task layout).
