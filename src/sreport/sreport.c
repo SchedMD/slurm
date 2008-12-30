@@ -648,6 +648,8 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
              - Group            - Group all accounts together for each user.\n\
                                   Default is a separate entry for each user\n\
                                   and account reference.                   \n\
+             - TopCount=<OPT>   - Used in the TopUsage report.  Change the \n\
+                                  number of users displayed.  Default is 10.\n\
              - Users=<OPT>      - List of users jobs to include in report. \n\
                                   Default is all.                          \n\
                                                                            \n\
