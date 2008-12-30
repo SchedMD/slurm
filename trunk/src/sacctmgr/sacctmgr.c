@@ -430,8 +430,9 @@ _process_command (int argc, char *argv[])
 		}		
 		readonly_flag = 1;
 	} else if (strncasecmp (argv[0], "rollup", MAX(command_len, 2)) == 0) {
-		time_t my_time = 0;
-		if (argc > 2) {
+		time_t my_start = 0;
+		time_t my_end = 0;
+		if (argc > 3) {
 			exit_code = 1;
 			fprintf (stderr,
 				 "too many arguments for %s keyword\n",
@@ -439,8 +440,10 @@ _process_command (int argc, char *argv[])
 		}
 
 		if(argc > 1)
-			my_time = parse_time(argv[1], 1);
-		if(acct_storage_g_roll_usage(db_conn, my_time)
+			my_start = parse_time(argv[1], 1);
+		if(argc > 2)
+			my_end = parse_time(argv[2], 1);
+		if(acct_storage_g_roll_usage(db_conn, my_start, my_end)
 		   == SLURM_SUCCESS) {
 			if(commit_check("Would you like to commit rollup?")) {
 				acct_storage_g_commit(db_conn, 1);

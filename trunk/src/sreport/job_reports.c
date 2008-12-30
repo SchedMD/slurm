@@ -636,7 +636,7 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 		       "----------------------------------------\n");
 		printf("Job Sizes %s - %s (%d secs)\n", 
 		       start_char, end_char, 
-		       (job_cond->usage_end - job_cond->usage_start));
+		       (int)(job_cond->usage_end - job_cond->usage_start));
 		if(print_job_count)
 			printf("Units are in number of jobs ran\n");
 		else

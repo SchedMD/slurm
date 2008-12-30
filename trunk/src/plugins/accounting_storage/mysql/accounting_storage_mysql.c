@@ -8918,12 +8918,12 @@ is_user:
 }
 
 extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn, 
-				     time_t sent_start)
+				     time_t sent_start, time_t sent_end)
 {
 #ifdef HAVE_MYSQL
 	int rc = SLURM_SUCCESS;
 	int i = 0;
-	time_t my_time = time(NULL);
+	time_t my_time = sent_end;
 	struct tm start_tm;
 	struct tm end_tm;
 	MYSQL_RES *result = NULL;
@@ -9014,6 +9014,9 @@ extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn,
 		}
 	}
 	
+	if(!my_time)
+		my_time = time(NULL);
+
 	/* test month gap */
 /* 	last_hour = 1212299999; */
 /* 	last_day = 1212217200; */

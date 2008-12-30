@@ -3077,7 +3077,12 @@ void inline
 slurmdbd_pack_roll_usage_msg(uint16_t rpc_version,
 			     dbd_roll_usage_msg_t *msg, Buf buffer)
 {
-	pack_time(msg->start, buffer);
+	if(rpc_version >= 5) {
+		pack_time(msg->end, buffer);
+		pack_time(msg->start, buffer);
+	} else {
+		pack_time(msg->start, buffer);
+	}
 }
 
 int inline 
@@ -3087,7 +3092,13 @@ slurmdbd_unpack_roll_usage_msg(uint16_t rpc_version,
 	dbd_roll_usage_msg_t *msg_ptr = xmalloc(sizeof(dbd_roll_usage_msg_t));
 
 	*msg = msg_ptr;
-	safe_unpack_time(&msg_ptr->start, buffer);
+
+	if(rpc_version >= 5) {
+		safe_unpack_time(&msg_ptr->end, buffer);
+		safe_unpack_time(&msg_ptr->start, buffer);
+	} else {
+		safe_unpack_time(&msg_ptr->start, buffer);
+	}
 	return SLURM_SUCCESS;
 	
 unpack_error:
