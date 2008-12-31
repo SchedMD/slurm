@@ -266,18 +266,21 @@ parameter in slurm.conf.
 
 .TP
 \fB\-\-exclusive\fR
-When used to initiate a job step within an existing resource allocation, 
-proceed only when processors can be dedicated to the job step without 
-sharing with other job steps. This can be used to initiate many 
-job steps simultaneously within an existing job allocation and have 
-SLURM perform resource management for the job. 
-In this mode, use with the \fB\-\-ntasks\fR option and NOT the 
-\fB\-\-nodes\fR, \fB\-\-relative\fR, \fB\-\-relative\fR=\fIarbitrary\fR
-options (which provide user control over task layout).
+When used to initiate a job, the job allocation cannot share nodes with 
+other running jobs.  This is the oposite of \-\-share, whichever option 
+is seen last on the command line will win.  (The default shared/exclusive 
+behaviour depends on system configuration.)
+
+This option can also be used when initiating more than job step within 
+an existing resource allocation and you want separate processors to 
+be dedicated to each job step. If sufficient processors are not 
+available to initiate the job step, it will be deferred. This can 
+be thought of as providing resource management for the job within
+it's allocation. Since resource management is provided  by 
+processor, the \fB\-\-ntasks\fR option must be specified, but the 
+following options should NOT be specified \fB\-\-nodes\fR, 
+\fB\-\-relative\fR, \fB\-\-relative\fR=\fIarbitrary\fR.
 See \fBEXAMPLE\fR below.
-When used to initiate a job, dedicate whole nodes to the job rather 
-than individual processors even if consumable resources are enabled 
-(e.g. \fBSelectType=select/cons_res\fR).
 
 .TP
 \fB\-\-gid\fR=\fIgroup\fR
