@@ -587,8 +587,12 @@ static int _build_all_nodeline_info(slurm_ctl_conf_t *conf)
 	if (node_rec == NULL)
 		fatal("No node %s configured", node_000);
 	xfree(node_000);
+#ifndef HAVE_BG
+	if (count == 1)
+		nodes_to_hilbert_curve();
+#endif	/* ! HAVE_BG */
 }
-#endif
+#endif	/* HAVE_3D */
 	return SLURM_SUCCESS;
 }
 

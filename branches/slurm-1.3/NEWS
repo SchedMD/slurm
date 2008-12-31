@@ -8,7 +8,8 @@ documents those changes that are of interest to users and admins.
     added the default will be set to this if none is given in the sacctmgr line.
  -- Added configure option --enable-sun-const for Sun Constellation system with
     3D torus interconnect. Supports proper smap and sview displays for 3-D
-    topology. 
+    topology. Node names are automatically put into Hilbert curve order given
+    a one-line nodelist definition in slurm.conf (e.g. NodeNames=sun[000x533]). 
 
 * Changes in SLURM 1.3.12
 =========================
