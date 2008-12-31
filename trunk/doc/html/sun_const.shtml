@@ -29,18 +29,27 @@ SLURM is being built.
 <li>Execute the <i>rpmbuild</i> command with the option 
 <i>--with sun_const</i> <b>OR</b></li>
 <li>Add <i>%with_sun_const 1</i> to your <i>~/.rpmmacros</i> file.</li>
-</ol>
+</ol></p>
 
-<p>Next you need to select from three options for the resource selection 
+<p>Node names must have a three-digit suffix describing their 
+zero-origin position in the X-, Y- and Z-dimension respectively (e.g. 
+"tux000" for X=0, Y=0, Z=0; "tux123" for X=1, Y=2, Z=3). 
+Rectangular prisms of nodes can be specified in SLURM commands and
+configuration files using the system name prefix with the end-points 
+enclosed in square brackets and separated by an "x". 
+For example "tux[620x731]" is used to represent the eight nodes in a 
+block with endpoints at "tux620" and "tux731" (tux620, tux621, tux630, 
+tux631, tux720, tux721, tux730, tux731).
+While node names of this form are required for SLURM's internal use,
+it need not be the name returned by the <i>hostlist -s</i> command. 
+See <i>man slurm.conf</i> for details on how to use the <i>NodeName</i>,
+<i>NodeAddr</i> and <i>NodeHostName</i> configuration parameters 
+for flexibility in this matter.</p>
+
+<p>Next you need to select from two options for the resource selection 
 plugin (the <i>SelectType</i> option in SLURM's <i>slurm.conf</i> configuration
 file):
 <ol>
-<li><b>select/3d_torus</b> - Uses a very simple algorithm to minimize
-communication distance in a three-dimensional torus. This allocates whole
-nodes to jobs and is provided primarily as a framework for researchers
-who wish to experiment with packing algorithms. Contributions from
-researchers are invited.  Support for this plugin may be discontinued 
-in the future.</li>
 <li><b>select/cons_res</b> - Performs a best-fit algorithm based upon a 
 one-dimensional space to allocate whole nodes, sockets, or cores to jobs
 based upon other configuration parameters.</li>
@@ -48,68 +57,63 @@ based upon other configuration parameters.</li>
 one-dimensional space to allocate whole nodes to jobs.</li>
 </ol>
 
-<p>Node names should have a three-digit suffix describing their zero-origin
-position in the X-, Y- and Z-dimension respectively (e.g. 
-"tux000" for X=0, Y=0, Z=0; "tux123" for X=1, Y=2, Z=3). 
-Rectangular prisms can be described using the system name prefix
-with the end-points enclosed in square brackets and separated by an "x".
-For example "tux[620x731]" is used to represent the eight nodes in a 
-block with endpoints at "tux620" and "tux731" (tux620, tux621, tux630, 
-tux631, tux720, tux721, tux730, tux731). A fragment of an valid SLURM
-configuration file is shown below:</p>
-
-<pre>
-# slurm.conf for Sun Constellation system of size 4x4x4
-# Parameters removed here
-SelectType=select/3d_torus
-NodeName=DEFAULT Procs=8 RealMemory=2048 State=Unknown
-NodeName=tux[000x333]
-PartitionName=debug Nodes=tux[000x333] Default=Yes State=UP
-</pre>
-
 <p>In order for <i>select/cons_res</i> or <i>select/linear</i> to 
 allocate resources physically nearby in three-dimensional space, the 
 nodes be specified in SLURM's <i>slurm.conf</i> configuration file in 
 such a fashion that those nearby in <i>slurm.conf</i> (one-dimensional
-space) are also nearby in the physical three-dimensional space. The
-<a href="http://en.wikipedia.org/wiki/Hilbert_curve">Hilbert curve</a>
-is a recommended for this purpose with systems which are cubic in shape 
-with a power of two size (e.g. 4x4x4). Systems of different dimensions
-will require use of another space-filling curve. The generation of 
-the configuration file describing the node locations is presently 
-a manual operation.
-A program included in the SLURM distribution at <i>contribs/skilling.c</i> 
-can be used as an aid to order the node names in the <i>slurm.conf</i> file.
-SLURM partitions should contain nodes which are defined sequentially
-(e.g. "tux000" and "tux100" rather than "tux000" and "tux001") for 
-optimal performance.
-An excerpt of a configuration file for use with a 4x4x4 system is shown
-below. Note that each node is listed exactly once and consecutive
-nodes are adjacent in three-dimensional space. Also note that 
-each node must be defined individually rather than using a hostlist
-expression in order to preserve the ordering (there is not a problem
-using a hostlist expression in the partition specification after
-the nodes have already been defined).</p>
+space) are also nearby in the physical three-dimensional space. 
+If the definition of the nodes in SLURM's <i>slurm.conf</i> configuration 
+file are listed on one line (e.g. <i>NodeName=tux[000x333]</i>),
+SLURM will automatically perform that conversion using a 
+<a href="http://en.wikipedia.org/wiki/Hilbert_curve">Hilbert curve</a>.
+Otherwise you may construct your own node name ordering and list them
+one node per line in <i>slurm.conf</i>.
+Note that each node must be listed exactly once and consecutive
+nodes should be nearby in three-dimensional space. 
+Also note that each node must be defined individually rather than using 
+a hostlist expression in order to preserve the ordering (there is no 
+problem using a hostlist expression in the partition specification after
+the nodes have already been defined).
+The open source code used by SLURM to generate the Hilbert curve is 
+included in the distribution at <i>contribs/skilling.c</i> in the event
+that you wish to experiment with it to generate your own node ordering.
+Two examples of SLURM configuration files are shown below:</p>
 
 <pre>
 # slurm.conf for Sun Constellation system of size 4x4x4
 # Parameters removed here
 SelectType=select/linear
 NodeName=DEFAULT Procs=8 RealMemory=2048 State=Unknown
-NodeName=tux000,tux100,tux110,tux010,tux011,tux111,tux101,tux001
-NodeName=tux002,tux102,tux103,tux003,tux013,tux113,tux112,tux012
-NodeName=tux022,tux122,tux123,tux023,tux033,tux133,tux132,tux032
-NodeName=tux031,tux030,tux020,tux021,tux121,tux120,tux130,tux131
-NodeName=tux231,tux230,tux220,tux221,tux321,tux320,tux330,tux331
-NodeName=tux332,tux232,tux233,tux333,tux323,tux223,tux222,tux322
-NodeName=tux312,tux212,tux213,tux313,tux303,tux203,tux202,tux302
-NodeName=tux301,tux201,tux211,tux311,tux310,tux210,tux200,tux300
+NodeName=tux[000x333]
 PartitionName=debug Nodes=tux[000x333] Default=Yes State=UP
 </pre>
 
+<pre>
+# slurm.conf for Sun Constellation system of size 4x4x4
+# Parameters removed here
+SelectType=select/linear
+NodeName=DEFAULT Procs=8 RealMemory=2048 State=Unknown
+NodeName=tux000
+NodeName=tux100
+NodeName=tux110
+NodeName=tux010
+NodeName=tux011
+NodeName=tux111
+NodeName=tux101
+NodeName=tux001
+PartitionName=debug Nodes=tux[000x111] Default=Yes State=UP
+</pre>
+
+<p>In both of the examples above, the node names output by the
+<i>scontrol show nodes</i> will be ordered as defined (sequentially 
+along the Hilbert curve or per the ordering in the <i>slurm.conf</i> file)
+rather than in numeric order (e.g. "tux001" follows "tux101" rather 
+than "tux000"). 
+SLURM partitions should contain nodes which are defined sequentially
+by that ordering for optimal performance.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 30 December 2008</p></td>
+<p style="text-align:center;">Last modified 31 December 2008</p></td>
 
 <!--#include virtual="footer.txt"-->
