@@ -21,6 +21,18 @@ of the SLURM contribs distribution follows:
   python/            [Python modules]
      Directory for Python modules.
 
+  skilling.c         [ C program ]
+     This program can be used to order the hostnames in a 2+ dimensional
+     architecture for use in the slurm.conf file. It is used to generate
+     the Hilbert number based upon a node's physical location in the 
+     computer. Nodes close together in their Hilbert number will also be 
+     physically close in 2-D or 3-D space, so we can reduce the 2-D or 3-D
+     job placement problem to a 1-D problem that SLURM can easily handle
+     by defining the node names in the slurm.conf file in order of their
+     Hilbert number. If the computer is not a perfect square or cube with
+     power of two size, then collapse the node list maintaining the numeric
+     order based upon the Hilbert number.
+
   time_login.c       [ C program ]
      This program will report how long a pseudo-login will take for specific
      users or all users on the system. Users identified by this program 

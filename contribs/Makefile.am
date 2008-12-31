@@ -5,5 +5,6 @@ EXTRA_DIST = \
 	make.slurm.patch	\
 	mpich1.slurm.patch	\
 	ptrace.patch		\
+	skilling.c		\
 	time_login.c		\
 	README
