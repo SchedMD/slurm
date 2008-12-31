@@ -20,6 +20,9 @@ slurmctld_SOURCES = 	\
 	agent.h		\
 	backup.c	\
 	controller.c 	\
+	hilbert.c	\
+	hilbert.h	\
+	hilbert_slurm.c	\
 	job_mgr.c 	\
 	job_scheduler.c \
 	job_scheduler.h \

@@ -226,7 +226,10 @@ struct node_record {
 					 * use for scheduling purposes */
 	char *arch;			/* computer architecture */
 	char *os;			/* operating system currently running */
-	struct node_record *node_next;	/* next entry with same hash index */ 
+	struct node_record *node_next;	/* next entry with same hash index */
+#ifdef HAVE_3D
+	uint32_t hilbert_integer;	/* Hilbert number based on node name */
+#endif
 };
 
 extern struct node_record *node_record_table_ptr;  /* ptr to node records */
@@ -1176,6 +1179,11 @@ extern void node_not_resp (char *name, time_t msg_time);
  * and log that the node is not responding using a hostlist expression */
 extern void node_no_resp_msg(void);
 
+/* Using the node record table, generate a Hilbert integer for each node
+ * based upon its coordinates and sort the records in that order. This must
+ * be called once, immediately after reading the slurm.conf file. */
+extern void nodes_to_hilbert_curve(void);
+
 /*
  * job_alloc_info - get details about an existing job allocation
  * IN uid - job issuing the code
@@ -1184,7 +1192,6 @@ extern void node_no_resp_msg(void);
  */
 extern int job_alloc_info(uint32_t uid, uint32_t job_id, 
 			  struct job_record **job_pptr);
-
 
 /* 
  * pack_all_jobs - dump all job information for all jobs in 
