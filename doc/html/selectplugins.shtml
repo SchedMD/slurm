@@ -28,10 +28,6 @@ many non-parallel programs sharing nodes. For more information see
 <li><b>bluegene</b>&#151;<a href="http://www.research.ibm.com/bluegene/">IBM Blue Gene</a>  
 node selector. Note that this plugin not only selects the nodes for a job, but performs 
 some initialization and termination functions for the job.</li>
-<li><b>3d_torus</b>&#151;A plugin that selects nodes assuming a three-dimensional
-torus architecture. The nodes are selected so as to minimize the communication
-overhead for jobs. This plugin does not allocate individual processors, 
-but can allocate memory to jobs.</li>
 </ul>
 <p>The <span class="commandline">plugin_name</span> and 
 <span class="commandline">plugin_version</span> 
