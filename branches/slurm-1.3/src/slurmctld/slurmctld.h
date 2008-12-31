@@ -226,9 +226,7 @@ struct node_record {
 	char *arch;			/* computer architecture */
 	char *os;			/* operating system currently running */
 	struct node_record *node_next;	/* next entry with same hash index */
-#ifdef HAVE_3D
 	uint32_t hilbert_integer;	/* Hilbert number based on node name */
-#endif
 };
 
 extern struct node_record *node_record_table_ptr;  /* ptr to node records */
