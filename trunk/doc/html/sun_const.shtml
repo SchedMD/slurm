@@ -78,6 +78,8 @@ with a power of two size (e.g. 4x4x4). Systems of different dimensions
 will require use of another space-filling curve. The generation of 
 the configuration file describing the node locations is presently 
 a manual operation.
+A program included in the SLURM distribution at <i>contribs/skilling.c</i> 
+can be used as an aid to order the node names in the <i>slurm.conf</i> file.
 SLURM partitions should contain nodes which are defined sequentially
 (e.g. "tux000" and "tux100" rather than "tux000" and "tux001") for 
 optimal performance.
