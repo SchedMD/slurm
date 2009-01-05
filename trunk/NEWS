@@ -136,6 +136,8 @@ documents those changes that are of interest to users and admins.
     3D torus interconnect. Supports proper smap and sview displays for 3-D
     topology. Node names are automatically put into Hilbert curve order given
     a one-line nodelist definition in slurm.conf (e.g. NodeNames=sun[000x533]). 
+ -- Fixed bug in parsing time for sacct and sreport to pick the correct year if
+    none is specified.
 
 * Changes in SLURM 1.3.12
 =========================
