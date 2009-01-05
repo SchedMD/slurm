@@ -384,19 +384,28 @@ extern time_t parse_time(char *time_str, int past)
 		}
 	}
 	if (year == -1) {
-		if (past || (month  >  time_now_tm->tm_mon)
-		    ||  ((month == time_now_tm->tm_mon) 
-			 && (mday >  time_now_tm->tm_mday))
-		    ||  ((month == time_now_tm->tm_mon) 
-			 && (mday == time_now_tm->tm_mday)
-			 && (hour >  time_now_tm->tm_hour)) 
-		    ||  ((month == time_now_tm->tm_mon) 
-			 && (mday == time_now_tm->tm_mday)
-			 && (hour == time_now_tm->tm_hour) 
-			 && (minute > time_now_tm->tm_min))) {
+		if (past) {
+			if (month > time_now_tm->tm_mon) {
+				/* last year */
+				year = time_now_tm->tm_year - 1;
+			} else  {
+				/* this year */
+				year = time_now_tm->tm_year;
+			}
+		} else if ((month  >  time_now_tm->tm_mon)
+			   ||  ((month == time_now_tm->tm_mon) 
+				&& (mday >  time_now_tm->tm_mday))
+			   ||  ((month == time_now_tm->tm_mon) 
+				&& (mday == time_now_tm->tm_mday)
+				&& (hour >  time_now_tm->tm_hour)) 
+			   ||  ((month == time_now_tm->tm_mon) 
+				&& (mday == time_now_tm->tm_mday)
+				&& (hour == time_now_tm->tm_hour) 
+				&& (minute > time_now_tm->tm_min))) {
 			/* this year */
 			year = time_now_tm->tm_year;
 		} else {
+			/* next year */
 			year = time_now_tm->tm_year + 1;
 		}
 	}
