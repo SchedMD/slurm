@@ -21,9 +21,9 @@ documents those changes that are of interest to users and admins.
     is now ISO 8601 (yyyy-mm-ddThh:mm:ss).
  -- Add support for scontrol to explicity power a node up or down using the
     configured SuspendProg and ResumeProg programs.
- -- Add select/3d_torus plugin which will support Sun Constellation and
-    eventually Cray architectures. 
-
+ -- Fix book select/cons_res logic for tracking the number of allocated
+    CPUs on a node when a partition's Shared value is YES or FORCE.
+ 
 * Changes in SLURM 1.4.0-pre6
 =============================
  -- Fix job preemption when sched/gang and select/linear are configured with
