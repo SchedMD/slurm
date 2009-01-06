@@ -62,6 +62,11 @@ typedef struct {
  	void (*remove_assoc_notify) (acct_association_rec_t *rec);
 } assoc_init_args_t;
 
+extern List assoc_mgr_association_list;
+extern List assoc_mgr_qos_list;
+extern List assoc_mgr_user_list;
+extern List assoc_mgr_wckey_list;
+
 extern acct_association_rec_t *assoc_mgr_root_assoc;
 extern pthread_mutex_t assoc_mgr_association_lock;
 extern pthread_mutex_t assoc_mgr_qos_lock;
@@ -146,24 +151,6 @@ extern int assoc_mgr_is_user_acct_coord(void *db_conn, uint32_t uid,
 
 extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args);
 extern int assoc_mgr_fini(char *state_save_location);
-
-/*
- * apply decay factor to all associations used_shares
- * IN: decay_factor - decay to be applied to each associations' used
- * shares.  This should already be modified with the amount of delta
- * time from last application..
- * RET: SLURM_SUCCESS on SUCCESS, SLURM_ERROR else.
- */
-extern int assoc_mgr_apply_decay(double decay_factor);
-
-/*
- * set up the cpu shares for the associations.  This can only be done
- * after we get a correct proc count for the system.
- * IN: procs - number of proccessors on the system
- * IN: half_life - time half_life is in seconds.
- * RET: SLURM_SUCCESS on SUCCESS, SLURM_ERROR else.
- */
-extern int assoc_mgr_set_cpu_shares(uint32_t procs, uint32_t half_life);
 
 /*
  * get the share information from the association list in the form of

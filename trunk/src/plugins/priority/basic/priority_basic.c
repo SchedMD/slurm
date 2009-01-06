@@ -127,3 +127,8 @@ extern void priority_p_reconfig()
 	
 	return;
 }
+
+extern int priority_p_set_cpu_shares(uint32_t procs, uint32_t half_life) 
+{
+	return SLURM_SUCCESS;
+}

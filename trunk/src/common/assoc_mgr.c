@@ -50,10 +50,11 @@
 acct_association_rec_t *assoc_mgr_root_assoc = NULL;
 uint32_t qos_max_priority = 0;
 
-static List assoc_mgr_association_list = NULL;
-static List assoc_mgr_qos_list = NULL;
-static List assoc_mgr_user_list = NULL;
-static List assoc_mgr_wckey_list = NULL;
+List assoc_mgr_association_list = NULL;
+List assoc_mgr_qos_list = NULL;
+List assoc_mgr_user_list = NULL;
+List assoc_mgr_wckey_list = NULL;
+
 static char *assoc_mgr_cluster_name = NULL;
 static int setup_childern = 0;
 
@@ -745,6 +746,7 @@ extern int assoc_mgr_init(void *db_conn, assoc_init_args_t *args)
 		char *prio = slurm_get_priority_type();
 		if(prio && !strcmp(prio, "priority/multifactor")) 
 			setup_childern = 1;
+		
 		xfree(prio);
 		checked_prio = 1;
 	}
@@ -818,74 +820,6 @@ extern int assoc_mgr_fini(char *state_save_location)
 	assoc_mgr_qos_list = NULL;
 	assoc_mgr_user_list = NULL;
 	assoc_mgr_wckey_list = NULL;
-
-	return SLURM_SUCCESS;
-}
-
-extern int assoc_mgr_apply_decay(double decay_factor)
-{
-	ListIterator itr = NULL;
-	acct_association_rec_t *assoc = NULL;
-
-	if(!setup_childern)
-		return SLURM_SUCCESS;
-
-	if(!decay_factor || !assoc_mgr_association_list)
-		return SLURM_ERROR;
-	
-	slurm_mutex_lock(&assoc_mgr_association_lock);
-	itr = list_iterator_create(assoc_mgr_association_list);
-	while((assoc = list_next(itr))) 
-		assoc->used_shares *= decay_factor;
-	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&assoc_mgr_association_lock);
-
-	return SLURM_SUCCESS;
-}
-
-extern int assoc_mgr_set_cpu_shares(uint32_t procs, uint32_t half_life) 
-{
-	ListIterator itr = NULL;
-	acct_association_rec_t *assoc = NULL;
-	static uint32_t last_procs = 0;
-	static uint32_t last_half_life = 0;
-
-	if(!setup_childern)
-		return SLURM_SUCCESS;
-
-	/* No need to do this if nothing has changed so just return */
-	if((procs == last_procs) && (half_life == last_half_life))
-		return SLURM_SUCCESS;
-
-	xassert(assoc_mgr_root_assoc);
-	xassert(assoc_mgr_association_list);
-
-	last_procs = procs;
-	last_half_life = half_life;
-
-	/* get the total decay for the entire cluster */
-	assoc_mgr_root_assoc->cpu_shares = 
-		(long double)procs * (long double)half_life * (long double)2;
-	debug2("total cpu shares on the system is %.0Lf",
-	       assoc_mgr_root_assoc->cpu_shares);
-
-	slurm_mutex_lock(&assoc_mgr_association_lock);
-	itr = list_iterator_create(assoc_mgr_association_list);
-	while((assoc = list_next(itr))) {
-		if(assoc == assoc_mgr_root_assoc)
-			continue;
-
-		assoc->cpu_shares = assoc_mgr_root_assoc->cpu_shares * 
-			(long double)assoc->norm_shares;
-		assoc->level_cpu_shares = 
-			assoc->cpu_shares * (long double)assoc->level_shares;
-		
-		slurm_mutex_lock(&assoc_mgr_qos_lock);
-		log_assoc_rec(assoc, assoc_mgr_qos_list);
-		slurm_mutex_unlock(&assoc_mgr_qos_lock);
-	}
-	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&assoc_mgr_association_lock);
 
 	return SLURM_SUCCESS;
 }

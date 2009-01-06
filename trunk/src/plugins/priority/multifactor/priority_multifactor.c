@@ -100,7 +100,7 @@ const uint32_t plugin_version	= 100;
 static pthread_t decay_handler_thread;
 static pthread_t cleanup_handler_thread;
 static pthread_mutex_t decay_lock = PTHREAD_MUTEX_INITIALIZER;
-static bool running_decay = 0, reconfig = 0;
+static bool running_decay = 0, reconfig = 0, calc_fairshare = 1;
 static bool favor_small; /* favor small jobs over large */
 static uint32_t max_age; /* time when not to add any more
 			  * priority to a job if reached */
@@ -109,6 +109,36 @@ static uint32_t weight_fs; /* weight for Fairshare factor */
 static uint32_t weight_js; /* weight for Job Size factor */
 static uint32_t weight_part; /* weight for Partition factor */
 static uint32_t weight_qos; /* weight for QOS factor */
+
+/*
+ * apply decay factor to all associations used_shares
+ * IN: decay_factor - decay to be applied to each associations' used
+ * shares.  This should already be modified with the amount of delta
+ * time from last application..
+ * RET: SLURM_SUCCESS on SUCCESS, SLURM_ERROR else.
+ */
+static int _apply_decay(double decay_factor)
+{
+	ListIterator itr = NULL;
+	acct_association_rec_t *assoc = NULL;
+
+	if(!calc_fairshare)
+		return SLURM_SUCCESS;
+
+	xassert(assoc_mgr_association_list);
+
+	if(!decay_factor)
+		return SLURM_ERROR;
+	
+	slurm_mutex_lock(&assoc_mgr_association_lock);
+	itr = list_iterator_create(assoc_mgr_association_list);
+	while((assoc = list_next(itr))) 
+		assoc->used_shares *= decay_factor;
+	list_iterator_destroy(itr);
+	slurm_mutex_unlock(&assoc_mgr_association_lock);
+
+	return SLURM_SUCCESS;
+}
 
 static time_t _read_last_decay_ran()
 {
@@ -299,6 +329,9 @@ static double _get_fairshare_priority( struct job_record *job_ptr )
 	acct_association_rec_t *assoc = 
 		(acct_association_rec_t *)job_ptr->assoc_ptr;
 	long double usage = 0;
+
+	if(!calc_fairshare)
+		return 0;
 
 	xassert(assoc_mgr_root_assoc);
 	xassert(assoc_mgr_root_assoc->cpu_shares);
@@ -496,7 +529,7 @@ static void *_decay_thread(void *no_data)
 		       run_delta, decay_factor, real_decay);
 
 		/* first apply decay to used time */
-		if(assoc_mgr_apply_decay(real_decay) != SLURM_SUCCESS) {
+		if(_apply_decay(real_decay) != SLURM_SUCCESS) {
 			error("problem applying decay");
 			running_decay = 0;
 			slurm_mutex_unlock(&decay_lock);
@@ -633,24 +666,41 @@ static void _internal_setup()
 int init ( void )
 {
 	pthread_attr_t thread_attr;
+	char *temp = NULL;
 
 	_internal_setup();
 
-	slurm_attr_init(&thread_attr);
-	if (pthread_create(&decay_handler_thread, &thread_attr,
-			   _decay_thread, NULL))
-		fatal("pthread_create error %m");
-
-	/* This is here to join the decay thread so we don't core
-	   dump if in the sleep, since there is no other place to join
-	   we have to create another thread to do it.
-	*/
-	slurm_attr_init(&thread_attr);
-	if (pthread_create(&cleanup_handler_thread, &thread_attr,
-			   _cleanup_thread, NULL))
-		fatal("pthread_create error %m");
-	
-	slurm_attr_destroy(&thread_attr);
+	/* Check to see if we are running a supported accounting plugin */
+	temp = slurm_get_accounting_storage_type();
+	if(strcasecmp(temp, "accounting_storage/slurmdbd")
+	   && strcasecmp(temp, "accounting_storage/mysql")) {
+		error("You are not running a supported "
+		      "accounting_storage plugin\n(%s).\n"
+		      "Fairshare can only be calculated with either "
+		      "'accounting_storage/slurmdbd' "
+		      "or 'accounting_storage/mysql' enabled.  "
+		      "If you want multifactor priority without fairshare "
+		      "ignore this message.\n",
+		      temp);
+		calc_fairshare = 0;
+	} else {
+		slurm_attr_init(&thread_attr);
+		if (pthread_create(&decay_handler_thread, &thread_attr,
+				   _decay_thread, NULL))
+			fatal("pthread_create error %m");
+		
+		/* This is here to join the decay thread so we don't core
+		   dump if in the sleep, since there is no other place to join
+		   we have to create another thread to do it.
+		*/
+		slurm_attr_init(&thread_attr);
+		if (pthread_create(&cleanup_handler_thread, &thread_attr,
+				   _cleanup_thread, NULL))
+			fatal("pthread_create error %m");
+		
+		slurm_attr_destroy(&thread_attr);
+	}
+	xfree(temp);
 
 	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
@@ -665,8 +715,10 @@ int fini ( void )
 	slurm_mutex_lock(&decay_lock);
 	
 	/* cancel the decay thread and then join the cleanup thread */
-	pthread_cancel(decay_handler_thread);
-	pthread_join(cleanup_handler_thread, NULL);
+	if(decay_handler_thread)
+		pthread_cancel(decay_handler_thread);
+	if(cleanup_handler_thread)
+		pthread_join(cleanup_handler_thread, NULL);
 
 	slurm_mutex_unlock(&decay_lock);
 
@@ -689,4 +741,51 @@ extern void priority_p_reconfig()
 	debug2("%s reconfigured", plugin_name);
 	
 	return;
+}
+
+extern int priority_p_set_cpu_shares(uint32_t procs, uint32_t half_life) 
+{
+	ListIterator itr = NULL;
+	acct_association_rec_t *assoc = NULL;
+	static uint32_t last_procs = 0;
+	static uint32_t last_half_life = 0;
+
+	if(!calc_fairshare)
+		return SLURM_SUCCESS;
+
+	/* No need to do this if nothing has changed so just return */
+	if((procs == last_procs) && (half_life == last_half_life))
+		return SLURM_SUCCESS;
+
+	xassert(assoc_mgr_root_assoc);
+	xassert(assoc_mgr_association_list);
+
+	last_procs = procs;
+	last_half_life = half_life;
+
+	/* get the total decay for the entire cluster */
+	assoc_mgr_root_assoc->cpu_shares = 
+		(long double)procs * (long double)half_life * (long double)2;
+	debug2("total cpu shares on the system is %.0Lf",
+	       assoc_mgr_root_assoc->cpu_shares);
+
+	slurm_mutex_lock(&assoc_mgr_association_lock);
+	itr = list_iterator_create(assoc_mgr_association_list);
+	while((assoc = list_next(itr))) {
+		if(assoc == assoc_mgr_root_assoc)
+			continue;
+
+		assoc->cpu_shares = assoc_mgr_root_assoc->cpu_shares * 
+			(long double)assoc->norm_shares;
+		assoc->level_cpu_shares = 
+			assoc->cpu_shares * (long double)assoc->level_shares;
+		
+		slurm_mutex_lock(&assoc_mgr_qos_lock);
+		log_assoc_rec(assoc, assoc_mgr_qos_list);
+		slurm_mutex_unlock(&assoc_mgr_qos_lock);
+	}
+	list_iterator_destroy(itr);
+	slurm_mutex_unlock(&assoc_mgr_association_lock);
+
+	return SLURM_SUCCESS;
 }
