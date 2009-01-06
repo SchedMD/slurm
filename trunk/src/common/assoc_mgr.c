@@ -2201,12 +2201,9 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 	}
 
 	/* write the buffer to file */
-	old_file = xstrdup(state_save_location);
-	xstrcat(old_file, "/assoc_mgr_state.old");
-	reg_file = xstrdup(state_save_location);
-	xstrcat(reg_file, "/assoc_mgr_state");
-	new_file = xstrdup(state_save_location);
-	xstrcat(new_file, "/assoc_mgr_state.new");
+	reg_file = xstrdup_printf("%s/assoc_mgr_state", state_save_location);
+	old_file = xstrdup_printf("%s.old", reg_file);
+	new_file = xstrdup_printf("%s.new", reg_file);
 	
 	slurm_mutex_lock(&assoc_mgr_file_lock);
 	log_fd = creat(new_file, 0600);
@@ -2272,12 +2269,9 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 		slurm_mutex_unlock(&assoc_mgr_association_lock);
 	}
 
-	old_file = xstrdup(state_save_location);
-	xstrcat(old_file, "/assoc_usage.old");
-	reg_file = xstrdup(state_save_location);
-	xstrcat(reg_file, "/assoc_usage");
-	new_file = xstrdup(state_save_location);
-	xstrcat(new_file, "/assoc_usage.new");
+	reg_file = xstrdup_printf("%s/assoc_usage", state_save_location);
+	old_file = xstrdup_printf("%s.old", reg_file);
+	new_file = xstrdup_printf("%s.new", reg_file);
 	
 	log_fd = creat(new_file, 0600);
 	if (log_fd == 0) {
