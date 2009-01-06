@@ -945,9 +945,9 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 			for (j = 0; j < p_ptr->row[i].num_jobs; j++) {
 				if (p_ptr->row[i].job_list[j] != job)
 					continue;
-					debug3("cons_res: removing job %u from "
-					       "part %s row %u",
-					       job_ptr->job_id, p_ptr->name, i);
+				debug3("cons_res: removing job %u from "
+				       "part %s row %u",
+				       job_ptr->job_id, p_ptr->name, i);
 				for (; j < p_ptr->row[i].num_jobs-1; j++) {
 					p_ptr->row[i].job_list[j] =
 						p_ptr->row[i].job_list[j+1];
