@@ -615,8 +615,15 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr)
 			num_jobs += p_ptr->row[i].num_jobs;
 		}
 	}
-	if (num_jobs == 0)
+	if (num_jobs == 0) {
+		size = bit_size(p_ptr->row[0].row_bitmap);
+		for (i = 0; i < p_ptr->num_rows; i++) {
+			if (p_ptr->row[i].row_bitmap) {
+				bit_nclear(p_ptr->row[i].row_bitmap, 0, size-1);
+			}
+		}
 		return;
+	}
 
 #if (CR_DEBUG)
 	info("DEBUG: _build_row_bitmaps (before):");
