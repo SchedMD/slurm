@@ -990,7 +990,7 @@ static int _accounting_cluster_ready()
 		rc = SLURM_SUCCESS;
 	}
 
-	assoc_mgr_set_cpu_shares(procs, slurmctld_conf.priority_decay_hl);
+	priority_g_set_cpu_shares(procs, slurmctld_conf.priority_decay_hl);
 	
 	return rc;
 }
