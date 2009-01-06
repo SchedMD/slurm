@@ -340,8 +340,14 @@ static double _get_fairshare_priority( struct job_record *job_ptr )
 			((assoc->norm_shares - usage) + 1) / 2;
 		debug4("((%f - %Lf) + 1) / 2 = %Lf", assoc->norm_shares,
 		       usage, assoc->eused_shares);
+	} else {
+		/* Multiply by something really close to 1 so the next
+		   job will get a lower priority than the previous
+		   jobs if they are submitted during the polling
+		   period.  If you can think of a better way to do
+		   this please implement :). */
+		assoc->eused_shares *= .99999;
 	}
-
 	usage = assoc->eused_shares;
 	slurm_mutex_unlock(&assoc_mgr_association_lock);
 
