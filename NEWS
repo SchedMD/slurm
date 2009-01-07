@@ -25,7 +25,9 @@ documents those changes that are of interest to users and admins.
     TO OLDER VERSIONS OF SLURM FINE.
  -- Added configuration parameter BatchStartTimeout to control how long to 
     allow for a batch job prolog and environment loading (for Moab) to run.
-    See "man slurm.conf" for details.
+    Previously if job startup took too long, a batch job could be cancelled
+    before fully starting with a SlurmctldLog message of "Master node lost 
+    JobId=#, killing it".  See "man slurm.conf" for details.
  -- For a job step, add support for srun's --nodelist and --exclusive options
     to be used together.
  -- On slurmstepd failure, set node state to DRAIN rather than DOWN.
