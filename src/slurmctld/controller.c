@@ -1188,8 +1188,10 @@ static void *_slurmctld_background(void *no_data)
 				lock_slurmctld(node_write_lock);
 				ping_nodes();
 				unlock_slurmctld(node_write_lock);
-			} else if (!msg_sent) {
-				/* log failure once per ping_nodes() call */
+			} else if ((!msg_sent) && (!ping_nodes_now)) {
+				/* log failure once per ping_nodes() call,
+				 * no error if node state update request
+				 * processed while the ping is in progress */
 				error("Node ping apparently hung, "
 				      "many nodes may be DOWN or configured "
 				      "SlurmdTimeout should be increased");

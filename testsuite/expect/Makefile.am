@@ -10,6 +10,7 @@ EXTRA_DIST = \
 	mpi-testscripts/Makefile	\
 	mpi-testscripts/script.slurm.sh	\
 	globals				\
+	globals_accounting		\
 	pkill				\
 	README				\
 	regression			\

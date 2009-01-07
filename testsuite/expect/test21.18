@@ -30,7 +30,7 @@
 # with SLURM; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 ############################################################################
-source ./globals
+source ./globals_accounting
 
 set test_id     "21.18"
 set exit_code   0
@@ -107,728 +107,49 @@ if { [string compare [check_accounting_admin_level] "Administrator"] } {
 	exit 0
 }
 
-
-#
-# Use sacctmgr to create a cluster
-#	
-proc _add_cluster {name} {
-        global sacctmgr timeout
-
-	set exit_code 0
-	set matches 0
-
-	if { ![string length $name] } {
-		send_user "FAILURE: we need a name to add\n"
-		return 1
-	}
-
-	set my_pid [spawn $sacctmgr -i add cluster $name]
-	expect {
-		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
-			send_user "FAILURE: there was a problem with the sacctmgr command\n"
-			incr exit_code 1
-		}
-		-re "Problem getting" {
-			send_user "FAILURE: there was a problem getting information from the database\n"
-			incr exit_code 1
-		}
-		-re "Problem adding" {
-			send_user "FAILURE: there was an unknwon problem\n"
-			incr exit_code 1
-		}
-		-re "No associations" {
-			send_user "FAILURE: your command didn't return anything\n"
-			incr exit_code 1
-		}
-		-re "Adding Cluster" {
-			incr matches
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: sacctmgr add not responding\n"
-			slow_kill $my_pid
-			exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$matches != 1} {
-		send_user "\nFAILURE:  sacctmgr had a problem adding clusters
-	got $matches\n"
-		incr exit_code 1
-	}
-
-	if { ![check_acct_associations] } {
-		send_user "\nFAILURE:  Our associations don't line up\n"
-		incr exit_code 1
-	}
-	
-	return $exit_code
-}
-
-#
-# Use sacctmgr to remove the test cluster
-#
-proc _remove_cluster {name} {
-        global access_err sacctmgr timeout
-
-	set exit_code 0
-	set matches 0
-	set nothing 0
-
-	if { ![string length $name] } {
-		send_user "FAILURE: we need a name to remove\n"
-		return 1
-	}
-
-	set my_pid [spawn $sacctmgr -i delete cluster $name]
-	expect {
-		-re "privilege to perform this action" {
-			set access_err 1
-			exp_continue
-		}
-		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
-			send_user "FAILURE: there was a problem with the sacctmgr command\n"
-			incr exit_code 1
-		}
-		-re "Problem getting" {
-			send_user "FAILURE: there was a problem getting information from the database\n"
-			incr exit_code 1
-		}
-		-re "Problem adding" {
-			send_user "FAILURE: there was an unknwon problem\n"
-			incr exit_code 1
-		}
-		-re "No associations" {
-			send_user "FAILURE: your command didn't return anything\n"
-			incr exit_code 1
-		}
-		-re "Deleting clusters" {
-			incr matches
-			exp_continue
-		}
-		-re " Nothing deleted" {
-			incr matches
-			set nothing 1
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: sacctmgr delete not responding\n"
-			slow_kill $my_pid
-			incr exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-	if {$access_err != 0} {
-		return 1
-	}
-	if {$matches != 1} {
-		send_user "\nFAILURE: sacctmgr had a problem deleting cluster got $matches\n"
-		incr exit_code 1
-	}
-	if { !$nothing } {
-		if { ![check_acct_associations] } {
-			send_user "\nFAILURE:  Our associations don't line up\n"
-			incr exit_code 1
-		}
-	}
-
-	return $exit_code
-}
-
-#
-# Use sacctmgr to add an account
-#
-proc _add_acct { cluster name } {
-        global sacctmgr timeout
-
-	set exit_code 0
-	set matches 0
-
-	if { ![string length $name] } {
-		send_user "FAILURE: we need a name to add\n"
-		return 1
-	}
-
-	set command "$name"
-
-	if { [string length $cluster] } {
-		set command "$command cluster=$cluster"
-	}
-
-	set my_pid [eval spawn $sacctmgr -i add account $command]
-	expect {
-		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
-			send_user "FAILURE: there was a problem with the sacctmgr command\n"
-			incr exit_code 1
-		}
-		-re "Problem getting" {
-			send_user "FAILURE: there was a problem getting information from the database\n"
-			incr exit_code 1
-		}
-		-re "Problem adding" {
-			send_user "FAILURE: there was an unknwon problem\n"
-			incr exit_code 1
-		}
-		-re "No associations" {
-			send_user "FAILURE: your command didn't return anything\n"
-			incr exit_code 1
-		}
-		-re "Adding Account" {
-			incr matches
-			exp_continue
-		}
-		-re "Associations" {
-			incr matches
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: sacctmgr add not responding\n"
-			slow_kill $my_pid
-			incr exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$matches != 2} {
-		send_user "\nFAILURE:  sacctmgr had a problem adding account.
-	got $matches\n"
-		incr exit_code 1
-	}
-
-	if { ![check_acct_associations] } {
-		send_user "\nFAILURE:  Our associations don't line up\n"
-		incr exit_code 1
-	}
-	return $exit_code
-}
-
-#
-# Use sacctmgr to remove an account
-#
-proc _remove_acct { cluster name } {
-        global sacctmgr timeout
-
-	set exit_code 0
-	set matches 0
-	set nothing 1
-	set check "Deleting account"
-
-	if { ![string length $name] } {
-		send_user "FAILURE: we need a name to remove\n"
-		return 1
-	}
-
-	set command "$name"
-
-	if { [string length $cluster] } {
-		set command "$command cluster=$cluster"
-		set check "Deleting account associations"
-	}
-
-	set my_pid [eval spawn $sacctmgr -i delete account $command]
-	expect {
-		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
-			send_user "FAILURE: there was a problem with the sacctmgr command\n"
-			incr exit_code 1
-		}
-		-re "Problem getting" {
-			send_user "FAILURE: there was a problem getting information from the database\n"
-			incr exit_code 1
-		}
-		-re "Problem adding" {
-			send_user "FAILURE: there was an unknwon problem\n"
-			incr exit_code 1
-		}
-		-re "No associations" {
-			send_user "FAILURE: your command didn't return anything\n"
-			incr exit_code 1
-		}
-		-re "$check" {
-			incr matches
-			exp_continue
-		}
-		-re " Nothing deleted" {
-			incr matches
-			set nothing 1
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: sacctmgr add not responding\n"
-			slow_kill $my_pid
-			incr exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$matches != 1} {
-		send_user "\nFAILURE:  sacctmgr had a problem deleting account.
-	got $matches\n"
-		incr exit_code 1
-	}
-
-	if { !$nothing } {
-		if { ![check_acct_associations] } {
-			send_user "\nFAILURE:  Our associations don't line up\n"
-			incr exit_code 1
-		}
-	}
-
-	return $exit_code
-}
-#
-# Use sacctmgr to modify an account
-#
-proc _mod_acct { cluster name desc org parent fs maxcpu maxjob maxnodes maxwall wdesc worg} {
-	global sacctmgr timeout
-	
-	set exit_code 0
-	set matches 0
-	set expected 0
-	set acct_stuff 0
-	set assoc_stuff 0
-
-	if { ![string length $name] } {
-		send_user "FAILURE: we need a name to modify\n"
-		return 1
-	}
-
-	#set up the where
-	set wcommand "where $name"
-
-	if { [string length $cluster] } {
-		set wcommand "$wcommand cluster=$cluster"
-	}
-
-	if { [string length $wdesc] } {
-		set wcommand "$wcommand description='$wdesc'"
-	}
-
-	if { [string length $worg] } {
-		set wcommand "$wcommand organization='$worg'"
-	}
-
-	#set up the set
-	set scommand "set"
-	if { [string length $parent] } {
-		set scommand "$scommand parent=$parent"
-		set assoc_stuff 1
-	}
-
-	if { [string length $fs] } {
-		set scommand "$scommand fairshare=$fs"
-		set assoc_stuff 1
-	}
-
-	if { [string length $maxcpu] } {
-		set scommand "$scommand maxcpum=$maxcpu"
-		set assoc_stuff 1
-	}
-
-	if { [string length $maxjob] } {
-		set scommand "$scommand maxj=$maxjob"
-		set assoc_stuff 1
-	}
-
-	if { [string length $maxnodes] } {
-		set scommand "$scommand maxn=$maxnodes"
-		set assoc_stuff 1
-	}
-
-	if { [string length $maxwall] } {
-		set scommand "$scommand maxw=$maxwall"
-		set assoc_stuff 1
-	}
-
-	if { [string length $desc] } {
-		set scommand "$scommand description='$desc'"
-		set acct_stuff 1
-	}
-
-	if { [string length $org] } {
-		set scommand "$scommand organization='$org'"
-		set acct_stuff 1
-	}
-
-	incr expected $acct_stuff
-	incr expected $assoc_stuff
-
-	set my_pid [eval spawn $sacctmgr -i modify account $scommand $wcommand ]
-	expect {
-		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
-			send_user "FAILURE: there was a problem with the sacctmgr command\n"
-			incr exit_code 1
-		}
-		-re "Problem getting" {
-			send_user "FAILURE: there was a problem getting information from the database\n"
-			incr exit_code 1
-		}
-		-re "Problem adding" {
-			send_user "FAILURE: there was an unknwon problem\n"
-			incr exit_code 1
-		}
-		-re "No associations" {
-			send_user "FAILURE: your command didn't return anything\n"
-			incr exit_code 1
-		}
-		-re "Modified accounts" {
-			incr matches
-			exp_continue
-		}
-		-re "Modified account associations" {
-			incr matches
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: sacctmgr add not responding\n"
-			slow_kill $my_pid
-			incr exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$matches != $expected} {
-		send_user "\nFAILURE:  sacctmgr had a problem modifying account.
-	got $matches needed $expected\n"
-		incr exit_code 1
-	}
-	
-	if { ![check_acct_associations] } {
-		send_user "\nFAILURE:  Our associations don't line up\n"
-		incr exit_code 1
-	}
-	return $exit_code
-}
-
-
-#
-# Use sacctmgr to add an user
-#
-proc _add_user { cluster account name } {
-        global sacctmgr timeout
-
-	set exit_code 0
-	set matches 0
-
-	if { ![string length $name] } {
-		send_user "FAILURE: we need a name to add\n"
-		return 1
-	}
-
-	set command "$name"
-
-	if { [string length $cluster] } {
-		set command "$command cluster=$cluster"
-	}
-
-	if { [string length $account] } {
-		set command "$command account=$account"
-	}
-
-	if { [string length $name] } {
-		set command "$command name=$name"
-	}
-
-	set my_pid [eval spawn $sacctmgr -i add user $command]
-	expect {
-		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
-			send_user "FAILURE: there was a problem with the sacctmgr command\n"
-			incr exit_code 1
-		}
-		-re "Problem getting" {
-			send_user "FAILURE: there was a problem getting information from the database\n"
-			incr exit_code 1
-		}
-		-re "Problem adding" {
-			send_user "FAILURE: there was an unknwon problem\n"
-			incr exit_code 1
-		}
-		-re "No associations" {
-			send_user "FAILURE: your command didn't return anything\n"
-			incr exit_code 1
-		}
-		-re "Adding User" {
-			incr matches
-			exp_continue
-		}
-		-re "Associations" {
-			incr matches
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: sacctmgr add not responding\n"
-			slow_kill $my_pid
-			incr exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$matches != 2} {
-		send_user "\nFAILURE:  sacctmgr had a problem adding user.
-	got $matches\n"
-		incr exit_code 1
-	}
-
-	if { ![check_acct_associations] } {
-		send_user "\nFAILURE:  Our associations don't line up\n"
-		incr exit_code 1
-	}
-	return $exit_code
-}
-
-#
-# Use sacctmgr to remove an user
-#
-proc _remove_user { user name } {
-        global sacctmgr timeout
-
-	set exit_code 0
-	set matches 0
-	set nothing 1
-	set check "Deleting user"
-
-	if { ![string length $name] } {
-		send_user "FAILURE: we need a name to remove\n"
-		return 1
-	}
-
-	set command "$name"
-
-	if { [string length $user] } {
-		set command "$command user=$user"
-		set check "Deleting user associations"
-	}
-
-	set my_pid [eval spawn $sacctmgr -i delete user $command]
-	expect {
-		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
-			send_user "FAILURE: there was a problem with the sacctmgr command\n"
-			incr exit_code 1
-		}
-		-re "Problem getting" {
-			send_user "FAILURE: there was a problem getting information from the database\n"
-			incr exit_code 1
-		}
-		-re "Problem adding" {
-			send_user "FAILURE: there was an unknown problem\n"
-			incr exit_code 1
-		}
-		-re "No associations" {
-			send_user "FAILURE: your command didn't return anything\n"
-			incr exit_code 1
-		}
-		-re "$check" {
-			incr matches
-			exp_continue
-		}
-		-re " Nothing deleted" {
-			incr matches
-			set nothing 1
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: sacctmgr delete not responding\n"
-			slow_kill $my_pid
-			incr exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$matches != 1} {
-		send_user "\nFAILURE:  sacctmgr had a problem deleting user.
-	got $matches\n"
-		incr exit_code 1
-	}
-
-	if { !$nothing } {
-		if { ![check_acct_associations] } {
-			send_user "\nFAILURE:  Our associations don't line up\n"
-			incr exit_code 1
-		}
-	}
-
-	return $exit_code
-}
-
-#
-# Use sacctmgr to modify an user
-#
-proc _mod_user { adminlevel defaultaccount fs maxcpu maxjob maxnodes maxwall waccounts wcluster wnames} {
-	global sacctmgr timeout
-	
-	set exit_code 0
-	set matches 0
-	set expected 0
-	set acct_stuff 0
-	set assoc_stuff 0
-
-	if { ![string length $wnames] } {
-		send_user "FAILURE: we need a name to modify\n"
-		return 1
-	}
-
-	#set up the where
-	set wcommand "where"
-
-	if { [string length $wcluster] } {
-		set wcommand "$wcommand cluster=$wcluster"
-	}
-
-	if { [string length $wnames] } {
-		set wcommand "$wcommand names='$wnames'"
-	}
-
-	if { [string length $waccounts] } {
-		set wcommand "$wcommand account='$waccount'"
-	}
-
-	#set up the set
-	set scommand "set"
-
-	if { [string length $adminlevel] } {
-		set scommand "$scommand adminlevel=$adminlevel"
-		set acct_stuff 1
-	}
-
-	if { [string length $defaultaccount] } {
-		set scommand "$scommand defaultaccount='$defaultaccount'"
-		set acct_stuff 1
-	}
-
-	if { [string length $fs] } {
-		set scommand "$scommand fairshare=$fs"
-		set assoc_stuff 1
-	}
-
-	if { [string length $maxcpu] } {
-		set scommand "$scommand maxcpum=$maxcpu"
-		set assoc_stuff 1
-	}
-
-	if { [string length $maxjob] } {
-		set scommand "$scommand maxj=$maxjob"
-		set assoc_stuff 1
-	}
-
-	if { [string length $maxnodes] } {
-		set scommand "$scommand maxn=$maxnodes"
-		set assoc_stuff 1
-	}
-
-	if { [string length $maxwall] } {
-		set scommand "$scommand maxw=$maxwall"
-		set assoc_stuff 1
-	}
-
-	incr expected $acct_stuff
-	incr expected $assoc_stuff
-
-	set my_pid [eval spawn $sacctmgr -i modify user $scommand $wcommand ]
-	expect {
-		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
-			send_user "FAILURE: there was a problem with the sacctmgr command\n"
-			incr exit_code 1
-		}
-		-re "Problem getting" {
-			send_user "FAILURE: there was a problem getting information from the database\n"
-			incr exit_code 1
-		}
-		-re "Problem adding" {
-			send_user "FAILURE: there was an unknown problem\n"
-			incr exit_code 1
-		}
-		-re "No associations" {
-			send_user "FAILURE: your command didn't return anything\n"
-			incr exit_code 1
-		}
-		-re "Modified account associations" {
-			incr matches
-			exp_continue
-		}
-		-re "Modified users" {
-			incr matches
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: sacctmgr modify not responding\n"
-			slow_kill $my_pid
-			incr exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$matches != $expected} {
-		send_user "\nFAILURE:  sacctmgr had a problem modifying user.
-	got $matches needed $expected\n"
-		incr exit_code 1
-	}
-	
-	if { ![check_acct_associations] } {
-		send_user "\nFAILURE:  Our associations don't line up\n"
-		incr exit_code 1
-	}
-	return $exit_code
-}
-
 #make sure we have a clean system and permission to do this work
-_remove_user "" "$us1,$us2,$us3"
-_remove_acct "" "$nm1,$nm2,$nm3"
-_remove_cluster "$tc1,$tc2,$tc3"
+remove_user "" "" "$us1,$us2,$us3"
+remove_acct "" "$nm1,$nm2,$nm3"
+remove_cluster "$tc1,$tc2,$tc3"
 if {$access_err != 0} {
 	send_user "\nWARNING: not authorized to perform this test\n"
 	exit $exit_code
 }
 
 #add cluster
-incr exit_code [_add_cluster "$tc1,$tc2,$tc3"]
+incr exit_code [add_cluster "$tc1,$tc2,$tc3" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
-	_remove_user "" "$us1,$us2,$us3"
-	_remove_acct "" "$nm1,$nm2,$nm3"
-	_remove_cluster "$tc1,$tc2,$tc3"
+	remove_user "" "" "$us1,$us2,$us3"
+	remove_acct "" "$nm1,$nm2,$nm3"
+	remove_cluster "$tc1,$tc2,$tc3"
 	exit $exit_code
 }
 
 #add accounts
-incr exit_code [_add_acct "$tc1,$tc2,$tc3" "$nm1,$nm2,$nm3"]
+incr exit_code [add_acct "$tc1,$tc2,$tc3" "" "$nm1,$nm2,$nm3" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
-	_remove_user "" "$us1,$us2,$us3"
-	_remove_acct "" "$nm1,$nm2,$nm3"
-	_remove_cluster "$tc1,$tc2,$tc3"
+	remove_user "" "" "$us1,$us2,$us3"
+	remove_acct "" "$nm1,$nm2,$nm3"
+	remove_cluster "$tc1,$tc2,$tc3"
 	exit $exit_code
 }
 
 #add users
-incr exit_code [_add_user  "$tc1,$tc2,$tc3" "$nm1,$nm2,$nm3" "$us1,$us2,$us3"]
+incr exit_code [add_user  "$tc1,$tc2,$tc3" "$nm1,$nm2,$nm3" "$us1,$us2,$us3" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
 if { $exit_code } {
-	_remove_user "" "$us1,$us2,$us3"
-	_remove_acct "" "$nm1,$nm2,$nm3"
-	_remove_cluster "$tc1,$tc2,$tc3"
+	remove_user "" "" "$us1,$us2,$us3"
+	remove_acct "" "$nm1,$nm2,$nm3"
+	remove_cluster "$tc1,$tc2,$tc3"
 	exit $exit_code
 }
 
 # First test change the AdminLevel and DefaultAccount of the accounts  
-# adminlevel defaultaccount fs maxcpu maxjob maxnodes maxwall waccounts wcluster wnames
-incr exit_code [_mod_user  $alo $nm2 "" "" "" "" "" "" "" "$us1,$us2,$us3"]
+# cluster account name part wadmin wdacct wdwckey qos fairshare grpcpumin grpcpu grpjob grpnode grpsubmit grpwall maxcpumin maxcpu maxjob maxnode maxsubmit maxwall admin dacct dwckey 
+incr exit_code [mod_user "" "" "$us1,$us2,$us3" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" $alo $nm2 ""]
 if { $exit_code } {
-	_remove_user "" "$us1,$us2,$us3"
-	_remove_acct "" "$nm1,$nm2,$nm3"
-	_remove_cluster "$tc1,$tc2,$tc3"
+	remove_user "" "" "$us1,$us2,$us3"
+	remove_acct "" "$nm1,$nm2,$nm3"
+	remove_cluster "$tc1,$tc2,$tc3"
 	exit $exit_code
 }
 
@@ -862,12 +183,12 @@ if {$matches != 3} {
 }
 
 # Test change the AdminLevel and DefaultAccount of two accounts  
-# adminlevel defaultaccount fs maxcpu maxjob maxnodes maxwall waccounts wcluster wnames
-incr exit_code [_mod_user $ala $nm3 "" "" "" "" "" "" "" "$us1,$us3"]
+# cluster account name part wadmin wdacct wdwckey qos fairshare grpcpumin grpcpu grpjob grpnode grpsubmit grpwall maxcpumin maxcpu maxjob maxnode maxsubmit maxwall admin dacct dwckey
+incr exit_code [mod_user "" "" "$us1,$us3" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" $ala $nm3 ""]
 if { $exit_code } {
-	_remove_user "" "$us1,$us2,$us3"
-	_remove_acct "" "$nm1,$nm2,$nm3"
-	_remove_cluster "$tc1,$tc2,$tc3"
+	remove_user "" "" "$us1,$us2,$us3"
+	remove_acct "" "$nm1,$nm2,$nm3"
+	remove_cluster "$tc1,$tc2,$tc3"
 	exit $exit_code
 }
 
@@ -901,13 +222,13 @@ if {$matches != 3} {
 }
 
 # Next, test change the limits of the users
-# adminlevel defaultaccount fs maxcpu maxjob maxnodes maxwall waccounts wcluster wnames
+# cluster account name part wadmin wdacct wdwckey qos fairshare grpcpumin grpcpu grpjob grpnode grpsubmit grpwall maxcpumin maxcpu maxjob maxnode maxsubmit maxwall admin dacct dwckey
  
-incr exit_code [_mod_user "" "" $fs2 $mc2 $mj2 $mn2 $mw2 "" "$tc1,$tc2" "$us1,$us2,$us3"]
+incr exit_code [mod_user "$tc1,$tc2" "" "$us1,$us2,$us3" "" "" "" "" "" $fs2 "" "" "" "" "" "" $mc2 "" $mj2 $mn2 "" $mw2 "" "" ""]
 if { $exit_code } {
-	_remove_user "" "$us1,$us2,$us3"
-	_remove_acct "" "$nm1,$nm2,$nm3"
-	_remove_cluster "$tc1,$tc2,$tc3"
+	remove_user "" "" "$us1,$us2,$us3"
+	remove_acct "" "$nm1,$nm2,$nm3"
+	remove_cluster "$tc1,$tc2,$tc3"
 	exit $exit_code
 }
 
@@ -943,11 +264,11 @@ if {$matches != 18} {
 # Next, test change the limits of two users 
 # adminlevel defaultaccount fs maxcpu maxjob maxnodes maxwall waccounts wcluster wnames
 
-incr exit_code [_mod_user "" "" $fs3 $mc3 $mj3 $mn3 $mw3 "" "" "$us1,$us3"]
+incr exit_code [mod_user "" "" "$us1,$us3" "" "" "" "" "" $fs3 "" "" "" "" "" "" $mc3 "" $mj3 $mn3 "" $mw3 "" "" ""]
 if { $exit_code } {
-	_remove_user "" "$us1,$us2,$us3"
-	_remove_acct "" "$nm1,$nm2,$nm3"
-	_remove_cluster "$tc1,$tc2,$tc3"
+	remove_user "" "" "$us1,$us2,$us3"
+	remove_acct "" "$nm1,$nm2,$nm3"
+	remove_cluster "$tc1,$tc2,$tc3"
 	exit $exit_code
 }
 
@@ -984,9 +305,9 @@ if {$matches != 18} {
 
 # This is the end below here
 
-incr exit_code [_remove_user "" "$us1,$us2,$us3"]
-incr exit_code [_remove_acct "" "$nm1,$nm2,$nm3"]
-incr exit_code [_remove_cluster "$tc1,$tc2,$tc3"]
+incr exit_code [remove_user "" "" "$us1,$us2,$us3"]
+incr exit_code [remove_acct "" "$nm1,$nm2,$nm3"]
+incr exit_code [remove_cluster "$tc1,$tc2,$tc3"]
 
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"

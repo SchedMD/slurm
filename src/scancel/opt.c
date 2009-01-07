@@ -507,14 +507,14 @@ static void _help(void)
 	printf("  -b, --batch                     signal batch shell for specified job\n");
 /*	printf("      --ctld                      route request through slurmctld\n"); */
 	printf("  -i, --interactive               require response from user for each job\n");
-	printf("  -n, --name=job_name             name of job to be signalled\n");
+	printf("  -n, --name=job_name             name of job to be signaled\n");
 	printf("  -p, --partition=partition       name of job's partition\n");
 	printf("  -q, --quiet                     disable warnings\n");
 	printf("  -s, --signal=name | integer     signal to send to job, default is SIGKILL\n");
-	printf("  -t, --states=states             states to jobs to cancel,\n");
-	printf("                                  default is pending, running, and\n");
-	printf("                                  suspended\n");
-	printf("  -u, --user=user                 name or id of user to have jobs cancelled\n");
+	printf("  -t, --state=state               state of the jobs to be signaled\n");
+	printf("                                  valid options are either pending,\n");
+	printf("                                  running, or suspended\n");
+	printf("  -u, --user=user                 name or id of user to have jobs signaled\n");
 	printf("  -v, --verbose                   verbosity level\n");
 	printf("  -V, --version                   output version information and exit\n");
 	printf("\nHelp options:\n");

@@ -15,7 +15,7 @@
 /* Define to 1 if licensed under terms of the GNU General Public License. */
 #undef GPL_LICENSED
 
-/* Define to 1 if 3-dimentional architecture */
+/* Define to 1 if 3-dimensional architecture */
 #undef HAVE_3D
 
 /* Define to 1 for AIX operating system */

@@ -521,3 +521,8 @@ test21.21  sacctmgr add an account to this cluster and try using it with
 test21.22  sacctmgr load file
 test21.23  sacctmgr wckey
 test21.24  sacctmgr dump file
+
+test22.#   Testing of sreport commands and options. 
+           These also test the sacctmgr archive dump/load functions.
+=================================================
+test22.1   sreport cluster ut report
