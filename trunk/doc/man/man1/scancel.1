@@ -58,7 +58,7 @@ If no signal is specified, the specified job or step will be terminated.
 
 .TP
 \fB\-t\fR, \fB\-\-state\fR=\fIjob_state_name\fR
-The state of the jobs are to be signaled. \fIjob_state_name\fR may have a value of 
+The state of the jobs to be signaled. \fIjob_state_name\fR may have a value of 
 either "PENDING", "RUNNING" or "SUSPENDED".
 
 .TP
@@ -89,9 +89,9 @@ The Slurm job ID to be signaled.
 \fIstep_id\fP
 The step ID of the job step to be signaled. 
 If not specified, the operation is performed at the level of a job.
-When \fB\-\-batch\fR is used, the batch shell processes will be signalled.
+When \fB\-\-batch\fR is used, the batch shell processes will be signaled.
 Otherwise the processes associated with all job steps, but not the 
-batch script itself, will be signalled.
+batch script itself, will be signaled.
 
 .SH "ENVIRONMENT VARIABLES"
 .PP

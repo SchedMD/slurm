@@ -38,6 +38,7 @@
 
 #include "bluegene.h"
 #include "src/common/uid.h"
+#include <fcntl.h>
 
 /** these are used in the dynamic partitioning algorithm */
 
@@ -247,7 +248,7 @@ static int _post_allocate(bg_record_t *bg_record)
 			temp = atoi(bg_record->bg_block_id+i)+1;
 			if(temp > block_inx)
 				block_inx = temp;
-			info("first new block inx will now be %d", block_inx);
+			debug4("first new block inx will now be %d", block_inx);
 		}
 	} else {
 		bg_record->bg_block_id = xmalloc(8);
@@ -888,5 +889,257 @@ int read_bg_blocks()
 	return rc;
 }
 
-#endif
+#else
 
+extern int load_state_file(char *dir_name)
+{
+	int state_fd, i, j=0;
+	char *state_file = NULL;
+	Buf buffer = NULL;
+	char *data = NULL;
+	int data_size = 0;
+	node_select_info_msg_t *node_select_ptr = NULL;
+	bg_record_t *bg_record = NULL;
+	bg_info_record_t *bg_info_record = NULL;
+	bitstr_t *node_bitmap = NULL, *ionode_bitmap = NULL;
+	int geo[BA_SYSTEM_DIMENSIONS];
+	char temp[256];
+	List results = NULL;
+	int data_allocated, data_read = 0;
+	char *ver_str = NULL;
+	uint32_t ver_str_len;
+	int blocks = 0;
+	uid_t my_uid;
+	int ionodes = 0;
+	char *name = NULL;
+
+	if(!dir_name) {
+		debug2("Starting bluegene with clean slate");
+		return SLURM_SUCCESS;
+	}
+
+	xassert(bg_curr_block_list);
+
+	state_file = xstrdup(dir_name);
+	xstrcat(state_file, "/block_state");
+	state_fd = open(state_file, O_RDONLY);
+	if(state_fd < 0) {
+		error("No block state file (%s) to recover", state_file);
+		xfree(state_file);
+		return SLURM_SUCCESS;
+	} else {
+		data_allocated = BUF_SIZE;
+		data = xmalloc(data_allocated);
+		while (1) {
+			data_read = read(state_fd, &data[data_size],
+					 BUF_SIZE);
+			if (data_read < 0) {
+				if (errno == EINTR)
+					continue;
+				else {
+					error("Read error on %s: %m", 
+					      state_file);
+					break;
+				}
+			} else if (data_read == 0)	/* eof */
+				break;
+			data_size      += data_read;
+			data_allocated += data_read;
+			xrealloc(data, data_allocated);
+		}
+		close(state_fd);
+	}
+	xfree(state_file);
+
+	buffer = create_buf(data, data_size);
+
+	/*
+	 * Check the data version so that when the format changes, we 
+	 * we don't try to unpack data using the wrong format routines
+	 */
+	if(size_buf(buffer)
+	   >= sizeof(uint32_t) + strlen(BLOCK_STATE_VERSION)) {
+	        char *ptr = get_buf_data(buffer);
+		if (!memcmp(&ptr[sizeof(uint32_t)], BLOCK_STATE_VERSION, 3)) {
+		        safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
+		        debug3("Version string in block_state header is %s",
+			       ver_str);
+		}
+	}
+	if (ver_str && (strcmp(ver_str, BLOCK_STATE_VERSION) != 0)) {
+		error("Can not recover block state, "
+		      "data version incompatable");
+		xfree(ver_str);
+		free_buf(buffer);
+		return EFAULT;
+	}
+	xfree(ver_str);
+	if(select_g_unpack_node_info(&node_select_ptr, buffer) == SLURM_ERROR) {
+		error("select_p_state_restore: problem unpacking node_info");
+		goto unpack_error;
+	}
+	slurm_mutex_lock(&block_state_mutex);
+	reset_ba_system(false);
+
+	node_bitmap = bit_alloc(node_record_count);	
+	ionode_bitmap = bit_alloc(bluegene_numpsets);	
+	for (i=0; i<node_select_ptr->record_count; i++) {
+		bg_info_record = &(node_select_ptr->bg_info_array[i]);
+		
+		bit_nclear(node_bitmap, 0, bit_size(node_bitmap) - 1);
+		bit_nclear(ionode_bitmap, 0, bit_size(ionode_bitmap) - 1);
+		
+		j = 0;
+		while(bg_info_record->bp_inx[j] >= 0) {
+			if (bg_info_record->bp_inx[j+1]
+			    >= node_record_count) {
+				fatal("Job state recovered incompatable with "
+					"bluegene.conf. bp=%u state=%d",
+					node_record_count,
+					bg_info_record->bp_inx[j+1]);
+			}
+			bit_nset(node_bitmap,
+				 bg_info_record->bp_inx[j],
+				 bg_info_record->bp_inx[j+1]);
+			j += 2;
+		}		
+
+		j = 0;
+		while(bg_info_record->ionode_inx[j] >= 0) {
+			if (bg_info_record->ionode_inx[j+1]
+			    >= bluegene_numpsets) {
+				fatal("Job state recovered incompatable with "
+					"bluegene.conf. ionodes=%u state=%d",
+					bluegene_numpsets,
+					bg_info_record->ionode_inx[j+1]);
+			}
+			bit_nset(ionode_bitmap,
+				 bg_info_record->ionode_inx[j],
+				 bg_info_record->ionode_inx[j+1]);
+			j += 2;
+		}		
+					
+		bg_record = xmalloc(sizeof(bg_record_t));
+		bg_record->bg_block_id =
+			xstrdup(bg_info_record->bg_block_id);
+		bg_record->nodes =
+			xstrdup(bg_info_record->nodes);
+		bg_record->ionodes =
+			xstrdup(bg_info_record->ionodes);
+		bg_record->ionode_bitmap = bit_copy(ionode_bitmap);
+		bg_record->state = bg_info_record->state;
+#ifdef HAVE_BGL
+		bg_record->quarter = bg_info_record->quarter;
+		bg_record->nodecard = bg_info_record->nodecard;
+#endif
+		if(bg_info_record->state == RM_PARTITION_ERROR)
+			bg_record->job_running = BLOCK_ERROR_STATE;
+		else
+			bg_record->job_running = NO_JOB_RUNNING;
+		bg_record->bp_count = bit_size(node_bitmap);
+		bg_record->node_cnt = bg_info_record->node_cnt;
+		if(bluegene_bp_node_cnt > bg_record->node_cnt) {
+			ionodes = bluegene_bp_node_cnt 
+				/ bg_record->node_cnt;
+			bg_record->cpus_per_bp =
+				procs_per_node / ionodes;
+		} else {
+			bg_record->cpus_per_bp = procs_per_node;
+		}
+#ifdef HAVE_BGL
+		bg_record->node_use = bg_info_record->node_use;
+#endif
+		bg_record->conn_type = bg_info_record->conn_type;
+		bg_record->boot_state = 0;
+
+		process_nodes(bg_record, true);
+
+		bg_record->target_name = xstrdup(bg_slurm_user_name);
+		bg_record->user_name = xstrdup(bg_slurm_user_name);
+			
+		my_uid = uid_from_string(bg_record->user_name);
+		if (my_uid == (uid_t) -1) {
+			error("uid_from_strin(%s): %m", 
+			      bg_record->user_name);
+		} else {
+			bg_record->user_uid = my_uid;
+		} 
+				
+#ifdef HAVE_BGL
+		bg_record->blrtsimage =
+			xstrdup(bg_info_record->blrtsimage);
+#endif
+		bg_record->linuximage = 
+			xstrdup(bg_info_record->linuximage);
+		bg_record->mloaderimage =
+			xstrdup(bg_info_record->mloaderimage);
+		bg_record->ramdiskimage =
+			xstrdup(bg_info_record->ramdiskimage);
+
+		for(j=0; j<BA_SYSTEM_DIMENSIONS; j++) 
+			geo[j] = bg_record->geo[j];
+				
+		if(bluegene_layout_mode == LAYOUT_OVERLAP) 
+			reset_ba_system(false);
+		results = list_create(NULL);
+		name = set_bg_block(results,
+				    bg_record->start, 
+				    geo, 
+				    bg_record->conn_type);
+		if(!name) {
+			error("I was unable to "
+			      "make the "
+			      "requested block.");
+			list_destroy(results);
+			destroy_bg_record(bg_record);
+			continue;
+		}
+
+			
+		snprintf(temp, sizeof(temp), "%s%s",
+			 bg_slurm_node_prefix,
+			 name);
+		
+		xfree(name);
+		if(strcmp(temp, bg_record->nodes)) {
+			fatal("bad wiring in preserved state "
+			      "(found %s, but allocated %s) "
+			      "YOU MUST COLDSTART",
+			      bg_record->nodes, temp);
+		}
+		if(bg_record->bg_block_list)
+			list_destroy(bg_record->bg_block_list);
+		bg_record->bg_block_list =
+			list_create(destroy_ba_node);
+		copy_node_path(results, &bg_record->bg_block_list);
+		list_destroy(results);			
+			
+		configure_block(bg_record);
+		blocks++;
+		list_push(bg_curr_block_list, bg_record);		
+		if(bluegene_layout_mode == LAYOUT_DYNAMIC) {
+			bg_record_t *tmp_record = xmalloc(sizeof(bg_record_t));
+			copy_bg_record(bg_record, tmp_record);
+			list_push(bg_list, tmp_record);
+		}
+	}
+
+	FREE_NULL_BITMAP(ionode_bitmap);
+	FREE_NULL_BITMAP(node_bitmap);
+
+	sort_bg_record_inc_size(bg_curr_block_list);
+	slurm_mutex_unlock(&block_state_mutex);
+		
+	info("Recovered %d blocks", blocks);
+	select_g_free_node_info(&node_select_ptr);
+	free_buf(buffer);
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	error("Incomplete block data checkpoint file");
+	free_buf(buffer);
+	return SLURM_FAILURE;
+}
+
+#endif

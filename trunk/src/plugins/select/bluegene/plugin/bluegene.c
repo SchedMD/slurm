@@ -112,7 +112,7 @@ int max_dim[BA_SYSTEM_DIMENSIONS] = { 0 };
 
 
 static void _set_bg_lists();
-static int  _validate_config_nodes(List *bg_found_block_list);
+static int  _validate_config_nodes(List *bg_found_block_list, char *dir);
 static int _delete_old_blocks(List bg_found_block_list);
 static char *_get_bg_conf(void);
 static int  _reopen_bridge_log(void);
@@ -943,8 +943,6 @@ extern int read_bg_conf(void)
 	static time_t last_config_update = (time_t) 0;
 	struct stat config_stat;
 	ListIterator itr = NULL;
-	/* found bg blocks already on system */
-	List bg_found_block_list = list_create(NULL);
 	
 	debug("Reading the bluegene.conf file");
 
@@ -1334,9 +1332,25 @@ extern int read_bg_conf(void)
 			add_bg_record(bg_list, NULL, blockreq_array[i]);
 		}
 	}
+	s_p_hashtbl_destroy(tbl);
+
+	return SLURM_SUCCESS;
+}
+
+extern int validate_current_blocks(char *dir)
+{
+	/* found bg blocks already on system */
+	List bg_found_block_list = list_create(NULL);
+	static time_t last_config_update = (time_t) 0;
+
+	/* only run on startup */
+	if(last_config_update)
+		return SLURM_SUCCESS;
+
+	last_config_update = time(NULL);
 //#if 0	
 	/* Check to see if the configs we have are correct */
-	if (_validate_config_nodes(&bg_found_block_list) == SLURM_ERROR) { 
+	if (_validate_config_nodes(&bg_found_block_list, dir) == SLURM_ERROR) { 
 		_delete_old_blocks(bg_found_block_list);
 	}
 //#endif
@@ -1369,8 +1383,6 @@ extern int read_bg_conf(void)
 	sort_bg_record_inc_size(bg_list);
 	slurm_mutex_unlock(&block_state_mutex);
 	debug("Blocks have finished being created.");
-	s_p_hashtbl_destroy(tbl);
-
 	return SLURM_SUCCESS;
 }
 
@@ -1389,7 +1401,6 @@ static void _set_bg_lists()
 	if(bg_curr_block_list)
 		list_destroy(bg_curr_block_list);	
 	bg_curr_block_list = list_create(destroy_bg_record);
-	
 	
 	if(bg_list) 
 		list_destroy(bg_list);
@@ -1423,10 +1434,9 @@ static void _set_bg_lists()
  * code. Writes bg_block_id into bg_list records.
  */
 
-static int _validate_config_nodes(List *bg_found_block_list)
+static int _validate_config_nodes(List *bg_found_block_list, char *dir)
 {
 	int rc = SLURM_ERROR;
-#ifdef HAVE_BG_FILES
 	bg_record_t* bg_record = NULL;	
 	bg_record_t* init_bg_record = NULL;
 	bg_record_t* full_system_bg_record = NULL;	
@@ -1435,10 +1445,19 @@ static int _validate_config_nodes(List *bg_found_block_list)
 	ListIterator itr_curr;
 	char tmp_char[256];
 
-	/* read current bg block info into bg_curr_block_list */
+#ifdef HAVE_BG_FILES
+	/* read current bg block info into bg_curr_block_list This
+	 * happens in the state load before this in emulation mode */
 	if (read_bg_blocks() == SLURM_ERROR)
 		return SLURM_ERROR;
-	
+#else
+	/* read in state from last run.  Only for emulation mode */
+	if ((rc = load_state_file(dir)) != SLURM_SUCCESS)
+		return rc;
+	/* This needs to be reset to SLURM_ERROR or it will never we
+	   that way again ;). */
+	rc = SLURM_ERROR;
+#endif	
 	if(!bg_recover) 
 		return SLURM_ERROR;
 
@@ -1452,7 +1471,6 @@ static int _validate_config_nodes(List *bg_found_block_list)
 	
 	if(!*bg_found_block_list)
 		(*bg_found_block_list) = list_create(NULL);
-
 	
 	itr_conf = list_iterator_create(bg_list);
 	while ((bg_record = (bg_record_t*) list_next(itr_conf))) {
@@ -1461,7 +1479,7 @@ static int _validate_config_nodes(List *bg_found_block_list)
 		   search here 
 		*/
 		list_iterator_reset(itr_curr);
-		while ((init_bg_record = list_next(itr_curr))) {
+		while ((init_bg_record = list_next(itr_curr))) {		
 			if (strcasecmp(bg_record->nodes, 
 				       init_bg_record->nodes))
 				continue; /* wrong nodes */
@@ -1497,8 +1515,7 @@ static int _validate_config_nodes(List *bg_found_block_list)
 				      init_bg_record->ramdiskimage))
 				continue;
 		       			
-			copy_bg_record(init_bg_record, 
-				       bg_record);
+			copy_bg_record(init_bg_record, bg_record);
 			break;
 		}
 			
@@ -1553,14 +1570,11 @@ finished:
 	if(list_count(bg_list) == list_count(bg_curr_block_list))
 		rc = SLURM_SUCCESS;
 	
-#endif
-
 	return rc;
 }
 
 static int _delete_old_blocks(List bg_found_block_list)
 {
-#ifdef HAVE_BG_FILES
 	ListIterator itr_curr, itr_found;
 	bg_record_t *found_record = NULL, *init_record = NULL;
 	pthread_attr_t attr_agent;
@@ -1631,7 +1645,7 @@ static int _delete_old_blocks(List bg_found_block_list)
 	if ((bg_destroy_block_list == NULL) 
 	    && ((bg_destroy_block_list = list_create(NULL)) == NULL))
 		fatal("malloc failure in block_list");
-		
+
 	itr_curr = list_iterator_create(bg_destroy_list);
 	while ((init_record = (bg_record_t*) list_next(itr_curr))) {
 		list_push(bg_destroy_block_list, init_record);
@@ -1680,7 +1694,7 @@ static int _delete_old_blocks(List bg_found_block_list)
 	}
 	
 	info("I am done deleting");
-#endif	
+
 	return SLURM_SUCCESS;
 }
 

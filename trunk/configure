@@ -1602,7 +1602,7 @@ Optional Packages:
   --with-tags[=TAGS]      include additional configurations [automatic]
   --with-cpusetdir=PATH   specify path to cpuset directory default is
                           /dev/cpuset
-  --with-db2-dir=PATH     Specify path to DB2 librarys parent directory
+  --with-db2-dir=PATH     Specify path to parent directory of DB2 library
   --with-bg-serial=NAME   set BG_SERIAL value
 
   --with-xcpu=PATH        specify path to XCPU directory
@@ -24742,9 +24742,9 @@ LIBS="$PTHREAD_LIBS $LIBS"
 	ac_bluegene_loaded=no
 
 
-# Check whether --with-db2 was given.
-if test "${with_db2+set}" = set; then
-  withval=$with_db2;  trydb2dir=$withval
+# Check whether --with-db2-dir was given.
+if test "${with_db2_dir+set}" = set; then
+  withval=$with_db2_dir;  trydb2dir=$withval
 fi
 
 
