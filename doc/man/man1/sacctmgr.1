@@ -882,8 +882,8 @@ Comma separated list of Quality of Service names (Defined in sacctmgr).
 .br
 > sacctmgr create user name=adam cluster=tux account=physics fairshare=10
 .br
-> sacctmgr modify user name=adam cluster=tux account=physics set
-  maxjobs=2 maxtime=30:00
+> sacctmgr modify user where name=adam cluster=tux account=physics set
+  maxjobs=2 maxwall=30:00
 .br
 > sacctmgr list associations cluster=tux format=Account,Cluster,User,Fairshare tree withd
 .br
