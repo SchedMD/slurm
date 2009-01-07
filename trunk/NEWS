@@ -23,6 +23,8 @@ documents those changes that are of interest to users and admins.
     configured SuspendProg and ResumeProg programs.
  -- Fix book select/cons_res logic for tracking the number of allocated
     CPUs on a node when a partition's Shared value is YES or FORCE.
+ -- Added configure options "--enable-cray-xt" and "--with-apbasil=PATH" for
+    eventual support of Cray-XT systems.
  
 * Changes in SLURM 1.4.0-pre6
 =============================
