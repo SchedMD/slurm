@@ -8,9 +8,11 @@ general overview.
 <h2>Super Quick Start</h2>
 <ol>
 <li>Make sure that you have synchronized clocks plus consistent users and groups
-across the cluster.</li>
+(UIDs and GIDs) across the cluster.</li>
 <li>Install <a href="http://home/gna.org/munge">MUNGE</a> for 
-authentication.</li>
+authentication. Make sure that all nodes in your cluster have the
+same <i>munge.key</i>. Make sure the MUNGE daemon, <i>munged</i>
+is started before you start the SLURM daemons.</li>
 <li>bunzip2 the distributed tar-ball and untar the files:<br>
 <i>tar --bzip -x -f slurm*tar.bz2</i></li>
 <li><i>cd</i> to the directory containing the SLURM source and type
@@ -186,8 +188,8 @@ all saved state), <b>restart</b>, and <b>stop</b>.</p>
 
 <h2>Infrastructure</h2>
 <h3>User and Group Identification</h3>
-<p>There must be a uniform user and group name space across the 
-cluster. 
+<p>There must be a uniform user and group name space (including 
+UIDs and GIDs) across the cluster. 
 It is not necessary to permit user logins to the control hosts
 (<b>ControlMachine</b> or <b>BackupController</b>), but the 
 users and groups must be configured on those hosts.</p>
@@ -205,7 +207,10 @@ An authentication type of "none" requires no infrastructure, but permits
 any user to execute any job as another user with limited programming effort. 
 This may be fine for testing purposes, but certainly not for production use. 
 <b>Configure some AuthType value other than "none" if you want any security.</b>
-We recommend the use of MUNGE unless you are experienced with authd.</p>
+We recommend the use of MUNGE unless you are experienced with authd.
+If using MUNGE, all nodes in the cluster must be configured with the
+same <i>munge.key</i> file. 
+The MUNGE daemon, <i>munged</i>, must also be started before SLURM daemons.</p>
 
 <p>While SLURM itself does not rely upon synchronized clocks on all nodes
 of a cluster for proper operation, its underlying authentication mechanism 
@@ -423,7 +428,7 @@ credential, which is sent to <i>srun</i> and then forwarded to
 This design offers improved performance by removing much of the 
 job step initiation overhead from the <i> slurmctld </i> daemon.
 The digital signature mechanism is specified by the <b>CryptoType</b> 
-configuration parameter. </p>
+configuration parameter and the default mechanism is MUNGE. </p>
 
 <h3>OpenSSL</h3>
 <p>If using <a href="http://www.openssl.org/">OpenSSL</a> digital signatures, 
@@ -619,6 +624,6 @@ Contents of major releases are also described in the RELEASE_NOTES file.
 
 </pre> <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 8 September 2008</p>
+<p style="text-align:center;">Last modified 7 January 2009</p>
 
 <!--#include virtual="footer.txt"-->
