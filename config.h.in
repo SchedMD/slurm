@@ -1,5 +1,8 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
+/* Define the apbasil command location */
+#undef APBASIL_LOC
+
 /* Define the BG_BRIDGE_SO value */
 #undef BG_BRIDGE_SO
 
@@ -32,6 +35,12 @@
 
 /* Define to 1 if have Blue Gene files */
 #undef HAVE_BG_FILES
+
+/* Define if Cray system */
+#undef HAVE_CRAY
+
+/* Define if Cray XT system */
+#undef HAVE_CRAY_XT
 
 /* Define to 1 if you have the <curses.h> header file. */
 #undef HAVE_CURSES_H
