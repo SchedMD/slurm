@@ -534,6 +534,36 @@ proc test_assoc_enforced { } {
 }
 
 ################################################################
+#
+# Proc: test_track_wckey
+#
+# Purpose: Determine if we track workload characterization keys. 
+# This is based upon the value of TrackWCKey in the slurm.conf.
+#
+# Returns value of TrackWCKey
+#
+################################################################
+proc test_track_wckey { } {
+        global scontrol number
+
+        log_user 0
+        set track_wckey 0
+        spawn $scontrol show config
+        expect {
+                -re "TrackWCKey *= ($number)" {
+                        set track_wckey $expect_out(1,string)
+                        exp_continue
+                }
+                eof {
+                        wait
+                }
+        }
+
+        log_user 1
+        return $track_wckey
+}
+
+################################################################
 # Proc: test_wiki_sched
 #
 # Return 1 if using sched/wiki or sched/wiki2 (Maui or Moab),
