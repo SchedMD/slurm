@@ -501,7 +501,7 @@ static void _help(void)
 	printf("  -p, --partition=partition       name of job's partition\n");
 	printf("  -q, --quiet                     disable warnings\n");
 	printf("  -s, --signal=name | integer     signal to send to job, default is SIGKILL\n");
-	printf("  -t, --state=state               state of the jobs are to be signaled\n");
+	printf("  -t, --state=state               state of the jobs to be signaled\n");
 	printf("                                  valid options are either pending,\n");
 	printf("                                  running, or suspended\n");
 	printf("  -u, --user=user                 name or id of user to have jobs signaled\n");
