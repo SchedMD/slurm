@@ -25173,6 +25173,11 @@ cat >>confdefs.h <<\_ACEOF
 #define HAVE_CRAY_XT 1
 _ACEOF
 
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_FRONT_END 1
+_ACEOF
+
   else
     { echo "$as_me:$LINENO: result: no" >&5
 echo "${ECHO_T}no" >&6; }

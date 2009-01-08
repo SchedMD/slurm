@@ -227,7 +227,12 @@ struct node_record {
 	char *arch;			/* computer architecture */
 	char *os;			/* operating system currently running */
 	struct node_record *node_next;	/* next entry with same hash index */
-	uint32_t hilbert_integer;	/* Hilbert number based on node name */
+	uint32_t hilbert_integer;	/* Hilbert number based on node name,
+					 * no need to save/restore */
+#ifdef APBASIL_LOC
+	uint32_t basil_node_id;		/* Cray/BASIL node ID,
+					 * no need to save/restore */
+#endif	/* APBASIL_LOC */
 };
 
 extern struct node_record *node_record_table_ptr;  /* ptr to node records */

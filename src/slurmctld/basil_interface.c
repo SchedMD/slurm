@@ -1,6 +1,8 @@
 /*****************************************************************************\
  *  basil_interface.c - slurmctld interface to BASIL, Cray's Batch Application
- *	Scheduler Interface Layer (BASIL)
+ *	Scheduler Interface Layer (BASIL). In order to support development, 
+ *	these functions will provide basic BASIL-like functionality even 
+ *	without a BASIL command being present.
  *****************************************************************************
  *  Copyright (C) 2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -36,26 +38,32 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-/* FIXME: In slurmctld/slurmctld.h, add node_ptr->basil_node_id, init to NO_VAL */
 /* FIXME: In slurmctld/node_mgr.c, make _sync_bitmaps() extern */
 /* FIXME: In common/node_select.c, add reservation_id to select_job */
 /* FIXME: Document, ALPS must be started before SLURM */
 
+#if HAVE_CONFIG_H
+#  include "config.h"
+#endif	/* HAVE_CONFIG_H */
+
 #include <slurm/slurm_errno.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "src/common/log.h"
+#include "src/common/node_select.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
 
 #define BASIL_DEBUG 1
 
-#ifndef HAVE_BASIL
+#ifndef APBASIL_LOC
 static int last_res_id = 0;
-#endif
+#endif	/* !APBASIL_LOC */
 
-#ifdef HAVE_BASIL
+#ifdef HAVE_CRAY_XT
+#ifdef APBASIL_LOC
 /* Make sure that each SLURM node has a BASIL node ID */
 static void _validate_basil_node_id(void)
 {
@@ -76,7 +84,8 @@ static void _validate_basil_node_id(void)
 		_sync_bitmaps(node_ptr, 0);
 	}
 }
-#endif	/* HAVE_BASIL */
+#endif	/* APBASIL_LOC */
+#endif	/* HAVE_CRAY_XT */
 
 /*
  * basil_query - Query BASIL for node and reservation state.
@@ -86,13 +95,16 @@ static void _validate_basil_node_id(void)
 extern int basil_query(void)
 {
 	int error_code = SLURM_SUCCESS;
-#ifdef HAVE_BASIL
+#ifdef HAVE_CRAY_XT
+#ifdef APBASIL_LOC
 	struct config_record *config_ptr;
 	struct node_record *node_ptr;
 	struct job_record *job_ptr;
 	ListIterator job_iterator;
 	uint16_t base_state;
+	int i;
 	char *reason, *res_id;
+	static bool first_run = true;
 
 	/* Issue the BASIL QUERY request */
 	if (request_failure) {
@@ -100,6 +112,15 @@ extern int basil_query(void)
 		return SLURM_ERROR;
 	}
 	debug("basil query initiated");
+
+	if (first_run) {
+		/* Set basil_node_id to NO_VAL since the default value 
+		 * of zero is a valid BASIL node ID */
+		node_ptr = node_record_table_ptr;
+		for (i=0; i<node_record_cnt; i++, node_ptr++)
+			node_ptr->basil_node_id = NO_VAL;
+		first_run = false;
+	}
 
 	/* Validate configuration for each node that BASIL reports */
 	for (each_basil_node) {
@@ -113,7 +134,9 @@ extern int basil_query(void)
 		 * in the future. When that happens, we'll want to use
 		 * those numbers to generate the hostname:
 		 * slurm_host_name = xmalloc(sizeof(conf->node_prefix) + 4);
-		 * sprintf(slurm_host_name: %s%d%d%d", basil_node_name, X, Y, Z);
+		 * sprintf(slurm_host_name: %s%d%d%d", basil_node_name, X,Y,Z);
+		 * Until then the node name must contain a 3-digit numberic
+		 * suffix specifying the X-, Y- and Z-coordinates.
 		 */
 		node_ptr = find_node_record(basil_node_name);
 		if (node_ptr == NULL) {
@@ -125,7 +148,7 @@ extern int basil_query(void)
 		/* Record BASIL's node_id for use in reservations */
 		node_ptr->basil_node_id = basil_node_id;
 
-		/* Update slurmctld's node architecture */
+		/* Update architecture in slurmctld's node record */
 		if (node_ptr->arch == NULL) {
 			xfree(node_ptr->arch);
 			node_ptr->arch = xstrdup(basil_node_arch);
@@ -191,7 +214,9 @@ extern int basil_query(void)
 	struct job_record *job_ptr;
 	ListIterator job_iterator;
 	char *res_id, *tmp;
+	int job_res_id;
 
+	/* Capture the highest reservation ID recorded to avoid re-use */
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		select_g_get_jobinfo(job_ptr->select_jobinfo, 
@@ -205,7 +230,8 @@ extern int basil_query(void)
 	}
 	list_iterator_destroy(job_iterator);
 	debug("basil_query() executed, last_res_id=%d", last_res_id);
-#endif	/* HAVE_BASIL */
+#endif	/* APBASIL_LOC */
+#endif	/* HAVE_CRAY_XT */
 
 	return error_code;
 }
@@ -218,7 +244,8 @@ extern int basil_query(void)
 extern int basil_reserve(struct job_record *job_ptr)
 {
 	int error_code = SLURM_SUCCESS;
-#ifdef HAVE_BASIL
+#ifdef HAVE_CRAY_XT
+#ifdef APBASIL_LOC
 	/* Issue the BASIL RESERVE request */
 	if (request_failure) {
 		error("basil reserve error: %s", "TBD");
@@ -230,10 +257,13 @@ extern int basil_reserve(struct job_record *job_ptr)
 #else
 	char *reservation_id;
 	xstrfmtcat(reservation_id, "RES_%d", ++last_res_id);
+	select_g_set_jobinfo(job_ptr->select_jobinfo, 
+			     SELECT_DATA_BLOCK_ID, reservation_id);
 	debug("basil reservation made job_id=%u res_id=%s", 
 	      job_ptr->job_id, reservation_id);
 	/* FIXME: add reservation_id to select_job_struct */
-#endif	/* HAVE_BASIL */
+#endif	/* APBASIL_LOC */
+#endif	/* HAVE_CRAY_XT */
 	return error_code;
 }
 
@@ -245,15 +275,17 @@ extern int basil_reserve(struct job_record *job_ptr)
 extern int basil_release(char *reservation_id)
 {
 	int error_code = SLURM_SUCCESS;
-#ifdef HAVE_BASIL
+#ifdef HAVE_CRAY_XT
+#ifdef APBASIL_LOC
 	/* Issue the BASIL RELEASE request */
 	if (request_failure) {
 		error("basil release of %s error: %s", reservation_id, "TBD");
 		return SLURM_ERROR;
 	}
-	debug("basil release of %s complete", reservation_id);
+	debug("basil release of reservation %s complete", reservation_id);
 #else
-	debug("basil release of %s complete", reservation_id);
-#endif	/* HAVE_BASIL */
+	debug("basil release of reservation %s complete", reservation_id);
+#endif	/* APBASIL_LOC */
+#endif	/* HAVE_CRAY_XT */
 	return error_code;
 }
