@@ -2,7 +2,7 @@
  *  controller.c - main control machine daemon for slurm
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>, Kevin Tew <tew1@llnl.gov>
  *  LLNL-CODE-402394.
@@ -81,6 +81,7 @@
 #include "src/common/xstring.h"
 
 #include "src/slurmctld/agent.h"
+#include "src/slurmctld/basil_interface.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
@@ -1175,6 +1176,9 @@ static void *_slurmctld_background(void *no_data)
 				last_health_check_time = now;
 				lock_slurmctld(node_write_lock);
 				run_health_check();
+#ifdef HAVE_CRAY_XT
+				basil_query();
+#endif
 				unlock_slurmctld(node_write_lock);
 			}
 		}

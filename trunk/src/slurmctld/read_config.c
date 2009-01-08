@@ -1,7 +1,8 @@
 /*****************************************************************************\
  *  read_config.c - read the overall slurm configuration file
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  LLNL-CODE-402394.
@@ -68,6 +69,7 @@
 #include "src/common/xstring.h"
 
 #include "src/slurmctld/acct_policy.h"
+#include "src/slurmctld/basil_interface.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
@@ -102,9 +104,6 @@ static void _validate_node_proc_count(void);
 
 static char *highest_node_name = NULL;
 int node_record_count = 0;
-
-/* FIXME - declarations for temporarily moved functions */
-#define MULTIPLE_VALUE_MSG "Multiple values for %s, latest one used"
 
 /*
  * _build_bitmaps_pre_select - recover some state for jobs and nodes prior to 
@@ -877,6 +876,10 @@ int read_slurm_conf(int recover)
 	 * an extremely rare situation */
 	if (load_job_ret)
 		_acct_restore_active_jobs();
+
+#ifdef HAVE_CRAY_XT
+	basil_query();
+#endif
 
 	slurmctld_conf.last_update = time(NULL);
 	END_TIMER2("read_slurm_conf");

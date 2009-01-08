@@ -10,7 +10,7 @@
  *  resolved on the front-end nodes, so we can't load the plugins there.
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  LLNL-CODE-402394.
@@ -142,7 +142,15 @@ struct select_jobinfo {
 	char *mloaderimage;     /* mloaderImage for this block */
 	char *ramdiskimage;     /* RamDiskImage for this block */
 };
-#endif
+#endif	/* HAVE_BG */
+
+#ifdef HAVE_CRAY_XT		/* node selection specific logic */
+#  define JOBINFO_MAGIC 0x8cb3
+struct select_jobinfo {
+	uint16_t magic;		/* magic number */
+	char *reservation_id;	/* BASIL reservation ID */
+};
+#endif	/* HAVE_CRAY_XT */
 
 /*
  * Local functions
@@ -741,16 +749,10 @@ extern int select_g_alloc_jobinfo (select_jobinfo_t *jobinfo)
 	(*jobinfo)->conn_type = SELECT_NAV;
 	(*jobinfo)->reboot = (uint16_t) NO_VAL;
 	(*jobinfo)->rotate = (uint16_t) NO_VAL;
-	(*jobinfo)->bg_block_id = NULL;
 	(*jobinfo)->magic = JOBINFO_MAGIC;
-	(*jobinfo)->nodes = NULL;
-	(*jobinfo)->ionodes = NULL;
 	(*jobinfo)->node_cnt = NO_VAL;
 	(*jobinfo)->max_procs =  NO_VAL;
-	(*jobinfo)->blrtsimage = NULL;
-	(*jobinfo)->linuximage = NULL;
-	(*jobinfo)->mloaderimage = NULL;
-	(*jobinfo)->ramdiskimage = NULL;
+	/* Remainder of structure is already NULL fulled */
 
 	return SLURM_SUCCESS;
 }
@@ -1097,7 +1099,7 @@ extern int  select_g_unpack_jobinfo(select_jobinfo_t jobinfo, Buf buffer)
 	safe_unpack32(&(jobinfo->max_procs), buffer);
 
 	safe_unpackstr_xmalloc(&(jobinfo->bg_block_id),  &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&(jobinfo->nodes),      &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&(jobinfo->nodes),        &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&(jobinfo->ionodes),      &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&(jobinfo->blrtsimage),   &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&(jobinfo->linuximage),   &uint32_tmp, buffer);
@@ -1506,6 +1508,291 @@ extern int select_g_free_node_info(node_select_info_msg_t **
 
 #else	/* !HAVE_BG */
 
+#ifdef HAVE_CRAY_XT
+
+/* allocate storage for a select job credential
+ * OUT jobinfo - storage for a select job credential
+ * RET         - slurm error code
+ * NOTE: storage must be freed using select_g_free_jobinfo
+ */
+extern int select_g_alloc_jobinfo (select_jobinfo_t *jobinfo)
+{
+	xassert(jobinfo != NULL);
+	
+	*jobinfo = xmalloc(sizeof(struct select_jobinfo));
+	(*jobinfo)->magic = JOBINFO_MAGIC;
+
+	return SLURM_SUCCESS;
+}
+
+/* fill in a previously allocated select job credential
+ * IN/OUT jobinfo  - updated select job credential
+ * IN data_type - type of data to enter into job credential
+ * IN data - the data to enter into job credential
+ */
+extern int select_g_set_jobinfo (select_jobinfo_t jobinfo,
+		enum select_data_type data_type, void *data)
+{
+	int rc = SLURM_SUCCESS;
+	char *tmp_char = (char *) data;
+
+	if (jobinfo == NULL) {
+		error("select_g_set_jobinfo: jobinfo not set");
+		return SLURM_ERROR;
+	}
+	if (jobinfo->magic != JOBINFO_MAGIC) {
+		error("select_g_set_jobinfo: jobinfo magic bad");
+		return SLURM_ERROR;
+	}
+
+	switch (data_type) {
+	case SELECT_DATA_RESV_ID:
+		/* we xfree() any preset value to avoid a memory leak */
+		xfree(jobinfo->reservation_id);
+		jobinfo->reservation_id = xstrdup(tmp_char);
+		break;
+	default:
+		debug("select_g_set_jobinfo data_type %d invalid", 
+		      data_type);
+	}
+
+	return rc;
+}
+
+/* get data from a select job credential
+ * IN jobinfo  - updated select job credential
+ * IN data_type - type of data to enter into job credential
+ * OUT data - the data to get from job credential, caller must xfree 
+ *	data for data_tyep == SELECT_DATA_BLOCK_ID 
+ */
+extern int select_g_get_jobinfo (select_jobinfo_t jobinfo,
+		enum select_data_type data_type, void *data)
+{
+	int rc = SLURM_SUCCESS;
+	char **tmp_char = (char **) data;
+
+	if (jobinfo == NULL) {
+		error("select_g_get_jobinfo: jobinfo not set");
+		return SLURM_ERROR;
+	}
+	if (jobinfo->magic != JOBINFO_MAGIC) {
+		error("select_g_get_jobinfo: jobinfo magic bad");
+		return SLURM_ERROR;
+	}
+
+	switch (data_type) {
+	case SELECT_DATA_RESV_ID:
+		if ((jobinfo->reservation_id == NULL) ||
+		    (jobinfo->reservation_id[0] == '\0'))
+			*tmp_char = NULL;
+		else
+			*tmp_char = xstrdup(jobinfo->reservation_id);
+		break;
+	default:
+		debug("select_g_get_jobinfo data_type %d invalid", 
+		      data_type);
+	}
+
+	return rc;
+}
+
+/* copy a select job credential
+ * IN jobinfo - the select job credential to be copied
+ * RET        - the copy or NULL on failure
+ * NOTE: returned value must be freed using select_g_free_jobinfo
+ */
+extern select_jobinfo_t select_g_copy_jobinfo(select_jobinfo_t jobinfo)
+{
+	struct select_jobinfo *rc = NULL;
+		
+	if (jobinfo == NULL)
+		;
+	else if (jobinfo->magic != JOBINFO_MAGIC)
+		error("select_g_copy_jobinfo: jobinfo magic bad");
+	else {
+		rc = xmalloc(sizeof(struct select_jobinfo));
+		rc->magic = JOBINFO_MAGIC;
+		rc->reservation_id = xstrdup(jobinfo->reservation_id);
+	}
+
+	return rc;
+}
+
+/* free storage previously allocated for a select job credential
+ * IN jobinfo  - the select job credential to be freed
+ */
+extern int select_g_free_jobinfo  (select_jobinfo_t *jobinfo)
+{
+	int rc = SLURM_SUCCESS;
+
+	xassert(jobinfo != NULL);
+	if (*jobinfo == NULL)	/* never set, treat as not an error */
+		;
+	else if ((*jobinfo)->magic != JOBINFO_MAGIC) {
+		error("select_g_free_jobinfo: jobinfo magic bad");
+		rc = EINVAL;
+	} else {
+		(*jobinfo)->magic = 0;
+		xfree((*jobinfo)->reservation_id);
+		xfree(*jobinfo);
+	}
+	return rc;
+}
+
+/* pack a select job credential into a buffer in machine independent form
+ * IN jobinfo  - the select job credential to be saved
+ * OUT buffer  - buffer with select credential appended
+ * RET         - slurm error code
+ */
+extern int  select_g_pack_jobinfo  (select_jobinfo_t jobinfo, Buf buffer)
+{
+	if (jobinfo) {
+		/* NOTE: If new elements are added here, make sure to 
+		 * add equivalant pack of zeros below for NULL pointer */
+		packstr(jobinfo->reservation_id, buffer);
+	} else {
+		packnull(buffer); //reservation_id
+	}
+
+	return SLURM_SUCCESS;
+}
+
+/* unpack a select job credential from a buffer
+ * OUT jobinfo - the select job credential read
+ * IN  buffer  - buffer with select credential read from current pointer loc
+ * RET         - slurm error code
+ * NOTE: returned value must be freed using select_g_free_jobinfo
+ */
+extern int  select_g_unpack_jobinfo(select_jobinfo_t jobinfo, Buf buffer)
+{
+	uint32_t uint32_tmp;
+
+	safe_unpackstr_xmalloc(&(jobinfo->reservation_id),  &uint32_tmp, buffer);
+
+	return SLURM_SUCCESS;
+
+      unpack_error:
+	return SLURM_ERROR;
+}
+
+/* write select job credential to a string
+ * IN jobinfo - a select job credential
+ * OUT buf    - location to write job credential contents
+ * IN size    - byte size of buf
+ * IN mode    - print mode, see enum select_print_mode
+ * RET        - the string, same as buf
+ */
+extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
+				     char *buf, size_t size, int mode)
+{
+		
+	if (buf == NULL) {
+		error("select_g_sprint_jobinfo: buf is null");
+		return NULL;
+	}
+
+	if ((mode != SELECT_PRINT_DATA) &&
+	    jobinfo && (jobinfo->magic != JOBINFO_MAGIC)) {
+		error("select_g_sprint_jobinfo: jobinfo magic bad");
+		return NULL;
+	}
+
+	if (jobinfo == NULL) {
+		if (mode != SELECT_PRINT_HEAD) {
+			error("select_g_sprint_jobinfo: jobinfo bad");
+			return NULL;
+		}
+	}
+
+	switch (mode) {
+	case SELECT_PRINT_HEAD:
+		snprintf(buf, size,
+			 "RESV_ID");
+		break;
+	case SELECT_PRINT_DATA:
+		snprintf(buf, size, 
+			 "%7s",
+			 jobinfo->reservation_id);
+		break;
+	case SELECT_PRINT_MIXED:
+		snprintf(buf, size, 
+			 "Resv_ID=%s",
+			 jobinfo->reservation_id);
+		break;
+	case SELECT_PRINT_RESV_ID:
+		snprintf(buf, size, "%s", jobinfo->reservation_id);
+		break;	
+	default:
+		error("select_g_sprint_jobinfo: bad mode %d", mode);
+		if (size > 0)
+			buf[0] = '\0';
+	}
+	
+	return buf;
+}
+
+/* write select job info to a string
+ * IN jobinfo - a select job credential
+ * IN mode    - print mode, see enum select_print_mode
+ * RET        - char * containing string of request
+ */
+extern char *select_g_xstrdup_jobinfo(select_jobinfo_t jobinfo, int mode)
+{
+	char *buf = NULL;
+		
+	if ((mode != SELECT_PRINT_DATA) &&
+	    jobinfo && (jobinfo->magic != JOBINFO_MAGIC)) {
+		error("select_g_xstrdup_jobinfo: jobinfo magic bad");
+		return NULL;
+	}
+
+	if (jobinfo == NULL) {
+		if (mode != SELECT_PRINT_HEAD) {
+			error("select_g_xstrdup_jobinfo: jobinfo bad");
+			return NULL;
+		}
+	}
+
+	switch (mode) {
+	case SELECT_PRINT_HEAD:
+		xstrcat(buf, 
+			"RESV_ID");
+		break;
+	case SELECT_PRINT_DATA:
+		xstrfmtcat(buf, 
+			   "%7s",
+			   jobinfo->reservation_id);
+		break;
+	case SELECT_PRINT_MIXED:
+		xstrfmtcat(buf, 
+			   "Resv_ID=%s",
+			   jobinfo->reservation_id);
+		break;
+	case SELECT_PRINT_RESV_ID:
+		xstrfmtcat(buf, "%s", jobinfo->reservation_id);
+		break;
+	default:
+		error("select_g_xstrdup_jobinfo: bad mode %d", mode);
+	}
+	
+	return buf;
+}
+
+/* Unpack node select info from a buffer */
+extern int select_g_unpack_node_info(node_select_info_msg_t **
+		node_select_info_msg_pptr, Buf buffer)
+{
+	return SLURM_ERROR;
+}
+
+/* Free a node select information buffer */
+extern int select_g_free_node_info(node_select_info_msg_t **
+		node_select_info_msg_pptr)
+{
+	return SLURM_ERROR;
+}
+
+#else	/* !HAVE_CRAY_XT */
 /* allocate storage for a select job credential
  * OUT jobinfo - storage for a select job credential
  * RET         - slurm error code
@@ -1615,4 +1902,5 @@ extern int select_g_free_node_info(node_select_info_msg_t **
 	return SLURM_ERROR;
 }
 
-#endif
+#endif	/* HAVE_CRAY_XT */
+#endif	/* HAVE_BG */
