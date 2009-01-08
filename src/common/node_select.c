@@ -949,8 +949,8 @@ extern int select_g_get_jobinfo (select_jobinfo_t jobinfo,
 			*tmp_char = xstrdup(jobinfo->ramdiskimage);
 		break;
 	default:
-		debug("select_g_get_jobinfo data_type %d invalid", 
-		      data_type);
+		debug2("select_g_get_jobinfo data_type %d invalid", 
+		       data_type);
 	}
 
 	return rc;
@@ -1549,7 +1549,8 @@ extern int select_g_set_jobinfo (select_jobinfo_t jobinfo,
 	case SELECT_DATA_RESV_ID:
 		/* we xfree() any preset value to avoid a memory leak */
 		xfree(jobinfo->reservation_id);
-		jobinfo->reservation_id = xstrdup(tmp_char);
+		if (tmp_char)
+			jobinfo->reservation_id = xstrdup(tmp_char);
 		break;
 	default:
 		debug("select_g_set_jobinfo data_type %d invalid", 
@@ -1589,8 +1590,12 @@ extern int select_g_get_jobinfo (select_jobinfo_t jobinfo,
 			*tmp_char = xstrdup(jobinfo->reservation_id);
 		break;
 	default:
-		debug("select_g_get_jobinfo data_type %d invalid", 
-		      data_type);
+		/* There is some use of BlueGene specific params that 
+		 * are not supported on the Cray, but requested on
+		 * all systems */
+		debug2("select_g_get_jobinfo data_type %d invalid", 
+		       data_type);
+		return SLURM_ERROR;
 	}
 
 	return rc;

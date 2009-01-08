@@ -523,7 +523,6 @@ extern void pack_select_job_res(select_job_res_t select_job_res_ptr,
 	xassert(select_job_res_ptr->cores_per_socket);
 	xassert(select_job_res_ptr->cpus);
 	xassert(select_job_res_ptr->nhosts);
-	xassert(select_job_res_ptr->node_bitmap);
 	xassert(select_job_res_ptr->sock_core_rep_count);
 	xassert(select_job_res_ptr->sockets_per_node);
 
