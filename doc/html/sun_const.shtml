@@ -60,14 +60,15 @@ one-dimensional space to allocate whole nodes to jobs.</li>
 <p>In order for <i>select/cons_res</i> or <i>select/linear</i> to 
 allocate resources physically nearby in three-dimensional space, the 
 nodes be specified in SLURM's <i>slurm.conf</i> configuration file in 
-such a fashion that those nearby in <i>slurm.conf</i> (one-dimensional
-space) are also nearby in the physical three-dimensional space. 
+such a fashion that those nearby in <i>slurm.conf</i> (managed
+internal to SLURM as a one-dimensional space) are also nearby in 
+the physical three-dimensional space. 
 If the definition of the nodes in SLURM's <i>slurm.conf</i> configuration 
 file are listed on one line (e.g. <i>NodeName=tux[000x333]</i>),
 SLURM will automatically perform that conversion using a 
 <a href="http://en.wikipedia.org/wiki/Hilbert_curve">Hilbert curve</a>.
-Otherwise you may construct your own node name ordering and list them
-one node per line in <i>slurm.conf</i>.
+Otherwise you may construct your own node ordering sequence and 
+list them one node per line in <i>slurm.conf</i>.
 Note that each node must be listed exactly once and consecutive
 nodes should be nearby in three-dimensional space. 
 Also note that each node must be defined individually rather than using 
@@ -81,17 +82,21 @@ Two examples of SLURM configuration files are shown below:</p>
 
 <pre>
 # slurm.conf for Sun Constellation system of size 4x4x4
-# Parameters removed here
-SelectType=select/linear
+
+# Configuration parameters removed here
+
+# Automatic orders nodes following a Hilbert curve
 NodeName=DEFAULT Procs=8 RealMemory=2048 State=Unknown
 NodeName=tux[000x333]
 PartitionName=debug Nodes=tux[000x333] Default=Yes State=UP
 </pre>
 
 <pre>
-# slurm.conf for Sun Constellation system of size 4x4x4
-# Parameters removed here
-SelectType=select/linear
+# slurm.conf for Sun Constellation system of size 2x2x2
+
+# Configuration parameters removed here
+
+# Manual ordering of nodes following a space-filling curve
 NodeName=DEFAULT Procs=8 RealMemory=2048 State=Unknown
 NodeName=tux000
 NodeName=tux100
@@ -109,11 +114,13 @@ PartitionName=debug Nodes=tux[000x111] Default=Yes State=UP
 along the Hilbert curve or per the ordering in the <i>slurm.conf</i> file)
 rather than in numeric order (e.g. "tux001" follows "tux101" rather 
 than "tux000"). 
+The output of other SLURM commands (e.g. <i>sinfo</i> and <i>squeue</i>) 
+will use a SLURM hostlist expression with the node names numerically ordered).
 SLURM partitions should contain nodes which are defined sequentially
 by that ordering for optimal performance.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 31 December 2008</p></td>
+<p style="text-align:center;">Last modified 8 January 2009</p></td>
 
 <!--#include virtual="footer.txt"-->
