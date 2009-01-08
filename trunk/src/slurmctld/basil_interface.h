@@ -56,10 +56,17 @@ extern int basil_query(void);
 extern int basil_reserve(struct job_record *job_ptr);
 
 /*
- * basil_release - release a BASIL reservation.
+ * basil_release - release a BASIL reservation by job.
+ * IN job_ptr - pointer to job which has just been deallocated resources
+ * RET 0 or error code
+ */
+extern int basil_release(struct job_record *job_ptr);
+
+/*
+ * basil_release_id - release a BASIL reservation by ID.
  * IN reservation_id - ID of reservation to release
  * RET 0 or error code
  */
-extern int basil_release(char *reservation_id);
+extern int basil_release_id(char *reservation_id);
 
 #endif	/* !_HAVE_BASIL_INTERFACE_H */

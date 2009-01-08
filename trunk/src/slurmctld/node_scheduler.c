@@ -3,7 +3,7 @@
  *	Note: there is a global node table (node_record_table_ptr) 
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  LLNL-CODE-402394.
@@ -65,6 +65,7 @@
 
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/agent.h"
+#include "src/slurmctld/basil_interface.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/node_scheduler.h"
@@ -158,7 +159,10 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 		error("slurm_sched_freealloc(%u): %m", job_ptr->job_id);
 	if (select_g_job_fini(job_ptr) != SLURM_SUCCESS)
 		error("select_g_job_fini(%u): %m", job_ptr->job_id);
-	
+#ifdef HAVE_CRAY_XT
+	basil_release(job_ptr);
+#endif /* HAVE_CRAY_XT */
+
 	agent_args = xmalloc(sizeof(agent_arg_t));
 	if (timeout)
 		agent_args->msg_type = REQUEST_KILL_TIMELIMIT;
@@ -1009,6 +1013,15 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		error_code = SLURM_SUCCESS;
 		goto cleanup;
 	}
+
+#ifdef HAVE_CRAY_XT
+	if (basil_reserve(job_ptr) != SLURM_SUCCESS) {
+		job_ptr->state_reason = WAIT_RESOURCES;
+		xfree(job_ptr->state_desc);
+		error_code = ESLURM_NODES_BUSY;
+		goto cleanup;
+	}
+#endif	/* HAVE_CRAY_XT */
 
 	/* This job may be getting requeued, clear vestigial 
 	 * state information before over-writting and leaking 

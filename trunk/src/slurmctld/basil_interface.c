@@ -54,6 +54,7 @@
 #include "src/common/node_select.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/slurmctld/basil_interface.h"
 #include "src/slurmctld/slurmctld.h"
 
 #define BASIL_DEBUG 1
@@ -268,16 +269,35 @@ extern int basil_reserve(struct job_record *job_ptr)
 	      job_ptr->job_id, reservation_id);
 #endif	/* APBASIL_LOC */
 #endif	/* HAVE_CRAY_XT */
-/* FIXME: test error handling if reservation fails */
 	return error_code;
 }
 
 /*
- * basil_release - release a BASIL reservation.
+ * basil_release - release a BASIL reservation by job.
+ * IN job_ptr - pointer to job which has just been deallocated resources
+ * RET 0 or error code
+ */
+extern int basil_release(struct job_record *job_ptr)
+{
+	int error_code = SLURM_SUCCESS;
+#ifdef HAVE_CRAY_XT
+	char *reservation_id = NULL;
+	select_g_get_jobinfo(job_ptr->select_jobinfo, 
+			     SELECT_DATA_RESV_ID, &reservation_id);
+	if (reservation_id) {
+		error_code = basil_release_id(reservation_id);
+		xfree(reservation_id);
+	}
+#endif	/* HAVE_CRAY_XT */
+	return error_code;
+}
+
+/*
+ * basil_release_id - release a BASIL reservation by ID.
  * IN reservation_id - ID of reservation to release
  * RET 0 or error code
  */
-extern int basil_release(char *reservation_id)
+extern int basil_release_id(char *reservation_id)
 {
 	int error_code = SLURM_SUCCESS;
 #ifdef HAVE_CRAY_XT

@@ -453,7 +453,7 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap)
 	}
 
 	if (job_ptr->select_job) {
-		error("_build_select_struct: already have select_job");
+		/* Due to job requeue */
 		free_select_job_res(&job_ptr->select_job);
 	}
 
