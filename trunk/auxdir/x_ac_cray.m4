@@ -31,6 +31,7 @@ AC_DEFUN([X_AC_CRAY], [
     AC_DEFINE(HAVE_3D, 1, [Define to 1 if 3-dimensional architecture])
     AC_DEFINE(HAVE_CRAY,1,[Define if Cray system])
     AC_DEFINE(HAVE_CRAY_XT,1,[Define if Cray XT system])
+    AC_DEFINE(HAVE_FRONT_END, 1, [Define to 1 if running slurmd on front-end only])
   else
     AC_MSG_RESULT([no])
   fi

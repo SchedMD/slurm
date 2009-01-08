@@ -19,6 +19,8 @@ slurmctld_SOURCES = 	\
 	agent.c  	\
 	agent.h		\
 	backup.c	\
+	basil_interface.c \
+	basil_interface.h \
 	controller.c 	\
 	hilbert.c	\
 	hilbert.h	\
