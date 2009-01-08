@@ -38,8 +38,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+/* FIXME: Change SELECT_PRINT_BG_ID to SELECT_PRINT_RESV_ID in various places sview/smap */
 /* FIXME: In slurmctld/node_mgr.c, make _sync_bitmaps() extern */
-/* FIXME: In common/node_select.c, add reservation_id to select_job */
 /* FIXME: Document, ALPS must be started before SLURM */
 
 #if HAVE_CONFIG_H
@@ -190,14 +190,14 @@ extern int basil_query(void)
 	}
 	_validate_basil_node_id();
 
-	/* Validate that each BASIL reservation is still valid, 
+	/* Confirm that each BASIL reservation is still valid, 
 	 * purge vestigial reservations */
 	for (each_basil_reservation) {
 		bool found = false;
 		job_iterator = list_iterator_create(job_list);
 		while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 			select_g_get_jobinfo(job_ptr->select_jobinfo, 
-					     SELECT_DATA_BLOCK_ID, &res_id);
+					     SELECT_DATA_RESV_ID, &res_id);
 			found = !strcmp(res_id, basil_reservation_id);
 			xfree(res_id);
 			if (found)
@@ -219,14 +219,17 @@ extern int basil_query(void)
 	/* Capture the highest reservation ID recorded to avoid re-use */
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		res_id = NULL;
 		select_g_get_jobinfo(job_ptr->select_jobinfo, 
-				     SELECT_DATA_BLOCK_ID, &res_id);
-		tmp = strchr(res_id, '_');
-		if (tmp) {
-			job_res_id = atoi(tmp+1);
-			last_res_id = MAX(last_res_id, job_res_id);
+				     SELECT_DATA_RESV_ID, &res_id);
+		if (res_id) {
+			tmp = strchr(res_id, '_');
+			if (tmp) {
+				job_res_id = atoi(tmp+1);
+				last_res_id = MAX(last_res_id, job_res_id);
+			}
+			xfree(res_id);
 		}
-		xfree(res_id);
 	}
 	list_iterator_destroy(job_iterator);
 	debug("basil_query() executed, last_res_id=%d", last_res_id);
@@ -239,7 +242,7 @@ extern int basil_query(void)
 /*
  * basil_reserve - create a BASIL reservation.
  * IN job_ptr - pointer to job which has just been allocated resources
- * RET 0 or error code
+ * RET 0 or error code, job will abort or be requeued on failure
  */
 extern int basil_reserve(struct job_record *job_ptr)
 {
@@ -251,19 +254,21 @@ extern int basil_reserve(struct job_record *job_ptr)
 		error("basil reserve error: %s", "TBD");
 		return SLURM_ERROR;
 	}
-	debug("basil reservation made job_id=%u res_id=%s", 
-	      job_ptr->job_id, reservation_id);
-	/* FIXME: add reservation_id to select_job_struct */
-#else
-	char *reservation_id;
-	xstrfmtcat(reservation_id, "RES_%d", ++last_res_id);
 	select_g_set_jobinfo(job_ptr->select_jobinfo, 
-			     SELECT_DATA_BLOCK_ID, reservation_id);
+			     SELECT_DATA_RESV_ID, reservation_id);
 	debug("basil reservation made job_id=%u res_id=%s", 
 	      job_ptr->job_id, reservation_id);
-	/* FIXME: add reservation_id to select_job_struct */
+#else
+	char reservation_id[32];
+	snprintf(reservation_id, sizeof(reservation_id), 
+		"RES_%d", ++last_res_id);
+	select_g_set_jobinfo(job_ptr->select_jobinfo, 
+			     SELECT_DATA_RESV_ID, reservation_id);
+	debug("basil reservation made job_id=%u res_id=%s", 
+	      job_ptr->job_id, reservation_id);
 #endif	/* APBASIL_LOC */
 #endif	/* HAVE_CRAY_XT */
+/* FIXME: test error handling if reservation fails */
 	return error_code;
 }
 

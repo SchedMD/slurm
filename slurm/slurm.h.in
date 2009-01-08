@@ -281,6 +281,7 @@ enum select_data_type {
 	SELECT_DATA_MLOADER_IMAGE,/* data-> char *mloaderimage */
 	SELECT_DATA_RAMDISK_IMAGE,/* data-> char *ramdiskimage */
 	SELECT_DATA_REBOOT,	/* data-> uint16_t reboot */
+	SELECT_DATA_RESV_ID,	/* data-> char *reservation_id */
 };
 
 enum select_print_mode {
@@ -299,6 +300,7 @@ enum select_print_mode {
 	SELECT_PRINT_MLOADER_IMAGE,/* Print just the MLOADER IMAGE */
 	SELECT_PRINT_RAMDISK_IMAGE,/* Print just the RAMDISK IMAGE */
 	SELECT_PRINT_REBOOT,	/* Print just the REBOOT */
+	SELECT_PRINT_RESV_ID,	/* Print just Cray/BASIL reservation ID */
 };
 
 enum select_node_cnt {
