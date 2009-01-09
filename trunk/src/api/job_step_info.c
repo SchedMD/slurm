@@ -128,10 +128,9 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 
 	/****** Line 2 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
-		"Partition=%s Nodes=%s Name=%s Network=%s Checkpoint=%u", 
+		"Partition=%s Nodes=%s Name=%s Network=%s", 
 		job_step_ptr->partition, job_step_ptr->nodes,
-		job_step_ptr->name, job_step_ptr->network,
-		job_step_ptr->ckpt_interval);
+		job_step_ptr->name, job_step_ptr->network);
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");
@@ -140,8 +139,8 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 
 	/****** Line 3 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
-		"CheckpointPath=%s\n\n", 
-		 job_step_ptr->ckpt_path);
+		"Checkpoint=%u CheckpointPath=%s\n\n", 
+		 job_step_ptr->ckpt_interval, job_step_ptr->ckpt_path);
 	xstrcat(out, tmp_line);
 
 	return out;
