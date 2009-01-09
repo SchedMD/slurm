@@ -3,7 +3,7 @@
  *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  LLNL-CODE-402394.
@@ -76,22 +76,23 @@
 
 #include <slurm/slurm_errno.h>
 
+#include "src/common/basil_resv_conf.h"
 #include "src/common/cbuf.h"
 #include "src/common/env.h"
+#include "src/common/fd.h"
+#include "src/common/forward.h"
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
+#include "src/common/mpi.h"
 #include "src/common/node_select.h"
-#include "src/common/fd.h"
+#include "src/common/plugstack.h"
 #include "src/common/safeopen.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/switch.h"
+#include "src/common/util-net.h"
+#include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
-#include "src/common/xmalloc.h"
-#include "src/common/util-net.h"
-#include "src/common/forward.h"
-#include "src/common/plugstack.h"
-#include "src/common/mpi.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
 
@@ -870,6 +871,13 @@ _fork_all_tasks(slurmd_job_t *job)
 		error("slurm_container_create: %m");
 		return SLURM_ERROR;
 	}
+
+#ifdef HAVE_CRAY_XT
+	if (basil_resv_conf(job->resv_id, job->jobid)) {
+		error("could not confirm reservation");
+		return SLURM_ERROR;
+	}
+#endif
 
 	debug2("Before call to spank_init()");
 	if (spank_init (job) < 0) {
