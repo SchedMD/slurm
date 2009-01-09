@@ -38,7 +38,6 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-/* FIXME: In slurmctld/node_mgr.c, make _sync_bitmaps() extern */
 /* FIXME: Document, ALPS must be started before SLURM */
 /* FIXME: Document BASIL_RESERVATION_ID env var */
 
@@ -82,7 +81,6 @@ static void _validate_basil_node_id(void)
 		error("Node %s has no basil node_id", node_ptr->name);
 		last_node_update = time(NULL);
 		set_node_down(node_ptr->name, "No BASIL node_id");
-		_sync_bitmaps(node_ptr, 0);
 	}
 }
 #endif	/* APBASIL_LOC */
@@ -186,7 +184,6 @@ extern int basil_query(void)
 		if (reason) {
 			last_node_update = time(NULL);
 			set_node_down(node_ptr->name, reason);
-			_sync_bitmaps(node_ptr, 0);
 		}
 	}
 	_validate_basil_node_id();

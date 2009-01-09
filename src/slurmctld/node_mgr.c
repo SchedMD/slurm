@@ -1656,7 +1656,6 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 		}
 		last_node_update = time (NULL);
 		set_node_down(reg_msg->node_name, reason_down);
-		_sync_bitmaps(node_ptr, reg_msg->job_count);
 	} else if (reg_msg->status == ESLURMD_PROLOG_FAILED) {
 		if ((node_flags & (NODE_STATE_DRAIN | NODE_STATE_FAIL)) == 0) {
 #ifdef HAVE_BG
@@ -2187,6 +2186,7 @@ void set_node_down (char *name, char *reason)
 	}
 	_make_node_down(node_ptr, now);
 	(void) kill_running_job_by_node_name(name);
+	_sync_bitmaps(node_ptr, 0);
 
 	return;
 }
