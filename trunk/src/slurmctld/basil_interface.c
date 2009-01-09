@@ -38,7 +38,6 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-/* FIXME: Change SELECT_PRINT_BG_ID to SELECT_PRINT_RESV_ID in various places sview/smap */
 /* FIXME: In slurmctld/node_mgr.c, make _sync_bitmaps() extern */
 /* FIXME: Document, ALPS must be started before SLURM */
 

@@ -3,7 +3,7 @@
  *  mode of sview.
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *
@@ -122,6 +122,9 @@ enum {
 	SORTID_REASON,
 	SORTID_REQ_NODELIST,
 	SORTID_REQ_PROCS,
+#ifdef HAVE_CRAY_XT
+	SORTID_RESV_ID, 
+#endif
 #ifdef HAVE_BG
 	SORTID_ROTATE,
 #endif
@@ -179,6 +182,10 @@ static display_data_t display_data_job[] = {
 	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_RAMDISKIMAGE, "Ramdisk Image",
 	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
+#endif
+#ifdef HAVE_CRAY_XT
+	{G_TYPE_STRING, SORTID_RESV_ID, "Reservation ID", TRUE, EDIT_NONE, 
+	 refresh_job, create_model_job, admin_edit_job},
 #endif
 	{G_TYPE_STRING, SORTID_USER, "User", TRUE, EDIT_NONE, refresh_job,
 	 create_model_job, admin_edit_job},
@@ -1135,6 +1142,16 @@ static void _layout_job_record(GtkTreeView *treeview,
 					   sizeof(tmp_char), 
 					   SELECT_PRINT_BG_ID));
 #endif
+#ifdef HAVE_CRAY_XT
+	add_display_treestore_line(update, treestore, &iter, 
+				   find_col_name(display_data_job,
+						 SORTID_RESV_ID), 
+				   select_g_sprint_jobinfo(
+					   job_ptr->select_jobinfo, 
+					   tmp_char, 
+					   sizeof(tmp_char), 
+					   SELECT_PRINT_RESV_ID));
+#endif
 	uname = uid_to_string((uid_t)job_ptr->user_id);
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
@@ -1315,6 +1332,16 @@ static void _layout_job_record(GtkTreeView *treeview,
 					   sizeof(tmp_char), 
 					   SELECT_PRINT_RAMDISK_IMAGE));
 	
+#endif
+#ifdef HAVE_CRAY_XT
+	add_display_treestore_line(update, treestore, &iter, 
+				   find_col_name(display_data_job,
+						 SORTID_RESV_ID), 
+				   select_g_sprint_jobinfo(
+					   job_ptr->select_jobinfo, 
+					   tmp_char, 
+					   sizeof(tmp_char), 
+					   SELECT_PRINT_RESV_ID));
 #endif
 
 	if(job_ptr->contiguous)
@@ -1573,6 +1600,15 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 				   sizeof(tmp_char), 
 				   SELECT_PRINT_RAMDISK_IMAGE), -1);
 	
+#endif
+#ifdef HAVE_CRAY_XT
+	gtk_tree_store_set(treestore, iter, 
+			   SORTID_RESV_ID, 
+			   select_g_sprint_jobinfo(
+				   job_ptr->select_jobinfo, 
+				   tmp_char, 
+				   sizeof(tmp_char), 
+				   SELECT_PRINT_RESV_ID), -1);
 #endif
 	uname = uid_to_string((uid_t)job_ptr->user_id);
 	gtk_tree_store_set(treestore, iter, 
