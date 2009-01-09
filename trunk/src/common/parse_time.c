@@ -197,7 +197,8 @@ _get_time(char *time_str, int *pos, int *hour, int *minute, int * second)
 }
 
 /* convert "MMDDYY" "MM.DD.YY" or "MM/DD/YY" string to numeric values
- * time_str (in): string to parse
+ * or "YYYY-MM-DD string to numeric values
+* time_str (in): string to parse
  * pos (in/out): position of parse start/end
  * month, mday, year (out): numberic values
  * RET: -1 on error, 0 otherwise
@@ -207,11 +208,62 @@ static int _get_date(char *time_str, int *pos, int *month, int *mday, int *year)
 	int mon, day, yr;
 	int offset = *pos;
 
+	if(time_str[offset+4] && (time_str[offset+4] == '-')
+	   && time_str[offset+7] && (time_str[offset+7] == '-')) {
+		/* get year */
+		if ((time_str[offset] < '0') || (time_str[offset] > '9'))
+			goto prob;
+		yr = time_str[offset++] - '0';
+
+		if ((time_str[offset] < '0') || (time_str[offset] > '9'))
+			goto prob;
+		yr = (yr * 10) + time_str[offset++] - '0';
+
+		if ((time_str[offset] < '0') || (time_str[offset] > '9'))
+			goto prob;
+		yr = (yr * 10) + time_str[offset++] - '0';
+
+		if ((time_str[offset] < '0') || (time_str[offset] > '9'))
+			goto prob;
+		yr = (yr * 10) + time_str[offset++] - '0';
+		
+		offset++; // for the -
+		
+		/* get month */
+		mon = time_str[offset++] - '0';
+		if ((time_str[offset] >= '0') && (time_str[offset] <= '9'))
+			mon = (mon * 10) + time_str[offset++] - '0';
+		if ((mon < 1) || (mon > 12)) {
+			offset -= 2;
+			goto prob;
+		}
+		
+		offset++; // for the -
+		
+		/* get day */
+		if ((time_str[offset] < '0') || (time_str[offset] > '9'))
+			goto prob;
+		day = time_str[offset++] - '0';
+		if ((time_str[offset] >= '0') && (time_str[offset] <= '9'))
+			day = (day * 10) + time_str[offset++] - '0';
+		if ((day < 1) || (day > 31)) {
+			offset -= 2;
+			goto prob;
+		}
+		
+		*pos = offset - 1;
+		*month = mon - 1;	/* zero origin */
+		*mday  = day;
+		*year  = yr - 1900;     /* need to make it mktime
+					   happy 1900 == "00" */
+		return 0;
+	}
+	
 	/* get month */
 	mon = time_str[offset++] - '0';
 	if ((time_str[offset] >= '0') && (time_str[offset] <= '9'))
 		mon = (mon * 10) + time_str[offset++] - '0';
-	if ((mon < 1) || (mon > 12)) {
+       	if ((mon < 1) || (mon > 12)) {
 		offset -= 2;
 		goto prob;
 	}
@@ -259,6 +311,8 @@ static int _get_date(char *time_str, int *pos, int *month, int *mday, int *year)
  *   HH:MM[:SS] [AM|PM]
  *   MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]
  *   MM/DD[/YY]-HH:MM[:SS]
+ *   YYYY-MM-DD[THH[:MM[:SS]]]
+ *
  *   now + count [minutes | hours | days | weeks]
  * 
  * Invalid input results in message to stderr and return value of zero
@@ -277,7 +331,8 @@ extern time_t parse_time(char *time_str, int past)
 	time_now_tm = localtime(&time_now);
 
 	for (pos=0; ((time_str[pos] != '\0')&&(time_str[pos] != '\n')); pos++) {
-		if (isblank(time_str[pos]) || (time_str[pos] == '-'))
+		if (isblank(time_str[pos]) || (time_str[pos] == '-') 
+		    || (time_str[pos] == 'T'))
 			continue;
 		if (strncasecmp(time_str+pos, "today", 5) == 0) {
 			month = time_now_tm->tm_mon;
@@ -328,7 +383,8 @@ extern time_t parse_time(char *time_str, int past)
 				}
 				if (isblank(time_str[i]))
 					continue;
-				if ((time_str[i] == '\0') || (time_str[i] == '\n')) {
+				if ((time_str[i] == '\0') 
+				    || (time_str[i] == '\n')) {
 					pos += (i-1);
 					break;
 				}
@@ -346,7 +402,8 @@ extern time_t parse_time(char *time_str, int past)
 			continue;
 		}
 
-		if ((time_str[pos] < '0') || (time_str[pos] > '9'))	/* invalid */
+		if ((time_str[pos] < '0') || (time_str[pos] > '9'))
+			/* invalid */
 			goto prob;
 		/* We have some numeric value to process */
 		if (time_str[pos+2] == ':') {	/* time */
@@ -354,10 +411,11 @@ extern time_t parse_time(char *time_str, int past)
 				goto prob;
 			continue;
 		}
+		
 		if (_get_date(time_str, &pos, &month, &mday, &year))
 			goto prob;
 	}
-	/* printf("%d/%d/%d %d:%d\n",month+1,mday,year+1900,hour+1,minute); */
+/* 	printf("%d/%d/%d %d:%d\n",month+1,mday,year,hour+1,minute);  */
 
 
 	if ((hour == -1) && (month == -1))		/* nothing specified, time=0 */
@@ -419,6 +477,9 @@ extern time_t parse_time(char *time_str, int past)
 	res_tm.tm_mon   = month;
 	res_tm.tm_year  = year;
 	res_tm.tm_isdst = -1;
+
+	/* printf("%d/%d/%d %d:%d\n",month+1,mday,year,hour+1,minute);  */
+
 	return mktime(&res_tm);
 
  prob:	fprintf(stderr, "Invalid time specification (pos=%d): %s\n", pos, time_str);

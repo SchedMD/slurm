@@ -697,29 +697,29 @@ void print_submit(type_t type, void *object)
 { 
 	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
 	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
-	char time_str[32];
+	char time_str[20];
 		
 	switch(type) {
 	case HEADLINE:
-		printf("%-14s", "Submit Time");
+		printf("%-20.20s", "Submit Time");
 		break;
 	case UNDERSCORE:
-		printf("%-14.14s", "--------------");
+		printf("%-20.20s", "-------------------------");
 		break;
 	case JOB:
 		slurm_make_time_str(&job->submit, 
 				    time_str, 
 				    sizeof(time_str));
-		printf("%-14s", time_str);
+		printf("%-20.20s", time_str);
 		break;
 	case JOBSTEP:
 		slurm_make_time_str(&step->start, 
 				    time_str, 
 				    sizeof(time_str));
-		printf("%-14s", time_str);
+		printf("%-20.20s", time_str);
 		break;
 	default:
-		printf("%-14s", "n/a");
+		printf("%-20.20s", "n/a");
 		break;
 	} 
 }
@@ -729,32 +729,32 @@ void print_start(type_t type, void *object)
 	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
 	jobcomp_job_rec_t *jobcomp = (jobcomp_job_rec_t *)object;
 	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
-	char time_str[19];
+	char time_str[20];
 	
 	switch(type) {
 	case HEADLINE:
-		printf("%-14s", "Start Time");
+		printf("%-20.20s", "Start Time");
 		break;
 	case UNDERSCORE:
-		printf("%-14.14s", "-------------------");
+		printf("%-20.20s", "------------------------------");
 		break;
 	case JOB:
 		slurm_make_time_str(&job->start, 
 				    time_str, 
 				    sizeof(time_str));
-		printf("%-14s", time_str);
+		printf("%-20.20s", time_str);
 		break;
 	case JOBCOMP:
-		printf("%-14s", jobcomp->start_time);
+		printf("%-20.20s", jobcomp->start_time);
 		break;
 	case JOBSTEP:
 		slurm_make_time_str(&step->start, 
 				    time_str, 
 				    sizeof(time_str));
-		printf("%-14s", time_str);
+		printf("%-20.20s", time_str);
 		break;
 	default:
-		printf("%-14s", "n/a");
+		printf("%-20.20s", "n/a");
 		break;
 	} 
 }
@@ -788,28 +788,28 @@ void print_end(type_t type, void *object)
 	
 	switch(type) {
 	case HEADLINE:
-		printf("%-14s", "End Time");
+		printf("%-20.20s", "End Time");
 		break;
 	case UNDERSCORE:
-		printf("%-14.14s", "--------------------");
+		printf("%-20.20s", "-------------------------------");
 		break;
 	case JOB:
 		slurm_make_time_str(&job->end, 
 				    time_str, 
 				    sizeof(time_str));
-		printf("%-14s", time_str);
+		printf("%-20.20s", time_str);
 		break;
 	case JOBCOMP:
-		printf("%-14s", jobcomp->end_time);
+		printf("%-20.20s", jobcomp->end_time);
 		break;
 	case JOBSTEP:
 		slurm_make_time_str(&step->end, 
 				    time_str, 
 				    sizeof(time_str));
-		printf("%-14s", time_str);
+		printf("%-20.20s", time_str);
 		break;
 	default:
-		printf("%-14s", "n/a");
+		printf("%-20.20s", "n/a");
 		break;
 	} 
 }
