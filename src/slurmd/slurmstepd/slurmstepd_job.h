@@ -2,7 +2,8 @@
  *  src/slurmd/slurmstepd/slurmstepd_job.h  slurmd_job_t definition
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  LLNL-CODE-402394.
@@ -194,6 +195,7 @@ typedef struct slurmd_job {
 	uint8_t        pty;		/* set if creating pseudo tty       */
 	job_options_t  options;
 	char          *ckpt_path;
+	char          *resv_id;		/* Cray/BASIL reservation ID */
 } slurmd_job_t;
 
 

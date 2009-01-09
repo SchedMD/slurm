@@ -1,6 +1,6 @@
 /*****************************************************************************\
- * src/slurmd/slurmstepd/slurmstepd_job.c - slurmd_job_t routines
- * $Id$
+ *  src/slurmd/slurmstepd/slurmstepd_job.c - slurmd_job_t routines
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -44,24 +44,25 @@
 #  include <string.h>
 #endif
 
+#include <grp.h>
 #include <signal.h>
 #include <sys/types.h>
-#include <grp.h>
 
-#include "src/common/xmalloc.h"
-#include "src/common/xassert.h"
-#include "src/common/xstring.h"
+#include "src/common/eio.h"
 #include "src/common/fd.h"
 #include "src/common/log.h"
-#include "src/common/eio.h"
+#include "src/common/node_select.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/xassert.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
-#include "src/slurmd/slurmstepd/slurmstepd_job.h"
 #include "src/slurmd/slurmstepd/io.h"
 #include "src/slurmd/slurmstepd/fname.h"
 #include "src/slurmd/slurmstepd/multi_prog.h"
+#include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 static char ** _array_copy(int n, char **src);
 static void _array_free(char ***array);
@@ -391,6 +392,11 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 					_batchfilename(job, msg->err));
 	job->task[0]->argc = job->argc;
 	job->task[0]->argv = job->argv;
+
+#ifdef HAVE_CRAY_XT
+	select_g_get_jobinfo(msg->select_jobinfo, SELECT_DATA_RESV_ID,
+			     &job->resv_id);
+#endif
 
 	return job;
 }
