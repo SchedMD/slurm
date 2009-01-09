@@ -538,6 +538,7 @@ int setup_env(env_t *env)
 	}
 
 	if(env->select_jobinfo) {
+#ifdef HAVE_BG
 		select_g_get_jobinfo(env->select_jobinfo, 
 				     SELECT_DATA_BLOCK_ID, &bgl_part_id);
 		if (bgl_part_id) {
@@ -556,6 +557,22 @@ int setup_env(env_t *env)
 			error("Can't set MPIRUN_PARTITION "
 			      "environment variable");
 		xfree(bgl_part_id);
+#endif
+#ifdef HAVE_CRAY_XT
+		select_g_get_jobinfo(env->select_jobinfo, 
+				     SELECT_DATA_RESV_ID, &bgl_part_id);
+		if (bgl_part_id) {
+			if(setenvf(&env->env, 
+				   "BASIL_RESVERATION_ID", "%s", bgl_part_id))
+				rc = SLURM_FAILURE;
+		} else 
+			rc = SLURM_FAILURE;
+		
+		if(rc == SLURM_FAILURE)
+			error("Can't set BASIL_RESVERATION_ID "
+			      "environment variable");
+		xfree(bgl_part_id);
+#endif
 	}
 	
 	if (env->jobid >= 0
@@ -809,7 +826,7 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 	env_array_overwrite(dest, "LOADLBATCH", "yes");
 #endif
 
-	/* BlueGene only */
+#ifdef HAVE_BG
 	select_g_get_jobinfo(alloc->select_jobinfo, SELECT_DATA_BLOCK_ID,
 			     &bgl_part_id);
 	if (bgl_part_id) {
@@ -818,6 +835,16 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 		env_array_overwrite_fmt(dest, "MPIRUN_NOFREE", "%d", 1);
 		env_array_overwrite_fmt(dest, "MPIRUN_NOALLOCATE", "%d", 1);
 	}
+#endif
+
+#ifdef HAVE_CRAY_XT
+	select_g_get_jobinfo(alloc->select_jobinfo, SELECT_DATA_RESV_ID,
+			     &bgl_part_id);
+	if (bgl_part_id) {
+		env_array_overwrite_fmt(dest, "BASIL_RESERVATION_ID", "%s",
+					bgl_part_id);
+	}
+#endif
 
 	/* OBSOLETE, but needed by MPI, do not remove */
 	env_array_overwrite_fmt(dest, "SLURM_JOBID", "%u", alloc->job_id);

@@ -40,6 +40,7 @@
 
 /* FIXME: In slurmctld/node_mgr.c, make _sync_bitmaps() extern */
 /* FIXME: Document, ALPS must be started before SLURM */
+/* FIXME: Document BASIL_RESERVATION_ID env var */
 
 #if HAVE_CONFIG_H
 #  include "config.h"

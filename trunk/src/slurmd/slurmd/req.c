@@ -2,7 +2,7 @@
  *  src/slurmd/slurmd/req.c - slurmd request handling
  *****************************************************************************
  *  Copyright (C) 2002-2006 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  LLNL-CODE-402394.
@@ -101,7 +101,7 @@ typedef struct {
 
 static int  _abort_job(uint32_t job_id);
 static int  _abort_step(uint32_t job_id, uint32_t step_id);
-static char ** _build_env(uint32_t jobid, uid_t uid, char *bg_part_id);
+static char ** _build_env(uint32_t jobid, uid_t uid, char *resv_id);
 static void _delay_rpc(int host_inx, int host_cnt, int usec_per_rpc);
 static void _destroy_env(char **env);
 static bool _slurm_authorized_user(uid_t uid);
@@ -131,8 +131,8 @@ static int  _rpc_health_check(slurm_msg_t *);
 static int  _rpc_step_complete(slurm_msg_t *msg);
 static int  _rpc_stat_jobacct(slurm_msg_t *msg);
 static int  _rpc_daemon_status(slurm_msg_t *msg);
-static int  _run_prolog(uint32_t jobid, uid_t uid, char *bg_part_id);
-static int  _run_epilog(uint32_t jobid, uid_t uid, char *bg_part_id);
+static int  _run_prolog(uint32_t jobid, uid_t uid, char *resv_id);
+static int  _run_epilog(uint32_t jobid, uid_t uid, char *resv_id);
 
 static bool _pause_for_job_completion(uint32_t jobid, char *nodes, 
 		int maxtime);
@@ -987,7 +987,7 @@ _rpc_batch_job(slurm_msg_t *msg)
 	bool     first_job_run = true;
 	int      rc = SLURM_SUCCESS;
 	uid_t    req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
-	char    *bg_part_id = NULL;
+	char    *resv_id = NULL;
 	bool	 replied = false;
 	slurm_addr *cli = &msg->orig_addr;
 	
@@ -1035,12 +1035,16 @@ _rpc_batch_job(slurm_msg_t *msg)
 		/* 
 	 	 * Run job prolog on this node
 	 	 */
+#ifdef HAVE_BG
 		select_g_get_jobinfo(req->select_jobinfo, 
-				     SELECT_DATA_BLOCK_ID, 
-				     &bg_part_id);
-
-		rc = _run_prolog(req->job_id, req->uid, bg_part_id);
-		xfree(bg_part_id);
+				     SELECT_DATA_BLOCK_ID, &resv_id);
+#endif
+#ifdef HAVE_CRAY_XT
+		select_g_get_jobinfo(req->select_jobinfo, 
+				     SELECT_DATA_RESV_ID, &resv_id);
+#endif
+		rc = _run_prolog(req->job_id, req->uid, resv_id);
+		xfree(resv_id);
 		if (rc) {
 			int term_sig, exit_status;
 			if (WIFSIGNALED(rc)) {
@@ -2619,7 +2623,7 @@ _rpc_abort_job(slurm_msg_t *msg)
 {
 	kill_job_msg_t *req    = msg->data;
 	uid_t           uid    = g_slurm_auth_get_uid(msg->auth_cred, NULL);
-	char           *bg_part_id = NULL;
+	char           *resv_id = NULL;
 
 	debug("_rpc_abort_job, uid = %d", uid);
 	/* 
@@ -2676,11 +2680,16 @@ _rpc_abort_job(slurm_msg_t *msg)
 	}
 
 	save_cred_state(conf->vctx);
-
+#ifdef HAVE_BG
 	select_g_get_jobinfo(req->select_jobinfo, SELECT_DATA_BLOCK_ID,
-		&bg_part_id);
-	_run_epilog(req->job_id, req->job_uid, bg_part_id);
-	xfree(bg_part_id);
+			     &resv_id);
+#endif
+#ifdef HAVE_CRAY_XT
+	select_g_get_jobinfo(req->select_jobinfo, SELECT_DATA_RESV_ID,
+			     &resv_id);
+#endif
+	_run_epilog(req->job_id, req->job_uid, resv_id);
+	xfree(resv_id);
 }
 
 static void 
@@ -2691,7 +2700,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	uid_t           uid    = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	int             nsteps = 0;
 	int		delay;
-	char           *bg_part_id = NULL;
+	char           *resv_id = NULL;
 	uint16_t	base_job_state = req->job_state & (~JOB_COMPLETING);
 	slurm_ctl_conf_t *cf;
 
@@ -2818,10 +2827,16 @@ _rpc_terminate_job(slurm_msg_t *msg)
 
 	save_cred_state(conf->vctx);
 
+#ifdef HAVE_BG
 	select_g_get_jobinfo(req->select_jobinfo, SELECT_DATA_BLOCK_ID,
-		&bg_part_id);
-	rc = _run_epilog(req->job_id, req->job_uid, bg_part_id);
-	xfree(bg_part_id);
+			     &resv_id);
+#endif
+#ifdef HAVE_CRAY_XT
+	select_g_get_jobinfo(req->select_jobinfo, SELECT_DATA_RESV_ID,
+			     &resv_id);
+#endif
+	rc = _run_epilog(req->job_id, req->job_uid, resv_id);
+	xfree(resv_id);
 	
 	if (rc) {
 		int term_sig, exit_status;
@@ -3031,15 +3046,19 @@ _rpc_update_time(slurm_msg_t *msg)
 
 /* NOTE: xfree returned value */
 static char **
-_build_env(uint32_t jobid, uid_t uid, char *bg_part_id)
+_build_env(uint32_t jobid, uid_t uid, char *resv_id)
 {
 	char **env = xmalloc(sizeof(char *));
 	env[0]  = NULL;
 	setenvf(&env, "SLURM_JOBID", "%u", jobid);
 	setenvf(&env, "SLURM_UID",   "%u", uid);
-	if (bg_part_id) {
-		setenvf(&env, "MPIRUN_PARTITION",
-			"%s", bg_part_id);
+	if (resv_id) {
+#ifdef HAVE_BG
+		setenvf(&env, "MPIRUN_PARTITION", "%s", resv_id);
+#endif
+#ifdef HAVE_CRAY_XT
+		setenvf(&env, "BASIL_RESERVATION_ID", "%s", resv_id);
+#endif
 	}
 	return env;
 }
@@ -3060,11 +3079,11 @@ _destroy_env(char **env)
 }
 
 static int 
-_run_prolog(uint32_t jobid, uid_t uid, char *bg_part_id)
+_run_prolog(uint32_t jobid, uid_t uid, char *resv_id)
 {
 	int error_code;
 	char *my_prolog;
-	char **my_env = _build_env(jobid, uid, bg_part_id);
+	char **my_env = _build_env(jobid, uid, resv_id);
 
 	slurm_mutex_lock(&conf->config_mutex);
 	my_prolog = xstrdup(conf->prolog);
@@ -3078,11 +3097,11 @@ _run_prolog(uint32_t jobid, uid_t uid, char *bg_part_id)
 }
 
 static int 
-_run_epilog(uint32_t jobid, uid_t uid, char *bg_part_id)
+_run_epilog(uint32_t jobid, uid_t uid, char *resv_id)
 {
 	int error_code;
 	char *my_epilog;
-	char **my_env = _build_env(jobid, uid, bg_part_id);
+	char **my_env = _build_env(jobid, uid, resv_id);
 
 	slurm_mutex_lock(&conf->config_mutex);
 	my_epilog = xstrdup(conf->epilog);

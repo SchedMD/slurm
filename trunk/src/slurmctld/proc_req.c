@@ -2800,6 +2800,8 @@ int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 	memcpy(launch_msg_ptr->cpu_count_reps, 
 	       job_ptr->select_job->cpu_array_reps,
 	       (sizeof(uint32_t) * job_ptr->select_job->cpu_array_cnt));
+	launch_msg_ptr->select_jobinfo = select_g_copy_jobinfo(
+			job_ptr->select_jobinfo);
 
 	/* FIXME: for some reason these CPU arrays total all the CPUs
 	 * actually allocated, rather than totaling up to the requested
