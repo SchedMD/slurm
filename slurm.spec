@@ -9,6 +9,7 @@
 # --with authd       %_with_authd       1    build auth-authd RPM
 # --with auth_none   %_with_auth_none   1    build auth-none RPM
 # --with bluegene    %_with_bluegene    1    build bluegene RPM
+# --with cray_xt     %_with_cray_xt     1    build for Cray XT system
 # --with debug       %_with_debug       1    enable extra debugging within SLURM
 # --with elan        %_with_elan        1    build switch-elan RPM
 # --without munge    %_without_munge    1    don't build auth-munge RPM
@@ -33,11 +34,12 @@
 %define slurm_with() %{expand:%%{?slurm_with_%{1}:1}%%{!?slurm_with_%{1}:0}}
 
 #  Options that are off by default (enable with --with <opt>)
-%slurm_without_opt elan
+%slurm_without_opt auth_none
 %slurm_without_opt authd
 %slurm_without_opt bluegene
-%slurm_without_opt auth_none
+%slurm_without_opt cray
 %slurm_without_opt debug
+%slurm_without_opt elan
 %slurm_without_opt sun_const
 
 # These options are only here to force there to be these on the build.  
@@ -262,6 +264,7 @@ SLURM process tracking plugin for SGI job containers.
 
 %build
 %configure --program-prefix=%{?_program_prefix:%{_program_prefix}} \
+	%{?slurm_with_cray_xt:--enable-cray-xt} \
 	%{?slurm_with_debug:--enable-debug} \
 	%{?slurm_with_sun_const:--enable-sun-const} \
 	%{?with_proctrack}	\

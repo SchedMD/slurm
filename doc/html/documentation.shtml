@@ -10,6 +10,7 @@ Also see <a href="publications.html">Publications and Presentations</a>.
 <li><a href="mc_support.shtml">Support for Multi-core/Multi-threaded Architectures</a></li>
 <li><a href="quickstart.shtml#mpi">Guide to MPI Use</a></li>
 <li><a href="bluegene.shtml">Blue Gene User and Administrator Guide</a></li>
+<li><a href="cray.shtml">Cray User and Administrator Guide</a></li>
 <li><a href="ibm.shtml">IBM AIX User and Administrator Guide</a></li>
 </ul>
 
@@ -28,6 +29,7 @@ Also see <a href="publications.html">Publications and Presentations</a>.
 <li><a href="moab.shtml">Moab Cluster Suite Integration Guide</a></li>
 <li><a href="http://docs.hp.com/en/5991-4847/ch09s02.html">Submitting Jobs through LSF</a></li>
 <li><a href="bluegene.shtml">Blue Gene User and Administrator Guide</a></li>
+<li><a href="cray.shtml">Cray User and Administrator Guide</a></li>
 <li><a href="sun_const.shtml">Sun Constellation Aministrator Guide</a></li>
 <li><a href="ibm.shtml">IBM AIX User and Administrator Guide</a></li>
 <li><a href="power_save.shtml">Power Saving Guide</a></li>
@@ -52,6 +54,6 @@ Also see <a href="publications.html">Publications and Presentations</a>.
 <li><a href="taskplugins.shtml">Task Plugin Programmer Guide</a></li>
 </ul>
 
-<p style="text-align:center;">Last modified 29 December 2008</p>
+<p style="text-align:center;">Last modified 9 January 2009</p>
 
 <!--#include virtual="footer.txt"-->
