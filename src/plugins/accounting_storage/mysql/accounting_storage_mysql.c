@@ -9088,8 +9088,10 @@ extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn,
 		   != SLURM_SUCCESS)
 			return rc;
 		END_TIMER2("hourly_rollup");
-		query = xstrdup_printf("update %s set hourly_rollup=%d",
-				       last_ran_table, end_time);
+		/* If we have a sent_end do not update the last_run_table */
+		if(!sent_end)
+			query = xstrdup_printf("update %s set hourly_rollup=%d",
+					       last_ran_table, end_time);
 	} else {
 		debug2("no need to run this hour %d <= %d", 
 		       end_time, start_time);
@@ -9118,9 +9120,9 @@ extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn,
 		   != SLURM_SUCCESS)
 			return rc;
 		END_TIMER2("daily_rollup");
-		if(query) 
+		if(query && !sent_end) 
 			xstrfmtcat(query, ", daily_rollup=%d", end_time);
-		else 
+		else if(!sent_end)
 			query = xstrdup_printf("update %s set daily_rollup=%d",
 					       last_ran_table, end_time);
 	} else {
@@ -9159,9 +9161,9 @@ extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn,
 			return rc;
 		END_TIMER2("monthly_rollup");
 
-		if(query) 
+		if(query && !sent_end) 
 			xstrfmtcat(query, ", monthly_rollup=%d", end_time);
-		else 
+		else if(!sent_end)
 			query = xstrdup_printf(
 				"update %s set monthly_rollup=%d",
 				last_ran_table, end_time);

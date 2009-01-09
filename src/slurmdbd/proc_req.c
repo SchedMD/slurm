@@ -837,7 +837,10 @@ static int _archive_load(slurmdbd_conn_t *slurmdbd_conn,
 	}
 	
 	rc = jobacct_storage_g_archive_load(slurmdbd_conn->db_conn, arch_rec);
-
+	if(rc == ENOENT) 
+		comment = "No archive file given to recover";
+	else if(rc != SLURM_SUCCESS)
+		comment = "Error with request";
 end_it:
 	destroy_acct_archive_rec(arch_rec);
 	*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version, 

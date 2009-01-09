@@ -1213,7 +1213,8 @@ extern int acct_storage_p_roll_usage(void *db_conn,
 
 	if(resp_code != SLURM_SUCCESS)
 		rc = resp_code;
-	
+	else
+		info("SUCCESS");
 	return rc;
 }
 

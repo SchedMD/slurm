@@ -1060,7 +1060,7 @@ extern int mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 	time_tm.tm_isdst = -1;
 	last_submit = mktime(&time_tm);
 	last_submit--;
-	debug("adjusted last submit is (%d)", last_submit);
+	debug("archive: adjusted last submit is (%d)", last_submit);
 	
 	if(arch_cond->archive_script)
 		return _archive_script(arch_cond, last_submit);

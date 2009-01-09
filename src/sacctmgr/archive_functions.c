@@ -38,6 +38,8 @@
 \*****************************************************************************/
 
 #include "src/sacctmgr/sacctmgr.h"
+#include <sys/param.h>		/* MAXPATHLEN */
+#include "src/common/proc_args.h"
 
 /* returns number of objects added to list */
 extern int _addto_uid_char_list(List char_list, char *names)
@@ -426,20 +428,34 @@ extern int sacctmgr_archive_load(int argc, char *argv[])
 			fprintf(stderr, " Unknown option: %s\n", argv[i]);
 		}		
 	}
-
+	
 	if(exit_code) {
 		destroy_acct_archive_rec(arch_rec);
 		return SLURM_ERROR;
 	} 
+	
+	if (arch_rec->archive_file) {
+		char *fullpath;
+		char cwd[MAXPATHLEN + 1];
+		int  mode = R_OK;
 
-	if (arch_rec->archive_file 
-	    && (stat(arch_rec->archive_file, &st) < 0)) {
-		exit_code = errno;
-		fprintf(stderr, " load: Failed to stat %s: %m\n "
-			"Note: For archive load, the file must be on "
-			"the calling host.\n",
-			arch_rec->archive_file);
-		return SLURM_ERROR;
+		if ((getcwd(cwd, MAXPATHLEN)) == NULL) 
+			fatal("getcwd failed: %m");		
+		
+		if ((fullpath = search_path(cwd, arch_rec->archive_file,
+					    true, mode))) {
+			xfree(arch_rec->archive_file);
+			arch_rec->archive_file = fullpath;
+		} 
+		
+		if(stat(arch_rec->archive_file, &st) < 0) {
+			exit_code = errno;
+			fprintf(stderr, " load: Failed to stat %s: %m\n "
+				"Note: For archive load, the file must be on "
+				"the calling host.\n",
+				arch_rec->archive_file);
+			return SLURM_ERROR;
+		}
 	}
 
 	rc = jobacct_storage_g_archive_load(db_conn, arch_rec);
