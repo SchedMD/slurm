@@ -2,7 +2,7 @@
  *  job_functions.c - Functions related to job display mode of smap.
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *
@@ -204,6 +204,11 @@ static void _print_header_job(void)
 			  main_xcord, "BG_BLOCK");
 		main_xcord += 18;
 #endif
+#ifdef HAVE_CRAY_XT
+		mvwprintw(text_win, main_ycord,
+			  main_xcord, "RESV_ID");
+		main_xcord += 18;
+#endif
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "USER");
 		main_xcord += 9;
@@ -299,6 +304,15 @@ static int _print_text_job(job_info_t * job_ptr)
 						  SELECT_PRINT_BG_ID));
 		main_xcord += 18;
 #endif
+#ifdef HAVE_CRAY_XT
+		mvwprintw(text_win, main_ycord,
+			  main_xcord, "%.16s", 
+			  select_g_sprint_jobinfo(job_ptr->select_jobinfo, 
+						  time_buf, 
+						  sizeof(time_buf), 
+						  SELECT_PRINT_RESV_ID));
+		main_xcord += 18;
+#endif
 		uname = uid_to_string((uid_t) job_ptr->user_id);
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "%.8s", uname);
@@ -372,6 +386,13 @@ static int _print_text_job(job_info_t * job_ptr)
 					       time_buf, 
 					       sizeof(time_buf), 
 					       SELECT_PRINT_BG_ID));
+#endif
+#ifdef HAVE_CRAY_XT
+		printf("%16.16s ", 
+		       select_g_sprint_jobinfo(job_ptr->select_jobinfo, 
+					       time_buf, 
+					       sizeof(time_buf), 
+					       SELECT_PRINT_RESV_ID));
 #endif
 		uname = uid_to_string((uid_t) job_ptr->user_id);
 		printf("%8.8s ", uname);
