@@ -66,13 +66,12 @@ expect {
 	eof {
 		wait
 	}
-}
-
+} 
 if {$ckpt_out == -1} {
 	send_user "\nFAILURE: No Checkpoint time reported for job step\n"
 	set exit_code 1
 } elseif {$ckpt_in != $ckpt_out} {
-	send_user "\nFAILURE: No Checkpoint time not set properly\n"
+	send_user "\nFAILURE: Checkpoint time not set properly ($ckpt_in != $ckpt_out)\n"
 	set exit_code 1
 }
 
