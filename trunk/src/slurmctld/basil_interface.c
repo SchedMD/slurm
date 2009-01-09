@@ -257,15 +257,15 @@ extern int basil_reserve(struct job_record *job_ptr)
 	}
 	select_g_set_jobinfo(job_ptr->select_jobinfo, 
 			     SELECT_DATA_RESV_ID, reservation_id);
-	debug("basil reservation made job_id=%u res_id=%s", 
+	debug("basil reservation made job_id=%u resv_id=%s", 
 	      job_ptr->job_id, reservation_id);
 #else
 	char reservation_id[32];
 	snprintf(reservation_id, sizeof(reservation_id), 
-		"RES_%d", ++last_res_id);
+		"resv_%d", ++last_res_id);
 	select_g_set_jobinfo(job_ptr->select_jobinfo, 
 			     SELECT_DATA_RESV_ID, reservation_id);
-	debug("basil reservation made job_id=%u res_id=%s", 
+	debug("basil reservation made job_id=%u resv_id=%s", 
 	      job_ptr->job_id, reservation_id);
 #endif	/* APBASIL_LOC */
 #endif	/* HAVE_CRAY_XT */

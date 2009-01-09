@@ -30,6 +30,7 @@ noinst_LTLIBRARIES = 			\
 
 libcommon_la_SOURCES = 			\
 	assoc_mgr.c assoc_mgr.h 	\
+	basil_resv_conf.c basil_resv_conf.h \
 	xmalloc.c xmalloc.h 		\
 	xassert.c xassert.h		\
 	xstring.c xstring.h		\
