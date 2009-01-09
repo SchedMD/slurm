@@ -1,4 +1,4 @@
-.TH "salloc" "1" "SLURM 1.4" "November 2008" "SLURM Commands"
+.TH "salloc" "1" "SLURM 1.4" "January 2009" "SLURM Commands"
 .SH "NAME"
 .LP 
 salloc \- Obtain a SLURM job allocation (a set of nodes), execute a command, 
@@ -794,6 +794,9 @@ Same as \fB\-W\fR or \fB\-\-wait\fR.
 salloc will set the following environment variables in the environment of
 the executed program:
 .TP
+\fBBASIL_RESERVATION_ID\fR
+The reservation ID on Cray systems running ALPS/BASIL only.
+.TP
 \fBSLURM_CPU_BIND\fR
 Set to value of the \-\-cpu_bind\fR option.
 .TP
@@ -860,7 +863,7 @@ salloc \-N5 srun \-n10 myprogram
 
 .SH "COPYING"
 Copyright (C) 2006\-2007 The Regents of the University of California.
-Copyright (C) 2008 Lawrence Livermore National Security.
+Copyright (C) 2008\-2009 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 LLNL\-CODE\-402394.
 .LP

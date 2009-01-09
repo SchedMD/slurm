@@ -1,4 +1,4 @@
-.TH SRUN "1" "August 2008" "srun 1.3" "slurm components"
+.TH SRUN "1" "January 2009" "srun 1.4" "slurm components"
 
 .SH "NAME"
 srun \- run parallel jobs
@@ -1320,6 +1320,10 @@ of the executing tasks on the remote compute nodes.
 These environment variables are:
 
 .TP
+\fBBASIL_RESERVATION_ID\fR
+The reservation ID on Cray systems running ALPS/BASIL only.
+
+.TP
 \fBSLURM_CPU_BIND_VERBOSE\fR
 \-\-cpu_bind verbosity (quiet,verbose).
 .TP
@@ -1655,7 +1659,7 @@ wait
 
 .SH "COPYING"
 Copyright (C) 2006\-2007 The Regents of the University of California.
-Copyright (C) 2008 Lawrence Livermore National Security.
+Copyright (C) 2008\-2009 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 LLNL\-CODE\-402394.
 .LP

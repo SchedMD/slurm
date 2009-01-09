@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "December 2008" "slurm.conf 1.4" "Slurm configuration file"
+.TH "slurm.conf" "5" "January 2009" "slurm.conf 1.4" "Slurm configuration file"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
@@ -335,12 +335,14 @@ will be rejected at submission time. If set to "NO" then the job will be
 accepted and remain queued until the partition limits are altered.
 The default value is "NO".
 
+.TP
 \fBEpilog\fR
 Fully qualified pathname of a script to execute as user root on every 
 node when a user's job completes (e.g. "/usr/local/slurm/epilog"). This may 
 be used to purge files, disable user login, etc. By default there is no epilog.
 The following environment variables are set for use by the program:
-SLURM_JOBID, SLURM_UID and MPIRUN_PARTITION (for BlueGene systems).
+SLURM_JOBID, SLURM_UID plus MPIRUN_PARTITION (only for BlueGene systems) or
+BASIL_PARTITION_ID (only for Cray systems running ALPS/BASIL).
 
 .TP
 \fBEpilogMsgTime\fR
@@ -740,7 +742,8 @@ the first job step.  This may be used to purge files, enable user login, etc.
 By default there is no prolog. Any configured script is expected to 
 complete execution quickly (in less time than \fBMessageTimeout\fR).
 The following environment variables are set for use by the program:
-SLURM_JOBID, SLURM_UID and MPIRUN_PARTITION (for BlueGene systems).
+SLURM_JOBID, SLURM_UID plus MPIRUN_PARTITION (only for BlueGene systems) or
+BASIL_PARTITION_ID (only for Cray systems running ALPS/BASIL).
 
 NOTE:  The Prolog script is ONLY run on any individual
 node when it first sees a job step from a new allocation; it does not
