@@ -130,7 +130,11 @@ for {set ii 0} {$ii < [llength $job_map]} {incr ii} {
 	set node_name [lindex [lindex $job_map $ii] 0]
 	set job_list  [lindex [lindex $job_map $ii] 1]
 
-	spawn $scancel -v -w $node_name
+	if {$ii == 0} {
+		spawn $scancel -v -u $env(USER) --nodelist $node_name
+	} else {
+		spawn $scancel -v -u $env(USER) -w $node_name
+	}
 	expect {
 		-re "scancel: Terminating job ($number)" {
 			#Search for the terminated job in the list recently
