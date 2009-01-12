@@ -73,11 +73,11 @@ void _elapsed_time(long secs, long usecs, char *str)
 		         days, hours, minutes, seconds);
 	else if (hours)
 		snprintf(str, FORMAT_STRING_SIZE,
-			 "%ld:%2.2ld:%2.2ld",
+			 "%2.2ld:%2.2ld:%2.2ld",
 		         hours, minutes, seconds);
 	else
 		snprintf(str, FORMAT_STRING_SIZE,
-			 "%ld:%2.2ld.%3.3ld",
+			 "%2.2ld:%2.2ld.%3.3ld",
 		         minutes, seconds, subsec);
 }
 

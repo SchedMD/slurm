@@ -1266,10 +1266,16 @@ extern int kill_running_job_by_node_name(char *node_name)
 				job_ptr->job_state  = JOB_NODE_FAIL;
 				deallocate_nodes(job_ptr, false, suspended);
 				job_completion_logger(job_ptr);
+				job_ptr->db_index = 0;
 				job_ptr->job_state = JOB_PENDING;
 				if (job_ptr->node_cnt)
 					job_ptr->job_state |= JOB_COMPLETING;
 				job_ptr->details->submit_time = now;
+				/* Since the job completion logger
+				   removes the submit we need to add it
+				   again.
+				*/
+				acct_policy_add_job_submit(job_ptr);
 			} else {
 				info("Killing job_id %u on failed node %s",
 				     job_ptr->job_id, node_name);
@@ -5876,10 +5882,15 @@ extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd conn_fd)
 	deallocate_nodes(job_ptr, false, suspended);
 	xfree(job_ptr->details->req_node_layout);
 	job_completion_logger(job_ptr);
+	job_ptr->db_index = 0;
 	job_ptr->job_state = JOB_PENDING;
 	if (job_ptr->node_cnt)
 		job_ptr->job_state |= JOB_COMPLETING;
 	job_ptr->details->submit_time = now;
+	/* Since the job completion logger removes the submit we need
+	   to add it again.
+	*/
+	acct_policy_add_job_submit(job_ptr);
 
     reply:
 	if (conn_fd >= 0) {
