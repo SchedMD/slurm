@@ -267,7 +267,6 @@ int setup_env(env_t *env)
 	int rc = SLURM_SUCCESS;
 	char *dist = NULL;
 	char *lllp_dist = NULL;
-	char *bgl_part_id = NULL;
 	char addrbuf[INET_ADDRSTRLEN];
 
 	if (env == NULL)
@@ -539,6 +538,7 @@ int setup_env(env_t *env)
 
 	if(env->select_jobinfo) {
 #ifdef HAVE_BG
+		char *bgl_part_id = NULL;
 		select_g_get_jobinfo(env->select_jobinfo, 
 				     SELECT_DATA_BLOCK_ID, &bgl_part_id);
 		if (bgl_part_id) {
@@ -559,11 +559,12 @@ int setup_env(env_t *env)
 		xfree(bgl_part_id);
 #endif
 #ifdef HAVE_CRAY_XT
+		char *resv_id = NULL;
 		select_g_get_jobinfo(env->select_jobinfo, 
-				     SELECT_DATA_RESV_ID, &bgl_part_id);
+				     SELECT_DATA_RESV_ID, &resv_id);
 		if (bgl_part_id) {
 			if(setenvf(&env->env, 
-				   "BASIL_RESVERATION_ID", "%s", bgl_part_id))
+				   "BASIL_RESVERATION_ID", "%s", resv_id))
 				rc = SLURM_FAILURE;
 		} else 
 			rc = SLURM_FAILURE;
@@ -571,7 +572,7 @@ int setup_env(env_t *env)
 		if(rc == SLURM_FAILURE)
 			error("Can't set BASIL_RESVERATION_ID "
 			      "environment variable");
-		xfree(bgl_part_id);
+		xfree(resv_id);
 #endif
 	}
 	
@@ -805,7 +806,13 @@ void
 env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 		  const job_desc_msg_t *desc)
 {
-	char *bgl_part_id = NULL, *tmp;
+#ifdef HAVE_BG
+	char *bgl_part_id = NULL;
+#endif
+#ifdef HAVE_CRAY_XT
+	char *resv_id = NULL;
+#endif
+	char *tmp;
 	slurm_step_layout_t *step_layout = NULL;
 	uint32_t num_tasks = desc->num_tasks;
 
@@ -839,10 +846,10 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 
 #ifdef HAVE_CRAY_XT
 	select_g_get_jobinfo(alloc->select_jobinfo, SELECT_DATA_RESV_ID,
-			     &bgl_part_id);
-	if (bgl_part_id) {
+			     &resv_id);
+	if (resv_id) {
 		env_array_overwrite_fmt(dest, "BASIL_RESERVATION_ID", "%s",
-					bgl_part_id);
+					resv_id);
 	}
 #endif
 
