@@ -1194,6 +1194,7 @@ extern int kill_running_job_by_node_name(char *node_name, bool step_test)
 				job_ptr->job_state  = JOB_NODE_FAIL;
 				deallocate_nodes(job_ptr, false, suspended);
 				job_completion_logger(job_ptr);
+				job_ptr->db_index = 0;
 				job_ptr->job_state = JOB_PENDING;
 				if (job_ptr->node_cnt)
 					job_ptr->job_state |= JOB_COMPLETING;
