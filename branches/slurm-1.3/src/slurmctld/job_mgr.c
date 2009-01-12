@@ -1188,10 +1188,10 @@ extern int kill_running_job_by_node_name(char *node_name, bool step_test)
 					job_ptr->end_time = now;
 				
 				/* We want this job to look like it
-				 * was cancelled in the accounting
-				 * logs. Set a new submit time so the restarted
+				 * was terminateded in the accounting logs.
+				 * Set a new submit time so the restarted
 				 * job looks like a new job. */
-				job_ptr->job_state  = JOB_CANCELLED;
+				job_ptr->job_state  = JOB_NODE_FAIL;
 				deallocate_nodes(job_ptr, false, suspended);
 				job_completion_logger(job_ptr);
 				job_ptr->job_state = JOB_PENDING;
@@ -4878,6 +4878,7 @@ kill_job_on_node(uint32_t job_id, struct job_record *job_ptr,
 	if (job_ptr) {  /* NULL if unknown */
 		kill_req->select_jobinfo = 
 			select_g_copy_jobinfo(job_ptr->select_jobinfo);
+		kill_req->job_state = job_ptr->job_state;
 	}
 
 	agent_info = xmalloc(sizeof(agent_arg_t));
