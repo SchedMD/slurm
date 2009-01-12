@@ -58,11 +58,11 @@
 
 #define BASIL_DEBUG 1
 
+#ifdef HAVE_CRAY_XT
 #ifndef APBASIL_LOC
 static int last_res_id = 0;
 #endif	/* !APBASIL_LOC */
 
-#ifdef HAVE_CRAY_XT
 #ifdef APBASIL_LOC
 /* Make sure that each SLURM node has a BASIL node ID */
 static void _validate_basil_node_id(void)
