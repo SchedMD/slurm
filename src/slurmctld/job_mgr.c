@@ -5086,6 +5086,7 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 		uint32_t return_code)
 {
 	struct job_record  *job_ptr = find_job_record(job_id);
+	struct node_record *node_ptr;
 
 	if (job_ptr == NULL)
 		return true;
@@ -5099,15 +5100,23 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 	 * hasn't really started. Very rare obviously. */
 	if ((job_ptr->job_state == JOB_PENDING)
 	||  (job_ptr->node_bitmap == NULL)) {
-		error("Epilog complete request for non-running job %u, "
-			"slurmctld and slurmd out of sync", job_id);
+		uint16_t base_state = NODE_STATE_UNKNOWN;
+		node_ptr = find_node_record(node_name);
+		if (node_ptr)
+			base_state = node_ptr->node_state & NODE_STATE_BASE;
+		if (base_state == NODE_STATE_DOWN) {
+			debug("Epilog complete response for job %u from DOWN "
+			      "node %s", job_id, node_name);
+		} else {
+			error("Epilog complete response for non-running job "
+			      "%u, slurmctld and slurmd out of sync", job_id);
+		}
 		return false;
 	}
 
 #ifdef HAVE_FRONT_END		/* operate only on front-end node */
 {
 	int i;
-	struct node_record *node_ptr;
 
 	if (return_code)
 		error("Epilog error on %s, setting DOWN", 
@@ -5127,7 +5136,7 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 		error("Epilog error on %s, setting DOWN", node_name);
 		set_node_down(node_name, "Epilog error");
 	} else {
-		struct node_record *node_ptr = find_node_record(node_name);
+		node_ptr = find_node_record(node_name);
 		if (node_ptr)
 			make_node_idle(node_ptr, job_ptr);
 	}
