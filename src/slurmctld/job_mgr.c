@@ -1199,6 +1199,11 @@ extern int kill_running_job_by_node_name(char *node_name, bool step_test)
 				if (job_ptr->node_cnt)
 					job_ptr->job_state |= JOB_COMPLETING;
 				job_ptr->details->submit_time = now;
+				/* Since the job completion logger
+				   removes the submit we need to add it
+				   again.
+				*/
+				acct_policy_add_job_submit(job_ptr);
 			} else {
 				info("Killing job_id %u on failed node %s",
 				     job_ptr->job_id, node_name);
@@ -1565,8 +1570,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		slurm_sched_schedule();	/* work for external scheduler */
 	}
 
-	if (accounting_enforce == ACCOUNTING_ENFORCE_WITH_LIMITS)
-		acct_policy_add_job_submit(job_ptr);
+	acct_policy_add_job_submit(job_ptr);
 
 	if ((error_code == ESLURM_NODES_BUSY) ||
 	    (error_code == ESLURM_JOB_HELD) ||
@@ -5183,8 +5187,7 @@ extern void job_completion_logger(struct job_record  *job_ptr)
 
 	xassert(job_ptr);
 
-	if (accounting_enforce == ACCOUNTING_ENFORCE_WITH_LIMITS)
-		acct_policy_remove_job_submit(job_ptr);
+	acct_policy_remove_job_submit(job_ptr);
 
 	/* make sure all parts of the job are notified */
 	srun_job_complete(job_ptr);
@@ -5716,6 +5719,10 @@ extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd conn_fd)
 	if (job_ptr->node_cnt)
 		job_ptr->job_state |= JOB_COMPLETING;
 	job_ptr->details->submit_time = now;
+	/* Since the job completion logger removes the submit we need
+	   to add it again.
+	*/
+	acct_policy_add_job_submit(job_ptr);
 
     reply:
 	if (conn_fd >= 0) {
