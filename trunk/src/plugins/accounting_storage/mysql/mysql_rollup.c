@@ -270,9 +270,10 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			} 
 
 			/* only record down time for the cluster we
-			   are looking for
+			   are looking for.  If it was during this
+			   time period we would already have it.
 			*/
-			if(!c_usage) {
+			if(c_usage) {
 				int local_start = row_start;
 				int local_end = row_end;
 				if(c_usage->start > local_start)
