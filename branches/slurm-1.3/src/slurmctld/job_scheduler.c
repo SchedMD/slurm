@@ -247,34 +247,6 @@ static bool _failed_partition(struct part_record *part_ptr,
 	return false;
 }
 
-/* Add a partition to the failed_parts array, reserving its nodes
- * from use by lower priority jobs. Also flags all partitions with
- * nodes overlapping this partition. */
-static void _add_failed_partition(struct part_record *failed_part_ptr, 
-			      struct part_record **failed_parts, 
-			      int *failed_part_cnt)
-{
-	int count = *failed_part_cnt;
-	ListIterator part_iterator;
-	struct part_record *part_ptr;
-
-	failed_parts[count++] = failed_part_ptr;
-
-	/* We also need to add partitions that have overlapping nodes */
-	part_iterator = list_iterator_create(part_list);
-	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
-		if ((part_ptr == failed_part_ptr) ||
-		    (_failed_partition(part_ptr, failed_parts, count)) ||
-		    (!bit_super_set(failed_part_ptr->node_bitmap,
-				    part_ptr->node_bitmap)))
-			continue;
-		failed_parts[count++] = part_ptr;
-	}
-	list_iterator_destroy(part_iterator);
-
-	*failed_part_cnt = count;
-}
-
 /* 
  * schedule - attempt to schedule all pending jobs
  *	pending jobs for each partition will be scheduled in priority  
@@ -291,6 +263,7 @@ extern int schedule(void)
 	int i, error_code, failed_part_cnt = 0, job_queue_size, job_cnt = 0;
 	struct job_record *job_ptr;
 	struct part_record **failed_parts = NULL;
+	bitstr_t *save_avail_node_bitmap;
 	/* Locks: Read config, write job, write node, read partition */
 	slurmctld_lock_t job_write_lock =
 	    { READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
@@ -336,6 +309,7 @@ extern int schedule(void)
 
 	failed_parts = xmalloc(sizeof(struct part_record *) * 
 			       list_count(part_list));
+	save_avail_node_bitmap = bit_copy(avail_node_bitmap);
 
 	for (i = 0; i < job_queue_size; i++) {
 		job_ptr = job_queue[i].job_ptr;
@@ -347,7 +321,13 @@ extern int schedule(void)
 			job_ptr->state_reason = WAIT_PRIORITY;
 			continue;
 		}
-
+		if (bit_overlap(avail_node_bitmap, 
+				job_ptr->part_ptr->node_bitmap) == 0) {
+			/* All nodes DRAIN, DOWN, or 
+			 * reserved for jobs in higher priority partition */
+			job_ptr->state_reason = WAIT_RESOURCES;
+			continue;
+		}
 		if (license_job_test(job_ptr) != SLURM_SUCCESS) {
 			job_ptr->state_reason = WAIT_LICENSES;
 			continue;
@@ -385,11 +365,14 @@ extern int schedule(void)
 				fail_by_part = false;
 #endif
 			if (fail_by_part) {
-		 		/* do not schedule more jobs 
-				 * in this partition */
-				_add_failed_partition(job_ptr->part_ptr, 
-						      failed_parts, 
-						      &failed_part_cnt);
+		 		/* do not schedule more jobs in this partition
+				 * or on nodes in this partition */
+				failed_parts[failed_part_cnt++] = 
+						job_ptr->part_ptr;
+				bit_not(job_ptr->part_ptr->node_bitmap);
+				bit_and(avail_node_bitmap, 
+					job_ptr->part_ptr->node_bitmap);
+				bit_not(job_ptr->part_ptr->node_bitmap);
 			}
 		} else if (error_code == SLURM_SUCCESS) {	
 			/* job initiated */
@@ -434,6 +417,8 @@ extern int schedule(void)
 		}
 	}
 
+	bit_free(avail_node_bitmap);
+	avail_node_bitmap = save_avail_node_bitmap;
 	xfree(failed_parts);
 	xfree(job_queue);
 	unlock_slurmctld(job_write_lock);
