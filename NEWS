@@ -16,6 +16,8 @@ documents those changes that are of interest to users and admins.
     be scheduled due to insufficient resources, reserve specific the nodes
     associated with that partition rather than blocking all partitions with
     any overlapping nodes).
+ -- Correct logic to log in a job's stderr that it was "CANCELLED DUE TO 
+    NODE FAILURE" rather than just "CANCLLED".
 
 * Changes in SLURM 1.3.12
 =========================
