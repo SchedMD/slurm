@@ -614,6 +614,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 
 	while((row = mysql_fetch_row(result))) {
 		char *id = row[JOB_REQ_ID];
+		bool job_ended = 0;
 
 		curr_id = atoi(row[JOB_REQ_JOBID]);
 
@@ -656,6 +657,10 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		job->submit = atoi(row[JOB_REQ_SUBMIT]);
 		job->start = atoi(row[JOB_REQ_START]);
 		job->end = atoi(row[JOB_REQ_END]);
+		/* since the job->end could be set later end it here */
+		if(job->end)
+			job_ended = 1;
+
 		if(job_cond && job_cond->usage_start) {
 			if(job->start && (job->start < job_cond->usage_start))
 				job->start = job_cond->usage_start;
@@ -819,6 +824,26 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 			step->start = atoi(step_row[STEP_REQ_START]);
 			
 			step->end = atoi(step_row[STEP_REQ_END]);
+			/* if the job has ended end the step also */
+			if(!step->end && job_ended) {
+				step->end = job->end;
+				step->state = job->state;
+			}
+
+			if(job_cond && job_cond->usage_start) {
+				if(step->start 
+				   && (step->start < job_cond->usage_start))
+					step->start = job_cond->usage_start;
+				
+				if(!step->start && step->end)
+					step->start = step->end;
+				
+				if(!step->end 
+				   || (step->end > job_cond->usage_end)) 
+					step->end = job_cond->usage_end;
+			}
+
+			step->elapsed = step->end - step->start;
 			/* figure this out by start stop */
 			step->suspended = atoi(step_row[STEP_REQ_SUSPENDED]);
 			if(!step->end) {

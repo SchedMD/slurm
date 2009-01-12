@@ -1570,9 +1570,10 @@ extern void re_kill_job(struct job_record *job_ptr)
 	agent_args->hostlist = hostlist_create("");
 	agent_args->retry = 0;
 	kill_job = xmalloc(sizeof(kill_job_msg_t));
-	kill_job->job_id  = job_ptr->job_id;
-	kill_job->job_uid = job_ptr->user_id;
-	kill_job->time    = time(NULL);
+	kill_job->job_id    = job_ptr->job_id;
+	kill_job->job_uid   = job_ptr->user_id;
+	kill_job->job_state = job_ptr->job_state;
+	kill_job->time      = time(NULL);
 	kill_job->select_jobinfo = select_g_copy_jobinfo(
 			job_ptr->select_jobinfo);
 
