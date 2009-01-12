@@ -7316,6 +7316,12 @@ empty:
 
 	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
 
+	if(cluster_cond) {
+		/* I don't think we want the with_usage flag here.
+		 * We do need the with_deleted though. */
+		//assoc_cond.with_usage = cluster_cond->with_usage;
+		assoc_cond.with_deleted = cluster_cond->with_deleted;
+	}
 	assoc_cond.cluster_list = list_create(NULL);
 
 	while((row = mysql_fetch_row(result))) {
