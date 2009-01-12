@@ -6284,7 +6284,7 @@ extern List acct_storage_p_remove_clusters(mysql_conn_t *mysql_conn,
 	/* We should not need to delete any cluster usage just set it
 	 * to deleted */
 	xstrfmtcat(query,
-		   "update %s set period_end=%d where (%s);"
+		   "update %s set period_end=%d where period_end=0 && (%s);"
 		   "update %s set mod_time=%d, deleted=1 where (%s);"
 		   "update %s set mod_time=%d, deleted=1 where (%s);"
 		   "update %s set mod_time=%d, deleted=1 where (%s);",
