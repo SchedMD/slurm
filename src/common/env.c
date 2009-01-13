@@ -562,7 +562,7 @@ int setup_env(env_t *env)
 		char *resv_id = NULL;
 		select_g_get_jobinfo(env->select_jobinfo, 
 				     SELECT_DATA_RESV_ID, &resv_id);
-		if (bgl_part_id) {
+		if (resv_id) {
 			if(setenvf(&env->env, 
 				   "BASIL_RESVERATION_ID", "%s", resv_id))
 				rc = SLURM_FAILURE;
