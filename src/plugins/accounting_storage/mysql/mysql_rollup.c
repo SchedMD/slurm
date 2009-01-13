@@ -783,7 +783,7 @@ extern int mysql_daily_rollup(mysql_conn_t *mysql_conn,
 	return SLURM_SUCCESS;
 }
 extern int mysql_monthly_rollup(mysql_conn_t *mysql_conn,
-			       time_t start, time_t end)
+				time_t start, time_t end)
 {
 	int rc = SLURM_SUCCESS;
 	struct tm start_tm;
@@ -893,7 +893,7 @@ extern int mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 		return SLURM_SUCCESS;
 
 	memset(&arch_cond, 0, sizeof(arch_cond));
-	arch_cond.archive_dir = xstrdup(slurmdbd_conf->archive_dir);
+	arch_cond.archive_dir = slurmdbd_conf->archive_dir;
 	arch_cond.archive_jobs = slurmdbd_conf->archive_jobs;
 	arch_cond.archive_script = slurmdbd_conf->archive_script;
 	arch_cond.archive_steps = slurmdbd_conf->archive_steps;
