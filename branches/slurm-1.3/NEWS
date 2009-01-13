@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.3.14
+=========================
+
 * Changes in SLURM 1.3.13
 =========================
  -- Added ability for slurmdbd to archive and purge step and/or job records.
@@ -17,7 +20,7 @@ documents those changes that are of interest to users and admins.
     associated with that partition rather than blocking all partitions with
     any overlapping nodes).
  -- Correct logic to log in a job's stderr that it was "CANCELLED DUE TO 
-    NODE FAILURE" rather than just "CANCLLED".
+    NODE FAILURE" rather than just "CANCELLED".
  -- Fix to crypto/openssl plugin that could result in job launch requests
     being spoofed through the use of an improperly formed credential. This bug 
     could permit a user to launch tasks on compute nodes not allocated for 
