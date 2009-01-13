@@ -2,6 +2,7 @@
  *  crypto_openssl.c - OpenSSL based cryptographic signature plugin
  *****************************************************************************
  *  Copyright (C) 2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark A. Grondona <mgrondona@llnl.gov>.
  *  LLNL-CODE-402394.
@@ -216,7 +217,7 @@ crypto_verify_sign(void * key, char *buffer, unsigned int buf_size,
 
 	rc = EVP_VerifyFinal(&ectx, (unsigned char *) signature, 
 		sig_size, (EVP_PKEY *) key);
-	if (!rc)
+	if (rc <= 0)
 		rc = SLURM_ERROR;
 	else
 		rc = SLURM_SUCCESS;
