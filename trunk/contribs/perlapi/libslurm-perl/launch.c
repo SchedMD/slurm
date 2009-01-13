@@ -113,14 +113,20 @@ hv_to_slurm_step_launch_params(HV* hv, slurm_step_launch_params_t* params)
 	FETCH_FIELD(hv, params, cpu_bind, charp, FALSE);
 	FETCH_FIELD(hv, params, mem_bind_type, uint16_t, FALSE);
 	FETCH_FIELD(hv, params, mem_bind, charp, FALSE);
-	FETCH_FIELD(hv, params, cpus_per_task, uint16_t, FALSE);
-	FETCH_FIELD(hv, params, ntasks_per_node, uint16_t, FALSE);
-	FETCH_FIELD(hv, params, ntasks_per_socket, uint16_t, FALSE);
-	FETCH_FIELD(hv, params, ntasks_per_core, uint16_t, FALSE);
-	FETCH_FIELD(hv, params, task_dist, uint16_t, FALSE);
-	FETCH_FIELD(hv, params, plane_size, uint16_t, FALSE);
-	FETCH_FIELD(hv, params, mpi_plugin_name, charp, FALSE);
 
+	FETCH_FIELD(hv, params, max_sockets, uint16_t, FALSE);
+	FETCH_FIELD(hv, params, max_cores, uint16_t, FALSE);
+	FETCH_FIELD(hv, params, max_threads, uint16_t, FALSE);
+	FETCH_FIELD(hv, params, cpus_per_task, uint16_t, FALSE);
+	FETCH_FIELD(hv, params, task_dist, uint16_t, FALSE);
+	FETCH_FIELD(hv, params, preserve_env, bool, FALSE);
+
+	FETCH_FIELD(hv, params, mpi_plugin_name, charp, FALSE);
+	FETCH_FIELD(hv, params, open_mode, uint8_t, FALSE);
+	FETCH_FIELD(hv, params, acctg_freq, uint16_t, FALSE);
+	FETCH_FIELD(hv, params, pty, bool, FALSE);
+	FETCH_FIELD(hv, params, ckpt_path, charp, FALSE);
+	
 	return 0;
 }
 
