@@ -38,11 +38,14 @@ set not_support 0
 set sql_in     "$test_id-in.sql"
 set sql_rem    "$test_id-rem.sql"
 set sql_out    "$test_id-out.sql"
-set cluster    "testclus"
-set account1   "testacct1"
-set user1      "testuser1"
-set account2   "testacct2"
-set user2      "testuser2"
+set cluster    [format "%s%s" $test_id "clus"]
+set account1   [format "%s%s" $test_id "acct1"]
+set account2   [format "%s%s" $test_id "acct2"]
+set account3   [format "%s%s" $test_id "acct3"]
+set accounts   [format "%s,%s,%s" $account1 $account2 $account3]
+set user1      [format "%s%s" $test_id "user1"]
+set user2      [format "%s%s" $test_id "user2"]
+set users      [format "%s,%s" $user1 $user2]
 set node0      [format "%s%d" $cluster 0]
 set node1      [format "%s%d" $cluster 1]
 set node0_cpus 2
@@ -55,8 +58,8 @@ set timeout 60
 
 print_header $test_id
 
-# Fri Feb 1st 00:00:00 2008 - Needed only for the 00:00:00 for timing purposes
-set midnight 1201852800
+# Fri Thu Jan 31 00:00:00 2008 - Needed only for the 00:00:00 for timing purposes
+set midnight 1201766400
 
 # Mon Dec 31 23:00:00 2007
 set period_start 1199170800
@@ -73,6 +76,36 @@ set job1_end [expr $job1_start+$job1_run]
 # This will give us the correct time we ran for
 set job1_diff_str [timestamp -format %X -seconds [expr $midnight+$job1_run]]
 set job1_end_str [timestamp -format %Y-%m-%dT%X -seconds $job1_end]
+set job1_nodes $node1
+set job1_cpus $node1_cpus
+
+#job2
+#make job eligible an hour into the allocation
+set job2_elig [expr $period_start+3600]
+#start the job 65 minutes later so we can check reserved time
+set job2_start [expr $job2_elig+3900]
+#run for a day
+set job2_run 86400
+set job2_end [expr $job2_start+$job2_run]
+# This will give us the correct time we ran for
+set job2_diff_str "1-00:00:00"
+set job2_end_str [timestamp -format %Y-%m-%dT%X -seconds $job2_end]
+set job2_nodes [format "%s\[%s\]" $cluster "0-1"]
+set job2_cpus [expr $node0_cpus + $node1_cpus]
+
+#job3
+#make job eligible an hour into the allocation
+set job3_elig [expr $job2_end-3600]
+#start the job 65 minutes later so we can check reserved time
+set job3_start $job2_end
+#run for a day
+set job3_run 3900
+set job3_end [expr $job3_start+$job3_run]
+# This will give us the correct time we ran for
+set job3_diff_str [timestamp -format %X -seconds [expr $midnight+$job1_run]]
+set job3_end_str [timestamp -format %Y-%m-%dT%X -seconds $job3_end]
+set job3_nodes $node0
+set job3_cpus $node0_cpus
 
 #node0 down
 set node0_down_start [expr $period_start+(60*45)]
@@ -91,8 +124,8 @@ if { [string compare [check_accounting_admin_level] "Administrator"] } {
 	exit 0
 }
 
-remove_user "" "" "$user1,$user2"
-remove_acct "" "$account1,$account2"
+remove_user "" "" $users
+remove_acct "" $accounts
 remove_cluster "$cluster"
 #add cluster
 incr exit_code [add_cluster "$cluster" "" "" "" "" "" "" "" "" "" "" "" "" "" ""]
@@ -109,11 +142,19 @@ if { $exit_code } {
 	exit $exit_code
 }
 
-#add users
-incr exit_code [add_user "$cluster" "$account1,$account2" "$user1,$user2" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ]
+#add accounts
+incr exit_code [add_acct "$cluster" "$account2" "$account3" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ]
 if { $exit_code } {
-	remove_user "" "" "$user1,$user2"
-	remove_acct "" "$account1,$account2"
+	remove_acct "" $accounts
+	remove_cluster "$cluster"
+	exit $exit_code
+}
+
+#add users
+incr exit_code [add_user "$cluster" $accounts $users "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ]
+if { $exit_code } {
+	remove_user "" "" $users
+	remove_acct "" $accounts
 	remove_cluster "$cluster"
 	exit $exit_code
 }
@@ -121,9 +162,11 @@ if { $exit_code } {
 #get the user association ids for the jobs we plan to add
 set user1acct1 0
 set user1acct2 0
+set user1acct3 0
 set user2acct1 0
 set user2acct2 0
-set my_pid [eval spawn $sacctmgr -n -p list assoc users=$user1,$user2 account=$account1,$account2 cluster=$cluster format="User,account,id"]
+set user2acct3 0
+set my_pid [eval spawn $sacctmgr -n -p list assoc users=$users account=$accounts cluster=$cluster format="User,account,id"]
 expect {
 	-re "There was a problem" {
 	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
@@ -137,12 +180,20 @@ expect {
 		set user1acct2 $expect_out(1,string)
 		exp_continue
 	}
+	-re "$user1.$account3.($number)." {
+		set user1acct3 $expect_out(1,string)
+		exp_continue
+	}
 	-re "$user2.$account1.($number)." {
 		set user2acct1 $expect_out(1,string)
 		exp_continue
 	}
 	-re "$user2.$account2.($number)." {
 		set user2acct2 $expect_out(1,string)
+		exp_continue
+	}
+	-re "$user2.$account3.($number)." {
+		set user2acct3 $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
@@ -155,15 +206,14 @@ expect {
 	}
 }
 
-if {!$user1acct1 || !$user1acct2 || !$user2acct1 || !$user2acct2} {
-	send_user "\nFAILURE:  Didn't get one of the user associations $user1acct1 $user1acct2 $user2acct1 $user2acct2.\n"
+if {!$user1acct1 || !$user1acct2 || !$user1acct3 || !$user2acct1 || !$user2acct2|| !$user2acct3} {
+	send_user "\nFAILURE:  Didn't get one of the user associations $user1acct1 $user1acct2 $user1acct3 $user2acct1 $user2acct2 $user2acct3.\n"
 	incr exit_code 1
-	remove_user "" "" "$user1,$user2"
-	remove_acct "" "$account1,$account2"
+	remove_user "" "" $users
+	remove_acct "" $accounts
 	remove_cluster "$cluster"
 	exit $exit_code
 }
-
 
 exec $bin_rm -f $sql_in
 set file [open $sql_in "w"]
@@ -183,8 +233,10 @@ puts $file "on duplicate key update period_start=VALUES(period_start), period_en
 
 #now we will put in a job running for an hour and 5 minutes
 puts $file "insert into job_table (jobid, associd, wckey, wckeyid, uid, gid, partition, blockid, cluster, account, eligible, submit, start, end, suspended, name, track_steps, state, comp_code, priority, req_cpus, alloc_cpus, nodelist, kill_requid, qos, deleted) values"
-puts $file "('65537', '$user1acct1', '', '0', '$uid', '$gid', 'debug', '', '$cluster', '$account1', $job1_start, $job1_start, $job1_start, $job1_end, '0', 'test_job1', '0', '3', '0', '$node1_cpus', '$node1_cpus', '$node1_cpus', '$node1', '0', '0', '0')"
-puts $file "on duplicate key update id=LAST_INSERT_ID(id), eligible=VALUES(eligible), submit=VALUES(submit), start=VALUES(start), end=VALUES(end), associd=VALUES(associd);";
+puts $file "('65537', '$user1acct1', '', '0', '$uid', '$gid', 'debug', '', '$cluster', '$account1', $job1_start, $job1_start, $job1_start, $job1_end, '0', 'test_job1', '0', '3', '0', '$job1_cpus', '$job1_cpus', '$job1_cpus', '$job1_nodes', '0', '0', '0')"
+puts $file "('65538', '$user2acct3', '', '0', '$uid', '$gid', 'debug', '', '$cluster', '$account3', $job2_elig, $job2_elig, $job2_start, $job2_end, '0', 'test_job2', '0', '3', '0', '$job2_cpus', '$job2_cpus', '$job2_cpus', '$job2_nodes', '0', '0', '0')"
+puts $file "('65539', '$user1acct2', '', '0', '$uid', '$gid', 'debug', '', '$cluster', '$account3', $job3_elig, $job3_elig, $job3_start, $job3_end, '0', 'test_job3', '0', '3', '0', '$job3_cpus', '$job3_cpus', '$job3_cpus', '$job3_nodes', '0', '0', '0')"
+puts $file "on duplicate key update id=LAST_INSERT_ID(id), eligible=VALUES(eligible), submit=VALUES(submit), start=VALUES(start), end=VALUES(end), associd=VALUES(associd); alloc_cpus=VALUES(alloc_cpus)";
 close $file
 
 exec $bin_rm -f $sql_rem
@@ -195,9 +247,9 @@ puts $file "delete from job_table where cluster='$cluster';"
 puts $file "delete from cluster_day_usage_table where cluster='$cluster';"
 puts $file "delete from cluster_hour_usage_table where cluster='$cluster';"
 puts $file "delete from cluster_month_usage_table where cluster='$cluster';"
-puts $file "delete from assoc_day_usage_table where id=$user1acct1 || id=$user1acct2 || id=$user2acct1 || id=$user2acct2;"
-puts $file "delete from assoc_hour_usage_table where id=$user1acct1 || id=$user1acct2 || id=$user2acct1 || id=$user2acct2;"
-puts $file "delete from assoc_month_usage_table where id=$user1acct1 || id=$user1acct2 || id=$user2acct1 || id=$user2acct2;"
+puts $file "delete from assoc_day_usage_table where id=$user1acct1 || id=$user1acct2 || id=$user1acct3 || id=$user2acct1 || id=$user2acct2 || id=$user2acct3;"
+puts $file "delete from assoc_hour_usage_table where id=$user1acct1 || id=$user1acct2 || id=$user1acct3 || id=$user2acct1 || id=$user2acct2 || id=$user2acct3;"
+puts $file "delete from assoc_month_usage_table where id=$user1acct1 || id=$user1acct2 || id=$user1acct3 || id=$user2acct1 || id=$user2acct2 || id=$user2acct3;"
 close $file
 
 #
@@ -207,8 +259,8 @@ incr exit_code [archive_load $sql_in]
 
 if { $exit_code } {
 	incr exit_code [archive_load $sql_rem]
-	remove_user "" "" "$user1,$user2"
-	remove_acct "" "$account1,$account2"
+	remove_user "" "" $users
+	remove_acct "" $accounts
 	remove_cluster "$cluster"
 	exit $exit_code
 }
@@ -269,9 +321,10 @@ if {$matches != 6} {
 }
 
 if { $exit_code } {
-	incr exit_code [archive_load $sql_rem]
-	remove_user "" "" "$user1,$user2"
-	remove_acct "" "$account1,$account2"
+	send_user "here\n"
+	#incr exit_code [archive_load $sql_rem]
+	remove_user "" "" $users
+	remove_acct "" $accounts
 	remove_cluster "$cluster"
 	exit $exit_code
 }
@@ -312,8 +365,8 @@ if {$matches != 1} {
 
 if { $exit_code } {
 	incr exit_code [archive_load $sql_rem]
-	remove_user "" "" "$user1,$user2"
-	remove_acct "" "$account1,$account2"
+	remove_user "" "" $users
+	remove_acct "" $accounts
 	remove_cluster "$cluster"
 	exit $exit_code
 }
@@ -369,8 +422,8 @@ if {$matches != 1} {
 
 if { $exit_code } {
 	incr exit_code [archive_load $sql_rem]
-	remove_user "" "" "$user1,$user2"
-	remove_acct "" "$account1,$account2"
+	remove_user "" "" $users
+	remove_acct "" $accounts
 	remove_cluster "$cluster"
 	exit $exit_code
 }
@@ -404,8 +457,8 @@ if {$matches != 1} {
 
 if { $exit_code } {
 	incr exit_code [archive_load $sql_rem]
-	remove_user "" "" "$user1,$user2"
-	remove_acct "" "$account1,$account2"
+	remove_user "" "" $users
+	remove_acct "" $accounts
 	remove_cluster "$cluster"
 	exit $exit_code
 }
@@ -447,8 +500,8 @@ if {$matches != 3} {
 
 if { $exit_code } {
 	incr exit_code [archive_load $sql_rem]
-	remove_user "" "" "$user1,$user2"
-	remove_acct "" "$account1,$account2"
+	remove_user "" "" $users
+	remove_acct "" $accounts
 	remove_cluster "$cluster"
 	exit $exit_code
 }
@@ -482,8 +535,8 @@ if {$matches != 1} {
 
 if { $exit_code } {
 	incr exit_code [archive_load $sql_rem]
-	remove_user "" "" "$user1,$user2"
-	remove_acct "" "$account1,$account2"
+	remove_user "" "" $users
+	remove_acct "" $accounts
 	remove_cluster "$cluster"
 	exit $exit_code
 }
@@ -521,8 +574,8 @@ if {$matches != 2} {
 
 if { $exit_code } {
 	incr exit_code [archive_load $sql_rem]
-	remove_user "" "" "$user1,$user2"
-	remove_acct "" "$account1,$account2"
+	remove_user "" "" $users
+	remove_acct "" $accounts
 	remove_cluster "$cluster"
 	exit $exit_code
 }
@@ -579,8 +632,8 @@ if {$matches != 1} {
 
 if { $exit_code } {
 	incr exit_code [archive_load $sql_rem]
-	remove_user "" "" "$user1,$user2"
-	remove_acct "" "$account1,$account2"
+	remove_user "" "" $users
+	remove_acct "" $accounts
 	remove_cluster "$cluster"
 	exit $exit_code
 }
@@ -614,8 +667,8 @@ if {$matches != 1} {
 
 if { $exit_code } {
 	incr exit_code [archive_load $sql_rem]
-	remove_user "" "" "$user1,$user2"
-	remove_acct "" "$account1,$account2"
+	remove_user "" "" $users
+	remove_acct "" $accounts
 	remove_cluster "$cluster"
 	exit $exit_code
 }
@@ -657,8 +710,8 @@ if {$matches != 3} {
 
 if { $exit_code } {
 	incr exit_code [archive_load $sql_rem]
-	remove_user "" "" "$user1,$user2"
-	remove_acct "" "$account1,$account2"
+	remove_user "" "" $users
+	remove_acct "" $accounts
 	remove_cluster "$cluster"
 	exit $exit_code
 }
@@ -692,8 +745,8 @@ if {$matches != 1} {
 
 if { $exit_code } {
 	incr exit_code [archive_load $sql_rem]
-	remove_user "" "" "$user1,$user2"
-	remove_acct "" "$account1,$account2"
+	remove_user "" "" $users
+	remove_acct "" $accounts
 	remove_cluster "$cluster"
 	exit $exit_code
 }
@@ -731,16 +784,16 @@ if {$matches != 2} {
 
 if { $exit_code } {
 	incr exit_code [archive_load $sql_rem]
-	remove_user "" "" "$user1,$user2"
-	remove_acct "" "$account1,$account2"
+	remove_user "" "" $users
+	remove_acct "" $accounts
 	remove_cluster "$cluster"
 	exit $exit_code
 }
 
 if {$exit_code == 0} {
 	incr exit_code [archive_load $sql_rem]
-	incr exit_code [remove_user "" "" "$user1,$user2"]
-	incr exit_code [remove_acct "" "$account1,$account2"]
+	incr exit_code [remove_user "" "" $users]
+	incr exit_code [remove_acct "" $accounts]
 	incr exit_code [remove_cluster "$cluster"]
 	
  	exec $bin_rm -f $sql_in

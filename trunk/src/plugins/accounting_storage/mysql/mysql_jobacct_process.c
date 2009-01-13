@@ -1247,10 +1247,11 @@ extern int mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 			if (rc)
 				(void) unlink(new_file);
 			else {			/* file shuffle */
+				int ign;	/* avoid warning */
 				(void) unlink(old_file);
-				(void) link(reg_file, old_file);
+				ign =  link(reg_file, old_file);
 				(void) unlink(reg_file);
-				(void) link(new_file, reg_file);
+				ign =   link(new_file, reg_file);
 				(void) unlink(new_file);
 			}
 			xfree(old_file);
@@ -1433,10 +1434,11 @@ exit_steps:
 			if (rc)
 				(void) unlink(new_file);
 			else {			/* file shuffle */
+				int ign;	/* avoid warning */
 				(void) unlink(old_file);
-				(void) link(reg_file, old_file);
+				ign =  link(reg_file, old_file);
 				(void) unlink(reg_file);
-				(void) link(new_file, reg_file);
+				ign =  link(new_file, reg_file);
 				(void) unlink(new_file);
 			}
 			xfree(old_file);
@@ -1521,7 +1523,7 @@ extern int mysql_jobacct_process_archive_load(mysql_conn_t *mysql_conn,
 	}
 	
 	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, data);
-	error_code = mysql_db_query(mysql_conn->db_conn, data);
+	error_code = mysql_db_query_check_after(mysql_conn->db_conn, data);
 	xfree(data);
 	if(error_code != SLURM_SUCCESS) {
 		error("Couldn't load old data");
