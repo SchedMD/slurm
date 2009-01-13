@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.4.0-pre8
+=============================
+
 * Changes in SLURM 1.4.0-pre7
 =============================
  -- Bug fix for preemption with select/cons_res when there are no idle nodes.

@@ -2,7 +2,7 @@
  *  sbatch.c - Submit a SLURM batch script.$
  *****************************************************************************
  *  Copyright (C) 2006-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Christopher J. Morrone <morrone2@llnl.gov>
  *  LLNL-CODE-402394.
@@ -146,7 +146,7 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->name = xstrdup(opt.job_name);
 	else
 		desc->name = xstrdup("sbatch");
-	
+	desc->reservation  = xstrdup(opt.reservation);
 	desc->wckey  = xstrdup(opt.wckey);
 
 	desc->req_nodes = opt.nodelist;
