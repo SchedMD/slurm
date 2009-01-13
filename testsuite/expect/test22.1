@@ -234,9 +234,9 @@ puts $file "on duplicate key update period_start=VALUES(period_start), period_en
 #now we will put in a job running for an hour and 5 minutes
 puts $file "insert into job_table (jobid, associd, wckey, wckeyid, uid, gid, partition, blockid, cluster, account, eligible, submit, start, end, suspended, name, track_steps, state, comp_code, priority, req_cpus, alloc_cpus, nodelist, kill_requid, qos, deleted) values"
 puts $file "('65537', '$user1acct1', '', '0', '$uid', '$gid', 'debug', '', '$cluster', '$account1', $job1_start, $job1_start, $job1_start, $job1_end, '0', 'test_job1', '0', '3', '0', '$job1_cpus', '$job1_cpus', '$job1_cpus', '$job1_nodes', '0', '0', '0')"
-puts $file "('65538', '$user2acct3', '', '0', '$uid', '$gid', 'debug', '', '$cluster', '$account3', $job2_elig, $job2_elig, $job2_start, $job2_end, '0', 'test_job2', '0', '3', '0', '$job2_cpus', '$job2_cpus', '$job2_cpus', '$job2_nodes', '0', '0', '0')"
-puts $file "('65539', '$user1acct2', '', '0', '$uid', '$gid', 'debug', '', '$cluster', '$account3', $job3_elig, $job3_elig, $job3_start, $job3_end, '0', 'test_job3', '0', '3', '0', '$job3_cpus', '$job3_cpus', '$job3_cpus', '$job3_nodes', '0', '0', '0')"
-puts $file "on duplicate key update id=LAST_INSERT_ID(id), eligible=VALUES(eligible), submit=VALUES(submit), start=VALUES(start), end=VALUES(end), associd=VALUES(associd); alloc_cpus=VALUES(alloc_cpus)";
+#puts $file ", ('65538', '$user2acct3', '', '0', '$uid', '$gid', 'debug', '', '$cluster', '$account3', $job2_elig, $job2_elig, $job2_start, $job2_end, '0', 'test_job2', '0', '3', '0', '$job2_cpus', '$job2_cpus', '$job2_cpus', '$job2_nodes', '0', '0', '0')"
+#puts $file ", ('65539', '$user1acct2', '', '0', '$uid', '$gid', 'debug', '', '$cluster', '$account3', $job3_elig, $job3_elig, $job3_start, $job3_end, '0', 'test_job3', '0', '3', '0', '$job3_cpus', '$job3_cpus', '$job3_cpus', '$job3_nodes', '0', '0', '0')"
+puts $file "on duplicate key update id=LAST_INSERT_ID(id), eligible=VALUES(eligible), submit=VALUES(submit), start=VALUES(start), end=VALUES(end), associd=VALUES(associd), alloc_cpus=VALUES(alloc_cpus);";
 close $file
 
 exec $bin_rm -f $sql_rem
