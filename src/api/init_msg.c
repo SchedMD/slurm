@@ -129,6 +129,7 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->resp_host		= NULL;
 	job_desc_msg->req_nodes		= NULL;
 	job_desc_msg->requeue		= (uint16_t) NO_VAL;
+	job_desc_msg->reservation	= NULL;
 	job_desc_msg->rotate		= (uint16_t) NO_VAL;
 	job_desc_msg->script		= NULL;
 	job_desc_msg->select_jobinfo	= NULL;

@@ -2,7 +2,7 @@
  *  opt.c - options processing for srun
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona1@llnl.gov>, et. al.
  *  LLNL-CODE-402394.
@@ -168,6 +168,7 @@
 #define LONG_OPT_OPEN_MODE       0x149
 #define LONG_OPT_ACCTG_FREQ      0x14a
 #define LONG_OPT_WCKEY           0x14b
+#define LONG_OPT_RESERVATION     0x14c
 
 /*---- global variables, defined in opt.h ----*/
 int _verbose;
@@ -435,6 +436,7 @@ static void _opt_default()
 	opt.pty = false;
 	opt.open_mode = 0;
 	opt.acctg_freq = -1;
+	opt.reservation = NULL;
 	opt.wckey = NULL;
 }
 
@@ -770,6 +772,7 @@ static void set_options(const int argc, char **argv)
 		{"open-mode",        required_argument, 0, LONG_OPT_OPEN_MODE},
 		{"acctg-freq",       required_argument, 0, LONG_OPT_ACCTG_FREQ},
 		{"wckey",            required_argument, 0, LONG_OPT_WCKEY},
+		{"reservation",      required_argument, 0, LONG_OPT_RESERVATION},
 		{NULL,               0,                 0, 0}
 	};
 	char *opt_string = "+aAbB:c:C:d:D:e:Eg:Hi:IjJ:kKlL:m:n:N:"
@@ -1296,6 +1299,10 @@ static void set_options(const int argc, char **argv)
 		case LONG_OPT_WCKEY:
 			xfree(opt.wckey);
 			opt.wckey = xstrdup(optarg);
+			break;
+		case LONG_OPT_RESERVATION:
+			xfree(opt.reservation);
+			opt.reservation = xstrdup(optarg);
 			break;
 		case LONG_OPT_CHECKPOINT_PATH:
 			xfree(opt.ckpt_path);
@@ -1840,6 +1847,7 @@ static void _opt_list()
 	info("partition      : %s",
 	     opt.partition == NULL ? "default" : opt.partition);
 	info("job name       : `%s'", opt.job_name);
+	info("reservation    : `%s'", opt.reservation);
 	info("wckey          : `%s'", opt.wckey);
 	info("distribution   : %s", format_task_dist_states(opt.distribution));
 	if(opt.distribution == SLURM_DIST_PLANE)
@@ -1946,7 +1954,7 @@ static void _usage(void)
 "            [--mpi=type] [--account=name] [--dependency=type:jobid]\n"
 "            [--kill-on-bad-exit] [--propagate[=rlimits] [--comment=name]\n"
 "            [--cpu_bind=...] [--mem_bind=...] [--network=type]\n"
-"            [--ntasks-per-node=n] [--ntasks-per-socket=n]\n"
+"            [--ntasks-per-node=n] [--ntasks-per-socket=n] [reservation=name]\n"
 "            [--ntasks-per-core=n] [--mem-per-cpu=MB] [--preserve-env]\n"
 #ifdef HAVE_BG		/* Blue gene specific options */
 "            [--geometry=XxYxZ] [--conn-type=type] [--no-rotate] [--reboot]\n"
@@ -2039,6 +2047,7 @@ static void _help(void)
 "  -w, --nodelist=hosts...     request a specific list of hosts\n"
 "  -x, --exclude=hosts...      exclude a specific list of hosts\n"
 "  -Z, --no-allocate           don't allocate nodes (must supply -w)\n"
+"      --reservation=name      allocate resources from named reservation\n"
 "\n"
 "Consumable resources related options:\n" 
 "      --exclusive             allocate nodes in exclusive mode when\n" 

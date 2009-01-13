@@ -2,7 +2,7 @@
  *  src/srun/allocate.c - srun functions for managing node allocations
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  LLNL-CODE-402394.
@@ -343,8 +343,8 @@ job_desc_msg_create_from_opts ()
 		j->name   = xstrdup(opt.job_name);
 	else
 		j->name   = xstrdup(opt.cmd_name);
-
-	j->wckey  = xstrdup(opt.wckey);
+	j->reservation    = xstrdup(opt.reservation);
+	j->wckey          = xstrdup(opt.wckey);
 	
 	j->req_nodes      = xstrdup(opt.nodelist);
 	

@@ -4,7 +4,7 @@
  *	(last_job_update), and hash table (job_hash)
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  LLNL-CODE-402394.
@@ -1403,8 +1403,8 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	debug3("   min_memory_%s=%ld job_min_tmp_disk=%ld",
 	       mem_type, job_min_memory, job_min_tmp_disk);
 	immediate = (job_specs->immediate == 0) ? 0L : 1L;
-	debug3("   immediate=%ld features=%s",
-	       immediate, job_specs->features);
+	debug3("   immediate=%ld features=%s reservation=%s",
+	       immediate, job_specs->features, job_specs->reservation);
 
 	debug3("   req_nodes=%s exc_nodes=%s", 
 	       job_specs->req_nodes, job_specs->exc_nodes);

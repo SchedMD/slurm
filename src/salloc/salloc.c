@@ -348,6 +348,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->features = opt.constraints;
 	desc->immediate = opt.immediate ? 1 : 0;
 	desc->name = xstrdup(opt.job_name);
+	desc->reservation = xstrdup(opt.reservation);
 	desc->wckey  = xstrdup(opt.wckey);
 
 	desc->req_nodes = opt.nodelist;

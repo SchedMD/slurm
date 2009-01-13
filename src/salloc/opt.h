@@ -2,7 +2,7 @@
  *  opt.h - definitions for salloc option processing
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona1@llnl.gov>,
  *    Christopher J. Morrone <morrone2@llnl.gov>, et. al.
@@ -138,6 +138,7 @@ typedef struct salloc_options {
 	int get_user_env_time;	/* --get-user-env[=secs]	*/
 	int get_user_env_mode; 	/* --get-user-env=[S|L]		*/
 	char *cwd;		/* current working directory	*/
+	char *reservation;	/* --reservation		*/
 	char *wckey;            /* --wckey workload characterization key */
 } opt_t;
 

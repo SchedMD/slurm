@@ -2825,6 +2825,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 	packstr(job_desc_ptr->licenses, buffer);
 	pack16(job_desc_ptr->mail_type, buffer);
 	packstr(job_desc_ptr->mail_user, buffer);
+	packstr(job_desc_ptr->reservation, buffer);
 	packstr(job_desc_ptr->wckey, buffer);
 
 	if(job_desc_ptr->select_jobinfo)
@@ -2964,6 +2965,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 	safe_unpackstr_xmalloc(&job_desc_ptr->licenses, &uint32_tmp, buffer);
 	safe_unpack16(&job_desc_ptr->mail_type, buffer);
 	safe_unpackstr_xmalloc(&job_desc_ptr->mail_user, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&job_desc_ptr->reservation, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&job_desc_ptr->wckey, &uint32_tmp, buffer);
 
 	if (select_g_alloc_jobinfo (&job_desc_ptr->select_jobinfo)

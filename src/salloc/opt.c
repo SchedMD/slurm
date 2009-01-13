@@ -2,7 +2,7 @@
  *  opt.c - options processing for salloc
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona1@llnl.gov>, et. al.
  *  LLNL-CODE-402394.
@@ -135,6 +135,7 @@
 #define LONG_OPT_HINT            0x13b
 #define LONG_OPT_ACCTG_FREQ      0x13c
 #define LONG_OPT_WCKEY           0x13d
+#define LONG_OPT_RESERVATION     0x13e
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -301,7 +302,8 @@ static void _opt_default()
 	opt.no_shell	    = false;
 	opt.get_user_env_time = -1;
 	opt.get_user_env_mode = -1;
-	opt.wckey = NULL;
+	opt.reservation     = NULL;
+	opt.wckey           = NULL;
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -573,6 +575,7 @@ void set_options(const int argc, char **argv)
 		{"cpu_bind",      required_argument, 0, LONG_OPT_CPU_BIND},
 		{"mem_bind",      required_argument, 0, LONG_OPT_MEM_BIND},
 		{"wckey",         required_argument, 0, LONG_OPT_WCKEY},
+		{"reservation",   required_argument, 0, LONG_OPT_RESERVATION},
 		{NULL,            0,                 0, 0}
 	};
 	char *opt_string = "+a:B:c:C:d:D:F:g:hHIJ:kK:L:m:n:N:Op:P:qR:st:uU:vVw:W:x:";
@@ -962,6 +965,10 @@ void set_options(const int argc, char **argv)
 		case LONG_OPT_WCKEY:
 			xfree(opt.wckey);
 			opt.wckey = xstrdup(optarg);
+			break;
+		case LONG_OPT_RESERVATION:
+			xfree(opt.reservation);
+			opt.reservation = xstrdup(optarg);
 			break;
 		default:
 			fatal("Unrecognized command line parameter %c",
@@ -1376,6 +1383,7 @@ static void _opt_list()
 	info("partition      : %s",
 		opt.partition == NULL ? "default" : opt.partition);
 	info("job name       : `%s'", opt.job_name);
+	info("reservation    : `%s'", opt.reservation);
 	info("wckey          : `%s'", opt.wckey);
 	if (opt.jobid != NO_VAL)
 		info("jobid          : %u", opt.jobid);
@@ -1461,7 +1469,7 @@ static void _usage(void)
 "              [--bell] [--no-bell] [--kill-command[=signal]]\n"
 "              [--nodefile=file] [--nodelist=hosts] [--exclude=hosts]\n"
 "              [--network=type] [--mem-per-cpu=MB]\n"
-"              [--cpu_bind=...] [--mem_bind=...]\n"
+"              [--cpu_bind=...] [--mem_bind=...] [--reservation=name]\n"
 "              [executable [args...]]\n");
 }
 
@@ -1520,6 +1528,7 @@ static void _help(void)
 "  -F, --nodefile=filename     request a specific list of hosts\n"
 "  -w, --nodelist=hosts...     request a specific list of hosts\n"
 "  -x, --exclude=hosts...      exclude a specific list of hosts\n"
+"      --reservation=name      allocate resources from named reservation\n"
 "\n"
 "Consumable resources related options:\n" 
 "      --exclusive             allocate nodes in exclusive mode when\n" 
