@@ -190,7 +190,7 @@ set mn6		670
 set mw6		2880
 set mt6		2-00:00:00
 set access_err  0
-set timeout     60
+set timeout     120
 #set user_name   "id -u -n"
 
 print_header $test_id
@@ -282,8 +282,6 @@ expect {
 		wait
 	}
 }
-
-set timeout 60
 
 #
 # Delete left-over input script files
@@ -608,7 +606,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		send_user "\nFAILURE: sacctmgr list associations not responding 1\n"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -661,7 +659,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		send_user "\nFAILURE: sacctmgr list associations not responding 2\n"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -694,7 +692,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		send_user "\nFAILURE: sacctmgr list associations not responding 3\n"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -728,7 +726,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		send_user "\nFAILURE: sacctmgr load not responding 4\n"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -793,7 +791,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		send_user "\nFAILURE: sacctmgr list associations not responding 5\n"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -830,7 +828,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		send_user "\nFAILURE: sacctmgr list associations not responding 6\n"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -864,7 +862,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		send_user "\nFAILURE: sacctmgr list associations not responding 7\n"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -930,7 +928,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		send_user "\nFAILURE: sacctmgr list associations not responding 8\n"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
@@ -967,7 +965,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: sacctmgr list associations not responding\n"
+		send_user "\nFAILURE: sacctmgr list associations not responding 9\n"
 		slow_kill $my_pid
 		incr exit_code 1
 	}
