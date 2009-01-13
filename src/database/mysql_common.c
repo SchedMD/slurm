@@ -66,7 +66,12 @@ static int _clear_results(MYSQL *mysql_db)
 			      mysql_errno(mysql_db),
 			      mysql_error(mysql_db));
 	} while (rc == 0);
-	
+
+	if(rc > 0) {
+		errno = rc;
+		return SLURM_ERROR;
+	} 
+
 	return SLURM_SUCCESS;
 }
 
@@ -542,6 +547,16 @@ extern MYSQL_RES *mysql_db_query_ret(MYSQL *mysql_db, char *query, bool last)
 	}
 
 	return result;
+}
+
+extern int mysql_db_query_check_after(MYSQL *mysql_db, char *query)
+{
+	int rc = SLURM_SUCCESS;
+		
+	if((rc = mysql_db_query(mysql_db, query)) != SLURM_ERROR)  
+		rc = _clear_results(mysql_db);
+	
+	return rc;
 }
 
 extern int mysql_insert_ret_id(MYSQL *mysql_db, char *query)

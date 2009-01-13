@@ -803,7 +803,12 @@ static int _archive_dump(slurmdbd_conn_t *slurmdbd_conn,
 		arch_cond->step_purge = slurmdbd_conf->step_purge;
 
 	rc = jobacct_storage_g_archive(slurmdbd_conn->db_conn, arch_cond);
-
+	if(rc != SLURM_SUCCESS) {
+		if(errno == EACCES) 
+			comment = "Problem accessing file.";
+		else
+			comment = "Error with request.";
+	}
 end_it:
 	slurmdbd_free_cond_msg(slurmdbd_conn->rpc_version, 
 			       DBD_ARCHIVE_DUMP, get_msg);
@@ -839,7 +844,10 @@ static int _archive_load(slurmdbd_conn_t *slurmdbd_conn,
 	}
 	
 	rc = jobacct_storage_g_archive_load(slurmdbd_conn->db_conn, arch_rec);
-
+	if(rc == ENOENT) 
+		comment = "No archive file given to recover.";
+	else if(rc != SLURM_SUCCESS)
+		comment = "Error with request.";
 end_it:
 	destroy_acct_archive_rec(arch_rec);
 	*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version, 

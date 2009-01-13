@@ -1522,7 +1522,7 @@ extern int mysql_jobacct_process_archive_load(mysql_conn_t *mysql_conn,
 	}
 	
 	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, data);
-	error_code = mysql_db_query(mysql_conn->db_conn, data);
+	error_code = mysql_db_query_check_after(mysql_conn->db_conn, data);
 	xfree(data);
 	if(error_code != SLURM_SUCCESS) {
 		error("Couldn't load old data");
