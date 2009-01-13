@@ -258,6 +258,10 @@ _cancel_jobs (void)
            remove any not found in the given list. */
 	if (opt.job_cnt) {
 		for (i = 0; i < job_buffer_ptr->record_count; i++) {
+			/*skip jobs removed by other filtering*/
+			if (job_ptr[i].job_id == 0)
+				continue;
+
 			for (j = 0; j < opt.job_cnt; j++ ) {
 				if (job_ptr[i].job_id != opt.job_id[j])
 					continue;
