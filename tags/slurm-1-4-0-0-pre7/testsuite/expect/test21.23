@@ -1,0 +1,328 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          sacctmgr verify wckey
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2008 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Joseph Donaghy <donaghy1@llnl.gov>
+# LLNL-CODE-402394.
+# 
+# This file is part of SLURM, a resource management program.
+# For details, see <http://www.llnl.gov/linux/slurm/>.
+#  
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+# 
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+# 
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id     "21.23"
+set exit_code   0
+set file_in     "test.$test_id.input"
+set test_acct   "test_acct"
+set wk          21test
+set timeout 60
+print_header $test_id
+
+#
+# Check accounting config and bail if not found.
+#
+if { [test_account_storage] == 0 } {
+	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
+	exit 0
+}
+if { [test_track_wckey] == 0} {
+	send_user "\nWARNING: This test can't be run without TrackWCKey being set\n"
+	exit 0
+}
+
+if { [string compare [check_accounting_admin_level] "Administrator"] } {
+	send_user "\nWARNING: This test can't be run without being an Accounting administrator.\nUse sacctmgr mod user \$USER_NAME set admin=admin.\n"
+	exit 0
+}
+
+set cn [get_cluster_name]
+
+#
+# Identify the user and his current default account
+#
+set acct_name ""
+set user_name ""
+spawn $bin_id -u -n
+expect {
+	 -re "($alpha_numeric_under)" {
+		set user_name $expect_out(1,string)
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+set s_pid [spawn $sacctmgr show user $user_name]
+expect {
+	-re "$user_name *($alpha_numeric_under)" {
+		set acct_name $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "FAILURE: sacctmgr add not responding\n"
+		slow_kill $s_pid
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# Use sacctmgr to add an account
+#
+set aamatches 0
+set sadd_pid [spawn $sacctmgr -i add account $test_acct cluster=$cn]
+expect {
+	-re "Adding Account" {
+		incr aamatches
+		exp_continue
+	}
+	-re "Nothing new added" {
+		send_user "\nWARNING: vestigial account $test_acct found\n"
+		incr aamatches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $sadd_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$aamatches != 1} {
+	send_user "\nFAILURE:  sacctmgr had a problem adding account.\n"
+	exit 1
+}
+
+#
+# Add self to this new account and wckey
+#
+set sadd_pid [spawn $sacctmgr -i create user name=$user_name account=$test_acct cluster=$cn wckeys=$wk]
+expect {
+	 timeout {
+		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $sadd_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# Spawn a job via salloc using this wckey
+#
+set job_id     0
+set matches    0
+set timeout    $max_job_delay
+spawn $salloc -N1 --account=$test_acct --wckey=$wk
+expect {
+	-re "Granted job allocation ($number)" {
+		set job_id $expect_out(1,string)
+		send "$scontrol show job $job_id\n"
+		send "exit\n"
+		exp_continue
+	}
+	-re "WCKey=$wk" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: salloc not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+spawn $sacct -j $job_id --fields=wckey
+	expect {
+		-re "$wk" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+if {$job_id == 0} {
+	send_user "\nFAILURE: salloc failed to initiate job\n"
+	set exit_code 1
+} elseif {$matches != 2} {
+	send_user "\nFAILURE: salloc failed to use desired wckey\n"
+	set exit_code 1
+}
+
+#
+# Spawn a job via sbatch using this wckey
+#
+make_bash_script $file_in "$bin_id"
+set job_id 0
+spawn $sbatch -N1 --account=$test_acct --wckey=$wk --output=none $file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	send_user "\nFAILURE: did not get sbatch job_id\n"
+	set exit_code 1
+} else {
+	set matches 0
+	spawn $scontrol show job $job_id
+	expect {
+		-re "WCKey=$wk" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	spawn $sacct -j $job_id --fields=wckey
+	expect {
+		-re "$wk" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 2} {
+		send_user "\nFAILURE: sbatch failed to use specified wckey\n"
+		set exit_code 1
+	}
+}
+
+#
+# Spawn a job via srun using this wckey
+#
+set job_id 0
+spawn $srun -N1 -v --account=$test_acct --wckey=$wk $bin_id
+expect {
+	-re "launching ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	send_user "\nFAILURE: did not get srun job_id\n"
+	set exit_code 1
+} else {
+	set matches 0
+	spawn $scontrol show job $job_id
+	expect {
+		 -re "WCKey=$wk" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	spawn $sacct -j $job_id --fields=wckey
+	expect {
+		-re "$wk" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 2} {
+		send_user "\nFAILURE: srun failed to use specified wckey\n"
+		set exit_code 1
+	}
+}
+
+#
+# Use sacctmgr to delete the test account
+#
+set damatches 0
+set sadel_pid [spawn $sacctmgr -i delete account $test_acct]
+expect {
+	-re "Deleting account" {
+		incr damatches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr delete not responding\n"
+		slow_kill $sadel_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$damatches != 1} {
+	send_user "\nFAILURE: sacctmgr had a problem deleting account\n"
+	set exit_code 1
+}
+
+if {$exit_code == 0} {
+	exec $bin_rm -f $file_in
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code

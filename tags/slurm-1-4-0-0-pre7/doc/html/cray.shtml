@@ -1,0 +1,146 @@
+<!--#include virtual="header.txt"-->
+
+<h1>SLURM User and Administrator Guide for Cray systems</h1>
+
+<b>NOTE: As of January 2009, the SLURM interface to Cray systems is still
+under development.</b>
+
+<h2>User Guide</h2>
+
+<p>This document describes the unique features of SLURM on
+Cray computers.
+You should be familiar with the SLURM's mode of operation on Linux clusters 
+before studying the relatively few differences in Cray system 
+operation described in this document.</p>
+
+<p>SLURM's primary mode of operation is designed for use on clusters with
+nodes configured in a one-dimensional space. 
+Minor changes were required for the <i>smap</i> and <i>sview</i> tools 
+to map nodes in a three-dimensional space. 
+Some changes are also desirable to optimize job placement in three-dimensional 
+space.</p>
+
+<p>SLURM has added an interface to Cray's Application Level Placement Scheduler
+(ALPS). The ALPS <i>aprun</i> command must used for task launch rather than SLURM's 
+<i>srun</i> command. You should create a resource reservation using SLURM's
+<i>salloc</i> or <i>sbatch</i> command and execute <i>aprun</i> from within
+that allocation. <//p>
+
+<h2>Administrator Guide</h2>
+
+<h3>Cray/ALPS configuration</h3>
+
+<p>Node names must have a three-digit suffix describing their 
+zero-origin position in the X-, Y- and Z-dimension respectively (e.g. 
+"tux000" for X=0, Y=0, Z=0; "tux123" for X=1, Y=2, Z=3). 
+Rectangular prisms of nodes can be specified in SLURM commands and
+configuration files using the system name prefix with the end-points 
+enclosed in square brackets and separated by an "x". 
+For example "tux[620x731]" is used to represent the eight nodes in a 
+block with endpoints at "tux620" and "tux731" (tux620, tux621, tux630, 
+tux631, tux720, tux721, tux730, tux731).
+<b>NOTE:</b> We anticipate that Cray will provide node coordinate
+information via the ALPS interface in the future, which may result
+in a more flexible node naming convention.</p>
+
+<p>In ALPS, configure each node to be scheduled using SLURM as type
+BATCH.</p>
+
+<h3>SLURM configuration</h3>
+
+<p>Four variables must be defined in the <i>config.h</i> file: 
+<i>APBASIL_LOC</i> (location of the <i>apbasil</i> command), 
+<i>HAVE_FRONT_END</i>, <i>HAVE_CRAY_XT</i> and <i>HAVE_3D</i>.
+The <i>apbasil</i> command should automatically be found. 
+If that is not the case, please notify us of its location on your system
+and we will add that to the search paths tested at configure time.
+The other variable definitions can be initiated in several different 
+ways depending upon how SLURM is being built.
+<ol>
+<li>Execute the <i>configure</i> command with the option 
+<i>--enable-cray-xt</i> <b>OR</b></li>
+<li>Execute the <i>rpmbuild</i> command with the option 
+<i>--with cray_xt</i> <b>OR</b></li>
+<li>Add <i>%with_cray_xt 1</i> to your <i>~/.rpmmacros</i> file.</li>
+</ol></p>
+
+<p>One <i>slurmd</i> will be used to run all of the batch jobs on
+the system. It is from here that users will execute <i>aprun</i>
+commands to launch tasks.
+This is specified in the <i>slurm.conf</i> file by using the
+<i>NodeName</i> field to identify the compute nodes and both the
+<i>NodeAddr</i> and <i>NodeHostname</i> fields to identify the 
+computer when <i>slurmd</i> runs (normally some sort of front-end node)
+as seen in the examples below.</p>
+
+<p>Next you need to select from two options for the resource selection 
+plugin (the <i>SelectType</i> option in SLURM's <i>slurm.conf</i> configuration
+file):
+<ol>
+<li><b>select/cons_res</b> - Performs a best-fit algorithm based upon a 
+one-dimensional space to allocate whole nodes, sockets, or cores to jobs
+based upon other configuration parameters.</li>
+<li><b>select/linear</b> - Performs a best-fit algorithm based upon a 
+one-dimensional space to allocate whole nodes to jobs.</li>
+</ol>
+
+<p>In order for <i>select/cons_res</i> or <i>select/linear</i> to 
+allocate resources physically nearby in three-dimensional space, the 
+nodes be specified in SLURM's <i>slurm.conf</i> configuration file in 
+such a fashion that those nearby in <i>slurm.conf</i> (one-dimensional
+space) are also nearby in the physical three-dimensional space. 
+If the definition of the nodes in SLURM's <i>slurm.conf</i> configuration 
+file are listed on one line (e.g. <i>NodeName=tux[000x333]</i>),
+SLURM will automatically perform that conversion using a 
+<a href="http://en.wikipedia.org/wiki/Hilbert_curve">Hilbert curve</a>.
+Otherwise you may construct your own node name ordering and list them
+one node per line in <i>slurm.conf</i>.
+Note that each node must be listed exactly once and consecutive
+nodes should be nearby in three-dimensional space. 
+Also note that each node must be defined individually rather than using 
+a hostlist expression in order to preserve the ordering (there is no 
+problem using a hostlist expression in the partition specification after
+the nodes have already been defined).
+The open source code used by SLURM to generate the Hilbert curve is 
+included in the distribution at <i>contribs/skilling.c</i> in the event
+that you wish to experiment with it to generate your own node ordering.
+Two examples of SLURM configuration files are shown below:</p>
+
+<pre>
+# slurm.conf for Cray XT system of size 4x4x4
+# Parameters removed here
+SelectType=select/linear
+NodeName=DEFAULT Procs=8 RealMemory=2048 State=Unknown
+NodeName=tux[000x333] NodeAddr=front_end NodeHostname=front_end
+PartitionName=debug Nodes=tux[000x333] Default=Yes State=UP
+</pre>
+
+<pre>
+# slurm.conf for Cray XT system of size 4x4x4
+# Parameters removed here
+SelectType=select/linear
+NodeName=DEFAULT Procs=8 RealMemory=2048 State=Unknown
+NodeName=tux000 NodeAddr=front_end NodeHostname=front_end
+NodeName=tux100 NodeAddr=front_end NodeHostname=front_end
+NodeName=tux110 NodeAddr=front_end NodeHostname=front_end
+NodeName=tux010 NodeAddr=front_end NodeHostname=front_end
+NodeName=tux011 NodeAddr=front_end NodeHostname=front_end
+NodeName=tux111 NodeAddr=front_end NodeHostname=front_end
+NodeName=tux101 NodeAddr=front_end NodeHostname=front_end
+NodeName=tux001 NodeAddr=front_end NodeHostname=front_end
+PartitionName=debug Nodes=tux[000x111] Default=Yes State=UP
+</pre>
+
+<p>In both of the examples above, the node names output by the
+<i>scontrol show nodes</i> will be ordered as defined (sequentially 
+along the Hilbert curve or per the ordering in the <i>slurm.conf</i> file)
+rather than in numeric order (e.g. "tux001" follows "tux101" rather 
+than "tux000"). 
+SLURM partitions should contain nodes which are defined sequentially
+by that ordering for optimal performance.</p>
+
+<p class="footer"><a href="#top">top</a></p>
+
+<p style="text-align:center;">Last modified 9 January 2009</p></td>
+
+<!--#include virtual="footer.txt"-->
