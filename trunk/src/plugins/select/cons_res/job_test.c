@@ -1654,25 +1654,6 @@ alloc_job:
 
 	if ((mode != SELECT_MODE_WILL_RUN) && (job_ptr->part_ptr == NULL))
 		error_code = EINVAL;
-	if (error_code == SLURM_SUCCESS) {
-		if (job_ptr->details->shared == 0) {
-			job_ptr->total_procs = 0;
-			for (i = 0; i < cr_node_cnt; i++) {
-				if (!bit_test(bitmap, i))
-					continue;
-				job_ptr->total_procs +=
-					select_node_record[i].cpus;
-			}
-		} else {
-			job_ptr->total_procs = job_ptr->num_procs;
-			if (job_ptr->details->cpus_per_task &&
-			    (job_ptr->details->cpus_per_task != 
-			     (uint16_t) NO_VAL)) {
-				job_ptr->total_procs *= job_ptr->details->
-							cpus_per_task;
-			}
-		}
-	}
 	if ((error_code != SLURM_SUCCESS) || (mode != SELECT_MODE_RUN_NOW)) {
 		FREE_NULL_BITMAP(free_cores);
 		return error_code;
@@ -1741,6 +1722,7 @@ alloc_job:
 	 */
 	if (job_ptr->details->overcommit && job_ptr->details->num_tasks)
 		job_res->nprocs = MIN(total_cpus, job_ptr->details->num_tasks);
+	job_ptr->total_procs = total_cpus;
 
 	debug3("cons_res: cr_job_test: job %u nprocs %u cbits %u/%u nbits %u",
 		job_ptr->job_id, job_res->nprocs, bit_set_count(free_cores),
