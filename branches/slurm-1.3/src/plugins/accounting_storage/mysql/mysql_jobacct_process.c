@@ -922,6 +922,8 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 					job->track_steps = 1;
 			}
                }
+		/* need to reset here to make the above test valid */
+		step = NULL;
 	}
 	mysql_free_result(result);
 

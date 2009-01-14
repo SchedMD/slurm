@@ -700,6 +700,8 @@ no_cond:
 					job->track_steps = 1;
 			}
                }
+		/* need to reset here to make the above test valid */
+		step = NULL;
 	}
 	PQclear(result);
 	
