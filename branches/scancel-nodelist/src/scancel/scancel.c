@@ -151,7 +151,14 @@ _verify_job_ids (void)
 				break;
 		}
 		if (i >= job_buffer_ptr->record_count) {
-			fprintf(stderr, "Job %u not found\n", opt.job_id[j]);
+			if (opt.step_id[j] == SLURM_BATCH_SCRIPT)
+				error("Kill job error on job id %u: %s", 
+				      opt.job_id[j], 
+				      slurm_strerror(ESLURM_INVALID_JOB_ID));
+			else
+				error("Kill job error on job step id %u.%u: %s", 
+				      opt.job_id[j], opt.step_id[j],
+				      slurm_strerror(ESLURM_INVALID_JOB_ID));
 		}
 	}
 }
