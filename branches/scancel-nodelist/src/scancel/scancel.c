@@ -79,6 +79,7 @@ static void *_cancel_step_id (void *cancel_info);
 static int  _confirmation (int i, uint32_t step_id);
 static void _filter_job_records (void);
 static void _load_job_records (void);
+static void _verify_job_ids (void);
 
 static job_info_msg_t * job_buffer_ptr = NULL;
 
@@ -104,7 +105,8 @@ main (int argc, char *argv[])
 		log_alter (log_opts, SYSLOG_FACILITY_DAEMON, NULL);
 	} 
 	
-	_load_job_records ();
+	_load_job_records();
+	_verify_job_ids();
 
 	if ((opt.interactive) ||
 	    (opt.job_name) ||
@@ -131,6 +133,26 @@ _load_job_records (void)
 	if (error_code) {
 		slurm_perror ("slurm_load_jobs error");
 		exit (1);
+	}
+}
+
+
+static void
+_verify_job_ids (void)
+{
+	/* If a list of jobs was given, make sure each job is actually in
+           our list of job records. */
+	int i, j;
+	job_info_t *job_ptr = job_buffer_ptr->job_array;
+
+	for (j = 0; j < opt.job_cnt; j++ ) {
+		for (i = 0; i < job_buffer_ptr->record_count; i++) {
+			if (job_ptr[i].job_id == opt.job_id[j])
+				break;
+		}
+		if (i >= job_buffer_ptr->record_count) {
+			fprintf(stderr, "Job %u not found\n", opt.job_id[j]);
+		}
 	}
 }
 
@@ -242,68 +264,82 @@ _cancel_jobs (void)
 
 	job_ptr = job_buffer_ptr->job_array ;
 
-	/* If a list of jobs was given, make sure each job is actually in
-           our list of job records. */
-	for (j = 0; j < opt.job_cnt; j++ ) {
-		for (i = 0; i < job_buffer_ptr->record_count; i++) {
-			if (job_ptr[i].job_id == opt.job_id[j])
-				break;
-		}
-		if (i >= job_buffer_ptr->record_count) {
-			fprintf(stderr, "Job %u not found\n", opt.job_id[j]);
-		}
-	}
-
-	/* If a list of jobs was given, search the list of all jobs, and
-           remove any not found in the given list. */
-	if (opt.job_cnt) {
-		for (i = 0; i < job_buffer_ptr->record_count; i++) {
-			/*skip jobs removed by other filtering*/
-			if (job_ptr[i].job_id == 0)
-				continue;
-
-			for (j = 0; j < opt.job_cnt; j++ ) {
-				if (job_ptr[i].job_id != opt.job_id[j])
-					continue;
-				if (opt.interactive && 
-				    (_confirmation(i, opt.step_id[j]) == 0)) {
-					job_ptr[i].job_id = 0;
-				}
-				break;
-			}
-			if (j >= opt.job_cnt)   /* not found */
-				job_ptr[i].job_id = 0;
-		}
-	}
-
 	/* Spawn a thread to cancel each job or job step marked for cancellation */
 	for (i = 0; i < job_buffer_ptr->record_count; i++) {
 		if (job_ptr[i].job_id == 0) 
 			continue;
-		if (opt.job_cnt == 0 && opt.interactive && 
-		    (_confirmation(i, SLURM_BATCH_SCRIPT) == 0))
-			continue;
 
-		cancel_info = (job_cancel_info_t *)malloc(sizeof(job_cancel_info_t));
-		cancel_info->job_id  = job_ptr[i].job_id;
-		cancel_info->sig     = opt.signal;
-		cancel_info->num_active_threads = &num_active_threads;
-		cancel_info->num_active_threads_lock = &num_active_threads_lock;
-		cancel_info->num_active_threads_cond = &num_active_threads_cond;
+		/* If cancelling a list of jobs, see if the current job 
+		   included a step id */
+		if (opt.job_cnt) {
+			for (j = 0; j < opt.job_cnt; j++ ) {
+				if (job_ptr[i].job_id != opt.job_id[j])
+					continue;
 
-		pthread_mutex_lock( &num_active_threads_lock );
-		num_active_threads++;
-		while (num_active_threads > MAX_THREADS) {
-			pthread_cond_wait( &num_active_threads_cond,
-					   &num_active_threads_lock );
+				if (opt.interactive && 
+				    _confirmation(i, opt.step_id[j]) == 0)
+					continue;
+
+				cancel_info = (job_cancel_info_t *)malloc(sizeof(job_cancel_info_t));
+				cancel_info->job_id  = job_ptr[i].job_id;
+				cancel_info->sig     = opt.signal;
+				cancel_info->num_active_threads = &num_active_threads;
+				cancel_info->num_active_threads_lock = &num_active_threads_lock;
+				cancel_info->num_active_threads_cond = &num_active_threads_cond;
+
+				pthread_mutex_lock( &num_active_threads_lock );
+				num_active_threads++;
+				while (num_active_threads > MAX_THREADS) {
+					pthread_cond_wait( &num_active_threads_cond,
+							   &num_active_threads_lock );
+				}
+				pthread_mutex_unlock( &num_active_threads_lock );
+
+				if (opt.step_id[j] == SLURM_BATCH_SCRIPT) {
+					err = pthread_create(&dummy, &attr, 
+							     _cancel_job_id,
+							     cancel_info);
+					if (err)
+						_cancel_job_id(cancel_info);
+					break;
+				} else {
+					cancel_info->step_id = opt.step_id[j];
+					err = pthread_create(&dummy, &attr, 
+							     _cancel_step_id,
+							     cancel_info);
+					if (err)
+						_cancel_step_id(cancel_info);
+					/* Don't break here.  Keep looping in 
+					   case other steps from the same job 
+					   are cancelled. */
+				}
+			}
+		} else {
+			if (opt.interactive && 
+			    _confirmation(i, SLURM_BATCH_SCRIPT) == 0)
+				continue;
+
+			cancel_info = (job_cancel_info_t *)malloc(sizeof(job_cancel_info_t));
+			cancel_info->job_id  = job_ptr[i].job_id;
+			cancel_info->sig     = opt.signal;
+			cancel_info->num_active_threads = &num_active_threads;
+			cancel_info->num_active_threads_lock = &num_active_threads_lock;
+			cancel_info->num_active_threads_cond = &num_active_threads_cond;
+
+			pthread_mutex_lock( &num_active_threads_lock );
+			num_active_threads++;
+			while (num_active_threads > MAX_THREADS) {
+				pthread_cond_wait( &num_active_threads_cond,
+						   &num_active_threads_lock );
+			}
+			pthread_mutex_unlock( &num_active_threads_lock );
+
+			err = pthread_create(&dummy, &attr, 
+					     _cancel_job_id,
+					     cancel_info);
+			if (err)
+				_cancel_job_id(cancel_info);
 		}
-		pthread_mutex_unlock( &num_active_threads_lock );
-
-		err = pthread_create(&dummy, &attr, 
-				     _cancel_job_id,
-				     cancel_info);
-		if (err)
-			_cancel_job_id(cancel_info);
 	}
 
 	/* Wait for any spawned threads that have not finished */
