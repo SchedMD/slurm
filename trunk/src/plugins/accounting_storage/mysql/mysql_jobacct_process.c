@@ -4,6 +4,7 @@
  *                               storage.
  *****************************************************************************
  *
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
@@ -736,6 +737,9 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 			job->elapsed -= job->suspended;
 		}
 
+		if((int)job->elapsed < 0)
+			job->elapsed = 0;
+
 		job->jobid = curr_id;
 		job->jobname = xstrdup(row[JOB_REQ_NAME]);
 		job->gid = atoi(row[JOB_REQ_GID]);
@@ -852,6 +856,10 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 				step->elapsed = step->end - step->start;
 			}
 			step->elapsed -= step->suspended;
+
+			if((int)step->elapsed < 0)
+				step->elapsed = 0;
+
 			step->user_cpu_sec = atoi(step_row[STEP_REQ_USER_SEC]);
 			step->user_cpu_usec =
 				atoi(step_row[STEP_REQ_USER_USEC]);
