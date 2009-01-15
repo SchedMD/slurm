@@ -358,6 +358,11 @@ static void _pack_accounting_update_msg(accounting_update_msg_t *msg,
 static int _unpack_accounting_update_msg(accounting_update_msg_t **msg,
 					 Buf buffer);
 
+static void _pack_update_resv_msg(reserve_request_msg_t * msg, Buf buffer);
+static int  _unpack_update_resv_msg(reserve_request_msg_t ** msg, Buf buffer);
+static void _pack_delete_resv_msg(delete_reserve_msg_t * msg, Buf buffer);
+static int  _unpack_delete_resv_msg(delete_reserve_msg_t ** msg, Buf buffer);
+
 /* pack_header
  * packs a slurm protocol header that proceeds every slurm message
  * IN header - the header structure to pack
@@ -534,7 +539,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		break;
 	case REQUEST_CREATE_RESERVATION:
 	case REQUEST_UPDATE_RESERVATION:
-		_pack_update_resv_msg((request_reserve_msg_t *) msg->
+		_pack_update_resv_msg((reserve_request_msg_t *) msg->
 				      data, buffer);
 		break;
 	case REQUEST_DELETE_RESERVATION:
@@ -1767,7 +1772,7 @@ unpack_error:
 }
 
 static void
-_pack_update_resv_msg(reseve_request_msg_t * msg, Buf buffer)
+_pack_update_resv_msg(reserve_request_msg_t * msg, Buf buffer)
 {
 	xassert(msg != NULL);
 

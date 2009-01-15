@@ -38,4 +38,13 @@
 #ifndef _RESERVATION_H
 #define _RESERVATION_H
 
+/* Create a resource reservation */
+extern int create_resv(reserve_request_msg_t *resv_desc_ptr);
+
+/* Update an exiting resource reservation */
+extern int update_resv(reserve_request_msg_t *resv_desc_ptr);
+
+/* Delete an exiting resource reservation */
+extern int delete_resv(delete_reserve_msg_t *resv_desc_ptr);
+
 #endif /* !_RESERVATION_H */

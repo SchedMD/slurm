@@ -127,7 +127,7 @@ slurm_create_reservation (reserve_request_msg_t * resv_msg )
  * IN resv_msg - description of reservation
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
-extern int slurm_update_reservation (reserve_request_msg_t * resv_msg )
+extern int slurm_update_reservation ( reserve_request_msg_t * resv_msg )
 {
 	return _slurm_update ((void *) resv_msg, REQUEST_UPDATE_RESERVATION);
 }
