@@ -40,25 +40,22 @@
 #include "sstat.h"
 
 
-void find_hostname(uint32_t pos, char *hosts, char *host)
+char *find_hostname(uint32_t pos, char *hosts)
 {
 	hostlist_t hostlist = NULL;
-	char *temp = NULL;
+	char *temp = NULL, *host = NULL;
 
-	if(pos == (uint32_t)NO_VAL) {
-		snprintf(host, 50, "'N/A'");
-		return;
-	}
+	if(!hosts || (pos == (uint32_t)NO_VAL))
+		return NULL;
+	
 	hostlist = hostlist_create(hosts);
 	temp = hostlist_nth(hostlist, pos);
 	if(temp) {
-		snprintf(host, 50, "%s", temp);
+		host = xstrdup(temp);
 		free(temp);
-	} else {
-		snprintf(host, 50, "'N/A'");
-	}
+	} 
 	hostlist_destroy(hostlist);
-	return;
+	return host;
 }
 
 void aggregate_sacct(sacct_t *dest, sacct_t *from)

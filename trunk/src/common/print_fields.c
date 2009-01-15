@@ -100,12 +100,12 @@ extern void print_fields_header(List print_fields_list)
 
 extern void print_fields_date(print_field_t *field, time_t value, int last)
 {
-	char temp_char[field->len];
+	char temp_char[field->len+1];
 	time_t now = value;
 
 	if(!now)
 		now = time(NULL);
-	slurm_make_time_str(&value, (char *)temp_char, field->len);
+	slurm_make_time_str(&value, (char *)temp_char, sizeof(temp_char));
 	if(print_fields_parsable_print == PRINT_FIELDS_PARSABLE_NO_ENDING
 	   && last)
 		printf("%s", temp_char);	
@@ -283,6 +283,33 @@ extern void print_fields_time(print_field_t *field, uint32_t value, int last)
 	} else {
 		char time_buf[32];
 		mins2time_str((time_t) value, time_buf, sizeof(time_buf));
+		if(print_fields_parsable_print 
+		   == PRINT_FIELDS_PARSABLE_NO_ENDING
+		   && last)
+			printf("%s", time_buf);
+		else if(print_fields_parsable_print)
+			printf("%s|", time_buf);
+		else
+			printf("%*s ", field->len, time_buf);
+	}
+}
+
+extern void print_fields_time_from_secs(print_field_t *field, 
+					uint32_t value, int last)
+{
+	/* (value == unset)  || (value == cleared) */
+	if((value == NO_VAL) || (value == INFINITE)) {
+		if(print_fields_parsable_print 
+		   == PRINT_FIELDS_PARSABLE_NO_ENDING
+		   && last)
+			;
+		else if(print_fields_parsable_print)
+			printf("|");	
+		else
+			printf("%*s ", field->len, " ");
+	} else {
+		char time_buf[32];
+		secs2time_str((time_t) value, time_buf, sizeof(time_buf));
 		if(print_fields_parsable_print 
 		   == PRINT_FIELDS_PARSABLE_NO_ENDING
 		   && last)

@@ -61,9 +61,9 @@ proc _get_mem {prog} {
 	set ave_used -1
 	set exit_code 0
 
-	spawn $prog --noheader --job=$job_id.0 --fields vsize
+	spawn $prog --noheader -p --job=$job_id.0 --fields maxvsize,maxvsizetask,avevsize
 	expect {
-		-re "($float)(\[KMG\]*)/.*:($number) - ($float)(\[KMG\]*)" {
+		-re "($float)(\[KMG\]*).($number).($float)(\[KMG\]*)" {
 			set mem_used  $expect_out(1,string)
 			set scale1    $expect_out(2,string)
 			set mem_task  $expect_out(3,string)
@@ -230,7 +230,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 # Report basic sacct info
 #
  
-spawn $sacct --noheader --job=$job_id.0 --fields jobid,jobname,status,exitcode
+spawn $sacct --noheader -P --job=$job_id.0 --fields jobid,jobname,state,exitcode
 expect {
 	-re "$job_id\.0" {
 		incr matches
@@ -267,14 +267,15 @@ if {$matches < 4} {
 #   expected integer but got "08" (looks like invalid octal number)
 #
 set elapsed_time 0
-spawn $sacct --noheader  --job=$job_id.0 --fields elapsed
+spawn $sacct --noheader -P --job=$job_id.0 --fields elapsed
 expect {
-	-re "($number):(\[0-9\])(\[0-9\])" {
-		set mins $expect_out(1,string)
-		set sec_ten $expect_out(2,string)
-		set sec_one $expect_out(3,string)
+	-re "($number):($number):(\[0-9\])(\[0-9\])" {
+		set hours $expect_out(1,string)
+		set mins $expect_out(2,string)
+		set sec_ten $expect_out(3,string)
+		set sec_one $expect_out(4,string)
 		set secs [expr $sec_ten * 10 + $sec_one]
-		set elapsed_time [expr $mins * 60 + $secs]
+		set elapsed_time [expr ($hours * 3600) + ($mins * 60) + $secs]
 		exp_continue
 	}
 	timeout {

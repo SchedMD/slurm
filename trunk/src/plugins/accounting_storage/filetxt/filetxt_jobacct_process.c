@@ -250,7 +250,6 @@ static jobacct_step_rec_t *_create_jobacct_step_rec(
 {
 	jobacct_step_rec_t *jobacct_step = create_jobacct_step_rec();
 	
-	jobacct_step->jobid = filetxt_step->header.jobnum;
 	jobacct_step->elapsed = filetxt_step->elapsed;
 	jobacct_step->end = filetxt_step->header.timestamp;
 	jobacct_step->exitcode = filetxt_step->exitcode;
@@ -328,8 +327,14 @@ no_cond:
 	if(filetxt_job->steps) {
 		itr = list_iterator_create(filetxt_job->steps);
 		while((filetxt_step = list_next(itr))) {
-			list_append(jobacct_job->steps,
-				    _create_jobacct_step_rec(filetxt_step));
+			jobacct_step_rec_t *step =
+				_create_jobacct_step_rec(filetxt_step);
+			if(step) {
+				step->job_ptr = jobacct_job;
+				if(!jobacct_job->first_step_ptr)
+					jobacct_job->first_step_ptr = step;
+				list_append(jobacct_job->steps, step);
+			}
 		}
 		list_iterator_destroy(itr);
 	}

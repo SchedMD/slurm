@@ -583,7 +583,9 @@ no_cond:
 		xfree(query);
 		for(j = 0; j < PQntuples(step_result); j++) {
 			step = create_jobacct_step_rec();
-			step->jobid = job->jobid;
+			step->job_ptr = job;
+			if(!job->first_step_ptr)
+				job->first_step_ptr = step;
 			list_append(job->steps, step);
 			step->stepid = atoi(
 				PQgetvalue(step_result, j, STEP_REQ_STEPID));

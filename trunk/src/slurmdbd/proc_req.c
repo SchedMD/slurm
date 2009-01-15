@@ -2789,7 +2789,8 @@ static int  _step_complete(slurmdbd_conn_t *slurmdbd_conn,
 	job.start_time = step_comp_msg->start_time;
 	details.submit_time = step_comp_msg->job_submit_time;
 	step.step_id = step_comp_msg->step_id;
-	job.total_procs = step_comp_msg->total_procs;
+	step.cpu_count = step_comp_msg->total_procs;
+	details.num_tasks = step_comp_msg->total_tasks;
 
 	job.details = &details;
 	step.job_ptr = &job;
@@ -2848,7 +2849,8 @@ static int  _step_start(slurmdbd_conn_t *slurmdbd_conn,
 	step.start_time = step_start_msg->start_time;
 	details.submit_time = step_start_msg->job_submit_time;
 	step.step_id = step_start_msg->step_id;
-	job.total_procs = step_start_msg->total_procs;
+	step.cpu_count = step_start_msg->total_procs;
+	details.num_tasks = step_start_msg->total_tasks;
 
 	job.details = &details;
 	step.job_ptr = &job;

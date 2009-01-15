@@ -2597,6 +2597,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "kill_requid", "smallint default -1 not null" },
 		{ "comp_code", "int default 0 not null" },
 		{ "cpus", "mediumint unsigned not null" },
+		{ "tasks", "mediumint unsigned not null" },
 		{ "user_sec", "int unsigned default 0 not null" },
 		{ "user_usec", "int unsigned default 0 not null" },
 		{ "sys_sec", "int unsigned default 0 not null" },
@@ -9788,7 +9789,7 @@ extern int jobacct_storage_p_step_start(mysql_conn_t *mysql_conn,
 					struct step_record *step_ptr)
 {
 #ifdef HAVE_MYSQL
-	int cpus = 0;
+	int cpus = 0, tasks = 0;
 	int rc=SLURM_SUCCESS;
 	char node_list[BUFFER_SIZE];
 #ifdef HAVE_BG
@@ -9807,12 +9808,13 @@ extern int jobacct_storage_p_step_start(mysql_conn_t *mysql_conn,
 	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 	if(slurmdbd_conf) {
-		cpus = step_ptr->job_ptr->total_procs;
+		tasks = step_ptr->job_ptr->details->num_tasks;
+		cpus = step_ptr->cpu_count;
 		snprintf(node_list, BUFFER_SIZE, "%s",
 			 step_ptr->job_ptr->nodes);
 	} else {
 #ifdef HAVE_BG
-		cpus = step_ptr->job_ptr->num_procs;
+		tasks = cpus = step_ptr->job_ptr->num_procs;
 		select_g_get_jobinfo(step_ptr->job_ptr->select_jobinfo, 
 				     SELECT_DATA_IONODES, 
 				     &ionodes);
@@ -9826,11 +9828,12 @@ extern int jobacct_storage_p_step_start(mysql_conn_t *mysql_conn,
 		
 #else
 		if(!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
-			cpus = step_ptr->job_ptr->total_procs;
+			tasks = cpus = step_ptr->job_ptr->total_procs;
 			snprintf(node_list, BUFFER_SIZE, "%s",
 				 step_ptr->job_ptr->nodes);
 		} else {
-			cpus = step_ptr->step_layout->task_cnt;
+			cpus = step_ptr->cpu_count; 
+			tasks = step_ptr->step_layout->task_cnt;
 			snprintf(node_list, BUFFER_SIZE, "%s", 
 				 step_ptr->step_layout->node_list);
 		}
@@ -9863,13 +9866,13 @@ extern int jobacct_storage_p_step_start(mysql_conn_t *mysql_conn,
 	   %d */
 	query = xstrdup_printf(
 		"insert into %s (id, stepid, start, name, state, "
-		"cpus, nodelist) "
-		"values (%d, %d, %d, \"%s\", %d, %d, \"%s\") "
-		"on duplicate key update cpus=%d, end=0, state=%d",
+		"cpus, tasks, nodelist) "
+		"values (%d, %d, %d, \"%s\", %d, %d, %d, \"%s\") "
+		"on duplicate key update cpus=%d, tasks=%d, end=0, state=%d",
 		step_table, step_ptr->job_ptr->db_index,
 		step_ptr->step_id, 
 		(int)step_ptr->start_time, step_ptr->name,
-		JOB_RUNNING, cpus, node_list, cpus, JOB_RUNNING);
+		JOB_RUNNING, cpus, tasks, node_list, cpus, tasks, JOB_RUNNING);
 	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
@@ -9890,7 +9893,7 @@ extern int jobacct_storage_p_step_complete(mysql_conn_t *mysql_conn,
 	time_t now;
 	int elapsed;
 	int comp_status;
-	int cpus = 0;
+	int cpus = 0, tasks = 0;
 	struct jobacctinfo *jobacct = (struct jobacctinfo *)step_ptr->jobacct;
 	struct jobacctinfo dummy_jobacct;
 	float ave_vsize = 0, ave_rss = 0, ave_pages = 0;
@@ -9918,18 +9921,20 @@ extern int jobacct_storage_p_step_complete(mysql_conn_t *mysql_conn,
 
 	if(slurmdbd_conf) {
 		now = step_ptr->job_ptr->end_time;
-		cpus = step_ptr->job_ptr->total_procs;
-
+		tasks = step_ptr->job_ptr->details->num_tasks;
+		cpus = step_ptr->cpu_count;
 	} else {
 		now = time(NULL);
 #ifdef HAVE_BG
-		cpus = step_ptr->job_ptr->num_procs;
+		tasks = cpus = step_ptr->job_ptr->num_procs;
 		
 #else
 		if(!step_ptr->step_layout || !step_ptr->step_layout->task_cnt)
-			cpus = step_ptr->job_ptr->total_procs;
-		else 
-			cpus = step_ptr->step_layout->task_cnt;
+			tasks = cpus = step_ptr->job_ptr->total_procs;
+		else {
+			cpus = step_ptr->cpu_count; 
+			tasks = step_ptr->step_layout->task_cnt;
+		}
 #endif
 	}
 	
