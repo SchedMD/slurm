@@ -75,6 +75,7 @@ set job1_run 3900
 set job1_end [expr $job1_start+$job1_run]
 # This will give us the correct time we ran for
 set job1_diff_str [timestamp -format %X -seconds [expr $midnight+$job1_run]]
+set job1_start_str [timestamp -format %Y-%m-%dT%X -seconds $job1_start]
 set job1_end_str [timestamp -format %Y-%m-%dT%X -seconds $job1_end]
 set job1_nodes $node1
 set job1_cpus $node1_cpus
@@ -89,6 +90,7 @@ set job2_run 86400
 set job2_end [expr $job2_start+$job2_run]
 # This will give us the correct time we ran for
 set job2_diff_str "1-00:00:00"
+set job2_start_str [timestamp -format %Y-%m-%dT%X -seconds $job2_start]
 set job2_end_str [timestamp -format %Y-%m-%dT%X -seconds $job2_end]
 set job2_nodes [format "%s\[%s\]" $cluster "0-1"]
 set job2_cpus [expr $node0_cpus + $node1_cpus]
@@ -103,6 +105,7 @@ set job3_run 3900
 set job3_end [expr $job3_start+$job3_run]
 # This will give us the correct time we ran for
 set job3_diff_str [timestamp -format %X -seconds [expr $midnight+$job1_run]]
+set job3_start_str [timestamp -format %Y-%m-%dT%X -seconds $job3_start]
 set job3_end_str [timestamp -format %Y-%m-%dT%X -seconds $job3_end]
 set job3_nodes $node0
 set job3_cpus $node0_cpus
@@ -234,8 +237,8 @@ puts $file "on duplicate key update period_start=VALUES(period_start), period_en
 #now we will put in a job running for an hour and 5 minutes
 puts $file "insert into job_table (jobid, associd, wckey, wckeyid, uid, gid, partition, blockid, cluster, account, eligible, submit, start, end, suspended, name, track_steps, state, comp_code, priority, req_cpus, alloc_cpus, nodelist, kill_requid, qos, deleted) values"
 puts $file "('65537', '$user1acct1', '', '0', '$uid', '$gid', 'debug', '', '$cluster', '$account1', $job1_start, $job1_start, $job1_start, $job1_end, '0', 'test_job1', '0', '3', '0', '$job1_cpus', '$job1_cpus', '$job1_cpus', '$job1_nodes', '0', '0', '0')"
-#puts $file ", ('65538', '$user2acct3', '', '0', '$uid', '$gid', 'debug', '', '$cluster', '$account3', $job2_elig, $job2_elig, $job2_start, $job2_end, '0', 'test_job2', '0', '3', '0', '$job2_cpus', '$job2_cpus', '$job2_cpus', '$job2_nodes', '0', '0', '0')"
-#puts $file ", ('65539', '$user1acct2', '', '0', '$uid', '$gid', 'debug', '', '$cluster', '$account3', $job3_elig, $job3_elig, $job3_start, $job3_end, '0', 'test_job3', '0', '3', '0', '$job3_cpus', '$job3_cpus', '$job3_cpus', '$job3_nodes', '0', '0', '0')"
+puts $file ", ('65538', '$user2acct3', '', '0', '$uid', '$gid', 'debug', '', '$cluster', '$account3', $job2_elig, $job2_elig, $job2_start, $job2_end, '0', 'test_job2', '0', '3', '0', '$job2_cpus', '$job2_cpus', '$job2_cpus', '$job2_nodes', '0', '0', '0')"
+puts $file ", ('65539', '$user1acct2', '', '0', '$uid', '$gid', 'debug', '', '$cluster', '$account2', $job3_elig, $job3_elig, $job3_start, $job3_end, '0', 'test_job3', '0', '3', '0', '$job3_cpus', '$job3_cpus', '$job3_cpus', '$job3_nodes', '0', '0', '0')"
 puts $file "on duplicate key update id=LAST_INSERT_ID(id), eligible=VALUES(eligible), submit=VALUES(submit), start=VALUES(start), end=VALUES(end), associd=VALUES(associd), alloc_cpus=VALUES(alloc_cpus);";
 close $file
 
@@ -269,42 +272,28 @@ if { $exit_code } {
 # Use sacct to see if the job loaded
 #
 set matches 0
-set my_pid [eval spawn $sacct -C $cluster --fields=cluster,account,associd,start,end,elapsed --noheader]
+set my_pid [eval spawn $sacct -p -C $cluster --fields=cluster,account,associd,start,end,elapsed --noheader]
 expect {
 	-re "There was a problem" {
 	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
-	-re "$cluster" {
+	-re "$cluster.$account1.$user1acct1.$job1_start_str.$job1_end_str.$job1_diff_str." {
 		send_user "got 1\n"
 		incr matches
 		exp_continue
 	}
-	-re "$account1" {
+	-re "$cluster.$account3.$user2acct3.$job2_start_str.$job2_end_str.$job2_diff_str." {
 		send_user "got 2\n"
 		incr matches
 		exp_continue
 	}
-	-re "$user1acct1" {
+	-re "$cluster.$account2.$user1acct2.$job3_start_str.$job3_end_str.$job3_diff_str." {
 		send_user "got 3\n"
 		incr matches
 		exp_continue
 	}
-	-re "$start_str" {
-		send_user "got 4\n"
-		incr matches
-		exp_continue
-	}
-	-re "$job1_end_str" {
-		send_user "got 5\n"
-		incr matches
-		exp_continue
-	}
-	-re "$job1_diff_str" {
-		send_user "got 6\n"
-		incr matches
-		exp_continue
-	}
+
 	timeout {
 		send_user "\nFAILURE: sacctmgr archive load not responding\n"
 		slow_kill $my_pid
@@ -315,7 +304,7 @@ expect {
 	}
 }
 
-if {$matches != 6} {
+if {$matches != 3} {
 	send_user "\nFAILURE:  job wasn't loaded correctly with only $matches.\n"
 	incr exit_code 1
 }
@@ -584,20 +573,28 @@ if { $exit_code } {
 # Use sreport to get cluster usage for the second hour
 #
 
-# Mon Dec 31 23:00:00 2007
+# Tue Jan 1 00:00:00 2008
 set period_start 1199174400
 
-# Tue Jan 1 00:00:00 2008
+# Tue Jan 1 01:00:00 2008
 set period_end  1199178000
 set start_str [timestamp -format %Y-%m-%dT%X -seconds $period_start]
 set end_str [timestamp -format %Y-%m-%dT%X -seconds $period_end]
 
 set reported [expr ($period_end - $period_start) * $cluster_cpus]
 set down [expr ($node0_down_end-$period_start) * $node0_cpus]
-set alloc_sec [expr ($job1_end-$period_start) * $node1_cpus]
-set resv 0
+set alloc_sec [expr ($job1_end-$period_start) * $job1_cpus]
+set resv [expr ($period_end - $job2_elig) * $job2_cpus]
 set idle [expr $reported - ($down + $alloc_sec + $resv)]
-
+# do the same logic inside the plugin to figure out the correct 
+# idle time and resv time
+if {$idle < 0 } {
+	set resv [expr $resv + $idle]
+	set idle 0
+	if {$resv < 0} {
+		set resv 0
+	}
+}
 set down [format "%d\\\(%.2f%%\\\)" $down [expr double($down * 100)/$reported]] 
 set alloc [format "%d\\\(%.2f%%\\\)" $alloc_sec [expr double($alloc_sec * 100)/$reported]] 
 set resv [format "%d\\\(%.2f%%\\\)" $resv  [expr double($resv * 100)/$reported]]
@@ -626,7 +623,8 @@ expect {
 }
 
 if {$matches != 1} {
-	send_user "\nFAILURE:  sreport didn't give good info 5.\n"
+	send_user "\nFAILURE:  sreport didn't give good info 5 $matches.\n"
+	send_user "we are looking for $cluster.$idle.$down.$alloc.$resv.$reported.\n"
 	incr exit_code 1
 }
 

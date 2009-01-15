@@ -88,21 +88,25 @@ typedef struct {
 
 typedef struct {
 	uint32_t alloc_cpus;
-	uint32_t associd;
 	char    *account;
+	uint32_t associd;
 	char	*blockid;
 	char    *cluster;
 	uint32_t elapsed;
 	time_t eligible;
 	time_t end;
 	int32_t	exitcode;
+	void *first_step_ptr; /* this pointer to a jobacct_step_rec_t 
+				 is set up on the
+				 client side so does not need to
+				 be packed */
 	uint32_t gid;
 	uint32_t jobid;
 	char	*jobname;
 	uint32_t lft;
 	char	*partition;
 	char	*nodes;
-	double priority;
+	uint32_t priority;
 	uint16_t qos;
 	uint32_t req_cpus;
 	uint32_t requid;
@@ -127,25 +131,15 @@ typedef struct {
 } jobacct_job_rec_t;
 
 typedef struct {
-	char    *account; /* This is a pointer to the account var inside
-			   * the jobacct_job_rec_t that contains this
-			   * step.  It is to be used only in the
-			   * client.  This should not be freed, packed
-			   * or unpacked
-			   */
-	uint32_t associd;
-	char    *cluster; /* This is a pointer to the cluster var inside
-			   * the jobacct_job_rec_t that contains this
-			   * step.  It is to be used only in the
-			   * client.  This should not be freed, packed
-			   * or unpacked
-			   */
 	uint32_t elapsed;
 	time_t end;
 	int32_t exitcode;
-	uint32_t jobid;
+	jobacct_job_rec_t *job_ptr; /* this pointer is set up on the
+				       client side so does not need to
+				       be packed */
 	uint32_t ncpus;
 	char *nodes;
+	uint32_t ntasks;
 	uint32_t requid;
 	sacct_t sacct;
 	time_t start;

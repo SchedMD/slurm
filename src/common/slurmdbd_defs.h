@@ -323,6 +323,7 @@ typedef struct dbd_step_comp_msg {
 				  * in db */
 	uint32_t step_id;	/* step ID */
 	uint32_t total_procs;	/* count of allocated processors */
+	uint32_t total_tasks;	/* count of tasks for step */
 } dbd_step_comp_msg_t;
 
 typedef struct dbd_step_start_msg {
@@ -336,6 +337,7 @@ typedef struct dbd_step_start_msg {
 				  * in db */
 	uint32_t step_id;	/* step ID */
 	uint32_t total_procs;	/* count of allocated processors */
+	uint32_t total_tasks;	/* count of tasks for step */
 } dbd_step_start_msg_t;
 
 /* flag to let us know if we are running on cache or from the actual

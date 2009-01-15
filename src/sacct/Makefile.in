@@ -77,7 +77,7 @@ am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
 am_sacct_OBJECTS = sacct.$(OBJEXT) process.$(OBJEXT) print.$(OBJEXT) \
-	options.$(OBJEXT) sacct_stat.$(OBJEXT)
+	options.$(OBJEXT)
 sacct_OBJECTS = $(am_sacct_OBJECTS)
 sacct_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o
 sacct_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
@@ -276,7 +276,7 @@ INCLUDES = -I$(top_srcdir)
 sacct_LDADD = $(top_builddir)/src/api/libslurm.o -ldl
 sacct_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 noinst_HEADERS = sacct.c 
-sacct_SOURCES = sacct.c process.c print.c options.c sacct_stat.c
+sacct_SOURCES = sacct.c process.c print.c options.c
 all: all-am
 
 .SUFFIXES:
@@ -352,7 +352,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/print.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/process.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sacct.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sacct_stat.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

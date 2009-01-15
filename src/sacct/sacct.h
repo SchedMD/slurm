@@ -60,26 +60,23 @@
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_jobcomp.h"
+#include "src/common/print_fields.h"
 
 #define ERROR 2
 
 #define BRIEF_FIELDS "jobid,state,exitcode"
 #define BRIEF_COMP_FIELDS "jobid,uid,state"
-#define DEFAULT_FIELDS "jobid,jobname,partition,ncpus,state,exitcode"
+#define DEFAULT_FIELDS "jobid,jobname,partition,account,alloccpus,state,exitcode"
 #define DEFAULT_COMP_FIELDS "jobid,uid,jobname,partition,nnodes,nodes,state,end"
-#define STAT_FIELDS "jobid,vsize,rss,pages,cputime,ntasks,state"
-#define LONG_FIELDS "jobid,jobname,partition,vsize,rss,pages,cputime,ntasks,ncpus,elapsed,state,exitcode"
+#define LONG_FIELDS "jobid,jobname,partition,maxvsize,maxvsizenode,maxvsizetask,avevsize,maxrss,maxrssnode,maxrsstask,averss,maxpages,maxpagesnode,maxpagestask,avepages,mincpu,mincpunode,mincputask,avecpu,ntasks,alloccpus,elapsed,state,exitcode"
 
-#ifdef HAVE_BG
-#define LONG_COMP_FIELDS "jobid,uid,jobname,partition,blockid,nnodes,nodes,state,start,end,timelimit,connection,reboot,rotate,max_procs,geo,bg_start_point"
-#else
 #define LONG_COMP_FIELDS "jobid,uid,jobname,partition,nnodes,nodes,state,start,end,timelimit"
-#endif
 
 #define BUFFER_SIZE 4096
 #define STATE_COUNT 10
 
 #define MAX_PRINTFIELDS 100
+#define FORMAT_STRING_SIZE 34
 
 #define SECONDS_IN_MINUTE 60
 #define SECONDS_IN_HOUR (60*SECONDS_IN_MINUTE)
@@ -94,83 +91,89 @@ typedef enum {	HEADLINE,
 		JOBCOMP
 } type_t;
 
+typedef enum {
+		PRINT_ALLOC_CPUS,
+		PRINT_ACCOUNT,
+		PRINT_ASSOCID,
+		PRINT_AVECPU,
+		PRINT_AVEPAGES,
+		PRINT_AVERSS,
+		PRINT_AVEVSIZE,
+		PRINT_BLOCKID,
+		PRINT_CLUSTER,
+		PRINT_ELAPSED,
+		PRINT_ELIGIBLE,
+		PRINT_END,
+		PRINT_EXITCODE,
+		PRINT_GID,
+		PRINT_GROUP,
+		PRINT_JOBID,
+		PRINT_JOBNAME,
+		PRINT_MAXPAGES,
+		PRINT_MAXPAGESNODE,
+		PRINT_MAXPAGESTASK,
+		PRINT_MAXRSS,
+		PRINT_MAXRSSNODE,
+		PRINT_MAXRSSTASK,
+		PRINT_MAXVSIZE,
+		PRINT_MAXVSIZENODE,
+		PRINT_MAXVSIZETASK,
+		PRINT_MINCPU,
+		PRINT_MINCPUNODE,
+		PRINT_MINCPUTASK,
+		PRINT_NODELIST,
+		PRINT_NNODES,
+		PRINT_NTASKS,
+		PRINT_PRIO,
+		PRINT_PARTITION,
+		PRINT_QOS,
+		PRINT_QOSRAW,
+		PRINT_REQ_CPUS,
+		PRINT_START,
+		PRINT_STATE,
+		PRINT_SUBMIT,
+		PRINT_SUSPENDED,
+		PRINT_SYSTEMCPU,
+		PRINT_TIMELIMIT,
+		PRINT_TOTALCPU,
+		PRINT_UID,
+		PRINT_USER,
+		PRINT_USERCPU,
+		PRINT_WCKEY,
+		PRINT_WCKEYID,
+} sacct_print_types_t;
+
 typedef struct {
-	acct_archive_cond_t *arch_cond;
+	acct_job_cond_t *job_cond;
 	int opt_completion;	/* --completion */
 	int opt_dump;		/* --dump */
 	int opt_dup;		/* --duplicates; +1 = explicitly set */
 	int opt_fdump;		/* --formattted_dump */
-	int opt_expire;		/* --expire */
 	char *opt_field_list;	/* --fields= */
 	int opt_gid;		/* running persons gid */
 	int opt_help;		/* --help */
-	int opt_long;		/* --long */
-	int opt_lowmem;		/* --low_memory */
+	char *opt_filein;
 	int opt_noheader;	/* can only be cleared */
-	int opt_raw;		/* --raw */
-	int opt_stat;		/* --stat */
-	int opt_total;		/* --total */
+	int opt_allocs;		/* --total */
 	int opt_uid;		/* running persons uid */
-	int opt_verbose;	/* --verbose */
 } sacct_parameters_t;
 
-typedef struct fields {
-	char *name;		/* Specified in --fields= */
-	void (*print_routine) ();	/* Who gets to print it? */
-} fields_t;
-
-extern fields_t fields[];
+extern print_field_t fields[];
 extern sacct_parameters_t params;
 
 extern List jobs;
 
-extern int printfields[MAX_PRINTFIELDS],	/* Indexed into fields[] */
-	nprintfields;
+extern List print_fields_list;
+extern ListIterator print_fields_itr;
+extern int field_count;
+extern List qos_list;
 
 /* process.c */
-void find_hostname(uint32_t pos, char *hosts, char *host);
+char *find_hostname(uint32_t pos, char *hosts);
 void aggregate_sacct(sacct_t *dest, sacct_t *from);
 
 /* print.c */
 void print_fields(type_t type, void *object);
-void print_cpu(type_t type, void *object);
-void print_elapsed(type_t type, void *object);
-void print_exitcode(type_t type, void *object);
-void print_gid(type_t type, void *object);
-void print_group(type_t type, void *object);
-void print_job(type_t type, void *object);
-void print_name(type_t type, void *object);
-void print_jobid(type_t type, void *object);
-void print_ncpus(type_t type, void *object);
-void print_nodes(type_t type, void *object);
-void print_nnodes(type_t type, void *object);
-void print_ntasks(type_t type, void *object);
-void print_partition(type_t type, void *object);
-void print_blockid(type_t type, void *object);
-void print_pages(type_t type, void *object);
-void print_rss(type_t type, void *object);
-void print_state(type_t type, void *object);
-void print_submit(type_t type, void *object);
-void print_start(type_t type, void *object);
-void print_end(type_t type, void *object);
-void print_systemcpu(type_t type, void *object);
-void print_timelimit(type_t type, void *object);
-void print_uid(type_t type, void *object);
-void print_user(type_t type, void *object);
-void print_usercpu(type_t type, void *object);
-void print_vsize(type_t type, void *object);
-void print_cputime(type_t type, void *object);
-void print_account(type_t type, void *object);
-void print_assoc(type_t type, void *object);
-void print_cluster(type_t type, void *object);
-
-void print_connection(type_t type, void *object);
-void print_geo(type_t type, void *object);
-void print_max_procs(type_t type, void *object);
-void print_reboot(type_t type, void *object);
-void print_rotate(type_t type, void *object);
-void print_bg_start_point(type_t type, void *object);
-void print_wckey(type_t type, void *object);
 
 /* options.c */
 int decode_state_char(char *state);
@@ -179,15 +182,10 @@ int get_data(void);
 void parse_command_line(int argc, char **argv);
 void do_dump(void);
 void do_dump_completion(void);
-void do_expire();
 void do_help(void);
 void do_list(void);
 void do_list_completion(void);
-void do_stat(void);
 void sacct_init();
 void sacct_fini();
-
-/* sacct_stat.c */
-extern int sacct_stat(uint32_t jobid, uint32_t stepid);
 
 #endif /* !_SACCT_H */

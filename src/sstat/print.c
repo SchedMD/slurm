@@ -42,17 +42,17 @@
 #include "slurm.h"
 #define FORMAT_STRING_SIZE 34
 
-void _elapsed_time(long secs, long usecs, char *str);
+char *_elapsed_time(long secs, long usecs);
 
-void _elapsed_time(long secs, long usecs, char *str)
+char *_elapsed_time(long secs, long usecs)
 {
 	long	days, hours, minutes, seconds;
 	long    subsec = 0;
+	char *str = NULL;
+
+	if(secs < 0 || secs == NO_VAL)
+		return NULL;
 	
-	if(secs < 0) {
-		snprintf(str, FORMAT_STRING_SIZE, "'N/A'");
-		return;
-	}
 	
 	while (usecs >= 1E6) {
 		secs++;
@@ -68,371 +68,191 @@ void _elapsed_time(long secs, long usecs, char *str)
 	days    =  secs / 86400;
 
 	if (days) 
-		snprintf(str, FORMAT_STRING_SIZE,
-			 "%ld-%2.2ld:%2.2ld:%2.2ld",
-		         days, hours, minutes, seconds);
+		str = xstrdup_printf("%ld-%2.2ld:%2.2ld:%2.2ld",
+				     days, hours, minutes, seconds);
 	else if (hours)
-		snprintf(str, FORMAT_STRING_SIZE,
-			 "%ld:%2.2ld:%2.2ld",
-		         hours, minutes, seconds);
+		str = xstrdup_printf("%2.2ld:%2.2ld:%2.2ld",
+				     hours, minutes, seconds);
 	else
-		snprintf(str, FORMAT_STRING_SIZE,
-			 "%ld:%2.2ld.%3.3ld",
-		         minutes, seconds, subsec);
+		str = xstrdup_printf("%2.2ld:%2.2ld.%3.3ld",
+				     minutes, seconds, subsec);
+	return str;
 }
 
-extern void print_fields(type_t type, void *object)
+void print_fields(jobacct_step_rec_t *step)
 {
-	int f, pf;
-	for (f=0; f<nprintfields; f++) {
-		pf = printfields[f];
-		if (f)
-			printf(" ");
-		(fields[pf].print_routine)(type, object);
+	print_field_t *field = NULL;
+	int curr_inx = 1;
+	char outbuf[FORMAT_STRING_SIZE];
+
+	list_iterator_reset(print_fields_itr);
+	while((field = list_next(print_fields_itr))) {
+		char *tmp_char = NULL;
+		
+		switch(field->type) {
+		case PRINT_AVECPU:
+			
+			tmp_char = _elapsed_time((int)step->sacct.ave_cpu, 0);
+			
+			field->print_routine(field,
+					     tmp_char,
+					     (curr_inx == field_count));
+			xfree(tmp_char);
+			break;
+		case PRINT_AVEPAGES:
+			convert_num_unit((float)step->sacct.ave_pages,
+					 outbuf, sizeof(outbuf),
+					 UNIT_KILO);
+			
+			field->print_routine(field,
+					     outbuf,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_AVERSS:
+			convert_num_unit((float)step->sacct.ave_rss,
+					 outbuf, sizeof(outbuf),
+					 UNIT_KILO);
+			
+			field->print_routine(field,
+					     outbuf,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_AVEVSIZE:
+			convert_num_unit((float)step->sacct.ave_vsize,
+					 outbuf, sizeof(outbuf),
+					 UNIT_KILO);
+			
+			field->print_routine(field,
+					     outbuf,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_JOBID:
+			snprintf(outbuf, sizeof(outbuf), "%u.%u",
+				 step->job_ptr->jobid,
+				 step->stepid);
+			
+			field->print_routine(field,
+					     outbuf,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_MAXPAGES:
+			convert_num_unit((float)step->sacct.max_pages,
+					 outbuf, sizeof(outbuf),
+					 UNIT_KILO);
+			
+			field->print_routine(field,
+					     outbuf,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_MAXPAGESNODE:
+			tmp_char = find_hostname(
+					step->sacct.max_pages_id.nodeid,
+					step->nodes);
+			field->print_routine(field,
+					     tmp_char,
+					     (curr_inx == field_count));
+			xfree(tmp_char);
+			break;
+		case PRINT_MAXPAGESTASK:
+			field->print_routine(field,
+					     step->sacct.max_pages_id.taskid,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_MAXRSS:
+			convert_num_unit((float)step->sacct.max_rss,
+					 outbuf, sizeof(outbuf),
+					 UNIT_KILO);
+			
+			field->print_routine(field,
+					     outbuf,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_MAXRSSNODE:
+			tmp_char = find_hostname(
+					step->sacct.max_rss_id.nodeid,
+					step->nodes);
+			field->print_routine(field,
+					     tmp_char,
+					     (curr_inx == field_count));
+			xfree(tmp_char);
+			break;
+		case PRINT_MAXRSSTASK:
+			field->print_routine(field,
+					     step->sacct.max_rss_id.taskid,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_MAXVSIZE:
+			convert_num_unit((float)step->sacct.max_vsize,
+					 outbuf, sizeof(outbuf),
+					 UNIT_KILO);
+			
+			field->print_routine(field,
+					     outbuf,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_MAXVSIZENODE:
+			tmp_char = find_hostname(
+					step->sacct.max_vsize_id.nodeid,
+					step->nodes);
+			field->print_routine(field,
+					     tmp_char,
+					     (curr_inx == field_count));
+			xfree(tmp_char);
+			break;
+		case PRINT_MAXVSIZETASK:
+			field->print_routine(field,
+					     step->sacct.max_vsize_id.taskid,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_MINCPU:
+			tmp_char = _elapsed_time((int)step->sacct.min_cpu, 0);
+			field->print_routine(field,
+					     tmp_char,
+					     (curr_inx == field_count));
+			xfree(tmp_char);
+			break;
+		case PRINT_MINCPUNODE:
+			tmp_char = find_hostname(
+					step->sacct.min_cpu_id.nodeid,
+					step->nodes);
+			field->print_routine(field,
+					     tmp_char,
+					     (curr_inx == field_count));
+			xfree(tmp_char);
+			break;
+		case PRINT_MINCPUTASK:
+			field->print_routine(field,
+					     step->sacct.min_cpu_id.taskid,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_NTASKS:
+			field->print_routine(field,
+					     step->ntasks,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_SYSTEMCPU:
+			tmp_char = _elapsed_time(step->sys_cpu_sec,
+						 step->sys_cpu_usec);
+
+			field->print_routine(field,
+					     tmp_char,
+					     (curr_inx == field_count));
+			xfree(tmp_char);
+			break;
+		case PRINT_TOTALCPU:
+			tmp_char = _elapsed_time(step->tot_cpu_sec, 
+						 step->tot_cpu_usec);
+
+			field->print_routine(field,
+					     tmp_char,
+					     (curr_inx == field_count));
+			xfree(tmp_char);
+			break;
+		default:
+			break;
+		}
+		curr_inx++;
 	}
 	printf("\n");
 }
 
-/* Field-specific print routines */
-
-extern void print_cputime(type_t type, void *object)
-{ 
-	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
-	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
-	char outbuf[FORMAT_STRING_SIZE];
-	char buf1[FORMAT_STRING_SIZE];
-	char buf2[FORMAT_STRING_SIZE];
-	char buf3[FORMAT_STRING_SIZE];
-	sacct_t sacct;
-	char *nodes = NULL;
-	uint32_t pos;
-
-	switch(type) {
-	case HEADLINE:
-		printf("%-37s", "MinCPUtime/Node:Task - Ave");
-		break;
-	case UNDERSCORE:
-		printf("%-37s", "-------------------------------------");
-		break;
-	case JOB:
-		sacct = job->sacct;
-		nodes = job->nodes;
-		pos = sacct.min_cpu_id.nodeid;				 
-		_elapsed_time((int)sacct.min_cpu, 0, buf1);
-		if(job->track_steps)
-			snprintf(outbuf, FORMAT_STRING_SIZE, 
-				 "%s/- - -", buf1);
-		else {
-			_elapsed_time((int)sacct.ave_cpu, 0, buf2);
-			find_hostname(pos, nodes, buf3);
-			snprintf(outbuf, FORMAT_STRING_SIZE, 
-				 "%s/%s:%u - %s", 
-				 buf1,
-				 buf3, 
-				 sacct.min_cpu_id.taskid, 
-				 buf2);
-		}
-		printf("%-37s", outbuf);
-		break;
-	case JOBSTEP:
-		sacct = step->sacct;
-		nodes = step->nodes;
-		pos = sacct.min_cpu_id.nodeid;				 
-		_elapsed_time((int)sacct.min_cpu, 0, buf1);
-		_elapsed_time((int)sacct.ave_cpu, 0, buf2);
-		find_hostname(pos, nodes, buf3);
-		snprintf(outbuf, FORMAT_STRING_SIZE, 
-			 "%s/%s:%u - %s", 
-			 buf1,
-			 buf3, 
-			 sacct.min_cpu_id.taskid, 
-			 buf2);
-		printf("%-37s", outbuf);
-		break;
-	default:
-		printf("%-37s", "n/a");
-		break;
-	} 
-}
-
-extern void print_jobid(type_t type, void *object)
-{
-	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
-	jobcomp_job_rec_t *jobcomp = (jobcomp_job_rec_t *)object;
-	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
-	char outbuf[10];
-
-	switch(type) {
-	case HEADLINE:
-		printf("%-10s", "JobID");
-		break;
-	case UNDERSCORE:
-		printf("%-10s", "----------");
-		break;
-	case JOB:
-		printf("%-10u", job->jobid);
-		break;
-	case JOBCOMP:
-		printf("%-10u", jobcomp->jobid);
-		break;
-	case JOBSTEP:
-		snprintf(outbuf, sizeof(outbuf), "%u.%u",
-			 step->jobid,
-			 step->stepid);
-		printf("%-10s", outbuf);
-		break;
-	default:
-		printf("%-10s", "n/a");
-		break;
-	} 
-
-}
-
-extern void print_ntasks(type_t type, void *object)
-{ 
-	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
-	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
-
-	switch(type) {
-	case HEADLINE:
-		printf("%-7s", "Ntasks");
-		break;
-	case UNDERSCORE:
-		printf("%-7s", "-------");
-		break;
-	case JOB:
-		printf("%-7u", job->alloc_cpus);
-		break;
-	case JOBSTEP:
-		printf("%-7u", step->ncpus);
-		break;
-	default:
-		printf("%-7s", "n/a");
-		break;
-	} 
-}
-
-extern void print_pages(type_t type, void *object)
-{ 
-	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
-	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
-	char outbuf[FORMAT_STRING_SIZE];
-	char buf1[FORMAT_STRING_SIZE];
-	char buf2[FORMAT_STRING_SIZE];
-	char buf3[FORMAT_STRING_SIZE];
-	sacct_t sacct;
-	char *nodes = NULL;
-	uint32_t pos;
-
-	switch(type) {
-	case HEADLINE:
-		printf("%-34s", "MaxPages/Node:Task - Ave");
-		break;
-	case UNDERSCORE:
-		printf("%-34s", "----------------------------------");
-		break;
-	case JOB:
-		sacct = job->sacct;
-		nodes = job->nodes;
-		pos = sacct.min_cpu_id.nodeid;				 
-		convert_num_unit((float)sacct.max_pages, 
-				 buf1, sizeof(buf1), UNIT_NONE);
-
-		if(job->track_steps)
-			snprintf(outbuf, FORMAT_STRING_SIZE, "%s/- - -", buf1);
-		else {
-			convert_num_unit((float)sacct.ave_pages,
-					 buf2, sizeof(buf2), UNIT_NONE);
-			find_hostname(pos, nodes, buf3);
-			snprintf(outbuf, FORMAT_STRING_SIZE, "%s/%s:%u - %s", 
-				 buf1,
-				 buf3,
-				 sacct.max_pages_id.taskid, 
-				 buf2);
-		}
-		printf("%-34s", outbuf);
-		break;
-	case JOBSTEP:
-		sacct = step->sacct;
-		nodes = step->nodes;
-		pos = sacct.min_cpu_id.nodeid;				 
-		convert_num_unit((float)sacct.max_pages, buf1, sizeof(buf1),
-				 UNIT_NONE);
-		convert_num_unit((float)sacct.ave_pages, buf2, sizeof(buf2),
-				 UNIT_NONE);
-		find_hostname(pos, nodes, buf3);
-		snprintf(outbuf, FORMAT_STRING_SIZE, "%s/%s:%u - %s", 
-			 buf1,
-			 buf3,
-			 sacct.max_pages_id.taskid, 
-			 buf2);
-		printf("%-34s", outbuf);
-		break;
-	default:
-		printf("%-34s", "n/a");
-		break;
-	} 
-}
-
-extern void print_rss(type_t type, void *object)
-{ 
-	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
-	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
-	char outbuf[FORMAT_STRING_SIZE];
-	char buf1[FORMAT_STRING_SIZE];
-	char buf2[FORMAT_STRING_SIZE];
-	char buf3[FORMAT_STRING_SIZE];
-	sacct_t sacct;
-	char *nodes = NULL;
-	uint32_t pos;
-
-	switch(type) {
-	case HEADLINE:
-		printf("%-34s", "MaxRSS/Node:Task - Ave");
-		break;
-	case UNDERSCORE:
-		printf("%-34s", "----------------------------------");
-		break;
-	case JOB:
-		sacct = job->sacct;
-		nodes = job->nodes;
-		pos = sacct.min_cpu_id.nodeid;				 
-		convert_num_unit((float)sacct.max_rss, buf1, sizeof(buf1),
-				 UNIT_KILO);
-
-		if(job->track_steps)
-			snprintf(outbuf, FORMAT_STRING_SIZE, "%s/- - -", buf1);
-		else {
-			convert_num_unit((float)sacct.ave_rss, 
-					 buf2, sizeof(buf2), UNIT_KILO);
-			find_hostname(pos, nodes, buf3);
-			snprintf(outbuf, FORMAT_STRING_SIZE, "%s/%s:%u - %s", 
-				 buf1,
-				 buf3, 
-				 sacct.max_rss_id.taskid, 
-				 buf2);
-		}
-		printf("%-34s", outbuf);
-		break;
-	case JOBSTEP:
-		sacct = step->sacct;
-		nodes = step->nodes;
-		pos = sacct.min_cpu_id.nodeid;				 
-		convert_num_unit((float)sacct.max_rss, buf1, sizeof(buf1),
-				 UNIT_KILO);
-		convert_num_unit((float)sacct.ave_rss, buf2, sizeof(buf2),
-				 UNIT_KILO);
-		find_hostname(pos, nodes, buf3);
-		snprintf(outbuf, FORMAT_STRING_SIZE, "%s/%s:%u - %s", 
-			 buf1,
-			 buf3, 
-			 sacct.max_rss_id.taskid, 
-			 buf2);
-		printf("%-34s", outbuf);
-		break;
-	default:
-		printf("%-34s", "n/a");
-		break;
-	} 
-}
-
-extern void print_state(type_t type, void *object)
-{ 
-	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
-	jobcomp_job_rec_t *jobcomp = (jobcomp_job_rec_t *)object;
-	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
-
-	switch(type) {
-	case HEADLINE:
-		printf("%-20s", "State");
-		break;
-	case UNDERSCORE:
-		printf("%-20s", "--------------------");
-		break;
-	case JOB:
-		if ( job->state == JOB_CANCELLED) {
-			printf ("%-10s by %6d",
-				job_state_string(job->state), job->requid);
-		}
-		else {
-			printf("%-20s", job_state_string(job->state));
-		}
-		break;
-	case JOBCOMP:
-		printf("%-20s", jobcomp->state);
-		break;
-	case JOBSTEP:
-		if ( step->state == JOB_CANCELLED) {
-			printf ("%-10s by %6d",
-				job_state_string(step->state), step->requid);
-		}
-		else {
-			printf("%-20s", job_state_string(step->state));
-		}
-		break;
-	default:
-		printf("%-20s", "n/a");
-		break;
-	} 
-}
-
-extern void print_vsize(type_t type, void *object)
-{ 
-	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
-	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
-	char outbuf[FORMAT_STRING_SIZE];
-	char buf1[FORMAT_STRING_SIZE];
-	char buf2[FORMAT_STRING_SIZE];
-	char buf3[FORMAT_STRING_SIZE];
-	sacct_t sacct;
-	char *nodes = NULL;
-	uint32_t pos;
-
-	switch(type) {
-	case HEADLINE:
-		printf("%-34s", "MaxVSIZE/Node:Task - Ave");
-		break;
-	case UNDERSCORE:
-		printf("%-34s", "----------------------------------");
-		break;
-	case JOB:
-		sacct = job->sacct;
-		nodes = job->nodes;
-		pos = sacct.min_cpu_id.nodeid;				 
-		convert_num_unit((float)sacct.max_vsize, 
-				 buf1, sizeof(buf1),UNIT_KILO);
-		if(job->track_steps)
-			snprintf(outbuf, FORMAT_STRING_SIZE, "%s/- - -", buf1);
-		else {
-			convert_num_unit((float)sacct.ave_vsize,
-					 buf2, sizeof(buf2), UNIT_KILO);
-			find_hostname(pos, nodes, buf3);
-			snprintf(outbuf, FORMAT_STRING_SIZE, "%s/%s:%u - %s", 
-				 buf1,
-				 buf3, 
-				 sacct.max_vsize_id.taskid, 
-				 buf2);
-		}
-		printf("%-34s", outbuf);
-		break;
-	case JOBSTEP:
-		sacct = step->sacct;
-		nodes = step->nodes;
-		pos = sacct.min_cpu_id.nodeid;				 
-		convert_num_unit((float)sacct.max_vsize, buf1, sizeof(buf1), 
-				 UNIT_KILO);
-		convert_num_unit((float)sacct.ave_vsize, buf2, sizeof(buf2),
-				 UNIT_KILO);
-		find_hostname(pos, nodes, buf3);
-		snprintf(outbuf, FORMAT_STRING_SIZE, "%s/%s:%u - %s", 
-			 buf1,
-			 buf3, 
-			 sacct.max_vsize_id.taskid, 
-			 buf2);
-		printf("%-34s", outbuf);
-		break;
-	default:
-		printf("%-34s", "n/a");
-		break;
-	} 
-}

@@ -1486,7 +1486,7 @@ extern int jobacct_storage_p_job_complete(void *db_conn,
 extern int jobacct_storage_p_step_start(void *db_conn,
 					struct step_record *step_ptr)
 {
-	uint32_t cpus = 0;
+	uint32_t cpus = 0, tasks = 0;
 	char node_list[BUFFER_SIZE];
 	slurmdbd_msg_t msg;
 	dbd_step_start_msg_t req;
@@ -1494,7 +1494,7 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 #ifdef HAVE_BG
 	char *ionodes = NULL;
 
-	cpus = step_ptr->job_ptr->num_procs;
+	cpus = tasks = step_ptr->job_ptr->num_procs;
 	select_g_get_jobinfo(step_ptr->job_ptr->select_jobinfo, 
 			     SELECT_DATA_IONODES, 
 			     &ionodes);
@@ -1509,11 +1509,12 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 	
 #else
 	if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
-		cpus = step_ptr->job_ptr->total_procs;
+		cpus = tasks = step_ptr->job_ptr->total_procs;
 		snprintf(node_list, BUFFER_SIZE, "%s",
 			 step_ptr->job_ptr->nodes);
 	} else {
-		cpus = step_ptr->step_layout->task_cnt;
+		cpus = step_ptr->cpu_count; 
+		tasks = step_ptr->step_layout->task_cnt;
 		snprintf(node_list, BUFFER_SIZE, "%s", 
 			 step_ptr->step_layout->node_list);
 	}
@@ -1537,6 +1538,7 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 		req.job_submit_time   = step_ptr->job_ptr->details->submit_time;
 	req.step_id     = step_ptr->step_id;
 	req.total_procs = cpus;
+	req.total_tasks = tasks;
 
 	msg.msg_type    = DBD_STEP_START;
 	msg.data        = &req;
@@ -1553,7 +1555,7 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 extern int jobacct_storage_p_step_complete(void *db_conn,
 					   struct step_record *step_ptr)
 {
-	uint32_t cpus = 0;
+	uint32_t cpus = 0, tasks = 0;
 	char node_list[BUFFER_SIZE];
 	slurmdbd_msg_t msg;
 	dbd_step_comp_msg_t req;
@@ -1561,7 +1563,7 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 #ifdef HAVE_BG
 	char *ionodes = NULL;
 
-	cpus = step_ptr->job_ptr->num_procs;
+	cpus = tasks = step_ptr->job_ptr->num_procs;
 	select_g_get_jobinfo(step_ptr->job_ptr->select_jobinfo, 
 			     SELECT_DATA_IONODES, 
 			     &ionodes);
@@ -1576,11 +1578,12 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 	
 #else
 	if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
-		cpus = step_ptr->job_ptr->total_procs;
+		cpus = tasks = step_ptr->job_ptr->total_procs;
 		snprintf(node_list, BUFFER_SIZE, "%s", 
 			 step_ptr->job_ptr->nodes);
 	} else {
-		cpus = step_ptr->step_layout->task_cnt;
+		cpus = step_ptr->cpu_count; 
+		tasks = step_ptr->step_layout->task_cnt;
 		snprintf(node_list, BUFFER_SIZE, "%s", 
 			 step_ptr->step_layout->node_list);
 	}
@@ -1606,6 +1609,7 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 		req.job_submit_time   = step_ptr->job_ptr->details->submit_time;
 	req.step_id     = step_ptr->step_id;
 	req.total_procs = cpus;
+	req.total_tasks = tasks;
 
 	msg.msg_type    = DBD_STEP_COMPLETE;
 	msg.data        = &req;

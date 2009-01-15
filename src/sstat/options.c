@@ -265,12 +265,14 @@ void parse_command_line(int argc, char **argv)
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 
 	static struct option long_options[] = {
-		{"cluster", 1, 0, 'C'},
-		{"fields", 1, 0, 'F'},
-		{"help", 0, &params.opt_help, 1},
-		{"help-fields", 0, &params.opt_help, 2},
+		{"helpformat", 0, 0, 'e'},
+		{"help", 0, 0, 'h'},
 		{"jobs", 1, 0, 'j'},
-		{"noheader", 0, &params.opt_noheader, 1},
+		{"noheader", 0, 0, 'n'},
+		{"fields", 1, 0, 'o'},
+		{"format", 1, 0, 'o'},
+		{"parsable", 0, 0, 'p'},
+		{"parsable2", 0, 0, 'P'},
 		{"usage", 0, &params.opt_help, 3},
 		{"verbose", 0, 0, 'v'},
 		{"version", 0, 0, 'V'},
@@ -283,16 +285,13 @@ void parse_command_line(int argc, char **argv)
 	opterr = 1;		/* Let getopt report problems to the user */
 
 	while (1) {		/* now cycle through the command line */
-		c = getopt_long(argc, argv, "F:hj:Vv",
+		c = getopt_long(argc, argv, "ehj:no:pPuvV",
 				long_options, &optionIndex);
 		if (c == -1)
 			break;
 		switch (c) {
-		case 'F':
-			if(params.opt_field_list)
-				xfree(params.opt_field_list);
-			
-			xstrfmtcat(params.opt_field_list, "%s,", optarg);
+		case 'e':
+			params.opt_help = 2;
 			break;
 		case 'h':
 			params.opt_help = 1;
@@ -309,6 +308,20 @@ void parse_command_line(int argc, char **argv)
 				params.opt_job_list = list_create(
 					destroy_jobacct_selected_step);
 			_addto_job_list(params.opt_job_list, optarg);
+			break;
+		case 'n':
+			print_fields_have_header = 0;
+			break;
+		case 'o':
+			xstrfmtcat(params.opt_field_list, "%s,", optarg);
+			break;
+		case 'p':
+			print_fields_parsable_print = 
+				PRINT_FIELDS_PARSABLE_ENDING;
+			break;
+		case 'P':
+			print_fields_parsable_print = 
+				PRINT_FIELDS_PARSABLE_NO_ENDING;
 			break;
 		case 'v':
 			/* Handle -vvv thusly...
@@ -364,32 +377,22 @@ void parse_command_line(int argc, char **argv)
 		xstrfmtcat(params.opt_field_list, "%s,", STAT_FIELDS);
 
 	if (params.opt_verbose) {
-		fprintf(stderr, "Options selected:\n"
-			"\topt_field_list=%s\n"
-			"\topt_noheader=%d\n"
-			"\topt_help=%d\n"
-			"\topt_verbose=%d\n",
-			params.opt_field_list,
-			params.opt_noheader,
-			params.opt_help,
-			params.opt_verbose);
 		logopt.stderr_level += params.opt_verbose;
 		log_alter(logopt, 0, NULL);
-
 	}
 
 	/* specific jobs requested? */
 	if (params.opt_verbose && params.opt_job_list
 	    && list_count(params.opt_job_list)) { 
-		fprintf(stderr, "Jobs requested:\n");
+		debug("Jobs requested:\n");
 		itr = list_iterator_create(params.opt_job_list);
 		while((selected_step = list_next(itr))) {
 			if(selected_step->stepid != NO_VAL) 
-				fprintf(stderr, "\t: %d.%d\n",
+				debug("\t: %d.%d\n",
 					selected_step->jobid,
 					selected_step->stepid);
 			else	
-				fprintf(stderr, "\t: %d\n", 
+				debug("\t: %d\n", 
 					selected_step->jobid);
 		}
 		list_iterator_destroy(itr);
@@ -406,24 +409,12 @@ void parse_command_line(int argc, char **argv)
 			if (!strcasecmp(fields[i].name, start))
 				goto foundfield;
 		}
-		fprintf(stderr,
-			"Invalid field requested: \"%s\"\n",
-			start);
+		error("Invalid field requested: \"%s\"", start);
 		exit(1);
 	foundfield:
-		printfields[nprintfields++] = i;
+		list_append(print_fields_list, &fields[i]);
 		start = end + 1;
 	}
-
-	if (params.opt_verbose) {
-		fprintf(stderr, "%d field%s selected:\n",
-			nprintfields,
-			(nprintfields==1? "" : "s"));
-		for (i = 0; i < nprintfields; i++)
-			fprintf(stderr,
-				"\t%s\n",
-				fields[printfields[i]].name);
-	} 
 
 	return;
 }

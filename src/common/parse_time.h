@@ -60,6 +60,7 @@
  *   midnight, noon, teatime (4PM)
  *   HH:MM [AM|PM]
  *   MMDDYY or MM/DD/YY or MM.DD.YY
+ *   YYYY-MM-DD[THH[:MM[:SS]]]
  *   now + count [minutes | hours | days | weeks]
  *
  * Invalid input results in message to stderr and return value of zero

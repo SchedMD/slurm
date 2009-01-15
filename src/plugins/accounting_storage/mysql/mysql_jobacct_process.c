@@ -414,6 +414,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		"t1.kill_requid",
 		"t1.comp_code",
 		"t1.cpus",
+		"t1.tasks",
 		"t1.user_sec",
 		"t1.user_usec",
 		"t1.sys_sec",
@@ -480,6 +481,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		STEP_REQ_KILL_REQUID,
 		STEP_REQ_COMP_CODE,
 		STEP_REQ_CPUS,
+		STEP_REQ_TASKS,
 		STEP_REQ_USER_SEC,
 		STEP_REQ_USER_USEC,
 		STEP_REQ_SYS_SEC,
@@ -817,7 +819,9 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		xfree(query);
 		while ((step_row = mysql_fetch_row(step_result))) {
 			step = create_jobacct_step_rec();
-			step->jobid = job->jobid;
+			step->job_ptr = job;
+			if(!job->first_step_ptr)
+				job->first_step_ptr = step;
 			list_append(job->steps, step);
 			step->stepid = atoi(step_row[STEP_REQ_STEPID]);
 			/* info("got step %u.%u", */
@@ -825,6 +829,11 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 			step->state = atoi(step_row[STEP_REQ_STATE]);
 			step->exitcode = atoi(step_row[STEP_REQ_COMP_CODE]);
 			step->ncpus = atoi(step_row[STEP_REQ_CPUS]);
+
+			step->ntasks = atoi(step_row[STEP_REQ_TASKS]);
+			if(!step->ntasks)
+				step->ntasks = step->ncpus;
+
 			step->start = atoi(step_row[STEP_REQ_START]);
 			
 			step->end = atoi(step_row[STEP_REQ_END]);
@@ -920,10 +929,10 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 			if(list_count(job->steps) > 1) 
 				job->track_steps = 1;
 			else if(step && step->stepname && job->jobname) {
-				if(strcmp(step->stepname, job->jobname))
+				if(strcmp(step->stepname, job->jobname)) 
 					job->track_steps = 1;
 			}
-               }
+		}
 	}
 	mysql_free_result(result);
 
@@ -990,6 +999,7 @@ extern int mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 		"kill_requid",
 		"comp_code",
 		"cpus",
+		"tasks",
 		"user_sec",
 		"user_usec",
 		"sys_sec",
@@ -1053,6 +1063,7 @@ extern int mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 		STEP_REQ_KILL_REQUID,
 		STEP_REQ_COMP_CODE,
 		STEP_REQ_CPUS,
+		STEP_REQ_TASKS,
 		STEP_REQ_USER_SEC,
 		STEP_REQ_USER_USEC,
 		STEP_REQ_SYS_SEC,
