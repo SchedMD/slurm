@@ -2,7 +2,8 @@
  *  update_config.c - request that slurmctld update its configuration
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> and Kevin Tew <tew1@llnl.gov>.
  *  LLNL-CODE-402394.
@@ -75,6 +76,17 @@ slurm_update_node ( update_node_msg_t * node_msg )
 }
 
 /*
+ * slurm_create_partition - create a new partition, only usable by user root
+ * IN part_msg - description of partition configuration
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ */
+int 
+slurm_create_partition ( update_part_msg_t * part_msg ) 
+{
+	return _slurm_update ((void *) part_msg, REQUEST_CREATE_PARTITION);
+}
+
+/*
  * slurm_update_partition - issue RPC to a partition's configuration per  
  *	request, only usable by user root
  * IN part_msg - description of partition updates
@@ -89,7 +101,7 @@ slurm_update_partition ( update_part_msg_t * part_msg )
 /*
  * slurm_delete_partition - issue RPC to delete a partition, only usable 
  *	by user root
- * IN part_msg - description of partition updates
+ * IN part_msg - description of partition to delete
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 int 
@@ -97,6 +109,41 @@ slurm_delete_partition ( delete_part_msg_t * part_msg )
 {
 	return _slurm_update ((void *) part_msg, REQUEST_DELETE_PARTITION);
 }
+
+/*
+ * slurm_create_reservation - create a new reservation, only usable by user root
+ * IN resv_msg - description of reservation
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ */
+int 
+slurm_create_reservation (reserve_request_msg_t * resv_msg ) 
+{
+	return _slurm_update ((void *) resv_msg, REQUEST_CREATE_RESERVATION);
+}
+
+/*
+ * slurm_update_reservation - modify an existing reservation, only usable by 
+ *	user root
+ * IN resv_msg - description of reservation
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ */
+extern int slurm_update_reservation (reserve_request_msg_t * resv_msg )
+{
+	return _slurm_update ((void *) resv_msg, REQUEST_UPDATE_RESERVATION);
+}
+
+/*
+ * slurm_delete_reservation - issue RPC to delete a reservation, only usable 
+ *	by user root
+ * IN resv_msg - description of reservation to delete
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ */
+int 
+slurm_delete_reservation ( delete_reserve_msg_t * resv_msg ) 
+{
+	return _slurm_update ((void *) resv_msg, REQUEST_DELETE_RESERVATION);
+}
+
 
 /* _slurm_update - issue RPC for all update requests */
 static int 

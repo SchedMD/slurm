@@ -432,6 +432,27 @@ void slurm_free_delete_part_msg(delete_part_msg_t * msg)
 	}
 }
 
+void slurm_free_update_resv_msg(reserve_request_msg_t * msg)
+{
+	if (msg) {
+		xfree(msg->accounts);
+		xfree(msg->features);
+		xfree(msg->partition);
+		xfree(msg->name);
+		xfree(msg->node_list);
+		xfree(msg->users);
+		xfree(msg);
+	}
+}
+
+void slurm_free_delete_resv_msg(delete_reserve_msg_t * msg)
+{
+	if (msg) {
+		xfree(msg->name);
+		xfree(msg);
+	}
+}
+
 void slurm_free_job_step_create_request_msg(job_step_create_request_msg_t *
 					    msg)
 {
@@ -1438,11 +1459,19 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_UPDATE_NODE:
 		slurm_free_update_node_msg(data);
 		break;
+	case REQUEST_CREATE_PARTITION:
 	case REQUEST_UPDATE_PARTITION:
 		slurm_free_update_part_msg(data);
 		break;
 	case REQUEST_DELETE_PARTITION:		
 		slurm_free_delete_part_msg(data);
+		break;
+	case REQUEST_CREATE_RESERVATION:
+	case REQUEST_UPDATE_RESERVATION:
+		slurm_free_update_resv_msg(data);
+		break;
+	case REQUEST_DELETE_RESERVATION:		
+		slurm_free_delete_resv_msg(data);
 		break;
 	case REQUEST_NODE_REGISTRATION_STATUS:
 		slurm_free_node_registration_status_msg(data);

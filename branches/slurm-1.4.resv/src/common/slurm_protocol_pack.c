@@ -523,6 +523,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		_pack_update_node_msg((update_node_msg_t *) msg->data,
 				      buffer);
 		break;
+	case REQUEST_CREATE_PARTITION:
 	case REQUEST_UPDATE_PARTITION:
 		_pack_update_partition_msg((update_part_msg_t *) msg->
 					   data, buffer);
@@ -530,6 +531,15 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	case REQUEST_DELETE_PARTITION:
 		_pack_delete_partition_msg((delete_part_msg_t *) msg->
 					   data, buffer);
+		break;
+	case REQUEST_CREATE_RESERVATION:
+	case REQUEST_UPDATE_RESERVATION:
+		_pack_update_resv_msg((request_reserve_msg_t *) msg->
+				      data, buffer);
+		break;
+	case REQUEST_DELETE_RESERVATION:
+		_pack_delete_resv_msg((delete_reserve_msg_t *) msg->
+				      data, buffer);
 		break;
 	case REQUEST_REATTACH_TASKS:
 		_pack_reattach_tasks_request_msg(
@@ -864,6 +874,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		rc = _unpack_update_node_msg((update_node_msg_t **) &
 					     (msg->data), buffer);
 		break;
+	case REQUEST_CREATE_PARTITION:
 	case REQUEST_UPDATE_PARTITION:
 		rc = _unpack_update_partition_msg((update_part_msg_t **) &
 						  (msg->data), buffer);
@@ -871,6 +882,15 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case REQUEST_DELETE_PARTITION:
 		rc = _unpack_delete_partition_msg((delete_part_msg_t **) &
 						  (msg->data), buffer);
+		break;
+	case REQUEST_CREATE_RESERVATION:
+	case REQUEST_UPDATE_RESERVATION:
+		rc = _unpack_update_resv_msg((reserve_request_msg_t **)
+					     &(msg->data), buffer);
+		break;
+	case REQUEST_DELETE_RESERVATION:
+		rc = _unpack_delete_resv_msg((delete_reserve_msg_t **)
+					     &(msg->data), buffer);
 		break;
 	case REQUEST_LAUNCH_TASKS:
 		rc = _unpack_launch_tasks_request_msg(
@@ -1747,6 +1767,55 @@ unpack_error:
 }
 
 static void
+_pack_update_resv_msg(reseve_request_msg_t * msg, Buf buffer)
+{
+	xassert(msg != NULL);
+
+	packstr(msg->name,         buffer);
+	pack_time(msg->start_time, buffer);
+	pack_time(msg->end_time,   buffer);
+	pack16(msg->type,          buffer);
+	pack32(msg->node_cnt,      buffer);
+	packstr(msg->node_list,    buffer);
+	packstr(msg->features,     buffer);
+	packstr(msg->partition,    buffer);
+
+	packstr(msg->users,        buffer);
+	packstr(msg->accounts,     buffer);
+}
+
+static int
+_unpack_update_resv_msg(reserve_request_msg_t ** msg, Buf buffer)
+{
+	uint32_t uint32_tmp;
+	reserve_request_msg_t *tmp_ptr;
+
+	xassert(msg != NULL);
+
+	/* alloc memory for structure */
+	tmp_ptr = xmalloc(sizeof(reserve_request_msg_t));
+	*msg = tmp_ptr;
+
+	safe_unpackstr_xmalloc(&tmp_ptr->name, &uint32_tmp, buffer);
+	safe_unpack_time(&tmp_ptr->start_time, buffer);
+	safe_unpack_time(&tmp_ptr->end_time,   buffer);
+	safe_unpack16(&tmp_ptr->type,          buffer);
+	safe_unpack32(&tmp_ptr->node_cnt,      buffer);
+	safe_unpackstr_xmalloc(&tmp_ptr->node_list, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&tmp_ptr->features,  &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&tmp_ptr->partition, &uint32_tmp, buffer);
+
+	safe_unpackstr_xmalloc(&tmp_ptr->users,     &uint32_tmp, buffer);	
+	safe_unpackstr_xmalloc(&tmp_ptr->accounts,  &uint32_tmp, buffer);
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_update_resv_msg(tmp_ptr);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
+static void
 _pack_delete_partition_msg(delete_part_msg_t * msg, Buf buffer)
 {
 	xassert(msg != NULL);
@@ -1771,6 +1840,35 @@ _unpack_delete_partition_msg(delete_part_msg_t ** msg, Buf buffer)
 
 unpack_error:
 	slurm_free_delete_part_msg(tmp_ptr);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
+static void
+_pack_delete_resv_msg(delete_reserve_msg_t * msg, Buf buffer)
+{
+	xassert(msg != NULL);
+
+	packstr(msg->name,         buffer);
+}
+
+static int
+_unpack_delete_resv_msg(delete_reserve_msg_t ** msg, Buf buffer)
+{
+	uint32_t uint32_tmp;
+	delete_reserve_msg_t *tmp_ptr;
+
+	xassert(msg != NULL);
+
+	/* alloc memory for structure */
+	tmp_ptr = xmalloc(sizeof(delete_reserve_msg_t));
+	*msg = tmp_ptr;
+
+	safe_unpackstr_xmalloc(&tmp_ptr->name, &uint32_tmp, buffer);
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_delete_resv_msg(tmp_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
