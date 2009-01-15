@@ -124,17 +124,18 @@ extern int build_select_job_res(select_job_res_t select_job_res,
 }
 
 /* Rebuild cpu_array_cnt, cpu_array_value, and cpu_array_reps based upon the
- * values of nhosts and cpus in an existing data structure */
+ * values of nhosts and cpus in an existing data structure
+ * Return total CPU count or -1 on error */
 extern int build_select_job_res_cpu_array(select_job_res_t select_job_res_ptr)
 {
-	int i;
+	int cpu_count = 0, i;
 	uint32_t last_cpu_cnt = 0;
 
 	if (select_job_res_ptr->nhosts == 0)
-		return SLURM_SUCCESS;	/* no work to do */
+		return cpu_count;	/* no work to do */
 	if (select_job_res_ptr->cpus == NULL) {
 		error("build_select_job_res_cpu_array: cpus==NULL");
-		return SLURM_ERROR;
+		return -1;
 	}
 
 	/* clear vestigial data and create new arrays of max size */
@@ -159,29 +160,31 @@ extern int build_select_job_res_cpu_array(select_job_res_t select_job_res_ptr)
 			select_job_res_ptr->cpu_array_reps[
 				select_job_res_ptr->cpu_array_cnt-1]++;
 		}
+		cpu_count += last_cpu_cnt;
 	}
-	return SLURM_SUCCESS;
+	return cpu_count;
 }
 
 /* Rebuild cpus array based upon the values of nhosts, cpu_array_value and
- * cpu_array_reps in an existing data structure */
+ * cpu_array_reps in an existing data structure
+ * Return total CPU count or -1 on error */
 extern int build_select_job_res_cpus_array(select_job_res_t select_job_res_ptr)
 {
-	int cpu_inx, i, j;
+	int cpu_count = 0, cpu_inx, i, j;
 
 	if (select_job_res_ptr->nhosts == 0)
-		return SLURM_SUCCESS;	/* no work to do */
+		return cpu_count;	/* no work to do */
 	if (select_job_res_ptr->cpu_array_cnt == 0) {
 		error("build_select_job_res_cpus_array: cpu_array_cnt==0");
-		return SLURM_ERROR;
+		return -1;
 	}
 	if (select_job_res_ptr->cpu_array_value == NULL) {
 		error("build_select_job_res_cpus_array: cpu_array_value==NULL");
-		return SLURM_ERROR;
+		return -1;
 	}
 	if (select_job_res_ptr->cpu_array_reps == NULL) {
 		error("build_select_job_res_cpus_array: cpu_array_reps==NULL");
-		return SLURM_ERROR;
+		return -1;
 	}
 
 	/* clear vestigial data and create new arrays of max size */
@@ -195,8 +198,9 @@ extern int build_select_job_res_cpus_array(select_job_res_t select_job_res_ptr)
 			if (cpu_inx >= select_job_res_ptr->nhosts) {
 				error("build_select_job_res_cpus_array: "
 				      "cpu_array is too long");
-				return SLURM_ERROR;
+				return -1;
 			}
+			cpu_count += select_job_res_ptr->cpus[i];
 			select_job_res_ptr->cpus[cpu_inx++] = 
 				select_job_res_ptr->cpus[i];
 		}
@@ -204,9 +208,9 @@ extern int build_select_job_res_cpus_array(select_job_res_t select_job_res_ptr)
 	if (cpu_inx < select_job_res_ptr->nhosts) {
 		error("build_select_job_res_cpus_array: "
 		      "cpu_array is incomplete");
-		return SLURM_ERROR;
+		return -1;
 	}
-	return SLURM_SUCCESS;
+	return cpu_count;
 }
 
 /* Reset the node_bitmap in a select_job_res data structure
