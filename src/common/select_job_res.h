@@ -136,11 +136,13 @@ extern int build_select_job_res(select_job_res_t select_job_res_ptr,
 				uint16_t fast_schedule);
 
 /* Rebuild cpu_array_cnt, cpu_array_value, and cpu_array_reps based upon the
- * values of cpus in an existing data structure */
+ * values of cpus in an existing data structure
+ * Return total CPU count or -1 on error */
 extern int build_select_job_res_cpu_array(select_job_res_t select_job_res_ptr);
 
 /* Rebuild cpus array based upon the values of nhosts, cpu_array_value and
- * cpu_array_reps in an existing data structure */
+ * cpu_array_reps in an existing data structure
+ * Return total CPU count or -1 on error */
 extern int build_select_job_res_cpus_array(select_job_res_t select_job_res_ptr);
 
 /* Validate a select_job_res data structure originally built using

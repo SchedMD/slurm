@@ -1337,6 +1337,7 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	bitstr_t *tmpcore = NULL, *reqmap = NULL;
 	bool test_only;
 	uint32_t c, i, n, csize, total_cpus, save_mem = 0;
+	int32_t build_cnt;
 	select_job_res_t job_res;
 	struct part_res_record *p_ptr, *jp_ptr;
 	uint16_t *cpu_count;
@@ -1722,7 +1723,6 @@ alloc_job:
 	 */
 	if (job_ptr->details->overcommit && job_ptr->details->num_tasks)
 		job_res->nprocs = MIN(total_cpus, job_ptr->details->num_tasks);
-	job_ptr->total_procs = total_cpus;
 
 	debug3("cons_res: cr_job_test: job %u nprocs %u cbits %u/%u nbits %u",
 		job_ptr->job_id, job_res->nprocs, bit_set_count(free_cores),
@@ -1738,7 +1738,11 @@ alloc_job:
 	}
 
 	/* translate job_res->cpus array into format with rep count */
-	build_select_job_res_cpu_array(job_res);
+	build_cnt = build_select_job_res_cpu_array(job_res);
+	if (build_cnt >= 0)
+		job_ptr->total_procs = build_cnt;
+	else
+		job_ptr->total_procs = total_cpus;	/* best guess */
 
 	if ((cr_type != CR_CPU_MEMORY) && (cr_type != CR_CORE_MEMORY) &&
 	    (cr_type != CR_SOCKET_MEMORY) && (cr_type != CR_MEMORY))
