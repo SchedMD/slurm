@@ -276,7 +276,7 @@ void slurmctld_req (slurm_msg_t * msg)
 		break;
 	case REQUEST_DELETE_RESERVATION:
 		_slurm_rpc_resv_delete(msg);
-		slurm_free_delete_resv_msg(msg->data);
+		slurm_free_resv_name_msg(msg->data);
 		break;
 	case REQUEST_NODE_REGISTRATION_STATUS:
 		error("slurmctld is talking with itself. "
@@ -2347,9 +2347,9 @@ static void _slurm_rpc_resv_create(slurm_msg_t * msg)
 	DEF_TIMERS;
 	reserve_request_msg_t *resv_desc_ptr = (reserve_request_msg_t *) 
 						msg->data;
-	/* Locks: read node, read partition */
+	/* Locks: write node, read partition */
 	slurmctld_lock_t part_read_lock = { 
-		NO_LOCK, NO_LOCK, READ_LOCK, WRITE_LOCK };
+		NO_LOCK, NO_LOCK, WRITE_LOCK, READ_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 
 	START_TIMER;
@@ -2376,9 +2376,16 @@ static void _slurm_rpc_resv_create(slurm_msg_t * msg)
 			resv_desc_ptr->name, slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
 	} else {
+		slurm_msg_t response_msg;
+		reservation_name_msg_t resv_resp_msg;
+
 		debug2("_slurm_rpc_resv_create complete for %s %s",
 			resv_desc_ptr->name, TIME_STR);
-		slurm_send_rc_msg(msg, SLURM_SUCCESS);
+		/* send reservation name */
+		resv_resp_msg.name    = resv_desc_ptr->name;
+		response_msg.msg_type = RESPONSE_CREATE_RESERVATION;
+		response_msg.data     = &resv_resp_msg;
+		slurm_send_node_msg(msg->conn_fd, &response_msg);
 
 		/* NOTE: These functions provide their own locks */
 		if (schedule()) {
@@ -2395,9 +2402,9 @@ static void _slurm_rpc_resv_update(slurm_msg_t * msg)
 	DEF_TIMERS;
 	reserve_request_msg_t *resv_desc_ptr = (reserve_request_msg_t *) 
 						msg->data;
-	/* Locks: read node, read partition */
+	/* Locks: write node, read partition */
 	slurmctld_lock_t part_read_lock = { 
-		NO_LOCK, NO_LOCK, READ_LOCK, WRITE_LOCK };
+		NO_LOCK, NO_LOCK, WRITE_LOCK, READ_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 
 	START_TIMER;
@@ -2442,7 +2449,8 @@ static void _slurm_rpc_resv_delete(slurm_msg_t * msg)
 	/* init */
 	int error_code = SLURM_SUCCESS;
 	DEF_TIMERS;
-	delete_reserve_msg_t *resv_desc_ptr = (delete_reserve_msg_t *)msg->data;
+	reservation_name_msg_t *resv_desc_ptr = (reservation_name_msg_t *)
+					      msg->data;
 	/* Locks: read node, read partition */
 	slurmctld_lock_t part_read_lock = { 
 		NO_LOCK, NO_LOCK, READ_LOCK, READ_LOCK };

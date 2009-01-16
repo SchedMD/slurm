@@ -1000,9 +1000,10 @@ typedef struct reserve_response_msg {
 	char *name;		/* name of reservation */
 } reserve_response_msg_t;
 
-typedef struct delete_reserve_msg {
-	char *name;		/* name of reservation to be delete */
-} delete_reserve_msg_t;
+typedef struct reservation_name_msg {
+	char *name;		/* name of reservation just created or
+				 * to be delete */
+} reservation_name_msg_t;
 
 
 #define DEBUG_FLAG_SELECT_TYPE	0x00000001	/* SelectType plugin */
@@ -1999,9 +2000,11 @@ extern void slurm_init_resv_desc_msg PARAMS((
 /*
  * slurm_create_reservation - create a new reservation, only usable by user root
  * IN resv_msg - description of reservation
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET name of reservation on success (caller must free the memory),
+ *	otherwise return NULL and set errno to indicate the error
  */
-extern int slurm_create_reservation PARAMS((reserve_request_msg_t *resv_msg));
+extern char * slurm_create_reservation PARAMS((
+		reserve_request_msg_t * resv_msg ));
 
 /*
  * slurm_update_reservation - modify an existing reservation, only usable by 
@@ -2018,7 +2021,7 @@ extern int slurm_update_reservation PARAMS((reserve_request_msg_t * resv_msg));
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 extern int slurm_delete_reservation PARAMS(( 
-		delete_reserve_msg_t * resv_msg ));
+		reservation_name_msg_t * resv_msg ));
 
 /*
  * slurm_load_reservations - issue RPC to get all slurm reservation 

@@ -360,8 +360,8 @@ static int _unpack_accounting_update_msg(accounting_update_msg_t **msg,
 
 static void _pack_update_resv_msg(reserve_request_msg_t * msg, Buf buffer);
 static int  _unpack_update_resv_msg(reserve_request_msg_t ** msg, Buf buffer);
-static void _pack_delete_resv_msg(delete_reserve_msg_t * msg, Buf buffer);
-static int  _unpack_delete_resv_msg(delete_reserve_msg_t ** msg, Buf buffer);
+static void _pack_resv_name_msg(reservation_name_msg_t * msg, Buf buffer);
+static int  _unpack_resv_name_msg(reservation_name_msg_t ** msg, Buf buffer);
 
 /* pack_header
  * packs a slurm protocol header that proceeds every slurm message
@@ -543,8 +543,9 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 				      data, buffer);
 		break;
 	case REQUEST_DELETE_RESERVATION:
-		_pack_delete_resv_msg((delete_reserve_msg_t *) msg->
-				      data, buffer);
+	case RESPONSE_CREATE_RESERVATION:
+		_pack_resv_name_msg((reservation_name_msg_t *) msg->
+				     data, buffer);
 		break;
 	case REQUEST_REATTACH_TASKS:
 		_pack_reattach_tasks_request_msg(
@@ -894,7 +895,8 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 					     &(msg->data), buffer);
 		break;
 	case REQUEST_DELETE_RESERVATION:
-		rc = _unpack_delete_resv_msg((delete_reserve_msg_t **)
+	case RESPONSE_CREATE_RESERVATION:
+		rc = _unpack_resv_name_msg((reservation_name_msg_t **)
 					     &(msg->data), buffer);
 		break;
 	case REQUEST_LAUNCH_TASKS:
@@ -1850,7 +1852,7 @@ unpack_error:
 }
 
 static void
-_pack_delete_resv_msg(delete_reserve_msg_t * msg, Buf buffer)
+_pack_resv_name_msg(reservation_name_msg_t * msg, Buf buffer)
 {
 	xassert(msg != NULL);
 
@@ -1858,22 +1860,22 @@ _pack_delete_resv_msg(delete_reserve_msg_t * msg, Buf buffer)
 }
 
 static int
-_unpack_delete_resv_msg(delete_reserve_msg_t ** msg, Buf buffer)
+_unpack_resv_name_msg(reservation_name_msg_t ** msg, Buf buffer)
 {
 	uint32_t uint32_tmp;
-	delete_reserve_msg_t *tmp_ptr;
+	reservation_name_msg_t *tmp_ptr;
 
 	xassert(msg != NULL);
 
 	/* alloc memory for structure */
-	tmp_ptr = xmalloc(sizeof(delete_reserve_msg_t));
+	tmp_ptr = xmalloc(sizeof(reservation_name_msg_t));
 	*msg = tmp_ptr;
 
 	safe_unpackstr_xmalloc(&tmp_ptr->name, &uint32_tmp, buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_free_delete_resv_msg(tmp_ptr);
+	slurm_free_resv_name_msg(tmp_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }

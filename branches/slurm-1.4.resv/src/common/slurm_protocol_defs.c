@@ -445,7 +445,7 @@ void slurm_free_update_resv_msg(reserve_request_msg_t * msg)
 	}
 }
 
-void slurm_free_delete_resv_msg(delete_reserve_msg_t * msg)
+void slurm_free_resv_name_msg(reservation_name_msg_t * msg)
 {
 	if (msg) {
 		xfree(msg->name);
@@ -1470,8 +1470,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_UPDATE_RESERVATION:
 		slurm_free_update_resv_msg(data);
 		break;
-	case REQUEST_DELETE_RESERVATION:		
-		slurm_free_delete_resv_msg(data);
+	case REQUEST_DELETE_RESERVATION:
+	case RESPONSE_CREATE_RESERVATION:		
+		slurm_free_resv_name_msg(data);
 		break;
 	case REQUEST_NODE_REGISTRATION_STATUS:
 		slurm_free_node_registration_status_msg(data);

@@ -15,7 +15,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -43,16 +43,60 @@
 #  include <pthread.h>
 #endif				/* WITH_PTHREADS */
 
+#include <string.h>
+#include <stdlib.h>
+#include <time.h>
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 
+#include "src/common/bitstring.h"
 #include "src/common/hostlist.h"
+#include "src/common/list.h"
 #include "src/common/log.h"
+#include "src/common/macros.h"
 #include "src/common/parse_time.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
+
+#include "src/slurmctld/slurmctld.h"
 
 #define _RESV_DEBUG 1
 
-inline static void _dump_resv_req(reserve_request_msg_t *resv_ptr, char *mode)
+typedef struct slurmctld_resv {
+	char *accounts;		/* names of accounts permitted to use	*/
+	time_t end_time;	/* end time of reservation		*/
+	char *features;		/* required node features		*/
+	char *name;		/* name of reservation			*/
+	uint32_t node_cnt;	/* count of nodes required		*/
+	char *node_list;	/* list of reserved nodes or ALL	*/
+	bitstr_t *node_bitmap;	/* bitmap of reserved nodes		*/
+	char *partition;	/* name of partition to be used		*/
+	struct part_record *part_ptr;	/* pointer to partition used	*/
+	time_t start_time;	/* start time of reservation		*/
+	uint16_t type;		/* see RESERVE_TYPE_* above		*/
+	char *users;		/* names of users permitted to use	*/
+} slurmctld_resv_t;
+
+List resv_list = (List) NULL;
+
+static void _del_resv_rec(void *x)
+{
+	slurmctld_resv_t *resv_ptr = (slurmctld_resv_t *) x;
+
+	if (resv_ptr) {
+		xfree(resv_ptr->accounts);
+		xfree(resv_ptr->features);
+		xfree(resv_ptr->name);
+		if (resv_ptr->node_bitmap)
+			bit_free(resv_ptr->node_bitmap);
+		xfree(resv_ptr->node_list);
+		xfree(resv_ptr->partition);
+		xfree(resv_ptr->users);
+		xfree(resv_ptr);
+	}
+}
+
+static void _dump_resv_req(reserve_request_msg_t *resv_ptr, char *mode)
 {
 #ifdef _RESV_DEBUG
 	char start_str[32], end_str[32], *type_str;
@@ -72,10 +116,111 @@ inline static void _dump_resv_req(reserve_request_msg_t *resv_ptr, char *mode)
 #endif
 }
 
+static void _generate_resv_name(reserve_request_msg_t *resv_ptr)
+{
+	char *key, *name, *sep, tmp[14];
+	ListIterator iter;
+	int i, len, top_suffix = 0;
+	slurmctld_resv_t * exist_resv_ptr;
+
+	/* Generate name prefix */
+	if (resv_ptr->users)
+		key = resv_ptr->users;
+	else
+		key = resv_ptr->accounts;
+	sep = strchr(key, ',');
+	if (sep)
+		len = sep - key;
+	else
+		len = strlen(key);
+	name = xmalloc(len + 16);
+	strncpy(name, key, len);
+	strcat(name, "_");
+	len++;
+
+	iter = list_iterator_create(resv_list);
+	if (!iter)
+		fatal("malloc: list_iterator_create");
+	while ((exist_resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+		if (strncmp(name, exist_resv_ptr->name, len))
+			continue;
+		i = atoi(exist_resv_ptr->name + len);
+		top_suffix = MAX(i, top_suffix);
+	}
+	list_iterator_destroy(iter);
+	snprintf(tmp, sizeof(tmp), "%d", top_suffix);
+	strcat(name, tmp);
+}
+
 /* Create a resource reservation */
 extern int create_resv(reserve_request_msg_t *resv_desc_ptr)
 {
+	time_t now = time(NULL);
+	struct part_record *part_ptr = NULL;
+	bitstr_t *node_bitmap;
+	slurmctld_resv_t *resv_ptr;
+
 	_dump_resv_req(resv_desc_ptr, "create_resv");
+
+	/* Validate the request */
+	if ((resv_desc_ptr->accounts == NULL) &&
+	    (resv_desc_ptr->users == NULL))
+		return ESLURM_USER_ID_MISSING;
+	if (resv_desc_ptr->start_time) {
+		if (resv_desc_ptr->start_time < (now - 60))
+			return ESLURM_INVALID_TIME_VALUE;
+	} else
+		resv_desc_ptr->start_time = now;
+	if (resv_desc_ptr->end_time) {
+		if (resv_desc_ptr->end_time < (now - 60))
+			return ESLURM_INVALID_TIME_VALUE;
+	} else
+		resv_desc_ptr->end_time = INFINITE;
+	if (resv_desc_ptr->type > RESERVE_TYPE_MAINT) {
+		error("Invalid reservation type %u ignored",
+		      resv_desc_ptr->type);
+		resv_desc_ptr->type = 0;
+	}
+	if (resv_desc_ptr->partition) {
+		part_ptr = find_part_record(resv_desc_ptr->partition);
+		if (!part_ptr)
+			return ESLURM_INVALID_PARTITION_NAME;
+	}
+	if (resv_desc_ptr->node_list) {
+		if (strcmp(resv_desc_ptr->node_list, "ALL") &&
+		    node_name2bitmap(resv_desc_ptr->node_list, 
+				     false, &node_bitmap))
+			return ESLURM_INVALID_NODE_NAME;
+	} else if (resv_desc_ptr->node_cnt == 0)
+		return ESLURM_INVALID_NODE_NAME;
+/* FIXME: Need to add validation for: accounts, features, name, users */
+/* Free node_bitmap on error or generate it last */
+
+	resv_ptr = xmalloc(sizeof(slurmctld_resv_t));
+	resv_ptr->accounts	= resv_desc_ptr->accounts;
+	resv_desc_ptr->accounts = NULL;		/* Nothing left to free */
+	resv_ptr->end_time	= resv_desc_ptr->end_time;
+	resv_ptr->features	= resv_desc_ptr->features;
+	resv_desc_ptr->features = NULL;		/* Nothing left to free */
+	resv_ptr->node_cnt	= resv_desc_ptr->node_cnt;
+	resv_ptr->node_list	= resv_desc_ptr->node_list;
+	resv_desc_ptr->node_list = NULL;	/* Nothing left to free */
+	resv_ptr->node_bitmap	= node_bitmap;	/* May be unset */
+	resv_ptr->partition	= resv_desc_ptr->partition;
+	resv_desc_ptr->partition = NULL;	/* Nothing left to free */
+	resv_ptr->part_ptr	= part_ptr;
+	resv_ptr->start_time	= resv_desc_ptr->start_time;
+	resv_ptr->type		= resv_desc_ptr->type;
+	resv_ptr->users		= resv_desc_ptr->users;
+	resv_desc_ptr->users = NULL;		/* Nothing left to free */
+	if (!resv_desc_ptr->name)
+		_generate_resv_name(resv_desc_ptr);
+	resv_ptr->name	= xstrdup(resv_desc_ptr->name);
+
+	if (!resv_list)
+		list_create(_del_resv_rec);
+	list_append(resv_list, resv_ptr);
+
 	return SLURM_SUCCESS;
 }
 
@@ -87,7 +232,7 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 }
 
 /* Delete an exiting resource reservation */
-extern int delete_resv(delete_reserve_msg_t *resv_desc_ptr)
+extern int delete_resv(reservation_name_msg_t *resv_desc_ptr)
 {
 #ifdef _RESV_DEBUG
 	info("delete_resv: Name=%s", resv_desc_ptr->name);

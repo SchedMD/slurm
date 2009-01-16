@@ -226,6 +226,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Access denied to requested reservation"		},
 	{ ESLURM_RESERVATION_INVALID,
 	  "Requested reservation is invalid"			},
+	{ ESLURM_INVALID_TIME_VALUE,
+	  "Invalid time specified"				},
 
 	/* slurmd error codes */
 
