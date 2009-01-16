@@ -25,8 +25,6 @@ HIGHLIGHTS
 * Preemption of jobs from lower priority partitions in order to execute jobs
   in higher priority partitions is now supported. The jobs from the lower 
   priority partition will resume once preempting job completes. 
-  NOTE: Supported only in SelectType=select/cons_res only as of 12 November 
-  2008.
 * Time format of all SLURM command set to ISO 8601 (yyyy-mm-ddThh:mm:ss)
   unless the configure option "--disable-iso8601" is used at build time.
 * Support added for Sun Constellation system with optimized resource allocation
