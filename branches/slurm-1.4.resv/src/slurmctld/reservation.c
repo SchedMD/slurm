@@ -431,10 +431,20 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 	if (resv_desc_ptr->node_cnt != NO_VAL)
 		resv_ptr->node_cnt = resv_desc_ptr->node_cnt;
 	if (resv_desc_ptr->accounts) {
-/* FIXME: Validate accounts value */
+		int account_cnt = 0, i, rc;
+		char **account_list;
+		rc = _build_account_list(resv_desc_ptr->accounts, 
+					 &account_cnt, &account_list);
+		if (rc)
+			return rc;
 		xfree(resv_ptr->accounts);
+		for (i=0; i<resv_ptr->account_cnt; i++)
+			xfree(resv_ptr->account_list[i]);
+		xfree(resv_ptr->account_list);
 		resv_ptr->accounts = resv_desc_ptr->accounts;
 		resv_desc_ptr->accounts = NULL;	/* Nothing left to free */
+		resv_ptr->account_cnt  = account_cnt;
+		resv_ptr->account_list = account_list;
 	}
 	if (resv_desc_ptr->features) {
 		xfree(resv_ptr->features);
@@ -442,10 +452,18 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 		resv_desc_ptr->features = NULL;	/* Nothing left to free */
 	}
 	if (resv_desc_ptr->users) {
-/* FIXME: Validate users value */
+		int rc, user_cnt = 0;
+		uid_t *user_list = NULL;
+		rc = _build_uid_list(resv_desc_ptr->users, 
+				     &user_cnt, &user_list);
+		if (rc)
+			return rc;
 		xfree(resv_ptr->users);
+		xfree(resv_ptr->user_list);
 		resv_ptr->users = resv_desc_ptr->users;
 		resv_desc_ptr->users = NULL;	/* Nothing left to free */
+		resv_ptr->user_cnt  = user_cnt;
+		resv_ptr->user_list = user_list;
 	}
 	if (resv_desc_ptr->node_list) {		/* Change bitmap last */
 		bitstr_t *node_bitmap;
