@@ -111,7 +111,7 @@ char *slurm_sprint_reservation_info ( reserve_info_t * resv_ptr,
 	slurm_make_time_str(&resv_ptr->start_time, tmp1, sizeof(tmp1));
 	slurm_make_time_str(&resv_ptr->end_time,   tmp2, sizeof(tmp2));
 	snprintf(tmp_line, sizeof(tmp_line),
-		 "ResevationName=%s StartTime=%s EndTime=%s Duration=%u",
+		 "ReservationName=%s StartTime=%s EndTime=%s Duration=%u",
 		 resv_ptr->name, tmp1, tmp2, 
 		 (uint32_t) difftime(resv_ptr->end_time, 
 				     resv_ptr->start_time));
@@ -128,7 +128,7 @@ char *slurm_sprint_reservation_info ( reserve_info_t * resv_ptr,
 	else
 		tmp3 = "";
 	snprintf(tmp_line, sizeof(tmp_line), 
-		 "NodeList=%s NodeCnt=%u Features=%s Partition=%s Type=%s",
+		 "Nodes=%s NodeCnt=%u Features=%s PartitionName=%s Type=%s",
 		 resv_ptr->node_list, resv_ptr->node_cnt,
 		 resv_ptr->features,  resv_ptr->partition, tmp3);
 	xstrcat(out, tmp_line);

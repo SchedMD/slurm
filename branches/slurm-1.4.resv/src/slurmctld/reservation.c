@@ -108,8 +108,8 @@ static void _dump_resv_req(reserve_request_msg_t *resv_ptr, char *mode)
 	else
 		type_str = "";
 
-	info("%s: Name=%s Start=%s End=%s Type=%s NodeCnt=%u NodeList=%s "
-	     "Features=%s Partition=%s Users=%u Accounts=%s",
+	info("%s: Name=%s StartTime=%s EndTime=%s Type=%s NodeCnt=%u Nodes=%s "
+	     "Features=%s PartitionName=%s Users=%u Accounts=%s",
 	     resv_ptr->name, start_str, end_str, type_str, resv_ptr->node_cnt,
 	     resv_ptr->node_list, resv_ptr->features, resv_ptr->partition, 
 	     resv_ptr->users, resv_ptr->accounts);
