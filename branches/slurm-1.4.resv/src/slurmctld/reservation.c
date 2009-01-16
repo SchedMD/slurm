@@ -46,6 +46,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
+#include <unistd.h>
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 
@@ -55,6 +56,7 @@
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/parse_time.h"
+#include "src/common/uid.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -65,6 +67,8 @@
 #define RESV_MAGIC	0x3b82
 typedef struct slurmctld_resv {
 	char *accounts;		/* names of accounts permitted to use	*/
+	int account_cnt;	/* count of accounts permitted to use	*/
+	char **account_list;	/* list of accounts permitted to use	*/
 	time_t end_time;	/* end time of reservation		*/
 	char *features;		/* required node features		*/
 	uint16_t magic;		/* magic cookie, RESV_MAGIC		*/
@@ -77,17 +81,23 @@ typedef struct slurmctld_resv {
 	time_t start_time;	/* start time of reservation		*/
 	uint16_t type;		/* see RESERVE_TYPE_* above		*/
 	char *users;		/* names of users permitted to use	*/
+	int user_cnt;		/* count of users permitted to use	*/
+	uid_t *user_list;	/* array of users permitted to use	*/
 } slurmctld_resv_t;
 
 List resv_list = (List) NULL;
 
 static void _del_resv_rec(void *x)
 {
+	int i;
 	slurmctld_resv_t *resv_ptr = (slurmctld_resv_t *) x;
 
 	if (resv_ptr) {
 		xassert(resv_ptr->magic == RESV_MAGIC);
 		xfree(resv_ptr->accounts);
+		for (i=0; i<resv_ptr->account_cnt; i++)
+			xfree(resv_ptr->account_list[i]);
+		xfree(resv_ptr->account_list);
 		xfree(resv_ptr->features);
 		xfree(resv_ptr->name);
 		if (resv_ptr->node_bitmap)
@@ -95,6 +105,7 @@ static void _del_resv_rec(void *x)
 		xfree(resv_ptr->node_list);
 		xfree(resv_ptr->partition);
 		xfree(resv_ptr->users);
+		xfree(resv_ptr->user_list);
 		xfree(resv_ptr);
 	}
 }
@@ -134,9 +145,12 @@ static void _generate_resv_name(reserve_request_msg_t *resv_ptr)
 	int i, len, top_suffix = 0;
 	slurmctld_resv_t * exist_resv_ptr;
 
-	/* Generate name prefix, presently based upon the first account
-	 * name and some account is required */
-	key = resv_ptr->accounts;
+	/* Generate name prefix, based upon the first account
+	 * name if provided otherwise first user name */
+	if (resv_ptr->accounts && resv_ptr->accounts[0])
+		key = resv_ptr->accounts;
+	else
+		key = resv_ptr->users;
 	sep = strchr(key, ',');
 	if (sep)
 		len = sep - key;
@@ -161,27 +175,116 @@ static void _generate_resv_name(reserve_request_msg_t *resv_ptr)
 	strcat(name, tmp);
 }
 
+/* Validate a comma delimited list of account names and build an array of
+ * them
+ * IN account       - a list of account names
+ * OUT account_cnt  - number of accounts in the list
+ * OUT account_list - list of the account names, 
+ *		      CALLER MUST XFREE this plus each individual record
+ * RETURN 0 on success */
+static int _build_account_list(char *accounts, int *account_cnt, 
+			       char ***account_list)
+{
+	char *last, *tmp, *tok;
+	int ac_cnt = 0, i;
+	char **ac_list;
+
+	*account_cnt = 0;
+	*account_list = (char **) NULL;
+
+	if (!accounts)
+		return ESLURM_INVALID_BANK_ACCOUNT;
+
+	i = strlen(accounts);
+	ac_list = xmalloc(sizeof(char *) * (i + 2));
+	tmp = xstrdup(accounts);
+	tok = strtok_r(tmp, ",", &last);
+	while (tok) {
+#if 0
+		/* Validate the account */
+		if (failure)
+			goto inval;
+#endif
+		ac_list[ac_cnt++] = xstrdup(tok);
+		tok = strtok_r(NULL, ",", &last);
+	}
+	*account_cnt  = ac_cnt;
+	*account_list = ac_list;
+	return SLURM_SUCCESS;
+
+#if 0
+ inval:	for (i=0; i<ac_cnt; i++)
+		xfree(ac_list[i]);
+	xfree(ac_list);
+	return ESLURM_INVALID_BANK_ACCOUNT;
+#endif
+}
+
+
+/* Validate a comma delimited list of user names and build an array of
+ * their UIDs
+ * IN users      - a list of user names
+ * OUT user_cnt  - number of UIDs in the list
+ * OUT user_list - list of the user's uid, CALLER MUST XFREE;
+ * RETURN 0 on success */
+static int _build_uid_list(char *users, int *user_cnt, uid_t **user_list)
+{
+	char *last, *tmp, *tok;
+	int u_cnt = 0, i;
+	uid_t *u_list, u_tmp;
+
+	*user_cnt = 0;
+	*user_list = (uid_t *) NULL;
+
+	if (!users)
+		return ESLURM_USER_ID_MISSING;
+
+	i = strlen(users);
+	u_list = xmalloc(sizeof(uid_t) * (i + 2));
+	tmp = xstrdup(users);
+	tok = strtok_r(tmp, ",", &last);
+	while (tok) {
+		u_tmp = uid_from_string(tok);
+		if (u_tmp == (uid_t) -1) {
+			info("reservation request invalid user %s", tok);
+			goto inval;
+		}
+		u_list[u_cnt++] = u_tmp;
+		tok = strtok_r(NULL, ",", &last);
+	}
+	*user_cnt  = u_cnt;
+	*user_list = u_list;
+	return SLURM_SUCCESS;
+
+ inval:	xfree(u_list);
+	return ESLURM_INVALID_BANK_ACCOUNT;
+}
+
 /* Create a resource reservation */
 extern int create_resv(reserve_request_msg_t *resv_desc_ptr)
 {
+	int i, rc = SLURM_SUCCESS;
 	time_t now = time(NULL);
 	struct part_record *part_ptr = NULL;
-	bitstr_t *node_bitmap;
+	bitstr_t *node_bitmap = NULL;
 	slurmctld_resv_t *resv_ptr;
+	int account_cnt = 0, user_cnt = 0;
+	char **account_list;
+	uid_t *user_list = NULL;
 
 	_dump_resv_req(resv_desc_ptr, "create_resv");
 
 	/* Validate the request */
-	if (resv_desc_ptr->accounts == NULL)
-		return ESLURM_INVALID_BANK_ACCOUNT;
 	if (resv_desc_ptr->start_time != (time_t) NO_VAL) {
 		if (resv_desc_ptr->start_time < (now - 60))
-			return ESLURM_INVALID_TIME_VALUE;
+			rc = ESLURM_INVALID_TIME_VALUE;
+			goto bad_parse;
 	} else
 		resv_desc_ptr->start_time = now;
 	if (resv_desc_ptr->end_time != (time_t) NO_VAL) {
 		if (resv_desc_ptr->end_time < (now - 60))
-			return ESLURM_INVALID_TIME_VALUE;
+			rc = ESLURM_INVALID_TIME_VALUE;
+			goto bad_parse;
 	} else
 		resv_desc_ptr->end_time = INFINITE;
 	if (resv_desc_ptr->type == (uint16_t) NO_VAL)
@@ -197,37 +300,56 @@ extern int create_resv(reserve_request_msg_t *resv_desc_ptr)
 		if (resv_ptr) {
 			info("Duplicate reservation name %s create request",
 			     resv_desc_ptr->name);
-			return ESLURM_RESERVATION_INVALID;
+			rc = ESLURM_RESERVATION_INVALID;
+			goto bad_parse;
 		}
 	} else
 		_generate_resv_name(resv_desc_ptr);
 	if (resv_desc_ptr->partition) {
 		part_ptr = find_part_record(resv_desc_ptr->partition);
-		if (!part_ptr)
-			return ESLURM_INVALID_PARTITION_NAME;
+		if (!part_ptr) {
+			rc = ESLURM_INVALID_PARTITION_NAME;
+			goto bad_parse;
+		}
 	}
-/* FIXME: Need to add validation for: accounts, users */
+	if ((resv_desc_ptr->accounts == NULL) &&
+	    (resv_desc_ptr->users == NULL)) {
+		rc = ESLURM_INVALID_BANK_ACCOUNT;
+		goto bad_parse;
+	}
+	if (resv_desc_ptr->accounts) {
+		rc = _build_account_list(resv_desc_ptr->accounts, 
+					 &account_cnt, &account_list);
+		if (rc)
+			goto bad_parse;
+	}
+	if (resv_desc_ptr->users) {
+		rc = _build_uid_list(resv_desc_ptr->users, 
+				     &user_cnt, &user_list);
+		if (rc)
+			goto bad_parse;
+	}
 
-
-	/*
-	 * IMPORTANT: keep node_bitmap generation last or 
-	 * we must free it on failure
-	 */
 	if (resv_desc_ptr->node_list) {
 		if (strcmp(resv_desc_ptr->node_list, "ALL") == 0) {
 			node_bitmap = bit_alloc(node_record_count);
 			bit_nset(node_bitmap, 0, (node_record_count - 1));
 		} else if (node_name2bitmap(resv_desc_ptr->node_list, 
-					    false, &node_bitmap))
-			return ESLURM_INVALID_NODE_NAME;
-	} else if (resv_desc_ptr->node_cnt == 0)
-		return ESLURM_INVALID_NODE_NAME;
-	/* IMPORTANT: See note above */
+					    false, &node_bitmap)) {
+			rc = ESLURM_INVALID_NODE_NAME;
+			goto bad_parse;
+		}
+	} else if (resv_desc_ptr->node_cnt == 0) {
+		rc = ESLURM_INVALID_NODE_NAME;
+		goto bad_parse;
+	}
 
 	/* Create a new reservation record */
 	resv_ptr = xmalloc(sizeof(slurmctld_resv_t));
 	resv_ptr->accounts	= resv_desc_ptr->accounts;
 	resv_desc_ptr->accounts = NULL;		/* Nothing left to free */
+	resv_ptr->account_cnt	= account_cnt;
+	resv_ptr->account_list	= account_list;
 	resv_ptr->end_time	= resv_desc_ptr->end_time;
 	resv_ptr->features	= resv_desc_ptr->features;
 	resv_desc_ptr->features = NULL;		/* Nothing left to free */
@@ -243,6 +365,8 @@ extern int create_resv(reserve_request_msg_t *resv_desc_ptr)
 	resv_ptr->start_time	= resv_desc_ptr->start_time;
 	resv_ptr->type		= resv_desc_ptr->type;
 	resv_ptr->users		= resv_desc_ptr->users;
+	resv_ptr->user_cnt	= user_cnt;
+	resv_ptr->user_list	= user_list;
 	resv_desc_ptr->users 	= NULL;		/* Nothing left to free */
 
 	if (!resv_list)
@@ -250,6 +374,15 @@ extern int create_resv(reserve_request_msg_t *resv_desc_ptr)
 	list_append(resv_list, resv_ptr);
 
 	return SLURM_SUCCESS;
+
+ bad_parse:
+	for (i=0; i<account_cnt; i++)
+		xfree(account_list[i]);
+	xfree(account_list);
+	if (node_bitmap)
+		bit_free(node_bitmap);
+	xfree(user_list);
+	return rc;
 }
 
 /* Update an exiting resource reservation */
@@ -314,7 +447,6 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 		resv_ptr->users = resv_desc_ptr->users;
 		resv_desc_ptr->users = NULL;	/* Nothing left to free */
 	}
-
 	if (resv_desc_ptr->node_list) {		/* Change bitmap last */
 		bitstr_t *node_bitmap;
 		if (strcmp(resv_desc_ptr->node_list, "ALL") == 0) {
@@ -355,7 +487,7 @@ extern int delete_resv(reservation_name_msg_t *resv_desc_ptr)
 	}
 	list_iterator_destroy(iter);
 
-	if (!resv_ptr)
+	if (!resv_ptr) {
 		info("Reservation %s not found for deletion",
 		     resv_desc_ptr->name);
 		return ESLURM_RESERVATION_INVALID;
