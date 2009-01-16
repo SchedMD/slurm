@@ -838,6 +838,7 @@ void inline slurm_free_update_part_msg(update_part_msg_t * msg);
 void inline slurm_free_delete_part_msg(delete_part_msg_t * msg);
 void inline slurm_free_update_resv_msg(reserve_request_msg_t * msg);
 void inline slurm_free_resv_name_msg(reservation_name_msg_t * msg);
+void inline slurm_free_resv_info_msg(reserve_info_msg_t * msg);
 void inline
 slurm_free_job_step_create_request_msg(job_step_create_request_msg_t * msg);
 void inline

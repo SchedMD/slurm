@@ -69,6 +69,7 @@
 #define _pack_node_select_info_msg(msg,buf)	_pack_buffer_msg(msg,buf)
 #define _pack_node_info_msg(msg,buf)		_pack_buffer_msg(msg,buf)
 #define _pack_partition_info_msg(msg,buf)	_pack_buffer_msg(msg,buf)
+#define _pack_reserve_info_msg(msg,buf)		_pack_buffer_msg(msg,buf)
 
 static void _pack_assoc_shares_object(void *in, Buf buffer);
 static int _unpack_assoc_shares_object(void **object, Buf buffer);
@@ -159,6 +160,11 @@ static int _unpack_partition_info_msg(partition_info_msg_t ** msg,
 				      Buf buffer);
 static int _unpack_partition_info_members(partition_info_t * part,
 					  Buf buffer);
+
+static int _unpack_reserve_info_msg(reserve_info_msg_t ** msg,
+				    Buf buffer);
+static int _unpack_reserve_info_members(reserve_info_t * resv,
+					Buf buffer);
 
 static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *
 					   msg, Buf buffer);
@@ -542,6 +548,9 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		_pack_update_resv_msg((reserve_request_msg_t *) msg->
 				      data, buffer);
 		break;
+	case RESPONSE_RESERVATION_INFO:
+		_pack_reserve_info_msg((slurm_msg_t *) msg, buffer);
+		break;
 	case REQUEST_DELETE_RESERVATION:
 	case RESPONSE_CREATE_RESERVATION:
 		_pack_resv_name_msg((reservation_name_msg_t *) msg->
@@ -897,6 +906,10 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case REQUEST_DELETE_RESERVATION:
 	case RESPONSE_CREATE_RESERVATION:
 		rc = _unpack_resv_name_msg((reservation_name_msg_t **)
+					     &(msg->data), buffer);
+		break;
+	case RESPONSE_RESERVATION_INFO:
+		rc = _unpack_reserve_info_msg((reserve_info_msg_t **)
 					     &(msg->data), buffer);
 		break;
 	case REQUEST_LAUNCH_TASKS:
@@ -2155,7 +2168,7 @@ _unpack_partition_info_msg(partition_info_msg_t ** msg, Buf buffer)
 	partition = (*msg)->partition_array =
 		xmalloc(sizeof(partition_info_t) * (*msg)->record_count);
 
-	/* load individual job info */
+	/* load individual partition info */
 	for (i = 0; i < (*msg)->record_count; i++) {
 		if (_unpack_partition_info_members(&partition[i], buffer))
 			goto unpack_error;
@@ -2213,48 +2226,62 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-/* pack_job_step_info_members
- * pack selected fields of the description of a job into a buffer
- * IN job_id, step_id, user_id, start_time, partition, nodes - job info
- * IN/OUT buffer - destination of the pack, contains pointers that are 
- *			automatically updated
- */
-/* void */
-/* pack_job_step_info_members(uint32_t job_id, uint16_t step_id, */
-/* 			   uint32_t user_id, uint32_t num_tasks, */
-/* 			   time_t start_time, char *partition,  */
-/* 			   char *nodes, char *name, char *network, */
-/* 			   Buf buffer) */
-/* { */
-/* 	pack32((uint32_t)job_id, buffer); */
-/* 	pack16((uint16_t)step_id, buffer); */
-/* 	pack32((uint32_t)user_id, buffer); */
-/* 	pack32((uint32_t)num_tasks, buffer); */
+static int
+_unpack_reserve_info_msg(reserve_info_msg_t ** msg, Buf buffer)
+{
+	int i;
+	reserve_info_t *reserve = NULL;
 
-/* 	pack_time(start_time, buffer); */
-/* 	packstr(partition, buffer); */
-/* 	packstr(nodes, buffer); */
-/* 	packstr(name, buffer); */
-/* 	packstr(network, buffer); */
-/* } */
+	xassert(msg != NULL);
+	*msg = xmalloc(sizeof(reserve_info_msg_t));
 
-/* pack_job_step_info
- * packs a slurm job steps info
- * IN step - pointer to the job step info
- * IN/OUT buffer - destination of the pack, contains pointers that are 
- *			automatically updated
- */
-/* void */
-/* pack_job_step_info(job_step_info_t * step, Buf buffer) */
-/* { */
-/* 	pack_job_step_info_members(step->job_id, */
-/* 				   step->step_id, */
-/* 				   step->user_id, */
-/* 				   step->num_tasks, */
-/* 				   step->start_time, */
-/* 				   step->partition, step->nodes,  */
-/* 				   step->name, step->network, buffer); */
-/* } */
+	/* load buffer's header (data structure version and time) */
+	safe_unpack32(&((*msg)->record_count), buffer);
+	safe_unpack_time(&((*msg)->last_update), buffer);
+
+	reserve = (*msg)->reservation_array =
+		xmalloc(sizeof(reserve_info_t) * (*msg)->record_count);
+
+	/* load individual jobreserve info */
+	for (i = 0; i < (*msg)->record_count; i++) {
+		if (_unpack_reserve_info_members(&reserve[i], buffer))
+			goto unpack_error;
+	}
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_reservation_info_msg(*msg);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
+
+static int
+_unpack_reserve_info_members(reserve_info_t * resv, Buf buffer)
+{
+	uint32_t uint32_tmp;
+
+	safe_unpackstr_xmalloc(&resv->accounts,	&uint32_tmp, buffer);
+	safe_unpack_time(&resv->end_time,	buffer);
+	safe_unpackstr_xmalloc(&resv->features,	&uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&resv->name,	&uint32_tmp, buffer);
+	safe_unpack32(&resv->node_cnt,		buffer);
+	safe_unpackstr_xmalloc(&resv->node_list,&uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&resv->partition,&uint32_tmp, buffer);
+	safe_unpack_time(&resv->start_time,	buffer);
+	safe_unpack16(&resv->type,		buffer);
+	safe_unpackstr_xmalloc(&resv->users,	&uint32_tmp, buffer);
+	return SLURM_SUCCESS;
+
+unpack_error:
+	xfree(resv->accounts);
+	xfree(resv->features);
+	xfree(resv->name);
+	xfree(resv->node_list);
+	xfree(resv->partition);
+	xfree(resv->users);
+	return SLURM_ERROR;
+}
 
 /* _unpack_job_step_info_members
  * unpacks a set of slurm job step info for one job step

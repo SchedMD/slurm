@@ -38,6 +38,11 @@
 #ifndef _RESERVATION_H
 #define _RESERVATION_H
 
+#include <time.h>
+#include <unistd.h>
+
+extern time_t last_resv_update;
+
 /* Create a resource reservation */
 extern int create_resv(reserve_request_msg_t *resv_desc_ptr);
 
@@ -46,5 +51,8 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr);
 
 /* Delete an exiting resource reservation */
 extern int delete_resv(reservation_name_msg_t *resv_desc_ptr);
+
+/* Dump the reservation records to a buffer */
+extern void show_resv(char **buffer_ptr, int *buffer_size, uid_t uid);
 
 #endif /* !_RESERVATION_H */

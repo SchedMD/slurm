@@ -55,6 +55,7 @@
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/pack.h"
 #include "src/common/parse_time.h"
 #include "src/common/uid.h"
 #include "src/common/xassert.h"
@@ -65,6 +66,9 @@
 
 #define _RESV_DEBUG	1
 #define RESV_MAGIC	0x3b82
+
+time_t last_resv_update = (time_t) 0;
+
 typedef struct slurmctld_resv {
 	char *accounts;		/* names of accounts permitted to use	*/
 	int account_cnt;	/* count of accounts permitted to use	*/
@@ -260,6 +264,29 @@ static int _build_uid_list(char *users, int *user_cnt, uid_t **user_list)
 	return ESLURM_INVALID_BANK_ACCOUNT;
 }
 
+/* 
+ * _pack_resv - dump all configuration information about a specific reservation
+ *	in machine independent form (for network transmission)
+ * IN resv_ptr - pointer to reservation for which information is requested
+ * IN/OUT buffer - buffer in which data is placed, pointers automatically 
+ *	updated
+ * NOTE: if you make any changes here be sure to make the corresponding 
+ *	to _unpack_resv_info_members() in common/slurm_protocol_pack.c
+ */
+void _pack_resv(struct slurmctld_resv *resv_ptr, Buf buffer)
+{
+	packstr(resv_ptr->accounts,	buffer);
+	pack_time(resv_ptr->end_time,	buffer);
+	packstr(resv_ptr->features,	buffer);
+	packstr(resv_ptr->name,		buffer);
+	pack32(resv_ptr->node_cnt,	buffer);
+	packstr(resv_ptr->node_list,	buffer);
+	packstr(resv_ptr->partition,	buffer);
+	pack_time(resv_ptr->start_time,	buffer);
+	pack16(resv_ptr->type,		buffer);
+	packstr(resv_ptr->users,	buffer);
+}
+
 /* Create a resource reservation */
 extern int create_resv(reserve_request_msg_t *resv_desc_ptr)
 {
@@ -372,6 +399,7 @@ extern int create_resv(reserve_request_msg_t *resv_desc_ptr)
 	if (!resv_list)
 		list_create(_del_resv_rec);
 	list_append(resv_list, resv_ptr);
+	last_resv_update = now;
 
 	return SLURM_SUCCESS;
 
@@ -401,7 +429,8 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 	if (!resv_ptr)
 		return ESLURM_RESERVATION_INVALID;
 
-	/* Validate the request */
+	/* Process the request */
+	last_resv_update = now;
 	if (resv_desc_ptr->start_time != (time_t) NO_VAL) {
 		if (resv_desc_ptr->start_time < (now - 60))
 			return ESLURM_INVALID_TIME_VALUE;
@@ -501,6 +530,7 @@ extern int delete_resv(reservation_name_msg_t *resv_desc_ptr)
 		if (strcmp(resv_ptr->name, resv_desc_ptr->name))
 			continue;
 		list_delete_item(iter);
+		last_resv_update = time(NULL);
 		break;
 	}
 	list_iterator_destroy(iter);
@@ -511,4 +541,44 @@ extern int delete_resv(reservation_name_msg_t *resv_desc_ptr)
 		return ESLURM_RESERVATION_INVALID;
 	}
 	return SLURM_SUCCESS;
+}
+
+/* Dump the reservation records to a buffer */
+extern void show_resv(char **buffer_ptr, int *buffer_size, uid_t uid)
+{
+	ListIterator iter;
+	slurmctld_resv_t *resv_ptr;
+	uint32_t resv_packed;
+	int tmp_offset;
+	Buf buffer;
+	time_t now = time(NULL);
+
+	buffer_ptr[0] = NULL;
+	*buffer_size = 0;
+
+	buffer = init_buf(BUF_SIZE);
+
+	/* write header: version and time */
+	resv_packed = 0;
+	pack32(resv_packed, buffer);
+	pack_time(now, buffer);
+
+	/* write individual reservation records */
+	iter = list_iterator_create(resv_list);
+	if (!iter)
+		fatal("malloc: list_iterator_create");
+	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+		_pack_resv(resv_ptr, buffer);
+		resv_packed++;
+	}
+	list_iterator_destroy(iter);
+
+	/* put the real record count in the message body header */
+	tmp_offset = get_buf_offset(buffer);
+	set_buf_offset(buffer, 0);
+	pack32(resv_packed, buffer);
+	set_buf_offset(buffer, tmp_offset);
+
+	*buffer_size = get_buf_offset(buffer);
+	buffer_ptr[0] = xfer_buf_data(buffer);
 }
