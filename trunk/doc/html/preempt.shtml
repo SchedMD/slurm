@@ -90,11 +90,11 @@ the same time.
 To enable preemption after making the configuration changes described above,
 restart SLURM if it is already running. Any change to the plugin settings in
 SLURM requires a full restart of the daemons. If you just change the partition
-<I>Priority</I> or <I>Shared</I> setting, this can be updated with
+<I>Priority</I> or <I>Shared</I> setting, this can be updated with
 <I>scontrol reconfig</I>.
 </P>
 
-<H2>Preemption Design and Operation</H2>
+<H2>Preemption Design and Operation</H2>
 
 <P>
 When enabled, the <I>sched/gang</I> plugin keeps track of the resources
