@@ -2242,7 +2242,7 @@ _unpack_reserve_info_msg(reserve_info_msg_t ** msg, Buf buffer)
 	reserve = (*msg)->reservation_array =
 		xmalloc(sizeof(reserve_info_t) * (*msg)->record_count);
 
-	/* load individual jobreserve info */
+	/* load individual reservation records */
 	for (i = 0; i < (*msg)->record_count; i++) {
 		if (_unpack_reserve_info_members(&reserve[i], buffer))
 			goto unpack_error;
