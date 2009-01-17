@@ -123,5 +123,6 @@ extern int	scontrol_update_node (int argc, char *argv[]);
 extern int	scontrol_update_part (int argc, char *argv[]);
 extern void     scontrol_list_pids(const char *jobid_str,
 				   const char *node_name);
+extern int	scontrol_create_res(int argc, char *argv[]);
 
 #endif
