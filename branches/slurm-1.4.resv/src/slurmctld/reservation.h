@@ -55,4 +55,14 @@ extern int delete_resv(reservation_name_msg_t *resv_desc_ptr);
 /* Dump the reservation records to a buffer */
 extern void show_resv(char **buffer_ptr, int *buffer_size, uid_t uid);
 
+/* Save the state of all reservations to file */
+extern int dump_all_resv_state(void);
+
+/*
+ * Load the reservation state from file, recover on slurmctld restart. 
+ *	execute this after loading the configuration file data.
+ * NOTE: READ lock_slurmctld config before entry
+ */
+extern int load_all_resv_state(void);
+
 #endif /* !_RESERVATION_H */

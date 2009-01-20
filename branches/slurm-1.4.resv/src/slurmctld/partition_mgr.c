@@ -299,6 +299,8 @@ int dump_all_part_state(void)
 	/* write partition records to buffer */
 	lock_slurmctld(part_read_lock);
 	part_iterator = list_iterator_create(part_list);
+	if (!part_iterator)
+		fatal("list_iterator_create malloc");
 	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
 		xassert (part_ptr->magic == PART_MAGIC);
 		_dump_part_state(part_ptr, buffer);

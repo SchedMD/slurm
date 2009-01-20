@@ -43,12 +43,15 @@
 #  include <pthread.h>
 #endif				/* WITH_PTHREADS */
 
+#include <fcntl.h>
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include "src/common/bitstring.h"
 #include "src/common/hostlist.h"
@@ -62,10 +65,14 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 
 #define _RESV_DEBUG	1
 #define RESV_MAGIC	0x3b82
+
+/* Change RESV_STATE_VERSION value when changing the state save format */
+#define RESV_STATE_VERSION      "VER001"
 
 time_t last_resv_update = (time_t) 0;
 
@@ -275,7 +282,7 @@ static int _build_uid_list(char *users, int *user_cnt, uid_t **user_list)
 	return SLURM_SUCCESS;
 
  inval:	xfree(u_list);
-	return ESLURM_INVALID_BANK_ACCOUNT;
+	return ESLURM_USER_ID_MISSING;
 }
 
 /* 
@@ -285,7 +292,7 @@ static int _build_uid_list(char *users, int *user_cnt, uid_t **user_list)
  * IN/OUT buffer - buffer in which data is placed, pointers automatically 
  *	updated
  * NOTE: if you make any changes here be sure to make the corresponding 
- *	to _unpack_resv_info_members() in common/slurm_protocol_pack.c
+ *	to _unpack_reserve_info_members() in common/slurm_protocol_pack.c
  */
 void _pack_resv(struct slurmctld_resv *resv_ptr, Buf buffer)
 {
@@ -332,6 +339,9 @@ extern int create_resv(reserve_request_msg_t *resv_desc_ptr)
 			rc = ESLURM_INVALID_TIME_VALUE;
 			goto bad_parse;
 		}
+	} else if (resv_desc_ptr->duration) {
+		resv_desc_ptr->end_time = resv_desc_ptr->start_time +
+					  (resv_desc_ptr->duration * 60);
 	} else
 		resv_desc_ptr->end_time = INFINITE;
 	if (resv_desc_ptr->type == (uint16_t) NO_VAL)
@@ -356,7 +366,7 @@ extern int create_resv(reserve_request_msg_t *resv_desc_ptr)
 		part_ptr = find_part_record(resv_desc_ptr->partition);
 		if (!part_ptr) {
 			info("Reservation request has invalid partition %s",
-			     resv_desc_ptr->name);
+			     resv_desc_ptr->partition);
 			rc = ESLURM_INVALID_PARTITION_NAME;
 			goto bad_parse;
 		}
@@ -471,6 +481,10 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 		}
 		resv_ptr->end_time = resv_desc_ptr->end_time;
 	}
+	if (resv_desc_ptr->duration != NO_VAL) {
+		resv_ptr->end_time = resv_ptr->start_time + 
+				     (resv_desc_ptr->duration * 60);
+	}
 	if (resv_desc_ptr->type != (uint16_t) NO_VAL) {
 		if (resv_desc_ptr->type > RESERVE_TYPE_MAINT) {
 			error("Invalid reservation type %u ignored",
@@ -483,7 +497,7 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 		part_ptr = find_part_record(resv_desc_ptr->partition);
 		if (!part_ptr) {
 			info("Reservation request has invalid partition %s",
-			     resv_desc_ptr->name);
+			     resv_desc_ptr->partition);
 			return ESLURM_INVALID_PARTITION_NAME;
 		}
 		resv_ptr->partition	= resv_desc_ptr->partition;
@@ -614,4 +628,225 @@ extern void show_resv(char **buffer_ptr, int *buffer_size, uid_t uid)
 
 	*buffer_size = get_buf_offset(buffer);
 	buffer_ptr[0] = xfer_buf_data(buffer);
+}
+
+/* Save the state of all reservations to file */
+extern int dump_all_resv_state(void)
+{
+	ListIterator iter;
+	slurmctld_resv_t *resv_ptr;
+	int error_code = 0, log_fd;
+	char *old_file, *new_file, *reg_file;
+	/* Locks: Read node */
+	slurmctld_lock_t resv_read_lock =
+	    { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
+	Buf buffer = init_buf(BUF_SIZE);
+	time_t now = time(NULL);
+	DEF_TIMERS;
+
+	if (!resv_list)
+		resv_list = list_create(_del_resv_rec);
+	START_TIMER;
+	/* write header: time */
+	packstr(RESV_STATE_VERSION, buffer);
+	pack_time(time(NULL), buffer);
+
+	/* write reservation records to buffer */
+	lock_slurmctld(resv_read_lock);
+	iter = list_iterator_create(resv_list);
+	if (!iter)
+		fatal("malloc: list_iterator_create");
+	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+		if (resv_ptr->end_time > now)
+			_pack_resv(resv_ptr, buffer);
+		else {
+			debug("Purging vestigial reservation record %s",
+			      resv_ptr->name);
+			list_delete_item (iter);
+		}
+	}
+	list_iterator_destroy(iter);
+	/* Maintain config read lock until we copy state_save_location *\
+	\* unlock_slurmctld(resv_read_lock);          - see below      */
+
+	/* write the buffer to file */
+	old_file = xstrdup(slurmctld_conf.state_save_location);
+	xstrcat(old_file, "/resv_state.old");
+	reg_file = xstrdup(slurmctld_conf.state_save_location);
+	xstrcat(reg_file, "/resv_state");
+	new_file = xstrdup(slurmctld_conf.state_save_location);
+	xstrcat(new_file, "/resv_state.new");
+	unlock_slurmctld(resv_read_lock);
+	lock_state_files();
+	log_fd = creat(new_file, 0600);
+	if (log_fd == 0) {
+		error("Can't save state, error creating file %s, %m",
+		      new_file);
+		error_code = errno;
+	} else {
+		int pos = 0, nwrite = get_buf_offset(buffer), amount;
+		char *data = (char *)get_buf_data(buffer);
+
+		while (nwrite > 0) {
+			amount = write(log_fd, &data[pos], nwrite);
+			if ((amount < 0) && (errno != EINTR)) {
+				error("Error writing file %s, %m", new_file);
+				error_code = errno;
+				break;
+			}
+			nwrite -= amount;
+			pos    += amount;
+		}
+		fsync(log_fd);
+		close(log_fd);
+	}
+	if (error_code)
+		(void) unlink(new_file);
+	else {			/* file shuffle */
+		(void) unlink(old_file);
+		(void) link(reg_file, old_file);
+		(void) unlink(reg_file);
+		(void) link(new_file, reg_file);
+		(void) unlink(new_file);
+	}
+	xfree(old_file);
+	xfree(reg_file);
+	xfree(new_file);
+	unlock_state_files();
+
+	free_buf(buffer);
+	END_TIMER2("dump_all_resv_state");
+	return 0;
+}
+
+/*
+ * Load the reservation state from file, recover on slurmctld restart. 
+ *	execute this after loading the configuration file data.
+ * NOTE: READ lock_slurmctld config before entry
+ */
+extern int load_all_resv_state(void)
+{
+	char *state_file, *data = NULL, *ver_str = NULL;
+	time_t time;
+	uint32_t data_size = 0, uint32_tmp;
+	int data_allocated, data_read = 0, error_code = 0, resv_cnt = 0;
+	int state_fd, rc;
+	Buf buffer;
+	slurmctld_resv_t *resv_ptr = NULL;
+	struct part_record *part_ptr = NULL;
+
+	/* read the file */
+	state_file = xstrdup(slurmctld_conf.state_save_location);
+	xstrcat(state_file, "/resv_state");
+	lock_state_files();
+	state_fd = open(state_file, O_RDONLY);
+	if (state_fd < 0) {
+		info("No reservation state file (%s) to recover",
+		     state_file);
+		error_code = ENOENT;
+	} else {
+		data_allocated = BUF_SIZE;
+		data = xmalloc(data_allocated);
+		while (1) {
+			data_read = read(state_fd, &data[data_size], 
+					BUF_SIZE);
+			if (data_read < 0) {
+				if  (errno == EINTR)
+					continue;
+				else {
+					error("Read error on %s: %m", 
+						state_file);
+					break;
+				}
+			} else if (data_read == 0)     /* eof */
+				break;
+			data_size      += data_read;
+			data_allocated += data_read;
+			xrealloc(data, data_allocated);
+		}
+		close(state_fd);
+	}
+	xfree(state_file);
+	unlock_state_files();
+
+	buffer = create_buf(data, data_size);
+
+	safe_unpackstr_xmalloc( &ver_str, &uint32_tmp, buffer);
+	debug3("Version string in resv_state header is %s", ver_str);
+	if ((!ver_str) || (strcmp(ver_str, RESV_STATE_VERSION) != 0)) {
+		error("**********************************************************");
+		error("Can not recover reservation state, data version incompatable");
+		error("**********************************************************");
+		xfree(ver_str);
+		free_buf(buffer);
+		return EFAULT;
+	}
+	xfree(ver_str);
+	safe_unpack_time(&time, buffer);
+
+	while (remaining_buf(buffer) > 0) {
+		resv_ptr = xmalloc(sizeof(slurmctld_resv_t));
+		safe_unpackstr_xmalloc(&resv_ptr->accounts,	
+				       &uint32_tmp,	buffer);
+		safe_unpack_time(&resv_ptr->end_time,	buffer);
+		safe_unpackstr_xmalloc(&resv_ptr->features,
+				       &uint32_tmp, 	buffer);
+		safe_unpackstr_xmalloc(&resv_ptr->name,	&uint32_tmp, buffer);
+		safe_unpack32(&resv_ptr->node_cnt,	buffer);
+		safe_unpackstr_xmalloc(&resv_ptr->node_list,
+				       &uint32_tmp,	buffer);
+		safe_unpackstr_xmalloc(&resv_ptr->partition,
+				       &uint32_tmp, 	buffer);
+		safe_unpack_time(&resv_ptr->start_time,	buffer);
+		safe_unpack16(&resv_ptr->type,		buffer);
+		safe_unpackstr_xmalloc(&resv_ptr->users,&uint32_tmp, buffer);
+
+		/* Validate the reservation */
+		if (resv_ptr->partition && resv_ptr->partition[0]) {
+			part_ptr = find_part_record(resv_ptr->partition);
+			if (!part_ptr) {
+				info("Reservation %s has invalid partition %s",
+				     resv_ptr->name, resv_ptr->partition);
+				goto unpack_error;
+			}
+		}
+		if (resv_ptr->accounts) {
+			rc = _build_account_list(resv_ptr->accounts, 
+						 &resv_ptr->account_cnt, 
+						 &resv_ptr->account_list);
+			if (rc) {
+				info("Reservation %s has invalid accounts %s",
+				     resv_ptr->name, resv_ptr->accounts);
+				goto unpack_error;
+			}
+		}
+		if (resv_ptr->users) {
+			rc = _build_uid_list(resv_ptr->users, 
+					     &resv_ptr->user_cnt, 
+					     &resv_ptr->user_list);
+			if (rc) {
+				info("Reservation %s has invalid users %s",
+				     resv_ptr->name, resv_ptr->accounts);
+				goto unpack_error;
+			}
+		}
+
+		if (!resv_list)
+			resv_list = list_create(_del_resv_rec);
+		xassert(resv_ptr->magic = RESV_MAGIC);	/* Sets value */
+		list_append(resv_list, resv_ptr);
+		debug("Recovered state of reservation %s", resv_ptr->name);
+	}
+
+	info("Recovered state of %d reservation", resv_cnt);
+	free_buf(buffer);
+	return error_code;
+
+      unpack_error:
+	error("Incomplete reservation data checkpoint file");
+	info("Recovered state of %d reservations", resv_cnt);
+	if (resv_ptr)
+		_del_resv_rec(resv_ptr);
+	free_buf(buffer);
+	return EFAULT;
 }
