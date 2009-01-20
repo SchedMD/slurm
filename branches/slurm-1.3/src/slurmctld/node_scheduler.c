@@ -996,8 +996,9 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		/* Leave job queued, something is hosed */
 		error("select_g_job_begin(%u): %m", job_ptr->job_id);
 		error_code = ESLURM_NODES_BUSY;
-		job_ptr->start_time = job_ptr->time_last_active 
-			= job_ptr->end_time = 0;
+		job_ptr->start_time = 0;
+		job_ptr->time_last_active = 0 
+		job_ptr->end_time = 0;
 		goto cleanup;
 	}
 
