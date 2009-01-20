@@ -30,7 +30,7 @@ Index: job.c
  child_execute_job (int stdin_fd, int stdout_fd, char **argv, char **envp)
  {
 +/* PARALLEL JOB LAUNCH VIA SLURM */
-+  if (getenv("SLURM_JOBID") {
++  if (getenv("SLURM_JOBID")) {
 +    int i;
 +    static char *argx[128];
 +    argx[0] = "srun";

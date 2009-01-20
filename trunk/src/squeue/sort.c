@@ -259,8 +259,13 @@ static int _sort_job_by_name(void *void1, void *void2)
 	int diff;
 	job_info_t *job1 = (job_info_t *) void1;
 	job_info_t *job2 = (job_info_t *) void2;
+	char *val1 = "", *val2 = "";
 
-	diff = strcmp(job1->name, job2->name);
+	if (job1->name)
+		val1 = job1->name;
+	if (job2->name)
+		val2 = job2->name;
+	diff = strcmp(val1, val2);
 
 	if (reverse_order)
 		diff = -diff;
@@ -565,8 +570,13 @@ static int _sort_job_by_partition(void *void1, void *void2)
 	int diff;
 	job_info_t *job1 = (job_info_t *) void1;
 	job_info_t *job2 = (job_info_t *) void2;
+	char *val1 = "", *val2 = "";
 
-	diff = strcmp(job1->partition, job2->partition);
+	if (job1->partition)
+		val1 = job1->partition;
+	if (job2->partition)
+		val2 = job2->partition;
+	diff = strcmp(val1, val2);
 
 	if (reverse_order)
 		diff = -diff;
@@ -696,8 +706,13 @@ static int _sort_step_by_partition(void *void1, void *void2)
 	int diff;
 	job_step_info_t *step1 = (job_step_info_t *) void1;
 	job_step_info_t *step2 = (job_step_info_t *) void2;
+	char *val1 = "", *val2 = "";
 
-	diff = strcmp(step1->partition, step2->partition);
+	if (step1->partition)
+		val1 = step1->partition;
+	if (step2->partition)
+		val2 = step2->partition;
+	diff = strcmp(val1, val2);
 
 	if (reverse_order)
 		diff = -diff;
