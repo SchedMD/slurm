@@ -129,7 +129,8 @@ typedef struct slurm_acct_storage_ops {
 				    time_t start, 
 				    time_t end);
 	int (*roll_usage)          (void *db_conn, 
-				    time_t sent_start, time_t sent_end);
+				    time_t sent_start, time_t sent_end,
+				    uint16_t archive_data);
 	int  (*node_down)          (void *db_conn,
 				    char *cluster,
 				    struct node_record *node_ptr,
@@ -7288,12 +7289,13 @@ extern int acct_storage_g_get_usage(void *db_conn,  uint32_t uid,
 }
 
 extern int acct_storage_g_roll_usage(void *db_conn, 
-				     time_t sent_start, time_t sent_end)
+				     time_t sent_start, time_t sent_end,
+				     uint16_t archive_data)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
 	return (*(g_acct_storage_context->ops.roll_usage))
-		(db_conn, sent_start, sent_end);
+		(db_conn, sent_start, sent_end, archive_data);
 }
 
 extern int clusteracct_storage_g_node_down(void *db_conn,

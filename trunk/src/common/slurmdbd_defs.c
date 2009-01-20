@@ -3078,6 +3078,7 @@ slurmdbd_pack_roll_usage_msg(uint16_t rpc_version,
 			     dbd_roll_usage_msg_t *msg, Buf buffer)
 {
 	if(rpc_version >= 5) {
+		pack16(msg->archive_data, buffer);
 		pack_time(msg->end, buffer);
 		pack_time(msg->start, buffer);
 	} else {
@@ -3094,6 +3095,7 @@ slurmdbd_unpack_roll_usage_msg(uint16_t rpc_version,
 	*msg = msg_ptr;
 
 	if(rpc_version >= 5) {
+		safe_unpack16(&msg_ptr->archive_data, buffer);
 		safe_unpack_time(&msg_ptr->end, buffer);
 		safe_unpack_time(&msg_ptr->start, buffer);
 	} else {

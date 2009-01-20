@@ -911,10 +911,12 @@ extern int acct_storage_g_get_usage(
  * roll up data in the storage 
  * IN: sent_start (option time to do a re-roll or start from this point)
  * IN: sent_end (option time to do a re-roll or end at this point)
+ * IN: archive_data (if 0 old data is not archived in a monthly rollup)
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int acct_storage_g_roll_usage(void *db_conn, 
-				     time_t sent_start, time_t sent_end);
+				     time_t sent_start, time_t sent_end,
+				     uint16_t archive_data);
 /* 
  * record shares used information for backup in case slurmctld restarts 
  * IN:  account_list List of shares_used_object_t *

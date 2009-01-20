@@ -8976,7 +8976,8 @@ is_user:
 }
 
 extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn, 
-				     time_t sent_start, time_t sent_end)
+				     time_t sent_start, time_t sent_end,
+				     uint16_t archive_data)
 {
 #ifdef HAVE_MYSQL
 	int rc = SLURM_SUCCESS;
@@ -9199,7 +9200,8 @@ extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn,
 	if(end_time-start_time > 0) {
 		START_TIMER;
 		if((rc = mysql_monthly_rollup(
-			    mysql_conn, start_time, end_time)) != SLURM_SUCCESS)
+			    mysql_conn, start_time, end_time, archive_data))
+		   != SLURM_SUCCESS)
 			return rc;
 		END_TIMER2("monthly_rollup");
 
