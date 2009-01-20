@@ -163,6 +163,41 @@ extern List acct_storage_p_remove_wckeys(mysql_conn_t *mysql_conn,
 					 uint32_t uid, 
 					 acct_wckey_cond_t *wckey_cond);
 
+static char *_get_cluster_from_associd(mysql_conn_t *mysql_conn,
+				       uint32_t associd)
+{
+	char *cluster = NULL;
+	char *query = NULL;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	
+	/* Just so we don't have to keep a
+	   cache of the associations around we
+	   will just query the db for the cluster
+	   name of the association id.  Since
+	   this should sort of be a rare case
+	   this isn't too bad.
+	*/
+	query = xstrdup_printf("select cluster from %s where id=%u",
+			       assoc_table, associd);
+
+	debug4("%d(%d) query\n%s",
+	       mysql_conn->conn, __LINE__, query);
+	if(!(result = 
+	     mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
+		xfree(query);
+		return NULL;
+	}
+	xfree(query);
+	
+	if((row = mysql_fetch_row(result)))
+		cluster = xstrdup(row[0]);
+
+	mysql_free_result(result);
+	
+	return cluster;
+}
+
 static char *_get_user_from_associd(mysql_conn_t *mysql_conn, uint32_t associd)
 {
 	char *user = NULL;
@@ -9514,6 +9549,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 	int reinit = 0;
 	time_t check_time = job_ptr->start_time;
 	uint32_t wckeyid = 0;
+	int no_cluster = 0;
 
 	if (!job_ptr->details || !job_ptr->details->submit_time) {
 		error("jobacct_storage_p_job_start: "
@@ -9542,6 +9578,12 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 		xfree(query);
 	} else
 		slurm_mutex_unlock(&rollup_lock);
+	
+	if(!cluster_name && job_ptr->assoc_id) {
+		no_cluster = 1;
+		cluster_name = _get_cluster_from_associd(mysql_conn,
+							 job_ptr->assoc_id);
+	}
 
 
 	if (job_ptr->name && job_ptr->name[0]) 
@@ -9575,6 +9617,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 		wckeyid = _get_wckeyid(mysql_conn, &job_ptr->wckey,
 				       job_ptr->user_id, cluster_name,
 				       job_ptr->assoc_id);
+	
 			
 	/* We need to put a 0 for 'end' incase of funky job state
 	 * files from a hot start of the controllers we call
@@ -9690,7 +9733,8 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 	xfree(block_id);
 	xfree(jname);
 	xfree(query);
-
+	if(no_cluster)
+		xfree(cluster_name);
 	return rc;
 #else
 	return SLURM_ERROR;
@@ -9706,6 +9750,7 @@ extern int jobacct_storage_p_job_complete(mysql_conn_t *mysql_conn,
 #ifdef HAVE_MYSQL
 	char *query = NULL, *nodes = NULL;
 	int rc=SLURM_SUCCESS;
+	time_t start_time = job_ptr->start_time;
 
 	if (!job_ptr->db_index 
 	    && (!job_ptr->details || !job_ptr->details->submit_time)) {
@@ -9724,7 +9769,8 @@ extern int jobacct_storage_p_job_complete(mysql_conn_t *mysql_conn,
 	if (job_ptr->end_time == 0) {
 		debug("mysql_jobacct: job %u never started", job_ptr->job_id);
 		return SLURM_SUCCESS;
-	}	
+	} else if(start_time > job_ptr->end_time)
+		start_time = 0;	
 	
 	slurm_mutex_lock(&rollup_lock);
 	if(job_ptr->end_time < global_last_rollup) {
@@ -9767,7 +9813,7 @@ extern int jobacct_storage_p_job_complete(mysql_conn_t *mysql_conn,
 	query = xstrdup_printf("update %s set start=%d, end=%d, state=%d, "
 			       "nodelist=\"%s\", comp_code=%d, "
 			       "kill_requid=%d where id=%d",
-			       job_table, (int)job_ptr->start_time,
+			       job_table, (int)start_time,
 			       (int)job_ptr->end_time, 
 			       job_ptr->job_state & (~JOB_COMPLETING),
 			       nodes, job_ptr->exit_code,
