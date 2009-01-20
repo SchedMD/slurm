@@ -119,7 +119,11 @@ static int _find_resv_rec(void *x, void *key)
 	slurmctld_resv_t *resv_ptr = (slurmctld_resv_t *) x;
 
 	xassert(resv_ptr->magic == RESV_MAGIC);
-	return strcmp(resv_ptr->name, (char *) key);
+
+	if (strcmp(resv_ptr->name, (char *) key))
+		return 0;
+	else
+		return 1;	/* match */
 }
 
 static void _dump_resv_req(reserve_request_msg_t *resv_ptr, char *mode)
@@ -213,8 +217,11 @@ static int _build_account_list(char *accounts, int *account_cnt,
 	while (tok) {
 #if 0
 		/* Validate the account */
-		if (failure)
+		if (failure) {
+			info("Reservation request has invalid account %s", 
+			     tok);
 			goto inval;
+		}
 #endif
 		ac_list[ac_cnt++] = xstrdup(tok);
 		tok = strtok_r(NULL, ",", &last);
@@ -257,7 +264,7 @@ static int _build_uid_list(char *users, int *user_cnt, uid_t **user_list)
 	while (tok) {
 		u_tmp = uid_from_string(tok);
 		if (u_tmp == (uid_t) -1) {
-			info("reservation request invalid user %s", tok);
+			info("Reservation request has invalid user %s", tok);
 			goto inval;
 		}
 		u_list[u_cnt++] = u_tmp;
@@ -306,19 +313,25 @@ extern int create_resv(reserve_request_msg_t *resv_desc_ptr)
 	char **account_list = NULL;
 	uid_t *user_list = NULL;
 
+	if (!resv_list)
+		resv_list = list_create(_del_resv_rec);
 	_dump_resv_req(resv_desc_ptr, "create_resv");
 
 	/* Validate the request */
 	if (resv_desc_ptr->start_time != (time_t) NO_VAL) {
-		if (resv_desc_ptr->start_time < (now - 60))
+		if (resv_desc_ptr->start_time < (now - 60)) {
+			info("Reservation requestion has invalid start time");
 			rc = ESLURM_INVALID_TIME_VALUE;
 			goto bad_parse;
+		}
 	} else
 		resv_desc_ptr->start_time = now;
 	if (resv_desc_ptr->end_time != (time_t) NO_VAL) {
-		if (resv_desc_ptr->end_time < (now - 60))
+		if (resv_desc_ptr->end_time < (now - 60)) {
+			info("Reservation requestion has invalid end time");
 			rc = ESLURM_INVALID_TIME_VALUE;
 			goto bad_parse;
+		}
 	} else
 		resv_desc_ptr->end_time = INFINITE;
 	if (resv_desc_ptr->type == (uint16_t) NO_VAL)
@@ -332,7 +345,7 @@ extern int create_resv(reserve_request_msg_t *resv_desc_ptr)
 		resv_ptr = (slurmctld_resv_t *) list_find_first (resv_list, 
 				_find_resv_rec, resv_desc_ptr->name);
 		if (resv_ptr) {
-			info("Duplicate reservation name %s create request",
+			info("Reservation requestion name duplication (%s)",
 			     resv_desc_ptr->name);
 			rc = ESLURM_RESERVATION_INVALID;
 			goto bad_parse;
@@ -342,12 +355,15 @@ extern int create_resv(reserve_request_msg_t *resv_desc_ptr)
 	if (resv_desc_ptr->partition) {
 		part_ptr = find_part_record(resv_desc_ptr->partition);
 		if (!part_ptr) {
+			info("Reservation request has invalid partition %s",
+			     resv_desc_ptr->name);
 			rc = ESLURM_INVALID_PARTITION_NAME;
 			goto bad_parse;
 		}
 	}
 	if ((resv_desc_ptr->accounts == NULL) &&
 	    (resv_desc_ptr->users == NULL)) {
+		info("Reservation request lacks users or accounts");
 		rc = ESLURM_INVALID_BANK_ACCOUNT;
 		goto bad_parse;
 	}
@@ -374,6 +390,7 @@ extern int create_resv(reserve_request_msg_t *resv_desc_ptr)
 			goto bad_parse;
 		}
 	} else if (resv_desc_ptr->node_cnt == 0) {
+		info("Reservation request lacks node specification");
 		rc = ESLURM_INVALID_NODE_NAME;
 		goto bad_parse;
 	}
@@ -403,8 +420,8 @@ extern int create_resv(reserve_request_msg_t *resv_desc_ptr)
 	resv_ptr->user_list	= user_list;
 	resv_desc_ptr->users 	= NULL;		/* Nothing left to free */
 
-	if (!resv_list)
-		list_create(_del_resv_rec);
+	info("Created reservation %s for accounts=%s users=%s",
+	     resv_ptr->name, resv_ptr->accounts, resv_ptr->users);
 	list_append(resv_list, resv_ptr);
 	last_resv_update = now;
 
@@ -426,10 +443,12 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 	time_t now = time(NULL);
 	slurmctld_resv_t *resv_ptr;
 
+	if (!resv_list)
+		resv_list = list_create(_del_resv_rec);
 	_dump_resv_req(resv_desc_ptr, "update_resv");
 
 	/* Find the specified reservation */
-	if ((resv_desc_ptr->name == NULL) || (!resv_list))
+	if ((resv_desc_ptr->name == NULL))
 		return ESLURM_RESERVATION_INVALID;
 	resv_ptr = (slurmctld_resv_t *) list_find_first (resv_list, 
 			_find_resv_rec, resv_desc_ptr->name);
@@ -439,13 +458,17 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 	/* Process the request */
 	last_resv_update = now;
 	if (resv_desc_ptr->start_time != (time_t) NO_VAL) {
-		if (resv_desc_ptr->start_time < (now - 60))
+		if (resv_desc_ptr->start_time < (now - 60)) {
+			info("Reservation requestion has invalid start time");
 			return ESLURM_INVALID_TIME_VALUE;
+		}
 		resv_ptr->start_time = resv_desc_ptr->start_time;
 	}
 	if (resv_desc_ptr->end_time != (time_t) NO_VAL) {
-		if (resv_desc_ptr->end_time < (now - 60))
+		if (resv_desc_ptr->end_time < (now - 60)) {
+			info("Reservation requestion has invalid end time");
 			return ESLURM_INVALID_TIME_VALUE;
+		}
 		resv_ptr->end_time = resv_desc_ptr->end_time;
 	}
 	if (resv_desc_ptr->type != (uint16_t) NO_VAL) {
@@ -458,8 +481,11 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 	if (resv_desc_ptr->partition) {
 		struct part_record *part_ptr = NULL;
 		part_ptr = find_part_record(resv_desc_ptr->partition);
-		if (!part_ptr)
+		if (!part_ptr) {
+			info("Reservation request has invalid partition %s",
+			     resv_desc_ptr->name);
 			return ESLURM_INVALID_PARTITION_NAME;
+		}
 		resv_ptr->partition	= resv_desc_ptr->partition;
 		resv_desc_ptr->partition = NULL; /* Nothing left to free */
 		resv_ptr->part_ptr	= part_ptr;
