@@ -1195,7 +1195,8 @@ extern int acct_storage_p_get_usage(void *db_conn, uid_t uid,
 }
 
 extern int acct_storage_p_roll_usage(void *db_conn, 
-				     time_t sent_start, time_t sent_end)
+				     time_t sent_start, time_t sent_end,
+				     uint16_t archive_data)
 {
 	slurmdbd_msg_t req;
 	dbd_roll_usage_msg_t get_msg;
@@ -1203,6 +1204,7 @@ extern int acct_storage_p_roll_usage(void *db_conn,
 	
 	get_msg.end = sent_end;
 	get_msg.start = sent_start;
+	get_msg.archive_data = archive_data;
 
 	req.msg_type = DBD_ROLL_USAGE;
 

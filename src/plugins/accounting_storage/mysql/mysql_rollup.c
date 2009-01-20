@@ -783,7 +783,7 @@ extern int mysql_daily_rollup(mysql_conn_t *mysql_conn,
 	return SLURM_SUCCESS;
 }
 extern int mysql_monthly_rollup(mysql_conn_t *mysql_conn,
-				time_t start, time_t end)
+				time_t start, time_t end, uint16_t archive_data)
 {
 	int rc = SLURM_SUCCESS;
 	struct tm start_tm;
@@ -889,7 +889,7 @@ extern int mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 		error("Couldn't remove old event data");
 		return SLURM_ERROR;
 	}
-	if(!slurmdbd_conf) 
+	if(!slurmdbd_conf || !archive_data) 
 		return SLURM_SUCCESS;
 
 	memset(&arch_cond, 0, sizeof(arch_cond));

@@ -96,17 +96,18 @@ set job2_nodes [format "%s\[%s\]" $cluster "0-1"]
 set job2_cpus [expr $node0_cpus + $node1_cpus]
 
 #job3
-#make job eligible an hour into the allocation
+#make job eligible an hour before the end of job2
 set job3_elig [expr $job2_end-3600]
-#start the job 65 minutes later so we can check reserved time
+#start the job at the end of job2
 set job3_start $job2_end
-#run for a day
+#run for 65 minutes
 set job3_run 3900
 set job3_end [expr $job3_start+$job3_run]
 # This will give us the correct time we ran for
 set job3_diff_str [timestamp -format %X -seconds [expr $midnight+$job1_run]]
 set job3_start_str [timestamp -format %Y-%m-%dT%X -seconds $job3_start]
 set job3_end_str [timestamp -format %Y-%m-%dT%X -seconds $job3_end]
+#run on just node0
 set job3_nodes $node0
 set job3_cpus $node0_cpus
 
@@ -383,6 +384,7 @@ set resv [format "%d\\\(%.2f%%\\\)" $resv  [expr double($resv * 100)/$reported]]
 set idle [format "%d\\\(%.2f%%\\\)" $idle [expr double($idle * 100)/$reported]] 
 set reported [format "%d\\\(%.2f%%\\\)" $reported 100]
 
+send_user "\nTesting sreport for first hour\n"
 set matches 0
 set my_pid [eval spawn $sreport cluster utilization cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,idle,down,alloc,res,reported]
 expect {
@@ -601,6 +603,7 @@ set resv [format "%d\\\(%.2f%%\\\)" $resv  [expr double($resv * 100)/$reported]]
 set idle [format "%d\\\(%.2f%%\\\)" $idle [expr double($idle * 100)/$reported]] 
 set reported [format "%d\\\(%.2f%%\\\)" $reported 100]
 
+send_user "\nTesting sreport for second hour\n"
 set matches 0
 set my_pid [eval spawn $sreport cluster utilization cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,idle,down,alloc,res,reported]
 expect {

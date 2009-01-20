@@ -2736,7 +2736,8 @@ static int   _roll_usage(slurmdbd_conn_t *slurmdbd_conn,
 	}
 
 	rc = acct_storage_g_roll_usage(slurmdbd_conn->db_conn,
-				       get_msg->start, get_msg->end);
+				       get_msg->start, get_msg->end,
+				       get_msg->archive_data);
 
 end_it:
 	slurmdbd_free_roll_usage_msg(slurmdbd_conn->rpc_version, 

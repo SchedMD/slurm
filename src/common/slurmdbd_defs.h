@@ -190,6 +190,7 @@ typedef struct {
 } dbd_cond_msg_t;
 
 typedef struct {
+	uint16_t archive_data;
 	time_t end;
 	time_t start;
 } dbd_roll_usage_msg_t;
