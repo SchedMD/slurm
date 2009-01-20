@@ -986,6 +986,7 @@ typedef struct reserve_request_msg {
 	char *name;		/* name of reservation */
 	time_t start_time;	/* start time of reservation */
 	time_t end_time;	/* end time of reservation */
+	uint32_t duration;	/* duration of reservation in seconds */
 	uint16_t type;		/* see RESERVE_TYPE_* above */
 	uint32_t node_cnt;	/* count of nodes required */
 	char *node_list;	/* list of reserved nodes or ALL */

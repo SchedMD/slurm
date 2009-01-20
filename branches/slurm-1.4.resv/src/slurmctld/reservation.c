@@ -126,8 +126,7 @@ static void _dump_resv_req(reserve_request_msg_t *resv_ptr, char *mode)
 {
 #ifdef _RESV_DEBUG
 	char start_str[32] = "", end_str[32] = "", *type_str;
-	char *name_str = "", *nodes_str = "", *features_str = "";
-	char *partition_str = "", *users_str = "", *accounts_str = "";
+	int duration;
 
 	slurm_make_time_str(&resv_ptr->start_time,start_str,sizeof(start_str));
 	slurm_make_time_str(&resv_ptr->end_time,  end_str,  sizeof(end_str));
@@ -135,23 +134,18 @@ static void _dump_resv_req(reserve_request_msg_t *resv_ptr, char *mode)
 		type_str = "MAINT";
 	else
 		type_str = "";
-	if (resv_ptr->name)
-		name_str = resv_ptr->name;
-	if (resv_ptr->node_list)
-		nodes_str = resv_ptr->node_list;
-	if (resv_ptr->features)
-		features_str = resv_ptr->features;
-	if (resv_ptr->partition)
-		partition_str = resv_ptr->partition;
-	if (resv_ptr->users)
-		users_str = resv_ptr->users;
-	if (resv_ptr->accounts)
-		accounts_str = resv_ptr->accounts;
+	if (resv_ptr->duration == NO_VAL)
+		duration = -1;
+	else
+		duration = resv_ptr->duration;
 
-	info("%s: Name=%s StartTime=%s EndTime=%s Type=%s NodeCnt=%u "
-	     "NodeList=%s Features=%s PartitionName=%s Users=%u Accounts=%s",
-	     mode, name_str, start_str, end_str, type_str, resv_ptr->node_cnt,
-	     nodes_str, features_str, partition_str, users_str, accounts_str);
+	info("%s: Name=%s StartTime=%s EndTime=%s Duration=%d "
+	     "Type=%s NodeCnt=%u NodeList=%s Features=%s "
+	     "PartitionName=%s Users=%s Accounts=%s",
+	     mode, resv_ptr->name, start_str, end_str, duration,
+	     type_str, resv_ptr->node_cnt, resv_ptr->node_list, 
+	     resv_ptr->features, resv_ptr->partition, 
+	     resv_ptr->users, resv_ptr->accounts);
 #endif
 }
 
