@@ -2387,6 +2387,7 @@ static void _slurm_rpc_resv_create(slurm_msg_t * msg)
 		debug2("_slurm_rpc_resv_create complete for %s %s",
 			resv_desc_ptr->name, TIME_STR);
 		/* send reservation name */
+		slurm_msg_t_init(&response_msg);
 		resv_resp_msg.name    = resv_desc_ptr->name;
 		response_msg.msg_type = RESPONSE_CREATE_RESERVATION;
 		response_msg.data     = &resv_resp_msg;
