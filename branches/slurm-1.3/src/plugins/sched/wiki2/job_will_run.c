@@ -234,7 +234,8 @@ static char *	_will_run_test(uint32_t *jobid, time_t *start_time,
 		}
 		if (job_ptr->details->exc_node_bitmap) {
 			bit_not(job_ptr->details->exc_node_bitmap);
-			bit_and(avail_bitmap, job_ptr->details->exc_node_bitmap);
+			bit_and(avail_bitmap, 
+				job_ptr->details->exc_node_bitmap);
 			bit_not(job_ptr->details->exc_node_bitmap);
 		}
 		if ((job_ptr->details->req_node_bitmap) &&
