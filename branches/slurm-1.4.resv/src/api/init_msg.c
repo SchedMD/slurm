@@ -173,7 +173,7 @@ void slurm_init_resv_desc_msg (reserve_request_msg_t * update_resv_msg)
 	update_resv_msg->start_time	= (time_t) NO_VAL;
 	update_resv_msg->end_time	= (time_t) NO_VAL;
 	update_resv_msg->duration	= NO_VAL;
-	update_resv_msg->type		= 0;
+	update_resv_msg->type		= (uint16_t) NO_VAL;
 	update_resv_msg->node_cnt	= NO_VAL;
 	update_resv_msg->node_list	= NULL;
 	update_resv_msg->features	= NULL;

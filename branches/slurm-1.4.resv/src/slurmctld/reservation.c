@@ -249,12 +249,14 @@ static int _build_account_list(char *accounts, int *account_cnt,
 	}
 	*account_cnt  = ac_cnt;
 	*account_list = ac_list;
+	xfree(tmp);
 	return SLURM_SUCCESS;
 
 #if 0
  inval:	for (i=0; i<ac_cnt; i++)
 		xfree(ac_list[i]);
 	xfree(ac_list);
+	xfree(tmp);
 	return ESLURM_INVALID_BANK_ACCOUNT;
 #endif
 }
@@ -268,7 +270,7 @@ static int _build_account_list(char *accounts, int *account_cnt,
  * RETURN 0 on success */
 static int _build_uid_list(char *users, int *user_cnt, uid_t **user_list)
 {
-	char *last, *tmp, *tok;
+	char *last, *tmp = NULL, *tok;
 	int u_cnt = 0, i;
 	uid_t *u_list, u_tmp;
 
@@ -293,9 +295,11 @@ static int _build_uid_list(char *users, int *user_cnt, uid_t **user_list)
 	}
 	*user_cnt  = u_cnt;
 	*user_list = u_list;
+	xfree(tmp);
 	return SLURM_SUCCESS;
 
- inval:	xfree(u_list);
+ inval:	xfree(tmp);
+	xfree(u_list);
 	return ESLURM_USER_ID_MISSING;
 }
 
@@ -307,6 +311,7 @@ static int _build_uid_list(char *users, int *user_cnt, uid_t **user_list)
  *	updated
  * NOTE: if you make any changes here be sure to make the corresponding 
  *	to _unpack_reserve_info_members() in common/slurm_protocol_pack.c
+ *	plus load_all_resv_state() below.
  */
 static void _pack_resv(struct slurmctld_resv *resv_ptr, Buf buffer)
 {

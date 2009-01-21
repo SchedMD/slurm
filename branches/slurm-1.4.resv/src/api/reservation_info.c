@@ -113,8 +113,8 @@ char *slurm_sprint_reservation_info ( reserve_info_t * resv_ptr,
 	snprintf(tmp_line, sizeof(tmp_line),
 		 "ReservationName=%s StartTime=%s EndTime=%s Duration=%u",
 		 resv_ptr->name, tmp1, tmp2, 
-		 (uint32_t) difftime(resv_ptr->end_time, 
-				     resv_ptr->start_time));
+		 (uint32_t) (difftime(resv_ptr->end_time, 
+				      resv_ptr->start_time) / 60));
 	xstrcat(out, tmp_line);
 
 	if (one_liner)
