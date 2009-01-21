@@ -85,6 +85,8 @@ scontrol_create_res(int argc, char *argv[])
 				      "No reservation created.", argv[i]);
 				return 0;
 			}
+			resv_msg.duration = (uint32_t)duration;
+
 		} else if (strncasecmp(argv[i], "Type=", 5) == 0) {
 			char *typestr = &argv[i][5];
 			if (strncasecmp(typestr, "Maintenance", 5) == 0) {
@@ -96,7 +98,15 @@ scontrol_create_res(int argc, char *argv[])
 				return 0;
 			}
 		} else if (strncasecmp(argv[i], "NodeCnt=", 8) == 0) {
-			resv_msg.node_cnt = strtol(&argv[i][8], (char **)NULL, 10);
+			char *endptr = NULL;
+			resv_msg.node_cnt = strtol(&argv[i][8], &endptr, 10);
+
+			if (endptr == NULL || *endptr != NULL) {
+				exit_code = 1;
+				error("Error parsing number of nodes.  "
+				      "No reservation created.");
+				return 0;
+			}
 		} else if (strncasecmp(argv[i], "Nodes=", 6) == 0) {
 			resv_msg.node_list = &argv[i][6];
 		} else if (strncasecmp(argv[i], "Features=", 9) == 0) {
@@ -107,43 +117,62 @@ scontrol_create_res(int argc, char *argv[])
 			resv_msg.users = &argv[i][6];
 		} else if (strncasecmp(argv[i], "Accounts=", 9) == 0) {
 			resv_msg.accounts = &argv[i][9];
+		} else if (strncasecmp(argv[i], "res", 3) == 0) {
+			continue;
 		} else {
+			exit_code = 1;
 			error("Unknown parameter %s.  "
 			      "No reservation created.", argv[i]);
 			return 0;
 		}
 	}
-	if (duration != -3) {
-		if (duration == INFINITE)
-			resv_msg.end_time = INFINITE;
-		else
-			resv_msg.end_time = resv_msg.start_time + duration*60;
-	}
+
 	if (resv_msg.start_time == (time_t)NO_VAL) {
+		exit_code = 1;
 		error("A start time must be given.  No reservation created.");
 		return 0;
 	}
-	if (resv_msg.end_time == (time_t)NO_VAL) {
+	if (resv_msg.end_time == (time_t)NO_VAL && 
+	    resv_msg.duration == (time_t)NO_VAL) {
+		exit_code = 1;
 		error("An end time or duration must be given.  "
 		      "No reservation created.");
 		return 0;
 	}
+	if (resv_msg.end_time != (time_t)NO_VAL && 
+	    resv_msg.duration != (time_t)NO_VAL && 
+            resv_msg.start_time + resv_msg.duration*60 != resv_msg.end_time) {
+		exit_code = 1;
+		error("StartTime + Duration does not equal EndTime.  "
+		      "No reservation created.");
+		return 0;
+	}
 	if (resv_msg.start_time > resv_msg.end_time && resv_msg.end_time) {
+		exit_code = 1;
 		error("Start time cannot be after end time.  "
 		      "No reservation created.");
 		return 0;
 	}
-
 	if (resv_msg.node_cnt == NO_VAL && resv_msg.node_list == NULL) {
+		exit_code = 1;
 		error("Either Nodes or NodeCnt must be specified.  "
 		      "No reservation created.");
 		return 0;
 	}
+	if (resv_msg.users == NULL && resv_msg.accounts == NULL) {
+		exit_code = 1;
+		error("Either Users or Accounts must be specified.  "
+		      "No reservation created.");
+		return 0;
+	}
+
 	new_res_name = slurm_create_reservation(&resv_msg);
 	if (!new_res_name) {
 		exit_code = 1;
-		return slurm_get_errno();
+		slurm_perror("Error creating the reservation");
+		return 0;
 	} else {
+		printf("Reservation created: %s\n", new_res_name);
 		free(new_res_name);
 	}
 	return 0;

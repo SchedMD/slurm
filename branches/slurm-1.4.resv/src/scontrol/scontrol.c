@@ -886,15 +886,17 @@ _process_command (int argc, char *argv[])
 static void
 _create_it (int argc, char *argv[]) 
 {
-	if (strncasecmp (argv[0], "ReservationName=", 16) == 0) {
-		scontrol_create_res(argc, argv);
-	/*  TODO:  Finish this
-	} else if (strncasecmp (argv[i], "PartitionName=", 14) == 0) {
-		error_code = scontrol_update_part (argc, argv);
-		break; */
-	} else {
+	int i;
+	for (i=0; i<argc; i++) {
+		if (strncasecmp (argv[i], "res", 3) == 0) {
+			scontrol_create_res(argc, argv);
+			break;
+		}
+	}
+
+	if (i >= argc) {
 		exit_code = 1;
-		fprintf(stderr, "Invalid creation entity: %s\n", argv[0]);
+		error("Invalid creation entity: %s\n", argv[0]);
 	}
 }
 
