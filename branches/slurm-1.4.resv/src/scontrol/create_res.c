@@ -101,7 +101,8 @@ scontrol_create_res(int argc, char *argv[])
 			char *endptr = NULL;
 			resv_msg.node_cnt = strtol(&argv[i][8], &endptr, 10);
 
-			if (endptr == NULL || *endptr != NULL) {
+			if (endptr == NULL || *endptr != '\0' || 
+                            argv[i][8] == '\0') {
 				exit_code = 1;
 				error("Error parsing number of nodes.  "
 				      "No reservation created.");
