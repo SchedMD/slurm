@@ -134,7 +134,7 @@ slurm_create_reservation (reserve_request_msg_t * resv_msg )
 			
 	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg);
 	switch (resp_msg.msg_type) {
-	case RESPONSE_RESOURCE_ALLOCATION:
+	case RESPONSE_CREATE_RESERVATION:
 		resp = (reservation_name_msg_t *) resp_msg.data;
 		resv_name = strdup(resp->name);
 		break;
@@ -142,6 +142,7 @@ slurm_create_reservation (reserve_request_msg_t * resv_msg )
 		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
 		if (rc) 
 			slurm_seterrno(rc);
+		break;
 	default:
 		slurm_seterrno(SLURM_UNEXPECTED_MSG_ERROR);
 	}
