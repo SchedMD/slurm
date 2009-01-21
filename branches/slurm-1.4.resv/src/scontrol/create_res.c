@@ -133,14 +133,14 @@ scontrol_create_res(int argc, char *argv[])
 		return 0;
 	}
 	if (resv_msg.end_time == (time_t)NO_VAL && 
-	    resv_msg.duration == (time_t)NO_VAL) {
+	    resv_msg.duration == (uint32_t)NO_VAL) {
 		exit_code = 1;
 		error("An end time or duration must be given.  "
 		      "No reservation created.");
 		return 0;
 	}
 	if (resv_msg.end_time != (time_t)NO_VAL && 
-	    resv_msg.duration != (time_t)NO_VAL && 
+	    resv_msg.duration != (uint32_t)NO_VAL && 
             resv_msg.start_time + resv_msg.duration*60 != resv_msg.end_time) {
 		exit_code = 1;
 		error("StartTime + Duration does not equal EndTime.  "
