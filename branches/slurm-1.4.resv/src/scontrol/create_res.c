@@ -147,7 +147,8 @@ scontrol_create_res(int argc, char *argv[])
 		      "No reservation created.");
 		return 0;
 	}
-	if (resv_msg.start_time > resv_msg.end_time && resv_msg.end_time) {
+	if (resv_msg.start_time > resv_msg.end_time && 
+	    resv_msg.end_time != (time_t)NO_VAL) {
 		exit_code = 1;
 		error("Start time cannot be after end time.  "
 		      "No reservation created.");
