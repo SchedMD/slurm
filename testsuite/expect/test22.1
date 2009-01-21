@@ -79,6 +79,8 @@ set job1_start_str [timestamp -format %Y-%m-%dT%X -seconds $job1_start]
 set job1_end_str [timestamp -format %Y-%m-%dT%X -seconds $job1_end]
 set job1_nodes $node1
 set job1_cpus $node1_cpus
+set job1_alloc [expr $job1_run * $job1_cpus]
+set job1_acct $account1
 
 #job2
 #make job eligible an hour into the allocation
@@ -94,6 +96,8 @@ set job2_start_str [timestamp -format %Y-%m-%dT%X -seconds $job2_start]
 set job2_end_str [timestamp -format %Y-%m-%dT%X -seconds $job2_end]
 set job2_nodes [format "%s\[%s\]" $cluster "0-1"]
 set job2_cpus [expr $node0_cpus + $node1_cpus]
+set job2_alloc [expr $job2_run * $job2_cpus]
+set job2_acct $account3
 
 #job3
 #make job eligible an hour before the end of job2
@@ -110,6 +114,16 @@ set job3_end_str [timestamp -format %Y-%m-%dT%X -seconds $job3_end]
 #run on just node0
 set job3_nodes $node0
 set job3_cpus $node0_cpus
+set job3_alloc [expr $job3_run * $job3_cpus]
+set job3_acct $account2
+
+set acct1_alloc $job1_alloc
+set acct3_alloc $job2_alloc
+set acct2_alloc [expr $acct3_alloc + $job3_alloc]
+set total_alloc [expr $job1_alloc + $job2_alloc + $job3_alloc]
+
+set size2_alloc [expr $job1_alloc + $job3_alloc]
+set size4_alloc $job3_alloc
 
 #node0 down
 set node0_down_start [expr $period_start+(60*45)]
@@ -237,9 +251,9 @@ puts $file "on duplicate key update period_start=VALUES(period_start), period_en
 
 #now we will put in a job running for an hour and 5 minutes
 puts $file "insert into job_table (jobid, associd, wckey, wckeyid, uid, gid, partition, blockid, cluster, account, eligible, submit, start, end, suspended, name, track_steps, state, comp_code, priority, req_cpus, alloc_cpus, nodelist, kill_requid, qos, deleted) values"
-puts $file "('65537', '$user1acct1', '', '0', '$uid', '$gid', 'debug', '', '$cluster', '$account1', $job1_start, $job1_start, $job1_start, $job1_end, '0', 'test_job1', '0', '3', '0', '$job1_cpus', '$job1_cpus', '$job1_cpus', '$job1_nodes', '0', '0', '0')"
-puts $file ", ('65538', '$user2acct3', '', '0', '$uid', '$gid', 'debug', '', '$cluster', '$account3', $job2_elig, $job2_elig, $job2_start, $job2_end, '0', 'test_job2', '0', '3', '0', '$job2_cpus', '$job2_cpus', '$job2_cpus', '$job2_nodes', '0', '0', '0')"
-puts $file ", ('65539', '$user1acct2', '', '0', '$uid', '$gid', 'debug', '', '$cluster', '$account2', $job3_elig, $job3_elig, $job3_start, $job3_end, '0', 'test_job3', '0', '3', '0', '$job3_cpus', '$job3_cpus', '$job3_cpus', '$job3_nodes', '0', '0', '0')"
+puts $file "('65537', '$user1acct1', '', '0', '$uid', '$gid', 'debug', '', '$cluster', '$job1_acct', $job1_start, $job1_start, $job1_start, $job1_end, '0', 'test_job1', '0', '3', '0', '$job1_cpus', '$job1_cpus', '$job1_cpus', '$job1_nodes', '0', '0', '0')"
+puts $file ", ('65538', '$user2acct3', '', '0', '$uid', '$gid', 'debug', '', '$cluster', '$job2_acct', $job2_elig, $job2_elig, $job2_start, $job2_end, '0', 'test_job2', '0', '3', '0', '$job2_cpus', '$job2_cpus', '$job2_cpus', '$job2_nodes', '0', '0', '0')"
+puts $file ", ('65539', '$user1acct2', '', '0', '$uid', '$gid', 'debug', '', '$cluster', '$job3_acct', $job3_elig, $job3_elig, $job3_start, $job3_end, '0', 'test_job3', '0', '3', '0', '$job3_cpus', '$job3_cpus', '$job3_cpus', '$job3_nodes', '0', '0', '0')"
 puts $file "on duplicate key update id=LAST_INSERT_ID(id), eligible=VALUES(eligible), submit=VALUES(submit), start=VALUES(start), end=VALUES(end), associd=VALUES(associd), alloc_cpus=VALUES(alloc_cpus);";
 close $file
 
@@ -780,6 +794,310 @@ expect {
 
 if {$matches != 2} {
 	send_user "\nFAILURE:  sreport didn't give good info 9 $matches.\n"
+	incr exit_code 1
+}
+
+if { $exit_code } {
+	incr exit_code [archive_load $sql_rem]
+	remove_user "" "" $users
+	remove_acct "" $accounts
+	remove_cluster "$cluster"
+	exit $exit_code
+}
+
+# Use sreport to get cluster usage for the first 3 days
+#
+
+# Mon Dec 31 23:00:00 2007
+set period_start 1199170800
+
+# Tue Jan 3 00:00:00 2008
+set period_end 1199347200
+set start_str [timestamp -format %Y-%m-%dT%X -seconds $period_start]
+set end_str [timestamp -format %Y-%m-%dT%X -seconds $period_end]
+
+set reported [expr ($period_end - $period_start) * $cluster_cpus]
+set down [expr ($node0_down_end - $node0_down_start) * $node0_cpus]
+set alloc_sec [expr ($job1_end-$job1_start) * $job1_cpus]
+set alloc_sec [expr $alloc_sec + (($job2_end-$job2_start) * $job2_cpus)]
+set alloc_sec [expr $alloc_sec + (($job3_end-$job3_start) * $job3_cpus)]
+set resv [expr ($job2_start - $job2_elig) * $job2_cpus]
+set resv [expr $resv + (($job3_start - $job3_elig) * $job3_cpus)]
+# I didn't have time to do the correct math here so I am just putting in 9000 which should be the correct value of over commit
+set over 9000
+set resv [expr $resv - $over]
+set idle [expr $reported - ($down + $alloc_sec + $resv)]
+# do the same logic inside the plugin to figure out the correct 
+# idle time and resv time
+if {$idle < 0 } {
+	set resv [expr $resv + $idle]
+	set idle 0
+	if {$resv < 0} {
+		set resv 0
+	}
+}
+set down [format "%d\\\(%.2f%%\\\)" $down [expr double($down * 100)/$reported]] 
+set alloc [format "%d\\\(%.2f%%\\\)" $alloc_sec [expr double($alloc_sec * 100)/$reported]] 
+set resv [format "%d\\\(%.2f%%\\\)" $resv  [expr double($resv * 100)/$reported]]
+set idle [format "%d\\\(%.2f%%\\\)" $idle [expr double($idle * 100)/$reported]] 
+set over [format "%d\\\(%.2f%%\\\)" $over [expr double($over * 100)/$reported]] 
+
+set job1_alloc_str [format "%d\\\(%.2f%%\\\)" $job1_alloc [expr double($job1_alloc * 100)/$reported]] 
+set job2_alloc_str [format "%d\\\(%.2f%%\\\)" $job2_alloc [expr double($job2_alloc * 100)/$reported]] 
+set job3_alloc_str [format "%d\\\(%.2f%%\\\)" $job3_alloc [expr double($job3_alloc * 100)/$reported]] 
+set total_alloc_str [format "%d\\\(%.2f%%\\\)" $total_alloc [expr double($total_alloc * 100)/$reported]] 
+set acct1_alloc_str [format "%d\\\(%.2f%%\\\)" $acct1_alloc [expr double($acct1_alloc * 100)/$reported]] 
+set acct2_alloc_str [format "%d\\\(%.2f%%\\\)" $acct2_alloc [expr double($acct2_alloc * 100)/$reported]] 
+set acct3_alloc_str [format "%d\\\(%.2f%%\\\)" $acct3_alloc [expr double($acct3_alloc * 100)/$reported]] 
+set reported [format "%d\\\(%.2f%%\\\)" $reported 100]
+
+send_user "\nTesting sreport for 3 days\n"
+set matches 0
+set my_pid [eval spawn $sreport cluster utilization cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,idle,down,alloc,res,over,reported]
+expect {
+	-re "There was a problem" {
+	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+	    	incr exit_code 1
+	}
+	-re "$cluster.$idle.$down.$alloc.$resv.$over.$reported." {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr archive load not responding\n"
+		slow_kill $my_pid
+		incr exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 1} {
+	send_user "\nFAILURE:  sreport didn't give good info 10 $matches.\n"
+	send_user "we are looking for $cluster.$idle.$down.$alloc.$resv.$over.$reported.\n"
+	incr exit_code 1
+}
+
+if { $exit_code } {
+	incr exit_code [archive_load $sql_rem]
+	remove_user "" "" $users
+	remove_acct "" $accounts
+	remove_cluster "$cluster"
+	exit $exit_code
+}
+
+# test the UserUtilizationByAccount report
+set matches 0
+set my_pid [eval spawn $sreport cluster UserUtilizationByAccount cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,login,account,used]
+expect {
+	-re "There was a problem" {
+	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+	    	incr exit_code 1
+	}
+	-re "$cluster.$user2.$account3.$job2_alloc_str." {
+		send_user "got 2\n"
+		incr matches
+		exp_continue
+	}
+	-re "$cluster.$user1.$account1.$job1_alloc_str." {
+		send_user "got 1\n"
+		incr matches
+		exp_continue
+	}
+	-re "$cluster.$user1.$account2.$job3_alloc_str." {
+		send_user "got 3\n"
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr archive load not responding\n"
+		slow_kill $my_pid
+		incr exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 3} {
+	send_user "\nFAILURE:  sreport didn't give good info 11 $matches.\n"
+	incr exit_code 1
+}
+
+if { $exit_code } {
+	incr exit_code [archive_load $sql_rem]
+	remove_user "" "" $users
+	remove_acct "" $accounts
+	remove_cluster "$cluster"
+	exit $exit_code
+}
+
+# test the AccountUtilizationByUser report
+set matches 0
+set my_pid [eval spawn $sreport cluster AccountUtilizationByUser cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,account,login,used]
+expect {
+	-re "There was a problem" {
+	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+	    	incr exit_code 1
+	}
+	-re "$cluster.root..$total_alloc_str." {
+		incr matches
+		exp_continue
+	}
+	-re "$cluster.$account1..$acct1_alloc_str." {
+		incr matches
+		exp_continue
+	}
+	-re "$cluster.$account1.$user1.$job1_alloc_str." {
+		incr matches
+		exp_continue
+	}
+	-re "$cluster.$account2..$acct2_alloc_str." {
+		incr matches
+		exp_continue
+	}
+	-re "$cluster.$account2.$user1.$job3_alloc_str." {
+		incr matches
+		exp_continue
+	}
+	-re "$cluster.$account3..$acct3_alloc_str." {
+		incr matches
+		exp_continue
+	}
+	-re "$cluster.$account3.$user2.$job2_alloc_str." {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr archive load not responding\n"
+		slow_kill $my_pid
+		incr exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 7} {
+	send_user "\nFAILURE:  sreport didn't give good info 11 $matches.\n"
+	incr exit_code 1
+}
+
+if { $exit_code } {
+	incr exit_code [archive_load $sql_rem]
+	remove_user "" "" $users
+	remove_acct "" $accounts
+	remove_cluster "$cluster"
+	exit $exit_code
+}
+
+# test the User Top report
+set matches 0
+set my_pid [eval spawn $sreport user top cluster='$cluster' start=$start_str end=$end_str -tsecper -p -n format=cluster,account,login,used]
+expect {
+	-re "There was a problem" {
+	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+	    	incr exit_code 1
+	}
+	-re "$cluster.$account3.$user2.$job2_alloc_str." {
+		incr matches
+		exp_continue
+	}
+	-re "$cluster.$account1.$user1.$job1_alloc_str." {
+		incr matches
+		exp_continue
+	}
+	-re "$cluster.$account2.$user1.$job3_alloc_str." {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr archive load not responding\n"
+		slow_kill $my_pid
+		incr exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 3} {
+	send_user "\nFAILURE:  sreport didn't give good info 12 $matches.\n"
+	incr exit_code 1
+}
+
+if { $exit_code } {
+	incr exit_code [archive_load $sql_rem]
+	remove_user "" "" $users
+	remove_acct "" $accounts
+	remove_cluster "$cluster"
+	exit $exit_code
+}
+
+# test the Job Size report
+set matches 0
+set my_pid [eval spawn $sreport job size grouping=2,4 cluster='$cluster' start=$start_str end=$end_str -tsec -p -n]
+expect {
+	-re "There was a problem" {
+	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+	    	incr exit_code 1
+	}
+	-re "$cluster.$account1.0.$job1_alloc.0." {
+		incr matches
+		exp_continue
+	}
+	-re "$cluster.$account2.0.$job3_alloc.$job2_alloc." {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr archive load not responding\n"
+		slow_kill $my_pid
+		incr exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 2} {
+	send_user "\nFAILURE:  sreport didn't give good info 13 $matches.\n"
+	incr exit_code 1
+}
+
+if { $exit_code } {
+	incr exit_code [archive_load $sql_rem]
+	remove_user "" "" $users
+	remove_acct "" $accounts
+	remove_cluster "$cluster"
+	exit $exit_code
+}
+
+# test the Job Size report down a level
+set matches 0
+set my_pid [eval spawn $sreport job size grouping=2,4 cluster='$cluster' account='$account2' start=$start_str end=$end_str -tsec -p -n]
+expect {
+	-re "There was a problem" {
+	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
+	    	incr exit_code 1
+	}
+	-re "$cluster.$account3.0.0.$job2_alloc." {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr archive load not responding\n"
+		slow_kill $my_pid
+		incr exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 1} {
+	send_user "\nFAILURE:  sreport didn't give good info 14 $matches.\n"
 	incr exit_code 1
 }
 

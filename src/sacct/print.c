@@ -303,11 +303,44 @@ void print_fields(type_t type, void *object)
 				break;
 			case JOBCOMP:
 			default:
-				tmp_char = NULL;
 				break;
 			}
 			field->print_routine(field,
 					     tmp_char,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_CPU_TIME:
+			switch(type) {
+			case JOB:
+				tmp_int = job->elapsed * job->alloc_cpus;
+				break;
+			case JOBSTEP:
+				tmp_int = step->elapsed * step->ncpus;
+				break;
+			case JOBCOMP:
+				break;
+			default:
+				break;
+			}
+			field->print_routine(field,
+					     tmp_int,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_CPU_TIME_RAW:
+			switch(type) {
+			case JOB:
+				tmp_int = job->elapsed * job->alloc_cpus;
+				break;
+			case JOBSTEP:
+				tmp_int = step->elapsed * step->ncpus;
+				break;
+			case JOBCOMP:
+				break;
+			default:
+				break;
+			}
+			field->print_routine(field,
+					     tmp_int,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_ELAPSED:
@@ -875,6 +908,73 @@ void print_fields(type_t type, void *object)
 				break;
 			case JOBSTEP:
 				tmp_int = step->ncpus;
+				break;
+			case JOBCOMP:
+
+				break;
+			default:
+
+				break;
+			}
+			field->print_routine(field,
+					     tmp_int,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_RESV:
+			switch(type) {
+			case JOB:
+				if(job->start)
+					tmp_int = job->start - job->eligible;
+				else
+					tmp_int = time(NULL) - job->eligible;
+				break;
+			case JOBSTEP:
+				break;
+			case JOBCOMP:
+
+				break;
+			default:
+
+				break;
+			}
+			field->print_routine(field,
+					     tmp_int,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_RESV_CPU:
+			switch(type) {
+			case JOB:
+				if(job->start)
+					tmp_int = (job->start - job->eligible)
+						* job->req_cpus;
+				else
+					tmp_int = (time(NULL) - job->eligible)
+						* job->req_cpus;
+				break;
+			case JOBSTEP:
+				break;
+			case JOBCOMP:
+
+				break;
+			default:
+
+				break;
+			}
+			field->print_routine(field,
+					     tmp_int,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_RESV_CPU_RAW:
+			switch(type) {
+			case JOB:
+				if(job->start)
+					tmp_int = (job->start - job->eligible)
+						* job->req_cpus;
+				else
+					tmp_int = (time(NULL) - job->eligible)
+						* job->req_cpus;
+				break;
+			case JOBSTEP:
 				break;
 			case JOBCOMP:
 
