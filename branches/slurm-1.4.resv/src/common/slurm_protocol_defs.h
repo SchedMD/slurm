@@ -806,6 +806,7 @@ void inline slurm_free_job_step_info_request_msg(
 		job_step_info_request_msg_t *msg);
 void inline slurm_free_node_info_request_msg(node_info_request_msg_t *msg);
 void inline slurm_free_part_info_request_msg(part_info_request_msg_t *msg);
+void inline slurm_free_resv_info_request_msg(resv_info_request_msg_t *msg);
 void inline slurm_free_set_debug_level_msg(set_debug_level_msg_t *msg);
 void inline slurm_destroy_association_shares_object(void *object);
 void inline slurm_free_shares_request_msg(shares_request_msg_t *msg);

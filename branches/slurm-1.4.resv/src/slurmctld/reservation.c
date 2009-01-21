@@ -399,7 +399,9 @@ extern int create_resv(reserve_request_msg_t *resv_desc_ptr)
 			rc = ESLURM_INVALID_NODE_NAME;
 			goto bad_parse;
 		}
-	} else if (resv_desc_ptr->node_cnt == 0) {
+		if (resv_desc_ptr->node_cnt == NO_VAL)
+			resv_desc_ptr->node_cnt = 0;
+	} else if (resv_desc_ptr->node_cnt == NO_VAL) {
 		info("Reservation request lacks node specification");
 		rc = ESLURM_INVALID_NODE_NAME;
 		goto bad_parse;

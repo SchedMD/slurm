@@ -283,6 +283,12 @@ void inline slurm_free_part_info_request_msg(
 	xfree(msg);
 }
 
+void inline slurm_free_resv_info_request_msg(
+		resv_info_request_msg_t *msg)
+{
+	xfree(msg);
+}
+
 void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 {
 	int i;
@@ -1611,6 +1617,7 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_DAEMON_STATUS:
 	case REQUEST_HEALTH_CHECK:
 	case ACCOUNTING_FIRST_REG:
+	case REQUEST_RESERVATION_INFO:
 		/* No body to free */
 		break;
 	case ACCOUNTING_UPDATE_MSG:

@@ -152,8 +152,12 @@ static int _unpack_job_step_create_response_msg(
 
 static void _pack_part_info_request_msg(part_info_request_msg_t * msg, 
 					Buf buffer);
-
 static int _unpack_part_info_request_msg(part_info_request_msg_t ** 
+					 msg, Buf buffer);
+
+static void _pack_resv_info_request_msg(resv_info_request_msg_t * msg, 
+					Buf buffer);
+static int _unpack_resv_info_request_msg(resv_info_request_msg_t ** 
 					 msg, Buf buffer);
 
 static int _unpack_partition_info_msg(partition_info_msg_t ** msg,
@@ -460,6 +464,10 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		break;
 	case REQUEST_PARTITION_INFO:
 		_pack_part_info_request_msg((part_info_request_msg_t *)
+					    msg->data, buffer);
+		break;
+	case REQUEST_RESERVATION_INFO:
+		_pack_resv_info_request_msg((resv_info_request_msg_t *)
 					    msg->data, buffer);
 		break;
 	case REQUEST_BUILD_INFO:
@@ -810,6 +818,10 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		break;
 	case REQUEST_PARTITION_INFO:
 		rc = _unpack_part_info_request_msg((part_info_request_msg_t **)
+						   & (msg->data), buffer);
+		break;
+	case REQUEST_RESERVATION_INFO:
+		rc = _unpack_resv_info_request_msg((resv_info_request_msg_t **)
 						   & (msg->data), buffer);
 		break;
 	case REQUEST_BUILD_INFO:
@@ -3983,6 +3995,29 @@ _unpack_part_info_request_msg(part_info_request_msg_t ** msg, Buf buffer)
 
 unpack_error:
 	slurm_free_part_info_request_msg(part_info);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
+static void
+_pack_resv_info_request_msg(resv_info_request_msg_t * msg, Buf buffer)
+{
+	pack_time(msg->last_update, buffer);
+}
+
+static int
+_unpack_resv_info_request_msg(resv_info_request_msg_t ** msg, Buf buffer)
+{
+	resv_info_request_msg_t* resv_info;
+
+	resv_info = xmalloc(sizeof(resv_info_request_msg_t));
+	*msg = resv_info;
+
+	safe_unpack_time(&resv_info->last_update, buffer);
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_resv_info_request_msg(resv_info);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
