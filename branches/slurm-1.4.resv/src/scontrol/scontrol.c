@@ -968,6 +968,9 @@ _update_it (int argc, char *argv[])
 		} else if (strncasecmp (argv[i], "SubBPName=", 10) == 0) {
 			error_code = _update_bluegene_subbp (argc, argv);
 			break;
+		} else if (strncasecmp (argv[i], "ReservationName=", 16) == 0) {
+			error_code = scontrol_update_res (argc, argv);
+			break;
 		}
 		
 	}

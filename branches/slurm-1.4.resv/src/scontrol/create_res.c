@@ -39,41 +39,37 @@
 #include "src/slurmctld/reservation.h"
 
 
-extern int
-scontrol_create_res(int argc, char *argv[])
+extern void
+scontrol_parse_res_options(int argc, char *argv[], 
+			   reserve_request_msg_t  *resv_msg_ptr, 
+			   const char *msg)
 {
-	reserve_request_msg_t   resv_msg;
 	int i;
 	int duration = -3;   /* -1 == INFINITE, -2 == error, -3 == not set */
-	char *new_res_name = NULL;
-
-	slurm_init_resv_desc_msg (&resv_msg);
 
 	for (i=0; i<argc; i++) {
 		if        (strncasecmp(argv[i], "ReservationName=", 16) == 0) {
-			resv_msg.name = &argv[i][16];
+			resv_msg_ptr->name = &argv[i][16];
 
 		} else if (strncasecmp(argv[i], "StartTime=", 10) == 0) {
 			time_t  t = parse_time(&argv[i][10], 0);
 			if (t == 0) {
 				//TODO:  Set errno here instead of exit_code?
 				exit_code = 1;
-				error("Invalid start time %s.  "
-				      "No reservation created.", argv[i]);
-				return 0;
+				error("Invalid start time %s.  %s", argv[i], msg);
+				return;
 			}
-			resv_msg.start_time = t;
+			resv_msg_ptr->start_time = t;
 
 		} else if (strncasecmp(argv[i], "EndTime=", 8) == 0) {
 			time_t  t = parse_time(&argv[i][8], 0);
 			if (t == 0) {
 				//TODO:  Set errno here instead of exit_code?
 				exit_code = 1;
-				error("Invalid end time %s.  "
-				      "No reservation created.", argv[i]);
-				return 0;
+				error("Invalid end time %s.  %s", argv[i], msg);
+				return;
 			}
-			resv_msg.end_time = t;
+			resv_msg_ptr->end_time = t;
 
 		} else if (strncasecmp(argv[i], "Duration=", 9) == 0) {
 			/* -1 == INFINITE, -2 == error, -3 == not set */
@@ -81,52 +77,96 @@ scontrol_create_res(int argc, char *argv[])
 			if (duration < 0 && duration != INFINITE) {
 				//TODO:  Set errno here instead of exit_code?
 				exit_code = 1;
-				error("Invalid duration %s.  "
-				      "No reservation created.", argv[i]);
-				return 0;
+				error("Invalid duration %s.  %s", argv[i], msg);
+				return;
 			}
-			resv_msg.duration = (uint32_t)duration;
+			resv_msg_ptr->duration = (uint32_t)duration;
 
 		} else if (strncasecmp(argv[i], "Type=", 5) == 0) {
 			char *typestr = &argv[i][5];
 			if (strncasecmp(typestr, "Maintenance", 5) == 0) {
-				resv_msg.type = RESERVE_TYPE_MAINT;
+				resv_msg_ptr->type = RESERVE_TYPE_MAINT;
 			} else {
 				exit_code = 1;
-				error("Unknown reservation type %s.  "
-				      "No reservation created.", &argv[i][5]);
-				return 0;
+				error("Invalid type %s.  %s", argv[i], msg);
+				return;
 			}
 		} else if (strncasecmp(argv[i], "NodeCnt=", 8) == 0) {
 			char *endptr = NULL;
-			resv_msg.node_cnt = strtol(&argv[i][8], &endptr, 10);
+			resv_msg_ptr->node_cnt = strtol(&argv[i][8], &endptr, 10);
 
 			if (endptr == NULL || *endptr != '\0' || 
                             argv[i][8] == '\0') {
 				exit_code = 1;
-				error("Error parsing number of nodes.  "
-				      "No reservation created.");
-				return 0;
+				error("Invalid node count %s.  %s", argv[i], msg);
+				return;
 			}
 		} else if (strncasecmp(argv[i], "Nodes=", 6) == 0) {
-			resv_msg.node_list = &argv[i][6];
+			resv_msg_ptr->node_list = &argv[i][6];
 		} else if (strncasecmp(argv[i], "Features=", 9) == 0) {
-			resv_msg.features = &argv[i][9];
+			resv_msg_ptr->features = &argv[i][9];
 		} else if (strncasecmp(argv[i], "PartitionName=", 14) == 0) {
-			resv_msg.partition = &argv[i][14];
+			resv_msg_ptr->partition = &argv[i][14];
 		} else if (strncasecmp(argv[i], "Users=", 6) == 0) {
-			resv_msg.users = &argv[i][6];
+			resv_msg_ptr->users = &argv[i][6];
 		} else if (strncasecmp(argv[i], "Accounts=", 9) == 0) {
-			resv_msg.accounts = &argv[i][9];
+			resv_msg_ptr->accounts = &argv[i][9];
 		} else if (strncasecmp(argv[i], "res", 3) == 0) {
 			continue;
 		} else {
 			exit_code = 1;
-			error("Unknown parameter %s.  "
-			      "No reservation created.", argv[i]);
-			return 0;
+			error("Unknown parameter %s.  %s", argv[i], msg);
+			return;
 		}
 	}
+}
+
+
+
+extern int
+scontrol_update_res(int argc, char *argv[])
+{
+	reserve_request_msg_t   resv_msg;
+	char *new_res_name = NULL;
+	int err;
+
+	slurm_init_resv_desc_msg (&resv_msg);
+	scontrol_parse_res_options(argc, argv, &resv_msg, "No reservation update.");
+	if (exit_code == 1)
+		return 0;
+
+	if (resv_msg.name == NULL) {
+		exit_code = 1;
+		error("ReservationName must be given.  No reservation update.");
+		return 0;
+	}
+
+
+	err = slurm_update_reservation(&resv_msg);
+	if (err) {
+		exit_code = 1;
+		slurm_perror("Error updating the reservation.");
+		return slurm_get_errno();
+	} else {
+		printf("Reservation updated.\n");
+		free(new_res_name);
+	}
+	return 0;
+}
+
+
+
+extern int
+scontrol_create_res(int argc, char *argv[])
+{
+	reserve_request_msg_t   resv_msg;
+	char *new_res_name = NULL;
+
+	slurm_init_resv_desc_msg (&resv_msg);
+	scontrol_parse_res_options(argc, argv, &resv_msg, "No reservation created.");
+	if (exit_code == 1)
+		return 0;
+
 
 	if (resv_msg.start_time == (time_t)NO_VAL) {
 		exit_code = 1;
@@ -172,7 +212,7 @@ scontrol_create_res(int argc, char *argv[])
 	if (!new_res_name) {
 		exit_code = 1;
 		slurm_perror("Error creating the reservation");
-		return 0;
+		return slurm_get_errno();
 	} else {
 		printf("Reservation created: %s\n", new_res_name);
 		free(new_res_name);
