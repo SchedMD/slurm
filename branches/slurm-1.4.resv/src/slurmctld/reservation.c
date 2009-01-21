@@ -67,6 +67,7 @@
 
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/state_save.h"
 
 #define _RESV_DEBUG	1
 #define RESV_MAGIC	0x3b82
@@ -97,6 +98,18 @@ typedef struct slurmctld_resv {
 } slurmctld_resv_t;
 
 List resv_list = (List) NULL;
+
+static int  _build_account_list(char *accounts, int *account_cnt, 
+			        char ***account_list);
+static int  _build_uid_list(char *users, int *user_cnt, uid_t **user_list);
+static void _del_resv_rec(void *x);
+static void _dump_resv_req(reserve_request_msg_t *resv_ptr, char *mode);
+static int  _find_resv_rec(void *x, void *key);
+static void _generate_resv_name(reserve_request_msg_t *resv_ptr);
+static void _pack_resv(struct slurmctld_resv *resv_ptr, Buf buffer);
+static void _validate_all_reservations(void);
+static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr);
+
 
 static void _del_resv_rec(void *x)
 {
@@ -295,7 +308,7 @@ static int _build_uid_list(char *users, int *user_cnt, uid_t **user_list)
  * NOTE: if you make any changes here be sure to make the corresponding 
  *	to _unpack_reserve_info_members() in common/slurm_protocol_pack.c
  */
-void _pack_resv(struct slurmctld_resv *resv_ptr, Buf buffer)
+static void _pack_resv(struct slurmctld_resv *resv_ptr, Buf buffer)
 {
 	packstr(resv_ptr->accounts,	buffer);
 	pack_time(resv_ptr->end_time,	buffer);
@@ -436,6 +449,7 @@ extern int create_resv(reserve_request_msg_t *resv_desc_ptr)
 	     resv_ptr->name, resv_ptr->accounts, resv_ptr->users);
 	list_append(resv_list, resv_ptr);
 	last_resv_update = now;
+	schedule_resv_save();
 
 	return SLURM_SUCCESS;
 
@@ -559,6 +573,8 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 		resv_ptr->node_bitmap = node_bitmap;
 	}
 
+	last_resv_update = now;
+	schedule_resv_save();
 	return SLURM_SUCCESS;
 }
 
@@ -589,6 +605,9 @@ extern int delete_resv(reservation_name_msg_t *resv_desc_ptr)
 		     resv_desc_ptr->name);
 		return ESLURM_RESERVATION_INVALID;
 	}
+
+	last_resv_update = time(NULL);
+	schedule_resv_save();
 	return SLURM_SUCCESS;
 }
 
@@ -601,6 +620,11 @@ extern void show_resv(char **buffer_ptr, int *buffer_size, uid_t uid)
 	int tmp_offset;
 	Buf buffer;
 	time_t now = time(NULL);
+	DEF_TIMERS;
+
+	START_TIMER;
+	if (!resv_list)
+		resv_list = list_create(_del_resv_rec);
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
@@ -630,6 +654,7 @@ extern void show_resv(char **buffer_ptr, int *buffer_size, uid_t uid)
 
 	*buffer_size = get_buf_offset(buffer);
 	buffer_ptr[0] = xfer_buf_data(buffer);
+	END_TIMER2("show_resv");
 }
 
 /* Save the state of all reservations to file */
@@ -646,9 +671,10 @@ extern int dump_all_resv_state(void)
 	time_t now = time(NULL);
 	DEF_TIMERS;
 
+	START_TIMER;
 	if (!resv_list)
 		resv_list = list_create(_del_resv_rec);
-	START_TIMER;
+
 	/* write header: time */
 	packstr(RESV_STATE_VERSION, buffer);
 	pack_time(time(NULL), buffer);
@@ -659,12 +685,12 @@ extern int dump_all_resv_state(void)
 	if (!iter)
 		fatal("malloc: list_iterator_create");
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
-		if (resv_ptr->end_time > now)
+		if (resv_ptr->end_time > now) {
 			_pack_resv(resv_ptr, buffer);
-		else {
+		} else {
 			debug("Purging vestigial reservation record %s",
 			      resv_ptr->name);
-			list_delete_item (iter);
+			list_delete_item(iter);
 		}
 	}
 	list_iterator_destroy(iter);
@@ -721,21 +747,133 @@ extern int dump_all_resv_state(void)
 	return 0;
 }
 
+/* Validate one reservation record, return true if good */
+static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
+{
+	if ((resv_ptr->name == NULL) || (resv_ptr->name[0] == '\0')) {
+		error("Read reservation without name");
+		return false;
+	}
+	if (resv_ptr->type > RESERVE_TYPE_MAINT) {
+		error("Reservation %s has invalid type (%u)",
+		      resv_ptr->name, resv_ptr->type);
+		return false;
+	}
+	if (resv_ptr->partition) {
+		struct part_record *part_ptr = NULL;
+		part_ptr = find_part_record(resv_ptr->partition);
+		if (!part_ptr) {
+			error("Reservation %s has invalid partition (%s)",
+			      resv_ptr->name, resv_ptr->partition);
+			return false;
+		}
+		resv_ptr->part_ptr	= part_ptr;
+	}
+	if (resv_ptr->accounts) {
+		int account_cnt = 0, i, rc;
+		char **account_list;
+		rc = _build_account_list(resv_ptr->accounts, 
+					 &account_cnt, &account_list);
+		if (rc) {
+			error("Reservation %s has invalid accounts (%s)",
+			      resv_ptr->name, resv_ptr->accounts);
+			return false;
+		}
+		for (i=0; i<resv_ptr->account_cnt; i++)
+			xfree(resv_ptr->account_list[i]);
+		xfree(resv_ptr->account_list);
+		resv_ptr->account_cnt  = account_cnt;
+		resv_ptr->account_list = account_list;
+	}
+	if (resv_ptr->users) {
+		int rc, user_cnt = 0;
+		uid_t *user_list = NULL;
+		rc = _build_uid_list(resv_ptr->users, 
+				     &user_cnt, &user_list);
+		if (rc) {
+			error("Reservation %s has invalid users (%s)",
+			      resv_ptr->name, resv_ptr->users);
+			return false;
+		}
+		xfree(resv_ptr->user_list);
+		resv_ptr->user_cnt  = user_cnt;
+		resv_ptr->user_list = user_list;
+	}
+	if (resv_ptr->node_list) {		/* Change bitmap last */
+		bitstr_t *node_bitmap;
+		if (strcmp(resv_ptr->node_list, "ALL") == 0) {
+			node_bitmap = bit_alloc(node_record_count);
+			bit_nset(node_bitmap, 0, (node_record_count - 1));
+		} else if (node_name2bitmap(resv_ptr->node_list, 
+					    false, &node_bitmap)) {
+			error("Reservation %s has invalid nodes (%s)",
+			      resv_ptr->name, resv_ptr->node_list);
+			return false;
+		}
+		FREE_NULL_BITMAP(resv_ptr->node_bitmap);
+		resv_ptr->node_bitmap = node_bitmap;
+	}
+	return true;
+}
+
+/*
+ * Validate all reservation records, reset bitmaps, etc.
+ * Purge any invalid reservation.
+ */
+static void _validate_all_reservations(void)
+{
+	ListIterator iter;
+	slurmctld_resv_t *resv_ptr;
+	time_t now = time(NULL);
+
+	iter = list_iterator_create(resv_list);
+	if (!iter)
+		fatal("malloc: list_iterator_create");
+	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+		if (resv_ptr->end_time < now) {
+			debug("Purging vestigial reservation record %s",
+			      resv_ptr->name);
+			list_delete_item(iter);
+		} else if (!_validate_one_reservation(resv_ptr)) {
+			error("Purging invalid reservation record %s",
+			      resv_ptr->name);
+			list_delete_item(iter);
+		}
+	}
+	list_iterator_destroy(iter);
+}
+
 /*
  * Load the reservation state from file, recover on slurmctld restart. 
  *	execute this after loading the configuration file data.
+ * IN recover - 0 = no change
+ *              1 = validate existing (in memory) reservations
+ *              2 = recover all reservation state from disk
+ * RET SLURM_SUCCESS or error code
  * NOTE: READ lock_slurmctld config before entry
  */
-extern int load_all_resv_state(void)
+extern int load_all_resv_state(int recover)
 {
 	char *state_file, *data = NULL, *ver_str = NULL;
-	time_t time;
+	time_t now;
 	uint32_t data_size = 0, uint32_tmp;
-	int data_allocated, data_read = 0, error_code = 0, resv_cnt = 0;
-	int state_fd, rc;
+	int data_allocated, data_read = 0, error_code = 0, state_fd;
 	Buf buffer;
 	slurmctld_resv_t *resv_ptr = NULL;
-	struct part_record *part_ptr = NULL;
+
+	last_resv_update = time(NULL);
+	if (recover == 0) {
+		if (resv_list)
+			_validate_all_reservations();
+		else
+			resv_list = list_create(_del_resv_rec);
+		return SLURM_SUCCESS;
+	}
+
+	if (resv_list)
+		list_flush(resv_list);
+	else
+		resv_list = list_create(_del_resv_rec);
 
 	/* read the file */
 	state_file = xstrdup(slurmctld_conf.state_save_location);
@@ -776,15 +914,15 @@ extern int load_all_resv_state(void)
 	safe_unpackstr_xmalloc( &ver_str, &uint32_tmp, buffer);
 	debug3("Version string in resv_state header is %s", ver_str);
 	if ((!ver_str) || (strcmp(ver_str, RESV_STATE_VERSION) != 0)) {
-		error("**********************************************************");
+		error("************************************************************");
 		error("Can not recover reservation state, data version incompatable");
-		error("**********************************************************");
+		error("************************************************************");
 		xfree(ver_str);
 		free_buf(buffer);
 		return EFAULT;
 	}
 	xfree(ver_str);
-	safe_unpack_time(&time, buffer);
+	safe_unpack_time(&now, buffer);
 
 	while (remaining_buf(buffer) > 0) {
 		resv_ptr = xmalloc(sizeof(slurmctld_resv_t));
@@ -803,50 +941,21 @@ extern int load_all_resv_state(void)
 		safe_unpack16(&resv_ptr->type,		buffer);
 		safe_unpackstr_xmalloc(&resv_ptr->users,&uint32_tmp, buffer);
 
-		/* Validate the reservation */
-		if (resv_ptr->partition && resv_ptr->partition[0]) {
-			part_ptr = find_part_record(resv_ptr->partition);
-			if (!part_ptr) {
-				info("Reservation %s has invalid partition %s",
-				     resv_ptr->name, resv_ptr->partition);
-				goto unpack_error;
-			}
-		}
-		if (resv_ptr->accounts) {
-			rc = _build_account_list(resv_ptr->accounts, 
-						 &resv_ptr->account_cnt, 
-						 &resv_ptr->account_list);
-			if (rc) {
-				info("Reservation %s has invalid accounts %s",
-				     resv_ptr->name, resv_ptr->accounts);
-				goto unpack_error;
-			}
-		}
-		if (resv_ptr->users) {
-			rc = _build_uid_list(resv_ptr->users, 
-					     &resv_ptr->user_cnt, 
-					     &resv_ptr->user_list);
-			if (rc) {
-				info("Reservation %s has invalid users %s",
-				     resv_ptr->name, resv_ptr->accounts);
-				goto unpack_error;
-			}
-		}
 
-		if (!resv_list)
-			resv_list = list_create(_del_resv_rec);
 		xassert(resv_ptr->magic = RESV_MAGIC);	/* Sets value */
 		list_append(resv_list, resv_ptr);
-		debug("Recovered state of reservation %s", resv_ptr->name);
+		info("Recovered state of reservation %s", resv_ptr->name);
 	}
 
-	info("Recovered state of %d reservation", resv_cnt);
+	_validate_all_reservations();
+	info("Recovered state of %d reservations", list_count(resv_list));
 	free_buf(buffer);
 	return error_code;
 
       unpack_error:
+	_validate_all_reservations();
 	error("Incomplete reservation data checkpoint file");
-	info("Recovered state of %d reservations", resv_cnt);
+	info("Recovered state of %d reservations", list_count(resv_list));
 	if (resv_ptr)
 		_del_resv_rec(resv_ptr);
 	free_buf(buffer);

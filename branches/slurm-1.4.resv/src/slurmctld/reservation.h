@@ -15,7 +15,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -40,6 +40,7 @@
 
 #include <time.h>
 #include <unistd.h>
+#include <slurm/slurm.h>
 
 extern time_t last_resv_update;
 
@@ -61,8 +62,12 @@ extern int dump_all_resv_state(void);
 /*
  * Load the reservation state from file, recover on slurmctld restart. 
  *	execute this after loading the configuration file data.
+ * IN recover - 0 = no change
+ *              1 = validate existing (in memory) reservations
+ *              2 = recover all reservation state from disk
+ * RET SLURM_SUCCESS or error code
  * NOTE: READ lock_slurmctld config before entry
  */
-extern int load_all_resv_state(void);
+extern int load_all_resv_state(int recover);
 
 #endif /* !_RESERVATION_H */
