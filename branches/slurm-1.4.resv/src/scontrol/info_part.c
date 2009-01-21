@@ -79,7 +79,7 @@ scontrol_load_partitions (partition_info_msg_t **part_buffer_pptr)
 }
 
 /*
- * scontrol_print_par - print the specified partition's information
+ * scontrol_print_part - print the specified partition's information
  * IN partition_name - NULL to print information about all partition 
  */
 extern void 
