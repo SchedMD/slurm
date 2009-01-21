@@ -193,8 +193,9 @@ static void _generate_resv_name(reserve_request_msg_t *resv_ptr)
 		top_suffix = MAX(i, top_suffix);
 	}
 	list_iterator_destroy(iter);
-	snprintf(tmp, sizeof(tmp), "%d", top_suffix);
+	snprintf(tmp, sizeof(tmp), "%d", (top_suffix + 1));
 	strcat(name, tmp);
+	resv_ptr->name = name;
 }
 
 /* Validate a comma delimited list of account names and build an array of
@@ -351,17 +352,6 @@ extern int create_resv(reserve_request_msg_t *resv_desc_ptr)
 		      resv_desc_ptr->type);
 		resv_desc_ptr->type = 0;
 	}
-	if (resv_desc_ptr->name) {
-		resv_ptr = (slurmctld_resv_t *) list_find_first (resv_list, 
-				_find_resv_rec, resv_desc_ptr->name);
-		if (resv_ptr) {
-			info("Reservation requestion name duplication (%s)",
-			     resv_desc_ptr->name);
-			rc = ESLURM_RESERVATION_INVALID;
-			goto bad_parse;
-		}
-	} else
-		_generate_resv_name(resv_desc_ptr);
 	if (resv_desc_ptr->partition) {
 		part_ptr = find_part_record(resv_desc_ptr->partition);
 		if (!part_ptr) {
@@ -389,7 +379,17 @@ extern int create_resv(reserve_request_msg_t *resv_desc_ptr)
 		if (rc)
 			goto bad_parse;
 	}
-
+	if (resv_desc_ptr->name) {
+		resv_ptr = (slurmctld_resv_t *) list_find_first (resv_list, 
+				_find_resv_rec, resv_desc_ptr->name);
+		if (resv_ptr) {
+			info("Reservation requestion name duplication (%s)",
+			     resv_desc_ptr->name);
+			rc = ESLURM_RESERVATION_INVALID;
+			goto bad_parse;
+		}
+	} else
+		_generate_resv_name(resv_desc_ptr);
 	if (resv_desc_ptr->node_list) {
 		if (strcmp(resv_desc_ptr->node_list, "ALL") == 0) {
 			node_bitmap = bit_alloc(node_record_count);
