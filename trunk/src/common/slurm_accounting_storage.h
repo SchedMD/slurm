@@ -134,7 +134,9 @@ typedef struct {
 typedef struct {
 	uint64_t alloc_secs; /* number of cpu seconds allocated */
 	uint32_t id;	/* association/wckey ID		*/
-	time_t period_start; 
+	uint64_t over_secs; /* number of cpu seconds overcommitted */
+	time_t period_start; /* when this record was started */
+	uint64_t resv_secs; /* number of cpu seconds reserved */	
 } acct_accounting_rec_t;
 
 typedef struct acct_association_rec {

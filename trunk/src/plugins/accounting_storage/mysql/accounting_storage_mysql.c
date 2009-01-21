@@ -2514,6 +2514,8 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "id", "int not null" },
 		{ "period_start", "int unsigned not null" },
 		{ "alloc_cpu_secs", "bigint default 0" },
+		{ "resv_cpu_secs", "bigint default 0" },
+		{ "over_cpu_secs", "bigint default 0" },
 		{ NULL, NULL}		
 	};
 
@@ -2703,6 +2705,8 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "id", "int not null" },
 		{ "period_start", "int unsigned not null" },
 		{ "alloc_cpu_secs", "bigint default 0" },
+		{ "resv_cpu_secs", "bigint default 0" },
+		{ "over_cpu_secs", "bigint default 0" },
 		{ NULL, NULL}		
 	};
 
@@ -8808,13 +8812,17 @@ extern int acct_storage_p_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 	char *usage_req_inx[] = {
 		"t1.id",
 		"t1.period_start",
-		"t1.alloc_cpu_secs"
+		"t1.alloc_cpu_secs",
+		"t1.resv_cpu_secs",
+		"t1.over_cpu_secs",
 	};
 	
 	enum {
 		USAGE_ID,
 		USAGE_START,
 		USAGE_ACPU,
+		USAGE_RCPU,
+		USAGE_OCPU,
 		USAGE_COUNT
 	};
 
@@ -8965,6 +8973,8 @@ is_user:
 		accounting_rec->id = atoi(row[USAGE_ID]);
 		accounting_rec->period_start = atoi(row[USAGE_START]);
 		accounting_rec->alloc_secs = atoll(row[USAGE_ACPU]);
+		accounting_rec->resv_secs = atoll(row[USAGE_RCPU]);
+		accounting_rec->over_secs = atoll(row[USAGE_OCPU]);
 		list_append((*my_list), accounting_rec);
 	}
 	mysql_free_result(result);
@@ -9159,7 +9169,8 @@ extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn,
 
 	if(end_time-start_time > 0) {
 		START_TIMER;
-		if((rc = mysql_daily_rollup(mysql_conn, start_time, end_time)) 
+		if((rc = mysql_daily_rollup(mysql_conn, start_time, end_time,
+					    archive_data)) 
 		   != SLURM_SUCCESS)
 			return rc;
 		END_TIMER2("daily_rollup");

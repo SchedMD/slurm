@@ -60,7 +60,7 @@ extern char *wckey_month_table;
 extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			       time_t start, time_t end);
 extern int mysql_daily_rollup(mysql_conn_t *mysql_conn,
-			      time_t start, time_t end);
+			      time_t start, time_t end, uint16_t archive_data);
 extern int mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 			       time_t start, time_t end, uint16_t archive_data);
 

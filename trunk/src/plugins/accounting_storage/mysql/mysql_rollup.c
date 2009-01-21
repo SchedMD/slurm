@@ -45,6 +45,8 @@
 typedef struct {
 	int id;
 	uint64_t a_cpu;
+	uint64_t o_cpu;
+	uint64_t r_cpu;
 } local_id_usage_t;
 
 typedef struct {
@@ -574,26 +576,32 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 /* 			     a_usage->a_cpu); */
 			if(query) {
 				xstrfmtcat(query, 
-					   ", (%d, %d, %d, %d, %llu)",
+					   ", (%d, %d, %d, %d, "
+					   "%llu, %llu, %llu)",
 					   now, now, 
 					   a_usage->id, curr_start,
-					   a_usage->a_cpu); 
+					   a_usage->a_cpu, a_usage->o_cpu,
+					   a_usage->r_cpu); 
 			} else {
 				xstrfmtcat(query, 
 					   "insert into %s (creation_time, "
 					   "mod_time, id, period_start, "
-					   "alloc_cpu_secs) values "
-					   "(%d, %d, %d, %d, %llu)",
+					   "alloc_cpu_secs, over_cpu_secs, "
+					   "resv_cpu_secs) values "
+					   "(%d, %d, %d, %d, %llu, %llu, %llu)",
 					   assoc_hour_table, now, now, 
 					   a_usage->id, curr_start,
-					   a_usage->a_cpu); 
+					   a_usage->a_cpu, a_usage->o_cpu,
+					   a_usage->r_cpu); 
 			}
 		}
 		if(query) {
 			xstrfmtcat(query, 
 				   " on duplicate key update "
 				   "mod_time=%d, "
-				   "alloc_cpu_secs=VALUES(alloc_cpu_secs)",
+				   "alloc_cpu_secs=VALUES(alloc_cpu_secs), "
+				   "over_cpu_secs=VALUES(over_cpu_secs), "
+				   "resv_cpu_secs=VALUES(resv_cpu_secs);",
 				   now);
 					   	
 			debug3("%d(%d) query\n%s",
@@ -616,26 +624,32 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 /* 			     w_usage->a_cpu); */
 			if(query) {
 				xstrfmtcat(query, 
-					   ", (%d, %d, %d, %d, %llu)",
+					   ", (%d, %d, %d, %d, "
+					   "%llu, %llu, %llu)",
 					   now, now, 
 					   w_usage->id, curr_start,
-					   w_usage->a_cpu); 
+					   w_usage->a_cpu, w_usage->o_cpu,
+					   w_usage->r_cpu); 
 			} else {
 				xstrfmtcat(query, 
 					   "insert into %s (creation_time, "
 					   "mod_time, id, period_start, "
-					   "alloc_cpu_secs) values "
-					   "(%d, %d, %d, %d, %llu)",
+					   "alloc_cpu_secs, over_cpu_secs, "
+					   "resv_cpu_secs) values "
+					   "(%d, %d, %d, %d, %llu, %llu, %llu)",
 					   wckey_hour_table, now, now, 
 					   w_usage->id, curr_start,
-					   w_usage->a_cpu); 
+					   w_usage->a_cpu, w_usage->o_cpu,
+					   w_usage->r_cpu); 
 			}
 		}
 		if(query) {
 			xstrfmtcat(query, 
 				   " on duplicate key update "
 				   "mod_time=%d, "
-				   "alloc_cpu_secs=VALUES(alloc_cpu_secs)",
+				   "alloc_cpu_secs=VALUES(alloc_cpu_secs), "
+				   "over_cpu_secs=VALUES(over_cpu_secs), "
+				   "resv_cpu_secs=VALUES(resv_cpu_secs);",
 				   now);
 					   	
 			debug3("%d(%d) query\n%s",
@@ -671,7 +685,7 @@ end_it:
 	return rc;
 }
 extern int mysql_daily_rollup(mysql_conn_t *mysql_conn, 
-			      time_t start, time_t end)
+			      time_t start, time_t end, uint16_t archive_data)
 {
 	/* can't just add 86400 since daylight savings starts and ends every
 	 * once in a while
@@ -701,11 +715,15 @@ extern int mysql_daily_rollup(mysql_conn_t *mysql_conn,
 /* 		info("end %s", ctime(&curr_end)); */
 		query = xstrdup_printf(
 			"insert into %s (creation_time, mod_time, id, "
-			"period_start, alloc_cpu_secs) select %d, %d, id, "
-			"%d, @ASUM:=SUM(alloc_cpu_secs) from %s where "
+			"period_start, alloc_cpu_secs, over_cpu_secs, "
+			"resv_cpu_secs) select %d, %d, id, "
+			"%d, @ASUM:=SUM(alloc_cpu_secs), "
+			"@OSUM:=SUM(over_cpu_secs), "
+			"@RSUM:=SUM(resv_cpu_secs) from %s where "
 			"(period_start < %d && period_start >= %d) "
 			"group by id on duplicate key update mod_time=%d, "
-			"alloc_cpu_secs=@ASUM;",
+			"alloc_cpu_secs=@ASUM, over_cpu_secs=@OSUM, "
+			"resv_cpu_secs=@RSUM;",
 			assoc_day_table, now, now, curr_start,
 			assoc_hour_table,
 			curr_end, curr_start, now);
@@ -734,12 +752,16 @@ extern int mysql_daily_rollup(mysql_conn_t *mysql_conn,
 			xstrfmtcat(query,
 				   "insert into %s (creation_time, "
 				   "mod_time, id, period_start, "
-				   "alloc_cpu_secs) select %d, %d, "
-				   "id, %d, @ASUM:=SUM(alloc_cpu_secs) from %s "
+				   "alloc_cpu_secs, over_cpu_secs, "
+				   "resv_cpu_secs) select %d, %d, "
+				   "id, %d, @ASUM:=SUM(alloc_cpu_secs), "
+				   "@OSUM:=SUM(over_cpu_secs), "
+				   "@RSUM:=SUM(resv_cpu_secs) from %s "
 				   "where (period_start < %d && "
 				   "period_start >= %d) "
 				   "group by id on duplicate key update "
-				   "mod_time=%d, alloc_cpu_secs=@ASUM;",
+				   "mod_time=%d, alloc_cpu_secs=@ASUM, "
+				   "over_cpu_secs=@OSUM, resv_cpu_secs=@RSUM;",
 				   wckey_day_table, now, now, curr_start,
 				   wckey_hour_table,
 				   curr_end, curr_start, now);
@@ -765,6 +787,13 @@ extern int mysql_daily_rollup(mysql_conn_t *mysql_conn,
 		start_tm.tm_isdst = -1;
 		curr_end = mktime(&start_tm);
 	}
+
+	/* if we didn't ask for archive data return here and don't do
+	   anything extra just rollup */
+
+	if(!archive_data)
+		return SLURM_SUCCESS;
+
 	/* remove all data from suspend table that was older than
 	 * start. 
 	 */
@@ -812,11 +841,15 @@ extern int mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 /* 		info("end %s", ctime(&curr_end)); */
 		query = xstrdup_printf(
 			"insert into %s (creation_time, mod_time, id, "
-			"period_start, alloc_cpu_secs) select %d, %d, id, "
-			"%d, @ASUM:=SUM(alloc_cpu_secs) from %s where "
+			"period_start, alloc_cpu_secs, over_cpu_secs, "
+			"resv_cpu_secs) select %d, %d, id, "
+			"%d, @ASUM:=SUM(alloc_cpu_secs), "
+			"@OSUM:=SUM(over_cpu_secs), "
+			"@RSUM:=SUM(resv_cpu_secs) from %s where "
 			"(period_start < %d && period_start >= %d) "
 			"group by id on duplicate key update mod_time=%d, "
-			"alloc_cpu_secs=@ASUM;",
+			"alloc_cpu_secs=@ASUM, over_cpu_secs=@OSUM, "
+			"resv_cpu_secs=@RSUM;",
 			assoc_month_table, now, now, curr_start,
 			assoc_day_table,
 			curr_end, curr_start, now);
@@ -844,13 +877,16 @@ extern int mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 		if(track_wckey) {
 			xstrfmtcat(query,
 				   "insert into %s (creation_time, mod_time, "
-				   "id, "
-				   "period_start, alloc_cpu_secs) select %d, "
-				   "%d, id, %d, @ASUM:=SUM(alloc_cpu_secs) "
+				   "id, period_start, alloc_cpu_secs, "
+				   "over_cpu_secs, resv_cpu_secs) select %d, "
+				   "%d, id, %d, @ASUM:=SUM(alloc_cpu_secs), "
+				   "@OSUM:=SUM(over_cpu_secs), "
+				   "@RSUM:=SUM(resv_cpu_secs) "
 				   "from %s where (period_start < %d && "
 				   "period_start >= %d) "
 				   "group by id on duplicate key update "
-				   "mod_time=%d, alloc_cpu_secs=@ASUM;",
+				   "mod_time=%d, alloc_cpu_secs=@ASUM, "
+				   "over_cpu_secs=@OSUM, resv_cpu_secs=@RSUM;",
 				   wckey_month_table, now, now, curr_start,
 				   wckey_day_table,
 				   curr_end, curr_start, now);
@@ -877,6 +913,12 @@ extern int mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 		curr_end = mktime(&start_tm);
 	}
 
+	/* if we didn't ask for archive data return here and don't do
+	   anything extra just rollup */
+
+	if(!archive_data)
+		return SLURM_SUCCESS;
+
 	/* remove all data from event table that was older than
 	 * start. 
 	 */
@@ -889,7 +931,7 @@ extern int mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 		error("Couldn't remove old event data");
 		return SLURM_ERROR;
 	}
-	if(!slurmdbd_conf || !archive_data) 
+	if(!slurmdbd_conf) 
 		return SLURM_SUCCESS;
 
 	memset(&arch_cond, 0, sizeof(arch_cond));
