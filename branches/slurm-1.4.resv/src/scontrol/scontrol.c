@@ -917,14 +917,21 @@ _create_it (int argc, char *argv[])
 static void
 _delete_it (int argc, char *argv[]) 
 {
-	delete_part_msg_t part_msg;
-
 	/* First identify the entity type to delete */
 	if (strncasecmp (argv[0], "PartitionName=", 14) == 0) {
+		delete_part_msg_t part_msg;
 		part_msg.name = argv[0] + 14;
 		if (slurm_delete_partition(&part_msg)) {
 			char errmsg[64];
 			snprintf(errmsg, 64, "delete_partition %s", argv[0]);
+			slurm_perror(errmsg);
+		}
+	} else if (strncasecmp (argv[0], "ReservationName=", 16) == 0) {
+		reservation_name_msg_t   res_msg;
+		res_msg.name = argv[0] + 16;
+		if (slurm_delete_reservation(&res_msg)) {
+			char errmsg[64];
+			snprintf(errmsg, 64, "delete_reservation %s", argv[0]);
 			slurm_perror(errmsg);
 		}
 	} else {
