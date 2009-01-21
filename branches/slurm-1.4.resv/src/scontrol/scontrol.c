@@ -761,6 +761,12 @@ _process_command (int argc, char *argv[])
 			else
 				scontrol_print_part (NULL);
 		}
+		else if (strncasecmp (argv[1], "reservations", 3) == 0) {
+			if (argc > 2)
+				scontrol_print_res(argv[2]);
+			else
+				scontrol_print_res(NULL);
+		}
 		else if (strncasecmp (argv[1], "slurmd", 6) == 0) {
 			if (argc > 2)
 				_print_slurmd(argv[2]);
