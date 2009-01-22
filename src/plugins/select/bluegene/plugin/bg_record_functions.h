@@ -99,7 +99,7 @@ typedef struct bg_record {
 					 * block is in an error state
 					 * BLOCK_ERROR_STATE */
 	int cpus_per_bp;                /* count of cpus per base part */
-	uint32_t node_cnt;              /* count of nodes per block */
+	uint32_t node_cnt;              /* count of cnodes per block */
 #ifdef HAVE_BGL
 	uint16_t quarter;               /* used for small blocks 
 					   determine quarter of BP */
