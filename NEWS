@@ -9,6 +9,8 @@ documents those changes that are of interest to users and admins.
     a line containing the prefix "print " to it's standard output.
  -- Fix for making the slurmdbd agent thread start up correctly when 
     stopped and then started again.
+ -- Prevent the Linux out of memory killer from killing the slurmd or
+    slurmstepd daemons. Patch from Hongjia Cao, NUDT.
 
 * Changes in SLURM 1.3.13
 =========================
