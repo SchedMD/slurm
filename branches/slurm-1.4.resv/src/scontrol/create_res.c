@@ -38,11 +38,17 @@
 #include "src/scontrol/scontrol.h"
 #include "src/slurmctld/reservation.h"
 
-
+/* 
+ * scontrol_parse_res_options   parse options for creating or updating a 
+                                reservation
+ * IN argc - count of arguments
+ * IN argv - list of arguments
+ * IN msg  - a string to append to any error message
+ * OUT resv_msg_ptr - struct holding reservation parameters
+ */
 extern void
-scontrol_parse_res_options(int argc, char *argv[], 
-			   reserve_request_msg_t  *resv_msg_ptr, 
-			   const char *msg)
+scontrol_parse_res_options(int argc, char *argv[], const char *msg, 
+			   reserve_request_msg_t  *resv_msg_ptr)
 {
 	int i;
 	int duration = -3;   /* -1 == INFINITE, -2 == error, -3 == not set */
@@ -123,15 +129,23 @@ scontrol_parse_res_options(int argc, char *argv[],
 
 
 
+/* 
+ * scontrol_update_res - update the slurm reservation configuration per the 
+ *     supplied arguments 
+ * IN argc - count of arguments
+ * IN argv - list of arguments
+ * RET 0 if no slurm error, errno otherwise. parsing error prints 
+ *     error message and returns 0.
+ */
 extern int
 scontrol_update_res(int argc, char *argv[])
 {
 	reserve_request_msg_t   resv_msg;
-	char *new_res_name = NULL;
 	int err;
 
 	slurm_init_resv_desc_msg (&resv_msg);
-	scontrol_parse_res_options(argc, argv, &resv_msg, "No reservation update.");
+	scontrol_parse_res_options(argc, argv, "No reservation update.",
+				   &resv_msg);
 	if (exit_code == 1)
 		return 0;
 
@@ -141,7 +155,6 @@ scontrol_update_res(int argc, char *argv[])
 		return 0;
 	}
 
-
 	err = slurm_update_reservation(&resv_msg);
 	if (err) {
 		exit_code = 1;
@@ -149,13 +162,20 @@ scontrol_update_res(int argc, char *argv[])
 		return slurm_get_errno();
 	} else {
 		printf("Reservation updated.\n");
-		free(new_res_name);
 	}
 	return 0;
 }
 
 
 
+/* 
+ * scontrol_create_res - create the slurm reservation configuration per the 
+ *     supplied arguments 
+ * IN argc - count of arguments
+ * IN argv - list of arguments
+ * RET 0 if no slurm error, errno otherwise. parsing error prints 
+ *     error message and returns 0.
+ */
 extern int
 scontrol_create_res(int argc, char *argv[])
 {
@@ -163,10 +183,11 @@ scontrol_create_res(int argc, char *argv[])
 	char *new_res_name = NULL;
 
 	slurm_init_resv_desc_msg (&resv_msg);
-	scontrol_parse_res_options(argc, argv, &resv_msg, "No reservation created.");
+	scontrol_parse_res_options(argc, argv, "No reservation created.", 
+				   &resv_msg);
+
 	if (exit_code == 1)
 		return 0;
-
 
 	if (resv_msg.start_time == (time_t)NO_VAL) {
 		exit_code = 1;
