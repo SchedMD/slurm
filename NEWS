@@ -7,6 +7,8 @@ documents those changes that are of interest to users and admins.
     that lack a name. Previously generated an invalid memory reference.
  -- Permit the TaskProlog to write to the job's standard output by writing
     a line containing the prefix "print " to it's standard output.
+ -- Fix for making the slurmdbd agent thread start up correctly when 
+    stopped and then started again.
 
 * Changes in SLURM 1.3.13
 =========================
