@@ -107,6 +107,7 @@ static void _dump_resv_req(reserve_request_msg_t *resv_ptr, char *mode);
 static int  _find_resv_rec(void *x, void *key);
 static void _generate_resv_name(reserve_request_msg_t *resv_ptr);
 static void _pack_resv(struct slurmctld_resv *resv_ptr, Buf buffer);
+static int  _update_uid_list(struct slurmctld_resv *resv_ptr, char *users);
 static void _validate_all_reservations(void);
 static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr);
 
@@ -263,7 +264,7 @@ static int _build_account_list(char *accounts, int *account_cnt,
 
 
 /* Validate a comma delimited list of user names and build an array of
- * their UIDs
+ *	their UIDs
  * IN users      - a list of user names
  * OUT user_cnt  - number of UIDs in the list
  * OUT user_list - list of the user's uid, CALLER MUST XFREE;
@@ -300,6 +301,145 @@ static int _build_uid_list(char *users, int *user_cnt, uid_t **user_list)
 
  inval:	xfree(tmp);
 	xfree(u_list);
+	return ESLURM_USER_ID_MISSING;
+}
+
+/* Update a user/uid list for an existing reservation based upon an 
+ *	update comma delimited specification of users to add (+name), 
+ *	remove (-name), or set value of
+ * IN/OUT resv_ptr - pointer to reservation structure being updated
+ * IN users        - a list of user names, to set, add, or remove
+ * RETURN 0 on success */
+static int _update_uid_list(struct slurmctld_resv *resv_ptr, char *users)
+{
+	char *last, *tmp = NULL, *tok;
+	int u_cnt = 0, i, j, k;
+	uid_t *u_list, u_tmp;
+	int *u_type, minus_user = 0, plus_user = 0;
+	char **u_name;
+	bool found_it;
+
+	if (!users)
+		return ESLURM_USER_ID_MISSING;
+
+	/* Parse the incoming user expression */
+	i = strlen(users);
+	u_list = xmalloc(sizeof(uid_t)  * (i + 2));
+	u_name = xmalloc(sizeof(char *) * (i + 2));
+	u_type = xmalloc(sizeof(int)    * (i + 2));
+	tmp = xstrdup(users);
+	tok = strtok_r(tmp, ",", &last);
+	while (tok) {
+		if (tok[0] == '-') {
+			u_type[u_cnt] = 1;	/* minus */
+			minus_user = 1;
+			tok++;
+		} else if (tok[0] == '+') {
+			u_type[u_cnt] = 2;	/* plus */
+			plus_user = 1;
+			tok++;
+		} else if (plus_user || minus_user) {
+			info("Reservation user expression invalid %s", users);
+			goto inval;
+		} else
+			u_type[u_cnt] = 3;	/* set */
+		u_tmp = uid_from_string(tok);
+		if (u_tmp == (uid_t) -1) {
+			info("Reservation request has invalid user %s", tok);
+			goto inval;
+		}
+		u_name[u_cnt] = tok;
+		u_list[u_cnt++] = u_tmp;
+		tok = strtok_r(NULL, ",", &last);
+	}
+	xfree(tmp);
+
+	if ((plus_user == 0) && (minus_user == 0)) {
+		/* Just a reset of user list */
+		xfree(resv_ptr->users);
+		xfree(resv_ptr->user_list);
+		resv_ptr->users = xstrdup(users);
+		resv_ptr->user_cnt  = u_cnt;
+		resv_ptr->user_list = u_list;
+		xfree(u_name);
+		xfree(u_type);
+		return SLURM_SUCCESS;
+	}
+	
+	/* Modification of existing user list */
+	if (minus_user) {
+		for (i=0; i<u_cnt; i++) {
+			if (u_type[i] != 1)
+				continue;
+			found_it = false;
+			for (j=0; j<resv_ptr->user_cnt; j++) {
+				if (resv_ptr->user_list[j] != u_list[i])
+					continue;
+				found_it = true;
+				resv_ptr->user_cnt--;
+				for (k=j; k<resv_ptr->user_cnt; k++) {
+					resv_ptr->user_list[k] =
+						resv_ptr->user_list[k+1];
+				}
+				break;
+			}
+			if (!found_it)
+				goto inval;
+			/* Now we need to remove from users string */
+			k = strlen(u_name[i]);
+			tmp = resv_ptr->users;
+			while ((tok = strstr(tmp, u_name[i]))) {
+				if (((tok != resv_ptr->users) &&
+				     (tok[-1] != ',')) ||
+				    ((tok[k] != '\0') && (tok[k] != ','))) {
+					tmp = tok + 1;
+					continue;
+				}
+				if (tok[-1] == ',') {
+					tok--;
+					k++;
+				} else if (tok[k] == ',')
+					k++;
+				for (j=0; ; j++) {
+					tok[j] = tok[j+k];
+					if (tok[j] == '\0')
+						break;
+				}
+			}
+		}
+	}
+
+	if (plus_user) {
+		for (i=0; i<u_cnt; i++) {
+			if (u_type[i] != 2)
+				continue;
+			found_it = false;
+			for (j=0; j<resv_ptr->user_cnt; j++) {
+				if (resv_ptr->user_list[j] != u_list[i])
+					continue;
+				found_it = true;
+				break;
+			}
+			if (found_it)
+				continue;	/* duplicate entry */
+			if (resv_ptr->users && resv_ptr->users[0])
+				xstrcat(resv_ptr->users, ",");
+			xstrcat(resv_ptr->users, u_name[i]);
+			xrealloc(resv_ptr->user_list, 
+				 sizeof(uid_t) * (resv_ptr->user_cnt + 1));
+			resv_ptr->user_list[resv_ptr->user_cnt++] =
+				u_list[i];
+		}
+	}
+	xfree(u_list);
+	xfree(u_name);
+	xfree(u_type);
+	return SLURM_SUCCESS;
+
+ inval:	xfree(tmp);
+	xfree(u_list);
+	xfree(u_name);
+	xfree(u_type);
 	return ESLURM_USER_ID_MISSING;
 }
 
@@ -549,18 +689,11 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 		resv_desc_ptr->features = NULL;	/* Nothing left to free */
 	}
 	if (resv_desc_ptr->users) {
-		int rc, user_cnt = 0;
-		uid_t *user_list = NULL;
-		rc = _build_uid_list(resv_desc_ptr->users, 
-				     &user_cnt, &user_list);
+		int rc;
+		rc = _update_uid_list(resv_ptr, 
+				      resv_desc_ptr->users);
 		if (rc)
 			return rc;
-		xfree(resv_ptr->users);
-		xfree(resv_ptr->user_list);
-		resv_ptr->users = resv_desc_ptr->users;
-		resv_desc_ptr->users = NULL;	/* Nothing left to free */
-		resv_ptr->user_cnt  = user_cnt;
-		resv_ptr->user_list = user_list;
 	}
 	if (resv_desc_ptr->node_list) {		/* Change bitmap last */
 		bitstr_t *node_bitmap;
