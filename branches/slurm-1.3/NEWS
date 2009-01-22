@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 =========================
  -- Fix bug in squeue command with sort on job name ("-S j" option) for jobs
     that lack a name. Previously generated an invalid memory reference.
+ -- Permit the TaskProlog to write to the job's standard output by writing
+    a line containing the prefix "print " to it's standard output.
 
 * Changes in SLURM 1.3.13
 =========================
