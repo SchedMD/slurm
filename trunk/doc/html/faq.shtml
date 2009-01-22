@@ -99,6 +99,8 @@ execute on DOWN nodes?</li>
 <li><a href="#accept_again">What does the messsage
 &quot;srun: error: Unable to accept connection: Resources termporarily unavailable&quot; 
 indicate?</a></li>
+<li><a href="#task_prolog">How could I automatically print a job's 
+SLURM job ID to its standard output?</li>
 </ol>
 
 
@@ -1106,8 +1108,33 @@ This has been reported on some larger clusters running Suse Linux when
 a user's resource limits are reached. You may need to increase limits
 for locked memory and stack size to resolve this problem.
 
+<p><a name="task_prolog"><b>34. How could I automatically print a job's 
+SLURM job ID to its standard output?</b></br>
+The configured <i>TaskProlog</i> is the only thing that can write to 
+the job's standard output or set extra environment variables for a job
+or job step. To write to the job's standard output, preceed the message
+with "print ". To export environment variables, output a line of this
+form "export name=value". The example below will print a job's SLURM
+job ID and allocated hosts for a batch job only.
+
+<pre>
+#!/bin/sh
+#
+# Sample TaskProlog script that will print a batch job's
+# job ID and node list to the job's stdout
+#
+
+if [ X"$SLURM_STEP_ID" = "X" -a X"$SLURM_PROCID" = "X"0 ]
+then
+  echo "print =========================================="
+  echo "print SLURM_JOBID = $SLURM_JOBID"
+  echo "print SLURM_NODELIST = $SLURM_NODELIST"
+  echo "print =========================================="
+fi
+</pre>
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 19 December 2008</p>
+<p style="text-align:center;">Last modified 22 January 2009</p>
 
 <!--#include virtual="footer.txt"-->
