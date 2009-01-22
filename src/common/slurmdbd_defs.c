@@ -1753,7 +1753,13 @@ static void _load_dbd_state(void)
 	xstrcat(dbd_fname, "/dbd.messages");
 	fd = open(dbd_fname, O_RDONLY);
 	if (fd < 0) {
-		error("slurmdbd: Opening state save file %s", dbd_fname);
+		/* don't print an error message if there is no file */
+		if(errno == ENOENT)
+			debug4("slurmdbd: There is no state save file to "
+			       "open by name %s", dbd_fname);
+		else
+			error("slurmdbd: Opening state save file %s: %m",
+			      dbd_fname);
 	} else {
 		while (1) {
 			buffer = _load_dbd_rec(fd);
@@ -1763,8 +1769,7 @@ static void _load_dbd_state(void)
 				fatal("slurmdbd: list_enqueue, no memory");
 			recovered++;
 		}
-	}
-	if (fd >= 0) {
+	
 		verbose("slurmdbd: recovered %d pending RPCs", recovered);
 		(void) close(fd);
 		(void) unlink(dbd_fname);	/* clear save state */
