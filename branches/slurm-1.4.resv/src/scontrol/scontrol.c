@@ -897,6 +897,9 @@ _create_it (int argc, char *argv[])
 		if (strncasecmp (argv[i], "res", 3) == 0) {
 			scontrol_create_res(argc, argv);
 			break;
+		} else if (strncasecmp (argv[i], "par", 3) == 0) {
+			scontrol_create_part(argc, argv);
+			break;
 		}
 	}
 
