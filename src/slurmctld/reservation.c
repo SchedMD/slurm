@@ -69,7 +69,7 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/state_save.h"
 
-#define _RESV_DEBUG	1
+#define _RESV_DEBUG	0
 #define RESV_MAGIC	0x3b82
 
 /* Change RESV_STATE_VERSION value when changing the state save format */
@@ -94,7 +94,7 @@ typedef struct slurmctld_resv {
 	struct part_record *part_ptr;	/* pointer to partition used	*/
 	uint32_t resv_id;	/* unique reservation ID, internal use	*/
 	time_t start_time;	/* start time of reservation		*/
-	uint16_t type;		/* see RESERVE_TYPE_* above		*/
+	uint16_t type;		/* see RESERVE_TYPE_* in slurm.h	*/
 	char *users;		/* names of users permitted to use	*/
 	int user_cnt;		/* count of users permitted to use	*/
 	uid_t *user_list;	/* array of users permitted to use	*/
@@ -1387,4 +1387,56 @@ extern int load_all_resv_state(int recover)
 		_del_resv_rec(resv_ptr);
 	free_buf(buffer);
 	return EFAULT;
+}
+
+/*
+ * Validate a job request with respect to reservations
+ * IN/OUT job_ptr - job to validate, set its resv_id and resv_type
+ * RET SLURM_SUCCESS or error code (not found or access denied)
+*/
+extern int validate_job_resv(struct job_record *job_ptr)
+{
+	slurmctld_resv_t *resv_ptr = NULL;
+	int i;
+
+	if (job_ptr->resv_name == NULL)
+		return SLURM_SUCCESS;
+
+	if (!resv_list)
+		return ESLURM_RESERVATION_INVALID;
+
+	/* Find the named reservation */
+	resv_ptr = (slurmctld_resv_t *) list_find_first (resv_list, 
+			_find_resv_name, job_ptr->resv_name);
+	if (!resv_ptr) {
+		info("Reservation name not found (%s)", job_ptr->resv_name);
+		return ESLURM_RESERVATION_INVALID;
+	}
+
+	/* Determine if we have access */
+	if (/*association_enforced*/ 0) {
+		/* FIXME: add association checks
+		if (job_ptr->assoc_id in reservation association list)
+			goto allow;
+		*/
+	} else {
+		for (i=0; i<resv_ptr->user_cnt; i++) {
+			if (job_ptr->user_id == resv_ptr->user_list[i])
+				goto allow;
+		}
+		for (i=0; (i<resv_ptr->account_cnt) && job_ptr->account; i++) {
+			if (resv_ptr->account_list[i] &&
+			    (strcmp(job_ptr->account, 
+				    resv_ptr->account_list[i]) == 0)) {
+				goto allow;
+			}
+		}
+	}
+	error("Security violation, uid=%u attempt to use reservation %s",
+	      job_ptr->user_id, resv_ptr->name);
+	return ESLURM_ACCESS_DENIED;
+
+ allow:	job_ptr->resv_id   = resv_ptr->resv_id;
+	job_ptr->resv_type = resv_ptr->type;
+	return SLURM_SUCCESS;
 }

@@ -41,6 +41,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <slurm/slurm.h>
+#include "src/slurmctld/slurmctld.h"
 
 extern time_t last_resv_update;
 
@@ -69,5 +70,12 @@ extern int dump_all_resv_state(void);
  * NOTE: READ lock_slurmctld config before entry
  */
 extern int load_all_resv_state(int recover);
+
+/*
+ * Validate a job request with respect to reservations
+ * IN/OUT job_ptr - job to validate, set its resv_id and resv_type
+ * RET SLURM_SUCCESS or error code (not found or access denied)
+*/
+extern int validate_job_resv(struct job_record *job_ptr);
 
 #endif /* !_RESERVATION_H */
