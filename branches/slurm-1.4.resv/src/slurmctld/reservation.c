@@ -97,7 +97,8 @@ typedef struct slurmctld_resv {
 	uid_t *user_list;	/* array of users permitted to use	*/
 } slurmctld_resv_t;
 
-List resv_list = (List) NULL;
+List     resv_list = (List) NULL;
+uint32_t top_suffix = 0;
 
 static int  _build_account_list(char *accounts, int *account_cnt, 
 			        char ***account_list);
@@ -179,10 +180,8 @@ static void _dump_resv_req(reserve_request_msg_t *resv_ptr, char *mode)
 
 static void _generate_resv_name(reserve_request_msg_t *resv_ptr)
 {
-	char *key, *name, *sep, tmp[14];
-	ListIterator iter;
-	int i, len, top_suffix = 0;
-	slurmctld_resv_t * exist_resv_ptr;
+	char *key, *name, *sep, tmp[32];
+	int len;
 
 	/* Generate name prefix, based upon the first account
 	 * name if provided otherwise first user name */
@@ -200,17 +199,9 @@ static void _generate_resv_name(reserve_request_msg_t *resv_ptr)
 	strcat(name, "_");
 	len++;
 
-	iter = list_iterator_create(resv_list);
-	if (!iter)
-		fatal("malloc: list_iterator_create");
-	while ((exist_resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
-		if (strncmp(name, exist_resv_ptr->name, len))
-			continue;
-		i = atoi(exist_resv_ptr->name + len);
-		top_suffix = MAX(i, top_suffix);
-	}
-	list_iterator_destroy(iter);
-	snprintf(tmp, sizeof(tmp), "%d", (top_suffix + 1));
+	if (top_suffix > 0xffffff00)
+		top_suffix = 0;	/* Wrap around */
+	snprintf(tmp, sizeof(tmp), "%d", ++top_suffix);
 	strcat(name, tmp);
 	resv_ptr->name = name;
 }
@@ -300,7 +291,8 @@ static int  _update_account_list(struct slurmctld_resv *resv_ptr,
 			plus_account = 1;
 			tok++;
 		} else if (plus_account || minus_account) {
-			info("Reservation account expression invalid %s", accounts);
+			info("Reservation account expression invalid %s", 
+			     accounts);
 			goto inval;
 		} else
 			ac_type[ac_cnt] = 3;	/* set */
@@ -334,8 +326,10 @@ static int  _update_account_list(struct slurmctld_resv *resv_ptr,
 				continue;
 			found_it = false;
 			for (j=0; j<resv_ptr->account_cnt; j++) {
-				if (strcmp(resv_ptr->account_list[j], ac_list[i]))
+				if (strcmp(resv_ptr->account_list[j], 
+					   ac_list[i])) {
 					continue;
+				}
 				found_it = true;
 				xfree(resv_ptr->account_list[j]);
 				resv_ptr->account_cnt--;
@@ -367,8 +361,10 @@ static int  _update_account_list(struct slurmctld_resv *resv_ptr,
 				continue;
 			found_it = false;
 			for (j=0; j<resv_ptr->account_cnt; j++) {
-				if (strcmp(resv_ptr->account_list[j], ac_list[i]))
+				if (strcmp(resv_ptr->account_list[j], 
+					   ac_list[i])) {
 					continue;
+				}
 				found_it = true;
 				break;
 			}
@@ -1095,6 +1091,8 @@ static void _validate_all_reservations(void)
 	ListIterator iter;
 	slurmctld_resv_t *resv_ptr;
 	time_t now = time(NULL);
+	char *tmp;
+	uint32_t res_num;
 
 	iter = list_iterator_create(resv_list);
 	if (!iter)
@@ -1108,6 +1106,12 @@ static void _validate_all_reservations(void)
 			error("Purging invalid reservation record %s",
 			      resv_ptr->name);
 			list_delete_item(iter);
+		} else {
+			tmp = strrchr(resv_ptr->name, '_');
+			if (tmp) {
+				res_num = atoi(tmp + 1);
+				top_suffix = MAX(top_suffix, res_num);
+			}
 		}
 	}
 	list_iterator_destroy(iter);
