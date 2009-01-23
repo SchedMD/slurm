@@ -81,6 +81,7 @@ typedef struct slurmctld_resv {
 	char *accounts;		/* names of accounts permitted to use	*/
 	int account_cnt;	/* count of accounts permitted to use	*/
 	char **account_list;	/* list of accounts permitted to use	*/
+	uint32_t cpu_cnt;	/* number of reserved CPUs		*/
 	time_t end_time;	/* end time of reservation		*/
 	char *features;		/* required node features		*/
 	uint16_t magic;		/* magic cookie, RESV_MAGIC		*/
@@ -108,7 +109,8 @@ static void _dump_resv_req(reserve_request_msg_t *resv_ptr, char *mode);
 static int  _find_resv_rec(void *x, void *key);
 static void _generate_resv_name(reserve_request_msg_t *resv_ptr);
 static bool _is_account_valid(char *account);
-static void _pack_resv(struct slurmctld_resv *resv_ptr, Buf buffer);
+static void _pack_resv(struct slurmctld_resv *resv_ptr, Buf buffer,
+		       bool internal);
 static int  _update_account_list(struct slurmctld_resv *resv_ptr, 
 				 char *accounts);
 static int  _update_uid_list(struct slurmctld_resv *resv_ptr, char *users);
@@ -587,11 +589,13 @@ static int _update_uid_list(struct slurmctld_resv *resv_ptr, char *users)
  * IN resv_ptr - pointer to reservation for which information is requested
  * IN/OUT buffer - buffer in which data is placed, pointers automatically 
  *	updated
+ * IN internal   - true if for internal save state, false for xmit to users
  * NOTE: if you make any changes here be sure to make the corresponding 
  *	to _unpack_reserve_info_members() in common/slurm_protocol_pack.c
  *	plus load_all_resv_state() below.
  */
-static void _pack_resv(struct slurmctld_resv *resv_ptr, Buf buffer)
+static void _pack_resv(struct slurmctld_resv *resv_ptr, Buf buffer, 
+		       bool internal)
 {
 	packstr(resv_ptr->accounts,	buffer);
 	pack_time(resv_ptr->end_time,	buffer);
@@ -603,6 +607,10 @@ static void _pack_resv(struct slurmctld_resv *resv_ptr, Buf buffer)
 	pack_time(resv_ptr->start_time,	buffer);
 	pack16(resv_ptr->type,		buffer);
 	packstr(resv_ptr->users,	buffer);
+
+	if (internal) {
+		pack32(resv_ptr->cpu_cnt,	buffer);
+	}
 }
 
 /* Create a resource reservation */
@@ -907,7 +915,7 @@ extern void show_resv(char **buffer_ptr, int *buffer_size, uid_t uid)
 	if (!iter)
 		fatal("malloc: list_iterator_create");
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
-		_pack_resv(resv_ptr, buffer);
+		_pack_resv(resv_ptr, buffer, false);
 		resv_packed++;
 	}
 	list_iterator_destroy(iter);
@@ -944,6 +952,7 @@ extern int dump_all_resv_state(void)
 	/* write header: time */
 	packstr(RESV_STATE_VERSION, buffer);
 	pack_time(time(NULL), buffer);
+	pack32(top_suffix, buffer);
 
 	/* write reservation records to buffer */
 	lock_slurmctld(resv_read_lock);
@@ -952,7 +961,7 @@ extern int dump_all_resv_state(void)
 		fatal("malloc: list_iterator_create");
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
 		if (resv_ptr->end_time > now) {
-			_pack_resv(resv_ptr, buffer);
+			_pack_resv(resv_ptr, buffer, true);
 		} else {
 			debug("Purging vestigial reservation record %s",
 			      resv_ptr->name);
@@ -1197,9 +1206,11 @@ extern int load_all_resv_state(int recover)
 	}
 	xfree(ver_str);
 	safe_unpack_time(&now, buffer);
+	safe_unpack32(&top_suffix, buffer);
 
 	while (remaining_buf(buffer) > 0) {
 		resv_ptr = xmalloc(sizeof(slurmctld_resv_t));
+		xassert(resv_ptr->magic = RESV_MAGIC);	/* Sets value */
 		safe_unpackstr_xmalloc(&resv_ptr->accounts,	
 				       &uint32_tmp,	buffer);
 		safe_unpack_time(&resv_ptr->end_time,	buffer);
@@ -1215,8 +1226,8 @@ extern int load_all_resv_state(int recover)
 		safe_unpack16(&resv_ptr->type,		buffer);
 		safe_unpackstr_xmalloc(&resv_ptr->users,&uint32_tmp, buffer);
 
+		safe_unpack32(&resv_ptr->cpu_cnt,	buffer);
 
-		xassert(resv_ptr->magic = RESV_MAGIC);	/* Sets value */
 		list_append(resv_list, resv_ptr);
 		info("Recovered state of reservation %s", resv_ptr->name);
 	}

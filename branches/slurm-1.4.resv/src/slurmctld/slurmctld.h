@@ -2,7 +2,7 @@
  *  slurmctld.h - definitions of functions and structures for slurmcltd use
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  LLNL-CODE-402394.
