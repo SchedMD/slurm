@@ -264,7 +264,7 @@ static void _updated_resv(struct slurmctld_resv *resv_ptr)
 static int _build_account_list(char *accounts, int *account_cnt, 
 			       char ***account_list)
 {
-	char *last, *tmp, *tok;
+	char *last = NULL, *tmp, *tok;
 	int ac_cnt = 0, i;
 	char **ac_list;
 
@@ -310,7 +310,7 @@ static int _build_account_list(char *accounts, int *account_cnt,
 static int  _update_account_list(struct slurmctld_resv *resv_ptr, 
 				 char *accounts)
 {
-	char *last, *tmp, *tok;
+	char *last = NULL, *tmp, *tok;
 	int ac_cnt = 0, i, j, k;
 	int *ac_type, minus_account = 0, plus_account = 0;
 	char **ac_list;
@@ -454,7 +454,7 @@ static int  _update_account_list(struct slurmctld_resv *resv_ptr,
  */
 static int _build_uid_list(char *users, int *user_cnt, uid_t **user_list)
 {
-	char *last, *tmp = NULL, *tok;
+	char *last = NULL, *tmp = NULL, *tok;
 	int u_cnt = 0, i;
 	uid_t *u_list, u_tmp;
 
@@ -497,7 +497,7 @@ static int _build_uid_list(char *users, int *user_cnt, uid_t **user_list)
  */
 static int _update_uid_list(struct slurmctld_resv *resv_ptr, char *users)
 {
-	char *last, *tmp = NULL, *tok;
+	char *last = NULL, *tmp = NULL, *tok;
 	int u_cnt = 0, i, j, k;
 	uid_t *u_list, u_tmp;
 	int *u_type, minus_user = 0, plus_user = 0;
