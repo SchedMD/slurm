@@ -145,10 +145,13 @@ extern int slurm_open_slurmdbd_conn(char *auth_info, bool make_agent,
 		tmp_errno = errno;
 	}
 	slurm_mutex_unlock(&slurmdbd_lock);
-
+	
 	slurm_mutex_lock(&agent_lock);
 	if (make_agent && ((agent_tid == 0) || (agent_list == NULL)))
 		_create_agent();
+	else if(agent_list)
+		_load_dbd_state();
+
 	slurm_mutex_unlock(&agent_lock);
 	
 	if(tmp_errno) {
@@ -244,9 +247,10 @@ extern int slurm_send_recv_slurmdbd_msg(uint16_t rpc_version,
 	rc = _send_msg(buffer);
 	free_buf(buffer);
 	if (rc != SLURM_SUCCESS) {
-		error("slurmdbd: Sending message type %u", req->msg_type);
+		error("slurmdbd: Sending message type %u: %d: %m",
+		      req->msg_type, rc);
 		slurm_mutex_unlock(&slurmdbd_lock);
-		return SLURM_ERROR;
+		return rc;
 	}
 
 	buffer = _recv_msg(read_timeout);
@@ -1180,7 +1184,7 @@ static int _send_init_msg()
 	rc = _send_msg(buffer);
 	free_buf(buffer);
 	if (rc != SLURM_SUCCESS) {
-		error("slurmdbd: Sending DBD_INIT message");
+		error("slurmdbd: Sending DBD_INIT message: %d: %m", rc);
 		return rc;
 	}
 
@@ -1509,6 +1513,9 @@ static int _fd_writeable(slurm_fd fd)
  ****************************************************************************/
 static void _create_agent(void)
 {
+	/* this needs to be set because the agent thread will do
+	   nothing if the connection was closed and then opened again */
+	agent_shutdown = 0;
 	if (agent_list == NULL) {
 		agent_list = list_create(_agent_queue_del);
 		if (agent_list == NULL)
@@ -1639,7 +1646,7 @@ static void *_agent(void *x)
 				slurm_mutex_unlock(&slurmdbd_lock);
 				break;
 			}
-			error("slurmdbd: Failure sending message");
+			error("slurmdbd: Failure sending message: %d: %m", rc);
 		} else {
 			rc = _get_return_code(SLURMDBD_VERSION, read_timeout);
 			if (rc == EAGAIN) {
@@ -1648,7 +1655,7 @@ static void *_agent(void *x)
 					break;
 				}
 				error("slurmdbd: Failure with "
-				      "message need to resend");
+				      "message need to resend: %d: %m", rc);
 			}
 		}
 		slurm_mutex_unlock(&slurmdbd_lock);
@@ -1731,12 +1738,18 @@ static void _load_dbd_state(void)
 	char *dbd_fname;
 	Buf buffer;
 	int fd, recovered = 0;
-
+	
 	dbd_fname = slurm_get_state_save_location();
 	xstrcat(dbd_fname, "/dbd.messages");
 	fd = open(dbd_fname, O_RDONLY);
 	if (fd < 0) {
-		error("slurmdbd: Opening state save file %s", dbd_fname);
+		/* don't print an error message if there is no file */
+		if(errno == ENOENT)
+			debug4("slurmdbd: There is no state save file to "
+			       "open by name %s", dbd_fname);
+		else
+			error("slurmdbd: Opening state save file %s: %m",
+			      dbd_fname);
 	} else {
 		while (1) {
 			buffer = _load_dbd_rec(fd);
@@ -1746,8 +1759,7 @@ static void _load_dbd_state(void)
 				fatal("slurmdbd: list_enqueue, no memory");
 			recovered++;
 		}
-	}
-	if (fd >= 0) {
+	
 		verbose("slurmdbd: recovered %d pending RPCs", recovered);
 		(void) close(fd);
 		(void) unlink(dbd_fname);	/* clear save state */

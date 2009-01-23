@@ -51,6 +51,17 @@ gather and report incomplete information for these calls;
 \f3sacct\fP reports values of 0 for this missing data. See your systems
 \f2getrusage(3)\fP man page for information about which data are
 actually available on your system.
+.IP
+If --dump is specified, the field selection options (--brief,
+--fields, ...) have no effect. 
+.IP
+Elapsed time fields are presented as 2 fields, integral seconds and integral microseconds
+.IP
+If --dump is not specified, elapsed time fields are presented as
+[[days-]hours:]minutes:seconds.hundredths.
+.IP
+The default input file is the file named in the jobacct_logfile
+parameter in slurm.conf.
 
 .SS "Options"
 .TP "10"
@@ -100,6 +111,25 @@ options.
 .IP 
 The section titled "INTERPRETING THE \-\-dump OPTION OUTPUT" describes the 
 data output when this option is used.
+
+.TP 
+\f3\-\-duplicates\fP
+If SLURM job ids are reset, but the job accounting log file isn't
+reset at the same time (with -e, for example), some job numbers will
+probably appear more than once in the accounting log file to refer to
+different jobs; such jobs can be distinguished by the "submit" time
+stamp in the data records.
+.IP 
+When data for specific jobs are requested with the --jobs option, we
+assume that the user wants to see only the most recent job with that
+number. This behavior can be overridden by specifying --duplicates, in
+which case all records that match the selection criteria will be returned.
+.IP
+When --jobs is not specified, we report data for all jobs that match
+the selection criteria, even if some of the job numbers are
+reused. Specify that you only want the most recent job for each
+selected job number with the --noduplicates option.
+
 
 .TP
 \f3\-e \fP\f2time_spec\fP \f3,\fP \f3\-\-expire=\fP\f2time_spec\fP
@@ -285,6 +315,10 @@ Displays a long listing, which includes the following data:
 .RE 
 
 .TP 
+\f3\-\-noduplicates\fP
+See the discussion under --duplicates.
+
+.TP 
 \f3\-\-noheader\fP
 Prevents the display of the heading over the output.
 The default action is to display a header.
@@ -298,6 +332,10 @@ option.
 Dumps accounting records in an easy\-to\-read format.
 .IP 
 This option is provided for debugging.
+
+.TP
+\f3\-P \fP\f3,\fP \f3\-\-purge\fP
+Used in conjunction with --expire to remove invalid data from the job accounting log.
 
 .TP 
 \f3\-p \fP\f2partition_list\fP \f3,\fP  \f3\-\-partition\fP\f3=\fP\f2partition_list\fP
