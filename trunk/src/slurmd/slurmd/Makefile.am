@@ -30,6 +30,8 @@ SLURMD_SOURCES = \
 	$(top_builddir)/src/slurmd/common/run_script.h \
 	$(top_builddir)/src/slurmd/common/task_plugin.c \
 	$(top_builddir)/src/slurmd/common/task_plugin.h \
+	$(top_builddir)/src/slurmd/common/set_oomadj.c \
+	$(top_builddir)/src/slurmd/common/set_oomadj.h \
 	$(top_builddir)/src/slurmd/common/reverse_tree.h
 
 slurmd_SOURCES = $(SLURMD_SOURCES)

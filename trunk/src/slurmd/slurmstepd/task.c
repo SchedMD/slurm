@@ -98,6 +98,7 @@
  * Static prototype definitions.
  */
 static void  _make_tmpdir(slurmd_job_t *job);
+static void  _print_stdout(char *buf);
 static int   _run_script_and_set_env(const char *name, const char *path, 
 				     slurmd_job_t *job);
 static void  _update_env(char *buf, char ***env);
@@ -105,8 +106,7 @@ static char *_uint32_array_to_str(int array_len, const uint32_t *array);
 
 /* Search for "export NAME=value" records in buf and 
  * use them to add environment variables to env */
-static void
-_update_env(char *buf, char ***env)
+static void _update_env(char *buf, char ***env)
 {
 	char *tmp_ptr, *name_ptr, *val_ptr, *buf_ptr = buf;
 
@@ -132,7 +132,32 @@ _update_env(char *buf, char ***env)
 		}
 		debug("name:%s:val:%s:",name_ptr,val_ptr);
 		if (setenvf(env, name_ptr, "%s", val_ptr))
-			error("Unable to set %s environment variable", name_ptr);
+			error("Unable to set %s environment variable", 
+			      name_ptr);
+	}		
+}
+
+/* Search for "print <whatever>" records in buf and 
+ * write that to the job's stdout */
+static void _print_stdout(char *buf)
+{
+	char *tmp_ptr, *buf_ptr = buf;
+
+	while ((tmp_ptr = strstr(buf_ptr, "print "))) {
+		if ((tmp_ptr != buf_ptr) && (tmp_ptr[-1] != '\n')) {
+			/* Skip "print " if not at start of a line */
+			buf_ptr +=6;
+			continue;
+		}
+		buf_ptr = tmp_ptr + 6;
+		tmp_ptr = strchr(buf_ptr, '\n');
+		if (tmp_ptr) {
+			write(1, buf_ptr, (tmp_ptr - buf_ptr + 1));
+			buf_ptr = tmp_ptr + 1;
+		} else {
+			write(1, buf_ptr, strlen(buf_ptr));
+			break;
+		}
 	}		
 }
 
@@ -196,6 +221,7 @@ _run_script_and_set_env(const char *name, const char *path, slurmd_job_t *job)
 		buf[nread] = 0;
 		//debug("read %d:%s:", nread, buf);
 		_update_env(buf, &job->env);
+		_print_stdout(buf);
 	}
 
 	close(pfd[0]);

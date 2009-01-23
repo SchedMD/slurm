@@ -1320,6 +1320,9 @@ available to identify the process ID of the task being started.
 Standard output from this program of the form 
 "export NAME=value" will be used to set environment variables 
 for the task being spawned. 
+Standard output from this program of the form
+"print ..." will cause that line (without the leading "print ")
+to be printed to the job's standard output.
 The order of task prolog/epilog execution is as follows:
 .RS
 .TP
