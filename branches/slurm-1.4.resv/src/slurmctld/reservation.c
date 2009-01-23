@@ -114,6 +114,7 @@ static void _generate_resv_name(reserve_request_msg_t *resv_ptr);
 static bool _is_account_valid(char *account);
 static void _pack_resv(struct slurmctld_resv *resv_ptr, Buf buffer,
 		       bool internal);
+static void _set_assoc_list(struct slurmctld_resv *resv_ptr);
 static void _set_resv_id(struct slurmctld_resv *resv_ptr);
 static int  _update_account_list(struct slurmctld_resv *resv_ptr, 
 				 char *accounts);
@@ -219,6 +220,16 @@ static bool _is_account_valid(char *account)
 {
 	/* FIXME: Need to add logic here */
 	return true;
+}
+
+/* Set a association list based upon accounts and users */
+static void _set_assoc_list(struct slurmctld_resv *resv_ptr)
+{
+	/* FIXME: Need to add logic here to get assoc_list from slurmdbd
+	 * based upon resv_ptr->account_cnt and account_list plus
+	 * user_cnt and user_list */
+	xfree(resv_ptr->assoc_list);	/* clear for modify */
+	resv_ptr->assoc_list = xstrdup("TBD");	/* FOR TESTING ONLY */
 }
 
 /* Set a unique reservation id */
@@ -781,6 +792,7 @@ extern int create_resv(reserve_request_msg_t *resv_desc_ptr)
 	resv_ptr->user_list	= user_list;
 	resv_desc_ptr->users 	= NULL;		/* Nothing left to free */
 	_set_resv_id(resv_ptr);
+	_set_assoc_list(resv_ptr);
 
 	info("Created reservation %s for accounts=%s users=%s",
 	     resv_ptr->name, resv_ptr->accounts, resv_ptr->users);
@@ -903,6 +915,7 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 	}
 
 fini:	last_resv_update = now;
+	_set_assoc_list(resv_ptr);
 	_updated_resv(resv_ptr);
 	schedule_resv_save();
 	return error_code;
@@ -1172,6 +1185,7 @@ static void _validate_all_reservations(void)
 			      resv_ptr->name);
 			list_delete_item(iter);
 		} else {
+			_set_assoc_list(resv_ptr);
 			tmp = strrchr(resv_ptr->name, '_');
 			if (tmp) {
 				res_num = atoi(tmp + 1);
