@@ -3,6 +3,9 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.4.0-pre8
 =============================
+ -- In order to create a new partition using the scontrol command, use
+    the "create" option rather than "update" (which will only operate
+    upon partitions that already exist).
 
 * Changes in SLURM 1.4.0-pre7
 =============================
