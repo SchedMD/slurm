@@ -2,7 +2,7 @@
  *  proc_req.c - process incomming messages to slurmctld
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette@llnl.gov>, et. al. 
  *  LLNL-CODE-402394.
@@ -75,6 +75,7 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/read_config.h"
+#include "src/slurmctld/reservation.h"
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/srun_comm.h"
@@ -113,6 +114,10 @@ inline static void  _slurm_rpc_job_alloc_info(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_alloc_info_lite(slurm_msg_t * msg);
 inline static void  _slurm_rpc_ping(slurm_msg_t * msg);
 inline static void  _slurm_rpc_reconfigure_controller(slurm_msg_t * msg);
+inline static void  _slurm_rpc_resv_create(slurm_msg_t * msg);
+inline static void  _slurm_rpc_resv_update(slurm_msg_t * msg);
+inline static void  _slurm_rpc_resv_delete(slurm_msg_t * msg);
+inline static void  _slurm_rpc_resv_show(slurm_msg_t * msg);
 inline static void  _slurm_rpc_requeue(slurm_msg_t * msg);
 inline static void  _slurm_rpc_shutdown_controller(slurm_msg_t * msg);
 inline static void  _slurm_rpc_shutdown_controller_immediate(slurm_msg_t *
@@ -253,6 +258,7 @@ void slurmctld_req (slurm_msg_t * msg)
 		_slurm_rpc_update_node(msg);
 		slurm_free_update_node_msg(msg->data);
 		break;
+	case REQUEST_CREATE_PARTITION:
 	case REQUEST_UPDATE_PARTITION:
 		_slurm_rpc_update_partition(msg);
 		slurm_free_update_part_msg(msg->data);
@@ -260,6 +266,22 @@ void slurmctld_req (slurm_msg_t * msg)
 	case REQUEST_DELETE_PARTITION:
 		_slurm_rpc_delete_partition(msg);
 		slurm_free_delete_part_msg(msg->data);
+		break;
+	case REQUEST_CREATE_RESERVATION:
+		_slurm_rpc_resv_create(msg);
+		slurm_free_update_resv_msg(msg->data);
+		break;
+	case REQUEST_UPDATE_RESERVATION:
+		_slurm_rpc_resv_update(msg);
+		slurm_free_update_resv_msg(msg->data);
+		break;
+	case REQUEST_DELETE_RESERVATION:
+		_slurm_rpc_resv_delete(msg);
+		slurm_free_resv_name_msg(msg->data);
+		break;
+	case REQUEST_RESERVATION_INFO:
+		_slurm_rpc_resv_show(msg);
+		/* No body to free */
 		break;
 	case REQUEST_NODE_REGISTRATION_STATUS:
 		error("slurmctld is talking with itself. "
@@ -2320,6 +2342,204 @@ static void _slurm_rpc_delete_partition(slurm_msg_t * msg)
 		schedule();
 		save_all_state();
 
+	}
+}
+
+/* _slurm_rpc_resv_create - process RPC to create a reservation */
+static void _slurm_rpc_resv_create(slurm_msg_t * msg)
+{
+	int error_code = SLURM_SUCCESS;
+	DEF_TIMERS;
+	reserve_request_msg_t *resv_desc_ptr = (reserve_request_msg_t *) 
+						msg->data;
+	/* Locks: write node, read partition */
+	slurmctld_lock_t node_write_lock = { 
+		NO_LOCK, NO_LOCK, WRITE_LOCK, READ_LOCK };
+	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+
+	START_TIMER;
+	debug2("Processing RPC: REQUEST_CREATE_RESERVATION from uid=%u",
+		(unsigned int) uid);
+	if (!validate_super_user(uid)) {
+		error_code = ESLURM_USER_ID_MISSING;
+		error
+		    ("Security violation, CREATE_RESERVATION RPC from uid=%u",
+		     (unsigned int) uid);
+	}
+
+	if (error_code == SLURM_SUCCESS) {
+		/* do RPC call */
+		lock_slurmctld(node_write_lock);
+		error_code = create_resv(resv_desc_ptr);
+		unlock_slurmctld(node_write_lock);
+		END_TIMER2("_slurm_rpc_resv_create");
+	}
+
+	/* return result */
+	if (error_code) {
+		info("_slurm_rpc_resv_create reservation=%s: %s",
+			resv_desc_ptr->name, slurm_strerror(error_code));
+		slurm_send_rc_msg(msg, error_code);
+	} else {
+		slurm_msg_t response_msg;
+		reservation_name_msg_t resv_resp_msg;
+
+		debug2("_slurm_rpc_resv_create complete for %s %s",
+			resv_desc_ptr->name, TIME_STR);
+		/* send reservation name */
+		slurm_msg_t_init(&response_msg);
+		resv_resp_msg.name    = resv_desc_ptr->name;
+		response_msg.msg_type = RESPONSE_CREATE_RESERVATION;
+		response_msg.data     = &resv_resp_msg;
+		slurm_send_node_msg(msg->conn_fd, &response_msg);
+
+		/* NOTE: These functions provide their own locks */
+		if (schedule()) {
+			schedule_job_save();
+			schedule_node_save();
+		}
+	}
+}
+
+/* _slurm_rpc_resv_update - process RPC to update a reservation */
+static void _slurm_rpc_resv_update(slurm_msg_t * msg)
+{
+	int error_code = SLURM_SUCCESS;
+	DEF_TIMERS;
+	reserve_request_msg_t *resv_desc_ptr = (reserve_request_msg_t *) 
+						msg->data;
+	/* Locks: write node, read partition */
+	slurmctld_lock_t node_write_lock = { 
+		NO_LOCK, NO_LOCK, WRITE_LOCK, READ_LOCK };
+	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+
+	START_TIMER;
+	debug2("Processing RPC: REQUEST_UPDATE_RESERVATION from uid=%u",
+		(unsigned int) uid);
+	if (!validate_super_user(uid)) {
+		error_code = ESLURM_USER_ID_MISSING;
+		error
+		    ("Security violation, UPDATE_RESERVATION RPC from uid=%u",
+		     (unsigned int) uid);
+	}
+
+	if (error_code == SLURM_SUCCESS) {
+		/* do RPC call */
+		lock_slurmctld(node_write_lock);
+		error_code = update_resv(resv_desc_ptr);
+		unlock_slurmctld(node_write_lock);
+		END_TIMER2("_slurm_rpc_resv_update");
+	}
+
+	/* return result */
+	if (error_code) {
+		info("_slurm_rpc_resv_update reservation=%s: %s",
+			resv_desc_ptr->name, slurm_strerror(error_code));
+		slurm_send_rc_msg(msg, error_code);
+	} else {
+		debug2("_slurm_rpc_resv_update complete for %s %s",
+			resv_desc_ptr->name, TIME_STR);
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
+
+		/* NOTE: These functions provide their own locks */
+		if (schedule()) {
+			schedule_job_save();
+			schedule_node_save();
+		}
+	}
+}
+
+/* _slurm_rpc_resv_delete - process RPC to delete a reservation */
+static void _slurm_rpc_resv_delete(slurm_msg_t * msg)
+{
+	/* init */
+	int error_code = SLURM_SUCCESS;
+	DEF_TIMERS;
+	reservation_name_msg_t *resv_desc_ptr = (reservation_name_msg_t *)
+					      msg->data;
+	/* Locks: write node */
+	slurmctld_lock_t node_write_lock = { 
+		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
+	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+
+	START_TIMER;
+	debug2("Processing RPC: REQUEST_DELETE_RESERVTION from uid=%u",
+		(unsigned int) uid);
+	if (!validate_super_user(uid)) {
+		error_code = ESLURM_USER_ID_MISSING;
+		error
+		    ("Security violation, DELETE_RESERVTION RPC from uid=%u",
+		     (unsigned int) uid);
+	}
+
+	if (error_code == SLURM_SUCCESS) {
+		/* do RPC call */
+		lock_slurmctld(node_write_lock);
+		error_code = delete_resv(resv_desc_ptr);
+		unlock_slurmctld(node_write_lock);
+		END_TIMER2("_slurm_rpc_resv_delete");
+	}
+
+	/* return result */
+	if (error_code) {
+		info("_slurm_rpc_delete_reservation partition=%s: %s",
+			resv_desc_ptr->name, slurm_strerror(error_code));
+		slurm_send_rc_msg(msg, error_code);
+	} else {
+		info("_slurm_rpc_delete_reservation complete for %s %s",
+			resv_desc_ptr->name, TIME_STR);
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
+
+		/* NOTE: These functions provide their own locks */
+		if (schedule()) {
+			schedule_job_save();
+			schedule_node_save();
+		}
+
+	}
+}
+
+/* _slurm_rpc_resv_show - process RPC to dump reservation info */
+static void _slurm_rpc_resv_show(slurm_msg_t * msg)
+{
+        resv_info_request_msg_t *resv_req_msg = (resv_info_request_msg_t *) 
+						msg->data;
+	DEF_TIMERS;
+	/* Locks: read node */
+	slurmctld_lock_t node_read_lock = { 
+		NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
+	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+	slurm_msg_t response_msg;
+	char *dump;
+	int dump_size;
+
+	START_TIMER;
+	debug2("Processing RPC: REQUEST_RESERVATION_INFO from uid=%u",
+		(unsigned int) uid);
+	if ((slurmctld_conf.private_data & PRIVATE_DATA_PARTITIONS) &&
+	    (!validate_super_user(uid))) {
+		debug2("Security violation, REQUEST_RESERVATION_INFO "
+		       "RPC from uid=%d", uid);
+		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
+	} else if ((resv_req_msg->last_update - 1) >= last_resv_update) {
+		debug2("_slurm_rpc_resv_show, no change");
+		slurm_send_rc_msg(msg, SLURM_NO_CHANGE_IN_DATA);
+	} else {
+		lock_slurmctld(node_read_lock);
+		show_resv(&dump, &dump_size, uid);
+		unlock_slurmctld(node_read_lock);
+		END_TIMER2("_slurm_rpc_resv_show");
+
+		/* init response_msg structure */
+		slurm_msg_t_init(&response_msg);
+		response_msg.address = msg->address;
+		response_msg.msg_type = RESPONSE_RESERVATION_INFO;
+		response_msg.data = dump;
+		response_msg.data_size = dump_size;
+
+		/* send message */
+		slurm_send_node_msg(msg->conn_fd, &response_msg);
+		xfree(dump);
 	}
 }
 

@@ -51,6 +51,7 @@ int one_liner;		/* one record per line if =1 */
 int quiet_flag;		/* quiet=1, verbose=-1, normal=0 */
 int verbosity;		/* count of "-v" options */
 
+static void	_create_it (int argc, char *argv[]);
 static void	_delete_it (int argc, char *argv[]);
 static int	_get_command (int *argc, char *argv[]);
 static void     _ping_slurmctld(char *control_machine, char *backup_controller);
@@ -489,6 +490,15 @@ _process_command (int argc, char *argv[])
 		}
 		scontrol_print_completing();
 	}
+	else if (strncasecmp (argv[0], "create", 1) == 0) {
+		if (argc < 2) {
+			exit_code = 1;
+			fprintf (stderr, "too few arguments for %s keyword\n",
+				 argv[0]);
+			return 0;
+		}		
+		_create_it ((argc - 1), &argv[1]);
+	}
 	else if (strncasecmp (argv[0], "exit", 1) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
@@ -751,6 +761,12 @@ _process_command (int argc, char *argv[])
 			else
 				scontrol_print_part (NULL);
 		}
+		else if (strncasecmp (argv[1], "reservations", 3) == 0) {
+			if (argc > 2)
+				scontrol_print_res(argv[2]);
+			else
+				scontrol_print_res(NULL);
+		}
 		else if (strncasecmp (argv[1], "slurmd", 6) == 0) {
 			if (argc > 2)
 				_print_slurmd(argv[2]);
@@ -867,6 +883,35 @@ _process_command (int argc, char *argv[])
 	return 0;
 }
 
+
+/* 
+ * _create_it - create a slurm configuration per the supplied arguments 
+ * IN argc - count of arguments
+ * IN argv - list of arguments
+ */
+static void
+_create_it (int argc, char *argv[]) 
+{
+	int i;
+	for (i=0; i<argc; i++) {
+		if (strncasecmp (argv[i], "res", 3) == 0) {
+			scontrol_create_res(argc, argv);
+			break;
+		} else if (strncasecmp (argv[i], "par", 3) == 0) {
+			scontrol_create_part(argc, argv);
+			break;
+		}
+	}
+
+	if (i >= argc) {
+		exit_code = 1;
+		error("Invalid creation entity: %s\n", argv[0]);
+	}
+}
+
+
+
+
 /* 
  * _delete_it - delete the slurm the specified slurm entity 
  * IN argc - count of arguments
@@ -875,14 +920,21 @@ _process_command (int argc, char *argv[])
 static void
 _delete_it (int argc, char *argv[]) 
 {
-	delete_part_msg_t part_msg;
-
 	/* First identify the entity type to delete */
 	if (strncasecmp (argv[0], "PartitionName=", 14) == 0) {
+		delete_part_msg_t part_msg;
 		part_msg.name = argv[0] + 14;
 		if (slurm_delete_partition(&part_msg)) {
 			char errmsg[64];
 			snprintf(errmsg, 64, "delete_partition %s", argv[0]);
+			slurm_perror(errmsg);
+		}
+	} else if (strncasecmp (argv[0], "ReservationName=", 16) == 0) {
+		reservation_name_msg_t   res_msg;
+		res_msg.name = argv[0] + 16;
+		if (slurm_delete_reservation(&res_msg)) {
+			char errmsg[64];
+			snprintf(errmsg, 64, "delete_reservation %s", argv[0]);
 			slurm_perror(errmsg);
 		}
 	} else {
@@ -918,6 +970,9 @@ _update_it (int argc, char *argv[])
 			break;
 		} else if (strncasecmp (argv[i], "SubBPName=", 10) == 0) {
 			error_code = _update_bluegene_subbp (argc, argv);
+			break;
+		} else if (strncasecmp (argv[i], "ReservationName=", 16) == 0) {
+			error_code = scontrol_update_res (argc, argv);
 			break;
 		}
 		

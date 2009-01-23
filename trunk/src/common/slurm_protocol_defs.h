@@ -2,7 +2,7 @@
  *  slurm_protocol_defs.h - definitions used for RPCs
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov>.
  *  LLNL-CODE-402394.
@@ -119,11 +119,18 @@ typedef enum {
 	REQUEST_JOB_INFO_SINGLE,
 	REQUEST_SHARE_INFO,
 	RESPONSE_SHARE_INFO,
+	REQUEST_RESERVATION_INFO,
+	RESPONSE_RESERVATION_INFO,
 
 	REQUEST_UPDATE_JOB = 3001,
 	REQUEST_UPDATE_NODE,
-	REQUEST_UPDATE_PARTITION,
+	REQUEST_CREATE_PARTITION,
 	REQUEST_DELETE_PARTITION,
+	REQUEST_UPDATE_PARTITION,
+	REQUEST_CREATE_RESERVATION,
+	RESPONSE_CREATE_RESERVATION,
+	REQUEST_DELETE_RESERVATION,
+	REQUEST_UPDATE_RESERVATION,
 
 	REQUEST_RESOURCE_ALLOCATION = 4001,
 	RESPONSE_RESOURCE_ALLOCATION,
@@ -370,6 +377,10 @@ typedef struct part_info_request_msg {
 	time_t last_update;
 	uint16_t show_flags;
 } part_info_request_msg_t;
+
+typedef struct resv_info_request_msg {
+        time_t last_update;
+} resv_info_request_msg_t;
 
 typedef struct complete_job_allocation {
 	uint32_t job_id;
@@ -795,6 +806,7 @@ void inline slurm_free_job_step_info_request_msg(
 		job_step_info_request_msg_t *msg);
 void inline slurm_free_node_info_request_msg(node_info_request_msg_t *msg);
 void inline slurm_free_part_info_request_msg(part_info_request_msg_t *msg);
+void inline slurm_free_resv_info_request_msg(resv_info_request_msg_t *msg);
 void inline slurm_free_set_debug_level_msg(set_debug_level_msg_t *msg);
 void inline slurm_destroy_association_shares_object(void *object);
 void inline slurm_free_shares_request_msg(shares_request_msg_t *msg);
@@ -825,6 +837,9 @@ void inline slurm_free_job_launch_msg(batch_job_launch_msg_t * msg);
 void inline slurm_free_update_node_msg(update_node_msg_t * msg);
 void inline slurm_free_update_part_msg(update_part_msg_t * msg);
 void inline slurm_free_delete_part_msg(delete_part_msg_t * msg);
+void inline slurm_free_update_resv_msg(reserve_request_msg_t * msg);
+void inline slurm_free_resv_name_msg(reservation_name_msg_t * msg);
+void inline slurm_free_resv_info_msg(reserve_info_msg_t * msg);
 void inline
 slurm_free_job_step_create_request_msg(job_step_create_request_msg_t * msg);
 void inline

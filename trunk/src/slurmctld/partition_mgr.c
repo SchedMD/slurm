@@ -299,6 +299,8 @@ int dump_all_part_state(void)
 	/* write partition records to buffer */
 	lock_slurmctld(part_read_lock);
 	part_iterator = list_iterator_create(part_list);
+	if (!part_iterator)
+		fatal("list_iterator_create malloc");
 	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
 		xassert (part_ptr->magic == PART_MAGIC);
 		_dump_part_state(part_ptr, buffer);
@@ -714,7 +716,7 @@ extern void pack_all_part(char **buffer_ptr, int *buffer_size,
 
 	buffer = init_buf(BUF_SIZE);
 
-	/* write haeader: version and time */
+	/* write header: version and time */
 	parts_packed = 0;
 	pack32(parts_packed, buffer);
 	pack_time(now, buffer);
@@ -750,8 +752,8 @@ extern void pack_all_part(char **buffer_ptr, int *buffer_size,
  * IN/OUT buffer - buffer in which data is placed, pointers automatically 
  *	updated
  * global: default_part_loc - pointer to the default partition
- * NOTE: if you make any changes here be sure to make the corresponding 
- *	changes to load_part_config in api/partition_info.c
+ * NOTE: if you make any changes here be sure to make the corresponding changes
+ *	to _unpack_partition_info_members() in common/slurm_protocol_pack.c
  */
 void pack_part(struct part_record *part_ptr, Buf buffer)
 {
