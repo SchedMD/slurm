@@ -115,13 +115,17 @@ extern void	scontrol_print_node (char *node_name,
 			node_info_msg_t *node_info_ptr);
 extern void	scontrol_print_node_list (char *node_list);
 extern void	scontrol_print_part (char *partition_name);
+extern void	scontrol_print_res (char *reservation_name);
 extern void	scontrol_print_step (char *job_step_id_str);
 extern int	scontrol_requeue(char *job_step_id_str);
 extern int	scontrol_suspend(char *op, char *job_id_str);
 extern int	scontrol_update_job (int argc, char *argv[]);
 extern int	scontrol_update_node (int argc, char *argv[]);
 extern int	scontrol_update_part (int argc, char *argv[]);
+extern int	scontrol_update_res (int argc, char *argv[]);
 extern void     scontrol_list_pids(const char *jobid_str,
 				   const char *node_name);
+extern int	scontrol_create_part(int argc, char *argv[]);
+extern int	scontrol_create_res(int argc, char *argv[]);
 
 #endif

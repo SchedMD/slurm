@@ -956,6 +956,57 @@ typedef struct partition_info_msg {
 	partition_info_t *partition_array; /* the partition records */
 } partition_info_msg_t;
 
+/*
+ * Resource reservation data structures.
+ * Create, show, modify and delete functions are required
+ */
+#define RESERVE_TYPE_MAINT	0x0001
+
+typedef struct reserve_info {
+	char *name;		/* name of reservation */
+	time_t start_time;	/* start time of reservation */
+	time_t end_time;	/* end time of reservation */
+	uint16_t type;		/* see RESERVE_TYPE_* above */
+	uint32_t node_cnt;	/* count of nodes required */
+	char *node_list;	/* list of reserved nodes or ALL */
+	char *features;		/* required node features */
+	char *partition;	/* name of partition to be used */
+/* Access control specification for the reservation */
+	char *users;		/* names of users permitted to use */
+	char *accounts;		/* names of accounts permitted to use */
+} reserve_info_t;
+
+typedef struct reserve_info_msg {
+	time_t last_update;	/* time of latest info */
+	uint32_t record_count;	/* number of records */
+	reserve_info_t *reservation_array; /* the reservation records */
+} reserve_info_msg_t;
+
+typedef struct reserve_request_msg {
+	char *name;		/* name of reservation */
+	time_t start_time;	/* start time of reservation */
+	time_t end_time;	/* end time of reservation */
+	uint32_t duration;	/* duration of reservation in seconds */
+	uint16_t type;		/* see RESERVE_TYPE_* above */
+	uint32_t node_cnt;	/* count of nodes required */
+	char *node_list;	/* list of reserved nodes or ALL */
+	char *features;		/* required node features */
+	char *partition;	/* name of partition to be used */
+/* Access control specification for the reservation */
+	char *users;		/* names of users permitted to use */
+	char *accounts;		/* names of accounts permitted to use */
+} reserve_request_msg_t;
+
+typedef struct reserve_response_msg {
+	char *name;		/* name of reservation */
+} reserve_response_msg_t;
+
+typedef struct reservation_name_msg {
+	char *name;		/* name of reservation just created or
+				 * to be delete */
+} reservation_name_msg_t;
+
+
 #define DEBUG_FLAG_SELECT_TYPE	0x00000001	/* SelectType plugin */
 #define DEBUG_FLAG_STEPS	0x00000002	/* slurmctld steps */
 #define DEBUG_FLAG_TRIGGERS	0x00000004	/* slurmctld triggers */
@@ -964,12 +1015,12 @@ typedef struct partition_info_msg {
 typedef struct slurm_ctl_conf {
 	time_t last_update;	/* last update time of the build parameters */
 	uint16_t accounting_storage_enforce; /* job requires valid association:
-					* user/account/partition/cluster */
-	char *accounting_storage_host; /* accounting storage host */
-	char *accounting_storage_loc; /* accounting storage (db table)
-				       * location */
-	char *accounting_storage_pass; /* accounting storage
-					    password */
+					 * user/account/partition/cluster */
+	char *accounting_storage_host;	/* accounting storage host */
+	char *accounting_storage_loc;	/* accounting storage (db table)
+					 * location */
+	char *accounting_storage_pass;	/* accounting storage
+					 * password */
 	uint32_t accounting_storage_port;/* node accountinging storage port */
 	char *accounting_storage_type; /* accounting storage type */
 	char *accounting_storage_user; /* accounting storage user */
@@ -1855,7 +1906,7 @@ extern int slurm_update_node PARAMS(( update_node_msg_t * node_msg ));
 /* 
  * slurm_init_part_desc_msg - initialize partition descriptor with 
  *	default values 
- * OUT job_desc_msg - user defined partition descriptor
+ * IN/OUT update_part_msg - user defined partition descriptor
  */
 extern void slurm_init_part_desc_msg PARAMS((update_part_msg_t * update_part_msg ));
 
@@ -1912,6 +1963,14 @@ extern void slurm_print_partition_info PARAMS((
  */
 extern char *slurm_sprint_partition_info PARAMS(( 
 		partition_info_t * part_ptr, int one_liner ));
+
+/*
+ * slurm_create_partition - create a new partition, only usable by user root
+ * IN part_msg - description of partition configuration
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ */
+extern int slurm_create_partition PARAMS(( update_part_msg_t * part_msg ));
+
 /*
  * slurm_update_partition - issue RPC to update a partition's configuration
  *	per request, only usable by user root
@@ -1927,6 +1986,95 @@ extern int slurm_update_partition PARAMS(( update_part_msg_t * part_msg ));
  * RET 0 on success, otherwise return -1 and set errno to indicate the error
  */
 extern int slurm_delete_partition PARAMS(( delete_part_msg_t * part_msg ));
+
+/*****************************************************************************\
+ *	SLURM PARTITION CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
+\*****************************************************************************/
+
+/*
+ * slurm_init_resv_desc_msg - initialize reservation descriptor with 
+ *	default values 
+ * OUT job_desc_msg - user defined partition descriptor
+ */
+extern void slurm_init_resv_desc_msg PARAMS(( 
+		reserve_request_msg_t * update_resv_msg ));
+/*
+ * slurm_create_reservation - create a new reservation, only usable by user root
+ * IN resv_msg - description of reservation
+ * RET name of reservation on success (caller must free the memory),
+ *	otherwise return NULL and set errno to indicate the error
+ */
+extern char * slurm_create_reservation PARAMS((
+		reserve_request_msg_t * resv_msg ));
+
+/*
+ * slurm_update_reservation - modify an existing reservation, only usable by 
+ *	user root
+ * IN resv_msg - description of reservation
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ */
+extern int slurm_update_reservation PARAMS((reserve_request_msg_t * resv_msg));
+
+/*
+ * slurm_delete_reservation - issue RPC to delete a reservation, only usable 
+ *	by user root
+ * IN resv_msg - description of reservation to delete
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ */
+extern int slurm_delete_reservation PARAMS(( 
+		reservation_name_msg_t * resv_msg ));
+
+/*
+ * slurm_load_reservations - issue RPC to get all slurm reservation 
+ *	configuration information if changed since update_time 
+ * IN update_time - time of current configuration data
+ * IN reserve_info_msg_pptr - place to store a reservation configuration 
+ *	pointer
+ * RET 0 or a slurm error code
+ * NOTE: free the response using slurm_free_reservation_info_msg
+ */
+extern int slurm_load_reservations PARAMS(( time_t update_time, 
+		reserve_info_msg_t **resp ));
+
+/*
+ * slurm_print_reservation_info_msg - output information about all Slurm 
+ *	reservations based upon message as loaded using slurm_load_reservation
+ * IN out - file to write to
+ * IN resv_info_ptr - reservation information message pointer
+ * IN one_liner - print as a single line if true
+ */
+void slurm_print_reservation_info_msg PARAMS(( FILE* out, 
+		reserve_info_msg_t * resv_info_ptr, int one_liner ));
+
+/*
+ * slurm_print_reservation_info - output information about a specific Slurm 
+ *	reservation based upon message as loaded using slurm_load_reservation
+ * IN out - file to write to
+ * IN resv_ptr - an individual reservation information record pointer
+ * IN one_liner - print as a single line if true
+ */
+void slurm_print_reservation_info PARAMS(( FILE* out, 
+		reserve_info_t * resv_ptr, int one_liner ));
+
+/*
+ * slurm_sprint_reservation_info - output information about a specific Slurm 
+ *	reservation based upon message as loaded using slurm_load_reservations
+ * IN resv_ptr - an individual reservation information record pointer
+ * IN one_liner - print as a single line if true
+ * RET out - char * containing formatted output (must be freed after call)
+ *           NULL is returned on failure.
+ */
+char *slurm_sprint_reservation_info PARAMS(( reserve_info_t * resv_ptr, 
+		int one_liner ));
+
+/*
+ * slurm_free_reservation_info_msg - free the reservation information 
+ *	response message
+ * IN msg - pointer to reservation information response message
+ * NOTE: buffer is loaded by slurm_load_reservation
+ */
+extern void slurm_free_reservation_info_msg PARAMS(( 
+	reserve_info_msg_t * resv_info_ptr ));
 
 /*****************************************************************************\
  *	SLURM PING/RECONFIGURE/SHUTDOWN FUNCTIONS

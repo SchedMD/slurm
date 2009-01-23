@@ -4,7 +4,7 @@
  *	the slurm daemons directly, not for user client use.
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov> et. al.
  *  LLNL-CODE-402394.
@@ -66,6 +66,9 @@ static void _slurm_free_node_info_members (node_info_t * node);
 
 static void _free_all_partitions (partition_info_msg_t *msg);
 static void _slurm_free_partition_info_members (partition_info_t * part);
+
+static void  _free_all_reservations(reserve_info_msg_t *msg);
+static void _slurm_free_reserve_info_members (reserve_info_t * part);
 
 static void _free_all_step_info (job_step_info_response_msg_t *msg);
 static void _slurm_free_job_step_info_members (job_step_info_t * msg);
@@ -280,6 +283,12 @@ void inline slurm_free_part_info_request_msg(
 	xfree(msg);
 }
 
+void inline slurm_free_resv_info_request_msg(
+		resv_info_request_msg_t *msg)
+{
+	xfree(msg);
+}
+
 void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 {
 	int i;
@@ -425,6 +434,27 @@ void slurm_free_update_part_msg(update_part_msg_t * msg)
 }
 
 void slurm_free_delete_part_msg(delete_part_msg_t * msg)
+{
+	if (msg) {
+		xfree(msg->name);
+		xfree(msg);
+	}
+}
+
+void slurm_free_update_resv_msg(reserve_request_msg_t * msg)
+{
+	if (msg) {
+		xfree(msg->accounts);
+		xfree(msg->features);
+		xfree(msg->partition);
+		xfree(msg->name);
+		xfree(msg->node_list);
+		xfree(msg->users);
+		xfree(msg);
+	}
+}
+
+void slurm_free_resv_name_msg(reservation_name_msg_t * msg)
 {
 	if (msg) {
 		xfree(msg->name);
@@ -1295,6 +1325,49 @@ static void _slurm_free_partition_info_members(partition_info_t * part)
 	}
 }
 
+/*
+ * slurm_free_reserve_info_msg - free the reservation information 
+ *	response message
+ * IN msg - pointer to reservation information response message
+ * NOTE: buffer is loaded by slurm_load_reservation
+ */
+void slurm_free_reservation_info_msg(reserve_info_msg_t * msg)
+{
+	if (msg) {
+		if (msg->reservation_array) {
+			_free_all_reservations(msg);
+			xfree(msg->reservation_array);
+		}
+		xfree(msg);
+	}
+}
+
+static void  _free_all_reservations(reserve_info_msg_t *msg)
+{
+	int i;
+
+	if ((msg == NULL) ||
+	    (msg->reservation_array == NULL))
+		return;
+
+	for (i = 0; i < msg->record_count; i++)
+		_slurm_free_reserve_info_members(
+			&msg->reservation_array[i]);
+
+}
+
+static void _slurm_free_reserve_info_members(reserve_info_t * resv)
+{
+	if (resv) {
+		xfree(resv->accounts);
+		xfree(resv->features);
+		xfree(resv->name);
+		xfree(resv->node_list);
+		xfree(resv->partition);
+		xfree(resv->users);
+	}
+}
+
 extern void slurm_free_file_bcast_msg(file_bcast_msg_t *msg)
 {
 	if (msg) {
@@ -1438,11 +1511,20 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_UPDATE_NODE:
 		slurm_free_update_node_msg(data);
 		break;
+	case REQUEST_CREATE_PARTITION:
 	case REQUEST_UPDATE_PARTITION:
 		slurm_free_update_part_msg(data);
 		break;
 	case REQUEST_DELETE_PARTITION:		
 		slurm_free_delete_part_msg(data);
+		break;
+	case REQUEST_CREATE_RESERVATION:
+	case REQUEST_UPDATE_RESERVATION:
+		slurm_free_update_resv_msg(data);
+		break;
+	case REQUEST_DELETE_RESERVATION:
+	case RESPONSE_CREATE_RESERVATION:		
+		slurm_free_resv_name_msg(data);
 		break;
 	case REQUEST_NODE_REGISTRATION_STATUS:
 		slurm_free_node_registration_status_msg(data);
@@ -1535,6 +1617,7 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_DAEMON_STATUS:
 	case REQUEST_HEALTH_CHECK:
 	case ACCOUNTING_FIRST_REG:
+	case REQUEST_RESERVATION_INFO:
 		/* No body to free */
 		break;
 	case ACCOUNTING_UPDATE_MSG:

@@ -2,6 +2,7 @@
  *  state_save.c - Keep saved slurmctld state current 
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  LLNL-CODE-402394.
@@ -44,12 +45,14 @@
 #endif                          /* WITH_PTHREADS */
 
 #include "src/common/macros.h"
+#include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/trigger_mgr.h"
 
 static pthread_mutex_t state_save_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  state_save_cond = PTHREAD_COND_INITIALIZER;
-static int save_jobs = 0, save_nodes = 0, save_parts = 0, save_triggers = 0;
+static int save_jobs = 0, save_nodes = 0, save_parts = 0;
+static int save_triggers = 0, save_resv = 0;
 static bool run_save_thread = true;
 
 /* Queue saving of job state information */
@@ -75,6 +78,15 @@ extern void schedule_part_save(void)
 {
 	slurm_mutex_lock(&state_save_lock);
 	save_parts++;
+	slurm_mutex_unlock(&state_save_lock);
+	pthread_cond_broadcast(&state_save_cond);
+}
+
+/* Queue saving of reservation state information */
+extern void schedule_resv_save(void)
+{
+	slurm_mutex_lock(&state_save_lock);
+	save_resv++;
 	slurm_mutex_unlock(&state_save_lock);
 	pthread_cond_broadcast(&state_save_cond);
 }
@@ -113,7 +125,7 @@ extern void *slurmctld_state_save(void *no_data)
 		slurm_mutex_lock(&state_save_lock);
 		while (1) {
 			if (save_jobs + save_nodes + save_parts + 
-			    save_triggers)
+			    save_resv + save_triggers)
 				break;		/* do the work */
 			else if (!run_save_thread) {
 				run_save_thread = true;
@@ -156,6 +168,17 @@ extern void *slurmctld_state_save(void *no_data)
 		slurm_mutex_unlock(&state_save_lock);
 		if (run_save)
 			(void)dump_all_part_state();
+
+		/* save reservation info if necessary */
+		run_save = false;
+		slurm_mutex_lock(&state_save_lock);
+		if (save_resv) {
+			run_save = true;
+			save_resv = 0;
+		}
+		slurm_mutex_unlock(&state_save_lock);
+		if (run_save)
+			(void)dump_all_resv_state();
 
 		/* save trigger info if necessary */
 		run_save = false;

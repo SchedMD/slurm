@@ -2,7 +2,7 @@
  *  init_msg.c - initialize RPC messages contents
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  LLNL-CODE-402394.
@@ -51,7 +51,7 @@
 /*
  * slurm_init_job_desc_msg - initialize job descriptor with 
  *	default values 
- * OUT job_desc_msg - user defined job descriptor
+ * IN/OUT job_desc_msg - user defined job descriptor
  */
 void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 {
@@ -144,7 +144,7 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 /*
  * slurm_init_part_desc_msg - initialize partition descriptor with 
  *	default values 
- * OUT job_desc_msg - user defined partition descriptor
+ * IN/OUT update_part_msg - user defined partition descriptor
  */
 void slurm_init_part_desc_msg (update_part_msg_t * update_part_msg)
 {
@@ -162,3 +162,22 @@ void slurm_init_part_desc_msg (update_part_msg_t * update_part_msg)
 	update_part_msg->state_up 	= (uint16_t) NO_VAL;
 }
 
+/*
+ * slurm_init_resv_desc_msg - initialize reservation descriptor with 
+ *	default values 
+ * OUT job_desc_msg - user defined partition descriptor
+ */
+void slurm_init_resv_desc_msg (reserve_request_msg_t * update_resv_msg)
+{
+	update_resv_msg->name		= NULL;
+	update_resv_msg->start_time	= (time_t) NO_VAL;
+	update_resv_msg->end_time	= (time_t) NO_VAL;
+	update_resv_msg->duration	= NO_VAL;
+	update_resv_msg->type		= (uint16_t) NO_VAL;
+	update_resv_msg->node_cnt	= NO_VAL;
+	update_resv_msg->node_list	= NULL;
+	update_resv_msg->features	= NULL;
+	update_resv_msg->partition	= NULL;
+	update_resv_msg->users		= NULL;
+	update_resv_msg->accounts	= NULL;
+}

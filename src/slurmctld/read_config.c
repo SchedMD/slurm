@@ -76,6 +76,7 @@
 #include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/read_config.h"
+#include "src/slurmctld/reservation.h"
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/trigger_mgr.h"
@@ -854,6 +855,7 @@ int read_slurm_conf(int recover)
 	(void) _sync_nodes_to_comp_job();/* must follow select_g_node_init() */
 	load_part_uid_allow_list(1);
 
+	load_all_resv_state(recover);
 	if (recover >= 1)
 		(void) trigger_state_restore();
 
