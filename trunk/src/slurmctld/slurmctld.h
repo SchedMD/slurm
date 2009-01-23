@@ -454,7 +454,10 @@ struct job_record {
 					 * used only by Moab, it is
 					 * void* because of interdependencies
 					 * in the header files, confirm the 
-					 * value before use*/
+					 * value before use */
+	uint32_t resv_id;		/* reservation ID */
+	char *resv_name;		/* reservation name */
+	uint16_t resv_type;		/* see RESERVE_TYPE_* in slurm.h */
 	uint32_t requid;            	/* requester user ID */
 	char *resp_host;		/* host for srun communications */
 	select_jobinfo_t select_jobinfo;/* opaque data, BlueGene */

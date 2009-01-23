@@ -76,6 +76,7 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/proc_req.h"
+#include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/srun_comm.h"
@@ -2353,6 +2354,9 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		goto cleanup_fail;
 	}
 
+	if ((error_code = validate_job_resv(job_ptr)))
+		goto cleanup_fail;
+
 	if (job_desc->script
 	    &&  (!will_run)) {	/* don't bother with copy if just a test */
 		if ((error_code = _copy_job_desc_to_file(job_desc,
@@ -2950,6 +2954,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_ptr->alloc_node = xstrdup(job_desc->alloc_node);
 	job_ptr->account    = xstrdup(job_desc->account);
 	job_ptr->network    = xstrdup(job_desc->network);
+	job_ptr->resv_name  = xstrdup(job_desc->reservation);
 	job_ptr->comment    = xstrdup(job_desc->comment);
 	if (!wiki_sched_test) {
 		char *sched_type = slurm_get_sched_type();
@@ -3370,6 +3375,7 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->nodes_completing);
 	xfree(job_ptr->partition);
 	xfree(job_ptr->resp_host);
+	xfree(job_ptr->resv_name);
 	free_select_job_res(&job_ptr->select_job);
 	select_g_free_jobinfo(&job_ptr->select_jobinfo);
 	xfree(job_ptr->state_desc);
