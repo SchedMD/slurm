@@ -57,9 +57,10 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 	}
 
 	for (i=0; i<argc; i++) {
-		if (strncasecmp(argv[i], "PartitionName=", 14) == 0)
+		if (strncasecmp(argv[i], "PartitionName=", 14) == 0) {
 			part_msg_ptr->name = &argv[i][14];
-		else if (strncasecmp(argv[i], "MaxTime=", 8) == 0) {
+			(*update_cnt_ptr)++;
+		} else if (strncasecmp(argv[i], "MaxTime=", 8) == 0) {
 			int max_time = time_str2mins(&argv[i][8]);
 			if ((max_time < 0) && (max_time != INFINITE)) {
 				exit_code = 1;
@@ -211,7 +212,12 @@ scontrol_update_part (int argc, char *argv[])
 	slurm_init_part_desc_msg ( &part_msg );
 	scontrol_parse_part_options (argc, argv, &update_cnt, &part_msg);
 
-	if (update_cnt == 0) {
+	if (part_msg.name == NULL) {
+		exit_code = 1;
+		error("PartitionName must be given.");
+		return 0;
+	}
+	if (update_cnt <= 1) {
 		exit_code = 1;
 		error("No changes specified");
 		return 0;
@@ -243,6 +249,11 @@ scontrol_create_part (int argc, char *argv[])
 	slurm_init_part_desc_msg ( &part_msg );
 	scontrol_parse_part_options (argc, argv, &update_cnt, &part_msg);
 
+	if (part_msg.name == NULL) {
+		exit_code = 1;
+		error("PartitionName must be given.");
+		return 0;
+	}
 	if (update_cnt == 0) {
 		exit_code = 1;
 		error("No parameters specified");
