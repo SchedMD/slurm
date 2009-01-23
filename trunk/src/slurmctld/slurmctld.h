@@ -1512,13 +1512,14 @@ extern void update_logging(void);
 extern int update_node ( update_node_msg_t * update_node_msg )  ;
 
 /* 
- * update_part - update a partition's configuration data
+ * update_part - create or update a partition's configuration data
  * IN part_desc - description of partition changes
+ * IN create_flag - create a new partition
  * RET 0 or an error code
  * global: part_list - list of partition entries
  *	last_part_update - update time of partition records
  */
-extern int update_part (update_part_msg_t * part_desc );
+extern int update_part (update_part_msg_t * part_desc, bool create_flag);
 
 /*
  * validate_group - validate that the submit uid is authorized to run in 

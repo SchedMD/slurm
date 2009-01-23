@@ -798,31 +798,44 @@ void pack_part(struct part_record *part_ptr, Buf buffer)
 
 
 /* 
- * update_part - update a partition's configuration data
+ * update_part - create or update a partition's configuration data
  * IN part_desc - description of partition changes
+ * IN create_flag - create a new partition
  * RET 0 or an error code
  * global: part_list - list of partition entries
  *	last_part_update - update time of partition records
  */
-int update_part(update_part_msg_t * part_desc)
+extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 {
 	int error_code;
 	struct part_record *part_ptr;
 
 	if (part_desc->name == NULL) {
-		error("update_part: invalid partition name, NULL");
+		info("update_part: invalid partition name, NULL");
 		return ESLURM_INVALID_PARTITION_NAME;
 	}
 
 	error_code = SLURM_SUCCESS;
-	part_ptr = list_find_first(part_list, &list_find_part, part_desc->name);
+	part_ptr = list_find_first(part_list, &list_find_part, 
+				   part_desc->name);
 
-	if (part_ptr == NULL) {
-		info("update_part: partition %s does not exist, "
-			"being created", part_desc->name);
+	if (create_flag) {
+		if (part_ptr) {
+			verbose("Duplicate partition name for create (%s)",
+				part_desc->name);
+			return ESLURM_INVALID_PARTITION_NAME;
+		}
+		info("update_part: partition %s being created",
+		     part_desc->name);
 		part_ptr = create_part_record();
 		xfree(part_ptr->name);
 		part_ptr->name = xstrdup(part_desc->name);
+	} else {
+		if (!part_ptr) {
+			verbose("Update for partition not found (%s)",
+				part_desc->name);
+			return ESLURM_INVALID_PARTITION_NAME;
+		}
 	}
 
 	last_part_update = time(NULL);
