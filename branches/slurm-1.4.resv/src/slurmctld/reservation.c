@@ -81,6 +81,7 @@ typedef struct slurmctld_resv {
 	char *accounts;		/* names of accounts permitted to use	*/
 	int account_cnt;	/* count of accounts permitted to use	*/
 	char **account_list;	/* list of accounts permitted to use	*/
+	char *assoc_list;	/* list of associations			*/
 	uint32_t cpu_cnt;	/* number of reserved CPUs		*/
 	time_t end_time;	/* end time of reservation		*/
 	char *features;		/* required node features		*/
@@ -91,6 +92,7 @@ typedef struct slurmctld_resv {
 	bitstr_t *node_bitmap;	/* bitmap of reserved nodes		*/
 	char *partition;	/* name of partition to be used		*/
 	struct part_record *part_ptr;	/* pointer to partition used	*/
+	uint32_t resv_id;	/* unique reservation ID, internal use	*/
 	time_t start_time;	/* start time of reservation		*/
 	uint16_t type;		/* see RESERVE_TYPE_* above		*/
 	char *users;		/* names of users permitted to use	*/
@@ -105,15 +107,18 @@ static int  _build_account_list(char *accounts, int *account_cnt,
 			        char ***account_list);
 static int  _build_uid_list(char *users, int *user_cnt, uid_t **user_list);
 static void _del_resv_rec(void *x);
+static void _deleted_resv(struct slurmctld_resv *resv_ptr);
 static void _dump_resv_req(reserve_request_msg_t *resv_ptr, char *mode);
-static int  _find_resv_rec(void *x, void *key);
+static int  _find_resv_name(void *x, void *key);
 static void _generate_resv_name(reserve_request_msg_t *resv_ptr);
 static bool _is_account_valid(char *account);
 static void _pack_resv(struct slurmctld_resv *resv_ptr, Buf buffer,
 		       bool internal);
+static void _set_resv_id(struct slurmctld_resv *resv_ptr);
 static int  _update_account_list(struct slurmctld_resv *resv_ptr, 
 				 char *accounts);
 static int  _update_uid_list(struct slurmctld_resv *resv_ptr, char *users);
+static void _updated_resv(struct slurmctld_resv *resv_ptr);
 static void _validate_all_reservations(void);
 static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr);
 
@@ -129,6 +134,7 @@ static void _del_resv_rec(void *x)
 		for (i=0; i<resv_ptr->account_cnt; i++)
 			xfree(resv_ptr->account_list[i]);
 		xfree(resv_ptr->account_list);
+		xfree(resv_ptr->assoc_list);
 		xfree(resv_ptr->features);
 		xfree(resv_ptr->name);
 		if (resv_ptr->node_bitmap)
@@ -141,7 +147,7 @@ static void _del_resv_rec(void *x)
 	}
 }
 
-static int _find_resv_rec(void *x, void *key)
+static int _find_resv_name(void *x, void *key)
 {
 	slurmctld_resv_t *resv_ptr = (slurmctld_resv_t *) x;
 
@@ -215,13 +221,35 @@ static bool _is_account_valid(char *account)
 	return true;
 }
 
-/* Validate a comma delimited list of account names and build an array of
- * them
+/* Set a unique reservation id */
+static void _set_resv_id(struct slurmctld_resv *resv_ptr)
+{
+	/* FIXME: Need to add logic here to get resv_id from slurmdbd */
+	/* NOTE: resv_id is zero on entry */
+	resv_ptr->resv_id = top_suffix;	/* FOR TESTING ONLY */
+}
+
+/* Note that a reservation has been deleted */
+static void _deleted_resv(struct slurmctld_resv *resv_ptr)
+{
+	/* FIXME: Need to add logic here to notify slurmdbd */
+}
+
+/* Note that a reservation has been updated */
+static void _updated_resv(struct slurmctld_resv *resv_ptr)
+{
+	/* FIXME: Need to add logic here to notify slurmdbd */
+}
+
+/*
+ * Validate a comma delimited list of account names and build an array of
+ *	them
  * IN account       - a list of account names
  * OUT account_cnt  - number of accounts in the list
  * OUT account_list - list of the account names, 
  *		      CALLER MUST XFREE this plus each individual record
- * RETURN 0 on success */
+ * RETURN 0 on success
+ */
 static int _build_account_list(char *accounts, int *account_cnt, 
 			       char ***account_list)
 {
@@ -260,12 +288,14 @@ static int _build_account_list(char *accounts, int *account_cnt,
 	return ESLURM_INVALID_BANK_ACCOUNT;
 }
 
-/* Update a account list for an existing reservation based upon an 
+/*
+ * Update a account list for an existing reservation based upon an 
  *	update comma delimited specification of accounts to add (+name), 
  *	remove (-name), or set value of
  * IN/OUT resv_ptr - pointer to reservation structure being updated
  * IN accounts     - a list of account names, to set, add, or remove
- * RETURN 0 on success */
+ * RETURN 0 on success
+ */
 static int  _update_account_list(struct slurmctld_resv *resv_ptr, 
 				 char *accounts)
 {
@@ -403,12 +433,14 @@ static int  _update_account_list(struct slurmctld_resv *resv_ptr,
 	return ESLURM_INVALID_BANK_ACCOUNT;
 }
 
-/* Validate a comma delimited list of user names and build an array of
+/*
+ * Validate a comma delimited list of user names and build an array of
  *	their UIDs
  * IN users      - a list of user names
  * OUT user_cnt  - number of UIDs in the list
  * OUT user_list - list of the user's uid, CALLER MUST XFREE;
- * RETURN 0 on success */
+ * RETURN 0 on success
+ */
 static int _build_uid_list(char *users, int *user_cnt, uid_t **user_list)
 {
 	char *last, *tmp = NULL, *tok;
@@ -444,12 +476,14 @@ static int _build_uid_list(char *users, int *user_cnt, uid_t **user_list)
 	return ESLURM_USER_ID_MISSING;
 }
 
-/* Update a user/uid list for an existing reservation based upon an 
+/*
+ * Update a user/uid list for an existing reservation based upon an 
  *	update comma delimited specification of users to add (+name), 
  *	remove (-name), or set value of
  * IN/OUT resv_ptr - pointer to reservation structure being updated
  * IN users        - a list of user names, to set, add, or remove
- * RETURN 0 on success */
+ * RETURN 0 on success
+ */
 static int _update_uid_list(struct slurmctld_resv *resv_ptr, char *users)
 {
 	char *last, *tmp = NULL, *tok;
@@ -609,7 +643,9 @@ static void _pack_resv(struct slurmctld_resv *resv_ptr, Buf buffer,
 	packstr(resv_ptr->users,	buffer);
 
 	if (internal) {
+		packstr(resv_ptr->assoc_list,	buffer);
 		pack32(resv_ptr->cpu_cnt,	buffer);
+		pack32(resv_ptr->resv_id,	buffer);
 	}
 }
 
@@ -685,15 +721,24 @@ extern int create_resv(reserve_request_msg_t *resv_desc_ptr)
 	}
 	if (resv_desc_ptr->name) {
 		resv_ptr = (slurmctld_resv_t *) list_find_first (resv_list, 
-				_find_resv_rec, resv_desc_ptr->name);
+				_find_resv_name, resv_desc_ptr->name);
 		if (resv_ptr) {
 			info("Reservation requestion name duplication (%s)",
 			     resv_desc_ptr->name);
 			rc = ESLURM_RESERVATION_INVALID;
 			goto bad_parse;
 		}
-	} else
-		_generate_resv_name(resv_desc_ptr);
+	} else {
+		while (1) {
+			_generate_resv_name(resv_desc_ptr);
+			resv_ptr = (slurmctld_resv_t *) 
+					list_find_first (resv_list, 
+					_find_resv_name, resv_desc_ptr->name);
+			if (!resv_ptr)
+				break;
+			/* Same as explicitly created name, retry */
+		}
+	}
 	if (resv_desc_ptr->node_list) {
 		if (strcmp(resv_desc_ptr->node_list, "ALL") == 0) {
 			node_bitmap = bit_alloc(node_record_count);
@@ -735,6 +780,7 @@ extern int create_resv(reserve_request_msg_t *resv_desc_ptr)
 	resv_ptr->user_cnt	= user_cnt;
 	resv_ptr->user_list	= user_list;
 	resv_desc_ptr->users 	= NULL;		/* Nothing left to free */
+	_set_resv_id(resv_ptr);
 
 	info("Created reservation %s for accounts=%s users=%s",
 	     resv_ptr->name, resv_ptr->accounts, resv_ptr->users);
@@ -759,6 +805,7 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 {
 	time_t now = time(NULL);
 	slurmctld_resv_t *resv_ptr;
+	int error_code = SLURM_SUCCESS;
 
 	if (!resv_list)
 		resv_list = list_create(_del_resv_rec);
@@ -768,7 +815,7 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 	if ((resv_desc_ptr->name == NULL))
 		return ESLURM_RESERVATION_INVALID;
 	resv_ptr = (slurmctld_resv_t *) list_find_first (resv_list, 
-			_find_resv_rec, resv_desc_ptr->name);
+			_find_resv_name, resv_desc_ptr->name);
 	if (!resv_ptr)
 		return ESLURM_RESERVATION_INVALID;
 
@@ -777,14 +824,16 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 	if (resv_desc_ptr->start_time != (time_t) NO_VAL) {
 		if (resv_desc_ptr->start_time < (now - 60)) {
 			info("Reservation requestion has invalid start time");
-			return ESLURM_INVALID_TIME_VALUE;
+			error_code = ESLURM_INVALID_TIME_VALUE;
+			goto fini;
 		}
 		resv_ptr->start_time = resv_desc_ptr->start_time;
 	}
 	if (resv_desc_ptr->end_time != (time_t) NO_VAL) {
 		if (resv_desc_ptr->end_time < (now - 60)) {
 			info("Reservation requestion has invalid end time");
-			return ESLURM_INVALID_TIME_VALUE;
+			error_code = ESLURM_INVALID_TIME_VALUE;
+			goto fini;
 		}
 		resv_ptr->end_time = resv_desc_ptr->end_time;
 	}
@@ -805,7 +854,8 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 		if (!part_ptr) {
 			info("Reservation request has invalid partition %s",
 			     resv_desc_ptr->partition);
-			return ESLURM_INVALID_PARTITION_NAME;
+			error_code = ESLURM_INVALID_PARTITION_NAME;
+			goto fini;
 		}
 		resv_ptr->partition	= resv_desc_ptr->partition;
 		resv_desc_ptr->partition = NULL; /* Nothing left to free */
@@ -816,8 +866,10 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 	if (resv_desc_ptr->accounts) {
 		int rc;
 		rc = _update_account_list(resv_ptr, resv_desc_ptr->accounts);
-		if (rc)
-			return rc;
+		if (rc) {
+			error_code = rc;
+			goto fini;
+		}
 	}
 	if (resv_desc_ptr->features) {
 		xfree(resv_ptr->features);
@@ -828,8 +880,10 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 		int rc;
 		rc = _update_uid_list(resv_ptr, 
 				      resv_desc_ptr->users);
-		if (rc)
-			return rc;
+		if (rc) {
+			error_code = rc;
+			goto fini;
+		}
 	}
 	if (resv_desc_ptr->node_list) {		/* Change bitmap last */
 		bitstr_t *node_bitmap;
@@ -838,7 +892,8 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 			bit_nset(node_bitmap, 0, (node_record_count - 1));
 		} else if (node_name2bitmap(resv_desc_ptr->node_list, 
 					    false, &node_bitmap)) {
-			return ESLURM_INVALID_NODE_NAME;
+			error_code = ESLURM_INVALID_NODE_NAME;
+			goto fini;
 		}
 		xfree(resv_ptr->node_list);
 		resv_ptr->node_list = resv_desc_ptr->node_list;
@@ -847,9 +902,10 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 		resv_ptr->node_bitmap = node_bitmap;
 	}
 
-	last_resv_update = now;
+fini:	last_resv_update = now;
+	_updated_resv(resv_ptr);
 	schedule_resv_save();
-	return SLURM_SUCCESS;
+	return error_code;
 }
 
 /* Delete an exiting resource reservation */
@@ -868,6 +924,7 @@ extern int delete_resv(reservation_name_msg_t *resv_desc_ptr)
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
 		if (strcmp(resv_ptr->name, resv_desc_ptr->name))
 			continue;
+		_deleted_resv(resv_ptr);
 		list_delete_item(iter);
 		last_resv_update = time(NULL);
 		break;
@@ -880,7 +937,6 @@ extern int delete_resv(reservation_name_msg_t *resv_desc_ptr)
 		return ESLURM_RESERVATION_INVALID;
 	}
 
-	last_resv_update = time(NULL);
 	schedule_resv_save();
 	return SLURM_SUCCESS;
 }
@@ -1226,7 +1282,11 @@ extern int load_all_resv_state(int recover)
 		safe_unpack16(&resv_ptr->type,		buffer);
 		safe_unpackstr_xmalloc(&resv_ptr->users,&uint32_tmp, buffer);
 
+		/* Fields saved for internal use only (save state) */
+		safe_unpackstr_xmalloc(&resv_ptr->assoc_list,	
+				       &uint32_tmp,	buffer);
 		safe_unpack32(&resv_ptr->cpu_cnt,	buffer);
+		safe_unpack32(&resv_ptr->resv_id,	buffer);
 
 		list_append(resv_list, resv_ptr);
 		info("Recovered state of reservation %s", resv_ptr->name);
