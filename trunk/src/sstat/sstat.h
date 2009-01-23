@@ -65,7 +65,7 @@
 
 #define ERROR 2
 
-#define STAT_FIELDS "jobid,maxvsize,maxvsizenode,maxvsizetask,avevsize,maxrss,maxrssnode,maxrsstask,averss,maxpages,maxpagesnode,maxpagestask,avepages,mincpu,mincpunode,mincputask,avecpu,ntasks,state"
+#define STAT_FIELDS "jobid,maxvsize,maxvsizenode,maxvsizetask,avevsize,maxrss,maxrssnode,maxrsstask,averss,maxpages,maxpagesnode,maxpagestask,avepages,mincpu,mincpunode,mincputask,avecpu,ntasks"
 
 #define BUFFER_SIZE 4096
 #define STATE_COUNT 10

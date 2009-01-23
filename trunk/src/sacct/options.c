@@ -56,16 +56,6 @@ ListIterator print_fields_itr = NULL;
 int field_count = 0;
 List qos_list = NULL;
 
-void _show_rec(char *f[])
-{
-	int 	i;
-	fprintf(stderr, "rec>");
-	for (i=0; f[i]; i++)
-		fprintf(stderr, " %s", f[i]);
-	fprintf(stderr, "\n");
-	return;
-}
-
 void _help_fields_msg(void)
 {
 	int i;
@@ -73,7 +63,7 @@ void _help_fields_msg(void)
 	for (i = 0; fields[i].name; i++) {
 		if (i & 3)
 			printf("  ");
-		else
+		else if(i)
 			printf("\n");
 		printf("%-12s", fields[i].name);
 	}
@@ -447,7 +437,7 @@ sacct [<OPTION>]                                                            \n\
                    The default is to print a header; the option has no effect\n\
                    if --dump is specified                                   \n\
      -o, --format:                                                          \n\
-	           Comma seperated list of fields. (use \"--help_format\"   \n\
+	           Comma seperated list of fields. (use \"--helpformat\"    \n\
                    for a list of available fields).                         \n\
      -O, --formatted_dump:                                                  \n\
 	           Dump accounting records in an easy-to-read format,       \n\
@@ -482,7 +472,7 @@ sacct [<OPTION>]                                                            \n\
 
 void _usage(void)
 {
-	printf("\nUsage: sacct [options]\n\tUse --help for help\n");
+	printf("Usage: sacct [options]\n\tUse --help for help\n");
 }
 
 void _init_params()
@@ -634,7 +624,7 @@ void parse_command_line(int argc, char **argv)
 
 	while (1) {		/* now cycle through the command line */
 		c = getopt_long(argc, argv,
-				"aA:bcC:deE:f:g:hj:lno:OpPr:s:S:u:vV",
+				"aA:bcC:deE:f:g:hj:lno:OpPr:s:S:tu:vV",
 				long_options, &optionIndex);
 		if (c == -1)
 			break;
@@ -767,6 +757,7 @@ void parse_command_line(int argc, char **argv)
 		case 'V':
 			printf("%s %s\n", PACKAGE, SLURM_VERSION);
 			exit(0);
+		case 't':
 		case 'X':
 			params.opt_allocs = 1;
 			break;

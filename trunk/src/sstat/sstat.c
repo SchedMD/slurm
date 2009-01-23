@@ -160,6 +160,7 @@ cleanup:
 		step.sacct.ave_rss /= tot_tasks;
 		step.sacct.ave_vsize /= tot_tasks;
 		step.sacct.ave_pages /= tot_tasks;
+		step.ntasks = tot_tasks;
 	}
 	jobacct_gather_g_destroy(r.jobacct);	
 	return SLURM_SUCCESS;
