@@ -107,7 +107,7 @@ if {[string compare $def_node ""] == 0} {
 #
 # Create a new partition
 #
-spawn $scontrol update PartitionName=$part_name Nodes=$def_node
+spawn $scontrol create PartitionName=$part_name Nodes=$def_node
 expect {
 	-re "slurm_update error: Invalid user" {
 		send_user "\nWARNING: user not authorized to create partition\n"

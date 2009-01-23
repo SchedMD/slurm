@@ -211,9 +211,6 @@ scontrol_update_part (int argc, char *argv[])
 	slurm_init_part_desc_msg ( &part_msg );
 	scontrol_parse_part_options (argc, argv, &update_cnt, &part_msg);
 
-	if (exit_code != 0)
-		return 0;
-
 	if (update_cnt == 0) {
 		exit_code = 1;
 		error("No changes specified");
@@ -246,8 +243,11 @@ scontrol_create_part (int argc, char *argv[])
 	slurm_init_part_desc_msg ( &part_msg );
 	scontrol_parse_part_options (argc, argv, &update_cnt, &part_msg);
 
-	if (exit_code != 0)
+	if (update_cnt == 0) {
+		exit_code = 1;
+		error("No parameters specified");
 		return 0;
+	}
 
 	if (slurm_create_partition(&part_msg)) {
 		exit_code = 1;

@@ -2271,9 +2271,13 @@ static void _slurm_rpc_update_partition(slurm_msg_t * msg)
 			error_code = select_g_update_block(part_desc_ptr);
 		else if(part_desc_ptr->root_only == (uint16_t)INFINITE) 
 			error_code = select_g_update_sub_node(part_desc_ptr);
-		else {
+		else if (msg->msg_type == REQUEST_CREATE_PARTITION) {
 			lock_slurmctld(part_write_lock);
-			error_code = update_part(part_desc_ptr);
+			error_code = update_part(part_desc_ptr, true);
+			unlock_slurmctld(part_write_lock);
+		} else {
+			lock_slurmctld(part_write_lock);
+			error_code = update_part(part_desc_ptr, false);
 			unlock_slurmctld(part_write_lock);
 		}
 		END_TIMER2("_slurm_rpc_update_partition");
