@@ -106,7 +106,10 @@ static void _del_resv_rec(void *x);
 static void _dump_resv_req(reserve_request_msg_t *resv_ptr, char *mode);
 static int  _find_resv_rec(void *x, void *key);
 static void _generate_resv_name(reserve_request_msg_t *resv_ptr);
+static bool _is_account_valid(char *account);
 static void _pack_resv(struct slurmctld_resv *resv_ptr, Buf buffer);
+static int  _update_account_list(struct slurmctld_resv *resv_ptr, 
+				 char *accounts);
 static int  _update_uid_list(struct slurmctld_resv *resv_ptr, char *users);
 static void _validate_all_reservations(void);
 static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr);
@@ -212,6 +215,13 @@ static void _generate_resv_name(reserve_request_msg_t *resv_ptr)
 	resv_ptr->name = name;
 }
 
+/* Validate an account name */
+static bool _is_account_valid(char *account)
+{
+	/* FIXME: Need to add logic here */
+	return true;
+}
+
 /* Validate a comma delimited list of account names and build an array of
  * them
  * IN account       - a list of account names
@@ -237,14 +247,11 @@ static int _build_account_list(char *accounts, int *account_cnt,
 	tmp = xstrdup(accounts);
 	tok = strtok_r(tmp, ",", &last);
 	while (tok) {
-#if 0
-		/* Validate the account */
-		if (failure) {
+		if (!_is_account_valid(tok)) {
 			info("Reservation request has invalid account %s", 
 			     tok);
 			goto inval;
 		}
-#endif
 		ac_list[ac_cnt++] = xstrdup(tok);
 		tok = strtok_r(NULL, ",", &last);
 	}
@@ -253,15 +260,150 @@ static int _build_account_list(char *accounts, int *account_cnt,
 	xfree(tmp);
 	return SLURM_SUCCESS;
 
-#if 0
  inval:	for (i=0; i<ac_cnt; i++)
 		xfree(ac_list[i]);
 	xfree(ac_list);
 	xfree(tmp);
 	return ESLURM_INVALID_BANK_ACCOUNT;
-#endif
 }
 
+/* Update a account list for an existing reservation based upon an 
+ *	update comma delimited specification of accounts to add (+name), 
+ *	remove (-name), or set value of
+ * IN/OUT resv_ptr - pointer to reservation structure being updated
+ * IN accounts     - a list of account names, to set, add, or remove
+ * RETURN 0 on success */
+static int  _update_account_list(struct slurmctld_resv *resv_ptr, 
+				 char *accounts)
+{
+	char *last, *tmp, *tok;
+	int ac_cnt = 0, i, j, k;
+	int *ac_type, minus_account = 0, plus_account = 0;
+	char **ac_list;
+	bool found_it;
+
+	if (!accounts)
+		return ESLURM_INVALID_BANK_ACCOUNT;
+
+	i = strlen(accounts);
+	ac_list = xmalloc(sizeof(char *) * (i + 2));
+	ac_type = xmalloc(sizeof(int)    * (i + 2));
+	tmp = xstrdup(accounts);
+	tok = strtok_r(tmp, ",", &last);
+	while (tok) {
+		if (tok[0] == '-') {
+			ac_type[ac_cnt] = 1;	/* minus */
+			minus_account = 1;
+			tok++;
+		} else if (tok[0] == '+') {
+			ac_type[ac_cnt] = 2;	/* plus */
+			plus_account = 1;
+			tok++;
+		} else if (plus_account || minus_account) {
+			info("Reservation account expression invalid %s", accounts);
+			goto inval;
+		} else
+			ac_type[ac_cnt] = 3;	/* set */
+		if (!_is_account_valid(tok)) {
+			info("Reservation request has invalid account %s", 
+			     tok);
+			goto inval;
+		}
+		ac_list[ac_cnt++] = xstrdup(tok);
+		tok = strtok_r(NULL, ",", &last);
+	}
+	xfree(tmp);
+
+	if ((plus_account == 0) && (minus_account == 0)) {
+		/* Just a reset of account list */
+		xfree(resv_ptr->accounts);
+		resv_ptr->accounts = xstrdup(accounts);
+		xfree(resv_ptr->account_list);
+		resv_ptr->account_list = ac_list;
+		resv_ptr->account_cnt = ac_cnt;
+		xfree(ac_type);
+		return SLURM_SUCCESS;
+	}
+
+	/* Modification of existing account list */
+	if (minus_account) {
+		if (resv_ptr->account_cnt == 0)
+			goto inval;
+		for (i=0; i<ac_cnt; i++) {
+			if (ac_type[i] != 1)
+				continue;
+			found_it = false;
+			for (j=0; j<resv_ptr->account_cnt; j++) {
+				if (strcmp(resv_ptr->account_list[j], ac_list[i]))
+					continue;
+				found_it = true;
+				xfree(resv_ptr->account_list[j]);
+				resv_ptr->account_cnt--;
+				for (k=j; k<resv_ptr->account_cnt; k++) {
+					resv_ptr->account_list[k] =
+						resv_ptr->account_list[k+1];
+				}
+				break;
+			}
+			if (!found_it)
+				goto inval;
+		}
+		xfree(resv_ptr->accounts);
+		for (i=0; i<resv_ptr->account_cnt; i++) {
+			if (i == 0) {
+				resv_ptr->accounts = xstrdup(resv_ptr->
+							     account_list[i]);
+			} else {
+				xstrcat(resv_ptr->accounts, ",");
+				xstrcat(resv_ptr->accounts,
+					resv_ptr->account_list[i]);
+			}
+		}
+	}
+
+	if (plus_account) {
+		for (i=0; i<ac_cnt; i++) {
+			if (ac_type[i] != 2)
+				continue;
+			found_it = false;
+			for (j=0; j<resv_ptr->account_cnt; j++) {
+				if (strcmp(resv_ptr->account_list[j], ac_list[i]))
+					continue;
+				found_it = true;
+				break;
+			}
+			if (found_it)
+				continue;	/* duplicate entry */
+			xrealloc(resv_ptr->account_list, 
+				 sizeof(char *) * (resv_ptr->account_cnt + 1));
+			resv_ptr->account_list[resv_ptr->account_cnt++] =
+					xstrdup(ac_list[i]);
+		}
+		xfree(resv_ptr->accounts);
+		for (i=0; i<resv_ptr->account_cnt; i++) {
+			if (i == 0) {
+				resv_ptr->accounts = xstrdup(resv_ptr->
+							     account_list[i]);
+			} else {
+				xstrcat(resv_ptr->accounts, ",");
+				xstrcat(resv_ptr->accounts,
+					resv_ptr->account_list[i]);
+			}
+		}
+	}
+	for (i=0; i<ac_cnt; i++)
+		xfree(ac_list[i]);
+	xfree(ac_list);
+	xfree(ac_type);
+	return SLURM_SUCCESS;
+
+ inval:	for (i=0; i<ac_cnt; i++)
+		xfree(ac_list[i]);
+	xfree(ac_list);
+	xfree(ac_type);
+	xfree(tmp);
+	return ESLURM_INVALID_BANK_ACCOUNT;
+}
 
 /* Validate a comma delimited list of user names and build an array of
  *	their UIDs
@@ -668,20 +810,10 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 	if (resv_desc_ptr->node_cnt != NO_VAL)
 		resv_ptr->node_cnt = resv_desc_ptr->node_cnt;
 	if (resv_desc_ptr->accounts) {
-		int account_cnt = 0, i, rc;
-		char **account_list;
-		rc = _build_account_list(resv_desc_ptr->accounts, 
-					 &account_cnt, &account_list);
+		int rc;
+		rc = _update_account_list(resv_ptr, resv_desc_ptr->accounts);
 		if (rc)
 			return rc;
-		xfree(resv_ptr->accounts);
-		for (i=0; i<resv_ptr->account_cnt; i++)
-			xfree(resv_ptr->account_list[i]);
-		xfree(resv_ptr->account_list);
-		resv_ptr->accounts = resv_desc_ptr->accounts;
-		resv_desc_ptr->accounts = NULL;	/* Nothing left to free */
-		resv_ptr->account_cnt  = account_cnt;
-		resv_ptr->account_list = account_list;
 	}
 	if (resv_desc_ptr->features) {
 		xfree(resv_ptr->features);
