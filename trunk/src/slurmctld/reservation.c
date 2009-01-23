@@ -1399,8 +1399,14 @@ extern int validate_job_resv(struct job_record *job_ptr)
 	slurmctld_resv_t *resv_ptr = NULL;
 	int i;
 
-	if (job_ptr->resv_name == NULL)
+	xassert(job_ptr);
+
+	if ((job_ptr->resv_name == NULL) || (job_ptr->resv_name[0] == '\0')) {
+		xfree(job_ptr->resv_name);
+		job_ptr->resv_id   = 0;
+		job_ptr->resv_type = 0;
 		return SLURM_SUCCESS;
+	}
 
 	if (!resv_list)
 		return ESLURM_RESERVATION_INVALID;
