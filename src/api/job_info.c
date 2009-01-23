@@ -2,7 +2,7 @@
  *  job_info.c - get/print the job state information of slurm
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  LLNL-CODE-402394.
@@ -173,9 +173,9 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 
 	/****** Line 3 ******/
 	snprintf(tmp_line, sizeof(tmp_line), 
-		 "Priority=%u Partition=%s BatchFlag=%u", 
+		 "Priority=%u Partition=%s BatchFlag=%u Reservation=%s", 
 		 job_ptr->priority, job_ptr->partition, 
-		 job_ptr->batch_flag);
+		 job_ptr->batch_flag, job_ptr->resv_name);
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");

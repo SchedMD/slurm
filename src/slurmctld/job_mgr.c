@@ -485,6 +485,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack32(dump_job_ptr->exit_code, buffer);
 	pack32(dump_job_ptr->db_index, buffer);
 	pack32(dump_job_ptr->assoc_id, buffer);
+	pack32(dump_job_ptr->resv_id, buffer);
 
 	pack_time(dump_job_ptr->start_time, buffer);
 	pack_time(dump_job_ptr->end_time, buffer);
@@ -501,6 +502,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack16(dump_job_ptr->mail_type, buffer);
 	pack16(dump_job_ptr->qos, buffer);
 	pack16(dump_job_ptr->state_reason, buffer);
+	pack16(dump_job_ptr->resv_type, buffer);
 
 	packstr(dump_job_ptr->state_desc, buffer);
 	packstr(dump_job_ptr->resp_host, buffer);
@@ -526,6 +528,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	packstr(dump_job_ptr->network, buffer);
 	packstr(dump_job_ptr->licenses, buffer);
 	packstr(dump_job_ptr->mail_user, buffer);
+	packstr(dump_job_ptr->resv_name, buffer);
 
 	select_g_pack_jobinfo(dump_job_ptr->select_jobinfo, buffer);
 	pack_select_job_res(dump_job_ptr->select_job, buffer);
@@ -554,17 +557,19 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 static int _load_job_state(Buf buffer)
 {
 	uint32_t job_id, user_id, group_id, time_limit, priority, alloc_sid;
-	uint32_t exit_code, num_procs, assoc_id, db_index, name_len,
-		total_procs;
+	uint32_t exit_code, num_procs, assoc_id, db_index, name_len;
+	uint32_t total_procs, resv_id;
 	time_t start_time, end_time, suspend_time, pre_sus_time, tot_sus_time;
 	time_t now = time(NULL);
 	uint16_t job_state, next_step_id, details, batch_flag, step_flag;
 	uint16_t kill_on_node_fail, kill_on_step_done, direct_set_prio, qos;
 	uint16_t alloc_resp_port, other_port, mail_type, state_reason;
+	uint16_t resv_type;
 	char *nodes = NULL, *partition = NULL, *name = NULL, *resp_host = NULL;
 	char *account = NULL, *network = NULL, *mail_user = NULL;
 	char *comment = NULL, *nodes_completing = NULL, *alloc_node = NULL;
 	char *licenses = NULL, *state_desc = NULL, *wckey = NULL;
+	char *resv_name = NULL;
 	struct job_record *job_ptr;
 	struct part_record *part_ptr;
 	int error_code;
@@ -585,6 +590,7 @@ static int _load_job_state(Buf buffer)
 	safe_unpack32(&exit_code, buffer);
 	safe_unpack32(&db_index, buffer);
 	safe_unpack32(&assoc_id, buffer);
+	safe_unpack32(&resv_id, buffer);
 
 	safe_unpack_time(&start_time, buffer);
 	safe_unpack_time(&end_time, buffer);
@@ -600,8 +606,8 @@ static int _load_job_state(Buf buffer)
 	safe_unpack16(&batch_flag, buffer);
 	safe_unpack16(&mail_type, buffer);
 	safe_unpack16(&qos, buffer);
-
 	safe_unpack16(&state_reason, buffer);
+	safe_unpack16(&resv_type, buffer);
 
 	safe_unpackstr_xmalloc(&state_desc, &name_len, buffer);
 	safe_unpackstr_xmalloc(&resp_host, &name_len, buffer);
@@ -623,6 +629,7 @@ static int _load_job_state(Buf buffer)
 	safe_unpackstr_xmalloc(&network, &name_len, buffer);
 	safe_unpackstr_xmalloc(&licenses, &name_len, buffer);
 	safe_unpackstr_xmalloc(&mail_user, &name_len, buffer);
+	safe_unpackstr_xmalloc(&resv_name, &name_len, buffer);
 
 	if (select_g_alloc_jobinfo(&select_jobinfo)
 	    ||  select_g_unpack_jobinfo(select_jobinfo, buffer))
@@ -682,7 +689,8 @@ static int _load_job_state(Buf buffer)
 		qos_rec.id = qos;
 		if((assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec,
 					  accounting_enforce, 
-					  (acct_qos_rec_t **)&job_ptr->qos_ptr))
+					  (acct_qos_rec_t **)
+					  &job_ptr->qos_ptr))
 		   != SLURM_SUCCESS) {
 			verbose("Invalid qos (%u) for job_id %u", qos, job_id);
 			/* not a fatal error, qos could have been removed */
@@ -763,6 +771,10 @@ static int _load_job_state(Buf buffer)
 	xfree(job_ptr->resp_host);
 	job_ptr->resp_host    = resp_host;
 	resp_host             = NULL;	/* reused, nothing left to free */
+	job_ptr->resv_id      = resv_id;
+	job_ptr->resv_name    = resv_name;
+	resv_name             = NULL;	/* reused, nothing left to free */
+	job_ptr->resv_type    = resv_type;
 	job_ptr->select_jobinfo = select_jobinfo;
 	job_ptr->select_job   = select_job;
 	job_ptr->start_time   = start_time;
@@ -811,7 +823,8 @@ static int _load_job_state(Buf buffer)
 
 		/* make sure we have started this job in accounting */
 		if(job_ptr->assoc_id && !job_ptr->db_index && job_ptr->nodes) {
-			debug("starting job %u in accounting", job_ptr->job_id);
+			debug("starting job %u in accounting", 
+			      job_ptr->job_id);
 			jobacct_storage_g_job_start(
 				acct_db_conn, slurmctld_cluster_name, job_ptr);
 			if(job_ptr->job_state == JOB_SUSPENDED) 
@@ -850,6 +863,7 @@ unpack_error:
 	xfree(nodes);
 	xfree(nodes_completing);
 	xfree(partition);
+	xfree(resv_name);
 	xfree(state_desc);
 	xfree(wckey);
 	select_g_free_jobinfo(&select_jobinfo);
@@ -3596,6 +3610,7 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 	packstr(dump_job_ptr->comment, buffer);
 	packstr(dump_job_ptr->licenses, buffer);
 	packstr(dump_job_ptr->state_desc, buffer);
+	packstr(dump_job_ptr->resv_name, buffer);
 
 	pack32(dump_job_ptr->exit_code, buffer);
 

@@ -2444,6 +2444,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 	safe_unpackstr_xmalloc(&job->comment, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&job->licenses, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&job->state_desc, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&job->resv_name,  &uint32_tmp, buffer);
 
 	safe_unpack32(&job->exit_code, buffer);
 	safe_unpack32(&job->num_cpu_groups, buffer);
