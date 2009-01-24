@@ -4195,7 +4195,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	}
 
 	if (job_specs->reservation) {
-		if (job_ptr->job_state != JOB_PENDING)
+		if (job_ptr->job_state != JOB_PENDING) {
 			error_code = ESLURM_DISABLED;
 		} else {
 			int rc;

@@ -112,6 +112,7 @@ static void _dump_resv_req(reserve_request_msg_t *resv_ptr, char *mode);
 static int  _find_resv_name(void *x, void *key);
 static void _generate_resv_name(reserve_request_msg_t *resv_ptr);
 static bool _is_account_valid(char *account);
+static bool _is_resv_used(slurmctld_resv_t *resv_ptr);
 static void _pack_resv(struct slurmctld_resv *resv_ptr, Buf buffer,
 		       bool internal);
 static bool _resv_overlap(time_t start_time, time_t end_time, 
@@ -989,11 +990,32 @@ fini:	last_resv_update = now;
 	return error_code;
 }
 
+/* Determine if a running or pending job is using a reservation */
+static bool _is_resv_used(slurmctld_resv_t *resv_ptr)
+{
+	ListIterator job_iterator;
+	struct job_record *job_ptr;
+	bool match = false;
+
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		if ((!IS_JOB_FINISHED(job_ptr)) &&
+		    (job_ptr->resv_id == resv_ptr->resv_id)) {
+			match = true;
+			break;
+		}
+	}
+	list_iterator_destroy(job_iterator);
+
+	return match;
+}
+
 /* Delete an exiting resource reservation */
 extern int delete_resv(reservation_name_msg_t *resv_desc_ptr)
 {
 	ListIterator iter;
 	slurmctld_resv_t *resv_ptr;
+	int rc = SLURM_SUCCESS;
 
 #ifdef _RESV_DEBUG
 	info("delete_resv: Name=%s", resv_desc_ptr->name);
@@ -1005,6 +1027,10 @@ extern int delete_resv(reservation_name_msg_t *resv_desc_ptr)
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
 		if (strcmp(resv_ptr->name, resv_desc_ptr->name))
 			continue;
+		if (_is_resv_used(resv_ptr)) {
+			rc = ESLURM_RESERVATION_BUSY;
+			break;
+		}
 		_deleted_resv(resv_ptr);
 		list_delete_item(iter);
 		last_resv_update = time(NULL);
@@ -1019,7 +1045,7 @@ extern int delete_resv(reservation_name_msg_t *resv_desc_ptr)
 	}
 
 	schedule_resv_save();
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 /* Dump the reservation records to a buffer */

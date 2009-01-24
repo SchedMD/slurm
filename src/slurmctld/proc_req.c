@@ -2461,9 +2461,9 @@ static void _slurm_rpc_resv_delete(slurm_msg_t * msg)
 	DEF_TIMERS;
 	reservation_name_msg_t *resv_desc_ptr = (reservation_name_msg_t *)
 					      msg->data;
-	/* Locks: write node */
+	/* Locks: read job, write node */
 	slurmctld_lock_t node_write_lock = { 
-		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
+		NO_LOCK, READ_LOCK, WRITE_LOCK, NO_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 
 	START_TIMER;
