@@ -1,6 +1,6 @@
 .TH "Slurm API" "3" "May 2007" "Morris Jette" "Slurm administrative calls"
 .SH "NAME"
-slurm_delete_partition, slurm_init_part_desc_msg,
+slurm_create_partition, slurm_delete_partition, slurm_init_part_desc_msg,
 slurm_reconfigure, slurm_shutdown, slurm_update_job, 
 slurm_update_node, slurm_update_partition
 \- Slurm administrative functions 
@@ -31,6 +31,12 @@ int \fBslurm_update_job\fR (
 int \fBslurm_update_node\fR ( 
 .br 
 	update_node_msg_t *\fIupdate_node_msg_ptr\fP 
+.br 
+);
+.LP
+int \fBslurm_create_partition\fR ( 
+.br 
+	update_part_msg_t *\fIupdate_part_msg_ptr\fP 
 .br 
 );
 .LP
@@ -68,9 +74,17 @@ Specifies the pointer to a node update request specification. See slurm.h for fu
 details on the data structure's contents. 
 .TP 
 \fIupdate_part_msg_ptr\fP
-Specifies the pointer to a partition update request specification. See slurm.h for 
-full details on the data structure's contents. 
+Specifies the pointer to a partition create or update request specification. 
+See slurm.h for full details on the data structure's contents. 
 .SH "DESCRIPTION"
+.LP 
+\fBslurm_create_partition\fR Request that a new partition be created. 
+Initialize the data structure using the \fBslurm_init_part_desc_msg\fR 
+function prior to setting values of the parameters to be changed.
+Note: \fBslurm_init_part_desc_msg\fR is not equivalent to setting the data 
+structure values to zero.  A partition name must be set for the call to
+succeed.
+This function may only be successfully executed by user root.
 .LP 
 \fBslurm_delete_partition\fR Request that the specified partition be deleted. 
 All jobs associated with the identified partition will be terminated and purged.
@@ -205,6 +219,16 @@ int main (int argc, char *argv[])
 	update_part_msg.name = "test.partition";
 .br
 	update_part_msg.state_up = 0;  /* partition down */
+.br 
+	if (slurm_create_partition (&update_part_msg)) { 
+.br
+		slurm_perror ("slurm_create_partition error");
+.br 
+		exit (1);
+.br
+	}
+.LP 
+	update_part_msg.state_up = 1;  /* partition up */
 .br 
 	if (slurm_update_partition (&update_part_msg)) { 
 .br
