@@ -1989,7 +1989,7 @@ extern int slurm_update_partition PARAMS(( update_part_msg_t * part_msg ));
 extern int slurm_delete_partition PARAMS(( delete_part_msg_t * part_msg ));
 
 /*****************************************************************************\
- *	SLURM PARTITION CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
+ *	SLURM RESERVATION CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
 \*****************************************************************************/
 
 /*
