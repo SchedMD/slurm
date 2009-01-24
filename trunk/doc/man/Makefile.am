@@ -45,6 +45,7 @@ man3_MANS = man3/slurm_hostlist_create.3 \
 	man3/slurm_complete_job.3 \
 	man3/slurm_complete_job_step.3 \
 	man3/slurm_confirm_allocation.3 \
+	man3/slurm_create_partition.3 \
 	man3/slurm_free_ctl_conf.3 \
 	man3/slurm_free_job_info_msg.3 \
 	man3/slurm_free_job_alloc_info_response_msg.3 \
