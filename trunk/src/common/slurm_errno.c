@@ -228,6 +228,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Requested reservation is invalid"			},
 	{ ESLURM_INVALID_TIME_VALUE,
 	  "Invalid time specified"				},
+	{ ESLURM_RESERVATION_BUSY, 
+	  "Requested reservation is busy"			},
 
 	/* slurmd error codes */
 
