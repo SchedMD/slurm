@@ -644,6 +644,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	if (error_code == SLURM_SUCCESS) {
 		do_unlock = true;
 		lock_slurmctld(job_write_lock);
+
 		error_code = job_allocate(job_desc_msg, immediate, 
 					  false, NULL,
 					  true, uid, &job_ptr);
@@ -652,8 +653,9 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	}
 
 	/* return result */
-	if ((error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE)
-	||  (error_code == ESLURM_JOB_HELD))
+	if ((error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) ||
+	    (error_code == ESLURM_RESERVATION_NOT_USABLE) ||
+	    (error_code == ESLURM_JOB_HELD))
 		job_waiting = true;
 
 	if ((error_code == SLURM_SUCCESS)
@@ -2084,6 +2086,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 	/* return result */
 	if ((error_code != SLURM_SUCCESS)
 	&&  (error_code != ESLURM_JOB_HELD)
+	&&  (error_code != ESLURM_RESERVATION_NOT_USABLE)
 	&&  (error_code != ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE)) {
 		info("_slurm_rpc_submit_batch_job: %s",
 			slurm_strerror(error_code));

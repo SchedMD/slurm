@@ -1195,26 +1195,56 @@ static int _build_node_list(struct job_record *job_ptr,
 			    struct node_set **node_set_pptr,
 			    int *node_set_size)
 {
-	int node_set_inx;
+	int node_set_inx, rc;
 	struct node_set *node_set_ptr;
 	struct config_record *config_ptr;
 	struct part_record *part_ptr = job_ptr->part_ptr;
 	ListIterator config_iterator;
 	int check_node_config, config_filter = 0;
 	struct job_details *detail_ptr = job_ptr->details;
-	bitstr_t *exc_node_mask = NULL;
+	bitstr_t *usable_node_mask = NULL;
 	multi_core_data_t *mc_ptr = detail_ptr->mc_ptr;
 	bitstr_t *tmp_feature;
+	time_t when = time(NULL);
+
+	if (job_ptr->resv_name) {
+		/* Limit node selection to those in selected reservation */
+		rc = job_test_resv(job_ptr, &when, &usable_node_mask);
+		if (rc != SLURM_SUCCESS) {
+			job_ptr->state_reason = WAIT_RESERVATION;
+			xfree(job_ptr->state_desc);
+			if (rc == ESLURM_INVALID_TIME_VALUE)
+				return ESLURM_RESERVATION_NOT_USABLE;
+			/* Defunct reservation or accesss denied */
+			return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
+		}
+		if ((detail_ptr->req_node_bitmap) &&
+		    (!bit_super_set(detail_ptr->req_node_bitmap, 
+				    usable_node_mask))) {
+			job_ptr->state_reason = WAIT_RESERVATION;
+			xfree(job_ptr->state_desc);
+			FREE_NULL_BITMAP(usable_node_mask);
+			/* Required nodes outside of the reservation */
+			return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
+		}
+	}
 
 	node_set_inx = 0;
 	node_set_ptr = (struct node_set *) 
 			xmalloc(sizeof(struct node_set) * 2);
 	node_set_ptr[node_set_inx+1].my_bitmap = NULL;
 	if (detail_ptr->exc_node_bitmap) {
-		exc_node_mask = bit_copy(detail_ptr->exc_node_bitmap);
-		if (exc_node_mask == NULL)
-			fatal("bit_copy malloc failure");
-		bit_not(exc_node_mask);
+		if (usable_node_mask) {
+			bit_not(detail_ptr->exc_node_bitmap);
+			bit_and(usable_node_mask, detail_ptr->exc_node_bitmap);
+			bit_not(detail_ptr->exc_node_bitmap);
+		} else {
+			usable_node_mask = 
+				bit_copy(detail_ptr->exc_node_bitmap);
+			if (usable_node_mask == NULL)
+				fatal("bit_copy malloc failure");
+			bit_not(usable_node_mask);
+		}
 	}
 
 	config_iterator = list_iterator_create(config_list);
@@ -1257,9 +1287,9 @@ static int _build_node_list(struct job_record *job_ptr,
 			fatal("bit_copy malloc failure");
 		bit_and(node_set_ptr[node_set_inx].my_bitmap,
 			part_ptr->node_bitmap);
-		if (exc_node_mask) {
+		if (usable_node_mask) {
 			bit_and(node_set_ptr[node_set_inx].my_bitmap,
-				exc_node_mask);
+				usable_node_mask);
 		}
 		node_set_ptr[node_set_inx].nodes =
 			bit_set_count(node_set_ptr[node_set_inx].my_bitmap);
@@ -1304,7 +1334,7 @@ static int _build_node_list(struct job_record *job_ptr,
 	xfree(node_set_ptr[node_set_inx].features);
 	FREE_NULL_BITMAP(node_set_ptr[node_set_inx].my_bitmap);
 	FREE_NULL_BITMAP(node_set_ptr[node_set_inx].feature_bits);
-	FREE_NULL_BITMAP(exc_node_mask);
+	FREE_NULL_BITMAP(usable_node_mask);
 
 	if (node_set_inx == 0) {
 		info("No nodes satisfy job %u requirements", 
