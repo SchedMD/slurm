@@ -509,6 +509,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 			xstrcat(out, "\n   ");
 		xstrcat(out, select_buf);
 	}
+#ifdef HAVE_BG
 	/****** Line 20 (optional) ******/
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo,
 				select_buf, sizeof(select_buf),
@@ -561,6 +562,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 			 "RamDiskImage=%s", select_buf);
 		xstrcat(out, tmp_line);
 	}
+#endif
 	xstrcat(out, "\n\n");
 
 	return out;
