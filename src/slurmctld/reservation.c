@@ -116,8 +116,10 @@ static bool _is_resv_used(slurmctld_resv_t *resv_ptr);
 static void _pack_resv(struct slurmctld_resv *resv_ptr, Buf buffer,
 		       bool internal);
 static bool _resv_overlap(time_t start_time, time_t end_time, 
-			  bitstr_t *node_bitmap);
+			  bitstr_t *node_bitmap,
+			  struct slurmctld_resv *this_resv_ptr);
 static void _set_assoc_list(struct slurmctld_resv *resv_ptr);
+static void _set_cpu_cnt(struct slurmctld_resv *resv_ptr);
 static void _set_resv_id(struct slurmctld_resv *resv_ptr);
 static int  _update_account_list(struct slurmctld_resv *resv_ptr, 
 				 char *accounts);
@@ -669,7 +671,8 @@ static void _pack_resv(struct slurmctld_resv *resv_ptr, Buf buffer,
  * RET true if overlap
  */
 static bool _resv_overlap(time_t start_time, time_t end_time, 
-			  bitstr_t *node_bitmap)
+			  bitstr_t *node_bitmap,
+			  struct slurmctld_resv *this_resv_ptr)
 {
 	ListIterator iter;
 	slurmctld_resv_t *resv_ptr;
@@ -681,7 +684,9 @@ static bool _resv_overlap(time_t start_time, time_t end_time,
 	iter = list_iterator_create(resv_list);
 	if (!iter)
 		fatal("malloc: list_iterator_create");
-	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {\
+		if (resv_ptr == this_resv_ptr)
+			continue;	/* skip self */
 		if ((resv_ptr->end_time   <= start_time) ||
 		    (resv_ptr->start_time >= end_time) ||
 		    (resv_ptr->node_bitmap == NULL) ||
@@ -694,6 +699,28 @@ static bool _resv_overlap(time_t start_time, time_t end_time,
 	list_iterator_destroy(iter);
 
 	return rc;
+}
+
+/* Set a reservation's CPU count. Requires that the reservation's
+ *	node_bitmap be set. */
+static void _set_cpu_cnt(struct slurmctld_resv *resv_ptr)
+{
+	int i;
+	uint32_t cpu_cnt = 0;
+	struct node_record *node_ptr = node_record_table_ptr;
+
+	if (!resv_ptr->node_bitmap)
+		return;
+
+	for (i=0; i<node_record_count; i++, node_ptr++) {
+		if (!bit_test(resv_ptr->node_bitmap, i))
+			continue;
+		if (slurmctld_conf.fast_schedule)
+			cpu_cnt += node_ptr->config_ptr->cpus;
+		else
+			cpu_cnt += node_ptr->cpus;
+	}
+	resv_ptr->cpu_cnt = cpu_cnt;
 }
 
 /* Create a resource reservation */
@@ -798,7 +825,8 @@ extern int create_resv(reserve_request_msg_t *resv_desc_ptr)
 		if (resv_desc_ptr->node_cnt == NO_VAL)
 			resv_desc_ptr->node_cnt = 0;
 		if (_resv_overlap(resv_desc_ptr->start_time, 
-				  resv_desc_ptr->end_time, node_bitmap)) {
+				  resv_desc_ptr->end_time, node_bitmap,
+				  NULL)) {
 			info("Reservation requestion overlaps another");
 			rc = ESLURM_INVALID_TIME_VALUE;
 			goto bad_parse;
@@ -834,6 +862,7 @@ extern int create_resv(reserve_request_msg_t *resv_desc_ptr)
 	resv_ptr->user_list	= user_list;
 	resv_desc_ptr->users 	= NULL;		/* Nothing left to free */
 	_set_resv_id(resv_ptr);
+	_set_cpu_cnt(resv_ptr);
 	_set_assoc_list(resv_ptr);
 
 	info("Created reservation %s for accounts=%s users=%s",
@@ -965,7 +994,7 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 		resv_ptr->node_bitmap = node_bitmap;
 	}
 	if (_resv_overlap(resv_ptr->start_time, resv_ptr->end_time, 
-			  resv_ptr->node_bitmap)) {
+			  resv_ptr->node_bitmap, resv_ptr)) {
 		info("Reservation requestion overlaps another");
 		error_code = ESLURM_INVALID_TIME_VALUE;
 		/* Restore state with respect to time and nodes */
@@ -978,6 +1007,7 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 			resv_ptr->node_bitmap = old_node_bitmap;
 		}
 	} else if (old_node_list) {
+		_set_cpu_cnt(resv_ptr);
 		/* Free temporarily saved state */
 		xfree(old_node_list);
 		FREE_NULL_BITMAP(old_node_bitmap);
