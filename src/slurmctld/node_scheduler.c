@@ -69,6 +69,7 @@
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/node_scheduler.h"
+#include "src/slurmctld/reservation.h"
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
 
@@ -427,7 +428,8 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 						bit_copy(feature_bitmap);
 				}
 				if (accumulate_bitmap) {
-					bit_or(accumulate_bitmap, feature_bitmap);
+					bit_or(accumulate_bitmap, 
+					       feature_bitmap);
 					bit_free(feature_bitmap);
 				} else
 					accumulate_bitmap = feature_bitmap;
@@ -727,7 +729,8 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			tried_sched = false;	/* need to test these nodes */
 
 			if (shared && ((i+1) < node_set_size) && 
-			    (node_set_ptr[i].weight == node_set_ptr[i+1].weight)) {
+			    (node_set_ptr[i].weight == 
+			     node_set_ptr[i+1].weight)) {
 				/* Keep accumulating so we can pick the
 				 * most lightly loaded nodes */
 				continue;
@@ -1125,16 +1128,19 @@ extern int job_req_node_filter(struct job_record *job_ptr,
 		node_ptr = node_record_table_ptr + i;
 		config_ptr = node_ptr->config_ptr;
 		feature_bitmap = _valid_features(detail_ptr, config_ptr);
-		if ((feature_bitmap == NULL) || (!bit_test(feature_bitmap, 0))) {
+		if ((feature_bitmap == NULL) || 
+		    (!bit_test(feature_bitmap, 0))) {
 			bit_clear(avail_bitmap, i);
 			continue;
 		}
 		FREE_NULL_BITMAP(feature_bitmap);
 		if (slurmctld_conf.fast_schedule) {
-			if ((detail_ptr->job_min_procs    > config_ptr->cpus       )
+			if ((detail_ptr->job_min_procs    > 
+			     config_ptr->cpus       )
 			||  ((detail_ptr->job_min_memory & (~MEM_PER_CPU)) > 
 			      config_ptr->real_memory) 
-			||  (detail_ptr->job_min_tmp_disk > config_ptr->tmp_disk)) {
+			||  (detail_ptr->job_min_tmp_disk > 
+			     config_ptr->tmp_disk)) {
 				bit_clear(avail_bitmap, i);
 				continue;
 			}
@@ -1144,15 +1150,18 @@ extern int job_req_node_filter(struct job_record *job_ptr,
 			||   (mc_ptr->min_threads     > config_ptr->threads  )
 			||   (mc_ptr->job_min_sockets > config_ptr->sockets  )
 			||   (mc_ptr->job_min_cores   > config_ptr->cores    )
-			||   (mc_ptr->job_min_threads > config_ptr->threads  ))) {
+			||   (mc_ptr->job_min_threads > 
+			      config_ptr->threads  ))) {
 				bit_clear(avail_bitmap, i);
 				continue;
 			}
 		} else {
-			if ((detail_ptr->job_min_procs    > node_ptr->cpus       )
+			if ((detail_ptr->job_min_procs    > 
+			     node_ptr->cpus       )
 			||  ((detail_ptr->job_min_memory & (~MEM_PER_CPU)) >
 			      node_ptr->real_memory) 
-			||  (detail_ptr->job_min_tmp_disk > node_ptr->tmp_disk)) {
+			||  (detail_ptr->job_min_tmp_disk > 
+			     node_ptr->tmp_disk)) {
 				bit_clear(avail_bitmap, i);
 				continue;
 			}
