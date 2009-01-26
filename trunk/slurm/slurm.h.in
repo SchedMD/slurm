@@ -226,6 +226,7 @@ enum job_state_reason {
 	WAIT_ASSOC_JOB_LIMIT,	/* user/bank job limit reached */
 	WAIT_ASSOC_RESOURCE_LIMIT,/* user/bank resource limit reached */
 	WAIT_ASSOC_TIME_LIMIT,  /* user/bank time limit reached */
+	WAIT_RESERVATION,	/* reservation not available */
 	WAIT_TBD1,
 	WAIT_TBD2,
 	FAIL_DOWN_PARTITION,	/* partition for job is DOWN */

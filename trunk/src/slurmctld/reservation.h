@@ -41,6 +41,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <slurm/slurm.h>
+#include "src/common/bitstring.h"
 #include "src/slurmctld/slurmctld.h"
 
 extern time_t last_resv_update;
@@ -72,10 +73,24 @@ extern int dump_all_resv_state(void);
 extern int load_all_resv_state(int recover);
 
 /*
- * Validate a job request with respect to reservations
+ * Determine if a job request can use the specified reservations
  * IN/OUT job_ptr - job to validate, set its resv_id and resv_type
  * RET SLURM_SUCCESS or error code (not found or access denied)
 */
 extern int validate_job_resv(struct job_record *job_ptr);
+
+/*
+ * Determine which nodes a job can use based upon reservations
+ * IN job_ptr      - job to test
+ * IN/OUT when     - when we want the job to start (IN)
+ *                   when the reservation is available (OUT)
+ * OUT node_bitmap - nodes which the job can use, caller must free
+ * RET	SLURM_SUCCESS if runable now
+ *	ESLURM_RESERVATION_ACCESS access to reservation denied
+ *	ESLURM_RESERVATION_INVALID reservation invalid
+ *	ESLURM_INVALID_TIME_VALUE reservation invalid at time "when"
+ */
+extern int job_test_resv(struct job_record *job_ptr, time_t *when,
+			 bitstr_t **node_bitmap);
 
 #endif /* !_RESERVATION_H */
