@@ -1684,6 +1684,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	if ((error_code == ESLURM_NODES_BUSY) ||
 	    (error_code == ESLURM_JOB_HELD) ||
 	    (error_code == ESLURM_ACCOUNTING_POLICY) ||
+	    (error_code == ESLURM_RESERVATION_NOT_USABLE) ||
 	    (error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE)) {
 		/* Not fatal error, but job can't be scheduled right now */
 		if (immediate) {
@@ -4070,6 +4071,17 @@ static bool _top_priority(struct job_record *job_ptr)
 				continue;
 			if (!job_independent(job_ptr2))
 				continue;
+			if ((job_ptr2->resv_name && (!job_ptr->resv_name)) ||
+			    ((!job_ptr2->resv_name) && job_ptr->resv_name))
+				continue;	/* different reservation */
+			if (job_ptr2->resv_name && job_ptr->resv_name &&
+			    (!strcmp(job_ptr2->resv_name, job_ptr->resv_name))) {
+				/* same reservation */
+				if (job_ptr2->priority <= job_ptr->priority)
+					continue;
+				top = false;
+				break;
+			}
 			if (job_ptr2->part_ptr == job_ptr->part_ptr) {
 				/* same partition */
 				if (job_ptr2->priority <= job_ptr->priority)
