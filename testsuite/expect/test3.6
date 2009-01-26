@@ -120,7 +120,7 @@ if {$found == 1} {
 #
 # Create a new partition
 #
-spawn $scontrol update PartitionName=$part_name Hidden=YES
+spawn $scontrol create PartitionName=$part_name Hidden=YES
 expect {
 	-re "slurm_update error: Invalid user" {
 		send_user "\nWARNING: user not authorized to create partition\n"
