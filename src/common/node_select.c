@@ -1728,6 +1728,7 @@ extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 		snprintf(buf, size, "%s", jobinfo->reservation_id);
 		break;	
 	default:
+		/* likely a BlueGene specific mode */
 		error("select_g_sprint_jobinfo: bad mode %d", mode);
 		if (size > 0)
 			buf[0] = '\0';

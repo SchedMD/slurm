@@ -75,8 +75,6 @@
 /* Change RESV_STATE_VERSION value when changing the state save format */
 #define RESV_STATE_VERSION      "VER001"
 
-time_t last_resv_update = (time_t) 0;
-
 typedef struct slurmctld_resv {
 	char *accounts;		/* names of accounts permitted to use	*/
 	int account_cnt;	/* count of accounts permitted to use	*/
@@ -99,6 +97,8 @@ typedef struct slurmctld_resv {
 	int user_cnt;		/* count of users permitted to use	*/
 	uid_t *user_list;	/* array of users permitted to use	*/
 } slurmctld_resv_t;
+
+time_t last_resv_update = (time_t) 0;
 
 List     resv_list = (List) NULL;
 uint32_t top_suffix = 0;
@@ -126,6 +126,8 @@ static int  _update_account_list(struct slurmctld_resv *resv_ptr,
 static int  _update_uid_list(struct slurmctld_resv *resv_ptr, char *users);
 static void _updated_resv(struct slurmctld_resv *resv_ptr);
 static void _validate_all_reservations(void);
+static int  _valid_job_access_resv(struct job_record *job_ptr,
+				   slurmctld_resv_t *resv_ptr);
 static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr);
 
 
@@ -136,6 +138,7 @@ static void _del_resv_rec(void *x)
 
 	if (resv_ptr) {
 		xassert(resv_ptr->magic == RESV_MAGIC);
+		resv_ptr->magic = 0;
 		xfree(resv_ptr->accounts);
 		for (i=0; i<resv_ptr->account_cnt; i++)
 			xfree(resv_ptr->account_list[i]);
@@ -1446,14 +1449,14 @@ extern int load_all_resv_state(int recover)
 }
 
 /*
- * Validate a job request with respect to reservations
+ * Determine if a job request can use the specified reservations
  * IN/OUT job_ptr - job to validate, set its resv_id and resv_type
  * RET SLURM_SUCCESS or error code (not found or access denied)
 */
 extern int validate_job_resv(struct job_record *job_ptr)
 {
 	slurmctld_resv_t *resv_ptr = NULL;
-	int i;
+	int rc;
 
 	xassert(job_ptr);
 
@@ -1475,30 +1478,116 @@ extern int validate_job_resv(struct job_record *job_ptr)
 		return ESLURM_RESERVATION_INVALID;
 	}
 
+	rc = _valid_job_access_resv(job_ptr, resv_ptr);
+	if (rc == SLURM_SUCCESS) {
+		job_ptr->resv_id   = resv_ptr->resv_id;
+		job_ptr->resv_type = resv_ptr->type;
+	}
+	return rc;
+}
+
+/* Determine if a job has access to a reservation
+ * RET SLURM_SUCCESS if true, ESLURM_RESERVATION_ACCESS otherwise */
+static int _valid_job_access_resv(struct job_record *job_ptr,
+				  slurmctld_resv_t *resv_ptr)
+{
+	int i;
+
 	/* Determine if we have access */
 	if (/*association_enforced*/ 0) {
 		/* FIXME: add association checks
 		if (job_ptr->assoc_id in reservation association list)
-			goto allow;
+			return SLURM_SUCCESS;
 		*/
 	} else {
 		for (i=0; i<resv_ptr->user_cnt; i++) {
 			if (job_ptr->user_id == resv_ptr->user_list[i])
-				goto allow;
+				return SLURM_SUCCESS;
 		}
 		for (i=0; (i<resv_ptr->account_cnt) && job_ptr->account; i++) {
 			if (resv_ptr->account_list[i] &&
 			    (strcmp(job_ptr->account, 
 				    resv_ptr->account_list[i]) == 0)) {
-				goto allow;
+				return SLURM_SUCCESS;
 			}
 		}
 	}
-	error("Security violation, uid=%u attempt to use reservation %s",
-	      job_ptr->user_id, resv_ptr->name);
-	return ESLURM_ACCESS_DENIED;
+	info("Security violation, uid=%u attempt to use reservation %s",
+	     job_ptr->user_id, resv_ptr->name);
+	return ESLURM_RESERVATION_ACCESS;
+}
 
- allow:	job_ptr->resv_id   = resv_ptr->resv_id;
-	job_ptr->resv_type = resv_ptr->type;
+/*
+ * Determine which nodes a job can use based upon reservations
+ * IN job_ptr      - job to test
+ * IN/OUT when     - when we want the job to start (IN)
+ *                   when the reservation is available (OUT)
+ * OUT node_bitmap - nodes which the job can use, caller must free unless error
+ * RET	SLURM_SUCCESS if runable now
+ *	ESLURM_RESERVATION_ACCESS access to reservation denied
+ *	ESLURM_RESERVATION_INVALID reservation invalid
+ *	ESLURM_INVALID_TIME_VALUE reservation invalid at time "when"
+ */
+extern int job_test_resv(struct job_record *job_ptr, time_t *when,
+			 bitstr_t **node_bitmap)
+{
+	slurmctld_resv_t * resv_ptr;
+	time_t job_start_time, job_end_time;
+	ListIterator iter;
+
+	*node_bitmap = (bitstr_t *) NULL;
+
+	if (job_ptr->resv_name) {
+		resv_ptr = (slurmctld_resv_t *) list_find_first (resv_list, 
+				_find_resv_name, job_ptr->resv_name);
+		if (!resv_ptr)
+			return ESLURM_RESERVATION_INVALID;
+		if (_valid_job_access_resv(job_ptr, resv_ptr) != SLURM_SUCCESS)
+			return ESLURM_RESERVATION_ACCESS;
+		if (*when < resv_ptr->start_time) {
+			/* reservation starts later */
+			*when = resv_ptr->start_time;
+			return ESLURM_INVALID_TIME_VALUE;
+		}
+		if (*when > resv_ptr->end_time) {
+			/* reservation ended earlier */
+			*when = resv_ptr->end_time;
+			job_ptr->priority = 0;	/* administrative hold */
+			return ESLURM_INVALID_TIME_VALUE;
+		}
+		*node_bitmap = bit_copy(resv_ptr->node_bitmap);
+		return SLURM_SUCCESS;
+	}
+
+	*node_bitmap = bit_copy(avail_node_bitmap);
+	if (list_count(resv_list) == 0)
+		return SLURM_SUCCESS;
+
+	job_start_time = job_end_time = *when;
+	if (job_ptr->time_limit == INFINITE)
+		job_end_time += 365 * 24 * 60 * 60;
+	else if (job_ptr->time_limit != NO_VAL)
+		job_end_time += (job_ptr->time_limit * 60);
+	else {	/* partition time limit */
+		if (job_ptr->part_ptr->max_time == INFINITE)
+			job_end_time += 365 * 24 * 60 * 60;
+		else
+			job_end_time += (job_ptr->part_ptr->max_time * 60);
+	}
+
+	iter = list_iterator_create(resv_list);
+	if (!iter)
+		fatal("malloc: list_iterator_create");
+	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+		if ((resv_ptr->node_bitmap == NULL) ||
+		    (resv_ptr->start_time > job_end_time) ||
+		    (resv_ptr->end_time   < job_start_time))
+			continue;
+		bit_not(resv_ptr->node_bitmap);
+		bit_and(*node_bitmap, resv_ptr->node_bitmap);
+		bit_not(resv_ptr->node_bitmap);
+	}
+	list_iterator_destroy(iter);
+
 	return SLURM_SUCCESS;
 }
