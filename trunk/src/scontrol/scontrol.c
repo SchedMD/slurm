@@ -490,7 +490,7 @@ _process_command (int argc, char *argv[])
 		}
 		scontrol_print_completing();
 	}
-	else if (strncasecmp (argv[0], "create", 1) == 0) {
+	else if (strncasecmp (argv[0], "create", 3) == 0) {
 		if (argc < 2) {
 			exit_code = 1;
 			fprintf (stderr, "too few arguments for %s keyword\n",
