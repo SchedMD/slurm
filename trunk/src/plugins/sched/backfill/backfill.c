@@ -15,7 +15,7 @@
  *  priority job.
  *****************************************************************************
  *  Copyright (C) 2003-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  LLNL-CODE-402394.
@@ -29,7 +29,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -72,6 +72,7 @@
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/node_scheduler.h"
+#include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/srun_comm.h"
 #include "backfill.h"
@@ -224,7 +225,7 @@ static void _attempt_backfill(void)
 	uint32_t min_nodes, max_nodes, req_nodes;
 	uint16_t orig_shared;
 	bitstr_t *avail_bitmap = NULL, *tmp_bitmap;
-	time_t now = time(NULL);
+	time_t now = time(NULL), when;
 	node_space_map_t node_space[MAX_BACKFILL_JOB_CNT + 2];
 
 	if (slurm_get_root_filter())
@@ -302,9 +303,15 @@ static void _attempt_backfill(void)
 		}
 		end_time = (time_limit * 60) + now;
 
-		/* Identify usable nodes for this job */
+		/* Determine impact of any resource reservations */
 		FREE_NULL_BITMAP(avail_bitmap);
-		avail_bitmap = bit_copy(part_ptr->node_bitmap);
+		when = now;
+		j = job_test_resv(job_ptr, &when, &avail_bitmap);
+		if (j != SLURM_SUCCESS)
+			continue;
+
+		/* Identify usable nodes for this job */
+		bit_and(avail_bitmap, part_ptr->node_bitmap);
 		bit_and(avail_bitmap, up_node_bitmap);
 		for (j=0; ; ) {
 			if (node_space[j].begin_time <= end_time) {
