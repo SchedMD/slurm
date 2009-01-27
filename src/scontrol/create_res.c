@@ -104,9 +104,9 @@ scontrol_parse_res_options(int argc, char *argv[], const char *msg,
 		} else if (strncasecmp(argv[i], "StartTime=", 10) == 0) {
 			time_t  t = parse_time(&argv[i][10], 0);
 			if (t == 0) {
-				//TODO:  Set errno here instead of exit_code?
 				exit_code = 1;
-				error("Invalid start time %s.  %s", argv[i], msg);
+				error("Invalid start time %s.  %s", 
+				      argv[i], msg);
 				return -1;
 			}
 			resv_msg_ptr->start_time = t;
@@ -114,7 +114,6 @@ scontrol_parse_res_options(int argc, char *argv[], const char *msg,
 		} else if (strncasecmp(argv[i], "EndTime=", 8) == 0) {
 			time_t  t = parse_time(&argv[i][8], 0);
 			if (t == 0) {
-				//TODO:  Set errno here instead of exit_code?
 				exit_code = 1;
 				error("Invalid end time %s.  %s", argv[i], msg);
 				return -1;
@@ -125,7 +124,6 @@ scontrol_parse_res_options(int argc, char *argv[], const char *msg,
 			/* -1 == INFINITE, -2 == error, -3 == not set */
 			duration = time_str2mins(&argv[i][9]);
 			if (duration < 0 && duration != INFINITE) {
-				//TODO:  Set errno here instead of exit_code?
 				exit_code = 1;
 				error("Invalid duration %s.  %s", argv[i], msg);
 				return -1;
@@ -143,12 +141,14 @@ scontrol_parse_res_options(int argc, char *argv[], const char *msg,
 			}
 		} else if (strncasecmp(argv[i], "NodeCnt=", 8) == 0) {
 			char *endptr = NULL;
-			resv_msg_ptr->node_cnt = strtol(&argv[i][8], &endptr, 10);
+			resv_msg_ptr->node_cnt = strtol(&argv[i][8], &endptr, 
+							10);
 
 			if (endptr == NULL || *endptr != '\0' || 
                             argv[i][8] == '\0') {
 				exit_code = 1;
-				error("Invalid node count %s.  %s", argv[i], msg);
+				error("Invalid node count %s.  %s", 
+				      argv[i], msg);
 				return -1;
 			}
 		} else if (strncasecmp(argv[i], "Nodes=", 6) == 0) {
@@ -157,21 +157,45 @@ scontrol_parse_res_options(int argc, char *argv[], const char *msg,
 			resv_msg_ptr->features = &argv[i][9];
 		} else if (strncasecmp(argv[i], "PartitionName=", 14) == 0) {
 			resv_msg_ptr->partition = &argv[i][14];
+		} else if (strncasecmp(argv[i], "User=", 5) == 0) {
+			resv_msg_ptr->users = &argv[i][5];
+		} else if (strncasecmp(argv[i], "User+=", 6) == 0) {
+			resv_msg_ptr->users = 
+					process_plus_minus('+', &argv[i][6]);
+			*free_user_str = 1;
+		} else if (strncasecmp(argv[i], "Uses-=", 6) == 0) {
+			resv_msg_ptr->users = 
+					process_plus_minus('-',  &argv[i][6]);
+			*free_user_str = 1;
 		} else if (strncasecmp(argv[i], "Users=", 6) == 0) {
 			resv_msg_ptr->users = &argv[i][6];
 		} else if (strncasecmp(argv[i], "Users+=", 7) == 0) {
-			resv_msg_ptr->users = process_plus_minus('+', &argv[i][7]);
+			resv_msg_ptr->users = 
+					process_plus_minus('+', &argv[i][7]);
 			*free_user_str = 1;
 		} else if (strncasecmp(argv[i], "Users-=", 7) == 0) {
-			resv_msg_ptr->users = process_plus_minus('-', &argv[i][7]);
+			resv_msg_ptr->users = 
+					process_plus_minus('-', &argv[i][7]);
 			*free_user_str = 1;
+		} else if (strncasecmp(argv[i], "Account=", 8) == 0) {
+			resv_msg_ptr->accounts = &argv[i][8];
+		} else if (strncasecmp(argv[i], "Account+=", 9) == 0) {
+			resv_msg_ptr->accounts = 
+					process_plus_minus('+', &argv[i][9]);
+			*free_acct_str = 1;
+		} else if (strncasecmp(argv[i], "Account-=", 9) == 0) {
+			resv_msg_ptr->accounts = 
+					process_plus_minus('-', &argv[i][9]);
+			*free_acct_str = 1;
 		} else if (strncasecmp(argv[i], "Accounts=", 9) == 0) {
 			resv_msg_ptr->accounts = &argv[i][9];
 		} else if (strncasecmp(argv[i], "Accounts+=", 10) == 0) {
-			resv_msg_ptr->accounts = process_plus_minus('+', &argv[i][10]);
+			resv_msg_ptr->accounts = 
+					process_plus_minus('+', &argv[i][10]);
 			*free_acct_str = 1;
 		} else if (strncasecmp(argv[i], "Accounts-=", 10) == 0) {
-			resv_msg_ptr->accounts = process_plus_minus('-', &argv[i][10]);
+			resv_msg_ptr->accounts = 
+					process_plus_minus('-', &argv[i][10]);
 			*free_acct_str = 1;
 		} else if (strncasecmp(argv[i], "res", 3) == 0) {
 			continue;
@@ -203,7 +227,8 @@ scontrol_update_res(int argc, char *argv[])
 
 	slurm_init_resv_desc_msg (&resv_msg);
 	err = scontrol_parse_res_options(argc, argv, "No reservation update.",
-					 &resv_msg, &free_user_str, &free_acct_str);
+					 &resv_msg, &free_user_str, 
+					 &free_acct_str);
 	if (err)
 		goto SCONTROL_UPDATE_RES_CLEANUP;
 
@@ -223,8 +248,10 @@ scontrol_update_res(int argc, char *argv[])
 	}
 
 SCONTROL_UPDATE_RES_CLEANUP:
-	if (free_user_str)  free(resv_msg.users);
-	if (free_acct_str)  free(resv_msg.accounts);
+	if (free_user_str)
+		free(resv_msg.users);
+	if (free_acct_str)
+		free(resv_msg.accounts);
 	return ret;
 }
 
@@ -301,6 +328,7 @@ scontrol_create_res(int argc, char *argv[])
 		printf("Reservation created: %s\n", new_res_name);
 		free(new_res_name);
 	}
+
 SCONTROL_CREATE_RES_CLEANUP:
 	if (free_user_str)  
 		free(resv_msg.users);
