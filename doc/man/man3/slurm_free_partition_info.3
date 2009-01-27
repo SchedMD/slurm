@@ -2,7 +2,7 @@
 .SH "NAME"
 slurm_free_partition_info_msg, slurm_load_partitions, 
 slurm_print_partition_info, slurm_print_partition_info_msg
-\- Slurm partitioninformation reporting functions
+\- Slurm partition information reporting functions
 .SH "SYNTAX"
 .LP
 #include <stdio.h>
@@ -27,7 +27,7 @@ int \fBslurm_load_partitions\fR (
 .LP 
 void \fBslurm_print_partition_info\fR (
 .br
-	FILE *\fIout_file\fp,
+	FILE *\fIout_file\fP,
 .br
 	partition_info_t *\fIpartition_ptr\fP,
 .br
@@ -37,7 +37,7 @@ void \fBslurm_print_partition_info\fR (
 .LP 
 void \fBslurm_print_partition_info_msg\fR (
 .br
-	FILE *\fIout_file\fp,
+	FILE *\fIout_file\fP,
 .br
 	partition_info_msg_t *\fIpartition_info_msg_ptr\fP,
 .br
@@ -108,6 +108,8 @@ SLURM controller.
 .LP 
 #include <stdio.h>
 .br
+#include <stdlib.h>
+.br
 #include <slurm/slurm.h>
 .br
 #include <slurm/slurm_errno.h>
@@ -126,7 +128,7 @@ int main (int argc, char *argv[])
 .br
 	if (slurm_load_partitions((time_t)NULL,
 .br
-	                          &part_buffer_ptr, SHOW_ALL)) {
+	                          &part_info_ptr, SHOW_ALL)) {
 .br
 		slurm_perror ("slurm_load_partitions error");
 .br
@@ -138,15 +140,15 @@ int main (int argc, char *argv[])
 .br
 	slurm_print_partition_info_msg (stdout, 
 .br
-	                                part_buffer_ptr);
+	                                part_info_ptr, 0);
 .LP
 	/* A harder way.. */
 .br
-	for (i = 0; i < part_buffer_ptr\->record_count; i++) {
+	for (i = 0; i < part_info_ptr\->record_count; i++) {
 .br
 		part_ptr = &part_info_ptr\->partition_array[i];
 .br
-		slurm_print_partition_info(stdout, part_ptr);
+		slurm_print_partition_info(stdout, part_ptr, 0);
 .br
 	}
 .LP
@@ -154,11 +156,11 @@ int main (int argc, char *argv[])
 .br
 	printf("Partitions updated at %lx, records=%d\\n",
 .br
-	       part_buffer_ptr\->last_update, 
+	       part_info_ptr\->last_update, 
 .br
-	       part_buffer_ptr\->record_count);
+	       part_info_ptr\->record_count);
 .br
-	for (i = 0; i < part_buffer_ptr\->record_count; i++) {
+	for (i = 0; i < part_info_ptr\->record_count; i++) {
 .br
 		printf ("PartitionName=%s Nodes=%s\\n", 
 .br
@@ -168,7 +170,7 @@ int main (int argc, char *argv[])
 .br
 	}
 .LP
-	slurm_free_partition_info_msg (part_buffer_ptr);
+	slurm_free_partition_info_msg (part_info_ptr);
 .br
 	exit (0);
 .br 
