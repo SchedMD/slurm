@@ -348,6 +348,18 @@ scontrol_update_job (int argc, char *argv[])
 			job_msg.partition = &argv[i][10];
 			update_cnt++;
 		}
+		else if (strncasecmp(argv[i], "PartitionName=", 14) == 0) {
+			job_msg.partition = &argv[i][14];
+			update_cnt++;
+		}
+		else if (strncasecmp(argv[i], "Reservation=", 12) == 0) {
+			job_msg.reservation = &argv[i][12];
+			update_cnt++;
+		}
+		else if (strncasecmp(argv[i], "ReservationName=", 16) == 0) {
+			job_msg.reservation = &argv[i][16];
+			update_cnt++;
+		}
 		else if (strncasecmp(argv[i], "Name=", 5) == 0) {
 			job_msg.name = &argv[i][5];
 			update_cnt++;
