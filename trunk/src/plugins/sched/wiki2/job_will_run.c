@@ -16,7 +16,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -39,8 +39,9 @@
 #include "./msg.h"
 #include "src/common/node_select.h"
 #include "src/slurmctld/locks.h"
-#include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/node_scheduler.h"
+#include "src/slurmctld/reservation.h"
+#include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/state_save.h"
 
 #define MAX_JOB_QUEUE 20
@@ -96,7 +97,8 @@ extern int	job_will_run(char *cmd_ptr, int *err_code, char **err_msg)
 		arg_ptr += 6;
 		jobid[job_cnt] = strtoul(arg_ptr, &tmp_char, 10);
 		if (tmp_char[0] == '@')
-			start_time[job_cnt] = strtoul(tmp_char+1, &tmp_char, 10);
+			start_time[job_cnt] = strtoul(tmp_char+1, &tmp_char,
+						      10);
 		else
 			start_time[job_cnt] = 0;
 		if (tmp_char[0] != ',') {
@@ -150,13 +152,14 @@ static char *	_will_run_test(uint32_t *jobid, time_t *start_time,
 {
 	struct job_record *job_ptr;
 	struct part_record *part_ptr;
-	bitstr_t *avail_bitmap = NULL;
+	bitstr_t *avail_bitmap = NULL, *resv_bitmap = NULL;
 	char *hostlist, *reply_msg = NULL;
 	uint32_t min_nodes, max_nodes, req_nodes;
 	int i, rc;
 	select_will_run_t *select_will_run = NULL;
 	List select_list;
 	ListIterator iter;
+	time_t now = time(NULL), when;
 
 	select_list = list_create(_select_list_del);
 	if (select_list == NULL)
@@ -207,6 +210,26 @@ static char *	_will_run_test(uint32_t *jobid, time_t *start_time,
 			      "list for job %u, %s", jobid[i], node_list[i]);
 			break;
 		}
+
+		/* Enforce reservation: access control, time and nodes */
+		if (start_time[i])
+			when = start_time[i];
+		else
+			when = now;
+		rc = job_test_resv(job_ptr, &when, &resv_bitmap);
+		if ((rc == ESLURM_INVALID_TIME_VALUE) && (when > now)) {
+			rc = job_test_resv(job_ptr, &when, &resv_bitmap);
+			start_time[i] = when;
+		}
+		if (rc != SLURM_SUCCESS) {
+			*err_code = -730;
+			*err_msg = "Job denied access to reservation";
+			error("wiki: reservation access denied for job %u", 
+			      jobid[i]);
+			break;
+		}
+		bit_and(avail_bitmap, resv_bitmap);
+		FREE_NULL_BITMAP(resv_bitmap);
 
 		/* Only consider nodes that are not DOWN or DRAINED */
 		bit_and(avail_bitmap, avail_node_bitmap);
