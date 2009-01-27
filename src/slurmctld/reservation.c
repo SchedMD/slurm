@@ -75,29 +75,6 @@
 /* Change RESV_STATE_VERSION value when changing the state save format */
 #define RESV_STATE_VERSION      "VER001"
 
-typedef struct slurmctld_resv {
-	char *accounts;		/* names of accounts permitted to use	*/
-	int account_cnt;	/* count of accounts permitted to use	*/
-	char **account_list;	/* list of accounts permitted to use	*/
-	char *assoc_list;	/* list of associations			*/
-	uint32_t cpu_cnt;	/* number of reserved CPUs		*/
-	time_t end_time;	/* end time of reservation		*/
-	char *features;		/* required node features		*/
-	uint16_t magic;		/* magic cookie, RESV_MAGIC		*/
-	char *name;		/* name of reservation			*/
-	uint32_t node_cnt;	/* count of nodes required		*/
-	char *node_list;	/* list of reserved nodes or ALL	*/
-	bitstr_t *node_bitmap;	/* bitmap of reserved nodes		*/
-	char *partition;	/* name of partition to be used		*/
-	struct part_record *part_ptr;	/* pointer to partition used	*/
-	uint32_t resv_id;	/* unique reservation ID, internal use	*/
-	time_t start_time;	/* start time of reservation		*/
-	uint16_t type;		/* see RESERVE_TYPE_* in slurm.h	*/
-	char *users;		/* names of users permitted to use	*/
-	int user_cnt;		/* count of users permitted to use	*/
-	uid_t *user_list;	/* array of users permitted to use	*/
-} slurmctld_resv_t;
-
 time_t last_resv_update = (time_t) 0;
 
 List     resv_list = (List) NULL;
@@ -1540,6 +1517,7 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 	if (job_ptr->resv_name) {
 		resv_ptr = (slurmctld_resv_t *) list_find_first (resv_list, 
 				_find_resv_name, job_ptr->resv_name);
+		job_ptr->resv_ptr = resv_ptr;
 		if (!resv_ptr)
 			return ESLURM_RESERVATION_INVALID;
 		if (_valid_job_access_resv(job_ptr, resv_ptr) != SLURM_SUCCESS)
@@ -1559,6 +1537,7 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 		return SLURM_SUCCESS;
 	}
 
+	job_ptr->resv_ptr = NULL;	/* should be redundant */
 	*node_bitmap = bit_copy(avail_node_bitmap);
 	if (list_count(resv_list) == 0)
 		return SLURM_SUCCESS;

@@ -4215,6 +4215,9 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			job_ptr->resv_name = job_specs->reservation;
 			rc = validate_job_resv(job_ptr);
 			if (rc == SLURM_SUCCESS) {
+				info("update_job: setting reservation to %s "
+				     "for job_id %u", job_ptr->resv_name, 
+				     job_ptr->job_id);
 				xfree(save_resv_name);
 				job_specs->reservation = NULL;	/* Noth free */
 			} else {
