@@ -3,7 +3,7 @@
  *	Note there is a global job list (job_list)
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  LLNL-CODE-402394.
@@ -323,7 +323,8 @@ extern int schedule(void)
 		if (job_ptr->priority == 0)	/* held */
 			continue;
 
-		if (_failed_partition(job_ptr->part_ptr, failed_parts, 
+		if ((job_ptr->resv_name == NULL) &&
+		    _failed_partition(job_ptr->part_ptr, failed_parts, 
 				      failed_part_cnt)) {
 			job_ptr->state_reason = WAIT_PRIORITY;
 			xfree(job_ptr->state_desc);
@@ -342,7 +343,8 @@ extern int schedule(void)
 			continue;
 		}
 
-		if (assoc_mgr_validate_assoc_id(acct_db_conn, job_ptr->assoc_id,
+		if (assoc_mgr_validate_assoc_id(acct_db_conn, 
+						job_ptr->assoc_id,
 						accounting_enforce)) {
 			/* NOTE: This only happens if a user's account is 
 			 * disabled between when the job was submitted and 
@@ -383,6 +385,18 @@ extern int schedule(void)
 				bit_and(avail_node_bitmap, 
 					job_ptr->part_ptr->node_bitmap);
 				bit_not(job_ptr->part_ptr->node_bitmap);
+			}
+		} else if (error_code == ESLURM_RESERVATION_NOT_USABLE) {
+			if (job_ptr->resv_ptr && job_ptr->resv_ptr->node_bitmap) {
+				bit_not(job_ptr->resv_ptr->node_bitmap);
+				bit_and(avail_node_bitmap, 
+					job_ptr->resv_ptr->node_bitmap);
+				bit_not(job_ptr->resv_ptr->node_bitmap);
+			} else {
+				/* The job has no reservation but requires
+				 * nodes that are currently in some reservation
+				 * so just skip over this job and try running
+				 * the next lower priority job */
 			}
 		} else if (error_code == SLURM_SUCCESS) {	
 			/* job initiated */

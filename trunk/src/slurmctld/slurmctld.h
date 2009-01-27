@@ -302,6 +302,33 @@ extern struct part_record *default_part_loc;	/* default partition ptr */
 extern uint16_t part_max_priority;      /* max priority in all partitions */
 
 /*****************************************************************************\
+ *  RESERVATION parameters and data structures
+\*****************************************************************************/
+
+typedef struct slurmctld_resv {
+	char *accounts;		/* names of accounts permitted to use	*/
+	int account_cnt;	/* count of accounts permitted to use	*/
+	char **account_list;	/* list of accounts permitted to use	*/
+	char *assoc_list;	/* list of associations			*/
+	uint32_t cpu_cnt;	/* number of reserved CPUs		*/
+	time_t end_time;	/* end time of reservation		*/
+	char *features;		/* required node features		*/
+	uint16_t magic;		/* magic cookie, RESV_MAGIC		*/
+	char *name;		/* name of reservation			*/
+	uint32_t node_cnt;	/* count of nodes required		*/
+	char *node_list;	/* list of reserved nodes or ALL	*/
+	bitstr_t *node_bitmap;	/* bitmap of reserved nodes		*/
+	char *partition;	/* name of partition to be used		*/
+	struct part_record *part_ptr;	/* pointer to partition used	*/
+	uint32_t resv_id;	/* unique reservation ID, internal use	*/
+	time_t start_time;	/* start time of reservation		*/
+	uint16_t type;		/* see RESERVE_TYPE_* in slurm.h	*/
+	char *users;		/* names of users permitted to use	*/
+	int user_cnt;		/* count of users permitted to use	*/
+	uid_t *user_list;	/* array of users permitted to use	*/
+} slurmctld_resv_t;
+
+/*****************************************************************************\
  *  JOB parameters and data structures
 \*****************************************************************************/
 extern time_t last_job_update;	/* time of last update to part records */
@@ -457,6 +484,7 @@ struct job_record {
 					 * value before use */
 	uint32_t resv_id;		/* reservation ID */
 	char *resv_name;		/* reservation name */
+	struct slurmctld_resv *resv_ptr;/* reservation structure pointer */
 	uint16_t resv_type;		/* see RESERVE_TYPE_* in slurm.h */
 	uint32_t requid;            	/* requester user ID */
 	char *resp_host;		/* host for srun communications */
