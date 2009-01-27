@@ -163,7 +163,7 @@ scontrol_parse_res_options(int argc, char *argv[], const char *msg,
 			resv_msg_ptr->users = 
 					process_plus_minus('+', &argv[i][6]);
 			*free_user_str = 1;
-		} else if (strncasecmp(argv[i], "Uses-=", 6) == 0) {
+		} else if (strncasecmp(argv[i], "User-=", 6) == 0) {
 			resv_msg_ptr->users = 
 					process_plus_minus('-',  &argv[i][6]);
 			*free_user_str = 1;
