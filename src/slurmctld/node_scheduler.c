@@ -382,7 +382,8 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	    (job_ptr->details->req_node_layout == NULL)) {
 		ListIterator feat_iter;
 		struct feature_record *feat_ptr;
-		feat_iter = list_iterator_create(job_ptr->details->feature_list);
+		feat_iter = list_iterator_create(
+				job_ptr->details->feature_list);
 		while ((feat_ptr = (struct feature_record *)
 				list_next(feat_iter))) {
 			if (feat_ptr->count == 0)
@@ -395,9 +396,11 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 				if (!_match_feature(feat_ptr->name, 
 						    node_set_ptr+i))
 					continue;
-				tmp_node_set_ptr[tmp_node_set_size].cpus_per_node =
+				tmp_node_set_ptr[tmp_node_set_size].
+					cpus_per_node =
 					node_set_ptr[i].cpus_per_node;
-				tmp_node_set_ptr[tmp_node_set_size].real_memory =
+				tmp_node_set_ptr[tmp_node_set_size].
+					real_memory =
 					node_set_ptr[i].real_memory;
 				tmp_node_set_ptr[tmp_node_set_size].nodes =
 					node_set_ptr[i].nodes;
@@ -405,11 +408,13 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 					node_set_ptr[i].weight;
 				tmp_node_set_ptr[tmp_node_set_size].features = 
 					xstrdup(node_set_ptr[i].features);
-				tmp_node_set_ptr[tmp_node_set_size].feature_array =
+				tmp_node_set_ptr[tmp_node_set_size].
+					feature_array =
 					node_set_ptr[i].feature_array;
-				tmp_node_set_ptr[tmp_node_set_size].feature_bits = 
+				tmp_node_set_ptr[tmp_node_set_size].
+					feature_bits = 
 					bit_copy(node_set_ptr[i].feature_bits);
-				tmp_node_set_ptr[tmp_node_set_size].my_bitmap = 
+				tmp_node_set_ptr[tmp_node_set_size].my_bitmap =
 					bit_copy(node_set_ptr[i].my_bitmap);
 				tmp_node_set_size++;
 			}
@@ -433,14 +438,17 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 #endif
 			for (i=0; i<tmp_node_set_size; i++) {
 				xfree(tmp_node_set_ptr[i].features);
-				FREE_NULL_BITMAP(tmp_node_set_ptr[i].feature_bits);
-				FREE_NULL_BITMAP(tmp_node_set_ptr[i].my_bitmap);
+				FREE_NULL_BITMAP(tmp_node_set_ptr[i].
+						 feature_bits);
+				FREE_NULL_BITMAP(tmp_node_set_ptr[i].
+						 my_bitmap);
 			}
 			if (error_code != SLURM_SUCCESS)
 				break;
 			if (feature_bitmap) {
 				if (job_ptr->details->req_node_bitmap) {
-					bit_or(job_ptr->details->req_node_bitmap,
+					bit_or(job_ptr->details->
+					       req_node_bitmap,
 					       feature_bitmap);
 				} else {
 					job_ptr->details->req_node_bitmap =
@@ -667,15 +675,19 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		}
 		if (!sched_gang) {
 			if (shared) {
-				if (!bit_super_set(job_ptr->details->req_node_bitmap, 
+				if (!bit_super_set(job_ptr->details->
+						   req_node_bitmap, 
 						   share_node_bitmap)) {
-					FREE_NULL_BITMAP(partially_idle_node_bitmap);
+					FREE_NULL_BITMAP(
+						partially_idle_node_bitmap);
 					return ESLURM_NODES_BUSY;
 				}
 			} else {
-				if (!bit_super_set(job_ptr->details->req_node_bitmap, 
+				if (!bit_super_set(job_ptr->details->
+						   req_node_bitmap, 
 						   idle_node_bitmap)) {
-					FREE_NULL_BITMAP(partially_idle_node_bitmap);
+					FREE_NULL_BITMAP(
+						partially_idle_node_bitmap);
 					return ESLURM_NODES_BUSY;
 				}
 			}
@@ -709,9 +721,10 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			if (!bit_test(node_set_ptr[i].feature_bits, j))
 				continue;
 
-			if (total_bitmap)
-				bit_or(total_bitmap, node_set_ptr[i].my_bitmap);
-			else {
+			if (total_bitmap) {
+				bit_or(total_bitmap, 
+				       node_set_ptr[i].my_bitmap);
+			} else {
 				total_bitmap = bit_copy(
 						node_set_ptr[i].my_bitmap);
 				if (total_bitmap == NULL)
@@ -742,9 +755,10 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 						idle_node_bitmap);
 				}
 			}
-			if (avail_bitmap)
-				bit_or(avail_bitmap, node_set_ptr[i].my_bitmap);
-			else {
+			if (avail_bitmap) {
+				bit_or(avail_bitmap, 
+				       node_set_ptr[i].my_bitmap);
+			} else {
 				avail_bitmap = bit_copy(
 					node_set_ptr[i].my_bitmap);
 				if (avail_bitmap == NULL)
@@ -849,11 +863,11 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 					fatal("bit_copy malloc failure");
 				bit_and(avail_bitmap, avail_node_bitmap);
 				pick_code = select_g_job_test(job_ptr, 
-							      avail_bitmap, 
-							      min_nodes, 
-							      max_nodes,
-							      req_nodes,
-							      SELECT_MODE_TEST_ONLY);
+						avail_bitmap, 
+						min_nodes, 
+						max_nodes,
+						req_nodes,
+						SELECT_MODE_TEST_ONLY);
 				if (pick_code == SLURM_SUCCESS) {
 					runable_ever  = true;
 					if (bit_set_count(avail_bitmap) <=
@@ -866,11 +880,11 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			}
 			if (!runable_ever) {
 				pick_code = select_g_job_test(job_ptr, 
-							      total_bitmap, 
-							      min_nodes, 
-							      max_nodes,
-							      req_nodes, 
-							      SELECT_MODE_TEST_ONLY);
+						total_bitmap, 
+						min_nodes, 
+						max_nodes,
+						req_nodes, 
+						SELECT_MODE_TEST_ONLY);
 				if (pick_code == SLURM_SUCCESS) {
 					FREE_NULL_BITMAP(possible_bitmap);
 					possible_bitmap = total_bitmap;
