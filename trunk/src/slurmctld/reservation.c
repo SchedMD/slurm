@@ -1538,7 +1538,8 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 	}
 
 	job_ptr->resv_ptr = NULL;	/* should be redundant */
-	*node_bitmap = bit_copy(avail_node_bitmap);
+	*node_bitmap = bit_alloc(node_record_count);
+	bit_nset(*node_bitmap, 0, (node_record_count - 1));
 	if (list_count(resv_list) == 0)
 		return SLURM_SUCCESS;
 
