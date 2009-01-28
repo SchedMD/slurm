@@ -56,7 +56,7 @@ if {[test_aix] == 1} {
 # Build the plugin
 #
 exec $bin_rm -f ${file_prog}.so
-exec $bin_cc -shared -I${slurm_dir}/include -o ${file_prog}.so ${file_prog}.c
+exec $bin_cc -fPIC -shared -I${slurm_dir}/include -o ${file_prog}.so ${file_prog}.c
 
 #
 # Locate slurm.conf's directory, copy the original plugstack.conf file
