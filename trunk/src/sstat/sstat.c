@@ -53,7 +53,7 @@ print_field_t fields[] = {
 	{10, "AveCPU", print_fields_str, PRINT_AVECPU}, 
 	{10, "AvePages", print_fields_str, PRINT_AVEPAGES}, 
 	{10, "AveRSS", print_fields_str, PRINT_AVERSS}, 
-	{10, "AveVMSize", print_fields_str, PRINT_AVEVMSIZE}, 
+	{10, "AveVMSize", print_fields_str, PRINT_AVEVSIZE}, 
 	{10, "JobID", print_fields_str, PRINT_JOBID}, 
 	{8, "MaxPages", print_fields_str, PRINT_MAXPAGES}, 
 	{12, "MaxPagesNode", print_fields_str, PRINT_MAXPAGESNODE}, 
@@ -61,9 +61,9 @@ print_field_t fields[] = {
 	{10, "MaxRSS", print_fields_str, PRINT_MAXRSS},
 	{10, "MaxRSSNode", print_fields_str, PRINT_MAXRSSNODE},
 	{10, "MaxRSSTask", print_fields_int, PRINT_MAXRSSTASK},
-	{8, "MaxVMSize", print_fields_str, PRINT_MAXVMSIZE}, 
-	{12, "MaxVMSizeNode", print_fields_str, PRINT_MAXVMSIZENODE}, 
-	{12, "MaxVMSizeTask", print_fields_int, PRINT_MAXVMSIZETASK}, 
+	{8, "MaxVMSize", print_fields_str, PRINT_MAXVSIZE}, 
+	{12, "MaxVMSizeNode", print_fields_str, PRINT_MAXVSIZENODE}, 
+	{12, "MaxVMSizeTask", print_fields_int, PRINT_MAXVSIZETASK}, 
 	{10, "MinCPU", print_fields_str, PRINT_MINCPU}, 
 	{10, "MinCPUNode", print_fields_str, PRINT_MINCPUNODE}, 
 	{10, "MinCPUTask", print_fields_int, PRINT_MINCPUTASK}, 
@@ -237,6 +237,7 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
+	print_fields_header(print_fields_list);
 	itr = list_iterator_create(params.opt_job_list);
 	while((selected_step = list_next(itr))) {
 		if(selected_step->stepid != NO_VAL)
