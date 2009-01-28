@@ -306,13 +306,15 @@ scontrol_create_res(int argc, char *argv[])
 		      "No reservation created.");
 		goto SCONTROL_CREATE_RES_CLEANUP;
 	}
-	if (resv_msg.node_cnt == NO_VAL && resv_msg.node_list == NULL) {
+	if (resv_msg.node_cnt == NO_VAL && 
+	    (resv_msg.node_list == NULL || resv_msg.node_list[0] == '\0')) {
 		exit_code = 1;
 		error("Either Nodes or NodeCnt must be specified.  "
 		      "No reservation created.");
 		goto SCONTROL_CREATE_RES_CLEANUP;
 	}
-	if (resv_msg.users == NULL && resv_msg.accounts == NULL) {
+	if ((resv_msg.users == NULL    || resv_msg.users[0] == '\0') && 
+	    (resv_msg.accounts == NULL || resv_msg.accounts[0] == '\0')) {
 		exit_code = 1;
 		error("Either Users or Accounts must be specified.  "
 		      "No reservation created.");
