@@ -95,6 +95,9 @@ static void _pack_resv(struct slurmctld_resv *resv_ptr, Buf buffer,
 static bool _resv_overlap(time_t start_time, time_t end_time, 
 			  bitstr_t *node_bitmap,
 			  struct slurmctld_resv *this_resv_ptr);
+static int  _select_nodes(reserve_request_msg_t *resv_desc_ptr, 
+			  struct part_record **part_ptr,
+			  bitstr_t **resv_bitmap);
 static void _set_assoc_list(struct slurmctld_resv *resv_ptr);
 static void _set_cpu_cnt(struct slurmctld_resv *resv_ptr);
 static void _set_resv_id(struct slurmctld_resv *resv_ptr);
@@ -815,6 +818,9 @@ extern int create_resv(reserve_request_msg_t *resv_desc_ptr)
 		info("Reservation request lacks node specification");
 		rc = ESLURM_INVALID_NODE_NAME;
 		goto bad_parse;
+	} else if ((rc = _select_nodes(resv_desc_ptr, &part_ptr, &node_bitmap))
+		   != SLURM_SUCCESS) {
+		goto bad_parse;
 	}
 
 	/* Create a new reservation record */
@@ -1252,7 +1258,7 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 		if (strcmp(resv_ptr->node_list, "ALL") == 0) {
 			node_bitmap = bit_alloc(node_record_count);
 			bit_nset(node_bitmap, 0, (node_record_count - 1));
-		} else if (node_name2bitmap(resv_ptr->node_list, 
+		} else if (node_name2bitmap(resv_ptr->node_list,
 					    false, &node_bitmap)) {
 			error("Reservation %s has invalid nodes (%s)",
 			      resv_ptr->name, resv_ptr->node_list);
@@ -1461,6 +1467,94 @@ extern int validate_job_resv(struct job_record *job_ptr)
 		job_ptr->resv_type = resv_ptr->type;
 	}
 	return rc;
+}
+
+/* Given a reservation create request, select appropriate nodes for use */
+static int  _select_nodes(reserve_request_msg_t *resv_desc_ptr, 
+			  struct part_record **part_ptr,
+			  bitstr_t **resv_bitmap)
+{
+	slurmctld_resv_t *resv_ptr;
+	bitstr_t *node_bitmap, *tmp_bitmap;
+	struct node_record *node_ptr;
+	ListIterator iter;
+	int i, j;
+
+	if (*part_ptr == NULL) {
+		*part_ptr = default_part_loc;
+		if (*part_ptr == NULL)
+			return ESLURM_DEFAULT_PARTITION_NOT_SET;
+		resv_desc_ptr->partition = xstrdup((*part_ptr)->name);
+	}
+
+	/* Start with all nodes in the partition */
+	node_bitmap = bit_copy((*part_ptr)->node_bitmap);
+
+	/* Don't use node already reserved */
+	iter = list_iterator_create(resv_list);
+	if (!iter)
+		fatal("malloc: list_iterator_create");
+	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+		if ((resv_ptr->node_bitmap == NULL) ||
+		    (resv_ptr->start_time >= resv_desc_ptr->end_time) ||
+		    (resv_ptr->end_time   <= resv_desc_ptr->start_time))
+			continue;
+		bit_not(resv_ptr->node_bitmap);
+		bit_and(node_bitmap, resv_ptr->node_bitmap);
+		bit_not(resv_ptr->node_bitmap);
+	}
+	list_iterator_destroy(iter);
+
+	/* Satisfy feature specification */
+	if (resv_desc_ptr->features) {
+		/* FIXME: Just support a single feature name for now */
+		node_ptr = node_record_table_ptr;
+		for (i=0; i<node_record_count; i++, node_ptr++) {
+			if (!bit_test(node_bitmap, i))
+				continue;
+			if (!node_ptr->config_ptr->feature_array) {
+				bit_clear(node_bitmap, i);
+				continue;
+			}
+			for (j=0; node_ptr->config_ptr->feature_array[j]; j++){
+				if (!strcmp(resv_desc_ptr->features,
+					    node_ptr->config_ptr->
+					    feature_array[j]))
+					break;
+			}
+			if (!node_ptr->config_ptr->feature_array[j]) {
+				bit_clear(node_bitmap, i);
+				continue;
+			}
+		}
+	}
+
+	bit_and(node_bitmap, avail_node_bitmap); /* Nodes must be up */
+	*resv_bitmap = NULL;
+	if (bit_set_count(node_bitmap) < resv_desc_ptr->node_cnt)
+		verbose("reservation requests more nodes than available");
+	else if ((i = bit_overlap(node_bitmap, idle_node_bitmap)) >=
+		 resv_desc_ptr->node_cnt) {	/* Reserve idle nodes */
+		bit_and(node_bitmap, idle_node_bitmap);
+		*resv_bitmap = bit_pick_cnt(node_bitmap, 
+					    resv_desc_ptr->node_cnt);
+	} else {		/* Reserve nodes that are idle or in use */
+		*resv_bitmap = bit_copy(node_bitmap);
+		bit_and(*resv_bitmap, idle_node_bitmap);
+		j = resv_desc_ptr->node_cnt - i; /* remaining nodes to pick */
+		bit_not(idle_node_bitmap);
+		bit_and(node_bitmap, idle_node_bitmap);	/* nodes now avail */
+		bit_not(idle_node_bitmap);
+		/* FIXME: Modify to select nodes that become free soonest */
+		tmp_bitmap = bit_pick_cnt(node_bitmap, j);
+		bit_or(*resv_bitmap, tmp_bitmap);
+	}
+
+	bit_free(node_bitmap);
+	if (*resv_bitmap == NULL)
+		return ESLURM_TOO_MANY_REQUESTED_NODES;
+	resv_desc_ptr->node_list = bitmap2node_name(*resv_bitmap);
+	return SLURM_SUCCESS;
 }
 
 /* Determine if a job has access to a reservation
