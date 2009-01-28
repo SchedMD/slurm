@@ -1026,7 +1026,8 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, acct_wckey_rec_t *wckey,
 
 			/* only check for on the slurmdbd */
 			if(!local_cluster_name && found_wckey->cluster
-			   strcasecmp(wckey->cluster, found_wckey->cluster)) {
+			   && strcasecmp(wckey->cluster, 
+					 found_wckey->cluster)) {
 				debug4("not the right cluster");
 				continue;
 			}
