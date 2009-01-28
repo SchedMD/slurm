@@ -62,6 +62,7 @@
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/node_scheduler.h"
+#include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/srun_comm.h"
 
@@ -923,9 +924,10 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 {
 	struct job_record *job_ptr;
 	struct part_record *part_ptr;
-	bitstr_t *avail_bitmap = NULL;
+	bitstr_t *avail_bitmap = NULL, *resv_bitmap = NULL;
 	uint32_t min_nodes, max_nodes, req_nodes;
-	int rc = SLURM_SUCCESS;
+	int i, rc = SLURM_SUCCESS;
+	time_t now = time(NULL), when;
 
 	job_ptr = find_job_record(job_desc_msg->job_id);
 	if (job_ptr == NULL)
@@ -942,21 +944,18 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 	if ((job_desc_msg->req_nodes == NULL) || 
 	    (job_desc_msg->req_nodes == '\0')) {
 		/* assume all nodes available to job for testing */
-		avail_bitmap = bit_copy(avail_node_bitmap);
+		avail_bitmap = bit_alloc(node_record_count);
+		bit_nset(avail_bitmap, 0, (node_record_count - 1));
 	} else if (node_name2bitmap(job_desc_msg->req_nodes, false, 
 				    &avail_bitmap) != 0) {
 		return ESLURM_INVALID_NODE_NAME;
 	}
-
-	/* Only consider nodes that are not DOWN or DRAINED */
-	bit_and(avail_bitmap, avail_node_bitmap);
 
 	/* Consider only nodes in this job's partition */
 	if (part_ptr->node_bitmap)
 		bit_and(avail_bitmap, part_ptr->node_bitmap);
 	else
 		rc = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
-
 	if (job_req_node_filter(job_ptr, avail_bitmap))
 		rc = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 	if (job_ptr->details->exc_node_bitmap) {
@@ -974,6 +973,20 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 			rc = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 		}
 	}
+
+	/* Enforce reservation: access control, time and nodes */
+	if (job_ptr->details->begin_time)
+		when = job_ptr->details->begin_time;
+	else
+		when = now;
+	i = job_test_resv(job_ptr, &when, &resv_bitmap);
+	if (i != SLURM_SUCCESS)
+		return i;
+	bit_and(avail_bitmap, resv_bitmap);
+	FREE_NULL_BITMAP(resv_bitmap);
+
+	/* Only consider nodes that are not DOWN or DRAINED */
+	bit_and(avail_bitmap, avail_node_bitmap);
 
 	if (rc == SLURM_SUCCESS) {
 		min_nodes = MAX(job_ptr->details->min_nodes, 
@@ -1006,7 +1019,7 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 #else
 		resp_data->proc_cnt = job_ptr->total_procs;
 #endif
-		resp_data->start_time = job_ptr->start_time;
+		resp_data->start_time = MAX(job_ptr->start_time, when);
 		job_ptr->start_time   = 0;  /* restore pending job start time */
 		resp_data->node_list  = bitmap2node_name(avail_bitmap);
 		FREE_NULL_BITMAP(avail_bitmap);

@@ -217,10 +217,8 @@ static char *	_will_run_test(uint32_t *jobid, time_t *start_time,
 		else
 			when = now;
 		rc = job_test_resv(job_ptr, &when, &resv_bitmap);
-		if ((rc == ESLURM_INVALID_TIME_VALUE) && (when > now)) {
-			rc = job_test_resv(job_ptr, &when, &resv_bitmap);
+		if (when > now)
 			start_time[i] = when;
-		}
 		if (rc != SLURM_SUCCESS) {
 			*err_code = -730;
 			*err_msg = "Job denied access to reservation";
