@@ -986,7 +986,8 @@ _update_it (int argc, char *argv[])
 		fprintf(stderr, "\"BlockName\", \"SubBPName\" "
 			"(i.e. bgl000[0-3]),");
 #endif
-		fprintf(stderr, "\"PartitionName\", or \"JobId\"\n");
+		fprintf(stderr, "\"PartitionName\", \"ReservationName\", "
+				"or \"JobId\"\n");
 	}
 	else if (error_code) {
 		exit_code = 1;
@@ -1127,7 +1128,8 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
                               job step \n\
      completing               display jobs in completing state along with  \n\
                               their completing or down nodes               \n\
-     delete <SPECIFICATIONS>  delete the specified partition, kill its jobs\n\
+     create <SPECIFICATIONS>  create a new partition or reservation        \n\
+     delete <SPECIFICATIONS>  delete the specified partition or reservation\n\
      exit                     terminate scontrol                           \n\
      help                     print this description of use.               \n\
      hide                     do not display information about hidden      \n\
@@ -1152,18 +1154,19 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      shutdown <OPTS>          shutdown slurm daemons                       \n\
      suspend <job_id>         susend specified job                         \n\
      resume <job_id>          resume previously suspended job              \n\
-     update <SPECIFICATIONS>  update job, node, partition, or bluegene     \n\
-                              block/subbp configuration                    \n\
+     update <SPECIFICATIONS>  update job, node, partition, reservation, or \n\
+                              bluegene block/subbp configuration           \n\
      verbose                  enable detailed logging.                     \n\
      version                  display tool version number.                 \n\
      !!                       Repeat the last command entered.             \n\
                                                                            \n\
   <ENTITY> may be \"config\", \"daemons\", \"job\", \"node\", \"partition\"\n\
-           \"hostlist\", \"hostnames\", \"slurmd\",                        \n\
-           (for BlueGene only: \"block\", \"subbp\" or \"step\").          \n\
+       \"reservation\", \"hostlist\", \"hostnames\", \"slurmd\",           \n\
+       (for BlueGene only: \"block\", \"subbp\" or \"step\").              \n\
                                                                            \n\
   <ID> may be a configuration parameter name, job id, node name, partition \n\
-       name, job step id, or hostlist or pathname to a list of host names. \n\
+       name, reservation name, job step id, or hostlist or pathname to a   \n\
+       list of host names.                                                 \n\
                                                                            \n\
   <HOSTLIST> may either be a comma separated list of host names or the     \n\
        absolute pathname of a file (with leading '/' containing host names \n\
@@ -1177,7 +1180,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
        otherwise all slurm daemons are shutdown                            \n\
                                                                            \n\
   Node names may be specified using simple range expressions,              \n\
-  (e.g. \"lx[10-20]\" corresponsds to lx10, lx11, lx12, ...)               \n\
+  (e.g. \"lx[10-20]\" corresponds to lx10, lx11, lx12, ...)                \n\
   The job step id is the job id followed by a period and the step id.      \n\
                                                                            \n\
   <SPECIFICATIONS> are specified in the same format as the configuration   \n\
