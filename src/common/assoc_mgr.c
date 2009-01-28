@@ -1017,11 +1017,16 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, acct_wckey_rec_t *wckey,
 				       wckey->name, found_wckey->name);
 				continue;
 			}
-			
+
+			if(!wckey->cluster) {
+				error("no cluster name was given, "
+				      "we need one to get a wckey");
+				continue;
+			}
+
 			/* only check for on the slurmdbd */
 			if(!local_cluster_name && found_wckey->cluster
-			   && strcasecmp(wckey->cluster,
-					 found_wckey->cluster)) {
+			   strcasecmp(wckey->cluster, found_wckey->cluster)) {
 				debug4("not the right cluster");
 				continue;
 			}
