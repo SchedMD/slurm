@@ -92,6 +92,7 @@ static bool _is_account_valid(char *account);
 static bool _is_resv_used(slurmctld_resv_t *resv_ptr);
 static void _pack_resv(struct slurmctld_resv *resv_ptr, Buf buffer,
 		       bool internal);
+static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt);
 static bool _resv_overlap(time_t start_time, time_t end_time, 
 			  bitstr_t *node_bitmap,
 			  struct slurmctld_resv *this_resv_ptr);
@@ -150,7 +151,7 @@ static int _find_resv_name(void *x, void *key)
 
 static void _dump_resv_req(reserve_request_msg_t *resv_ptr, char *mode)
 {
-#ifdef _RESV_DEBUG
+#if _RESV_DEBUG
 	char start_str[32] = "", end_str[32] = "", *type_str;
 	int duration;
 
@@ -814,6 +815,7 @@ extern int create_resv(reserve_request_msg_t *resv_desc_ptr)
 			rc = ESLURM_INVALID_TIME_VALUE;
 			goto bad_parse;
 		}
+		resv_desc_ptr->node_cnt = bit_set_count(node_bitmap);
 	} else if (resv_desc_ptr->node_cnt == NO_VAL) {
 		info("Reservation request lacks node specification");
 		rc = ESLURM_INVALID_NODE_NAME;
@@ -877,7 +879,7 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 	bitstr_t *old_node_bitmap = (bitstr_t *) NULL;
 	char *old_node_list = NULL;
 	slurmctld_resv_t *resv_ptr;
-	int error_code = SLURM_SUCCESS;
+	int error_code = SLURM_SUCCESS, rc;
 
 	if (!resv_list)
 		resv_list = list_create(_del_resv_rec);
@@ -913,10 +915,15 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 		resv_desc_ptr->partition = NULL; /* Nothing left to free */
 		resv_ptr->part_ptr	= part_ptr;
 	}
-	if (resv_desc_ptr->node_cnt != NO_VAL)
-		resv_ptr->node_cnt = resv_desc_ptr->node_cnt;
+	if ((resv_desc_ptr->node_cnt != NO_VAL) &&
+	    (resv_desc_ptr->node_list == NULL)) {
+		rc = _resize_resv(resv_ptr, resv_desc_ptr->node_cnt);
+		if (rc) {
+			error_code = rc;
+			goto fini;
+		}
+	}
 	if (resv_desc_ptr->accounts) {
-		int rc;
 		rc = _update_account_list(resv_ptr, resv_desc_ptr->accounts);
 		if (rc) {
 			error_code = rc;
@@ -929,7 +936,6 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 		resv_desc_ptr->features = NULL;	/* Nothing left to free */
 	}
 	if (resv_desc_ptr->users) {
-		int rc;
 		rc = _update_uid_list(resv_ptr, 
 				      resv_desc_ptr->users);
 		if (rc) {
@@ -992,7 +998,8 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 			FREE_NULL_BITMAP(resv_ptr->node_bitmap);
 			resv_ptr->node_bitmap = old_node_bitmap;
 		}
-	} else if (old_node_list) {
+	} else if (old_node_list) {	/* Clean up from changed nodes */
+		resv_ptr->node_cnt = bit_set_count(resv_ptr->node_bitmap);
 		_set_cpu_cnt(resv_ptr);
 		/* Free temporarily saved state */
 		xfree(old_node_list);
@@ -1467,6 +1474,58 @@ extern int validate_job_resv(struct job_record *job_ptr)
 		job_ptr->resv_type = resv_ptr->type;
 	}
 	return rc;
+}
+
+static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
+{
+	bitstr_t *orig_bitmap, *tmp1_bitmap, *tmp2_bitmap;
+	int delta_node_cnt, i;
+
+	delta_node_cnt = resv_ptr->node_cnt - node_cnt;
+	if (delta_node_cnt == 0)	/* Already correct node count */
+		return SLURM_SUCCESS;
+
+	orig_bitmap = bit_copy(resv_ptr->node_bitmap);
+	if (delta_node_cnt > 0) {	/* Must decrease node count */
+		if (bit_overlap(orig_bitmap, idle_node_bitmap)) {
+			/* Start by eliminating idle nodes from reservation */
+			tmp1_bitmap = bit_copy(orig_bitmap);
+			bit_and(tmp1_bitmap, idle_node_bitmap);
+			i = bit_set_count(tmp1_bitmap);
+			if (i > delta_node_cnt) {
+				tmp2_bitmap = bit_pick_cnt(tmp1_bitmap, 
+							   delta_node_cnt);
+				bit_not(tmp2_bitmap);
+				bit_and(resv_ptr->node_bitmap, tmp2_bitmap);
+				bit_free(tmp1_bitmap);
+				bit_free(tmp2_bitmap);
+				delta_node_cnt = 0;	/* ALL DONE */
+			} else if (i) {
+				bit_not(idle_node_bitmap);
+				bit_and(resv_ptr->node_bitmap, 
+					idle_node_bitmap);
+				bit_not(idle_node_bitmap);
+				resv_ptr->node_cnt = bit_set_count(
+						resv_ptr->node_bitmap);
+				delta_node_cnt = resv_ptr->node_cnt - 
+						 node_cnt;
+			}
+		}
+		if (delta_node_cnt > 0) {
+			/* Now eliminate allocated nodes from reservation */
+			tmp1_bitmap = bit_pick_cnt(resv_ptr->node_bitmap,
+						   node_cnt);
+			bit_free(resv_ptr->node_bitmap);
+			resv_ptr->node_bitmap = tmp1_bitmap;
+		}
+		resv_ptr->node_list = bitmap2node_name(resv_ptr->node_bitmap);
+		resv_ptr->node_cnt = node_cnt;
+		return SLURM_SUCCESS;
+	}
+
+	/* Must increase node count, make this look like new request to 
+	 * use _select_nodes() for selecting the nodes */
+	return ESLURM_NOT_SUPPORTED;
 }
 
 /* Given a reservation create request, select appropriate nodes for use */
