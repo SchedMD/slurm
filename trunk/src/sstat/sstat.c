@@ -73,6 +73,7 @@ print_field_t fields[] = {
 	{0, NULL, NULL, 0}};
 
 List jobs = NULL;
+jobacct_job_rec_t job;
 jobacct_step_rec_t step;
 List print_fields_list = NULL;
 ListIterator print_fields_itr = NULL;
@@ -94,11 +95,17 @@ int _sstat_query(slurm_step_layout_t *step_layout, uint32_t job_id,
 	debug("getting the stat of job %d on %d nodes", 
 	      job_id, step_layout->node_cnt);
 
+	memset(&job, 0, sizeof(jobacct_job_rec_t));
+	job.jobid = job_id;
+
+	memset(&step, 0, sizeof(jobacct_step_rec_t));
+	
 	memset(&temp_sacct, 0, sizeof(sacct_t));
 	temp_sacct.min_cpu = (float)NO_VAL;
 	memset(&step.sacct, 0, sizeof(sacct_t));
 	step.sacct.min_cpu = (float)NO_VAL;
 
+	step.job_ptr = &job;
 	step.stepid = step_id;
 	step.nodes = step_layout->node_list;
 	step.stepname = NULL;
