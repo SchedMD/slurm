@@ -1510,7 +1510,9 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 {
 	slurmctld_resv_t * resv_ptr;
 	time_t job_start_time, job_end_time;
+	uint32_t duration;
 	ListIterator iter;
+	int i, rc = SLURM_SUCCESS;
 
 	*node_bitmap = (bitstr_t *) NULL;
 
@@ -1531,7 +1533,7 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 			/* reservation ended earlier */
 			*when = resv_ptr->end_time;
 			job_ptr->priority = 0;	/* administrative hold */
-			return ESLURM_INVALID_TIME_VALUE;
+			return ESLURM_RESERVATION_INVALID;
 		}
 		*node_bitmap = bit_copy(resv_ptr->node_bitmap);
 		return SLURM_SUCCESS;
@@ -1543,31 +1545,54 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 	if (list_count(resv_list) == 0)
 		return SLURM_SUCCESS;
 
-	job_start_time = job_end_time = *when;
+	/* Job has no reservation, try to find time when this can
+	 * run and get it's required nodes (if any) */
 	if (job_ptr->time_limit == INFINITE)
-		job_end_time += 365 * 24 * 60 * 60;
+		duration = 365 * 24 * 60 * 60;
 	else if (job_ptr->time_limit != NO_VAL)
-		job_end_time += (job_ptr->time_limit * 60);
+		duration = (job_ptr->time_limit * 60);
 	else {	/* partition time limit */
 		if (job_ptr->part_ptr->max_time == INFINITE)
-			job_end_time += 365 * 24 * 60 * 60;
+			duration = 365 * 24 * 60 * 60;
 		else
-			job_end_time += (job_ptr->part_ptr->max_time * 60);
+			duration = (job_ptr->part_ptr->max_time * 60);
 	}
+	for (i=0; ; i++) {
+		job_start_time = job_end_time = *when;
+		job_end_time += duration;
 
-	iter = list_iterator_create(resv_list);
-	if (!iter)
-		fatal("malloc: list_iterator_create");
-	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
-		if ((resv_ptr->node_bitmap == NULL) ||
-		    (resv_ptr->start_time > job_end_time) ||
-		    (resv_ptr->end_time   < job_start_time))
+		iter = list_iterator_create(resv_list);
+		if (!iter)
+			fatal("malloc: list_iterator_create");
+		while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+			if ((resv_ptr->node_bitmap == NULL) ||
+			    (resv_ptr->start_time >= job_end_time) ||
+			    (resv_ptr->end_time   <= job_start_time))
+				continue;
+			if (job_ptr->details->req_node_bitmap &&
+			    bit_overlap(job_ptr->details->req_node_bitmap,
+					resv_ptr->node_bitmap)) {
+				*when = resv_ptr->end_time;
+				rc = ESLURM_INVALID_TIME_VALUE;
+				break;
+			}
+			bit_not(resv_ptr->node_bitmap);
+			bit_and(*node_bitmap, resv_ptr->node_bitmap);
+			bit_not(resv_ptr->node_bitmap);
+		}
+		list_iterator_destroy(iter);
+
+		if (rc == SLURM_SUCCESS)
+			break;
+
+		if (i<10) {	/* Retry for later start time */
+			bit_nset(*node_bitmap, 0, (node_record_count - 1));
+			rc = SLURM_SUCCESS;
 			continue;
-		bit_not(resv_ptr->node_bitmap);
-		bit_and(*node_bitmap, resv_ptr->node_bitmap);
-		bit_not(resv_ptr->node_bitmap);
+		}
+		FREE_NULL_BITMAP(*node_bitmap);
+		break;	/* Give up */
 	}
-	list_iterator_destroy(iter);
 
-	return SLURM_SUCCESS;
+	return rc;
 }
