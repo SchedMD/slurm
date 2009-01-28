@@ -960,7 +960,7 @@ void parse_command_line(int argc, char **argv)
 		list_append(print_fields_list, &fields[i]);
 		start = end + 1;
 	}
-	
+	field_count = list_count(print_fields_list);
 endopt:
 	if (optind < argc) {
 		debug2("Error: Unknown arguments:");
