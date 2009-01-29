@@ -247,6 +247,9 @@ User name for a job or job step.
 \fB%U\fR 
 User ID for a job or job step.
 .TP
+\fB%v\fR 
+Reservation for the job.
+.TP
 \fB%x\fR 
 List of node names explicitly excluded by the job.
 .TP
@@ -282,7 +285,7 @@ This uses the same field specifciation as the <output_format>.
 Multiple sorts may be performed by listing multiple sort fields 
 separated by commas.
 The field specifications may be preceeded by "+" or "\-" for 
-assending (default) and desending order respectively. 
+ascending (default) and descending order respectively. 
 For example, a sort value of "P,U" will sort the
 records by partition name then by user id. 
 The default value of sort for jobs is "P,t,\-p" (increasing partition 

@@ -1067,6 +1067,18 @@ int _print_job_select_jobinfo(job_info_t * job, int width, bool right_justify,
 	return SLURM_SUCCESS;
 }
 
+int _print_job_reservation(job_info_t * job, int width, bool right_justify,
+			char* suffix)
+{
+	if (job == NULL)	 /* Print the Header instead */
+		_print_str("RESERVATION", width, right_justify, true);
+	else
+		_print_str(job->resv_name, width, right_justify, true);
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
 /*****************************************************************************
  * Job Step Print Functions
  *****************************************************************************/
