@@ -22688,6 +22688,7 @@ cat >>confdefs.h <<\_ACEOF
 #define HAVE_NUMA 1
 _ACEOF
 
+    CFLAGS="-DNUMA_VERSION1_COMPATIBILITY $CFLAGS"
   else
     { echo "$as_me:$LINENO: WARNING: Unable to locate NUMA memory affinity functions" >&5
 echo "$as_me: WARNING: Unable to locate NUMA memory affinity functions" >&2;}
