@@ -40,6 +40,7 @@ AC_DEFUN([X_AC_AFFINITY], [
   AM_CONDITIONAL(HAVE_NUMA, test "x$ac_have_numa" = "xyes")
   if test "x$ac_have_numa" = "xyes"; then
     AC_DEFINE(HAVE_NUMA, 1, [define if numa library installed])
+    CFLAGS="-DNUMA_VERSION1_COMPATIBILITY $CFLAGS"
   else
     AC_MSG_WARN([Unable to locate NUMA memory affinity functions])
   fi
