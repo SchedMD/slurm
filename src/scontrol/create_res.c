@@ -130,15 +130,25 @@ scontrol_parse_res_options(int argc, char *argv[], const char *msg,
 			}
 			resv_msg_ptr->duration = (uint32_t)duration;
 
-		} else if (strncasecmp(argv[i], "Type=", 5) == 0) {
+		} else if (strncasecmp(argv[i], "Flag=", 5) == 0) {
 			char *typestr = &argv[i][5];
 			if (strncasecmp(typestr, "Maintenance", 5) == 0) {
-				resv_msg_ptr->type = RESERVE_TYPE_MAINT;
+				resv_msg_ptr->flags = RESERVE_FLAG_MAINT;
 			} else {
 				exit_code = 1;
-				error("Invalid type %s.  %s", argv[i], msg);
+				error("Invalid flag %s.  %s", argv[i], msg);
 				return -1;
 			}
+		} else if (strncasecmp(argv[i], "Flags=", 6) == 0) {
+			char *typestr = &argv[i][6];
+			if (strncasecmp(typestr, "Maintenance", 5) == 0) {
+				resv_msg_ptr->flags = RESERVE_FLAG_MAINT;
+			} else {
+				exit_code = 1;
+				error("Invalid flag %s.  %s", argv[i], msg);
+				return -1;
+			}
+
 		} else if (strncasecmp(argv[i], "NodeCnt=", 8) == 0) {
 			char *endptr = NULL;
 			resv_msg_ptr->node_cnt = strtol(&argv[i][8], &endptr, 

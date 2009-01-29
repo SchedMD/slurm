@@ -323,7 +323,7 @@ typedef struct slurmctld_resv {
 	struct part_record *part_ptr;	/* pointer to partition used	*/
 	uint32_t resv_id;	/* unique reservation ID, internal use	*/
 	time_t start_time;	/* start time of reservation		*/
-	uint16_t type;		/* see RESERVE_TYPE_* in slurm.h	*/
+	uint16_t flags;		/* see RESERVE_FLAG_* in slurm.h	*/
 	char *users;		/* names of users permitted to use	*/
 	int user_cnt;		/* count of users permitted to use	*/
 	uid_t *user_list;	/* array of users permitted to use	*/
@@ -486,7 +486,7 @@ struct job_record {
 	uint32_t resv_id;		/* reservation ID */
 	char *resv_name;		/* reservation name */
 	struct slurmctld_resv *resv_ptr;/* reservation structure pointer */
-	uint16_t resv_type;		/* see RESERVE_TYPE_* in slurm.h */
+	uint16_t resv_flags;		/* see RESERVE_FLAG_* in slurm.h */
 	uint32_t requid;            	/* requester user ID */
 	char *resp_host;		/* host for srun communications */
 	select_jobinfo_t select_jobinfo;/* opaque data, BlueGene */

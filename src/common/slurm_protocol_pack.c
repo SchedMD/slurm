@@ -1807,7 +1807,7 @@ _pack_update_resv_msg(reserve_request_msg_t * msg, Buf buffer)
 	pack_time(msg->start_time, buffer);
 	pack_time(msg->end_time,   buffer);
 	pack32(msg->duration,      buffer);
-	pack16(msg->type,          buffer);
+	pack16(msg->flags,         buffer);
 	pack32(msg->node_cnt,      buffer);
 	packstr(msg->node_list,    buffer);
 	packstr(msg->features,     buffer);
@@ -1833,7 +1833,7 @@ _unpack_update_resv_msg(reserve_request_msg_t ** msg, Buf buffer)
 	safe_unpack_time(&tmp_ptr->start_time, buffer);
 	safe_unpack_time(&tmp_ptr->end_time,   buffer);
 	safe_unpack32(&tmp_ptr->duration,      buffer);
-	safe_unpack16(&tmp_ptr->type,          buffer);
+	safe_unpack16(&tmp_ptr->flags,         buffer);
 	safe_unpack32(&tmp_ptr->node_cnt,      buffer);
 	safe_unpackstr_xmalloc(&tmp_ptr->node_list, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&tmp_ptr->features,  &uint32_tmp, buffer);
@@ -2283,7 +2283,7 @@ _unpack_reserve_info_members(reserve_info_t * resv, Buf buffer)
 	safe_unpackstr_xmalloc(&resv->node_list,&uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&resv->partition,&uint32_tmp, buffer);
 	safe_unpack_time(&resv->start_time,	buffer);
-	safe_unpack16(&resv->type,		buffer);
+	safe_unpack16(&resv->flags,		buffer);
 	safe_unpackstr_xmalloc(&resv->users,	&uint32_tmp, buffer);
 	return SLURM_SUCCESS;
 
