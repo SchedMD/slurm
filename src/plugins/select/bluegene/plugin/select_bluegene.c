@@ -107,7 +107,7 @@ extern int init ( void )
 	fatal("SYSTEM_DIMENSIONS value (%d) invalid for Blue Gene",
 		SYSTEM_DIMENSIONS);
 #endif
-#ifdef HAVE_BG_FILES
+#ifdef HAVE_BGL
 	if (!getenv("CLASSPATH") || !getenv("DB2INSTANCE") 
 	||  !getenv("VWSPATH"))
 		fatal("db2profile has not been run to setup DB2 environment");
@@ -117,12 +117,9 @@ extern int init ( void )
 	||  (SELECT_NAV   != RM_NAV))
 		fatal("enum conn_type out of sync with rm_api.h");
 
-#ifdef HAVE_BGL
 	if ((SELECT_COPROCESSOR_MODE  != RM_PARTITION_COPROCESSOR_MODE)
 	||  (SELECT_VIRTUAL_NODE_MODE != RM_PARTITION_VIRTUAL_NODE_MODE))
 		fatal("enum node_use_type out of sync with rm_api.h");
-#endif
-	
 #endif
 
 	verbose("%s loading...", plugin_name);

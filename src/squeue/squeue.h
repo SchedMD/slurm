@@ -86,6 +86,7 @@ struct squeue_parameters {
 	char* jobs;
 	hostset_t nodes;
 	char* partitions;
+	char* accounts;
 	char* states;
 	char* steps;
 	char* users;
@@ -94,6 +95,7 @@ struct squeue_parameters {
 
 	List  job_list;
 	List  part_list;
+	List  account_list;
 	List  state_list;
 	List  step_list;
 	List  user_list;
