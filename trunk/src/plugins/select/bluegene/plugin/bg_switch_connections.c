@@ -667,7 +667,7 @@ extern int configure_small_block(bg_record_t *bg_record)
 		if(!nc_char) {
 			error("No NodeCard ID was returned from database");
 			rc = SLURM_ERROR;
-			goto cleanup
+			goto cleanup;
 		}
 
 		nc_id = atoi((char*)nc_char+1);
