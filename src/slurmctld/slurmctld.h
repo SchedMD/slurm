@@ -661,14 +661,6 @@ extern struct node_record *create_node_record (struct config_record
 extern struct part_record *create_part_record (void);
 
 /* 
- * create_step_record - create an empty step_record for the specified job.
- * IN job_ptr - pointer to job table entry to have step record added
- * RET a pointer to the record or NULL if error
- * NOTE: allocates memory that should be xfreed with delete_step_record
- */
-extern struct step_record * create_step_record (struct job_record *job_ptr);
-
-/* 
  * delete_step_records - delete step record for specified job_ptr
  * IN job_ptr - pointer to job table entry to have step records removed
  * IN filter  - determine which job steps to delete

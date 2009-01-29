@@ -2,7 +2,7 @@
  *  step_mgr.c - manage the job step information of slurm
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>, et. al.
  *  LLNL-CODE-402394.
@@ -71,6 +71,7 @@
 #define MAX_RETRIES 10
 
 static int  _count_cpus(bitstr_t *bitmap);
+static struct step_record * _create_step_record (struct job_record *job_ptr);
 static void _free_step_rec(struct step_record *step_ptr);
 static void _pack_ctld_job_step_info(struct step_record *step, Buf buffer);
 static bitstr_t * _pick_step_nodes (struct job_record  *job_ptr, 
@@ -85,27 +86,32 @@ static void _step_dealloc_lps(struct step_record *step_ptr);
 
 
 /* 
- * create_step_record - create an empty step_record for the specified job.
+ * _create_step_record - create an empty step_record for the specified job.
  * IN job_ptr - pointer to job table entry to have step record added
  * RET a pointer to the record or NULL if error
  * NOTE: allocates memory that should be xfreed with delete_step_record
  */
-struct step_record * 
-create_step_record (struct job_record *job_ptr) 
+static struct step_record * _create_step_record(struct job_record *job_ptr)
 {
 	struct step_record *step_ptr;
 
 	xassert(job_ptr);
+	if (job_ptr->next_step_id >= 0xffff) {
+		/* avoid step records in the accounting database */
+		info("job %u has reached step id limit", job_ptr->job_id);
+		return NULL;
+	}
+
 	step_ptr = (struct step_record *) xmalloc(sizeof (struct step_record));
 
 	last_job_update = time(NULL);
-	step_ptr->job_ptr = job_ptr; 
+	step_ptr->job_ptr = job_ptr;
 	step_ptr->step_id = (job_ptr->next_step_id)++;
 	step_ptr->start_time = time(NULL) ;
 	step_ptr->jobacct = jobacct_gather_g_create(NULL);
 	step_ptr->ckpt_path = NULL;
 	if (list_append (job_ptr->step_list, step_ptr) == NULL)
-		fatal ("create_step_record: unable to allocate memory");
+		fatal ("_create_step_record: unable to allocate memory");
 
 	return step_ptr;
 }
@@ -1203,9 +1209,11 @@ step_create(job_step_create_request_msg_t *step_specs,
 		return ESLURM_BAD_TASK_COUNT;
 	}
 
-	step_ptr = create_step_record (job_ptr);
-	if (step_ptr == NULL)
-		fatal ("create_step_record failed with no memory");
+	step_ptr = _create_step_record (job_ptr);
+	if (step_ptr == NULL) {
+		bit_free(nodeset);
+		return ESLURMD_TOOMANYSTEPS;
+	}
 
 	/* set the step_record values */
 
@@ -2167,7 +2175,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 
 	step_ptr = find_step_record(job_ptr, step_id);
 	if (step_ptr == NULL)
-		step_ptr = create_step_record(job_ptr);
+		step_ptr = _create_step_record(job_ptr);
 	if (step_ptr == NULL)
 		goto unpack_error;
 
