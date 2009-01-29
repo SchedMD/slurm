@@ -371,7 +371,8 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	bzero(conf_ptr, sizeof(slurm_ctl_conf_t));
 
 	conf_ptr->last_update         = time(NULL);
-	conf_ptr->accounting_storage_enforce = conf->accounting_storage_enforce;
+	conf_ptr->accounting_storage_enforce = 
+					conf->accounting_storage_enforce;
 	conf_ptr->accounting_storage_host =
 					xstrdup(conf->accounting_storage_host);
 	conf_ptr->accounting_storage_loc =
