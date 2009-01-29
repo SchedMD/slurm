@@ -1108,6 +1108,8 @@ typedef struct slurm_ctl_conf {
         char *propagate_rlimits_except;/* Propagate all rlimits except these */
 	uint16_t resume_rate;	/* nodes to make full power, per minute */
 	char *resume_program;	/* program to make nodes full power */
+	uint16_t resv_over_run;	/* how long a running job can exceed 
+				 * reservation time */
 	uint16_t ret2service;	/* 1 return DOWN node to service at 
 				 * registration */
 	char *salloc_default_command; /* default salloc command */

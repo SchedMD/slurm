@@ -642,7 +642,7 @@ This is particularly useful for backfill scheduling, which bases upon
 each job's soft time limit.
 The default value is zero.
 Man not exceed exceed 65533 minutes.
-A value of "UNLIMITED", which is represented internally as \-1.
+A value of "UNLIMITED" is also supported.
 
 .TP
 \fBPluginDir\fR
@@ -875,6 +875,17 @@ The default value is 300 nodes per minute.
 Related configuration options include \fBResumeProgram\fR, \fBSuspendRate\fR,
 \fBSuspendTime\fR, \fBSuspendProgram\fR, \fBSuspendExcNodes\fR, and
 \fBSuspendExcParts\fR.
+
+.TP
+\fBResvOverRun\fR
+Describes how long a job already running in a reservation should be 
+permitted to execute after the end time of the reservation has been 
+reached. 
+The time period is specified in minutes and the default value is 0
+(kill the job immediately).
+The value may not exceed 65533 minutes, although a value of "UNLIMITED"
+is supported to permit a job to run indefinitely after its reservation
+is terminated.
 
 .TP
 \fBReturnToService\fR

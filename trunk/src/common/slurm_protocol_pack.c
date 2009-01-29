@@ -2,7 +2,7 @@
  *  slurm_protocol_pack.c - functions to pack and unpack structures for RPCs
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov>, et. al.
  *  LLNL-CODE-402394.
@@ -2628,6 +2628,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 
 	packstr(build_ptr->resume_program, buffer);
 	pack16(build_ptr->resume_rate, buffer);
+	pack16(build_ptr->resv_over_run, buffer);
 	pack16(build_ptr->ret2service, buffer);
 
 	packstr(build_ptr->salloc_default_command, buffer);
@@ -2812,6 +2813,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpackstr_xmalloc(&build_ptr->resume_program,
 			       &uint32_tmp, buffer);
 	safe_unpack16(&build_ptr->resume_rate, buffer);
+	safe_unpack16(&build_ptr->resv_over_run, buffer);
 	safe_unpack16(&build_ptr->ret2service, buffer);
 
 	safe_unpackstr_xmalloc(&build_ptr->salloc_default_command, 
