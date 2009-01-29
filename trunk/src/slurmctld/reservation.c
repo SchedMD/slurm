@@ -901,7 +901,6 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 		return ESLURM_RESERVATION_INVALID;
 
 	/* Process the request */
-	last_resv_update = now;
 	if (resv_desc_ptr->type != (uint16_t) NO_VAL) {
 		if (resv_desc_ptr->type > RESERVE_TYPE_MAINT) {
 			error("Invalid reservation type %u ignored",
@@ -1024,9 +1023,9 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 
 fini:	xfree(old_node_list);
 	FREE_NULL_BITMAP(old_node_bitmap);
-	last_resv_update = now;
 	_set_assoc_list(resv_ptr);
 	_updated_resv(resv_ptr);
+	last_resv_update = now;
 	schedule_resv_save();
 	return error_code;
 }
@@ -1074,7 +1073,6 @@ extern int delete_resv(reservation_name_msg_t *resv_desc_ptr)
 		}
 		_deleted_resv(resv_ptr);
 		list_delete_item(iter);
-		last_resv_update = time(NULL);
 		break;
 	}
 	list_iterator_destroy(iter);
@@ -1085,6 +1083,7 @@ extern int delete_resv(reservation_name_msg_t *resv_desc_ptr)
 		return ESLURM_RESERVATION_INVALID;
 	}
 
+	last_resv_update = time(NULL);
 	schedule_resv_save();
 	return rc;
 }
@@ -1841,10 +1840,11 @@ extern void fini_job_resv_check(void)
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
 		if ((resv_ptr->job_cnt == 0) &&
 		    (resv_ptr->end_time <= now)) {
-			info("Purging vestigial reservation record %s",
+			debug("Purging vestigial reservation record %s",
 			      resv_ptr->name);
 			list_delete_item(iter);
 			last_resv_update = now;
+			schedule_resv_save();
 		}
 
 	}
