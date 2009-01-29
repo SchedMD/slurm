@@ -622,6 +622,11 @@ extern int parse_format( char* format )
 				                          field_size, 
 				                          right_justify, 
 				                          suffix );
+			else if (field[0] == 'v')
+				job_format_add_reservation( params.format_list, 
+				                        field_size, 
+				                        right_justify, 
+				                        suffix );
 			else if (field[0] == 'w')
 				job_format_add_wckey( params.format_list, 
 						      field_size, 
