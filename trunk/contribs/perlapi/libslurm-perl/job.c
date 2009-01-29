@@ -87,6 +87,8 @@ job_info_to_hv(job_info_t* job_info, HV* hv)
 	/* TODO: exc_node_inx */
 	if(job_info->features)
 		STORE_FIELD(hv, job_info, features, charp);
+	if(job_info->resv_name)
+		STORE_FIELD(hv, job_info, resv_name, charp);
 	STORE_FIELD(hv, job_info, dependency, charp);
 	STORE_FIELD(hv, job_info, exit_code, uint32_t);
 	if(job_info->account)
