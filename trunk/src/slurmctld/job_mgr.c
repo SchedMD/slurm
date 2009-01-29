@@ -502,7 +502,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack16(dump_job_ptr->mail_type, buffer);
 	pack16(dump_job_ptr->qos, buffer);
 	pack16(dump_job_ptr->state_reason, buffer);
-	pack16(dump_job_ptr->resv_type, buffer);
+	pack16(dump_job_ptr->resv_flags, buffer);
 
 	packstr(dump_job_ptr->state_desc, buffer);
 	packstr(dump_job_ptr->resp_host, buffer);
@@ -564,7 +564,7 @@ static int _load_job_state(Buf buffer)
 	uint16_t job_state, next_step_id, details, batch_flag, step_flag;
 	uint16_t kill_on_node_fail, kill_on_step_done, direct_set_prio, qos;
 	uint16_t alloc_resp_port, other_port, mail_type, state_reason;
-	uint16_t resv_type;
+	uint16_t resv_flags;
 	char *nodes = NULL, *partition = NULL, *name = NULL, *resp_host = NULL;
 	char *account = NULL, *network = NULL, *mail_user = NULL;
 	char *comment = NULL, *nodes_completing = NULL, *alloc_node = NULL;
@@ -607,7 +607,7 @@ static int _load_job_state(Buf buffer)
 	safe_unpack16(&mail_type, buffer);
 	safe_unpack16(&qos, buffer);
 	safe_unpack16(&state_reason, buffer);
-	safe_unpack16(&resv_type, buffer);
+	safe_unpack16(&resv_flags, buffer);
 
 	safe_unpackstr_xmalloc(&state_desc, &name_len, buffer);
 	safe_unpackstr_xmalloc(&resp_host, &name_len, buffer);
@@ -774,7 +774,7 @@ static int _load_job_state(Buf buffer)
 	job_ptr->resv_id      = resv_id;
 	job_ptr->resv_name    = resv_name;
 	resv_name             = NULL;	/* reused, nothing left to free */
-	job_ptr->resv_type    = resv_type;
+	job_ptr->resv_flags   = resv_flags;
 	job_ptr->select_jobinfo = select_jobinfo;
 	job_ptr->select_job   = select_job;
 	job_ptr->start_time   = start_time;

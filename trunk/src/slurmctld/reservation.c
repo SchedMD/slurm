@@ -152,25 +152,25 @@ static int _find_resv_name(void *x, void *key)
 static void _dump_resv_req(reserve_request_msg_t *resv_ptr, char *mode)
 {
 #if _RESV_DEBUG
-	char start_str[32] = "", end_str[32] = "", *type_str;
+	char start_str[32] = "", end_str[32] = "", *flag_str;
 	int duration;
 
 	slurm_make_time_str(&resv_ptr->start_time,start_str,sizeof(start_str));
 	slurm_make_time_str(&resv_ptr->end_time,  end_str,  sizeof(end_str));
-	if (resv_ptr->type == RESERVE_TYPE_MAINT)
-		type_str = "MAINT";
+	if (resv_ptr->flag == RESERVE_FLAG_MAINT)
+		flag_str = "MAINT";
 	else
-		type_str = "";
+		flag_str = "";
 	if (resv_ptr->duration == NO_VAL)
 		duration = -1;
 	else
 		duration = resv_ptr->duration;
 
 	info("%s: Name=%s StartTime=%s EndTime=%s Duration=%d "
-	     "Type=%s NodeCnt=%u NodeList=%s Features=%s "
+	     "Flags=%s NodeCnt=%u NodeList=%s Features=%s "
 	     "PartitionName=%s Users=%s Accounts=%s",
 	     mode, resv_ptr->name, start_str, end_str, duration,
-	     type_str, resv_ptr->node_cnt, resv_ptr->node_list, 
+	     flag_str, resv_ptr->node_cnt, resv_ptr->node_list, 
 	     resv_ptr->features, resv_ptr->partition, 
 	     resv_ptr->users, resv_ptr->accounts);
 #endif
@@ -639,7 +639,7 @@ static void _pack_resv(struct slurmctld_resv *resv_ptr, Buf buffer,
 	packstr(resv_ptr->node_list,	buffer);
 	packstr(resv_ptr->partition,	buffer);
 	pack_time(resv_ptr->start_time,	buffer);
-	pack16(resv_ptr->type,		buffer);
+	pack16(resv_ptr->flags,		buffer);
 	packstr(resv_ptr->users,	buffer);
 
 	if (internal) {
@@ -744,12 +744,12 @@ extern int create_resv(reserve_request_msg_t *resv_desc_ptr)
 					  (resv_desc_ptr->duration * 60);
 	} else
 		resv_desc_ptr->end_time = INFINITE;
-	if (resv_desc_ptr->type == (uint16_t) NO_VAL)
-		resv_desc_ptr->type = 0;
-	else if (resv_desc_ptr->type > RESERVE_TYPE_MAINT) {
-		info("Invalid reservation type %u ignored",
-		      resv_desc_ptr->type);
-		resv_desc_ptr->type = 0;
+	if (resv_desc_ptr->flags == (uint16_t) NO_VAL)
+		resv_desc_ptr->flags = 0;
+	else if (resv_desc_ptr->flags > RESERVE_FLAG_MAINT) {
+		info("Invalid reservation flag %u ignored",
+		      resv_desc_ptr->flags);
+		resv_desc_ptr->flags = 0;
 	}
 	if (resv_desc_ptr->partition) {
 		part_ptr = find_part_record(resv_desc_ptr->partition);
@@ -845,7 +845,7 @@ extern int create_resv(reserve_request_msg_t *resv_desc_ptr)
 	resv_desc_ptr->partition = NULL;	/* Nothing left to free */
 	resv_ptr->part_ptr	= part_ptr;
 	resv_ptr->start_time	= resv_desc_ptr->start_time;
-	resv_ptr->type		= resv_desc_ptr->type;
+	resv_ptr->flags		= resv_desc_ptr->flags;
 	resv_ptr->users		= resv_desc_ptr->users;
 	resv_ptr->user_cnt	= user_cnt;
 	resv_ptr->user_list	= user_list;
@@ -901,12 +901,12 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 		return ESLURM_RESERVATION_INVALID;
 
 	/* Process the request */
-	if (resv_desc_ptr->type != (uint16_t) NO_VAL) {
-		if (resv_desc_ptr->type > RESERVE_TYPE_MAINT) {
-			error("Invalid reservation type %u ignored",
-			      resv_desc_ptr->type);
+	if (resv_desc_ptr->flags != (uint16_t) NO_VAL) {
+		if (resv_desc_ptr->flags > RESERVE_FLAG_MAINT) {
+			error("Invalid reservation flag %u ignored",
+			      resv_desc_ptr->flags);
 		} else
-			resv_ptr->type = resv_desc_ptr->type;
+			resv_ptr->flags = resv_desc_ptr->flags;
 	}
 	if (resv_desc_ptr->partition) {
 		struct part_record *part_ptr = NULL;
@@ -1224,9 +1224,9 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 		error("Read reservation without name");
 		return false;
 	}
-	if (resv_ptr->type > RESERVE_TYPE_MAINT) {
-		error("Reservation %s has invalid type (%u)",
-		      resv_ptr->name, resv_ptr->type);
+	if (resv_ptr->flags > RESERVE_FLAG_MAINT) {
+		error("Reservation %s has invalid flag (%u)",
+		      resv_ptr->name, resv_ptr->flags);
 		return false;
 	}
 	if (resv_ptr->partition) {
@@ -1414,7 +1414,7 @@ extern int load_all_resv_state(int recover)
 		safe_unpackstr_xmalloc(&resv_ptr->partition,
 				       &uint32_tmp, 	buffer);
 		safe_unpack_time(&resv_ptr->start_time,	buffer);
-		safe_unpack16(&resv_ptr->type,		buffer);
+		safe_unpack16(&resv_ptr->flags,		buffer);
 		safe_unpackstr_xmalloc(&resv_ptr->users,&uint32_tmp, buffer);
 
 		/* Fields saved for internal use only (save state) */
@@ -1444,7 +1444,7 @@ extern int load_all_resv_state(int recover)
 
 /*
  * Determine if a job request can use the specified reservations
- * IN/OUT job_ptr - job to validate, set its resv_id and resv_type
+ * IN/OUT job_ptr - job to validate, set its resv_id and resv_flags
  * RET SLURM_SUCCESS or error code (not found or access denied)
 */
 extern int validate_job_resv(struct job_record *job_ptr)
@@ -1456,8 +1456,8 @@ extern int validate_job_resv(struct job_record *job_ptr)
 
 	if ((job_ptr->resv_name == NULL) || (job_ptr->resv_name[0] == '\0')) {
 		xfree(job_ptr->resv_name);
-		job_ptr->resv_id   = 0;
-		job_ptr->resv_type = 0;
+		job_ptr->resv_id    = 0;
+		job_ptr->resv_flags = 0;
 		return SLURM_SUCCESS;
 	}
 
@@ -1474,8 +1474,8 @@ extern int validate_job_resv(struct job_record *job_ptr)
 
 	rc = _valid_job_access_resv(job_ptr, resv_ptr);
 	if (rc == SLURM_SUCCESS) {
-		job_ptr->resv_id   = resv_ptr->resv_id;
-		job_ptr->resv_type = resv_ptr->type;
+		job_ptr->resv_id    = resv_ptr->resv_id;
+		job_ptr->resv_flags = resv_ptr->flags;
 	}
 	return rc;
 }

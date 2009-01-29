@@ -123,12 +123,12 @@ char *slurm_sprint_reservation_info ( reserve_info_t * resv_ptr,
 		xstrcat(out, "\n   ");
 	
 	/****** Line 2 ******/
-	if (resv_ptr->type == RESERVE_TYPE_MAINT)
+	if (resv_ptr->flags == RESERVE_FLAG_MAINT)
 		tmp3 = "MAINT";
 	else
 		tmp3 = "";
 	snprintf(tmp_line, sizeof(tmp_line), 
-		 "Nodes=%s NodeCnt=%u Features=%s PartitionName=%s Type=%s",
+		 "Nodes=%s NodeCnt=%u Features=%s PartitionName=%s Flags=%s",
 		 resv_ptr->node_list, resv_ptr->node_cnt,
 		 resv_ptr->features,  resv_ptr->partition, tmp3);
 	xstrcat(out, tmp_line);
