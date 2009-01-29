@@ -193,15 +193,16 @@ function displayfile()
    "# <br>" +
    "# TIMERS <br>" +
    "#BatchStartTimeout=10 <br>" +
+   "#CompleteWait=0 <br>" +
    "#EpilogMsgTime=2000 <br>" +
    "#GetEnvTimeout=2 <br>" +
    "#HealthCheckInterval=0 <br>" +
    "#HealthCheckProgram= <br>" +
    "InactiveLimit=" + document.config.inactive_limit.value + "<br>" +
-   "MinJobAge=" + document.config.min_job_age.value + "<br>" +
-   "#CompleteWait=0 <br>" +
    "KillWait=" + document.config.kill_wait.value + "<br>" +
    "#MessageTimeout=10 <br>" +
+   "#ResvOverRun=0 <br>" +
+   "MinJobAge=" + document.config.min_job_age.value + "<br>" +
    "SlurmctldTimeout=" + document.config.slurmctld_timeout.value + "<br>" +
    "SlurmdTimeout=" + document.config.slurmd_timeout.value + "<br>" +
    "#UnkillableStepProgram= <br>" +

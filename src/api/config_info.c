@@ -2,7 +2,7 @@
  *  config_info.c - get/print the system configuration information of slurm
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> and Kevin Tew <tew1@llnl.gov>.
  *  LLNL-CODE-402394.
@@ -271,6 +271,12 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->resume_program);
 	fprintf(out, "ResumeRate              = %u nodes/min\n", 
 		slurm_ctl_conf_ptr->resume_rate);
+	if (slurm_ctl_conf_ptr->resv_over_run == (uint16_t) INFINITE)
+		fprintf(out, "ResvOverRun             = UNLIMITED\n");
+	else {
+		fprintf(out, "ResvOverRun             = %u min\n",
+			slurm_ctl_conf_ptr->resv_over_run);
+	}
 	fprintf(out, "ReturnToService         = %u\n", 
 		slurm_ctl_conf_ptr->ret2service);
 	if (slurm_ctl_conf_ptr->salloc_default_command) {
