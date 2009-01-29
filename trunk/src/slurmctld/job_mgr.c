@@ -3172,28 +3172,33 @@ void job_time_limit(void)
 	time_t now = time(NULL);
 	time_t old = now - slurmctld_conf.inactive_limit;
 	time_t over_run;
+	int resv_status;
 
 	if (slurmctld_conf.over_time_limit == (uint16_t) INFINITE)
 		over_run = now - (365 * 24 * 60 * 60);	/* one year */
 	else
 		over_run = now - (slurmctld_conf.over_time_limit  * 60);
 
+	begin_job_resv_check();
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr =
 		(struct job_record *) list_next(job_iterator))) {
 		xassert (job_ptr->magic == JOB_MAGIC);
+
+		resv_status = job_resv_check(job_ptr);
+
 		if (job_ptr->job_state != JOB_RUNNING)
 			continue;
 
 		/* Consider a job active if it has any active steps */
-		if (job_ptr->step_list
-		    &&  (list_count(job_ptr->step_list) > 0))
+		if (job_ptr->step_list &&
+		    (list_count(job_ptr->step_list) > 0))
 			job_ptr->time_last_active = now;
 
-		if (slurmctld_conf.inactive_limit
-		    &&  (job_ptr->time_last_active <= old)
-		    &&  (job_ptr->part_ptr)
-		    &&  (job_ptr->part_ptr->root_only == 0)) {
+		if (slurmctld_conf.inactive_limit &&
+		    (job_ptr->time_last_active <= old) &&
+		    (job_ptr->part_ptr) &&
+		    (job_ptr->part_ptr->root_only == 0)) {
 			/* job inactive, kill it */
 			info("Inactivity time limit reached for JobId=%u",
 			     job_ptr->job_id);
@@ -3202,10 +3207,20 @@ void job_time_limit(void)
 			xfree(job_ptr->state_desc);
 			continue;
 		}
-		if ((job_ptr->time_limit != INFINITE)
-		    &&  (job_ptr->end_time <= over_run)) {
+		if ((job_ptr->time_limit != INFINITE) &&
+		    (job_ptr->end_time <= over_run)) {
 			last_job_update = now;
 			info("Time limit exhausted for JobId=%u",
+			     job_ptr->job_id);
+			_job_timed_out(job_ptr);
+			job_ptr->state_reason = FAIL_TIMEOUT;
+			xfree(job_ptr->state_desc);
+			continue;
+		}
+
+		if (resv_status != SLURM_SUCCESS) {
+			last_job_update = now;
+			info("Reservation ended for JobId=%u",
 			     job_ptr->job_id);
 			_job_timed_out(job_ptr);
 			job_ptr->state_reason = FAIL_TIMEOUT;
@@ -3219,6 +3234,7 @@ void job_time_limit(void)
 	}
 
 	list_iterator_destroy(job_iterator);
+	fini_job_resv_check();
 }
 
 /* Terminate a job that has exhausted its time limit */

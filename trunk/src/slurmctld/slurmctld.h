@@ -313,6 +313,7 @@ typedef struct slurmctld_resv {
 	uint32_t cpu_cnt;	/* number of reserved CPUs		*/
 	time_t end_time;	/* end time of reservation		*/
 	char *features;		/* required node features		*/
+	uint32_t job_cnt;	/* number of jobs associated with this	*/
 	uint16_t magic;		/* magic cookie, RESV_MAGIC		*/
 	char *name;		/* name of reservation			*/
 	uint32_t node_cnt;	/* count of nodes required		*/

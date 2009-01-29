@@ -93,4 +93,15 @@ extern int validate_job_resv(struct job_record *job_ptr);
 extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 			 bitstr_t **node_bitmap);
 
+/* Begin scan of all jobs for valid reservations */
+extern void begin_job_resv_check(void);
+
+/* Test a particular job for valid reservation
+ * RET ESLURM_INVALID_TIME_VALUE if reservation is terminated
+ *     SLURM_SUCCESS if reservation is still valid */
+extern int job_resv_check(struct job_record *job_ptr);
+
+/* Finish scan of all jobs for valid reservations */
+extern void fini_job_resv_check(void);
+
 #endif /* !_RESERVATION_H */

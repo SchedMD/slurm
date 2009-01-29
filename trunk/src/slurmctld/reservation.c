@@ -75,10 +75,10 @@
 /* Change RESV_STATE_VERSION value when changing the state save format */
 #define RESV_STATE_VERSION      "VER001"
 
-time_t last_resv_update = (time_t) 0;
-
-List     resv_list = (List) NULL;
-uint32_t top_suffix = 0;
+time_t    last_resv_update = (time_t) 0;
+List      resv_list = (List) NULL;
+uint32_t  resv_over_run;
+uint32_t  top_suffix = 0;
 
 static int  _build_account_list(char *accounts, int *account_cnt, 
 			        char ***account_list);
@@ -1146,7 +1146,6 @@ extern int dump_all_resv_state(void)
 	slurmctld_lock_t resv_read_lock =
 	    { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
 	Buf buffer = init_buf(BUF_SIZE);
-	time_t now = time(NULL);
 	DEF_TIMERS;
 
 	START_TIMER;
@@ -1163,15 +1162,8 @@ extern int dump_all_resv_state(void)
 	iter = list_iterator_create(resv_list);
 	if (!iter)
 		fatal("malloc: list_iterator_create");
-	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
-		if (resv_ptr->end_time > now) {
-			_pack_resv(resv_ptr, buffer, true);
-		} else {
-			debug("Purging vestigial reservation record %s",
-			      resv_ptr->name);
-			list_delete_item(iter);
-		}
-	}
+	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter)))
+		_pack_resv(resv_ptr, buffer, true);
 	list_iterator_destroy(iter);
 	/* Maintain config read lock until we copy state_save_location *\
 	\* unlock_slurmctld(resv_read_lock);          - see below      */
@@ -1303,7 +1295,6 @@ static void _validate_all_reservations(void)
 {
 	ListIterator iter;
 	slurmctld_resv_t *resv_ptr;
-	time_t now = time(NULL);
 	char *tmp;
 	uint32_t res_num;
 
@@ -1311,11 +1302,7 @@ static void _validate_all_reservations(void)
 	if (!iter)
 		fatal("malloc: list_iterator_create");
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
-		if (resv_ptr->end_time < now) {
-			debug("Purging vestigial reservation record %s",
-			      resv_ptr->name);
-			list_delete_item(iter);
-		} else if (!_validate_one_reservation(resv_ptr)) {
+		if (!_validate_one_reservation(resv_ptr)) {
 			error("Purging invalid reservation record %s",
 			      resv_ptr->name);
 			list_delete_item(iter);
@@ -1782,4 +1769,84 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 	}
 
 	return rc;
+}
+
+/* Begin scan of all jobs for valid reservations */
+extern void begin_job_resv_check(void)
+{
+	ListIterator iter;
+	slurmctld_resv_t *resv_ptr;
+	slurm_ctl_conf_t *conf;
+
+	if (!resv_list)
+		return;
+
+	conf = slurm_conf_lock();
+	resv_over_run = conf->resv_over_run;
+	slurm_conf_unlock();
+	if (resv_over_run == (uint16_t) INFINITE)
+		resv_over_run = 365 * 24 * 60 * 60;
+	else
+		resv_over_run *= 60;
+
+	iter = list_iterator_create(resv_list);
+	if (!iter)
+		fatal("malloc: list_iterator_create");
+	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter)))
+		resv_ptr->job_cnt = 0;
+	list_iterator_destroy(iter);
+}
+
+/* Test a particular job for valid reservation
+ * RET ESLURM_INVALID_TIME_VALUE if reservation is terminated
+ *     SLURM_SUCCESS if reservation is still valid */
+extern int job_resv_check(struct job_record *job_ptr)
+{
+	if (!job_ptr->resv_name)
+		return SLURM_SUCCESS;
+
+	if (!job_ptr->resv_ptr) {
+		job_ptr->resv_ptr = (slurmctld_resv_t *) list_find_first (
+					resv_list, _find_resv_name, 
+					job_ptr->resv_name);
+		if (!job_ptr->resv_ptr) {
+			/* This should only happen when we have trouble
+			 * on a slurm restart and fail to recover a
+			 * reservation */
+			error("JobId %u linked to defunct reservation %s",
+			       job_ptr->job_id, job_ptr->resv_name);
+			return ESLURM_INVALID_TIME_VALUE;
+		}
+	}
+
+	job_ptr->resv_ptr->job_cnt++;
+	if (job_ptr->resv_ptr->end_time < (time(NULL) + resv_over_run))
+		return ESLURM_INVALID_TIME_VALUE;
+	return SLURM_SUCCESS;
+}
+
+/* Finish scan of all jobs for valid reservations */
+extern void fini_job_resv_check(void)
+{
+	ListIterator iter;
+	slurmctld_resv_t *resv_ptr;
+	time_t now = time(NULL);
+
+	if (!resv_list)
+		return;
+
+	iter = list_iterator_create(resv_list);
+	if (!iter)
+		fatal("malloc: list_iterator_create");
+	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+		if ((resv_ptr->job_cnt == 0) &&
+		    (resv_ptr->end_time <= now)) {
+			info("Purging vestigial reservation record %s",
+			      resv_ptr->name);
+			list_delete_item(iter);
+			last_resv_update = now;
+		}
+
+	}
+	list_iterator_destroy(iter);
 }
