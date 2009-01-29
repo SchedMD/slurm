@@ -1978,11 +1978,13 @@ extern int set_bp_map(void)
 		return -1;
 	}
 
+#ifdef HAVE_BGL
 	if (!getenv("DB2INSTANCE") || !getenv("VWSPATH")) {
-		fatal("Missing DB2INSTANCE or VWSPATH env var."
-			"Execute 'db2profile'");
+		fatal("Missing DB2INSTANCE or VWSPATH env var.  "
+		      "Execute 'db2profile'");
 		return -1;
 	}
+#endif
 	
 	if ((rc = bridge_get_bg(&bg)) != STATUS_OK) {
 		error("bridge_get_BG(): %d", rc);
@@ -2076,7 +2078,7 @@ extern int *find_bp_loc(char* bp_id)
 			return NULL;
 	}
 	itr = list_iterator_create(bp_map_list);
-	while ((bp_map = list_next(itr)) != NULL)
+	while ((bp_map = list_next(itr)))  
 		if (!strcasecmp(bp_map->bp_id, bp_id)) 
 			break;	/* we found it */
 	
@@ -3643,17 +3645,30 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 			       ba_node_t* target)
 {
 #ifdef HAVE_BG_FILES
+#ifdef HAVE_BGL
+
+#define UNDER_POS  7
+#define NODE_LEN 5
+#define VAL_NAME_LEN 12
+
+#else
+
+#define UNDER_POS  9
+#define NODE_LEN 7
+#define VAL_NAME_LEN 16
+
+#endif
 	my_bluegene_t *bg = NULL;
 	int rc;
 	int i;
 	rm_wire_t *my_wire = NULL;
 	rm_port_t *my_port = NULL;
 	char *wire_id = NULL;
-	char from_node[5];
-	char to_node[5];
 	int from_port, to_port;
 	int wire_num;
 	int *coord;
+	char from_node[NODE_LEN];
+	char to_node[NODE_LEN];
 
 	if (!have_db2) {
 		error("Can't access DB2 library, run from service node");
@@ -3700,7 +3715,7 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 			continue;
 		}
 
-		if(wire_id[7] != '_') 
+		if(wire_id[UNDER_POS] != '_') 
 			continue;
 		switch(wire_id[0]) {
 		case 'X':
@@ -3713,17 +3728,17 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 			dim = Z;
 			break;
 		}
-		if(strlen(wire_id)<12) {
+		if(strlen(wire_id) < VAL_NAME_LEN) {
 			error("Wire_id isn't correct %s",wire_id);
 			continue;
 		}
-		strncpy(from_node, wire_id+2, 4);
-		strncpy(to_node, wire_id+8, 4);
 		
+                memset(&from_node, 0, sizeof(from_node));
+                memset(&to_node, 0, sizeof(to_node));
+                strncpy(from_node, wire_id+2, NODE_LEN-1);
+                strncpy(to_node, wire_id+UNDER_POS+1, NODE_LEN-1);
 		free(wire_id);
-		
-		from_node[4] = '\0';
-		to_node[4] = '\0';
+
 		if ((rc = bridge_get_data(my_wire, RM_WireFromPort, &my_port))
 		    != STATUS_OK) {
 			error("bridge_get_data(RM_FirstWire): %d", rc);

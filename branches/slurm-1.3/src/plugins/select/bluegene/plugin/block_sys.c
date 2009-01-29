@@ -130,6 +130,11 @@ static void _pre_allocate(bg_record_t *bg_record)
 		error("bridge_set_data(RM_PartitionIoloadImg)", 
 		      bg_err_str(rc));
 
+/* 	bg_record->bg_block_id = xstrdup("RMP101"); */
+/* 	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionID, */
+/* 			&bg_record->bg_block_id)) != STATUS_OK) */
+/* 		error("bridge_set_data(RM_PartitionID)", bg_err_str(rc)); */
+
 #endif
 	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionMloaderImg, 
 				  bg_record->mloaderimage)) != STATUS_OK)
@@ -460,11 +465,17 @@ int read_bg_blocks()
 			error("No Block ID was returned from database");
 			continue;
 		}
-
+#ifdef HAVE_BGL
 		if(strncmp("RMP", tmp_char, 3)) {
 			free(tmp_char);
 			continue;
 		}
+#else
+		if(strncmp("PARTITION-", tmp_char, 10)) {
+			free(tmp_char);
+			continue;
+		}
+#endif
 		if(bg_recover) {
 			if ((rc = bridge_get_block(tmp_char, &block_ptr))
 			    != STATUS_OK) {
@@ -487,6 +498,22 @@ int read_bg_blocks()
 #ifdef HAVE_BGL
 		bg_record->quarter = (uint16_t) NO_VAL;
 		bg_record->nodecard = (uint16_t) NO_VAL;
+#else
+		if ((rc = bridge_get_data(block_ptr, 
+					  RM_PartitionSize, 
+					  &bp_cnt)) 
+		    != STATUS_OK) {
+			error("bridge_get_data(RM_PartitionSize): %s", 
+			      bg_err_str(rc));
+			bp_cnt = 0;
+		}
+				
+		if(bp_cnt==0)
+			goto clean_up;
+
+		bg_record->node_cnt = bp_cnt;
+		bg_record->cpus_per_bp = 
+			bluegene_proc_ratio * bg_record->node_cnt;
 #endif
 		bg_record->job_running = NO_JOB_RUNNING;
 		
@@ -503,24 +530,6 @@ int read_bg_blocks()
 			goto clean_up;
 		bg_record->bp_count = bp_cnt;
 
-#ifndef HAVE_BGL
-		if ((rc = bridge_get_data(block_ptr, 
-					  RM_PartitionSize, 
-					  &bp_cnt)) 
-		    != STATUS_OK) {
-			error("bridge_get_data(RM_PartitionSize): %s", 
-			      bg_err_str(rc));
-			bp_cnt = 0;
-		}
-				
-		if(bp_cnt==0)
-			goto clean_up;
-
-		bg_record->node_cnt = bp_cnt;
-		bg_record->cpus_per_bp = 
-			bluegene_proc_ratio * bg_record->node_cnt;
-
-#endif
 		debug3("has %d BPs",
 		       bg_record->bp_count);
 		
@@ -639,11 +648,6 @@ int read_bg_blocks()
 			fatal("couldn't get the wiring info for block %s",
 			      bg_record->bg_block_id);
 		hostlist = hostlist_create(NULL);
-
-		/* this needs to be changed for small blocks,
-		   we just don't know what they are suppose to look 
-		   like just yet. 
-		*/
 
 		for (i=0; i<bp_cnt; i++) {
 			if(i) {
