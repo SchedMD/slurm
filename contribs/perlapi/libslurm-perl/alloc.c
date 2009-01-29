@@ -53,6 +53,7 @@ hv_to_job_desc_msg(HV* hv, job_desc_msg_t* job_desc_msg)
 		}
 	}
 	FETCH_FIELD(hv, job_desc_msg, features, charp, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, reservation, charp, FALSE);
 	FETCH_FIELD(hv, job_desc_msg, immediate, uint16_t, FALSE);
 	FETCH_FIELD(hv, job_desc_msg, job_id, uint32_t, FALSE);
 	FETCH_FIELD(hv, job_desc_msg, name, charp, FALSE);
