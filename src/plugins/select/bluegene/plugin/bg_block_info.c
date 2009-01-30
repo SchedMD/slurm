@@ -65,6 +65,7 @@
 #include "src/slurmctld/proc_req.h"
 #include "src/api/job_info.h"
 #include "src/slurmctld/trigger_mgr.h"
+#include "src/slurmctld/locks.h"
 #include "bluegene.h"
 
 #define _DEBUG 0
@@ -102,7 +103,7 @@ static int _block_is_deallocating(bg_record_t *bg_record)
 	if(bg_record->target_name && bg_record->user_name) {
 		if(!strcmp(bg_record->target_name, user_name)) {
 			if(strcmp(bg_record->target_name, bg_record->user_name)
-			   || (jobid > -1)) {
+			   || (jobid > NO_JOB_RUNNING)) {
 				kill_job_struct_t *freeit =
 					xmalloc(sizeof(freeit));
 				freeit->jobid = jobid;
@@ -245,6 +246,8 @@ extern int update_block_list()
 	time_t now;
 	kill_job_struct_t *freeit = NULL;
 	ListIterator itr = NULL;
+	slurmctld_lock_t job_write_lock = {
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 	
 	if(!kill_job_list)
 		kill_job_list = list_create(_destroy_kill_struct);
@@ -354,7 +357,7 @@ extern int update_block_list()
 			case RM_PARTITION_ERROR:
 				bg_record->boot_state = 0;
 				bg_record->boot_count = 0;
-				if(bg_record->job_running > -1) {
+				if(bg_record->job_running > NO_JOB_RUNNING) {
 					error("Block %s in an error "
 					      "state while booting.  "
 					      "Failing job %u.",
@@ -451,8 +454,15 @@ extern int update_block_list()
 	
 	/* kill all the jobs from unexpectedly freed blocks */
 	while((freeit = list_pop(kill_job_list))) {
-		debug2("killing job %d", freeit->jobid);
-		(void) slurm_fail_job(freeit->jobid);
+		debug2("Trying to requeue job %d", freeit->jobid);
+		lock_slurmctld(job_write_lock);
+		if((rc = job_requeue(0, freeit->job_id, -1))) {
+			error("couldn't requeue job %u, failing it: %s",
+			      freeit->job_id, 
+			      slurm_strerror(rc));
+			(void) job_fail(freeit->job_id);
+		}
+		unlock_slurmctld(job_write_lock);
 		_destroy_kill_struct(freeit);
 	}
 		

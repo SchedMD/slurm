@@ -41,6 +41,7 @@
 
 #include "src/common/uid.h"
 #include "src/slurmctld/trigger_mgr.h"
+#include "src/slurmctld/locks.h"
 
 /* some local functions */
 #ifdef HAVE_BG
@@ -580,8 +581,20 @@ extern void drain_as_needed(bg_record_t *bg_record, char *reason)
 	char *host = NULL;
 	char bg_down_node[128];
 
-	if(bg_record->job_running > NO_JOB_RUNNING)
-		slurm_fail_job(bg_record->job_running);			
+	if(bg_record->job_running > NO_JOB_RUNNING) {
+		int rc;
+		slurmctld_lock_t job_write_lock = {
+			NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
+		lock_slurmctld(job_write_lock);
+		debug2("Trying to requeue job %d", bg_record->job_running);
+		if((rc = job_requeue(0, bg_record->job_running, -1))) {
+			error("couldn't requeue job %u, failing it: %s",
+			      bg_record->job_running, 
+			      slurm_strerror(rc));
+			job_fail(bg_record->job_running);
+		}
+		unlock_slurmctld(job_write_lock);
+	}
 
 	/* small blocks */
 	if(bg_record->cpus_per_bp != procs_per_node) {
