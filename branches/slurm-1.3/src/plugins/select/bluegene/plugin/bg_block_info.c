@@ -64,6 +64,7 @@
 #include "src/common/xstring.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/api/job_info.h"
+#include "src/slurmctld/trigger_mgr.h"
 #include "bluegene.h"
 
 #define _DEBUG 0
@@ -350,11 +351,25 @@ extern int update_block_list()
 				
 				break;
 			case RM_PARTITION_ERROR:
-				error("block in an error state");
-				bg_record->boot_count = RETRY_BOOT_COUNT;
-				/* no break needed here since we are
-				   going to kill the job and drain the
-				   block below. */
+				bg_record->boot_state = 0;
+				bg_record->boot_count = 0;
+				if(bg_record->job_running > -1) {
+					error("Block %s in an error "
+					      "state while booting.  "
+					      "Failing job %u.",
+					      bg_record->bg_block_id,
+					      bg_record->job_running);
+					freeit = xmalloc(
+						sizeof(kill_job_struct_t));
+					freeit->jobid = bg_record->job_running;
+					list_push(kill_job_list, freeit);
+				} else 
+					error("block %s in an error "
+					      "state while booting.",
+					      bg_record->bg_block_id);
+
+				trigger_block_error();
+				break;
 			case RM_PARTITION_FREE:
 				if(bg_record->boot_count < RETRY_BOOT_COUNT) {
 					slurm_mutex_unlock(&block_state_mutex);
