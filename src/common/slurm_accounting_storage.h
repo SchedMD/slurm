@@ -2,7 +2,7 @@
  *  slurm_accounting_storage.h - Define accounting storage plugin functions.
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  LLNL-CODE-402394.
@@ -240,6 +240,11 @@ typedef struct {
 	uint16_t with_deleted; 
 	uint16_t with_usage; 
 } acct_cluster_cond_t;
+
+typedef struct {
+	char *name;
+	char *value;
+} config_key_pairs_t;
 
 typedef struct {
 	List accounting_list; /* list of cluster_accounting_rec_t *'s */
@@ -860,6 +865,14 @@ extern List acct_storage_g_get_accounts(void *db_conn,  uint32_t uid,
 extern List acct_storage_g_get_clusters(
 	void *db_conn,  uint32_t uid, acct_cluster_cond_t *cluster_cond);
 
+
+/* 
+ * get info from the storage 
+ * RET: List of config_key_pairs_t *
+ * note List needs to be freed when called
+ */
+extern List acct_storage_g_get_config(void *db_conn);
+
 /* 
  * get info from the storage 
  * IN:  acct_association_cond_t *
@@ -868,7 +881,6 @@ extern List acct_storage_g_get_clusters(
  */
 extern List acct_storage_g_get_associations(
 	void *db_conn, uint32_t uid, acct_association_cond_t *assoc_cond);
-
 
 /* 
  * get info from the storage 

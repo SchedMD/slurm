@@ -955,6 +955,27 @@ extern List acct_storage_p_get_clusters(void *db_conn, uid_t uid,
 	return ret_list;
 }
 
+static void _del_config_list(void *x)
+{
+	config_key_pairs_t *key_pair = (config_key_pairs_t *) x;
+	xfree(key_pair->name);
+	xfree(key_pair->value);
+	xfree(key_pair);
+}
+
+extern List acct_storage_p_get_config(void *db_conn)
+{
+	List dbd_config_list = NULL;
+	config_key_pairs_t *key_pair;
+
+	dbd_config_list = list_create(_del_config_list);
+	key_pair = xmalloc(sizeof(config_key_pairs_t));
+	key_pair->name  = xstrdup("NAME");
+	key_pair->value = xstrdup("VALUE_FOR_TESTING");
+	list_append(dbd_config_list, key_pair);
+	return dbd_config_list;
+}
+
 extern List acct_storage_p_get_associations(void *db_conn, uid_t uid,
 					    acct_association_cond_t *assoc_cond)
 {

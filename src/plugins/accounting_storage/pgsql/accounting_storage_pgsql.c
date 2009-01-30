@@ -962,6 +962,11 @@ extern List acct_storage_p_get_clusters(PGconn *acct_pgsql_db, uid_t uid,
 	return NULL;
 }
 
+extern List acct_storage_p_get_config(void *db_conn)
+{
+	return NULL;
+}
+
 extern List acct_storage_p_get_associations(PGconn *acct_pgsql_db, uid_t uid,
 					    acct_association_cond_t *assoc_cond)
 {

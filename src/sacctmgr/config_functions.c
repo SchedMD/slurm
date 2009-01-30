@@ -35,9 +35,11 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "src/common/list.h"
 #include "src/common/read_config.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/uid.h"
+#include "src/common/xstring.h"
 #include "src/sacctmgr/sacctmgr.h"
 
 static char    *acct_storage_host = NULL;
@@ -53,22 +55,42 @@ static uint16_t private_data;
 static uint32_t slurm_user_id;
 static uint16_t track_wckey;
 
-static void _load_dbd_config()
+static List dbd_config_list = NULL;
+
+
+static void _load_dbd_config(void)
 {
+	dbd_config_list = acct_storage_g_get_config(db_conn);
 }
 
-static void _print_dbd_config()
+static void _print_dbd_config(void)
 {
-	printf("SlurmDBD configuration under development\n");
+	ListIterator iter = NULL;
+	config_key_pairs_t *key_pair;
+
+	if (!dbd_config_list)
+		return;
+
+	printf("\nSlurmDBD configuration:\n");
+	iter = list_iterator_create(dbd_config_list);
+	while((key_pair = list_next(iter))) {
+		printf("%-22s = %s\n", key_pair->name, key_pair->value);
+	}
+	list_iterator_destroy(iter);
 }
 
-static void _free_dbd_config()
+static void _free_dbd_config(void)
 {
+	if (!dbd_config_list)
+		return;
+
+	list_destroy(dbd_config_list);
+	dbd_config_list = NULL;
 }
 
 static void _load_slurm_config(void)
 {
-	acct_storage_type = slurm_get_accounting_storage_host();
+	acct_storage_host = slurm_get_accounting_storage_host();
 	acct_storage_loc  = slurm_get_accounting_storage_loc();
 	acct_storage_pass = slurm_get_accounting_storage_pass();
 	acct_storage_port = slurm_get_accounting_storage_port();
@@ -117,7 +139,6 @@ static void _print_slurm_config(void)
 	printf("SLURM_CONFIG_FILE      = %s\n", default_slurm_config_file);
 	printf("SLURM_VERSION          = %s\n", SLURM_VERSION);
 	printf("TrackWCKey             = %u\n", track_wckey);
-	printf("\n");
 }
 
 extern int sacctmgr_list_config(void)
