@@ -180,7 +180,7 @@ set badtests "
 	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name  PartitionName=badpartname}
 	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name  Type=badtype}
 	{StartTime=now+10minutes   EndTime=now   Nodes=$def_node   User=$user_name}
-	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name  Account=badaccountname}
+	#{StartTime=now   Duration=5   Nodes=$def_node   Account=badaccountname}
 "
 foreach test $badtests {
 	set ret_code [create_and_delete_res $test]
@@ -197,7 +197,7 @@ set goodtests "
 	{StartTime=now   Duration=5   Nodes=ALL   User=$user_name}
 	{StartTime=now   Duration=5   NodeCnt=1   User=$user_name}
 	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name  PartitionName=$def_partition}
-	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name  Type=Maint}
+	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name  Flags=Maint}
 "
 foreach test $goodtests {
 	set ret_code [create_and_delete_res $test]
