@@ -6,6 +6,8 @@ documents those changes that are of interest to users and admins.
  -- In order to create a new partition using the scontrol command, use
     the "create" option rather than "update" (which will only operate
     upon partitions that already exist).
+ -- Added environment variable SLURM_RESTART_COUNT to batch jobs to
+    indicated the count of job restarts made.
 
 * Changes in SLURM 1.4.0-pre7
 =============================

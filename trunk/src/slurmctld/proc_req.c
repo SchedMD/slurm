@@ -2980,6 +2980,7 @@ int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 	launch_msg_ptr->gid = job_ptr->group_id;
 	launch_msg_ptr->uid = uid;
 	launch_msg_ptr->nodes = xstrdup(job_ptr->nodes);
+	launch_msg_ptr->restart_cnt = job_ptr->restart_cnt;
 
 	if (make_batch_job_cred(launch_msg_ptr, job_ptr)) {
 		error("aborting batch step %u.%u", job_ptr->job_id,

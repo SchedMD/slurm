@@ -73,6 +73,7 @@ typedef struct env_options {
 	uint8_t ws_col;		/* window size, columns */
 	uint8_t ws_row;		/* window size, row count */
 	char *ckpt_path;	/* --ckpt-path=                 */
+	uint16_t restart_cnt;	/* count of job restarts	*/
 } env_t;
 
 

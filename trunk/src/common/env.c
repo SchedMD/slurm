@@ -2,7 +2,7 @@
  *  src/common/env.c - add an environment variable to environment vector
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>, Danny Auble <da@llnl.gov>.
  *  LLNL-CODE-402394.
@@ -695,6 +695,13 @@ int setup_env(env_t *env)
 		error("Can't set SLURM_CHECKPOINT_PATH env variable");
 		rc = SLURM_FAILURE;
 	}
+
+	if (env->restart_cnt &&
+	    setenvf(&env->env, "SLURM_RESTART_COUNT", "%u", env->restart_cnt)) {
+		error("Can't set SLURM_RESTART_COUNT env variable");
+		rc = SLURM_FAILURE;
+	}
+
 	return rc;
 }
 
