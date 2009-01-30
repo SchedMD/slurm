@@ -401,6 +401,11 @@ extern List acct_storage_p_get_clusters(void *db_conn, uid_t uid,
 	return NULL;
 }
 
+extern List acct_storage_p_get_config(void *db_conn)
+{
+	return NULL;
+}
+
 extern List acct_storage_p_get_associations(void *db_conn, uid_t uid,
 					    acct_association_cond_t *assoc_q)
 {

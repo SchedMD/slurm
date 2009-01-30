@@ -8028,6 +8028,11 @@ empty:
 #endif
 }
 
+extern List acct_storage_p_get_config(void *db_conn)
+{
+	return NULL;
+}
+
 extern List acct_storage_p_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 				   acct_qos_cond_t *qos_cond)
 {

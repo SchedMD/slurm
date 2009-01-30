@@ -4,7 +4,7 @@
  *  $Id: slurm_accounting_storage.c 10744 2007-01-11 20:09:18Z da $
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Aubke <da@llnl.gov>.
  *  LLNL-CODE-402394.
@@ -116,6 +116,7 @@ typedef struct slurm_acct_storage_ops {
 				    acct_account_cond_t *acct_cond);
 	List (*get_clusters)       (void *db_conn, uint32_t uid,
 				    acct_cluster_cond_t *cluster_cond);
+	List (*get_config)         (void *db_conn);
 	List (*get_associations)   (void *db_conn, uint32_t uid,
 				    acct_association_cond_t *assoc_cond);
 	List (*get_qos)            (void *db_conn, uint32_t uid,
@@ -229,6 +230,7 @@ static slurm_acct_storage_ops_t * _acct_storage_get_ops(
 		"acct_storage_p_get_users",
 		"acct_storage_p_get_accts",
 		"acct_storage_p_get_clusters",
+		"acct_storage_p_get_config",
 		"acct_storage_p_get_associations",
 		"acct_storage_p_get_qos",
 		"acct_storage_p_get_wckeys",
@@ -7267,6 +7269,13 @@ extern List acct_storage_g_get_clusters(void *db_conn, uint32_t uid,
 		return NULL;
 	return (*(g_acct_storage_context->ops.get_clusters))
 		(db_conn, uid, cluster_cond);
+}
+
+extern List acct_storage_g_get_config(void *db_conn)
+{
+	if (slurm_acct_storage_init(NULL) < 0)
+		return NULL;
+	return (*(g_acct_storage_context->ops.get_config))(db_conn);
 }
 
 extern List acct_storage_g_get_associations(void *db_conn, uint32_t uid,
