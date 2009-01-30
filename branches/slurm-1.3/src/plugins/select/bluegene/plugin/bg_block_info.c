@@ -332,11 +332,23 @@ extern int update_block_list()
 			bg_record->state = state;
 
 			if(bg_record->state == RM_PARTITION_DEALLOCATING
-			   || skipped_dealloc) {
+			   || skipped_dealloc) 
 				_block_is_deallocating(bg_record);
-			} else if(bg_record->state == RM_PARTITION_CONFIGURING)
+			else if(bg_record->state == RM_PARTITION_CONFIGURING)
 				bg_record->boot_state = 1;
+			else if(bg_record->state == RM_PARTITION_FREE) {
+				if(remove_from_bg_list(bg_job_block_list, 
+						       bg_record) 
+				   == SLURM_SUCCESS) {
+					num_unused_cpus += 
+						bg_record->bp_count
+						* bg_record->cpus_per_bp;
+				}
+				remove_from_bg_list(bg_booted_block_list,
+						    bg_record);			
+			} 
 			updated = 1;
+			
 		}
 
 		/* check the boot state */
@@ -367,11 +379,21 @@ extern int update_block_list()
 						sizeof(kill_job_struct_t));
 					freeit->jobid = bg_record->job_running;
 					list_push(kill_job_list, freeit);
+					if(remove_from_bg_list(
+						   bg_job_block_list, 
+						   bg_record) 
+					   == SLURM_SUCCESS) {
+						num_unused_cpus += 
+							bg_record->bp_count
+							* bg_record->
+							cpus_per_bp;
+					} 
 				} else 
 					error("block %s in an error "
 					      "state while booting.",
 					      bg_record->bg_block_id);
-
+				remove_from_bg_list(bg_booted_block_list,
+						    bg_record);
 				trigger_block_error();
 				break;
 			case RM_PARTITION_FREE:
