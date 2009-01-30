@@ -2425,6 +2425,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 	safe_unpack16(&job->job_state,    buffer);
 	safe_unpack16(&job->batch_flag,   buffer);
 	safe_unpack16(&job->state_reason, buffer);
+	safe_unpack16(&job->restart_cnt, buffer);
 
 	safe_unpack32(&job->alloc_sid,    buffer);
 	safe_unpack32(&job->time_limit,   buffer);
@@ -2475,13 +2476,13 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 	safe_unpackstr_xmalloc(&job->dependency, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&job->command,    &uint32_tmp, buffer);
 
-	safe_unpack32(&job->num_nodes, buffer);
-	safe_unpack32(&job->max_nodes, buffer);
-	safe_unpack16(&job->requeue,   buffer);
+	safe_unpack32(&job->num_nodes,   buffer);
+	safe_unpack32(&job->max_nodes,   buffer);
+	safe_unpack16(&job->requeue,     buffer);
 
 	/*** unpack pending job details ***/
-	safe_unpack16(&job->shared, buffer);
-	safe_unpack16(&job->contiguous, buffer);
+	safe_unpack16(&job->shared,        buffer);
+	safe_unpack16(&job->contiguous,    buffer);
 	safe_unpack16(&job->cpus_per_task, buffer);
 	safe_unpack16(&job->job_min_procs, buffer);
 

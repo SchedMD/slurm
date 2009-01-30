@@ -483,6 +483,7 @@ struct job_record {
 					 * void* because of interdependencies
 					 * in the header files, confirm the 
 					 * value before use */
+	uint16_t restart_cnt;		/* count of restarts */
 	uint32_t resv_id;		/* reservation ID */
 	char *resv_name;		/* reservation name */
 	struct slurmctld_resv *resv_ptr;/* reservation structure pointer */
