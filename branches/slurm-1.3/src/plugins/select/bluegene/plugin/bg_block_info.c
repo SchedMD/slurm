@@ -322,7 +322,7 @@ extern int update_block_list()
 			   through freeing correctly 
 			*/
 			if((bg_record->state != RM_PARTITION_DEALLOCATING
-			    && bg_record != RM_PARTITION_ERROR)
+			    && bg_record->state != RM_PARTITION_ERROR)
 			   && state == RM_PARTITION_FREE)
 				skipped_dealloc = 1;
 
