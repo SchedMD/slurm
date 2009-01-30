@@ -503,7 +503,7 @@ int read_bg_blocks()
 		    != STATUS_OK) {
 			error("bridge_get_data(RM_PartitionSize): %s", 
 			      bg_err_str(rc));
-			bp_cnt = 0;
+			goto clean_up;
 		}
 				
 		if(bp_cnt==0)
