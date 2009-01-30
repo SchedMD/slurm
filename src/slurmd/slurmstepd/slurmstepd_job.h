@@ -192,10 +192,11 @@ typedef struct slurmd_job {
 	char          *batchdir;
 	jobacctinfo_t *jobacct;
 	uint8_t        open_mode;	/* stdout/err append or truncate */
-	uint8_t        pty;		/* set if creating pseudo tty       */
+	uint8_t        pty;		/* set if creating pseudo tty	*/
 	job_options_t  options;
 	char          *ckpt_path;
-	char          *resv_id;		/* Cray/BASIL reservation ID */
+	char          *resv_id;		/* Cray/BASIL reservation ID	*/
+	uint16_t       restart_cnt;	/* batch job restart count	*/
 } slurmd_job_t;
 
 

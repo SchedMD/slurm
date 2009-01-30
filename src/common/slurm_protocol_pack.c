@@ -4114,6 +4114,7 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, Buf buffer)
 
 	pack16(msg->acctg_freq,     buffer);
 	pack16(msg->cpus_per_task,  buffer);
+	pack16(msg->restart_cnt,    buffer);
 
 	pack32(msg->num_cpu_groups, buffer);
 	if (msg->num_cpu_groups) {
@@ -4163,6 +4164,7 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer)
 
 	safe_unpack16(&launch_msg_ptr->acctg_freq,     buffer);
 	safe_unpack16(&launch_msg_ptr->cpus_per_task,  buffer);
+	safe_unpack16(&launch_msg_ptr->restart_cnt,    buffer);
 
 	safe_unpack32(&launch_msg_ptr->num_cpu_groups, buffer);
 	if (launch_msg_ptr->num_cpu_groups) {

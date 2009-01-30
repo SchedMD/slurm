@@ -2,7 +2,8 @@
  *  src/slurmd/slurmstepd/slurmstepd_job.c - slurmd_job_t routines
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  LLNL-CODE-402394.
@@ -359,6 +360,8 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	job->envtp->mem_bind_type = 0;
 	job->envtp->mem_bind = NULL;
 	job->envtp->ckpt_path = NULL;
+	job->envtp->restart_cnt = msg->restart_cnt;
+
 	job->cpus_per_task = msg->cpus_per_node[0];
 
 	srun = srun_info_create(NULL, NULL, NULL);
