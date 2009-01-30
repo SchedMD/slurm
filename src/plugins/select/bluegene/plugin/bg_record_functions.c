@@ -594,6 +594,13 @@ extern void drain_as_needed(bg_record_t *bg_record, char *reason)
 			job_fail(bg_record->job_running);
 		}
 		unlock_slurmctld(job_write_lock);
+		slurm_mutex_lock(&block_state_mutex);
+		if(remove_from_bg_list(bg_job_block_list, bg_record) 
+		   == SLURM_SUCCESS) {
+			num_unused_cpus += bg_record->bp_count
+				* bg_record->cpus_per_bp;
+		}
+		slurm_mutex_unlock(&block_state_mutex);
 	}
 
 	/* small blocks */
@@ -632,6 +639,7 @@ end_it:
 	error("Setting Block %s to ERROR state.", bg_record->bg_block_id);
 	bg_record->job_running = BLOCK_ERROR_STATE;
 	bg_record->state = RM_PARTITION_ERROR;
+	remove_from_bg_list(bg_booted_block_list, bg_record);			
 	slurm_mutex_unlock(&block_state_mutex);
 	trigger_block_error();
 	return;

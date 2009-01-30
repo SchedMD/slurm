@@ -502,7 +502,7 @@ extern int remove_from_bg_list(List my_bg_list, bg_record_t *bg_record)
 
 	//slurm_mutex_lock(&block_state_mutex);	
 	itr = list_iterator_create(my_bg_list);
-	while ((found_record = (bg_record_t *) list_next(itr)) != NULL) {
+	while ((found_record = list_next(itr))) {
 		if(found_record)
 			if(bg_record == found_record) {
 				list_remove(itr);
