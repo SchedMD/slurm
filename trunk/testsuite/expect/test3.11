@@ -1,0 +1,216 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Validate scontrol create, delete, and update for reservations.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2009 Lawrence Livermore National Security
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Dave Bremer <dbremer@llnl.gov>
+# LLNL-CODE-402394.
+
+# 
+# This file is part of SLURM, a resource management program.
+# For details, see <http://www.llnl.gov/linux/slurm/>.
+#  
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+# 
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+# 
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id       "3.11"
+#set authorized   1
+set exit_code     0
+set res_name      ""
+set user_name     ""
+set def_partition ""
+set def_node      ""
+print_header $test_id
+set ii 0
+
+
+#
+# Procedure to create a new reservation, validate it, and delete it
+#
+proc create_and_delete_res { res_params } {
+	#exp_internal 1
+	global scontrol
+	global alpha_numeric_under
+
+	set ret_code 0
+	set res_name ""
+
+	#
+	# Create a reservation using the list of arguments in a
+	#
+	set arglist [linsert $res_params 0 $scontrol create res]
+	eval spawn $arglist
+	expect {
+		-re "Reservation created: ($alpha_numeric_under)" {
+			set res_name $expect_out(1,string)
+		}
+		-re "slurm_update error: Invalid user" {
+			send_user "\nWARNING: user not authorized \
+				   to create reservation\n"
+			set ret_code 2
+			exp_continue
+		}
+		-re "Error" {
+			send_user "\nFAILURE: problem creating \
+				   reservation with args:  $res_params\n"
+			set ret_code 1
+			exp_continue
+		}
+		-re "error" {
+			send_user "\nFAILURE: problem creating \
+				   reservation with args:  $res_params\n"
+			set ret_code 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			set ret_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if { $ret_code != 0 } {
+		return $ret_code
+	}
+
+	spawn $scontrol show res $res_name
+	expect {
+		
+	}
+	if { $ret_code != 0 } {
+		return $ret_code
+	}
+
+	spawn $scontrol delete ReservationName=$res_name
+	expect {
+		-re "invalid" {
+			send_user "\nFAILURE: problem deleting reservation $res_name\n"
+			set ret_code 1
+			exp_continue
+		}
+	}
+	#exp_internal 0
+
+	return $ret_code
+}
+
+
+#
+# Identify usable nodes in default partition
+#
+spawn $sinfo -h -o %32P
+expect {
+	-re "($alpha_numeric_under)(\\*)" {
+		set def_partition $expect_out(1,string)
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {[string compare $def_partition ""] == 0} {
+	send_user "\nFAILURE: failed to find default partition\n"
+	exit 1
+}
+spawn $sinfo -h -o "=%N=" -p $def_partition
+expect {
+	-re "=(.+)=" {
+		set def_node $expect_out(1,string)
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {[string compare $def_node ""] == 0} {
+	send_user "\nFAILURE:default partition seems to have no nodes\n"
+	exit 1
+}
+
+
+#
+# Get the user name
+#
+spawn $bin_id -un
+expect {
+	-re "($alpha_numeric_under)" {
+		set user_name $expect_out(1,string)
+	}
+	eof {
+		wait
+	}
+	
+}
+
+
+#
+# Make a list of lists with a series of parameters to test.  All the tests 
+# in goodtests should pass, all those in badtests should fail.
+#
+set badtests "
+	{}
+	{Duration=5   Nodes=$def_node   User=$user_name}
+	{StartTime=now   Nodes=$def_node   User=$user_name}
+	{StartTime=midnight   Duration=600   User=$user_name}
+	{StartTime=now   Duration=5   Nodes=ALL}
+	{StartTime=now   Duration=5   NodeCnt=  Nodes=   User=$user_name}
+	{StartTime=now   Duration=5   User=$user_name}
+	{StartTime=blah   Duration=5   Nodes=$def_node   User=$user_name}
+	{StartTime=now   Duration=foo   Nodes=$def_node   User=$user_name}
+	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name  PartitionName=badpartname}
+	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name  Type=badtype}
+	{StartTime=now+10minutes   EndTime=now   Nodes=$def_node   User=$user_name}
+	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name  Account=badaccountname}
+"
+foreach test $badtests {
+	set ret_code [create_and_delete_res $test]
+	if {$ret_code == 0} {
+		send_user "\nFAILURE: Reservation $test did not fail but should have\n"
+		exit 1
+	}
+}
+
+set goodtests "
+	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name}
+	{StartTime=now+5minutes   EndTime=now+10minutes   Nodes=$def_node   User=$user_name}
+	{StartTime=midnight   Duration=600   Nodes=$def_node   User=$user_name}
+	{StartTime=now   Duration=5   Nodes=ALL   User=$user_name}
+	{StartTime=now   Duration=5   NodeCnt=1   User=$user_name}
+	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name  PartitionName=$def_partition}
+	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name  Type=Maint}
+"
+foreach test $goodtests {
+	set ret_code [create_and_delete_res $test]
+	if {$ret_code != 0} {
+		exit $ret_code
+	}
+}
+
+
+
+
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code
