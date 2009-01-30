@@ -211,6 +211,7 @@ test3.7    Test of job suspend/resume.
 test3.8    Test of batch job requeue.
 test3.9    Test of "scontrol show slurmd"
 test3.10   Test of "scontrol notify <jobid> <message>"
+test3.11   Validate scontrol create, delete, and update of reservations.
 UNTESTED   "scontrol abort"    would stop slurm 
 UNTESTED   "scontrol shutdown" would stop slurm
 

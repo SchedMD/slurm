@@ -113,6 +113,7 @@ EXTRA_DIST = \
 	test3.8				\
 	test3.9				\
 	test3.10			\
+	test3.11			\
 	test4.1				\
 	test4.2				\
 	test4.3				\
