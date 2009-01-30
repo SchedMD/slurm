@@ -462,6 +462,9 @@ extern int bg_record_cmpf_inc(bg_record_t* rec_a, bg_record_t* rec_b)
 	else if(rec_a->nodecard > rec_b->nodecard)
 		return 1;
 #else
+	if(!rec_a->ionode_bitmap || !rec_b->ionode_bitmap)
+		return 0;
+
 	if(bit_ffs(rec_a->ionode_bitmap) < bit_ffs(rec_b->ionode_bitmap))
 		return -1;
 	else

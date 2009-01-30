@@ -351,6 +351,10 @@ extern int update_block_list()
 				break;
 			case RM_PARTITION_ERROR:
 				error("block in an error state");
+				bg_record->boot_count = RETRY_BOOT_COUNT;
+				/* no break needed here since we are
+				   going to kill the job and drain the
+				   block below. */
 			case RM_PARTITION_FREE:
 				if(bg_record->boot_count < RETRY_BOOT_COUNT) {
 					slurm_mutex_unlock(&block_state_mutex);

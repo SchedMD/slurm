@@ -96,4 +96,7 @@ extern int time_str2mins(char *string);
 extern void secs2time_str(time_t time, char *string, int size);
 extern void mins2time_str(uint32_t time, char *string, int size);
 
+/* used to get a 2 char abbriviated month name from int 0-11 */
+extern char *mon_abbr(int mon);
+
 #endif

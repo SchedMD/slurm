@@ -119,6 +119,9 @@ static void _pre_allocate(bg_record_t *bg_record)
 		error("bridge_set_data(RM_PartitionRamdiskImg)", 
 		      bg_err_str(rc));
 #else
+	struct tm my_tm;
+	struct timeval my_tv;
+
 	if ((rc = bridge_set_data(bg_record->bg_block,
 				  RM_PartitionCnloadImg,
 				  bg_record->linuximage)) != STATUS_OK) 
@@ -130,10 +133,15 @@ static void _pre_allocate(bg_record_t *bg_record)
 		error("bridge_set_data(RM_PartitionIoloadImg)", 
 		      bg_err_str(rc));
 
-/* 	bg_record->bg_block_id = xstrdup("RMP101"); */
-/* 	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionID, */
-/* 			&bg_record->bg_block_id)) != STATUS_OK) */
-/* 		error("bridge_set_data(RM_PartitionID)", bg_err_str(rc)); */
+	gettimeofday(&my_tv, NULL);
+	localtime_r(&my_tv.tv_sec, &my_tm);
+	bg_record->bg_block_id = xstrdup_printf(
+		"RMP%2.2d%2.2s%2.2d%2.2d%2.2d%3.3d",
+		my_tm.tm_mday, mon_abbr(my_tm.tm_mon), 
+		my_tm.tm_hour, my_tm.tm_min, my_tm.tm_sec, my_tv.tv_usec/1000);
+	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionID,
+				  bg_record->bg_block_id)) != STATUS_OK)
+		error("bridge_set_data(RM_PartitionID)", bg_err_str(rc));
 
 #endif
 	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionMloaderImg, 
@@ -160,11 +168,6 @@ static void _pre_allocate(bg_record_t *bg_record)
 	    != STATUS_OK)
 		error("bridge_set_data(RM_PartitionUserName)", bg_err_str(rc));
 	
-/* 	info("setting it here"); */
-/* 	bg_record->bg_block_id = "RMP101"; */
-/* 	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionID,  */
-/* 			&bg_record->bg_block_id)) != STATUS_OK) */
-/* 		error("bridge_set_data(RM_PartitionID)", bg_err_str(rc)); */
 #endif
 }
 
@@ -465,17 +468,12 @@ int read_bg_blocks()
 			error("No Block ID was returned from database");
 			continue;
 		}
-#ifdef HAVE_BGL
+
 		if(strncmp("RMP", tmp_char, 3)) {
 			free(tmp_char);
 			continue;
 		}
-#else
-		if(strncmp("PARTITION-", tmp_char, 10)) {
-			free(tmp_char);
-			continue;
-		}
-#endif
+
 		if(bg_recover) {
 			if ((rc = bridge_get_block(tmp_char, &block_ptr))
 			    != STATUS_OK) {
