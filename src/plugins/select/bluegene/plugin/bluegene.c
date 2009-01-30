@@ -615,7 +615,10 @@ extern int bg_free_block(bg_record_t *bg_record)
 		}
 		
 		if ((bg_record->state == RM_PARTITION_FREE)
-		    ||  (bg_record->state == RM_PARTITION_ERROR)) {
+#ifdef HAVE_BGL
+		    ||  (bg_record->state == RM_PARTITION_ERROR)
+#endif
+			) {
 			break;
 		}
 		slurm_mutex_unlock(&block_state_mutex);			
