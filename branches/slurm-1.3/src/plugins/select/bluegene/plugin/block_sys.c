@@ -521,21 +521,21 @@ int read_bg_blocks()
 		    != STATUS_OK) {
 			error("bridge_get_data(RM_BPNum): %s", 
 			      bg_err_str(rc));
-			bp_cnt = 0;
+			goto clean_up;
 		}
 				
 		if(bp_cnt==0)
 			goto clean_up;
 		bg_record->bp_count = bp_cnt;
 
-		debug3("has %d BPs",
-		       bg_record->bp_count);
+		debug3("has %d BPs", bg_record->bp_count);
 		
 		if ((rc = bridge_get_data(block_ptr, RM_PartitionSwitchNum,
 					  &bg_record->switch_count)) 
 		    != STATUS_OK) {
 			error("bridge_get_data(RM_PartitionSwitchNum): %s",
 			      bg_err_str(rc));
+			goto clean_up;
 		} 
 
 		if ((rc = bridge_get_data(block_ptr, RM_PartitionSmall, 
@@ -543,9 +543,9 @@ int read_bg_blocks()
 		    != STATUS_OK) {
 			error("bridge_get_data(RM_PartitionSmall): %s",
 			      bg_err_str(rc));
-			bp_cnt = 0;
+			goto clean_up;
 		}
-
+		
 		if(small) {
 			if((rc = bridge_get_data(block_ptr,
 						 RM_PartitionFirstNodeCard,
@@ -554,7 +554,7 @@ int read_bg_blocks()
 				error("bridge_get_data("
 				      "RM_PartitionFirstNodeCard): %s",
 				      bg_err_str(rc));
-				bp_cnt = 0;
+				goto clean_up;
 			}
 			
 			bg_record->conn_type = SELECT_SMALL;
@@ -565,7 +565,7 @@ int read_bg_blocks()
 				error("bridge_get_data("
 				      "RM_PartitionNodeCardNum): %s",
 				      bg_err_str(rc));
-				bp_cnt = 0;
+				goto clean_up;
 			}
 #ifdef HAVE_BGL
 			if(i == 1) {
@@ -576,8 +576,9 @@ int read_bg_blocks()
 						  RM_NodeCardQuarter, 
 						  &quarter)) != STATUS_OK) {
 				error("bridge_get_data(CardQuarter): %d",rc);
-				bp_cnt = 0;
+				goto clean_up;
 			}
+
 			bg_record->quarter = quarter;
 
 
@@ -600,10 +601,10 @@ int read_bg_blocks()
 						  RM_NodeCardID, 
 						  &tmp_char)) != STATUS_OK) {
 				error("bridge_get_data(RM_NodeCardID): %d",rc);
-				bp_cnt = 0;
+				goto clean_up;
 			}
 			
-			if(bp_cnt==0)
+			if(!tmp_char)
 				goto clean_up;
 			
 			/* From the first nodecard id we can figure
@@ -631,6 +632,7 @@ int read_bg_blocks()
 				error("bridge_get_data"
 				      "(RM_PartitionConnection): %s",
 				      bg_err_str(rc));
+				goto clean_up;
 			}
 			/* Set the bitmap blank here if it is a full
 			   node we don't want anything set we also
@@ -728,6 +730,7 @@ int read_bg_blocks()
 					  &bg_record->state)) != STATUS_OK) {
 			error("bridge_get_data(RM_PartitionState): %s",
 			      bg_err_str(rc));
+			goto clean_up;
 		} else if(bg_record->state == RM_PARTITION_CONFIGURING)
 			bg_record->boot_state = 1;
 		else
@@ -749,6 +752,7 @@ int read_bg_blocks()
 					  &bp_cnt)) != STATUS_OK) {
 			error("bridge_get_data(RM_PartitionUsersNum): %s",
 			      bg_err_str(rc));
+			goto clean_up;
 		} else {
 			if(bp_cnt==0) {
 				
@@ -767,6 +771,7 @@ int read_bg_blocks()
 					error("bridge_get_data"
 					      "(RM_PartitionFirstUser): %s",
 					      bg_err_str(rc));
+					goto clean_up;
 				}
 				if(!user_name) {
 					error("No user name was "
@@ -804,6 +809,7 @@ int read_bg_blocks()
 		    != STATUS_OK) {
 			error("bridge_get_data(RM_PartitionBlrtsImg): %s",
 			      bg_err_str(rc));
+			goto clean_up;
 		}
 		if(!user_name) {
 			error("No BlrtsImg was returned from database");
@@ -817,6 +823,7 @@ int read_bg_blocks()
 		    != STATUS_OK) {
 			error("bridge_get_data(RM_PartitionLinuxImg): %s",
 			      bg_err_str(rc));
+			goto clean_up;
 		}
 		if(!user_name) {
 			error("No LinuxImg was returned from database");
@@ -830,6 +837,7 @@ int read_bg_blocks()
 		    != STATUS_OK) {
 			error("bridge_get_data(RM_PartitionRamdiskImg): %s",
 			      bg_err_str(rc));
+			goto clean_up;
 		}
 		if(!user_name) {
 			error("No RamdiskImg was returned from database");
@@ -844,6 +852,7 @@ int read_bg_blocks()
 		    != STATUS_OK) {
 			error("bridge_get_data(RM_PartitionCnloadImg): %s",
 			      bg_err_str(rc));
+			goto clean_up;
 		}
 		if(!user_name) {
 			error("No CnloadImg was returned from database");
@@ -857,6 +866,7 @@ int read_bg_blocks()
 		    != STATUS_OK) {
 			error("bridge_get_data(RM_PartitionIoloadImg): %s",
 			      bg_err_str(rc));
+			goto clean_up;
 		}
 		if(!user_name) {
 			error("No IoloadImg was returned from database");
@@ -871,6 +881,7 @@ int read_bg_blocks()
 		    != STATUS_OK) {
 			error("bridge_get_data(RM_PartitionMloaderImg): %s",
 			      bg_err_str(rc));
+			goto clean_up;
 		}
 		if(!user_name) {
 			error("No MloaderImg was returned from database");
@@ -880,9 +891,8 @@ int read_bg_blocks()
 
 					
 	clean_up:	
-		if (bg_recover
-		    &&  ((rc = bridge_free_block(block_ptr)) 
-			 != STATUS_OK)) {
+		if (bg_recover 
+		    && ((rc = bridge_free_block(block_ptr)) != STATUS_OK)) {
 			error("bridge_free_block(): %s", bg_err_str(rc));
 		}
 	}
