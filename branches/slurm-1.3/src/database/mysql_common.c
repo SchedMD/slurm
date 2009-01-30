@@ -382,17 +382,18 @@ extern int mysql_get_db_connection(MYSQL **mysql_db, char *db_name,
 {
 	int rc = SLURM_SUCCESS;
 	bool storage_init = false;
-
+	
 	if(!(*mysql_db = mysql_init(*mysql_db)))
 		fatal("mysql_init failed: %s", mysql_error(*mysql_db));
 	else {
+		unsigned int my_timeout = 30;
 #ifdef MYSQL_OPT_RECONNECT
-{
 		my_bool reconnect = 1;
 		/* make sure reconnect is on */
 		mysql_options(*mysql_db, MYSQL_OPT_RECONNECT, &reconnect);
-}
 #endif
+		mysql_options(*mysql_db, MYSQL_OPT_CONNECT_TIMEOUT,
+			      (char *)&my_timeout);
 		while(!storage_init) {
 			if(!mysql_real_connect(*mysql_db, db_info->host,
 					       db_info->user, db_info->pass,
