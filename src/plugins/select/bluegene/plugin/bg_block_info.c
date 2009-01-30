@@ -456,11 +456,11 @@ extern int update_block_list()
 	while((freeit = list_pop(kill_job_list))) {
 		debug2("Trying to requeue job %d", freeit->jobid);
 		lock_slurmctld(job_write_lock);
-		if((rc = job_requeue(0, freeit->job_id, -1))) {
+		if((rc = job_requeue(0, freeit->jobid, -1))) {
 			error("couldn't requeue job %u, failing it: %s",
-			      freeit->job_id, 
+			      freeit->jobid, 
 			      slurm_strerror(rc));
-			(void) job_fail(freeit->job_id);
+			(void) job_fail(freeit->jobid);
 		}
 		unlock_slurmctld(job_write_lock);
 		_destroy_kill_struct(freeit);
