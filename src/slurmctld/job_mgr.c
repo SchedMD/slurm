@@ -502,6 +502,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack16(dump_job_ptr->mail_type, buffer);
 	pack16(dump_job_ptr->qos, buffer);
 	pack16(dump_job_ptr->state_reason, buffer);
+	pack16(dump_job_ptr->restart_cnt, buffer);
 	pack16(dump_job_ptr->resv_flags, buffer);
 
 	packstr(dump_job_ptr->state_desc, buffer);
@@ -564,7 +565,7 @@ static int _load_job_state(Buf buffer)
 	uint16_t job_state, next_step_id, details, batch_flag, step_flag;
 	uint16_t kill_on_node_fail, kill_on_step_done, direct_set_prio, qos;
 	uint16_t alloc_resp_port, other_port, mail_type, state_reason;
-	uint16_t resv_flags;
+	uint16_t restart_cnt, resv_flags;
 	char *nodes = NULL, *partition = NULL, *name = NULL, *resp_host = NULL;
 	char *account = NULL, *network = NULL, *mail_user = NULL;
 	char *comment = NULL, *nodes_completing = NULL, *alloc_node = NULL;
@@ -607,6 +608,7 @@ static int _load_job_state(Buf buffer)
 	safe_unpack16(&mail_type, buffer);
 	safe_unpack16(&qos, buffer);
 	safe_unpack16(&state_reason, buffer);
+	safe_unpack16(&restart_cnt, buffer);
 	safe_unpack16(&resv_flags, buffer);
 
 	safe_unpackstr_xmalloc(&state_desc, &name_len, buffer);
@@ -771,6 +773,7 @@ static int _load_job_state(Buf buffer)
 	xfree(job_ptr->resp_host);
 	job_ptr->resp_host    = resp_host;
 	resp_host             = NULL;	/* reused, nothing left to free */
+	job_ptr->restart_cnt  = restart_cnt;
 	job_ptr->resv_id      = resv_id;
 	job_ptr->resv_name    = resv_name;
 	resv_name             = NULL;	/* reused, nothing left to free */
@@ -1286,6 +1289,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 				if (job_ptr->node_cnt)
 					job_ptr->job_state |= JOB_COMPLETING;
 				job_ptr->details->submit_time = now;
+				job_ptr->restart_cnt++;
 				/* Since the job completion logger
 				   removes the submit we need to add it
 				   again.
@@ -1982,6 +1986,7 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 
 	if (requeue && job_ptr->details && job_ptr->batch_flag) {
 		job_ptr->batch_flag++;	/* only one retry */
+		job_ptr->restart_cnt++;
 		job_ptr->job_state = JOB_PENDING | job_comp_flag;
 		info("Non-responding node, requeue JobId=%u", job_ptr->job_id);
 	} else if ((job_ptr->job_state == JOB_PENDING) && job_ptr->details && 
@@ -3597,9 +3602,10 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 	pack32(dump_job_ptr->user_id, buffer);
 	pack32(dump_job_ptr->group_id, buffer);
 
-	pack16(dump_job_ptr->job_state, buffer);
-	pack16(dump_job_ptr->batch_flag, buffer);
+	pack16(dump_job_ptr->job_state,    buffer);
+	pack16(dump_job_ptr->batch_flag,   buffer);
 	pack16(dump_job_ptr->state_reason, buffer);
+	pack16(dump_job_ptr->restart_cnt,  buffer);
 
 	pack32(dump_job_ptr->alloc_sid, buffer);
 	if ((dump_job_ptr->time_limit == NO_VAL) && dump_job_ptr->part_ptr)
@@ -5958,6 +5964,7 @@ extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd conn_fd)
 	if (job_ptr->node_cnt)
 		job_ptr->job_state |= JOB_COMPLETING;
 	job_ptr->details->submit_time = now;
+	job_ptr->restart_cnt++;
 	/* Since the job completion logger removes the submit we need
 	   to add it again.
 	*/
