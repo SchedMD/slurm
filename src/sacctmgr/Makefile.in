@@ -76,8 +76,8 @@ binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
 am_sacctmgr_OBJECTS = account_functions.$(OBJEXT) \
 	archive_functions.$(OBJEXT) association_functions.$(OBJEXT) \
-	cluster_functions.$(OBJEXT) common.$(OBJEXT) \
-	file_functions.$(OBJEXT) sacctmgr.$(OBJEXT) \
+	config_functions.$(OBJEXT) cluster_functions.$(OBJEXT) \
+	common.$(OBJEXT) file_functions.$(OBJEXT) sacctmgr.$(OBJEXT) \
 	qos_functions.$(OBJEXT) txn_functions.$(OBJEXT) \
 	user_functions.$(OBJEXT) wckey_functions.$(OBJEXT)
 sacctmgr_OBJECTS = $(am_sacctmgr_OBJECTS)
@@ -284,6 +284,7 @@ sacctmgr_SOURCES = \
 	account_functions.c	\
 	archive_functions.c	\
 	association_functions.c	\
+	config_functions.c	\
 	cluster_functions.c	\
 	common.c                \
 	file_functions.c	\
@@ -370,6 +371,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/association_functions.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cluster_functions.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/common.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/config_functions.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/file_functions.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/qos_functions.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sacctmgr.Po@am__quote@

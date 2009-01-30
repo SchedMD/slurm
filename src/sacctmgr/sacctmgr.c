@@ -3,7 +3,7 @@
  *	         provides interface to read, write, update, and configure
  *               accounting.
  *****************************************************************************
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
@@ -77,15 +77,15 @@ main (int argc, char *argv[])
 	int option_index;
 	static struct option long_options[] = {
 		{"help",     0, 0, 'h'},
+		{"usage",    0, 0, 'h'},
 		{"immediate",0, 0, 'i'},
+		{"no_header",0, 0, 'n'},
 		{"oneliner", 0, 0, 'o'},
-		{"no_header", 0, 0, 'n'},
 		{"parsable", 0, 0, 'p'},
 		{"parsable2", 0, 0, 'P'},
 		{"quiet",    0, 0, 'q'},
 		{"readonly", 0, 0, 'r'},
 		{"associations", 0, 0, 's'},
-		{"usage",    0, 0, 'h'},
 		{"verbose",  0, 0, 'v'},
 		{"version",  0, 0, 'V'},
 		{NULL,       0, 0, 0}
@@ -185,13 +185,18 @@ main (int argc, char *argv[])
 		exit(1);
 	}
 	xfree(temp);
+
 	/* always do a rollback.  If you don't then if there is an
 	 * error you can not rollback ;)
 	 */
 	errno = 0;
 	db_conn = acct_storage_g_get_connection(false, 0, 1);
 	if(errno != SLURM_SUCCESS) {
-		error("sacctmgr: %m");
+		if((input_field_count == 2) &&
+		   (!strncasecmp(argv[2], "Configuration", strlen(argv[1]))) &&
+		   ((!strncasecmp(argv[1], "list", strlen(argv[0]))) || 
+		    (!strncasecmp(argv[1], "show", strlen(argv[0])))))
+			sacctmgr_list_config();
 		exit(1);
 	}
 	my_uid = getuid();
@@ -591,6 +596,9 @@ static void _show_it (int argc, char *argv[])
 	} else if (strncasecmp (argv[0], "Clusters", 
 				MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_list_cluster((argc - 1), &argv[1]);
+	} else if (strncasecmp (argv[0], "Configuration", 
+				MAX(command_len, 1)) == 0) {
+		error_code = sacctmgr_list_config();
 	} else if (strncasecmp (argv[0], "QOS", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_list_qos((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "Transactions", 
@@ -761,17 +769,17 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
      oneliner                 report output one record per line.           \n\
      parsable                 output will be | delimited with an ending '|'\n\
      parsable2                output will be | delimited without an ending '|'\n\
-     readonly                 makes it so no modification can happen.      \n\
      quiet                    print no messages other than error messages. \n\
      quit                     terminate this command.                      \n\
+     readonly                 makes it so no modification can happen.      \n\
      show                     same as list                                 \n\
      verbose                  enable detailed logging.                     \n\
      version                  display tool version number.                 \n\
      !!                       Repeat the last command entered.             \n\
                                                                            \n\
   <ENTITY> may be \"account\", \"association\", \"cluster\",               \n\
-                  \"coordinator\", \"qos\", \"transaction\", \"user\",     \n\
-                  or \"wckey\"                                             \n\
+                  \"configuration\", \"coordinator\", \"qos\",             \n\
+                  \"transaction\", \"user\",or \"wckey\"                   \n\
                                                                            \n\
   <SPECS> are different for each command entity pair.                      \n\
        list account       - Clusters=, Descriptions=, Format=, Names=,     \n\
@@ -792,7 +800,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
        delete account     - Clusters=, Descriptions=, Names=,              \n\
                             Organizations=, and Parents=                   \n\
                                                                            \n\
-       list associations  - Accounts=, Clusters=, Format=, IDs=,            \n\
+       list associations  - Accounts=, Clusters=, Format=, IDs=,           \n\
                             Partitions=, Parent=, Tree, Users=,            \n\
                             WithSubAccounts, WithDeleted, WOPInfo,         \n\
                             and WOPLimits                                  \n\

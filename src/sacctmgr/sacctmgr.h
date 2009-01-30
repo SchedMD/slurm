@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  sacctmgr.h - definitions for all sacctmgr modules.
  *****************************************************************************
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
@@ -109,6 +109,7 @@ extern int sacctmgr_list_association(int argc, char *argv[]);
 extern int sacctmgr_list_user(int argc, char *argv[]);
 extern int sacctmgr_list_account(int argc, char *argv[]);
 extern int sacctmgr_list_cluster(int argc, char *argv[]);
+extern int sacctmgr_list_config(void);
 extern int sacctmgr_list_qos(int argc, char *argv[]);
 extern int sacctmgr_list_wckey(int argc, char *argv[]);
 

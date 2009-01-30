@@ -74,9 +74,10 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am_scontrol_OBJECTS = create_res.$(OBJEXT) info_job.$(OBJEXT) info_node.$(OBJEXT) \
-	info_part.$(OBJEXT) info_res.$(OBJEXT) scontrol.$(OBJEXT) update_job.$(OBJEXT) \
-	update_node.$(OBJEXT) update_part.$(OBJEXT)
+am_scontrol_OBJECTS = create_res.$(OBJEXT) info_job.$(OBJEXT) \
+	info_node.$(OBJEXT) info_part.$(OBJEXT) info_res.$(OBJEXT) \
+	scontrol.$(OBJEXT) update_job.$(OBJEXT) update_node.$(OBJEXT) \
+	update_part.$(OBJEXT)
 scontrol_OBJECTS = $(am_scontrol_OBJECTS)
 am__DEPENDENCIES_1 = $(top_builddir)/src/api/libslurm.o
 am__DEPENDENCIES_2 =
