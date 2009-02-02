@@ -394,10 +394,6 @@ extern int mysql_get_db_connection(MYSQL **mysql_db, char *db_name,
 #endif
 		mysql_options(*mysql_db, MYSQL_OPT_CONNECT_TIMEOUT,
 			      (char *)&my_timeout);
-		mysql_options(*mysql_db, MYSQL_OPT_READ_TIMEOUT,
-			      (char *)&my_timeout);
-		mysql_options(*mysql_db, MYSQL_OPT_WRITE_TIMEOUT,
-			      (char *)&my_timeout);
 		while(!storage_init) {
 			if(!mysql_real_connect(*mysql_db, db_info->host,
 					       db_info->user, db_info->pass,
