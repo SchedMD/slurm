@@ -908,11 +908,17 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 		} else
 			resv_ptr->flags = resv_desc_ptr->flags;
 	}
+	if (resv_desc_ptr->partition && (resv_desc_ptr->partition[0] == '\0')) {
+		/* Clear the partition */
+		xfree(resv_desc_ptr->partition);
+		xfree(resv_ptr->partition);
+		resv_ptr->part_ptr = NULL;
+	}
 	if (resv_desc_ptr->partition) {
 		struct part_record *part_ptr = NULL;
 		part_ptr = find_part_record(resv_desc_ptr->partition);
 		if (!part_ptr) {
-			info("Reservation request has invalid partition %s",
+			info("Reservation request has invalid partition (%s)",
 			     resv_desc_ptr->partition);
 			error_code = ESLURM_INVALID_PARTITION_NAME;
 			goto fini;
