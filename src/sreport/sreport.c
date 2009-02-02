@@ -519,13 +519,13 @@ static int _set_time_format(char *format)
 
 	if (strncasecmp (format, "SecPer", MAX(command_len, 6)) == 0) {
 		time_format = SREPORT_TIME_SECS_PER;
-		time_format_string = "Seconds/Percentange of Total";
+		time_format_string = "Seconds/Percentage of Total";
 	} else if (strncasecmp (format, "MinPer", MAX(command_len, 6)) == 0) {
 		time_format = SREPORT_TIME_MINS_PER;
-		time_format_string = "Minutes/Percentange of Total";
+		time_format_string = "Minutes/Percentage of Total";
 	} else if (strncasecmp (format, "HourPer", MAX(command_len, 6)) == 0) {
 		time_format = SREPORT_TIME_HOURS_PER;
-		time_format_string = "Hours/Percentange of Total";
+		time_format_string = "Hours/Percentage of Total";
 	} else if (strncasecmp (format, "Seconds", MAX(command_len, 1)) == 0) {
 		time_format = SREPORT_TIME_SECS;
 		time_format_string = "Seconds";
@@ -537,7 +537,7 @@ static int _set_time_format(char *format)
 		time_format_string = "Hours";
 	} else if (strncasecmp (format, "Percent", MAX(command_len, 1)) == 0) {
 		time_format = SREPORT_TIME_PERCENT;
-		time_format_string = "Percentange of Total";
+		time_format_string = "Percentage of Total";
 	} else {
 		fprintf (stderr, "unknown time format %s", format);	
 		return SLURM_ERROR;
