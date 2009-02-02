@@ -972,7 +972,8 @@ typedef struct partition_info_msg {
 #define RESERVE_FLAG_DELETE	0x0004
 
 /* regular flags to send over */
-#define RESERVE_FLAG_MAINT	0x0010
+#define RESERVE_FLAG_CLEAR	0x0010
+#define RESERVE_FLAG_MAINT	0x0020
 
 typedef struct reserve_info {
 	char *accounts;		/* names of accounts permitted to use */

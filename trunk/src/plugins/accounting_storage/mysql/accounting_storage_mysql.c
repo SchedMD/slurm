@@ -879,19 +879,17 @@ static int _setup_resv_limits(acct_reservation_rec_t *resv,
 	/* strip off the action item from the flags */
 	resv->flags &= RESERVE_FLAG_FLAGS;
 
-	if(resv->assocs) {
-		xstrcat(*cols, ", assoclist");
-		xstrfmtcat(*vals, ", \"%s\"", resv->assocs);
-		xstrfmtcat(*extra, ", assoclist=\"%s\"", resv->assocs);
-	}
-
 	if(resv->cpus) {
 		xstrcat(*cols, ", cpus");
 		xstrfmtcat(*vals, ", %u", resv->cpus);
 		xstrfmtcat(*extra, ", cpus=%u", resv->cpus);		
 	}
 	
-	if(resv->flags) {
+	if(resv->flags & RESERVE_FLAG_CLEAR) {
+		xstrcat(*cols, ", flags");
+		xstrcat(*vals, ", 0");
+		xstrcat(*extra, ", flags=0");		
+	} else if(resv->flags) {
 		xstrcat(*cols, ", flags");
 		xstrfmtcat(*vals, ", %u", resv->flags);
 		xstrfmtcat(*extra, ", flags=%u", resv->flags);		
@@ -2674,7 +2672,6 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "cluster", "text not null" },
 		{ "deleted", "tinyint default 0" },
 		{ "cpus", "mediumint unsigned not null" },
-		{ "assoclist", "text not null default ''" },
 		{ "nodelist", "text not null default ''" },
 		{ "start", "int unsigned default 0 not null" },
 		{ "end", "int unsigned default 0 not null" },
@@ -4578,7 +4575,6 @@ extern int acct_storage_p_edit_reservation(mysql_conn_t *mysql_conn,
 			"start",
 			"end",
 			"cpus",
-			"assoclist",
 			"nodelist",
 			"flags"
 		};
@@ -4586,7 +4582,6 @@ extern int acct_storage_p_edit_reservation(mysql_conn_t *mysql_conn,
 			RESV_START,
 			RESV_END,
 			RESV_CPU,
-			RESV_ASSOC,
 			RESV_NODES,
 			RESV_FLAGS,
 			RESV_COUNT
@@ -4652,9 +4647,6 @@ extern int acct_storage_p_edit_reservation(mysql_conn_t *mysql_conn,
 		set = 0;
 
 		/* check differences here */
-		
-		if(!resv->assocs) 
-			resv->assocs = xstrdup(row[RESV_ASSOC]);
 		
 		if(!resv->cpus) {
 			resv->cpus = atoi(row[RESV_CPU]);

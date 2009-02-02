@@ -99,7 +99,6 @@ static bool _resv_overlap(time_t start_time, time_t end_time,
 static int  _select_nodes(reserve_request_msg_t *resv_desc_ptr, 
 			  struct part_record **part_ptr,
 			  bitstr_t **resv_bitmap);
-static void _set_assoc_list(struct slurmctld_resv *resv_ptr);
 static void _set_cpu_cnt(struct slurmctld_resv *resv_ptr);
 
 static int  _post_resv_create(struct slurmctld_resv *resv_ptr);
@@ -127,7 +126,6 @@ static void _del_resv_rec(void *x)
 		for (i=0; i<resv_ptr->account_cnt; i++)
 			xfree(resv_ptr->account_list[i]);
 		xfree(resv_ptr->account_list);
-		xfree(resv_ptr->assoc_list);
 		xfree(resv_ptr->features);
 		xfree(resv_ptr->name);
 		if (resv_ptr->node_bitmap)
@@ -211,16 +209,6 @@ static bool _is_account_valid(char *account)
 	return true;
 }
 
-/* Set a association list based upon accounts and users */
-static void _set_assoc_list(struct slurmctld_resv *resv_ptr)
-{
-	/* FIXME: Need to add logic here to get assoc_list from slurmdbd
-	 * based upon resv_ptr->account_cnt and account_list plus
-	 * user_cnt and user_list */
-	xfree(resv_ptr->assoc_list);	/* clear for modify */
-	resv_ptr->assoc_list = xstrdup("TBD");	/* FOR TESTING ONLY */
-}
-
 /* Post reservation create */
 static int _post_resv_create(struct slurmctld_resv *resv_ptr)
 {
@@ -228,7 +216,6 @@ static int _post_resv_create(struct slurmctld_resv *resv_ptr)
 	acct_reservation_rec_t resv;
 	memset(&resv, 0, sizeof(acct_reservation_rec_t));
 	
-	resv.assocs = resv_ptr->assoc_list;
 	resv.cluster = slurmctld_cluster_name;
 	resv.cpus = resv_ptr->cpu_cnt;
 	resv.flags = resv_ptr->flags | RESERVE_FLAG_CREATE;
@@ -274,7 +261,6 @@ static int _post_resv_update(struct slurmctld_resv *resv_ptr)
 	acct_reservation_rec_t resv;
 	memset(&resv, 0, sizeof(acct_reservation_rec_t));
 
-	resv.assocs = resv_ptr->assoc_list;
 	resv.cluster = slurmctld_cluster_name;
 	resv.cpus = resv_ptr->cpu_cnt;
 	resv.flags = resv_ptr->flags | RESERVE_FLAG_MODIFY;
@@ -694,7 +680,6 @@ static void _pack_resv(struct slurmctld_resv *resv_ptr, Buf buffer,
 	packstr(resv_ptr->users,	buffer);
 
 	if (internal) {
-		packstr(resv_ptr->assoc_list,	buffer);
 		pack32(resv_ptr->cpu_cnt,	buffer);
 		pack32(resv_ptr->resv_id,	buffer);
 	}
@@ -913,7 +898,6 @@ extern int create_resv(reserve_request_msg_t *resv_desc_ptr)
 	resv_ptr->user_list	= user_list;
 	resv_desc_ptr->users 	= NULL;		/* Nothing left to free */
 	_set_cpu_cnt(resv_ptr);
-	_set_assoc_list(resv_ptr);
 
 	/* This needs to be done after all other setup is done. */
 	_post_resv_create(resv_ptr);
@@ -1094,7 +1078,6 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 
 fini:	xfree(old_node_list);
 	FREE_NULL_BITMAP(old_node_bitmap);
-	_set_assoc_list(resv_ptr);
 	_post_resv_update(resv_ptr);
 	last_resv_update = now;
 	schedule_resv_save();
@@ -1377,7 +1360,6 @@ static void _validate_all_reservations(void)
 			      resv_ptr->name);
 			list_delete_item(iter);
 		} else {
-			_set_assoc_list(resv_ptr);
 			tmp = strrchr(resv_ptr->name, '_');
 			if (tmp) {
 				res_num = atoi(tmp + 1);
@@ -1489,8 +1471,6 @@ extern int load_all_resv_state(int recover)
 		safe_unpackstr_xmalloc(&resv_ptr->users,&uint32_tmp, buffer);
 
 		/* Fields saved for internal use only (save state) */
-		safe_unpackstr_xmalloc(&resv_ptr->assoc_list,	
-				       &uint32_tmp,	buffer);
 		safe_unpack32(&resv_ptr->cpu_cnt,	buffer);
 		safe_unpack32(&resv_ptr->resv_id,	buffer);
 
