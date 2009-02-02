@@ -110,6 +110,7 @@ typedef struct {
 	uint16_t qos;
 	uint32_t req_cpus;
 	uint32_t requid;
+	uint32_t resvid;
 	sacct_t sacct;
 	uint32_t show_full;
 	time_t start;

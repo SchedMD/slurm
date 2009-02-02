@@ -255,6 +255,23 @@ extern int setup_job_cond_limits(acct_job_cond_t *job_cond, char **extra)
 		xstrcat(*extra, ")");
 	}
 
+	if(job_cond->resv_list && list_count(job_cond->resv_list)) {
+		set = 0;
+		if(*extra)
+			xstrcat(*extra, " && (");
+		else
+			xstrcat(*extra, " where (");
+		itr = list_iterator_create(job_cond->resv_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "t1.resv='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+
 	if(job_cond->step_list && list_count(job_cond->step_list)) {
 		set = 0;
 		if(*extra)
@@ -376,6 +393,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		"t1.wckeyid",
 		"t1.uid",
 		"t1.gid",
+		"t1.resvid",
 		"t1.partition",
 		"t1.blockid",
 		"t1.cluster",
@@ -445,6 +463,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		JOB_REQ_WCKEYID,
 		JOB_REQ_UID,
 		JOB_REQ_GID,
+		JOB_REQ_RESVID,
 		JOB_REQ_PARTITION,
 		JOB_REQ_BLOCKID,
 		JOB_REQ_CLUSTER1,
@@ -630,6 +649,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 
 		job->alloc_cpus = atoi(row[JOB_REQ_ALLOC_CPUS]);
 		job->associd = atoi(row[JOB_REQ_ASSOCID]);
+		job->resvid = atoi(row[JOB_REQ_RESVID]);
 
 		if(row[JOB_REQ_WCKEY] && row[JOB_REQ_WCKEY][0])
 			job->wckey = xstrdup(row[JOB_REQ_WCKEY]);
@@ -966,6 +986,7 @@ extern int mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 		"wckeyid",
 		"uid",
 		"gid",
+		"resvid",
 		"partition",
 		"blockid",
 		"cluster",
@@ -1032,6 +1053,7 @@ extern int mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 		JOB_REQ_WCKEYID,
 		JOB_REQ_UID,
 		JOB_REQ_GID,
+		JOB_REQ_RESVID,
 		JOB_REQ_PARTITION,
 		JOB_REQ_BLOCKID,
 		JOB_REQ_CLUSTER,

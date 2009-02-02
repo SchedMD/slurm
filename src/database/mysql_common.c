@@ -51,30 +51,6 @@ pthread_mutex_t mysql_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static char *table_defs_table = "table_defs_table";
 
-static int _clear_results(MYSQL *mysql_db)
-{
-	MYSQL_RES *result = NULL;
-	int rc = 0;
-	do {
-		/* did current statement return data? */
-		if((result = mysql_store_result(mysql_db)))
-			mysql_free_result(result);
-		
-		/* more results? -1 = no, >0 = error, 0 = yes (keep looping) */
-		if ((rc = mysql_next_result(mysql_db)) > 0)
-			error("Could not execute statement %d %s\n",
-			      mysql_errno(mysql_db),
-			      mysql_error(mysql_db));
-	} while (rc == 0);
-
-	if(rc > 0) {
-		errno = rc;
-		return SLURM_ERROR;
-	} 
-
-	return SLURM_SUCCESS;
-}
-
 static MYSQL_RES *_get_first_result(MYSQL *mysql_db)
 {
 	MYSQL_RES *result = NULL;
@@ -444,6 +420,30 @@ extern int mysql_cleanup()
 	return SLURM_SUCCESS;
 }
 
+extern int mysql_clear_results(MYSQL *mysql_db)
+{
+	MYSQL_RES *result = NULL;
+	int rc = 0;
+	do {
+		/* did current statement return data? */
+		if((result = mysql_store_result(mysql_db)))
+			mysql_free_result(result);
+		
+		/* more results? -1 = no, >0 = error, 0 = yes (keep looping) */
+		if ((rc = mysql_next_result(mysql_db)) > 0)
+			error("Could not execute statement %d %s\n",
+			      mysql_errno(mysql_db),
+			      mysql_error(mysql_db));
+	} while (rc == 0);
+
+	if(rc > 0) {
+		errno = rc;
+		return SLURM_ERROR;
+	} 
+
+	return SLURM_SUCCESS;
+}
+
 extern int mysql_db_query(MYSQL *mysql_db, char *query)
 {
 	if(!mysql_db)
@@ -452,13 +452,9 @@ extern int mysql_db_query(MYSQL *mysql_db, char *query)
 	slurm_mutex_lock(&mysql_lock);
 #endif
 	/* clear out the old results so we don't get a 2014 error */
-	_clear_results(mysql_db);		
+	mysql_clear_results(mysql_db);		
 //try_again:
 	if(mysql_query(mysql_db, query)) {
-		/* if(mysql_errno(mysql_db) == CR_SERVER_GONE_ERROR) { */
-/* 			/\* FIX ME: this means the connection went away *\/ */
-/* 		} */
-
 		error("mysql_query failed: %d %s\n%s",
 		      mysql_errno(mysql_db),
 		      mysql_error(mysql_db), query);
@@ -478,7 +474,7 @@ extern int mysql_db_query(MYSQL *mysql_db, char *query)
 extern int mysql_db_ping(MYSQL *mysql_db)
 {
 	/* clear out the old results so we don't get a 2014 error */
-	_clear_results(mysql_db);		
+	mysql_clear_results(mysql_db);		
 	return mysql_ping(mysql_db);
 }
 
@@ -488,7 +484,7 @@ extern int mysql_db_commit(MYSQL *mysql_db)
 	slurm_mutex_lock(&mysql_lock);
 #endif
 	/* clear out the old results so we don't get a 2014 error */
-	_clear_results(mysql_db);		
+	mysql_clear_results(mysql_db);		
 	if(mysql_commit(mysql_db)) {
 		error("mysql_commit failed: %d %s",
 		      mysql_errno(mysql_db),
@@ -511,7 +507,7 @@ extern int mysql_db_rollback(MYSQL *mysql_db)
 	slurm_mutex_lock(&mysql_lock);
 #endif
 	/* clear out the old results so we don't get a 2014 error */
-	_clear_results(mysql_db);		
+	mysql_clear_results(mysql_db);		
 	if(mysql_rollback(mysql_db)) {
 		error("mysql_commit failed: %d %s",
 		      mysql_errno(mysql_db),
@@ -554,7 +550,7 @@ extern int mysql_db_query_check_after(MYSQL *mysql_db, char *query)
 	int rc = SLURM_SUCCESS;
 		
 	if((rc = mysql_db_query(mysql_db, query)) != SLURM_ERROR)  
-		rc = _clear_results(mysql_db);
+		rc = mysql_clear_results(mysql_db);
 	
 	return rc;
 }

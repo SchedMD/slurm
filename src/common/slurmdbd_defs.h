@@ -122,7 +122,9 @@ typedef enum {
 	DBD_GOT_USERS,  	/* Response to DBD_GET_USERS		*/
 	DBD_JOB_COMPLETE,	/* Record job completion 		*/
 	DBD_JOB_START,		/* Record job starting			*/
-	DBD_JOB_START_RC,	/* return db_index from job insertion 	*/
+	DBD_ID_RC,	        /* return db_index from job
+				 * insertion, or any other id from
+				 * other commands.              	*/
 	DBD_JOB_SUSPEND,	/* Record job suspension		*/
 	DBD_MODIFY_ACCOUNTS,    /* Modify existing account              */
 	DBD_MODIFY_ASSOCS,      /* Modify existing association          */
@@ -161,6 +163,7 @@ typedef enum {
 	DBD_ARCHIVE_DUMP,    	/* issue a request to dump jobs to
 				 * archive */
 	DBD_ARCHIVE_LOAD,    	/* load an archive file    	        */
+	DBD_EDIT_RESV,    	/* edit a reservation (add,modify,delete) */
 	DBD_GET_CONFIG,  	/* Get configuration information	*/
 	DBD_GOT_CONFIG,		/* Response to DBD_GET_CONFIG		*/
 } slurmdbd_msg_type_t;
@@ -184,6 +187,12 @@ typedef struct dbd_cluster_procs_msg {
 	uint32_t proc_count;	/* total processor count */
 	time_t event_time;	/* time of transition */
 } dbd_cluster_procs_msg_t;
+
+typedef struct {
+	void *rec; /* this could be anything based on the type types
+		     * are defined in slurm_accounting_storage.h
+		     * *_rec_t */
+} dbd_rec_msg_t;
 
 typedef struct {
 	void *cond; /* this could be anything based on the type types
@@ -258,16 +267,18 @@ typedef struct dbd_job_start_msg {
 	char *   partition;	/* partition job is running on */
 	uint32_t priority;	/* job priority */
 	uint32_t req_cpus;	/* count of req processors */
+	uint32_t resv_id;	/* reservation id */
 	time_t   start_time;	/* job start time */
 	time_t   submit_time;	/* job submit time */
 	uint32_t uid;	        /* user ID if associations are being used */
 	char *   wckey;		/* wckey name */
 } dbd_job_start_msg_t;
 
-typedef struct dbd_job_start_rc_msg {
-	uint32_t db_index;	/* db_index */
+/* returns a uint32_t along with a return code */
+typedef struct dbd_id_rc_msg {
+	uint32_t id;
 	uint32_t return_code;
-} dbd_job_start_rc_msg_t;
+} dbd_id_rc_msg_t;
 
 typedef struct dbd_job_suspend_msg {
 	uint32_t assoc_id;	/* accounting association id needed
@@ -403,6 +414,9 @@ void inline slurmdbd_free_acct_coord_msg(uint16_t rpc_version,
 					 dbd_acct_coord_msg_t *msg);
 void inline slurmdbd_free_cluster_procs_msg(uint16_t rpc_version, 
 					    dbd_cluster_procs_msg_t *msg);
+void inline slurmdbd_free_rec_msg(uint16_t rpc_version, 
+				  slurmdbd_msg_type_t type,
+				  dbd_rec_msg_t *msg);
 void inline slurmdbd_free_cond_msg(uint16_t rpc_version, 
 				   slurmdbd_msg_type_t type,
 				   dbd_cond_msg_t *msg);
@@ -416,8 +430,8 @@ void inline slurmdbd_free_job_complete_msg(uint16_t rpc_version,
 					   dbd_job_comp_msg_t *msg);
 void inline slurmdbd_free_job_start_msg(uint16_t rpc_version, 
 					dbd_job_start_msg_t *msg);
-void inline slurmdbd_free_job_start_rc_msg(uint16_t rpc_version, 
-					   dbd_job_start_rc_msg_t *msg);
+void inline slurmdbd_free_id_rc_msg(uint16_t rpc_version, 
+					   dbd_id_rc_msg_t *msg);
 void inline slurmdbd_free_job_suspend_msg(uint16_t rpc_version, 
 					  dbd_job_suspend_msg_t *msg);
 void inline slurmdbd_free_list_msg(uint16_t rpc_version, 
@@ -450,6 +464,9 @@ void inline slurmdbd_pack_acct_coord_msg(uint16_t rpc_version,
 void inline slurmdbd_pack_cluster_procs_msg(uint16_t rpc_version, 
 					    dbd_cluster_procs_msg_t *msg,
 					    Buf buffer);
+void inline slurmdbd_pack_rec_msg(uint16_t rpc_version, 
+				  slurmdbd_msg_type_t type,
+				  dbd_rec_msg_t *msg, Buf buffer);
 void inline slurmdbd_pack_cond_msg(uint16_t rpc_version, 
 				   slurmdbd_msg_type_t type,
 				   dbd_cond_msg_t *msg, Buf buffer);
@@ -466,9 +483,9 @@ void inline slurmdbd_pack_job_complete_msg(uint16_t rpc_version,
 void inline slurmdbd_pack_job_start_msg(uint16_t rpc_version, 
 					dbd_job_start_msg_t *msg,
 					Buf buffer);
-void inline slurmdbd_pack_job_start_rc_msg(uint16_t rpc_version, 
-					   dbd_job_start_rc_msg_t *msg,
-					   Buf buffer);
+void inline slurmdbd_pack_id_rc_msg(uint16_t rpc_version, 
+				    dbd_id_rc_msg_t *msg,
+				    Buf buffer);
 void inline slurmdbd_pack_job_suspend_msg(uint16_t rpc_version, 
 					  dbd_job_suspend_msg_t *msg,
 					  Buf buffer);
@@ -507,6 +524,9 @@ int inline slurmdbd_unpack_acct_coord_msg(uint16_t rpc_version,
 int inline slurmdbd_unpack_cluster_procs_msg(uint16_t rpc_version, 
 					     dbd_cluster_procs_msg_t **msg,
 					     Buf buffer);
+int inline slurmdbd_unpack_rec_msg(uint16_t rpc_version, 
+				   slurmdbd_msg_type_t type,
+				   dbd_rec_msg_t **msg, Buf buffer);
 int inline slurmdbd_unpack_cond_msg(uint16_t rpc_version, 
 				    slurmdbd_msg_type_t type,
 				    dbd_cond_msg_t **msg, Buf buffer);
@@ -523,9 +543,9 @@ int inline slurmdbd_unpack_job_complete_msg(uint16_t rpc_version,
 int inline slurmdbd_unpack_job_start_msg(uint16_t rpc_version, 
 					 dbd_job_start_msg_t **msg,
 					 Buf buffer);
-int inline slurmdbd_unpack_job_start_rc_msg(uint16_t rpc_version, 
-					    dbd_job_start_rc_msg_t **msg,
-					    Buf buffer);
+int inline slurmdbd_unpack_id_rc_msg(uint16_t rpc_version, 
+				     dbd_id_rc_msg_t **msg,
+				     Buf buffer);
 int inline slurmdbd_unpack_job_suspend_msg(uint16_t rpc_version, 
 					   dbd_job_suspend_msg_t **msg,
 					   Buf buffer);

@@ -323,6 +323,9 @@ typedef struct slurmctld_resv {
 	struct part_record *part_ptr;	/* pointer to partition used	*/
 	uint32_t resv_id;	/* unique reservation ID, internal use	*/
 	time_t start_time;	/* start time of reservation		*/
+	time_t start_time_prev;	/* If start time was changed this is
+				 * the pervious start time.  Needed
+				 * for accounting */
 	uint16_t flags;		/* see RESERVE_FLAG_* in slurm.h	*/
 	char *users;		/* names of users permitted to use	*/
 	int user_cnt;		/* count of users permitted to use	*/
