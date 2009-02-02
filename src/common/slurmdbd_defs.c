@@ -1,7 +1,7 @@
 /****************************************************************************\
  *  slurmdbd_defs.c - functions for use with Slurm DBD RPCs
  *****************************************************************************
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  LLNL-CODE-402394.
@@ -388,6 +388,7 @@ extern Buf pack_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 	case DBD_GOT_WCKEYS:
 	case DBD_GOT_TXN:
 	case DBD_GOT_USERS:
+	case DBD_GOT_CONFIG:
 		slurmdbd_pack_list_msg(
 			rpc_version, req->msg_type, 
 			(dbd_list_msg_t *)req->data, buffer);
@@ -507,6 +508,9 @@ extern Buf pack_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 					     (dbd_roll_usage_msg_t *)
 					     req->data, buffer);
 		break;
+	case DBD_GET_CONFIG:
+		/* No message to pack */
+		break;
 	default:
 		error("slurmdbd: Invalid message type pack %u(%s:%u)",
 		      req->msg_type,
@@ -541,6 +545,7 @@ extern int unpack_slurmdbd_msg(uint16_t rpc_version,
 	case DBD_GOT_WCKEYS:
 	case DBD_GOT_TXN:
 	case DBD_GOT_USERS:
+	case DBD_GOT_CONFIG:
 		rc = slurmdbd_unpack_list_msg(
 			rpc_version, resp->msg_type,
 			(dbd_list_msg_t **)&resp->data, buffer);
@@ -664,6 +669,9 @@ extern int unpack_slurmdbd_msg(uint16_t rpc_version,
 		rc = slurmdbd_unpack_roll_usage_msg(
 			rpc_version,
 			(dbd_roll_usage_msg_t **)&resp->data, buffer);
+		break;
+	case DBD_GET_CONFIG:
+		/* No message to unpack */
 		break;
 	default:
 		error("slurmdbd: Invalid message type unpack %u(%s)",
@@ -2795,6 +2803,9 @@ void inline slurmdbd_pack_list_msg(uint16_t rpc_version,
 	case DBD_GOT_CLUSTERS:
 		my_function = pack_acct_cluster_rec;
 		break;
+	case DBD_GOT_CONFIG:
+		my_function = pack_acct_config_rec;
+		break;
 	case DBD_GOT_JOBS:
 		my_function = pack_jobacct_job_rec;
 		break;
@@ -2862,6 +2873,10 @@ int inline slurmdbd_unpack_list_msg(uint16_t rpc_version,
 	case DBD_GOT_CLUSTERS:
 		my_function = unpack_acct_cluster_rec;
 		my_destroy = destroy_acct_cluster_rec;
+		break;
+	case DBD_GOT_CONFIG:
+		my_function = unpack_acct_config_rec;
+		my_destroy = destroy_acct_config_rec;
 		break;
 	case DBD_GOT_JOBS:
 		my_function = unpack_jobacct_job_rec;

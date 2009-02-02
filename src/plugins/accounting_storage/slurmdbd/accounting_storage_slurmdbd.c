@@ -955,25 +955,38 @@ extern List acct_storage_p_get_clusters(void *db_conn, uid_t uid,
 	return ret_list;
 }
 
-static void _del_config_list(void *x)
+extern List acct_storage_p_get_config(void)
 {
-	config_key_pairs_t *key_pair = (config_key_pairs_t *) x;
-	xfree(key_pair->name);
-	xfree(key_pair->value);
-	xfree(key_pair);
-}
+	slurmdbd_msg_t req, resp;
+	dbd_list_msg_t *got_msg;
+	int rc;
+	List ret_list = NULL;
+	
+	req.msg_type = DBD_GET_CONFIG;
+	req.data = NULL;
+	rc = slurm_send_recv_slurmdbd_msg(SLURMDBD_VERSION, &req, &resp);
 
-extern List acct_storage_p_get_config(void *db_conn)
-{
-	List dbd_config_list = NULL;
-	config_key_pairs_t *key_pair;
+	if (rc != SLURM_SUCCESS)
+		error("slurmdbd: DBD_GET_CONFIG failure: %m");
+	else if (resp.msg_type == DBD_RC) {
+		dbd_rc_msg_t *msg = resp.data;
+		if(msg->return_code == SLURM_SUCCESS) {
+			info("%s", msg->comment);
+			ret_list = list_create(NULL);
+		} else
+			error("%s", msg->comment);
+		slurmdbd_free_rc_msg(SLURMDBD_VERSION, msg);
+	} else if (resp.msg_type != DBD_GOT_CONFIG) {
+		error("slurmdbd: response type not DBD_GOT_CONFIG: %u", 
+		      resp.msg_type);
+	} else {
+		got_msg = (dbd_list_msg_t *) resp.data;
+		ret_list = got_msg->my_list;
+		got_msg->my_list = NULL;
+		slurmdbd_free_list_msg(SLURMDBD_VERSION, got_msg);
+	}
 
-	dbd_config_list = list_create(_del_config_list);
-	key_pair = xmalloc(sizeof(config_key_pairs_t));
-	key_pair->name  = xstrdup("NAME");
-	key_pair->value = xstrdup("VALUE_FOR_TESTING");
-	list_append(dbd_config_list, key_pair);
-	return dbd_config_list;
+	return ret_list;
 }
 
 extern List acct_storage_p_get_associations(void *db_conn, uid_t uid,

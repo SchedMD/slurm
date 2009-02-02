@@ -75,6 +75,8 @@ static int   _get_assocs(slurmdbd_conn_t *slurmdbd_conn,
 			 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _get_clusters(slurmdbd_conn_t *slurmdbd_conn,
 			   Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _get_config(slurmdbd_conn_t *slurmdbd_conn,
+			 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _get_jobs(slurmdbd_conn_t *slurmdbd_conn,
 		       Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _get_jobs_cond(slurmdbd_conn_t *slurmdbd_conn,
@@ -226,6 +228,10 @@ proc_req(slurmdbd_conn_t *slurmdbd_conn,
 		case DBD_GET_CLUSTERS:
 			rc = _get_clusters(slurmdbd_conn,
 					   in_buffer, out_buffer, uid);
+			break;
+		case DBD_GET_CONFIG:
+			rc = _get_config(slurmdbd_conn,
+					 in_buffer, out_buffer, uid);
 			break;
 		case DBD_GET_JOBS:
 			rc = _get_jobs(slurmdbd_conn,
@@ -1001,6 +1007,35 @@ static int _get_clusters(slurmdbd_conn_t *slurmdbd_conn,
 	if(list_msg.my_list)
 		list_destroy(list_msg.my_list);
 	
+	return SLURM_SUCCESS;
+}
+
+static int _get_config(slurmdbd_conn_t *slurmdbd_conn, 
+			 Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	dbd_list_msg_t list_msg = { NULL };
+	config_key_pair_t *test = NULL;
+
+	debug2("DBD_GET_CONFIG: called");
+	/* No message body to unpack */
+
+	list_msg.my_list = list_create(NULL);
+test = xmalloc(sizeof(config_key_pair_t));
+test->name = xstrdup("NAME1");
+test->value = xstrdup("VALUE1");
+list_append(list_msg.my_list, test);
+test = xmalloc(sizeof(config_key_pair_t));
+test->name = xstrdup("NAME2");
+test->value = xstrdup("VALUE2");
+/* NEED TO FREE LIST and it's contents */
+	list_append(list_msg.my_list, test);
+	*out_buffer = init_buf(1024);
+	pack16((uint16_t) DBD_GOT_CONFIG, *out_buffer);
+	slurmdbd_pack_list_msg(slurmdbd_conn->rpc_version, 
+			       DBD_GOT_CONFIG, &list_msg, *out_buffer);
+	if(list_msg.my_list)
+		list_destroy(list_msg.my_list);
+
 	return SLURM_SUCCESS;
 }
 
