@@ -1058,16 +1058,7 @@ static int _get_config(slurmdbd_conn_t *slurmdbd_conn,
 	debug2("DBD_GET_CONFIG: called");
 	/* No message body to unpack */
 
-	list_msg.my_list = list_create(NULL);
-test = xmalloc(sizeof(config_key_pair_t));
-test->name = xstrdup("NAME1");
-test->value = xstrdup("VALUE1");
-list_append(list_msg.my_list, test);
-test = xmalloc(sizeof(config_key_pair_t));
-test->name = xstrdup("NAME2");
-test->value = xstrdup("VALUE2");
-/* NEED TO FREE LIST and it's contents */
-	list_append(list_msg.my_list, test);
+	list_msg.my_list = dump_config();
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_CONFIG, *out_buffer);
 	slurmdbd_pack_list_msg(slurmdbd_conn->rpc_version, 
