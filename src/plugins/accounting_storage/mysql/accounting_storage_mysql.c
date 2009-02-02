@@ -4522,6 +4522,7 @@ extern int acct_storage_p_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 extern int acct_storage_p_edit_reservation(mysql_conn_t *mysql_conn,
 					   acct_reservation_rec_t *resv)
 {
+#ifdef HAVE_MYSQL
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	int rc = SLURM_SUCCESS;
@@ -4723,6 +4724,9 @@ end_it:
 	xfree(extra);
 	
 	return rc;
+#else
+	return SLURM_ERROR;
+#endif
 }
 
 extern List acct_storage_p_modify_users(mysql_conn_t *mysql_conn, uint32_t uid, 
