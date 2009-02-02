@@ -1053,7 +1053,6 @@ static int _get_config(slurmdbd_conn_t *slurmdbd_conn,
 			 Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_list_msg_t list_msg = { NULL };
-	config_key_pair_t *test = NULL;
 
 	debug2("DBD_GET_CONFIG: called");
 	/* No message body to unpack */

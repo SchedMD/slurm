@@ -1225,12 +1225,13 @@ static int _restore_job_dependencies(void)
 	assoc_mgr_clear_used_info();
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if((job_ptr->job_state == JOB_RUNNING) ||
-		   (job_ptr->job_state == JOB_SUSPENDED))
-			acct_policy_job_begin(job_ptr);
-			
-		if(!IS_JOB_FINISHED(job_ptr))
-			acct_policy_add_job_submit(job_ptr);
+		if (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) {
+			if((job_ptr->job_state == JOB_RUNNING) ||
+			   (job_ptr->job_state == JOB_SUSPENDED))
+				acct_policy_job_begin(job_ptr);
+			if(!IS_JOB_FINISHED(job_ptr))
+				acct_policy_add_job_submit(job_ptr);
+		}
 
 		license_list = license_job_validate(job_ptr->licenses, &valid);
 		if (job_ptr->license_list)

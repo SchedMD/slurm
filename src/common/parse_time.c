@@ -657,3 +657,48 @@ extern void mins2time_str(uint32_t time, char *string, int size)
 				hours, minutes, seconds);
 	}
 }
+
+extern char *mon_abbr(int mon)
+{
+	switch(mon) {
+	case 0:
+		return "Ja";
+		break;
+	case 1:
+		return "Fe";
+		break;
+	case 2:
+		return "Ma";
+		break;
+	case 3:
+		return "Ap";
+		break;
+	case 4:
+		return "Ma";
+		break;
+	case 5:
+		return "Ju";
+		break;
+	case 6:
+		return "Jl";
+		break;
+	case 7:
+		return "Au";
+		break;
+	case 8:
+		return "Se";
+		break;
+	case 9:
+		return "Oc";
+		break;
+	case 10:
+		return "No";
+		break;
+	case 11:
+		return "De";
+		break;
+	default:
+		return "Un";
+		break;
+	}
+}

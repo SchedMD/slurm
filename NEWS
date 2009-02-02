@@ -150,6 +150,9 @@ documents those changes that are of interest to users and admins.
     slurmstepd daemons. Patch from Hongjia Cao, NUDT.
  -- Add squeue option to report jobs by account (-U or --account). Patch from
     Par Andersson, National Supercomputer Centre, Sweden.
+ -- Add -DNUMA_VERSION1_COMPATIBILITY to Makefile CFLAGS for proper behavior
+    when building with NUMA version 2 APIs.
+ -- BLUEGENE - slurm works on a BGP system.
 
 * Changes in SLURM 1.3.13
 =========================
