@@ -8,6 +8,7 @@ documents those changes that are of interest to users and admins.
     upon partitions that already exist).
  -- Added environment variable SLURM_RESTART_COUNT to batch jobs to
     indicated the count of job restarts made.
+ -- Added sacctmgr command "show config".
 
 * Changes in SLURM 1.4.0-pre7
 =============================
