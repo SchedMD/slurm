@@ -530,4 +530,5 @@ test22.1   sreport cluster ut report
 
 test23.#   Testing of sacctmgr commands and options.
 =================================================
-test23.1   sacctmgr --usage
+test23.1   sacctmgr --help
+test23.2   sacctmgr --helpformat
