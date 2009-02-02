@@ -41,6 +41,7 @@
 
 #include "src/common/uid.h"
 #include "src/slurmctld/trigger_mgr.h"
+#include "src/slurmctld/locks.h"
 
 /* some local functions */
 #ifdef HAVE_BG
@@ -462,6 +463,9 @@ extern int bg_record_cmpf_inc(bg_record_t* rec_a, bg_record_t* rec_b)
 	else if(rec_a->nodecard > rec_b->nodecard)
 		return 1;
 #else
+	if(!rec_a->ionode_bitmap || !rec_b->ionode_bitmap)
+		return 0;
+
 	if(bit_ffs(rec_a->ionode_bitmap) < bit_ffs(rec_b->ionode_bitmap))
 		return -1;
 	else
@@ -577,8 +581,27 @@ extern void drain_as_needed(bg_record_t *bg_record, char *reason)
 	char *host = NULL;
 	char bg_down_node[128];
 
-	if(bg_record->job_running > NO_JOB_RUNNING)
-		slurm_fail_job(bg_record->job_running);			
+	if(bg_record->job_running > NO_JOB_RUNNING) {
+		int rc;
+		slurmctld_lock_t job_write_lock = {
+			NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
+		lock_slurmctld(job_write_lock);
+		debug2("Trying to requeue job %d", bg_record->job_running);
+		if((rc = job_requeue(0, bg_record->job_running, -1))) {
+			error("couldn't requeue job %u, failing it: %s",
+			      bg_record->job_running, 
+			      slurm_strerror(rc));
+			job_fail(bg_record->job_running);
+		}
+		unlock_slurmctld(job_write_lock);
+		slurm_mutex_lock(&block_state_mutex);
+		if(remove_from_bg_list(bg_job_block_list, bg_record) 
+		   == SLURM_SUCCESS) {
+			num_unused_cpus += bg_record->bp_count
+				* bg_record->cpus_per_bp;
+		}
+		slurm_mutex_unlock(&block_state_mutex);
+	}
 
 	/* small blocks */
 	if(bg_record->cpus_per_bp != procs_per_node) {
@@ -616,6 +639,7 @@ end_it:
 	error("Setting Block %s to ERROR state.", bg_record->bg_block_id);
 	bg_record->job_running = BLOCK_ERROR_STATE;
 	bg_record->state = RM_PARTITION_ERROR;
+	remove_from_bg_list(bg_booted_block_list, bg_record);			
 	slurm_mutex_unlock(&block_state_mutex);
 	trigger_block_error();
 	return;

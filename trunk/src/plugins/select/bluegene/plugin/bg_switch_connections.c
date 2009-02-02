@@ -127,7 +127,7 @@ static int _get_switches_by_bpid(
 
 	for (i=0; i<switch_num; i++) {
 		if(i) {
-			if ((rc = bridge_get_data(bg, RM_NextSwitch, 
+			if ((rc = bridge_get_data(my_bg, RM_NextSwitch, 
 						  &curr_switch)) 
 			    != STATUS_OK) {
 				fatal("bridge_get_data"
@@ -135,7 +135,7 @@ static int _get_switches_by_bpid(
 				      bg_err_str(rc));
 			}
 		} else {
-			if ((rc = bridge_get_data(bg, RM_FirstSwitch, 
+			if ((rc = bridge_get_data(my_bg, RM_FirstSwitch, 
 						  &curr_switch)) 
 			    != STATUS_OK) {
 				fatal("bridge_get_data"
@@ -170,31 +170,33 @@ static int _get_switches_by_bpid(
 static int _add_switch_conns(rm_switch_t* curr_switch, 
 			     ba_switch_t *ba_switch)
 {
-	ListIterator itr;
 	int firstconnect=1;
 
 	/* max number of connections in a switch */
 	int num_connections = 3;
 	ba_connection_t *ba_conn = NULL;
-	rm_connection_t conn;
+	rm_connection_t conn[num_connections];
+	rm_connection_t *conn_ptr = NULL;
 	int i, rc;
-	int conn_num=0;
 	int source = 0;
-	
-	for(i=0;i<num_connections;i++) {
+	List conn_list = list_create(NULL);
+	/* we have to figure out how may connections we have and then
+	   go through the loop again to actually add them */
+
+	for(i=0; i<num_connections; i++) {
 		/* set the source port(-) to check */
 		switch(i) {
 		case 0:
 			source = 1;
-			conn.p1 = RM_PORT_S1;
+			conn[i].p1 = RM_PORT_S1;
 			break;
 		case 1:
 			source = 2;
-			conn.p1 = RM_PORT_S2;
+			conn[i].p1 = RM_PORT_S2;
 			break;
 		case 2:
 			source = 4;
-			conn.p1 = RM_PORT_S4;
+			conn[i].p1 = RM_PORT_S4;
 			break;
 		default:
 			error("we are to far into the switch connections");
@@ -204,13 +206,13 @@ static int _add_switch_conns(rm_switch_t* curr_switch,
 		if(ba_conn->used && ba_conn->port_tar != source) {
 			switch(ba_conn->port_tar) {
 			case 0:
-				conn.p2 = RM_PORT_S0; 
+				conn[i].p2 = RM_PORT_S0; 
 				break;
 			case 3:
-				conn.p2 = RM_PORT_S3; 
+				conn[i].p2 = RM_PORT_S3; 
 				break;
 			case 5:
-				conn.p2 = RM_PORT_S5; 
+				conn[i].p2 = RM_PORT_S5; 
 				break;	
 			default:
 				error("we are trying to connection %d -> %d "
@@ -218,45 +220,15 @@ static int _add_switch_conns(rm_switch_t* curr_switch,
 				      source, ba_conn->port_tar);
 				break;	
 			}
-			conn.part_state = RM_PARTITION_READY;
-			
-			if(firstconnect) {
-				if ((rc = bridge_set_data(
-					     curr_switch, 
-					     RM_SwitchFirstConnection, 
-					     &conn)) 
-				    != STATUS_OK) {
-					list_iterator_destroy(itr);
-					
-					fatal("bridge_set_data"
-					      "(RM_SwitchFirstConnection): "
-					      "%s", 
-					      bg_err_str(rc));
-					return SLURM_ERROR;
-				}
-				firstconnect=0;
-			} else {
-				if ((rc = bridge_set_data(
-					     curr_switch, 
-					     RM_SwitchNextConnection,
-					     &conn)) 
-				    != STATUS_OK) {
-					list_iterator_destroy(itr);
-					
-					fatal("bridge_set_data"
-					      "(RM_SwitchNextConnection): %s",
-					      bg_err_str(rc));
-					return SLURM_ERROR;
-				}
-			} 
-			
-			conn_num++;
+			conn[i].part_state = RM_PARTITION_READY;
 			debug2("adding %d -> %d", source, ba_conn->port_tar);
+			list_push(conn_list, &conn[i]);
 		}
 	}
-	if(conn_num) {
-		if ((rc = bridge_set_data(curr_switch, RM_SwitchConnNum,
-					  &conn_num)) 
+	
+	i = list_count(conn_list);
+	if(i) {
+		if ((rc = bridge_set_data(curr_switch, RM_SwitchConnNum, &i))
 		    != STATUS_OK) {
 			fatal("bridge_set_data: RM_SwitchConnNum: %s",
 			      bg_err_str(rc));
@@ -265,9 +237,43 @@ static int _add_switch_conns(rm_switch_t* curr_switch,
 		} 
 	} else {
 		debug("we got a switch with no connections");
-		return SLURM_ERROR;
+		list_destroy(conn_list);
+                return SLURM_ERROR;
+	}
+
+	/* Now we can add them to the mix */
+	while((conn_ptr = list_pop(conn_list))) {
+		if(firstconnect) {
+			if ((rc = bridge_set_data(
+				     curr_switch, 
+				     RM_SwitchFirstConnection, 
+				     conn_ptr)) 
+			    != STATUS_OK) {
+				fatal("bridge_set_data"
+				      "(RM_SwitchFirstConnection): "
+				      "%s", 
+				      bg_err_str(rc));
+				list_destroy(conn_list);
+				return SLURM_ERROR;
+			}
+			firstconnect=0;
+		} else {
+			if ((rc = bridge_set_data(
+				     curr_switch, 
+				     RM_SwitchNextConnection,
+				     conn_ptr)) 
+			    != STATUS_OK) {
+				fatal("bridge_set_data"
+				      "(RM_SwitchNextConnection): %s",
+				      bg_err_str(rc));
+				list_destroy(conn_list);
+				return SLURM_ERROR;
+			}
+		} 		
 	}
 	
+	list_destroy(conn_list);
+
 	return SLURM_SUCCESS;
 }
 #endif
@@ -322,7 +328,6 @@ extern int configure_small_block(bg_record_t *bg_record)
 	int rc = SLURM_SUCCESS;
 #ifdef HAVE_BG_FILES	
 	bool small = true;
-	ListIterator itr;
 	ba_node_t* ba_node = NULL;
 	rm_BP_t *curr_bp = NULL;
 	rm_bp_id_t bp_id = NULL;
@@ -362,9 +367,7 @@ extern int configure_small_block(bg_record_t *bg_record)
 	}
 	
 			
-	itr = list_iterator_create(bg_record->bg_block_list);
-	ba_node = list_next(itr);
-	list_iterator_destroy(itr);
+	ba_node = list_peek(bg_record->bg_block_list);
 
 	if (_get_bp_by_location(bg, ba_node->coord, &curr_bp) 
 	    == SLURM_ERROR) {
@@ -505,7 +508,6 @@ extern int configure_small_block(bg_record_t *bg_record)
 	int rc = SLURM_SUCCESS;
 #ifdef HAVE_BG_FILES	
 	bool small = true;
-	ListIterator itr;
 	ba_node_t* ba_node = NULL;
 	rm_BP_t *curr_bp = NULL;
 	rm_bp_id_t bp_id = NULL;
@@ -570,10 +572,7 @@ extern int configure_small_block(bg_record_t *bg_record)
 		      bg_err_str(rc));
 	}
 	
-			
-	itr = list_iterator_create(bg_record->bg_block_list);
-	ba_node = list_next(itr);
-	list_iterator_destroy(itr);
+	ba_node = list_peek(bg_record->bg_block_list);
 
 	if (_get_bp_by_location(bg, ba_node->coord, &curr_bp) 
 	    == SLURM_ERROR) {
@@ -825,7 +824,7 @@ extern int configure_block_switches(bg_record_t * bg_record)
 	bg_record->bp_count = 0;
 	
 	itr = list_iterator_create(bg_record->bg_block_list);
-	while ((ba_node = (ba_node_t *) list_next(itr)) != NULL) {
+	while ((ba_node = list_next(itr))) {
 		if(ba_node->used) {
 			bg_record->bp_count++;
 		}
@@ -857,7 +856,7 @@ extern int configure_block_switches(bg_record_t * bg_record)
 	debug3("switch count %d", bg_record->switch_count);
 
 	list_iterator_reset(itr);
-	while ((ba_node = (ba_node_t *) list_next(itr)) != NULL) {
+	while ((ba_node = list_next(itr))) {
 #ifdef HAVE_BG_FILES
 		if (_get_bp_by_location(bg, ba_node->coord, &curr_bp) 
 		    == SLURM_ERROR) {

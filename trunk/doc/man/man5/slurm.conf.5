@@ -415,7 +415,11 @@ The default value is zero, which disables execution.
 \fBHealthCheckProgram\fR
 Fully qualified pathname of a script to execute as user root periodically 
 on all compute nodes that are not in the DOWN state. This may be used to 
-verify the node is fully operational and DRAIN the it otherwise.
+verify the node is fully operational and DRAIN the node or send email
+if a problem is detected. 
+Any action to be taken must be explicitly performed by the program
+(e.g. execute "scontrol update NodeName=foo State=drain Reason=tmp_file_system_full"
+to drain a node).
 The interval is controlled using the \fBHealthCheckInterval\fR parameter.
 Note that the \fBHealthCheckProgram\fR will be executed at the same time 
 on all nodes to minimize its impact upon parallel programs.

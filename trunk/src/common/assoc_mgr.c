@@ -397,7 +397,7 @@ static int _get_assoc_mgr_association_list(void *db_conn, int enforce)
 	if(assoc_mgr_cluster_name) {
 		assoc_q.cluster_list = list_create(NULL);
 		list_append(assoc_q.cluster_list, assoc_mgr_cluster_name);
-	} else if(enforce && !slurmdbd_conf) {
+	} else if((enforce & ACCOUNTING_ENFORCE_ASSOCS) && !slurmdbd_conf) {
 		error("_get_assoc_mgr_association_list: "
 		      "no cluster name here going to get "
 		      "all associations.");
@@ -416,7 +416,7 @@ static int _get_assoc_mgr_association_list(void *db_conn, int enforce)
 		   isn't anything there */
 		assoc_mgr_association_list = list_create(NULL);
 		slurm_mutex_unlock(&assoc_mgr_association_lock);
-		if(enforce) {
+		if(enforce & ACCOUNTING_ENFORCE_ASSOCS) {
 			error("_get_assoc_mgr_association_list: "
 			      "no list was made.");
 			return SLURM_ERROR;
@@ -445,7 +445,7 @@ static int _get_assoc_mgr_qos_list(void *db_conn, int enforce)
 
 	if(!assoc_mgr_qos_list) {
 		slurm_mutex_unlock(&assoc_mgr_qos_lock);
-		if(enforce) {
+		if(enforce & ACCOUNTING_ENFORCE_ASSOCS) {
 			error("_get_assoc_mgr_qos_list: no list was made.");
 			return SLURM_ERROR;
 		} else {
@@ -489,7 +489,7 @@ static int _get_assoc_mgr_user_list(void *db_conn, int enforce)
 
 	if(!assoc_mgr_user_list) {
 		slurm_mutex_unlock(&assoc_mgr_user_lock);
-		if(enforce) {
+		if(enforce & ACCOUNTING_ENFORCE_ASSOCS) {
 			error("_get_assoc_mgr_user_list: "
 			      "no list was made.");
 			return SLURM_ERROR;
@@ -519,7 +519,7 @@ static int _get_local_wckey_list(void *db_conn, int enforce)
 	if(assoc_mgr_cluster_name) {
 		wckey_q.cluster_list = list_create(NULL);
 		list_append(wckey_q.cluster_list, assoc_mgr_cluster_name);
-	} else if(enforce && !slurmdbd_conf) {
+	} else if((enforce & ACCOUNTING_ENFORCE_WCKEYS) && !slurmdbd_conf) {
 		error("_get_local_wckey_list: "
 		      "no cluster name here going to get "
 		      "all wckeys.");
@@ -538,7 +538,7 @@ static int _get_local_wckey_list(void *db_conn, int enforce)
 		   isn't anything there */
 		assoc_mgr_wckey_list = list_create(NULL);
 		slurm_mutex_unlock(&assoc_mgr_wckey_lock);
-		if(enforce) {
+		if(enforce & ACCOUNTING_ENFORCE_WCKEYS) {
 			error("_get_local_wckey_list: "
 			      "no list was made.");
 			return SLURM_ERROR;
@@ -570,7 +570,7 @@ static int _refresh_assoc_mgr_association_list(void *db_conn, int enforce)
 	if(assoc_mgr_cluster_name) {
 		assoc_q.cluster_list = list_create(NULL);
 		list_append(assoc_q.cluster_list, assoc_mgr_cluster_name);
-	} else if(enforce && !slurmdbd_conf) {
+	} else if((enforce & ACCOUNTING_ENFORCE_ASSOCS) && !slurmdbd_conf) {
 		error("_refresh_assoc_mgr_association_list: "
 		      "no cluster name here going to get "
 		      "all associations.");
@@ -710,7 +710,7 @@ static int _refresh_assoc_wckey_list(void *db_conn, int enforce)
 	if(assoc_mgr_cluster_name) {
 		wckey_q.cluster_list = list_create(NULL);
 		list_append(wckey_q.cluster_list, assoc_mgr_cluster_name);
-	} else if(enforce && !slurmdbd_conf) {
+	} else if((enforce & ACCOUNTING_ENFORCE_WCKEYS) && !slurmdbd_conf) {
 		error("_refresh_assoc_wckey_list: "
 		      "no cluster name here going to get "
 		      "all wckeys.");
@@ -841,7 +841,7 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 	}
 	if((!assoc_mgr_association_list
 	    || !list_count(assoc_mgr_association_list))
-	   && !enforce) 
+	   && !(enforce & ACCOUNTING_ENFORCE_ASSOCS)) 
 		return SLURM_SUCCESS;
 
 	if(!assoc->id) {
@@ -849,7 +849,7 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 			acct_user_rec_t user;
 
 			if(assoc->uid == (uint32_t)NO_VAL) {
-				if(enforce) {
+				if(enforce & ACCOUNTING_ENFORCE_ASSOCS) {
 					error("get_assoc_id: "
 					      "Not enough info to "
 					      "get an association");
@@ -863,7 +863,7 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 			if(assoc_mgr_fill_in_user(db_conn, &user,
 						  enforce, NULL) 
 			   == SLURM_ERROR) {
-				if(enforce) 
+				if(enforce & ACCOUNTING_ENFORCE_ASSOCS) 
 					return SLURM_ERROR;
 				else {
 					return SLURM_SUCCESS;
@@ -932,7 +932,7 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 	
 	if(!ret_assoc) {
 		slurm_mutex_unlock(&assoc_mgr_association_lock);
-		if(enforce) 
+		if(enforce & ACCOUNTING_ENFORCE_ASSOCS) 
 			return SLURM_ERROR;
 		else
 			return SLURM_SUCCESS;
@@ -995,7 +995,7 @@ extern int assoc_mgr_fill_in_user(void *db_conn, acct_user_rec_t *user,
 			return SLURM_ERROR;
 
 	if((!assoc_mgr_user_list || !list_count(assoc_mgr_user_list))
-	   && !enforce) 
+	   && !(enforce & ACCOUNTING_ENFORCE_ASSOCS)) 
 		return SLURM_SUCCESS;
 
 	slurm_mutex_lock(&assoc_mgr_user_lock);
@@ -1141,7 +1141,7 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, acct_wckey_rec_t *wckey,
 			return SLURM_ERROR;
 	}
 	if((!assoc_mgr_wckey_list || !list_count(assoc_mgr_wckey_list))
-	   && !enforce) 
+	   && !(enforce & ACCOUNTING_ENFORCE_WCKEYS)) 
 		return SLURM_SUCCESS;
 
 	if(!wckey->id) {
@@ -1149,7 +1149,7 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, acct_wckey_rec_t *wckey,
 			acct_user_rec_t user;
 
 			if(wckey->uid == (uint32_t)NO_VAL && !wckey->user) {
-				if(enforce) {
+				if(enforce & ACCOUNTING_ENFORCE_WCKEYS) {
 					error("get_wckey_id: "
 					      "Not enough info to "
 					      "get an wckey");
@@ -1164,7 +1164,7 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, acct_wckey_rec_t *wckey,
 			if(assoc_mgr_fill_in_user(db_conn, &user,
 						  enforce, NULL) 
 			   == SLURM_ERROR) {
-				if(enforce) 
+				if(enforce & ACCOUNTING_ENFORCE_WCKEYS) 
 					return SLURM_ERROR;
 				else {
 					return SLURM_SUCCESS;
@@ -1174,7 +1174,7 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, acct_wckey_rec_t *wckey,
 				wckey->user = user.name;
 			wckey->name = user.default_wckey;
 		} else if(wckey->uid == (uint32_t)NO_VAL && !wckey->user) {
-			if(enforce) {
+			if(enforce & ACCOUNTING_ENFORCE_WCKEYS) {
 				error("get_wckey_id: "
 				      "Not enough info 2 to "
 				      "get an wckey");
@@ -1244,7 +1244,7 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, acct_wckey_rec_t *wckey,
 	
 	if(!ret_wckey) {
 		slurm_mutex_unlock(&assoc_mgr_wckey_lock);
-		if(enforce) 
+		if(enforce & ACCOUNTING_ENFORCE_WCKEYS) 
 			return SLURM_ERROR;
 		else
 			return SLURM_SUCCESS;
@@ -2050,7 +2050,7 @@ extern int assoc_mgr_validate_assoc_id(void *db_conn,
 
 	if((!assoc_mgr_association_list
 	    || !list_count(assoc_mgr_association_list))
-	   && !enforce) 
+	   && !(enforce & ACCOUNTING_ENFORCE_ASSOCS)) 
 		return SLURM_SUCCESS;
 	
 	slurm_mutex_lock(&assoc_mgr_association_lock);
@@ -2062,7 +2062,7 @@ extern int assoc_mgr_validate_assoc_id(void *db_conn,
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&assoc_mgr_association_lock);
 
-	if(found_assoc || !enforce)
+	if(found_assoc || !(enforce & ACCOUNTING_ENFORCE_ASSOCS))
 		return SLURM_SUCCESS;
 
 	return SLURM_ERROR;

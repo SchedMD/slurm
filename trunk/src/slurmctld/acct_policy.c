@@ -102,7 +102,7 @@ extern void acct_policy_add_job_submit(struct job_record *job_ptr)
 {
 	acct_association_rec_t *assoc_ptr = NULL;
 
-	if (accounting_enforce != ACCOUNTING_ENFORCE_WITH_LIMITS
+	if (!(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)
 	    || !_valid_job_assoc(job_ptr))
 		return;
 
@@ -126,7 +126,7 @@ extern void acct_policy_remove_job_submit(struct job_record *job_ptr)
 	acct_association_rec_t *assoc_ptr = NULL;
 
 	if (!job_ptr->assoc_ptr || 
-	    accounting_enforce != ACCOUNTING_ENFORCE_WITH_LIMITS)
+	    !(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS))
 		return;
 
 	slurm_mutex_lock(&assoc_mgr_association_lock);
@@ -151,7 +151,7 @@ extern void acct_policy_job_begin(struct job_record *job_ptr)
 {
 	acct_association_rec_t *assoc_ptr = NULL;
 
-	if (accounting_enforce != ACCOUNTING_ENFORCE_WITH_LIMITS
+	if (!(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)
 	    || !_valid_job_assoc(job_ptr))
 		return;
 
@@ -175,8 +175,8 @@ extern void acct_policy_job_fini(struct job_record *job_ptr)
 {
 	acct_association_rec_t *assoc_ptr = NULL;
 
-	if (!job_ptr->assoc_ptr || 
-	    accounting_enforce != ACCOUNTING_ENFORCE_WITH_LIMITS)
+	if (!(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)
+	    || !job_ptr->assoc_ptr)
 		return;
 
 	slurm_mutex_lock(&assoc_mgr_association_lock);
@@ -232,7 +232,7 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 	}
 
 	/* now see if we are enforcing limits */
-	if (accounting_enforce != ACCOUNTING_ENFORCE_WITH_LIMITS)
+	if (!(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS))
 		return true;
 
 	/* clear old state reason */

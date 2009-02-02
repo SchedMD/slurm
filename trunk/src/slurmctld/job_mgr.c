@@ -810,7 +810,8 @@ static int _load_job_state(Buf buffer)
 				    accounting_enforce,
 				    (acct_association_rec_t **)
 				    &job_ptr->assoc_ptr) &&
-	    accounting_enforce && (!IS_JOB_FINISHED(job_ptr))) {
+	    (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)
+	    && (!IS_JOB_FINISHED(job_ptr))) {
 		info("Cancelling job %u with invalid association",
 		     job_id);
 		job_ptr->job_state = JOB_CANCELLED;
@@ -2165,7 +2166,8 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		error_code = ESLURM_INVALID_ACCOUNT;
 		return error_code;
 	} else if(association_based_accounting
-		  && !assoc_ptr && !accounting_enforce) {
+		  && !assoc_ptr 
+		  && !(accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)) {
 		/* if not enforcing associations we want to look for
 		   the default account and use it to avoid getting
 		   trash in the accounting records.
@@ -2183,7 +2185,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	}
 	if (job_desc->account == NULL)
 		job_desc->account = xstrdup(assoc_rec.acct);
-	if ((accounting_enforce == ACCOUNTING_ENFORCE_WITH_LIMITS) &&
+	if ((accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) &&
 	    (!_validate_acct_policy(job_desc, part_ptr, &assoc_rec))) {
 		info("_job_create: exceeded association's node or time limit "
 		     "for user %u", job_desc->user_id);
@@ -2349,7 +2351,8 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 						       part_ptr,
 						       &req_bitmap,
 						       &exc_bitmap))) {
-		error_code = ESLURM_ERROR_ON_DESC_TO_RECORD_COPY;
+		if(error_code == SLURM_ERROR)
+			error_code = ESLURM_ERROR_ON_DESC_TO_RECORD_COPY;
 		goto cleanup_fail;
 	}
 
@@ -2945,26 +2948,58 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		job_ptr->job_id = job_desc->job_id;
 	else
 		_set_job_id(job_ptr);
-	_add_job_hash(job_ptr);
 
 	if (job_desc->name)
 		job_ptr->name = xstrdup(job_desc->name);
+	
+        if(slurm_get_track_wckey()) {
+		if(!job_desc->wckey) {
+			/* get the default wckey for this user since none was
+			 * given */
+			acct_user_rec_t user_rec;
+			memset(&user_rec, 0, sizeof(acct_user_rec_t));
+			user_rec.uid = job_desc->user_id;
+			assoc_mgr_fill_in_user(acct_db_conn, &user_rec,
+					       accounting_enforce, NULL);
+			if(user_rec.default_wckey)
+				job_ptr->wckey = xstrdup_printf(
+					"*%s", user_rec.default_wckey);
+			else if(!(accounting_enforce 
+				  & ACCOUNTING_ENFORCE_WCKEYS))
+				job_ptr->wckey = xstrdup("*");	
+			else {
+				error("Job didn't specify wckey and user "
+				      "%d has no default.", job_desc->user_id);
+				return ESLURM_INVALID_WCKEY;
+			}		
+		} else if(job_desc->wckey) {
+			acct_wckey_rec_t wckey_rec, *wckey_ptr = NULL;
+				
+			memset(&wckey_rec, 0, sizeof(acct_wckey_rec_t));
+			wckey_rec.uid       = job_desc->user_id;
+			wckey_rec.name      = job_desc->wckey;
 
-        if(slurm_get_track_wckey() && !job_desc->wckey) {
-		/* get the default wckey for this user since none was
-		 * given */
-		acct_user_rec_t user_rec;
-		memset(&user_rec, 0, sizeof(acct_user_rec_t));
-		user_rec.uid = job_desc->user_id;
-		assoc_mgr_fill_in_user(acct_db_conn, &user_rec,
-				       accounting_enforce, NULL);
-		if(user_rec.default_wckey)
-			job_ptr->wckey = xstrdup_printf(
-				"*%s", user_rec.default_wckey);
-		else
-			job_ptr->wckey = xstrdup("*");			
-	} else
-		job_ptr->wckey = xstrdup(job_desc->wckey);
+			if (assoc_mgr_fill_in_wckey(acct_db_conn, &wckey_rec,
+						    accounting_enforce,
+						    &wckey_ptr)) {
+				if(accounting_enforce 
+				   & ACCOUNTING_ENFORCE_WCKEYS) {
+					info("_job_create: invalid wckey '%s' "
+					     "for user %u.",
+					     wckey_rec.name, job_desc->user_id);
+					return ESLURM_INVALID_WCKEY;
+				}
+			}
+			job_ptr->wckey = xstrdup(job_desc->wckey);
+		} else if (accounting_enforce & ACCOUNTING_ENFORCE_WCKEYS) {
+			/* This should never happen */
+			info("_job_create: no wckey was given for job '%u'.",
+			     job_ptr->job_id);
+				return ESLURM_INVALID_WCKEY;
+		}
+	}
+
+	_add_job_hash(job_ptr);
 
 	job_ptr->user_id    = (uid_t) job_desc->user_id;
 	job_ptr->group_id   = (gid_t) job_desc->group_id;
@@ -4582,6 +4617,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		else {
 			job_ptr->name = job_specs->name;
 			job_specs->name = NULL;
+
 			info("update_job: setting name to %s for job_id %u",
 			     job_ptr->name, job_specs->job_id);
 		}
@@ -4591,11 +4627,15 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		if (!IS_JOB_PENDING(job_ptr))
 			error_code = ESLURM_DISABLED;
 		else {
-			job_ptr->wckey = job_specs->wckey;
-			job_specs->wckey = NULL;
-
-			info("update_job: setting wckey to %s for job_id %u",
-			     job_ptr->wckey, job_specs->job_id);
+			int rc = update_job_wckey("update_job",
+						  job_ptr, 
+						  job_specs->wckey);
+			if (rc != SLURM_SUCCESS)
+				error_code = rc;
+			else
+				info("update_job: setting wckey to "
+				     "%s for job_id %u",
+				     job_ptr->wckey, job_specs->job_id);
 		}
 	}
 
@@ -4603,6 +4643,13 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		detail_ptr->requeue = job_specs->requeue;
 		info("update_job: setting requeue to %u for job_id %u",
 		     job_specs->requeue, job_specs->job_id);
+	}
+
+	if (job_specs->account) {
+		int rc = update_job_account("update_job", job_ptr, 
+					    job_specs->account);
+		if (rc != SLURM_SUCCESS)
+			error_code = rc;
 	}
 
 	if (job_specs->partition) {
@@ -4699,13 +4746,6 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				job_specs->req_nodes = NULL;
 			}
 		}
-	}
-
-	if (job_specs->account) {
-		int rc = update_job_account("update_job", job_ptr, 
-					    job_specs->account);
-		if (rc != SLURM_SUCCESS)
-			error_code = rc;
 	}
 
 	if (job_specs->ntasks_per_node != (uint16_t) NO_VAL) {
@@ -6288,7 +6328,8 @@ extern int update_job_account(char *module, struct job_record *job_ptr,
 		     module, new_account, job_ptr->job_id);
 		return ESLURM_INVALID_ACCOUNT;
 	} else if(association_based_accounting 
-		  && !job_ptr->assoc_ptr && !accounting_enforce) {
+		  && !job_ptr->assoc_ptr 
+		  && !(accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)) {
 		/* if not enforcing associations we want to look for
 		   the default account and use it to avoid getting
 		   trash in the accounting records.
@@ -6300,11 +6341,12 @@ extern int update_job_account(char *module, struct job_record *job_ptr,
 					&job_ptr->assoc_ptr);
 		if(!job_ptr->assoc_ptr) {
 			debug("%s: we didn't have an association for account "
-			      "'%s' and user '%s', and we can't seem to find "
+			      "'%s' and user '%u', and we can't seem to find "
 			      "a default one either.  Keeping new account "
 			      "'%s'.  This will produce trash in accounting.  "
 			      "If this is not what you desire please put "
-			      "AccountStorageEnforce=1 in your slurm.conf "
+			      "AccountStorageEnforce=associations "
+			      "in your slurm.conf "
 			      "file.", module, new_account,
 			      job_ptr->user_id, new_account);
 			assoc_rec.acct = new_account;
@@ -6321,6 +6363,75 @@ extern int update_job_account(char *module, struct job_record *job_ptr,
 		     module, job_ptr->job_id);
 	}
 	job_ptr->assoc_id = assoc_rec.id;
+
+	if (job_ptr->details && job_ptr->details->begin_time) {
+		/* Update account associated with the eligible time */
+		jobacct_storage_g_job_start(
+			acct_db_conn, slurmctld_cluster_name, job_ptr);
+	}
+	last_job_update = time(NULL);
+
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Modify the account associated with a pending job
+ * IN module - where this is called from
+ * IN job_ptr - pointer to job which should be modified
+ * IN new_wckey - desired wckey name
+ * RET SLURM_SUCCESS or error code
+ */
+extern int update_job_wckey(char *module, struct job_record *job_ptr, 
+			    char *new_wckey)
+{
+	acct_wckey_rec_t wckey_rec, *wckey_ptr;
+
+	if ((!IS_JOB_PENDING(job_ptr)) || (job_ptr->details == NULL)) {
+		info("%s: attempt to modify account for non-pending "
+		     "job_id %u", module, job_ptr->job_id);
+		return ESLURM_DISABLED;
+	}
+
+	memset(&wckey_rec, 0, sizeof(acct_wckey_rec_t));
+	wckey_rec.uid       = job_ptr->user_id;
+	wckey_rec.name      = new_wckey;
+	if (assoc_mgr_fill_in_wckey(acct_db_conn, &wckey_rec,
+				    accounting_enforce, &wckey_ptr)) {
+		info("%s: invalid wckey %s for job_id %u",
+		     module, new_wckey, job_ptr->job_id);
+		return ESLURM_INVALID_WCKEY;
+	} else if(association_based_accounting 
+		  && !wckey_ptr 
+		  && !(accounting_enforce & ACCOUNTING_ENFORCE_WCKEYS)) {
+		/* if not enforcing associations we want to look for
+		   the default account and use it to avoid getting
+		   trash in the accounting records.
+		*/
+		wckey_rec.name = NULL;
+		assoc_mgr_fill_in_wckey(acct_db_conn, &wckey_rec,
+					accounting_enforce, &wckey_ptr);
+		if(!wckey_ptr) {
+			debug("%s: we didn't have a wckey record for wckey "
+			      "'%s' and user '%u', and we can't seem to find "
+			      "a default one either.  Setting it anyway. "
+			      "This will produce trash in accounting.  "
+			      "If this is not what you desire please put "
+			      "AccountStorageEnforce=wckeys in your slurm.conf "
+			      "file.", module, new_wckey,
+			      job_ptr->user_id, new_wckey);
+			wckey_rec.name = new_wckey;
+		}
+	}
+	
+	if (wckey_rec.name && wckey_rec.name[0] != '\0') {
+		xstrfmtcat(job_ptr->name, "\"%s", wckey_rec.name);
+		job_ptr->account = xstrdup(wckey_rec.name);
+		info("%s: setting wckey to %s for job_id %u",
+		     module, wckey_rec.name, job_ptr->job_id);
+	} else {
+		info("%s: cleared wckey for job_id %u",
+		     module, job_ptr->job_id);
+	}
 
 	if (job_ptr->details && job_ptr->details->begin_time) {
 		/* Update account associated with the eligible time */
@@ -6355,7 +6466,7 @@ extern int send_jobs_to_accounting(time_t event_time)
 						   accounting_enforce,
 						   (acct_association_rec_t **)
 						   &job_ptr->assoc_ptr) &&
-			   accounting_enforce 
+			   (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)
 			   && (!IS_JOB_FINISHED(job_ptr))) {
 				info("Cancelling job %u with "
 				     "invalid association",
