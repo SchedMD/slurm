@@ -159,6 +159,7 @@ enum {
 	ESLURM_NEED_RESTART,
 	ESLURM_ACCOUNTING_POLICY,
 	ESLURM_INVALID_TIME_LIMIT,
+	ESLURM_INVALID_WCKEY,
 
 	/* switch specific error codes, specific values defined in plugin module */
 	ESLURM_SWITCH_MIN = 3000,

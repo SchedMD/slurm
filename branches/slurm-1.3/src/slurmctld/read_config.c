@@ -1203,7 +1203,7 @@ static int _restore_job_dependencies(void)
 	assoc_mgr_clear_used_info();
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if (accounting_enforce == ACCOUNTING_ENFORCE_WITH_LIMITS) {
+		if (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) {
 			if((job_ptr->job_state == JOB_RUNNING) ||
 			   (job_ptr->job_state == JOB_SUSPENDED))
 				acct_policy_job_begin(job_ptr);

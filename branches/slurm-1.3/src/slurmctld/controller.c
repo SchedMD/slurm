@@ -317,7 +317,7 @@ int main(int argc, char *argv[])
 		ASSOC_MGR_CACHE_USER | ASSOC_MGR_CACHE_QOS;
 
 	if (assoc_mgr_init(acct_db_conn, &assoc_init_arg)) {
-		if(accounting_enforce) 
+		if(accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS) 
 			error("Association database appears down, "
 			      "reading from state file.");
 		else
@@ -325,7 +325,8 @@ int main(int argc, char *argv[])
 			      "reading from state file.");
 			
 		if ((load_assoc_mgr_state(slurmctld_conf.state_save_location)
-		     != SLURM_SUCCESS) && accounting_enforce) {
+		     != SLURM_SUCCESS) 
+		    && (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)) {
 			error("Unable to get any information from "
 			      "the state file");
 			fatal("slurmdbd and/or database must be up at "
@@ -431,7 +432,8 @@ int main(int argc, char *argv[])
 			   NULL will just use those set before.
 			*/
 			if (assoc_mgr_init(acct_db_conn, NULL) &&
-			    accounting_enforce && !running_cache) {
+			    (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)
+			    && !running_cache) {
 				error("assoc_mgr_init failure");
 				fatal("slurmdbd and/or database must be up at "
 				      "slurmctld start time");
@@ -1016,7 +1018,7 @@ static void _remove_assoc(acct_association_rec_t *rec)
 {
 	int cnt = 0;
 
-	if (accounting_enforce)
+	if (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)
 		cnt = job_cancel_by_assoc_id(rec->id);
 
 	if (cnt) {
