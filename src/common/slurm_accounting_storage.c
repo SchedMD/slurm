@@ -751,7 +751,6 @@ extern void destroy_acct_reservation_rec(void *object)
 {
 	acct_reservation_rec_t *acct_resv = (acct_reservation_rec_t *)object;
 	if(acct_resv) {
-		xfree(acct_resv->assocs);
 		xfree(acct_resv->cluster);
 		xfree(acct_resv->nodes);
 		xfree(acct_resv);
@@ -5661,7 +5660,6 @@ extern void pack_acct_reservation_rec(void *in, uint16_t rpc_version,
 
 	if(!object) {
 		packnull(buffer);
-		packnull(buffer);
 		pack32(0, buffer);
 		pack16(0, buffer);
 		pack32(0, buffer);
@@ -5672,7 +5670,6 @@ extern void pack_acct_reservation_rec(void *in, uint16_t rpc_version,
 		return;
 	}
 	
-	packstr(object->assocs, buffer);
 	packstr(object->cluster, buffer);
 	pack32(object->cpus, buffer);
 	pack16(object->flags, buffer);
@@ -5692,7 +5689,6 @@ extern int unpack_acct_reservation_rec(void **object, uint16_t rpc_version,
 
 	*object = object_ptr;
 
-	safe_unpackstr_xmalloc(&object_ptr->assocs, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&object_ptr->cluster, &uint32_tmp, buffer);
 	safe_unpack32(&object_ptr->cpus, buffer);
 	safe_unpack16(&object_ptr->flags, buffer);
