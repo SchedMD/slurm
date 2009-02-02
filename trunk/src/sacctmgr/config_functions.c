@@ -66,7 +66,7 @@ static void _load_dbd_config(void)
 static void _print_dbd_config(void)
 {
 	ListIterator iter = NULL;
-	config_key_pairs_t *key_pair;
+	config_key_pair_t *key_pair;
 
 	if (!dbd_config_list)
 		return;
@@ -141,14 +141,17 @@ static void _print_slurm_config(void)
 	printf("TrackWCKey             = %u\n", track_wckey);
 }
 
-extern int sacctmgr_list_config(void)
+extern int sacctmgr_list_config(bool have_db_conn)
 {
 	_load_slurm_config();
 	_print_slurm_config();
 	_free_slurm_config();
 
-	_load_dbd_config();
-	_print_dbd_config();
-	_free_dbd_config();
+	if (have_db_conn) {
+		_load_dbd_config();
+		_print_dbd_config();
+		_free_dbd_config();
+	}
+
 	return SLURM_SUCCESS;
 }

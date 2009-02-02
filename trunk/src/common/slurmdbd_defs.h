@@ -161,6 +161,8 @@ typedef enum {
 	DBD_ARCHIVE_DUMP,    	/* issue a request to dump jobs to
 				 * archive */
 	DBD_ARCHIVE_LOAD,    	/* load an archive file    	        */
+	DBD_GET_CONFIG,  	/* Get configuration information	*/
+	DBD_GOT_CONFIG,		/* Response to DBD_GET_CONFIG		*/
 } slurmdbd_msg_type_t;
 
 /*****************************************************************************\

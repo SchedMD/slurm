@@ -196,7 +196,7 @@ main (int argc, char *argv[])
 		   (!strncasecmp(argv[2], "Configuration", strlen(argv[1]))) &&
 		   ((!strncasecmp(argv[1], "list", strlen(argv[0]))) || 
 		    (!strncasecmp(argv[1], "show", strlen(argv[0])))))
-			sacctmgr_list_config();
+			sacctmgr_list_config(false);
 		exit(1);
 	}
 	my_uid = getuid();
@@ -598,7 +598,7 @@ static void _show_it (int argc, char *argv[])
 		error_code = sacctmgr_list_cluster((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "Configuration", 
 				MAX(command_len, 1)) == 0) {
-		error_code = sacctmgr_list_config();
+		error_code = sacctmgr_list_config(true);
 	} else if (strncasecmp (argv[0], "QOS", MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_list_qos((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "Transactions", 
