@@ -50,13 +50,11 @@ extern char *default_slurm_config_file;
 extern char *default_plugin_path;
 extern char *default_plugstack;
 
-enum {
-	ACCOUNTING_ENFORCE_NONE,
-	ACCOUNTING_ENFORCE_YES,
-	ACCOUNTING_ENFORCE_WITH_LIMITS
-};
+#define ACCOUNTING_ENFORCE_ASSOCS 0x0001
+#define ACCOUNTING_ENFORCE_LIMITS 0x0002
+#define ACCOUNTING_ENFORCE_WCKEYS 0x0004
 
-#define DEFAULT_ACCOUNTING_ENFORCE  ACCOUNTING_ENFORCE_NONE
+#define DEFAULT_ACCOUNTING_ENFORCE  0
 #define DEFAULT_ACCOUNTING_STORAGE_TYPE "accounting_storage/none"
 #define DEFAULT_AUTH_TYPE          "auth/none"
 #define DEFAULT_BATCH_START_TIMEOUT 10
