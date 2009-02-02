@@ -290,7 +290,7 @@ extern int acct_storage_p_add_qos(void *db_conn, uint32_t uid,
 }
 
 extern int acct_storage_p_add_wckeys(void *db_conn, uint32_t uid,
-				  List wckey_list)
+				     List wckey_list)
 {
 	slurmdbd_msg_t req;
 	dbd_list_msg_t get_msg;
@@ -306,6 +306,27 @@ extern int acct_storage_p_add_wckeys(void *db_conn, uint32_t uid,
 	if(resp_code != SLURM_SUCCESS)
 		rc = resp_code;
 	
+	return rc;
+}
+
+extern int acct_storage_p_edit_reservation(void *db_conn, 
+					   acct_reservation_rec_t *resv)
+{
+	slurmdbd_msg_t req;
+	dbd_rec_msg_t get_msg;
+	int rc, resp_code;
+
+	get_msg.rec = resv;
+
+	req.msg_type = DBD_EDIT_RESV;
+	req.data = &get_msg;
+
+	rc = slurm_send_slurmdbd_recv_rc_msg(SLURMDBD_VERSION,
+					     &req, &resp_code);
+	
+	if(resp_code != SLURM_SUCCESS)
+		rc = resp_code;
+
 	return rc;
 }
 
@@ -1404,7 +1425,7 @@ extern int jobacct_storage_p_job_start(void *db_conn, char *cluster_name,
 {
 	slurmdbd_msg_t msg, msg_rc;
 	dbd_job_start_msg_t req;
-	dbd_job_start_rc_msg_t *resp;
+	dbd_id_rc_msg_t *resp;
 	char *block_id = NULL;
 	int rc = SLURM_SUCCESS;
 
@@ -1434,6 +1455,7 @@ extern int jobacct_storage_p_job_start(void *db_conn, char *cluster_name,
 	req.nodes         = job_ptr->nodes;
 	req.partition     = job_ptr->partition;
 	req.req_cpus      = job_ptr->num_procs;
+	req.resv_id       = job_ptr->resv_id;
 	req.priority      = job_ptr->priority;
 	req.start_time    = job_ptr->start_time;
 	req.wckey    = job_ptr->wckey;
@@ -1465,15 +1487,15 @@ extern int jobacct_storage_p_job_start(void *db_conn, char *cluster_name,
 			xfree(block_id);
 			return SLURM_ERROR;
 		}
-	} else if (msg_rc.msg_type != DBD_JOB_START_RC) {
-		error("slurmdbd: response type not DBD_GOT_JOBS: %u", 
+	} else if (msg_rc.msg_type != DBD_ID_RC) {
+		error("slurmdbd: response type not DBD_ID_RC: %u", 
 		      msg_rc.msg_type);
 	} else {
-		resp = (dbd_job_start_rc_msg_t *) msg_rc.data;
-		job_ptr->db_index = resp->db_index;
+		resp = (dbd_id_rc_msg_t *) msg_rc.data;
+		job_ptr->db_index = resp->id;
 		rc = resp->return_code;
 		//info("here got %d for return code", resp->return_code);
-		slurmdbd_free_job_start_rc_msg(SLURMDBD_VERSION, resp);
+		slurmdbd_free_id_rc_msg(SLURMDBD_VERSION, resp);
 	}
 	xfree(block_id);
 	

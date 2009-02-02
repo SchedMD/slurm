@@ -77,6 +77,8 @@ typedef struct slurm_acct_storage_ops {
 				    List qos_list);
 	int  (*add_wckeys)         (void *db_conn, uint32_t uid,
 				    List wckey_list);
+	int  (*edit_reservation)   (void *db_conn,
+				    acct_reservation_rec_t *resv);
 	List (*modify_users)       (void *db_conn, uint32_t uid,
 				    acct_user_cond_t *user_cond,
 				    acct_user_rec_t *user);
@@ -214,6 +216,7 @@ static slurm_acct_storage_ops_t * _acct_storage_get_ops(
 		"acct_storage_p_add_associations",
 		"acct_storage_p_add_qos",
 		"acct_storage_p_add_wckeys",
+		"acct_storage_p_edit_reservation",
 		"acct_storage_p_modify_users",
 		"acct_storage_p_modify_accounts",
 		"acct_storage_p_modify_clusters",
@@ -718,6 +721,8 @@ extern void destroy_acct_job_cond(void *object)
 			list_destroy(job_cond->groupid_list);
 		if(job_cond->partition_list)
 			list_destroy(job_cond->partition_list);
+		if(job_cond->resv_list)
+			list_destroy(job_cond->resv_list);
 		if(job_cond->step_list)
 			list_destroy(job_cond->step_list);
 		if(job_cond->state_list)
@@ -739,6 +744,17 @@ extern void destroy_acct_qos_cond(void *object)
 		if(acct_qos->name_list)
 			list_destroy(acct_qos->name_list);
 		xfree(acct_qos);
+	}
+}
+
+extern void destroy_acct_reservation_rec(void *object)
+{
+	acct_reservation_rec_t *acct_resv = (acct_reservation_rec_t *)object;
+	if(acct_resv) {
+		xfree(acct_resv->assocs);
+		xfree(acct_resv->cluster);
+		xfree(acct_resv->nodes);
+		xfree(acct_resv);
 	}
 }
 
@@ -4784,6 +4800,7 @@ extern void pack_acct_job_cond(void *in, uint16_t rpc_version, Buf buffer)
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
 			pack_time(0, buffer);
 			pack_time(0, buffer);
 			pack32(NO_VAL, buffer);
@@ -4850,6 +4867,19 @@ extern void pack_acct_job_cond(void *in, uint16_t rpc_version, Buf buffer)
 		pack32(count, buffer);
 		if(count && count != NO_VAL) {
 			itr = list_iterator_create(object->partition_list);
+			while((tmp_info = list_next(itr))) {
+				packstr(tmp_info, buffer);
+			}
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+
+		if(object->resv_list)
+			count = list_count(object->resv_list);
+	
+		pack32(count, buffer);
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->resv_list);
 			while((tmp_info = list_next(itr))) {
 				packstr(tmp_info, buffer);
 			}
@@ -5248,6 +5278,18 @@ extern int unpack_acct_job_cond(void **object, uint16_t rpc_version, Buf buffer)
 
 		safe_unpack32(&count, buffer);
 		if(count != NO_VAL) {
+			object_ptr->resv_list =
+				list_create(slurm_destroy_char);
+			for(i=0; i<count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info,
+						       &uint32_tmp, buffer);
+				list_append(object_ptr->resv_list, 
+					    tmp_info);
+			}
+		}
+
+		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
 			object_ptr->step_list =
 				list_create(destroy_jobacct_selected_step);
 			for(i=0; i<count; i++) {
@@ -5608,6 +5650,62 @@ extern int unpack_acct_qos_cond(void **object, uint16_t rpc_version, Buf buffer)
 
 unpack_error:
 	destroy_acct_qos_cond(object_ptr);
+	*object = NULL;
+	return SLURM_ERROR;
+}
+
+extern void pack_acct_reservation_rec(void *in, uint16_t rpc_version,
+				      Buf buffer)
+{
+	acct_reservation_rec_t *object = (acct_reservation_rec_t *)in;
+
+	if(!object) {
+		packnull(buffer);
+		packnull(buffer);
+		pack32(0, buffer);
+		pack16(0, buffer);
+		pack32(0, buffer);
+		packnull(buffer);
+		pack_time(0, buffer);
+		pack_time(0, buffer);
+		pack_time(0, buffer);
+		return;
+	}
+	
+	packstr(object->assocs, buffer);
+	packstr(object->cluster, buffer);
+	pack32(object->cpus, buffer);
+	pack16(object->flags, buffer);
+	pack32(object->id, buffer);
+	packstr(object->nodes, buffer);
+	pack_time(object->time_end, buffer);
+	pack_time(object->time_start, buffer);	
+	pack_time(object->time_start_prev, buffer);	
+}
+
+extern int unpack_acct_reservation_rec(void **object, uint16_t rpc_version,
+				      Buf buffer)
+{
+	uint32_t uint32_tmp;
+	acct_reservation_rec_t *object_ptr = 
+		xmalloc(sizeof(acct_reservation_rec_t));
+
+	*object = object_ptr;
+
+	safe_unpackstr_xmalloc(&object_ptr->assocs, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&object_ptr->cluster, &uint32_tmp, buffer);
+	safe_unpack32(&object_ptr->cpus, buffer);
+	safe_unpack16(&object_ptr->flags, buffer);
+	safe_unpack32(&object_ptr->id, buffer);
+	safe_unpackstr_xmalloc(&object_ptr->nodes, &uint32_tmp, buffer);
+	safe_unpack_time(&object_ptr->time_end, buffer);
+	safe_unpack_time(&object_ptr->time_start, buffer);	
+	safe_unpack_time(&object_ptr->time_start_prev, buffer);	
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	destroy_acct_reservation_rec(object_ptr);
 	*object = NULL;
 	return SLURM_ERROR;
 }
@@ -7152,6 +7250,15 @@ extern int acct_storage_g_add_wckeys(void *db_conn, uint32_t uid,
 		return SLURM_ERROR;
 	return (*(g_acct_storage_context->ops.add_wckeys))
 		(db_conn, uid, wckey_list);
+}
+
+extern int acct_storage_g_edit_reservation(void *db_conn,
+					   acct_reservation_rec_t *resv)
+{
+	if (slurm_acct_storage_init(NULL) < 0)
+		return NO_VAL;
+	return (*(g_acct_storage_context->ops.edit_reservation))
+		(db_conn, resv);
 }
 
 extern List acct_storage_g_modify_users(void *db_conn, uint32_t uid,

@@ -298,6 +298,12 @@ extern int acct_storage_p_add_wckeys(void *db_conn, uint32_t uid,
 	return SLURM_SUCCESS;
 }
 
+extern int acct_storage_p_edit_reservation(void *db_conn, 
+					   acct_reservation_rec_t *resv)
+{
+	return SLURM_SUCCESS;
+}
+
 extern List acct_storage_p_modify_users(void *db_conn, uint32_t uid,
 				       acct_user_cond_t *user_q,
 				       acct_user_rec_t *user)

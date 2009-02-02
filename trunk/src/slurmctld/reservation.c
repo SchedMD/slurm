@@ -64,6 +64,7 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/common/slurm_accounting_storage.h"
 
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
@@ -84,7 +85,6 @@ static int  _build_account_list(char *accounts, int *account_cnt,
 			        char ***account_list);
 static int  _build_uid_list(char *users, int *user_cnt, uid_t **user_list);
 static void _del_resv_rec(void *x);
-static void _deleted_resv(struct slurmctld_resv *resv_ptr);
 static void _dump_resv_req(reserve_request_msg_t *resv_ptr, char *mode);
 static int  _find_resv_name(void *x, void *key);
 static void _generate_resv_name(reserve_request_msg_t *resv_ptr);
@@ -101,11 +101,14 @@ static int  _select_nodes(reserve_request_msg_t *resv_desc_ptr,
 			  bitstr_t **resv_bitmap);
 static void _set_assoc_list(struct slurmctld_resv *resv_ptr);
 static void _set_cpu_cnt(struct slurmctld_resv *resv_ptr);
-static void _set_resv_id(struct slurmctld_resv *resv_ptr);
+
+static int  _post_resv_create(struct slurmctld_resv *resv_ptr);
+static int  _post_resv_delete(struct slurmctld_resv *resv_ptr);
+static int  _post_resv_update(struct slurmctld_resv *resv_ptr);
+
 static int  _update_account_list(struct slurmctld_resv *resv_ptr, 
 				 char *accounts);
 static int  _update_uid_list(struct slurmctld_resv *resv_ptr, char *users);
-static void _updated_resv(struct slurmctld_resv *resv_ptr);
 static void _validate_all_reservations(void);
 static int  _valid_job_access_resv(struct job_record *job_ptr,
 				   slurmctld_resv_t *resv_ptr);
@@ -178,7 +181,7 @@ static void _dump_resv_req(reserve_request_msg_t *resv_ptr, char *mode)
 
 static void _generate_resv_name(reserve_request_msg_t *resv_ptr)
 {
-	char *key, *name, *sep, tmp[32];
+	char *key, *name, *sep;
 	int len;
 
 	/* Generate name prefix, based upon the first account
@@ -194,13 +197,10 @@ static void _generate_resv_name(reserve_request_msg_t *resv_ptr)
 		len = strlen(key);
 	name = xmalloc(len + 16);
 	strncpy(name, key, len);
-	strcat(name, "_");
+
+	xstrfmtcat(name, "_%d", top_suffix);
 	len++;
 
-	if (top_suffix > 0xffffff00)
-		top_suffix = 0;	/* Wrap around */
-	snprintf(tmp, sizeof(tmp), "%d", ++top_suffix);
-	strcat(name, tmp);
 	resv_ptr->name = name;
 }
 
@@ -221,24 +221,75 @@ static void _set_assoc_list(struct slurmctld_resv *resv_ptr)
 	resv_ptr->assoc_list = xstrdup("TBD");	/* FOR TESTING ONLY */
 }
 
-/* Set a unique reservation id */
-static void _set_resv_id(struct slurmctld_resv *resv_ptr)
+/* Post reservation create */
+static int _post_resv_create(struct slurmctld_resv *resv_ptr)
 {
-	/* FIXME: Need to add logic here to get resv_id from slurmdbd */
-	/* NOTE: resv_id is zero on entry */
-	resv_ptr->resv_id = top_suffix;	/* FOR TESTING ONLY */
+	int rc = SLURM_SUCCESS;
+	acct_reservation_rec_t resv;
+	memset(&resv, 0, sizeof(acct_reservation_rec_t));
+	
+	resv.assocs = resv_ptr->assoc_list;
+	resv.cluster = slurmctld_cluster_name;
+	resv.cpus = resv_ptr->cpu_cnt;
+	resv.flags = resv_ptr->flags | RESERVE_FLAG_CREATE;
+	resv.id = resv_ptr->resv_id;
+	resv.nodes = resv_ptr->node_list;
+	resv.time_end = resv_ptr->end_time;
+	resv.time_start = resv_ptr->start_time;
+
+	rc = acct_storage_g_edit_reservation(acct_db_conn, &resv);
+
+	/* strip off the action item from the flags */
+	resv_ptr->flags &= RESERVE_FLAG_FLAGS;
+	return rc;
 }
 
 /* Note that a reservation has been deleted */
-static void _deleted_resv(struct slurmctld_resv *resv_ptr)
+static int _post_resv_delete(struct slurmctld_resv *resv_ptr)
 {
-	/* FIXME: Need to add logic here to notify slurmdbd */
+	int rc = SLURM_SUCCESS;
+	acct_reservation_rec_t resv;
+	memset(&resv, 0, sizeof(acct_reservation_rec_t));
+
+	resv.cluster = slurmctld_cluster_name;
+	resv.flags |= RESERVE_FLAG_DELETE;
+	resv.id = resv_ptr->resv_id;
+	resv.time_start = resv_ptr->start_time;
+	/* This is just a time stamp here to delete if the reservation
+	   hasn't started yet so we don't get trash records in the
+	   database if said database isn't up right now */
+	resv.time_start_prev = time(NULL);
+	rc = acct_storage_g_edit_reservation(acct_db_conn, &resv);
+
+	/* strip off the action item from the flags */
+	resv_ptr->flags &= RESERVE_FLAG_FLAGS;
+
+	return rc;
 }
 
 /* Note that a reservation has been updated */
-static void _updated_resv(struct slurmctld_resv *resv_ptr)
+static int _post_resv_update(struct slurmctld_resv *resv_ptr)
 {
-	/* FIXME: Need to add logic here to notify slurmdbd */
+	int rc = SLURM_SUCCESS;
+	acct_reservation_rec_t resv;
+	memset(&resv, 0, sizeof(acct_reservation_rec_t));
+
+	resv.assocs = resv_ptr->assoc_list;
+	resv.cluster = slurmctld_cluster_name;
+	resv.cpus = resv_ptr->cpu_cnt;
+	resv.flags = resv_ptr->flags | RESERVE_FLAG_MODIFY;
+	resv.id = resv_ptr->resv_id;
+	resv.nodes = resv_ptr->node_list;
+	resv.time_end = resv_ptr->end_time;
+	resv.time_start = resv_ptr->start_time;
+	resv.time_start_prev = resv_ptr->start_time_prev;
+
+	rc = acct_storage_g_edit_reservation(acct_db_conn, &resv);
+
+	/* strip off the action item from the flags */
+	resv_ptr->flags &= RESERVE_FLAG_FLAGS;
+
+	return rc;
 }
 
 /*
@@ -733,6 +784,7 @@ extern int create_resv(reserve_request_msg_t *resv_desc_ptr)
 		}
 	} else
 		resv_desc_ptr->start_time = now;
+	
 	if (resv_desc_ptr->end_time != (time_t) NO_VAL) {
 		if (resv_desc_ptr->end_time < (now - 60)) {
 			info("Reservation requestion has invalid end time");
@@ -778,26 +830,6 @@ extern int create_resv(reserve_request_msg_t *resv_desc_ptr)
 		if (rc)
 			goto bad_parse;
 	}
-	if (resv_desc_ptr->name) {
-		resv_ptr = (slurmctld_resv_t *) list_find_first (resv_list, 
-				_find_resv_name, resv_desc_ptr->name);
-		if (resv_ptr) {
-			info("Reservation requestion name duplication (%s)",
-			     resv_desc_ptr->name);
-			rc = ESLURM_RESERVATION_INVALID;
-			goto bad_parse;
-		}
-	} else {
-		while (1) {
-			_generate_resv_name(resv_desc_ptr);
-			resv_ptr = (slurmctld_resv_t *) 
-					list_find_first (resv_list, 
-					_find_resv_name, resv_desc_ptr->name);
-			if (!resv_ptr)
-				break;
-			/* Same as explicitly created name, retry */
-		}
-	}
 	if (resv_desc_ptr->node_list) {
 		if (strcmp(resv_desc_ptr->node_list, "ALL") == 0) {
 			node_bitmap = bit_alloc(node_record_count);
@@ -826,6 +858,34 @@ extern int create_resv(reserve_request_msg_t *resv_desc_ptr)
 		goto bad_parse;
 	}
 
+	/* Generate the id of the reservation.  Also used if name
+	   wasn't specified.  This needs to happen before the name generation.
+	*/
+	if (top_suffix > 0xffffff00)
+		top_suffix = 0;	/* Wrap around */
+	top_suffix++;
+	
+	if (resv_desc_ptr->name) {
+		resv_ptr = (slurmctld_resv_t *) list_find_first (resv_list, 
+				_find_resv_name, resv_desc_ptr->name);
+		if (resv_ptr) {
+			info("Reservation requestion name duplication (%s)",
+			     resv_desc_ptr->name);
+			rc = ESLURM_RESERVATION_INVALID;
+			goto bad_parse;
+		}
+	} else {
+		while (1) {
+			_generate_resv_name(resv_desc_ptr);
+			resv_ptr = (slurmctld_resv_t *) 
+					list_find_first (resv_list, 
+					_find_resv_name, resv_desc_ptr->name);
+			if (!resv_ptr)
+				break;
+			/* Same as explicitly created name, retry */
+		}
+	}
+
 	/* Create a new reservation record */
 	resv_ptr = xmalloc(sizeof(slurmctld_resv_t));
 	resv_ptr->accounts	= resv_desc_ptr->accounts;
@@ -835,6 +895,7 @@ extern int create_resv(reserve_request_msg_t *resv_desc_ptr)
 	resv_ptr->end_time	= resv_desc_ptr->end_time;
 	resv_ptr->features	= resv_desc_ptr->features;
 	resv_desc_ptr->features = NULL;		/* Nothing left to free */
+	resv_ptr->resv_id       = top_suffix;
 	xassert(resv_ptr->magic = RESV_MAGIC);	/* Sets value */
 	resv_ptr->name		= xstrdup(resv_desc_ptr->name);
 	resv_ptr->node_cnt	= resv_desc_ptr->node_cnt;
@@ -845,14 +906,17 @@ extern int create_resv(reserve_request_msg_t *resv_desc_ptr)
 	resv_desc_ptr->partition = NULL;	/* Nothing left to free */
 	resv_ptr->part_ptr	= part_ptr;
 	resv_ptr->start_time	= resv_desc_ptr->start_time;
+	resv_ptr->start_time_prev = resv_ptr->start_time;
 	resv_ptr->flags		= resv_desc_ptr->flags;
 	resv_ptr->users		= resv_desc_ptr->users;
 	resv_ptr->user_cnt	= user_cnt;
 	resv_ptr->user_list	= user_list;
 	resv_desc_ptr->users 	= NULL;		/* Nothing left to free */
-	_set_resv_id(resv_ptr);
 	_set_cpu_cnt(resv_ptr);
 	_set_assoc_list(resv_ptr);
+
+	/* This needs to be done after all other setup is done. */
+	_post_resv_create(resv_ptr);
 
 	slurm_make_time_str(&resv_ptr->start_time, start_time, 
 			    sizeof(start_time));
@@ -956,6 +1020,7 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 			error_code = ESLURM_INVALID_TIME_VALUE;
 			goto fini;
 		}
+		resv_ptr->start_time_prev = resv_ptr->start_time;
 		resv_ptr->start_time = resv_desc_ptr->start_time;
 	}
 	if (resv_desc_ptr->end_time != (time_t) NO_VAL) {
@@ -1030,7 +1095,7 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 fini:	xfree(old_node_list);
 	FREE_NULL_BITMAP(old_node_bitmap);
 	_set_assoc_list(resv_ptr);
-	_updated_resv(resv_ptr);
+	_post_resv_update(resv_ptr);
 	last_resv_update = now;
 	schedule_resv_save();
 	return error_code;
@@ -1077,7 +1142,7 @@ extern int delete_resv(reservation_name_msg_t *resv_desc_ptr)
 			rc = ESLURM_RESERVATION_BUSY;
 			break;
 		}
-		_deleted_resv(resv_ptr);
+		rc = _post_resv_delete(resv_ptr);
 		list_delete_item(iter);
 		break;
 	}

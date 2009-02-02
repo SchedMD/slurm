@@ -69,6 +69,8 @@ static int   _archive_load(slurmdbd_conn_t *slurmdbd_conn,
 			   Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _cluster_procs(slurmdbd_conn_t *slurmdbd_conn,
 			    Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _edit_reservation(slurmdbd_conn_t *slurmdbd_conn,
+			       Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _get_accounts(slurmdbd_conn_t *slurmdbd_conn,
 			   Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _get_assocs(slurmdbd_conn_t *slurmdbd_conn,
@@ -211,6 +213,10 @@ proc_req(slurmdbd_conn_t *slurmdbd_conn,
 		case DBD_CLUSTER_PROCS:
 			rc = _cluster_procs(slurmdbd_conn,
 					    in_buffer, out_buffer, uid);
+			break;
+		case DBD_EDIT_RESV:
+			rc = _edit_reservation(slurmdbd_conn,
+					       in_buffer, out_buffer, uid);
 			break;
 		case DBD_GET_ACCOUNTS:
 			rc = _get_accounts(slurmdbd_conn, 
@@ -899,6 +905,39 @@ end_it:
 	return rc;
 }
 
+static int _edit_reservation(slurmdbd_conn_t *slurmdbd_conn,
+			     Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	int rc = SLURM_SUCCESS;
+	dbd_rec_msg_t *rec_msg = NULL;
+	char *comment = NULL;
+
+	if ((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)) {
+		comment = "DBD_EDIT_RESV message from invalid uid";
+		error("DBD_EDIT_RESV message from invalid uid %u", *uid);
+		rc = ESLURM_ACCESS_DENIED;
+		goto end_it;
+	}
+	if (slurmdbd_unpack_rec_msg(slurmdbd_conn->rpc_version, DBD_EDIT_RESV,
+				    &rec_msg, in_buffer) != SLURM_SUCCESS) {
+		comment = "Failed to unpack DBD_EDIT_RESV message";
+		error("%s", comment);
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+	debug2("DBD_EDIT_RESV: called");
+
+	rc = acct_storage_g_edit_reservation(slurmdbd_conn->db_conn,
+					     rec_msg->rec);
+
+end_it:
+	slurmdbd_free_rec_msg(slurmdbd_conn->rpc_version,
+			      DBD_EDIT_RESV, rec_msg);
+	*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version, 
+				      rc, comment, DBD_EDIT_RESV);
+	return rc;
+}
+
 static int _get_accounts(slurmdbd_conn_t *slurmdbd_conn, 
 			 Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
@@ -1544,7 +1583,7 @@ static int  _job_start(slurmdbd_conn_t *slurmdbd_conn,
 		       Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_job_start_msg_t *job_start_msg = NULL;
-	dbd_job_start_rc_msg_t job_start_rc_msg;
+	dbd_id_rc_msg_t id_rc_msg;
 	struct job_record job;
 	struct job_details details;
 	char *comment = NULL;
@@ -1569,7 +1608,7 @@ static int  _job_start(slurmdbd_conn_t *slurmdbd_conn,
 	}
 	memset(&job, 0, sizeof(struct job_record));
 	memset(&details, 0, sizeof(struct job_details));
-	memset(&job_start_rc_msg, 0, sizeof(dbd_job_start_rc_msg_t));
+	memset(&id_rc_msg, 0, sizeof(dbd_id_rc_msg_t));
 
 	job.total_procs = job_start_msg->alloc_cpus;
 	job.account = job_start_msg->account;
@@ -1585,6 +1624,7 @@ static int  _job_start(slurmdbd_conn_t *slurmdbd_conn,
 	job.nodes = job_start_msg->nodes;
 	job.partition = job_start_msg->partition;
 	job.num_procs = job_start_msg->req_cpus;
+	job.resv_id = job_start_msg->resv_id;
 	job.priority = job_start_msg->priority;
 	job.start_time = job_start_msg->start_time;
 	job.wckey = job_start_msg->wckey;
@@ -1600,16 +1640,16 @@ static int  _job_start(slurmdbd_conn_t *slurmdbd_conn,
 		debug2("DBD_JOB_START: ELIGIBLE CALL ID:%u NAME:%s", 
 		       job_start_msg->job_id, job_start_msg->name);
 	}
-	job_start_rc_msg.return_code = jobacct_storage_g_job_start(
+	id_rc_msg.return_code = jobacct_storage_g_job_start(
 		slurmdbd_conn->db_conn, job_start_msg->cluster, &job);
-	job_start_rc_msg.db_index = job.db_index;
+	id_rc_msg.id = job.db_index;
 
 	slurmdbd_free_job_start_msg(slurmdbd_conn->rpc_version, 
 				    job_start_msg);
 	*out_buffer = init_buf(1024);
-	pack16((uint16_t) DBD_JOB_START_RC, *out_buffer);
-	slurmdbd_pack_job_start_rc_msg(slurmdbd_conn->rpc_version, 
-				       &job_start_rc_msg, *out_buffer);
+	pack16((uint16_t) DBD_ID_RC, *out_buffer);
+	slurmdbd_pack_id_rc_msg(slurmdbd_conn->rpc_version, 
+				       &id_rc_msg, *out_buffer);
 	return SLURM_SUCCESS;
 }
 

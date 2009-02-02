@@ -274,6 +274,7 @@ typedef struct {
 	uint16_t duplicates;    /* report duplicate job entries */
 	List groupid_list;	/* list of char * */
 	List partition_list;	/* list of char * */
+	List resv_list;		/* list of char * */
 	List step_list;         /* list of jobacct_selected_step_t */
 	List state_list;        /* list of char * */
 	time_t usage_end; 
@@ -346,6 +347,20 @@ typedef struct {
 	List name_list; /* list of char * */
 	uint16_t with_deleted; 
 } acct_qos_cond_t;
+
+typedef struct {
+	char *assocs; /* comma seperated list of associations */
+	char *cluster; /* cluster reservation is for */
+	uint32_t cpus; /* how many cpus are in reservation */
+	uint16_t flags; /* flags for reservation. */
+	uint32_t id;   /* id of reservation. */
+	char *nodes; /* list of nodes in reservation */
+	time_t time_end; /* end time of reservation */
+	time_t time_start; /* start time of reservation */
+	time_t time_start_prev; /* If start time was changed this is
+				 * the pervious start time.  Needed
+				 * for accounting */
+} acct_reservation_rec_t;
 
 /* Right now this is used in the acct_qos_rec_t structure.  In the
  * user_limit_list. */
@@ -522,6 +537,7 @@ extern void destroy_acct_cluster_cond(void *object);
 extern void destroy_acct_association_cond(void *object);
 extern void destroy_acct_job_cond(void *object);
 extern void destroy_acct_qos_cond(void *object);
+extern void destroy_acct_reservation_rec(void *object);
 extern void destroy_acct_txn_cond(void *object);
 extern void destroy_acct_wckey_cond(void *object);
 extern void destroy_acct_archive_cond(void *object);
@@ -593,6 +609,10 @@ extern int unpack_acct_job_cond(void **object, uint16_t rpc_version,
 extern void pack_acct_qos_cond(void *in, uint16_t rpc_version, Buf buffer);
 extern int unpack_acct_qos_cond(void **object, uint16_t rpc_version,
 				Buf buffer);
+extern void pack_acct_reservation_rec(void *in, uint16_t rpc_version,
+				      Buf buffer);
+extern int unpack_acct_reservation_rec(void **object, uint16_t rpc_version,
+				       Buf buffer);
 extern void pack_acct_txn_cond(void *in, uint16_t rpc_version, Buf buffer);
 extern int unpack_acct_txn_cond(void **object, uint16_t rpc_version,
 				Buf buffer);
@@ -723,6 +743,16 @@ extern int acct_storage_g_add_qos(void *db_conn, uint32_t uid,
  */
 extern int acct_storage_g_add_wckeys(void *db_conn, uint32_t uid, 
 				     List wckey_list);
+
+/* 
+ * edit reservation's in accounting system 
+ * IN:  acct_reservation_rec_t *resv (id=NO_VAL for create,
+ *      id!=NO_VAL for modify, mode=NO_VAL for delete) on create id
+ *      will be filled in with the new id.
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int acct_storage_g_edit_reservation(void *db_conn, 
+					   acct_reservation_rec_t *resv);
 
 /* 
  * modify existing users in the accounting system 

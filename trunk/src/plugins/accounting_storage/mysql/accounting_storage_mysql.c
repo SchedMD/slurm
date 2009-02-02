@@ -113,6 +113,7 @@ char *event_table = "cluster_event_table";
 char *job_table = "job_table";
 char *last_ran_table = "last_ran_table";
 char *qos_table = "qos_table";
+char *resv_table = "resv_table";
 char *step_table = "step_table";
 char *txn_table = "txn_table";
 char *user_table = "user_table";
@@ -871,6 +872,52 @@ static int _setup_qos_limits(acct_qos_rec_t *qos,
 
 }
 
+static int _setup_resv_limits(acct_reservation_rec_t *resv,
+			      char **cols, char **vals,
+			      char **extra)
+{	
+	/* strip off the action item from the flags */
+	resv->flags &= RESERVE_FLAG_FLAGS;
+
+	if(resv->assocs) {
+		xstrcat(*cols, ", assoclist");
+		xstrfmtcat(*vals, ", \"%s\"", resv->assocs);
+		xstrfmtcat(*extra, ", assoclist=\"%s\"", resv->assocs);
+	}
+
+	if(resv->cpus) {
+		xstrcat(*cols, ", cpus");
+		xstrfmtcat(*vals, ", %u", resv->cpus);
+		xstrfmtcat(*extra, ", cpus=%u", resv->cpus);		
+	}
+	
+	if(resv->flags) {
+		xstrcat(*cols, ", flags");
+		xstrfmtcat(*vals, ", %u", resv->flags);
+		xstrfmtcat(*extra, ", flags=%u", resv->flags);		
+	}
+
+	if(resv->nodes) {
+		xstrcat(*cols, ", nodelist");
+		xstrfmtcat(*vals, ", \"%s\"", resv->nodes);
+		xstrfmtcat(*extra, ", nodelist=\"%s\"", resv->nodes);
+	}
+	
+	if(resv->time_end) {
+		xstrcat(*cols, ", end");
+		xstrfmtcat(*vals, ", %u", resv->time_end);
+		xstrfmtcat(*extra, ", end=%u", resv->time_end);		
+	}
+
+	if(resv->time_start) {
+		xstrcat(*cols, ", start");
+		xstrfmtcat(*vals, ", %u", resv->time_start);
+		xstrfmtcat(*extra, ", start=%u", resv->time_start);		
+	}
+
+	
+	return SLURM_SUCCESS;
+}
 /* when doing a select on this all the select should have a prefix of
  * t1. */
 static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
@@ -2584,6 +2631,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "nodelist", "text" },
 		{ "kill_requid", "smallint default -1 not null" },
 		{ "qos", "smallint default 0" },
+		{ "resvid", "int unsigned not null" },
 		{ NULL, NULL}
 	};
 
@@ -2618,6 +2666,19 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "preemptors", "text not null default ''" },
 		{ "priority", "int default 0" },
 		{ "usage_factor", "float default 1.0 not null" },
+		{ NULL, NULL}		
+	};
+
+	storage_field_t resv_table_fields[] = {
+		{ "id", "int unsigned default 0 not null" },
+		{ "cluster", "text not null" },
+		{ "deleted", "tinyint default 0" },
+		{ "cpus", "mediumint unsigned not null" },
+		{ "assoclist", "text not null default ''" },
+		{ "nodelist", "text not null default ''" },
+		{ "start", "int unsigned default 0 not null" },
+		{ "end", "int unsigned default 0 not null" },
+		{ "flags", "smallint default 0 not null" },
 		{ NULL, NULL}		
 	};
 
@@ -2909,6 +2970,12 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 	if(mysql_db_create_table(db_conn, step_table,
 				 step_table_fields, 
 				 ", primary key (id, stepid))") == SLURM_ERROR)
+		return SLURM_ERROR;
+
+	if(mysql_db_create_table(db_conn, resv_table,
+				 resv_table_fields, 
+				 ", primary key (id, start, cluster(20)))")
+	   == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	if(mysql_db_create_table(db_conn, suspend_table,
@@ -4453,6 +4520,217 @@ extern int acct_storage_p_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 #else
 	return SLURM_ERROR;
 #endif
+}
+
+extern int acct_storage_p_edit_reservation(mysql_conn_t *mysql_conn,
+					   acct_reservation_rec_t *resv)
+{
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	int rc = SLURM_SUCCESS;
+	char *cols = NULL, *vals = NULL, *extra = NULL, 
+		*query = NULL;//, *tmp_extra = NULL;
+
+	if(!resv) {
+		error("No reservation was given to edit");
+		return SLURM_ERROR;
+	}
+
+	if(!resv->id || !resv->time_start || !resv->cluster) {
+		error("We need an id, start time, and cluster "
+		      "name to edit a reservation.");
+		return SLURM_ERROR;
+	}
+
+
+	if(resv->flags & RESERVE_FLAG_DELETE) {
+		/* delete */
+
+		/* first delete the resv that hasn't happened yet. */
+		query = xstrdup_printf("delete from %s where start > %d "
+				       "and id=%u and start=%d "
+				       "and cluster='%s';", 
+				       resv_table, resv->time_start_prev,
+				       resv->id, 
+				       resv->time_start, resv->cluster);
+		/* then update the remaining ones with a deleted flag */
+		xstrfmtcat(query,
+			   "update %s set deleted=1 where deleted=0 and "
+			   "id=%u and start=%d and cluster='%s;'",
+			   resv_table, resv->id, resv->time_start,
+			   resv->cluster);
+	} else if(resv->flags & RESERVE_FLAG_CREATE) {
+		/* create */
+
+		_setup_resv_limits(resv, &cols, &vals, &extra);
+
+		xstrfmtcat(query,
+			   "insert into %s (id, cluster%s) values (%u, '%s'%s) "
+			   "on duplicate key update deleted=0%s;",
+			   resv_table, cols, resv->id, resv->cluster,
+			   vals, extra);
+	} else if (resv->flags & RESERVE_FLAG_MODIFY) {
+		/* modify */
+		time_t start = 0, now = time(NULL);
+		int i;
+		int set = 0;
+		char *resv_req_inx[] = {
+			"start",
+			"end",
+			"cpus",
+			"assoclist",
+			"nodelist",
+			"flags"
+		};
+		enum {
+			RESV_START,
+			RESV_END,
+			RESV_CPU,
+			RESV_ASSOC,
+			RESV_NODES,
+			RESV_FLAGS,
+			RESV_COUNT
+		};
+		
+		if(!resv->time_start_prev) {
+			error("We need a time to check for last "
+			      "start of reservation.");
+			return SLURM_ERROR;
+		}
+
+		for(i=0; i<RESV_COUNT; i++) {
+			if(i) 
+				xstrcat(cols, ", ");
+			xstrcat(cols, resv_req_inx[i]);
+		}
+
+		query = xstrdup_printf("select %s from %s where id=%u "
+				       "and start=%d and cluster='%s' "
+				       "and deleted=0 order by start desc "
+				       "limit 1;",
+				       cols, resv_table, resv->id, 
+				       resv->time_start_prev, resv->cluster);
+	try_again:
+		debug4("%d(%d) query\n%s",
+		       mysql_conn->conn, __LINE__, query);
+		if(!(result = mysql_db_query_ret(
+			     mysql_conn->db_conn, query, 0))) {
+			rc = SLURM_ERROR;
+			goto end_it;
+		}
+		if(!(row = mysql_fetch_row(result))) {
+			rc = SLURM_ERROR;
+			mysql_free_result(result);
+			error("There is no reservation by id %u, "
+			      "start %d, and cluster '%s'", resv->id,
+			      resv->time_start_prev, resv->cluster);
+			if(!set && resv->time_end) {
+				/* This should never really happen,
+				   but just incase the controller and the
+				   database get out of sync we check
+				   to see if there is a reservation
+				   not deleted that hasn't ended yet. */
+				xfree(query);
+				query = xstrdup_printf(
+					"select %s from %s where id=%u "
+					"and start <= %d and cluster='%s' "
+					"and deleted=0 order by start desc "
+					"limit 1;",
+				       cols, resv_table, resv->id, 
+				       resv->time_end, resv->cluster);
+				set = 1;
+				goto try_again;
+			}
+			goto end_it;
+		} 
+
+		start = atoi(row[RESV_START]);
+		
+		xfree(query);
+		xfree(cols);
+
+		set = 0;
+
+		/* check differences here */
+		
+		if(!resv->assocs) 
+			resv->assocs = xstrdup(row[RESV_ASSOC]);
+		
+		if(!resv->cpus) {
+			resv->cpus = atoi(row[RESV_CPU]);
+			set = 1;
+		}
+		
+		if(!resv->flags) {
+			resv->flags = atoi(row[RESV_FLAGS]);
+			set = 1;
+		}
+		
+		if(!resv->nodes) {
+			resv->nodes = xstrdup(row[RESV_NODES]);
+			set = 1;
+		}
+		
+		if(!resv->time_end)
+			resv->time_end = atoi(row[RESV_END]);
+
+		mysql_free_result(result);
+
+		_setup_resv_limits(resv, &cols, &vals, &extra);
+		/* use start below instead of resv->time_start_prev
+		 * just incase we have a different one from being out
+		 * of sync
+		 */
+
+		if((start < now) || !set) {
+			/* we haven't started the reservation yet, or
+			   we are changing the associations or end
+			   time which we can just update it */
+			query = xstrdup_printf("update %s set deleted=0%s "
+					       "where deleted=0 and id=%u "
+					       "and start=%d and cluster='%s';",
+					       resv_table, extra, resv->id,
+					       start,
+					       resv->cluster);
+		} else {
+			/* time_start is already done above and we
+			 * changed something that is in need on a new
+			 * entry. */
+			query = xstrdup_printf("update %s set end=%d "
+					       "where deleted=0 && id=%u "
+					       "&& start=%d and cluster='%s';",
+					       resv_table, resv->time_start-1,
+					       resv->id, start,
+					       resv->cluster);
+			xstrfmtcat(query,
+				   "insert into %s (id, cluster, %s) "
+				   "values (%u, '%s', %s) "
+				   "on duplicate key update deleted=0, %s;",
+				   resv_table, cols, resv->id, resv->cluster,
+				   vals, extra);
+		}
+	} else {
+		uint16_t flags = resv->flags & RESERVE_FLAG_FLAGS;
+		error("Unkown action %x", flags);
+		return SLURM_ERROR;
+	}
+	
+	if(query) {
+		debug3("%d(%d) query\n%s",
+		       mysql_conn->conn, __LINE__, query);
+		
+		if((rc = mysql_db_query(mysql_conn->db_conn, query)
+		    == SLURM_SUCCESS))
+			rc = mysql_clear_results(mysql_conn->db_conn);
+	}
+end_it:
+	
+	xfree(query);
+	xfree(cols);
+	xfree(vals);
+	xfree(extra);
+	
+	return rc;
 }
 
 extern List acct_storage_p_modify_users(mysql_conn_t *mysql_conn, uint32_t uid, 
@@ -9649,7 +9927,8 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 				job_ptr->details->submit_time;
 		query = xstrdup_printf(
 			"insert into %s "
-			"(jobid, associd, wckeyid, uid, gid, nodelist, ",
+			"(jobid, associd, wckeyid, uid, "
+			"gid, nodelist, resvid, ",
 			job_table);
 
 		if(cluster_name) 
@@ -9666,9 +9945,10 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 		xstrfmtcat(query, 
 			   "eligible, submit, start, name, track_steps, "
 			   "state, priority, req_cpus, alloc_cpus) "
-			   "values (%u, %u, %u, %u, %u, \"%s\", ",
+			   "values (%u, %u, %u, %u, %u, \"%s\", %u, ",
 			   job_ptr->job_id, job_ptr->assoc_id, wckeyid,
-			   job_ptr->user_id, job_ptr->group_id, nodes);
+			   job_ptr->user_id, job_ptr->group_id, nodes, 
+			   job_ptr->resv_id);
 		
 		if(cluster_name) 
 			xstrfmtcat(query, "\"%s\", ", cluster_name);
@@ -9685,7 +9965,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 			   "%d, %d, %d, \"%s\", %u, %u, %u, %u, %u) "
 			   "on duplicate key update "
 			   "id=LAST_INSERT_ID(id), state=%u, "
-			   "associd=%u, wckeyid=%u",
+			   "associd=%u, wckeyid=%u, resvid=%u",
 			   (int)job_ptr->details->begin_time,
 			   (int)job_ptr->details->submit_time,
 			   (int)job_ptr->start_time,
@@ -9694,7 +9974,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 			   job_ptr->priority, job_ptr->num_procs,
 			   job_ptr->total_procs, 
 			   job_ptr->job_state & (~JOB_COMPLETING),
-			   job_ptr->assoc_id, wckeyid);
+			   job_ptr->assoc_id, wckeyid, job_ptr->resv_id);
 
 		if(job_ptr->account) 
 			xstrfmtcat(query, ", account=\"%s\"", job_ptr->account);
@@ -9739,11 +10019,12 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 			xstrfmtcat(query, "wckey=\"%s\", ", job_ptr->wckey);
 
 		xstrfmtcat(query, "start=%d, name=\"%s\", state=%u, "
-			   "alloc_cpus=%u, associd=%u, wckeyid=%u where id=%d",
+			   "alloc_cpus=%u, associd=%u, wckeyid=%u, resvid=%u "
+			   "where id=%d",
 			   (int)job_ptr->start_time,
 			   jname, job_ptr->job_state & (~JOB_COMPLETING),
 			   job_ptr->total_procs, job_ptr->assoc_id, wckeyid,
-			   job_ptr->db_index);
+			   job_ptr->resv_id, job_ptr->db_index);
 		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 	}

@@ -852,7 +852,13 @@ extern int acct_storage_p_add_qos(PGconn *acct_pgsql_db, uint32_t uid,
 }
 
 extern int acct_storage_p_add_wckeys(PGconn *acct_pgsql_db, uint32_t uid, 
-				  List wckey_list)
+				     List wckey_list)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int acct_storage_p_edit_reservation(PGconn *acct_pgsql_db, 
+					   acct_reservation_rec_t *resv)
 {
 	return SLURM_SUCCESS;
 }
