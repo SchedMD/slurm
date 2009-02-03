@@ -103,6 +103,7 @@ typedef enum {
 
 
 typedef struct {
+	int opt_all_steps;	/* --allsteps */
 	char *opt_field_list;	/* --fields= */
 	int opt_help;		/* --help */
 	List opt_job_list;	/* --jobs */

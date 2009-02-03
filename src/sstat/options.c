@@ -66,7 +66,10 @@ void _help_msg(void)
 	printf("\
 sstat [<OPTION>] -j <job(.stepid)>                                          \n\
     Valid <OPTION> values are:                                              \n\
-     -e, --helpformat:                                                      \n\
+      -a, --allsteps:                                                       \n\
+                   Print all steps for the jobs given when no step is       \n\
+                   specified.                                               \n\
+      -e, --helpformat:                                                     \n\
 	           Print a list of fields that can be specified with the    \n\
 	           '--format' option                                        \n\
      -h, --help:   Print this description of use.                           \n\
@@ -74,7 +77,9 @@ sstat [<OPTION>] -j <job(.stepid)>                                          \n\
 	           Format is <job(.step)>. Stat this job step               \n\
                    or comma-separated list of job steps. This option is     \n\
                    required.  The step portion will default to step 0 if not\n\
-                   specified.                                               \n\
+                   specified, unless the --allsteps flag is set where not   \n\
+                   specifing a step will result in all running steps to be  \n\
+                   displayed.                                               \n\
      -n, --noheader:                                                        \n\
 	           No header will be added to the beginning of output.      \n\
                    The default is to print a header.                        \n\
@@ -266,6 +271,7 @@ void parse_command_line(int argc, char **argv)
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 
 	static struct option long_options[] = {
+		{"allsteps", 0, 0, 'a'},
 		{"helpformat", 0, 0, 'e'},
 		{"help", 0, 0, 'h'},
 		{"jobs", 1, 0, 'j'},
@@ -286,11 +292,14 @@ void parse_command_line(int argc, char **argv)
 	opterr = 1;		/* Let getopt report problems to the user */
 
 	while (1) {		/* now cycle through the command line */
-		c = getopt_long(argc, argv, "ehj:no:pPvV",
+		c = getopt_long(argc, argv, "aehj:no:pPvV",
 				long_options, &optionIndex);
 		if (c == -1)
 			break;
 		switch (c) {
+		case 'a':
+			params.opt_all_steps = 1;
+			break;
 		case 'e':
 			params.opt_help = 2;
 			break;
