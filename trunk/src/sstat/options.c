@@ -67,7 +67,7 @@ void _help_msg(void)
 sstat [<OPTION>] -j <job(.stepid)>                                          \n\
     Valid <OPTION> values are:                                              \n\
       -a, --allsteps:                                                       \n\
-                   Print all steps for the jobs given when no step is       \n\
+                   Print all steps for the given job(s) when no step is     \n\
                    specified.                                               \n\
       -e, --helpformat:                                                     \n\
 	           Print a list of fields that can be specified with the    \n\

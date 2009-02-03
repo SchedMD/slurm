@@ -152,13 +152,15 @@ static int _find_resv_name(void *x, void *key)
 
 static void _dump_resv_req(reserve_request_msg_t *resv_ptr, char *mode)
 {
+	
 #if _RESV_DEBUG
-	char start_str[32] = "", end_str[32] = "", flag_str[64] = "";
+	char start_str[32] = "", end_str[32] = "", *flag_str = NULL;
 	int duration;
 
 	slurm_make_time_str(&resv_ptr->start_time,start_str,sizeof(start_str));
 	slurm_make_time_str(&resv_ptr->end_time,  end_str,  sizeof(end_str));
-	reservation_flags_string(resv_ptr->flags, flag_str, sizeof(flag_str));
+	flag_str = reservation_flags_string(resv_ptr->flags);
+
 	if (resv_ptr->duration == NO_VAL)
 		duration = -1;
 	else
@@ -171,6 +173,8 @@ static void _dump_resv_req(reserve_request_msg_t *resv_ptr, char *mode)
 	     flag_str, resv_ptr->node_cnt, resv_ptr->node_list, 
 	     resv_ptr->features, resv_ptr->partition, 
 	     resv_ptr->users, resv_ptr->accounts);
+
+	xfree(flag_str);
 #endif
 }
 
@@ -934,15 +938,15 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 	/* Process the request */
 	if (resv_desc_ptr->flags != (uint16_t) NO_VAL) {
 		if (resv_desc_ptr->flags & RESERVE_FLAG_MAINT)
-			resv_ptr->flags &= RESERVE_FLAG_MAINT;
+			resv_ptr->flags |= RESERVE_FLAG_MAINT;
 		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_MAINT)
 			resv_ptr->flags &= (~RESERVE_FLAG_MAINT);
 		if (resv_desc_ptr->flags & RESERVE_FLAG_DAILY)
-			resv_ptr->flags &= RESERVE_FLAG_DAILY;
+			resv_ptr->flags |= RESERVE_FLAG_DAILY;
 		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_DAILY)
 			resv_ptr->flags &= (~RESERVE_FLAG_DAILY);
 		if (resv_desc_ptr->flags & RESERVE_FLAG_WEEKLY)
-			resv_ptr->flags &= RESERVE_FLAG_WEEKLY;
+			resv_ptr->flags |= RESERVE_FLAG_WEEKLY;
 		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_WEEKLY)
 			resv_ptr->flags &= (~RESERVE_FLAG_WEEKLY);
 	}

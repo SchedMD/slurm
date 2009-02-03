@@ -877,24 +877,23 @@ char *job_state_string_compact(enum job_states inx)
 	}
 }
 
-extern void reservation_flags_string(uint16_t flags, char *str, int str_len)
+extern char *reservation_flags_string(uint16_t flags)
 {
-	char flag_str[64] = "";
+	char *flag_str = xstrdup("");
 
-	if (flags == RESERVE_FLAG_MAINT)
-		strcat(flag_str, "MAINT");
-	if (flags == RESERVE_FLAG_DAILY) {
+	if (flags & RESERVE_FLAG_MAINT)
+		xstrcat(flag_str, "MAINT");
+	if (flags & RESERVE_FLAG_DAILY) {
 		if (flag_str[0])
-			strcat(flag_str, ",");
-		strcat(flag_str, "DAILY");
+			xstrcat(flag_str, ",");
+		xstrcat(flag_str, "DAILY");
 	}
-	if (flags == RESERVE_FLAG_WEEKLY) {
+	if (flags & RESERVE_FLAG_WEEKLY) {
 		if (flag_str[0])
-			strcat(flag_str, ",");
-		strcat(flag_str, "WEEKLY");
+			xstrcat(flag_str, ",");
+		xstrcat(flag_str, "WEEKLY");
 	}
-	
-	strncpy(str, flag_str, str_len);
+	return flag_str;
 }
 
 char *node_state_string(enum node_states inx)
