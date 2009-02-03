@@ -44,11 +44,11 @@ print_header $test_id
 
 spawn $sstat --help
 expect {
-	-re "sstat.*OPTION" {
+	-re "sstat...OPTION" {
 		incr matches
 		exp_continue
 	}
-	-re "Valid.*OPTION" {
+	-re "Valid..OPTION" {
 		incr matches
 		exp_continue
 	}
@@ -67,39 +67,6 @@ expect {
 
 if {$matches != 3} {
 	send_user "\nFAILURE: sstat --help failed ($matches)\n"
-	set exit_code 1
-}
-
-#
-# Report the sstat -h format
-#
-set matches     0
-
-spawn $sstat -h
-expect {
-	-re "sstat.*OPTION" {
-		incr matches
-		exp_continue
-	}
-	-re "Valid.*OPTION" {
-		incr matches
-		exp_continue
-	}
-	-re "-e, --helpformat" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sstat not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-if {$matches != 3} {
-	send_user "\nFAILURE: sstat -h failed ($matches)\n"
 	set exit_code 1
 }
 
