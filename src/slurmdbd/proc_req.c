@@ -63,14 +63,14 @@ static int   _add_users(slurmdbd_conn_t *slurmdbd_conn,
 			Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _add_wckeys(slurmdbd_conn_t *slurmdbd_conn,
 			 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _add_reservation(slurmdbd_conn_t *slurmdbd_conn,
+			      Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _archive_dump(slurmdbd_conn_t *slurmdbd_conn,
 			   Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _archive_load(slurmdbd_conn_t *slurmdbd_conn,
 			   Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _cluster_procs(slurmdbd_conn_t *slurmdbd_conn,
 			    Buf in_buffer, Buf *out_buffer, uint32_t *uid);
-static int   _edit_reservation(slurmdbd_conn_t *slurmdbd_conn,
-			       Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _get_accounts(slurmdbd_conn_t *slurmdbd_conn,
 			   Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _get_assocs(slurmdbd_conn_t *slurmdbd_conn,
@@ -117,6 +117,8 @@ static int   _modify_users(slurmdbd_conn_t *slurmdbd_conn,
 			   Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _modify_wckeys(slurmdbd_conn_t *slurmdbd_conn,
 			    Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _modify_reservation(slurmdbd_conn_t *slurmdbd_conn,
+				 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _node_state(slurmdbd_conn_t *slurmdbd_conn,
 			 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static char *_node_state_string(uint16_t node_state);
@@ -137,6 +139,8 @@ static int   _remove_users(slurmdbd_conn_t *slurmdbd_conn,
 			   Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _remove_wckeys(slurmdbd_conn_t *slurmdbd_conn,
 			    Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _remove_reservation(slurmdbd_conn_t *slurmdbd_conn,
+				 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _roll_usage(slurmdbd_conn_t *slurmdbd_conn,
 			 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _step_complete(slurmdbd_conn_t *slurmdbd_conn,
@@ -202,6 +206,10 @@ proc_req(slurmdbd_conn_t *slurmdbd_conn,
 			rc = _add_wckeys(slurmdbd_conn, 
 					 in_buffer, out_buffer, uid);
 			break;
+		case DBD_ADD_RESV:
+			rc = _add_reservation(slurmdbd_conn,
+					      in_buffer, out_buffer, uid);
+			break;
 		case DBD_ARCHIVE_DUMP:
 			rc = _archive_dump(slurmdbd_conn, 
 					   in_buffer, out_buffer, uid);
@@ -213,10 +221,6 @@ proc_req(slurmdbd_conn_t *slurmdbd_conn,
 		case DBD_CLUSTER_PROCS:
 			rc = _cluster_procs(slurmdbd_conn,
 					    in_buffer, out_buffer, uid);
-			break;
-		case DBD_EDIT_RESV:
-			rc = _edit_reservation(slurmdbd_conn,
-					       in_buffer, out_buffer, uid);
 			break;
 		case DBD_GET_ACCOUNTS:
 			rc = _get_accounts(slurmdbd_conn, 
@@ -317,7 +321,11 @@ proc_req(slurmdbd_conn_t *slurmdbd_conn,
 			break;
 		case DBD_MODIFY_WCKEYS:
 			rc = _modify_wckeys(slurmdbd_conn, 
-					 in_buffer, out_buffer, uid);
+					    in_buffer, out_buffer, uid);
+			break;
+		case DBD_MODIFY_RESV:
+			rc = _modify_reservation(slurmdbd_conn,
+						 in_buffer, out_buffer, uid);
 			break;
 		case DBD_NODE_STATE:
 			rc = _node_state(slurmdbd_conn,
@@ -354,6 +362,10 @@ proc_req(slurmdbd_conn_t *slurmdbd_conn,
 		case DBD_REMOVE_WCKEYS:
 			rc = _remove_wckeys(slurmdbd_conn, 
 					    in_buffer, out_buffer, uid);
+			break;
+		case DBD_REMOVE_RESV:
+			rc = _remove_reservation(slurmdbd_conn,
+						 in_buffer, out_buffer, uid);
 			break;
 		case DBD_ROLL_USAGE:
 			rc = _roll_usage(slurmdbd_conn, 
@@ -770,6 +782,39 @@ end_it:
 	return rc;
 }
 
+static int _add_reservation(slurmdbd_conn_t *slurmdbd_conn,
+			     Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	int rc = SLURM_SUCCESS;
+	dbd_rec_msg_t *rec_msg = NULL;
+	char *comment = NULL;
+
+	if ((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)) {
+		comment = "DBD_ADD_RESV message from invalid uid";
+		error("DBD_ADD_RESV message from invalid uid %u", *uid);
+		rc = ESLURM_ACCESS_DENIED;
+		goto end_it;
+	}
+	if (slurmdbd_unpack_rec_msg(slurmdbd_conn->rpc_version, DBD_ADD_RESV,
+				    &rec_msg, in_buffer) != SLURM_SUCCESS) {
+		comment = "Failed to unpack DBD_ADD_RESV message";
+		error("%s", comment);
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+	debug2("DBD_ADD_RESV: called");
+
+	rc = acct_storage_g_add_reservation(slurmdbd_conn->db_conn,
+					     rec_msg->rec);
+
+end_it:
+	slurmdbd_free_rec_msg(slurmdbd_conn->rpc_version,
+			      DBD_ADD_RESV, rec_msg);
+	*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version, 
+				      rc, comment, DBD_ADD_RESV);
+	return rc;
+}
+
 static int _archive_dump(slurmdbd_conn_t *slurmdbd_conn,
 			 Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
@@ -902,39 +947,6 @@ end_it:
 					cluster_procs_msg);
 	*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version, 
 				      rc, comment, DBD_CLUSTER_PROCS);
-	return rc;
-}
-
-static int _edit_reservation(slurmdbd_conn_t *slurmdbd_conn,
-			     Buf in_buffer, Buf *out_buffer, uint32_t *uid)
-{
-	int rc = SLURM_SUCCESS;
-	dbd_rec_msg_t *rec_msg = NULL;
-	char *comment = NULL;
-
-	if ((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)) {
-		comment = "DBD_EDIT_RESV message from invalid uid";
-		error("DBD_EDIT_RESV message from invalid uid %u", *uid);
-		rc = ESLURM_ACCESS_DENIED;
-		goto end_it;
-	}
-	if (slurmdbd_unpack_rec_msg(slurmdbd_conn->rpc_version, DBD_EDIT_RESV,
-				    &rec_msg, in_buffer) != SLURM_SUCCESS) {
-		comment = "Failed to unpack DBD_EDIT_RESV message";
-		error("%s", comment);
-		rc = SLURM_ERROR;
-		goto end_it;
-	}
-	debug2("DBD_EDIT_RESV: called");
-
-	rc = acct_storage_g_edit_reservation(slurmdbd_conn->db_conn,
-					     rec_msg->rec);
-
-end_it:
-	slurmdbd_free_rec_msg(slurmdbd_conn->rpc_version,
-			      DBD_EDIT_RESV, rec_msg);
-	*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version, 
-				      rc, comment, DBD_EDIT_RESV);
 	return rc;
 }
 
@@ -2144,6 +2156,39 @@ static int   _modify_wckeys(slurmdbd_conn_t *slurmdbd_conn,
 	return rc;
 }
 
+static int _modify_reservation(slurmdbd_conn_t *slurmdbd_conn,
+			     Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	int rc = SLURM_SUCCESS;
+	dbd_rec_msg_t *rec_msg = NULL;
+	char *comment = NULL;
+
+	if ((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)) {
+		comment = "DBD_MODIFY_RESV message from invalid uid";
+		error("DBD_MODIFY_RESV message from invalid uid %u", *uid);
+		rc = ESLURM_ACCESS_DENIED;
+		goto end_it;
+	}
+	if (slurmdbd_unpack_rec_msg(slurmdbd_conn->rpc_version, DBD_MODIFY_RESV,
+				    &rec_msg, in_buffer) != SLURM_SUCCESS) {
+		comment = "Failed to unpack DBD_MODIFY_RESV message";
+		error("%s", comment);
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+	debug2("DBD_MODIFY_RESV: called");
+
+	rc = acct_storage_g_modify_reservation(slurmdbd_conn->db_conn,
+					     rec_msg->rec);
+
+end_it:
+	slurmdbd_free_rec_msg(slurmdbd_conn->rpc_version,
+			      DBD_MODIFY_RESV, rec_msg);
+	*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version, 
+				      rc, comment, DBD_MODIFY_RESV);
+	return rc;
+}
+
 static int _node_state(slurmdbd_conn_t *slurmdbd_conn,
 		       Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
@@ -2770,6 +2815,39 @@ static int   _remove_wckeys(slurmdbd_conn_t *slurmdbd_conn,
 	if(list_msg.my_list)
 		list_destroy(list_msg.my_list);
 
+	return rc;
+}
+
+static int _remove_reservation(slurmdbd_conn_t *slurmdbd_conn,
+			     Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	int rc = SLURM_SUCCESS;
+	dbd_rec_msg_t *rec_msg = NULL;
+	char *comment = NULL;
+
+	if ((*uid != slurmdbd_conf->slurm_user_id && *uid != 0)) {
+		comment = "DBD_REMOVE_RESV message from invalid uid";
+		error("DBD_REMOVE_RESV message from invalid uid %u", *uid);
+		rc = ESLURM_ACCESS_DENIED;
+		goto end_it;
+	}
+	if (slurmdbd_unpack_rec_msg(slurmdbd_conn->rpc_version, DBD_REMOVE_RESV,
+				    &rec_msg, in_buffer) != SLURM_SUCCESS) {
+		comment = "Failed to unpack DBD_REMOVE_RESV message";
+		error("%s", comment);
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+	debug2("DBD_REMOVE_RESV: called");
+
+	rc = acct_storage_g_remove_reservation(slurmdbd_conn->db_conn,
+					     rec_msg->rec);
+
+end_it:
+	slurmdbd_free_rec_msg(slurmdbd_conn->rpc_version,
+			      DBD_REMOVE_RESV, rec_msg);
+	*out_buffer = make_dbd_rc_msg(slurmdbd_conn->rpc_version, 
+				      rc, comment, DBD_REMOVE_RESV);
 	return rc;
 }
 

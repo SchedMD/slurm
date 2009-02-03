@@ -163,7 +163,9 @@ typedef enum {
 	DBD_ARCHIVE_DUMP,    	/* issue a request to dump jobs to
 				 * archive */
 	DBD_ARCHIVE_LOAD,    	/* load an archive file    	        */
-	DBD_EDIT_RESV,    	/* edit a reservation (add,modify,delete) */
+	DBD_ADD_RESV,    	/* add a reservation                    */
+	DBD_REMOVE_RESV,    	/* remove a reservation                 */
+	DBD_MODIFY_RESV,    	/* modify a reservation                 */
 	DBD_GET_CONFIG,  	/* Get configuration information	*/
 	DBD_GOT_CONFIG,		/* Response to DBD_GET_CONFIG		*/
 } slurmdbd_msg_type_t;

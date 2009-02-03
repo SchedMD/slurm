@@ -4519,12 +4519,10 @@ extern int acct_storage_p_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 #endif
 }
 
-extern int acct_storage_p_edit_reservation(mysql_conn_t *mysql_conn,
-					   acct_reservation_rec_t *resv)
+extern int acct_storage_p_add_reservation(mysql_conn_t *mysql_conn,
+					  acct_reservation_rec_t *resv)
 {
 #ifdef HAVE_MYSQL
-	MYSQL_RES *result = NULL;
-	MYSQL_ROW row;
 	int rc = SLURM_SUCCESS;
 	char *cols = NULL, *vals = NULL, *extra = NULL, 
 		*query = NULL;//, *tmp_extra = NULL;
@@ -4541,182 +4539,20 @@ extern int acct_storage_p_edit_reservation(mysql_conn_t *mysql_conn,
 	}
 
 
-	if(resv->flags & RESERVE_FLAG_DELETE) {
-		/* delete */
-
-		/* first delete the resv that hasn't happened yet. */
-		query = xstrdup_printf("delete from %s where start > %d "
-				       "and id=%u and start=%d "
-				       "and cluster='%s';", 
-				       resv_table, resv->time_start_prev,
-				       resv->id, 
-				       resv->time_start, resv->cluster);
-		/* then update the remaining ones with a deleted flag */
-		xstrfmtcat(query,
-			   "update %s set deleted=1 where deleted=0 and "
-			   "id=%u and start=%d and cluster='%s;'",
-			   resv_table, resv->id, resv->time_start,
-			   resv->cluster);
-	} else if(resv->flags & RESERVE_FLAG_CREATE) {
-		/* create */
-
-		_setup_resv_limits(resv, &cols, &vals, &extra);
-
-		xstrfmtcat(query,
-			   "insert into %s (id, cluster%s) values (%u, '%s'%s) "
-			   "on duplicate key update deleted=0%s;",
-			   resv_table, cols, resv->id, resv->cluster,
-			   vals, extra);
-	} else if (resv->flags & RESERVE_FLAG_MODIFY) {
-		/* modify */
-		time_t start = 0, now = time(NULL);
-		int i;
-		int set = 0;
-		char *resv_req_inx[] = {
-			"start",
-			"end",
-			"cpus",
-			"nodelist",
-			"flags"
-		};
-		enum {
-			RESV_START,
-			RESV_END,
-			RESV_CPU,
-			RESV_NODES,
-			RESV_FLAGS,
-			RESV_COUNT
-		};
-		
-		if(!resv->time_start_prev) {
-			error("We need a time to check for last "
-			      "start of reservation.");
-			return SLURM_ERROR;
-		}
-
-		for(i=0; i<RESV_COUNT; i++) {
-			if(i) 
-				xstrcat(cols, ", ");
-			xstrcat(cols, resv_req_inx[i]);
-		}
-
-		query = xstrdup_printf("select %s from %s where id=%u "
-				       "and start=%d and cluster='%s' "
-				       "and deleted=0 order by start desc "
-				       "limit 1;",
-				       cols, resv_table, resv->id, 
-				       resv->time_start_prev, resv->cluster);
-	try_again:
-		debug4("%d(%d) query\n%s",
-		       mysql_conn->conn, __LINE__, query);
-		if(!(result = mysql_db_query_ret(
-			     mysql_conn->db_conn, query, 0))) {
-			rc = SLURM_ERROR;
-			goto end_it;
-		}
-		if(!(row = mysql_fetch_row(result))) {
-			rc = SLURM_ERROR;
-			mysql_free_result(result);
-			error("There is no reservation by id %u, "
-			      "start %d, and cluster '%s'", resv->id,
-			      resv->time_start_prev, resv->cluster);
-			if(!set && resv->time_end) {
-				/* This should never really happen,
-				   but just incase the controller and the
-				   database get out of sync we check
-				   to see if there is a reservation
-				   not deleted that hasn't ended yet. */
-				xfree(query);
-				query = xstrdup_printf(
-					"select %s from %s where id=%u "
-					"and start <= %d and cluster='%s' "
-					"and deleted=0 order by start desc "
-					"limit 1;",
-				       cols, resv_table, resv->id, 
-				       resv->time_end, resv->cluster);
-				set = 1;
-				goto try_again;
-			}
-			goto end_it;
-		} 
-
-		start = atoi(row[RESV_START]);
-		
-		xfree(query);
-		xfree(cols);
-
-		set = 0;
-
-		/* check differences here */
-		
-		if(!resv->cpus) {
-			resv->cpus = atoi(row[RESV_CPU]);
-			set = 1;
-		}
-		
-		if(!resv->flags) {
-			resv->flags = atoi(row[RESV_FLAGS]);
-			set = 1;
-		}
-		
-		if(!resv->nodes) {
-			resv->nodes = xstrdup(row[RESV_NODES]);
-			set = 1;
-		}
-		
-		if(!resv->time_end)
-			resv->time_end = atoi(row[RESV_END]);
-
-		mysql_free_result(result);
-
-		_setup_resv_limits(resv, &cols, &vals, &extra);
-		/* use start below instead of resv->time_start_prev
-		 * just incase we have a different one from being out
-		 * of sync
-		 */
-
-		if((start < now) || !set) {
-			/* we haven't started the reservation yet, or
-			   we are changing the associations or end
-			   time which we can just update it */
-			query = xstrdup_printf("update %s set deleted=0%s "
-					       "where deleted=0 and id=%u "
-					       "and start=%d and cluster='%s';",
-					       resv_table, extra, resv->id,
-					       start,
-					       resv->cluster);
-		} else {
-			/* time_start is already done above and we
-			 * changed something that is in need on a new
-			 * entry. */
-			query = xstrdup_printf("update %s set end=%d "
-					       "where deleted=0 && id=%u "
-					       "&& start=%d and cluster='%s';",
-					       resv_table, resv->time_start-1,
-					       resv->id, start,
-					       resv->cluster);
-			xstrfmtcat(query,
-				   "insert into %s (id, cluster, %s) "
-				   "values (%u, '%s', %s) "
-				   "on duplicate key update deleted=0, %s;",
-				   resv_table, cols, resv->id, resv->cluster,
-				   vals, extra);
-		}
-	} else {
-		uint16_t flags = resv->flags & RESERVE_FLAG_FLAGS;
-		error("Unkown action %x", flags);
-		return SLURM_ERROR;
-	}
+	_setup_resv_limits(resv, &cols, &vals, &extra);
 	
-	if(query) {
-		debug3("%d(%d) query\n%s",
-		       mysql_conn->conn, __LINE__, query);
-		
-		if((rc = mysql_db_query(mysql_conn->db_conn, query)
-		    == SLURM_SUCCESS))
-			rc = mysql_clear_results(mysql_conn->db_conn);
-	}
-end_it:
+	xstrfmtcat(query,
+		   "insert into %s (id, cluster%s) values (%u, '%s'%s) "
+		   "on duplicate key update deleted=0%s;",
+		   resv_table, cols, resv->id, resv->cluster,
+		   vals, extra);
+	debug3("%d(%d) query\n%s",
+	       mysql_conn->conn, __LINE__, query);
+	
+	if((rc = mysql_db_query(mysql_conn->db_conn, query)
+	    == SLURM_SUCCESS))
+		rc = mysql_clear_results(mysql_conn->db_conn);
+
 	
 	xfree(query);
 	xfree(cols);
@@ -6000,6 +5836,182 @@ extern List acct_storage_p_modify_wckeys(mysql_conn_t *mysql_conn,
 	return NULL;
 }
 
+extern int acct_storage_p_modify_reservation(mysql_conn_t *mysql_conn,
+					     acct_reservation_rec_t *resv)
+{
+#ifdef HAVE_MYSQL
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	int rc = SLURM_SUCCESS;
+	char *cols = NULL, *vals = NULL, *extra = NULL, 
+		*query = NULL;//, *tmp_extra = NULL;
+	time_t start = 0, now = time(NULL);
+	int i;
+	int set = 0;
+	char *resv_req_inx[] = {
+		"start",
+		"end",
+		"cpus",
+		"nodelist",
+		"flags"
+	};
+	enum {
+		RESV_START,
+		RESV_END,
+		RESV_CPU,
+		RESV_NODES,
+		RESV_FLAGS,
+		RESV_COUNT
+	};
+
+	if(!resv) {
+		error("No reservation was given to edit");
+		return SLURM_ERROR;
+	}
+
+	if(!resv->id || !resv->time_start || !resv->cluster) {
+		error("We need an id, start time, and cluster "
+		      "name to edit a reservation.");
+		return SLURM_ERROR;
+	}
+
+
+		
+	if(!resv->time_start_prev) {
+		error("We need a time to check for last "
+		      "start of reservation.");
+		return SLURM_ERROR;
+	}
+	
+	for(i=0; i<RESV_COUNT; i++) {
+		if(i) 
+			xstrcat(cols, ", ");
+		xstrcat(cols, resv_req_inx[i]);
+	}
+	
+	query = xstrdup_printf("select %s from %s where id=%u "
+			       "and start=%d and cluster='%s' "
+			       "and deleted=0 order by start desc "
+			       "limit 1;",
+			       cols, resv_table, resv->id, 
+			       resv->time_start_prev, resv->cluster);
+try_again:
+	debug4("%d(%d) query\n%s",
+	       mysql_conn->conn, __LINE__, query);
+	if(!(result = mysql_db_query_ret(
+		     mysql_conn->db_conn, query, 0))) {
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+	if(!(row = mysql_fetch_row(result))) {
+		rc = SLURM_ERROR;
+		mysql_free_result(result);
+		error("There is no reservation by id %u, "
+		      "start %d, and cluster '%s'", resv->id,
+		      resv->time_start_prev, resv->cluster);
+		if(!set && resv->time_end) {
+			/* This should never really happen,
+			   but just incase the controller and the
+			   database get out of sync we check
+			   to see if there is a reservation
+			   not deleted that hasn't ended yet. */
+			xfree(query);
+			query = xstrdup_printf(
+				"select %s from %s where id=%u "
+				"and start <= %d and cluster='%s' "
+				"and deleted=0 order by start desc "
+				"limit 1;",
+				cols, resv_table, resv->id, 
+				resv->time_end, resv->cluster);
+			set = 1;
+			goto try_again;
+		}
+		goto end_it;
+	} 
+	
+	start = atoi(row[RESV_START]);
+	
+	xfree(query);
+	xfree(cols);
+	
+	set = 0;
+	
+	/* check differences here */
+		
+	if(!resv->cpus) {
+		resv->cpus = atoi(row[RESV_CPU]);
+		set = 1;
+	}
+		
+	if(!resv->flags) {
+		resv->flags = atoi(row[RESV_FLAGS]);
+		set = 1;
+	}
+		
+	if(!resv->nodes) {
+		resv->nodes = xstrdup(row[RESV_NODES]);
+		set = 1;
+	}
+		
+	if(!resv->time_end)
+		resv->time_end = atoi(row[RESV_END]);
+
+	mysql_free_result(result);
+
+	_setup_resv_limits(resv, &cols, &vals, &extra);
+	/* use start below instead of resv->time_start_prev
+	 * just incase we have a different one from being out
+	 * of sync
+	 */
+
+	if((start < now) || !set) {
+		/* we haven't started the reservation yet, or
+		   we are changing the associations or end
+		   time which we can just update it */
+		query = xstrdup_printf("update %s set deleted=0%s "
+				       "where deleted=0 and id=%u "
+				       "and start=%d and cluster='%s';",
+				       resv_table, extra, resv->id,
+				       start,
+				       resv->cluster);
+	} else {
+		/* time_start is already done above and we
+		 * changed something that is in need on a new
+		 * entry. */
+		query = xstrdup_printf("update %s set end=%d "
+				       "where deleted=0 && id=%u "
+				       "&& start=%d and cluster='%s';",
+				       resv_table, resv->time_start-1,
+				       resv->id, start,
+				       resv->cluster);
+		xstrfmtcat(query,
+			   "insert into %s (id, cluster, %s) "
+			   "values (%u, '%s', %s) "
+			   "on duplicate key update deleted=0, %s;",
+			   resv_table, cols, resv->id, resv->cluster,
+			   vals, extra);
+	}
+
+	debug3("%d(%d) query\n%s",
+	       mysql_conn->conn, __LINE__, query);
+	
+	if((rc = mysql_db_query(mysql_conn->db_conn, query)
+	    == SLURM_SUCCESS))
+		rc = mysql_clear_results(mysql_conn->db_conn);
+	
+end_it:
+	
+	xfree(query);
+	xfree(cols);
+	xfree(vals);
+	xfree(extra);
+	
+	return rc;
+#else
+	return SLURM_ERROR;
+#endif
+}
+
 extern List acct_storage_p_remove_users(mysql_conn_t *mysql_conn, uint32_t uid, 
 					acct_user_cond_t *user_cond)
 {
@@ -7100,6 +7112,54 @@ empty:
 	return ret_list;
 #else
 	return NULL;
+#endif
+}
+
+extern int acct_storage_p_remove_reservation(mysql_conn_t *mysql_conn,
+					     acct_reservation_rec_t *resv)
+{
+#ifdef HAVE_MYSQL
+	int rc = SLURM_SUCCESS;
+	char *query = NULL;//, *tmp_extra = NULL;
+
+	if(!resv) {
+		error("No reservation was given to edit");
+		return SLURM_ERROR;
+	}
+
+	if(!resv->id || !resv->time_start || !resv->cluster) {
+		error("We need an id, start time, and cluster "
+		      "name to edit a reservation.");
+		return SLURM_ERROR;
+	}
+
+
+	/* first delete the resv that hasn't happened yet. */
+	query = xstrdup_printf("delete from %s where start > %d "
+			       "and id=%u and start=%d "
+			       "and cluster='%s';", 
+			       resv_table, resv->time_start_prev,
+			       resv->id, 
+			       resv->time_start, resv->cluster);
+	/* then update the remaining ones with a deleted flag */
+	xstrfmtcat(query,
+		   "update %s set deleted=1 where deleted=0 and "
+		   "id=%u and start=%d and cluster='%s;'",
+		   resv_table, resv->id, resv->time_start,
+		   resv->cluster);
+	
+	debug3("%d(%d) query\n%s",
+	       mysql_conn->conn, __LINE__, query);
+	
+	if((rc = mysql_db_query(mysql_conn->db_conn, query)
+	    == SLURM_SUCCESS))
+		rc = mysql_clear_results(mysql_conn->db_conn);
+	
+	xfree(query);
+	
+	return rc;
+#else
+	return SLURM_ERROR;
 #endif
 }
 

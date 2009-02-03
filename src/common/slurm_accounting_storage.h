@@ -744,13 +744,13 @@ extern int acct_storage_g_add_wckeys(void *db_conn, uint32_t uid,
 				     List wckey_list);
 
 /* 
- * edit reservation's in accounting system 
+ * add reservation's in accounting system 
  * IN:  acct_reservation_rec_t *resv (id=NO_VAL for create,
  *      id!=NO_VAL for modify, mode=NO_VAL for delete) on create id
  *      will be filled in with the new id.
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_edit_reservation(void *db_conn, 
+extern int acct_storage_g_add_reservation(void *db_conn, 
 					   acct_reservation_rec_t *resv);
 
 /* 
@@ -815,6 +815,13 @@ extern List acct_storage_g_modify_wckeys(void *db_conn, uint32_t uid,
 					 acct_wckey_rec_t *wckey);
 
 /* 
+ * modify reservation's in accounting system 
+ * IN:  acct_reservation_rec_t *resv 
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int acct_storage_g_modify_reservation(void *db_conn, 
+					     acct_reservation_rec_t *resv);
+/* 
  * remove users from accounting system 
  * IN:  acct_user_cond_t *user_cond
  * RET: List containing (char *'s) else NULL on error
@@ -872,6 +879,13 @@ extern List acct_storage_g_remove_qos(
 extern List acct_storage_g_remove_wckeys(
 	void *db_conn, uint32_t uid, acct_wckey_cond_t *wckey_cond);
 
+/* 
+ * remove reservation's in accounting system 
+ * IN:  acct_reservation_rec_t *resv 
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int acct_storage_g_remove_reservation(void *db_conn, 
+					     acct_reservation_rec_t *resv);
 /* 
  * get info from the storage 
  * IN:  acct_user_cond_t *

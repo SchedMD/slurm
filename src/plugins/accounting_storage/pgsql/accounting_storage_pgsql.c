@@ -857,7 +857,7 @@ extern int acct_storage_p_add_wckeys(PGconn *acct_pgsql_db, uint32_t uid,
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_edit_reservation(PGconn *acct_pgsql_db, 
+extern int acct_storage_p_add_reservation(PGconn *acct_pgsql_db, 
 					   acct_reservation_rec_t *resv)
 {
 	return SLURM_SUCCESS;
@@ -906,6 +906,12 @@ extern List acct_storage_p_modify_wckeys(PGconn *acct_pgsql_db, uint32_t uid,
 	return SLURM_SUCCESS;
 }
 
+extern int acct_storage_p_modify_reservation(PGconn *acct_pgsql_db, 
+					     acct_reservation_rec_t *resv)
+{
+	return SLURM_SUCCESS;
+}
+
 extern List acct_storage_p_remove_users(PGconn *acct_pgsql_db, uint32_t uid,
 					acct_user_cond_t *user_cond)
 {
@@ -948,6 +954,12 @@ extern List acct_storage_p_remove_wckeys(void *db_conn, uint32_t uid,
 				      acct_wckey_cond_t *wckey_cond)
 {
 	return NULL;
+}
+
+extern int acct_storage_p_remove_reservation(PGconn *acct_pgsql_db, 
+					     acct_reservation_rec_t *resv)
+{
+	return SLURM_SUCCESS;
 }
 
 extern List acct_storage_p_get_users(PGconn *acct_pgsql_db, uid_t uid,

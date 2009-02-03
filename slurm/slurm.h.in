@@ -963,17 +963,7 @@ typedef struct partition_info_msg {
  * Resource reservation data structures.
  * Create, show, modify and delete functions are required
  */
-#define RESERVE_FLAG_ACTION     0x000f
-#define RESERVE_FLAG_FLAGS      0xfff0
-
-/* Reservation flags to create modify or delete */
-#define RESERVE_FLAG_CREATE	0x0001
-#define RESERVE_FLAG_MODIFY	0x0002
-#define RESERVE_FLAG_DELETE	0x0004
-
-/* regular flags to send over */
-#define RESERVE_FLAG_CLEAR	0x0010
-#define RESERVE_FLAG_MAINT	0x0020
+#define RESERVE_FLAG_MAINT	0x0001
 
 typedef struct reserve_info {
 	char *accounts;		/* names of accounts permitted to use */
