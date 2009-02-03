@@ -244,7 +244,23 @@ int main(int argc, char **argv)
 	while((selected_step = list_next(itr))) {
 		if(selected_step->stepid != NO_VAL)
 			stepid = selected_step->stepid;
-		else
+		else if(params.opt_all_steps) {
+			job_step_info_response_msg_t *step_ptr = NULL;
+			int i = 0;
+			if(slurm_get_job_steps(
+				   0, selected_step->jobid, 0, 
+				   &step_ptr, SHOW_ALL)) {
+				error("couldn't get steps for job %u",
+				      selected_step->jobid);
+				continue;
+			}
+			for (i = 0; i < step_ptr->job_step_count; i++) {
+				_do_stat(selected_step->jobid, 
+					 step_ptr->job_steps[i].step_id);
+			}
+			slurm_free_job_step_info_response_msg(step_ptr);
+			continue;
+		} else 
 			stepid = 0;
 		_do_stat(selected_step->jobid, stepid);
 	}

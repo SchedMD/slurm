@@ -66,6 +66,7 @@ void _help_msg(void)
 	printf("\n"
 	       "By default, sstat displays status data for job/step stated\n"
 	       "Options:\n"
+	       "-a, --allsteps\n"
 	       "-C, --cluster\n"
 	       "    Job is running on this cluster.\n"
 	       "-F <field-list>, --fields=<field-list>\n"
@@ -265,6 +266,7 @@ void parse_command_line(int argc, char **argv)
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 
 	static struct option long_options[] = {
+		{"allsteps", 0, 0, 'a'},
 		{"cluster", 1, 0, 'C'},
 		{"fields", 1, 0, 'F'},
 		{"help", 0, &params.opt_help, 1},
@@ -283,11 +285,14 @@ void parse_command_line(int argc, char **argv)
 	opterr = 1;		/* Let getopt report problems to the user */
 
 	while (1) {		/* now cycle through the command line */
-		c = getopt_long(argc, argv, "F:hj:Vv",
+		c = getopt_long(argc, argv, "aF:hj:Vv",
 				long_options, &optionIndex);
 		if (c == -1)
 			break;
 		switch (c) {
+		case 'a':
+			params.opt_all_steps = 1;
+			break;
 		case 'F':
 			if(params.opt_field_list)
 				xfree(params.opt_field_list);
