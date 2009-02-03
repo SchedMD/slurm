@@ -5666,8 +5666,8 @@ extern void pack_acct_reservation_rec(void *in, uint16_t rpc_version,
 
 	if(!object) {
 		packnull(buffer);
-		pack32(0, buffer);
-		pack16(0, buffer);
+		pack32((uint32_t)NO_VAL, buffer);
+		pack16((uint16_t)NO_VAL, buffer);
 		pack32(0, buffer);
 		packnull(buffer);
 		pack_time(0, buffer);
