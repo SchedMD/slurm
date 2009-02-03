@@ -67,20 +67,20 @@ proc create_res { res_params } {
 			set res_name $expect_out(1,string)
 		}
 		-re "slurm_update error: Invalid user" {
-			send_user "\nWARNING: user not authorized \
-				   to create reservation\n"
+			send_user "\nWARNING: user not authorized "
+			send_user "to create reservation\n"
 			set ret_code 1
 			exp_continue
 		}
 		-re "Error" {
-			send_user "\nFAILURE: problem creating \
-				   reservation with args:  $res_params\n"
+			send_user "\nFAILURE: problem creating "
+			send_user "reservation with args:  $res_params\n"
 			set ret_code 1
 			exp_continue
 		}
 		-re "error" {
-			send_user "\nFAILURE: problem creating \
-				   reservation with args:  $res_params\n"
+			send_user "\nFAILURE: problem creating "
+			send_user "reservation with args:  $res_params\n"
 			set ret_code 1
 			exp_continue
 		}
@@ -101,21 +101,23 @@ proc create_res { res_params } {
 		-re "ReservationName=($alpha_numeric_under)" {
 			set tmp_res_name $expect_out(1,string)
 			if {$tmp_res_name != $res_name} {
-				send_user "\nFAILURE: problem showing\
-				   reservation created with args:  $res_params\n"
+				send_user "\nFAILURE: problem showing "
+				send_user "reservation created with:  "
+				send_user "$res_params\n"
 				set ret_code 1
 				exp_continue
 			}
 		}
 		-re "No reservations in the system" {
-			send_user "\nFAILURE: no reservations found after\
-				reservation created with args:  $res_params\n"
+			send_user "\nFAILURE: no reservations found after "
+			send_user "reservation created with:  $res_params\n"
 			set ret_code 1
 			exp_continue
 		}
 		-re "Reservation ($alpha_numeric_under) not found" {
-			send_user "\nFAILURE: Reservation $res_name not found after\
-				reservation created with args:  $res_params\n"
+			send_user "\nFAILURE: Reservation $res_name not "
+			send_user "found after reservation created with:  "
+			send_user "$res_params\n"
 			set ret_code 1
 			exp_continue
 		}
@@ -144,20 +146,20 @@ proc update_res { res_name res_params } {
 			exp_continue
 		}
 		-re "slurm_update error: Invalid user" {
-			send_user "\nWARNING: user not authorized \
-				   to update reservation\n"
+			send_user "\nWARNING: user not authorized "
+			send_user "to update reservation\n"
 			set ret_code 1
 			exp_continue
 		}
 		-re "Error" {
-			send_user "\nFAILURE: problem updating \
-				   reservation $res_name with $res_params\n"
+			send_user "\nFAILURE: problem updating "
+			send_user "reservation $res_name with $res_params\n"
 			set ret_code 1
 			exp_continue
 		}
 		-re "error" {
-			send_user "\nFAILURE: problem updating \
-				   reservation $res_name with $res_params\n"
+			send_user "\nFAILURE: problem updating "
+			send_user "reservation $res_name with $res_params\n"
 			set ret_code 1
 			exp_continue
 		}
@@ -187,9 +189,12 @@ proc delete_res { res_name } {
 			set ret_code 1
 			exp_continue
 		}
+		-re "reservation is in use" {
+			send_user "\nFAILURE: $res_name is in use\n"
+			set ret_code 1
+			exp_continue
+		}
 	}
-	#exp_internal 0
-
 	return $ret_code
 }
 
@@ -240,7 +245,6 @@ expect {
 	eof {
 		wait
 	}
-	
 }
 
 
@@ -377,9 +381,9 @@ expect {
 	-re "Reservation=($alpha_numeric_under)" {
 		set tmp_res_name $expect_out(1,string)
 		if {$tmp_res_name != $res_name} {
-			send_user "\nFAILURE: problem submitting a job to a " 
-				"reservation.  Job $job_id is running on "
-				"reservation $tmp_res_name, not $res_name\n"
+			send_user "\nFAILURE: problem submitting a job to a "
+			send_user "reservation.  Job $job_id is running on "
+			send_user "reservation $tmp_res_name, not $res_name\n"
 			set exit_code 1
 			exp_continue
 		}
@@ -401,9 +405,9 @@ expect {
 # Cancel the job
 spawn $scancel -v $job_id
 expect {
-	-re "Invalid job id specified" {
+	-re "Invalid job_id" {
 		send_user "\nFAILURE: Error cancelling the job submitted "
-			"to the reservation.  Job $job_id not found\n"
+		send_user "to the reservation.  Job $job_id not found\n"
 		set exit_code 1
 		exp_continue
 	}
