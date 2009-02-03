@@ -153,15 +153,12 @@ static int _find_resv_name(void *x, void *key)
 static void _dump_resv_req(reserve_request_msg_t *resv_ptr, char *mode)
 {
 #if _RESV_DEBUG
-	char start_str[32] = "", end_str[32] = "", *flag_str;
+	char start_str[32] = "", end_str[32] = "", flag_str[64] = "";
 	int duration;
 
 	slurm_make_time_str(&resv_ptr->start_time,start_str,sizeof(start_str));
 	slurm_make_time_str(&resv_ptr->end_time,  end_str,  sizeof(end_str));
-	if (resv_ptr->flag == RESERVE_FLAG_MAINT)
-		flag_str = "MAINT";
-	else
-		flag_str = "";
+	reservation_flags_string(resv_ptr->flags, flag_str, sizeof(flag_str));
 	if (resv_ptr->duration == NO_VAL)
 		duration = -1;
 	else
@@ -774,11 +771,6 @@ extern int create_resv(reserve_request_msg_t *resv_desc_ptr)
 		resv_desc_ptr->end_time = INFINITE;
 	if (resv_desc_ptr->flags == (uint16_t) NO_VAL)
 		resv_desc_ptr->flags = 0;
-	else if (resv_desc_ptr->flags > RESERVE_FLAG_MAINT) {
-		info("Invalid reservation flag %u ignored",
-		      resv_desc_ptr->flags);
-		resv_desc_ptr->flags = 0;
-	}
 	if (resv_desc_ptr->partition) {
 		part_ptr = find_part_record(resv_desc_ptr->partition);
 		if (!part_ptr) {
@@ -941,11 +933,18 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 
 	/* Process the request */
 	if (resv_desc_ptr->flags != (uint16_t) NO_VAL) {
-		if (resv_desc_ptr->flags > RESERVE_FLAG_MAINT) {
-			error("Invalid reservation flag %u ignored",
-			      resv_desc_ptr->flags);
-		} else
-			resv_ptr->flags = resv_desc_ptr->flags;
+		if (resv_desc_ptr->flags & RESERVE_FLAG_MAINT)
+			resv_ptr->flags &= RESERVE_FLAG_MAINT;
+		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_MAINT)
+			resv_ptr->flags &= (~RESERVE_FLAG_MAINT);
+		if (resv_desc_ptr->flags & RESERVE_FLAG_DAILY)
+			resv_ptr->flags &= RESERVE_FLAG_DAILY;
+		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_DAILY)
+			resv_ptr->flags &= (~RESERVE_FLAG_DAILY);
+		if (resv_desc_ptr->flags & RESERVE_FLAG_WEEKLY)
+			resv_ptr->flags &= RESERVE_FLAG_WEEKLY;
+		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_WEEKLY)
+			resv_ptr->flags &= (~RESERVE_FLAG_WEEKLY);
 	}
 	if (resv_desc_ptr->partition && (resv_desc_ptr->partition[0] == '\0')) {
 		/* Clear the partition */
@@ -1267,11 +1266,6 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 {
 	if ((resv_ptr->name == NULL) || (resv_ptr->name[0] == '\0')) {
 		error("Read reservation without name");
-		return false;
-	}
-	if (resv_ptr->flags > RESERVE_FLAG_MAINT) {
-		error("Reservation %s has invalid flag (%u)",
-		      resv_ptr->name, resv_ptr->flags);
 		return false;
 	}
 	if (resv_ptr->partition) {
