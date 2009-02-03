@@ -919,6 +919,7 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 	time_t old_start_time, old_end_time;
 	bitstr_t *old_node_bitmap = (bitstr_t *) NULL;
 	char *old_node_list = NULL;
+	uint32_t old_node_cnt = 0;
 	slurmctld_resv_t *resv_ptr;
 	int error_code = SLURM_SUCCESS, rc;
 	char start_time[32], end_time[32];
@@ -1029,17 +1030,23 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 		old_node_list = resv_ptr->node_list;
 		resv_ptr->node_list = resv_desc_ptr->node_list;
 		resv_desc_ptr->node_list = NULL;  /* Nothing left to free */
+		old_node_cnt = resv_ptr->node_cnt;
 		old_node_bitmap = resv_ptr->node_bitmap;
 		resv_ptr->node_bitmap = node_bitmap;
+		resv_ptr->node_cnt = bit_set_count(resv_ptr->node_bitmap);
 	}
 	if (resv_desc_ptr->node_cnt != NO_VAL) {
-		old_node_list = xstrdup(resv_ptr->node_list);
-		old_node_bitmap = bit_copy(resv_ptr->node_bitmap);
+		if (!old_node_list) {
+			old_node_list = xstrdup(resv_ptr->node_list);
+			old_node_cnt = resv_ptr->node_cnt;
+			old_node_bitmap = bit_copy(resv_ptr->node_bitmap);
+		}
 		rc = _resize_resv(resv_ptr, resv_desc_ptr->node_cnt);
 		if (rc) {
 			error_code = rc;
 			goto fini;
 		}
+		resv_ptr->node_cnt = bit_set_count(resv_ptr->node_bitmap);
 	}
 	if (_resv_overlap(resv_ptr->start_time, resv_ptr->end_time, 
 			  resv_ptr->node_bitmap, resv_ptr)) {
@@ -1055,10 +1062,10 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 			FREE_NULL_BITMAP(resv_ptr->node_bitmap);
 			resv_ptr->node_bitmap = old_node_bitmap;
 			old_node_bitmap = NULL;
+			resv_ptr->node_cnt = old_node_cnt;
 		}
 	} else if (old_node_list) {
 		/* Nodes in the reservation have changed */
-		resv_ptr->node_cnt = bit_set_count(resv_ptr->node_bitmap);
 		_set_cpu_cnt(resv_ptr);
 	}
 
