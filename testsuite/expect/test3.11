@@ -33,29 +33,32 @@
 source ./globals
 
 set test_id       "3.11"
-#set authorized   1
+set file_in       "test$test_id.input"
 set exit_code     0
 set res_name      ""
 set user_name     ""
 set def_partition ""
 set def_node      ""
-print_header $test_id
 set ii 0
 
+print_header $test_id
+
 
 #
-# Procedure to create a new reservation, validate it, and delete it
+# Procedure to create a new reservation and validate it.
+# Modifies the global var res_name in the process
 #
-proc create_and_delete_res { res_params } {
+proc create_res { res_params } {
 	#exp_internal 1
 	global scontrol
 	global alpha_numeric_under
+	global res_name
 
 	set ret_code 0
 	set res_name ""
 
 	#
-	# Create a reservation using the list of arguments in a
+	# Create a reservation using the list of params in res_params
 	#
 	set arglist [linsert $res_params 0 $scontrol create res]
 	eval spawn $arglist
@@ -66,7 +69,7 @@ proc create_and_delete_res { res_params } {
 		-re "slurm_update error: Invalid user" {
 			send_user "\nWARNING: user not authorized \
 				   to create reservation\n"
-			set ret_code 2
+			set ret_code 1
 			exp_continue
 		}
 		-re "Error" {
@@ -95,12 +98,88 @@ proc create_and_delete_res { res_params } {
 
 	spawn $scontrol show res $res_name
 	expect {
-		
+		-re "ReservationName=($alpha_numeric_under)" {
+			set tmp_res_name $expect_out(1,string)
+			if {$tmp_res_name != $res_name} {
+				send_user "\nFAILURE: problem showing\
+				   reservation created with args:  $res_params\n"
+				set ret_code 1
+				exp_continue
+			}
+		}
+		-re "No reservations in the system" {
+			send_user "\nFAILURE: no reservations found after\
+				reservation created with args:  $res_params\n"
+			set ret_code 1
+			exp_continue
+		}
+		-re "Reservation ($alpha_numeric_under) not found" {
+			send_user "\nFAILURE: Reservation $res_name not found after\
+				reservation created with args:  $res_params\n"
+			set ret_code 1
+			exp_continue
+		}
 	}
-	if { $ret_code != 0 } {
-		return $ret_code
-	}
+	#exp_internal 0
 
+	return $ret_code
+}
+
+
+#
+# Procedure to update a reservation
+#
+proc update_res { res_name res_params } {
+	global scontrol
+	global alpha_numeric_under
+	set ret_code 0
+
+	#
+	# Update the reservation using the list of arguments in res_params
+	#
+	set arglist [linsert $res_params 0 $scontrol update ReservationName=$res_name]
+	eval spawn $arglist
+	expect {
+		-re "Reservation updated." {
+			exp_continue
+		}
+		-re "slurm_update error: Invalid user" {
+			send_user "\nWARNING: user not authorized \
+				   to update reservation\n"
+			set ret_code 1
+			exp_continue
+		}
+		-re "Error" {
+			send_user "\nFAILURE: problem updating \
+				   reservation $res_name with $res_params\n"
+			set ret_code 1
+			exp_continue
+		}
+		-re "error" {
+			send_user "\nFAILURE: problem updating \
+				   reservation $res_name with $res_params\n"
+			set ret_code 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol not responding\n"
+			set ret_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	return $ret_code
+}
+
+
+#
+# Procedure to delete a reservation
+#
+proc delete_res { res_name } {
+	global scontrol
+	set ret_code 0
+	
 	spawn $scontrol delete ReservationName=$res_name
 	expect {
 		-re "invalid" {
@@ -113,6 +192,8 @@ proc create_and_delete_res { res_params } {
 
 	return $ret_code
 }
+
+
 
 
 #
@@ -164,6 +245,7 @@ expect {
 
 
 #
+# TEST 1
 # Make a list of lists with a series of parameters to test.  All the tests 
 # in goodtests should pass, all those in badtests should fail.
 #
@@ -178,14 +260,16 @@ set badtests "
 	{StartTime=blah   Duration=5   Nodes=$def_node   User=$user_name}
 	{StartTime=now   Duration=foo   Nodes=$def_node   User=$user_name}
 	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name  PartitionName=badpartname}
-	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name  Type=badtype}
+	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name  Flags=badtype}
 	{StartTime=now+10minutes   EndTime=now   Nodes=$def_node   User=$user_name}
-	#{StartTime=now   Duration=5   Nodes=$def_node   Account=badaccountname}
 "
+#	{StartTime=now   Duration=5   Nodes=$def_node   Account=badaccountname}
+
 foreach test $badtests {
-	set ret_code [create_and_delete_res $test]
+	set ret_code [create_res $test]
 	if {$ret_code == 0} {
 		send_user "\nFAILURE: Reservation $test did not fail but should have\n"
+		delete_res $res_name
 		exit 1
 	}
 }
@@ -200,13 +284,146 @@ set goodtests "
 	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name  Flags=Maint}
 "
 foreach test $goodtests {
-	set ret_code [create_and_delete_res $test]
+	set ret_code [create_res $test]
+	if {$ret_code != 0} {
+		exit $ret_code
+	}
+	set ret_code [delete_res $res_name]
 	if {$ret_code != 0} {
 		exit $ret_code
 	}
 }
 
 
+#
+# TEST 2
+# Create a reservation and update it in various ways
+#
+set ret_code [create_res "StartTime=now+60minutes Duration=60 NodeCnt=1 User=$user_name"]
+if {$ret_code != 0} {
+	exit $ret_code
+}
+
+set goodupdates "
+	{PartitionName=$def_partition}
+	{PartitionName=}
+	{Duration=90}
+	{StartTime=now+30minutes}
+	{Nodes=$def_node}
+	{EndTime=now+60minutes Flags=Maint NodeCnt=1 Nodes=}
+"
+#	{Flags=Maint}
+#	{Flags=}
+
+if {$user_name != "root"} {
+	lappend goodupdates {Users+=root} {Users-=root}
+}
+
+foreach test $goodupdates {
+	set ret_code [update_res $res_name $test ]
+	if {$ret_code != 0} {
+		set exit_code 1
+		break
+	}
+
+}
+
+set ret_code [delete_res $res_name]
+if {$ret_code != 0} {
+	exit $ret_code
+}
+
+
+#
+# TEST 3
+# Make a reservation, submit a job to it, confirm that the job is paired 
+# with the reservation.
+#
+
+# Make the reservation
+set ret_code [create_res "StartTime=now+60minutes Duration=60 NodeCnt=1 User=$user_name"]
+if {$ret_code != 0} {
+	exit $ret_code
+}
+
+# Make the job script
+exec $bin_rm -f $file_in
+make_bash_script $file_in "$bin_sleep 10"
+
+# Submit the batch job
+set sbatch_pid [spawn $sbatch -N1 --reservation=$res_name $file_in]
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		slow_kill $sbatch_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	send_user "\nFAILURE: batch submit failure\n"
+	exit 1
+}
+
+# Show the job, make sure reservation tag is right
+spawn $scontrol show job $job_id
+expect {
+	-re "Reservation=($alpha_numeric_under)" {
+		set tmp_res_name $expect_out(1,string)
+		if {$tmp_res_name != $res_name} {
+			send_user "\nFAILURE: problem submitting a job to a " 
+				"reservation.  Job $job_id is running on "
+				"reservation $tmp_res_name, not $res_name\n"
+			set exit_code 1
+			exp_continue
+		}
+	}
+	-re "Invalid job id specified" {
+		send_user "\nFAILURE: Job $job_id not found\n"
+		set exit_code 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+# Cancel the job
+spawn $scancel -v $job_id
+expect {
+	-re "Invalid job id specified" {
+		send_user "\nFAILURE: Error cancelling the job submitted "
+			"to the reservation.  Job $job_id not found\n"
+		set exit_code 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scancel not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+# Remove the temporary job script
+exec $bin_rm -f $file_in
+
+# Delete the reservation
+set ret_code [delete_res $res_name]
+if {$ret_code != 0} {
+	exit $ret_code
+}
 
 
 
