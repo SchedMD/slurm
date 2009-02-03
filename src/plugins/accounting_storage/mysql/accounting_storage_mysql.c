@@ -878,17 +878,13 @@ static int _setup_resv_limits(acct_reservation_rec_t *resv,
 {	
 	/* strip off the action item from the flags */
 
-	if(resv->cpus) {
+	if(resv->cpus != (uint32_t)NO_VAL) {
 		xstrcat(*cols, ", cpus");
 		xstrfmtcat(*vals, ", %u", resv->cpus);
 		xstrfmtcat(*extra, ", cpus=%u", resv->cpus);		
 	}
 	
-	/* if(resv->flags & RESERVE_FLAG_CLEAR) { */
-/* 		xstrcat(*cols, ", flags"); */
-/* 		xstrcat(*vals, ", 0"); */
-/* 		xstrcat(*extra, ", flags=0");		 */
-/* 	} else  */if(resv->flags) {
+	if(resv->flags != (uint16_t)NO_VAL) {
 		xstrcat(*cols, ", flags");
 		xstrfmtcat(*vals, ", %u", resv->flags);
 		xstrfmtcat(*extra, ", flags=%u", resv->flags);		
@@ -5937,12 +5933,12 @@ try_again:
 	
 	/* check differences here */
 		
-	if(!resv->cpus) {
+	if(resv->cpus == (uint32_t)NO_VAL) {
 		resv->cpus = atoi(row[RESV_CPU]);
 		set = 1;
 	}
 		
-	if(!resv->flags) {
+	if(resv->flags == (uint16_t)NO_VAL) {
 		resv->flags = atoi(row[RESV_FLAGS]);
 		set = 1;
 	}
