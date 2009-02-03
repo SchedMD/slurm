@@ -33,6 +33,10 @@ command limits the display of job status data to jobs that were
 launched with their own user identifier (UID).
 
 .TP 
+\f3\-a \fP\f3,\fP \f3\-\-allsteps\fP
+Print all steps for the jobs given when no step is specified.
+
+.TP 
 \f3\-e \fP\f3,\fP \f3\-\-helpformat\fP
 Print a list of fields that can be specified with the '\-\-format' option.
 
@@ -44,7 +48,8 @@ Displays a general help message.
 \f3\-j \fP\f3,\fP \f3\-\-jobs\fP
 Format is <job(.step)>. Stat this job step or comma-separated list of
 job steps. This option is required.  The step portion will default to
-step 0 if not specified.
+step 0 if not specified, unless the --allsteps flag is set where not
+specifing a step will result in all running steps to be displayed.
 
 .TP 
 \f3\-n \fP\f3,\fP \f3\-\-noheader\fP
