@@ -508,7 +508,7 @@ extern List dump_config(void)
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("SLURMDBD_CONF (path)");
+	key_pair->name = xstrdup("SLURMDBD_CONF");
 	key_pair->value = _get_conf_path();
 	list_append(my_list, key_pair);
 

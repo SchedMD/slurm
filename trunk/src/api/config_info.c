@@ -330,7 +330,7 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->slurmd_spooldir);
 	fprintf(out, "SlurmdTimeout           = %u sec\n", 
 		slurm_ctl_conf_ptr->slurmd_timeout);
-	fprintf(out, "SLURM_CONF (Path)       = %s\n", 
+	fprintf(out, "SLURM_CONF              = %s\n", 
 		slurm_ctl_conf_ptr->slurm_conf);
 	fprintf(out, "SLURM_VERSION           = %s\n", SLURM_VERSION);
 	fprintf(out, "SrunEpilog              = %s\n",
