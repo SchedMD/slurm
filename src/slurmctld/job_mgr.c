@@ -3225,7 +3225,8 @@ void job_time_limit(void)
 		(struct job_record *) list_next(job_iterator))) {
 		xassert (job_ptr->magic == JOB_MAGIC);
 
-		resv_status = job_resv_check(job_ptr);
+		if (!IS_JOB_FINISHED(job_ptr))	/* PENDING or RUNNING */
+			resv_status = job_resv_check(job_ptr);
 
 		if (job_ptr->job_state != JOB_RUNNING)
 			continue;
