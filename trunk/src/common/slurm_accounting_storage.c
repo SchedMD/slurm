@@ -77,7 +77,7 @@ typedef struct slurm_acct_storage_ops {
 				    List qos_list);
 	int  (*add_wckeys)         (void *db_conn, uint32_t uid,
 				    List wckey_list);
-	int  (*edit_reservation)   (void *db_conn,
+	int  (*add_reservation)    (void *db_conn,
 				    acct_reservation_rec_t *resv);
 	List (*modify_users)       (void *db_conn, uint32_t uid,
 				    acct_user_cond_t *user_cond,
@@ -97,6 +97,8 @@ typedef struct slurm_acct_storage_ops {
 	List (*modify_wckeys)      (void *db_conn, uint32_t uid,
 				    acct_wckey_cond_t *wckey_cond,
 				    acct_wckey_rec_t *wckey);
+	int  (*modify_reservation) (void *db_conn,
+				    acct_reservation_rec_t *resv);
 	List (*remove_users)       (void *db_conn, uint32_t uid,
 				    acct_user_cond_t *user_cond);
 	List (*remove_coord)       (void *db_conn, uint32_t uid,
@@ -112,6 +114,8 @@ typedef struct slurm_acct_storage_ops {
 				    acct_qos_cond_t *qos_cond);
 	List (*remove_wckeys)      (void *db_conn, uint32_t uid,
 				    acct_wckey_cond_t *wckey_cond);
+	int  (*remove_reservation) (void *db_conn,
+				    acct_reservation_rec_t *resv);
 	List (*get_users)          (void *db_conn, uint32_t uid,
 				    acct_user_cond_t *user_cond);
 	List (*get_accts)          (void *db_conn, uint32_t uid,
@@ -216,13 +220,14 @@ static slurm_acct_storage_ops_t * _acct_storage_get_ops(
 		"acct_storage_p_add_associations",
 		"acct_storage_p_add_qos",
 		"acct_storage_p_add_wckeys",
-		"acct_storage_p_edit_reservation",
+		"acct_storage_p_add_reservation",
 		"acct_storage_p_modify_users",
 		"acct_storage_p_modify_accounts",
 		"acct_storage_p_modify_clusters",
 		"acct_storage_p_modify_associations",
 		"acct_storage_p_modify_qos",
 		"acct_storage_p_modify_wckeys",
+		"acct_storage_p_modify_reservation",
 		"acct_storage_p_remove_users",
 		"acct_storage_p_remove_coord",
 		"acct_storage_p_remove_accts",
@@ -230,6 +235,7 @@ static slurm_acct_storage_ops_t * _acct_storage_get_ops(
 		"acct_storage_p_remove_associations",
 		"acct_storage_p_remove_qos",
 		"acct_storage_p_remove_wckeys",
+		"acct_storage_p_remove_reservation",
 		"acct_storage_p_get_users",
 		"acct_storage_p_get_accts",
 		"acct_storage_p_get_clusters",
@@ -7248,12 +7254,12 @@ extern int acct_storage_g_add_wckeys(void *db_conn, uint32_t uid,
 		(db_conn, uid, wckey_list);
 }
 
-extern int acct_storage_g_edit_reservation(void *db_conn,
+extern int acct_storage_g_add_reservation(void *db_conn,
 					   acct_reservation_rec_t *resv)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return NO_VAL;
-	return (*(g_acct_storage_context->ops.edit_reservation))
+	return (*(g_acct_storage_context->ops.add_reservation))
 		(db_conn, resv);
 }
 
@@ -7316,6 +7322,15 @@ extern List acct_storage_g_modify_wckeys(void *db_conn, uint32_t uid,
 		return NULL;
 	return (*(g_acct_storage_context->ops.modify_wckeys))
 		(db_conn, uid, wckey_cond, wckey);
+}
+
+extern int acct_storage_g_modify_reservation(void *db_conn,
+					   acct_reservation_rec_t *resv)
+{
+	if (slurm_acct_storage_init(NULL) < 0)
+		return NO_VAL;
+	return (*(g_acct_storage_context->ops.modify_reservation))
+		(db_conn, resv);
 }
 
 extern List acct_storage_g_remove_users(void *db_conn, uint32_t uid,
@@ -7381,6 +7396,15 @@ extern List acct_storage_g_remove_wckeys(void *db_conn, uint32_t uid,
 		return NULL;
 	return (*(g_acct_storage_context->ops.remove_wckeys))
 		(db_conn, uid, wckey_cond);
+}
+
+extern int acct_storage_g_remove_reservation(void *db_conn,
+					     acct_reservation_rec_t *resv)
+{
+	if (slurm_acct_storage_init(NULL) < 0)
+		return NO_VAL;
+	return (*(g_acct_storage_context->ops.remove_reservation))
+		(db_conn, resv);
 }
 
 extern List acct_storage_g_get_users(void *db_conn, uint32_t uid,

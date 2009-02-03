@@ -218,16 +218,14 @@ static int _post_resv_create(struct slurmctld_resv *resv_ptr)
 	
 	resv.cluster = slurmctld_cluster_name;
 	resv.cpus = resv_ptr->cpu_cnt;
-	resv.flags = resv_ptr->flags | RESERVE_FLAG_CREATE;
+	resv.flags = resv_ptr->flags;
 	resv.id = resv_ptr->resv_id;
 	resv.nodes = resv_ptr->node_list;
 	resv.time_end = resv_ptr->end_time;
 	resv.time_start = resv_ptr->start_time;
 
-	rc = acct_storage_g_edit_reservation(acct_db_conn, &resv);
+	rc = acct_storage_g_add_reservation(acct_db_conn, &resv);
 
-	/* strip off the action item from the flags */
-	resv_ptr->flags &= RESERVE_FLAG_FLAGS;
 	return rc;
 }
 
@@ -239,17 +237,13 @@ static int _post_resv_delete(struct slurmctld_resv *resv_ptr)
 	memset(&resv, 0, sizeof(acct_reservation_rec_t));
 
 	resv.cluster = slurmctld_cluster_name;
-	resv.flags |= RESERVE_FLAG_DELETE;
 	resv.id = resv_ptr->resv_id;
 	resv.time_start = resv_ptr->start_time;
 	/* This is just a time stamp here to delete if the reservation
 	   hasn't started yet so we don't get trash records in the
 	   database if said database isn't up right now */
 	resv.time_start_prev = time(NULL);
-	rc = acct_storage_g_edit_reservation(acct_db_conn, &resv);
-
-	/* strip off the action item from the flags */
-	resv_ptr->flags &= RESERVE_FLAG_FLAGS;
+	rc = acct_storage_g_remove_reservation(acct_db_conn, &resv);
 
 	return rc;
 }
@@ -263,17 +257,14 @@ static int _post_resv_update(struct slurmctld_resv *resv_ptr)
 
 	resv.cluster = slurmctld_cluster_name;
 	resv.cpus = resv_ptr->cpu_cnt;
-	resv.flags = resv_ptr->flags | RESERVE_FLAG_MODIFY;
+	resv.flags = resv_ptr->flags;
 	resv.id = resv_ptr->resv_id;
 	resv.nodes = resv_ptr->node_list;
 	resv.time_end = resv_ptr->end_time;
 	resv.time_start = resv_ptr->start_time;
 	resv.time_start_prev = resv_ptr->start_time_prev;
 
-	rc = acct_storage_g_edit_reservation(acct_db_conn, &resv);
-
-	/* strip off the action item from the flags */
-	resv_ptr->flags &= RESERVE_FLAG_FLAGS;
+	rc = acct_storage_g_modify_reservation(acct_db_conn, &resv);
 
 	return rc;
 }

@@ -309,7 +309,7 @@ extern int acct_storage_p_add_wckeys(void *db_conn, uint32_t uid,
 	return rc;
 }
 
-extern int acct_storage_p_edit_reservation(void *db_conn, 
+extern int acct_storage_p_add_reservation(void *db_conn, 
 					   acct_reservation_rec_t *resv)
 {
 	slurmdbd_msg_t req;
@@ -318,7 +318,7 @@ extern int acct_storage_p_edit_reservation(void *db_conn,
 
 	get_msg.rec = resv;
 
-	req.msg_type = DBD_EDIT_RESV;
+	req.msg_type = DBD_ADD_RESV;
 	req.data = &get_msg;
 
 	rc = slurm_send_slurmdbd_recv_rc_msg(SLURMDBD_VERSION,
@@ -573,6 +573,27 @@ extern List acct_storage_p_modify_wckeys(void *db_conn, uint32_t uid,
 	}
 
 	return ret_list;
+}
+
+extern int acct_storage_p_modify_reservation(void *db_conn, 
+					   acct_reservation_rec_t *resv)
+{
+	slurmdbd_msg_t req;
+	dbd_rec_msg_t get_msg;
+	int rc, resp_code;
+
+	get_msg.rec = resv;
+
+	req.msg_type = DBD_MODIFY_RESV;
+	req.data = &get_msg;
+
+	rc = slurm_send_slurmdbd_recv_rc_msg(SLURMDBD_VERSION,
+					     &req, &resp_code);
+	
+	if(resp_code != SLURM_SUCCESS)
+		rc = resp_code;
+
+	return rc;
 }
 
 extern List acct_storage_p_remove_users(void *db_conn, uint32_t uid,
@@ -858,6 +879,27 @@ extern List acct_storage_p_remove_wckeys(
 	}
 
 	return ret_list;
+}
+
+extern int acct_storage_p_remove_reservation(void *db_conn, 
+					   acct_reservation_rec_t *resv)
+{
+	slurmdbd_msg_t req;
+	dbd_rec_msg_t get_msg;
+	int rc, resp_code;
+
+	get_msg.rec = resv;
+
+	req.msg_type = DBD_REMOVE_RESV;
+	req.data = &get_msg;
+
+	rc = slurm_send_slurmdbd_recv_rc_msg(SLURMDBD_VERSION,
+					     &req, &resp_code);
+	
+	if(resp_code != SLURM_SUCCESS)
+		rc = resp_code;
+
+	return rc;
 }
 
 extern List acct_storage_p_get_users(void *db_conn, uid_t uid,

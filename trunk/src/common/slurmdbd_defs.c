@@ -508,7 +508,9 @@ extern Buf pack_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 					     (dbd_roll_usage_msg_t *)
 					     req->data, buffer);
 		break;
-	case DBD_EDIT_RESV:
+	case DBD_ADD_RESV:
+	case DBD_REMOVE_RESV:
+	case DBD_MODIFY_RESV:
 		slurmdbd_pack_rec_msg(
 			rpc_version, req->msg_type,
 			(dbd_rec_msg_t *)req->data, buffer);
@@ -675,7 +677,9 @@ extern int unpack_slurmdbd_msg(uint16_t rpc_version,
 			rpc_version,
 			(dbd_roll_usage_msg_t **)&resp->data, buffer);
 		break;
-	case DBD_EDIT_RESV:
+	case DBD_ADD_RESV:
+	case DBD_REMOVE_RESV:
+	case DBD_MODIFY_RESV:
 		rc = slurmdbd_unpack_rec_msg(
 			rpc_version, resp->msg_type,
 			(dbd_rec_msg_t **)&resp->data, buffer);
@@ -816,8 +820,16 @@ extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 		return DBD_GET_WCKEY_USAGE;
 	} else if(!strcasecmp(msg_type, "Got WCKey Usage")) {
 		return DBD_GOT_WCKEY_USAGE;
-	} else if(!strcasecmp(msg_type, "Edit Reservation")) {
-		return DBD_EDIT_RESV;
+	} else if(!strcasecmp(msg_type, "Add Reservation")) {
+		return DBD_ADD_RESV;
+	} else if(!strcasecmp(msg_type, "Remove Reservation")) {
+		return DBD_REMOVE_RESV;
+	} else if(!strcasecmp(msg_type, "Modify Reservation")) {
+		return DBD_MODIFY_RESV;
+	} else if(!strcasecmp(msg_type, "Get Config")) {
+		return DBD_GET_CONFIG;
+	} else if(!strcasecmp(msg_type, "Got Config")) {
+		return DBD_GOT_CONFIG;
 	} else {
 		return NO_VAL;		
 	}
@@ -1176,11 +1188,35 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 		} else
 			return "Got WCKey Usage";
 		break;
-	case DBD_EDIT_RESV:
+	case DBD_ADD_RESV:
 		if(get_enum) {
-			return "DBD_EDIT_RESV";
+			return "DBD_ADD_RESV";
 		} else
-			return "Edit Reservation";
+			return "Add Reservation";
+		break;
+	case DBD_REMOVE_RESV:
+		if(get_enum) {
+			return "DBD_REMOVE_RESV";
+		} else
+			return "Remove Reservation";
+		break;
+	case DBD_MODIFY_RESV:
+		if(get_enum) {
+			return "DBD_MODIFY_RESV";
+		} else
+			return "Modify Reservation";
+		break;
+	case DBD_GET_CONFIG:
+		if(get_enum) {
+			return "DBD_GET_CONFIG";
+		} else
+			return "Get Config";
+		break;
+	case DBD_GOT_CONFIG:
+		if(get_enum) {
+			return "DBD_GOT_CONFIG";
+		} else
+			return "Got Config";
 		break;
 	default:
 		return "Unknown";
@@ -1947,7 +1983,9 @@ void inline slurmdbd_free_rec_msg(uint16_t rpc_version,
 
 	if (msg) {
 		switch(type) {
-		case DBD_EDIT_RESV:
+		case DBD_ADD_RESV:
+		case DBD_REMOVE_RESV:
+		case DBD_MODIFY_RESV:
 			my_destroy = destroy_acct_reservation_rec;
 			break;
 		default:
@@ -2299,7 +2337,9 @@ void inline slurmdbd_pack_rec_msg(uint16_t rpc_version,
 	void (*my_function) (void *object, uint16_t rpc_version, Buf buffer);
 
 	switch(type) {
-	case DBD_EDIT_RESV:
+	case DBD_ADD_RESV:
+	case DBD_REMOVE_RESV:
+	case DBD_MODIFY_RESV:
 		my_function = pack_acct_reservation_rec;
 		break;
 	default:
@@ -2318,7 +2358,9 @@ int inline slurmdbd_unpack_rec_msg(uint16_t rpc_version,
 	int (*my_function) (void **object, uint16_t rpc_version, Buf buffer);
 
 	switch(type) {
-	case DBD_EDIT_RESV:
+	case DBD_ADD_RESV:
+	case DBD_REMOVE_RESV:
+	case DBD_MODIFY_RESV:
 		my_function = unpack_acct_reservation_rec;
 		break;
 	default:
