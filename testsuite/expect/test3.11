@@ -420,9 +420,6 @@ expect {
 	}
 }
 
-# Remove the temporary job script
-exec $bin_rm -f $file_in
-
 # Delete the reservation
 set ret_code [delete_res $res_name]
 if {$ret_code != 0} {
@@ -430,6 +427,58 @@ if {$ret_code != 0} {
 }
 
 
+#
+# TEST 4
+# If not running as root, make a reservation restricted to root, submit a job,
+# and confirm that the job is rejected.
+#
+if {$user_name != "root"} {
+	# Make the reservation
+	set ret_code [create_res "StartTime=now+60minutes Duration=60 NodeCnt=1 User=root"]
+	if {$ret_code != 0} {
+		set exit_code 1
+	}
+
+	# Submit the batch job
+	set denied 0
+	set sbatch_pid [spawn $sbatch -N1 --reservation=$res_name $file_in]
+	expect {
+		-re "Submitted batch job ($number)" {
+			set job_id $expect_out(1,string)
+			exec $scancel $job_id
+			set exit_code 1
+			exp_continue
+		}
+		-re "Batch job submission failed: Access denied to requested reservation" {
+			# Job was correctly denied
+			set denied 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sbatch not responding\n"
+			slow_kill $sbatch_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$denied == 0} {
+		send_user "\nFAILURE: Job $job_id should have been rejected "
+		send_user "from reservation restricted to root.  Expected "
+		send_user "rejection message not given.\n"
+		set exit_code 1
+	}
+	# Delete the reservation
+	set ret_code [delete_res $res_name]
+	if {$ret_code != 0} {
+		exit $ret_code
+	}
+}
+
+# Remove the temporary job script
+exec $bin_rm -f $file_in
 
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
