@@ -66,7 +66,7 @@ log_user 0
 set config_dir ""
 spawn $scontrol show config
 expect {
-	-re "SLURM_CONFIG_FILE.*= (/.*)/slurm.conf" {
+	-re "SLURM_CONF.*= (/.*)/slurm.conf" {
 		set config_dir $expect_out(1,string)
 		exp_continue
 	}
