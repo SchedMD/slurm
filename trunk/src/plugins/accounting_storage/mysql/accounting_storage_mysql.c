@@ -877,7 +877,6 @@ static int _setup_resv_limits(acct_reservation_rec_t *resv,
 			      char **extra)
 {	
 	/* strip off the action item from the flags */
-	resv->flags &= RESERVE_FLAG_FLAGS;
 
 	if(resv->cpus) {
 		xstrcat(*cols, ", cpus");
@@ -885,11 +884,11 @@ static int _setup_resv_limits(acct_reservation_rec_t *resv,
 		xstrfmtcat(*extra, ", cpus=%u", resv->cpus);		
 	}
 	
-	if(resv->flags & RESERVE_FLAG_CLEAR) {
-		xstrcat(*cols, ", flags");
-		xstrcat(*vals, ", 0");
-		xstrcat(*extra, ", flags=0");		
-	} else if(resv->flags) {
+	/* if(resv->flags & RESERVE_FLAG_CLEAR) { */
+/* 		xstrcat(*cols, ", flags"); */
+/* 		xstrcat(*vals, ", 0"); */
+/* 		xstrcat(*extra, ", flags=0");		 */
+/* 	} else  */if(resv->flags) {
 		xstrcat(*cols, ", flags");
 		xstrfmtcat(*vals, ", %u", resv->flags);
 		xstrfmtcat(*extra, ", flags=%u", resv->flags);		
