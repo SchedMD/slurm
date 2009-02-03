@@ -894,7 +894,7 @@ extern void reservation_flags_string(uint16_t flags, char *str, int str_len)
 		strcat(flag_str, "WEEKLY");
 	}
 	
-	strncpy(str, flag_str, strlen);
+	strncpy(str, flag_str, str_len);
 }
 
 char *node_state_string(enum node_states inx)
