@@ -103,7 +103,7 @@ void slurm_print_reservation_info ( FILE* out, reserve_info_t * resv_ptr,
 char *slurm_sprint_reservation_info ( reserve_info_t * resv_ptr, 
 				      int one_liner )
 {
-	char tmp1[32], tmp2[32], *tmp3;
+	char tmp1[32], tmp2[32], tmp3[64];
 	char tmp_line[MAXHOSTRANGELEN];
 	char *out = NULL;
 
@@ -123,10 +123,7 @@ char *slurm_sprint_reservation_info ( reserve_info_t * resv_ptr,
 		xstrcat(out, "\n   ");
 	
 	/****** Line 2 ******/
-	if (resv_ptr->flags == RESERVE_FLAG_MAINT)
-		tmp3 = "MAINT";
-	else
-		tmp3 = "";
+	reservation_flags_string(resv_ptr->flags, tmp3, sizeof(tmp3));
 	snprintf(tmp_line, sizeof(tmp_line), 
 		 "Nodes=%s NodeCnt=%u Features=%s PartitionName=%s Flags=%s",
 		 resv_ptr->node_list, resv_ptr->node_cnt,
