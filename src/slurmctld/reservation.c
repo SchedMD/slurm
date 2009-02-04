@@ -133,7 +133,8 @@ static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr)
 	resv_copy_ptr->end_time = resv_orig_ptr->end_time;
 	resv_copy_ptr->features = xstrdup(resv_orig_ptr->features);
 	resv_copy_ptr->flags = resv_orig_ptr->flags;
-	resv_copy_ptr->job_cnt = resv_orig_ptr->job_cnt;
+	resv_copy_ptr->job_pend_cnt = resv_orig_ptr->job_pend_cnt;
+	resv_copy_ptr->job_run_cnt = resv_orig_ptr->job_run_cnt;
 	resv_copy_ptr->magic = resv_orig_ptr->magic;
 	resv_copy_ptr->name = xstrdup(resv_orig_ptr->name);
 	resv_copy_ptr->node_bitmap = bit_copy(resv_orig_ptr->node_bitmap);
@@ -1909,8 +1910,10 @@ extern void begin_job_resv_check(void)
 	iter = list_iterator_create(resv_list);
 	if (!iter)
 		fatal("malloc: list_iterator_create");
-	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter)))
-		resv_ptr->job_cnt = 0;
+	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+		resv_ptr->job_pend_cnt = 0;
+		resv_ptr->job_run_cnt  = 0;
+	}
 	list_iterator_destroy(iter);
 }
 
@@ -1919,7 +1922,17 @@ extern void begin_job_resv_check(void)
  *     SLURM_SUCCESS if reservation is still valid */
 extern int job_resv_check(struct job_record *job_ptr)
 {
+	bool run_flag = false;
+
 	if (!job_ptr->resv_name)
+		return SLURM_SUCCESS;
+
+	if ((job_ptr->job_state == JOB_RUNNING) ||
+	    (job_ptr->job_state == JOB_SUSPENDED))
+		run_flag = true;
+	else if (job_ptr->job_state == JOB_PENDING)
+		run_flag = false;
+	else
 		return SLURM_SUCCESS;
 
 	if (!job_ptr->resv_ptr) {
@@ -1936,7 +1949,11 @@ extern int job_resv_check(struct job_record *job_ptr)
 		}
 	}
 
-	job_ptr->resv_ptr->job_cnt++;
+	if (run_flag)
+		job_ptr->resv_ptr->job_run_cnt++;
+	else
+		job_ptr->resv_ptr->job_pend_cnt++;
+
 	if (job_ptr->resv_ptr->end_time < (time(NULL) + resv_over_run))
 		return ESLURM_INVALID_TIME_VALUE;
 	return SLURM_SUCCESS;
@@ -1956,8 +1973,39 @@ extern void fini_job_resv_check(void)
 	if (!iter)
 		fatal("malloc: list_iterator_create");
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
-		if ((resv_ptr->job_cnt == 0) &&
-		    (resv_ptr->end_time <= now)) {
+		if (resv_ptr->end_time > now) { /* reservation not over */
+			/* _validate_node_choise(resv_ptr); */
+			continue;
+		}
+
+		if ((resv_ptr->job_run_cnt  == 0) &&
+		    (resv_ptr->flags & RESERVE_FLAG_DAILY)) {
+			verbose("Advance reservation %s one day",
+			resv_ptr->name);
+			resv_ptr->start_time_prev = resv_ptr->start_time;
+			resv_ptr->start_time += 24 * 60 * 60;
+			resv_ptr->end_time   += 24 * 60 * 60;
+			_post_resv_update(resv_ptr);
+			last_resv_update = now;
+			schedule_resv_save();
+			continue;
+		}
+		if ((resv_ptr->job_run_cnt  == 0) &&
+		    (resv_ptr->flags & RESERVE_FLAG_WEEKLY)) {
+			verbose("Advance reservation %s one week",
+				resv_ptr->name);
+			resv_ptr->start_time_prev = resv_ptr->start_time;
+			resv_ptr->start_time += 7 * 24 * 60 * 60;
+			resv_ptr->end_time   += 7 * 24 * 60 * 60;
+			_post_resv_update(resv_ptr);
+			last_resv_update = now;
+			schedule_resv_save();
+			continue;
+		}
+		if ((resv_ptr->job_pend_cnt == 0) &&
+		    (resv_ptr->job_run_cnt  == 0) &&
+		    ((resv_ptr->flags & RESERVE_FLAG_DAILY ) == 0) &&
+		    ((resv_ptr->flags & RESERVE_FLAG_WEEKLY) == 0)) {
 			debug("Purging vestigial reservation record %s",
 			      resv_ptr->name);
 			list_delete_item(iter);
