@@ -743,6 +743,7 @@ static bool _resv_overlap(time_t start_time, time_t end_time,
 	ListIterator iter;
 	slurmctld_resv_t *resv_ptr;
 	bool rc = false;
+	uint32_t delta_t, i;
 
 	if (!node_bitmap)
 		return rc;
@@ -750,17 +751,25 @@ static bool _resv_overlap(time_t start_time, time_t end_time,
 	iter = list_iterator_create(resv_list);
 	if (!iter)
 		fatal("malloc: list_iterator_create");
-	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {\
+
+	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
 		if (resv_ptr == this_resv_ptr)
 			continue;	/* skip self */
-		if ((resv_ptr->end_time   <= start_time) ||
-		    (resv_ptr->start_time >= end_time) ||
-		    (resv_ptr->node_bitmap == NULL) ||
-		    (bit_overlap(resv_ptr->node_bitmap, node_bitmap) == 0))
-			continue;
-		verbose("Reservation overlap with %s", resv_ptr->name);
-		rc = true;
-		break;
+
+		for (i=0; i<7; i++) {	/* look forward one week */
+			delta_t = i * (24 * 60 * 60);
+			if ((start_time < (resv_ptr->end_time   + delta_t)) &&
+			    (end_time   > (resv_ptr->start_time + delta_t)) &&
+			    resv_ptr->node_bitmap &&
+			    bit_overlap(resv_ptr->node_bitmap, node_bitmap)) {
+				verbose("Reservation overlap with %s", 
+					resv_ptr->name);
+				rc = true;
+				break;
+			}
+			if ((resv_ptr->flags & RESERVE_FLAG_DAILY) == 0)
+				break;
+		}
 	}
 	list_iterator_destroy(iter);
 
