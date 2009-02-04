@@ -95,7 +95,7 @@ static void _pack_resv(struct slurmctld_resv *resv_ptr, Buf buffer,
 		       bool internal);
 static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt);
 static bool _resv_overlap(time_t start_time, time_t end_time, 
-			  bitstr_t *node_bitmap,
+			  uint16_t flags, bitstr_t *node_bitmap,
 			  struct slurmctld_resv *this_resv_ptr);
 static int  _select_nodes(reserve_request_msg_t *resv_desc_ptr, 
 			  struct part_record **part_ptr,
@@ -737,13 +737,14 @@ static void _pack_resv(struct slurmctld_resv *resv_ptr, Buf buffer,
  * RET true if overlap
  */
 static bool _resv_overlap(time_t start_time, time_t end_time, 
-			  bitstr_t *node_bitmap,
+			  uint16_t flags, bitstr_t *node_bitmap,
 			  struct slurmctld_resv *this_resv_ptr)
 {
 	ListIterator iter;
 	slurmctld_resv_t *resv_ptr;
 	bool rc = false;
-	uint32_t delta_t, i;
+	uint32_t delta_t, i, j;
+	time_t s_time1, s_time2, e_time1, e_time2;
 
 	if (!node_bitmap)
 		return rc;
@@ -755,19 +756,30 @@ static bool _resv_overlap(time_t start_time, time_t end_time,
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
 		if (resv_ptr == this_resv_ptr)
 			continue;	/* skip self */
+		if (resv_ptr->node_bitmap == NULL)
+			continue;	/* no specific nodes in reservation */
+		if (!bit_overlap(resv_ptr->node_bitmap, node_bitmap))
+			continue;	/* no overlap */
 
-		for (i=0; i<7; i++) {	/* look forward one week */
+		for (i=0; ((i<7) && (!rc)); i++) {  /* look forward one week */
 			delta_t = i * (24 * 60 * 60);
-			if ((start_time < (resv_ptr->end_time   + delta_t)) &&
-			    (end_time   > (resv_ptr->start_time + delta_t)) &&
-			    resv_ptr->node_bitmap &&
-			    bit_overlap(resv_ptr->node_bitmap, node_bitmap)) {
-				verbose("Reservation overlap with %s", 
-					resv_ptr->name);
-				rc = true;
-				break;
+			s_time1 = start_time + delta_t;
+			e_time1 = end_time   + delta_t;
+			for (j=0; ((j<7) && (!rc)); j++) {
+				delta_t = j * (24 * 60 * 60);
+				s_time2 = resv_ptr->start_time + delta_t;
+				e_time2 = resv_ptr->end_time   + delta_t;
+				if ((s_time1 < e_time2) &&
+				    (e_time1 > s_time2)) {
+					verbose("Reservation overlap with %s",
+						resv_ptr->name);
+					rc = true;
+					break;
+				}
+				if (!(resv_ptr->flags & RESERVE_FLAG_DAILY))
+					break;
 			}
-			if ((resv_ptr->flags & RESERVE_FLAG_DAILY) == 0)
+			if ((flags & RESERVE_FLAG_DAILY) == 0)
 				break;
 		}
 	}
@@ -838,6 +850,11 @@ extern int create_resv(reserve_request_msg_t *resv_desc_ptr)
 		resv_desc_ptr->end_time = INFINITE;
 	if (resv_desc_ptr->flags == (uint16_t) NO_VAL)
 		resv_desc_ptr->flags = 0;
+	else {
+		resv_desc_ptr->flags &= RESERVE_FLAG_MAINT | 
+					RESERVE_FLAG_DAILY | 
+					RESERVE_FLAG_WEEKLY;
+	}
 	if (resv_desc_ptr->partition) {
 		part_ptr = find_part_record(resv_desc_ptr->partition);
 		if (!part_ptr) {
@@ -866,6 +883,7 @@ extern int create_resv(reserve_request_msg_t *resv_desc_ptr)
 			goto bad_parse;
 	}
 	if (resv_desc_ptr->node_list) {
+		resv_desc_ptr->flags |= RESERVE_FLAG_SPEC_NODES;
 		if (strcmp(resv_desc_ptr->node_list, "ALL") == 0) {
 			node_bitmap = bit_alloc(node_record_count);
 			bit_nset(node_bitmap, 0, (node_record_count - 1));
@@ -877,7 +895,8 @@ extern int create_resv(reserve_request_msg_t *resv_desc_ptr)
 		if (resv_desc_ptr->node_cnt == NO_VAL)
 			resv_desc_ptr->node_cnt = 0;
 		if (_resv_overlap(resv_desc_ptr->start_time, 
-				  resv_desc_ptr->end_time, node_bitmap,
+				  resv_desc_ptr->end_time, 
+				  resv_desc_ptr->flags, node_bitmap,
 				  NULL)) {
 			info("Reservation requestion overlaps another");
 			rc = ESLURM_INVALID_TIME_VALUE;
@@ -1074,8 +1093,18 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 		resv_ptr->end_time = resv_ptr->start_time + 
 				     (resv_desc_ptr->duration * 60);
 	}
+	if (resv_desc_ptr->node_list && 
+	    (resv_desc_ptr->node_list[0] == '\0')) {	/* Clear bitmap */
+		resv_ptr->flags &= (~RESERVE_FLAG_SPEC_NODES);
+		xfree(resv_desc_ptr->node_list);
+		xfree(resv_ptr->node_list);
+		FREE_NULL_BITMAP(resv_ptr->node_bitmap);
+		if (resv_desc_ptr->node_cnt == NO_VAL)
+			resv_desc_ptr->node_cnt = resv_ptr->node_cnt;
+	}
 	if (resv_desc_ptr->node_list) {		/* Change bitmap last */
 		bitstr_t *node_bitmap;
+		resv_ptr->flags |= RESERVE_FLAG_SPEC_NODES;
 		if (strcmp(resv_desc_ptr->node_list, "ALL") == 0) {
 			node_bitmap = bit_alloc(node_record_count);
 			bit_nset(node_bitmap, 0, (node_record_count - 1));
@@ -1100,7 +1129,7 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 		resv_ptr->node_cnt = bit_set_count(resv_ptr->node_bitmap);
 	}
 	if (_resv_overlap(resv_ptr->start_time, resv_ptr->end_time, 
-			  resv_ptr->node_bitmap, resv_ptr)) {
+			  resv_ptr->flags, resv_ptr->node_bitmap, resv_ptr)) {
 		info("Reservation requestion overlaps another");
 		error_code = ESLURM_INVALID_TIME_VALUE;
 		goto update_failure;

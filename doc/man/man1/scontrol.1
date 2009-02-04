@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "December 2008" "scontrol 1.4" "Slurm components"
+.TH SCONTROL "1" "February 2009" "scontrol 1.4" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -576,7 +576,13 @@ Identify the partition to be reserved.
 .TP
 \fIFlags\fP=<flags>
 Flags associated with the reservation. 
-Currently "Maintenance" is supported.
+Currently "MAINT" (maintenance mode, receives special accounting treatment), 
+"DAILY" (repeat the reservation every day), 
+"WEEKLY" (repeat the reservation every week) and
+"SPEC_NODES" (reservation is for specific nodes, output only) is supported.
+In order to remove the "MAINT", "DAILY" or "WEEKLY" flag with the update
+option, preceed the name with a minus sign. For example:
+Flags=\-MAINT.
 
 .TP
 \fIFeatures\fP=<features>
