@@ -74,6 +74,58 @@ process_plus_minus(char plus_or_minus, char *src)
 }
 
 
+/*
+ *  parse_flags  is used to parse the Flags= option.  It handles
+ *  daily, weekly, and maint, optionally preceded by + or -, 
+ *  separated by a comma but no spaces.
+ */
+static uint32_t
+parse_flags(const char *flagstr, const char *msg)
+{
+	int flip;
+	uint32_t outflags = 0;
+	const char *curr = flagstr;
+
+	while (*curr != '\0') {
+		flip = 0;
+		if (*curr == '+') {
+			curr++;
+		} else if (*curr == '-') {
+			flip = 1;
+			curr++;
+		}
+
+		if (strncasecmp(curr, "Maint", 5) == 0) {
+			curr += 5;
+			if (flip)
+				outflags |= RESERVE_FLAG_NO_MAINT;
+			else 
+				outflags |= RESERVE_FLAG_MAINT;
+		} else if (strncasecmp(curr, "Daily", 5) == 0) {
+			curr += 5;
+			if (flip)
+				outflags |= RESERVE_FLAG_NO_DAILY;
+			else 
+				outflags |= RESERVE_FLAG_DAILY;
+		} else if (strncasecmp(curr, "Weekly", 6) == 0) {
+			curr += 6;
+			if (flip)
+				outflags |= RESERVE_FLAG_NO_WEEKLY;
+			else 
+				outflags |= RESERVE_FLAG_WEEKLY;
+		} else {
+			error("Error parsing flags %s.  %s", flagstr, msg);
+			return 0xffffffff;
+		}
+
+		if (*curr == ',') {
+			curr++;
+		}
+	}
+	return outflags;
+}
+
+
 
 /* 
  * scontrol_parse_res_options   parse options for creating or updating a 
@@ -131,24 +183,55 @@ scontrol_parse_res_options(int argc, char *argv[], const char *msg,
 			resv_msg_ptr->duration = (uint32_t)duration;
 
 		} else if (strncasecmp(argv[i], "Flag=", 5) == 0) {
-			char *typestr = &argv[i][5];
-			if (strncasecmp(typestr, "Maintenance", 5) == 0) {
-				resv_msg_ptr->flags = RESERVE_FLAG_MAINT;
-			} else {
-				exit_code = 1;
-				error("Invalid flag %s.  %s", argv[i], msg);
+			uint32_t f = parse_flags(&argv[i][5], msg);
+			if (f == 0xffffffff) {
 				return -1;
+			} else {
+				resv_msg_ptr->flags = f;
 			}
 		} else if (strncasecmp(argv[i], "Flags=", 6) == 0) {
-			char *typestr = &argv[i][6];
-			if (strncasecmp(typestr, "Maintenance", 5) == 0) {
-				resv_msg_ptr->flags = RESERVE_FLAG_MAINT;
-			} else {
-				exit_code = 1;
-				error("Invalid flag %s.  %s", argv[i], msg);
+			uint32_t f = parse_flags(&argv[i][6], msg);
+			if (f == 0xffffffff) {
 				return -1;
+			} else {
+				resv_msg_ptr->flags = f;
 			}
-
+		} else if (strncasecmp(argv[i], "Flag+=", 6) == 0) {
+			char *tmp = process_plus_minus('+', &argv[i][6]);
+			uint32_t f = parse_flags(tmp, msg);
+			if (f == 0xffffffff) {
+				return -1;
+			} else {
+				resv_msg_ptr->flags = f;
+			}
+			free(tmp);
+		} else if (strncasecmp(argv[i], "Flag-=", 6) == 0) {
+			char *tmp = process_plus_minus('-', &argv[i][6]);
+			uint32_t f = parse_flags(tmp, msg);
+			if (f == 0xffffffff) {
+				return -1;
+			} else {
+				resv_msg_ptr->flags = f;
+			}
+			free(tmp);
+		} else if (strncasecmp(argv[i], "Flags+=", 7) == 0) {
+			char *tmp = process_plus_minus('+', &argv[i][7]);
+			uint32_t f = parse_flags(tmp, msg);
+			if (f == 0xffffffff) {
+				return -1;
+			} else {
+				resv_msg_ptr->flags = f;
+			}
+			free(tmp);
+		} else if (strncasecmp(argv[i], "Flags-=", 7) == 0) {
+			char *tmp = process_plus_minus('-', &argv[i][7]);
+			uint32_t f = parse_flags(tmp, msg);
+			if (f == 0xffffffff) {
+				return -1;
+			} else {
+				resv_msg_ptr->flags = f;
+			}
+			free(tmp);
 		} else if (strncasecmp(argv[i], "NodeCnt=", 8) == 0) {
 			char *endptr = NULL;
 			resv_msg_ptr->node_cnt = strtol(&argv[i][8], &endptr, 
@@ -251,7 +334,7 @@ scontrol_update_res(int argc, char *argv[])
 	err = slurm_update_reservation(&resv_msg);
 	if (err) {
 		exit_code = 1;
-		slurm_perror("Error updating the reservation.");
+		slurm_perror("Error updating the reservation");
 		ret = slurm_get_errno();
 	} else {
 		printf("Reservation updated.\n");
