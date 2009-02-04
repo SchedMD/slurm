@@ -3212,7 +3212,7 @@ void job_time_limit(void)
 	time_t now = time(NULL);
 	time_t old = now - slurmctld_conf.inactive_limit;
 	time_t over_run;
-	int resv_status;
+	int resv_status = 0;
 
 	if (slurmctld_conf.over_time_limit == (uint16_t) INFINITE)
 		over_run = now - (365 * 24 * 60 * 60);	/* one year */

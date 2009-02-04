@@ -312,12 +312,13 @@ typedef struct slurmctld_resv {
 	uint32_t cpu_cnt;	/* number of reserved CPUs		*/
 	time_t end_time;	/* end time of reservation		*/
 	char *features;		/* required node features		*/
+	uint16_t flags;		/* see RESERVE_FLAG_* in slurm.h	*/
 	uint32_t job_cnt;	/* number of jobs associated with this	*/
 	uint16_t magic;		/* magic cookie, RESV_MAGIC		*/
 	char *name;		/* name of reservation			*/
+	bitstr_t *node_bitmap;	/* bitmap of reserved nodes		*/
 	uint32_t node_cnt;	/* count of nodes required		*/
 	char *node_list;	/* list of reserved nodes or ALL	*/
-	bitstr_t *node_bitmap;	/* bitmap of reserved nodes		*/
 	char *partition;	/* name of partition to be used		*/
 	struct part_record *part_ptr;	/* pointer to partition used	*/
 	uint32_t resv_id;	/* unique reservation ID, internal use	*/
@@ -325,7 +326,6 @@ typedef struct slurmctld_resv {
 	time_t start_time_prev;	/* If start time was changed this is
 				 * the pervious start time.  Needed
 				 * for accounting */
-	uint16_t flags;		/* see RESERVE_FLAG_* in slurm.h	*/
 	char *users;		/* names of users permitted to use	*/
 	int user_cnt;		/* count of users permitted to use	*/
 	uid_t *user_list;	/* array of users permitted to use	*/
