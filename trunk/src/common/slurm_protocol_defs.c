@@ -908,6 +908,11 @@ extern char *reservation_flags_string(uint16_t flags)
 			xstrcat(flag_str, ",");
 		xstrcat(flag_str, "NO_WEEKLY");
 	}
+	if (flags & RESERVE_FLAG_SPEC_NODES) {
+		if (flag_str[0])
+			xstrcat(flag_str, ",");
+		xstrcat(flag_str, "SPEC_NODES");
+	}
 	return flag_str;
 }
 
