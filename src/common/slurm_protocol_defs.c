@@ -883,15 +883,30 @@ extern char *reservation_flags_string(uint16_t flags)
 
 	if (flags & RESERVE_FLAG_MAINT)
 		xstrcat(flag_str, "MAINT");
+	if (flags & RESERVE_FLAG_NO_MAINT) {
+		if (flag_str[0])
+			xstrcat(flag_str, ",");
+		xstrcat(flag_str, "NO_MAINT");
+	}
 	if (flags & RESERVE_FLAG_DAILY) {
 		if (flag_str[0])
 			xstrcat(flag_str, ",");
 		xstrcat(flag_str, "DAILY");
 	}
+	if (flags & RESERVE_FLAG_NO_DAILY) {
+		if (flag_str[0])
+			xstrcat(flag_str, ",");
+		xstrcat(flag_str, "NO_DAILY");
+	}
 	if (flags & RESERVE_FLAG_WEEKLY) {
 		if (flag_str[0])
 			xstrcat(flag_str, ",");
 		xstrcat(flag_str, "WEEKLY");
+	}
+	if (flags & RESERVE_FLAG_NO_WEEKLY) {
+		if (flag_str[0])
+			xstrcat(flag_str, ",");
+		xstrcat(flag_str, "NO_WEEKLY");
 	}
 	return flag_str;
 }
