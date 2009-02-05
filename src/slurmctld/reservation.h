@@ -63,10 +63,11 @@ extern int dump_all_resv_state(void);
 
 /*
  * Load the reservation state from file, recover on slurmctld restart. 
- *	execute this after loading the configuration file data.
- * IN recover - 0 = no change
- *              1 = validate existing (in memory) reservations
- *              2 = recover all reservation state from disk
+ *	Reset reservation pointers for all jobs.
+ *	Execute this after loading the configuration file data.
+ * IN recover - 0 = validate current reservations ONLY if already recovered, 
+ *                  otherwise recover from disk
+ *              1+ = recover all reservation state from disk
  * RET SLURM_SUCCESS or error code
  * NOTE: READ lock_slurmctld config before entry
  */
