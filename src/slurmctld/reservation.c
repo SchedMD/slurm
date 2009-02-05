@@ -1787,6 +1787,40 @@ static int _valid_job_access_resv(struct job_record *job_ptr,
 }
 
 /*
+ * Determine if a job can start now based only upon reservations
+ * IN job_ptr      - job to test
+ * RET	SLURM_SUCCESS if runable now, otherwise an error code
+ */
+extern int job_test_resv_now(struct job_record *job_ptr)
+{
+	slurmctld_resv_t * resv_ptr;
+	time_t now;
+
+	if (job_ptr->resv_name == NULL)
+		return SLURM_SUCCESS;
+
+	resv_ptr = (slurmctld_resv_t *) list_find_first (resv_list, 
+			_find_resv_name, job_ptr->resv_name);
+	job_ptr->resv_ptr = resv_ptr;
+	if (!resv_ptr)
+		return ESLURM_RESERVATION_INVALID;
+
+	if (_valid_job_access_resv(job_ptr, resv_ptr) != SLURM_SUCCESS)
+		return ESLURM_RESERVATION_ACCESS;
+	now = time(NULL);
+	if (now < resv_ptr->start_time) {
+		/* reservation starts later */
+		return ESLURM_INVALID_TIME_VALUE;
+	}
+	if (now > resv_ptr->end_time) {
+		/* reservation ended earlier */
+		return ESLURM_RESERVATION_INVALID;
+	}
+
+	return SLURM_SUCCESS;
+}
+
+/*
  * Determine which nodes a job can use based upon reservations
  * IN job_ptr      - job to test
  * IN/OUT when     - when we want the job to start (IN)

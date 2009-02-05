@@ -93,6 +93,13 @@ extern int validate_job_resv(struct job_record *job_ptr);
 extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 			 bitstr_t **node_bitmap);
 
+/*
+ * Determine if a job can start now based only upon reservations
+ * IN job_ptr      - job to test
+ * RET	SLURM_SUCCESS if runable now, otherwise an error code
+ */
+extern int job_test_resv_now(struct job_record *job_ptr);
+
 /* Begin scan of all jobs for valid reservations */
 extern void begin_job_resv_check(void);
 
