@@ -204,6 +204,20 @@ static char* _convert_conn_type(enum connection_type conn_type)
 		return "SMALL";
 	case (SELECT_NAV):
 		return "NAV";
+#ifndef HAVE_BGL
+	case SELECT_HTC_S:
+		return "HTC_S";
+		break;
+	case SELECT_HTC_D:
+		return "HTC_D";
+		break;
+	case SELECT_HTC_V:
+		return "HTC_V";
+		break;
+	case SELECT_HTC_L:
+		return "HTC_L";
+		break;
+#endif
 	}
 	return "?";
 }

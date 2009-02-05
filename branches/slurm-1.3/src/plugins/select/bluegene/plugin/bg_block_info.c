@@ -304,6 +304,49 @@ extern int update_block_list()
 			bg_record->node_use = node_use;
 			updated = 1;
 		}
+#else
+		if(bg_record->node_cnt < bluegene_bp_node_cnt) {
+			char *mode = NULL;
+			uint16_t conn_type = SELECT_SMALL;
+			if ((rc = bridge_get_data(block_ptr,
+						  RM_PartitionOptions,
+						  &mode))
+			    != STATUS_OK) {
+				error("bridge_get_data(RM_PartitionOptions): "
+				      "%s", bg_err_str(rc));
+				updated = -1;
+				goto next_block;
+			} else if(mode) {
+				switch(mode[0]) {
+				case 'S':
+					conn_type = SELECT_HTC_S;
+					break;
+				case 'D':
+					conn_type = SELECT_HTC_D;
+					break;
+				case 'V':
+					conn_type = SELECT_HTC_V;
+					break;
+				case 'L':
+					conn_type = SELECT_HTC_L;
+					break;
+				default:
+					conn_type = SELECT_SMALL;
+					break;
+				}
+				free(mode);
+			}
+			
+			if(bg_record->conn_type != conn_type) {
+				debug("mode of small Block %s was %u "
+				      "and now is %u",
+				      bg_record->bg_block_id, 
+				      bg_record->conn_type, 
+				      conn_type);
+				bg_record->conn_type = conn_type;
+				updated = 1;
+			}
+		}
 #endif		
 		if ((rc = bridge_get_data(block_ptr, RM_PartitionState,
 					  &state))
@@ -441,6 +484,20 @@ extern int update_block_list()
 						sizeof(kill_job_struct_t));
 					freeit->jobid = bg_record->job_running;
 					list_push(kill_job_list, freeit);
+				}
+				/* for htc blocks we need to set the
+				   pool to be the same as the block
+				   name for users to use 
+				*/
+				if(bg_record->conn_type > SELECT_SMALL) {
+					if ((rc = bridge_modify_block(
+						     bg_record->bg_block_id,
+						     RM_MODIFY_HTCPool,
+						     bg_record->bg_block_id))
+					    != STATUS_OK)
+						error("bridge_set_data("
+						      "RM_MODIFY_HTCPool)",
+						      bg_err_str(rc));
 				}
 				break;
 			case RM_PARTITION_DEALLOCATING:

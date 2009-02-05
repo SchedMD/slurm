@@ -1529,7 +1529,7 @@ extern char *set_bg_block(List results, int *start,
 	/* This midplane should have already been checked if it was in
 	   use or not */
 	list_append(results, ba_node);
-	if(conn_type == SELECT_SMALL) {
+	if(conn_type >= SELECT_SMALL) {
 		/* adding the ba_node and ending */
 		ba_node->used = true;
 		name = xstrdup_printf("%c%c%c",

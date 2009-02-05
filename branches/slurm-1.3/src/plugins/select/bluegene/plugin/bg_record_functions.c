@@ -163,7 +163,7 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 		}
 		memset(&best_start, 0, sizeof(best_start));
 		bg_record->bp_count = 0;
-		if((bg_record->conn_type == SELECT_SMALL) && (!startup))
+		if((bg_record->conn_type >= SELECT_SMALL) && (!startup))
 			error("We shouldn't be here there could be some "
 			      "badness if we use this logic %s",
 			      bg_record->nodes);
@@ -686,6 +686,23 @@ extern int set_ionodes(bg_record_t *bg_record)
 
 	return SLURM_SUCCESS;
 }
+#else 
+
+extern int set_ionodes(bg_record_t *bg_record, int io_start, int io_nodes)
+{
+	char bitstring[BITSIZE];
+
+	if(!bg_record)
+		return SLURM_ERROR;
+	
+	bg_record->ionode_bitmap = bit_alloc(bluegene_numpsets);
+	/* Set the correct ionodes being used in this block */
+	bit_nset(bg_record->ionode_bitmap, io_start, io_start+io_nodes);
+	bit_fmt(bitstring, BITSIZE, bg_record->ionode_bitmap);
+	bg_record->ionodes = xstrdup(bitstring);
+	return SLURM_SUCCESS;
+}
+
 #endif
 
 extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq)
