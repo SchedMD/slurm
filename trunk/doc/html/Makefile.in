@@ -287,6 +287,7 @@ generated_html = \
 	publications.html \
 	quickstart_admin.html \
 	quickstart.html \
+	reservations.html \
 	schedplugins.html \
 	selectplugins.html \
 	slurm.html \

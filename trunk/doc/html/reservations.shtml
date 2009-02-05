@@ -1,0 +1,125 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Resource Reservation Gude</h1>
+
+<p>SLURM verstion 1.4 has the ability to reserve resources for jobs
+being executed by select users and/or select bank accounts.
+A resource reservation identifies the nodes of a resource reservation 
+and a time period during which the reservation is available.</p>
+
+<p>Reservations can be created, updated, or destroyed only by user root 
+using the <i>scontrol</i> command. 
+The <i>scontrol</i>, <i>smap</i> and <i>sview</i> commands can be used
+to view reservations. 
+The man pages for the various commands contain details.</p>
+
+<h2>Reservation Creation</h2>
+
+<p>One common mode of operation for a reservation would be to reserve
+an entire computer at a particular time for a system down time.
+The example below shows the creation of a full-system reservation 
+at 16:00 hours on 6 February and lasting for 120 minutes. 
+The "maint" flag is used to identify the reservation for accounting 
+purposes as system maintenance. As the reservation time approaches, 
+only jobs that can complete by the reservation time will be 
+initiated.</p>
+<pre>
+$ scontrol create reservation starttime=2009-02-06T16:00:00 \
+   duration=120 user=root flags=maint nodes=ALL
+Reservation created: root_4
+
+$ scontrol show reservation
+ReservationName=root_4 StartTime=2009-02-06T16:00:00 
+   EndTime=2009-02-06T18:00:00 Duration=120
+   Nodes=ALL NodeCnt=20 Features=(null) PartitionName=(null)
+   Flags=MAINT,SPEC_NODES Users=root Accounts=(null)
+</pre>
+
+<p>Another mode of operation would be to reserve specific nodes
+for an indefinite period in order to study problems on those 
+nodes. This could also be accomplished using a SLURM partition
+specifically for this purpose, but that would fail to capture
+the maintenance nature of their use.</p>
+<pre>
+$ scontrol create reservation user=root starttime=now \
+   duration=infinite flags=maint nodes=sun000
+Reservation created: root_5
+
+$ scontrol show res
+ReservationName=root_5 StartTime=2009-02-04T16:22:57 
+   EndTime=2009-02-04T16:21:57 Duration=4294967295
+   Nodes=sun000 NodeCnt=1 Features=(null) PartitionName=(null)
+   Flags=MAINT,SPEC_NODES Users=root Accounts=(null)
+</pre>
+
+<p>Our final example is to reserve ten nodes in the default 
+SLURM partition starting at noon and with a duration of 60 
+minutes occuring daily. The reservation will be available
+only to users alan and brenda.</p>
+<pre>
+$ scontrol create reservation user=alan,brenda \
+   starttime=noon duration=60 flags=daily nodecnt=10
+Reservation created: alan_6
+
+$ scontrol show res
+ReservationName=alan_6 StartTime=2009-02-05T12:00:00 
+   EndTime=2009-02-05T13:00:00 Duration=60
+   Nodes=sun[000-003,007,010-013,017] NodeCnt=10 
+   Features=(null) PartitionName=pdebug Flags=DAILY
+   Users=alan,brenda Accounts=(null)
+</pre>
+
+<p>Note that specific nodes to be associated with the reservation are
+made immediately after creation of the reservation. This permits
+users to stage files to the nodes in preparation for use during the
+reservation. Note that the reservation creation request can also 
+identify the partition from which to select the nodes or _one_
+feature that every selected node must contain.</p>
+
+<h2>Reservation Modification</h2>
+
+<p>Reservations can be modified by user root as desired. 
+For example their duration could be altered or the users
+granted access changed as shown below:</p>
+<pre>
+$ scontrol update ReservationName=root_4 \
+   duration=150 users=admin
+Reservation updated.
+
+bash-3.00$ scontrol show ReservationName=root_4
+ReservationName=root_4 StartTime=2009-02-06T16:00:00 
+   EndTime=2009-02-06T18:30:00 Duration=150
+   Nodes=ALL NodeCnt=20 Features=(null) 
+   PartitionName=(null) Flags=MAINT,SPEC_NODES
+   Users=jette Accounts=(null)
+</pre>
+
+<h2>Reservation Deletion</h2>
+
+<p>Reservations are automatically purged after their end time. 
+They may also be manually deleted at any time as shown below:</p>
+<pre>
+$ scontrol delete ReservationName=alan_6
+</pre>
+
+<h2>Future Work</h2>
+
+<p>Several enhancements are anticipated at some point in the future.
+<ol>
+<li>In the event that one more node initially selected for use in a 
+reservation goes DOWN, no replacement is currently selected.</li>
+<li>The automatic selection of nodes for a reservation create request is
+sub-optimal in terms timing (selecting nodes that are expected to become 
+available close to the time when needed). If reservations are created
+well before they start, this should not pose problems.</li>
+<li>The automatic selection of nodes for a reservation create request is
+sub-optimal in terms of locality (for optimized application communication).</li>
+<li> The feature specification in the reservation creation request should be 
+made more flexible to accept multiple features with AND or OR operators.</li> 
+</ol>
+
+
+<p style="text-align: center;">Last modified 4 February 2009</p>
+
+<!--#include virtual="footer.txt"-->
+
