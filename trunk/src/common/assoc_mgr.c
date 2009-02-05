@@ -1,8 +1,8 @@
 /*****************************************************************************\
- *  accounting_storage_slurmdbd.c - accounting interface to slurmdbd.
+ *  assoc_mgr.h - keep track of local cache of accounting data.
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  
@@ -890,7 +890,9 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 			}
 			continue;
 		} else {
-			if(assoc->uid == (uint32_t)NO_VAL
+			if(assoc->uid == (uint32_t)INFINITE) {
+				;	/* match any user id */
+			} else if(assoc->uid == (uint32_t)NO_VAL
 			   && found_assoc->uid != (uint32_t)NO_VAL) {
 				debug3("we are looking for a "
 				       "nonuser association");

@@ -53,6 +53,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include "src/common/assoc_mgr.h"
 #include "src/common/bitstring.h"
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
@@ -272,7 +273,19 @@ static void _generate_resv_name(reserve_request_msg_t *resv_ptr)
 /* Validate an account name */
 static bool _is_account_valid(char *account)
 {
-	/* FIXME: Need to add logic here */
+	acct_association_rec_t assoc_rec, *assoc_ptr;
+
+	if (!(accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS))
+		return true;	/* don't worry about account validity */
+
+	memset(&assoc_rec, 0, sizeof(acct_association_rec_t));
+	assoc_rec.uid       = INFINITE;
+	assoc_rec.acct      = account;
+
+	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
+				    accounting_enforce, &assoc_ptr)) {
+		return false;
+	}
 	return true;
 }
 
