@@ -125,6 +125,15 @@ jobs running in it.</p>
 $ scontrol delete ReservationName=alan_6
 </pre>
 
+<h2>Reservation Accounting</h2>
+
+<p>Jobs executed within a reservation are accounted for using the appropriate
+user and bank account. If resources within a reservation are not used, those 
+resources will be accounted for as being used by all users or bank accounts
+associated with the reservation on an equal basis (e.g. if two users are
+eligible to use a reservation and neither does, each user will be reported 
+to have used half of the reserved resources).</p>
+
 <h2>Future Work</h2>
 
 <p>Several enhancements are anticipated at some point in the future.
