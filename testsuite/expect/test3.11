@@ -48,7 +48,7 @@ print_header $test_id
 # Procedure to create a new reservation and validate it.
 # Modifies the global var res_name in the process
 #
-proc create_res { res_params } {
+proc create_res { res_params failure_expected } {
 	#exp_internal 1
 	global scontrol
 	global alpha_numeric_under
@@ -73,14 +73,18 @@ proc create_res { res_params } {
 			exp_continue
 		}
 		-re "Error" {
-			send_user "\nFAILURE: problem creating "
-			send_user "reservation with args:  $res_params\n"
+			if {!$failure_expected} {
+				send_user "\nFAILURE: problem creating "
+				send_user "reservation with args: $res_params\n"
+			}
 			set ret_code 1
 			exp_continue
 		}
 		-re "error" {
-			send_user "\nFAILURE: problem creating "
-			send_user "reservation with args:  $res_params\n"
+			if {!$failure_expected} {
+				send_user "\nFAILURE: problem creating "
+				send_user "reservation with args: $res_params\n"
+			}
 			set ret_code 1
 			exp_continue
 		}
@@ -101,23 +105,30 @@ proc create_res { res_params } {
 		-re "ReservationName=($alpha_numeric_under)" {
 			set tmp_res_name $expect_out(1,string)
 			if {$tmp_res_name != $res_name} {
-				send_user "\nFAILURE: problem showing "
-				send_user "reservation created with:  "
-				send_user "$res_params\n"
+				if {!$failure_expected} {
+					send_user "\nFAILURE: problem showing "
+					send_user "reservation created with:  "
+					send_user "$res_params\n"
+				}
 				set ret_code 1
 				exp_continue
 			}
 		}
 		-re "No reservations in the system" {
-			send_user "\nFAILURE: no reservations found after "
-			send_user "reservation created with:  $res_params\n"
+			if {!$failure_expected} {
+				send_user "\nFAILURE: no reservations found  "
+				send_user "after reservation created with:  "
+				send_user "$res_params\n"
+			}
 			set ret_code 1
 			exp_continue
 		}
 		-re "Reservation ($alpha_numeric_under) not found" {
-			send_user "\nFAILURE: Reservation $res_name not "
-			send_user "found after reservation created with:  "
-			send_user "$res_params\n"
+			if {!$failure_expected} {
+				send_user "\nFAILURE: Reservation $res_name not"
+				send_user "found after reservation created "
+				send_user "with:  $res_params\n"
+			}
 			set ret_code 1
 			exp_continue
 		}
@@ -131,7 +142,7 @@ proc create_res { res_params } {
 #
 # Procedure to update a reservation
 #
-proc update_res { res_name res_params } {
+proc update_res { res_name res_params failure_expected } {
 	global scontrol
 	global alpha_numeric_under
 	set ret_code 0
@@ -146,20 +157,28 @@ proc update_res { res_name res_params } {
 			exp_continue
 		}
 		-re "slurm_update error: Invalid user" {
-			send_user "\nWARNING: user not authorized "
-			send_user "to update reservation\n"
+			if {!$failure_expected} {
+				send_user "\nWARNING: user not authorized "
+				send_user "to update reservation\n"
+			}
 			set ret_code 1
 			exp_continue
 		}
 		-re "Error" {
-			send_user "\nFAILURE: problem updating "
-			send_user "reservation $res_name with $res_params\n"
+			if {!$failure_expected} {
+				send_user "\nFAILURE: problem updating "
+				send_user "reservation $res_name with "
+				send_user "$res_params\n"
+			}
 			set ret_code 1
 			exp_continue
 		}
 		-re "error" {
-			send_user "\nFAILURE: problem updating "
-			send_user "reservation $res_name with $res_params\n"
+			if {!$failure_expected} {
+				send_user "\nFAILURE: problem updating "
+				send_user "reservation $res_name with "
+				send_user "$res_params\n"
+			}
 			set ret_code 1
 			exp_continue
 		}
@@ -270,11 +289,13 @@ set badtests "
 #	{StartTime=now   Duration=5   Nodes=$def_node   Account=badaccountname}
 
 foreach test $badtests {
-	set ret_code [create_res $test]
+	set ret_code [create_res $test 1]
 	if {$ret_code == 0} {
 		send_user "\nFAILURE: Reservation $test did not fail but should have\n"
 		delete_res $res_name
 		exit 1
+	} else {
+		send_user "Expected error.  You can turn that frown upside-down.\n"
 	}
 }
 
@@ -288,7 +309,7 @@ set goodtests "
 	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name  Flags=Maint}
 "
 foreach test $goodtests {
-	set ret_code [create_res $test]
+	set ret_code [create_res $test 0]
 	if {$ret_code != 0} {
 		exit $ret_code
 	}
@@ -303,7 +324,7 @@ foreach test $goodtests {
 # TEST 2
 # Create a reservation and update it in various ways
 #
-set ret_code [create_res "StartTime=now+60minutes Duration=60 NodeCnt=1 User=$user_name"]
+set ret_code [create_res "StartTime=now+60minutes Duration=60 NodeCnt=1 User=$user_name" 0]
 if {$ret_code != 0} {
 	exit $ret_code
 }
@@ -324,7 +345,7 @@ if {$user_name != "root"} {
 }
 
 foreach test $goodupdates {
-	set ret_code [update_res $res_name $test ]
+	set ret_code [update_res $res_name $test 0]
 	if {$ret_code != 0} {
 		set exit_code 1
 		break
@@ -345,7 +366,7 @@ if {$ret_code != 0} {
 #
 
 # Make the reservation
-set ret_code [create_res "StartTime=now+60minutes Duration=60 NodeCnt=1 User=$user_name"]
+set ret_code [create_res "StartTime=now+60minutes Duration=60 NodeCnt=1 User=$user_name" 0]
 if {$ret_code != 0} {
 	exit $ret_code
 }
@@ -434,7 +455,7 @@ if {$ret_code != 0} {
 #
 if {$user_name != "root"} {
 	# Make the reservation
-	set ret_code [create_res "StartTime=now+60minutes Duration=60 NodeCnt=1 User=root"]
+	set ret_code [create_res "StartTime=now+60minutes Duration=60 NodeCnt=1 User=root" 0]
 	if {$ret_code != 0} {
 		set exit_code 1
 	}
@@ -469,6 +490,8 @@ if {$user_name != "root"} {
 		send_user "from reservation restricted to root.  Expected "
 		send_user "rejection message not given.\n"
 		set exit_code 1
+	} else {
+		send_user "Expected error, no worries mate.\n"
 	}
 	# Delete the reservation
 	set ret_code [delete_res $res_name]
