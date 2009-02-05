@@ -555,16 +555,16 @@ int read_bg_blocks()
 				goto clean_up;
 			} else if(tmp_char) {
 				switch(tmp_char[0]) {
-				case 'S':
+				case 's':
 					bg_record->conn_type = SELECT_HTC_S;
 					break;
-				case 'D':
+				case 'd':
 					bg_record->conn_type = SELECT_HTC_D;
 					break;
-				case 'V':
+				case 'v':
 					bg_record->conn_type = SELECT_HTC_V;
 					break;
-				case 'L':
+				case 'l':
 					bg_record->conn_type = SELECT_HTC_L;
 					break;
 				default:

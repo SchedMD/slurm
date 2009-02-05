@@ -554,16 +554,16 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 			char *conn_type = NULL;
 			switch(bg_record->conn_type) {
 			case SELECT_HTC_S:
-				conn_type = 'S';
+				conn_type = 's';
 				break;
 			case SELECT_HTC_D:
-				conn_type = 'D';
+				conn_type = 'd';
 				break;
 			case SELECT_HTC_V:
-				conn_type = 'V';
+				conn_type = 'v';
 				break;
 			case SELECT_HTC_L:
-				conn_type = 'L';
+				conn_type = 'l';
 				break;
 			default:
 				break;

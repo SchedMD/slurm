@@ -318,16 +318,16 @@ extern int update_block_list()
 				goto next_block;
 			} else if(mode) {
 				switch(mode[0]) {
-				case 'S':
+				case 's':
 					conn_type = SELECT_HTC_S;
 					break;
-				case 'D':
+				case 'd':
 					conn_type = SELECT_HTC_D;
 					break;
-				case 'V':
+				case 'v':
 					conn_type = SELECT_HTC_V;
 					break;
-				case 'L':
+				case 'l':
 					conn_type = SELECT_HTC_L;
 					break;
 				default:
@@ -484,20 +484,6 @@ extern int update_block_list()
 						sizeof(kill_job_struct_t));
 					freeit->jobid = bg_record->job_running;
 					list_push(kill_job_list, freeit);
-				}
-				/* for htc blocks we need to set the
-				   pool to be the same as the block
-				   name for users to use 
-				*/
-				if(bg_record->conn_type > SELECT_SMALL) {
-					if ((rc = bridge_modify_block(
-						     bg_record->bg_block_id,
-						     RM_MODIFY_HTCPool,
-						     bg_record->bg_block_id))
-					    != STATUS_OK)
-						error("bridge_set_data("
-						      "RM_MODIFY_HTCPool)",
-						      bg_err_str(rc));
 				}
 				break;
 			case RM_PARTITION_DEALLOCATING:
