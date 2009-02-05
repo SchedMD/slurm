@@ -529,7 +529,7 @@ test22.#   Testing of sreport commands and options.
 =================================================
 test22.1   sreport cluster utilization report
 
-test23.#   Testing of sacctmgr commands and options.
+test23.#   Testing of sstat commands and options.
 =================================================
-test23.1   sacctmgr --help
-test23.2   sacctmgr --helpformat
+test23.1   sstat --help
+test23.2   sstat --helpformat
