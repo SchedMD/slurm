@@ -5538,6 +5538,12 @@ extern bool job_independent(struct job_record *job_ptr)
 		return false;	/* not yet time */
 	}
 
+	if (job_test_resv_now(job_ptr) != SLURM_SUCCESS) {
+		job_ptr->state_reason = WAIT_RESERVATION;
+		xfree(job_ptr->state_desc);
+		return false;	/* not yet time */
+	}
+
 	rc = test_job_dependency(job_ptr);
 	if (rc == 0) {
 		bool send_acct_rec = false;

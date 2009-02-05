@@ -232,6 +232,7 @@ extern void set_job_elig_time(void)
 		    ((job_ptr->details->max_nodes < part_ptr->min_nodes) ||
 		     (job_ptr->details->min_nodes > part_ptr->max_nodes)))
 			continue;
+		/* Job's eligible time is set in job_independent() */
 		if (!job_independent(job_ptr))
 			continue;
 	}
