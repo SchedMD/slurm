@@ -554,23 +554,23 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 			char *conn_type = NULL;
 			switch(bg_record->conn_type) {
 			case SELECT_HTC_S:
-				conn_type = 's';
+				conn_type = "s";
 				break;
 			case SELECT_HTC_D:
-				conn_type = 'd';
+				conn_type = "d";
 				break;
 			case SELECT_HTC_V:
-				conn_type = 'v';
+				conn_type = "v";
 				break;
 			case SELECT_HTC_L:
-				conn_type = 'l';
+				conn_type = "l";
 				break;
 			default:
 				break;
 			}
 			/* the option has to be set before the pool can be
 			   set */
-			if ((rc = bridge_modify_data(
+			if ((rc = bridge_modify_block(
 				     bg_record->bg_block_id,
 				     RM_MODIFY_Options,
 				     conn_type)) != STATUS_OK)
