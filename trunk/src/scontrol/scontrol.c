@@ -53,6 +53,7 @@ int verbosity;		/* count of "-v" options */
 
 static void	_create_it (int argc, char *argv[]);
 static void	_delete_it (int argc, char *argv[]);
+static void     _show_it (int argc, char *argv[]);
 static int	_get_command (int *argc, char *argv[]);
 static void     _ping_slurmctld(char *control_machine, char *backup_controller);
 static void	_print_config (char *config_param);
@@ -699,94 +700,7 @@ _process_command (int argc, char *argv[])
 		}
 	}
 	else if (strncasecmp (argv[0], "show", 3) == 0) {
-		if (argc > 3) {
-			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr, 
-				        "too many arguments for keyword:%s\n", 
-				        argv[0]);
-		}
-		else if (argc < 2) {
-			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr, 
-				        "too few arguments for keyword:%s\n", 
-				        argv[0]);
-		}
-		else if (strncasecmp (argv[1], "config", 3) == 0) {
-			if (argc > 2)
-				_print_config (argv[2]);
-			else
-				_print_config (NULL);
-		}
-		else if (strncasecmp (argv[1], "daemons", 3) == 0) {
-			if (argc > 2) {
-				exit_code = 1;
-				if (quiet_flag != 1)
-					fprintf(stderr,
-					        "too many arguments for keyword:%s\n", 
-					        argv[0]);
-			}
-			_print_daemons ();
-		}
-		else if (strncasecmp (argv[1], "jobs", 3) == 0) {
-			if (argc > 2)
-				scontrol_print_job (argv[2]);
-			else
-				scontrol_print_job (NULL);
-		}
-		else if (strncasecmp (argv[1], "hostnames", 5) == 0) {
-			if (argc > 2)
-				scontrol_print_hosts(argv[2]);
-			else
-				scontrol_print_hosts(getenv("SLURM_NODELIST"));
-		}
-		else if (strncasecmp (argv[1], "hostlist", 5) == 0) {
-			if (argc != 3) {
-				exit_code = 1;
-				fprintf(stderr, "invalid encode argument\n");
-				_usage();
-			} else if (scontrol_encode_hostlist(argv[2]))
-				exit_code = 1;
-		}
-		else if (strncasecmp (argv[1], "nodes", 3) == 0) {
-			if (argc > 2)
-				scontrol_print_node_list (argv[2]);
-			else
-				scontrol_print_node_list (NULL);
-		}
-		else if (strncasecmp (argv[1], "partitions", 3) == 0) {
-			if (argc > 2)
-				scontrol_print_part (argv[2]);
-			else
-				scontrol_print_part (NULL);
-		}
-		else if (strncasecmp (argv[1], "reservations", 3) == 0) {
-			if (argc > 2)
-				scontrol_print_res(argv[2]);
-			else
-				scontrol_print_res(NULL);
-		}
-		else if (strncasecmp (argv[1], "slurmd", 6) == 0) {
-			if (argc > 2)
-				_print_slurmd(argv[2]);
-			else
-				_print_slurmd(NULL);
-		}
-		else if (strncasecmp (argv[1], "steps", 3) == 0) {
-			if (argc > 2)
-				scontrol_print_step (argv[2]);
-			else
-				scontrol_print_step (NULL);
-		}
-		else {
-			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf (stderr,
-					 "invalid entity:%s for keyword:%s \n",
-					 argv[1], argv[0]);
-		}		
-
+		_show_it (argc, argv);
 	}
 	else if (strncasecmp (argv[0], "shutdown", 8) == 0) {
 		/* require full command name */
@@ -913,7 +827,7 @@ _create_it (int argc, char *argv[])
 
 
 /* 
- * _delete_it - delete the slurm the specified slurm entity 
+ * _delete_it - delete the specified slurm entity 
  * IN argc - count of arguments
  * IN argv - list of arguments
  */
@@ -942,6 +856,104 @@ _delete_it (int argc, char *argv[])
 		fprintf(stderr, "Invalid deletion entity: %s\n", argv[1]);
 	}
 }
+
+
+/* 
+ * _show_it - print a description of the specified slurm entity 
+ * IN argc - count of arguments
+ * IN argv - list of arguments
+ */
+static void
+_show_it (int argc, char *argv[])
+{
+	char *tag = NULL, *val = NULL;
+	int taglen = 0;
+
+	if (argc > 3) {
+		exit_code = 1;
+		if (quiet_flag != 1)
+			fprintf(stderr, 
+			        "too many arguments for keyword:%s\n", 
+			        argv[0]);
+		return;
+	}
+	else if (argc < 2) {
+		exit_code = 1;
+		if (quiet_flag != 1)
+			fprintf(stderr, 
+			        "too few arguments for keyword:%s\n", argv[0]);
+		return;
+	}
+
+	tag = argv[1];
+	taglen = strlen(tag);
+	val = strchr(argv[1], '=');
+	if (val) {
+		taglen = val - argv[1];
+		val++;
+	} else if (argc == 3) {
+		val = argv[2];
+	} else {
+		val = NULL;
+	}
+
+	if (strncasecmp (tag, "config", MAX(taglen, 3)) == 0) {
+		_print_config (val);
+	}
+	else if (strncasecmp (tag, "daemons", MAX(taglen, 3)) == 0) {
+		if (val) {
+			exit_code = 1;
+			if (quiet_flag != 1)
+				fprintf(stderr,
+				        "too many arguments for keyword:%s\n", 
+				        argv[0]);
+		}
+		_print_daemons ();
+	}
+	else if (strncasecmp (tag, "jobs", MAX(taglen, 3)) == 0) {
+		scontrol_print_job (val);
+	}
+	else if (strncasecmp (tag, "hostnames", MAX(taglen, 5)) == 0) {
+		if (val)
+			scontrol_print_hosts(val);
+		else
+			scontrol_print_hosts(getenv("SLURM_NODELIST"));
+	}
+	else if (strncasecmp (tag, "hostlist", MAX(taglen, 5)) == 0) {
+		if (!val) {
+			exit_code = 1;
+			fprintf(stderr, "invalid encode argument\n");
+			_usage();
+		} else if (scontrol_encode_hostlist(val))
+			exit_code = 1;
+	}
+	else if (strncasecmp (tag, "nodes", MAX(taglen, 3)) == 0) {
+		scontrol_print_node_list (val);
+	}
+	else if (strncasecmp (tag, "partitions", MAX(taglen, 3)) == 0 || 
+		 strncasecmp (tag, "partitionname", MAX(taglen, 3)) == 0) {
+		scontrol_print_part (val);
+	}
+	else if (strncasecmp (tag, "reservations", MAX(taglen, 3)) == 0 || 
+		 strncasecmp (tag, "reservationname", MAX(taglen, 3)) == 0) {
+		scontrol_print_res (val);
+	}
+	else if (strncasecmp (tag, "slurmd", MAX(taglen, 3)) == 0) {
+		_print_slurmd (val);
+	}
+	else if (strncasecmp (tag, "steps", MAX(taglen, 3)) == 0) {
+		scontrol_print_step (val);
+	}
+	else {
+		exit_code = 1;
+		if (quiet_flag != 1)
+			fprintf (stderr,
+				 "invalid entity:%s for keyword:%s \n",
+				 tag, argv[0]);
+	}		
+
+}
+
 
 
 /* 
