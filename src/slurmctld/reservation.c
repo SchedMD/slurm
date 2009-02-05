@@ -70,7 +70,7 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/state_save.h"
 
-#define _RESV_DEBUG	1
+#define _RESV_DEBUG	0
 #define RESV_MAGIC	0x3b82
 
 /* Change RESV_STATE_VERSION value when changing the state save format */
@@ -885,7 +885,7 @@ extern int create_resv(reserve_request_msg_t *resv_desc_ptr)
 	}
 	if (resv_desc_ptr->node_list) {
 		resv_desc_ptr->flags |= RESERVE_FLAG_SPEC_NODES;
-		if (strcmp(resv_desc_ptr->node_list, "ALL") == 0) {
+		if (strcasecmp(resv_desc_ptr->node_list, "ALL") == 0) {
 			node_bitmap = bit_alloc(node_record_count);
 			bit_nset(node_bitmap, 0, (node_record_count - 1));
 		} else if (node_name2bitmap(resv_desc_ptr->node_list, 
@@ -1106,7 +1106,7 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 	if (resv_desc_ptr->node_list) {		/* Change bitmap last */
 		bitstr_t *node_bitmap;
 		resv_ptr->flags |= RESERVE_FLAG_SPEC_NODES;
-		if (strcmp(resv_desc_ptr->node_list, "ALL") == 0) {
+		if (strcasecmp(resv_desc_ptr->node_list, "ALL") == 0) {
 			node_bitmap = bit_alloc(node_record_count);
 			bit_nset(node_bitmap, 0, (node_record_count - 1));
 		} else if (node_name2bitmap(resv_desc_ptr->node_list, 
@@ -1393,7 +1393,7 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 	}
 	if (resv_ptr->node_list) {		/* Change bitmap last */
 		bitstr_t *node_bitmap;
-		if (strcmp(resv_ptr->node_list, "ALL") == 0) {
+		if (strcasecmp(resv_ptr->node_list, "ALL") == 0) {
 			node_bitmap = bit_alloc(node_record_count);
 			bit_nset(node_bitmap, 0, (node_record_count - 1));
 		} else if (node_name2bitmap(resv_ptr->node_list,
