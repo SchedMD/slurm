@@ -1111,6 +1111,7 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 		resv_ptr->node_bitmap = bit_alloc(node_record_count);
 		if (resv_desc_ptr->node_cnt == NO_VAL)
 			resv_desc_ptr->node_cnt = resv_ptr->node_cnt;
+		resv_ptr->node_cnt = 0;
 	}
 	if (resv_desc_ptr->node_list) {		/* Change bitmap last */
 		bitstr_t *node_bitmap;

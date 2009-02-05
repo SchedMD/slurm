@@ -744,7 +744,7 @@ extern int node_name2bitmap (char *node_names, bool best_effort,
 	*bitmap = my_bitmap;
 	
 	if (node_names == NULL) {
-		error ("node_name2bitmap: node_names is NULL");
+		info("node_name2bitmap: node_names is NULL");
 		return rc;
 	}
 
