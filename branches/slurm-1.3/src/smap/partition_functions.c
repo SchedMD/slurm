@@ -968,6 +968,8 @@ static char* _convert_conn_type(enum connection_type conn_type)
 		return "HTC_L";
 		break;
 #endif
+	default:
+		return "?";
 	}
 #endif
 	return "?";
