@@ -195,6 +195,7 @@ static int _in_slurm_partition(int *part_inx, int *bp_inx)
 
 static char* _convert_conn_type(enum connection_type conn_type)
 {
+#ifdef HAVE_BG
 	switch (conn_type) {
 	case (SELECT_MESH):
 		return "MESH";
@@ -219,6 +220,7 @@ static char* _convert_conn_type(enum connection_type conn_type)
 		break;
 #endif
 	}
+#endif
 	return "?";
 }
 
