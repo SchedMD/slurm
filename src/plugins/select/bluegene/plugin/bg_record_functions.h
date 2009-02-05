@@ -136,6 +136,8 @@ extern void drain_as_needed(bg_record_t *bg_record, char *reason);
 
 #ifdef HAVE_BGL
 extern int set_ionodes(bg_record_t *bg_record);
+#else 
+extern int set_ionodes(bg_record_t *bg_record, int io_start, int io_nodes);
 #endif
 
 extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq);

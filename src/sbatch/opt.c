@@ -2249,6 +2249,12 @@ static void _help(void)
 "      --reboot                reboot block before starting job\n"
 "      --conn-type=type        constraint on type of connection, MESH or TORUS\n"
 "                              if not set, then tries to fit TORUS else MESH\n"
+#ifndef HAVE_BGL
+"                              If wanting to run in HTC mode (only for 1\n"
+"                              midplane and below).  You can use HTC_S for\n"
+"                              SMP (default), HTC_D for Dual, HTC_V for\n"
+"                              virtual node mode, and HTC_L for Linux mode.\n" 
+#endif
 "      --blrts-image=path      path to blrts image for bluegene block.  Default if not set\n"
 "      --linux-image=path      path to linux image for bluegene block.  Default if not set\n"
 "      --mloader-image=path    path to mloader image for bluegene block.  Default if not set\n"

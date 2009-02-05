@@ -76,6 +76,10 @@ typedef struct bg_update {
 	struct job_record *job_ptr;	/* pointer to job running on
 					 * block or NULL if no job */
 	uint16_t reboot;	/* reboot block before starting job */
+#ifndef HAVE_BGL
+	uint16_t conn_type;     /* needed to boot small blocks into
+				   HTC mode or not */
+#endif
 	pm_partition_id_t bg_block_id;
 	char *blrtsimage;       /* BlrtsImage for this block */
 	char *linuximage;       /* LinuxImage for this block */
@@ -455,6 +459,14 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		bg_record->blrtsimage = xstrdup(bg_update_ptr->blrtsimage);
 		rc = 1;
 	}
+#else 
+	if((bg_update_ptr->conn_type >= SELECT_SMALL) 
+		&& (bg_update_ptr->conn_type != bg_record->conn_type)) {
+		debug3("changing small block mode from %u to %u",
+		       bg_record->conn_type, bg_update_ptr->conn_type);
+		bg_record->conn_type = bg_update_ptr->conn_type;
+		rc = 1;
+	}
 #endif
 	if(bg_update_ptr->linuximage
 	   && strcasecmp(bg_update_ptr->linuximage, bg_record->linuximage)) {
@@ -538,6 +550,33 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 			error("bridge_modify_block(RM_MODIFY_IoloadImg)", 
 			      bg_err_str(rc));
 
+		if(bg_record->conn_type > SELECT_SMALL) {
+			char *conn_type = NULL;
+			switch(bg_record->conn_type) {
+			case SELECT_HTC_S:
+				conn_type = 'S';
+				break;
+			case SELECT_HTC_D:
+				conn_type = 'D';
+				break;
+			case SELECT_HTC_V:
+				conn_type = 'V';
+				break;
+			case SELECT_HTC_L:
+				conn_type = 'L';
+				break;
+			default:
+				break;
+			}
+			/* the option has to be set before the pool can be
+			   set */
+			if ((rc = bridge_modify_data(
+				     bg_record->bg_block_id,
+				     RM_MODIFY_Options,
+				     conn_type)) != STATUS_OK)
+				error("bridge_set_data(RM_MODIFY_Options)",
+				      bg_err_str(rc));
+		}
 #endif
 		if ((rc = bridge_modify_block(bg_record->bg_block_id,
 					      RM_MODIFY_MloaderImg, 
@@ -998,7 +1037,12 @@ extern int start_job(struct job_record *job_ptr)
 				     SELECT_DATA_BLRTS_IMAGE, 
 				     bg_update_ptr->blrtsimage);
 	}
+#else
+	select_g_get_jobinfo(job_ptr->select_jobinfo,
+			     SELECT_DATA_CONN_TYPE, 
+			     &(bg_update_ptr->conn_type));
 #endif
+
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 			     SELECT_DATA_LINUX_IMAGE, 
 			     &(bg_update_ptr->linuximage));

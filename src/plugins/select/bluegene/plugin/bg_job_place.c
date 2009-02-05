@@ -450,8 +450,8 @@ static bg_record_t *_find_matching_block(List block_list,
 		/***********************************************/
 		/* check the connection type specified matches */
 		/***********************************************/
-		if ((request->conn_type != bg_record->conn_type)
-		    && (request->conn_type != SELECT_NAV)) {
+		if ((request->conn_type < SELECT_NAV)
+		    && (request->conn_type != bg_record->conn_type)) {
 			debug("bg block %s conn-type not usable asking for %s "
 			      "bg_record is %s", 
 			      bg_record->bg_block_id,
@@ -1214,7 +1214,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 #ifdef HAVE_BG
 	bg_record_t* bg_record = NULL;
 	char buf[100];
-	uint16_t tmp16 = (uint16_t)NO_VAL;
+	uint16_t conn_type = (uint16_t)NO_VAL;
 	List block_list = NULL;
 	int blocks_added = 0;
 	time_t starttime = time(NULL);
@@ -1232,6 +1232,17 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 
 	job_block_test_list = bg_job_block_list;
 	
+	select_g_get_jobinfo(job_ptr->select_jobinfo,
+			     SELECT_DATA_CONN_TYPE, &conn_type);
+	if(conn_type == SELECT_NAV) {
+		if(max_nodes > procs_per_node) 
+			conn_type = SELECT_TORUS;
+		else
+			conn_type = SELECT_SMALL;
+		select_g_set_jobinfo(job_ptr->select_jobinfo,
+				     SELECT_DATA_CONN_TYPE,
+				     &conn_type);
+	}
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo, buf, sizeof(buf), 
 				SELECT_PRINT_MIXED);
 	debug("bluegene:submit_job: %s nodes=%u-%u-%u", 
@@ -1349,10 +1360,10 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 						     SELECT_DATA_GEOMETRY, 
 						     &bg_record->geo);
 
-				tmp16 = bg_record->conn_type;
-				select_g_set_jobinfo(job_ptr->select_jobinfo,
-						     SELECT_DATA_CONN_TYPE, 
-						     &tmp16);
+				/* tmp16 = bg_record->conn_type; */
+/* 				select_g_set_jobinfo(job_ptr->select_jobinfo, */
+/* 						     SELECT_DATA_CONN_TYPE,  */
+/* 						     &tmp16); */
 			}
 		} else {
 			error("we got a success, but no block back");

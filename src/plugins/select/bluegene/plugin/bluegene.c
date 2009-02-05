@@ -408,6 +408,20 @@ extern char* convert_conn_type(rm_connection_type_t conn_type)
 		return "SMALL"; 
 	case (SELECT_NAV):
 		return "NAV";
+#ifndef HAVE_BGL
+	case SELECT_HTC_S:
+		return "HTC_S";
+		break;
+	case SELECT_HTC_D:
+		return "HTC_D";
+		break;
+	case SELECT_HTC_V:
+		return "HTC_V";
+		break;
+	case SELECT_HTC_L:
+		return "HTC_L";
+		break;
+#endif
 	default:
 		break;
 	}

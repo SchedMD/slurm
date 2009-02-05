@@ -252,7 +252,11 @@ enum connection_type {
 	SELECT_MESH, 		/* nodes wired in mesh */
 	SELECT_TORUS, 		/* nodes wired in torus */
 	SELECT_NAV,		/* nodes wired in torus else mesh */
-	SELECT_SMALL 		/* nodes in a small partition */
+	SELECT_SMALL, 		/* nodes in a small partition */
+	SELECT_HTC_S,           /* nodes in a htc running SMP mode */
+	SELECT_HTC_D,           /* nodes in a htc running Dual mode */
+	SELECT_HTC_V,           /* nodes in a htc running VN mode */
+	SELECT_HTC_L            /* nodes in a htc running in Linux mode */
 };
 
 enum node_use_type {
