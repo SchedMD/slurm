@@ -73,7 +73,9 @@
 #define _RESV_DEBUG	0
 #define RESV_MAGIC	0x3b82
 
-/* Change RESV_STATE_VERSION value when changing the state save format */
+/* Change RESV_STATE_VERSION value when changing the state save format
+ * Add logic to permit reading of the previous version's state in order
+ * to avoid losing reservations between releases major SLURM updates. */
 #define RESV_STATE_VERSION      "VER001"
 
 time_t    last_resv_update = (time_t) 0;
@@ -84,6 +86,7 @@ uint32_t  top_suffix = 0;
 static int  _build_account_list(char *accounts, int *account_cnt, 
 			        char ***account_list);
 static int  _build_uid_list(char *users, int *user_cnt, uid_t **user_list);
+static void _clear_job_resv(slurmctld_resv_t *resv_ptr);
 static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr);
 static void _del_resv_rec(void *x);
 static void _dump_resv_req(reserve_request_msg_t *resv_ptr, char *mode);
@@ -120,6 +123,7 @@ static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr)
 	slurmctld_resv_t *resv_copy_ptr;
 	int i;
 
+	xassert(resv_orig_ptr->magic == RESV_MAGIC);
 	resv_copy_ptr = xmalloc(sizeof(slurmctld_resv_t));
 	resv_copy_ptr->accounts = xstrdup(resv_orig_ptr->accounts);
 	resv_copy_ptr->account_cnt = resv_orig_ptr->account_cnt;
@@ -161,6 +165,8 @@ static void _swap_resv(slurmctld_resv_t *resv_backup,
 {
 	reserve_request_msg_t *resv_copy_ptr;
 
+	xassert(resv_backup->magic == RESV_MAGIC);
+	xassert(resv_ptr->magic    == RESV_MAGIC);
 	resv_copy_ptr = xmalloc(sizeof(slurmctld_resv_t));
 	memcpy(resv_copy_ptr, resv_backup, sizeof(slurmctld_resv_t));
 	memcpy(resv_backup, resv_ptr, sizeof(slurmctld_resv_t));
@@ -252,6 +258,11 @@ static void _generate_resv_name(reserve_request_msg_t *resv_ptr)
 	name = xmalloc(len + 16);
 	strncpy(name, key, len);
 
+	if (top_suffix >= 9999)
+		top_suffix = 1;		/* wrap around */
+	else
+		top_suffix++;
+
 	xstrfmtcat(name, "_%d", top_suffix);
 	len++;
 
@@ -296,8 +307,8 @@ static int _post_resv_delete(struct slurmctld_resv *resv_ptr)
 	resv.id = resv_ptr->resv_id;
 	resv.time_start = resv_ptr->start_time;
 	/* This is just a time stamp here to delete if the reservation
-	   hasn't started yet so we don't get trash records in the
-	   database if said database isn't up right now */
+	 * hasn't started yet so we don't get trash records in the
+	 * database if said database isn't up right now */
 	resv.time_start_prev = time(NULL);
 	rc = acct_storage_g_remove_reservation(acct_db_conn, &resv);
 
@@ -912,13 +923,6 @@ extern int create_resv(reserve_request_msg_t *resv_desc_ptr)
 		   != SLURM_SUCCESS) {
 		goto bad_parse;
 	}
-
-	/* Generate the id of the reservation.  Also used if name
-	   wasn't specified.  This needs to happen before the name generation.
-	*/
-	if (top_suffix > 0xffffff00)
-		top_suffix = 0;	/* Wrap around */
-	top_suffix++;
 	
 	if (resv_desc_ptr->name) {
 		resv_ptr = (slurmctld_resv_t *) list_find_first (resv_list, 
@@ -937,7 +941,7 @@ extern int create_resv(reserve_request_msg_t *resv_desc_ptr)
 					_find_resv_name, resv_desc_ptr->name);
 			if (!resv_ptr)
 				break;
-			/* Same as explicitly created name, retry */
+			/* Same as previously created name, retry */
 		}
 	}
 
@@ -1094,12 +1098,17 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 		resv_ptr->end_time = resv_ptr->start_time + 
 				     (resv_desc_ptr->duration * 60);
 	}
+	if (resv_ptr->start_time >= resv_ptr->end_time) {
+		error_code = ESLURM_INVALID_TIME_VALUE;
+		goto update_failure;
+	}
 	if (resv_desc_ptr->node_list && 
 	    (resv_desc_ptr->node_list[0] == '\0')) {	/* Clear bitmap */
 		resv_ptr->flags &= (~RESERVE_FLAG_SPEC_NODES);
 		xfree(resv_desc_ptr->node_list);
 		xfree(resv_ptr->node_list);
 		FREE_NULL_BITMAP(resv_ptr->node_bitmap);
+		resv_ptr->node_bitmap = bit_alloc(node_record_count);
 		if (resv_desc_ptr->node_cnt == NO_VAL)
 			resv_desc_ptr->node_cnt = resv_ptr->node_cnt;
 	}
@@ -1177,6 +1186,28 @@ static bool _is_resv_used(slurmctld_resv_t *resv_ptr)
 	return match;
 }
 
+/* Clear the reservation points for jobs referencing a defunct reservation */
+static void _clear_job_resv(slurmctld_resv_t *resv_ptr)
+{
+	ListIterator job_iterator;
+	struct job_record *job_ptr;
+
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		if (job_ptr->resv_ptr != resv_ptr)
+			continue;
+		if (!IS_JOB_FINISHED(job_ptr)) {
+			info("Job %u linked to defunct reservation %s, "
+			     "clearing that reservation",
+			     job_ptr->job_id, job_ptr->resv_name);
+		}
+		job_ptr->resv_id = 0;
+		job_ptr->resv_ptr = NULL;
+		xfree(job_ptr->resv_name);
+	}
+	list_iterator_destroy(job_iterator);
+}
+
 /* Delete an exiting resource reservation */
 extern int delete_resv(reservation_name_msg_t *resv_desc_ptr)
 {
@@ -1199,6 +1230,7 @@ extern int delete_resv(reservation_name_msg_t *resv_desc_ptr)
 			break;
 		}
 		rc = _post_resv_delete(resv_ptr);
+		_clear_job_resv(resv_ptr);
 		list_delete_item(iter);
 		break;
 	}
@@ -1416,6 +1448,7 @@ static void _validate_all_reservations(void)
 {
 	ListIterator iter;
 	slurmctld_resv_t *resv_ptr;
+	struct job_record *job_ptr;
 	char *tmp;
 	uint32_t res_num;
 
@@ -1426,6 +1459,7 @@ static void _validate_all_reservations(void)
 		if (!_validate_one_reservation(resv_ptr)) {
 			error("Purging invalid reservation record %s",
 			      resv_ptr->name);
+			_clear_job_resv(resv_ptr);
 			list_delete_item(iter);
 		} else {
 			tmp = strrchr(resv_ptr->name, '_');
@@ -1436,14 +1470,38 @@ static void _validate_all_reservations(void)
 		}
 	}
 	list_iterator_destroy(iter);
+
+	/* Validate all job reservation pointers */
+	iter = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(iter))) {
+		if (job_ptr->resv_name == NULL)
+			continue;
+
+		if ((job_ptr->resv_ptr == NULL) ||
+		    (job_ptr->resv_ptr->magic != RESV_MAGIC)) {
+			job_ptr->resv_ptr = (slurmctld_resv_t *) 
+					list_find_first(resv_list,
+							_find_resv_name,
+							job_ptr->resv_name);
+		}
+		if (!job_ptr->resv_ptr) {
+			error("JobId %u linked to defunct reservation %s",
+			       job_ptr->job_id, job_ptr->resv_name);
+			job_ptr->resv_id = 0;
+			xfree(job_ptr->resv_name);
+		}
+	}
+	list_iterator_destroy(iter);
+
 }
 
 /*
  * Load the reservation state from file, recover on slurmctld restart. 
- *	execute this after loading the configuration file data.
- * IN recover - 0 = no change
- *              1 = validate existing (in memory) reservations
- *              2 = recover all reservation state from disk
+ *	Reset reservation pointers for all jobs.
+ *	Execute this after loading the configuration file data.
+ * IN recover - 0 = validate current reservations ONLY if already recovered, 
+ *                  otherwise recover from disk
+ *              1+ = recover all reservation state from disk
  * RET SLURM_SUCCESS or error code
  * NOTE: READ lock_slurmctld config before entry
  */
@@ -1457,14 +1515,12 @@ extern int load_all_resv_state(int recover)
 	slurmctld_resv_t *resv_ptr = NULL;
 
 	last_resv_update = time(NULL);
-	if (recover == 0) {
-		if (resv_list)
-			_validate_all_reservations();
-		else
-			resv_list = list_create(_del_resv_rec);
+	if ((recover == 0) && resv_list) {
+		_validate_all_reservations();
 		return SLURM_SUCCESS;
 	}
 
+	/* Read state file and validate */
 	if (resv_list)
 		list_flush(resv_list);
 	else
@@ -1969,20 +2025,7 @@ extern int job_resv_check(struct job_record *job_ptr)
 	else
 		return SLURM_SUCCESS;
 
-	if (!job_ptr->resv_ptr) {
-		job_ptr->resv_ptr = (slurmctld_resv_t *) list_find_first (
-					resv_list, _find_resv_name, 
-					job_ptr->resv_name);
-		if (!job_ptr->resv_ptr) {
-			/* This should only happen when we have trouble
-			 * on a slurm restart and fail to recover a
-			 * reservation */
-			error("JobId %u linked to defunct reservation %s",
-			       job_ptr->job_id, job_ptr->resv_name);
-			return ESLURM_INVALID_TIME_VALUE;
-		}
-	}
-
+	xassert(job_ptr->resv_ptr->magic == RESV_MAGIC);
 	if (run_flag)
 		job_ptr->resv_ptr->job_run_cnt++;
 	else
@@ -2042,6 +2085,7 @@ extern void fini_job_resv_check(void)
 		    ((resv_ptr->flags & RESERVE_FLAG_WEEKLY) == 0)) {
 			debug("Purging vestigial reservation record %s",
 			      resv_ptr->name);
+			_clear_job_resv(resv_ptr);
 			list_delete_item(iter);
 			last_resv_update = now;
 			schedule_resv_save();
