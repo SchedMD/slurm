@@ -234,6 +234,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Requested reservation is in use"			},
 	{ ESLURM_RESERVATION_NOT_USABLE, 
 	  "Requested reservation not usable now"		},
+	{ ESLURM_RESERVATION_OVERLAP, 
+	  "Requested reservation overlaps with another reservation"	},
 
 	/* slurmd error codes */
 

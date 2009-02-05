@@ -166,6 +166,7 @@ enum {
 	ESLURM_RESERVATION_BUSY,
 	ESLURM_RESERVATION_NOT_USABLE,
 	ESLURM_INVALID_WCKEY,
+	ESLURM_RESERVATION_OVERLAP,
 
 	/* switch specific error codes, specific values defined in plugin module */
 	ESLURM_SWITCH_MIN = 3000,
