@@ -1119,7 +1119,7 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 
 		user->wckey_list = list_create(destroy_acct_wckey_rec);
 		wckey_itr = list_iterator_create(file_opts->wckey_list);
-		printf(" Adding WCKey(s) '");
+		printf(" Adding WCKey(s) ");
 		while((temp_char = list_next(wckey_itr))) {
 			wckey = xmalloc(sizeof(acct_wckey_rec_t));
 			wckey->name = xstrdup(temp_char);
@@ -1128,13 +1128,13 @@ static int _mod_user(sacctmgr_file_opts_t *file_opts,
 			list_push(user->wckey_list, wckey);
 
 			if(first) {
-				printf(" %s", temp_char);
+				printf("'%s'", temp_char);
 				first = 0;
 			} else
-				printf(", %s", temp_char);
+				printf(", '%s'", temp_char);
 		}
 		list_iterator_destroy(wckey_itr);
-		printf("' for user '%s'\n", user->name);
+		printf(" for user '%s'\n", user->name);
 		set = 1;
 		notice_thread_init();
 		rc = acct_storage_g_add_wckeys(db_conn, my_uid, 
@@ -1686,7 +1686,9 @@ static int _print_file_acct_hierarchical_rec_childern(FILE *fd,
 			if(user_rec) {
 				xstrfmtcat(line, ":DefaultAccount='%s'",
 					   user_rec->default_acct);
-				if(track_wckey)
+				if(track_wckey 
+				   && user_rec->default_wckey 
+				   && user_rec->default_wckey[0])
 					xstrfmtcat(line, ":DefaultWCKey='%s'",
 						   user_rec->default_wckey);
 					
