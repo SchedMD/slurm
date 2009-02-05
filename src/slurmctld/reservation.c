@@ -900,7 +900,7 @@ extern int create_resv(reserve_request_msg_t *resv_desc_ptr)
 				  resv_desc_ptr->flags, node_bitmap,
 				  NULL)) {
 			info("Reservation requestion overlaps another");
-			rc = ESLURM_INVALID_TIME_VALUE;
+			rc = ESLURM_RESERVATION_OVERLAP;
 			goto bad_parse;
 		}
 		resv_desc_ptr->node_cnt = bit_set_count(node_bitmap);
@@ -1132,7 +1132,7 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 	if (_resv_overlap(resv_ptr->start_time, resv_ptr->end_time, 
 			  resv_ptr->flags, resv_ptr->node_bitmap, resv_ptr)) {
 		info("Reservation requestion overlaps another");
-		error_code = ESLURM_INVALID_TIME_VALUE;
+		error_code = ESLURM_RESERVATION_OVERLAP;
 		goto update_failure;
 	}
 	_set_cpu_cnt(resv_ptr);
