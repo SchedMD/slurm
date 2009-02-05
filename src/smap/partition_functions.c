@@ -944,6 +944,7 @@ static int _make_nodelist(char *nodes, List nodelist)
 
 static char* _convert_conn_type(enum connection_type conn_type)
 {
+#ifdef HAVE_BG
 	switch (conn_type) {
 	case (SELECT_MESH):
 		return "MESH";
@@ -968,6 +969,7 @@ static char* _convert_conn_type(enum connection_type conn_type)
 		break;
 #endif
 	}
+#endif
 	return "?";
 }
 
