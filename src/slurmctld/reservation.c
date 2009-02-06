@@ -71,7 +71,7 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/state_save.h"
 
-#define _RESV_DEBUG	0
+#define _RESV_DEBUG	1
 #define RESV_MAGIC	0x3b82
 
 /* Change RESV_STATE_VERSION value when changing the state save format
@@ -91,7 +91,9 @@ static void _clear_job_resv(slurmctld_resv_t *resv_ptr);
 static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr);
 static void _del_resv_rec(void *x);
 static void _dump_resv_req(reserve_request_msg_t *resv_ptr, char *mode);
+static int  _find_resv_id(void *x, void *key);
 static int  _find_resv_name(void *x, void *key);
+static void _generate_resv_id(void);
 static void _generate_resv_name(reserve_request_msg_t *resv_ptr);
 static bool _is_account_valid(char *account);
 static bool _is_resv_used(slurmctld_resv_t *resv_ptr);
@@ -199,6 +201,19 @@ static void _del_resv_rec(void *x)
 	}
 }
 
+static int _find_resv_id(void *x, void *key)
+{
+	slurmctld_resv_t *resv_ptr = (slurmctld_resv_t *) x;
+	uint32_t *resv_id = (uint32_t *) key;
+
+	xassert(resv_ptr->magic == RESV_MAGIC);
+
+	if (resv_ptr->resv_id != *resv_id)
+		return 0;
+	else
+		return 1;	/* match */
+}
+
 static int _find_resv_name(void *x, void *key)
 {
 	slurmctld_resv_t *resv_ptr = (slurmctld_resv_t *) x;
@@ -240,6 +255,18 @@ static void _dump_resv_req(reserve_request_msg_t *resv_ptr, char *mode)
 #endif
 }
 
+static void _generate_resv_id(void)
+{
+	while (1) {
+		if (top_suffix >= 9999)
+			top_suffix = 1;		/* wrap around */
+		else
+			top_suffix++;
+		if (!list_find_first(resv_list, _find_resv_id, &top_suffix))
+			break;
+	}
+}
+
 static void _generate_resv_name(reserve_request_msg_t *resv_ptr)
 {
 	char *key, *name, *sep;
@@ -258,11 +285,6 @@ static void _generate_resv_name(reserve_request_msg_t *resv_ptr)
 		len = strlen(key);
 	name = xmalloc(len + 16);
 	strncpy(name, key, len);
-
-	if (top_suffix >= 9999)
-		top_suffix = 1;		/* wrap around */
-	else
-		top_suffix++;
 
 	xstrfmtcat(name, "_%d", top_suffix);
 	len++;
@@ -446,7 +468,6 @@ static int  _update_account_list(struct slurmctld_resv *resv_ptr,
 		ac_list[ac_cnt++] = xstrdup(tok);
 		tok = strtok_r(NULL, ",", &last);
 	}
-	xfree(tmp);
 
 	if ((plus_account == 0) && (minus_account == 0)) {
 		/* Just a reset of account list */
@@ -456,6 +477,7 @@ static int  _update_account_list(struct slurmctld_resv *resv_ptr,
 		xfree(resv_ptr->account_list);
 		resv_ptr->account_list = ac_list;
 		resv_ptr->account_cnt = ac_cnt;
+		xfree(tmp);
 		xfree(ac_type);
 		return SLURM_SUCCESS;
 	}
@@ -534,6 +556,7 @@ static int  _update_account_list(struct slurmctld_resv *resv_ptr,
 		xfree(ac_list[i]);
 	xfree(ac_list);
 	xfree(ac_type);
+	xfree(tmp);
 	return SLURM_SUCCESS;
 
  inval:	for (i=0; i<ac_cnt; i++)
@@ -639,7 +662,6 @@ static int _update_uid_list(struct slurmctld_resv *resv_ptr, char *users)
 		u_list[u_cnt++] = u_tmp;
 		tok = strtok_r(NULL, ",", &last);
 	}
-	xfree(tmp);
 
 	if ((plus_user == 0) && (minus_user == 0)) {
 		/* Just a reset of user list */
@@ -649,6 +671,7 @@ static int _update_uid_list(struct slurmctld_resv *resv_ptr, char *users)
 			resv_ptr->users = xstrdup(users);
 		resv_ptr->user_cnt  = u_cnt;
 		resv_ptr->user_list = u_list;
+		xfree(tmp);
 		xfree(u_name);
 		xfree(u_type);
 		return SLURM_SUCCESS;
@@ -719,6 +742,7 @@ static int _update_uid_list(struct slurmctld_resv *resv_ptr, char *users)
 				u_list[i];
 		}
 	}
+	xfree(tmp);
 	xfree(u_list);
 	xfree(u_name);
 	xfree(u_type);
@@ -943,7 +967,8 @@ extern int create_resv(reserve_request_msg_t *resv_desc_ptr)
 		   != SLURM_SUCCESS) {
 		goto bad_parse;
 	}
-	
+
+	_generate_resv_id();
 	if (resv_desc_ptr->name) {
 		resv_ptr = (slurmctld_resv_t *) list_find_first (resv_list, 
 				_find_resv_name, resv_desc_ptr->name);
@@ -961,6 +986,7 @@ extern int create_resv(reserve_request_msg_t *resv_desc_ptr)
 					_find_resv_name, resv_desc_ptr->name);
 			if (!resv_ptr)
 				break;
+			_generate_resv_id();	/* makes new suffix */
 			/* Same as previously created name, retry */
 		}
 	}
