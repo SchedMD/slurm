@@ -430,6 +430,8 @@ static int  _update_account_list(struct slurmctld_resv *resv_ptr,
 			ac_type[ac_cnt] = 2;	/* plus */
 			plus_account = 1;
 			tok++;
+		} else if (tok[0] == '\0') {
+			continue;
 		} else if (plus_account || minus_account) {
 			info("Reservation account expression invalid %s", 
 			     accounts);
@@ -449,7 +451,8 @@ static int  _update_account_list(struct slurmctld_resv *resv_ptr,
 	if ((plus_account == 0) && (minus_account == 0)) {
 		/* Just a reset of account list */
 		xfree(resv_ptr->accounts);
-		resv_ptr->accounts = xstrdup(accounts);
+		if (accounts[0] != '\0')
+			resv_ptr->accounts = xstrdup(accounts);
 		xfree(resv_ptr->account_list);
 		resv_ptr->account_list = ac_list;
 		resv_ptr->account_cnt = ac_cnt;
@@ -620,6 +623,8 @@ static int _update_uid_list(struct slurmctld_resv *resv_ptr, char *users)
 			u_type[u_cnt] = 2;	/* plus */
 			plus_user = 1;
 			tok++;
+		} else if (tok[0] == '\0') {
+			continue;
 		} else if (plus_user || minus_user) {
 			info("Reservation user expression invalid %s", users);
 			goto inval;
@@ -640,7 +645,8 @@ static int _update_uid_list(struct slurmctld_resv *resv_ptr, char *users)
 		/* Just a reset of user list */
 		xfree(resv_ptr->users);
 		xfree(resv_ptr->user_list);
-		resv_ptr->users = xstrdup(users);
+		if (users[0] != '\0')
+			resv_ptr->users = xstrdup(users);
 		resv_ptr->user_cnt  = u_cnt;
 		resv_ptr->user_list = u_list;
 		xfree(u_name);
@@ -751,8 +757,9 @@ static void _pack_resv(struct slurmctld_resv *resv_ptr, Buf buffer,
 	packstr(resv_ptr->users,	buffer);
 
 	if (internal) {
-		pack32(resv_ptr->cpu_cnt,	buffer);
-		pack32(resv_ptr->resv_id,	buffer);
+		pack32(resv_ptr->cpu_cnt,		buffer);
+		pack_time(resv_ptr->start_time_prev,	buffer);
+		pack32(resv_ptr->resv_id,		buffer);
 	}
 }
 
@@ -1077,6 +1084,10 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 			goto update_failure;
 		}
 	}
+	if (resv_desc_ptr->features && (resv_desc_ptr->features[0] == '\0')) {
+		xfree(resv_desc_ptr->features);
+		xfree(resv_ptr->features);
+	}
 	if (resv_desc_ptr->features) {
 		xfree(resv_ptr->features);
 		resv_ptr->features = resv_desc_ptr->features;
@@ -1088,6 +1099,11 @@ extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 			error_code = rc;
 			goto update_failure;
 		}
+	}
+	if ((resv_ptr->users == NULL) && (resv_ptr->accounts == NULL)) {
+		info("Reservation request lacks users or accounts");
+		error_code = ESLURM_INVALID_BANK_ACCOUNT;
+		goto update_failure;
 	}
 
 	if (resv_desc_ptr->start_time != (time_t) NO_VAL) {
@@ -1611,6 +1627,7 @@ extern int load_all_resv_state(int recover)
 		/* Fields saved for internal use only (save state) */
 		safe_unpack32(&resv_ptr->cpu_cnt,	buffer);
 		safe_unpack32(&resv_ptr->resv_id,	buffer);
+		safe_unpack_time(&resv_ptr->start_time_prev,	buffer);
 
 		list_append(resv_list, resv_ptr);
 		info("Recovered state of reservation %s", resv_ptr->name);
