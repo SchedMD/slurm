@@ -93,7 +93,6 @@ extern int assoc_mgr_fill_in_user(void *db_conn, acct_user_rec_t *user,
  * IN/OUT:  assoc - acct_association_rec_t with at least cluster and
  *		    account set for account association.  To get user
  *		    association set user, and optional partition.
- *		    Input a uid=INFINITE to match any user.
  *		    Sets "id" field with the association ID.
  * IN: enforce - return an error if no such association exists
  * IN/OUT: assoc_pptr - if non-NULL then return a pointer to the 

@@ -279,7 +279,7 @@ static bool _is_account_valid(char *account)
 		return true;	/* don't worry about account validity */
 
 	memset(&assoc_rec, 0, sizeof(acct_association_rec_t));
-	assoc_rec.uid       = INFINITE;
+	assoc_rec.uid       = NO_VAL;
 	assoc_rec.acct      = account;
 
 	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
