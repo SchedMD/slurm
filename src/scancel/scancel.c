@@ -146,7 +146,8 @@ _verify_job_ids (void)
 			if (job_ptr[i].job_id == opt.job_id[j])
 				break;
 		}
-		if (i >= job_buffer_ptr->record_count) {
+		if ((job_ptr[i].job_state >= JOB_COMPLETE) ||
+		    (i >= job_buffer_ptr->record_count)) {
 			if (opt.step_id[j] == SLURM_BATCH_SCRIPT)
 				error("Kill job error on job id %u: %s", 
 				      opt.job_id[j], 
@@ -269,7 +270,8 @@ _cancel_jobs (void)
 
 	job_ptr = job_buffer_ptr->job_array ;
 
-	/* Spawn a thread to cancel each job or job step marked for cancellation */
+	/* Spawn a thread to cancel each job or job step marked for
+	 * cancellation */
 	for (i = 0; i < job_buffer_ptr->record_count; i++) {
 		if (job_ptr[i].job_id == 0) 
 			continue;
