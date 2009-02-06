@@ -478,6 +478,7 @@ static int parse_partitionname(void **dest, slurm_parser_enum_t type,
 	static s_p_options_t _partition_options[] = {
 		{"AllowGroups", S_P_STRING},
 		{"Default", S_P_BOOLEAN}, /* YES or NO */
+		{"DefaultTime", S_P_STRING},
 		{"DisableRootJobs", S_P_BOOLEAN}, /* YES or NO */
 		{"Hidden", S_P_BOOLEAN}, /* YES or NO */
 		{"MaxTime", S_P_STRING},
@@ -540,6 +541,22 @@ static int parse_partitionname(void **dest, slurm_parser_enum_t type,
 				return -1;
 			}
 			p->max_time = max_time;
+			xfree(tmp);
+		}
+
+		if (!s_p_get_string(&tmp, "DefaultTime", tbl) &&
+		    !s_p_get_string(&tmp, "DefaultTime", dflt))
+			p->default_time = NO_VAL;
+		else {
+			int default_time = time_str2mins(tmp);
+			if ((default_time < 0) && (default_time != INFINITE)) {
+				error("Bad value \"%s\" for DefaultTime", tmp);
+				destroy_partitionname(p);
+				s_p_hashtbl_destroy(tbl);
+				xfree(tmp);
+				return -1;
+			}
+			p->default_time = default_time;
 			xfree(tmp);
 		}
 

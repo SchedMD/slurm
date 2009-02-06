@@ -650,6 +650,10 @@ static bool _match_part_data(sinfo_data_t *sinfo_ptr,
 	    (part_ptr->max_nodes != sinfo_ptr->part_info->max_nodes))
 		return false;
 
+	if (params.match_flags.default_time_flag &&
+	    (part_ptr->default_time != sinfo_ptr->part_info->default_time))
+		return false;
+
 	if (params.match_flags.max_time_flag &&
 	    (part_ptr->max_time != sinfo_ptr->part_info->max_time))
 		return false;

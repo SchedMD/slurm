@@ -910,6 +910,7 @@ typedef struct partition_info {
 	uint32_t max_nodes;	/* per job or INFINITE */
 	uint16_t max_share;	/* number of jobs to gang schedule */
 	uint32_t max_time;	/* minutes or INFINITE */
+	uint32_t default_time;	/* minutes, NO_VAL or INFINITE */
 	uint32_t min_nodes;	/* per job */
 	char *name;		/* name of the partition */
 	int *node_inx;		/* list index pairs into node_table:

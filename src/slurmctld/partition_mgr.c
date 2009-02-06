@@ -222,6 +222,7 @@ struct part_record *create_part_record(void)
 	part_ptr->disable_root_jobs = default_part.disable_root_jobs;
 	part_ptr->hidden            = default_part.hidden;
 	part_ptr->max_time          = default_part.max_time;
+	part_ptr->default_time      = default_part.default_time;
 	part_ptr->max_nodes         = default_part.max_nodes;
 	part_ptr->max_nodes_orig    = default_part.max_nodes;
 	part_ptr->min_nodes         = default_part.min_nodes;
@@ -377,6 +378,7 @@ static void _dump_part_state(struct part_record *part_ptr, Buf buffer)
 
 	packstr(part_ptr->name,          buffer);
 	pack32(part_ptr->max_time,       buffer);
+	pack32(part_ptr->default_time,   buffer);
 	pack32(part_ptr->max_nodes_orig, buffer);
 	pack32(part_ptr->min_nodes_orig, buffer);
 
@@ -400,7 +402,7 @@ static void _dump_part_state(struct part_record *part_ptr, Buf buffer)
 int load_all_part_state(void)
 {
 	char *part_name, *allow_groups, *nodes, *state_file, *data = NULL;
-	uint32_t max_time, max_nodes, min_nodes;
+	uint32_t max_time, default_time, max_nodes, min_nodes;
 	time_t time;
 	uint16_t def_part_flag, hidden, root_only;
 	uint16_t max_share, priority, state_up;
@@ -463,6 +465,7 @@ int load_all_part_state(void)
 	while (remaining_buf(buffer) > 0) {
 		safe_unpackstr_xmalloc(&part_name, &name_len, buffer);
 		safe_unpack32(&max_time, buffer);
+		safe_unpack32(&default_time, buffer);
 		safe_unpack32(&max_nodes, buffer);
 		safe_unpack32(&min_nodes, buffer);
 
@@ -502,6 +505,7 @@ int load_all_part_state(void)
 			part_cnt++;
 			part_ptr->hidden         = hidden;
 			part_ptr->max_time       = max_time;
+			part_ptr->default_time   = default_time;
 			part_ptr->max_nodes      = max_nodes;
 			part_ptr->max_nodes_orig = max_nodes;
 			part_ptr->min_nodes      = min_nodes;
@@ -573,6 +577,7 @@ int init_part_conf(void)
 	default_part.disable_root_jobs = slurmctld_conf.disable_root_jobs;
 	default_part.hidden         = 0;
 	default_part.max_time       = INFINITE;
+	default_part.default_time   = NO_VAL;
 	default_part.max_nodes      = INFINITE;
 	default_part.max_nodes_orig = INFINITE;
 	default_part.min_nodes      = 1;
@@ -768,6 +773,7 @@ void pack_part(struct part_record *part_ptr, Buf buffer)
 
 	packstr(part_ptr->name, buffer);
 	pack32(part_ptr->max_time, buffer);
+	pack32(part_ptr->default_time, buffer);
 	pack32(part_ptr->max_nodes_orig, buffer);
 	pack32(part_ptr->min_nodes_orig, buffer);
 	altered = part_ptr->total_nodes;
@@ -850,6 +856,16 @@ extern int update_part (update_part_msg_t * part_desc, bool create_flag)
 		info("update_part: setting max_time to %u for partition %s", 
 		     part_desc->max_time, part_desc->name);
 		part_ptr->max_time = part_desc->max_time;
+	}
+
+	if ((part_desc->default_time != NO_VAL) && 
+	    (part_desc->default_time > part_ptr->max_time)) {
+		info("update_part: DefaultTime would exceed MaxTime for "
+		     "partition %s", part_desc->name);
+	} else if (part_desc->default_time != NO_VAL) {
+		info("update_part: setting default_time to %u for partition %s", 
+		     part_desc->default_time, part_desc->name);
+		part_ptr->default_time = part_desc->default_time;
 	}
 
 	if (part_desc->max_nodes != NO_VAL) {

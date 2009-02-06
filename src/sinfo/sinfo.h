@@ -123,6 +123,7 @@ struct sinfo_match_flags {
 	bool features_flag;
 	bool groups_flag;
 	bool job_size_flag;
+	bool default_time_flag;
 	bool max_time_flag;
 	bool memory_flag;
 	bool partition_flag;

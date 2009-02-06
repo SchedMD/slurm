@@ -1782,6 +1782,12 @@ the next minute.
 This limit does not apply to jobs executed by SlurmUser or user root.
 
 .TP
+\fBDefaultTime\fR
+Run time limit used for jobs that don't specify a value. If not set
+then MaxTime will be used.
+Format is the same as for MaxTime.
+
+.TP
 \fBMinNodes\fR
 Minimum count of nodes (or base partitions for BlueGene systems) which 
 may be allocated to any single job.

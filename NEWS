@@ -11,7 +11,10 @@ documents those changes that are of interest to users and admins.
  -- Added sacctmgr command "show config".
  -- Added the scancel option --nodelist to cancel any jobs running on a
     given list of nodes.
-
+ -- Add partition-specific DefaultTime (default time limit for jobs, 
+    if not specified use MaxTime for the partition. Patch from Par
+    Andersson, National Supercomputer Centre, Sweden.
+ 
 * Changes in SLURM 1.4.0-pre7
 =============================
  -- Bug fix for preemption with select/cons_res when there are no idle nodes.

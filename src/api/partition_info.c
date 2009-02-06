@@ -237,6 +237,19 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 			part_ptr->node_inx[j+1]);
 		xstrcat(out, tmp_line);
 	}
+
+	if (part_ptr->default_time == INFINITE)
+		sprintf(tmp_line, " DefaultTime=UNLIMITED ");
+	else if (part_ptr->default_time == NO_VAL)
+		sprintf(tmp_line, " DefaultTime=NONE ");	  
+	else {
+		char time_line[32];
+		secs2time_str(part_ptr->default_time * 60, time_line, 
+			sizeof(time_line));
+		sprintf(tmp_line, " DefaultTime=%s ", time_line);
+	}
+	xstrcat(out, tmp_line);
+
 	if (one_liner)
 		xstrcat(out, "\n");
 	else
