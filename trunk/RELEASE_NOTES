@@ -1,10 +1,10 @@
-RELEASE NOTES FOR SLURM VERSION 1.4
-15 January 2009 (after SLURM 1.4.0-pre7 released)
+RELEASE NOTES FOR SLURM VERSION 2.0
+6 February 2009 (after SLURM 1.4.0-pre7 released)
 
 
 IMPORTANT NOTE:
-SLURM state files in version 1.4 are different from those of version 1.3.
-After installing SLURM version 1.4, plan to restart without preserving 
+SLURM state files in version 2.0 are different from those of version 1.3.
+After installing SLURM version 2.0, plan to restart without preserving 
 jobs or other state information. While SLURM version 1.3 is still running, 
 cancel all pending and running jobs (e.g.
 "scancel --state=pending; scancel --state=running"). Then stop and restart 
@@ -15,30 +15,45 @@ is recommended that you rebuild your configuration file using the tool
 doc/html/configurator.html that comes with the distribution.
 
 HIGHLIGHTS
+* Sophisticated scheduling algorithms are available in a new plugin. Jobs
+  can be prioritized based upon their age, size, and/or fair-share resource 
+  allocation using hierarchical bank accounts. For more information see:
+  https://computing.llnl.gov/linux/slurm/job_priority.html
+* An assortment of resource limits can be imposed individually upon users 
+  and/or hierarchical bank accounts such as maximum job time limit, maximum 
+  job size, maximum number of running jobs. For more information see:
+  https://computing.llnl.gov/linux/slurm/resource_limits.html
+* Advanced reservations can be made to insure resources will be available when
+  needed. For more information see:
+  https://computing.llnl.gov/linux/slurm/reservations.html
 * Idle nodes can now be completely powered down when idle and automatically
   restarted when their is work available. For more information see:
   https://computing.llnl.gov/linux/slurm/power_save.html
 * SLURM has been modified to allocate specific cores to jobs and job steps in
-  order to effectively preempt or gang schedule jobs.
+  the centralized scheduler rather than the daemons running on the individual
+  compute nodes. This permits effective preemption or gang schedule jobs.
 * A new configuration parameter, PrologSlurmctld, can be used to support the 
   booting of different operating systems for each job.
 * Preemption of jobs from lower priority partitions in order to execute jobs
   in higher priority partitions is now supported. The jobs from the lower 
   priority partition will resume once preempting job completes. 
-* Time format of all SLURM command set to ISO 8601 (yyyy-mm-ddThh:mm:ss)
-  unless the configure option "--disable-iso8601" is used at build time.
 * Support added for Sun Constellation system with optimized resource allocation
   for a 3-dimensional torus interconnect.
-* Support added for IBM BlueGene/P systems.
+* Support added for IBM BlueGene/P systems, including High Throughput Computing
+  (HTC) mode.
 
 CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
+* The default AuthType is now "auth/munge" rather than "auth/none".
+* The default CryptoType is now "crypto/munge". OpenSSL is no longer required
+  by SLURM in the default configuration.
+* DefaultTime has been added to specify a default job time limit in the 
+  partition. If not set, uses the partition's MaxTime.
+* PrologSlurmctld has been added and can be used to boot nodes into a 
+  particular state for each job.
 * DefMemPerTask has been removed. Use DefMemPerCPU or DefMemPerNode instead.
 * Added new node state of "FUTURE". These node records are created in SLURM
   tables for future use without a reboot of the SLURM daemons, but are not
-   reported by any SLURM commands or APIs.
-* Default AuthType is now "auth/munge" rather than auth/none.
-* Default CryptoType is now "crypto/munge". OpenSSL is no longer required by
-  SLURM in the default configuration.
+  reported by any SLURM commands or APIs.
 * BatchStartTime has been added to control how long to wait for a batch job
   to start (complete Prolog, load environment for Moab, etc.).
 * CompleteTime has been added to control how long to wait for a job's 
@@ -47,14 +62,21 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
   configurable amount. Backfill scheduling will be based upon the soft time
   limit.
 * DebugFlags added to provide detailed logging for specific subsystems.
-* PrologSlurmctld has been aded and can be used to boot nodes into a particular
-  state for each job.
 
 COMMAND CHANGES (see man pages for details)
-* --task-mem and --job-mem options have been removed from salloc sbatch and
+* --task-mem and --job-mem options have been removed from salloc, sbatch and
   srun. Use --mem-per-cpu or --mem instead.
+* Added the srun option --preserve-env to pass the current values of 
+  environment variables SLURM_NNODES and SLURM_NPROCS through to the 
+  executable, rather than computing them from commandline parameters.
 * --ctrl-comm-ifhn-addr option has been removed from the srun command (it is 
   no longer useful).
+* Batch jobs have an environment variable SLURM_RESTART_COUNT set when 
+  restarted.
+* To create a partition using the scontrol command, use the "create" command
+  rather than "update" with a new partition name.
+* Time format of all SLURM command set to ISO 8601 (yyyy-mm-ddThh:mm:ss)
+  unless the configure option "--disable-iso8601" is used at build time.
 
 ACCOUNTING CHANGES
 * Added ability for slurmdbd to archive and purge step and/or job records.
