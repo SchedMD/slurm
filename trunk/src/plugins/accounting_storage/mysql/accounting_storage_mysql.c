@@ -4,7 +4,7 @@
  *  $Id: accounting_storage_mysql.c 13061 2008-01-22 21:23:56Z da $
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  
@@ -4527,12 +4527,18 @@ extern int acct_storage_p_add_reservation(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 	}
 
-	if(!resv->id || !resv->time_start || !resv->cluster) {
-		error("We need an id, start time, and cluster "
-		      "name to edit a reservation.");
+	if(!resv->id) {
+		error("We need an id to edit a reservation.");
 		return SLURM_ERROR;
 	}
-
+	if(!resv->time_start) {
+		error("We need a start time to edit a reservation.");
+		return SLURM_ERROR;
+	}
+	if(!resv->cluster) {
+		error("We need a cluster name to edit a reservation.");
+		return SLURM_ERROR;
+	}
 
 	_setup_resv_limits(resv, &cols, &vals, &extra);
 	
@@ -5864,13 +5870,18 @@ extern int acct_storage_p_modify_reservation(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 	}
 
-	if(!resv->id || !resv->time_start || !resv->cluster) {
-		error("We need an id, start time, and cluster "
-		      "name to edit a reservation.");
+	if(!resv->id) {
+		error("We need an id to edit a reservation.");
 		return SLURM_ERROR;
 	}
-
-
+	if(!resv->time_start) {
+		error("We need a start time to edit a reservation.");
+		return SLURM_ERROR;
+	}
+	if(!resv->cluster) {
+		error("We need a cluster name to edit a reservation.");
+		return SLURM_ERROR;
+	}
 		
 	if(!resv->time_start_prev) {
 		error("We need a time to check for last "
