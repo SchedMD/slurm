@@ -509,6 +509,12 @@ _parse_format( char* format )
 					field_size, 
 					right_justify, 
 					suffix );
+		} else if (field[0] == 'L') {
+			params.match_flags.default_time_flag = true;
+			format_add_default_time( params.format_list, 
+					field_size, 
+					right_justify, 
+					suffix );
 		} else if (field[0] == 'm') {
 			params.match_flags.memory_flag = true;
 			format_add_memory( params.format_list, 
@@ -687,6 +693,8 @@ void _print_options( void )
 	printf("bg_flag         = %s\n", params.bg_flag ? "true" : "false");
 	printf("cpus_flag       = %s\n", params.match_flags.cpus_flag ?
 			"true" : "false");
+	printf("default_time_flag =%s\n", params.match_flags.default_time_flag ?
+					"true" : "false");
 	printf("disk_flag       = %s\n", params.match_flags.disk_flag ?
 			"true" : "false");
 	printf("features_flag   = %s\n", params.match_flags.features_flag ?

@@ -148,6 +148,7 @@ typedef struct slurm_conf_partition {
 				     * default */
 	char	*name;		/* name of the partition */
 	bool     hidden_flag;	/* 1 if hidden by default */
+	uint32_t default_time;	/* minutes or INFINITE */
 	uint32_t max_time;	/* minutes or INFINITE */
 	uint32_t max_nodes;	/* per job or INFINITE */
 	uint32_t min_nodes;	/* per job */

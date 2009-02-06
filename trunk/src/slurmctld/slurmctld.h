@@ -272,6 +272,7 @@ struct part_record {
 	char *name;		/* name of the partition */
 	uint16_t hidden;	/* 1 if hidden by default */
 	uint32_t max_time;	/* minutes or INFINITE */
+	uint32_t default_time;	/* minutes, NO_VAL or INFINITE */
 	uint32_t max_nodes;	/* per job or INFINITE */
 	uint32_t max_nodes_orig;/* unscaled value (c-nodes on BlueGene) */
 	uint32_t min_nodes;	/* per job */

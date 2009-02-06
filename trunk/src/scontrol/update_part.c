@@ -70,6 +70,16 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 			part_msg_ptr->max_time = max_time;
 			(*update_cnt_ptr)++;
 		}
+		else if (strncasecmp(argv[i], "DefaultTime=", 12) == 0) {
+			int default_time = time_str2mins(&argv[i][12]);
+			if ((default_time < 0) && (default_time != INFINITE)) {
+				exit_code = 1;
+				error("Invalid input %s", argv[i]);
+				return -1;
+			}
+			part_msg_ptr->default_time = default_time;
+			(*update_cnt_ptr)++;
+		}
 		else if (strncasecmp(argv[i], "MaxNodes=", 9) == 0) {
 			if ((strcasecmp(&argv[i][9],"UNLIMITED") == 0) ||
 			    (strcasecmp(&argv[i][8],"INFINITE") == 0))

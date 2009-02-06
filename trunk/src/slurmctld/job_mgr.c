@@ -2120,6 +2120,10 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		return error_code;
 	}
 
+	if ((job_desc->time_limit == NO_VAL) &&
+	    (part_ptr->default_time != NO_VAL))
+	  job_desc->time_limit = part_ptr->default_time;
+
 	if ((job_desc->time_limit != NO_VAL) &&
 	    (job_desc->time_limit > part_ptr->max_time) &&
 	    slurmctld_conf.enforce_part_limits) {

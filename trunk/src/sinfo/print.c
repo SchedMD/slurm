@@ -805,6 +805,26 @@ int _print_time(sinfo_data_t * sinfo_data, int width,
 	return SLURM_SUCCESS;
 }
 
+int _print_default_time(sinfo_data_t * sinfo_data, int width,
+				bool right_justify, char *suffix)
+{
+	if (sinfo_data) {
+		if ((sinfo_data->part_info == NULL) ||
+		    (sinfo_data->part_info->default_time == NO_VAL))	      
+			_print_str("n/a", width, right_justify, true);
+		else if (sinfo_data->part_info->default_time == INFINITE)
+			_print_str("infinite", width, right_justify, true);
+		else
+			_print_secs((sinfo_data->part_info->default_time * 60L),
+					width, right_justify, true);
+	} else
+		_print_str("DEFAULTTIME", width, right_justify, true);
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
 int _print_weight(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix)
 {
