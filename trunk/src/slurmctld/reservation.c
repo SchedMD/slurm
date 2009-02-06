@@ -71,7 +71,7 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/state_save.h"
 
-#define _RESV_DEBUG	1
+#define _RESV_DEBUG	0
 #define RESV_MAGIC	0x3b82
 
 /* Change RESV_STATE_VERSION value when changing the state save format
@@ -429,7 +429,7 @@ static int _build_account_list(char *accounts, int *account_cnt,
 static int  _update_account_list(struct slurmctld_resv *resv_ptr, 
 				 char *accounts)
 {
-	char *last = NULL, *tmp, *tok;
+	char *last = NULL, *ac_cpy, *tok;
 	int ac_cnt = 0, i, j, k;
 	int *ac_type, minus_account = 0, plus_account = 0;
 	char **ac_list;
@@ -441,8 +441,8 @@ static int  _update_account_list(struct slurmctld_resv *resv_ptr,
 	i = strlen(accounts);
 	ac_list = xmalloc(sizeof(char *) * (i + 2));
 	ac_type = xmalloc(sizeof(int)    * (i + 2));
-	tmp = xstrdup(accounts);
-	tok = strtok_r(tmp, ",", &last);
+	ac_cpy = xstrdup(accounts);
+	tok = strtok_r(ac_cpy, ",", &last);
 	while (tok) {
 		if (tok[0] == '-') {
 			ac_type[ac_cnt] = 1;	/* minus */
@@ -477,7 +477,7 @@ static int  _update_account_list(struct slurmctld_resv *resv_ptr,
 		xfree(resv_ptr->account_list);
 		resv_ptr->account_list = ac_list;
 		resv_ptr->account_cnt = ac_cnt;
-		xfree(tmp);
+		xfree(ac_cpy);
 		xfree(ac_type);
 		return SLURM_SUCCESS;
 	}
@@ -556,14 +556,14 @@ static int  _update_account_list(struct slurmctld_resv *resv_ptr,
 		xfree(ac_list[i]);
 	xfree(ac_list);
 	xfree(ac_type);
-	xfree(tmp);
+	xfree(ac_cpy);
 	return SLURM_SUCCESS;
 
  inval:	for (i=0; i<ac_cnt; i++)
 		xfree(ac_list[i]);
 	xfree(ac_list);
 	xfree(ac_type);
-	xfree(tmp);
+	xfree(ac_cpy);
 	return ESLURM_INVALID_BANK_ACCOUNT;
 }
 
@@ -620,7 +620,7 @@ static int _build_uid_list(char *users, int *user_cnt, uid_t **user_list)
  */
 static int _update_uid_list(struct slurmctld_resv *resv_ptr, char *users)
 {
-	char *last = NULL, *tmp = NULL, *tok;
+	char *last = NULL, *u_cpy = NULL, *tmp = NULL, *tok;
 	int u_cnt = 0, i, j, k;
 	uid_t *u_list, u_tmp;
 	int *u_type, minus_user = 0, plus_user = 0;
@@ -635,8 +635,8 @@ static int _update_uid_list(struct slurmctld_resv *resv_ptr, char *users)
 	u_list = xmalloc(sizeof(uid_t)  * (i + 2));
 	u_name = xmalloc(sizeof(char *) * (i + 2));
 	u_type = xmalloc(sizeof(int)    * (i + 2));
-	tmp = xstrdup(users);
-	tok = strtok_r(tmp, ",", &last);
+	u_cpy = xstrdup(users);
+	tok = strtok_r(u_cpy, ",", &last);
 	while (tok) {
 		if (tok[0] == '-') {
 			u_type[u_cnt] = 1;	/* minus */
@@ -671,7 +671,7 @@ static int _update_uid_list(struct slurmctld_resv *resv_ptr, char *users)
 			resv_ptr->users = xstrdup(users);
 		resv_ptr->user_cnt  = u_cnt;
 		resv_ptr->user_list = u_list;
-		xfree(tmp);
+		xfree(u_cpy);
 		xfree(u_name);
 		xfree(u_type);
 		return SLURM_SUCCESS;
@@ -742,13 +742,13 @@ static int _update_uid_list(struct slurmctld_resv *resv_ptr, char *users)
 				u_list[i];
 		}
 	}
-	xfree(tmp);
+	xfree(u_cpy);
 	xfree(u_list);
 	xfree(u_name);
 	xfree(u_type);
 	return SLURM_SUCCESS;
 
- inval:	xfree(tmp);
+ inval:	xfree(u_cpy);
 	xfree(u_list);
 	xfree(u_name);
 	xfree(u_type);
