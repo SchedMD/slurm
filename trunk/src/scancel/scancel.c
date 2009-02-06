@@ -146,8 +146,9 @@ _verify_job_ids (void)
 			if (job_ptr[i].job_id == opt.job_id[j])
 				break;
 		}
-		if ((job_ptr[i].job_state >= JOB_COMPLETE) ||
-		    (i >= job_buffer_ptr->record_count)) {
+		if (((job_ptr[i].job_state >= JOB_COMPLETE) ||
+		     (i >= job_buffer_ptr->record_count)) &&
+		     (opt.verbose >= 0)) {
 			if (opt.step_id[j] == SLURM_BATCH_SCRIPT)
 				error("Kill job error on job id %u: %s", 
 				      opt.job_id[j], 
