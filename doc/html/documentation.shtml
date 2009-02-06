@@ -24,6 +24,7 @@ Also see <a href="publications.html">Publications and Presentations</a>.
 <li><a href="cons_res_share.shtml">Sharing Consumable Resources</a></li>
 <li><a href="accounting.shtml">Accounting</a></li>
 <li><a href="gang_scheduling.shtml">Gang Scheduling</a></li>
+<li><a href="job_priority.shtml">Job Priority</a></li>
 <li><a href="preempt.shtml">Preemption</a></li>
 <li><a href="maui.shtml">Maui Scheduler Integration Guide</a></li>
 <li><a href="moab.shtml">Moab Cluster Suite Integration Guide</a></li>
@@ -55,6 +56,6 @@ Also see <a href="publications.html">Publications and Presentations</a>.
 <li><a href="taskplugins.shtml">Task Plugin Programmer Guide</a></li>
 </ul>
 
-<p style="text-align:center;">Last modified 9 January 2009</p>
+<p style="text-align:center;">Last modified 6 February 2009</p>
 
 <!--#include virtual="footer.txt"-->

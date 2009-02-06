@@ -19,6 +19,7 @@ generated_html = \
 	gang_scheduling.html \
 	help.html \
 	ibm.html \
+	job_priority.html \
 	jobacct_gatherplugins.html \
 	jobacct_storageplugins.html \
 	jobcompplugins.html \
