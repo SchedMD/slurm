@@ -1,0 +1,84 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Multi-factor Job Priority Plugin</h1>
+
+<b>Note:</b> This document describes features added to SLURM version 2.0.
+
+<h2>Contents</h2>
+<UL>
+<LI> <a href=#intro>Introduction</a>
+<LI> <a href=#general>Job Priority Factors In General</a>
+<LI> <a href=#age>Age Factor</a>
+<LI> <a href=#jobsize>Job Size Factor</a>
+<LI> <a href=#partition>Partition Factor</a>
+<LI> <a href=#qos>Quality of Service (QOS) Factor</a>
+<LI> <a href=#fairshare>Fair-share Factor</a>
+</UL>
+
+<!-------------------------------------------------------------------------->
+<a name=intro>
+<h2>Introduction</h2></a>
+
+<P> The Multi-factor job priority plugin provides a very versatile facility for ordering the queue of jobs waiting to be scheduled.  There are five factors that influence job priority:</P>
+
+<UL>
+<LI> <B>Age</B> the length of time a job has been waiting in the queue, eligible to be scheduled
+<LI> <B>Fair-share</B> the difference between the portion of the computing resource that has been promised and the amount of resources that have been consumed
+<LI> <B>Job size</B> the number of nodes a job is allocated
+<LI> <B>Partition</B> a factor associated with each node partition
+<LI> <B>QOS</B> a factor associated with each Quality Of Service
+</UL>
+
+<P> Additionally, a weight can be assigned to each of the above factors.  This provides the ability to enact a policy that blends a combination of any of the above factors in any portion desired.  For example, a site could configure fair-share to be the dominant factor (say 70%), set the job size and the aging factors to each contribute 15%, and set the partition and QOS influences to zero.</P>
+
+<!-------------------------------------------------------------------------->
+<a name=general>
+<h2>Job Priority Factors In General</h2></a>
+
+<P> The jobs priority at any given time will be a weighted sum of all the factors that have been enabled in the slurm configuration file.  Job priority can be expressed as:</P>
+<PRE>
+Job_priority =
+	(age_weight) * (time_eligible_in_queue_factor) +
+	(fair-share_weight) * (fair-share_factor) +
+	(job_size_weight) * (number_of_nodes_factor) +
+	(partition_weight) * (partition_factor) +
+	(QOS_weight) * (QOS_factor)
+</PRE>
+
+<P> All of the factors in this formula are floating point numbers that range from 0.0 to 1.0.  The weights are unsigned, 32 bit integers.   Consequently, the job's priority is a floating point number that ranges between 0 and 4294967295.0.  The higher the number,  the higher the job will be positioned in the queue, and the sooner the job will be scheduled.  A job's priority, and hence its order in the queue, will vary over time.  For example, the longer a job sits in the queue, the higher its priority will grow when the age_weight is non-zero.</P>
+
+<!-------------------------------------------------------------------------->
+<a name=age>
+<h2>Age Factor</h2>
+
+<P> The age factor represents the length of time a job has been sitting in the queue and eligible to run.  A job that depends on another job to complete will not increment the age factor.  Also, a job whose limits exceed the allowable limits in effect will similarly not increment the age factor.</P>
+
+<P> At some configurable length of time (<i>PriorityMaxAge</i>), the aging factor will max out to 1.0.</P>
+
+<!-------------------------------------------------------------------------->
+<a name=jobsize>
+<h2>Job Size Factor</h2>
+
+<P> The job size factor represents the number of nodes the job has requested.  This factor can be configured to favor larger jobs or smaller jobs based on the state of the <i>PriorityFavorSmall</i> boolean in the slurm configuration file.  When <i>PriorityFavorSmall</i> is 0, the larger the job, the greater its job size factor will be.  A job that requests all the nodes on the machine will get a job size factor of 1.0.  When the <i>PriorityFavorSmall</i> Boolean is 1, the single node job will receive the 1.0 job size factor.</P>
+
+<!-------------------------------------------------------------------------->
+<a name=partition>
+<h2>Partition Factor</h2>
+
+<P> Each node partition can be assigned a factor from 0.0 to 1.0.  The higher the number, the greater the job priority will be for jobs that are slated to run in this partition.</P>
+
+<!-------------------------------------------------------------------------->
+<a name=qos>
+<h2>Quality of Service (QOS) Factor</h2>
+
+<P> Each QOS can be assigned a factor from 0.0 to 1.0.  The higher the number, the greater the job priority will be for jobs that request this QOS.</P>
+
+<!-------------------------------------------------------------------------->
+<a name=fairshare>
+<h2>Fair-share Factor</h2>
+
+<!-------------------------------------------------------------------------->
+<p style="text-align:center;">Last modified 6 February 2009</p>
+
+<!--#include virtual="footer.txt"-->
+
