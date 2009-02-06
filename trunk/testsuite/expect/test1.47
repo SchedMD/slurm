@@ -79,7 +79,7 @@ expect {
 		set job_id2 $expect_out(1,string)
 		exp_continue
 	}
-	-re "JobState=COMPLETED" {
+	-re "JobState=COMPLETED|COMPLETING" {
 		set matches 1
 		exp_continue
 	}
