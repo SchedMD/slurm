@@ -9,6 +9,8 @@ documents those changes that are of interest to users and admins.
  -- Added environment variable SLURM_RESTART_COUNT to batch jobs to
     indicated the count of job restarts made.
  -- Added sacctmgr command "show config".
+ -- Added the scancel option --nodelist to cancel any jobs running on a
+    given list of nodes.
 
 * Changes in SLURM 1.4.0-pre7
 =============================
@@ -34,7 +36,7 @@ documents those changes that are of interest to users and admins.
     CPUs on a node when a partition's Shared value is YES or FORCE.
  -- Added configure options "--enable-cray-xt" and "--with-apbasil=PATH" for
     eventual support of Cray-XT systems.
- 
+
 * Changes in SLURM 1.4.0-pre6
 =============================
  -- Fix job preemption when sched/gang and select/linear are configured with

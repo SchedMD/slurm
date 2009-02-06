@@ -1,4 +1,4 @@
-.TH SCANCEL "1" "November 2008" "scancel 1.2" "Slurm components"
+.TH SCANCEL "1" "February 2009" "scancel 1.4" "Slurm components"
 
 .SH "NAME"
 scancel \- Used to signal jobs or job steps that are under the control of Slurm.
@@ -77,6 +77,13 @@ This option is incompatible with the \fB\-\-quiet\fR option.
 .TP
 \fB\-V\fR, \fB\-\-Version\fR
 Print the version number of the scancel command. 
+
+.TP
+\fB\-w\fR, \fB\-\-nodelist=\fIhost1,host2,...\fR
+Cancel any jobs using any of the given hosts.  The list may be specified as 
+a comma\-separated list of hosts, a range of hosts (host[1\-5,7,...] for 
+example), or a filename. The host list will be assumed to be a filename only 
+if it contains a "/" character. 
 
 .TP
 ARGUMENTS
