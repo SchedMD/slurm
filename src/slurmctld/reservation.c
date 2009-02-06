@@ -756,8 +756,8 @@ static int _update_uid_list(struct slurmctld_resv *resv_ptr, char *users)
 }
 
 /* 
- * _pack_resv - dump all configuration information about a specific reservation
- *	in machine independent form (for network transmission)
+ * _pack_resv - dump configuration information about a specific reservation
+ *	in machine independent form (for network transmission or state save)
  * IN resv_ptr - pointer to reservation for which information is requested
  * IN/OUT buffer - buffer in which data is placed, pointers automatically 
  *	updated
