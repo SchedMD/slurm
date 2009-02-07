@@ -460,13 +460,9 @@ static bg_record_t *_find_matching_block(List block_list,
 				if(check_image 
 				   && (bg_record->state
 				       == RM_PARTITION_READY)) {
-					info("got here for %s",
-					     bg_record->bg_block_id);
 					*allow = 1;
 					continue;			
 				} 
-				info("now here for %s", 
-				     bg_record->bg_block_id);
 				goto good_conn_type;
 			} 
 #endif
@@ -1256,12 +1252,24 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 			     SELECT_DATA_CONN_TYPE, &conn_type);
 	if(conn_type == SELECT_NAV) {
 		uint32_t max_procs = (uint32_t)NO_VAL;
-		select_g_get_jobinfo(job_ptr->select_jobinfo,
-				     SELECT_DATA_MAX_PROCS, &max_procs);
-		if((max_procs > procs_per_node) || (max_procs == NO_VAL))
+		if(min_nodes > 1) {
 			conn_type = SELECT_TORUS;
-		else
-			conn_type = SELECT_SMALL;
+			/* make sure the max procs are set to NO_VAL */
+			select_g_set_jobinfo(job_ptr->select_jobinfo,
+					     SELECT_DATA_MAX_PROCS,
+					     &max_procs);
+
+		} else {
+			select_g_get_jobinfo(job_ptr->select_jobinfo,
+					     SELECT_DATA_MAX_PROCS,
+					     &max_procs);
+			info("got max procs of %u", max_procs);
+			if((max_procs > procs_per_node)
+			   || (max_procs == NO_VAL))
+				conn_type = SELECT_TORUS;
+			else
+				conn_type = SELECT_SMALL;
+		}
 		select_g_set_jobinfo(job_ptr->select_jobinfo,
 				     SELECT_DATA_CONN_TYPE,
 				     &conn_type);
