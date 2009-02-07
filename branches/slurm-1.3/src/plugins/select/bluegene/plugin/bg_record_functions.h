@@ -98,7 +98,7 @@ typedef struct bg_record {
 	int job_running;                /* job id of job running of if
 					 * block is in an error state
 					 * BLOCK_ERROR_STATE */
-	int cpus_per_bp;                /* count of cpus per base part */
+	uint32_t cpu_cnt;               /* count of cpus per block */
 	uint32_t node_cnt;              /* count of cnodes per block */
 #ifdef HAVE_BGL
 	uint16_t quarter;               /* used for small blocks 

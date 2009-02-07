@@ -379,7 +379,7 @@ extern int configure_block(bg_record_t *bg_record)
 #endif
 	_pre_allocate(bg_record);
 
-	if(bg_record->cpus_per_bp < procs_per_node)
+	if(bg_record->cpu_cnt < procs_per_node)
 		configure_small_block(bg_record);
 	else
 		configure_block_switches(bg_record);
@@ -509,8 +509,7 @@ int read_bg_blocks()
 			goto clean_up;
 
 		bg_record->node_cnt = bp_cnt;
-		bg_record->cpus_per_bp = 
-			bluegene_proc_ratio * bg_record->node_cnt;
+		bg_record->cpu_cnt = bluegene_proc_ratio * bg_record->node_cnt;
 #endif
 		bg_record->job_running = NO_JOB_RUNNING;
 		
@@ -609,12 +608,11 @@ int read_bg_blocks()
 
 			bg_record->quarter = quarter;
 
-
 			debug3("%s is in quarter %d nodecard %d",
 			       bg_record->bg_block_id,
 			       bg_record->quarter,
 			       bg_record->nodecard);
-			bg_record->cpus_per_bp = procs_per_node/i;
+			bg_record->cpu_cnt = procs_per_node/i;
 			bg_record->node_cnt = bluegene_bp_node_cnt/i;
 			if(set_ionodes(bg_record) == SLURM_ERROR) 
 				error("couldn't create ionode_bitmap "
@@ -683,7 +681,8 @@ int read_bg_blocks()
 #endif
 		} else {
 #ifdef HAVE_BGL
-			bg_record->cpus_per_bp = procs_per_node;
+			bg_record->cpu_cnt = procs_per_node 
+				* bg_record->bp_count;
 			bg_record->node_cnt =  bluegene_bp_node_cnt
 				* bg_record->bp_count;
 #endif
@@ -1115,10 +1114,10 @@ extern int load_state_file(char *dir_name)
 		if(bluegene_bp_node_cnt > bg_record->node_cnt) {
 			ionodes = bluegene_bp_node_cnt 
 				/ bg_record->node_cnt;
-			bg_record->cpus_per_bp =
-				procs_per_node / ionodes;
+			bg_record->cpu_cnt = procs_per_node / ionodes;
 		} else {
-			bg_record->cpus_per_bp = procs_per_node;
+			bg_record->cpu_cnt = procs_per_node
+				* bg_record->bp_count;
 		}
 #ifdef HAVE_BGL
 		bg_record->node_use = bg_info_record->node_use;

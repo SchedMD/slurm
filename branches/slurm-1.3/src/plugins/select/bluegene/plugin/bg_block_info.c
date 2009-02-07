@@ -119,8 +119,8 @@ static int _block_is_deallocating(bg_record_t *bg_record)
 				if(remove_from_bg_list(bg_job_block_list, 
 						       bg_record) 
 				   == SLURM_SUCCESS) {
-					num_unused_cpus += bg_record->bp_count
-						* bg_record->cpus_per_bp;
+					num_unused_cpus += 
+						bg_record->cpu_cnt;
 				} 
 			} else {
 				debug("Block %s was in a ready state "
@@ -383,9 +383,7 @@ extern int update_block_list()
 				if(remove_from_bg_list(bg_job_block_list, 
 						       bg_record) 
 				   == SLURM_SUCCESS) {
-					num_unused_cpus += 
-						bg_record->bp_count
-						* bg_record->cpus_per_bp;
+					num_unused_cpus += bg_record->cpu_cnt;
 				}
 				remove_from_bg_list(bg_booted_block_list,
 						    bg_record);			
@@ -427,9 +425,7 @@ extern int update_block_list()
 						   bg_record) 
 					   == SLURM_SUCCESS) {
 						num_unused_cpus += 
-							bg_record->bp_count
-							* bg_record->
-							cpus_per_bp;
+							bg_record->cpu_cnt;
 					} 
 				} else 
 					error("block %s in an error "

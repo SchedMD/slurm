@@ -51,8 +51,6 @@ typedef enum bg_layout_type {
 
 
 /* Global variables */
-
-extern my_bluegene_t *bg;
 #ifdef HAVE_BGL
 extern char *default_blrtsimage;
 #endif
