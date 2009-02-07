@@ -104,9 +104,9 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 				error("create_defined_blocks: "
 				      "no bg_found_block_list 1");
 			}
-			if(bg_record->bp_count>0 
+			if(bg_record->bp_count > 0 
 			   && !bg_record->full_block
-			   && bg_record->cpus_per_bp == procs_per_node) {
+			   && bg_record->cpu_cnt >= procs_per_node) {
 				char *name = NULL;
 
 				if(overlapped == LAYOUT_OVERLAP) 

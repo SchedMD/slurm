@@ -49,8 +49,6 @@
 char* bg_conf = NULL;
 
 /* Global variables */
-my_bluegene_t *bg = NULL;
-
 List bg_list = NULL;			/* total list of bg_record entries */
 List bg_curr_block_list = NULL;  	/* current bg blocks in bluegene.conf*/
 List bg_job_block_list = NULL;  	/* jobs running in these blocks */
@@ -121,26 +119,6 @@ static void _destroy_bitmap(void *object);
 /* Initialize all plugin variables */
 extern int init_bg(void)
 {
-#ifdef HAVE_BG_FILES
-	int rc;
-	rm_size3D_t bp_size;
-	
-	info("Attempting to contact MMCS");
-	if ((rc = bridge_get_bg(&bg)) != STATUS_OK) {
-		fatal("init_bg: rm_get_BG(): %s", bg_err_str(rc));
-		return SLURM_ERROR;
-	}
-	
-	if ((rc = bridge_get_data(bg, RM_Msize, &bp_size)) != STATUS_OK) {
-		fatal("init_bg: rm_get_data(): %s", bg_err_str(rc));
-		return SLURM_ERROR;
-	}
-	verbose("BlueGene configured with %d x %d x %d base blocks",
-		bp_size.X, bp_size.Y, bp_size.Z);
-	DIM_SIZE[X]=bp_size.X;
-	DIM_SIZE[Y]=bp_size.Y;
-	DIM_SIZE[Z]=bp_size.Z;
-#endif
 	ba_init(NULL);
 
 	info("BlueGene plugin loaded successfully");
@@ -151,9 +129,6 @@ extern int init_bg(void)
 /* Purge all plugin variables */
 extern void fini_bg(void)
 {
-#ifdef HAVE_BG_FILES
-	int rc;
-#endif
 	_set_bg_lists();
 	
 	if (bg_list) {
@@ -232,11 +207,6 @@ extern void fini_bg(void)
 	xfree(bg_slurm_user_name);
 	xfree(bg_slurm_node_prefix);
 	
-#ifdef HAVE_BG_FILES
-	if(bg)
-		if ((rc = bridge_free_bg(bg)) != STATUS_OK)
-			error("bridge_free_BG(): %s", bg_err_str(rc));
-#endif	
 	ba_fini();
 }
 
@@ -805,8 +775,7 @@ extern void *mult_destroy_block(void *args)
 		sort_bg_record_inc_size(bg_freeing_list);
 		if(remove_from_bg_list(bg_job_block_list, bg_record) 
 		   == SLURM_SUCCESS) {
-			num_unused_cpus += 
-				bg_record->bp_count*bg_record->cpus_per_bp;
+			num_unused_cpus += bg_record->cpu_cnt;
 		}
 		slurm_mutex_unlock(&block_state_mutex);
 		debug3("removing the jobs on block %s\n",

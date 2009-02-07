@@ -224,8 +224,7 @@ static int _reset_block(bg_record_t *bg_record)
 		last_bg_update = time(NULL);
 		if(remove_from_bg_list(bg_job_block_list, bg_record) 
 		   == SLURM_SUCCESS) {
-			num_unused_cpus += 
-				bg_record->bp_count*bg_record->cpus_per_bp;
+			num_unused_cpus += bg_record->cpu_cnt;
 		}
 	} else {
 		error("No block given to reset");
@@ -267,7 +266,7 @@ static void _sync_agent(bg_update_t *bg_update_ptr)
 
 	if(!block_exist_in_list(bg_job_block_list, bg_record)) {
 		list_push(bg_job_block_list, bg_record);
-		num_unused_cpus -= bg_record->bp_count*bg_record->cpus_per_bp;
+		num_unused_cpus -= bg_record->cpu_cnt;
 	}
 	if(!block_exist_in_list(bg_booted_block_list, bg_record)) 
 		list_push(bg_booted_block_list, bg_record);
@@ -464,7 +463,6 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		&& (bg_update_ptr->conn_type != bg_record->conn_type)) {
 		debug3("changing small block mode from %u to %u",
 		       bg_record->conn_type, bg_update_ptr->conn_type);
-		bg_record->conn_type = bg_update_ptr->conn_type;
 		rc = 1;
 	}
 #endif
@@ -550,9 +548,9 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 			error("bridge_modify_block(RM_MODIFY_IoloadImg)", 
 			      bg_err_str(rc));
 
-		if(bg_record->conn_type > SELECT_SMALL) {
+		if(bg_update_ptr->conn_type > SELECT_SMALL) {
 			char *conn_type = NULL;
-			switch(bg_record->conn_type) {
+			switch(bg_update_ptr->conn_type) {
 			case SELECT_HTC_S:
 				conn_type = "s";
 				break;
@@ -602,8 +600,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 			_reset_block(bg_record);
 			if (remove_from_bg_list(bg_job_block_list, bg_record)
 			    == SLURM_SUCCESS) {
-				num_unused_cpus += bg_record->bp_count
-					*bg_record->cpus_per_bp;
+				num_unused_cpus += bg_record->cpu_cnt;
 			}
 			slurm_mutex_unlock(&block_state_mutex);
 			sleep(2);	
@@ -665,8 +662,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		slurm_mutex_lock(&block_state_mutex);
 		if (remove_from_bg_list(bg_job_block_list, bg_record)
 		    == SLURM_SUCCESS) {
-			num_unused_cpus += bg_record->bp_count
-				*bg_record->cpus_per_bp;
+			num_unused_cpus += bg_record->cpu_cnt;
 		}
 		slurm_mutex_unlock(&block_state_mutex);
 	}
@@ -1074,14 +1070,12 @@ extern int start_job(struct job_record *job_ptr)
 		find_bg_record_in_list(bg_list, bg_update_ptr->bg_block_id);
 	if (bg_record) {
 		slurm_mutex_lock(&block_state_mutex);
-		job_ptr->num_procs = (bg_record->cpus_per_bp *
-				      bg_record->bp_count);
+		job_ptr->num_procs = bg_record->cpu_cnt;
 		bg_record->job_running = bg_update_ptr->job_ptr->job_id;
 		bg_record->job_ptr = bg_update_ptr->job_ptr;
 		if(!block_exist_in_list(bg_job_block_list, bg_record)) {
 			list_push(bg_job_block_list, bg_record);
-			num_unused_cpus -= 
-				bg_record->bp_count*bg_record->cpus_per_bp;
+			num_unused_cpus -= bg_record->cpu_cnt;
 		}
 		if(!block_exist_in_list(bg_booted_block_list, bg_record))
 			list_push(bg_booted_block_list, bg_record);
@@ -1254,7 +1248,7 @@ extern int boot_block(bg_record_t *bg_record)
 	if ((rc = bridge_set_block_owner(bg_record->bg_block_id, 
 					 bg_slurm_user_name)) 
 	    != STATUS_OK) {
-		error("bridge_set_part_owner(%s,%s): %s", 
+		error("bridge_set_block_owner(%s,%s): %s", 
 		      bg_record->bg_block_id, 
 		      bg_slurm_user_name,
 		      bg_err_str(rc));
