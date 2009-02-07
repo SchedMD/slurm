@@ -1263,7 +1263,6 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 			select_g_get_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_MAX_PROCS,
 					     &max_procs);
-			info("got max procs of %u", max_procs);
 			if((max_procs > procs_per_node)
 			   || (max_procs == NO_VAL))
 				conn_type = SELECT_TORUS;
