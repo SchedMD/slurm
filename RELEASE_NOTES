@@ -10,6 +10,11 @@ cancel all pending and running jobs (e.g.
 "scancel --state=pending; scancel --state=running"). Then stop and restart 
 daemons with the "-c" option or use "/etc/init.d/slurm startclean".
 
+If using the slurmdbd you must update this first.  The 1.4 slurmdbd will 
+work with 1.3.7 and above.  So you will not need to update all clusters at
+the same time, but it is very important to update this first and having it 
+running before updating any other clusters using the slurmdbd.
+
 There are substantial changes in the slurm.conf configuration file. It 
 is recommended that you rebuild your configuration file using the tool
 doc/html/configurator.html that comes with the distribution.
@@ -66,6 +71,11 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
   specified in the configuration file. Additional resources found by SLURM
   daemons on the compute nodes will not be used.
 * DebugFlags added to provide detailed logging for specific subsystems.
+* Added Priority plugin.  Default for PriorityType is "priority/basic" which 
+  is the same logic slurm has today.  "priority/multifactor" is a new plugin 
+  which utilizes logic to set a priority on a job based on many different 
+  factors described here:  
+  https://computing.llnl.gov/linux/slurm/job_priority.html
 
 COMMAND CHANGES (see man pages for details)
 * --task-mem and --job-mem options have been removed from salloc, sbatch and
@@ -81,6 +91,8 @@ COMMAND CHANGES (see man pages for details)
   rather than "update" with a new partition name.
 * Time format of all SLURM command set to ISO 8601 (yyyy-mm-ddThh:mm:ss)
   unless the configure option "--disable-iso8601" is used at build time.
+* sacct -S to satus a job will no longer work.  Use sstat from now on.
+* sacct and sstat have been rewritten to have a more sacctmgr like feel
 
 ACCOUNTING CHANGES
 * Added ability for slurmdbd to archive and purge step and/or job records.
