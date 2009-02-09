@@ -349,6 +349,7 @@ typedef struct {
 } acct_qos_cond_t;
 
 typedef struct {
+	char *assocs; /* comma seperated list of associations */
 	char *cluster; /* cluster reservation is for */
 	uint32_t cpus; /* how many cpus are in reservation */
 	uint16_t flags; /* flags for reservation. */

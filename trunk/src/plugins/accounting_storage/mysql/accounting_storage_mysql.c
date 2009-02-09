@@ -878,6 +878,12 @@ static int _setup_resv_limits(acct_reservation_rec_t *resv,
 {	
 	/* strip off the action item from the flags */
 
+	if(resv->assocs) {
+		xstrcat(*cols, ", assoclist");
+		xstrfmtcat(*vals, ", \"%s\"", resv->assocs);
+		xstrfmtcat(*extra, ", assoclist=\"%s\"", resv->assocs);
+	}
+
 	if(resv->cpus != (uint32_t)NO_VAL) {
 		xstrcat(*cols, ", cpus");
 		xstrfmtcat(*vals, ", %u", resv->cpus);
@@ -2667,8 +2673,9 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "cluster", "text not null" },
 		{ "deleted", "tinyint default 0" },
 		{ "cpus", "mediumint unsigned not null" },
+		{ "assoclist", "text not null default ''" },
 		{ "nodelist", "text not null default ''" },
-		{ "start", "int unsigned default 0 not null" },
+		{ "start", "int unsigned default 0 not null"},
 		{ "end", "int unsigned default 0 not null" },
 		{ "flags", "smallint default 0 not null" },
 		{ NULL, NULL}		
@@ -4553,7 +4560,6 @@ extern int acct_storage_p_add_reservation(mysql_conn_t *mysql_conn,
 	if((rc = mysql_db_query(mysql_conn->db_conn, query)
 	    == SLURM_SUCCESS))
 		rc = mysql_clear_results(mysql_conn->db_conn);
-
 	
 	xfree(query);
 	xfree(cols);
@@ -5850,6 +5856,7 @@ extern int acct_storage_p_modify_reservation(mysql_conn_t *mysql_conn,
 	int i;
 	int set = 0;
 	char *resv_req_inx[] = {
+		"assoclist",
 		"start",
 		"end",
 		"cpus",
@@ -5857,6 +5864,7 @@ extern int acct_storage_p_modify_reservation(mysql_conn_t *mysql_conn,
 		"flags"
 	};
 	enum {
+		RESV_ASSOCS,
 		RESV_START,
 		RESV_END,
 		RESV_CPU,
@@ -5944,20 +5952,30 @@ try_again:
 	
 	/* check differences here */
 		
-	if(resv->cpus == (uint32_t)NO_VAL) {
+	if(!resv->assocs 
+	   && row[RESV_ASSOCS] && row[RESV_ASSOCS][0])
+		// if this changes we just update the
+		// record, no need to create a new one since
+		// this doesn't really effect the
+		// reservation accounting wise
+		resv->assocs = xstrdup(row[RESV_ASSOCS]);
+
+	if(resv->cpus != (uint32_t)NO_VAL) 
+		set = 1;
+	else 
 		resv->cpus = atoi(row[RESV_CPU]);
-		set = 1;
-	}
+
 		
-	if(resv->flags == (uint16_t)NO_VAL) {
+	if(resv->flags == (uint16_t)NO_VAL) 
+		set = 1;
+	else
 		resv->flags = atoi(row[RESV_FLAGS]);
-		set = 1;
-	}
+
 		
-	if(!resv->nodes) {
-		resv->nodes = xstrdup(row[RESV_NODES]);
+	if(resv->nodes) 
 		set = 1;
-	}
+	else if(row[RESV_NODES] && row[RESV_NODES][0])
+		resv->nodes = xstrdup(row[RESV_NODES]);
 		
 	if(!resv->time_end)
 		resv->time_end = atoi(row[RESV_END]);
@@ -5991,9 +6009,9 @@ try_again:
 				       resv->id, start,
 				       resv->cluster);
 		xstrfmtcat(query,
-			   "insert into %s (id, cluster, %s) "
-			   "values (%u, '%s', %s) "
-			   "on duplicate key update deleted=0, %s;",
+			   "insert into %s (id, cluster%s) "
+			   "values (%u, '%s'%s) "
+			   "on duplicate key update deleted=0%s;",
 			   resv_table, cols, resv->id, resv->cluster,
 			   vals, extra);
 	}

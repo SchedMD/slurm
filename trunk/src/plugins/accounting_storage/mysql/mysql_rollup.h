@@ -44,25 +44,14 @@
 #include "mysql_jobacct_process.h"
 
 #ifdef HAVE_MYSQL
-extern char *assoc_table;
-extern char *assoc_day_table;
-extern char *assoc_hour_table;
-extern char *assoc_month_table;
-extern char *cluster_day_table;
-extern char *cluster_hour_table;
-extern char *cluster_month_table;
-extern char *event_table;
-extern char *suspend_table;
-extern char *wckey_day_table;
-extern char *wckey_hour_table;
-extern char *wckey_month_table;
 
 extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			       time_t start, time_t end);
 extern int mysql_daily_rollup(mysql_conn_t *mysql_conn,
 			      time_t start, time_t end, uint16_t archive_data);
 extern int mysql_monthly_rollup(mysql_conn_t *mysql_conn,
-			       time_t start, time_t end, uint16_t archive_data);
+				time_t start, time_t end,
+				uint16_t archive_data);
 
 #endif
 

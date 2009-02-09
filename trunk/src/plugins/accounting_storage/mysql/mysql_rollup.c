@@ -51,6 +51,7 @@ typedef struct {
 
 typedef struct {
 	char *name;
+	int id; /*only needed for reservations */
 	uint64_t total_time;
 	uint64_t a_cpu;
 	int cpu_count;
@@ -62,7 +63,18 @@ typedef struct {
 	time_t end;
 } local_cluster_usage_t;
 
-extern void _destroy_local_id_usage(void *object)
+typedef struct {
+	uint64_t a_cpu;
+	char *cluster;
+	int id;
+	List local_assocs; /* list of assocs to spread unused time
+			      over of type local_id_usage_t */
+	uint64_t total_time;
+	time_t start;
+	time_t end;
+} local_resv_usage_t;
+
+static void _destroy_local_id_usage(void *object)
 {
 	local_id_usage_t *a_usage = (local_id_usage_t *)object;
 	if(a_usage) {
@@ -70,12 +82,23 @@ extern void _destroy_local_id_usage(void *object)
 	}
 }
 
-extern void _destroy_local_cluster_usage(void *object)
+static void _destroy_local_cluster_usage(void *object)
 {
 	local_cluster_usage_t *c_usage = (local_cluster_usage_t *)object;
 	if(c_usage) {
 		xfree(c_usage->name);
 		xfree(c_usage);
+	}
+}
+
+static void _destroy_local_resv_usage(void *object)
+{
+	local_resv_usage_t *r_usage = (local_resv_usage_t *)object;
+	if(r_usage) {
+		xfree(r_usage->cluster);
+		if(r_usage->local_assocs)
+			list_destroy(r_usage->local_assocs);
+		xfree(r_usage);
 	}
 }
 
@@ -94,11 +117,12 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 	ListIterator a_itr = NULL;
 	ListIterator c_itr = NULL;
 	ListIterator w_itr = NULL;
+	ListIterator r_itr = NULL;
 	List assoc_usage_list = list_create(_destroy_local_id_usage);
 	List cluster_usage_list = list_create(_destroy_local_cluster_usage);
 	List wckey_usage_list = list_create(_destroy_local_id_usage);
+	List resv_usage_list = list_create(_destroy_local_resv_usage);
 	uint16_t track_wckey = slurm_get_track_wckey();
-	local_cluster_usage_t *last_c_usage = NULL;
 
 	char *event_req_inx[] = {
 		"node_name",
@@ -116,6 +140,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		EVENT_REQ_END,
 		EVENT_REQ_COUNT
 	};
+
 	char *job_req_inx[] = {
 		"id",
 		"jobid",
@@ -127,7 +152,9 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		"end",
 		"suspended",
 		"alloc_cpus",
-		"req_cpus"
+		"req_cpus",
+		"resvid"
+	   
 	};
 	char *job_str = NULL;
 	enum {
@@ -142,8 +169,10 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		JOB_REQ_SUSPENDED,
 		JOB_REQ_ACPU,
 		JOB_REQ_RCPU,
+		JOB_REQ_RESVID,
 		JOB_REQ_COUNT
 	};
+
 	char *suspend_req_inx[] = {
 		"start",
 		"end"
@@ -153,6 +182,25 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		SUSPEND_REQ_START,
 		SUSPEND_REQ_END,
 		SUSPEND_REQ_COUNT
+	};
+
+	char *resv_req_inx[] = {
+		"id",
+		"cluster",
+		"assoclist",
+		"cpus",
+		"start",
+		"end"
+	};
+	char *resv_str = NULL;
+	enum {
+		RESV_REQ_ID,
+		RESV_REQ_CLUSTER,
+		RESV_REQ_ASSOCS,
+		RESV_REQ_CPU,
+		RESV_REQ_START,
+		RESV_REQ_END,
+		RESV_REQ_COUNT
 	};
 
 	i=0;
@@ -173,20 +221,27 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		xstrfmtcat(suspend_str, ", %s", suspend_req_inx[i]);
 	}
 
+	i=0;
+	xstrfmtcat(resv_str, "%s", resv_req_inx[i]);
+	for(i=1; i<RESV_REQ_COUNT; i++) {
+		xstrfmtcat(resv_str, ", %s", resv_req_inx[i]);
+	}
+
 /* 	info("begin start %s", ctime(&curr_start)); */
 /* 	info("begin end %s", ctime(&curr_end)); */
 	a_itr = list_iterator_create(assoc_usage_list);
 	c_itr = list_iterator_create(cluster_usage_list);
 	w_itr = list_iterator_create(wckey_usage_list);
+	r_itr = list_iterator_create(resv_usage_list);
 	while(curr_start < end) {
+		local_cluster_usage_t *last_c_usage = NULL;
 		int last_id = -1;
 		int last_wckeyid = -1;
 		int seconds = 0;
 		local_cluster_usage_t *c_usage = NULL;
+		local_resv_usage_t *r_usage = NULL;
 		local_id_usage_t *a_usage = NULL;
 		local_id_usage_t *w_usage = NULL;
-
-		last_c_usage = NULL;
 
 		debug3("curr hour is now %d-%d", curr_start, curr_end);
 /* 		info("start %s", ctime(&curr_start)); */
@@ -301,6 +356,54 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 		}
 		mysql_free_result(result);
 
+		// now get the reservations during this time
+		query = xstrdup_printf("select %s from %s where "
+				       "(start < %d && end >= %d) "
+				       "order by cluster, start",
+				       resv_str, resv_table,
+				       curr_end, curr_start);
+
+		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+		if(!(result = mysql_db_query_ret(
+			     mysql_conn->db_conn, query, 0))) {
+			xfree(query);
+			return SLURM_ERROR;
+		}
+		xfree(query);
+		
+		while((row = mysql_fetch_row(result))) {
+			int row_start = atoi(row[RESV_REQ_START]);
+			int row_end = atoi(row[RESV_REQ_END]);
+			int row_cpu = atoi(row[RESV_REQ_CPU]);
+		
+			if(row_start < curr_start)
+				row_start = curr_start;
+		
+			if(!row_end || row_end > curr_end) 
+				row_end = curr_end;
+
+			/* Don't worry about it if the time is less
+			 * than 1 second.
+			 */
+			if((row_end - row_start) < 1)
+				continue;
+
+			r_usage = xmalloc(sizeof(local_resv_usage_t));
+			r_usage->id = atoi(row[RESV_REQ_ID]);
+
+			r_usage->local_assocs = list_create(slurm_destroy_char);
+			slurm_addto_char_list(r_usage->local_assocs, 
+					      row[RESV_REQ_ASSOCS]);
+
+			r_usage->cluster = xstrdup(row[RESV_REQ_CLUSTER]);
+			r_usage->total_time = (row_end - row_start) * row_cpu;
+			r_usage->start = row_start;
+			r_usage->end = row_end;
+			list_append(resv_usage_list, r_usage);
+		}
+		mysql_free_result(result);
+
+		/* now get the jobs during this time */
 		query = xstrdup_printf("select %s from %s where "
 				       "(eligible < %d && (end >= %d "
 				       "|| end = 0)) "
@@ -320,6 +423,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			int job_id = atoi(row[JOB_REQ_JOBID]);
 			int assoc_id = atoi(row[JOB_REQ_ASSOCID]);
 			int wckey_id = atoi(row[JOB_REQ_WCKEYID]);
+			int resv_id = atoi(row[JOB_REQ_RESVID]);
 			int row_eligible = atoi(row[JOB_REQ_ELG]);
 			int row_start = atoi(row[JOB_REQ_START]);
 			int row_end = atoi(row[JOB_REQ_END]);
@@ -338,7 +442,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 
 			if(!row_start || ((row_end - row_start) < 1)) 
 				goto calc_cluster;
-
+			
 			seconds = (row_end - row_start);
 
 			if(row[JOB_REQ_SUSPENDED]) {
@@ -379,7 +483,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 
 					if((local_end - local_start) < 1)
 						continue;
-					
+
 					seconds -= (local_end - local_start);
 				}
 				mysql_free_result(result2);
@@ -388,14 +492,14 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				debug4("This job (%u) was suspended "
 				       "the entire hour", job_id);
 				continue;
-			}
+			} 
 
 			if(last_id != assoc_id) {
 				a_usage = xmalloc(sizeof(local_id_usage_t));
 				a_usage->id = assoc_id;
 				list_append(assoc_usage_list, a_usage);
 				last_id = assoc_id;
-			}
+			} 
 			
 			a_usage->a_cpu += seconds * row_acpu;
 
@@ -425,6 +529,32 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			if(!row[JOB_REQ_CLUSTER] || !row[JOB_REQ_CLUSTER][0]) 
 				continue;
 			
+			/* first figure out the reservation */
+			if(resv_id) {
+				list_iterator_reset(r_itr);
+				while((r_usage = list_next(r_itr))) {
+					if((r_usage->id == resv_id)
+					   && !strcmp(r_usage->cluster,
+						      row[JOB_REQ_CLUSTER])) {
+						int temp_end = row_end;
+						int temp_start = row_start;
+						if(r_usage->start > temp_start)
+							temp_start =
+								r_usage->start;
+						if(r_usage->end < temp_end)
+							temp_end = r_usage->end;
+						
+						if((temp_end - temp_start) 
+						   > 0) {
+							r_usage->a_cpu += 
+								(temp_end 
+								 - temp_start)
+								* row_acpu;
+						}
+					}
+				}
+			}
+
 			if(last_c_usage && !strcmp(last_c_usage->name,
 						   row[JOB_REQ_CLUSTER])) {
 				c_usage = last_c_usage;
@@ -471,7 +601,8 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					row_end = c_usage->end;
 				
 				if((row_end - row_start) > 0) {
-					seconds = (row_end - row_start);
+					seconds = (row_end - row_start)
+						* row_rcpu;
 					
 /* 					info("%d assoc %d reserved " */
 /* 					     "(%d)(%d-%d) * %d = %d " */
@@ -483,11 +614,75 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 /* 					     row_rcpu, */
 /* 					     seconds * row_rcpu, */
 /* 					     row_rcpu); */
-					c_usage->r_cpu += seconds * row_rcpu;
+					c_usage->r_cpu += seconds;
 				}
 			}
 		}
 		mysql_free_result(result);
+
+		/* now figure out how much more to add to the cluster
+		   from the reservations
+		*/
+		list_iterator_reset(r_itr);
+		while((r_usage = list_next(r_itr))) {
+			int64_t idle = r_usage->total_time - r_usage->a_cpu;
+			char *assoc = NULL;
+			ListIterator tmp_itr = NULL;
+
+			if(idle <= 0)
+				continue;
+			/* Since this reservation was added to the
+			   cluster and only certain people could run
+			   there we will use this as allocated time on
+			   the system.
+			*/
+			if(last_c_usage && !strcmp(last_c_usage->name,
+						   r_usage->cluster)) {
+				c_usage = last_c_usage;
+			} else {
+				list_iterator_reset(c_itr);
+				while((c_usage = list_next(c_itr))) {
+					if(!strcmp(c_usage->name,
+						   r_usage->cluster)) {
+						last_c_usage = c_usage;
+						break;
+					}
+				}				
+			}
+			c_usage->a_cpu += idle;
+			info("adding this much %ll to cluster %s",
+			     idle, c_usage->name);
+			/* now divide that time by the number of
+			   associations in the reservation and add
+			   them to each association */
+			seconds = idle / list_count(r_usage->local_assocs);
+			info("got %d for seconds for %d assocs", seconds,
+			     list_count(r_usage->local_assocs));
+			tmp_itr = list_iterator_create(r_usage->local_assocs);
+			while((assoc = list_next(tmp_itr))) {
+				int associd = atoi(assoc);
+				if(last_id != associd) {
+					list_iterator_reset(a_itr);
+					while((a_usage = list_next(a_itr))) {
+						if(!a_usage->id == associd) {
+							last_id = a_usage->id;
+							break;
+						}
+					}
+				}
+
+				if(!a_usage) {
+					a_usage = xmalloc(
+						sizeof(local_id_usage_t));
+					a_usage->id = associd;
+					list_append(assoc_usage_list, a_usage);
+					last_id = associd;
+				} 
+				
+				a_usage->a_cpu += seconds;
+			}
+			list_iterator_destroy(tmp_itr);
+		}
 
 		/* Now put the lists into the usage tables */
 		list_iterator_reset(c_itr);
@@ -673,13 +868,17 @@ end_it:
 	xfree(suspend_str);	
 	xfree(event_str);	
 	xfree(job_str);
+	xfree(resv_str);
 	list_iterator_destroy(a_itr);
 	list_iterator_destroy(c_itr);
 	list_iterator_destroy(w_itr);
+	list_iterator_destroy(r_itr);
 		
 	list_destroy(assoc_usage_list);
 	list_destroy(cluster_usage_list);
 	list_destroy(wckey_usage_list);
+	list_destroy(resv_usage_list);
+
 /* 	info("stop start %s", ctime(&curr_start)); */
 /* 	info("stop end %s", ctime(&curr_end)); */
 	return rc;

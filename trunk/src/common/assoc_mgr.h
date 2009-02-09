@@ -76,17 +76,21 @@ extern pthread_mutex_t assoc_mgr_wckey_lock;
 
 /* 
  * get info from the storage 
- * IN/OUT:  user - acct_user_rec_t with the name set of the user.
- *                 "default_account" will be filled in on
- *                 successful return DO NOT FREE.
- * IN/OUT: user_pptr - if non-NULL then return a pointer to the 
- *		       acct_user record in cache on success
- *                     DO NOT FREE.
- * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ * IN:  assoc - acct_association_rec_t with at least cluster and
+ *		    account set for account association.  To get user
+ *		    association set user, and optional partition.
+ *		    Sets "id" field with the association ID.
+ * IN: enforce - return an error if no such association exists
+ * IN/OUT: assoc_list - contains a list of assoc_rec ptrs to
+ *                      associations this user has in the list.  This
+ *                      list should be created with list_create(NULL)
+ *                      since we are putting pointers to memory used elsewhere.
+ * RET: SLURM_SUCCESS on success, else SLURM_ERROR
  */
-extern int assoc_mgr_fill_in_user(void *db_conn, acct_user_rec_t *user,
-				  int enforce,
-				  acct_user_rec_t **user_pptr);
+extern int assoc_mgr_get_user_assocs(void *db_conn,
+				     acct_association_rec_t *assoc,
+				     int enforce, 
+				     List assoc_list);
 
 /* 
  * get info from the storage 
@@ -105,6 +109,19 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 				   int enforce,
 				   acct_association_rec_t **assoc_pptr);
 
+/* 
+ * get info from the storage 
+ * IN/OUT:  user - acct_user_rec_t with the name set of the user.
+ *                 "default_account" will be filled in on
+ *                 successful return DO NOT FREE.
+ * IN/OUT: user_pptr - if non-NULL then return a pointer to the 
+ *		       acct_user record in cache on success
+ *                     DO NOT FREE.
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int assoc_mgr_fill_in_user(void *db_conn, acct_user_rec_t *user,
+				  int enforce,
+				  acct_user_rec_t **user_pptr);
 
 /* 
  * get info from the storage 
