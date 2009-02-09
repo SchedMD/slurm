@@ -142,7 +142,6 @@ static void _pre_allocate(bg_record_t *bg_record)
 	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionID,
 				  bg_record->bg_block_id)) != STATUS_OK)
 		error("bridge_set_data(RM_PartitionID)", bg_err_str(rc));
-
 #endif
 	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionMloaderImg, 
 				  bg_record->mloaderimage)) != STATUS_OK)
@@ -380,7 +379,7 @@ extern int configure_block(bg_record_t *bg_record)
 #endif
 	_pre_allocate(bg_record);
 
-	if(bg_record->cpus_per_bp < procs_per_node)
+	if(bg_record->cpu_cnt < procs_per_node)
 		configure_small_block(bg_record);
 	else
 		configure_block_switches(bg_record);
@@ -510,8 +509,7 @@ int read_bg_blocks()
 			goto clean_up;
 
 		bg_record->node_cnt = bp_cnt;
-		bg_record->cpus_per_bp = 
-			bluegene_proc_ratio * bg_record->node_cnt;
+		bg_record->cpu_cnt = bluegene_proc_ratio * bg_record->node_cnt;
 #endif
 		bg_record->job_running = NO_JOB_RUNNING;
 		
@@ -547,6 +545,36 @@ int read_bg_blocks()
 		}
 		
 		if(small) {
+			if ((rc = bridge_get_data(block_ptr,
+						  RM_PartitionOptions,
+						  &tmp_char))
+			    != STATUS_OK) {
+				error("bridge_get_data(RM_PartitionOptions): "
+				      "%s", bg_err_str(rc));
+				goto clean_up;
+			} else if(tmp_char) {
+				switch(tmp_char[0]) {
+				case 's':
+					bg_record->conn_type = SELECT_HTC_S;
+					break;
+				case 'd':
+					bg_record->conn_type = SELECT_HTC_D;
+					break;
+				case 'v':
+					bg_record->conn_type = SELECT_HTC_V;
+					break;
+				case 'l':
+					bg_record->conn_type = SELECT_HTC_L;
+					break;
+				default:
+					bg_record->conn_type = SELECT_SMALL;
+					break;
+				}
+				
+				free(tmp_char);
+			} else
+				bg_record->conn_type = SELECT_SMALL;
+
 			if((rc = bridge_get_data(block_ptr,
 						 RM_PartitionFirstNodeCard,
 						 &ncard))
@@ -557,7 +585,6 @@ int read_bg_blocks()
 				goto clean_up;
 			}
 			
-			bg_record->conn_type = SELECT_SMALL;
 			if((rc = bridge_get_data(block_ptr,
 						 RM_PartitionNodeCardNum,
 						 &i))
@@ -581,12 +608,11 @@ int read_bg_blocks()
 
 			bg_record->quarter = quarter;
 
-
 			debug3("%s is in quarter %d nodecard %d",
 			       bg_record->bg_block_id,
 			       bg_record->quarter,
 			       bg_record->nodecard);
-			bg_record->cpus_per_bp = procs_per_node/i;
+			bg_record->cpu_cnt = procs_per_node/i;
 			bg_record->node_cnt = bluegene_bp_node_cnt/i;
 			if(set_ionodes(bg_record) == SLURM_ERROR) 
 				error("couldn't create ionode_bitmap "
@@ -613,15 +639,50 @@ int read_bg_blocks()
 			nc_id = atoi((char*)tmp_char+1);
 			free(tmp_char);
 			io_start = nc_id * bluegene_io_ratio;
-			bg_record->ionode_bitmap = bit_alloc(bluegene_numpsets);
-			/* Set the correct ionodes being used in this
-			   block */
-			bit_nset(bg_record->ionode_bitmap,
-				 io_start, io_start+i);
+			if(bg_record->node_cnt < bluegene_nodecard_node_cnt) {
+				rm_ionode_t *ionode;
+
+				/* figure out the ionode we are using */
+				if ((rc = bridge_get_data(
+					     ncard, 
+					     RM_NodeCardFirstIONode, 
+					     &ionode)) != STATUS_OK) {
+					error("bridge_get_data("
+					      "RM_NodeCardFirstIONode): %d",
+					      rc);
+					goto clean_up;
+				}
+				if ((rc = bridge_get_data(ionode,
+							  RM_IONodeID, 
+							  &tmp_char)) 
+				    != STATUS_OK) {				
+					error("bridge_get_data("
+					      "RM_NodeCardIONodeNum): %s", 
+					      bg_err_str(rc));
+					rc = SLURM_ERROR;
+					goto clean_up;
+				}			
+				
+				if(!tmp_char)
+					goto clean_up;
+				/* just add the ionode num to the
+				 * io_start */
+				io_start += atoi((char*)tmp_char+1);
+				free(tmp_char);
+				/* make sure i is 0 since we are only using
+				 * 1 ionode */
+				i = 0;
+			}
+
+			if(set_ionodes(bg_record, io_start, i) == SLURM_ERROR)
+				error("couldn't create ionode_bitmap "
+				      "for ionodes %d to %d",
+				      io_start, io_start+i);
 #endif
 		} else {
 #ifdef HAVE_BGL
-			bg_record->cpus_per_bp = procs_per_node;
+			bg_record->cpu_cnt = procs_per_node 
+				* bg_record->bp_count;
 			bg_record->node_cnt =  bluegene_bp_node_cnt
 				* bg_record->bp_count;
 #endif
@@ -1053,10 +1114,10 @@ extern int load_state_file(char *dir_name)
 		if(bluegene_bp_node_cnt > bg_record->node_cnt) {
 			ionodes = bluegene_bp_node_cnt 
 				/ bg_record->node_cnt;
-			bg_record->cpus_per_bp =
-				procs_per_node / ionodes;
+			bg_record->cpu_cnt = procs_per_node / ionodes;
 		} else {
-			bg_record->cpus_per_bp = procs_per_node;
+			bg_record->cpu_cnt = procs_per_node
+				* bg_record->bp_count;
 		}
 #ifdef HAVE_BGL
 		bg_record->node_use = bg_info_record->node_use;

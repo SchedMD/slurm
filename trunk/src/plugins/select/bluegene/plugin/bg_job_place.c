@@ -337,7 +337,6 @@ static bg_record_t *_find_matching_block(List block_list,
 {
 	bg_record_t *bg_record = NULL;
 	ListIterator itr = NULL;
-	uint32_t proc_cnt = 0;
 	char tmp_char[256];
 	
 	debug("number of blocks to check: %d state %d", 
@@ -369,15 +368,15 @@ static bg_record_t *_find_matching_block(List block_list,
 		}
 
 		/* Check processor count */
-		proc_cnt = bg_record->bp_count * bg_record->cpus_per_bp;
 		debug3("asking for %u-%u looking at %d", 
-		       request->procs, max_procs, proc_cnt);
-		if ((proc_cnt < request->procs)
-		    || ((max_procs != NO_VAL) && (proc_cnt > max_procs))) {
+		       request->procs, max_procs, bg_record->cpu_cnt);
+		if ((bg_record->cpu_cnt < request->procs)
+		    || ((max_procs != NO_VAL)
+			&& (bg_record->cpu_cnt > max_procs))) {
 			/* We use the proccessor count per block here
 			   mostly to see if we can run on a smaller block. 
 			 */
-			convert_num_unit((float)proc_cnt, tmp_char, 
+			convert_num_unit((float)bg_record->cpu_cnt, tmp_char, 
 					 sizeof(tmp_char), UNIT_NONE);
 			debug("block %s CPU count (%s) not suitable",
 			      bg_record->bg_block_id, 
@@ -451,6 +450,21 @@ static bg_record_t *_find_matching_block(List block_list,
 		/***********************************************/
 		if ((request->conn_type != bg_record->conn_type)
 		    && (request->conn_type != SELECT_NAV)) {
+#ifndef HAVE_BGL
+			if(request->conn_type >= SELECT_SMALL) {
+				/* we only want to reboot blocks if
+				   they have to be so skip booted
+				   blocks if in small state
+				*/
+				if(check_image 
+				   && (bg_record->state
+				       == RM_PARTITION_READY)) {
+					*allow = 1;
+					continue;			
+				} 
+				goto good_conn_type;
+			} 
+#endif
 			debug("bg block %s conn-type not usable asking for %s "
 			      "bg_record is %s", 
 			      bg_record->bg_block_id,
@@ -458,7 +472,9 @@ static bg_record_t *_find_matching_block(List block_list,
 			      convert_conn_type(bg_record->conn_type));
 			continue;
 		} 
-
+#ifndef HAVE_BGL
+		good_conn_type:
+#endif
 		/*****************************************/
 		/* match up geometry as "best" possible  */
 		/*****************************************/
@@ -1271,7 +1287,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 #ifdef HAVE_BG
 	bg_record_t* bg_record = NULL;
 	char buf[100];
-	uint16_t tmp16 = (uint16_t)NO_VAL;
+	uint16_t conn_type = (uint16_t)NO_VAL;
 	List block_list = NULL;
 	int blocks_added = 0;
 	time_t starttime = time(NULL);
@@ -1289,6 +1305,31 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 
 	job_block_test_list = bg_job_block_list;
 	
+	select_g_get_jobinfo(job_ptr->select_jobinfo,
+			     SELECT_DATA_CONN_TYPE, &conn_type);
+	if(conn_type == SELECT_NAV) {
+		uint32_t max_procs = (uint32_t)NO_VAL;
+		if(min_nodes > 1) {
+			conn_type = SELECT_TORUS;
+			/* make sure the max procs are set to NO_VAL */
+			select_g_set_jobinfo(job_ptr->select_jobinfo,
+					     SELECT_DATA_MAX_PROCS,
+					     &max_procs);
+
+		} else {
+			select_g_get_jobinfo(job_ptr->select_jobinfo,
+					     SELECT_DATA_MAX_PROCS,
+					     &max_procs);
+			if((max_procs > procs_per_node)
+			   || (max_procs == NO_VAL))
+				conn_type = SELECT_TORUS;
+			else
+				conn_type = SELECT_SMALL;
+		}
+		select_g_set_jobinfo(job_ptr->select_jobinfo,
+				     SELECT_DATA_CONN_TYPE,
+				     &conn_type);
+	}
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo, buf, sizeof(buf), 
 				SELECT_PRINT_MIXED);
 	debug("bluegene:submit_job: %s nodes=%u-%u-%u", 
@@ -1406,10 +1447,10 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 						     SELECT_DATA_GEOMETRY, 
 						     &bg_record->geo);
 
-				tmp16 = bg_record->conn_type;
-				select_g_set_jobinfo(job_ptr->select_jobinfo,
-						     SELECT_DATA_CONN_TYPE, 
-						     &tmp16);
+				/* tmp16 = bg_record->conn_type; */
+/* 				select_g_set_jobinfo(job_ptr->select_jobinfo, */
+/* 						     SELECT_DATA_CONN_TYPE,  */
+/* 						     &tmp16); */
 			}
 			if (mode == SELECT_MODE_RUN_NOW) {
 				_build_select_struct(job_ptr, 

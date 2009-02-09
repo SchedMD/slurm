@@ -119,8 +119,8 @@ static int _block_is_deallocating(bg_record_t *bg_record)
 				if(remove_from_bg_list(bg_job_block_list, 
 						       bg_record) 
 				   == SLURM_SUCCESS) {
-					num_unused_cpus += bg_record->bp_count
-						* bg_record->cpus_per_bp;
+					num_unused_cpus += 
+						bg_record->cpu_cnt;
 				} 
 			} else {
 				debug("Block %s was in a ready state "
@@ -304,6 +304,49 @@ extern int update_block_list()
 			bg_record->node_use = node_use;
 			updated = 1;
 		}
+#else
+		if(bg_record->node_cnt < bluegene_bp_node_cnt) {
+			char *mode = NULL;
+			uint16_t conn_type = SELECT_SMALL;
+			if ((rc = bridge_get_data(block_ptr,
+						  RM_PartitionOptions,
+						  &mode))
+			    != STATUS_OK) {
+				error("bridge_get_data(RM_PartitionOptions): "
+				      "%s", bg_err_str(rc));
+				updated = -1;
+				goto next_block;
+			} else if(mode) {
+				switch(mode[0]) {
+				case 's':
+					conn_type = SELECT_HTC_S;
+					break;
+				case 'd':
+					conn_type = SELECT_HTC_D;
+					break;
+				case 'v':
+					conn_type = SELECT_HTC_V;
+					break;
+				case 'l':
+					conn_type = SELECT_HTC_L;
+					break;
+				default:
+					conn_type = SELECT_SMALL;
+					break;
+				}
+				free(mode);
+			}
+			
+			if(bg_record->conn_type != conn_type) {
+				debug("mode of small Block %s was %u "
+				      "and now is %u",
+				      bg_record->bg_block_id, 
+				      bg_record->conn_type, 
+				      conn_type);
+				bg_record->conn_type = conn_type;
+				updated = 1;
+			}
+		}
 #endif		
 		if ((rc = bridge_get_data(block_ptr, RM_PartitionState,
 					  &state))
@@ -340,9 +383,7 @@ extern int update_block_list()
 				if(remove_from_bg_list(bg_job_block_list, 
 						       bg_record) 
 				   == SLURM_SUCCESS) {
-					num_unused_cpus += 
-						bg_record->bp_count
-						* bg_record->cpus_per_bp;
+					num_unused_cpus += bg_record->cpu_cnt;
 				}
 				remove_from_bg_list(bg_booted_block_list,
 						    bg_record);			
@@ -384,9 +425,7 @@ extern int update_block_list()
 						   bg_record) 
 					   == SLURM_SUCCESS) {
 						num_unused_cpus += 
-							bg_record->bp_count
-							* bg_record->
-							cpus_per_bp;
+							bg_record->cpu_cnt;
 					} 
 				} else 
 					error("block %s in an error "

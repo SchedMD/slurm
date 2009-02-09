@@ -711,14 +711,33 @@ unpack_error:
 
 static char *_job_conn_type_string(uint16_t inx)
 {
-	if (inx == SELECT_TORUS)
+	switch(inx) {
+	case SELECT_TORUS:
 		return "torus";
-	else if (inx == SELECT_MESH)
+		break;
+	case SELECT_MESH:
 		return "mesh";
-	else if (inx == SELECT_SMALL)
+		break;
+	case SELECT_SMALL:
 		return "small";
-	else
+		break;
+#ifndef HAVE_BGL
+	case SELECT_HTC_S:
+		return "htc_s";
+		break;
+	case SELECT_HTC_D:
+		return "htc_d";
+		break;
+	case SELECT_HTC_V:
+		return "htc_v";
+		break;
+	case SELECT_HTC_L:
+		return "htc_l";
+		break;
+#endif
+	default: 
 		return "n/a";
+	}
 }
 
 static char *_yes_no_string(uint16_t inx)

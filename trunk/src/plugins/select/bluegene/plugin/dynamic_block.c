@@ -406,7 +406,7 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 
 	if(nodecard != (uint16_t) NO_VAL)
 		small_size = bluegene_bp_nodecard_cnt;
-	found_record->cpus_per_bp = procs_per_node/small_size;
+	found_record->cpu_cnt = procs_per_node/small_size;
 	found_record->node_cnt = bluegene_bp_node_cnt/small_size;
 	found_record->quarter = quarter; 
 	found_record->nodecard = nodecard;
@@ -449,7 +449,7 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 		new_ba_node = ba_copy_node(ba_node);
 		for (i=0; i<BA_SYSTEM_DIMENSIONS; i++){
 			for(j=0;j<NUM_PORTS_PER_NODE;j++) {
-				ba_node->axis_switch[i].int_wire[j].used = 0;	
+				ba_node->axis_switch[i].int_wire[j].used = 0;
 				if(i!=X) {
 					if(j==3 || j==4) 
 						ba_node->axis_switch[i].
@@ -484,7 +484,7 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 	found_record->node_use = SELECT_COPROCESSOR_MODE;
 	if(nodecard != (uint16_t) NO_VAL)
 		small_size = bluegene_bp_nodecard_cnt;
-	found_record->cpus_per_bp = procs_per_node/small_size;
+	found_record->cpu_cnt = procs_per_node/small_size;
 	found_record->node_cnt = bluegene_bp_node_cnt/small_size;
 	found_record->quarter = quarter; 
 	found_record->nodecard = nodecard;
@@ -494,7 +494,7 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 		      found_record->quarter, found_record->nodecard);
 #else
 	xassert(bluegene_proc_ratio);
-	found_record->cpus_per_bp = bluegene_proc_ratio * size;
+	found_record->cpu_cnt = bluegene_proc_ratio * size;
 	found_record->node_cnt = size;
 
 	found_record->ionode_bitmap = bit_copy(ionodes);
@@ -578,7 +578,6 @@ static int _breakup_blocks(List block_list, List new_blocks,
 	int rc = SLURM_ERROR;
 	bg_record_t *bg_record = NULL;
 	ListIterator itr;
-	int proc_cnt=0;
 	int total_proc_cnt=0;
 	uint16_t last_quarter = (uint16_t) NO_VAL;
 	char tmp_char[256];
@@ -621,9 +620,8 @@ static int _breakup_blocks(List block_list, List new_blocks,
 			       alpha_num[request->start[Y]],
 			       alpha_num[request->start[Z]]);
 		}
-		proc_cnt = bg_record->bp_count * 
-			bg_record->cpus_per_bp;
-		if(proc_cnt == request->procs) {
+
+		if(bg_record->cpu_cnt == request->procs) {
 			debug2("found it here %s, %s",
 			       bg_record->bg_block_id,
 			       bg_record->nodes);
@@ -637,12 +635,12 @@ static int _breakup_blocks(List block_list, List new_blocks,
 		}
 		if(bg_record->node_cnt > bluegene_bp_node_cnt)
 			continue;
-		if(proc_cnt < request->procs) {
+		if(bg_record->cpu_cnt < request->procs) {
 			if(last_quarter != bg_record->quarter){
 				last_quarter = bg_record->quarter;
-				total_proc_cnt = proc_cnt;
+				total_proc_cnt = bg_record->cpu_cnt;
 			} else {
-				total_proc_cnt += proc_cnt;
+				total_proc_cnt += bg_record->cpu_cnt;
 			}
 			debug2("1 got %d on quarter %d",
 			       total_proc_cnt, last_quarter);
@@ -710,8 +708,7 @@ static int _breakup_blocks(List block_list, List new_blocks,
 			       alpha_num[request->start[Z]]);
 		}
 				
-		proc_cnt = bg_record->bp_count * bg_record->cpus_per_bp;
-		if(proc_cnt == request->procs) {
+		if(bg_record->cpu_cnt == request->procs) {
 			debug2("found it here %s, %s",
 			       bg_record->bg_block_id,
 			       bg_record->nodes);
@@ -726,12 +723,12 @@ static int _breakup_blocks(List block_list, List new_blocks,
 
 		if(bg_record->node_cnt > bluegene_bp_node_cnt)
 			continue;
-		if(proc_cnt < request->procs) {
+		if(bg_record->cpu_cnt < request->procs) {
 			if(last_quarter != bg_record->quarter){
 				last_quarter = bg_record->quarter;
-				total_proc_cnt = proc_cnt;
+				total_proc_cnt = bg_record->cpu_cnt;
 			} else {
-				total_proc_cnt += proc_cnt;
+				total_proc_cnt += bg_record->cpu_cnt;
 			}
 			debug2("got %d on quarter %d",
 			       total_proc_cnt, last_quarter);

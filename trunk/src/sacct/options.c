@@ -1211,6 +1211,9 @@ void do_list(void)
 	jobacct_job_rec_t *job = NULL;
 	jobacct_step_rec_t *step = NULL;
 	
+	if(!jobs)
+		return;
+
 	itr = list_iterator_create(jobs);
 	while((job = list_next(itr))) {
 		if(job->sacct.min_cpu == NO_VAL)
@@ -1252,7 +1255,10 @@ void do_list_completion(void)
 {
 	ListIterator itr = NULL;
 	jobcomp_job_rec_t *job = NULL;
-	
+
+	if(!jobs)
+		return;
+
 	itr = list_iterator_create(jobs);
 	while((job = list_next(itr))) {
 		print_fields(JOBCOMP, job);

@@ -249,6 +249,7 @@ typedef struct {
 } ba_bp_map_t;
 
 /* Global */
+extern my_bluegene_t *bg;
 extern List bp_map_list; /* list used for conversion from XYZ to Rack
 			  * midplane */
 extern char letters[62]; /* complete list of letters used in smap */
@@ -516,5 +517,9 @@ extern int load_block_wiring(char *bg_block_id);
  * node list
  */
 extern List get_and_set_block_wiring(char *bg_block_id);
+
+/* make sure a node is in the system return 1 if it is 0 if not */
+extern int validate_coord(int *coord);
+
 
 #endif /* _BLOCK_ALLOCATOR_H_ */

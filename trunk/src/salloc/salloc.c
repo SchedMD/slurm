@@ -637,6 +637,7 @@ static int _wait_bluegene_block_ready(resource_allocation_response_msg_t *alloc)
 	int max_delay = BG_FREE_PREVIOUS_BLOCK + BG_MIN_BLOCK_BOOT +
 		(BG_INCR_BLOCK_BOOT * alloc->node_cnt);
 
+	pending_job_id = alloc->job_id;
 	select_g_get_jobinfo(alloc->select_jobinfo, SELECT_DATA_BLOCK_ID,
 			     &block_id);
 
@@ -671,6 +672,7 @@ static int _wait_bluegene_block_ready(resource_allocation_response_msg_t *alloc)
 	else
 		error("Block %s still not ready", block_id);
 	xfree(block_id);
+	pending_job_id = 0;
 
 	return is_ready;
 }
