@@ -21,7 +21,15 @@ SLURM</a> (Supercomputing 2008, November 2008)</li>
 </ul>
 
 <h2>Publications</h2>
-<b>Enhancing an Open Source Resource Manager with Multi-Core/Multi-threaded Support</b>,
+
+<p><a href="http://www.linux-mag.com/id/7239/1/">
+<b>Caos NSA and Perceus: All-in-one Cluster Software Stack</b></a>,
+Jeffrey B. Layton,
+<i>Linux Magazine</i>,
+5 February 2009.
+</p>
+
+<p><b>Enhancing an Open Source Resource Manager with Multi-Core/Multi-threaded Support</b>,
 S. M. Balle and D. Palermo,
 <i>Job Scheduling Strategies for Parallel Processing</i>,
 2007.</p>
@@ -39,6 +47,6 @@ volume 2862 of <i>Lecture Notes in Computer Science</i>,
 pages 44-60,
 Springer-Verlag, 2003.</p>
 
-<p style="text-align:center;">Last modified 12 November 2008</p>
+<p style="text-align:center;">Last modified 9 February 2009</p>
 
 <!--#include virtual="footer.txt"-->
