@@ -624,7 +624,7 @@ void parse_command_line(int argc, char **argv)
 
 	while (1) {		/* now cycle through the command line */
 		c = getopt_long(argc, argv,
-				"aA:bcC:deE:f:g:hj:lno:OpPr:s:S:tu:vV",
+				"aA:bcC:deE:f:g:hj:lno:OpPr:s:S:tu:vVX",
 				long_options, &optionIndex);
 		if (c == -1)
 			break;
