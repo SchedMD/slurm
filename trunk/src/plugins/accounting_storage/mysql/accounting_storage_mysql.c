@@ -7165,11 +7165,14 @@ extern int acct_storage_p_remove_reservation(mysql_conn_t *mysql_conn,
 			       resv_table, resv->time_start_prev,
 			       resv->id, 
 			       resv->time_start, resv->cluster);
-	/* then update the remaining ones with a deleted flag */
+	/* then update the remaining ones with a deleted flag and end
+	 * time of the time_start_prev which is set to when the
+	 * command was issued */
 	xstrfmtcat(query,
-		   "update %s set deleted=1 where deleted=0 and "
+		   "update %s set end=%d, deleted=1 where deleted=0 and "
 		   "id=%u and start=%d and cluster='%s;'",
-		   resv_table, resv->id, resv->time_start,
+		   resv_table, resv->time_start_prev,
+		   resv->id, resv->time_start,
 		   resv->cluster);
 	
 	debug3("%d(%d) query\n%s",
