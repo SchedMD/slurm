@@ -1392,6 +1392,7 @@ _pack_update_node_msg(update_node_msg_t * msg, Buf buffer)
 	pack16(msg->node_state, buffer);
 	packstr(msg->features, buffer);
 	packstr(msg->reason, buffer);
+	pack32(msg->weight, buffer);
 }
 
 static int
@@ -1409,6 +1410,7 @@ _unpack_update_node_msg(update_node_msg_t ** msg, Buf buffer)
 	safe_unpack16(&tmp_ptr->node_state, buffer);
 	safe_unpackstr_xmalloc(&tmp_ptr->features, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&tmp_ptr->reason, &uint32_tmp, buffer);
+	safe_unpack32(&tmp_ptr->weight, buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:

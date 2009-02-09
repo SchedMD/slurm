@@ -182,3 +182,16 @@ void slurm_init_resv_desc_msg (reserve_request_msg_t * update_resv_msg)
 	update_resv_msg->users		= NULL;
 	update_resv_msg->accounts	= NULL;
 }
+
+/*
+ * slurm_init_update_node_msg - initialize node update message
+ * OUT update_node_msg - user defined node descriptor
+ */
+void slurm_init_update_node_msg (update_node_msg_t * update_node_msg)
+{
+	update_node_msg->node_names = NULL;
+	update_node_msg->features = NULL;
+	update_node_msg->reason = NULL;
+	update_node_msg->node_state = (uint16_t) NO_VAL;
+	update_node_msg->weight = (uint32_t) NO_VAL;
+}

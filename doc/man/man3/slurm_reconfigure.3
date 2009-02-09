@@ -4,7 +4,7 @@ slurm_create_partition, slurm_create_reservation,
 slurm_delete_partition, slurm_delete_reservation, 
 slurm_init_part_desc_msg, slurm_init_resv_desc_msg,
 slurm_reconfigure, slurm_shutdown, slurm_update_job, 
-slurm_update_node, slurm_update_partition,
+,slurm_init_update_node_msg slurm_update_node, slurm_update_partition,
 slurm_update_reservation
 \- Slurm administrative functions 
 .SH "SYNTAX"
@@ -58,6 +58,12 @@ int \fBslurm_shutdown\fR (
 int \fBslurm_update_job\fR (
 .br 
 	job_desc_msg_t *\fIupdate_job_msg_ptr\fP
+.br 
+);
+.LP
+void \fBslurm_init_update_node_msg\fR(
+.br
+	update_node_msg_t *\fIupdate_node_msg_ptr\fP 
 .br 
 );
 .LP
@@ -166,6 +172,11 @@ Note the job priority of zero represents a job that will not be scheduled.
 Slurm uses the priority one to represent jobs that can not be scheduled until 
 additional nodes are returned to service (i.e. not DOWN, DRAINED, or FAILED). 
 This permits lower priority jobs to utilize those resources which are available.
+.LP 
+\fBslurm_init_update_node_msg\fR Initialize the contents of an update mpde 
+descriptor with default values. Note: \fBslurm_init_update_node_msg\fR is 
+not equivalent to setting the data structure values to zero. Execute 
+this function before executing \fBslurm_update_node\fR.
 .LP 
 \fBslurm_update_node\fR Request that the state of one or more nodes be updated. 
 Note that the state of a node (e.g. DRAINING, IDLE, etc.) may be changed, but 
@@ -332,6 +343,8 @@ int main (int argc, char *argv[])
 .br
 	}
 .LP 
+	slurm_init_update_node_msg (&update_node_msg);
+.br
 	update_node_msg.node_names = "lx[10\-12]";
 .br
 	update_node_msg.node_state = NODE_STATE_DRAINING ;

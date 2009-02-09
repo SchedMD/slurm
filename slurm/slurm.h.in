@@ -1201,6 +1201,7 @@ typedef struct slurm_update_node_msg {
 	uint16_t node_state;	/* see enum node_states */
 	char *reason;   	/* reason for node being DOWN or DRAINING */
 	char *features;		/* new feature for node */
+	uint32_t weight;	/* new weight for node */
 } update_node_msg_t;
 
 typedef struct partition_info update_part_msg_t;
@@ -1901,6 +1902,12 @@ extern void slurm_print_node_table PARAMS((
  */
 extern char *slurm_sprint_node_table PARAMS(( node_info_t * node_ptr, 
 					     int one_liner ));
+
+/*
+ * slurm_init_update_node_msg - initialize node update message
+ * OUT update_node_msg - user defined node descriptor
+ */
+void slurm_init_update_node_msg (update_node_msg_t * update_node_msg);
 
 /*
  * slurm_update_node - issue RPC to a node's configuration per request, 

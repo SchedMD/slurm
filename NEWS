@@ -14,6 +14,8 @@ documents those changes that are of interest to users and admins.
  -- Add partition-specific DefaultTime (default time limit for jobs, 
     if not specified use MaxTime for the partition. Patch from Par
     Andersson, National Supercomputer Centre, Sweden.
+ -- Add support for the scontrol command to be able change the Weight
+    associated with nodes. Patch from Kumar Krishna.
  
 * Changes in SLURM 1.4.0-pre7
 =============================
