@@ -40,7 +40,7 @@
 <a name=general>
 <h2>Job Priority Factors In General</h2></a>
 
-<P> The jobs priority at any given time will be a weighted sum of all the factors that have been enabled in the slurm configuration file.  Job priority can be expressed as:</P>
+<P> The job's priority at any given time will be a weighted sum of all the factors that have been enabled in the slurm configuration file.  Job priority can be expressed as:</P>
 <PRE>
 Job_priority =
 	(age_weight) * (time_eligible_in_queue_factor) +
@@ -56,7 +56,7 @@ Job_priority =
 <a name=age>
 <h2>Age Factor</h2></a>
 
-<P> The age factor represents the length of time a job has been sitting in the queue and eligible to run.  In general, the longer a job waits in the queue, the larger its age factor grows.  However, the age factor for a dependent job will not change while it waits for the job it depends on to complete.  Also, the age factor of a queued job whose node or time limits exceed the cluster's current limits will not change.</P>
+<P> The age factor represents the length of time a job has been sitting in the queue and eligible to run.  In general, the longer a job waits in the queue, the larger its age factor grows.  However, the age factor for a dependent job will not change while it waits for the job it depends on to complete.  Also, the age factor will not change when scheduling is withheld for a job whose node or time limits exceed the cluster's current limits.</P>
 
 <P> At some configurable length of time (<i>PriorityMaxAge</i>), the age factor will max out to 1.0.</P>
 
@@ -82,7 +82,7 @@ Job_priority =
 <a name=fairshare>
 <h2>Fair-share Factor</h2></a>
 
-<P> The fair-share component to a job's priority influences the order to which a user's queued jobs are scheduled to run based on the portion of the computing resources they have been allocated and the resources their jobs have already consumed.  The fair-share factor does not involve a fixed allotment, whereby a user's access to a machine is cut off once that allotment is reached.</P>
+<P> The fair-share component to a job's priority influences the order in which a user's queued jobs are scheduled to run based on the portion of the computing resources they have been allocated and the resources their jobs have already consumed.  The fair-share factor does not involve a fixed allotment, whereby a user's access to a machine is cut off once that allotment is reached.</P>
 
 <P> Instead, the fair-share factor serves to prioritize queued jobs such that those jobs charging accounts that are under-serviced are scheduled first, while jobs charging accounts that are over-serviced are scheduled when the machine would otherwise go idle.</P>
 
@@ -117,7 +117,7 @@ Where:
 <DT> S<sub>user</sub>
 <DD> are the number of shares of the account allocated to the user
 <DT> S<sub>sibblings</sub>
-<DD> are the total number of shares allocated to all users permitted to charge the account (including Suser)
+<DD> are the total number of shares allocated to all users permitted to charge the account (including S<sub>user</sub>)
 <DT> S<sub>account</sub>
 <DD> are the number of shares of the parent account allocated to the account
 <DT> S<sub>sibbling-accounts</sub>
@@ -276,7 +276,7 @@ Where:
 
 <h3>Example</h3>
 
-<P> The following example demonstrates the effective usage calculations and resultant fair-share factors.</P>
+<P> The following example demonstrates the effective usage calculations and resultant fair-share factors. (See Figure 3 below.)</P>
 
 <P> The machine's computing resources are allocated to accounts A and D with 40 and 60 shares respectively.  Account A is further divided into two children accounts, B with 30 shares and C with 10 shares.  Account D is further divided into two children accounts, E with 25 shares and F with 35 shares.</P>
 
