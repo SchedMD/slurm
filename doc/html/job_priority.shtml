@@ -54,7 +54,7 @@ Job_priority =
 
 <!-------------------------------------------------------------------------->
 <a name=age>
-<h2>Age Factor</h2>
+<h2>Age Factor</h2></a>
 
 <P> The age factor represents the length of time a job has been sitting in the queue and eligible to run.  In general, the longer a job waits in the queue, the larger its age factor grows.  However, the age factor for a dependent job will not change while it waits for the job it depends on to complete.  Also, the age factor of a queued job whose node or time limits exceed the cluster's current limits will not change.</P>
 
@@ -62,25 +62,25 @@ Job_priority =
 
 <!-------------------------------------------------------------------------->
 <a name=jobsize>
-<h2>Job Size Factor</h2>
+<h2>Job Size Factor</h2></a>
 
 <P> The job size factor correlates to the number of nodes the job has requested.  This factor can be configured to favor larger jobs or smaller jobs based on the state of the <i>PriorityFavorSmall</i> boolean in the slurm configuration file.  When <i>PriorityFavorSmall</i> is 0, the larger the job, the greater its job size factor will be.  A job that requests all the nodes on the machine will get a job size factor of 1.0.  When the <i>PriorityFavorSmall</i> Boolean is 1, the single node job will receive the 1.0 job size factor.</P>
 
 <!-------------------------------------------------------------------------->
 <a name=partition>
-<h2>Partition Factor</h2>
+<h2>Partition Factor</h2></a>
 
 <P> Each node partition can be assigned a factor from 0.0 to 1.0.  The higher the number, the greater the job priority will be for jobs that are slated to run in this partition.</P>
 
 <!-------------------------------------------------------------------------->
 <a name=qos>
-<h2>Quality of Service (QOS) Factor</h2>
+<h2>Quality of Service (QOS) Factor</h2></a>
 
 <P> Each QOS can be assigned a factor from 0.0 to 1.0.  The higher the number, the greater the job priority will be for jobs that request this QOS.</P>
 
 <!-------------------------------------------------------------------------->
 <a name=fairshare>
-<h2>Fair-share Factor</h2>
+<h2>Fair-share Factor</h2></a>
 
 <!-------------------------------------------------------------------------->
 <p style="text-align:center;">Last modified 9 February 2009</p>

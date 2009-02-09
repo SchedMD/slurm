@@ -85,6 +85,9 @@ FIFO (First In First Out, default), backfill, gang (time-slicing for parallel jo
 The Maui Scheduler</a>, and  
 <a href="http://www.clusterresources.com/pages/products/moab-cluster-suite.php">
 Moab Cluster Suite</a>.
+There is also a <a href="job_priority.html">job prioritization</a> plugin 
+available for use with the FIFO, backfil and gang schedulers. Jobs can be 
+prioritized by age, size, fair-share allocation, etc.</li>
 
 <li><a href="switchplugins.html">Switch or interconnect</a>: 
 <a href="http://www.quadrics.com/">Quadrics</a> 
@@ -170,6 +173,6 @@ PartitionName=DEFAULT MaxTime=UNLIMITED MaxNodes=4096
 PartitionName=batch Nodes=lx[0041-9999]
 </pre>
 
-<p style="text-align:center;">Last modified 13 November 2008</p>
+<p style="text-align:center;">Last modified 9 February 2009</p>
 
 <!--#include virtual="footer.txt"-->
