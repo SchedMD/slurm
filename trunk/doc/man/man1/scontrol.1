@@ -446,6 +446,16 @@ node states given their prior state.
 Generally only "DRAIN", "FAIL" and "RESUME" should be used.
 
 .TP
+\fIWeight\fP=<weight>
+Identify weight to be associated with specified nodes. This allows 
+dynamic changes to weight associated with nodes, which will be used 
+for the subsequent node allocation decisions. 
+Any previously identified weight will be overwritten with the new value.\fBNOTE:\fR The \fIWeight\fP associated with nodes will be reset to
+the values specified in slurm.conf (if any) upon slurmctld restart
+or reconfiguration.
+Update slurm.conf with any changes meant to be persistent.
+
+.TP
 \fBSPECIFICATIONS FOR CREATE, UPDATE, AND DELETE COMMANDS, PARTITIONS\fR
 .TP
 \fIAllowGroups\fP=<name>

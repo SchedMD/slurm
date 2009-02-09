@@ -107,6 +107,7 @@ static void	_sync_bitmaps(struct node_record *node_ptr, int job_count);
 static void	_update_config_ptr(bitstr_t *bitmap,
 				struct config_record *config_ptr);
 static int	_update_node_features(char *node_names, char *features);
+static int	_update_node_weight(char *node_names, uint32_t weight);
 static bool 	_valid_node_state_change(uint16_t old, uint16_t new); 
 #ifndef HAVE_FRONT_END
 static void	_node_not_resp (struct node_record *node_ptr, time_t msg_time);
@@ -1240,6 +1241,18 @@ int update_node ( update_node_msg_t * update_node_msg )
 			update_node_msg->node_names, 
 			update_node_msg->features);
 	}
+	
+
+	/* Update weight. Weight is part of config_ptr, 
+	 * hence do the splitting if required */
+	if ((error_code == 0) && (update_node_msg->weight != NO_VAL))	{
+		error_code = _update_node_weight(update_node_msg->node_names,
+						 update_node_msg->weight);
+		if (!error_code) 
+			/* sort config_list by weight for scheduling */
+			list_sort(config_list, &list_compare_config);
+
+	}
 
 	return error_code;
 }
@@ -1287,6 +1300,88 @@ extern void restore_node_features(void)
 		xfree(node_record_table_ptr[i].features);
 		xfree(node_list);
 	}
+}
+
+/*
+ * _update_node_weight - Update weight associated with nodes
+ *	build new config list records as needed
+ * IN node_names - List of nodes to update
+ * IN weight - New weight value
+ * RET: SLURM_SUCCESS or error code
+ */
+static int _update_node_weight(char *node_names, uint32_t weight)
+{
+	bitstr_t *node_bitmap = NULL, *tmp_bitmap;
+	ListIterator config_iterator;
+	struct config_record *config_ptr, *new_config_ptr;
+	struct config_record *first_new = NULL;
+	int rc, config_cnt, tmp_cnt;
+
+	rc = node_name2bitmap(node_names, false, &node_bitmap);
+	if (rc) {
+		info("_update_node_weight: invalid node_name");
+		return rc;
+	}
+
+	/* For each config_record with one of these nodes, 
+	 * update it (if all nodes updated) or split it into 
+	 * a new entry */
+	config_iterator = list_iterator_create(config_list);
+	if (config_iterator == NULL)
+		fatal("list_iterator_create malloc failure");
+	while ((config_ptr = (struct config_record *)
+			list_next(config_iterator))) {
+		if (config_ptr == first_new)
+			break;	/* done with all original records */
+
+		tmp_bitmap = bit_copy(node_bitmap);
+		bit_and(tmp_bitmap, config_ptr->node_bitmap);
+		config_cnt = bit_set_count(config_ptr->node_bitmap);
+		tmp_cnt = bit_set_count(tmp_bitmap);
+		if (tmp_cnt == 0) {
+			/* no overlap, leave alone */
+		} else if (tmp_cnt == config_cnt) {
+			/* all nodes changed, update in situ */
+			config_ptr->weight = weight;
+		} else {
+			/* partial update, split config_record */
+			new_config_ptr = create_config_record();
+			if (first_new == NULL);
+				first_new = new_config_ptr;
+			new_config_ptr->magic       = config_ptr->magic;
+			new_config_ptr->cpus        = config_ptr->cpus;
+			new_config_ptr->sockets     = config_ptr->sockets;
+			new_config_ptr->cores       = config_ptr->cores;
+			new_config_ptr->threads     = config_ptr->threads;
+			new_config_ptr->real_memory = config_ptr->real_memory;
+			new_config_ptr->tmp_disk    = config_ptr->tmp_disk;
+			/* Change weight for the given node */
+			new_config_ptr->weight      = weight;
+			if (config_ptr->feature) {
+				new_config_ptr->feature = xstrdup(config_ptr->
+								  feature);
+			}
+			build_config_feature_array(new_config_ptr);
+			new_config_ptr->node_bitmap = bit_copy(tmp_bitmap);
+			new_config_ptr->nodes = 
+				bitmap2node_name(tmp_bitmap);
+			_update_config_ptr(tmp_bitmap, new_config_ptr);
+
+			/* Update remaining records */ 
+			bit_not(tmp_bitmap);
+			bit_and(config_ptr->node_bitmap, tmp_bitmap);
+			xfree(config_ptr->nodes);
+			config_ptr->nodes = bitmap2node_name(
+				config_ptr->node_bitmap);
+		}
+		bit_free(tmp_bitmap);
+	}
+	list_iterator_destroy(config_iterator);
+	bit_free(node_bitmap);
+ 
+	info("_update_node_weight: nodes %s weight set to: %u",
+		node_names, weight);
+	return SLURM_SUCCESS;
 }
 
 /*

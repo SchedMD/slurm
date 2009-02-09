@@ -54,16 +54,49 @@ scontrol_update_node (int argc, char *argv[])
 	char *reason_str = NULL;
 	char *user_name;
 
-	node_msg.node_names = NULL;
-	node_msg.features = NULL;
-	node_msg.reason = NULL;
-	node_msg.node_state = (uint16_t) NO_VAL;
+	slurm_init_update_node_msg(&node_msg);
 	for (i=0; i<argc; i++) {
 		if (strncasecmp(argv[i], "NodeName=", 9) == 0)
 			node_msg.node_names = &argv[i][9];
 		else if (strncasecmp(argv[i], "Features=", 9) == 0) {
 			node_msg.features = &argv[i][9];
 			update_cnt++;
+		} else if (strncasecmp(argv[i], "Weight=",7) == 0) {
+			/* Logic borrowed from function _handle_uint32 */
+			char *endptr, *value = &argv[i][7];
+			unsigned long num;
+			errno = 0;
+			num = strtoul(value, &endptr, 0);
+			if ((endptr[0] == 'k') || (endptr[0] == 'K')) {
+				num *= 1024;
+				endptr++;
+			}
+	                if ((num == 0 && errno == EINVAL)
+        		            || (*endptr != '\0')) {
+                        	if ((strcasecmp(value, "UNLIMITED") == 0) ||
+                            	    (strcasecmp(value, "INFINITE")  == 0)) {
+                                	num = (uint32_t) INFINITE;
+                        	} else {
+                                	error("Weight value (%s) is not a "
+					      "valid number",
+                                        	value);
+                                	break;
+				}
+			} else if (errno == ERANGE) {
+				error("Weight value (%s) is out of range", 
+				      value);
+				break;
+			} else if (value[0] == '-') {
+				error("Weight value (%s) is less than zero", 
+				      value);
+				break;
+			} else if (num > 0xfffffff0) {
+				error("Weight value (%s) is greater than %u",
+					value, 0xfffffff0);
+				break;
+                	}
+                        node_msg.weight = num;
+                        update_cnt++;
 		} else if (strncasecmp(argv[i], "Reason=", 7) == 0) {
 			char time_buf[64], time_str[32];
 			time_t now;
