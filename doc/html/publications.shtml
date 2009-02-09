@@ -22,12 +22,14 @@ SLURM</a> (Supercomputing 2008, November 2008)</li>
 
 <h2>Publications</h2>
 
+<!--
 <p><a href="http://www.linux-mag.com/id/7239/1/">
 <b>Caos NSA and Perceus: All-in-one Cluster Software Stack</b></a>,
 Jeffrey B. Layton,
 <i>Linux Magazine</i>,
 5 February 2009.
 </p>
+-->
 
 <p><b>Enhancing an Open Source Resource Manager with Multi-Core/Multi-threaded Support</b>,
 S. M. Balle and D. Palermo,
