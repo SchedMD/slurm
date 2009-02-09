@@ -125,6 +125,7 @@ task_dist_states_t verify_dist_type(const char *arg, uint32_t *plane_size)
  */
 int verify_conn_type(const char *arg)
 {
+#ifdef HAVE_BG
 	int len = strlen(arg);
 
 	if (!strncasecmp(arg, "MESH", len))
@@ -133,7 +134,18 @@ int verify_conn_type(const char *arg)
 		return SELECT_TORUS;
 	else if (!strncasecmp(arg, "NAV", len))
 		return SELECT_NAV;
-
+#ifndef HAVE_BGL
+	else if (!strncasecmp(arg, "HTC", len)
+		 || !strncasecmp(arg, "HTC_S", len))
+		return SELECT_HTC_S;
+	else if (!strncasecmp(arg, "HTC_D", len))
+		return SELECT_HTC_D;
+	else if (!strncasecmp(arg, "HTC_V", len))
+		return SELECT_HTC_V;
+	else if (!strncasecmp(arg, "HTC_L", len))
+		return SELECT_HTC_L;
+#endif
+#endif
 	error("invalid --conn-type argument %s ignored.", arg);
 	return NO_VAL;
 }

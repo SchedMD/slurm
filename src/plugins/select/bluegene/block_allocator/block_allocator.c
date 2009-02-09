@@ -65,13 +65,16 @@ int color_count = 0;
 bool *passthrough = NULL;
 
 /* extern Global */
+my_bluegene_t *bg = NULL;
 List bp_map_list = NULL;
 char letters[62];
 char colors[6];
 #ifdef HAVE_3D
 int DIM_SIZE[BA_SYSTEM_DIMENSIONS] = {0,0,0};
+int REAL_DIM_SIZE[BA_SYSTEM_DIMENSIONS] = {0,0,0};
 #else
 int DIM_SIZE[BA_SYSTEM_DIMENSIONS] = {0};
+int REAL_DIM_SIZE[BA_SYSTEM_DIMENSIONS] = {0};
 #endif
 
 s_p_options_t bg_conf_file_options[] = {
@@ -205,6 +208,7 @@ static int _set_one_dim(int *start, int *end, int *coord);
 
 /* */
 static void _destroy_geo(void *object);
+
 
 extern char *bg_block_state_string(rm_partition_state_t state)
 {
@@ -856,7 +860,6 @@ extern void ba_init(node_info_msg_t *node_info_ptr)
 	int end[BA_SYSTEM_DIMENSIONS];
 	
 #ifdef HAVE_BG_FILES
-	my_bluegene_t *bg = NULL;
 	rm_size3D_t bp_size;
 	int rc = 0;
 #endif /* HAVE_BG_FILES */
@@ -943,6 +946,10 @@ extern void ba_init(node_info_msg_t *node_info_ptr)
 		DIM_SIZE[X]++;
 		DIM_SIZE[Y]++;
 		DIM_SIZE[Z]++;
+		/* this will probably be reset below */
+		REAL_DIM_SIZE[X] = DIM_SIZE[X];
+		REAL_DIM_SIZE[Y] = DIM_SIZE[Y];
+		REAL_DIM_SIZE[Z] = DIM_SIZE[Z];
 #else
 		DIM_SIZE[X] = node_info_ptr->record_count;
 #endif
@@ -950,28 +957,6 @@ extern void ba_init(node_info_msg_t *node_info_ptr)
 	} 
 #ifdef HAVE_3D
 node_info_error:
-
-#ifdef HAVE_BG_FILES
-	if (have_db2
-	    && ((DIM_SIZE[X]==0) || (DIM_SIZE[Y]==0) || (DIM_SIZE[Z]==0))) {
-		if ((rc = bridge_get_bg(&bg)) != STATUS_OK) {
-			error("bridge_get_BG(): %d", rc);
-			return;
-		}
-		
-		if ((bg != NULL)
-		&&  ((rc = bridge_get_data(bg, RM_Msize, &bp_size)) 
-		     == STATUS_OK)) {
-			DIM_SIZE[X]=bp_size.X;
-			DIM_SIZE[Y]=bp_size.Y;
-			DIM_SIZE[Z]=bp_size.Z;
-		} else {
-			error("bridge_get_data(RM_Msize): %d", rc);	
-		}
-		if ((rc = bridge_free_bg(bg)) != STATUS_OK)
-			error("bridge_free_BG(): %d", rc);
-	}
-#endif
 
 	if ((DIM_SIZE[X]==0) || (DIM_SIZE[Y]==0) || (DIM_SIZE[Z]==0)) {
 		debug("Setting dimensions from slurm.conf file");
@@ -1025,9 +1010,54 @@ node_info_error:
 		DIM_SIZE[X]++;
 		DIM_SIZE[Y]++;
 		DIM_SIZE[Z]++;
+		/* this will probably be reset below */
+		REAL_DIM_SIZE[X] = DIM_SIZE[X];
+		REAL_DIM_SIZE[Y] = DIM_SIZE[Y];
+		REAL_DIM_SIZE[Z] = DIM_SIZE[Z];
 	}
-	debug("DIM_SIZE = %c%c%c\n", alpha_num[DIM_SIZE[X]],
-	      alpha_num[DIM_SIZE[Y]], alpha_num[DIM_SIZE[Z]]);
+#ifdef HAVE_BG_FILES
+	/* sanity check.  We can only request part of the system, but
+	   we don't want to allow more than we have. */
+	if (have_db2) {
+		verbose("Attempting to contact MMCS");
+		if ((rc = bridge_get_bg(&bg)) != STATUS_OK) {
+			error("bridge_get_BG(): %d", rc);
+			return;
+		}
+		
+		if ((bg != NULL)
+		&&  ((rc = bridge_get_data(bg, RM_Msize, &bp_size)) 
+		     == STATUS_OK)) {
+			verbose("BlueGene configured with "
+				"%d x %d x %d base blocks", 
+				bp_size.X, bp_size.Y, bp_size.Z);
+			REAL_DIM_SIZE[X] = bp_size.X;
+			REAL_DIM_SIZE[Y] = bp_size.Y;
+			REAL_DIM_SIZE[Z] = bp_size.Z;
+			if((DIM_SIZE[X] > bp_size.X)
+			   || (DIM_SIZE[Y] > bp_size.Y)
+			   || (DIM_SIZE[Z] > bp_size.Z)) {
+				fatal("You requested a %c%c%c system, "
+				      "but we only have a system of %c%c%c.  "
+				      "Change your slurm.conf.",
+				      alpha_num[DIM_SIZE[X]],
+				      alpha_num[DIM_SIZE[Y]],
+				      alpha_num[DIM_SIZE[Z]],
+				      alpha_num[bp_size.X],
+				      alpha_num[bp_size.Y],
+				      alpha_num[bp_size.Z]);
+			}
+		} else {
+			error("bridge_get_data(RM_Msize): %d", rc);	
+		}
+	}
+#endif
+
+
+	debug("We are using %c x %c x %c of the system.", 
+	      alpha_num[DIM_SIZE[X]],
+	      alpha_num[DIM_SIZE[Y]],
+	      alpha_num[DIM_SIZE[Z]]);
 	
 #else 
 	if (DIM_SIZE[X]==0) {
@@ -1120,6 +1150,9 @@ extern void ba_fini()
 		best_path = NULL;
 	}
 #ifdef HAVE_BG_FILES
+	if(bg)
+		bridge_free_bg(bg);
+
 	if (bp_map_list) {
 		list_destroy(bp_map_list);
 		bp_map_list = NULL;
@@ -1529,7 +1562,7 @@ extern char *set_bg_block(List results, int *start,
 	/* This midplane should have already been checked if it was in
 	   use or not */
 	list_append(results, ba_node);
-	if(conn_type == SELECT_SMALL) {
+	if(conn_type >= SELECT_SMALL) {
 		/* adding the ba_node and ending */
 		ba_node->used = true;
 		name = xstrdup_printf("%c%c%c",
@@ -1959,7 +1992,6 @@ extern char *bg_err_str(status_t inx)
 extern int set_bp_map(void)
 {
 #ifdef HAVE_BG_FILES
-	static my_bluegene_t *bg = NULL;
 	int rc;
 	rm_BP_t *my_bp = NULL;
 	ba_bp_map_t *bp_map = NULL;
@@ -1986,9 +2018,11 @@ extern int set_bp_map(void)
 	}
 #endif
 	
-	if ((rc = bridge_get_bg(&bg)) != STATUS_OK) {
-		error("bridge_get_BG(): %d", rc);
-		return -1;
+	if (!bg) {
+		if((rc = bridge_get_bg(&bg)) != STATUS_OK) {
+			error("bridge_get_BG(): %d", rc);
+			return -1;
+		}
 	}
 	
 	if ((rc = bridge_get_data(bg, RM_BPNum, &bp_num)) != STATUS_OK) {
@@ -2054,10 +2088,6 @@ extern int set_bp_map(void)
 		
 		free(bp_id);		
 	}
-
-	if ((rc = bridge_free_bg(bg)) != STATUS_OK)
-		error("bridge_free_BG(): %s", rc);	
-	
 #endif
 	_bp_map_initialized = true;
 	return 1;
@@ -2600,6 +2630,42 @@ end_it:
 #endif
 	
 }
+
+/* */
+extern int validate_coord(int *coord)
+{
+#ifdef HAVE_BG_FILES
+	if(coord[X]>=REAL_DIM_SIZE[X] 
+	   || coord[Y]>=REAL_DIM_SIZE[Y]
+	   || coord[Z]>=REAL_DIM_SIZE[Z]) {
+		error("got coord %c%c%c greater than system dims "
+		      "%c%c%c",
+		      alpha_num[coord[X]],
+		      alpha_num[coord[Y]],
+		      alpha_num[coord[Z]],
+		      alpha_num[REAL_DIM_SIZE[X]],
+		      alpha_num[REAL_DIM_SIZE[Y]],
+		      alpha_num[REAL_DIM_SIZE[Z]]);
+		return 0;
+	}
+
+	if(coord[X]>=DIM_SIZE[X] 
+	   || coord[Y]>=DIM_SIZE[Y]
+	   || coord[Z]>=DIM_SIZE[Z]) {
+		debug4("got coord %c%c%c greater than what we are using "
+		       "%c%c%c",
+		       alpha_num[coord[X]],
+		       alpha_num[coord[Y]],
+		       alpha_num[coord[Z]],
+		       alpha_num[DIM_SIZE[X]],
+		       alpha_num[DIM_SIZE[Y]],
+		       alpha_num[DIM_SIZE[Z]]);
+		return 0;
+	}
+#endif
+	return 1;
+}
+
 
 /********************* Local Functions *********************/
 
@@ -3658,7 +3724,6 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 #define VAL_NAME_LEN 16
 
 #endif
-	my_bluegene_t *bg = NULL;
 	int rc;
 	int i;
 	rm_wire_t *my_wire = NULL;
@@ -3675,9 +3740,11 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 		return -1;
 	}
 	
-	if ((rc = bridge_get_bg(&bg)) != STATUS_OK) {
-		error("bridge_get_BG(): %d", rc);
-		return -1;
+	if (!bg) {
+		if((rc = bridge_get_bg(&bg)) != STATUS_OK) {
+			error("bridge_get_BG(): %d", rc);
+			return -1;
+		}
 	}
 		
 	if (bg == NULL) 
@@ -3765,20 +3832,9 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 			error("1 find_bp_loc: bpid %s not known", from_node);
 			continue;
 		}
-		
-		if(coord[X]>=DIM_SIZE[X] 
-		   || coord[Y]>=DIM_SIZE[Y]
-		   || coord[Z]>=DIM_SIZE[Z]) {
-			error("got coord %c%c%c greater than system dims "
-			      "%c%c%c",
-			      alpha_num[coord[X]],
-			      alpha_num[coord[Y]],
-			      alpha_num[coord[Z]],
-			      alpha_num[DIM_SIZE[X]],
-			      alpha_num[DIM_SIZE[Y]],
-			      alpha_num[DIM_SIZE[Z]]);
+		if(!validate_coord(coord))
 			continue;
-		}
+
 		source = &ba_system_ptr->
 			grid[coord[X]][coord[Y]][coord[Z]];
 		coord = find_bp_loc(to_node);
@@ -3786,19 +3842,9 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 			error("2 find_bp_loc: bpid %s not known", to_node);
 			continue;
 		}
-		if(coord[X]>=DIM_SIZE[X] 
-		   || coord[Y]>=DIM_SIZE[Y]
-		   || coord[Z]>=DIM_SIZE[Z]) {
-			error("got coord %c%c%c greater than system dims "
-			      "%c%c%c",
-			      alpha_num[coord[X]],
-			      alpha_num[coord[Y]],
-			      alpha_num[coord[Z]],
-			      alpha_num[DIM_SIZE[X]],
-			      alpha_num[DIM_SIZE[Y]],
-			      alpha_num[DIM_SIZE[Z]]);
+		if(!validate_coord(coord))
 			continue;
-		}
+
 		target = &ba_system_ptr->
 			grid[coord[X]][coord[Y]][coord[Z]];
 		_switch_config(source, 
@@ -3818,9 +3864,6 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 		       alpha_num[target->coord[Z]],
 		       _port_enum(to_port));
 	}
-	if ((rc = bridge_free_bg(bg)) != STATUS_OK)
-		error("bridge_free_BG(): %s", rc);
-	
 #else
 
 	_switch_config(source, source, dim, 0, 0);
@@ -4852,7 +4895,8 @@ static int _set_one_dim(int *start, int *end, int *coord)
 	return 1;
 }
 
-static void _destroy_geo(void *object) {
+static void _destroy_geo(void *object) 
+{
 	int *geo_ptr = (int *)object;
 	xfree(geo_ptr);
 }

@@ -63,7 +63,7 @@ extern void print_bg_record(bg_record_t* bg_record)
 	info("\tsize: %d BPs %u Nodes %d cpus", 
 	     bg_record->bp_count,
 	     bg_record->node_cnt,
-	     bg_record->cpus_per_bp * bg_record->bp_count);
+	     bg_record->cpu_cnt);
 	info("\tgeo: %ux%ux%u", bg_record->geo[X], bg_record->geo[Y], 
 	     bg_record->geo[Z]);
 	info("\tconn_type: %s", convert_conn_type(bg_record->conn_type));
@@ -163,7 +163,7 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 		}
 		memset(&best_start, 0, sizeof(best_start));
 		bg_record->bp_count = 0;
-		if((bg_record->conn_type == SELECT_SMALL) && (!startup))
+		if((bg_record->conn_type >= SELECT_SMALL) && (!startup))
 			error("We shouldn't be here there could be some "
 			      "badness if we use this logic %s",
 			      bg_record->nodes);
@@ -421,7 +421,7 @@ extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
 	}
 	sec_record->job_running = fir_record->job_running;
 	sec_record->job_ptr = fir_record->job_ptr;
-	sec_record->cpus_per_bp = fir_record->cpus_per_bp;
+	sec_record->cpu_cnt = fir_record->cpu_cnt;
 	sec_record->node_cnt = fir_record->node_cnt;
 #ifdef HAVE_BGL
 	sec_record->quarter = fir_record->quarter;
@@ -597,14 +597,13 @@ extern void drain_as_needed(bg_record_t *bg_record, char *reason)
 		slurm_mutex_lock(&block_state_mutex);
 		if(remove_from_bg_list(bg_job_block_list, bg_record) 
 		   == SLURM_SUCCESS) {
-			num_unused_cpus += bg_record->bp_count
-				* bg_record->cpus_per_bp;
+			num_unused_cpus += bg_record->cpu_cnt;
 		}
 		slurm_mutex_unlock(&block_state_mutex);
 	}
 
 	/* small blocks */
-	if(bg_record->cpus_per_bp != procs_per_node) {
+	if(bg_record->cpu_cnt < procs_per_node) {
 		debug2("small block");
 		goto end_it;
 	}
@@ -686,6 +685,23 @@ extern int set_ionodes(bg_record_t *bg_record)
 
 	return SLURM_SUCCESS;
 }
+#else 
+
+extern int set_ionodes(bg_record_t *bg_record, int io_start, int io_nodes)
+{
+	char bitstring[BITSIZE];
+
+	if(!bg_record)
+		return SLURM_ERROR;
+	
+	bg_record->ionode_bitmap = bit_alloc(bluegene_numpsets);
+	/* Set the correct ionodes being used in this block */
+	bit_nset(bg_record->ionode_bitmap, io_start, io_start+io_nodes);
+	bit_fmt(bitstring, BITSIZE, bg_record->ionode_bitmap);
+	bg_record->ionodes = xstrdup(bitstring);
+	return SLURM_SUCCESS;
+}
+
 #endif
 
 extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq)
@@ -772,7 +788,7 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq)
 	bg_record->node_use = SELECT_COPROCESSOR_MODE;
 #endif
 	bg_record->conn_type = blockreq->conn_type;
-	bg_record->cpus_per_bp = procs_per_node;
+	bg_record->cpu_cnt = procs_per_node * bg_record->bp_count;
 	bg_record->node_cnt = bluegene_bp_node_cnt * bg_record->bp_count;
 	bg_record->job_running = NO_JOB_RUNNING;
 

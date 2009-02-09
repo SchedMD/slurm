@@ -55,7 +55,7 @@
 #ifdef HAVE_BG_FILES
 
 /* Find the specified BlueGene node ID and drain it from SLURM */
-static void _configure_node_down(rm_bp_id_t bp_id, my_bluegene_t *bg)
+static void _configure_node_down(rm_bp_id_t bp_id, my_bluegene_t *my_bg)
 {
 	int bp_num, i, rc;
 	rm_bp_id_t bpid;
@@ -65,21 +65,21 @@ static void _configure_node_down(rm_bp_id_t bp_id, my_bluegene_t *bg)
 	char bg_down_node[128], reason[128], time_str[32];
 	time_t now = time(NULL);
 
-	if ((rc = bridge_get_data(bg, RM_BPNum, &bp_num)) != STATUS_OK) {
+	if ((rc = bridge_get_data(my_bg, RM_BPNum, &bp_num)) != STATUS_OK) {
 		error("bridge_get_data(RM_BPNum): %s", bg_err_str(rc));
 		bp_num = 0;
 	}
 
 	for (i=0; i<bp_num; i++) {
 		if (i) {
-			if ((rc = bridge_get_data(bg, RM_NextBP, &my_bp)) 
+			if ((rc = bridge_get_data(my_bg, RM_NextBP, &my_bp)) 
 			    != STATUS_OK) {
 				error("bridge_get_data(RM_NextBP): %s", 
 				      bg_err_str(rc));
 				continue;
 			}
 		} else {
-			if ((rc = bridge_get_data(bg, RM_FirstBP, &my_bp)) 
+			if ((rc = bridge_get_data(my_bg, RM_FirstBP, &my_bp)) 
 			    != 
 			    STATUS_OK) {
 				error("bridge_get_data(RM_FirstBP): %s", 
@@ -162,7 +162,7 @@ static char *_convert_bp_state(rm_BP_state_t state)
 }
 
 /* Test for nodes that are not UP in MMCS and DRAIN them in SLURM */ 
-static void _test_down_nodes(my_bluegene_t *bg)
+static void _test_down_nodes(my_bluegene_t *my_bg)
 {
 	int bp_num, i, rc;
 	rm_BP_t *my_bp;
@@ -175,20 +175,20 @@ static void _test_down_nodes(my_bluegene_t *bg)
 		
 	debug2("Running _test_down_nodes");
 	down_node_list[0] = '\0';
-	if ((rc = bridge_get_data(bg, RM_BPNum, &bp_num)) != STATUS_OK) {
+	if ((rc = bridge_get_data(my_bg, RM_BPNum, &bp_num)) != STATUS_OK) {
 		error("bridge_get_data(RM_BPNum): %s", bg_err_str(rc));
 		bp_num = 0;
 	}
 	for (i=0; i<bp_num; i++) {
 		if (i) {
-			if ((rc = bridge_get_data(bg, RM_NextBP, &my_bp)) 
+			if ((rc = bridge_get_data(my_bg, RM_NextBP, &my_bp)) 
 			    != STATUS_OK) {
 				error("bridge_get_data(RM_NextBP): %s", 
 				      bg_err_str(rc));
 				continue;
 			}
 		} else {
-			if ((rc = bridge_get_data(bg, RM_FirstBP, &my_bp)) 
+			if ((rc = bridge_get_data(my_bg, RM_FirstBP, &my_bp)) 
 			    != STATUS_OK) {
 				error("bridge_get_data(RM_FirstBP): %s", 
 				      bg_err_str(rc));
@@ -212,6 +212,12 @@ static void _test_down_nodes(my_bluegene_t *bg)
 			continue;
 		}
 
+		/* we only want to look at the ones in the system */
+		if(bp_loc.X >= DIM_SIZE[X] 
+		   || bp_loc.Y >= DIM_SIZE[Y]
+		   || bp_loc.Z >= DIM_SIZE[Z]) 
+			continue;
+		
 		
 		snprintf(bg_down_node, sizeof(bg_down_node), "%s%c%c%c", 
 			 bg_slurm_node_prefix,
@@ -246,7 +252,7 @@ static void _test_down_nodes(my_bluegene_t *bg)
 
 /* Test for switches that are not UP in MMCS, 
  * when found DRAIN them in SLURM and configure their base partition DOWN */
-static void _test_down_switches(my_bluegene_t *bg)
+static void _test_down_switches(my_bluegene_t *my_bg)
 {
 	int switch_num, i, rc;
 	rm_switch_t *my_switch;
@@ -254,14 +260,14 @@ static void _test_down_switches(my_bluegene_t *bg)
 	rm_switch_state_t switch_state;
 
 	debug2("Running _test_down_switches");
-	if ((rc = bridge_get_data(bg, RM_SwitchNum, &switch_num)) 
+	if ((rc = bridge_get_data(my_bg, RM_SwitchNum, &switch_num)) 
 	    != STATUS_OK) {
 		error("bridge_get_data(RM_SwitchNum): %s", bg_err_str(rc));
 		switch_num = 0;
 	}
 	for (i=0; i<switch_num; i++) {
 		if (i) {
-			if ((rc = bridge_get_data(bg, RM_NextSwitch, 
+			if ((rc = bridge_get_data(my_bg, RM_NextSwitch, 
 						  &my_switch))
 			    != STATUS_OK) {
 				error("bridge_get_data(RM_NextSwitch): %s", 
@@ -269,7 +275,7 @@ static void _test_down_switches(my_bluegene_t *bg)
 				continue;
 			}
 		} else {
-			if ((rc = bridge_get_data(bg, RM_FirstSwitch, 
+			if ((rc = bridge_get_data(my_bg, RM_FirstSwitch, 
 						  &my_switch))
 			    != STATUS_OK) {
 				error("bridge_get_data(RM_FirstSwitch): %s",
@@ -298,7 +304,7 @@ static void _test_down_switches(my_bluegene_t *bg)
 			continue;
 		}
 
-		_configure_node_down(bp_id, bg);
+		_configure_node_down(bp_id, my_bg);
 		free(bp_id);
 	}
 }
@@ -331,19 +337,19 @@ extern bool node_already_down(char *node_name)
 extern void test_mmcs_failures(void)
 {
 #ifdef HAVE_BG_FILES
-	my_bluegene_t *bg;
+	my_bluegene_t *local_bg;
 	int rc;
 
-	if ((rc = bridge_get_bg(&bg)) != STATUS_OK) {
+	if ((rc = bridge_get_bg(&local_bg)) != STATUS_OK) {
 		
 		error("bridge_get_BG(): %s", bg_err_str(rc));
 		return;
 	}
 	
 			
-	_test_down_switches(bg);
-	_test_down_nodes(bg);
-	if ((rc = bridge_free_bg(bg)) != STATUS_OK)
+	_test_down_switches(local_bg);
+	_test_down_nodes(local_bg);
+	if ((rc = bridge_free_bg(local_bg)) != STATUS_OK)
 		error("bridge_free_BG(): %s", bg_err_str(rc));
 #endif
 }

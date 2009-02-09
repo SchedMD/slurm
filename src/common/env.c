@@ -542,6 +542,16 @@ int setup_env(env_t *env)
 		select_g_get_jobinfo(env->select_jobinfo, 
 				     SELECT_DATA_BLOCK_ID, &bgl_part_id);
 		if (bgl_part_id) {
+#ifndef HAVE_BGL
+			uint16_t conn_type = (uint16_t)NO_VAL;
+			select_g_get_jobinfo(env->select_jobinfo, 
+					     SELECT_DATA_CONN_TYPE, &conn_type);
+			if(conn_type > SELECT_SMALL) {
+				if(setenvf(&env->env, 
+					   "SUBMIT_POOL", "%s", bgl_part_id))
+					rc = SLURM_FAILURE;
+			}
+#endif
 			if(setenvf(&env->env, 
 				   "MPIRUN_PARTITION", "%s", bgl_part_id))
 				rc = SLURM_FAILURE;
@@ -550,14 +560,16 @@ int setup_env(env_t *env)
 				rc = SLURM_FAILURE;
 			if(setenvf(&env->env, "MPIRUN_NOALLOCATE", "%d", 1))
 				rc = SLURM_FAILURE;
+			xfree(bgl_part_id);
 		} else 
 			rc = SLURM_FAILURE;
 		
 		if(rc == SLURM_FAILURE)
 			error("Can't set MPIRUN_PARTITION "
 			      "environment variable");
-		xfree(bgl_part_id);
+		
 #endif
+
 #ifdef HAVE_CRAY_XT
 		char *resv_id = NULL;
 		select_g_get_jobinfo(env->select_jobinfo, 
@@ -575,7 +587,7 @@ int setup_env(env_t *env)
 		xfree(resv_id);
 #endif
 	}
-	
+
 	if (env->jobid >= 0
 	    && setenvf(&env->env, "SLURM_JOBID", "%d", env->jobid)) {
 		error("Unable to set SLURM_JOBID environment");
@@ -819,7 +831,7 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 #ifdef HAVE_CRAY_XT
 	char *resv_id = NULL;
 #endif
-	char *tmp;
+	char *tmp = NULL;
 	slurm_step_layout_t *step_layout = NULL;
 	uint32_t num_tasks = desc->num_tasks;
 
@@ -841,13 +853,25 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 #endif
 
 #ifdef HAVE_BG
+	/* BlueGene only */
 	select_g_get_jobinfo(alloc->select_jobinfo, SELECT_DATA_BLOCK_ID,
-			     &bgl_part_id);
-	if (bgl_part_id) {
+			     &tmp);
+	if (tmp) {
+#ifndef HAVE_BGL
+		uint16_t conn_type = (uint16_t)NO_VAL;
+		select_g_get_jobinfo(alloc->select_jobinfo, 
+				     SELECT_DATA_CONN_TYPE, &conn_type);
+		if(conn_type > SELECT_SMALL) {
+			env_array_overwrite_fmt(dest, "SUBMIT_POOL", "%s",
+						tmp);
+		}
+#endif
 		env_array_overwrite_fmt(dest, "MPIRUN_PARTITION", "%s",
-					bgl_part_id);
+					tmp);
 		env_array_overwrite_fmt(dest, "MPIRUN_NOFREE", "%d", 1);
 		env_array_overwrite_fmt(dest, "MPIRUN_NOALLOCATE", "%d", 1);
+
+		xfree(tmp);
 	}
 #endif
 

@@ -160,6 +160,7 @@ documents those changes that are of interest to users and admins.
  -- Add -DNUMA_VERSION1_COMPATIBILITY to Makefile CFLAGS for proper behavior
     when building with NUMA version 2 APIs.
  -- BLUEGENE - slurm works on a BGP system.
+ -- BLUEGENE - slurm handles HTC blocks
 
 * Changes in SLURM 1.3.13
 =========================

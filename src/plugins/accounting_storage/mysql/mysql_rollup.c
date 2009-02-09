@@ -409,7 +409,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				       "|| end = 0)) "
 				       "order by associd, eligible",
 				       job_str, job_table, 
-				       curr_end, curr_start, curr_start);
+				       curr_end, curr_start);
 
 		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 		if(!(result = mysql_db_query_ret(
@@ -650,7 +650,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				}				
 			}
 			c_usage->a_cpu += idle;
-			info("adding this much %ll to cluster %s",
+			info("adding this much %d to cluster %s",
 			     idle, c_usage->name);
 			/* now divide that time by the number of
 			   associations in the reservation and add
