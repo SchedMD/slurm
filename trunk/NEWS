@@ -15,7 +15,7 @@ documents those changes that are of interest to users and admins.
     if not specified use MaxTime for the partition. Patch from Par
     Andersson, National Supercomputer Centre, Sweden.
  -- Add support for the scontrol command to be able change the Weight
-    associated with nodes. Patch from Kumar Krishna.
+    associated with nodes. Patch from Krishnakumar Ravi[KK] (HP).
  
 * Changes in SLURM 1.4.0-pre7
 =============================
