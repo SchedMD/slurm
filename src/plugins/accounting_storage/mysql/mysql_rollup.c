@@ -650,7 +650,7 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				}				
 			}
 			c_usage->a_cpu += idle;
-			info("adding this much %d to cluster %s",
+			info("adding this much %lld to cluster %s",
 			     idle, c_usage->name);
 			/* now divide that time by the number of
 			   associations in the reservation and add
@@ -694,7 +694,8 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			 * idle/reserved time put extra in the over
 			 * commit field
 			 */
-			
+/* 			info("%s got idle of %lld", c_usage->name,  */
+/* 			     (int64_t)c_usage->i_cpu); */
 			if((int64_t)c_usage->i_cpu < 0) {
 /* 				info("got %d %d %d", c_usage->r_cpu, */
 /* 				     c_usage->i_cpu, c_usage->o_cpu); */
