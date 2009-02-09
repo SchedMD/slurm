@@ -1,6 +1,7 @@
 <!--#include virtual="header.txt"-->
 
 <h1><a name="top">Overview</a></h1>
+
 <p>The Simple Linux Utility for Resource Management (SLURM) is an open source,
 fault-tolerant, and highly scalable cluster management and job scheduling system 
 for large and small Linux clusters. SLURM requires no kernel modifications for
@@ -8,8 +9,18 @@ its operation and is relatively self-contained. As a cluster resource manager,
 SLURM has three key functions. First, it allocates exclusive and/or non-exclusive 
 access to resources (compute nodes) to users for some duration of time so they
 can perform work. Second, it provides a framework for starting, executing, and
-monitoring work (normally a parallel job) on the set of allocated nodes. Finally, 
-it arbitrates contention for resources by managing a queue of pending work.</p>
+monitoring work (normally a parallel job) on the set of allocated nodes. 
+Finally, it arbitrates contention for resources by managing a queue of 
+pending work.
+Optional plugins can be used for 
+<a href="accounting.html">accounting</a>, 
+<a href="reservations.html">advanced reservation</a>, 
+<a href="gang_scheduling.html">gang scheduling</a> (time sharing for 
+parallel jobs), backfill scheduling, 
+<a href="resource_limits.html">resource limits</a> by user or bank account, 
+and sophisticated <a href="job_priority.html">job prioritization</a>
+algorithms.
+
 
 <p>SLURM has been developed through the collaborative efforts of 
 <a href="https://www.llnl.gov/">Lawrence Livermore National Laboratory (LLNL)</a>,
@@ -87,7 +98,9 @@ The Maui Scheduler</a>, and
 Moab Cluster Suite</a>.
 There is also a <a href="job_priority.html">job prioritization</a> plugin 
 available for use with the FIFO, backfil and gang schedulers. Jobs can be 
-prioritized by age, size, fair-share allocation, etc.</li>
+prioritized by age, size, fair-share allocation, etc.
+Many <a href="resource_limits.html">resource limits</a> are also 
+configurable by user or bank account.</li>
 
 <li><a href="switchplugins.html">Switch or interconnect</a>: 
 <a href="http://www.quadrics.com/">Quadrics</a> 

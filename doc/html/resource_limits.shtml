@@ -1,12 +1,12 @@
 <!--#include virtual="header.txt"-->
 
-<h1>Sheduling Policy</h1>
+<h1>Resource Limits</h1>
 
 <p>SLURM scheduling policy support was significantly changed
-in version 1.3 in order to take advantage of the database 
+in version 2.0 in order to take advantage of the database 
 integration used for storing accounting information.
 This document describes the capabilities available in 
-SLURM version 1.3.4.
+SLURM version 2.0.
 New features are under active development. 
 Familiarity with SLURM's <a href="accounting">Accounting</a> web page
 is strongly recommended before use of this document.</p>
@@ -111,6 +111,6 @@ The time window considered in fair-share scheduling will be configurable
 as well as the relative importance of job age (time waiting to run), 
 but this this example illustrates the concepts involved.</p>
 
-<p style="text-align: center;">Last modified 24 June 2008</p>
+<p style="text-align: center;">Last modified 9 February 2009</p>
 
 </ul></body></html>

@@ -2,7 +2,7 @@
 
 <h1>Resource Reservation Gude</h1>
 
-<p>SLURM verstion 1.4 has the ability to reserve resources for jobs
+<p>SLURM verstion 2.0 has the ability to reserve resources for jobs
 being executed by select users and/or select bank accounts.
 A resource reservation identifies the nodes of a resource reservation 
 and a time period during which the reservation is available.</p>

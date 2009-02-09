@@ -40,6 +40,7 @@ generated_html = \
 	quickstart_admin.html \
 	quickstart.html \
 	reservations.html \
+	resource_limits.html \
 	schedplugins.html \
 	selectplugins.html \
 	slurm.html \
