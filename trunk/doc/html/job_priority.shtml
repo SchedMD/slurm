@@ -31,7 +31,7 @@
 <DT> Partition
 <DD> a factor associated with each node partition
 <DT> QOS
-<DD> a factor associated with each Quality Of Service
+<DD> a factor associated with each Quality Of Service (Still under Development)
 </DL>
 
 <P> Additionally, a weight can be assigned to each of the above factors.  This provides the ability to enact a policy that blends a combination of any of the above factors in any portion desired.  For example, a site could configure fair-share to be the dominant factor (say 70%), set the job size and the age factors to each contribute 15%, and set the partition and QOS influences to zero.</P>
@@ -76,7 +76,9 @@ Job_priority =
 <a name=qos>
 <h2>Quality of Service (QOS) Factor</h2></a>
 
-<P> Each QOS can be assigned a factor from 0.0 to 1.0.  The higher the number, the greater the job priority will be for jobs that request this QOS.</P>
+<P> Each QOS can be assigned a factor from 0.0 to 1.0.  The higher the
+  number, the greater the job priority will be for jobs that request
+  this QOS. (Still under Development)</P>
 
 <!-------------------------------------------------------------------------->
 <a name=fairshare>
@@ -88,7 +90,7 @@ Job_priority =
 
 <P> SLURM's fair-share factor is a floating point number between 0.0 and 1.0 that reflects the shares of a computing resource that a user has been allocated and the amount of computing resources the user's jobs have consumed.  The higher the value, the higher is the placement in the queue of jobs waiting to be scheduled.</P>
 
-<P> The computing resource is currently defined to be computing cycles delivered by a machine in the units of processor*seconds.  Future versions of the fair-share plug-in may additionally include a memory integral component.</P>
+<P> The computing resource is currently defined to be computing cycles delivered by a machine in the units of processor*seconds.  Future versions of the fair-share factor may additionally include a memory integral component.</P>
 
 <h3> Normalized Shares</h3>
 
