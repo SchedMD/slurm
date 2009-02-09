@@ -824,6 +824,53 @@ extern int assoc_mgr_fini(char *state_save_location)
 	return SLURM_SUCCESS;
 }
 
+extern int assoc_mgr_get_user_assocs(void *db_conn,
+				     acct_association_rec_t *assoc,
+				     int enforce, 
+				     List assoc_list)
+{
+	ListIterator itr = NULL;
+	acct_association_rec_t *found_assoc = NULL;
+	int set = 1;
+
+	xassert(assoc);
+	xassert(assoc->uid != (uint32_t)NO_VAL);
+	xassert(assoc_list);
+
+	if(!assoc_mgr_association_list) {
+		if(_get_assoc_mgr_association_list(db_conn, enforce) 
+		   == SLURM_ERROR)
+			return SLURM_ERROR;
+	}
+
+	if((!assoc_mgr_association_list
+	    || !list_count(assoc_mgr_association_list))
+	   && !(enforce & ACCOUNTING_ENFORCE_ASSOCS)) 
+		return SLURM_SUCCESS;
+
+	slurm_mutex_lock(&assoc_mgr_association_lock);
+	itr = list_iterator_create(assoc_mgr_association_list);
+	while((found_assoc = list_next(itr))) {
+		if(assoc->uid != found_assoc->uid) {
+			debug4("not the right user %u != %u",
+			       assoc->uid, found_assoc->uid);
+			continue;
+		}
+
+		list_append(assoc_list, found_assoc);
+		set = 1;
+	}
+	list_iterator_destroy(itr);
+	slurm_mutex_unlock(&assoc_mgr_association_lock);
+
+	if(set)
+		return SLURM_SUCCESS;
+	else {
+		debug("user %u does not have any associations", assoc->uid);
+		return SLURM_ERROR;
+	}
+}
+
 extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 				   int enforce, 
 				   acct_association_rec_t **assoc_pptr)

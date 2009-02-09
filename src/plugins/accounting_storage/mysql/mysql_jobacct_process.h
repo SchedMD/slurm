@@ -56,11 +56,29 @@
 #ifdef HAVE_MYSQL
 
 //extern int acct_db_init;
-
+extern char *acct_coord_table;
+extern char *acct_table;
+extern char *assoc_day_table;
+extern char *assoc_hour_table;
+extern char *assoc_month_table;
 extern char *assoc_table;
+extern char *cluster_day_table;
+extern char *cluster_hour_table;
+extern char *cluster_month_table;
+extern char *cluster_table;
+extern char *event_table;
 extern char *job_table;
+extern char *last_ran_table;
+extern char *qos_table;
+extern char *resv_table;
 extern char *step_table;
+extern char *txn_table;
+extern char *user_table;
 extern char *suspend_table;
+extern char *wckey_day_table;
+extern char *wckey_hour_table;
+extern char *wckey_month_table;
+extern char *wckey_table;
 
 extern int setup_job_cond_limits(acct_job_cond_t *job_cond, char **extra);
 
