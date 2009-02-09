@@ -82,6 +82,277 @@ Job_priority =
 <a name=fairshare>
 <h2>Fair-share Factor</h2></a>
 
+<P> The fair-share component to a job's priority influences the order to which a user's queued jobs are scheduled to run based on the portion of the computing resources they have been allocated and the resources their jobs have already consumed.  The fair-share factor does not involve a fixed allotment, whereby a user's access to a machine is cut off once that allotment is reached.</P>
+
+<P> Instead, the fair-share factor serves to prioritize queued jobs such that those jobs charging accounts that are under-serviced are scheduled first, while jobs charging accounts that are over-serviced are scheduled when the machine would otherwise go idle.</P>
+
+<P> SLURM's fair-share factor is a floating point number between 0.0 and 1.0 that reflects the shares of a computing resource that a user has been allocated and the amount of computing resources the user's jobs have consumed.  The higher the value, the higher is the placement in the queue of jobs waiting to be scheduled.</P>
+
+<P> The computing resource is currently defined to be computing cycles delivered by a machine in the units of processor*seconds.  Future versions of the fair-share plug-in may additionally include a memory integral component.</P>
+
+<h3> Normalized Shares</h3>
+
+<P> The fair-share hierarchy represents the portions of the computing resource that have been allocated to multiple projects.  These allocations are assigned to an account.  There can be multiple levels of allocations made as allocations of a given account are further divided to sub-accounts:</P>
+
+<div class="figure">
+  <img src=AllocationPies.gif width=400 ><BR>
+  Figure 1. Machine Allocation
+</div>
+
+<P> The chart above shows the resources of the machine allocated to four accounts, A, B, C and D.  Furthermore, account A's shares are further allocated to sub accounts, A1 through A4.  Users are granted permission (through sacctmgr) to submit jobs against specific accounts.  If there are 10 users given equal shares in Account A3, they will each be allocated 1% of the machine.</P>
+
+<P> A user's normalized shares is simply</P>
+
+<PRE>
+S =	(S<sub>user</sub> / S<sub>sibblings</sub>) *
+	(S<sub>account</sub> / S<sub>sibbling-accounts</sub>) *
+	(S<sub>parent</sub> / S<sub>parent-sibblings</sub>) * ...
+</PRE>
+
+Where:
+
+<DL>
+<DT> S
+<DD> is the user's normalized share, between zero and one
+<DT> S<sub>user</sub>
+<DD> are the number of shares of the account allocated to the user
+<DT> S<sub>sibblings</sub>
+<DD> are the total number of shares allocated to all users permitted to charge the account (including Suser)
+<DT> S<sub>account</sub>
+<DD> are the number of shares of the parent account allocated to the account
+<DT> S<sub>sibbling-accounts</sub>
+<DD> are the total number of shares allocated to all sub-accounts of the parent account
+<DT> S<sub>parent</sub>
+<DD> are the number of shares of the grandparent account allocated to the parent
+<DT> S<sub>parent-sibblings</sub>
+<DD> are the total number of shares allocated to all sub-accounts of the grandparent account
+</DL>
+
+<h3> Normalized Usage</h3>
+
+<P> The total number of processor*seconds that a machine is able to deliver over a fixed time period (for example, a day) is a fixed quantity.  The processor*seconds allocated to every job are tracked and saved to the SLURM database in real-time.  If one only considered usage over a fixed time period, then calculating a user's normalized usage would be a simple quotient:</P>
+
+<PRE>
+	U<sub>N</sub> = U<sub>user</sub> / R<sub>available</sub>
+</PRE>
+
+Where:
+
+<DL>
+<DT> U<sub>N</sub>
+<DD> is normalized usage, between zero and one
+<DT> U<sub>user</sub>
+<DD> is the processor*seconds consumed by all of a user's jobs in a given account for over a fixed time period
+<DT> R<sub>available</sub>
+<DD> is the total number of processor*seconds a machine can deliver during that same time period
+</DL>
+
+<P> However significant, real-world usage quantities span multiple time periods.  Rather than treating usage over a number of weeks or months with equal importance, SLURM's fair-share priority calculation places more importance on the most recent resource usage and less importance on usage from the distant past.</P>
+
+<P> The SLURM usage metric is based off a half-life formula that favors the most recent usage statistics.  Usage statistics from the past decrease in importance based on a single decay factor, D:</P>
+
+<PRE>
+	U<sub>H</sub> = U<sub>current_period</sub> +
+	     ( D * U<sub>last_period</sub>) + (D * D * U<sub>period-2</sub>) + ...
+</PRE>
+
+Where:
+
+<DL>
+<DT> U<sub>H</sub>
+<DD> is the historical usage subject to the half-life decay
+<DT> U<sub>current_period</sub>
+<DD> is the usage charged over the current measurement period
+<DT> U<sub>last_period</sub>
+<DD> is the usage charged over the last measurement period
+<DT> U<sub>period-2</sub>
+<DD> is the usage charged over the second last measurement period
+<DT> D
+<DD> is a decay factor between zero and one that delivers the half-life decay defined by the <i>PriorityDecayHalfLife</i> setting in the slurm.conf file.  Without accruing additional usage, a user's U<sub>H</sub> usage will decay to 1/2 value after a time period of <i>PriorityDecayHalfLife</i> seconds.
+</DL>
+
+<P> In practice, the <i>PriorityDecayHalfLife</i> could be a matter of seconds or days as appropriate for each site.  The measurement period is nominally 5 minutes.  The decay factor, D, is assigned the value that will achieve the half life decay rate specified by the <i>PriorityDecayHalfLife</i> parameter.</P>
+
+<P> The historical resources a machine has available is similarly aggregated with the same decay factor:</P>
+
+<PRE>
+	R<sub>H</sub> = R<sub>current_period</sub> +
+	    ( D * R<sub>last_period</sub>) + (D * D * R<sub>period-2</sub>) + ...
+</PRE>
+
+Where:
+
+<DL>
+<DT> R<sub>H</sub>
+<DD> is the historical resources available subject to the same half-life decay as the usage formula.
+<DT> R<sub>current_period</sub>
+<DD> the resources available over the current measurement period
+<DT> R<sub>last_period</sub>
+<DD> the resources available over the last measurement period
+<DT> R<sub>period-2</sub>
+<DD> the resources available over the second last measurement period
+</DL>
+
+<P> A user's normalized usage that spans multiple time periods then becomes:</P>
+
+<PRE>
+	U = U<sub>H</sub> / R<sub>H</sub>
+</PRE>
+
+
+<h3>Simplified Fair-Share Formula</h3>
+
+<P> The simplified formula for calculating the fair-share factor for usage that spans multiple time periods and subject to a half-life decay is:</P>
+
+<PRE>
+	F = (S - U + 1) / 2
+</PRE>
+
+Where:
+
+<DL compact>
+<DT> F
+<DD> is the fair-share factor
+<DT> S
+<DD> is the normalized shares
+<DT> U
+<DD> is the normalized usage factoring in half-life decay
+</DL>
+
+<P> The fair-share factor will therefore range from zero to one, where one represents the highest priority for a job.  A fair-share factor of 0.5 indicates that the user's jobs have used exactly the portion of the machine that they have been allocated.  A fair-share factor of above 0.5 indicates that the user's jobs have consumed less than their allocated share while a fair-share factor below 0.5 indicates that the user's jobs have consumed more than their allocated share of the computing resources.</P>
+
+<h3>The Fair-share Factor Under An Account Hierarchy</h3>
+
+<P> The method described above presents a system whereby the priority of a user's job is calculated based on the portion of the machine allocated to the user and the historical usage of all the jobs run by that user under a specific account.</P>
+
+<P> Another layer of "fairness" is necessary however, one that factors in the usage of other users drawing from the same account.  This allows a job's fair-share factor to be influenced by the computing resources delivered to jobs of other users drawing from the same account.</P>
+
+<P> If there are two members of a given account, and if one of those users has run many jobs under that account, the job priority of a job submitted by the user who has not run any jobs will be negatively affected.  This ensures that the combined usage charged to an account matches the portion of the machine that is allocated to that account.</P>
+
+<P> In the example below, when user 3 submits their first job using account C, they will want their job's priority to reflect all the resources delivered to account B.  They do not care that user 1 has been using up a significant portion of the cycles allocated to account B and user 2 has yet to run a job out of account B.  If user 2 submits a job using account B and user 3 submits a job using account C, user 3 expects their job to be scheduled before the job from user 2.</P>
+
+<div class="figure">
+  <img src=UsagePies.gif width=400 ><BR>
+  Figure 2. Usage Example
+</div>
+
+<h3>The SLURM Fair-Share Formula</h3>
+
+<P> The SLURM fair-share formula has been designed to provide fair scheduling to users based on the allocation and usage of every account.</P>
+
+<P> The actual formula used is a refinement of the formula presented above:</P>
+
+<PRE>
+	F = (S - U<sub>E</sub> + 1) / 2
+</PRE>
+
+<P> The difference is that the usage term is effective usage, which is defined as:</P>
+
+<PRE>
+	U<sub>E</sub> = U<sub>Achild</sub> +
+		  ((U<sub>Eparent</sub> - U<sub>Achild</sub>) * S<sub>child</sub>/S<sub>all_siblings</sub>)
+</PRE>
+
+Where:
+
+<DL>
+<DT> U<sub>E</sub>
+<DD> is the effective usage of the child user or child account
+<DT> U<sub>Achild</sub>
+<DD> is the actual usage of the child user or child account
+<DT> U<sub>Eparent</sub>
+<DD> is the effective usage of the parent account
+<DT> S<sub>child</sub>
+<DD> is the shares allocated to the child user or child account
+<DT> S<sub>all_siblings</sub>
+<DD> is the shares allocated to all the children of the parent account
+</DL>
+
+<P> This formula only applies with the second tier of accounts below root.  For the tier of accounts just under root, their effective usage equals their actual usage.</P>
+
+<P> Because the formula for effective usage includes a term of the effective usage of the parent, the calculation for each account in the tree must start at the second tier of accounts and proceed downward:  to the children accounts, then grandchildren, etc.  The effective usage of the users will be the last to be calculated.</P>
+
+<P> Plugging in the effective usage into the fair-share formula above yields a fair-share factor that reflects the aggregated usage charged to each of the accounts in the fair-share hierarchy.</P>
+
+<h3>Example</h3>
+
+<P> The following example demonstrates the effective usage calculations and resultant fair-share factors.</P>
+
+<P> The machine's computing resources are allocated to accounts A and D with 40 and 60 shares respectively.  Account A is further divided into two children accounts, B with 30 shares and C with 10 shares.  Account D is further divided into two children accounts, E with 25 shares and F with 35 shares.</P>
+
+<P> Note:  the shares at any given tier in the Account hierarchy do not need to total up to 100 shares.  This example shows them totaling up to 100 to make the arithmetic easier to follow in your head.</P>
+
+<P> User 1 is granted permission to submit jobs against the B account.  Users 2 and 3 are granted one share each in the C account.  User 4 is the sole member of the E account and User 5 is the sole member of the F account.</P>
+
+<P> Note:  accounts A and D do not have any user members in this example, though users could have been assigned.</P>
+
+<P> The shares assigned to each account make it easy to determine normalized shares of the machine's complete resources.  Account A has .4 normalized shares, B has .3 normalized shares, etc.  Users who are sole members of an account have the same number of normalized shares as the account.  (E.g., User 1 has .3 normalized shares).  Users who share accounts have a portion of the normalized shares based on their shares.  For example, if user 2 had been allocated 4 shares instead of 1, user 2 would have had .08 normalized shares.  With users 2 and 3 each holding 1 share, they each have a normalized share of  0.05.</P>
+
+<P> Users 1, 2, and 4 have run jobs that have consumed the machine's computing resources.  User 1's actual usage is 0.2 of the machine; user 2 is 0.25,  and user 4 is 0.25.</P>
+
+<P> The actual usage charged to each account is represented by the solid arrows.  The actual usage charged to each account is summed as one goes up the tree.  Account C's usage is the sum of the usage of Users 2 and 3; account A's actual usage is the sum of its children, accounts B and C.</P>
+
+<div class="figure">
+  <img src=ExampleUsage.gif width=400 ><BR>
+  Figure 3. Fair-share Example
+</div>
+
+<UL>
+<LI> User 1 normalized share: 0.3
+<LI> User 2 normalized share: 0.05
+<LI> User 3 normalized share: 0.05
+<LI> User 4 normalized share: 0.25
+<LI> User 5 normalized share: 0.35
+</UL>
+
+<P> As stated above, the effective usage is computed from the formula:</P>
+
+<PRE>
+	U<sub>E</sub> = U<sub>Achild</sub> +
+		  ((U<sub>Eparent</sub> - U<sub>Achild</sub>) * S<sub>child</sub>/S<sub>all_siblings</sub>)
+</PRE>
+
+<P> The effective usage for all accounts at the first tier under the root allocation is always equal to the actual usage:</P>
+
+Account A's effective usage is therefore equal to .45.  Account D's effective usage is equal to .25.
+
+<UL>
+<LI> Account B effective usage: 0.2 + ((0.45 - 0.2) * 30 / 40) = 0.3875
+<LI> Account C effective usage: 0.25 + ((0.45 - 0.25) * 10 / 40) = 0.3
+<LI> Account E effective usage: 0.25 + ((0.25 - 0.25) * 25 / 60) = 0.25
+<LI> Account F effective usage: 0.0 + ((0.25 - 0.0) * 35 / 60) = 0.1458
+</UL>
+
+<P> The effective usage of each user is calculated using the same formula:</P>
+
+<UL>
+<LI> User 1 effective usage: 0.2 + ((0.3875 - 0.2) * 1 / 1) = 0.3875
+<LI> User 2 effective usage: 0.25 + ((0.3 - 0.25) * 1 / 2) =  0.275
+<LI> User 3 effective usage: 0.0 + ((0.3 - 0.0) * 1 / 2) =  0.15
+<LI> User 4 effective usage: 0.25 + ((0.25 - 0.25) * 1 / 1) = 0.25
+<LI> User 5 effective usage: 0.0 + ((.1458 - 0.0) * 1 / 1) =  0.1458
+</UL>
+
+<P> Using the SLURM fair-share formula,</P>
+
+<PRE>
+	F = (S - U<sub>E</sub> + 1) / 2
+</PRE>
+
+<P> the fair-share factor for each user is:</P>
+
+<UL>
+<LI> User 1 fair-share factor: (.3 - .3875 + 1) / 2 =  0.45625
+<LI> User 2 fair-share factor: (.05 - .275 + 1) / 2 =  0.3875
+<LI> User 3 fair-share factor: (.05 - .15 + 1) / 2 =  0.45
+<LI> User 4 fair-share factor: (.25 - .25 + 1) / 2 =  0.5
+<LI> User 5 fair-share factor: (.35 - .1458 + 1) / 2 =  0.6021
+</UL>
+
+<P> From this example, once can see that users 1,2, and 3 are over-serviced while user 5 is under-serviced.  Even though user 3 has yet to submit a job, his/her fair-share factor is negatively influenced by the jobs users 1 and 2 have run.</P>
+
+<P> Based on the fair-share factor alone, if all 5 users were to submit a job charging their respective accounts, user 5's job would be granted the highest scheduling priority.</P>
+
 <!-------------------------------------------------------------------------->
 <p style="text-align:center;">Last modified 9 February 2009</p>
 
