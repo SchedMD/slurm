@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 2.0
-6 February 2009 (after SLURM 1.4.0-pre7 released)
+9 February 2009 (after SLURM 1.4.0-pre7 released)
 
 
 IMPORTANT NOTE:
@@ -19,7 +19,7 @@ HIGHLIGHTS
   can be prioritized based upon their age, size, and/or fair-share resource 
   allocation using hierarchical bank accounts. For more information see:
   https://computing.llnl.gov/linux/slurm/job_priority.html
-* An assortment of resource limits can be imposed individually upon users 
+* An assortment of resource limits can be imposed upon individual users 
   and/or hierarchical bank accounts such as maximum job time limit, maximum 
   job size, maximum number of running jobs. For more information see:
   https://computing.llnl.gov/linux/slurm/resource_limits.html
@@ -38,7 +38,8 @@ HIGHLIGHTS
   in higher priority partitions is now supported. The jobs from the lower 
   priority partition will resume once preempting job completes. 
 * Support added for Sun Constellation system with optimized resource allocation
-  for a 3-dimensional torus interconnect.
+  for a 3-dimensional torus interconnect. For more information see:
+  https://computing.llnl.gov/linux/slurm/sun_const.html
 * Support added for IBM BlueGene/P systems, including High Throughput Computing
   (HTC) mode.
 
@@ -61,6 +62,9 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 * OverTimeLimit added to permit jobs to exceed their (soft) time limit by a
   configurable amount. Backfill scheduling will be based upon the soft time
   limit.
+* For select/cons_res or sched/gang only: Each nodes processor count must be
+  specified in the configuration file. Additional resources found by SLURM
+  daemons on the compute nodes will not be used.
 * DebugFlags added to provide detailed logging for specific subsystems.
 
 COMMAND CHANGES (see man pages for details)
