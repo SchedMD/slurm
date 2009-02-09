@@ -9,9 +9,12 @@ Also see <a href="publications.html">Publications and Presentations</a>.
 <li><a href="quickstart.shtml">Quick Start User Guide</a></li>
 <li><a href="mc_support.shtml">Support for Multi-core/Multi-threaded Architectures</a></li>
 <li><a href="quickstart.shtml#mpi">Guide to MPI Use</a></li>
+<li>Specific Systems</li>
+<ul>
 <li><a href="bluegene.shtml">Blue Gene User and Administrator Guide</a></li>
 <li><a href="cray.shtml">Cray User and Administrator Guide</a></li>
 <li><a href="ibm.shtml">IBM AIX User and Administrator Guide</a></li>
+</ul>
 </ul>
 
 <h2>SLURM Administrators</h2>
@@ -20,21 +23,31 @@ Also see <a href="publications.html">Publications and Presentations</a>.
 <li><a href="configurator.html">Configuration Tool</a></li>
 <li><a href="troubleshoot.shtml">Troubleshooting Guide</a></li>
 <li><a href="big_sys.shtml">Large Cluster Administration Guide</a></li>
-<li><a href="cons_res.shtml">Consumable Resources Guide</a></li>
-<li><a href="cons_res_share.shtml">Sharing Consumable Resources</a></li>
 <li><a href="accounting.shtml">Accounting</a></li>
+<li><a href="power_save.shtml">Power Saving Guide</a></li>
+<li>SLURM Scheduling</li>
+<ul>
+<li><a href="cons_res.shtml">Consumable Resources Guide</a></li>
 <li><a href="gang_scheduling.shtml">Gang Scheduling</a></li>
 <li><a href="job_priority.shtml">Job Priority</a></li>
 <li><a href="preempt.shtml">Preemption</a></li>
+<li><a href="resource_limits.shtml">Resource Limits</a></li>
+<li><a href="reservations.shtml">Resource Reservation Gude</a></li>
+<li><a href="cons_res_share.shtml">Sharing Consumable Resources</a></li>
+</ul>
+<li>External Schedulers</li>
+<ul>
 <li><a href="maui.shtml">Maui Scheduler Integration Guide</a></li>
 <li><a href="moab.shtml">Moab Cluster Suite Integration Guide</a></li>
 <li><a href="http://docs.hp.com/en/5991-4847/ch09s02.html">Submitting Jobs through LSF</a></li>
+</ul>
+<li>Specific Systems</li>
+<ul>
 <li><a href="bluegene.shtml">Blue Gene User and Administrator Guide</a></li>
 <li><a href="cray.shtml">Cray User and Administrator Guide</a></li>
-<li><a href="sun_const.shtml">Sun Constellation Aministrator Guide</a></li>
 <li><a href="ibm.shtml">IBM AIX User and Administrator Guide</a></li>
-<li><a href="power_save.shtml">Power Saving Guide</a></li>
-<li><a href="reservations.shtml">Resource Reservation Gude</a></li>
+<li><a href="sun_const.shtml">Sun Constellation Aministrator Guide</a></li>
+</ul>
 </ul>
 
 <h2>SLURM Developers</h2>
@@ -42,6 +55,8 @@ Also see <a href="publications.html">Publications and Presentations</a>.
 <li><a href="programmer_guide.shtml">Programmer Guide</a></li>
 <li><a href="api.shtml">Application Programmer Interface (API) Guide</a></li>
 <li><a href="plugins.shtml">Plugin Programmer Guide</a></li>
+<li>Plugin Interface Details</li>
+<ul>
 <li><a href="authplugins.shtml">Authentication Plugin Programmer Guide</a></li>
 <li><a href="crypto_plugins.shtml">Cryptographic Plugin Programmer Guild</a></li>
 <li><a href="jobacct_gatherplugins.shtml">Job Accounting Gather Plugin Programmer Guide</a></li>
@@ -54,8 +69,9 @@ Also see <a href="publications.html">Publications and Presentations</a>.
 <li><a href="selectplugins.shtml">Resource Selection Plugin Programmer Guide</a></li>
 <li><a href="switchplugins.shtml">Switch (Interconnect) Plugin Programmer Guide</a></li>
 <li><a href="taskplugins.shtml">Task Plugin Programmer Guide</a></li>
+</li>
 </ul>
 
-<p style="text-align:center;">Last modified 6 February 2009</p>
+<p style="text-align:center;">Last modified 9 February 2009</p>
 
 <!--#include virtual="footer.txt"-->

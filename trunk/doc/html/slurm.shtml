@@ -18,7 +18,7 @@ couple of minutes (see <a href="http://www.linux-mag.com/id/7239/1/">
 Caos NSA and Perceus: All-in-one Cluster Software Stack</a> 
 by Jeffrey B. Layton).
 More complex configurations rely upon a 
-<a href="http://www.mysql.com/">MySQL</a> for archiving 
+<a href="http://www.mysql.com/">MySQL</a> database for archiving 
 <a href="accounting.html">accounting</a> records, managing 
 <a href="resource_limits.html">resource limits</a> by user or bank account, 
 or supporting sophisticated <a href="job_priority.html">job prioritization</a>

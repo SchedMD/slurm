@@ -221,30 +221,46 @@ do have this requirement.</p>
 For more information, see <a href="quickstart.html#mpi">MPI</a>.
 
 <h3>Scheduler support</h3>
-<p>The scheduler used by SLURM is controlled by the <b>SchedType</b> configuration 
-parameter. This is meant to control the relative importance of pending jobs and 
-several options are available
-SLURM's default scheduler is <u>FIFO (First-In First-Out)</u>. 
-SLURM offers a backfill scheduling plugin.
-<u>Backfill scheduling</u> will initiate a lower-priority jobs
-if doing so does not delay the expected initiation time of higher priority jobs; 
-essentially using smaller jobs to fill holes in the resource allocation plan. 
-Effective backfill scheduling does require users to specify job time limits.
-SLURM offers a <u>gang scheduler</u>, which time-slices jobs in the same partition/queue
-and can be used to preempt jobs from lower-priority queues in order to execute
-jobs in higher priority queues.
-SLURM also supports a plugin for use of 
+<p>SLURM can be configured with rather simple or quite sophisticated
+scheduling algorithms depending upon your needs and willingness to 
+manage the configuration (much of which requires a database).
+The first configuration parameter of interest is <b>PriorityType</b>
+with two options available: <i>basic</i> (first-in-first-out) and
+<i>multifactor</i>. 
+The <i>multifactor</i> plugin is very configurable and its details
+are beyond the scope of this document.
+See the <a href="job_priority.html">Multi-factor Job Priority Plugin</a>
+document for details.</p>
+
+<p>The <b>SchedType</b> configuration parameter controls how queued
+jobs are scheduled and several options are available.
+<ul>
+<li><i>builtin</i>  will initiate jobs strictly in their priority order,
+typically (first-in-first-out) </li>
+<li><i>backfill</i> will initiate a lower-priority job if doing so does 
+not delay the expected initiation time of higher priority jobs; essentially 
+using smaller jobs to fill holes in the resource allocation plan. Effective 
+backfill scheduling does require users to specify job time limits.</li>
+<li><i>gang</i> time-slices jobs in the same partition/queue and can be 
+used to preempt jobs from lower-priority queues in order to execute
+jobs in higher priority queues.</li>
+<li><i>wiki</i> is an interface for use with
 <a href="http://www.clusterresources.com/pages/products/maui-cluster-scheduler.php">
-The Maui Scheduler</a> or 
+The Maui Scheduler</a></li>
+<li><i>wiki2</i> is an interface for use with the
 <a href="http://www.clusterresources.com/pages/products/moab-cluster-suite.php">
-Moab Cluster Suite</a> which offer sophisticated scheduling algorithms.
-For more information about these options see
+Moab Cluster Suite</a>
+</ul>
+
+<p>For more information about scheduling options see
 <a href="gang_scheduling.html">Gang Scheduling</a>,
-<a href="preempt.html">Preemption</a> and
+<a href="preempt.html">Preemption</a>,
+<a href="reservations.html">Resource Reservation Guide</a>,
+<a href="resource_limits.html">Resource Limits</a> and
 <a href="cons_res_share.html">Sharing Consumable Resources</a>.</p> 
 
-<h3>Node selection</h3>
-<p>The node selection mechanism used by SLURM is controlled by the 
+<h3>Resource selection</h3>
+<p>The resource selection mechanism used by SLURM is controlled by the 
 <b>SelectType</b> configuration parameter. 
 If you want to execute multiple jobs per node, but apportion the processors, 
 memory and other resources, the <i>cons_res</i> (consumable resources) 

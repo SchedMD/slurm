@@ -2,8 +2,7 @@
 
 <h1>SLURM User and Administrator Guide for Cray systems</h1>
 
-<b>NOTE: As of January 2009, the SLURM interface to Cray systems is still
-under development.</b>
+<b>NOTE: As of January 2009, the SLURM interface to Cray systems is incomplete.</b>
 
 <h2>User Guide</h2>
 
