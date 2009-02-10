@@ -50,7 +50,7 @@ Job_priority =
 	(QOS_weight) * (QOS_factor)
 </PRE>
 
-<P> All of the factors in this formula are floating point numbers that range from 0.0 to 1.0.  The weights are unsigned, 32 bit integers.   Consequently, the job's priority is a floating point number that ranges between 0.0 and 4294967295.0.  The higher the number,  the higher the job will be positioned in the queue, and the sooner the job will be scheduled.  A job's priority, and hence its order in the queue, will vary over time.  For example, the longer a job sits in the queue, the higher its priority will grow when the age_weight is non-zero.</P>
+<P> All of the factors in this formula are floating point numbers that range from 0.0 to 1.0.  The weights are unsigned, 32 bit integers.   The job's priority is an integer that ranges between 0 and 4294967295.  The higher the number,  the higher the job will be positioned in the queue, and the sooner the job will be scheduled.  A job's priority, and hence its order in the queue, will vary over time.  For example, the longer a job sits in the queue, the higher its priority will grow when the age_weight is non-zero.</P>
 
 <!-------------------------------------------------------------------------->
 <a name=age>
