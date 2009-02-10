@@ -364,7 +364,7 @@ _step_setup(slurm_addr *cli, slurm_addr *self, slurm_msg_t *msg)
 	return job;
 }
 
-#ifdef MEMORY_LEAK_TEST
+#ifdef MEMORY_LEAK_DEBUG
 static void
 _step_cleanup(slurmd_job_t *job, slurm_msg_t *msg, int rc)
 {
