@@ -290,6 +290,7 @@ if [ -d /etc/init.d ]; then
    install -D -m755 etc/init.d.slurmdbd $RPM_BUILD_ROOT/etc/init.d/slurmdbd
 fi
 install -D -m644 etc/slurm.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/slurm.conf.example
+install -D -m644 etc/slurmdbd.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/slurmdbd.conf.example
 install -D -m755 etc/slurm.epilog.clean ${RPM_BUILD_ROOT}%{_sysconfdir}/slurm.epilog.clean
 
 # Delete unpackaged files:
@@ -429,6 +430,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_sbindir}/slurmdbd
 %{_mandir}/man5/slurmdbd.*
 %{_mandir}/man8/slurmdbd.*
+%config %{_sysconfdir}/slurmdbd.conf.example
 #############################################################################
 
 %files -f plugins.files plugins
