@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "January 2009" "slurm.conf 1.4" "Slurm configuration file"
+.TH "slurm.conf" "5" "February 2009" "slurm.conf 2.0" "Slurm configuration file"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
@@ -664,6 +664,73 @@ be called before and/or after execution of each task spawned as
 part of a user's job step.  Default location is "plugstack.conf"
 in the same directory as the system slurm.conf. For more information
 on SPANK plugins, see the \fBspank\fR(8) manual.
+
+.TP
+\fBPriorityDecayHalfLife\fR
+This controls how long prior resource use is considered in determining
+how over\- or under\-serviced an association is (user, bank account and 
+cluster) in determining job priority.
+Applicable only if PriorityType=priority/multifactor.
+The units are minutes and the default value is 7 days.
+
+.TP
+\fBPriorityFavorSmall\fR
+Specifies that small jobs should be given preferencial scheduling priority.
+Applicable only if PriorityType=priority/multifactor.
+Supported values are "YES" and "NO". 
+The default value is "NO".
+
+.TP
+\fBPriorityMaxAge\fR
+Specifies the job age which will be given the maximum age factor in computing
+priority. For example, a value of 30 minutes would result in all jobs over
+30 minutes old would get the same age\-based priority.
+Applicable only if PriorityType=priority/multifactor.
+The units are minutes and the default value is 7 days.
+
+.TP
+\fBPriorityType\fR
+This specifies the plugin to be used in establishing a job's scheduling
+priority. Supported values are "priority/basic" (jobs are prioritized
+by order of arrival, also suitable for sched/wiki and sched/wiki2) and
+"priority/multifactor" (jobs are prioritized based upon size, age, 
+fair\-share of allocation, etc). 
+The default value is "priority/basic".
+
+.TP
+\fBPriorityWeightAge\fR
+An integer value specifying how important a job's age is in computing 
+its priority.
+Applicable only if PriorityType=priority/multifactor.
+The default value is 1.
+
+.TP
+\fBPriorityWeightFairshare\fR
+An integer value specifying how important a job's age is in computing 
+its priority.
+Applicable only if PriorityType=priority/multifactor.
+The default value is 1.
+
+.TP
+\fBPriorityWeightJobSize\fR
+An integer value specifying how important a job's size is in computing 
+its priority.
+Applicable only if PriorityType=priority/multifactor.
+The default value is 1.
+
+.TP
+\fBPriorityWeightPartition\fR
+An integer value specifying how important a job's partition is in computing 
+its priority.
+Applicable only if PriorityType=priority/multifactor.
+The default value is 1.
+
+.TP
+\fBPriorityWeightQOS\fR
+An integer value specifying how important a job's Quality Of Service is 
+in computing its priority.
+Applicable only if PriorityType=priority/multifactor.
+The default value is 1.
 
 .TP
 \fBPrivateData\fR
