@@ -65,12 +65,16 @@ parameter in slurm.conf.
 
 .SS "Options"
 .TP "10"
-\f3\-a \fP\f3,\fP \f3\-\-all\fP
-Displays the job accounting data for all jobs in the job accounting log file.
+\f3\-a \fP\f3,\fP \f3\-\-allusers\fP
+Displays the current user's jobs. Displays all users jobs when run by root.
 .IP 
-This is the default behavior when the 
-.BR "sacct "
-command is executed by the root user.
+
+.TP
+\f3\-A \fP\f2account_list\fP \fP\f3,\fP \f3\-\-accounts\fP\f3=\fP\f2account_list\fP
+Displays jobs when a comma separated list of accounts are given as the
+argument.
+.IP 
+
 
 .TP 
 \f3\-b \fP\f3,\fP \f3\-\-brief\fP
@@ -99,16 +103,17 @@ Space characters are not allowed in the \f2cluster_list\fP. \-1 for
 all clusters, default is current cluster you are executing the sacct
 command on\&.
 
+.TP
+\f3\-c \fP\f3,\fP \f3\-\-completion\fP
+Use job completion instead of job accounting.
+.IP 
+
+
 .TP 
 \f3\-d \fP\f3,\fP \f3\-\-dump\fP
-Displays (dumps) the raw data records.
+Dumps the raw data records.
 .IP 
-This option overrides the 
-\f3\-\-brief\fP 
-and 
-\f3\-\-fields=\fP 
-options.
-.IP 
+
 The section titled "INTERPRETING THE \-\-dump OPTION OUTPUT" describes the 
 data output when this option is used.
 
@@ -132,80 +137,43 @@ selected job number with the --noduplicates option.
 
 
 .TP
-\f3\-e \fP\f2time_spec\fP \f3,\fP \f3\-\-expire=\fP\f2time_spec\fP
+\f3\-e \fP\f3,\fP \f3\-\-helpformat\fP
 .IP
-Removes job data from SLURMs current accounting log file (or the file
-specified with \f3\-\-file\fP) for jobs that completed more than
-\f2time_spec\fP
-ago and appends them to the expired log file.
+Print a list of fields that can be specified with the \f3\-\-format\fP option.
 .IP
-If \f2time_spec\fP is an integer value only, it is interpreted as minutes. If
-\f2time_spec\fP is an integer followed by "h", it is interpreted as
-a number of hours. If \f2time_spec\fP is an integer followed by "d",
-it is interpreted as number of days. For example, "\-\-expire=14d" 
-purges the job accounting log of all jobs that completed
-more than 14 days ago.
-.IP
-The expired log file is a file with the same name as the accounting
-log file, with ".expired" appended to the file name. For example, if
-the accounting log file is /var/log/slurmacct.log, the expired log
-file will be /var/log/slurmacct.log.expired.
-
-.TP 
-\f3\-F \fP\f2field_list\fP \f3,\fP  \f3\-\-fields\fP\f3=\fP\f2field_list\fP
-Displays the job accounting data specified by the 
-\f2field_list\fP 
-operand, which is a comma\-separated list of fields.
-Space characters are not allowed in the 
-\f2field_list\fP\c
-\&. 
-.IP 
-See the 
-\f3\-\-help\-fields\fP 
-option for a list of the available fields.
-See the section titled "Job Accounting Fields" for a description of 
-each field.
-.IP 
-The job accounting data is displayed in the order specified by the 
-\f2field_list\fP 
-operand.
-Thus, the following two commands display the same data but in different order:
 .RS 
 .PP
 .nf 
 .ft 3
-# sacct \-\-fields=jobid,status
-Jobid    Status
-\-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-
-3          COMPLETED
-3.0        COMPLETED
+Fields available:
 
-.ft 1
-.fi 
-.RE 
-.RS 
-.PP
-.nf 
-.ft 3
-# sacct \-\-fields=status,jobid
-Status     Jobid
-\-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-
-COMPLETED  3
-COMPLETED  3.0
+AllocCPUS     Account       AssocID       AveCPU
+AvePages      AveRSS        AveVSize      BlockID
+Cluster       CPUTime       CPUTimeRAW    Elapsed
+Eligible      End           ExitCode      GID
+Group         JobID         JobName       NodeList
+MaxPages      MaxPagesNode  MaxPagesTask  MaxRSS
+MaxRSSNode    MaxRSSTask    MaxVSize      MaxVSizeNode
+MaxVSizeTask  MinCPU        MinCPUNode    MinCPUTask
+NCPUS         NNodes        NTasks        Priority
+Partition     QOS           QOSRAW        ReqCPUS
+Reserved      ResvCPU       ResvCPURAW    Start
+State         Submit        Suspended     SystemCPU
+Timelimit     TotalCPU      UID           User
+UserCPU       WCKey         WCKeyID
 
 .ft 1
 .fi 
 .RE 
 .IP 
-The default value for the 
-\f2field_list\fP 
-operand is 
-\f3"jobid,jobname,partition,ncpus,state,exitcode"\fP\c
-\&.
-.IP 
-This option has no effect when the 
-\f3\-\-dump\fP 
-option is also specified.
+The section titled "Job Accounting Fields" describes these fields.
+
+.TP
+\f3\-E \fP\f2end_time\fP\fP\f3,\fP \f3\-\-endtime\fP\f3=\fP\f2end_time\fP
+.IP
+Select jobs ending before time.
+.IP
+
 
 .TP 
 \f3\-f \fP\f2file\fP\f3,\fP  \f3\-\-file\fP\f3=\fP\f2file\fP
@@ -213,53 +181,21 @@ Causes the
 .BR "sacct "
 command to read job accounting data from the named 
 \f2file\fP 
-instead of the current SLURM job accounting log file.
+instead of the current SLURM job accounting log file. Only applicable
+when running the filetxt plugin.
 
 .TP 
-\f3\-g \fP\f2gid_list\fP\f3,\fP  \f3\-\-gid\fP\f3=\fP\f2gid_list\fP
+\f3\-g \fP\f2gid_list\fP\f3,\fP  \f3\-\-gid\fP\f3=\fP\f2gid_list\fP \f3\-\-group\fP\f3=\fP\f2group_list\fP
 Displays the statistics only for the jobs started with the GID
-specified by the \f2gid_list\fP operand, which is a comma\-separated
-list of gids.  Space characters are not allowed in the \f2gid_list\fP. 
-Default is no restrictions.  This is virtually the same as the \-\-group
-option\&. 
-
-.TP 
-\f3\-g \fP\f2group_list\fP\f3,\fP  \f3\-\-group\fP\f3=\fP\f2group_list\fP
-Displays the statistics only for the jobs started with the GROUP
-specified by the \f2group_list\fP operand, which is a comma\-separated
-list of groups.  Space characters are not allowed in the \f2group_list\fP. 
-Default is no restrictions.  This is virtually the same as the \-\-gid option\&. 
+or the GROUP specified by the \f2gid_list\fP or the\f2group_list\fP operand, which is a comma\-separated
+list.  Space characters are not allowed. 
+Default is no restrictions.\&. 
 
 .TP 
 \f3\-h \fP\f3,\fP \f3\-\-help\fP
 Displays a general help message.
 .TP 
-\f3\-\-help\-fields\fP
-Displays a list of fields that can be specified with the 
-\f3\-\-fields\fP 
-option.
-.RS 
-.PP
-.nf 
-.ft 3
-Fields available:
-account     associd     cluster     cpu       
-cputime     elapsed     end         exitcode  
-finished    gid         group       job       
-jobid       jobname     ncpus       nodes     
-nnodes      nprocs      ntasks      pages     
-partition   rss         start       state     
-status      submit      timelimit   submitted 
-systemcpu   uid         user        usercpu   
-vsize       blockid     connection  geo       
-max_procs   reboot      rotate      bg_start_point
-wckey     
 
-.ft 1
-.fi 
-.RE 
-.IP 
-The section titled "Job Accounting Fields" describes these fields.
 
 .TP 
 \f3\-j \fP\f2job(.step)\fP \f3,\fP  \f3\-\-jobs\fP\f3=\fP\f2job(.step)\fP
@@ -274,58 +210,29 @@ The default is to display information on all jobs.
 
 .TP 
 \f3\-l\fP\f3,\fP \f3\-\-long\fP
-Displays a long listing, which includes the following data:
-.RS 
-.TP "3"
-\(bu
-\f3jobid\fP 
-.TP "3"
-\(bu
-\f3jobname\fP 
-.TP "3"
-\(bu
-\f3partition\fP 
-.TP "3"
-\(bu
-\f3vsize\fP 
-.TP "3"
-\(bu
-\f3rss\fP 
-.TP "3"
-\(bu
-\f3pages\fP 
-.TP "3"
-\(bu
-\f3cputime\fP 
-.TP "3"
-\(bu
-\f3ntasks\fP 
-.TP "3"
-\(bu
-\f3ncpus\fP 
-.TP "3"
-\(bu
-\f3elapsed\fP 
-.TP "3"
-\(bu
-\f3status\fP 
-.TP "3"
-\(bu
-\f3exitcode\fP 
-.RE 
+Equivelent to specifying:
+.IP
+\'--fields=jobid,jobname,partition,maxvsize,maxvsizenode,maxvsizetask,avevsize,maxrss,maxrssnode,maxrsstask,averss,maxpages,maxpagesnode,maxpagestask,avepages,mincpu,mincpunode,mincputask,avecpu,ntasks,alloccpus,elapsed,state,exitcode\' 
+
 
 .TP 
-\f3\-\-noduplicates\fP
-See the discussion under --duplicates.
+\f3\-L\fP\f3,\fP \f3\-\-allclusters\fP
+Display jobs ran on all clusters. By default, only jobs ran on the
+cluster from where sacct is called are displayed.
 
 .TP 
 \f3\-\-noheader\fP
-Prevents the display of the heading over the output.
-The default action is to display a header.
+No heading will be added to the output. The default action is to
+display a header.
 .IP 
 This option has no effect when used with the 
 \f3\-\-dump\fP 
 option.
+
+.TP 
+\f3\-o \fP\f3,\fP \f3\-\-format\fP
+Comma seperated list of fields. (use "\-\-helpformat" for a list of available fields).
+.IP 
 
 .TP 
 \f3\-O \fP\f3,\fP \f3\-\-formatted_dump\fP
@@ -334,51 +241,18 @@ Dumps accounting records in an easy\-to\-read format.
 This option is provided for debugging.
 
 .TP
-\f3\-P \fP\f3,\fP \f3\-\-purge\fP
-Used in conjunction with --expire to remove invalid data from the job accounting log.
-
-.TP 
-\f3\-p \fP\f2partition_list\fP \f3,\fP  \f3\-\-partition\fP\f3=\fP\f2partition_list\fP
-Displays information about jobs and job steps specified by the 
-\f2partition_list\fP 
-operand, which is a comma\-separated list of partitions.
-Space characters are not allowed in the 
-\f2partition_list\fP\c
-\&. 
-.IP 
-The default is to display information on jobs and job steps on all partitions.
+\f3\-p \fP\f3,\fP \f3\-\-parsable\fP
+output will be '|' delimited with a '|' at the end
 
 .TP
-\f3\-S \fP\f3,\fP \f3\-\-stat\fP
-.IP
-Queries the status of a job as the job is running displaying
-the following data:
-.RS 
-.TP "3"
-\(bu
-\f3jobid\fP 
-.TP "3"
-\(bu
-\f3vsize\fP 
-.TP "3"
-\(bu
-\f3rss\fP 
-.TP "3"
-\(bu
-\f3pages\fP 
-.TP "3"
-\(bu
-\f3cputime\fP 
-.TP "3"
-\(bu
-\f3ntasks\fP 
-.TP "3"
-\(bu
-\f3status\fP 
-.RE 
-.IP
-You must also include the \-\-jobs=job(.step) option if no (.step) is 
-given you will recieve the job.0 step.
+\f3\-P \fP\f3,\fP \f3\-\-parsable2\fP
+output will be '|' delimited without a '|' at the end
+
+.TP
+\f3\-r \fP\f3,\fP \f3\-\-partition\fP
+
+Comma seperated list of partitions to select jobs and job steps
+from. The default is all partitions.
 
 .TP 
 \f3\-s \fP\f2state_list\fP \f3,\fP  \f3\-\-state\fP\f3=\fP\f2state_list\fP
@@ -419,25 +293,13 @@ Space characters are not allowed in the
 \&.
 
 .TP 
-\f3\-t \fP\f3,\fP \f3\-\-total\fP
-Displays only the cumulative statistics for each job.
-Intermediate steps are displayed by default.
+\f3\-S \fP\f3,\fP \f3\-\-starttime\fP
+Select jobs starting after the specified time.
 
 .TP 
-\f3\-u \fP\f2uid_list\fP\f3,\fP  \f3\-\-uid\fP\f3=\fP\f2uid_list\fP
-Displays the statistics only for the jobs started by the specified
-\f2uid_list\fP operand, which is a comma\-separated list of uids.
-Space characters are not allowed in the \f2uid_list\fP.  
-\-1 for all uids, default is current uid.  If run as user root default
-is all users.  This is virtually the same as the \-\-user option\&.
-
-.TP 
-\f3\-u \fP\f2user_list\fP\f3,\fP  \f3\-\-user\fP\f3=\fP\f2user_list\fP
-Displays the statistics only for the jobs started by the specified
-\f2user_list\fP operand, which is a comma\-separated list of users.
-Space characters are not allowed in the \f2user_list\fP.  
-\-1 for all uids, default is current uid.  If run as user root default
-is all users.  This is virtually the same as the \-\-uid option\&.
+\f3\-u \fP\f2uid_list\fP\f3,\fP  \f3\-\-uid\fP\f3=\fP\f2uid_list\fP \f3\-\-user\fP\f3=\fP\f2user_list\fP
+Use this comma seperated list of uids or user names to select jobs to display.  By default, the running
+user's uid is used.
 
 .TP 
 \f3\-\-usage\fP
@@ -445,28 +307,61 @@ Displays a help message.
 
 .TP 
 \f3\-v \fP\f3,\fP \f3\-\-verbose\fP
-Reports the state of certain variables during processing.
-This option is primarily used for debugging.
+Primarily for debug use reports the state of certain variables during processing.
+
+.TP 
+\f3\-V \fP\f3,\fP \f3\-\-version\fP
+Print version.
+
+.TP 
+\f3\-X \fP\f3,\fP \f3\-\-allocations\fP
+Only show cumulative statistics for each job, not the intermediate steps.
 
 .SS "Job Accounting Fields"
 The following describes each job accounting field:
 .RS 
 .TP "10"
+\f3alloccpus\fP
+Allocated processors.
+
+.TP
 \f3account\fP
 User supplied account number for the job
+
+.TP
+\f3associd\fP
+
+.TP
+\f3avecpu\fP
+Average CPU time of a process.
+
+.TP
+\f3avepages\fP
+Average pages of a process.
+
+.TP
+\f3averss\fP
+Average resident set size of a process.
+
+.TP
+\f3avevsize\fP
 
 .TP
 \f3blockid\fP
 Block ID, applicable to BlueGene computers only
 
 .TP
-\f3cpu\fP 
-The sum of the system time (systemcpu) and user time (usercpu) in seconds 
+\f3cluster\fP 
+Cluster name.
 
 .TP
 \f3cputime\fP
 Minimum CPU time of any process followed by its task id along with
 the average of all processes running in the step.
+
+.TP
+\f3cputimeraw\fP
+
 
 .TP 
 \f3elapsed\fP 
@@ -495,6 +390,9 @@ minutes
 \f2ss\fP 
 seconds
 .RE 
+
+.TP 
+\f3eligible\fP 
 
 .TP
 \f3end\fP
@@ -538,26 +436,6 @@ The group identifier of the user who ran the job.
 The group name of the user who ran the job.
 
 .TP 
-\f3idrss\fP 
-Maximum unshared data size (in KB) of any process.
-
-.TP 
-\f3inblocks\fP 
-Total block input operations for all processes.
-
-.TP 
-\f3isrss\fP 
-Maximum unshared stack space size (in KB) of any process.
-
-.TP 
-\f3ixrss\fP 
-Maximum shared memory (in KB) of any process.
-
-.TP 
-\f3job\fP 
-The SLURM job identifier of the job.
-
-.TP 
 \f3jobid\fP 
 The number of the job or job step.
 It is in the form: 
@@ -568,104 +446,121 @@ It is in the form:
 \f3jobname\fP
 The name of the job or job step.
 
-.TP 
-\f3majflt\fP 
-Maximum number of major page faults for any process.
+.TP
+\f3maxpages\fP
+Maximum page faults of a process.
 
-.TP 
-\f3minflt\fP 
-Maximum number of minor page faults (page reclaims) for any process.
+.TP
+\f3maxpagesnode\fP
+Maximum page faults of a node.
 
-.TP 
-\f3msgrcv\fP 
-Total number of messages received for all processes.
 
-.TP 
-\f3msgsnd\fP 
-Total number of messages sent for all processes.
+.TP
+\f3maxpagestask\fP
+Maximum page faults of a task.
+
+
+.TP
+\f3maxrss\fP
+Maximum resident set size of a process.
+
+.TP
+\f3maxrssnode\fP
+Maximum resident set size of a node.
+
+.TP
+\f3maxrsstask\fP
+Maximum resident set size of a node.
+
+.TP
+\f3maxvsize\fP
+Maximum  Virtual  Memory size of any process.
+
+.TP
+\f3maxvsizenode\fP
+Maximum  Virtual  Memory size of a node.
+
+.TP
+\f3maxvsizetask\fP
+Maximum  Virtual  Memory size of a task.
+
+.TP
+\f3mincpu\fP
+Minimum cpu of any process.
+
+.TP
+\f3mincpunode\fP
+Minimum cpu of a node.
+
+.TP
+\f3mincputasks\fP
+Minimum cpu of a task.
 
 .TP 
 \f3ncpus\fP 
 Total number of CPUs allocated to the job.
 
-.TP 
-\f3nivcsw\fP 
-Total number of involuntary context switches for all processes.
-
-.TP 
-\f3nodes\fP 
-A list of nodes allocated to the job.
+.TP
+\f3nodelist\fP
+List of node.
 
 .TP
-\f3nprocs\fP
-Total number of tasks in job. Identical to \f3ntasks\fP.
+\f3nnodes\fP
+Number of nodes.
 
 .TP 
-\f3nsignals\fP
-Total number of signals received for all processes.
-
-.TP
-\f3nswap\fP
-Maximum number of swap operations of any process.
-
-.TP
 \f3ntasks\fP 
-Total number of tasks in job.
-
-.TP 
-\f3nvcsw\fP 
-Total number of voluntary context switches for all processes.
-
-.TP 
-\f3outblocks\fP 
-Total block output operations for all processes.
+Total number of tasks in a job.
 
 .TP
-\f3pages\fP
-Maximum page faults of any process followed by its task id along with
-the average of all processes running in the step.
+\f3priority\fP
+Slurm priority.
 
 .TP 
-\f3partition\fP 
+\f3partition\fP
 Identifies the partition on which the job ran.
 
+.TP
+\f3qos\fP
+Quality of service.
+
+.TP
+\f3qosraw\fP 
+
 .TP 
-\f3rss\fP 
-Maximum resident set size of any process followed by its task id along with
-the average of all processes running in the step.
+\f3reqcpus\fP 
+Required CPUs.
+
+.TP 
+\f3reserved\fP 
+
+.TP
+\f3resvcpu\fP
+Reserved CPUs.
+
+.TP 
+\f3resvcpuraw\fP 
 
 .TP
 \f3start\fP
 Initiation time of the job in the same format as \f3end\fP.
 
 .TP
-\f3status\fP
+\f3state\fP
 Displays the job status, or state.
-.IP 
-Output can be 
-\f3RUNNING\fP\c
-\&, 
-\f3SUSPENDED\fP\c
-\&,
-\f3COMPLETED\fP\c
-\&, 
-\f3CANCELLED\fP\c
-\&, 
-\f3FAILED\fP\c
-\&, 
-\f3TIMEOUT\fP\c
-\&, or 
-\f3NODE_FAIL\fP\c
-\&.
 
-.TP 
-\f3submit\fP 
-The time and date stamp (in Universal Time Coordinated, UTC) the job was 
-submitted.
-The format of the output is identical to that of the \f3end\fP field.
+Output can be RUNNING, SUSPENDED, COMPLETED,  CANCELLED, FAILED, TIMEOUT, or NODE_FAIL.
 
-.TP 
-\f3systemcpu\fP 
+.TP
+\f3submit\fP
+The  time and date stamp (in Universal Time Coordinated, UTC) the job
+was submitted.  The format of the output is identical to that of the end field.
+
+.TP
+\f3suspended\fP
+
+.TP
+\f3systemcpu\fP
 The amount of system CPU time. (If job was running on multiple cpus this
 is a combination of all the times so this number could be much larger
 than the elapsed time.)
@@ -673,37 +568,33 @@ The format of the output is identical to that of the
 \f3elapsed\fP 
 field.
 
-.TP 
-\f3uid\fP 
-The user identifier of the user who ran the job.
+.TP
+\f3timelimit\fP
 
-.TP 
-\f3uid.gid\fP 
-The user and group identifiers of the user who ran the job. (This
-field is used in record headers, and simply concatenates the
-\f3uid\fP and \f3gid\fP fields.)
+.TP
+\f3totalcpu\fP
+
+.TP
+\f3uid\fP
+The user identifier of the user who ran the job.
 
 .TP
 \f3user\fP
 The user name of the user who ran the job.
 
-.TP 
-\f3usercpu\fP 
-The amount of user CPU time. (If job was running on multiple cpus this
-is a combination of all the times so this number could be much larger
-than the elapsed time.)
-The format of the output is identical to that of the 
-\f3elapsed\fP field.
-
 .TP
-\f3vsize\fP
-Maximum Virtual Memory size of any process followed by its task id along with
-the average of all processes running in the step.
+\f3usercpu\fP
+The amount of user CPU time. (If job was running on mul-tiple cpus
+this is a combination of  all  the  times  so this number could be
+much larger than the elapsed time.) The format of the output is
+identical  to  that  of  the elapsed field.
 
 .TP
 \f3wckey\fP
-Workload Characterization Key.  Arbitrary string for grouping
-orthogonal accounts together.
+Workload  Characterization  Key.   Arbitrary  string for grouping orthogonal accounts together.
+
+.TP
+\f3wckeyid\fP
 
 .RE 
 .SH "INTERPRETING THE \-DUMP OPTION OUTPUT"
@@ -1126,12 +1017,12 @@ command:
 .nf 
 .ft 3
 # sacct
-Jobid      Jobname    Partition    Ncpus Status     Exitcode
-\-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-
-2          script01   srun             1 RUNNING           0
-3          script02   srun             1 RUNNING           0
-4          endscript  srun             1 RUNNING           0
-4.0                   srun             1 COMPLETED         0
+Jobid      Jobname    Partition    Account AllocCPUS State     ExitCode
+\-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-
+2          script01   srun       acct1               1 RUNNING           0
+3          script02   srun       acct1               1 RUNNING           0
+4          endscript  srun       acct1               1 RUNNING           0
+4.0                   srun       acct1               1 COMPLETED         0
 
 .ft 1
 .fi 
@@ -1159,17 +1050,17 @@ Jobid      Status     Exitcode
 .PP
 .nf 
 .ft 3
-# sacct \-\-total
-Jobid      Jobname    Partition    Ncpus Status     Exitcode
-\-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-
-3          sja_init   andy             1 COMPLETED         0
-4          sjaload    andy             2 COMPLETED         0
-5          sja_scr1   andy             1 COMPLETED         0
-6          sja_scr2   andy            18 COMPLETED         2
-7          sja_scr3   andy            18 COMPLETED         0
-8          sja_scr5   andy             2 COMPLETED         0
-9          sja_scr7   andy            90 COMPLETED         1
-10         endscript  andy           186 COMPLETED         0
+# sacct \-\-allocations
+Jobid      Jobname    Partition Account    AllocCPUS  State     Exitcode
+\-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-
+3          sja_init   andy       acct1            1 COMPLETED         0
+4          sjaload    andy       acct1            2 COMPLETED         0
+5          sja_scr1   andy       acct1            1 COMPLETED         0
+6          sja_scr2   andy       acct1           18 COMPLETED         2
+7          sja_scr3   andy       acct1           18 COMPLETED         0
+8          sja_scr5   andy       acct1            2 COMPLETED         0
+9          sja_scr7   andy       acct1           90 COMPLETED         1
+10         endscript  andy       acct1          186 COMPLETED         0
 
 .ft 1
 .fi 
@@ -1184,14 +1075,14 @@ The fields are displayed in the order designated on the command line.
 .nf 
 .ft 3
 # sacct \-\-fields=jobid,ncpus,ntasks,nsignals,status
-Jobid        Ncpus  Ntasks  Nsignals Status
-\-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\- \-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-
-3                2       1         0 COMPLETED
-3.0              2       1         0 COMPLETED
-4                2       2         0 COMPLETED
-4.0              2       2         0 COMPLETED
-5                2       1         0 COMPLETED
-5.0              2       1         0 COMPLETED
+Jobid     Elapsed    Ncpus     Ntasks   Status
+\-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-
+3            00:01:30          2        1 COMPLETED
+3.0          00:01:30          2        1 COMPLETED
+4            00:00:00          2        2 COMPLETED
+4.0          00:00:01          2        2 COMPLETED
+5            00:01:23          2        1 COMPLETED
+5.0          00:01:31          2        1 COMPLETED
 
 .ft 1
 .fi 
