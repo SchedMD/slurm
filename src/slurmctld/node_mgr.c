@@ -75,7 +75,7 @@
 #define MAX_RETRIES	10
 
 /* Change NODE_STATE_VERSION value when changing the state save format */
-#define NODE_STATE_VERSION      "VER002"
+#define NODE_STATE_VERSION      "VER003"
 
 /* Global variables */
 List config_list = NULL;		/* list of config_record entries */
