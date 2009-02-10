@@ -8,6 +8,7 @@
 #
 # See the slurm.conf man page for more information.
 #
+ClusterName=linux
 ControlMachine=linux0
 #ControlAddr=
 #BackupController=
@@ -62,6 +63,13 @@ SchedulerType=sched/backfill
 #SchedulerRootFilter=
 SelectType=select/linear
 FastSchedule=1
+#PriorityType=priority/multifactor
+#PriorityDecayHalfLife=4:00:00
+#PriorityWeightFairshare=100000
+#PriorityWeightAge=1000
+#PriorityWeightPartition=10000
+#PriorityWeightJobSize=1000
+#PriorityMaxAge=1-0
 #
 # LOGGING
 SlurmctldDebug=3
@@ -70,14 +78,16 @@ SlurmdDebug=3
 #SlurmdLogFile=
 JobCompType=jobcomp/none
 #JobCompLoc=
-JobAcctType=jobacct/none
-#JobAcctLoc=
-#JobAcctFrequency=
-DatabaseType=database/flatfile
-#DatabaseHost=localhost
-#DatabasePort=1234
-#DatabaseUser=mysql
-#DatabasePass=mysql
+#
+# ACCOUNTING
+#JobAcctGatherType=jobacct_gather/linux
+#JobAcctGatherFrequency=30
+#
+#AccountingStorageType=accounting_storage/slurmdbd
+#AccountingStorageHost=
+#AccountingStorageLoc=
+#AccountingStoragePass=
+#AccountingStorageUser=
 #
 # COMPUTE NODES
 NodeName=linux[1-32] Procs=1 State=UNKNOWN
