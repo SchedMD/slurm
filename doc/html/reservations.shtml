@@ -5,7 +5,10 @@
 <p>SLURM verstion 2.0 has the ability to reserve resources for jobs
 being executed by select users and/or select bank accounts.
 A resource reservation identifies the nodes of a resource reservation 
-and a time period during which the reservation is available.</p>
+and a time period during which the reservation is available.
+Note that resource reservations are not compatable with SLURM's
+gang scheduler plugin since the termination time of running jobs
+is not possible to accurately predict.</p>
 
 <p>Reservations can be created, updated, or destroyed only by user root 
 using the <i>scontrol</i> command. 
@@ -79,7 +82,8 @@ feature that every selected node must contain.</p>
 <p>Reservations must not overlap. They must either include 
 different nodes or operate at different times. If specific nodes
 are not specified when a reservation is created, SLURM will 
-automatically select nodes to avoid overlap.</p>
+automatically select nodes to avoid overlap and insure that
+the selected nodes are available when the reservation begins.</p>
 
 <h2>Reservation Use</h2>
 
@@ -93,7 +97,7 @@ reaches its EndTime. If letting the job continue execution after
 the reservation EndTime, a configuration option <i>ResvOverRun</i>
 can be set to control how long the job can continue execution.</p>
 <pre>
-$ sbatch --reservation=alan6 -N4 my.script
+$ sbatch --reservation=alan_6 -N4 my.script
 sbatch: Submitted batch job 65540
 </pre>
 
@@ -140,18 +144,14 @@ to have used half of the reserved resources).</p>
 <ol>
 <li>In the event that one more node initially selected for use in a 
 reservation goes DOWN, no replacement is currently selected.</li>
-<li>The automatic selection of nodes for a reservation create request is
-sub-optimal in terms timing (selecting nodes that are expected to become 
-available close to the time when needed). If reservations are created
-well before they start, this should not pose problems.</li>
-<li>The automatic selection of nodes for a reservation create request is
+<li>The automatic selection of nodes for a reservation create request may be
 sub-optimal in terms of locality (for optimized application communication).</li>
 <li> The feature specification in the reservation creation request should be 
 made more flexible to accept multiple features with AND or OR operators.</li> 
 </ol>
 
 
-<p style="text-align: center;">Last modified 5 February 2009</p>
+<p style="text-align: center;">Last modified 10 February 2009</p>
 
 <!--#include virtual="footer.txt"-->
 
