@@ -227,8 +227,9 @@ manage the configuration (much of which requires a database).
 The first configuration parameter of interest is <b>PriorityType</b>
 with two options available: <i>basic</i> (first-in-first-out) and
 <i>multifactor</i>. 
-The <i>multifactor</i> plugin is very configurable and its details
-are beyond the scope of this document.
+The <i>multifactor</i> plugin will assign a priority to jobs based upon
+a multitude of configuration parameters (age, size, fair-share allocation, 
+etc.) and its details are beyond the scope of this document.
 See the <a href="job_priority.html">Multi-factor Job Priority Plugin</a>
 document for details.</p>
 
