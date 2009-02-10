@@ -88,6 +88,7 @@
 #include "src/slurmctld/ping_nodes.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/read_config.h"
+#include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/srun_comm.h"
@@ -569,6 +570,7 @@ int main(int argc, char *argv[])
 	job_fini();
 	part_fini();	/* part_fini() must preceed node_fini() */
 	node_fini();
+	resv_fini();
 	trigger_fini();
 	assoc_mgr_fini(slurmctld_conf.state_save_location);
 
