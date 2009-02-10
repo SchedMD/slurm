@@ -1181,6 +1181,15 @@ extern int create_resv(reserve_request_msg_t *resv_desc_ptr)
 	return rc;
 }
 
+/* Purge all reservation data structures */
+extern void resv_fini(void)
+{
+	if (resv_list) {
+		list_destroy(resv_list);
+		resv_list = (List) NULL;
+	}
+}
+
 /* Update an exiting resource reservation */
 extern int update_resv(reserve_request_msg_t *resv_desc_ptr)
 {

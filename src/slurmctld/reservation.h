@@ -61,6 +61,9 @@ extern void show_resv(char **buffer_ptr, int *buffer_size, uid_t uid);
 /* Save the state of all reservations to file */
 extern int dump_all_resv_state(void);
 
+/* Purge all reservation data structures */
+extern void resv_fini(void);
+
 /*
  * Load the reservation state from file, recover on slurmctld restart. 
  *	Reset reservation pointers for all jobs.
