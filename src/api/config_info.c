@@ -252,6 +252,33 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->plugindir);
 	fprintf(out, "PlugStackConfig         = %s\n",
 		slurm_ctl_conf_ptr->plugstack);
+
+	if (strcmp(slurm_ctl_conf_ptr->priority_type, "priority/basic") == 0) {
+		fprintf(out, "PriorityType            = %s\n",
+			slurm_ctl_conf_ptr->priority_type);
+	} else {
+		secs2time_str((time_t) slurm_ctl_conf_ptr->priority_decay_hl,
+			      tmp_str, sizeof(tmp_str));
+		fprintf(out, "PriorityDecayHalfLife   = %s\n", tmp_str);
+		fprintf(out, "PriorityFavorSmall      = %u\n",
+			slurm_ctl_conf_ptr->priority_favor_small);
+		secs2time_str((time_t) slurm_ctl_conf_ptr->priority_max_age,
+			      tmp_str, sizeof(tmp_str));
+		fprintf(out, "PriorityMaxAge          = %s\n", tmp_str);
+		fprintf(out, "PriorityType            = %s\n",
+			slurm_ctl_conf_ptr->priority_type);
+		fprintf(out, "PriorityWeightAge       = %u\n",
+			slurm_ctl_conf_ptr->priority_weight_age);
+		fprintf(out, "PriorityWeightFairShare = %u\n",
+			slurm_ctl_conf_ptr->priority_weight_fs);
+		fprintf(out, "PriorityWeightJobSize   = %u\n",
+			slurm_ctl_conf_ptr->priority_weight_js);
+		fprintf(out, "PriorityWeightPartition = %u\n",
+			slurm_ctl_conf_ptr->priority_weight_part);
+		fprintf(out, "PriorityWeightQOS       = %u\n",
+			slurm_ctl_conf_ptr->priority_weight_qos);
+	}
+
 	private_data_string(slurm_ctl_conf_ptr->private_data,
 			    tmp_str, sizeof(tmp_str));
 	fprintf(out, "PrivateData             = %s\n", tmp_str);
