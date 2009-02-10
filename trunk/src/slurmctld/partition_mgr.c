@@ -67,7 +67,7 @@
 #include "src/slurmctld/slurmctld.h"
 
 /* Change PART_STATE_VERSION value when changing the state save format */
-#define PART_STATE_VERSION      "VER001"
+#define PART_STATE_VERSION      "VER002"
 
 /* Global variables */
 struct part_record default_part;	/* default configuration values */
