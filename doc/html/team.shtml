@@ -5,14 +5,14 @@
 <a href="https://www.llnl.gov/">Lawrence Livermore National Laboratory</a> (LLNL),
 <a href="http://www.hp.com/">HP</a>,
 <a href="http://www.bull.com/">Bull</a>,
-<a href="http://www.lnxi.com/">Linux NetworX</a>,
-and a host of others.
+Linux NetworX and many other contributorss.
 
 <p>The current SLURM development staff includes: </p>
 <ul>
 <li>Morris Jette (LLNL, Project leader)</li>
 <li>Danny Auble (LLNL)</li>
 <li>Susanne Balle (HP)</li>
+<li>David Bremer (LLNL)</li>
 <li>Chris Holmes (HP)</li>
 </ul>
 

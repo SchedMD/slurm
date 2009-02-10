@@ -26,7 +26,7 @@ algorithms.
 <a href="https://www.llnl.gov/">Lawrence Livermore National Laboratory (LLNL)</a>,
 <a href="http://www.hp.com/">Hewlett-Packard</a>, 
 <a href="http://www.bull.com/">Bull</a>,
-<a href="http://www.lnxi.com/">Linux NetworX</a> and many other contributors.</p>
+Linux NetworX and many other contributors.</p>
 
 <h2>Architecture</h2>
 <p>SLURM has a centralized manager, <b>slurmctld</b>, to monitor resources and 
