@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 2.0
-9 February 2009 (after SLURM 1.4.0-pre7 released)
+10 February 2009 (after SLURM 1.4.0-pre7 released)
 
 
 IMPORTANT NOTE:
@@ -10,14 +10,21 @@ cancel all pending and running jobs (e.g.
 "scancel --state=pending; scancel --state=running"). Then stop and restart 
 daemons with the "-c" option or use "/etc/init.d/slurm startclean".
 
-If using the slurmdbd you must update this first.  The 1.4 slurmdbd will 
-work with 1.3.7 and above.  So you will not need to update all clusters at
-the same time, but it is very important to update this first and having it 
-running before updating any other clusters using the slurmdbd.
+If using the slurmdbd (SLURM DataBase Daemon) you must update this first.  
+The 2.0 slurmdbd will work with SLURM daemons at version 1.3.7 and above.  
+You will not need to update all clusters at the same time, but it is very 
+important to update slurmdbd first and having it running before updating 
+any other clusters making use of it.
 
 There are substantial changes in the slurm.conf configuration file. It 
 is recommended that you rebuild your configuration file using the tool
 doc/html/configurator.html that comes with the distribution.
+
+SLURM can continue to be used as a simple resource manager, but optional
+plugins support sophisticated scheduling algorithms. These plugins do require 
+the use of a database containing user and bank account information, so 
+more administration work is required. SLURM's modular design lets you 
+control the functionality that you want it to provide.
 
 HIGHLIGHTS
 * Sophisticated scheduling algorithms are available in a new plugin. Jobs
@@ -38,10 +45,13 @@ HIGHLIGHTS
   the centralized scheduler rather than the daemons running on the individual
   compute nodes. This permits effective preemption or gang schedule jobs.
 * A new configuration parameter, PrologSlurmctld, can be used to support the 
-  booting of different operating systems for each job.
+  booting of different operating systems for each job. See "man slurm.conf"
+  for details.
 * Preemption of jobs from lower priority partitions in order to execute jobs
   in higher priority partitions is now supported. The jobs from the lower 
-  priority partition will resume once preempting job completes. 
+  priority partition will resume once preempting job completes. For more 
+  information see:
+  https://computing.llnl.gov/linux/slurm/preempt.html
 * Support added for Sun Constellation system with optimized resource allocation
   for a 3-dimensional torus interconnect. For more information see:
   https://computing.llnl.gov/linux/slurm/sun_const.html
@@ -71,10 +81,11 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
   specified in the configuration file. Additional resources found by SLURM
   daemons on the compute nodes will not be used.
 * DebugFlags added to provide detailed logging for specific subsystems.
-* Added Priority plugin.  Default for PriorityType is "priority/basic" which 
-  is the same logic slurm has today.  "priority/multifactor" is a new plugin 
+* Added job priority plugin.  Default for PriorityType is "priority/basic" 
+  which is the same logic SLURM has today (job priorities are assigned at
+  submit time with decreasing value).  "priority/multifactor" is a new plugin 
   which utilizes logic to set a priority on a job based on many different 
-  factors described here:  
+  configuration parameters as described here:  
   https://computing.llnl.gov/linux/slurm/job_priority.html
 
 COMMAND CHANGES (see man pages for details)
