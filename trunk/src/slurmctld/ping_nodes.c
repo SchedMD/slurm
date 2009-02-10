@@ -310,7 +310,7 @@ extern void run_health_check(void)
 		hostlist_uniq(check_agent_args->hostlist);
 		hostlist_ranged_string(check_agent_args->hostlist, 
 			sizeof(host_str), host_str);
-		verbose("Spawning health check agent for %s", host_str);
+		debug("Spawning health check agent for %s", host_str);
 		ping_begin();
 		agent_queue_request(check_agent_args);
 	}
