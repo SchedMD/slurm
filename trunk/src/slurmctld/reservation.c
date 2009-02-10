@@ -99,6 +99,8 @@ static bool _is_account_valid(char *account);
 static bool _is_resv_used(slurmctld_resv_t *resv_ptr);
 static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 		       bool internal);
+static bitstr_t *_pick_idle_nodes(bitstr_t *avail_nodes, 
+				  reserve_request_msg_t *resv_desc_ptr);
 static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt);
 static bool _resv_overlap(time_t start_time, time_t end_time, 
 			  uint16_t flags, bitstr_t *node_bitmap,
@@ -1924,7 +1926,7 @@ static int  _select_nodes(reserve_request_msg_t *resv_desc_ptr,
 			  bitstr_t **resv_bitmap)
 {
 	slurmctld_resv_t *resv_ptr;
-	bitstr_t *node_bitmap, *tmp_bitmap;
+	bitstr_t *node_bitmap;
 	struct node_record *node_ptr;
 	ListIterator iter;
 	int i, j;
@@ -1988,16 +1990,11 @@ static int  _select_nodes(reserve_request_msg_t *resv_desc_ptr,
 		bit_and(node_bitmap, idle_node_bitmap);
 		*resv_bitmap = bit_pick_cnt(node_bitmap, 
 					    resv_desc_ptr->node_cnt);
-	} else {		/* Reserve nodes that are idle or in use */
-		*resv_bitmap = bit_copy(node_bitmap);
-		bit_and(*resv_bitmap, idle_node_bitmap);
-		j = resv_desc_ptr->node_cnt - i; /* remaining nodes to pick */
-		bit_not(idle_node_bitmap);
-		bit_and(node_bitmap, idle_node_bitmap);	/* nodes now avail */
-		bit_not(idle_node_bitmap);
-		/* FIXME: Modify to select nodes that become free soonest */
-		tmp_bitmap = bit_pick_cnt(node_bitmap, j);
-		bit_or(*resv_bitmap, tmp_bitmap);
+	} else {
+		/* Reserve nodes that are or will be idle.
+		 * This algorithm is slower than above logic that just 
+		 * selects from the idle nodes. */
+		*resv_bitmap = _pick_idle_nodes(node_bitmap, resv_desc_ptr);
 	}
 
 	bit_free(node_bitmap);
@@ -2005,6 +2002,35 @@ static int  _select_nodes(reserve_request_msg_t *resv_desc_ptr,
 		return ESLURM_TOO_MANY_REQUESTED_NODES;
 	resv_desc_ptr->node_list = bitmap2node_name(*resv_bitmap);
 	return SLURM_SUCCESS;
+}
+
+/*
+ * Select nodes for a reservation to use
+ * IN,OUT avail_nodes - nodes to choose from with proper features, partition
+ *                      destructively modified by this function
+ * IN resv_desc_ptr - reservation request
+ * RET bitmap of selected nodes or NULL if request can not be satisfied
+ */
+static bitstr_t *_pick_idle_nodes(bitstr_t *avail_nodes, 
+				  reserve_request_msg_t *resv_desc_ptr)
+{
+	ListIterator job_iterator;
+	struct job_record *job_ptr;
+
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		if ((job_ptr->job_state != JOB_RUNNING) &&
+		    (job_ptr->job_state != JOB_SUSPENDED))
+			continue;
+		if (job_ptr->end_time < resv_desc_ptr->start_time)
+			continue;
+		bit_not(job_ptr->node_bitmap);
+		bit_and(avail_nodes, job_ptr->node_bitmap);
+		bit_not(job_ptr->node_bitmap);
+	}
+	list_iterator_destroy(job_iterator);
+
+	return bit_pick_cnt(avail_nodes, resv_desc_ptr->node_cnt);
 }
 
 /* Determine if a job has access to a reservation
