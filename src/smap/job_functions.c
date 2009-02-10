@@ -195,7 +195,7 @@ static void _print_header_job(void)
 		main_xcord += 3;
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "JOBID");
-		main_xcord += 6;
+		main_xcord += 8;
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "PARTITION");
 		main_xcord += 10;
@@ -297,7 +297,7 @@ static int _print_text_job(job_info_t * job_ptr)
 		main_xcord += 3;
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "%d", job_ptr->job_id);
-		main_xcord += 6;
+		main_xcord += 8;
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "%.10s", job_ptr->partition);
 		main_xcord += 10;
@@ -375,7 +375,7 @@ static int _print_text_job(job_info_t * job_ptr)
 		main_xcord = 1;
 		main_ycord++;
 	} else {
-		printf("%5d ", job_ptr->job_id);
+		printf("%8d ", job_ptr->job_id);
 		printf("%9.9s ", job_ptr->partition);
 #ifdef HAVE_BG
 		printf("%16.16s ", 
