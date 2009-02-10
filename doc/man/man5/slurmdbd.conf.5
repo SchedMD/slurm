@@ -1,4 +1,4 @@
-.TH "slurmdbd.conf" "5" "June 2008" "slurmdbd.conf 1.3" "Slurm configuration file"
+.TH "slurmdbd.conf" "5" "Feb 2009" "slurmdbd.conf 1.3" "Slurm configuration file"
 .SH "NAME"
 slurmdbd.conf \- Slurm Database Daemon (SlurmDBD) configuration file 
 
@@ -22,18 +22,38 @@ contains a database password.
 The overall configuration parameters available include:
 
 .TP
-\fBArchiveAge\fR
-Move data over this age out of the database to an archive.
-The time is a numeric value and is a number of days.
-If zero, then never archive the data.
-The default value is zero.
+\fBArchiveDir\fR
+If ArchiveScript is not set the slurmdbd will generate a text file that can be 
+read in anytime with sacctmgr load filename.  This directory is where the 
+file will be placed archive has ran.  Default is /tmp.
+
+.TP
+\fBArchiveJobs\fR
+Boolean, yes to archive job data, no other wise.  Default is no.
 
 .TP
 \fBArchiveScript\fR
 This script is executed periodically in order to transfer accounting
 records out of the database into an archive. The script is executed 
-with a single argument, the value of \fBArchiveTime\fR as described
-below.
+with a no arguments, The following environment variables are set.
+.RS
+.TP
+\fBSLURM_ARCHIVE_STEPS\fR 
+1 for archive steps 0 otherwise.
+.TP
+\fBSLURM_ARCHIVE_LAST_STEP\fR
+Time of last step start to archive.
+.TP
+\fBSLURM_ARCHIVE_JOBS\fR
+1 for achive jobs 0 otherwise.
+.TP
+\fBSLURM_ARCHIVE_LAST_JOB\fR
+Time of last job submit to archive.
+.RE
+
+.TP
+\fBArchiveSteps\fR
+Boolean, yes to archive step data, no other wise.  Default is no.
 
 .TP
 \fBAuthInfo\fR
@@ -99,12 +119,16 @@ Values from 0 to 9 are legal, with `0' being "quiet" operation and
 The default value is 3.
 
 .TP
+\fBDefaultQOS\fR
+When adding a new cluster this will be used as the qos for the cluster 
+unless something is explicitly set by the admin with the create.
+ 
+.TP
 \fBJobPurge\fR
 Individual job records over this age are purged from the database.
 Aggregated information will be preserved indefinitely.
-The time is a numeric value and is a number of days.
-If zero, then job records are never purged.
-The default value is 360 days.
+The time is a numeric value and is a number of months.
+If zero (default), then job records are never purged.
 
 .TP
 \fBLogFile\fR
@@ -173,9 +197,8 @@ The default value is "root".
 \fBStepPurge\fR
 Individual job step records over this age are purged from the database.
 Aggregated information will be preserved indefinitely.
-The time is a numeric value and is a number of days.
-If zero, then job step records are never purged.
-The default value is 30 days.
+The time is a numeric value and is a number of months.
+If zero (default), then job step records are never purged.
 
 .TP
 \fBStorageHost\fR
@@ -237,9 +260,11 @@ Characterization Key. Must be set to track wckey usage.
 .br
 #
 .br
-ArchiveAge=365   # keep 1 year of data online
+ArchiveJobs=yes
 .br
-ArchiveScript=/usr/sbin/slurm.dbd.archive
+ArchiveSteps=no
+.br
+#ArchiveScript=/usr/sbin/slurm.dbd.archive
 .br
 AuthInfo=/var/run/munge/munge.socket.2
 .br
@@ -249,9 +274,9 @@ DbdHost=db_host
 .br
 DebugLevel=4
 .br
-JobPurge=90
+JobPurge=12
 .br
-StepPurge=30
+StepPurge=1
 .br
 LogFile=/var/log/slurmdbd.log
 .br

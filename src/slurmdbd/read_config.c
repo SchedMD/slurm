@@ -114,8 +114,8 @@ static void _clear_slurmdbd_conf(void)
 extern int read_slurmdbd_conf(void)
 {
 	s_p_options_t options[] = {
-		{"ArchiveJobs", S_P_BOOLEAN},
 		{"ArchiveDir", S_P_STRING},
+		{"ArchiveJobs", S_P_BOOLEAN},
 		{"ArchiveScript", S_P_STRING},
 		{"ArchiveSteps", S_P_BOOLEAN},
 		{"AuthInfo", S_P_STRING},
