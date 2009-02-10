@@ -2795,7 +2795,9 @@ static int _append_geo(int *geometry, List geos, int rotate)
 	if(rotate) {
 		for (i = (BA_SYSTEM_DIMENSIONS - 1); i >= 0; i--) {
 			for (j = 1; j <= i; j++) {
-				if (geometry[j-1] > geometry[j]) {
+				if ((geometry[j-1] > geometry[j])
+				    && (geometry[j] <= DIM_SIZE[j-i])
+				    && (geometry[j-1] <= DIM_SIZE[j])) {
 					temp_geo = geometry[j-1];
 					geometry[j-1] = geometry[j];
 					geometry[j] = temp_geo;
