@@ -269,6 +269,7 @@ generated_html = \
 	help.html \
 	ibm.html \
 	job_priority.html \
+	job_priority_plugins.html \
 	jobacct_gatherplugins.html \
 	jobacct_storageplugins.html \
 	jobcompplugins.html \
