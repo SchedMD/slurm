@@ -49,7 +49,6 @@ typedef enum bg_layout_type {
 	LAYOUT_DYNAMIC	/* slurm will make all blocks */
 } bg_layout_t;
 
-
 /* Global variables */
 #ifdef HAVE_BGL
 extern char *default_blrtsimage;
@@ -72,6 +71,7 @@ extern uint16_t bluegene_nodecard_node_cnt;
 extern uint16_t bluegene_nodecard_ionode_cnt;
 extern uint16_t bluegene_quarter_node_cnt;
 extern uint16_t bluegene_quarter_ionode_cnt;
+
 extern ba_system_t *ba_system_ptr;
 extern time_t last_bg_update;
 

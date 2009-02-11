@@ -932,12 +932,15 @@ static int _find_best_block_match(List block_list,
 	*found_bg_record = NULL;
 	allow = 0;
 
+	memset(&request, 0, sizeof(ba_request_t));
+
 	for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
 		request.start[i] = start[i];
 	
 	for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
 		request.geometry[i] = req_geometry[i];
-	
+
+	request.deny_pass = (uint16_t)NO_VAL;
 	request.save_name = NULL;
 	request.elongate_geos = NULL;
 	request.size = target_size;

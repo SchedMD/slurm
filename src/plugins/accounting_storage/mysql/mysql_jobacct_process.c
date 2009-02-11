@@ -231,7 +231,7 @@ extern int setup_job_cond_limits(acct_job_cond_t *job_cond, char **extra)
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "t1.gid=", object);
+			xstrfmtcat(*extra, "t1.gid='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
