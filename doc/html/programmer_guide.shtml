@@ -95,11 +95,11 @@ SLURM.<br>
 <b>plugins</b>&#151;Plugin functions for various infrastructure. A separate 
 subdirectory is used for each plugin class:<br> 
 <ul>
+<li><b>accounting_storage</b> for specifing the type of storage for accounting,<br>
 <li><b>auth</b> for user authentication,<br> 
 <li><b>checkpoint</b> for system-initiated checkpoint and restart of user jobs,<br>
 <li><b>crypto</b> for cryptographic functions,<br>
 <li><b>jobacct_gather</b> for job accounting,<br>
-<li><b>jobacct_storage</b> for specifing the type of storage for job accounting,<br>
 <li><b>jobcomp</b> for job completion logging,<br>
 <li><b>mpi</b> for MPI support,<br>
 <li><b>proctrack</b> for process tracking,<br>
@@ -109,6 +109,8 @@ subdirectory is used for each plugin class:<br>
 <li><b>task</b> for task affinity to processors.<br>
 </ul>
 <p style="margin-left:.2in">
+<b>sacct</b>&#151;User command to view accounting information about jobs.<br>
+<b>sacctmgr</b>&#151;User and administrator tool to manage accounting.<br>
 <b>salloc</b>&#151;User command to allocate resources for a job.<br>
 <b>sattach</b>&#151;User command to attach standard input, output and error 
 files to a running job or job step.<br>
@@ -122,12 +124,15 @@ with an existing SLURM job.<br>
 <b>slurmd</b>&#151;SLURM daemon code to manage the compute server nodes including 
 the execution of user applications.<br>
 <b>smap</b>&#151;User command to view layout of nodes, partitions, and jobs.
-This is particularly valuable on systems like Blue Gene, which has a three
+This is particularly valuable on systems like Bluegene, which has a three
 dimension torus topography.<br>
 <b>squeue</b>&#151;User command to get information on SLURM jobs and job steps.<br>
+<b>sreport</b>&#151;User command to view various reports about past
+usage across the enterprise.<br>
 <b>srun</b>&#151;User command to submit a job, get an allocation, and/or 
 initiation a parallel job step.<br>
-<b>strigger</b>&#151;User and administrator to manage event triggers.<br>
+<b>sstat</b>&#151;User tool to status running jobs.<br>
+<b>strigger</b>&#151;User and administrator tool to manage event triggers.<br>
 <b>sview</b>&#151;User command to view and update node, partition, and job 
 job state information.<br>
 
