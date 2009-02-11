@@ -61,7 +61,7 @@ proc _get_mem {prog} {
 	set ave_used -1
 	set exit_code 0
 
-	spawn $prog --noheader -p --job=$job_id.0 --fields maxvsize,maxvsizetask,avevsize
+	spawn $prog --noheader -p --job=$job_id.0 --fields maxvmsize,maxvmsizetask,avevmsize
 	expect {
 		-re "($float)(\[KMG\]*).($number).($float)(\[KMG\]*)" {
 			set mem_used  $expect_out(1,string)
