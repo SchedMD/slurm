@@ -62,10 +62,11 @@ List path = NULL;
 List best_path = NULL;
 int best_count;
 int color_count = 0;
-bool *passthrough = NULL;
+uint16_t *deny_pass = NULL;
 
 /* extern Global */
 my_bluegene_t *bg = NULL;
+uint16_t ba_deny_pass = 0;
 List bp_map_list = NULL;
 char letters[62];
 char colors[6];
@@ -91,6 +92,7 @@ s_p_options_t bg_conf_file_options[] = {
 	{"AltCnloadImage", S_P_ARRAY, parse_image, NULL},
 	{"AltIoloadImage", S_P_ARRAY, parse_image, NULL},
 #endif
+	{"DenyPassthrough", S_P_STRING},
 	{"LayoutMode", S_P_STRING},
 	{"MloaderImage", S_P_STRING},
 	{"BridgeAPILogFile", S_P_STRING},
@@ -241,6 +243,28 @@ extern char *bg_block_state_string(rm_partition_state_t state)
 	snprintf(tmp, sizeof(tmp), "%d", state);
 	return tmp;
 }
+
+extern char *ba_passthroughs_string(uint16_t passthrough)
+{
+	char *pass = NULL;
+	if(passthrough & PASS_FOUND_X)
+		xstrcat(pass, "X");
+	if(passthrough & PASS_FOUND_Y) {
+		if(pass)
+			xstrcat(pass, ",Y");
+		else
+			xstrcat(pass, "Y");
+	}
+	if(passthrough & PASS_FOUND_Z) {
+		if(pass)
+			xstrcat(pass, ",Z");
+		else
+			xstrcat(pass, "Z");
+	}
+	
+	return pass;
+}
+
 
 extern int parse_blockreq(void **dest, slurm_parser_enum_t type,
 			  const char *key, const char *value, 
@@ -489,8 +513,11 @@ extern int new_ba_request(ba_request_t* ba_request)
 	geo[X] = ba_request->geometry[X];
 	geo[Y] = ba_request->geometry[Y];
 	geo[Z] = ba_request->geometry[Z];
-	passthrough = &ba_request->passthrough;
-
+	if(ba_request->deny_pass == (uint16_t)NO_VAL) 
+		ba_request->deny_pass = ba_deny_pass;
+	
+	deny_pass = &ba_request->deny_pass;
+	
 	if(geo[X] != (uint16_t)NO_VAL) { 
 		for (i=0; i<BA_SYSTEM_DIMENSIONS; i++){
 			if ((geo[i] < 1) 
@@ -2102,17 +2129,38 @@ extern int *find_bp_loc(char* bp_id)
 #ifdef HAVE_BG_FILES
 	ba_bp_map_t *bp_map = NULL;
 	ListIterator itr;
-	
+	char *check = bp_id;
+
 	if(!bp_map_list) {
 		if(set_bp_map() == -1)
 			return NULL;
 	}
+
+	/* with BGP they changed the names of the rack midplane action from
+	 * R000 to R00-M0 so we now support both formats for each of the
+	 * systems */
+#ifdef HAVE_BGL
+	if(check[3] == '-') {
+		if(check[5]) {
+			check[3] = check[5];
+			check[4] = '\0';
+		}
+	}
+#else
+	if(bp_id[3] != '-') 
+		check = xstrdup_printf("R%c%c-M%c",
+				       bp_id[1], bp_id[2], bp_id[3]);
+#endif
+
 	itr = list_iterator_create(bp_map_list);
 	while ((bp_map = list_next(itr)))  
-		if (!strcasecmp(bp_map->bp_id, bp_id)) 
+		if (!strcasecmp(bp_map->bp_id, check)) 
 			break;	/* we found it */
-	
 	list_iterator_destroy(itr);
+
+#ifndef HAVE_BGL
+	xfree(check);
+#endif
 	if(bp_map != NULL)
 		return bp_map->coord;
 	else
@@ -2923,6 +2971,19 @@ static int _fill_in_coords(List results, List start_list,
 			goto failed;
 		}
 	}
+
+	if(deny_pass) {
+		if((*deny_pass & PASS_DENY_Y)
+		   && (*deny_pass & PASS_FOUND_Y)) {
+			debug("We don't allow Y passthoughs");
+			rc = 0;
+		} else if((*deny_pass & PASS_DENY_Z)
+		   && (*deny_pass & PASS_FOUND_Z)) {
+			debug("We don't allow Z passthoughs");
+			rc = 0;
+		}
+	}
+
 failed:
 	list_iterator_destroy(itr);				
 				
@@ -3126,7 +3187,16 @@ static int _find_yz_path(ba_node_t *ba_node, int *first,
 					dim_curr_switch->int_wire[2].port_tar
 						= 0;
 					dim_curr_switch = dim_next_switch;
-									
+
+					if(deny_pass
+					   && (node_tar[i2] != first[i2])) {
+						if(i2 == 1) 
+							*deny_pass |=
+								PASS_FOUND_Y;
+						else 
+							*deny_pass |=
+								PASS_FOUND_Z;
+					}
 					while(node_tar[i2] != first[i2]) {
 						debug3("on dim %d at %d "
 						       "looking for %d",
@@ -3140,6 +3210,7 @@ static int _find_yz_path(ba_node_t *ba_node, int *first,
 							       "here 3");
 							return 0;
 						} 
+						
 						dim_curr_switch->
 							int_wire[2].used = 1;
 						dim_curr_switch->
@@ -4264,6 +4335,11 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 			} else if(found == x_size) {
 				debug2("Algo(%d) finishing the torus!", algo);
 
+				if(deny_pass && (*deny_pass & PASS_DENY_X)) {
+					info("we don't allow passthroughs 1");
+					return 0;
+				}
+
 				if(best_path)
 					list_flush(best_path);
 				else
@@ -4418,7 +4494,13 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 			debug2("Algo(%d) yes found next free %d", algo,
 			       best_count);
 			node_tar = _set_best_path();
-			
+
+			if(deny_pass && (*deny_pass & PASS_DENY_X)
+			   && (*deny_pass & PASS_FOUND_X)) {
+				debug("We don't allow X passthoughs.");
+				return 0;
+			}
+
 			next_node = &ba_system_ptr->grid[node_tar[X]]
 #ifdef HAVE_3D
 				[node_tar[Y]]
@@ -4836,9 +4918,9 @@ static int *_set_best_path()
 
 	itr = list_iterator_create(best_path);
 	while((path_switch = (ba_path_switch_t*) list_next(itr))) {
-		if(passthrough && path_switch->in > 1 && path_switch->out > 1) {
-			*passthrough = true;
-			debug2("got a passthrough");
+		if(deny_pass && path_switch->in > 1 && path_switch->out > 1) {
+			*deny_pass |= PASS_FOUND_X;
+			debug2("got a passthrough in X");
 		}
 #ifdef HAVE_3D
 		debug3("mapping %c%c%c %d->%d",
