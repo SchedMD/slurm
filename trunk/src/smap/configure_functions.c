@@ -98,9 +98,12 @@ static allocated_block_t *_make_request(ba_request_t *request)
 			  request->geometry[2]);
 		return NULL;
 	} else {
-		if(request->passthrough)
+		char *pass = ba_passthroughs_string(request->deny_pass);
+		if(pass) {
 			sprintf(error_string,"THERE ARE PASSTHROUGHS IN "
-				"THIS ALLOCATION!!!!!!!");
+				"THIS ALLOCATION DIM %s!!!!!!!", pass);
+			xfree(pass);
+		}
 		
 		allocated_block = (allocated_block_t *)xmalloc(
 			sizeof(allocated_block_t));
@@ -213,7 +216,7 @@ static int _create_allocation(char *com, List allocated_blocks)
 	request->size = 0;
 	request->small32 = 0;
 	request->small128 = 0;
-	request->passthrough = false;
+	request->deny_pass = 0;
 	request->avail_node_bitmap = NULL;
 
 	while(i<len) {				
@@ -1393,7 +1396,9 @@ void get_command(void)
 			_delete_allocated_blocks(allocated_blocks);
 			ba_fini();
 			exit(0);
-		} if (!strcmp(com, "quit")) {
+		} 
+		
+		if (!strcmp(com, "quit") || !strcmp(com, "\\q")) {
 			break;
 		} else if (!strncasecmp(com, "layout", 6)) {
 			_set_layout(com);
