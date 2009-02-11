@@ -354,7 +354,8 @@ test12.1   Test sacct --help option.
 test12.2   Test validity/accuracy of accounting data for exit code, 
            memory and real-time information along with stating a running job.
 test12.3   Test sacct --allusers option.
-test12.3   Test sacct --brief option.
+test12.4   Test sacct --brief option.
+test12.5   Test sacct --helpformat option.
 
 
 test13.#   Testing of switch plugins
