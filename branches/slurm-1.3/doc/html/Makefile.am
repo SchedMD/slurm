@@ -19,7 +19,7 @@ generated_html = \
 	help.html \
 	ibm.html \
 	jobacct_gatherplugins.html \
-	jobacct_storageplugins.html \
+	accounting_storageplugins.html \
 	jobcompplugins.html \
 	mail.html \
 	maui.html \
