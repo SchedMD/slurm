@@ -17,8 +17,10 @@ Changes to the configuration file take effect upon restart of
 SLURM daemons, daemon receipt of the SIGHUP signal, or execution 
 of the command "scontrol reconfigure" unless otherwise noted.
 .LP
-The overall configuration parameters available include:
 
+There are some differences between Bluegene/L and Bluegene/P in respects to the contents of the bluegene.conf file.  
+
+.SH "The Bluegene/L specific options are:"
 .TP
 \fBAltBlrtsImage\fR
 Alternative BlrtsImage.  This is an optional field only used for 
@@ -36,16 +38,59 @@ Groups= is not stated then this image will be able to be used by all
 groups. You can but as many alternative images as you want in the conf file.
 
 .TP
-\fBAltMloaderImage\fR
-Alternative MloaderImage.  This is an optional field only used for 
+\fBAltRamDiskImage\fR
+Alternative RamDiskImage.  This is an optional field only used for 
 mulitple images on a system and should be followed by a Groups= with
 the user groups allowed to use this image (i.e. Groups=da,jette) if 
 Groups= is not stated then this image will be able to be used by all
 groups. You can but as many alternative images as you want in the conf file.
 
 .TP
-\fBAltRamDiskImage\fR
-Alternative RamDiskImage.  This is an optional field only used for 
+\fBBlrtsImage\fR
+BlrtsImage used for creation of all bgblocks.
+There is no default value and this must be specified.
+
+.TP
+\fBLinuxImage\fR
+LinuxImage used for creation of all bgblocks.
+There is no default value and this must be specified.
+
+.TP
+\fBRamDiskImage\fR
+RamDiskImage used for creation of all bgblocks.
+There is no default value and this must be specified.
+
+.SH "The Bluegene/P specific options are:"
+.TP
+\fBAltCnloadImage\fR
+Alternative CnloadImage.  This is an optional field only used for 
+mulitple images on a system and should be followed by a Groups= with
+the user groups allowed to use this image (i.e. Groups=da,jette) if 
+Groups= is not stated then this image will be able to be used by all
+groups. You can but as many alternative images as you want in the conf file.
+
+.TP
+\fBAltIoloadImage\fR
+Alternative IoloadImage.  This is an optional field only used for 
+mulitple images on a system and should be followed by a Groups= with
+the user groups allowed to use this image (i.e. Groups=da,jette) if 
+Groups= is not stated then this image will be able to be used by all
+groups. You can but as many alternative images as you want in the conf file.
+
+.TP
+\fBCnloadImage\fR
+CnloadImage used for creation of all bgblocks.
+There is no default value and this must be specified.
+
+.TP
+\fBIoloadImage\fR
+IoloadImage used for creation of all bgblocks.
+There is no default value and this must be specified.
+
+.SH "All options below are common on all Bluegene systems:"
+.TP
+\fBAltMloaderImage\fR
+Alternative MloaderImage.  This is an optional field only used for 
 mulitple images on a system and should be followed by a Groups= with
 the user groups allowed to use this image (i.e. Groups=da,jette) if 
 Groups= is not stated then this image will be able to be used by all
@@ -56,11 +101,6 @@ groups. You can but as many alternative images as you want in the conf file.
 The number of c\-nodes per base partition.
 There is no default value and this must be specified. (For bgl systems this
 is usually 512)
-
-.TP
-\fBBlrtsImage\fR
-BlrtsImage used for creation of all bgblocks.
-There is no default value and this must be specified.
 
 .TP
 \fBBridgeAPILogFile\fR
@@ -86,6 +126,11 @@ The default value is 0.
 .RE
 
 .TP
+\fBDenyPassthrough\fR
+Specify which dimsions you do not want to allow pass throughs.  Valid options are X, Y, Z or all.
+example: If you don't want to allow passthroughs in the X and Y diminsions you would specify DenyPassthrough=X,Y
+
+.TP
 \fBLayoutMode\fR
 Describes how SLURM should create bgblocks.
 .RS
@@ -103,11 +148,6 @@ Dynamic partitioning may introduce fragmentation of resources
 and starvation of larger jobs.
 \fBUse this mode with caution.\fR
 .RE
-
-.TP
-\fBLinuxImage\fR
-LinuxImage used for creation of all bgblocks.
-There is no default value and this must be specified.
 
 .TP
 \fBMloaderImage\fR
@@ -131,11 +171,6 @@ should be used to create small blocks.  For systems that are not IO rich, or
 you do not wish to create small blocks, 8 is usually the number to use.
 For bgp IO rich systems 32 is the value that should be used to create small 
 blocks since you can only have 2 ionodes per nodecard instead of 4 like on bgl.
-
-.TP
-\fBRamDiskImage\fR
-RamDiskImage used for creation of all bgblocks.
-There is no default value and this must be specified.
 
 .LP
 Each bgblock is defined by the base partitions used to construct it.
