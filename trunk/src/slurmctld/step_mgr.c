@@ -72,6 +72,7 @@
 
 static int  _count_cpus(bitstr_t *bitmap);
 static struct step_record * _create_step_record (struct job_record *job_ptr);
+static void _dump_step_layout(struct step_record *step_ptr);
 static void _free_step_rec(struct step_record *step_ptr);
 static void _pack_ctld_job_step_info(struct step_record *step, Buf buffer);
 static bitstr_t * _pick_step_nodes (struct job_record  *job_ptr, 
@@ -985,6 +986,8 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 					 step_ptr->step_layout->
 					 tasks[step_node_inx]);
 		}
+		if (slurm_get_debug_flags() & DEBUG_FLAG_CPU_BIND)
+			_dump_step_layout(step_ptr);
 		if (slurm_get_debug_flags() & DEBUG_FLAG_STEPS) {
 			info("step alloc of %s procs: %u of %u", 
 			     node_record_table_ptr[i_node].name,
@@ -995,6 +998,45 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 			break;
 	}
 	
+}
+
+/* Dump a job step's CPU binding information.
+ * NOTE: The core_bitmap_job and node index are based upon 
+ * the _job_ allocation */
+static void _dump_step_layout(struct step_record *step_ptr)
+{
+	struct job_record* job_ptr = step_ptr->job_ptr;
+	select_job_res_t select_ptr = job_ptr->select_job;
+	int i, bit_inx, core_inx, node_inx, rep, sock_inx;
+
+	if ((step_ptr->core_bitmap_job == NULL) ||
+	    (select_ptr == NULL) || (select_ptr->cores_per_socket == NULL))
+		return;
+
+	info("====================");
+	info("step_id:%u.%u", job_ptr->job_id, step_ptr->step_id);
+	for (i=0, bit_inx= 0, node_inx=0; node_inx<select_ptr->nhosts; i++) {
+		for (rep=0; rep<select_ptr->sock_core_rep_count[i]; rep++) {
+			for (sock_inx=0; 
+			     sock_inx<select_ptr->sockets_per_node[i]; 
+			     sock_inx++) {
+				for (core_inx=0; 
+			 	     core_inx<select_ptr->cores_per_socket[i]; 
+			 	     core_inx++) {
+					if (bit_test(step_ptr->
+						     core_bitmap_job, 
+						     bit_inx++)) {
+						info("JobNode[%d] Socket[%d] "
+						     "Core[%d] is allocated",
+						     node_inx, sock_inx, 
+						     core_inx);
+					}
+				}
+			}
+			node_inx++;
+		}
+	}
+	info("====================");
 }
 
 static void _step_dealloc_lps(struct step_record *step_ptr)
