@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Test sacct -allusers option.
+#          Test sacct --allusers option.
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -42,11 +42,11 @@ print_header $test_id
 #
 # Proc: sacct
 #
-# Purpose:  pass sacct options to one location
+# Purpose:  Pass sacct options and test
 #
-# Returns: A non-zero return code indicates a failure.
+# Returns: Number of matches.
 #
-# Input: 
+# Input: Switch options -a and --allusers
 #
 ################################################################
 
@@ -56,7 +56,7 @@ set exit_code   0
 set matches     0
 set not_support 0
 	send_user "sacct -$soption\n"
-spawn $sacct -$soption -j 3
+spawn $sacct -$soption
 expect {
 	-re "SLURM accounting storage is disabled" {
 		set not_support 1
