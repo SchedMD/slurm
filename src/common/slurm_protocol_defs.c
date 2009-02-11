@@ -283,12 +283,6 @@ void inline slurm_free_part_info_request_msg(
 	xfree(msg);
 }
 
-void inline slurm_free_resv_info_request_msg(
-		resv_info_request_msg_t *msg)
-{
-	xfree(msg);
-}
-
 void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 {
 	int i;
@@ -321,6 +315,7 @@ void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 		xfree(msg->partition);
 		xfree(msg->ramdiskimage);
 		xfree(msg->req_nodes);
+		xfree(msg->reservation);
 		xfree(msg->resp_host);
 		xfree(msg->script);
 		select_g_free_jobinfo(&msg->select_jobinfo);
@@ -463,6 +458,11 @@ void slurm_free_resv_name_msg(reservation_name_msg_t * msg)
 	}
 }
 
+void slurm_free_resv_info_request_msg(resv_info_request_msg_t * msg)
+{
+	xfree(msg);
+}
+
 void slurm_free_job_step_create_request_msg(job_step_create_request_msg_t *
 					    msg)
 {
@@ -479,9 +479,7 @@ void slurm_free_job_step_create_request_msg(job_step_create_request_msg_t *
 void slurm_free_complete_job_allocation_msg(
 	complete_job_allocation_msg_t * msg)
 {
-	if (msg) {
-		xfree(msg);
-	}
+	xfree(msg);
 }
 
 void slurm_free_complete_batch_script_msg(complete_batch_script_msg_t * msg)
@@ -1568,6 +1566,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case RESPONSE_CREATE_RESERVATION:		
 		slurm_free_resv_name_msg(data);
 		break;
+	case REQUEST_RESERVATION_INFO:
+		slurm_free_resv_info_request_msg(data);
+		break;
 	case REQUEST_NODE_REGISTRATION_STATUS:
 		slurm_free_node_registration_status_msg(data);
 		break;
@@ -1659,7 +1660,6 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_DAEMON_STATUS:
 	case REQUEST_HEALTH_CHECK:
 	case ACCOUNTING_FIRST_REG:
-	case REQUEST_RESERVATION_INFO:
 		/* No body to free */
 		break;
 	case ACCOUNTING_UPDATE_MSG:

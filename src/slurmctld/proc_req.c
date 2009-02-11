@@ -281,7 +281,7 @@ void slurmctld_req (slurm_msg_t * msg)
 		break;
 	case REQUEST_RESERVATION_INFO:
 		_slurm_rpc_resv_show(msg);
-		/* No body to free */
+		slurm_free_resv_info_request_msg(msg->data);
 		break;
 	case REQUEST_NODE_REGISTRATION_STATUS:
 		error("slurmctld is talking with itself. "
