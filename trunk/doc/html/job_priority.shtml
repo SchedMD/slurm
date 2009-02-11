@@ -13,6 +13,8 @@
 <LI> <a href=#partition>Partition Factor</a>
 <LI> <a href=#qos>Quality of Service (QOS) Factor</a>
 <LI> <a href=#fairshare>Fair-share Factor</a>
+<LI> <a href=#config>Configuration</a>
+<LI> <a href=#configexample>Configuration Example</a>
 </UL>
 
 <!-------------------------------------------------------------------------->
@@ -40,12 +42,12 @@
 <a name=general>
 <h2>Job Priority Factors In General</h2></a>
 
-<P> The job's priority at any given time will be a weighted sum of all the factors that have been enabled in the slurm configuration file.  Job priority can be expressed as:</P>
+<P> The job's priority at any given time will be a weighted sum of all the factors that have been enabled in the slurm.conf file.  Job priority can be expressed as:</P>
 <PRE>
 Job_priority =
-	(age_weight) * (time_eligible_in_queue_factor) +
+	(age_weight) * (age_factor) +
 	(fair-share_weight) * (fair-share_factor) +
-	(job_size_weight) * (number_of_nodes_factor) +
+	(job_size_weight) * (job_size_factor) +
 	(partition_weight) * (partition_factor) +
 	(QOS_weight) * (QOS_factor)
 </PRE>
@@ -64,7 +66,7 @@ Job_priority =
 <a name=jobsize>
 <h2>Job Size Factor</h2></a>
 
-<P> The job size factor correlates to the number of nodes the job has requested.  This factor can be configured to favor larger jobs or smaller jobs based on the state of the <i>PriorityFavorSmall</i> boolean in the slurm configuration file.  When <i>PriorityFavorSmall</i> is 0, the larger the job, the greater its job size factor will be.  A job that requests all the nodes on the machine will get a job size factor of 1.0.  When the <i>PriorityFavorSmall</i> Boolean is 1, the single node job will receive the 1.0 job size factor.</P>
+<P> The job size factor correlates to the number of nodes the job has requested.  This factor can be configured to favor larger jobs or smaller jobs based on the state of the <i>PriorityFavorSmall</i> boolean in the slurm.conf file.  When <i>PriorityFavorSmall</i> is NO, the larger the job, the greater its job size factor will be.  A job that requests all the nodes on the machine will get a job size factor of 1.0.  When the <i>PriorityFavorSmall</i> Boolean is YES, the single node job will receive the 1.0 job size factor.</P>
 
 <!-------------------------------------------------------------------------->
 <a name=partition>
@@ -149,7 +151,7 @@ Where:
 <DD> is the total number of processor*seconds a machine can deliver during that same time period
 </DL>
 
-<P> However significant, real-world usage quantities span multiple time periods.  Rather than treating usage over a number of weeks or months with equal importance, SLURM's fair-share priority calculation places more importance on the most recent resource usage and less importance on usage from the distant past.</P>
+<P> However, significant real-world usage quantities span multiple time periods.  Rather than treating usage over a number of weeks or months with equal importance, SLURM's fair-share priority calculation places more importance on the most recent resource usage and less importance on usage from the distant past.</P>
 
 <P> The SLURM usage metric is based off a half-life formula that favors the most recent usage statistics.  Usage statistics from the past decrease in importance based on a single decay factor, D:</P>
 
@@ -173,7 +175,7 @@ Where:
 <DD> is a decay factor between zero and one that delivers the half-life decay defined by the <i>PriorityDecayHalfLife</i> setting in the slurm.conf file.  Without accruing additional usage, a user's U<sub>H</sub> usage will decay to 1/2 value after a time period of <i>PriorityDecayHalfLife</i> seconds.
 </DL>
 
-<P> In practice, the <i>PriorityDecayHalfLife</i> could be a matter of seconds or days as appropriate for each site.  The measurement period is nominally 5 minutes.  The decay factor, D, is assigned the value that will achieve the half life decay rate specified by the <i>PriorityDecayHalfLife</i> parameter.</P>
+<P> In practice, the <i>PriorityDecayHalfLife</i> could be a matter of seconds or days as appropriate for each site.  The measurement period is nominally 5 minutes.  The decay factor, D, is assigned the value that will achieve the half-life decay rate specified by the <i>PriorityDecayHalfLife</i> parameter.</P>
 
 <P> The historical resources a machine has available is similarly aggregated with the same decay factor:</P>
 
@@ -356,7 +358,66 @@ Account A's effective usage is therefore equal to .45.  Account D's effective us
 <P> Based on the fair-share factor alone, if all 5 users were to submit a job charging their respective accounts, user 5's job would be granted the highest scheduling priority.</P>
 
 <!-------------------------------------------------------------------------->
-<p style="text-align:center;">Last modified 9 February 2009</p>
+<a name=config>
+<h2>Configuration</h2></a>
+
+<P> The following slurm.conf (SLURM_CONFIG_FILE) parameters are used to configure the Multi-factor Job Priority Plugin.  See slurm.conf(5) man page for more details.</P>
+
+<DL>
+<DT> PriorityType
+<DD> Set this value to "priority/multifactor" to enable the Multi-factor Job Priority Plugin.  The default value for this variable is "priority/basic" which enables simple FIFO scheduling.
+<DT> PriorityDecayHalfLife
+<DD> This determines the contribution of historical usage on the composite usage value.  The higher the number, the further back in time that usage is collected.  The units are minutes and the default value is 10080 (7 days).
+<DT> PriorityFavorSmall
+<DD> A boolean that sets the polarity of the job size factor.  The default setting is NO which results in larger node sizes having a larger job size factor.  Setting this parameter to YES means that the smaller the job, the greater the job size factor will be.
+<DT> PriorityMaxAge
+<DD> Specifies the queue wait time at which the age factor maxes out.  The units are minutes and the default value is 10080 (7 days).
+<DT> PriorityWeightAge
+<DD> An unsigned integer that scales the contribution of the age factor.
+<DT> PriorityWeightFairshare
+<DD> An unsigned integer that scales the contribution of the fair-share factor.
+<DT> PriorityWeightJobSize
+<DD> An unsigned integer that scales the contribution of the job size factor.
+<DT> PriorityWeightPartition
+<DD> An unsigned integer that scales the contribution of the partition factor.
+<DT> PriorityWeightQOS
+<DD> An unsigned integer that scales the contribution of the quality of service factor.
+</DL>
+
+<P> Note:  As stated above, the five priority factors range from 0.0 to 1.0.  As such, the PriorityWeight terms may need to be set to a high enough value (say, 1000) to resolve very tiny differences in priority factors.  This is especially true with the fair-share factor, where two jobs may differ in priority by as little as .001. (or even less!)</P>
+
+<!-------------------------------------------------------------------------->
+<a name=configexample>
+<h2>Configuration Example</h2></a>
+
+<P> The following are sample slurm.conf file settings for the Multi-factor Job Priority Plugin.</P>
+
+<PRE>
+# Activate the Multi-factor Job Priority Plugin
+PriorityType=priority/multifactor
+
+# 2 week half-life
+PriorityDecayHalfLife=20160
+
+# The larger the job, the greater its job size priority.
+PriorityFavorSmall=NO
+
+# The job's age factor reaches 1.0 after waiting in the
+# queue for 2 weeks.
+PriorityMaxAge=20160
+
+# This next group determines the weighting of each of the
+# components of the Multi-factor Job Priority Plugin.
+# The default value for each of the following is 1.
+PriorityWeightAge=100
+PriorityWeightFairshare=1000
+PriorityWeightJobSize=100
+PriorityWeightPartition=0
+PriorityWeightQOS=0
+</PRE>
+
+<!-------------------------------------------------------------------------->
+<p style="text-align:center;">Last modified 10 February 2009</p>
 
 <!--#include virtual="footer.txt"-->
 
