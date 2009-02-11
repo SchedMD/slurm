@@ -845,7 +845,7 @@ extern List acct_storage_g_get_accounts(void *db_conn,  uint32_t uid,
  * note List needs to be freed when called
  */
 extern List acct_storage_g_get_clusters(
-	void *db_conn,  uint32_t uid, acct_cluster_cond_t *cluster_cond);
+	void *db_conn, uint32_t uid, acct_cluster_cond_t *cluster_cond);
 
 /* 
  * get info from the storage 
