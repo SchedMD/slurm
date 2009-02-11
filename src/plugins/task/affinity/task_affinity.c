@@ -5,7 +5,7 @@
  *  Copyright (C) 2005-2008 Hewlett-Packard Development Company, L.P.
  *  Modified by Hewlett-Packard for task affinity support using task_none.c
  *  Copyright (C) 2005-2007 The Regents of the University of California
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  LLNL-CODE-402394.
  *  

@@ -1,5 +1,6 @@
 /*****************************************************************************\
- *  Copyright (C) 2006 Hewlett-Packard Development Company, L.P.
+ *  Copyright (C) 2006-2009 Hewlett-Packard Development Company, L.P.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Written by Susanne M. Balle, <susanne.balle@hp.com>
  *  LLNL-CODE-402394.
  *  
@@ -45,6 +46,11 @@
 #ifdef HAVE_NUMA
 #include <numa.h>
 #endif
+
+static char *_alloc_mask(launch_tasks_request_msg_t *req);
+static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
+				uint16_t *hw_sockets, uint16_t *hw_cores,
+				uint16_t *hw_threads);
 
 static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 				   uint32_t node_id, bitstr_t ***masks_p);
@@ -169,13 +175,32 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 	char buf_type[100];
 	int maxtasks = req->tasks_to_launch[(int)node_id];
         const uint32_t *gtid = req->global_task_ids[(int)node_id];
-	
-	slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
-	if(req->cpu_bind_type >= CPU_BIND_NONE) {
+
+	if ((req->cpu_bind_type & CPU_BIND_NONE)   ||
+	    (req->cpu_bind_type & CPU_BIND_MASK)   ||
+	    (req->cpu_bind_type & CPU_BIND_RANK)   ||
+	    (req->cpu_bind_type & CPU_BIND_MAP)    ||
+	    (req->cpu_bind_type & CPU_BIND_LDRANK) ||
+	    (req->cpu_bind_type & CPU_BIND_LDMAP)  ||
+	    (req->cpu_bind_type & CPU_BIND_LDMASK)) {
+		char *avail_mask = _alloc_mask(req);
+		if (avail_mask) {	/* step missing some CPUs */
+			xfree(req->cpu_bind);
+			req->cpu_bind = avail_mask;
+			req->cpu_bind_type &= (~CPU_BIND_RANK);
+			req->cpu_bind_type &= (~CPU_BIND_MAP);
+			req->cpu_bind_type &= (~CPU_BIND_LDRANK);
+			req->cpu_bind_type &= (~CPU_BIND_LDMAP);
+			req->cpu_bind_type &= (~CPU_BIND_LDMASK);
+			req->cpu_bind_type |=   CPU_BIND_MASK;
+		}
+		slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
 		info("lllp_distribution jobid [%u] manual binding: %s",
 		     req->job_id, buf_type);
 		return;
 	}
+
+	slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
 	if (!((req->cpu_bind_type & CPU_BIND_TO_THREADS) ||
 	      (req->cpu_bind_type & CPU_BIND_TO_CORES) ||
 	      (req->cpu_bind_type & CPU_BIND_TO_SOCKETS) ||
@@ -314,6 +339,38 @@ static void _enforce_limits(launch_tasks_request_msg_t *req, bitstr_t *mask,
 			count--;
 		}
 	}
+}
+
+/* Determine which CPUs a job step can use. 
+ * Return NULL of all CPUs are available, 
+ *	otherwise return a string representation of the available mask
+ * NOTE: Caller must xfree() the return value. */
+static char *_alloc_mask(launch_tasks_request_msg_t *req)
+{
+	uint16_t sockets, cores, threads;
+	int i, mask;
+	bool miss = false;
+	bitstr_t *alloc_bitmap;
+	char *str_mask;
+
+	alloc_bitmap = _get_avail_map(req, &sockets, &cores, &threads);
+	if (!alloc_bitmap)
+		return NULL;
+
+	for (i=0, mask=0; i<(sockets*cores*threads); i++) {
+		if (bit_test(alloc_bitmap, i))
+			mask |= (1 << i);
+		else
+			miss = true;
+	}
+	bit_free(alloc_bitmap);
+
+	if (!miss)
+		return NULL;
+
+	str_mask = xmalloc(16);
+	snprintf(str_mask, 16, "%x", mask);
+	return str_mask;
 }
 
 static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
