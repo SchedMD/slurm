@@ -1,0 +1,16 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Job Priority</h1>
+
+<b>Note:</b> This document describes features added to SLURM version 2.0.
+
+<P> By default, SLURM assigns job priority on a First In, First Out (FIFO) basis.  FIFO scheduling should be configured when SLURM is controlled by an external scheduler.</P>
+
+<P> SLURM version 2.0 includes the <a href="job_priority_plugins.html">Multi-factor Job Priority plugin</a>.  This plugin provides a very versatile facility for ordering the queue of jobs waiting to be scheduled.  For details, see the  <a href="job_priority_plugins.html">Multi-factor Job Priority plugin</a> page.</P>
+
+
+<!-------------------------------------------------------------------------->
+<p style="text-align:center;">Last modified 11 February 2009</p>
+
+<!--#include virtual="footer.txt"-->
+
