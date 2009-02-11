@@ -170,7 +170,8 @@ extern select_job_res_t copy_select_job_res(select_job_res_t
 extern void free_select_job_res(select_job_res_t *select_job_res_pptr);
 
 /* Log the contents of a select_job_res data structure using info() */
-extern void log_select_job_res(select_job_res_t select_job_res_ptr);
+extern void log_select_job_res(uint32_t job_id, 
+			       select_job_res_t select_job_res_ptr);
 
 /* Un/pack full select_job_res data structure */
 extern void pack_select_job_res(select_job_res_t select_job_res_ptr, 

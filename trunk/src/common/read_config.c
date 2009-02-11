@@ -2265,6 +2265,11 @@ extern char * debug_flags2str(uint32_t debug_flags)
 {
 	char *rc = NULL;
 
+	if (debug_flags & DEBUG_FLAG_CPU_BIND) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "CPU_Bind");
+	}
 	if (debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 		if (rc)
 			xstrcat(rc, ",");
@@ -2299,7 +2304,9 @@ extern uint32_t debug_str2flags(char *debug_flags)
 	tmp_str = xstrdup(debug_flags);
 	tok = strtok_r(tmp_str, ",", &last);
 	while (tok) {
-		if      (strcasecmp(tok, "SelectType") == 0)
+		if      (strcasecmp(tok, "CPU_Bind") == 0)
+			rc |= DEBUG_FLAG_CPU_BIND;
+		else if (strcasecmp(tok, "SelectType") == 0)
 			rc |= DEBUG_FLAG_SELECT_TYPE;
 		else if (strcasecmp(tok, "Steps") == 0)
 			rc |= DEBUG_FLAG_STEPS;

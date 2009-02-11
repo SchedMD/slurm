@@ -1207,8 +1207,15 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 {
 	int rc;
 	uint16_t job_node_req;
+	bool debug_cpu_bind = false, debug_check = false;
 
 	xassert(bitmap);
+
+	if (!debug_check) {
+		debug_check = true;
+		if (slurm_get_debug_flags() & DEBUG_FLAG_CPU_BIND)
+			debug_cpu_bind = true;
+	}
 
 	if (!job_ptr->details)
 		return EINVAL;
@@ -1237,10 +1244,13 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 
 #if (CR_DEBUG)
 	if (job_ptr->select_job)
-		log_select_job_res(job_ptr->select_job);
+		log_select_job_res(job_ptr->job_id, job_ptr->select_job);
 	else
 		info("no select_job_res info for job %u", 
 		     job_ptr->job_id);
+#else
+	if (debug_cpu_bind)
+		log_select_job_res(job_ptr->job_id, job_ptr->select_job);
 #endif
 
 	return rc;
