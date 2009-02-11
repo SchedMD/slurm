@@ -16,6 +16,8 @@ documents those changes that are of interest to users and admins.
     Andersson, National Supercomputer Centre, Sweden.
  -- Add support for the scontrol command to be able change the Weight
     associated with nodes. Patch from Krishnakumar Ravi[KK] (HP).
+ -- Add DebugFlag configuration option of "CPU_Bind" for detailed CPU
+    binding information to be logged.
  
 * Changes in SLURM 1.4.0-pre7
 =============================

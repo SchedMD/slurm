@@ -148,6 +148,10 @@ void slurm_print_ctl_conf ( FILE* out,
 	fprintf(out, "CryptoType              = %s\n",
 		slurm_ctl_conf_ptr->crypto_type);
 
+	xbuf = debug_flags2str(slurm_ctl_conf_ptr->debug_flags);
+	fprintf(out, "DebugFlags              = %s\n", xbuf);
+	xfree(xbuf);
+
 	if (slurm_ctl_conf_ptr->def_mem_per_task & MEM_PER_CPU) {
 		fprintf(out, "DefMemPerCPU            = %u MB\n",
 			slurm_ctl_conf_ptr->def_mem_per_task &
@@ -157,10 +161,6 @@ void slurm_print_ctl_conf ( FILE* out,
 			slurm_ctl_conf_ptr->def_mem_per_task);
 	} else
 		fprintf(out, "DefMemPerCPU            = UNLIMITED\n");
-
-	xbuf = debug_flags2str(slurm_ctl_conf_ptr->debug_flags);
-	fprintf(out, "DebugFlags              = %s\n", xbuf);
-	xfree(xbuf);
 
 	if (slurm_ctl_conf_ptr->disable_root_jobs)
 		fprintf(out, "DisableRootJobs         = YES\n");
