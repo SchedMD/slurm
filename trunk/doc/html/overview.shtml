@@ -18,7 +18,7 @@ Optional plugins can be used for
 <a href="gang_scheduling.html">gang scheduling</a> (time sharing for 
 parallel jobs), backfill scheduling, 
 <a href="resource_limits.html">resource limits</a> by user or bank account, 
-and sophisticated <a href="job_priority.html">job prioritization</a>
+and sophisticated <a href="job_priority_plugins.html">job prioritization</a>
 algorithms.
 
 
@@ -96,7 +96,7 @@ FIFO (First In First Out, default), backfill, gang (time-slicing for parallel jo
 The Maui Scheduler</a>, and  
 <a href="http://www.clusterresources.com/pages/products/moab-cluster-suite.php">
 Moab Cluster Suite</a>.
-There is also a <a href="job_priority.html">job prioritization</a> plugin 
+There is also a <a href="job_priority_plugins.html">job prioritization</a> plugin 
 available for use with the FIFO, backfil and gang schedulers. Jobs can be 
 prioritized by age, size, fair-share allocation, etc.
 Many <a href="resource_limits.html">resource limits</a> are also 
