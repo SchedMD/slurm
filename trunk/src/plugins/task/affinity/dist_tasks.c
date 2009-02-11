@@ -322,7 +322,7 @@ static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 {
 	bitstr_t *req_map, *hw_map;
 	slurm_cred_arg_t arg;
-	uint16_t c, s, t, num_threads, sockets, cores, hw_size;
+	uint16_t p, t, num_procs, num_threads, sockets, cores, hw_size;
 	uint32_t job_node_id;
 	int start;
 	char *str;
@@ -332,71 +332,59 @@ static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 	*hw_threads = conf->threads;
 	hw_size    = (*hw_sockets) * (*hw_cores) * (*hw_threads);
 
-	if (slurm_cred_get_args(req->cred, &arg) != SLURM_SUCCESS)
+	if (slurm_cred_get_args(req->cred, &arg) != SLURM_SUCCESS) {
+		error("task/affinity: job lacks a credential");
 		return NULL;
+	}
 
 	/* we need this node's ID in relation to the whole
 	 * job allocation, not just this jobstep */
 	job_node_id = nodelist_find(arg.job_hostlist, conf->node_name);
 	start = _get_local_node_info(&arg, job_node_id, &sockets, &cores);
-	if (start < 0)
+	if (start < 0) {
+		error("task/affinity: missing node %u in job credential",
+		      job_node_id);
 		return NULL;
+	}
 	debug3("task/affinity: slurmctld s %u c %u; hw s %u c %u t %u",
 		sockets, cores, *hw_sockets, *hw_cores, *hw_threads);
 
-	req_map = (bitstr_t *) bit_alloc(sockets*cores);
+	num_procs   = MIN((sockets * cores),
+			  ((*hw_sockets)*(*hw_cores)));
+	req_map = (bitstr_t *) bit_alloc(num_procs);
 	hw_map  = (bitstr_t *) bit_alloc(hw_size);
 	if (!req_map || !hw_map) {
+		error("task/affinity: malloc error");
 		bit_free(req_map);
 		bit_free(hw_map);
 		return NULL;
 	}
-	/* transfer core_bitmap data to local req_map */
-	for (c = 0; c < sockets * cores; c++)
-		if (bit_test(arg.core_bitmap, start+c))
-			bit_set(req_map, c);
+	/* Transfer core_bitmap data to local req_map.
+	 * The MOD function handles the case where fewer processes
+	 * physically exist than are configured (slurmd is out of 
+	 * sync with the slurmctld daemon). */
+	for (p = 0; p < (sockets * cores); p++)
+		if (bit_test(arg.core_bitmap, start+p))
+			bit_set(req_map, (p % num_procs));
 
 	str = (char *)bit_fmt_hexmask(req_map);
 	debug3("task/affinity: job %u.%u CPU mask from slurmctld: %s",
 		req->job_id, req->job_step_id, str);
 	xfree(str);
 
-	/* first pass at mapping req_map to hw_map */
 	num_threads = MIN(req->max_threads, (*hw_threads));
-	for (s = 0; s < sockets; s++) {
-		/* for first pass, keep socket index within hw limits */
-		s %= (*hw_sockets);
-		for (c = 0; c < cores; c++) {
-			/* for first pass, keep core index within hw limits */
-			c %= (*hw_cores) * (*hw_threads);
-			if (bit_test(req_map, s*cores+c) == 0)
-				continue;
-			/* core_bitmap does not include threads, so we
-			 * add them here but limit them to what the job
-			 * requested */
-			for (t = 0; t < num_threads; t++) {
-				uint16_t bit =  s*(*hw_cores)*(*hw_threads) +
-						c*(*hw_threads) + t;
-				if (bit_test(hw_map, bit) == 0) {
-					bit_set(hw_map, bit);
-					bit_clear(req_map, s*cores+c);
-				}
-			}
+	for (p = 0; p < num_procs; p++) {
+		if (bit_test(req_map, p) == 0)
+			continue;
+		bit_clear(req_map, p);
+		/* core_bitmap does not include threads, so we
+		 * add them here but limit them to what the job
+		 * requested */
+		for (t = 0; t < num_threads; t++) {
+			uint16_t bit = p * (*hw_threads) + t;
+			bit_set(hw_map, bit);
 		}
 	}
-	/* second pass: place any remaining bits. Remaining bits indicate
-	 *		an out-of-sync configuration between the slurmctld
-	 *		and the local node.
-	 */
-	start = bit_set_count(req_map);
-	if (start > 0) {
-		debug3("task/affinity: placing remaining %d bits anywhere",
-			start);
-	}
-	str = (char *)bit_fmt_hexmask(hw_map);
-	debug3("task/affinity: job %u.%u CPU mask for local node: %s",
-		req->job_id, req->job_step_id, str);
-	xfree(str);
 
 	/* enforce max_sockets and max_cores limits */
 	_enforce_limits(req, hw_map, *hw_sockets, *hw_cores, *hw_threads);
