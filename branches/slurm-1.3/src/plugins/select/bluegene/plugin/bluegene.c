@@ -86,6 +86,7 @@ uint16_t bluegene_quarter_ionode_cnt = 0;
 uint16_t bluegene_nodecard_node_cnt = 0;
 uint16_t bluegene_nodecard_ionode_cnt = 0;
 uint16_t bridge_api_verb = 0;
+
 bool agent_fini = false;
 time_t last_bg_update;
 pthread_mutex_t block_state_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -1287,6 +1288,20 @@ extern int read_bg_conf(void)
 		info("BridgeAPILogFile not configured in bluegene.conf");
 	else
 		_reopen_bridge_log();
+
+	if (s_p_get_string(&layout, "DenyPassthrough", tbl)) {
+		if(strstr(layout, "X")) 
+			ba_deny_pass |= PASS_DENY_X;
+		if(strstr(layout, "Y")) 
+			ba_deny_pass |= PASS_DENY_Y;
+		if(strstr(layout, "Z")) 
+			ba_deny_pass |= PASS_DENY_Z;
+		if(!strcasecmp(layout, "ALL")) 
+			ba_deny_pass |= PASS_DENY_ALL;
+		
+		xfree(layout);
+	}
+
 	if (!s_p_get_string(&layout, "LayoutMode", tbl)) {
 		info("Warning: LayoutMode was not specified in bluegene.conf "
 		     "defaulting to STATIC partitioning");
