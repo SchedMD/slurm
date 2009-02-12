@@ -11,6 +11,10 @@ New features are under active development.
 Familiarity with SLURM's <a href="accounting">Accounting</a> web page
 is strongly recommended before use of this document.</p>
 
+<p>Note for users of Maui or Moab schedulers: <br>
+Maui and Moab are not integrated with SLURM's resource limits,
+but should use their own resource limits mechanisms.</p>
+
 <h2>Configuration</h2>
 
 <p>Scheduling policy information must be stored in a database 
