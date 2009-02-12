@@ -538,7 +538,7 @@ struct 	step_record {
 	uint32_t cpu_count;		/* count of step's CPUs */
 	uint16_t cpus_per_task;		/* cpus per task initiated */
 	uint16_t cyclic_alloc;		/* set for cyclic task allocation 
-					   across nodes */
+					 * across nodes */
 	uint16_t exclusive;		/* dedicated resources for the step */
 	uint32_t exit_code;		/* highest exit code from any task */
 	bitstr_t *exit_node_bitmap;	/* bitmap of exited nodes */

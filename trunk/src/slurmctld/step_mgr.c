@@ -946,9 +946,11 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 	if (step_ptr->core_bitmap_job) {
 		/* "scontrol reconfig" of live system */
 		pick_step_cores = false;
-	} else if (step_ptr->cpu_count == job_ptr->total_procs) {
+	} else if ((step_ptr->exclusive == 0) ||
+		   (step_ptr->cpu_count == job_ptr->total_procs)) {
 		/* Step uses all of job's cores
 		 * Just copy the bitmap to save time */
+
 		step_ptr->core_bitmap_job = bit_copy(select_ptr->core_bitmap);
 		pick_step_cores = false;
 	}
