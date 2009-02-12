@@ -64,6 +64,9 @@ extern int dump_all_resv_state(void);
 /* Purge all reservation data structures */
 extern void resv_fini(void);
 
+/* Set or clear NODE_STATE_MAINT for node_state as needed */
+extern void set_node_maint_mode(void);
+
 /*
  * Load the reservation state from file, recover on slurmctld restart. 
  *	Reset reservation pointers for all jobs.

@@ -920,9 +920,15 @@ char *node_state_string(enum node_states inx)
 	bool comp_flag    = (inx & NODE_STATE_COMPLETING);
 	bool drain_flag   = (inx & NODE_STATE_DRAIN);
 	bool fail_flag    = (inx & NODE_STATE_FAIL);
+	bool maint_flag   = (inx & NODE_STATE_MAINT);
 	bool no_resp_flag = (inx & NODE_STATE_NO_RESPOND);
 	bool power_flag   = (inx & NODE_STATE_POWER_SAVE);
 
+	if (maint_flag) {
+		if (no_resp_flag)
+			return "MAINT*";
+		return "MAINT";
+	}
 	if (drain_flag) {
 		if (comp_flag || (base == NODE_STATE_ALLOCATED)) {
 			if (no_resp_flag)
@@ -993,11 +999,17 @@ char *node_state_string_compact(enum node_states inx)
 	bool comp_flag    = (inx & NODE_STATE_COMPLETING);
 	bool drain_flag   = (inx & NODE_STATE_DRAIN);
 	bool fail_flag    = (inx & NODE_STATE_FAIL);
+	bool maint_flag   = (inx & NODE_STATE_MAINT);
 	bool no_resp_flag = (inx & NODE_STATE_NO_RESPOND);
 	bool power_flag   = (inx & NODE_STATE_POWER_SAVE);
 
 	inx = (uint16_t) (inx & NODE_STATE_BASE);
 
+	if (maint_flag) {
+		if (no_resp_flag)
+			return "MAINT*";
+		return "MAINT";
+	}
 	if (drain_flag) {
 		if (comp_flag || (inx == NODE_STATE_ALLOCATED)) {
 			if (no_resp_flag)
