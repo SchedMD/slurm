@@ -97,7 +97,7 @@ SchedulerAuth=42 (for Slurm version 1.1 and earlier only)
 authentication key specified when Maui was configured above. 
 Just make sure the numbers match.</p>
 
-<p>For Slurm version 1.2 or higher, the authentication key 
+<p>For SLURM version 1.2 or higher, the authentication key 
 is stored in a file specific to the wiki-plugin named 
 <i>wiki.conf</i>.
 This file should be protected from reading by users.
@@ -109,6 +109,18 @@ a man page distributed with SLURM, although that
 includes a description of keywords presently only 
 supported by the sched/wiki2 plugin for use with the 
 Moab Scheduler.</p>
+
+<p>SLURM version 2.0 and higher have internal scheduling capabilities
+that are not compatable with Maui.
+<ol>
+<li>Do not configure SLURM to use the "priority/multifactor" plugin 
+as it would set job priorities which conflict with those set by Maui.</li>
+<li>Do not use SLURM's <a href="reservations.html">reservation</a> 
+mechanism, but use that offered by Maui.</li>
+<li>Do not use SLURM's <a href="resource_limits.html">resource limits</a>
+as those may conflict with those managed by Maui.</li>
+</ol></p>
+
 
 <p>The wiki.conf keywords currently supported by Maui include:</p>
 
@@ -162,6 +174,6 @@ HidePartitionJobs=debug
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 4 November 2008</p>
+<p style="text-align:center;">Last modified 12 February 2009</p>
 
 <!--#include virtual="footer.txt"-->

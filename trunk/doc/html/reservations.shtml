@@ -16,6 +16,10 @@ The <i>scontrol</i>, <i>smap</i> and <i>sview</i> commands can be used
 to view reservations. 
 The man pages for the various commands contain details.</p>
 
+<p>Note for users of Maui or Moab schedulers: <br>
+Maui and Moab are not integrated with SLURM's resource reservation system,
+but should use their own advanced reservation system.</p>
+
 <h2>Reservation Creation</h2>
 
 <p>One common mode of operation for a reservation would be to reserve
@@ -151,7 +155,7 @@ made more flexible to accept multiple features with AND or OR operators.</li>
 </ol>
 
 
-<p style="text-align: center;">Last modified 10 February 2009</p>
+<p style="text-align: center;">Last modified 12 February 2009</p>
 
 <!--#include virtual="footer.txt"-->
 
