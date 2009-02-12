@@ -1698,6 +1698,12 @@ Also see the \fBDownNodes\fR parameter below.
 .TP
 \fBThreadsPerCore\fR
 Number of logical threads in a single physical core (e.g. "2").
+Note that the SLURM can allocate resources to jobs down to the
+resolution of a core. If your system is configured with more than
+one thread per core, execution of a different job on each thread 
+is not supported. 
+A job can execute a one task per thread from within one job step or
+execute a distinct job step on each of the threads.
 The default value is 1.
 
 .TP
