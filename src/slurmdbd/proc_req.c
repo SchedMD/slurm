@@ -2197,7 +2197,6 @@ static int _node_state(slurmdbd_conn_t *slurmdbd_conn,
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
 
-	memset(&node_ptr, 0, sizeof(struct node_record));
 
 	if (*uid != slurmdbd_conf->slurm_user_id) {
 		comment = "DBD_NODE_STATE message from invalid uid";
@@ -2214,38 +2213,37 @@ static int _node_state(slurmdbd_conn_t *slurmdbd_conn,
 		goto end_it;
 	}
 
-	if(node_state_msg->new_state == DBD_NODE_STATE_UP)
+	memset(&node_ptr, 0, sizeof(struct node_record));
+	node_ptr.name = node_state_msg->hostlist;
+	node_ptr.cpus = node_state_msg->cpu_count;
+	node_ptr.node_state = node_state_msg->state;
+
+	slurmctld_conf.fast_schedule = 0;
+
+	if(node_state_msg->new_state == DBD_NODE_STATE_UP) {
 		debug3("DBD_NODE_STATE: NODE:%s STATE:%s REASON:%s TIME:%u", 
 		       node_state_msg->hostlist,
 		       _node_state_string(node_state_msg->new_state),
 		       node_state_msg->reason, 
 		       node_state_msg->event_time);
-	else
+		rc = clusteracct_storage_g_node_up(
+			slurmdbd_conn->db_conn,
+			node_state_msg->cluster_name,
+			&node_ptr,
+			node_state_msg->event_time);
+	} else {
 		debug2("DBD_NODE_STATE: NODE:%s STATE:%s REASON:%s TIME:%u", 
 		       node_state_msg->hostlist,
 		       _node_state_string(node_state_msg->new_state),
 		       node_state_msg->reason, 
 		       node_state_msg->event_time);
-	node_ptr.name = node_state_msg->hostlist;
-	node_ptr.cpus = node_state_msg->cpu_count;
-
-	slurmctld_conf.fast_schedule = 0;
-
-	if(node_state_msg->new_state == DBD_NODE_STATE_DOWN)
 		rc = clusteracct_storage_g_node_down(
 			slurmdbd_conn->db_conn,
 			node_state_msg->cluster_name,
 			&node_ptr,
 			node_state_msg->event_time,
 			node_state_msg->reason);
-	else
-		rc = clusteracct_storage_g_node_up(slurmdbd_conn->db_conn,
-						   node_state_msg->cluster_name,
-						   &node_ptr,
-						   node_state_msg->event_time);
-	
-	if(rc && errno == 740) /* meaning data is already there */
-		rc = SLURM_SUCCESS;
+	}
 
 end_it:
 	slurmdbd_free_node_state_msg(slurmdbd_conn->rpc_version, 
