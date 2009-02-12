@@ -2560,8 +2560,6 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "id", "int not null" },
 		{ "period_start", "int unsigned not null" },
 		{ "alloc_cpu_secs", "bigint default 0" },
-		{ "resv_cpu_secs", "bigint default 0" },
-		{ "over_cpu_secs", "bigint default 0" },
 		{ NULL, NULL}		
 	};
 
@@ -2586,6 +2584,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "cpu_count", "int default 0" },
 		{ "alloc_cpu_secs", "bigint default 0" },
 		{ "down_cpu_secs", "bigint default 0" },
+		{ "pdown_cpu_secs", "bigint default 0" },
 		{ "idle_cpu_secs", "bigint default 0" },
 		{ "resv_cpu_secs", "bigint default 0" },
 		{ "over_cpu_secs", "bigint default 0" },
@@ -9179,16 +9178,12 @@ extern int acct_storage_p_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 		"t1.id",
 		"t1.period_start",
 		"t1.alloc_cpu_secs",
-		"t1.resv_cpu_secs",
-		"t1.over_cpu_secs",
 	};
 	
 	enum {
 		USAGE_ID,
 		USAGE_START,
 		USAGE_ACPU,
-		USAGE_RCPU,
-		USAGE_OCPU,
 		USAGE_COUNT
 	};
 
@@ -9339,8 +9334,6 @@ is_user:
 		accounting_rec->id = atoi(row[USAGE_ID]);
 		accounting_rec->period_start = atoi(row[USAGE_START]);
 		accounting_rec->alloc_secs = atoll(row[USAGE_ACPU]);
-		accounting_rec->resv_secs = atoll(row[USAGE_RCPU]);
-		accounting_rec->over_secs = atoll(row[USAGE_OCPU]);
 		list_append((*my_list), accounting_rec);
 	}
 	mysql_free_result(result);
@@ -9839,6 +9832,7 @@ extern int clusteracct_storage_p_get_usage(
 	char *cluster_req_inx[] = {
 		"alloc_cpu_secs",
 		"down_cpu_secs",
+		"pdown_cpu_secs",
 		"idle_cpu_secs",
 		"resv_cpu_secs",
 		"over_cpu_secs",
@@ -9849,6 +9843,7 @@ extern int clusteracct_storage_p_get_usage(
 	enum {
 		CLUSTER_ACPU,
 		CLUSTER_DCPU,
+		CLUSTER_PDCPU,
 		CLUSTER_ICPU,
 		CLUSTER_RCPU,
 		CLUSTER_OCPU,
@@ -9897,6 +9892,7 @@ extern int clusteracct_storage_p_get_usage(
 			xmalloc(sizeof(cluster_accounting_rec_t));
 		accounting_rec->alloc_secs = atoll(row[CLUSTER_ACPU]);
 		accounting_rec->down_secs = atoll(row[CLUSTER_DCPU]);
+		accounting_rec->pdown_secs = atoll(row[CLUSTER_PDCPU]);
 		accounting_rec->idle_secs = atoll(row[CLUSTER_ICPU]);
 		accounting_rec->over_secs = atoll(row[CLUSTER_OCPU]);
 		accounting_rec->resv_secs = atoll(row[CLUSTER_RCPU]);

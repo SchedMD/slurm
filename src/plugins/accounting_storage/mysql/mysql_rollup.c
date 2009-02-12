@@ -45,8 +45,6 @@
 typedef struct {
 	int id;
 	uint64_t a_cpu;
-	uint64_t o_cpu;
-	uint64_t r_cpu;
 } local_id_usage_t;
 
 typedef struct {
@@ -772,32 +770,26 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 /* 			     a_usage->a_cpu); */
 			if(query) {
 				xstrfmtcat(query, 
-					   ", (%d, %d, %d, %d, "
-					   "%llu, %llu, %llu)",
+					   ", (%d, %d, %d, %d, %llu)",
 					   now, now, 
 					   a_usage->id, curr_start,
-					   a_usage->a_cpu, a_usage->o_cpu,
-					   a_usage->r_cpu); 
+					   a_usage->a_cpu); 
 			} else {
 				xstrfmtcat(query, 
 					   "insert into %s (creation_time, "
 					   "mod_time, id, period_start, "
-					   "alloc_cpu_secs, over_cpu_secs, "
-					   "resv_cpu_secs) values "
-					   "(%d, %d, %d, %d, %llu, %llu, %llu)",
+					   "alloc_cpu_secs) values "
+					   "(%d, %d, %d, %d, %llu)",
 					   assoc_hour_table, now, now, 
 					   a_usage->id, curr_start,
-					   a_usage->a_cpu, a_usage->o_cpu,
-					   a_usage->r_cpu); 
+					   a_usage->a_cpu); 
 			}
 		}
 		if(query) {
 			xstrfmtcat(query, 
 				   " on duplicate key update "
 				   "mod_time=%d, "
-				   "alloc_cpu_secs=VALUES(alloc_cpu_secs), "
-				   "over_cpu_secs=VALUES(over_cpu_secs), "
-				   "resv_cpu_secs=VALUES(resv_cpu_secs);",
+				   "alloc_cpu_secs=VALUES(alloc_cpu_secs);",
 				   now);
 					   	
 			debug3("%d(%d) query\n%s",
@@ -820,32 +812,26 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 /* 			     w_usage->a_cpu); */
 			if(query) {
 				xstrfmtcat(query, 
-					   ", (%d, %d, %d, %d, "
-					   "%llu, %llu, %llu)",
+					   ", (%d, %d, %d, %d, %llu)",
 					   now, now, 
 					   w_usage->id, curr_start,
-					   w_usage->a_cpu, w_usage->o_cpu,
-					   w_usage->r_cpu); 
+					   w_usage->a_cpu); 
 			} else {
 				xstrfmtcat(query, 
 					   "insert into %s (creation_time, "
 					   "mod_time, id, period_start, "
-					   "alloc_cpu_secs, over_cpu_secs, "
-					   "resv_cpu_secs) values "
-					   "(%d, %d, %d, %d, %llu, %llu, %llu)",
+					   "alloc_cpu_secs) values "
+					   "(%d, %d, %d, %d, %llu)",
 					   wckey_hour_table, now, now, 
 					   w_usage->id, curr_start,
-					   w_usage->a_cpu, w_usage->o_cpu,
-					   w_usage->r_cpu); 
+					   w_usage->a_cpu); 
 			}
 		}
 		if(query) {
 			xstrfmtcat(query, 
 				   " on duplicate key update "
 				   "mod_time=%d, "
-				   "alloc_cpu_secs=VALUES(alloc_cpu_secs), "
-				   "over_cpu_secs=VALUES(over_cpu_secs), "
-				   "resv_cpu_secs=VALUES(resv_cpu_secs);",
+				   "alloc_cpu_secs=VALUES(alloc_cpu_secs);",
 				   now);
 					   	
 			debug3("%d(%d) query\n%s",
@@ -915,27 +901,24 @@ extern int mysql_daily_rollup(mysql_conn_t *mysql_conn,
 /* 		info("end %s", ctime(&curr_end)); */
 		query = xstrdup_printf(
 			"insert into %s (creation_time, mod_time, id, "
-			"period_start, alloc_cpu_secs, over_cpu_secs, "
-			"resv_cpu_secs) select %d, %d, id, "
-			"%d, @ASUM:=SUM(alloc_cpu_secs), "
-			"@OSUM:=SUM(over_cpu_secs), "
-			"@RSUM:=SUM(resv_cpu_secs) from %s where "
+			"period_start, alloc_cpu_secs) select %d, %d, id, "
+			"%d, @ASUM:=SUM(alloc_cpu_secs) from %s where "
 			"(period_start < %d && period_start >= %d) "
 			"group by id on duplicate key update mod_time=%d, "
-			"alloc_cpu_secs=@ASUM, over_cpu_secs=@OSUM, "
-			"resv_cpu_secs=@RSUM;",
+			"alloc_cpu_secs=@ASUM;",
 			assoc_day_table, now, now, curr_start,
 			assoc_hour_table,
 			curr_end, curr_start, now);
 		xstrfmtcat(query,
 			   "insert into %s (creation_time, "
 			   "mod_time, cluster, period_start, cpu_count, "
-			   "alloc_cpu_secs, down_cpu_secs, idle_cpu_secs, "
-			   "over_cpu_secs, resv_cpu_secs) "
+			   "alloc_cpu_secs, down_cpu_secs, pdown_cpu_secs, "
+			   "idle_cpu_secs, over_cpu_secs, resv_cpu_secs) "
 			   "select %d, %d, cluster, "
 			   "%d, @CPU:=MAX(cpu_count), "
 			   "@ASUM:=SUM(alloc_cpu_secs), "
 			   "@DSUM:=SUM(down_cpu_secs), "
+			   "@PDSUM:=SUM(pdown_cpu_secs), "
 			   "@ISUM:=SUM(idle_cpu_secs), "
 			   "@OSUM:=SUM(over_cpu_secs), "
 			   "@RSUM:=SUM(resv_cpu_secs) from %s where "
@@ -943,8 +926,8 @@ extern int mysql_daily_rollup(mysql_conn_t *mysql_conn,
 			   "group by cluster on duplicate key update "
 			   "mod_time=%d, cpu_count=@CPU, "
 			   "alloc_cpu_secs=@ASUM, down_cpu_secs=@DSUM, "
-			   "idle_cpu_secs=@ISUM, over_cpu_secs=@OSUM, "
-			   "resv_cpu_secs=@RSUM;",
+			   "pdown_cpu_secs=@DSUM, idle_cpu_secs=@ISUM, "
+			   "over_cpu_secs=@OSUM, resv_cpu_secs=@RSUM;",
 			   cluster_day_table, now, now, curr_start,
 			   cluster_hour_table,
 			   curr_end, curr_start, now);
@@ -952,16 +935,12 @@ extern int mysql_daily_rollup(mysql_conn_t *mysql_conn,
 			xstrfmtcat(query,
 				   "insert into %s (creation_time, "
 				   "mod_time, id, period_start, "
-				   "alloc_cpu_secs, over_cpu_secs, "
-				   "resv_cpu_secs) select %d, %d, "
-				   "id, %d, @ASUM:=SUM(alloc_cpu_secs), "
-				   "@OSUM:=SUM(over_cpu_secs), "
-				   "@RSUM:=SUM(resv_cpu_secs) from %s "
-				   "where (period_start < %d && "
+				   "alloc_cpu_secs) select %d, %d, "
+				   "id, %d, @ASUM:=SUM(alloc_cpu_secs) "
+				   "from %s where (period_start < %d && "
 				   "period_start >= %d) "
 				   "group by id on duplicate key update "
-				   "mod_time=%d, alloc_cpu_secs=@ASUM, "
-				   "over_cpu_secs=@OSUM, resv_cpu_secs=@RSUM;",
+				   "mod_time=%d, alloc_cpu_secs=@ASUM;",
 				   wckey_day_table, now, now, curr_start,
 				   wckey_hour_table,
 				   curr_end, curr_start, now);
@@ -1041,27 +1020,24 @@ extern int mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 /* 		info("end %s", ctime(&curr_end)); */
 		query = xstrdup_printf(
 			"insert into %s (creation_time, mod_time, id, "
-			"period_start, alloc_cpu_secs, over_cpu_secs, "
-			"resv_cpu_secs) select %d, %d, id, "
-			"%d, @ASUM:=SUM(alloc_cpu_secs), "
-			"@OSUM:=SUM(over_cpu_secs), "
-			"@RSUM:=SUM(resv_cpu_secs) from %s where "
+			"period_start, alloc_cpu_secs) select %d, %d, id, "
+			"%d, @ASUM:=SUM(alloc_cpu_secs) from %s where "
 			"(period_start < %d && period_start >= %d) "
 			"group by id on duplicate key update mod_time=%d, "
-			"alloc_cpu_secs=@ASUM, over_cpu_secs=@OSUM, "
-			"resv_cpu_secs=@RSUM;",
+			"alloc_cpu_secs=@ASUM;",
 			assoc_month_table, now, now, curr_start,
 			assoc_day_table,
 			curr_end, curr_start, now);
 		xstrfmtcat(query,
 			   "insert into %s (creation_time, "
 			   "mod_time, cluster, period_start, cpu_count, "
-			   "alloc_cpu_secs, down_cpu_secs, idle_cpu_secs, "
-			   "over_cpu_secs, resv_cpu_secs) "
+			   "alloc_cpu_secs, down_cpu_secs, pdown_cpu_secs, "
+			   "idle_cpu_secs, over_cpu_secs, resv_cpu_secs) "
 			   "select %d, %d, cluster, "
 			   "%d, @CPU:=MAX(cpu_count), "
 			   "@ASUM:=SUM(alloc_cpu_secs), "
 			   "@DSUM:=SUM(down_cpu_secs), "
+			   "@PDSUM:=SUM(pdown_cpu_secs), "
 			   "@ISUM:=SUM(idle_cpu_secs), "
 			   "@OSUM:=SUM(over_cpu_secs), "
 			   "@RSUM:=SUM(resv_cpu_secs) from %s where "
@@ -1069,24 +1045,21 @@ extern int mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 			   "group by cluster on duplicate key update "
 			   "mod_time=%d, cpu_count=@CPU, "
 			   "alloc_cpu_secs=@ASUM, down_cpu_secs=@DSUM, "
-			   "idle_cpu_secs=@ISUM, over_cpu_secs=@OSUM, "
-			   "resv_cpu_secs=@RSUM;",
+			   "pdown_cpu_secs=@DSUM, idle_cpu_secs=@ISUM, "
+			   "over_cpu_secs=@OSUM, resv_cpu_secs=@RSUM;",
 			   cluster_month_table, now, now, curr_start,
 			   cluster_day_table,
 			   curr_end, curr_start, now);
 		if(track_wckey) {
 			xstrfmtcat(query,
 				   "insert into %s (creation_time, mod_time, "
-				   "id, period_start, alloc_cpu_secs, "
-				   "over_cpu_secs, resv_cpu_secs) select %d, "
-				   "%d, id, %d, @ASUM:=SUM(alloc_cpu_secs), "
-				   "@OSUM:=SUM(over_cpu_secs), "
-				   "@RSUM:=SUM(resv_cpu_secs) "
+				   "id, period_start, alloc_cpu_secs) "
+				   "select %d, %d, id, %d, "
+				   "@ASUM:=SUM(alloc_cpu_secs) "
 				   "from %s where (period_start < %d && "
 				   "period_start >= %d) "
 				   "group by id on duplicate key update "
-				   "mod_time=%d, alloc_cpu_secs=@ASUM, "
-				   "over_cpu_secs=@OSUM, resv_cpu_secs=@RSUM;",
+				   "mod_time=%d, alloc_cpu_secs=@ASUM;",
 				   wckey_month_table, now, now, curr_start,
 				   wckey_day_table,
 				   curr_end, curr_start, now);
