@@ -87,6 +87,10 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
   which utilizes logic to set a priority on a job based on many different 
   configuration parameters as described here:  
   https://computing.llnl.gov/linux/slurm/job_priority.html
+* The task/affinity plugin will automatically bind a job step to the CPUs
+  it has been allocated. Therefore TaskAffinityParam values of "core", 
+  "sockets" and "threads" are generally not desirable (in fact they would 
+  prevent some user flexibility).
 
 COMMAND CHANGES (see man pages for details)
 * --task-mem and --job-mem options have been removed from salloc, sbatch and
