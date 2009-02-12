@@ -1,4 +1,4 @@
-.TH SRUN "1" "January 2009" "srun 1.4" "slurm components"
+.TH SRUN "1" "February 2009" "srun 1.4" "slurm components"
 
 .SH "NAME"
 srun \- run parallel jobs
@@ -143,6 +143,12 @@ itself to avoid having all threads of the multithreaded task use the same
 mask/CPU as the parent.  Alternatively, fat masks (masks which specify more 
 than one allowed CPU) could be used for the tasks in order to provide
 multiple CPUs for the multithreaded tasks.
+
+Note that a job step can be allocated different numbers of CPUs on each node
+or be allocated CPUs not starting at location zero. Therefore one of the 
+options which automatically generates the mask is generally recommended. 
+Explicitly specified masks or bindings are only honored when the job step
+has been allocated every available CPU on the node.
 
 Binding a task to a NUMA locality domain means to bind the task to the set of
 CPUs that belong to the NUMA locality domain or "NUMA node".
