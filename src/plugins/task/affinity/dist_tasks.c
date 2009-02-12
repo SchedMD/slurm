@@ -161,6 +161,7 @@ static void _match_masks_to_ldom(const uint32_t maxtasks, bitstr_t **masks)
  * When automatic binding is enabled:
  *      - no binding flags set >= CPU_BIND_NONE, and
  *      - a auto binding level selected CPU_BIND_TO_{SOCKETS,CORES,THREADS}
+ * Otherwise limit job step to the allocated CPUs
  *
  * generate the appropriate cpu_bind type and string which results in
  * the specified lllp distribution.
@@ -175,24 +176,18 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 	char buf_type[100];
 	int maxtasks = req->tasks_to_launch[(int)node_id];
         const uint32_t *gtid = req->global_task_ids[(int)node_id];
+	uint16_t bind_mode;
 
-	if ((req->cpu_bind_type & CPU_BIND_NONE)   ||
-	    (req->cpu_bind_type & CPU_BIND_MASK)   ||
-	    (req->cpu_bind_type & CPU_BIND_RANK)   ||
-	    (req->cpu_bind_type & CPU_BIND_MAP)    ||
-	    (req->cpu_bind_type & CPU_BIND_LDRANK) ||
-	    (req->cpu_bind_type & CPU_BIND_LDMAP)  ||
-	    (req->cpu_bind_type & CPU_BIND_LDMASK)) {
+	bind_mode = CPU_BIND_NONE   | 
+		    CPU_BIND_MASK   | CPU_BIND_RANK   | CPU_BIND_MAP |
+		    CPU_BIND_LDMASK | CPU_BIND_LDRANK | CPU_BIND_LDMAP;
+	if (req->cpu_bind_type & bind_mode) {	/* explicit user mapping */
 		char *avail_mask = _alloc_mask(req);
 		if (avail_mask) {	/* step missing some CPUs */
 			xfree(req->cpu_bind);
 			req->cpu_bind = avail_mask;
-			req->cpu_bind_type &= (~CPU_BIND_RANK);
-			req->cpu_bind_type &= (~CPU_BIND_MAP);
-			req->cpu_bind_type &= (~CPU_BIND_LDRANK);
-			req->cpu_bind_type &= (~CPU_BIND_LDMAP);
-			req->cpu_bind_type &= (~CPU_BIND_LDMASK);
-			req->cpu_bind_type |=   CPU_BIND_MASK;
+			req->cpu_bind_type &= (~bind_mode);
+			req->cpu_bind_type |= CPU_BIND_MASK;
 		}
 		slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
 		info("lllp_distribution jobid [%u] manual binding: %s",
@@ -200,11 +195,17 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 		return;
 	}
 
-	slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
 	if (!((req->cpu_bind_type & CPU_BIND_TO_THREADS) ||
-	      (req->cpu_bind_type & CPU_BIND_TO_CORES) ||
+	      (req->cpu_bind_type & CPU_BIND_TO_CORES)   ||
 	      (req->cpu_bind_type & CPU_BIND_TO_SOCKETS) ||
 	      (req->cpu_bind_type & CPU_BIND_TO_LDOMS))) {
+		char *avail_mask = _alloc_mask(req);
+		if (avail_mask) {	/* step missing some CPUs */
+			xfree(req->cpu_bind);
+			req->cpu_bind = avail_mask;
+			req->cpu_bind_type |= CPU_BIND_MASK;
+		}
+		slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
 		info("lllp_distribution jobid [%u] auto binding off: %s",
 		     req->job_id, buf_type);
 		return;
@@ -219,6 +220,7 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 	}
 	*/
 
+	slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
 	info("lllp_distribution jobid [%u] auto binding: %s, dist %d",
 	     req->job_id, buf_type, req->task_dist);
 

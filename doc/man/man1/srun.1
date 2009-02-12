@@ -121,6 +121,8 @@ by the slurm job manager.
 \fB\-\-cpu_bind\fR=[{\fIquiet,verbose\fR},]\fItype\fR
 Bind tasks to CPUs. Used only when the task/affinity plugin is enabled.
 The configuration parameter \fBTaskPluginParam\fR may override these options.
+For example, if \fBTaskPluginParam\fR is configured to bind to cores, 
+your job will not be able to bind tasks to sockets.
 NOTE: To have SLURM always report on the selected CPU binding for all
 commands executed in a shell, you can enable verbose mode by setting
 the SLURM_CPU_BIND environment variable value to "verbose".
@@ -146,11 +148,11 @@ multiple CPUs for the multithreaded tasks.
 
 By default a job step has access to every CPU allocated to the job.
 To ensure disticnt CPUs are allocated to each job step, us the 
-\fb\-\-exclusive\fR option.
+\fB\-\-exclusive\fR option.
 
 Note that a job step can be allocated different numbers of CPUs on each node
 or be allocated CPUs not starting at location zero. Therefore one of the 
-options which automatically generates the mask is generally recommended. 
+options which automatically generate the task binding is recommended. 
 Explicitly specified masks or bindings are only honored when the job step
 has been allocated every available CPU on the node.
 
@@ -173,19 +175,21 @@ verbosely report binding before task runs
 don't bind tasks to CPUs (default)
 .TP
 .B rank
-bind by task rank
+automatically bind by task rank
 .TP
 .B map_cpu:<list>
 bind by mapping CPU IDs to tasks as specified
 where <list> is <cpuid1>,<cpuid2>,...<cpuidN>.
 CPU IDs are interpreted as decimal values unless they are preceded
 with '0x' in which case they are interpreted as hexadecimal values.
+Not supported unless the entire node is allocated to the job.
 .TP
 .B mask_cpu:<list>
 bind by setting CPU masks on tasks as specified
 where <list> is <mask1>,<mask2>,...<maskN>.
 CPU masks are \fBalways\fR interpreted as hexadecimal values but can be
 preceded with an optional '0x'.
+Not supported unless the entire node is allocated to the job.
 .TP
 .B rank_ldom
 bind to a NUMA locality domain by rank
@@ -195,24 +199,26 @@ bind by mapping NUMA locality domain IDs to tasks as specified where
 <list> is <ldom1>,<ldom2>,...<ldomN>.
 The locality domain IDs are interpreted as decimal values unless they are
 preceded with '0x' in which case they areinterpreted as hexadecimal values.
+Not supported unless the entire node is allocated to the job.
 .TP
 .B mask_ldom:<list>
 bind by setting NUMA locality domain masks on tasks as specified
 where <list> is <mask1>,<mask2>,...<maskN>.
 NUMA locality domain masks are \fBalways\fR interpreted as hexadecimal
 values but can be preceded with an optional '0x'.
+Not supported unless the entire node is allocated to the job.
 .TP
 .B sockets
-auto\-generated masks bind to sockets
+automatically generate masks binding tasks to sockets
 .TP
 .B cores
-auto\-generated masks bind to cores
+automatically generate masks binding tasks to cores
 .TP
 .B threads
-auto\-generated masks bind to threads
+automatically generate masks binding tasks to threads
 .TP
 .B ldoms
-auto\-generated masks bind to NUMA locality domains
+automatically generate masks binding tasks to NUMA locality domains
 .TP
 .B help
 show this help message
