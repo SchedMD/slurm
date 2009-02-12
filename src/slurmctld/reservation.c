@@ -1662,6 +1662,7 @@ static void _validate_all_reservations(void)
 		if (!_validate_one_reservation(resv_ptr)) {
 			error("Purging invalid reservation record %s",
 			      resv_ptr->name);
+			_post_resv_delete(resv_ptr);
 			_clear_job_resv(resv_ptr);
 			list_delete_item(iter);
 		} else {
