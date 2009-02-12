@@ -1503,24 +1503,47 @@ extern void pack_cluster_accounting_rec(void *in, uint16_t rpc_version,
 {
 	cluster_accounting_rec_t *object = (cluster_accounting_rec_t *)in;
 	
-	if(!object) {
-		pack64(0, buffer);
-		pack32(0, buffer);
-		pack64(0, buffer);
-		pack64(0, buffer);
-		pack64(0, buffer);
-		pack_time(0, buffer);
-		pack64(0, buffer);
-		return;
+	if(rpc_version >= 5) {
+		if(!object) {
+			pack64(0, buffer);
+			pack32(0, buffer);
+			pack64(0, buffer);
+			pack64(0, buffer);
+			pack64(0, buffer);
+			pack64(0, buffer);
+			pack_time(0, buffer);
+			pack64(0, buffer);
+			return;
+		}
+		
+		pack64(object->alloc_secs, buffer);
+		pack32(object->cpu_count, buffer);
+		pack64(object->down_secs, buffer);
+		pack64(object->idle_secs, buffer);
+		pack64(object->over_secs, buffer);
+		pack64(object->pdown_secs, buffer);
+		pack_time(object->period_start, buffer);
+		pack64(object->resv_secs, buffer);
+	} else {
+		if(!object) {
+			pack64(0, buffer);
+			pack32(0, buffer);
+			pack64(0, buffer);
+			pack64(0, buffer);
+			pack64(0, buffer);
+			pack_time(0, buffer);
+			pack64(0, buffer);
+			return;
+		}
+		
+		pack64(object->alloc_secs, buffer);
+		pack32(object->cpu_count, buffer);
+		pack64(object->down_secs, buffer);
+		pack64(object->idle_secs, buffer);
+		pack64(object->over_secs, buffer);
+		pack_time(object->period_start, buffer);
+		pack64(object->resv_secs, buffer);
 	}
-
- 	pack64(object->alloc_secs, buffer);
-	pack32(object->cpu_count, buffer);
-	pack64(object->down_secs, buffer);
-	pack64(object->idle_secs, buffer);
-	pack64(object->over_secs, buffer);
-	pack_time(object->period_start, buffer);
-	pack64(object->resv_secs, buffer);
 }
 
 extern int unpack_cluster_accounting_rec(void **object, uint16_t rpc_version,
@@ -1530,13 +1553,25 @@ extern int unpack_cluster_accounting_rec(void **object, uint16_t rpc_version,
 		xmalloc(sizeof(cluster_accounting_rec_t));
 	
 	*object = object_ptr;
-	safe_unpack64(&object_ptr->alloc_secs, buffer);
-	safe_unpack32(&object_ptr->cpu_count, buffer);
-	safe_unpack64(&object_ptr->down_secs, buffer);
-	safe_unpack64(&object_ptr->idle_secs, buffer);
-	safe_unpack64(&object_ptr->over_secs, buffer);
-	safe_unpack_time(&object_ptr->period_start, buffer);
-	safe_unpack64(&object_ptr->resv_secs, buffer);
+
+	if(rpc_version >= 5) {
+		safe_unpack64(&object_ptr->alloc_secs, buffer);
+		safe_unpack32(&object_ptr->cpu_count, buffer);
+		safe_unpack64(&object_ptr->down_secs, buffer);
+		safe_unpack64(&object_ptr->idle_secs, buffer);
+		safe_unpack64(&object_ptr->over_secs, buffer);
+		safe_unpack64(&object_ptr->pdown_secs, buffer);
+		safe_unpack_time(&object_ptr->period_start, buffer);
+		safe_unpack64(&object_ptr->resv_secs, buffer);
+	} else {
+		safe_unpack64(&object_ptr->alloc_secs, buffer);
+		safe_unpack32(&object_ptr->cpu_count, buffer);
+		safe_unpack64(&object_ptr->down_secs, buffer);
+		safe_unpack64(&object_ptr->idle_secs, buffer);
+		safe_unpack64(&object_ptr->over_secs, buffer);
+		safe_unpack_time(&object_ptr->period_start, buffer);
+		safe_unpack64(&object_ptr->resv_secs, buffer);
+	}
 	
 	return SLURM_SUCCESS;
 
@@ -1779,33 +1814,16 @@ extern void pack_acct_accounting_rec(void *in, uint16_t rpc_version, Buf buffer)
 {
 	acct_accounting_rec_t *object = (acct_accounting_rec_t *)in;
 	
-	if(rpc_version >= 5) {
-		if(!object) {
-			pack64(0, buffer);
-			pack32(0, buffer);
-			pack64(0, buffer);
-			pack_time(0, buffer);
-			pack64(0, buffer);
-			return;
-		}
-		
-		pack64(object->alloc_secs, buffer);
-		pack32(object->id, buffer);
-		pack64(object->over_secs, buffer);
-		pack_time(object->period_start, buffer);
-		pack64(object->resv_secs, buffer);
-	} else {
-		if(!object) {
-			pack64(0, buffer);
-			pack32(0, buffer);
-			pack_time(0, buffer);
-			return;
-		}
-		
-		pack64(object->alloc_secs, buffer);
-		pack32(object->id, buffer);
-		pack_time(object->period_start, buffer);		
+	if(!object) {
+		pack64(0, buffer);
+		pack32(0, buffer);
+		pack_time(0, buffer);
+		return;
 	}
+	
+	pack64(object->alloc_secs, buffer);
+	pack32(object->id, buffer);
+	pack_time(object->period_start, buffer);		
 }
 
 extern int unpack_acct_accounting_rec(void **object, uint16_t rpc_version,
@@ -1815,18 +1833,11 @@ extern int unpack_acct_accounting_rec(void **object, uint16_t rpc_version,
 		xmalloc(sizeof(acct_accounting_rec_t));
 	
 	*object = object_ptr;
-	if(rpc_version >= 5) {
-		safe_unpack64(&object_ptr->alloc_secs, buffer);
-		safe_unpack32(&object_ptr->id, buffer);
-		safe_unpack64(&object_ptr->over_secs, buffer);
-		safe_unpack_time(&object_ptr->period_start, buffer);
-		safe_unpack64(&object_ptr->resv_secs, buffer);
-	} else {
-		safe_unpack64(&object_ptr->alloc_secs, buffer);
-		safe_unpack32(&object_ptr->id, buffer);
-		safe_unpack_time(&object_ptr->period_start, buffer);	
-	}
 	
+	safe_unpack64(&object_ptr->alloc_secs, buffer);
+	safe_unpack32(&object_ptr->id, buffer);
+	safe_unpack_time(&object_ptr->period_start, buffer);	
+		
 	return SLURM_SUCCESS;
 
 unpack_error:
