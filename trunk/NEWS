@@ -18,6 +18,8 @@ documents those changes that are of interest to users and admins.
     associated with nodes. Patch from Krishnakumar Ravi[KK] (HP).
  -- Add DebugFlag configuration option of "CPU_Bind" for detailed CPU
     binding information to be logged.
+ -- Fix some significant bugs in task binding logic (possible infinite loops
+    and memory corruption).
  
 * Changes in SLURM 1.4.0-pre7
 =============================
