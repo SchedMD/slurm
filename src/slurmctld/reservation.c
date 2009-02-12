@@ -99,6 +99,10 @@ static bool _is_account_valid(char *account);
 static bool _is_resv_used(slurmctld_resv_t *resv_ptr);
 static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 		       bool internal);
+static int  _post_resv_create(slurmctld_resv_t *resv_ptr);
+static int  _post_resv_delete(slurmctld_resv_t *resv_ptr);
+static int  _post_resv_update(slurmctld_resv_t *resv_ptr,
+			      slurmctld_resv_t *old_resv_ptr);
 static bitstr_t *_pick_idle_nodes(bitstr_t *avail_nodes, 
 				  reserve_request_msg_t *resv_desc_ptr);
 static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt);
@@ -110,13 +114,9 @@ static int  _select_nodes(reserve_request_msg_t *resv_desc_ptr,
 			  bitstr_t **resv_bitmap);
 static int  _set_assoc_list(slurmctld_resv_t *resv_ptr);
 static void _set_cpu_cnt(slurmctld_resv_t *resv_ptr);
+static void _set_nodes_maint(slurmctld_resv_t *resv_ptr);
 static void _swap_resv(slurmctld_resv_t *resv_backup, 
 		       slurmctld_resv_t *resv_ptr);
-static int  _post_resv_create(slurmctld_resv_t *resv_ptr);
-static int  _post_resv_delete(slurmctld_resv_t *resv_ptr);
-static int  _post_resv_update(slurmctld_resv_t *resv_ptr,
-			      slurmctld_resv_t *old_resv_ptr);
-
 static int  _update_account_list(slurmctld_resv_t *resv_ptr, 
 				 char *accounts);
 static int  _update_uid_list(slurmctld_resv_t *resv_ptr, char *users);
@@ -936,7 +936,7 @@ static bool _resv_overlap(time_t start_time, time_t end_time,
 	uint32_t delta_t, i, j;
 	time_t s_time1, s_time2, e_time1, e_time2;
 
-	if (!node_bitmap)
+	if ((!node_bitmap) || (flags & RESERVE_FLAG_MAINT))
 		return rc;
 
 	iter = list_iterator_create(resv_list);
@@ -1953,19 +1953,21 @@ static int  _select_nodes(reserve_request_msg_t *resv_desc_ptr,
 	node_bitmap = bit_copy((*part_ptr)->node_bitmap);
 
 	/* Don't use node already reserved */
-	iter = list_iterator_create(resv_list);
-	if (!iter)
-		fatal("malloc: list_iterator_create");
-	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
-		if ((resv_ptr->node_bitmap == NULL) ||
-		    (resv_ptr->start_time >= resv_desc_ptr->end_time) ||
-		    (resv_ptr->end_time   <= resv_desc_ptr->start_time))
-			continue;
-		bit_not(resv_ptr->node_bitmap);
-		bit_and(node_bitmap, resv_ptr->node_bitmap);
-		bit_not(resv_ptr->node_bitmap);
+	if ((resv_desc_ptr->flags & RESERVE_FLAG_MAINT) == 0) {
+		iter = list_iterator_create(resv_list);
+		if (!iter)
+			fatal("malloc: list_iterator_create");
+		while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+			if ((resv_ptr->node_bitmap == NULL) ||
+			    (resv_ptr->start_time >= resv_desc_ptr->end_time) ||
+			    (resv_ptr->end_time   <= resv_desc_ptr->start_time))
+				continue;
+			bit_not(resv_ptr->node_bitmap);
+			bit_and(node_bitmap, resv_ptr->node_bitmap);
+			bit_not(resv_ptr->node_bitmap);
+		}
+		list_iterator_destroy(iter);
 	}
-	list_iterator_destroy(iter);
 
 	/* Satisfy feature specification */
 	if (resv_desc_ptr->features) {
@@ -1991,7 +1993,10 @@ static int  _select_nodes(reserve_request_msg_t *resv_desc_ptr,
 		}
 	}
 
-	bit_and(node_bitmap, avail_node_bitmap); /* Nodes must be available */
+	if ((resv_desc_ptr->flags & RESERVE_FLAG_MAINT) == 0) {
+		/* Nodes must be available */
+		bit_and(node_bitmap, avail_node_bitmap);
+	}
 	*resv_bitmap = NULL;
 	if (bit_set_count(node_bitmap) < resv_desc_ptr->node_cnt)
 		verbose("reservation requests more nodes than are available");
@@ -2311,8 +2316,9 @@ extern void fini_job_resv_check(void)
 			schedule_resv_save();
 			continue;
 		}
-		if ((resv_ptr->job_pend_cnt == 0) &&
-		    (resv_ptr->job_run_cnt  == 0) &&
+		if ((resv_ptr->job_pend_cnt   == 0) &&
+		    (resv_ptr->job_run_cnt    == 0) &&
+		    (resv_ptr->maint_set_node == 0) &&
 		    ((resv_ptr->flags & RESERVE_FLAG_DAILY ) == 0) &&
 		    ((resv_ptr->flags & RESERVE_FLAG_WEEKLY) == 0)) {
 			debug("Purging vestigial reservation record %s",
@@ -2325,4 +2331,60 @@ extern void fini_job_resv_check(void)
 
 	}
 	list_iterator_destroy(iter);
+}
+
+/* Set or clear NODE_STATE_MAINT for node_state as needed */
+extern void set_node_maint_mode(void)
+{
+	ListIterator iter;
+	slurmctld_resv_t *resv_ptr;
+	time_t now = time(NULL);
+
+	if (!resv_list)
+		return;
+
+	iter = list_iterator_create(resv_list);
+	if (!iter)
+		fatal("malloc: list_iterator_create");
+	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+		if ((resv_ptr->flags & RESERVE_FLAG_MAINT) == 0)
+			continue;
+		if ((now >= resv_ptr->start_time) &&
+		    (now <  resv_ptr->end_time  )) {
+			if (!resv_ptr->maint_set_node) {
+				resv_ptr->maint_set_node = true;
+				_set_nodes_maint(resv_ptr);
+				last_node_update = now;
+			}
+		} else if (resv_ptr->maint_set_node) {
+			resv_ptr->maint_set_node = false;
+			_set_nodes_maint(resv_ptr);
+			last_node_update = now;
+		}
+	}
+	list_iterator_destroy(iter);
+}
+
+static void _set_nodes_maint(slurmctld_resv_t *resv_ptr)
+{
+	int i, i_first, i_last;
+	struct node_record *node_ptr;
+
+	if (!resv_ptr->node_bitmap) {
+		error("reservation %s lacks a bitmap", resv_ptr->name);
+		return;
+	}
+
+	i_first = bit_ffs(resv_ptr->node_bitmap);
+	i_last  = bit_fls(resv_ptr->node_bitmap);
+	for (i=i_first; i<=i_last; i++) {
+		if (!bit_test(resv_ptr->node_bitmap, i))
+			continue;
+
+		node_ptr = node_record_table_ptr + i;
+		if (resv_ptr->maint_set_node)
+			node_ptr->node_state |= NODE_STATE_MAINT;
+		else
+			node_ptr->node_state &= (~NODE_STATE_MAINT);
+	}
 }

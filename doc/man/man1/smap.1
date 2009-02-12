@@ -1,4 +1,4 @@
-.TH SMAP "1" "May 2007" "smap 1.3" "Slurm components"
+.TH SMAP "1" "February 2009" "smap 2.0" "Slurm components"
 
 .SH "NAME"
 smap \- graphically view information about SLURM jobs, partitions, and set 
@@ -387,6 +387,9 @@ man page or the \fBslurm.conf\fR(5) man page for more information.
 .TP
 \fBIDLE\fR
 The node is not allocated to any jobs and is available for use.
+.TP
+\fBMAINT\fR
+The node is currently in a reservation with a flag value of "maintainence".
 .TP
 \fBUNKNOWN\fR
 The SLURM controller has just started and the node's state

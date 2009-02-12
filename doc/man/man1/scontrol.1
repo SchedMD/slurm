@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "February 2009" "scontrol 1.4" "Slurm components"
+.TH SCONTROL "1" "February 2009" "scontrol 2.0" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -426,8 +426,8 @@ Use quotes to enclose a reason having more than one word.
 .TP
 \fIState\fP=<state>
 Identify the state to be assigned to the node. Possible values are  "NoResp", 
-"ALLOC", "ALLOCATED", "DOWN", "DRAIN", "FAIL", "FAILING", "IDLE", "POWER_DOWN",
-"POWER_UP", or "RESUME". 
+"ALLOC", "ALLOCATED", "DOWN", "DRAIN", "FAIL", "FAILING", "IDLE", "MAINT",
+"POWER_DOWN", "POWER_UP", or "RESUME". 
 If you want to remove a node from service, you typically want to set 
 it's state to "DRAIN". 
 "FAILING" is similar to "DRAIN" except that some applications will  

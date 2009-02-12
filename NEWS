@@ -20,6 +20,8 @@ documents those changes that are of interest to users and admins.
     binding information to be logged.
  -- Fix some significant bugs in task binding logic (possible infinite loops
     and memory corruption).
+ -- Add new node state flag of NODE_STATE_MAINT indicating the node is in
+    a reservation of type MAINT.
  
 * Changes in SLURM 1.4.0-pre7
 =============================

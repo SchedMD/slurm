@@ -318,6 +318,7 @@ typedef struct slurmctld_resv {
 	uint32_t job_pend_cnt;	/* number of pending jobs		*/
 	uint32_t job_run_cnt;	/* number of running jobs		*/
 	uint16_t magic;		/* magic cookie, RESV_MAGIC		*/
+	bool maint_set_node;	/* NODE_STATE_MAINT set for nodes	*/
 	char *name;		/* name of reservation			*/
 	bitstr_t *node_bitmap;	/* bitmap of reserved nodes		*/
 	uint32_t node_cnt;	/* count of nodes required		*/
