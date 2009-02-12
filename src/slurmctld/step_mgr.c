@@ -851,9 +851,10 @@ static void _pick_step_cores(struct step_record *step_ptr,
 			     select_job_res_t select_ptr, 
 			     int job_node_inx, uint16_t task_cnt)
 {
-	int bit_offset, core_inx, sock_inx;
+	int bit_offset, core_inx, i, sock_inx;
 	uint16_t sockets, cores;
 	bool use_all_cores;
+	static int last_core_inx;
 
 	if (!step_ptr->core_bitmap_job) {
 		step_ptr->core_bitmap_job = bit_alloc(bit_size(select_ptr->
@@ -894,8 +895,13 @@ static void _pick_step_cores(struct step_record *step_ptr,
 	if (use_all_cores)
 		return;
 
-	/* Need to over-subscribe some cores */
-	for (core_inx=0; core_inx<cores; core_inx++) {
+	/* We need to over-subscribe one or more cores.
+	 * Use last_core_inx to avoid putting all of the extra
+	 * work onto core zero */
+	verbose("job step needs to over-subscribe cores");
+	last_core_inx = (last_core_inx + 1) % cores;
+	for (i=0; i<cores; i++) {
+		core_inx = (last_core_inx + i) % cores;
 		for (sock_inx=0; sock_inx<sockets; sock_inx++) {
 			bit_offset = get_select_job_res_offset(select_ptr,
 							       job_node_inx,
@@ -950,7 +956,6 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 		   (step_ptr->cpu_count == job_ptr->total_procs)) {
 		/* Step uses all of job's cores
 		 * Just copy the bitmap to save time */
-
 		step_ptr->core_bitmap_job = bit_copy(select_ptr->core_bitmap);
 		pick_step_cores = false;
 	}
