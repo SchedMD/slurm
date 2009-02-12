@@ -144,6 +144,10 @@ mask/CPU as the parent.  Alternatively, fat masks (masks which specify more
 than one allowed CPU) could be used for the tasks in order to provide
 multiple CPUs for the multithreaded tasks.
 
+By default a job step has access to every CPU allocated to the job.
+To ensure disticnt CPUs are allocated to each job step, us the 
+\fb\-\-exclusive\fR option.
+
 Note that a job step can be allocated different numbers of CPUs on each node
 or be allocated CPUs not starting at location zero. Therefore one of the 
 options which automatically generates the mask is generally recommended. 
@@ -295,7 +299,9 @@ an existing resource allocation and you want separate processors to
 be dedicated to each job step. If sufficient processors are not 
 available to initiate the job step, it will be deferred. This can 
 be thought of as providing resource management for the job within
-it's allocation. Since resource management is provided  by 
+it's allocation. Note that all CPUs allocated to a job are available
+to each job step unless the \fB\-\-exclusive\fR option is used plus
+task affinity is configured. Since resource management is provided by 
 processor, the \fB\-\-ntasks\fR option must be specified, but the 
 following options should NOT be specified \fB\-\-nodes\fR, 
 \fB\-\-relative\fR, \fB\-\-relative\fR=\fIarbitrary\fR.
