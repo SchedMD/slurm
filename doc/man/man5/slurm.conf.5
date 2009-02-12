@@ -1374,6 +1374,7 @@ are mutually exclusive (select only one of them).
 .TP 10
 \fBCores\fR
 Always bind to cores.
+Not generally recommended as it prevents user flexibility.
 .TP
 \fBCpusets\fR
 Use cpusets to perform task affinity functions.
@@ -1381,6 +1382,7 @@ By default, \fBSched\fR task binding is performed.
 .TP
 \fBNone\fR
 Perform no task binding.
+Not generally recommended as it prevents user flexibility.
 .TP
 \fBSched\fR
 Use \fIsched_setaffinity\fR or \fIplpa_sched_setaffinity\fR
@@ -1388,9 +1390,11 @@ Use \fIsched_setaffinity\fR or \fIplpa_sched_setaffinity\fR
 .TP
 \fBSockets\fR
 Always bind to sockets.
+Not generally recommended as it prevents user flexibility.
 .TP
 \fBThreads\fR
 Always bind to threads.
+Not generally recommended as it prevents user flexibility.
 .TP
 \fBVerbose\fR
 Verbosely report binding before tasks run.
