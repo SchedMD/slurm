@@ -114,7 +114,7 @@ static int  _select_nodes(reserve_request_msg_t *resv_desc_ptr,
 			  bitstr_t **resv_bitmap);
 static int  _set_assoc_list(slurmctld_resv_t *resv_ptr);
 static void _set_cpu_cnt(slurmctld_resv_t *resv_ptr);
-static void _set_nodes_maint(slurmctld_resv_t *resv_ptr);
+static void _set_nodes_maint(slurmctld_resv_t *resv_ptr, time_t now);
 static void _swap_resv(slurmctld_resv_t *resv_backup, 
 		       slurmctld_resv_t *resv_ptr);
 static int  _update_account_list(slurmctld_resv_t *resv_ptr, 
@@ -450,7 +450,7 @@ static int _post_resv_delete(slurmctld_resv_t *resv_ptr)
 	 * database if said database isn't up right now */
 	resv.time_start_prev = time(NULL);
 	rc = acct_storage_g_remove_reservation(acct_db_conn, &resv);
-
+	
 	return rc;
 }
 
@@ -1417,6 +1417,7 @@ extern int delete_resv(reservation_name_msg_t *resv_desc_ptr)
 	ListIterator iter;
 	slurmctld_resv_t *resv_ptr;
 	int rc = SLURM_SUCCESS;
+	time_t now = time(NULL);
 
 #ifdef _RESV_DEBUG
 	info("delete_resv: Name=%s", resv_desc_ptr->name);
@@ -1432,6 +1433,13 @@ extern int delete_resv(reservation_name_msg_t *resv_desc_ptr)
 			rc = ESLURM_RESERVATION_BUSY;
 			break;
 		}
+
+		if (resv_ptr->maint_set_node) {
+			resv_ptr->maint_set_node = false;
+			_set_nodes_maint(resv_ptr, now);
+			last_node_update = now;
+		}
+
 		rc = _post_resv_delete(resv_ptr);
 		_clear_job_resv(resv_ptr);
 		list_delete_item(iter);
@@ -2353,19 +2361,19 @@ extern void set_node_maint_mode(void)
 		    (now <  resv_ptr->end_time  )) {
 			if (!resv_ptr->maint_set_node) {
 				resv_ptr->maint_set_node = true;
-				_set_nodes_maint(resv_ptr);
+				_set_nodes_maint(resv_ptr, now);
 				last_node_update = now;
 			}
 		} else if (resv_ptr->maint_set_node) {
 			resv_ptr->maint_set_node = false;
-			_set_nodes_maint(resv_ptr);
+			_set_nodes_maint(resv_ptr, now);
 			last_node_update = now;
 		}
 	}
 	list_iterator_destroy(iter);
 }
 
-static void _set_nodes_maint(slurmctld_resv_t *resv_ptr)
+static void _set_nodes_maint(slurmctld_resv_t *resv_ptr, time_t now)
 {
 	int i, i_first, i_last;
 	struct node_record *node_ptr;
@@ -2386,5 +2394,17 @@ static void _set_nodes_maint(slurmctld_resv_t *resv_ptr)
 			node_ptr->node_state |= NODE_STATE_MAINT;
 		else
 			node_ptr->node_state &= (~NODE_STATE_MAINT);
+		/* mark that this node is now down and in maint mode
+		   or was removed from maint mode 
+		*/
+		if(((node_ptr->node_state & NODE_STATE_BASE) 
+		    == NODE_STATE_DOWN) ||
+		   (node_ptr->node_state & NODE_STATE_DRAIN) ||
+		   (node_ptr->node_state & NODE_STATE_FAIL)) {
+			clusteracct_storage_g_node_down(
+				acct_db_conn, 
+				slurmctld_cluster_name,
+				node_ptr, now, NULL);
+		}
 	}
 }

@@ -1343,6 +1343,7 @@ extern int clusteracct_storage_p_node_down(void *db_conn,
 	req.new_state  = DBD_NODE_STATE_DOWN;
 	req.event_time = event_time;
 	req.reason     = my_reason;
+	req.state      = node_ptr->node_state;
 	msg.msg_type   = DBD_NODE_STATE;
 	msg.data       = &req;
 

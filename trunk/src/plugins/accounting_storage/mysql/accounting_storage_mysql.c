@@ -2595,6 +2595,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "node_name", "tinytext default '' not null" },
 		{ "cluster", "tinytext not null" },
 		{ "cpu_count", "int not null" },
+		{ "state", "smallint default 0 not null" },
 		{ "period_start", "int unsigned not null" },
 		{ "period_end", "int unsigned default 0 not null" },
 		{ "reason", "tinytext not null" },
@@ -9642,10 +9643,12 @@ extern int clusteracct_storage_p_node_down(mysql_conn_t *mysql_conn,
 	 */
 	xstrfmtcat(query,
 		   "insert into %s "
-		   "(node_name, cluster, cpu_count, period_start, reason) "
-		   "values (\"%s\", \"%s\", %u, %d, \"%s\") on duplicate key "
+		   "(node_name, state, cluster, cpu_count, "
+		   "period_start, reason) "
+		   "values (\"%s\", %u, \"%s\", %u, %d, \"%s\") "
+		   "on duplicate key "
 		   "update period_end=0;",
-		   event_table, node_ptr->name, cluster, 
+		   event_table, node_ptr->name,  node_ptr->node_state, cluster, 
 		   cpus, event_time, my_reason);
 	debug4("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
