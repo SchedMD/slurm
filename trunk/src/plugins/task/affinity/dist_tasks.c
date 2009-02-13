@@ -49,7 +49,7 @@
 
 static char *_alloc_mask(launch_tasks_request_msg_t *req,
 			 int *whole_node_cnt, int *whole_socket_cnt, 
-			 int *whole_core_cnt, int *whole_thread_cnt);
+			 int *whole_core_cnt, int *whole_thread_cnt,		 				 int *part_socket_cnt, int *part_core_cnt);
 static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 				uint16_t *hw_sockets, uint16_t *hw_cores,
 				uint16_t *hw_threads);
@@ -178,6 +178,7 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 	char buf_type[100];
 	int maxtasks = req->tasks_to_launch[(int)node_id];
 	int whole_nodes, whole_sockets, whole_cores, whole_threads;
+	int part_sockets, part_cores;
         const uint32_t *gtid = req->global_task_ids[(int)node_id];
 	uint16_t bind_entity, bind_mode;
 
@@ -186,8 +187,9 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 		    CPU_BIND_LDMASK | CPU_BIND_LDRANK | CPU_BIND_LDMAP;
 	if (req->cpu_bind_type & bind_mode) {	/* explicit user mapping */
 		char *avail_mask = _alloc_mask(req,
-					       &whole_nodes, &whole_sockets, 
-					       &whole_cores, &whole_threads);
+					       &whole_nodes,  &whole_sockets, 
+					       &whole_cores,  &whole_threads,
+					       &part_sockets, &part_cores);
 		if ((whole_nodes == 0) && avail_mask) {
 			xfree(req->cpu_bind);
 			req->cpu_bind = avail_mask;
@@ -206,16 +208,18 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 	if (!(req->cpu_bind_type & bind_entity)) {
 		int max_tasks = req->tasks_to_launch[(int)node_id];
 		char *avail_mask = _alloc_mask(req,
-					       &whole_nodes, &whole_sockets, 
-					       &whole_cores, &whole_threads);
-		debug("binding tasks:%d to nodes:%d sockets:%d cores:%d threads:%d",
-		      max_tasks, whole_nodes, whole_sockets, whole_cores, 
-		      whole_threads);
-		if (max_tasks == whole_sockets) {
+					       &whole_nodes,  &whole_sockets, 
+					       &whole_cores,  &whole_threads,
+					       &part_sockets, &part_cores);
+		debug("binding tasks:%d to "
+		      "nodes:%d sockets:%d:%d cores:%d:%d threads:%d",
+		      max_tasks, whole_nodes, whole_sockets ,part_sockets,
+		      whole_cores, part_cores, whole_threads);
+		if ((max_tasks == whole_sockets) && (part_sockets == 0)) {
 			req->cpu_bind_type |= CPU_BIND_TO_SOCKETS;
 			goto make_auto;
 		}
-		if (max_tasks == whole_cores) {
+		if ((max_tasks == whole_cores) && (part_cores == 0)) {
 			req->cpu_bind_type |= CPU_BIND_TO_CORES;
 			goto make_auto;
 		}
@@ -366,15 +370,18 @@ static void _enforce_limits(launch_tasks_request_msg_t *req, bitstr_t *mask,
 /* Determine which CPUs a job step can use. 
  * OUT whole_<entity>_count - returns count of whole <entities> in this 
  *                            allocation for this node
+ * OUT part__<entity>_count - returns count of partial <entities> in this 
+ *                            allocation for this node
  * RET - a string representation of the available mask or NULL on errlr
  * NOTE: Caller must xfree() the return value. */
 static char *_alloc_mask(launch_tasks_request_msg_t *req,
-			 int *whole_node_cnt, int *whole_socket_cnt, 
-			 int *whole_core_cnt, int *whole_thread_cnt)
+			 int *whole_node_cnt,  int *whole_socket_cnt, 
+			 int *whole_core_cnt,  int *whole_thread_cnt,
+			 int *part_socket_cnt, int *part_core_cnt)
 {
 	uint16_t sockets, cores, threads;
 	int c, s, t, i, mask;
-	int c_miss, s_miss, t_miss;
+	int c_miss, s_miss, t_miss, c_hit, t_hit;
 	bitstr_t *alloc_bitmap;
 	char *str_mask;
 
@@ -382,6 +389,8 @@ static char *_alloc_mask(launch_tasks_request_msg_t *req,
 	*whole_socket_cnt = 0;
 	*whole_core_cnt   = 0;
 	*whole_thread_cnt = 0;
+	*part_socket_cnt  = 0;
+	*part_core_cnt    = 0;
 
 	alloc_bitmap = _get_avail_map(req, &sockets, &cores, &threads);
 	if (!alloc_bitmap)
@@ -389,24 +398,32 @@ static char *_alloc_mask(launch_tasks_request_msg_t *req,
 
 	i = mask = 0;
 	for (s=0, s_miss=false; s<sockets; s++) {
-		for (c=0, c_miss=false; c<cores; c++) {
-			for (t=0, t_miss=false; t<cores; t++) {
+		for (c=0, c_hit=c_miss=false; c<cores; c++) {
+			for (t=0, t_hit=t_miss=false; t<cores; t++) {
 				if (bit_test(alloc_bitmap, i)) {
 					mask |= (1 << i);
 					(*whole_thread_cnt)++;
+					t_hit = true;
+					c_hit = true;
 				} else
 					t_miss = true;
 				i++;
 			}
 			if (!t_miss)
 				(*whole_core_cnt)++;
-			else
+			else {
+				if (t_hit)
+					(*part_core_cnt)++;
 				c_miss = true;
+			}
 		}
 		if (!c_miss)
 			(*whole_socket_cnt)++;
-		else
+		else {
+			if (c_hit)
+				(*part_socket_cnt)++;
 			s_miss = true;
+		}
 	}
 	if (!s_miss)
 		(*whole_node_cnt)++;
