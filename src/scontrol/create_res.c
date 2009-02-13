@@ -57,7 +57,7 @@ process_plus_minus(char plus_or_minus, char *src)
 		if (src[ii] == ',')
 			num_commas++;
 	}
-	ret = dst = malloc(srclen + 2 + num_commas);
+	ret = dst = xmalloc(srclen + 2 + num_commas);
 
 	*dst++ = plus_or_minus;
 	for (ii=0; ii<srclen; ii++) {
@@ -85,6 +85,7 @@ parse_flags(const char *flagstr, const char *msg)
 	int flip;
 	uint32_t outflags = 0;
 	const char *curr = flagstr;
+	int taglen = 0;
 
 	while (*curr != '\0') {
 		flip = 0;
@@ -94,21 +95,24 @@ parse_flags(const char *flagstr, const char *msg)
 			flip = 1;
 			curr++;
 		}
+		taglen = 0;
+		while (curr[taglen] != ',' && curr[taglen] != '\0')
+			taglen++;
 
-		if (strncasecmp(curr, "Maint", 5) == 0) {
-			curr += 5;
+		if (strncasecmp(curr, "Maintenance", MAX(taglen,1)) == 0) {
+			curr += taglen;
 			if (flip)
 				outflags |= RESERVE_FLAG_NO_MAINT;
 			else 
 				outflags |= RESERVE_FLAG_MAINT;
-		} else if (strncasecmp(curr, "Daily", 5) == 0) {
-			curr += 5;
+		} else if (strncasecmp(curr, "Daily", MAX(taglen,1)) == 0) {
+			curr += taglen;
 			if (flip)
 				outflags |= RESERVE_FLAG_NO_DAILY;
 			else 
 				outflags |= RESERVE_FLAG_DAILY;
-		} else if (strncasecmp(curr, "Weekly", 6) == 0) {
-			curr += 6;
+		} else if (strncasecmp(curr, "Weekly", MAX(taglen,1)) == 0) {
+			curr += taglen;
 			if (flip)
 				outflags |= RESERVE_FLAG_NO_WEEKLY;
 			else 
@@ -150,11 +154,31 @@ scontrol_parse_res_options(int argc, char *argv[], const char *msg,
 	*free_acct_str = 0;
 
 	for (i=0; i<argc; i++) {
-		if        (strncasecmp(argv[i], "ReservationName=", 16) == 0) {
-			resv_msg_ptr->name = &argv[i][16];
+		char *tag = argv[i];
+		int taglen = 0;
+		char plus_minus = '\0';
 
-		} else if (strncasecmp(argv[i], "StartTime=", 10) == 0) {
-			time_t  t = parse_time(&argv[i][10], 0);
+		char *val = strchr(argv[i], '=');
+		taglen = val - argv[i];
+
+		if (!val && strncasecmp(argv[i], "res", 3) == 0) {
+			continue;
+		} else if (!val || taglen == 0) {
+			exit_code = 1;
+			error("Unknown parameter %s.  %s", argv[i], msg);
+			return -1;
+		}
+		if (val[-1] == '+' || val[-1] == '-') {
+			plus_minus = val[-1];
+			taglen--;
+		}
+		val++;
+
+		if (strncasecmp(tag, "ReservationName", MAX(taglen, 1)) == 0) {
+			resv_msg_ptr->name = val;
+
+		} else if (strncasecmp(tag, "StartTime", MAX(taglen, 1)) == 0) {
+			time_t  t = parse_time(val, 0);
 			if (t == 0) {
 				exit_code = 1;
 				error("Invalid start time %s.  %s", 
@@ -163,8 +187,8 @@ scontrol_parse_res_options(int argc, char *argv[], const char *msg,
 			}
 			resv_msg_ptr->start_time = t;
 
-		} else if (strncasecmp(argv[i], "EndTime=", 8) == 0) {
-			time_t  t = parse_time(&argv[i][8], 0);
+		} else if (strncasecmp(tag, "EndTime", MAX(taglen, 1)) == 0) {
+			time_t  t = parse_time(val, 0);
 			if (t == 0) {
 				exit_code = 1;
 				error("Invalid end time %s.  %s", argv[i], msg);
@@ -172,9 +196,9 @@ scontrol_parse_res_options(int argc, char *argv[], const char *msg,
 			}
 			resv_msg_ptr->end_time = t;
 
-		} else if (strncasecmp(argv[i], "Duration=", 9) == 0) {
+		} else if (strncasecmp(tag, "Duration", MAX(taglen, 1)) == 0) {
 			/* -1 == INFINITE, -2 == error, -3 == not set */
-			duration = time_str2mins(&argv[i][9]);
+			duration = time_str2mins(val);
 			if (duration < 0 && duration != INFINITE) {
 				exit_code = 1;
 				error("Invalid duration %s.  %s", argv[i], msg);
@@ -182,115 +206,58 @@ scontrol_parse_res_options(int argc, char *argv[], const char *msg,
 			}
 			resv_msg_ptr->duration = (uint32_t)duration;
 
-		} else if (strncasecmp(argv[i], "Flag=", 5) == 0) {
-			uint32_t f = parse_flags(&argv[i][5], msg);
+		} else if (strncasecmp(tag, "Flags", MAX(taglen, 2)) == 0) {
+			uint32_t f;
+			if (plus_minus) {
+				char *tmp = process_plus_minus(plus_minus, val);
+				f = parse_flags(tmp, msg);
+				xfree(tmp);
+			} else {
+				f = parse_flags(val, msg);
+			}
 			if (f == 0xffffffff) {
 				return -1;
 			} else {
 				resv_msg_ptr->flags = f;
 			}
-		} else if (strncasecmp(argv[i], "Flags=", 6) == 0) {
-			uint32_t f = parse_flags(&argv[i][6], msg);
-			if (f == 0xffffffff) {
-				return -1;
-			} else {
-				resv_msg_ptr->flags = f;
-			}
-		} else if (strncasecmp(argv[i], "Flag+=", 6) == 0) {
-			char *tmp = process_plus_minus('+', &argv[i][6]);
-			uint32_t f = parse_flags(tmp, msg);
-			if (f == 0xffffffff) {
-				return -1;
-			} else {
-				resv_msg_ptr->flags = f;
-			}
-			free(tmp);
-		} else if (strncasecmp(argv[i], "Flag-=", 6) == 0) {
-			char *tmp = process_plus_minus('-', &argv[i][6]);
-			uint32_t f = parse_flags(tmp, msg);
-			if (f == 0xffffffff) {
-				return -1;
-			} else {
-				resv_msg_ptr->flags = f;
-			}
-			free(tmp);
-		} else if (strncasecmp(argv[i], "Flags+=", 7) == 0) {
-			char *tmp = process_plus_minus('+', &argv[i][7]);
-			uint32_t f = parse_flags(tmp, msg);
-			if (f == 0xffffffff) {
-				return -1;
-			} else {
-				resv_msg_ptr->flags = f;
-			}
-			free(tmp);
-		} else if (strncasecmp(argv[i], "Flags-=", 7) == 0) {
-			char *tmp = process_plus_minus('-', &argv[i][7]);
-			uint32_t f = parse_flags(tmp, msg);
-			if (f == 0xffffffff) {
-				return -1;
-			} else {
-				resv_msg_ptr->flags = f;
-			}
-			free(tmp);
-		} else if (strncasecmp(argv[i], "NodeCnt=", 8) == 0) {
+		} else if (strncasecmp(tag, "NodeCnt", MAX(taglen,5)) == 0 || 
+			   strncasecmp(tag, "NodeCount", MAX(taglen,5)) == 0) {
 			char *endptr = NULL;
-			resv_msg_ptr->node_cnt = strtol(&argv[i][8], &endptr, 
-							10);
+			resv_msg_ptr->node_cnt = strtol(val, &endptr, 10);
 
 			if (endptr == NULL || *endptr != '\0' || 
-                            argv[i][8] == '\0') {
+                            *val == '\0') {
 				exit_code = 1;
 				error("Invalid node count %s.  %s", 
 				      argv[i], msg);
 				return -1;
 			}
-		} else if (strncasecmp(argv[i], "Nodes=", 6) == 0) {
-			resv_msg_ptr->node_list = &argv[i][6];
-		} else if (strncasecmp(argv[i], "Features=", 9) == 0) {
-			resv_msg_ptr->features = &argv[i][9];
-		} else if (strncasecmp(argv[i], "PartitionName=", 14) == 0) {
-			resv_msg_ptr->partition = &argv[i][14];
-		} else if (strncasecmp(argv[i], "User=", 5) == 0) {
-			resv_msg_ptr->users = &argv[i][5];
-		} else if (strncasecmp(argv[i], "User+=", 6) == 0) {
-			resv_msg_ptr->users = 
-					process_plus_minus('+', &argv[i][6]);
-			*free_user_str = 1;
-		} else if (strncasecmp(argv[i], "User-=", 6) == 0) {
-			resv_msg_ptr->users = 
-					process_plus_minus('-',  &argv[i][6]);
-			*free_user_str = 1;
-		} else if (strncasecmp(argv[i], "Users=", 6) == 0) {
-			resv_msg_ptr->users = &argv[i][6];
-		} else if (strncasecmp(argv[i], "Users+=", 7) == 0) {
-			resv_msg_ptr->users = 
-					process_plus_minus('+', &argv[i][7]);
-			*free_user_str = 1;
-		} else if (strncasecmp(argv[i], "Users-=", 7) == 0) {
-			resv_msg_ptr->users = 
-					process_plus_minus('-', &argv[i][7]);
-			*free_user_str = 1;
-		} else if (strncasecmp(argv[i], "Account=", 8) == 0) {
-			resv_msg_ptr->accounts = &argv[i][8];
-		} else if (strncasecmp(argv[i], "Account+=", 9) == 0) {
-			resv_msg_ptr->accounts = 
-					process_plus_minus('+', &argv[i][9]);
-			*free_acct_str = 1;
-		} else if (strncasecmp(argv[i], "Account-=", 9) == 0) {
-			resv_msg_ptr->accounts = 
-					process_plus_minus('-', &argv[i][9]);
-			*free_acct_str = 1;
-		} else if (strncasecmp(argv[i], "Accounts=", 9) == 0) {
-			resv_msg_ptr->accounts = &argv[i][9];
-		} else if (strncasecmp(argv[i], "Accounts+=", 10) == 0) {
-			resv_msg_ptr->accounts = 
-					process_plus_minus('+', &argv[i][10]);
-			*free_acct_str = 1;
-		} else if (strncasecmp(argv[i], "Accounts-=", 10) == 0) {
-			resv_msg_ptr->accounts = 
-					process_plus_minus('-', &argv[i][10]);
-			*free_acct_str = 1;
-		} else if (strncasecmp(argv[i], "res", 3) == 0) {
+		} else if (strncasecmp(tag, "Nodes", MAX(taglen, 5)) == 0) {
+			resv_msg_ptr->node_list = val;
+
+		} else if (strncasecmp(tag, "Features", MAX(taglen, 2)) == 0) {
+			resv_msg_ptr->features = val;
+
+		} else if (strncasecmp(tag, "PartitionName", MAX(taglen, 1)) == 0) {
+			resv_msg_ptr->partition = val;
+
+		} else if (strncasecmp(tag, "Users", MAX(taglen, 1)) == 0) {
+			if (plus_minus) {
+				resv_msg_ptr->users = 
+					process_plus_minus(plus_minus, val);
+				*free_user_str = 1;
+			} else {
+				resv_msg_ptr->users = val;
+			}
+		} else if (strncasecmp(tag, "Accounts", MAX(taglen, 1)) == 0) {
+			if (plus_minus) {
+				resv_msg_ptr->accounts = 
+					process_plus_minus(plus_minus, val);
+				*free_acct_str = 1;
+			} else {
+				resv_msg_ptr->accounts = val;
+			}
+		} else if (strncasecmp(tag, "res", 3) == 0) {
 			continue;
 		} else {
 			exit_code = 1;
@@ -327,7 +294,7 @@ scontrol_update_res(int argc, char *argv[])
 
 	if (resv_msg.name == NULL) {
 		exit_code = 1;
-		error("ReservationName must be given.  No reservation update.");
+		error("Reservation must be given.  No reservation update.");
 		goto SCONTROL_UPDATE_RES_CLEANUP;
 	}
 
@@ -342,9 +309,9 @@ scontrol_update_res(int argc, char *argv[])
 
 SCONTROL_UPDATE_RES_CLEANUP:
 	if (free_user_str)
-		free(resv_msg.users);
+		xfree(resv_msg.users);
 	if (free_acct_str)
-		free(resv_msg.accounts);
+		xfree(resv_msg.accounts);
 	return ret;
 }
 
@@ -426,8 +393,8 @@ scontrol_create_res(int argc, char *argv[])
 
 SCONTROL_CREATE_RES_CLEANUP:
 	if (free_user_str)  
-		free(resv_msg.users);
+		xfree(resv_msg.users);
 	if (free_acct_str)  
-		free(resv_msg.accounts);
+		xfree(resv_msg.accounts);
 	return ret;
 }

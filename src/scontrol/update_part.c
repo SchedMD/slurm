@@ -43,6 +43,9 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 			     update_part_msg_t *part_msg_ptr) 
 {
 	int i, min, max;
+	char *tag, *val;
+	int taglen, vallen;
+
 	if (!update_cnt_ptr) {
 		error("scontrol_parse_part_options internal error, "
 		      "update_cnt_ptr == NULL");
@@ -57,11 +60,23 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 	}
 
 	for (i=0; i<argc; i++) {
-		if (strncasecmp(argv[i], "PartitionName=", 14) == 0) {
-			part_msg_ptr->name = &argv[i][14];
+		tag = argv[i];
+		val = strchr(argv[i], '=');
+		if (val) {
+			taglen = val - argv[i];
+			val++;
+			vallen = strlen(val);
+		} else {
+			exit_code = 1;
+			error("Invalid input: %s  Request aborted", argv[i]);
+			return -1;
+		}
+
+		if (strncasecmp(tag, "PartitionName", MAX(taglen, 2)) == 0) {
+			part_msg_ptr->name = val;
 			(*update_cnt_ptr)++;
-		} else if (strncasecmp(argv[i], "MaxTime=", 8) == 0) {
-			int max_time = time_str2mins(&argv[i][8]);
+		} else if (strncasecmp(tag, "MaxTime", MAX(taglen, 4)) == 0) {
+			int max_time = time_str2mins(val);
 			if ((max_time < 0) && (max_time != INFINITE)) {
 				exit_code = 1;
 				error("Invalid input %s", argv[i]);
@@ -70,8 +85,8 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 			part_msg_ptr->max_time = max_time;
 			(*update_cnt_ptr)++;
 		}
-		else if (strncasecmp(argv[i], "DefaultTime=", 12) == 0) {
-			int default_time = time_str2mins(&argv[i][12]);
+		else if (strncasecmp(tag, "DefaultTime", MAX(taglen, 8)) == 0) {
+			int default_time = time_str2mins(val);
 			if ((default_time < 0) && (default_time != INFINITE)) {
 				exit_code = 1;
 				error("Invalid input %s", argv[i]);
@@ -80,29 +95,29 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 			part_msg_ptr->default_time = default_time;
 			(*update_cnt_ptr)++;
 		}
-		else if (strncasecmp(argv[i], "MaxNodes=", 9) == 0) {
-			if ((strcasecmp(&argv[i][9],"UNLIMITED") == 0) ||
-			    (strcasecmp(&argv[i][8],"INFINITE") == 0))
+		else if (strncasecmp(tag, "MaxNodes", MAX(taglen, 4)) == 0) {
+			if ((strcasecmp(val,"UNLIMITED") == 0) ||
+			    (strcasecmp(val,"INFINITE") == 0))
 				part_msg_ptr->max_nodes = (uint32_t) INFINITE;
 			else {
 				min = 1;
-				get_resource_arg_range(&argv[i][9],
+				get_resource_arg_range(val,
 					"MaxNodes", &min, &max, true);
 				part_msg_ptr->max_nodes = min;
 			}
 			(*update_cnt_ptr)++;
 		}
-		else if (strncasecmp(argv[i], "MinNodes=", 9) == 0) {
+		else if (strncasecmp(tag, "MinNodes", MAX(taglen, 2)) == 0) {
 			min = 1;
-			get_resource_arg_range(&argv[i][9],
+			get_resource_arg_range(val,
 				"MinNodes", &min, &max, true);
 			part_msg_ptr->min_nodes = min;
 			(*update_cnt_ptr)++;
 		}
-		else if (strncasecmp(argv[i], "Default=", 8) == 0) {
-			if (strcasecmp(&argv[i][8], "NO") == 0)
+		else if (strncasecmp(tag, "Default", MAX(taglen, 7)) == 0) {
+			if (strncasecmp(val, "NO", MAX(vallen, 1)) == 0)
 				part_msg_ptr->default_part = 0;
-			else if (strcasecmp(&argv[i][8], "YES") == 0)
+			else if (strncasecmp(val, "YES", MAX(vallen, 1)) == 0)
 				part_msg_ptr->default_part = 1;
 			else {
 				exit_code = 1;
@@ -113,10 +128,10 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 			}
 			(*update_cnt_ptr)++;
 		}
-		else if (strncasecmp(argv[i], "Hidden=", 4) == 0) {
-			if (strcasecmp(&argv[i][7], "NO") == 0)
+		else if (strncasecmp(tag, "Hidden", MAX(taglen, 1)) == 0) {
+			if (strncasecmp(val, "NO", MAX(vallen, 1)) == 0)
 				part_msg_ptr->hidden = 0;
-			else if (strcasecmp(&argv[i][7], "YES") == 0)
+			else if (strncasecmp(val, "YES", MAX(vallen, 1)) == 0)
 				part_msg_ptr->hidden = 1;
 			else {
 				exit_code = 1;
@@ -127,10 +142,10 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 			}
 			(*update_cnt_ptr)++;
 		}
-		else if (strncasecmp(argv[i], "RootOnly=", 4) == 0) {
-			if (strcasecmp(&argv[i][9], "NO") == 0)
+		else if (strncasecmp(tag, "RootOnly", MAX(taglen, 1)) == 0) {
+			if (strncasecmp(val, "NO", MAX(vallen, 1)) == 0)
 				part_msg_ptr->root_only = 0;
-			else if (strcasecmp(&argv[i][9], "YES") == 0)
+			else if (strncasecmp(val, "YES", MAX(vallen, 1)) == 0)
 				part_msg_ptr->root_only = 1;
 			else {
 				exit_code = 1;
@@ -141,22 +156,33 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 			}
 			(*update_cnt_ptr)++;
 		}
-		else if (strncasecmp(argv[i], "Shared=", 7) == 0) {
-			if (strncasecmp(&argv[i][7], "NO", 2) == 0) {
+		else if (strncasecmp(tag, "Shared", MAX(taglen, 2)) == 0) {
+			char *colon_pos = strchr(val, ':');
+			if (colon_pos) {
+				*colon_pos = '\0';
+				vallen = strlen(val);
+			}
+			if (strncasecmp(val, "NO", MAX(vallen, 1)) == 0) {
 				part_msg_ptr->max_share = 1;
-			} else if (strncasecmp(&argv[i][7], "EXCLUSIVE", 9) == 0) {
+
+			} else if (strncasecmp(val, "EXCLUSIVE", MAX(vallen, 1)) == 0) {
 				part_msg_ptr->max_share = 0;
-			} else if (strncasecmp(&argv[i][7], "YES:", 4) == 0) {
-				part_msg_ptr->max_share = (uint16_t) strtol(&argv[i][11], 
-					(char **) NULL, 10);
-			} else if (strncasecmp(&argv[i][7], "YES", 3) == 0) {
-				part_msg_ptr->max_share = (uint16_t) 4;
-			} else if (strncasecmp(&argv[i][7], "FORCE:", 6) == 0) {
-				part_msg_ptr->max_share = (uint16_t) strtol(&argv[i][13],
-					(char **) NULL, 10) | SHARED_FORCE;
-			} else if (strncasecmp(&argv[i][7], "FORCE", 5) == 0) {
-				part_msg_ptr->max_share = (uint16_t) 4 |
-					SHARED_FORCE;
+
+			} else if (strncasecmp(val, "YES", MAX(vallen, 1)) == 0) {
+				if (colon_pos) {
+					part_msg_ptr->max_share = (uint16_t) strtol(colon_pos+1, 
+						(char **) NULL, 10);
+				} else {
+					part_msg_ptr->max_share = (uint16_t) 4;
+				}
+			} else if (strncasecmp(val, "FORCE", MAX(vallen, 1)) == 0) {
+				if (colon_pos) {
+					part_msg_ptr->max_share = (uint16_t) strtol(colon_pos+1,
+						(char **) NULL, 10) | SHARED_FORCE;
+				} else {
+					part_msg_ptr->max_share = (uint16_t) 4 |
+						SHARED_FORCE;
+				}
 			} else {
 				exit_code = 1;
 				error("Invalid input: %s", argv[i]);
@@ -166,15 +192,15 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 			}
 			(*update_cnt_ptr)++;
 		}
-		else if (strncasecmp(argv[i], "Priority=", 9) == 0) {
-			part_msg_ptr->priority = (uint16_t) strtol(&argv[i][9], 
+		else if (strncasecmp(tag, "Priority", MAX(taglen, 2)) == 0) {
+			part_msg_ptr->priority = (uint16_t) strtol(val, 
 					(char **) NULL, 10);
 			(*update_cnt_ptr)++;
 		}
-		else if (strncasecmp(argv[i], "State=", 6) == 0) {
-			if (strcasecmp(&argv[i][6], "DOWN") == 0)
+		else if (strncasecmp(tag, "State", MAX(taglen, 2)) == 0) {
+			if (strncasecmp(val, "DOWN", MAX(vallen, 1)) == 0)
 				part_msg_ptr->state_up = 0;
-			else if (strcasecmp(&argv[i][6], "UP") == 0)
+			else if (strncasecmp(val, "UP", MAX(vallen, 1)) == 0)
 				part_msg_ptr->state_up = 1;
 			else {
 				exit_code = 1;
@@ -185,12 +211,12 @@ scontrol_parse_part_options (int argc, char *argv[], int *update_cnt_ptr,
 			}
 			(*update_cnt_ptr)++;
 		}
-		else if (strncasecmp(argv[i], "Nodes=", 6) == 0) {
-			part_msg_ptr->nodes = &argv[i][6];
+		else if (strncasecmp(tag, "Nodes", MAX(taglen, 1)) == 0) {
+			part_msg_ptr->nodes = val;
 			(*update_cnt_ptr)++;
 		}
-		else if (strncasecmp(argv[i], "AllowGroups=", 12) == 0) {
-			part_msg_ptr->allow_groups = &argv[i][12];
+		else if (strncasecmp(tag, "AllowGroups", MAX(taglen, 1)) == 0) {
+			part_msg_ptr->allow_groups = val;
 			(*update_cnt_ptr)++;
 		}
 		else {
