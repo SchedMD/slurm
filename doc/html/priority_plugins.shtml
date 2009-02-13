@@ -68,8 +68,8 @@ configuration. Called whenever slurmctld is reconfigured.</p>
 <p style="margin-left:.2in"><b>Returns</b>: void</p>
 
 <p class="commandline">int priority_p_set_cpu_shares(uint32_t procs, uint32_t half_life)</p>
-<p style="margin-left:.2in"><b>Description</b>: Conveys the machine's cpu count
-and half-life configuration to the priority plugin.</p>
+<p style="margin-left:.2in"><b>Description</b>: Conveys the machine's processor
+count and half-life configuration to the priority plugin.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
 <span class="commandline">procs</span> (input) the machine's processor count<br>
 <span class="commandline">half_life</span> (input) the configured half-life</p>
@@ -77,7 +77,7 @@ and half-life configuration to the priority plugin.</p>
 
 <h2>Versioning</h2>
 <p> This document describes version 100 of the SLURM Priority API. Future
-releases of SLURM may revise this API. An priority plugin conveys its ability
+releases of SLURM may revise this API. A priority plugin conveys its ability
 to implement a particular API version using the mechanism outlined for SLURM
 plugins.</p>
 
