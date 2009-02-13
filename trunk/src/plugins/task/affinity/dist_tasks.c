@@ -58,6 +58,8 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 				   uint32_t node_id, bitstr_t ***masks_p);
 static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 				    uint32_t node_id, bitstr_t ***masks_p);
+static int _task_layout_lllp_multi(launch_tasks_request_msg_t *req, 
+				    uint32_t node_id, bitstr_t ***masks_p);
 
 static void _lllp_map_abstract_masks(const uint32_t maxtasks,
 				     bitstr_t **masks);
@@ -262,7 +264,10 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 		rc = _task_layout_lllp_cyclic(req, node_id, &masks); 
 		break;
 	default:
-		rc = _task_layout_lllp_cyclic(req, node_id, &masks); 
+		if (req->cpus_per_task > 1)
+			rc = _task_layout_lllp_multi(req, node_id, &masks);
+		else
+			rc = _task_layout_lllp_cyclic(req, node_id, &masks);
 		req->task_dist = SLURM_DIST_BLOCK_CYCLIC;
 		break;
 	}
@@ -565,6 +570,82 @@ static void _expand_masks(uint16_t cpu_bind_type, const uint32_t maxtasks,
 	}
 }
 
+/* 
+ * _task_layout_lllp_multi
+ *
+ * A variant of _task_layout_lllp_cyclic for use with allocations having 
+ * more than one CPU per task, put the tasks as close as possible (fill 
+ * core rather than going next socket for the extra task)
+ *
+ */
+static int _task_layout_lllp_multi(launch_tasks_request_msg_t *req, 
+				    uint32_t node_id, bitstr_t ***masks_p)
+{
+	int last_taskcount = -1, taskcount = 0;
+	uint16_t c, i, s, t, hw_sockets = 0, hw_cores = 0, hw_threads = 0;
+	uint16_t num_threads, num_cores, num_sockets;
+	int size, maxtasks = req->tasks_to_launch[(int)node_id];
+	bitstr_t *avail_map;
+	bitstr_t **masks = NULL;
+	
+	info ("_task_layout_lllp_multi ");
+
+	avail_map = _get_avail_map(req, &hw_sockets, &hw_cores, &hw_threads);
+	if (!avail_map)
+		return SLURM_ERROR;
+	
+	*masks_p = xmalloc(maxtasks * sizeof(bitstr_t*));
+	masks = *masks_p;
+	
+	size = bit_set_count(avail_map);
+	if (!size || size < req->cpus_per_task) {
+		error("task/affinity: no set bits in avail_map!");
+		bit_free(avail_map);
+		return SLURM_ERROR;
+	}
+	
+	size = bit_size(avail_map);
+	num_sockets = MIN(req->max_sockets, hw_sockets);
+	num_cores   = MIN(req->max_cores, hw_cores);
+	num_threads = MIN(req->max_threads, hw_threads);
+	i = 0;
+	while (taskcount < maxtasks) {
+		if (taskcount == last_taskcount)
+			fatal("_task_layout_lllp_multi failure");
+		last_taskcount = taskcount; 
+		for (s = 0; s < hw_sockets; s++) {
+			for (c = 0; c < hw_cores; c++) {
+				for (t = 0; t < num_threads; t++) {
+					uint16_t bit = s*(hw_cores*hw_threads) +
+							c*(hw_threads) + t;
+					if (bit_test(avail_map, bit) == 0)
+						continue;
+					if (masks[taskcount] == NULL)
+						masks[taskcount] =
+						    (bitstr_t *)bit_alloc(size);
+					bit_set(masks[taskcount], bit);
+					if (++i < req->cpus_per_task)
+						continue;
+					i = 0;
+					if (++taskcount >= maxtasks)
+						break;
+				}
+				if (taskcount >= maxtasks)
+					break;
+			}
+			if (taskcount >= maxtasks)
+				break;
+		}
+	}
+	bit_free(avail_map);
+	
+	/* last step: expand the masks to bind each task
+	 * to the requested resource */
+	_expand_masks(req->cpu_bind_type, maxtasks, masks,
+			hw_sockets, hw_cores, hw_threads);
+
+	return SLURM_SUCCESS;
+}
 
 /* 
  * _task_layout_lllp_cyclic
@@ -620,9 +701,8 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 	num_threads = MIN(req->max_threads, hw_threads);
 	i = 0;
 	while (taskcount < maxtasks) {
-		if (taskcount == last_taskcount) {
+		if (taskcount == last_taskcount)
 			fatal("_task_layout_lllp_cyclic failure");
-		}
 		last_taskcount = taskcount; 
 		for (t = 0; t < num_threads; t++) {
 			for (c = 0; c < hw_cores; c++) {
