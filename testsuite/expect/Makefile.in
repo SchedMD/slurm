@@ -450,6 +450,9 @@ EXTRA_DIST = \
 	test12.1			\
 	test12.2			\
 	test12.2.prog.c			\
+	test12.3			\
+	test12.4			\
+	test12.5			\
 	test13.1			\
 	test14.1			\
 	test14.2			\
@@ -554,6 +557,8 @@ EXTRA_DIST = \
 	test21.23			\
 	test21.24			\
 	test22.1			\
+	test23.1			\
+	test23.2			\
 	usleep
 
 all: all-am

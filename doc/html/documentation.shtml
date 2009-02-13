@@ -29,7 +29,7 @@ Also see <a href="publications.html">Publications and Presentations</a>.
 <ul>
 <li><a href="cons_res.shtml">Consumable Resources Guide</a></li>
 <li><a href="gang_scheduling.shtml">Gang Scheduling</a></li>
-<li><a href="job_priority.shtml">Job Priority</a></li>
+<li><a href="priority_multifactor.shtml">Multifactor Job Priority</a></li>
 <li><a href="preempt.shtml">Preemption</a></li>
 <li><a href="resource_limits.shtml">Resource Limits</a></li>
 <li><a href="reservations.shtml">Resource Reservation Gude</a></li>
