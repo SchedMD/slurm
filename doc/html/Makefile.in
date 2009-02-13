@@ -270,7 +270,7 @@ generated_html = \
 	ibm.html \
 	job_priority.html \
 	jobacct_gatherplugins.html \
-	jobacct_storageplugins.html \
+	accounting_storageplugins.html \
 	jobcompplugins.html \
 	mail.html \
 	maui.html \

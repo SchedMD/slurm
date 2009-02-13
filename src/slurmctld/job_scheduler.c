@@ -806,8 +806,10 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 	/* Clear dependencies on NULL or empty dependency input */
 	if ((new_depend == NULL) || (new_depend[0] == '\0')) {
 		xfree(job_ptr->details->dependency);
-		if (job_ptr->details->depend_list)
+		if (job_ptr->details->depend_list) {
 			list_destroy(job_ptr->details->depend_list);
+			job_ptr->details->depend_list = NULL;
+		}
 		return rc;
 
 	}
