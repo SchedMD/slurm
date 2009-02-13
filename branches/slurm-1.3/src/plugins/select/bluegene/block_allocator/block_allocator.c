@@ -1596,6 +1596,16 @@ extern char *set_bg_block(List results, int *start,
 				      alpha_num[ba_node->coord[X]],
 				      alpha_num[ba_node->coord[Y]],
 				      alpha_num[ba_node->coord[Z]]);
+		if(ba_node->letter == '.') {
+			ba_node->letter = letters[color_count%62];
+			ba_node->color = colors[color_count%6];
+			debug3("count %d setting letter = %c "
+			       "color = %d",
+			       color_count,
+			       ba_node->letter,
+			       ba_node->color);
+			color_count++;
+		}
 		goto end_it; 
 	}
 	found = _find_x_path(results, ba_node,
