@@ -21,14 +21,6 @@ Dona Crawford, Associate Directory Lawrence Livermore National Laboratory
 <HR SIZE=4>
 
 <i>
-"We are extremely pleased with SLURM and strongly recommend it to others 
-because it is mature, the developers are highly responsive and 
-it just works."<br><br>
-Jeffrey M. Squyres, Pervasive Technology Labs at Indiana University
-</i>
-<HR SIZE=4>
-
-<i>
 "Thank you for SLURM! It is one of the nicest pieces of free software
 for managing HPC clusters we have come across in a long time.
 Both of our Blue Genes are running SLURM and it works fantastically 
@@ -39,7 +31,23 @@ Rensselaer Polytechnic Institute
 <HR SIZE=4>
 
 <i>
-We adopted SLURM as our resource manager over two years ago when it was at
+"Awesome! I just read the manual, set it up and it works great.
+I tell you, I've used Sun Grid Engine, Torque, PBS Pro and there's
+nothing like SLURM."<br><br>
+Aaron Knister, Environmental Protection Agency
+</i>
+<HR SIZE=4>
+
+<i>
+"We are extremely pleased with SLURM and strongly recommend it to others 
+because it is mature, the developers are highly responsive and 
+it just works."<br><br>
+Jeffrey M. Squyres, Pervasive Technology Labs at Indiana University
+</i>
+<HR SIZE=4>
+
+<i>
+"We adopted SLURM as our resource manager over two years ago when it was at
 the 0.3.x release level. Since then it has become an integral and important
 component of our production research services. Its stability, flexibility
 and performance has allowed us to significantly increase the quality of
@@ -112,6 +120,6 @@ Bill Celmaster, XC Program Manager, Hewlett-Packard Company
 </i>
 <HR SIZE=4>
 
-<p style="text-align:center;">Last modified 13 November 2008</p>
+<p style="text-align:center;">Last modified 13 February 2009</p>
 
 <!--#include virtual="footer.txt"-->
