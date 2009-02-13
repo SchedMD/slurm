@@ -198,11 +198,12 @@ unpack_error:
 
 static int _write_last_decay_ran(time_t last_ran)
 {
-	static int high_buffer_size = (1024 * 1024);
+	/* Save high-water mark to avoid buffer growth with copies */
+	static int high_buffer_size = BUF_SIZE;
 	int error_code = SLURM_SUCCESS;
 	int state_fd;
 	char *old_file, *new_file, *state_file;
-	Buf buffer = init_buf(BUF_SIZE);
+	Buf buffer = init_buf(high_buffer_size);
 
 	pack_time(last_ran, buffer);
 
