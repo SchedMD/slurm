@@ -54,6 +54,7 @@ scontrol_checkpoint(char *op, char *job_step_id_str)
 	char *next_str;
 	uint32_t ckpt_errno;
 	char *ckpt_strerror = NULL;
+	int oplen = strlen(op);
 
 	if (job_step_id_str) {
 		job_id = (uint32_t) strtol (job_step_id_str, &next_str, 10);
@@ -71,7 +72,7 @@ scontrol_checkpoint(char *op, char *job_step_id_str)
 		return 0;
 	}
 
-	if (strncasecmp(op, "able", 2) == 0) {
+	if (strncasecmp(op, "able", MAX(oplen, 1)) == 0) {
 		time_t start_time;
 		rc = slurm_checkpoint_able (job_id, step_id, &start_time);
 		if (rc == SLURM_SUCCESS) {
@@ -89,7 +90,7 @@ scontrol_checkpoint(char *op, char *job_step_id_str)
 			rc = SLURM_SUCCESS;	/* not real error */
 		}
 	}
-	else if (strncasecmp(op, "complete", 3) == 0) {
+	else if (strncasecmp(op, "complete", MAX(oplen, 2)) == 0) {
 		/* Undocumented option used for testing purposes */
 		static uint32_t error_code = 1;
 		char error_msg[64];
@@ -97,17 +98,17 @@ scontrol_checkpoint(char *op, char *job_step_id_str)
 		rc = slurm_checkpoint_complete(job_id, step_id, (time_t) 0,
 			error_code++, error_msg);
 	}
-	else if (strncasecmp(op, "disable", 3) == 0)
+	else if (strncasecmp(op, "disable", MAX(oplen, 1)) == 0)
 		rc = slurm_checkpoint_disable (job_id, step_id);
-	else if (strncasecmp(op, "enable", 2) == 0)
+	else if (strncasecmp(op, "enable", MAX(oplen, 2)) == 0)
 		rc = slurm_checkpoint_enable (job_id, step_id);
-	else if (strncasecmp(op, "create", 2) == 0)
+	else if (strncasecmp(op, "create", MAX(oplen, 2)) == 0)
 		rc = slurm_checkpoint_create (job_id, step_id, CKPT_WAIT);
-	else if (strncasecmp(op, "vacate", 2) == 0)
+	else if (strncasecmp(op, "vacate", MAX(oplen, 1)) == 0)
 		rc = slurm_checkpoint_vacate (job_id, step_id, CKPT_WAIT);
-	else if (strncasecmp(op, "restart", 2) == 0)
+	else if (strncasecmp(op, "restart", MAX(oplen, 1)) == 0)
 		rc = slurm_checkpoint_restart (job_id, step_id);
-	else if (strncasecmp(op, "error", 2) == 0) {
+	else if (strncasecmp(op, "error", MAX(oplen, 2)) == 0) {
 		rc = slurm_checkpoint_error (job_id, step_id, 
 			&ckpt_errno, &ckpt_strerror);
 		if (rc == SLURM_SUCCESS) {
@@ -151,7 +152,7 @@ scontrol_suspend(char *op, char *job_id_str)
 		return 0;
 	}
 
-	if (strncasecmp(op, "suspend", 3) == 0)
+	if (strncasecmp(op, "suspend", MAX(strlen(op), 2)) == 0)
 		rc = slurm_suspend (job_id);
 	else
 		rc = slurm_resume (job_id);
@@ -201,21 +202,42 @@ extern int
 scontrol_update_job (int argc, char *argv[]) 
 {
 	int i, update_cnt = 0;
+	char *tag, *val;
+	int taglen, vallen;
 	job_desc_msg_t job_msg;
 
 	slurm_init_job_desc_msg (&job_msg);	
 
 	for (i=0; i<argc; i++) {
-		if (strncasecmp(argv[i], "JobId=", 6) == 0)
-			job_msg.job_id = 
-				(uint32_t) strtol(&argv[i][6], 
-						 (char **) NULL, 10);
-		else if (strncasecmp(argv[i], "Comment=", 8) == 0) {
-			job_msg.comment = &argv[i][8];
+		tag = argv[i];
+		val = strchr(argv[i], '=');
+		if (val) {
+			taglen = val - argv[i];
+			val++;
+			vallen = strlen(val);
+		} else if (strncasecmp(tag, "Nice", MAX(strlen(tag), 2)) == 0) {
+			/* "Nice" is the only tag that might not have an 
+			   equal sign, so it is handled specially. */
+			job_msg.nice = NICE_OFFSET + 100;
 			update_cnt++;
+			continue;
+		} else {
+			exit_code = 1;
+			fprintf (stderr, "Invalid input: %s\n", argv[i]);
+			fprintf (stderr, "Request aborted\n");
+			return -1;
 		}
-		else if (strncasecmp(argv[i], "TimeLimit=", 10) == 0) {
-			int time_limit = time_str2mins(&argv[i][10]);
+
+		if (strncasecmp(tag, "JobId", MAX(taglen, 1)) == 0) {
+			job_msg.job_id = 
+				(uint32_t) strtol(val, (char **) NULL, 10);
+		}
+		else if (strncasecmp(tag, "Comment", MAX(taglen, 3)) == 0) {
+			job_msg.comment = val;
+			update_cnt++;
+		} 
+		else if (strncasecmp(tag, "TimeLimit", MAX(taglen, 2)) == 0) {
+			int time_limit = time_str2mins(val);
 			if ((time_limit < 0) && (time_limit != INFINITE)) {
 				error("Invalid TimeLimit value");
 				exit_code = 1;
@@ -224,15 +246,14 @@ scontrol_update_job (int argc, char *argv[])
 			job_msg.time_limit = time_limit;
 			update_cnt++;
 		}
-		else if (strncasecmp(argv[i], "Priority=", 9) == 0) {
+		else if (strncasecmp(tag, "Priority", MAX(taglen, 2)) == 0) {
 			job_msg.priority = 
-				(uint32_t) strtoll(&argv[i][9], 
-						(char **) NULL, 10);
+				(uint32_t) strtoll(val, (char **) NULL, 10);
 			update_cnt++;
 		}
-		else if (strncasecmp(argv[i], "Nice=", 5) == 0) {
+		else if (strncasecmp(tag, "Nice", MAX(taglen, 2)) == 0) {
 			int nice;
-			nice = strtoll(&argv[i][5], (char **) NULL, 10);
+			nice = strtoll(val, (char **) NULL, 10);
 			if (abs(nice) > NICE_OFFSET) {
 				error("Invalid nice value, must be between "
 					"-%d and %d", NICE_OFFSET, NICE_OFFSET);
@@ -242,29 +263,21 @@ scontrol_update_job (int argc, char *argv[])
 			job_msg.nice = NICE_OFFSET + nice;
 			update_cnt++;
 		}
-		else if (strncasecmp(argv[i], "Nice", 4) == 0) {
-			job_msg.nice = NICE_OFFSET + 100;
-			update_cnt++;
-		}		
-		else if (strncasecmp(argv[i], "ReqProcs=", 9) == 0) {
+		else if (strncasecmp(tag, "ReqProcs", MAX(taglen, 4)) == 0) {
 			job_msg.num_procs = 
-				(uint32_t) strtol(&argv[i][9], 
-						(char **) NULL, 10);
+				(uint32_t) strtol(val, (char **) NULL, 10);
 			update_cnt++;
 		}
-		else if (strncasecmp(argv[i], "Requeue=", 8) == 0) {
+		else if (strncasecmp(tag, "Requeue", MAX(taglen, 4)) == 0) {
 			job_msg.requeue = 
-				(uint16_t) strtol(&argv[i][8], 
-						(char **) NULL, 10);
+				(uint16_t) strtol(val, (char **) NULL, 10);
 			update_cnt++;
 		}
 		/* MinNodes was replaced by ReqNodes in SLURM version 1.2 */
-		else if ((strncasecmp(argv[i], "MinNodes=", 9) == 0) ||
-		         (strncasecmp(argv[i], "ReqNodes=", 9) == 0)) {
+		else if ((strncasecmp(tag, "MinNodes", MAX(taglen, 4)) == 0) ||
+		         (strncasecmp(tag, "ReqNodes", MAX(taglen, 8)) == 0)) {
 			char *tmp;
-			job_msg.min_nodes = 
-				(uint32_t) strtol(&argv[i][9],
-						 &tmp, 10);
+			job_msg.min_nodes = (uint32_t) strtol(val, &tmp, 10);
 			if (tmp[0] == '-') {
 				job_msg.max_nodes = (uint32_t)
 					strtol(&tmp[1], (char **) NULL, 10);
@@ -273,149 +286,136 @@ scontrol_update_job (int argc, char *argv[])
 						"minimum value (%u < %u)",
 						job_msg.max_nodes,
 						job_msg.min_nodes);
+					exit_code = 1;
+					return 0;
 				}
 			}
 			update_cnt++;
 		}
-		else if (strncasecmp(argv[i], "ReqSockets=", 11) == 0) {
+		else if (strncasecmp(tag, "ReqSockets", MAX(taglen, 4)) == 0) {
 			job_msg.min_sockets = 
-				(uint16_t) strtol(&argv[i][11],
-						 (char **) NULL, 10);
+				(uint16_t) strtol(val, (char **) NULL, 10);
 			update_cnt++;
 		}
-		else if (strncasecmp(argv[i], "ReqCores=", 9) == 0) {
+		else if (strncasecmp(tag, "ReqCores", MAX(taglen, 4)) == 0) {
 			job_msg.min_cores = 
-				(uint16_t) strtol(&argv[i][9],
-						 (char **) NULL, 10);
+				(uint16_t) strtol(val, (char **) NULL, 10);
 			update_cnt++;
 		}
-                else if (strncasecmp(argv[i], "TasksPerNode=", 13) == 0) {
+                else if (strncasecmp(tag, "TasksPerNode", MAX(taglen, 2))==0) {
                         job_msg.ntasks_per_node =
-                                (uint16_t) strtol(&argv[i][13],
-                                                 (char **) NULL, 10);
+                                (uint16_t) strtol(val, (char **) NULL, 10);
                         update_cnt++;
                 }
-		else if (strncasecmp(argv[i], "ReqThreads=", 11) == 0) {
+		else if (strncasecmp(tag, "ReqThreads", MAX(taglen, 4)) == 0) {
 			job_msg.min_threads = 
-				(uint16_t) strtol(&argv[i][11],
-						 (char **) NULL, 10);
+				(uint16_t) strtol(val, (char **) NULL, 10);
 			update_cnt++;
 		}
-		else if (strncasecmp(argv[i], "MinProcs=", 9) == 0) {
+		else if (strncasecmp(tag, "MinProcs", MAX(taglen, 4)) == 0) {
 			job_msg.job_min_procs = 
-				(uint32_t) strtol(&argv[i][9], 
-						(char **) NULL, 10);
+				(uint32_t) strtol(val, (char **) NULL, 10);
 			update_cnt++;
 		}
-		else if (strncasecmp(argv[i], "MinSockets=", 11) == 0) {
+		else if (strncasecmp(tag, "MinSockets", MAX(taglen, 4)) == 0) {
 			job_msg.job_min_sockets = 
-				(uint16_t) strtol(&argv[i][11], 
-						(char **) NULL, 10);
+				(uint16_t) strtol(val, (char **) NULL, 10);
 			update_cnt++;
 		}
-		else if (strncasecmp(argv[i], "MinCores=", 9) == 0) {
+		else if (strncasecmp(tag, "MinCores", MAX(taglen, 4)) == 0) {
 			job_msg.job_min_cores = 
-				(uint16_t) strtol(&argv[i][9], 
-						(char **) NULL, 10);
+				(uint16_t) strtol(val, (char **) NULL, 10);
 			update_cnt++;
 		}
-		else if (strncasecmp(argv[i], "MinThreads=", 11) == 0) {
+		else if (strncasecmp(tag, "MinThreads", MAX(taglen, 5)) == 0) {
 			job_msg.job_min_threads = 
-				(uint16_t) strtol(&argv[i][11], 
-						(char **) NULL, 10);
+				(uint16_t) strtol(val, (char **) NULL, 10);
 			update_cnt++;
 		}
-		else if (strncasecmp(argv[i], "MinMemoryNode=", 14) == 0) {
+		else if (strncasecmp(tag, "MinMemoryNode", 
+				     MAX(taglen, 10)) == 0) {
 			job_msg.job_min_memory = 
-				(uint32_t) strtol(&argv[i][14], 
-						(char **) NULL, 10);
+				(uint32_t) strtol(val, (char **) NULL, 10);
 			update_cnt++;
 		}
-		else if (strncasecmp(argv[i], "MinMemoryCPU=", 13) == 0) {
+		else if (strncasecmp(tag, "MinMemoryCPU", 
+				     MAX(taglen, 10)) == 0) {
 			job_msg.job_min_memory =
-				(uint32_t) strtol(&argv[i][13],
-						(char **) NULL, 10);
+				(uint32_t) strtol(val, (char **) NULL, 10);
 			job_msg.job_min_memory |= MEM_PER_CPU;
 			update_cnt++;
 		}
-		else if (strncasecmp(argv[i], "MinTmpDisk=", 11) == 0) {
+		else if (strncasecmp(tag, "MinTmpDisk", MAX(taglen, 5)) == 0) {
 			job_msg.job_min_tmp_disk = 
-				(uint32_t) strtol(&argv[i][11], 
-						(char **) NULL, 10);
+				(uint32_t) strtol(val, (char **) NULL, 10);
 			update_cnt++;
 		}
-		else if (strncasecmp(argv[i], "Partition=", 10) == 0) {
-			job_msg.partition = &argv[i][10];
+		else if (strncasecmp(tag, "PartitionName", 
+				     MAX(taglen, 2)) == 0) {
+			job_msg.partition = val;
 			update_cnt++;
 		}
-		else if (strncasecmp(argv[i], "PartitionName=", 14) == 0) {
-			job_msg.partition = &argv[i][14];
+		else if (strncasecmp(tag, "ReservationName", 
+				     MAX(taglen, 3)) == 0) {
+			job_msg.reservation = val;
 			update_cnt++;
 		}
-		else if (strncasecmp(argv[i], "Reservation=", 12) == 0) {
-			job_msg.reservation = &argv[i][12];
+		else if (strncasecmp(tag, "Name", MAX(taglen, 2)) == 0) {
+			job_msg.name = val;
 			update_cnt++;
 		}
-		else if (strncasecmp(argv[i], "ReservationName=", 16) == 0) {
-			job_msg.reservation = &argv[i][16];
+		else if (strncasecmp(tag, "WCKey", MAX(taglen, 1)) == 0) {
+			job_msg.wckey = val;
 			update_cnt++;
 		}
-		else if (strncasecmp(argv[i], "Name=", 5) == 0) {
-			job_msg.name = &argv[i][5];
-			update_cnt++;
-		}
-		else if (strncasecmp(argv[i], "WCKey=", 6) == 0) {
-			job_msg.wckey = &argv[i][6];
-			update_cnt++;
-		}
-		else if (strncasecmp(argv[i], "Shared=", 7) == 0) {
-			if (strcasecmp(&argv[i][7], "YES") == 0)
+		else if (strncasecmp(tag, "Shared", MAX(taglen, 2)) == 0) {
+			if (strncasecmp(val, "YES", MAX(vallen, 1)) == 0)
 				job_msg.shared = 1;
-			else if (strcasecmp(&argv[i][7], "NO") == 0)
+			else if (strncasecmp(val, "NO", MAX(vallen, 1)) == 0)
 				job_msg.shared = 0;
 			else
 				job_msg.shared = 
-					(uint16_t) strtol(&argv[i][7], 
+					(uint16_t) strtol(val, 
 							(char **) NULL, 10);
 			update_cnt++;
 		}
-		else if (strncasecmp(argv[i], "Contiguous=", 11) == 0) {
-			if (strcasecmp(&argv[i][11], "YES") == 0)
+		else if (strncasecmp(tag, "Contiguous", MAX(taglen, 3)) == 0) {
+			if (strncasecmp(val, "YES", MAX(vallen, 1)) == 0)
 				job_msg.contiguous = 1;
-			else if (strcasecmp(&argv[i][11], "NO") == 0)
+			else if (strncasecmp(val, "NO", MAX(vallen, 1)) == 0)
 				job_msg.contiguous = 0;
 			else
 				job_msg.contiguous = 
-					(uint16_t) strtol(&argv[i][11], 
+					(uint16_t) strtol(val, 
 							(char **) NULL, 10);
 			update_cnt++;
 		}
-		else if (strncasecmp(argv[i], "ExcNodeList=", 12) == 0) {
-			job_msg.exc_nodes = &argv[i][12];
+		else if (strncasecmp(tag, "ExcNodeList", MAX(taglen, 1)) == 0) {
+			job_msg.exc_nodes = val;
 			update_cnt++;
 		}
-		else if (strncasecmp(argv[i], "ReqNodeList=", 12) == 0) {
-			job_msg.req_nodes = &argv[i][12];
+		else if (strncasecmp(tag, "ReqNodeList", MAX(taglen, 8)) == 0) {
+			job_msg.req_nodes = val;
 			update_cnt++;
 		}
-		else if (strncasecmp(argv[i], "Features=", 9) == 0) {
-			job_msg.features = &argv[i][9];
+		else if (strncasecmp(tag, "Features", MAX(taglen, 1)) == 0) {
+			job_msg.features = val;
 			update_cnt++;
 		}
-		else if (strncasecmp(argv[i], "Account=", 8) == 0) {
-			job_msg.account = &argv[i][8];
+		else if (strncasecmp(tag, "Account", MAX(taglen, 1)) == 0) {
+			job_msg.account = val;
 			update_cnt++;
 		}
-		else if (strncasecmp(argv[i], "Dependency=", 11) == 0) {
-			job_msg.dependency = &argv[i][11];
+		else if (strncasecmp(tag, "Dependency", MAX(taglen, 1)) == 0) {
+			job_msg.dependency = val;
 			update_cnt++;
 		}
 #ifdef HAVE_BG
-		else if (strncasecmp(argv[i], "Geometry=", 9) == 0) {
+		else if (strncasecmp(tag, "Geometry", MAX(taglen, 1)) == 0) {
 			char* token, *delimiter = ",x", *next_ptr;
 			int j, rc = 0;
 			uint16_t geo[SYSTEM_DIMENSIONS];
-			char* geometry_tmp = xstrdup(&argv[i][9]);
+			char* geometry_tmp = xstrdup(val);
 			char* original_ptr = geometry_tmp;
 			token = strtok_r(geometry_tmp, delimiter, &next_ptr);
 			for (j=0; j<SYSTEM_DIMENSIONS; j++) {
@@ -451,25 +451,25 @@ scontrol_update_job (int argc, char *argv[])
 			}
 		}
 
-		else if (strncasecmp(argv[i], "Rotate=", 7) == 0) {
+		else if (strncasecmp(tag, "Rotate", MAX(taglen, 2)) == 0) {
 			uint16_t rotate;
-			if (strcasecmp(&argv[i][7], "yes") == 0)
+			if (strncasecmp(val, "YES", MAX(vallen, 1)) == 0)
 				rotate = 1;
-			else if (strcasecmp(&argv[i][7], "no") == 0)
+			else if (strncasecmp(val, "NO", MAX(vallen, 1)) == 0)
 				rotate = 0;
 			else
-				rotate = (uint16_t) strtol(&argv[i][7], 
+				rotate = (uint16_t) strtol(val, 
 							   (char **) NULL, 10);
 			job_msg.rotate = rotate;
 			update_cnt++;
 		}
 #endif
-		else if (strncasecmp(argv[i], "Licenses=", 9) == 0) {
-			job_msg.licenses = &argv[i][9];
+		else if (strncasecmp(tag, "Licenses", MAX(taglen, 1)) == 0) {
+			job_msg.licenses = val;
 			update_cnt++;
 		}
-		else if (strncasecmp(argv[i], "StartTime=", 10) == 0) {
-			job_msg.begin_time = parse_time(&argv[i][10], 0);
+		else if (strncasecmp(tag, "StartTime", MAX(taglen, 2)) == 0) {
+			job_msg.begin_time = parse_time(val, 0);
 			update_cnt++;
 		}
 		else {
