@@ -69,7 +69,9 @@ configuration. Called whenever slurmctld is reconfigured.</p>
 
 <p class="commandline">int priority_p_set_cpu_shares(uint32_t procs, uint32_t half_life)</p>
 <p style="margin-left:.2in"><b>Description</b>: Conveys the machine's processor
-count and half-life configuration to the priority plugin.</p>
+count and half-life configuration to the priority plugin.  Which 
+  would be used to set the available shares for underlying layers in
+  a hierarchical fairshare.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
 <span class="commandline">procs</span> (input) the machine's processor count<br>
 <span class="commandline">half_life</span> (input) the configured half-life</p>
