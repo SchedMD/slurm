@@ -447,7 +447,12 @@ To permit all groups to use the partition specify "AllowGroups=ALL".
 .TP
 \fIDefault\fP=<yes|no>
 Specify if this partition is to be used by jobs which do not explicitly 
-identify a partition to use. Possible values are"YES" and "NO".
+identify a partition to use. 
+Possible output values are "YES" and "NO".
+In order to change the default partition of a running system, 
+use the scontrol update command and set Default=yes for the partition
+that you want to become the new default.
+
 .TP
 \fIHidden\fP=<yes|no>
 Specify if the partition and its jobs should be hidden from view. 
