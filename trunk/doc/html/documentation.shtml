@@ -58,13 +58,13 @@ Also see <a href="publications.html">Publications and Presentations</a>.
 <li>Plugin Interface Details</li>
 <ul>
 <li><a href="authplugins.shtml">Authentication Plugin Programmer Guide</a></li>
-<li><a href="crypto_plugins.shtml">Cryptographic Plugin Programmer Guild</a></li>
+<li><a href="crypto_plugins.shtml">Cryptographic Plugin Programmer Guide</a></li>
 <li><a href="jobacct_gatherplugins.shtml">Job Accounting Gather Plugin Programmer Guide</a></li>
 <li><a href="jobacct_storageplugins.shtml">Job Accounting Storage Plugin Programmer Guide</a></li>
 <li><a href="checkpoint_plugins.shtml">Job Checkpoint Plugin Programmer Guide</a></li>
 <li><a href="jobcompplugins.shtml">Job Completion Logging Plugin Programmer Guide</a></li>
 <li><a href="mpiplugins.shtml">MPI Plugin Programmer Guide</a></li>
-<li><a href="job_priority_plugins.shtml">Multi-factor Job Priority Plugin Guide</a></li>
+<li><a href="priority_plugins.shtml">Priority Plugin Programmer Guide</a></li>
 <li><a href="proctrack_plugins.shtml">Process Tracking Plugin Programmer Guide</a></li>
 <li><a href="schedplugins.shtml">Scheduler Plugin Programmer Guide</a></li>
 <li><a href="selectplugins.shtml">Resource Selection Plugin Programmer Guide</a></li>
@@ -73,6 +73,6 @@ Also see <a href="publications.html">Publications and Presentations</a>.
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 9 February 2009</p>
+<p style="text-align:center;">Last modified 12 February 2009</p>
 
 <!--#include virtual="footer.txt"-->
