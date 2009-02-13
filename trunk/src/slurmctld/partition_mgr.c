@@ -282,6 +282,8 @@ static int _delete_part_record(char *name)
 /* dump_all_part_state - save the state of all partitions to file */
 int dump_all_part_state(void)
 {
+	/* Save high-water mark to avoid buffer growth with copies */
+	static int high_buffer_size = BUF_SIZE;
 	ListIterator part_iterator;
 	struct part_record *part_ptr;
 	int error_code = 0, log_fd;
@@ -289,7 +291,7 @@ int dump_all_part_state(void)
 	/* Locks: Read partition */
 	slurmctld_lock_t part_read_lock =
 	    { READ_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
-	Buf buffer = init_buf(BUF_SIZE);
+	Buf buffer = init_buf(high_buffer_size);
 	DEF_TIMERS;
 
 	START_TIMER;
@@ -327,7 +329,7 @@ int dump_all_part_state(void)
 	} else {
 		int pos = 0, nwrite = get_buf_offset(buffer), amount;
 		char *data = (char *)get_buf_data(buffer);
-
+		high_buffer_size = MAX(nwrite, high_buffer_size);
 		while (nwrite > 0) {
 			amount = write(log_fd, &data[pos], nwrite);
 			if ((amount < 0) && (errno != EINTR)) {
