@@ -1249,7 +1249,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 		info("no select_job_res info for job %u", 
 		     job_ptr->job_id);
 #else
-	if (debug_cpu_bind)
+	if (debug_cpu_bind && job_ptr->select_job)
 		log_select_job_res(job_ptr->job_id, job_ptr->select_job);
 #endif
 
