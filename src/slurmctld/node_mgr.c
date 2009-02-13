@@ -5,7 +5,7 @@
  *	configuration list (config_list)
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>, et. al.
  *  LLNL-CODE-402394.
@@ -241,12 +241,14 @@ static int _delete_config_record (void)
 /* dump_all_node_state - save the state of all nodes to file */
 int dump_all_node_state ( void )
 {
+	/* Save high-water mark to avoid buffer growth with copies */
+	static int high_buffer_size = (1024 * 1024);
 	int error_code = 0, inx, log_fd;
 	char *old_file, *new_file, *reg_file;
 	/* Locks: Read config and node */
 	slurmctld_lock_t node_read_lock = { READ_LOCK, NO_LOCK, READ_LOCK, 
 						NO_LOCK };
-	Buf buffer = init_buf(BUF_SIZE*16);
+	Buf buffer = init_buf(high_buffer_size);
 	DEF_TIMERS;
 
 	START_TIMER;
@@ -281,7 +283,7 @@ int dump_all_node_state ( void )
 	} else {
 		int pos = 0, nwrite = get_buf_offset(buffer), amount;
 		char *data = (char *)get_buf_data(buffer);
-
+		high_buffer_size = MAX(nwrite, high_buffer_size);
 		while (nwrite > 0) {
 			amount = write(log_fd, &data[pos], nwrite);
 			if ((amount < 0) && (errno != EINTR)) {
