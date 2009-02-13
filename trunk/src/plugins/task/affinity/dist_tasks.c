@@ -47,7 +47,9 @@
 #include <numa.h>
 #endif
 
-static char *_alloc_mask(launch_tasks_request_msg_t *req);
+static char *_alloc_mask(launch_tasks_request_msg_t *req,
+			 int *whole_node_cnt, int *whole_socket_cnt, 
+			 int *whole_core_cnt, int *whole_thread_cnt);
 static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 				uint16_t *hw_sockets, uint16_t *hw_cores,
 				uint16_t *hw_threads);
@@ -175,54 +177,69 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 	bitstr_t **masks = NULL;
 	char buf_type[100];
 	int maxtasks = req->tasks_to_launch[(int)node_id];
+	int whole_nodes, whole_sockets, whole_cores, whole_threads;
         const uint32_t *gtid = req->global_task_ids[(int)node_id];
-	uint16_t bind_mode;
+	uint16_t bind_entity, bind_mode;
 
 	bind_mode = CPU_BIND_NONE   | 
 		    CPU_BIND_MASK   | CPU_BIND_RANK   | CPU_BIND_MAP |
 		    CPU_BIND_LDMASK | CPU_BIND_LDRANK | CPU_BIND_LDMAP;
 	if (req->cpu_bind_type & bind_mode) {	/* explicit user mapping */
-		char *avail_mask = _alloc_mask(req);
-		if (avail_mask) {	/* step missing some CPUs */
+		char *avail_mask = _alloc_mask(req,
+					       &whole_nodes, &whole_sockets, 
+					       &whole_cores, &whole_threads);
+		if ((whole_nodes == 0) && avail_mask) {
 			xfree(req->cpu_bind);
 			req->cpu_bind = avail_mask;
 			req->cpu_bind_type &= (~bind_mode);
 			req->cpu_bind_type |= CPU_BIND_MASK;
-		}
+		} else
+			xfree(avail_mask);
 		slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
 		info("lllp_distribution jobid [%u] manual binding: %s",
 		     req->job_id, buf_type);
 		return;
 	}
 
-	if (!((req->cpu_bind_type & CPU_BIND_TO_THREADS) ||
-	      (req->cpu_bind_type & CPU_BIND_TO_CORES)   ||
-	      (req->cpu_bind_type & CPU_BIND_TO_SOCKETS) ||
-	      (req->cpu_bind_type & CPU_BIND_TO_LDOMS))) {
-		char *avail_mask = _alloc_mask(req);
-		if (avail_mask) {	/* step missing some CPUs */
+	bind_entity = CPU_BIND_TO_THREADS | CPU_BIND_TO_CORES |
+		      CPU_BIND_TO_SOCKETS | CPU_BIND_TO_LDOMS;
+	if (!(req->cpu_bind_type & bind_entity)) {
+		int max_tasks = req->tasks_to_launch[(int)node_id];
+		char *avail_mask = _alloc_mask(req,
+					       &whole_nodes, &whole_sockets, 
+					       &whole_cores, &whole_threads);
+		if (max_tasks == whole_sockets) {
+			req->cpu_bind_type |= CPU_BIND_TO_SOCKETS;
+			goto make_auto;
+		}
+		if (max_tasks == whole_cores) {
+			req->cpu_bind_type |= CPU_BIND_TO_CORES;
+			goto make_auto;
+		}
+		if (max_tasks == whole_threads) {
+			req->cpu_bind_type |= CPU_BIND_TO_THREADS;
+			goto make_auto;
+		}
+		if ((whole_nodes == 0) && avail_mask) {
 			xfree(req->cpu_bind);
 			req->cpu_bind = avail_mask;
 			req->cpu_bind_type |= CPU_BIND_MASK;
-		}
+		} else
+			xfree(avail_mask);
 		slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
 		info("lllp_distribution jobid [%u] auto binding off: %s",
 		     req->job_id, buf_type);
 		return;
-	}
 
-	/* We are still thinking about this. Does this make sense?
-	if (req->task_dist == SLURM_DIST_ARBITRARY) {
-		req->cpu_bind_type >= CPU_BIND_NONE;
-		info("lllp_distribution jobid [%u] -m hostfile - auto binding off ",
-		     req->job_id);
-		return;
+  make_auto:	xfree(avail_mask);
+		slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
+		info("lllp_distribution jobid [%u] implicit auto binding: "
+		     "%s, dist %d", req->job_id, buf_type, req->task_dist);
+	} else {
+		slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
+		info("lllp_distribution jobid [%u] auto binding: %s, dist %d",
+		     req->job_id, buf_type, req->task_dist);
 	}
-	*/
-
-	slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
-	info("lllp_distribution jobid [%u] auto binding: %s, dist %d",
-	     req->job_id, buf_type, req->task_dist);
 
 	switch (req->task_dist) {
 	case SLURM_DIST_BLOCK_BLOCK:
@@ -344,31 +361,53 @@ static void _enforce_limits(launch_tasks_request_msg_t *req, bitstr_t *mask,
 }
 
 /* Determine which CPUs a job step can use. 
- * Return NULL of all CPUs are available, 
- *	otherwise return a string representation of the available mask
+ * OUT whole_<entity>_count - returns count of whole <entities> in this 
+ *                            allocation for this node
+ * RET - a string representation of the available mask or NULL on errlr
  * NOTE: Caller must xfree() the return value. */
-static char *_alloc_mask(launch_tasks_request_msg_t *req)
+static char *_alloc_mask(launch_tasks_request_msg_t *req,
+			 int *whole_node_cnt, int *whole_socket_cnt, 
+			 int *whole_core_cnt, int *whole_thread_cnt)
 {
 	uint16_t sockets, cores, threads;
-	int i, mask;
-	bool miss = false;
+	int c, s, t, i, mask;
+	int c_miss, s_miss, t_miss;
 	bitstr_t *alloc_bitmap;
 	char *str_mask;
+
+	*whole_node_cnt   = 0;
+	*whole_socket_cnt = 0;
+	*whole_core_cnt   = 0;
+	*whole_thread_cnt = 0;
 
 	alloc_bitmap = _get_avail_map(req, &sockets, &cores, &threads);
 	if (!alloc_bitmap)
 		return NULL;
 
-	for (i=0, mask=0; i<(sockets*cores*threads); i++) {
-		if (bit_test(alloc_bitmap, i))
-			mask |= (1 << i);
+	i = mask = 0;
+	for (s=0, s_miss=false; s<sockets; s++) {
+		for (c=0, c_miss=false; c<cores; c++) {
+			for (t=0, t_miss=false; t<cores; t++) {
+				if (bit_test(alloc_bitmap, i)) {
+					mask |= (1 << i);
+					*whole_thread_cnt++;
+				} else
+					t_miss = true;
+				i++;
+			}
+			if (!t_miss)
+				*whole_core_cnt++;
+			else
+				c_miss = true;
+		}
+		if (!c_miss)
+			*whole_socket_cnt++;
 		else
-			miss = true;
+			s_miss = true;
 	}
+	if (!s_miss)
+		*whole_node_cnt++;
 	bit_free(alloc_bitmap);
-
-	if (!miss)
-		return NULL;
 
 	str_mask = xmalloc(16);
 	snprintf(str_mask, 16, "%x", mask);
