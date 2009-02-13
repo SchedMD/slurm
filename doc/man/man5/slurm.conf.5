@@ -259,6 +259,9 @@ are alocated to jobs (\fBSelectType=select/cons_res\fR).
 The default value is 0 (unlimited).
 Also see \fBDefMemPerNode\fR and \fBMaxMemPerCPU\fR.
 \fBDefMemPerCPU\fR and \fBDefMemPerNode\fR are mutually exclusive.
+NOTE: Enforcement of memory limits currently requires enabling of 
+accounting, which samples memory use on a periodic basis (data need
+not be stored, just collected).
 
 .TP
 \fBDefMemPerNode\fR
@@ -270,6 +273,9 @@ resources are shared (\fBShared=yes\fR or \fBShared=force\fR).
 The default value is 0 (unlimited).
 Also see \fBDefMemPerCPU\fR and \fBMaxMemPerNode\fR.
 \fBDefMemPerCPU\fR and \fBDefMemPerNode\fR are mutually exclusive.
+NOTE: Enforcement of memory limits currently requires enabling of 
+accounting, which samples memory use on a periodic basis (data need
+not be stored, just collected).
 
 .TP
 \fBDefaultStorageHost\fR
@@ -600,6 +606,9 @@ are alocated to jobs (\fBSelectType=select/cons_res\fR).
 The default value is 0 (unlimited).
 Also see \fBDefMemPerCPU\fR and \fBMaxMemPerNode\fR.
 \fBMaxMemPerCPU\fR and \fBMaxMemPerNode\fR are mutually exclusive.
+NOTE: Enforcement of memory limits currently requires enabling of 
+accounting, which samples memory use on a periodic basis (data need
+not be stored, just collected).
 
 .TP
 \fBMaxMemPerNode\fR
@@ -611,6 +620,9 @@ resources are shared (\fBShared=yes\fR or \fBShared=force\fR).
 The default value is 0 (unlimited).
 Also see \fBDefMemPerNode\fR and \fBMaxMemPerCPU\fR.
 \fBMaxMemPerCPU\fR and \fBMaxMemPerNode\fR are mutually exclusive.
+NOTE: Enforcement of memory limits currently requires enabling of 
+accounting, which samples memory use on a periodic basis (data need
+not be stored, just collected).
 
 .TP
 \fBMessageTimeout\fR
@@ -1365,35 +1377,41 @@ If \fBNone\fR, \fBSockets\fR, \fBCores\fR, \fBThreads\fR,
 and/or \fBVerbose\fR are specified, they will override
 the \fB\-\-cpu_bind\fR option specified by the user
 in the \fBsrun\fR command.
-\fBNone\fR, \fBSockets\fR, \fBCores\fR and \fBThreads\fR
-are mutually exclusive (select only one of them).
+\fBNone\fR, \fBSockets\fR, \fBCores\fR and \fBThreads\fR are mutually 
+exclusive and since they decrease scheduling flexibility are not generally 
+recommended (select no more than one of them).
 \fBCpusets\fR and \fBSched\fR
 are mutually exclusive (select only one of them).
 
 .RS
 .TP 10
 \fBCores\fR
-Always bind to cores.
+Always bind to cores. 
+Overrides user options or automatic binding.
 .TP
 \fBCpusets\fR
 Use cpusets to perform task affinity functions.
 By default, \fBSched\fR task binding is performed.
 .TP
 \fBNone\fR
-Perform no task binding.
+Perform no task binding. 
+Overrides user options or automatic binding.
 .TP
 \fBSched\fR
 Use \fIsched_setaffinity\fR or \fIplpa_sched_setaffinity\fR
 (if available) to bind tasks to processors.
 .TP
 \fBSockets\fR
-Always bind to sockets.
+Always bind to sockets. 
+Overrides user options or automatic binding.
 .TP
 \fBThreads\fR
-Always bind to threads.
+Always bind to threads. 
+Overrides user options or automatic binding.
 .TP
 \fBVerbose\fR
-Verbosely report binding before tasks run.
+Verbosely report binding before tasks run. 
+Overrides user options.
 .RE
 
 .TP

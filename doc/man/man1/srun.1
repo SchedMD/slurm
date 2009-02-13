@@ -146,9 +146,14 @@ mask/CPU as the parent.  Alternatively, fat masks (masks which specify more
 than one allowed CPU) could be used for the tasks in order to provide
 multiple CPUs for the multithreaded tasks.
 
-By default a job step has access to every CPU allocated to the job.
-To ensure disticnt CPUs are allocated to each job step, us the 
+By default, a job step has access to every CPU allocated to the job.
+To ensure that distinct CPUs are allocated to each job step, us the 
 \fB\-\-exclusive\fR option.
+
+If the job step allocation includes an allocation with a number of 
+sockets, cores, or threads equal to the number of tasks to be started
+then the tasks will by default be bound to the appropriate resources.
+Disable this mode of operation by explicitly setting "-\-cpu\-bind=none".
 
 Note that a job step can be allocated different numbers of CPUs on each node
 or be allocated CPUs not starting at location zero. Therefore one of the 
@@ -166,62 +171,72 @@ Supported options include:
 .RS
 .TP
 .B q[uiet]
-quietly bind before task runs (default)
+Quietly bind before task runs (default)
 .TP
 .B v[erbose]
-verbosely report binding before task runs
+Verbosely report binding before task runs
 .TP
 .B no[ne]
-don't bind tasks to CPUs (default)
+Do not bind tasks to CPUs (default)
 .TP
 .B rank
-automatically bind by task rank
+Automatically bind by task rank. 
+Task zero is bound to socket (or core or thread) zero, etc.
+Not supported unless the entire node is allocated to the job.
 .TP
 .B map_cpu:<list>
-bind by mapping CPU IDs to tasks as specified
+Bind by mapping CPU IDs to tasks as specified
 where <list> is <cpuid1>,<cpuid2>,...<cpuidN>.
 CPU IDs are interpreted as decimal values unless they are preceded
 with '0x' in which case they are interpreted as hexadecimal values.
 Not supported unless the entire node is allocated to the job.
 .TP
 .B mask_cpu:<list>
-bind by setting CPU masks on tasks as specified
+Bind by setting CPU masks on tasks as specified
 where <list> is <mask1>,<mask2>,...<maskN>.
 CPU masks are \fBalways\fR interpreted as hexadecimal values but can be
 preceded with an optional '0x'.
 Not supported unless the entire node is allocated to the job.
 .TP
 .B rank_ldom
-bind to a NUMA locality domain by rank
+Bind to a NUMA locality domain by rank
 .TP
 .B map_ldom:<list>
-bind by mapping NUMA locality domain IDs to tasks as specified where
+Bind by mapping NUMA locality domain IDs to tasks as specified where
 <list> is <ldom1>,<ldom2>,...<ldomN>.
 The locality domain IDs are interpreted as decimal values unless they are
 preceded with '0x' in which case they areinterpreted as hexadecimal values.
 Not supported unless the entire node is allocated to the job.
 .TP
 .B mask_ldom:<list>
-bind by setting NUMA locality domain masks on tasks as specified
+Bind by setting NUMA locality domain masks on tasks as specified
 where <list> is <mask1>,<mask2>,...<maskN>.
 NUMA locality domain masks are \fBalways\fR interpreted as hexadecimal
 values but can be preceded with an optional '0x'.
 Not supported unless the entire node is allocated to the job.
 .TP
 .B sockets
-automatically generate masks binding tasks to sockets
+Automatically generate masks binding tasks to sockets.
+If the number of tasks differs from the number of allocated sockets 
+this can result in sub\-optimal binding.
 .TP
 .B cores
-automatically generate masks binding tasks to cores
+Automatically generate masks binding tasks to cores.
+If the number of tasks differs from the number of allocated cores 
+this can result in sub\-optimal binding.
 .TP
 .B threads
-automatically generate masks binding tasks to threads
+Automatically generate masks binding tasks to threads.
+If the number of tasks differs from the number of allocated threads 
+this can result in sub\-optimal binding.
 .TP
 .B ldoms
-automatically generate masks binding tasks to NUMA locality domains
+Automatically generate masks binding tasks to NUMA locality domains.
+If the number of tasks differs from the number of allocated locality domains 
+this can result in sub\-optimal binding.
 .TP
 .B help
-show this help message
+Show this help message
 .RE
 
 .TP
