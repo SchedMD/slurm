@@ -239,6 +239,20 @@ static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist,
 			goto fini;
 		}
 
+		if (!bit_super_set(new_bitmap, avail_node_bitmap)) {
+			/* Selected node is UP and not responding
+			 * or it just went DOWN */
+			*err_code = -700;
+			*err_msg = "TASKLIST includes non-responsive node";
+			error("wiki: Attempt to use non-responsive nodes for "
+				"job %u, %s",
+				jobid, hostlist);
+			xfree(new_node_list);
+			bit_free(new_bitmap);
+			rc = -1;
+			goto fini;
+		}
+
 		/* User excluded node list incompatable with Wiki
 		 * Exclude all nodes not explicitly requested */
 		FREE_NULL_BITMAP(job_ptr->details->exc_node_bitmap);
