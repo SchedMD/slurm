@@ -73,6 +73,8 @@ Numpsets=64 #used for IO rich systems
 BridgeAPILogFile=/var/log/slurm/bridgeapi.log
 BridgeAPIVerbose=0
 
+#DenyPassthrough=X,Y,Z
+
 ###############################################################################
 # Define the static/overlap partitions (bgblocks)
 #

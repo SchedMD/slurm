@@ -167,6 +167,10 @@ documents those changes that are of interest to users and admins.
     when building with NUMA version 2 APIs.
  -- BLUEGENE - slurm works on a BGP system.
  -- BLUEGENE - slurm handles HTC blocks
+ -- BLUEGENE - Added option DenyPassthrough in the bluegene.conf.  Can be set
+    to any combination of X,Y,Z to not allow passthroughs when running in 
+    dynamic layout mode.
+ -- Fix bug in logic to remove a job's dependency, could result in abort.
 
 * Changes in SLURM 1.3.13
 =========================

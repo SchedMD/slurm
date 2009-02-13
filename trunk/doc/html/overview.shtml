@@ -68,9 +68,8 @@ building block approach. These plugins presently include:
 <li><a href="crypto_plugins.html">Cryptography</a>: Munge or OpenSSL</li>
 <li><a href="jobacct_gatherplugins.html">Job Accounting Gather</a>: AIX, Linux, or none(default)</li>
 
-<li><a href="jobacct_storageplugins.html">Job Accounting Storage</a>: 
+<li><a href="accounting_storageplugins.html">Accounting Storage</a>: 
 text file (default if jobacct_gather != none), 
-<a href="http://www.clusterresources.com/pages/products/gold-allocation-manager.php">Gold</a>
 MySQL, PGSQL, SlurmDBD (Slurm Database Daemon) or none</li>
 
 <li><a href="jobcompplugins.html">Job completion logging</a>: 
@@ -81,7 +80,7 @@ MPICH-GM, MPICH-MX, MVAPICH, OpenMPI and none (default, for most
 other versions of MPI including MPICH2 and MVAPICH2).</li>
 
 <li><a href="selectplugins.html">Node selection</a>: 
-Blue Gene (a 3-D torus interconnect), 
+Bluegene (a 3-D torus interconnect BGL or BGP), 
 <a href="cons_res.html">consumable resources</a> (to allocate 
 individual processors and memory) or linear (to dedicate entire nodes).</li>
 
