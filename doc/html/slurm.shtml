@@ -21,7 +21,7 @@ More complex configurations rely upon a
 <a href="http://www.mysql.com/">MySQL</a> database for archiving 
 <a href="accounting.html">accounting</a> records, managing 
 <a href="resource_limits.html">resource limits</a> by user or bank account, 
-or supporting sophisticated <a href="job_priority_plugins.html">job prioritization</a>
+or supporting sophisticated <a href="job_priority.html">job prioritization</a>
 algorithms.
 SLURM also provides an Applications Programming Interface (API) for 
 integration with external schedulers such as 

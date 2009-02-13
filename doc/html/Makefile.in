@@ -269,7 +269,6 @@ generated_html = \
 	help.html \
 	ibm.html \
 	job_priority.html \
-	job_priority_plugins.html \
 	jobacct_gatherplugins.html \
 	jobacct_storageplugins.html \
 	jobcompplugins.html \
@@ -284,6 +283,7 @@ generated_html = \
 	plugins.html \
 	power_save.html \
 	preempt.html \
+	priority_plugins.html \
 	proctrack_plugins.html \
 	programmer_guide.html \
 	publications.html \
