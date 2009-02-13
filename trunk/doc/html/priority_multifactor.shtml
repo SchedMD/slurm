@@ -1,6 +1,6 @@
 <!--#include virtual="header.txt"-->
 
-<h1>Priority Plugin</h1>
+<h1>Multifactor Priority Plugin</h1>
 
 <b>Note:</b> This document describes features added to SLURM version 2.0.
 
