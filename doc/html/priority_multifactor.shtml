@@ -30,7 +30,7 @@
 
 <!-------------------------------------------------------------------------->
 <a name=mfjppintro>
-<h2>Multi-factor Job Priority Plugin</h2></a>
+<h2>Multi-factor 'Factors'</h2></a>
 
 <P> There are five factors in the Multi-factor Job Priority plugin that influence job priority:</P>
 
@@ -47,7 +47,12 @@
 <DD> a factor associated with each Quality Of Service (Still under Development)
 </DL>
 
-<P> Additionally, a weight can be assigned to each of the above factors.  This provides the ability to enact a policy that blends a combination of any of the above factors in any portion desired.  For example, a site could configure fair-share to be the dominant factor (say 70%), set the job size and the age factors to each contribute 15%, and set the partition and QOS influences to zero.</P>
+<P> Additionally, a weight can be assigned to each of the above
+  factors.  This provides the ability to enact a policy that blends a
+  combination of any of the above factors in any portion desired.  For
+  example, a site could configure fair-share to be the dominant factor
+  (say 70%), set the job size and the age factors to each contribute
+  15%, and set the partition and QOS influences to zero.</P>
 
 <!-------------------------------------------------------------------------->
 <a name=general>
@@ -63,7 +68,24 @@ Job_priority =
 	(QOS_weight) * (QOS_factor)
 </PRE>
 
-<P> All of the factors in this formula are floating point numbers that range from 0.0 to 1.0.  The weights are unsigned, 32 bit integers.   The job's priority is an integer that ranges between 0 and 4294967295.  The higher the number,  the higher the job will be positioned in the queue, and the sooner the job will be scheduled.  A job's priority, and hence its order in the queue, will vary over time.  For example, the longer a job sits in the queue, the higher its priority will grow when the age_weight is non-zero.</P>
+<P> All of the factors in this formula are floating point numbers that
+  range from 0.0 to 1.0.  The weights are unsigned, 32 bit integers.
+  The job's priority is an integer that ranges between 0 and
+  4294967295.  The higher the number,  the higher the job will be
+  positioned in the queue, and the sooner the job will be scheduled.
+  A job's priority, and hence its order in the queue, will vary over
+  time.  For example, the longer a job sits in the queue, the higher
+  its priority will grow when the age_weight is non-zero.</P>
+
+<P> <b>IMPORTANT:</b> Since all the factors are floating points from 0.0 to
+  1.0 weighting should be set to get a good set of significant
+  digits in the priority since it in contrast is not floating point.
+  In example one job could have a fairshare of .59534 and another job
+  could have a fairshare of .50002.  If your fairshare weight is only
+  set to 10 both jobs would have the same effective fairshare.  It is
+  advised to set the weight high enough to make this type of senario
+  actually mean something.  It is advised to start around 1000 or so
+  in the weights you want to have more of a factor.</P> 
 
 <!-------------------------------------------------------------------------->
 <a name=age>
@@ -183,10 +205,18 @@ Where:
 <DT> U<sub>period-2</sub>
 <DD> is the usage charged over the second last measurement period
 <DT> D
-<DD> is a decay factor between zero and one that delivers the half-life decay defined by the <i>PriorityDecayHalfLife</i> setting in the slurm.conf file.  Without accruing additional usage, a user's U<sub>H</sub> usage will decay to 1/2 value after a time period of <i>PriorityDecayHalfLife</i> seconds.
+<DD> is a decay factor between zero and one that delivers the
+  half-life decay based off the <i>PriorityDecayHalfLife</i> setting
+  in the slurm.conf file.  Without accruing additional usage, a user's
+  U<sub>H</sub> usage will decay to 1/2 value after a time period
+  of <i>PriorityDecayHalfLife</i> seconds.
 </DL>
 
-<P> In practice, the <i>PriorityDecayHalfLife</i> could be a matter of seconds or days as appropriate for each site.  The measurement period is nominally 5 minutes.  The decay factor, D, is assigned the value that will achieve the half-life decay rate specified by the <i>PriorityDecayHalfLife</i> parameter.</P>
+<P> In practice, the <i>PriorityDecayHalfLife</i> could be a matter of
+  seconds or days as appropriate for each site.  The measurement
+  period is nominally 5 minutes.  The decay factor, D, is assigned the
+  value that will achieve the half-life decay rate specified by
+  the <i>PriorityDecayHalfLife</i> parameter.</P> 
 
 <P> The historical resources a machine has available is similarly aggregated with the same decay factor:</P>
 
@@ -378,11 +408,15 @@ Account A's effective usage is therefore equal to .45.  Account D's effective us
 <DT> PriorityType
 <DD> Set this value to "priority/multifactor" to enable the Multi-factor Job Priority Plugin.  The default value for this variable is "priority/basic" which enables simple FIFO scheduling.
 <DT> PriorityDecayHalfLife
-<DD> This determines the contribution of historical usage on the composite usage value.  The higher the number, the further back in time that usage is collected.  The units are minutes and the default value is 10080 (7 days).
+<DD> This determines the contribution of historical usage on the
+  composite usage value.  The higher the number, the longer past usage
+  affects fair-share.  The unit is a time string (i.e. min, min:sec,
+  hr:min:sec, days-hr:min:sec, or days-hr.  The default value is 7-0 (7 days).
 <DT> PriorityFavorSmall
 <DD> A boolean that sets the polarity of the job size factor.  The default setting is NO which results in larger node sizes having a larger job size factor.  Setting this parameter to YES means that the smaller the job, the greater the job size factor will be.
 <DT> PriorityMaxAge
-<DD> Specifies the queue wait time at which the age factor maxes out.  The units are minutes and the default value is 10080 (7 days).
+<DD> Specifies the queue wait time at which the age factor maxes out.  The unit is a time string (i.e. min, min:sec,
+  hr:min:sec, days-hr:min:sec, or days-hr.  The default value is 7-0 (7 days).
 <DT> PriorityWeightAge
 <DD> An unsigned integer that scales the contribution of the age factor.
 <DT> PriorityWeightFairshare
@@ -408,23 +442,23 @@ Account A's effective usage is therefore equal to .45.  Account D's effective us
 PriorityType=priority/multifactor
 
 # 2 week half-life
-PriorityDecayHalfLife=20160
+PriorityDecayHalfLife=14-0
 
 # The larger the job, the greater its job size priority.
 PriorityFavorSmall=NO
 
 # The job's age factor reaches 1.0 after waiting in the
 # queue for 2 weeks.
-PriorityMaxAge=20160
+PriorityMaxAge=14-0
 
 # This next group determines the weighting of each of the
 # components of the Multi-factor Job Priority Plugin.
 # The default value for each of the following is 1.
-PriorityWeightAge=100
-PriorityWeightFairshare=1000
-PriorityWeightJobSize=100
-PriorityWeightPartition=0
-PriorityWeightQOS=0
+PriorityWeightAge=1000
+PriorityWeightFairshare=10000
+PriorityWeightJobSize=1000
+PriorityWeightPartition=1000
+PriorityWeightQOS=0 # don't use the qos factor
 </PRE>
 
 <!-------------------------------------------------------------------------->
