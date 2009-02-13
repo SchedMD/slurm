@@ -208,6 +208,9 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 		char *avail_mask = _alloc_mask(req,
 					       &whole_nodes, &whole_sockets, 
 					       &whole_cores, &whole_threads);
+		debug("binding tasks:%d to nodes:%d sockets:%d cores:%d threads:%d",
+		      max_tasks, whole_nodes, whole_sockets, whole_cores, 
+		      whole_threads);
 		if (max_tasks == whole_sockets) {
 			req->cpu_bind_type |= CPU_BIND_TO_SOCKETS;
 			goto make_auto;
@@ -390,23 +393,23 @@ static char *_alloc_mask(launch_tasks_request_msg_t *req,
 			for (t=0, t_miss=false; t<cores; t++) {
 				if (bit_test(alloc_bitmap, i)) {
 					mask |= (1 << i);
-					*whole_thread_cnt++;
+					(*whole_thread_cnt)++;
 				} else
 					t_miss = true;
 				i++;
 			}
 			if (!t_miss)
-				*whole_core_cnt++;
+				(*whole_core_cnt)++;
 			else
 				c_miss = true;
 		}
 		if (!c_miss)
-			*whole_socket_cnt++;
+			(*whole_socket_cnt)++;
 		else
 			s_miss = true;
 	}
 	if (!s_miss)
-		*whole_node_cnt++;
+		(*whole_node_cnt)++;
 	bit_free(alloc_bitmap);
 
 	str_mask = xmalloc(16);
