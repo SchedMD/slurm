@@ -18,7 +18,8 @@ commands until explicitly terminated. If a command is entered on the execute
 line, \fBscontrol\fR will execute that command and terminate. All commands 
 and options are case\-insensitive, although node names, partition names, and 
 reservation names are case\-sensitive (node names "LX" and "lx" are distinct). 
-Commands can be abbreviated to the extent that the specification is unique.
+All commands and options can be abbreviated to the extent that the 
+specification is unique.
 
 .SH "OPTIONS"
 .TP
@@ -101,7 +102,7 @@ COMPLETING or DOWN state.
 \fBdelete\fP \fISPECIFICATION\fP
 Delete the entry with the specified \fISPECIFICATION\fP.
 The two \fISPECIFICATION\fP choices are \fIPartitionName=<name>\fP
-and \fIReservationName=<name>\fP
+and \fIReservation=<name>\fP
 
 .TP
 \fBexit\fP
@@ -268,7 +269,7 @@ Display the version number of scontrol being executed.
 Repeat the last command executed.
 
 .TP
-\fBSPECIFICATIONS FOR SHOW AND UPDATE COMMANDS, JOBS\fR
+\fBSPECIFICATIONS FOR UPDATE COMMAND, JOBS\fR
 .TP
 \fIAccount\fP=<account>
 Account name to be changed for this job's resource use.
@@ -535,7 +536,7 @@ must be explicitly canceled to force their termination.
 .TP
 
 .TP
-\fIReservationName\fP=<name>
+\fIReservation\fP=<name>
 Identify the name of the reservation to be created, updated, or deleted.  
 This parameter is required for update and is the only parameter for delete.  
 For create, if you do not want to give a reservation name, use 
@@ -696,9 +697,9 @@ scontrol: create res StartTime=2009-04-01T08:00:00 Duration=5:00:00 Users=dbreme
 .br
 Reservation created: dbremer_1
 .br
-scontrol: update ReservationName=dbremer_1 Type=Maint NodeCnt=20
+scontrol: update Reservation=dbremer_1 Flags=Maint NodeCnt=20
 .br
-scontrol: delete ReservationName=dbremer_1
+scontrol: delete Reservation=dbremer_1
 .br
 scontrol: quit
 .ec
