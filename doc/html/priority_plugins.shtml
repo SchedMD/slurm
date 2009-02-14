@@ -11,7 +11,8 @@ SLURM priority plugins. This is version 100 of the API.</p>
 API described herein. They must conform to the SLURM Plugin API with the
 following specifications:</p>
 
-<p><span class="commandline">const char plugin_type[]</span><br>
+<p><span class="commandline">const char
+plugin_type[]="<i>major/minor</i>"</span><br>
 The major type must be &quot;priority.&quot; The minor type can be any
 recognizable abbreviation for the type of priority.
 We recommend, for example:</p>
