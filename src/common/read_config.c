@@ -2060,6 +2060,16 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	else if ((strcmp(conf->schedtype, "sched/gang") == 0) &&
 		 (conf->fast_schedule == 0))
 		fatal("FastSchedule=0 is not supported with sched/gang");
+	if (strcmp(conf->priority_type, "priority/multifactor") == 0) {
+		if (strcmp(conf->schedtype, "sched/wiki") == 0) {
+			fatal("PriorityType=priority/multifactor is "
+			      "incompatible with SchedulerType=sched/wiki");
+		}
+		if (strcmp(conf->schedtype, "sched/wiki2") == 0) {
+			fatal("PriorityType=priority/multifactor is "
+			      "incompatible with SchedulerType=sched/wiki2");
+		}
+	}
 
 	if (!s_p_get_string(&conf->select_type, "SelectType", hashtbl))
 		conf->select_type = xstrdup(DEFAULT_SELECT_TYPE);
