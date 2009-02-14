@@ -70,7 +70,7 @@ exec $bin_chmod 700 $file_prog
 #
 # Create an allocation
 #
-set salloc_pid [spawn $salloc -N1 --verbose -t2 $bin_bash]
+set salloc_pid [spawn $salloc -N1 --exclusive --verbose -t2 $bin_bash]
 
 #
 # Run a job step to get allocated processor count and affinity
