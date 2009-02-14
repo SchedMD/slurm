@@ -395,8 +395,10 @@ static void _restore_node_usage(struct node_use_record *orig_ptr)
 	if (orig_ptr == NULL)
 		return;
 
-	for (i = 0; i < select_node_cnt; i++)
-		select_node_usage[i].node_state = orig_ptr[i].node_state;
+	for (i = 0; i < select_node_cnt; i++) {
+		select_node_usage[i].node_state   = orig_ptr[i].node_state;
+		select_node_usage[i].alloc_memory = orig_ptr[i].alloc_memory;
+	}
 }
 
 /* delete the given row data */
