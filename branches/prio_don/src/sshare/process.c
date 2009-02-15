@@ -106,12 +106,11 @@ extern int process(shares_response_msg_t *resp)
 		PRINT_ACCOUNT,
 		PRINT_CLUSTER,
 		PRINT_EUSED,
-		PRINT_FAIRSHARE,
 		PRINT_ID,
-		PRINT_NORME,
 		PRINT_NORMS,
 		PRINT_NORMU,
-		PRINT_USED,
+		PRINT_RAWS,
+		PRINT_RAWU,
 		PRINT_USER,
 	};
 
@@ -120,8 +119,8 @@ extern int process(shares_response_msg_t *resp)
 
 	format_list = list_create(slurm_destroy_char);
 	slurm_addto_char_list(format_list,
-			      "A,User,Id,Fair,NormShares,"
-			      "Used,NormUsed,EUsed,NormEUsed");
+			      "A,User,Id,RawShares,NormShares,"
+			      "RawUsage,NormUsage,EffUsed");
 
 	print_fields_list = list_create(destroy_print_field);
 
@@ -139,26 +138,16 @@ extern int process(shares_response_msg_t *resp)
 			field->name = xstrdup("Cluster");
 			field->len = 10;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("EUsed", object, 1)) {
+		} else if(!strncasecmp("EffUsed", object, 1)) {
 			field->type = PRINT_EUSED;
 			field->name = xstrdup("Effective Used");
 			field->len = 19;
 			field->print_routine = _sshare_print_time;
-		} else if(!strncasecmp("FairShare", object, 1)) {
-			field->type = PRINT_FAIRSHARE;
-			field->name = xstrdup("FairShare");
-			field->len = 9;
-			field->print_routine = print_fields_uint;
 		} else if(!strncasecmp("ID", object, 1)) {
 			field->type = PRINT_ID;
 			field->name = xstrdup("ID");
 			field->len = 6;
 			field->print_routine = print_fields_uint;
-		}else if(!strncasecmp("NormEUsage", object, 5)) {
-			field->type = PRINT_NORME;
-			field->name = xstrdup("Norm EUsage");
-			field->len = 11;
-			field->print_routine = print_fields_double;
 		} else if(!strncasecmp("NormShares", object, 5)) {
 			field->type = PRINT_NORMS;
 			field->name = xstrdup("Norm Shares");
@@ -169,9 +158,14 @@ extern int process(shares_response_msg_t *resp)
 			field->name = xstrdup("Norm Usage");
 			field->len = 11;
 			field->print_routine = print_fields_double;
-		} else if(!strncasecmp("Used", object, 4)) {
-			field->type = PRINT_USED;
-			field->name = xstrdup("Used");
+		} else if(!strncasecmp("RawShares", object, 1)) {
+			field->type = PRINT_RAWS;
+			field->name = xstrdup("Raw Shares");
+			field->len = 9;
+			field->print_routine = print_fields_uint;
+		} else if(!strncasecmp("RawUsage", object, 4)) {
+			field->type = PRINT_RAWU;
+			field->name = xstrdup("Raw Usage");
 			field->len = 19;
 			field->print_routine = _sshare_print_time;
 		} else if(!strncasecmp("User", object, 4)) {
@@ -242,25 +236,12 @@ extern int process(shares_response_msg_t *resp)
 				break;
 			case PRINT_EUSED:
 				field->print_routine(field, 
-						     assoc->eused_shares,
+						     assoc->efctv_usage,
 						     (curr_inx == field_count));
-				break;
-			case PRINT_FAIRSHARE:
-				field->print_routine(
-					field,
-					assoc->fairshare,
-					(curr_inx == field_count));
 				break;
 			case PRINT_ID:
 				field->print_routine(field, 
 						     assoc->assoc_id,
-						     (curr_inx == field_count));
-				break;
-			case PRINT_NORME:
-				tmp_double = ((double)assoc->eused_shares
-					      / (double)resp->tot_shares);
-				field->print_routine(field, 
-						     tmp_double,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_NORMS:
@@ -269,18 +250,18 @@ extern int process(shares_response_msg_t *resp)
 						     (curr_inx == field_count));
 				break;
 			case PRINT_NORMU:
-				tmp_double = ((double)assoc->used_shares
-					      / (double)resp->tot_shares);
-/* 				info("norm used is %llu / %llu = %f", */
-/* 				     assoc->used_shares, resp->tot_shares, */
-/* 				     tmp_double); */
-				field->print_routine(field, 
-						     tmp_double,
+				field->print_routine(field,
+						     assoc->norm_usage,
 						     (curr_inx == field_count));
 				break;
-			case PRINT_USED:
+			case PRINT_RAWS:
+				field->print_routine(field,
+						     assoc->raw_shares,
+						     (curr_inx == field_count));
+				break;
+			case PRINT_RAWU:
 				field->print_routine(field, 
-						     assoc->used_shares,
+						     assoc->raw_usage,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_USER:

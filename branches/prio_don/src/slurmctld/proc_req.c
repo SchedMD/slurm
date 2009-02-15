@@ -852,7 +852,6 @@ static void  _slurm_rpc_get_shares(slurm_msg_t *msg)
 	START_TIMER;
 	debug2("Processing RPC: REQUEST GET SHARES from uid=%u",
 	       (unsigned int)uid);
-	resp_msg.tot_shares = assoc_mgr_root_assoc->cpu_shares;
 	resp_msg.assoc_shares_list = assoc_mgr_get_shares(acct_db_conn,
 							  uid,
 							  req_msg->acct_list, 

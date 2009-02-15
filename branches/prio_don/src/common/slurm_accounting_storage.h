@@ -145,10 +145,11 @@ typedef struct acct_association_rec {
 	char *cluster;		/* cluster associated to association
 				 * */
 
-	long double cpu_shares;	/* how many cpu shares available for
-				 * this association (DON'T PACK) */
-	long double eused_shares; /* Effective used shares (DON'T PACK) */
-	uint32_t fairshare;	/* fairshare number */
+	long double raw_usage;	/* measure of resource usage (DON'T PACK) */
+	long double norm_usage;	/* normalized usage (DON'T PACK) */
+	long double efctv_usage;/* effective, normalized usage (DON'T PACK) */
+	uint32_t raw_shares;	/* number of shares allocated to association */
+	double norm_shares;     /* normalized shares (DON'T PACK) */
 
 	uint64_t grp_cpu_mins; /* max number of cpu hours the
 				     * underlying group of
@@ -186,9 +187,7 @@ typedef struct acct_association_rec {
 
 	uint32_t level_shares;  /* number of shares on this level of
 				 * the tree (DON'T PACK) */
-	
-	long double level_cpu_shares; /* how many cpu shares available at
-				       * this level (DON'T PACK) */
+
 	uint32_t lft;		/* lft used for grouping sub
 				 * associations and jobs as a left
 				 * most container used with rgt */
@@ -205,7 +204,6 @@ typedef struct acct_association_rec {
 				     submitted by association */
 	uint32_t max_wall_pj; /* longest time this
 			       * association can run a job */
-	double norm_shares;     /* normalized shares (DON'T PACK) */
 	char *parent_acct;	/* name of parent account */
 	struct acct_association_rec *parent_assoc_ptr;	/* ptr to parent acct
 							 * set in
@@ -223,8 +221,6 @@ typedef struct acct_association_rec {
 	uint32_t uid;		/* user ID */
 	
 	uint32_t used_jobs;	/* count of active jobs (DON'T PACK) */
-	long double used_shares;	/* measure of resource usage 
-					   (DON'T PACK) */
 	uint32_t used_submit_jobs; /* count of jobs pending or running
 				    * (DON'T PACK) */
 	

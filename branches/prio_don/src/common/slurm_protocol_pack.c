@@ -1214,14 +1214,14 @@ static void _pack_assoc_shares_object(void *in, Buf buffer)
 
 	packstr(object->cluster, buffer);
 
-	pack64(object->eused_shares, buffer);
-	pack32(object->fairshare, buffer);
+	pack64(object->efctv_usage, buffer);
+	pack32(object->raw_shares, buffer);
 	packdouble(object->norm_shares, buffer);
 
 	packstr(object->name, buffer);
 	packstr(object->parent, buffer);
 
-	pack64(object->used_shares, buffer);
+	pack64(object->raw_usage, buffer);
 	pack16(object->user, buffer);
 }
 
@@ -1236,14 +1236,14 @@ static int _unpack_assoc_shares_object(void **object, Buf buffer)
 	
 	safe_unpackstr_xmalloc(&object_ptr->cluster, &uint32_tmp, buffer);
 
-	safe_unpack64(&object_ptr->eused_shares, buffer);
-	safe_unpack32(&object_ptr->fairshare, buffer);
+	safe_unpack64(&object_ptr->efctv_usage, buffer);
+	safe_unpack32(&object_ptr->raw_shares, buffer);
 	safe_unpackdouble(&object_ptr->norm_shares, buffer);
 
 	safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&object_ptr->parent, &uint32_tmp, buffer);
 
-	safe_unpack64(&object_ptr->used_shares, buffer);
+	safe_unpack64(&object_ptr->raw_usage, buffer);
 	safe_unpack16(&object_ptr->user, buffer);
 
 	return SLURM_SUCCESS;

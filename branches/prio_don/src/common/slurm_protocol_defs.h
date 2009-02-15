@@ -308,14 +308,15 @@ typedef struct association_shares_object {
 
 	char *cluster;          /* cluster name */
 
-	uint64_t eused_shares;   /* measure of effective resource usage */
-	uint32_t fairshare;     /* non-normilized shares */
-	double norm_shares;     /* normilized shares */
+	uint32_t raw_shares;	/* number of shares allocated */
+	double norm_shares;     /* normalized shares */
 
 	char *name;             /* name */
 	char *parent;           /* parent name */
 
-	uint64_t used_shares;   /* measure of resource usage */
+	uint64_t raw_usage;	/* measure of resource usage */
+	double norm_usage;	/* normalized usage */
+	double efctv_usage;	/* effective, normalized usage */
 	uint16_t user;          /* 1 if user association 0 if account
 				 * association */
 } association_shares_object_t;
