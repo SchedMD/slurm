@@ -31,6 +31,8 @@ allocated to a SLURM job?</a></li>
 killed?</a></li>
 <li><a href="#arbitrary">How do I run specific tasks on certain nodes
 in my allocation?</a></li> 
+<li><a href="#hold">How can I temporarily prevent a job from running 
+(e.g. place it into a <i>hold</i> state)?</a></li>
 </ol>
 
 <h2>For Administrators</h2>
@@ -580,9 +582,19 @@ print $layout;
 We can now use this script in our srun line in this fashion.<p>
 <i>srun -m arbitrary -n5 -w `arbitrary.pl 4,1` -l hostname</i><p>
 This will layout 4 tasks on the first node in the allocation and 1
-task on the second node.  
+task on the second node.</p>
 
-</p>
+<p><a name="hold"><b>21. How can I temporarily prevent a job from running 
+(e.g. place it into a <i>hold</i> state)?</b></a><br>
+The easiest way to do this is to change a job's earliest begin time
+(optionally set at job submit time using the <i>--begin</i> option).
+The example below places a job into hold state (preventing its start
+until 10 January 2020 at noon) and later permitting it to start now.</p>
+<pre>
+$ scontrol update JobId=1234 StartTime=2020-01-10T12:00:00
+... later ...
+$ scontrol update JobId=1234 StartTime=now
+</pre>
 
 <p class="footer"><a href="#top">top</a></p>
 
