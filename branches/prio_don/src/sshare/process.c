@@ -120,7 +120,7 @@ extern int process(shares_response_msg_t *resp)
 	format_list = list_create(slurm_destroy_char);
 	slurm_addto_char_list(format_list,
 			      "A,User,Id,RawShares,NormShares,"
-			      "RawUsage,NormUsage,EffUsed");
+			      "RawUsage,NormUsage,EffUsage");
 
 	print_fields_list = list_create(destroy_print_field);
 
@@ -138,11 +138,11 @@ extern int process(shares_response_msg_t *resp)
 			field->name = xstrdup("Cluster");
 			field->len = 10;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("EffUsed", object, 1)) {
+		} else if(!strncasecmp("EffUsage", object, 1)) {
 			field->type = PRINT_EUSED;
-			field->name = xstrdup("Effective Used");
-			field->len = 19;
-			field->print_routine = _sshare_print_time;
+			field->name = xstrdup("Effective Usage");
+			field->len = 11;
+			field->print_routine = _sshare_print_double;
 		} else if(!strncasecmp("ID", object, 1)) {
 			field->type = PRINT_ID;
 			field->name = xstrdup("ID");
@@ -157,8 +157,8 @@ extern int process(shares_response_msg_t *resp)
 			field->type = PRINT_NORMU;
 			field->name = xstrdup("Norm Usage");
 			field->len = 11;
-			field->print_routine = print_fields_double;
-		} else if(!strncasecmp("RawShares", object, 1)) {
+			field->print_routine = _sshare_print_double;
+		} else if(!strncasecmp("RawShares", object, 4)) {
 			field->type = PRINT_RAWS;
 			field->name = xstrdup("Raw Shares");
 			field->len = 9;
@@ -166,9 +166,9 @@ extern int process(shares_response_msg_t *resp)
 		} else if(!strncasecmp("RawUsage", object, 4)) {
 			field->type = PRINT_RAWU;
 			field->name = xstrdup("Raw Usage");
-			field->len = 19;
-			field->print_routine = _sshare_print_time;
-		} else if(!strncasecmp("User", object, 4)) {
+			field->len = 11;
+			field->print_routine = _sshare_print_double;
+		} else if(!strncasecmp("User", object, 1)) {
 			field->type = PRINT_USER;
 			field->name = xstrdup("User");
 			field->len = 10;
