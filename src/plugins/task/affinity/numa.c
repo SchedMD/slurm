@@ -150,7 +150,7 @@ void slurm_chk_memset(nodemask_t *mask, slurmd_job_t *job)
 
 int get_memset(nodemask_t *mask, slurmd_job_t *job)
 {
-	int nummasks, maskid, i;
+	int nummasks, maskid, i, threads;
 	char *curstr, *selstr;
 	char mstr[1 + NUMA_NUM_NODES / 4];
 	int local_id = job->envtp->localid;
@@ -167,7 +167,8 @@ int get_memset(nodemask_t *mask, slurmd_job_t *job)
 	}
 
 	if (job->mem_bind_type & MEM_BIND_RANK) {
-		nodemask_set(mask, job->envtp->localid % job->cpus);
+		threads = MAX(conf->threads, 1);
+		nodemask_set(mask, job->envtp->localid % (job->cpus*threads));
 		return true;
 	}
 
