@@ -135,7 +135,7 @@ static int _bind_ldom(uint32_t ldom, cpu_set_t *mask)
 
 int get_cpuset(cpu_set_t *mask, slurmd_job_t *job)
 {
-	int nummasks, maskid, i;
+	int nummasks, maskid, i, threads;
 	char *curstr, *selstr;
 	char mstr[1 + CPU_SETSIZE / 4];
 	uint32_t local_id = job->envtp->localid;
@@ -151,7 +151,8 @@ int get_cpuset(cpu_set_t *mask, slurmd_job_t *job)
 	}
 
 	if (job->cpu_bind_type & CPU_BIND_RANK) {
-		CPU_SET(job->envtp->localid % job->cpus, mask);
+		threads = MAX(conf->threads, 1);
+		CPU_SET(job->envtp->localid % (job->cpus*threads), mask);
 		return true;
 	}
 	
