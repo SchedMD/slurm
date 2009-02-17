@@ -52,101 +52,114 @@ print_header $test_id
 
 proc sacct_job { soption } {
 	global sacct
-set exit_code   0
-set matches     0
-set not_support 0
-	send_user "sacct -$soption\n"
-spawn $sacct -$soption
-expect {
-	-re "SLURM accounting storage is disabled" {
-		set not_support 1
-		exp_continue
-	}
-	-re "AllocCPUS     Account       AssocID       AveCPU" {
-		incr matches
-		exp_continue
-	}
-	-re "AvePages      AveRSS        AveVSize      BlockID" {
-		incr matches
-		exp_continue
-	}
-	-re "Cluster       CPUTime       CPUTimeRAW    Elapsed" {
-		incr matches
-		exp_continue
-	}
-	-re "Eligible      End           ExitCode      GID" {
-		incr matches
-		exp_continue
-	}
-	-re "Group         JobID         JobName       NodeList" {
-		incr matches
-		exp_continue
-	}
-	-re "MaxPages      MaxPagesNode  MaxPagesTask  MaxRSS" {
-		incr matches
-		exp_continue
-	}
-	-re "MaxRSSNode    MaxRSSTask    MaxVSize      MaxVSizeNode" {
-		incr matches
-		exp_continue
-	}
-	-re "MaxVSizeTask  MinCPU        MinCPUNode    MinCPUTask" {
-		incr matches
-		exp_continue
-	}
-	-re "NCPUS         NNodes        NTasks        Priority" {
-		incr matches
-		exp_continue
-	}
-	-re "Partition     QOS           QOSRAW        ReqCPUS" {
-		incr matches
-		exp_continue
-	}
-	-re "Reserved      ResvCPU       ResvCPURAW    Start" {
-		incr matches
-		exp_continue
-	}
-	-re "State         Submit        Suspended     SystemCPU" {
-		incr matches
-		exp_continue
-	}
-	-re "Timelimit     TotalCPU      UID           User" {
-		incr matches
-		exp_continue
-	}
-	-re "UserCPU       WCKey         WCKeyID" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacct not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
+	set debug       0
+	set exit_code   0
+	set matches     0
+	set not_support 0
+	send_user "sacct $soption\n"
 
-if {$not_support != 0} {
-	send_user "\nWARNING: can not test without accounting enabled\n"
-	exit 0
-}
-if {$matches != 14} {
-	send_user "\nFAILURE: sacct -$soption failed ($matches)\n"
-	set exit_code 1
-}
+	spawn $sacct $soption
+	expect {
+		-re "SLURM accounting storage is disabled" {
+			set not_support 1
+			exp_continue
+		}
+		-re "AllocCPUS     Account       AssocID       AveCPU" {
+			if {$debug} {send_user "\nmatch1\n"}
+			incr matches
+			exp_continue
+		}
+		-re "AvePages      AveRSS        AveVMSize     BlockID" {
+			if {$debug} {send_user "\nmatch2\n"}
+			incr matches
+			exp_continue
+		}
+		-re "Cluster       CPUTime       CPUTimeRAW    Elapsed" {
+			if {$debug} {send_user "\nmatch3\n"}
+			incr matches
+			exp_continue
+		}
+		-re "Eligible      End           ExitCode      GID" {
+			if {$debug} {send_user "\nmatch4\n"}
+			incr matches
+			exp_continue
+		}
+		-re "Group         JobID         JobName       NodeList" {
+			if {$debug} {send_user "\nmatch5\n"}
+			incr matches
+			exp_continue
+		}
+		-re "MaxPages      MaxPagesNode  MaxPagesTask  MaxRSS" {
+			if {$debug} {send_user "\nmatch6\n"}
+			incr matches
+			exp_continue
+		}
+		-re "MaxRSSNode    MaxRSSTask    MaxVMSize     MaxVMSizeNode" {
+			if {$debug} {send_user "\nmatch7\n"}
+			incr matches
+			exp_continue
+		}
+		-re "MaxVMSizeTask  MinCPU        MinCPUNode    MinCPUTask" {
+			if {$debug} {send_user "\nmatch8\n"}
+			incr matches
+			exp_continue
+		}
+		-re "NCPUS         NNodes        NTasks        Priority" {
+			if {$debug} {send_user "\nmatch9\n"}
+			incr matches
+			exp_continue
+		}
+		-re "Partition     QOS           QOSRAW        ReqCPUS" {
+			if {$debug} {send_user "\nmatch10\n"}
+			incr matches
+			exp_continue
+		}
+		-re "Reserved      ResvCPU       ResvCPURAW    Start" {
+			if {$debug} {send_user "\nmatch11\n"}
+			incr matches
+			exp_continue
+		}
+		-re "State         Submit        Suspended     SystemCPU" {
+			if {$debug} {send_user "\nmatch12\n"}
+			incr matches
+			exp_continue
+		}
+		-re "Timelimit     TotalCPU      UID           User" {
+			if {$debug} {send_user "\nmatch13\n"}
+			incr matches
+			exp_continue
+		}
+		-re "UserCPU       WCKey         WCKeyID" {
+			if {$debug} {send_user "\nmatch14\n"}
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacct not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$not_support != 0} {
+		send_user "\nWARNING: can not test without accounting enabled\n"
+		exit 0
+	}
 	return $matches
 }
+
 ################################################################
-set matches [sacct_job -helpformat]
+set matches [sacct_job --helpformat]
 if {$matches != 14} {
-	send_user "\nFAILURE: sacct --allusers failed ($matches)\n"
+	send_user "\nFAILURE: sacct --helpformat failed ($matches)\n"
 	set exit_code 1
 }
 
-set matches [sacct_job e]
+set matches [sacct_job -e]
 if {$matches != 14} {
-	send_user "\nFAILURE: sacct -a failed ($matches)\n"
+	send_user "\nFAILURE: sacct -e failed ($matches)\n"
 	set exit_code 1
 }
 
