@@ -42,6 +42,15 @@
 #define CR_DEBUG 1
 #endif
 
+#if(0)
+/* Using CR_SOCKET or CR_SOCKET_MEMORY will not allocate a socket to more
+ * than one job at a time, but it also will not grant a job access to more
+ * CPUs on the socket than requested. If ALLOCATE_FULL_SOCKET is defined,
+ * then a job will be given access to every cores on each allocated socket.
+ */
+#define ALLOCATE_FULL_SOCKET 1
+#endif
+
 /* _compute_task_c_b_task_dist - compute the number of tasks on each
  * of the node for the cyclic and block distribution. We need to do
  * this in the case of consumable resources so that we have an exact
@@ -160,14 +169,22 @@ static int _compute_plane_dist(struct job_record *job_ptr)
  * The CPU array contains the distribution of CPUs, which can include
  * virtual CPUs (hyperthreads)
  */
-static void _block_sync_core_bitmap(struct job_record *job_ptr)
+static void _block_sync_core_bitmap(struct job_record *job_ptr,
+				    const select_type_plugin_info_t cr_type)
 {
 	uint32_t c, i, n, size, csize;
 	uint16_t cpus, num_bits, vpus = 1;
 	select_job_res_t job_res = job_ptr->select_job;
+	bool alloc_sockets = false;
+
 	if (!job_res)
 		return;
-	
+
+#ifdef ALLOCATE_FULL_SOCKET
+	if ((cr_type == CR_SOCKET) || (cr_type == CR_SOCKET_MEMORY))
+		alloc_sockets = true;
+#endif
+
 	size  = bit_size(job_res->node_bitmap);
 	csize = bit_size(job_res->core_bitmap);
 	for (c = 0, i = 0, n = 0; n < size; n++) {
@@ -184,7 +201,7 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr)
 			vpus  = MIN(job_ptr->details->mc_ptr->max_threads,
 				    select_node_record[n].vpus);
 		}
-		
+
 		while (cpus > 0 && num_bits > 0) {
 			if (bit_test(job_res->core_bitmap, c++)) {
 				if (cpus < vpus)
@@ -199,6 +216,13 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr)
 			 * of set bits in the core bitmap for a given node */
 			fatal("cons_res: cpus computation error");
 
+		if (alloc_sockets) {	/* Advance to end of socket */
+			while ((num_bits > 0) && 
+			       (c % select_node_record[n].cores)) {
+				c++;
+				num_bits--;
+			}
+		}
 		while (num_bits > 0) {
 			bit_clear(job_res->core_bitmap, c++);
 			num_bits--;
@@ -213,21 +237,29 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr)
  * The CPU array contains the distribution of CPUs, which can include
  * virtual CPUs (hyperthreads)
  */
-static void _cyclic_sync_core_bitmap(struct job_record *job_ptr)
+static void _cyclic_sync_core_bitmap(struct job_record *job_ptr,
+				     const select_type_plugin_info_t cr_type)
 {
 	uint32_t c, i, s, n, *sock_start, *sock_end, size, csize;
 	uint16_t cps = 0, cpus, vpus, sockets, sock_size;
 	select_job_res_t job_res = job_ptr->select_job;
 	bitstr_t *core_map;
-	if (!job_res)
+	bool *sock_used, alloc_sockets = false;
+
+	if ((job_res == NULL) || (job_res->core_bitmap == NULL))
 		return;
+
+#ifdef ALLOCATE_FULL_SOCKET
+	if ((cr_type == CR_SOCKET) || (cr_type == CR_SOCKET_MEMORY))
+		alloc_sockets = true;
+#endif
+
 	core_map = job_res->core_bitmap;
-	if (!core_map)
-		return;
-	
+
 	sock_size  = select_node_record[0].sockets;
 	sock_start = xmalloc(sock_size * sizeof(uint32_t));
 	sock_end   = xmalloc(sock_size * sizeof(uint32_t));
+	sock_used  = xmalloc(sock_size * sizeof(bool));
 	
 	size  = bit_size(job_res->node_bitmap);
 	csize = bit_size(core_map);
@@ -238,12 +270,12 @@ static void _cyclic_sync_core_bitmap(struct job_record *job_ptr)
 		sockets = select_node_record[n].sockets;
 		cps     = select_node_record[n].cores;
 		vpus    = MIN(job_ptr->details->mc_ptr->max_threads,
-				select_node_record[n].vpus);
+			      select_node_record[n].vpus);
 #ifdef CR_DEBUG
 		info("DEBUG: job %u node %s max_threads %u, vpus %u cpus %u",
-			job_ptr->job_id, select_node_record[n].node_ptr->name,
-			job_ptr->details->mc_ptr->max_threads, vpus,
-			job_res->cpus[i]);
+		     job_ptr->job_id, select_node_record[n].node_ptr->name,
+		     job_ptr->details->mc_ptr->max_threads, vpus,
+		     job_res->cpus[i]);
 #endif
 		if ((c + (sockets * cps)) > csize)
 			fatal ("cons_res: _cyclic_sync_core_bitmap index error");
@@ -251,7 +283,8 @@ static void _cyclic_sync_core_bitmap(struct job_record *job_ptr)
 		if (sockets > sock_size) {
 			sock_size = sockets;
 			xrealloc(sock_start, sock_size * sizeof(uint32_t));
-			xrealloc(sock_end, sock_size * sizeof(uint32_t));
+			xrealloc(sock_end,   sock_size * sizeof(uint32_t));
+			xrealloc(sock_used,  sock_size * sizeof(bool));
 		}
 		
 		for (s = 0; s < sockets; s++) {
@@ -263,9 +296,13 @@ static void _cyclic_sync_core_bitmap(struct job_record *job_ptr)
 			uint16_t prev_cpus = cpus;
 			for (s = 0; s < sockets && cpus > 0; s++) {
 
-				while (sock_start[s] < sock_end[s] &&
-					bit_test(core_map, sock_start[s]) == 0)
-					sock_start[s]++;
+				while (sock_start[s] < sock_end[s]) {
+					if (bit_test(core_map,sock_start[s])) {
+						sock_used[s] = true;
+						break;
+					} else
+						sock_start[s]++;
+				}
 
 				if (sock_start[s] == sock_end[s])
 					/* this socket is unusable*/
@@ -286,13 +323,17 @@ static void _cyclic_sync_core_bitmap(struct job_record *job_ptr)
 		for (s = 0; s < sockets; s++) {
 			if (sock_start[s] == sock_end[s])
 				continue;
-			bit_nclear(core_map, sock_start[s], sock_end[s]-1);
+			if (!alloc_sockets || !sock_used[s]) {
+				bit_nclear(core_map, sock_start[s], 
+					   sock_end[s]-1);
+			}
 		}
 		/* advance 'c' to the beginning of the next node */
 		c += sockets * cps;
 	}
 	xfree(sock_start);
 	xfree(sock_end);
+	xfree(sock_used);
 }
 
 
@@ -361,7 +402,7 @@ extern int cr_dist(struct job_record *job_ptr,
 		cr_cpu = 0;
 
 	if (cr_cpu) {
-		_block_sync_core_bitmap(job_ptr);
+		_block_sync_core_bitmap(job_ptr, cr_type);
 		return SLURM_SUCCESS;
 	}
 
@@ -372,7 +413,7 @@ extern int cr_dist(struct job_record *job_ptr,
 	case SLURM_DIST_BLOCK_BLOCK:
 	case SLURM_DIST_CYCLIC_BLOCK:
 	case SLURM_DIST_PLANE:
-		_block_sync_core_bitmap(job_ptr);
+		_block_sync_core_bitmap(job_ptr, cr_type);
 		break;
 	case SLURM_DIST_ARBITRARY:
 	case SLURM_DIST_BLOCK:
@@ -380,7 +421,7 @@ extern int cr_dist(struct job_record *job_ptr,
 	case SLURM_DIST_BLOCK_CYCLIC:
 	case SLURM_DIST_CYCLIC_CYCLIC:
 	case SLURM_DIST_UNKNOWN:
-		_cyclic_sync_core_bitmap(job_ptr); 
+		_cyclic_sync_core_bitmap(job_ptr, cr_type); 
 		break;
 	default:
 		error("select/cons_res: invalid task_dist entry");

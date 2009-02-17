@@ -1136,10 +1136,14 @@ Cores and memory are consumable resources.
 Setting a value for \fBDefMemPerCPU\fR is strongly recommended.
 .TP
 \fBCR_Socket\fR
-Sockets are consumable resources.
+Sockets are consumable resources. 
+Note that jobs requesting one CPU will only be given access to 
+that one CPU, but no other job will share the socket.
 .TP
 \fBCR_Socket_Memory\fR
 Memory and CPUs are consumable resources.
+Note that jobs requesting one CPU will only be given access to 
+that one CPU, but no other job will share the socket.
 Setting a value for \fBDefMemPerCPU\fR is strongly recommended.
 .TP
 \fBCR_Memory\fR
