@@ -720,7 +720,8 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 			alloc_lps = 1;
 		}
 		if (tasks_to_launch > alloc_lps) {
-			/* This is expected with the --overcommit option */
+			/* This is expected with the --overcommit option
+			 * or hyperthreads */
 			debug("cons_res: More than one tasks per logical "
 			      "processor (%d > %u) on host [%u.%u %ld %s] ",
 			      tasks_to_launch, alloc_lps, arg.jobid,
