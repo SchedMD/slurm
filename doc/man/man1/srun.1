@@ -57,10 +57,11 @@ a specific time of day (seconds are optional).
 (If that time is already past, the next day is assumed.) 
 You may also specify \fImidnight\fR, \fInoon\fR, or 
 \fIteatime\fR (4pm) and you can have a time\-of\-day suffixed 
-with \fIAM\fR or \fIPM\fR for running in the morning or the evening.  
+with \fIAM\fR or \fIPM\fR for running in the morning or the evening.
 You can also say what day the job will be run, by specifying
 a date of the form \fIMMDDYY\fR or \fIMM/DD/YY\fR
-or \fIMM.DD.YY\fR. You can also
+\fIYYYY-MM-DD\fR. Combine date and time using the following 
+format \fIYYYY\-MM\-DD[THH[:MM[:SS]]]\fR. You can also
 give times like \fInow + count time\-units\fR, where the time\-units
 can be \fIseconds\fR (default), \fIminutes\fR, \fIhours\fR, 
 \fIdays\fR, or \fIweeks\fR and you can tell SLURM to run 
@@ -73,7 +74,7 @@ For example:
    \-\-begin=16:00
    \-\-begin=now+1hour
    \-\-begin=now+60           (seconds by default)
-   \-\-begin=02/22/08-12:34:67
+   \-\-begin=2010-01-20T12:34:67
 .fi
 
 .TP
