@@ -1587,7 +1587,7 @@ static acct_account_rec_t *_set_acct_up(sacctmgr_file_opts_t *file_opts,
 		acct->organization = xstrdup(parent);
 	else
 		acct->organization = xstrdup(file_opts->name);
-	/* info("adding acct %s (%s) (%s)", */
+	/* info("adding account %s (%s) (%s)", */
 /* 	        acct->name, acct->description, */
 /* 		acct->organization); */
 

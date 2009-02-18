@@ -518,7 +518,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 
 /*
  * IN: user_cond - used for the assoc_cond pointing to the user and
- *     acct list 
+ *     account list 
  * IN: check - whether or not to check if the existance of the above lists
  */
 static int _check_coord_request(acct_user_cond_t *user_cond, bool check)
@@ -967,7 +967,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 			destroy_acct_wckey_cond(wckey_cond);
 			destroy_acct_association_cond(assoc_cond);
 			exit_code=1;
-			fprintf(stderr, " Need name of acct to "
+			fprintf(stderr, " Need name of account to "
 				"add user to.\n"); 
 			return SLURM_ERROR;
 		}
