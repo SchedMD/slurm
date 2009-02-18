@@ -1100,7 +1100,7 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 					error("step_layout_create exclusive");
 					return NULL;
 				}
-				usable_cpus = MAX(usable_cpus, 
+				usable_cpus = MIN(usable_cpus, 
 						  (num_tasks - set_cpus));
 			} else
 				usable_cpus = job_ptr->alloc_lps[pos];
