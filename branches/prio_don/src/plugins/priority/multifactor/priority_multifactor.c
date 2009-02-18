@@ -287,7 +287,7 @@ static int _set_children_efctv_usage(List childern_list)
 
 		if (assoc->parent_assoc_ptr == assoc_mgr_root_assoc) {
 			assoc->efctv_usage = assoc->norm_usage;
-			debug4("Effective usage for %s %Lf",
+			info("Effective usage for %s %Lf",
 			       assoc->acct, assoc->efctv_usage);
 		} else if(assoc->user) {
 			assoc->efctv_usage = NO_VAL;
@@ -297,12 +297,12 @@ static int _set_children_efctv_usage(List childern_list)
 				((assoc->parent_assoc_ptr->efctv_usage -
 				  assoc->norm_usage) *
 				 assoc->raw_shares / assoc->level_shares);
-			debug4("Effective usage for acct %s "
-			       "%Lf + ((%Lf - %Lf) * %Lf / %Lf) = %Lf",
-				assoc->acct, assoc->norm_usage,
-				assoc->parent_assoc_ptr->efctv_usage, assoc->norm_usage,
-				assoc->raw_shares, assoc->level_shares,
-				assoc->efctv_usage);
+			info("Effective usage for acct %s "
+			     "%Lf + ((%Lf - %Lf) * %d / %d) = %Lf",
+			     assoc->acct, assoc->norm_usage,
+			     assoc->parent_assoc_ptr->efctv_usage,
+			     assoc->norm_usage, assoc->raw_shares,
+			     assoc->level_shares, assoc->efctv_usage);
 		}
 		_set_children_efctv_usage(assoc->childern_list);
 	}
@@ -338,12 +338,12 @@ static double _get_fairshare_priority( struct job_record *job_ptr )
 			((assoc->parent_assoc_ptr->efctv_usage -
 			  assoc->norm_usage) *
 			 assoc->raw_shares / assoc->level_shares);
-		debug4("Effective usage for user %s in acct %s "
-		       "%Lf + ((%Lf - %Lf) * %Lf / %Lf) = %Lf",
-		       assoc->user, assoc->acct, assoc->norm_usage,
-		       assoc->parent_assoc_ptr->efctv_usage, assoc->norm_usage,
-		       assoc->raw_shares, assoc->level_shares,
-		       assoc->efctv_usage);
+		info("Effective usage for user %s in acct %s "
+		     "%Lf + ((%Lf - %Lf) * %d / %d) = %Lf",
+		     assoc->user, assoc->acct, assoc->norm_usage,
+		     assoc->parent_assoc_ptr->efctv_usage, assoc->norm_usage,
+		     assoc->raw_shares, assoc->level_shares,
+		     assoc->efctv_usage);
 
 	} else {
 		/* Multiply by something really close to 1 so the next
@@ -356,14 +356,14 @@ static double _get_fairshare_priority( struct job_record *job_ptr )
 
 	// Priority is 0 -> 1
 	fs_priority = (assoc->norm_shares - assoc->efctv_usage + 1.0) / 2.0;
-	debug4("Fair-share priority for user %s in acct %s"
+	info("Fairshare priority for user %s in acct %s"
 	       "((%f - %Lf) + 1) / 2 = %lf",
 	       assoc->user, assoc->acct, assoc->norm_shares,
 	       assoc->efctv_usage, fs_priority);
 
 	slurm_mutex_unlock(&assoc_mgr_association_lock);
 
-	debug3("job %u has a fairshare priority of %lf",
+	info("job %u has a fairshare priority of %lf",
 	      job_ptr->job_id, fs_priority);
 
 	return fs_priority;
