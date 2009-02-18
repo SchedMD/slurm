@@ -21,8 +21,8 @@ More complex configurations rely upon a
 <a href="http://www.mysql.com/">MySQL</a> database for archiving 
 <a href="accounting.html">accounting</a> records, managing 
 <a href="resource_limits.html">resource limits</a> by user or bank account, 
-or supporting sophisticated <a href="priority_multifactor.html">multifactor
-  job prioritization</a> algorithms.
+or supporting sophisticated 
+<a href="priority_multifactor.html">job prioritization</a> algorithms.
 SLURM also provides an Applications Programming Interface (API) for 
 integration with external schedulers such as 
 <a href="http://www.clusterresources.com/pages/products/maui-cluster-scheduler.php">
@@ -35,7 +35,8 @@ respects:
 <ul>
 <li>Its source code is freely available under the 
 <a href="http://www.gnu.org/licenses/gpl.html">GNU General Public License</a>.</li>
-<li>It is designed to operate in a heterogeneous cluster with up to 65,536 nodes.</li>
+<li>It is designed to operate in a heterogeneous cluster with up to 65,536 nodes
+and hundreds of thousands of processors.</li>
 <li>It is portable; written in C with a GNU autoconf configuration engine. 
 While initially written for Linux, other UNIX-like operating systems should 
 be easy porting targets.</li>
