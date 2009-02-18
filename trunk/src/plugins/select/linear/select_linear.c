@@ -527,7 +527,7 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap)
  *	satisfy the request are cleared, other left set
  * IN min_nodes - minimum count of nodes
  * IN req_nodes - requested (or desired) count of nodes
- * IN max_nodes - maximum count of nodes (0==don't care)
+ * IN max_nodes - maximum count of nodes
  * IN mode - SELECT_MODE_RUN_NOW: try to schedule job now
  *           SELECT_MODE_TEST_ONLY: test if job can ever run
  *           SELECT_MODE_WILL_RUN: determine when and where job can run
