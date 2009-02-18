@@ -208,7 +208,6 @@ extern int process(shares_response_msg_t *resp)
 		int curr_inx = 1;
 		char *tmp_char = NULL;
 		char *local_acct = NULL;
-		double tmp_double = 0.0;
 
 		while((field = list_next(itr2))) {
 			switch(field->type) {
