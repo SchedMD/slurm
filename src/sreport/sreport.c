@@ -653,6 +653,18 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
              - Users=<OPT>      - List of users jobs to include in report. \n\
                                   Default is all.                          \n\
                                                                            \n\
+  Format options are different for listing each entity pair.               \n\
+                                                                           \n\
+       Cluster            - Allocation, Account, Cluster, CPUcount         \n\
+                            Down, Idle, Login, Overcommited, Proper,       \n\
+                            Reported, Reserved, Used, WCKey                \n\
+                                                                           \n\
+       Job                - Account, CPUcount, Duration, Nodecount,        \n\
+                            User                                           \n\
+                                                                           \n\
+                                                                           \n\
+       User               - Account, Cluster, Login, Proper, Used          \n\
+                                                                           \n\
                                                                            \n\
   All commands and options are case-insensitive.                         \n\n");
 	
