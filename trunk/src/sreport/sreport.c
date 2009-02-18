@@ -655,11 +655,11 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
                                                                            \n\
   Format options are different for listing each entity pair.               \n\
                                                                            \n\
-       Cluster            - Allocation, Account, Cluster, CPUcount         \n\
+       Cluster            - Allocation, Account, Cluster, CPU_count        \n\
                             Down, Idle, Login, Overcommited, Proper,       \n\
                             Reported, Reserved, Used, WCKey                \n\
                                                                            \n\
-       Job                - Account, CPUcount, Duration, Nodecount,        \n\
+       Job                - Account, CPU_count, Duration, Nodecount,       \n\
                             User                                           \n\
                                                                            \n\
                                                                            \n\
