@@ -142,7 +142,7 @@ extern int process(shares_response_msg_t *resp)
 			field->type = PRINT_EUSED;
 			field->name = xstrdup("Effective Usage");
 			field->len = 11;
-			field->print_routine = _sshare_print_double;
+			field->print_routine = print_fields_double;
 		} else if(!strncasecmp("ID", object, 1)) {
 			field->type = PRINT_ID;
 			field->name = xstrdup("ID");
@@ -157,7 +157,7 @@ extern int process(shares_response_msg_t *resp)
 			field->type = PRINT_NORMU;
 			field->name = xstrdup("Norm Usage");
 			field->len = 11;
-			field->print_routine = _sshare_print_double;
+			field->print_routine = print_fields_double;
 		} else if(!strncasecmp("RawShares", object, 4)) {
 			field->type = PRINT_RAWS;
 			field->name = xstrdup("Raw Shares");
@@ -167,7 +167,7 @@ extern int process(shares_response_msg_t *resp)
 			field->type = PRINT_RAWU;
 			field->name = xstrdup("Raw Usage");
 			field->len = 11;
-			field->print_routine = _sshare_print_double;
+			field->print_routine = print_fields_double;
 		} else if(!strncasecmp("User", object, 1)) {
 			field->type = PRINT_USER;
 			field->name = xstrdup("User");

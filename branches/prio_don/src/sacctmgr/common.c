@@ -1056,10 +1056,10 @@ extern void sacctmgr_print_assoc_limits(acct_association_rec_t *assoc)
 	if(!assoc)
 		return;
 
-	if(assoc->fairshare == INFINITE)
+	if(assoc->raw_shares == INFINITE)
 		printf("  Fairshare     = NONE\n");
-	else if(assoc->fairshare != NO_VAL) 
-		printf("  Fairshare     = %u\n", assoc->fairshare);
+	else if(assoc->raw_shares != NO_VAL) 
+		printf("  Fairshare     = %u\n", assoc->raw_shares);
 
 	if(assoc->grp_cpu_mins == INFINITE)
 		printf("  GrpCPUMins    = NONE\n");

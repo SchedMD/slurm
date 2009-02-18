@@ -356,7 +356,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 					 MAX(command_len, 1))) {
 			if(!assoc)
 				continue;
-			if (get_uint(argv[i]+end, &assoc->fairshare, 
+			if (get_uint(argv[i]+end, &assoc->raw_shares, 
 				     "FairShare") == SLURM_SUCCESS)
 				a_set = 1;
 		} else if (!strncasecmp (argv[i], "GrpCPUMins", 
@@ -772,7 +772,7 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 			assoc->acct = xstrdup(name);
 			assoc->cluster = xstrdup(cluster);
 			assoc->parent_acct = xstrdup(start_assoc->parent_acct);
-			assoc->fairshare = start_assoc->fairshare;
+			assoc->raw_shares = start_assoc->raw_shares;
 
 			assoc->grp_cpu_mins = start_assoc->grp_cpu_mins;
 			assoc->grp_cpus = start_assoc->grp_cpus;
@@ -1202,7 +1202,7 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 					case PRINT_FAIRSHARE:
 						field->print_routine(
 							field, 
-							assoc->fairshare,
+							assoc->raw_shares,
 							(curr_inx == 
 							 field_count));
 						break;
