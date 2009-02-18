@@ -1130,18 +1130,30 @@ Setting a value for \fBDefMemPerCPU\fR is strongly recommended.
 .TP
 \fBCR_Core\fR
 Cores are consumable resources.
+On nodes with hyper\-threads, each thread is counted as a CPU to 
+satisfy a job's resource requirement, but multiple jobs are not 
+allocated threads on the same core.
 .TP
 \fBCR_Core_Memory\fR
 Cores and memory are consumable resources.
+On nodes with hyper\-threads, each thread is counted as a CPU to 
+satisfy a job's resource requirement, but multiple jobs are not 
+allocated threads on the same core.
 Setting a value for \fBDefMemPerCPU\fR is strongly recommended.
 .TP
 \fBCR_Socket\fR
 Sockets are consumable resources. 
+On nodes with multiple cores, each core or thread is counted as a CPU 
+to satisfy a job's resource requirement, but multiple jobs are not 
+allocated resources on the same socket.
 Note that jobs requesting one CPU will only be given access to 
 that one CPU, but no other job will share the socket.
 .TP
 \fBCR_Socket_Memory\fR
-Memory and CPUs are consumable resources.
+Memory and sockets are consumable resources. 
+On nodes with multiple cores, each core or thread is counted as a CPU 
+to satisfy a job's resource requirement, but multiple jobs are not
+allocated resources on the same socket.
 Note that jobs requesting one CPU will only be given access to 
 that one CPU, but no other job will share the socket.
 Setting a value for \fBDefMemPerCPU\fR is strongly recommended.
@@ -2124,7 +2136,7 @@ PartitionName=long Nodes=dev[9\-17] MaxTime=120 AllowGroups=admin
 
 .SH "COPYING"
 Copyright (C) 2002\-2007 The Regents of the University of California.
-Copyright (C) 2008 Lawrence Livermore National Security.
+Copyright (C) 2008\-2009 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 LLNL\-CODE\-402394.
 .LP
