@@ -207,7 +207,9 @@ static int _create_allocation(char *com, List allocated_blocks)
 	allocated_block_t *allocated_block = NULL;
 	ba_request_t *request = (ba_request_t*) xmalloc(sizeof(ba_request_t)); 
 	int diff=0;
-
+#ifndef HAVE_BGL
+	int small16=-1, small64=-1, small256=-1;
+#endif
 	request->geometry[0] = (uint16_t)NO_VAL;
 	request->conn_type=SELECT_TORUS;
 	request->rotate = false;
@@ -226,12 +228,28 @@ static int _create_allocation(char *com, List allocated_blocks)
 		} else if(!strncasecmp(com+i, "small", 5)) {
 			request->conn_type = SELECT_SMALL;
 			i+=5;
+		} else if(!strncasecmp(com+i, "deny", 4)) {
+			i+=4;
+			if(strstr(com+i, "X")) 
+				request->deny_pass |= PASS_DENY_X;
+			if(strstr(com+i, "Y")) 
+				request->deny_pass |= PASS_DENY_Y;
+			if(strstr(com+i, "Z")) 
+				request->deny_pass |= PASS_DENY_Z;
+			if(!strcasecmp(com+i, "ALL")) 
+				request->deny_pass |= PASS_DENY_ALL;
 		} else if(!strncasecmp(com+i, "nodecard", 8)) {
 			small32=0;
-			i+=5;
+			i+=8;
 		} else if(!strncasecmp(com+i, "quarter", 7)) {
 			small128=0;
-			i+=6;
+			i+=7;
+		} else if(!strncasecmp(com+i, "32CN", 4)) {
+			small32=0;
+			i+=4;
+		} else if(!strncasecmp(com+i, "128CN", 5)) {
+			small128=0;
+			i+=5;
 		} else if(!strncasecmp(com+i, "rotate", 6)) {
 			request->rotate=true;
 			i+=6;
@@ -247,13 +265,35 @@ static int _create_allocation(char *com, List allocated_blocks)
 			      || (com[i] >= 'A' && com[i] <= 'Z'))) {
 			starti=i;
 			i++;
-		} else if(small32 == 0 && (com[i] < 58 && com[i] > 47)) {
+		} else if(small32 == 0 && (com[i] >= '0' && com[i] <= '9')) {
 			small32=i;
 			i++;
-		} else if(small128 == 0 && (com[i] < 58 && com[i] > 47)) {
+		} else if(small128 == 0 && (com[i] >= '0' && com[i] <= '9')) {
 			small128=i;
 			i++;
-		} else if(geoi<0 && ((com[i] >= '0' && com[i] <= '9')
+		} 
+#ifndef HAVE_BGL
+		else if(!strncasecmp(com+i, "16CN", 4)) {
+			small16=0;
+			i+=4;
+		} else if(!strncasecmp(com+i, "64CN", 4)) {
+			small64=0;
+			i+=4;
+		} else if(!strncasecmp(com+i, "256CN", 5)) {
+			small256=0;
+			i+=5;
+		} else if(small16 == 0 && (com[i] >= '0' && com[i] <= '9')) {
+			small16=i;
+			i++;
+		} else if(small64 == 0 && (com[i] >= '0' && com[i] <= '9')) {
+			small64=i;
+			i++;
+		} else if(small256 == 0 && (com[i] >= '0' && com[i] <= '9')) {
+			small256=i;
+			i++;
+		} 
+#endif
+		else if(geoi<0 && ((com[i] >= '0' && com[i] <= '9')
 				     || (com[i] >= 'A' && com[i] <= 'Z'))) {
 			geoi=i;
 			i++;
@@ -264,36 +304,79 @@ static int _create_allocation(char *com, List allocated_blocks)
 	}		
 	
 	if(request->conn_type == SELECT_SMALL) {
+		int total = 512;
+#ifndef HAVE_BGL
+		if(small16 > 0) {
+			request->small16 = atoi(&com[small16]);
+			total -= request->small16 * 16;
+		}
+
+		if(small64 > 0) {
+			request->small64 = atoi(&com[small64]);
+			total -= request->small64 * 64;
+		}
+
+		if(small256 > 0) {
+			request->small256 = atoi(&com[small256]);
+			total -= request->small256 * 256;
+		}
+#endif
+
 		if(small32 > 0) {
 			request->small32 = atoi(&com[small32]);
-			small32 = request->small32/4;
-			request->small32 = small32*4;
+			total -= request->small32 * 32;
 		}
 
-		request->small128 = 4;
-		
-		if(request->small32 > 0)
-			request->small128 -= small32;
-
-		if(request->small128 > 4) {
-			request->small128 = 4;
-			request->small32 = 0;
-		} else if(request->small32 > 16) {
-			request->small128 = 0;
-			request->small32 = 16;
+		if(small128 > 0) {
+			request->small128 = atoi(&com[small128]);
+			total -= request->small128 * 128;
 		}
-		
-		small128 = request->small128*4;
-		small32 = request->small32;
-		if((small128+small32) > 16) {
+		if(total < 0) {
 			sprintf(error_string, 
-				"please specify a complete split of a "
-				"Base Partion\n"
-				"(i.e. small32=4)");
+				"You asked for %d more nodes than "
+				"are in a Midplane\n", total * 2);
 			geoi = -1;
+
+		} 
+
+#ifndef HAVE_BGL
+		while(total > 0) {
+			if(total >= 256) {
+				request->small256++;
+				total -= 256;
+			} else if(total >= 128) {
+				request->small128++;
+				total -= 128;
+			} else if(total >= 64) {
+				request->small64++;
+				total -= 64;
+			} else if(total >= 32) {
+				request->small32++;
+				total -= 32;
+			} else if(total >= 16) {
+				request->small16++;
+				total -= 16;
+			} else
+				break;
 		}
+#else
+		while(total > 0) {
+			if(total >= 128) {
+				request->small128++;
+				total -= 128;
+			} else if(total >= 32) {
+				request->small32++;
+				total -= 32;
+			} else
+				break;
+		}
+#endif
 		request->size = 1;
-				
+/* 		sprintf(error_string, */
+/* 			"got %d %d %d %d %d %d", */
+/* 			total, request->small16, request->small32, */
+/* 			request->small64, request->small128, */
+/* 			request->small256); */
 	}
 
 	if(geoi<0 && !request->size) {
@@ -861,6 +944,12 @@ static int _copy_allocation(char *com, List allocated_blocks)
 		request->conn_type=allocated_block->request->conn_type;
 		request->rotate =allocated_block->request->rotate;
 		request->elongate = allocated_block->request->elongate;
+		request->deny_pass = allocated_block->request->deny_pass;
+#ifndef HAVE_BGL
+		request->small16 = allocated_block->request->small16;
+		request->small64 = allocated_block->request->small64;
+		request->small256 = allocated_block->request->small256;
+#endif
 		request->small32 = allocated_block->request->small32;
 		request->small128 = allocated_block->request->small128;
 				
@@ -964,9 +1053,23 @@ static int _save_allocation(char *com, List allocated_blocks)
 				conn_type = "MESH";
 			else {
 				conn_type = "SMALL";
-				xstrfmtcat(extra, " NodeCards=%d Quarters=%d",
+#ifndef HAVE_BGL
+				xstrfmtcat(extra, 
+					   " 16CNBlocks=%d 32CNBlocks=%d "
+					   "64CNBlocks=%d 128CNBlocks=%d "
+					   "256CNBlocks=%d",
+					   allocated_block->request->small16,
+					   allocated_block->request->small32,
+					   allocated_block->request->small64,
+					   allocated_block->request->small128,
+					   allocated_block->request->small256);
+#else
+				xstrfmtcat(extra, 
+					   " 32CNBlocks=%d 128CNBlocks=%d",
 					   allocated_block->request->small32,
 					   allocated_block->request->small128);
+
+#endif
 			}
 			xstrfmtcat(save_string, "BPs=%s Type=%s", 
 				   allocated_block->request->save_name, 
@@ -1229,12 +1332,28 @@ static void _print_header_command(void)
 		  main_xcord, "NODES");
 #endif
 	main_xcord += 10;
+
+#ifndef HAVE_BGL
 	mvwprintw(text_win, main_ycord,
-		  main_xcord, "NODECARDS");
-	main_xcord += 11;
+		  main_xcord, "16CN");
+	main_xcord += 5;
+#endif
 	mvwprintw(text_win, main_ycord,
-		  main_xcord, "QUARTERS");
-	main_xcord += 10;
+		  main_xcord, "32CN");
+	main_xcord += 5;
+#ifndef HAVE_BGL
+	mvwprintw(text_win, main_ycord,
+		  main_xcord, "64CN");
+	main_xcord += 5;
+#endif
+	mvwprintw(text_win, main_ycord,
+		  main_xcord, "128CN");
+	main_xcord += 6;
+#ifndef HAVE_BGL
+	mvwprintw(text_win, main_ycord,
+		  main_xcord, "256CN");
+	main_xcord += 6;
+#endif
 #ifdef HAVE_BG
 	mvwprintw(text_win, main_ycord,
 		  main_xcord, "BP_LIST");
@@ -1252,7 +1371,7 @@ static void _print_text_command(allocated_block_t *allocated_block)
 		COLOR_PAIR(allocated_block->color));
 			
 	mvwprintw(text_win, main_ycord,
-		  main_xcord, "%c",allocated_block->letter);
+		  main_xcord, "%c", allocated_block->letter);
 	main_xcord += 4;
 	if(allocated_block->request->conn_type==SELECT_TORUS) 
 		mvwprintw(text_win, main_ycord,
@@ -1286,18 +1405,40 @@ static void _print_text_command(allocated_block_t *allocated_block)
 	main_xcord += 10;
 	
 	if(allocated_block->request->conn_type == SELECT_SMALL) {
+#ifndef HAVE_BGL
+		mvwprintw(text_win, main_ycord,
+			  main_xcord, "%d", 
+			  allocated_block->request->small16);
+		main_xcord += 5;
+#endif
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "%d", 
 			  allocated_block->request->small32);
-		main_xcord += 11;
+		main_xcord += 5;
+#ifndef HAVE_BGL
+		mvwprintw(text_win, main_ycord,
+			  main_xcord, "%d", 
+			  allocated_block->request->small64);
+		main_xcord += 5;
+#endif
 		mvwprintw(text_win, main_ycord,
 			  main_xcord, "%d", 
 			  allocated_block->request->small128);
-		main_xcord += 10;
+		main_xcord += 6;
+#ifndef HAVE_BGL
+		mvwprintw(text_win, main_ycord,
+			  main_xcord, "%d", 
+			  allocated_block->request->small256);
+		main_xcord += 6;
+#endif
 		
 	} else
-		main_xcord += 21;
-	
+#ifndef HAVE_BGL
+		main_xcord += 27;
+#else
+		main_xcord += 11;
+#endif	
+
 	mvwprintw(text_win, main_ycord,
 		  main_xcord, "%s",
 		  allocated_block->request->save_name);
