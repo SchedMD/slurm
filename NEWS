@@ -25,6 +25,8 @@ documents those changes that are of interest to users and admins.
     STARTJOB request: "TASKLIST includes non-responsive nodes".
  -- Fix bug in task layout for heterogeneous nodes and srun --exclusive
     option.
+ -- Fix bug in select/linear when used with sched/gang that can result in a 
+    job's required or excluded node specification being ignored.
 
 * Changes in SLURM 1.3.13
 =========================
