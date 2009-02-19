@@ -50,7 +50,10 @@ extern int set_oom_adj(int adj)
 
 	fd = open("/proc/self/oom_adj", O_WRONLY);
 	if (fd < 0) {
-		verbose("failed to open /proc/self/oom_adj: %m");
+		if (errno == ENOENT)
+			debug("failed to open /proc/self/oom_adj: %m");
+		else
+			verbose("failed to open /proc/self/oom_adj: %m");
 		return -1;
 	}
 	if (snprintf(oom_adj, 16, "%d", adj) >= 16) {
