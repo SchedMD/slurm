@@ -2,7 +2,7 @@
  *  task_plugin.h - Define plugin functions for task pre_launch and post_term.
  *****************************************************************************
  *  Copyright (C) 2005-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  LLNL-CODE-402394.
@@ -60,6 +60,13 @@ extern int slurmd_task_fini(void);
  *                          P L U G I N   C A L L S                       *
  **************************************************************************
  */
+
+/*
+ * Slurmd has received a batch job launch request.
+ *
+ * RET - slurm error code
+ */
+extern int slurmd_batch_request(uint32_t job_id, batch_job_launch_msg_t *req);
 
 /*
  * Slurmd has received a launch request.
