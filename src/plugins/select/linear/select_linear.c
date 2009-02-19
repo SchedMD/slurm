@@ -661,6 +661,7 @@ static int _find_job_mate(struct job_record *job_ptr, bitstr_t *bitmap,
 {
 	ListIterator job_iterator;
 	struct job_record *job_scan_ptr;
+	int rc = EINVAL;
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_scan_ptr = (struct job_record *) list_next(job_iterator))) {
@@ -670,11 +671,12 @@ static int _find_job_mate(struct job_record *job_ptr, bitstr_t *bitmap,
 		    (job_scan_ptr->total_procs >= job_ptr->num_procs) &&
 		    bit_super_set(job_scan_ptr->node_bitmap, bitmap)) {
 			bit_and(bitmap, job_scan_ptr->node_bitmap);
-			return SLURM_SUCCESS;
+			rc = SLURM_SUCCESS;
+			break;
 		}
 	}
 	list_iterator_destroy(job_iterator);
-	return EINVAL;
+	return rc;
 }
 
 /* _job_test - does most of the real work for select_p_job_test(), which 
