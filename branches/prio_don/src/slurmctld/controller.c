@@ -975,7 +975,7 @@ static int _accounting_cluster_ready()
 			continue;
 #ifdef SLURM_NODE_ACCT_REGISTER
 		if (slurmctld_conf.fast_schedule)
-			pcluster_rocs += node_ptr->config_ptr->cpus;
+			cluster_procs += node_ptr->config_ptr->cpus;
 		else
 			cluster_procs += node_ptr->cpus;
 #else
@@ -994,7 +994,7 @@ static int _accounting_cluster_ready()
 		send_nodes_to_accounting(event_time);
 		rc = SLURM_SUCCESS;
 	}
-	info("here");
+
 	return rc;
 }
 
