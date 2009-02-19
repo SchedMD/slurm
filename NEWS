@@ -178,6 +178,8 @@ documents those changes that are of interest to users and admins.
  -- Fix bug in logic to remove a job's dependency, could result in abort.
  -- Add new error message to sched/wiki and sched/wiki2 (Maui and Moab) for
     STARTJOB request: "TASKLIST includes non-responsive nodes".
+ -- Fix bug in select/linear when used with sched/gang that can result in a 
+    job's required or excluded node specification being ignored.
 
 * Changes in SLURM 1.3.13
 =========================
