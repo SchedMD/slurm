@@ -4118,6 +4118,7 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, Buf buffer)
 	pack8(msg->overcommit, buffer);
 
 	pack16(msg->acctg_freq,     buffer);
+	pack16(msg->cpu_bind_type,  buffer);
 	pack16(msg->cpus_per_task,  buffer);
 	pack16(msg->restart_cnt,    buffer);
 
@@ -4127,8 +4128,9 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, Buf buffer)
 		pack32_array(msg->cpu_count_reps, msg->num_cpu_groups, buffer);
 	}
 
-	packstr(msg->nodes, buffer);
-	packstr(msg->script, buffer);
+	packstr(msg->cpu_bind, buffer);
+	packstr(msg->nodes,    buffer);
+	packstr(msg->script,   buffer);
 	packstr(msg->work_dir, buffer);
 
 	packstr(msg->err, buffer);
@@ -4168,6 +4170,7 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer)
 	safe_unpack8(&launch_msg_ptr->overcommit, buffer);
 
 	safe_unpack16(&launch_msg_ptr->acctg_freq,     buffer);
+	safe_unpack16(&launch_msg_ptr->cpu_bind_type,  buffer);
 	safe_unpack16(&launch_msg_ptr->cpus_per_task,  buffer);
 	safe_unpack16(&launch_msg_ptr->restart_cnt,    buffer);
 
@@ -4182,7 +4185,8 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer)
 		if (launch_msg_ptr->num_cpu_groups != uint32_tmp)
 			goto unpack_error;
 	}
-	
+
+	safe_unpackstr_xmalloc(&launch_msg_ptr->cpu_bind, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&launch_msg_ptr->nodes,    &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&launch_msg_ptr->script,   &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&launch_msg_ptr->work_dir, &uint32_tmp, buffer);

@@ -46,6 +46,22 @@ SLURM_ERROR.</p>
 <p>The following functions must appear. Functions which are not implemented should 
 be stubbed.</p>
 
+<p class="commandline">int task_slurmd_batch_request (uint32_t job_id, 
+batch_job_launch_msg_t *req);</p>
+<p style="margin-left:.2in"><b>Description</b>: Prepare to launch a batch job.
+Establish node, socket, and core resource availability for it.
+Executed by the <b>slurmd</b> daemon as user root.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline">job_id</span>&nbsp;&nbsp;&nbsp;(input) 
+ID of the job to be started.<br>
+<span class="commandline">req</span>&nbsp;&nbsp;&nbsp;(input/output)
+Batch job launch request specification.
+See <b>src/common/slurm_protocol_defs.h</b> for the
+data structure definition.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. 
+On failure, the plugin should return SLURM_ERROR and set the errno to an 
+appropriate value to indicate the reason for failure.</p>
+
 <p class="commandline">int task_slurmd_launch_request (uint32_t job_id, 
 launch_tasks_request_msg_t *req, uint32_t node_id);</p>
 <p style="margin-left:.2in"><b>Description</b>: Prepare to launch a job.
@@ -164,6 +180,6 @@ appropriate value to indicate the reason for failure.</p>
 Future releases of SLURM may revise this API.</p>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 28 May 2008</p>
+<p style="text-align:center;">Last modified 19 February 2009</p>
 
 <!--#include virtual="footer.txt"-->

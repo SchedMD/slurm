@@ -99,6 +99,16 @@ extern int fini (void)
 }
 
 /*
+ * task_slurmd_batch_request()
+ */
+extern int task_slurmd_batch_request (uint32_t job_id, 
+				      batch_job_launch_msg_t *req)
+{
+	debug("task_slurmd_batch_request: %u", job_id);
+	return SLURM_SUCCESS;
+}
+
+/*
  * task_slurmd_launch_request()
  */
 extern int task_slurmd_launch_request (uint32_t job_id, 

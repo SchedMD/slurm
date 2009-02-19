@@ -38,6 +38,7 @@
 #include <stdint.h>
 #include "src/common/slurm_protocol_defs.h"
 
+void batch_bind(batch_job_launch_msg_t *req);
 void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id);
 
 #endif /* !_SLURMSTEPD_DIST_TASKS_H */

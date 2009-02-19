@@ -1,8 +1,8 @@
 /*****************************************************************************\
- *  task_plugin.h - task launch plugin stub.
+ *  task_plugin.c - task launch plugin stub.
  *****************************************************************************
  *  Copyright (C) 2005-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  LLNL-CODE-402394.
@@ -47,6 +47,8 @@
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 typedef struct slurmd_task_ops {
+	int	(*slurmd_batch_request)		(uint32_t job_id, 
+						 batch_job_launch_msg_t *req);
 	int	(*slurmd_launch_request)	(uint32_t job_id, 
 						 launch_tasks_request_msg_t *req,
 						 uint32_t node_id);
@@ -81,6 +83,7 @@ _slurmd_task_get_ops(slurmd_task_context_t *c)
 	 * Must be synchronized with slurmd_task_ops_t above.
 	 */
 	static const char *syms[] = {
+		"task_slurmd_batch_request",
 		"task_slurmd_launch_request",
 		"task_slurmd_reserve_resources",
 		"task_slurmd_suspend_job",
@@ -229,6 +232,19 @@ extern int slurmd_task_fini(void)
 	rc = _slurmd_task_context_destroy(g_task_context);
 	g_task_context = NULL;
 	return rc;
+}
+
+/*
+ * Slurmd has received a batch job launch request.
+ *
+ * RET - slurm error code
+ */
+extern int slurmd_batch_request(uint32_t job_id, batch_job_launch_msg_t *req)
+{
+	if (slurmd_task_init())
+		return SLURM_ERROR;
+
+	return (*(g_task_context->ops.slurmd_batch_request))(job_id, req);
 }
 
 /*

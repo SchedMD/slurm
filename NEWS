@@ -26,7 +26,8 @@ documents those changes that are of interest to users and admins.
     cores, or threads as appropriated based upon resource allocation and
     task count. User can override with srun's --cpu_bind option. 
  -- Fix bug in backfill logic for select/cons_res plugin, resulted in 
-    error "cons_res:_rm_job_from_res: node_state mis-count" 
+    error "cons_res:_rm_job_from_res: node_state mis-count".
+ -- Add logic go bind a batch job to the resources allocated to that job.
 
 * Changes in SLURM 1.4.0-pre7
 =============================

@@ -355,8 +355,8 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	job->envtp->nodeid = -1;
 
 	job->envtp->distribution = 0;
-	job->envtp->cpu_bind_type = 0;
-	job->envtp->cpu_bind = NULL;
+	job->cpu_bind_type = msg->cpu_bind_type;
+	job->cpu_bind = xstrdup(msg->cpu_bind);
 	job->envtp->mem_bind_type = 0;
 	job->envtp->mem_bind = NULL;
 	job->envtp->ckpt_path = NULL;

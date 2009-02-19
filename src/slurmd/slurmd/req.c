@@ -1006,6 +1006,8 @@ _rpc_batch_job(slurm_msg_t *msg)
 		goto done;
 	}
 
+	slurmd_batch_request(req->job_id, req);	/* determine task affinity */
+
 	if ((req->step_id != SLURM_BATCH_SCRIPT) && (req->step_id != 0))
 		first_job_run = false;
 
