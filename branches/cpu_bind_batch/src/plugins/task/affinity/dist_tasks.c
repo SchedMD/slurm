@@ -53,6 +53,8 @@ static char *_alloc_mask(launch_tasks_request_msg_t *req,
 static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 				uint16_t *hw_sockets, uint16_t *hw_cores,
 				uint16_t *hw_threads);
+static int _get_local_node_info(slurm_cred_arg_t *arg, uint32_t job_node_id,
+				uint16_t *sockets, uint16_t *cores);
 
 static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 				   uint32_t node_id, bitstr_t ***masks_p);
@@ -156,6 +158,80 @@ static void _match_masks_to_ldom(const uint32_t maxtasks, bitstr_t **masks)
 	}
 }
 #endif
+
+/* 
+ * batch_bind - Set the batch request message so as to bind the shell to the 
+ *	proper resources
+ */
+void batch_bind(batch_job_launch_msg_t *req)
+{
+	bitstr_t *req_map, *hw_map;
+	slurm_cred_arg_t arg;
+	uint16_t sockets=0, cores=0, num_procs;
+	int hw_size, start, p, t, task_cnt=0;
+	char *str;
+
+	if (slurm_cred_get_args(req->cred, &arg) != SLURM_SUCCESS) {
+		error("task/affinity: job lacks a credential");
+		return;
+	}
+	start = _get_local_node_info(&arg, 0, &sockets, &cores);
+	if (start != 0) {
+		error("task/affinity: missing node 0 in job credential");
+		slurm_cred_free_args(&arg);
+		return;
+	}
+
+	hw_size    = conf->sockets * conf->cores * conf->threads;
+	num_procs  = MIN((sockets * cores),
+			 (conf->sockets * conf->cores));
+	req_map = (bitstr_t *) bit_alloc(num_procs);
+	hw_map  = (bitstr_t *) bit_alloc(hw_size);
+	if (!req_map || !hw_map) {
+		error("task/affinity: malloc error");
+		bit_free(req_map);
+		bit_free(hw_map);
+		slurm_cred_free_args(&arg);
+	}
+
+	/* Transfer core_bitmap data to local req_map.
+	 * The MOD function handles the case where fewer processes
+	 * physically exist than are configured (slurmd is out of 
+	 * sync with the slurmctld daemon). */
+	for (p = 0; p < (sockets * cores); p++) {
+		if (bit_test(arg.core_bitmap, p))
+			bit_set(req_map, (p % num_procs));
+	}
+	str = (char *)bit_fmt_hexmask(req_map);
+	debug3("task/affinity: job %u CPU mask from slurmctld: %s",
+		req->job_id, str);
+	xfree(str);
+
+	for (p = 0; p < num_procs; p++) {
+		if (bit_test(req_map, p) == 0)
+			continue;
+		/* core_bitmap does not include threads, so we
+		 * add them here but limit them to what the job
+		 * requested */
+		for (t = 0; t < conf->threads; t++) {
+			uint16_t bit = p * conf->threads + t;
+			bit_set(hw_map, bit);
+			task_cnt++;
+		}
+	}
+	if (task_cnt) {
+		req->cpu_bind_type = CPU_BIND_MASK;
+		req->cpu_bind = (char *)bit_fmt_hexmask(hw_map);
+		info("task/affinity: job %u CPU final mask for node: %s",
+		     req->job_id, req->cpu_bind);
+	} else {
+		error("task/affinity: job %u allocated not CPUs", 
+		      req->job_id);
+	}
+	bit_free(hw_map);
+	bit_free(req_map);
+	slurm_cred_free_args(&arg);
+}
 
 /* 
  * lllp_distribution
@@ -299,8 +375,8 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 }
 
 
-/* helper function for _get_avail_map
- *
+/*
+ * _get_local_node_info - get job allocation details for this node
  * IN: req         - launch request structure
  * IN: job_node_id - index of the local node in the job allocation
  * IN/OUT: sockets - pointer to socket count variable
@@ -467,6 +543,7 @@ static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 	if (start < 0) {
 		error("task/affinity: missing node %u in job credential",
 		      job_node_id);
+		slurm_cred_free_args(&arg);
 		return NULL;
 	}
 	debug3("task/affinity: slurmctld s %u c %u; hw s %u c %u t %u",
@@ -480,15 +557,17 @@ static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 		error("task/affinity: malloc error");
 		bit_free(req_map);
 		bit_free(hw_map);
+		slurm_cred_free_args(&arg);
 		return NULL;
 	}
 	/* Transfer core_bitmap data to local req_map.
 	 * The MOD function handles the case where fewer processes
 	 * physically exist than are configured (slurmd is out of 
 	 * sync with the slurmctld daemon). */
-	for (p = 0; p < (sockets * cores); p++)
+	for (p = 0; p < (sockets * cores); p++) {
 		if (bit_test(arg.core_bitmap, start+p))
 			bit_set(req_map, (p % num_procs));
+	}
 
 	str = (char *)bit_fmt_hexmask(req_map);
 	debug3("task/affinity: job %u.%u CPU mask from slurmctld: %s",
@@ -499,7 +578,6 @@ static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 	for (p = 0; p < num_procs; p++) {
 		if (bit_test(req_map, p) == 0)
 			continue;
-		bit_clear(req_map, p);
 		/* core_bitmap does not include threads, so we
 		 * add them here but limit them to what the job
 		 * requested */
@@ -518,6 +596,7 @@ static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 	xfree(str);
 
 	bit_free(req_map);
+	slurm_cred_free_args(&arg);
 	return hw_map;
 }
 

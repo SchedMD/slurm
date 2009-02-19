@@ -157,6 +157,17 @@ static void _update_bind_type(launch_tasks_request_msg_t *req)
 }
 
 /*
+ * task_slurmd_batch_request()
+ */
+extern int task_slurmd_batch_request (uint32_t job_id, 
+				      batch_job_launch_msg_t *req)
+{
+	info("task_slurmd_batch_request: %u", job_id);
+	batch_bind(req);
+	return SLURM_SUCCESS;
+}
+
+/*
  * task_slurmd_launch_request()
  */
 extern int task_slurmd_launch_request (uint32_t job_id, 
@@ -185,9 +196,6 @@ extern int task_slurmd_launch_request (uint32_t job_id,
 		info("task affinity : after lllp distribution cpu bind "
 		     "method is '%s' (%s)", buf_type, req->cpu_bind);
 	}
-		
-	/* Remove the slurm msg timeout needs to be investigated some more */
-	/* req->cpu_bind_type = CPU_BIND_NONE; */ 
 	
 	return SLURM_SUCCESS;
 }
