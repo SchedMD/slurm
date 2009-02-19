@@ -198,267 +198,288 @@ if {$job_id == 0} {
 
 proc sacct_job { soption job_id} {
 	global sacct
-set exit_code   0
-set matches     0
-set not_support 0
+	set debug       0
+	set exit_code   0
+	set matches     0
+	set not_support 0
 	send_user "sacct -$soption -j $job_id\n"
 
-if { $soption == "-long" || $soption == "l" } {
+	if { $soption == "-brief" || $soption == "b" } {
 
-spawn $sacct -$soption -j $job_id
-expect {
-	-re "SLURM accounting storage is disabled" {
-		set not_support 1
-		exp_continue
+	spawn $sacct -$soption -j $job_id
+	expect {
+		-re "SLURM accounting storage is disabled" {
+			set not_support 1
+			exp_continue
+		}
+		-re "JobID......State......ExitCode" {
+			if {$debug} {send_user "\nmatch1\n"}
+			incr matches
+			exp_continue
+		}
+		-re "$job_id" {
+			if {$debug} {send_user "\nmatch2\n"}
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacct not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
 	}
-	-re "JobID......JobName....Partition..MaxVMSize" {
-		incr matches
-		exp_continue
+
+	if {$not_support != 0} {
+		send_user "\nWARNING: can not test without accounting enabled\n"
+		exit 0
 	}
-	-re "MaxVMSizeNode..MaxVMSizeTask..AveVMSize..MaxRSS" {
-		incr matches
-		exp_continue
-	}
-	-re "MaxRSSNode.MaxRSSTask.AveRSS.....MaxPages" {
-		incr matches
-		exp_continue
-	}
-	-re "MaxPagesNode.MaxPagesTask...AvePages...MinCPU" {
-		incr matches
-		exp_continue
-	}
-	-re "MinCPUNode.MinCPUTask.AveCPU.....NTasks" {
-		incr matches
-		exp_continue
-	}
-	-re "AllocCPUS..Elapsed....State......ExitCode" {
-		incr matches
-		exp_continue
-	}
-	-re "$job_id" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacct not responding\n"
+	if {$matches != 2} {
+		send_user "\nFAILURE: sacct -$soption failed ($matches)\n"
 		set exit_code 1
 	}
-	eof {
-		wait
+		return $matches
 	}
-}
 
-if {$not_support != 0} {
-	send_user "\nWARNING: can not test without accounting enabled\n"
-	exit 0
-}
-if {$matches != 7} {
-	send_user "\nFAILURE: sacct -$soption failed ($matches)\n"
-	set exit_code 1
-}
-	return $matches
-}
+	if { $soption == "-long" || $soption == "l" } {
 
-if { $soption == "-brief" || $soption == "b" } {
+	spawn $sacct -$soption -j $job_id
+	expect {
+		-re "SLURM accounting storage is disabled" {
+			set not_support 1
+			exp_continue
+		}
+		-re "JobID......JobName....Partition..MaxVMSize" {
+			if {$debug} {send_user "\nmatch3\n"}
+			incr matches
+			exp_continue
+		}
+		-re "MaxVMSizeNode..MaxVMSizeTask..AveVMSize..MaxRSS" {
+			if {$debug} {send_user "\nmatch4\n"}
+			incr matches
+			exp_continue
+		}
+		-re "MaxRSSNode.MaxRSSTask.AveRSS.....MaxPages" {
+			if {$debug} {send_user "\nmatch5\n"}
+			incr matches
+			exp_continue
+		}
+		-re "MaxPagesNode.MaxPagesTask...AvePages...MinCPU" {
+			if {$debug} {send_user "\nmatch6\n"}
+			incr matches
+			exp_continue
+		}
+		-re "MinCPUNode.MinCPUTask.AveCPU.....NTasks" {
+			if {$debug} {send_user "\nmatch7\n"}
+			incr matches
+			exp_continue
+		}
+		-re "AllocCPUS..Elapsed....State......ExitCode" {
+			if {$debug} {send_user "\nmatch8\n"}
+			incr matches
+			exp_continue
+		}
+		-re "$job_id" {
+			if {$debug} {send_user "\nmatch9\n"}
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacct not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
 
-spawn $sacct -$soption -j $job_id
-expect {
-	-re "SLURM accounting storage is disabled" {
-		set not_support 1
-		exp_continue
+	if {$not_support != 0} {
+		send_user "\nWARNING: can not test without accounting enabled\n"
+		exit 0
 	}
-	-re "JobID......State......ExitCode" {
-		incr matches
-		exp_continue
-	}
-	-re "$job_id" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacct not responding\n"
+
+	if {$matches != 7} {
+		send_user "\nFAILURE: sacct -$soption failed ($matches)\n"
 		set exit_code 1
 	}
-	eof {
-		wait
+		return $matches
 	}
-}
 
-if {$not_support != 0} {
-	send_user "\nWARNING: can not test without accounting enabled\n"
-	exit 0
-}
-if {$matches != 2} {
-	send_user "\nFAILURE: sacct -$soption failed ($matches)\n"
-	set exit_code 1
-}
-	return $matches
-}
+	if { $soption == "-noheader" || $soption == "n" } {
 
-if { $soption == "-parsable" || $soption == "p" } {
+	spawn $sacct -$soption -j $job_id
+	expect {
+		-re "SLURM accounting storage is disabled" {
+			set not_support 1
+			exp_continue
+		}
+		-re "AllocCPUS|Account|AssocID|AveCPU|AvePages|AveRSS|AveVSize|BlockID	\
+			|Cluster|CPUTime|CPUTimeRAW|Elapsed	\
+			|Eligible|End|ExitCode|GID	\
+			|Group|JobID|JobName|NodeList	\
+			|MaxPages|MaxPagesNode|MaxPagesTask|MaxRSS	|
+			|MaxRSSNode|MaxRSSTask|MaxVSize|MaxVSizeNode	|
+			|MaxVSizeTask|MinCPU|MinCPUNode|MinCPUTask	|
+			|NCPUS|NNodes|NTasks|Priority	|
+			|Partition|QOS|QOSRAW|ReqCPUS	|
+			|Reserved|ResvCPU|ResvCPURAW|Start	|
+			|State|Submit|Suspended|SystemCPU	|
+			|Timelimit|TotalCPU|UID|User	|
+			|UserCPU|WCKey|WCKeyID" {
+			if {$debug} {send_user "\nmatch10\n"}
+			incr matches
+			exp_continue
+		}
+		-re "$job_id" {
+			if {$debug} {send_user "\nmatch11\n"}
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacct not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
 
-spawn $sacct -$soption -j $job_id
-expect {
-	-re "SLURM accounting storage is disabled" {
-		set not_support 1
-		exp_continue
+	if {$not_support != 0} {
+		send_user "\nWARNING: can not test without accounting enabled\n"
+		exit 0
 	}
-	-re "JobID\\|JobName\\|Partition\\|Account\\|AllocCPUS\\|State\\|ExitCode\\|" {
-		incr matches
-		exp_continue
-	}
-	-re "$job_id\\|" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacct not responding\n"
+	if {$matches != 1} {
+		send_user "\nFAILURE: sacct -$soption failed ($matches)\n"
 		set exit_code 1
 	}
-	eof {
-		wait
+		return $matches
 	}
-}
 
-if {$not_support != 0} {
-	send_user "\nWARNING: can not test without accounting enabled\n"
-	exit 0
-}
-if {$matches != 2} {
-	send_user "\nFAILURE: sacct -$soption failed ($matches)\n"
-	set exit_code 1
-}
-	return $matches
-}
+	if { $soption == "-parsable" || $soption == "p" } {
 
-if { $soption == "-parsable2" || $soption == "P" } {
-
-spawn $sacct -$soption -j $job_id
-expect {
-	-re "SLURM accounting storage is disabled" {
-		set not_support 1
-		exp_continue
+	spawn $sacct -$soption -j $job_id
+	expect {
+		-re "SLURM accounting storage is disabled" {
+			set not_support 1
+			exp_continue
+		}
+		-re "JobID\\|JobName\\|Partition\\|Account\\|AllocCPUS\\|State\\|ExitCode\\|" {
+			if {$debug} {send_user "\nmatch12\n"}
+			incr matches
+			exp_continue
+		}
+		-re "$job_id\\|" {
+			if {$debug} {send_user "\nmatch13\n"}
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacct not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
 	}
-	-re
+
+	if {$not_support != 0} {
+		send_user "\nWARNING: can not test without accounting enabled\n"
+		exit 0
+	}
+	if {$matches != 2} {
+		send_user "\nFAILURE: sacct -$soption failed ($matches)\n"
+		set exit_code 1
+	}
+		return $matches
+	}
+
+	if { $soption == "-parsable2" || $soption == "P" } {
+
+	spawn $sacct -$soption -j $job_id
+	expect {
+		-re "SLURM accounting storage is disabled" {
+			set not_support 1
+			exp_continue
+		}
+		-re
 "JobID\\|JobName\\|Partition\\|Account\\|AllocCPUS\\|State\\|ExitCode *" {
-		incr matches
-		exp_continue
+			if {$debug} {send_user "\nmatch14\n"}
+			incr matches
+			exp_continue
+		}
+		-re "$job_id\\|" {
+			if {$debug} {send_user "\nmatch15\n"}
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacct not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
 	}
-	-re "$job_id\\|" {
-		incr matches
-		exp_continue
+
+	if {$not_support != 0} {
+		send_user "\nWARNING: can not test without accounting enabled\n"
+		exit 0
 	}
-	timeout {
-		send_user "\nFAILURE: sacct not responding\n"
+	if {$matches != 2} {
+		send_user "\nFAILURE: sacct -$soption failed ($matches)\n"
 		set exit_code 1
 	}
-	eof {
-		wait
+		return $matches
 	}
-}
 
-if {$not_support != 0} {
-	send_user "\nWARNING: can not test without accounting enabled\n"
-	exit 0
-}
-if {$matches != 2} {
-	send_user "\nFAILURE: sacct -$soption failed ($matches)\n"
-	set exit_code 1
-}
-	return $matches
-}
+	if { $soption == "-verbose" || $soption == "v" } {
 
-if { $soption == "-noheader" || $soption == "n" } {
+	spawn $sacct -$soption -j $job_id
+	expect {
+		-re "SLURM accounting storage is disabled" {
+			set not_support 1
+			exp_continue
+		}
+		-re "sacct: Accounting storage SLURMDBD plugin loaded " {
+			if {$debug} {send_user "\nmatch16\n"}
+			incr matches
+			exp_continue
+		}
+		-re "JobID......JobName....Partition" {
+			if {$debug} {send_user "\nmatch17\n"}
+			incr matches
+			exp_continue
+		}
+		-re "Account....AllocCPUS..State......ExitCode" {
+			if {$debug} {send_user "\nmatch18\n"}
+			incr matches
+			exp_continue
+		}
+		-re "$job_id" {
+			if {$debug} {send_user "\nmatch19\n"}
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacct not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
 
-spawn $sacct -$soption -j $job_id
-expect {
-	-re "SLURM accounting storage is disabled" {
-		set not_support 1
-		exp_continue
+	if {$not_support != 0} {
+		send_user "\nWARNING: can not test without accounting enabled\n"
+		exit 0
 	}
-	-re "AllocCPUS|Account|AssocID|AveCPU|AvePages|AveRSS|AveVSize|BlockID	\
-		|Cluster|CPUTime|CPUTimeRAW|Elapsed	\
-		|Eligible|End|ExitCode|GID	\
-		|Group|JobID|JobName|NodeList	\
-		|MaxPages|MaxPagesNode|MaxPagesTask|MaxRSS	|
-		|MaxRSSNode|MaxRSSTask|MaxVSize|MaxVSizeNode	|
-		|MaxVSizeTask|MinCPU|MinCPUNode|MinCPUTask	|
-		|NCPUS|NNodes|NTasks|Priority	|
-		|Partition|QOS|QOSRAW|ReqCPUS	|
-		|Reserved|ResvCPU|ResvCPURAW|Start	|
-		|State|Submit|Suspended|SystemCPU	|
-		|Timelimit|TotalCPU|UID|User	|
-		|UserCPU|WCKey|WCKeyID" {
-		incr matches
-		exp_continue
-	}
-	-re "$job_id" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacct not responding\n"
+	if {$matches != 4} {
+		send_user "\nFAILURE: sacct -$soption failed ($matches)\n"
 		set exit_code 1
 	}
-	eof {
-		wait
+		return $matches
 	}
-}
-
-if {$not_support != 0} {
-	send_user "\nWARNING: can not test without accounting enabled\n"
-	exit 0
-}
-if {$matches != 1} {
-	send_user "\nFAILURE: sacct -$soption failed ($matches)\n"
-	set exit_code 1
-}
-	return $matches
-}
-
-if { $soption == "-verbose" || $soption == "v" } {
-
-spawn $sacct -$soption -j $job_id
-expect {
-	-re "SLURM accounting storage is disabled" {
-		set not_support 1
-		exp_continue
-	}
-	-re "sacct: Accounting storage SLURMDBD plugin loaded " {
-		incr matches
-		exp_continue
-	}
-	-re "JobID......JobName....Partition" {
-		incr matches
-		exp_continue
-	}
-	-re "Account....AllocCPUS..State......ExitCode" {
-		incr matches
-		exp_continue
-	}
-	-re "$job_id" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacct not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-if {$not_support != 0} {
-	send_user "\nWARNING: can not test without accounting enabled\n"
-	exit 0
-}
-if {$matches != 4} {
-	send_user "\nFAILURE: sacct -$soption failed ($matches)\n"
-	set exit_code 1
-}
-	return $matches
-}
 
 
 }
@@ -477,62 +498,84 @@ if {$matches != 4} {
 
 proc sacct_vargs { soption vargs job_id} {
 	global sacct
-set exit_code   0
-set matches     0
-set not_support 0
+	set debug       0
+	set exit_code   0
+	set matches     0
+	set not_support 0
 	send_user "sacct -$soption $vargs -j $job_id\n"
 
-if { $soption == "g" || $soption == "-gid" || $soption == "-group" || $soption == "u" || $soption == "-uid" || $soption == "-user"} {
+	if { $soption == "g" || $soption == "-gid" || $soption == "-group" || $soption == "u" || $soption == "-uid" || $soption == "-user"} {
 
-spawn $sacct -$soption $vargs -j $job_id
-expect {
-	-re "SLURM accounting storage is disabled" {
-		set not_support 1
-		exp_continue
+	spawn $sacct -$soption $vargs -j $job_id
+	expect {
+		-re "SLURM accounting storage is disabled" {
+			set not_support 1
+			exp_continue
+		}
+		-re "JobID......JobName....Partition" {
+			if {$debug} {send_user "\nmatch20\n"}
+			incr matches
+			exp_continue
+		}
+		-re "Account....AllocCPUS..State......ExitCode" {
+			if {$debug} {send_user "\nmatch21\n"}
+			incr matches
+			exp_continue
+		}
+		-re "$job_id" {
+			incr matches
+			if {$debug} {send_user "\nmatch22\n"}
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sacct not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
 	}
-	-re "JobID......JobName....Partition" {
-		incr matches
-		exp_continue
+
+	if {$not_support != 0} {
+		send_user "\nWARNING: can not test without accounting enabled\n"
+		exit 0
 	}
-	-re "Account....AllocCPUS..State......ExitCode" {
-		incr matches
-		exp_continue
-	}
-	-re "$job_id" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sacct not responding\n"
+	if {$matches != 3} {
+		send_user "\nFAILURE: sacct -$soption failed ($matches)\n"
 		set exit_code 1
 	}
-	eof {
-		wait
+		return $matches
 	}
-}
-
-if {$not_support != 0} {
-	send_user "\nWARNING: can not test without accounting enabled\n"
-	exit 0
-}
-if {$matches != 3} {
-	send_user "\nFAILURE: sacct -$soption failed ($matches)\n"
-	set exit_code 1
-}
-	return $matches
-}
 }
 ################################################################
 
-set matches [sacct_job n $job_id]
-if {$matches != 1} {
-	send_user "\nFAILURE: sacct -n failed ($matches)\n"
+set matches [sacct_job b $job_id]
+if {$matches != 2} {
+	send_user "\nFAILURE: sacct -b failed ($matches)\n"
 	set exit_code 1
 }
 
-set matches [sacct_job -noheader $job_id]
-if {$matches != 1} {
-	send_user "\nFAILURE: sacct -n failed ($matches)\n"
+set matches [sacct_job -brief $job_id]
+if {$matches != 2} {
+	send_user "\nFAILURE: sacct --brief failed ($matches)\n"
+	set exit_code 1
+}
+
+set matches [sacct_vargs g $user_gid $job_id]
+if {$matches != 3} {
+	send_user "\nFAILURE: sacct -g failed ($matches)\n"
+	set exit_code 1
+}
+
+set matches [sacct_vargs -gid $user_gid $job_id]
+if {$matches != 3} {
+	send_user "\nFAILURE: sacct --gid failed ($matches)\n"
+	set exit_code 1
+}
+
+set matches [sacct_vargs -group $user_gid $job_id]
+if {$matches != 3} {
+	send_user "\nFAILURE: sacct --group failed ($matches)\n"
 	set exit_code 1
 }
 
@@ -548,15 +591,15 @@ if {$matches != 7} {
 	set exit_code 1
 }
 
-set matches [sacct_job b $job_id]
-if {$matches != 2} {
-	send_user "\nFAILURE: sacct -b failed ($matches)\n"
+set matches [sacct_job n $job_id]
+if {$matches != 1} {
+	send_user "\nFAILURE: sacct -n failed ($matches)\n"
 	set exit_code 1
 }
 
-set matches [sacct_job -brief $job_id]
-if {$matches != 2} {
-	send_user "\nFAILURE: sacct --brief failed ($matches)\n"
+set matches [sacct_job -noheader $job_id]
+if {$matches != 1} {
+	send_user "\nFAILURE: sacct -n failed ($matches)\n"
 	set exit_code 1
 }
 
@@ -584,36 +627,6 @@ if {$matches != 2} {
 	set exit_code 1
 }
 
-set matches [sacct_job v $job_id]
-if {$matches != 4} {
-	send_user "\nFAILURE: sacct -v failed ($matches)\n"
-	set exit_code 1
-}
-
-set matches [sacct_job -verbose $job_id]
-if {$matches != 4} {
-	send_user "\nFAILURE: sacct --verbosee failed ($matches)\n"
-	set exit_code 1
-}
-
-set matches [sacct_vargs g $user_gid $job_id]
-if {$matches != 3} {
-	send_user "\nFAILURE: sacct -g failed ($matches)\n"
-	set exit_code 1
-}
-
-set matches [sacct_vargs -gid $user_gid $job_id]
-if {$matches != 3} {
-	send_user "\nFAILURE: sacct --gid failed ($matches)\n"
-	set exit_code 1
-}
-
-set matches [sacct_vargs -group $user_gid $job_id]
-if {$matches != 3} {
-	send_user "\nFAILURE: sacct --group failed ($matches)\n"
-	set exit_code 1
-}
-
 set matches [sacct_vargs u $user_name $job_id]
 if {$matches != 3} {
 	send_user "\nFAILURE: sacct -g failed ($matches)\n"
@@ -629,6 +642,18 @@ if {$matches != 3} {
 set matches [sacct_vargs -user $user_name $job_id]
 if {$matches != 3} {
 	send_user "\nFAILURE: sacct --group failed ($matches)\n"
+	set exit_code 1
+}
+
+set matches [sacct_job v $job_id]
+if {$matches != 4} {
+	send_user "\nFAILURE: sacct -v failed ($matches)\n"
+	set exit_code 1
+}
+
+set matches [sacct_job -verbose $job_id]
+if {$matches != 4} {
+	send_user "\nFAILURE: sacct --verbosee failed ($matches)\n"
 	set exit_code 1
 }
 
