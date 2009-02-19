@@ -27,6 +27,8 @@ documents those changes that are of interest to users and admins.
     option.
  -- Fix bug in select/linear when used with sched/gang that can result in a 
     job's required or excluded node specification being ignored.
+ -- Add logic to handle message connect timeouts (timed-out.patch from 
+    Chuck Clouston, Bull).
 
 * Changes in SLURM 1.3.13
 =========================
