@@ -110,6 +110,8 @@ static uint32_t weight_js; /* weight for Job Size factor */
 static uint32_t weight_part; /* weight for Partition factor */
 static uint32_t weight_qos; /* weight for QOS factor */
 
+extern int priority_p_set_cpu_shares(uint32_t procs, uint32_t half_life);
+
 /*
  * apply decay factor to all associations raw_usage
  * IN: decay_factor - decay to be applied to each associations' used
@@ -280,23 +282,26 @@ static int _set_children_efctv_usage(List childern_list)
 	while((assoc = list_next(itr))) {
 		assoc->norm_usage = assoc->raw_usage /
 			assoc_mgr_root_assoc->raw_usage;
+		info("norm usage = %Lf / %Lf", assoc->raw_usage,
+		     assoc_mgr_root_assoc->raw_usage);
 		/* This is needed in case someone changes the half-life on the
 		   fly and now we have used more time than is available under
 		   the new config */
-		if (assoc->norm_usage > 1.0) assoc->norm_usage = 1.0;
+		if (assoc->norm_usage > 1.0) 
+			assoc->norm_usage = 1.0;
 
 		if (assoc->parent_assoc_ptr == assoc_mgr_root_assoc) {
 			assoc->efctv_usage = assoc->norm_usage;
-			info("Effective usage for %s %Lf",
+			info("Effective usage for %s %f",
 			       assoc->acct, assoc->efctv_usage);
 		} else if(assoc->user) {
-			assoc->efctv_usage = NO_VAL;
+			assoc->efctv_usage = (long double)NO_VAL;
 			continue;
 		} else {
 			assoc->efctv_usage = assoc->norm_usage +
 				((assoc->parent_assoc_ptr->efctv_usage -
 				  assoc->norm_usage) *
-				 assoc->raw_shares / assoc->level_shares);
+				 assoc->raw_shares / (long double)assoc->level_shares);
 			info("Effective usage for acct %s "
 			     "%Lf + ((%Lf - %Lf) * %d / %d) = %Lf",
 			     assoc->acct, assoc->norm_usage,
@@ -317,7 +322,7 @@ static double _get_fairshare_priority( struct job_record *job_ptr )
 {
 	acct_association_rec_t *assoc = 
 		(acct_association_rec_t *)job_ptr->assoc_ptr;
-	double	fs_priority = 0.0;
+	long double	fs_priority = 0.0;
 
 	if(!calc_fairshare)
 		return 0;
@@ -332,12 +337,12 @@ static double _get_fairshare_priority( struct job_record *job_ptr )
 	}
 
 	slurm_mutex_lock(&assoc_mgr_association_lock);
-	if(assoc->efctv_usage == NO_VAL) {
+	if(assoc->efctv_usage == (long double)NO_VAL) {
 		xassert(assoc->parent_assoc_ptr);
 		assoc->efctv_usage = assoc->norm_usage +
 			((assoc->parent_assoc_ptr->efctv_usage -
 			  assoc->norm_usage) *
-			 assoc->raw_shares / assoc->level_shares);
+			 assoc->raw_shares / (long double)assoc->level_shares);
 		info("Effective usage for user %s in acct %s "
 		     "%Lf + ((%Lf - %Lf) * %d / %d) = %Lf",
 		     assoc->user, assoc->acct, assoc->norm_usage,
@@ -351,22 +356,24 @@ static double _get_fairshare_priority( struct job_record *job_ptr )
 		   jobs if they are submitted during the polling
 		   period.  If you can think of a better way to do
 		   this please implement :). */
-		assoc->efctv_usage *= 1.00000001;
+		info("here %Lf", assoc->efctv_usage);
+		assoc->efctv_usage += .00001;
+		info("1 here %Lf", assoc->efctv_usage);
 	}
 
 	// Priority is 0 -> 1
-	fs_priority = (assoc->norm_shares - assoc->efctv_usage + 1.0) / 2.0;
+	fs_priority = ((long double)assoc->norm_shares - assoc->efctv_usage + 1.0) / 2.0;
 	info("Fairshare priority for user %s in acct %s"
-	       "((%f - %Lf) + 1) / 2 = %lf",
+	       "((%f - %Lf) + 1) / 2 = %Lf",
 	       assoc->user, assoc->acct, assoc->norm_shares,
 	       assoc->efctv_usage, fs_priority);
 
 	slurm_mutex_unlock(&assoc_mgr_association_lock);
 
-	info("job %u has a fairshare priority of %lf",
+	info("job %u has a fairshare priority of %Lf",
 	      job_ptr->job_id, fs_priority);
 
-	return fs_priority;
+	return (double)fs_priority;
 }
 
 static uint32_t _get_priority_internal(time_t start_time,
@@ -634,6 +641,7 @@ static void _internal_setup()
 	debug3("priority: Weight JobSize is %u", weight_js);
 	debug3("priority: Weight Part is %u", weight_part);
 	debug3("priority: Weight QOS is %u", weight_qos);
+	priority_p_set_cpu_shares(cluster_procs, slurm_get_priority_decay_hl());
 }
 
 /*
@@ -743,7 +751,7 @@ extern int priority_p_set_cpu_shares(uint32_t procs, uint32_t half_life)
 	/* get the total decay for the entire cluster */
 	assoc_mgr_root_assoc->raw_usage =
 		(long double)procs * (long double)half_life * (long double)2;
-	debug2("total cpu usage on the system is %.0Lf",
+	info("total cpu usage on the system is %.0Lf",
 	       assoc_mgr_root_assoc->raw_usage);
 
 	slurm_mutex_lock(&assoc_mgr_association_lock);

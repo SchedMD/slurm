@@ -148,6 +148,7 @@ void *acct_db_conn = NULL;
 int accounting_enforce = 0;
 int association_based_accounting = 0;
 bool ping_nodes_now = false;
+int      cluster_procs = 0;
 
 /* Local variables */
 static int	daemonize = DEFAULT_DAEMONIZE;
@@ -159,7 +160,6 @@ static int	recover   = DEFAULT_RECOVER;
 static pthread_cond_t server_thread_cond = PTHREAD_COND_INITIALIZER;
 static pid_t	slurmctld_pid;
 static char    *slurm_conf_filename;
-
 /*
  * Static list of signals to block in this process
  * *Must be zero-terminated*
@@ -963,29 +963,29 @@ static void _free_server_thread(void)
 
 static int _accounting_cluster_ready()
 {
-	uint32_t procs = 0;
 	struct node_record *node_ptr;
 	int i;
 	int rc = SLURM_ERROR;
 	time_t event_time = time(NULL);
 
+	cluster_procs = 0;
 	node_ptr = node_record_table_ptr;
 	for (i = 0; i < node_record_count; i++, node_ptr++) {
 		if (node_ptr->name == '\0')
 			continue;
 #ifdef SLURM_NODE_ACCT_REGISTER
 		if (slurmctld_conf.fast_schedule)
-			procs += node_ptr->config_ptr->cpus;
+			pcluster_rocs += node_ptr->config_ptr->cpus;
 		else
-			procs += node_ptr->cpus;
+			cluster_procs += node_ptr->cpus;
 #else
-		procs += node_ptr->config_ptr->cpus;
+		cluster_procs += node_ptr->config_ptr->cpus;
 #endif
 	}
 
 	rc = clusteracct_storage_g_cluster_procs(acct_db_conn,
 						 slurmctld_cluster_name,
-						 procs, event_time);
+						 cluster_procs, event_time);
 	if(rc == ACCOUNTING_FIRST_REG) {
 		/* see if we are running directly to a database
 		 * instead of a slurmdbd.
@@ -994,9 +994,7 @@ static int _accounting_cluster_ready()
 		send_nodes_to_accounting(event_time);
 		rc = SLURM_SUCCESS;
 	}
-
-	priority_g_set_cpu_shares(procs, slurmctld_conf.priority_decay_hl);
-	
+	info("here");
 	return rc;
 }
 
@@ -1268,6 +1266,13 @@ static void *_slurmctld_background(void *no_data)
 			last_node_acct = now;
 			lock_slurmctld(node_read_lock);
 			_accounting_cluster_ready();
+			/* just incase the numbers change we need to
+			   update the proc count on the cluster inside
+			   the priority plugin */
+			info("got here");
+			priority_g_set_cpu_shares(
+				cluster_procs,
+				slurmctld_conf.priority_decay_hl);
 			unlock_slurmctld(node_read_lock);
 		}
 
