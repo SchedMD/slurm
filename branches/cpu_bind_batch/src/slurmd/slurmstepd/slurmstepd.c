@@ -2,7 +2,8 @@
  *  src/slurmd/slurmstepd/slurmstepd.c - SLURM job-step manager.
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov> 
  *  and Christopher Morrone <morrone2@llnl.gov>.
