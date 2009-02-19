@@ -77,7 +77,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/util-net.h"
 
-#define PORT_RETRIES    2
+#define PORT_RETRIES    3
 #define MIN_USER_PORT   (IPPORT_RESERVED + 1)
 #define MAX_USER_PORT   0xffff
 #define RANDOM_USER_PORT ((uint16_t) ((lrand48() % \
@@ -525,7 +525,7 @@ slurm_fd _slurm_open_stream(slurm_addr *addr, bool retry)
 				    sizeof(*addr));
 		if (rc >= 0)		    /* success */
 			break;
-		if ((errno != ECONNREFUSED) || 
+		if (((errno != ECONNREFUSED) && (errno != ETIMEDOUT)) ||
 		    (!retry) || (retry_cnt >= PORT_RETRIES)) {
 			slurm_seterrno(errno);
 			goto error;
