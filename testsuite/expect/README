@@ -532,5 +532,6 @@ test22.1   sreport cluster utilization report
 
 test23.#   Testing of sstat commands and options.
 =================================================
-test23.1   sstat --help
+test23.1   sstat -e, h, and V options
 test23.2   sstat --helpformat
+test23.3   sstat -a, n, o, p, P, v options
