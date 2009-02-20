@@ -791,7 +791,7 @@ typedef struct {
 	uint16_t plane_size;	/* plane size when task_dist =
 				 * SLURM_DIST_PLANE */
 	uint16_t relative;	/* first node to use of job's allocation */
-	uint8_t  resv_ports;	/* reserve ports if set */
+	uint16_t resv_ports;	/* reserve ports if set */
 	uint32_t task_count;	/* number of tasks required */
 	uint16_t task_dist;	/* see enum task_dist_state, default
 				 * is SLURM_DIST_CYCLIC */
