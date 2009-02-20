@@ -68,11 +68,10 @@ configuration. Called whenever slurmctld is reconfigured.</p>
 <span class="commandline">none</span></p>
 <p style="margin-left:.2in"><b>Returns</b>: void</p>
 
-<p class="commandline">int priority_p_set_cpu_shares(uint32_t procs, uint32_t half_life)</p>
-<p style="margin-left:.2in"><b>Description</b>: Conveys the machine's processor
-count and half-life configuration to the priority plugin.  Which 
-  would be used to set the available shares for underlying layers in
-  a hierarchical fairshare.</p>
+<p class="commandline">int priority_p_set_max_cluster_usage(uint32_t procs, uint32_t half_life)</p>
+<p style="margin-left:.2in"><b>Description</b>: Conveys the maximum
+raw usage to the priority plugin.  This establishes the reference by
+which each job's usage can be normalized.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
 <span class="commandline">procs</span> (input) the machine's processor count<br>
 <span class="commandline">half_life</span> (input) the configured half-life</p>

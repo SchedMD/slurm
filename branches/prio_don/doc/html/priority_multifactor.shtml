@@ -218,11 +218,17 @@ Where:
   value that will achieve the half-life decay rate specified by
   the <i>PriorityDecayHalfLife</i> parameter.</P> 
 
-<P> The historical resources a machine has available is similarly aggregated with the same decay factor:</P>
+<P> The historical resources a machine has available could be similarly aggregated with the same decay factor:</P>
 
 <PRE>
 	R<sub>H</sub> = R<sub>current_period</sub> +
 	    ( D * R<sub>last_period</sub>) + (D * D * R<sub>period-2</sub>) + ...
+</PRE>
+
+<P> However, A simpler formula is:</P>
+
+<PRE>
+	R<sub>H</sub> = num_procs * half_life * 2
 </PRE>
 
 Where:
@@ -230,12 +236,10 @@ Where:
 <DL>
 <DT> R<sub>H</sub>
 <DD> is the historical resources available subject to the same half-life decay as the usage formula.
-<DT> R<sub>current_period</sub>
-<DD> the resources available over the current measurement period
-<DT> R<sub>last_period</sub>
-<DD> the resources available over the last measurement period
-<DT> R<sub>period-2</sub>
-<DD> the resources available over the second last measurement period
+<DT> num_procs</sub>
+<DD> is the total number of processors in the cluster
+<DT> half_life</sub>
+<DD> is the configured half-life(<i>PriorityDecayHalfLife</i>)
 </DL>
 
 <P> A user's normalized usage that spans multiple time periods then becomes:</P>

@@ -113,7 +113,7 @@ static long double small_usage; /* amount of usage to add if multiple
 				 * jobs are scheduled during the same
 				 * decay period for the same association 
 				 */
-extern int priority_p_set_cpu_shares(uint32_t procs, uint32_t half_life);
+extern int priority_p_set_max_cluster_usage(uint32_t procs, uint32_t half_life);
 
 /*
  * apply decay factor to all associations usage_raw
@@ -708,7 +708,7 @@ int init ( void )
 			fatal("We need to have a cluster cpu count "
 			      "before we can init the priority/multifactor "
 			      "plugin");
-		priority_p_set_cpu_shares(cluster_procs,
+		priority_p_set_max_cluster_usage(cluster_procs,
 					  slurm_get_priority_decay_hl());
 		slurm_attr_init(&thread_attr);
 		if (pthread_create(&decay_handler_thread, &thread_attr,
@@ -769,7 +769,7 @@ extern void priority_p_reconfig()
 	return;
 }
 
-extern int priority_p_set_cpu_shares(uint32_t procs, uint32_t half_life) 
+extern int priority_p_set_max_cluster_usage(uint32_t procs, uint32_t half_life)
 {
 	static uint32_t last_procs = 0;
 	static uint32_t last_half_life = 0;

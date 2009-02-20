@@ -81,7 +81,7 @@ static slurm_priority_ops_t * _priority_get_ops(
 	static const char *syms[] = {
 		"priority_p_set",
 		"priority_p_reconfig",
-		"priority_p_set_cpu_shares",
+		"priority_p_set_max_cluster_usage",
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
 
