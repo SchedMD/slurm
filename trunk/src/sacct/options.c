@@ -592,6 +592,7 @@ void parse_command_line(int argc, char **argv)
 		{"dump", 0, 0, 'd'},
 		{"duplicates", 0, &params.opt_dup, 1},
 		{"helpformat", 0, 0, 'e'},
+		{"help-fields", 0, 0, 'e'},
 		{"endtime", 1, 0, 'E'},
 		{"file", 1, 0, 'f'},
 		{"gid", 1, 0, 'g'},
