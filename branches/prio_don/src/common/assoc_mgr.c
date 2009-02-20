@@ -1491,31 +1491,31 @@ extern List assoc_mgr_get_shares(void *db_conn,
 
 		share->assoc_id = assoc->id;
 		share->cluster = xstrdup(assoc->cluster);
-		/* This will be reset for users later since this is a
-		 * normalized usage for users */
-		if(!assoc->user)
-			share->efctv_usage = (uint64_t)assoc->efctv_usage;
 
 		if(assoc == assoc_mgr_root_assoc) 
 			share->raw_shares = NO_VAL;
 		else 
 			share->raw_shares = assoc->raw_shares;
-			
+
 		share->norm_shares = assoc->norm_shares;
+		share->raw_usage = (uint64_t)assoc->raw_usage;
+		share->norm_usage = (double)assoc->norm_usage;
 		if(assoc->user) {
+		/* We only calculate user effective usage when we need
+		 * it */
 			long double efctv_usage = assoc->norm_usage +
 				((assoc->parent_assoc_ptr->efctv_usage -
 				  assoc->norm_usage) *
 				 assoc->raw_shares / assoc->level_shares);
-			share->efctv_usage = (uint64_t)efctv_usage;
+			share->efctv_usage = (double)efctv_usage;
 			share->name = xstrdup(assoc->user);
 			share->parent = xstrdup(assoc->acct);
 			share->user = 1;
 		} else {
+			share->efctv_usage = (double)assoc->efctv_usage;
 			share->name = xstrdup(assoc->acct);
 			share->parent = xstrdup(assoc->parent_acct);
 		}
-		share->raw_usage = assoc->raw_usage;
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&assoc_mgr_association_lock);

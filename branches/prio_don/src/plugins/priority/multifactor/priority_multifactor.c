@@ -134,8 +134,11 @@ static int _apply_decay(double decay_factor)
 	
 	slurm_mutex_lock(&assoc_mgr_association_lock);
 	itr = list_iterator_create(assoc_mgr_association_list);
-	while((assoc = list_next(itr))) 
+	while((assoc = list_next(itr))) {
+		if (assoc == assoc_mgr_root_assoc)
+			continue;
 		assoc->raw_usage *= decay_factor;
+	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&assoc_mgr_association_lock);
 
@@ -282,8 +285,10 @@ static int _set_children_efctv_usage(List childern_list)
 	while((assoc = list_next(itr))) {
 		assoc->norm_usage = assoc->raw_usage /
 			assoc_mgr_root_assoc->raw_usage;
-		info("norm usage = %Lf / %Lf", assoc->raw_usage,
-		     assoc_mgr_root_assoc->raw_usage);
+		debug4("Normalized usage for %s %Lf / %Lf = %Lf",
+		     assoc->user ? assoc->user : assoc->acct,
+		     assoc->raw_usage, assoc_mgr_root_assoc->raw_usage,
+		     assoc->norm_usage);
 		/* This is needed in case someone changes the half-life on the
 		   fly and now we have used more time than is available under
 		   the new config */
@@ -292,7 +297,7 @@ static int _set_children_efctv_usage(List childern_list)
 
 		if (assoc->parent_assoc_ptr == assoc_mgr_root_assoc) {
 			assoc->efctv_usage = assoc->norm_usage;
-			info("Effective usage for %s %f",
+			debug4("Effective usage for %s %Lf",
 			       assoc->acct, assoc->efctv_usage);
 		} else if(assoc->user) {
 			assoc->efctv_usage = (long double)NO_VAL;
@@ -302,7 +307,7 @@ static int _set_children_efctv_usage(List childern_list)
 				((assoc->parent_assoc_ptr->efctv_usage -
 				  assoc->norm_usage) *
 				 assoc->raw_shares / (long double)assoc->level_shares);
-			info("Effective usage for acct %s "
+			debug4("Effective usage for acct %s "
 			     "%Lf + ((%Lf - %Lf) * %d / %d) = %Lf",
 			     assoc->acct, assoc->norm_usage,
 			     assoc->parent_assoc_ptr->efctv_usage,
@@ -343,7 +348,7 @@ static double _get_fairshare_priority( struct job_record *job_ptr )
 			((assoc->parent_assoc_ptr->efctv_usage -
 			  assoc->norm_usage) *
 			 assoc->raw_shares / (long double)assoc->level_shares);
-		info("Effective usage for user %s in acct %s "
+		debug4("Effective usage for user %s in acct %s "
 		     "%Lf + ((%Lf - %Lf) * %d / %d) = %Lf",
 		     assoc->user, assoc->acct, assoc->norm_usage,
 		     assoc->parent_assoc_ptr->efctv_usage, assoc->norm_usage,
@@ -351,26 +356,22 @@ static double _get_fairshare_priority( struct job_record *job_ptr )
 		     assoc->efctv_usage);
 
 	} else {
-		/* Multiply by something really close to 1 so the next
-		   job will get a lower priority than the previous
-		   jobs if they are submitted during the polling
-		   period.  If you can think of a better way to do
-		   this please implement :). */
-		info("here %Lf", assoc->efctv_usage);
-		assoc->efctv_usage += .00001;
-		info("1 here %Lf", assoc->efctv_usage);
+		/* Add a tiny amount so the next job will get a lower
+		   priority than the previous jobs if they are
+		   submitted during the polling period.   */
+		assoc->efctv_usage += 2.0 / (long double) weight_fs;
 	}
 
 	// Priority is 0 -> 1
 	fs_priority = ((long double)assoc->norm_shares - assoc->efctv_usage + 1.0) / 2.0;
-	info("Fairshare priority for user %s in acct %s"
+	debug4("Fairshare priority for user %s in acct %s"
 	       "((%f - %Lf) + 1) / 2 = %Lf",
 	       assoc->user, assoc->acct, assoc->norm_shares,
 	       assoc->efctv_usage, fs_priority);
 
 	slurm_mutex_unlock(&assoc_mgr_association_lock);
 
-	info("job %u has a fairshare priority of %Lf",
+	debug3("job %u has a fairshare priority of %Lf",
 	      job_ptr->job_id, fs_priority);
 
 	return (double)fs_priority;
@@ -379,7 +380,12 @@ static double _get_fairshare_priority( struct job_record *job_ptr )
 static uint32_t _get_priority_internal(time_t start_time,
 				       struct job_record *job_ptr)
 {
-	double priority = 0;
+	double age_priority = 0.0;
+	double fs_priority = 0.0;
+	double js_priority = 0.0;
+	double part_priority = 0.0;
+	double priority = 0.0;
+	double qos_priority = 0.0;
 	acct_qos_rec_t *qos_ptr = (acct_qos_rec_t *)job_ptr->qos_ptr;
 
 	if(job_ptr->direct_set_prio)
@@ -397,26 +403,28 @@ static uint32_t _get_priority_internal(time_t start_time,
 		return 1;
 
 	/* figure out the priority */
-	
+
 	if(weight_age) {
 		uint32_t diff = start_time - job_ptr->details->begin_time; 
 		double norm_diff = 1;
 
 		if(diff < max_age)
 			norm_diff = (double)diff / (double)max_age;
-		
+
 		if(norm_diff > 0) {
-			priority += norm_diff * (double)weight_age;
-			debug3("Age priority is %f * %u = %f", 
-			       norm_diff, weight_age, 
-			       norm_diff * (double)weight_age);
+			age_priority = norm_diff * (double)weight_age;
+			debug3("Weighted Age priority is %f * %u = %.2f", 
+			       norm_diff, weight_age, age_priority);
 		}
 	}
-	
-	if(job_ptr->assoc_ptr && weight_fs) 
-		priority += _get_fairshare_priority(job_ptr) 
-			* (double)weight_fs;
-	
+
+	if(job_ptr->assoc_ptr && weight_fs) {
+		double fs_temp = _get_fairshare_priority(job_ptr);
+		fs_priority = fs_temp * (double)weight_fs;
+		debug3("Weighted Fairshare priority is %f * %u = %.2f",
+		       fs_temp, weight_fs, fs_priority);
+	}
+
 	if(weight_js) {
 		double norm_js = 0;
 		if(favor_small) {
@@ -427,27 +435,33 @@ static uint32_t _get_priority_internal(time_t start_time,
 			norm_js = (double)job_ptr->details->min_nodes
 				/ (double)node_record_count;
 		if(norm_js > 0) {
-			priority += norm_js * (double)weight_js;
-			debug3("JobSize priority is %f * %u = %f", 
-			       norm_js, weight_js, norm_js * (double)weight_js);
+			js_priority = norm_js * (double)weight_js;
+			debug3("Weighted JobSize priority is %f * %u = %.2f", 
+			       norm_js, weight_js, js_priority);
 		}
 	}
-	
+
 	if(job_ptr->part_ptr && job_ptr->part_ptr->priority && weight_part) {
-		priority += job_ptr->part_ptr->norm_priority 
+		part_priority = job_ptr->part_ptr->norm_priority 
 			* (double)weight_part;
-		debug3("Partition priority is %f * %u = %f", 
+		debug3("Weighted Partition priority is %f * %u = %.2f", 
 		       job_ptr->part_ptr->norm_priority, weight_part,
-		       job_ptr->part_ptr->norm_priority * (double)weight_part);
+		       part_priority);
 	}
-	
+
 	if(qos_ptr && qos_ptr->priority && weight_qos) {
-		priority += qos_ptr->norm_priority 
+		qos_priority = qos_ptr->norm_priority 
 			* (double)weight_qos;
-		debug3("QOS priority is %f * %u = %f", 
+		debug3("Weighted QOS priority is %f * %u = %.2f", 
 		       qos_ptr->norm_priority, weight_qos,
-		       qos_ptr->norm_priority * (double)weight_qos);
+		       qos_priority);
 	}
+
+	priority = age_priority + fs_priority + js_priority + part_priority +
+		qos_priority;
+	debug3("Job %u priority: %.2f + %.2f + %.2f + %.2f + %.2f = %.2f",
+	       job_ptr->job_id, age_priority, fs_priority, js_priority,
+	       part_priority, qos_priority, priority);
 
 	priority -= ((double)job_ptr->details->nice - (double)NICE_OFFSET);
 	debug3("Nice offset is %u", job_ptr->details->nice - NICE_OFFSET);
@@ -574,6 +588,8 @@ static void *_decay_thread(void *no_data)
 					     real_decay, assoc->id, assoc->acct,
 					     assoc->raw_usage);
 					assoc = assoc->parent_assoc_ptr;
+					if (assoc == assoc_mgr_root_assoc)
+						break;
 				}
 				slurm_mutex_unlock(&assoc_mgr_association_lock);
 			}
@@ -751,6 +767,7 @@ extern int priority_p_set_cpu_shares(uint32_t procs, uint32_t half_life)
 	/* get the total decay for the entire cluster */
 	assoc_mgr_root_assoc->raw_usage =
 		(long double)procs * (long double)half_life * (long double)2;
+	assoc_mgr_root_assoc->norm_usage = 1.0;
 	info("total cpu usage on the system is %.0Lf",
 	       assoc_mgr_root_assoc->raw_usage);
 

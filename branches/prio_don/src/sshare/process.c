@@ -140,8 +140,8 @@ extern int process(shares_response_msg_t *resp)
 			field->print_routine = print_fields_str;
 		} else if(!strncasecmp("EffUsage", object, 1)) {
 			field->type = PRINT_EUSED;
-			field->name = xstrdup("Effective Usage");
-			field->len = 11;
+			field->name = xstrdup("Effectv Usage");
+			field->len = 13;
 			field->print_routine = print_fields_double;
 		} else if(!strncasecmp("ID", object, 1)) {
 			field->type = PRINT_ID;
@@ -161,13 +161,13 @@ extern int process(shares_response_msg_t *resp)
 		} else if(!strncasecmp("RawShares", object, 4)) {
 			field->type = PRINT_RAWS;
 			field->name = xstrdup("Raw Shares");
-			field->len = 9;
-			field->print_routine = print_fields_uint;
+			field->len = 10;
+			field->print_routine = print_fields_uint32;
 		} else if(!strncasecmp("RawUsage", object, 4)) {
 			field->type = PRINT_RAWU;
 			field->name = xstrdup("Raw Usage");
 			field->len = 11;
-			field->print_routine = print_fields_double;
+			field->print_routine = print_fields_uint64;
 		} else if(!strncasecmp("User", object, 1)) {
 			field->type = PRINT_USER;
 			field->name = xstrdup("User");
