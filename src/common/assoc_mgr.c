@@ -84,6 +84,19 @@ static int _sort_assoc_dec(acct_association_rec_t *assoc_a,
 	return -1;
 }
 
+/* you should check for assoc == NULL before this function */
+static void _normalize_assoc_shares(acct_association_rec_t *assoc)
+{
+	acct_association_rec_t *assoc2 = assoc;
+
+	assoc2->shares_norm = 1.0;
+	while(assoc->parent_assoc_ptr) {
+		assoc2->shares_norm *=
+			(double)assoc->shares_raw / (double)assoc->level_shares;
+		assoc = assoc->parent_assoc_ptr;
+	}
+}
+
 static int _addto_used_info(acct_association_rec_t *assoc1,
 			    acct_association_rec_t *assoc2)
 {
@@ -97,7 +110,7 @@ static int _addto_used_info(acct_association_rec_t *assoc1,
 	
 	assoc1->used_jobs += assoc2->used_jobs;
 	assoc1->used_submit_jobs += assoc2->used_submit_jobs;
-	assoc1->used_shares += assoc2->used_shares;
+	assoc1->usage_raw += assoc2->usage_raw;
 
 	return SLURM_SUCCESS;
 }
@@ -114,7 +127,7 @@ static int _clear_used_info(acct_association_rec_t *assoc)
 	
 	assoc->used_jobs  = 0;
 	assoc->used_submit_jobs = 0;
-	/* do not reset used_shares if you need to reset it do it
+	/* do not reset usage_raw if you need to reset it do it
 	 * else where since sometimes we call this and do not want
 	 * shares reset */
 
@@ -312,33 +325,16 @@ static int _post_association_list(List assoc_list)
 				continue;
 			itr2 = list_iterator_create(assoc->childern_list);
 			while((assoc2 = list_next(itr2))) 
-				count += assoc2->fairshare;
+				count += assoc2->shares_raw;
 			list_iterator_reset(itr2);
 			while((assoc2 = list_next(itr2))) 
 				assoc2->level_shares = count;
 			list_iterator_destroy(itr2);
 		}	
-		/* Now normilize the static shares */
+		/* Now normalize the static shares */
 		list_iterator_reset(itr);
-		while((assoc = list_next(itr))) {
-			assoc2 = assoc;
-			assoc2->norm_shares = 1.0;
-			/* we don't need to do this for root so stop
-			   there */
-			while(assoc->parent_assoc_ptr) {
-				assoc2->norm_shares *= 
-					(double)assoc->fairshare /
-					(double)assoc->level_shares;
-				assoc = assoc->parent_assoc_ptr;
-			}
-			if((assoc_mgr_root_assoc->cpu_shares == NO_VAL)
-			   || (assoc2 == assoc_mgr_root_assoc))
-				continue;
-			assoc2->cpu_shares = assoc_mgr_root_assoc->cpu_shares * 
-				(long double)assoc2->norm_shares;
-			assoc2->level_cpu_shares = assoc2->cpu_shares * 
-				(long double)assoc2->level_shares;
-		}
+		while((assoc = list_next(itr))) 
+			_normalize_assoc_shares(assoc);
 	}
 	list_iterator_destroy(itr);
 	//END_TIMER2("load_associations");
@@ -1000,7 +996,7 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 	if(!assoc->partition)
 		assoc->partition = ret_assoc->partition;
 
-	assoc->fairshare       = ret_assoc->fairshare;
+	assoc->shares_raw       = ret_assoc->shares_raw;
 
 	assoc->grp_cpu_mins   = ret_assoc->grp_cpu_mins;
 	assoc->grp_cpus        = ret_assoc->grp_cpus;
@@ -1496,35 +1492,35 @@ extern List assoc_mgr_get_shares(void *db_conn,
 
 		share = xmalloc(sizeof(association_shares_object_t));
 		list_append(ret_list, share);
-		
+
 		share->assoc_id = assoc->id;
 		share->cluster = xstrdup(assoc->cluster);
-		/* This will be reset for users later since this is a
-		 * normalized usage for users */
-		if(!assoc->user)
-			share->eused_shares = (uint64_t)assoc->eused_shares;
 
 		if(assoc == assoc_mgr_root_assoc) 
-			share->fairshare = NO_VAL;
+			share->shares_raw = NO_VAL;
 		else 
-			share->fairshare = assoc->fairshare;
-			
-		share->norm_shares = assoc->norm_shares;
+			share->shares_raw = assoc->shares_raw;
+
+		share->shares_norm = assoc->shares_norm;
+		share->usage_raw = (uint64_t)assoc->usage_raw;
+		share->usage_norm = (double)assoc->usage_norm;
 		if(assoc->user) {
-			long double usage = assoc->used_shares 
-				+ ((assoc->parent_assoc_ptr->eused_shares
-				    - assoc->used_shares) 
-				   * assoc->cpu_shares 
-				   / assoc->level_cpu_shares);
-			share->eused_shares = (uint64_t)usage;
+			/* We only calculate user effective usage when
+			 * we need it
+			 */
+			long double usage_efctv = assoc->usage_norm +
+				((assoc->parent_assoc_ptr->usage_efctv -
+				  assoc->usage_norm) *
+				 assoc->shares_raw / assoc->level_shares);
+			share->usage_efctv = (double)usage_efctv;
 			share->name = xstrdup(assoc->user);
 			share->parent = xstrdup(assoc->acct);
 			share->user = 1;
 		} else {
+			share->usage_efctv = (double)assoc->usage_efctv;
 			share->name = xstrdup(assoc->acct);
 			share->parent = xstrdup(assoc->parent_acct);
 		}
-		share->used_shares = assoc->used_shares;
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&assoc_mgr_association_lock);
@@ -1611,8 +1607,8 @@ extern int assoc_mgr_update_assocs(acct_update_object_t *update)
 				break;
 			}
 
-			if(object->fairshare != NO_VAL) {
-				rec->fairshare = object->fairshare;
+			if(object->shares_raw != NO_VAL) {
+				rec->shares_raw = object->shares_raw;
 				if(setup_childern) {
 					/* we need to update the shares on
 					   each sibling and child
@@ -1731,7 +1727,7 @@ extern int assoc_mgr_update_assocs(acct_update_object_t *update)
 			*/
 			if(!object->user) {
 				_clear_used_info(object);
-				object->used_shares = 0;
+				object->usage_raw = 0;
 			}
 			_set_assoc_parent_and_user(
 				object, assoc_mgr_association_list, reset);
@@ -1751,7 +1747,7 @@ extern int assoc_mgr_update_assocs(acct_update_object_t *update)
 				itr2 = list_iterator_create(
 					object->childern_list);
 				while((rec = list_next(itr2))) 
-					count += rec->fairshare;
+					count += rec->shares_raw;
 				list_iterator_reset(itr2);
 				while((rec = list_next(itr2))) 
 					rec->level_shares = count;
@@ -1775,32 +1771,14 @@ extern int assoc_mgr_update_assocs(acct_update_object_t *update)
 			}
 		}
 		if(setup_childern) {
-			/* Now normilize the static shares */
+			/* Now normalize the static shares */
+			slurm_mutex_lock(&assoc_mgr_qos_lock);
 			list_iterator_reset(itr);
 			while((object = list_next(itr))) {
-				rec = object;
-				rec->norm_shares = 1.0;
-				/* we don't need to do this for root so stop
-				   there */
-				while(object->parent_assoc_ptr) {
-					rec->norm_shares *= 
-						(double)object->fairshare /
-						(double)object->level_shares;
-					object = object->parent_assoc_ptr;
-				}
-				if((assoc_mgr_root_assoc->cpu_shares == NO_VAL)
-				   || (rec == assoc_mgr_root_assoc))
-					continue;
-				rec->cpu_shares = 
-					assoc_mgr_root_assoc->cpu_shares * 
-					(long double)rec->norm_shares;
-				rec->level_cpu_shares = rec->cpu_shares * 
-					(long double)rec->level_shares;
-
-				slurm_mutex_lock(&assoc_mgr_qos_lock);
+				_normalize_assoc_shares(object);
 				log_assoc_rec(rec, assoc_mgr_qos_list);
-				slurm_mutex_unlock(&assoc_mgr_qos_lock);
 			}
+			slurm_mutex_unlock(&assoc_mgr_qos_lock);
 		}
 	}
 
@@ -2254,7 +2232,7 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 			/* we only care about the main part here so
 			   anything under 1 we are dropping 
 			*/
-			pack64((uint64_t)assoc->used_shares, buffer);
+			pack64((uint64_t)assoc->usage_raw, buffer);
 		}
 		list_iterator_destroy(itr);
 		slurm_mutex_unlock(&assoc_mgr_association_lock);
@@ -2386,7 +2364,7 @@ extern int load_assoc_usage(char *state_save_location)
 		}
 		if(assoc) {
 			while(assoc) {
-				assoc->used_shares += (long double)uint64_tmp;
+				assoc->usage_raw += (long double)uint64_tmp;
 				assoc = assoc->parent_assoc_ptr;
 			}
 		}

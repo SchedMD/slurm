@@ -149,6 +149,7 @@ void *acct_db_conn = NULL;
 int accounting_enforce = 0;
 int association_based_accounting = 0;
 bool ping_nodes_now = false;
+int      cluster_procs = 0;
 
 /* Local variables */
 static int	daemonize = DEFAULT_DAEMONIZE;
@@ -160,7 +161,6 @@ static int	recover   = DEFAULT_RECOVER;
 static pthread_cond_t server_thread_cond = PTHREAD_COND_INITIALIZER;
 static pid_t	slurmctld_pid;
 static char    *slurm_conf_filename;
-
 /*
  * Static list of signals to block in this process
  * *Must be zero-terminated*
@@ -964,11 +964,11 @@ static void _free_server_thread(void)
 
 static int _accounting_cluster_ready()
 {
-	uint32_t procs = 0;
 	struct node_record *node_ptr;
 	int i;
 	int rc = SLURM_ERROR;
 	time_t event_time = time(NULL);
+	int procs = 0;
 
 	node_ptr = node_record_table_ptr;
 	for (i = 0; i < node_record_count; i++, node_ptr++) {
@@ -984,9 +984,15 @@ static int _accounting_cluster_ready()
 #endif
 	}
 
+	/* Since cluster_procs is used else where we need to keep a
+	   local var here to avoid race conditions on cluster_procs
+	   not being correct.
+	*/
+	cluster_procs = procs;
+		
 	rc = clusteracct_storage_g_cluster_procs(acct_db_conn,
 						 slurmctld_cluster_name,
-						 procs, event_time);
+						 cluster_procs, event_time);
 	if(rc == ACCOUNTING_FIRST_REG) {
 		/* see if we are running directly to a database
 		 * instead of a slurmdbd.
@@ -996,8 +1002,12 @@ static int _accounting_cluster_ready()
 		rc = SLURM_SUCCESS;
 	}
 
-	priority_g_set_cpu_shares(procs, slurmctld_conf.priority_decay_hl);
-	
+	/* just incase the numbers change we need to
+	   update the proc count on the cluster inside
+	   the priority plugin */
+	priority_g_set_max_cluster_usage(cluster_procs,
+					 slurmctld_conf.priority_decay_hl);
+		
 	return rc;
 }
 

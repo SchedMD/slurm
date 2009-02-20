@@ -617,7 +617,7 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 			case PRINT_FAIRSHARE:
 				field->print_routine(
 					field,
-					assoc->fairshare,
+					assoc->shares_raw,
 					(curr_inx == field_count));
 				break;
 			case PRINT_GRPCM:

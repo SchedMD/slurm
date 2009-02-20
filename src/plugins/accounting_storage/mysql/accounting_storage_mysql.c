@@ -481,17 +481,17 @@ static int _setup_association_limits(acct_association_rec_t *assoc,
 	if(!assoc)
 		return SLURM_ERROR;
 	
-	if((int)assoc->fairshare >= 0) {
+	if((int)assoc->shares_raw >= 0) {
 		xstrcat(*cols, ", fairshare");
-		xstrfmtcat(*vals, ", %u", assoc->fairshare);
-		xstrfmtcat(*extra, ", fairshare=%u", assoc->fairshare);
-	} else if (((int)assoc->fairshare == INFINITE) || get_fs) {
+		xstrfmtcat(*vals, ", %u", assoc->shares_raw);
+		xstrfmtcat(*extra, ", fairshare=%u", assoc->shares_raw);
+	} else if (((int)assoc->shares_raw == INFINITE) || get_fs) {
 		xstrcat(*cols, ", fairshare");
 		xstrcat(*vals, ", 1");
 		xstrcat(*extra, ", fairshare=1");
-		assoc->fairshare = 1;
+		assoc->shares_raw = 1;
 	} else 
-		assoc->fairshare = 1;
+		assoc->shares_raw = 1;
 
 	if((int)assoc->grp_cpu_mins >= 0) {
 		xstrcat(*cols, ", grp_cpu_mins");
@@ -1911,7 +1911,7 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 				continue;
 			}
 			/* We do want to send all user accounts though */
-			mod_assoc->fairshare = NO_VAL;
+			mod_assoc->shares_raw = NO_VAL;
 			if(row[ASSOC_PART][0]) { 
 				// see if there is a partition name
 				object = xstrdup_printf(
@@ -5319,7 +5319,7 @@ extern List acct_storage_p_modify_associations(
 		init_acct_association_rec(mod_assoc);
 		mod_assoc->id = atoi(row[MASSOC_ID]);
 
-		mod_assoc->fairshare = assoc->fairshare;
+		mod_assoc->shares_raw = assoc->shares_raw;
 
 		mod_assoc->grp_cpus = assoc->grp_cpus;
 		mod_assoc->grp_cpu_mins = assoc->grp_cpu_mins;
@@ -8168,9 +8168,9 @@ empty:
 		if(row[ASSOC_REQ_PART][0])
 			assoc->partition = xstrdup(row[ASSOC_REQ_PART]);
 		if(row[ASSOC_REQ_FS])
-			assoc->fairshare = atoi(row[ASSOC_REQ_FS]);
+			assoc->shares_raw = atoi(row[ASSOC_REQ_FS]);
 		else
-			assoc->fairshare = 1;
+			assoc->shares_raw = 1;
 
 		if(!without_parent_info && parent_acct &&
 		   (!last_acct || !last_cluster 

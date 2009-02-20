@@ -45,7 +45,7 @@ typedef struct slurm_priority_ops {
 	uint32_t (*set)            (uint32_t last_prio,
 				    struct job_record *job_ptr);
 	void     (*reconfig)       ();
-	int      (*set_cpu_shares) (uint32_t procs, uint32_t half_life);
+	int      (*set_max_usage)  (uint32_t procs, uint32_t half_life);
 } slurm_priority_ops_t;
 
 typedef struct slurm_priority_context {
@@ -82,7 +82,7 @@ static slurm_priority_ops_t * _priority_get_ops(
 	static const char *syms[] = {
 		"priority_p_set",
 		"priority_p_reconfig",
-		"priority_p_set_cpu_shares",
+		"priority_p_set_max_cluster_usage",
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
 
@@ -244,10 +244,10 @@ extern void priority_g_reconfig()
 	return;
 }
 
-extern int priority_g_set_cpu_shares(uint32_t procs, uint32_t half_life)
+extern int priority_g_set_max_cluster_usage(uint32_t procs, uint32_t half_life)
 {
 	if (slurm_priority_init() < 0)
 		return SLURM_ERROR;
 
-	return (*(g_priority_context->ops.set_cpu_shares))(procs, half_life);
+	return (*(g_priority_context->ops.set_max_usage))(procs, half_life);
 }
