@@ -29,7 +29,7 @@ documents those changes that are of interest to users and admins.
     error "cons_res:_rm_job_from_res: node_state mis-count".
  -- Add logic go bind a batch job to the resources allocated to that job.
  -- Add configuration parameter MpiParams for (future) OpenMPI port 
-    management.
+    management. Add mpi_ports field to the job step data structures.
 
 * Changes in SLURM 1.4.0-pre7
 =============================

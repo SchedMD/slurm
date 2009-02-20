@@ -549,6 +549,7 @@ struct 	step_record {
 	jobacctinfo_t *jobacct;         /* keep track of process info in the 
 					 * step */
 	uint32_t mem_per_task;		/* MB memory per task, 0=no limit */
+	char *mpi_ports;		/* ports allocated to MPI */
 	char *name;			/* name of job step */
 	char *network;			/* step's network specification */
 	uint8_t no_kill;		/* 1 if no kill on node failure */

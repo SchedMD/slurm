@@ -3,6 +3,7 @@
  *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>, 
  *             Joey Ekstrom <ekstrom1@llnl.gov>,  et. al.
@@ -140,7 +141,8 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 
 	/****** Line 3 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
-		"Checkpoint=%u CheckpointPath=%s\n\n", 
+		"MpiPorts=%s Checkpoint=%u CheckpointPath=%s\n\n", 
+		 job_step_ptr->mpi_ports,
 		 job_step_ptr->ckpt_interval, job_step_ptr->ckpt_path);
 	xstrcat(out, tmp_line);
 
