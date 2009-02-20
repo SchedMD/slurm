@@ -370,6 +370,10 @@ static double _get_fairshare_priority( struct job_record *job_ptr )
 		   priority than the previous jobs if they are
 		   submitted during the polling period.   */
 		assoc->usage_efctv += small_usage;
+		/* If the user submits a bunch of jobs and then
+		   cancels the jobs before they run the priority will
+		   not be reset until the decay loop happens.
+		*/
 	}
 
 	// Priority is 0 -> 1

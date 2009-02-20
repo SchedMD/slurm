@@ -967,22 +967,28 @@ static int _accounting_cluster_ready()
 	int i;
 	int rc = SLURM_ERROR;
 	time_t event_time = time(NULL);
+	int procs = 0;
 
-	cluster_procs = 0;
 	node_ptr = node_record_table_ptr;
 	for (i = 0; i < node_record_count; i++, node_ptr++) {
 		if (node_ptr->name == '\0')
 			continue;
 #ifdef SLURM_NODE_ACCT_REGISTER
 		if (slurmctld_conf.fast_schedule)
-			cluster_procs += node_ptr->config_ptr->cpus;
+			procs += node_ptr->config_ptr->cpus;
 		else
-			cluster_procs += node_ptr->cpus;
+			procs += node_ptr->cpus;
 #else
-		cluster_procs += node_ptr->config_ptr->cpus;
+		procs += node_ptr->config_ptr->cpus;
 #endif
 	}
 
+	/* Since cluster_procs is used else where we need to keep a
+	   local var here to avoid race conditions on cluster_procs
+	   not being correct.
+	*/
+	cluster_procs = procs;
+		
 	rc = clusteracct_storage_g_cluster_procs(acct_db_conn,
 						 slurmctld_cluster_name,
 						 cluster_procs, event_time);
@@ -998,10 +1004,9 @@ static int _accounting_cluster_ready()
 	/* just incase the numbers change we need to
 	   update the proc count on the cluster inside
 	   the priority plugin */
-	if(rc == SLURM_SUCCESS) 
-		rc = priority_g_set_cpu_shares(
-			cluster_procs, slurmctld_conf.priority_decay_hl);
-	
+	priority_g_set_cpu_shares(cluster_procs,
+				  slurmctld_conf.priority_decay_hl);
+		
 	return rc;
 }
 
