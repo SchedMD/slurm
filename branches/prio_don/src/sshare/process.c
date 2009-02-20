@@ -235,7 +235,7 @@ extern int process(shares_response_msg_t *resp)
 				break;
 			case PRINT_EUSED:
 				field->print_routine(field, 
-						     assoc->efctv_usage,
+						     assoc->usage_efctv,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_ID:
@@ -245,22 +245,22 @@ extern int process(shares_response_msg_t *resp)
 				break;
 			case PRINT_NORMS:
 				field->print_routine(field, 
-						     assoc->norm_shares,
+						     assoc->shares_norm,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_NORMU:
 				field->print_routine(field,
-						     assoc->norm_usage,
+						     assoc->usage_norm,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_RAWS:
 				field->print_routine(field,
-						     assoc->raw_shares,
+						     assoc->shares_raw,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_RAWU:
 				field->print_routine(field, 
-						     assoc->raw_usage,
+						     assoc->usage_raw,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_USER:

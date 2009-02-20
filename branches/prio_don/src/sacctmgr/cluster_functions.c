@@ -131,7 +131,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 				slurm_addto_char_list(name_list, argv[i]+end);
 		} else if (!strncasecmp (argv[i], "FairShare", 
 					 MAX(command_len, 1))) {
-			if (get_uint(argv[i]+end, &assoc->raw_shares, 
+			if (get_uint(argv[i]+end, &assoc->shares_raw, 
 			    "FairShare") == SLURM_SUCCESS)
 				set = 1;
 		} else if (!strncasecmp (argv[i], "GrpCPUMins",
@@ -324,7 +324,7 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 		init_acct_association_rec(cluster->root_assoc);
 		printf("  Name          = %s\n", cluster->name);
 
-		cluster->root_assoc->raw_shares = start_assoc.raw_shares;		
+		cluster->root_assoc->shares_raw = start_assoc.shares_raw;
 		
 		cluster->root_assoc->grp_cpu_mins = start_assoc.grp_cpu_mins;
 		cluster->root_assoc->grp_cpus = start_assoc.grp_cpus;
@@ -628,7 +628,7 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 			case PRINT_FAIRSHARE:
 				field->print_routine(
 					field,
-					cluster->root_assoc->raw_shares,
+					cluster->root_assoc->shares_raw,
 					(curr_inx == field_count));
 				break;
 			case PRINT_GRPCM:

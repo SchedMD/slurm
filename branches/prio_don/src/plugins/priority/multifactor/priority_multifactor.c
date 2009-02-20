@@ -113,7 +113,7 @@ static uint32_t weight_qos; /* weight for QOS factor */
 extern int priority_p_set_cpu_shares(uint32_t procs, uint32_t half_life);
 
 /*
- * apply decay factor to all associations raw_usage
+ * apply decay factor to all associations usage_raw
  * IN: decay_factor - decay to be applied to each associations' used
  * shares.  This should already be modified with the amount of delta
  * time from last application..
@@ -137,12 +137,59 @@ static int _apply_decay(double decay_factor)
 	while((assoc = list_next(itr))) {
 		if (assoc == assoc_mgr_root_assoc)
 			continue;
-		assoc->raw_usage *= decay_factor;
+		assoc->usage_raw *= decay_factor;
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&assoc_mgr_association_lock);
 
 	return SLURM_SUCCESS;
+}
+
+/* you should test for assoc == NULL before this function */
+static void _set_assoc_usage(acct_association_rec_t *assoc)
+{
+	char *child = "account";
+	char *child_str = assoc->acct;
+
+	if(assoc->user) {
+		child = "user";
+		child_str = assoc->user;
+	}
+
+	xassert(assoc_mgr_root_assoc);
+	xassert(assoc_mgr_root_assoc->usage_raw);
+	xassert(assoc->parent_assoc_ptr);
+	
+	assoc->usage_norm = assoc->usage_raw / assoc_mgr_root_assoc->usage_raw;
+	debug4("Normalized usage for %s %s off %s %Lf / %Lf = %Lf",
+	       child, child_str, assoc->parent_assoc_ptr->acct,
+	       assoc->usage_raw, assoc_mgr_root_assoc->usage_raw,
+	       assoc->usage_norm);
+	/* This is needed in case someone changes the half-life on the
+	   fly and now we have used more time than is available under
+	   the new config */
+	if (assoc->usage_norm > 1.0) 
+		assoc->usage_norm = 1.0;
+	
+	if (assoc->parent_assoc_ptr == assoc_mgr_root_assoc) {
+		assoc->usage_efctv = assoc->usage_norm;
+		debug4("Effective usage for %s %s off %s %Lf %Lf",
+		       child, child_str, assoc->parent_assoc_ptr->acct,
+		       assoc->usage_efctv, assoc->usage_norm);
+	} else {
+		assoc->usage_efctv = assoc->usage_norm +
+			((assoc->parent_assoc_ptr->usage_efctv -
+			  assoc->usage_norm) *
+			 assoc->shares_raw / 
+			 (long double)assoc->level_shares);
+		debug4("Effective usage for %s %s off %s "
+		       "%Lf + ((%Lf - %Lf) * %d / %d) = %Lf",
+		       child, child_str, assoc->parent_assoc_ptr->acct,
+		       assoc->usage_norm,
+		       assoc->parent_assoc_ptr->usage_efctv,
+		       assoc->usage_norm, assoc->shares_raw,
+		       assoc->level_shares, assoc->usage_efctv);
+	}
 }
 
 static time_t _read_last_decay_ran()
@@ -268,12 +315,12 @@ static int _write_last_decay_ran(time_t last_ran)
  * assoc_mgr_root_assoc.  Since our algorythm goes from top down we
  * calculate all the non-user associations now.  When a user submits a
  * job, that norm_fairshare is calculated.  Here we will set the
- * norm_fairshare to NO_VAL for users to not have to calculate a bunch
+ * usage_efctv to NO_VAL for users to not have to calculate a bunch
  * of things that will never be used. 
  *
  * NOTE: acct_mgr_association_lock must be locked before this is called.
  */
-static int _set_children_efctv_usage(List childern_list)
+static int _set_children_usage_efctv(List childern_list)
 {
 	acct_association_rec_t *assoc = NULL;
 	ListIterator itr = NULL;
@@ -283,38 +330,12 @@ static int _set_children_efctv_usage(List childern_list)
 
 	itr = list_iterator_create(childern_list);
 	while((assoc = list_next(itr))) {
-		assoc->norm_usage = assoc->raw_usage /
-			assoc_mgr_root_assoc->raw_usage;
-		debug4("Normalized usage for %s %Lf / %Lf = %Lf",
-		     assoc->user ? assoc->user : assoc->acct,
-		     assoc->raw_usage, assoc_mgr_root_assoc->raw_usage,
-		     assoc->norm_usage);
-		/* This is needed in case someone changes the half-life on the
-		   fly and now we have used more time than is available under
-		   the new config */
-		if (assoc->norm_usage > 1.0) 
-			assoc->norm_usage = 1.0;
-
-		if (assoc->parent_assoc_ptr == assoc_mgr_root_assoc) {
-			assoc->efctv_usage = assoc->norm_usage;
-			debug4("Effective usage for %s %Lf",
-			       assoc->acct, assoc->efctv_usage);
-		} else if(assoc->user) {
-			assoc->efctv_usage = (long double)NO_VAL;
+		if(assoc->user) {
+			assoc->usage_efctv = (long double)NO_VAL;
 			continue;
-		} else {
-			assoc->efctv_usage = assoc->norm_usage +
-				((assoc->parent_assoc_ptr->efctv_usage -
-				  assoc->norm_usage) *
-				 assoc->raw_shares / (long double)assoc->level_shares);
-			debug4("Effective usage for acct %s "
-			     "%Lf + ((%Lf - %Lf) * %d / %d) = %Lf",
-			     assoc->acct, assoc->norm_usage,
-			     assoc->parent_assoc_ptr->efctv_usage,
-			     assoc->norm_usage, assoc->raw_shares,
-			     assoc->level_shares, assoc->efctv_usage);
 		}
-		_set_children_efctv_usage(assoc->childern_list);
+		_set_assoc_usage(assoc);
+		_set_children_usage_efctv(assoc->childern_list);
 	}
 	list_iterator_destroy(itr);
 	return SLURM_SUCCESS;
@@ -332,9 +353,6 @@ static double _get_fairshare_priority( struct job_record *job_ptr )
 	if(!calc_fairshare)
 		return 0;
 
-	xassert(assoc_mgr_root_assoc);
-	xassert(assoc_mgr_root_assoc->raw_usage);
-
 	if(!assoc) {
 		error("Job %u has no association.  Unable to "
 		      "compute fairshare.");
@@ -342,32 +360,22 @@ static double _get_fairshare_priority( struct job_record *job_ptr )
 	}
 
 	slurm_mutex_lock(&assoc_mgr_association_lock);
-	if(assoc->efctv_usage == (long double)NO_VAL) {
-		xassert(assoc->parent_assoc_ptr);
-		assoc->efctv_usage = assoc->norm_usage +
-			((assoc->parent_assoc_ptr->efctv_usage -
-			  assoc->norm_usage) *
-			 assoc->raw_shares / (long double)assoc->level_shares);
-		debug4("Effective usage for user %s in acct %s "
-		     "%Lf + ((%Lf - %Lf) * %d / %d) = %Lf",
-		     assoc->user, assoc->acct, assoc->norm_usage,
-		     assoc->parent_assoc_ptr->efctv_usage, assoc->norm_usage,
-		     assoc->raw_shares, assoc->level_shares,
-		     assoc->efctv_usage);
-
+	if(assoc->usage_efctv == (long double)NO_VAL) {
+		_set_assoc_usage(assoc);
 	} else {
 		/* Add a tiny amount so the next job will get a lower
 		   priority than the previous jobs if they are
 		   submitted during the polling period.   */
-		assoc->efctv_usage += 2.0 / (long double) weight_fs;
+		assoc->usage_efctv += 2.0 / (long double) weight_fs;
 	}
 
 	// Priority is 0 -> 1
-	fs_priority = ((long double)assoc->norm_shares - assoc->efctv_usage + 1.0) / 2.0;
+	fs_priority = ((long double)assoc->shares_norm 
+		       - assoc->usage_efctv + 1.0) / 2.0;
 	debug4("Fairshare priority for user %s in acct %s"
 	       "((%f - %Lf) + 1) / 2 = %Lf",
-	       assoc->user, assoc->acct, assoc->norm_shares,
-	       assoc->efctv_usage, fs_priority);
+	       assoc->user, assoc->acct, assoc->shares_norm,
+	       assoc->usage_efctv, fs_priority);
 
 	slurm_mutex_unlock(&assoc_mgr_association_lock);
 
@@ -580,13 +588,13 @@ static void *_decay_thread(void *no_data)
 
 				slurm_mutex_lock(&assoc_mgr_association_lock);
 				while(assoc) {
-					assoc->raw_usage +=
+					assoc->usage_raw +=
 						(long double)real_decay;
 					debug4("adding %f new usage to %u"
 					       "(acct='%s') "
 					       "raw usage is now %Lf",
 					     real_decay, assoc->id, assoc->acct,
-					     assoc->raw_usage);
+					     assoc->usage_raw);
 					assoc = assoc->parent_assoc_ptr;
 					if (assoc == assoc_mgr_root_assoc)
 						break;
@@ -614,7 +622,7 @@ static void *_decay_thread(void *no_data)
 
 		/* now calculate all the normalized usage here */
 		slurm_mutex_lock(&assoc_mgr_association_lock);
-		_set_children_efctv_usage(assoc_mgr_root_assoc->childern_list);
+		_set_children_usage_efctv(assoc_mgr_root_assoc->childern_list);
 		slurm_mutex_unlock(&assoc_mgr_association_lock);
 	
 	sleep_now:
@@ -657,7 +665,6 @@ static void _internal_setup()
 	debug3("priority: Weight JobSize is %u", weight_js);
 	debug3("priority: Weight Part is %u", weight_part);
 	debug3("priority: Weight QOS is %u", weight_qos);
-	priority_p_set_cpu_shares(cluster_procs, slurm_get_priority_decay_hl());
 }
 
 /*
@@ -685,6 +692,12 @@ int init ( void )
 		      temp);
 		calc_fairshare = 0;
 	} else {
+		if(!cluster_procs)
+			fatal("We need to have a cluster cpu count "
+			      "before we can init the priority/multifactor "
+			      "plugin");
+		priority_p_set_cpu_shares(cluster_procs,
+					  slurm_get_priority_decay_hl());
 		slurm_attr_init(&thread_attr);
 		if (pthread_create(&decay_handler_thread, &thread_attr,
 				   _decay_thread, NULL))
@@ -746,8 +759,6 @@ extern void priority_p_reconfig()
 
 extern int priority_p_set_cpu_shares(uint32_t procs, uint32_t half_life) 
 {
-	ListIterator itr = NULL;
-	acct_association_rec_t *assoc = NULL;
 	static uint32_t last_procs = 0;
 	static uint32_t last_half_life = 0;
 
@@ -759,28 +770,16 @@ extern int priority_p_set_cpu_shares(uint32_t procs, uint32_t half_life)
 		return SLURM_SUCCESS;
 
 	xassert(assoc_mgr_root_assoc);
-	xassert(assoc_mgr_association_list);
 
 	last_procs = procs;
 	last_half_life = half_life;
 
 	/* get the total decay for the entire cluster */
-	assoc_mgr_root_assoc->raw_usage =
+	assoc_mgr_root_assoc->usage_raw =
 		(long double)procs * (long double)half_life * (long double)2;
-	assoc_mgr_root_assoc->norm_usage = 1.0;
+	assoc_mgr_root_assoc->usage_norm = 1.0;
 	info("total cpu usage on the system is %.0Lf",
-	       assoc_mgr_root_assoc->raw_usage);
-
-	slurm_mutex_lock(&assoc_mgr_association_lock);
-	itr = list_iterator_create(assoc_mgr_association_list);
-	while((assoc = list_next(itr))) {
-		/* what's this do? */
-		slurm_mutex_lock(&assoc_mgr_qos_lock);
-		log_assoc_rec(assoc, assoc_mgr_qos_list);
-		slurm_mutex_unlock(&assoc_mgr_qos_lock);
-	}
-	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&assoc_mgr_association_lock);
+	     assoc_mgr_root_assoc->usage_raw);
 
 	return SLURM_SUCCESS;
 }

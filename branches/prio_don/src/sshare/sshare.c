@@ -451,7 +451,7 @@ sshare [<OPTION>] [<COMMAND>]                                              \n\
                                                                            \n\
                                                                            \n\
                                                                            \n\
-  All commands entitys, and options are case-insensitive.               \n\n");
+  All commands entities, and options are case-insensitive.               \n\n");
 	
 }
 

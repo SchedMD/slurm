@@ -1196,15 +1196,16 @@ static void _pack_assoc_shares_object(void *in, Buf buffer)
 		pack32(0, buffer);
 
 		packnull(buffer);
+		packnull(buffer);
+		packnull(buffer);
 
-		pack64(0, buffer);
-		pack32(0, buffer);
 		packdouble(0, buffer);
+		pack32(0, buffer);
 
-		packnull(buffer);
-		packnull(buffer);
-
+		packdouble(0, buffer);
+		packdouble(0, buffer);
 		pack64(0, buffer);
+
 		pack16(0, buffer);
 		
 		return;
@@ -1213,16 +1214,16 @@ static void _pack_assoc_shares_object(void *in, Buf buffer)
 	pack32(object->assoc_id, buffer);
 
 	packstr(object->cluster, buffer);
-
-	pack32(object->raw_shares, buffer);
-	packdouble(object->norm_shares, buffer);
-
 	packstr(object->name, buffer);
 	packstr(object->parent, buffer);
 
-	pack64(object->raw_usage, buffer);
-	packdouble(object->norm_usage, buffer);
-	packdouble(object->efctv_usage, buffer);
+	packdouble(object->shares_norm, buffer);
+	pack32(object->shares_raw, buffer);
+
+	packdouble(object->usage_efctv, buffer);
+	packdouble(object->usage_norm, buffer);
+	pack64(object->usage_raw, buffer);
+
 	pack16(object->user, buffer);
 }
 
@@ -1236,16 +1237,16 @@ static int _unpack_assoc_shares_object(void **object, Buf buffer)
 	safe_unpack32(&object_ptr->assoc_id, buffer);
 	
 	safe_unpackstr_xmalloc(&object_ptr->cluster, &uint32_tmp, buffer);
-
-	safe_unpack32(&object_ptr->raw_shares, buffer);
-	safe_unpackdouble(&object_ptr->norm_shares, buffer);
-
 	safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&object_ptr->parent, &uint32_tmp, buffer);
 
-	safe_unpack64(&object_ptr->raw_usage, buffer);
-	safe_unpackdouble(&object_ptr->norm_usage, buffer);
-	safe_unpackdouble(&object_ptr->efctv_usage, buffer);
+	safe_unpackdouble(&object_ptr->shares_norm, buffer);
+	safe_unpack32(&object_ptr->shares_raw, buffer);
+
+	safe_unpackdouble(&object_ptr->usage_efctv, buffer);
+	safe_unpackdouble(&object_ptr->usage_norm, buffer);
+	safe_unpack64(&object_ptr->usage_raw, buffer);
+
 	safe_unpack16(&object_ptr->user, buffer);
 
 	return SLURM_SUCCESS;

@@ -145,49 +145,43 @@ typedef struct acct_association_rec {
 	char *cluster;		/* cluster associated to association
 				 * */
 
-	long double raw_usage;	/* measure of resource usage (DON'T PACK) */
-	long double norm_usage;	/* normalized usage (DON'T PACK) */
-	long double efctv_usage;/* effective, normalized usage (DON'T PACK) */
-	uint32_t raw_shares;	/* number of shares allocated to association */
-	double norm_shares;     /* normalized shares (DON'T PACK) */
-
 	uint64_t grp_cpu_mins; /* max number of cpu hours the
-				     * underlying group of
-				     * associations can run for */
+				* underlying group of
+				* associations can run for */
 	uint32_t grp_cpus; /* max number of cpus the
-				* underlying group of 
-				* associations can allocate at one time */
+			    * underlying group of 
+			    * associations can allocate at one time */
 	uint32_t grp_jobs;	/* max number of jobs the
 				 * underlying group of associations can run
 				 * at one time */
 	uint32_t grp_nodes; /* max number of nodes the
-				 * underlying group of
-				 * associations can allocate at once */
+			     * underlying group of
+			     * associations can allocate at once */
 	uint32_t grp_submit_jobs; /* max number of jobs the
-				       * underlying group of
-				       * associations can submit at
-				       * one time */
+				   * underlying group of
+				   * associations can submit at
+				   * one time */
 	uint32_t grp_wall; /* total time in hours the 
 			    * underlying group of
 			    * associations can run for */
-
+	
 	uint32_t grp_used_cpu_mins; /* cpu mins the
-				      * underlying group of
-				      * associations has ran for 
-				      * (DON'T PACK) */
+				     * underlying group of
+				     * associations has ran for 
+				     * (DON'T PACK) */
 	uint32_t grp_used_cpus; /* count of active jobs in the group
 				 * (DON'T PACK) */
 	uint32_t grp_used_nodes; /* count of active jobs in the group
 				  * (DON'T PACK) */
 	uint32_t grp_used_wall; /* group count of time used in
-				     * running jobs (DON'T PACK) */
+				 * running jobs (DON'T PACK) */
 	
 	uint32_t id;		/* id identifing a combination of
 				 * user-account-cluster(-partition) */
-
+	
 	uint32_t level_shares;  /* number of shares on this level of
 				 * the tree (DON'T PACK) */
-
+	
 	uint32_t lft;		/* lft used for grouping sub
 				 * associations and jobs as a left
 				 * most container used with rgt */
@@ -195,15 +189,16 @@ typedef struct acct_association_rec {
 	uint64_t max_cpu_mins_pj; /* max number of cpu seconds this 
 				   * association can have per job */
 	uint32_t max_cpus_pj; /* max number of cpus this 
-				    * association can allocate per job */
+			       * association can allocate per job */
 	uint32_t max_jobs;	/* max number of jobs this association can run
 				 * at one time */
 	uint32_t max_nodes_pj; /* max number of nodes this
-				     * association can allocate per job */
+				* association can allocate per job */
 	uint32_t max_submit_jobs; /* max number of jobs that can be
 				     submitted by association */
 	uint32_t max_wall_pj; /* longest time this
 			       * association can run a job */
+	
 	char *parent_acct;	/* name of parent account */
 	struct acct_association_rec *parent_assoc_ptr;	/* ptr to parent acct
 							 * set in
@@ -212,14 +207,22 @@ typedef struct acct_association_rec {
 	uint32_t parent_id;	/* id of parent account */
 	char *partition;	/* optional partition in a cluster 
 				 * associated to association */
-
+	
 	List qos_list;          /* list of char * */
-
+	
 	uint32_t rgt;		/* rgt used for grouping sub
 				 * associations and jobs as a right
 				 * most container used with lft */
+
+	double shares_norm;     /* normalized shares (DON'T PACK) */
+	uint32_t shares_raw;	/* number of shares allocated to association */
+
 	uint32_t uid;		/* user ID */
 	
+	long double usage_efctv;/* effective, normalized usage (DON'T PACK) */
+	long double usage_norm;	/* normalized usage (DON'T PACK) */
+	long double usage_raw;	/* measure of resource usage (DON'T PACK) */
+
 	uint32_t used_jobs;	/* count of active jobs (DON'T PACK) */
 	uint32_t used_submit_jobs; /* count of jobs pending or running
 				    * (DON'T PACK) */

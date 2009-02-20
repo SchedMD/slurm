@@ -763,7 +763,7 @@ static int _print_out_assoc(List assoc_list, bool user, bool add)
 				break;
 			case PRINT_FAIRSHARE:
 				field->print_routine(field,
-						     assoc->raw_shares);
+						     assoc->shares_raw);
 				break;
 			case PRINT_GRPCM:
 				field->print_routine(
@@ -1222,14 +1222,14 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
 
 	if((file_opts->fairshare != NO_VAL)
-	   && (assoc->raw_shares != file_opts->fairshare)) {
-		mod_assoc.raw_shares = file_opts->fairshare;
+	   && (assoc->shares_raw != file_opts->fairshare)) {
+		mod_assoc.shares_raw = file_opts->fairshare;
 		changed = 1;
 		xstrfmtcat(my_info, 
 			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
 			   " Changed fairshare",
 			   type, name,
-			   assoc->raw_shares,
+			   assoc->shares_raw,
 			   file_opts->fairshare);
 	}
 
@@ -1637,7 +1637,7 @@ static acct_association_rec_t *_set_assoc_up(sacctmgr_file_opts_t *file_opts,
 	}
 
 	
-	assoc->raw_shares = file_opts->fairshare;
+	assoc->shares_raw = file_opts->fairshare;
 	
 	assoc->grp_cpu_mins = file_opts->grp_cpu_mins;
 	assoc->grp_cpus = file_opts->grp_cpus;
@@ -1797,8 +1797,8 @@ extern int print_file_add_limits_to_line(char **line,
 	if(!assoc)
 		return SLURM_ERROR;
 
-	if(assoc->raw_shares != INFINITE)
-		xstrfmtcat(*line, ":Fairshare=%u", assoc->raw_shares);
+	if(assoc->shares_raw != INFINITE)
+		xstrfmtcat(*line, ":Fairshare=%u", assoc->shares_raw);
 		
 	if(assoc->grp_cpu_mins != INFINITE)
 		xstrfmtcat(*line, ":GrpCPUMins=%llu", assoc->grp_cpu_mins);

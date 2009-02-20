@@ -995,6 +995,13 @@ static int _accounting_cluster_ready()
 		rc = SLURM_SUCCESS;
 	}
 
+	/* just incase the numbers change we need to
+	   update the proc count on the cluster inside
+	   the priority plugin */
+	if(rc == SLURM_SUCCESS) 
+		rc = priority_g_set_cpu_shares(
+			cluster_procs, slurmctld_conf.priority_decay_hl);
+	
 	return rc;
 }
 
@@ -1266,13 +1273,6 @@ static void *_slurmctld_background(void *no_data)
 			last_node_acct = now;
 			lock_slurmctld(node_read_lock);
 			_accounting_cluster_ready();
-			/* just incase the numbers change we need to
-			   update the proc count on the cluster inside
-			   the priority plugin */
-			info("got here");
-			priority_g_set_cpu_shares(
-				cluster_procs,
-				slurmctld_conf.priority_decay_hl);
 			unlock_slurmctld(node_read_lock);
 		}
 
