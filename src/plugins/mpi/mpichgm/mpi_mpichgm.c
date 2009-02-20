@@ -98,14 +98,14 @@ int p_mpi_hook_slurmstepd_task(const mpi_plugin_task_info_t *job,
 	env_array_overwrite_fmt(env, "GMPI_SLAVE",  "%s", addrbuf);
 	env_array_overwrite_fmt(env, "GMPI_ID",  "%u", job->gtaskid);
 	if (!getenv("GMPI_RECV")) {
-		env_array_overwrite_fmt(env, "GMPI_RECV",  "%u", "hybrid");
+		env_array_overwrite_fmt(env, "GMPI_RECV",  "%s", "hybrid");
 	}
 
 	env_array_overwrite_fmt(env, "MXMPI_MASTER", "%s", addr);
 	env_array_overwrite_fmt(env, "MXMPI_ID", "%u", job->gtaskid);
 	env_array_overwrite_fmt(env, "MXMPI_SLAVE", "%s", addrbuf);
 	if (!getenv("MXMPI_RECV")) {
-		env_array_overwrite_fmt(env, "MXMPI_RECV",  "%u", "hybrid");
+		env_array_overwrite_fmt(env, "MXMPI_RECV",  "%s", "hybrid");
 	}
 	debug2("init for mpi rank %u\n", job->gtaskid);
 	
