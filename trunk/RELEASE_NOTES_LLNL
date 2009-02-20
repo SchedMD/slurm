@@ -4,7 +4,10 @@ LLNL-SPECIFIC RELEASE NOTES FOR SLURM VERSION 2.0
 For processor-scheduled clusters (*not* allocating whole nodes to jobs):
 Set "DefMemPerCPU" and "MaxMemPerCPU" as appropriate to restrict memory 
 available to a job. Also set "JobAcctGatherType=jobacct_gather/linux"
-for enforcement (periodic sampling of memory use by the job).
+for enforcement (periodic sampling of memory use by the job).  You can change 
+said sampling rate from the default (every 30 seconds) by setting the 
+"JobAcctGatherFrequency" option to a different number of seconds in 
+the slurm.conf.
 
 Configure "TaskPlugin=task/affinity" and remove the "auto-affinity.so"
 SPANK plugin with equivalent functionality.
@@ -15,7 +18,8 @@ directly in SLURM.
 SLURM version 2.0 must use a database daemon (slurmdbd) at version 2.0
 or higher. While we are testing version 2.0, set "AccountingStoragePort=????".
 Once we upgrade the production slurmdbd to version 2.0, this change will
-not be required. 
+not be required.  You can like wise test 1.3.7+ clusters with the same port 
+as the 2.0 slurmdbd will also talk to 1.3.7+ slurm.
 
 SLURM state files in version 2.0 are different from those of version 1.3.
 After installing SLURM version 2.0, plan to restart without preserving 
