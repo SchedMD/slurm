@@ -880,12 +880,6 @@ extern void init_acct_association_rec(acct_association_rec_t *assoc)
 
 	memset(assoc, 0, sizeof(acct_association_rec_t));
 
-	assoc->cpu_shares = NO_VAL;
-
-	assoc->eused_shares = 0;
-
-	assoc->fairshare = NO_VAL;
-
 	assoc->grp_cpu_mins = NO_VAL;
 	assoc->grp_cpus = NO_VAL;
 	assoc->grp_jobs = NO_VAL;
@@ -894,7 +888,6 @@ extern void init_acct_association_rec(acct_association_rec_t *assoc)
 	assoc->grp_wall = NO_VAL;
 
 	assoc->level_shares = NO_VAL;
-	assoc->level_cpu_shares = NO_VAL;
 
 	assoc->max_cpu_mins_pj = NO_VAL;
 	assoc->max_cpus_pj = NO_VAL;
@@ -903,9 +896,12 @@ extern void init_acct_association_rec(acct_association_rec_t *assoc)
 	assoc->max_submit_jobs = NO_VAL;
 	assoc->max_wall_pj = NO_VAL;
 
-	assoc->norm_shares = NO_VAL;
-	
-	assoc->used_shares = 0;
+	assoc->shares_norm = (double)NO_VAL;
+	assoc->shares_raw = NO_VAL;
+
+	assoc->usage_efctv = 0;
+	assoc->usage_norm = (long double)NO_VAL;
+	assoc->usage_raw = 0;
 }
 
 extern void init_acct_qos_rec(acct_qos_rec_t *qos)
@@ -1709,7 +1705,7 @@ extern void pack_acct_cluster_rec(void *in, uint16_t rpc_version, Buf buffer)
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
 		} else {
-			pack32(object->root_assoc->fairshare, buffer);
+			pack32(object->root_assoc->shares_raw, buffer);
 			pack32(object->root_assoc->max_cpu_mins_pj, buffer);
 			pack32(object->root_assoc->max_jobs, buffer);
 			pack32(object->root_assoc->max_nodes_pj, buffer);
@@ -1790,7 +1786,7 @@ extern int unpack_acct_cluster_rec(void **object, uint16_t rpc_version,
 		object_ptr->root_assoc = 
 			xmalloc(sizeof(acct_association_rec_t));
 		init_acct_association_rec(object_ptr->root_assoc);
-		safe_unpack32(&object_ptr->root_assoc->fairshare, buffer);
+		safe_unpack32(&object_ptr->root_assoc->shares_raw, buffer);
 		safe_unpack32((uint32_t *)&object_ptr->root_assoc->
 			      max_cpu_mins_pj, buffer);
 		safe_unpack32(&object_ptr->root_assoc->max_jobs, buffer);
@@ -1912,7 +1908,10 @@ extern void pack_acct_association_rec(void *in, uint16_t rpc_version,
 		packstr(object->acct, buffer);
 		packstr(object->cluster, buffer);
 
-		pack32(object->fairshare, buffer);
+		/* this used to be named fairshare to not have to redo
+		   the order of things just to be in alpha order we
+		   just renamed it and called it good */
+		pack32(object->shares_raw, buffer);
 
 		pack64(object->grp_cpu_mins, buffer);
 		pack32(object->grp_cpus, buffer);
@@ -2011,7 +2010,7 @@ extern void pack_acct_association_rec(void *in, uint16_t rpc_version,
 		packstr(object->acct, buffer);
 		packstr(object->cluster, buffer);
 
-		pack32(object->fairshare, buffer);
+		pack32(object->shares_raw, buffer);
 
 		pack64(object->grp_cpu_mins, buffer);
 		pack32(object->grp_cpus, buffer);
@@ -2100,7 +2099,7 @@ extern void pack_acct_association_rec(void *in, uint16_t rpc_version,
 
 		packstr(object->acct, buffer);
 		packstr(object->cluster, buffer);
-		pack32(object->fairshare, buffer);
+		pack32(object->shares_raw, buffer);
 		pack32(object->id, buffer);
 		pack32(object->lft, buffer);
 		pack32(object->max_cpu_mins_pj, buffer);
@@ -2154,7 +2153,7 @@ extern int unpack_acct_association_rec(void **object, uint16_t rpc_version,
 		safe_unpackstr_xmalloc(&object_ptr->cluster, &uint32_tmp,
 				       buffer);
 
-		safe_unpack32(&object_ptr->fairshare, buffer);
+		safe_unpack32(&object_ptr->shares_raw, buffer);
 
 		safe_unpack64(&object_ptr->grp_cpu_mins, buffer);
 		safe_unpack32(&object_ptr->grp_cpus, buffer);
@@ -2215,7 +2214,7 @@ extern int unpack_acct_association_rec(void **object, uint16_t rpc_version,
 		safe_unpackstr_xmalloc(&object_ptr->cluster, &uint32_tmp,
 				       buffer);
 
-		safe_unpack32(&object_ptr->fairshare, buffer);
+		safe_unpack32(&object_ptr->shares_raw, buffer);
 
 		safe_unpack64(&object_ptr->grp_cpu_mins, buffer);
 		safe_unpack32(&object_ptr->grp_cpus, buffer);
@@ -2278,7 +2277,7 @@ extern int unpack_acct_association_rec(void **object, uint16_t rpc_version,
 		safe_unpackstr_xmalloc(&object_ptr->cluster, &uint32_tmp,
 				       buffer);
 
-		safe_unpack32(&object_ptr->fairshare, buffer);
+		safe_unpack32(&object_ptr->shares_raw, buffer);
 		safe_unpack32(&object_ptr->id, buffer);
 		safe_unpack32(&object_ptr->lft, buffer);
 
@@ -7022,24 +7021,17 @@ extern void log_assoc_rec(acct_association_rec_t *assoc_ptr, List qos_list)
 	debug2("  acct             : %s", assoc_ptr->acct);
 	debug2("  cluster          : %s", assoc_ptr->cluster);
 
-	if(assoc_ptr->fairshare == INFINITE)
-		debug2("  Fairshare        : NONE");
-	else if(assoc_ptr->fairshare != NO_VAL) 
-		debug2("  Fairshare        : %u", assoc_ptr->fairshare);
+	if(assoc_ptr->shares_raw == INFINITE)
+		debug2("  RawShares        : NONE");
+	else if(assoc_ptr->shares_raw != NO_VAL) 
+		debug2("  RawShares        : %u", assoc_ptr->shares_raw);
 
-	if(assoc_ptr->norm_shares != NO_VAL) 
-		debug2("  NormalizedShares : %f", assoc_ptr->norm_shares);
+	if(assoc_ptr->shares_norm != (double)NO_VAL) 
+		debug2("  NormalizedShares : %f", assoc_ptr->shares_norm);
 
 	if(assoc_ptr->level_shares != NO_VAL) 
 		debug2("  LevelShares      : %u", assoc_ptr->level_shares);
 
-	if(assoc_ptr->cpu_shares != NO_VAL) 
-		debug2("  CPUShares        : %Lf", assoc_ptr->cpu_shares);
-	
-	if(assoc_ptr->level_cpu_shares != NO_VAL) 
-		debug2("  LevelCPUShares   : %Lf",
-		       assoc_ptr->level_cpu_shares);
-		
 	if(assoc_ptr->grp_cpu_mins == INFINITE)
 		debug2("  GrpCPUMins       : NONE");
 	else if(assoc_ptr->grp_cpu_mins != NO_VAL) 
@@ -7120,14 +7112,14 @@ extern void log_assoc_rec(acct_association_rec_t *assoc_ptr, List qos_list)
 	}
 
 	if(assoc_ptr->parent_acct)
-		debug2("  parent_acct      : %s", assoc_ptr->parent_acct);
+		debug2("  ParentAccount    : %s", assoc_ptr->parent_acct);
 	if(assoc_ptr->partition)
-		debug2("  partition        : %s", assoc_ptr->partition);
+		debug2("  Partition        : %s", assoc_ptr->partition);
 	if(assoc_ptr->user)
-		debug2("  user             : %s(%u)",
+		debug2("  User             : %s(%u)",
 		       assoc_ptr->user, assoc_ptr->uid);
-	debug2("  used_jobs        : %u", assoc_ptr->used_jobs);
-	debug2("  used_shares      : %Lf", assoc_ptr->used_shares);
+	debug2("  UsedJobs        : %u", assoc_ptr->used_jobs);
+	debug2("  RawUsage        : %Lf", assoc_ptr->usage_raw);
 }
 
 /*
