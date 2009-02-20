@@ -447,10 +447,11 @@ int setup_env(env_t *env)
 
 		str_bind = xstrdup ("");
 		xstrcat(str_bind, str_verbose);
-		if (str_bind[0]) {		/* add ',' if str_verbose */
+		if (str_bind[0] && str_bind_type && str_bind_type[0])
 			xstrcatchar(str_bind, ',');
-		}
 		xstrcat(str_bind, str_bind_type);
+		if (str_bind[0] && str_bind_list && str_bind_list[0])
+			xstrcatchar(str_bind, ',');
 		xstrcat(str_bind, str_bind_list);
 
 		if (setenvf(&env->env, "SLURM_CPU_BIND", str_bind)) {
