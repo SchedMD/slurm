@@ -1932,6 +1932,7 @@ _pack_job_step_create_request_msg(job_step_create_request_msg_t
 	pack16(msg->ckpt_interval, buffer);
 	pack16(msg->exclusive, buffer);
 	pack16(msg->immediate, buffer);
+	pack16(msg->resv_ports, buffer);
 
 	packstr(msg->host, buffer);
 	packstr(msg->name, buffer);
@@ -1941,7 +1942,6 @@ _pack_job_step_create_request_msg(job_step_create_request_msg_t
 
 	pack8(msg->no_kill, buffer);
 	pack8(msg->overcommit, buffer);
-	pack8(msg->resv_ports, buffer);
 }
 
 static int
@@ -1970,6 +1970,7 @@ _unpack_job_step_create_request_msg(job_step_create_request_msg_t ** msg,
 	safe_unpack16(&(tmp_ptr->ckpt_interval), buffer);
 	safe_unpack16(&(tmp_ptr->exclusive), buffer);
 	safe_unpack16(&(tmp_ptr->immediate), buffer);
+	safe_unpack16(&(tmp_ptr->resv_ports), buffer);
 
 	safe_unpackstr_xmalloc(&(tmp_ptr->host), &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&(tmp_ptr->name), &uint32_tmp, buffer);
@@ -1979,7 +1980,6 @@ _unpack_job_step_create_request_msg(job_step_create_request_msg_t ** msg,
 
 	safe_unpack8(&(tmp_ptr->no_kill), buffer);
 	safe_unpack8(&(tmp_ptr->overcommit), buffer);
-	safe_unpack8(&(tmp_ptr->resv_ports), buffer);
 
 	return SLURM_SUCCESS;
 
