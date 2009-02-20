@@ -1,0 +1,137 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Test sbcast transmission buffer options (--size and
+#          --fanout options).
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+#
+# Note:    This script generates and then deletes files in the working directory 
+#          named test14.8.input and test14.8.output
+############################################################################
+# Copyright (C) 2006 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# LLNL-CODE-402394.
+# 
+# This file is part of SLURM, a resource management program.
+# For details, see <http://www.llnl.gov/linux/slurm/>.
+#  
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+# 
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+# 
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id     "14.8"
+set file_in     "test$test_id.input"
+set file_out    "test$test_id.output"
+
+set exit_code            0
+set job_id               0
+
+print_header $test_id
+
+if {[test_front_end] != 0} {
+	send_user "\nWARNING: This test is incompatable with front-end systems\n"
+	exit 0
+}
+if {[test_multiple_slurmd] != 0} {
+	send_user "\nWARNING: This test is incompatable with multiple slurmd systems\n"
+	exit 0
+}
+
+# Delete left-over stdout file
+file delete $file_out
+
+#
+# Build input script file that broacasts a file
+#
+set pid		[pid]
+set file1       "/tmp/test.$pid.1.$test_id"
+set file2	"/tmp/test.$pid.2.$test_id"
+make_bash_script $file_in "
+  $srun $bin_rm -f $file1
+  $sbcast $sbcast --fanout=2 $file1
+  $srun $bin_diff $sbcast $file1
+  $srun $bin_rm -f $file1
+
+  $srun $bin_rm -f $file2
+  $sbcast $sbcast --size=16k  $file2
+  $srun $bin_diff $sbcast $file2
+  $srun $bin_rm -f $file2
+"
+
+#
+# Spawn an sbatch job that uses stdout and confirm its contents
+#
+set timeout $max_job_delay
+set sbatch_pid [spawn $sbatch -N1-4 --output=$file_out -t1 $file_in]
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $sbatch_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$job_id == 0} {
+	send_user "\nFAILURE: batch submit failure\n"
+	exit 1
+}
+
+#
+# Wait for job to complete and check output file
+#
+if {[wait_for_job $job_id "DONE"] != 0} {
+	send_user "\nFAILURE: waiting for job to complete\n"
+	set exit_code 1
+}
+
+if {[wait_for_file $file_out] == 0} {
+	spawn $bin_cat $file_out
+	expect {
+		-re "differ" {
+			send_user "\nFAILURE: sbcast transmitted file differs from original\n"
+			set exit_code 1
+			exp_continue
+		}
+		-re "no such" {
+			send_user "\nFAILURE: sbcast failed to transmit the file\n"
+			set exit_code 1
+		}
+		-re "error" {
+			send_user "\nFAILURE: some error occurred\n"
+			set exit_code 1
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+}
+
+if {$exit_code == 0} {
+	exec $bin_rm -f $file_in $file_out
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code

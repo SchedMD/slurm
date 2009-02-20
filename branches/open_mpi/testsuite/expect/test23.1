@@ -1,0 +1,259 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Test sstat h, e, usage and V options.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2008 - 2009 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Joseph Donaghy <donaghy1@llnl.gov>
+# LLNL-CODE-402394.
+# 
+# This file is part of SLURM, a resource management program.
+# For details, see <http://www.llnl.gov/linux/slurm/>.
+#  
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+# 
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+# 
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id     "23.1"
+set exit_code   0
+set matches     0
+set not_support 0
+
+print_header $test_id
+
+################################################################
+#
+# Proc: sstat_job
+#
+# Purpose:  Pass sstat option and test
+#
+# Returns: Number of matches.
+#
+# Input: sstat options not requiring arguments
+#
+################################################################
+
+proc sstat_job { soption } {
+	global sstat
+	set debug	0
+	set exit_code   0
+	set matches     0
+	set not_support 0
+	send_user "sstat -$soption \n"
+
+	if { $soption == "e" || $soption == "-helpformat" } {
+
+	spawn $sstat -$soption 
+	expect {
+		-re "AveCPU *AvePages *AveRSS *AveVMSize" {
+			if {$debug} {send_user "\nmatch1\n"}
+			incr matches
+			exp_continue
+		}
+		-re "JobID *MaxPages *MaxPagesNode *MaxPagesTask" {
+			if {$debug} {send_user "\nmatch2\n"}
+			incr matches
+			exp_continue
+		}
+		-re "MaxRSS *MaxRSSNode *MaxRSSTask *MaxVMSize" {
+			if {$debug} {send_user "\nmatch3\n"}
+			incr matches
+			exp_continue
+		}
+		-re "MaxVMSizeNode *MaxVMSizeTask *MinCPU *MinCPUNode" {
+			if {$debug} {send_user "\nmatch4\n"}
+			incr matches
+			exp_continue
+		}
+		-re "MinCPUTask *NTasks *SystemCPU *TotalCPU" {
+			if {$debug} {send_user "\nmatch5\n"}
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sstat not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != 5} {
+		send_user "\nFAILURE: sstat -$soption failed ($matches)\n"
+		set exit_code 1
+	}
+		return $matches
+	}
+
+	if { $soption == "h" || $soption == "-help" } {
+
+	spawn $sstat -$soption 
+	expect {
+		-re "sstat...OPTION" {
+			if {$debug} {send_user "\nmatch6\n"}
+			incr matches
+			exp_continue
+		}
+		-re "Valid..OPTION" {
+			if {$debug} {send_user "\nmatch7\n"}
+			incr matches
+			exp_continue
+		}
+		-re "-e, --helpformat" {
+			if {$debug} {send_user "\nmatch8\n"}
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sstat not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != 3} {
+		send_user "\nFAILURE: sstat -$soption failed ($matches)\n"
+		set exit_code 1
+	}
+		return $matches
+	}
+
+	if { $soption == "-usage" } {
+
+	spawn $sstat -$soption 
+	expect {
+		-re "Usage: sstat .options. -j .job..stepid." {
+			if {$debug} {send_user "\nmatch9\n"}
+			incr matches
+			exp_continue
+		}
+		-re "Use --help for help" {
+			if {$debug} {send_user "\nmatch10\n"}
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sstat not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != 2} {
+		send_user "\nFAILURE: sstat -$soption failed ($matches)\n"
+		set exit_code 1
+	}
+		return $matches
+	}
+
+	if { $soption == "V" || $soption == "-version" } {
+
+	spawn $sstat -$soption 
+	expect {
+		-re "slurm 1.4." {
+			if {$debug} {send_user "\nmatch11\n"}
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sstat not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != 1} {
+		send_user "\nFAILURE: sstat -$soption failed ($matches)\n"
+		set exit_code 1
+	}
+		return $matches
+	}
+}
+################################################################
+
+set matches [sstat_job e ]
+if {$matches != 5} {
+	send_user "\nFAILURE: sstat -e failed ($matches)\n"
+	set exit_code 1
+	}	else	{
+		send_user "\nsstat -e test GOOD!\n"
+}
+
+set matches [sstat_job -helpformat ]
+if {$matches != 5} {
+	send_user "\nFAILURE: sstat --helpformat failed ($matches)\n"
+	set exit_code 1
+	}	else	{
+		send_user "\nsstat --helpformat test GOOD!\n"
+}
+
+set matches [sstat_job h ]
+if {$matches != 3} {
+	send_user "\nFAILURE: sstat -h failed ($matches)\n"
+	set exit_code 1
+	}	else	{
+		send_user "\nsstat -h test GOOD!\n"
+}
+
+set matches [sstat_job -help ]
+if {$matches != 3} {
+	send_user "\nFAILURE: sstat --help failed ($matches)\n"
+	set exit_code 1
+	}	else	{
+		send_user "\nsstat --help test GOOD!\n"
+}
+
+set matches [sstat_job -usage ]
+if {$matches != 2} {
+	send_user "\nFAILURE: sstat --usage failed ($matches)\n"
+	set exit_code 1
+	}	else	{
+		send_user "\nsstat --usage test GOOD!\n"
+}
+
+set matches [sstat_job V ]
+if {$matches != 1} {
+	send_user "\nFAILURE: sstat -V failed ($matches)\n"
+	set exit_code 1
+	}	else	{
+		send_user "\nsstat -V test GOOD!\n"
+}
+
+set matches [sstat_job -version ]
+if {$matches != 1} {
+	send_user "\nFAILURE: sstat --version failed ($matches)\n"
+	set exit_code 1
+	}	else	{
+		send_user "\nsstat --version test GOOD!\n"
+}
+
+
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code
