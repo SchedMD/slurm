@@ -28,6 +28,8 @@ documents those changes that are of interest to users and admins.
  -- Fix bug in backfill logic for select/cons_res plugin, resulted in 
     error "cons_res:_rm_job_from_res: node_state mis-count".
  -- Add logic go bind a batch job to the resources allocated to that job.
+ -- Add configuration parameter MpiParams for (future) OpenMPI port 
+    management.
 
 * Changes in SLURM 1.4.0-pre7
 =============================

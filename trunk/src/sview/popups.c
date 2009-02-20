@@ -2,7 +2,7 @@
  *  popups.c - put different popup displays here
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Portions Copyright (C) 2008 Vijay Ramasubramanian
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>, et. al.
@@ -383,6 +383,9 @@ static void _layout_ctl_conf(GtkTreeStore *treestore,
 	add_display_treestore_line(update, treestore, &iter, 
 				   "MpiDefault",
 				   slurm_ctl_conf_ptr->mpi_default);
+	add_display_treestore_line(update, treestore, &iter, 
+				   "MpiParams",
+				   slurm_ctl_conf_ptr->mpi_params);
 #ifdef MULTIPLE_SLURMD
 	add_display_treestore_line(update, treestore, &iter, 
 				   "MULTIPLE_SLURMD", "1");

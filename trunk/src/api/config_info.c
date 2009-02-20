@@ -238,6 +238,8 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->min_job_age);
 	fprintf(out, "MpiDefault              = %s\n",
 		slurm_ctl_conf_ptr->mpi_default);
+	fprintf(out, "MpiParams               = %s\n",
+		slurm_ctl_conf_ptr->mpi_params);
 #ifdef MULTIPLE_SLURMD
 	fprintf(out, "MULTIPLE_SLURMD         = %d\n", MULTIPLE_SLURMD);
 #endif

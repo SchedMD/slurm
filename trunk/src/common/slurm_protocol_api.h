@@ -139,6 +139,12 @@ int inline slurm_get_env_timeout(void);
  */
 char *slurm_get_mpi_default(void);
 
+/* slurm_get_mpi_params
+ * get mpi parameters value from slurmctld_conf object
+ * RET char *   - mpi default value from slurm.conf,  MUST be xfreed by caller
+ */
+char *slurm_get_mpi_params(void);
+
 /* slurm_get_msg_timeout
  * get default message timeout value from slurmctld_conf object
  */

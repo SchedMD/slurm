@@ -1178,6 +1178,7 @@ void slurm_free_ctl_conf(slurm_ctl_conf_info_msg_t * config_ptr)
 		xfree(config_ptr->licenses);
 		xfree(config_ptr->mail_prog);
 		xfree(config_ptr->mpi_default);
+		xfree(config_ptr->mpi_params);
 		xfree(config_ptr->node_prefix);
 		xfree(config_ptr->plugindir);
 		xfree(config_ptr->plugstack);
