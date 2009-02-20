@@ -141,7 +141,7 @@ See the "man slurm.conf" for more information about these parameters.</p>
 
 <p><a name="rlimit"><b>2. Why are my resource limits not propagated?</b></a><br>
 When the <span class="commandline">srun</span> command executes, it captures the 
-resource limits in effect at that time. These limits are propagated to the allocated 
+resource limits in effect at submit time. These limits are propagated to the allocated 
 nodes before initiating the user's job. The SLURM daemon running on that node then 
 tries to establish identical resource limits for the job being initiated. 
 There are several possible reasons for not being able to establish those 
@@ -150,7 +150,7 @@ resource limits.
 <li>The hard resource limits applied to SLURM's slurmd daemon are lower 
 than the user's soft resources limits on the submit host. Typically 
 the slurmd daemon is initiated by the init daemon with the operating 
-system default limits. This may be address either through use of the 
+system default limits. This may be addressed either through use of the 
 ulimit command in the /etc/sysconfig/slurm file or enabling
 <a href="#pam">PAM in SLURM</a>.</li>
 <li>The user's hard resource limits on the allocated node are lower than 
