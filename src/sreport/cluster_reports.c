@@ -47,6 +47,7 @@ enum {
 	PRINT_CLUSTER_ACPU,
 	PRINT_CLUSTER_DCPU,
 	PRINT_CLUSTER_ICPU,
+	PRINT_CLUSTER_PDCPU,
 	PRINT_CLUSTER_OCPU,
 	PRINT_CLUSTER_RCPU,
 	PRINT_CLUSTER_TOTAL,
@@ -431,7 +432,7 @@ static int _setup_print_fields_list(List format_list)
 			field->name = xstrdup("Cluster");
 			field->len = 9;
 			field->print_routine = print_fields_str;
-		} else if(!strncasecmp("cpu_count", object, 
+		} else if(!strncasecmp("cpucount", object, 
 				       MAX(command_len, 2))) {
 			field->type = PRINT_CLUSTER_CPUS;
 			field->name = xstrdup("CPU count");
@@ -473,7 +474,18 @@ static int _setup_print_fields_list(List format_list)
 			else
 				field->len = 9;
 			field->print_routine = sreport_print_time;
-		} else if(!strncasecmp("Proper", object, MAX(command_len, 1))) {
+		} else if(!strncasecmp("PlannedDown", object,
+				       MAX(command_len, 2))) {
+			field->type = PRINT_CLUSTER_PDCPU;
+			field->name = xstrdup("PLND Down");
+			if(time_format == SREPORT_TIME_SECS_PER
+			   || time_format == SREPORT_TIME_MINS_PER
+			   || time_format == SREPORT_TIME_HOURS_PER)
+				field->len = 18;
+			else
+				field->len = 10;
+			field->print_routine = sreport_print_time;
+		} else if(!strncasecmp("Proper", object, MAX(command_len, 2))) {
 			field->type = PRINT_CLUSTER_USER_PROPER;
 			field->name = xstrdup("Proper Name");
 			field->len = 15;
@@ -1504,6 +1516,7 @@ extern int cluster_utilization(int argc, char *argv[])
 		while((accting = list_next(itr3))) {
 			total_acct.alloc_secs += accting->alloc_secs;
 			total_acct.down_secs += accting->down_secs;
+			total_acct.pdown_secs += accting->pdown_secs;
 			total_acct.idle_secs += accting->idle_secs;
 			total_acct.resv_secs += accting->resv_secs;
 			total_acct.over_secs += accting->over_secs;
@@ -1516,7 +1529,8 @@ extern int cluster_utilization(int argc, char *argv[])
 		local_total_time =
 			(uint64_t)total_time * (uint64_t)total_acct.cpu_count;
 		total_reported = total_acct.alloc_secs + total_acct.down_secs 
-			+ total_acct.idle_secs + total_acct.resv_secs;
+			+ total_acct.pdown_secs + total_acct.idle_secs
+			+ total_acct.resv_secs;
 
 		while((field = list_next(itr2))) {
 			switch(field->type) {
@@ -1563,6 +1577,13 @@ extern int cluster_utilization(int argc, char *argv[])
 			case PRINT_CLUSTER_OCPU:
 					field->print_routine(field,
 						     total_acct.over_secs,
+						     total_reported,
+						     (curr_inx == 
+						      field_count));
+				break;
+			case PRINT_CLUSTER_PDCPU:
+					field->print_routine(field,
+						     total_acct.pdown_secs,
 						     total_reported,
 						     (curr_inx == 
 						      field_count));

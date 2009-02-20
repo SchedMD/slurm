@@ -654,17 +654,26 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
              - Users=<OPT>      - List of users jobs to include in report. \n\
                                   Default is all.                          \n\
                                                                            \n\
-  Format options are different for listing each entity pair.               \n\
+  Below are the format options for each report.                            \n\
                                                                            \n\
-       Cluster            - Allocation, Account, Cluster, CPU_count        \n\
-                            Down, Idle, Login, Overcommited, Proper,       \n\
-                            Reported, Reserved, Used, WCKey                \n\
+       Cluster                                                             \n\
+       - AccountUtilizationByUser                                          \n\
+       - UserUtilizationByAccount                                          \n\
+             - Accounts, Cluster, CPUCount, Login, Proper, Used            \n\
+       - UserUtilizationByWckey                                            \n\
+       - WCKeyUtilizationByUser                                            \n\
+             - Cluster, CPUCount, Login, Proper, Used, Wckey               \n\
+       - Utilization                                                       \n\
+             - Allocated, Cluster, CPUCount, Down, Idle, Overcommited,     \n\
+               PlannedDown, Reported, Reserved                             \n\
                                                                            \n\
-       Job                - Account, CPU_count, Duration, Nodecount,       \n\
-                            User                                           \n\
+       Job                                                                 \n\
+       - Sizes                                                             \n\
+             - Account, Cluster                                            \n\
                                                                            \n\
-                                                                           \n\
-       User               - Account, Cluster, Login, Proper, Used          \n\
+       User                                                                \n\
+       - TopUsage                                                          \n\
+             - Account, Cluster, Login, Proper, Used                       \n\
                                                                            \n\
                                                                            \n\
   All commands and options are case-insensitive.                         \n\n");
