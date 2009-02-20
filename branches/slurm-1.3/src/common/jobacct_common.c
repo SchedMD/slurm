@@ -176,8 +176,10 @@ extern void destroy_jobacct_job_rec(void *object)
 		xfree(job->jobname);
 		xfree(job->partition);
 		xfree(job->nodes);
-		if(job->steps)
+		if(job->steps) {
 			list_destroy(job->steps);
+			job->steps = NULL;
+		}
 		xfree(job->user);
 		xfree(job->wckey);
 		xfree(job);
@@ -558,7 +560,6 @@ extern void jobacct_common_free_jobacct(void *object)
 {
 	struct jobacctinfo *jobacct = (struct jobacctinfo *)object;
 	xfree(jobacct);
-	jobacct = NULL;
 }
 
 extern int jobacct_common_setinfo(struct jobacctinfo *jobacct, 

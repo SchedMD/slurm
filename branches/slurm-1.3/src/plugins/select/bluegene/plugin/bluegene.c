@@ -811,7 +811,9 @@ extern void *mult_destroy_block(void *args)
 			debug2("done %s", 
 			       (char *)bg_record->bg_block_id);
 #endif
+		slurm_mutex_lock(&block_state_mutex);
 		destroy_bg_record(bg_record);
+		slurm_mutex_unlock(&block_state_mutex);
 		debug2("destroyed");
 		
 	already_here:
@@ -865,9 +867,15 @@ extern int free_block_list(List delete_list)
 	while ((found_record = (bg_record_t*)list_pop(delete_list)) != NULL) {
 		/* push job onto queue in a FIFO */
 		debug3("adding %s to be freed", found_record->bg_block_id);
-		if (list_push(*block_list, found_record) == NULL)
-			fatal("malloc failure in _block_op/list_push");
-		
+		if(!block_exist_in_list(*block_list, found_record)) {
+			if (list_push(*block_list, found_record) == NULL)
+				fatal("malloc failure in _block_op/list_push");
+		} else {
+			error("we had block %s already on the freeing list",
+			      found_record->bg_block_id);
+			num_block_to_free--;
+			continue;
+		}
 		/* already running MAX_AGENTS we don't really need more 
 		   since they don't end until we shut down the controller */
 		if (*count > MAX_AGENT_COUNT) 
