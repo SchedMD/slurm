@@ -765,38 +765,39 @@ typedef struct srun_user_msg {
 
 typedef struct srun_node_fail_msg {
 	uint32_t job_id;	/* slurm job_id */
-	uint32_t step_id;	/* step_id or NO_VAL */
 	char *nodelist;		/* name of failed node(s) */
+	uint32_t step_id;	/* step_id or NO_VAL */
 } srun_node_fail_msg_t;
 
 typedef struct {
-	uint32_t job_id;	/* job ID */
-	uid_t uid;
-	char *name;		/* name of the job step */
-	uint32_t node_count;	/* number of required nodes */
-	uint32_t cpu_count;	/* number of required processors */
-	uint32_t task_count;	/* number of tasks required */
-	uint16_t relative;	/* first node to use of job's allocation */
-	uint16_t task_dist;	/* see enum task_dist_state, default
-				   is SLURM_DIST_CYCLIC */
-	uint16_t plane_size;	/* plane size when task_dist =
-				   SLURM_DIST_PLANE */
-	char *node_list;	/* list of required nodes */
-	char *network;		/* network use spec */
-	uint16_t immediate;	/* 1 if allocate to run or fail immediately, 
-				 * 0 if to be queued awaiting resources */
-	uint16_t exclusive;	/* 1 if CPUs not shared with other steps */
-	bool overcommit;	/* "true" to allow the allocation of more tasks
-				   to a node than available processors,
-				   "false" to accept at most one task per
-				   processor. "false" by default. */
-	uint8_t no_kill;	/* 1 if no kill on node failure */
 	uint16_t ckpt_interval;	/* checkpoint interval in minutes */
 	char *ckpt_path;	/* path to store checkpoint image files */
-	uint16_t verbose_level; /* for extra logging decisions in step
-				   launch api */
+	uint32_t cpu_count;	/* number of required processors */
+	uint16_t exclusive;	/* 1 if CPUs not shared with other steps */
+	uint16_t immediate;	/* 1 if allocate to run or fail immediately, 
+				 * 0 if to be queued awaiting resources */
+	uint32_t job_id;	/* job ID */
 	uint32_t mem_per_task;	/* memory required per task (MB), 
 				 * use job limit if 0 */
+	char *name;		/* name of the job step */
+	char *network;		/* network use spec */
+	uint8_t no_kill;	/* 1 if no kill on node failure */
+	uint32_t node_count;	/* number of required nodes */
+	char *node_list;	/* list of required nodes */
+	bool overcommit;	/* "true" to allow the allocation of more tasks
+				 * to a node than available processors,
+				 * "false" to accept at most one task per
+				 * processor. "false" by default. */
+	uint16_t plane_size;	/* plane size when task_dist =
+				 * SLURM_DIST_PLANE */
+	uint16_t relative;	/* first node to use of job's allocation */
+	uint8_t  resv_ports;	/* reserve ports if set */
+	uint32_t task_count;	/* number of tasks required */
+	uint16_t task_dist;	/* see enum task_dist_state, default
+				 * is SLURM_DIST_CYCLIC */
+	uid_t uid;		/* user ID */
+	uint16_t verbose_level; /* for extra logging decisions in step
+				 * launch api */
 } slurm_step_ctx_params_t;
 
 typedef struct {

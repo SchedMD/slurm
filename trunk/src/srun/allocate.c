@@ -538,6 +538,8 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 	job->ctx_params.exclusive = (uint16_t)opt.exclusive;
 	job->ctx_params.immediate = (uint16_t)opt.immediate;
 	job->ctx_params.verbose_level = (uint16_t)_verbose;
+	job->ctx_params.resv_ports = (uint8_t) opt.resv_ports;
+
 	switch (opt.distribution) {
 	case SLURM_DIST_BLOCK:
 	case SLURM_DIST_ARBITRARY:
