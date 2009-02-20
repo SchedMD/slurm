@@ -778,8 +778,9 @@ extern int priority_p_set_cpu_shares(uint32_t procs, uint32_t half_life)
 	assoc_mgr_root_assoc->usage_raw =
 		(long double)procs * (long double)half_life * (long double)2;
 	assoc_mgr_root_assoc->usage_norm = 1.0;
-	info("total cpu usage on the system is %.0Lf",
-	     assoc_mgr_root_assoc->usage_raw);
+	debug3("Total possible cpu usage for half_life of %d secs "
+	       "on the system is %.0Lf",
+	       half_life, assoc_mgr_root_assoc->usage_raw);
 
 	return SLURM_SUCCESS;
 }
