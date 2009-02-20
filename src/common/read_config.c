@@ -192,6 +192,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"MinJobAge", S_P_UINT16},
 	{"MpichGmDirectSupport", S_P_LONG, defunct_option},
 	{"MpiDefault", S_P_STRING},
+	{"MpiParams", S_P_STRING},
 	{"OverTimeLimit", S_P_UINT16},
 	{"PluginDir", S_P_STRING},
 	{"PlugStackConfig", S_P_STRING},
@@ -1208,6 +1209,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->licenses);
 	xfree (ctl_conf_ptr->mail_prog);
 	xfree (ctl_conf_ptr->mpi_default);
+	xfree (ctl_conf_ptr->mpi_params);
 	xfree (ctl_conf_ptr->node_prefix);
 	xfree (ctl_conf_ptr->plugindir);
 	xfree (ctl_conf_ptr->plugstack);
@@ -1303,6 +1305,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->max_mem_per_task          = 0;
 	ctl_conf_ptr->min_job_age		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->mpi_default);
+	xfree (ctl_conf_ptr->mpi_params);
 	ctl_conf_ptr->msg_timeout		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->next_job_id		= (uint32_t) NO_VAL;
 	xfree (ctl_conf_ptr->node_prefix);
@@ -1822,6 +1825,8 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_string(&conf->mpi_default, "MpiDefault", hashtbl))
 		conf->mpi_default = xstrdup(DEFAULT_MPI_DEFAULT);
+
+	s_p_get_string(&conf->mpi_params, "MpiParams", hashtbl);
 
 	if(!s_p_get_boolean((bool *)&conf->track_wckey, 
 			    "TrackWCKey", hashtbl))

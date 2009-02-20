@@ -2,7 +2,7 @@
  *  slurm_protocol_api.c - high-level slurm communication functions
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -325,6 +325,24 @@ char *slurm_get_mpi_default(void)
 		slurm_conf_unlock();
 	}
 	return mpi_default;
+}
+
+/* slurm_get_mpi_params
+ * get mpi parameters value from slurmctld_conf object
+ * RET char *   - mpi default value from slurm.conf,  MUST be xfreed by caller
+ */
+char *slurm_get_mpi_params(void)
+{
+	char *mpi_params = NULL;
+	slurm_ctl_conf_t *conf;
+
+	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		mpi_params = xstrdup(conf->mpi_params);
+		slurm_conf_unlock();
+	}
+	return mpi_params;
 }
 
 /* slurm_get_msg_timeout
