@@ -1941,6 +1941,7 @@ _pack_job_step_create_request_msg(job_step_create_request_msg_t
 
 	pack8(msg->no_kill, buffer);
 	pack8(msg->overcommit, buffer);
+	pack8(msg->resv_ports, buffer);
 }
 
 static int
@@ -1978,6 +1979,7 @@ _unpack_job_step_create_request_msg(job_step_create_request_msg_t ** msg,
 
 	safe_unpack8(&(tmp_ptr->no_kill), buffer);
 	safe_unpack8(&(tmp_ptr->overcommit), buffer);
+	safe_unpack8(&(tmp_ptr->resv_ports), buffer);
 
 	return SLURM_SUCCESS;
 

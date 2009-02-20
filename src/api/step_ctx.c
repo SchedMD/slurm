@@ -2,7 +2,7 @@
  *  step_ctx.c - step_ctx task functions for use by AIX/POE
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -90,6 +90,7 @@ static job_step_create_request_msg_t *_create_step_request(
 	step_req->cpu_count = step_params->cpu_count;
 	step_req->num_tasks = step_params->task_count;
 	step_req->relative = step_params->relative;
+	step_req->resv_ports = step_params->resv_ports;
 	step_req->exclusive  = step_params->exclusive;
 	step_req->immediate  = step_params->immediate;
 	step_req->ckpt_interval = step_params->ckpt_interval;

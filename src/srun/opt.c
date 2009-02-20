@@ -99,6 +99,7 @@
 #define OPT_OVERCOMMIT  0x06
 #define OPT_CORE        0x07
 #define OPT_CONN_TYPE	0x08
+#define OPT_RESV_PORTS	0x09
 #define OPT_NO_ROTATE	0x0a
 #define OPT_GEOMETRY	0x0b
 #define OPT_MPI         0x0c
@@ -127,7 +128,8 @@
 #define LONG_OPT_UID         0x10a
 #define LONG_OPT_GID         0x10b
 #define LONG_OPT_MPI         0x10c
-#define LONG_OPT_CORE	     0x10e
+#define LONG_OPT_RESV_PORTS  0x10d
+#define LONG_OPT_CORE        0x10e
 #define LONG_OPT_DEBUG_TS    0x110
 #define LONG_OPT_CONNTYPE    0x111
 #define LONG_OPT_TEST_ONLY   0x113
@@ -344,6 +346,7 @@ static void _opt_default()
 
 	opt.relative = NO_VAL;
 	opt.relative_set = false;
+	opt.resv_ports = 0;
 	opt.cmd_name = NULL;
 	opt.job_name = NULL;
 	opt.job_name_set_cmd = false;
@@ -489,6 +492,7 @@ env_vars_t env_vars[] = {
 {"SLURM_PARTITION",     OPT_STRING,     &opt.partition,     NULL             },
 {"SLURM_RAMDISK_IMAGE", OPT_STRING,     &opt.ramdiskimage,  NULL             },
 {"SLURM_REMOTE_CWD",    OPT_STRING,     &opt.cwd,           NULL             },
+{"SLURM_RESV_PORTS",    OPT_RESV_PORTS, NULL,               NULL             },
 {"SLURM_STDERRMODE",    OPT_STRING,     &opt.efname,        NULL             },
 {"SLURM_STDINMODE",     OPT_STRING,     &opt.ifname,        NULL             },
 {"SLURM_STDOUTMODE",    OPT_STRING,     &opt.ofname,        NULL             },
@@ -600,6 +604,13 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_EXCLUSIVE:
 		opt.exclusive = true;
 		opt.shared = 0;
+		break;
+
+	case OPT_RESV_PORTS:
+		if (val)
+			opt.resv_ports = strtol(val, NULL, 10);
+		else
+			opt.resv_ports = 1;
 		break;
 
 	case OPT_OPEN_MODE:
@@ -730,6 +741,7 @@ static void set_options(const int argc, char **argv)
 		{"mem-per-cpu",      required_argument, 0, LONG_OPT_MEM_PER_CPU},
 		{"hint",             required_argument, 0, LONG_OPT_HINT},
 		{"mpi",              required_argument, 0, LONG_OPT_MPI},
+		{"resv-ports",       optional_argument, 0, LONG_OPT_RESV_PORTS},
 		{"tmp",              required_argument, 0, LONG_OPT_TMP},
 		{"jobid",            required_argument, 0, LONG_OPT_JOBID},
 		{"msg-timeout",      required_argument, 0, LONG_OPT_TIMEO},
@@ -1068,6 +1080,12 @@ static void set_options(const int argc, char **argv)
 				      "--mpi=list for acceptable types.",
 				      optarg);
 			}
+			break;
+		case LONG_OPT_RESV_PORTS:
+			if (optarg)
+				opt.resv_ports = strtol(optarg, NULL, 10);
+			else
+				opt.resv_ports = 1;
 			break;
 		case LONG_OPT_TMP:
 			opt.job_min_tmp_disk = str_to_bytes(optarg);
@@ -1928,6 +1946,7 @@ static void _opt_list()
 	info("ntasks-per-socket : %d", opt.ntasks_per_socket);
 	info("ntasks-per-core   : %d", opt.ntasks_per_core);
 	info("plane_size        : %u", opt.plane_size);
+	info("resv_ports        : %u", opt.resv_ports);
 	str = print_commandline(opt.argc, opt.argv);
 	info("remote command    : `%s'", str);
 	xfree(str);
@@ -1965,6 +1984,7 @@ static void _usage(void)
 		"            [--mail-type=type] [--mail-user=user] [--nice[=value]]\n"
 		"            [--prolog=fname] [--epilog=fname] [--multi-prog]\n"
 		"            [--task-prolog=fname] [--task-epilog=fname]\n"
+		"            [--resv-ports]\n"
 		"            [-w hosts...] [-x hosts...] executable [args...]\n");
 }
 
@@ -2057,6 +2077,7 @@ static void _help(void)
 "      --mem-per-cpu=MB        maximum amount of real memory per allocated\n"
 "                              CPU required by the job.\n" 
 "                              --mem >= --mem-per-cpu if --mem is specified.\n" 
+"      --resv-ports            reserve communication ports\n" 
 "\n"
 "Affinity/Multi-core options: (when the task/affinity plugin is enabled)\n" 
 "  -B --extra-node-info=S[:C[:T]]            Expands to:\n"

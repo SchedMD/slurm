@@ -115,6 +115,7 @@ typedef struct srun_options {
 	char *ckpt_interval_str;/* --checkpoint (string)	*/
 	char *ckpt_path;	/* --checkpoint-path (string)   */
 	bool exclusive;		/* --exclusive			*/
+	int  resv_ports;	/* --resv_ports			*/
 	char *partition;	/* --partition=n,   -p n   	*/
 	enum task_dist_states
 	        distribution;	/* --distribution=, -m dist	*/
