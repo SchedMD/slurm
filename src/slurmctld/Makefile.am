@@ -38,6 +38,8 @@ slurmctld_SOURCES = 	\
 	partition_mgr.c \
 	ping_nodes.c	\
 	ping_nodes.h	\
+	port_mgr.c	\
+	port_mgr.h	\
 	power_save.c	\
 	proc_req.c	\
 	proc_req.h	\
