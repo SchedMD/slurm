@@ -361,8 +361,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 	delete_list = list_create(NULL);
 	slurm_mutex_lock(&block_state_mutex);
 	itr = list_iterator_create(bg_list);
-	while ((found_record = (bg_record_t*) 
-		list_next(itr)) != NULL) {
+	while ((found_record = list_next(itr))) {
 		if ((!found_record) || (bg_record == found_record))
 			continue;
 		
