@@ -109,7 +109,10 @@ static uint32_t weight_fs; /* weight for Fairshare factor */
 static uint32_t weight_js; /* weight for Job Size factor */
 static uint32_t weight_part; /* weight for Partition factor */
 static uint32_t weight_qos; /* weight for QOS factor */
-
+static long double small_usage; /* amount of usage to add if multiple
+				 * jobs are scheduled during the same
+				 * decay period for the same association 
+				 */
 extern int priority_p_set_cpu_shares(uint32_t procs, uint32_t half_life);
 
 /*
@@ -348,7 +351,7 @@ static double _get_fairshare_priority( struct job_record *job_ptr )
 {
 	acct_association_rec_t *assoc = 
 		(acct_association_rec_t *)job_ptr->assoc_ptr;
-	long double	fs_priority = 0.0;
+	double fs_priority = 0.0;
 
 	if(!calc_fairshare)
 		return 0;
@@ -366,23 +369,23 @@ static double _get_fairshare_priority( struct job_record *job_ptr )
 		/* Add a tiny amount so the next job will get a lower
 		   priority than the previous jobs if they are
 		   submitted during the polling period.   */
-		assoc->usage_efctv += 2.0 / (long double) weight_fs;
+		assoc->usage_efctv += small_usage;
 	}
 
 	// Priority is 0 -> 1
-	fs_priority = ((long double)assoc->shares_norm 
-		       - assoc->usage_efctv + 1.0) / 2.0;
-	debug4("Fairshare priority for user %s in acct %s"
-	       "((%f - %Lf) + 1) / 2 = %Lf",
+	fs_priority =
+		(assoc->shares_norm - (double)assoc->usage_efctv + 1.0) / 2.0;
+	info("Fairshare priority for user %s in acct %s"
+	       "((%f - %Lf) + 1) / 2 = %f",
 	       assoc->user, assoc->acct, assoc->shares_norm,
 	       assoc->usage_efctv, fs_priority);
 
 	slurm_mutex_unlock(&assoc_mgr_association_lock);
 
-	debug3("job %u has a fairshare priority of %Lf",
+	debug3("job %u has a fairshare priority of %f",
 	      job_ptr->job_id, fs_priority);
 
-	return (double)fs_priority;
+	return fs_priority;
 }
 
 static uint32_t _get_priority_internal(time_t start_time,
@@ -590,11 +593,12 @@ static void *_decay_thread(void *no_data)
 				while(assoc) {
 					assoc->usage_raw +=
 						(long double)real_decay;
-					debug4("adding %f new usage to %u"
-					       "(acct='%s') "
+					debug4("adding %f new usage to "
+					       "assoc %u (user='%s' acct='%s') "
 					       "raw usage is now %Lf",
-					     real_decay, assoc->id, assoc->acct,
-					     assoc->usage_raw);
+					       real_decay, assoc->id, 
+					       assoc->user, assoc->acct,
+					       assoc->usage_raw);
 					assoc = assoc->parent_assoc_ptr;
 					if (assoc == assoc_mgr_root_assoc)
 						break;
@@ -659,12 +663,16 @@ static void _internal_setup()
 	weight_js = slurm_get_priority_weight_job_size();
 	weight_part = slurm_get_priority_weight_partition();
 	weight_qos = slurm_get_priority_weight_qos();
+
+	small_usage = 2.0 / (long double) weight_fs;
+
 	debug3("priority: Max Age is %u", max_age);
 	debug3("priority: Weight Age is %u", weight_age);
 	debug3("priority: Weight Fairshare is %u", weight_fs);
 	debug3("priority: Weight JobSize is %u", weight_js);
 	debug3("priority: Weight Part is %u", weight_part);
 	debug3("priority: Weight QOS is %u", weight_qos);
+	debug3("priority: Small Usage is %Lf", small_usage);
 }
 
 /*
