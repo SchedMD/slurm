@@ -379,7 +379,7 @@ static double _get_fairshare_priority( struct job_record *job_ptr )
 	// Priority is 0 -> 1
 	fs_priority =
 		(assoc->shares_norm - (double)assoc->usage_efctv + 1.0) / 2.0;
-	info("Fairshare priority for user %s in acct %s"
+	debug4("Fairshare priority for user %s in acct %s"
 	       "((%f - %Lf) + 1) / 2 = %f",
 	       assoc->user, assoc->acct, assoc->shares_norm,
 	       assoc->usage_efctv, fs_priority);
@@ -709,7 +709,7 @@ int init ( void )
 			      "before we can init the priority/multifactor "
 			      "plugin");
 		priority_p_set_max_cluster_usage(cluster_procs,
-					  slurm_get_priority_decay_hl());
+						 slurm_get_priority_decay_hl());
 		slurm_attr_init(&thread_attr);
 		if (pthread_create(&decay_handler_thread, &thread_attr,
 				   _decay_thread, NULL))

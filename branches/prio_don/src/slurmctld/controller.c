@@ -1004,8 +1004,8 @@ static int _accounting_cluster_ready()
 	/* just incase the numbers change we need to
 	   update the proc count on the cluster inside
 	   the priority plugin */
-	priority_g_set_cpu_shares(cluster_procs,
-				  slurmctld_conf.priority_decay_hl);
+	priority_g_set_max_cluster_usage(cluster_procs,
+					 slurmctld_conf.priority_decay_hl);
 		
 	return rc;
 }
