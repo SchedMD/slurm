@@ -231,9 +231,9 @@ dump_step_desc(job_step_create_request_msg_t *step_spec)
 	       step_spec->network, step_spec->exclusive);
 	debug3("   checkpoint-path=%s checkpoint_int=%u",
 	       step_spec->ckpt_path, step_spec->ckpt_interval);
-	debug3("   mem_per_task=%u immediate=%u no_kill=%u",
-	       step_spec->mem_per_task, step_spec->immediate, 
-	       step_spec->no_kill);
+	debug3("   mem_per_task=%u resv_ports=%u immediate=%u no_kill=%u",
+	       step_spec->mem_per_task, step_spec->resv_ports,
+	       step_spec->immediate, step_spec->no_kill);
 }
 
 
