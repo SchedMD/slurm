@@ -44,6 +44,7 @@
 
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
+#include "src/common/slurm_priority.h"
 #include "src/slurmdbd/read_config.h"
 
 #define ASSOC_USAGE_VERSION 1
@@ -1503,24 +1504,23 @@ extern List assoc_mgr_get_shares(void *db_conn,
 
 		share->shares_norm = assoc->shares_norm;
 		share->usage_raw = (uint64_t)assoc->usage_raw;
-		share->usage_norm = (double)assoc->usage_norm;
+
 		if(assoc->user) {
 			/* We only calculate user effective usage when
 			 * we need it
 			 */
-			long double usage_efctv = assoc->usage_norm +
-				((assoc->parent_assoc_ptr->usage_efctv -
-				  assoc->usage_norm) *
-				 assoc->shares_raw / assoc->level_shares);
-			share->usage_efctv = (double)usage_efctv;
+			if(assoc->usage_efctv == (long double)NO_VAL) 
+				priority_g_set_assoc_usage(assoc);
+			
 			share->name = xstrdup(assoc->user);
 			share->parent = xstrdup(assoc->acct);
 			share->user = 1;
 		} else {
-			share->usage_efctv = (double)assoc->usage_efctv;
 			share->name = xstrdup(assoc->acct);
 			share->parent = xstrdup(assoc->parent_acct);
 		}
+		share->usage_norm = (double)assoc->usage_norm;
+		share->usage_efctv = (double)assoc->usage_efctv;
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&assoc_mgr_association_lock);

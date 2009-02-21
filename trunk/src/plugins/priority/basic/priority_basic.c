@@ -133,3 +133,8 @@ extern int priority_p_set_max_cluster_usage(uint32_t procs, uint32_t half_life)
 {
 	return SLURM_SUCCESS;
 }
+
+extern void priority_p_set_assoc_usage(acct_association_rec_t *assoc)
+{
+	return;
+}

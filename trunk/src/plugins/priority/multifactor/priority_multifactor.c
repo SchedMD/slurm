@@ -115,6 +115,7 @@ static long double small_usage; /* amount of usage to add if multiple
 				 * decay period for the same association 
 				 */
 extern int priority_p_set_max_cluster_usage(uint32_t procs, uint32_t half_life);
+extern void priority_p_set_assoc_usage(acct_association_rec_t *assoc);
 
 /*
  * apply decay factor to all associations usage_raw
@@ -147,53 +148,6 @@ static int _apply_decay(double decay_factor)
 	slurm_mutex_unlock(&assoc_mgr_association_lock);
 
 	return SLURM_SUCCESS;
-}
-
-/* you should test for assoc == NULL before this function */
-static void _set_assoc_usage(acct_association_rec_t *assoc)
-{
-	char *child = "account";
-	char *child_str = assoc->acct;
-
-	if(assoc->user) {
-		child = "user";
-		child_str = assoc->user;
-	}
-
-	xassert(assoc_mgr_root_assoc);
-	xassert(assoc_mgr_root_assoc->usage_raw);
-	xassert(assoc->parent_assoc_ptr);
-	
-	assoc->usage_norm = assoc->usage_raw / assoc_mgr_root_assoc->usage_raw;
-	debug4("Normalized usage for %s %s off %s %Lf / %Lf = %Lf",
-	       child, child_str, assoc->parent_assoc_ptr->acct,
-	       assoc->usage_raw, assoc_mgr_root_assoc->usage_raw,
-	       assoc->usage_norm);
-	/* This is needed in case someone changes the half-life on the
-	   fly and now we have used more time than is available under
-	   the new config */
-	if (assoc->usage_norm > 1.0) 
-		assoc->usage_norm = 1.0;
-	
-	if (assoc->parent_assoc_ptr == assoc_mgr_root_assoc) {
-		assoc->usage_efctv = assoc->usage_norm;
-		debug4("Effective usage for %s %s off %s %Lf %Lf",
-		       child, child_str, assoc->parent_assoc_ptr->acct,
-		       assoc->usage_efctv, assoc->usage_norm);
-	} else {
-		assoc->usage_efctv = assoc->usage_norm +
-			((assoc->parent_assoc_ptr->usage_efctv -
-			  assoc->usage_norm) *
-			 assoc->shares_raw / 
-			 (long double)assoc->level_shares);
-		debug4("Effective usage for %s %s off %s "
-		       "%Lf + ((%Lf - %Lf) * %d / %d) = %Lf",
-		       child, child_str, assoc->parent_assoc_ptr->acct,
-		       assoc->usage_norm,
-		       assoc->parent_assoc_ptr->usage_efctv,
-		       assoc->usage_norm, assoc->shares_raw,
-		       assoc->level_shares, assoc->usage_efctv);
-	}
 }
 
 static time_t _read_last_decay_ran()
@@ -338,7 +292,7 @@ static int _set_children_usage_efctv(List childern_list)
 			assoc->usage_efctv = (long double)NO_VAL;
 			continue;
 		}
-		_set_assoc_usage(assoc);
+		priority_p_set_assoc_usage(assoc);
 		_set_children_usage_efctv(assoc->childern_list);
 	}
 	list_iterator_destroy(itr);
@@ -365,7 +319,7 @@ static double _get_fairshare_priority( struct job_record *job_ptr )
 
 	slurm_mutex_lock(&assoc_mgr_association_lock);
 	if(assoc->usage_efctv == (long double)NO_VAL) {
-		_set_assoc_usage(assoc);
+		priority_p_set_assoc_usage(assoc);
 	} else {
 		/* Add a tiny amount so the next job will get a lower
 		   priority than the previous jobs if they are
@@ -797,3 +751,52 @@ extern int priority_p_set_max_cluster_usage(uint32_t procs, uint32_t half_life)
 
 	return SLURM_SUCCESS;
 }
+
+extern void priority_p_set_assoc_usage(acct_association_rec_t *assoc)
+{
+	char *child = "account";
+	char *child_str = assoc->acct;
+
+	xassert(assoc);
+
+	if(assoc->user) {
+		child = "user";
+		child_str = assoc->user;
+	}
+
+	xassert(assoc_mgr_root_assoc);
+	xassert(assoc_mgr_root_assoc->usage_raw);
+	xassert(assoc->parent_assoc_ptr);
+	
+	assoc->usage_norm = assoc->usage_raw / assoc_mgr_root_assoc->usage_raw;
+	debug4("Normalized usage for %s %s off %s %Lf / %Lf = %Lf",
+	       child, child_str, assoc->parent_assoc_ptr->acct,
+	       assoc->usage_raw, assoc_mgr_root_assoc->usage_raw,
+	       assoc->usage_norm);
+	/* This is needed in case someone changes the half-life on the
+	   fly and now we have used more time than is available under
+	   the new config */
+	if (assoc->usage_norm > 1.0) 
+		assoc->usage_norm = 1.0;
+	
+	if (assoc->parent_assoc_ptr == assoc_mgr_root_assoc) {
+		assoc->usage_efctv = assoc->usage_norm;
+		debug4("Effective usage for %s %s off %s %Lf %Lf",
+		       child, child_str, assoc->parent_assoc_ptr->acct,
+		       assoc->usage_efctv, assoc->usage_norm);
+	} else {
+		assoc->usage_efctv = assoc->usage_norm +
+			((assoc->parent_assoc_ptr->usage_efctv -
+			  assoc->usage_norm) *
+			 assoc->shares_raw / 
+			 (long double)assoc->level_shares);
+		debug4("Effective usage for %s %s off %s "
+		       "%Lf + ((%Lf - %Lf) * %d / %d) = %Lf",
+		       child, child_str, assoc->parent_assoc_ptr->acct,
+		       assoc->usage_norm,
+		       assoc->parent_assoc_ptr->usage_efctv,
+		       assoc->usage_norm, assoc->shares_raw,
+		       assoc->level_shares, assoc->usage_efctv);
+	}
+}
+

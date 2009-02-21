@@ -46,6 +46,7 @@ typedef struct slurm_priority_ops {
 				    struct job_record *job_ptr);
 	void     (*reconfig)       ();
 	int      (*set_max_usage)  (uint32_t procs, uint32_t half_life);
+	void     (*set_assoc_usage)(acct_association_rec_t *assoc);
 } slurm_priority_ops_t;
 
 typedef struct slurm_priority_context {
@@ -83,6 +84,7 @@ static slurm_priority_ops_t * _priority_get_ops(
 		"priority_p_set",
 		"priority_p_reconfig",
 		"priority_p_set_max_cluster_usage",
+		"priority_p_set_assoc_usage",
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
 
@@ -250,4 +252,13 @@ extern int priority_g_set_max_cluster_usage(uint32_t procs, uint32_t half_life)
 		return SLURM_ERROR;
 
 	return (*(g_priority_context->ops.set_max_usage))(procs, half_life);
+}
+
+extern void priority_g_set_assoc_usage(acct_association_rec_t *assoc)
+{
+	if (slurm_priority_init() < 0)
+		return;
+
+       (*(g_priority_context->ops.set_assoc_usage))(assoc);
+       return;
 }
