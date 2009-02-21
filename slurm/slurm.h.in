@@ -864,7 +864,7 @@ typedef struct {
 	time_t start_time;	/* step start time */
 	time_t run_time;	/* net run time (factor out time suspended) */
 	char *partition;	/* name of assigned partition */
-	char *mpi_ports;	/* ports allocated for MPI */
+	char *resv_ports;	/* ports allocated for MPI */
 	char *nodes;		/* list of nodes allocated to job_step */
 	char *name;		/* name of job step */
 	char *network;		/* network specs for job step */
