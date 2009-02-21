@@ -120,7 +120,7 @@ extern int process(shares_response_msg_t *resp)
 
 	format_list = list_create(slurm_destroy_char);
 	slurm_addto_char_list(format_list,
-			      "A,User,Id,RawShares,NormShares,"
+			      "A,User,RawShares,NormShares,"
 			      "RawUsage,NormUsage,EffUsage");
 
 	print_fields_list = list_create(destroy_print_field);

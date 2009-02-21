@@ -50,6 +50,7 @@
 #endif
 
 #include "src/slurmctld/slurmctld.h"
+#include "src/common/slurm_accounting_storage.h"
 
 extern int slurm_priority_init(void);
 extern int slurm_priority_fini(void);
@@ -64,5 +65,11 @@ extern void priority_g_reconfig();
  * RET: SLURM_SUCCESS on SUCCESS, SLURM_ERROR else.
  */
 extern int priority_g_set_max_cluster_usage(uint32_t procs, uint32_t half_life);
+
+/* sets up the normalized usage and the effective usage of an
+ * association.
+ * IN/OUT: assoc - association to have usage set.
+ */
+extern void priority_g_set_assoc_usage(acct_association_rec_t *assoc);
 
 #endif /*_SLURM_PRIORIY_H */
