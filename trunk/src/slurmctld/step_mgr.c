@@ -164,7 +164,7 @@ static void _free_step_rec(struct step_record *step_ptr)
 	FREE_NULL_BITMAP(step_ptr->core_bitmap_job);
 	FREE_NULL_BITMAP(step_ptr->exit_node_bitmap);
 	FREE_NULL_BITMAP(step_ptr->step_node_bitmap);
-	xfree(step_ptr->mpi_ports);
+	xfree(step_ptr->resv_ports);
 	xfree(step_ptr->network);
 	xfree(step_ptr->ckpt_path);
 	xfree(step_ptr);
@@ -1308,6 +1308,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	step_ptr->exclusive = step_specs->exclusive;
 	step_ptr->ckpt_path = xstrdup(step_specs->ckpt_path);
 	step_ptr->no_kill   = step_specs->no_kill;
+if (step_specs->resv_ports)step_ptr->resv_ports=xstrdup("[1234-5678]");
 
 	/* step's name and network default to job's values if not 
 	 * specified in the step specification */
@@ -1480,7 +1481,7 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer)
 	}
 	pack_time(run_time, buffer);
 	packstr(step_ptr->job_ptr->partition, buffer);
-	packstr(step_ptr->mpi_ports, buffer);
+	packstr(step_ptr->resv_ports, buffer);
 	packstr(node_list, buffer);
 	packstr(step_ptr->name, buffer);
 	packstr(step_ptr->network, buffer);
@@ -2142,7 +2143,7 @@ extern void dump_job_step_state(struct step_record *step_ptr, Buf buffer)
 	pack_time(step_ptr->ckpt_time, buffer);
 
 	packstr(step_ptr->host,  buffer);
-	packstr(step_ptr->mpi_ports, buffer);
+	packstr(step_ptr->resv_ports, buffer);
 	packstr(step_ptr->name, buffer);
 	packstr(step_ptr->network, buffer);
 	packstr(step_ptr->ckpt_path, buffer);
@@ -2169,7 +2170,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 	uint32_t core_size, cpu_count, exit_code, mem_per_task, name_len;
 	time_t start_time, pre_sus_time, tot_sus_time, ckpt_time;
 	char *host = NULL, *ckpt_path = NULL, *core_job = NULL;
-	char *mpi_ports = NULL, *name = NULL, *network = NULL, *bit_fmt = NULL;
+	char *resv_ports = NULL, *name = NULL, *network = NULL, *bit_fmt = NULL;
 	switch_jobinfo_t switch_tmp = NULL;
 	check_jobinfo_t check_tmp = NULL;
 	slurm_step_layout_t *step_layout = NULL;
@@ -2199,7 +2200,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 	safe_unpack_time(&ckpt_time, buffer);
 
 	safe_unpackstr_xmalloc(&host, &name_len, buffer);
-	safe_unpackstr_xmalloc(&mpi_ports, &name_len, buffer);
+	safe_unpackstr_xmalloc(&resv_ports, &name_len, buffer);
 	safe_unpackstr_xmalloc(&name, &name_len, buffer);
 	safe_unpackstr_xmalloc(&network, &name_len, buffer);
 	safe_unpackstr_xmalloc(&ckpt_path, &name_len, buffer);
@@ -2238,7 +2239,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 	step_ptr->cpu_count    = cpu_count;
 	step_ptr->cpus_per_task= cpus_per_task;
 	step_ptr->cyclic_alloc = cyclic_alloc;
-	step_ptr->mpi_ports    = mpi_ports;
+	step_ptr->resv_ports   = resv_ports;
 	step_ptr->name         = name;
 	step_ptr->network      = network;
 	step_ptr->no_kill      = no_kill;
@@ -2294,7 +2295,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 
       unpack_error:
 	xfree(host);
-	xfree(mpi_ports);
+	xfree(resv_ports);
 	xfree(name);
 	xfree(network);
 	xfree(ckpt_path);

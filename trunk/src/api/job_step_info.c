@@ -141,8 +141,8 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 
 	/****** Line 3 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
-		"MpiPorts=%s Checkpoint=%u CheckpointPath=%s\n\n", 
-		 job_step_ptr->mpi_ports,
+		"ResvPorts=%s Checkpoint=%u CheckpointPath=%s\n\n", 
+		 job_step_ptr->resv_ports,
 		 job_step_ptr->ckpt_interval, job_step_ptr->ckpt_path);
 	xstrcat(out, tmp_line);
 
