@@ -77,6 +77,13 @@ which each job's usage can be normalized.</p>
 <span class="commandline">half_life</span> (input) the configured half-life</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful, otherwise SLURM_ERROR</p>
 
+<p class="commandline">void priority_p_set_assoc_usage(acct_association_rec_t *assoc)</p>
+<p style="margin-left:.2in"><b>Description</b>: Set the normalized and
+effective usage for an association.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:
+<span class="commandline">assoc</span> (input/output) pointer to the association.</p>
+<p style="margin-left:.2in"><b>Returns</b>: void</p>
+
 <h2>Versioning</h2>
 <p> This document describes version 100 of the SLURM Priority API. Future
 releases of SLURM may revise this API. A priority plugin conveys its ability
@@ -85,6 +92,6 @@ plugins.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 12 February 2009</p>
+<p style="text-align:center;">Last modified 20 February 2009</p>
 
 <!--#include virtual="footer.txt"-->
