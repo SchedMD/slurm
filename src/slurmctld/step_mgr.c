@@ -56,16 +56,17 @@
 
 #include "src/common/bitstring.h"
 #include "src/common/checkpoint.h"
-#include "src/common/slurm_protocol_interface.h"
-#include "src/common/switch.h"
-#include "src/common/xstring.h"
 #include "src/common/forward.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_jobacct_gather.h"
+#include "src/common/slurm_protocol_interface.h"
+#include "src/common/switch.h"
+#include "src/common/xstring.h"
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/node_scheduler.h"
+#include "src/slurmctld/port_mgr.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/srun_comm.h"
 
@@ -1147,7 +1148,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	struct step_record *step_ptr;
 	struct job_record  *job_ptr;
 	bitstr_t *nodeset;
-	int cpus_per_task, node_count, ret_code;
+	int cpus_per_task, node_count, ret_code, i;
 	time_t now = time(NULL);
 	char *step_node_list = NULL;
 	uint32_t orig_cpu_count;
@@ -1308,10 +1309,6 @@ step_create(job_step_create_request_msg_t *step_specs,
 	step_ptr->exclusive = step_specs->exclusive;
 	step_ptr->ckpt_path = xstrdup(step_specs->ckpt_path);
 	step_ptr->no_kill   = step_specs->no_kill;
-if (step_specs->resv_port_cnt != (uint16_t)NO_VAL) {
-step_ptr->resv_port_cnt = step_specs->resv_port_cnt;
-step_ptr->resv_ports=xstrdup("[1234-5678]");
-}
 
 	/* step's name and network default to job's values if not 
 	 * specified in the step specification */
@@ -1338,6 +1335,25 @@ step_ptr->resv_ports=xstrdup("[1234-5678]");
 			delete_step_record (job_ptr, step_ptr->step_id);
 			return SLURM_ERROR;
 		}
+
+		if ((step_specs->resv_port_cnt != (uint16_t) NO_VAL) &&
+		    (step_specs->resv_port_cnt == 0)) {
+			/* reserved port count set to max task count any node */
+			for (i=0; i<step_ptr->step_layout->node_cnt; i++) {
+				step_specs->resv_port_cnt = 
+					MAX(step_specs->resv_port_cnt,
+					    step_ptr->step_layout->tasks[i]);
+			}
+		}
+		if (step_specs->resv_port_cnt != (uint16_t) NO_VAL) {
+			step_ptr->resv_port_cnt = step_specs->resv_port_cnt;
+			i = reserve_ports(step_ptr);
+			if (i != SLURM_SUCCESS) {
+				delete_step_record (job_ptr, step_ptr->step_id);
+				return i;
+			}
+		}
+
 		if (switch_alloc_jobinfo (&step_ptr->switch_job) < 0)
 			fatal ("step_create: switch_alloc_jobinfo error");
 		
