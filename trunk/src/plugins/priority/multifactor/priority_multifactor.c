@@ -486,12 +486,12 @@ static void *_decay_thread(void *no_data)
 		}
 
 		if(!last_ran) 
-			goto sleep_now;
+			goto get_usage;
 		else
 			run_delta = (start_time - last_ran);
 
 		if(run_delta <= 0)
-			goto sleep_now;
+			goto get_usage;
 
 		real_decay = pow(decay_factor, (double)run_delta);
 
@@ -583,12 +583,12 @@ static void *_decay_thread(void *no_data)
 		list_iterator_destroy(itr);
 		unlock_slurmctld(job_write_lock);
 
+	get_usage:
 		/* now calculate all the normalized usage here */
 		slurm_mutex_lock(&assoc_mgr_association_lock);
 		_set_children_usage_efctv(assoc_mgr_root_assoc->childern_list);
 		slurm_mutex_unlock(&assoc_mgr_association_lock);
 	
-	sleep_now:
 		last_ran = start_time;
 
 		_write_last_decay_ran(last_ran);
