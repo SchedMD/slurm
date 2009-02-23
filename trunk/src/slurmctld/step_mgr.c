@@ -1333,6 +1333,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 					   (uint16_t)cpus_per_task,
 					   step_specs->task_dist,
 					   step_specs->plane_size);
+		xfree(step_node_list);
 		if (!step_ptr->step_layout) {
 			delete_step_record (job_ptr, step_ptr->step_id);
 			return SLURM_ERROR;
@@ -1369,10 +1370,10 @@ step_create(job_step_create_request_msg_t *step_specs,
 			return ESLURM_INTERCONNECT_FAILURE;
 		}
 		step_alloc_lps(step_ptr);
-	}
+	} else
+		xfree(step_node_list);
 	if (checkpoint_alloc_jobinfo (&step_ptr->check_job) < 0)
 		fatal ("step_create: checkpoint_alloc_jobinfo error");
-	xfree(step_node_list);
 	*new_step_record = step_ptr;
 	jobacct_storage_g_step_start(acct_db_conn, step_ptr);
 	return SLURM_SUCCESS;
