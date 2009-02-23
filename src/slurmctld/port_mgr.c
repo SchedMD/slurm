@@ -168,6 +168,8 @@ extern int reserve_port_config(char *mpi_params)
 	if (tmp_p == NULL) {
 		if (port_resv_table) {
 			info("Clearing port reservations");
+			for (i=0; i<port_resv_cnt; i++)
+				bit_free(port_resv_table[i]);
 			xfree(port_resv_table);
 			port_resv_cnt = 0;
 			port_resv_min = port_resv_max = 0;
@@ -188,8 +190,10 @@ extern int reserve_port_config(char *mpi_params)
 		return SLURM_ERROR;
 	}
 
-	if ((p_min == port_resv_min) && (p_max == port_resv_max))
+	if ((p_min == port_resv_min) && (p_max == port_resv_max)) {
+		_dump_resv_port_info();
 		return SLURM_SUCCESS;	/* No change */
+	}
 
 	port_resv_min = p_min;
 	port_resv_max = p_max;
