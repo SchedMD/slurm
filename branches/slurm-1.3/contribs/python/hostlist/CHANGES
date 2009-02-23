@@ -1,3 +1,22 @@
+Version 1.5 (2009-02-22)
+
+    Make each "-" on the command line count as one hostlist argument.
+    If multiple hostslists are given on stdin they are combined to a
+    union hostlist before being used in the way requested by the
+    options.
+
+    Add hostgrep utility to search for lines matching a hostlist.
+
+    Make the build system (used when building tar.gz and RPMs from the
+    source code held in git) smarter.
+
+Version 1.4 (2008-12-28)
+
+    Support Python 3.
+
+    Import reduce from functools if possible.
+    Use Python 2/3 installation trick from .../Demo/distutils/test2to3
+
 Version 1.3 (2008-09-30)
 
     Add -s/--separator, -p/--prepend, -a/--append and --version

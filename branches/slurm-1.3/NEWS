@@ -29,6 +29,13 @@ documents those changes that are of interest to users and admins.
     job's required or excluded node specification being ignored.
  -- Add logic to handle message connect timeouts (timed-out.patch from 
     Chuck Clouston, Bull).
+ -- Update python-hostlist code from Kent Engström (NSC) to v1.5
+    - Add hostgrep utility to search for lines matching a hostlist.
+    - Make each "-" on the command line count as one hostlist argument.
+      If multiple hostslists are given on stdin they are combined to a
+      union hostlist before being used in the way requested by the
+      options.
+
 
 * Changes in SLURM 1.3.13
 =========================
@@ -189,7 +196,7 @@ documents those changes that are of interest to users and admins.
     given user with a given name will execute with this dependency type.
     From Matthieu Hautreux, CEA.
  -- Updated contribs/python/hostlist to version 1.3: See "CHANGES" file in
-    that directory for details. From Kent Engstrom, NSC.
+    that directory for details. From Kent Engström, NSC.
  -- Add SLURM_JOB_NAME environment variable for jobs submitted using sbatch.
     In order to prevent the job steps from all having the same name as the 
     batch job that spawned them, the SLURM_JOB_NAME environment variable is
