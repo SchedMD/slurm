@@ -536,3 +536,7 @@ test23.#   Testing of sstat commands and options.
 test23.1   sstat -e, h, usage and V options
 test23.2   sstat --helpformat
 test23.3   sstat -a, n, o, p, P, v options
+
+test24.#   Testing of sshare/priority multifactor plugin.
+=================================================
+test24.1   multifactor plugin algo test
