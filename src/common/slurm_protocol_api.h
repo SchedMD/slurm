@@ -3,7 +3,7 @@
  *	definitions
  *****************************************************************************
  *  Copyright (C) 2002-2006 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -423,6 +423,10 @@ char *slurm_get_proctrack_type(void);
 /* slurm_get_root_filter
  * RET uint16_t  - Value of SchedulerRootFilter */
 extern uint16_t slurm_get_root_filter(void);
+
+/* slurm_get_sched_params
+ * RET char * - Value of SchedulerParameters, MUST be xfreed by caller */
+extern char *slurm_get_sched_params(void);
 
 /* slurm_get_sched_port
  * RET uint16_t  - Value of SchedulerPort */

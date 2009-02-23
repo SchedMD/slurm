@@ -91,10 +91,6 @@ static bool new_work      = false;
 static bool stop_backfill = false;
 static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-/* Backfill scheduling has considerable overhead, 
- *	so only attempt it every BACKFILL_INTERVAL seconds.
- * Much of the scheduling for BlueGene happens through backfill,
- *	so we run it more frequently. */
 #ifndef BACKFILL_INTERVAL
 #  ifdef HAVE_BG
 #    define BACKFILL_INTERVAL	5
@@ -176,13 +172,23 @@ extern void stop_backfill_agent(void)
 extern void *backfill_agent(void *args)
 {
 	struct timeval tv1, tv2;
-	char tv_str[20];
+	char tv_str[20], *sched_params, *tmp_ptr;
 	time_t now;
-	int i, iter;
+	int backfill_interval = 0, i, iter;
 	static time_t last_backfill_time = 0;
 	/* Read config, and partitions; Write jobs and nodes */
 	slurmctld_lock_t all_locks = {
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
+
+	sched_params = slurm_get_sched_params();
+	if (sched_params && (tmp_ptr=strstr(sched_params, "interval:")))
+		backfill_interval = atoi(tmp_ptr+9);
+	else
+		backfill_interval = BACKFILL_INTERVAL;
+	if (backfill_interval < 1) {
+		fatal("Invalid backfill scheduler interval: %d", 
+		      backfill_interval);
+	}
 
 	while (!stop_backfill) {
 		iter = (BACKFILL_CHECK_SEC * 1000000) /
@@ -197,7 +203,7 @@ extern void *backfill_agent(void *args)
 		/* Avoid resource fragmentation if important */
 		if (job_is_completing())
 			continue;
-		if ((difftime(now, last_backfill_time) < BACKFILL_INTERVAL) ||
+		if ((difftime(now, last_backfill_time) < backfill_interval) ||
 		    stop_backfill || (!_more_work()))
 			continue;
 		last_backfill_time = now;

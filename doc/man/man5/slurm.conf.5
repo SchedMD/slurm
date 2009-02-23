@@ -1026,6 +1026,15 @@ and
 would run \fBxterm\fR with the title set to the SLURM jobid.
 
 .TP
+\fBSchedulerParameters\fR
+The interprettation of this parameter varies by \fBSchedulerType\fR.
+In the case of \fBSchedulerType=sched/backfill\fR, there is one 
+optional argument of the form "interval:#", where "#" is number of
+seconds between iterations. Higher values result in less overhead 
+and responsivenss, The default value is 5 secondson BlueGene systems 
+and 10 seconds otherwise.
+
+.TP
 \fBSchedulerPort\fR
 The port number on which slurmctld should listen for connection requests.
 This value is only used by the Maui Scheduler (see \fBSchedulerType\fR).
