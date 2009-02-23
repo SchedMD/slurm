@@ -51,10 +51,110 @@
 
 #include "src/slurmctld/slurmctld.h"
 
+#define  _DEBUG 0
+
 bitstr_t **port_resv_table = (bitstr_t **) NULL;
 int        port_resv_cnt   = 0;
 int        port_resv_min   = 0;
 int        port_resv_max   = 0;
+
+static void _dump_resv_port_info(void);
+static void _make_all_resv(void);
+static void _make_step_resv(struct step_record *step_ptr);
+static void _rebuild_port_array(struct step_record *step_ptr);
+
+static void _dump_resv_port_info(void)
+{
+#if _DEBUG
+	int i;
+	char *tmp_char;
+
+	for (i=0; i<port_resv_cnt; i++) {
+		if (bit_set_count(port_resv_table[i]) == 0)
+			continue;
+
+		tmp_char = bitmap2node_name(port_resv_table[i]);
+		info("Port %d: %s", (i+port_resv_min), tmp_char);
+		xfree(tmp_char);
+	}
+#endif
+}
+
+/* Builds the job step's resv_port_array based upon resv_ports (a string) */
+static void _rebuild_port_array(struct step_record *step_ptr)
+{
+	int i;
+	char *tmp_char;
+	hostlist_t hl;
+
+	i = strlen(step_ptr->resv_ports);
+	tmp_char = xmalloc(i+3);
+	sprintf(tmp_char, "[%s]", step_ptr->resv_ports);
+	hl = hostlist_create(tmp_char);
+	xfree(tmp_char);
+	if (hl == NULL)
+		fatal("malloc failure: hostlist_create");
+
+	step_ptr->resv_port_array = xmalloc(sizeof(int) * 
+					    step_ptr->resv_port_cnt);
+	step_ptr->resv_port_cnt = 0;
+	while ((tmp_char = hostlist_shift(hl))) {
+		i = atoi(tmp_char);
+		if (i > 0)
+			step_ptr->resv_port_array[step_ptr->resv_port_cnt++]=i;
+		free(tmp_char);
+	}
+	hostlist_destroy(hl);
+	if (step_ptr->resv_port_cnt == 0) {
+		error("Problem recovering resv_port_array for step %u.%u: %s",
+		      step_ptr->job_ptr->job_id, step_ptr->step_id, 
+		      step_ptr->resv_ports);
+		xfree(step_ptr->resv_ports);
+	}
+}
+
+/* Update the local reservation table for one job step.
+ * Builds the job step's resv_port_array based upon resv_ports (a string) */
+static void _make_step_resv(struct step_record *step_ptr)
+{
+	int i, j;
+
+	if ((step_ptr->resv_port_cnt == 0) ||
+	    (step_ptr->resv_ports == NULL) ||
+	    (step_ptr->resv_ports[0] == '\0'))
+		return;
+
+	if (step_ptr->resv_port_array == NULL)
+		_rebuild_port_array(step_ptr);
+
+	for (i=0; i<step_ptr->resv_port_cnt; i++) {
+		if ((step_ptr->resv_port_array[i] < port_resv_min) ||
+		    (step_ptr->resv_port_array[i] > port_resv_max)) 
+			continue;
+		j = step_ptr->resv_port_array[i] - port_resv_min;
+		bit_or(port_resv_table[j], step_ptr->step_node_bitmap);
+	}
+}
+
+/* Identify every job step with a port reservation and put the 
+ * reservation into the local reservation table. */
+static void _make_all_resv(void)
+{
+	struct job_record *job_ptr;
+	struct step_record *step_ptr;
+	ListIterator job_iterator, step_iterator;
+
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		step_iterator = list_iterator_create(job_ptr->step_list);
+		while ((step_ptr = (struct step_record *) 
+				   list_next(step_iterator))) {
+			_make_step_resv(step_ptr);
+		}
+		list_iterator_destroy(step_iterator);
+	}
+	list_iterator_destroy(job_iterator);
+}
 
 /* Configure reserved ports.
  * Call with mpi_params==NULL to free memory */
@@ -102,7 +202,8 @@ extern int reserve_port_config(char *mpi_params)
 	for (i=0; i<port_resv_cnt; i++)
 		port_resv_table[i] = bit_alloc(node_record_count);
 
-/* FIXME: Rebuild record of reserved ports */
+	_make_all_resv();
+	_dump_resv_port_info();
 	return SLURM_SUCCESS;
 }
 
