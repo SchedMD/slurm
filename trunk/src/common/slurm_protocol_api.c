@@ -1275,6 +1275,23 @@ extern uint16_t slurm_get_root_filter(void)
 	}
 	return root_filter;
 }
+
+/* slurm_get_sched_params
+ * RET char * - Value of SchedulerParameters, MUST be xfreed by caller */
+extern char *slurm_get_sched_params(void)
+{
+	char *params = 0;
+	slurm_ctl_conf_t *conf;
+
+ 	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		params = conf->sched_params;
+		slurm_conf_unlock();
+	}
+	return params;
+}
+
 /* slurm_get_sched_port
  * RET uint16_t  - Value of SchedulerPort */
 extern uint16_t slurm_get_sched_port(void)

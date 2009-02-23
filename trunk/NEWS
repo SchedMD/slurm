@@ -32,6 +32,8 @@ documents those changes that are of interest to users and admins.
     management. Add resv_port_cnt and resv_ports fields to the job step 
     data structures. Add environment variable SLURM_STEP_RESV_PORTS to
     show what ports are reserved for a job step.
+ -- Add support for SchedulerParameters=interval=<sec> to control the time
+    interval between executions of the backfill scheduler logic.
  -- NOTE: Cold-start (without preserving state) required for upgrade from 
     version 1.4.0-pre7.
 
