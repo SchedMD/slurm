@@ -596,7 +596,8 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 		rc = slurm_get_errno();
 
 		if (opt.immediate ||
-		    ((rc != ESLURM_NODES_BUSY) && (rc != ESLURM_DISABLED))) {
+		    ((rc != ESLURM_NODES_BUSY) && (rc != ESLURM_PORTS_BUSY) &&
+		     (rc != ESLURM_DISABLED))) {
 			error ("Unable to create job step: %m");
 			return -1;
 		}
