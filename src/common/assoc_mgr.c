@@ -296,7 +296,7 @@ static int _set_assoc_parent_and_user(acct_association_rec_t *assoc,
 
 	return SLURM_SUCCESS;
 }
-
+	
 static int _post_association_list(List assoc_list)
 {
 	acct_association_rec_t *assoc = NULL;
@@ -341,7 +341,7 @@ static int _post_association_list(List assoc_list)
 	//END_TIMER2("load_associations");
 	return SLURM_SUCCESS;
 }
-	
+
 static int _post_user_list(List user_list)
 {
 	acct_user_rec_t *user = NULL;
@@ -1517,7 +1517,11 @@ extern List assoc_mgr_get_shares(void *db_conn,
 			share->user = 1;
 		} else {
 			share->name = xstrdup(assoc->acct);
-			share->parent = xstrdup(assoc->parent_acct);
+			if(!assoc->parent_acct && assoc->parent_assoc_ptr)
+				share->parent = 
+					xstrdup(assoc->parent_assoc_ptr->acct);
+			else
+				share->parent = xstrdup(assoc->parent_acct);
 		}
 		share->usage_norm = (double)assoc->usage_norm;
 		share->usage_efctv = (double)assoc->usage_efctv;
@@ -1743,7 +1747,7 @@ extern int assoc_mgr_update_assocs(acct_update_object_t *update)
 				ListIterator itr2 = NULL;
 				if(!object->childern_list
 				   || !list_count(object->childern_list))
-					continue;
+					goto is_user;
 				itr2 = list_iterator_create(
 					object->childern_list);
 				while((rec = list_next(itr2))) 
@@ -1753,7 +1757,7 @@ extern int assoc_mgr_update_assocs(acct_update_object_t *update)
 					rec->level_shares = count;
 				list_iterator_destroy(itr2);
 			}
-				
+		is_user:
 			if(!object->user)
 				continue;
 
@@ -1776,7 +1780,7 @@ extern int assoc_mgr_update_assocs(acct_update_object_t *update)
 			list_iterator_reset(itr);
 			while((object = list_next(itr))) {
 				_normalize_assoc_shares(object);
-				log_assoc_rec(rec, assoc_mgr_qos_list);
+				log_assoc_rec(object, assoc_mgr_qos_list);
 			}
 			slurm_mutex_unlock(&assoc_mgr_qos_lock);
 		}
@@ -2569,4 +2573,5 @@ extern int assoc_mgr_refresh_lists(void *db_conn, assoc_init_args_t *args)
 
 	return SLURM_SUCCESS;	
 }
+
 

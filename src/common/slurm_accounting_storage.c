@@ -7017,6 +7017,8 @@ extern char *get_qos_complete_str(List qos_list, List num_qos_list)
 
 extern void log_assoc_rec(acct_association_rec_t *assoc_ptr, List qos_list)
 {
+	xassert(assoc_ptr);
+
 	debug2("association rec id : %u", assoc_ptr->id);
 	debug2("  acct             : %s", assoc_ptr->acct);
 	debug2("  cluster          : %s", assoc_ptr->cluster);
