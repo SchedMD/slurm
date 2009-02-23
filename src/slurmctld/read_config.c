@@ -75,6 +75,7 @@
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/node_scheduler.h"
+#include "src/slurmctld/port_mgr.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/read_config.h"
 #include "src/slurmctld/reservation.h"
@@ -851,6 +852,7 @@ int read_slurm_conf(int recover)
 
 	if ((rc = _build_bitmaps()))
 		fatal("_build_bitmaps failure");
+	reserve_port_config(conf->mpi_params);
 
 	license_free();
 	if (license_init(slurmctld_conf.licenses) != SLURM_SUCCESS)

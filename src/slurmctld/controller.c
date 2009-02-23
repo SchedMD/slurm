@@ -87,6 +87,7 @@
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/ping_nodes.h"
+#include "src/slurmctld/port_mgr.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/read_config.h"
 #include "src/slurmctld/reservation.h"
@@ -574,6 +575,7 @@ int main(int argc, char *argv[])
 	resv_fini();
 	trigger_fini();
 	assoc_mgr_fini(slurmctld_conf.state_save_location);
+	reserve_port_config(NULL);
 
 	/* Some plugins are needed to purge job/node data structures,
 	 * unplug after other data structures are purged */
