@@ -34,7 +34,7 @@ corner cases the behaviour of this module have not been compared for
 compatibility with pdsh/dshbak/SLURM et al.
 """
 
-__version__ = "1.3"
+__version__ = "1.5"
 
 import re
 import itertools
@@ -50,7 +50,7 @@ MAX_SIZE = 100000
 def expand_hostlist(hostlist, allow_duplicates=False, sort=False):
     """Expand a hostlist expression string to a Python list.
 
-    Exemple: expand_hostlist("n[9-11],d[01-02]") ==> 
+    Example: expand_hostlist("n[9-11],d[01-02]") ==> 
              ['n9', 'n10', 'n11', 'd01', 'd02']
 
     Unless allow_duplicates is true, duplicates will be purged

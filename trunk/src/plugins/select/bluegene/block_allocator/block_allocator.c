@@ -2140,13 +2140,14 @@ extern int *find_bp_loc(char* bp_id)
 #ifdef HAVE_BG_FILES
 	ba_bp_map_t *bp_map = NULL;
 	ListIterator itr;
-	char *check = bp_id;
+	char *check = NULL;
 
 	if(!bp_map_list) {
 		if(set_bp_map() == -1)
 			return NULL;
 	}
 
+	check = xstrdup(bp_id);
 	/* with BGP they changed the names of the rack midplane action from
 	 * R000 to R00-M0 so we now support both formats for each of the
 	 * systems */
@@ -2158,9 +2159,11 @@ extern int *find_bp_loc(char* bp_id)
 		}
 	}
 #else
-	if(bp_id[3] != '-') 
+	if(check[3] != '-') {
+		xfree(check);
 		check = xstrdup_printf("R%c%c-M%c",
 				       bp_id[1], bp_id[2], bp_id[3]);
+	}
 #endif
 
 	itr = list_iterator_create(bp_map_list);
@@ -2169,9 +2172,8 @@ extern int *find_bp_loc(char* bp_id)
 			break;	/* we found it */
 	list_iterator_destroy(itr);
 
-#ifndef HAVE_BGL
 	xfree(check);
-#endif
+
 	if(bp_map != NULL)
 		return bp_map->coord;
 	else
