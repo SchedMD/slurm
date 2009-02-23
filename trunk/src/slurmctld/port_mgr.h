@@ -40,4 +40,10 @@
 #ifndef _HAVE_PORT_MGR_H
 #define _HAVE_PORT_MGR_H
 
+#include "src/slurmctld/slurmctld.h"
+
+/* Reserve ports for a job step
+ * RET SLURM_SUCCESS or an error code */
+extern int reserve_ports(struct step_record *step_ptr);
+
 #endif	/* !_HAVE_PORT_MGR_H */

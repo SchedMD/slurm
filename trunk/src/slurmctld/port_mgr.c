@@ -41,4 +41,14 @@
 #  include "config.h"
 #endif
 
+#include "src/slurmctld/slurmctld.h"
+
+/* Reserve ports for a job step
+ * RET SLURM_SUCCESS or an error code */
+extern int reserve_ports(struct step_record *step_ptr)
+{
+info("reserving %u ports", step_ptr->resv_port_cnt);
+step_ptr->resv_ports = xstrdup("123-456");
+	return SLURM_SUCCESS;
+}
 
