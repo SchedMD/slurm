@@ -77,15 +77,14 @@ Job_priority =
   time.  For example, the longer a job sits in the queue, the higher
   its priority will grow when the age_weight is non-zero.</P>
 
-<P> <b>IMPORTANT:</b> Since all the factors are floating points from 0.0 to
-  1.0 weighting should be set to get a good set of significant
-  digits in the priority since it in contrast is not floating point.
-  In example one job could have a fairshare of .59534 and another job
-  could have a fairshare of .50002.  If your fairshare weight is only
-  set to 10 both jobs would have the same effective fairshare.  It is
-  advised to set the weight high enough to make this type of senario
-  actually mean something.  It is advised to start around 1000 or so
-  in the weights you want to have more of a factor.</P> 
+<P> <b>IMPORTANT:</b> The weight values should be high enough to get a
+  good set of significant digits since all the factors are floating
+  point numbers from 0.0 to 1.0. For example, one job could have a
+  fair-share factor of .59534 and another job could have a fair-share
+  factor of .50002.  If the fair-share weight is only set to 10, both
+  jobs would have the same fair-share priority. Therefore, set the
+  weights high enough to avoid this scenario, starting around 1000 or
+  so for those factors you want to make predominant.</P>
 
 <!-------------------------------------------------------------------------->
 <a name=age>
