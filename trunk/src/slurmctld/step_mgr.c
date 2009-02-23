@@ -108,7 +108,6 @@ static struct step_record * _create_step_record(struct job_record *job_ptr)
 
 	last_job_update = time(NULL);
 	step_ptr->job_ptr = job_ptr;
-	step_ptr->step_id = (job_ptr->next_step_id)++;
 	step_ptr->start_time = time(NULL) ;
 	step_ptr->jobacct = jobacct_gather_g_create(NULL);
 	step_ptr->ckpt_path = NULL;
@@ -231,8 +230,8 @@ dump_step_desc(job_step_create_request_msg_t *step_spec)
 	       step_spec->network, step_spec->exclusive);
 	debug3("   checkpoint-path=%s checkpoint_int=%u",
 	       step_spec->ckpt_path, step_spec->ckpt_interval);
-	debug3("   mem_per_task=%u resv_ports=%u immediate=%u no_kill=%u",
-	       step_spec->mem_per_task, step_spec->resv_ports,
+	debug3("   mem_per_task=%u resv_port_cnt=%u immediate=%u no_kill=%u",
+	       step_spec->mem_per_task, step_spec->resv_port_cnt,
 	       step_spec->immediate, step_spec->no_kill);
 }
 
@@ -1265,6 +1264,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 		bit_free(nodeset);
 		return ESLURMD_TOOMANYSTEPS;
 	}
+	step_ptr->step_id = job_ptr->next_step_id++;
 
 	/* set the step_record values */
 
@@ -1308,7 +1308,10 @@ step_create(job_step_create_request_msg_t *step_specs,
 	step_ptr->exclusive = step_specs->exclusive;
 	step_ptr->ckpt_path = xstrdup(step_specs->ckpt_path);
 	step_ptr->no_kill   = step_specs->no_kill;
-if (step_specs->resv_ports)step_ptr->resv_ports=xstrdup("[1234-5678]");
+if (step_specs->resv_port_cnt != (uint16_t)NO_VAL) {
+step_ptr->resv_port_cnt = step_specs->resv_port_cnt;
+step_ptr->resv_ports=xstrdup("[1234-5678]");
+}
 
 	/* step's name and network default to job's values if not 
 	 * specified in the step specification */
@@ -2119,6 +2122,7 @@ extern void dump_job_step_state(struct step_record *step_ptr, Buf buffer)
 	pack16(step_ptr->port, buffer);
 	pack16(step_ptr->ckpt_interval, buffer);
 	pack16(step_ptr->cpus_per_task, buffer);
+	pack16(step_ptr->resv_port_cnt, buffer);
 
 	pack8(step_ptr->no_kill, buffer);
 
@@ -2166,7 +2170,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 	struct step_record *step_ptr = NULL;
 	uint8_t no_kill;
 	uint16_t step_id, cyclic_alloc, port, batch_step, bit_cnt;
-	uint16_t ckpt_interval, cpus_per_task;
+	uint16_t ckpt_interval, cpus_per_task, resv_port_cnt;
 	uint32_t core_size, cpu_count, exit_code, mem_per_task, name_len;
 	time_t start_time, pre_sus_time, tot_sus_time, ckpt_time;
 	char *host = NULL, *ckpt_path = NULL, *core_job = NULL;
@@ -2180,6 +2184,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 	safe_unpack16(&port, buffer);
 	safe_unpack16(&ckpt_interval, buffer);
 	safe_unpack16(&cpus_per_task, buffer);
+	safe_unpack16(&resv_port_cnt, buffer);
 
 	safe_unpack8(&no_kill, buffer);
 
@@ -2239,6 +2244,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 	step_ptr->cpu_count    = cpu_count;
 	step_ptr->cpus_per_task= cpus_per_task;
 	step_ptr->cyclic_alloc = cyclic_alloc;
+	step_ptr->resv_port_cnt= resv_port_cnt;
 	step_ptr->resv_ports   = resv_ports;
 	step_ptr->name         = name;
 	step_ptr->network      = network;

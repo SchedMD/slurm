@@ -346,7 +346,7 @@ static void _opt_default()
 
 	opt.relative = NO_VAL;
 	opt.relative_set = false;
-	opt.resv_ports = 0;
+	opt.resv_port_cnt = NO_VAL;
 	opt.cmd_name = NULL;
 	opt.job_name = NULL;
 	opt.job_name_set_cmd = false;
@@ -608,9 +608,9 @@ _process_env_var(env_vars_t *e, const char *val)
 
 	case OPT_RESV_PORTS:
 		if (val)
-			opt.resv_ports = strtol(val, NULL, 10);
+			opt.resv_port_cnt = strtol(val, NULL, 10);
 		else
-			opt.resv_ports = 1;
+			opt.resv_port_cnt = 0;
 		break;
 
 	case OPT_OPEN_MODE:
@@ -1083,9 +1083,9 @@ static void set_options(const int argc, char **argv)
 			break;
 		case LONG_OPT_RESV_PORTS:
 			if (optarg)
-				opt.resv_ports = strtol(optarg, NULL, 10);
+				opt.resv_port_cnt = strtol(optarg, NULL, 10);
 			else
-				opt.resv_ports = 1;
+				opt.resv_port_cnt = 0;
 			break;
 		case LONG_OPT_TMP:
 			opt.job_min_tmp_disk = str_to_bytes(optarg);
@@ -1946,7 +1946,8 @@ static void _opt_list()
 	info("ntasks-per-socket : %d", opt.ntasks_per_socket);
 	info("ntasks-per-core   : %d", opt.ntasks_per_core);
 	info("plane_size        : %u", opt.plane_size);
-	info("resv_ports        : %d", opt.resv_ports);
+	if (opt.resv_port_cnt != NO_VAL)
+		info("resv_port_cnt     : %d", opt.resv_port_cnt);
 	str = print_commandline(opt.argc, opt.argv);
 	info("remote command    : `%s'", str);
 	xfree(str);

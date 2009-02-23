@@ -30,6 +30,8 @@ documents those changes that are of interest to users and admins.
  -- Add logic go bind a batch job to the resources allocated to that job.
  -- Add configuration parameter MpiParams for (future) OpenMPI port 
     management. Add mpi_ports field to the job step data structures.
+ -- NOTE: Cold-start (without preserving state) required for upgrade from 
+    version 1.4.0-pre7.
 
 * Changes in SLURM 1.4.0-pre7
 =============================
