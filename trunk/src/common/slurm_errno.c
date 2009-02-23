@@ -1,7 +1,8 @@
 /*****************************************************************************\
  *  slurm_errno.c - error codes and functions for slurm
  ******************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Jim Garlick <garlick@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -237,6 +238,10 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Requested reservation not usable now"		},
 	{ ESLURM_RESERVATION_OVERLAP, 
 	  "Requested reservation overlaps with another reservation"	},
+	{ ESLURM_PORTS_BUSY,
+	  "Requires ports are in use"				},
+	{ ESLURM_PORTS_INVALID,
+	  "Requires more ports than can be reserved"		},
 
 	/* slurmd error codes */
 
