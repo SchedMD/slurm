@@ -1,3 +1,6 @@
+INTRODUCTION
+============
+
 The Python module hostlist.py knows how to expand and collect hostlist
 expressions. Example:
 
@@ -32,22 +35,27 @@ perform set operations on them. Example:
   n9
   n10
 
-Install directly by running
+
+BUILDING
+========
+
+Build RPM packages from the tar.gz archive by running:
+
+  rpmbuild -ta python-hostlist-1.5.tar.gz
+
+If you do not have the tar archive, create it first:
+
+  python setup.py sdist
+  rpmbuild -ta dist/python-hostlist-1.5.tar.gz
+
+You may also install directly by running:
 
   python setup.py build   (as yourself)
   python setup.py install (as root) 
 
-or just copy the hostlist.py, hostlist and hostlist.1 files to appropriate places.
 
-Build RPM packages by running:
-
-  rpmbuild -ta python-hostlist-VERSION.tar.gz
-
-If you do not have the tar archive, build RPM packages by running:
-
-  python setup.py sdist
-  cp dist/python-hostlist-VERSION.tar.gz ~/rpmbuild/SOURCES
-  rpmbuild -ba python-hostlist.spec  
+RELEASES AND FEEDBACK
+=====================
 
 You will find new releases at:
 
