@@ -47,15 +47,63 @@ print_header $test_id
 file delete $test_prog
 
 send_user "build_dir is $build_dir\n"
-send_user "$bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${build_dir} -I${src_dir} ${build_dir}/src/api/libslurm.o -ldl\n"
-exec       $bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${build_dir} -I${src_dir} ${build_dir}/src/api/libslurm.o -ldl
+send_user "$bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${build_dir} -I${src_dir} ${build_dir}/src/common/libcommon.o ${build_dir}/src/slurmctld/locks.o  ${build_dir}/src/sshare/process.o -ldl -export-dynamic \n"
+exec       $bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${build_dir} -I${src_dir} ${build_dir}/src/common/libcommon.o ${build_dir}/src/slurmctld/locks.o ${build_dir}/src/sshare/process.o -ldl -export-dynamic 
 
 exec $bin_chmod 700 $test_prog
 
 # Usage: test24.1.prog
 spawn ./$test_prog
 expect {
-	"success" {
+	"No last decay" {
+		send_user "This error is expected.  No worries.\n"
+		exp_continue
+	}
+	"error: Can't save decay state" {
+		send_user "This error is expected.  No worries.\n"
+		exp_continue
+	}
+	"AccountA||40|0.400000|45|0.450000|0.450000|" {
+		incr matches
+		exp_continue
+	}
+	"AccountB||30|0.300000|20|0.200000|0.387500|" {
+		incr matches
+		exp_continue
+	}
+	"AccountB|User1|1|0.300000|20|0.200000|0.387500|" {
+		incr matches
+		exp_continue
+	}
+	"AccountC||10|0.100000|25|0.250000|0.300000|" {
+		incr matches
+		exp_continue
+	}
+	"AccountC|User2|1|0.050000|25|0.250000|0.275000|" {
+		incr matches
+		exp_continue
+	}
+	"AccountC|User3|1|0.050000|0|0.000000|0.150000|" {
+		incr matches
+		exp_continue
+	} 
+	"AccountD||60|0.600000|25|0.250000|0.250000|" {
+		incr matches
+		exp_continue
+	}
+	"AccountE||25|0.250000|25|0.250000|0.250000|" {
+		incr matches
+		exp_continue
+	}
+	"AccountE|User4|1|0.250000|25|0.250000|0.250000|" {
+		incr matches
+		exp_continue
+	}
+	"AccountF||35|0.350000|0|0.000000|0.145833|" {
+		incr matches
+		exp_continue
+	} 
+	"AccountF|User5|1|0.350000|0|0.000000|0.145833|" {
 		incr matches
 		exp_continue
 	}
@@ -69,8 +117,8 @@ expect {
 	}
 }
 
-if {$matches != 1} {
-	send_user "\nFAILURE: we didn't get the correct priorities from the plugin\n"
+if {$matches != 11} {
+	send_user "\nFAILURE: we didn't get the correct priorities from the plugin $matches\n"
 	set exit_code 1
 }
 
