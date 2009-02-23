@@ -555,6 +555,7 @@ struct 	step_record {
 	uint8_t no_kill;		/* 1 if no kill on node failure */
 	uint16_t port;			/* port for srun communications */
 	time_t pre_sus_time;		/* time step ran prior to last suspend */
+	int *resv_port_array;		/* reserved port indexes */
 	uint16_t resv_port_cnt;		/* count of ports reserved per node */
 	char *resv_ports;		/* ports reserved for job */
 	time_t start_time;      	/* step allocation time */

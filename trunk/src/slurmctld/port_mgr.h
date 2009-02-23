@@ -42,8 +42,16 @@
 
 #include "src/slurmctld/slurmctld.h"
 
+/* Configure reserved ports.
+ * Call with mpi_params==NULL to free memory */
+extern int reserve_port_config(char *mpi_params);
+
 /* Reserve ports for a job step
  * RET SLURM_SUCCESS or an error code */
-extern int reserve_ports(struct step_record *step_ptr);
+extern int resv_port_alloc(struct step_record *step_ptr);
+
+/* Release reserved ports for a job step
+ * RET SLURM_SUCCESS or an error code */
+extern void resv_port_free(struct step_record *step_ptr);
 
 #endif	/* !_HAVE_PORT_MGR_H */

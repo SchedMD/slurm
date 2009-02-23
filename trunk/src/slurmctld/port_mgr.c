@@ -41,6 +41,9 @@
 #  include "config.h"
 #endif
 
+#include <string.h>
+#include <stdlib.h>
+
 #include "src/common/bitstring.h"
 #include "src/common/hostlist.h"
 #include "src/common/xmalloc.h"
@@ -53,13 +56,63 @@ int        port_resv_cnt   = 0;
 int        port_resv_min   = 0;
 int        port_resv_max   = 0;
 
+/* Configure reserved ports.
+ * Call with mpi_params==NULL to free memory */
+extern int reserve_port_config(char *mpi_params)
+{
+	char *tmp_e=NULL, *tmp_p=NULL;
+	int i, p_min, p_max;
+
+	if (mpi_params)
+		tmp_p = strstr(mpi_params, "ports:");
+	if (tmp_p == NULL) {
+		if (port_resv_table) {
+			info("Clearing port reservations");
+			xfree(port_resv_table);
+			port_resv_cnt = 0;
+			port_resv_min = port_resv_max = 0;
+		}
+		return SLURM_SUCCESS;
+	}
+
+	tmp_p += 6;
+	p_min = strtol(tmp_p, &tmp_e, 10);
+	if ((p_min < 1) || (tmp_e[0] != '-')) {
+		info("invalid MpiParams: %s", mpi_params);
+		return SLURM_ERROR;
+	}
+	tmp_e++;
+	p_max = strtol(tmp_e, NULL, 10);
+	if (p_max < p_min) {
+		info("invalid MpiParams: %s", mpi_params);
+		return SLURM_ERROR;
+	}
+
+	if ((p_min == port_resv_min) && (p_max == port_resv_max))
+		return SLURM_SUCCESS;	/* No change */
+
+	port_resv_min = p_min;
+	port_resv_max = p_max;
+	port_resv_cnt = p_max - p_min + 1;
+	debug("Ports available for reservation %u-%u", 
+	      port_resv_min, port_resv_max);
+
+	xfree(port_resv_table);
+	port_resv_table = xmalloc(sizeof(bitstr_t *) * port_resv_cnt);
+	for (i=0; i<port_resv_cnt; i++)
+		port_resv_table[i] = bit_alloc(node_record_count);
+
+/* FIXME: Rebuild record of reserved ports */
+	return SLURM_SUCCESS;
+}
+
 /* Reserve ports for a job step
  * RET SLURM_SUCCESS or an error code */
-extern int reserve_ports(struct step_record *step_ptr)
+extern int resv_port_alloc(struct step_record *step_ptr)
 {
 	int i, port_inx;
 	int *port_array = NULL;
-	char port_str[16];
+	char port_str[16], *tmp_str;
 	hostlist_t hl;
 
 	if (step_ptr->resv_port_cnt > port_resv_cnt) {
@@ -95,8 +148,8 @@ extern int reserve_ports(struct step_record *step_ptr)
 	for (i=0; i<port_inx; i++) {
 		bit_or(port_resv_table[port_array[i]], 
 		       step_ptr->step_node_bitmap);
-		snprintf(port_str, sizeof(port_str), 
-			 "%d", (port_array[i] + port_resv_min));
+		port_array[i] += port_resv_min;
+		snprintf(port_str, sizeof(port_str), "%d", port_array[i]);
 		hostlist_push(hl, port_str);
 	}
 	hostlist_sort(hl);
@@ -107,11 +160,47 @@ extern int reserve_ports(struct step_record *step_ptr)
 		xfree(step_ptr->resv_ports);
 	}
 	hostlist_destroy(hl);
-	xfree(port_array);
-	info("reserved ports %s for step %u.%u",
-	     step_ptr->resv_ports,
-	     step_ptr->job_ptr->job_id, step_ptr->step_id);
+	step_ptr->resv_port_array = port_array;
+
+	if (step_ptr->resv_ports[0] == '[') {
+		/* Remove brackets from hostlist */
+		i = strlen(step_ptr->resv_ports);
+		step_ptr->resv_ports[i-1] = '\0';
+		tmp_str = xmalloc(i);
+		strcpy(tmp_str, step_ptr->resv_ports + 1);
+		xfree(step_ptr->resv_ports);
+		step_ptr->resv_ports = tmp_str;
+	}
+
+	debug("reserved ports %s for step %u.%u",
+	      step_ptr->resv_ports,
+	      step_ptr->job_ptr->job_id, step_ptr->step_id);
 
 	return SLURM_SUCCESS;
 }
 
+/* Release reserved ports for a job step
+ * RET SLURM_SUCCESS or an error code */
+extern void resv_port_free(struct step_record *step_ptr)
+{
+	int i, j;
+
+	if (step_ptr->resv_port_array == NULL)
+		return;
+
+	bit_not(step_ptr->step_node_bitmap);
+	for (i=0; i<step_ptr->resv_port_cnt; i++) {
+		if ((step_ptr->resv_port_array[i] < port_resv_min) ||
+		    (step_ptr->resv_port_array[i] > port_resv_max)) 
+			continue;
+		j = step_ptr->resv_port_array[i] - port_resv_min;
+		bit_and(port_resv_table[j], step_ptr->step_node_bitmap);
+		
+	}
+	bit_not(step_ptr->step_node_bitmap);
+	xfree(step_ptr->resv_port_array);
+
+	debug("freed ports %s for step %u.%u",
+	      step_ptr->resv_ports,
+	      step_ptr->job_ptr->job_id, step_ptr->step_id);
+}

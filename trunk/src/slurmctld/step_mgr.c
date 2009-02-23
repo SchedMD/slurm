@@ -164,6 +164,7 @@ static void _free_step_rec(struct step_record *step_ptr)
 	FREE_NULL_BITMAP(step_ptr->core_bitmap_job);
 	FREE_NULL_BITMAP(step_ptr->exit_node_bitmap);
 	FREE_NULL_BITMAP(step_ptr->step_node_bitmap);
+	xfree(step_ptr->resv_port_array);
 	xfree(step_ptr->resv_ports);
 	xfree(step_ptr->network);
 	xfree(step_ptr->ckpt_path);
@@ -201,6 +202,7 @@ delete_step_record (struct job_record *job_ptr, uint32_t step_id)
 					step_ptr->step_layout->node_list);
 				switch_free_jobinfo (step_ptr->switch_job);
 			}
+			resv_port_free(step_ptr);
 			checkpoint_free_jobinfo (step_ptr->check_job);
 			_free_step_rec(step_ptr);
 			error_code = 0;
@@ -1347,7 +1349,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 		}
 		if (step_specs->resv_port_cnt != (uint16_t) NO_VAL) {
 			step_ptr->resv_port_cnt = step_specs->resv_port_cnt;
-			i = reserve_ports(step_ptr);
+			i = resv_port_alloc(step_ptr);
 			if (i != SLURM_SUCCESS) {
 				delete_step_record (job_ptr, step_ptr->step_id);
 				return i;
