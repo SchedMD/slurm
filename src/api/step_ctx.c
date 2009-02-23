@@ -90,7 +90,7 @@ static job_step_create_request_msg_t *_create_step_request(
 	step_req->cpu_count = step_params->cpu_count;
 	step_req->num_tasks = step_params->task_count;
 	step_req->relative = step_params->relative;
-	step_req->resv_ports = step_params->resv_ports;
+	step_req->resv_port_cnt = step_params->resv_port_cnt;
 	step_req->exclusive  = step_params->exclusive;
 	step_req->immediate  = step_params->immediate;
 	step_req->ckpt_interval = step_params->ckpt_interval;
@@ -455,6 +455,7 @@ extern void slurm_step_ctx_params_t_init (slurm_step_ctx_params_t *ptr)
 	ptr->relative = (uint16_t)NO_VAL;
 	ptr->task_dist = SLURM_DIST_CYCLIC;
 	ptr->plane_size = (uint16_t)NO_VAL;
+	ptr->resv_port_cnt = (uint16_t)NO_VAL;
 
 	ptr->uid = getuid();
 

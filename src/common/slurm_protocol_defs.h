@@ -467,7 +467,7 @@ typedef struct job_step_specs {
 				   SLURM_DIST_PLANE */
 	uint16_t port;		/* port to contact initiating srun */
 	uint16_t relative;	/* first node to use of job's allocation */
-	uint16_t resv_ports;	/* reserve ports for MPI if set */
+	uint16_t resv_port_cnt;	/* reserve ports for MPI if set */
 	uint16_t task_dist;	/* see enum task_dist_state */
 	uint32_t user_id;	/* user the job runs as */
 } job_step_create_request_msg_t;
