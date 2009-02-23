@@ -33,7 +33,7 @@ documents those changes that are of interest to users and admins.
     data structures. Add environment variable SLURM_STEP_RESV_PORTS to
     show what ports are reserved for a job step.
  -- NOTE: Cold-start (without preserving state) required for upgrade from 
-    version 1.4.0-pre7. 
+    version 1.4.0-pre7.
 
 * Changes in SLURM 1.4.0-pre7
 =============================
