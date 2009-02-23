@@ -1,0 +1,81 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose:  Test of priority multifactor algo to get correct decay and
+#           such.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+#
+# Note:    This script generates and then deletes files in the working directory
+#          named test24.1.prog
+############################################################################
+# Copyright (C) 2009 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Danny Auble <da@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+# 
+# This file is part of SLURM, a resource management program.
+# For details, see <https://computing.llnl.gov/linux/slurm/>.
+# Please also read the included file: DISCLAIMER.
+#  
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+# 
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+# 
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id     "24.1"
+set exit_code   0
+set test_prog   "test$test_id.prog"
+set matches     0
+print_header $test_id
+
+#
+# Delete left-over programs and rebuild them 
+#
+file delete $test_prog
+
+send_user "build_dir is $build_dir\n"
+send_user "$bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${build_dir} -I${src_dir} ${build_dir}/src/api/libslurm.o -ldl\n"
+exec       $bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${build_dir} -I${src_dir} ${build_dir}/src/api/libslurm.o -ldl
+
+exec $bin_chmod 700 $test_prog
+
+# Usage: test24.1.prog
+spawn ./$test_prog
+expect {
+	"success" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: spawn IO not responding\n"
+		cancel_job $job_id
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 1} {
+	send_user "\nFAILURE: we didn't get the correct priorities from the plugin\n"
+	set exit_code 1
+}
+
+if {$exit_code == 0} {
+	file delete $test_prog
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code

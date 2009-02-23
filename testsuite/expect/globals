@@ -57,6 +57,7 @@ if [file exists globals.local] {
 #
 cset slurm_dir   "/usr"
 cset build_dir   "../../"
+cset src_dir     "../../"
 cset sacctmgr    "${slurm_dir}/bin/sacctmgr"
 cset sacct       "${slurm_dir}/bin/sacct"
 cset salloc      "${slurm_dir}/bin/salloc"
