@@ -1033,6 +1033,7 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
  *	SLURM_STEP_TASKS_PER_NODE
  *	SLURM_STEP_LAUNCHER_PORT
  *	SLURM_STEP_LAUNCHER_IPADDR
+ *	SLURM_STEP_RESV_PORTS
  *
  * Sets OBSOLETE variables:
  *	SLURM_STEPID
@@ -1064,6 +1065,10 @@ env_array_for_step(char ***dest,
 	env_array_overwrite_fmt(dest, "SLURM_STEP_TASKS_PER_NODE", "%s", tmp);
 	env_array_overwrite_fmt(dest, "SLURM_STEP_LAUNCHER_PORT",
 				"%hu", launcher_port);
+	if (step->resv_ports) {
+		env_array_overwrite_fmt(dest, "SLURM_STEP_RESV_PORTS",
+					"%s", step->resv_ports);
+	}
 
 	/* OBSOLETE, but needed by MPI, do not remove */
 	env_array_overwrite_fmt(dest, "SLURM_STEPID", "%u", step->job_step_id);

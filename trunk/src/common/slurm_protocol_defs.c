@@ -1120,6 +1120,7 @@ void slurm_free_job_step_create_response_msg(
 		job_step_create_response_msg_t * msg)
 {
 	if (msg) {
+		xfree(msg->resv_ports);
 		slurm_step_layout_destroy(msg->step_layout);
 		slurm_cred_destroy(msg->cred);
 		if (msg->switch_job)

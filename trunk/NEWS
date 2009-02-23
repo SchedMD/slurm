@@ -29,7 +29,9 @@ documents those changes that are of interest to users and admins.
     error "cons_res:_rm_job_from_res: node_state mis-count".
  -- Add logic go bind a batch job to the resources allocated to that job.
  -- Add configuration parameter MpiParams for (future) OpenMPI port 
-    management. Add mpi_ports field to the job step data structures.
+    management. Add resv_port_cnt and resv_ports fields to the job step 
+    data structures. Add environment variable SLURM_STEP_RESV_PORTS to
+    show what ports are reserved for a job step.
  -- NOTE: Cold-start (without preserving state) required for upgrade from 
     version 1.4.0-pre7.
 

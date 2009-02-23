@@ -2137,7 +2137,8 @@ _pack_job_step_create_response_msg(job_step_create_response_msg_t * msg,
 {
 	xassert(msg != NULL);
 
-	pack32((uint32_t)msg->job_step_id, buffer);
+	packstr(msg->resv_ports, buffer);
+	pack32(msg->job_step_id, buffer);
 	pack_slurm_step_layout(msg->step_layout, buffer);
 	slurm_cred_pack(msg->cred, buffer);
 	switch_pack_jobinfo(msg->switch_job, buffer);
@@ -2149,12 +2150,14 @@ _unpack_job_step_create_response_msg(job_step_create_response_msg_t ** msg,
 				     Buf buffer)
 {
 	job_step_create_response_msg_t *tmp_ptr = NULL;
+	uint32_t uint32_tmp;
 	
 	/* alloc memory for structure */
 	xassert(msg != NULL);
 	tmp_ptr = xmalloc(sizeof(job_step_create_response_msg_t));
 	*msg = tmp_ptr;
 
+	safe_unpackstr_xmalloc(&tmp_ptr->resv_ports, &uint32_tmp, buffer);
 	safe_unpack32(&tmp_ptr->job_step_id, buffer);
 	if (unpack_slurm_step_layout(&tmp_ptr->step_layout, buffer))
 		goto unpack_error;

@@ -473,12 +473,13 @@ typedef struct job_step_specs {
 } job_step_create_request_msg_t;
 
 typedef struct job_step_create_response_msg {
-	uint32_t job_step_id;	/* assigned job step id */
+	uint32_t job_step_id;		/* assigned job step id */
+	char *resv_ports;		/* reserved ports */
 	slurm_step_layout_t *step_layout; /* information about how the 
-                                             step is laid out */
-	slurm_cred_t cred;      /* slurm job credential */
+                                           * step is laid out */
+	slurm_cred_t cred;    	  /* slurm job credential */
 	switch_jobinfo_t switch_job;	/* switch context, opaque 
-                                           data structure */
+                                         * data structure */
 } job_step_create_response_msg_t;
 
 typedef struct launch_tasks_request_msg {
