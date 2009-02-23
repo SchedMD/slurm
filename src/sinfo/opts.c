@@ -247,7 +247,7 @@ extern void parse_command_line(int argc, char *argv[])
 		} else {
 			params.format = params.long_output ? 
 			  "%9P %.5a %.10l %.10s %.4r %.5h %.10g %.6D %.11T %N" :
-			  "%9P %.5a %.10l %.5D %.6t %N";
+			  "%9P %.5a %.10l %.6D %.6t %N";
 		}
 	}
 	_parse_format( params.format );
