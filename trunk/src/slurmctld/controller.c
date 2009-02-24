@@ -312,6 +312,21 @@ int main(int argc, char *argv[])
 	association_based_accounting =
 		slurm_get_is_association_based_accounting();
 	accounting_enforce = slurmctld_conf.accounting_storage_enforce;
+
+	if(accounting_enforce && !association_based_accounting) {
+		slurm_ctl_conf_t *conf = slurm_conf_lock();
+		conf->track_wckey = false;
+		conf->accounting_storage_enforce = 0;
+		accounting_enforce = 0;
+		slurmctld_conf.track_wckey = false;
+		slurmctld_conf.accounting_storage_enforce = 0;
+		slurm_conf_unlock();
+
+		error("You can not have AccountingStorageEnforce "
+		      "set for AccountingStorageType='%s'", 
+		      slurmctld_conf.accounting_storage_type);
+	}
+
 	acct_db_conn = acct_storage_g_get_connection(true, 0, false);
 
 	memset(&assoc_init_arg, 0, sizeof(assoc_init_args_t));
