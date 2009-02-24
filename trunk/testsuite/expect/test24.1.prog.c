@@ -218,6 +218,11 @@ int main (int argc, char **argv)
 	/* force priority type to be multifactor */
 	xfree(conf->priority_type);
 	conf->priority_type = xstrdup("priority/multifactor");
+	/* force accounting type to be slurmdbd (It doesn't really talk
+	 * to any database, but needs this to work with fairshare
+	 * calculation). */
+	xfree(conf->accounting_storage_type);
+	conf->accounting_storage_type = xstrdup("accounting_storage/slurmdbd");
 	/* set up a known environment to test against.  Since we are
 	   only concerned about the fairshare we won't look at the other
 	   factors here.
