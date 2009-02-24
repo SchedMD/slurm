@@ -470,6 +470,7 @@ documents those changes that are of interest to users and admins.
     slurmctld daemon and leave the slurmd daemons running.
  -- Do not require JobCredentialPrivateKey or JobCredentialPublicCertificate
     in slurm.conf if using CryptoType=crypto/munge.
+ -- Remove SPANK support from sbatch. 
 
 * Changes in SLURM 1.3.6
 ========================
