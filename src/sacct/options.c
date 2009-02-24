@@ -616,7 +616,6 @@ void parse_command_line(int argc, char **argv)
 		{"version", 0, 0, 'V'},
 		{0, 0, 0, 0}};
 
-	job_cond->duplicates = params.opt_dup;
 	params.opt_uid = getuid();
 	params.opt_gid = getgid();
 
@@ -782,6 +781,8 @@ void parse_command_line(int argc, char **argv)
 	
 	if (params.opt_fdump) 
 		params.opt_dup |= FDUMP_FLAG;
+
+	job_cond->duplicates = params.opt_dup;
 
 	debug("Options selected:\n"
 	      "\topt_completion=%d\n"
