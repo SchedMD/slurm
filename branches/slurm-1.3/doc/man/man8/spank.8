@@ -1,4 +1,4 @@
-.TH "SPANK" "8" "Jul 2008" "SPANK" "SLURM plug\-in architecture for Node and job (K)control"
+.TH "SPANK" "8" "February 2009" "SPANK" "SLURM plug\-in architecture for Node and job (K)control"
 .SH "NAME"
 \fBSPANK\fR \- SLURM Plug\-in Architecture for Node and job (K)control 
 
@@ -20,8 +20,8 @@ behavior of SLURM job launch.
 
 .SH "SPANK PLUGINS"
 \fBSPANK\fR plugins are loaded in two separate contexts during a 
-\fBSLURM\fR job.  In "local" context, the plugin is loaded by \fBsrun\fR,
-\fBsbatch\fR or other \fBSLURM\fR user interface. 
+\fBSLURM\fR job.  In "local" context, the plugin is loaded by \fBsrun\fR
+(NOTE: the \fBsalloc\fR and \fBsbatch\fR commands do not support \fBSPANK\fR).
 In local context, options provided by 
 plugins are read by \fBSPANK\fR, and these options are presented to the user. 
 In "remote" context, the plugin is loaded on a compute node of the job,
@@ -47,12 +47,11 @@ the \fBinit\fR callback, then process user options, and finaly take some
 action in \fBslurm_spank_init_post_opt\fR if necessary.
 .TP
 \fBslurm_spank_local_user_init\fR
-Called in local (\fBsrun\fR or \fBsbatch\fR) context only after all 
+Called in local (\fBsrun\fR) context only after all 
 options have been processed. 
 This is called after the job ID and step IDs are available.
 This happens in \fBsrun\fR after the allocation is made, but before 
 tasks are launched.
-This happens in \fBsbatch\fR after the job is submitted.
 .TP
 \fBslurm_spank_user_init\fR 
 Called after privileges are temporarily dropped. (remote context only)
@@ -72,7 +71,7 @@ Called for each task as its exit status is collected by SLURM.
 .TP
 \fBslurm_spank_exit\fR
 Called once just before \fBslurmstepd\fR exits in remote context.
-In local context, called before \fBsrun\fR or \fBsbatch\fR exits.
+In local context, called before \fBsrun\fR exits.
 .LP
 All of these functions have the same prototype, for example:
 .nf
@@ -119,9 +118,7 @@ file. Some examples are:
 User id for running job. (uid_t *) is third arg of \fBspank_get_item\fR
 .TP
 \fBS_JOB_STEPID\fR
-Job step id for running job. (uint32_t *) is third arg of \fBspank_get_item\fR
-For batch jobs (initiated by \fBsbatch\fR), the step id will be 
-\fBSLURM_BATCH_SCRIPT\fR as defined in the \fBslurm.h\fR file.
+Job step id for running job. (uint32_t *) is third arg of \fBspank_get_item\fR.
 .TP
 \fBS_TASK_EXIT_STATUS\fR
 Exit status for exited task. Only valid from \fBslurm_spank_task_exit\fR.
@@ -163,8 +160,7 @@ for \fBspank_getenv\fR usage.
 .LP
 SPANK plugins also have an interface through which they may define
 and implement extra job options. These options are made available to
-the user through SLURM commands such as \fBsrun\fR(1) or 
-\fBsbatch\fR(1), and if the
+the user through SLURM commands such as \fBsrun\fR(1), and if the
 option is specified, its value is forwarded and registered with
 the plugin on the remote side. In this way, \fBSPANK\fR plugins
 may dynamically provide new options and functionality to SLURM.
@@ -217,7 +213,7 @@ registered with SLURM. \fBspank_opt_cb_f\fR is typedef'd in
 Where \fIval\fR is the value of the \fIval\fR field in the \fBspank_option\fR
 struct, \fIoptarg\fR is the supplied argument if applicable, and \fIremote\fR
 is 0 if the function is being called from the "local" host 
-(e.g. \fBsrun\fR or \fBsbatch\fR) or 1 from the "remote" host (\fBslurmd\fR).
+(e.g. \fBsrun\fR) or 1 from the "remote" host (\fBslurmd\fR).
 .LP
 There are two methods by which the plugin can register these options
 with SLURM. The simplest method is for the plugin to define an array
@@ -505,4 +501,4 @@ details.
 \fB/usr/include/slurm/spank.h\fR \- SPANK header file.
 .SH "SEE ALSO"
 .LP
-\fBsbatch\fR(1), \fBsrun\fR(1), \fBslurm.conf\fR(5)
+\fBsrun\fR(1), \fBslurm.conf\fR(5)
