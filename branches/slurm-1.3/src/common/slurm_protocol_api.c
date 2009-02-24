@@ -678,7 +678,7 @@ int slurm_get_is_association_based_accounting(void)
 		conf = slurm_conf_lock();
 		if(!strcasecmp(conf->accounting_storage_type, 
 			      "accounting_storage/slurmdbd")
-		   || strcasecmp(conf->accounting_storage_type,
+		   || !strcasecmp(conf->accounting_storage_type,
 				 "accounting_storage/mysql")) 
 			enforce = 1;
 		slurm_conf_unlock();

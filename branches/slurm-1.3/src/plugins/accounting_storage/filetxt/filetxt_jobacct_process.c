@@ -640,23 +640,6 @@ static filetxt_job_rec_t *_find_job_record(List job_list,
 	return job;
 }
 
-static int _remove_job_record(List job_list, uint32_t jobnum)
-{
-	filetxt_job_rec_t *job = NULL;
-	int rc = SLURM_ERROR;
-	ListIterator itr = list_iterator_create(job_list);
-
-	while((job = (filetxt_job_rec_t *)list_next(itr)) != NULL) {
-		if (job->header.jobnum == jobnum) {
-			list_remove(itr);
-			_destroy_filetxt_job_rec(job);
-			rc = SLURM_SUCCESS;
-		}
-	}
-	list_iterator_destroy(itr);
-	return rc;
-}
-
 static filetxt_step_rec_t *_find_step_record(filetxt_job_rec_t *job,
 					     long stepnum)
 {
@@ -704,9 +687,12 @@ static int _parse_line(char *f[], void **data, int len)
 		(*job)->priority = atoi(f[F_PRIORITY]);
 		(*job)->ncpus = atoi(f[F_NCPUS]);
 		(*job)->nodes = xstrdup(f[F_NODES]);
+
 		for (i=0; (*job)->nodes[i]; i++) { /* discard trailing <CR> */
-			if (isspace((*job)->nodes[i]))
+			if (isspace((*job)->nodes[i])) {
 				(*job)->nodes[i] = '\0';
+				info("got here");
+			}
 		}
 		if (!strcmp((*job)->nodes, "(null)")) {
 			xfree((*job)->nodes);
@@ -814,7 +800,7 @@ static int _parse_line(char *f[], void **data, int len)
 			(*job)->exitcode = atoi(f[F_JOB_EXITCODE]);
 		break;
 	default:
-		printf("UNKOWN TYPE %d",i);
+		error("UNKOWN TYPE %d",i);
 		break;
 	}
 	return SLURM_SUCCESS;
@@ -828,19 +814,21 @@ static void _process_start(List job_list, char *f[], int lc,
 
 	_parse_line(f, (void **)&temp, len);
 	job = _find_job_record(job_list, temp->header, JOB_START);
-	if (job) {	/* Hmmm... that's odd */
-		printf("job->header.job_submit = %d",
-		       (int)job->header.job_submit);
-		if(job->header.job_submit == 0)
-			_remove_job_record(job_list, job->header.jobnum);
-		else {
-			fprintf(stderr,
-				"Conflicting JOB_START for job %u at"
-				" line %d -- ignoring it\n",
-				job->header.jobnum, lc);
-			_destroy_filetxt_job_rec(temp);
-			return;
-		}
+	if (job) { 
+		/* in slurm we can get 2 start records one for submit
+		 * and one for start, so look at the last one */
+		xfree(job->jobname);
+		job->jobname = xstrdup(temp->jobname);
+		job->track_steps = temp->track_steps;
+		job->priority = temp->priority;
+		job->ncpus = temp->ncpus;
+		xfree(job->nodes);
+		job->nodes = xstrdup(temp->nodes);
+		xfree(job->account);
+		job->account = xstrdup(temp->account);
+
+		_destroy_filetxt_job_rec(temp);
+		return;
 	}
 	
 	job = temp;
@@ -861,7 +849,7 @@ static void _process_step(List job_list, char *f[], int lc,
 	_parse_line(f, (void **)&temp, len);
 	
 	job = _find_job_record(job_list, temp->header, JOB_STEP);
-	
+
 	if (temp->stepnum == -2) {
 		_destroy_filetxt_step_rec(temp);
 		return;
@@ -936,8 +924,7 @@ static void _process_step(List job_list, char *f[], int lc,
 		job->nodes = xstrdup(step->nodes);
 	}
 	
-got_step:
-	
+got_step:	
 		
 	if (job->job_terminated_seen == 0) {	/* If the job is still running,
 						   this is the most recent
@@ -1053,6 +1040,8 @@ extern List filetxt_jobacct_process_get_jobs(acct_job_cond_t *job_cond)
 	if(job_cond) {
 		fdump_flag = job_cond->duplicates & FDUMP_FLAG;
 		job_cond->duplicates &= (~FDUMP_FLAG);
+		if(!job_cond->duplicates) 
+			itr2 = list_iterator_create(ret_job_list);
 	}
 
 	fd = _open_log_file(filein);
@@ -1169,21 +1158,21 @@ extern List filetxt_jobacct_process_get_jobs(acct_job_cond_t *job_cond)
 		switch(rec_type) {
 		case JOB_START:
 			if(i < F_JOB_ACCOUNT) {
-				printf("Bad data on a Job Start\n");
+				error("Bad data on a Job Start\n");
 				_show_rec(f);
 			} else 
 				_process_start(job_list, f, lc, show_full, i);
 			break;
 		case JOB_STEP:
 			if(i < F_MAX_VSIZE) {
-				printf("Bad data on a Step entry\n");
+				error("Bad data on a Step entry\n");
 				_show_rec(f);
 			} else
 				_process_step(job_list, f, lc, show_full, i);
 			break;
 		case JOB_SUSPEND:
 			if(i < F_JOB_REQUID) {
-				printf("Bad data on a Suspend entry\n");
+				error("Bad data on a Suspend entry\n");
 				_show_rec(f);
 			} else
 				_process_suspend(job_list, f, lc,
@@ -1191,7 +1180,7 @@ extern List filetxt_jobacct_process_get_jobs(acct_job_cond_t *job_cond)
 			break;
 		case JOB_TERMINATED:
 			if(i < F_JOB_REQUID) {
-				printf("Bad data on a Job Term\n");
+				error("Bad data on a Job Term\n");
 				_show_rec(f);
 			} else
 				_process_terminated(job_list, f, lc,
@@ -1211,30 +1200,28 @@ extern List filetxt_jobacct_process_get_jobs(acct_job_cond_t *job_cond)
 	fclose(fd);
 
 	itr = list_iterator_create(job_list);
-	if(!job_cond->duplicates)
-		itr2 = list_iterator_create(ret_job_list);
+	
 	while((filetxt_job = list_next(itr))) {
 		jobacct_job_rec_t *jobacct_job = 
 			_create_jobacct_job_rec(filetxt_job, job_cond);
 		if(jobacct_job) {
 			jobacct_job_rec_t *curr_job = NULL;
-			if(job_cond && !job_cond->duplicates) {
+			if(itr2) {
+				list_iterator_reset(itr2);
 				while((curr_job = list_next(itr2))) {
 					if (curr_job->jobid == 
 					    jobacct_job->jobid) {
 						list_delete_item(itr2);
+						info("removing job %d", jobacct_job->jobid);
 						break;
 					}
 				}
 			}
 			list_append(ret_job_list, jobacct_job);
-			
-			if(!job_cond->duplicates)
-				list_iterator_reset(itr2);
 		}
 	}
 
-	if(!job_cond->duplicates)
+	if(itr2)
 		list_iterator_destroy(itr2);
 
 	list_iterator_destroy(itr);
@@ -1302,12 +1289,12 @@ extern int filetxt_jobacct_process_archive(acct_archive_cond_t *arch_cond)
 		goto finished;
 	}
 	if ((statbuf.st_mode & S_IFLNK) == S_IFLNK) {
-		fprintf(stderr, "%s is a symbolic link; --expire requires "
+		error("%s is a symbolic link; --expire requires "
 			"a hard-linked file name\n", filein);
 		goto finished;
 	}
 	if (!(statbuf.st_mode & S_IFREG)) {
-		fprintf(stderr, "%s is not a regular file; --expire "
+		error("%s is not a regular file; --expire "
 			"only works on accounting log files\n",
 			filein);
 		goto finished;
@@ -1324,7 +1311,7 @@ extern int filetxt_jobacct_process_archive(acct_archive_cond_t *arch_cond)
 			goto finished;
 		}
 	} else {
-		fprintf(stderr, "Warning! %s exists -- please remove "
+		error("Warning! %s exists -- please remove "
 			"or rename it before proceeding\n",
 			old_logfile_name);
 		goto finished;
@@ -1386,7 +1373,7 @@ extern int filetxt_jobacct_process_archive(acct_archive_cond_t *arch_cond)
 	sprintf(logfile_name, "%s.expired", filein);
 	new_file = stat(logfile_name, &statbuf);
 	if ((expired_logfile = fopen(logfile_name, "a"))==NULL) {
-		fprintf(stderr, "Error while opening %s", 
+		error("Error while opening %s", 
 			logfile_name);
 		perror("");
 		xfree(logfile_name);
@@ -1401,7 +1388,7 @@ extern int filetxt_jobacct_process_archive(acct_archive_cond_t *arch_cond)
 
 	logfile_name = _prefix_filename(filein, ".new.");
 	if ((new_logfile = fopen(logfile_name, "w"))==NULL) {
-		fprintf(stderr, "Error while opening %s",
+		error("Error while opening %s",
 			logfile_name);
 		perror("");
 		fclose(expired_logfile);
@@ -1421,16 +1408,16 @@ extern int filetxt_jobacct_process_archive(acct_archive_cond_t *arch_cond)
 	list_sort(keep_list, (ListCmpF) _cmp_jrec);
 	
 	/* if (params->opt_verbose > 2) { */
-/* 		fprintf(stderr, "--- contents of exp_list ---"); */
+/* 		error("--- contents of exp_list ---"); */
 /* 		itr = list_iterator_create(exp_list); */
 /* 		while((exp_rec = list_next(itr))) { */
 /* 			if (!(i%5)) */
-/* 				fprintf(stderr, "\n"); */
+/* 				error("\n"); */
 /* 			else */
-/* 				fprintf(stderr, "\t"); */
-/* 			fprintf(stderr, "%d", exp_rec->job); */
+/* 				error("\t"); */
+/* 			error("%d", exp_rec->job); */
 /* 		} */
-/* 		fprintf(stderr, "\n---- end of exp_list ---\n"); */
+/* 		error("\n---- end of exp_list ---\n"); */
 /* 		list_iterator_destroy(itr); */
 /* 	} */
 	/* write the expired file */
@@ -1506,10 +1493,10 @@ extern int filetxt_jobacct_process_archive(acct_archive_cond_t *arch_cond)
 		perror("renaming new logfile");
 		/* undo it? */
 		if (!rename(old_logfile_name, filein)) 
-			fprintf(stderr, "Please correct the problem "
+			error("Please correct the problem "
 				"and try again");
 		else
-			fprintf(stderr, "SEVERE ERROR: Current accounting "
+			error("SEVERE ERROR: Current accounting "
 				"log may have been renamed %s;\n"
 				"please rename it to \"%s\" if necessary, "
 			        "and try again\n",
@@ -1522,7 +1509,7 @@ extern int filetxt_jobacct_process_archive(acct_archive_cond_t *arch_cond)
 	file_err = slurm_reconfigure();
 	if (file_err) {
 		file_err = 1;
-		fprintf(stderr, "Error: Attempt to reconfigure "
+		error("Error: Attempt to reconfigure "
 			"SLURM failed.\n");
 		if (rename(old_logfile_name, filein)) {
 			perror("renaming logfile from .old.");
