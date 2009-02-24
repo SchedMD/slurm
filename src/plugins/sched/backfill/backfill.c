@@ -181,7 +181,7 @@ extern void *backfill_agent(void *args)
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
 
 	sched_params = slurm_get_sched_params();
-	if (sched_params && (tmp_ptr=strstr(sched_params, "interval:")))
+	if (sched_params && (tmp_ptr=strstr(sched_params, "interval=")))
 		backfill_interval = atoi(tmp_ptr+9);
 	else
 		backfill_interval = BACKFILL_INTERVAL;
