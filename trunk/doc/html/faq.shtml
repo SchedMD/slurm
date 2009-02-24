@@ -803,7 +803,7 @@ The best method for most conditins is to run one <i>slurmd</i>
 daemon per emulated node in the cluster as follows.
 <ol>
 <li>When executing the <i>configure</i> program, use the option 
-<i>--multiple-slurmd</i> (or add that option to your <i>~/.rpmmacros</i>
+<i>--enable-multiple-slurmd</i> (or add that option to your <i>~/.rpmmacros</i>
 file).</li>
 <li>Build and install SLURM in the usual manner.</li>
 <li>In <i>slurm.conf</i> define the desired node names (arbitrary 
