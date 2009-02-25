@@ -352,7 +352,8 @@ static bg_record_t *_find_matching_block(List block_list,
 		debug3("%s job_running = %d", 
 		       bg_record->bg_block_id, bg_record->job_running);
 		/*block is messed up some how (BLOCK_ERROR_STATE) ignore it*/
-		if(bg_record->job_running == BLOCK_ERROR_STATE) {
+		if((bg_record->job_running == BLOCK_ERROR_STATE)
+		   || (bg_record->state == RM_PARTITION_ERROR)) {
 			debug("block %s is in an error state (can't use)", 
 			      bg_record->bg_block_id);			
 			continue;
@@ -1088,7 +1089,8 @@ static int _find_best_block_match(List block_list,
 
 				bg_record = list_pop(job_list);
 				if(bg_record)
-					debug2("taking off %d(%s) started at %d ends at %d",
+					debug2("taking off %d(%s) started "
+					       "at %d ends at %d",
 					       bg_record->job_running,
 					       bg_record->bg_block_id,
 					       bg_record->job_ptr->start_time,
@@ -1402,22 +1404,14 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 			if(!bg_record->bg_block_id) {
 				uint16_t geo[BA_SYSTEM_DIMENSIONS];
 				
-				debug2("%d can start job at "
-				       "%u on %s on unmade block",
-				       test_only, starttime,
+				debug2("%d can start unassigned job %u at "
+				       "%u on %s",
+				       test_only, job_ptr->job_id, starttime,
 				       bg_record->nodes);
 				select_g_set_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_BLOCK_ID,
 					     "unassigned");
-				/* if(job_ptr->num_procs < bluegene_bp_node_cnt  */
-/* 				   && job_ptr->num_procs > 0) { */
-/* 					i = procs_per_node/job_ptr->num_procs; */
-/* 					debug2("divide by %d", i); */
-/* 				} else  */
-/* 					i = 1; */
-/* 				min_nodes *= bluegene_bp_node_cnt/i; */
-				/* this seems to do the same thing as
-				 * above */
+
 				min_nodes = bg_record->node_cnt;
 				select_g_set_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_NODE_CNT,
@@ -1437,10 +1431,11 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 					error("Small block used in "
 					      "non-shared partition");
 				
-				debug2("%d can start job at %u on %s",
-				       test_only, starttime,
+				debug2("%d can start job %u at %u on %s(%s)",
+				       test_only, job_ptr->job_id, starttime,
+				       bg_record->bg_block_id,
 				       bg_record->nodes);
-
+				
 				select_g_set_jobinfo(job_ptr->select_jobinfo,
 						     SELECT_DATA_BLOCK_ID,
 						     bg_record->bg_block_id);
@@ -1505,12 +1500,41 @@ extern int test_job_list(List req_list)
 
 	itr = list_iterator_create(req_list);
 	while((will_run = list_next(itr))) {
+		uint16_t conn_type = (uint16_t)NO_VAL;
+
 		if(!will_run->job_ptr) {
 			error("test_job_list: you need to give me a job_ptr");
 			rc = SLURM_ERROR;
 			break;
 		}
 		
+		select_g_get_jobinfo(will_run->job_ptr->select_jobinfo,
+				     SELECT_DATA_CONN_TYPE, &conn_type);
+		if(conn_type == SELECT_NAV) {
+			uint32_t max_procs = (uint32_t)NO_VAL;
+			if(will_run->min_nodes > 1) {
+				conn_type = SELECT_TORUS;
+				/* make sure the max procs are set to NO_VAL */
+				select_g_set_jobinfo(
+					will_run->job_ptr->select_jobinfo,
+					SELECT_DATA_MAX_PROCS,
+					&max_procs);
+				
+			} else {
+				select_g_get_jobinfo(
+					will_run->job_ptr->select_jobinfo,
+					SELECT_DATA_MAX_PROCS,
+					&max_procs);
+				if((max_procs > procs_per_node)
+				   || (max_procs == NO_VAL))
+					conn_type = SELECT_TORUS;
+				else
+					conn_type = SELECT_SMALL;
+			}
+			select_g_set_jobinfo(will_run->job_ptr->select_jobinfo,
+					     SELECT_DATA_CONN_TYPE,
+					     &conn_type);
+		}
 		select_g_sprint_jobinfo(will_run->job_ptr->select_jobinfo,
 					buf, sizeof(buf), 
 					SELECT_PRINT_MIXED);
