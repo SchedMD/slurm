@@ -654,6 +654,29 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
                                   Default is all.                          \n\
                                                                            \n\
                                                                            \n\
+  Below are the format options for each report.                            \n\
+                                                                           \n\
+       Cluster                                                             \n\
+       - AccountUtilizationByUser                                          \n\
+       - UserUtilizationByAccount                                          \n\
+             - Accounts, Cluster, CPUCount, Login, Proper, Used            \n\
+       - UserUtilizationByWckey                                            \n\
+       - WCKeyUtilizationByUser                                            \n\
+             - Cluster, CPUCount, Login, Proper, Used, Wckey               \n\
+       - Utilization                                                       \n\
+             - Allocated, Cluster, CPUCount, Down, Idle, Overcommited,     \n\
+               Reported, Reserved                                          \n\
+                                                                           \n\
+       Job                                                                 \n\
+       - Sizes                                                             \n\
+             - Account, Cluster                                            \n\
+                                                                           \n\
+       User                                                                \n\
+       - TopUsage                                                          \n\
+             - Account, Cluster, Login, Proper, Used                       \n\
+                                                                           \n\
+                                                                           \n\
+                                                                           \n\
   All commands and options are case-insensitive.                         \n\n");
 	
 }
