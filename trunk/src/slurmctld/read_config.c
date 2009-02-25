@@ -829,6 +829,7 @@ int read_slurm_conf(int recover)
 						 old_node_record_count);
 			error_code = MAX(error_code, rc);  /* not fatal */
 		}
+		load_last_job_id();
 		reset_first_job_id();
 		(void) slurm_sched_reconfig();
 		xfree(state_save_dir);

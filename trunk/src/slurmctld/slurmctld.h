@@ -1141,6 +1141,12 @@ extern int load_all_job_state ( void );
 extern int load_all_node_state ( bool state_only );
 
 /*
+ * load_last_job_id - load only the last job ID from state save file.
+ * RET 0 or error code
+ */
+extern int load_last_job_id( void );
+
+/*
  * load_part_uid_allow_list - reload the allow_uid list of partitions
  *	if required (updated group file or force set)
  * IN force - if set then always reload the allow_uid list
