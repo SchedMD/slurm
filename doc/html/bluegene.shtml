@@ -193,10 +193,6 @@ keys scroll the window containing the text information.</p>
 
 <h2>System Administration</h2>
 
-<p>As of IBM's REV 2 driver SLURM must be built in 64-bit mode.  
-This can be done by specifying <b>CFLAGS=-m64</b>.  
-CFLAGS must be set for SLURM to compile correctly.</p>
-
 <p>Building a BlueGene compatible system is dependent upon the 
 <i>configure</i> program locating some expected files. 
 In particular, the configure script searches for <i>libdb2.so</i> in the 

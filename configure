@@ -24839,7 +24839,7 @@ echo "$as_me: Running in BG/L emulation mode" >&6;}
 		# Test to make sure the api is good
                 have_bg_files=yes
       		saved_LDFLAGS="$LDFLAGS"
-      	 	LDFLAGS="$saved_LDFLAGS $bg_ldflags"
+      	 	LDFLAGS="$saved_LDFLAGS $bg_ldflags -m64"
          	cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
 _ACEOF
@@ -24890,6 +24890,7 @@ rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
 
   	if test ! -z "$have_bg_files" ; then
       		BG_INCLUDES="$bg_includes"
+	        test "$GCC" = yes && CFLAGS="$CFLAGS -m64"
 
 cat >>confdefs.h <<\_ACEOF
 #define HAVE_3D 1
@@ -25021,7 +25022,7 @@ echo "$as_me: Running in BG/P emulation mode" >&6;}
       		# ac_with_readline="no"
 		# Test to make sure the api is good
                 saved_LDFLAGS="$LDFLAGS"
-      	 	LDFLAGS="$saved_LDFLAGS $bg_ldflags"
+      	 	LDFLAGS="$saved_LDFLAGS $bg_ldflags -m64"
          	cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
 _ACEOF
@@ -25072,6 +25073,7 @@ rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
 
   	if test ! -z "$have_bgp_files" ; then
       		BG_INCLUDES="$bg_includes"
+	        test "$GCC" = yes && CFLAGS="$CFLAGS -m64"
 
 cat >>confdefs.h <<\_ACEOF
 #define HAVE_3D 1
