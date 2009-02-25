@@ -352,7 +352,8 @@ static bg_record_t *_find_matching_block(List block_list,
 		debug3("%s job_running = %d", 
 		       bg_record->bg_block_id, bg_record->job_running);
 		/*block is messed up some how (BLOCK_ERROR_STATE) ignore it*/
-		if(bg_record->job_running == BLOCK_ERROR_STATE) {
+		if((bg_record->job_running == BLOCK_ERROR_STATE)
+		   || (bg_record->state == RM_PARTITION_ERROR)) {
 			debug("block %s is in an error state (can't use)", 
 			      bg_record->bg_block_id);			
 			continue;
