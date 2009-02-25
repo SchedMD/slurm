@@ -80,13 +80,14 @@ AC_DEFUN([X_AC_BGL],
 		# Test to make sure the api is good
                 have_bg_files=yes
       		saved_LDFLAGS="$LDFLAGS"
-      	 	LDFLAGS="$saved_LDFLAGS $bg_ldflags"
+      	 	LDFLAGS="$saved_LDFLAGS $bg_ldflags -m64"
          	AC_LINK_IFELSE([AC_LANG_PROGRAM([[ int rm_set_serial(char *); ]], [[ rm_set_serial(""); ]])],[have_bg_files=yes],[AC_MSG_ERROR(There is a problem linking to the BG/L api.)])
 		LDFLAGS="$saved_LDFLAGS"         	
    	fi
 
   	if test ! -z "$have_bg_files" ; then
       		BG_INCLUDES="$bg_includes"
+	        test "$GCC" = yes && CFLAGS="$CFLAGS -m64"
       		AC_DEFINE(HAVE_3D, 1, [Define to 1 if 3-dimensional architecture])
       		AC_DEFINE(HAVE_BG, 1, [Define to 1 if emulating or running on Blue Gene system])
       		AC_DEFINE(HAVE_BGL, 1, [Define to 1 if emulating or running on Blue Gene/L system])
@@ -160,13 +161,14 @@ AC_DEFUN([X_AC_BGP],
       		# ac_with_readline="no"
 		# Test to make sure the api is good
                 saved_LDFLAGS="$LDFLAGS"
-      	 	LDFLAGS="$saved_LDFLAGS $bg_ldflags"
+      	 	LDFLAGS="$saved_LDFLAGS $bg_ldflags -m64"
          	AC_LINK_IFELSE([AC_LANG_PROGRAM([[ int rm_set_serial(char *); ]], [[ rm_set_serial(""); ]])],[have_bgp_files=yes],[AC_MSG_ERROR(There is a problem linking to the BG/P api.)])
 		LDFLAGS="$saved_LDFLAGS"         	
    	fi
 
   	if test ! -z "$have_bgp_files" ; then
       		BG_INCLUDES="$bg_includes"
+	        test "$GCC" = yes && CFLAGS="$CFLAGS -m64"
       		AC_DEFINE(HAVE_3D, 1, [Define to 1 if 3-dimensional architecture])
       		AC_DEFINE(HAVE_BG, 1, [Define to 1 if emulating or running on Blue Gene system])
       		AC_DEFINE(HAVE_BGP, 1, [Define to 1 if emulating or running on Blue Gene/P system])
