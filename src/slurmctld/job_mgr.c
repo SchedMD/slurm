@@ -277,7 +277,10 @@ static void _delete_job_desc_files(uint32_t job_id)
 	xfree(dir_name);
 }
 
-/* dump_all_job_state - save the state of all jobs to file for checkpoint
+/*
+ * dump_all_job_state - save the state of all jobs to file for checkpoint
+ *	Changes here should be reflected in load_last_job_id() and 
+ *	load_all_job_state().
  * RET 0 or error code */
 int dump_all_job_state(void)
 {
@@ -373,6 +376,7 @@ int dump_all_job_state(void)
 /*
  * load_all_job_state - load the job state from file, recover from last 
  *	checkpoint. Execute this after loading the configuration file data.
+ *	Changes here should be reflected in load_last_job_id().
  * RET 0 or error code
  */
 extern int load_all_job_state(void)
@@ -427,7 +431,7 @@ extern int load_all_job_state(void)
 	buffer = create_buf(data, data_size);
 	safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
 	debug3("Version string in job_state header is %s", ver_str);
-	if ((!ver_str) || strcmp(ver_str, JOB_STATE_VERSION) != 0) {
+	if ((!ver_str) || (strcmp(ver_str, JOB_STATE_VERSION) != 0)) {
 		error("***********************************************");
 		error("Can not recover job state, incompatable version");
 		error("***********************************************");
@@ -458,6 +462,87 @@ extern int load_all_job_state(void)
 unpack_error:
 	error("Incomplete job data checkpoint file");
 	info("Recovered information about %d jobs", job_cnt);
+	free_buf(buffer);
+	return SLURM_FAILURE;
+}
+
+/*
+ * load_last_job_id - load only the last job ID from state save file.
+ *	Changes here should be reflected in load_all_job_state().
+ * RET 0 or error code
+ */
+extern int load_last_job_id( void )
+{
+	int data_allocated, data_read = 0, error_code = SLURM_SUCCESS;
+	uint32_t data_size = 0;
+	int state_fd;
+	char *data = NULL, *state_file;
+	Buf buffer;
+	time_t buf_time;
+	char *ver_str = NULL;
+	uint32_t ver_str_len;
+
+	/* read the file */
+	state_file = xstrdup(slurmctld_conf.state_save_location);
+	xstrcat(state_file, "/job_state");
+	lock_state_files();
+	state_fd = open(state_file, O_RDONLY);
+	if (state_fd < 0) {
+		debug("No job state file (%s) to recover", state_file);
+		error_code = ENOENT;
+	} else {
+		data_allocated = BUF_SIZE;
+		data = xmalloc(data_allocated);
+		while (1) {
+			data_read = read(state_fd, &data[data_size],
+					 BUF_SIZE);
+			if (data_read < 0) {
+				if (errno == EINTR)
+					continue;
+				else {
+					error("Read error on %s: %m", 
+					      state_file);
+					break;
+				}
+			} else if (data_read == 0)	/* eof */
+				break;
+			data_size      += data_read;
+			data_allocated += data_read;
+			xrealloc(data, data_allocated);
+		}
+		close(state_fd);
+	}
+	xfree(state_file);
+	unlock_state_files();
+
+	if (error_code)
+		return error_code;
+
+	buffer = create_buf(data, data_size);
+	safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
+	debug3("Version string in job_state header is %s", ver_str);
+	if ((!ver_str) || (strcmp(ver_str, JOB_STATE_VERSION) != 0)) {
+		debug("*************************************************");
+		debug("Can not recover last job ID, incompatable version");
+		debug("*************************************************");
+		xfree(ver_str);
+		free_buf(buffer);
+		return EFAULT;
+	}
+	xfree(ver_str);
+	debug3("Version string in job_state header is %s", ver_str);
+
+	safe_unpack_time(&buf_time, buffer);
+	safe_unpack32( &job_id_sequence, buffer);
+	debug3("Job ID in job_state header is %u", job_id_sequence);
+
+	/* Ignore the state for individual jobs stored here */
+
+	free_buf(buffer);
+	return error_code;
+
+unpack_error:
+	debug("Invalid job data checkpoint file");
 	free_buf(buffer);
 	return SLURM_FAILURE;
 }
