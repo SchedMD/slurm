@@ -315,13 +315,7 @@ static int _set_cluster_cond(int *start, int argc, char *argv[],
 			}
 		}
 
-		if (!strncasecmp (argv[i], "Set", MAX(command_len, 3))) {
-			i--;
-			break;
-		} else if(!end && !strncasecmp(argv[i], "where",
-					       MAX(command_len, 5))) {
-			continue;
-		} else if(!end && !strncasecmp(argv[i], "all_clusters",
+		if(!end && !strncasecmp(argv[i], "all_clusters",
 					       MAX(command_len, 1))) {
 			local_cluster_flag = 1;
 		} else if(!end
@@ -630,7 +624,8 @@ extern int cluster_account_by_user(int argc, char *argv[])
 	_set_assoc_cond(&i, argc, argv, assoc_cond, format_list);
 
 	if(!list_count(format_list)) 
-		slurm_addto_char_list(format_list, "Cluster,Ac,L,P,Used");
+		slurm_addto_char_list(format_list, 
+				      "Cluster,Ac,Login,Proper,Used");
 
 	_setup_print_fields_list(format_list);
 	list_destroy(format_list);
@@ -931,7 +926,8 @@ extern int cluster_user_by_account(int argc, char *argv[])
 	_set_assoc_cond(&i, argc, argv, assoc_cond, format_list);
 
 	if(!list_count(format_list)) 
-		slurm_addto_char_list(format_list, "Cluster,L,P,Ac,Used");
+		slurm_addto_char_list(format_list,
+				      "Cluster,Login,Proper,Ac,Used");
 
 	_setup_print_fields_list(format_list);
 	list_destroy(format_list);
@@ -1217,7 +1213,8 @@ extern int cluster_user_by_wckey(int argc, char *argv[])
 	_set_wckey_cond(&i, argc, argv, wckey_cond, format_list);
 
 	if(!list_count(format_list)) 
-		slurm_addto_char_list(format_list, "Cluster,L,P,WCkey,Used");
+		slurm_addto_char_list(format_list, 
+				      "Cluster,Login,Proper,WCkey,Used");
 
 	_setup_print_fields_list(format_list);
 	list_destroy(format_list);
@@ -1481,7 +1478,7 @@ extern int cluster_utilization(int argc, char *argv[])
 		goto end_it;
 
 	if(!list_count(format_list)) 
-		slurm_addto_char_list(format_list, "Cl,al,d,i,res,rep");
+		slurm_addto_char_list(format_list, "Cl,al,d,planned,i,res,rep");
 
 	_setup_print_fields_list(format_list);
 	list_destroy(format_list);
@@ -1648,7 +1645,8 @@ extern int cluster_wckey_by_user(int argc, char *argv[])
 	_set_wckey_cond(&i, argc, argv, wckey_cond, format_list);
 
 	if(!list_count(format_list)) 
-		slurm_addto_char_list(format_list, "Cluster,WCKey,L,P,Used");
+		slurm_addto_char_list(format_list, 
+				      "Cluster,WCKey,Login,Proper,Used");
 
 	_setup_print_fields_list(format_list);
 	list_destroy(format_list);
