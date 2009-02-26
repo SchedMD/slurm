@@ -199,6 +199,9 @@ COMMON FOR ALL TYPES
 .B All_Clusters
 Use all monitored clusters. Default is local cluster.
 .TP
+.B Clusters=<OPT>
+List of clusters to include in report.  Default is local cluster.
+.TP
 .B End=<OPT>
 Period ending for report. Default is 23:59:59 of previous day.
 .TP
@@ -213,12 +216,22 @@ Period start for report.  Default is 00:00:00 of previous day.
 CLUSTER
 .RS
 .TP
-.B Names=<OPT>
-List of clusters to include in report.  Default is local cluster.
+.B Accounts=<OPT>
+When used with the UserUtilizationByAccount, or
+AccountUtilizationByUser, List of accounts to include in report.
+Default is all. 
 .TP
 .B Tree
 When used with the AccountUtilizationByUser report will span the
 accounts as they are in the hierarchy.
+.TP
+.B Users=<OPT>
+When used with any report other than Utilization, List of users to
+include in report.  Default is all.
+.TP
+.B Wckeys=<OPT>
+When used with the UserUtilizationByWckey or WCKeyUtilizationByUser,
+List of wckeys to include in report. Default is all. 
 .RE
 
 .TP
@@ -226,10 +239,11 @@ JOB
 .RS
 .TP
 .B Accounts=<OPT>
-List of accounts to use for the report. Default is all.
-.TP
-.B Clusters=<OPT>
-List of clusters to include in report.  Default is local cluster.
+List of accounts to use for the report Default is all.  The Sizes
+report only displays 1 hierarchical level.  If accounts are specified
+the next layer of accounts under those specified will be displayed,
+not the accounts specified.  In the Sizes reports the default for
+accounts is root.
 .TP
 .B GID=<OPT>
 List of group ids to include in report.  Default is all.
@@ -258,11 +272,9 @@ USER
 .B Accounts=<OPT>
 List of accounts to use for the report. Default is all.
 .TP
-.B Clusters=<OPT>
-List of clusters to include in report. Default is local cluster.
-.TP
 .B Group
-Group all accounts together for each user.  Default is a separate entry for each user and account reference.
+Group all accounts together for each user.  Default is a separate
+entry for each user and account reference.
 .TP
 .B TopCount=<OPT>
 Used in the TopUsage report.  Change the number of users displayed.
