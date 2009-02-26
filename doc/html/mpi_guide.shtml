@@ -66,7 +66,7 @@ It relies upon SLURM version 2.0 (or higher) managing
 reservations of communication ports for the Open MPI's use.
 Specify the range of ports to be reserved in the <i>slurm.conf</i> 
 file using the <i>MpiParams</i> parameter.
-For example: <i>MpiParams=ports:12000-12999</i>.
+For example: <i>MpiParams=ports=12000-12999</i>.
 Then launch tasks using the <span class="commandline">srun</span> command 
 plus the option <i>--resv-ports</i>.
 The ports reserved on every allocated node will be identified in an 

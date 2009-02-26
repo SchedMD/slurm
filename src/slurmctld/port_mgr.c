@@ -164,7 +164,7 @@ extern int reserve_port_config(char *mpi_params)
 	int i, p_min, p_max;
 
 	if (mpi_params)
-		tmp_p = strstr(mpi_params, "ports:");
+		tmp_p = strstr(mpi_params, "ports=");
 	if (tmp_p == NULL) {
 		if (port_resv_table) {
 			info("Clearing port reservations");
