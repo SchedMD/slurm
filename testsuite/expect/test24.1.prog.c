@@ -208,7 +208,7 @@ int main (int argc, char **argv)
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 	xfree(slurmctld_conf.priority_type);
-//	logopt.stderr_level += 5;
+	//logopt.stderr_level += 5;
 	logopt.prefix_level = 1;
 	log_alter(logopt, 0, NULL);
 	print_fields_have_header = 0;
@@ -249,12 +249,12 @@ int main (int argc, char **argv)
 	/* now init the priorities of the associations */
 	if (slurm_priority_init() != SLURM_SUCCESS)
 		fatal("failed to initialize priority plugin");
-	
+	/* on some systems that don't have multiple cores we need to
+	   sleep to make sure the tread get started. */
+	sleep(1);
 	memset(&resp, 0, sizeof(shares_response_msg_t));
 	resp.assoc_shares_list = assoc_mgr_get_shares(NULL, 0, NULL, NULL);
 	process(&resp);
-	/* do the calculations */
-	info("success");
 
 	/* free memory */
 	if (slurm_priority_fini() != SLURM_SUCCESS)
