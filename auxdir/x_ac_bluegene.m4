@@ -87,7 +87,7 @@ AC_DEFUN([X_AC_BGL],
 
   	if test ! -z "$have_bg_files" ; then
       		BG_INCLUDES="$bg_includes"
-	        test "$GCC" = yes && CFLAGS="$CFLAGS -m64"
+	        CFLAGS="$CFLAGS -m64"
       		AC_DEFINE(HAVE_3D, 1, [Define to 1 if 3-dimensional architecture])
       		AC_DEFINE(HAVE_BG, 1, [Define to 1 if emulating or running on Blue Gene system])
       		AC_DEFINE(HAVE_BGL, 1, [Define to 1 if emulating or running on Blue Gene/L system])
@@ -168,7 +168,7 @@ AC_DEFUN([X_AC_BGP],
 
   	if test ! -z "$have_bgp_files" ; then
       		BG_INCLUDES="$bg_includes"
-	        test "$GCC" = yes && CFLAGS="$CFLAGS -m64"
+	        CFLAGS="$CFLAGS -m64"
       		AC_DEFINE(HAVE_3D, 1, [Define to 1 if 3-dimensional architecture])
       		AC_DEFINE(HAVE_BG, 1, [Define to 1 if emulating or running on Blue Gene system])
       		AC_DEFINE(HAVE_BGP, 1, [Define to 1 if emulating or running on Blue Gene/P system])
