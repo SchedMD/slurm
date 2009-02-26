@@ -24,6 +24,12 @@ AM_MAINTAINER_MODE
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_HEADERS([slurm/slurm.h])
 
+dnl This needs to be close to the front to set CFLAGS=-m64
+X_AC_BGL
+X_AC_BGP
+AM_CONDITIONAL(BLUEGENE_LOADED, test "x$ac_bluegene_loaded" = "xyes")
+AC_SUBST(BLUEGENE_LOADED)
+
 X_AC_AIX
 
 dnl
@@ -132,11 +138,6 @@ AC_DEFINE(WITH_PTHREADS,1,[Define if you have pthreads.])
 LDFLAGS="$LDFLAGS "
 CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
 LIBS="$PTHREAD_LIBS $LIBS"
-
-X_AC_BGL
-X_AC_BGP
-AM_CONDITIONAL(BLUEGENE_LOADED, test "x$ac_bluegene_loaded" = "xyes")
-AC_SUBST(BLUEGENE_LOADED)
 
 X_AC_SUN_CONST
 

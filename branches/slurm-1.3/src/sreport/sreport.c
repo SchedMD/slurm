@@ -642,15 +642,21 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
              - Users=<OPT>      - When used with any report other than     \n\
                                   Utilization, List of users to include in \n\
                                   report.  Default is all.                 \n\
-             - Wckeys=<OPT>     - When used with the UserUtilizationByWckey,\n\
+             - Wckeys=<OPT>     - When used with the UserUtilizationByWckey\n\
                                   or WCKeyUtilizationByUser, List of wckeys\n\
                                   to include in report.  Default is all.   \n\
                                                                            \n\
      job     - Accounts=<OPT>   - List of accounts to use for the report   \n\
-                                  Default is all.                          \n\
+                                  Default is all.  The Sizes report only   \n\
+                                  displays 1 hierarchical level.  If       \n\
+                                  accounts are specified the next layer of \n\
+                                  accounts under those specified will be   \n\
+                                  displayed, not the accounts specified.   \n\
+                                  In the Sizes reports the default for     \n\
+                                  accounts is root.                        \n\
              - Clusters=<OPT>   - List of clusters to include in report.   \n\
                                   Default is local cluster.                \n\
-             - GID=<OPT>        - List of group ids to include in report   \n\
+             - GID=<OPT>        - List of group ids to include in report.  \n\
                                   Default is all.                          \n\
              - Grouping=<OPT>   - Comma separated list of size groupings.  \n\
                                   (i.e. 50,100,150 would group job cpu count\n\
