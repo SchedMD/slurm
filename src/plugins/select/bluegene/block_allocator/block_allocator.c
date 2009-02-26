@@ -1048,7 +1048,7 @@ node_info_error:
 	if (have_db2) {
 		verbose("Attempting to contact MMCS");
 		if ((rc = bridge_get_bg(&bg)) != STATUS_OK) {
-			error("bridge_get_BG(): %d", rc);
+			fatal("bridge_get_BG(): %d", rc);
 			return;
 		}
 		
