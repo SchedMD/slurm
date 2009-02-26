@@ -822,7 +822,7 @@ of the node that it is supposed to serve on the execute line.</li>
 <p>It is strongly recommended that SLURM version 1.2 or higher be used 
 for this due to it's improved support for multiple slurmd daemons.
 See the
-<a href="programmer_guide.shtml#multiple_slurmd_support">Programmers Guide</a>
+<a href="programmer_guide.html#multiple_slurmd_support">Programmers Guide</a>
 for more details about configuring multiple slurmd support.</p>
 
 <p>In order to emulate a really large cluster, it can be more 

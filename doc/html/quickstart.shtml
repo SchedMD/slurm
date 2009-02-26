@@ -371,17 +371,17 @@ these tasks when the job's allocation is relinquished. </li>
 <p>Links to instructions for using several varieties of MPI 
 with SLURM are provided below.
 <ul>
-<li><a href="mpi_guide.shtml#bluegene_mpi">BlueGene MPI</a></li>
-<li><a href="mpi_guide.shtml#hp_mpi">HP-MPI</a></li>
-<li><a href="mpi_guide.shtml#lam_mpi">LAM/MPI</a></li>
-<li><a href="mpi_guide.shtml#mpich1">MPICH1</a></li>
-<li><a href="mpi_guide.shtml#mpich2">MPICH2</a></li>
-<li><a href="mpi_guide.shtml#mpich_gm">MPICH-GM</a></li>
-<li><a href="mpi_guide.shtml#mpich_mx">MPICH-MX</a></li>
-<li><a href="mpi_guide.shtml#mvapich">MVAPICH</a></li>
-<li><a href="mpi_guide.shtml#mvapich2">MVAPICH2</a></li>
-<li><a href="mpi_guide.shtml#open_mpi">Open MPI</a></li>
-<li><a href="mpi_guide.shtml#quadrics_mpi">Quadrics MPI</a></li>
+<li><a href="mpi_guide.html#bluegene_mpi">BlueGene MPI</a></li>
+<li><a href="mpi_guide.html#hp_mpi">HP-MPI</a></li>
+<li><a href="mpi_guide.html#lam_mpi">LAM/MPI</a></li>
+<li><a href="mpi_guide.html#mpich1">MPICH1</a></li>
+<li><a href="mpi_guide.html#mpich2">MPICH2</a></li>
+<li><a href="mpi_guide.html#mpich_gm">MPICH-GM</a></li>
+<li><a href="mpi_guide.html#mpich_mx">MPICH-MX</a></li>
+<li><a href="mpi_guide.html#mvapich">MVAPICH</a></li>
+<li><a href="mpi_guide.html#mvapich2">MVAPICH2</a></li>
+<li><a href="mpi_guide.html#open_mpi">Open MPI</a></li>
+<li><a href="mpi_guide.html#quadrics_mpi">Quadrics MPI</a></li>
 </ul></p>
 
 <p style="text-align:center;">Last modified 26 February 2009</p>
