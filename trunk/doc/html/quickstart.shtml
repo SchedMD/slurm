@@ -25,7 +25,7 @@ and <b>sview</b>.
 All of the commands can run anywhere in the cluster.</p>
 
 <div class="figure">
-  <img src="arch.gif" width="600"><br />
+  <img src="arch.gif" width=550></br>
   Figure 1. SLURM components
 </div>
 
@@ -45,7 +45,7 @@ a single job step may be started that utilizes all nodes allocated to the job,
 or several job steps may independently use a portion of the allocation.</p>
 
 <div class="figure">
-  <img src="entities.gif" width="291" height="218"><br />
+  <img src="entities.gif" width=500></br>
   Figure 2. SLURM entities
 </div>
 

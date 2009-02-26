@@ -129,6 +129,6 @@ releases of SLURM may revise this API. A job completion plugin conveys its abili
 to implement a particular API version using the mechanism outlined for SLURM plugins.</p>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 10 Sep 2007</p>
+<p style="text-align:center;">Last modified 10 September 2007</p>
 
 <!--#include virtual="footer.txt"-->

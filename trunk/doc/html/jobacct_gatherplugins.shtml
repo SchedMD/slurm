@@ -12,7 +12,7 @@ their own SLURM job accounting gather plugins. This is version 1 of the API.
 SLURM Plugin API with the following specifications:
 
 <p><span class="commandline">const char
-plugin_name[]="<i>full&nbsp;text&nbsp;name</i>"
+plugin_name[]="<i>full&nbsp;text&nbsp;name</i>"</span>
 <p style="margin-left:.2in">
 A free-formatted ASCII text string that identifies the plugin.
 
@@ -257,6 +257,6 @@ ability to implement a particular API version using the mechanism outlined
 for SLURM plugins.
 <p class="footer"><a href="#top">top</a>
 
-<p style="text-align:center;">Last modified 11 Sep 2007</p>
+<p style="text-align:center;">Last modified 11 September 2007</p>
 
 <!--#include virtual="footer.txt"-->

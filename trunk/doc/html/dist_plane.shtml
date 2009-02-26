@@ -128,7 +128,7 @@ following allocation of the task ids:
 
 <p>
 <center>
-<img src="plane_ex6.gif">
+<img src="plane_ex6.gif" width=600>
 <p>Figure 6: Process layout for <i>srun -N 4-4 -n 21 -m plane=4 -s <...></i>.
 </center>
 
@@ -138,7 +138,7 @@ following allocation of the task ids:
 
 <p>
 <center>
-<img src="plane_ex7.gif">
+<img src="plane_ex7.gif" width=600>
 <p>Figure 7: Process layout for <i>srun -N 4-4 -n 21 -m plane=2 -s <...></i>.
 </center>
 

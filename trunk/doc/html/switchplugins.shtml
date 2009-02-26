@@ -374,7 +374,7 @@ to indicate the reason for failure.</p>
 <p class="footer"><a href="#top">top</a></p>
 
 <h3>Job Management Functions</h3>
-<blockquote><pre>
+<pre>
 =========================================================================
 Process 1 (root)        Process 2 (root, user)  |  Process 3 (user task) 
                                                 |                        
@@ -386,7 +386,7 @@ waitpid                 setuid, chdir, etc.     |
                         switch_p_job_fini*      |                        
 switch_p_job_postfini                           |                        
 =========================================================================
-</pre></blockquote>
+</pre>
 
 <p class="commandline">int switch_p_job_preinit (switch_jobinfo_t jobinfo switch_job);</p>
 <p style="margin-left:.2in"><b>Description</b>: Preinit is run as root in the first slurmd process, 
