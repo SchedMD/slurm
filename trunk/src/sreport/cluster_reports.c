@@ -105,10 +105,7 @@ static int _set_wckey_cond(int *start, int argc, char *argv[],
 			}
 		}
 
-		if(!end && !strncasecmp(argv[i], "where",
-					MAX(command_len, 5))) {
-			continue;
-		} else if(!end && !strncasecmp(argv[i], "all_clusters", 
+		if(!end && !strncasecmp(argv[i], "all_clusters", 
 					       MAX(command_len, 1))) {
 			local_cluster_flag = 1;
 		} else if(!end && !strncasecmp(argv[i], "withdeleted",

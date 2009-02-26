@@ -625,6 +625,8 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
      COMMON FOR ALL TYPES                                                  \n\
              - All_Clusters     - Use all monitored clusters default is    \n\
                                   local cluster.                           \n\
+             - Clusters=<OPT>   - List of clusters to include in report    \n\
+                                  Default is local cluster.                \n\
              - End=<OPT>        - Period ending for report.                \n\
                                   Default is 23:59:59 of previous day.     \n\
              - Format=<OPT>     - Comma separated list of fields to display\n\
@@ -632,11 +634,18 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
              - Start=<OPT>      - Period start for report.                 \n\
                                   Default is 00:00:00 of previous day.     \n\
                                                                            \n\
-     cluster - Clusters=<OPT>   - List of clusters to include in report    \n\
-                                  Default is local cluster.                \n\
+     cluster - Accounts=<OPT>   - When used with the UserUtilizationByAccount,\n\
+                                  or AccountUtilizationByUser, List of accounts\n\
+                                  to include in report.  Default is all.   \n\
              - Tree             - When used with the AccountUtilizationByUser\n\
                                   report will span the accounts as they    \n\
                                   in the hierarchy.                        \n\
+             - Users=<OPT>      - When used with any report other than     \n\
+                                  Utilization, List of users to include in \n\
+                                  report.  Default is all.                 \n\
+             - Wckeys=<OPT>     - When used with the UserUtilizationByWckey,\n\
+                                  or WCKeyUtilizationByUser, List of wckeys\n\
+                                  to include in report.  Default is all.   \n\
                                                                            \n\
      job     - Accounts=<OPT>   - List of accounts to use for the report   \n\
                                   Default is all.                          \n\
