@@ -146,8 +146,6 @@ to have used half of the reserved resources).</p>
 
 <p>Several enhancements are anticipated at some point in the future.
 <ol>
-<li>In the event that one more node initially selected for use in a 
-reservation goes DOWN, no replacement is currently selected.</li>
 <li>The automatic selection of nodes for a reservation create request may be
 sub-optimal in terms of locality (for optimized application communication).</li>
 <li> The feature specification in the reservation creation request should be 
@@ -155,7 +153,7 @@ made more flexible to accept multiple features with AND or OR operators.</li>
 </ol>
 
 
-<p style="text-align: center;">Last modified 12 February 2009</p>
+<p style="text-align: center;">Last modified 26 February 2009</p>
 
 <!--#include virtual="footer.txt"-->
 

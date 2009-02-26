@@ -125,6 +125,7 @@ static void _validate_all_reservations(void);
 static int  _valid_job_access_resv(struct job_record *job_ptr,
 				   slurmctld_resv_t *resv_ptr);
 static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr);
+static void _validate_node_choice(slurmctld_resv_t *resv_ptr);
 
 static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr)
 {
@@ -1710,6 +1711,51 @@ static void _validate_all_reservations(void)
 }
 
 /*
+ * Validate the the reserved nodes are not DOWN or DRAINED and 
+ *	select different nodes as needed.
+ */
+static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
+{
+	bitstr_t *tmp_bitmap = NULL;
+	int i;
+	reserve_request_msg_t resv_desc;
+
+	if (resv_ptr->flags & RESERVE_FLAG_SPEC_NODES)
+		return;
+
+	i = bit_overlap(resv_ptr->node_bitmap, avail_node_bitmap);
+	if (i == resv_ptr->node_cnt)
+		return;
+
+	/* Reservation includes DOWN, DRAINED/DRAINING, FAILING or 
+	 * NO_RESPOND nodes. Generate new request using _select_nodes()
+	 * in attempt to replace this nodes */
+	bzero(&resv_desc, sizeof(reserve_request_msg_t));
+	resv_desc.start_time = resv_ptr->start_time;
+	resv_desc.end_time   = resv_ptr->end_time;
+	resv_desc.features   = resv_ptr->features;
+	resv_desc.node_cnt   = resv_ptr->node_cnt - i;
+	i = _select_nodes(&resv_desc, &resv_ptr->part_ptr, &tmp_bitmap);
+	xfree(resv_desc.node_list);
+	xfree(resv_desc.partition);
+	if (i == SLURM_SUCCESS) {
+		bit_and(resv_ptr->node_bitmap, avail_node_bitmap);
+		bit_or(resv_ptr->node_bitmap, tmp_bitmap);
+		bit_free(tmp_bitmap);
+		xfree(resv_ptr->node_list);
+		resv_ptr->node_list = bitmap2node_name(resv_ptr->node_bitmap);
+		info("modified reservation %s due to unusable nodes, "
+		     "new nodes: %s", resv_ptr->name, resv_ptr->node_list);
+	} else if (difftime(resv_ptr->start_time, time(NULL)) < 600) {
+		info("reservation %s contains unusable nodes, "
+		     "can't reallocate now", resv_ptr->name);
+	} else {
+		debug("reservation %s contains unusable nodes, "
+		      "can't reallocate now", resv_ptr->name);
+	}
+}
+
+/*
  * Load the reservation state from file, recover on slurmctld restart. 
  *	Reset reservation pointers for all jobs.
  *	Execute this after loading the configuration file data.
@@ -1915,6 +1961,7 @@ static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
 			bit_free(resv_ptr->node_bitmap);
 			resv_ptr->node_bitmap = tmp1_bitmap;
 		}
+		xfree(resv_ptr->node_list);
 		resv_ptr->node_list = bitmap2node_name(resv_ptr->node_bitmap);
 		resv_ptr->node_cnt = node_cnt;
 		return SLURM_SUCCESS;
@@ -1933,6 +1980,7 @@ static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
 	if (i == SLURM_SUCCESS) {
 		bit_or(resv_ptr->node_bitmap, tmp1_bitmap);
 		bit_free(tmp1_bitmap);
+		xfree(resv_ptr->node_list);
 		resv_ptr->node_list = bitmap2node_name(resv_ptr->node_bitmap);
 		resv_ptr->node_cnt = node_cnt;
 	}
@@ -2297,7 +2345,7 @@ extern void fini_job_resv_check(void)
 		fatal("malloc: list_iterator_create");
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
 		if (resv_ptr->end_time > now) { /* reservation not over */
-			/* _validate_node_choise(resv_ptr); */
+			_validate_node_choice(resv_ptr);
 			continue;
 		}
 
