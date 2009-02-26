@@ -431,7 +431,7 @@ A sample <i>bluegene.conf</i> file is shown below.
 #
 # BlrtsImage:           BlrtsImage used for creation of all bgblocks.
 # LinuxImage:           LinuxImage used for creation of all bgblocks.
-# tMloaderImage:         MloaderImage used for creation of all bgblocks.
+# MloaderImage:         MloaderImage used for creation of all bgblocks.
 # RamDiskImage:         RamDiskImage used for creation of all bgblocks.
 #
 # You may add extra images which a user can specify from the srun 
@@ -462,6 +462,8 @@ A sample <i>bluegene.conf</i> file is shown below.
 #                    2: Log level 1 and basic debug messages
 #                    3: Log level 2 and more debug message
 #                    4: Log all messages
+# DenyPassthrough:   Prevents use of passthrough ports in specific
+#                    dimensions, X, Y, and/or Z, plus ALL
 #
 # NOTE: The bgl_serial value is set at configuration time using the 
 #       "--with-bgl-serial=" option. Its default value is "BGL".
@@ -498,6 +500,8 @@ NodeCardNodeCnt=32
 NumPsets=64	# An I/O rich environment
 BridgeAPILogFile=/var/log/slurm/bridgeapi.log
 BridgeAPIVerbose=0
+
+#DenyPassthrough=X,Y,Z
 
 ###############################################################################
 # Define the static/overlap partitions (bgblocks)

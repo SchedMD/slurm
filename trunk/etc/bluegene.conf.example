@@ -34,6 +34,8 @@
 #                    2: Log level 1 and basic debug messages
 #                    3: Log level 2 and more debug message
 #                    4: Log all messages
+# DenyPassthrough:   Prevents use of passthrough ports in specific
+#                    dimensions, X, Y, and/or Z, plus ALL
 # 
 # NOTE: The bgl_serial value is set at configuration time using the 
 #       "--with-bgl-serial=" option. Its default value is "BGL".
