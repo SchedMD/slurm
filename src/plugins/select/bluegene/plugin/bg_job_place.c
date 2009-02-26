@@ -351,7 +351,8 @@ static bg_record_t *_find_matching_block(List block_list,
 		*/
 		debug3("%s job_running = %d", 
 		       bg_record->bg_block_id, bg_record->job_running);
-		/*block is messed up some how (BLOCK_ERROR_STATE) ignore it*/
+		/*block is messed up some how (BLOCK_ERROR_STATE)
+		 * ignore it or if state == RM_PARTITION_ERROR */
 		if((bg_record->job_running == BLOCK_ERROR_STATE)
 		   || (bg_record->state == RM_PARTITION_ERROR)) {
 			debug("block %s is in an error state (can't use)", 
@@ -603,9 +604,12 @@ static int _check_for_booted_overlapping_blocks(
 				}
 			}
 
-			if(found_record->job_running != NO_JOB_RUNNING) {
-				if(found_record->job_running
-				   == BLOCK_ERROR_STATE)
+			if((found_record->job_running != NO_JOB_RUNNING) 
+			   || (found_record->state == RM_PARTITION_ERROR)) {
+				if((found_record->job_running
+				    == BLOCK_ERROR_STATE)
+				   || (found_record->state
+				       == RM_PARTITION_ERROR))
 					error("can't use %s, "
 					      "overlapping block %s "
 					      "is in an error state.",

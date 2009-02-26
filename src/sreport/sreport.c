@@ -75,7 +75,7 @@ main (int argc, char *argv[])
 	int error_code = SLURM_SUCCESS, i, opt_char, input_field_count;
 	char **input_fields;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
-
+	char *temp = NULL;
 	int option_index;
 	static struct option long_options[] = {
 		{"all_clusters", 0, 0, 'a'},
@@ -98,6 +98,20 @@ main (int argc, char *argv[])
 	input_field_count = 0;
 	quiet_flag        = 0;
 	log_init("sreport", opts, SYSLOG_FACILITY_DAEMON, NULL);
+
+	/* Check to see if we are running a supported accounting plugin */
+	temp = slurm_get_accounting_storage_type();
+	if(strcasecmp(temp, "accounting_storage/slurmdbd")
+	   && strcasecmp(temp, "accounting_storage/mysql")) {
+		fprintf (stderr, "You are not running a supported "
+			 "accounting_storage plugin\n(%s).\n"
+			 "Only 'accounting_storage/slurmdbd' "
+			 "and 'accounting_storage/mysql' are supported.\n",
+			temp);
+		xfree(temp);
+		exit(1);
+	}
+	xfree(temp);
 
 	while((opt_char = getopt_long(argc, argv, "ahnpPqs:t:vV",
 			long_options, &option_index)) != -1) {
@@ -617,7 +631,7 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
              - Start=<OPT>      - Period start for report.                 \n\
                                   Default is 00:00:00 of previous day.     \n\
                                                                            \n\
-     cluster - Names=<OPT>      - List of clusters to include in report    \n\
+     cluster - Clusters=<OPT>   - List of clusters to include in report    \n\
                                   Default is local cluster.                \n\
              - Tree             - When used with the AccountUtilizationByUser\n\
                                   report will span the accounts as they    \n\
