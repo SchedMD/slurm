@@ -34,6 +34,10 @@ documents those changes that are of interest to users and admins.
     show what ports are reserved for a job step.
  -- Add support for SchedulerParameters=interval=<sec> to control the time
     interval between executions of the backfill scheduler logic.
+ -- Preserve record of last job ID in use even when doing a cold-start unless
+    there is no job state file or there is a change in its format (which only 
+    happens when there is a change in SLURM's major or minor version number: 
+    v1.3 -> v1.4).
  -- NOTE: Cold-start (without preserving state) required for upgrade from 
     version 1.4.0-pre7.
 
