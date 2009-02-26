@@ -60,45 +60,59 @@ APIs are available for all functions.</p>
 infrastructures. This permits a wide variety of SLURM configurations using a 
 building block approach. These plugins presently include: 
 <ul>
+<li><a href="accounting_storageplugins.html">Accounting Storage</a>: 
+text file (default if jobacct_gather != none), 
+MySQL, PGSQL, SlurmDBD (Slurm Database Daemon) or none</li>
+
 <li><a href="authplugins.html">Authentication of communications</a>: 
 <a href="http://www.theether.org/authd/">authd</a>, 
 <a href="http://home.gna.org/munge/">munge</a>, or none (default).</li>
 
 <li><a href="checkpoint_plugins.html">Checkpoint</a>: AIX, OpenMPI, XLCH, or none.</li>
-<li><a href="crypto_plugins.html">Cryptography</a>: Munge or OpenSSL</li>
+
+<li><a href="crypto_plugins.html">Cryptography (Digital Signature Generation)</a>: 
+<a href="http://home.gna.org/munge/">munge</a> (default) or
+<a href="http://www.openssl.org/">OpenSSL</a>.</li>
+
 <li><a href="jobacct_gatherplugins.html">Job Accounting Gather</a>: AIX, Linux, or none(default)</li>
 
-<li><a href="accounting_storageplugins.html">Accounting Storage</a>: 
-text file (default if jobacct_gather != none), 
-MySQL, PGSQL, SlurmDBD (Slurm Database Daemon) or none</li>
-
-<li><a href="jobcompplugins.html">Job completion logging</a>: 
+<li><a href="jobcompplugins.html">Job Completion Logging</a>: 
 text file, arbitrary script, MySQL, PGSQL, SlurmDBD, or none (default).</li>
 
 <li><a href="mpiplugins.html">MPI</a>: LAM, MPICH1-P4, MPICH1-shmem,
 MPICH-GM, MPICH-MX, MVAPICH, OpenMPI and none (default, for most 
 other versions of MPI including MPICH2 and MVAPICH2).</li>
 
-<li><a href="selectplugins.html">Node selection</a>: 
-Bluegene (a 3-D torus interconnect BGL or BGP), 
-<a href="cons_res.html">consumable resources</a> (to allocate 
-individual processors and memory) or linear (to dedicate entire nodes).</li>
+<li><a href="priority_plugins.html">Priority</a>:
+Assigns priorities to jobs as they arrive.
+Options include 
+<a href="priority_multifactor.html">multifactor job prioritization</a>
+(assigns job priority based upon fair-share allocate, size, age, QoS, and/or partition) and
+basic (assigns job priority based upon age for First In First Out ordering, default).</li>
 
 <li><a href="proctrack_plugins.html">Process tracking (for signaling)</a>: 
 AIX (using a kernel extension), Linux process tree hierarchy, process group ID, 
 RMS (Quadrics Linux kernel patch),
 and <a href="http://oss.sgi.com/projects/pagg/">SGI's Process Aggregates (PAGG)</a>.</li>
 
+<li><a href="selectplugins.html">Node selection</a>: 
+Bluegene (a 3-D torus interconnect BGL or BGP), 
+<a href="cons_res.html">consumable resources</a> (to allocate 
+individual processors and memory) or linear (to dedicate entire nodes).</li>
+
 <li><a href="schedplugins.html">Scheduler</a>: 
-FIFO (First In First Out, default), backfill, gang (time-slicing for parallel jobs),
+builtin (First In First Out, default), 
+backfill (starts jobs early if doing so does not delay the expected initiation
+time of any higher priority job), 
+gang (time-slicing for parallel jobs),
 <a href="http://www.clusterresources.com/pages/products/maui-cluster-scheduler.php">
 The Maui Scheduler</a>, and  
 <a href="http://www.clusterresources.com/pages/products/moab-cluster-suite.php">
 Moab Cluster Suite</a>.
 There is also a <a href="priority_multifactor.html">multifactor job
-  prioritization</a> plugin 
-available for use with the FIFO, backfill and gang schedulers. Jobs can be 
-prioritized by age, size, fair-share allocation, etc.
+prioritization</a> plugin 
+available for use with the basic, backfill and gang schedulers only. 
+Jobs can be prioritized by age, size, fair-share allocation, etc.
 Many <a href="resource_limits.html">resource limits</a> are also 
 configurable by user or bank account.</li>
 
@@ -109,6 +123,10 @@ Federation
 <a href="http://publib-b.boulder.ibm.com/Redbooks.nsf/f338d71ccde39f08852568dd006f956d/55258945787efc2e85256db00051980a?OpenDocument">Federation</a> (IBM High Performance Switch), 
 or none (actually means nothing requiring special handling, such as Ethernet or 
 <a href="http://www.myricom.com/">Myrinet</a>, default).</li>
+
+<li><a href="taskplugins.html">Task Affinity</a>:
+Affinity (bind tasks to processors or CPU sets) or none (no binding, the default).</li>
+
 </ul>
 
 <p>The entities managed by these SLURM daemons, shown in Figure 2, include <b>nodes</b>,
@@ -166,7 +184,6 @@ SlurmdPort=7003
 SlurmdSpoolDir=/var/tmp/slurmd.spool
 SlurmdTimeout=120
 StateSaveLocation=/usr/local/slurm/slurm.state
-SwitchType=switch/elan
 TmpFS=/tmp
 #
 # Node Configurations
@@ -186,6 +203,6 @@ PartitionName=DEFAULT MaxTime=UNLIMITED MaxNodes=4096
 PartitionName=batch Nodes=lx[0041-9999]
 </pre>
 
-<p style="text-align:center;">Last modified 9 February 2009</p>
+<p style="text-align:center;">Last modified 26 February 2009</p>
 
 <!--#include virtual="footer.txt"-->

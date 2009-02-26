@@ -102,7 +102,7 @@ to backfill schedule jobs will be limited.
 The backfill scheduler does not alter job specifications of required 
 or excluded nodes, so jobs which specify nodes will substantially 
 reduce the effectiveness of backfill scheduling.
-See the <a href="faq.shtml#backfill">backfill documentation</a>
+See the <a href="faq.html#backfill">backfill documentation</a>
 for more details.</li>
 
 <li>If the scheduler type is <i>wiki</i>, this represents 
