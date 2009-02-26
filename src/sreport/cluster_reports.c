@@ -117,8 +117,6 @@ static int _set_wckey_cond(int *start, int argc, char *argv[],
 			set = 1;
 		} else if(!end
 			  || !strncasecmp (argv[i], "WCKeys",
-					   MAX(command_len, 3))
-			  || !strncasecmp (argv[i], "Names",
 					   MAX(command_len, 3))) {
 			if(!wckey_cond->name_list)
 				wckey_cond->name_list =
@@ -320,8 +318,6 @@ static int _set_cluster_cond(int *start, int argc, char *argv[],
 			local_cluster_flag = 1;
 		} else if(!end
 			  || !strncasecmp (argv[i], "Clusters",
-					   MAX(command_len, 1))
-			  || !strncasecmp (argv[i], "Names", 
 					   MAX(command_len, 1))) {
 			slurm_addto_char_list(cluster_cond->cluster_list,
 					      argv[i]+end);
