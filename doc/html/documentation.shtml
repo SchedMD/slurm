@@ -8,7 +8,7 @@ Also see <a href="publications.html">Publications and Presentations</a>.
 <ul>
 <li><a href="quickstart.shtml">Quick Start User Guide</a></li>
 <li><a href="mc_support.shtml">Support for Multi-core/Multi-threaded Architectures</a></li>
-<li><a href="quickstart.shtml#mpi">Guide to MPI Use</a></li>
+<li><a href="mpi_guide.shtml">MPI Use Guide</a></li>
 <li>Specific Systems</li>
 <ul>
 <li><a href="bluegene.shtml">Blue Gene User and Administrator Guide</a></li>

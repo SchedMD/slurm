@@ -28,6 +28,7 @@ generated_html = \
 	maui.html \
 	mc_support.html \
 	moab.html \
+	mpi_guide.html \
 	mpiplugins.html \
 	news.html \
 	overview.html \
