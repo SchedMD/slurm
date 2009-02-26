@@ -277,16 +277,53 @@ Default is 10.
 List of users jobs to include in report.  Default is all.
 .RE
 
+.TP
+ 
+.SH "Format Options for Each Report"
 
+\fBCluster\fP
+       AccountUtilizationByUser
+       UserUtilizationByAccount
+             - Accounts, Cluster, CPUCount, Login, Proper, Used
+       UserUtilizationByWckey
+       WCKeyUtilizationByUser
+             - Cluster, CPUCount, Login, Proper, Used, Wckey
+       Utilization
+             - Allocated, Cluster, CPUCount, Down, Idle, Overcommited,
+               PlannedDown, Reported, Reserved
+
+\fBJob\fP
+       Sizes
+             - Account, Cluster
+
+\fBUser\fP
+       TopUsage
+             - Account, Cluster, Login, Proper, Used
+                                                                           
+.TP         
 .SH "EXAMPLES"
-.eo
-.br
-> sreport job sizes 
-.br
-> sreport cluster utilization 
-.br
-> sreport user top 
-.ec
+.TP
+\fBsreport job sizes\fP
+.TP
+\fBreport cluster utilization\fP
+.TP
+\fBsreport user top\fP
+.TP
+\fBsreport job sizes All_Clusters users=gore1 account=environ PrintJobCount\fP
+Report number of jobs by user gore1 within the environ account
+.TP
+\fBsreport cluster AccountUtilizationByUser cluster=zeus user=gore1 start=2/23/08 end=2/24/09 format=Accounts,Cluster,CPU_Count,Login,Proper,Used\fP
+Report cluster account utilization with the specified fields during
+the specified 24 hour day of February 23, 2009, by user gore1
+.TP
+\fBsreport cluster AccountUtilizationByUser cluster=zeus accounts=lc start=2/23/08 end=2/24/09\fP
+Report cluster account utilization by user in the LC account on
+cluster zeus
+.TP
+\fBsreport user topusage start=2/16/09 end=2/23/09 -t percent account=lc\fP
+Report top usage in percent of the lc account during the specified week
+.TP
+               
 
 .SH "COPYING"
 Copyright (C) 2008 Lawrence Livermore National Security.
