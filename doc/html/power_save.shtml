@@ -5,7 +5,7 @@
 Nodes that remain idle for an configurable period of time can be placed 
 in a power saving mode. 
 The nodes will be restored to normal operation once work is assigned to them.
-Beginning with version 1.4.0, nodes can be fully powered down.
+Beginning with version 2.0.0, nodes can be fully powered down.
 Earlier releases of SLURM do not support the powering down of nodes, 
 only support of reducing their performance and thus their power consumption.
 For example, power saving can be accomplished using a <i>cpufreq</i> governor 
