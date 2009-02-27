@@ -663,20 +663,41 @@ int _spank_init(enum spank_context_type context, slurmd_job_t * job)
 	if (_do_call_stack(SPANK_INIT, job, -1) < 0)
 		return (-1);
 
-	if (job && spank_get_remote_options(job->options) < 0) {
+	/*
+	 *  Nothing more to do unless we are in remote context:
+	 */
+	if (spank_ctx != S_CTX_REMOTE)
+		return (0);
+
+	/*
+	 *  Remote-specific code:
+	 */
+	if (!job) {
+		error("spank: spank_init called without job reference!");
+		return (-1);
+	}
+
+	/*
+	 *  Get any remote options from job launch message:
+	 */
+	if (spank_get_remote_options(job->options) < 0) {
 		error("spank: Unable to get remote options");
 		return (-1);
 	}
 
-	if (job && spank_get_remote_options_env(job->env) < 0) {
+	/*
+	 *  Get any remote option passed thru environment
+	 */
+	if (spank_get_remote_options_env(job->env) < 0) {
 		error("spank: Unable to get remote options from environment");
 		return (-1);
 	}
 
-	if (_do_call_stack(SPANK_INIT_POST_OPT, job, -1) < 0)
-		return (-1);
-
-	return (0);
+	/*
+	 *  Now that all options have been processed, we can
+	 *   call the post_opt handlers here in remote context.
+	 */
+	return (_do_call_stack(SPANK_INIT_POST_OPT, job, -1) < 0);
 }
 
 int spank_init (slurmd_job_t * job)
@@ -690,6 +711,17 @@ int spank_init (slurmd_job_t * job)
 int spank_init_allocator (void)
 {
 	return _spank_init (S_TYPE_ALLOCATOR, NULL);
+}
+
+int spank_init_post_opt (void)
+{
+	/*
+	 *  In allocator context, set remote options in env here.
+	 */
+	if (spank_ctx == S_TYPE_ALLOCATOR)
+		spank_set_remote_options_env();
+
+	return (_do_call_stack(SPANK_INIT_POST_OPT, NULL, -1));
 }
 
 int spank_user(slurmd_job_t * job)

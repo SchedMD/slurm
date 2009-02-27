@@ -68,6 +68,8 @@ int spank_init (slurmd_job_t *job);
 
 int spank_init_allocator (void);
 
+int spank_init_post_opt (void);
+
 int spank_user (slurmd_job_t *job);
 
 int spank_local_user (struct spank_launcher_job_info *job);

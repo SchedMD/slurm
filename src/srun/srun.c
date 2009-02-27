@@ -199,6 +199,9 @@ int srun(int ac, char **av)
 		exit (1);
 	}
 	record_ppid();
+
+	if (spank_init_post_opt() < 0)
+		fatal("Plugin stack post-option processing failed.");
 	
 	/* reinit log with new verbosity (if changed by command line)
 	 */
