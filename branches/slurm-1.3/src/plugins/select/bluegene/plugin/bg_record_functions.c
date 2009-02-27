@@ -297,12 +297,19 @@ extern void process_nodes(bg_record_t *bg_record, bool startup)
 	       alpha_num[bg_record->geo[Y]],
 	       alpha_num[bg_record->geo[Z]],
 	       bg_record->bp_count);
-
-	if ((bg_record->geo[X] == DIM_SIZE[X])
-	    && (bg_record->geo[Y] == DIM_SIZE[Y])
-	    && (bg_record->geo[Z] == DIM_SIZE[Z])) {
-		bg_record->full_block = 1;	
-	}	
+	/* This check is for sub midplane systems to figure out what
+	   the largest block can be.
+	*/
+	if((DIM_SIZE[X] > 1) || (DIM_SIZE[Y] > 1) || (DIM_SIZE[Z] > 1)) {
+		/* means we have more than 1 base partition */
+		if ((bg_record->geo[X] == DIM_SIZE[X])
+		    && (bg_record->geo[Y] == DIM_SIZE[Y])
+		    && (bg_record->geo[Z] == DIM_SIZE[Z])) {
+			bg_record->full_block = 1;	
+		}	
+	} else if(bg_record->node_cnt == bluegene_bp_node_cnt)
+		bg_record->full_block = 1;
+	
 	
 /* #ifndef HAVE_BG_FILES */
 /* 	max_dim[X] = MAX(max_dim[X], end[X]); */
