@@ -1302,6 +1302,20 @@ int spank_remote(spank_t spank)
 		return (0);
 }
 
+spank_context_t spank_context (void)
+{
+	switch (spank_ctx) {
+	  case S_TYPE_REMOTE:
+		  return S_CTX_REMOTE;
+	  case S_TYPE_LOCAL:
+		  return S_CTX_LOCAL;
+	  case S_TYPE_NONE:
+		  return S_CTX_ERROR;
+	}
+
+	return S_CTX_ERROR;
+}
+
 spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 {
 	int *p2int;
