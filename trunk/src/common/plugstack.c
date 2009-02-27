@@ -801,9 +801,13 @@ _spank_option_register(struct spank_plugin *p, struct spank_option *opt)
 	int disabled = 0;
 	struct spank_plugin_opt *spopt;
 
+	if (!option_cache) {
+		option_cache =
+			list_create((ListDelF) _spank_plugin_opt_destroy);
+	}
+
 	spopt = list_find_first(option_cache, 
 			(ListFindF) _opt_by_name, opt->name);
-
 	if (spopt) {
 		struct spank_plugin *q = spopt->plugin;
 		info("spank: option \"%s\" provided by both %s and %s", 

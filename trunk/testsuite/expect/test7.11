@@ -149,6 +149,67 @@ if {$matches != 2} {
 }
 
 #
+# Test of alloc help message
+#
+# NOTE: Expect parsing failures have been noted running "$salloc --help" 
+#       directly, so we build a script containing a pipe to tail
+#
+
+make_bash_script $file_in "$salloc --help | $bin_grep test"
+
+set matches 0
+set srun_pid [spawn $file_in]
+expect {
+	-re "Registered component of slurm test suite" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: salloc not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 1} {
+	send_user "\nFAILURE: spank help message not in salloc help message\n"
+	set exit_code 1
+}
+
+#
+# Test of sbatch help message
+#
+# NOTE: Expect parsing failures have been noted running "$sbatch --help" 
+#       directly, so we build a script containing a pipe to tail
+#
+
+make_bash_script $file_in "$sbatch --help | $bin_grep test"
+
+set matches 0
+set srun_pid [spawn $file_in]
+expect {
+	-re "Registered component of slurm test suite" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 1} {
+	send_user "\nFAILURE: spank help message not in sbatch help message\n"
+	set exit_code 1
+}
+exec $bin_rm -f $file_in
+
+#
 # Test of locally logged messages().
 # We update the plugstatck.conf in this script since NFS delays may 
 # prevent it from having the same state as the submit host. 
@@ -161,8 +222,17 @@ make_bash_script $file_in "
     $bin_cp $orig_spank_conf $spank_conf_file
   fi
 "
-spawn $sbatch -N1 -t1 -o $file_out $file_in
+set matches 0
+spawn $sbatch --test_suite_reg=4 -N1 -t1 -o $file_out $file_in
 expect {
+	-re "_test_opt_process: test_suite: opt_arg=4" {
+		incr matches
+		exp_continue
+	}
+	-re "slurm_spank_exit: opt_arg=4" {
+		incr matches
+		exp_continue
+	}
 	-re timeout {
 		send_user "\nFAILURE: sbatch not responding\n"
 		set exit_code 1
@@ -170,6 +240,10 @@ expect {
 	eof {
 		wait
 	}
+}
+if {$matches != 2} {
+	send_user "\nFAILURE: spank options not processed by sbatch\n"
+	set exit_code 1
 }
 
 # NOTE: spank logs from sbatch and srun would be intermingled here
