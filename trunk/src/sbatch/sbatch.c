@@ -100,6 +100,9 @@ int main(int argc, char *argv[])
 		fatal("sbatch parameter parsing");
 	}
 
+	if (spank_init_post_opt() < 0)
+		fatal("Plugin stack post-option processing failed");
+
 	if (opt.get_user_env_time < 0) {
 		/* Moab does not propage the user's resource limits, so 
 		 * slurmd determines the values at the same time that it 

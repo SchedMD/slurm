@@ -290,10 +290,12 @@ if {[wait_for_file $file_out] == 0} {
 #
 if {[wait_for_file $spank_out] == 0} {
 	send_user "\n\n"
-	set matches 0
-	spawn $bin_cat $spank_out
+	set matches        0
+	set matches_sbatch 0
+	set matches_srun   0
+	spawn $bin_sort $spank_out
 	expect {
-		-re "slurm_spank_task_init: opt_arg=5" {
+		-re "spank_get_item: argv" {
 			incr matches
 			exp_continue
 		}
@@ -301,20 +303,36 @@ if {[wait_for_file $spank_out] == 0} {
 			incr matches
 			exp_continue
 		}
-		-re "spank_get_item: argv" {
-			incr matches
+		-re "slurm_spank_exit: opt_arg=($number)" {
+			if {$expect_out(1,string) == 4} {
+				incr matches_sbatch
+			}
+			if {$expect_out(1,string) == 5} {
+				incr matches_srun
+			}
 			exp_continue
 		}
-		-re "slurm_spank_exit: opt_arg=5" {
-			incr matches
+		-re "slurm_spank_task_init: opt_arg=($number)" {
+			if {$expect_out(1,string) == 4} {
+				incr matches_sbatch
+			}
+			if {$expect_out(1,string) == 5} {
+				incr matches_srun
+			}
 			exp_continue
 		}
 		eof {
 			wait
 		}
 	}
-	if {$matches != 4} {
-		send_user "\nFAILURE: remote (slurmd) spank plugin failure\n"
+	if {$matches_sbatch != 2} {
+		send_user "\nFAILURE: remote (slurmd) sbatch spank plugin failure ($matches_sbatch)\n"
+		set exit_code 1
+	} elseif {$matches_srun != 2} {
+		send_user "\nFAILURE: remote (slurmd) srun spank plugin failure ($matches_srun)\n"
+		set exit_code 1
+	} elseif {$matches != 4} {
+		send_user "\nFAILURE: remote (slurmd) spank plugin failure ($matches)\n"
 		set exit_code 1
 	} else {
 		send_user "\n remote (slurmd) spank plugin success\n"

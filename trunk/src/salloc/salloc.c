@@ -143,6 +143,9 @@ int main(int argc, char *argv[])
 		log_alter(logopt, 0, NULL);
 	}
 
+	if (spank_init_post_opt() < 0)
+		fatal("Plugin stack post-option processing failed");
+
 	if (opt.cwd && chdir(opt.cwd)) {
 		error("chdir(%s): %m", opt.cwd);
 		exit(1);
