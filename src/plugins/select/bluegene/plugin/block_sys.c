@@ -802,7 +802,10 @@ int read_bg_blocks()
 		       bg_record->state);
 		
 		process_nodes(bg_record, false);
-	
+
+		/* We can stop processing information now since we
+		   don't need to rest of the information to decide if
+		   this is the correct block. */
 		if(bluegene_layout_mode == LAYOUT_DYNAMIC) {
 			bg_record_t *tmp_record = xmalloc(sizeof(bg_record_t));
 			copy_bg_record(bg_record, tmp_record);

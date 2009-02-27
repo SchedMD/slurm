@@ -1472,15 +1472,11 @@ static int _validate_config_nodes(List *bg_found_block_list, char *dir)
 
 	if(!bg_curr_block_list)
 		return SLURM_ERROR;
-
-	itr_curr = list_iterator_create(bg_curr_block_list);
-	while ((init_bg_record = list_next(itr_curr))) 
-		if(init_bg_record->full_block) 
-			full_system_bg_record = init_bg_record;	
 	
 	if(!*bg_found_block_list)
 		(*bg_found_block_list) = list_create(NULL);
 
+	itr_curr = list_iterator_create(bg_curr_block_list);
 	itr_conf = list_iterator_create(bg_list);
 	while ((bg_record = (bg_record_t*) list_next(itr_conf))) {
 		list_iterator_reset(itr_curr);
@@ -1553,30 +1549,39 @@ static int _validate_config_nodes(List *bg_found_block_list, char *dir)
 				list_push(bg_booted_block_list, bg_record);
 		}
 	}		
-	list_iterator_destroy(itr_conf);
-	list_iterator_destroy(itr_curr);
 	if(bluegene_layout_mode == LAYOUT_DYNAMIC)
 		goto finished;
 
-	if(!full_created && full_system_bg_record) {
-		bg_record = xmalloc(sizeof(bg_record_t));
-		copy_bg_record(full_system_bg_record, bg_record);
-		list_append(bg_list, bg_record);
-		list_push(*bg_found_block_list, bg_record);
-		format_node_name(bg_record, tmp_char, sizeof(tmp_char));
-		info("Existing: BlockID:%s Nodes:%s Conn:%s",
-		     bg_record->bg_block_id, 
-		     tmp_char,
-		     convert_conn_type(bg_record->conn_type));
-		if(((bg_record->state == RM_PARTITION_READY)
-		    || (bg_record->state == RM_PARTITION_CONFIGURING))
-		   && !block_exist_in_list(bg_booted_block_list, 
-					   bg_record))
-			list_push(bg_booted_block_list, bg_record);
+	if(!full_created) {
+		list_iterator_reset(itr_curr);
+		while ((init_bg_record = list_next(itr_curr))) {
+			if(init_bg_record->full_block) {
+				list_remove(itr_curr);
+				bg_record = init_bg_record;
+				list_append(bg_list, bg_record);
+				list_push(*bg_found_block_list, bg_record);
+				format_node_name(bg_record, tmp_char,
+						 sizeof(tmp_char));
+				info("Existing: BlockID:%s Nodes:%s Conn:%s",
+				     bg_record->bg_block_id, 
+				     tmp_char,
+				     convert_conn_type(bg_record->conn_type));
+				if(((bg_record->state == RM_PARTITION_READY)
+				    || (bg_record->state 
+					== RM_PARTITION_CONFIGURING))
+				   && !block_exist_in_list(
+					   bg_booted_block_list, bg_record))
+					list_push(bg_booted_block_list,
+						  bg_record);
+				break;
+			}
+		}
 	}
 		
 finished:
-	if(list_count(bg_list) == list_count(bg_curr_block_list))
+	list_iterator_destroy(itr_conf);
+	list_iterator_destroy(itr_curr);
+	if(!list_count(bg_curr_block_list))
 		rc = SLURM_SUCCESS;
 	
 	return rc;
