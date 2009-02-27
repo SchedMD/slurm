@@ -79,9 +79,13 @@ typedef int (spank_f) (spank_t spank, int ac, char *argv[]);
  *               + for each task
  *               |       + wait ()
  *               |          `-> task_exit ()
- *               `-> fini ()
+ *               `-> exit ()
  *
- *   In srun only the init() and local_user_init() callbacks are used.
+ *   In srun only the init(), init_post_opt() and local_user_init(), and exit()
+ *    callbacks are used.
+ *
+ *   In sbatch/salloc only the init(), init_post_opt(), and exit() callbacks
+ *    are used.
  *
  */
 
@@ -195,9 +199,10 @@ struct spank_option {
 };
 
 /*
- *  Plugin may declare spank_options option table:
- *   [Note: options may also be declared with spank_option_register(),
- *    defined below.]
+ *  Plugins may export a spank_options option table as symbol "spank_options".
+ *   This method only works in "local" and "remote" mode. To register options
+ *   in "allocator" mode (sbatch/salloc), use the preferred
+ *   spank_option_register function described below.
  */
 extern struct spank_option spank_options [];
 
@@ -248,8 +253,13 @@ spank_context_t spank_context (void);
 /*
  *  Register a plugin-provided option dynamically. This function
  *   is only valid when called from slurm_spank_init(), and must
- *   be called in both remote (slurmd) and local (srun) contexts.
- *   May be called multiple times to register many options.
+ *   be guaranteed to be called in all contexts in which it is
+ *   used (local, remote, allocator).
+ *
+ *  This function is the only method to register options in
+ *   allocator context.
+ *
+ *  May be called multiple times to register many options.
  *
  *  Returns ESPANK_SUCCESS on successful registration of the option
  *   or ESPANK_BAD_ARG if not called from slurm_spank_init().
