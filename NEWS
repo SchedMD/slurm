@@ -41,6 +41,8 @@ documents those changes that are of interest to users and admins.
  -- Added new configuration parameter KillOnBadExit to kill a job step as soon
     as any task of a job step exits with a non-zero exit code. Patch based
     on work from Eric Lin, Bull.
+ -- Add spank plugin calls for use by salloc and sbatch command, see 
+    "man spank" for details.
  -- NOTE: Cold-start (without preserving state) required for upgrade from 
     version 1.4.0-pre7.
 
