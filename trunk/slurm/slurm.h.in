@@ -1085,6 +1085,9 @@ typedef struct slurm_ctl_conf {
 	char *job_credential_public_certificate;/* path to public certificate*/
 	uint16_t job_file_append; /* if set, append to stdout/err file */
 	uint16_t job_requeue;	/* If set, jobs get requeued on node failre */
+	uint16_t kill_on_bad_exit; /* If set, the job will be
+				 * terminated immediately when one of
+				 * the processes is aborted or crashed */ 
 	uint16_t kill_wait;	/* seconds between SIGXCPU to SIGKILL 
 				 * on job termination */
 	char *licenses;		/* licenses available on this cluster */

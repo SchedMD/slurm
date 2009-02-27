@@ -181,6 +181,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"JobFileAppend", S_P_UINT16},
 	{"JobRequeue", S_P_UINT16},
 	{"KillTree", S_P_UINT16, defunct_option},
+	{"KillOnBadExit", S_P_UINT16},
 	{"KillWait", S_P_UINT16},
 	{"Licenses", S_P_STRING},
 	{"MailProg", S_P_STRING},
@@ -1362,6 +1363,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->unkillable_timeout        = (uint16_t) NO_VAL;
 	ctl_conf_ptr->use_pam			= 0;
 	ctl_conf_ptr->wait_time			= (uint16_t) NO_VAL;
+	ctl_conf_ptr->kill_on_bad_exit	= 0;
 
 	_free_name_hashtbl();
 	_init_name_hashtbl();
@@ -1791,6 +1793,9 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		       hashtbl);
 	s_p_get_string(&conf->health_check_program, "HealthCheckProgram", 
 		       hashtbl);
+
+	if (!s_p_get_uint16(&conf->kill_on_bad_exit, "KillOnBadExit", hashtbl))
+		conf->kill_on_bad_exit = DEFAULT_KILL_ON_BAD_EXIT;
 
 	if (!s_p_get_uint16(&conf->kill_wait, "KillWait", hashtbl))
 		conf->kill_wait = DEFAULT_KILL_WAIT;

@@ -69,6 +69,8 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 * PrologSlurmctld has been added and can be used to boot nodes into a 
   particular state for each job.
 * DefMemPerTask has been removed. Use DefMemPerCPU or DefMemPerNode instead.
+* KillOnBadExit added to immediately terminate a job step whenever any tasks
+  terminates with a non-zero exit code.
 * Added new node state of "FUTURE". These node records are created in SLURM
   tables for future use without a reboot of the SLURM daemons, but are not
   reported by any SLURM commands or APIs.
