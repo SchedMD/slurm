@@ -128,8 +128,9 @@ static List option_cache = NULL;
  */
 enum spank_context_type {
 	S_TYPE_NONE,
-	S_TYPE_LOCAL,           /* LOCAL == srun         */
-	S_TYPE_REMOTE           /* REMOTE == slurmd      */
+	S_TYPE_LOCAL,           /* LOCAL == srun              */
+	S_TYPE_REMOTE,          /* REMOTE == slurmd           */
+	S_TYPE_ALLOCATOR        /* ALLOCATOR == sbatch/salloc */
 };
 
 /*
@@ -272,7 +273,11 @@ static struct spank_plugin *_spank_plugin_create(char *path, int ac,
 	plugin->argv = av;
 	plugin->ops = ops;
 
-	plugin->opts = plugin_get_sym(p, "spank_options");
+	/*
+	 *  Do not load static plugin options table in allocator context.
+	 */
+	if (spank_ctx != S_TYPE_ALLOCATOR)
+		plugin->opts = plugin_get_sym(p, "spank_options");
 
 	return (plugin);
 }
@@ -634,17 +639,14 @@ static int _do_call_stack(step_fn_t type, void * job, int taskid)
 	return (rc);
 }
 
-int spank_init(slurmd_job_t * job)
+int _spank_init(enum spank_context_type context, slurmd_job_t * job)
 {
 	slurm_ctl_conf_t *conf = slurm_conf_lock();
 	const char *path = conf->plugstack;
 	default_spank_path = conf->plugindir;
 	slurm_conf_unlock();
 
-	if (job)
-		spank_ctx = S_TYPE_REMOTE;
-	else
-		spank_ctx = S_TYPE_LOCAL;
+	spank_ctx = context;
 
 	if (_spank_stack_create(path, &spank_stack) < 0) {
 		/* No error if spank config doesn't exist */
@@ -668,6 +670,18 @@ int spank_init(slurmd_job_t * job)
 	return (0);
 }
 
+int spank_init (slurmd_job_t * job)
+{
+	if (job)
+		return _spank_init (S_TYPE_REMOTE, job);
+	else
+		return _spank_init (S_TYPE_LOCAL, NULL);
+}
+
+int spank_init_allocator (void)
+{
+	return _spank_init (S_TYPE_ALLOCATOR, NULL);
+}
 
 int spank_user(slurmd_job_t * job)
 {
@@ -1254,23 +1268,49 @@ static int _valid_in_local_context (spank_item_t item)
 	return (rc);
 }
 
-/*
- *  Return 1 if spank_item_t is just getting version (valid anywhere)
- */
-static int _version_check (spank_item_t item)
+static int _valid_in_allocator_context (spank_item_t item)
 {
-	int rc = 0;
 	switch (item) {
-	case S_SLURM_VERSION:
-	case S_SLURM_VERSION_MAJOR:
-	case S_SLURM_VERSION_MINOR:
-	case S_SLURM_VERSION_MICRO:
-		rc = 1;
-		break;
-	default:
-		rc = 0;
+	  case S_JOB_UID:
+	  case S_JOB_GID:
+		  return 1;
+	  default:
+		  return 0;
 	}
-	return (rc);
+}
+
+static spank_err_t _check_spank_item_validity (spank_item_t item)
+{
+	/*
+	 *  Valid in all contexts:
+	 */
+	switch (item) {
+	  case S_SLURM_VERSION:
+	  case S_SLURM_VERSION_MAJOR:
+	  case S_SLURM_VERSION_MINOR:
+	  case S_SLURM_VERSION_MICRO:
+		  return ESPANK_SUCCESS;
+	  default:
+		  break; /* fallthru */
+	}
+
+	if (spank_ctx == S_TYPE_LOCAL) {
+		if (_valid_in_local_context (item))
+			return ESPANK_SUCCESS;
+		else
+			return ESPANK_NOT_REMOTE;
+	}
+	else if (spank_ctx == S_TYPE_ALLOCATOR) {
+		if (_valid_in_allocator_context (item))
+			return ESPANK_SUCCESS;
+		else if (_valid_in_local_context (item))
+			return ESPANK_BAD_ARG;
+		else
+			return ESPANK_NOT_REMOTE;
+	}
+
+	/* All items presumably valid in remote context */
+	return ESPANK_SUCCESS;
 }
 
 /*
@@ -1309,7 +1349,9 @@ spank_context_t spank_context (void)
 		  return S_CTX_REMOTE;
 	  case S_TYPE_LOCAL:
 		  return S_CTX_LOCAL;
-	  case S_TYPE_NONE:
+	  case S_TYPE_ALLOCATOR:
+		  return S_CTX_ALLOCATOR;
+	  default:
 		  return S_CTX_ERROR;
 	}
 
@@ -1338,20 +1380,16 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 	if ((spank == NULL) || (spank->magic != SPANK_MAGIC))
 		return (ESPANK_BAD_ARG);
 
-	if (!_version_check(item)) {
-		/* Need job pointer to process other items */
-		if ( (spank_ctx != S_TYPE_REMOTE)
-		  && (!_valid_in_local_context(item)))
-			return (ESPANK_NOT_REMOTE);
+	/*
+	 *  Check for validity of the given item in the current context
+	 */
+	if ((rc = _check_spank_item_validity (item)) != ESPANK_SUCCESS)
+		return (rc);
 
-		if (spank->job == NULL)
-			return (ESPANK_BAD_ARG);
-
-		if (spank_ctx == S_TYPE_LOCAL)
-			launcher_job = spank->job;
-		else
-			slurmd_job = spank->job;
-	}
+	if (spank_ctx == S_TYPE_LOCAL)
+		launcher_job = spank->job;
+	else if (spank_ctx == S_TYPE_REMOTE)
+		slurmd_job = spank->job;
 
 	va_start(vargs, item);
 	switch (item) {
@@ -1359,15 +1397,19 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 		p2uid = va_arg(vargs, uid_t *);
 		if (spank_ctx == S_TYPE_LOCAL)
 			*p2uid = launcher_job->uid;
-		else
+		else if (spank_ctx == S_TYPE_REMOTE)
 			*p2uid = slurmd_job->uid;
+		else
+			*p2uid = getuid();
 		break;
 	case S_JOB_GID:
 		p2gid = va_arg(vargs, gid_t *);
 		if (spank_ctx == S_TYPE_LOCAL)
 			*p2gid = launcher_job->gid;
-		else
+		else if (spank_ctx == S_TYPE_REMOTE)
 			*p2gid = slurmd_job->gid;
+		else
+			*p2gid = getgid();
 		break;
 	case S_JOB_SUPPLEMENTARY_GIDS:
 		p2gids = va_arg(vargs, gid_t **);
