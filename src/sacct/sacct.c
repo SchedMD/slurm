@@ -77,7 +77,7 @@ print_field_t fields[] = {
 	{10, "MinCPUNode", print_fields_str, PRINT_MINCPUNODE}, 
 	{10, "MinCPUTask", print_fields_int, PRINT_MINCPUTASK}, 
 	{10, "NCPUS", print_fields_int, PRINT_ALLOC_CPUS},
-	{8, "NNodes", print_fields_int, PRINT_NNODES}, 
+	{8, "NNodes", print_fields_str, PRINT_NNODES}, 
 	{8, "NTasks", print_fields_int, PRINT_NTASKS},
 	{10, "Priority", print_fields_int, PRINT_PRIO}, 
 	{10, "Partition", print_fields_str, PRINT_PARTITION}, 

@@ -796,8 +796,10 @@ void print_fields(type_t type, void *object)
 				tmp_int = hostlist_count(hl);
 				hostlist_destroy(hl);
 			}
+			convert_num_unit((float)tmp_int, 
+					 outbuf, sizeof(outbuf), UNIT_NONE);
 			field->print_routine(field,
-					     tmp_int,
+					     outbuf,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_NTASKS:
