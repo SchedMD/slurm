@@ -812,7 +812,7 @@ _spank_option_register(struct spank_plugin *p, struct spank_option *opt)
 
 	if (!option_cache) {
 		option_cache =
-			list_create((ListDelF) _spank_plugin_opt_destroy);
+		    list_create((ListDelF) _spank_plugin_opt_destroy);
 	}
 
 	spopt = list_find_first(option_cache, 
@@ -862,11 +862,6 @@ static int _spank_plugin_options_cache(struct spank_plugin *p)
 
 	if ((opt == NULL) || opt->name == NULL)
 		return (0);
-
-	if (!option_cache) {
-		option_cache =
-		    list_create((ListDelF) _spank_plugin_opt_destroy);
-	}
 
 	for (; opt && opt->name != NULL; opt++)
 		_spank_option_register(p, opt);
