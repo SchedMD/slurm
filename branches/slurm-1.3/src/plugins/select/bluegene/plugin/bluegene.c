@@ -1448,7 +1448,6 @@ static int _validate_config_nodes(List *bg_found_block_list, char *dir)
 	int rc = SLURM_ERROR;
 	bg_record_t* bg_record = NULL;	
 	bg_record_t* init_bg_record = NULL;
-	bg_record_t* full_system_bg_record = NULL;	
 	int full_created = 0;
 	ListIterator itr_conf;
 	ListIterator itr_curr;
