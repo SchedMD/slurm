@@ -1480,15 +1480,11 @@ static int _validate_config_nodes(List *bg_found_block_list, char *dir)
 	
 	if(!*bg_found_block_list)
 		(*bg_found_block_list) = list_create(NULL);
-	
+
 	itr_conf = list_iterator_create(bg_list);
 	while ((bg_record = (bg_record_t*) list_next(itr_conf))) {
-		/* translate hostlist to ranged 
-		   string for consistent format
-		   search here 
-		*/
 		list_iterator_reset(itr_curr);
-		while ((init_bg_record = list_next(itr_curr))) {		
+		while ((init_bg_record = list_next(itr_curr))) {
 			if (strcasecmp(bg_record->nodes, 
 				       init_bg_record->nodes))
 				continue; /* wrong nodes */
@@ -1525,6 +1521,10 @@ static int _validate_config_nodes(List *bg_found_block_list, char *dir)
 				continue;
 		       			
 			copy_bg_record(init_bg_record, bg_record);
+			/* remove from the curr list since we just
+			   matched it no reason to keep it around
+			   anymore */
+			list_delete_item(itr_curr);
 			break;
 		}
 			
