@@ -448,7 +448,7 @@ void print_nnodes(type_t type, void *object)
 	else {
 		char outbuf[FORMAT_STRING_SIZE];
 		convert_num_unit((float)tmp_int, 
-				 outbuf, sizeof(outfuf), UNIT_NONE);
+				 outbuf, sizeof(outbuf), UNIT_NONE);
 		printf("%-8s", outbuf);
 	}
 }
