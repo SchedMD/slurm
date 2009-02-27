@@ -74,6 +74,11 @@ static int _test_opt_process(int val, const char *optarg, int remote)
 /*  Called from both srun and slurmd */
 int slurm_spank_init(spank_t sp, int ac, char **av)
 {
+	spank_context_t context;
+
+	context = spank_context();
+	if ((context != S_CTX_LOCAL) && (context != S_CTX_REMOTE))
+		slurm_error("spank_context error");
 	if (spank_option_register(sp, spank_options_reg) != ESPANK_SUCCESS)
 		slurm_error("spank_option_register error");
 	if (spank_remote(sp) && (ac == 1))
