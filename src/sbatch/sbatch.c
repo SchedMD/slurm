@@ -45,6 +45,7 @@
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
+#include "src/common/plugstack.h"
 
 #include "src/sbatch/opt.h"
 
@@ -68,6 +69,15 @@ int main(int argc, char *argv[])
 	int retries = 0;
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
+
+	if (spank_init_allocator() < 0)
+		fatal("Failed to intialize plugin stack");
+
+	/* Be sure to call spank_fini when sbatch exits
+	 */
+	if (atexit((void (*) (void)) spank_fini) < 0)
+		error("Failed to register atexit handler for plugins: %m");
+
 	script_name = process_options_first_pass(argc, argv);
 	/* reinit log with new verbosity (if changed by command line) */
 	if (opt.verbose || opt.quiet) {

@@ -49,6 +49,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
+#include "src/common/plugstack.h"
 
 #include "src/salloc/salloc.h"
 #include "src/salloc/opt.h"
@@ -121,6 +122,16 @@ int main(int argc, char *argv[])
 	slurm_allocation_callbacks_t callbacks;
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
+
+	if (spank_init_allocator() < 0)
+		fatal("Failed to initialize plugin stack");
+
+	/* Be sure to call spank_fini when salloc exits
+	 */
+	if (atexit((void (*) (void)) spank_fini) < 0)
+		error("Failed to register atexit handler for plugins: %m");
+
+
 	if (initialize_and_process_args(argc, argv) < 0) {
 		fatal("salloc parameter parsing");
 	}

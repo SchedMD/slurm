@@ -44,7 +44,7 @@ static char *opt_out_file = NULL;
 static int _test_opt_process(int val, const char *optarg, int remote);
 
 /*
- *  Provide a --renice=[prio] option to srun:
+ *  Provide a --test_suite=[opt_arg] option to srun:
  */
 struct spank_option spank_options[] =
 {
@@ -77,7 +77,8 @@ int slurm_spank_init(spank_t sp, int ac, char **av)
 	spank_context_t context;
 
 	context = spank_context();
-	if ((context != S_CTX_LOCAL) && (context != S_CTX_REMOTE))
+	if ((context != S_CTX_LOCAL) && (context != S_CTX_REMOTE) &&
+	    (context != S_CTX_ALLOCATOR))
 		slurm_error("spank_context error");
 	if (spank_option_register(sp, spank_options_reg) != ESPANK_SUCCESS)
 		slurm_error("spank_option_register error");

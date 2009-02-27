@@ -62,6 +62,7 @@
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/parse_time.h"
+#include "src/common/plugstack.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h" /* contains getnodename() */
 #include "src/common/slurm_protocol_api.h"
@@ -581,10 +582,15 @@ void set_options(const int argc, char **argv)
 	};
 	char *opt_string = "+a:B:c:C:d:D:F:g:hHIJ:kK:L:m:n:N:Op:P:qR:st:uU:vVw:W:x:";
 
+	struct option *optz = spank_option_table_create(long_options);
+
+	if (!optz)
+		fatal("Unable to create options table");
+
 	opt.progname = xbasename(argv[0]);
 	optind = 0;		
 	while((opt_char = getopt_long(argc, argv, opt_string,
-				      long_options, &option_index)) != -1) {
+				      optz, &option_index)) != -1) {
 		switch (opt_char) {
 			
 		case '?':
@@ -972,10 +978,13 @@ void set_options(const int argc, char **argv)
 			opt.reservation = xstrdup(optarg);
 			break;
 		default:
-			fatal("Unrecognized command line parameter %c",
-			      opt_char);
+			if (spank_process_option(opt_char, optarg) < 0)
+			    fatal("Unrecognized command line parameter %c",
+				    opt_char);
 		}
 	}
+
+	spank_option_table_destroy(optz);
 }
 
 static void _proc_get_user_env(char *optarg)
@@ -1560,6 +1569,8 @@ static void _help(void)
 "                              (see \"--mem_bind=help\" for options)\n");
 	}
 	slurm_conf_unlock();
+
+	spank_print_options(stdout, 6, 30);
 
         printf("\n"
 #ifdef HAVE_AIX				/* AIX/Federation specific options */
