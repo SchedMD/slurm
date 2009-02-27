@@ -2605,6 +2605,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	pack16(build_ptr->job_file_append, buffer);
 	pack16(build_ptr->job_requeue, buffer);
 
+	pack16(build_ptr->kill_on_bad_exit, buffer);
 	pack16(build_ptr->kill_wait, buffer);
 
 	packstr(build_ptr->licenses, buffer);
@@ -2785,6 +2786,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpack16(&build_ptr->job_file_append, buffer);
 	safe_unpack16(&build_ptr->job_requeue, buffer);
 
+	safe_unpack16(&build_ptr->kill_on_bad_exit, buffer);
 	safe_unpack16(&build_ptr->kill_wait, buffer);
 
 	safe_unpackstr_xmalloc(&build_ptr->licenses, &uint32_tmp, buffer);

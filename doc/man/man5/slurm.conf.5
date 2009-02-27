@@ -560,6 +560,13 @@ option to change the default behavior for individual jobs.
 The default value is 1.
 
 .TP
+\fBSlurmKillOnBadExit\fR
+If set to 1, the job will be terminated immediately when one of the 
+processes is crashed or aborted. With default value of 0, if one of 
+the processes is crashed or aborted the other processes will continue 
+to run.
+
+.TP
 \fBKillWait\fR
 The interval, in seconds, given to a job's processes between the 
 SIGTERM and SIGKILL signals upon reaching its time limit. 

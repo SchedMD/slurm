@@ -215,6 +215,8 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->job_file_append);
 	fprintf(out, "JobRequeue              = %u\n",
 		slurm_ctl_conf_ptr->job_requeue);
+	fprintf(out, "KillOnBadExit           = %u\n", 
+		slurm_ctl_conf_ptr->kill_on_bad_exit);
 	fprintf(out, "KillWait                = %u sec\n", 
 		slurm_ctl_conf_ptr->kill_wait);
 	fprintf(out, "Licenses                = %s\n",

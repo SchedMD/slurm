@@ -3,7 +3,7 @@
  *	parallel jobs.
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -1004,7 +1004,8 @@ _task_finish(task_exit_msg_t *msg)
 	bit_free(tasks_exited);
 	global_rc = MAX(global_rc, rc);
 
-	if (first_error && rc > 0 && opt.kill_bad_exit) {
+	if (first_error && (rc > 0) &&
+	    (opt.kill_bad_exit || slurm_get_kill_on_bad_exit())) {
 		first_error = false;
 		_terminate_job_step(job->step_ctx);
 	} else if (first_done && opt.max_wait > 0) {

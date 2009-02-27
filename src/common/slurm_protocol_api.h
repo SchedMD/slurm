@@ -118,6 +118,11 @@ uint32_t slurm_get_debug_flags(void);
  */
 uint32_t slurm_get_def_mem_per_task(void);
 
+/* slurm_get_kill_on_bad_exit
+ * RET KillOnBadExit value from slurm.conf
+ */
+uint16_t slurm_get_kill_on_bad_exit(void);
+
 /* slurm_get_max_mem_per_task
  * RET MaxMemPerTask value from slurm.conf
  */

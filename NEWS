@@ -38,6 +38,9 @@ documents those changes that are of interest to users and admins.
     there is no job state file or there is a change in its format (which only 
     happens when there is a change in SLURM's major or minor version number: 
     v1.3 -> v1.4).
+ -- Added new configuration parameter KillOnBadExit to kill a job step as soon
+    as any task of a job step exits with a non-zero exit code. Patch based
+    on work from Eric Lin, Bull.
  -- NOTE: Cold-start (without preserving state) required for upgrade from 
     version 1.4.0-pre7.
 

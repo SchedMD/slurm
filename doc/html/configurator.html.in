@@ -155,6 +155,7 @@ function displayfile()
    get_field("JobCredentialPublicCertificate", document.config.public_key) + "<br>" +
    "#JobFileAppend=0 <br>" +
    "#JobRequeue=1 <br>" +
+   "#KillOnBadExit=0 <br>" +
    "#Licenses=foo*4,bar <br>" +
    "#MailProg=/bin/mail <br>" +
    "#MaxJobCount=5000 <br>" +
