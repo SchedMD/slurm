@@ -655,8 +655,6 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
                                   displayed, not the accounts specified.   \n\
                                   In the Sizes reports the default for     \n\
                                   accounts is root.                        \n\
-             - Clusters=<OPT>   - List of clusters to include in report.   \n\
-                                  Default is local cluster.                \n\
              - GID=<OPT>        - List of group ids to include in report.  \n\
                                   Default is all.                          \n\
              - Grouping=<OPT>   - Comma separated list of size groupings.  \n\
@@ -673,8 +671,6 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
                                                                            \n\
      user    - Accounts=<OPT>   - List of accounts to use for the report   \n\
                                   Default is all.                          \n\
-             - Clusters=<OPT>   - List of clusters to include in report.   \n\
-                                  Default is local cluster.                \n\
              - Group            - Group all accounts together for each user.\n\
                                   Default is a separate entry for each user\n\
                                   and account reference.                   \n\
