@@ -1298,8 +1298,12 @@ int spank_get_remote_options_env (char **env)
 	char var [1024];
 	const char *arg;
 	struct spank_plugin_opt *option;
+	ListIterator i;
 
-	ListIterator i = list_iterator_create (option_cache);
+	if (!option_cache)
+		return (0);
+
+	i = list_iterator_create (option_cache);
 	while ((option = list_next (i))) {
 		struct spank_option *p = option->opt;
 
