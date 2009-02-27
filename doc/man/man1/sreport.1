@@ -284,21 +284,21 @@ List of users jobs to include in report.  Default is all.
 \fBCluster\fP
        AccountUtilizationByUser
        UserUtilizationByAccount
-             - Accounts, Cluster, CPUCount, Login, Proper, Used
+             \- Accounts, Cluster, CPUCount, Login, Proper, Used
        UserUtilizationByWckey
        WCKeyUtilizationByUser
-             - Cluster, CPUCount, Login, Proper, Used, Wckey
+             \- Cluster, CPUCount, Login, Proper, Used, Wckey
        Utilization
-             - Allocated, Cluster, CPUCount, Down, Idle, Overcommited,
+             \- Allocated, Cluster, CPUCount, Down, Idle, Overcommited,
                PlannedDown, Reported, Reserved
 
 \fBJob\fP
        Sizes
-             - Account, Cluster
+             \- Account, Cluster
 
 \fBUser\fP
        TopUsage
-             - Account, Cluster, Login, Proper, Used
+             \- Account, Cluster, Login, Proper, Used
                                                                            
 .TP         
 .SH "EXAMPLES"
@@ -320,7 +320,7 @@ the specified 24 hour day of February 23, 2009, by user gore1
 Report cluster account utilization by user in the LC account on
 cluster zeus
 .TP
-\fBsreport user topusage start=2/16/09 end=2/23/09 -t percent account=lc\fP
+\fBsreport user topusage start=2/16/09 end=2/23/09 \-t percent account=lc\fP
 Report top usage in percent of the lc account during the specified week
 .TP
                
