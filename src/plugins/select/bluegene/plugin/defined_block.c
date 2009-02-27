@@ -59,10 +59,29 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 	int geo[BA_SYSTEM_DIMENSIONS];
 	char temp[256];
 	List results = NULL;
-	
+	struct part_record *part_ptr = NULL;
+	char *non_usable_nodes = NULL;
+	bitstr_t *bitmap = bit_alloc(node_record_count);
+
 #ifdef HAVE_BG_FILES
 	init_wires();
 #endif
+ 		
+	/* Locks are already in place to protect part_list here */
+	itr = list_iterator_create(part_list);
+	while ((part_ptr = list_next(itr))) {
+		/* we only want to use bps that are in
+		 * partitions
+		 */
+		bit_or(bitmap, part_ptr->node_bitmap);
+	}
+	list_iterator_destroy(itr);
+
+	bit_not(bitmap);
+	non_usable_nodes = bitmap2node_name(bitmap);
+	removable_set_bps(non_usable_nodes);
+	FREE_NULL_BITMAP(bitmap);
+	
 	slurm_mutex_lock(&block_state_mutex);
 	reset_ba_system(false);
 	if(bg_list) {
@@ -109,9 +128,11 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 			   && bg_record->cpu_cnt >= procs_per_node) {
 				char *name = NULL;
 
-				if(overlapped == LAYOUT_OVERLAP) 
+				if(overlapped == LAYOUT_OVERLAP) {
 					reset_ba_system(false);
-									
+					removable_set_bps(non_usable_nodes);
+				}
+
 				/* we want the bps that aren't
 				 * in this record to mark them as used
 				 */
@@ -149,6 +170,7 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 						reset_all_removed_bps();
 						slurm_mutex_unlock(
 							&block_state_mutex);
+						xfree(non_usable_nodes);
 						return SLURM_ERROR;
 					}
 				} else {
@@ -167,6 +189,7 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 						list_iterator_destroy(itr);
 						slurm_mutex_unlock(
 							&block_state_mutex);
+						xfree(non_usable_nodes);
 						return SLURM_ERROR;
 					}
 					
@@ -215,6 +238,7 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 				   == SLURM_ERROR) {
 					list_iterator_destroy(itr);
 					slurm_mutex_unlock(&block_state_mutex);
+					xfree(non_usable_nodes);
 					return rc;
 				}
 				print_bg_record(bg_record);
@@ -224,8 +248,11 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 	} else {
 		error("create_defined_blocks: no bg_list 2");
 		slurm_mutex_unlock(&block_state_mutex);
+		xfree(non_usable_nodes);
 		return SLURM_ERROR;
 	}
+	xfree(non_usable_nodes);
+
 	slurm_mutex_unlock(&block_state_mutex);
 	create_full_system_block(bg_found_block_list);
 
@@ -263,7 +290,28 @@ extern int create_full_system_block(List bg_found_block_list)
 	int i;
 	blockreq_t blockreq;
 	List results = NULL;
+	struct part_record *part_ptr = NULL;
+	bitstr_t *bitmap = bit_alloc(node_record_count);
 	
+	/* Locks are already in place to protect part_list here */
+	itr = list_iterator_create(part_list);
+	while ((part_ptr = list_next(itr))) {
+		/* we only want to use bps that are in
+		 * partitions
+		 */
+		bit_or(bitmap, part_ptr->node_bitmap);
+	}
+	list_iterator_destroy(itr);
+
+	bit_not(bitmap);
+	if(bit_ffs(bitmap)) {
+		error("We don't have the entire system covered by partitions, "
+		      "can't create full system block");
+		FREE_NULL_BITMAP(bitmap);
+		return SLURM_ERROR;
+	}
+	FREE_NULL_BITMAP(bitmap);
+
 	/* Here we are adding a block that in for the entire machine 
 	   just in case it isn't in the bluegene.conf file.
 	*/
@@ -357,8 +405,7 @@ extern int create_full_system_block(List bg_found_block_list)
 			    geo, 
 			    bg_record->conn_type);
 	if(!name) {
-		error("I was unable to make the "
-		      "requested block.");
+		error("I was unable to make the full system block.");
 		list_destroy(results);
 		list_iterator_destroy(itr);
 		slurm_mutex_unlock(&block_state_mutex);

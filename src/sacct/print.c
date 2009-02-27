@@ -445,8 +445,12 @@ void print_nnodes(type_t type, void *object)
 		return;
 	else if(tmp_int == NO_VAL) 
 		printf("%-8s", "n/a");
-	else
-		printf("%-8d", tmp_int);
+	else {
+		char outbuf[FORMAT_STRING_SIZE];
+		convert_num_unit((float)tmp_int, 
+				 outbuf, sizeof(outfuf), UNIT_NONE);
+		printf("%-8s", outbuf);
+	}
 }
 
 void print_ntasks(type_t type, void *object)

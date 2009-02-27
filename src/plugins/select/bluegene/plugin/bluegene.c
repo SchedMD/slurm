@@ -1582,7 +1582,6 @@ finished:
 	list_iterator_destroy(itr_curr);
 	if(!list_count(bg_curr_block_list))
 		rc = SLURM_SUCCESS;
-	
 	return rc;
 }
 
