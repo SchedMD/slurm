@@ -56,6 +56,7 @@
 #include "src/common/plugstack.h"
 #include "src/common/optz.h"
 #include "src/common/job_options.h"
+#include "src/common/env.h"
 
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 /*#include "src/srun/srun_job.h"*/
@@ -103,6 +104,9 @@ struct spank_plugin {
 /*
  *  SPANK Plugin options 
  */
+
+#define SPANK_OPTION_ENV_PREFIX "_SLURM_SPANK_OPTION_"
+
 struct spank_plugin_opt {
 	struct spank_option *opt;   /* Copy of plugin option info           */
 	struct spank_plugin *plugin;/* Link back to plugin structure        */
@@ -664,6 +668,11 @@ int _spank_init(enum spank_context_type context, slurmd_job_t * job)
 		return (-1);
 	}
 
+	if (job && spank_get_remote_options_env(job->env) < 0) {
+		error("spank: Unable to get remote options from environment");
+		return (-1);
+	}
+
 	if (_do_call_stack(SPANK_INIT_POST_OPT, job, -1) < 0)
 		return (-1);
 
@@ -1110,6 +1119,78 @@ int spank_print_options(FILE * fp, int left_pad, int width)
 
 #define OPT_TYPE_SPANK 0x4400
 
+static char _canonical_char (char c)
+{
+	if (!isalnum (c))
+		return '_';
+	else
+		return c;
+}
+
+/*
+ *  Create spank option environment variable name from option name.
+ */
+static char * _opt_env_name (struct spank_plugin_opt *p, char *buf, size_t siz)
+{
+	const char * name = p->opt->name;
+	const char * pname = p->plugin->name;
+	int i, n;
+
+	strlcpy (buf, SPANK_OPTION_ENV_PREFIX, siz);
+
+	/*
+	 *  First append the plugin name associated with this option:
+	 */
+	n = 0;
+	for (i = strlen (buf); i < siz - 1 && n < strlen (pname); i++)
+	    buf[i] = _canonical_char (pname[n++]);
+
+	/*
+	 *  Append _
+	 */
+	buf[i] = '_';
+	buf[i+1] = '\0';
+
+	/*
+	 *  Now incorporate the option name:
+	 */
+	n = 0;
+	for (i = strlen (buf); i < siz - 1 && n < strlen (name); i++)
+	    buf[i] = _canonical_char (name[n++]);
+	buf[i] = '\0';
+
+	return (buf);
+}
+
+static int _option_setenv (struct spank_plugin_opt *option)
+{
+	char var [1024];
+
+	_opt_env_name (option, var, sizeof (var));
+
+	if (setenv (var, option->optarg, 1) < 0)
+	    error ("failed to set %s=%s in env", var, option->optarg);
+
+	return (0);
+}
+
+int spank_set_remote_options_env(void)
+{
+	struct spank_plugin_opt *p;
+	ListIterator i;
+
+	if ((option_cache == NULL) || (list_count(option_cache) == 0))
+		return (0);
+
+	i = list_iterator_create(option_cache);
+	while ((p = list_next(i))) {
+		if (p->found)
+			_option_setenv (p);
+	}
+	list_iterator_destroy(i);
+	return (0);
+}
+
 int spank_set_remote_options(job_options_t opts)
 {
 	struct spank_plugin_opt *p;
@@ -1183,6 +1264,34 @@ static struct spank_plugin_opt *_find_remote_option_by_name(const char
 	}
 
 	return (opt);
+}
+
+int spank_get_remote_options_env (char **env)
+{
+	char var [1024];
+	const char *arg;
+	struct spank_plugin_opt *option;
+
+	ListIterator i = list_iterator_create (option_cache);
+	while ((option = list_next (i))) {
+		struct spank_option *p = option->opt;
+
+		if (!(arg = getenvp (env, _opt_env_name (option, var, sizeof(var)))))
+			continue;
+
+		if (p->cb && (((*p->cb) (p->val, arg, 1)) < 0))
+			error ("spank: failed to process option %s=%s", p->name, arg);
+
+		/*
+		 *  Now remove the environment variable.
+		 *   It is no longer needed.
+		 */
+		unsetenvp (env, var);
+
+	}
+	list_iterator_destroy (i);
+
+	return (0);
 }
 
 int spank_get_remote_options(job_options_t opts)

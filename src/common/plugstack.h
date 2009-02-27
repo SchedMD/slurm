@@ -127,6 +127,12 @@ int spank_print_options (FILE *fp, int width, int left_pad);
  */
 int spank_set_remote_options (job_options_t options);
 
+/*  Set all registered remote options (i.e. those passed to
+ *   spank_process_option) in the current environment for later
+ *   retreival by spank_get_remote_options_env().
+ */
+int spank_set_remote_options_env (void);
+
 /*  Register any remote spank options that exist in `options'
  *    to their respective spank plugins. This function ends up invoking
  *    all plugin option callbacks, and will fail (return < 0) if
@@ -136,5 +142,15 @@ int spank_set_remote_options (job_options_t options);
  *   in the job_options structure, but the funtion does not return failure.
  */
 int spank_get_remote_options (job_options_t options);
+
+/*  Register any remote spank options that exist in the environment `env'
+ *    to their respective spank plugins. This function ends up invoking
+ *    all plugin option callbacks, and will fail (return < 0) if
+ *    a *required* plugin callback returns < 0.
+ *
+ *  A warning is printed if no plugin matches a remote option
+ *   in the job_options structure, but the funtion does not return failure.
+ */
+int spank_get_remote_options_env (char **env);
 
 #endif /* !_PLUGSTACK_H */
