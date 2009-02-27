@@ -35,6 +35,29 @@
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+ *****************************************************************************
+ *  Here is a list of the environment variables set
+ *
+ *  ACCOUNT		Account name
+ *  BATCH		"yes" if submitted via sbatch, "no" otherwise
+ *  END			Time of job termination, UTS
+ *  GID			Group ID of job owner
+ *  JOBID		SLURM Job ID
+ *  JOBNAME		Job name
+ *  JOBSTATE		Termination state of job (FIXME
+ *  NODECNT		Count of allocated nodes
+ *  NODES		List of allocated nodes
+ *  PARTITION		Partition name used to run job
+ *  PROCS		Count of allocated CPUs
+ *  START		Time of job start, UTS
+ *  SUBMIT		Time of job submission, UTS
+ *  UID			User ID of job owner
+ *
+ *  BlueGene specific environment variables:
+ *  BLOCKID		Name of Block ID
+ *  CONNECT_TYPE	Connection type: small, torus or mesh
+ *  GEOMETRY		Requested geometry of the job, "#x#x#" where "#" 
+ *			represents the X, Y and Z dimension sizes
 \*****************************************************************************/
 
 #ifdef HAVE_CONFIG_H
@@ -162,11 +185,7 @@ struct jobcomp_info {
 	char *account;
 #ifdef HAVE_BG
 	char *connect_type;
-	char *reboot;
-	char *rotate;
-	char *maxprocs;
 	char *geometry;
-	char *block_start;
 	char *blockid;
 #endif
 };
@@ -202,16 +221,8 @@ static struct jobcomp_info * _jobcomp_info_create (struct job_record *job)
 #ifdef HAVE_BG
 	j->connect_type = select_g_xstrdup_jobinfo(job->select_jobinfo,
 						   SELECT_PRINT_CONNECTION);
-	j->reboot = select_g_xstrdup_jobinfo(job->select_jobinfo,
-					     SELECT_PRINT_REBOOT);
-	j->rotate = select_g_xstrdup_jobinfo(job->select_jobinfo,
-					     SELECT_PRINT_ROTATE);
-	j->maxprocs = select_g_xstrdup_jobinfo(job->select_jobinfo,
-					       SELECT_PRINT_MAX_PROCS);
 	j->geometry = select_g_xstrdup_jobinfo(job->select_jobinfo,
 					       SELECT_PRINT_GEOMETRY);
-	j->block_start = select_g_xstrdup_jobinfo(job->select_jobinfo,
-						  SELECT_PRINT_START);
 	j->blockid = select_g_xstrdup_jobinfo(job->select_jobinfo,
 					      SELECT_PRINT_BG_ID);
 #endif
@@ -229,11 +240,7 @@ static void _jobcomp_info_destroy (struct jobcomp_info *j)
 	xfree (j->account);
 #ifdef HAVE_BG
 	xfree (j->connect_type);
-	xfree (j->reboot);
-	xfree (j->rotate);
-	xfree (j->maxprocs);
 	xfree (j->geometry);
-	xfree (j->block_start);
 	xfree (j->blockid);
 #endif
 	xfree (j);
@@ -341,13 +348,9 @@ static char ** _create_environment (struct jobcomp_info *job)
 	_env_append (&env, "PARTITION", job->partition);
 	
 #ifdef HAVE_BG
-	_env_append (&env, "CONNECT_TYPE", job->connect_type);
-	_env_append (&env, "REBOOT",       job->reboot);
-	_env_append (&env, "ROTATE",       job->rotate);
-	_env_append (&env, "MAXPROCS",     job->maxprocs);
-	_env_append (&env, "GEOMETRY",     job->geometry);
-	_env_append (&env, "BLOCK_START",  job->block_start);
 	_env_append (&env, "BLOCKID",      job->blockid);
+	_env_append (&env, "CONNECT_TYPE", job->connect_type);
+	_env_append (&env, "GEOMETRY",     job->geometry);
 #endif
 
 	if (job->limit == INFINITE)
