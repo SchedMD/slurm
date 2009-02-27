@@ -64,8 +64,7 @@ static int _sort_iter_compare_func_char(GtkTreeModel *model,
 	gtk_tree_model_get(model, a, sortcol, &name1, -1);
 	gtk_tree_model_get(model, b, sortcol, &name2, -1);
 	
-	if (name1 == NULL || name2 == NULL)
-	{
+	if (name1 == NULL || name2 == NULL) {
 		if (name1 == NULL && name2 == NULL)
 			goto cleanup; /* both equal => ret = 0 */
 		
@@ -116,6 +115,52 @@ static int _sort_iter_compare_func_int(GtkTreeModel *model,
 	
 	if (int1 != int2)
 		ret = (int1 > int2) ? 1 : -1;
+	
+	return ret;
+}
+
+static int _sort_iter_compare_func_nodes(GtkTreeModel *model,
+					 GtkTreeIter  *a,
+					 GtkTreeIter  *b,
+					 gpointer      userdata)
+{
+	int sortcol = GPOINTER_TO_INT(userdata);
+	int ret = 0;
+	gchar *name1 = NULL, *name2 = NULL;
+	
+	gtk_tree_model_get(model, a, sortcol, &name1, -1);
+	gtk_tree_model_get(model, b, sortcol, &name2, -1);
+	
+	if (name1 == NULL || name2 == NULL) {
+		if (name1 == NULL && name2 == NULL)
+			goto cleanup; /* both equal => ret = 0 */
+		
+		ret = (name1 == NULL) ? -1 : 1;
+	} else {
+		uint64_t int1 = atoi(name1);
+		uint64_t int2 = atoi(name2);
+		if(strchr(name1, 'K')) {
+			int1 *= 1024;
+		} else if(strchr(name1, 'M')) {
+			int1 *= 1048576;
+		} else if(strchr(name1, 'G')) {
+			int1 *= 1073741824;
+		}
+
+		if(strchr(name2, 'K')) {
+			int2 *= 1024;
+		} else if(strchr(name2, 'M')) {
+			int2 *= 1048576;
+		} else if(strchr(name2, 'G')) {
+			int2 *= 1073741824;
+		}
+
+		if (int1 != int2)
+			ret = (int1 > int2) ? 1 : -1;		
+	}
+cleanup:
+	g_free(name1);
+	g_free(name2);
 	
 	return ret;
 }
@@ -567,13 +612,23 @@ extern GtkTreeStore *create_treestore(GtkTreeView *tree_view,
 			
 			break;
 		case G_TYPE_STRING:
-			gtk_tree_sortable_set_sort_func(
-				GTK_TREE_SORTABLE(treestore), 
-				display_data[i].id, 
-				_sort_iter_compare_func_char,
-				GINT_TO_POINTER(display_data[i].id), 
-				NULL); 
-			break;
+			if(!strcasecmp(display_data[i].name, "Nodes")) {
+				gtk_tree_sortable_set_sort_func(
+					GTK_TREE_SORTABLE(treestore), 
+					display_data[i].id, 
+					_sort_iter_compare_func_nodes,
+					GINT_TO_POINTER(display_data[i].id), 
+					NULL); 
+				break;
+			} else {
+				gtk_tree_sortable_set_sort_func(
+					GTK_TREE_SORTABLE(treestore), 
+					display_data[i].id, 
+					_sort_iter_compare_func_char,
+					GINT_TO_POINTER(display_data[i].id), 
+					NULL); 
+				break;
+			}
 		default:
 			g_print("unknown type %d",
 				(int)display_data[i].type);

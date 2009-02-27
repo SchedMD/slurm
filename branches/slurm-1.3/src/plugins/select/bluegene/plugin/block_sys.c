@@ -988,6 +988,10 @@ extern int load_state_file(char *dir_name)
 	uid_t my_uid;
 	int ionodes = 0;
 	char *name = NULL;
+	struct part_record *part_ptr = NULL;
+	char *non_usable_nodes = NULL;
+	bitstr_t *bitmap = NULL;
+	ListIterator itr = NULL;
 
 	if(!dir_name) {
 		debug2("Starting bluegene with clean slate");
@@ -1056,6 +1060,21 @@ extern int load_state_file(char *dir_name)
 	}
 	slurm_mutex_lock(&block_state_mutex);
 	reset_ba_system(false);
+
+	/* Locks are already in place to protect part_list here */
+	bitmap = bit_alloc(node_record_count);
+	itr = list_iterator_create(part_list);
+	while ((part_ptr = list_next(itr))) {
+		/* we only want to use bps that are in partitions
+		 */
+		bit_or(bitmap, part_ptr->node_bitmap);
+	}
+	list_iterator_destroy(itr);
+
+	bit_not(bitmap);
+	non_usable_nodes = bitmap2node_name(bitmap);
+	FREE_NULL_BITMAP(bitmap);
+	removable_set_bps(non_usable_nodes);
 
 	node_bitmap = bit_alloc(node_record_count);	
 	ionode_bitmap = bit_alloc(bluegene_numpsets);	
@@ -1155,8 +1174,11 @@ extern int load_state_file(char *dir_name)
 		for(j=0; j<BA_SYSTEM_DIMENSIONS; j++) 
 			geo[j] = bg_record->geo[j];
 				
-		if(bluegene_layout_mode == LAYOUT_OVERLAP) 
+		if(bluegene_layout_mode == LAYOUT_OVERLAP) {
 			reset_ba_system(false);
+			removable_set_bps(non_usable_nodes);
+		}
+
 		results = list_create(NULL);
 		name = set_bg_block(results,
 				    bg_record->start, 
@@ -1200,6 +1222,7 @@ extern int load_state_file(char *dir_name)
 		}
 	}
 
+	xfree(non_usable_nodes);
 	FREE_NULL_BITMAP(ionode_bitmap);
 	FREE_NULL_BITMAP(node_bitmap);
 
