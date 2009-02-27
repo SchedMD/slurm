@@ -161,6 +161,17 @@ enum spank_err {
 typedef enum spank_err spank_err_t;
 
 /*
+ *  SPANK plugin context
+ */
+enum spank_context {
+    S_CTX_ERROR,             /* Error obtaining current context              */
+    S_CTX_LOCAL,             /* Local context (srun)                         */
+    S_CTX_REMOTE             /* Remote context (slurmd)                      */
+};
+
+typedef enum spank_context spank_context_t;
+
+/*
  *  SPANK plugin options
  */
 
@@ -216,14 +227,22 @@ BEGIN_C_DECLS
 int spank_symbol_supported (const char *symbol);
 
 /*
- *  Determine whether plugin is loaded "local" or "remote."
+ *  Determine whether plugin is loaded in "remote" context
  * 
  *  Returns:
  *  = 1   remote context, i.e. plugin is loaded in slurmd.
- *  = 0   local context, i.e. plugin loaded in srun.
+ *  = 0   not remote context
  *  < 0   spank handle was not valid.
  */
 int spank_remote (spank_t spank);
+
+/*
+ *  Return the context in which the calling plugin is loaded.
+ *
+ *  Returns the spank_context for the calling plugin, or SPANK_CTX_ERROR
+ *   if the current context cannot be determined.
+ */
+spank_context_t spank_context (void);
 
 /*
  *  Register a plugin-provided option dynamically. This function
