@@ -124,14 +124,13 @@ static List option_cache = NULL;
 
 
 /*
- *  SPANK handle for plugins
- *
- *   Handle types: local or remote.
+ *  SPANK plugin context (local, remote, allocator)
  */
-typedef enum spank_handle_type {
+enum spank_context_type {
+	S_TYPE_NONE,
 	S_TYPE_LOCAL,           /* LOCAL == srun         */
 	S_TYPE_REMOTE           /* REMOTE == slurmd      */
-} spank_handle_type_t;
+};
 
 /*
  *  SPANK plugin hook types:
@@ -151,7 +150,6 @@ struct spank_handle {
 #   define SPANK_MAGIC 0x00a5a500
 	int                  magic;  /* Magic identifier to ensure validity. */
 	struct spank_plugin *plugin; /* Current plugin using handle          */
-	spank_handle_type_t  type;   /* remote(slurmd) || local(srun)        */
 	step_fn_t            phase;  /* Which spank fn are we called from?   */
 	void               * job;    /* Reference to current srun|slurmd job */
 	slurmd_task_info_t * task;   /* Reference to current task (if valid) */
@@ -161,6 +159,7 @@ struct spank_handle {
  *  SPANK plugins stack
  */
 static List spank_stack = NULL;
+static enum spank_context_type spank_ctx = S_TYPE_NONE;
 
 static pthread_mutex_t spank_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -497,15 +496,9 @@ _spank_handle_init(struct spank_handle *spank, void * arg,
 
 	if (arg != NULL) {
 		spank->job = arg;
-		if (fn == LOCAL_USER_INIT)
-			spank->type = S_TYPE_LOCAL;
-		else {
-			spank->type = S_TYPE_REMOTE;
-			if (taskid >= 0)
-				spank->task = ((slurmd_job_t *) arg)->task[taskid];
+		if (spank_ctx == S_TYPE_REMOTE && taskid >= 0) {
+			spank->task = ((slurmd_job_t *) arg)->task[taskid];
 		}
-	} else {
-		spank->type = S_TYPE_LOCAL;
 	}
 	return (0);
 }
@@ -647,6 +640,11 @@ int spank_init(slurmd_job_t * job)
 	const char *path = conf->plugstack;
 	default_spank_path = conf->plugindir;
 	slurm_conf_unlock();
+
+	if (job)
+		spank_ctx = S_TYPE_REMOTE;
+	else
+		spank_ctx = S_TYPE_LOCAL;
 
 	if (_spank_stack_create(path, &spank_stack) < 0) {
 		/* No error if spank config doesn't exist */
@@ -1298,7 +1296,7 @@ int spank_remote(spank_t spank)
 {
 	if ((spank == NULL) || (spank->magic != SPANK_MAGIC))
 		return (-1);
-	if (spank->type == S_TYPE_REMOTE)
+	if (spank_ctx == S_TYPE_REMOTE)
 		return (1);
 	else
 		return (0);
@@ -1328,14 +1326,14 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 
 	if (!_version_check(item)) {
 		/* Need job pointer to process other items */
-		if ( (spank->type != S_TYPE_REMOTE) 
+		if ( (spank_ctx != S_TYPE_REMOTE)
 		  && (!_valid_in_local_context(item)))
 			return (ESPANK_NOT_REMOTE);
 
 		if (spank->job == NULL)
 			return (ESPANK_BAD_ARG);
 
-		if (spank->type == S_TYPE_LOCAL)
+		if (spank_ctx == S_TYPE_LOCAL)
 			launcher_job = spank->job;
 		else
 			slurmd_job = spank->job;
@@ -1345,14 +1343,14 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 	switch (item) {
 	case S_JOB_UID:
 		p2uid = va_arg(vargs, uid_t *);
-		if (spank->type == S_TYPE_LOCAL)
+		if (spank_ctx == S_TYPE_LOCAL)
 			*p2uid = launcher_job->uid;
 		else
 			*p2uid = slurmd_job->uid;
 		break;
 	case S_JOB_GID:
 		p2gid = va_arg(vargs, gid_t *);
-		if (spank->type == S_TYPE_LOCAL)
+		if (spank_ctx == S_TYPE_LOCAL)
 			*p2gid = launcher_job->gid;
 		else
 			*p2gid = slurmd_job->gid;
@@ -1365,21 +1363,21 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 		break;
 	case S_JOB_ID:
 		p2uint32 = va_arg(vargs, uint32_t *);
-		if (spank->type == S_TYPE_LOCAL)
+		if (spank_ctx == S_TYPE_LOCAL)
 			*p2uint32 = launcher_job->jobid;
 		else
 			*p2uint32 = slurmd_job->jobid;
 		break;
 	case S_JOB_STEPID:
 		p2uint32 = va_arg(vargs, uint32_t *);
-		if (spank->type == S_TYPE_LOCAL)
+		if (spank_ctx == S_TYPE_LOCAL)
 			*p2uint32 = launcher_job->stepid;
 		else
 			*p2uint32 = slurmd_job->stepid;
 		break;
 	case S_JOB_NNODES:
 		p2uint32 = va_arg(vargs, uint32_t *);
-		if (spank->type == S_TYPE_LOCAL) {
+		if (spank_ctx == S_TYPE_LOCAL) {
 			if (launcher_job->step_layout)
 				*p2uint32 = launcher_job->step_layout->node_cnt;
 			else {
@@ -1399,7 +1397,7 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 		break;
 	case S_JOB_TOTAL_TASK_COUNT:
 		p2uint32 = va_arg(vargs, uint32_t *);
-		if (spank->type == S_TYPE_LOCAL) {
+		if (spank_ctx == S_TYPE_LOCAL) {
 			if (launcher_job->step_layout)
 				*p2uint32 = launcher_job->step_layout->task_cnt;
 			else {
@@ -1420,7 +1418,7 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 	case S_JOB_ARGV:
 		p2int = va_arg(vargs, int *);
 		p2argv = va_arg(vargs, char ***);
-		if (spank->type == S_TYPE_LOCAL) {
+		if (spank_ctx == S_TYPE_LOCAL) {
 			*p2int = launcher_job->argc;
 			*p2argv = launcher_job->argv;
 		} else {
@@ -1538,7 +1536,7 @@ spank_err_t spank_getenv(spank_t spank, const char *var, char *buf,
 	if ((spank == NULL) || (spank->magic != SPANK_MAGIC))
 		return (ESPANK_BAD_ARG);
 
-	if (spank->type != S_TYPE_REMOTE)
+	if (spank_ctx != S_TYPE_REMOTE)
 		return (ESPANK_NOT_REMOTE);
 
 	if (spank->job == NULL)
@@ -1564,7 +1562,7 @@ spank_err_t spank_setenv(spank_t spank, const char *var, const char *val,
 	if ((spank == NULL) || (spank->magic != SPANK_MAGIC))
 		return (ESPANK_BAD_ARG);
 
-	if (spank->type != S_TYPE_REMOTE)
+	if (spank_ctx != S_TYPE_REMOTE)
 		return (ESPANK_NOT_REMOTE);
 
 	if (spank->job == NULL)
@@ -1589,7 +1587,7 @@ spank_err_t spank_unsetenv (spank_t spank, const char *var)
 	if ((spank == NULL) || (spank->magic != SPANK_MAGIC))
 		return (ESPANK_BAD_ARG);
 
-	if (spank->type != S_TYPE_REMOTE)
+	if (spank_ctx != S_TYPE_REMOTE)
 		return (ESPANK_NOT_REMOTE);
 
 	if (spank->job == NULL)
