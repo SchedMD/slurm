@@ -2104,11 +2104,9 @@ static void _help(void)
 			);
 	}
 	slurm_conf_unlock();
-	printf("\n");
 	spank_print_options (stdout, 6, 30);
-	printf("\n");
 
-        printf(
+        printf("\n"
 #ifdef HAVE_AIX				/* AIX/Federation specific options */
 		"AIX related options:\n"
 		"  --network=type              communication protocol to be used\n"
