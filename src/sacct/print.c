@@ -112,7 +112,6 @@ void print_fields(type_t type, void *object)
 	int curr_inx = 1;
 	struct passwd *pw = NULL;
 	struct	group *gr = NULL;
-	hostlist_t hl = NULL;
 	char outbuf[FORMAT_STRING_SIZE];
 	
 	switch(type) {
@@ -507,6 +506,29 @@ void print_fields(type_t type, void *object)
 					     tmp_char,
 					     (curr_inx == field_count));
 			break;
+		case PRINT_LAYOUT:
+			switch(type) {
+			case JOB:
+				/* below really should be step.  It is
+				   not a typo */
+				if(!job->track_steps) 
+					tmp_char = slurm_step_layout_type_name(
+						step->task_dist);
+				break;
+			case JOBSTEP:
+				tmp_char = slurm_step_layout_type_name(
+					step->task_dist);
+				break;
+			case JOBCOMP:
+				break;
+			default:
+				tmp_char = NULL;
+				break;
+			}
+			field->print_routine(field,
+					     tmp_char,
+					     (curr_inx == field_count));
+			break;
 		case PRINT_MAXPAGES:
 			switch(type) {
 			case JOB:
@@ -780,10 +802,10 @@ void print_fields(type_t type, void *object)
 		case PRINT_NNODES:
 			switch(type) {
 			case JOB:
-				tmp_char = job->nodes;
+				tmp_int = job->alloc_nodes;
 				break;
 			case JOBSTEP:
-				tmp_char = step->nodes;
+				tmp_int = step->nnodes;
 				break;
 			case JOBCOMP:
 				tmp_int = job_comp->node_cnt;
@@ -791,8 +813,9 @@ void print_fields(type_t type, void *object)
 			default:
 				break;
 			}
-			if(tmp_char) {
-				hl = hostlist_create(tmp_char);
+			
+			if(!tmp_int) {
+				hostlist_t hl = hostlist_create(tmp_char);
 				tmp_int = hostlist_count(hl);
 				hostlist_destroy(hl);
 			}

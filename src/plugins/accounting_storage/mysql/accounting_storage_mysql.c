@@ -2628,6 +2628,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "priority", "int not null" },
 		{ "req_cpus", "mediumint unsigned not null" }, 
 		{ "alloc_cpus", "mediumint unsigned not null" }, 
+		{ "alloc_nodes", "mediumint unsigned not null" }, 
 		{ "nodelist", "text" },
 		{ "kill_requid", "smallint default -1 not null" },
 		{ "qos", "smallint default 0" },
@@ -2694,8 +2695,10 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "state", "smallint not null" },
 		{ "kill_requid", "smallint default -1 not null" },
 		{ "comp_code", "int default 0 not null" },
+		{ "nodes", "mediumint unsigned not null" },
 		{ "cpus", "mediumint unsigned not null" },
 		{ "tasks", "mediumint unsigned not null" },
+		{ "task_dist", "smallint default 0" },
 		{ "user_sec", "int unsigned default 0 not null" },
 		{ "user_usec", "int unsigned default 0 not null" },
 		{ "sys_sec", "int unsigned default 0 not null" },
@@ -9929,6 +9932,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 	time_t check_time = job_ptr->start_time;
 	uint32_t wckeyid = 0;
 	int no_cluster = 0;
+	int node_cnt = 0;
 
 	if (!job_ptr->details || !job_ptr->details->submit_time) {
 		error("jobacct_storage_p_job_start: "
@@ -9966,13 +9970,13 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 
 
 	if (job_ptr->name && job_ptr->name[0]) 
-		jname = xstrdup(job_ptr->name);
+		jname = job_ptr->name;
 	else {
-		jname = xstrdup("allocation");
+		jname = "allocation";
 		track_steps = 1;
 	}
 	
-	if (job_ptr->nodes && job_ptr->nodes[0])
+	if (job_ptr->nodes && job_ptr->nodes[0]) 
 		nodes = job_ptr->nodes;
 	else
 		nodes = "None assigned";
@@ -9982,10 +9986,18 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 
 	if(slurmdbd_conf) {
 		block_id = xstrdup(job_ptr->comment);
+		node_cnt = job_ptr->node_cnt;
 	} else {
+#ifdef HAVE_BG
 		select_g_get_jobinfo(job_ptr->select_jobinfo, 
 				     SELECT_DATA_BLOCK_ID, 
 				     &block_id);
+		select_g_get_jobinfo(job_ptr->select_jobinfo, 
+				     SELECT_DATA_NODE_CNT, 
+				     &node_cnt);
+#else
+		node_cnt = job_ptr->node_cnt;
+#endif 		
 	}
 
 	job_ptr->requid = -1; /* force to -1 for sacct to know this
@@ -10027,7 +10039,8 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 		
 		xstrfmtcat(query, 
 			   "eligible, submit, start, name, track_steps, "
-			   "state, priority, req_cpus, alloc_cpus) "
+			   "state, priority, req_cpus, "
+			   "alloc_cpus, alloc_nodes) "
 			   "values (%u, %u, %u, %u, %u, \"%s\", %u, ",
 			   job_ptr->job_id, job_ptr->assoc_id, wckeyid,
 			   job_ptr->user_id, job_ptr->group_id, nodes, 
@@ -10045,7 +10058,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 			xstrfmtcat(query, "\"%s\", ", job_ptr->wckey);
 
 		xstrfmtcat(query, 
-			   "%d, %d, %d, \"%s\", %u, %u, %u, %u, %u) "
+			   "%d, %d, %d, \"%s\", %u, %u, %u, %u, %u, %u) "
 			   "on duplicate key update "
 			   "id=LAST_INSERT_ID(id), state=%u, "
 			   "associd=%u, wckeyid=%u, resvid=%u",
@@ -10055,7 +10068,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 			   jname, track_steps,
 			   job_ptr->job_state & (~JOB_COMPLETING),
 			   job_ptr->priority, job_ptr->num_procs,
-			   job_ptr->total_procs, 
+			   job_ptr->total_procs, node_cnt,
 			   job_ptr->job_state & (~JOB_COMPLETING),
 			   job_ptr->assoc_id, wckeyid, job_ptr->resv_id);
 
@@ -10102,18 +10115,19 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 			xstrfmtcat(query, "wckey=\"%s\", ", job_ptr->wckey);
 
 		xstrfmtcat(query, "start=%d, name=\"%s\", state=%u, "
-			   "alloc_cpus=%u, associd=%u, wckeyid=%u, resvid=%u "
+			   "alloc_cpus=%u, alloc_nodes=%u, "
+			   "associd=%u, wckeyid=%u, resvid=%u "
 			   "where id=%d",
 			   (int)job_ptr->start_time,
 			   jname, job_ptr->job_state & (~JOB_COMPLETING),
-			   job_ptr->total_procs, job_ptr->assoc_id, wckeyid,
+			   job_ptr->total_procs, node_cnt, 
+			   job_ptr->assoc_id, wckeyid,
 			   job_ptr->resv_id, job_ptr->db_index);
 		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 		rc = mysql_db_query(mysql_conn->db_conn, query);
 	}
 
 	xfree(block_id);
-	xfree(jname);
 	xfree(query);
 	if(no_cluster)
 		xfree(cluster_name);
@@ -10217,7 +10231,7 @@ extern int jobacct_storage_p_step_start(mysql_conn_t *mysql_conn,
 					struct step_record *step_ptr)
 {
 #ifdef HAVE_MYSQL
-	int cpus = 0, tasks = 0;
+	int cpus = 0, tasks = 0, nodes = 0, task_dist = 0;
 	int rc=SLURM_SUCCESS;
 	char node_list[BUFFER_SIZE];
 #ifdef HAVE_BG
@@ -10240,6 +10254,8 @@ extern int jobacct_storage_p_step_start(mysql_conn_t *mysql_conn,
 		cpus = step_ptr->cpu_count;
 		snprintf(node_list, BUFFER_SIZE, "%s",
 			 step_ptr->job_ptr->nodes);
+		nodes = step_ptr->step_layout->node_cnt;
+		task_dist = step_ptr->step_layout->task_dist;
 	} else {
 #ifdef HAVE_BG
 		tasks = cpus = step_ptr->job_ptr->num_procs;
@@ -10253,15 +10269,20 @@ extern int jobacct_storage_p_step_start(mysql_conn_t *mysql_conn,
 		} else
 			snprintf(node_list, BUFFER_SIZE, "%s",
 				 step_ptr->job_ptr->nodes);
-		
+		select_g_get_jobinfo(job_ptr->select_jobinfo, 
+				     SELECT_DATA_NODE_CNT, 
+				     &nodes);
 #else
 		if(!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
 			tasks = cpus = step_ptr->job_ptr->total_procs;
 			snprintf(node_list, BUFFER_SIZE, "%s",
 				 step_ptr->job_ptr->nodes);
+			nodes = step_ptr->job_ptr->node_cnt;
 		} else {
 			cpus = step_ptr->cpu_count; 
 			tasks = step_ptr->step_layout->task_cnt;
+			nodes = step_ptr->step_layout->node_cnt;
+			task_dist = step_ptr->step_layout->task_dist;
 			snprintf(node_list, BUFFER_SIZE, "%s", 
 				 step_ptr->step_layout->node_list);
 		}
@@ -10294,13 +10315,15 @@ extern int jobacct_storage_p_step_start(mysql_conn_t *mysql_conn,
 	   %d */
 	query = xstrdup_printf(
 		"insert into %s (id, stepid, start, name, state, "
-		"cpus, tasks, nodelist) "
-		"values (%d, %d, %d, \"%s\", %d, %d, %d, \"%s\") "
-		"on duplicate key update cpus=%d, tasks=%d, end=0, state=%d",
+		"cpus, nodes, tasks, nodelist, task_dist) "
+		"values (%d, %d, %d, \"%s\", %d, %d, %d, %d, \"%s\", %d) "
+		"on duplicate key update cpus=%d, nodes=%d, "
+		"tasks=%d, end=0, state=%d, task_dist=%d",
 		step_table, step_ptr->job_ptr->db_index,
 		step_ptr->step_id, 
 		(int)step_ptr->start_time, step_ptr->name,
-		JOB_RUNNING, cpus, tasks, node_list, cpus, tasks, JOB_RUNNING);
+		JOB_RUNNING, cpus, nodes, tasks, node_list, task_dist,
+		cpus, nodes, tasks, JOB_RUNNING, task_dist);
 	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);

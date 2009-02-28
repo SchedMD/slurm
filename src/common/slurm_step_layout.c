@@ -100,7 +100,8 @@ slurm_step_layout_t *slurm_step_layout_create(
 	char *arbitrary_nodes = NULL;
 	slurm_step_layout_t *step_layout = 
 		xmalloc(sizeof(slurm_step_layout_t));
-		
+
+	step_layout->task_dist = task_dist;
 	if(task_dist == SLURM_DIST_ARBITRARY) {
 		hostlist_t hl = NULL;
 		char buf[65536];
@@ -262,6 +263,7 @@ extern slurm_step_layout_t *slurm_step_layout_copy(
 	layout->node_list = xstrdup(step_layout->node_list);
 	layout->node_cnt = step_layout->node_cnt;
 	layout->task_cnt = step_layout->task_cnt;
+	layout->task_dist = step_layout->task_dist;
 	
 /* 	layout->node_addr = xmalloc(sizeof(slurm_addr) * layout->node_cnt); */
 /* 	memcpy(layout->node_addr, step_layout->node_addr,  */
@@ -294,6 +296,7 @@ extern void pack_slurm_step_layout(slurm_step_layout_t *step_layout,
 	packstr(step_layout->node_list, buffer);
 	pack32(step_layout->node_cnt, buffer);
 	pack32(step_layout->task_cnt, buffer);
+	pack16(step_layout->task_dist, buffer);
 /* 	slurm_pack_slurm_addr_array(step_layout->node_addr,  */
 /* 				    step_layout->node_cnt, buffer); */
 
@@ -324,6 +327,7 @@ extern int unpack_slurm_step_layout(slurm_step_layout_t **layout, Buf buffer)
 	safe_unpackstr_xmalloc(&step_layout->node_list, &uint32_tmp, buffer);
 	safe_unpack32(&step_layout->node_cnt, buffer);
 	safe_unpack32(&step_layout->task_cnt, buffer);
+	safe_unpack16(&step_layout->task_dist, buffer);
 	
 /* 	if (slurm_unpack_slurm_addr_array(&(step_layout->node_addr),  */
 /* 					  &uint32_tmp, buffer)) */
@@ -704,4 +708,45 @@ static int _task_layout_plane(slurm_step_layout_t *step_layout,
 #endif	  
 	
 	return SLURM_SUCCESS;
+}
+
+extern char *slurm_step_layout_type_name(task_dist_states_t task_dist)
+{
+	switch(task_dist) {
+	case SLURM_DIST_CYCLIC:
+		return "Cyclic";
+		break;
+	case SLURM_DIST_BLOCK:	/* distribute tasks filling node by node */
+		return "Block";
+		break;
+	case SLURM_DIST_ARBITRARY:	/* arbitrary task distribution  */
+		return "Arbitrary";
+		break;
+	case SLURM_DIST_PLANE:	/* distribute tasks by filling up
+				   planes of lllp first and then by
+				   going across the nodes See
+				   documentation for more
+				   information */
+		return "Plane";
+		break;
+	case SLURM_DIST_CYCLIC_CYCLIC:/* distribute tasks 1 per node:
+				   round robin: same for lowest
+				   level of logical processor (lllp) */
+		return "CCyclic";
+		break;
+	case SLURM_DIST_CYCLIC_BLOCK: /* cyclic for node and block for lllp  */
+		return "CBlock";
+		break;
+	case SLURM_DIST_BLOCK_CYCLIC: /* block for node and cyclic for lllp  */
+		return "BCyclic";
+		break;
+	case SLURM_DIST_BLOCK_BLOCK:	/* block for node and block for lllp  */
+		return "BBlock";
+		break;
+	case SLURM_NO_LLLP_DIST:	/* No distribution specified for lllp */
+	case SLURM_DIST_UNKNOWN:
+	default:
+		return "Unknown";
+
+	}
 }

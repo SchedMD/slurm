@@ -257,6 +257,7 @@ typedef struct dbd_job_start_msg {
 	char *   account;       /* Account name for those not running
 				 * with associations */
 	uint32_t alloc_cpus;	/* count of allocated processors */
+	uint32_t alloc_nodes;   /* how many nodes used in job */ 
 	uint32_t assoc_id;	/* accounting association id */
 	char *   cluster;       /* cluster job is being ran on */
 	char *   block_id;      /* Bluegene block id */
@@ -351,10 +352,12 @@ typedef struct dbd_step_start_msg {
 	uint32_t job_id;	/* job ID */
 	char *   name;		/* step name */
 	char *   nodes;		/* hosts allocated to the step */
+	uint32_t node_cnt;      /* how many nodes used in step */ 
 	time_t   start_time;	/* step start time */
 	time_t   job_submit_time;/* job submit time needed to find job record
 				  * in db */
 	uint32_t step_id;	/* step ID */
+	uint16_t task_dist;     /* layout method of step */
 	uint32_t total_procs;	/* count of allocated processors */
 	uint32_t total_tasks;	/* count of tasks for step */
 } dbd_step_start_msg_t;

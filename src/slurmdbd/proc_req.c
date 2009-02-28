@@ -1614,6 +1614,7 @@ static int  _job_start(slurmdbd_conn_t *slurmdbd_conn,
 	memset(&id_rc_msg, 0, sizeof(dbd_id_rc_msg_t));
 
 	job.total_procs = job_start_msg->alloc_cpus;
+	job.node_cnt = job_start_msg->alloc_nodes;
 	job.account = job_start_msg->account;
 	job.assoc_id = job_start_msg->assoc_id;
 	job.comment = job_start_msg->block_id;
@@ -2958,6 +2959,7 @@ static int  _step_start(slurmdbd_conn_t *slurmdbd_conn,
 	struct step_record step;
 	struct job_record job;
 	struct job_details details;
+	slurm_step_layout_t layout;
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
 
@@ -2983,6 +2985,7 @@ static int  _step_start(slurmdbd_conn_t *slurmdbd_conn,
 	memset(&step, 0, sizeof(struct step_record));
 	memset(&job, 0, sizeof(struct job_record));
 	memset(&details, 0, sizeof(struct job_details));
+	memset(&layout, 0, sizeof(slurm_step_layout_t));
 
 	job.assoc_id = step_start_msg->assoc_id;
 	job.db_index = step_start_msg->db_index;
@@ -2995,8 +2998,12 @@ static int  _step_start(slurmdbd_conn_t *slurmdbd_conn,
 	step.cpu_count = step_start_msg->total_procs;
 	details.num_tasks = step_start_msg->total_tasks;
 
+	layout.node_cnt = step_start_msg->node_cnt;
+	layout.task_dist = step_start_msg->task_dist;
+
 	job.details = &details;
 	step.job_ptr = &job;
+	step.step_layout = &layout;
 
 	rc = jobacct_storage_g_step_start(slurmdbd_conn->db_conn, &step);
 
