@@ -2718,6 +2718,7 @@ slurmdbd_pack_job_start_msg(uint16_t rpc_version,
 	if(rpc_version >= 5) {
 		packstr(msg->account, buffer);
 		pack32(msg->alloc_cpus, buffer);
+		pack32(msg->alloc_nodes, buffer);
 		pack32(msg->assoc_id, buffer);
 		packstr(msg->block_id, buffer);
 		packstr(msg->cluster, buffer);
@@ -2787,6 +2788,7 @@ slurmdbd_unpack_job_start_msg(uint16_t rpc_version,
 	if(rpc_version >= 5) {
 		safe_unpackstr_xmalloc(&msg_ptr->account, &uint32_tmp, buffer);
 		safe_unpack32(&msg_ptr->alloc_cpus, buffer);
+		safe_unpack32(&msg_ptr->alloc_nodes, buffer);
 		safe_unpack32(&msg_ptr->assoc_id, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->block_id, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->cluster, &uint32_tmp, buffer);
@@ -3342,9 +3344,11 @@ slurmdbd_pack_step_start_msg(uint16_t rpc_version, dbd_step_start_msg_t *msg,
 		pack32(msg->job_id, buffer);
 		packstr(msg->name, buffer);
 		packstr(msg->nodes, buffer);
+		pack32(msg->node_cnt, buffer);
 		pack_time(msg->start_time, buffer);
 		pack_time(msg->job_submit_time, buffer);
 		pack32(msg->step_id, buffer);
+		pack16(msg->task_dist, buffer);
 		pack32(msg->total_procs, buffer);
 		pack32(msg->total_tasks, buffer);
 	} else {
@@ -3373,9 +3377,11 @@ slurmdbd_unpack_step_start_msg(uint16_t rpc_version,
 		safe_unpack32(&msg_ptr->job_id, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->name, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->nodes, &uint32_tmp, buffer);
+		safe_unpack32(&msg_ptr->node_cnt, buffer);
 		safe_unpack_time(&msg_ptr->start_time, buffer);
 		safe_unpack_time(&msg_ptr->job_submit_time, buffer);
 		safe_unpack32(&msg_ptr->step_id, buffer);
+		safe_unpack16(&msg_ptr->task_dist, buffer);
 		safe_unpack32(&msg_ptr->total_procs, buffer);
 		safe_unpack32(&msg_ptr->total_tasks, buffer);
 	} else {

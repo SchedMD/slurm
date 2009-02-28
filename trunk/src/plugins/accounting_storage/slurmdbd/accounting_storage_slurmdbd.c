@@ -1478,6 +1478,7 @@ extern int jobacct_storage_p_job_start(void *db_conn, char *cluster_name,
 		      "Not inputing this job, it has no submit time.");
 		return SLURM_ERROR;
 	}
+	memset(&req, 0, sizeof(dbd_job_start_msg_t));
 
 	req.alloc_cpus    = job_ptr->total_procs;
 	req.cluster       = cluster_name;
@@ -1487,6 +1488,11 @@ extern int jobacct_storage_p_job_start(void *db_conn, char *cluster_name,
 	select_g_get_jobinfo(job_ptr->select_jobinfo, 
 			     SELECT_DATA_BLOCK_ID, 
 			     &block_id);
+	select_g_get_jobinfo(job_ptr->select_jobinfo, 
+			     SELECT_DATA_NODE_CNT, 
+			     &req.alloc_nodes);
+#else
+	req.alloc_nodes      = job_ptr->node_cnt;
 #endif
 	req.block_id      = block_id;
 	req.db_index      = job_ptr->db_index;
@@ -1497,6 +1503,7 @@ extern int jobacct_storage_p_job_start(void *db_conn, char *cluster_name,
 	req.job_state     = job_ptr->job_state & (~JOB_COMPLETING);
 	req.name          = job_ptr->name;
 	req.nodes         = job_ptr->nodes;
+
 	req.partition     = job_ptr->partition;
 	req.req_cpus      = job_ptr->num_procs;
 	req.resv_id       = job_ptr->resv_id;
@@ -1562,6 +1569,7 @@ extern int jobacct_storage_p_job_complete(void *db_conn,
 		return SLURM_ERROR;
 	}
 
+	memset(&req, 0, sizeof(dbd_job_comp_msg_t));
 	req.assoc_id    = job_ptr->assoc_id;
 	req.db_index    = job_ptr->db_index;
 	req.end_time    = job_ptr->end_time;
@@ -1588,7 +1596,7 @@ extern int jobacct_storage_p_job_complete(void *db_conn,
 extern int jobacct_storage_p_step_start(void *db_conn,
 					struct step_record *step_ptr)
 {
-	uint32_t cpus = 0, tasks = 0;
+	uint32_t cpus = 0, tasks = 0, nodes = 0, task_dist = 0;
 	char node_list[BUFFER_SIZE];
 	slurmdbd_msg_t msg;
 	dbd_step_start_msg_t req;
@@ -1608,15 +1616,20 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 		snprintf(node_list, BUFFER_SIZE, "%s",
 			 step_ptr->job_ptr->nodes);
 	}
-	
+	select_g_get_jobinfo(step_ptr->job_ptr->select_jobinfo, 
+			     SELECT_DATA_NODE_CNT, 
+			     &nodes);
 #else
 	if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
 		cpus = tasks = step_ptr->job_ptr->total_procs;
 		snprintf(node_list, BUFFER_SIZE, "%s",
 			 step_ptr->job_ptr->nodes);
+		nodes = step_ptr->job_ptr->node_cnt;
 	} else {
 		cpus = step_ptr->cpu_count; 
 		tasks = step_ptr->step_layout->task_cnt;
+		nodes = step_ptr->step_layout->node_cnt;
+		task_dist = step_ptr->step_layout->task_dist;
 		snprintf(node_list, BUFFER_SIZE, "%s", 
 			 step_ptr->step_layout->node_list);
 	}
@@ -1629,16 +1642,21 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 		      "Not inputing this job, it has no submit time.");
 		return SLURM_ERROR;
 	}
+	memset(&req, 0, sizeof(dbd_step_start_msg_t));
 
 	req.assoc_id    = step_ptr->job_ptr->assoc_id;
 	req.db_index    = step_ptr->job_ptr->db_index;
 	req.job_id      = step_ptr->job_ptr->job_id;
 	req.name        = step_ptr->name;
 	req.nodes       = node_list;
+	req.node_cnt    = nodes;
 	req.start_time  = step_ptr->start_time;
 	if (step_ptr->job_ptr->details)
 		req.job_submit_time   = step_ptr->job_ptr->details->submit_time;
 	req.step_id     = step_ptr->step_id;
+	if (step_ptr->step_layout)
+		req.task_dist   = step_ptr->step_layout->task_dist;
+	req.task_dist   = task_dist;
 	req.total_procs = cpus;
 	req.total_tasks = tasks;
 
@@ -1699,6 +1717,7 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 		return SLURM_ERROR;
 	}
 
+	memset(&req, 0, sizeof(dbd_step_comp_msg_t));
 	req.assoc_id    = step_ptr->job_ptr->assoc_id;
 	req.db_index    = step_ptr->job_ptr->db_index;
 	req.end_time    = time(NULL);	/* called at step completion */

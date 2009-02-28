@@ -89,6 +89,7 @@ typedef struct {
 
 typedef struct {
 	uint32_t alloc_cpus;
+	uint32_t alloc_nodes;
 	char    *account;
 	uint32_t associd;
 	char	*blockid;
@@ -140,6 +141,7 @@ typedef struct {
 				       client side so does not need to
 				       be packed */
 	uint32_t ncpus;
+	uint32_t nnodes;
 	char *nodes;
 	uint32_t ntasks;
 	uint32_t requid;
@@ -151,6 +153,7 @@ typedef struct {
 	uint32_t suspended;
 	uint32_t sys_cpu_sec;
 	uint32_t sys_cpu_usec;
+	uint16_t task_dist;
 	uint32_t tot_cpu_sec;
 	uint32_t tot_cpu_usec;
 	uint32_t user_cpu_sec;

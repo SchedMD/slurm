@@ -411,6 +411,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		"t1.priority",
 		"t1.req_cpus",
 		"t1.alloc_cpus",
+		"t1.alloc_nodes",
 		"t1.nodelist",
 		"t1.kill_requid",
 		"t1.qos",
@@ -432,8 +433,10 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		"t1.state",
 		"t1.kill_requid",
 		"t1.comp_code",
+		"t1.nodes",
 		"t1.cpus",
 		"t1.tasks",
+		"t1.task_dist",
 		"t1.user_sec",
 		"t1.user_usec",
 		"t1.sys_sec",
@@ -481,6 +484,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		JOB_REQ_PRIORITY,
 		JOB_REQ_REQ_CPUS,
 		JOB_REQ_ALLOC_CPUS,
+		JOB_REQ_ALLOC_NODES,
 		JOB_REQ_NODELIST,
 		JOB_REQ_KILL_REQUID,
 		JOB_REQ_QOS,
@@ -500,8 +504,10 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		STEP_REQ_STATE,
 		STEP_REQ_KILL_REQUID,
 		STEP_REQ_COMP_CODE,
+		STEP_REQ_NODES,
 		STEP_REQ_CPUS,
 		STEP_REQ_TASKS,
+		STEP_REQ_TASKDIST,
 		STEP_REQ_USER_SEC,
 		STEP_REQ_USER_USEC,
 		STEP_REQ_SYS_SEC,
@@ -649,6 +655,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		job = create_jobacct_job_rec();
 
 		job->alloc_cpus = atoi(row[JOB_REQ_ALLOC_CPUS]);
+		job->alloc_nodes = atoi(row[JOB_REQ_ALLOC_NODES]);
 		job->associd = atoi(row[JOB_REQ_ASSOCID]);
 		job->resvid = atoi(row[JOB_REQ_RESVID]);
 
@@ -850,8 +857,10 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 			step->state = atoi(step_row[STEP_REQ_STATE]);
 			step->exitcode = atoi(step_row[STEP_REQ_COMP_CODE]);
 			step->ncpus = atoi(step_row[STEP_REQ_CPUS]);
+			step->nnodes = atoi(step_row[STEP_REQ_NODES]);
 
 			step->ntasks = atoi(step_row[STEP_REQ_TASKS]);
+			step->task_dist = atoi(step_row[STEP_REQ_TASKDIST]);
 			if(!step->ntasks)
 				step->ntasks = step->ncpus;
 

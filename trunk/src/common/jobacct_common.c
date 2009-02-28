@@ -216,6 +216,7 @@ extern void pack_jobacct_job_rec(void *object, uint16_t rpc_version, Buf buffer)
 
 	if(rpc_version >= 5) {
 		pack32(job->alloc_cpus, buffer);
+		pack32(job->alloc_nodes, buffer);
 		pack32(job->associd, buffer);
 		packstr(job->account, buffer);
 		packstr(job->blockid, buffer);
@@ -373,6 +374,7 @@ extern int unpack_jobacct_job_rec(void **job, uint16_t rpc_version, Buf buffer)
 
 	if(rpc_version >= 5) {
 		safe_unpack32(&job_ptr->alloc_cpus, buffer);
+		safe_unpack32(&job_ptr->alloc_nodes, buffer);
 		safe_unpack32(&job_ptr->associd, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->account, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->blockid, &uint32_tmp, buffer);
@@ -549,6 +551,7 @@ extern void pack_jobacct_step_rec(jobacct_step_rec_t *step,
 		pack_time(step->end, buffer);
 		pack32((uint32_t)step->exitcode, buffer);
 		pack32(step->ncpus, buffer);
+		pack32(step->nnodes, buffer);
 		packstr(step->nodes, buffer);
 		pack32(step->ntasks, buffer);
 		pack32(step->requid, buffer);
@@ -560,6 +563,7 @@ extern void pack_jobacct_step_rec(jobacct_step_rec_t *step,
 		pack32(step->suspended, buffer);
 		pack32(step->sys_cpu_sec, buffer);
 		pack32(step->sys_cpu_usec, buffer);
+		pack16(step->task_dist, buffer);
 		pack32(step->tot_cpu_sec, buffer);
 		pack32(step->tot_cpu_usec, buffer);
 		pack32(step->user_cpu_sec, buffer);
@@ -602,6 +606,7 @@ extern int unpack_jobacct_step_rec(jobacct_step_rec_t **step,
 		safe_unpack32(&uint32_tmp, buffer);
 		step_ptr->exitcode = (int32_t)uint32_tmp;
 		safe_unpack32(&step_ptr->ncpus, buffer);
+		safe_unpack32(&step_ptr->nnodes, buffer);
 		safe_unpackstr_xmalloc(&step_ptr->nodes, &uint32_tmp, buffer);
 		safe_unpack32(&step_ptr->ntasks, buffer);
 		safe_unpack32(&step_ptr->requid, buffer);
@@ -615,6 +620,7 @@ extern int unpack_jobacct_step_rec(jobacct_step_rec_t **step,
 		safe_unpack32(&step_ptr->suspended, buffer);
 		safe_unpack32(&step_ptr->sys_cpu_sec, buffer);
 		safe_unpack32(&step_ptr->sys_cpu_usec, buffer);
+		safe_unpack16(&step_ptr->task_dist, buffer);
 		safe_unpack32(&step_ptr->tot_cpu_sec, buffer);
 		safe_unpack32(&step_ptr->tot_cpu_usec, buffer);
 		safe_unpack32(&step_ptr->user_cpu_sec, buffer);
