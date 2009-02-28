@@ -295,14 +295,6 @@ if {[wait_for_file $spank_out] == 0} {
 	set matches_srun   0
 	spawn $bin_sort $spank_out
 	expect {
-		-re "spank_get_item: argv" {
-			incr matches
-			exp_continue
-		}
-		-re "spank_get_item: my_uid=" {
-			incr matches
-			exp_continue
-		}
 		-re "slurm_spank_exit: opt_arg=($number)" {
 			if {$expect_out(1,string) == 4} {
 				incr matches_sbatch
@@ -319,6 +311,14 @@ if {[wait_for_file $spank_out] == 0} {
 			if {$expect_out(1,string) == 5} {
 				incr matches_srun
 			}
+			exp_continue
+		}
+		-re "spank_get_item: argv" {
+			incr matches
+			exp_continue
+		}
+		-re "spank_get_item: my_uid=" {
+			incr matches
 			exp_continue
 		}
 		eof {
