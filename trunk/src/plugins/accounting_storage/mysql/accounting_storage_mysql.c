@@ -2572,7 +2572,6 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "control_host", "tinytext not null default ''" },
 		{ "control_port", "mediumint not null default 0" },
 		{ "rpc_version", "mediumint not null default 0" },
-		{ "valid_qos", "blob" },
 		{ NULL, NULL}		
 	};
 
@@ -7739,14 +7738,12 @@ extern List acct_storage_p_get_clusters(mysql_conn_t *mysql_conn, uid_t uid,
 		"control_host",
 		"control_port",
 		"rpc_version",
-		"valid_qos",
 	};
 	enum {
 		CLUSTER_REQ_NAME,
 		CLUSTER_REQ_CH,
 		CLUSTER_REQ_CP,
 		CLUSTER_REQ_VERSION,
-		CLUSTER_REQ_VALID_QOS,
 		CLUSTER_REQ_COUNT
 	};
 
@@ -7833,13 +7830,6 @@ empty:
 		cluster->control_host = xstrdup(row[CLUSTER_REQ_CH]);
 		cluster->control_port = atoi(row[CLUSTER_REQ_CP]);
 		cluster->rpc_version = atoi(row[CLUSTER_REQ_VERSION]);
-		cluster->valid_qos_list = list_create(slurm_destroy_char);
-
-		if(row[CLUSTER_REQ_VALID_QOS] && row[CLUSTER_REQ_VALID_QOS][0])
-			slurm_addto_char_list(assoc->qos_list,
-					      row[CLUSTER_REQ_VALID_QOS]+1);
-		else 
-			list_append(cluster->valid_qos_list, xstrdup("all"));
 	}
 	mysql_free_result(result);
 

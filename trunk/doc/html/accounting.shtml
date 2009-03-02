@@ -15,6 +15,7 @@ jobs which have already terminated and can be viewed using the
 <b>sacct</b> can also report resource usage for individual tasks, 
 which can be useful to detect load imbalance between the tasks. 
 The <b>sstat</b> tool can be used to status a currently running job.
+It also can give you valuable information about imbalance between tasks.
 The <b>sreport</b> can be used to generate reports based upon all jobs
 executed in a particular time interval.</p>
 
@@ -44,11 +45,15 @@ database optionally using either
 or SlurmDBD for added security.</li>
 </ul>
 
-<p>The use of sacct or sstat to view information about completed jobs 
-is dependent upon both JobAcctGatherType and AccountingStorageType
+<p>The use of sacct to view information about jobs 
+is dependent upon AccountingStorageType
 being configured to collect and store that information.
 The use of sreport is dependent upon some database being 
 used to store that information.</p>
+
+<p>The use of sacct or sstat to view information about resource usage
+  within jobs is dependent upon both JobAcctGatherType and AccountingStorageType
+  being configured to collect and store that information.</p>
 
 <p>Storing the accounting information into text files is 
 very simple. Just configure the appropriate plugin (e.g. 
@@ -212,20 +217,35 @@ Note that you can write accounting information to SlurmDBD
 while job completion records are written to a text file or 
 not maintained at all. 
 If you don't set the configuration parameters that begin 
-with "JobComp" then job completion records will not be recorded.</p>
+with "AccountingStorage" then accounting information will not be
+referenced or recorded.</p>
 
 <ul>
 <li><b>AccountingStorageEnforce</b>:
-If you want to prevent users from running jobs if their <i>association</i>
-is not in the database, then set this to "1". 
+This option contains a comma separated list of options you may want to
+ enforce.  The valid options are 
+<ul>
+<li>associations - This will prevent users from running jobs if
+their <i>association</i> is not in the database. This option will
+prevent users from accessing invalid accounts.  
+</li>
+<li>limits - This will enforce limits set to associations.  By setting
+  this option the 'associations' option is also set.
+</li>
+<li>wckeys - This will prevent users from running jobs under a wckey
+  that they don't have access to.  By using this option the
+  'associations' option is also set.  The 'TrackWCKey' option is also
+  set to true.
+</li>
+</ul>
 (NOTE: The association is a combination of cluster, account, 
 user names and optional partition name.)
+<br>
 Without AccountingStorageEnforce being set (the default behavior) 
-jobs will be executed based upon policies configured in SLURM on each cluster. 
-This option will prevent users from accessing invalid accounts.  
-Setting this to "2" will also cause association limits to be
-enforced.  When set to "1" association limits will not be
-enforced.  It is a good idea to run in this mode when running a
+jobs will be executed based upon policies configured in SLURM on each
+cluster.
+<br> 
+It is a good idea to run without the option 'limits' set when running a
 scheduler on top of slurm, like Moab, that does not update in real
 time their limits per association.</li>
 
@@ -245,6 +265,13 @@ Set to "accounting_storage/slurmdbd".</li>
 <li><b>ClusterName</b>:
 Set to a unique name for each Slurm-managed cluster so that 
 accounting records from each can be identified.</li>
+<li><b>TrackWCKey</b>:
+Boolean.  If you want to track wckeys (Workload Characterization Key)
+  of users.  A Wckey is an orthogonal way to do accounting against
+  maybe a group of unrelated accounts. WCKeys can be definded using
+  sacctmgr add wckey 'name'.  When a job is run use srun --wckey and 
+  time will be summed up for this wckey.
+</li>
 </ul>
 
 <h2>SlurmDBD Configuration</h2>
@@ -446,8 +473,8 @@ with a default account of <i>test</i> execute:</p>
 sacctmgr add user da default=test
 </pre>
 
-<p>If <b>AccountingStorageEnforce=1</b> is configured in the slurm.conf of 
-the cluster <i>snowflake</i> then user <i>da</i> would be
+<p>If <b>AccountingStorageEnforce=associations</b> is configured in
+the slurm.conf of the cluster <i>snowflake</i> then user <i>da</i> would be
 allowed to run in account <i>test</i> and any other accounts added
 in the future.
 Any attempt to use other accounts will result in the job being 
@@ -459,7 +486,6 @@ the job submission command.</p>
 Partition='partitionname' option to specify an association specific to
 a slurm partition.</p>
 
-<!-- For future use
 <h2>Cluster Options</h2>
 
 <p>When either adding or modifying a cluster, these are the options 
@@ -467,48 +493,28 @@ available with sacctmgr:
 <ul>
 <li><b>Name=</b> Cluster name</li>
 
-<li><b>Fairshare=</b> Used for determining priority</li>
-
-<li><b>MaxJobs=</b> Limit number of jobs a user can run in this account</li>
-
-<li><b>MaxNodes=</b>Limit number of nodes a user can allocate in this 
-account</li>
-
-<li><b>MaxWall=</b>Limit wall clock time a job can run</li>
-
-<li><b>MaxCPUSecs=</b> Limit cpu seconds a job can run</li>
 </ul>
-!-->
 
 <h2>Account Options</h2>
 
 <p>When either adding or modifying an account, the following sacctmgr 
 options are available:
 <ul>
-<li><b>Description=</b> Description of the account. (Required on creation)</li>
-
-<li><b>Organization=</b>Organization of the account. (Required on creation)</li>
-
-<li><b>Name=</b> Name of account</li>
-
 <li><b>Cluster=</b> Only add this account to these clusters.
 The account is added to all defined clusters by default.</li>
 
-<li><b>Parent=</b> Make this account a child of this other account.</li>
+<li><b>Description=</b> Description of the account. (Default is
+  account name)</li>
 
-<!-- For future use
-<li><b>QOS=</b> Quality of Service</li>
+<li><b>Name=</b> Name of account</li>
 
-<li><b>Fairshare=</b> Used for determining priority</li>
+<li><b>Organization=</b>Organization of the account. (Default is
+  parent account unless parent account is root then organization is
+  set to the account name.)</li>
 
-<li><b>MaxJobs=</b> Limit number of jobs a user can run in this account</li>
+<li><b>Parent=</b> Make this account a child of this other account
+  (already added).</li>
 
-<li><b>MaxNodes=</b>Limit number of nodes a user can allocate in this account</li>
-
-<li><b>MaxWall=</b>Limit wall time a job can run</li>
-
-<li><b>MaxCPUSecs=</b> Limit cpu seconds a job can run</li>
-!-->
 </ul>
 
 <h2>User Options</h2>
@@ -517,10 +523,7 @@ The account is added to all defined clusters by default.</li>
 options are available:
 
 <ul>
-<li><b>Name=</b> User name</li>
-
-<li><b>DefaultAccount=</b> Default account for the user, used when no account 
-is specified when a job is submitted. (Required on creation)</li>
+<li><b>Account=</b> Account(s) to add user to</li>
 
 <li><b>AdminLevel=</b> This field is used to allow a user to add accounting 
 privileges to this user. Valid options are 
@@ -531,28 +534,20 @@ privileges to this user. Valid options are
 and remove accounts and clusters</li>
 </ul>
 
-<li><b>Account=</b> Account(s) to add user to</li>
-
 <li><b>Cluster=</b> Only add to accounts on these clusters (default is all clusters)</li>
+
+<li><b>DefaultAccount=</b> Default account for the user, used when no account 
+is specified when a job is submitted. (Required on creation)</li>
+
+<li><b>DefaultWCKey=</b> Default wckey for the user, used when no wckey 
+is specified when a job is submitted. (Only used when tracking wckeys.)</li>
+
+<li><b>Name=</b> User name</li>
 
 <li><b>Partition=</b> Name of Slurm partition this association applies to</li>
 
-<!-- For future use
-<li><b>QOS=</b> Quality of Service</li>
-
-<li><b>Fairshare=</b> Used for determining priority</li>
-
-<li><b>MaxJobs=</b> Limit number of jobs a user can run in this account</li>
-
-<li><b>MaxNodes=</b> Limit number of nodes a user can allocate in this account</li>
-
-<li><b>MaxWall=</b> Limit wall time a job can run</li>
-
-<li><b>MaxCPUSecs=</b> Limit cpu seconds a job can run</li>
-!-->
 </ul>
 
-<!-- For future use
 <h2>Limit enforcement</h2>
 
 <p>When limits are developed they will work in this order...
@@ -561,7 +556,95 @@ if not we will refer to the account associated with the job.
 If the account doesn't have the limit set we will refer to 
 the cluster's limits. 
 If the cluster doesn't have the limit set no limit will be enforced.
-!-->
+<p>All of the above entities can include limits as described below...
+
+<ul>
+
+<li><b>Fairshare=</b> Used for determining priority.  Essentially
+  this is the amount of claim this association and it's childern have
+  to the above system.</li>
+</li>
+
+<!-- For future use
+<li><b>GrpCPUMins=</b> A hard limit of cpu minutes to be used by jobs
+  running from this association and its childern.  If this limit is
+  reached all jobs running in this group will be killed, and no new
+  jobs will be allowed to run.
+</li>
+-->
+
+<!-- For future use
+<li><b>GrpCPUs=</b> The total count of cpus able to be used at any given
+  time from jobs running from this association and its childern.  If
+  this limit is reached new jobs will be queued but only allowed to
+  run after resources have been relinquished from this group.
+</li>
+-->
+
+<li><b>GrpJobs=</b> The total number of jobs able to run at any given
+  time from this association and its childern.  If
+  this limit is reached new jobs will be queued but only allowed to
+  run after previous jobs complete from this group.
+</li>
+
+<li><b>GrpNodes=</b> The total count of nodes able to be used at any given
+  time from jobs running from this association and its childern.  If
+  this limit is reached new jobs will be queued but only allowed to
+  run after resources have been relinquished from this group.
+</li>
+
+<li><b>GrpSubmitJobs=</b> The total number of jobs able to be submitted
+  to the system at any given time from this association and its childern.  If
+  this limit is reached new submission requests will be denied until
+  previous jobs complete from this group.
+</li>
+
+<li><b>GrpWall=</b> The maximum wall clock time any job submitted to
+  this group can run for.  If this limit is reached submission requests
+  will be denied. 
+</li>
+
+<!-- For future use
+<li><b>MaxCPUMinsPerJob=</b> A limit of cpu minutes to be used by jobs
+  running from this association.  If this limit is
+  reached the job will be killed will be allowed to run.
+</li>
+-->
+
+<!-- For future use
+<li><b>MaxCPUsPerJob=</b> The maximum size in cpus any given job can
+  have from this association.  If this limit is reached the job will
+  be denied at submission.
+</li>
+-->
+
+<li><b>MaxJobs=</b> The total number of jobs able to run at any given
+  time from this association.  If this limit is reached new jobs will
+  be queued but only allowed to run after previous jobs complete from
+  this association.
+</li>
+
+<li><b>MaxNodesPerJob=</b> The maximum size in nodes any given job can
+  have from this association.  If this limit is reached the job will
+  be denied at submission.
+</li>
+ 
+<li><b>MaxSubmitJobs=</b> The maximum number of jobs able to be submitted
+  to the system at any given time from this association.  If
+  this limit is reached new submission requests will be denied until
+  previous jobs complete from this association.
+</li>
+
+<li><b>MaxWallDurationPerJob=</b> The maximum wall clock time any job
+  submitted to this association can run for.  If this limit is reached
+  the job will be denied at submission.
+</li>
+
+<li><b>QOS=</b> comma separated list of QOS's this association is
+  able to run.
+
+</li>
+</ul>
 
 <h2>Modifying Entities</h2>
 
