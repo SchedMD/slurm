@@ -18,6 +18,10 @@ AC_DEFUN([X_AC_GTK],
     ac_have_gtk="yes"
     _x_ac_pkcfg_bin="no"
 
+    if test -d "/usr/lib64/pkgconfig"; then
+	    PKG_CONFIG_PATH="/usr/lib64/pkgconfig/"
+    fi
+ 
 ### Check for pkg-config program
     AC_ARG_WITH(
 	    [pkg-config],
