@@ -8,7 +8,7 @@ by these various MPI implementation.
 <ol>
 <li>SLURM directly launches the tasks and performs initialization 
 of communications (Quadrics MPI, MPICH2, MPICH-GM, MPICH-MX, 
-MVAPICH, MVAPICH2 and some MPICH1 modes).</li>
+MVAPICH, MVAPICH2, some MPICH1 modes, and future versions of OpenMPI).</li>
 <li>SLURM creates a resource allocation for the job and then
 mpirun launches tasks using SLURM's infrastructure (OpenMPI,
 LAM/MPI and HP-MPI).</li>
@@ -58,20 +58,31 @@ To launch more than one task per node using the
 option will be required to explicitly disable the LAM/MPI plugin.</p>
 
 <h2>Future Use</h2>
-There is work underway in both SLURM and Open MPI to support task launch
+<p>There is work underway in both SLURM and Open MPI to support task launch
 using the <span class="commandline">srun</span> command. 
 We expect this mode of operation to be supported late in 2009.
 It may differ slightly from the description below.
 It relies upon SLURM version 2.0 (or higher) managing 
 reservations of communication ports for the Open MPI's use.
-Specify the range of ports to be reserved in the <i>slurm.conf</i> 
-file using the <i>MpiParams</i> parameter.
-For example: <i>MpiParams=ports=12000-12999</i>.
-Then launch tasks using the <span class="commandline">srun</span> command 
+The system administrator must specify the range of ports to be reserved 
+in the <i>slurm.conf</i> file using the <i>MpiParams</i> parameter.
+For example: <br>
+<i>MpiParams=ports=12000-12999</i></p>
+
+<p>Launch tasks using the <span class="commandline">srun</span> command 
 plus the option <i>--resv-ports</i>.
 The ports reserved on every allocated node will be identified in an 
-environment variable as shown here: 
+environment variable available to the tasks as shown here: <br>
 <i>SLURM_STEP_RESV_PORTS=12000-12015</i></p>
+
+<p>If the ports reserved for a job step are found by the Open MPI library
+to be in use, a message of this form will be printed and the job step
+will be re-launched:<br>
+<i>srun: error: sun000: task 0 unble to claim reserved port, retrying</i><br>
+After three failed attempts, the job step will be aborted.
+Repeated failures should be reported to your system administrator in 
+order to rectify the problem by cancelling the processes holding those
+ports.</p>
 <hr size=4 width="100%">
 
 
@@ -291,6 +302,6 @@ sbatch: Submitted batch job 1234
 tasks. These tasks are not managed by SLURM since they are launched 
 outside of its control.</p>
  
-<p style="text-align:center;">Last modified 26 February 2009</p>
+<p style="text-align:center;">Last modified 2 March 2009</p>
 
 <!--#include virtual="footer.txt"-->

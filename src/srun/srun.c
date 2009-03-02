@@ -103,6 +103,13 @@
 #  endif
 #endif /* defined HAVE_DECL_STRSIGNAL && !HAVE_DECL_STRSIGNAL */
 
+#ifndef OPEN_MPI_PORT_ERROR
+/* This exit code indicates the launched Open MPI tasks could 
+ *	not open the reserved port. It was already open by some
+ *	other process. */
+#define OPEN_MPI_PORT_ERROR 108
+#endif
+
 #define MAX_RETRIES 20
 #define MAX_ENTRIES 50
 
@@ -114,6 +121,11 @@ mpi_plugin_client_info_t mpi_job_info[1];
 static struct termios termdefaults;
 uint32_t global_rc = 0;
 srun_job_t *job = NULL;
+
+#define MAX_STEP_RETRIES 4
+time_t launch_start_time;
+bool   retry_step_begin = false;
+int    retry_step_cnt = 0;
 
 struct {
 	bitstr_t *start_success;
@@ -347,6 +359,7 @@ int srun(int ac, char **av)
 	xfree(env->task_count);
 	xfree(env);
 	
+ re_launch:
 	_task_state_struct_init(opt.nprocs);
 	slurm_step_launch_params_t_init(&launch_params);
 	launch_params.gid = opt.gid;
@@ -402,6 +415,7 @@ int srun(int ac, char **av)
 	}
 
 	update_job_state(job, SRUN_JOB_LAUNCHING);
+	launch_start_time = time(NULL);
 	if (slurm_step_launch(job->step_ctx, &launch_params, &callbacks) != 
 	    SLURM_SUCCESS) {
 		error("Application launch failed: %m");
@@ -428,6 +442,18 @@ int srun(int ac, char **av)
 	}
 
 	slurm_step_launch_wait_finish(job->step_ctx);
+	if (retry_step_begin && (retry_step_cnt < MAX_STEP_RETRIES)) {
+		retry_step_begin = false;
+		slurm_step_ctx_destroy(job->step_ctx);
+		if (got_alloc) {
+			if (create_job_step(job, true) < 0)
+				exit(1);
+		} else {
+			if (create_job_step(job, true) < 0)
+				exit(1);
+		}
+		goto re_launch;
+	}
 
 cleanup:
 	if(got_alloc) {
@@ -979,8 +1005,28 @@ _task_finish(task_exit_msg_t *msg)
 		if (rc != 0) {
 			bit_or(task_state.finish_abnormal, tasks_exited);
 			node_list = _taskids_to_nodelist(tasks_exited);
-			error("%s: task %s: Exited with exit code %d", 
-			      node_list, buf, rc);
+			if ((rc == OPEN_MPI_PORT_ERROR) &&
+			    (opt.resv_port_cnt != NO_VAL) &&
+			    (difftime(time(NULL), launch_start_time) <= 
+			     slurm_get_msg_timeout())) {
+				if (!retry_step_begin) {
+					retry_step_begin = true;
+					retry_step_cnt++;
+				}
+				if (retry_step_cnt < MAX_STEP_RETRIES) {
+					error("%s: task %s unable to claim "
+					      "reserved port, retrying",
+					      node_list, buf, rc);
+				} else {
+					error("%s: task %s unable to claim "
+					      "reserved port, aborting",
+					      node_list, buf, rc);
+					opt.kill_bad_exit = true;
+				}
+			} else {
+				error("%s: task %s: Exited with exit code %d",
+				      node_list, buf, rc);
+			}
 		} else {
 			bit_or(task_state.finish_normal, tasks_exited);
 			verbose("task %s: Completed", buf);
