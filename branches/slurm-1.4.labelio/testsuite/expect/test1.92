@@ -1,0 +1,297 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Test of task distribution support on multi-core systems.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "WARNING: ..." with an explanation of why the test can't be made, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2005-2007 The Regents of the University of California.
+# Copyright (C) 2008 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+# 
+# This file is part of SLURM, a resource management program.
+# For details, see <https://computing.llnl.gov/linux/slurm/>.
+# Please also read the included file: DISCLAIMER.
+#  
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+# 
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+# 
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id     "1.92"
+set exit_code   0
+set file_bash   "test$test_id.bash"
+
+print_header $test_id
+
+if { [test_bluegene] } {
+	send_user "\nWARNING: This test is not compatible with bluegene systesm\n"
+	exit 0
+}
+
+make_bash_script $file_bash {
+echo nodeid:$SLURM_NODEID taskid:$SLURM_PROCID localid:$SLURM_LOCALID
+exit 0
+}
+
+#
+# Create an allocation
+#
+set timeout $max_job_delay
+set salloc_pid [spawn $salloc -N2 -n4 --verbose -t2 $bin_bash]
+expect {
+	-re "More processors requested than permitted" {
+		send_user "\nWARNING: can't test srun task distribution\n"
+		exit 0
+	}
+	-re "Node count specification invalid" {
+		send_user "\nWARNING: can't test srun task distribution\n"
+		exit 0
+	}
+	-re $prompt {
+		send "$srun -l -c1 $file_bash | sort -n\n"
+	}
+	timeout {
+		send_user "\nFAILURE: salloc not responding\n"
+		slow_kill $salloc_pid
+		exit 1
+	}
+}
+
+#############################################################################
+#
+# Run a job step to get allocated processor count
+#
+set mask 0
+set task_cnt 0
+set prev_node -1
+set node_cnt 0
+expect {
+	-re "nodeid:($number) taskid:($number)" {
+		set this_node $expect_out(1,string)
+		set this_tid  $expect_out(2,string)
+		incr task_cnt 1
+		if {$this_node != $prev_node} {
+			incr node_cnt 1
+			set prev_node $this_node
+		}
+		exp_continue
+	}
+	-re "error" {
+		send_user "\nFAILURE: some error occurred\n"
+		set exit_code 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: salloc not responding "
+		send_user "or failure to recognize prompt\n"
+		slow_kill $salloc_pid
+		exit 1
+	}
+	-re $prompt
+}
+
+if {$node_cnt != 2} {
+	send_user "\nWARNING: need 2 nodes to perform test\n"
+	exit $exit_code
+}
+
+if {$task_cnt < (2 * $node_cnt)} {
+        send_user "\nWARNING: need at least 2 CPUs per node, test is not applicable\n"
+        exit $exit_code
+}
+
+#############################################################################
+#
+# Run a job step with block distribution
+#
+set this_cnt  0
+set prev_node -1
+set this_node -1
+send "$srun -l -n $task_cnt -m block $file_bash | sort -n\n"
+expect {
+	-re "nodeid:($number) taskid:($number) localid:($number)" {
+		set this_node $expect_out(1,string)
+		set this_tid  $expect_out(2,string)
+		set this_lid  $expect_out(3,string)
+		incr this_cnt 1
+		if {$prev_node != $this_node} {
+			if {$prev_node > $this_node } {
+				send_user "\nFAILURE: incorrect distribution "
+				send_user " $this_node, $prev_node\n"
+				set exit_code 1
+			}
+			set prev_node $this_node
+			set prev_cnt 1
+		} else {
+			incr prev_cnt 1
+		}
+		exp_continue
+	}
+	-re "error" {
+		send_user "\nFAILURE: some error occurred\n"
+		set exit_code 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding "
+		send_user "or failure to recognize prompt\n"
+		set exit_code 1
+	}
+	-re $prompt
+}
+if {$prev_node > $this_node } {
+	send_user "\nFAILURE: incorrect final distribution\n"
+	set exit_code 1
+}
+if {$this_cnt != $task_cnt} {
+	send_user "\nFAILURE: task count inconsistency ($this_cnt,$task_cnt)\n"
+	set exit_code 1
+}
+
+#############################################################################
+#
+# Run a job step with cyclic distribution
+#
+set block_size 1
+set this_cnt  0
+set prev_node -1
+set this_node -1
+set prev_cnt  $block_size
+send "$srun -l -n $task_cnt -m cyclic $file_bash | sort -n\n"
+expect {
+	-re "nodeid:($number) taskid:($number) localid:($number)" {
+		set this_node $expect_out(1,string)
+		set this_tid  $expect_out(2,string)
+		set this_lid  $expect_out(3,string)
+		incr this_cnt 1
+		if {$prev_node != $this_node} {
+			if {$prev_cnt != $block_size } {
+				send_user "\nFAILURE: incorrect distribution "
+				send_user " $this_node, $prev_node, $prev_cnt\n"
+				set exit_code 1
+			}
+			set prev_node $this_node
+			set prev_cnt 1
+		} else {
+			incr prev_cnt 1
+		}
+		exp_continue
+	}
+	-re "error" {
+		send_user "\nFAILURE: some error occurred\n"
+		set exit_code 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding "
+		send_user "or failure to recognize prompt\n"
+		set exit_code 1
+	}
+	-re $prompt
+}
+if {$prev_cnt != $block_size} {
+	send_user "\nFAILURE: incorrect final distribution\n"
+	set exit_code 1
+}
+if {$this_cnt != $task_cnt} {
+	send_user "\nFAILURE: task count inconsistency ($this_cnt,$task_cnt)\n"
+	set exit_code 1
+}
+
+#############################################################################
+#
+# Run a job step with plane distribution
+#
+set block_size 2
+set this_cnt  0
+set prev_node -1
+set this_node -1
+set prev_cnt  $block_size
+send "$srun -l -n $task_cnt -m plane=$block_size $file_bash | sort -n\n"
+expect {
+	-re "nodeid:($number) taskid:($number) localid:($number)" {
+		set this_node $expect_out(1,string)
+		set this_tid  $expect_out(2,string)
+		set this_lid  $expect_out(3,string)
+		incr this_cnt 1
+		if {$prev_node != $this_node} {
+			if {$prev_cnt != $block_size } {
+				send_user "\nFAILURE: incorrect distribution "
+				send_user " $this_node, $prev_node, $prev_cnt\n"
+				set exit_code 1
+			}
+			set prev_node $this_node
+			set prev_cnt 1
+		} else {
+			incr prev_cnt 1
+		}
+		exp_continue
+	}
+	-re "error" {
+		send_user "\nFAILURE: some error occurred\n"
+		set exit_code 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding "
+		send_user "or failure to recognize prompt\n"
+		set exit_code 1
+	}
+	-re $prompt
+}
+if {$prev_cnt != $block_size} {
+	send_user "\nFAILURE: incorrect final distribution\n"
+	set exit_code 1
+}
+if {$this_cnt != $task_cnt} {
+	send_user "\nFAILURE: task count inconsistency ($this_cnt,$task_cnt)\n"
+	set exit_code 1
+}
+
+#############################################################################
+#
+# Terminate the job, free the allocation
+#
+send "exit\n"
+expect {
+	-re "error" {
+		send_user "\nFAILURE: some error occurred\n"
+		set exit_code 1
+	}
+	timeout {
+		send_user "\nFAILURE: salloc not responding "
+		send_user "or failure to recognize prompt\n"
+		slow_kill $salloc_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+	
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+} else {
+	send_user "\nNOTE: This test can fail if the node configuration in slurm.conf \n"
+	send_user "  (sockets, cores, threads) differs from the actual configuration\n"
+}
+file delete $file_bash
+exit $exit_code
+
