@@ -301,7 +301,7 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 		/* we don't need to check submit_jobs here */
 		
 		/* FIX ME: Once we start tracking time of running jobs
-		 * we will need toupdate the amount of time we have
+		 * we will need to update the amount of time we have
 		 * used and check against that here.  When we start
 		 * keeping track of time we will also need to come up
 		 * with a way to refresh the time. 

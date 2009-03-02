@@ -489,7 +489,8 @@ static void _add_it (int argc, char *argv[])
 	acct_storage_g_commit(db_conn, 0);
 	
 	/* First identify the entity to add */
-	if (strncasecmp (argv[0], "Account", MAX(command_len, 1)) == 0) {
+	if (strncasecmp (argv[0], "Account", MAX(command_len, 1)) == 0
+	    || !strncasecmp (argv[0], "Acct", MAX(command_len, 4))) {
 		error_code = sacctmgr_add_account((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "Cluster", MAX(command_len, 2)) == 0) {
 		error_code = sacctmgr_add_cluster((argc - 1), &argv[1]);
@@ -576,7 +577,8 @@ static void _show_it (int argc, char *argv[])
 	acct_storage_g_commit(db_conn, 0);
 
 	/* First identify the entity to list */
-	if (strncasecmp (argv[0], "Accounts", MAX(command_len, 2)) == 0) {
+	if (strncasecmp (argv[0], "Accounts", MAX(command_len, 2)) == 0
+	    || !strncasecmp (argv[0], "Acct", MAX(command_len, 4))) {
 		error_code = sacctmgr_list_account((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "Associations",
 				MAX(command_len, 2)) == 0) {
@@ -633,7 +635,8 @@ static void _modify_it (int argc, char *argv[])
 	acct_storage_g_commit(db_conn, 0);
 
 	/* First identify the entity to modify */
-	if (strncasecmp (argv[0], "Accounts", MAX(command_len, 1)) == 0) {
+	if (strncasecmp (argv[0], "Accounts", MAX(command_len, 1)) == 0
+	    || !strncasecmp (argv[0], "Acct", MAX(command_len, 4))) {
 		error_code = sacctmgr_modify_account((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "Clusters", 
 				MAX(command_len, 1)) == 0) {
@@ -677,7 +680,8 @@ static void _delete_it (int argc, char *argv[])
 	acct_storage_g_commit(db_conn, 0);
 
 	/* First identify the entity to delete */
-	if (strncasecmp (argv[0], "Accounts", MAX(command_len, 1)) == 0) {
+	if (strncasecmp (argv[0], "Accounts", MAX(command_len, 1)) == 0
+	    || !strncasecmp (argv[0], "Acct", MAX(command_len, 4))) {
 		error_code = sacctmgr_delete_account((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "Clusters",
 				MAX(command_len, 2)) == 0) {

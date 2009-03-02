@@ -112,7 +112,9 @@ static int _set_cond(int *start, int argc, char *argv[],
 						 argv[i]+end)) 
 				u_set = 1;
 		} else if (!strncasecmp (argv[i], "Account",
-					 MAX(command_len, 2))) {
+					 MAX(command_len, 2))
+			   || !strncasecmp (argv[i], "Acct",
+					    MAX(command_len, 4))) {
 			if(!assoc_cond->acct_list) {
 				assoc_cond->acct_list = 
 					list_create(slurm_destroy_char);
@@ -704,7 +706,9 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 			slurm_addto_char_list(assoc_cond->user_list,
 					      argv[i]+end);
 		} else if (!strncasecmp (argv[i], "Accounts", 
-					 MAX(command_len, 2))) {
+					 MAX(command_len, 2))
+			   || !strncasecmp (argv[i], "Acct",
+					    MAX(command_len, 4))) {
 			slurm_addto_char_list(assoc_cond->acct_list,
 					argv[i]+end);
 		} else if (!strncasecmp (argv[i], "AdminLevel", 
@@ -1538,7 +1542,8 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 		command_len = strlen(object);
 
 		field = xmalloc(sizeof(print_field_t));
-		if(!strncasecmp("Account", object, MAX(command_len, 2))) {
+		if(!strncasecmp("Account", object, MAX(command_len, 2))
+		   || !strncasecmp (argv[i], "Acct", MAX(command_len, 4))) {
 			field->type = PRINT_ACCOUNT;
 			field->name = xstrdup("Account");
 			field->len = 10;
