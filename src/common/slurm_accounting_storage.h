@@ -254,7 +254,6 @@ typedef struct {
 	uint32_t control_port;
 	char *name;
 
-	List valid_qos_list;
 	acct_association_rec_t *root_assoc; /* root association for cluster */
 
 	uint16_t rpc_version; /* version of rpc this cluter is running */
