@@ -631,7 +631,6 @@ If the cluster doesn't have the limit set no limit will be enforced.
 
 <li><b>QOS=</b> comma separated list of QOS's this association is
   able to run.
-
 </li>
 </ul>
 

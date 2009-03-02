@@ -199,6 +199,19 @@ acct_wckey_rec_t *'s containing information about the wckeys to add. <br>
 <span class="commandline">SLURM_ERROR</span> on failure.
 
 <p class="commandline">
+int acct_storage_p_add_reservation(void *db_conn,
+acct_reservation_rec_t *resv)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+Called to add reservations to the storage type.
+<p style="margin-left:.2in"><b>Arguments</b>: <br>
+<span class="commandline">db_conn</span> (input) connection to
+the storage type. <br>
+<span class="commandline">resv</span> (input) Reservation to be added. <br>
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+<span class="commandline">SLURM_SUCCESS</span> on success, or<br>
+<span class="commandline">SLURM_ERROR</span> on failure.
+
+<p class="commandline">
 List acct_storage_p_modify_users(void *db_conn, uint32_t uid,
 acct_user_cond_t *user_cond, acct_user_rec_t *user)
 <p style="margin-left:.2in"><b>Description</b>:<br>
@@ -331,6 +344,20 @@ modified on success, or<br>
 <span class="commandline">NULL</span> on failure.
 
 <p class="commandline">
+int acct_storage_p_modify_reservation(void *db_conn,
+acct_reservation_rec_t *resv)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+Called to modify reservations in the storage type.
+<p style="margin-left:.2in"><b>Arguments</b>: <br>
+<span class="commandline">db_conn</span> (input) connection to
+the storage type. <br>
+<span class="commandline">resv</span> (input) Reservation to be
+modified (id) must be set in the structure. <br>
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+<span class="commandline">SLURM_SUCCESS</span> on success, or<br>
+<span class="commandline">SLURM_ERROR</span> on failure.
+
+<p class="commandline">
 List acct_storage_p_remove_users(void *db_conn, uint32_t uid,
 acct_user_cond_t *user_cond)
 <p style="margin-left:.2in"><b>Description</b>:<br>
@@ -454,6 +481,20 @@ removed on success, or<br>
 <span class="commandline">NULL</span> on failure.
 
 <p class="commandline">
+int acct_storage_p_remove_reservation(void *db_conn,
+acct_reservation_rec_t *resv)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+Called to remove reservations in the storage type.
+<p style="margin-left:.2in"><b>Arguments</b>: <br>
+<span class="commandline">db_conn</span> (input) connection to
+the storage type. <br>
+<span class="commandline">resv</span> (input) Reservation to be
+removed (id) must be set in the structure. <br>
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+<span class="commandline">SLURM_SUCCESS</span> on success, or<br>
+<span class="commandline">SLURM_ERROR</span> on failure.
+
+<p class="commandline">
 List acct_storage_p_get_users(void *db_conn, uint32_t uid,
 acct_user_cond_t *user_cond)
 <p style="margin-left:.2in"><b>Description</b>:<br>
@@ -471,7 +512,7 @@ be stated.<br>
 on success, or<br>
 <span class="commandline">NULL</span> on failure.
 
-		<p class="commandline">
+<p class="commandline">
 List acct_storage_p_get_accts(void *db_conn, uint32_t uid,
 acct_account_cond_t *acct_cond)
 <p style="margin-left:.2in"><b>Description</b>:<br>
@@ -880,6 +921,6 @@ ability to implement a particular API version using the mechanism outlined
 for SLURM plugins.
 <p class="footer"><a href="#top">top</a>
 
-<p style="text-align:center;">Last modified 10 February 2009</p>
+<p style="text-align:center;">Last modified 2 March 2009</p>
 
 <!--#include virtual="footer.txt"-->

@@ -744,13 +744,11 @@ extern int acct_storage_g_add_wckeys(void *db_conn, uint32_t uid,
 
 /* 
  * add reservation's in accounting system 
- * IN:  acct_reservation_rec_t *resv (id=NO_VAL for create,
- *      id!=NO_VAL for modify, mode=NO_VAL for delete) on create id
- *      will be filled in with the new id.
+ * IN:  acct_reservation_rec_t *resv reservation to be added.
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int acct_storage_g_add_reservation(void *db_conn, 
-					   acct_reservation_rec_t *resv);
+					  acct_reservation_rec_t *resv);
 
 /* 
  * modify existing users in the accounting system 
