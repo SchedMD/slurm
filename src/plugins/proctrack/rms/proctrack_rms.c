@@ -94,7 +94,7 @@ extern int slurm_container_create (slurmd_job_t *job)
 	/*
 	 * Return a handle to an existing prgid or create a new one
 	 */
-	if (rms_getprgid (job->jmgr_pid, &prgid) < 0) {
+	if (rms_getprgid ((int) job->jmgr_pid, &prgid) < 0) {
 		int fd = _prg_destructor_fork();
 		/* Use slurmd job-step manager's pid as a unique identifier */
 		prgid = job->jmgr_pid;
