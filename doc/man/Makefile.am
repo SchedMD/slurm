@@ -43,7 +43,6 @@ man3_MANS = man3/slurm_hostlist_create.3 \
 	man3/slurm_checkpoint_vacate.3 \
 	man3/slurm_clear_trigger.3 \
 	man3/slurm_complete_job.3 \
-	man3/slurm_complete_job_step.3 \
 	man3/slurm_confirm_allocation.3 \
 	man3/slurm_create_partition.3 \
 	man3/slurm_create_reservation.3 \
