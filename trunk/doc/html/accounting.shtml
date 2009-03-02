@@ -8,13 +8,13 @@ releases.</p>
 
 <p>SLURM can be configured to collect accounting information for every 
 job and job step executed. 
-Accounting records can be written to a simple file or a database.
+Accounting records can be written to a simple text file or a database.
 Information is available about both currently executing jobs and 
-jobs which have already terminated and can be viewed using the 
-<b>sacct</b> command.
-<b>sacct</b> can also report resource usage for individual tasks, 
-which can be useful to detect load imbalance between the tasks. 
-The <b>sstat</b> tool can be used to status a currently running job.
+jobs which have already terminated.
+The <b>sacct</b> command can report resource usage for running or terminated
+jobs including individual tasks, which can be useful to detect load imbalance 
+between the tasks. 
+The <b>sstat</b> command can be used to status only currently running jobs.
 It also can give you valuable information about imbalance between tasks.
 The <b>sreport</b> can be used to generate reports based upon all jobs
 executed in a particular time interval.</p>
@@ -23,6 +23,15 @@ executed in a particular time interval.</p>
 The SLURM configuration parameters (in <i>slurm.conf</i>) associated with 
 these plugins include:</p>
 <ul>
+<li><b>AccountingStorageType</b> controls how detailed job and job 
+step information is recorded. You can store this information in a 
+text file, <a href="http://www.mysql.com/">MySQL</a> or 
+<a href="http://www.postgresql.org/">PostgreSQL</a> 
+database, optionally using SlurmDBD for added security.</li>
+<li><b>JobAcctGatherType</b> is operating system dependent and 
+controls what mechanism is used to collect accounting information.
+Supported values are <i>jobacct_gather/aix</i>, <i>jobacct_gather/linux</i>
+and <i>jobacct_gather/none</i> (no information collected).</li>
 <li><b>JobCompType</b> controls how job completion information is 
 recorded. This can be used to record basic job information such
 as job name, user name, allocated nodes, start time, completion 
@@ -32,17 +41,6 @@ with minimal overhead. You can store this information in a
 text file, <a href="http://www.mysql.com/">MySQL</a> or 
 <a href="http://www.postgresql.org/">PostgreSQL</a> 
 database</li>
-<li><b>JobAcctGatherType</b> is operating system dependent and 
-controls what mechanisms are used to collect accounting information.
-Supported values are <i>jobacct_gather/aix</i>, <i>jobacct_gather/linux</i>
-and <i>jobacct_gather/none</i> (no information collected).</li>
-<li><b>AccountingStorageType</b> controls how detailed job and job 
-step information is recorded. You can store this information in a 
-text file, <a href="http://www.mysql.com/">MySQL</a> or 
-<a href="http://www.postgresql.org/">PostgreSQL</a> 
-database optionally using either 
-<a href="http://www.clusterresources.com/pages/products/gold-allocation-manager.php">Gold</a>
-or SlurmDBD for added security.</li>
 </ul>
 
 <p>The use of sacct to view information about jobs 
@@ -76,14 +74,11 @@ sacctmgr).
 Making possibly sensitive information available to all users makes 
 database security more difficult to provide, sending the data through
 an intermediate daemon can provide better security and performance
-(through caching data).
-Gold and SlurmDBD are two such services. 
-Our initial implementation relied upon Gold, but we found its
-performance to be inadequate for our needs and developed SlurmDBD.
+(through caching data) and SlurmDBD provides such services. 
 SlurmDBD (SLURM Database Daemon) is written in C, multi-threaded, 
-secure, and considerably faster than Gold.
+secure and fast.
 The configuration required to use SlurmDBD will be described below.
-Direct database or Gold use would be similar.</p>
+Storing information directly into database would be similar.</p>
 
 <p>Note that SlurmDBD relies upon existing SLURM plugins
 for authentication and database use, but the other SLURM 
@@ -133,9 +128,9 @@ The pathname of local domain socket will be needed in the SLURM
 and SlurmDBD configuration files (slurm.conf and slurmdbd.conf 
 respectively, more details are provided below).</p>
 
-Whether you use any authentication module or not you will need to have
+<p?Whether you use any authentication module or not you will need to have
 a way for the SlurmDBD to get uid's for users and/or admin.  If using
-Munge it is ideal for your users to have the same id on all your
+Munge, it is ideal for your users to have the same id on all your
 clusters.  If this is the case you should have a combination of every clusters
 /etc/passwd file on the database server to allow the DBD to resolve
 names for authentication.  If using Munge and a users name is not in
@@ -148,9 +143,9 @@ LDAP server could also server as a way to gather this information.
 <h2>Slurm JobComp Configuration</h2>
 
 <p>Presently job completion is not supported with the SlurmDBD, but can be
-written directly to a database, script or flat file.If you are
+written directly to a database, script or flat file. If you are
 running with the accounting storage, you may not need to run this
-since it contains much of the same information.If you would like
+since it contains much of the same information. If you would like
 to configure this, some of the more important parameters include:</p>
 
 <ul>
@@ -160,7 +155,8 @@ the database server executes.</li>
 
 <li><b>JobCompPass</b>:
 Only needed if using a database. Password for the user connecting to
-the database.</li>
+the database. Since the password can not be security maintained,
+storing the information directly in a database is not recommended.</li>
 
 <li><b>JobCompPort</b>:
 Only needed if using a database. The network port that the database
@@ -182,23 +178,21 @@ job completions and such this configuration will not allow
 "associations" between a user and account. A database allows such
 a configuration. 
 
-<p>
-<b>MySQL is the preferred database, PostgreSQL is
+<p><b>MySQL is the preferred database, PostgreSQL is
 supported for job and step accounting only.</b> The infrastructure for
 PostgresSQL for use with associations is not yet supported, meaning
 sacctmgr will not work correcting.  If interested in adding this
-capabilty for PostgresSQL please email slurm-dev@lists.llnl.gov.
+capability for PostgresSQL, please contact us at slurm-dev@lists.llnl.gov.
 
-<p>
-To enable this database support
+<p>To enable this database support
 one only needs to have the development package for the database they
 wish to use on the system. The slurm configure script uses
 mysql_config and pg-config to find out the information it needs
 about installed libraries and headers. You can specify where your
 mysql_config script is with the
 </i>--with-mysql_conf=/path/to/mysql_config</i> option when configuring your
-slurm build. A similar option is available for PostgreSQL also. On
-a successful configure, output is something like this: </p>
+slurm build. A similar option is also available for PostgreSQL. 
+On a successful configure, output is something like this: </p>
 <pre>
 checking for mysql_config... /usr/bin/mysql_config
 MySQL test program built properly.
@@ -208,7 +202,7 @@ MySQL test program built properly.
 
 <p>For simplicity sake we are going to reference everything as if you
 are running with the SlurmDBD. You can communicate with a storage plugin
-directly, but that offers minimal authentication. 
+directly, but that offers minimal security. </p>
 
 <p>Several SLURM configuration parameters must be set to support
 archiving information in SlurmDBD. SlurmDBD has a separate configuration
@@ -230,10 +224,10 @@ their <i>association</i> is not in the database. This option will
 prevent users from accessing invalid accounts.  
 </li>
 <li>limits - This will enforce limits set to associations.  By setting
-  this option the 'associations' option is also set.
+  this option, the 'associations' option is also set.
 </li>
 <li>wckeys - This will prevent users from running jobs under a wckey
-  that they don't have access to.  By using this option the
+  that they don't have access to.  By using this option, the
   'associations' option is also set.  The 'TrackWCKey' option is also
   set to true.
 </li>
@@ -245,8 +239,8 @@ Without AccountingStorageEnforce being set (the default behavior)
 jobs will be executed based upon policies configured in SLURM on each
 cluster.
 <br> 
-It is a good idea to run without the option 'limits' set when running a
-scheduler on top of slurm, like Moab, that does not update in real
+It is advisable to run without the option 'limits' set when running a
+scheduler on top of SLURM, like Moab, that does not update in real
 time their limits per association.</li>
 
 <li><b>AccountingStorageHost</b>: The name or address of the host where 
@@ -268,7 +262,7 @@ accounting records from each can be identified.</li>
 <li><b>TrackWCKey</b>:
 Boolean.  If you want to track wckeys (Workload Characterization Key)
   of users.  A Wckey is an orthogonal way to do accounting against
-  maybe a group of unrelated accounts. WCKeys can be definded using
+  maybe a group of unrelated accounts. WCKeys can be defined using
   sacctmgr add wckey 'name'.  When a job is run use srun --wckey and 
   time will be summed up for this wckey.
 </li>
@@ -349,12 +343,7 @@ Define the port on which the database is listening.</li>
 <li><b>StorageType</b>:
 Define the accounting storage mechanism type.
 Acceptable values at present include 
-"accounting_storage/gold", "accounting_storage/mysql", and
-"accounting_storage/pgsql".
-The value "accounting_storage/gold" indicates that account records
-will be written to Gold, which maintains its own database.
-Use of Gold is not recommended due to reduced performance without 
-providing any additional security.
+"accounting_storage/mysql" and "accounting_storage/pgsql".
 The value "accounting_storage/mysql" indicates that accounting records
 should be written to a MySQL database specified by the 
 <i>StorageLoc</i> parameter.
@@ -418,7 +407,7 @@ given time period.</li>
 <p>See the man pages for each command for more information.</p>
 
 <p>Web interfaces with graphical output is currently under
-development and should be available in the Fall of 2008.
+development and should be available in the Fall of 2009.
 A tool to report node state information is also under development.</p>
 
 <h2>Database Configuration</h2>
@@ -544,13 +533,13 @@ is specified when a job is submitted. (Only used when tracking wckeys.)</li>
 
 <li><b>Name=</b> User name</li>
 
-<li><b>Partition=</b> Name of Slurm partition this association applies to</li>
+<li><b>Partition=</b> Name of SLURM partition this association applies to</li>
 
 </ul>
 
 <h2>Limit enforcement</h2>
 
-<p>When limits are developed they will work in this order...
+<p>When limits are developed they will work in this order.
 If a user has a limit set SLURM will read in those, 
 if not we will refer to the account associated with the job. 
 If the account doesn't have the limit set we will refer to 
@@ -561,13 +550,13 @@ If the cluster doesn't have the limit set no limit will be enforced.
 <ul>
 
 <li><b>Fairshare=</b> Used for determining priority.  Essentially
-  this is the amount of claim this association and it's childern have
+  this is the amount of claim this association and it's children have
   to the above system.</li>
 </li>
 
 <!-- For future use
 <li><b>GrpCPUMins=</b> A hard limit of cpu minutes to be used by jobs
-  running from this association and its childern.  If this limit is
+  running from this association and its children.  If this limit is
   reached all jobs running in this group will be killed, and no new
   jobs will be allowed to run.
 </li>
@@ -575,26 +564,26 @@ If the cluster doesn't have the limit set no limit will be enforced.
 
 <!-- For future use
 <li><b>GrpCPUs=</b> The total count of cpus able to be used at any given
-  time from jobs running from this association and its childern.  If
+  time from jobs running from this association and its children.  If
   this limit is reached new jobs will be queued but only allowed to
   run after resources have been relinquished from this group.
 </li>
 -->
 
 <li><b>GrpJobs=</b> The total number of jobs able to run at any given
-  time from this association and its childern.  If
+  time from this association and its children.  If
   this limit is reached new jobs will be queued but only allowed to
   run after previous jobs complete from this group.
 </li>
 
 <li><b>GrpNodes=</b> The total count of nodes able to be used at any given
-  time from jobs running from this association and its childern.  If
+  time from jobs running from this association and its children.  If
   this limit is reached new jobs will be queued but only allowed to
   run after resources have been relinquished from this group.
 </li>
 
 <li><b>GrpSubmitJobs=</b> The total number of jobs able to be submitted
-  to the system at any given time from this association and its childern.  If
+  to the system at any given time from this association and its children.  If
   this limit is reached new submission requests will be denied until
   previous jobs complete from this group.
 </li>
@@ -678,7 +667,7 @@ as deleted.
 If an entity has existed for less than 1 day, the entity will be removed 
 completely. This is meant to clean up after typographic errors.</p>
 
-<p style="text-align: center;">Last modified 27 June 2008</p>
+<p style="text-align: center;">Last modified 2 March 2009</p>
 
 <!--#include virtual="footer.txt"-->
 
