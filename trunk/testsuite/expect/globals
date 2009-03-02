@@ -71,6 +71,7 @@ cset smap        "${slurm_dir}/bin/smap"
 cset squeue      "${slurm_dir}/bin/squeue"
 cset srun        "${slurm_dir}/bin/srun"
 cset sreport     "${slurm_dir}/bin/sreport"
+cset sshare      "${slurm_dir}/bin/sshare"
 cset sstat       "${slurm_dir}/bin/sstat"
 cset strigger    "${slurm_dir}/bin/strigger"
 
@@ -691,6 +692,36 @@ proc test_account_storage { } {
 
 ################################################################
 #
+# Proc: priority_type
+#
+# Purpose: Use scontrol to determine the priority plugin
+#
+# Returns: Name of priority type
+#
+################################################################
+
+proc priority_type {} {
+	global scontrol
+
+	set name ""
+	set fd [open "|$scontrol show config"]
+	while {[gets $fd line] != -1} {
+		if {[regexp {^PriorityType *= priority/(\w+)} $line frag name]
+				== 1} {
+			break
+		}
+	}
+	catch {close $fd}
+
+	if {[string length $name] == 0} {
+		send_user "ERROR: could not identify the switch type"
+	}
+
+	return $name
+}
+
+################################################################
+#
 # Proc: get_default_acct
 #
 # Purpose: get users default account.
@@ -1073,7 +1104,6 @@ proc switch_type {} {
 
 	return $name
 }
-
 
 ################################################################
 #
