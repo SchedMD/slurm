@@ -83,8 +83,8 @@ its use.</p>
 <p>Changes made to the scheduling policy are uploaded to 
 the SLURM control daemons on the various clusters and take effect 
 immediately. When an association is delete, all jobs running or 
-pending which belong to that association are immediately cancelled.
-When limits are lowered, running jobs will not be cancelled to 
+pending which belong to that association are immediately canceled.
+When limits are lowered, running jobs will not be canceled to 
 satisfy the new limits, but the new lower limits will be enforced.</p>
 
 <h2>Policies supported</h2>
@@ -101,7 +101,7 @@ for the cluster plus account pair and if that is not specified
 then the cluster and if that is not specified then no limit 
 will apply.</p>
 
-<p>Currently available cheduling policy options:</p>
+<p>Currently available scheduling policy options:</p>
 <ul>
 <li><b>Fairshare=</b> Used for determining priority.  Essentially
   this is the amount of claim this association and it's children have
@@ -207,7 +207,7 @@ Consider the trivial example of a single bank account with
 two users named Alice and Brian. 
 <br>
 We might allocate Alice 60 percent of the resources and Brian the 
-remaining 40 precent.
+remaining 40 percent.
 <br>
 If Alice has actually used 80 percent of available resources in the 
 recent past, then Brian's pending jobs will automatically be given a
