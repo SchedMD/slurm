@@ -11,7 +11,7 @@ their own SLURM Job Accounting Storage plugins. This is version 1 of the API.
 SLURM Plugin API with the following specifications:
 
 <p><span class="commandline">const char
-plugin_name[]="<i>full&nbsp;text&nbsp;name</i>"
+plugin_name[]="<i>full&nbsp;text&nbsp;name</i>"</span>
 <p style="margin-left:.2in">
 A free-formatted ASCII text string that identifies the plugin.
 
@@ -58,7 +58,7 @@ acct_storage_p_get_connection() is called to get a connection to the
 <span class="commandline">make_agent</span> (input) to make an agent
 thread of not.  This is primarily used in the slurmdbd plugin.<br>
 <span class="commandline">conn_num</span> (input) connection number to
-the plugin.  In many cases you should plan on multiple simultanious
+the plugin.  In many cases you should plan on multiple simultaneous
 connections to the plugin.  This number is useful since the debug
 messages can print this out to determine which connection the message
 is from.<br>
@@ -77,7 +77,7 @@ the storage type.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">db_conn</span> (input/output) connection to
 the storage type, all memory will be freed inside this function and
-NULLed out. 
+set to NULL. 
 <p style="margin-left:.2in"><b>Returns</b>: <br>
 <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
 <span class="commandline">SLURM_ERROR</span> on failure.
@@ -216,7 +216,7 @@ List acct_storage_p_modify_users(void *db_conn, uint32_t uid,
 acct_user_cond_t *user_cond, acct_user_rec_t *user)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 Used to modify existing users in the storage type.  The condition
-  could include very vaque information about the user, so this
+  could include very vague information about the user, so this
   function should be robust in the ability to give everything the user
   is asking for.  This is the reason a list of modified users is
   returned so the caller knows what has been changed, sometimes by mistake.
@@ -238,7 +238,7 @@ List acct_storage_p_modify_accounts(void *db_conn, uint32_t uid,
 acct_account_cond_t *acct_cond, acct_account_rec_t *acct)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 Used to modify existing accounts in the storage type.  The condition
-  could include very vaque information about the account, so this
+  could include very vague information about the account, so this
   function should be robust in the ability to give everything the account
   is asking for.  This is the reason a list of modified accounts is
   returned so the caller knows what has been changed, sometimes by mistake.
@@ -260,7 +260,7 @@ List acct_storage_p_modify_clusters(void *db_conn, uint32_t uid,
 acct_cluster_cond_t *cluster_cond, acct_cluster_rec_t *cluster)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 Used to modify existing clusters in the storage type.  The condition
-  could include very vaque information about the cluster, so this
+  could include very vague information about the cluster, so this
   function should be robust in the ability to give everything the cluster
   is asking for.  This is the reason a list of modified clusters is
   returned so the caller knows what has been changed, sometimes by mistake.
@@ -282,7 +282,7 @@ List acct_storage_p_modify_associations(void *db_conn, uint32_t uid,
 acct_association_cond_t *assoc_cond, acct_association_rec_t *assoc)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 Used to modify existing associations in the storage type.  The condition
-  could include very vaque information about the association, so this
+  could include very vague information about the association, so this
   function should be robust in the ability to give everything the association
   is asking for.  This is the reason a list of modified associations is
   returned so the caller knows what has been changed, sometimes by mistake.
@@ -304,7 +304,7 @@ List acct_storage_p_modify_qos(void *db_conn, uint32_t uid,
 acct_qos_cond_t *qos_cond, acct_qos_rec_t *qos)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 Used to modify existing qos in the storage type.  The condition
-  could include very vaque information about the qos, so this
+  could include very vague information about the qos, so this
   function should be robust in the ability to give everything the qos
   is asking for.  This is the reason a list of modified qos is
   returned so the caller knows what has been changed, sometimes by mistake.
@@ -326,7 +326,7 @@ List acct_storage_p_modify_wckeys(void *db_conn, uint32_t uid,
 acct_wckey_cond_t *wckey_cond, acct_wckey_rec_t *wckey)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 Used to modify existing wckeys in the storage type.  The condition
-  could include very vaque information about the wckeys, so this
+  could include very vague information about the wckeys, so this
   function should be robust in the ability to give everything the wckey
   is asking for.  This is the reason a list of modified wckey is
   returned so the caller knows what has been changed, sometimes by mistake.
@@ -631,7 +631,7 @@ the storage type.<br>
 <span class="commandline">uid</span> (input) uid of user calling the
 function.<br> 
 <span class="commandline">in</span> (input/out) can be anything that
-gathers usage like acct_associaiton_rec_t * or acct_wckey_rec_t *.<br> 
+gathers usage like acct_association_rec_t * or acct_wckey_rec_t *.<br> 
 <span class="commandline">type</span> (input) really
 slurmdbd_msg_type_t should let the plugin know what the structure is
 that was sent in some how.<br> 
@@ -908,7 +908,7 @@ database with.
 <dt><span class="commandline">AccountingStoragePass</span>
 <dd>Let the plugin know the password of the user connecting to the database.
 <dt><span class="commandline">AccountingStorageEnforce</span>
-<dd>Specifies if we should enforce certain things be in existance
+<dd>Specifies if we should enforce certain things be in existence
   before allowing job submissions and such valid options are
   "associations, limits, and wckeys". You can use any combination of
   those listed.
