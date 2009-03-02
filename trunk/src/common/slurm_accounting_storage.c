@@ -507,8 +507,6 @@ extern void destroy_acct_cluster_rec(void *object)
 			list_destroy(acct_cluster->accounting_list);
 		xfree(acct_cluster->control_host);
 		xfree(acct_cluster->name);
-		if(acct_cluster->valid_qos_list)
-			list_destroy(acct_cluster->valid_qos_list);
 		destroy_acct_association_rec(acct_cluster->root_assoc);
 		xfree(acct_cluster);
 	}
@@ -1607,11 +1605,48 @@ extern void pack_acct_cluster_rec(void *in, uint16_t rpc_version, Buf buffer)
 {
 	cluster_accounting_rec_t *acct_info = NULL;
 	ListIterator itr = NULL;
-	char *tmp_info = NULL;
 	uint32_t count = NO_VAL;
 	acct_cluster_rec_t *object = (acct_cluster_rec_t *)in;
 
-	if(rpc_version >= 3) {
+	if(rpc_version >= 5) {
+		if(!object) {
+			pack32(NO_VAL, buffer);
+			packnull(buffer);
+			pack32(0, buffer);
+
+			packnull(buffer);
+
+			pack_acct_association_rec(NULL, rpc_version, buffer);
+
+			pack16(0, buffer);
+			return;
+		}
+ 
+		if(object->accounting_list)
+			count = list_count(object->accounting_list);
+
+		pack32(count, buffer);
+
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->accounting_list);
+			while((acct_info = list_next(itr))) {
+				pack_cluster_accounting_rec(
+					acct_info, rpc_version, buffer);
+			}
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+
+		packstr(object->control_host, buffer);
+		pack32(object->control_port, buffer);
+
+		packstr(object->name, buffer);
+
+		pack_acct_association_rec(object->root_assoc,
+					  rpc_version, buffer);
+
+		pack16(object->rpc_version, buffer);
+	} else if(rpc_version >= 3) {
 		if(!object) {
 			pack32(NO_VAL, buffer);
 			packnull(buffer);
@@ -1646,19 +1681,7 @@ extern void pack_acct_cluster_rec(void *in, uint16_t rpc_version, Buf buffer)
 
 		packstr(object->name, buffer);
 
-		if(object->valid_qos_list)
-			count = list_count(object->valid_qos_list);
-
-		pack32(count, buffer);
-
-		if(count && count != NO_VAL) {
-			itr = list_iterator_create(object->valid_qos_list);
-			while((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
+		pack32(count, buffer); /* for defunt valid_qos_list */
 
 		pack_acct_association_rec(object->root_assoc,
 					  rpc_version, buffer);
@@ -1721,14 +1744,13 @@ extern int unpack_acct_cluster_rec(void **object, uint16_t rpc_version,
 {
 	uint32_t uint32_tmp;
 	int i;
-	char *tmp_info = NULL;
 	uint32_t count;
 	acct_cluster_rec_t *object_ptr = xmalloc(sizeof(acct_cluster_rec_t));
 	cluster_accounting_rec_t *acct_info = NULL;
 
 	*object = object_ptr;
 
-	if(rpc_version >= 3) {
+	if(rpc_version >= 5) {
 		safe_unpack32(&count, buffer);
 		if(count != NO_VAL) {
 			object_ptr->accounting_list =
@@ -1748,17 +1770,34 @@ extern int unpack_acct_cluster_rec(void **object, uint16_t rpc_version,
 
 		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
 
+		if(unpack_acct_association_rec(
+			   (void **)&object_ptr->root_assoc, 
+			   rpc_version, buffer)
+		   == SLURM_ERROR)
+			goto unpack_error;
+
+		safe_unpack16(&object_ptr->rpc_version, buffer);
+	} else if(rpc_version >= 3) {
 		safe_unpack32(&count, buffer);
 		if(count != NO_VAL) {
-			object_ptr->valid_qos_list = 
-				list_create(slurm_destroy_char);
+			object_ptr->accounting_list =
+				list_create(destroy_cluster_accounting_rec);
 			for(i=0; i<count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info,
-						       &uint32_tmp, buffer);
-				list_append(object_ptr->valid_qos_list,
-					    tmp_info);
+				unpack_cluster_accounting_rec(
+					(void *)&acct_info,
+					rpc_version, buffer);
+				list_append(object_ptr->accounting_list,
+					    acct_info);
 			}
 		}
+
+		safe_unpackstr_xmalloc(&object_ptr->control_host,
+				       &uint32_tmp, buffer);
+		safe_unpack32(&object_ptr->control_port, buffer);
+
+		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
+
+		safe_unpack32(&count, buffer); /* for defunt valid_qos_list */
 
 		if(unpack_acct_association_rec(
 			   (void **)&object_ptr->root_assoc, 
