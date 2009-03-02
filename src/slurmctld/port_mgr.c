@@ -212,6 +212,9 @@ extern int reserve_port_config(char *mpi_params)
 }
 
 /* Reserve ports for a job step
+ * NOTE: We keep track of last port reserved and go round-robin through full
+ *       set of available ports. This helps avoid re-using busy ports when
+ *       restarting job steps.
  * RET SLURM_SUCCESS or an error code */
 extern int resv_port_alloc(struct step_record *step_ptr)
 {
@@ -219,6 +222,7 @@ extern int resv_port_alloc(struct step_record *step_ptr)
 	int *port_array = NULL;
 	char port_str[16], *tmp_str;
 	hostlist_t hl;
+	static int last_port_alloc = 0;
 
 	if (step_ptr->resv_port_cnt > port_resv_cnt) {
 		info("step %u.%u needs %u reserved ports, but only %d exist",
@@ -231,10 +235,12 @@ extern int resv_port_alloc(struct step_record *step_ptr)
 	port_array = xmalloc(sizeof(int) * step_ptr->resv_port_cnt);
 	port_inx = 0;
 	for (i=0; i<port_resv_cnt; i++) {
+		if (++last_port_alloc >= port_resv_cnt)
+			last_port_alloc = 0;
 		if (bit_overlap(step_ptr->step_node_bitmap,
-				port_resv_table[i]))
+				port_resv_table[last_port_alloc]))
 			continue;
-		port_array[port_inx++] = i;
+		port_array[port_inx++] = last_port_alloc;
 		if (port_inx >= step_ptr->resv_port_cnt)
 			break;
 	}
@@ -251,10 +257,12 @@ extern int resv_port_alloc(struct step_record *step_ptr)
 	if (hl == NULL)
 		fatal("malloc: hostlist_create");
 	for (i=0; i<port_inx; i++) {
+		/* NOTE: We give the port a name like "[1234]" rather than 
+		 * just "1234" to avoid hostlists of the form "1[234-236]" */
 		bit_or(port_resv_table[port_array[i]], 
 		       step_ptr->step_node_bitmap);
 		port_array[i] += port_resv_min;
-		snprintf(port_str, sizeof(port_str), "%d", port_array[i]);
+		snprintf(port_str, sizeof(port_str), "[%d]", port_array[i]);
 		hostlist_push(hl, port_str);
 	}
 	hostlist_sort(hl);
