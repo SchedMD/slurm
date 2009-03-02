@@ -211,7 +211,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 					" Bad MaxWall time format: %s\n", 
 					argv[i]);
 			}
-		} else if (!strncasecmp (argv[i], "QosLevel", 
+		} else if (!strncasecmp (argv[i], "QOSLevel", 
 					 MAX(command_len, 1))) {
 			if(!assoc->qos_list) 
 				assoc->qos_list = 

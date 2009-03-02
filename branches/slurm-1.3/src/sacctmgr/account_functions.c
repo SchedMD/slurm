@@ -101,7 +101,9 @@ static int _set_cond(int *start, int argc, char *argv[],
 			  || !strncasecmp (argv[i], "Names", 
 					   MAX(command_len, 1))
 			  || !strncasecmp (argv[i], "Accounts",
-					   MAX(command_len, 1))) {
+					   MAX(command_len, 1))
+			  || !strncasecmp (argv[i], "Acct",
+					   MAX(command_len, 4))) {
 			if(!assoc_cond->acct_list) {
 				assoc_cond->acct_list = 
 					list_create(slurm_destroy_char);
@@ -339,7 +341,9 @@ static int _set_rec(int *start, int argc, char *argv[],
 			  || !strncasecmp (argv[i], "Account",
 					   MAX(command_len, 1))
 			  || !strncasecmp (argv[i], "Names", 
-					   MAX(command_len, 1))) {
+					   MAX(command_len, 1))
+			  || !strncasecmp (argv[i], "Acct",
+					    MAX(command_len, 4))) {
 			if(acct_list) 
 				slurm_addto_char_list(acct_list, argv[i]+end);
 				

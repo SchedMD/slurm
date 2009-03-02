@@ -108,7 +108,9 @@ static int _set_cond(int *start, int argc, char *argv[],
 			list_iterator_destroy(itr);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Accounts",
-					 MAX(command_len, 2))) {
+					 MAX(command_len, 2))
+			   || !strncasecmp (argv[i], "Acct",
+					    MAX(command_len, 4))) {
 			if(!assoc_cond->acct_list)
 				assoc_cond->acct_list = 
 					list_create(slurm_destroy_char);
@@ -373,7 +375,8 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 	
 		field = xmalloc(sizeof(print_field_t));
 
-		if(!strncasecmp("Account", object, MAX(command_len, 1))) {
+		if(!strncasecmp("Account", object, MAX(command_len, 1))
+		   || !strncasecmp (argv[i], "Acct", MAX(command_len, 4))) {
 			field->type = PRINT_ACCOUNT;
 			field->name = xstrdup("Account");
 			if(tree_display)
