@@ -41,16 +41,33 @@ an <i>association</i>. An <i>association</i> is a 4-tuple consisting
 of the cluster name, bank account, user and (optionally) the SLURM 
 partition.
 In order to enforce scheduling policy, set the value of 
-<b>AccountingStorageEnforce</b> to "1" in <b>slurm.conf</b>.
-This prevents users from running any jobs without an valid
-<i>association</i> record in the database and enforces scheduling 
-policy limits that have been configured.  
-In order to enforce association limits along with scheduling policy,
-set the value of <b>AccountingStorageEnforce</b> to "2"
-in <b>slurm.conf</b>.  When set to "1" association limits will not be
-enforced.  It is a good idea to run in this mode when running a
-scheduler on top of slurm, like Moab, that does not update in real
-time their limits per association.
+<b>AccountingStorageEnforce</b>:
+This option contains a comma separated list of options you may want to
+ enforce.  The valid options are 
+<ul>
+<li>associations - This will prevent users from running jobs if
+their <i>association</i> is not in the database. This option will
+prevent users from accessing invalid accounts.  
+</li>
+<li>limits - This will enforce limits set to associations.  By setting
+  this option, the 'associations' option is also set.
+</li>
+<li>wckeys - This will prevent users from running jobs under a wckey
+  that they don't have access to.  By using this option, the
+  'associations' option is also set.  The 'TrackWCKey' option is also
+  set to true.
+</li>
+</ul>
+(NOTE: The association is a combination of cluster, account, 
+user names and optional partition name.)
+<br>
+Without AccountingStorageEnforce being set (the default behavior) 
+jobs will be executed based upon policies configured in SLURM on each
+cluster.
+<br> 
+It is advisable to run without the option 'limits' set when running a
+scheduler on top of SLURM, like Moab, that does not update in real
+time their limits per association.</li>
 </p>
 
 <h2>Tools</h2>
@@ -77,7 +94,7 @@ supported.
 The available options are expected to increase as development 
 continues. 
 Most of these scheduling policy options are available not only 
-for an association, but also for each cluster and account. 
+for a user association, but also for each cluster and account. 
 If a new association is created for some user and some scheduling 
 policy options is not specified, the default will be the option 
 for the cluster plus account pair and if that is not specified 
@@ -86,9 +103,89 @@ will apply.</p>
 
 <p>Currently available cheduling policy options:</p>
 <ul>
-<li><b>MaxJobs</b> Maxiumum number of running jobs for this association</li>
-<li><b>MaxNodes</b> Maxiumum number of nodes for any single jobs in this association</li>
-<li><b>MaxWall</b> Maxiumum wall clock time limit for any single jobs in this association</li>
+<li><b>Fairshare=</b> Used for determining priority.  Essentially
+  this is the amount of claim this association and it's children have
+  to the above system.</li>
+</li>
+
+<!-- For future use
+<li><b>GrpCPUMins=</b> A hard limit of cpu minutes to be used by jobs
+  running from this association and its children.  If this limit is
+  reached all jobs running in this group will be killed, and no new
+  jobs will be allowed to run.
+</li>
+-->
+
+<!-- For future use
+<li><b>GrpCPUs=</b> The total count of cpus able to be used at any given
+  time from jobs running from this association and its children.  If
+  this limit is reached new jobs will be queued but only allowed to
+  run after resources have been relinquished from this group.
+</li>
+-->
+
+<li><b>GrpJobs=</b> The total number of jobs able to run at any given
+  time from this association and its children.  If
+  this limit is reached new jobs will be queued but only allowed to
+  run after previous jobs complete from this group.
+</li>
+
+<li><b>GrpNodes=</b> The total count of nodes able to be used at any given
+  time from jobs running from this association and its children.  If
+  this limit is reached new jobs will be queued but only allowed to
+  run after resources have been relinquished from this group.
+</li>
+
+<li><b>GrpSubmitJobs=</b> The total number of jobs able to be submitted
+  to the system at any given time from this association and its children.  If
+  this limit is reached new submission requests will be denied until
+  previous jobs complete from this group.
+</li>
+
+<li><b>GrpWall=</b> The maximum wall clock time any job submitted to
+  this group can run for.  If this limit is reached submission requests
+  will be denied. 
+</li>
+
+<!-- For future use
+<li><b>MaxCPUMinsPerJob=</b> A limit of cpu minutes to be used by jobs
+  running from this association.  If this limit is
+  reached the job will be killed will be allowed to run.
+</li>
+-->
+
+<!-- For future use
+<li><b>MaxCPUsPerJob=</b> The maximum size in cpus any given job can
+  have from this association.  If this limit is reached the job will
+  be denied at submission.
+</li>
+-->
+
+<li><b>MaxJobs=</b> The total number of jobs able to run at any given
+  time from this association.  If this limit is reached new jobs will
+  be queued but only allowed to run after previous jobs complete from
+  this association.
+</li>
+
+<li><b>MaxNodesPerJob=</b> The maximum size in nodes any given job can
+  have from this association.  If this limit is reached the job will
+  be denied at submission.
+</li>
+ 
+<li><b>MaxSubmitJobs=</b> The maximum number of jobs able to be submitted
+  to the system at any given time from this association.  If
+  this limit is reached new submission requests will be denied until
+  previous jobs complete from this association.
+</li>
+
+<li><b>MaxWallDurationPerJob=</b> The maximum wall clock time any job
+  submitted to this association can run for.  If this limit is reached
+  the job will be denied at submission.
+</li>
+
+<li><b>QOS=</b> comma separated list of QOS's this association is
+  able to run.
+</li>
 </ul>
 
 <p>The <b>MaxNodes</b> and <b>MaxWall</b> options already exist in 
@@ -98,23 +195,29 @@ The <b>MaxJobs</b> option provides an entirely new mechanism
 for SLURM to control the workload any individual may place on
 a cluster in order to achieve some balance between users.</p>
 
-<p>The next scheduling policy expected to be added is the concept 
-of fair-share scheduling based upon the hierarchical bank account
-data is already maintained in the SLURM database. 
+<p>Fair-share scheduling based upon the hierarchical bank account
+data is already maintained in the SLURM database.  This information
+  can now be leveraged from
+  the <a href="priority_multifactor.html">priority/multifactor</a> plugin.
+<p>
 The priorities of pending jobs will be adjusted in order to 
 deliver resources in proportion to each association's fair-share.
+<br>
 Consider the trivial example of a single bank account with 
 two users named Alice and Brian. 
+<br>
 We might allocate Alice 60 percent of the resources and Brian the 
 remaining 40 precent.
+<br>
 If Alice has actually used 80 percent of available resources in the 
 recent past, then Brian's pending jobs will automatically be given a
 higher priority than Alice's in order to deliver resources in 
 proportion to the fair-share target. 
+<br>
 The time window considered in fair-share scheduling will be configurable 
 as well as the relative importance of job age (time waiting to run), 
 but this this example illustrates the concepts involved.</p>
 
-<p style="text-align: center;">Last modified 9 February 2009</p>
+<p style="text-align: center;">Last modified 2 March 2009</p>
 
 </ul></body></html>
