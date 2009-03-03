@@ -3470,6 +3470,7 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer)
 		packstr(msg->efname, buffer);
 		packstr(msg->ifname, buffer);
 		pack8(msg->buffered_stdio, buffer);
+		pack8(msg->labelio, buffer);
 		pack16(msg->num_io_port, buffer);
 		for(i = 0; i < msg->num_io_port; i++)
 			pack16(msg->io_port[i], buffer);
@@ -3550,6 +3551,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 		safe_unpackstr_xmalloc(&msg->efname, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg->ifname, &uint32_tmp, buffer);
 		safe_unpack8(&msg->buffered_stdio, buffer);
+		safe_unpack8(&msg->labelio, buffer);
 		safe_unpack16(&msg->num_io_port, buffer);
 		if (msg->num_io_port > 0) {
 			msg->io_port =

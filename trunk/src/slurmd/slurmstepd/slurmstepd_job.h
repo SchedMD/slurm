@@ -176,6 +176,7 @@ typedef struct slurmd_job {
 	uint8_t	buffered_stdio; /* stdio buffering flag, 1 for line-buffering,
 				 * 0 for no buffering
 				 */
+	uint8_t labelio;	/* 1 for labelling output with the task id */
 
 	pthread_t      ioid;  /* pthread id of IO thread                    */
 	pthread_t      msgid; /* pthread id of message thread               */

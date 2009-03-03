@@ -255,6 +255,7 @@ job_create(launch_tasks_request_msg_t *msg)
 	srun = srun_info_create(msg->cred, &resp_addr, &io_addr);
 
 	job->buffered_stdio = msg->buffered_stdio;
+	job->labelio = msg->labelio;
 
 	job->task_prolog = xstrdup(msg->task_prolog);
 	job->task_epilog = xstrdup(msg->task_epilog);
