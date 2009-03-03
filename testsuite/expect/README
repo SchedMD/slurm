@@ -530,6 +530,7 @@ test22.#   Testing of sreport commands and options.
            These also test the sacctmgr archive dump/load functions.
 =================================================
 test22.1   sreport cluster utilization report
+test22.2   sreport h, n, p, P, v, V options
 
 test23.#   Testing of sstat commands and options.
 =================================================
