@@ -63,10 +63,10 @@ void _help_fields_msg(void)
 
 	for (i = 0; fields[i].name; i++) {
 		if (i & 3)
-			printf("  ");
+			printf(" ");
 		else if(i)
 			printf("\n");
-		printf("%-12s", fields[i].name);
+		printf("%-13s", fields[i].name);
 	}
 	printf("\n");
 	return;
