@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM sshare functionality
-#          sshare h, n, p, P and V options.
+#          sshare h, n, p, P, v and V options.
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -310,6 +310,48 @@ proc sshare_opt { soption } {
 	}
 
 
+	if { $soption == "-version" || $soption == "V" } {
+
+	spawn $sshare -$soption
+	expect {
+		-re "SLURM accounting storage is disabled" {
+			set not_support 1
+			exp_continue
+		}
+		-re "You are not running a supported priority plugin" {
+			set not_support 2
+			exp_continue
+		}
+		-re "slurm 1.4.0-pre8" {
+			if {$debug} {send_user "\nmatch12\n"}
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sshare not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$not_support == 1} {
+		send_user "\nWARNING: can not test without accounting enabled\n"
+		exit 0
+	}
+
+	if {$not_support == 2} {
+		send_user "\nWARNING: can not test without priority/multifactor plugin\n"
+		exit 0
+	}
+
+	if {$matches != 1} {
+		send_user "\nFAILURE: sshare -$soption failed ($matches)\n"
+		set exit_code 1
+	}
+		return $matches
+	}
 }
 
 ################################################################
@@ -376,6 +418,19 @@ if {$matches != 3} {
 
 set matches [sshare_opt -verbose ]
 if {$matches != 3} {
+	send_user "\nFAILURE: sshare --verbose failed ($matches)\n"
+	set exit_code 1
+}
+
+
+set matches [sshare_opt V ]
+if {$matches != 1} {
+	send_user "\nFAILURE: sshare -v failed ($matches)\n"
+	set exit_code 1
+}
+
+set matches [sshare_opt -version ]
+if {$matches != 1} {
 	send_user "\nFAILURE: sshare --verbose failed ($matches)\n"
 	set exit_code 1
 }
