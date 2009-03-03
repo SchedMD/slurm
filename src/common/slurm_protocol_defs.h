@@ -529,6 +529,7 @@ typedef struct launch_tasks_request_msg {
 	char     *efname; /* stderr filename pattern */
 	char     *ifname; /* stdin filename pattern */
 	uint8_t   buffered_stdio; /* 1 for line-buffered, 0 for unbuffered */
+	uint8_t   labelio;  /* prefix output lines with the task number */
 	uint16_t  num_io_port;
 	uint16_t  *io_port;  /* array of available client IO listen ports */
 	/**********  END  "normal" IO only options **********/
