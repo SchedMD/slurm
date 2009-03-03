@@ -7,6 +7,7 @@ generated_html = \
 	authplugins.html \
 	big_sys.html \
 	bluegene.html \
+	checkpoint_blcr.html \
 	checkpoint_plugins.html \
 	cons_res.html \
 	cons_res_share.html \

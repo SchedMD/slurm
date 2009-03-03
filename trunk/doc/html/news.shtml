@@ -37,23 +37,29 @@ Computing) mode.</li>
 <p>SLURM Version 2.0 is scheduled for released in May 2009.
 Major enhancements include:
 <ul>
-<li>Sophisticated scheduling algorithms are available in a new plugin. Jobs
-can be prioritized based upon their age, size and/or fair-share resource 
+<li>Sophisticated <a href="priority_multifactor.html">job prioritization 
+plugin</a> is now available. 
+Jobs can be prioritized based upon their age, size and/or fair-share resource 
 allocation using hierarchical bank accounts.</li>
-<li>An assortment of resource limits can be imposed upon individual users 
-and/or hierarchical bank accounts such as maximum job time limit, maximum 
-job size, and maximum number of running jobs.</li>
-<li>Advanced reservations can be made to insure resources will be available 
-when needed.</li>
-<li>Idle nodes can now be completely powered down when idle and automatically
-restarted when their is work available.</li>
-<li>Jobs in higher priority partitions (queues) can automatically preempt jobs
-in lower priority queues. The preempted jobs will automatically resume 
-execution upon completion of the higher priority job.</li>
-<li>Specific cores are allocated to jobs and jobs steps in order to effective
+<li>An assortment of <a href="resource_limits.html">resource limits</a> 
+can be imposed upon individual users and/or hierarchical bank accounts 
+such as maximum job time limit, maximum job size, and maximum number of 
+running jobs.</li>
+<li><a href="reservations.html">Advanced reservations</a> can be made to 
+insure resources will be available when needed.</li>
+<li>Idle nodes can now be completely <a href="power_save.html">powered 
+down</a> when idle and automatically restarted when their is work 
+available.</li>
+<li>Jobs in higher priority partitions (queues) can automatically 
+<a href="preempt.html">preempt</a> jobs in lower priority queues. 
+The preempted jobs will automatically resume execution upon completion 
+of the higher priority job.</li>
+<li>Specific cores are allocated to jobs and jobs steps in order to effective 
 preempt or gang schedule jobs.</li>
 <li>A new configuration parameter, <i>PrologSlurmctld</i>, can be used to 
 support the booting of different operating systems for each job.</li>
+<li>Automatic <a href="checkpoint_blcr.html">Checkpoint/Restart using BRCR</a> 
+is now available.</li>
 </ul>
 
 <h2><a name="21">Major Updates in SLURM Version 2.1 and beyond</a></h2>
@@ -64,12 +70,13 @@ to coordinate activities. Future development plans includes:
 <ul>
 <li>Optimized resource allocation based upon network topology (e.g.
 hierarchical switches).</li>
+<li>Modify more SLURM commands to operate between clusters.</li>
 <li>Support for BlueGene/Q systems.</li>
 <li>Permit resource allocations (jobs) to change size.</li>
 <li>Add Kerberos credential support including credential forwarding 
 and refresh.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 9 February 2009</p>
+<p style="text-align:center;">Last modified 3 March 2009</p>
 
 <!--#include virtual="footer.txt"-->
