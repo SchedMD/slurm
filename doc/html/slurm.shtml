@@ -61,14 +61,15 @@ with 10,240 PowerPC processors and a Myrinet switch</li>
 </ul>
 <p>SLURM is actively being developed, distributed and supported by 
 <a href="https://www.llnl.gov">Lawrence Livermore National Laboratory</a>,
-<a href="http://www.hp.com">Hewlett-Packard</a>,
-<a href="http://www.bull.com">Bull</a>,
+<a href="http://www.hp.com">Hewlett-Packard</a> and 
+<a href="http://www.bull.com">Bull</a>.
+It is also distributed and supported by 
 <a href="http://www.clusterresources.com">Cluster Resources</a>,
 <a href="http://www.sicortex.com">SiCortex</a>,
 <a href="http://www.infiscale.com">Infiscale</a>,
-<a href="http://www.ibm.com">IBM</a>, 
+<a href="http://www.ibm.com">IBM</a> and
 <a href="http://www.sun.com">Sun Microsystems</a>.</p>
 
-<p style="text-align:center;">Last modified 2 March 2009</p>
+<p style="text-align:center;">Last modified 3 March 2009</p>
 
 <!--#include virtual="footer.txt"-->
