@@ -75,66 +75,6 @@ proc sacct_job { soption } {
 			incr matches
 			exp_continue
 		}
-		-re "Cluster       CPUTime       CPUTimeRAW    Elapsed" {
-			if {$debug} {send_user "\nmatch3\n"}
-			incr matches
-			exp_continue
-		}
-		-re "Eligible      End           ExitCode      GID" {
-			if {$debug} {send_user "\nmatch4\n"}
-			incr matches
-			exp_continue
-		}
-		-re "Group         JobID         JobName       NodeList" {
-			if {$debug} {send_user "\nmatch5\n"}
-			incr matches
-			exp_continue
-		}
-		-re "MaxPages      MaxPagesNode  MaxPagesTask  MaxRSS" {
-			if {$debug} {send_user "\nmatch6\n"}
-			incr matches
-			exp_continue
-		}
-		-re "MaxRSSNode    MaxRSSTask    MaxVMSize     MaxVMSizeNode" {
-			if {$debug} {send_user "\nmatch7\n"}
-			incr matches
-			exp_continue
-		}
-		-re "MaxVMSizeTask  MinCPU        MinCPUNode    MinCPUTask" {
-			if {$debug} {send_user "\nmatch8\n"}
-			incr matches
-			exp_continue
-		}
-		-re "NCPUS         NNodes        NTasks        Priority" {
-			if {$debug} {send_user "\nmatch9\n"}
-			incr matches
-			exp_continue
-		}
-		-re "Partition     QOS           QOSRAW        ReqCPUS" {
-			if {$debug} {send_user "\nmatch10\n"}
-			incr matches
-			exp_continue
-		}
-		-re "Reserved      ResvCPU       ResvCPURAW    Start" {
-			if {$debug} {send_user "\nmatch11\n"}
-			incr matches
-			exp_continue
-		}
-		-re "State         Submit        Suspended     SystemCPU" {
-			if {$debug} {send_user "\nmatch12\n"}
-			incr matches
-			exp_continue
-		}
-		-re "Timelimit     TotalCPU      UID           User" {
-			if {$debug} {send_user "\nmatch13\n"}
-			incr matches
-			exp_continue
-		}
-		-re "UserCPU       WCKey         WCKeyID" {
-			if {$debug} {send_user "\nmatch14\n"}
-			incr matches
-			exp_continue
-		}
 		timeout {
 			send_user "\nFAILURE: sacct not responding\n"
 			set exit_code 1
@@ -153,14 +93,14 @@ proc sacct_job { soption } {
 
 ################################################################
 set matches [sacct_job --helpformat]
-if {$matches != 14} {
-	send_user "\nFAILURE: sacct --helpformat failed ($matches)\n"
+if {$matches != 2} {
+	send_user "\nFAILURE: sacct --helpformat failed ($matches of 2)\n"
 	set exit_code 1
 }
 
 set matches [sacct_job -e]
-if {$matches != 14} {
-	send_user "\nFAILURE: sacct -e failed ($matches)\n"
+if {$matches != 2} {
+	send_user "\nFAILURE: sacct -e failed ($matches of 2)\n"
 	set exit_code 1
 }
 
