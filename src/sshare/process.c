@@ -38,54 +38,6 @@
 
 #include "src/sshare/sshare.h"
 
-extern void _sshare_print_time(print_field_t *field,
-			       uint64_t value, int last)
-{
-	/* (value == unset)  || (value == cleared) */
-	if((value == NO_VAL) || (value == INFINITE)) {
-		if(print_fields_parsable_print 
-		   == PRINT_FIELDS_PARSABLE_NO_ENDING
-		   && last)
-			;
-		else if(print_fields_parsable_print)
-			printf("|");	
-		else				
-			printf("%-*s ", field->len, " ");
-	} else {
-		char *output = NULL;
-		double temp_d = (double)value;
-		
-		switch(time_format) {
-		case SSHARE_TIME_SECS:
-			output = xstrdup_printf("%llu", value);
-			break;
-		case SSHARE_TIME_MINS:
-			temp_d /= 60;
-			output = xstrdup_printf("%.0lf", temp_d);
-			break;
-		case SSHARE_TIME_HOURS:
-			temp_d /= 3600;
-			output = xstrdup_printf("%.0lf", temp_d);
-			break;
-		default:
-			temp_d /= 60;
-			output = xstrdup_printf("%.0lf", temp_d);
-			break;
-		}
-		
-		if(print_fields_parsable_print 
-		   == PRINT_FIELDS_PARSABLE_NO_ENDING
-		   && last)
-			printf("%s", output);
-		else if(print_fields_parsable_print)
-			printf("%s|", output);	
-		else
-			printf("%*.*s ", field->len, field->len, output);
-		xfree(output);
-	}
-}
-
-
 extern int process(shares_response_msg_t *resp)
 {
 	int rc = SLURM_SUCCESS;
