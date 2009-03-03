@@ -1544,7 +1544,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 
 		field = xmalloc(sizeof(print_field_t));
 		if(!strncasecmp("Account", object, MAX(command_len, 2))
-		   || !strncasecmp (argv[i], "Acct", MAX(command_len, 4))) {
+		   || !strncasecmp ("Acct", object, MAX(command_len, 4))) {
 			field->type = PRINT_ACCOUNT;
 			field->name = xstrdup("Account");
 			field->len = 10;

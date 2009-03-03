@@ -992,6 +992,7 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 
 		field = xmalloc(sizeof(print_field_t));
 		if(!strncasecmp("Account", object, MAX(command_len, 1))
+		   || !strncasecmp("Acct", object, MAX(command_len, 4))
 		   || !strncasecmp("Name", object, MAX(command_len, 2))) {
 			field->type = PRINT_ACCOUNT;
 			field->name = xstrdup("Account");
