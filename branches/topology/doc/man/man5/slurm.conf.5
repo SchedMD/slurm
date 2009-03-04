@@ -2067,7 +2067,7 @@ The network topology configuration one one line defining a switch name and
 its children, either node names or switch names.
 SLURM hostlist expressions can be used for either.
 .TP
-\fBSwitch\fR
+\fBSwitchName\fR
 The name of a switch. This name is internal to SLURM and arbitrary.
 Each switch should have a unique name.
 This field must be specified.
@@ -2214,13 +2214,13 @@ PartitionName=long Nodes=dev[9\-17] MaxTime=120 AllowGroups=admin
 .br
 #
 .br
-Switch=s0 Nodes=dev[0\-5]
+SwitchName=s0 Nodes=dev[0\-5]
 .br
-Switch=s1 Nodes=dev[6\-11]
+SwitchName=s1 Nodes=dev[6\-11]
 .br
-Switch=s2 Nodes=dev[12\-17]
+SwitchName=s2 Nodes=dev[12\-17]
 .br
-Switch=s3 Switches=s[0\-2]
+SwitchName=s3 Switches=s[0\-2]
 
 .SH "COPYING"
 Copyright (C) 2002\-2007 The Regents of the University of California.

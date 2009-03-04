@@ -119,6 +119,10 @@ static int parse_downnodes(void **dest, slurm_parser_enum_t type,
 			   const char *key, const char *value,
 			   const char *line, char **leftover);
 static void destroy_downnodes(void *ptr);
+static int parse_switches(void **dest, slurm_parser_enum_t type,
+			  const char *key, const char *value,
+			  const char *line, char **leftover);
+static void destroy_switches(void *ptr);
 static int defunct_option(void **dest, slurm_parser_enum_t type,
 			  const char *key, const char *value,
 			  const char *line, char **leftover);
@@ -264,6 +268,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"PartitionName", S_P_ARRAY, parse_partitionname,
 	 destroy_partitionname},
 	{"DownNodes", S_P_ARRAY, parse_downnodes, destroy_downnodes},
+	{"SwitchName", S_P_ARRAY, parse_switches, destroy_switches},
 
 	{NULL}
 };
@@ -714,12 +719,73 @@ static void destroy_downnodes(void *ptr)
 	xfree(ptr);
 }
 
-int slurm_conf_downnodes_array(slurm_conf_downnodes_t **ptr_array[])
+extern int slurm_conf_downnodes_array(slurm_conf_downnodes_t **ptr_array[])
 {
 	int count;
 	slurm_conf_downnodes_t **ptr;
 
 	if (s_p_get_array((void ***)&ptr, &count, "DownNodes", conf_hashtbl)) {
+		*ptr_array = ptr;
+		return count;
+	} else {
+		*ptr_array = NULL;
+		return 0;
+	}
+}
+
+static int parse_switches(void **dest, slurm_parser_enum_t type,
+			  const char *key, const char *value,
+			  const char *line, char **leftover)
+{
+	s_p_hashtbl_t *tbl;
+	slurm_conf_switches_t *s;
+	static s_p_options_t _switch_options[] = {
+		{"Nodes", S_P_STRING},
+		{"Switches", S_P_STRING},
+		{NULL}
+	};
+
+	tbl = s_p_hashtbl_create(_switch_options);
+	s_p_parse_line(tbl, *leftover, leftover);
+
+	s = xmalloc(sizeof(slurm_conf_switches_t));
+	s->switch_name = xstrdup(value);
+	s_p_get_string(&s->nodes, "Nodes", tbl);
+	s_p_get_string(&s->switches, "Switches", tbl);
+
+	if (s->nodes && s->switches) {
+		error("switch %s has both child switches and nodes",
+		      s->switch_name);
+		destroy_switches(s);
+		return -1;
+	}
+	if (!s->nodes && !s->switches) {
+		error("switch %s has neither child switches nor nodes",
+		      s->switch_name);
+		destroy_switches(s);
+		return -1;
+	}
+
+	*dest = (void *)s;
+
+	return 1;
+}
+
+static void destroy_switches(void *ptr)
+{
+	slurm_conf_switches_t *s = (slurm_conf_switches_t *)ptr;
+	xfree(s->nodes);
+	xfree(s->switch_name);
+	xfree(s->switches);
+	xfree(ptr);
+}
+
+extern int slurm_conf_switch_array(slurm_conf_switches_t **ptr_array[])
+{
+	int count;
+	slurm_conf_switches_t **ptr;
+
+	if (s_p_get_array((void ***)&ptr, &count, "SwitchName", conf_hashtbl)) {
 		*ptr_array = ptr;
 		return count;
 	} else {
