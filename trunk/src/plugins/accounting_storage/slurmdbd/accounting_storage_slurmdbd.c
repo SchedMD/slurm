@@ -1377,6 +1377,7 @@ extern int clusteracct_storage_p_node_up(void *db_conn,
 
 extern int clusteracct_storage_p_cluster_procs(void *db_conn,
 					       char *cluster,
+					       char *cluster_nodes,
 					       uint32_t procs,
 					       time_t event_time)
 {
@@ -1385,6 +1386,7 @@ extern int clusteracct_storage_p_cluster_procs(void *db_conn,
 
 	debug2("Sending info for cluster %s", cluster);
 	req.cluster_name = cluster;
+	req.cluster_nodes = cluster_nodes;
 	req.proc_count   = procs;
 	req.event_time   = event_time;
 	msg.msg_type     = DBD_CLUSTER_PROCS;
@@ -1472,6 +1474,7 @@ extern int jobacct_storage_p_job_start(void *db_conn, char *cluster_name,
 	dbd_id_rc_msg_t *resp;
 	char *block_id = NULL;
 	int rc = SLURM_SUCCESS;
+	char temp_bit[BUF_SIZE];
 
 	if (!job_ptr->details || !job_ptr->details->submit_time) {
 		error("jobacct_storage_p_job_start: "
@@ -1503,13 +1506,16 @@ extern int jobacct_storage_p_job_start(void *db_conn, char *cluster_name,
 	req.job_state     = job_ptr->job_state & (~JOB_COMPLETING);
 	req.name          = job_ptr->name;
 	req.nodes         = job_ptr->nodes;
-
+	if(job_ptr->node_bitmap) 
+		req.node_inx = bit_fmt(temp_bit, sizeof(temp_bit), 
+				       job_ptr->node_bitmap);
+	
 	req.partition     = job_ptr->partition;
 	req.req_cpus      = job_ptr->num_procs;
 	req.resv_id       = job_ptr->resv_id;
 	req.priority      = job_ptr->priority;
 	req.start_time    = job_ptr->start_time;
-	req.wckey    = job_ptr->wckey;
+	req.wckey         = job_ptr->wckey;
 	if (job_ptr->details)
 		req.submit_time   = job_ptr->details->submit_time;
 	req.uid           = job_ptr->user_id;
@@ -1600,6 +1606,7 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 	char node_list[BUFFER_SIZE];
 	slurmdbd_msg_t msg;
 	dbd_step_start_msg_t req;
+	char temp_bit[BUF_SIZE];
 
 #ifdef HAVE_BG
 	char *ionodes = NULL;
@@ -1649,6 +1656,9 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 	req.job_id      = step_ptr->job_ptr->job_id;
 	req.name        = step_ptr->name;
 	req.nodes       = node_list;
+	if(step_ptr->step_node_bitmap) 
+		req.node_inx = bit_fmt(temp_bit, sizeof(temp_bit), 
+				       step_ptr->step_node_bitmap);
 	req.node_cnt    = nodes;
 	req.start_time  = step_ptr->start_time;
 	if (step_ptr->job_ptr->details)

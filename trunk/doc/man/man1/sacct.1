@@ -220,13 +220,18 @@ Display jobs ran on all clusters. By default, only jobs ran on the
 cluster from where sacct is called are displayed.
 
 .TP 
-\f3\-\-noheader\fP
+\f3\-n\fP\f3,\fP \f3\-\-noheader\fP
 No heading will be added to the output. The default action is to
 display a header.
 .IP 
 This option has no effect when used with the 
 \f3\-\-dump\fP 
 option.
+
+.TP 
+\f3\-N\fP\f3,\fP \f3\-\-nodes\fP
+Display jobs that ran on any of these nodes.
+.IP
 
 .TP 
 \f3\-o \fP\f3,\fP \f3\-\-format\fP
@@ -501,7 +506,7 @@ Total number of CPUs allocated to the job.
 
 .TP
 \f3nodelist\fP
-List of node.
+List of nodes in job/step.
 
 .TP
 \f3nnodes\fP

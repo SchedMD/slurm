@@ -149,7 +149,7 @@ typedef struct slurm_acct_storage_ops {
 				    struct node_record *node_ptr,
 				    time_t event_time);
 	int  (*cluster_procs)      (void *db_conn,
-				    char *cluster,
+				    char *cluster, char *cluster_nodes,
 				    uint32_t procs, time_t event_time);
 	int  (*c_get_usage)        (void *db_conn, uint32_t uid,
 				    void *cluster_rec, int type,
@@ -507,6 +507,7 @@ extern void destroy_acct_cluster_rec(void *object)
 			list_destroy(acct_cluster->accounting_list);
 		xfree(acct_cluster->control_host);
 		xfree(acct_cluster->name);
+		xfree(acct_cluster->nodes);
 		destroy_acct_association_rec(acct_cluster->root_assoc);
 		xfree(acct_cluster);
 	}
@@ -732,6 +733,7 @@ extern void destroy_acct_job_cond(void *object)
 			list_destroy(job_cond->step_list);
 		if(job_cond->state_list)
 			list_destroy(job_cond->state_list);
+		xfree(job_cond->used_nodes);
 		if(job_cond->userid_list)
 			list_destroy(job_cond->userid_list);
 		if(job_cond->wckey_list)
@@ -1613,7 +1615,9 @@ extern void pack_acct_cluster_rec(void *in, uint16_t rpc_version, Buf buffer)
 			pack32(NO_VAL, buffer);
 			packnull(buffer);
 			pack32(0, buffer);
+			pack32(0, buffer);
 
+			packnull(buffer);
 			packnull(buffer);
 
 			pack_acct_association_rec(NULL, rpc_version, buffer);
@@ -1639,8 +1643,10 @@ extern void pack_acct_cluster_rec(void *in, uint16_t rpc_version, Buf buffer)
 
 		packstr(object->control_host, buffer);
 		pack32(object->control_port, buffer);
+		pack32(object->cpu_count, buffer);
 
 		packstr(object->name, buffer);
+		packstr(object->nodes, buffer);
 
 		pack_acct_association_rec(object->root_assoc,
 					  rpc_version, buffer);
@@ -1767,8 +1773,10 @@ extern int unpack_acct_cluster_rec(void **object, uint16_t rpc_version,
 		safe_unpackstr_xmalloc(&object_ptr->control_host,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&object_ptr->control_port, buffer);
+		safe_unpack32(&object_ptr->cpu_count, buffer);
 
 		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->nodes, &uint32_tmp, buffer);
 
 		if(unpack_acct_association_rec(
 			   (void **)&object_ptr->root_assoc, 
@@ -4859,6 +4867,7 @@ extern void pack_acct_job_cond(void *in, uint16_t rpc_version, Buf buffer)
 			pack32(NO_VAL, buffer);
 			pack_time(0, buffer);
 			pack_time(0, buffer);
+			packnull(buffer);
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
 			pack16(0, buffer);
@@ -4972,6 +4981,8 @@ extern void pack_acct_job_cond(void *in, uint16_t rpc_version, Buf buffer)
 
 		pack_time(object->usage_end, buffer);
 		pack_time(object->usage_start, buffer);
+
+		packstr(object->used_nodes, buffer);
 
 		if(object->userid_list)
 			count = list_count(object->userid_list);
@@ -5368,6 +5379,9 @@ extern int unpack_acct_job_cond(void **object, uint16_t rpc_version, Buf buffer)
 	
 		safe_unpack_time(&object_ptr->usage_end, buffer);
 		safe_unpack_time(&object_ptr->usage_start, buffer);
+
+		safe_unpackstr_xmalloc(&object_ptr->used_nodes,
+				       &uint32_tmp, buffer);
 
 		safe_unpack32(&count, buffer);
 		if(count != NO_VAL) {
@@ -7570,13 +7584,14 @@ extern int clusteracct_storage_g_node_up(void *db_conn,
 
 extern int clusteracct_storage_g_cluster_procs(void *db_conn,
 					       char *cluster,
+					       char *cluster_nodes,
 					       uint32_t procs,
 					       time_t event_time)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
  	return (*(g_acct_storage_context->ops.cluster_procs))
-		(db_conn, cluster, procs, event_time);
+		(db_conn, cluster, cluster_nodes, procs, event_time);
 }
 
 

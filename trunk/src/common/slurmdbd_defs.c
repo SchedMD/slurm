@@ -1972,6 +1972,7 @@ void inline slurmdbd_free_cluster_procs_msg(uint16_t rpc_version,
 {
 	if (msg) {
 		xfree(msg->cluster_name);
+		xfree(msg->cluster_nodes);
 		xfree(msg);
 	}
 }
@@ -2094,6 +2095,7 @@ void inline slurmdbd_free_job_start_msg(uint16_t rpc_version,
 		xfree(msg->cluster);
 		xfree(msg->name);
 		xfree(msg->nodes);
+		xfree(msg->node_inx);
 		xfree(msg->partition);
 		xfree(msg->wckey);
 		xfree(msg);
@@ -2210,6 +2212,7 @@ void inline slurmdbd_free_step_start_msg(uint16_t rpc_version,
 	if (msg) {
 		xfree(msg->name);
 		xfree(msg->nodes);
+		xfree(msg->node_inx);
 		xfree(msg);
 	}
 }
@@ -2306,9 +2309,16 @@ void inline
 slurmdbd_pack_cluster_procs_msg(uint16_t rpc_version, 
 				dbd_cluster_procs_msg_t *msg, Buf buffer)
 {
-	packstr(msg->cluster_name, buffer);
-	pack32(msg->proc_count,    buffer);
-	pack_time(msg->event_time, buffer);
+	if(rpc_version >= 5) {
+		packstr(msg->cluster_name, buffer);
+		packstr(msg->cluster_nodes, buffer);
+		pack32(msg->proc_count,    buffer);
+		pack_time(msg->event_time, buffer);
+	} else {
+		packstr(msg->cluster_name, buffer);
+		pack32(msg->proc_count,    buffer);
+		pack_time(msg->event_time, buffer);
+	}
 }
 
 int inline
@@ -2320,9 +2330,20 @@ slurmdbd_unpack_cluster_procs_msg(uint16_t rpc_version,
 
 	msg_ptr = xmalloc(sizeof(dbd_cluster_procs_msg_t));
 	*msg = msg_ptr;
-	safe_unpackstr_xmalloc(&msg_ptr->cluster_name, &uint32_tmp, buffer);
-	safe_unpack32(&msg_ptr->proc_count, buffer);
-	safe_unpack_time(&msg_ptr->event_time, buffer);
+
+	if(rpc_version >= 5) {
+		safe_unpackstr_xmalloc(&msg_ptr->cluster_name,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&msg_ptr->cluster_nodes,
+				       &uint32_tmp, buffer);
+		safe_unpack32(&msg_ptr->proc_count, buffer);
+		safe_unpack_time(&msg_ptr->event_time, buffer);
+	} else {
+		safe_unpackstr_xmalloc(&msg_ptr->cluster_name,
+				       &uint32_tmp, buffer);
+		safe_unpack32(&msg_ptr->proc_count, buffer);
+		safe_unpack_time(&msg_ptr->event_time, buffer);
+	}
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -2729,6 +2750,7 @@ slurmdbd_pack_job_start_msg(uint16_t rpc_version,
 		pack16(msg->job_state, buffer);
 		packstr(msg->name, buffer);
 		packstr(msg->nodes, buffer);
+		packstr(msg->node_inx, buffer);
 		packstr(msg->partition, buffer);
 		pack32(msg->priority, buffer);
 		pack32(msg->req_cpus, buffer);
@@ -2799,6 +2821,7 @@ slurmdbd_unpack_job_start_msg(uint16_t rpc_version,
 		safe_unpack16(&msg_ptr->job_state, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->name, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->nodes, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&msg_ptr->node_inx, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->partition,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&msg_ptr->priority, buffer);
@@ -3344,6 +3367,7 @@ slurmdbd_pack_step_start_msg(uint16_t rpc_version, dbd_step_start_msg_t *msg,
 		pack32(msg->job_id, buffer);
 		packstr(msg->name, buffer);
 		packstr(msg->nodes, buffer);
+		packstr(msg->node_inx, buffer);
 		pack32(msg->node_cnt, buffer);
 		pack_time(msg->start_time, buffer);
 		pack_time(msg->job_submit_time, buffer);
@@ -3377,6 +3401,7 @@ slurmdbd_unpack_step_start_msg(uint16_t rpc_version,
 		safe_unpack32(&msg_ptr->job_id, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->name, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->nodes, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&msg_ptr->node_inx, &uint32_tmp, buffer);
 		safe_unpack32(&msg_ptr->node_cnt, buffer);
 		safe_unpack_time(&msg_ptr->start_time, buffer);
 		safe_unpack_time(&msg_ptr->job_submit_time, buffer);

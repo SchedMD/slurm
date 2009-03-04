@@ -252,8 +252,9 @@ typedef struct {
 	List accounting_list; /* list of cluster_accounting_rec_t *'s */
 	char *control_host;
 	uint32_t control_port;
+	uint32_t cpu_count;
 	char *name;
-
+	char *nodes;
 	acct_association_rec_t *root_assoc; /* root association for cluster */
 
 	uint16_t rpc_version; /* version of rpc this cluter is running */
@@ -276,6 +277,7 @@ typedef struct {
 	List state_list;        /* list of char * */
 	time_t usage_end; 
 	time_t usage_start; 
+	char *used_nodes;       /* a ranged node string where jobs ran */
 	List userid_list;		/* list of char * */
 	List wckey_list;		/* list of char * */
 	uint16_t without_steps; /* don't give me step info */
@@ -1012,6 +1014,7 @@ extern int clusteracct_storage_g_node_up(void *db_conn,
 
 extern int clusteracct_storage_g_cluster_procs(void *db_conn, 
 					       char *cluster,
+					       char *cluster_nodes,
 					       uint32_t procs,
 					       time_t event_time);
 

@@ -2599,6 +2599,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "period_start", "int unsigned not null" },
 		{ "period_end", "int unsigned default 0 not null" },
 		{ "reason", "tinytext not null" },
+		{ "cluster_nodes", "text not null default ''" },
 		{ NULL, NULL}		
 	};
 
@@ -2629,6 +2630,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "alloc_cpus", "mediumint unsigned not null" }, 
 		{ "alloc_nodes", "mediumint unsigned not null" }, 
 		{ "nodelist", "text" },
+		{ "node_inx", "text" },
 		{ "kill_requid", "smallint default -1 not null" },
 		{ "qos", "smallint default 0" },
 		{ "resvid", "int unsigned not null" },
@@ -2691,6 +2693,7 @@ static int _mysql_acct_check_tables(MYSQL *db_conn)
 		{ "suspended", "int unsigned default 0 not null" },
 		{ "name", "text not null" },
 		{ "nodelist", "text not null" },
+		{ "node_inx", "text" },
 		{ "state", "smallint not null" },
 		{ "kill_requid", "smallint default -1 not null" },
 		{ "comp_code", "int default 0 not null" },
@@ -7811,6 +7814,9 @@ empty:
 	assoc_cond.cluster_list = list_create(NULL);
 
 	while((row = mysql_fetch_row(result))) {
+		MYSQL_RES *result2 = NULL;
+		MYSQL_ROW row2;
+
 		cluster = xmalloc(sizeof(acct_cluster_rec_t));
 		list_append(cluster_list, cluster);
 
@@ -7830,6 +7836,23 @@ empty:
 		cluster->control_host = xstrdup(row[CLUSTER_REQ_CH]);
 		cluster->control_port = atoi(row[CLUSTER_REQ_CP]);
 		cluster->rpc_version = atoi(row[CLUSTER_REQ_VERSION]);
+		query = xstrdup_printf(
+			"select cpu_count, cluster_nodes from "
+			"%s where cluster=\"%s\" "
+			"and period_end=0 and node_name='' limit 1",
+			event_table, cluster);
+		if(!(result2 = mysql_db_query_ret(
+			     mysql_conn->db_conn, query, 0))) {
+			xfree(query);
+			continue;
+		}
+		xfree(query);
+		if((row2 = mysql_fetch_row(result2))) {
+			cluster->cpu_count = atoi(row2[0]);
+			if(row2[1] && row2[1][0])
+				cluster->nodes = xstrdup(row2[1]);
+		}
+		mysql_free_result(result2);	
 	}
 	mysql_free_result(result);
 
@@ -9711,9 +9734,11 @@ extern int clusteracct_storage_p_register_ctld(mysql_conn_t *mysql_conn,
 
 	query = xstrdup_printf(
 		"update %s set deleted=0, mod_time=%d, "
-		"control_host='%s', control_port=%u, rpc_version=%d "
+		"control_host='%s', control_port=%u, rpc_version=%d, "
 		"where name='%s';",
-		cluster_table, now, address, port, SLURMDBD_VERSION, cluster);
+		cluster_table, now, address, port,
+		SLURMDBD_VERSION,
+		cluster);
 	xstrfmtcat(query, 	
 		   "insert into %s "
 		   "(timestamp, action, name, actor, info) "
@@ -9733,6 +9758,7 @@ extern int clusteracct_storage_p_register_ctld(mysql_conn_t *mysql_conn,
 
 extern int clusteracct_storage_p_cluster_procs(mysql_conn_t *mysql_conn, 
 					       char *cluster,
+					       char *cluster_nodes,
 					       uint32_t procs,
 					       time_t event_time)
 {
@@ -9748,7 +9774,7 @@ extern int clusteracct_storage_p_cluster_procs(mysql_conn_t *mysql_conn,
 
 	/* Record the processor count */
 	query = xstrdup_printf(
-		"select cpu_count from %s where cluster=\"%s\" "
+		"select cpu_count, cluster_nodes from %s where cluster=\"%s\" "
 		"and period_end=0 and node_name='' limit 1",
 		event_table, cluster);
 	if(!(result = mysql_db_query_ret(
@@ -9783,9 +9809,30 @@ extern int clusteracct_storage_p_cluster_procs(mysql_conn_t *mysql_conn,
 	if(atoi(row[0]) == procs) {
 		debug3("we have the same procs as before no need to "
 		       "update the database.");
-		goto end_it;
-	}
-	debug("%s has changed from %s cpus to %u", cluster, row[0], procs);   
+		if(cluster_nodes) {
+			if(!row[1][0]) {
+				debug("Adding cluster nodes '%s' to "
+				      "last instance of cluster '%s'.",
+				      cluster_nodes, cluster);
+				query = xstrdup_printf(
+					"update %s set cluster_nodes=\"%s\" "
+					"where cluster=\"%s\" "
+					"and period_end=0 and node_name=''",
+					event_table, cluster_nodes, cluster);
+				rc = mysql_db_query(mysql_conn->db_conn, query);
+				xfree(query);
+				goto end_it;
+			} else if(!strcmp(cluster_nodes, row[1])) {
+				debug3("we have the same nodes in the cluster "
+				       "as before no need to "
+				       "update the database.");
+				goto end_it;
+			}
+		} else 
+			goto end_it;
+	} else
+		debug("%s has changed from %s cpus to %u",
+		      cluster, row[0], procs);   
 
 	query = xstrdup_printf(
 		"update %s set period_end=%d where cluster=\"%s\" "
@@ -9797,9 +9844,10 @@ extern int clusteracct_storage_p_cluster_procs(mysql_conn_t *mysql_conn,
 		goto end_it;
 add_it:
 	query = xstrdup_printf(
-		"insert into %s (cluster, cpu_count, period_start, reason) "
-		"values (\"%s\", %u, %d, 'Cluster processor count')",
-		event_table, cluster, procs, event_time);
+		"insert into %s (cluster, cluster_nodes, cpu_count, "
+		"period_start, reason) "
+		"values (\"%s\", \"%s\", %u, %d, 'Cluster processor count')",
+		event_table, cluster, cluster_nodes, procs, event_time);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
 end_it:
@@ -9914,7 +9962,7 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 {
 #ifdef HAVE_MYSQL
 	int	rc=SLURM_SUCCESS;
-	char	*nodes = NULL, *jname = NULL;
+	char	*nodes = NULL, *jname = NULL, *node_inx = NULL;
 	int track_steps = 0;
 	char *block_id = NULL;
 	char *query = NULL;
@@ -9977,7 +10025,13 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 	if(slurmdbd_conf) {
 		block_id = xstrdup(job_ptr->comment);
 		node_cnt = job_ptr->node_cnt;
+		node_inx = job_ptr->network;
 	} else {
+		char temp_bit[BUF_SIZE];
+
+		if(job_ptr->node_bitmap) 
+			node_inx = bit_fmt(temp_bit, sizeof(temp_bit), 
+					   job_ptr->node_bitmap);
 #ifdef HAVE_BG
 		select_g_get_jobinfo(job_ptr->select_jobinfo, 
 				     SELECT_DATA_BLOCK_ID, 
@@ -10026,6 +10080,8 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 			xstrcat(query, "blockid, ");
 		if(job_ptr->wckey) 
 			xstrcat(query, "wckey, ");
+		if(node_inx) 
+			xstrcat(query, "node_inx, ");
 		
 		xstrfmtcat(query, 
 			   "eligible, submit, start, name, track_steps, "
@@ -10046,6 +10102,8 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 			xstrfmtcat(query, "\"%s\", ", block_id);
 		if(job_ptr->wckey) 
 			xstrfmtcat(query, "\"%s\", ", job_ptr->wckey);
+		if(node_inx) 
+			xstrfmtcat(query, "\"%s\", ", node_inx);
 
 		xstrfmtcat(query, 
 			   "%d, %d, %d, \"%s\", %u, %u, %u, %u, %u, %u) "
@@ -10071,6 +10129,8 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 			xstrfmtcat(query, ", blockid=\"%s\"", block_id);
 		if(job_ptr->wckey) 
 			xstrfmtcat(query, ", wckey=\"%s\"", job_ptr->wckey);
+		if(node_inx) 
+			xstrfmtcat(query, ", node_inx=\"%s\"", node_inx);
 		
 		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	try_again:
@@ -10100,9 +10160,10 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 				   job_ptr->partition);
 		if(block_id)
 			xstrfmtcat(query, "blockid=\"%s\", ", block_id);
-
 		if(job_ptr->wckey) 
 			xstrfmtcat(query, "wckey=\"%s\", ", job_ptr->wckey);
+		if(node_inx) 
+			xstrfmtcat(query, "node_inx=\"%s\", ", node_inx);
 
 		xstrfmtcat(query, "start=%d, name=\"%s\", state=%u, "
 			   "alloc_cpus=%u, alloc_nodes=%u, "
@@ -10224,6 +10285,7 @@ extern int jobacct_storage_p_step_start(mysql_conn_t *mysql_conn,
 	int cpus = 0, tasks = 0, nodes = 0, task_dist = 0;
 	int rc=SLURM_SUCCESS;
 	char node_list[BUFFER_SIZE];
+	char *node_inx = NULL;
 #ifdef HAVE_BG
 	char *ionodes = NULL;
 #endif
@@ -10246,7 +10308,13 @@ extern int jobacct_storage_p_step_start(mysql_conn_t *mysql_conn,
 			 step_ptr->job_ptr->nodes);
 		nodes = step_ptr->step_layout->node_cnt;
 		task_dist = step_ptr->step_layout->task_dist;
+		node_inx = step_ptr->network;
 	} else {
+		char temp_bit[BUF_SIZE];
+
+		if(step_ptr->step_node_bitmap) 
+			node_inx = bit_fmt(temp_bit, sizeof(temp_bit), 
+					   step_ptr->step_node_bitmap);
 #ifdef HAVE_BG
 		tasks = cpus = step_ptr->job_ptr->num_procs;
 		select_g_get_jobinfo(step_ptr->job_ptr->select_jobinfo, 
@@ -10278,7 +10346,7 @@ extern int jobacct_storage_p_step_start(mysql_conn_t *mysql_conn,
 		}
 #endif
 	}
-	
+
 	step_ptr->job_ptr->requid = -1; /* force to -1 for sacct to know this
 					 * hasn't been set yet  */
 
@@ -10305,15 +10373,16 @@ extern int jobacct_storage_p_step_start(mysql_conn_t *mysql_conn,
 	   %d */
 	query = xstrdup_printf(
 		"insert into %s (id, stepid, start, name, state, "
-		"cpus, nodes, tasks, nodelist, task_dist) "
-		"values (%d, %d, %d, \"%s\", %d, %d, %d, %d, \"%s\", %d) "
+		"cpus, nodes, node_inx, tasks, nodelist, task_dist) "
+		"values (%d, %d, %d, \"%s\", %d, %d, %d, %d, "
+		"\"%s\", \"%s\", %d) "
 		"on duplicate key update cpus=%d, nodes=%d, "
-		"tasks=%d, end=0, state=%d, task_dist=%d",
+		"tasks=%d, end=0, state=%d, node_inx=\"%s\", task_dist=%d",
 		step_table, step_ptr->job_ptr->db_index,
 		step_ptr->step_id, 
 		(int)step_ptr->start_time, step_ptr->name,
-		JOB_RUNNING, cpus, nodes, tasks, node_list, task_dist,
-		cpus, nodes, tasks, JOB_RUNNING, task_dist);
+		JOB_RUNNING, cpus, nodes, tasks, node_list, node_inx, task_dist,
+		cpus, nodes, tasks, JOB_RUNNING, node_inx, task_dist);
 	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);

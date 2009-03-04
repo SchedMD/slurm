@@ -691,13 +691,15 @@ structure marked up.<br>
 
 <p class="commandline">
 int clusteracct_storage_p_cluster_procs(void *db_conn, char *cluster,
-uint32_t procs, time_t event_time)
+char *cluster_nodes, uint32_t procs, time_t event_time)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 Update storage type with the current number of processors on a given cluster.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">db_conn</span> (input) connection to
 the storage type. <br>
 <span class="commandline">cluster</span> (input) name of cluster.<br>
+<span class="commandline">cluster_nodes</span> (input) ranged list of
+nodes on system.<br>
 <span class="commandline">procs</span> (input) number of processors on
 system.<br>
 <span class="commandline">event_time</span> (input) time event happened.<br>

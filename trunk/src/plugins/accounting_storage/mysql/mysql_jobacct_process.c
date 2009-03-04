@@ -51,6 +51,24 @@
 #ifdef HAVE_MYSQL
 static pthread_mutex_t local_file_lock = PTHREAD_MUTEX_INITIALIZER;
 
+typedef struct {
+	hostlist_t hl;
+	time_t start;
+	time_t end;
+	bitstr_t *asked_bitmap;
+} local_cluster_t;
+
+static void _destroy_local_cluster(void *object)
+{
+	local_cluster_t *local_cluster = (local_cluster_t *)object;
+	if(local_cluster) {
+		if(local_cluster->hl)
+			hostlist_destroy(local_cluster->hl);
+		FREE_NULL_BITMAP(local_cluster->asked_bitmap);
+		xfree(local_cluster);
+	}
+}
+
 static int _write_to_file(int fd, char *data)
 {
 	int pos = 0, nwrite = strlen(data), amount;
@@ -67,6 +85,44 @@ static int _write_to_file(int fd, char *data)
 		pos    += amount;
 	}
 	return rc;
+}
+
+static int _good_nodes(List local_cluster_list, 
+		       local_cluster_t **curr_cluster, char *node_inx,
+		       int submit)
+{
+	/* check the bitmap to see if this is one of the jobs
+	   we are looking for */
+	if(*curr_cluster) {
+		bitstr_t *job_bitmap = NULL;
+		if(!node_inx || !node_inx[0])
+			return 0;
+		if((submit < (*curr_cluster)->start)
+		   || (submit > (*curr_cluster)->end)) {
+			local_cluster_t *local_cluster = NULL;
+			
+			ListIterator itr =
+				list_iterator_create(local_cluster_list);
+			while((local_cluster = list_next(itr))) {
+				if((submit >= local_cluster->start)
+				   && (submit <= local_cluster->end)) {
+					*curr_cluster = local_cluster;
+						break;
+				}
+			}
+			list_iterator_destroy(itr);
+			if(!local_cluster)
+				return 0;
+		}
+		job_bitmap = bit_alloc(hostlist_count((*curr_cluster)->hl));
+		bit_unfmt(job_bitmap, node_inx);
+		if(!bit_overlap((*curr_cluster)->asked_bitmap, job_bitmap)) {
+			FREE_NULL_BITMAP(job_bitmap);
+			return 0;
+		}
+		FREE_NULL_BITMAP(job_bitmap);
+	}
+	return 1;
 }
 
 static int _archive_script(acct_archive_cond_t *arch_cond, time_t last_submit)
@@ -383,7 +439,9 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 	List job_list = list_create(destroy_jobacct_job_rec);
 	uint16_t private_data = 0;
 	acct_user_rec_t user;
-		
+	local_cluster_t *curr_cluster = NULL;
+	List local_cluster_list = NULL;
+
 	/* if this changes you will need to edit the corresponding 
 	 * enum below also t1 is job_table */
 	char *job_req_inx[] = {
@@ -413,6 +471,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		"t1.alloc_cpus",
 		"t1.alloc_nodes",
 		"t1.nodelist",
+		"t1.node_inx",
 		"t1.kill_requid",
 		"t1.qos",
 		"t2.user",
@@ -430,6 +489,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		"t1.suspended",
 		"t1.name",
 		"t1.nodelist",
+		"t1.node_inx",
 		"t1.state",
 		"t1.kill_requid",
 		"t1.comp_code",
@@ -486,6 +546,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		JOB_REQ_ALLOC_CPUS,
 		JOB_REQ_ALLOC_NODES,
 		JOB_REQ_NODELIST,
+		JOB_REQ_NODE_INX,
 		JOB_REQ_KILL_REQUID,
 		JOB_REQ_QOS,
 		JOB_REQ_USER_NAME,
@@ -501,6 +562,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		STEP_REQ_SUSPENDED,
 		STEP_REQ_NAME,
 		STEP_REQ_NODELIST,
+		STEP_REQ_NODE_INX,
 		STEP_REQ_STATE,
 		STEP_REQ_KILL_REQUID,
 		STEP_REQ_COMP_CODE,
@@ -559,6 +621,103 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		}
 	}
 
+
+	/* Here we set up environment to check used nodes of jobs.
+	   Since we store the bitmap of the entire cluster we can use
+	   that to set up a hostlist and set up the bitmap to make
+	   things work.  This should go before the setup of conds
+	   since we could update the start/end time.
+	*/
+	if(job_cond && job_cond->used_nodes) {
+		hostlist_t temp_hl = NULL;
+		hostlist_iterator_t h_itr = NULL;
+		char *object = NULL;
+
+		if(!job_cond->cluster_list
+		   || list_count(job_cond->cluster_list) != 1) {
+			error("If you are doing a query against nodes "
+			      "you must only have 1 cluster "
+			      "you are asking for.");
+			list_destroy(job_list);
+			return NULL;
+		}
+
+		temp_hl = hostlist_create(job_cond->used_nodes);
+		if(!hostlist_count(temp_hl)) {
+			error("we didn't get any real hosts to look for.");
+			goto no_hosts;
+		}
+		h_itr = hostlist_iterator_create(temp_hl);
+
+		query = xstrdup_printf("select cluster_nodes, period_start, "
+				       "period_end from %s where node_name='' "
+				       "&& cluster_nodes !=''",
+				       event_table);
+
+		if((object = list_peek(job_cond->cluster_list)))
+			xstrfmtcat(query, " && cluster='%s'", object);
+
+		if(job_cond->usage_start) {
+			if(!job_cond->usage_end)
+				job_cond->usage_end = now;
+
+			xstrfmtcat(query, 
+				   " && ((period_start < %d) "
+				   "&& (period_end >= %d || period_end = 0))",
+				   job_cond->usage_end, job_cond->usage_start);
+		}
+		
+		debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+		if(!(result = mysql_db_query_ret(mysql_conn->db_conn,
+						 query, 0))) {
+			xfree(query);
+			list_destroy(job_list);
+			hostlist_destroy(temp_hl);
+			return NULL;
+		}
+		xfree(query);
+
+		local_cluster_list = list_create(_destroy_local_cluster);
+		while((row = mysql_fetch_row(result))) {
+			char *host = NULL;
+			int loc = 0;
+			local_cluster_t *local_cluster =
+				xmalloc(sizeof(local_cluster_t));
+			local_cluster->hl = hostlist_create(row[0]);
+			local_cluster->start = atoi(row[1]);
+			local_cluster->end   = atoi(row[2]);
+			local_cluster->asked_bitmap = 
+				bit_alloc(hostlist_count(local_cluster->hl));
+			while((host = hostlist_next(h_itr))) {
+				if((loc = hostlist_find(
+					    local_cluster->hl, host)) != -1) 
+					bit_set(local_cluster->asked_bitmap,
+						loc);
+				free(host);
+			}
+			hostlist_iterator_reset(h_itr);
+			if(bit_ffs(local_cluster->asked_bitmap) != -1) {
+				list_append(local_cluster_list, local_cluster);
+				if(local_cluster->end == 0) {
+					local_cluster->end = now;
+					curr_cluster = local_cluster;
+				}
+			} else 
+				_destroy_local_cluster(local_cluster);
+		}
+		mysql_free_result(result);
+		hostlist_iterator_destroy(h_itr);
+		if(!list_count(local_cluster_list)) {
+			list_destroy(job_list);
+			hostlist_destroy(temp_hl);
+			list_destroy(local_cluster_list);
+			return NULL;
+		}
+	no_hosts:
+
+		hostlist_destroy(temp_hl);
+	}
+
 	setup_job_cond_limits(job_cond, &extra);
 
 	xfree(tmp);
@@ -588,6 +747,9 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 			     mysql_conn->db_conn, query, 0))) {
 			xfree(extra);
 			xfree(query);
+			list_destroy(job_list);
+			if(local_cluster_list)
+				list_destroy(local_cluster_list);
 			return NULL;
 		}
 		xfree(query);
@@ -626,17 +788,19 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		xstrcat(query, extra);
 		xfree(extra);
 	}
+	
 	/* Here we want to order them this way in such a way so it is
 	   easy to look for duplicates 
 	*/
 	if(job_cond && !job_cond->duplicates) 
-		xstrcat(query, " order by jobid, submit desc");
+		xstrcat(query, " order by t1.cluster, jobid, submit desc");
 
 	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
-	if(!(result = mysql_db_query_ret(
-		     mysql_conn->db_conn, query, 0))) {
+	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
 		xfree(query);
 		list_destroy(job_list);
+		if(local_cluster_list)
+			list_destroy(local_cluster_list);
 		return NULL;
 	}
 	xfree(query);
@@ -644,6 +808,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 	while((row = mysql_fetch_row(result))) {
 		char *id = row[JOB_REQ_ID];
 		bool job_ended = 0;
+		int submit = atoi(row[JOB_REQ_SUBMIT]);
 
 		curr_id = atoi(row[JOB_REQ_JOBID]);
 
@@ -652,6 +817,12 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		
 		last_id = curr_id;
 
+		/* check the bitmap to see if this is one of the jobs
+		   we are looking for */
+		if(!_good_nodes(local_cluster_list, &curr_cluster,
+				row[JOB_REQ_NODE_INX], submit))
+			continue;
+		
 		job = create_jobacct_job_rec();
 
 		job->alloc_cpus = atoi(row[JOB_REQ_ALLOC_CPUS]);
@@ -685,7 +856,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 			job->blockid = xstrdup(row[JOB_REQ_BLOCKID]);
 
 		job->eligible = atoi(row[JOB_REQ_ELIGIBLE]);
-		job->submit = atoi(row[JOB_REQ_SUBMIT]);
+		job->submit = submit;
 		job->start = atoi(row[JOB_REQ_START]);
 		job->end = atoi(row[JOB_REQ_END]);
 		/* since the job->end could be set later end it here */
@@ -842,10 +1013,18 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 			     mysql_conn->db_conn, query, 0))) {
 			xfree(query);
 			list_destroy(job_list);
+			if(local_cluster_list)
+				list_destroy(local_cluster_list);
 			return NULL;
 		}
 		xfree(query);
 		while ((step_row = mysql_fetch_row(step_result))) {
+			/* check the bitmap to see if this is one of the steps
+			   we are looking for */
+			if(!_good_nodes(local_cluster_list, &curr_cluster,
+					step_row[STEP_REQ_NODE_INX], submit))
+				continue;
+		
 			step = create_jobacct_step_rec();
 			step->job_ptr = job;
 			if(!job->first_step_ptr)
@@ -967,6 +1146,8 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		step = NULL;
 	}
 	mysql_free_result(result);
+	if(local_cluster_list)
+		list_destroy(local_cluster_list);
 
 	return job_list;
 }
@@ -1513,7 +1694,7 @@ exit_steps:
 		}
 	}
 exit_jobs:
-	
+
 	return SLURM_SUCCESS;
 }
 

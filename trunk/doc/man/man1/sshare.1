@@ -1,4 +1,4 @@
-.TH SSHARE "12" "November 2008" "sshare 2.0" "Slurm components"
+.TH SSHARE "1" "November 2008" "sshare 2.0" "Slurm components"
 
 .SH "NAME"
 sshare \- Tool for listing the shares of associations to a cluster.
@@ -7,11 +7,14 @@ sshare \- Tool for listing the shares of associations to a cluster.
 \fBsshare\fR [\fIOPTIONS\fR...] [\fICOMMAND\fR...]
 
 .SH "DESCRIPTION"
-\fBsshare\fR is used to view Slurm share information.
+\fBsshare\fR is used to view Slurm share information.  This command is
+only viable when running with the priority/multifactor plugin.
 The sshare information is derived from a database with the interface 
-being provided by \fBslurmdbd\fR (Slurm Database daemon).
-sshare provides Slurm share information of Account, User, ID,
-FairShare, Normal Shares, Used, Normal Usage, Effective Used, Normal Effective Usage.
+being provided by \fBslurmdbd\fR (Slurm Database daemon) which is
+read in from the slurmctld and used to process the shares available
+to a given association.  sshare provides Slurm share information of
+Account, User, Raw Shares, Normalized Shares, Raw Usage, Normalized
+Usage, and Effective Usage.
 
 
 .SH "OPTIONS"

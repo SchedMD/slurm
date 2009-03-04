@@ -491,6 +491,7 @@ extern int clusteracct_storage_p_register_ctld(void *db_conn,
 
 extern int clusteracct_storage_p_cluster_procs(void *db_conn,
 					       char *cluster,
+					       char *cluster_nodes,
 					       uint32_t procs,
 					       time_t event_time)
 {

@@ -187,6 +187,7 @@ typedef struct {
 
 typedef struct dbd_cluster_procs_msg {
 	char *cluster_name;	/* name of cluster */
+	char *cluster_nodes;	/* name of cluster */
 	uint32_t proc_count;	/* total processor count */
 	time_t event_time;	/* time of transition */
 } dbd_cluster_procs_msg_t;
@@ -268,6 +269,8 @@ typedef struct dbd_job_start_msg {
 	uint16_t job_state;	/* job state */
 	char *   name;		/* job name */
 	char *   nodes;		/* hosts allocated to the job */
+	char *   node_inx;      /* ranged bitmap string of hosts
+				 * allocated to the job */
 	char *   partition;	/* partition job is running on */
 	uint32_t priority;	/* job priority */
 	uint32_t req_cpus;	/* count of req processors */
@@ -352,6 +355,8 @@ typedef struct dbd_step_start_msg {
 	uint32_t job_id;	/* job ID */
 	char *   name;		/* step name */
 	char *   nodes;		/* hosts allocated to the step */
+	char *   node_inx;	/* bitmap index of hosts allocated to
+				 * the step */
 	uint32_t node_cnt;      /* how many nodes used in step */ 
 	time_t   start_time;	/* step start time */
 	time_t   job_submit_time;/* job submit time needed to find job record
