@@ -5,6 +5,7 @@ documents those changes that are of interest to users and admins.
 =============================
  -- OpenMPI users only: Add srun logic to automatically recreate and 
     re-launch a job step if the step fails with a reserved port conflict.
+ -- Add TopologyPlugin configuration parameter.
 
 * Changes in SLURM 1.4.0-pre8
 =============================

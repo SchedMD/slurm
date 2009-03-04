@@ -286,16 +286,24 @@ extern char *slurm_get_crypto_type(void);
  */
 extern uint16_t slurm_get_fast_schedule(void);
 
-/* slurm_get_track_wckey
- * returns the value of track_wckey in slurmctld_conf object
+/* slurm_get_crypto_type
+ * returns the crypto_type from slurmctld_conf object
+ * RET char *    - crypto type, MUST be xfreed by caller
  */
-extern uint16_t slurm_get_track_wckey(void);
+extern char *slurm_get_crypto_type(void);
+
+/* slurm_get_topology_plugin
+ * returns the value of topology_plugin in slurmctld_conf object
+ * RET char *    - topology type, MUST be xfreed by caller
+ */
+extern char * slurm_get_topology_plugin(void);
 
 /* slurm_set_tree_width
  * sets the value of tree_width in slurmctld_conf object
  * RET 0 or error code
  */
 extern int slurm_set_tree_width(uint16_t tree_width);
+
 /* slurm_get_tree_width
  * returns the value of tree_width in slurmctld_conf object
  */

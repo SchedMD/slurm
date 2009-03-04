@@ -186,6 +186,7 @@ function displayfile()
    "TaskPlugin=task/" + get_radio_value(document.config.task_plugin) + "<br>" +
    get_task_plugin_param() + "<br>" +
    get_field("TaskProlog",document.config.task_prolog) + "<br>" +
+   "#TopologyPlugin=topology/slurm.conf <br>" +
    "#TmpFs=/tmp <br>" +
    "#TrackWCKey=no <br>" +
    "#TreeWidth= <br>" +
@@ -835,6 +836,6 @@ before terminating all remaining tasks. A value of zero indicates unlimited wait
 </FORM>
 <HR>
 <P class="footer">LLNL-WEB-402631<BR>
-Last modified 15 December 2008</P>
+Last modified 4 March 2009</P>
 </BODY>
 
