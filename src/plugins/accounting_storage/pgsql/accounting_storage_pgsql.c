@@ -1102,6 +1102,7 @@ extern int clusteracct_storage_p_register_ctld(PGconn *acct_pgsql_db,
 
 extern int clusteracct_storage_p_cluster_procs(PGconn *acct_pgsql_db,
 					       char *cluster,
+					       char *cluster_nodes,
 					       uint32_t procs,
 					       time_t event_time)
 {

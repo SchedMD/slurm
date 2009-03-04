@@ -437,6 +437,8 @@ sacct [<OPTION>]                                                            \n\
 	           No header will be added to the beginning of output.      \n\
                    The default is to print a header; the option has no effect\n\
                    if --dump is specified                                   \n\
+     -N, --nodes:                                                           \n\
+                   A comma separated list of nodes where jobs ran           \n\
      -o, --format:                                                          \n\
 	           Comma seperated list of fields. (use \"--helpformat\"    \n\
                    for a list of available fields).                         \n\
@@ -600,6 +602,7 @@ void parse_command_line(int argc, char **argv)
 		{"help", 0, 0, 'h'},
 		{"jobs", 1, 0, 'j'},
 		{"long", 0, 0, 'l'},
+		{"nodes", 1, 0, 'N'},
 		{"noheader", 0, 0, 'n'},
 		{"fields", 1, 0, 'o'},
 		{"format", 1, 0, 'o'},
@@ -625,7 +628,7 @@ void parse_command_line(int argc, char **argv)
 
 	while (1) {		/* now cycle through the command line */
 		c = getopt_long(argc, argv,
-				"aA:bcC:deE:f:g:hj:lno:OpPr:s:S:tu:vVX",
+				"aA:bcC:deE:f:g:hj:lnN:o:OpPr:s:S:tu:vVX",
 				long_options, &optionIndex);
 		if (c == -1)
 			break;
@@ -694,6 +697,7 @@ void parse_command_line(int argc, char **argv)
 				job_cond->step_list = list_create(
 					destroy_jobacct_selected_step);
 			_addto_step_list(job_cond->step_list, optarg);
+			all_users = 1;
 			break;
 		case 'L':
 			all_clusters = 1;
@@ -709,6 +713,15 @@ void parse_command_line(int argc, char **argv)
 			break;
 		case 'n':
 			print_fields_have_header = 0;
+			break;
+		case 'N':
+			if(job_cond->used_nodes) {
+				error("Aleady asked for nodes '%s'",
+				      job_cond->used_nodes);
+				break;
+			}
+			job_cond->used_nodes = xstrdup(optarg);
+			all_users = 1;
 			break;
 		case 'p':
 			print_fields_parsable_print = 

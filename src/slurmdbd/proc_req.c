@@ -941,6 +941,7 @@ static int _cluster_procs(slurmdbd_conn_t *slurmdbd_conn,
 	rc = clusteracct_storage_g_cluster_procs(
 		slurmdbd_conn->db_conn,
 		cluster_procs_msg->cluster_name,
+		cluster_procs_msg->cluster_nodes,
 		cluster_procs_msg->proc_count,
 		cluster_procs_msg->event_time);
 end_it:
@@ -1626,6 +1627,7 @@ static int  _job_start(slurmdbd_conn_t *slurmdbd_conn,
 	job.job_state = job_start_msg->job_state;
 	job.name = job_start_msg->name;
 	job.nodes = job_start_msg->nodes;
+	job.network = job_start_msg->node_inx;
 	job.partition = job_start_msg->partition;
 	job.num_procs = job_start_msg->req_cpus;
 	job.resv_id = job_start_msg->resv_id;
@@ -2992,6 +2994,7 @@ static int  _step_start(slurmdbd_conn_t *slurmdbd_conn,
 	job.job_id = step_start_msg->job_id;
 	step.name = step_start_msg->name;
 	job.nodes = step_start_msg->nodes;
+	step.network = step_start_msg->node_inx;
 	step.start_time = step_start_msg->start_time;
 	details.submit_time = step_start_msg->job_submit_time;
 	step.step_id = step_start_msg->step_id;

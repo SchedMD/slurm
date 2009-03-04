@@ -986,6 +986,8 @@ static int _accounting_cluster_ready()
 	int rc = SLURM_ERROR;
 	time_t event_time = time(NULL);
 	int procs = 0;
+	bitstr_t *total_node_bitmap = NULL;
+	char *cluster_nodes = NULL;
 
 	node_ptr = node_record_table_ptr;
 	for (i = 0; i < node_record_count; i++, node_ptr++) {
@@ -1006,10 +1008,20 @@ static int _accounting_cluster_ready()
 	   not being correct.
 	*/
 	cluster_procs = procs;
-		
+
+	/* Now get the names of all the nodes on the cluster at this
+	   time and send it also.
+	*/
+	total_node_bitmap = bit_alloc(node_record_count);
+	bit_nset(total_node_bitmap, 0, node_record_count-1);
+	cluster_nodes = bitmap2node_name(total_node_bitmap);
+	FREE_NULL_BITMAP(total_node_bitmap);
+
 	rc = clusteracct_storage_g_cluster_procs(acct_db_conn,
 						 slurmctld_cluster_name,
+						 cluster_nodes,
 						 cluster_procs, event_time);
+	xfree(cluster_nodes);
 	if(rc == ACCOUNTING_FIRST_REG) {
 		/* see if we are running directly to a database
 		 * instead of a slurmdbd.
