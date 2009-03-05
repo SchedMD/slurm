@@ -600,7 +600,10 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 	   easy to look for duplicates 
 	*/
 	if(job_cond && !job_cond->duplicates) 
-		xstrcat(query, " order by jobid, submit desc");
+		xstrcat(query, " order by t1.cluster, jobid, submit desc");
+	else
+		xstrcat(query, " order by t1.cluster, submit desc");
+		
 
 	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	if(!(result = mysql_db_query_ret(
