@@ -352,7 +352,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		if (job_ptr->details->req_node_bitmap &&
 		    (!bit_super_set(job_ptr->details->req_node_bitmap,
 				    resv_bitmap))) {
-			bit_free(resv_bitmap);
+			FREE_NULL_BITMAP(resv_bitmap);
 			return ESLURM_RESERVATION_NOT_USABLE;
 		}
 		if (resv_bitmap &&
@@ -360,7 +360,8 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 			bit_and(resv_bitmap, avail_node_bitmap);
 			save_avail_node_bitmap = avail_node_bitmap;
 			avail_node_bitmap = resv_bitmap;
-		}
+		} else
+			FREE_NULL_BITMAP(resv_bitmap);
 	}
 
 	/* save job and request state */
