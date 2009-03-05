@@ -1502,7 +1502,8 @@ static void _usage(char *prog_name)
 /*
  * Tell the backup_controller to relinquish control, primary control_machine 
  *	has resumed operation
- * wait_time - How long to wait for backup controller to write state, seconds
+ * wait_time - How long to wait for backup controller to write state, seconds.
+ *             Must be zero when called from _slurmctld_background() loop.
  * RET 0 or an error code
  * NOTE: READ lock_slurmctld config before entry (or be single-threaded)
  */
@@ -1531,9 +1532,17 @@ static int _shutdown_backup_controller(int wait_time)
 	}
 	if (rc == ESLURM_DISABLED)
 		debug("backup controller responding");
-	else if (rc == 0)
+	else if (rc == 0) {
 		debug("backup controller has relinquished control");
-	else {
+		if (wait_time == 0) {
+			/* In case primary controller really did not terminate,
+			 * but just temporarily became non-responsive */
+			clusteracct_storage_g_register_ctld(
+				acct_db_conn,
+				slurmctld_cluster_name, 
+				slurmctld_conf.slurmctld_port);
+		}
+	} else {
 		error("_shutdown_backup_controller: %s", slurm_strerror(rc));
 		return SLURM_ERROR;
 	}
