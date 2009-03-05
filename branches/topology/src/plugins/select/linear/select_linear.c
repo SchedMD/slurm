@@ -1151,14 +1151,15 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 		goto fini;
 	}
 
-	/* Accumulate the required resources, if any */
 	if (req_nodes_bitmap) {
+		/* Accumulate the required resources, if any */
 		first = bit_ffs(req_nodes_bitmap);
 		last  = bit_fls(req_nodes_bitmap);
 		for (i=first; i<=last; i++) {
 			if (!bit_test(req_nodes_bitmap, i))
 				continue;
 			bit_set(bitmap, i);
+			bit_clear(avail_nodes_bitmap, i);
 			rem_nodes--;
 			max_nodes--;
 			avail_cpus = _get_avail_cpus(job_ptr, i);
@@ -1171,19 +1172,51 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 				switches_node_cnt[j]--;
 			}
 		}
+		if ((rem_nodes <= 0) && (rem_cpus <= 0))
+			goto fini;
+
+		/* Accumulate additional resources from leafs that
+		 * contain required nodes */
+		for (j=0; j<switch_record_cnt; j++) {
+			if ((switch_record_table[j].level != 0) ||
+			    (switches_node_cnt[j] == 0) ||
+			    (switches_required[j] == 0)) {
+				continue;
+			}
+			while ((max_nodes > 0) &&
+			       ((rem_nodes > 0) || (rem_cpus > 0))) {
+				i = bit_ffs(switches_bitmap[j]);
+				if (i == -1)
+					break;
+				bit_set(bitmap, i);
+				bit_clear(avail_nodes_bitmap, i);
+				bit_clear(switches_bitmap[j], i);
+				rem_nodes--;
+				max_nodes--;
+				avail_cpus = _get_avail_cpus(job_ptr, i);
+				rem_cpus   -= avail_cpus;
+				alloc_cpus += avail_cpus;
+			}
+		}
+		if ((rem_nodes <= 0) && (rem_cpus <= 0))
+			goto fini;
 	}
-	if ((rem_nodes <= 0) && (rem_cpus <= 0))
-		goto fini;
+
 
 	rc = EINVAL;
 
- fini:	FREE_NULL_BITMAP(avail_nodes_bitmap);
+ fini:	if (rc == SLURM_SUCCESS) {
+		/* job's total_procs is needed for SELECT_MODE_WILL_RUN */
+		job_ptr->total_procs = alloc_cpus;
+	}
+	FREE_NULL_BITMAP(avail_nodes_bitmap);
 	FREE_NULL_BITMAP(req_nodes_bitmap);
 	for (i=0; i<switch_record_cnt; i++)
 		bit_free(switches_bitmap[i]);
 	xfree(switches_bitmap);
 	xfree(switches_node_cnt);
 	xfree(switches_required);
+
 	return rc;
 #else
 	int i, index, error_code = EINVAL, sufficient;
