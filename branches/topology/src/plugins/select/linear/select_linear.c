@@ -1091,7 +1091,7 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 	bitstr_t  *avail_nodes_bitmap = NULL, *req_nodes_bitmap = NULL;
 	int rem_cpus, rem_nodes;	/* remaining resources desired */
 	int avail_cpus, alloc_cpus = 0;
-	int i, j, rc = SLURM_SUCCESS;
+	int i, j, level, rc = SLURM_SUCCESS;
 	int first, last;
 
 	rem_cpus = job_ptr->num_procs;
@@ -1176,30 +1176,37 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 			goto fini;
 
 		/* Accumulate additional resources from leafs that
-		 * contain required nodes */
-		for (j=0; j<switch_record_cnt; j++) {
-			if ((switch_record_table[j].level != 0) ||
-			    (switches_node_cnt[j] == 0) ||
-			    (switches_required[j] == 0)) {
-				continue;
+		 * contain required nodes and work down to the root */
+		for (level=0; level<switch_record_cnt; level++) {
+			for (j=0; j<switch_record_cnt; j++) {
+				if ((switch_record_table[j].level != level) ||
+				    (switches_node_cnt[j] == 0) ||
+				    (switches_required[j] == 0)) {
+					continue;
+				}
+				while ((max_nodes > 0) &&
+				       ((rem_nodes > 0) || (rem_cpus > 0))) {
+					i = bit_ffs(switches_bitmap[j]);
+					if (i == -1)
+						break;
+					if (!bit_test(avail_nodes_bitmap, i)) {
+						/* cleared from lower level */
+						bit_clear(switches_bitmap[j],i);
+						continue;
+					}
+					bit_set(bitmap, i);
+					bit_clear(avail_nodes_bitmap, i);
+					bit_clear(switches_bitmap[j], i);
+					rem_nodes--;
+					max_nodes--;
+					avail_cpus = _get_avail_cpus(job_ptr,i);
+					rem_cpus   -= avail_cpus;
+					alloc_cpus += avail_cpus;
+				}
 			}
-			while ((max_nodes > 0) &&
-			       ((rem_nodes > 0) || (rem_cpus > 0))) {
-				i = bit_ffs(switches_bitmap[j]);
-				if (i == -1)
-					break;
-				bit_set(bitmap, i);
-				bit_clear(avail_nodes_bitmap, i);
-				bit_clear(switches_bitmap[j], i);
-				rem_nodes--;
-				max_nodes--;
-				avail_cpus = _get_avail_cpus(job_ptr, i);
-				rem_cpus   -= avail_cpus;
-				alloc_cpus += avail_cpus;
-			}
+			if ((rem_nodes <= 0) && (rem_cpus <= 0))
+				goto fini;
 		}
-		if ((rem_nodes <= 0) && (rem_cpus <= 0))
-			goto fini;
 	}
 
 
