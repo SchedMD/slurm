@@ -3544,6 +3544,7 @@ static void _list_delete_job(void *job_entry)
 		delete_step_records(job_ptr, 0);
 		list_destroy(job_ptr->step_list);
 	}
+	xfree(job_ptr->wckey);
 	job_count--;
 	xfree(job_ptr);
 }

@@ -1658,6 +1658,7 @@ alloc_job:
 		error_code = EINVAL;
 	if ((error_code != SLURM_SUCCESS) || (mode != SELECT_MODE_RUN_NOW)) {
 		FREE_NULL_BITMAP(free_cores);
+		xfree(cpu_count);
 		return error_code;
 	}
 
