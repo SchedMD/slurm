@@ -697,7 +697,6 @@ void parse_command_line(int argc, char **argv)
 				job_cond->step_list = list_create(
 					destroy_jobacct_selected_step);
 			_addto_step_list(job_cond->step_list, optarg);
-			all_users = 1;
 			break;
 		case 'L':
 			all_clusters = 1;
@@ -721,7 +720,6 @@ void parse_command_line(int argc, char **argv)
 				break;
 			}
 			job_cond->used_nodes = xstrdup(optarg);
-			all_users = 1;
 			break;
 		case 'p':
 			print_fields_parsable_print = 
@@ -863,6 +861,13 @@ void parse_command_line(int argc, char **argv)
 			debug2("Clusters requested:\t%s", start);
 		}
 	}
+
+	/* if any jobs or nodes are specified set to look for all users if none
+	   are set */
+	if(!job_cond->userid_list || !list_count(job_cond->userid_list)) 
+		if((job_cond->step_list && list_count(job_cond->step_list)) 
+		   || job_cond->used_nodes)
+			all_users=1;      
 
 	if(all_users) {
 		if(job_cond->userid_list && list_count(job_cond->userid_list)) {

@@ -212,6 +212,8 @@ documents those changes that are of interest to users and admins.
       If multiple hostslists are given on stdin they are combined to a
       union hostlist before being used in the way requested by the
       options.
+ -- when using -j option in sacct no user restriction will applied unless
+    specified with the -u option.
 
 * Changes in SLURM 1.3.13
 =========================
