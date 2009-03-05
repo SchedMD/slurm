@@ -52,24 +52,20 @@ AC_DEFUN([X_AC_GTK],
 #    fi
 
 
-### Check for gtk2.7.1 package
+### Check for min gtk package
     if test "$ac_have_gtk" == "yes" ; then
         $HAVEPKGCONFIG --exists gtk+-2.0
         if ! test $? -eq 0 ; then
             AC_MSG_WARN([*** gtk+-2.0 is not available.])
             ac_have_gtk="no"
 	else
-	   gtk_config_major_version=`$HAVEPKGCONFIG --modversion gtk+-2.0 | \
-             sed 's/\([[0-9]]*\).\([[0-9]]*\).\([[0-9]]*\)/\1/'`
-    	   gtk_config_minor_version=`$HAVEPKGCONFIG --modversion gtk+-2.0 | \
-             sed 's/\([[0-9]]*\).\([[0-9]]*\).\([[0-9]]*\)/\2/'`
-    	   gtk_config_micro_version=`$HAVEPKGCONFIG --modversion gtk+-2.0 | \
-             sed 's/\([[0-9]]*\).\([[0-9]]*\).\([[0-9]]*\)/\3/'`
-
-	   if test $gtk_config_major_version -lt 2 && test $gtk_config_minor_version -lt 7 && test $gtk_config_micro_version -lt 1; then
-	   	AC_MSG_WARN([*** gtk+-$gtk_config_major_version.$gtk_config_minor_version.$gtk_config_micro_version available, we need >= gtk+-2.7.1 installed for sview.])
-            	ac_have_gtk="no"
-	   fi
+	    min_gtk_version="2.7.1"
+	    $HAVEPKGCONFIG --atleast-version=$min_gtk_version gtk+-2.0
+	    if ! test $? -eq 0 ; then
+		    gtk_config_version=`$HAVEPKGCONFIG --modversion gtk+-2.0`
+		    AC_MSG_WARN([*** gtk+-$gtk_config_version available, we need >= gtk+-$min_gtk_version installed for sview.])
+		    ac_have_gtk="no"
+	    fi
         fi
     fi
 
