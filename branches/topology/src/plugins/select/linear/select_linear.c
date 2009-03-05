@@ -1091,7 +1091,7 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 	bitstr_t  *avail_nodes_bitmap = NULL, *req_nodes_bitmap = NULL;
 	int rem_cpus, rem_nodes;	/* remaining resources desired */
 	int avail_cpus, alloc_cpus = 0;
-	int i, j, level, rc = SLURM_SUCCESS;
+	int i, j, rc = SLURM_SUCCESS;
 	int first, last;
 
 	rem_cpus = job_ptr->num_procs;
@@ -1152,7 +1152,7 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 	}
 
 	if (req_nodes_bitmap) {
-		/* Accumulate the required resources, if any */
+		/* Accumulate specific required resources, if any */
 		first = bit_ffs(req_nodes_bitmap);
 		last  = bit_fls(req_nodes_bitmap);
 		for (i=first; i<=last; i++) {
@@ -1176,40 +1176,63 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 			goto fini;
 
 		/* Accumulate additional resources from leafs that
-		 * contain required nodes and work down to the root */
-		for (level=0; level<switch_record_cnt; level++) {
-			for (j=0; j<switch_record_cnt; j++) {
-				if ((switch_record_table[j].level != level) ||
-				    (switches_node_cnt[j] == 0) ||
-				    (switches_required[j] == 0)) {
-					continue;
-				}
-				while ((max_nodes > 0) &&
-				       ((rem_nodes > 0) || (rem_cpus > 0))) {
-					i = bit_ffs(switches_bitmap[j]);
-					if (i == -1)
-						break;
-					if (!bit_test(avail_nodes_bitmap, i)) {
-						/* cleared from lower level */
-						bit_clear(switches_bitmap[j],i);
-						continue;
-					}
-					bit_set(bitmap, i);
-					bit_clear(avail_nodes_bitmap, i);
+		 * contain required nodes */
+		for (j=0; j<switch_record_cnt; j++) {
+			if ((switch_record_table[j].level != 0) ||
+			    (switches_node_cnt[j] == 0) ||
+			    (switches_required[j] == 0)) {
+				continue;
+			}
+			while ((max_nodes > 0) &&
+			       ((rem_nodes > 0) || (rem_cpus > 0))) {
+				i = bit_ffs(switches_bitmap[j]);
+				if (i == -1)
+					break;
+				bit_set(bitmap, i);
+				bit_clear(avail_nodes_bitmap, i);
+				bit_clear(switches_bitmap[j], i);
+				switches_node_cnt[j]--;
+				rem_nodes--;
+				max_nodes--;
+				avail_cpus = _get_avail_cpus(job_ptr,i);
+				rem_cpus   -= avail_cpus;
+				alloc_cpus += avail_cpus;
+			}
+		}
+		if ((rem_nodes <= 0) && (rem_cpus <= 0))
+			goto fini;
+
+		/* Update bitmaps and node counts for higher-level switches */
+		for (j=0; j<switch_record_cnt; j++) {
+			if ((switch_record_table[j].level == 0) ||
+			    (switches_node_cnt[j] == 0) ||
+			    (switches_required[j] == 0)) {
+				continue;
+			}
+			first = bit_ffs(switches_bitmap[j]);
+			last  = bit_fls(switches_bitmap[j]);
+			for (i=first; i<=last; i++) {
+				if (bit_test(switches_bitmap[j], i) &&
+				    !bit_test(avail_nodes_bitmap, i)) {
+					/* Already cleared from lower level */
 					bit_clear(switches_bitmap[j], i);
-					rem_nodes--;
-					max_nodes--;
-					avail_cpus = _get_avail_cpus(job_ptr,i);
-					rem_cpus   -= avail_cpus;
-					alloc_cpus += avail_cpus;
+					switches_node_cnt[j]--;
 				}
 			}
-			if ((rem_nodes <= 0) && (rem_cpus <= 0))
-				goto fini;
 		}
 	}
 
-
+	/* don't compile this, it slows things down too much */
+	for (i=0; i<switch_record_cnt; i++) {
+		char *node_names = NULL;
+		if (switches_node_cnt[i])
+			node_names = bitmap2node_name(switches_bitmap[i]);
+		debug("switch=%s nodes=%u:%s required:%u",
+		      switch_record_table[i].name,
+		      switches_node_cnt[i], node_names,
+		      switches_required[i]);
+		xfree(node_names);
+	}
 	rc = EINVAL;
 
  fini:	if (rc == SLURM_SUCCESS) {
@@ -1226,108 +1249,6 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	return rc;
 #else
-	int i, index, error_code = EINVAL, sufficient;
-	int *consec_nodes;	/* how many nodes we can add from this 
-				 * consecutive set of nodes */
-	int *consec_cpus;	/* how many nodes we can add from this 
-				 * consecutive set of nodes */
-	int *consec_start;	/* where this consecutive set starts (index) */
-	int *consec_end;	/* where this consecutive set ends (index) */
-	int *consec_req;	/* are nodes from this set required 
-				 * (in req_bitmap) */
-	int consec_index, consec_size;
-	int rem_cpus, rem_nodes;	/* remaining resources desired */
-	int best_fit_nodes, best_fit_cpus, best_fit_req;
-	int best_fit_location = 0, best_fit_sufficient;
-	int avail_cpus, alloc_cpus = 0;
-
-	consec_index = 0;
-	consec_size  = 50;	/* start allocation for 50 sets of 
-				 * consecutive nodes */
-	consec_cpus  = xmalloc(sizeof(int) * consec_size);
-	consec_nodes = xmalloc(sizeof(int) * consec_size);
-	consec_start = xmalloc(sizeof(int) * consec_size);
-	consec_end   = xmalloc(sizeof(int) * consec_size);
-	consec_req   = xmalloc(sizeof(int) * consec_size);
-
-
-	/* Build table with information about sets of consecutive nodes */
-	consec_cpus[consec_index] = consec_nodes[consec_index] = 0;
-	consec_req[consec_index] = -1;	/* no required nodes here by default */
-	rem_cpus = job_ptr->num_procs;
-	if (req_nodes > min_nodes)
-		rem_nodes = req_nodes;
-	else
-		rem_nodes = min_nodes;
-
-	for (index = 0; index < select_node_cnt; index++) {
-		if (bit_test(bitmap, index)) {
-			if (consec_nodes[consec_index] == 0)
-				consec_start[consec_index] = index;
-
-			avail_cpus = _get_avail_cpus(job_ptr, index);
-
-			if (job_ptr->details->req_node_bitmap
-			&&  bit_test(job_ptr->details->req_node_bitmap, index)
-			&&  (max_nodes > 0)) {
-				if (consec_req[consec_index] == -1) {
-					/* first required node in set */
-					consec_req[consec_index] = index;
-				}
-				rem_cpus   -= avail_cpus;
-				alloc_cpus += avail_cpus;
-				rem_nodes--;
-				max_nodes--;
-			} else {	 /* node not required (yet) */
-				bit_clear(bitmap, index); 
-				consec_cpus[consec_index] += avail_cpus;
-				consec_nodes[consec_index]++;
-			}
-		} else if (consec_nodes[consec_index] == 0) {
-			consec_req[consec_index] = -1;
-			/* already picked up any required nodes */
-			/* re-use this record */
-		} else {
-			consec_end[consec_index] = index - 1;
-			if (++consec_index >= consec_size) {
-				consec_size *= 2;
-				xrealloc(consec_cpus,
-					 sizeof(int) * consec_size);
-				xrealloc(consec_nodes,
-					 sizeof(int) * consec_size);
-				xrealloc(consec_start,
-					 sizeof(int) * consec_size);
-				xrealloc(consec_end,
-					 sizeof(int) * consec_size);
-				xrealloc(consec_req,
-					 sizeof(int) * consec_size);
-			}
-			consec_cpus[consec_index] = 0;
-			consec_nodes[consec_index] = 0;
-			consec_req[consec_index] = -1;
-		}
-	}
-	if (consec_nodes[consec_index] != 0)
-		consec_end[consec_index++] = index - 1;
-
-#if SELECT_DEBUG
-	/* don't compile this, slows things down too much */
-	debug3("rem_cpus=%d, rem_nodes=%d", rem_cpus, rem_nodes);
-	for (i = 0; i < consec_index; i++) {
-		if (consec_req[i] != -1)
-			debug3
-			    ("start=%s, end=%s, nodes=%d, cpus=%d, req=%s",
-			     select_node_ptr[consec_start[i]].name,
-			     select_node_ptr[consec_end[i]].name,
-			     consec_nodes[i], consec_cpus[i],
-			     select_node_ptr[consec_req[i]].name);
-		else
-			debug3("start=%s, end=%s, nodes=%d, cpus=%d",
-			       select_node_ptr[consec_start[i]].name,
-			       select_node_ptr[consec_end[i]].name,
-			       consec_nodes[i], consec_cpus[i]);
-	}
-#endif
 
 	/* accumulate nodes from these sets of consecutive nodes until */
 	/*   sufficient resources have been accumulated */
@@ -1427,17 +1348,6 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 	&&  _enough_nodes(0, rem_nodes, min_nodes, req_nodes)) {
 		error_code = SLURM_SUCCESS;
 	}
-	if (error_code == SLURM_SUCCESS) {
-		/* job's total_procs is needed for SELECT_MODE_WILL_RUN */
-		job_ptr->total_procs = alloc_cpus;
-	}
-
-	xfree(consec_cpus);
-	xfree(consec_nodes);
-	xfree(consec_start);
-	xfree(consec_end);
-	xfree(consec_req);
-	return error_code;
 #endif
 }
 extern int select_p_job_begin(struct job_record *job_ptr)
