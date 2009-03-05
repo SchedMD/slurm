@@ -707,8 +707,8 @@ static void _validate_switches(void)
 	}
 	if (switches_bitmap) {
 		bit_not(switches_bitmap);
-		i = bit_set_count(switches_bitmap);
-		if (i) {
+		i = bit_ffs(switches_bitmap);
+		if (i >= 0) {
 			child = bitmap2node_name(switches_bitmap);
 			error("switches lack access to nodes: %s", child);
 			xfree(child);
