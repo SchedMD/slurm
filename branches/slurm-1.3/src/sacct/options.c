@@ -921,6 +921,12 @@ void parse_command_line(int argc, char **argv)
 		}
 	}
 
+	/* if any jobs are specified set to look for all users if none
+	   are set */
+	if((job_cond->step_list && list_count(job_cond->step_list))
+	   && (!job_cond->userid_list || !list_count(job_cond->userid_list)))
+		all_users=1;
+
 	if(all_users) {
 		if(job_cond->userid_list 
 		   && list_count(job_cond->userid_list)) {
