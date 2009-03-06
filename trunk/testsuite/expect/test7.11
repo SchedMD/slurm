@@ -7,7 +7,7 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2008 Lawrence Livermore National Security.
+# Copyright (C) 2008-2009 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
@@ -67,7 +67,7 @@ log_user 0
 set config_dir ""
 spawn $scontrol show config
 expect {
-	-re "SLURM_CONF.*= (/.*)/slurm.conf" {
+	-re "SLURM_CONF.*= (/.*)/slurm.conf.*SLURM_VERSION" {
 		set config_dir $expect_out(1,string)
 		exp_continue
 	}
@@ -113,6 +113,10 @@ expect {
 		wait
 	}
 }
+
+# Allow enough time for configuration file in NFS to be propogated
+# to all nodes of cluster
+exec sleep 30 
 
 #
 # Test of srun help message
