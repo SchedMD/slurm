@@ -44,7 +44,9 @@ For more information, see SLURM's documentation for
 hierarchical network to minimize network contention.
 The basic algorithm is to identify the lowest level switch in the
 hierarchy that can satisfy a job's request and then allocate resources
-on its underlying leaf switches using a best-fit algorithm.</p>
+on its underlying leaf switches using a best-fit algorithm.
+Use of this logic requires a configuration setting of 
+<i>TopologyPlugin=topology/slurm.conf</i>.</p>
 
 <p>At some point in the future SLURM code may be provided to 
 gather network topology information directly.

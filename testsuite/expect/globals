@@ -602,6 +602,35 @@ proc test_assoc_enforced { } {
 
 ################################################################
 #
+# Proc: test_topology
+#
+# Purpose: Determine if system is topology aware
+#
+# Returns level of association enforcement, 0 if none
+#
+################################################################
+proc test_topology { } {
+	global scontrol
+
+	log_user 0
+	set have_topology 1
+	spawn $scontrol show config
+	expect {
+		-re "TopologyPlugin *= *topology/none" {
+			set have_topology 0
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+
+	log_user 1
+	return $have_topology
+}
+
+################################################################
+#
 # Proc: test_track_wckey
 #
 # Purpose: Determine if we track workload characterization keys. 
