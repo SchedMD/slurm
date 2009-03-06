@@ -480,7 +480,7 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap)
 
 	first_bit = bit_ffs(bitmap);
 	last_bit  = bit_fls(bitmap);
-	for (i=first_bit, j=0, k=-1; i<=last_bit; i++) {
+	for (i=first_bit, j=0, k=-1; ((i<=last_bit) && (first_bit>=0)); i++) {
 		if (!bit_test(bitmap, i))
 			continue;
 		node_ptr = &(select_node_ptr[i]);
@@ -1170,7 +1170,7 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 		/* Accumulate specific required resources, if any */
 		first = bit_ffs(req_nodes_bitmap);
 		last  = bit_fls(req_nodes_bitmap);
-		for (i=first; i<=last; i++) {
+		for (i=first; ((i<=last) && (first>=0)); i++) {
 			if (!bit_test(req_nodes_bitmap, i))
 				continue;
 			if (max_nodes <= 0) {
@@ -1229,7 +1229,7 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 				continue;
 			first = bit_ffs(switches_bitmap[j]);
 			last  = bit_fls(switches_bitmap[j]);
-			for (i=first; i<=last; i++) {
+			for (i=first; ((i<=last) && (first>=0)); i++) {
 				if (!bit_test(switches_bitmap[j], i))
 					continue;
 				if (!bit_test(avail_nodes_bitmap, i)) {
@@ -1247,7 +1247,7 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 		for (j=0; j<switch_record_cnt; j++) {
 			first = bit_ffs(switches_bitmap[j]);
 			last  = bit_fls(switches_bitmap[j]);
-			for (i=first; i<=last; i++) {
+			for (i=first; ((i<=last) && (first>=0)); i++) {
 				if (!bit_test(switches_bitmap[j], i))
 					continue;
 				switches_cpu_cnt[j] += 
@@ -1327,7 +1327,7 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 		} else {/* Use select nodes from this leaf */
 			first = bit_ffs(switches_bitmap[best_fit_location]);
 			last  = bit_fls(switches_bitmap[best_fit_location]);
-			for (i=first; i<=last; i++) {
+			for (i=first; ((i<=last) && (first>=0)); i++) {
 				if (!bit_test(switches_bitmap
 						[best_fit_location], i))
 					continue;
@@ -1673,7 +1673,7 @@ static int _add_job_to_nodes(struct node_cr_record *node_cr_ptr,
 	}
 	i_first = bit_ffs(select_ptr->node_bitmap);
 	i_last  = bit_fls(select_ptr->node_bitmap);
-	for (i = i_first; i <= i_last; i++) {
+	for (i=i_first; ((i<=i_last) && (i_first>=0)); i++) {
 		if (bit_test(select_ptr->node_bitmap, i) == 0)
 			continue;
 		if (job_memory_cpu == 0)
@@ -1866,7 +1866,7 @@ static void _init_node_cr(void)
 			continue;
 		i_first = bit_ffs(select_ptr->node_bitmap);
 		i_last  = bit_fls(select_ptr->node_bitmap);
-		for (i = i_first; i <= i_last; i++) {
+		for (i=i_first; ((i<=i_last) && (i_first>=0)); i++) {
 			if (!bit_test(select_ptr->node_bitmap, i))
 				continue;
 			if (exclusive) {
