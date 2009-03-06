@@ -6,9 +6,11 @@ documents those changes that are of interest to users and admins.
  -- OpenMPI users only: Add srun logic to automatically recreate and 
     re-launch a job step if the step fails with a reserved port conflict.
  -- Add TopologyPlugin configuration parameter (not currently used).
-    Add switch topology data structure to slurmctld (for use by select plugin)
+ -- Add switch topology data structure to slurmctld (for use by select plugin)
     add load it based upon new slurm.conf parameters: SwitchName, Nodes, and 
     Switches.
+ -- Modify select/linear plugin to optimize resource allocation with respect
+    to network topology.
 
 * Changes in SLURM 1.4.0-pre8
 =============================

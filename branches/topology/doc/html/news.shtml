@@ -58,6 +58,8 @@ of the higher priority job.</li>
 preempt or gang schedule jobs.</li>
 <li>A new configuration parameter, <i>PrologSlurmctld</i>, can be used to 
 support the booting of different operating systems for each job.</li>
+<li>Added switch topology configuration options to optimize job resource 
+allocation with respect to communication performance.</li>
 <li>Automatic <a href="checkpoint_blcr.html">Checkpoint/Restart using BRCR</a> 
 is now available.</li>
 </ul>
@@ -77,6 +79,6 @@ hierarchical switches).</li>
 and refresh.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 3 March 2009</p>
+<p style="text-align:center;">Last modified 5 March 2009</p>
 
 <!--#include virtual="footer.txt"-->
