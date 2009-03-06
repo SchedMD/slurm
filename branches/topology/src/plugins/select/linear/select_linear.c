@@ -1218,11 +1218,8 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 
 		/* Update bitmaps and node counts for higher-level switches */
 		for (j=0; j<switch_record_cnt; j++) {
-			if ((switch_record_table[j].level == 0) ||
-			    (switches_node_cnt[j] == 0) ||
-			    (switches_required[j] == 0)) {
+			if (switches_node_cnt[j] == 0)
 				continue;
-			}
 			first = bit_ffs(switches_bitmap[j]);
 			last  = bit_fls(switches_bitmap[j]);
 			for (i=first; i<=last; i++) {
