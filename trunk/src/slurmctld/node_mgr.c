@@ -127,22 +127,28 @@ static void	_dump_hash (void);
  */
 char * bitmap2node_name (bitstr_t *bitmap) 
 {
-	int i;
+	int i, first, last;
 	hostlist_t hl;
 	char buf[8192];
 
 	if (bitmap == NULL)
 		return xstrdup("");
 
+	first = bit_ffs(bitmap);
+	if (first == -1)
+		return xstrdup("");
+
+	last  = bit_fls(bitmap);
 	hl = hostlist_create("");
-	for (i = 0; i < node_record_count; i++) {
-		if (bit_test (bitmap, i) == 0)
+	for (i = first; i <= last; i++) {
+		if (bit_test(bitmap, i) == 0)
 			continue;
 		hostlist_push(hl, node_record_table_ptr[i].name);
 	}
 	hostlist_uniq(hl);
 	hostlist_ranged_string(hl, sizeof(buf), buf);
 	hostlist_destroy(hl);
+
 	return xstrdup(buf);
 }
 

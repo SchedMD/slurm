@@ -264,6 +264,21 @@ extern bitstr_t *share_node_bitmap;	/* bitmap of sharable nodes */
 extern bitstr_t *up_node_bitmap;	/* bitmap of up nodes, not DOWN */
 
 /*****************************************************************************\
+ *  SWITCH topology data structures
+\*****************************************************************************/
+struct switch_record {
+	int level;			/* level in hierarchy, leaf=0 */
+	char *name;			/* switch name */
+	bitstr_t *node_bitmap;		/* bitmap of all nodes descended from 
+					 * this switch */
+	char *nodes;			/* name if direct descendent nodes */
+	char *switches;			/* name if direct descendent switches */
+};
+
+extern struct switch_record *switch_record_table;  /* ptr to switch records */
+extern int switch_record_cnt;		/* size of switch_record_table */
+
+/*****************************************************************************\
  *  PARTITION parameters and data structures
 \*****************************************************************************/
 #define PART_MAGIC 0xaefe8495
@@ -773,6 +788,9 @@ extern struct node_record *find_node_record (char *name);
  * global: part_list - global partition list
  */
 extern struct part_record *find_part_record (char *name);
+
+/* Free all memory associated with switch_record_table structure */
+extern void free_switch_record_table(void);
 
 /*
  * get_job_env - return the environment variables and their count for a 

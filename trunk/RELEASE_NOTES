@@ -54,6 +54,8 @@ HIGHLIGHTS
   priority partition will resume once preempting job completes. For more 
   information see:
   https://computing.llnl.gov/linux/slurm/preempt.html
+* Add support for optimize resource allocation with respect to network 
+  topology. Requires switch configuration information be added to slurm.conf.
 * Support added for Sun Constellation system with optimized resource allocation
   for a 3-dimensional torus interconnect. For more information see:
   https://computing.llnl.gov/linux/slurm/sun_const.html
@@ -95,6 +97,7 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
   it has been allocated. The entity bound to (sockets, cores or threads)
   will be automatically set based upon the allocation size and task count
   SLURM's SPANK cpuset plugin is no longer be needed.
+* Added switch topology configuration options: SwitchName, Nodes, Switches.
 * BLUEGENE - Added option DenyPassthrough in the bluegene.conf.  Can be set
   to any combination of X,Y,Z to not allow passthroughs when running in 
   dynamic layout mode. (see "man bluegene.conf" for details)
@@ -113,7 +116,7 @@ COMMAND CHANGES (see man pages for details)
   rather than "update" with a new partition name.
 * Time format of all SLURM command set to ISO 8601 (yyyy-mm-ddThh:mm:ss)
   unless the configure option "--disable-iso8601" is used at build time.
-* sacct -S to satus a job will no longer work.  Use sstat from now on.
+* sacct -S to status a job will no longer work.  Use sstat from now on.
 * sacct and sstat have been rewritten to have a more sacctmgr like feel
 
 ACCOUNTING CHANGES

@@ -122,6 +122,7 @@ extern char *default_plugstack;
 #define DEFAULT_SWITCH_TYPE         "switch/none"
 #define DEFAULT_TASK_PLUGIN         "task/none"
 #define DEFAULT_TMP_FS              "/tmp"
+#define DEFAULT_TOPOLOGY_PLUGIN     "topology/slurm.conf"
 #define DEFAULT_WAIT_TIME           0
 #define DEFAULT_TREE_WIDTH          50
 #define DEFAULT_UNKILLABLE_TIMEOUT  60 /* seconds */
@@ -172,6 +173,14 @@ typedef struct slurm_conf_downnodes {
 	char *reason;
 	char *state;
 } slurm_conf_downnodes_t;
+
+typedef struct slurm_conf_switches {
+	char *nodes;		/* names of nodes directly connect to
+				 * this switch, if any */
+	char *switch_name;	/* name of this switch */
+	char *switches;		/* names if child switches directly
+				 * connected to this switch, if any */
+} slurm_conf_switches_t;
 
 /*
  * slurm_conf_init - load the slurm configuration from the a file.
@@ -238,11 +247,19 @@ extern int slurm_conf_partition_array(slurm_conf_partition_t **ptr_array[]);
 
 /*
  * Set "ptr_array" with the pointer to an array of pointers to
- * slurm_conf_node_t structures.
+ * slurm_conf_downnodes_t structures.
  * 
  * Return value is the length of the array.
  */
 extern int slurm_conf_downnodes_array(slurm_conf_downnodes_t **ptr_array[]);
+
+/*
+ * Set "ptr_array" with the pointer to an array of pointers to
+ * slurm_conf_switch_t structures.
+ * 
+ * Return value is the length of the array.
+ */
+extern int slurm_conf_switch_array(slurm_conf_switches_t **ptr_array[]);
 
 /*
  * slurm_conf_get_hostname - Return the NodeHostname for given NodeName

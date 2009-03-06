@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "February 2009" "slurm.conf 2.0" "Slurm configuration file"
+.TH "slurm.conf" "5" "March 2009" "slurm.conf 2.0" "Slurm configuration file"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
@@ -1494,6 +1494,17 @@ space.
 The default value is "/tmp".
 
 .TP
+\fBTopologyPlugin\fR
+Identifies the plugin to be used for determining the network topology
+and optimizing job allocations to minimize network contention. 
+The only currently acceptable value is
+"topology/slurm.conf", which will determine the network topology based
+upon information contained in the slurm.conf file.
+See \fBNETWORK TOPOLOGY\fR below for details.
+Additional plugins may be provided in the future which gather topology
+information directly from the network.
+
+.TP
 \fBTrackWCKey\fR
 Boolean yes or no.  Used to set display and track of the Workload  
 Characterization Key.  Must be set to track wckey usage.
@@ -2028,6 +2039,47 @@ Recommended only for systems running with gang scheduling
 State of partition or availability for use.  Possible values 
 are "UP" or "DOWN". The default value is "UP".
 
+.SH "NETWORK TOPOLOGY"
+SLURM is able to optimze job allocations to minimize network contention.
+Special SLURM logic is used to optimize allocations on systems with a 
+three\-dimensional interconnect (BlueGene, Sun Constellation, etc.)
+and information about configuring those systems are availble on 
+web pages available here: <https://computing.llnl.gov/linux/slurm/>.
+For a hierarchical network, SLURM needs to have detailed information 
+about how nodes are configured on the network switches as described below.
+.LP
+Given network topology information, SLURM allocates all of a job's 
+resources onto a single leaf of the network (if possible) using a best\-fit 
+algorithm.
+Otherwise it will allocate a job's resources onto multiple leaf switches
+so as to minimize the use of higher\-level switches. 
+The \fBTopologyPlugin\fR parameter controls which plugin is used to
+collect network topology information. 
+The only value presently supported is "topology/slurm.conf", which the 
+default and will load that information from the slurm.conf file. 
+Future plugins may gather topology information directly from the network.
+The topology information is optional. 
+If not provided, SLURM will perform a best\-fit algorithm assuming the
+nodes are in a one\-dimensional array as configured and the communications 
+cost is related to the node distance in this array.
+.LP
+The network topology configuration one one line defining a switch name and
+its children, either node names or switch names.
+SLURM hostlist expressions can be used for either.
+.TP
+\fBSwitchName\fR
+The name of a switch. This name is internal to SLURM and arbitrary.
+Each switch should have a unique name.
+This field must be specified.
+.TP
+\fBSwitches\fR
+Child switches of the named switch.
+Either this option or the \fBNodes\fR option must be specified.
+.TP
+\fBNodes\fR
+Child Nodes of the named leaf switch.
+Either this option or the \fBSwitches\fR option must be specified.
+
 .SH "RELOCATING CONTROLLERS"
 If the cluster's computers used for the primary or backup controller 
 will be out of service for an extended period of time, it may be 
@@ -2155,6 +2207,20 @@ PartitionName=debug Nodes=dev[0\-8,18\-25] Default=YES
 PartitionName=batch Nodes=dev[9\-17]  MinNodes=4
 .br
 PartitionName=long Nodes=dev[9\-17] MaxTime=120 AllowGroups=admin
+.br
+#
+.br
+# Switch Configurations
+.br
+#
+.br
+SwitchName=s0 Nodes=dev[0\-5]
+.br
+SwitchName=s1 Nodes=dev[6\-11]
+.br
+SwitchName=s2 Nodes=dev[12\-17]
+.br
+SwitchName=s3 Switches=s[0\-2]
 
 .SH "COPYING"
 Copyright (C) 2002\-2007 The Regents of the University of California.

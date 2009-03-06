@@ -687,6 +687,24 @@ extern char *slurm_get_crypto_type(void)
 	return crypto_type;
 }
 
+/* slurm_get_topology_plugin
+ * returns the value of topology_plugin in slurmctld_conf object
+ * RET char *    - topology type, MUST be xfreed by caller
+ */
+extern char * slurm_get_topology_plugin(void)
+{
+	char *topology_plugin = NULL;
+	slurm_ctl_conf_t *conf;
+
+	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		topology_plugin = xstrdup(conf->topology_plugin);
+		slurm_conf_unlock();
+	}
+	return topology_plugin;
+}
+
 /* slurm_get_propagate_prio_process
  * return the PropagatePrioProcess flag from slurmctld_conf object
  */
