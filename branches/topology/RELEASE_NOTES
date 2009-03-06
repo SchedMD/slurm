@@ -116,7 +116,7 @@ COMMAND CHANGES (see man pages for details)
   rather than "update" with a new partition name.
 * Time format of all SLURM command set to ISO 8601 (yyyy-mm-ddThh:mm:ss)
   unless the configure option "--disable-iso8601" is used at build time.
-* sacct -S to satus a job will no longer work.  Use sstat from now on.
+* sacct -S to status a job will no longer work.  Use sstat from now on.
 * sacct and sstat have been rewritten to have a more sacctmgr like feel
 
 ACCOUNTING CHANGES
