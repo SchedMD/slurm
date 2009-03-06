@@ -1497,9 +1497,10 @@ The default value is "/tmp".
 \fBTopologyPlugin\fR
 Identifies the plugin to be used for determining the network topology
 and optimizing job allocations to minimize network contention. 
-The only currently acceptable value is
-"topology/slurm.conf", which will determine the network topology based
-upon information contained in the slurm.conf file.
+Acceptable values include "topology/none" (default, simple best\-fit
+logic over one\-dimensional topology) and 
+"topology/slurm.conf" (determine the network topology based
+upon information contained in the slurm.conf file).
 See \fBNETWORK TOPOLOGY\fR below for details.
 Additional plugins may be provided in the future which gather topology
 information directly from the network.

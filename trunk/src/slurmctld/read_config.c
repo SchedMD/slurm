@@ -616,9 +616,12 @@ static void _validate_switches(void)
 	 * slurm.conf, but could read it from some other plugin based upon 
 	 * the value of TopologyPlugin (topology_plugin). 
 	 * We can add support for such a plugin at some time in the future. */
+	if (strcmp(slurmctld_conf.topology_plugin, "topology/slurm.conf"))
+		return;
+
 	switch_record_cnt = slurm_conf_switch_array(&ptr_array);
 	if (switch_record_cnt == 0) {
-		debug("No switches");
+		error("No switches configured");
 		return;
 	}	
 

@@ -122,7 +122,11 @@ extern char *default_plugstack;
 #define DEFAULT_SWITCH_TYPE         "switch/none"
 #define DEFAULT_TASK_PLUGIN         "task/none"
 #define DEFAULT_TMP_FS              "/tmp"
-#define DEFAULT_TOPOLOGY_PLUGIN     "topology/slurm.conf"
+#ifdef HAVE_3D
+#  define DEFAULT_TOPOLOGY_PLUGIN     "topology/3D"
+#else
+#  define DEFAULT_TOPOLOGY_PLUGIN     "topology/none"
+#endif
 #define DEFAULT_WAIT_TIME           0
 #define DEFAULT_TREE_WIDTH          50
 #define DEFAULT_UNKILLABLE_TIMEOUT  60 /* seconds */
