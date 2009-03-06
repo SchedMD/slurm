@@ -394,6 +394,8 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->task_prolog);
 	fprintf(out, "TmpFS                   = %s\n", 
 		slurm_ctl_conf_ptr->tmp_fs);
+	fprintf(out, "TopologyPlugin          = %s\n",
+		 slurm_ctl_conf_ptr->topology_plugin);
 	fprintf(out, "TrackWCKey              = %u\n",
 		slurm_ctl_conf_ptr->track_wckey);
 	fprintf(out, "TreeWidth               = %u\n",

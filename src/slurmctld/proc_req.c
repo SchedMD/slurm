@@ -523,6 +523,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->task_plugin         = xstrdup(conf->task_plugin);
 	conf_ptr->task_plugin_param   = conf->task_plugin_param;
 	conf_ptr->tmp_fs              = xstrdup(conf->tmp_fs);
+	conf_ptr->topology_plugin     = xstrdup(conf->topology_plugin);
 	conf_ptr->track_wckey         = conf->track_wckey;
 	conf_ptr->tree_width          = conf->tree_width;
 

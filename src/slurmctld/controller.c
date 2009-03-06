@@ -151,6 +151,8 @@ int accounting_enforce = 0;
 int association_based_accounting = 0;
 bool ping_nodes_now = false;
 int      cluster_procs = 0;
+struct switch_record *switch_record_table = NULL;
+int switch_record_cnt = 0;
 
 /* Local variables */
 static int	daemonize = DEFAULT_DAEMONIZE;
@@ -591,6 +593,7 @@ int main(int argc, char *argv[])
 	trigger_fini();
 	assoc_mgr_fini(slurmctld_conf.state_save_location);
 	reserve_port_config(NULL);
+	free_switch_record_table();
 
 	/* Some plugins are needed to purge job/node data structures,
 	 * unplug after other data structures are purged */

@@ -9,8 +9,14 @@ said sampling rate from the default (every 30 seconds) by setting the
 "JobAcctGatherFrequency" option to a different number of seconds in 
 the slurm.conf.
 
-Configure "TaskPlugin=task/affinity" and remove the "auto-affinity.so"
-SPANK plugin with equivalent functionality.
+For InfiniBand switch systems, add switch topology information to 
+slurm.conf. Options used are SwitchName, Switches, and Nodes. The
+SwitchName is any conveneient name for bookkeeping purposes only. 
+For example:
+SwitchName=s0 Nodes=tux[0-11]
+SwitchName=s1 Nodes=tux[12-23]
+SwitchName=s2 Nodes=tux[24-35]
+SwitchName=s3 Switches=s[0-2]
 
 Remove the "preserve-env.so" SPANK plugin. The functionality is now
 directly in SLURM.
