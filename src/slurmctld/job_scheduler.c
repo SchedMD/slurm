@@ -72,6 +72,7 @@
 
 static void	_depend_list_del(void *dep_ptr);
 static void	_feature_list_delete(void *x);
+static void *	_run_epilog(void *arg);
 static void *	_run_prolog(void *arg);
 static int	_valid_feature_list(uint32_t job_id, List feature_list);
 static int	_valid_node_feature(char *feature);
@@ -1038,6 +1039,105 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 }
 
 /*
+ * epilog_slurmctld - execute the prolog_slurmctld for a job that has just
+ *	terminated.
+ * IN job_ptr - pointer to job that has been terminated
+ * RET SLURM_SUCCESS(0) or error code
+ */
+extern int epilog_slurmctld(struct job_record *job_ptr)
+{
+	int rc;
+	pthread_t thread_id_epilog;
+	pthread_attr_t thread_attr_epilog;
+
+	if ((slurmctld_conf.epilog_slurmctld == NULL) ||
+	    (slurmctld_conf.epilog_slurmctld[0] == '\0'))
+		return SLURM_SUCCESS;
+
+	if (access(slurmctld_conf.epilog_slurmctld, X_OK) < 0) {
+		error("Invalid EpilogSlurmctld: %m");
+		return errno;
+	}
+
+	slurm_attr_init(&thread_attr_epilog);
+	pthread_attr_setdetachstate(&thread_attr_epilog, 
+				    PTHREAD_CREATE_DETACHED);
+	while(1) {
+		rc = pthread_create(&thread_id_epilog,
+				    &thread_attr_epilog,
+				    _run_epilog, (void *) job_ptr);
+		if (rc == 0)
+			return SLURM_SUCCESS;
+		if (errno == EAGAIN)
+			continue;
+		error("pthread_create: %m");
+		return errno;
+	}
+}
+
+static void *_run_epilog(void *arg)
+{
+	struct job_record *job_ptr = (struct job_record *) arg;
+	uint32_t job_id;
+	pid_t cpid;
+	int i, status, wait_rc;
+	char *argv[2], **my_env;
+	/* Locks: Read config, job */
+	slurmctld_lock_t config_read_lock = { 
+		READ_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+
+	lock_slurmctld(config_read_lock);
+	argv[0] = xstrdup(slurmctld_conf.epilog_slurmctld);
+	argv[1] = NULL;
+
+	my_env = xmalloc(sizeof(char *));
+	my_env[0] = NULL;
+	setenvf(&my_env, "SLURM_JOBID", "%u", job_ptr->job_id);
+	setenvf(&my_env, "SLURM_NODELIST", "%s", job_ptr->nodes);
+	setenvf(&my_env, "SLURM_UID", "%u", job_ptr->user_id);
+	job_id = job_ptr->job_id;
+	unlock_slurmctld(config_read_lock);
+
+	if ((cpid = fork()) < 0) {
+		error("epilog_slurmctld fork error: %m");
+		goto fini;
+	}
+	if (cpid == 0) {
+#ifdef SETPGRP_TWO_ARGS
+		setpgrp(0, 0);
+#else
+		setpgrp();
+#endif
+		execve(argv[0], argv, my_env);
+		exit(127);
+	}
+
+	while (1) {
+		wait_rc = waitpid(cpid, &status, 0);
+		if (wait_rc < 0) {
+			if (errno == EINTR)
+				continue;
+			error("epilog_slurmctld waitpid error: %m");
+			break;
+		} else if (wait_rc > 0) {
+			killpg(cpid, SIGKILL);	/* kill children too */
+			break;
+		}
+	}
+	if (status != 0) {
+		error("epilog_slurmctld job %u epilog exit status %u:%u",
+		      job_id, WEXITSTATUS(status), WTERMSIG(status));
+	} else
+		debug2("epilog_slurmctld job %u prolog completed", job_id);
+
+ fini:	xfree(argv[0]);
+	for (i=0; my_env[i]; i++)
+		xfree(my_env[i]);
+	xfree(my_env);
+	return NULL;
+}
+
+/*
  * prolog_slurmctld - execute the prolog_slurmctld for a job that has just
  *	been allocated resources.
  * IN job_ptr - pointer to job that will be initiated
@@ -1057,7 +1157,6 @@ extern int prolog_slurmctld(struct job_record *job_ptr)
 		error("Invalid PrologSlurmctld: %m");
 		return errno;
 	}
-
 
 	if (job_ptr->details)
 		job_ptr->details->prolog_running = 1;

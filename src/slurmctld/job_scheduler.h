@@ -67,6 +67,14 @@ extern int build_feature_list(struct job_record *job_ptr);
 extern int build_job_queue(struct job_queue **job_queue);
 
 /*
+ * epilog_slurmctld - execute the prolog_slurmctld for a job that has just
+ *	terminated.
+ * IN job_ptr - pointer to job that has been terminated
+ * RET SLURM_SUCCESS(0) or error code
+ */
+extern int epilog_slurmctld(struct job_record *job_ptr);
+
+/*
  * job_is_completing - Determine if jobs are in the process of completing.
  * RET - True of any job is in the process of completing
  * NOTE: This function can reduce resource fragmentation, which is a 

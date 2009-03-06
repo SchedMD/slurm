@@ -161,6 +161,8 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 		error("slurm_sched_freealloc(%u): %m", job_ptr->job_id);
 	if (select_g_job_fini(job_ptr) != SLURM_SUCCESS)
 		error("select_g_job_fini(%u): %m", job_ptr->job_id);
+	(void) epilog_slurmctld(job_ptr);
+
 #ifdef HAVE_CRAY_XT
 	basil_release(job_ptr);
 #endif /* HAVE_CRAY_XT */
