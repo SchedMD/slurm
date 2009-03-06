@@ -1322,7 +1322,7 @@ static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 		for (j=0; j<switch_record_cnt; j++) {
 			first = bit_ffs(switches_bitmap[j]);
 			last  = bit_fls(switches_bitmap[j]);
-			for (i=first; i<=last; i++) {
+			for (i=first; ((i<=last) && (first>=0)); i++) {
 				if (!bit_test(switches_bitmap[j], i))
 					continue;
 				switches_cpu_cnt[j] += 
