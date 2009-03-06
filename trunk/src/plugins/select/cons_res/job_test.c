@@ -1241,7 +1241,7 @@ static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 		/* Accumulate specific required resources, if any */
 		first = bit_ffs(req_nodes_bitmap);
 		last  = bit_fls(req_nodes_bitmap);
-		for (i=first; i<=last; i++) {
+		for (i=first; ((i<=last) && (first>=0)); i++) {
 			if (!bit_test(req_nodes_bitmap, i))
 				continue;
 			if (max_nodes <= 0) {
@@ -1302,7 +1302,7 @@ static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 				continue;
 			first = bit_ffs(switches_bitmap[j]);
 			last  = bit_fls(switches_bitmap[j]);
-			for (i=first; i<=last; i++) {
+			for (i=first; ((i<=last) && (first>=0)); i++) {
 				if (!bit_test(switches_bitmap[j], i))
 					continue;
 				if (!bit_test(avail_nodes_bitmap, i)) {
@@ -1403,7 +1403,7 @@ static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 		} else {/* Use select nodes from this leaf */
 			first = bit_ffs(switches_bitmap[best_fit_location]);
 			last  = bit_fls(switches_bitmap[best_fit_location]);
-			for (i=first; i<=last; i++) {
+			for (i=first; ((i<=last) && (first>=0)); i++) {
 				if (!bit_test(switches_bitmap
 						[best_fit_location], i))
 					continue;
