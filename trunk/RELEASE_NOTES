@@ -48,7 +48,8 @@ HIGHLIGHTS
   compute nodes. This permits effective preemption or gang schedule jobs.
 * A new configuration parameter, PrologSlurmctld, can be used to support the 
   booting of different operating systems for each job. See "man slurm.conf"
-  for details.
+  for details. EpilogSlurmctld has also been added to execution at job 
+  completion.
 * Preemption of jobs from lower priority partitions in order to execute jobs
   in higher priority partitions is now supported. The jobs from the lower 
   priority partition will resume once preempting job completes. For more 

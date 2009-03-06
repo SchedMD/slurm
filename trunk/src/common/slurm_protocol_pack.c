@@ -2579,6 +2579,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 
 	packstr(build_ptr->epilog, buffer);
 	pack32(build_ptr->epilog_msg_time, buffer);
+	packstr(build_ptr->epilog_slurmctld, buffer);
 
 	pack16(build_ptr->fast_schedule, buffer);
 	pack32(build_ptr->first_job_id, buffer);
@@ -2756,6 +2757,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 
 	safe_unpackstr_xmalloc(&build_ptr->epilog, &uint32_tmp, buffer);
 	safe_unpack32(&build_ptr->epilog_msg_time, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->epilog_slurmctld, &uint32_tmp, 
+			       buffer);
 
 	safe_unpack16(&build_ptr->fast_schedule, buffer);
 	safe_unpack32(&build_ptr->first_job_id, buffer);

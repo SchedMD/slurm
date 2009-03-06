@@ -176,6 +176,8 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->epilog);
 	fprintf(out, "EpilogMsgTime           = %u usec\n",
 		slurm_ctl_conf_ptr->epilog_msg_time);
+	fprintf(out, "EpilogSlurmctld         = %s\n", 
+		slurm_ctl_conf_ptr->epilog_slurmctld);
 	fprintf(out, "FastSchedule            = %u\n",
 		slurm_ctl_conf_ptr->fast_schedule);
 	fprintf(out, "FirstJobId              = %u\n",

@@ -161,6 +161,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"EnforcePartLimits", S_P_BOOLEAN},
 	{"Epilog", S_P_STRING},
 	{"EpilogMsgTime", S_P_UINT32},
+	{"EPilogSlurmctld", S_P_STRING},
 	{"FastSchedule", S_P_UINT16},
 	{"FirstJobId", S_P_UINT32},
 	{"GetEnvTimeout", S_P_UINT16},
@@ -1746,6 +1747,8 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_uint32(&conf->epilog_msg_time, "EpilogMsgTime", hashtbl))
 		conf->epilog_msg_time = DEFAULT_EPILOG_MSG_TIME;
+
+	s_p_get_string(&conf->epilog_slurmctld, "EpilogSlurmctld", hashtbl);
 
 	if (!s_p_get_uint16(&conf->fast_schedule, "FastSchedule", hashtbl))
 		conf->fast_schedule = DEFAULT_FAST_SCHEDULE;

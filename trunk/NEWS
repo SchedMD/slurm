@@ -11,6 +11,8 @@ documents those changes that are of interest to users and admins.
     Switches.
  -- Modify select/linear and select/cons_res plugins to optimize resource
     allocation with respect to network topology.
+ -- Add support for new configuration parameter EpilogSlurmctld (executed by 
+    slurmctld daemon).
 
 * Changes in SLURM 1.4.0-pre8
 =============================
