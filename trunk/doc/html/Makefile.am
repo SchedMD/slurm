@@ -38,6 +38,8 @@ generated_html = \
 	power_save.html \
 	preempt.html \
 	proctrack_plugins.html \
+	priority_multifactor.html \
+	priority_plugins.html \
 	programmer_guide.html \
 	publications.html \
 	quickstart_admin.html \
@@ -52,14 +54,17 @@ generated_html = \
 	taskplugins.html \
 	team.html \
 	testimonials.html \
+	topology.html \
 	troubleshoot.html
 
 html_DATA = \
 	${generated_html} \
+	AllocationPies.gif \
 	arch.gif \
 	configurator.html \
 	coding_style.pdf \
 	entities.gif \
+	ExampleUsage.gif \
 	lci.7.tutorial.pdf \
 	lll.gif \
 	mc_support.gif \
@@ -74,7 +79,8 @@ html_DATA = \
 	slurm_design.pdf \
 	slurmstyles.css \
 	sponsors.gif \
-	linuxstyles.css
+	linuxstyles.css \
+	UsagePies.gif
 
 MOSTLYCLEANFILES = ${generated_html}
 
