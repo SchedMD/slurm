@@ -57,7 +57,7 @@ exit 0
 set timeout $max_job_delay
 set salloc_pid [spawn $salloc -N2 -n4 --verbose -t2 $bin_bash]
 expect {
-	-re "salloc: Granted job allocation ($number):" {
+	-re "salloc: Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}

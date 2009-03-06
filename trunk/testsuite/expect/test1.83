@@ -137,10 +137,12 @@ set host_2_num [get_suffix $host_2_name]
 
 if {$host_1_num != [expr $host_0_num + 1]} {
 	send_user "\nFAILURE: node sequence number not contiguous\n"
+	send_user "  This can be the result of network topology aware scheduling\n"
 	set exit_code   1	
 }
 if {$host_2_num != [expr $host_1_num + 1]} {
 	send_user "\nFAILURE: node sequence number not contiguous\n"
+	send_user "  This can be the result of network topology aware scheduling\n"
 	set exit_code   1	
 }
 
