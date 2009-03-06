@@ -365,6 +365,18 @@ For a 1000 node job, this spreads the epilog completion messages out over
 two seconds.
 
 .TP
+\fBEpilogSlurmctld\fR
+Fully qualified pathname of a program for the slurmctld to execute 
+upon termination of a job allocation (e.g.
+"/usr/local/slurm/epilog_controller"). 
+The program executes as SlurmUser, which gives it permission to drain 
+nodes and requeue the job if a failure occurs or cancel the job if appropriate.
+The program can be used to reboot nodes or perform other work to prepare 
+resources for use. 
+The following environment variables are set for use by the program:
+SLURM_JOBID, SLURM_UID, SLURM_NODELIST and SLURM_CONSTRAINTS.
+
+.TP
 \fBFastSchedule\fR
 Controls how a nodes configuration specifications in slurm.conf are used.
 If the number of node configuration entries in the configuration file

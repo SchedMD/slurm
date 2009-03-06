@@ -150,6 +150,7 @@ function displayfile()
    "#DisableRootJobs=NO <br>" +
    "#EnforcePartLimits=NO <br>" +
    get_field("Epilog",document.config.epilog) + "<br>" +
+   "#PrologSlurmctld= <br>" +
    "#FirstJobId=1 <br>" +
    get_field("JobCredentialPrivateKey", document.config.private_key) + "<br>" +
    get_field("JobCredentialPublicCertificate", document.config.public_key) + "<br>" +

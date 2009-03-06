@@ -1167,6 +1167,7 @@ void slurm_free_ctl_conf(slurm_ctl_conf_info_msg_t * config_ptr)
 		xfree(config_ptr->control_machine);
 		xfree(config_ptr->crypto_type);
 		xfree(config_ptr->epilog);
+		xfree(config_ptr->epilog_slurmctld);
 		xfree(config_ptr->health_check_program);
 		xfree(config_ptr->job_acct_gather_type);
 		xfree(config_ptr->job_comp_host);

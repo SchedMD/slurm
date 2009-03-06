@@ -1063,6 +1063,7 @@ typedef struct slurm_ctl_conf {
 	char *epilog;		/* pathname of job epilog */
 	uint32_t epilog_msg_time;  /* usecs for slurmctld to process an
 				 * epilog complete message */
+	char *epilog_slurmctld;	/* pathname of job epilog run by slurmctld */
 	uint16_t fast_schedule;	/* 1 to *not* check configurations by node
 				 * (only check configuration file, faster) */
 	uint32_t first_job_id;	/* first slurm generated job_id to assign */
@@ -1120,7 +1121,7 @@ typedef struct slurm_ctl_conf {
 	uint16_t private_data;	/* block viewing of information, 
 				 * see PRIVATE_DATA_* */
 	char *proctrack_type;	/* process tracking plugin type */
-	char *prolog;		/* pathname of job prolog run by slurmc */
+	char *prolog;		/* pathname of job prolog run by slurmd */
 	char *prolog_slurmctld;	/* pathname of job prolog run by slurmctld */
 	uint16_t propagate_prio_process; /* 1 if process priority should
 				          * be propagated */
