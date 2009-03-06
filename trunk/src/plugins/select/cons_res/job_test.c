@@ -1301,8 +1301,10 @@ static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 			if (switches_node_cnt[j] == 0)
 				continue;
 			first = bit_ffs(switches_bitmap[j]);
+			if (first < 0)
+				continue;
 			last  = bit_fls(switches_bitmap[j]);
-			for (i=first; ((i<=last) && (first>=0)); i++) {
+			for (i=first; i<=last; i++) {
 				if (!bit_test(switches_bitmap[j], i))
 					continue;
 				if (!bit_test(avail_nodes_bitmap, i)) {
@@ -1321,8 +1323,10 @@ static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 		/* No specific required nodes, calculate CPU counts */
 		for (j=0; j<switch_record_cnt; j++) {
 			first = bit_ffs(switches_bitmap[j]);
+			if (first < 0)
+				continue;
 			last  = bit_fls(switches_bitmap[j]);
-			for (i=first; ((i<=last) && (first>=0)); i++) {
+			for (i=first; i<=last; i++) {
 				if (!bit_test(switches_bitmap[j], i))
 					continue;
 				switches_cpu_cnt[j] += 
