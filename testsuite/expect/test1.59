@@ -103,6 +103,10 @@ expect {
 		wait
 	}
 }
+if {$job_id == 0} {
+	send_user "\nFAILURE: salloc failure\n"
+	exit 1
+}
 
 for {set i 0} {$i<4} {incr i} {
 	set extra ""
