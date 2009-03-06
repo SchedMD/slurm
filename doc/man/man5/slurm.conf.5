@@ -2056,8 +2056,10 @@ Otherwise it will allocate a job's resources onto multiple leaf switches
 so as to minimize the use of higher\-level switches. 
 The \fBTopologyPlugin\fR parameter controls which plugin is used to
 collect network topology information. 
-The only value presently supported is "topology/slurm.conf", which the 
-default and will load that information from the slurm.conf file. 
+The only values presently supported are "topology/none" (default, 
+simple best\-fit logic over one\-dimensional topology) and
+"topology/slurm.conf" (determine the network topology based
+upon information contained in the slurm.conf file).
 Future plugins may gather topology information directly from the network.
 The topology information is optional. 
 If not provided, SLURM will perform a best\-fit algorithm assuming the
@@ -2214,6 +2216,8 @@ PartitionName=long Nodes=dev[9\-17] MaxTime=120 AllowGroups=admin
 # Switch Configurations
 .br
 #
+.br
+TopologyPlugin=topology/slurm.conf
 .br
 SwitchName=s0 Nodes=dev[0\-5]
 .br
