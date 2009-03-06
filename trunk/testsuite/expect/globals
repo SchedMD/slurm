@@ -714,7 +714,7 @@ proc priority_type {} {
 	catch {close $fd}
 
 	if {[string length $name] == 0} {
-		send_user "ERROR: could not identify the switch type"
+		send_user "ERROR: could not identify the switch type\n"
 	}
 
 	return $name
@@ -1099,7 +1099,7 @@ proc switch_type {} {
 	catch {close $fd}
 
 	if {[string length $name] == 0} {
-		send_user "ERROR: could not identify the switch type"
+		send_user "ERROR: could not identify the switch type\n"
 	}
 
 	return $name

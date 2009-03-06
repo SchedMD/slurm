@@ -37,6 +37,7 @@ source ./globals
 set test_id     "1.92"
 set exit_code   0
 set file_bash   "test$test_id.bash"
+set job_id      0
 
 print_header $test_id
 
@@ -56,6 +57,10 @@ exit 0
 set timeout $max_job_delay
 set salloc_pid [spawn $salloc -N2 -n4 --verbose -t2 $bin_bash]
 expect {
+	-re "salloc: Granted job allocation ($number):" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
 	-re "More processors requested than permitted" {
 		send_user "\nWARNING: can't test srun task distribution\n"
 		exit 0
@@ -72,6 +77,10 @@ expect {
 		slow_kill $salloc_pid
 		exit 1
 	}
+}
+if {$job_id == 0} {
+	send_user "\nFAILURE: salloc failure\n"
+	exit 1
 }
 
 #############################################################################
