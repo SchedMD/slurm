@@ -870,6 +870,9 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	int best_fit_location = 0, best_fit_sufficient;
 	int avail_cpus, alloc_cpus = 0;
 
+	if (bit_set_count(node_map) < min_nodes)
+		return error_code;
+
 	if ((job_ptr->details->req_node_bitmap) &&
 	    (!bit_super_set(job_ptr->details->req_node_bitmap, bitmap)))
 		return error_code;
@@ -1079,7 +1082,11 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	return error_code;
 }
 
-/* _job_test_topo - A topology aware version of _job_test() */
+/*
+ * _job_test_topo - A topology aware version of _job_test()
+ * NOTE: The logic here is almost identical to that of _eval_nodes_topo() in
+ *       select/cons_res/job_test.c. Any bug found here is probably also there.
+ */
 static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 			  uint32_t min_nodes, uint32_t max_nodes, 
 			  uint32_t req_nodes)
