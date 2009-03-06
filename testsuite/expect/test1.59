@@ -87,7 +87,7 @@ set node4 0
 set timeout $max_job_delay
 spawn $salloc -N$num_nodes -v bash
 expect {
-	-re "salloc: Granted job allocation ($number):" {
+	-re "salloc: Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
