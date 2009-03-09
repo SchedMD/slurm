@@ -146,6 +146,9 @@ typedef struct sbatch_options {
 	int get_user_env_mode;	/* --get-user-env=[S|L]         */
 	char *wckey;            /* --wckey workload characterization key */
 	char *reservation;      /* --reservation */
+ 	int ckpt_interval;	/* --checkpoint (int minutes)   */
+ 	char *ckpt_interval_str;/* --checkpoint (string)        */
+ 	char *ckpt_dir;		/* --checkpoint-dir (string)    */
 } opt_t;
 
 extern opt_t opt;

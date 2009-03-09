@@ -167,11 +167,12 @@
 #define LONG_OPT_GET_USER_ENV    0x145
 #define LONG_OPT_PTY             0x146
 #define LONG_OPT_CHECKPOINT      0x147
-#define LONG_OPT_CHECKPOINT_PATH 0x148
+#define LONG_OPT_CHECKPOINT_DIR  0x148
 #define LONG_OPT_OPEN_MODE       0x149
 #define LONG_OPT_ACCTG_FREQ      0x14a
 #define LONG_OPT_WCKEY           0x14b
 #define LONG_OPT_RESERVATION     0x14c
+#define LONG_OPT_RESTART_DIR     0x14d
 
 /*---- global variables, defined in opt.h ----*/
 int _verbose;
@@ -339,7 +340,8 @@ static void _opt_default()
 	opt.time_limit_str = NULL;
 	opt.ckpt_interval = 0;
 	opt.ckpt_interval_str = NULL;
-	opt.ckpt_path = NULL;
+	opt.ckpt_dir = NULL;
+	opt.restart_dir = NULL;
 	opt.partition = NULL;
 	opt.max_threads = MAX_THREADS;
 	pmi_server_max_threads(opt.max_threads);
@@ -499,7 +501,8 @@ env_vars_t env_vars[] = {
 {"SLURM_THREADS",       OPT_INT,        &opt.max_threads,   NULL             },
 {"SLURM_TIMELIMIT",     OPT_STRING,     &opt.time_limit_str,NULL             },
 {"SLURM_CHECKPOINT",    OPT_STRING,     &opt.ckpt_interval_str, NULL         },
-{"SLURM_CHECKPOINT_PATH",OPT_STRING,    &opt.ckpt_path,     NULL             },
+{"SLURM_CHECKPOINT_DIR",OPT_STRING,     &opt.ckpt_dir,      NULL             },
+{"SLURM_RESTART_DIR",   OPT_STRING,     &opt.restart_dir ,  NULL             },
 {"SLURM_WAIT",          OPT_INT,        &opt.max_wait,      NULL             },
 {"SLURM_DISABLE_STATUS",OPT_INT,        &opt.disable_status,NULL             },
 {"SLURM_MPI_TYPE",      OPT_MPI,        NULL,               NULL             },
@@ -781,11 +784,12 @@ static void set_options(const int argc, char **argv)
 		{"get-user-env",     optional_argument, 0, LONG_OPT_GET_USER_ENV},
 		{"pty",              no_argument,       0, LONG_OPT_PTY},
 		{"checkpoint",       required_argument, 0, LONG_OPT_CHECKPOINT},
-		{"checkpoint-path",  required_argument, 0, LONG_OPT_CHECKPOINT_PATH},
+		{"checkpoint-dir",   required_argument, 0, LONG_OPT_CHECKPOINT_DIR},
 		{"open-mode",        required_argument, 0, LONG_OPT_OPEN_MODE},
 		{"acctg-freq",       required_argument, 0, LONG_OPT_ACCTG_FREQ},
 		{"wckey",            required_argument, 0, LONG_OPT_WCKEY},
 		{"reservation",      required_argument, 0, LONG_OPT_RESERVATION},
+		{"restart-dir",      required_argument, 0, LONG_OPT_RESTART_DIR},
 		{NULL,               0,                 0, 0}
 	};
 	char *opt_string = "+aAbB:c:C:d:D:e:Eg:Hi:IjJ:kKlL:m:n:N:"
@@ -1323,9 +1327,13 @@ static void set_options(const int argc, char **argv)
 			xfree(opt.reservation);
 			opt.reservation = xstrdup(optarg);
 			break;
-		case LONG_OPT_CHECKPOINT_PATH:
-			xfree(opt.ckpt_path);
-			opt.ckpt_path = xstrdup(optarg);
+		case LONG_OPT_CHECKPOINT_DIR:
+			xfree(opt.ckpt_dir);
+			opt.ckpt_dir = xstrdup(optarg);
+			break;
+		case LONG_OPT_RESTART_DIR:
+			xfree(opt.restart_dir);
+			opt.restart_dir = xstrdup(optarg);
 			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {
@@ -1768,8 +1776,8 @@ static bool _opt_verify(void)
 		}
 	}
 
-	if (! opt.ckpt_path)
-		opt.ckpt_path = xstrdup(opt.cwd);
+	if (! opt.ckpt_dir)
+		opt.ckpt_dir = xstrdup(opt.cwd);
 
 	if ((opt.euid != (uid_t) -1) && (opt.euid != opt.uid)) 
 		opt.uid = opt.euid;
@@ -1889,7 +1897,9 @@ static void _opt_list()
 		info("time_limit     : %d", opt.time_limit);
 	if (opt.ckpt_interval)
 		info("checkpoint     : %d secs", opt.ckpt_interval);
-	info("checkpoint_path: %s", opt.ckpt_path);
+	info("checkpoint_dir: %s", opt.ckpt_dir);
+	if (opt.restart_dir)
+		info("restart_dir: %s", opt.restart_dir);
 	info("wait           : %d", opt.max_wait);
 	if (opt.nice)
 		info("nice           : %d", opt.nice);
@@ -1970,7 +1980,8 @@ static void _usage(void)
 "            [--share] [--label] [--unbuffered] [-m dist] [-J jobname]\n"
 "            [--jobid=id] [--verbose] [--slurmd_debug=#]\n"
 "            [--core=type] [-T threads] [-W sec] [--checkpoint=time]\n"
-"            [--checkpoint-path=dir]  [--licenses=names]\n"
+"            [--checkpoint-dir=dir]  [--licenses=names]\n"
+"            [--restart-dir=dir]\n"
 "            [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
 "            [--mpi=type] [--account=name] [--dependency=type:jobid]\n"
 "            [--kill-on-bad-exit] [--propagate[=rlimits] [--comment=name]\n"
@@ -2051,7 +2062,8 @@ static void _help(void)
 "      --get-user-env          used by Moab.  See srun man page.\n"
 "  -L, --licenses=names        required license, comma separated\n"
 "      --checkpoint=time       job step checkpoint interval\n"
-"      --checkpoint-path=dir   path to store job step checkpoint image files\n"
+"      --checkpoint-dir=dir    directory to store job step checkpoint image files\n"
+"      --restart-dir=dir       directory of checkpoint image files to restart from\n"
 "  -E, --preserve-env          env vars for node and task counts override command-line flags\n"
 #ifdef HAVE_PTY_H
 "      --pty                   run task zero in pseudo terminal\n"

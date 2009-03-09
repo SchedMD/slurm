@@ -587,7 +587,7 @@ _process_command (int argc, char *argv[])
 		}
 	}
 	else if (strncasecmp (tag, "checkpoint", MAX(taglen, 2)) == 0) {
-		if (argc > 3) {
+		if (argc > 5) {
 			exit_code = 1;
 			if (quiet_flag != 1)
 				fprintf(stderr, 
@@ -602,11 +602,11 @@ _process_command (int argc, char *argv[])
 				        tag);
 		}
 		else {
-			error_code = scontrol_checkpoint(argv[1], argv[2]);
+			error_code = scontrol_checkpoint(argv[1], argv[2], argc - 3, &argv[3]);
 			if (error_code) {
 				exit_code = 1;
 				if (quiet_flag != 1)
-					slurm_perror ("slurm_checkpoint error");
+					slurm_perror ("scontrol_checkpoint error");
 			}
 		}
 	}

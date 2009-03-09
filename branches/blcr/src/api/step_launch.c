@@ -92,6 +92,7 @@ static int  _msg_thr_create(struct step_launch_state *sls, int num_nodes);
 static void _handle_msg(struct step_launch_state *sls, slurm_msg_t *msg);
 static bool _message_socket_readable(eio_obj_t *obj);
 static int  _message_socket_accept(eio_obj_t *obj, List objs);
+static int  _cr_notify_step_launch(slurm_step_ctx_t *ctx);
 
 static struct io_operations message_socket_ops = {
 	readable:	&_message_socket_readable,
@@ -225,7 +226,8 @@ int slurm_step_launch (slurm_step_ctx_t *ctx,
 	launch.cpus_per_task	= params->cpus_per_task;
 	launch.task_dist	= params->task_dist;
 	launch.pty              = params->pty;
-	launch.ckpt_path        = params->ckpt_path;
+	launch.ckpt_dir         = params->ckpt_dir;
+	launch.restart_dir      = params->restart_dir;
 	launch.acctg_freq	= params->acctg_freq;
 	launch.open_mode        = params->open_mode;
 	launch.options          = job_options_create();
@@ -342,6 +344,8 @@ int slurm_step_launch_wait_start(slurm_step_ctx_t *ctx)
 			pthread_cond_wait(&sls->cond, &sls->lock);
 		}
 	}
+
+	_cr_notify_step_launch(ctx);
 
 	pthread_mutex_unlock(&sls->lock);
 	return SLURM_SUCCESS;
@@ -593,6 +597,78 @@ void step_launch_state_destroy(struct step_launch_state *sls)
 	if (sls->resp_port != NULL) {
 		xfree(sls->resp_port);
 	}
+}
+
+/**********************************************************************
+ * CR functions
+ **********************************************************************/
+
+/* connect to srun_cr */
+static int _connect_srun_cr(char *addr)
+{
+        struct sockaddr_un sa;
+        unsigned int sa_len;
+        int fd, rc;
+
+        fd = socket(AF_UNIX, SOCK_STREAM, 0);
+        if (fd < 0) {
+                error("failed creating cr socket: %m");
+                return -1;
+        }
+        bzero(&sa, sizeof(sa));
+
+        sa.sun_family = AF_UNIX;
+	strcpy(sa.sun_path, addr);
+        sa_len = strlen(sa.sun_path) + sizeof(sa.sun_family);
+
+        while((rc = connect(fd, (struct sockaddr *)&sa, sa_len) < 0) &&
+	      errno == EINTR);
+
+	if (rc < 0) {
+		debug2("failed connecting cr socket: %m");
+		close(fd);
+		return -1;
+	}
+        return fd;
+}
+/* send job_id, step_id, node_list to srun_cr */
+static int _cr_notify_step_launch(slurm_step_ctx_t *ctx)
+{
+	int fd, len, rc = 0;
+	char *cr_sock_addr = NULL;
+
+	cr_sock_addr = getenv("SLURM_SRUN_CR_SOCKET");
+	if (cr_sock_addr == NULL) { /* not run under srun_cr */
+		return 0;
+	}
+
+        if ((fd = _connect_srun_cr(cr_sock_addr)) < 0) {
+                debug2("failed connecting srun_cr. take it not running under srun_cr.");
+		return 0;
+        }
+        if (write(fd, &ctx->job_id, sizeof(uint32_t)) != sizeof(uint32_t)) {
+                error ("failed writing job_id to srun_cr: %m");
+		rc = -1;
+                goto out;
+        }
+        if (write(fd, &ctx->step_resp->job_step_id, sizeof(uint32_t)) != sizeof(uint32_t)) {
+                error("failed writing job_step_id to srun_cr: %m");
+		rc = -1;
+                goto out;
+        }
+	len = strlen(ctx->step_resp->step_layout->node_list);
+	if (write(fd, &len, sizeof(int)) != sizeof(int)) {
+                error("failed writing nodelist length to srun_cr: %m");
+		rc = -1;
+		goto out;
+	}
+	if (write(fd, ctx->step_resp->step_layout->node_list, len + 1) != len + 1) {
+		error("failed writing nodelist to srun_cr: %m");
+		rc = -1;
+	}
+ out:
+	close (fd);
+        return rc;
 }
 
 /**********************************************************************

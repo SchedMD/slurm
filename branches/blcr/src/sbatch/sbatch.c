@@ -298,6 +298,8 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 	if (opt.acctg_freq >= 0)
 		desc->acctg_freq = opt.acctg_freq;
 
+	desc->ckpt_dir = opt.ckpt_dir;
+	desc->ckpt_interval = (uint16_t)opt.ckpt_interval;
 	return 0;
 }
 

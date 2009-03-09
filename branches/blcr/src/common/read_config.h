@@ -130,6 +130,7 @@ extern char *default_plugstack;
 #define DEFAULT_WAIT_TIME           0
 #define DEFAULT_TREE_WIDTH          50
 #define DEFAULT_UNKILLABLE_TIMEOUT  60 /* seconds */
+#define DEFAULT_JOB_CKPT_DIR      "/var/slurm/checkpoint"
 
 typedef struct slurm_conf_node {
 	char *nodenames;

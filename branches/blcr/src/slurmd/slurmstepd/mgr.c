@@ -700,6 +700,7 @@ job_manager(slurmd_job_t *job)
 {
 	int  rc = 0;
 	bool io_initialized = false;
+	char *ckpt_type = slurm_get_checkpoint_type();
 
 	debug3("Entered job_manager for %u.%u pid=%lu",
 	       job->jobid, job->stepid, (unsigned long) job->jmgr_pid);
@@ -709,6 +710,7 @@ job_manager(slurmd_job_t *job)
 	if (switch_init() != SLURM_SUCCESS
 	    || slurmd_task_init() != SLURM_SUCCESS
 	    || slurm_proctrack_init() != SLURM_SUCCESS
+	    || checkpoint_init(ckpt_type) != SLURM_SUCCESS
 	    || slurm_jobacct_gather_init() != SLURM_SUCCESS) {
 		rc = SLURM_PLUGIN_NAME_INVALID;
 		goto fail1;
@@ -757,6 +759,14 @@ job_manager(slurmd_job_t *job)
 		goto fail2;
 	}
 
+	/* fork necessary threads for checkpoint */
+        if (checkpoint_stepd_prefork(job) != SLURM_SUCCESS) {
+                error("Failed checkpoint_stepd_prefork");
+                rc = SLURM_FAILURE;
+                io_close_task_fds(job);
+                goto fail2;
+        }
+	
 	/* calls pam_setup() and requires pam_finish() if successful */
 	if (_fork_all_tasks(job) < 0) {
 		debug("_fork_all_tasks failed");
@@ -850,6 +860,7 @@ job_manager(slurmd_job_t *job)
 		_send_step_complete_msgs(job);
 	}
 
+	xfree(ckpt_type);
 	return(rc);
 }
 

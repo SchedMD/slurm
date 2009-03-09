@@ -28,4 +28,5 @@ EXTRA_DIST = \
     x_ac_readline.m4 \
     x_ac_setproctitle.m4 \
     x_ac_slurm_ssl.m4 \
-    x_ac_sun_const.m4 
+    x_ac_sun_const.m4 \
+    x_ac_blcr.m4

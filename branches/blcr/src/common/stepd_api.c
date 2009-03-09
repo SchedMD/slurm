@@ -325,14 +325,21 @@ rwfail:
  * Send a checkpoint request to all tasks of a job step.
  */
 int
-stepd_checkpoint(int fd, int signal, time_t timestamp)
+stepd_checkpoint(int fd, time_t timestamp, char *image_dir)
 {
 	int req = REQUEST_CHECKPOINT_TASKS;
 	int rc;
 
 	safe_write(fd, &req, sizeof(int));
-	safe_write(fd, &signal, sizeof(int));
 	safe_write(fd, &timestamp, sizeof(time_t));
+	if (image_dir) {
+                rc = strlen(image_dir) + 1;
+                safe_write(fd, &rc, sizeof(int));
+                safe_write(fd, image_dir, rc);
+	} else {
+		rc = 0;
+                safe_write(fd, &rc, sizeof(int));
+	}
 
 	/* Receive the return code */
 	safe_read(fd, &rc, sizeof(int));

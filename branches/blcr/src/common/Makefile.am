@@ -126,7 +126,7 @@ libcommon_la_LDFLAGS  = $(LIB_LDFLAGS) -module --export-dynamic
 # on multiple platforms
 libcommon_o_SOURCES = 
 libcommon.o :  $(libcommon_la_OBJECTS) $(libcommon_la_DEPENDENCIES) 
-	$(libcommon_la_LINK)  $(libcommon_la_OBJECTS) 
+	$(LINK)  $(libcommon_la_OBJECTS) 
 
 # This was made so we chould export all symbols from libeio 
 # on multiple platforms

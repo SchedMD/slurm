@@ -2763,7 +2763,13 @@ inline static void  _slurm_rpc_checkpoint(slurm_msg_t * msg)
 
 	/* do RPC call and send reply */
 	lock_slurmctld(job_write_lock);
-	error_code = job_step_checkpoint(ckpt_ptr, uid, msg->conn_fd);
+	if (ckpt_ptr->op == CHECK_RESTART) {
+		error_code = job_restart(ckpt_ptr, uid, msg->conn_fd);
+	} else if (ckpt_ptr->step_id == SLURM_BATCH_SCRIPT) {
+		error_code = job_checkpoint(ckpt_ptr, uid, msg->conn_fd);
+	} else {
+		error_code = job_step_checkpoint(ckpt_ptr, uid, msg->conn_fd);
+	}
 	unlock_slurmctld(job_write_lock);
 	END_TIMER2("_slurm_rpc_checkpoint");
 

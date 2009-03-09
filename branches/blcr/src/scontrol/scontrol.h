@@ -98,7 +98,7 @@ extern int input_words;	/* number of words of input permitted */
 extern int one_liner;	/* one record per line if =1 */
 extern int quiet_flag;	/* quiet=1, verbose=-1, normal=0 */
 
-extern int	scontrol_checkpoint(char *op, char *job_step_id_str);
+extern int	scontrol_checkpoint(char *op, char *job_step_id_str, int argc, char **argv);
 extern int	scontrol_encode_hostlist(char *hostlist);
 extern int	scontrol_job_notify(int argc, char *argv[]);
 extern int 	scontrol_load_jobs (job_info_msg_t ** job_buffer_pptr);

@@ -799,16 +799,20 @@ rwfail:
 static int
 _handle_checkpoint_tasks(int fd, slurmd_job_t *job, uid_t uid)
 {
-	static time_t last_timestamp = 0;
 	int rc = SLURM_SUCCESS;
-	int signal;
 	time_t timestamp;
+	int len;
+	char *image_dir = NULL;
 
 	debug3("_handle_checkpoint_tasks for job %u.%u",
 	       job->jobid, job->stepid);
 
-	safe_read(fd, &signal, sizeof(int));
 	safe_read(fd, &timestamp, sizeof(time_t));
+	safe_read(fd, &len, sizeof(int));
+        if (len) {
+                image_dir = xmalloc (len);
+                safe_read(fd, image_dir, len); /* '\0' terminated */
+        }
 
 	debug3("  uid = %d", uid);
 	if (uid != job->uid && !_slurm_authorized_user(uid)) {
@@ -818,7 +822,8 @@ _handle_checkpoint_tasks(int fd, slurmd_job_t *job, uid_t uid)
 		goto done;
 	}
 
-	if (timestamp == last_timestamp) {
+	if (job->ckpt_timestamp &&
+	    timestamp == job->ckpt_timestamp) {
 		debug("duplicate checkpoint req for job %u.%u, timestamp %ld. discarded.",
 		      job->jobid, job->stepid, (long)timestamp);
 		rc = ESLURM_ALREADY_DONE; /* EINPROGRESS? */
@@ -845,17 +850,24 @@ _handle_checkpoint_tasks(int fd, slurmd_job_t *job, uid_t uid)
                goto done;
        }
 
-       /* TODO: send timestamp with signal */
-       if (killpg(job->pgid, signal) == -1) {
-               rc = -1;        /* Most probable ESRCH, resulting in ESLURMD_JOB_NOTRUNNING */
-               verbose("Error sending signal %d to %u.%u, pgid %d, errno: %d: %s",
-                       signal, job->jobid, job->stepid, job->pgid,
-                       errno, slurm_strerror(rc));
+       /* set timestamp in case another request comes */
+       job->ckpt_timestamp = timestamp;
+
+       /* TODO: do we need job->ckpt_dir any more, except for checkpoint/xlch? */
+/*        if (! image_dir) { */
+/*                image_dir = xstrdup(job->ckpt_dir); */
+/*        } */
+       
+       /* call the plugin to send the request */
+       if (checkpoint_signal_tasks(job, image_dir) != SLURM_SUCCESS) {
+               rc = -1;
+               verbose("Error sending checkpoint request to %u.%u: %s",
+                     job->jobid, job->stepid, slurm_strerror(rc));
        } else {
-               last_timestamp = timestamp;
-               verbose("Sent signal %d to %u.%u, pgid %d",
-                       signal, job->jobid, job->stepid, job->pgid);
+               verbose("Sent checkpoint request to %u.%u",
+                       job->jobid, job->stepid);
        }
+
        pthread_mutex_unlock(&suspend_mutex);
 
 done:

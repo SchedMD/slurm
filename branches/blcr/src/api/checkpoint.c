@@ -59,7 +59,8 @@
 
 static int _handle_rc_msg(slurm_msg_t *msg);
 static int _checkpoint_op (uint16_t op, uint16_t data,
-		uint32_t job_id, uint32_t step_id);
+			   uint32_t job_id, uint32_t step_id,
+			   char *image_dir);
 /*
  * _checkpoint_op - perform many checkpoint operation for some job step.
  * IN op      - operation to perform
@@ -69,7 +70,8 @@ static int _checkpoint_op (uint16_t op, uint16_t data,
  * RET 0 or a slurm error code
  */
 static int _checkpoint_op (uint16_t op, uint16_t data,
-		uint32_t job_id, uint32_t step_id)
+			   uint32_t job_id, uint32_t step_id,
+			   char *image_dir)
 {
 	int rc;
 	checkpoint_msg_t ckp_req;
@@ -80,6 +82,7 @@ static int _checkpoint_op (uint16_t op, uint16_t data,
 	ckp_req.data     = data;
 	ckp_req.job_id   = job_id;
 	ckp_req.step_id  = step_id;
+	ckp_req.image_dir = image_dir;
 	req_msg.msg_type = REQUEST_CHECKPOINT;
 	req_msg.data     = &ckp_req;
 
@@ -109,6 +112,7 @@ extern int slurm_checkpoint_able (uint32_t job_id, uint32_t step_id,
 	ckp_req.op       = CHECK_ABLE;
 	ckp_req.job_id   = job_id;
 	ckp_req.step_id  = step_id;
+	ckp_req.image_dir = NULL;
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
 	req_msg.msg_type = REQUEST_CHECKPOINT;
@@ -142,7 +146,7 @@ extern int slurm_checkpoint_able (uint32_t job_id, uint32_t step_id,
  */
 extern int slurm_checkpoint_disable (uint32_t job_id, uint32_t step_id)
 {
-	return _checkpoint_op (CHECK_DISABLE, 0, job_id, step_id);
+	return _checkpoint_op (CHECK_DISABLE, 0, job_id, step_id, NULL);
 }
 
 
@@ -154,7 +158,7 @@ extern int slurm_checkpoint_disable (uint32_t job_id, uint32_t step_id)
  */
 extern int slurm_checkpoint_enable (uint32_t job_id, uint32_t step_id)
 {
-	return _checkpoint_op (CHECK_ENABLE, 0, job_id, step_id);
+	return _checkpoint_op (CHECK_ENABLE, 0, job_id, step_id, NULL);
 }
 
 /*
@@ -166,9 +170,9 @@ extern int slurm_checkpoint_enable (uint32_t job_id, uint32_t step_id)
  * RET 0 or a slurm error code
  */
 extern int slurm_checkpoint_create (uint32_t job_id, uint32_t step_id, 
-		uint16_t max_wait)
+		uint16_t max_wait, char *image_dir)
 {
-	return _checkpoint_op (CHECK_CREATE, max_wait, job_id, step_id);
+	return _checkpoint_op (CHECK_CREATE, max_wait, job_id, step_id, image_dir);
 }
 
 /*
@@ -180,9 +184,9 @@ extern int slurm_checkpoint_create (uint32_t job_id, uint32_t step_id,
  * RET 0 or a slurm error code
  */
 extern int slurm_checkpoint_vacate (uint32_t job_id, uint32_t step_id, 
-		uint16_t max_wait)
+		uint16_t max_wait, char *image_dir)
 {
-	return _checkpoint_op (CHECK_VACATE, max_wait, job_id, step_id);
+	return _checkpoint_op (CHECK_VACATE, max_wait, job_id, step_id, image_dir);
 }
 
 /*
@@ -191,9 +195,10 @@ extern int slurm_checkpoint_vacate (uint32_t job_id, uint32_t step_id,
  * IN step_id - job step on which to perform operation
  * RET 0 or a slurm error code
  */
-extern int slurm_checkpoint_restart (uint32_t job_id, uint32_t step_id)
+extern int slurm_checkpoint_restart (uint32_t job_id, uint32_t step_id,
+				     uint16_t stick, char *image_dir)
 {
-	return _checkpoint_op (CHECK_RESTART, 0, job_id, step_id);
+	return _checkpoint_op (CHECK_RESTART, stick, job_id, step_id, image_dir);
 }
 
 /*
@@ -260,6 +265,7 @@ extern int slurm_checkpoint_error ( uint32_t job_id, uint32_t step_id,
 	req.op       = CHECK_ERROR;
 	req.job_id   = job_id;
 	req.step_id  = step_id;
+	req.image_dir = NULL;
 	slurm_msg_t_init(&msg);
 	slurm_msg_t_init(&resp_msg);
 	msg.msg_type = REQUEST_CHECKPOINT;
@@ -341,6 +347,9 @@ extern int slurm_checkpoint_task_complete (uint32_t job_id, uint32_t step_id,
 	return SLURM_SUCCESS;
 }
 
+
+/* removed. should be implemented in plugin */
+#if 0
 /*
  * slurm_get_checkpoint_file_path - return the checkpoint file
  *      path of this process, creating the directory if needed.
@@ -351,47 +360,47 @@ extern int slurm_checkpoint_task_complete (uint32_t job_id, uint32_t step_id,
 extern int
 slurm_get_checkpoint_file_path(size_t len, char *buf)
 {
-       char *ckpt_path, *job_id, *step_id, *proc_id;
+       char *ckpt_dir, *job_id, *step_id, *proc_id;
        struct stat mystat;
        int idx;
 
        len --;                 /* for a terminating 0 */
 
-       ckpt_path = getenv("SLURM_CHECKPOINT_PATH");
-       if (ckpt_path == NULL) { /* this should not happen since the program may chdir */
-               ckpt_path = getcwd(buf, len);
-               if (ckpt_path == NULL)  /* ERANGE: len is too short */
+       ckpt_dir = getenv("SLURM_CHECKPOINT_PATH");
+       if (ckpt_dir == NULL) { /* this should not happen since the program may chdir */
+               ckpt_dir = getcwd(buf, len);
+               if (ckpt_dir == NULL)  /* ERANGE: len is too short */
                        return -1;
        } else {
-               if (snprintf(buf, len, "%s", ckpt_path) >= len) { /* glibc >= 2.1 */
+               if (snprintf(buf, len, "%s", ckpt_dir) >= len) { /* glibc >= 2.1 */
                        errno = ERANGE;
                        return -1;
                }
-               ckpt_path = buf;
+               ckpt_dir = buf;
        }
-       idx = strlen(ckpt_path) - 1;
-       while (idx > 0 && ckpt_path[idx] == '/')
-               ckpt_path[idx --] = 0;
+       idx = strlen(ckpt_dir) - 1;
+       while (idx > 0 && ckpt_dir[idx] == '/')
+               ckpt_dir[idx --] = 0;
 
-       if (stat(ckpt_path, &mystat) < 0)
+       if (stat(ckpt_dir, &mystat) < 0)
                return -1;
        if (! S_ISDIR(mystat.st_mode)) {
                errno = ENOTDIR;
                return -1;
        }
 
-       job_id = getenv("SLURM_JOBID");
-       step_id = getenv("SLURM_STEPID");
+/*        job_id = getenv("SLURM_JOBID"); */
+/*        step_id = getenv("SLURM_STEPID"); */
        proc_id = getenv("SLURM_PROCID");
-       if (job_id == NULL || step_id == NULL || proc_id == NULL) {
+       if (/* job_id == NULL || step_id == NULL ||  */proc_id == NULL) {
                errno = ENODATA;
                return -1;
        }
        idx = strlen(buf);
-       if (snprintf(buf + idx, len - idx, "/%s.%s", job_id, step_id) >= len - idx) {
-               errno = ERANGE;
-               return -1;
-       }
+/*        if (snprintf(buf + idx, len - idx, "/%s.%s", job_id, step_id) >= len - idx) { */
+/*                errno = ERANGE; */
+/*                return -1; */
+/*        } */
 
        if (stat(buf, &mystat) < 0) {
                if (errno == ENOENT) { /* dir does not exists */
@@ -415,4 +424,23 @@ slurm_get_checkpoint_file_path(size_t len, char *buf)
        }
 
        return 0;
+}
+#endif
+
+/*
+ * slurm_checkpoint_tasks - send checkpoint request to tasks of
+ *     specified step
+ * IN job_id: job ID of step
+ * IN step_id: step ID of step
+ * IN image_dir: location to store ckpt images. parameter to plugin.
+ * IN wait: seconds to wait for the operation to complete
+ * IN nodelist: nodes to send the request
+ * RET: 0 on success, non-zero on failure with errno set
+ */
+extern int
+slurm_checkpoint_tasks(uint32_t job_id, uint16_t step_id, time_t begin_time,
+		       char *image_dir, uint16_t wait, char *nodelist)
+{
+	return checkpoint_tasks(job_id, step_id, begin_time,
+				image_dir, wait, nodelist);
 }

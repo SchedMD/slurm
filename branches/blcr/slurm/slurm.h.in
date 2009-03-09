@@ -493,6 +493,8 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint32_t argc;		/* number of arguments to the script */
 	char **argv;		/* arguments to the script */
 	time_t begin_time;	/* delay initiation until this time */
+	uint16_t ckpt_interval;	/* periodically checkpoint this job */
+	char *ckpt_dir;  	/* directory to store checkpoint images */
 	char *comment;		/* arbitrary comment (used by Moab scheduler) */
 	uint16_t contiguous;	/* 1 if job requires contiguous nodes,
 				 * 0 otherwise,default=0 */
@@ -771,7 +773,6 @@ typedef struct srun_node_fail_msg {
 
 typedef struct {
 	uint16_t ckpt_interval;	/* checkpoint interval in minutes */
-	char *ckpt_path;	/* path to store checkpoint image files */
 	uint32_t cpu_count;	/* number of required processors */
 	uint16_t exclusive;	/* 1 if CPUs not shared with other steps */
 	uint16_t immediate;	/* 1 if allocate to run or fail immediately, 
@@ -779,6 +780,7 @@ typedef struct {
 	uint32_t job_id;	/* job ID */
 	uint32_t mem_per_task;	/* memory required per task (MB), 
 				 * use job limit if 0 */
+        char *ckpt_dir;         /* directory to store checkpoint image files */
 	char *name;		/* name of the job step */
 	char *network;		/* network use spec */
 	uint8_t no_kill;	/* 1 if no kill on node failure */
@@ -840,7 +842,8 @@ typedef struct {
 	uint8_t open_mode;
 	uint16_t acctg_freq;
 	bool pty;
-	char *ckpt_path;
+	char *ckpt_dir;
+	char *restart_dir;
 } slurm_step_launch_params_t;
 
 typedef struct {
@@ -872,7 +875,7 @@ typedef struct {
 				 * start_range_1, end_range_1,
 				 * start_range_2, .., -1  */
 	uint16_t ckpt_interval;	/* checkpoint interval in minutes */
-	char *ckpt_path;	/* path to store checkpoint image files */
+	char *ckpt_dir;	        /* path to store checkpoint image files */
 } job_step_info_t;
 
 typedef struct job_step_info_response_msg {
@@ -1076,6 +1079,7 @@ typedef struct slurm_ctl_conf {
 	char *job_acct_gather_type; /* job accounting gather type */
 	uint16_t job_acct_gather_freq; /* poll frequency for job accounting 
 					* gather plugins */
+	char *job_ckpt_dir;	/* directory saving job record checkpoint */
 	char *job_comp_host;	/* job completion logging host */
 	char *job_comp_loc;	/* job completion logging location */
 	char *job_comp_pass;	/* job completion storage password */
@@ -2211,10 +2215,11 @@ extern int slurm_checkpoint_enable PARAMS(( uint32_t job_id,
  * IN job_id  - job on which to perform operation
  * IN step_id - job step on which to perform operation
  * IN max_wait - maximum wait for operation to complete, in seconds
+ * IN image_dir - directory to store image files
  * RET 0 or a slurm error code
  */
 extern int slurm_checkpoint_create PARAMS(( uint32_t job_id, 
-		uint32_t step_id, uint16_t max_wait ));
+		uint32_t step_id, uint16_t max_wait, char *image_dir ));
 
 /*
  * slurm_checkpoint_vacate - initiate a checkpoint requests for some job step.
@@ -2222,19 +2227,22 @@ extern int slurm_checkpoint_create PARAMS(( uint32_t job_id,
  * IN job_id  - job on which to perform operation
  * IN step_id - job step on which to perform operation
  * IN max_wait - maximum wait for operation to complete, in seconds
+ * IN image_dir - directory to store image files
  * RET 0 or a slurm error code
  */
 extern int slurm_checkpoint_vacate PARAMS(( uint32_t job_id, 
-		uint32_t step_id, uint16_t max_wait ));
+		uint32_t step_id, uint16_t max_wait, char *image_dir ));
 
 /*
  * slurm_checkpoint_restart - restart execution of a checkpointed job step.
  * IN job_id  - job on which to perform operation
  * IN step_id - job step on which to perform operation
+ * IN stick - stick to nodes previously running on
+ * IN image_dir - directory to find checkpoint image files
  * RET 0 or a slurm error code
  */
 extern int slurm_checkpoint_restart PARAMS(( uint32_t job_id, 
-		uint32_t step_id ));
+		uint32_t step_id, uint16_t stick, char *image_dir ));
 
 /*
  * slurm_checkpoint_complete - note the completion of a job step's checkpoint
@@ -2290,6 +2298,21 @@ extern int slurm_checkpoint_error PARAMS(( uint32_t job_id,
  * RET: 0 on success, -1 on failure with errno set
  */
 extern int slurm_get_checkpoint_file_path(size_t len, char *buf);
+
+/*
+ * slurm_checkpoint_tasks - send checkpoint request to tasks of
+ *     specified step
+ * IN job_id: job ID of step
+ * IN step_id: step ID of step
+ * IN image_dir: location to store ckpt images. parameter to plugin.
+ * IN wait: seconds to wait for the operation to complete
+ * IN nodelist: nodes to send the request
+ * RET: 0 on success, non-zero on failure with errno set
+ */
+extern int
+slurm_checkpoint_tasks(uint32_t job_id, uint16_t step_id, time_t begin_time,
+		       char *image_dir, uint16_t wait, char *nodelist);
+
 
 /*****************************************************************************\
  *      SLURM HOSTLIST FUNCTIONS

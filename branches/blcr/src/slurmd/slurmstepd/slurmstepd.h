@@ -64,4 +64,6 @@ typedef struct {
 
 extern step_complete_t step_complete;
 
+extern slurmd_conf_t *conf;
+
 #endif /* !_SLURMSTEPD_H */

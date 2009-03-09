@@ -422,8 +422,8 @@ typedef struct kill_tasks_msg {
 typedef struct checkpoint_tasks_msg {
 	uint32_t job_id;
 	uint32_t job_step_id;
-	uint32_t signal;
 	time_t timestamp;
+	char *image_dir;
 } checkpoint_tasks_msg_t;
 
 typedef struct epilog_complete_msg {
@@ -447,7 +447,7 @@ typedef struct set_debug_level_msg {
 
 typedef struct job_step_specs {
 	uint16_t ckpt_interval;	/* checkpoint creation interval (minutes) */
-	char *ckpt_path;	/* path to store checkpoint image files */
+	char *ckpt_dir; 	/* path to store checkpoint image files */
 	uint32_t cpu_count;	/* count of required processors */
 	uint16_t exclusive;	/* 1 if CPUs not shared with other steps */
 	char *host;		/* host to contact initiating srun */
@@ -543,7 +543,8 @@ typedef struct launch_tasks_request_msg {
 	switch_jobinfo_t switch_job;	/* switch credential for the job */
 	job_options_t options;  /* Arbitrary job options */
 	char *complete_nodelist;
-	char *ckpt_path;	/* checkpoint path */
+	char *ckpt_dir;	/* checkpoint path */
+	char *restart_dir;	/* restart from checkpoint if set */
 } launch_tasks_request_msg_t;
 
 typedef struct task_user_managed_io_msg {
@@ -625,6 +626,8 @@ typedef struct batch_job_launch_msg {
 	char *in;		/* pathname of stdin */
 	char *out;		/* pathname of stdout */
 	char *work_dir;		/* full pathname of working directory */
+	char *ckpt_dir;		/* location to store checkpoint image */
+	char *restart_dir;	/* retart execution from image in this dir */
 	uint32_t argc;
 	char **argv;
 	uint32_t envc;		/* element count in environment */
@@ -660,6 +663,7 @@ typedef struct checkpoint_msg {
 	uint16_t data;		/* operation specific data */
 	uint32_t job_id;	/* slurm job_id */
 	uint32_t step_id;	/* slurm step_id */
+	char *image_dir;	/* locate to store the context images. NULL for default */
 } checkpoint_msg_t;
 
 typedef struct checkpoint_comp_msg {

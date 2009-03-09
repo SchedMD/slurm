@@ -125,7 +125,7 @@ hv_to_slurm_step_launch_params(HV* hv, slurm_step_launch_params_t* params)
 	FETCH_FIELD(hv, params, open_mode, uint8_t, FALSE);
 	FETCH_FIELD(hv, params, acctg_freq, uint16_t, FALSE);
 	FETCH_FIELD(hv, params, pty, bool, FALSE);
-	FETCH_FIELD(hv, params, ckpt_path, charp, FALSE);
+	FETCH_FIELD(hv, params, ckpt_dir, charp, FALSE);
 	
 	return 0;
 }

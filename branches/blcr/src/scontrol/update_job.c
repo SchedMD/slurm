@@ -39,16 +39,23 @@
 
 #include "scontrol.h"
 
+static int _parse_checkpoint_args(int argc, char **argv,
+				  uint16_t *max_wait, char **image_dir);
+static int _parse_restart_args(int argc, char **argv,
+			       uint16_t *stick, char **image_dir);
+
 /* 
  * scontrol_checkpoint - perform some checkpoint/resume operation
  * IN op - checkpoint operation
  * IN job_step_id_str - either a job name (for all steps of the given job) or 
  *			a step name: "<jid>.<step_id>"
+ * IN argc - argument count
+ * IN argv - arguments of the operation
  * RET 0 if no slurm error, errno otherwise. parsing error prints 
  *			error message and returns 0
  */
 extern int 
-scontrol_checkpoint(char *op, char *job_step_id_str)
+scontrol_checkpoint(char *op, char *job_step_id_str, int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
 	uint32_t job_id = 0, step_id = 0, step_id_set = 0;
@@ -56,6 +63,8 @@ scontrol_checkpoint(char *op, char *job_step_id_str)
 	uint32_t ckpt_errno;
 	char *ckpt_strerror = NULL;
 	int oplen = strlen(op);
+	uint16_t max_wait = CKPT_WAIT, stick = 0;
+	char *image_dir = NULL;
 
 	if (job_step_id_str) {
 		job_id = (uint32_t) strtol (job_step_id_str, &next_str, 10);
@@ -103,13 +112,25 @@ scontrol_checkpoint(char *op, char *job_step_id_str)
 		rc = slurm_checkpoint_disable (job_id, step_id);
 	else if (strncasecmp(op, "enable", MAX(oplen, 2)) == 0)
 		rc = slurm_checkpoint_enable (job_id, step_id);
-	else if (strncasecmp(op, "create", MAX(oplen, 2)) == 0)
-		rc = slurm_checkpoint_create (job_id, step_id, CKPT_WAIT);
-	else if (strncasecmp(op, "vacate", MAX(oplen, 1)) == 0)
-		rc = slurm_checkpoint_vacate (job_id, step_id, CKPT_WAIT);
-	else if (strncasecmp(op, "restart", MAX(oplen, 1)) == 0)
-		rc = slurm_checkpoint_restart (job_id, step_id);
-	else if (strncasecmp(op, "error", MAX(oplen, 2)) == 0) {
+	else if (strncasecmp(op, "create", MAX(oplen, 2)) == 0) {
+		if (_parse_checkpoint_args(argc, argv, &max_wait, &image_dir)) {
+			return 0;
+		}
+		rc = slurm_checkpoint_create (job_id, step_id, max_wait, image_dir);
+
+	} else if (strncasecmp(op, "vacate", MAX(oplen, 2)) == 0) {
+		if (_parse_checkpoint_args(argc, argv, &max_wait, &image_dir)) {
+			return 0;
+		}
+		rc = slurm_checkpoint_vacate (job_id, step_id, max_wait, image_dir);
+
+	} else if (strncasecmp(op, "restart", MAX(oplen, 2)) == 0) {
+		if (_parse_restart_args(argc, argv, &stick, &image_dir)) {
+			return 0;
+		}
+		rc = slurm_checkpoint_restart (job_id, step_id, stick, image_dir);
+
+	} else if (strncasecmp(op, "error", MAX(oplen, 2)) == 0) {
 		rc = slurm_checkpoint_error (job_id, step_id, 
 			&ckpt_errno, &ckpt_strerror);
 		if (rc == SLURM_SUCCESS) {
@@ -124,6 +145,47 @@ scontrol_checkpoint(char *op, char *job_step_id_str)
 	}
 
 	return rc;
+}
+
+static int
+_parse_checkpoint_args(int argc, char **argv, uint16_t *max_wait, char **image_dir)
+{
+	int i;
+	
+	for (i=0; i< argc; i++) {
+		if (strncasecmp(argv[i], "MaxWait=", 8) == 0) {
+			*max_wait = (uint16_t) strtol(&argv[i][8], 
+						      (char **) NULL, 10);
+		} else if (strncasecmp(argv[i], "ImageDir=", 9) == 0) {
+			*image_dir = &argv[i][9];
+		} else {
+			exit_code = 1;
+			error("Invalid input: %s", argv[i]);
+			error("Request aborted");
+			return -1;
+		}
+	}
+	return 0;
+}
+
+static int
+_parse_restart_args(int argc, char **argv, uint16_t *stick, char **image_dir)
+{
+	int i;
+	
+	for (i=0; i< argc; i++) {
+		if (strncasecmp(argv[i], "StickToNodes", 5) == 0) {
+			*stick = 1;
+		} else if (strncasecmp(argv[i], "ImageDir=", 9) == 0) {
+			*image_dir = &argv[i][9];
+		} else {
+			exit_code = 1;
+			error("Invalid input: %s", argv[i]);
+			error("Request aborted");
+			return -1;
+		}
+	}
+	return 0;
 }
 
 /*

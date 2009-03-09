@@ -116,7 +116,7 @@ static void  _ckpt_signal_step(struct ckpt_timeout_info *rec);
 
 static int _on_ckpt_complete(struct step_record *step_ptr, uint32_t error_code);
 
-extern char *scch_path;
+static char *scch_path = SLURM_PREFIX "/sbin/scch";
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -438,7 +438,6 @@ static void _send_ckpt(uint32_t job_id, uint32_t step_id, uint16_t signal,
 	ckpt_tasks_msg = xmalloc(sizeof(checkpoint_tasks_msg_t));
 	ckpt_tasks_msg->job_id		= job_id;
 	ckpt_tasks_msg->job_step_id	= step_id;
-	ckpt_tasks_msg->signal		= signal;
 	ckpt_tasks_msg->timestamp       = timestamp;
 
 	agent_args = xmalloc(sizeof(agent_arg_t));
@@ -676,7 +675,7 @@ static int _on_ckpt_complete(struct step_record *step_ptr, uint32_t error_code)
 			args[1] = str_job;
 			args[2] = str_step;
 			args[3] = str_err;
-			args[4] = step_ptr->ckpt_path;
+			args[4] = step_ptr->ckpt_dir;
 			args[5] = NULL;
 
 			execv(scch_path, args);

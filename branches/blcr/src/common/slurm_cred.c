@@ -84,6 +84,7 @@
 typedef struct {
 	uint32_t jobid;		/* SLURM job id for this credential         */
 	uint32_t stepid;	/* SLURM step id for this credential        */
+	time_t   ctime;		/* Time that the cred was created */
 	time_t   expiration;    /* Time at which cred is no longer good     */
 } cred_state_t;
 
@@ -1423,7 +1424,7 @@ _slurm_cred_verify_signature(slurm_cred_ctx_t ctx, slurm_cred_t cred)
 			get_buf_data(buffer), get_buf_offset(buffer),
 			cred->signature, cred->siglen);
 	if (rc && _exkey_is_valid(ctx)) {
-		rc = (*(g_crypto_context->ops.crypto_verify_sign))(ctx->key, 
+		rc = (*(g_crypto_context->ops.crypto_verify_sign))(ctx->exkey, 
 			get_buf_data(buffer), get_buf_offset(buffer),
 			cred->signature, cred->siglen);
 	}
@@ -1482,7 +1483,9 @@ _credential_replayed(slurm_cred_ctx_t ctx, slurm_cred_t cred)
 	i = list_iterator_create(ctx->state_list);
 
 	while ((s = list_next(i))) {
-		if ((s->jobid == cred->jobid) && (s->stepid == cred->stepid))
+		if ((s->jobid == cred->jobid) &&
+		    (s->stepid == cred->stepid) &&
+		    (s->ctime == cred->ctime))
 			break;
 	}
 
@@ -1596,7 +1599,8 @@ _find_job_state(slurm_cred_ctx_t ctx, uint32_t jobid)
 static int
 _find_cred_state(cred_state_t *c, slurm_cred_t cred)
 {
-	return ((c->jobid == cred->jobid) && (c->stepid == cred->stepid));
+	return ((c->jobid == cred->jobid) && (c->stepid == cred->stepid) &&
+		(c->ctime == cred->ctime));
 }
 
 static job_state_t *
@@ -1697,6 +1701,7 @@ _cred_state_create(slurm_cred_ctx_t ctx, slurm_cred_t cred)
 
 	s->jobid      = cred->jobid;
 	s->stepid     = cred->stepid;
+	s->ctime      = cred->ctime;
 	s->expiration = cred->ctime + ctx->expiry_window;
 
 	return s;
@@ -1714,6 +1719,7 @@ _cred_state_pack_one(cred_state_t *s, Buf buffer)
 {
 	pack32(s->jobid, buffer);
 	pack32(s->stepid, buffer);
+	pack_time(s->ctime, buffer);
 	pack_time(s->expiration, buffer);
 }
 
@@ -1725,6 +1731,7 @@ _cred_state_unpack_one(Buf buffer)
 
 	safe_unpack32(&s->jobid, buffer);
 	safe_unpack32(&s->stepid, buffer);
+	safe_unpack_time(&s->ctime, buffer);
 	safe_unpack_time(&s->expiration, buffer);
 	return s;
 

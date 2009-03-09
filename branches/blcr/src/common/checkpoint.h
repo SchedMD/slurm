@@ -71,9 +71,10 @@ extern int checkpoint_init(char *checkpoint_type);
 /* shutdown checkpoint plugin */
 extern int checkpoint_fini(void);
 
-/* perform many checkpoint operation */
-extern int checkpoint_op(uint16_t op, uint16_t data, void * step_ptr, 
-		time_t * event_time, uint32_t *error_code, char **error_msg);
+/* perform many checkpoint operation on job/step */
+extern int checkpoint_op(uint32_t job_id, uint16_t step_id, uint16_t op,
+			 uint16_t data, char *image_dir, time_t *event_time,
+			 uint32_t *error_code, char **error_msg);
 
 /* note checkpoint completion */
 extern int checkpoint_comp(void * step_ptr, time_t event_time, uint32_t error_code,
@@ -96,5 +97,17 @@ extern int checkpoint_free_jobinfo(check_jobinfo_t jobinfo);
 extern int  checkpoint_pack_jobinfo  (check_jobinfo_t jobinfo, Buf buffer);
 extern int  checkpoint_unpack_jobinfo  (check_jobinfo_t jobinfo, Buf buffer);
 
+/* create the necessary threads before forking the tasks */
+extern int checkpoint_stepd_prefork (void *slurmd_job);
+
+/* send the checkpoint request to the tasks */
+extern int checkpoint_signal_tasks (void *slurmd_job, char *image_dir);
+
+/* restart the requested job task */
+extern int checkpoint_restart_task(void *slurmd_job, char *image_dir, int gtid);
+
+/* send checkpoint request to specified job/step */
+extern int checkpoint_tasks (uint32_t job_id, uint16_t step_id, time_t begin_time,
+			     char *image_dir, uint16_t wait, char *nodelist);
 #endif /*__CHECKPOINT_H__*/
 

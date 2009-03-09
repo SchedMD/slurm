@@ -382,6 +382,7 @@ struct job_details {
 	time_t begin_time;		/* start at this time (srun --being), 
 					 * resets to time first eligible
 					 * (all dependencies satisfied) */
+	char *ckpt_dir;		        /* directory to store checkpoint images */
 	uint16_t contiguous;		/* set if requires contiguous nodes */
 	char *cpu_bind;			/* binding map for map/mask_cpu */
 	uint16_t cpu_bind_type;		/* see cpu_bind_type_t */
@@ -424,6 +425,7 @@ struct job_details {
 	uint16_t *req_node_layout;	/* task layout for required nodes */
 	char *req_nodes;		/* required nodes */
 	uint16_t requeue;		/* controls ability requeue job */
+	char *restart_dir;	        /* restart execution from ckpt images in this dir */
 	uint16_t shared;		/* 1 if job can share nodes,
 					 * 0 if job cannot share nodes,
 					 * any other value accepts the default
@@ -447,6 +449,9 @@ struct job_record {
 					 * value before use */
 	uint16_t batch_flag;		/* 1 or 2 if batch job (with script),
 					 * 2 indicates retry mode (one retry) */
+	check_jobinfo_t check_job;      /* checkpoint context, opaque */
+	uint16_t ckpt_interval;	        /* checkpoint interval in minutes */
+	time_t ckpt_time;	        /* last time job was periodically checkpointed */
 	char *comment;			/* arbitrary comment */
         uint16_t cr_enabled;            /* specify if if Consumable Resources
                                          * is enabled. Needed since CR deals
@@ -549,7 +554,7 @@ struct 	step_record {
 	uint16_t batch_step;		/* 1 if batch job step, 0 otherwise */
 	uint16_t ckpt_interval;		/* checkpoint interval in minutes */
 	check_jobinfo_t check_job;	/* checkpoint context, opaque */
-	char *ckpt_path;	        /* path to checkpoint image files */
+	char *ckpt_dir;	                /* path to checkpoint image files */
 	time_t ckpt_time;		/* time of last checkpoint */
 	bitstr_t *core_bitmap_job;	/* bitmap of cores allocated to this
 					 * step relative to job's nodes, 

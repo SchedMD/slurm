@@ -175,6 +175,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"JobAcctGatherFrequency", S_P_UINT16},
 	{"JobAcctLogFile", S_P_STRING},
 	{"JobAcctType", S_P_STRING},
+	{"JobCheckpointDir", S_P_STRING},
 	{"JobCompHost", S_P_STRING},
 	{"JobCompLoc", S_P_STRING},
 	{"JobCompPass", S_P_STRING},
@@ -1271,6 +1272,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->epilog);
 	xfree (ctl_conf_ptr->health_check_program);
 	xfree (ctl_conf_ptr->job_acct_gather_type);
+	xfree (ctl_conf_ptr->job_ckpt_dir);
 	xfree (ctl_conf_ptr->job_comp_host);
 	xfree (ctl_conf_ptr->job_comp_loc);
 	xfree (ctl_conf_ptr->job_comp_pass);
@@ -1362,6 +1364,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->inactive_limit		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->job_acct_gather_type);
 	ctl_conf_ptr->job_acct_gather_freq             = 0;
+	xfree (ctl_conf_ptr->job_ckpt_dir);
 	xfree (ctl_conf_ptr->job_comp_loc);
 	xfree (ctl_conf_ptr->job_comp_pass);
 	ctl_conf_ptr->job_comp_port             = 0;
@@ -1798,6 +1801,9 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			   "JobAcctGatherType", hashtbl))
 		conf->job_acct_gather_type =
 			xstrdup(DEFAULT_JOB_ACCT_GATHER_TYPE);
+
+	if (!s_p_get_string(&conf->job_ckpt_dir, "JobCheckpointDir", hashtbl))
+		conf->job_ckpt_dir = xstrdup(DEFAULT_JOB_CKPT_DIR);
 
 	if (!s_p_get_string(&conf->job_comp_type, "JobCompType", hashtbl)) {
 		if(default_storage_type) {

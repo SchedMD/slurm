@@ -376,7 +376,7 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 	job->envtp->mem_bind = xstrdup(job->mem_bind);
 	job->envtp->mem_bind_type = job->mem_bind_type;
 	job->envtp->distribution = -1;
-	job->envtp->ckpt_path = xstrdup(job->ckpt_path);
+	job->envtp->ckpt_dir = xstrdup(job->ckpt_dir);
 	setup_env(job->envtp);
 	setenvf(&job->envtp->env, "SLURMD_NODENAME", "%s", conf->node_name);
 	job->env = job->envtp->env;
@@ -448,6 +448,14 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 		job->env = (char **)xmalloc(sizeof(char *));
 		job->env[0] = (char *)NULL;
 	}
+
+        if (job->restart_dir) {
+		info("restart from %s", job->restart_dir);
+		/* no return on success */
+                checkpoint_restart_task(job, job->restart_dir, task->gtid); 
+                error("Restart task failed: %m");
+                exit(errno);
+        }
 
 	if (task->argv[0] == NULL) {
 		error("No executable program specified for this task");
