@@ -1,4 +1,4 @@
-.TH "Slurm API" "3" "December 2005" "Morris Jette" "Slurm checkpoint functions"
+.TH "Slurm API" "3" "March 2009" "Morris Jette" "Slurm checkpoint functions"
 
 .SH "NAME"
 slurm_checkpoint_able, slurm_checkpoint_complete, slurm_checkpoint_create,
@@ -40,7 +40,9 @@ int \fBslurm_checkpoint_create\fR (
 .br
 	uint32_t \fIstep_id\fP,
 .br
-	uint16_t \fImax_wait\fP
+	uint16_t \fImax_wait\fP,
+.br
+	char *\fIimage_dir\fP
 .br
 );
 .LP
@@ -77,7 +79,11 @@ int \fBslurm_checkpoint_restart\fR (
 .br
 	uint32_t \fIjob_id\fP,
 .br
-	uint32_t \fIstep_id\fP
+	uint32_t \fIstep_id\fP,
+.br
+	uint16_t \fIstick\fP,
+.br
+	char *\fIimage_dir\fP
 .br
 );
 .LP
@@ -87,7 +93,9 @@ int \fBslurm_checkpoint_vacate\fR (
 .br
 	uint32_t \fIstep_id\fP,
 .br
-	uint16_t \fImax_wait\fP
+	uint16_t \fImax_wait\fP,
+.br
+	char *\fIimage_dir\fP
 .br
 );
 
@@ -101,6 +109,11 @@ Error code for checkpoint operation. Only the highest value is preserved.
 Error message for checkpoint operation. Only the \fIerror_msg\fP value for the highest 
 \fIerror_code\fP is preserved.
 .TP
+\fIimage_dir\fP
+Directory specification for where the checkpoint file should be read from or 
+written to. The default value is specified by the \fIJobCheckpointDir\fP
+SLURM configuration parameter.
+.TP
 \fIjob_id\fP
 SLURM job ID to perform the operation upon.
 .TP
@@ -113,6 +126,9 @@ Time at which last checkpoint operation began (if one is in progress), otherwise
 \fIstep_id\fP
 SLURM job step ID to perform the operation upon. 
 May be NO_VAL if the operation is to be performed on all steps of the specified job.
+.TP
+\fIstick\fP
+If non\-zero then restart the job on the same nodes that it was checkpointed from.
 
 .SH "DESCRIPTION"
 .LP
@@ -217,7 +233,8 @@ which must be linked to your process for use
 (e.g. "cc \-lslurm myprog.c").
 
 .SH "COPYING"
-Copyright (C) 2004 The Regents of the University of California.
+Copyright (C) 2004\-2007 The Regents of the University of California.
+Copyright (C) 2008\-2009 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 CODE\-OCEC\-09\-009. All rights reserved.
 .LP
@@ -236,4 +253,4 @@ details.
 
 .SH "SEE ALSO"
 .LP 
-\fBsrun\fR(1), \fBsqueue\fR(1), \fBfree\fR(3) 
+\fBsrun\fR(1), \fBsqueue\fR(1), \fBfree\fR(3), \fBslurm.conf\fR(5)
