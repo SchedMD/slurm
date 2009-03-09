@@ -131,6 +131,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 				slurm_addto_char_list(format_list,
 						      argv[i]+end);
 		} else if (!strncasecmp (argv[i], "FairShare",
+					 MAX(command_len, 1))
+			   || !strncasecmp (argv[i], "Shares",
 					 MAX(command_len, 1))) {
 			if(!assoc_cond->fairshare_list)
 				assoc_cond->fairshare_list =
@@ -376,7 +378,7 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 		field = xmalloc(sizeof(print_field_t));
 
 		if(!strncasecmp("Account", object, MAX(command_len, 1))
-		   || !strncasecmp (argv[i], "Acct", MAX(command_len, 4))) {
+		   || !strncasecmp("Acct", object, MAX(command_len, 4))) {
 			field->type = PRINT_ACCOUNT;
 			field->name = xstrdup("Account");
 			if(tree_display)
@@ -524,6 +526,12 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 			field->type = PRINT_RGT;
 			field->name = xstrdup("RGT");
 			field->len = 6;
+			field->print_routine = print_fields_uint;
+		} else if(!strncasecmp("Shares", object,
+				       MAX(command_len, 1))) {
+			field->type = PRINT_FAIRSHARE;
+			field->name = xstrdup("Shares");
+			field->len = 9;
 			field->print_routine = print_fields_uint;
 		} else if(!strncasecmp("User", object, MAX(command_len, 1))) {
 			field->type = PRINT_USER;

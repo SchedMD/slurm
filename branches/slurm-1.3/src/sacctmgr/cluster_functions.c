@@ -130,6 +130,8 @@ static int _set_rec(int *start, int argc, char *argv[],
 			if(name_list)
 				slurm_addto_char_list(name_list, argv[i]+end);
 		} else if (!strncasecmp (argv[i], "FairShare", 
+					 MAX(command_len, 1))
+			   || !strncasecmp (argv[i], "Shares",
 					 MAX(command_len, 1))) {
 			if (get_uint(argv[i]+end, &assoc->fairshare, 
 			    "FairShare") == SLURM_SUCCESS)
@@ -566,6 +568,12 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 			field->type = PRINT_RPC_VERSION;
 			field->name = xstrdup("RPC");
 			field->len = 3;
+			field->print_routine = print_fields_uint;
+		} else if(!strncasecmp("Shares", object, 
+				       MAX(command_len, 1))) {
+			field->type = PRINT_FAIRSHARE;
+			field->name = xstrdup("Shares");
+			field->len = 9;
 			field->print_routine = print_fields_uint;
 		} else {
 			exit_code=1;
