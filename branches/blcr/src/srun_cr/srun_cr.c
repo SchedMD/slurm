@@ -1,7 +1,39 @@
-/*
- * srun_cr.c - C/R wrapper for srun
+/*****************************************************************************\
+ *  srun_cr.c - Checkpoint/Restart wrapper for srun
+ *****************************************************************************
+ *  Copyright (C) 2009 National University of Defense Technology, China.
+ *  Written by Hongia Cao
+ *  CODE-OCEC-09-009. All rights reserved.
+ *  
+ *  This file is part of SLURM, a resource management program.
+ *  For details, see <https://computing.llnl.gov/linux/slurm/>.
+ *  Please also read the included file: DISCLAIMER.
+ *  
+ *  SLURM is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
  *
- */
+ *  In addition, as a special exception, the copyright holders give permission 
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and 
+ *  distribute linked combinations including the two. You must obey the GNU 
+ *  General Public License in all respects for all of the code used other than 
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this 
+ *  exception to your version of the file(s), but you are not obligated to do 
+ *  so. If you do not wish to do so, delete this exception statement from your
+ *  version.  If you delete this exception statement from all source files in 
+ *  the program, then also delete it here.
+ *  
+ *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *  
+ *  You should have received a copy of the GNU General Public License along
+ *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+\*****************************************************************************/
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
 #endif
@@ -26,6 +58,7 @@
 #include <libcr.h>
 #include <slurm/slurm.h>
 
+#include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -112,7 +145,7 @@ mimic_exit(int status)
 		/* now raise the signal */
 		signal_self(WTERMSIG(status));
 	} else {
-		warn("Unexpected status from child\n");
+		error("Unexpected status from child\n");
 		exit(-1);
 	}
 }
@@ -131,17 +164,17 @@ on_child_exit(int signum)
 static int
 _slurm_debug_env_val (void)
 {
-        long int level = 0;
-        const char *val;
+	long int level = 0;
+	const char *val;
 
-        if ((val = getenv ("SLURM_DEBUG"))) {
-                char *p;
-                if ((level = strtol (val, &p, 10)) < -LOG_LEVEL_INFO)
-                        level = -LOG_LEVEL_INFO;
-                if (p && *p != '\0')
-                        level = 0;
-        }
-        return ((int) level);
+	if ((val = getenv ("SLURM_DEBUG"))) {
+		char *p;
+		if ((level = strtol (val, &p, 10)) < -LOG_LEVEL_INFO)
+			level = -LOG_LEVEL_INFO;
+		if (p && *p != '\0')
+			level = 0;
+	}
+	return ((int) level);
 }
 
 
@@ -150,7 +183,7 @@ update_env(char *name, char *val)
 {
 	char *buf = NULL;
 
-        xstrfmtcat (buf, "%s=%s", name, val);
+	xstrfmtcat (buf, "%s=%s", name, val);
 	if (putenv(buf)) {
 		fatal("failed to update env: %m");
 	}
@@ -160,13 +193,8 @@ static int
 init_srun_argv(int argc, char **argv)
 {
 	int i;
-	char *rchar;
 	
 	srun_argv = (char **)xmalloc(sizeof(char *) * (argc + 3));
-	if (!srun_argv) {
-		error("failed to malloc srun_argv: %m");
-		return -1;
-	}
 
 	srun_argv[0] = cr_run_path;
 	srun_argv[1] = "--omit";
@@ -183,7 +211,7 @@ init_srun_argv(int argc, char **argv)
 static void
 remove_listen_socket(void)
 {
-        unlink(cr_sock_addr);
+	unlink(cr_sock_addr);
 }
 
 /*
@@ -215,7 +243,8 @@ create_listen_socket(void)
 
 	unlink(sa.sun_path);	/* remove possible old socket */
 
-	setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, (void*)&re_use_addr, sizeof(int));
+	setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, 
+		   (void*)&re_use_addr, sizeof(int));
 
 	if (bind(listen_fd, (struct sockaddr *)&sa, sa_len) < 0) {
 		error("failed to bind listen socket: %m");
@@ -274,7 +303,7 @@ fork_exec_srun(void)
 		exit(-1);
 	}
 
-	return 0;
+	return rc;
 }
 
 /*
@@ -295,14 +324,16 @@ get_step_image_dir(int cr)
 	if (cr) {		/* checkpoint */
 		ckpt_info = cr_get_checkpoint_info();
 		if (!ckpt_info) {
-			error("failed to get checkpoint info: %s", cr_strerror(errno));
+			error("failed to get checkpoint info: %s", 
+			      cr_strerror(errno));
 			return NULL;
 		}
 		dest = ckpt_info->dest;
 	} else {		/* retart */
 		rstrt_info = cr_get_restart_info();
 		if (!rstrt_info) {
-			error("failed to get restart info: %s", cr_strerror(errno));
+			error("failed to get restart info: %s", 
+			      cr_strerror(errno));
 			return NULL;
 		}
 		dest = rstrt_info->src;
@@ -378,7 +409,7 @@ main(int argc, char **argv)
 	int debug_level, sig, srun_fd;
 	cr_client_id_t cr_id;
 	struct sigaction sa;
-        log_options_t logopt = LOG_OPTS_STDERR_ONLY;
+	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 	struct sockaddr_un ca;
 	unsigned int ca_len = sizeof(ca);
 
@@ -386,8 +417,8 @@ main(int argc, char **argv)
 	
 	/* copied from srun */
 	debug_level = _slurm_debug_env_val();
-        logopt.stderr_level += debug_level;
-        log_init(xbasename(argv[0]), logopt, 0, NULL);
+	logopt.stderr_level += debug_level;
+	log_init(xbasename(argv[0]), logopt, 0, NULL);
 
 	if (init_srun_argv(argc, argv)) {
 		fatal("failed to initialize arguments for running srun");
@@ -454,14 +485,14 @@ main(int argc, char **argv)
 static int
 _wait_for_srun_connect(void)
 {
-        struct pollfd fds[1];
-        int rc;
+	struct pollfd fds[1];
+	int rc;
 
-        fds[0].fd = listen_fd;
-        fds[0].events = POLLIN;
+	fds[0].fd = listen_fd;
+	fds[0].events = POLLIN;
 
-        while ((rc = poll(fds, 1, -1)) < 0) {
-                switch (errno) {
+	while ((rc = poll(fds, 1, -1)) < 0) {
+		switch (errno) {
 		case EAGAIN:
 		case EINTR:
 			continue;
@@ -473,8 +504,8 @@ _wait_for_srun_connect(void)
 			fatal("poll: %m");
 		default:
 			error("poll: %m. Continuing...");
-                }
-        }
+		}
+	}
 	return 0;
 }
 
