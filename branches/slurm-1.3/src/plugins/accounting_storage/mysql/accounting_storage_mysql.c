@@ -1166,7 +1166,7 @@ static int _setup_association_cond_limits(acct_association_cond_t *assoc_cond,
 	} else if(assoc_cond->user_list) {
 		/* we want all the users, but no non-user associations */
 		set = 1;
-		xstrfmtcat(*extra, " && (%s.user!='')", prefix);		
+		xstrfmtcat(*extra, " && (%s.user!='')", prefix);
 	}
 
 	if(assoc_cond->partition_list 
@@ -2392,6 +2392,208 @@ static int _get_db_index(MYSQL *db_conn,
 	mysql_free_result(result);
 	
 	return db_index;
+}
+
+/* checks should already be done before this to see if this is a valid
+   user or not.
+*/
+static int _get_usage_for_list(mysql_conn_t *mysql_conn,
+			    slurmdbd_msg_type_t type, List object_list, 
+			    time_t start, time_t end)
+{
+#ifdef HAVE_MYSQL
+	int rc = SLURM_SUCCESS;
+	int i=0;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	char *tmp = NULL;
+	char *my_usage_table = NULL;
+	char *query = NULL;
+	List usage_list = NULL;
+	char *id_str = NULL;
+	ListIterator itr = NULL, u_itr = NULL;
+	void *object = NULL;
+	acct_association_rec_t *assoc = NULL;
+	acct_wckey_rec_t *wckey = NULL;
+	acct_accounting_rec_t *accounting_rec = NULL;
+
+	char *usage_req_inx[] = {
+		"t1.id",
+		"t1.period_start",
+		"t1.alloc_cpu_secs"
+	};
+	
+	enum {
+		USAGE_ID,
+		USAGE_START,
+		USAGE_ACPU,
+		USAGE_COUNT
+	};
+
+
+	if(!object_list) {
+		error("We need an object to set data for getting usage");
+		return SLURM_ERROR;
+	}
+
+	if(_check_connection(mysql_conn) != SLURM_SUCCESS)
+		return SLURM_ERROR;
+
+	switch (type) {
+	case DBD_GET_ASSOC_USAGE:
+		itr = list_iterator_create(object_list);
+		while((assoc = list_next(itr))) {
+			if(id_str)
+				xstrfmtcat(id_str, " || t3.id=%d", assoc->id);
+			else
+				xstrfmtcat(id_str, "t3.id=%d", assoc->id);
+		}
+		list_iterator_destroy(itr);
+
+		my_usage_table = assoc_day_table;
+		break;
+	case DBD_GET_WCKEY_USAGE:
+		itr = list_iterator_create(object_list);
+		while((wckey = list_next(itr))) {
+			if(id_str)
+				xstrfmtcat(id_str, " || id=%d", wckey->id);
+			else
+				xstrfmtcat(id_str, "id=%d", wckey->id);
+		}
+		list_iterator_destroy(itr);
+
+		my_usage_table = wckey_day_table;
+		break;
+	default:
+		error("Unknown usage type %d", type);
+		return SLURM_ERROR;
+		break;
+	}
+
+	if(_set_usage_information(&my_usage_table, type, &start, &end)
+	   != SLURM_SUCCESS) {
+		xfree(id_str);
+		return SLURM_ERROR;
+	}
+
+	xfree(tmp);
+	i=0;
+	xstrfmtcat(tmp, "%s", usage_req_inx[i]);
+	for(i=1; i<USAGE_COUNT; i++) {
+		xstrfmtcat(tmp, ", %s", usage_req_inx[i]);
+	}
+	switch (type) {
+	case DBD_GET_ASSOC_USAGE:
+		query = xstrdup_printf(
+			"select %s from %s as t1, %s as t2, %s as t3 "
+			"where (t1.period_start < %d && t1.period_start >= %d) "
+			"&& t1.id=t2.id && (%s) && "
+			"t2.lft between t3.lft and t3.rgt "
+			"order by t1.id, period_start;",
+			tmp, my_usage_table, assoc_table, assoc_table,
+			end, start, id_str);
+		break;
+	case DBD_GET_WCKEY_USAGE:
+		query = xstrdup_printf(
+			"select %s from %s as t1 "
+			"where (period_start < %d && period_start >= %d) "
+			"&& %s order by id, period_start;",
+			tmp, my_usage_table, end, start, id_str);
+		break;
+	default:
+		error("Unknown usage type %d", type);
+		xfree(id_str);
+		xfree(tmp);
+		return SLURM_ERROR;
+		break;
+	}
+	xfree(id_str);
+	xfree(tmp);
+
+	debug4("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
+	if(!(result = mysql_db_query_ret(
+		     mysql_conn->db_conn, query, 0))) {
+		xfree(query);
+		return SLURM_ERROR;
+	}
+	xfree(query);
+
+	usage_list = list_create(destroy_acct_accounting_rec);
+
+	while((row = mysql_fetch_row(result))) {
+		acct_accounting_rec_t *accounting_rec =
+			xmalloc(sizeof(acct_accounting_rec_t));
+		accounting_rec->id = atoi(row[USAGE_ID]);
+		accounting_rec->period_start = atoi(row[USAGE_START]);
+		accounting_rec->alloc_secs = atoll(row[USAGE_ACPU]);
+		list_append(usage_list, accounting_rec);
+	}
+	mysql_free_result(result);
+	
+	u_itr = list_iterator_create(usage_list);
+	itr = list_iterator_create(object_list);
+	while((object = list_next(itr))) {
+		int found = 0;
+		int id = 0;
+		List acct_list = NULL;
+
+		switch (type) {
+		case DBD_GET_ASSOC_USAGE:
+			assoc = (acct_association_rec_t *)object;
+			if(!assoc->accounting_list)
+				assoc->accounting_list = list_create(
+					destroy_acct_accounting_rec);
+			acct_list = assoc->accounting_list;
+			id = assoc->id;
+			break;
+		case DBD_GET_WCKEY_USAGE:
+			wckey = (acct_wckey_rec_t *)object;
+			if(!wckey->accounting_list)
+				wckey->accounting_list = list_create(
+					destroy_acct_accounting_rec);
+			acct_list = wckey->accounting_list;
+			id = wckey->id;
+			break;
+		default:
+			continue;
+			break;
+		}
+		
+		while((accounting_rec = list_next(u_itr))) {
+			if(id == accounting_rec->id) {
+				list_append(acct_list, accounting_rec);
+				list_remove(u_itr);
+				found = 1;
+			} else if(found) {
+				/* here we know the
+				   list is in id order so
+				   if the next record
+				   isn't the correct id
+				   just continue since
+				   there is no reason to
+				   go through the rest of
+				   the list when we know
+				   it isn't going to be
+				   the correct id */
+				break;
+			}
+		}
+		list_iterator_reset(u_itr);
+	}
+	list_iterator_destroy(itr);
+	list_iterator_destroy(u_itr);	
+	
+	if(list_count(usage_list))
+		error("we have %d records not added "
+		      "to the association list",
+		      list_count(usage_list));
+	list_destroy(usage_list);
+
+
+	return rc;
+#else
+	return SLURM_ERROR;
+#endif
 }
 
 static mysql_db_info_t *_mysql_acct_create_db_info()
@@ -7419,8 +7621,8 @@ empty:
 	list_iterator_destroy(itr);
 	list_iterator_destroy(assoc_itr);
 	if(list_count(assoc_list))
-		info("I have %d left over associations", 
-		     list_count(assoc_list));
+		error("I have %d left over associations", 
+		      list_count(assoc_list));
 	list_destroy(assoc_list);
 
 	return cluster_list;
@@ -7684,13 +7886,6 @@ empty:
 		else
 			assoc->grp_cpu_mins = INFINITE;
 
-		/* get the usage if requested */
-		if(with_usage) {
-			acct_storage_p_get_usage(mysql_conn, uid, assoc,
-						 DBD_GET_ASSOC_USAGE,
-						 assoc_cond->usage_start,
-						 assoc_cond->usage_end);
-		}
 		parent_acct = row[ASSOC_REQ_ACCT];
 		if(!without_parent_info 
 		   && row[ASSOC_REQ_PARENT][0]) {
@@ -7915,6 +8110,12 @@ empty:
 		//info("parent id is %d", assoc->parent_id);
 		//log_assoc_rec(assoc);
 	}
+
+	if(with_usage && assoc_list) 
+		_get_usage_for_list(mysql_conn, DBD_GET_ASSOC_USAGE,
+				    assoc_list, assoc_cond->usage_start,
+				    assoc_cond->usage_end);
+	
 	mysql_free_result(result);
 
 	list_destroy(delta_qos_list);
@@ -8277,16 +8478,14 @@ empty:
 			wckey->name = xstrdup("");
 
 		wckey->cluster = xstrdup(row[WCKEY_REQ_CLUSTER]);
-
-		/* get the usage if requested */
-		if(with_usage) {
-			acct_storage_p_get_usage(mysql_conn, uid, wckey,
-						 DBD_GET_WCKEY_USAGE,
-						 wckey_cond->usage_start,
-						 wckey_cond->usage_end);
-		}		
 	}
 	mysql_free_result(result);
+
+	if(with_usage && wckey_list) 
+		_get_usage_for_list(mysql_conn, DBD_GET_WCKEY_USAGE,
+				    wckey_list, wckey_cond->usage_start,
+				    wckey_cond->usage_end);
+	
 
 	//END_TIMER2("get_wckeys");
 	return wckey_list;
@@ -8787,7 +8986,7 @@ extern int acct_storage_p_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 				if(!acct_assoc->acct) {
 					debug("No account name given "
 					      "in association.");
-					goto bad_user;				
+					goto bad_user;			
 				}
 				
 				itr = list_iterator_create(user.coord_accts);
