@@ -336,6 +336,8 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 					 MAX(command_len, 3))) {
 			file_opts->desc = xstrdup(option);
 		} else if (!strncasecmp (sub, "FairShare", 
+					 MAX(command_len, 1))
+			   || !strncasecmp (sub, "Shares",
 					 MAX(command_len, 1))) {
 			if (get_uint(option, &file_opts->fairshare, 
 			    "FairShare") != SLURM_SUCCESS) {
@@ -584,7 +586,9 @@ static List _set_up_print_fields(List format_list)
 			field->len = 20;
 			field->print_routine = print_fields_str;
 		} else if(!strncasecmp("FairShare", object, 
-				       MAX(command_len, 1))) {
+				       MAX(command_len, 1))
+			  || !strncasecmp("Shares", object, 
+					  MAX(command_len, 1))) {
 			field->type = PRINT_FAIRSHARE;
 			field->name = xstrdup("FairShare");
 			field->len = 9;
