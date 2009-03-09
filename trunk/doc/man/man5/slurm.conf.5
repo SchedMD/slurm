@@ -2081,6 +2081,7 @@ cost is related to the node distance in this array.
 The network topology configuration one one line defining a switch name and
 its children, either node names or switch names.
 SLURM hostlist expressions can be used for either.
+An optional link speed may also be specified.
 .TP
 \fBSwitchName\fR
 The name of a switch. This name is internal to SLURM and arbitrary.
@@ -2094,6 +2095,11 @@ Either this option or the \fBNodes\fR option must be specified.
 \fBNodes\fR
 Child Nodes of the named leaf switch.
 Either this option or the \fBSwitches\fR option must be specified.
+.TP
+\fBLinkSpeed\fR
+An optional value specifying the performance of this communication link.
+The units used are arbitrary and this information is currently not used.
+It may be used in the future to optimize resource allocations.
 
 .SH "RELOCATING CONTROLLERS"
 If the cluster's computers used for the primary or backup controller 

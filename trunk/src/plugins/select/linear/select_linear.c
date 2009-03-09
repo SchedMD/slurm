@@ -1150,10 +1150,11 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 		char *node_names = NULL;
 		if (switches_node_cnt[i])
 			node_names = bitmap2node_name(switches_bitmap[i]);
-		debug("switch=%s nodes=%u:%s required:%u",
+		debug("switch=%s nodes=%u:%s required:%u speed=%u",
 		      switch_record_table[i].name,
 		      switches_node_cnt[i], node_names,
-		      switches_required[i]);
+		      switches_required[i],
+		      switch_record_table[i].link_speed);
 		xfree(node_names);
 	}
 #endif

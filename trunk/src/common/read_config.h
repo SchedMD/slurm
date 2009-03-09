@@ -179,6 +179,7 @@ typedef struct slurm_conf_downnodes {
 } slurm_conf_downnodes_t;
 
 typedef struct slurm_conf_switches {
+	uint32_t link_speed;	/* link speed, arbitrary units */
 	char *nodes;		/* names of nodes directly connect to
 				 * this switch, if any */
 	char *switch_name;	/* name of this switch */
