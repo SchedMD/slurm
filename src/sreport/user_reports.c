@@ -75,7 +75,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 		user_cond->assoc_cond->with_usage = 1;
 	}
 	assoc_cond = user_cond->assoc_cond;
-
+	
 	if(!assoc_cond->cluster_list)
 		assoc_cond->cluster_list = list_create(slurm_destroy_char);
 	for (i=(*start); i<argc; i++) {
@@ -263,6 +263,8 @@ extern int user_top(int argc, char *argv[])
 	print_fields_list = list_create(destroy_print_field);
 
 	_set_cond(&i, argc, argv, user_cond, format_list);
+
+	user_cond->assoc_cond->without_parent_info = 1;
 
 	if(!list_count(format_list)) 
 		slurm_addto_char_list(format_list, "Cl,L,P,A,U");
