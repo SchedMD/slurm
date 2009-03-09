@@ -1,4 +1,4 @@
-.TH SRUN "1" "February 2009" "srun 2.0" "slurm components"
+.TH SRUN "1" "March 2009" "srun 2.0" "slurm components"
 
 .SH "NAME"
 srun \- run parallel jobs
@@ -86,9 +86,9 @@ Acceptable time formats include "minutes", "minutes:seconds",
 "days\-hours:minutes:seconds".
 
 .TP
-\fB\-\-checkpoint\-path\fR=\fIdirectory\fR
-Specifies the directory into which the job step's checkpoint should 
-be written (used by the checkpoint/xlch plugin only).
+\fB\-\-checkpoint\-dir\fR=\fIdirectory\fR
+Specifies the directory into which the job or job step's checkpoint should 
+be written (used by the checkpoint/blcrm and checkpoint/xlch plugins only).
 
 .TP
 \fB\-C\fR, \fB\-\-constraint\fR[=]<\fIlist\fR>
@@ -887,6 +887,11 @@ Used for OpenMPI.
 Allocate resources for the job from the named reservation.
 
 .TP
+\fB\-\-restart\-dir\fR=\fIdirectory\fR
+Specifies the directory from which the job or job step's checkpoint should 
+be read (used by the checkpoint/blcrm and checkpoint/xlch plugins only).
+
+.TP
 \fB\-s\fR, \fB\-\-share\fR
 The job can share nodes with other running jobs. This may result in faster job 
 initiation and higher system utilization, but lower application performance.
@@ -1242,6 +1247,9 @@ Same as \fB\-U, \-\-account\fR=\fIaccount\fR
 \fBSLURM_CHECKPOINT\fR
 Same as \fB\-\-checkpoint\fR=\fItime\fR
 .TP
+\fBSLURM_CHECKPOINT_DIR\fR
+Same as \fB\-\-checkpoint\-dir\fR=\fIpath\fR
+.TP
 \fBSLURM_CPU_BIND\fR
 Same as \fB\-\-cpu_bind\fR=\fItype\fR
 .TP
@@ -1327,6 +1335,9 @@ Same as \fB\-\-prolog\fR=\fIexecutable\fR
 .TP
 \fBSLURM_REMOTE_CWD\fR
 Same as \fB\-D, \-\-chdir=\fR=\fIdir\fR
+.TP
+\fBSLURM_RESTART_DIR\fR
+Same as \fB\-\-restart-dir\fR=\fIpath\fR
 .TP
 \fBSLURM_STDERRMODE\fR
 Same as \fB\-e, \-\-error\fR=\fImode\fR

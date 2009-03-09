@@ -1897,9 +1897,9 @@ static void _opt_list()
 		info("time_limit     : %d", opt.time_limit);
 	if (opt.ckpt_interval)
 		info("checkpoint     : %d secs", opt.ckpt_interval);
-	info("checkpoint_dir: %s", opt.ckpt_dir);
+	info("checkpoint_dir : %s", opt.ckpt_dir);
 	if (opt.restart_dir)
-		info("restart_dir: %s", opt.restart_dir);
+		info("restart_dir    : %s", opt.restart_dir);
 	info("wait           : %d", opt.max_wait);
 	if (opt.nice)
 		info("nice           : %d", opt.nice);
