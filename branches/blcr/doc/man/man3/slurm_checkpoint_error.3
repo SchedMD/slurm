@@ -87,6 +87,23 @@ int \fBslurm_checkpoint_restart\fR (
 .br
 );
 .LP
+.LP
+int \fBslurm_checkpoint_tasks\fR (
+.br
+        uint32_t \fIjob_id\fP,
+.br
+        uint32_t \fIstep_id\fP,
+.br
+        time_t \fIbegin_time\fP,
+.br
+        char *\fIimage_dir\fP,
+.br
+	uint16_t \fImax_wait\fP,
+.br
+	char *\fInodelist\fP
+.br
+);
+.LP
 int \fBslurm_checkpoint_vacate\fR (
 .br
 	uint32_t \fIjob_id\fP,
@@ -101,6 +118,9 @@ int \fBslurm_checkpoint_vacate\fR (
 
 .SH "ARGUMENTS"
 .LP 
+.TP
+\fIbegin_time\fP
+When to begin the operation.
 .TP
 \fIerror_code\fP
 Error code for checkpoint operation. Only the highest value is preserved.
@@ -119,6 +139,9 @@ SLURM job ID to perform the operation upon.
 .TP
 \fImax_wait\fP
 Maximum time to allow for the operation to complete in seconds.
+.TP
+\fInodelist\fP
+Nodes to send the request.
 .TP
 \fIstart_time\fP
 Time at which last checkpoint operation began (if one is in progress), otherwise zero.

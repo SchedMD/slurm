@@ -40,6 +40,7 @@ man3_MANS = man3/slurm_hostlist_create.3 \
 	man3/slurm_checkpoint_failed.3 \
 	man3/slurm_checkpoint_restart.3 \
 	man3/slurm_checkpoint_task_complete.3 \
+	man3/slurm_checkpoint_tasks.3 \
 	man3/slurm_checkpoint_vacate.3 \
 	man3/slurm_clear_trigger.3 \
 	man3/slurm_complete_job.3 \
@@ -62,7 +63,6 @@ man3_MANS = man3/slurm_hostlist_create.3 \
 	man3/slurm_free_slurmd_status.3 \
 	man3/slurm_free_submit_response_response_msg.3 \
 	man3/slurm_free_trigger_msg.3 \
-	man3/slurm_get_checkpoint_file_path.3 \
 	man3/slurm_get_end_time.3 \
 	man3/slurm_get_errno.3 \
 	man3/slurm_get_job_steps.3 \

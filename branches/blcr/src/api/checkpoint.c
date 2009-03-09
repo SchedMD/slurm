@@ -2,7 +2,8 @@
  *  checkpoint.c - Process checkpoint related functions.
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2004 The Regents of the University of California.
+ *  Copyright (C) 2004-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -63,10 +64,11 @@ static int _checkpoint_op (uint16_t op, uint16_t data,
 			   char *image_dir);
 /*
  * _checkpoint_op - perform many checkpoint operation for some job step.
- * IN op      - operation to perform
- * IN data    - operation-specific data
- * IN job_id  - job on which to perform operation
- * IN step_id - job step on which to perform operation
+ * IN op        - operation to perform
+ * IN data      - operation-specific data
+ * IN job_id    - job on which to perform operation
+ * IN step_id   - job step on which to perform operation
+ * IN image_dir - directory used to get/put checkpoint images
  * RET 0 or a slurm error code
  */
 static int _checkpoint_op (uint16_t op, uint16_t data,
@@ -164,15 +166,17 @@ extern int slurm_checkpoint_enable (uint32_t job_id, uint32_t step_id)
 /*
  * slurm_checkpoint_create - initiate a checkpoint requests for some job step.
  *	the job will continue execution after the checkpoint operation completes
- * IN job_id  - job on which to perform operation
- * IN step_id - job step on which to perform operation
- * IN max_wait - maximum wait for operation to complete, in seconds
+ * IN job_id   - job on which to perform operation
+ * IN step_id  - job step on which to perform operation
+ * IN max_wait  - maximum wait for operation to complete, in seconds
+ * IN image_dir - directory used to get/put checkpoint images
  * RET 0 or a slurm error code
  */
 extern int slurm_checkpoint_create (uint32_t job_id, uint32_t step_id, 
 		uint16_t max_wait, char *image_dir)
 {
-	return _checkpoint_op (CHECK_CREATE, max_wait, job_id, step_id, image_dir);
+	return _checkpoint_op (CHECK_CREATE, max_wait, job_id, step_id, 
+			       image_dir);
 }
 
 /*
@@ -181,12 +185,14 @@ extern int slurm_checkpoint_create (uint32_t job_id, uint32_t step_id,
  * IN job_id  - job on which to perform operation
  * IN step_id - job step on which to perform operation
  * IN max_wait - maximum wait for operation to complete, in seconds
+ * IN image_dir - directory used to get/put checkpoint images
  * RET 0 or a slurm error code
  */
 extern int slurm_checkpoint_vacate (uint32_t job_id, uint32_t step_id, 
 		uint16_t max_wait, char *image_dir)
 {
-	return _checkpoint_op (CHECK_VACATE, max_wait, job_id, step_id, image_dir);
+	return _checkpoint_op (CHECK_VACATE, max_wait, job_id, step_id, 
+			       image_dir);
 }
 
 /*
@@ -347,100 +353,20 @@ extern int slurm_checkpoint_task_complete (uint32_t job_id, uint32_t step_id,
 	return SLURM_SUCCESS;
 }
 
-
-/* removed. should be implemented in plugin */
-#if 0
-/*
- * slurm_get_checkpoint_file_path - return the checkpoint file
- *      path of this process, creating the directory if needed.
- * IN len: length of the file path buffer
- * OUT buf: buffer to store the checkpoint file path
- * RET: 0 on success, -1 on failure with errno set
- */
-extern int
-slurm_get_checkpoint_file_path(size_t len, char *buf)
-{
-       char *ckpt_dir, *job_id, *step_id, *proc_id;
-       struct stat mystat;
-       int idx;
-
-       len --;                 /* for a terminating 0 */
-
-       ckpt_dir = getenv("SLURM_CHECKPOINT_PATH");
-       if (ckpt_dir == NULL) { /* this should not happen since the program may chdir */
-               ckpt_dir = getcwd(buf, len);
-               if (ckpt_dir == NULL)  /* ERANGE: len is too short */
-                       return -1;
-       } else {
-               if (snprintf(buf, len, "%s", ckpt_dir) >= len) { /* glibc >= 2.1 */
-                       errno = ERANGE;
-                       return -1;
-               }
-               ckpt_dir = buf;
-       }
-       idx = strlen(ckpt_dir) - 1;
-       while (idx > 0 && ckpt_dir[idx] == '/')
-               ckpt_dir[idx --] = 0;
-
-       if (stat(ckpt_dir, &mystat) < 0)
-               return -1;
-       if (! S_ISDIR(mystat.st_mode)) {
-               errno = ENOTDIR;
-               return -1;
-       }
-
-/*        job_id = getenv("SLURM_JOBID"); */
-/*        step_id = getenv("SLURM_STEPID"); */
-       proc_id = getenv("SLURM_PROCID");
-       if (/* job_id == NULL || step_id == NULL ||  */proc_id == NULL) {
-               errno = ENODATA;
-               return -1;
-       }
-       idx = strlen(buf);
-/*        if (snprintf(buf + idx, len - idx, "/%s.%s", job_id, step_id) >= len - idx) { */
-/*                errno = ERANGE; */
-/*                return -1; */
-/*        } */
-
-       if (stat(buf, &mystat) < 0) {
-               if (errno == ENOENT) { /* dir does not exists */
-                       if (mkdir(buf, 0750) < 0 && errno != EEXIST)
-                               return -1;
-                       if (stat(buf, &mystat) < 0)
-                               return -1;
-               }
-               else
-                       return -1;
-       }
-       if (! S_ISDIR(mystat.st_mode)) {
-               errno = ENOTDIR;
-               return -1;
-       }
-
-       idx = strlen(buf);
-       if (snprintf(buf + idx, len - idx, "/%s.%s.ckpt", __progname, proc_id) >= len - idx) {
-               errno = ERANGE;
-               return -1;
-       }
-
-       return 0;
-}
-#endif
-
 /*
  * slurm_checkpoint_tasks - send checkpoint request to tasks of
  *     specified step
  * IN job_id: job ID of step
  * IN step_id: step ID of step
  * IN image_dir: location to store ckpt images. parameter to plugin.
- * IN wait: seconds to wait for the operation to complete
+ * IN max_wait: seconds to wait for the operation to complete
  * IN nodelist: nodes to send the request
  * RET: 0 on success, non-zero on failure with errno set
  */
 extern int
 slurm_checkpoint_tasks(uint32_t job_id, uint16_t step_id, time_t begin_time,
-		       char *image_dir, uint16_t wait, char *nodelist)
+		       char *image_dir, uint16_t max_wait, char *nodelist)
 {
 	return checkpoint_tasks(job_id, step_id, begin_time,
-				image_dir, wait, nodelist);
+				image_dir, max_wait, nodelist);
 }
