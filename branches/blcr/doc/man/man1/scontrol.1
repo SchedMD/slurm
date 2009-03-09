@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "February 2009" "scontrol 2.0" "Slurm components"
+.TH SCONTROL "1" "March 2009" "scontrol 2.0" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -64,7 +64,7 @@ are unavailable to user's group.
 Instruct the Slurm controller to terminate immediately and generate a core file.
 
 .TP
-\fBcheckpoint\fP \fICKPT_OP\fP \fIID\fP
+\fBcheckpoint\fP \fICKPT_OP\fP \fIID\fP \fIOPTIONS\fP
 Perform a checkpoint activity on the job step(s) with the specified identification.
 \fIID\fP can be used to identify a specific job (e.g. "<job_id>",
 which applies to all of its existing steps)
@@ -85,6 +85,17 @@ Acceptable values for \fICKPT_OP\fP include:
 \fIerror\fP (report the result for the last checkpoint request, error code and message) 
 .TP
 \fIrestart\fP (restart execution of the previously checkpointed job steps)
+.TP
+Acceptable values for \fICKPT_OP\fP include:
+.TP
+\fIMaxWait=<seconds>\fP maximum time for checkpoint to be written. 
+Valid with \fIcreate\fP and \fIvacate\fP options only.
+.TP
+\fIImageDir=<directory_name>\fP Location of checkpoint file.
+Valid with \fIcreate\fP, \fIvacate\fP and \fIrestart\fP options only.
+.TP
+\fIStickToNodes\fP If set, resume job on the same nodes are previously used.
+Valid with the \fIrestart\fP option only.
 .RE
 
 .TP
