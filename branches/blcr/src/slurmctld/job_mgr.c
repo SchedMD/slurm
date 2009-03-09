@@ -171,7 +171,7 @@ static int  _write_data_array_to_file(char *file_name, char **data,
 static void _xmit_new_end_time(struct job_record *job_ptr);
 
 static int _checkpoint_job_record (struct job_record *job_ptr, char *image_dir);
-static int _pack_job_for_ckpt (struct job_record *job_ptr, Buf buffer);
+static void _pack_job_for_ckpt (struct job_record *job_ptr, Buf buffer);
 static job_desc_msg_t * _copy_job_record_to_job_desc(struct job_record *job_ptr);
 static char * _read_job_ckpt_file(char *ckpt_file, int *size_ptr);
 
@@ -2488,7 +2488,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 			error_code = ESLURM_ERROR_ON_DESC_TO_RECORD_COPY;
 		goto cleanup_fail;
 	}
-	if (error_code = checkpoint_alloc_jobinfo(&((*job_pptr)->check_job))) {
+	if ((error_code=checkpoint_alloc_jobinfo(&((*job_pptr)->check_job)))) {
 		error("Failed to allocate checkpoint info for job");
 		goto cleanup_fail;
 	}
@@ -6649,7 +6649,9 @@ extern int send_jobs_to_accounting(time_t event_time)
 	return SLURM_SUCCESS;
 }
 
-extern int job_checkpoint(checkpoint_msg_t *ckpt_ptr, uid_t uid, slurm_fd conn_fd)
+/* Perform checkpoint operation on a job */
+extern int job_checkpoint(checkpoint_msg_t *ckpt_ptr, uid_t uid, 
+			  slurm_fd conn_fd)
 {
 	int rc = SLURM_SUCCESS;
 	struct job_record *job_ptr;
@@ -6696,7 +6698,8 @@ extern int job_checkpoint(checkpoint_msg_t *ckpt_ptr, uid_t uid, slurm_fd conn_f
 					rc = ESLURM_DISABLED;
 					goto reply;
 				}
-				ckpt_ptr->image_dir = xstrdup(job_ptr->details->ckpt_dir);
+				ckpt_ptr->image_dir = xstrdup(job_ptr->details
+							      ->ckpt_dir);
 			}
 
 			rc = _checkpoint_job_record(job_ptr, ckpt_ptr->image_dir);
@@ -6724,7 +6727,8 @@ extern int job_checkpoint(checkpoint_msg_t *ckpt_ptr, uid_t uid, slurm_fd conn_f
 			} else {
 				image_dir = xstrdup(step_ptr->ckpt_dir);
 			}
-			xstrfmtcat(image_dir, "/%u.%hu", job_ptr->job_id, step_ptr->step_id);
+			xstrfmtcat(image_dir, "/%u.%hu", job_ptr->job_id, 
+				   step_ptr->step_id);
 			update_rc = checkpoint_op(ckpt_ptr->job_id,
 						  step_ptr->step_id,
 						  ckpt_ptr->op, 
@@ -6770,7 +6774,6 @@ static int _checkpoint_job_record (struct job_record *job_ptr, char *image_dir)
 	char *ckpt_file = NULL, *old_file = NULL, *new_file = NULL;
 	int ckpt_fd, error_code = SLURM_SUCCESS;
 	Buf buffer = init_buf(high_buffer_size);
-        struct stat st;
 
 	ckpt_file = xstrdup(slurmctld_conf.job_ckpt_dir);
 	xstrfmtcat(ckpt_file, "/%u.ckpt", job_ptr->job_id);
@@ -6839,11 +6842,9 @@ static int _checkpoint_job_record (struct job_record *job_ptr, char *image_dir)
  *
  * IN job_ptr - id of the job to be checkpointed
  * IN buffer - buffer to save the job state
- * RET 0 on success, otherwise ESLURM error code
  */
-static int _pack_job_for_ckpt (struct job_record *job_ptr, Buf buffer)
+static void _pack_job_for_ckpt (struct job_record *job_ptr, Buf buffer)
 {
-	int rc = SLURM_SUCCESS;
 	slurm_msg_t msg;
 	job_desc_msg_t *job_desc;
 
@@ -6856,15 +6857,14 @@ static int _pack_job_for_ckpt (struct job_record *job_ptr, Buf buffer)
 	msg.data = job_desc;
 	pack_msg(&msg, buffer);
 
-	/* free the environment since all strings are stored in one xmalloced buffer */
+	/* free the environment since all strings are stored in one 
+	 * xmalloced buffer */
 	if (job_desc->environment) {
 		xfree(job_desc->environment[0]);
 		xfree(job_desc->environment);
 		job_desc->env_size = 0;
 	}
 	slurm_free_job_desc_msg(job_desc);
-
-	return 0;
 }
 
 /*
@@ -6997,10 +6997,10 @@ _copy_job_record_to_job_desc(struct job_record *job_ptr)
 extern int job_restart(checkpoint_msg_t *ckpt_ptr, uid_t uid, slurm_fd conn_fd)
 {
 	struct job_record *job_ptr;
-	char *image_dir, *ckpt_file, *data, *ver_str = NULL, *alloc_nodes = NULL;
+	char *image_dir, *ckpt_file, *data, *ver_str = NULL;
+	char *alloc_nodes = NULL;
 	int data_size;
 	Buf buffer;
-	uint16_t next_step_id;
 	uint32_t tmp_uint32;
 	slurm_msg_t msg, resp_msg;
 	return_code_msg_t rc_msg;

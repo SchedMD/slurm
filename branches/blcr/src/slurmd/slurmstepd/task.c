@@ -2,7 +2,7 @@
  *  slurmd/slurmstepd/task.c - task launching functions for slurmstepd
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark A. Grondona <mgrondona@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -77,23 +77,24 @@
 
 #include <slurm/slurm_errno.h>
 
+#include "src/common/checkpoint.h"
 #include "src/common/env.h"
 #include "src/common/fd.h"
 #include "src/common/log.h"
+#include "src/common/mpi.h"
+#include "src/common/plugstack.h"
+#include "src/slurmd/common/proctrack.h"
 #include "src/common/switch.h"
+#include "src/slurmd/common/task_plugin.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
-#include "src/common/mpi.h"
 #include "src/common/xmalloc.h"
-#include "src/common/plugstack.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
-#include "src/slurmd/common/proctrack.h"
-#include "src/slurmd/common/task_plugin.h"
-#include "src/slurmd/slurmstepd/task.h"
-#include "src/slurmd/slurmstepd/ulimits.h"
 #include "src/slurmd/slurmstepd/io.h"
 #include "src/slurmd/slurmstepd/pdebug.h"
+#include "src/slurmd/slurmstepd/task.h"
+#include "src/slurmd/slurmstepd/ulimits.h"
 
 /*
  * Static prototype definitions.

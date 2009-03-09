@@ -918,6 +918,10 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
  */
 extern int job_cancel_by_assoc_id(uint32_t assoc_id);
 
+/* Perform checkpoint operation on a job */
+extern int job_checkpoint(checkpoint_msg_t *ckpt_ptr, uid_t uid, 
+			  slurm_fd conn_fd);
+
 /* log the completion of the specified job */
 extern void job_completion_logger(struct job_record  *job_ptr);
 
@@ -958,6 +962,21 @@ extern int job_fail(uint32_t job_id);
  * RET SLURM error code
  */
 extern int job_node_ready(uint32_t job_id, int *ready);
+
+/*
+ * job_restart - Restart a batch job from checkpointed state
+ *
+ * Restart a job is similar to submit a new job, except that
+ * the job requirements is load from the checkpoint file and
+ * the job id is restored.
+ *
+ * IN ckpt_ptr - checkpoint request message 
+ * IN uid - user id of the user issuing the RPC
+ * IN conn_fd - file descriptor on which to send reply
+ * RET 0 on success, otherwise ESLURM error code
+ */
+extern int job_restart(checkpoint_msg_t *ckpt_ptr, uid_t uid, 
+		       slurm_fd conn_fd);
 
 /* 
  * job_signal - signal the specified job
