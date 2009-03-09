@@ -741,6 +741,7 @@ static int parse_switches(void **dest, slurm_parser_enum_t type,
 	s_p_hashtbl_t *tbl;
 	slurm_conf_switches_t *s;
 	static s_p_options_t _switch_options[] = {
+		{"LinkSpeed", S_P_UINT32},
 		{"Nodes", S_P_STRING},
 		{"Switches", S_P_STRING},
 		{NULL}
@@ -751,6 +752,8 @@ static int parse_switches(void **dest, slurm_parser_enum_t type,
 
 	s = xmalloc(sizeof(slurm_conf_switches_t));
 	s->switch_name = xstrdup(value);
+	if (!s_p_get_uint32(&s->link_speed, "LinkSpeed", tbl))
+		s->link_speed = 1;
 	s_p_get_string(&s->nodes, "Nodes", tbl);
 	s_p_get_string(&s->switches, "Switches", tbl);
 

@@ -631,6 +631,7 @@ static void _validate_switches(void)
 	for (i=0; i<switch_record_cnt; i++, switch_ptr++) {
 		ptr = ptr_array[i];
 		switch_ptr->name = xstrdup(ptr->switch_name);
+		switch_ptr->link_speed = ptr->link_speed;
 		if (ptr->nodes) {
 			switch_ptr->level = 0;	/* leaf switch */
 			switch_ptr->nodes = xstrdup(ptr->nodes);

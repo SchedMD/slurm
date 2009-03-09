@@ -7,8 +7,8 @@ documents those changes that are of interest to users and admins.
     re-launch a job step if the step fails with a reserved port conflict.
  -- Add TopologyPlugin configuration parameter.
  -- Add switch topology data structure to slurmctld (for use by select plugin)
-    add load it based upon new slurm.conf parameters: SwitchName, Nodes, and 
-    Switches.
+    add load it based upon new slurm.conf parameters: SwitchName, Nodes, 
+    Switches and LinkSpeed.
  -- Modify select/linear and select/cons_res plugins to optimize resource
     allocation with respect to network topology.
  -- Add support for new configuration parameter EpilogSlurmctld (executed by 

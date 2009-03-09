@@ -268,6 +268,7 @@ extern bitstr_t *up_node_bitmap;	/* bitmap of up nodes, not DOWN */
 \*****************************************************************************/
 struct switch_record {
 	int level;			/* level in hierarchy, leaf=0 */
+	uint32_t link_speed;		/* link speed, arbitrary units */
 	char *name;			/* switch name */
 	bitstr_t *node_bitmap;		/* bitmap of all nodes descended from 
 					 * this switch */

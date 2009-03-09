@@ -64,6 +64,11 @@ switch.
 Higher-level switch descriptions contain a <i>SwitchName</i> field
 plus a <i>Switches</i> field to identify the child switches.</p>
 
+<p>An optional LinkSpeed option can be used to indicate the 
+relative performance of the link. 
+The units used are arbitrary and this information is currently not used.
+It may be used in the future to optimize resource allocations.</p>
+
 <pre>
 # Switch Configuration
 SwitchName=s0 Nodes=tux[0-1]
@@ -79,14 +84,14 @@ SwitchName=s6 Switches=s[4-5]
 each switch has four connections.</p>
 <pre>
 # Switch Configuration
-SwitchName=s0 Nodes=tux[0-3]
-SwitchName=s1 Nodes=tux[4-7]
-SwitchName=s2 Nodes=tux[8-11]
-SwitchName=s3 Nodes=tux[12-15]
-SwitchName=s4 Switches=s[0-3]
-SwitchName=s5 Switches=s[0-3]
-SwitchName=s6 Switches=s[0-3]
-SwitchName=s7 Switches=s[0-3]
+SwitchName=s0 Nodes=tux[0-3]   LinkSpeed=900
+SwitchName=s1 Nodes=tux[4-7]   LinkSpeed=900
+SwitchName=s2 Nodes=tux[8-11]  LinkSpeed=900
+SwitchName=s3 Nodes=tux[12-15] LinkSpeed=1800
+SwitchName=s4 Switches=s[0-3]  LinkSpeed=1800
+SwitchName=s5 Switches=s[0-3]  LinkSpeed=1800
+SwitchName=s6 Switches=s[0-3]  LinkSpeed=1800
+SwitchName=s7 Switches=s[0-3]  LinkSpeed=1800
 </pre>
 
 <p style="text-align:center;">Last modified 6 March 2009</p>
