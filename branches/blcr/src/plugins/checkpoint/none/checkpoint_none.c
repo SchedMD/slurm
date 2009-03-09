@@ -103,14 +103,14 @@ extern int fini ( void )
  * The remainder of this file implements the standard SLURM checkpoint API.
  */
 
-extern int slurm_ckpt_op ( uint16_t op, uint16_t data,
-		struct step_record * step_ptr, time_t * event_time,
+extern int slurm_ckpt_op (uint32_t job_id, uint32_t step_id, uint16_t op, 
+		uint16_t data, char *image_dir, time_t * event_time,
 		uint32_t *error_code, char **error_msg )
 {
 	return ESLURM_NOT_SUPPORTED;
 }
 
-extern int slurm_ckpt_comp ( struct step_record * step_ptr, time_t event_time,
+extern int slurm_ckpt_comp (struct step_record * step_ptr, time_t event_time,
 		uint32_t error_code, char *error_msg)
 {
 	return ESLURM_NOT_SUPPORTED;
@@ -136,9 +136,23 @@ extern int slurm_ckpt_unpack_job(check_jobinfo_t jobinfo, Buf buffer)
 	return SLURM_SUCCESS;
 }
 
-extern int slurm_ckpt_task_comp ( struct step_record * step_ptr, uint32_t task_id,
-				  time_t event_time, uint32_t error_code, char *error_msg )
+extern int slurm_ckpt_task_comp (struct step_record * step_ptr, uint32_t task_id,
+				 time_t event_time, uint32_t error_code, char *error_msg )
 {
 	return SLURM_SUCCESS;
 }
 
+extern int slurm_ckpt_stepd_prefork(void *slurmd_job)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int slurm_ckpt_signal_tasks(void *slurmd_job)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int slurm_ckpt_restart_task(void *slurmd_job)
+{
+	return SLURM_SUCCESS;
+}
