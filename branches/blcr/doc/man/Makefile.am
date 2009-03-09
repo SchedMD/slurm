@@ -16,6 +16,7 @@ man1_MANS =            \
 	man1/squeue.1 \
 	man1/sreport.1 \
 	man1/srun.1 \
+	man1/srun_cr.1 \
 	man1/sshare.1 \
 	man1/sstat.1 \
 	man1/strigger.1 \
