@@ -41,6 +41,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac__system_configuration.m4 \
 	$(top_srcdir)/auxdir/x_ac_affinity.m4 \
 	$(top_srcdir)/auxdir/x_ac_aix.m4 \
+	$(top_srcdir)/auxdir/x_ac_blcr.m4 \
 	$(top_srcdir)/auxdir/x_ac_bluegene.m4 \
 	$(top_srcdir)/auxdir/x_ac_cflags.m4 \
 	$(top_srcdir)/auxdir/x_ac_cray.m4 \
@@ -81,6 +82,10 @@ AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
 BG_INCLUDES = @BG_INCLUDES@
+BLCR_CPPFLAGS = @BLCR_CPPFLAGS@
+BLCR_HOME = @BLCR_HOME@
+BLCR_LDFLAGS = @BLCR_LDFLAGS@
+BLCR_LIBS = @BLCR_LIBS@
 BLUEGENE_LOADED = @BLUEGENE_LOADED@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
@@ -264,7 +269,8 @@ EXTRA_DIST = \
     x_ac_readline.m4 \
     x_ac_setproctitle.m4 \
     x_ac_slurm_ssl.m4 \
-    x_ac_sun_const.m4 
+    x_ac_sun_const.m4 \
+    x_ac_blcr.m4
 
 all: all-am
 
