@@ -421,6 +421,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->job_acct_gather_freq  = conf->job_acct_gather_freq;
 	conf_ptr->job_acct_gather_type  = xstrdup(conf->job_acct_gather_type);
 
+	conf_ptr->job_ckpt_dir        = xstrdup(conf->job_ckpt_dir);
 	conf_ptr->job_comp_host       = xstrdup(conf->job_comp_host);
 	conf_ptr->job_comp_loc        = xstrdup(conf->job_comp_loc);
 	conf_ptr->job_comp_pass       = xstrdup(conf->job_comp_pass);

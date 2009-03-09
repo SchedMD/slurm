@@ -152,6 +152,7 @@ function displayfile()
    get_field("Epilog",document.config.epilog) + "<br>" +
    "#PrologSlurmctld= <br>" +
    "#FirstJobId=1 <br>" +
+   "#JobCheckpointDir=/var/slurm/checkpoint <br>"
    get_field("JobCredentialPrivateKey", document.config.private_key) + "<br>" +
    get_field("JobCredentialPublicCertificate", document.config.public_key) + "<br>" +
    "#JobFileAppend=0 <br>" +

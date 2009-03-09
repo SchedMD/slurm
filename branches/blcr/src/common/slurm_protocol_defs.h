@@ -543,7 +543,7 @@ typedef struct launch_tasks_request_msg {
 	switch_jobinfo_t switch_job;	/* switch credential for the job */
 	job_options_t options;  /* Arbitrary job options */
 	char *complete_nodelist;
-	char *ckpt_dir;	/* checkpoint path */
+	char *ckpt_dir;		/* checkpoint path */
 	char *restart_dir;	/* restart from checkpoint if set */
 } launch_tasks_request_msg_t;
 

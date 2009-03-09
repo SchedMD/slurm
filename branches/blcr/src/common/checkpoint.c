@@ -70,9 +70,9 @@ typedef struct slurm_checkpoint_ops {
 	int	(*ckpt_free_jobinfo) (check_jobinfo_t jobinfo);
 	int	(*ckpt_pack_jobinfo) (check_jobinfo_t jobinfo, Buf buffer);
 	int	(*ckpt_unpack_jobinfo) (check_jobinfo_t jobinfo, Buf buffer);
-        int     (*ckpt_stepd_prefork) (void *slurmd_job);
-        int     (*ckpt_signal_tasks) (void *slurmd_job, char *image_dir);
-        int     (*ckpt_restart_task) (void *slurmd_job, char *image_dir, int gtid);
+	int     (*ckpt_stepd_prefork) (void *slurmd_job);
+	int     (*ckpt_signal_tasks) (void *slurmd_job, char *image_dir);
+	int     (*ckpt_restart_task) (void *slurmd_job, char *image_dir, int gtid);
 } slurm_checkpoint_ops_t;
 
 /*
@@ -159,9 +159,9 @@ _slurm_checkpoint_get_ops( slurm_checkpoint_context_t c )
 		"slurm_ckpt_free_job",
 		"slurm_ckpt_pack_job",
 		"slurm_ckpt_unpack_job",
-                "slurm_ckpt_stepd_prefork",
-                "slurm_ckpt_signal_tasks",
-                "slurm_ckpt_restart_task"
+		"slurm_ckpt_stepd_prefork",
+		"slurm_ckpt_signal_tasks",
+		"slurm_ckpt_restart_task"
 	};
         int n_syms = sizeof( syms ) / sizeof( char * );
 
