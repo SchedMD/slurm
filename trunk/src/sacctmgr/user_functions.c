@@ -160,6 +160,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 			if(format_list)
 				slurm_addto_char_list(format_list, argv[i]+end);
 		} else if (!strncasecmp (argv[i], "FairShare", 
+					 MAX(command_len, 1))
+			   || !strncasecmp (argv[i], "Shares",
 					 MAX(command_len, 1))) {
 			if(!assoc_cond->fairshare_list)
 				assoc_cond->fairshare_list =
@@ -373,6 +375,8 @@ static int _set_rec(int *start, int argc, char *argv[],
 				strip_quotes(argv[i]+end, NULL, 1);
 			u_set = 1;
 		} else if (!strncasecmp (argv[i], "FairShare",
+					 MAX(command_len, 1))
+			   || !strncasecmp (argv[i], "Shares",
 					 MAX(command_len, 1))) {
 			if(!assoc)
 				continue;
@@ -744,6 +748,8 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 			slurm_addto_char_list(wckey_cond->name_list,
 					      default_wckey);
 		} else if (!strncasecmp (argv[i], "FairShare",
+					 MAX(command_len, 1))
+			   || !strncasecmp (argv[i], "Shares",
 					 MAX(command_len, 1))) {
 			if (get_uint(argv[i]+end, &start_assoc.shares_raw, 
 			    "FairShare") == SLURM_SUCCESS)
@@ -1686,6 +1692,12 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 			field->name = xstrdup("Partition");
 			field->len = 10;
 			field->print_routine = print_fields_str;
+		} else if(!strncasecmp("Shares", object,
+				       MAX(command_len, 1))) {
+			field->type = PRINT_FAIRSHARE;
+			field->name = xstrdup("Shares");
+			field->len = 9;
+			field->print_routine = print_fields_uint;
 		} else if(!strncasecmp("User", object, MAX(command_len, 1))
 			  || !strncasecmp("Name", object, 
 					  MAX(command_len, 2))) {
