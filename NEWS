@@ -222,6 +222,7 @@ documents those changes that are of interest to users and admins.
       options.
  -- when using -j option in sacct no user restriction will applied unless
     specified with the -u option.
+ -- significant speed up for association based reports in sreport
 
 * Changes in SLURM 1.3.13
 =========================
