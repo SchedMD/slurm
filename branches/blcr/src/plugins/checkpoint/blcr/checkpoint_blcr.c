@@ -148,7 +148,7 @@ static pthread_cond_t ckpt_agent_cond = PTHREAD_COND_INITIALIZER;
  */
 const char plugin_name[]       	= "BLCR checkpoint plugin";
 const char plugin_type[]       	= "checkpoint/blcr";
-const uint32_t plugin_version	= 10;
+const uint32_t plugin_version	= 100;
 
 /*
  * init() is called when the plugin is loaded, before any other functions
@@ -508,6 +508,9 @@ extern int slurm_ckpt_restart_task(slurmd_job_t *job, char *image_dir, int gtid)
         argv[2] = NULL;
 
         execv(argv[0], argv);
+
+	/* Should only reach here if execv() fails */
+	return SLURM_ERROR;
 }
 
 

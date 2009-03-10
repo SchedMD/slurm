@@ -83,7 +83,7 @@
  */
 const char plugin_name[]       	= "Checkpoint NONE plugin";
 const char plugin_type[]       	= "checkpoint/none";
-const uint32_t plugin_version	= 90;
+const uint32_t plugin_version	= 100;
 
 /*
  * init() is called when the plugin is loaded, before any other functions
@@ -136,8 +136,9 @@ extern int slurm_ckpt_unpack_job(check_jobinfo_t jobinfo, Buf buffer)
 	return SLURM_SUCCESS;
 }
 
-extern int slurm_ckpt_task_comp (struct step_record * step_ptr, uint32_t task_id,
-				 time_t event_time, uint32_t error_code, char *error_msg )
+extern int slurm_ckpt_task_comp (struct step_record * step_ptr, 
+				 uint32_t task_id, time_t event_time, 
+				 uint32_t error_code, char *error_msg )
 {
 	return SLURM_SUCCESS;
 }
@@ -149,10 +150,10 @@ extern int slurm_ckpt_stepd_prefork(void *slurmd_job)
 
 extern int slurm_ckpt_signal_tasks(void *slurmd_job)
 {
-	return SLURM_SUCCESS;
+	return ESLURM_NOT_SUPPORTED;
 }
 
-extern int slurm_ckpt_restart_task(void *slurmd_job)
+extern int slurm_ckpt_restart_task(void *slurmd_job, char *image_dir, int gtid)
 {
-	return SLURM_SUCCESS;
+	return ESLURM_NOT_SUPPORTED;
 }
