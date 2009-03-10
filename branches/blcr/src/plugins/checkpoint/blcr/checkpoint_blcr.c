@@ -87,7 +87,7 @@ struct ckpt_req {
 	uint32_t gid;
 	uint32_t uid;
 	uint32_t job_id;
-	uint16_t step_id;
+	uint32_t step_id;
 	time_t begin_time;
 	uint16_t wait;
 	char *image_dir;
@@ -97,15 +97,12 @@ struct ckpt_req {
 
 static void _send_sig(uint32_t job_id, uint32_t step_id, uint16_t signal, 
 		      char *nodelist);
-
-static int _is_dir(const char *dir);
-static int _mkdir_p(const char *dir);
 static void _send_sig(uint32_t job_id, uint32_t step_id,
 		      uint16_t signal, char *nodelist);
 static void *_ckpt_agent_thr(void *arg);
 static void _ckpt_req_free(void *ptr);
 static int _on_ckpt_complete(uint32_t group_id, uint32_t user_id,
-			     uint32_t job_id, uint16_t step_id,
+			     uint32_t job_id, uint32_t step_id,
 			     char *image_dir, uint32_t error_code);
 
 
@@ -170,7 +167,7 @@ extern int fini ( void )
 /*
  * The remainder of this file implements the standard SLURM checkpoint API.
  */
-extern int slurm_ckpt_op (uint32_t job_id, uint16_t step_id, uint16_t op,
+extern int slurm_ckpt_op (uint32_t job_id, uint32_t step_id, uint16_t op,
 			  uint16_t data, char *image_dir, time_t * event_time, 
 			  uint32_t *error_code, char **error_msg )
 {
@@ -187,12 +184,16 @@ extern int slurm_ckpt_op (uint32_t job_id, uint16_t step_id, uint16_t op,
 
         /* job/step checked already */
         job_ptr = find_job_record(job_id);
+	if (!job_ptr)
+		return ESLURM_INVALID_JOB_ID;
         if (step_id == (uint16_t)SLURM_BATCH_SCRIPT) {
                 check_ptr = (struct check_job_info *)job_ptr->check_job;
                 node_ptr = find_first_node_record(job_ptr->node_bitmap);
                 nodelist = node_ptr->name;
         } else {
                 step_ptr = find_step_record(job_ptr, step_id);
+		if (!step_ptr)
+			return ESLURM_INVALID_JOB_ID;
                 check_ptr = (struct check_job_info *)step_ptr->check_job;
                 nodelist = step_ptr->step_layout->node_list;
         }
@@ -572,7 +573,7 @@ static void *_ckpt_agent_thr(void *arg)
 		error("_ckpt_agent_thr: job finished");
 		goto out;
 	}
-	if (req->step_id == (uint16_t)SLURM_BATCH_SCRIPT) {	/* batch job */
+	if (req->step_id == SLURM_BATCH_SCRIPT) {	/* batch job */
 		check_ptr = (struct check_job_info *)job_ptr->check_job;
 	} else {
 		step_ptr = find_step_record(job_ptr, req->step_id);
@@ -590,10 +591,13 @@ static void *_ckpt_agent_thr(void *arg)
  out:
 	unlock_slurmctld(job_write_lock);
 		
-	if (req->sig_done)
-		_send_sig(req->job_id, req->step_id, req->sig_done, req->nodelist);
+	if (req->sig_done) {
+		_send_sig(req->job_id, req->step_id, req->sig_done, 
+			  req->nodelist);
+	}
 
-	_on_ckpt_complete(req->gid, req->uid, req->job_id, req->step_id, req->image_dir, rc);
+	_on_ckpt_complete(req->gid, req->uid, req->job_id, req->step_id, 
+			  req->image_dir, rc);
 
 	slurm_mutex_lock(&ckpt_agent_mutex);
 	ckpt_agent_count --;
@@ -603,6 +607,7 @@ static void *_ckpt_agent_thr(void *arg)
 	}
 	slurm_mutex_unlock(&ckpt_agent_mutex);
 	_ckpt_req_free(req);
+	return NULL;
 }
 
 
@@ -620,7 +625,7 @@ static void _ckpt_req_free(void *ptr)
 
 /* a checkpoint completed, process the images files */
 static int _on_ckpt_complete(uint32_t group_id, uint32_t user_id,
-			     uint32_t job_id, uint16_t step_id,
+			     uint32_t job_id, uint32_t step_id,
 			     char *image_dir, uint32_t error_code)
 {
 	int status;
@@ -674,7 +679,7 @@ static int _on_ckpt_complete(uint32_t group_id, uint32_t user_id,
 				}
 			}
 			snprintf(str_job,  sizeof(str_job),  "%u", job_id);
-			snprintf(str_step, sizeof(str_step), "%hu", step_id);
+			snprintf(str_step, sizeof(str_step), "%u", step_id);
 			snprintf(str_err,  sizeof(str_err),  "%u", error_code);
 
 			args[0] = scch_path;

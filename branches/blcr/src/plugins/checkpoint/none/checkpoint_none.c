@@ -1,7 +1,8 @@
 /*****************************************************************************\
  *  checkpoint_none.c - NO-OP slurm checkpoint plugin.
  *****************************************************************************
- *  Copyright (C) 2004 The Regents of the University of California.
+ *  Copyright (C) 2004-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -103,9 +104,9 @@ extern int fini ( void )
  * The remainder of this file implements the standard SLURM checkpoint API.
  */
 
-extern int slurm_ckpt_op (uint32_t job_id, uint32_t step_id, uint16_t op, 
-		uint16_t data, char *image_dir, time_t * event_time,
-		uint32_t *error_code, char **error_msg )
+extern int slurm_ckpt_op (uint32_t job_id, uint32_t step_id, uint16_t op,
+			  uint16_t data, char *image_dir, time_t * event_time, 
+			  uint32_t *error_code, char **error_msg )
 {
 	return ESLURM_NOT_SUPPORTED;
 }

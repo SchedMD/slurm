@@ -2,7 +2,8 @@
  *  checkpoint_aix.c - AIX slurm checkpoint plugin.
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2004 The Regents of the University of California.
+ *  Copyright (C) 2004-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -132,7 +133,7 @@ static void  _ckpt_signal_step(struct ckpt_timeout_info *rec);
  */
 const char plugin_name[]       	= "Checkpoint AIX plugin";
 const char plugin_type[]       	= "checkpoint/aix";
-const uint32_t plugin_version	= 90;
+const uint32_t plugin_version	= 100;
 
 /*
  * init() is called when the plugin is loaded, before any other functions
@@ -177,12 +178,26 @@ extern int fini ( void )
  * The remainder of this file implements the standard SLURM checkpoint API.
  */
 
-extern int slurm_ckpt_op ( uint16_t op, uint16_t data,
-		struct step_record * step_ptr, time_t * event_time, 
-		uint32_t *error_code, char **error_msg )
+extern int slurm_ckpt_op (uint32_t job_id, uint32_t step_id, uint16_t op,
+			  uint16_t data, char *image_dir, time_t * event_time, 
+			  uint32_t *error_code, char **error_msg )
 {
 	int rc = SLURM_SUCCESS;
 	struct check_job_info *check_ptr;
+	struct job_record *job_ptr;
+	struct step_record *step_ptr;
+
+	/* job/step checked already */
+	job_ptr = find_job_record(job_id);
+	if (!job_ptr)
+		return ESLURM_INVALID_JOB_ID;
+	if ((step_id == SLURM_BATCH_SCRIPT) || (step_id == NO_VAL))
+		return ESLURM_NOT_SUPPORTED;
+	step_ptr = find_step_record(job_ptr, step_id);
+	if (!step_ptr)
+		return ESLURM_INVALID_JOB_ID;
+	check_ptr = (struct check_job_info *)step_ptr->check_job;
+	xassert(check_ptr);
 
 	xassert(step_ptr);
 	check_ptr = (struct check_job_info *) step_ptr->check_job;
@@ -508,8 +523,24 @@ static void _ckpt_dequeue_timeout(uint32_t job_id, uint32_t step_id,
 	slurm_mutex_unlock(&ckpt_agent_mutex);
 }
 
-extern int slurm_ckpt_task_comp ( struct step_record * step_ptr, uint32_t task_id,
-				  time_t event_time, uint32_t error_code, char *error_msg )
+extern int slurm_ckpt_task_comp ( struct step_record * step_ptr, 
+				  uint32_t task_id, time_t event_time,
+				  uint32_t error_code, char *error_msg )
 {
 	return SLURM_SUCCESS;
+}
+
+extern int slurm_ckpt_stepd_prefork(void *slurmd_job)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int slurm_ckpt_signal_tasks(void *slurmd_job)
+{
+	return ESLURM_NOT_SUPPORTED;
+}
+
+extern int slurm_ckpt_restart_task(void *slurmd_job, char *image_dir, int gtid)
+{
+	return ESLURM_NOT_SUPPORTED;
 }
