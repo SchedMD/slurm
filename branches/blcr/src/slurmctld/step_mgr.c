@@ -1707,9 +1707,9 @@ extern int job_step_checkpoint(checkpoint_msg_t *ckpt_ptr,
 		if (ckpt_ptr->image_dir == NULL) {
 			ckpt_ptr->image_dir = xstrdup(step_ptr->ckpt_dir);
 		}
-		xstrfmtcat(ckpt_ptr->image_dir, "/%u.%hu", job_ptr->job_id, step_ptr->step_id);
+		xstrfmtcat(ckpt_ptr->image_dir, "/%u.%u", job_ptr->job_id, step_ptr->step_id);
 
-		rc = checkpoint_op(ckpt_ptr->job_id, ckpt_ptr->step_id,
+		rc = checkpoint_op(ckpt_ptr->job_id, ckpt_ptr->step_id, step_ptr,
 				   ckpt_ptr->op, ckpt_ptr->data,
 				   ckpt_ptr->image_dir, &resp_data.event_time, 
 				   &resp_data.error_code, &resp_data.error_msg);
@@ -2390,7 +2390,7 @@ extern void step_checkpoint(void)
 			image_dir = xstrdup(step_ptr->ckpt_dir);
 			xstrfmtcat(image_dir, "/%u.%hu", job_ptr->job_id, step_ptr->step_id);
 			(void) checkpoint_op(job_ptr->job_id, step_ptr->step_id,
-					     CHECK_CREATE, 0, image_dir, 
+					     step_ptr, CHECK_CREATE, 0, image_dir, 
 					     &event_time, &error_code, &error_msg);
 		}
 		list_iterator_destroy (step_iterator);

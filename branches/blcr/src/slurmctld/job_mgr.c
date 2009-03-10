@@ -6708,7 +6708,7 @@ extern int job_checkpoint(checkpoint_msg_t *ckpt_ptr, uid_t uid,
 		}
 		/* append job id to ckpt image dir */
 		xstrfmtcat(ckpt_ptr->image_dir, "/%u", job_ptr->job_id);
-		rc = checkpoint_op(ckpt_ptr->job_id, ckpt_ptr->step_id,
+		rc = checkpoint_op(ckpt_ptr->job_id, ckpt_ptr->step_id, NULL,
 				   ckpt_ptr->op, ckpt_ptr->data,
 				   ckpt_ptr->image_dir, &resp_data.event_time, 
 				   &resp_data.error_code, &resp_data.error_msg);
@@ -6731,6 +6731,7 @@ extern int job_checkpoint(checkpoint_msg_t *ckpt_ptr, uid_t uid,
 				   step_ptr->step_id);
 			update_rc = checkpoint_op(ckpt_ptr->job_id,
 						  step_ptr->step_id,
+						  step_ptr,
 						  ckpt_ptr->op, 
 						  ckpt_ptr->data,
 						  image_dir,

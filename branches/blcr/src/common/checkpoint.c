@@ -59,7 +59,8 @@
  * at the end of the structure.
  */
 typedef struct slurm_checkpoint_ops {
-	int     (*ckpt_op) (uint32_t job_id, uint32_t step_id, uint16_t op,
+	int     (*ckpt_op) (uint32_t job_id, uint32_t step_id, 
+			    struct step_record *step_ptr, uint16_t op,
 			    uint16_t data, char *image_dir, time_t *event_time,
 			    uint32_t *error_code, char **error_msg);
 	int	(*ckpt_comp) (struct step_record * step_ptr, time_t event_time,
@@ -263,18 +264,20 @@ checkpoint_fini(void)
 
 /* perform some checkpoint operation */
 extern int
-checkpoint_op(uint32_t job_id, uint32_t step_id, uint16_t op,
+checkpoint_op(uint32_t job_id, uint32_t step_id, 
+	      void *step_ptr, uint16_t op,
 	      uint16_t data, char *image_dir, time_t *event_time,
 	      uint32_t *error_code, char **error_msg)
 {
 	int retval = SLURM_SUCCESS;
 
 	slurm_mutex_lock( &context_lock );
-	if ( g_context )
-		retval = (*(g_context->ops.ckpt_op))(job_id, step_id, op,
-						     data, image_dir, event_time,
-						     error_code, error_msg);
-	else {
+	if ( g_context ) {
+		retval = (*(g_context->ops.ckpt_op))(job_id, step_id, 
+					(struct step_record *) step_ptr,
+					op, data, image_dir, 
+					event_time, error_code, error_msg);
+	} else {
 		error ("slurm_checkpoint plugin context not initialized");
 		retval = ENOENT;
 	}

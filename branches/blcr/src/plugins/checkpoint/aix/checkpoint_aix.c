@@ -178,28 +178,16 @@ extern int fini ( void )
  * The remainder of this file implements the standard SLURM checkpoint API.
  */
 
-extern int slurm_ckpt_op (uint32_t job_id, uint32_t step_id, uint16_t op,
+extern int slurm_ckpt_op (uint32_t job_id, uint32_t step_id, 
+			  struct step_record *step_ptr, uint16_t op,
 			  uint16_t data, char *image_dir, time_t * event_time, 
 			  uint32_t *error_code, char **error_msg )
 {
 	int rc = SLURM_SUCCESS;
 	struct check_job_info *check_ptr;
-	struct job_record *job_ptr;
-	struct step_record *step_ptr;
 
-	/* job/step checked already */
-	job_ptr = find_job_record(job_id);
-	if (!job_ptr)
-		return ESLURM_INVALID_JOB_ID;
-	if ((step_id == SLURM_BATCH_SCRIPT) || (step_id == NO_VAL))
-		return ESLURM_NOT_SUPPORTED;
-	step_ptr = find_step_record(job_ptr, step_id);
 	if (!step_ptr)
 		return ESLURM_INVALID_JOB_ID;
-	check_ptr = (struct check_job_info *)step_ptr->check_job;
-	xassert(check_ptr);
-
-	xassert(step_ptr);
 	check_ptr = (struct check_job_info *) step_ptr->check_job;
 	xassert(check_ptr);
 

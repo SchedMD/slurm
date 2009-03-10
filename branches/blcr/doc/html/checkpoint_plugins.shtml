@@ -97,7 +97,7 @@ the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 
 <p class="commandline">int slurm_ckpt_op ( uint32_t job_id, uint32_t step_id,
-uint16_t op, uint16_t data,
+struct step_record *step_ptr, uint16_t op, uint16_t data,
 char *image_dir, time_t *event_time, 
 uint32_t *error_code, char **error_msg );</p>
 <p style="margin-left:.2in"><b>Description</b>: Perform some checkpoint operation on a 
@@ -106,7 +106,9 @@ specific job step.</p>
 <b>job_id</b> (input) identifies the job to be operated upon.
 May be SLURM_BATCH_SCRIPT for a batch job or NO_VAL for all steps of the 
 specified job.</br>
-<b>step_id</b> (input) identifies the job step to be operated upon.</br>
+<b>step_id</b> (input) identifies the job step to be operated upon.<br>
+<b>step_ptr</b> (input) pointer to the job step to be operated upon.
+Used by checkpoint/aix only.<br>
 <b>op</b> (input) specifies the operation to be performed. 
 Currently supported operations include 
 CHECK_ABLE (is job step currently able to be checkpointed),
@@ -116,8 +118,8 @@ CHECK_CREATE (create a checkpoint for this job step and continue its execution),
 CHECK_VACATE (create a checkpoint for this job step and terminate it),
 CHECK_RESTART (restart this previously checkpointed job step), and
 CHECK_ERROR (return checkpoint-specific error information for this job step).<br>
-<b>data</b> (input) operation-specific data.</br>
-<b>image_dir</b> (input) directory to be used to save or restore state.</br>
+<b>data</b> (input) operation-specific data.<br>
+<b>image_dir</b> (input) directory to be used to save or restore state.<br>
 <b>event_time</b> (output) identifies the time of a checkpoint or restart 
 operation.</br>
 <b>error_code</b> (output) returns checkpoint-specific error code 

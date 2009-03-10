@@ -104,7 +104,8 @@ extern int fini ( void )
  * The remainder of this file implements the standard SLURM checkpoint API.
  */
 
-extern int slurm_ckpt_op (uint32_t job_id, uint32_t step_id, uint16_t op,
+extern int slurm_ckpt_op (uint32_t job_id, uint32_t step_id, 
+			  struct step_record *step_ptr, uint16_t op,
 			  uint16_t data, char *image_dir, time_t * event_time, 
 			  uint32_t *error_code, char **error_msg )
 {

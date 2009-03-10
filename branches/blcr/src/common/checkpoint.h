@@ -38,8 +38,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef __CHECKPOINT_H__
-#define __CHECKPOINT_H__
+#ifndef _HAVE_SLURM_CHECKPOINT_H__
+#define _HAVE_SLURM_CHECKPOINT_H__
 
 #include "slurm/slurm.h"
 #include "src/common/macros.h"
@@ -73,7 +73,8 @@ extern int checkpoint_init(char *checkpoint_type);
 extern int checkpoint_fini(void);
 
 /* perform many checkpoint operation on job/step */
-extern int checkpoint_op(uint32_t job_id, uint32_t step_id, uint16_t op,
+extern int checkpoint_op(uint32_t job_id, uint32_t step_id, 
+			 void *step_ptr, uint16_t op,
 			 uint16_t data, char *image_dir, time_t *event_time,
 			 uint32_t *error_code, char **error_msg);
 
@@ -111,5 +112,5 @@ extern int checkpoint_restart_task(void *slurmd_job, char *image_dir, int gtid);
 extern int checkpoint_tasks (uint32_t job_id, uint32_t step_id, 
 			     time_t begin_time, char *image_dir, 
 			     uint16_t wait, char *nodelist);
-#endif /*__CHECKPOINT_H__*/
+#endif /*_HAVE_SLURM_CHECKPOINT_H__*/
 
