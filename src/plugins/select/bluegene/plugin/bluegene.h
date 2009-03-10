@@ -150,10 +150,6 @@ extern void *bluegene_agent(void *args);
 
 extern int bg_free_block(bg_record_t *bg_record);
 
-#ifndef HAVE_BGL
-extern int bg_reboot_block(bg_record_t *bg_record);
-#endif
-
 extern int remove_from_bg_list(List my_bg_list, bg_record_t *bg_record);
 extern bg_record_t *find_and_remove_org_from_bg_list(List my_list, 
 						     bg_record_t *bg_record);

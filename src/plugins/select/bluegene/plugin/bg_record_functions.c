@@ -113,13 +113,14 @@ extern void destroy_bg_record(void *object)
 	}
 }
 
+/* see if a record already of like bitmaps exists in a list */
 extern int block_exist_in_list(List my_list, bg_record_t *bg_record)
 {
 	ListIterator itr = list_iterator_create(my_list);
 	bg_record_t *found_record = NULL;
 	int rc = 0;
 
-	while ((found_record = (bg_record_t *) list_next(itr)) != NULL) {
+	while ((found_record = list_next(itr))) {
 		/* check for full node bitmap compare */
 		if(bit_equal(bg_record->bitmap, found_record->bitmap)
 		   && bit_equal(bg_record->ionode_bitmap,
@@ -136,6 +137,23 @@ extern int block_exist_in_list(List my_list, bg_record_t *bg_record)
 				       bg_record->nodes,
 				       found_record->bg_block_id);
 				
+			rc = 1;
+			break;
+		}
+	}
+	list_iterator_destroy(itr);
+	return rc;
+}
+
+/* see if the exact record already exists in a list */
+extern int block_ptr_exist_in_list(List my_list, bg_record_t *bg_record)
+{
+	ListIterator itr = list_iterator_create(my_list);
+	bg_record_t *found_record = NULL;
+	int rc = 0;
+
+	while ((found_record = list_next(itr))) {
+		if(bg_record == found_record) {
 			rc = 1;
 			break;
 		}
@@ -587,7 +605,6 @@ extern void drain_as_needed(bg_record_t *bg_record, char *reason)
 	bool needed = true;
 	hostlist_t hl;
 	char *host = NULL;
-	char bg_down_node[128];
 
 	if(bg_record->job_running > NO_JOB_RUNNING) {
 		int rc;
@@ -623,7 +640,7 @@ extern void drain_as_needed(bg_record_t *bg_record, char *reason)
 		return;
 	}
 	while ((host = hostlist_shift(hl))) {
-		if (node_already_down(bg_down_node)) {
+		if (node_already_down(host)) {
 			needed = false;
 			free(host);
 			break;

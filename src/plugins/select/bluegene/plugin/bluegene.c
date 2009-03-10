@@ -616,74 +616,6 @@ extern int bg_free_block(bg_record_t *bg_record)
 	return SLURM_SUCCESS;
 }
 
-#ifndef HAVE_BGL
-/* This function not available in bgl land */
-extern int bg_reboot_block(bg_record_t *bg_record)
-{
-#ifdef HAVE_BG_FILES
-	int rc;
-#endif
-	if(!bg_record) {
-		error("bg_reboot_block: there was no bg_record");
-		return SLURM_ERROR;
-	}
-	
-	while (1) {
-		if(!bg_record) {
-			error("bg_reboot_block: there was no bg_record");
-			return SLURM_ERROR;
-		}
-		
-		slurm_mutex_lock(&block_state_mutex);			
-		if (bg_record->state != NO_VAL
-		    && bg_record->state != RM_PARTITION_REBOOTING) {
-#ifdef HAVE_BG_FILES
-			debug2("bridge_reboot %s", bg_record->bg_block_id);
-			
-			rc = bridge_reboot_block(bg_record->bg_block_id);
-			if (rc != STATUS_OK) {
-				if(rc == PARTITION_NOT_FOUND) {
-					debug("block %s is not found",
-					      bg_record->bg_block_id);
-					break;
-				} else if(rc == INCOMPATIBLE_STATE) {
-					debug2("bridge_reboot_partition"
-					       "(%s): %s State = %d",
-					       bg_record->bg_block_id, 
-					       bg_err_str(rc), 
-					       bg_record->state);
-				} else {
-					error("bridge_reboot_partition"
-					      "(%s): %s State = %d",
-					      bg_record->bg_block_id, 
-					      bg_err_str(rc), 
-					      bg_record->state);
-				}
-			}
-#else
-			bg_record->state = RM_PARTITION_READY;	
-			break;
-#endif
-		}
-		
-		if (bg_record->state == RM_PARTITION_CONFIGURING) {
-			if(!block_exist_in_list(bg_booted_block_list,
-						bg_record))
-				list_push(bg_booted_block_list, bg_record);
-			break;
-		} else if (bg_record->state == RM_PARTITION_ERROR) {
-			remove_from_bg_list(bg_booted_block_list, bg_record);
-			break;
-		}
-		slurm_mutex_unlock(&block_state_mutex);			
-		sleep(3);
-	}
-	slurm_mutex_unlock(&block_state_mutex);			
-		
-	return SLURM_SUCCESS;
-}
-#endif
-
 /* Free multiple blocks in parallel */
 extern void *mult_free_block(void *args)
 {
@@ -868,7 +800,7 @@ extern int free_block_list(List delete_list)
 	while ((found_record = (bg_record_t*)list_pop(delete_list)) != NULL) {
 		/* push job onto queue in a FIFO */
 		debug3("adding %s to be freed", found_record->bg_block_id);
-		if(!block_exist_in_list(*block_list, found_record)) {
+		if(!block_ptr_exist_in_list(*block_list, found_record)) {
 			if (list_push(*block_list, found_record) == NULL)
 				fatal("malloc failure in _block_op/list_push");
 		} else {
@@ -1544,8 +1476,8 @@ static int _validate_config_nodes(List *bg_found_block_list, char *dir)
 			     convert_conn_type(bg_record->conn_type));
 			if(((bg_record->state == RM_PARTITION_READY)
 			    || (bg_record->state == RM_PARTITION_CONFIGURING))
-			   && !block_exist_in_list(bg_booted_block_list, 
-						   bg_record))
+			   && !block_ptr_exist_in_list(bg_booted_block_list, 
+						       bg_record))
 				list_push(bg_booted_block_list, bg_record);
 		}
 	}		
@@ -1569,7 +1501,7 @@ static int _validate_config_nodes(List *bg_found_block_list, char *dir)
 				if(((bg_record->state == RM_PARTITION_READY)
 				    || (bg_record->state 
 					== RM_PARTITION_CONFIGURING))
-				   && !block_exist_in_list(
+				   && !block_ptr_exist_in_list(
 					   bg_booted_block_list, bg_record))
 					list_push(bg_booted_block_list,
 						  bg_record);

@@ -724,7 +724,8 @@ static int _dynamically_request(List block_list, int *blocks_added,
 		*/
 		debug("trying with %d", create_try);
 		if((new_blocks = create_dynamic_block(block_list,
-						      request, temp_list))) {
+						      request, temp_list,
+						      true))) {
 			bg_record_t *bg_record = NULL;
 			while((bg_record = list_pop(new_blocks))) {
 				if(block_exist_in_list(block_list, bg_record))
@@ -1086,6 +1087,7 @@ static int _find_best_block_match(List block_list,
 			slurm_mutex_unlock(&block_state_mutex);
 			list_sort(job_list, (ListCmpF)_bg_record_sort_aval_inc);
 			while(1) {
+				bool track_down_nodes = true;
 				/* this gets altered in
 				 * create_dynamic_block so we reset it */
 				for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
@@ -1099,8 +1101,17 @@ static int _find_best_block_match(List block_list,
 					       bg_record->bg_block_id,
 					       bg_record->job_ptr->start_time,
 					       bg_record->job_ptr->end_time);
+				else 
+					/* This means we didn't have
+					   any jobs to take off
+					   anymore so we are making
+					   sure we can look at every
+					   node on the system.
+					*/
+					track_down_nodes = false;
 				if(!(new_blocks = create_dynamic_block(
-					     block_list, &request, job_list))) {
+					     block_list, &request, job_list,
+					     track_down_nodes))) {
 					destroy_bg_record(bg_record);
 					if(errno == ESLURM_INTERCONNECT_FAILURE
 					   || !list_count(job_list)) {
