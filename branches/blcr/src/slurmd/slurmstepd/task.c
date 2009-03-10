@@ -347,11 +347,11 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 	if (i == 0)
 		_make_tmpdir(job);
 
-        /*
+	/*
 	 * Stall exec until all tasks have joined the same process group
 	 */
-        if ((rc = read (waitfd, &c, sizeof (c))) != 1) {
-	        error ("_exec_task read failed, fd = %d, rc=%d: %m", waitfd, rc);
+	if ((rc = read (waitfd, &c, sizeof (c))) != 1) {
+		error ("_exec_task read failed, fd = %d, rc=%d: %m", waitfd, rc);
 		log_fini();
 		exit(1);
 	}
@@ -450,13 +450,13 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 		job->env[0] = (char *)NULL;
 	}
 
-        if (job->restart_dir) {
+	if (job->restart_dir) {
 		info("restart from %s", job->restart_dir);
 		/* no return on success */
-                checkpoint_restart_task(job, job->restart_dir, task->gtid); 
-                error("Restart task failed: %m");
-                exit(errno);
-        }
+		checkpoint_restart_task(job, job->restart_dir, task->gtid); 
+		error("Restart task failed: %m");
+		exit(errno);
+	}
 
 	if (task->argv[0] == NULL) {
 		error("No executable program specified for this task");
