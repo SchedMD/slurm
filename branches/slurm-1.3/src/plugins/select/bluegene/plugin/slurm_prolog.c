@@ -125,8 +125,11 @@ static int _wait_part_ready(uint32_t job_id)
 			break;				/* fatal error */
 		if (rc == READY_JOB_ERROR)		/* error */
 			continue;			/* retry */
-		if ((rc & READY_JOB_STATE) == 0)	/* job killed */
+		if ((rc & READY_JOB_STATE) == 0) {	/* job killed */
+			/* return 1 so we don't get a prolog error */
+			is_ready = 1;
 			break;
+		}
 		if (rc & READY_NODE_STATE) {		/* job and node ready */
 			is_ready = 1;
 			break;
