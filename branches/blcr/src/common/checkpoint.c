@@ -2,7 +2,8 @@
  *  checkpoint.c - implementation-independent checkpoint functions
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2004 The Regents of the University of California.
+ *  Copyright (C) 2004-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.com>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -58,7 +59,7 @@
  * at the end of the structure.
  */
 typedef struct slurm_checkpoint_ops {
-	int     (*ckpt_op) (uint32_t job_id, uint16_t step_id, uint16_t op,
+	int     (*ckpt_op) (uint32_t job_id, uint32_t step_id, uint16_t op,
 			    uint16_t data, char *image_dir, time_t *event_time,
 			    uint32_t *error_code, char **error_msg);
 	int	(*ckpt_comp) (struct step_record * step_ptr, time_t event_time,
@@ -262,7 +263,7 @@ checkpoint_fini(void)
 
 /* perform some checkpoint operation */
 extern int
-checkpoint_op(uint32_t job_id, uint16_t step_id, uint16_t op,
+checkpoint_op(uint32_t job_id, uint32_t step_id, uint16_t op,
 	      uint16_t data, char *image_dir, time_t *event_time,
 	      uint32_t *error_code, char **error_msg)
 {
@@ -422,9 +423,10 @@ extern int checkpoint_restart_task (void *job, char *image_dir, int gtid)
         int retval = SLURM_SUCCESS;
 
         slurm_mutex_lock( &context_lock );
-        if ( g_context )
-                retval = (*(g_context->ops.ckpt_restart_task))(job, image_dir, gtid);
-        else {
+        if ( g_context ) {
+                retval = (*(g_context->ops.ckpt_restart_task))(job, image_dir, 
+							       gtid);
+        } else {
                 error ("slurm_checkpoint plugin context not initialized");
                 retval = ENOENT;
         }
@@ -432,8 +434,9 @@ extern int checkpoint_restart_task (void *job, char *image_dir, int gtid)
         return retval;
 }
 
-extern int checkpoint_tasks (uint32_t job_id, uint16_t step_id, time_t begin_time,
-			     char *image_dir, uint16_t wait, char *nodelist)
+extern int checkpoint_tasks (uint32_t job_id, uint32_t step_id, 
+			     time_t begin_time, char *image_dir, 
+			     uint16_t wait, char *nodelist)
 {
 	int rc = SLURM_SUCCESS, temp_rc;
 	checkpoint_tasks_msg_t ckpt_req;
@@ -443,13 +446,14 @@ extern int checkpoint_tasks (uint32_t job_id, uint16_t step_id, time_t begin_tim
 
 	slurm_msg_t_init(&req_msg);
 	ckpt_req.job_id   = job_id;
-	ckpt_req.job_step_id  = (uint32_t)(int32_t)(int16_t)step_id;
+	ckpt_req.job_step_id  = step_id;
 	ckpt_req.timestamp = begin_time,
 	ckpt_req.image_dir = image_dir;
 	req_msg.msg_type = REQUEST_CHECKPOINT_TASKS;
 	req_msg.data     = &ckpt_req;
 
-	if ((ret_list = slurm_send_recv_msgs(nodelist, &req_msg, wait * 1000, false))) {
+	if ((ret_list = slurm_send_recv_msgs(nodelist, &req_msg, (wait*1000),
+					     false))) {
 		while((ret_data_info = list_pop(ret_list))) {
                         temp_rc = slurm_get_return_code(ret_data_info->type,
                                                         ret_data_info->data);

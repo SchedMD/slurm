@@ -2,7 +2,7 @@
  *  srun_cr.c - Checkpoint/Restart wrapper for srun
  *****************************************************************************
  *  Copyright (C) 2009 National University of Defense Technology, China.
- *  Written by Hongia Cao
+ *  Written by Hongia Cao.
  *  CODE-OCEC-09-009. All rights reserved.
  *  
  *  This file is part of SLURM, a resource management program.

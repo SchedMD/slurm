@@ -2,11 +2,9 @@
  *  checkpoint_xlch.c - XLCH slurm checkpoint plugin.
  *  $Id: checkpoint_xlch.c 0001 2006-10-31 10:55:11Z hjcao $
  *****************************************************************************
- *  Copied from checkpoint_aix.c
- *  
- *  Copyright (C) 2004 The Regents of the University of California.
- *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Morris Jette <jette1@llnl.gov>
+ *  Derived from checkpoint_aix.c
+ *  Copyright (C) 2007-2009 National University of Defense Technology, China.
+ *  Written by Hongia Cao.
  *  CODE-OCEC-09-009. All rights reserved.
  *  
  *  This file is part of SLURM, a resource management program.

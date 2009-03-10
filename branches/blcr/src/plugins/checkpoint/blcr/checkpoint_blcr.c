@@ -2,12 +2,10 @@
  *  checkpoint_blcr.c - BLCR slurm checkpoint plugin.
  *  $Id: checkpoint_blcr.c 0001 2008-12-29 16:50:11Z hjcao $
  *****************************************************************************
- *  Copied from checkpoint_xlch.c
- *  
- *  Copyright (C) 2004 The Regents of the University of California.
- *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Morris Jette <jette1@llnl.gov>
- *  LLNL-CODE-402394.
+ *  Derived from checkpoint_aix.c
+ *  Copyright (C) 2007-2009 National University of Defense Technology, China.
+ *  Written by Hongia Cao.
+ *  CODE-OCEC-09-009. All rights reserved.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -186,7 +184,7 @@ extern int slurm_ckpt_op (uint32_t job_id, uint32_t step_id, uint16_t op,
         job_ptr = find_job_record(job_id);
 	if (!job_ptr)
 		return ESLURM_INVALID_JOB_ID;
-        if (step_id == (uint16_t)SLURM_BATCH_SCRIPT) {
+        if (step_id == SLURM_BATCH_SCRIPT) {
                 check_ptr = (struct check_job_info *)job_ptr->check_job;
                 node_ptr = find_first_node_record(job_ptr->node_bitmap);
                 nodelist = node_ptr->name;
@@ -253,7 +251,8 @@ extern int slurm_ckpt_op (uint32_t job_id, uint32_t step_id, uint16_t op,
 			break;
 		}
 		
-		if (pthread_create(&ckpt_agent_tid, &attr, _ckpt_agent_thr, req_ptr)) {
+		if (pthread_create(&ckpt_agent_tid, &attr, _ckpt_agent_thr, 
+				   req_ptr)) {
 			error("pthread_create: %m");
 			rc = errno;
 			break;
@@ -263,7 +262,7 @@ extern int slurm_ckpt_op (uint32_t job_id, uint32_t step_id, uint16_t op,
 		break;
 			
 	case CHECK_RESTART:
-		if (step_id != (uint16_t)SLURM_BATCH_SCRIPT) {
+		if (step_id != SLURM_BATCH_SCRIPT) {
 			rc = ESLURM_NOT_SUPPORTED;
 			break;
 		}

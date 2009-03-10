@@ -2,7 +2,8 @@
  *  checkpoint.h - implementation-independent checkpoint API definitions. 
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2004 The Regents of the University of California.
+ *  Copyright (C) 2004-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.com>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -72,7 +73,7 @@ extern int checkpoint_init(char *checkpoint_type);
 extern int checkpoint_fini(void);
 
 /* perform many checkpoint operation on job/step */
-extern int checkpoint_op(uint32_t job_id, uint16_t step_id, uint16_t op,
+extern int checkpoint_op(uint32_t job_id, uint32_t step_id, uint16_t op,
 			 uint16_t data, char *image_dir, time_t *event_time,
 			 uint32_t *error_code, char **error_msg);
 
@@ -107,7 +108,8 @@ extern int checkpoint_signal_tasks (void *slurmd_job, char *image_dir);
 extern int checkpoint_restart_task(void *slurmd_job, char *image_dir, int gtid);
 
 /* send checkpoint request to specified job/step */
-extern int checkpoint_tasks (uint32_t job_id, uint16_t step_id, time_t begin_time,
-			     char *image_dir, uint16_t wait, char *nodelist);
+extern int checkpoint_tasks (uint32_t job_id, uint32_t step_id, 
+			     time_t begin_time, char *image_dir, 
+			     uint16_t wait, char *nodelist);
 #endif /*__CHECKPOINT_H__*/
 
