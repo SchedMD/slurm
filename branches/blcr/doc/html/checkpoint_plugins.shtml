@@ -17,8 +17,12 @@ abbreviation for the type of checkpoint mechanism.
 We recommend, for example:</p>
 <ul>
 <li><b>aix</b>&#151;AIX system checkpoint.</li>
+<li><b>blcr</b>&#151;
+<a href="https://ftg.lbl.gov/CheckpointRestart/CheckpointRestart.shtml">
+Berkeley Lab Checkpoint/Restart (BLCR)</a></li>
 <li><b>none</b>&#151;No job checkpoint.</li>
 <li><b>ompi</b>&#151;OpenMPI checkpoint (requires OpenMPI version 1.3 or higher).</li>
+<li><b>xlch</b>&#151;XLCH</li>
 </ul></p>
 
 <p>The <span class="commandline">plugin_name</span> and 
@@ -92,12 +96,17 @@ from a buffer.</p>
 the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 
-<p class="commandline">int slurm_ckpt_op ( uint16_t op, uint16_t data,
-struct step_record * step_ptr, time_t * event_time,
+<p class="commandline">int slurm_ckpt_op ( uint32_t job_id, uint32_t step_id,
+uint16_t op, uint16_t data,
+char *image_dir, time_t *event_time, 
 uint32_t *error_code, char **error_msg );</p>
 <p style="margin-left:.2in"><b>Description</b>: Perform some checkpoint operation on a 
 specific job step.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
+<b>job_id</b> (input) identifies the job to be operated upon.
+May be SLURM_BATCH_SCRIPT for a batch job or NO_VAL for all steps of the 
+specified job.</br>
+<b>step_id</b> (input) identifies the job step to be operated upon.</br>
 <b>op</b> (input) specifies the operation to be performed. 
 Currently supported operations include 
 CHECK_ABLE (is job step currently able to be checkpointed),
@@ -108,7 +117,7 @@ CHECK_VACATE (create a checkpoint for this job step and terminate it),
 CHECK_RESTART (restart this previously checkpointed job step), and
 CHECK_ERROR (return checkpoint-specific error information for this job step).<br>
 <b>data</b> (input) operation-specific data.</br>
-<b>step_ptr</b> (input/output) identifies the job step to be operated upon.</br>
+<b>image_dir</b> (input) directory to be used to save or restore state.</br>
 <b>event_time</b> (output) identifies the time of a checkpoint or restart 
 operation.</br>
 <b>error_code</b> (output) returns checkpoint-specific error code 
@@ -117,8 +126,8 @@ associated with an operation.</br>
 associated with an operation.</p>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
 SLURM_SUCCESS if successful. On failure,
-the plugin should return SLURM_ERROR and set the error_code and error_msg to an 
-appropriate value to indicate the reason for failure.</p>
+the plugin should return SLURM_ERROR and set the error_code and error_msg 
+to an appropriate value to indicate the reason for failure.</p>
 
 <p class="commandline">int slurm_ckpt_comp ( struct step_record * step_ptr, time_t event_time,
 uint32_t error_code, char *error_msg );</p>
@@ -135,14 +144,47 @@ with an operation.</p>
 the plugin should return SLURM_ERROR and set the error_code and error_msg to an
 appropriate value to indicate the reason for failure.</p>
                                                                                                                        
+<p class="commandline">int slurm_ckpt_stepd_prefork ( void *slurmd_job );</p>
+<p style="margin-left:.2in"><b>Description</b>: Do preparation work for
+the checkpoint/restart support. This function is called by <b>slurmstepd</b>
+before forking the user tasks.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<b>slurmd_job</b> (input) pointer to job structure internal to slurmstepd.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. 
+On failure, the plugin should return SLURM_ERROR and set the error_code 
+and error_msg to an appropriate value to indicate the reason for failure.</p>
+
+<p class="commandline">int slurm_ckpt_signal_tasks ( void *slurmd_job,
+char *image_dir );</p>
+<p style="margin-left:.2in"><b>Description</b>: Forward the checkpoint
+request to tasks managed by <b>slurmstepd</b>.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<b>slurmd_job</b> (input) pointer to job structure internal to slurmstepd.</br>
+<b>image_dir</b> (input) directory to be used to save or restore state.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. 
+On failure, the plugin should return SLURM_ERROR and set the error_code 
+and error_msg to an appropriate value to indicate the reason for failure.</p>
+
+<p class="commandline">int slurm_ckpt_restart_task ( void *slurmd_job,
+char *image_dir, int gtid);</p>
+<p style="margin-left:.2in"><b>Description</b>: Restart the execution
+of a tasks from a checkpoint image, called by <b>slurmstepd</b>.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<b>slurmd_job</b> (input) pointer to job structure internal to slurmstepd.<br>
+<b>image_dir</b> (input) directory to be used to save or restore state.<br>
+<b>gtid</b> (input) global task ID to be restarted</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. 
+On failure, the plugin should return SLURM_ERROR and set the error_code 
+and error_msg to an appropriate value to indicate the reason for failure.</p>
+
 
 <h2>Versioning</h2>
-<p> This document describes version 0 of the SLURM checkpoint API. 
+<p> This document describes version 100 of the SLURM checkpoint API. 
 Future releases of SLURM may revise this API. 
 A checkpoint plugin conveys its ability to implement a particular API 
 version using the mechanism outlined for SLURM plugins.</p>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 21 August 2007</p>
+<p style="text-align:center;">Last modified 10 March 2009</p>
 
 <!--#include virtual="footer.txt"-->

@@ -149,6 +149,7 @@ Time at which last checkpoint operation began (if one is in progress), otherwise
 \fIstep_id\fP
 SLURM job step ID to perform the operation upon. 
 May be NO_VAL if the operation is to be performed on all steps of the specified job.
+Specify SLURM_BATCH_SCRIPT to checkpoint a batch job.
 .TP
 \fIstick\fP
 If non\-zero then restart the job on the same nodes that it was checkpointed from.
