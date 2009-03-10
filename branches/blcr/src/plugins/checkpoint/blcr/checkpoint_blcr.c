@@ -113,6 +113,7 @@ static uint32_t ckpt_agent_jobid = 0;
 static uint16_t ckpt_agent_count = 0;
 static pthread_mutex_t ckpt_agent_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t ckpt_agent_cond = PTHREAD_COND_INITIALIZER;
+
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -159,7 +160,7 @@ extern int init ( void )
 extern int fini ( void )
 {
 	info("checkpoint/blcr fini");
-	return SLURM_ERROR;
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -312,7 +313,7 @@ extern int slurm_ckpt_free_job(check_jobinfo_t jobinfo)
 {
 	struct check_job_info *check_ptr = (struct check_job_info *)jobinfo;
 	if (check_ptr) {
-		xfree (check_ptr->error_msg);
+		xfree(check_ptr->error_msg);
 		xfree(check_ptr);
 	}
 	return SLURM_SUCCESS;
@@ -509,7 +510,7 @@ extern int slurm_ckpt_restart_task(slurmd_job_t *job, char *image_dir, int gtid)
 
         execv(argv[0], argv);
 
-	/* Should only reach here if execv() fails */
+	error("execv failure: %m");
 	return SLURM_ERROR;
 }
 
@@ -559,7 +560,7 @@ static void *_ckpt_agent_thr(void *arg)
 	ckpt_agent_count ++;
 	slurm_mutex_unlock(&ckpt_agent_mutex);
 
-	debug3("checkpoint/blcr: sending checkpoint tasks request to %u.%hu",
+	debug3("checkpoint/blcr: sending checkpoint tasks request to %u.%u",
 	       req->job_id, req->step_id);
 	
 	rc = checkpoint_tasks(req->job_id, req->step_id, req->begin_time,
@@ -650,7 +651,7 @@ static int _on_ckpt_complete(uint32_t group_id, uint32_t user_id,
 		 */
 		/* fork twice to avoid zombies */
 		if ((cpid = fork()) < 0) {
-			error ("_on_ckpt_complete: second fork: %m");
+			error("_on_ckpt_complete: second fork: %m");
 			exit(127);
 		}
 		/* grand child execs */
@@ -667,13 +668,13 @@ static int _on_ckpt_complete(uint32_t group_id, uint32_t user_id,
 			 */
 			if (geteuid() == 0) { /* root */
 				if (setgid(group_id) < 0) {
-					error ("_on_ckpt_complete: failed to "
-						"setgid: %m");
+					error("_on_ckpt_complete: failed to "
+					      "setgid: %m");
 					exit(127);
 				}
 				if (setuid(user_id) < 0) {
-					error ("_on_ckpt_complete: failed to "
-						"setuid: %m");
+					error("_on_ckpt_complete: failed to "
+					      "setuid: %m");
 					exit(127);
 				}
 			}
@@ -689,7 +690,7 @@ static int _on_ckpt_complete(uint32_t group_id, uint32_t user_id,
 			args[5] = NULL;
 
 			execv(scch_path, args);
-			error("help! %m");
+			error("execv failure: %m");
 			exit(127);
 		}
 		/* child just exits */
