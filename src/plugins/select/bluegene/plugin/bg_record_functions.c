@@ -586,7 +586,6 @@ extern void drain_as_needed(bg_record_t *bg_record, char *reason)
 	bool needed = true;
 	hostlist_t hl;
 	char *host = NULL;
-	char bg_down_node[128];
 
 	if(bg_record->job_running > NO_JOB_RUNNING) {
 		int rc;
@@ -622,7 +621,7 @@ extern void drain_as_needed(bg_record_t *bg_record, char *reason)
 		return;
 	}
 	while ((host = hostlist_shift(hl))) {
-		if (node_already_down(bg_down_node)) {
+		if (node_already_down(host)) {
 			needed = false;
 			free(host);
 			break;
