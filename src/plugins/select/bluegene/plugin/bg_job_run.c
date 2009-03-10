@@ -264,11 +264,11 @@ static void _sync_agent(bg_update_t *bg_update_ptr)
 	bg_record->job_running = bg_update_ptr->job_ptr->job_id;
 	bg_record->job_ptr = bg_update_ptr->job_ptr;
 
-	if(!block_exist_in_list(bg_job_block_list, bg_record)) {
+	if(!block_ptr_exist_in_list(bg_job_block_list, bg_record)) {
 		list_push(bg_job_block_list, bg_record);
 		num_unused_cpus -= bg_record->cpu_cnt;
 	}
-	if(!block_exist_in_list(bg_booted_block_list, bg_record)) 
+	if(!block_ptr_exist_in_list(bg_booted_block_list, bg_record)) 
 		list_push(bg_booted_block_list, bg_record);
 	slurm_mutex_unlock(&block_state_mutex);
 
@@ -1078,11 +1078,11 @@ extern int start_job(struct job_record *job_ptr)
 		job_ptr->num_procs = bg_record->cpu_cnt;
 		bg_record->job_running = bg_update_ptr->job_ptr->job_id;
 		bg_record->job_ptr = bg_update_ptr->job_ptr;
-		if(!block_exist_in_list(bg_job_block_list, bg_record)) {
+		if(!block_ptr_exist_in_list(bg_job_block_list, bg_record)) {
 			list_push(bg_job_block_list, bg_record);
 			num_unused_cpus -= bg_record->cpu_cnt;
 		}
-		if(!block_exist_in_list(bg_booted_block_list, bg_record))
+		if(!block_ptr_exist_in_list(bg_booted_block_list, bg_record))
 			list_push(bg_booted_block_list, bg_record);
 		slurm_mutex_unlock(&block_state_mutex);
 	} else {
@@ -1284,7 +1284,7 @@ extern int boot_block(bg_record_t *bg_record)
 	}
 	
 	slurm_mutex_lock(&block_state_mutex);
-	if(!block_exist_in_list(bg_booted_block_list, bg_record))
+	if(!block_ptr_exist_in_list(bg_booted_block_list, bg_record))
 		list_push(bg_booted_block_list, bg_record);
 	slurm_mutex_unlock(&block_state_mutex);
 	
@@ -1310,7 +1310,7 @@ extern int boot_block(bg_record_t *bg_record)
 	slurm_mutex_unlock(&block_state_mutex);
 #else
 	slurm_mutex_lock(&block_state_mutex);
-	if(!block_exist_in_list(bg_booted_block_list, bg_record))
+	if(!block_ptr_exist_in_list(bg_booted_block_list, bg_record))
 		list_push(bg_booted_block_list, bg_record);
 	bg_record->state = RM_PARTITION_READY;
 	last_bg_update = time(NULL);
