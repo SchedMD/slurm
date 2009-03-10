@@ -54,7 +54,8 @@ static int _breakup_blocks(List block_list, List new_blocks,
  * RET - a list of created block(s) or NULL on failure errno is set.
  */
 extern List create_dynamic_block(List block_list, 
-				 ba_request_t *request, List my_block_list)
+				 ba_request_t *request, List my_block_list,
+				 bool track_down_nodes)
 {
 	int rc = SLURM_SUCCESS;
 	
@@ -79,7 +80,7 @@ extern List create_dynamic_block(List block_list,
 
 	slurm_mutex_lock(&block_state_mutex);
 	if(my_block_list) {
-		reset_ba_system(true);
+		reset_ba_system(track_down_nodes);
 		itr = list_iterator_create(my_block_list);
 		while ((bg_record = list_next(itr))) {
 			if(!my_bitmap) {
