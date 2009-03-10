@@ -2,12 +2,149 @@
 
 <h1><a name="top">SLURM Checkpoint/Restart with BLCR</a></h1>
 
-<h2> Overview</h2>
+<h2>Overview</h2>
+<p>SLURM version 2.0 has been integrated with 
+<a href="https://ftg.lbl.gov/CheckpointRestart/CheckpointRestart.shtml">
+Berkeley Lab Checkpoint/Restart (BLCR)</a> in order to provide automatic
+job checkpoint/restart support.
+Functionality provided includes:
+<ol>
+<li>Checkpoint of whole batch jobs in addition to job steps</li>
+<li>Periodic checkpoint of batch jobs and job steps</li>
+<li>Restart execution of batch jobs and job steps from checkpoint files</li>
+<li>Automatically  requeue and restart the execution of batch jobs upon 
+node failure</li>
+</ol></p>
 
-<p>Not yet available.</p>
+<h2>User Commands</h2>
+
+<p>The following documents SLURM changes specific to BLCR support.
+Baic familiarity with SLURM commands is assumed.</p>
+
+<h3>srun</h3>
+
+<p>Several options have been added to support checkpoint restart:</p>
+<li><b>--checkpoint</b>: Specify the interval between periodic checkpoint
+of a job step, in seconds</li>
+<li><b>--checkpoint-dir</b>:Specify the directory when the checkpoint image
+files of a job step will be stored</li>
+<li><b>--restart-dir</b>: Specify the directory when the checkpoint image
+files of a job step will be read from</li>
+</li>
+
+<p>Environment variables are available for all of these options:</p>
+<li<b>SLURM_CHECKPOINT</b> is equivalent to <b>--checkpoint</b>:</li>
+<li><b>SLURM_CHECKPOINT_DIR</b> is equivalent to <b>--checkpoint-dir</b></li>
+<li><b>SLURM_RESTART_DIR</b> is equivalent to <b>--restart-dir</b></li>
+</li>
+<p>The environment variable <b>SLURM_SRUN_CR_SOCKET</b> is used for job step 
+logic to interact with the <b>srun_cr</b> command.</p>
+
+<h3>srun_cr</h3>
+
+<p>This is a wrapper program for use with SLURM's <b>checkpoint/blcr</b>
+plugin to checkpoint/restart tasks launched by srun.
+The design of <b>srun_cr</b> is inspired by <b>mpiexec_cr</b> from MVAPICH2 and
+<b>cr_restart</b> form BLCR.
+It is a wrapper around the <b>srun</b> command to enable batch job 
+checkpoint/restart support when used with SLURM's <b>checkpoint/blcr</b> plugin.
+
+<p>The <b>srun_cr</b> execute line options are identical to those of the 
+<b>srun</b> command.
+See "man srun" for details.</p>
+
+<p>After initialization, <b>srun_cr</b> registers a thread context callback
+function.
+Then it forks a process and executes "cr_run --omit srun" with its arguments.
+<b>cr_run</b> is employed to exclude the <b>srun</b> process from being dumped 
+upon checkpoint.
+All catchable signals except SIGCHLD sent to <b>srun_cr</b> will be forwarded 
+to the child <b>srun</b> process.
+SIGCHLD will be captured to mimic the exit status of <b>srun</b> when it exits.
+Then <b>srun_cr</b> loops waiting for termination of tasks being launched 
+from <b>srun</b>.</p>
+
+<p>The step launch logic of SLURM is augmented to check if <b>srun</b> is 
+running under <b>srun_cr</b>.
+If true, the environment variable <b>SURN_SRUN_CR_SOCKET</b> should be present,
+the value of which is the address of a Unix domain socket created and listened
+to be <b>srun_cr</b>.
+After launching the tasks, <b>srun</b> tires to connect to the socket and sends
+the job ID, step ID and the nodes allocated to the step to <b>srun_cr</b>.</p>
+
+<p>Upon checkpoint, </b>srun_cr</b> checks to see if the tasks have been launched.
+If not </b>srun_cr</b> first forwards the checkpoint request to the tasks by 
+calling the SLURM API <b>slurm_checkpoint_tasks()</b> before dumping its process
+context.</p>
+
+<p>Upon restart, <b>srun_cr</b> checks to see if the tasks have been previously 
+launched and checkpointed. 
+If true, the environment variable </b>SLURM_RESTART_DIR</b> is set to the 
+directory of the checkpoint image files of the tasks.
+Then <b>srun</b> is forked and executed again. 
+The environment variable will be used by the <b>srun</b> command to restart 
+execution of the tasks from the previous checkpoint.</p>
+
+<h3>sbatch</h3>
+
+<p>Several options have been added to support checkpoint restart:</p>
+<li><b>--checkpoint</b>: Specify the interval between periodic checkpoint
+of a batch job, in seconds</li>
+<li><b>--checkpoint-dir</b>:Specify the directory when the checkpoint image
+files of a batch job will be stored</li>
+</li>
+
+<p>Environment variables are available for all of these options:</p>
+<li<b>SLURM_CHECKPOINT</b> is equivalent to <b>--checkpoint</b>:</li>
+<li><b>SLURM_CHECKPOINT_DIR</b> is equivalent to <b>--checkpoint-dir</b></li>
+</li>
+
+<h3>scontrol</h3>
+
+<p><b>scontrol</b> is used to initiate checkpoint/restart requests.</p>
+<ul>
+<li><b>scontrol checkpoint create <i>jobid</i> [ImageDir=<i>dir</i>] 
+[MaxWait=<i>seconds</i>]</b><br>
+Requests a checkpoint on a specific job.
+For backward compatibility, if a job id is specified, all job steps of
+it are checkpointed. 
+If a batch job id is specified, the entire job is checkpointed including
+the batch shell and all running tasks of all job steps.
+Upon checkpoint, the task launch command must forward the requests to 
+tasks it launched.
+<ul>
+<li><b>ImageDir</b> specifies the directory in which to save the checkpoint 
+image files.</li>
+<li><b>MaxWait</b> specifies the maximum time permitted for a checkpoint 
+request to complete. The request will be considered failed if not 
+completed in this time period.</li>
+</ul></li>
+
+<li><b>scontrol checkpoint create <i>jobid.stepid</i> [ImageDir=<i>dir</i>] 
+[MaxWait=<i>seconds</i>]</b><br>
+Requests a checkpoint on a specific job step.</li>
+
+<li><b>scontrol checkpoint restart <i>jobid</i> [ImageDir=<i>dir</i>] 
+[StickToNodes]</b><br>
+Restart a previously checkpointed batch job.
+<ul>
+<li><b>ImageDir</b> specifies the directory from which to read the checkpoint 
+image files.</li>
+<li><b>StickToNodes</b> specifies that the job should be restarted on the
+same set of nodes from which it was previously checkpointed.</li>
+</ul></li>
+</ul>
+
+<h2>Configuration</h2>
+
+<p>The following SLURM configuration parameter has been added:</p>
+<ul>
+<li><b>JobCheckpointDir</b> specified the default directory for storing 
+or reading job checkpoint files</li>
+</ul>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 3 March 2009</p>
+<p style="text-align:center;">Last modified 9 March 2009</p>
 
 <!--#include virtual="footer.txt"-->
