@@ -587,11 +587,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		bg_record->modifying = 0;		
 		slurm_mutex_unlock(&block_state_mutex);		
 	} else if(bg_update_ptr->reboot) 
-#ifdef HAVE_BGL
 		bg_free_block(bg_record);
-#else
-		bg_reboot_block(bg_record);
-#endif
 
 	if(bg_record->state == RM_PARTITION_FREE) {
 		if((rc = boot_block(bg_record)) != SLURM_SUCCESS) {
