@@ -317,8 +317,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 
 	slurm_mutex_lock(&job_start_mutex);
 		
-	bg_record = 
-		find_bg_record_in_list(bg_list, bg_update_ptr->bg_block_id);
+	bg_record = find_bg_record_in_list(bg_list, bg_update_ptr->bg_block_id);
 
 	if(!bg_record) {
 		error("block %s not found in bg_list",
@@ -353,6 +352,9 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		slurm_mutex_unlock(&block_state_mutex);
 		debug("Block is in Deallocating state, waiting for free.");
 		bg_free_block(bg_record);
+		/* no reason to reboot here since we are already
+		   deallocating */
+		bg_update_ptr->reboot = 0;
 	} else 
 		slurm_mutex_unlock(&block_state_mutex);
 
@@ -586,8 +588,17 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		slurm_mutex_lock(&block_state_mutex);
 		bg_record->modifying = 0;		
 		slurm_mutex_unlock(&block_state_mutex);		
-	} else if(bg_update_ptr->reboot) 
+	} else if(bg_update_ptr->reboot) {
+		slurm_mutex_lock(&block_state_mutex);
+		bg_record->modifying = 1;
+		slurm_mutex_unlock(&block_state_mutex);
+
 		bg_free_block(bg_record);
+
+		slurm_mutex_lock(&block_state_mutex);
+		bg_record->modifying = 0;		
+		slurm_mutex_unlock(&block_state_mutex);		
+	}
 
 	if(bg_record->state == RM_PARTITION_FREE) {
 		if((rc = boot_block(bg_record)) != SLURM_SUCCESS) {
