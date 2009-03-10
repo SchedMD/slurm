@@ -725,7 +725,7 @@ static int _dynamically_request(List block_list, int *blocks_added,
 		debug("trying with %d", create_try);
 		if((new_blocks = create_dynamic_block(block_list,
 						      request, temp_list,
-						      false))) {
+						      true))) {
 			bg_record_t *bg_record = NULL;
 			while((bg_record = list_pop(new_blocks))) {
 				if(block_exist_in_list(block_list, bg_record))
