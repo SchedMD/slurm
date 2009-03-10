@@ -2,7 +2,7 @@
  *  src/slurmd/slurmstepd/req.c - slurmstepd domain socket request handling
  *****************************************************************************
  *  Copyright (C) 2005-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Christopher Morrone <morrone2@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -809,14 +809,15 @@ _handle_checkpoint_tasks(int fd, slurmd_job_t *job, uid_t uid)
 
 	safe_read(fd, &timestamp, sizeof(time_t));
 	safe_read(fd, &len, sizeof(int));
-        if (len) {
-                image_dir = xmalloc (len);
-                safe_read(fd, image_dir, len); /* '\0' terminated */
-        }
+	if (len) {
+		image_dir = xmalloc (len);
+		safe_read(fd, image_dir, len); /* '\0' terminated */
+	}
 
 	debug3("  uid = %d", uid);
 	if (uid != job->uid && !_slurm_authorized_user(uid)) {
-		debug("checkpoint req from uid %ld for job %u.%u owned by uid %ld",
+		debug("checkpoint req from uid %ld for job %u.%u "
+		      "owned by uid %ld",
 		      (long)uid, job->jobid, job->stepid, (long)job->uid);
 		rc = EPERM;
 		goto done;
@@ -824,7 +825,8 @@ _handle_checkpoint_tasks(int fd, slurmd_job_t *job, uid_t uid)
 
 	if (job->ckpt_timestamp &&
 	    timestamp == job->ckpt_timestamp) {
-		debug("duplicate checkpoint req for job %u.%u, timestamp %ld. discarded.",
+		debug("duplicate checkpoint req for job %u.%u, "
+		      "timestamp %ld. discarded.",
 		      job->jobid, job->stepid, (long)timestamp);
 		rc = ESLURM_ALREADY_DONE; /* EINPROGRESS? */
 		goto done;
@@ -854,9 +856,9 @@ _handle_checkpoint_tasks(int fd, slurmd_job_t *job, uid_t uid)
        job->ckpt_timestamp = timestamp;
 
        /* TODO: do we need job->ckpt_dir any more, except for checkpoint/xlch? */
-/*        if (! image_dir) { */
-/*                image_dir = xstrdup(job->ckpt_dir); */
-/*        } */
+/*	if (! image_dir) { */
+/*		image_dir = xstrdup(job->ckpt_dir); */
+/*	} */
        
        /* call the plugin to send the request */
        if (checkpoint_signal_tasks(job, image_dir) != SLURM_SUCCESS) {
