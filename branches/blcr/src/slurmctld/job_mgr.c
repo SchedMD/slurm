@@ -583,6 +583,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack32(dump_job_ptr->db_index, buffer);
 	pack32(dump_job_ptr->assoc_id, buffer);
 	pack32(dump_job_ptr->resv_id, buffer);
+	pack32(dump_job_ptr->next_step_id, buffer);
 
 	pack_time(dump_job_ptr->start_time, buffer);
 	pack_time(dump_job_ptr->end_time, buffer);
@@ -592,7 +593,6 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 
 	pack16(dump_job_ptr->direct_set_prio, buffer);
 	pack16(dump_job_ptr->job_state, buffer);
-	pack16(dump_job_ptr->next_step_id, buffer);
 	pack16(dump_job_ptr->kill_on_node_fail, buffer);
 	pack16(dump_job_ptr->kill_on_step_done, buffer);
 	pack16(dump_job_ptr->batch_flag, buffer);
@@ -659,10 +659,10 @@ static int _load_job_state(Buf buffer)
 {
 	uint32_t job_id, user_id, group_id, time_limit, priority, alloc_sid;
 	uint32_t exit_code, num_procs, assoc_id, db_index, name_len;
-	uint32_t total_procs, resv_id;
+	uint32_t next_step_id, total_procs, resv_id;
 	time_t start_time, end_time, suspend_time, pre_sus_time, tot_sus_time;
 	time_t now = time(NULL);
-	uint16_t job_state, next_step_id, details, batch_flag, step_flag;
+	uint16_t job_state, details, batch_flag, step_flag;
 	uint16_t kill_on_node_fail, kill_on_step_done, direct_set_prio, qos;
 	uint16_t alloc_resp_port, other_port, mail_type, state_reason;
 	uint16_t restart_cnt, resv_flags, ckpt_interval;
@@ -693,6 +693,7 @@ static int _load_job_state(Buf buffer)
 	safe_unpack32(&db_index, buffer);
 	safe_unpack32(&assoc_id, buffer);
 	safe_unpack32(&resv_id, buffer);
+	safe_unpack32(&next_step_id, buffer);
 
 	safe_unpack_time(&start_time, buffer);
 	safe_unpack_time(&end_time, buffer);
@@ -702,7 +703,6 @@ static int _load_job_state(Buf buffer)
 
 	safe_unpack16(&direct_set_prio, buffer);
 	safe_unpack16(&job_state, buffer);
-	safe_unpack16(&next_step_id, buffer);
 	safe_unpack16(&kill_on_node_fail, buffer);
 	safe_unpack16(&kill_on_step_done, buffer);
 	safe_unpack16(&batch_flag, buffer);

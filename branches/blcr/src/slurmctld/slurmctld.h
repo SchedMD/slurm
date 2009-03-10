@@ -487,7 +487,7 @@ struct job_record {
 	uint32_t magic;			/* magic cookie for data integrity */
 	char *name;			/* name of the job */
 	char *network;			/* network/switch requirement spec */
-	uint16_t next_step_id;		/* next step id to be used */
+	uint32_t next_step_id;		/* next step id to be used */
 	char *nodes;			/* list of nodes allocated to job */
 	slurm_addr *node_addr;		/* addresses of the nodes allocated to 
 					 * job */
@@ -580,7 +580,7 @@ struct 	step_record {
 	uint16_t resv_port_cnt;		/* count of ports reserved per node */
 	char *resv_ports;		/* ports reserved for job */
 	time_t start_time;      	/* step allocation time */
-	uint16_t step_id;		/* step number */
+	uint32_t step_id;		/* step number */
 	slurm_step_layout_t *step_layout;/* info about how tasks are laid out
 					  * in the step */
 	bitstr_t *step_node_bitmap;	/* bitmap of nodes allocated to job 
@@ -828,7 +828,7 @@ extern uint32_t get_next_job_id(void);
  * RET pointer to the job step's record, NULL on error
  */
 extern struct step_record * find_step_record(struct job_record *job_ptr, 
-					     uint16_t step_id);
+					     uint32_t step_id);
 
 /* 
  * init_job_conf - initialize the job configuration tables and values. 

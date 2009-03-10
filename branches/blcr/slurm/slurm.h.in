@@ -861,7 +861,7 @@ typedef struct {
 
 typedef struct {
 	uint32_t job_id;	/* job ID */
-	uint16_t step_id;	/* step ID */
+	uint32_t step_id;	/* step ID */
 	uint32_t user_id;	/* user the job runs as */
 	uint32_t num_tasks;	/* number of tasks */
 	time_t start_time;	/* step start time */

@@ -99,7 +99,9 @@ static struct step_record * _create_step_record(struct job_record *job_ptr)
 	struct step_record *step_ptr;
 
 	xassert(job_ptr);
-	if (job_ptr->next_step_id >= 0xffff) {
+	/* NOTE: Reserve highest step ID values for NO_VAL and
+	 * SLURM_BATCH_SCRIPT */
+	if (job_ptr->next_step_id >= 0xfffffff0) {
 		/* avoid step records in the accounting database */
 		info("job %u has reached step id limit", job_ptr->job_id);
 		return NULL;
@@ -247,7 +249,7 @@ dump_step_desc(job_step_create_request_msg_t *step_spec)
  * RET pointer to the job step's record, NULL on error
  */
 struct step_record *
-find_step_record(struct job_record *job_ptr, uint16_t step_id) 
+find_step_record(struct job_record *job_ptr, uint32_t step_id) 
 {
 	ListIterator step_iterator;
 	struct step_record *step_ptr;
@@ -257,10 +259,8 @@ find_step_record(struct job_record *job_ptr, uint16_t step_id)
 
 	step_iterator = list_iterator_create (job_ptr->step_list);
 	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
-		if ((step_ptr->step_id == step_id)
-		||  ((uint16_t) step_id == (uint16_t) NO_VAL)) {
+		if ((step_ptr->step_id == step_id) || (step_id == NO_VAL))
 			break;
-		}
 	}		
 	list_iterator_destroy (step_iterator);
 
@@ -1487,7 +1487,7 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer)
 		node_list = step_ptr->job_ptr->nodes;	
 	}
 	pack32(step_ptr->job_ptr->job_id, buffer);
-	pack16(step_ptr->step_id, buffer);
+	pack32(step_ptr->step_id, buffer);
 	pack16(step_ptr->ckpt_interval, buffer);
 	pack32(step_ptr->job_ptr->user_id, buffer);
 	pack32(task_cnt, buffer);
@@ -2118,7 +2118,7 @@ resume_job_step(struct job_record *job_ptr)
  */
 extern void dump_job_step_state(struct step_record *step_ptr, Buf buffer)
 {
-	pack16(step_ptr->step_id, buffer);
+	pack32(step_ptr->step_id, buffer);
 	pack16(step_ptr->cyclic_alloc, buffer);
 	pack16(step_ptr->port, buffer);
 	pack16(step_ptr->ckpt_interval, buffer);
@@ -2170,9 +2170,10 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 {
 	struct step_record *step_ptr = NULL;
 	uint8_t no_kill;
-	uint16_t step_id, cyclic_alloc, port, batch_step, bit_cnt;
+	uint16_t cyclic_alloc, port, batch_step, bit_cnt;
 	uint16_t ckpt_interval, cpus_per_task, resv_port_cnt;
 	uint32_t core_size, cpu_count, exit_code, mem_per_task, name_len;
+	uint32_t step_id;
 	time_t start_time, pre_sus_time, tot_sus_time, ckpt_time;
 	char *host = NULL, *ckpt_dir = NULL, *core_job = NULL;
 	char *resv_ports = NULL, *name = NULL, *network = NULL, *bit_fmt = NULL;
@@ -2180,7 +2181,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 	check_jobinfo_t check_tmp = NULL;
 	slurm_step_layout_t *step_layout = NULL;
 	
-	safe_unpack16(&step_id, buffer);
+	safe_unpack32(&step_id, buffer);
 	safe_unpack16(&cyclic_alloc, buffer);
 	safe_unpack16(&port, buffer);
 	safe_unpack16(&ckpt_interval, buffer);

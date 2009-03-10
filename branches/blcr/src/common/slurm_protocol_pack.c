@@ -1446,7 +1446,7 @@ _pack_node_registration_status_msg(slurm_node_registration_status_msg_t *
 		pack32((uint32_t)msg->job_id[i], buffer);
 	}
 	for (i = 0; i < msg->job_count; i++) {
-		pack16((uint16_t)msg->step_id[i], buffer);
+		pack32(msg->step_id[i], buffer);
 	}
 	pack16((uint16_t)msg->startup, buffer);
 	if (msg->startup)
@@ -1486,9 +1486,9 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 		safe_unpack32(&node_reg_ptr->job_id[i], buffer);
 	}
 	node_reg_ptr->step_id =
-		xmalloc(sizeof(uint16_t) * node_reg_ptr->job_count);
+		xmalloc(sizeof(uint32_t) * node_reg_ptr->job_count);
 	for (i = 0; i < node_reg_ptr->job_count; i++) {
-		safe_unpack16(&node_reg_ptr->step_id[i], buffer);
+		safe_unpack32(&node_reg_ptr->step_id[i], buffer);
 	}
 
 	safe_unpack16(&node_reg_ptr->startup, buffer);
@@ -2324,7 +2324,7 @@ _unpack_job_step_info_members(job_step_info_t * step, Buf buffer)
 	char *node_inx_str;
 
 	safe_unpack32(&step->job_id, buffer);
-	safe_unpack16(&step->step_id, buffer);
+	safe_unpack32(&step->step_id, buffer);
 	safe_unpack16(&step->ckpt_interval, buffer);
 	safe_unpack32(&step->user_id, buffer);
 	safe_unpack32(&step->num_tasks, buffer);
