@@ -799,7 +799,7 @@ extern int free_block_list(List delete_list)
 	while ((found_record = (bg_record_t*)list_pop(delete_list)) != NULL) {
 		/* push job onto queue in a FIFO */
 		debug3("adding %s to be freed", found_record->bg_block_id);
-		if(!block_exist_in_list(*block_list, found_record)) {
+		if(!block_ptr_exist_in_list(*block_list, found_record)) {
 			if (list_push(*block_list, found_record) == NULL)
 				fatal("malloc failure in _block_op/list_push");
 		} else {
@@ -1475,8 +1475,8 @@ static int _validate_config_nodes(List *bg_found_block_list, char *dir)
 			     convert_conn_type(bg_record->conn_type));
 			if(((bg_record->state == RM_PARTITION_READY)
 			    || (bg_record->state == RM_PARTITION_CONFIGURING))
-			   && !block_exist_in_list(bg_booted_block_list, 
-						   bg_record))
+			   && !block_ptr_exist_in_list(bg_booted_block_list, 
+						       bg_record))
 				list_push(bg_booted_block_list, bg_record);
 		}
 	}		
@@ -1500,7 +1500,7 @@ static int _validate_config_nodes(List *bg_found_block_list, char *dir)
 				if(((bg_record->state == RM_PARTITION_READY)
 				    || (bg_record->state 
 					== RM_PARTITION_CONFIGURING))
-				   && !block_exist_in_list(
+				   && !block_ptr_exist_in_list(
 					   bg_booted_block_list, bg_record))
 					list_push(bg_booted_block_list,
 						  bg_record);
