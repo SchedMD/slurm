@@ -627,13 +627,18 @@ extern int bg_reboot_block(bg_record_t *bg_record)
 		return SLURM_ERROR;
 	}
 	
+	/* no reason to continue if this is the case ;) */
+	if(bg_record->state != RM_PARTITION_READY) {
+		return bg_free_block(bg_record);
+	}
+
 	while (1) {
 		if(!bg_record) {
 			error("bg_reboot_block: there was no bg_record");
 			return SLURM_ERROR;
 		}
 		
-		slurm_mutex_lock(&block_state_mutex);			
+		slurm_mutex_lock(&block_state_mutex);	
 		if (bg_record->state != NO_VAL
 		    && bg_record->state != RM_PARTITION_REBOOTING) {
 #ifdef HAVE_BG_FILES
