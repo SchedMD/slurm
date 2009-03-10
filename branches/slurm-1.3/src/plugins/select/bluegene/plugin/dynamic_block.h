@@ -42,7 +42,8 @@
 #include "bluegene.h"
 
 extern List create_dynamic_block(List block_list,
-				 ba_request_t *request, List my_block_list);
+				 ba_request_t *request, List my_block_list,
+				 bool track_down_nodes);
 
 #ifdef HAVE_BGL 
 extern bg_record_t *create_small_record(bg_record_t *bg_record, 

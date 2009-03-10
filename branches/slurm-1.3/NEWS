@@ -39,6 +39,9 @@ documents those changes that are of interest to users and admins.
  -- when using -j option in sacct no user restriction will applied unless
     specified with the -u option.
  -- significant speed up for association based reports in sreport
+ -- BLUEGENE - fix for checking if job can run with downed nodes.  Previously 
+    sbatch etc would tell you node configuration not available now jobs are 
+    accepted but held until nodes are back up.
 
 * Changes in SLURM 1.3.13
 =========================
