@@ -3662,10 +3662,10 @@ unpack_error:
 static void
 _pack_checkpoint_tasks_msg(checkpoint_tasks_msg_t * msg, Buf buffer)
 {
-	pack32((uint32_t)msg->job_id, buffer);
-	pack32((uint32_t)msg->job_step_id, buffer);
-	pack_time((time_t)msg->timestamp, buffer);
-	packstr((char *)msg->image_dir, buffer);
+	pack32(msg->job_id, buffer);
+	pack32(msg->job_step_id, buffer);
+	pack_time(msg->timestamp, buffer);
+	packstr(msg->image_dir, buffer);
 }
 
 static int
@@ -4522,10 +4522,10 @@ _pack_checkpoint_msg(checkpoint_msg_t *msg, Buf buffer)
 {
 	xassert ( msg != NULL );
 
-	pack16((uint16_t)msg->op,      buffer ) ;
-	pack16((uint16_t)msg->data,    buffer ) ;
-	pack32((uint32_t)msg->job_id,  buffer ) ;
-	pack32((uint32_t)msg->step_id, buffer ) ;
+	pack16(msg->op,      buffer ) ;
+	pack16(msg->data,    buffer ) ;
+	pack32(msg->job_id,  buffer ) ;
+	pack32(msg->step_id, buffer ) ;
 	packstr((char *)msg->image_dir, buffer ) ;
 }
 

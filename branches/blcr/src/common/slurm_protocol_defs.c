@@ -625,8 +625,10 @@ void slurm_free_kill_tasks_msg(kill_tasks_msg_t * msg)
 
 void slurm_free_checkpoint_tasks_msg(checkpoint_tasks_msg_t * msg)
 {
-	xfree(msg->image_dir);
-	xfree(msg);
+	if (msg) {
+		xfree(msg->image_dir);
+		xfree(msg);
+	}
 }
 
 void slurm_free_epilog_complete_msg(epilog_complete_msg_t * msg)
@@ -683,8 +685,10 @@ void inline slurm_free_srun_user_msg(srun_user_msg_t * user_msg)
 
 void inline slurm_free_checkpoint_msg(checkpoint_msg_t *msg)
 {
-	xfree(msg->image_dir);
-	xfree(msg);
+	if (msg) {
+		xfree(msg->image_dir);
+		xfree(msg);
+	}
 }
 
 void inline slurm_free_checkpoint_comp_msg(checkpoint_comp_msg_t *msg)

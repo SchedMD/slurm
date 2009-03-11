@@ -663,7 +663,8 @@ typedef struct checkpoint_msg {
 	uint16_t data;		/* operation specific data */
 	uint32_t job_id;	/* slurm job_id */
 	uint32_t step_id;	/* slurm step_id */
-	char *image_dir;	/* locate to store the context images. NULL for default */
+	char *image_dir;	/* locate to store the context images. 
+				 * NULL for default */
 } checkpoint_msg_t;
 
 typedef struct checkpoint_comp_msg {

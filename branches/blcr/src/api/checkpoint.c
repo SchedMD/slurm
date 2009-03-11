@@ -80,13 +80,13 @@ static int _checkpoint_op (uint16_t op, uint16_t data,
 	slurm_msg_t req_msg;
 
 	slurm_msg_t_init(&req_msg);
-	ckp_req.op       = op;
-	ckp_req.data     = data;
-	ckp_req.job_id   = job_id;
-	ckp_req.step_id  = step_id;
+	ckp_req.op        = op;
+	ckp_req.data      = data;
+	ckp_req.job_id    = job_id;
+	ckp_req.step_id   = step_id;
 	ckp_req.image_dir = image_dir;
-	req_msg.msg_type = REQUEST_CHECKPOINT;
-	req_msg.data     = &ckp_req;
+	req_msg.msg_type  = REQUEST_CHECKPOINT;
+	req_msg.data      = &ckp_req;
 
 	if (slurm_send_recv_controller_rc_msg(&req_msg, &rc) < 0)
 		return SLURM_ERROR;
@@ -111,14 +111,14 @@ extern int slurm_checkpoint_able (uint32_t job_id, uint32_t step_id,
 	checkpoint_msg_t ckp_req;
 	checkpoint_resp_msg_t *resp;
 
-	ckp_req.op       = CHECK_ABLE;
-	ckp_req.job_id   = job_id;
-	ckp_req.step_id  = step_id;
+	ckp_req.op        = CHECK_ABLE;
+	ckp_req.job_id    = job_id;
+	ckp_req.step_id   = step_id;
 	ckp_req.image_dir = NULL;
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
-	req_msg.msg_type = REQUEST_CHECKPOINT;
-	req_msg.data     = &ckp_req;
+	req_msg.msg_type  = REQUEST_CHECKPOINT;
+	req_msg.data      = &ckp_req;
 
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;
@@ -268,14 +268,14 @@ extern int slurm_checkpoint_error ( uint32_t job_id, uint32_t step_id,
 	/*
 	 * Request message:
 	 */
-	req.op       = CHECK_ERROR;
-	req.job_id   = job_id;
-	req.step_id  = step_id;
+	req.op        = CHECK_ERROR;
+	req.job_id    = job_id;
+	req.step_id   = step_id;
 	req.image_dir = NULL;
 	slurm_msg_t_init(&msg);
 	slurm_msg_t_init(&resp_msg);
-	msg.msg_type = REQUEST_CHECKPOINT;
-	msg.data     = &req;
+	msg.msg_type  = REQUEST_CHECKPOINT;
+	msg.data      = &req;
 
 	rc = slurm_send_recv_controller_msg(&msg, &resp_msg);
 
@@ -330,7 +330,9 @@ _handle_rc_msg(slurm_msg_t *msg)
  * RET 0 or a slurm error code
  */
 extern int slurm_checkpoint_task_complete (uint32_t job_id, uint32_t step_id,
-		uint32_t task_id, time_t begin_time, uint32_t error_code, char *error_msg)
+					   uint32_t task_id, time_t begin_time,
+					   uint32_t error_code, 
+					   char *error_msg)
 {
 	int rc;
 	slurm_msg_t msg;

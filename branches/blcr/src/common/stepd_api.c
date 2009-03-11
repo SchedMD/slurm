@@ -3,7 +3,7 @@
  *  $Id$
  *****************************************************************************
  *  Copyright (C) 2005-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Portions Copyright (C) 2008 Vijay Ramasubramanian
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Christopher Morrone <morrone2@llnl.gov>
@@ -333,12 +333,12 @@ stepd_checkpoint(int fd, time_t timestamp, char *image_dir)
 	safe_write(fd, &req, sizeof(int));
 	safe_write(fd, &timestamp, sizeof(time_t));
 	if (image_dir) {
-                rc = strlen(image_dir) + 1;
-                safe_write(fd, &rc, sizeof(int));
-                safe_write(fd, image_dir, rc);
+		rc = strlen(image_dir) + 1;
+		safe_write(fd, &rc, sizeof(int));
+		safe_write(fd, image_dir, rc);
 	} else {
 		rc = 0;
-                safe_write(fd, &rc, sizeof(int));
+		safe_write(fd, &rc, sizeof(int));
 	}
 
 	/* Receive the return code */
@@ -463,9 +463,9 @@ _sockname_regex_init(regex_t *re, const char *nodename)
 	xstrcat(pattern, "_([[:digit:]]*)\\.([[:digit:]]*)$");
 
 	if (regcomp(re, pattern, REG_EXTENDED) != 0) {
-                error("sockname regex compilation failed\n");
-                return -1;
-        }
+		error("sockname regex compilation failed\n");
+		return -1;
+	}
 
 	xfree(pattern);
 
@@ -476,9 +476,9 @@ static int
 _sockname_regex(regex_t *re, const char *filename,
 		uint32_t *jobid, uint32_t *stepid)
 {
-        size_t nmatch = 5;
-        regmatch_t pmatch[5];
-        char *match;
+	size_t nmatch = 5;
+	regmatch_t pmatch[5];
+	char *match;
 
 	memset(pmatch, 0, sizeof(regmatch_t)*nmatch);
 	if (regexec(re, filename, nmatch, pmatch, 0) == REG_NOMATCH) {

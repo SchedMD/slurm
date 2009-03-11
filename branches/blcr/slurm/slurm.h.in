@@ -2269,9 +2269,12 @@ extern int slurm_checkpoint_complete PARAMS(( uint32_t job_id,
  * IN error_msg - error message, preserved for highest error_code
  * RET 0 or a slurm error code
  */
-extern int slurm_checkpoint_task_complete (uint32_t job_id, uint32_t step_id,
-					   uint32_t task_id, time_t begin_time, 
-					   uint32_t error_code, char *error_msg);
+extern int slurm_checkpoint_task_complete PARAMS(( uint32_t job_id, 
+						   uint32_t step_id,
+						   uint32_t task_id, 
+						   time_t begin_time, 
+						   uint32_t error_code, 
+						   char *error_msg ));
 
 /*
  * slurm_checkpoint_error - gather error information for the last checkpoint
@@ -2286,9 +2289,9 @@ extern int slurm_checkpoint_task_complete (uint32_t job_id, uint32_t step_id,
  *	must be freed by the caller to prevent memory leak
  * RET 0 or a slurm error code
  */
-extern int slurm_checkpoint_error PARAMS(( uint32_t job_id, 
-		uint32_t step_id, uint32_t *error_code, 
-		char **error_msg ));
+extern int slurm_checkpoint_error PARAMS(( uint32_t job_id, uint32_t step_id, 
+					   uint32_t *error_code, 
+					   char **error_msg ));
 
 /*
  * slurm_checkpoint_tasks - send checkpoint request to tasks of
@@ -2300,9 +2303,9 @@ extern int slurm_checkpoint_error PARAMS(( uint32_t job_id,
  * IN nodelist: nodes to send the request
  * RET: 0 on success, non-zero on failure with errno set
  */
-extern int
-slurm_checkpoint_tasks(uint32_t job_id, uint16_t step_id, time_t begin_time,
-		       char *image_dir, uint16_t max_wait, char *nodelist);
+extern int slurm_checkpoint_tasks PARAMS(( uint32_t job_id, uint16_t step_id, 
+					   time_t begin_time, char *image_dir, 
+					   uint16_t max_wait, char *nodelist));
 
 
 /*****************************************************************************\

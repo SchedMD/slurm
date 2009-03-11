@@ -2,7 +2,7 @@
  *  src/common/slurm_cred.c - SLURM job credential functions
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -82,10 +82,10 @@
  * 
  */
 typedef struct {
-	uint32_t jobid;		/* SLURM job id for this credential         */
-	uint32_t stepid;	/* SLURM step id for this credential        */
-	time_t   ctime;		/* Time that the cred was created */
-	time_t   expiration;    /* Time at which cred is no longer good     */
+	uint32_t jobid;		/* SLURM job id for this credential	*/
+	uint32_t stepid;	/* SLURM step id for this credential	*/
+	time_t   ctime;		/* Time that the cred was created	*/
+	time_t   expiration;    /* Time at which cred is no longer good	*/
 } cred_state_t;
 
 /*
@@ -1483,9 +1483,9 @@ _credential_replayed(slurm_cred_ctx_t ctx, slurm_cred_t cred)
 	i = list_iterator_create(ctx->state_list);
 
 	while ((s = list_next(i))) {
-		if ((s->jobid == cred->jobid) &&
+		if ((s->jobid  == cred->jobid)  &&
 		    (s->stepid == cred->stepid) &&
-		    (s->ctime == cred->ctime))
+		    (s->ctime  == cred->ctime))
 			break;
 	}
 
