@@ -459,15 +459,15 @@ libspank_la_SOURCES = \
 libcommon_la_LIBADD = -ldl 
 libcommon_la_LDFLAGS = $(LIB_LDFLAGS) -module --export-dynamic
 
-# This was made so we chould export all symbols from libcommon 
+# This was made so we could export all symbols from libcommon 
 # on multiple platforms
 libcommon_o_SOURCES = 
 
-# This was made so we chould export all symbols from libeio 
+# This was made so we could export all symbols from libeio 
 # on multiple platforms
 libeio_o_SOURCES = 
 
-# This was made so we chould export all symbols from libspank 
+# This was made so we could export all symbols from libspank 
 # on multiple platforms
 libspank_o_SOURCES = 
 all: all-am
