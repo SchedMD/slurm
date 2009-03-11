@@ -1309,7 +1309,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	step_ptr->cpu_count = orig_cpu_count;
 	step_ptr->exit_code = NO_VAL;
 	step_ptr->exclusive = step_specs->exclusive;
-	step_ptr->ckpt_dir = xstrdup(step_specs->ckpt_dir);
+	step_ptr->ckpt_dir  = xstrdup(step_specs->ckpt_dir);
 	step_ptr->no_kill   = step_specs->no_kill;
 
 	/* step's name and network default to job's values if not 
@@ -1702,17 +1702,18 @@ extern int job_step_checkpoint(checkpoint_msg_t *ckpt_ptr,
 	step_ptr = find_step_record(job_ptr, ckpt_ptr->step_id);
 	if (step_ptr == NULL) {
 		rc = ESLURM_INVALID_JOB_ID;
-		goto reply;
 	} else {
 		if (ckpt_ptr->image_dir == NULL) {
 			ckpt_ptr->image_dir = xstrdup(step_ptr->ckpt_dir);
 		}
-		xstrfmtcat(ckpt_ptr->image_dir, "/%u.%u", job_ptr->job_id, step_ptr->step_id);
+		xstrfmtcat(ckpt_ptr->image_dir, "/%u.%u", job_ptr->job_id, 
+			   step_ptr->step_id);
 
-		rc = checkpoint_op(ckpt_ptr->job_id, ckpt_ptr->step_id, step_ptr,
-				   ckpt_ptr->op, ckpt_ptr->data,
+		rc = checkpoint_op(ckpt_ptr->job_id, ckpt_ptr->step_id, 
+				   step_ptr, ckpt_ptr->op, ckpt_ptr->data,
 				   ckpt_ptr->image_dir, &resp_data.event_time, 
-				   &resp_data.error_code, &resp_data.error_msg);
+				   &resp_data.error_code, 
+				   &resp_data.error_msg);
 		last_job_update = time(NULL);
 	}
 
@@ -2251,7 +2252,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 	step_ptr->name         = name;
 	step_ptr->network      = network;
 	step_ptr->no_kill      = no_kill;
-	step_ptr->ckpt_dir    = ckpt_dir;
+	step_ptr->ckpt_dir     = ckpt_dir;
 	step_ptr->port         = port;
 	step_ptr->ckpt_interval= ckpt_interval;
 	step_ptr->mem_per_task = mem_per_task;
@@ -2346,16 +2347,18 @@ extern void step_checkpoint(void)
 		if (job_ptr->job_state != JOB_RUNNING)
 			continue;
 		if (job_ptr->batch_flag &&
-		    job_ptr->ckpt_interval != 0) { /* periodic job ckpt */
+		    (job_ptr->ckpt_interval != 0)) { /* periodic job ckpt */
 			ckpt_due = job_ptr->ckpt_time +
-				(job_ptr->ckpt_interval * 60);
+				   (job_ptr->ckpt_interval * 60);
 			if (ckpt_due > now)
 				continue;
 			/* 
 			 * DO NOT initiate a checkpoint request if the job is
 			 * started just now, in case it is restarting from checkpoint.
 			 */
-			if (job_ptr->start_time + job_ptr->ckpt_interval * 60 > now)
+			ckpt_due = job_ptr->start_time +
+				   (job_ptr->ckpt_interval * 60);
+			if (ckpt_due > now)
 				continue;
 
 			ckpt_req.op = CHECK_CREATE;
@@ -2375,23 +2378,30 @@ extern void step_checkpoint(void)
 			if (step_ptr->ckpt_interval == 0)
 				continue;
 			ckpt_due = step_ptr->ckpt_time +
-				(step_ptr->ckpt_interval * 60);
+				   (step_ptr->ckpt_interval * 60);
 			if (ckpt_due > now) 
 				continue;
 			/* 
 			 * DO NOT initiate a checkpoint request if the step is
-			 * started just now, in case it is restarting from checkpoint.
+			 * started just now, in case it is restarting from 
+			 * checkpoint.
 			 */
-			if (step_ptr->start_time + step_ptr->ckpt_interval * 60 > now)
+			ckpt_due = step_ptr->start_time + 
+				   (step_ptr->ckpt_interval * 60);
+			if (ckpt_due > now)
 				continue;
 
 			step_ptr->ckpt_time = now;
 			last_job_update = now;
 			image_dir = xstrdup(step_ptr->ckpt_dir);
-			xstrfmtcat(image_dir, "/%u.%hu", job_ptr->job_id, step_ptr->step_id);
-			(void) checkpoint_op(job_ptr->job_id, step_ptr->step_id,
-					     step_ptr, CHECK_CREATE, 0, image_dir, 
-					     &event_time, &error_code, &error_msg);
+			xstrfmtcat(image_dir, "/%u.%u", job_ptr->job_id, 
+				   step_ptr->step_id);
+			(void) checkpoint_op(job_ptr->job_id, 
+					     step_ptr->step_id,
+					     step_ptr, CHECK_CREATE, 0, 
+					     image_dir, &event_time,
+					     &error_code, &error_msg);
+			xfree(image_dir);
 		}
 		list_iterator_destroy (step_iterator);
 	}
