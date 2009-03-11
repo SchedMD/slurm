@@ -705,7 +705,8 @@ int setup_env(env_t *env)
 		rc = SLURM_FAILURE;
 	}
 	if (env->ckpt_dir 
-        && setenvf(&env->env, "SLURM_CHECKPOINT_IMAGE_DIR", "%s", env->ckpt_dir)) {
+	&& setenvf(&env->env, "SLURM_CHECKPOINT_IMAGE_DIR", "%s", 
+		   env->ckpt_dir)) {
 		error("Can't set SLURM_CHECKPOINT_IMAGE_DIR env variable");
 		rc = SLURM_FAILURE;
 	}

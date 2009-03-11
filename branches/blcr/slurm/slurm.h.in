@@ -2207,7 +2207,7 @@ extern int slurm_checkpoint_disable PARAMS(( uint32_t job_id,
  * RET 0 or a slurm error code
  */
 extern int slurm_checkpoint_enable PARAMS(( uint32_t job_id, 
-		uint32_t step_id ));
+					    uint32_t step_id ));
 
 /*
  * slurm_checkpoint_create - initiate a checkpoint requests for some job step.
@@ -2219,7 +2219,9 @@ extern int slurm_checkpoint_enable PARAMS(( uint32_t job_id,
  * RET 0 or a slurm error code
  */
 extern int slurm_checkpoint_create PARAMS(( uint32_t job_id, 
-		uint32_t step_id, uint16_t max_wait, char *image_dir ));
+					    uint32_t step_id, 
+					    uint16_t max_wait, 
+					    char *image_dir ));
 
 /*
  * slurm_checkpoint_vacate - initiate a checkpoint requests for some job step.
@@ -2231,7 +2233,9 @@ extern int slurm_checkpoint_create PARAMS(( uint32_t job_id,
  * RET 0 or a slurm error code
  */
 extern int slurm_checkpoint_vacate PARAMS(( uint32_t job_id, 
-		uint32_t step_id, uint16_t max_wait, char *image_dir ));
+					    uint32_t step_id, 
+					    uint16_t max_wait, 
+					    char *image_dir ));
 
 /*
  * slurm_checkpoint_restart - restart execution of a checkpointed job step.
@@ -2242,7 +2246,9 @@ extern int slurm_checkpoint_vacate PARAMS(( uint32_t job_id,
  * RET 0 or a slurm error code
  */
 extern int slurm_checkpoint_restart PARAMS(( uint32_t job_id, 
-		uint32_t step_id, uint16_t stick, char *image_dir ));
+					     uint32_t step_id, 
+					     uint16_t stick, 
+					     char *image_dir ));
 
 /*
  * slurm_checkpoint_complete - note the completion of a job step's checkpoint
@@ -2255,8 +2261,10 @@ extern int slurm_checkpoint_restart PARAMS(( uint32_t job_id,
  * RET 0 or a slurm error code
  */
 extern int slurm_checkpoint_complete PARAMS(( uint32_t job_id, 
-		uint32_t step_id, time_t begin_time, 
-		uint32_t error_code, char *error_msg ));
+					      uint32_t step_id, 
+					      time_t begin_time, 
+					      uint32_t error_code, 
+					      char *error_msg ));
 
 /*
  * slurm_checkpoint_task_complete - note the completion of a task's checkpoint

@@ -85,7 +85,7 @@ static void remove_listen_socket(void);
 static int  _wait_for_srun_connect(void);
 static void _read_info_from_srun(int srun_fd);
 
-/******************** copied and modified from cr_restart of BLCR ********************/
+/**************** copied and modified from cr_restart of BLCR ****************/
 static void signal_child (int, siginfo_t *, void *);
 
 static void
@@ -117,7 +117,8 @@ signal_child (int sig, siginfo_t *siginfo, void *context)
 	}
 	
 	if ((siginfo->si_code > 0) &&	/* si_code > 0 indicates sent by kernel */
-	    (sig == SIGILL || sig == SIGFPE || sig == SIGBUS || sig == SIGSEGV )) {
+	    (sig == SIGILL || sig == SIGFPE || 
+	     sig == SIGBUS || sig == SIGSEGV )) {
 		/* This signal is OUR error, so we don't forward */
 		signal_self(sig);
 	} else if (sig == SIGTSTP || sig == SIGTTIN || sig == SIGTTOU) {
@@ -450,7 +451,8 @@ main(int argc, char **argv)
 		pthread_mutex_lock(&step_launch_mutex);
 		while (step_launched) {
 			/* just avoid busy waiting */
-			pthread_cond_wait(&step_launch_cond, &step_launch_mutex);
+			pthread_cond_wait(&step_launch_cond, 
+					  &step_launch_mutex);
 		}
 		pthread_mutex_unlock(&step_launch_mutex);
 

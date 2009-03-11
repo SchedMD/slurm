@@ -181,21 +181,21 @@ extern int slurm_ckpt_op (uint32_t job_id, uint32_t step_id,
 	char *nodelist;
 	struct ckpt_req *req_ptr;
 
-        /* job/step checked already */
-        job_ptr = find_job_record(job_id);
+	/* job/step checked already */
+	job_ptr = find_job_record(job_id);
 	if (!job_ptr)
 		return ESLURM_INVALID_JOB_ID;
-        if (step_id == SLURM_BATCH_SCRIPT) {
-                check_ptr = (struct check_job_info *)job_ptr->check_job;
-                node_ptr = find_first_node_record(job_ptr->node_bitmap);
-                nodelist = node_ptr->name;
-        } else {
-                step_ptr = find_step_record(job_ptr, step_id);
+	if (step_id == SLURM_BATCH_SCRIPT) {
+		check_ptr = (struct check_job_info *)job_ptr->check_job;
+		node_ptr = find_first_node_record(job_ptr->node_bitmap);
+		nodelist = node_ptr->name;
+	} else {
+		step_ptr = find_step_record(job_ptr, step_id);
 		if (!step_ptr)
 			return ESLURM_INVALID_JOB_ID;
-                check_ptr = (struct check_job_info *)step_ptr->check_job;
-                nodelist = step_ptr->step_layout->node_list;
-        }
+		check_ptr = (struct check_job_info *)step_ptr->check_job;
+		nodelist = step_ptr->step_layout->node_list;
+	}
 	xassert(check_ptr);
 
 	switch (op) {
@@ -246,7 +246,8 @@ extern int slurm_ckpt_op (uint32_t job_id, uint32_t step_id,
 		req_ptr->sig_done = done_sig;
 
 		slurm_attr_init(&attr);
-		if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED)) {
+		if (pthread_attr_setdetachstate(&attr, 
+						PTHREAD_CREATE_DETACHED)) {
 			error("pthread_attr_setdetachstate: %m");
 			rc = errno;
 			break;
@@ -294,8 +295,9 @@ extern int slurm_ckpt_comp ( struct step_record * step_ptr, time_t event_time,
 	return SLURM_FAILURE; 
 }
 
-extern int slurm_ckpt_task_comp ( struct step_record * step_ptr, uint32_t task_id,
-				  time_t event_time, uint32_t error_code, char *error_msg )
+extern int slurm_ckpt_task_comp ( struct step_record * step_ptr, 
+				  uint32_t task_id, time_t event_time, 
+				  uint32_t error_code, char *error_msg )
 {
 	error("checkpoint/blcr: slurm_ckpt_task_comp not implemented");
 	return SLURM_FAILURE; 
@@ -354,7 +356,7 @@ extern int slurm_ckpt_stepd_prefork(slurmd_job_t *job)
 {
 	char *old_env = NULL, *new_env = NULL, *ptr = NULL, *save_ptr = NULL;
 	
-        /*
+	/*
 	 * I was thinking that a thread can be created here to
 	 * communicate with the tasks via sockets/pipes.
 	 * Maybe this is not needed - we can modify MVAPICH2
@@ -364,8 +366,9 @@ extern int slurm_ckpt_stepd_prefork(slurmd_job_t *job)
 	//if (job->batch) {
 		old_env = getenvp(job->env, "LD_PRELOAD");
 		if (old_env) {
-			/* search and replace all libcr_run and libcr_omit */
-			/* the old env value is messed up -- it will be replaced */
+			/* search and replace all libcr_run and libcr_omit
+			 * the old env value is messed up --
+			 * it will be replaced */
 			while ((ptr = strtok_r(old_env, " :", &save_ptr))) {
 				old_env = NULL;
 				if (!ptr)
@@ -384,131 +387,136 @@ extern int slurm_ckpt_stepd_prefork(slurmd_job_t *job)
 		xfree(new_env);
 		xfree(ptr);
 		//}
-        return SLURM_SUCCESS;
+	return SLURM_SUCCESS;
 }
 
 extern int slurm_ckpt_signal_tasks(slurmd_job_t *job, char *image_dir)
 {
-        char *argv[4];
-        char context_file[MAX_PATH_LEN];
-        char pid[16];
-        int status;
-        pid_t *children = NULL;
-        int *fd = NULL;
-        int rc = SLURM_SUCCESS;
-        int i;
-        char c;
+	char *argv[4];
+	char context_file[MAX_PATH_LEN];
+	char pid[16];
+	int status;
+	pid_t *children = NULL;
+	int *fd = NULL;
+	int rc = SLURM_SUCCESS;
+	int i;
+	char c;
 
-	debug3("checkpoint/blcr: slurm_ckpt_signal_tasks: image_dir=%s", image_dir);
-        /*
-         * the tasks must be checkpointed concurrently.
-         */
-        children = xmalloc(sizeof(pid_t) * job->ntasks);
-        fd = xmalloc(sizeof(int) * 2 * job->ntasks);
-        if (!children || !fd) {
-                error("slurm_ckpt_signal_tasks: memory exhausted");
-                rc = SLURM_FAILURE;
-                goto out;
-        }
-        for (i = 0; i < job->ntasks; i ++) {
-                fd[i*2] = -1;
-                fd[i*2+1] = -1;
-        }
+	debug3("checkpoint/blcr: slurm_ckpt_signal_tasks: image_dir=%s", 
+	       image_dir);
+	/*
+	 * the tasks must be checkpointed concurrently.
+	 */
+	children = xmalloc(sizeof(pid_t) * job->ntasks);
+	fd = xmalloc(sizeof(int) * 2 * job->ntasks);
+	if (!children || !fd) {
+		error("slurm_ckpt_signal_tasks: memory exhausted");
+		rc = SLURM_FAILURE;
+		goto out;
+	}
+	for (i = 0; i < job->ntasks; i ++) {
+		fd[i*2] = -1;
+		fd[i*2+1] = -1;
+	}
 
-        for (i = 0; i < job->ntasks; i ++) {
-                if (job->batch) {
-                        sprintf(context_file, "%s/script.ckpt", image_dir);
-                } else {
-                        sprintf(context_file, "%s/task.%d.ckpt",
-                                image_dir, job->task[i]->gtid);
-                }
-                sprintf(pid, "%u", (unsigned int)job->task[i]->pid);
+	for (i = 0; i < job->ntasks; i ++) {
+		if (job->batch) {
+			sprintf(context_file, "%s/script.ckpt", image_dir);
+		} else {
+			sprintf(context_file, "%s/task.%d.ckpt",
+				image_dir, job->task[i]->gtid);
+		}
+		sprintf(pid, "%u", (unsigned int)job->task[i]->pid);
 
-                if (pipe(&fd[i*2]) < 0) {
-                        error("failed to create pipes: %m");
-                        rc = SLURM_ERROR;
-                        goto out_wait;
-                }
+		if (pipe(&fd[i*2]) < 0) {
+			error("failed to create pipes: %m");
+			rc = SLURM_ERROR;
+			goto out_wait;
+		}
 
-                children[i] = fork();
-                if (children[i] < 0) {
-                        error("error forking cr_checkpoint");
-                        rc = SLURM_ERROR;
-                        goto out_wait;
-                } else if (children[i] == 0) {
-                        close(fd[i*2+1]);
+		children[i] = fork();
+		if (children[i] < 0) {
+			error("error forking cr_checkpoint");
+			rc = SLURM_ERROR;
+			goto out_wait;
+		} else if (children[i] == 0) {
+			close(fd[i*2+1]);
 
-                        while(read(fd[i*2], &c, 1) < 0 && errno == EINTR);
-                        if (c)
-                                exit(-1);
+			while(read(fd[i*2], &c, 1) < 0 && errno == EINTR);
+			if (c)
+				exit(-1);
 
 			/* change cred to job owner */
 			if (setgid(job->gid) < 0) {
-				error ("checkpoint/blcr: slurm_ckpt_signal_tasks: "
+				error ("checkpoint/blcr: "
+				       "slurm_ckpt_signal_tasks: "
 				       "failed to setgid: %m");
 				exit(errno);
 			}
 			if (setuid(job->uid) < 0) {
-				error ("checkpoint/blcr: slurm_ckpt_signal_tasks: "
+				error ("checkpoint/blcr: "
+				       "slurm_ckpt_signal_tasks: "
 				       "failed to setuid: %m");
 				exit(errno);
 			}
 			if (chdir(job->cwd) < 0) {
-				error ("checkpoint/blcr: slurm_ckpt_signal_tasks: "
+				error ("checkpoint/blcr: "
+				       "slurm_ckpt_signal_tasks: "
 				       "failed to chdir: %m");
 				exit(errno);
 			}
 			
-                        argv[0] = cr_checkpoint_path;
-                        argv[1] = pid;
-                        argv[2] = context_file;
-                        argv[3] = NULL;
+			argv[0] = cr_checkpoint_path;
+			argv[1] = pid;
+			argv[2] = context_file;
+			argv[3] = NULL;
 
-                        execv(argv[0], argv);
-                        exit(errno);
-                }
-                close(fd[i*2]);
-        }
+			execv(argv[0], argv);
+			exit(errno);
+		}
+		close(fd[i*2]);
+	}
 
  out_wait:
-        c = (rc == SLURM_SUCCESS) ? 0 : 1;
-        for (i = 0; i < job->ntasks; i ++) {
-                if (fd[i*2+1] >= 0) {
-                        while(write(fd[i*2+1], &c, 1) < 0 && errno == EINTR);
-                }
-        }
-        /* wait children in sequence is OK */
-        for (i = 0; i < job->ntasks; i ++) {
-                if (children[i] == 0)
-                        continue;
-                while(waitpid(children[i], &status, 0) < 0 && errno == EINTR);
-                if (! (WIFEXITED(status) && WEXITSTATUS(status))== 0)
-                        rc = SLURM_ERROR;
-        }
+	c = (rc == SLURM_SUCCESS) ? 0 : 1;
+	for (i = 0; i < job->ntasks; i ++) {
+		if (fd[i*2+1] >= 0) {
+			while(write(fd[i*2+1], &c, 1) < 0 && errno == EINTR);
+		}
+	}
+	/* wait children in sequence is OK */
+	for (i = 0; i < job->ntasks; i ++) {
+		if (children[i] == 0)
+			continue;
+		while(waitpid(children[i], &status, 0) < 0 && errno == EINTR);
+		if (! (WIFEXITED(status) && WEXITSTATUS(status))== 0)
+			rc = SLURM_ERROR;
+	}
  out:
-        xfree(children);
-        xfree(fd);
+	xfree(children);
+	xfree(fd);
 
-        return rc;
+	return rc;
 }
 
 extern int slurm_ckpt_restart_task(slurmd_job_t *job, char *image_dir, int gtid)
 {
-        char *argv[3];
-        char context_file[MAX_PATH_LEN];
+	char *argv[3];
+	char context_file[MAX_PATH_LEN];
 
-        /* jobid and stepid must NOT be spelled here, since it is a new job/step */
-        if (job->batch) {
-                sprintf(context_file, "%s/script.ckpt", image_dir);
-        } else {
-                sprintf(context_file, "%s/task.%d.ckpt", image_dir, gtid);
-        }
+	/* jobid and stepid must NOT be spelled here, 
+	 * since it is a new job/step */
+	if (job->batch) {
+		sprintf(context_file, "%s/script.ckpt", image_dir);
+	} else {
+		sprintf(context_file, "%s/task.%d.ckpt", image_dir, gtid);
+	}
 
-        argv[0] = cr_restart_path;
-        argv[1] = context_file;
-        argv[2] = NULL;
+	argv[0] = cr_restart_path;
+	argv[1] = context_file;
+	argv[2] = NULL;
 
-        execv(argv[0], argv);
+	execv(argv[0], argv);
 
 	error("execv failure: %m");
 	return SLURM_ERROR;
@@ -531,7 +539,7 @@ static void _send_sig(uint32_t job_id, uint32_t step_id, uint16_t signal,
 	agent_args->msg_type		= REQUEST_SIGNAL_TASKS;
 	agent_args->retry		= 1;
 	agent_args->msg_args		= kill_tasks_msg;
-	agent_args->hostlist            = hostlist_create(nodelist);
+	agent_args->hostlist		= hostlist_create(nodelist);
 	agent_args->node_count		= hostlist_count(agent_args->hostlist);
 
 	agent_queue_request(agent_args);
