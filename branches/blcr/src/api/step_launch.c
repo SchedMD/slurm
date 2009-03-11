@@ -606,31 +606,32 @@ void step_launch_state_destroy(struct step_launch_state *sls)
 /* connect to srun_cr */
 static int _connect_srun_cr(char *addr)
 {
-        struct sockaddr_un sa;
-        unsigned int sa_len;
-        int fd, rc;
+	struct sockaddr_un sa;
+	unsigned int sa_len;
+	int fd, rc;
 
-        fd = socket(AF_UNIX, SOCK_STREAM, 0);
-        if (fd < 0) {
-                error("failed creating cr socket: %m");
-                return -1;
-        }
-        bzero(&sa, sizeof(sa));
+	fd = socket(AF_UNIX, SOCK_STREAM, 0);
+	if (fd < 0) {
+		error("failed creating cr socket: %m");
+		return -1;
+	}
+	bzero(&sa, sizeof(sa));
 
-        sa.sun_family = AF_UNIX;
+	sa.sun_family = AF_UNIX;
 	strcpy(sa.sun_path, addr);
-        sa_len = strlen(sa.sun_path) + sizeof(sa.sun_family);
+	sa_len = strlen(sa.sun_path) + sizeof(sa.sun_family);
 
-        while((rc = connect(fd, (struct sockaddr *)&sa, sa_len) < 0) &&
-	      errno == EINTR);
+	while ((rc = connect(fd, (struct sockaddr *)&sa, sa_len) < 0) &&
+	       (errno == EINTR));
 
 	if (rc < 0) {
 		debug2("failed connecting cr socket: %m");
 		close(fd);
 		return -1;
 	}
-        return fd;
+	return fd;
 }
+
 /* send job_id, step_id, node_list to srun_cr */
 static int _cr_notify_step_launch(slurm_step_ctx_t *ctx)
 {
@@ -642,33 +643,36 @@ static int _cr_notify_step_launch(slurm_step_ctx_t *ctx)
 		return 0;
 	}
 
-        if ((fd = _connect_srun_cr(cr_sock_addr)) < 0) {
-                debug2("failed connecting srun_cr. take it not running under srun_cr.");
+	if ((fd = _connect_srun_cr(cr_sock_addr)) < 0) {
+		debug2("failed connecting srun_cr. take it not running under "
+		       "srun_cr.");
 		return 0;
-        }
-        if (write(fd, &ctx->job_id, sizeof(uint32_t)) != sizeof(uint32_t)) {
-                error ("failed writing job_id to srun_cr: %m");
-		rc = -1;
-                goto out;
-        }
-        if (write(fd, &ctx->step_resp->job_step_id, sizeof(uint32_t)) != sizeof(uint32_t)) {
-                error("failed writing job_step_id to srun_cr: %m");
-		rc = -1;
-                goto out;
-        }
-	len = strlen(ctx->step_resp->step_layout->node_list);
-	if (write(fd, &len, sizeof(int)) != sizeof(int)) {
-                error("failed writing nodelist length to srun_cr: %m");
+	}
+	if (write(fd, &ctx->job_id, sizeof(uint32_t)) != sizeof(uint32_t)) {
+		error("failed writing job_id to srun_cr: %m");
 		rc = -1;
 		goto out;
 	}
-	if (write(fd, ctx->step_resp->step_layout->node_list, len + 1) != len + 1) {
+	if (write(fd, &ctx->step_resp->job_step_id, sizeof(uint32_t)) != 
+	    sizeof(uint32_t)) {
+		error("failed writing job_step_id to srun_cr: %m");
+		rc = -1;
+		goto out;
+	}
+	len = strlen(ctx->step_resp->step_layout->node_list);
+	if (write(fd, &len, sizeof(int)) != sizeof(int)) {
+		error("failed writing nodelist length to srun_cr: %m");
+		rc = -1;
+		goto out;
+	}
+	if (write(fd, ctx->step_resp->step_layout->node_list, len + 1) != 
+	    (len + 1)) {
 		error("failed writing nodelist to srun_cr: %m");
 		rc = -1;
 	}
  out:
 	close (fd);
-        return rc;
+	return rc;
 }
 
 /**********************************************************************
