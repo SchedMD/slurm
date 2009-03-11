@@ -1125,9 +1125,16 @@ extern int read_bg_conf(void)
 		bitstr_t *tmp_bitmap = NULL;
 		int small_size = 1;
 
-		bluegene_quarter_ionode_cnt = bluegene_numpsets/4;
-		bluegene_nodecard_ionode_cnt = bluegene_quarter_ionode_cnt/4;
-
+		/* THIS IS A HACK TO MAKE A 1 NODECARD SYSTEM WORK */
+		if(bluegene_bp_node_cnt == bluegene_nodecard_node_cnt) {
+			bluegene_quarter_ionode_cnt = 2;
+			bluegene_nodecard_ionode_cnt = 2;
+		} else {
+			bluegene_quarter_ionode_cnt = bluegene_numpsets/4;
+			bluegene_nodecard_ionode_cnt =
+				bluegene_quarter_ionode_cnt/4;
+		}
+			
 		/* How many nodecards per ionode */
 		bluegene_nc_ratio = 
 			((double)bluegene_bp_node_cnt 
