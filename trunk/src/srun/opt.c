@@ -1489,8 +1489,10 @@ static bool _opt_verify(void)
 	 *   these debug messages cause the generation of more
 	 *   debug messages ad infinitum)
 	 */
-	if (opt.slurmd_debug + LOG_LEVEL_ERROR > LOG_LEVEL_DEBUG2)
+	if (opt.slurmd_debug + LOG_LEVEL_ERROR > LOG_LEVEL_DEBUG2) {
 		opt.slurmd_debug = LOG_LEVEL_DEBUG2 - LOG_LEVEL_ERROR;
+		info("Using srun's max debug increment of %d", opt.slurmd_debug);
+	}
 
 	if (opt.quiet && _verbose) {
 		error ("don't specify both --verbose (-v) and --quiet (-Q)");
