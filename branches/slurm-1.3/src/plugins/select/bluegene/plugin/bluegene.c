@@ -1189,6 +1189,11 @@ extern int read_bg_conf(void)
 				list_append(bg_valid_small32, tmp_bitmap);
 			}
 		}
+		/* If we only have 1 nodecard just jump to the end
+		   since this will never need to happen below.
+		   Pretty much a hack to avoid seg fault;). */
+		if(bluegene_bp_node_cnt == bluegene_nodecard_node_cnt) 
+			goto no_calc;
 
 		bg_valid_small128 = list_create(_destroy_bitmap);
 		if((small_size = bluegene_quarter_ionode_cnt))
@@ -1227,6 +1232,8 @@ extern int read_bg_conf(void)
 	} else {
 		fatal("your numpsets is 0");
 	}
+
+no_calc:
 
 	if (!s_p_get_uint16(&bridge_api_verb, "BridgeAPIVerbose", tbl))
 		info("Warning: BridgeAPIVerbose not configured "

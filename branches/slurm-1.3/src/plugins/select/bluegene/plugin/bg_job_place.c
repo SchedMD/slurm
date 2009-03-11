@@ -1272,7 +1272,9 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 			     SELECT_DATA_CONN_TYPE, &conn_type);
 	if(conn_type == SELECT_NAV) {
 		uint32_t max_procs = (uint32_t)NO_VAL;
-		if(min_nodes > 1) {
+		if(bluegene_bp_node_cnt == bluegene_nodecard_node_cnt)
+			conn_type = SELECT_SMALL;
+		else if(min_nodes > 1) {
 			conn_type = SELECT_TORUS;
 			/* make sure the max procs are set to NO_VAL */
 			select_g_set_jobinfo(job_ptr->select_jobinfo,
