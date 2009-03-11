@@ -201,20 +201,17 @@ static int _reset_block(bg_record_t *bg_record)
 			bg_record->job_running = NO_JOB_RUNNING;
 			bg_record->job_ptr = NULL;
 		}
-		/* remove user from list */
-		
+		/* remove user from list */		
 		
 		if(bg_record->target_name) {
-			if(strcmp(bg_record->target_name, 
-				  bg_slurm_user_name)) {
+			if(strcmp(bg_record->target_name, bg_slurm_user_name)) {
 				xfree(bg_record->target_name);
 				bg_record->target_name = 
 					xstrdup(bg_slurm_user_name);
 			}
 			update_block_user(bg_record, 1);
 		} else {
-			bg_record->target_name = 
-				xstrdup(bg_slurm_user_name);
+			bg_record->target_name = xstrdup(bg_slurm_user_name);
 		}	
 		
 			
@@ -341,6 +338,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 	}
 	slurm_mutex_lock(&block_state_mutex);
 	if(bg_record->job_running <= NO_JOB_RUNNING) {
+		// _reset_block(bg_record); should already happened
 		slurm_mutex_unlock(&block_state_mutex);
 		slurm_mutex_unlock(&job_start_mutex);
 		debug("job %u finished during the queueing job "
@@ -442,6 +440,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 	
 	slurm_mutex_lock(&block_state_mutex);
 	if(bg_record->job_running <= NO_JOB_RUNNING) {
+		// _reset_block(bg_record); should already happened
 		slurm_mutex_unlock(&block_state_mutex);
 		slurm_mutex_unlock(&job_start_mutex);
 		debug("job %u already finished before boot",
@@ -604,10 +603,6 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		if((rc = boot_block(bg_record)) != SLURM_SUCCESS) {
 			slurm_mutex_lock(&block_state_mutex);
 			_reset_block(bg_record);
-			if (remove_from_bg_list(bg_job_block_list, bg_record)
-			    == SLURM_SUCCESS) {
-				num_unused_cpus += bg_record->cpu_cnt;
-			}
 			slurm_mutex_unlock(&block_state_mutex);
 			sleep(2);	
 			/* wait for the slurmd to begin 
@@ -772,8 +767,7 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 #endif
 	
 	/* remove the block's users */
-	bg_record = 
-		find_bg_record_in_list(bg_list, bg_update_ptr->bg_block_id);
+	bg_record = find_bg_record_in_list(bg_list, bg_update_ptr->bg_block_id);
 	if(bg_record) {
 		debug("got the record %s user is %s",
 		      bg_record->bg_block_id,
