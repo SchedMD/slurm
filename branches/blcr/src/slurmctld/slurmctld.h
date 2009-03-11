@@ -453,7 +453,7 @@ struct job_record {
 	uint16_t ckpt_interval;	        /* checkpoint interval in minutes */
 	time_t ckpt_time;	        /* last time job was periodically checkpointed */
 	char *comment;			/* arbitrary comment */
-        uint16_t cr_enabled;            /* specify if if Consumable Resources
+	uint16_t cr_enabled;            /* specify if if Consumable Resources
                                          * is enabled. Needed since CR deals
                                          * with a finer granularity in its
                                          * node/cpu scheduling (available cpus
