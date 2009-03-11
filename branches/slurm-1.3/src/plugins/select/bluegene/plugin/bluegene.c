@@ -1426,24 +1426,24 @@ static int _validate_config_nodes(List *bg_found_block_list, char *dir)
 	while ((bg_record = (bg_record_t*) list_next(itr_conf))) {
 		list_iterator_reset(itr_curr);
 		while ((init_bg_record = list_next(itr_curr))) {
-			if (strcasecmp(bg_record->nodes, 
-				       init_bg_record->nodes))
+			if (strcasecmp(bg_record->nodes, init_bg_record->nodes))
 				continue; /* wrong nodes */
-			if (bg_record->conn_type 
-			    != init_bg_record->conn_type)
-				continue; /* wrong conn_type */
 #ifdef HAVE_BGL
-			if(bg_record->quarter !=
-			   init_bg_record->quarter)
+			if (bg_record->conn_type != init_bg_record->conn_type)
+				continue; /* wrong conn_type */
+			if(bg_record->quarter != init_bg_record->quarter)
 				continue; /* wrong quart */
-			if(bg_record->nodecard !=
-			   init_bg_record->nodecard)
+			if(bg_record->nodecard != init_bg_record->nodecard)
 				continue; /* wrong nodecard */
 			if(bg_record->blrtsimage &&
 			   strcasecmp(bg_record->blrtsimage,
 				      init_bg_record->blrtsimage)) 
 				continue;
 #else
+			if ((bg_record->conn_type != init_bg_record->conn_type)
+			    && ((bg_record->conn_type < SELECT_SMALL)
+				&& (init_bg_record->conn_type < SELECT_SMALL)))
+				continue; /* wrong conn_type */
 			if(!bit_equal(bg_record->ionode_bitmap,
 				     init_bg_record->ionode_bitmap))
 				continue;
