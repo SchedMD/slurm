@@ -130,17 +130,9 @@ extern int slurm_ckpt_op (uint32_t job_id, uint32_t step_id,
 {
 	int rc = SLURM_SUCCESS;
 	struct check_job_info *check_ptr;
-	struct job_record *job_ptr;
 
-	/* job/step checked already */
-	job_ptr = find_job_record(job_id);
-	if (!job_ptr)
-		return ESLURM_INVALID_JOB_ID;
-	if ((step_id == SLURM_BATCH_SCRIPT) || (step_id == NO_VAL))
+	if (!step_ptr)	/* batch job restore */
 		return ESLURM_NOT_SUPPORTED;
-	step_ptr = find_step_record(job_ptr, step_id);
-	if (!step_ptr)
-		return ESLURM_INVALID_JOB_ID;
 	check_ptr = (struct check_job_info *)step_ptr->check_job;
 	xassert(check_ptr);
 

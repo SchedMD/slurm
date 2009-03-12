@@ -146,7 +146,7 @@ static char *scch_path = SLURM_PREFIX "/sbin/scch";
  */
 const char plugin_name[]       	= "XLCH checkpoint plugin";
 const char plugin_type[]       	= "checkpoint/xlch";
-const uint32_t plugin_version	= 10;
+const uint32_t plugin_version	= 100;
 
 /*
  * init() is called when the plugin is loaded, before any other functions
