@@ -68,7 +68,7 @@ exec $strigger --clear --quiet --user=$uid
 #
 # Build input script file and submit a job
 #
-make_bash_script $file_in "sleep 60"
+make_bash_script $file_in "$srun sleep 60"
 
 set job_id 0
 spawn $sbatch --output=/dev/null -t2 $file_in
