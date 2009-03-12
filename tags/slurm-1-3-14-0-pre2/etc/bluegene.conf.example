@@ -1,0 +1,109 @@
+###############################################################################
+# Global specifications for BlueGene system
+#
+# BlrtsImage:           BlrtsImage used for creation of all bgblocks.
+# LinuxImage:           LinuxImage used for creation of all bgblocks.
+# MloaderImage:         MloaderImage used for creation of all bgblocks.
+# RamDiskImage:         RamDiskImage used for creation of all bgblocks.
+#
+# You may add extra images which a user can specify from the srun 
+# command line (see man srun).  When adding these images you may also add 
+# a Groups= at the end of the image path to specify which groups can 
+# use the image.
+#
+# AltBlrtsImage:           Alternative BlrtsImage(s).
+# AltLinuxImage:           Alternative LinuxImage(s).
+# AltMloaderImage:         Alternative MloaderImage(s).
+# AltRamDiskImage:         Alternative RamDiskImage(s).
+#
+# LayoutMode:           Mode in which slurm will create blocks:
+#                       STATIC:  Use defined non-overlapping bgblocks
+#                       OVERLAP: Use defined bgblocks, which may overlap
+#                       DYNAMIC: Create bgblocks as needed for each job
+# BasePartitionNodeCnt: Number of c-nodes per base partition.  
+# NodeCardNodeCnt:      Number of c-nodes per node card.
+# NumPsets:             The Numpsets used for creation of all bgblocks 
+#                       equals this value multiplied by the number of 
+#                       base partitions in the bgblock.
+#
+# BridgeAPILogFile : Pathname of file in which to write the Bridge
+#                    API logs.
+# BridgeAPIVerbose:  How verbose the Bridge API logs should be
+#                    0: Log only error and warning messages
+#                    1: Log level 0 and information messasges
+#                    2: Log level 1 and basic debug messages
+#                    3: Log level 2 and more debug message
+#                    4: Log all messages
+# 
+# NOTE: The bgl_serial value is set at configuration time using the 
+#       "--with-bgl-serial=" option. Its default value is "BGL".
+###############################################################################
+# These are the default images with are used if the user doesn't specify 
+# which image they want
+BlrtsImage=/bgl/BlueLight/ppcfloor/bglsys/bin/rts_hw.rts
+LinuxImage=/bgl/BlueLight/ppcfloor/bglsys/bin/zImage.elf
+MloaderImage=/bgl/BlueLight/ppcfloor/bglsys/bin/mmcs-mloader.rts
+RamDiskImage=/bgl/BlueLight/ppcfloor/bglsys/bin/ramdisk.elf
+
+#Only group jette can use these images
+AltBlrtsImage=/bgl/BlueLight/ppcfloor/bglsys/bin/rts_hw2.rts Groups=jette
+AltLinuxImage=/bgl/BlueLight/ppcfloor/bglsys/bin/zImage2.elf Groups=jette
+AltMloaderImage=/bgl/BlueLight/ppcfloor/bglsys/bin/mmcs-mloader2.rts Groups=jette
+AltRamDiskImage=/bgl/BlueLight/ppcfloor/bglsys/bin/ramdisk2.elf Groups=jette
+
+# Since no groups are specified here any user can use them
+AltBlrtsImage=/bgl/BlueLight/ppcfloor/bglsys/bin/rts_hw3.rts
+AltLinuxImage=/bgl/BlueLight/ppcfloor/bglsys/bin/zImage3.elf
+AltMloaderImage=/bgl/BlueLight/ppcfloor/bglsys/bin/mmcs-mloader3.rts
+AltRamDiskImage=/bgl/BlueLight/ppcfloor/bglsys/bin/ramdisk3.elf
+
+# Another option for images would be a "You can use anything you like image" *
+# This allows the user to use any image entered with no security checking
+AltBlrtsImage=* Groups=da,adamb
+AltLinuxImage=* Groups=da,adamb
+AltMloaderImage=* Groups=da,adamb
+AltRamDiskImage=*  Groups=da,adamb
+
+LayoutMode=STATIC
+BasePartitionNodeCnt=512
+NodeCardNodeCnt=32
+#Numpsets=8 #used for IO poor systems (Can't create 32 cnode blocks)
+Numpsets=64 #used for IO rich systems
+
+BridgeAPILogFile=/var/log/slurm/bridgeapi.log
+BridgeAPIVerbose=0
+
+#DenyPassthrough=X,Y,Z
+
+###############################################################################
+# Define the static/overlap partitions (bgblocks)
+#
+# Nodes: The base partitions (midplanes) in the bgblock using XYZ coordinates
+# Type:  Connection type "MESH" or "TORUS" or "SMALL", default is "TORUS" 
+#        Type SMALL will divide a midplane into multiple bgblock
+#        based on options NodeCards (count of single node card bglblocks)
+#        and Quarters (count of quarter midplane bglblocks) to determine 
+#        type of small blocks.
+# 
+# IMPORTANT NOTES: 
+# * Ordering is very important for laying out switch wires.  Please create
+#   blocks with smap, and once done don't change the order of blocks created.
+# * A bgblock is implicitly created containing all resources on the system
+# * Bgblocks must not overlap in static mode (except for implicitly 
+#   created bgblock). This will be the case when smap is used to create 
+#   a configuration file.
+# * All Nodes defined here must also be defined in the slurm.conf file
+# * Define only the numeric coordinates of the bgblocks here. The prefix
+#   will be based upon the NodeName defined in slurm.conf.
+###############################################################################
+# LEAVE NEXT LINE AS A COMMENT, Full-system bgblock, implicitly created
+# BP=[000x333] Type=TORUS         # 4x4x4 = 64 midplanes
+###############################################################################
+# smap bgblock layout here:
+BPs=[000x133] Type=TORUS          # 2x4x4 = 32
+BPs=[200x233] Type=TORUS          # 1x4x4 = 16
+BPs=[300x313] Type=TORUS          # 1x2x4 =  8
+BPs=[320x323] Type=TORUS          # 1x1x4 =  4
+BPs=[330x331] Type=TORUS          # 1x1x2 =  2
+BPs=[332x332] Type=TORUS          # 1x1x1 =  1
+BPs=[333x333] Type=SMALL NodeCards=4 Quarters=3 # 1x1x1 = 4-32 c-node blocks 3-128 c-node blocks
