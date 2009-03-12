@@ -8918,11 +8918,7 @@ extern int acct_storage_p_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 	List *my_list;
 	uint32_t id = NO_VAL;
 
-	char *usage_req_inx[] = {
-		"t1.id",
-		"t1.period_start",
-		"t1.alloc_cpu_secs"
-	};
+	char **usage_req_inx = NULL;
 	
 	enum {
 		USAGE_ID,
@@ -8933,17 +8929,35 @@ extern int acct_storage_p_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 
 	switch (type) {
 	case DBD_GET_ASSOC_USAGE:
+	{
+		char *temp_usage[] = {
+			"t3.id",
+			"t1.period_start",
+			"t1.alloc_cpu_secs"
+		};
+		usage_req_inx = temp_usage;
+
 		id = acct_assoc->id;
 		username = acct_assoc->user;
 		my_list = &acct_assoc->accounting_list;
 		my_usage_table = assoc_day_table;
 		break;
+	}
 	case DBD_GET_WCKEY_USAGE:
+	{
+		char *temp_usage[] = {
+			"id",
+			"period_start",
+			"alloc_cpu_secs"
+		};
+		usage_req_inx = temp_usage;
+
 		id = acct_wckey->id;
 		username = acct_wckey->user;
 		my_list = &acct_wckey->accounting_list;
 		my_usage_table = wckey_day_table;
 		break;
+	}
 	default:
 		error("Unknown usage type %d", type);
 		return SLURM_ERROR;
@@ -9042,13 +9056,13 @@ is_user:
 			"where (t1.period_start < %d && t1.period_start >= %d) "
 			"&& t1.id=t2.id && t3.id=%d && "
 			"t2.lft between t3.lft and t3.rgt "
-			"order by t1.id, period_start;",
+			"order by t3.id, period_start;",
 			tmp, my_usage_table, assoc_table, assoc_table,
 			end, start, id);
 		break;
 	case DBD_GET_WCKEY_USAGE:
 		query = xstrdup_printf(
-			"select %s from %s as t1 "
+			"select %s from %s "
 			"where (period_start < %d && period_start >= %d) "
 			"&& id=%d order by id, period_start;",
 			tmp, my_usage_table, end, start, id);
