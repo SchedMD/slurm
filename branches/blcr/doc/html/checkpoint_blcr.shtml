@@ -24,6 +24,7 @@ Baic familiarity with SLURM commands is assumed.</p>
 <h3>srun</h3>
 
 <p>Several options have been added to support checkpoint restart:</p>
+<ul>
 <li><b>--checkpoint</b>: Specify the interval between periodic checkpoint
 of a job step, in seconds</li>
 <li><b>--checkpoint-dir</b>:Specify the directory when the checkpoint image
@@ -34,12 +35,15 @@ and <i>"&lt;job_id&gt;.&lt;step_id&gt;.ckpt"</i> for job steps.</li>
 <li><b>--restart-dir</b>: Specify the directory when the checkpoint image
 files of a job step will be read from</li>
 </li>
+</ul>
 
 <p>Environment variables are available for all of these options:</p>
+<ul>
 <li<b>SLURM_CHECKPOINT</b> is equivalent to <b>--checkpoint</b>:</li>
 <li><b>SLURM_CHECKPOINT_DIR</b> is equivalent to <b>--checkpoint-dir</b></li>
 <li><b>SLURM_RESTART_DIR</b> is equivalent to <b>--restart-dir</b></li>
 </li>
+</ul>
 <p>The environment variable <b>SLURM_SRUN_CR_SOCKET</b> is used for job step 
 logic to interact with the <b>srun_cr</b> command.</p>
 
@@ -91,6 +95,7 @@ execution of the tasks from the previous checkpoint.</p>
 <h3>sbatch</h3>
 
 <p>Several options have been added to support checkpoint restart:</p>
+<ul>
 <li><b>--checkpoint</b>: Specify the interval between periodic checkpoint
 of a batch job, in seconds</li>
 <li><b>--checkpoint-dir</b>:Specify the directory when the checkpoint image
@@ -99,11 +104,14 @@ The default value is the current working directory.
 Checkpoint files will be of the form <i>"&lt;job_id&gt;.ckpt"</i> for jobs
 and <i>"&lt;job_id&gt;.&lt;step_id&gt;.ckpt"</i> for job steps.</li>
 </li>
+</ul>
 
 <p>Environment variables are available for all of these options:</p>
+<ul>
 <li<b>SLURM_CHECKPOINT</b> is equivalent to <b>--checkpoint</b>:</li>
 <li><b>SLURM_CHECKPOINT_DIR</b> is equivalent to <b>--checkpoint-dir</b></li>
 </li>
+</ul>
 
 <h3>scontrol</h3>
 
@@ -125,7 +133,8 @@ option specified when the job or job step were submitted.</li>
 <li><b>MaxWait</b> specifies the maximum time permitted for a checkpoint 
 request to complete. The request will be considered failed if not 
 completed in this time period.</li>
-</ul></li>
+</li>
+</ul>
 
 <li><b>scontrol checkpoint create <i>jobid.stepid</i> [ImageDir=<i>dir</i>] 
 [MaxWait=<i>seconds</i>]</b><br>
