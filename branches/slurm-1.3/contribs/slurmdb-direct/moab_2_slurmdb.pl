@@ -62,7 +62,7 @@ my $sql = "INSERT INTO $db_job_table " .
 	"cluster, account, partition, wckey, eligible, " .
 	"submit, start, name, track_steps, state, priority, " .
 	"req_cpus, alloc_cpus) VALUES ";
-	
+
 foreach my $line (<STDIN>) {
 	chomp $line;
 	# the below list is based off the index in
@@ -123,19 +123,31 @@ foreach my $line (<STDIN>) {
 	    $ext_mem,
 	    $ext_cpu,
 	    @extra) = split /\s+/, $line;
+	next if !$type;
 	next if $type ne "job";
 	next if $event eq "JOBMIGRATE";
 
 	my $uid = getpwnam($user);
 	my $gid = getgrnam($group);
+	$uid = -2 if !$uid;
+	$gid = -2 if !$gid;
+
+	my $alloc_hl = Slurm::Hostlist::create($alloc_hostlist);
+	if($alloc_hl) {
+		Slurm::Hostlist::uniq($alloc_hl);
+		$alloc_hl = Slurm::Hostlist::ranged_string($alloc_hl);
+	}
+
 	$sql .= ", " if $set;
-	#$sql .= "($parts[4], 0, 0, $uid, $gid, '$parts[42]')";
+	$sql .= "($id, 0, 0, $uid, $gid, '$alloc_hl', )";
 	$set = 1;
 }
 
 exit 0 if !$set;
-#$sql .= "($parts[4], 0, 0, $uid, $gid, '$parts[42]')";
+$sql .= " on duplicate key update nodelist=VALUES(nodelist), account=VALUES(account), partition=VALUES(partition), wckey=VALUES(wckey), start=VALUES(start), alloc_cpus=VALUES(alloc_cpus)";
+print "$sql\n";
 
+exit 0;
 $db_user = (getpwuid($<))[0] if !$db_user;
 my $dbhandle = DBI->connect($db_conn_line, $db_user, $db_passwd,
 			    {AutoCommit => 1, RaiseError => 1});
