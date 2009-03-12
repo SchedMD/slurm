@@ -2510,11 +2510,9 @@ static int _get_usage_for_list(mysql_conn_t *mysql_conn,
 	acct_wckey_rec_t *wckey = NULL;
 	acct_accounting_rec_t *accounting_rec = NULL;
 
-	char *usage_req_inx[] = {
-		"t1.id",
-		"t1.period_start",
-		"t1.alloc_cpu_secs"
-	};
+	/* Since for id in association table we
+	   use t3 and in wckey table we use t1 we can't define it here */
+	char **usage_req_inx = NULL;
 	
 	enum {
 		USAGE_ID,
@@ -2534,6 +2532,14 @@ static int _get_usage_for_list(mysql_conn_t *mysql_conn,
 
 	switch (type) {
 	case DBD_GET_ASSOC_USAGE:
+	{
+		char *temp_usage[] = {
+			"t3.id",
+			"t1.period_start",
+			"t1.alloc_cpu_secs"
+		};
+		usage_req_inx = temp_usage;
+
 		itr = list_iterator_create(object_list);
 		while((assoc = list_next(itr))) {
 			if(id_str)
@@ -2545,7 +2551,16 @@ static int _get_usage_for_list(mysql_conn_t *mysql_conn,
 
 		my_usage_table = assoc_day_table;
 		break;
+	}
 	case DBD_GET_WCKEY_USAGE:
+	{
+		char *temp_usage[] = {
+			"id",
+			"period_start",
+			"alloc_cpu_secs"
+		};
+		usage_req_inx = temp_usage;
+
 		itr = list_iterator_create(object_list);
 		while((wckey = list_next(itr))) {
 			if(id_str)
@@ -2557,6 +2572,7 @@ static int _get_usage_for_list(mysql_conn_t *mysql_conn,
 
 		my_usage_table = wckey_day_table;
 		break;
+	}
 	default:
 		error("Unknown usage type %d", type);
 		return SLURM_ERROR;
@@ -2582,13 +2598,13 @@ static int _get_usage_for_list(mysql_conn_t *mysql_conn,
 			"where (t1.period_start < %d && t1.period_start >= %d) "
 			"&& t1.id=t2.id && (%s) && "
 			"t2.lft between t3.lft and t3.rgt "
-			"order by t1.id, period_start;",
+			"order by t3.id, period_start;",
 			tmp, my_usage_table, assoc_table, assoc_table,
 			end, start, id_str);
 		break;
 	case DBD_GET_WCKEY_USAGE:
 		query = xstrdup_printf(
-			"select %s from %s as t1 "
+			"select %s from %s "
 			"where (period_start < %d && period_start >= %d) "
 			"&& %s order by id, period_start;",
 			tmp, my_usage_table, end, start, id_str);

@@ -1126,9 +1126,16 @@ extern int read_bg_conf(void)
 		bitstr_t *tmp_bitmap = NULL;
 		int small_size = 1;
 
-		bluegene_quarter_ionode_cnt = bluegene_numpsets/4;
-		bluegene_nodecard_ionode_cnt = bluegene_quarter_ionode_cnt/4;
-
+		/* THIS IS A HACK TO MAKE A 1 NODECARD SYSTEM WORK */
+		if(bluegene_bp_node_cnt == bluegene_nodecard_node_cnt) {
+			bluegene_quarter_ionode_cnt = 2;
+			bluegene_nodecard_ionode_cnt = 2;
+		} else {
+			bluegene_quarter_ionode_cnt = bluegene_numpsets/4;
+			bluegene_nodecard_ionode_cnt =
+				bluegene_quarter_ionode_cnt/4;
+		}
+			
 		/* How many nodecards per ionode */
 		bluegene_nc_ratio = 
 			((double)bluegene_bp_node_cnt 
@@ -1183,6 +1190,11 @@ extern int read_bg_conf(void)
 				list_append(bg_valid_small32, tmp_bitmap);
 			}
 		}
+		/* If we only have 1 nodecard just jump to the end
+		   since this will never need to happen below.
+		   Pretty much a hack to avoid seg fault;). */
+		if(bluegene_bp_node_cnt == bluegene_nodecard_node_cnt) 
+			goto no_calc;
 
 		bg_valid_small128 = list_create(_destroy_bitmap);
 		if((small_size = bluegene_quarter_ionode_cnt))
@@ -1221,6 +1233,8 @@ extern int read_bg_conf(void)
 	} else {
 		fatal("your numpsets is 0");
 	}
+
+no_calc:
 
 	if (!s_p_get_uint16(&bridge_api_verb, "BridgeAPIVerbose", tbl))
 		info("Warning: BridgeAPIVerbose not configured "
@@ -1413,24 +1427,24 @@ static int _validate_config_nodes(List *bg_found_block_list, char *dir)
 	while ((bg_record = (bg_record_t*) list_next(itr_conf))) {
 		list_iterator_reset(itr_curr);
 		while ((init_bg_record = list_next(itr_curr))) {
-			if (strcasecmp(bg_record->nodes, 
-				       init_bg_record->nodes))
+			if (strcasecmp(bg_record->nodes, init_bg_record->nodes))
 				continue; /* wrong nodes */
-			if (bg_record->conn_type 
-			    != init_bg_record->conn_type)
-				continue; /* wrong conn_type */
 #ifdef HAVE_BGL
-			if(bg_record->quarter !=
-			   init_bg_record->quarter)
+			if (bg_record->conn_type != init_bg_record->conn_type)
+				continue; /* wrong conn_type */
+			if(bg_record->quarter != init_bg_record->quarter)
 				continue; /* wrong quart */
-			if(bg_record->nodecard !=
-			   init_bg_record->nodecard)
+			if(bg_record->nodecard != init_bg_record->nodecard)
 				continue; /* wrong nodecard */
 			if(bg_record->blrtsimage &&
 			   strcasecmp(bg_record->blrtsimage,
 				      init_bg_record->blrtsimage)) 
 				continue;
 #else
+			if ((bg_record->conn_type != init_bg_record->conn_type)
+			    && ((bg_record->conn_type < SELECT_SMALL)
+				&& (init_bg_record->conn_type < SELECT_SMALL)))
+				continue; /* wrong conn_type */
 			if(!bit_equal(bg_record->ionode_bitmap,
 				     init_bg_record->ionode_bitmap))
 				continue;
