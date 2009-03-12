@@ -268,6 +268,12 @@ dnl Add LSD-Tools defines:
 AC_DEFINE(WITH_LSD_FATAL_ERROR_FUNC, 1, [Have definition of lsd_fatal_error()])
 AC_DEFINE(WITH_LSD_NOMEM_ERROR_FUNC, 1, [Have definition of lsd_nomem_error()])
 
+dnl
+dnl Check for compilation of SLURM with BLCR support:
+dnl
+X_AC_BLCR
+
+
 dnl All slurm Makefiles:
 
 AC_CONFIG_FILES([Makefile
@@ -295,6 +301,7 @@ AC_CONFIG_FILES([Makefile
 		 src/sbatch/Makefile 
 		 src/sattach/Makefile
 		 src/srun/Makefile 
+		 src/srun_cr/Makefile 
 		 src/slurmd/Makefile 
 		 src/slurmd/slurmd/Makefile 
 		 src/slurmd/slurmstepd/Makefile 
@@ -324,6 +331,9 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/checkpoint/none/Makefile
 		 src/plugins/checkpoint/ompi/Makefile
 		 src/plugins/checkpoint/xlch/Makefile
+		 src/plugins/checkpoint/blcr/Makefile
+		 src/plugins/checkpoint/blcr/cr_checkpoint.sh
+		 src/plugins/checkpoint/blcr/cr_restart.sh
 		 src/plugins/crypto/Makefile
 		 src/plugins/crypto/munge/Makefile
 		 src/plugins/crypto/openssl/Makefile

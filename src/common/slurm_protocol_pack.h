@@ -1,7 +1,8 @@
 /****************************************************************************\
  *  slurm_protocol_pack.h - definitions for all pack and unpack functions
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -134,7 +135,7 @@ extern int unpack_msg ( slurm_msg_t * msgi , Buf buffer );
  * IN/OUT buffer - destination of the pack, contains pointers that are 
  *			automatically updated
  */ 
-/* void pack_job_step_info_members( uint32_t job_id, uint16_t step_id,  */
+/* void pack_job_step_info_members( uint32_t job_id, uint32_t step_id,  */
 /* 		uint32_t user_id, uint32_t num_tasks, time_t start_time,  */
 /* 		char *partition, char *nodes, char *name, char *network, */
 /* 		Buf buffer ); */

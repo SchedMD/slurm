@@ -197,6 +197,8 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->job_acct_gather_freq);
 	fprintf(out, "JobAcctGatherType       = %s\n",
 		slurm_ctl_conf_ptr->job_acct_gather_type);
+	fprintf(out, "JobCheckpointDir        = %s\n",
+		slurm_ctl_conf_ptr->job_ckpt_dir);
 	fprintf(out, "JobCompHost             = %s\n",
 		slurm_ctl_conf_ptr->job_comp_host);
 	fprintf(out, "JobCompLoc              = %s\n",

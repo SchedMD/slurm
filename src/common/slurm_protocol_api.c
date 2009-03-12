@@ -92,6 +92,10 @@ static char *_global_auth_key(void);
 static void  _remap_slurmctld_errno(void);
 static int   _unpack_msg_uid(Buf buffer);
 
+#if _DEBUG
+static void _print_data(char *data, int len);
+#endif
+
 /* define the slurmdbd_options flag */
 slurm_dbd_conf_t *slurmdbd_conf = NULL;
 
@@ -1760,7 +1764,7 @@ int slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 	}
 	
 #if	_DEBUG
-	_print_data (buftemp, rc);
+	_print_data (buf, buflen);
 #endif
 	buffer = create_buf(buf, buflen);
 
@@ -1922,7 +1926,7 @@ List slurm_receive_msgs(slurm_fd fd, int steps, int timeout)
 	}
 	
 #if	_DEBUG
-	_print_data (buftemp, rc);
+	_print_data (buf, buflen);
 #endif
 	buffer = create_buf(buf, buflen);
 
@@ -2105,7 +2109,7 @@ int slurm_receive_msg_and_forward(slurm_fd fd, slurm_addr *orig_addr,
 	}
 	
 #if	_DEBUG
-	_print_data (buftemp, rc);
+	_print_data (buf, buflen);
 #endif
 	buffer = create_buf(buf, buflen);
 

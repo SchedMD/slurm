@@ -99,7 +99,9 @@ static struct step_record * _create_step_record(struct job_record *job_ptr)
 	struct step_record *step_ptr;
 
 	xassert(job_ptr);
-	if (job_ptr->next_step_id >= 0xffff) {
+	/* NOTE: Reserve highest step ID values for NO_VAL and
+	 * SLURM_BATCH_SCRIPT */
+	if (job_ptr->next_step_id >= 0xfffffff0) {
 		/* avoid step records in the accounting database */
 		info("job %u has reached step id limit", job_ptr->job_id);
 		return NULL;
@@ -111,7 +113,7 @@ static struct step_record * _create_step_record(struct job_record *job_ptr)
 	step_ptr->job_ptr = job_ptr;
 	step_ptr->start_time = time(NULL) ;
 	step_ptr->jobacct = jobacct_gather_g_create(NULL);
-	step_ptr->ckpt_path = NULL;
+	step_ptr->ckpt_dir = NULL;
 	if (list_append (job_ptr->step_list, step_ptr) == NULL)
 		fatal ("_create_step_record: unable to allocate memory");
 
@@ -167,7 +169,7 @@ static void _free_step_rec(struct step_record *step_ptr)
 	xfree(step_ptr->resv_port_array);
 	xfree(step_ptr->resv_ports);
 	xfree(step_ptr->network);
-	xfree(step_ptr->ckpt_path);
+	xfree(step_ptr->ckpt_dir);
 	xfree(step_ptr);
 }
 
@@ -231,8 +233,8 @@ dump_step_desc(job_step_create_request_msg_t *step_spec)
 	debug3("   host=%s port=%u name=%s network=%s exclusive=%u", 
 	       step_spec->host, step_spec->port, step_spec->name,
 	       step_spec->network, step_spec->exclusive);
-	debug3("   checkpoint-path=%s checkpoint_int=%u",
-	       step_spec->ckpt_path, step_spec->ckpt_interval);
+	debug3("   checkpoint-dir=%s checkpoint_int=%u",
+	       step_spec->ckpt_dir, step_spec->ckpt_interval);
 	debug3("   mem_per_task=%u resv_port_cnt=%u immediate=%u no_kill=%u",
 	       step_spec->mem_per_task, step_spec->resv_port_cnt,
 	       step_spec->immediate, step_spec->no_kill);
@@ -247,7 +249,7 @@ dump_step_desc(job_step_create_request_msg_t *step_spec)
  * RET pointer to the job step's record, NULL on error
  */
 struct step_record *
-find_step_record(struct job_record *job_ptr, uint16_t step_id) 
+find_step_record(struct job_record *job_ptr, uint32_t step_id) 
 {
 	ListIterator step_iterator;
 	struct step_record *step_ptr;
@@ -257,10 +259,8 @@ find_step_record(struct job_record *job_ptr, uint16_t step_id)
 
 	step_iterator = list_iterator_create (job_ptr->step_list);
 	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
-		if ((step_ptr->step_id == step_id)
-		||  ((uint16_t) step_id == (uint16_t) NO_VAL)) {
+		if ((step_ptr->step_id == step_id) || (step_id == NO_VAL))
 			break;
-		}
 	}		
 	list_iterator_destroy (step_iterator);
 
@@ -1212,8 +1212,8 @@ step_create(job_step_create_request_msg_t *step_specs,
 	     (strlen(step_specs->network)   > MAX_STR_LEN)) ||
 	    (step_specs->name      && 
 	     (strlen(step_specs->name)      > MAX_STR_LEN)) ||
-	    (step_specs->ckpt_path && 
-	     (strlen(step_specs->ckpt_path) > MAX_STR_LEN)))
+	    (step_specs->ckpt_dir && 
+	     (strlen(step_specs->ckpt_dir) > MAX_STR_LEN)))
 		return ESLURM_PATHNAME_TOO_LONG;
 
 	/* determine cpus_per_task value by reversing what srun does */
@@ -1309,7 +1309,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	step_ptr->cpu_count = orig_cpu_count;
 	step_ptr->exit_code = NO_VAL;
 	step_ptr->exclusive = step_specs->exclusive;
-	step_ptr->ckpt_path = xstrdup(step_specs->ckpt_path);
+	step_ptr->ckpt_dir  = xstrdup(step_specs->ckpt_dir);
 	step_ptr->no_kill   = step_specs->no_kill;
 
 	/* step's name and network default to job's values if not 
@@ -1487,7 +1487,7 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer)
 		node_list = step_ptr->job_ptr->nodes;	
 	}
 	pack32(step_ptr->job_ptr->job_id, buffer);
-	pack16(step_ptr->step_id, buffer);
+	pack32(step_ptr->step_id, buffer);
 	pack16(step_ptr->ckpt_interval, buffer);
 	pack32(step_ptr->job_ptr->user_id, buffer);
 	pack32(task_cnt, buffer);
@@ -1508,7 +1508,7 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer)
 	packstr(step_ptr->name, buffer);
 	packstr(step_ptr->network, buffer);
 	pack_bit_fmt(step_ptr->step_node_bitmap, buffer);
-	packstr(step_ptr->ckpt_path, buffer);
+	packstr(step_ptr->ckpt_dir, buffer);
 	
 }
 
@@ -1699,39 +1699,22 @@ extern int job_step_checkpoint(checkpoint_msg_t *ckpt_ptr,
 	}
 
 	bzero((void *)&resp_data, sizeof(checkpoint_resp_msg_t));
-	/* find the individual job step */
-	if (ckpt_ptr->step_id != NO_VAL) {
-		step_ptr = find_step_record(job_ptr, ckpt_ptr->step_id);
-		if (step_ptr == NULL) {
-			rc = ESLURM_INVALID_JOB_ID;
-			goto reply;
-		} else {
-			rc = checkpoint_op(ckpt_ptr->op, ckpt_ptr->data, 
-				(void *)step_ptr, &resp_data.event_time, 
-				&resp_data.error_code, &resp_data.error_msg);
-			last_job_update = time(NULL);
+	step_ptr = find_step_record(job_ptr, ckpt_ptr->step_id);
+	if (step_ptr == NULL) {
+		rc = ESLURM_INVALID_JOB_ID;
+	} else {
+		if (ckpt_ptr->image_dir == NULL) {
+			ckpt_ptr->image_dir = xstrdup(step_ptr->ckpt_dir);
 		}
-	}
+		xstrfmtcat(ckpt_ptr->image_dir, "/%u.%u", job_ptr->job_id, 
+			   step_ptr->step_id);
 
-	/* operate on all of a job's steps */
-	else {
-		int update_rc = -2;
-		ListIterator step_iterator;
-
-		step_iterator = list_iterator_create (job_ptr->step_list);
-		while ((step_ptr = (struct step_record *) 
-					list_next (step_iterator))) {
-			update_rc = checkpoint_op(ckpt_ptr->op, 
-						  ckpt_ptr->data,
-						  (void *)step_ptr,
-						  &resp_data.event_time,
-						  &resp_data.error_code,
-						  &resp_data.error_msg);
-			rc = MAX(rc, update_rc);
-		}
-		if (update_rc != -2)	/* some work done */
-			last_job_update = time(NULL);
-		list_iterator_destroy (step_iterator);
+		rc = checkpoint_op(ckpt_ptr->job_id, ckpt_ptr->step_id, 
+				   step_ptr, ckpt_ptr->op, ckpt_ptr->data,
+				   ckpt_ptr->image_dir, &resp_data.event_time, 
+				   &resp_data.error_code, 
+				   &resp_data.error_msg);
+		last_job_update = time(NULL);
 	}
 
     reply:
@@ -2136,7 +2119,7 @@ resume_job_step(struct job_record *job_ptr)
  */
 extern void dump_job_step_state(struct step_record *step_ptr, Buf buffer)
 {
-	pack16(step_ptr->step_id, buffer);
+	pack32(step_ptr->step_id, buffer);
 	pack16(step_ptr->cyclic_alloc, buffer);
 	pack16(step_ptr->port, buffer);
 	pack16(step_ptr->ckpt_interval, buffer);
@@ -2169,7 +2152,7 @@ extern void dump_job_step_state(struct step_record *step_ptr, Buf buffer)
 	packstr(step_ptr->resv_ports, buffer);
 	packstr(step_ptr->name, buffer);
 	packstr(step_ptr->network, buffer);
-	packstr(step_ptr->ckpt_path, buffer);
+	packstr(step_ptr->ckpt_dir, buffer);
 	pack16(step_ptr->batch_step, buffer);
 	if (!step_ptr->batch_step) {
 		pack_slurm_step_layout(step_ptr->step_layout, buffer);
@@ -2188,17 +2171,18 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 {
 	struct step_record *step_ptr = NULL;
 	uint8_t no_kill;
-	uint16_t step_id, cyclic_alloc, port, batch_step, bit_cnt;
+	uint16_t cyclic_alloc, port, batch_step, bit_cnt;
 	uint16_t ckpt_interval, cpus_per_task, resv_port_cnt;
 	uint32_t core_size, cpu_count, exit_code, mem_per_task, name_len;
+	uint32_t step_id;
 	time_t start_time, pre_sus_time, tot_sus_time, ckpt_time;
-	char *host = NULL, *ckpt_path = NULL, *core_job = NULL;
+	char *host = NULL, *ckpt_dir = NULL, *core_job = NULL;
 	char *resv_ports = NULL, *name = NULL, *network = NULL, *bit_fmt = NULL;
 	switch_jobinfo_t switch_tmp = NULL;
 	check_jobinfo_t check_tmp = NULL;
 	slurm_step_layout_t *step_layout = NULL;
 	
-	safe_unpack16(&step_id, buffer);
+	safe_unpack32(&step_id, buffer);
 	safe_unpack16(&cyclic_alloc, buffer);
 	safe_unpack16(&port, buffer);
 	safe_unpack16(&ckpt_interval, buffer);
@@ -2227,7 +2211,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 	safe_unpackstr_xmalloc(&resv_ports, &name_len, buffer);
 	safe_unpackstr_xmalloc(&name, &name_len, buffer);
 	safe_unpackstr_xmalloc(&network, &name_len, buffer);
-	safe_unpackstr_xmalloc(&ckpt_path, &name_len, buffer);
+	safe_unpackstr_xmalloc(&ckpt_dir, &name_len, buffer);
 	safe_unpack16(&batch_step, buffer);
 	if (!batch_step) {
 		if (unpack_slurm_step_layout(&step_layout, buffer))
@@ -2268,7 +2252,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 	step_ptr->name         = name;
 	step_ptr->network      = network;
 	step_ptr->no_kill      = no_kill;
-	step_ptr->ckpt_path    = ckpt_path;
+	step_ptr->ckpt_dir     = ckpt_dir;
 	step_ptr->port         = port;
 	step_ptr->ckpt_interval= ckpt_interval;
 	step_ptr->mem_per_task = mem_per_task;
@@ -2323,7 +2307,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 	xfree(resv_ports);
 	xfree(name);
 	xfree(network);
-	xfree(ckpt_path);
+	xfree(ckpt_dir);
 	xfree(bit_fmt);
 	xfree(core_job);
 	if (switch_tmp)
@@ -2344,6 +2328,7 @@ extern void step_checkpoint(void)
 	time_t event_time;
 	uint32_t error_code;
 	char *error_msg;
+	checkpoint_msg_t ckpt_req;
 
 	/* Exit if "checkpoint/none" is configured */
 	if (ckpt_run == -1) {
@@ -2361,20 +2346,62 @@ extern void step_checkpoint(void)
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (job_ptr->job_state != JOB_RUNNING)
 			continue;
+		if (job_ptr->batch_flag &&
+		    (job_ptr->ckpt_interval != 0)) { /* periodic job ckpt */
+			ckpt_due = job_ptr->ckpt_time +
+				   (job_ptr->ckpt_interval * 60);
+			if (ckpt_due > now)
+				continue;
+			/* 
+			 * DO NOT initiate a checkpoint request if the job is
+			 * started just now, in case it is restarting from checkpoint.
+			 */
+			ckpt_due = job_ptr->start_time +
+				   (job_ptr->ckpt_interval * 60);
+			if (ckpt_due > now)
+				continue;
+
+			ckpt_req.op = CHECK_CREATE;
+			ckpt_req.data = 0;
+			ckpt_req.job_id = job_ptr->job_id;
+			ckpt_req.step_id = SLURM_BATCH_SCRIPT;
+			ckpt_req.image_dir = NULL;
+			job_checkpoint(&ckpt_req, getuid(), -1);
+			job_ptr->ckpt_time = now;
+			last_job_update = now;
+			continue; /* ignore periodic step ckpt */
+		}
 		step_iterator = list_iterator_create (job_ptr->step_list);
 		while ((step_ptr = (struct step_record *) 
 				list_next (step_iterator))) {
+			char *image_dir = NULL;
 			if (step_ptr->ckpt_interval == 0)
 				continue;
 			ckpt_due = step_ptr->ckpt_time +
-				(step_ptr->ckpt_interval * 60);
+				   (step_ptr->ckpt_interval * 60);
 			if (ckpt_due > now) 
 				continue;
+			/* 
+			 * DO NOT initiate a checkpoint request if the step is
+			 * started just now, in case it is restarting from 
+			 * checkpoint.
+			 */
+			ckpt_due = step_ptr->start_time + 
+				   (step_ptr->ckpt_interval * 60);
+			if (ckpt_due > now)
+				continue;
+
 			step_ptr->ckpt_time = now;
 			last_job_update = now;
-			(void) checkpoint_op(CHECK_CREATE, 0, 
-				(void *)step_ptr, &event_time, 
-				&error_code, &error_msg);
+			image_dir = xstrdup(step_ptr->ckpt_dir);
+			xstrfmtcat(image_dir, "/%u.%u", job_ptr->job_id, 
+				   step_ptr->step_id);
+			(void) checkpoint_op(job_ptr->job_id, 
+					     step_ptr->step_id,
+					     step_ptr, CHECK_CREATE, 0, 
+					     image_dir, &event_time,
+					     &error_code, &error_msg);
+			xfree(image_dir);
 		}
 		list_iterator_destroy (step_iterator);
 	}

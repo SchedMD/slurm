@@ -12,6 +12,9 @@
 /* Define the BG_SERIAL value */
 #undef BG_SERIAL
 
+/* Define BLCR installation home */
+#undef BLCR_HOME
+
 /* Define location of cpuset directory */
 #undef CPUSET_DIR
 

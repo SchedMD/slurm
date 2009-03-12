@@ -113,7 +113,7 @@ typedef struct srun_options {
 	char *time_limit_str;	/* --time,   -t (string)	*/
 	int  ckpt_interval;	/* --checkpoint (int minutes)	*/
 	char *ckpt_interval_str;/* --checkpoint (string)	*/
-	char *ckpt_path;	/* --checkpoint-path (string)   */
+	char *ckpt_dir;  	/* --checkpoint-dir (string)   */
 	bool exclusive;		/* --exclusive			*/
 	int  resv_port_cnt;	/* --resv_ports			*/
 	char *partition;	/* --partition=n,   -p n   	*/
@@ -210,6 +210,7 @@ typedef struct srun_options {
 	uint8_t open_mode;	/* --open-mode=append|truncate	*/
 	int acctg_freq;		/* --acctg-freq=secs		*/
 	bool pty;		/* --pty			*/
+	char *restart_dir;	/* --restart                    */
 	int argc;		/* length of argv array		*/
 	char **argv;		/* left over on command line	*/
 	char *wckey;            /* --wckey workload characterization key */

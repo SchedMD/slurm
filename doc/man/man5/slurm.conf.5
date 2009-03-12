@@ -488,6 +488,11 @@ A value of zero disables real the periodic job sampling and provides accounting
 information only on job termination (reducing SLURM interference with the job).
 
 .TP
+\fBJobCheckpointDir\fR
+Set the default directory used to store job checkpoint files.
+The default value is "/var/slurm/checkpoint".
+
+.TP
 \fBJobCompHost\fR
 Define the name of the host where the database is running and used
 to store the job completion data.

@@ -137,7 +137,7 @@ int stepd_signal(int fd, int signal);
 /*
  * Send a checkpoint request to all tasks of a job step.
  */
-int stepd_checkpoint(int fd, int signal, time_t timestamp);
+int stepd_checkpoint(int fd, time_t timestamp, char *image_dir);
 
 /*
  * Send a signal to a single task in a job step.

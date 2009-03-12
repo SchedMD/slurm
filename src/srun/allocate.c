@@ -166,6 +166,13 @@ static bool _retry()
 		else
 			return false;
 		sleep (++retries);
+	} else if (errno == EINTR) {
+		/* srun may be interrupted by the BLCR checkpoint signal */
+		/*
+		 * XXX: this will cause the old job cancelled and a new job allocated
+		 */
+		debug("Syscall interrupted while allocating resources, retrying.");
+		return true;
 	} else {
 		error("Unable to allocate resources: %m");
 		return false;
@@ -534,7 +541,7 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 	
 	job->ctx_params.relative = (uint16_t)opt.relative;
 	job->ctx_params.ckpt_interval = (uint16_t)opt.ckpt_interval;
-	job->ctx_params.ckpt_path = opt.ckpt_path;
+	job->ctx_params.ckpt_dir = opt.ckpt_dir;
 	job->ctx_params.exclusive = (uint16_t)opt.exclusive;
 	job->ctx_params.immediate = (uint16_t)opt.immediate;
 	job->ctx_params.verbose_level = (uint16_t)_verbose;

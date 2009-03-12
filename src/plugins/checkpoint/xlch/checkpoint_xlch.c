@@ -2,11 +2,9 @@
  *  checkpoint_xlch.c - XLCH slurm checkpoint plugin.
  *  $Id: checkpoint_xlch.c 0001 2006-10-31 10:55:11Z hjcao $
  *****************************************************************************
- *  Copied from checkpoint_aix.c
- *  
- *  Copyright (C) 2004 The Regents of the University of California.
- *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Morris Jette <jette1@llnl.gov>
+ *  Derived from checkpoint_aix.c
+ *  Copyright (C) 2007-2009 National University of Defense Technology, China.
+ *  Written by Hongia Cao.
  *  CODE-OCEC-09-009. All rights reserved.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -116,7 +114,7 @@ static void  _ckpt_signal_step(struct ckpt_timeout_info *rec);
 
 static int _on_ckpt_complete(struct step_record *step_ptr, uint32_t error_code);
 
-extern char *scch_path;
+static char *scch_path = SLURM_PREFIX "/sbin/scch";
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -148,7 +146,7 @@ extern char *scch_path;
  */
 const char plugin_name[]       	= "XLCH checkpoint plugin";
 const char plugin_type[]       	= "checkpoint/xlch";
-const uint32_t plugin_version	= 10;
+const uint32_t plugin_version	= 100;
 
 /*
  * init() is called when the plugin is loaded, before any other functions
@@ -193,9 +191,10 @@ extern int fini ( void )
  * The remainder of this file implements the standard SLURM checkpoint API.
  */
 
-extern int slurm_ckpt_op ( uint16_t op, uint16_t data,
-			   struct step_record * step_ptr, time_t * event_time, 
-			   uint32_t *error_code, char **error_msg )
+extern int slurm_ckpt_op (uint32_t job_id, uint32_t step_id, 
+			  struct step_record *step_ptr, uint16_t op,
+			  uint16_t data, char *image_dir, time_t * event_time, 
+			  uint32_t *error_code, char **error_msg )
 {
 	int rc = SLURM_SUCCESS;
 	struct check_job_info *check_ptr;
@@ -438,7 +437,6 @@ static void _send_ckpt(uint32_t job_id, uint32_t step_id, uint16_t signal,
 	ckpt_tasks_msg = xmalloc(sizeof(checkpoint_tasks_msg_t));
 	ckpt_tasks_msg->job_id		= job_id;
 	ckpt_tasks_msg->job_step_id	= step_id;
-	ckpt_tasks_msg->signal		= signal;
 	ckpt_tasks_msg->timestamp       = timestamp;
 
 	agent_args = xmalloc(sizeof(agent_arg_t));
@@ -676,7 +674,7 @@ static int _on_ckpt_complete(struct step_record *step_ptr, uint32_t error_code)
 			args[1] = str_job;
 			args[2] = str_step;
 			args[3] = str_err;
-			args[4] = step_ptr->ckpt_path;
+			args[4] = step_ptr->ckpt_dir;
 			args[5] = NULL;
 
 			execv(scch_path, args);
@@ -694,4 +692,19 @@ static int _on_ckpt_complete(struct step_record *step_ptr, uint32_t error_code)
 	}
 
 	return SLURM_SUCCESS;
+}
+
+extern int slurm_ckpt_stepd_prefork(void *slurmd_job)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int slurm_ckpt_signal_tasks(void *slurmd_job)
+{
+	return ESLURM_NOT_SUPPORTED;
+}
+
+extern int slurm_ckpt_restart_task(void *slurmd_job, char *image_dir, int gtid)
+{
+	return ESLURM_NOT_SUPPORTED;
 }

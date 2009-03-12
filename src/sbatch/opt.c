@@ -141,6 +141,8 @@
 #define LONG_OPT_ACCTG_FREQ      0x148
 #define LONG_OPT_WCKEY           0x149
 #define LONG_OPT_RESERVATION     0x14a
+#define LONG_OPT_CHECKPOINT      0x14b
+#define LONG_OPT_CHECKPOINT_DIR  0x14c
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -311,6 +313,10 @@ static void _opt_default()
 	opt.acctg_freq        = -1;
 	opt.reservation       = NULL;
 	opt.wckey             = NULL;
+
+	opt.ckpt_interval = 0;
+	opt.ckpt_interval_str = NULL;
+	opt.ckpt_dir = xstrdup(opt.cwd);
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -358,6 +364,8 @@ env_vars_t env_vars[] = {
   {"SBATCH_TIMELIMIT",     OPT_STRING,     &opt.time_limit_str,NULL           },
   {"SBATCH_REQUEUE",       OPT_REQUEUE,    NULL,               NULL           },
   {"SBATCH_WCKEY",         OPT_STRING,     &opt.wckey,         NULL           },
+  {"SBATCH_CHECKPOINT",    OPT_STRING,     &opt.ckpt_interval_str, NULL       },
+  {"SBATCH_CHECKPOINT_DIR",OPT_STRING,     &opt.ckpt_dir,      NULL           },
   {NULL, 0, NULL, NULL}
 };
 
@@ -591,6 +599,8 @@ static struct option long_options[] = {
 	{"mem_bind",      required_argument, 0, LONG_OPT_MEM_BIND},
 	{"wckey",         required_argument, 0, LONG_OPT_WCKEY},
 	{"reservation",   required_argument, 0, LONG_OPT_RESERVATION},
+ 	{"checkpoint",    required_argument, 0, LONG_OPT_CHECKPOINT},
+ 	{"checkpoint-dir",required_argument, 0, LONG_OPT_CHECKPOINT_DIR},
 	{NULL,            0,                 0, 0}
 };
 
@@ -1384,6 +1394,14 @@ static void _set_options(int argc, char **argv)
 			xfree(opt.reservation);
 			opt.reservation = xstrdup(optarg);
 			break;
+		case LONG_OPT_CHECKPOINT:
+			xfree(opt.ckpt_interval_str);
+			opt.ckpt_interval_str = xstrdup(optarg);
+			break;
+		case LONG_OPT_CHECKPOINT_DIR:
+			xfree(opt.ckpt_dir);
+			opt.ckpt_dir = xstrdup(optarg);
+			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0)
 				fatal("Unrecognized command line parameter %c",
@@ -1933,6 +1951,14 @@ static bool _opt_verify(void)
 		}
 		if (opt.time_limit == 0)
 			opt.time_limit = INFINITE;
+	}
+
+	if (opt.ckpt_interval_str) {
+		opt.ckpt_interval = time_str2mins(opt.ckpt_interval_str);
+		if ((opt.ckpt_interval < 0) && (opt.ckpt_interval != INFINITE)) {
+			error("Invalid checkpoint interval specification");
+			exit(1);
+		}
 	}
 
 	if ((opt.euid != (uid_t) -1) && (opt.euid != opt.uid)) 

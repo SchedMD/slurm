@@ -1541,7 +1541,7 @@ _rpc_checkpoint_tasks(slurm_msg_t *msg)
 		goto done3;
 	}
 
-	rc = stepd_checkpoint(fd, req->signal, req->timestamp);
+	rc = stepd_checkpoint(fd, req->timestamp, req->image_dir);
 	if (rc == -1)
 		rc = ESLURMD_JOB_NOTRUNNING;
 

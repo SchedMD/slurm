@@ -2,7 +2,8 @@
  *  checkpoint.h - implementation-independent checkpoint API definitions. 
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2004 The Regents of the University of California.
+ *  Copyright (C) 2004-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.com>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -37,8 +38,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef __CHECKPOINT_H__
-#define __CHECKPOINT_H__
+#ifndef _HAVE_SLURM_CHECKPOINT_H__
+#define _HAVE_SLURM_CHECKPOINT_H__
 
 #include "slurm/slurm.h"
 #include "src/common/macros.h"
@@ -71,9 +72,11 @@ extern int checkpoint_init(char *checkpoint_type);
 /* shutdown checkpoint plugin */
 extern int checkpoint_fini(void);
 
-/* perform many checkpoint operation */
-extern int checkpoint_op(uint16_t op, uint16_t data, void * step_ptr, 
-		time_t * event_time, uint32_t *error_code, char **error_msg);
+/* perform many checkpoint operation on job/step */
+extern int checkpoint_op(uint32_t job_id, uint32_t step_id, 
+			 void *step_ptr, uint16_t op,
+			 uint16_t data, char *image_dir, time_t *event_time,
+			 uint32_t *error_code, char **error_msg);
 
 /* note checkpoint completion */
 extern int checkpoint_comp(void * step_ptr, time_t event_time, uint32_t error_code,
@@ -96,5 +99,18 @@ extern int checkpoint_free_jobinfo(check_jobinfo_t jobinfo);
 extern int  checkpoint_pack_jobinfo  (check_jobinfo_t jobinfo, Buf buffer);
 extern int  checkpoint_unpack_jobinfo  (check_jobinfo_t jobinfo, Buf buffer);
 
-#endif /*__CHECKPOINT_H__*/
+/* create the necessary threads before forking the tasks */
+extern int checkpoint_stepd_prefork (void *slurmd_job);
+
+/* send the checkpoint request to the tasks */
+extern int checkpoint_signal_tasks (void *slurmd_job, char *image_dir);
+
+/* restart the requested job task */
+extern int checkpoint_restart_task(void *slurmd_job, char *image_dir, int gtid);
+
+/* send checkpoint request to specified job/step */
+extern int checkpoint_tasks (uint32_t job_id, uint32_t step_id, 
+			     time_t begin_time, char *image_dir, 
+			     uint16_t wait, char *nodelist);
+#endif /*_HAVE_SLURM_CHECKPOINT_H__*/
 
