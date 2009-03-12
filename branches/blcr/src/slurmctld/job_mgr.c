@@ -6896,8 +6896,12 @@ _copy_job_record_to_job_desc(struct job_record *job_ptr)
 	job_desc->account           = xstrdup(job_ptr->account);
 	job_desc->acctg_freq        = details->acctg_freq;
 	job_desc->alloc_node        = xstrdup(job_ptr->alloc_node);
-	job_desc->alloc_resp_port   = job_ptr->alloc_resp_port;
-	job_desc->alloc_sid         = job_ptr->alloc_sid;
+	/* Since the allocating salloc or srun is not expected to exist
+	 * when this checkpointed job is restarted, do not save these:
+	 *
+	 * job_desc->alloc_resp_port   = job_ptr->alloc_resp_port;
+	 * job_desc->alloc_sid         = job_ptr->alloc_sid;
+	 */
 	job_desc->argc              = details->argc;
 	job_desc->argv              = xmalloc(sizeof(char *) * job_desc->argc);
 	for (i = 0; i < job_desc->argc; i ++)

@@ -2775,23 +2775,24 @@ inline static void  _slurm_rpc_checkpoint(slurm_msg_t * msg)
 	END_TIMER2("_slurm_rpc_checkpoint");
 
 	if (error_code) {
-		if (ckpt_ptr->step_id == SLURM_BATCH_SCRIPT)
+		if (ckpt_ptr->step_id == SLURM_BATCH_SCRIPT) {
 			info("_slurm_rpc_checkpoint %s %u: %s", op, 
 				ckpt_ptr->job_id, slurm_strerror(error_code));
-		else
+		} else {
 			info("_slurm_rpc_checkpoint %s %u.%u: %s", op, 
 				ckpt_ptr->job_id, ckpt_ptr->step_id, 
 				slurm_strerror(error_code));
+		}
 	} else {
-		if (ckpt_ptr->step_id == SLURM_BATCH_SCRIPT)
+		if (ckpt_ptr->step_id == SLURM_BATCH_SCRIPT) {
 			info("_slurm_rpc_checkpoint %s for %u %s", op,
 				ckpt_ptr->job_id, TIME_STR);
-		else
+		} else {
 			info("_slurm_rpc_checkpoint %s for %u.%u %s", op,
 				ckpt_ptr->job_id, ckpt_ptr->step_id, TIME_STR);
-
-		if ((ckpt_ptr->op != CHECK_ABLE) 
-		&&  (ckpt_ptr->op != CHECK_ERROR)) {
+		}
+		if ((ckpt_ptr->op != CHECK_ABLE) &&
+		    (ckpt_ptr->op != CHECK_ERROR)) {
 			/* job state changed, save it */
 			/* NOTE: This function provides it own locks */
 			schedule_job_save();
