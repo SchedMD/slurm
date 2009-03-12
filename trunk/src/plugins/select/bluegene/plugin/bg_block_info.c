@@ -90,7 +90,6 @@ static int _block_is_deallocating(bg_record_t *bg_record)
 
 	if(bg_record->modifying)
 		return SLURM_SUCCESS;
-
 	
 	user_name = xstrdup(bg_slurm_user_name);
 	if(remove_all_users(bg_record->bg_block_id, NULL) 
@@ -98,8 +97,7 @@ static int _block_is_deallocating(bg_record_t *bg_record)
 		error("Something happened removing "
 		      "users from block %s", 
 		      bg_record->bg_block_id);
-	} 
-	
+	} 	
 	
 	if(bg_record->target_name && bg_record->user_name) {
 		if(!strcmp(bg_record->target_name, user_name)) {
@@ -116,13 +114,6 @@ static int _block_is_deallocating(bg_record_t *bg_record)
 				      bg_record->bg_block_id,
 				      bg_record->user_name,
 				      jobid);
-
-				if(remove_from_bg_list(bg_job_block_list, 
-						       bg_record) 
-				   == SLURM_SUCCESS) {
-					num_unused_cpus += 
-						bg_record->cpu_cnt;
-				} 
 			} else {
 				debug("Block %s was in a ready state "
 				      "but is being freed. No job running.",
@@ -133,7 +124,6 @@ static int _block_is_deallocating(bg_record_t *bg_record)
 			      "for block %s.",
 			      bg_record->bg_block_id);
 		}
-		remove_from_bg_list(bg_booted_block_list, bg_record);
 	} else if(bg_record->user_name) {
 		error("Target Name was not set "
 		      "not set for block %s.",
@@ -146,6 +136,10 @@ static int _block_is_deallocating(bg_record_t *bg_record)
 		bg_record->user_name = xstrdup(user_name);
 		bg_record->target_name = xstrdup(bg_record->user_name);
 	}
+
+	if(remove_from_bg_list(bg_job_block_list, bg_record) == SLURM_SUCCESS) 
+		num_unused_cpus += bg_record->cpu_cnt;			       
+	remove_from_bg_list(bg_booted_block_list, bg_record);
 
 	xfree(user_name);
 			
@@ -306,7 +300,8 @@ extern int update_block_list()
 			updated = 1;
 		}
 #else
-		if(bg_record->node_cnt < bluegene_bp_node_cnt) {
+		if((bg_record->node_cnt < bluegene_bp_node_cnt) 
+		   || (bluegene_bp_node_cnt == bluegene_nodecard_node_cnt)) {
 			char *mode = NULL;
 			uint16_t conn_type = SELECT_SMALL;
 			if ((rc = bridge_get_data(block_ptr,
@@ -387,7 +382,7 @@ extern int update_block_list()
 					num_unused_cpus += bg_record->cpu_cnt;
 				}
 				remove_from_bg_list(bg_booted_block_list,
-						    bg_record);			
+						    bg_record);
 			} 
 			updated = 1;
 			
@@ -471,6 +466,16 @@ extern int update_block_list()
 					slurm_mutex_lock(&block_state_mutex);
 					bg_record->boot_state = 0;
 					bg_record->boot_count = 0;
+					if(remove_from_bg_list(
+						   bg_job_block_list, 
+						   bg_record) 
+					   == SLURM_SUCCESS) {
+						num_unused_cpus += 
+							bg_record->cpu_cnt;
+					} 
+					remove_from_bg_list(
+						bg_booted_block_list,
+						bg_record);
 				}
 				break;
 			case RM_PARTITION_READY:
