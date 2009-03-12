@@ -52,6 +52,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <libgen.h>
 #include <sys/stat.h>
 
 #include <slurm/slurm_errno.h>
@@ -94,6 +95,8 @@
 /* Change JOB_STATE_VERSION value when changing the state save format */
 #define JOB_STATE_VERSION      "VER007"
 
+#define JOB_CKPT_VERSION      "JOB_CKPT_001"
+
 /* Global variables */
 List   job_list = NULL;		/* job_record list */
 time_t last_job_update;		/* time of last update to job records */
@@ -109,7 +112,7 @@ static bool     wiki_sched_test = false;
 
 /* Local functions */
 static void _add_job_hash(struct job_record *job_ptr);
-
+static int  _checkpoint_job_record (struct job_record *job_ptr, char *image_dir);
 static int  _copy_job_desc_to_file(job_desc_msg_t * job_desc,
 				   uint32_t job_id);
 static int  _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
@@ -117,6 +120,7 @@ static int  _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 					 struct part_record *part_ptr,
 					 bitstr_t ** exc_bitmap,
 					 bitstr_t ** req_bitmap);
+static job_desc_msg_t * _copy_job_record_to_job_desc(struct job_record *job_ptr);
 static char *_copy_nodelist_no_dup(char *node_list);
 static void _del_batch_list_rec(void *x);
 static void _delete_job_desc_files(uint32_t job_id);
@@ -135,6 +139,7 @@ static int  _list_find_job_id(void *job_entry, void *key);
 static int  _list_find_job_old(void *job_entry, void *key);
 static int  _load_job_details(struct job_record *job_ptr, Buf buffer);
 static int  _load_job_state(Buf buffer);
+static void _pack_job_for_ckpt (struct job_record *job_ptr, Buf buffer);
 static void _pack_default_job_details(struct job_details *detail_ptr,
 				      Buf buffer);
 static void _pack_pending_job_details(struct job_details *detail_ptr,
@@ -144,6 +149,7 @@ static void _purge_lost_batch_jobs(int node_inx, time_t now);
 static void _read_data_array_from_file(char *file_name, char ***data,
 				       uint32_t * size);
 static void _read_data_from_file(char *file_name, char **data);
+static char *_read_job_ckpt_file(char *ckpt_file, int *size_ptr);
 static void _remove_defunct_batch_dirs(List batch_dirs);
 static int  _reset_detail_bitmaps(struct job_record *job_ptr);
 static void _reset_step_bitmaps(struct job_record *job_ptr);
@@ -166,6 +172,7 @@ static int  _write_data_to_file(char *file_name, char *data);
 static int  _write_data_array_to_file(char *file_name, char **data,
 				      uint32_t size);
 static void _xmit_new_end_time(struct job_record *job_ptr);
+
 
 /* 
  * create_job_record - create an empty job_record including job_details.
@@ -230,6 +237,7 @@ void delete_job_details(struct job_record *job_entry)
 	for (i=0; i<job_entry->details->argc; i++)
 		xfree(job_entry->details->argv[i]);
 	xfree(job_entry->details->argv);
+	xfree(job_entry->details->ckpt_dir);
 	xfree(job_entry->details->cpu_bind);
 	if (job_entry->details->depend_list)
 		list_destroy(job_entry->details->depend_list);
@@ -247,6 +255,7 @@ void delete_job_details(struct job_record *job_entry)
 	FREE_NULL_BITMAP(job_entry->details->req_node_bitmap);
 	xfree(job_entry->details->req_node_layout);
 	xfree(job_entry->details->req_nodes);
+	xfree(job_entry->details->restart_dir);
 	xfree(job_entry->details->work_dir);
 	xfree(job_entry->details);	/* Must be last */
 }
@@ -573,6 +582,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack32(dump_job_ptr->db_index, buffer);
 	pack32(dump_job_ptr->assoc_id, buffer);
 	pack32(dump_job_ptr->resv_id, buffer);
+	pack32(dump_job_ptr->next_step_id, buffer);
 
 	pack_time(dump_job_ptr->start_time, buffer);
 	pack_time(dump_job_ptr->end_time, buffer);
@@ -582,7 +592,6 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 
 	pack16(dump_job_ptr->direct_set_prio, buffer);
 	pack16(dump_job_ptr->job_state, buffer);
-	pack16(dump_job_ptr->next_step_id, buffer);
 	pack16(dump_job_ptr->kill_on_node_fail, buffer);
 	pack16(dump_job_ptr->kill_on_step_done, buffer);
 	pack16(dump_job_ptr->batch_flag, buffer);
@@ -621,6 +630,9 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	select_g_pack_jobinfo(dump_job_ptr->select_jobinfo, buffer);
 	pack_select_job_res(dump_job_ptr->select_job, buffer);
 
+	pack16(dump_job_ptr->ckpt_interval, buffer);
+	checkpoint_pack_jobinfo(dump_job_ptr->check_job, buffer);
+
 	/* Dump job details, if available */
 	detail_ptr = dump_job_ptr->details;
 	if (detail_ptr) {
@@ -646,13 +658,13 @@ static int _load_job_state(Buf buffer)
 {
 	uint32_t job_id, user_id, group_id, time_limit, priority, alloc_sid;
 	uint32_t exit_code, num_procs, assoc_id, db_index, name_len;
-	uint32_t total_procs, resv_id;
+	uint32_t next_step_id, total_procs, resv_id;
 	time_t start_time, end_time, suspend_time, pre_sus_time, tot_sus_time;
 	time_t now = time(NULL);
-	uint16_t job_state, next_step_id, details, batch_flag, step_flag;
+	uint16_t job_state, details, batch_flag, step_flag;
 	uint16_t kill_on_node_fail, kill_on_step_done, direct_set_prio, qos;
 	uint16_t alloc_resp_port, other_port, mail_type, state_reason;
-	uint16_t restart_cnt, resv_flags;
+	uint16_t restart_cnt, resv_flags, ckpt_interval;
 	char *nodes = NULL, *partition = NULL, *name = NULL, *resp_host = NULL;
 	char *account = NULL, *network = NULL, *mail_user = NULL;
 	char *comment = NULL, *nodes_completing = NULL, *alloc_node = NULL;
@@ -663,6 +675,7 @@ static int _load_job_state(Buf buffer)
 	int error_code;
 	select_jobinfo_t select_jobinfo = NULL;
 	select_job_res_t select_job = NULL;
+	check_jobinfo_t check_job = NULL;
 	acct_association_rec_t assoc_rec;
 	acct_qos_rec_t qos_rec;
 
@@ -679,6 +692,7 @@ static int _load_job_state(Buf buffer)
 	safe_unpack32(&db_index, buffer);
 	safe_unpack32(&assoc_id, buffer);
 	safe_unpack32(&resv_id, buffer);
+	safe_unpack32(&next_step_id, buffer);
 
 	safe_unpack_time(&start_time, buffer);
 	safe_unpack_time(&end_time, buffer);
@@ -688,7 +702,6 @@ static int _load_job_state(Buf buffer)
 
 	safe_unpack16(&direct_set_prio, buffer);
 	safe_unpack16(&job_state, buffer);
-	safe_unpack16(&next_step_id, buffer);
 	safe_unpack16(&kill_on_node_fail, buffer);
 	safe_unpack16(&kill_on_step_done, buffer);
 	safe_unpack16(&batch_flag, buffer);
@@ -724,6 +737,11 @@ static int _load_job_state(Buf buffer)
 	    ||  select_g_unpack_jobinfo(select_jobinfo, buffer))
 		goto unpack_error;
 	if (unpack_select_job_res(&select_job, buffer))
+		goto unpack_error;
+
+	safe_unpack16(&ckpt_interval, buffer);
+	if (checkpoint_alloc_jobinfo(&check_job) ||
+	    checkpoint_unpack_jobinfo(check_job, buffer))
 		goto unpack_error;
 
 
@@ -867,6 +885,8 @@ static int _load_job_state(Buf buffer)
 	job_ptr->resv_flags   = resv_flags;
 	job_ptr->select_jobinfo = select_jobinfo;
 	job_ptr->select_job   = select_job;
+	job_ptr->ckpt_interval = ckpt_interval;
+	job_ptr->check_job    = check_job;
 	job_ptr->start_time   = start_time;
 	job_ptr->state_reason = state_reason;
 	job_ptr->state_desc   = state_desc;
@@ -958,6 +978,7 @@ unpack_error:
 	xfree(state_desc);
 	xfree(wckey);
 	select_g_free_jobinfo(&select_jobinfo);
+	checkpoint_free_jobinfo(check_job);
 	return SLURM_FAILURE;
 }
 
@@ -1007,6 +1028,8 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 	packstr(detail_ptr->in,        buffer);
 	packstr(detail_ptr->out,       buffer);
 	packstr(detail_ptr->work_dir,  buffer);
+	packstr(detail_ptr->ckpt_dir,  buffer);
+	packstr(detail_ptr->restart_dir, buffer);
 
 	pack_multi_core_data(detail_ptr->mc_ptr, buffer);
 	packstr_array(detail_ptr->argv, detail_ptr->argc, buffer);
@@ -1018,6 +1041,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	char *req_nodes = NULL, *exc_nodes = NULL, *features = NULL;
 	char *cpu_bind, *dependency = NULL, *mem_bind;
 	char *err = NULL, *in = NULL, *out = NULL, *work_dir = NULL;
+	char *ckpt_dir = NULL, *restart_dir = NULL;
 	char **argv = (char **) NULL;
 	uint32_t min_nodes, max_nodes;
 	uint32_t job_min_procs;
@@ -1070,6 +1094,8 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	safe_unpackstr_xmalloc(&in,  &name_len, buffer);
 	safe_unpackstr_xmalloc(&out, &name_len, buffer);
 	safe_unpackstr_xmalloc(&work_dir, &name_len, buffer);
+	safe_unpackstr_xmalloc(&ckpt_dir, &name_len, buffer);
+	safe_unpackstr_xmalloc(&restart_dir, &name_len, buffer);
 
 	if (unpack_multi_core_data(&mc_ptr, buffer))
 		goto unpack_error;
@@ -1106,7 +1132,8 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	xfree(job_ptr->details->out);
 	xfree(job_ptr->details->req_nodes);
 	xfree(job_ptr->details->work_dir);
-
+	xfree(job_ptr->details->ckpt_dir);
+	xfree(job_ptr->details->restart_dir);
 
 	/* now put the details into the job record */
 	job_ptr->details->acctg_freq = acctg_freq;
@@ -1144,6 +1171,8 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	job_ptr->details->submit_time = submit_time;
 	job_ptr->details->task_dist = task_dist;
 	job_ptr->details->work_dir = work_dir;
+	job_ptr->details->ckpt_dir = ckpt_dir;
+	job_ptr->details->restart_dir = restart_dir;
 	
 	return SLURM_SUCCESS;
 
@@ -1163,6 +1192,8 @@ unpack_error:
 	xfree(out);
 	xfree(req_nodes);
 	xfree(work_dir);
+	xfree(ckpt_dir);
+	xfree(restart_dir);
 	return SLURM_FAILURE;
 }
 
@@ -1377,6 +1408,16 @@ extern int kill_running_job_by_node_name(char *node_name)
 				if (job_ptr->node_cnt)
 					job_ptr->job_state |= JOB_COMPLETING;
 				job_ptr->details->submit_time = now;
+				/* restart from periodic checkpoint */
+				if (job_ptr->ckpt_interval &&
+				    job_ptr->ckpt_time &&
+				    job_ptr->details->ckpt_dir) {
+					xfree(job_ptr->details->restart_dir);
+					job_ptr->details->restart_dir =
+						xstrdup (job_ptr->details->ckpt_dir);
+					xstrfmtcat(job_ptr->details->restart_dir,
+						   "/%u", job_ptr->job_id);
+				}
 				job_ptr->restart_cnt++;
 				/* Since the job completion logger
 				   removes the submit we need to add it
@@ -2446,6 +2487,10 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 			error_code = ESLURM_ERROR_ON_DESC_TO_RECORD_COPY;
 		goto cleanup_fail;
 	}
+	if ((error_code=checkpoint_alloc_jobinfo(&((*job_pptr)->check_job)))) {
+		error("Failed to allocate checkpoint info for job");
+		goto cleanup_fail;
+	}
 
 	job_ptr = *job_pptr;
 	
@@ -3148,6 +3193,8 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_ptr->mail_type = job_desc->mail_type;
 	job_ptr->mail_user = xstrdup(job_desc->mail_user);
 
+	job_ptr->ckpt_interval = job_desc->ckpt_interval;
+
 	detail_ptr = job_ptr->details;
 	detail_ptr->argc = job_desc->argc;
 	detail_ptr->argv = job_desc->argv;
@@ -3213,6 +3260,11 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_ptr->select_jobinfo = 
 		select_g_copy_jobinfo(job_desc->select_jobinfo);
 
+	if (job_desc->ckpt_dir)
+		detail_ptr->ckpt_dir = xstrdup(job_desc->ckpt_dir);
+	else
+		detail_ptr->ckpt_dir = xstrdup(detail_ptr->work_dir);
+	
 	/* The priority needs to be set after this since we don't have
 	   an association rec yet
 	*/
@@ -6595,4 +6647,545 @@ extern int send_jobs_to_accounting(time_t event_time)
 	unlock_slurmctld(job_write_lock);
 
 	return SLURM_SUCCESS;
+}
+
+/* Perform checkpoint operation on a job */
+extern int job_checkpoint(checkpoint_msg_t *ckpt_ptr, uid_t uid, 
+			  slurm_fd conn_fd)
+{
+	int rc = SLURM_SUCCESS;
+	struct job_record *job_ptr;
+	struct step_record *step_ptr;
+	checkpoint_resp_msg_t resp_data;
+	slurm_msg_t resp_msg;
+
+	slurm_msg_t_init(&resp_msg);
+	
+	/* find the job */
+	job_ptr = find_job_record (ckpt_ptr->job_id);
+	if (job_ptr == NULL) {
+		rc = ESLURM_INVALID_JOB_ID;
+		goto reply;
+	}
+	if ((uid != job_ptr->user_id) && ! validate_super_user(uid)) {
+		rc = ESLURM_ACCESS_DENIED ;
+		goto reply;
+	}
+	if (job_ptr->job_state == JOB_PENDING) {
+		rc = ESLURM_JOB_PENDING;
+		goto reply;
+	} else if (job_ptr->job_state == JOB_SUSPENDED) {
+		/* job can't get cycles for checkpoint 
+		 * if it is already suspended */
+		rc = ESLURM_DISABLED;
+		goto reply;
+	} else if (job_ptr->job_state != JOB_RUNNING) {
+		rc = ESLURM_ALREADY_DONE;
+		goto reply;
+	}
+
+	bzero((void *)&resp_data, sizeof(checkpoint_resp_msg_t));
+
+	if (job_ptr->batch_flag) { /* operate on batch job */
+		if ((ckpt_ptr->op == CHECK_CREATE) ||
+		    (ckpt_ptr->op == CHECK_VACATE)) {
+			if (job_ptr->details == NULL) {
+				rc = ESLURM_DISABLED;
+				goto reply;
+			}
+			if (ckpt_ptr->image_dir == NULL) {
+				if (job_ptr->details->ckpt_dir == NULL) {
+					rc = ESLURM_DISABLED;
+					goto reply;
+				}
+				ckpt_ptr->image_dir = xstrdup(job_ptr->details
+							      ->ckpt_dir);
+			}
+
+			rc = _checkpoint_job_record(job_ptr, 
+						    ckpt_ptr->image_dir);
+			if (rc != SLURM_SUCCESS)
+				goto reply;
+		}
+		/* append job id to ckpt image dir */
+		xstrfmtcat(ckpt_ptr->image_dir, "/%u", job_ptr->job_id);
+		rc = checkpoint_op(ckpt_ptr->job_id, ckpt_ptr->step_id, NULL,
+				   ckpt_ptr->op, ckpt_ptr->data,
+				   ckpt_ptr->image_dir, &resp_data.event_time, 
+				   &resp_data.error_code, &resp_data.error_msg);
+		info("checkpoint_op %u of %u.%u complete, rc=%d",
+		     ckpt_ptr->op, ckpt_ptr->job_id, ckpt_ptr->step_id, rc);
+		last_job_update = time(NULL);
+	} else {		/* operate on all of a job's steps */
+		int update_rc = -2;
+		ListIterator step_iterator;
+		
+		step_iterator = list_iterator_create (job_ptr->step_list);
+		while ((step_ptr = (struct step_record *) 
+					list_next (step_iterator))) {
+			char *image_dir = NULL;
+			if (ckpt_ptr->image_dir) {
+				image_dir = xstrdup(ckpt_ptr->image_dir);
+			} else {
+				image_dir = xstrdup(step_ptr->ckpt_dir);
+			}
+			xstrfmtcat(image_dir, "/%u.%hu", job_ptr->job_id, 
+				   step_ptr->step_id);
+			update_rc = checkpoint_op(ckpt_ptr->job_id,
+						  step_ptr->step_id,
+						  step_ptr,
+						  ckpt_ptr->op, 
+						  ckpt_ptr->data,
+						  image_dir,
+						  &resp_data.event_time,
+						  &resp_data.error_code,
+						  &resp_data.error_msg);
+			info("checkpoint_op %u of %u.%u complete, rc=%d",
+			     ckpt_ptr->op, ckpt_ptr->job_id, 
+			     step_ptr->step_id, rc);
+			rc = MAX(rc, update_rc);
+			xfree(image_dir);
+		}
+		if (update_rc != -2)	/* some work done */
+			last_job_update = time(NULL);
+		list_iterator_destroy (step_iterator);
+	}
+
+    reply:
+	if (conn_fd < 0)	/* periodic checkpoint */
+		return rc;
+	
+	if ((rc == SLURM_SUCCESS) &&
+	    ((ckpt_ptr->op == CHECK_ABLE) || (ckpt_ptr->op == CHECK_ERROR))) {
+		resp_msg.msg_type = RESPONSE_CHECKPOINT;
+		resp_msg.data = &resp_data;
+		(void) slurm_send_node_msg(conn_fd, &resp_msg);
+	} else {
+		return_code_msg_t rc_msg;
+		rc_msg.return_code = rc;
+		resp_msg.msg_type  = RESPONSE_SLURM_RC;
+		resp_msg.data      = &rc_msg;
+		(void) slurm_send_node_msg(conn_fd, &resp_msg);
+	}
+	return rc;
+}
+
+/*
+ * _checkpoint_job_record - save job to file for checkpoint
+ *
+ */
+static int _checkpoint_job_record (struct job_record *job_ptr, char *image_dir)
+{
+	static int high_buffer_size = (1024*1024);
+	char *ckpt_file = NULL, *old_file = NULL, *new_file = NULL;
+	int ckpt_fd, error_code = SLURM_SUCCESS;
+	Buf buffer = init_buf(high_buffer_size);
+
+	ckpt_file = xstrdup(slurmctld_conf.job_ckpt_dir);
+	xstrfmtcat(ckpt_file, "/%u.ckpt", job_ptr->job_id);
+
+	debug("_checkpoint_job_record: checkpoint job record of %u to file %s",
+	      job_ptr->job_id, ckpt_file);
+	
+	old_file = xstrdup(ckpt_file);
+	xstrcat(old_file, ".old");
+
+	new_file = xstrdup(ckpt_file);
+	xstrcat(new_file, ".new");
+
+	/* save version string */
+	packstr(JOB_CKPT_VERSION, buffer);
+
+	/* save checkpoint image directory */
+	packstr(image_dir, buffer);
+
+	_pack_job_for_ckpt(job_ptr, buffer);
+
+	ckpt_fd = creat(new_file, 0600);
+	if (ckpt_fd < 0) {
+		error("Can't ckpt job, create file %s error: %m",
+		      new_file);
+		error_code = errno;
+	} else {
+		int pos = 0, nwrite = get_buf_offset(buffer), amount;
+		char *data = (char *)get_buf_data(buffer);
+		while (nwrite > 0) {
+			amount = write(ckpt_fd, &data[pos], nwrite);
+			if ((amount < 0) && (errno != EINTR)) {
+				error("Error writing file %s, %m", new_file);
+				error_code = errno;
+				break;
+			} else if (amount >= 0) {
+				nwrite -= amount;
+				pos    += amount;
+			}
+		}
+		fsync(ckpt_fd);
+		close(ckpt_fd);
+	}
+	if (error_code)
+		(void) unlink(new_file);
+	else {			/* file shuffle */
+		(void) unlink(old_file);
+		(void) link(ckpt_file, old_file);
+		(void) unlink(ckpt_file);
+		(void) link(new_file, ckpt_file);
+		(void) unlink(new_file);
+	}
+
+	xfree(ckpt_file);
+	xfree(old_file);
+	xfree(new_file);
+	free_buf(buffer);
+
+	return error_code;
+}
+
+/*
+ * _pack_job_for_ckpt - save RUNNING job to buffer for checkpoint
+ *
+ *   Just save enough information to restart it
+ *
+ * IN job_ptr - id of the job to be checkpointed
+ * IN buffer - buffer to save the job state
+ */
+static void _pack_job_for_ckpt (struct job_record *job_ptr, Buf buffer)
+{
+	slurm_msg_t msg;
+	job_desc_msg_t *job_desc;
+
+	/* save allocated nodes */
+	packstr(job_ptr->nodes, buffer);
+
+	/* save job req */
+	job_desc = _copy_job_record_to_job_desc(job_ptr);
+	msg.msg_type = REQUEST_SUBMIT_BATCH_JOB;
+	msg.data = job_desc;
+	pack_msg(&msg, buffer);
+
+	/* free the environment since all strings are stored in one 
+	 * xmalloced buffer */
+	if (job_desc->environment) {
+		xfree(job_desc->environment[0]);
+		xfree(job_desc->environment);
+		job_desc->env_size = 0;
+	}
+	slurm_free_job_desc_msg(job_desc);
+}
+
+/*
+ * _copy_job_record_to_job_desc - construct a job_desc_msg_t for a job.
+ * IN job_ptr - the job record
+ * RET the job_desc_msg_t, NULL on error
+ */
+static job_desc_msg_t *
+_copy_job_record_to_job_desc(struct job_record *job_ptr)
+{
+	job_desc_msg_t *job_desc;
+	struct job_details *details = job_ptr->details;
+	multi_core_data_t *mc_ptr = details->mc_ptr;
+	int i;
+
+	/* construct a job_desc_msg_t from job */
+	job_desc = xmalloc(sizeof(job_desc_msg_t));
+	if (!job_desc) {
+		error("_pack_job_for_ckpt: memory exhausted");
+		return NULL;
+	}
+
+	job_desc->account           = xstrdup(job_ptr->account);
+	job_desc->acctg_freq        = details->acctg_freq;
+	job_desc->alloc_node        = xstrdup(job_ptr->alloc_node);
+	/* Since the allocating salloc or srun is not expected to exist
+	 * when this checkpointed job is restarted, do not save these:
+	 *
+	 * job_desc->alloc_resp_port   = job_ptr->alloc_resp_port;
+	 * job_desc->alloc_sid         = job_ptr->alloc_sid;
+	 */
+	job_desc->argc              = details->argc;
+	job_desc->argv              = xmalloc(sizeof(char *) * job_desc->argc);
+	for (i = 0; i < job_desc->argc; i ++)
+		job_desc->argv[i]   = xstrdup(details->argv[i]);
+	job_desc->begin_time        = details->begin_time;
+	job_desc->ckpt_interval     = job_ptr->ckpt_interval;
+	job_desc->ckpt_dir          = xstrdup(details->ckpt_dir);
+	job_desc->comment           = xstrdup(job_ptr->comment);
+	job_desc->contiguous        = details->contiguous;
+	job_desc->cpu_bind          = xstrdup(details->cpu_bind);
+	job_desc->cpu_bind_type     = details->cpu_bind_type;
+	job_desc->dependency        = xstrdup(details->dependency);
+	job_desc->environment       = get_job_env(job_ptr, &job_desc->env_size);
+	job_desc->err               = xstrdup(details->err);
+	job_desc->exc_nodes         = xstrdup(details->exc_nodes);
+	job_desc->features          = xstrdup(details->features);
+	job_desc->group_id          = job_ptr->group_id;
+	job_desc->immediate         = 0; /* nowhere to get this value */
+	job_desc->in                = xstrdup(details->in);
+	job_desc->job_id            = job_ptr->job_id; /* XXX */
+	job_desc->kill_on_node_fail = job_ptr->kill_on_node_fail;
+	job_desc->licenses          = xstrdup(job_ptr->licenses);
+	job_desc->mail_type         = job_ptr->mail_type;
+	job_desc->mail_user         = xstrdup(job_ptr->mail_user);
+	job_desc->mem_bind          = xstrdup(details->mem_bind);
+	job_desc->mem_bind_type     = details->mem_bind_type;
+	job_desc->name              = xstrdup(job_ptr->name);
+	job_desc->network           = xstrdup(job_ptr->network);
+	job_desc->nice              = details->nice;
+	job_desc->num_tasks         = details->num_tasks;
+	job_desc->open_mode         = details->open_mode;
+	job_desc->other_port        = job_ptr->other_port; 
+	job_desc->out               = xstrdup(details->out);
+	job_desc->overcommit        = details->overcommit;
+	job_desc->partition         = xstrdup(job_ptr->partition);
+	job_desc->plane_size        = details->plane_size;
+	job_desc->priority          = job_ptr->priority;
+	job_desc->resp_host         = xstrdup(job_ptr->resp_host);
+	job_desc->req_nodes         = xstrdup(details->req_nodes);
+	job_desc->requeue           = details->requeue;
+	job_desc->reservation       = xstrdup(job_ptr->resv_name);
+	job_desc->script            = get_job_script(job_ptr);
+	job_desc->shared            = details->shared;
+	job_desc->task_dist         = details->task_dist;
+	job_desc->time_limit        = job_ptr->time_limit;
+	job_desc->user_id           = job_ptr->user_id;
+	job_desc->work_dir          = xstrdup(details->work_dir);
+	job_desc->job_min_procs     = details->job_min_procs;
+	job_desc->job_min_sockets   = mc_ptr->job_min_sockets;
+	job_desc->job_min_cores     = mc_ptr->job_min_cores;
+	job_desc->job_min_threads   = mc_ptr->job_min_threads;
+	job_desc->job_min_memory    = details->job_min_memory;
+	job_desc->job_min_tmp_disk  = details->job_min_tmp_disk;
+	job_desc->num_procs         = job_ptr->num_procs;
+	job_desc->min_nodes         = details->min_nodes;
+	job_desc->max_nodes         = details->max_nodes;
+	job_desc->min_sockets       = mc_ptr->min_sockets;
+	job_desc->max_sockets       = mc_ptr->max_sockets;
+	job_desc->min_cores         = mc_ptr->min_cores;
+	job_desc->max_cores         = mc_ptr->max_cores;
+	job_desc->min_threads       = mc_ptr->min_threads;
+	job_desc->max_threads       = mc_ptr->max_threads;
+	job_desc->cpus_per_task     = details->cpus_per_task;
+	job_desc->ntasks_per_node   = details->ntasks_per_node;
+	job_desc->ntasks_per_socket = mc_ptr->ntasks_per_socket;
+	job_desc->ntasks_per_core   = mc_ptr->ntasks_per_core;
+	job_desc->wckey             = xstrdup(job_ptr->wckey);
+#if 0
+	/* select_jobinfo is unused at job submit time, only it's 
+	 * components are set. We recover those from the structure below.
+	 * job_desc->select_jobinfo = select_g_copy_jobinfo(job_ptr->
+							    select_jobinfo); */
+
+	/* The following fields are used only on BlueGene systems.
+	 * Since BlueGene does not use the checkpoint/restart logic today,
+	 * we do not them. */
+	select_g_get_jobinfo(job_ptr->select_jobinfo, SELECT_DATA_GEOMETRY, 
+			     &job_desc->geometry);
+	select_g_get_jobinfo(job_ptr->select_jobinfo, SELECT_DATA_CONN_TYPE, 
+			     &job_desc->conn_type);
+	select_g_get_jobinfo(job_ptr->select_jobinfo, SELECT_DATA_REBOOT, 
+			     &job_desc->reboot);
+	select_g_get_jobinfo(job_ptr->select_jobinfo, SELECT_DATA_ROTATE, 
+			     &job_desc->rotate);
+	select_g_get_jobinfo(job_ptr->select_jobinfo, SELECT_DATA_BLRTS_IMAGE, 
+			     &job_desc->blrtsimage);
+	select_g_get_jobinfo(job_ptr->select_jobinfo, SELECT_DATA_LINUX_IMAGE, 
+			     &job_desc->linuximage);
+	select_g_get_jobinfo(job_ptr->select_jobinfo, 
+			     SELECT_DATA_MLOADER_IMAGE, 
+			     &job_desc->mloaderimage);
+	select_g_get_jobinfo(job_ptr->select_jobinfo, 
+			     SELECT_DATA_RAMDISK_IMAGE, 
+			     &job_desc->ramdiskimage);
+#endif
+
+	return job_desc;
+}
+
+
+/*
+ * job_restart - Restart a batch job from checkpointed state
+ *
+ * Restart a job is similar to submit a new job, except that
+ * the job requirements is load from the checkpoint file and
+ * the job id is restored.
+ *
+ * IN ckpt_ptr - checkpoint request message 
+ * IN uid - user id of the user issuing the RPC
+ * IN conn_fd - file descriptor on which to send reply
+ * RET 0 on success, otherwise ESLURM error code
+ */
+extern int job_restart(checkpoint_msg_t *ckpt_ptr, uid_t uid, slurm_fd conn_fd)
+{
+	struct job_record *job_ptr;
+	char *image_dir, *ckpt_file, *data, *ver_str = NULL;
+	char *alloc_nodes = NULL;
+	int data_size;
+	Buf buffer;
+	uint32_t tmp_uint32;
+	slurm_msg_t msg, resp_msg;
+	return_code_msg_t rc_msg;
+	job_desc_msg_t *job_desc = NULL;
+	int rc = SLURM_SUCCESS;
+
+	if (ckpt_ptr->step_id != SLURM_BATCH_SCRIPT) {
+		rc = ESLURM_NOT_SUPPORTED;
+		goto reply;
+	}
+	
+	if ((job_ptr = find_job_record(ckpt_ptr->job_id)) &&
+	    ! IS_JOB_FINISHED(job_ptr)) {
+		rc = ESLURM_DISABLED;
+		goto reply;
+	}
+
+	ckpt_file = xstrdup(slurmctld_conf.job_ckpt_dir);
+	xstrfmtcat(ckpt_file, "/%u.ckpt", ckpt_ptr->job_id);
+
+	data = _read_job_ckpt_file(ckpt_file, &data_size);
+	xfree(ckpt_file);
+	
+	if (data == NULL) {
+		rc = errno;
+		xfree (ckpt_file);
+		goto reply;
+	}
+	buffer = create_buf(data, data_size);
+
+	/* unpack version string */
+	safe_unpackstr_xmalloc(&ver_str, &tmp_uint32, buffer);
+	debug3("Version string in job_ckpt header is %s", ver_str);
+	if ((!ver_str) || (strcmp(ver_str, JOB_CKPT_VERSION) != 0)) {
+		error("***************************************************");
+		error("Can not restart from job ckpt, incompatable version");
+		error("***************************************************");
+		rc = EINVAL;
+		goto unpack_error;
+	}
+
+	/* unpack checkpoint image directory */
+	safe_unpackstr_xmalloc(&image_dir, &tmp_uint32, buffer);
+
+	/* unpack the allocated nodes */
+	safe_unpackstr_xmalloc(&alloc_nodes, &tmp_uint32, buffer);
+
+	/* unpack the job req */
+	msg.msg_type = REQUEST_SUBMIT_BATCH_JOB;
+	if (unpack_msg(&msg, buffer) != SLURM_SUCCESS) {
+		goto unpack_error;
+	}
+
+	job_desc = msg.data;
+
+	/* sanity check */
+	if (job_desc->job_id != ckpt_ptr->job_id) {
+		error("saved job id(%u) is different from required job id(%u)",
+		      job_desc->job_id, ckpt_ptr->job_id);
+		rc = EINVAL;
+		goto unpack_error;
+	}
+	if (! validate_super_user(uid) && (job_desc->user_id != uid)) {
+		error("Security violation, user %u not allowed to restart "
+		      "job %u of user %u",
+		      uid, ckpt_ptr->job_id, job_desc->user_id);
+		rc = EPERM;
+		goto unpack_error;
+	}
+
+	if (ckpt_ptr->data == 1) { /* stick to nodes */
+		xfree(job_desc->req_nodes);
+		job_desc->req_nodes = alloc_nodes;
+		alloc_nodes = NULL;	/* Nothing left to xfree */
+	}
+
+	/* set open mode to append */
+	job_desc->open_mode = OPEN_MODE_APPEND;
+
+	/* Set new job priority */
+	job_desc->priority = NO_VAL;
+	
+	/*
+	 * XXX: we set submit_uid to 0 in the following job_allocate() call
+	 * This is for setting the job_id to the original one.
+	 * But this will bypass some partition access permission checks.
+	 * TODO: fix this.
+	 */
+	rc = job_allocate(job_desc,
+			  0,		/* immediate */
+			  0,		/* will_run */
+			  NULL, 	/* resp */
+			  0,		/* allocate */
+			  0,		/* submit_uid. set to 0 to set job_id */
+			  &job_ptr);
+
+	/* set restart directory */
+	if (job_ptr) {
+		if (ckpt_ptr->image_dir) {
+			xfree (image_dir);
+			image_dir = xstrdup(ckpt_ptr->image_dir);
+		}
+		xstrfmtcat(image_dir, "/%u", ckpt_ptr->job_id);
+	
+		job_ptr->details->restart_dir = image_dir;
+		image_dir = NULL;	/* Nothing left to xfree */
+
+		last_job_update = time(NULL);
+	}
+	
+ unpack_error:
+	free_buf(buffer);
+	xfree(image_dir);
+	xfree(alloc_nodes);
+	xfree(ckpt_file);
+
+ reply:
+	slurm_msg_t_init(&resp_msg);
+	rc_msg.return_code = rc;
+	resp_msg.msg_type  = RESPONSE_SLURM_RC;
+	resp_msg.data      = &rc_msg;
+	(void) slurm_send_node_msg(conn_fd, &resp_msg);
+
+	return rc;
+}
+
+static char *
+_read_job_ckpt_file(char *ckpt_file, int *size_ptr)
+{
+	int ckpt_fd, error_code = 0;
+	int data_allocated, data_read, data_size = 0;
+	char *data = NULL;
+	
+	ckpt_fd = open(ckpt_file, O_RDONLY);
+	if (ckpt_fd < 0) {
+		info("No job ckpt file (%s) to read", ckpt_file);
+		error_code = ENOENT;
+	} else {
+		data_allocated = BUF_SIZE;
+		data = xmalloc(data_allocated);
+		while (1) {
+			data_read = read(ckpt_fd, &data[data_size],
+					 BUF_SIZE);
+			if (data_read < 0) {
+				if (errno == EINTR)
+					continue;
+				else {
+					error("Read error on %s: %m", 
+					      ckpt_file);
+					error_code = errno;
+					break;
+				}
+			} else if (data_read == 0)	/* eof */
+				break;
+			data_size      += data_read;
+			data_allocated += data_read;
+			xrealloc(data, data_allocated);
+		}
+		close(ckpt_fd);
+	}
+
+	if (error_code) {
+		xfree(data);
+		return NULL;
+	}
+	*size_ptr = data_size;
+	return data;
 }

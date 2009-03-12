@@ -295,6 +295,7 @@ void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 			xfree(msg->argv[i]);
 		xfree(msg->argv);
 		xfree(msg->blrtsimage);
+		xfree(msg->ckpt_dir);
 		xfree(msg->comment);
 		xfree(msg->cpu_bind);
 		xfree(msg->dependency);
@@ -340,6 +341,8 @@ void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg)
 		xfree(msg->in);
 		xfree(msg->out);
 		xfree(msg->work_dir);
+		xfree(msg->ckpt_dir);
+		xfree(msg->restart_dir);
 
 		for (i = 0; i < msg->argc; i++)
 			xfree(msg->argv[i]);
@@ -473,7 +476,7 @@ void slurm_free_job_step_create_request_msg(job_step_create_request_msg_t *
 		xfree(msg->name);
 		xfree(msg->network);
 		xfree(msg->node_list);
-		xfree(msg->ckpt_path);
+		xfree(msg->ckpt_dir);
 		xfree(msg);
 	}
 }
@@ -572,7 +575,8 @@ void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg)
 	xfree(msg->task_epilog);
 	xfree(msg->complete_nodelist);
 
-	xfree(msg->ckpt_path);
+	xfree(msg->ckpt_dir);
+	xfree(msg->restart_dir);
 
 	if (msg->switch_job)
 		switch_free_jobinfo(msg->switch_job);
@@ -621,7 +625,10 @@ void slurm_free_kill_tasks_msg(kill_tasks_msg_t * msg)
 
 void slurm_free_checkpoint_tasks_msg(checkpoint_tasks_msg_t * msg)
 {
-	xfree(msg);
+	if (msg) {
+		xfree(msg->image_dir);
+		xfree(msg);
+	}
 }
 
 void slurm_free_epilog_complete_msg(epilog_complete_msg_t * msg)
@@ -678,7 +685,10 @@ void inline slurm_free_srun_user_msg(srun_user_msg_t * user_msg)
 
 void inline slurm_free_checkpoint_msg(checkpoint_msg_t *msg)
 {
-	xfree(msg);
+	if (msg) {
+		xfree(msg->image_dir);
+		xfree(msg);
+	}
 }
 
 void inline slurm_free_checkpoint_comp_msg(checkpoint_comp_msg_t *msg)
@@ -1170,6 +1180,7 @@ void slurm_free_ctl_conf(slurm_ctl_conf_info_msg_t * config_ptr)
 		xfree(config_ptr->epilog_slurmctld);
 		xfree(config_ptr->health_check_program);
 		xfree(config_ptr->job_acct_gather_type);
+		xfree(config_ptr->job_ckpt_dir);
 		xfree(config_ptr->job_comp_host);
 		xfree(config_ptr->job_comp_loc);
 		xfree(config_ptr->job_comp_pass);
@@ -1297,7 +1308,7 @@ static void _slurm_free_job_step_info_members (job_step_info_t * msg)
 	if (msg != NULL) {
 		xfree(msg->partition);
 		xfree(msg->nodes);
-		xfree(msg->ckpt_path);
+		xfree(msg->ckpt_dir);
 	}
 }
 

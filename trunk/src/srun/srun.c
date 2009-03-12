@@ -180,7 +180,7 @@ int srun(int ac, char **av)
 	env->nodeid = -1;
 	env->cli = NULL;
 	env->env = NULL;
-	env->ckpt_path = NULL;
+	env->ckpt_dir = NULL;
 
 	debug_level = _slurm_debug_env_val();
 	logopt.stderr_level += debug_level;
@@ -388,7 +388,8 @@ int srun(int ac, char **av)
 	launch_params.max_threads	= opt.max_threads_per_core;
 	launch_params.cpus_per_task	= opt.cpus_per_task;
 	launch_params.task_dist         = opt.distribution;
-	launch_params.ckpt_path		= xstrdup(opt.ckpt_path);
+	launch_params.ckpt_dir		= opt.ckpt_dir;
+	launch_params.restart_dir       = opt.restart_dir;
 	launch_params.preserve_env      = opt.preserve_env;
 	/* job structure should now be filled in */
 	_setup_signals();

@@ -65,6 +65,8 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->argv		= ((char **) NULL);
 	job_desc_msg->begin_time	= 0;
 	job_desc_msg->blrtsimage	= NULL;
+	job_desc_msg->ckpt_dir          = NULL;
+	job_desc_msg->ckpt_interval     = 0;
 	job_desc_msg->comment		= NULL;
 	job_desc_msg->conn_type		= (uint16_t) NO_VAL;
 	job_desc_msg->contiguous	= (uint16_t) NO_VAL;

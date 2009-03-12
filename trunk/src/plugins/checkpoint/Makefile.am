@@ -1,3 +1,9 @@
 # Makefile for checkpoint plugins
 
-SUBDIRS = aix none ompi xlch
+if WITH_BLCR
+BLCR = blcr
+else
+BLCR =
+endif
+
+SUBDIRS = aix none ompi xlch $(BLCR)

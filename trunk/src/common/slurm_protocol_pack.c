@@ -1446,7 +1446,7 @@ _pack_node_registration_status_msg(slurm_node_registration_status_msg_t *
 		pack32((uint32_t)msg->job_id[i], buffer);
 	}
 	for (i = 0; i < msg->job_count; i++) {
-		pack16((uint16_t)msg->step_id[i], buffer);
+		pack32(msg->step_id[i], buffer);
 	}
 	pack16((uint16_t)msg->startup, buffer);
 	if (msg->startup)
@@ -1486,9 +1486,9 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 		safe_unpack32(&node_reg_ptr->job_id[i], buffer);
 	}
 	node_reg_ptr->step_id =
-		xmalloc(sizeof(uint16_t) * node_reg_ptr->job_count);
+		xmalloc(sizeof(uint32_t) * node_reg_ptr->job_count);
 	for (i = 0; i < node_reg_ptr->job_count; i++) {
-		safe_unpack16(&node_reg_ptr->step_id[i], buffer);
+		safe_unpack32(&node_reg_ptr->step_id[i], buffer);
 	}
 
 	safe_unpack16(&node_reg_ptr->startup, buffer);
@@ -1941,7 +1941,7 @@ _pack_job_step_create_request_msg(job_step_create_request_msg_t
 	packstr(msg->name, buffer);
 	packstr(msg->network, buffer);
 	packstr(msg->node_list, buffer);
-	packstr(msg->ckpt_path, buffer);
+	packstr(msg->ckpt_dir, buffer);
 
 	pack8(msg->no_kill, buffer);
 	pack8(msg->overcommit, buffer);
@@ -1979,7 +1979,7 @@ _unpack_job_step_create_request_msg(job_step_create_request_msg_t ** msg,
 	safe_unpackstr_xmalloc(&(tmp_ptr->name), &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&(tmp_ptr->network), &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&(tmp_ptr->node_list), &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&(tmp_ptr->ckpt_path), &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&(tmp_ptr->ckpt_dir), &uint32_tmp, buffer);
 
 	safe_unpack8(&(tmp_ptr->no_kill), buffer);
 	safe_unpack8(&(tmp_ptr->overcommit), buffer);
@@ -2324,7 +2324,7 @@ _unpack_job_step_info_members(job_step_info_t * step, Buf buffer)
 	char *node_inx_str;
 
 	safe_unpack32(&step->job_id, buffer);
-	safe_unpack16(&step->step_id, buffer);
+	safe_unpack32(&step->step_id, buffer);
 	safe_unpack16(&step->ckpt_interval, buffer);
 	safe_unpack32(&step->user_id, buffer);
 	safe_unpack32(&step->num_tasks, buffer);
@@ -2337,7 +2337,7 @@ _unpack_job_step_info_members(job_step_info_t * step, Buf buffer)
 	safe_unpackstr_xmalloc(&step->name, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&step->network, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&node_inx_str, &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&step->ckpt_path, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&step->ckpt_dir, &uint32_tmp, buffer);
 	if (node_inx_str == NULL)
 		step->node_inx = bitfmt2int("");
 	else {
@@ -2594,6 +2594,8 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	pack16(build_ptr->job_acct_gather_freq, buffer);
 	packstr(build_ptr->job_acct_gather_type, buffer);
 
+	packstr(build_ptr->job_ckpt_dir, buffer);
+	
 	packstr(build_ptr->job_comp_host, buffer);
 	packstr(build_ptr->job_comp_loc, buffer);
 	packstr(build_ptr->job_comp_pass, buffer);
@@ -2775,6 +2777,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpackstr_xmalloc(&build_ptr->job_acct_gather_type,
 			       &uint32_tmp, buffer);
 
+	safe_unpackstr_xmalloc(&build_ptr->job_ckpt_dir, &uint32_tmp, buffer);
+
 	safe_unpackstr_xmalloc(&build_ptr->job_comp_host, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->job_comp_loc,  &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->job_comp_pass, &uint32_tmp, buffer);
@@ -2951,6 +2955,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 	pack8(job_desc_ptr->overcommit,  buffer);
 	pack16(job_desc_ptr->acctg_freq, buffer);
 	pack32(job_desc_ptr->num_tasks,  buffer);
+	pack16(job_desc_ptr->ckpt_interval, buffer);
 
 	packstr(job_desc_ptr->req_nodes, buffer);
 	packstr(job_desc_ptr->exc_nodes, buffer);
@@ -2963,6 +2968,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 	packstr(job_desc_ptr->in, buffer);
 	packstr(job_desc_ptr->out, buffer);
 	packstr(job_desc_ptr->work_dir, buffer);
+	packstr(job_desc_ptr->ckpt_dir, buffer);
 
 	pack16(job_desc_ptr->immediate, buffer);
 	pack16(job_desc_ptr->requeue, buffer);
@@ -3091,6 +3097,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 	safe_unpack8(&job_desc_ptr->overcommit,  buffer);
 	safe_unpack16(&job_desc_ptr->acctg_freq, buffer);
 	safe_unpack32(&job_desc_ptr->num_tasks,  buffer);
+	safe_unpack16(&job_desc_ptr->ckpt_interval, buffer);
 
 	safe_unpackstr_xmalloc(&job_desc_ptr->req_nodes, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&job_desc_ptr->exc_nodes, &uint32_tmp, buffer);
@@ -3103,6 +3110,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 	safe_unpackstr_xmalloc(&job_desc_ptr->in, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&job_desc_ptr->out, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&job_desc_ptr->work_dir, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&job_desc_ptr->ckpt_dir, &uint32_tmp, buffer);
 
 	safe_unpack16(&job_desc_ptr->immediate, buffer);
 	safe_unpack16(&job_desc_ptr->requeue, buffer);
@@ -3490,7 +3498,8 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer)
 	pack8(msg->open_mode, buffer);
 	pack8(msg->pty, buffer);
 	pack16(msg->acctg_freq, buffer);
-	packstr(msg->ckpt_path, buffer);
+	packstr(msg->ckpt_dir, buffer);
+	packstr(msg->restart_dir, buffer);
 }
 
 static int
@@ -3585,7 +3594,8 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 	safe_unpack8(&msg->open_mode, buffer);
 	safe_unpack8(&msg->pty, buffer);
 	safe_unpack16(&msg->acctg_freq, buffer);
-	safe_unpackstr_xmalloc(&msg->ckpt_path, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&msg->ckpt_dir, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&msg->restart_dir, &uint32_tmp, buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -3652,24 +3662,26 @@ unpack_error:
 static void
 _pack_checkpoint_tasks_msg(checkpoint_tasks_msg_t * msg, Buf buffer)
 {
-	pack32((uint32_t)msg->job_id, buffer);
-	pack32((uint32_t)msg->job_step_id, buffer);
-	pack32((uint32_t)msg->signal, buffer);
-	pack_time((time_t)msg->timestamp, buffer);
+	pack32(msg->job_id, buffer);
+	pack32(msg->job_step_id, buffer);
+	pack_time(msg->timestamp, buffer);
+	packstr(msg->image_dir, buffer);
 }
 
 static int
 _unpack_checkpoint_tasks_msg(checkpoint_tasks_msg_t ** msg_ptr, Buf buffer)
 {
 	checkpoint_tasks_msg_t *msg;
+	uint32_t uint32_tmp;
 
 	msg = xmalloc(sizeof(checkpoint_tasks_msg_t));
 	*msg_ptr = msg;
 
 	safe_unpack32(&msg->job_id, buffer);
 	safe_unpack32(&msg->job_step_id, buffer);
-	safe_unpack32(&msg->signal, buffer);
 	safe_unpack_time(&msg->timestamp, buffer);
+	safe_unpackstr_xmalloc(&msg->image_dir, &uint32_tmp, buffer);
+	
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -4153,6 +4165,8 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, Buf buffer)
 	packstr(msg->nodes,    buffer);
 	packstr(msg->script,   buffer);
 	packstr(msg->work_dir, buffer);
+	packstr(msg->ckpt_dir, buffer);
+	packstr(msg->restart_dir, buffer);
 
 	packstr(msg->err, buffer);
 	packstr(msg->in, buffer);
@@ -4211,6 +4225,8 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer)
 	safe_unpackstr_xmalloc(&launch_msg_ptr->nodes,    &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&launch_msg_ptr->script,   &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&launch_msg_ptr->work_dir, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&launch_msg_ptr->ckpt_dir, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&launch_msg_ptr->restart_dir, &uint32_tmp, buffer);
 
 	safe_unpackstr_xmalloc(&launch_msg_ptr->err, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&launch_msg_ptr->in,  &uint32_tmp, buffer);
@@ -4506,16 +4522,18 @@ _pack_checkpoint_msg(checkpoint_msg_t *msg, Buf buffer)
 {
 	xassert ( msg != NULL );
 
-	pack16((uint16_t)msg->op,      buffer ) ;
-	pack16((uint16_t)msg->data,    buffer ) ;
-	pack32((uint32_t)msg->job_id,  buffer ) ;
-	pack32((uint32_t)msg->step_id, buffer ) ;
+	pack16(msg->op,      buffer ) ;
+	pack16(msg->data,    buffer ) ;
+	pack32(msg->job_id,  buffer ) ;
+	pack32(msg->step_id, buffer ) ;
+	packstr((char *)msg->image_dir, buffer ) ;
 }
 
 static int
 _unpack_checkpoint_msg(checkpoint_msg_t **msg_ptr, Buf buffer)
 {
 	checkpoint_msg_t * msg;
+	uint32_t uint32_tmp;
 	xassert ( msg_ptr != NULL );
 
 	msg = xmalloc ( sizeof (checkpoint_msg_t) ) ;
@@ -4525,6 +4543,7 @@ _unpack_checkpoint_msg(checkpoint_msg_t **msg_ptr, Buf buffer)
 	safe_unpack16(&msg->data, buffer ) ;
 	safe_unpack32(&msg->job_id, buffer ) ;
 	safe_unpack32(&msg->step_id, buffer ) ;
+	safe_unpackstr_xmalloc(&msg->image_dir, &uint32_tmp, buffer ) ;
 	return SLURM_SUCCESS;
 
 unpack_error:

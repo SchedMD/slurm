@@ -1,4 +1,4 @@
-.TH "sbatch" "1" "SLURM 2.0" "February 2009" "SLURM Commands"
+.TH "sbatch" "1" "SLURM 2.0" "March 2009" "SLURM Commands"
 .SH "NAME"
 .LP 
 sbatch \- Submit a batch script to SLURM.
@@ -166,6 +166,22 @@ auto\-generated masks bind to threads
 .B help
 show this help message
 .RE
+
+.TP
+\fB\-\-checkpoint\fR=\fItime\fR
+Specifies the interval between creating checkpoints of the job step. 
+By default, the job step will no checkpoints created.
+Acceptable time formats include "minutes", "minutes:seconds", 
+"hours:minutes:seconds", "days\-hours", "days\-hours:minutes" and 
+"days\-hours:minutes:seconds".
+
+.TP
+\fB\-\-checkpoint\-dir\fR=\fIdirectory\fR
+Specifies the directory into which the job or job step's checkpoint should 
+be written (used by the checkpoint/blcrm and checkpoint/xlch plugins only).
+The default value is the current working directory.
+Checkpoint files will be of the form "<job_id>.ckpt" for jobs
+and "<job_id>.<step_id>.ckpt" for job steps.
 
 .TP 
 \fB\-c\fR, \fB\-\-cpus\-per\-task\fR[=]<\fIncpus\fR>
@@ -845,6 +861,12 @@ Same as \fB\-\-account\fR.
 .TP
 \fBSALLOC_ACCTG_FREQ\fR
 Same as \fB\-\-acctg\-freq\fR.
+.TP
+\fBSLURM_CHECKPOINT\fR
+Same as \fB\-\-checkpoint\fR=\fItime\fR
+.TP
+\fBSLURM_CHECKPOINT_DIR\fR
+Same as \fB\-\-checkpoint\-dir\fR=\fIpath\fR
 .TP
 \fBSBATCH_CONN_TYPE\fR
 Same as \fB\-\-conn\-type\fR.

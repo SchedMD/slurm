@@ -587,7 +587,7 @@ _process_command (int argc, char *argv[])
 		}
 	}
 	else if (strncasecmp (tag, "checkpoint", MAX(taglen, 2)) == 0) {
-		if (argc > 3) {
+		if (argc > 5) {
 			exit_code = 1;
 			if (quiet_flag != 1)
 				fprintf(stderr, 
@@ -602,11 +602,12 @@ _process_command (int argc, char *argv[])
 				        tag);
 		}
 		else {
-			error_code = scontrol_checkpoint(argv[1], argv[2]);
+			error_code = scontrol_checkpoint(argv[1], argv[2], 
+							 argc - 3, &argv[3]);
 			if (error_code) {
 				exit_code = 1;
 				if (quiet_flag != 1)
-					slurm_perror ("slurm_checkpoint error");
+					slurm_perror ("scontrol_checkpoint error");
 			}
 		}
 	}
@@ -1255,8 +1256,8 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
                               generating a core file.                      \n\
      all                      display information about all partitions,    \n\
                               including hidden partitions.                 \n\
-     checkpoint <CH_OP><step> perform a checkpoint operation on identified \n\
-                              job step \n\
+     checkpoint <CH_OP><ID>   perform a checkpoint operation on identified \n\
+                              job or job step \n\
      completing               display jobs in completing state along with  \n\
                               their completing or down nodes               \n\
      create <SPECIFICATIONS>  create a new partition or reservation        \n\
@@ -1322,6 +1323,8 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
                                                                            \n\
   <CH_OP> identify checkpoint operations and may be \"able\", \"disable\", \n\
   \"enable\", \"create\", \"vacate\", \"restart\", or \"error\".           \n\
+  Additional options include \"ImageDir=<dir>\", \"MaxWait=<seconds>\" and \n\
+  \"StickToNodes\"   \n\
                                                                            \n\
   All commands and options are case-insensitive, although node names and   \n\
   partition names tests are case-sensitive (node names \"LX\" and \"lx\"   \n\

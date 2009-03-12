@@ -13,6 +13,8 @@ documents those changes that are of interest to users and admins.
     allocation with respect to network topology.
  -- Add support for new configuration parameter EpilogSlurmctld (executed by 
     slurmctld daemon).
+ -- Add checkpoint/blcr plugin, SLURM now support job checkpoint/restart using
+    BLCR. Patch from Hongjia Cao, NUDT, China.
 
 * Changes in SLURM 1.4.0-pre8
 =============================

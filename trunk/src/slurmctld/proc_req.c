@@ -421,6 +421,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->job_acct_gather_freq  = conf->job_acct_gather_freq;
 	conf_ptr->job_acct_gather_type  = xstrdup(conf->job_acct_gather_type);
 
+	conf_ptr->job_ckpt_dir        = xstrdup(conf->job_ckpt_dir);
 	conf_ptr->job_comp_host       = xstrdup(conf->job_comp_host);
 	conf_ptr->job_comp_loc        = xstrdup(conf->job_comp_loc);
 	conf_ptr->job_comp_pass       = xstrdup(conf->job_comp_pass);
@@ -2763,28 +2764,35 @@ inline static void  _slurm_rpc_checkpoint(slurm_msg_t * msg)
 
 	/* do RPC call and send reply */
 	lock_slurmctld(job_write_lock);
-	error_code = job_step_checkpoint(ckpt_ptr, uid, msg->conn_fd);
+	if (ckpt_ptr->op == CHECK_RESTART) {
+		error_code = job_restart(ckpt_ptr, uid, msg->conn_fd);
+	} else if (ckpt_ptr->step_id == SLURM_BATCH_SCRIPT) {
+		error_code = job_checkpoint(ckpt_ptr, uid, msg->conn_fd);
+	} else {
+		error_code = job_step_checkpoint(ckpt_ptr, uid, msg->conn_fd);
+	}
 	unlock_slurmctld(job_write_lock);
 	END_TIMER2("_slurm_rpc_checkpoint");
 
 	if (error_code) {
-		if (ckpt_ptr->step_id == SLURM_BATCH_SCRIPT)
+		if (ckpt_ptr->step_id == SLURM_BATCH_SCRIPT) {
 			info("_slurm_rpc_checkpoint %s %u: %s", op, 
 				ckpt_ptr->job_id, slurm_strerror(error_code));
-		else
+		} else {
 			info("_slurm_rpc_checkpoint %s %u.%u: %s", op, 
 				ckpt_ptr->job_id, ckpt_ptr->step_id, 
 				slurm_strerror(error_code));
+		}
 	} else {
-		if (ckpt_ptr->step_id == SLURM_BATCH_SCRIPT)
+		if (ckpt_ptr->step_id == SLURM_BATCH_SCRIPT) {
 			info("_slurm_rpc_checkpoint %s for %u %s", op,
 				ckpt_ptr->job_id, TIME_STR);
-		else
+		} else {
 			info("_slurm_rpc_checkpoint %s for %u.%u %s", op,
 				ckpt_ptr->job_id, ckpt_ptr->step_id, TIME_STR);
-
-		if ((ckpt_ptr->op != CHECK_ABLE) 
-		&&  (ckpt_ptr->op != CHECK_ERROR)) {
+		}
+		if ((ckpt_ptr->op != CHECK_ABLE) &&
+		    (ckpt_ptr->op != CHECK_ERROR)) {
 			/* job state changed, save it */
 			/* NOTE: This function provides it own locks */
 			schedule_job_save();

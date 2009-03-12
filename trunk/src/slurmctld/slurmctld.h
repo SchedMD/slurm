@@ -382,6 +382,7 @@ struct job_details {
 	time_t begin_time;		/* start at this time (srun --being), 
 					 * resets to time first eligible
 					 * (all dependencies satisfied) */
+	char *ckpt_dir;		        /* directory to store checkpoint images */
 	uint16_t contiguous;		/* set if requires contiguous nodes */
 	char *cpu_bind;			/* binding map for map/mask_cpu */
 	uint16_t cpu_bind_type;		/* see cpu_bind_type_t */
@@ -424,6 +425,7 @@ struct job_details {
 	uint16_t *req_node_layout;	/* task layout for required nodes */
 	char *req_nodes;		/* required nodes */
 	uint16_t requeue;		/* controls ability requeue job */
+	char *restart_dir;	        /* restart execution from ckpt images in this dir */
 	uint16_t shared;		/* 1 if job can share nodes,
 					 * 0 if job cannot share nodes,
 					 * any other value accepts the default
@@ -447,8 +449,11 @@ struct job_record {
 					 * value before use */
 	uint16_t batch_flag;		/* 1 or 2 if batch job (with script),
 					 * 2 indicates retry mode (one retry) */
+	check_jobinfo_t check_job;      /* checkpoint context, opaque */
+	uint16_t ckpt_interval;	        /* checkpoint interval in minutes */
+	time_t ckpt_time;	        /* last time job was periodically checkpointed */
 	char *comment;			/* arbitrary comment */
-        uint16_t cr_enabled;            /* specify if if Consumable Resources
+	uint16_t cr_enabled;            /* specify if if Consumable Resources
                                          * is enabled. Needed since CR deals
                                          * with a finer granularity in its
                                          * node/cpu scheduling (available cpus
@@ -482,7 +487,7 @@ struct job_record {
 	uint32_t magic;			/* magic cookie for data integrity */
 	char *name;			/* name of the job */
 	char *network;			/* network/switch requirement spec */
-	uint16_t next_step_id;		/* next step id to be used */
+	uint32_t next_step_id;		/* next step id to be used */
 	char *nodes;			/* list of nodes allocated to job */
 	slurm_addr *node_addr;		/* addresses of the nodes allocated to 
 					 * job */
@@ -549,7 +554,7 @@ struct 	step_record {
 	uint16_t batch_step;		/* 1 if batch job step, 0 otherwise */
 	uint16_t ckpt_interval;		/* checkpoint interval in minutes */
 	check_jobinfo_t check_job;	/* checkpoint context, opaque */
-	char *ckpt_path;	        /* path to checkpoint image files */
+	char *ckpt_dir;	                /* path to checkpoint image files */
 	time_t ckpt_time;		/* time of last checkpoint */
 	bitstr_t *core_bitmap_job;	/* bitmap of cores allocated to this
 					 * step relative to job's nodes, 
@@ -575,7 +580,7 @@ struct 	step_record {
 	uint16_t resv_port_cnt;		/* count of ports reserved per node */
 	char *resv_ports;		/* ports reserved for job */
 	time_t start_time;      	/* step allocation time */
-	uint16_t step_id;		/* step number */
+	uint32_t step_id;		/* step number */
 	slurm_step_layout_t *step_layout;/* info about how tasks are laid out
 					  * in the step */
 	bitstr_t *step_node_bitmap;	/* bitmap of nodes allocated to job 
@@ -823,7 +828,7 @@ extern uint32_t get_next_job_id(void);
  * RET pointer to the job step's record, NULL on error
  */
 extern struct step_record * find_step_record(struct job_record *job_ptr, 
-					     uint16_t step_id);
+					     uint32_t step_id);
 
 /* 
  * init_job_conf - initialize the job configuration tables and values. 
@@ -913,6 +918,10 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
  */
 extern int job_cancel_by_assoc_id(uint32_t assoc_id);
 
+/* Perform checkpoint operation on a job */
+extern int job_checkpoint(checkpoint_msg_t *ckpt_ptr, uid_t uid, 
+			  slurm_fd conn_fd);
+
 /* log the completion of the specified job */
 extern void job_completion_logger(struct job_record  *job_ptr);
 
@@ -953,6 +962,21 @@ extern int job_fail(uint32_t job_id);
  * RET SLURM error code
  */
 extern int job_node_ready(uint32_t job_id, int *ready);
+
+/*
+ * job_restart - Restart a batch job from checkpointed state
+ *
+ * Restart a job is similar to submit a new job, except that
+ * the job requirements is load from the checkpoint file and
+ * the job id is restored.
+ *
+ * IN ckpt_ptr - checkpoint request message 
+ * IN uid - user id of the user issuing the RPC
+ * IN conn_fd - file descriptor on which to send reply
+ * RET 0 on success, otherwise ESLURM error code
+ */
+extern int job_restart(checkpoint_msg_t *ckpt_ptr, uid_t uid, 
+		       slurm_fd conn_fd);
 
 /* 
  * job_signal - signal the specified job

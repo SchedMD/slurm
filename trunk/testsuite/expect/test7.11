@@ -116,7 +116,7 @@ expect {
 
 # Allow enough time for configuration file in NFS to be propogated
 # to all nodes of cluster
-exec sleep 30 
+exec sleep 60 
 
 #
 # Test of srun help message

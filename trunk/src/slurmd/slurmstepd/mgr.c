@@ -127,11 +127,11 @@ static int mgr_sigarray[] = {
 };
 
 struct priv_state {
-	uid_t           saved_uid;
-	gid_t           saved_gid;
-	gid_t *         gid_list;
-	int             ngids;
-	char            saved_cwd [4096];
+	uid_t	saved_uid;
+	gid_t	saved_gid;
+	gid_t *	gid_list;
+	int	ngids;
+	char	saved_cwd [4096];
 };
 
 step_complete_t step_complete = {
@@ -146,7 +146,7 @@ step_complete_t step_complete = {
 	true,
 	(bitstr_t *)NULL,
 	0,
-        NULL
+	NULL
 };
 
 typedef struct kill_thread {
@@ -164,20 +164,20 @@ typedef struct kill_thread {
  */
 static int  _access(const char *path, int modes, uid_t uid, gid_t gid);
 static void _send_launch_failure(launch_tasks_request_msg_t *, 
-                                 slurm_addr *, int);
+				 slurm_addr *, int);
 static int  _fork_all_tasks(slurmd_job_t *job);
 static int  _become_user(slurmd_job_t *job, struct priv_state *ps);
 static void  _set_prio_process (slurmd_job_t *job);
 static void _set_job_log_prefix(slurmd_job_t *job);
 static int  _setup_normal_io(slurmd_job_t *job);
 static int  _drop_privileges(slurmd_job_t *job, bool do_setuid,
-				struct priv_state *state);
+			     struct priv_state *state);
 static int  _reclaim_privileges(struct priv_state *state);
 static void _send_launch_resp(slurmd_job_t *job, int rc);
 static void _slurmd_job_log_init(slurmd_job_t *job);
 static void _wait_for_io(slurmd_job_t *job);
 static int  _send_exit_msg(slurmd_job_t *job, uint32_t *tid, int n, 
-		int status);
+			   int status);
 static void _wait_for_children_slurmstepd(slurmd_job_t *job);
 static int  _send_pending_exit_msgs(slurmd_job_t *job);
 static void _send_step_complete_msgs(slurmd_job_t *job);
@@ -359,7 +359,7 @@ _set_job_log_prefix(slurmd_job_t *job)
 static int
 _setup_normal_io(slurmd_job_t *job)
 {
-	int            rc   = 0;
+	int	    rc   = 0;
 	struct priv_state sprivs;
 
 	debug2("Entering _setup_normal_io");
@@ -439,14 +439,14 @@ _send_exit_msg(slurmd_job_t *job, uint32_t *tid, int n, int status)
 
 	debug3("sending task exit msg for %d tasks", n);
 
-	msg.task_id_list = tid;
-	msg.num_tasks    = n;
-	msg.return_code  = status;
-	msg.job_id       = job->jobid;
-	msg.step_id      = job->stepid;
+	msg.task_id_list	= tid;
+	msg.num_tasks		= n;
+	msg.return_code		= status;
+	msg.job_id		= job->jobid;
+	msg.step_id		= job->stepid;
 	slurm_msg_t_init(&resp);
-	resp.data        = &msg;
-	resp.msg_type    = MESSAGE_TASK_EXIT;
+	resp.data		= &msg;
+	resp.msg_type		= MESSAGE_TASK_EXIT;
 	
 	/*
 	 *  XXX Hack for TCP timeouts on exit of large, synchronized
@@ -700,6 +700,7 @@ job_manager(slurmd_job_t *job)
 {
 	int  rc = 0;
 	bool io_initialized = false;
+	char *ckpt_type = slurm_get_checkpoint_type();
 
 	debug3("Entered job_manager for %u.%u pid=%lu",
 	       job->jobid, job->stepid, (unsigned long) job->jmgr_pid);
@@ -709,6 +710,7 @@ job_manager(slurmd_job_t *job)
 	if (switch_init() != SLURM_SUCCESS
 	    || slurmd_task_init() != SLURM_SUCCESS
 	    || slurm_proctrack_init() != SLURM_SUCCESS
+	    || checkpoint_init(ckpt_type) != SLURM_SUCCESS
 	    || slurm_jobacct_gather_init() != SLURM_SUCCESS) {
 		rc = SLURM_PLUGIN_NAME_INVALID;
 		goto fail1;
@@ -739,7 +741,7 @@ job_manager(slurmd_job_t *job)
 	if (prctl(PR_SET_DUMPABLE, 1) < 0)
 		debug ("Unable to set dumpable to 1");
 #  endif /* PR_SET_DUMPABLE */
-#endif   /* !NDEBUG         */
+#endif   /* !NDEBUG	 */
 
 	if (rc) {
 		error("IO setup failed: %m");
@@ -757,6 +759,14 @@ job_manager(slurmd_job_t *job)
 		goto fail2;
 	}
 
+	/* fork necessary threads for checkpoint */
+	if (checkpoint_stepd_prefork(job) != SLURM_SUCCESS) {
+		error("Failed checkpoint_stepd_prefork");
+		rc = SLURM_FAILURE;
+		io_close_task_fds(job);
+		goto fail2;
+	}
+	
 	/* calls pam_setup() and requires pam_finish() if successful */
 	if (_fork_all_tasks(job) < 0) {
 		debug("_fork_all_tasks failed");
@@ -850,6 +860,7 @@ job_manager(slurmd_job_t *job)
 		_send_step_complete_msgs(job);
 	}
 
+	xfree(ckpt_type);
 	return(rc);
 }
 
@@ -1036,11 +1047,11 @@ _fork_all_tasks(slurmd_job_t *job)
 				i, job->task[i]->pid, job->pgid);
 		}
 
-                if (slurm_container_add(job, job->task[i]->pid)
+		if (slurm_container_add(job, job->task[i]->pid)
 		    == SLURM_ERROR) {
-                        error("slurm_container_add: %m");
+			error("slurm_container_add: %m");
 			goto fail1;
-                }
+		}
 		jobacct_id.nodeid = job->nodeid;
 		jobacct_id.taskid = job->task[i]->gtid;
 		jobacct_gather_g_add_task(job->task[i]->pid, 
@@ -1444,13 +1455,13 @@ _send_launch_resp(slurmd_job_t *job, int rc)
 	debug("Sending launch resp rc=%d", rc);
 
 	slurm_msg_t_init(&resp_msg);
-        resp_msg.address      = srun->resp_addr;
-	resp_msg.data         = &resp;
-	resp_msg.msg_type     = RESPONSE_LAUNCH_TASKS;
+	resp_msg.address	= srun->resp_addr;
+	resp_msg.data		= &resp;
+	resp_msg.msg_type	= RESPONSE_LAUNCH_TASKS;
 	
-	resp.node_name        = xstrdup(job->node_name);
-	resp.return_code      = rc;
-	resp.count_of_pids    = job->ntasks;
+	resp.node_name		= xstrdup(job->node_name);
+	resp.return_code	= rc;
+	resp.count_of_pids	= job->ntasks;
 
 	resp.local_pids = xmalloc(job->ntasks * sizeof(*resp.local_pids));
 	resp.task_ids = xmalloc(job->ntasks * sizeof(*resp.task_ids));
@@ -1470,9 +1481,9 @@ _send_launch_resp(slurmd_job_t *job, int rc)
 static int
 _send_complete_batch_script_msg(slurmd_job_t *job, int err, int status)
 {
-	int                      rc, i;
-	slurm_msg_t              req_msg;
-	complete_batch_script_msg_t  req;
+	int		rc, i;
+	slurm_msg_t	req_msg;
+	complete_batch_script_msg_t req;
 
 	req.job_id	= job->jobid;
 	req.job_rc      = status;

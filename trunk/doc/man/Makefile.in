@@ -40,6 +40,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac__system_configuration.m4 \
 	$(top_srcdir)/auxdir/x_ac_affinity.m4 \
 	$(top_srcdir)/auxdir/x_ac_aix.m4 \
+	$(top_srcdir)/auxdir/x_ac_blcr.m4 \
 	$(top_srcdir)/auxdir/x_ac_bluegene.m4 \
 	$(top_srcdir)/auxdir/x_ac_cflags.m4 \
 	$(top_srcdir)/auxdir/x_ac_cray.m4 \
@@ -88,6 +89,10 @@ AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
 BG_INCLUDES = @BG_INCLUDES@
+BLCR_CPPFLAGS = @BLCR_CPPFLAGS@
+BLCR_HOME = @BLCR_HOME@
+BLCR_LDFLAGS = @BLCR_LDFLAGS@
+BLCR_LIBS = @BLCR_LIBS@
 BLUEGENE_LOADED = @BLUEGENE_LOADED@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
@@ -263,6 +268,7 @@ man1_MANS = \
 	man1/squeue.1 \
 	man1/sreport.1 \
 	man1/srun.1 \
+	man1/srun_cr.1 \
 	man1/sshare.1 \
 	man1/sstat.1 \
 	man1/strigger.1 \
@@ -287,6 +293,7 @@ man3_MANS = man3/slurm_hostlist_create.3 \
 	man3/slurm_checkpoint_failed.3 \
 	man3/slurm_checkpoint_restart.3 \
 	man3/slurm_checkpoint_task_complete.3 \
+	man3/slurm_checkpoint_tasks.3 \
 	man3/slurm_checkpoint_vacate.3 \
 	man3/slurm_clear_trigger.3 \
 	man3/slurm_complete_job.3 \
@@ -309,7 +316,6 @@ man3_MANS = man3/slurm_hostlist_create.3 \
 	man3/slurm_free_slurmd_status.3 \
 	man3/slurm_free_submit_response_response_msg.3 \
 	man3/slurm_free_trigger_msg.3 \
-	man3/slurm_get_checkpoint_file_path.3 \
 	man3/slurm_get_end_time.3 \
 	man3/slurm_get_errno.3 \
 	man3/slurm_get_job_steps.3 \
