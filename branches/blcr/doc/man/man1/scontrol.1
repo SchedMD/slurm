@@ -94,6 +94,8 @@ Valid with \fIcreate\fP and \fIvacate\fP options only.
 .TP
 \fIImageDir=<directory_name>\fP Location of checkpoint file.
 Valid with \fIcreate\fP, \fIvacate\fP and \fIrestart\fP options only.
+This value takes precedent over any \-\-checkpoint\-dir value specified
+at job submission time.
 .TP
 \fIStickToNodes\fP If set, resume job on the same nodes are previously used.
 Valid with the \fIrestart\fP option only.

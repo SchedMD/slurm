@@ -27,7 +27,10 @@ Baic familiarity with SLURM commands is assumed.</p>
 <li><b>--checkpoint</b>: Specify the interval between periodic checkpoint
 of a job step, in seconds</li>
 <li><b>--checkpoint-dir</b>:Specify the directory when the checkpoint image
-files of a job step will be stored</li>
+files of a job step will be stored.
+The default value is the current working directory.
+Checkpoint files will be of the form <i>"&lt;job_id&gt;.ckpt"</i> for jobs
+and <i>"&lt;job_id&gt;.&lt;step_id&gt;.ckpt"</i> for job steps.</li>
 <li><b>--restart-dir</b>: Specify the directory when the checkpoint image
 files of a job step will be read from</li>
 </li>
@@ -91,7 +94,10 @@ execution of the tasks from the previous checkpoint.</p>
 <li><b>--checkpoint</b>: Specify the interval between periodic checkpoint
 of a batch job, in seconds</li>
 <li><b>--checkpoint-dir</b>:Specify the directory when the checkpoint image
-files of a batch job will be stored</li>
+files of a batch job will be stored.
+The default value is the current working directory.
+Checkpoint files will be of the form <i>"&lt;job_id&gt;.ckpt"</i> for jobs
+and <i>"&lt;job_id&gt;.&lt;step_id&gt;.ckpt"</i> for job steps.</li>
 </li>
 
 <p>Environment variables are available for all of these options:</p>
@@ -114,7 +120,8 @@ Upon checkpoint, the task launch command must forward the requests to
 tasks it launched.
 <ul>
 <li><b>ImageDir</b> specifies the directory in which to save the checkpoint 
-image files.</li>
+image files. If specified, this takes precedence over any <b>--checkpoint-dir</b>
+option specified when the job or job step were submitted.</li>
 <li><b>MaxWait</b> specifies the maximum time permitted for a checkpoint 
 request to complete. The request will be considered failed if not 
 completed in this time period.</li>
@@ -145,6 +152,6 @@ or reading job checkpoint files</li>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 9 March 2009</p>
+<p style="text-align:center;">Last modified 11 March 2009</p>
 
 <!--#include virtual="footer.txt"-->

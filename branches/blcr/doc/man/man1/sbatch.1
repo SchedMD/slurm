@@ -180,6 +180,8 @@ Acceptable time formats include "minutes", "minutes:seconds",
 Specifies the directory into which the job or job step's checkpoint should 
 be written (used by the checkpoint/blcrm and checkpoint/xlch plugins only).
 The default value is the current working directory.
+Checkpoint files will be of the form "<job_id>.ckpt" for jobs
+and "<job_id>.<step_id>.ckpt" for job steps.
 
 .TP 
 \fB\-c\fR, \fB\-\-cpus\-per\-task\fR[=]<\fIncpus\fR>
