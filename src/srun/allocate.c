@@ -604,6 +604,7 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 
 		if (opt.immediate ||
 		    ((rc != ESLURM_NODES_BUSY) && (rc != ESLURM_PORTS_BUSY) &&
+		     (rc != ESLURM_PROLOG_RUNNING) && 
 		     (rc != ESLURM_DISABLED))) {
 			error ("Unable to create job step: %m");
 			return -1;
@@ -617,7 +618,7 @@ create_job_step(srun_job_t *job, bool use_all_cpus)
 			oquitf  = xsignal(SIGQUIT, _intr_handler);
 		} else
 			verbose("Job step creation still disabled, retrying");
-		sleep(MIN((i*10), 60));
+		sleep(MIN((i*10+1), 60));
 	}
 	if (i > 0) {
 		xsignal(SIGINT,  ointf);

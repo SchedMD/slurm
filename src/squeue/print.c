@@ -642,7 +642,9 @@ int _print_job_num_procs(job_info_t * job, int width, bool right, char* suffix)
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("CPUS", width, right, true);
 	else {
-		if (job->job_state == JOB_RUNNING) {
+		if ((job->num_cpu_groups > 0) &&
+		    (job->cpus_per_node) &&
+		    (job->cpu_count_reps)) {
 			uint32_t cnt = 0, i;
 			for (i=0; i<job->num_cpu_groups; i++) {
 				cnt += job->cpus_per_node[i] * 

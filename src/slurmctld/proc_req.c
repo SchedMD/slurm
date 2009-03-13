@@ -1309,8 +1309,8 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 	/* return result */
 	if (error_code) {
 		unlock_slurmctld(job_write_lock);
-		error("_slurm_rpc_job_step_create: %s", 
-			slurm_strerror(error_code));
+		info("_slurm_rpc_job_step_create: %s", 
+		     slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
 	} else {
 		slurm_step_layout_t *layout = step_rec->step_layout;
