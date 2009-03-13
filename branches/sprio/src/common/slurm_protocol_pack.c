@@ -79,6 +79,16 @@ static int _unpack_shares_request_msg(shares_request_msg_t ** msg, Buf buffer);
 static void _pack_shares_response_msg(shares_response_msg_t * msg, Buf buffer);
 static int _unpack_shares_response_msg(shares_response_msg_t ** msg,
 				       Buf buffer);
+static void _pack_priority_factors_object(void *in, Buf buffer);
+static int _unpack_priority_factors_object(void **object, Buf buffer);
+static void _pack_priority_factors_request_msg(
+	priority_factors_request_msg_t * msg, Buf buffer);
+static int _unpack_priority_factors_request_msg(
+	priority_factors_request_msg_t ** msg, Buf buffer);
+static void _pack_priority_factors_response_msg(
+	priority_factors_response_msg_t * msg, Buf buffer);
+static int _unpack_priority_factors_response_msg(
+	priority_factors_response_msg_t ** msg, Buf buffer);
 
 static void _pack_update_node_msg(update_node_msg_t * msg, Buf buffer);
 static int _unpack_update_node_msg(update_node_msg_t ** msg, Buf buffer);
@@ -747,7 +757,16 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		_pack_shares_response_msg((shares_response_msg_t *)msg->data,
 					  buffer);
 		break;
-
+	case REQUEST_PRIORITY_FACTORS:
+		_pack_priority_factors_request_msg(
+			(priority_factors_request_msg_t*)msg->data,
+			buffer);
+		break;
+	case RESPONSE_PRIORITY_FACTORS:
+		_pack_priority_factors_response_msg(
+			(priority_factors_response_msg_t*)msg->data,
+			buffer);
+		break;
 	case REQUEST_NODE_SELECT_INFO:
 		_pack_node_select_info_req_msg(
 			(node_info_select_request_msg_t *) msg->data, buffer);
@@ -1129,6 +1148,16 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 			(shares_response_msg_t **)&msg->data,
 			buffer);
 		break;
+	case REQUEST_PRIORITY_FACTORS:
+		_unpack_priority_factors_request_msg(
+			(priority_factors_request_msg_t**)&msg->data,
+			buffer);
+		break;
+	case RESPONSE_PRIORITY_FACTORS:
+		_unpack_priority_factors_response_msg(
+			(priority_factors_response_msg_t**)&msg->data,
+			buffer);
+		break;
 	case REQUEST_NODE_SELECT_INFO:
 		rc = _unpack_node_select_info_req_msg(
 			(node_info_select_request_msg_t **) &msg->data,
@@ -1382,6 +1411,167 @@ static int _unpack_shares_response_msg(shares_response_msg_t ** msg,
 
 unpack_error:
 	slurm_free_shares_response_msg(object_ptr);
+	*msg = NULL;
+	return SLURM_ERROR;
+
+}
+
+static void _pack_priority_factors_object(void *in, Buf buffer)
+{
+	priority_factors_object_t *object = (priority_factors_object_t *)in;
+
+	if(!object) {
+		pack32(0, buffer);
+		pack32(0, buffer);
+
+		packdouble(0, buffer);
+		packdouble(0, buffer);
+		packdouble(0, buffer);
+		packdouble(0, buffer);
+		packdouble(0, buffer);
+
+		pack16(0, buffer);
+
+		return;
+	}
+
+	pack32(object->job_id, buffer);
+	pack32(object->user_id, buffer);
+
+	packdouble(object->priority_age, buffer);
+	packdouble(object->priority_fs, buffer);
+	packdouble(object->priority_js, buffer);
+	packdouble(object->priority_part, buffer);
+	packdouble(object->priority_qos, buffer);
+
+	pack16(object->nice_offset, buffer);
+}
+
+static int _unpack_priority_factors_object(void **object, Buf buffer)
+{
+	priority_factors_object_t *object_ptr =
+		xmalloc(sizeof(priority_factors_object_t));
+
+	*object = (void *) object_ptr;
+	safe_unpack32(&object_ptr->job_id, buffer);
+	safe_unpack32(&object_ptr->user_id, buffer);
+
+	safe_unpackdouble(&object_ptr->priority_age, buffer);
+	safe_unpackdouble(&object_ptr->priority_fs, buffer);
+	safe_unpackdouble(&object_ptr->priority_js, buffer);
+	safe_unpackdouble(&object_ptr->priority_part, buffer);
+	safe_unpackdouble(&object_ptr->priority_qos, buffer);
+
+	safe_unpack16(&object_ptr->nice_offset, buffer);
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	xfree(object);
+	*object = NULL;
+	return SLURM_ERROR;
+}
+
+static void 
+_pack_priority_factors_request_msg(priority_factors_request_msg_t * msg,
+				   Buf buffer)
+{
+	uint32_t count = NO_VAL;
+	uint32_t* tmp = NULL;
+	ListIterator itr = NULL;
+
+	xassert(msg != NULL);
+
+	if(msg->job_id_list)
+		count = list_count(msg->job_id_list);
+	pack32(count, buffer);
+	if(count && count != NO_VAL) {
+		itr = list_iterator_create(msg->job_id_list);
+		while((tmp = list_next(itr))) {
+			pack32(*tmp, buffer);
+		}
+		list_iterator_destroy(itr);
+	}
+}
+
+static int
+_unpack_priority_factors_request_msg(priority_factors_request_msg_t ** msg,
+				     Buf buffer)
+{
+	uint32_t* uint32_tmp;
+	uint32_t count = NO_VAL;
+	int i;
+	priority_factors_request_msg_t *object_ptr = NULL;
+
+	xassert(msg != NULL);
+
+	object_ptr = xmalloc(sizeof(priority_factors_request_msg_t));
+	*msg = object_ptr;
+
+	safe_unpack32(&count, buffer);
+	if(count != NO_VAL) {
+		object_ptr->job_id_list = list_create(NULL);
+		for(i=0; i<count; i++) {
+			uint32_tmp = xmalloc(sizeof(uint32_t));
+			safe_unpack32(uint32_tmp, buffer);
+			list_append(object_ptr->job_id_list, uint32_tmp);
+		}
+	}
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_priority_factors_request_msg(object_ptr);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
+static void
+_pack_priority_factors_response_msg(priority_factors_response_msg_t * msg,
+						Buf buffer)
+{
+	ListIterator itr = NULL;
+	priority_factors_object_t *factors = NULL;
+	uint32_t count = NO_VAL;
+
+	xassert(msg != NULL);
+	if(msg->priority_factors_list)
+		count = list_count(msg->priority_factors_list);
+	pack32(count, buffer);
+	if(count && count != NO_VAL) {
+		itr = list_iterator_create(msg->priority_factors_list);
+		while((factors = list_next(itr)))
+			_pack_priority_factors_object(factors, buffer);
+		list_iterator_destroy(itr);
+	}
+}
+
+static int
+_unpack_priority_factors_response_msg(priority_factors_response_msg_t ** msg,
+						  Buf buffer)
+{
+	uint32_t count = NO_VAL;
+	int i = 0;
+	void *tmp_info = NULL;
+	priority_factors_response_msg_t *object_ptr = NULL;
+	xassert(msg != NULL);
+
+	object_ptr = xmalloc(sizeof(priority_factors_response_msg_t));
+	*msg = object_ptr;
+
+	safe_unpack32(&count, buffer);
+	if(count != NO_VAL) {
+		object_ptr->priority_factors_list = list_create(NULL);
+		for(i=0; i<count; i++) {
+			if(_unpack_priority_factors_object(&tmp_info, buffer)
+			   != SLURM_SUCCESS)
+				goto unpack_error;
+			list_append(object_ptr->priority_factors_list, tmp_info);
+		}
+	}
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_priority_factors_response_msg(object_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 

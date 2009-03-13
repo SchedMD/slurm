@@ -100,6 +100,7 @@ inline static void  _slurm_rpc_dump_conf(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_jobs(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_job_single(slurm_msg_t * msg);
 inline static void  _slurm_rpc_get_shares(slurm_msg_t *msg);
+inline static void  _slurm_rpc_get_priority_factors(slurm_msg_t *msg);
 inline static void  _slurm_rpc_dump_nodes(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_partitions(slurm_msg_t * msg);
 inline static void  _slurm_rpc_epilog_complete(slurm_msg_t * msg);
@@ -174,6 +175,10 @@ void slurmctld_req (slurm_msg_t * msg)
 	case REQUEST_SHARE_INFO:
 		_slurm_rpc_get_shares(msg);
 		slurm_free_shares_request_msg(msg->data);
+		break;
+	case REQUEST_PRIORITY_FACTORS:
+		_slurm_rpc_get_priority_factors(msg);
+		slurm_free_priority_factors_request_msg(msg->data);
 		break;
 	case REQUEST_JOB_END_TIME:
 		_slurm_rpc_end_time(msg);
@@ -871,6 +876,32 @@ static void  _slurm_rpc_get_shares(slurm_msg_t *msg)
 		list_destroy(resp_msg.assoc_shares_list);
 	END_TIMER2("_slurm_rpc_get_share");
 	debug2("_slurm_rpc_get_shares %s", TIME_STR);
+}
+
+static void  _slurm_rpc_get_priority_factors(slurm_msg_t *msg)
+{
+	DEF_TIMERS;
+	priority_factors_request_msg_t *req_msg =
+		(priority_factors_request_msg_t *) msg->data;
+	priority_factors_response_msg_t resp_msg;
+	slurm_msg_t response_msg;
+
+	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+
+	START_TIMER;
+	debug2("Processing RPC: REQUEST GET PRIORITY FACTORS from uid=%u",
+	       (unsigned int)uid);
+	resp_msg.priority_factors_list = priority_g_get_priority_factors_list(
+		req_msg->job_id_list);
+	slurm_msg_t_init(&response_msg);
+	response_msg.address  = msg->address;
+	response_msg.msg_type = RESPONSE_PRIORITY_FACTORS;
+	response_msg.data     = &resp_msg;
+	slurm_send_node_msg(msg->conn_fd, &response_msg);
+	if(resp_msg.priority_factors_list)
+		list_destroy(resp_msg.priority_factors_list);
+	END_TIMER2("_slurm_rpc_get_priority_factors");
+	debug2("_slurm_rpc_get_priority_factors %s", TIME_STR);
 }
 
 /* _slurm_rpc_end_time - Process RPC for job end time */

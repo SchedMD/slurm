@@ -1517,6 +1517,25 @@ void inline slurm_free_shares_response_msg(shares_response_msg_t *msg)
 	}
 }
 
+void inline slurm_free_priority_factors_request_msg(
+	priority_factors_request_msg_t *msg)
+{
+	if(msg) {
+		if(msg->job_id_list)
+			list_destroy(msg->job_id_list);
+		xfree(msg);
+	}
+}
+
+void inline slurm_free_priority_factors_response_msg(
+	priority_factors_response_msg_t *msg)
+{
+	if(msg) {
+		if(msg->priority_factors_list)
+			list_destroy(msg->priority_factors_list);
+		xfree(msg);
+	}
+}
 
 
 void inline slurm_free_accounting_update_msg(accounting_update_msg_t *msg)
@@ -1623,6 +1642,12 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		break;
 	case RESPONSE_SHARE_INFO:
 		slurm_free_shares_response_msg(data);
+		break;
+	case REQUEST_PRIORITY_FACTORS:
+		slurm_free_priority_factors_request_msg(data);
+		break;
+	case RESPONSE_PRIORITY_FACTORS:
+		slurm_free_priority_factors_response_msg(data);
 		break;
 	case REQUEST_NODE_SELECT_INFO:
 		slurm_free_node_select_msg(data);

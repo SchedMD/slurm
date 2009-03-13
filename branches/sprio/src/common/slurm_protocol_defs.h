@@ -122,6 +122,8 @@ typedef enum {
 	RESPONSE_SHARE_INFO,
 	REQUEST_RESERVATION_INFO,
 	RESPONSE_RESERVATION_INFO,
+	REQUEST_PRIORITY_FACTORS,
+	RESPONSE_PRIORITY_FACTORS,
 
 	REQUEST_UPDATE_JOB = 3001,
 	REQUEST_UPDATE_NODE,
@@ -331,6 +333,27 @@ typedef struct shares_response_msg {
 	List assoc_shares_list; /* list of association_shares_object_t *'s */
 	uint64_t tot_shares;
 } shares_response_msg_t;
+
+typedef struct priority_factors_object {
+	uint32_t job_id;
+	uint32_t user_id;
+
+	double	 priority_age;
+	double	 priority_fs;
+	double	 priority_js;
+	double	 priority_part;
+	double	 priority_qos;
+
+	uint16_t nice_offset;
+} priority_factors_object_t;
+
+typedef struct priority_factors_request_msg {
+	List	 job_id_list;
+} priority_factors_request_msg_t;
+
+typedef struct priority_factors_response_msg {
+	List	 priority_factors_list;	/* priority_factors_object_t list */
+} priority_factors_response_msg_t;
 
 typedef struct job_step_kill_msg {
 	uint32_t job_id;
@@ -824,6 +847,10 @@ void inline slurm_free_set_debug_level_msg(set_debug_level_msg_t *msg);
 void inline slurm_destroy_association_shares_object(void *object);
 void inline slurm_free_shares_request_msg(shares_request_msg_t *msg);
 void inline slurm_free_shares_response_msg(shares_response_msg_t *msg);
+void inline slurm_free_priority_factors_request_msg(
+	priority_factors_request_msg_t *msg);
+void inline slurm_free_priority_factors_response_msg(
+	priority_factors_response_msg_t *msg);
 
 #define	slurm_free_timelimit_msg(msg) \
 	slurm_free_kill_job_msg(msg)
