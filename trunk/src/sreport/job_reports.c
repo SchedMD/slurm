@@ -608,7 +608,8 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
 	assoc_cond.id_list = job_cond->associd_list;
 	assoc_cond.cluster_list = job_cond->cluster_list;
-	assoc_cond.partition_list = job_cond->partition_list;
+	/* don't limit associations to having the partition_list */
+	//assoc_cond.partition_list = job_cond->partition_list;
 	if(!job_cond->acct_list || !list_count(job_cond->acct_list)) {
 		job_cond->acct_list = list_create(NULL);
 		list_append(job_cond->acct_list, "root");
