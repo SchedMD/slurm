@@ -1120,8 +1120,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 
 	acct_policy_job_begin(job_ptr);
 
-	jobacct_storage_g_job_start(
-		acct_db_conn, slurmctld_cluster_name, job_ptr);
+	jobacct_storage_g_job_start(acct_db_conn, slurmctld_cluster_name, 
+				    job_ptr);
 	prolog_slurmctld(job_ptr);
 	slurm_sched_newalloc(job_ptr);
 

@@ -54,6 +54,7 @@
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
 #include "src/common/slurm_accounting_storage.h"
+#include "src/common/uid.h"
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
 
@@ -70,6 +71,7 @@
 #define _DEBUG 0
 #define MAX_RETRIES 10
 
+static char **	_build_env(struct job_record *job_ptr);
 static void	_depend_list_del(void *dep_ptr);
 static void	_feature_list_delete(void *x);
 static void *	_run_epilog(void *arg);
@@ -1077,6 +1079,44 @@ extern int epilog_slurmctld(struct job_record *job_ptr)
 	}
 }
 
+static char **_build_env(struct job_record *job_ptr)
+{
+	char **my_env, *name;
+
+	my_env = xmalloc(sizeof(char *));
+	my_env[0] = NULL;
+#ifdef HAVE_CRAY_XT
+	select_g_get_jobinfo(job_ptr->select_jobinfo, 
+			     SELECT_DATA_RESV_ID, &name);
+	setenvf(&env, "BASIL_RESERVATION_ID", "%s", name);
+	xfree(name);
+#endif
+#ifdef HAVE_BG
+	select_g_get_jobinfo(job_ptr->select_jobinfo, 
+			     SELECT_DATA_BLOCK_ID, &name);
+	setenvf(&env, "MPIRUN_PARTITION", "%s", name);
+#endif
+	setenvf(&my_env, "SLURM_JOB_ACCOUNT", "%s", job_ptr->account);
+	if (job_ptr->details) {
+		setenvf(&my_env, "SLURM_JOB_CONSTRAINTS", 
+			"%s", job_ptr->details->features);
+	}
+	setenvf(&my_env, "SLURM_JOB_GID", "%u", job_ptr->group_id);
+	name = gid_to_string((uid_t) job_ptr->group_id);
+	setenvf(&my_env, "SLURM_JOB_GROUP", "%s", name);
+	xfree(name);
+	setenvf(&my_env, "SLURM_JOB_ID", "%u", job_ptr->job_id);
+	setenvf(&my_env, "SLURM_JOB_NAME", "%s", job_ptr->name);
+	setenvf(&my_env, "SLURM_JOB_NODELIST", "%s", job_ptr->nodes);
+	setenvf(&my_env, "SLURM_JOB_PARTITION", "%s", job_ptr->partition);
+	setenvf(&my_env, "SLURM_JOB_UID", "%u", job_ptr->user_id);
+	name = uid_to_string((uid_t) job_ptr->user_id);
+	setenvf(&my_env, "SLURM_JOB_USER", "%s", name);
+	xfree(name);
+
+	return my_env;
+}
+
 static void *_run_epilog(void *arg)
 {
 	struct job_record *job_ptr = (struct job_record *) arg;
@@ -1091,12 +1131,7 @@ static void *_run_epilog(void *arg)
 	lock_slurmctld(config_read_lock);
 	argv[0] = xstrdup(slurmctld_conf.epilog_slurmctld);
 	argv[1] = NULL;
-
-	my_env = xmalloc(sizeof(char *));
-	my_env[0] = NULL;
-	setenvf(&my_env, "SLURM_JOBID", "%u", job_ptr->job_id);
-	setenvf(&my_env, "SLURM_NODELIST", "%s", job_ptr->nodes);
-	setenvf(&my_env, "SLURM_UID", "%u", job_ptr->user_id);
+	my_env = _build_env(job_ptr);
 	job_id = job_ptr->job_id;
 	unlock_slurmctld(config_read_lock);
 
@@ -1193,16 +1228,7 @@ static void *_run_prolog(void *arg)
 	lock_slurmctld(config_read_lock);
 	argv[0] = xstrdup(slurmctld_conf.prolog_slurmctld);
 	argv[1] = NULL;
-
-	my_env = xmalloc(sizeof(char *));
-	my_env[0] = NULL;
-	if (job_ptr->details && job_ptr->details->features) {
-		setenvf(&my_env, "SLURM_CONSTRAINTS", 
-			"%s", job_ptr->details->features);
-	}
-	setenvf(&my_env, "SLURM_JOBID", "%u", job_ptr->job_id);
-	setenvf(&my_env, "SLURM_NODELIST", "%s", job_ptr->nodes);
-	setenvf(&my_env, "SLURM_UID", "%u", job_ptr->user_id);
+	my_env = _build_env(job_ptr);
 	job_id = job_ptr->job_id;
 	unlock_slurmctld(config_read_lock);
 

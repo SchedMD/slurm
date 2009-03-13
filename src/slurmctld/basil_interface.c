@@ -194,7 +194,8 @@ extern int basil_query(void)
 	for (each_basil_reservation) {
 		bool found = false;
 		job_iterator = list_iterator_create(job_list);
-		while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		while ((job_ptr = (struct job_record *) 
+				  list_next(job_iterator))) {
 			select_g_get_jobinfo(job_ptr->select_jobinfo, 
 					     SELECT_DATA_RESV_ID, &res_id);
 			found = !strcmp(res_id, basil_reservation_id);
