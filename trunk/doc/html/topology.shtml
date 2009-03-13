@@ -50,9 +50,11 @@ Use of this logic requires a configuration setting of
 
 <p>At some point in the future SLURM code may be provided to 
 gather network topology information directly.
-Now the network topology information must be included directly
+Now the network topology information must be included 
 in the <i>slurm.conf</i> configuration file as shown in the 
 examples below.
+If maintaining this information in a distinct file is desirable, 
+the <i>Include</i> option can be used in <i>slurm.conf</i> for this purpose.
 The first example describes a three level switch in which 
 each switch has two children. 
 Note that the <i>SwitchName</i> values are arbitrary and only
@@ -62,7 +64,11 @@ The leaf switch descriptions contain a <i>SwitchName</i> field
 plus a <i>Nodes</i> field to identify the nodes connected to the
 switch.
 Higher-level switch descriptions contain a <i>SwitchName</i> field
-plus a <i>Switches</i> field to identify the child switches.</p>
+plus a <i>Switches</i> field to identify the child switches.
+SLURM's hostlist expression parser is used, so the node and switch
+names need not be consecutive (e.g. "Nodes=tux[0-3,12,18-20]"
+and "Swithces=s[0-2,4-8,12]" will parse fine).
+</p>
 
 <p>An optional LinkSpeed option can be used to indicate the 
 relative performance of the link. 
@@ -94,6 +100,6 @@ SwitchName=s6 Switches=s[0-3]  LinkSpeed=1800
 SwitchName=s7 Switches=s[0-3]  LinkSpeed=1800
 </pre>
 
-<p style="text-align:center;">Last modified 6 March 2009</p>
+<p style="text-align:center;">Last modified 12 March 2009</p>
 
 <!--#include virtual="footer.txt"-->
