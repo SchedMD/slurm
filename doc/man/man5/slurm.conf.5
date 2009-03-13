@@ -2138,8 +2138,15 @@ cost is related to the node distance in this array.
 .LP
 The network topology configuration one one line defining a switch name and
 its children, either node names or switch names.
-SLURM hostlist expressions can be used for either.
+SLURM's hostlist expression parser is used, so the node and switch
+names need not be consecutive (e.g. "Nodes=tux[0\-3,12,18\-20]"
+and "Swithces=s[0\-2,4\-8,12]" will parse fine).
 An optional link speed may also be specified.
+If maintaining this information in a distinct files is desirable, the
+"Include" option can be used in slurm.conf for this purpose
+(if a line begins with the word "Include" followed by whitespace
+and then a file name, that file will be included inline with the current
+configuration file).
 .TP
 \fBSwitchName\fR
 The name of a switch. This name is internal to SLURM and arbitrary.
