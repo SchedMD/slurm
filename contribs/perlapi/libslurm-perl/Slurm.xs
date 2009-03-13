@@ -675,19 +675,19 @@ slurm_checkpoint_enable(slurm_t self, U32 jobid, U32 stepid)
 		jobid, stepid
 
 int
-slurm_checkpoint_create(slurm_t self, U32 jobid, U32 stepid, U16 max_wait)
+slurm_checkpoint_create(slurm_t self, U32 jobid, U32 stepid, U16 max_wait, char* image_dir)
 	C_ARGS:
-		jobid, stepid, max_wait
+		jobid, stepid, max_wait, image_dir
 
 int
-slurm_checkpoint_vacate(slurm_t self, U32 jobid, U32 stepid, U16 max_wait)
+slurm_checkpoint_vacate(slurm_t self, U32 jobid, U32 stepid, U16 max_wait, char* image_dir)
 	C_ARGS:
-		jobid, stepid, max_wait
+		jobid, stepid, max_wait, image_dir
 
 int
-slurm_checkpoint_restart(slurm_t self, U32 jobid, U32 stepid)
+slurm_checkpoint_restart(slurm_t self, U32 jobid, U32 stepid, U16 stick, char *image_dir)
 	C_ARGS:
-		jobid, stepid
+		jobid, stepid, stick, image_dir
 
 int
 slurm_checkpoint_complete(slurm_t self, U32 jobid, U32 stepid, time_t begin_time, U32 error_code, char* error_msg)
