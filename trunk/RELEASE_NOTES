@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 2.0
-10 February 2009 (after SLURM 1.4.0-pre7 released)
+11 February 2009 (after SLURM 1.4.0-pre8 released)
 
 
 IMPORTANT NOTE:
@@ -46,10 +46,9 @@ HIGHLIGHTS
 * SLURM has been modified to allocate specific cores to jobs and job steps in
   the centralized scheduler rather than the daemons running on the individual
   compute nodes. This permits effective preemption or gang schedule jobs.
-* A new configuration parameter, PrologSlurmctld, can be used to support the 
-  booting of different operating systems for each job. See "man slurm.conf"
-  for details. EpilogSlurmctld has also been added to execution at job 
-  completion.
+* New configuration parameters, PrologSlurmctld and EpilogSlurmctld, can be 
+  used to support the booting of different operating systems for each job. 
+  See "man slurm.conf" for details. 
 * Preemption of jobs from lower priority partitions in order to execute jobs
   in higher priority partitions is now supported. The jobs from the lower 
   priority partition will resume once preempting job completes. For more 
@@ -62,6 +61,9 @@ HIGHLIGHTS
   https://computing.llnl.gov/linux/slurm/sun_const.html
 * Support added for IBM BlueGene/P systems, including High Throughput Computing
   (HTC) mode.
+* Support for checkpoint/restart using BLCR added using the checkpoint/blcr
+  plugin. For more information see:
+  https://computing.llnl.gov/linux/slurm/checkpoint_blcr.html
 
 CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 * The default AuthType is now "auth/munge" rather than "auth/none".

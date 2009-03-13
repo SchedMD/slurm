@@ -5,16 +5,21 @@ documents those changes that are of interest to users and admins.
 =============================
  -- OpenMPI users only: Add srun logic to automatically recreate and 
     re-launch a job step if the step fails with a reserved port conflict.
- -- Add TopologyPlugin configuration parameter.
- -- Add switch topology data structure to slurmctld (for use by select plugin)
-    add load it based upon new slurm.conf parameters: SwitchName, Nodes, 
-    Switches and LinkSpeed.
+ -- Added TopologyPlugin configuration parameter.
+ -- Added switch topology data structure to slurmctld (for use by select 
+    plugin) add load it based upon new slurm.conf parameters: SwitchName, 
+    Nodes, Switches and LinkSpeed.
  -- Modify select/linear and select/cons_res plugins to optimize resource
     allocation with respect to network topology.
- -- Add support for new configuration parameter EpilogSlurmctld (executed by 
-    slurmctld daemon).
- -- Add checkpoint/blcr plugin, SLURM now support job checkpoint/restart using
-    BLCR. Patch from Hongjia Cao, NUDT, China.
+ -- Added  support for new configuration parameter EpilogSlurmctld (executed 
+    by slurmctld daemon).
+ -- Added checkpoint/blcr plugin, SLURM now support job checkpoint/restart 
+    using BLCR. Patch from Hongjia Cao, NUDT, China.
+ -- Made a variety of new environment variables available to PrologSlurmctld
+    and EpilogSlurmctld. See the "Prolog and Epilog Scripts" section of the 
+    slurm.conf man page for details.
+ -- NOTE: Cold-start (without preserving state) required for upgrade from 
+    version 1.4.0-pre8.
 
 * Changes in SLURM 1.4.0-pre8
 =============================

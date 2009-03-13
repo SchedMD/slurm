@@ -348,10 +348,9 @@ The default value is "NO".
 \fBEpilog\fR
 Fully qualified pathname of a script to execute as user root on every 
 node when a user's job completes (e.g. "/usr/local/slurm/epilog"). This may 
-be used to purge files, disable user login, etc. By default there is no epilog.
-The following environment variables are set for use by the program:
-SLURM_JOBID, SLURM_UID plus MPIRUN_PARTITION (only for BlueGene systems) or
-BASIL_PARTITION_ID (only for Cray systems running ALPS/BASIL).
+be used to purge files, disable user login, etc. 
+By default there is no epilog.
+See \fBProlog and Epilog Scripts\fR for more information.
 
 .TP
 \fBEpilogMsgTime\fR
@@ -373,8 +372,7 @@ The program executes as SlurmUser, which gives it permission to drain
 nodes and requeue the job if a failure occurs or cancel the job if appropriate.
 The program can be used to reboot nodes or perform other work to prepare 
 resources for use. 
-The following environment variables are set for use by the program:
-SLURM_JOBID, SLURM_UID, SLURM_NODELIST and SLURM_CONSTRAINTS.
+See \fBProlog and Epilog Scripts\fR for more information.
 
 .TP
 \fBFastSchedule\fR
@@ -857,16 +855,7 @@ whenever it is asked to run a job step from a new job allocation (e.g.
 the first job step.  This may be used to purge files, enable user login, etc.
 By default there is no prolog. Any configured script is expected to 
 complete execution quickly (in less time than \fBMessageTimeout\fR).
-The following environment variables are set for use by the program:
-SLURM_JOBID, SLURM_UID plus MPIRUN_PARTITION (only for BlueGene systems) or
-BASIL_PARTITION_ID (only for Cray systems running ALPS/BASIL).
-
-NOTE:  The Prolog script is ONLY run on any individual
-node when it first sees a job step from a new allocation; it does not
-run the Prolog immediately when an allocation is granted.  If no job steps
-from an allocation are run on a node, it will never run the Prolog for that
-allocation.  The Epilog, on the other hand, always runs on every node of an
-allocation when the allocation is released.
+See \fBProlog and Epilog Scripts\fR for more information.
 
 .TP
 \fBPrologSlurmctld\fR
@@ -877,10 +866,7 @@ The program executes as SlurmUser, which gives it permission to drain
 nodes and requeue the job if a failure occurs or cancel the job if appropriate.
 The program can be used to reboot nodes or perform other work to prepare 
 resources for use. 
-The available environments for the job would be identified as a 
-node \fBFeature\fR and specified in the user request as a job constraint.
-The following environment variables are set for use by the program:
-SLURM_JOBID, SLURM_UID, SLURM_NODELIST and SLURM_CONSTRAINTS.
+See \fBProlog and Epilog Scripts\fR for more information.
 
 .TP
 \fBPropagatePrioProcess\fR
@@ -2056,6 +2042,73 @@ Recommended only for systems running with gang scheduling
 \fBState\fR
 State of partition or availability for use.  Possible values 
 are "UP" or "DOWN". The default value is "UP".
+
+.SH "Prolog and Epilog Scripts"
+There are a variety of prolog and epilog program options that 
+execute with various permissions and at various times. 
+The four options most likely to be used are: 
+\fBProlog\fR and \fBEpilog\fR (executed once on each compute node
+for each job) plus \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR
+(executed once on the \fBControlMachine\fR for each job).
+ 
+NOTE:  The Prolog script is ONLY run on any individual
+node when it first sees a job step from a new allocation; it does not
+run the Prolog immediately when an allocation is granted.  If no job steps
+from an allocation are run on a node, it will never run the Prolog for that
+allocation.  The Epilog, on the other hand, always runs on every node of an
+allocation when the allocation is released.
+
+Information about the job is passed to the script using environment
+variables.
+Unless otherwise specified, these environment variables are available
+to all of the programs.
+.TP
+\fBBASIL_RESERVATION_ID\fR
+Basil reservation ID.
+Available on Cray XT systems only.
+.TP
+\fBMPIRUN_PARTITION\fR
+BlueGene partition name.
+Available on BlueGene systems only.
+.TP
+\fBSLURM_JOB_ACCOUNT\fR
+Account name used for the job. 
+Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR only.
+.TP
+\fBSLURM_JOB_CONSTRAINTS\fR
+Features required to run the job. 
+Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR only.
+.TP
+\fBSLURM_JOB_GID\fR
+Group ID of the job's owner.
+Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR only.
+.TP
+\fBSLURM_JOB_GROUP\fR
+Group name of the job's owner.
+Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR only.
+.TP
+\fBSLURM_JOB_ID\fR
+Job ID.
+.TP
+\fBSLURM_JOB_NAME\fR
+Name of the job.
+Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR only.
+.TP
+\fBSLURM_JOB_NODELIST\fR
+Nodes assigned to job. A SLURM hostlist expression.
+"scontrol show hostnames" can be used to convert this to a
+list of individual host names.
+Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR only.
+.TP
+\fBSLURM_JOB_PARTITION\fR
+Partition that job runs in.
+Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR only.
+.TP
+\fBSLURM_JOB_UID\fR
+User ID of the job's owner.
+.TP
+\fBSLURM_JOB_USER\fR
+User name of the job's owner.
 
 .SH "NETWORK TOPOLOGY"
 SLURM is able to optimze job allocations to minimize network contention.

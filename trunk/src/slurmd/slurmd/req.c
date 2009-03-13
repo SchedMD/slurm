@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  src/slurmd/slurmd/req.c - slurmd request handling
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
@@ -2567,7 +2567,8 @@ _rpc_suspend_job(slurm_msg_t *msg)
 		while ((stepd = list_next(i))) {
 			if (stepd->jobid != req->job_id) {
 				/* multiple jobs expected on shared nodes */
-				debug3("Step from other job: jobid=%u (this jobid=%u)",
+				debug3("Step from other job: jobid=%u "
+				       "(this jobid=%u)",
 				      stepd->jobid, req->job_id);
 				continue;
 			}
@@ -3048,12 +3049,19 @@ _rpc_update_time(slurm_msg_t *msg)
 	slurm_send_rc_msg(msg, rc);
 }
 
-/* NOTE: xfree returned value */
+/* NOTE: call _destroy_env() to free returned value */
 static char **
 _build_env(uint32_t jobid, uid_t uid, char *resv_id)
 {
+	char *name;
 	char **env = xmalloc(sizeof(char *));
+
 	env[0]  = NULL;
+	setenvf(&env, "SLURM_JOB_ID", "%u", jobid);
+	setenvf(&env, "SLURM_JOB_UID",   "%u", uid);
+	name = uid_to_string(uid);
+	setenvf(&env, "SLURM_JOB_USER", "%s", name);
+	xfree(name);
 	setenvf(&env, "SLURM_JOBID", "%u", jobid);
 	setenvf(&env, "SLURM_UID",   "%u", uid);
 	if (resv_id) {
