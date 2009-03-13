@@ -46,7 +46,7 @@
 use strict;
 use FindBin;
 use Getopt::Long 2.24 qw(:config no_ignore_case require_order);
-use lib "${FindBin::Bin}/../lib/perl";
+#use lib "${FindBin::Bin}/../lib/perl";
 use lib qw(/home/da/slurm/1.3/snowflake/lib/perl/5.8.8);
 use autouse 'Pod::Usage' => qw(pod2usage);
 use Slurm ':all';
@@ -56,12 +56,30 @@ BEGIN { require "config.slurmdb.pl"; }
 our ($logLevel, $db_conn_line, $db_job_table, $db_user, $db_passwd);
 
 my $set = 0;
+my $submit_set = 0;
+my $migrate_set = 0;
+my $start_set = 0;
+my $end_set = 0;
 
-my $sql = "INSERT INTO $db_job_table " .
-	"(jobid, associd, wckeyid, uid, gid, nodelist, " .
-	"cluster, account, partition, wckey, eligible, " .
-	"submit, start, name, track_steps, state, priority, " .
-	"req_cpus, alloc_cpus) VALUES ";
+my $submit_sql = "INSERT INTO $db_job_table " .
+	"(jobid, associd, wckeyid, track_steps, priority, uid, gid, cluster, " .
+	"account, partition, wckey, name, state, req_cpus, submit) VALUES ";
+
+my $migrate_sql = "INSERT INTO $db_job_table " .
+	"(jobid, associd, wckeyid, track_steps, priority, uid, gid, cluster, " .
+	"account, partition, wckey, name, state, req_cpus, " .
+	"submit, eligible) VALUES ";
+
+my $start_sql = "INSERT INTO $db_job_table " .
+	"(jobid, associd, wckeyid, track_steps, priority, uid, gid, cluster, " .
+	"account, partition, wckey, name, state, req_cpus, " .
+	"submit, eligible, start, nodelist, alloc_cpus) VALUES ";
+
+my $end_sql = "INSERT INTO $db_job_table " .
+	"(jobid, associd, wckeyid, track_steps, priority, uid, gid, cluster, " .
+	"account, partition, wckey, name, state, req_cpus, " .
+	"submit, eligible, start, nodelist, alloc_cpus, " .
+	"end, comp_code) VALUES ";
 
 foreach my $line (<STDIN>) {
 	chomp $line;
@@ -78,8 +96,8 @@ foreach my $line (<STDIN>) {
 	    $group,
 	    $wall_limit,
 	    $state,
-	    $class,
-	    $sub_time,
+	    $partition,
+	    $eligible_time,
 	    $dispatch_time,
 	    $start_time,
 	    $end_time,
@@ -91,7 +109,7 @@ foreach my $line (<STDIN>) {
 	    $node_disk_comp,
 	    $node_disk,
 	    $node_features,
-	    $queue_time,
+	    $submit_time,
 	    $alloc_tasks,
 	    $tasks_per_node,
 	    $qos,
@@ -101,12 +119,12 @@ foreach my $line (<STDIN>) {
 	    $rm_ext,
 	    $bypass_cnt,
 	    $cpu_secs,
-	    $partition,
+	    $cluster,
 	    $procs_per_task,
 	    $mem_per_task,
 	    $disk_per_task,
 	    $swap_per_task,
-	    $eligible_time,
+	    $other_time,
 	    $timeout,
 	    $alloc_hostlist,
 	    $rm_name,
@@ -125,32 +143,133 @@ foreach my $line (<STDIN>) {
 	    @extra) = split /\s+/, $line;
 	next if !$type;
 	next if $type ne "job";
-	next if $event eq "JOBMIGRATE";
 
 	my $uid = getpwnam($user);
 	my $gid = getgrnam($group);
 	$uid = -2 if !$uid;
 	$gid = -2 if !$gid;
+	
+	# figure out the wckey 
+	my $wckey = "";
+	if ($rm_ext =~ /wckey:(\w*)/) {
+		$wckey = $1;
+	}
+	
+	if($partition =~ /\[(\w*)/) {
+		$partition = $1;
+	}
+
+	#figure out the cluster
+	if($cluster eq "ALL") {
+		if ($node_features =~ /\[(\w*)\]/) {
+			$cluster = $1;
+		} elsif ($rm_ext =~ /partition:(\w*)/) {
+			$cluster = $1;
+		} elsif ($rm_ext =~ /feature:(\w*)/) {
+			$cluster = $1;
+		} else {
+			$cluster = "";
+		}
+	}
+	
+	if($message =~ /job\\20exceeded\\20wallclock\\20limit/) {
+		$event = "JOBTIMEOUT";
+	}
 
 	my $alloc_hl = Slurm::Hostlist::create($alloc_hostlist);
 	if($alloc_hl) {
 		Slurm::Hostlist::uniq($alloc_hl);
 		$alloc_hl = Slurm::Hostlist::ranged_string($alloc_hl);
 	}
+	
+	if($event eq "JOBSUBMIT") {
+		$submit_sql .= ", " if $submit_set;
+		$submit_sql .= "($id, 0, 0, 0, 0, $uid, $gid, \"$cluster\", " .
+			"\"$account\", \"$partition\", \"$wckey\", " .
+			"\"$executable\", 0, $req_tasks, $submit_time)";
+		$submit_set = 1;		
+		$set = 1;		
+	} elsif ($event eq "JOBMIGRATE") {
+		$migrate_sql .= ", " if $migrate_set;
+		# here for some reason the eligible time is really the 
+		# elgible time, so we use the end time which appears 
+		# to be the best guess.
+		$migrate_sql .= "($id, 0, 0, 0, 0, $uid, $gid, \"$cluster\", " .
+			"\"$account\", \"$partition\", \"$wckey\", " .
+			"\"$executable\", 0, $req_tasks, $submit_time, " .
+			"$end_time)";
+		$migrate_set = 1;		
+		$set = 1;		
+	} elsif ($event eq "JOBSTART") {
+		$start_sql .= ", " if $start_set;
 
-	$sql .= ", " if $set;
-	$sql .= "($id, 0, 0, $uid, $gid, '$alloc_hl', )";
-	$set = 1;
+		# req_tasks is used for alloc_tasks on purpose.
+		# alloc_tasks isn't always correct.
+		$start_sql .= "($id, 0, 0, 0, 0, $uid, $gid, \"$cluster\", " .
+			"\"$account\", \"$partition\", \"$wckey\", " .
+			"\"$executable\", 1, $req_tasks, $submit_time, " .
+			"$eligible_time, $start_time, \"$alloc_hl\", " .
+			"$req_tasks)";
+		$start_set = 1;		
+		$set = 1;		
+	} elsif (($event eq "JOBEND") || ($event eq "JOBCANCEL")
+		|| ($event eq "JOBFAILURE") || ($event eq "JOBTIMEOUT"))  {
+		if($event eq "JOBEND") {
+			$state = 3;
+		} elsif($event eq "JOBCANCEL") {
+			$state = 4;
+		} elsif($event eq "JOBFAILURE") {
+			$state = 5;
+		} else {
+			$state = 6;
+		}
+
+		$end_sql .= ", " if $end_set;
+		$end_sql .= "($id, 0, 0, 0, 0, $uid, $gid, \"$cluster\", " .
+			"\"$account\", \"$partition\", \"$wckey\", " .
+			"\"$executable\", $state, $req_tasks, $submit_time, " .
+			"$eligible_time, $start_time, \"$alloc_hl\", " .
+			"$req_tasks, $end_time, $comp_code)";
+		$end_set = 1;		
+		$set = 1;		
+	} else {
+		print "ERROR: unknown event of $event\n";
+		next;
+	}
 }
 
 exit 0 if !$set;
-$sql .= " on duplicate key update nodelist=VALUES(nodelist), account=VALUES(account), partition=VALUES(partition), wckey=VALUES(wckey), start=VALUES(start), alloc_cpus=VALUES(alloc_cpus)";
-print "$sql\n";
 
-exit 0;
 $db_user = (getpwuid($<))[0] if !$db_user;
 my $dbhandle = DBI->connect($db_conn_line, $db_user, $db_passwd,
 			    {AutoCommit => 1, RaiseError => 1});
-$dbhandle->do($sql);
+if($submit_set) {
+	$submit_sql .= " on duplicate key update jobid=VALUES(jobid)";
+	#print "submit\n$submit_sql\n\n";
+	$dbhandle->do($submit_sql);
+}
+
+if($migrate_set) {
+	$migrate_sql .= " on duplicate key update eligible=VALUES(eligible)";
+	#print "migrate\n$migrate_sql\n\n";
+	$dbhandle->do($migrate_sql);
+}
+
+if($start_set) {
+	$start_sql .= " on duplicate key update nodelist=VALUES(nodelist), " .
+		"account=VALUES(account), partition=VALUES(partition), " .
+		"wckey=values(wckey), start=VALUES(start), " .
+		"name=VALUES(name), state=values(state), " .
+		"alloc_cpus=values(alloc_cpus)";
+	#print "start\n$start_sql\n\n";
+	$dbhandle->do($start_sql);
+}
+
+if($end_set) {
+	$end_sql .= " on duplicate key update end=VALUES(end), " .
+		"state=VALUES(state), comp_code=VALUES(comp_code)";
+	#print "end\n$end_sql\n\n";
+	$dbhandle->do($end_sql);
+}
 
 exit 0;
