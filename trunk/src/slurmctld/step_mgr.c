@@ -472,7 +472,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 
 	if (job_ptr->next_step_id == 0) {
 		if (job_ptr->details && job_ptr->details->prolog_running) {
-			*return_code = ESLURM_NODES_BUSY;
+			*return_code = ESLURM_PROLOG_RUNNING;
 			return NULL;
 		}
 		for (i=bit_ffs(job_ptr->node_bitmap); i<node_record_count; 

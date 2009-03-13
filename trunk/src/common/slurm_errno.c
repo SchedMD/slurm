@@ -242,6 +242,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Requires ports are in use"				},
 	{ ESLURM_PORTS_INVALID,
 	  "Requires more ports than can be reserved"		},
+	{ ESLURM_PROLOG_RUNNING,
+	  "SlurmctldProlog is still running"			},
 
 	/* slurmd error codes */
 
