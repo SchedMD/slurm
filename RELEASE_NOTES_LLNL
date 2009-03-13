@@ -11,7 +11,7 @@ the slurm.conf.
 
 For InfiniBand switch systems, add switch topology information to 
 slurm.conf. Options used are TopologyPlugin, SwitchName, Switches, 
-and Nodes. The SwitchName is any conveneient name for bookkeeping 
+and Nodes. The SwitchName is any convenient name for bookkeeping 
 purposes only. For example:
 # Switch Topology Information
 TopologyPlugin=topology/slurm.conf
@@ -26,8 +26,8 @@ directly in SLURM.
 SLURM version 2.0 must use a database daemon (slurmdbd) at version 2.0
 or higher. While we are testing version 2.0, set "AccountingStoragePort=????".
 Once we upgrade the production slurmdbd to version 2.0, this change will
-not be required.  You can like wise test 1.3.7+ clusters with the same port 
-as the 2.0 slurmdbd will also talk to 1.3.7+ SLURM.
+not be required.  You can likewise test 1.3.7+ clusters with the same port 
+since 2.0 slurmdbd will talk to 1.3.7+ SLURM.
 
 SLURM state files in version 2.0 are different from those of version 1.3.
 After installing SLURM version 2.0, plan to restart without preserving 
