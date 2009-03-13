@@ -151,6 +151,7 @@ void print_pages(type_t type, void *object);
 void print_rss(type_t type, void *object);
 void print_state(type_t type, void *object);
 void print_submit(type_t type, void *object);
+void print_eligible(type_t type, void *object);
 void print_start(type_t type, void *object);
 void print_end(type_t type, void *object);
 void print_systemcpu(type_t type, void *object);

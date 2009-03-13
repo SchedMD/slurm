@@ -750,6 +750,37 @@ void print_submit(type_t type, void *object)
 	} 
 }
 
+void print_eligible(type_t type, void *object)
+{ 
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
+	char time_str[32];
+		
+	switch(type) {
+	case HEADLINE:
+		printf("%-14s", "Eligible Time");
+		break;
+	case UNDERSCORE:
+		printf("%-14.14s", "--------------");
+		break;
+	case JOB:
+		slurm_make_time_str(&job->eligible, 
+				    time_str, 
+				    sizeof(time_str));
+		printf("%-14s", time_str);
+		break;
+	case JOBSTEP:
+		slurm_make_time_str(&step->start, 
+				    time_str, 
+				    sizeof(time_str));
+		printf("%-14s", time_str);
+		break;
+	default:
+		printf("%-14s", "n/a");
+		break;
+	} 
+}
+
 void print_start(type_t type, void *object)
 { 
 	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;

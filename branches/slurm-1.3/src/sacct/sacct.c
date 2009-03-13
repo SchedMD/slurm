@@ -158,6 +158,7 @@ fields_t fields[] = {{"account", print_account},
 		     {"cpu", print_cpu},
 		     {"cputime", print_cputime}, 
 		     {"elapsed", print_elapsed},
+		     {"eligible", print_eligible},
 		     {"end", print_end}, 
 		     {"exitcode", print_exitcode},
 		     {"finished", print_end},		/* Defunct name */ 
