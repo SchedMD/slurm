@@ -1,0 +1,245 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Testing of hidden partitions.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2002 The Regents of the University of California.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+# 
+# This file is part of SLURM, a resource management program.
+# For details, see <https://computing.llnl.gov/linux/slurm/>.
+# Please also read the included file: DISCLAIMER.
+#  
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+# 
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+# 
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id        "3.6"
+set authorized     1
+set exit_code      0
+set part_name      "QA_TEST"
+
+print_header $test_id
+
+#
+# Confirm that no hidden partition is seen by default
+#
+spawn  $scontrol show part
+expect {
+	-re "Hidden=YES" {
+		send_user "\nFAILURE: scontrol hidden partition seen\n"
+		set exit_code 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# Check if any hidden partitions exist
+#
+set found 0
+spawn  $scontrol -a show part
+expect {
+	-re "Hidden=YES" {
+		set found 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$found == 1} {
+	if {$exit_code == 0} {
+		send_user "\nSUCCESS\n"
+	}
+	exit $exit_code
+}
+
+#
+# We only reach this point if a hidden partition must be 
+# created to test this feature, which only super users can do 
+# 
+# Confirm the partition name does not already exist
+#
+set found -1
+spawn $scontrol -a show part $part_name
+expect {
+	-re "not found" {
+		send_user "This error was expected, no worries\n"
+		set found 0
+		exp_continue
+	}
+	-re "PartitionName" {
+		set found 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$found == -1} {
+	send_user "\nFAILURE: scontrol output format error\n"
+	exit 1
+}
+if {$found == 1} {
+	send_user "\nFAILURE: partition $part_name already exists\n"
+	exit 1
+}
+
+#
+# Create a new partition
+#
+spawn $scontrol create PartitionName=$part_name Hidden=YES
+expect {
+	-re "slurm_update error: Invalid user" {
+		send_user "\nWARNING: user not authorized to create partition\n"
+		exit $exit_code
+		exp_continue
+	}
+	-re "error" {
+		send_user "\nFAILURE: something bad happened on partitiion create\n"
+		set exit_code 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# Confirm the partition now exists
+#
+set found -1
+set hidden 0
+spawn $scontrol -a show part $part_name
+expect {
+	-re "not found" {
+		set found 0
+		exp_continue
+	}
+	-re "PartitionName" {
+		set found 1
+		exp_continue
+	}
+	-re "Hidden=YES" {
+		set hidden 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$found != 1} {
+	send_user "\nFAILURE: partition not created\n"
+	exit 1
+}
+if {$hidden == 0} {
+	send_user "\nFAILURE: partition not hidden\n"
+	set exit_code 1
+}
+
+#
+# Confirm partition is hidden by default
+#
+spawn $scontrol show part $part_name
+expect {
+	-re "PartitionName" {
+		send_user "\nFAILURE: partition not hidden\n"
+		set exit_code 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# Now delete the partition
+#
+spawn $scontrol delete PartitionName=$part_name
+expect {
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# Confirm the partition is now gone
+#
+set found -1
+spawn $scontrol -a show part $part_name
+expect {
+	-re "not found" {
+		send_user "This error was expected, no worries\n"
+		set found 0
+		exp_continue
+	}
+	-re "PartitionName" {
+		set found 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$found != 0} {
+	send_user "\nFAILURE: partition not deleted\n"
+	exit 1
+}
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code
