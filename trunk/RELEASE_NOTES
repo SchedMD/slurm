@@ -64,6 +64,7 @@ HIGHLIGHTS
 * Support for checkpoint/restart using BLCR added using the checkpoint/blcr
   plugin. For more information see:
   https://computing.llnl.gov/linux/slurm/checkpoint_blcr.html
+  https://ftg.lbl.gov/CheckpointRestart/CheckpointRestart.shtml
 
 CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
 * The default AuthType is now "auth/munge" rather than "auth/none".
