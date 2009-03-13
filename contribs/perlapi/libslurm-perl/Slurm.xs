@@ -25,6 +25,7 @@ extern int slurm_hostlist_push(hostlist_t hl, const char *hosts);
 extern int slurm_hostlist_push_host(hostlist_t hl, const char *host);
 extern int slurm_hostlist_find(hostlist_t hl, const char *hostname);
 extern size_t slurm_hostlist_ranged_string(hostlist_t hl, size_t n, char *buf);
+extern void slurm_hostlist_uniq(hostlist_t hl);
 
 struct slurm {
 	node_info_msg_t *node_info_msg;
@@ -803,6 +804,11 @@ slurm_hostlist_ranged_string(hostlist_t hl = NULL)
 		}
 	OUTPUT:
 		RETVAL
+
+void
+slurm_hostlist_uniq(hostlist_t hl = NULL)
+        CODE:
+		slurm_hostlist_uniq(hl);
 
 void
 DESTROY(hl)
