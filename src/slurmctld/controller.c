@@ -421,16 +421,9 @@ int main(int argc, char *argv[])
 			}
 			unlock_slurmctld(config_write_lock);
 			
-			if ((recover == 0) || 
-			    (!stat("/tmp/slurm_accounting_first", &stat_buf))) {
-				/* When first starting to write node state
-				 * information to Gold or SlurmDBD, create 
-				 * a file called "/tmp/slurm_accounting_first"  
-				 * to capture node initialization information */
-				
+			if (recover == 0) 
 				_accounting_mark_all_nodes_down("cold-start");
-				unlink("/tmp/slurm_accounting_first");
-			}
+			
 		} else {
 			error("this host (%s) not valid controller (%s or %s)",
 				node_name, slurmctld_conf.control_machine,
