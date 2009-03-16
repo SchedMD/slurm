@@ -337,7 +337,6 @@ static int _append_assoc_list(List assoc_list, acct_association_rec_t *assoc)
 		
 	} 
 	if(assoc_ptr) {
-		info("got here");
 		list_append(assoc_list, assoc_ptr);
 		rc = SLURM_SUCCESS;
 	}
