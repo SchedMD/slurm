@@ -2147,71 +2147,72 @@ static void _opt_list()
 	char *str;
 
 	info("defined options for program `%s'", opt.progname);
-	info("--------------- ---------------------");
+	info("----------------- ---------------------");
 
-	info("user           : `%s'", opt.user);
-	info("uid            : %ld", (long) opt.uid);
-	info("gid            : %ld", (long) opt.gid);
-	info("cwd            : %s", opt.cwd);
-	info("nprocs         : %d %s", opt.nprocs,
+	info("user              : `%s'", opt.user);
+	info("uid               : %ld", (long) opt.uid);
+	info("gid               : %ld", (long) opt.gid);
+	info("cwd               : %s", opt.cwd);
+	info("nprocs            : %d %s", opt.nprocs,
 		opt.nprocs_set ? "(set)" : "(default)");
-	info("cpus_per_task  : %d %s", opt.cpus_per_task,
+	info("cpus_per_task     : %d %s", opt.cpus_per_task,
 		opt.cpus_set ? "(set)" : "(default)");
 	if (opt.max_nodes)
-		info("nodes          : %d-%d", opt.min_nodes, opt.max_nodes);
+		info("nodes             : %d-%d", opt.min_nodes, opt.max_nodes);
 	else {
-		info("nodes          : %d %s", opt.min_nodes,
+		info("nodes             : %d %s", opt.min_nodes,
 			opt.nodes_set ? "(set)" : "(default)");
 	}
-	info("jobid          : %u %s", opt.jobid, 
+	info("jobid             : %u %s", opt.jobid, 
 		opt.jobid_set ? "(set)" : "(default)");
-	info("partition      : %s",
+	info("partition         : %s",
 		opt.partition == NULL ? "default" : opt.partition);
-	info("job name       : `%s'", opt.job_name);
-	info("reservation    : `%s'", opt.reservation);
-	info("wckey          : `%s'", opt.wckey);
-	info("distribution   : %s", format_task_dist_states(opt.distribution));
+	info("job name          : `%s'", opt.job_name);
+	info("reservation       : `%s'", opt.reservation);
+	info("wckey             : `%s'", opt.wckey);
+	info("distribution      : %s",
+	     format_task_dist_states(opt.distribution));
 	if(opt.distribution == SLURM_DIST_PLANE)
-		info("plane size   : %u", opt.plane_size);
-	info("verbose        : %d", opt.verbose);
-	info("immediate      : %s", tf_(opt.immediate));
+		info("plane size        : %u", opt.plane_size);
+	info("verbose           : %d", opt.verbose);
+	info("immediate         : %s", tf_(opt.immediate));
 	if (opt.requeue != NO_VAL)
-		info("requeue        : %u", opt.requeue);
-	info("overcommit     : %s", tf_(opt.overcommit));
+		info("requeue           : %u", opt.requeue);
+	info("overcommit        : %s", tf_(opt.overcommit));
 	if (opt.time_limit == INFINITE)
-		info("time_limit     : INFINITE");
+		info("time_limit        : INFINITE");
 	else if (opt.time_limit != NO_VAL)
-		info("time_limit     : %d", opt.time_limit);
+		info("time_limit        : %d", opt.time_limit);
 	if (opt.nice)
-		info("nice           : %d", opt.nice);
-	info("account        : %s", opt.account);
-	info("comment        : %s", opt.comment);
-	info("dependency     : %s", opt.dependency);
+		info("nice              : %d", opt.nice);
+	info("account           : %s", opt.account);
+	info("comment           : %s", opt.comment);
+	info("dependency        : %s", opt.dependency);
 	str = print_constraints();
-	info("constraints    : %s", str);
+	info("constraints       : %s", str);
 	xfree(str);
 	if (opt.conn_type != (uint16_t) NO_VAL)
-		info("conn_type      : %u", opt.conn_type);
+		info("conn_type         : %u", opt.conn_type);
 	str = print_geometry(opt.geometry);
-	info("geometry       : %s", str);
+	info("geometry          : %s", str);
 	xfree(str);
-	info("reboot         : %s", opt.reboot ? "no" : "yes");
-	info("rotate         : %s", opt.no_rotate ? "yes" : "no");
-	info("network        : %s", opt.network);
+	info("reboot            : %s", opt.reboot ? "no" : "yes");
+	info("rotate            : %s", opt.no_rotate ? "yes" : "no");
+	info("network           : %s", opt.network);
 
 	if (opt.blrtsimage)
-		info("BlrtsImage     : %s", opt.blrtsimage);
+		info("BlrtsImage        : %s", opt.blrtsimage);
 	if (opt.linuximage)
-		info("LinuxImage     : %s", opt.linuximage);
+		info("LinuxImage        : %s", opt.linuximage);
 	if (opt.mloaderimage)
-		info("MloaderImage   : %s", opt.mloaderimage);
+		info("MloaderImage      : %s", opt.mloaderimage);
 	if (opt.ramdiskimage)
-		info("RamDiskImage   : %s", opt.ramdiskimage);
+		info("RamDiskImage      : %s", opt.ramdiskimage);
 
 	if (opt.begin) {
 		char time_str[32];
 		slurm_make_time_str(&opt.begin, time_str, sizeof(time_str));
-		info("begin          : %s", time_str);
+		info("begin             : %s", time_str);
 	}
 	info("mail_type         : %s", print_mail_type(opt.mail_type));
 	info("mail_user         : %s", opt.mail_user);
