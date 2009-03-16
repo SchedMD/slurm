@@ -283,6 +283,13 @@ extern int setup_job_cond_limits(acct_job_cond_t *job_cond, char **extra)
 			   "(t1.eligible < %d "
 			   "&& (t1.end >= %d || t1.end = 0)))",
 			   job_cond->usage_end, job_cond->usage_start);
+	} else if(job_cond->usage_end) {
+		if(*extra)
+			xstrcat(*extra, " && (");
+		else
+			xstrcat(*extra, " where (");
+		xstrfmtcat(*extra, 
+			   "(t1.eligible < %d))", job_cond->usage_end);
 	}
 
 	if(job_cond->state_list && list_count(job_cond->state_list)) {
