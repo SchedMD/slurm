@@ -1200,7 +1200,7 @@ job128\-00.out, job128\-01.out, ...
 .RS -10
 .PP
 
-.SH "ENVIRONMENT VARIABLES"
+.SH "INPUT ENVIRONMENT VARIABLES"
 .PP
 Some srun options may be set via environment variables. 
 These environment variables, along with their corresponding options, 
@@ -1371,12 +1371,14 @@ Same as \fB\-W, \-\-wait\fR=\fIseconds\fR
 .TP
 \fBSLURM_WORKING_DIR\fR
 \fB\-D, \-\-chdir\fR=\fIpath\fR
+
+.SH "OUTPUT ENVIRONMENT VARIABLES"
 .PP
-Additionally, srun will set some environment variables in the environment 
+srun will set some environment variables in the environment 
 of the executing tasks on the remote compute nodes. 
 These environment variables are:
 
-.TP
+.TP 22
 \fBBASIL_RESERVATION_ID\fR
 The reservation ID on Cray systems running ALPS/BASIL only.
 
@@ -1517,7 +1519,7 @@ These tasks initiated outside of SLURM's monitoring
 or control. SLURM's epilog should be configured to purge
 these tasks when the job's allocation is relinquished.
 
-See \fIhttps://computing.llnl.gov/linux/slurm/quickstart.html#mpi\fR 
+See \fIhttps://computing.llnl.gov/linux/slurm/mpi_guide.html\fR 
 for more information on use of these various MPI implementation 
 with SLURM.
 
