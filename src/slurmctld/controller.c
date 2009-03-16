@@ -1613,8 +1613,9 @@ static void *_assoc_cache_mgr(void *no_data)
 	ListIterator itr = NULL;
 	struct job_record *job_ptr = NULL;
 	acct_association_rec_t assoc_rec;
+	/* Write lock on jobs, read lock on nodes and partitions */
 	slurmctld_lock_t job_write_lock =
-		{ READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
+		{ NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 
 	while(running_cache == 1) {
 		slurm_mutex_lock(&assoc_cache_mutex);
