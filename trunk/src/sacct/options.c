@@ -406,7 +406,7 @@ sacct [<OPTION>]                                                            \n\
 	           Print a list of fields that can be specified with the    \n\
 	           '--format' option                                        \n\
      -E, --endtime:                                                         \n\
-                   Select jobs ending before this time.                     \n\
+                   Select jobs started before this time.                    \n\
      -f, --file=file:                                                       \n\
 	           Read data from the specified file, rather than SLURM's   \n\
                    current accounting log file. (Only appliciable when      \n\
@@ -455,7 +455,7 @@ sacct [<OPTION>]                                                            \n\
 	           completed (cd), failed (f), timeout (to), and            \n\
                    node_fail (nf).                                          \n\
      -S, --starttime:                                                       \n\
-                   Select jobs starting after this time.                    \n\
+                   Select jobs eligible after this time.                    \n\
      -u, --uid, --user:                                                     \n\
 	           Use this comma seperated list of uids or user names      \n\
                    to select jobs to display.  By default, the running      \n\
@@ -468,6 +468,12 @@ sacct [<OPTION>]                                                            \n\
      -X, --allocations:                                                     \n\
 	           Only show cumulative statistics for each job, not the    \n\
 	           intermediate steps.                                      \n\
+	                                                                    \n\
+     Note, valid start/end time formats are...                              \n\
+	           HH:MM[:SS] [AM|PM]                                       \n\
+	           MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]                     \n\
+	           MM/DD[/YY]-HH:MM[:SS]                                    \n\
+	           YYYY-MM-DD[THH[:MM[:SS]]]                                \n\
 \n");
 
 	return;

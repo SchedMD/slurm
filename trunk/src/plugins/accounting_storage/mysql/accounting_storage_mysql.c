@@ -10063,12 +10063,16 @@ extern int clusteracct_storage_p_cluster_procs(mysql_conn_t *mysql_conn,
 		debug("%s has changed from %s cpus to %u",
 		      cluster, row[0], procs);   
 
+	/* reset all the entries for this cluster since the procs
+	   changed some of the downed nodes may have gone away.
+	   Request them again with ACCOUNTING_FIRST_REG */
 	query = xstrdup_printf(
 		"update %s set period_end=%d where cluster=\"%s\" "
-		"and period_end=0 and node_name=''",
+		"and period_end=0",
 		event_table, event_time, cluster);
 	rc = mysql_db_query(mysql_conn->db_conn, query);
 	xfree(query);
+	first = 1;
 	if(rc != SLURM_SUCCESS)
 		goto end_it;
 add_it:
