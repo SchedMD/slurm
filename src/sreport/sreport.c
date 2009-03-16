@@ -702,6 +702,12 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
                                                                            \n\
                                                                            \n\
                                                                            \n\
+  Note, valid start/end time formats are...                                \n\
+       HH:MM[:SS] [AM|PM]                                                  \n\
+       MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]                                \n\
+       MM/DD[/YY]-HH:MM[:SS]                                               \n\
+                                                                           \n\
+                                                                           \n\
   All commands and options are case-insensitive.                         \n\n");
 	
 }

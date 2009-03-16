@@ -444,6 +444,8 @@ void _help_msg(void)
 	       "    followed by \"d\", it is interpreted as number of days. For\n"
 	       "    example, \"--expire=14d\" means that you wish to purge the job\n"
 	       "    accounting log of all jobs that completed more than 14 days ago.\n" 
+	       "--endtime:                                                   \n"
+               "    Select jobs ending before this time.                     \n"
 	       "-F <field-list>, --fields=<field-list>\n"
 	       "    Display the specified data (use \"--help-fields\" for a\n"
 	       "    list of available fields). If no field option is specified,\n"
@@ -486,6 +488,8 @@ void _help_msg(void)
 	       "-S, --stat\n"
 	       "    Get real time state of a jobstep supplied by the -j\n"
 	       "    option\n" 
+	       "--starttime:                                                 \n"
+               "    Select jobs starting after this time.                    \n"
 	       "-t, --total\n"
 	       "    Only show cumulative statistics for each job, not the\n"
 	       "    intermediate steps\n"
@@ -496,7 +500,13 @@ void _help_msg(void)
 	       "    Pointer to this message.\n"
 	       "-v, --verbose\n"
 	       "    Primarily for debugging purposes, report the state of various\n"
-	       "    variables during processing.\n", conf->slurm_conf);
+	       "    variables during processing.\n"
+	       "\n"
+	       "Note, valid start/end time formats are...\n"
+	       "    HH:MM[:SS] [AM|PM]\n"
+	       "    MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]\n"
+	       "    MM/DD[/YY]-HH:MM[:SS]\n"
+	       , conf->slurm_conf);
 
 	slurm_conf_unlock();
 
@@ -629,6 +639,7 @@ void parse_command_line(int argc, char **argv)
 		{"duplicates", 0, &params.opt_dup, 1},
 		{"dump", 0, 0, 'd'},
 		{"end", 1, 0, 'E'},
+		{"endtime", 1, 0, 'E'},
 		{"expire", 1, 0, 'e'},
 		{"fields", 1, 0, 'F'},
 		{"file", 1, 0, 'f'},
@@ -646,6 +657,7 @@ void parse_command_line(int argc, char **argv)
 		{"purge", 0, 0, 'P'},
 		{"state", 1, 0, 's'},
 		{"stat", 0, 0, 'S'},
+		{"starttime", 1, 0, 'B'},
 		{"total", 0, 0,  't'},
 		{"uid", 1, 0, 'u'},
 		{"usage", 0, &params.opt_help, 3},
