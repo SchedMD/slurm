@@ -1,11 +1,9 @@
 /*****************************************************************************\
  *  sprio.c - Display the priority components of jobs in the slurm system
  *****************************************************************************
- *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, 
- *             Morris Jette <jette1@llnl.gov>, et. al.
+ *  Written by Donald Lipari <lipari1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -98,11 +96,11 @@ int main (int argc, char *argv[])
 
 	log_init(xbasename(argv[0]), opts, SYSLOG_FACILITY_USER, NULL);
 
-	weight_age = slurm_get_priority_weight_age();
-	weight_fs = slurm_get_priority_weight_fairshare();
-	weight_js = slurm_get_priority_weight_job_size();
+	weight_age  = slurm_get_priority_weight_age();
+	weight_fs   = slurm_get_priority_weight_fairshare();
+	weight_js   = slurm_get_priority_weight_job_size();
 	weight_part = slurm_get_priority_weight_partition();
-	weight_qos = slurm_get_priority_weight_qos();
+	weight_qos  = slurm_get_priority_weight_qos();
 
 	parse_command_line( argc, argv );
 	if (params.verbose) {
@@ -169,9 +167,14 @@ int main (int argc, char *argv[])
 
 	print_jobs_array(resp_msg->priority_factors_list, params.format_list);
 
+#if 0
+	/* Free storage here if we want to verify that logic.
+	 * Since we exit next, this is not important */
  	list_destroy(params.format_list);
 	if(params.user_list)
 		list_destroy(params.user_list);
+	slurm_free_priority_factors_response_msg(resp_msg);
+#endif
 
 	exit (error_code);
 }

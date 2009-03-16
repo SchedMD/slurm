@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  priority_multifactor.c - slurm multifactor priority plugin.
  *****************************************************************************
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -475,8 +475,9 @@ static void *_decay_thread(void *no_data)
 	double decay_factor =
 		1 - (0.693 / (double)slurm_get_priority_decay_hl());
 
+	/* Write lock on jobs, read lock on nodes and partitions */
 	slurmctld_lock_t job_write_lock =
-		{ READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
+		{ NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
@@ -871,8 +872,9 @@ extern List priority_p_get_priority_factors_list(List req_job_list)
 	struct tm tm;
 	time_t start_time = time(NULL);
 
+	/* Read lock on jobs, nodes, and partitions */
 	slurmctld_lock_t job_read_lock =
-		{ READ_LOCK, READ_LOCK, READ_LOCK, READ_LOCK };
+		{ NO_LOCK, READ_LOCK, READ_LOCK, READ_LOCK };
 
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);

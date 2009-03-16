@@ -1,11 +1,9 @@
 /*****************************************************************************\
  *  print.c - sprio print job functions
  *****************************************************************************
- *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, 
- *             Morris Jette <jette1@llnl.gov>, et. al.
+ *  Written by Donald Lipari <lipari1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *    
  *  This file is part of SLURM, a resource management program.
@@ -281,9 +279,9 @@ int _print_job_priority_normalized(priority_factors_object_t * job, int width,
 		double qos_priority = job->priority_qos * (double)weight_qos;
 		uint16_t nice_offset = job->nice_offset;
 		double priority = age_priority + fs_priority + js_priority +
-			part_priority + qos_priority - nice_offset;
-
+				  part_priority + qos_priority - nice_offset;
 		double prio = priority / (double) ((uint32_t) 0xffffffff);
+
 		sprintf(temp, "%16.14f", prio);
 		_print_str(temp, width, right, true);
 	}

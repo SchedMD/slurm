@@ -1,11 +1,9 @@
 /****************************************************************************\
- *  opts.c - srun command line option parsing
- *
- *  $Id: opts.c 16616 2009-02-20 17:00:27Z jette $
+ *  opts.c - sprio command line option parsing
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Morris Jette <jette1@llnl.gov>
+ *  Written by Donald Lipari <lipari1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
