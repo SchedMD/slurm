@@ -368,7 +368,8 @@ Usage: strigger [--set | --get | --clear] [OPTIONS]\n\
   -p, --program=path  pathname of program to execute when triggered\n\
   -r, --reconfig      trigger event on configuration changes\n\
   -t, --time          trigger event on job's time limit\n\
-  -u, --up            trigger event when node returned to service from DOWN state\n\
+  -u, --up            trigger event when node returned to service from DOWN \n\
+                      state\n\
       --user          a user name or ID to filter triggers by\n\
   -v, --verbose       print detailed event logging\n\
   -V, --version       print version information and exit\n\

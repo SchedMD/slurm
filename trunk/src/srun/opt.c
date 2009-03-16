@@ -698,6 +698,7 @@ static void set_options(const int argc, char **argv)
 		{"chdir",         required_argument, 0, 'D'},
 		{"error",         required_argument, 0, 'e'},
 		{"preserve-env",  no_argument,       0, 'E'},
+		{"preserve-slurm-env", no_argument,  0, 'E'},
 		{"geometry",      required_argument, 0, 'g'},
 		{"hold",          no_argument,       0, 'H'},
 		{"input",         required_argument, 0, 'i'},
@@ -2058,15 +2059,18 @@ static void _help(void)
 "      --task-epilog=program   run \"program\" after launching task\n"
 "      --begin=time            defer job until HH:MM DD/MM/YY\n"
 "      --mail-type=type        notify on state change: BEGIN, END, FAIL or ALL\n"
-"      --mail-user=user        who to send email notification for job state changes\n"
+"      --mail-user=user        who to send email notification for job state\n" "                              changes\n"
 "      --multi-prog            if set the program name specified is the\n"
 "                              configuration specification for multiple programs\n"
 "      --get-user-env          used by Moab.  See srun man page.\n"
 "  -L, --licenses=names        required license, comma separated\n"
 "      --checkpoint=time       job step checkpoint interval\n"
-"      --checkpoint-dir=dir    directory to store job step checkpoint image files\n"
-"      --restart-dir=dir       directory of checkpoint image files to restart from\n"
-"  -E, --preserve-env          env vars for node and task counts override command-line flags\n"
+"      --checkpoint-dir=dir    directory to store job step checkpoint image \n"
+"                              files\n"
+"      --restart-dir=dir       directory of checkpoint image files to restart "
+"                              from\n"
+"  -E, --preserve-env          env vars for node and task counts override "
+"                              command-line flags\n"
 #ifdef HAVE_PTY_H
 "      --pty                   run task zero in pseudo terminal\n"
 #endif
@@ -2122,32 +2126,36 @@ static void _help(void)
 
 	printf("\n"
 #ifdef HAVE_AIX				/* AIX/Federation specific options */
-		"AIX related options:\n"
-		"  --network=type              communication protocol to be used\n"
-		"\n"
+"AIX related options:\n"
+"  --network=type              communication protocol to be used\n"
+"\n"
 #endif
 
 #ifdef HAVE_BG				/* Blue gene specific options */
-		"Blue Gene related options:\n"
-		"  -g, --geometry=XxYxZ        geometry constraints of the job\n"
-		"  -R, --no-rotate             disable geometry rotation\n"
-		"      --reboot                reboot block before starting job\n"
-		"      --conn-type=type        constraint on type of connection, MESH or TORUS\n"
-		"                              if not set, then tries to fit TORUS else MESH\n"
-		"      --blrts-image=path      path to blrts image for bluegene block.  Default if not set\n"
-		"      --linux-image=path      path to linux image for bluegene block.  Default if not set\n"
-		"      --mloader-image=path    path to mloader image for bluegene block.  Default if not set\n"
-		"      --ramdisk-image=path    path to ramdisk image for bluegene block.  Default if not set\n"
-		"\n"
+"Blue Gene related options:\n"
+"  -g, --geometry=XxYxZ        geometry constraints of the job\n"
+"  -R, --no-rotate             disable geometry rotation\n"
+"      --reboot                reboot block before starting job\n"
+"      --conn-type=type        constraint on type of connection, MESH or TORUS\n"
+"                              if not set, then tries to fit TORUS else MESH\n"
+"      --blrts-image=path      path to blrts image for bluegene block.  Default\n"
+"                              if not set\n"
+"      --linux-image=path      path to linux image for bluegene block.  Default\n"
+"                              if not set\n"
+"      --mloader-image=path    path to mloader image for bluegene block.\n"
+"                              Default if not set\n"
+"      --ramdisk-image=path    path to ramdisk image for bluegene block.\n"
+"                              Default if not set\n"
+"\n"
 #endif
-		"Help options:\n"
-		"      --help                  show this help message\n"
-		"      --usage                 display brief usage message\n"
-		"      --print-request         Display job's layout without scheduling it\n"
-		"\n"
-		"Other options:\n"
-		"  -V, --version               output version information and exit\n"
-		"\n"
+"Help options:\n"
+"      --help                  show this help message\n"
+"      --usage                 display brief usage message\n"
+"      --print-request         Display job's layout without scheduling it\n"
+"\n"
+"Other options:\n"
+"  -V, --version               output version information and exit\n"
+"\n"
 		);
 
 }
