@@ -163,20 +163,20 @@ static void _help(void)
 {
 	printf("\
 Usage: smap [OPTIONS]\n\
-  -D, --display              set which Display mode to use\n\
-      j=jobs\n\
-      s=slurm partitions\n\
-      b=Bluegene blocks\n\
-      c=set configuration\n\
+  -D, --display              set which display mode to use\n\
+                             j=jobs\n\
+                             s=slurm partitions\n\
+                             b=bluegene blocks\n\
+                             c=set configuration\n\
   -h, --noheader             no headers on output\n\
   -i, --iterate=seconds      specify an interation period\n\
   -V, --version              output version information and exit\n\
-  -c, --commandline          output written with straight to the \
-commandline.\n\
-  -p, --parse                used with -c to not format output, but use \
-single tab delimitation.\n\
-  -R, --resolve              resolve an XYZ coord from a Rack/Midplane id \
-or vice versa.\n\
+  -c, --commandline          output written with straight to the\n\
+                             commandline.\n\
+  -p, --parse                used with -c to not format output, but use\n\
+                             single tab delimitation.\n\
+  -R, --resolve              resolve an XYZ coord from a Rack/Midplane id \n\
+                             or vice versa.\n\
                              (i.e. -R R101 for R/M input -R 101 for XYZ).\n\
 \nHelp options:\n\
   --help                     show this help message\n\
