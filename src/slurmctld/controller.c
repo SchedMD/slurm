@@ -434,16 +434,9 @@ int main(int argc, char *argv[])
 			}
 			unlock_slurmctld(config_write_lock);
 			
-			if ((recover == 0) || 
-			    (!stat("/tmp/slurm_accounting_first", &stat_buf))) {
-				/* When first starting to write node state
-				 * information to Gold or SlurmDBD, create 
-				 * a file called "/tmp/slurm_accounting_first"  
-				 * to capture node initialization information */
-				
+			if (recover == 0) 
 				_accounting_mark_all_nodes_down("cold-start");
-				unlink("/tmp/slurm_accounting_first");
-			}
+			
 		} else {
 			error("this host (%s) not valid controller (%s or %s)",
 				node_name, slurmctld_conf.control_machine,
@@ -1679,8 +1672,9 @@ static void *_assoc_cache_mgr(void *no_data)
 	struct job_record *job_ptr = NULL;
 	acct_qos_rec_t qos_rec;
 	acct_association_rec_t assoc_rec;
+	/* Write lock on jobs, read lock on nodes and partitions */
 	slurmctld_lock_t job_write_lock =
-		{ READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
+		{ NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 
 	while(running_cache == 1) {
 		slurm_mutex_lock(&assoc_cache_mutex);

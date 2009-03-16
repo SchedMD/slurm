@@ -227,12 +227,17 @@ documents those changes that are of interest to users and admins.
       If multiple hostslists are given on stdin they are combined to a
       union hostlist before being used in the way requested by the
       options.
- -- when using -j option in sacct no user restriction will applied unless
+ -- When using -j option in sacct no user restriction will applied unless
     specified with the -u option.
- -- significant speed up for association based reports in sreport
+ -- For sched/wiki and sched/wiki2, change logging of wiki message traffic
+    from debug() to debug2(). Only seen if SlurmctldDebug is configured to
+    6 or higher.
+ -- Significant speed up for association based reports in sreport
  -- BLUEGENE - fix for checking if job can run with downed nodes.  Previously 
     sbatch etc would tell you node configuration not available now jobs are 
     accepted but held until nodes are back up.
+ -- Fix in accounting so if any nodes are removed from the system when they 
+    were previously down will be recorded correctly.
 
 * Changes in SLURM 1.3.13
 =========================
