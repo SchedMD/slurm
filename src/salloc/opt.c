@@ -1490,23 +1490,29 @@ static void _help(void)
 
         printf("\n"
 #ifdef HAVE_AIX				/* AIX/Federation specific options */
-  "AIX related options:\n"
-  "  --network=type              communication protocol to be used\n"
-  "\n"
+"AIX related options:\n"
+"  --network=type              communication protocol to be used\n"
+"\n"
 #endif
 #ifdef HAVE_BG				/* Blue gene specific options */
 "\n"
-  "Blue Gene related options:\n"
-  "  -g, --geometry=XxYxZ        geometry constraints of the job\n"
-  "  -R, --no-rotate             disable geometry rotation\n"
-  "      --reboot                reboot nodes before starting job\n"
-  "      --conn-type=type        constraint on type of connection, MESH or TORUS\n"
-  "                              if not set, then tries to fit TORUS else MESH\n"
-  "      --blrts-image=path      path to blrts image for bluegene block.  Default if not set\n"
-  "      --linux-image=path      path to linux image for bluegene block.  Default if not set\n"
-  "      --mloader-image=path    path to mloader image for bluegene block.  Default if not set\n"
-  "      --ramdisk-image=path    path to ramdisk image for bluegene block.  Default if not set\n"
-  "\n"
+"Blue Gene related options:\n"
+"  -g, --geometry=XxYxZ        geometry constraints of the job\n"
+"  -R, --no-rotate             disable geometry rotation\n"
+"      --reboot                reboot nodes before starting job\n"
+"      --conn-type=type        constraint on type of connection, MESH or TORUS\n"
+"                              if not set, then tries to fit TORUS else MESH\n"
+#ifndef HAVE_BGL
+"                              If wanting to run in HTC mode (only for 1\n"
+"                              midplane and below).  You can use HTC_S for\n"
+"                              SMP, HTC_D for Dual, HTC_V for\n"
+"                              virtual node mode, and HTC_L for Linux mode.\n" 
+#endif
+"      --blrts-image=path      path to blrts image for bluegene block.  Default if not set\n"
+"      --linux-image=path      path to linux image for bluegene block.  Default if not set\n"
+"      --mloader-image=path    path to mloader image for bluegene block.  Default if not set\n"
+"      --ramdisk-image=path    path to ramdisk image for bluegene block.  Default if not set\n"
+"\n"
 #endif
 "Help options:\n"
 "  -h, --help                  show this help message\n"
