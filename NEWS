@@ -1,6 +1,11 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.4.0-pre10
+==============================
+ -- Critical bug fix in task/affinity when the CoresPerSocket is greater
+    than the ThreadsPerCore (invalid memory reference).
+
 * Changes in SLURM 1.4.0-pre9
 =============================
  -- OpenMPI users only: Add srun logic to automatically recreate and 

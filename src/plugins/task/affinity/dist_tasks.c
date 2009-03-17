@@ -483,7 +483,7 @@ static char *_alloc_mask(launch_tasks_request_msg_t *req,
 	i = mask = 0;
 	for (s=0, s_miss=false; s<sockets; s++) {
 		for (c=0, c_hit=c_miss=false; c<cores; c++) {
-			for (t=0, t_hit=t_miss=false; t<cores; t++) {
+			for (t=0, t_hit=t_miss=false; t<threads; t++) {
 				if (bit_test(alloc_bitmap, i)) {
 					mask |= (1 << i);
 					(*whole_thread_cnt)++;
