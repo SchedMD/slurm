@@ -538,8 +538,13 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 			xstrcat(out, " ");
 		else
 			xstrcat(out, "\n   ");
+#ifdef HAVE_BGL
 		snprintf(tmp_line, sizeof(tmp_line),
 			 "LinuxImage=%s", select_buf);
+#else
+		snprintf(tmp_line, sizeof(tmp_line),
+			 "CnloadImage=%s", select_buf);
+#endif
 		xstrcat(out, tmp_line);
 	}
 	/****** Line 22 (optional) ******/
@@ -564,8 +569,13 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 			xstrcat(out, " ");
 		else
 			xstrcat(out, "\n   ");
+#ifdef HAVE_BGL
 		snprintf(tmp_line, sizeof(tmp_line),
 			 "RamDiskImage=%s", select_buf);
+#else
+		snprintf(tmp_line, sizeof(tmp_line),
+			 "IoloadImage=%s", select_buf);
+#endif
 		xstrcat(out, tmp_line);
 	}
 	xstrcat(out, "\n\n");
