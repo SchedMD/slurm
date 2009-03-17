@@ -483,6 +483,7 @@ env_vars_t env_vars[] = {
 {"SLURM_KILL_BAD_EXIT", OPT_INT,        &opt.kill_bad_exit, NULL             },
 {"SLURM_LABELIO",       OPT_INT,        &opt.labelio,       NULL             },
 {"SLURM_LINUX_IMAGE",   OPT_STRING,     &opt.linuximage,    NULL             },
+{"SLURM_CNLOAD_IMAGE",  OPT_STRING,     &opt.linuximage,    NULL             },
 {"SLURM_MLOADER_IMAGE", OPT_STRING,     &opt.mloaderimage,  NULL             },
 {"SLURM_NNODES",        OPT_NODES,      NULL,               NULL             },
 {"SLURM_NSOCKETS_PER_NODE",OPT_NSOCKETS,NULL,               NULL             },
@@ -493,6 +494,7 @@ env_vars_t env_vars[] = {
 {"SLURM_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL             },
 {"SLURM_PARTITION",     OPT_STRING,     &opt.partition,     NULL             },
 {"SLURM_RAMDISK_IMAGE", OPT_STRING,     &opt.ramdiskimage,  NULL             },
+{"SLURM_IOLOAD_IMAGE",  OPT_STRING,     &opt.ramdiskimage,  NULL             },
 {"SLURM_REMOTE_CWD",    OPT_STRING,     &opt.cwd,           NULL             },
 {"SLURM_RESV_PORTS",    OPT_RESV_PORTS, NULL,               NULL             },
 {"SLURM_STDERRMODE",    OPT_STRING,     &opt.efname,        NULL             },
@@ -779,8 +781,10 @@ static void set_options(const int argc, char **argv)
 		{"tasks-per-node",   required_argument, 0, LONG_OPT_NTASKSPERNODE},
 		{"blrts-image",      required_argument, 0, LONG_OPT_BLRTS_IMAGE},
 		{"linux-image",      required_argument, 0, LONG_OPT_LINUX_IMAGE},
+		{"cnload-image",     required_argument, 0, LONG_OPT_LINUX_IMAGE},
 		{"mloader-image",    required_argument, 0, LONG_OPT_MLOADER_IMAGE},
 		{"ramdisk-image",    required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
+		{"ioload-image",     required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
 		{"reboot",           no_argument,       0, LONG_OPT_REBOOT},            
 		{"get-user-env",     optional_argument, 0, LONG_OPT_GET_USER_ENV},
 		{"pty",              no_argument,       0, LONG_OPT_PTY},
@@ -1925,14 +1929,24 @@ static void _opt_list()
 	info("rotate         : %s", opt.no_rotate ? "yes" : "no");
 	info("preserve_env   : %s", tf_(opt.preserve_env));
 	
+#ifdef HAVE_BGL
 	if (opt.blrtsimage)
 		info("BlrtsImage     : %s", opt.blrtsimage);
+#endif
 	if (opt.linuximage)
+#ifdef HAVE_BGL
 		info("LinuxImage     : %s", opt.linuximage);
+#else
+		info("CnloadImage    : %s", opt.linuximage);
+#endif
 	if (opt.mloaderimage)
 		info("MloaderImage   : %s", opt.mloaderimage);
 	if (opt.ramdiskimage)
+#ifdef HAVE_BGL
 		info("RamDiskImage   : %s", opt.ramdiskimage);
+#else
+		info("IoloadImage   : %s", opt.ramdiskimage);
+#endif
 
 	info("network        : %s", opt.network);
 	info("propagate      : %s",
@@ -1993,14 +2007,19 @@ static void _usage(void)
 "            [--ntasks-per-core=n] [--mem-per-cpu=MB] [--preserve-env]\n"
 #ifdef HAVE_BG		/* Blue gene specific options */
 "            [--geometry=XxYxZ] [--conn-type=type] [--no-rotate] [--reboot]\n"
+#ifdef HAVE_BGL
 "            [--blrts-image=path] [--linux-image=path]\n"
 "            [--mloader-image=path] [--ramdisk-image=path]\n"
+#else
+"            [--cnload-image=path]\n"
+"            [--mloader-image=path] [--ioload-image=path]\n"
 #endif
-		"            [--mail-type=type] [--mail-user=user] [--nice[=value]]\n"
-		"            [--prolog=fname] [--epilog=fname] [--multi-prog]\n"
-		"            [--task-prolog=fname] [--task-epilog=fname]\n"
-		"            [--resv-ports]\n"
-		"            [-w hosts...] [-x hosts...] executable [args...]\n");
+#endif
+"            [--mail-type=type] [--mail-user=user] [--nice[=value]]\n"
+"            [--prolog=fname] [--epilog=fname]\n"
+"            [--task-prolog=fname] [--task-epilog=fname]\n"
+"            [--ctrl-comm-ifhn=addr] [--multi-prog]\n"
+"            [-w hosts...] [-x hosts...] executable [args...]\n");
 }
 
 static void _help(void)
@@ -2143,17 +2162,17 @@ static void _help(void)
 "                              midplane and below).  You can use HTC_S for\n"
 "                              SMP, HTC_D for Dual, HTC_V for\n"
 "                              virtual node mode, and HTC_L for Linux mode.\n" 
+"      --cnload-image=path     path to compute node image for bluegene block.  Default if not set\n"
+"      --mloader-image=path    path to mloader image for bluegene block.  Default if not set\n"
+"      --ioload-image=path     path to ioload image for bluegene block.  Default if not set\n"
+#else
+"      --blrts-image=path      path to blrts image for bluegene block.  Default if not set\n"
+"      --linux-image=path      path to linux image for bluegene block.  Default if not set\n"
+"      --mloader-image=path    path to mloader image for bluegene block.  Default if not set\n"
+"      --ramdisk-image=path    path to ramdisk image for bluegene block.  Default if not set\n"
 #endif
-"      --blrts-image=path      path to blrts image for bluegene block.  Default\n"
-"                              if not set\n"
-"      --linux-image=path      path to linux image for bluegene block.  Default\n"
-"                              if not set\n"
-"      --mloader-image=path    path to mloader image for bluegene block.\n"
-"                              Default if not set\n"
-"      --ramdisk-image=path    path to ramdisk image for bluegene block.\n"
-"                              Default if not set\n"
+#endif
 "\n"
-#endif
 "Help options:\n"
 "      --help                  show this help message\n"
 "      --usage                 display brief usage message\n"

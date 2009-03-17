@@ -73,9 +73,12 @@ char *_elapsed_time(long secs, long usecs)
 	else if (hours)
 		str = xstrdup_printf("%2.2ld:%2.2ld:%2.2ld",
 				     hours, minutes, seconds);
-	else
+	else if(subsec)
 		str = xstrdup_printf("%2.2ld:%2.2ld.%3.3ld",
 				     minutes, seconds, subsec);
+	else
+		str = xstrdup_printf("00:%2.2ld:%2.2ld",
+				     minutes, seconds);
 	return str;
 }
 
