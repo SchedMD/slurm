@@ -44,10 +44,12 @@ Seven new sbatch options are available:
 <i>--geometry</i> (specify job size in each dimension),
 <i>--no-rotate</i> (disable rotation of geometry), 
 <i>--conn-type</i> (specify interconnect type between base partitions, mesh or torus).
-<i>--blrts-image</i> (specify alternative blrts image for bluegene block.  Default if not set).
-<i>--linux-image</i> (specify alternative linux image for bluegene block.  Default if not set).
+<i>--blrts-image</i> (specify alternative blrts image for bluegene --block.  Default if not set, BGL only.)
+<i>--cnload-image</i> (specify alternative c-node image for bluegene block.  Default if not set, BGP only.)
+<i>--ioload-image</i> (specify alternative io image for bluegene block.  Default if not set, BGP only.)
+<i>--linux-image</i> (specify alternative linux image for bluegene block.  Default if not set, BGL only.)
 <i>--mloader-image</i> (specify alternative mloader image for bluegene block.  Default if not set).
-<i>--ramdisk-image</i> (specify alternative ramdisk image for bluegene block.  Default if not set).
+<i>--ramdisk-image</i> (specify alternative ramdisk image for bluegene block.  Default if not set, BGL only.)
 The <i>--nodes</i> option with a minimum and (optionally) maximum node count continues 
 to be available.  
 
@@ -195,10 +197,11 @@ keys scroll the window containing the text information.</p>
 
 <p>Building a BlueGene compatible system is dependent upon the 
 <i>configure</i> program locating some expected files. 
-In particular, the configure script searches for <i>libdb2.so</i> in the 
-directories <i>/home/bgdb2cli/sqllib</i> and <i>/u/bgdb2cli/sqllib</i>.
-If your DB2 library file is in a different location, use the configure 
-option <i>--with-db2-dir=PATH</i> to specify the parent directory.
+In particular for a BlueGene/L system, the configure script searches
+for <i>libdb2.so</i> in the directories <i>/home/bgdb2cli/sqllib</i>
+and <i>/u/bgdb2cli/sqllib</i>.  If your DB2 library file is in a
+different location, use the configure
+option <i>--with-db2-dir=PATH</i> to specify the parent directory. 
 If you have the same version of the operating system on both the 
 Service Node (SN) and the Front End Nodes (FEN) then you can configure 
 and build one set of files on the SN and install them on both the SN and FEN.
@@ -234,7 +237,6 @@ This is because there are no job steps and we don't want to purge jobs premature
 The value of <i>SelectType</i> must be set to "select/bluegene" in order to have 
 node selection performed using a system aware of the system's topography 
 and interfaces. 
-The value of <i>SchedulerType</i> should be set to "sched/builtin".
 The value of <i>Prolog</i> should be set to the full pathname of a program that 
 will delay execution until the bgblock identified by the MPIRUN_PARTITION 
 environment variable is ready for use. It is recommended that you construct a script 
@@ -416,7 +418,7 @@ systems).
 the user.
 If you change the bgblock layout, then slurmctld and slurmd should 
 both be cold-started (e.g. <b>/etc/init.d/slurm startclean</b>).
-If you which to modify the <i>Numpsets</i> values 
+If you wish to modify the <i>Numpsets</i> values 
 for existing bgblocks, either modify them manually or destroy the bgblocks
 and let SLURM recreate them. 
 Note that in addition to the bgblocks defined in <i>bluegene.conf</i>, an 
@@ -527,17 +529,18 @@ BridgeAPIVerbose=0
 # BPs=[000x001] Type=TORUS       # 1x1x2 = 2 midplanes
 ###############################################################################
 # volume = 1x1x1 = 1
-BPs=[000x000] Type=TORUS                         # 1x1x1 =  1 midplane
-BPs=[001x001] Type=SMALL NodeCards=4 Quarters=3  # 1x1x1 = 4-Nodecard sized 
-                                                 # cnode blocks 3-Base 
-                                                 # Partition Quarter sized 
-                                                 # c-node blocks
+BPs=[000x000] Type=TORUS                            # 1x1x1 =  1 midplane
+BPs=[001x001] Type=SMALL 32CNBlocks=4 128CNBlocks=3 # 1x1x1 = 4-Nodecard sized 
+                                                    # cnode blocks 3-Base 
+                                                    # Partition Quarter sized 
+                                                    # c-node blocks
 
 </pre></p>
 
 <p>The above <i>bluegene.conf</i> file defines multiple bgblocks to be 
 created in a single midplane (see the "SMALL" option). 
-Using this mechanism, up to 32 independent jobs can be executed 
+Using this mechanism, up to 32 independent jobs each consisting of 1
+  32 cnodes can be executed 
 simultaneously on a one-rack BlueGene system.
 If defining bgblocks of <i>Type=SMALL</i>, the SLURM partition 
 containing them as defined in <i>slurm.conf</i> must have the 
@@ -548,6 +551,10 @@ may have the parameter <i>Shared=no</i> for a slight improvement in
 scheduler performance. 
 As in all SLURM configuration files, parameters and values 
 are case insensitive.</p>
+
+<p> With a BlueGene/P system the image names are different.  The
+  correct image names are CnloadImage, MloaderImage, and IoloadImage.
+  You can also use alternate images just the same as discribed above.
 
 <p>One more thing is required to support SLURM interactions with 
 the DB2 database (at least as of the time this was written).
@@ -624,10 +631,15 @@ daemon serving as a front-end to those base partitions is not responding (on
 non-BlueGene systems, the slurmd actually does run on the compute 
 nodes, so the message is more meaningful there). </p>
 
-<p>Note that you can emulate a BlueGene system on stand-alone Linux 
+<p>Note that you can emulate a BlueGene/L system on stand-alone Linux 
 system. 
-Run <b>configure</b> with the <b>--enable-bluegene-emulation</b> option.
-This will define "HAVE_BG" and "HAVE_FRONT_END" in the config.h file. 
+Run <b>configure</b> with the <b>--enable-bgl-emulation</b> option.
+This will define "HAVE_BG", "HAVE_BGL", and "HAVE_FRONT_END" in the
+config.h file. 
+You can also emulate a BlueGene/P system with
+  the <b>--enable-bgp-emulation</b> option. 
+This will define "HAVE_BG", "HAVE_BGP", and "HAVE_FRONT_END" in the
+config.h file. 
 Then execute <b>make</b> normally. 
 These variables will build the code as if it were running 
 on an actual BlueGene computer, but avoid making calls to the
@@ -637,6 +649,6 @@ scheduling logic, etc. </p>
  
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 13 November 2008</p>
+<p style="text-align:center;">Last modified 17 March 2009</p>
 
 <!--#include virtual="footer.txt"-->
