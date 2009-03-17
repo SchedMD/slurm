@@ -1032,6 +1032,7 @@ typedef struct reservation_name_msg {
 #define DEBUG_FLAG_STEPS	0x00000002	/* slurmctld steps */
 #define DEBUG_FLAG_TRIGGERS	0x00000004	/* slurmctld triggers */
 #define DEBUG_FLAG_CPU_BIND	0x00000008	/* CPU binding */
+#define DEBUG_FLAG_WIKI		0x00000010	/* wiki communications */
 
 typedef struct slurm_ctl_conf {
 	time_t last_update;	/* last update time of the build parameters */
