@@ -170,7 +170,12 @@ The section titled "Job Accounting Fields" describes these fields.
 .TP
 \f3\-E \fP\f2end_time\fP\fP\f3,\fP \f3\-\-endtime\fP\f3=\fP\f2end_time\fP
 .IP
-Select jobs ending before time.
+Select jobs starting before time.
+Valid time formats are...
+HH:MM[:SS] [AM|PM]
+MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]
+MM/DD[/YY]-HH:MM[:SS]         
+YYYY-MM-DD[THH[:MM[:SS]]]
 .IP
 
 
@@ -298,7 +303,12 @@ Space characters are not allowed in the
 
 .TP 
 \f3\-S \fP\f3,\fP \f3\-\-starttime\fP
-Select jobs starting after the specified time.
+Select jobs eligible after the specified time.
+Valid time formats are...
+HH:MM[:SS] [AM|PM]
+MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]
+MM/DD[/YY]-HH:MM[:SS]         
+YYYY-MM-DD[THH[:MM[:SS]]]
 
 .TP 
 \f3\-u \fP\f2uid_list\fP\f3,\fP  \f3\-\-uid\fP\f3=\fP\f2uid_list\fP \f3\-\-user\fP\f3=\fP\f2user_list\fP

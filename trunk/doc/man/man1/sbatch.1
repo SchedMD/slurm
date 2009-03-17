@@ -807,6 +807,9 @@ On Blue Gene the acceptable of \fItype\fR are MESH, TORUS and NAV.
 If NAV, or if not set, then SLURM will try to fit a TORUS else MESH.
 You should not normally set this option.
 SLURM will normally allocate a TORUS if possible for a given geometry.
+If running on a BGP system and wanting to run in HTC mode (only for 1
+midplane and below).  You can use HTC_S for SMP, HTC_D for Dual, HTC_V
+for virtual node mode, and HTC_L for Linux mode.
 
 .TP
 \fB\-g\fR, \fB\-\-geometry\fR[=]<\fIXxYxZ\fR>
