@@ -58,7 +58,7 @@ if { [test_account_storage] == 0 } {
 ################################################################
 
 proc sreport_opt { soption } {
-	global sreport
+	global number sreport
 	set debug       0
 	set exit_code   0
 	set matches     0
@@ -223,7 +223,7 @@ proc sreport_opt { soption } {
 			set not_support 1
 			exp_continue
 		}
-		-re "slurm 1.4" {
+		-re "slurm ($number).($number)" {
 			if {$debug} {send_user "\nmatch9\n"}
 			incr matches
 			exp_continue
