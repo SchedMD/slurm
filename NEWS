@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 ==============================
  -- Critical bug fix in task/affinity when the CoresPerSocket is greater
     than the ThreadsPerCore (invalid memory reference).
+ -- Add DebugFlag parameter of "Wiki" to log sched/wiki and wiki2 
+    communications in greater detail.
 
 * Changes in SLURM 1.4.0-pre9
 =============================

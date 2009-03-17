@@ -2390,6 +2390,11 @@ extern char * debug_flags2str(uint32_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "Triggers");
 	}
+	if (debug_flags & DEBUG_FLAG_WIKI) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "Wiki");
+	}
 		
 	return rc;
 }
@@ -2417,6 +2422,8 @@ extern uint32_t debug_str2flags(char *debug_flags)
 			rc |= DEBUG_FLAG_STEPS;
 		else if (strcasecmp(tok, "Triggers") == 0)
 			rc |= DEBUG_FLAG_TRIGGERS;
+		else if (strcasecmp(tok, "Wiki") == 0)
+			rc |= DEBUG_FLAG_WIKI;
 		else {
 			error("Invalid DebugFlag: %s", tok);
 			rc = NO_VAL;
