@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Donald Lipari <lipari1@llnl.gov>
+ *  Written by Don Lipari <lipari1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *    
  *  This file is part of SLURM, a resource management program.
@@ -40,24 +40,19 @@
 #  include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-#include <grp.h>
-#include <pwd.h>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
 #include <sys/types.h>
 
-#include "src/common/hostlist.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
-#include "src/common/node_select.h"
-#include "src/common/parse_time.h"
+#include "src/slurmctld/slurmctld.h"
 #include "src/sprio/print.h"
 #include "src/sprio/sprio.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/slurmctld/slurmctld.h"
 
 static int	_print_str(char *str, int width, bool right, bool cut_output);
 
@@ -119,18 +114,6 @@ static int _print_str(char *str, int width, bool right, bool cut_output)
 
 	return printed;
 }
-
-int _print_nodes(char *nodes, int width, bool right, bool cut)
-{
-	hostlist_t hl = hostlist_create(nodes);
-	char buf[MAXHOSTRANGELEN];
-	int retval;
-	hostlist_ranged_string(hl, MAXHOSTRANGELEN, buf);
-	retval = _print_str(buf, width, right, false);
-	hostlist_destroy(hl);
-	return retval;
-}
-
 
 int _print_int(int number, int width, bool right, bool cut_output)
 {
@@ -277,9 +260,9 @@ int _print_job_priority_normalized(priority_factors_object_t * job, int width,
 		double js_priority = job->priority_js * (double)weight_js;
 		double part_priority = job->priority_part * (double)weight_part;
 		double qos_priority = job->priority_qos * (double)weight_qos;
-		uint16_t nice_offset = job->nice_offset;
 		double priority = age_priority + fs_priority + js_priority +
-				  part_priority + qos_priority - nice_offset;
+				  part_priority + qos_priority;
+		priority -= (double)(job->nice - NICE_OFFSET);
 		double prio = priority / (double) ((uint32_t) 0xffffffff);
 
 		sprintf(temp, "%16.14f", prio);
@@ -302,10 +285,10 @@ int _print_job_priority_weighted(priority_factors_object_t * job, int width,
 		double js_priority = job->priority_js * (double)weight_js;
 		double part_priority = job->priority_part * (double)weight_part;
 		double qos_priority = job->priority_qos * (double)weight_qos;
-		uint16_t nice_offset = job->nice_offset;
 		uint32_t priority = (uint32_t) (age_priority + fs_priority +
 						js_priority + part_priority +
-						qos_priority - nice_offset);
+						qos_priority);
+		priority -= (uint32_t)(job->nice - NICE_OFFSET);
 
 		sprintf(temp, "%u", priority);
 		_print_str(temp, width, right, true);
@@ -391,14 +374,25 @@ int _print_qos_priority_weighted(priority_factors_object_t * job, int width,
 	return SLURM_SUCCESS;
 }
 
+int _print_job_nice(priority_factors_object_t * job, int width,
+				bool right, char* suffix)
+{
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("NICE", width, right, true);
+	else
+		_print_int(job->nice - NICE_OFFSET, width, right, true);
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
 int _print_job_user_name(priority_factors_object_t * job, int width,
 			 bool right, char* suffix)
 {
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("USER", width, right, true);
 	else {
-		char *uname = NULL;
-/* 		char *uname = uid_to_string((uid_t) job->user_id); */
+		char *uname = uid_to_string((uid_t) job->user_id);
 		_print_str(uname, width, right, true);
 		xfree(uname);
 	}

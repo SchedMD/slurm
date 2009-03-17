@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Donald Lipari <lipari1@llnl.gov>
+ *  Written by Don Lipari <lipari1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -70,7 +70,6 @@ uint32_t weight_js; /* weight for Job Size factor */
 uint32_t weight_part; /* weight for Partition factor */
 uint32_t weight_qos; /* weight for QOS factor */
 
-static List  _build_job_list( char* str );
 static int _get_info(priority_factors_request_msg_t *factors_req,
 		     priority_factors_response_msg_t **factors_resp);
 
@@ -111,14 +110,16 @@ int main (int argc, char *argv[])
 	memset(&req_msg, 0, sizeof(priority_factors_request_msg_t));
 
 	if (params.jobs)
-		req_msg.job_id_list = _build_job_list(params.jobs);
+		req_msg.job_id_list = params.job_list;
 	else
 		req_msg.job_id_list = NULL;
 
-	error_code = _get_info(&req_msg, &resp_msg);
+	if (params.users)
+		req_msg.uid_list = params.user_list;
+	else
+		req_msg.uid_list = NULL;
 
-	if(req_msg.job_id_list)
-		list_destroy(req_msg.job_id_list);
+	error_code = _get_info(&req_msg, &resp_msg);
 
 	if (params.format == NULL) {
 		if (params.normalized) {
@@ -142,7 +143,7 @@ int main (int argc, char *argv[])
 			}
 		} else {
 			if (params.long_list)
-				params.format = "%.7i %.8u %.10Y %.10A %.10F %.10J %.10P %.10Q";
+				params.format = "%.7i %.8u %.10Y %.10A %.10F %.10J %.10P %.10Q %.6N";
 			else{
 				params.format = xstrdup("%.7i");
 				if (params.users)
@@ -171,44 +172,10 @@ int main (int argc, char *argv[])
 	/* Free storage here if we want to verify that logic.
 	 * Since we exit next, this is not important */
  	list_destroy(params.format_list);
-	if(params.user_list)
-		list_destroy(params.user_list);
 	slurm_free_priority_factors_response_msg(resp_msg);
 #endif
 
 	exit (error_code);
-}
-
-/*
- * _build_job_list- build a list of job_ids
- * IN str - comma separated list of job_ids
- * RET List of job_ids (uint32_t)
- */
-static List _build_job_list( char* str )
-{
-	List my_list;
-	char *job = NULL, *tmp_char = NULL, *my_job_list = NULL;
-	int i;
-	uint32_t *job_id = NULL;
-
-	if ( str == NULL)
-		return NULL;
-	my_list = list_create( NULL );
-	my_job_list = xstrdup( str );
-	job = strtok_r( my_job_list, ",", &tmp_char );
-	while (job)
-	{
-		i = strtol( job, (char **) NULL, 10 );
-		if (i <= 0) {
-			error( "Invalid job id: %s", job );
-			exit( 1 );
-		}
-		job_id = xmalloc( sizeof( uint32_t ) );
-		*job_id = (uint32_t) i;
-		list_append( my_list, job_id );
-		job = strtok_r (NULL, ",", &tmp_char);
-	}
-	return my_list;
 }
 
 static int _get_info(priority_factors_request_msg_t *factors_req,

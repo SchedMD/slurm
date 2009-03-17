@@ -71,6 +71,6 @@ extern int priority_g_set_max_cluster_usage(uint32_t procs, uint32_t half_life);
  * IN/OUT: assoc - association to have usage set.
  */
 extern void priority_g_set_assoc_usage(acct_association_rec_t *assoc);
-extern List priority_g_get_priority_factors_list(List job_list);
+extern List priority_g_get_priority_factors_list(List job_list, List user_list);
 
 #endif /*_SLURM_PRIORIY_H */

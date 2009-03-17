@@ -94,6 +94,8 @@ int job_format_add_function(List list, int width, bool right_justify,
 	job_format_add_function(list,wid,right,suffix,_print_qos_priority_normalized)
 #define job_format_add_qos_priority_weighted(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_qos_priority_weighted)
+#define job_format_add_job_nice(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_nice)
 #define job_format_add_user_name(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_user_name)
 
@@ -128,6 +130,8 @@ int _print_qos_priority_normalized(priority_factors_object_t * job, int width,
 				   bool right_justify, char* suffix);
 int _print_qos_priority_weighted(priority_factors_object_t * job, int width,
 				 bool right_justify, char* suffix);
+int _print_job_nice(priority_factors_object_t * job, int width,
+		    bool right_justify, char* suffix);
 int _print_job_user_name(priority_factors_object_t * job, int width,
 			 bool right_justify, char* suffix);
 

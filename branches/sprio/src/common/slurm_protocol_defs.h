@@ -344,11 +344,12 @@ typedef struct priority_factors_object {
 	double	 priority_part;
 	double	 priority_qos;
 
-	uint16_t nice_offset;
+	uint16_t nice;
 } priority_factors_object_t;
 
 typedef struct priority_factors_request_msg {
 	List	 job_id_list;
+	List	 uid_list;
 } priority_factors_request_msg_t;
 
 typedef struct priority_factors_response_msg {

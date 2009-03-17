@@ -302,7 +302,7 @@ static int _set_children_usage_efctv(List childern_list)
 /* job_ptr should already have the partition priority and such added
  * here before had we will be adding to it
  */
-static double _get_fairshare_priority( struct job_record *job_ptr )
+static double _get_fairshare_priority( struct job_record *job_ptr)
 {
 	acct_association_rec_t *assoc =
 		(acct_association_rec_t *)job_ptr->assoc_ptr;
@@ -348,20 +348,19 @@ static double _get_fairshare_priority( struct job_record *job_ptr )
 }
 
 static void _get_priority_factors(time_t start_time, struct job_record *job_ptr,
-				 priority_factors_object_t* factors)
+				  priority_factors_object_t* factors)
 {
 	acct_qos_rec_t *qos_ptr = (acct_qos_rec_t *)job_ptr->qos_ptr;
 
-	factors->priority_age = .0;
-	factors->priority_fs = .0;
-	factors->priority_js = .0;
-	factors->priority_part = .0;
-	factors->priority_qos = .0;
-	factors->nice_offset = 0;
+	factors->priority_age = 0.0;
+	factors->priority_fs = 0.0;
+	factors->priority_js = 0.0;
+	factors->priority_part = 0.0;
+	factors->priority_qos = 0.0;
+	factors->nice = 0;
 
 	if(weight_age) {
 		uint32_t diff = start_time - job_ptr->details->begin_time; 
-		factors->priority_age = 1;
 
 		if(diff < max_age)
 			factors->priority_age = (double)diff / (double)max_age;
@@ -381,7 +380,7 @@ static void _get_priority_factors(time_t start_time, struct job_record *job_ptr,
 				(double)job_ptr->details->min_nodes
 				/ (double)node_record_count;
 		if (factors->priority_js < .0)
-			factors->priority_js = .0;
+			factors->priority_js = 0.0;
 		else if (factors->priority_js > 1.0)
 			factors->priority_js = 1.0;
 	}
@@ -394,8 +393,7 @@ static void _get_priority_factors(time_t start_time, struct job_record *job_ptr,
 		factors->priority_qos = qos_ptr->norm_priority;
 	}
 
-	factors->nice_offset = ((double)job_ptr->details->nice -
-				(double)NICE_OFFSET);
+	factors->nice = job_ptr->details->nice;
 }
 
 static uint32_t _get_priority_internal(time_t start_time,
@@ -454,8 +452,8 @@ static uint32_t _get_priority_internal(time_t start_time,
 	       job_ptr->job_id, age_priority, fs_priority, js_priority,
 	       part_priority, qos_priority, priority);
 
-	priority -= factors.nice_offset;
-	debug3("Nice offset is %u", factors.nice_offset);
+	priority -= (double)(factors.nice - NICE_OFFSET);
+	debug3("Nice adjust is %u", factors.nice - NICE_OFFSET);
 
 	if(priority < 1)
 		priority = 1;
@@ -630,12 +628,15 @@ static void *_decay_thread(void *no_data)
 }
 
 /* Selects the specific jobs that the user wanted to see
- * returns 1 if job should be omitted */
-static int _filter_job(struct job_record *job_ptr, List req_job_list)
+ * Requests that include job id(s) and user id(s) must match both to be passed.
+ * Returns 1 if job should be omitted */
+static int _filter_job(struct job_record *job_ptr, List req_job_list,
+		       List req_user_list)
 {
 	int filter = 0;
 	ListIterator iterator;
 	uint32_t *job_id;
+	uint32_t *user_id;
 
 	if (req_job_list) {
 		filter = 1;
@@ -647,26 +648,25 @@ static int _filter_job(struct job_record *job_ptr, List req_job_list)
 			}
 		}
 		list_iterator_destroy(iterator);
-		if (filter == 0) {
-			return 0;
+		if (filter == 1) {
+			return 1;
 		}
 	}
-#if 0
-Todo:  add job selection by user id
-	if (user_list) {
+
+	if (req_user_list) {
 		filter = 1;
-		iterator = list_iterator_create(params.user_list);
-		while ((user = list_next(iterator))) {
-			if (*user == job->user_id) {
+		iterator = list_iterator_create(req_user_list);
+		while ((user_id = list_next(iterator))) {
+			if (*user_id == job_ptr->user_id) {
 				filter = 0;
 				break;
 			}
 		}
 		list_iterator_destroy(iterator);
-		if (filter == 0)
-			return 0;
+		if (filter == 1)
+			return 1;
 	}
-#endif
+
 	return filter;
 }
 
@@ -863,7 +863,8 @@ extern void priority_p_set_assoc_usage(acct_association_rec_t *assoc)
 	}
 }
 
-extern List priority_p_get_priority_factors_list(List req_job_list)
+extern List priority_p_get_priority_factors_list(List req_job_list,
+						 List req_user_list)
 {
 	List ret_list = NULL;
 	ListIterator itr;
@@ -905,7 +906,8 @@ extern List priority_p_get_priority_factors_list(List req_job_list)
 				if(job_ptr->priority <= 1)
 					continue;
 
-				if (_filter_job(job_ptr, req_job_list))
+				if (_filter_job(job_ptr, req_job_list,
+						req_user_list))
 					continue;
 
 				obj = (priority_factors_object_t *) xmalloc(

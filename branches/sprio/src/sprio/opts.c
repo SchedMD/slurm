@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Donald Lipari <lipari1@llnl.gov>
+ *  Written by Don Lipari <lipari1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
@@ -57,15 +57,16 @@
 #include <unistd.h>
 
 #include "src/common/read_config.h"
+#include "src/common/uid.h"
 #include "src/common/xstring.h"
 #include "src/sprio/sprio.h"
 
 /* getopt_long options, integers but not characters */
 #define OPT_LONG_HELP  0x100
 #define OPT_LONG_USAGE 0x101
-#define OPT_LONG_HIDE  0x102
 
 /* FUNCTIONS */
+static List  _build_job_list( char* str );
 static List  _build_user_list( char* str );
 static char *_get_prefix(char *token);
 static void  _help( void );
@@ -96,7 +97,6 @@ parse_command_line( int argc, char* argv[] )
 		{"version",    no_argument,       0, 'V'},
 		{"help",       no_argument,       0, OPT_LONG_HELP},
 		{"usage",      no_argument,       0, OPT_LONG_USAGE},
-		{"hide",       no_argument,       0, OPT_LONG_HIDE},
 		{NULL,         0,                 0, 0}
 	};
 
@@ -113,6 +113,7 @@ parse_command_line( int argc, char* argv[] )
 		case (int) 'j':
 			if (optarg) {
 				params.jobs = xstrdup(optarg);
+				params.job_list = _build_job_list(params.jobs);
 			}
 			params.job_flag = true;
 			break;
@@ -149,6 +150,7 @@ parse_command_line( int argc, char* argv[] )
 	if (optind < argc) {
 		if (params.job_flag) {
 			params.jobs = xstrdup(argv[optind++]);
+			params.job_list = _build_job_list(params.jobs);
 		}
 		if (optind < argc) {
 			error("Unrecognized option: %s",argv[optind]);
@@ -161,10 +163,10 @@ parse_command_line( int argc, char* argv[] )
 		_print_options();
 }
 
-/* 
- * parse_format - Take the user's format specification and use it to build 
- *	build the format specifications (internalize it to print.c data 
- *	structures) 
+/*
+ * parse_format - Take the user's format specification and use it to build
+ *	build the format specifications (internalize it to print.c data
+ *	structures)
  * IN format - user's format specification
  * RET zero or error code
  */
@@ -231,6 +233,11 @@ extern int parse_format( char* format )
 							    field_size,
 							    right_justify,
 							    suffix );
+		else if (field[0] == 'N')
+			job_format_add_job_nice(params.format_list,
+						field_size,
+						right_justify,
+						suffix );
 		else if (field[0] == 'p')
 			job_format_add_part_priority_normalized(params.format_list,
 								field_size,
@@ -371,18 +378,50 @@ _print_options()
 
 
 /*
+ * _build_job_list- build a list of job_ids
+ * IN str - comma separated list of job_ids
+ * RET List of job_ids (uint32_t)
+ */
+static List
+_build_job_list( char* str )
+{
+	List my_list;
+	char *job = NULL, *tmp_char = NULL, *my_job_list = NULL;
+	int i;
+	uint32_t *job_id = NULL;
+
+	if ( str == NULL)
+		return NULL;
+	my_list = list_create( NULL );
+	my_job_list = xstrdup( str );
+	job = strtok_r( my_job_list, ",", &tmp_char );
+	while (job)
+	{
+		i = strtol( job, (char **) NULL, 10 );
+		if (i <= 0) {
+			error( "Invalid job id: %s", job );
+			exit( 1 );
+		}
+		job_id = xmalloc( sizeof( uint32_t ) );
+		*job_id = (uint32_t) i;
+		list_append( my_list, job_id );
+		job = strtok_r (NULL, ",", &tmp_char);
+	}
+	return my_list;
+}
+
+/*
  * _build_user_list- build a list of UIDs
  * IN str - comma separated list of user names
  * RET List of UIDs (uint32_t)
  */
-static List 
+static List
 _build_user_list( char* str )
 {
 	List my_list;
 	char *user = NULL;
-	char *tmp_char = NULL, *my_user_list = NULL, *end_ptr = NULL;
+	char *tmp_char = NULL, *my_user_list = NULL;
 	uint32_t *uid = NULL;
-	struct passwd *passwd_ptr = NULL;
 
 	if ( str == NULL)
 		return NULL;
@@ -391,18 +430,12 @@ _build_user_list( char* str )
 	user = strtok_r( my_user_list, ",", &tmp_char );
 	while (user) {
 		uid = xmalloc( sizeof( uint32_t ));
-		*uid = (uint32_t) strtol(user, &end_ptr, 10);
-		if (end_ptr[0] == '\0')
+		*uid = uid_from_string(user);
+		if (*uid == -1) {
+			error( "Invalid user: %s\n", user);
+			xfree(uid);
+		} else {
 			list_append( my_list, uid );
-		else {
-			passwd_ptr = getpwnam( user );
-			if (passwd_ptr == NULL) {
-				error( "Invalid user: %s\n", user);
-				xfree(uid);
-			} else {
-				*uid = passwd_ptr->pw_uid;
-				list_append( my_list, uid );
-			}
 		}
 		user = strtok_r (NULL, ",", &tmp_char);
 	}
@@ -416,7 +449,7 @@ static void _print_version(void)
 
 static void _usage(void)
 {
-	printf("Usage: sprio [-o format] [-u user_name] [-j jid[s]] [--usage] [-ahjlv]\n");
+	printf("Usage: sprio [-j jid[s]] [-u user_name[s]] [-o format] [--usage] [-hlvV]\n");
 }
 
 static void _help(void)
@@ -424,7 +457,6 @@ static void _help(void)
 	printf("\
 Usage: sprio [OPTIONS]\n\
   -h, --noheader                  no headers on output\n\
-  --hide                          do not display jobs in hidden partitions\n\
   -j, --jobs                      comma separated list of jobs\n\
                                   to view, default is all\n\
   -l, --long                      long report\n\

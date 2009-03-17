@@ -1523,6 +1523,8 @@ void inline slurm_free_priority_factors_request_msg(
 	if(msg) {
 		if(msg->job_id_list)
 			list_destroy(msg->job_id_list);
+		if(msg->uid_list)
+			list_destroy(msg->uid_list);
 		xfree(msg);
 	}
 }

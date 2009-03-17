@@ -1444,7 +1444,7 @@ static void _pack_priority_factors_object(void *in, Buf buffer)
 	packdouble(object->priority_part, buffer);
 	packdouble(object->priority_qos, buffer);
 
-	pack16(object->nice_offset, buffer);
+	pack16(object->nice, buffer);
 }
 
 static int _unpack_priority_factors_object(void **object, Buf buffer)
@@ -1462,7 +1462,7 @@ static int _unpack_priority_factors_object(void **object, Buf buffer)
 	safe_unpackdouble(&object_ptr->priority_part, buffer);
 	safe_unpackdouble(&object_ptr->priority_qos, buffer);
 
-	safe_unpack16(&object_ptr->nice_offset, buffer);
+	safe_unpack16(&object_ptr->nice, buffer);
 
 	return SLURM_SUCCESS;
 
@@ -1492,6 +1492,19 @@ _pack_priority_factors_request_msg(priority_factors_request_msg_t * msg,
 		}
 		list_iterator_destroy(itr);
 	}
+
+	count = NO_VAL;
+	if(msg->uid_list)
+		count = list_count(msg->uid_list);
+	pack32(count, buffer);
+	if(count && count != NO_VAL) {
+		itr = list_iterator_create(msg->uid_list);
+		while((tmp = list_next(itr))) {
+			pack32(*tmp, buffer);
+		}
+		list_iterator_destroy(itr);
+	}
+
 }
 
 static void _priority_factors_req_list_del(void *x)
@@ -1515,12 +1528,23 @@ _unpack_priority_factors_request_msg(priority_factors_request_msg_t ** msg,
 
 	safe_unpack32(&count, buffer);
 	if(count != NO_VAL) {
-		object_ptr->job_id_list = 
+		object_ptr->job_id_list =
 			list_create(_priority_factors_req_list_del);
 		for(i=0; i<count; i++) {
 			uint32_tmp = xmalloc(sizeof(uint32_t));
 			safe_unpack32(uint32_tmp, buffer);
 			list_append(object_ptr->job_id_list, uint32_tmp);
+		}
+	}
+
+	safe_unpack32(&count, buffer);
+	if(count != NO_VAL) {
+		object_ptr->uid_list =
+			list_create(_priority_factors_req_list_del);
+		for(i=0; i<count; i++) {
+			uint32_tmp = xmalloc(sizeof(uint32_t));
+			safe_unpack32(uint32_tmp, buffer);
+			list_append(object_ptr->uid_list, uint32_tmp);
 		}
 	}
 	return SLURM_SUCCESS;
@@ -1571,13 +1595,13 @@ _unpack_priority_factors_response_msg(priority_factors_response_msg_t ** msg,
 
 	safe_unpack32(&count, buffer);
 	if(count != NO_VAL) {
-		object_ptr->priority_factors_list = 
+		object_ptr->priority_factors_list =
 			list_create(_priority_factors_resp_list_del);
 		for(i=0; i<count; i++) {
 			if(_unpack_priority_factors_object(&tmp_info, buffer)
 			   != SLURM_SUCCESS)
 				goto unpack_error;
-			list_append(object_ptr->priority_factors_list, 
+			list_append(object_ptr->priority_factors_list,
 				    tmp_info);
 		}
 	}
