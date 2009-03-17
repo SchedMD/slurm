@@ -593,6 +593,16 @@ The following options support Blue Gene systems, but may be
 applicable to other systems as well.
 
 .TP
+\fB\-\-blrts\-image\fR[=]<\fIpath\fR>
+Path to blrts image for bluegene block.  BGL only.
+Default from \fIblugene.conf\fR if not set.
+
+.TP
+\fB\-\-cnload\-image\fR=\fIpath\fR
+Path to compute node image for bluegene block.  BGP only.
+Default from \fIblugene.conf\fR if not set.
+
+.TP
 \fB\-\-conn\-type\fR[=]<\fItype\fR>
 Require the partition connection type to be of a certain type.  
 On Blue Gene the acceptable of \fItype\fR are MESH, TORUS and NAV.  
@@ -612,10 +622,30 @@ of nodes having 2 x 3 x 4 = 24 nodes (actually base partitions on
 Blue Gene).
 
 .TP
+\fB\-\-ioload\-image\fR=\fIpath\fR
+Path to io image for bluegene block.  BGP only.
+Default from \fIblugene.conf\fR if not set.
+
+.TP
+\fB\-\-linux\-image\fR[=]<\fIpath\fR>
+Path to linux image for bluegene block.  BGL only.
+Default from \fIblugene.conf\fR if not set.
+
+.TP
+\fB\-\-mloader\-image\fR[=]<\fIpath\fR>
+Path to mloader image for bluegene block.
+Default from \fIblugene.conf\fR if not set.
+
+.TP
 \fB\-R\fR, \fB\-\-no\-rotate\fR
 Disables rotation of the job's requested geometry in order to fit an 
 appropriate partition.
 By default the specified geometry can rotate in three dimensions.
+
+.TP
+\fB\-\-ramdisk\-image\fR[=]<\fIpath\fR>
+Path to ramdisk image for bluegene block.  BGL only.
+Default from \fIblugene.conf\fR if not set.
 
 .TP
 \fB\-\-reboot\fR

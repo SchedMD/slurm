@@ -657,6 +657,13 @@ Specify wckey to be used with job.  If TrackWCKey=no (default) in the
 slurm.conf this value does not get looked at. 
 
 .TP
+\fB\-\-wrap\fR[=]<\fIcommand string\fR>
+Sbatch will wrap the specified command string in a simple "sh" shell script,
+and submit that script to the slurm controller.  When \-\-wrap is used,
+a script name and arguments may not be specified on the command line; instead
+the sbatch-generated wrapper script is used.
+
+.TP
 \fB\-x\fR, \fB\-\-exclude\fR[=]<\fInode name list\fR>
 Explicitly exclude certain nodes from the resources granted to the job.
 
@@ -666,7 +673,12 @@ applicable to other systems as well.
 
 .TP
 \fB\-\-blrts\-image\fR[=]<\fIpath\fR>
-Path to blrts image for bluegene block.
+Path to blrts image for bluegene block.  BGL only.
+Default from \fIblugene.conf\fR if not set.
+
+.TP
+\fB\-\-cnload\-image\fR=\fIpath\fR
+Path to compute node image for bluegene block.  BGP only.
 Default from \fIblugene.conf\fR if not set.
 
 .TP
@@ -689,8 +701,13 @@ of nodes having 2 x 3 x 4 = 24 nodes (actually base partions on
 Blue Gene).
 
 .TP
+\fB\-\-ioload\-image\fR=\fIpath\fR
+Path to io image for bluegene block.  BGP only.
+Default from \fIblugene.conf\fR if not set.
+
+.TP
 \fB\-\-linux\-image\fR[=]<\fIpath\fR>
-Path to linux image for bluegene block.
+Path to linux image for bluegene block.  BGL only.
 Default from \fIblugene.conf\fR if not set.
 
 .TP
@@ -706,19 +723,12 @@ By default the specified geometry can rotate in three dimensions.
 
 .TP
 \fB\-\-ramdisk\-image\fR[=]<\fIpath\fR>
-Path to ramdisk image for bluegene block.
+Path to ramdisk image for bluegene block.  BGL only.
 Default from \fIblugene.conf\fR if not set.
 
 .TP
 \fB\-\-reboot\fR
 Force the allocated nodes to reboot before starting the job.
-
-.TP
-\fB\-\-wrap\fR[=]<\fIcommand string\fR>
-Sbatch will wrap the specified command string in a simple "sh" shell script,
-and submit that script to the slurm controller.  When \-\-wrap is used,
-a script name and arguments may not be specified on the command line; instead
-the sbatch-generated wrapper script is used.
 
 .SH "INPUT ENVIRONMENT VARIABLES"
 .PP

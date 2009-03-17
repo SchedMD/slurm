@@ -967,7 +967,12 @@ applicable to other systems as well.
 
 .TP
 \fB\-\-blrts\-image\fR=\fIpath\fR
-Path to blrts image for bluegene block. 
+Path to blrts image for bluegene block.  BGL only.
+Default from \fIblugene.conf\fR if not set.
+
+.TP
+\fB\-\-cnload\-image\fR=\fIpath\fR
+Path to compute node image for bluegene block.  BGP only.
 Default from \fIblugene.conf\fR if not set.
 
 .TP
@@ -990,8 +995,13 @@ of nodes having 2 x 3 x 4 = 24 nodes (actually base partitions on
 Blue Gene).
 
 .TP
+\fB\-\-ioload\-image\fR=\fIpath\fR
+Path to io image for bluegene block.  BGP only.
+Default from \fIblugene.conf\fR if not set.
+
+.TP
 \fB\-\-linux\-image\fR=\fIpath\fR
-Path to linux image for bluegene block.
+Path to linux image for bluegene block.  BGL only.
 Default from \fIblugene.conf\fR if not set.
 
 .TP
@@ -1007,7 +1017,7 @@ By default the specified geometry can rotate in three dimensions.
 
 .TP
 \fB\-\-ramdisk\-image\fR=\fIpath\fR
-Path to ramdisk image for bluegene block.
+Path to ramdisk image for bluegene block.  BGL only.
 Default from \fIblugene.conf\fR if not set.
 
 .TP
