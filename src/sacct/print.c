@@ -70,16 +70,20 @@ void _elapsed_time(long secs, long usecs, char *str)
 
 	if (days) 
 		snprintf(str, FORMAT_STRING_SIZE,
-			 "%ld-%2.2ld:%2.2ld:%2.2ld",
+			 "%2.2ld-%2.2ld:%2.2ld:%2.2ld",
 		         days, hours, minutes, seconds);
 	else if (hours)
 		snprintf(str, FORMAT_STRING_SIZE,
-			 "%ld:%2.2ld:%2.2ld",
+			 "%2.2ld:%2.2ld:%2.2ld",
 		         hours, minutes, seconds);
+	else if(subsec)
+		snprintf(str, FORMAT_STRING_SIZE,
+			 "%2.2ld:%2.2ld.%3.3ld",
+		         minutes, seconds, subsec);
 	else
 		snprintf(str, FORMAT_STRING_SIZE,
-			 "%ld:%2.2ld.%3.3ld",
-		         minutes, seconds, subsec);
+			 "00:%2.2ld:%2.2ld",
+		         minutes, seconds);
 }
 
 void print_fields(type_t type, void *object)
