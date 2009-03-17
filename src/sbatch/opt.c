@@ -2370,7 +2370,7 @@ static void _help(void)
 #ifndef HAVE_BGL
 "                              If wanting to run in HTC mode (only for 1\n"
 "                              midplane and below).  You can use HTC_S for\n"
-"                              SMP (default), HTC_D for Dual, HTC_V for\n"
+"                              SMP, HTC_D for Dual, HTC_V for\n"
 "                              virtual node mode, and HTC_L for Linux mode.\n" 
 #endif
 "      --blrts-image=path      path to blrts image for bluegene block.  Default\n"

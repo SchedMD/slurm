@@ -94,6 +94,7 @@ static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
 				     storage_field_t *fields, char *ending)
 {
 	char *query = NULL;
+	char *correct_query = NULL;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	int i = 0;
@@ -144,6 +145,7 @@ static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
 
 	itr = list_iterator_create(columns);
 	query = xstrdup_printf("alter table %s", table_name);
+	correct_query = xstrdup_printf("alter table %s", table_name);
 	START_TIMER;
 	while(fields[i].name) {
 		int found = 0;
@@ -151,6 +153,9 @@ static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
 		while((col = list_next(itr))) {
 			if(!strcmp(col, fields[i].name)) {
 				xstrfmtcat(query, " modify %s %s,",
+					   fields[i].name,
+					   fields[i].options);
+				xstrfmtcat(correct_query, " modify %s %s,",
 					   fields[i].name,
 					   fields[i].options);
 				list_delete_item(itr);
@@ -168,6 +173,9 @@ static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
 					   fields[i].name,
 					   fields[i].options,
 					   fields[i-1].name);
+				xstrfmtcat(correct_query, " modify %s %s,",
+					   fields[i].name,
+					   fields[i].options);
 			} else {
 				info("adding column %s at the beginning "
 				     "of table %s",
@@ -175,6 +183,9 @@ static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
 				     fields[i-1].name,
 				     table_name);
 				xstrfmtcat(query, " add %s %s first,",
+					   fields[i].name,
+					   fields[i].options);
+				xstrfmtcat(correct_query, " modify %s %s,",
 					   fields[i].name,
 					   fields[i].options);
 			}
@@ -210,9 +221,13 @@ static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
 		if(temp[end]) {
 			end++;
 			primary_key = xstrndup(temp, end);
-			if(old_primary)
+			if(old_primary) {
 				xstrcat(query, " drop primary key,");
+				xstrcat(correct_query, " drop primary key,");
+			}
 			xstrfmtcat(query, " add %s,",  primary_key);
+			xstrfmtcat(correct_query, " add %s,",  primary_key);
+			
 			xfree(primary_key);
 		}
 	}
@@ -233,16 +248,21 @@ static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
 		if(temp[end]) {
 			end++;
 			unique_index = xstrndup(temp, end);
-			if(old_index)
+			if(old_index) {
 				xstrfmtcat(query, " drop index %s,",
 					   old_index);
+				xstrfmtcat(correct_query, " drop index %s,",
+					   old_index);
+			}
 			xstrfmtcat(query, " add %s,", unique_index);
+			xstrfmtcat(correct_query, " add %s,", unique_index);
 			xfree(unique_index);
 		}
 	}
 	xfree(old_index);
 
 	query[strlen(query)-1] = ';';
+	correct_query[strlen(correct_query)-1] = ';';
 	//info("%d query\n%s", __LINE__, query);
 
 	/* see if we have already done this definition */
@@ -269,6 +289,7 @@ static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
 		char *query2 = NULL;
 	
 		debug("Table %s has changed.  Updating...", table_name);
+
 		if(mysql_db_query(mysql_db, query)) {
 			xfree(query);
 			return SLURM_ERROR;
@@ -280,15 +301,17 @@ static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
 					"on duplicate key update "
 					"definition=\"%s\", mod_time=%d;",
 					table_defs_table, now, now,
-					table_name, query, query, now);
+					table_name, correct_query,
+					correct_query, now);
 		if(mysql_db_query(mysql_db, query2)) {
 			xfree(query2);
 			return SLURM_ERROR;
 		}
 		xfree(query2);
 	}
-	
+
 	xfree(query);
+	xfree(correct_query);
 	query = xstrdup_printf("make table current %s", table_name);
 	END_TIMER2(query);
 	xfree(query);

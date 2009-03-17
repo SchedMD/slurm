@@ -488,7 +488,7 @@ static uint32_t	_get_job_max_nodes(struct job_record *job_ptr)
 		return max_nodes;	/* should never reach here */
 
 	if (job_ptr->details->max_nodes) {
-			max_nodes = job_ptr->details->max_nodes;
+		max_nodes = job_ptr->details->max_nodes;
 		if (job_ptr->part_ptr->max_nodes != INFINITE) {
 			max_nodes = MIN(max_nodes, 
 					job_ptr->part_ptr->max_nodes);
