@@ -306,7 +306,7 @@ static double _get_fairshare_priority( struct job_record *job_ptr)
 {
 	acct_association_rec_t *assoc =
 		(acct_association_rec_t *)job_ptr->assoc_ptr;
-	double fs_priority = 0.0;
+	double priority_fs = 0.0;
 
 	if(!calc_fairshare)
 		return 0;
@@ -332,23 +332,24 @@ static double _get_fairshare_priority( struct job_record *job_ptr)
 	}
 
 	// Priority is 0 -> 1
-	fs_priority =
+	priority_fs =
 		(assoc->shares_norm - (double)assoc->usage_efctv + 1.0) / 2.0;
 	debug4("Fairshare priority for user %s in acct %s"
 	       "((%f - %Lf) + 1) / 2 = %f",
 	       assoc->user, assoc->acct, assoc->shares_norm,
-	       assoc->usage_efctv, fs_priority);
+	       assoc->usage_efctv, priority_fs);
 
 	slurm_mutex_unlock(&assoc_mgr_association_lock);
 
 	debug3("job %u has a fairshare priority of %f",
-	      job_ptr->job_id, fs_priority);
+	      job_ptr->job_id, priority_fs);
 
-	return fs_priority;
+	return priority_fs;
 }
 
 static void _get_priority_factors(time_t start_time, struct job_record *job_ptr,
-				  priority_factors_object_t* factors)
+				  priority_factors_object_t* factors,
+				  bool status_only)
 {
 	acct_qos_rec_t *qos_ptr = (acct_qos_rec_t *)job_ptr->qos_ptr;
 
@@ -360,19 +361,30 @@ static void _get_priority_factors(time_t start_time, struct job_record *job_ptr,
 	factors->nice = 0;
 
 	if(weight_age) {
-		uint32_t diff = start_time - job_ptr->details->begin_time; 
-
-		if(diff < max_age)
-			factors->priority_age = (double)diff / (double)max_age;
+		uint32_t diff = start_time - job_ptr->details->begin_time;
+		if(job_ptr->details->begin_time) {
+			if(diff < max_age)
+				factors->priority_age =
+					(double)diff / (double)max_age;
+			else
+				factors->priority_age = 1.0;
+		}
 	}
 
 	if(job_ptr->assoc_ptr && weight_fs) {
-		factors->priority_fs = _get_fairshare_priority(job_ptr);
+		if (status_only)
+			factors->priority_fs = job_ptr->priority_fs;
+		else {
+			factors->priority_fs = _get_fairshare_priority(job_ptr);
+			job_ptr->priority_fs = factors->priority_fs;
+	debug3("sprio job %u has a fairshare priority of %f",
+	       job_ptr->job_id, job_ptr->priority_fs);
+		}
 	}
 
 	if(weight_js) {
 		if(favor_small) {
-			factors->priority_js = (double)(node_record_count 
+			factors->priority_js = (double)(node_record_count
 					   - job_ptr->details->min_nodes)
 				/ (double)node_record_count;
 		} else
@@ -399,12 +411,12 @@ static void _get_priority_factors(time_t start_time, struct job_record *job_ptr,
 static uint32_t _get_priority_internal(time_t start_time,
 				       struct job_record *job_ptr)
 {
-	double age_priority = 0.0;
-	double fs_priority = 0.0;
-	double js_priority = 0.0;
-	double part_priority = 0.0;
-	double priority = 0.0;
-	double qos_priority = 0.0;
+	double priority		= 0.0;
+	double priority_age	= 0.0;
+	double priority_fs	= 0.0;
+	double priority_js	= 0.0;
+	double priority_part	= 0.0;
+	double priority_qos	= 0.0;
 	priority_factors_object_t	factors;
 
 	if(job_ptr->direct_set_prio)
@@ -422,35 +434,35 @@ static uint32_t _get_priority_internal(time_t start_time,
 		return 1;
 
 	/* figure out the priority */
-	_get_priority_factors(start_time, job_ptr, &factors);
+	_get_priority_factors(start_time, job_ptr, &factors, false);
 
 	if(factors.priority_age > 0) {
-		age_priority = factors.priority_age * (double)weight_age;
+		priority_age = factors.priority_age * (double)weight_age;
 		debug3("Weighted Age priority is %f * %u = %.2f",
-		       factors.priority_age, weight_age, age_priority);
+		       factors.priority_age, weight_age, priority_age);
 	}
 
-	fs_priority = factors.priority_fs * (double)weight_fs;
+	priority_fs = factors.priority_fs * (double)weight_fs;
 	debug3("Weighted Fairshare priority is %f * %u = %.2f",
-	       factors.priority_fs, weight_fs, fs_priority);
+	       factors.priority_fs, weight_fs, priority_fs);
 
-	js_priority = factors.priority_js * (double)weight_js;
+	priority_js = factors.priority_js * (double)weight_js;
 	debug3("Weighted JobSize priority is %f * %u = %.2f",
-	       factors.priority_js, weight_js, js_priority);
+	       factors.priority_js, weight_js, priority_js);
 
-	part_priority = factors.priority_part * (double)weight_part;
+	priority_part = factors.priority_part * (double)weight_part;
 	debug3("Weighted Partition priority is %f * %u = %.2f",
-	       factors.priority_part, weight_part, part_priority);
+	       factors.priority_part, weight_part, priority_part);
 
-	qos_priority = factors.priority_qos * (double)weight_qos;
+	priority_qos = factors.priority_qos * (double)weight_qos;
 	debug3("Weighted QOS priority is %f * %u = %.2f",
-	       factors.priority_qos, weight_qos, qos_priority);
+	       factors.priority_qos, weight_qos, priority_qos);
 
-	priority = age_priority + fs_priority + js_priority + part_priority +
-		qos_priority;
+	priority = priority_age + priority_fs + priority_js + priority_part +
+		priority_qos;
 	debug3("Job %u priority: %.2f + %.2f + %.2f + %.2f + %.2f = %.2f",
-	       job_ptr->job_id, age_priority, fs_priority, js_priority,
-	       part_priority, qos_priority, priority);
+	       job_ptr->job_id, priority_age, priority_fs, priority_js,
+	       priority_part, priority_qos, priority);
 
 	priority -= (double)(factors.nice - NICE_OFFSET);
 	debug3("Nice adjust is %u", factors.nice - NICE_OFFSET);
@@ -913,7 +925,8 @@ extern List priority_p_get_priority_factors_list(List req_job_list,
 				obj = (priority_factors_object_t *) xmalloc(
 					sizeof(priority_factors_object_t));
 
-				_get_priority_factors(start_time, job_ptr, obj);
+				_get_priority_factors(start_time, job_ptr, obj,
+						      true);
 				obj->job_id = job_ptr->job_id;
 				obj->user_id = job_ptr->user_id;
 				list_append(ret_list, (void *) obj);
