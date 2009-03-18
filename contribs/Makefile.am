@@ -1,4 +1,4 @@
-SUBDIRS = perlapi python torque 
+SUBDIRS = perlapi python torque slurmdb-direct
 
 EXTRA_DIST = \
 	env_cache_builder.c	\

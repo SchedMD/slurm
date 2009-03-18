@@ -17,7 +17,7 @@ _perldir=$(exec_prefix)`perl -e 'use Config; $$T=$$Config{installsitearch}; $$P=
 
 install-binSCRIPTS: $(bin_SCRIPTS)
 	@$(NORMAL_INSTALL)
-	test -z "$(bindir)" || $(MKDIR_P) "$(DESTDIR)$(bindir)"
+	test -z "$(DESTDIR)$(bindir)" || $(MKDIR_P) "$(DESTDIR)$(bindir)"
 	@list='$(bin_SCRIPTS)'; for p in $$list; do \
 	   echo "sed 's%use lib .*%use lib qw(${_perldir});%' $(top_srcdir)/contribs/torque/$$p.pl > $(DESTDIR)$(bindir)/$$p"; \
 	   sed "s%use lib .*%use lib qw(${_perldir});%" $(top_srcdir)/contribs/torque/$$p.pl >$(DESTDIR)$(bindir)/$$p; \
