@@ -76,6 +76,11 @@ int print_jobs_array(List jobs, List format)
 	if (!params.no_header)
 		print_job_from_format(NULL, format);
 
+	if (params.weights) {
+		print_job_from_format((priority_factors_object_t *) -1, format);
+		return SLURM_SUCCESS;
+	}
+
 	/* Print the jobs of interest */
 	if (jobs)
 		list_for_each (jobs, (ListForF) print_job_from_format,
@@ -182,6 +187,8 @@ int _print_job_job_id(priority_factors_object_t * job, int width,
 {
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("JOBID", width, right, true);
+	else if (job == (priority_factors_object_t *) -1)
+		_print_str("Weights", width, right, true);
 	else {
 		char id[FORMAT_STRING_SIZE];
 		snprintf(id, FORMAT_STRING_SIZE, "%u", job->job_id);
@@ -205,6 +212,8 @@ int _print_age_priority_normalized(priority_factors_object_t * job, int width,
 {
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("AGE", width, right, true);
+	else if (job == (priority_factors_object_t *) -1)
+		_print_int(weight_age, width, right, true);
 	else
 		_print_norm(job->priority_age, width, right, true);
 	if (suffix)
@@ -217,6 +226,8 @@ int _print_age_priority_weighted(priority_factors_object_t * job, int width,
 {
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("AGE", width, right, true);
+	else if (job == (priority_factors_object_t *) -1)
+		_print_int(weight_age, width, right, true);
 	else
 		_print_int(job->priority_age * weight_age, width, right, true);
 	if (suffix)
@@ -229,6 +240,8 @@ int _print_fs_priority_normalized(priority_factors_object_t * job, int width,
 {
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("FAIRSHARE", width, right, true);
+	else if (job == (priority_factors_object_t *) -1)
+		_print_int(weight_fs, width, right, true);
 	else
 		_print_norm(job->priority_fs, width, right, true);
 	if (suffix)
@@ -241,6 +254,8 @@ int _print_fs_priority_weighted(priority_factors_object_t * job, int width,
 {
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("FAIRSHARE", width, right, true);
+	else if (job == (priority_factors_object_t *) -1)
+		_print_int(weight_fs, width, right, true);
 	else
 		_print_int(job->priority_fs * weight_fs, width, right, true);
 	if (suffix)
@@ -254,6 +269,8 @@ int _print_job_priority_normalized(priority_factors_object_t * job, int width,
 	char temp[FORMAT_STRING_SIZE];
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("PRIORITY", width, right, true);
+	else if (job == (priority_factors_object_t *) -1)
+		_print_str("", width, right, true);
 	else {
 		double age_priority = job->priority_age * (double)weight_age;
 		double fs_priority = job->priority_fs * (double)weight_fs;
@@ -279,6 +296,8 @@ int _print_job_priority_weighted(priority_factors_object_t * job, int width,
 	char temp[FORMAT_STRING_SIZE];
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("PRIORITY", width, right, true);
+	else if (job == (priority_factors_object_t *) -1)
+		_print_str("", width, right, true);
 	else {
 		double age_priority = job->priority_age * (double)weight_age;
 		double fs_priority = job->priority_fs * (double)weight_fs;
@@ -303,6 +322,8 @@ int _print_js_priority_normalized(priority_factors_object_t * job, int width,
 {
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("JOBSIZE", width, right, true);
+	else if (job == (priority_factors_object_t *) -1)
+		_print_int(weight_js, width, right, true);
 	else {
 		_print_norm(job->priority_js, width, right, true);
 	}
@@ -317,6 +338,8 @@ int _print_js_priority_weighted(priority_factors_object_t * job, int width,
 {
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("JOBSIZE", width, right, true);
+	else if (job == (priority_factors_object_t *) -1)
+		_print_int(weight_js, width, right, true);
 	else {
 		_print_int(job->priority_js * weight_js, width, right, true);
 	}
@@ -331,6 +354,8 @@ int _print_part_priority_normalized(priority_factors_object_t * job, int width,
 {
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("PARTITION", width, right, true);
+	else if (job == (priority_factors_object_t *) -1)
+		_print_int(weight_part, width, right, true);
 	else
 		_print_norm(job->priority_part, width, right, true);
 	if (suffix)
@@ -343,6 +368,8 @@ int _print_part_priority_weighted(priority_factors_object_t * job, int width,
 {
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("PARTITION", width, right, true);
+	else if (job == (priority_factors_object_t *) -1)
+		_print_int(weight_part, width, right, true);
 	else
 		_print_int(job->priority_part * weight_part, width, right, true);
 	if (suffix)
@@ -355,6 +382,8 @@ int _print_qos_priority_normalized(priority_factors_object_t * job, int width,
 {
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("QOS", width, right, true);
+	else if (job == (priority_factors_object_t *) -1)
+		_print_int(weight_qos, width, right, true);
 	else
 		_print_norm(job->priority_qos, width, right, true);
 	if (suffix)
@@ -367,6 +396,8 @@ int _print_qos_priority_weighted(priority_factors_object_t * job, int width,
 {
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("QOS", width, right, true);
+	else if (job == (priority_factors_object_t *) -1)
+		_print_int(weight_qos, width, right, true);
 	else
 		_print_int(job->priority_qos * weight_qos, width, right, true);
 	if (suffix)
@@ -379,6 +410,8 @@ int _print_job_nice(priority_factors_object_t * job, int width,
 {
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("NICE", width, right, true);
+	else if (job == (priority_factors_object_t *) -1)
+		_print_str("", width, right, true);
 	else
 		_print_int(job->nice - NICE_OFFSET, width, right, true);
 	if (suffix)
@@ -391,6 +424,8 @@ int _print_job_user_name(priority_factors_object_t * job, int width,
 {
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("USER", width, right, true);
+	else if (job == (priority_factors_object_t *) -1)
+		_print_str("", width, right, true);
 	else {
 		char *uname = uid_to_string((uid_t) job->user_id);
 		_print_str(uname, width, right, true);

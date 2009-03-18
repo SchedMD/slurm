@@ -124,7 +124,8 @@ int main (int argc, char *argv[])
 	if (params.format == NULL) {
 		if (params.normalized) {
 			if (params.long_list)
-				params.format = "%.7i %.8u %10y %10a %10f %10j %10p %10q";
+				params.format = "%.7i %.8u %10y %10a %10f %10j "
+					"%10p %10q";
 			else{
 				params.format = xstrdup("%.7i");
 				if (params.users)
@@ -143,7 +144,8 @@ int main (int argc, char *argv[])
 			}
 		} else {
 			if (params.long_list)
-				params.format = "%.7i %.8u %.10Y %.10A %.10F %.10J %.10P %.10Q %.6N";
+				params.format = "%.7i %.8u %.10Y %.10A %.10F "
+					"%.10J %.10P %.10Q %.6N";
 			else{
 				params.format = xstrdup("%.7i");
 				if (params.users)
@@ -166,7 +168,12 @@ int main (int argc, char *argv[])
 	/* create the format list from the format */
 	parse_format(params.format);
 
-	print_jobs_array(resp_msg->priority_factors_list, params.format_list);
+	if (params.jobs && (!resp_msg->priority_factors_list ||
+			    !list_count(resp_msg->priority_factors_list)))
+		printf("Unable to find jobs matching user/id(s) specified\n");
+	else
+		print_jobs_array(resp_msg->priority_factors_list,
+				 params.format_list);
 
 #if 0
 	/* Free storage here if we want to verify that logic.

@@ -95,12 +95,13 @@ parse_command_line( int argc, char* argv[] )
 		{"users",      required_argument, 0, 'u'},
 		{"verbose",    no_argument,       0, 'v'},
 		{"version",    no_argument,       0, 'V'},
+		{"weights",    no_argument,       0, 'w'},
 		{"help",       no_argument,       0, OPT_LONG_HELP},
 		{"usage",      no_argument,       0, OPT_LONG_USAGE},
 		{NULL,         0,                 0, 0}
 	};
 
-	while((opt_char = getopt_long(argc, argv, "hj::lno:u:vV",
+	while((opt_char = getopt_long(argc, argv, "hj::lno:u:vVw",
 				      long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -138,6 +139,9 @@ parse_command_line( int argc, char* argv[] )
 		case (int) 'V':
 			_print_version();
 			exit(0);
+		case (int) 'w':
+			params.weights = true;
+			break;
 		case OPT_LONG_HELP:
 			_help();
 			exit(0);
@@ -464,6 +468,7 @@ Usage: sprio [OPTIONS]\n\
   -u, --user=user_name            comma separated list of users to view\n\
   -v, --verbose                   verbosity level\n\
   -V, --version                   output version information and exit\n\
+  -w, --weights                   show the weights for each priority factor\n\
 \nHelp options:\n\
   --help                          show this help message\n\
   --usage                         display a brief summary of sprio options\n");

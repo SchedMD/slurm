@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Donald Lipari <lipari1@llnl.gov>
+ *  Written by Don Lipari <lipari1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of SLURM, a resource management program.
@@ -73,6 +73,7 @@ struct sprio_parameters {
 	bool long_list;
 	bool no_header;
 	bool normalized;
+	bool weights;
 
 	int  verbose;
 
