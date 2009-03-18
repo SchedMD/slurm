@@ -1147,6 +1147,7 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
 	int parents_changed = 0;
+	List remove_list = NULL;
 
 	if(!local_association_list)
 		return SLURM_SUCCESS;
@@ -1286,9 +1287,19 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 				//rc = SLURM_ERROR;
 				break;
 			}
-			if (remove_assoc_notify)
-				remove_assoc_notify(rec);
-			list_delete_item(itr);
+			if(remove_assoc_notify) {
+				/* since there are some deadlock
+				   issues while inside our lock here
+				   we have to process a notify later 
+				*/
+				if(!remove_list)
+					remove_list = list_create(
+						destroy_acct_association_rec);
+				list_remove(itr);
+				list_append(remove_list, rec);
+			} else
+				list_delete_item(itr);
+
 			break;
 		default:
 			break;
@@ -1340,6 +1351,18 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&assoc_mgr_association_lock);
+	
+	/* This needs to happen outside of the
+	   assoc_mgr_association_lock */
+	if(remove_list) {
+		itr = list_iterator_create(remove_list);
+
+		while((rec = list_next(itr))) 
+			remove_assoc_notify(rec);
+		
+		list_iterator_destroy(itr);
+		list_destroy(remove_list);
+	}
 
 	return rc;	
 }
