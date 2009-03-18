@@ -150,8 +150,8 @@ typedef struct slurmd_job {
 	eio_handle_t  *eio;
 	List 	       sruns; /* List of srun_info_t pointers               */
 	List           clients; /* List of struct client_io_info pointers   */
-	List stdout_eio_objs;
-	List stderr_eio_objs;
+	List stdout_eio_objs; /* List of objs that gather stdout from tasks */
+	List stderr_eio_objs; /* List of objs that gather stderr from tasks */
 	List free_incoming;   /* List of free struct io_buf * for incoming
 			       * traffic. "incoming" means traffic from srun
 			       * to the tasks.
@@ -164,8 +164,8 @@ typedef struct slurmd_job {
 			       * including free_incoming buffers and
 			       * buffers in use.
 			       */
-	int outgoing_count;   /* Count of total incoming message buffers
-			       * including free_incoming buffers and
+	int outgoing_count;   /* Count of total outgoing message buffers
+			       * including free_outgoing buffers and
 			       * buffers in use.
 			       */
 
@@ -176,6 +176,7 @@ typedef struct slurmd_job {
 	uint8_t	buffered_stdio; /* stdio buffering flag, 1 for line-buffering,
 				 * 0 for no buffering
 				 */
+	uint8_t labelio;	/* 1 for labelling output with the task id */
 
 	pthread_t      ioid;  /* pthread id of IO thread                    */
 	pthread_t      msgid; /* pthread id of message thread               */
