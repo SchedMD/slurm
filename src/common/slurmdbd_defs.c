@@ -2832,6 +2832,7 @@ slurmdbd_unpack_job_start_msg(uint16_t rpc_version,
 		safe_unpack32(&msg_ptr->uid, buffer);	
 		safe_unpackstr_xmalloc(&msg_ptr->wckey, &uint32_tmp, buffer);
 	} else if(rpc_version >= 3) {
+		char *temp = NULL, *jname = NULL;
 		safe_unpackstr_xmalloc(&msg_ptr->account, &uint32_tmp, buffer);
 		safe_unpack32(&msg_ptr->alloc_cpus, buffer);
 		safe_unpack32(&msg_ptr->assoc_id, buffer);
@@ -2851,6 +2852,22 @@ slurmdbd_unpack_job_start_msg(uint16_t rpc_version,
 		safe_unpack_time(&msg_ptr->start_time, buffer);
 		safe_unpack_time(&msg_ptr->submit_time, buffer);
 		safe_unpack32(&msg_ptr->uid, buffer);	
+
+		/* first set the jname to the msg_ptr->name */
+		jname = xstrdup(msg_ptr->name);
+		/* then grep for " since that is the delimiter for
+		   the wckey */
+		if((temp = strchr(jname, '\"'))) {
+			/* if we have a wckey set the " to NULL to
+			 * end the jname */
+			temp[0] = '\0';
+			/* increment and copy the remainder */
+			temp++;
+			msg_ptr->wckey = xstrdup(temp);
+		}
+		xfree(msg_ptr->name);
+		msg_ptr->name = xstrdup(jname);
+		xfree(jname);
 	} else {
 		safe_unpackstr_xmalloc(&msg_ptr->account, &uint32_tmp, buffer);
 		safe_unpack32(&msg_ptr->alloc_cpus, buffer);
