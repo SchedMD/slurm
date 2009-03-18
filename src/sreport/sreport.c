@@ -705,6 +705,7 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
        HH:MM[:SS] [AM|PM]                                                  \n\
        MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]                                \n\
        MM/DD[/YY]-HH:MM[:SS]                                               \n\
+       YYYY-MM-DD[THH[:MM[:SS]]]                                           \n\
                                                                            \n\
                                                                            \n\
   All commands and options are case-insensitive.                         \n\n");
