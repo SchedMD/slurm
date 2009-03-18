@@ -248,6 +248,7 @@ int slurm_step_launch (slurm_step_ctx_t *ctx,
 		launch.efname = params->remote_error_filename;
 		launch.ifname = params->remote_input_filename;
 		launch.buffered_stdio = params->buffered_stdio ? 1 : 0;
+		launch.labelio = params->labelio ? 1 : 0;
 		ctx->launch_state->io.normal =
 			client_io_handler_create(params->local_fds,
 						 ctx->step_req->num_tasks,
