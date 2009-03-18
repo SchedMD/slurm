@@ -6035,6 +6035,17 @@ extern int job_cancel_by_assoc_id(uint32_t assoc_id)
 						     job_ptr->assoc_ptr)->id;
 		} 
 
+		if(job_ptr->assoc_id == assoc_id) {
+			/* this should never happen, but if it does to
+			   avoid deadlock in the assoc_mgr make the
+			   assoc_ptr = NULL so we don't do any
+			   lock/unlocks on the association lock */
+			error("The direct parent of this association %u "
+			      "is no longer around.", assoc_id);
+			job_ptr->assoc_id = 0;
+			job_ptr->assoc_ptr = NULL;
+		}
+
 		if(IS_JOB_FINISHED(job_ptr))
 			continue;
 
