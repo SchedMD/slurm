@@ -230,14 +230,12 @@ SLURM plugins (loadable shared objects)
 %package torque
 Summary: Torque/PBS wrappers for transitition from Torque/PBS to SLURM.
 Group: Development/System
-Requires: perlapi
 %description torque
 Torque wrapper scripts used for helping migrate from Torque/PBS to SLURM.
 
 %package slurmdb-direct
 Summary: Wrappers to write directly to the slurmdb.
 Group: Development/System
-Requires: perlapi
 %description slurmdb-direct
 Wrappers to write directly to the slurmdb.
 
