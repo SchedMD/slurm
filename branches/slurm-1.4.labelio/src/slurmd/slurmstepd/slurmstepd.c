@@ -101,7 +101,6 @@ main (int argc, char *argv[])
 		_dump_user_env();
 		exit(0);
 	}
-
 	set_oom_adj(OOM_DISABLE);
 
 	xsignal_block(slurmstepd_blocked_signals);
@@ -109,6 +108,8 @@ main (int argc, char *argv[])
 	conf->argv = &argv;
 	conf->argc = &argc;
 	init_setproctitle(argc, argv);
+
+	/* Receive job parameters from the slurmd */
 	_init_from_slurmd(STDIN_FILENO, argv, &cli, &self, &msg,
 			  &ngids, &gids);
 
@@ -117,12 +118,17 @@ main (int argc, char *argv[])
 	 * on STDERR_FILENO for us. */
 	dup2(STDERR_FILENO, STDIN_FILENO);
 
+	/* Create the slurmd_job_t, mostly from info in a 
+	   launch_tasks_request_msg_t or a batch_job_launch_msg_t */
 	job = _step_setup(cli, self, msg);
 	job->ngids = ngids;
 	job->gids = gids;
 
+	/* fork handlers cause mutexes on some global data structures 
+	   to be re-initialized after the fork. */
 	list_install_fork_handlers();
 	slurm_conf_install_fork_handlers();
+
 	/* sets job->msg_handle and job->msgid */
 	if (msg_thr_create(job) == SLURM_ERROR) {
 		_send_fail_to_slurmd(STDOUT_FILENO);
@@ -137,7 +143,9 @@ main (int argc, char *argv[])
 	 * on STDERR_FILENO for us. */
 	dup2(STDERR_FILENO, STDOUT_FILENO);
 
-	rc = job_manager(job); /* blocks until step is complete */
+	/* This does most of the stdio setup, then launches all the tasks,
+	   and blocks until the step is complete */
+	rc = job_manager(job); 
 
 	/* signal the message thread to shutdown, and wait for it */
 	eio_signal_shutdown(job->msg_handle);
