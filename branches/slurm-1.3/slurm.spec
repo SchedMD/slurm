@@ -151,7 +151,7 @@ partition management, job management, scheduling and accounting modules.
 %package perlapi
 Summary: Perl API to SLURM.
 Group: Development/System
-Requires: slurm
+#Requires: slurm
 %description perlapi
 Perl API package for SLURM.  This package includes the perl API to provide a
 helpful interface to SLURM through Perl.
@@ -230,9 +230,16 @@ SLURM plugins (loadable shared objects)
 %package torque
 Summary: Torque/PBS wrappers for transitition from Torque/PBS to SLURM.
 Group: Development/System
-Requires: slurm
+Requires: perlapi
 %description torque
 Torque wrapper scripts used for helping migrate from Torque/PBS to SLURM.
+
+%package slurmdb-direct
+Summary: Wrappers to write directly to the slurmdb.
+Group: Development/System
+Requires: perlapi
+%description slurmdb-direct
+Wrappers to write directly to the slurmdb.
 
 %if %{slurm_with aix}
 %package aix-federation
@@ -480,6 +487,12 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/qstat
 %{_bindir}/qsub
 %{_bindir}/mpiexec
+#############################################################################
+
+%files slurmdb-direct
+%defattr(-,root,root)
+%{_perldir}/config.slurmdb.pl
+%{_bindir}/moab_2_slurmdb
 #############################################################################
 
 %if %{slurm_with aix}
