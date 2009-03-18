@@ -359,7 +359,7 @@ _set_job_log_prefix(slurmd_job_t *job)
 static int
 _setup_normal_io(slurmd_job_t *job)
 {
-	int            rc   = 0;
+	int rc = 0, ii = 0;
 	struct priv_state sprivs;
 
 	debug2("Entering _setup_normal_io");
@@ -385,8 +385,88 @@ _setup_normal_io(slurmd_job_t *job)
 	 */
 	if (!job->batch) {
 		srun_info_t *srun = list_peek(job->sruns);
+
+		/* local id of task that sends to srun, -1 for all tasks,
+		   any other value for no tasks */
+		int srun_stdout_tasks = -1;
+		int srun_stderr_tasks = -1;
+
 		xassert(srun != NULL);
-		rc = io_initial_client_connect(srun, job);
+
+		/* If I/O is labelled with task num, and if a separate file is
+		   written per node or per task, the I/O needs to be sent 
+		   back to the stepd, get a label appended, and written from
+		   the stepd rather than sent back to srun or written directly
+		   from the node.  When a task has ofname or efname == NULL, it
+		   means data gets sent back to the client. */
+
+		if (job->labelio) {
+			slurmd_filename_pattern_t outpattern, errpattern;
+			bool same = false;
+			int file_flags;
+
+			io_find_filename_pattern(job, &outpattern, &errpattern,
+						 &same);
+			file_flags = io_get_file_flags(job);
+
+			/* Make eio objects to write from the slurmstepd */
+			if (outpattern == SLURMD_ALL_UNIQUE) {
+				/* Open a separate file per task */
+				for (ii = 0; ii < job->ntasks; ii++) {
+					rc = io_create_local_client( 
+						job->task[ii]->ofname, 
+						file_flags, job, job->labelio,
+						job->task[ii]->id,
+						same ? job->task[ii]->id : -2);
+					if (rc != SLURM_SUCCESS)
+						return ESLURMD_IO_ERROR;
+				}
+				srun_stdout_tasks = -2;
+				if (same)
+					srun_stderr_tasks = -2;
+			} else if (outpattern == SLURMD_ALL_SAME) {
+				/* Open a file for all tasks */
+				rc = io_create_local_client( 
+					job->task[0]->ofname, 
+					file_flags, job, job->labelio,
+					-1, same ? -1 : -2);
+				if (rc != SLURM_SUCCESS)
+					return ESLURMD_IO_ERROR;
+
+				srun_stdout_tasks = -2;
+				if (same)
+					srun_stderr_tasks = -2;
+			}
+
+			if (!same) {
+				if (errpattern == SLURMD_ALL_UNIQUE) {
+					/* Open a separate file per task */
+					for (ii = 0; ii < job->ntasks; ii++) {
+						rc = io_create_local_client( 
+							job->task[ii]->efname, 
+							file_flags, job, 
+							job->labelio,
+							-2, job->task[ii]->id);
+						if (rc != SLURM_SUCCESS)
+							return ESLURMD_IO_ERROR;
+					}
+					srun_stderr_tasks = -2;
+				} else if (errpattern == SLURMD_ALL_SAME) {
+					/* Open a file for all tasks */
+					rc = io_create_local_client( 
+						job->task[0]->efname, 
+						file_flags, job, job->labelio,
+						-2, -1);
+					if (rc != SLURM_SUCCESS)
+						return ESLURMD_IO_ERROR;
+
+					srun_stderr_tasks = -2;
+				}
+			}
+		}
+
+		rc = io_initial_client_connect(srun, job, srun_stdout_tasks, 
+					       srun_stderr_tasks);
 		if (rc < 0) 
 			return ESLURMD_IO_ERROR;
 	}
