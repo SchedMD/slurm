@@ -366,7 +366,21 @@ extern int update_block_list()
 			    && bg_record->state != RM_PARTITION_ERROR)
 			   && state == RM_PARTITION_FREE)
 				skipped_dealloc = 1;
-			
+			else if((bg_record->state == RM_PARTITION_READY)
+				&& (state == RM_PARTITION_CONFIGURING)) {
+				/* This means the user did a reboot through
+				   mpirun but we missed the state
+				   change */
+				debug("Block %s skipped rebooting, "
+				      "but it really is.  "
+				      "Setting target_name back to %s",
+				      bg_record->bg_block_id,
+				      bg_record->user_name);
+				xfree(bg_record->target_name);
+				bg_record->target_name =
+					xstrdup(bg_record->user_name);
+			}
+
 			bg_record->state = state;
 
 			if(bg_record->state == RM_PARTITION_DEALLOCATING
