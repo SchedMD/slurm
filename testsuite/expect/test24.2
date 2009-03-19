@@ -58,7 +58,7 @@ if { [test_account_storage] == 0 } {
 ################################################################
 
 proc sshare_opt { soption } {
-	global sshare
+	global sshare number
 	set debug       1
 	set exit_code   0
 	set matches     0
@@ -322,7 +322,7 @@ proc sshare_opt { soption } {
 				set not_support 2
 				exp_continue
 			}
-			-re "slurm 1.4.0-pre8" {
+			-re "slurm $number.$number.$number" {
 				if {$debug} {send_user "\nmatch12\n"}
 				incr matches
 				exp_continue
