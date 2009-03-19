@@ -115,6 +115,12 @@ extern void slurm_destroy_char(void *object)
 	xfree(tmp);
 }
 
+extern void slurm_destroy_uint32_ptr(void *object)
+{
+	uint32_t *tmp = (uint32_t *)object;
+	xfree(tmp);
+}
+
 /* returns number of objects added to list */
 extern int slurm_addto_char_list(List char_list, char *names)
 {

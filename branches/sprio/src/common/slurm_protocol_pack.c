@@ -1507,11 +1507,6 @@ _pack_priority_factors_request_msg(priority_factors_request_msg_t * msg,
 
 }
 
-static void _priority_factors_req_list_del(void *x)
-{
-	xfree(x);
-}
-
 static int
 _unpack_priority_factors_request_msg(priority_factors_request_msg_t ** msg,
 				     Buf buffer)
@@ -1528,8 +1523,7 @@ _unpack_priority_factors_request_msg(priority_factors_request_msg_t ** msg,
 
 	safe_unpack32(&count, buffer);
 	if(count != NO_VAL) {
-		object_ptr->job_id_list =
-			list_create(_priority_factors_req_list_del);
+		object_ptr->job_id_list = list_create(slurm_destroy_uint32_ptr);
 		for(i=0; i<count; i++) {
 			uint32_tmp = xmalloc(sizeof(uint32_t));
 			safe_unpack32(uint32_tmp, buffer);
@@ -1539,8 +1533,7 @@ _unpack_priority_factors_request_msg(priority_factors_request_msg_t ** msg,
 
 	safe_unpack32(&count, buffer);
 	if(count != NO_VAL) {
-		object_ptr->uid_list =
-			list_create(_priority_factors_req_list_del);
+		object_ptr->uid_list = list_create(slurm_destroy_uint32_ptr);
 		for(i=0; i<count; i++) {
 			uint32_tmp = xmalloc(sizeof(uint32_t));
 			safe_unpack32(uint32_tmp, buffer);

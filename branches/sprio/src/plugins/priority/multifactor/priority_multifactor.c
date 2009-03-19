@@ -377,8 +377,8 @@ static void _get_priority_factors(time_t start_time, struct job_record *job_ptr,
 		else {
 			factors->priority_fs = _get_fairshare_priority(job_ptr);
 			job_ptr->priority_fs = factors->priority_fs;
-	debug3("sprio job %u has a fairshare priority of %f",
-	       job_ptr->job_id, job_ptr->priority_fs);
+			debug3("sprio job %u has a fairshare priority of %f",
+			       job_ptr->job_id, job_ptr->priority_fs);
 		}
 	}
 
@@ -430,7 +430,8 @@ static uint32_t _get_priority_internal(time_t start_time,
 	/*
 	 * This means the job is not eligible yet
 	 */
-	if(!job_ptr->details->begin_time >= start_time)
+	if(!job_ptr->details->begin_time
+	   || (job_ptr->details->begin_time > start_time))
 		return 1;
 
 	/* figure out the priority */
@@ -899,34 +900,33 @@ extern List priority_p_get_priority_factors_list(
 		lock_slurmctld(job_read_lock);
 		itr = list_iterator_create(job_list);
 		while ((job_ptr = list_next(itr))) {
-			if(IS_JOB_PENDING(job_ptr)) {
+			/*
+			 * We are only looking for pending jobs 
+			 */
+			if(!IS_JOB_PENDING(job_ptr))
+				continue;
+			/*
+			 * This means the job is not eligible yet
+			 */
+			if(!job_ptr->details->begin_time
+			   || (job_ptr->details->begin_time > start_time))
+				continue;
 
-				/*
-				 * This means the job is not eligible yet
-				 */
-				if(!job_ptr->details->begin_time >= start_time)
-					continue;
-
-				/*
-				 * 0 means the job is held; 1 means system hold
-				 */
-				if(job_ptr->priority <= 1)
-					continue;
-
-				if (_filter_job(job_ptr, req_job_list,
-						req_user_list))
-					continue;
-
-				obj = (priority_factors_object_t *) xmalloc(
-					sizeof(priority_factors_object_t));
-
-				_get_priority_factors(start_time, job_ptr, obj,
-						      true);
-				obj->job_id = job_ptr->job_id;
-				obj->user_id = job_ptr->user_id;
-				list_append(ret_list, (void *) obj);
-
-			}
+			/*
+			 * 0 means the job is held; 1 means system hold
+			 */
+			if(job_ptr->priority <= 1)
+				continue;
+			
+			if (_filter_job(job_ptr, req_job_list, req_user_list))
+				continue;
+			
+			obj = xmalloc(sizeof(priority_factors_object_t));
+			
+			_get_priority_factors(start_time, job_ptr, obj, true);
+			obj->job_id = job_ptr->job_id;
+			obj->user_id = job_ptr->user_id;
+			list_append(ret_list, obj);
 		}
 		list_iterator_destroy(itr);
 		unlock_slurmctld(job_read_lock);
