@@ -472,9 +472,14 @@ static size_t	_write_bytes(int fd, char *buf, size_t size)
 		if (rc == 0)		/* timed out */
 			break;
 		if ((rc == -1) &&	/* some error */
-		    ((errno== EINTR) || (errno == EAGAIN)) &&
-		    ((retry_cnt++) < MAX_RETRIES))
+		    ((errno== EINTR) || (errno == EAGAIN))) {
+			if ((retry_cnt++) >= MAX_RETRIES) {
+				error("wiki: repeated poll errors for "
+				      "write: %m");
+				break;
+			}
 			continue;
+		}
 		if ((ufds.revents & POLLOUT) == 0) /* some poll error */
 			break;
 
