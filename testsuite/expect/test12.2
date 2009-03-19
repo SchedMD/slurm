@@ -269,12 +269,13 @@ if {$matches < 4} {
 set elapsed_time 0
 spawn $sacct --noheader  --job=$job_id.0 --fields elapsed
 expect {
-	-re "($number):(\[0-9\])(\[0-9\])" {
-		set mins $expect_out(1,string)
-		set sec_ten $expect_out(2,string)
-		set sec_one $expect_out(3,string)
+	-re "($number):($number):(\[0-9\])(\[0-9\])" {
+		set hours $expect_out(1,string)
+		set mins $expect_out(2,string)
+		set sec_ten $expect_out(3,string)
+		set sec_one $expect_out(4,string)
 		set secs [expr $sec_ten * 10 + $sec_one]
-		set elapsed_time [expr $mins * 60 + $secs]
+		set elapsed_time [expr ($hours * 3600) + ($mins * 60) + $secs]
 		exp_continue
 	}
 	timeout {
