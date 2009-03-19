@@ -151,7 +151,7 @@ partition management, job management, scheduling and accounting modules.
 %package perlapi
 Summary: Perl API to SLURM.
 Group: Development/System
-#Requires: slurm
+Requires: slurm
 %description perlapi
 Perl API package for SLURM.  This package includes the perl API to provide a
 helpful interface to SLURM through Perl.
@@ -230,12 +230,14 @@ SLURM plugins (loadable shared objects)
 %package torque
 Summary: Torque/PBS wrappers for transitition from Torque/PBS to SLURM.
 Group: Development/System
+Requires: slurm-perlapi
 %description torque
 Torque wrapper scripts used for helping migrate from Torque/PBS to SLURM.
 
 %package slurmdb-direct
 Summary: Wrappers to write directly to the slurmdb.
 Group: Development/System
+Requires: slurm-perlapi
 %description slurmdb-direct
 Wrappers to write directly to the slurmdb.
 
