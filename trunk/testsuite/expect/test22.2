@@ -223,7 +223,7 @@ proc sreport_opt { soption } {
 			set not_support 1
 			exp_continue
 		}
-		-re "slurm ($number).($number)" {
+		-re "slurm $number.$number.$number" {
 			if {$debug} {send_user "\nmatch9\n"}
 			incr matches
 			exp_continue
