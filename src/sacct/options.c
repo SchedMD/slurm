@@ -408,13 +408,15 @@ void _help_msg(void)
 	       "    Display job accounting data for all users. By default, only\n"
 	       "    data for the current user is displayed for users other than\n"
 	       "    root.\n"
+	       "-A, --accounts\n"
+	       "    Only send data about these accounts.  Default is all.\n"
 	       "-b, --brief\n"
 	       "    Equivalent to \"--fields=jobstep,state,error\". This option\n"
 	       "    has no effect if --dump is specified.\n"
 	       "-c, --completion\n"
 	       "    Use job completion instead of accounting data.\n"
-	       "-C, --cluster\n"
-	       "    Only send data about this cluster -1 for all clusters.\n"
+	       "-C, --clusters\n"
+	       "    Only send data about these clusters.  -1 for all clusters.\n"
 	       "-d, --dump\n"
 	       "    Dump the raw data records\n"
 	       "--duplicates\n"
@@ -445,11 +447,11 @@ void _help_msg(void)
 	       "    example, \"--expire=14d\" means that you wish to purge the job\n"
 	       "    accounting log of all jobs that completed more than 14 days ago.\n" 
 	       "--endtime:                                                   \n"
-               "    Select jobs started before this time.                    \n"
-	       "-F <field-list>, --fields=<field-list>\n"
-	       "    Display the specified data (use \"--help-fields\" for a\n"
-	       "    list of available fields). If no field option is specified,\n"
-	       "    we use \"--fields=jobstep,jobname,partition,alloc_cpus,state,error\".\n"
+               "    Select jobs eligible before this time.                   \n"
+	       "-F <format-list>, --format=<format-list>\n"
+	       "    Display the specified data (use \"--helpformat\" for a\n"
+	       "    list of available fields). If no format option is specified,\n"
+	       "    we use \"--format=jobstep,jobname,partition,alloc_cpus,state,error\".\n"
 	       "-f<file>, --file=<file>\n"
 	       "    Read data from the specified file, rather than SLURM's current\n"
 	       "    accounting log file.\n"
@@ -501,6 +503,8 @@ void _help_msg(void)
 	       "-v, --verbose\n"
 	       "    Primarily for debugging purposes, report the state of various\n"
 	       "    variables during processing.\n"
+	       "-W, --wckeys\n"
+	       "    Only send data about these wckeys.  Default is all.\n"
 	       "\n"
 	       "Note, valid start/end time formats are...\n"
 	       "    HH:MM[:SS] [AM|PM]\n"
@@ -634,7 +638,7 @@ void parse_command_line(int argc, char **argv)
 		{"accounts", 1, 0, 'A'},
 		{"begin", 1, 0, 'B'},
 		{"brief", 0, 0, 'b'},
-		{"cluster", 1, 0, 'C'},
+		{"clusters", 1, 0, 'C'},
 		{"completion", 0, &params.opt_completion, 'c'},
 		{"duplicates", 0, &params.opt_dup, 1},
 		{"dump", 0, 0, 'd'},
@@ -642,12 +646,14 @@ void parse_command_line(int argc, char **argv)
 		{"endtime", 1, 0, 'E'},
 		{"expire", 1, 0, 'e'},
 		{"fields", 1, 0, 'F'},
+		{"format", 1, 0, 'F'},
 		{"file", 1, 0, 'f'},
 		{"formatted_dump", 0, 0, 'O'},
 		{"gid", 1, 0, 'g'},
 		{"group", 1, 0, 'g'},
 		{"help", 0, &params.opt_help, 1},
 		{"help-fields", 0, &params.opt_help, 2},
+		{"helpformat", 0, &params.opt_help, 2},
 		{"jobs", 1, 0, 'j'},
 		{"long", 0, 0, 'l'},
 		{"big_logfile", 0, &params.opt_lowmem, 1},
@@ -664,6 +670,7 @@ void parse_command_line(int argc, char **argv)
 		{"user", 1, 0, 'u'},
 		{"verbose", 0, 0, 'v'},
 		{"version", 0, 0, 'V'},
+		{"wckeys", 1, 0, 'W'},
 		{0, 0, 0, 0}};
 
 	params.opt_uid = getuid();
@@ -673,7 +680,7 @@ void parse_command_line(int argc, char **argv)
 
 	while (1) {		/* now cycle through the command line */
 		c = getopt_long(argc, argv,
-				"aA:bB:cC:deE:F:f:g:hj:lOP:p:s:StUu:Vv",
+				"aA:bB:cC:deE:F:f:g:hj:lOP:p:s:StUu:VvW:",
 				long_options, &optionIndex);
 		if (c == -1)
 			break;
@@ -822,6 +829,12 @@ void parse_command_line(int argc, char **argv)
 			params.opt_verbose++;
 			break;
 
+		case 'W':
+			if(!job_cond->wckey_list) 
+				job_cond->wckey_list =
+					list_create(slurm_destroy_char);
+			slurm_addto_char_list(job_cond->wckey_list, optarg);
+			break;
 		case 'V':
 			printf("%s %s\n", PACKAGE, SLURM_VERSION);
 			exit(0);
@@ -1014,6 +1027,15 @@ void parse_command_line(int argc, char **argv)
 		}
 		list_iterator_destroy(itr);
 	}
+
+	if (params.opt_verbose && job_cond->wckey_list 
+	    && list_count(job_cond->wckey_list)) {
+		fprintf(stderr, "Wckeys requested:\n");
+		itr = list_iterator_create(job_cond->wckey_list);
+		while((start = list_next(itr))) 
+			fprintf(stderr, "\t: %s\n", start);
+		list_iterator_destroy(itr);
+	} 
 
 	/* select the output fields */
 	if(brief_output) {
