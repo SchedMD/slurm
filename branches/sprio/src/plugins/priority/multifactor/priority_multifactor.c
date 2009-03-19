@@ -351,14 +351,14 @@ static void _get_priority_factors(time_t start_time, struct job_record *job_ptr,
 				  priority_factors_object_t* factors,
 				  bool status_only)
 {
-	acct_qos_rec_t *qos_ptr = (acct_qos_rec_t *)job_ptr->qos_ptr;
+	acct_qos_rec_t *qos_ptr = NULL;
 
-	factors->priority_age = 0.0;
-	factors->priority_fs = 0.0;
-	factors->priority_js = 0.0;
-	factors->priority_part = 0.0;
-	factors->priority_qos = 0.0;
-	factors->nice = 0;
+	xassert(factors);
+	xassert(job_ptr);
+	
+	qos_ptr = (acct_qos_rec_t *)job_ptr->qos_ptr;
+
+	memset(factors, 0, sizeof(priority_factors_object_t));
 
 	if(weight_age) {
 		uint32_t diff = start_time - job_ptr->details->begin_time;
@@ -430,7 +430,7 @@ static uint32_t _get_priority_internal(time_t start_time,
 	/*
 	 * This means the job is not eligible yet
 	 */
-	if(!job_ptr->details->begin_time > start_time)
+	if(!job_ptr->details->begin_time >= start_time)
 		return 1;
 
 	/* figure out the priority */
@@ -875,32 +875,27 @@ extern void priority_p_set_assoc_usage(acct_association_rec_t *assoc)
 	}
 }
 
-extern List priority_p_get_priority_factors_list(List req_job_list,
-						 List req_user_list)
+extern List priority_p_get_priority_factors_list(
+	priority_factors_request_msg_t *req_msg)
 {
+	List req_job_list;
+	List req_user_list;
 	List ret_list = NULL;
 	ListIterator itr;
 	priority_factors_object_t *obj = NULL;
 	struct job_record *job_ptr = NULL;
-	struct tm tm;
 	time_t start_time = time(NULL);
+
+	xassert(req_msg);
+	req_job_list = req_msg->job_id_list;
+	req_user_list = req_msg->uid_list;
 
 	/* Read lock on jobs, nodes, and partitions */
 	slurmctld_lock_t job_read_lock =
 		{ NO_LOCK, READ_LOCK, READ_LOCK, READ_LOCK };
 
-	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
-
-	if(!localtime_r(&start_time, &tm)) {
-		fatal("_decay_thread: "
-		      "Couldn't get localtime for priority factors %d",
-		      start_time);
-		return NULL;
-	}
-
 	if (job_list && list_count(job_list)) {
-		ret_list = list_create(NULL);
+		ret_list = list_create(slurm_destroy_priority_factors_object);
 		lock_slurmctld(job_read_lock);
 		itr = list_iterator_create(job_list);
 		while ((job_ptr = list_next(itr))) {
@@ -909,7 +904,7 @@ extern List priority_p_get_priority_factors_list(List req_job_list,
 				/*
 				 * This means the job is not eligible yet
 				 */
-				if(!job_ptr->details->begin_time > start_time)
+				if(!job_ptr->details->begin_time >= start_time)
 					continue;
 
 				/*

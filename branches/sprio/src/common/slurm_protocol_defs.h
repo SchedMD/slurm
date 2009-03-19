@@ -848,6 +848,7 @@ void inline slurm_free_set_debug_level_msg(set_debug_level_msg_t *msg);
 void inline slurm_destroy_association_shares_object(void *object);
 void inline slurm_free_shares_request_msg(shares_request_msg_t *msg);
 void inline slurm_free_shares_response_msg(shares_response_msg_t *msg);
+void inline slurm_destroy_priority_factors_object(void *object);
 void inline slurm_free_priority_factors_request_msg(
 	priority_factors_request_msg_t *msg);
 void inline slurm_free_priority_factors_response_msg(

@@ -1517,6 +1517,13 @@ void inline slurm_free_shares_response_msg(shares_response_msg_t *msg)
 	}
 }
 
+void inline slurm_destroy_priority_factors_object(void *object)
+{
+	priority_factors_object_t *obj_ptr =
+		(priority_factors_object_t *)object;
+	xfree(obj_ptr);
+}
+
 void inline slurm_free_priority_factors_request_msg(
 	priority_factors_request_msg_t *msg)
 {

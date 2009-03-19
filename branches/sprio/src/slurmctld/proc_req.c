@@ -892,7 +892,7 @@ static void  _slurm_rpc_get_priority_factors(slurm_msg_t *msg)
 	debug2("Processing RPC: REQUEST GET PRIORITY FACTORS from uid=%u",
 	       (unsigned int)uid);
 	resp_msg.priority_factors_list = priority_g_get_priority_factors_list(
-		req_msg->job_id_list, req_msg->uid_list);
+		req_msg);
 	slurm_msg_t_init(&response_msg);
 	response_msg.address  = msg->address;
 	response_msg.msg_type = RESPONSE_PRIORITY_FACTORS;
