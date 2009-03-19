@@ -43,6 +43,11 @@
 
 #define _DEBUG 0
 
+/* When a remote socket closes on AIX, we have seen poll() return EAGAIN
+ * indefinitely for a pending write request. Rather than locking up 
+ * slurmctld's wiki interface, abort after MAX_RETRIES poll() failures. */
+#define MAX_RETRIES 10
+
 static bool thread_running = false;
 static bool thread_shutdown = false;
 static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -433,8 +438,8 @@ static size_t	_read_bytes(int fd, char *buf, size_t size)
 		rc = poll(&ufds, 1, 10000);	/* 10 sec timeout */
 		if (rc == 0)		/* timed out */
 			break;
-		if ((rc == -1) 		/* some error */
-		&&  ((errno== EINTR) || (errno == EAGAIN)))
+		if ((rc == -1) &&	/* some error */
+		    ((errno== EINTR) || (errno == EAGAIN)))
 			continue;
 		if ((ufds.revents & POLLIN) == 0) /* some poll error */
 			break;
@@ -455,7 +460,7 @@ static size_t	_write_bytes(int fd, char *buf, size_t size)
 	size_t bytes_remaining, bytes_written;
 	char *ptr;
 	struct pollfd ufds;
-	int rc;
+	int rc, retry_cnt = 0;
 
 	bytes_remaining = size;
 	size = 0;
@@ -466,8 +471,9 @@ static size_t	_write_bytes(int fd, char *buf, size_t size)
 		rc = poll(&ufds, 1, 10000);	/* 10 sec timeout */
 		if (rc == 0)		/* timed out */
 			break;
-		if ((rc == -1)  	/* some error */
-		&&  ((errno== EINTR) || (errno == EAGAIN)))
+		if ((rc == -1) &&	/* some error */
+		    ((errno== EINTR) || (errno == EAGAIN)) &&
+		    ((retry_cnt++) < MAX_RETRIES))
 			continue;
 		if ((ufds.revents & POLLOUT) == 0) /* some poll error */
 			break;
