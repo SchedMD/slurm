@@ -24,7 +24,7 @@ The
 command displays information on jobs, job steps, status, and exitcodes by 
 default.
 You can tailor the output with the use of the 
-\f3\-\-fields=\fP 
+\f3\-\-format=\fP 
 option to specify the fields to be shown.
 .PP
 For the root user, the 
@@ -53,7 +53,7 @@ gather and report incomplete information for these calls;
 actually available on your system.
 .IP
 If --dump is specified, the field selection options (--brief,
---fields, ...) have no effect. 
+--format, ...) have no effect. 
 .IP
 Elapsed time fields are presented as 2 fields, integral seconds and integral microseconds
 .IP
@@ -71,7 +71,13 @@ Displays the job accounting data for all jobs in the job accounting log file.
 This is the default behavior when the 
 .BR "sacct "
 command is executed by the root user.
-
+.TP 
+\f3\-A \fP\f2account_list\fP\f3,\fP  \f3\-\-accounts\fP\f3=\fP\f2account_list\fP
+Displays the statistics only for the jobs started on the accounts specified by
+the \f2account_list\fP operand, which is a comma\-separated list of
+account names.
+Space characters are not allowed in the \f2account_list\fP. Default is
+all accounts\&.
 .TP 
 \f3\-b \fP\f3,\fP \f3\-\-brief\fP
 Displays a brief listing, which includes the following data:
@@ -92,7 +98,7 @@ This option has no effect when the
 option is also specified.
 
 .TP 
-\f3\-C \fP\f2cluster_list\fP\f3,\fP  \f3\-\-cluster\fP\f3=\fP\f2cluster_list\fP
+\f3\-C \fP\f2cluster_list\fP\f3,\fP  \f3\-\-clusters\fP\f3=\fP\f2cluster_list\fP
 Displays the statistics only for the jobs started on the clusters specified by
 the \f2cluster_list\fP operand, which is a comma\-separated list of clusters.
 Space characters are not allowed in the \f2cluster_list\fP. \-1 for
@@ -106,7 +112,7 @@ Displays (dumps) the raw data records.
 This option overrides the 
 \f3\-\-brief\fP 
 and 
-\f3\-\-fields=\fP 
+\f3\-\-format=\fP 
 options.
 .IP 
 The section titled "INTERPRETING THE \-\-dump OPTION OUTPUT" describes the 
@@ -151,30 +157,38 @@ log file, with ".expired" appended to the file name. For example, if
 the accounting log file is /var/log/slurmacct.log, the expired log
 file will be /var/log/slurmacct.log.expired.
 
+.TP
+\f3\-\-endtime\fP\f3=\fP\f2endtime\fP
+Select jobs eligible before this time.
+Valid Formats are.
+	HH:MM[:SS] [AM|PM]
+	MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]
+	MM/DD[/YY]-HH:MM[:SS]
+
 .TP 
-\f3\-F \fP\f2field_list\fP \f3,\fP  \f3\-\-fields\fP\f3=\fP\f2field_list\fP
+\f3\-F \fP\f2format_list\fP \f3,\fP  \f3\-\-format\fP\f3=\fP\f2format_list\fP
 Displays the job accounting data specified by the 
-\f2field_list\fP 
+\f2format_list\fP 
 operand, which is a comma\-separated list of fields.
 Space characters are not allowed in the 
-\f2field_list\fP\c
+\f2format_list\fP\c
 \&. 
 .IP 
 See the 
-\f3\-\-help\-fields\fP 
+\f3\-\-helpformat\fP 
 option for a list of the available fields.
 See the section titled "Job Accounting Fields" for a description of 
 each field.
 .IP 
 The job accounting data is displayed in the order specified by the 
-\f2field_list\fP 
+\f2format_list\fP 
 operand.
 Thus, the following two commands display the same data but in different order:
 .RS 
 .PP
 .nf 
 .ft 3
-# sacct \-\-fields=jobid,status
+# sacct \-\-format=jobid,status
 Jobid    Status
 \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-
 3          COMPLETED
@@ -187,7 +201,7 @@ Jobid    Status
 .PP
 .nf 
 .ft 3
-# sacct \-\-fields=status,jobid
+# sacct \-\-format=status,jobid
 Status     Jobid
 \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-
 COMPLETED  3
@@ -234,9 +248,9 @@ Default is no restrictions.  This is virtually the same as the \-\-gid option\&.
 \f3\-h \fP\f3,\fP \f3\-\-help\fP
 Displays a general help message.
 .TP 
-\f3\-\-help\-fields\fP
+\f3\-\-helpformat\fP
 Displays a list of fields that can be specified with the 
-\f3\-\-fields\fP 
+\f3\-\-format\fP 
 option.
 .RS 
 .PP
@@ -244,16 +258,16 @@ option.
 .ft 3
 Fields available:
 account     associd     cluster     cpu       
-cputime     elapsed     end         exitcode  
-finished    gid         group       job       
-jobid       jobname     ncpus       nodes     
-nnodes      nprocs      ntasks      pages     
-partition   rss         start       state     
-status      submit      timelimit   submitted 
-systemcpu   uid         user        usercpu   
-vsize       blockid     connection  geo       
-max_procs   reboot      rotate      bg_start_point
-wckey     
+cputime     elapsed     eligible    end       
+exitcode    finished    gid         group     
+job         jobid       jobname     ncpus     
+nodes       nnodes      nprocs      ntasks    
+pages       partition   rss         start     
+state       status      submit      timelimit 
+submitted   systemcpu   uid         user      
+usercpu     vsize       blockid     connection
+geo         max_procs   reboot      rotate    
+bg_start_point  wckey     
 
 .ft 1
 .fi 
@@ -418,6 +432,14 @@ Space characters are not allowed in the
 \f2state_list\fP\c
 \&.
 
+.TP
+\f3\-\-starttime\fP\f3=\fP\f2starttime\fP
+Select jobs eligible after this time.
+Valid Formats are.
+	HH:MM[:SS] [AM|PM]
+	MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]
+	MM/DD[/YY]-HH:MM[:SS]
+
 .TP 
 \f3\-t \fP\f3,\fP \f3\-\-total\fP
 Displays only the cumulative statistics for each job.
@@ -447,6 +469,14 @@ Displays a help message.
 \f3\-v \fP\f3,\fP \f3\-\-verbose\fP
 Reports the state of certain variables during processing.
 This option is primarily used for debugging.
+
+.TP 
+\f3\-W \fP\f2wckey_list\fP\f3,\fP  \f3\-\-wckeys\fP\f3=\fP\f2wckey_list\fP
+Displays the statistics only for the jobs started on the wckeys specified by
+the \f2wckey_list\fP operand, which is a comma\-separated list of
+wckey names.
+Space characters are not allowed in the \f2wckey_list\fP. Default is
+all wckeys\&.
 
 .SS "Job Accounting Fields"
 The following describes each job accounting field:

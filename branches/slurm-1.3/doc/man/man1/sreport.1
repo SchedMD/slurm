@@ -130,7 +130,7 @@ Repeat the last command executed.
 Various reports are as follows...
      cluster \- AccountUtilizationByUser, UserUtilizationByAccount,
      UserUtilizationByWckey, Utilization, WCKeyUtilizationByUser
-     job     \- Sizes
+     job     \- SizesByAccount, SizesByWckey
      user    \- TopUsage
 
 .TP
@@ -168,13 +168,17 @@ This report will display wckey utilization sorted by WCKey name for
 each user on each cluster.  
 
 .TP
-.B job Sizes
+.B job SizesByAccount
 This report will dispay the amount of time used for job ranges
 specified by the 'grouping=' option.  Only a single level in the tree
 is displayed defaulting to the root dir.  If you specify other
 accounts with the 'account=' option sreport will use those accounts as
 the root account and you will receive the sub accounts for the
 accounts listed.
+.TP
+.B job SizesByWckey
+This report will dispay the amount of time for each wckey for job ranges
+specified by the 'grouping=' option.  
 
 .TP
 .B user TopUsage
@@ -240,11 +244,11 @@ JOB
 .RS
 .TP
 .B Accounts=<OPT>
-List of accounts to use for the report Default is all.  The Sizes
-report only displays 1 hierarchical level.  If accounts are specified
+List of accounts to use for the report Default is all.  The SizesByAccount
+report only displays 1 hierarchical level. If accounts are specified
 the next layer of accounts under those specified will be displayed,
-not the accounts specified.  In the Sizes reports the default for
-accounts is root.
+not the accounts specified.  In the SizesByAccount reports the default
+for accounts is root. 
 .TP
 .B GID=<OPT>
 List of group ids to include in report.  Default is all.
@@ -264,6 +268,11 @@ of time used.
 .TP
 .B Users=<OPT>
 List of users jobs to include in report.  Default is all.
+.TP
+.B Wckeys=<OPT>
+List of wckeys to use for the report.  Default is all.  The
+SizesbyWckey report all users summed together.  If you want only
+certain users specify them them with the Users= option.
 .RE
 
 .TP
@@ -301,8 +310,10 @@ List of users jobs to include in report.  Default is all.
                PlannedDown, Reported, Reserved
 
 \fBJob\fP
-       Sizes
+       SizesByAccount
              \- Account, Cluster
+       SizesByWckey
+             \- Wckey, Cluster
 
 \fBUser\fP
        TopUsage
@@ -311,13 +322,13 @@ List of users jobs to include in report.  Default is all.
 .TP         
 .SH "EXAMPLES"
 .TP
-\fBsreport job sizes\fP
+\fBsreport job sizesbyaccount\fP
 .TP
 \fBreport cluster utilization\fP
 .TP
 \fBsreport user top\fP
 .TP
-\fBsreport job sizes All_Clusters users=gore1 account=environ PrintJobCount\fP
+\fBsreport job sizesbyaccount All_Clusters users=gore1 account=environ PrintJobCount\fP
 Report number of jobs by user gore1 within the environ account
 .TP
 \fBsreport cluster AccountUtilizationByUser cluster=zeus user=gore1 start=2/23/08 end=2/24/09 format=Accounts,Cluster,CPU_Count,Login,Proper,Used\fP
