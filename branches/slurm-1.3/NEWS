@@ -47,6 +47,7 @@ documents those changes that are of interest to users and admins.
     accepted but held until nodes are back up.
  -- Fix in accounting so if any nodes are removed from the system when they 
     were previously down will be recorded correctly.
+ -- For sched/wiki2 (Moab), add flag to note if job is restartable.
 
 * Changes in SLURM 1.3.13
 =========================

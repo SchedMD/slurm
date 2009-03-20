@@ -439,6 +439,13 @@ static void	_get_job_comment(struct job_record *job_ptr,
 		field_sep = "?";
 	}
 
+	/* JOBFLAGS:RESTARTABLE */
+	if (job_ptr->details && job_ptr->details->requeue) {
+		size += snprintf((buffer + size), (buf_size - size),
+			"%sJOBFLAGS:RESTARTABLE", field_sep);
+		field_sep = "?";
+	}
+
 	/* COMMENT SET BY MOAB */
 	if (job_ptr->comment && job_ptr->comment[0]) {
 		size += snprintf((buffer + size), (buf_size - size),
