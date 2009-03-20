@@ -85,7 +85,6 @@ parse_command_line( int argc, char* argv[] )
 	int opt_char;
 	int option_index;
 	static struct option long_options[] = {
-		{"all",        no_argument,       0, 'a'},
 		{"noheader",   no_argument,       0, 'h'},
 		{"jobs",       optional_argument, 0, 'j'},
 		{"long",       no_argument,       0, 'l'},
@@ -252,6 +251,16 @@ extern int parse_format( char* format )
 							      field_size,
 							      right_justify,
 							      suffix );
+		else if (field[0] == 'q')
+			job_format_add_qos_priority_normalized(params.format_list,
+							       field_size,
+							       right_justify,
+							       suffix );
+		else if (field[0] == 'Q')
+			job_format_add_qos_priority_weighted(params.format_list,
+							     field_size,
+							     right_justify,
+							     suffix );
 		else if (field[0] == 'u')
 			job_format_add_user_name(params.format_list,
 						 field_size,
@@ -264,16 +273,6 @@ extern int parse_format( char* format )
 							       suffix );
 		else if (field[0] == 'Y')
 			job_format_add_job_priority_weighted(params.format_list,
-							     field_size,
-							     right_justify,
-							     suffix );
-		else if (field[0] == 'q')
-			job_format_add_qos_priority_normalized(params.format_list,
-							       field_size,
-							       right_justify,
-							       suffix );
-		else if (field[0] == 'Q')
-			job_format_add_qos_priority_weighted(params.format_list,
 							     field_size,
 							     right_justify,
 							     suffix );
@@ -453,7 +452,7 @@ static void _print_version(void)
 
 static void _usage(void)
 {
-	printf("Usage: sprio [-j jid[s]] [-u user_name[s]] [-o format] [--usage] [-hlvV]\n");
+	printf("Usage: sprio [-j jid[s]] [-u user_name[s]] [-o format] [--usage] [-hlnvVw]\n");
 }
 
 static void _help(void)
@@ -464,6 +463,7 @@ Usage: sprio [OPTIONS]\n\
   -j, --jobs                      comma separated list of jobs\n\
                                   to view, default is all\n\
   -l, --long                      long report\n\
+  -n, --norm                      display normalized values\n\
   -o, --format=format             format specification\n\
   -u, --user=user_name            comma separated list of users to view\n\
   -v, --verbose                   verbosity level\n\

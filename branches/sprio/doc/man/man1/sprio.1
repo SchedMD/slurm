@@ -1,0 +1,220 @@
+.TH SPRIO "1" "March 2009" "sprio 2.0" "SLURM commands"
+
+.SH "NAME"
+sprio \- view the factors that comprise a job's scheduling priority
+
+.SH "SYNOPSIS"
+\fBsprio\fR [\fIOPTIONS\fR...]
+
+.SH "DESCRIPTION"
+\fBsprio\fR is used to view the components of a job's scheduling
+priority when the multi-factor priority plugin is installed.
+\fBsprio\fR is a read-only utility that extracts information from the
+multi-factor priority plugin.  By default, \fBsprio\fR returns
+information for all pending jobs.  Options exist to display specific
+jobs by job ID and user name.
+
+.SH "OPTIONS"
+
+.TP
+\fB\-h\fR, \fB\-\-noheader\fR
+Do not print a header on the output.
+
+.TP
+\fB\-\-help\fR
+Print a help message describing all options \fBsprio\fR.
+
+.TP
+\fB\-j <job_id_list>\fR, \fB\-\-jobs=<job_id_list>\fR
+Requests a comma separated list of job ids to display.  Defaults to all jobs.
+
+.TP
+\fB\-l\fR, \fB\-\-long\fR
+Report more of the available information for the selected jobs.
+
+.TP
+\fB\-n\fR, \fB\-\-norm\fR
+Display the normalized priority factors for the selected jobs.
+
+.TP
+\fB\-o <output_format>\fR, \fB\-\-format=<output_format>\fR
+Specify the information to be displayed, its size and position
+(right or left justified).
+The default formats with various options are
+
+.RS
+.TP 15
+\fIdefault\fR
+"%.7i %.8u %.10A %.10F %.10J %.10P %.10Q"
+.TP
+\fI\-l, \-\-long\fR
+"%.7i %.8u %.10Y %.10A %.10F %.10J %.10P %.10Q %.6N"
+.RE
+
+.IP
+The format of each field is "%[.][size]type".
+.RS
+.TP 8
+\fIsize\fR
+is the minimum field size.
+If no size is specified, whatever is needed to print the information will be used.
+.TP
+\fI .\fR
+indicates the output should be left justified.
+By default, output is right justified.
+.RE
+
+.IP
+Valid \fItype\fR specifications include:
+
+.RS
+.TP 4
+\fB%a\fR
+Normalized age priority
+.TP
+\fB%A\fR
+Weighted age priority
+.TP
+\fB%f\fR
+Normalized fair-share priority
+.TP
+\fB%F\fR
+Weighted fair-share priority
+.TP
+\fB%i\fR
+Job ID
+.TP
+\fB%j\fR
+Normalized job size priority
+.TP
+\fB%J\fR
+Weighted job size priority
+.TP
+\fB%N\fR
+Nice adjustment
+.TP
+\fB%p\fR
+Normalized partition priority
+.TP
+\fB%P\fR
+Weighted partition priority
+.TP
+\fB%q\fR
+Normalized quality of service priority
+.TP
+\fB%Q\fR
+Weighted quality of service priority
+.TP
+\fB%u\fR
+User name for a job
+.TP
+\fB%Y\fR
+Job priority
+.TP
+\fB%y\fR
+Normalized job priority
+.RE
+
+.TP
+\fB\-u <user_list>\fR, \fB\-\-user=<user_list>\fR
+Request jobs from a comma separated list of users.  The list can
+consist of user names or user id numbers.
+
+.TP
+\fB\-\-usage\fR
+Print a brief help message listing the \fBsprio\fR options.
+
+.TP
+\fB\-v\fR, \fB\-\-verbose\fR
+Report details of sprios actions.
+
+.TP
+\fB\-V\fR , \fB\-\-version\fR
+Print version information and exit.
+
+.TP
+\fB\-w\fR , \fB\-\-weights\fR Display the configured weights for each
+factor.  This is for information purposes only.  Actual job data is
+suppressed.
+
+.SH "EXAMPLES"
+.eo
+Print the list of all pending jobs with their weighted priorities
+.br
+> sprio
+  JOBID   PRIORITY        AGE  FAIRSHARE    JOBSIZE  PARTITION        QOS
+.br
+  65539      62664          0      51664       1000      10000          0
+.br
+  65540      62663          0      51663       1000      10000          0
+.br
+  65541      62662          0      51662       1000      10000          0
+.ec
+
+.eo
+Print the list of all pending jobs with their normalized priorities
+.br
+> sprio -n
+.br
+  JOBID PRIORITY   AGE        FAIRSHARE  JOBSIZE    PARTITION  QOS
+.br
+  65539 0.00001459 0.0007180  0.5166470  1.0000000  1.0000000  0.0000000
+.br
+  65540 0.00001459 0.0007180  0.5166370  1.0000000  1.0000000  0.0000000
+.br
+  65541 0.00001458 0.0007180  0.5166270  1.0000000  1.0000000  0.0000000
+.ec
+
+.eo
+Print the job priorities for specific jobs
+.br
+> sprio --jobs=65548,65547
+.br
+  JOBID   PRIORITY        AGE  FAIRSHARE    JOBSIZE  PARTITION        QOS
+.br
+  65547      62078          0      51078       1000      10000          0
+.br
+  65548      62077          0      51077       1000      10000          0
+.ec
+
+.eo
+Print the job priorities for jobs of specific users
+.br
+> sprio --users=fred,sally
+.br
+  JOBID     USER  PRIORITY       AGE  FAIRSHARE   JOBSIZE  PARTITION     QOS
+.br
+  65548     fred     62079         1      51077      1000      10000       0
+.br
+  65549    sally     62080         1      51078      1000      10000       0
+.ec
+
+.eo
+Print the configured weights for each priority component
+.br
+> sprio -w
+.br
+  JOBID   PRIORITY        AGE  FAIRSHARE    JOBSIZE  PARTITION        QOS
+.br
+  Weights                1000     100000       1000      10000          1
+.ec
+
+.SH "COPYING"
+Copyright (C) 2009 Lawrence Livermore National Security.
+Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+CODE\-OCEC\-09\-009. All rights reserved.
+.LP
+This file is part of SLURM, a resource management program.
+For details, see <https://computing.llnl.gov/linux/slurm/>.
+.LP
+SLURM is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+.SH "SEE ALSO"
+\fBsqueue\fR(1), \fBsshare\fR(1)

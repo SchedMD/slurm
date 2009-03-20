@@ -14,6 +14,7 @@
 <LI> <a href=#partition>Partition Factor</a>
 <LI> <a href=#qos>Quality of Service (QOS) Factor</a>
 <LI> <a href=#fairshare>Fair-share Factor</a>
+<LI> <a href=#sprio>The <i>sprio</i> utility</a>
 <LI> <a href=#config>Configuration</a>
 <LI> <a href=#configexample>Configuration Example</a>
 </UL>
@@ -400,6 +401,18 @@ Account A's effective usage is therefore equal to .45.  Account D's effective us
 <P> From this example, once can see that users 1,2, and 3 are over-serviced while user 5 is under-serviced.  Even though user 3 has yet to submit a job, his/her fair-share factor is negatively influenced by the jobs users 1 and 2 have run.</P>
 
 <P> Based on the fair-share factor alone, if all 5 users were to submit a job charging their respective accounts, user 5's job would be granted the highest scheduling priority.</P>
+
+<!-------------------------------------------------------------------------->
+<a name=sprio>
+<h2>The <i>sprio</i> utility</h2></a>
+
+<P> The <i>sprio</i> command provides a summary of the five factors
+that comprise each job's scheduling priority.  While <i>squeue</i> has
+format options (%p and %Q) that display a job's composite priority,
+sprio can be used to display a breakdown of the priority components
+for each job.  In addition, the <i>sprio -w</i> option displays the
+weights (PriorityWeightAge, PriorityWeightFairshare, etc.) for each
+factor as it is currently configured.</P>
 
 <!-------------------------------------------------------------------------->
 <a name=config>
