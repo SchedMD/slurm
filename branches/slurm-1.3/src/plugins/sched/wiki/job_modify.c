@@ -40,6 +40,7 @@
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/common/slurm_accounting_storage.h"
 
 extern void	null_term(char *str)
 {
@@ -60,6 +61,7 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr,
 			uint32_t new_time_limit)
 {
 	struct job_record *job_ptr;
+	bool update_accounting = false;
 
 	job_ptr = find_job_record(jobid);
 	if (job_ptr == NULL) {
@@ -96,9 +98,12 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr,
 		last_job_update = time(NULL);
 	}
 
-	if (bank_ptr &&
-	    (update_job_account("wiki", job_ptr, bank_ptr) != SLURM_SUCCESS)) {
-		return EINVAL;
+	if (bank_ptr) {
+		if(update_job_account("wiki", job_ptr, bank_ptr)
+		   != SLURM_SUCCESS)
+			return EINVAL;
+		else
+			update_accounting = true;
 	}
 
 	if (new_hostlist) {
@@ -147,11 +152,14 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr,
 		}
 
 host_fini:	if (rc) {
-			info("wiki: change job %u invalid hostlist %s", jobid, new_hostlist);
+			info("wiki: change job %u invalid hostlist %s",
+			     jobid, new_hostlist);
 			xfree(job_ptr->details->req_nodes);
 			return EINVAL;
 		} else {
-			info("wiki: change job %u hostlist %s", jobid, new_hostlist);
+			info("wiki: change job %u hostlist %s",
+			     jobid, new_hostlist);
+			update_accounting = true;
 		}
 	}
 
@@ -169,6 +177,7 @@ host_fini:	if (rc) {
 		job_ptr->partition = xstrdup(part_name_ptr);
 		job_ptr->part_ptr = part_ptr;
 		last_job_update = time(NULL);
+		update_accounting = true;
 	}
 	if (new_node_cnt) {
 		if (IS_JOB_PENDING(job_ptr) && job_ptr->details) {
@@ -179,10 +188,19 @@ host_fini:	if (rc) {
 			info("wiki: change job %u min_nodes to %u",
 				jobid, new_node_cnt);
 			last_job_update = time(NULL);
+			update_accounting = true;
 		} else {
 			error("wiki: MODIFYJOB node count of non-pending "
 				"job %u", jobid);
 			return ESLURM_DISABLED;
+		}
+	}
+
+	if(update_accounting) {
+		if (job_ptr->details && job_ptr->details->begin_time) {
+			/* Update job record in accounting to reflect changes */
+			jobacct_storage_g_job_start(
+				acct_db_conn, slurmctld_cluster_name, job_ptr);
 		}
 	}
 

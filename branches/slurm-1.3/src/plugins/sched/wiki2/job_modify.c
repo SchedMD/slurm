@@ -40,6 +40,7 @@
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/common/slurm_accounting_storage.h"
 
 /* Given a string, replace the first space found with '\0' */
 extern void	null_term(char *str)
@@ -63,6 +64,7 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr,
 {
 	struct job_record *job_ptr;
 	time_t now = time(NULL);
+	bool update_accounting = false;
 
 	job_ptr = find_job_record(jobid);
 	if (job_ptr == NULL) {
@@ -127,6 +129,7 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr,
 				jobid, begin_time);
 			job_ptr->details->begin_time = begin_time;
 			last_job_update = now;
+			update_accounting = true;
 		} else {
 			error("wiki: MODIFYJOB begin_time of non-pending "
 				"job %u", jobid);
@@ -140,6 +143,7 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr,
 			xfree(job_ptr->name);
 			job_ptr->name = xstrdup(name_ptr);
 			last_job_update = now;
+			update_accounting = true;
 		} else {
 			error("wiki: MODIFYJOB name of non-pending job %u",
 			      jobid);
@@ -200,6 +204,7 @@ host_fini:	if (rc) {
 		} else {
 			info("wiki: change job %u hostlist %s", 
 				jobid, new_hostlist);
+			update_accounting = true;
 		}
 	}
 
@@ -217,6 +222,7 @@ host_fini:	if (rc) {
 		job_ptr->partition = xstrdup(part_name_ptr);
 		job_ptr->part_ptr = part_ptr;
 		last_job_update = now;
+		update_accounting = true;
 	}
 
 	if (new_node_cnt) {
@@ -228,10 +234,19 @@ host_fini:	if (rc) {
 			info("wiki: change job %u min_nodes to %u",
 				jobid, new_node_cnt);
 			last_job_update = now;
+			update_accounting = true;
 		} else {
 			error("wiki: MODIFYJOB node count of non-pending "
 				"job %u", jobid);
 			return ESLURM_DISABLED;
+		}
+	}
+
+	if(update_accounting) {
+		if (job_ptr->details && job_ptr->details->begin_time) {
+			/* Update job record in accounting to reflect changes */
+			jobacct_storage_g_job_start(
+				acct_db_conn, slurmctld_cluster_name, job_ptr);
 		}
 	}
 
