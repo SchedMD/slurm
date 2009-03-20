@@ -3,7 +3,7 @@
  *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Portions Copyright (C) 2008 Vijay Ramasubramanian.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
@@ -86,7 +86,7 @@
 #include "src/slurmd/common/task_plugin.h"
 #include "src/slurmd/common/set_oomadj.h"
 
-#define GETOPT_ARGS	"L:Dvhcf:MN:V"
+#define GETOPT_ARGS	"cd:Df:hL:MN:vV"
 
 #ifndef MAXHOSTNAMELEN
 #  define MAXHOSTNAMELEN	64
@@ -739,6 +739,7 @@ _print_conf()
 	debug3("Prolog      = `%s'",     conf->prolog);
 	debug3("TmpFS       = `%s'",     conf->tmpfs);
 	debug3("Public Cert = `%s'",     conf->pubkey);
+	debug3("Slurmstepd  = `%s'",     conf->stepd_loc);
 	debug3("Spool Dir   = `%s'",     conf->spooldir);
 	debug3("Pid File    = `%s'",     conf->pidfile);
 	debug3("Slurm UID   = %u",       conf->slurm_user_id);
@@ -749,6 +750,8 @@ _print_conf()
 	slurm_conf_unlock();
 }
 
+/* Initialize slurmd configuration table.
+ * Everything is already NULL/zero filled when called */
 static void
 _init_conf()
 {
@@ -760,33 +763,12 @@ _init_conf()
 		exit(1);
 	}
 	conf->hostname    = xstrdup(host);
-	conf->node_name   = NULL;
-	conf->sockets     = 0;
-	conf->cores       = 0;
-	conf->threads     = 0;
-	conf->block_map_size = 0;
-	conf->block_map   = NULL;
-	conf->block_map_inv = NULL;
-	conf->conffile    = NULL;
-	conf->epilog      = NULL;
-	conf->health_check_program = NULL;
-	conf->logfile     = NULL;
-	conf->pubkey      = NULL;
-	conf->prolog      = NULL;
-	conf->task_prolog = NULL;
-	conf->task_epilog = NULL;
-
-	conf->port        =  0;
 	conf->daemonize   =  1;
 	conf->lfd         = -1;
-	conf->cleanstart  =  0;
-	conf->mlock_pages =  0;
 	conf->log_opts    = lopts;
 	conf->debug_level = LOG_LEVEL_INFO;
 	conf->pidfile     = xstrdup(DEFAULT_SLURMD_PIDFILE);
 	conf->spooldir	  = xstrdup(DEFAULT_SPOOLDIR);
-	conf->use_pam	  =  0;
-	conf->task_plugin_param = 0;
 
 	slurm_mutex_init(&conf->config_mutex);
 	return;
@@ -810,6 +792,7 @@ _destroy_conf()
 		xfree(conf->task_epilog);
 		xfree(conf->pidfile);
 		xfree(conf->spooldir);
+		xfree(conf->stepd_loc);
 		xfree(conf->tmpfs);
 		slurm_mutex_destroy(&conf->config_mutex);
 		slurm_cred_ctx_destroy(conf->vctx);
@@ -827,11 +810,14 @@ _process_cmdline(int ac, char **av)
 
 	while ((c = getopt(ac, av, GETOPT_ARGS)) > 0) {
 		switch (c) {
+		case 'c':
+			conf->cleanstart = 1;
+			break;
+		case 'd':
+			conf->stepd_loc = xstrdup(optarg);
+			break;
 		case 'D': 
 			conf->daemonize = 0;
-			break;
-		case 'v':
-			conf->debug_level++;
 			break;
 		case 'f':
 			conf->conffile = xstrdup(optarg);
@@ -843,14 +829,14 @@ _process_cmdline(int ac, char **av)
 		case 'L':
 			conf->logfile = xstrdup(optarg);
 			break;
-		case 'c':
-			conf->cleanstart = 1;
-			break;
 		case 'M':
 			conf->mlock_pages = 1;
 			break;
 		case 'N':
 			conf->node_name = xstrdup(optarg);
+			break;
+		case 'v':
+			conf->debug_level++;
 			break;
 		case 'V':
 			printf("%s %s\n", PACKAGE, SLURM_VERSION);
@@ -973,8 +959,13 @@ _slurmd_init()
 	fd_set_close_on_exec(devnull);
 
 	/* make sure we have slurmstepd installed */
-	snprintf(slurm_stepd_path, sizeof(slurm_stepd_path),
-		 "%s/sbin/slurmstepd", SLURM_PREFIX);
+	if (conf->stepd_loc) {
+		snprintf(slurm_stepd_path, sizeof(slurm_stepd_path),
+			 "%s", conf->stepd_loc);
+	} else {
+		snprintf(slurm_stepd_path, sizeof(slurm_stepd_path),
+			 "%s/sbin/slurmstepd", SLURM_PREFIX);
+	}
 	if (stat(slurm_stepd_path, &stat_buf)) {
 		fatal("Unable to find slurmstepd file at %s",
 			slurm_stepd_path);
@@ -1130,6 +1121,7 @@ _usage()
 	fprintf(stderr, "\
 Usage: %s [OPTIONS]\n\
    -c          Force cleanup of slurmd shared memory.\n\
+   -d stepd    Pathname to the slurmstepd program.\n\
    -D          Run daemon in foreground.\n\
    -M          Use mlock() to lock slurmd pages into memory.\n\
    -h          Print this help message.\n\

@@ -2,7 +2,8 @@
  * src/slurmd/slurmd/slurmd.h - header for slurmd
  * $Id$
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -105,6 +106,7 @@ typedef struct slurmd_config {
 	char         *pubkey;		/* location of job cred public key */
 	char         *epilog;		/* Path to Epilog script	   */
 	char         *prolog;		/* Path to prolog script           */
+	char         *stepd_loc;	/* Non-standard slurmstepd path    */
 	char         *task_prolog;	/* per-task prolog script          */
 	char         *task_epilog;	/* per-task epilog script          */
 	int           port;	        /* local slurmd port               */
