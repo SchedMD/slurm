@@ -659,7 +659,7 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
                                   If accounts are specified the next layer \n\
                                   of accounts under those specified will be\n\
                                   displayed, not the accounts specified.   \n\
-                                  In the SizesByAccount reports the default\n\ 
+                                  In the SizesByAccount reports the default\n\
                                   for accounts is root.                    \n\
              - GID=<OPT>        - List of group ids to include in report.  \n\
                                   Default is all.                          \n\
