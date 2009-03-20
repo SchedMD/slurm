@@ -4739,7 +4739,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 #endif
         if(update_accounting) {
 		if (job_ptr->details && job_ptr->details->begin_time) {
-			/* Update account associated with the eligible time */
+			/* Update job record in accounting to reflect changes */
 			jobacct_storage_g_job_start(
 				acct_db_conn, slurmctld_cluster_name, job_ptr);
 		}
