@@ -181,7 +181,7 @@ typedef struct slurm_crypto_ops {
 						 unsigned int buf_size, 
 						 char *signature, 
 						 unsigned int sig_size);
-	char *(*crypto_str_error)		(void);
+	const char *(*crypto_str_error)		(int);
 } slurm_crypto_ops_t;
 
 /*
@@ -1404,7 +1404,7 @@ _slurm_cred_sign(slurm_cred_ctx_t ctx, slurm_cred_t cred)
 
 	if (rc) {
 		error("Credential sign: %s", 
-		      (*(g_crypto_context->ops.crypto_str_error))());
+		      (*(g_crypto_context->ops.crypto_str_error))(rc));
 		return SLURM_ERROR;
 	}
 	return SLURM_SUCCESS;
@@ -1432,7 +1432,7 @@ _slurm_cred_verify_signature(slurm_cred_ctx_t ctx, slurm_cred_t cred)
 
 	if (rc) {
 		error("Credential signature check: %s", 
-		      (*(g_crypto_context->ops.crypto_str_error))());
+		      (*(g_crypto_context->ops.crypto_str_error))(rc));
 		return SLURM_ERROR;
 	}
 	return SLURM_SUCCESS;

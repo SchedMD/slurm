@@ -96,7 +96,15 @@ const char plugin_name[]        = "Munge cryptographic signature plugin";
 const char plugin_type[]        = "crypto/munge";
 const uint32_t plugin_version   = 90;
 
-static munge_err_t munge_err;
+
+/*
+ *  Error codes local to this plugin:
+ */
+enum local_error_code {
+	ESIG_BUF_DATA_MISMATCH = 5000,
+	ESIG_BUF_SIZE_MISMATCH,
+	ESIG_BAD_USERID,
+};
 
 /*
  * init() is called when the plugin is loaded, before any other functions
@@ -167,10 +175,17 @@ crypto_read_public_key(const char *path)
 	return (void *) munge_ctx_create();
 }
 
-extern char *
-crypto_str_error(void)
+extern const char *
+crypto_str_error(int errnum)
 {
-	return (char *) munge_strerror(munge_err); 
+	if (errnum == ESIG_BUF_DATA_MISMATCH)
+		return "Credential data mismatch";
+	else if (errnum == ESIG_BUF_SIZE_MISMATCH)
+		return "Credential data size mismatch";
+	else if (errnum == ESIG_BAD_USERID)
+		return "Credential created by invalid user";
+	else
+		return munge_strerror ((munge_err_t) errnum);
 }
 
 /* NOTE: Caller must xfree the signature returned by sig_pp */
@@ -179,17 +194,18 @@ crypto_sign(void * key, char *buffer, int buf_size, char **sig_pp,
 		unsigned int *sig_size_p) 
 {
 	char *cred;
+	munge_err_t err;
 
-	munge_err = munge_encode(&cred, (munge_ctx_t) key,
+	err = munge_encode(&cred, (munge_ctx_t) key,
 				 buffer, buf_size);
 
-	if (munge_err != EMUNGE_SUCCESS)
-		return SLURM_ERROR;
+	if (err != EMUNGE_SUCCESS)
+		return err;
 
 	*sig_size_p = strlen(cred) + 1;
 	*sig_pp = xstrdup(cred);
 	free(cred); 
-	return SLURM_SUCCESS;
+	return 0;
 }
 
 extern int
@@ -200,53 +216,42 @@ crypto_verify_sign(void * key, char *buffer, unsigned int buf_size,
 	gid_t gid;
 	void *buf_out;
 	int   buf_out_size;
+	int   rc = 0;
+	munge_err_t err;
 
-	munge_err = munge_decode(signature, (munge_ctx_t) key,
+	err = munge_decode(signature, (munge_ctx_t) key,
 				 &buf_out, &buf_out_size, 
 				 &uid, &gid);
 
-	if (munge_err != EMUNGE_SUCCESS) {
+	if (err != EMUNGE_SUCCESS) {
 #ifdef MULTIPLE_SLURMD
 		/* In multple slurmd mode this will happen all the
 		 * time since we are authenticating with the same
 		 * munged.
 		 */
-		if (munge_err != EMUNGE_CRED_REPLAYED) {
-			return SLURM_ERROR;
+		if (err != EMUNGE_CRED_REPLAYED) {
+			return err;
 		} else {
 			debug2("We had a replayed crypto, "
 			       "but this is expected in multiple "
 			       "slurmd mode.");
-			munge_err = 0;
 		}
 #else
-		return SLURM_ERROR;
+		return err;
 #endif
 	}
 
 
 	if ((uid != slurm_user) && (uid != 0)) {
-		error("crypto/munge: bad user id (%d != %d)", 
-			(int) slurm_user, (int) uid);
-		munge_err = EMUNGE_CRED_UNAUTHORIZED;
-		free(buf_out);
-		return SLURM_ERROR;
+		error("crypto/munge: Unexpected uid (%d) != SLURM uid (%d)",
+			(int) uid, (int) slurm_user);
+		rc = ESIG_BAD_USERID;
 	}
-
-	if (buf_size != buf_out_size) {
-		error("crypto/munge: buf_size bad");
-		munge_err = EMUNGE_CRED_INVALID;
-		free(buf_out);
-		return SLURM_ERROR;
-	}
-
-	if (memcmp(buffer, buf_out, buf_size)) {
-		error("crypto/munge: buffers different");
-		munge_err = EMUNGE_CRED_INVALID;
-		free(buf_out);
-		return SLURM_ERROR;
-	}
+	else if (buf_size != buf_out_size)
+		rc = ESIG_BUF_SIZE_MISMATCH;
+	else if (memcmp(buffer, buf_out, buf_size))
+		rc = ESIG_BUF_DATA_MISMATCH;
 
 	free(buf_out);
-	return SLURM_SUCCESS;
+	return rc;
 }
