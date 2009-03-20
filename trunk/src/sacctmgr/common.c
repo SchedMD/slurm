@@ -995,6 +995,7 @@ extern List copy_char_list(List char_list)
 extern void sacctmgr_print_coord_list(
 	print_field_t *field, List value, int last)
 {
+	int abs_len = abs(field->len);
 	ListIterator itr = NULL;
 	char *print_this = NULL;
 	acct_coord_rec_t *object = NULL;
@@ -1023,10 +1024,13 @@ extern void sacctmgr_print_coord_list(
 	else if(print_fields_parsable_print)
 		printf("%s|", print_this);
 	else {
-		if(strlen(print_this) > field->len) 
-			print_this[field->len-1] = '+';
+		if(strlen(print_this) > abs_len)
+			print_this[abs_len-1] = '+';
 		
-		printf("%-*.*s ", field->len, field->len, print_this);
+		if(field->len == abs_len)
+			printf("%*.*s ", abs_len, abs_len, print_this);
+		else
+			printf("%-*.*s ", abs_len, abs_len, print_this);
 	}
 	xfree(print_this);
 }
@@ -1034,6 +1038,7 @@ extern void sacctmgr_print_coord_list(
 extern void sacctmgr_print_qos_list(print_field_t *field, List qos_list,
 				    List value, int last)
 {
+	int abs_len = abs(field->len);
 	char *print_this = NULL;
 
 	print_this = get_qos_complete_str(qos_list, value);
@@ -1044,10 +1049,13 @@ extern void sacctmgr_print_qos_list(print_field_t *field, List qos_list,
 	else if(print_fields_parsable_print)
 		printf("%s|", print_this);
 	else {
-		if(strlen(print_this) > field->len) 
-			print_this[field->len-1] = '+';
+		if(strlen(print_this) > abs_len) 
+			print_this[abs_len-1] = '+';
 		
-		printf("%-*.*s ", field->len, field->len, print_this);
+		if(field->len == abs_len)
+			printf("%*.*s ", abs_len, abs_len, print_this);
+		else
+			printf("%-*.*s ", abs_len, abs_len, print_this);
 	}
 	xfree(print_this);
 }

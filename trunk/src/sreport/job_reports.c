@@ -461,7 +461,7 @@ static int _setup_print_fields_list(List format_list)
 			continue;
 		}
 
-		if(newlen > 0) 
+		if(newlen) 
 			field->len = newlen;
 		
 		list_append(print_fields_list, field);		
@@ -515,7 +515,7 @@ static int _setup_grouping_print_fields_list(List grouping_list)
 		last_object = object;
 		if((tmp_char = strstr(object, "\%"))) {
 			int newlen = atoi(tmp_char+1);
-			if(newlen > 0) 
+			if(newlen) 
 				field->len = newlen;
 		}
 		list_append(grouping_print_fields_list, field);		
@@ -541,7 +541,7 @@ static int _setup_grouping_print_fields_list(List grouping_list)
 			field->print_routine = sreport_print_time;
 		if((tmp_char = strstr(last_object, "\%"))) {
 			int newlen = atoi(tmp_char+1);
-			if(newlen > 0) 
+			if(newlen) 
 				field->len = newlen;
 		}
 		list_append(grouping_print_fields_list, field);		

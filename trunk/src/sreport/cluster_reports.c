@@ -518,7 +518,7 @@ static int _setup_print_fields_list(List format_list)
 			continue;
 		}
 
-		if(newlen > 0) 
+		if(newlen) 
 			field->len = newlen;
 		
 		list_append(print_fields_list, field);		

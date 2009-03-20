@@ -135,7 +135,7 @@ extern int process(shares_response_msg_t *resp)
 		}
 		if((tmp_char = strstr(object, "\%"))) {
 			int newlen = atoi(tmp_char+1);
-			if(newlen > 0) 
+			if(newlen) 
 				field->len = newlen;
 		}
 		list_append(print_fields_list, field);		

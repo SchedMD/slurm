@@ -43,6 +43,8 @@
 extern void sreport_print_time(print_field_t *field,
 			       uint64_t value, uint64_t total_time, int last)
 {
+	int abs_len = abs(field->len);
+
 	if(!total_time) 
 		total_time = 1;
 
@@ -55,7 +57,7 @@ extern void sreport_print_time(print_field_t *field,
 		else if(print_fields_parsable_print)
 			printf("|");	
 		else				
-			printf("%-*s ", field->len, " ");
+			printf("%-*s ", abs_len, " ");
 	} else {
 		char *output = NULL;
 		double percent = (double)value;
@@ -110,8 +112,11 @@ extern void sreport_print_time(print_field_t *field,
 			printf("%s", output);
 		else if(print_fields_parsable_print)
 			printf("%s|", output);	
+		else if(field->len == abs_len)
+			printf("%*.*s ", abs_len, abs_len, output);
 		else
-			printf("%*.*s ", field->len, field->len, output);
+			printf("%-*.*s ", abs_len, abs_len, output);
+
 		xfree(output);
 	}
 }
