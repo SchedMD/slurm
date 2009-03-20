@@ -163,8 +163,8 @@ crypto_read_public_key(const char *path)
 	return (void *) pk;
 }
 
-extern char *
-crypto_str_error(void)
+extern const char *
+crypto_str_error(int errnum)
 {
 	static int loaded = 0;
 
