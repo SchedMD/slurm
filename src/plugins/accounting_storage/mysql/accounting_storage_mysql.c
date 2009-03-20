@@ -8059,7 +8059,8 @@ empty:
 			"select cpu_count, cluster_nodes from "
 			"%s where cluster=\"%s\" "
 			"and period_end=0 and node_name='' limit 1",
-			event_table, cluster);
+			event_table, cluster->name);
+		debug4("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 		if(!(result2 = mysql_db_query_ret(
 			     mysql_conn->db_conn, query, 0))) {
 			xfree(query);

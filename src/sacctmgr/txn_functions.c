@@ -284,7 +284,7 @@ extern int sacctmgr_list_txn(int argc, char *argv[])
 			continue;
 		}
 
-		if(newlen > 0) 
+		if(newlen) 
 			field->len = newlen;
 		
 		list_append(print_fields_list, field);		

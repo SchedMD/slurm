@@ -408,6 +408,7 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 		PRINT_CLUSTER,
 		PRINT_CHOST,
 		PRINT_CPORT,
+		PRINT_CPUS,
 		PRINT_FAIRSHARE,
 		PRINT_GRPCM,
 		PRINT_GRPC,
@@ -421,6 +422,8 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 		PRINT_MAXN,
 		PRINT_MAXS,
 		PRINT_MAXW,
+		PRINT_NODECNT,
+		PRINT_NODES,
 		PRINT_QOS,
 		PRINT_QOS_RAW,
 		PRINT_RPC_VERSION		
@@ -466,15 +469,21 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 		} else if(!strncasecmp("ControlHost", object,
 				       MAX(command_len, 8))) {
 			field->type = PRINT_CHOST;
-			field->name = xstrdup("Control Host");
+			field->name = xstrdup("ControlHost");
 			field->len = 15;
 			field->print_routine = print_fields_str;
 		} else if(!strncasecmp("ControlPort", object,
 				       MAX(command_len, 8))) {
 			field->type = PRINT_CPORT;
-			field->name = xstrdup("Control Port");
+			field->name = xstrdup("ControlPort");
 			field->len = 12;
 			field->print_routine = print_fields_uint;
+		} else if(!strncasecmp("CPUCount", object,
+				       MAX(command_len, 2))) {
+			field->type = PRINT_CPUS;
+			field->name = xstrdup("CPUCount");
+			field->len = 9;
+			field->print_routine = print_fields_str;
 		} else if(!strncasecmp("FairShare", object, 
 				       MAX(command_len, 1))) {
 			field->type = PRINT_FAIRSHARE;
@@ -553,6 +562,18 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 			field->name = xstrdup("MaxWall");
 			field->len = 11;
 			field->print_routine = print_fields_time;
+		} else if(!strncasecmp("NodeCount", object,
+				       MAX(command_len, 5))) {
+			field->type = PRINT_NODECNT;
+			field->name = xstrdup("NodeCount");
+			field->len = 9;
+			field->print_routine = print_fields_uint;
+		} else if(!strncasecmp("NodeNames", object,
+				       MAX(command_len, 5))) {
+			field->type = PRINT_NODES;
+			field->name = xstrdup("NodeNames");
+			field->len = 20;
+			field->print_routine = print_fields_str;
 		} else if(!strncasecmp("QOSRAWLevel", object, 
 				       MAX(command_len, 4))) {
 			field->type = PRINT_QOS_RAW;
@@ -583,7 +604,7 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 			continue;
 		}
 		
-		if(newlen > 0) 
+		if(newlen) 
 			field->len = newlen;
 		
 		list_append(print_fields_list, field);		
@@ -634,10 +655,21 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 						     cluster->control_port,
 						     (curr_inx == field_count));
 				break;
+			case PRINT_CPUS:
+			{
+				char tmp_char[9];
+				convert_num_unit((float)cluster->cpu_count,
+						 tmp_char, sizeof(tmp_char),
+						 UNIT_NONE);
+				field->print_routine(field,
+						     tmp_char,
+						     (curr_inx == field_count));
+				break;
+			}
 			case PRINT_FAIRSHARE:
 				field->print_routine(
 					field,
-					cluster->root_assoc->shares_raw,
+					assoc->shares_raw,
 					(curr_inx == field_count));
 				break;
 			case PRINT_GRPCM:
@@ -704,6 +736,28 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 					assoc->max_wall_pj,
 					(curr_inx == field_count));
 				break;
+				
+			case PRINT_NODECNT:
+			{
+				hostlist_t hl = hostlist_create(cluster->nodes);
+				int cnt = 0;
+				if(hl) {
+					cnt = hostlist_count(hl);
+					hostlist_destroy(hl);
+				}
+				field->print_routine(
+					field,
+					cnt,
+					(curr_inx == field_count));
+				break;
+			}				
+			case PRINT_NODES:
+				field->print_routine(
+					field,
+					cluster->nodes,
+					(curr_inx == field_count));
+				break;
+				
 			case PRINT_QOS:
 				if(!qos_list) 
 					qos_list = acct_storage_g_get_qos(

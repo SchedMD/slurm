@@ -874,10 +874,11 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             ParentID, ParentName, Partition, RawQOS, RGT,  \n\
                             User                                           \n\
                                                                            \n\
-       Cluster            - Cluster, ControlHost, ControlPort, Fairshare   \n\
-                            GrpCPUMins, GrpCPUs, GrpJobs, GrpNodes,        \n\
-                            GrpSubmitJob, GrpWall, MaxCPUs, MaxCPUMins,    \n\
-                            MaxJobs, MaxNodes, MaxSubmitJobs, MaxWall      \n\
+       Cluster            - Cluster, ControlHost, ControlPort, CpuCount,   \n\
+                            Fairshare, GrpCPUMins, GrpCPUs, GrpJobs,       \n\
+                            GrpNodes, GrpSubmitJob, GrpWall, MaxCPUs,      \n\
+                            MaxCPUMins, MaxJobs, MaxNodes, MaxSubmitJobs,  \n\
+                            MaxWall, NodeCount, NodeNames                  \n\
                                                                            \n\
        QOS                - Description, ID, Name                          \n\
                                                                            \n\

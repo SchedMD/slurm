@@ -69,7 +69,7 @@
 #include "src/common/list.h"
 
 typedef struct {
-	uint16_t len;  /* what is the width of the print */          
+	int len;  /* what is the width of the print */          
 	char *name;  /* name to be printed in header */
 	void (*print_routine) (); /* what is the function to print with  */
 	uint16_t type; /* defined in the local function */
