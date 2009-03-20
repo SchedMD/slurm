@@ -437,11 +437,9 @@ static uint32_t _get_priority_internal(time_t start_time,
 	/* figure out the priority */
 	_get_priority_factors(start_time, job_ptr, &factors, false);
 
-	if(factors.priority_age > 0) {
-		priority_age = factors.priority_age * (double)weight_age;
-		debug3("Weighted Age priority is %f * %u = %.2f",
-		       factors.priority_age, weight_age, priority_age);
-	}
+	priority_age = factors.priority_age * (double)weight_age;
+	debug3("Weighted Age priority is %f * %u = %.2f",
+	       factors.priority_age, weight_age, priority_age);
 
 	priority_fs = factors.priority_fs * (double)weight_fs;
 	debug3("Weighted Fairshare priority is %f * %u = %.2f",
@@ -460,13 +458,12 @@ static uint32_t _get_priority_internal(time_t start_time,
 	       factors.priority_qos, weight_qos, priority_qos);
 
 	priority = priority_age + priority_fs + priority_js + priority_part +
-		priority_qos;
-	debug3("Job %u priority: %.2f + %.2f + %.2f + %.2f + %.2f = %.2f",
-	       job_ptr->job_id, priority_age, priority_fs, priority_js,
-	       priority_part, priority_qos, priority);
+		priority_qos - (double)(factors.nice - NICE_OFFSET);
 
-	priority -= (double)(factors.nice - NICE_OFFSET);
-	debug3("Nice adjust is %u", factors.nice - NICE_OFFSET);
+	debug3("Job %u priority: %.2f + %.2f + %.2f + %.2f + %.2f - %d = %.2f",
+	       job_ptr->job_id, priority_age, priority_fs, priority_js,
+	       priority_part, priority_qos, (factors.nice - NICE_OFFSET),
+	       priority);
 
 	if(priority < 1)
 		priority = 1;
