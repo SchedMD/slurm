@@ -4336,6 +4336,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	bitstr_t *exc_bitmap = NULL, *req_bitmap = NULL;
 	time_t now = time(NULL);
 	multi_core_data_t *mc_ptr = NULL;
+	bool update_accounting = false;
 
 	job_ptr = find_job_record(job_specs->job_id);
 	if (job_ptr == NULL) {
@@ -4399,6 +4400,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			info("update_job: setting time_limit to %u for "
 			     "job_id %u", job_specs->time_limit, 
 			     job_specs->job_id);
+			update_accounting = true;
 		} else {
 			error("Attempt to increase time limit for job %u",
 			      job_specs->job_id);
@@ -4407,7 +4409,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	}
 
 	if (job_specs->reservation) {
-		if (job_ptr->job_state != JOB_PENDING) {
+		if (!IS_JOB_PENDING(job_ptr)) {
 			error_code = ESLURM_DISABLED;
 		} else {
 			int rc;
@@ -4420,6 +4422,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				     job_ptr->job_id);
 				xfree(save_resv_name);
 				job_specs->reservation = NULL;	/* Noth free */
+				update_accounting = true;
 			} else {
 				/* Restore reservation info */
 				job_ptr->resv_name = save_resv_name;
@@ -4428,11 +4431,59 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		}
 	}
 
+	if (job_specs->comment && wiki_sched && (!super_user)) {
+		/* User must use Moab command to change job comment */
+		error("Attempt to change comment for job %u",
+		      job_specs->job_id);
+		error_code = ESLURM_ACCESS_DENIED;
+	} else if (job_specs->comment) {
+		xfree(job_ptr->comment);
+		job_ptr->comment = job_specs->comment;
+		job_specs->comment = NULL;	/* Nothing left to free */
+		info("update_job: setting comment to %s for job_id %u",
+		     job_ptr->comment, job_specs->job_id);
+
+		if (wiki_sched && strstr(job_ptr->comment, "QOS:")) {
+			acct_qos_rec_t qos_rec;
+
+			bzero(&qos_rec, sizeof(acct_qos_rec_t));
+
+			if (strstr(job_ptr->comment, "FLAGS:PREEMPTOR"))
+				qos_rec.name = "expedite";
+			else if (strstr(job_ptr->comment, "FLAGS:PREEMPTEE"))
+				qos_rec.name = "standby";
+			else
+				qos_rec.name = "normal";
+			
+			if((assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec,
+						  accounting_enforce,
+						  (acct_qos_rec_t **)
+						  &job_ptr->qos_ptr))
+			   != SLURM_SUCCESS) {
+				verbose("Invalid qos (%s) for job_id %u",
+					qos_rec.name, job_ptr->job_id);
+				/* not a fatal error, qos could have
+				 * been removed */
+			} else 
+				job_ptr->qos = qos_rec.id;
+		}
+	}
+
+	if (job_specs->requeue != (uint16_t) NO_VAL) {
+		detail_ptr->requeue = job_specs->requeue;
+		info("update_job: setting requeue to %u for job_id %u",
+		     job_specs->requeue, job_specs->job_id);
+	}
+
 	if (job_specs->priority != NO_VAL) {
-		if (IS_JOB_FINISHED(job_ptr))
+		/* If we are doing time slicing we could update the
+		   priority of the job while running to give better
+		   position (larger time slices) than competing jobs
+		*/
+		if (IS_JOB_FINISHED(job_ptr) || (detail_ptr == NULL)) 
 			error_code = ESLURM_DISABLED;
-		else if (super_user ||
-		         (job_ptr->priority > job_specs->priority)) {
+		else if (super_user
+			 ||  (job_ptr->priority > job_specs->priority)) {
 			if(job_specs->priority == INFINITE) {
 				job_ptr->direct_set_prio = 0;
 				_set_job_prio(job_ptr);
@@ -4443,6 +4494,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			info("update_job: setting priority to %u for "
 			     "job_id %u", job_ptr->priority, 
 			     job_specs->job_id);
+			update_accounting = true;
 		} else {
 			error("Attempt to increase priority for job %u",
 			      job_specs->job_id);
@@ -4460,6 +4512,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			info("update_job: setting priority to %u for "
 			     "job_id %u", job_ptr->priority,
 			     job_specs->job_id);
+			update_accounting = true;
 		} else {
 			error("Attempt to increase priority for job %u",
 			      job_specs->job_id);
@@ -4566,6 +4619,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			info("update_job: setting num_procs to %u for "
 			     "job_id %u", job_specs->num_procs, 
 			     job_specs->job_id);
+			update_accounting = true;
 		} else {
 			error("Attempt to increase num_procs for job %u",
 			      job_specs->job_id);
@@ -4582,6 +4636,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			info("update_job: setting min_nodes to %u for "
 			     "job_id %u", job_specs->min_nodes, 
 			     job_specs->job_id);
+			update_accounting = true;
 		} else {
 			error("Attempt to increase min_nodes for job %u",
 			      job_specs->job_id);
@@ -4716,44 +4771,6 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		}
 	}
 
-	if (job_specs->comment && wiki_sched && (!super_user)) {
-		/* User must use Moab command to change job comment */
-		error("Attempt to change comment for job %u",
-		      job_specs->job_id);
-		error_code = ESLURM_ACCESS_DENIED;
-	} else if (job_specs->comment) {
-		xfree(job_ptr->comment);
-		job_ptr->comment = job_specs->comment;
-		job_specs->comment = NULL;	/* Nothing left to free */
-		info("update_job: setting comment to %s for job_id %u",
-		     job_ptr->comment, job_specs->job_id);
-
-		if (wiki_sched && strstr(job_ptr->comment, "QOS:")) {
-			acct_qos_rec_t qos_rec;
-
-			bzero(&qos_rec, sizeof(acct_qos_rec_t));
-
-			if (strstr(job_ptr->comment, "FLAGS:PREEMPTOR"))
-				qos_rec.name = "expedite";
-			else if (strstr(job_ptr->comment, "FLAGS:PREEMPTEE"))
-				qos_rec.name = "standby";
-			else
-				qos_rec.name = "normal";
-			
-			if((assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec,
-						  accounting_enforce,
-						  (acct_qos_rec_t **)
-						  &job_ptr->qos_ptr))
-			   != SLURM_SUCCESS) {
-				verbose("Invalid qos (%s) for job_id %u",
-					qos_rec.name, job_ptr->job_id);
-				/* not a fatal error, qos could have
-				 * been removed */
-			} else 
-				job_ptr->qos = qos_rec.id;
-		}
-	}
-
 	if (job_specs->name) {
 		if (!IS_JOB_PENDING(job_ptr))
 			error_code = ESLURM_DISABLED;
@@ -4763,6 +4780,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 
 			info("update_job: setting name to %s for job_id %u",
 			     job_ptr->name, job_specs->job_id);
+			update_accounting = true;
 		}
 	}
 
@@ -4775,24 +4793,23 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 						  job_specs->wckey);
 			if (rc != SLURM_SUCCESS)
 				error_code = rc;
-			else
-				info("update_job: setting wckey to "
-				     "%s for job_id %u",
-				     job_ptr->wckey, job_specs->job_id);
+			else 
+				update_accounting = true;
 		}
 	}
 
-	if (job_specs->requeue != (uint16_t) NO_VAL) {
-		detail_ptr->requeue = job_specs->requeue;
-		info("update_job: setting requeue to %u for job_id %u",
-		     job_specs->requeue, job_specs->job_id);
-	}
 
 	if (job_specs->account) {
-		int rc = update_job_account("update_job", job_ptr, 
-					    job_specs->account);
-		if (rc != SLURM_SUCCESS)
-			error_code = rc;
+		if (!IS_JOB_PENDING(job_ptr))
+			error_code = ESLURM_DISABLED;
+		else {
+			int rc = update_job_account("update_job", job_ptr, 
+						    job_specs->account);
+			if (rc != SLURM_SUCCESS)
+				error_code = rc;
+			else
+				update_accounting = true;
+		}
 	}
 
 	if (job_specs->partition) {
@@ -4826,6 +4843,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			info("update_job: setting partition to %s for "
 			     "job_id %u", job_specs->partition, 
 			     job_specs->job_id);
+			update_accounting = true;
 		} else {
 			error("Attempt to change partition for job %u",
 			      job_specs->job_id);
@@ -4921,9 +4939,10 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	}
 
 	if (job_specs->begin_time) {
-		if (IS_JOB_PENDING(job_ptr) && detail_ptr)
+		if (IS_JOB_PENDING(job_ptr) && detail_ptr) {
 			detail_ptr->begin_time = job_specs->begin_time;
-		else
+			update_accounting = true;
+		} else
 			error_code = ESLURM_DISABLED;
 	}
 
@@ -5101,7 +5120,13 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	 }
  }
 #endif
-
+        if(update_accounting) {
+		if (job_ptr->details && job_ptr->details->begin_time) {
+			/* Update job record in accounting to reflect changes */
+			jobacct_storage_g_job_start(
+				acct_db_conn, slurmctld_cluster_name, job_ptr);
+		}
+	}
 	return error_code;
 }
 
@@ -6515,11 +6540,6 @@ extern int update_job_account(char *module, struct job_record *job_ptr,
 	}
 	job_ptr->assoc_id = assoc_rec.id;
 
-	if (job_ptr->details && job_ptr->details->begin_time) {
-		/* Update account associated with the eligible time */
-		jobacct_storage_g_job_start(
-			acct_db_conn, slurmctld_cluster_name, job_ptr);
-	}
 	last_job_update = time(NULL);
 
 	return SLURM_SUCCESS;
@@ -6584,11 +6604,6 @@ extern int update_job_wckey(char *module, struct job_record *job_ptr,
 		     module, job_ptr->job_id);
 	}
 
-	if (job_ptr->details && job_ptr->details->begin_time) {
-		/* Update account associated with the eligible time */
-		jobacct_storage_g_job_start(
-			acct_db_conn, slurmctld_cluster_name, job_ptr);
-	}
 	last_job_update = time(NULL);
 
 	return SLURM_SUCCESS;

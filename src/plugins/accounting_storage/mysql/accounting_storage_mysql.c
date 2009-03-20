@@ -269,6 +269,7 @@ static uint32_t _get_wckeyid(mysql_conn_t *mysql_conn, char **name,
 				error("No user by name of %s", user);
 				goto no_wckeyid;
 			}
+			
 			if(user_rec.default_wckey)
 				*name = xstrdup_printf("*%s", 
 						       user_rec.default_wckey);

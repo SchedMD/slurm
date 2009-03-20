@@ -663,7 +663,7 @@ end_it:
 	error("Setting Block %s to ERROR state.", bg_record->bg_block_id);
 	bg_record->job_running = BLOCK_ERROR_STATE;
 	bg_record->state = RM_PARTITION_ERROR;
-	remove_from_bg_list(bg_booted_block_list, bg_record);			
+	remove_from_bg_list(bg_booted_block_list, bg_record);
 	slurm_mutex_unlock(&block_state_mutex);
 	trigger_block_error();
 	return;
