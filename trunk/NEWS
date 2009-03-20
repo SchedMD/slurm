@@ -9,6 +9,10 @@ documents those changes that are of interest to users and admins.
     communications in greater detail.
  -- Add "-d <slurmstepd_path>" as an option to the slurmd daemon to
     specifying a non-stardard slurmstepd file, used  for testing purposes.
+ -- Minor cleanup to crypto/munge plugin.
+    - Restrict uid allowed to decode job credentials in crypto/munge
+    - Get slurm user id early in crypto/munge
+    - Remove buggy error code handling in crypto/munge
 
 * Changes in SLURM 1.4.0-pre9
 =============================
