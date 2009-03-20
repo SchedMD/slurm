@@ -155,9 +155,15 @@ crypto_read_private_key(const char *path)
 }
 
 
+static uid_t slurm_user = 0;
+
 extern void *
 crypto_read_public_key(const char *path)
 {
+	/*
+	 * Get slurm user id once. We use it later to verify credentials.
+	 */
+	slurm_user = slurm_get_slurm_user_id();
 	return (void *) munge_ctx_create();
 }
 
@@ -190,8 +196,6 @@ extern int
 crypto_verify_sign(void * key, char *buffer, unsigned int buf_size, 
 		char *signature, unsigned int sig_size)
 {
-	static uid_t slurm_user = 0;
-	static int got_slurm_user = 0;
 	uid_t uid;
 	gid_t gid;
 	void *buf_out;
@@ -220,10 +224,6 @@ crypto_verify_sign(void * key, char *buffer, unsigned int buf_size,
 #endif
 	}
 
-	if (!got_slurm_user) {
-		slurm_user = slurm_get_slurm_user_id();
-		got_slurm_user = 1;
-	}
 
 	if ((uid != slurm_user) && (uid != 0)) {
 		error("crypto/munge: bad user id (%d != %d)", 
