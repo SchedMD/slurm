@@ -1,8 +1,11 @@
-.TH SLURMD "8" "June 2006" "slurmd 12.0" "Slurm components"
+.TH SLURMD "8" "March 2009" "slurmd 2.0" "Slurm components"
+
 .SH "NAME"
 slurmd \- The compute node daemon for SLURM.
+
 .SH "SYNOPSIS"
 \fBslurmd\fR [\fIOPTIONS\fR...]
+
 .SH "DESCRIPTION"
 \fBslurmd\fR is the compute node daemon of Slurm. It monitors all tasks 
 running on the compute node , accepts work (tasks), launches tasks, and kills 
@@ -14,8 +17,21 @@ OPTIONS
 Clear system locks as needed. This may be required if \fBslurmd\fR terminated 
 abnormally.
 .TP
+\fB\-d <file>\fR
+Specify the fully qualified pathname to the \fBslurmstepd\fR program to be used
+for sheperding user job steps. This can be useful for testing purposes.
+.TP
 \fB\-D\fR
 Run slurmd in the foreground. Error and debug messages will be copied to stderr.
+.TP
+\fB\-f <file>\fR
+Read configuration from the specified file. See \fBNOTES\fR below.
+.TP
+\fB\-h\fR
+Help; print a brief summary of command options.
+.TP
+\fB\-L <file>\fR
+Write log messages to the specified file.
 .TP
 \fB\-M\fR
 Lock slurmd pages into system memory using mlockall(2) to disable
@@ -23,15 +39,6 @@ paging of the slurmd process. This may help in cases where nodes are
 marked DOWN during periods of heavy swap activity. If the mlockall(2)
 system call is not available, an error will be printed to the log
 and slurmd will continue as normal.
-.TP
-\fB\-h\fR
-Help; print a brief summary of command options.
-.TP
-\fB\-f <file>\fR
-Read configuration from the specified file. See \fBNOTES\fR below.
-.TP
-\fB\-L <file>\fR
-Write log messages to the specified file.
 .TP
 \fB\-v\fR
 Verbose operation. Multiple \-v's increase verbosity.
@@ -58,7 +65,8 @@ other parameters used by other Slurm components, change the common
 configuration file, \fBslurm.conf\fR.
 
 .SH "COPYING"
-Copyright (C) 2002\-2006 The Regents of the University of California.
+Copyright (C) 2002\-2007 The Regents of the University of California.
+Copyright (C) 2008\-2009 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 CODE\-OCEC\-09\-009. All rights reserved.
 .LP
@@ -78,5 +86,6 @@ details.
 .SH "FILES"
 .LP
 /etc/slurm.conf
+
 .SH "SEE ALSO"
 \fBslurm.conf\fR(5), \fBslurmctld\fR(8)

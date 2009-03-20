@@ -7,6 +7,8 @@ documents those changes that are of interest to users and admins.
     than the ThreadsPerCore (invalid memory reference).
  -- Add DebugFlag parameter of "Wiki" to log sched/wiki and wiki2 
     communications in greater detail.
+ -- Add "-d <slurmstepd_path>" as an option to the slurmd daemon to
+    specifying a non-stardard slurmstepd file, used  for testing purposes.
 
 * Changes in SLURM 1.4.0-pre9
 =============================

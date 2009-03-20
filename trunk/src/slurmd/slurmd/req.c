@@ -560,8 +560,14 @@ _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
 		char slurm_stepd_path[MAXPATHLEN];
 		char *const argv[2] = { slurm_stepd_path, NULL};
 		int failed = 0;
-		snprintf(slurm_stepd_path, sizeof(slurm_stepd_path),
-			 "%s/sbin/slurmstepd", SLURM_PREFIX);
+		if (conf->stepd_loc) {
+			snprintf(slurm_stepd_path, sizeof(slurm_stepd_path),
+				 "%s", conf->stepd_loc);
+		} else {
+			snprintf(slurm_stepd_path, sizeof(slurm_stepd_path),
+				 "%s/sbin/slurmstepd", SLURM_PREFIX);
+		}
+
 		/*
 		 * Child forks and exits
 		 */
