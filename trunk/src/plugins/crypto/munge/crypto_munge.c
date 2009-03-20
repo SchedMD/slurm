@@ -2,6 +2,7 @@
  *  crypto_munge.c - Munge based cryptographic signature plugin
  *****************************************************************************
  *  Copyright (C) 2007 The Regents of the University of California.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark A. Grondona <mgrondona@llnl.gov>.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -127,7 +128,30 @@ crypto_destroy_key(void *key)
 extern void *
 crypto_read_private_key(const char *path)
 {
-	return (void *) munge_ctx_create();
+	munge_ctx_t ctx;
+	munge_err_t err;
+
+	if ((ctx = munge_ctx_create()) == NULL) {
+		error ("crypto_read_private_key: munge_ctx_create failed");
+		return (NULL);
+	}
+
+	/*
+	 *  Only allow user root to decode job credentials creatdd by
+	 *   slurmctld. This provides a slight layer of extra security,
+	 *   as non-privileged users cannot get at the contents of job
+	 *   credentials.
+	 */
+	err = munge_ctx_set(ctx, MUNGE_OPT_UID_RESTRICTION, (uid_t) 0);
+
+	if (err != EMUNGE_SUCCESS) {
+		error("Unable to set uid restriction on munge credentials: %s",
+		      munge_ctx_strerror (ctx));
+		munge_ctx_destroy(ctx);
+		return(NULL);
+	}
+
+	return ((void *) ctx);
 }
 
 
