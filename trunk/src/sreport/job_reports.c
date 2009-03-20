@@ -76,7 +76,8 @@ enum {
 	PRINT_JOB_DUR,
 	PRINT_JOB_NODES,
 	PRINT_JOB_SIZE,
-	PRINT_JOB_USER
+	PRINT_JOB_USER,
+	PRINT_JOB_WCKEY
 };
 
 static List print_fields_list = NULL; /* types are of print_field_t */
@@ -340,6 +341,14 @@ static int _set_cond(int *start, int argc, char *argv[],
 			_addto_uid_char_list(job_cond->userid_list,
 					     argv[i]+end);
 			set = 1;
+		} else if (!strncasecmp (argv[i], "Wckeys", 
+					 MAX(command_len, 2))) {
+			if(!job_cond->wckey_list)
+				job_cond->wckey_list =
+					list_create(slurm_destroy_char);
+			slurm_addto_char_list(job_cond->wckey_list,
+					      argv[i]+end);
+			set = 1;
 		} else {
 			exit_code=1;
 			fprintf(stderr, " Unknown condition: %s\n"
@@ -437,6 +446,12 @@ static int _setup_print_fields_list(List format_list)
 				       MAX(command_len, 1))) {
 			field->type = PRINT_JOB_USER;
 			field->name = xstrdup("User");
+			field->len = 9;
+			field->print_routine = print_fields_str;
+		} else if(!strncasecmp("Wckey", object,
+				       MAX(command_len, 1))) {
+			field->type = PRINT_JOB_WCKEY;
+			field->name = xstrdup("Wckey");
 			field->len = 9;
 			field->print_routine = print_fields_str;
 		} else {
@@ -901,7 +916,339 @@ end_it:
 	
 	if(assoc_list) {
 		list_destroy(assoc_list);
+		assoc_list = NULL;
+	}
+	
+	if(cluster_list) {
+		list_destroy(cluster_list);
+		cluster_list = NULL;
+	}
+	
+	if(print_fields_list) {
+		list_destroy(print_fields_list);
+		print_fields_list = NULL;
+	}
+
+	if(grouping_print_fields_list) {
+		list_destroy(grouping_print_fields_list);
+		grouping_print_fields_list = NULL;
+	}
+
+	return rc;
+}
+
+extern int job_sizes_grouped_by_wckey(int argc, char *argv[])
+{
+	int rc = SLURM_SUCCESS;
+	acct_job_cond_t *job_cond = xmalloc(sizeof(acct_job_cond_t));
+	acct_wckey_cond_t wckey_cond;
+	acct_wckey_rec_t *wckey = NULL;
+	int i=0;
+
+	ListIterator itr = NULL;
+	ListIterator itr2 = NULL;
+	ListIterator cluster_itr = NULL;
+	ListIterator local_itr = NULL;
+	ListIterator acct_itr = NULL;
+	ListIterator group_itr = NULL;	
+
+	jobacct_job_rec_t *job = NULL;
+	cluster_grouping_t *cluster_group = NULL;
+	acct_grouping_t *acct_group = NULL;
+	local_grouping_t *local_group = NULL;
+
+	print_field_t *field = NULL;
+	print_field_t total_field;
+	uint32_t total_time = 0;
+	sreport_time_format_t temp_format;
+	
+	List job_list = NULL;
+	List cluster_list = NULL;
+	List wckey_list = NULL;
+
+	List format_list = list_create(slurm_destroy_char);
+	List grouping_list = list_create(slurm_destroy_char);
+
+	List header_list = list_create(NULL);
+
+//	sreport_time_format_t temp_time_format = time_format;
+
+	print_fields_list = list_create(destroy_print_field);
+
+	_set_cond(&i, argc, argv, job_cond, format_list, grouping_list);
+	
+	if(!list_count(format_list))
+		slurm_addto_char_list(format_list, "Cl,wc");
+
+	if(!list_count(grouping_list)) 
+		slurm_addto_char_list(grouping_list, "50,250,500,1000");
+	
+	_setup_print_fields_list(format_list);
+	list_destroy(format_list);
+
+	_setup_grouping_print_fields_list(grouping_list);
+
+	/* we don't want to actually query by wckeys in the jobs
+	   here since we may be looking for sub accounts of a specific
+	   account.
+	*/
+	job_list = jobacct_storage_g_get_jobs_cond(db_conn, my_uid, job_cond);
+
+	if(!job_list) {
+		exit_code=1;
+		fprintf(stderr, " Problem with job query.\n");
+		goto end_it;
+	}
+
+	memset(&wckey_cond, 0, sizeof(acct_wckey_cond_t));
+	wckey_cond.name_list = job_cond->wckey_list;
+	wckey_cond.cluster_list = job_cond->cluster_list;
+
+	wckey_list = acct_storage_g_get_wckeys(db_conn, my_uid, &wckey_cond);
+	
+	if(print_fields_have_header) {
+		char start_char[20];
+		char end_char[20];
+		time_t my_start = job_cond->usage_start;
+		time_t my_end = job_cond->usage_end-1;
+
+		slurm_make_time_str(&my_start, start_char, sizeof(start_char));
+		slurm_make_time_str(&my_end, end_char, sizeof(end_char));
+		printf("----------------------------------------"
+		       "----------------------------------------\n");
+		printf("Job Sizes by Wckey %s - %s (%d secs)\n", 
+		       start_char, end_char, 
+		       (int)(job_cond->usage_end - job_cond->usage_start));
+		if(print_job_count)
+			printf("Units are in number of jobs ran\n");
+		else
+			printf("Time reported in %s\n", time_format_string);
+		printf("----------------------------------------"
+		       "----------------------------------------\n");
+	}
+	total_time = job_cond->usage_end - job_cond->usage_start;
+
+	cluster_list = list_create(_destroy_cluster_grouping);
+
+	cluster_itr = list_iterator_create(cluster_list);
+	group_itr = list_iterator_create(grouping_list);
+
+	if(!wckey_list) {
+		debug2(" No wckey list given.\n");
+		goto no_assocs;
+	}
+
+	itr = list_iterator_create(wckey_list);
+	while((wckey = list_next(itr))) {
+		while((cluster_group = list_next(cluster_itr))) {
+			if(!strcmp(wckey->cluster, cluster_group->cluster)) 
+				break;
+		}
+		if(!cluster_group) {
+			cluster_group = 
+				xmalloc(sizeof(cluster_grouping_t));
+			cluster_group->cluster = xstrdup(wckey->cluster);
+			cluster_group->acct_list =
+				list_create(_destroy_acct_grouping);
+			list_append(cluster_list, cluster_group);
+		}
+
+		acct_itr = list_iterator_create(cluster_group->acct_list);
+		while((acct_group = list_next(acct_itr))) {
+			if(!strcmp(wckey->name, acct_group->acct))
+				break;
+		}
+		list_iterator_destroy(acct_itr);		
+			
+		if(!acct_group) {
+			uint32_t last_size = 0;
+			char *group = NULL;
+			acct_group = xmalloc(sizeof(acct_grouping_t));
+			acct_group->acct = xstrdup(wckey->name);
+			acct_group->lft = wckey->id;
+			acct_group->groups =
+				list_create(_destroy_local_grouping);
+			list_append(cluster_group->acct_list, acct_group);
+			while((group = list_next(group_itr))) {
+				local_group = xmalloc(sizeof(local_grouping_t));
+				local_group->jobs = list_create(NULL);
+				local_group->min_size = last_size;
+				last_size = atoi(group);
+				local_group->max_size = last_size-1;
+				list_append(acct_group->groups, local_group);
+			}
+			if(last_size) {
+				local_group = xmalloc(sizeof(local_grouping_t));
+				local_group->jobs = list_create(NULL);
+				local_group->min_size = last_size;
+				local_group->max_size = INFINITE;
+				list_append(acct_group->groups, local_group);
+			}
+			list_iterator_reset(group_itr);
+		}
+		list_iterator_reset(cluster_itr);
+	}
+	list_iterator_destroy(itr);
+no_assocs:
+	itr = list_iterator_create(job_list);
+
+	list_append_list(header_list, print_fields_list);
+	list_append_list(header_list, grouping_print_fields_list);
+
+	memset(&total_field, 0, sizeof(print_field_t));
+	total_field.type = PRINT_JOB_SIZE;
+	total_field.name = xstrdup("% of cluster");
+	total_field.len = 12;
+	total_field.print_routine = sreport_print_time;
+	list_append(header_list, &total_field);
+
+	print_fields_header(header_list);
+	list_destroy(header_list);
+
+	while((job = list_next(itr))) {
+		char *local_cluster = "UNKNOWN";
+		char *local_account = "UNKNOWN";
+
+		if(!job->elapsed) {
+			/* here we don't care about jobs that didn't
+			 * really run here */
+			continue;
+		}
+		if(job->cluster) 
+			local_cluster = job->cluster;
+		if(job->account) 
+			local_account = job->account;
+
+		list_iterator_reset(cluster_itr);
+		while((cluster_group = list_next(cluster_itr))) {
+			if(!strcmp(local_cluster, cluster_group->cluster)) 
+				break;
+		}
+		if(!cluster_group) {
+			/* here we are only looking for groups that
+			 * were added with the associations above
+			 */
+			continue;
+		}
+
+		acct_itr = list_iterator_create(cluster_group->acct_list);
+		while((acct_group = list_next(acct_itr))) {
+			if(!strcmp(job->wckey, acct_group->acct))
+				break;
+		}
+		list_iterator_destroy(acct_itr);		
+			
+		if(!acct_group) {
+			/* here we are only looking for groups that
+			 * were added with the associations above
+			 */
+			continue;
+		}
+
+		local_itr = list_iterator_create(acct_group->groups);
+		while((local_group = list_next(local_itr))) {
+			uint64_t total_secs = 0;
+			if((job->alloc_cpus < local_group->min_size)
+			   || (job->alloc_cpus > local_group->max_size))
+				continue;
+			list_append(local_group->jobs, job);
+			local_group->count++;
+			total_secs = (uint64_t)job->elapsed 
+				* (uint64_t)job->alloc_cpus;
+			local_group->cpu_secs += total_secs;
+			acct_group->cpu_secs += total_secs;
+			cluster_group->cpu_secs += total_secs;
+		}
+		list_iterator_destroy(local_itr);		
+	}
+	list_iterator_destroy(group_itr);
+	list_destroy(grouping_list);
+	list_iterator_destroy(itr);
+	
+//	time_format = SREPORT_TIME_PERCENT;
+	
+	itr = list_iterator_create(print_fields_list);
+	itr2 = list_iterator_create(grouping_print_fields_list);
+	list_iterator_reset(cluster_itr);
+	while((cluster_group = list_next(cluster_itr))) {
+		acct_itr = list_iterator_create(cluster_group->acct_list);
+		while((acct_group = list_next(acct_itr))) {
+			
+			while((field = list_next(itr))) {
+				switch(field->type) {
+				case PRINT_JOB_CLUSTER:
+					field->print_routine(
+						field,
+						cluster_group->cluster, 0);
+					break;
+				case PRINT_JOB_WCKEY:
+					field->print_routine(field,
+							     acct_group->acct,
+							     0);
+					break;
+				default:
+					field->print_routine(field,
+							     NULL,
+							     0);
+					break;
+				}
+			}
+			list_iterator_reset(itr);
+			local_itr = list_iterator_create(acct_group->groups);
+			while((local_group = list_next(local_itr))) {
+				field = list_next(itr2);
+				switch(field->type) {
+				case PRINT_JOB_SIZE:
+					field->print_routine(
+						field,
+						local_group->cpu_secs,
+						acct_group->cpu_secs,
+						0);
+					break;
+				case PRINT_JOB_COUNT:
+					field->print_routine(
+						field,
+						local_group->count,
+						0);
+					break;
+				default:
+					field->print_routine(field,
+							     NULL,
+							     0);
+					break;
+				}
+			}
+			list_iterator_reset(itr2);
+			list_iterator_destroy(local_itr);
+			
+			temp_format = time_format;
+			time_format = SREPORT_TIME_PERCENT;
+			total_field.print_routine(&total_field,
+						  acct_group->cpu_secs,
+						  cluster_group->cpu_secs, 1);
+			time_format = temp_format;
+			printf("\n");
+		}
+		list_iterator_destroy(acct_itr);
+	}
+	list_iterator_destroy(itr);
+
+//	time_format = temp_time_format;
+
+end_it:
+	if(print_job_count)
+		print_job_count = 0;
+
+	destroy_acct_job_cond(job_cond);
+	
+	if(job_list) {
+		list_destroy(job_list);
 		job_list = NULL;
+	}
+	
+	if(wckey_list) {
+		list_destroy(wckey_list);
+		wckey_list = NULL;
 	}
 	
 	if(cluster_list) {

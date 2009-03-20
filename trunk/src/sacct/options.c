@@ -395,7 +395,8 @@ sacct [<OPTION>]                                                            \n\
 	           Equivalent to '--fields=jobstep,state,error'. This option\n\
 	           has no effect if --dump is specified.                    \n\
      -c, --completion: Use job completion instead of accounting data.       \n\
-     -C, --cluster: Only send data about this cluster -1 for all clusters.  \n\
+     -C, --clusters:                                                        \n\
+                   Only send data about these clusters. -1 for all clusters.\n\
      -d, --dump:   Dump the raw data records                                \n\
      -D, --duplicates:                                                      \n\
 	           If SLURM job ids are reset, some job numbers will        \n\
@@ -465,6 +466,8 @@ sacct [<OPTION>]                                                            \n\
 	           Primarily for debugging purposes, report the state of    \n\
                    various variables during processing.                     \n\
      -V, --version: Print version.                                          \n\
+     -W, --wckeys:                                                          \n\
+                   Only send data about these wckeys.  Default is all.      \n\
      -X, --allocations:                                                     \n\
 	           Only show cumulative statistics for each job, not the    \n\
 	           intermediate steps.                                      \n\
@@ -596,16 +599,18 @@ void parse_command_line(int argc, char **argv)
 		{"allocations", 0, &params.opt_allocs,  1},
 		{"brief", 0, 0, 'b'},
 		{"completion", 0, &params.opt_completion, 'c'},
-		{"cluster", 1, 0, 'C'},
+		{"clusters", 1, 0, 'C'},
 		{"dump", 0, 0, 'd'},
 		{"duplicates", 0, &params.opt_dup, 1},
 		{"helpformat", 0, 0, 'e'},
 		{"help-fields", 0, 0, 'e'},
 		{"endtime", 1, 0, 'E'},
+		{"format", 1, 0, 'F'},
 		{"file", 1, 0, 'f'},
 		{"gid", 1, 0, 'g'},
 		{"group", 1, 0, 'g'},
 		{"help", 0, 0, 'h'},
+		{"helpformat", 0, &params.opt_help, 2},
 		{"jobs", 1, 0, 'j'},
 		{"long", 0, 0, 'l'},
 		{"nodes", 1, 0, 'N'},
@@ -623,6 +628,7 @@ void parse_command_line(int argc, char **argv)
 		{"user", 1, 0, 'u'},
 		{"verbose", 0, 0, 'v'},
 		{"version", 0, 0, 'V'},
+		{"wckeys", 1, 0, 'W'},
 		{0, 0, 0, 0}};
 
 	params.opt_uid = getuid();
@@ -634,7 +640,7 @@ void parse_command_line(int argc, char **argv)
 
 	while (1) {		/* now cycle through the command line */
 		c = getopt_long(argc, argv,
-				"aA:bcC:deE:f:g:hj:lnN:o:OpPr:s:S:tu:vVX",
+				"aA:bcC:deE:f:g:hj:lnN:o:OpPr:s:S:tu:vVW:X",
 				long_options, &optionIndex);
 		if (c == -1)
 			break;
@@ -771,6 +777,12 @@ void parse_command_line(int argc, char **argv)
 			/* Handle -vvv thusly...
 			 */
 			verbosity++;
+			break;
+		case 'W':
+			if(!job_cond->wckey_list) 
+				job_cond->wckey_list =
+					list_create(slurm_destroy_char);
+			slurm_addto_char_list(job_cond->wckey_list, optarg);
 			break;
 		case 'V':
 			printf("%s %s\n", PACKAGE, SLURM_VERSION);
@@ -939,6 +951,14 @@ void parse_command_line(int argc, char **argv)
 		}
 		list_iterator_destroy(itr);
 	}
+
+	if (job_cond->wckey_list && list_count(job_cond->wckey_list)) {
+		debug2("Wckeys requested:");
+		itr = list_iterator_create(job_cond->wckey_list);
+		while((start = list_next(itr))) 
+			debug2("\t: %s\n", start);
+		list_iterator_destroy(itr);
+	} 
 
 	/* select the output fields */
 	if(brief_output) {

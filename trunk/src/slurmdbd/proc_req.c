@@ -1575,6 +1575,9 @@ static int  _job_complete(slurmdbd_conn_t *slurmdbd_conn,
 
 	if(rc && errno == 740) /* meaning data is already there */
 		rc = SLURM_SUCCESS;
+
+	/* just incase this gets set we need to clear it */
+	xfree(job.wckey);
 end_it:
 	slurmdbd_free_job_complete_msg(slurmdbd_conn->rpc_version, 
 				       job_comp_msg);
@@ -1650,6 +1653,10 @@ static int  _job_start(slurmdbd_conn_t *slurmdbd_conn,
 		slurmdbd_conn->db_conn, job_start_msg->cluster, &job);
 	id_rc_msg.id = job.db_index;
 
+	/* just incase job.wckey was set because we didn't send one */
+	if(!job_start_msg->wckey)
+		xfree(job.wckey);
+
 	slurmdbd_free_job_start_msg(slurmdbd_conn->rpc_version, 
 				    job_start_msg);
 	*out_buffer = init_buf(1024);
@@ -1702,6 +1709,9 @@ static int  _job_suspend(slurmdbd_conn_t *slurmdbd_conn,
 
 	if(rc && errno == 740) /* meaning data is already there */
 		rc = SLURM_SUCCESS;
+
+	/* just incase this gets set we need to clear it */
+	xfree(job.wckey);
 end_it:
 	slurmdbd_free_job_suspend_msg(slurmdbd_conn->rpc_version, 
 				      job_suspend_msg);
@@ -2945,7 +2955,8 @@ static int  _step_complete(slurmdbd_conn_t *slurmdbd_conn,
 
 	if(rc && errno == 740) /* meaning data is already there */
 		rc = SLURM_SUCCESS;
-
+	/* just incase this gets set we need to clear it */
+	xfree(job.wckey);
 end_it:
 	slurmdbd_free_step_complete_msg(slurmdbd_conn->rpc_version, 
 					step_comp_msg);
@@ -3012,6 +3023,9 @@ static int  _step_start(slurmdbd_conn_t *slurmdbd_conn,
 
 	if(rc && errno == 740) /* meaning data is already there */
 		rc = SLURM_SUCCESS;
+
+	/* just incase this gets set we need to clear it */
+	xfree(job.wckey);
 end_it:
 	slurmdbd_free_step_start_msg(slurmdbd_conn->rpc_version, 
 				     step_start_msg);
