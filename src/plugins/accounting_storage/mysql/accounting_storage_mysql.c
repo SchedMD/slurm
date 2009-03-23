@@ -9723,12 +9723,20 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 		/* then grep for " since that is the delimiter for
 		   the wckey */
 		if((temp = strchr(jname, '\"'))) {
-			/* if we have a wckey set the " to NULL to
-			 * end the jname */
-			temp[0] = '\0';
-			/* increment and copy the remainder */
-			temp++;
-			wckey = xstrdup(temp);
+			if(strrchr(jname, '\"') != temp) {
+				error("job %u has quotes in it's name '%s', "
+				      "no way to get correct wckey", 
+				      job_ptr->job_id, jname);
+				xfree(jname);
+				jname = _fix_double_quotes(job_ptr->name);
+			} else {
+				/* if we have a wckey set the " to NULL to
+				 * end the jname */
+				temp[0] = '\0';
+				/* increment and copy the remainder */
+				temp++;
+				wckey = xstrdup(temp);
+			}
 		}
 	}
 
