@@ -1444,10 +1444,13 @@ extern void run_health_check(void);
 /* save_all_state - save entire slurmctld state for later recovery */
 extern void save_all_state(void);
 
+/* send all info for the controller to accounting */
+extern void send_all_to_accounting(time_t event_time);
+
 /* sends all jobs in eligible state to accounting.  Only needed at
  * first registration
  */
-extern int send_jobs_to_accounting(time_t event_time);
+extern int send_jobs_to_accounting();
 
 /* send all nodes in a down like state to accounting.  Only needed at
  * first registration
