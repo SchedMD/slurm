@@ -403,6 +403,23 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+/* replace \" with \` return is the same as what is given */
+static char * _replace_double_quotes(char *option)
+{
+	int i=0;
+
+	if(!option)
+		return NULL;
+
+	while(option[i]) {
+		if(option[i] == '\"')
+			option[i] = '`';
+		i++;
+	}
+	return option;
+}
+
+
 static int _add_accounts(slurmdbd_conn_t *slurmdbd_conn,
 			 Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
@@ -1619,7 +1636,7 @@ static int  _job_start(slurmdbd_conn_t *slurmdbd_conn,
 
 	job.total_procs = job_start_msg->alloc_cpus;
 	job.node_cnt = job_start_msg->alloc_nodes;
-	job.account = job_start_msg->account;
+	job.account = _replace_double_quotes(job_start_msg->account);
 	job.assoc_id = job_start_msg->assoc_id;
 	job.comment = job_start_msg->block_id;
 	job.db_index = job_start_msg->db_index;
@@ -1628,7 +1645,7 @@ static int  _job_start(slurmdbd_conn_t *slurmdbd_conn,
 	job.group_id = job_start_msg->gid;
 	job.job_id = job_start_msg->job_id;
 	job.job_state = job_start_msg->job_state;
-	job.name = job_start_msg->name;
+	job.name = _replace_double_quotes(job_start_msg->name);
 	job.nodes = job_start_msg->nodes;
 	job.network = job_start_msg->node_inx;
 	job.partition = job_start_msg->partition;
@@ -1636,7 +1653,7 @@ static int  _job_start(slurmdbd_conn_t *slurmdbd_conn,
 	job.resv_id = job_start_msg->resv_id;
 	job.priority = job_start_msg->priority;
 	job.start_time = job_start_msg->start_time;
-	job.wckey = job_start_msg->wckey;
+	job.wckey = _replace_double_quotes(job_start_msg->wckey);
 	details.submit_time = job_start_msg->submit_time;
 
 	job.details = &details;

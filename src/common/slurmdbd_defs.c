@@ -207,7 +207,8 @@ extern int slurm_send_slurmdbd_recv_rc_msg(uint16_t rpc_version,
 	} else {	/* resp->msg_type == DBD_RC */
 		dbd_rc_msg_t *msg = resp->data;
 		*resp_code = msg->return_code;
-		if(msg->return_code != SLURM_SUCCESS)
+		if(msg->return_code != SLURM_SUCCESS
+		   && msg->return_code != ACCOUNTING_FIRST_REG)
 			error("slurmdbd(%d): from %u: %s", msg->return_code, 
 			      msg->sent_type, msg->comment);
 		slurmdbd_free_rc_msg(rpc_version, msg);
@@ -2858,12 +2859,21 @@ slurmdbd_unpack_job_start_msg(uint16_t rpc_version,
 		/* then grep for " since that is the delimiter for
 		   the wckey */
 		if((temp = strchr(jname, '\"'))) {
-			/* if we have a wckey set the " to NULL to
-			 * end the jname */
-			temp[0] = '\0';
-			/* increment and copy the remainder */
-			temp++;
-			msg_ptr->wckey = xstrdup(temp);
+			if(strrchr(jname, '\"') != temp) {
+				error("job %u has quotes in it's name '%s', "
+				      "no way to get correct wckey, "
+				      "setting name to 'bad_name'", 
+				      msg_ptr->job_id, jname);
+				xfree(jname);
+				jname = xstrdup("bad_name");
+			} else {			
+				/* if we have a wckey set the " to NULL to
+				 * end the jname */
+				temp[0] = '\0';
+				/* increment and copy the remainder */
+				temp++;
+				msg_ptr->wckey = xstrdup(temp);
+			}
 		}
 		xfree(msg_ptr->name);
 		msg_ptr->name = xstrdup(jname);

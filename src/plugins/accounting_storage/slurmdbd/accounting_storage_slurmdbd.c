@@ -1383,6 +1383,7 @@ extern int clusteracct_storage_p_cluster_procs(void *db_conn,
 {
 	slurmdbd_msg_t msg;
 	dbd_cluster_procs_msg_t req;
+	int rc = SLURM_ERROR;
 
 	debug2("Sending info for cluster %s", cluster);
 	req.cluster_name = cluster;
@@ -1392,10 +1393,9 @@ extern int clusteracct_storage_p_cluster_procs(void *db_conn,
 	msg.msg_type     = DBD_CLUSTER_PROCS;
 	msg.data         = &req;
 
-	if (slurm_send_slurmdbd_msg(SLURMDBD_VERSION, &msg) < 0)
-		return SLURM_ERROR;
+	slurm_send_slurmdbd_recv_rc_msg(SLURMDBD_VERSION, &msg, &rc);
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 extern int clusteracct_storage_p_register_ctld(void *db_conn,
