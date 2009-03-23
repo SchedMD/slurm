@@ -1350,9 +1350,10 @@ extern void send_all_to_accounting(time_t event_time)
 	   push the requests on the queue and process them when the
 	   database server comes back up.
 	*/
-	send_jobs_to_accounting(event_time);
+	debug2("send_all_to_accounting: called");
+	send_jobs_to_accounting();
 	send_nodes_to_accounting(event_time);
-	send_resvs_to_accounting(event_time);
+	send_resvs_to_accounting();
 }
 
 /* 
@@ -1750,5 +1751,8 @@ static void *_assoc_cache_mgr(void *no_data)
 	}
 	list_iterator_destroy(itr);
 	unlock_slurmctld(job_write_lock);
+	/* This needs to be after the lock and after we update the
+	   jobs so if we need to send them we are set. */
+	_accounting_cluster_ready();
 	return NULL;
 }

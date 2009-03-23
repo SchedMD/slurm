@@ -223,7 +223,7 @@ static void * _service_connection(void *arg)
 			rc = proc_req(
 				conn, msg, msg_size, first, &buffer, &uid);
 			first = false;
-			if (rc != SLURM_SUCCESS) {
+			if (rc != SLURM_SUCCESS && rc != ACCOUNTING_FIRST_REG) {
 				error("Processing last message from "
 				      "connection %d(%s) uid(%d)",
 				      conn->newsockfd, conn->ip, uid);
