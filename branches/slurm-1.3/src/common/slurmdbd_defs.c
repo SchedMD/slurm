@@ -206,7 +206,8 @@ extern int slurm_send_slurmdbd_recv_rc_msg(uint16_t rpc_version,
 	} else {	/* resp->msg_type == DBD_RC */
 		dbd_rc_msg_t *msg = resp->data;
 		*resp_code = msg->return_code;
-		if(msg->return_code != SLURM_SUCCESS)
+		if(msg->return_code != SLURM_SUCCESS
+		   && msg->return_code != ACCOUNTING_FIRST_REG)
 			error("slurmdbd(%d): from %u: %s", msg->return_code, 
 			      msg->sent_type, msg->comment);
 		slurmdbd_free_rc_msg(rpc_version, msg);

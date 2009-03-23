@@ -974,8 +974,7 @@ static int _accounting_cluster_ready()
 		/* see if we are running directly to a database
 		 * instead of a slurmdbd.
 		 */
-		send_jobs_to_accounting(event_time);
-		send_nodes_to_accounting(event_time);
+		send_all_to_accounting(event_time);
 		rc = SLURM_SUCCESS;
 	}
 
@@ -1277,6 +1276,18 @@ void save_all_state(void)
 	schedule_trigger_save();
 	select_g_state_save(slurmctld_conf.state_save_location);
 	dump_assoc_mgr_state(slurmctld_conf.state_save_location);
+}
+
+/* send all info for the controller to accounting */
+extern void send_all_to_accounting(time_t event_time)
+{
+	/* ignore the rcs here because if there was an error we will
+	   push the requests on the queue and process them when the
+	   database server comes back up.
+	*/
+	debug2("send_all_to_accounting: called");
+	send_jobs_to_accounting();
+	send_nodes_to_accounting(event_time);
 }
 
 /* 
@@ -1656,5 +1667,8 @@ static void *_assoc_cache_mgr(void *no_data)
 	}
 	list_iterator_destroy(itr);
 	unlock_slurmctld(job_write_lock);
+	/* This needs to be after the lock and after we update the
+	   jobs so if we need to send them we are set. */
+	_accounting_cluster_ready();
 	return NULL;
 }
