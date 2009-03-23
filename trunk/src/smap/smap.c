@@ -183,7 +183,7 @@ part_fini:
 			      COLS, 
 			      LINES);
 			ba_fini();
-			exit(0);
+			exit(1);
 		}
 		
 		raw();
@@ -253,7 +253,7 @@ part_fini:
 			if(!params.commandline)
 				endwin();
 			ba_fini();
-			exit(0);
+			exit(1);
 			break;
 #endif
 		}
