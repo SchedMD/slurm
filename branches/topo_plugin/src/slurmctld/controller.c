@@ -95,6 +95,7 @@
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/srun_comm.h"
 #include "src/slurmctld/state_save.h"
+#include "src/slurmctld/topo_plugin.h"
 #include "src/slurmctld/trigger_mgr.h"
 
 
@@ -594,6 +595,7 @@ int main(int argc, char *argv[])
 	slurm_acct_storage_fini();
 	slurm_jobacct_gather_fini();
 	slurm_select_fini();
+	slurm_topo_fini();
 	checkpoint_fini();
 	slurm_auth_fini();
 	switch_fini();

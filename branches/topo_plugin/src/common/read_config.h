@@ -124,7 +124,7 @@ extern char *default_plugstack;
 #define DEFAULT_TASK_PLUGIN         "task/none"
 #define DEFAULT_TMP_FS              "/tmp"
 #ifdef HAVE_3D
-#  define DEFAULT_TOPOLOGY_PLUGIN     "topology/3D"
+#  define DEFAULT_TOPOLOGY_PLUGIN     "topology/3d_torus"
 #else
 #  define DEFAULT_TOPOLOGY_PLUGIN     "topology/none"
 #endif

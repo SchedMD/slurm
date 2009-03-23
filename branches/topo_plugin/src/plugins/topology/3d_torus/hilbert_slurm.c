@@ -3,7 +3,7 @@
  *	on a Hilbert curve so that the resource allocation problem in 
  *	N-dimensions can be reduced to a 1-dimension problem
  *****************************************************************************
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -42,7 +42,7 @@
 #  include "config.h"
 #endif
 
-#include "src/slurmctld/hilbert.h"
+#include "src/plugins/topology/3d_torus/hilbert.h"
 #include "src/slurmctld/slurmctld.h"
 
 static int _coord(char coord)

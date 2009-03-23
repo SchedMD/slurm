@@ -82,6 +82,7 @@
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/trigger_mgr.h"
+#include "src/slurmctld/topo_plugin.h"
 
 static void _acct_restore_active_jobs(void);
 static int  _build_bitmaps(void);
@@ -90,7 +91,8 @@ static int  _get_switch_inx(const char *name);
 static int  _init_all_slurm_conf(void);
 static void _log_switches(void);
 static int  _preserve_select_type_param(slurm_ctl_conf_t * ctl_conf_ptr, 
-					select_type_plugin_info_t old_select_type_p);
+					select_type_plugin_info_t 
+					old_select_type_p);
 static int  _preserve_plugins(slurm_ctl_conf_t * ctl_conf_ptr, 
 				char *old_auth_type, char *old_checkpoint_type,
 				char *old_crypto_type, char *old_sched_type, 
@@ -595,9 +597,11 @@ static int _build_all_nodeline_info(slurm_ctl_conf_t *conf)
 	xfree(node_000);
 #ifndef HAVE_BG
 	if (count == 1)
-		nodes_to_hilbert_curve();
+		slurm_topo_build_config();
 #endif	/* ! HAVE_BG */
 }
+#else
+	slurm_topo_build_config();
 #endif	/* HAVE_3D */
 	return SLURM_SUCCESS;
 }
@@ -964,6 +968,10 @@ int read_slurm_conf(int recover)
 		node_record_table_ptr = old_node_table_ptr;
 		return error_code;
 	}
+
+	if (slurm_topo_init() != SLURM_SUCCESS)
+		fatal("Failed to initialize topology plugin");
+
 	conf = slurm_conf_lock();
 	_build_all_nodeline_info(conf);
 	slurm_conf_unlock();
@@ -972,9 +980,10 @@ int read_slurm_conf(int recover)
 
 	update_logging();
 	g_slurm_jobcomp_init(slurmctld_conf.job_comp_loc);
-	slurm_sched_init();
-	if (switch_init() < 0)
-		error("Failed to initialize switch plugin");
+	if (slurm_sched_init() != SLURM_SUCCESS)
+		fatal("Failed to initialize sched plugin");
+	if (switch_init() != SLURM_SUCCESS)
+		fatal("Failed to initialize switch plugin");
 
 	if (default_part_loc == NULL)
 		error("read_slurm_conf: default partition not set.");

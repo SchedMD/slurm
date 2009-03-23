@@ -1267,11 +1267,6 @@ extern void node_not_resp (char *name, time_t msg_time);
  * and log that the node is not responding using a hostlist expression */
 extern void node_no_resp_msg(void);
 
-/* Using the node record table, generate a Hilbert integer for each node
- * based upon its coordinates and sort the records in that order. This must
- * be called once, immediately after reading the slurm.conf file. */
-extern void nodes_to_hilbert_curve(void);
-
 /*
  * job_alloc_info - get details about an existing job allocation
  * IN uid - job issuing the code

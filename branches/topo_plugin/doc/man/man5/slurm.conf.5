@@ -1503,7 +1503,10 @@ The default value is "/tmp".
 \fBTopologyPlugin\fR
 Identifies the plugin to be used for determining the network topology
 and optimizing job allocations to minimize network contention. 
-Acceptable values include "topology/none" (default, simple best\-fit
+Acceptable values include 
+"topology/3d_torus" (default for Cray XT, IBM BlueGene and Sun Constellation 
+systems, best\-fit logic over three\-dimensional topology)
+"topology/none" (default for other systems, best\-fit
 logic over one\-dimensional topology) and 
 "topology/slurm.conf" (determine the network topology based
 upon information contained in the slurm.conf file).
@@ -2129,9 +2132,12 @@ Otherwise it will allocate a job's resources onto multiple leaf switches
 so as to minimize the use of higher\-level switches. 
 The \fBTopologyPlugin\fR parameter controls which plugin is used to
 collect network topology information. 
-The only values presently supported are "topology/none" (default, 
-simple best\-fit logic over one\-dimensional topology) and
-"topology/slurm.conf" (determine the network topology based
+The only values presently supported are 
+"topology/3d_torus" (default for Sun Constellation and Cray XT systems, 
+best\-fit logic over three\-dimensional topology),
+"topology/none" (default for other systems, 
+best\-fit logic over one\-dimensional topology),
+"topology/tree" (determine the network topology based
 upon information contained in the slurm.conf file).
 Future plugins may gather topology information directly from the network.
 The topology information is optional. 
@@ -2303,7 +2309,7 @@ PartitionName=long Nodes=dev[9\-17] MaxTime=120 AllowGroups=admin
 .br
 #
 .br
-TopologyPlugin=topology/slurm.conf
+TopologyPlugin=topology/tree
 .br
 SwitchName=s0 Nodes=dev[0\-5]
 .br

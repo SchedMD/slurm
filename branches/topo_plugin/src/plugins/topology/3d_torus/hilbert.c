@@ -31,7 +31,7 @@
 #include "license.txt"
 */
 
-#include "src/slurmctld/hilbert.h"
+#include "src/plugins/topology/3d_torus/hilbert.h"
 
 extern void TransposetoAxes(
 coord_t* X,            // I O  position   [n]

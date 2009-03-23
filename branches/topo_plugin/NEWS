@@ -13,6 +13,8 @@ documents those changes that are of interest to users and admins.
     - Restrict uid allowed to decode job credentials in crypto/munge
     - Get slurm user id early in crypto/munge
     - Remove buggy error code handling in crypto/munge
+ -- Add real topology plugin infrastructure (it was initially added 
+    directly into slurmctld code).
 
 * Changes in SLURM 1.4.0-pre9
 =============================
