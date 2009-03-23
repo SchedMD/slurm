@@ -1,0 +1,441 @@
+#!/usr/bin/expect
+############################################################################
+# Purpose: Test of SLURM sshare functionality
+#          sshare h, n, p, P, v and V options.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2009 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Joseph Donaghy <donaghy1@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+# 
+# This file is part of SLURM, a resource management program.
+# For details, see <https://computing.llnl.gov/linux/slurm/>.
+# Please also read the included file: DISCLAIMER.
+#  
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+# 
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+# 
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id     "24.2"
+set exit_code   0
+set timeout 60
+print_header $test_id
+
+#
+# Check accounting config and bail if not found.
+#
+if { [test_account_storage] == 0 } {
+	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
+	exit 0
+}
+
+################################################################
+#
+# Proc: sshare_opt
+#
+# Purpose:  Pass sshare options and test
+#
+# Returns: Number of matches.
+#
+# Input: Switch options not requiring arguments
+#
+################################################################
+
+proc sshare_opt { soption } {
+	global sshare number
+	set debug       1
+	set exit_code   0
+	set matches     0
+	set not_support 0
+	send_user "$sshare -$soption \n"
+
+	if { $soption == "-help"|| $soption == "-usage" || $soption == "h" } {
+		
+		spawn $sshare -$soption
+		expect {
+			-re "SLURM accounting storage is disabled" {
+				set not_support 1
+				exp_continue
+			}
+			-re "You are not running a supported priority plugin" {
+				set not_support 2
+				exp_continue
+			}
+			-re "sshare...OPTION.....COMMAND" {
+				if {$debug} {send_user "\nmatch1\n"}
+				incr matches
+				exp_continue
+			}
+			-re "Valid .OPTION. values are" {
+				if {$debug} {send_user "\nmatch2\n"}
+				incr matches
+				exp_continue
+			}
+			-re "Valid .COMMAND. values are" {
+				if {$debug} {send_user "\nmatch3\n"}
+				incr matches
+				exp_continue
+			}
+			timeout {
+				send_user "\nFAILURE: sshare not responding\n"
+				set exit_code 1
+			}
+			eof {
+				wait
+			}
+		}
+
+		if {$not_support == 1} {
+			send_user "\nWARNING: can not test without accounting enabled\n"
+			exit 0
+		}
+
+		if {$not_support == 2} {
+			send_user "\nWARNING: can not test without priority/multifactor plugin\n"
+			exit 0
+		}
+
+		if {$matches != 3} {
+			send_user "\nFAILURE: sshare -$soption failed ($matches)\n"
+			set exit_code 1
+		}
+		return $matches
+	}
+
+	if { $soption == "-no_header" || $soption == "n" } {
+
+		spawn $sshare -$soption
+		expect {
+			-re "SLURM accounting storage is disabled" {
+				set not_support 1
+				exp_continue
+			}
+			-re "You are not running a supported priority plugin" {
+				set not_support 2
+				exp_continue
+			}
+			-re "Account|User|Raw Shares|Norm Shares|Raw Usage|Norm Usage|Effectv Usage" {	
+				if {$debug} {send_user "\nmatch4\n"}
+				incr matches
+				exp_continue
+			}
+			timeout {
+				send_user "\nFAILURE: sshare not responding\n"
+				set exit_code 1
+			}
+			eof {
+				wait
+			}
+		}
+
+		if {$not_support == 1} {
+			send_user "\nWARNING: can not test without accounting enabled\n"
+			exit 0
+		}
+
+		if {$not_support == 2} {
+			send_user "\nWARNING: can not test without priority/multifactor plugin\n"
+			exit 0
+		}
+
+		if {$matches != 0} {
+			send_user "\nFAILURE: sshare -$soption failed ($matches)\n"
+			set exit_code 1
+		}
+		return $matches
+	}
+
+	if { $soption == "-parsable" || $soption == "p" } {
+
+		spawn $sshare -$soption
+		expect {
+			-re "SLURM accounting storage is disabled" {
+				set not_support 1
+				exp_continue
+			}
+			-re "You are not running a supported priority plugin" {
+				set not_support 2
+				exp_continue
+			}
+			-re "Account\\|User\\|Raw Shares\\|Norm Shares\\|" {
+				if {$debug} {send_user "\nmatch5\n"}
+				incr matches
+				exp_continue
+			}
+			-re "Raw Usage\\|Norm Usage\\|Effectv Usage\\|" {
+				if {$debug} {send_user "\nmatch5\n"}
+				incr matches
+				exp_continue
+			}
+			timeout {
+				send_user "\nFAILURE: sshare not responding\n"
+				set exit_code 1
+			}
+			eof {
+				wait
+			}
+		}
+
+		if {$not_support != 0} {
+			send_user "\nWARNING: can not test without accounting enabled\n"
+			exit 0
+		}
+		if {$matches != 2} {
+			send_user "\nFAILURE: sshare -$soption failed ($matches)\n"
+			set exit_code 1
+		}
+		return $matches
+	}
+
+	if { $soption == "-parsable2" || $soption == "P" } {
+
+		spawn $sshare -$soption
+		expect {
+			-re "SLURM accounting storage is disabled" {
+				set not_support 1
+				exp_continue
+			}
+			-re "You are not running a supported priority plugin" {
+				set not_support 2
+				exp_continue
+			}
+			-re "Account\\|User\\|Raw Shares\\|Norm Shares\\|" {
+				if {$debug} {send_user "\nmatch6\n"}
+				incr matches
+				exp_continue
+			}
+			-re "Raw Usage\\|Norm Usage\\|Effectv Usage" {
+				if {$debug} {send_user "\nmatch7\n"}
+				incr matches
+				exp_continue
+			}
+			-re "Raw Usage\\|Norm Usage\\|Effectv Usage\\|" {
+				if {$debug} {send_user "\nmatch8\n"}
+				incr matches
+				exp_continue
+			}
+			timeout {
+				send_user "\nFAILURE: sshare not responding\n"
+				set exit_code 1
+			}
+			eof {
+				wait
+			}
+		}
+
+		if {$not_support == 1} {
+			send_user "\nWARNING: can not test without accounting enabled\n"
+			exit 0
+		}
+
+		if {$not_support == 2} {
+			send_user "\nWARNING: can not test without priority/multifactor plugin\n"
+			exit 0
+		}
+
+		if {$matches != 2} {
+			send_user "\nFAILURE: sshare -$soption failed ($matches)\n"
+			set exit_code 1
+		}
+		return $matches
+	}
+
+	if { $soption == "-verbose" || $soption == "v" } {
+
+		spawn $sshare -$soption
+		expect {
+			-re "SLURM accounting storage is disabled" {
+				set not_support 1
+				exp_continue
+			}
+			-re "You are not running a supported priority plugin" {
+				set not_support 2
+				exp_continue
+			}
+			-re "Users requested" {
+				if {$debug} {send_user "\nmatch9\n"}
+				incr matches
+				exp_continue
+			}
+			-re "Accounts requested" {
+				if {$debug} {send_user "\nmatch10\n"}
+				incr matches
+				exp_continue
+			}
+			-re "sshare: .* loaded" {
+				if {$debug} {send_user "\nmatch11\n"}
+				incr matches
+				exp_continue
+			}
+			timeout {
+				send_user "\nFAILURE: sshare not responding\n"
+				set exit_code 1
+			}
+			eof {
+				wait
+			}
+		}
+
+		if {$not_support == 1} {
+			send_user "\nWARNING: can not test without accounting enabled\n"
+			exit 0
+		}
+
+		if {$not_support == 2} {
+			send_user "\nWARNING: can not test without priority/multifactor plugin\n"
+			exit 0
+		}
+
+		if {$matches != 3} {
+			send_user "\nFAILURE: sshare -$soption failed ($matches)\n"
+			set exit_code 1
+		}
+		return $matches
+	}
+
+
+	if { $soption == "-version" || $soption == "V" } {
+
+		spawn $sshare -$soption
+		expect {
+			-re "SLURM accounting storage is disabled" {
+				set not_support 1
+				exp_continue
+			}
+			-re "You are not running a supported priority plugin" {
+				set not_support 2
+				exp_continue
+			}
+			-re "slurm $number.$number.$number" {
+				if {$debug} {send_user "\nmatch12\n"}
+				incr matches
+				exp_continue
+			}
+			timeout {
+				send_user "\nFAILURE: sshare not responding\n"
+				set exit_code 1
+			}
+			eof {
+				wait
+			}
+		}
+
+		if {$not_support == 1} {
+			send_user "\nWARNING: can not test without accounting enabled\n"
+			exit 0
+		}
+
+		if {$not_support == 2} {
+			send_user "\nWARNING: can not test without priority/multifactor plugin\n"
+			exit 0
+		}
+
+		if {$matches != 1} {
+			send_user "\nFAILURE: sshare -$soption failed ($matches)\n"
+			set exit_code 1
+		}
+		return $matches
+	}
+}
+
+################################################################
+
+set matches [sshare_opt h ]
+if {$matches != 3} {
+	send_user "\nFAILURE: sshare -h failed ($matches)\n"
+	set exit_code 1
+}
+
+set matches [sshare_opt -help ]
+if {$matches != 3} {
+	send_user "\nFAILURE: sshare --help failed ($matches)\n"
+	set exit_code 1
+}
+
+set matches [sshare_opt -usage ]
+if {$matches != 3} {
+	send_user "\nFAILURE: sshare --usage failed ($matches)\n"
+	set exit_code 1
+}
+
+set matches [sshare_opt n ]
+if {$matches != 0} {
+	send_user "\nFAILURE: sshare -n failed ($matches)\n"
+	set exit_code 1
+}
+
+set matches [sshare_opt -no_header ]
+if {$matches != 0} {
+	send_user "\nFAILURE: sshare --no_header failed ($matches)\n"
+	set exit_code 1
+}
+
+set matches [sshare_opt p ]
+if {$matches != 2} {
+	send_user "\nFAILURE: sshare -p failed ($matches)\n"
+	set exit_code 1
+}
+
+set matches [sshare_opt -parsable ]
+if {$matches != 2} {
+	send_user "\nFAILURE: sshare --parsable failed ($matches)\n"
+	set exit_code 1
+}
+
+set matches [sshare_opt P ]
+if {$matches != 2} {
+	send_user "\nFAILURE: sshare -P failed ($matches)\n"
+	set exit_code 1
+}
+
+set matches [sshare_opt -parsable2 ]
+if {$matches != 2} {
+	send_user "\nFAILURE: sshare --parsable2 failed ($matches)\n"
+	set exit_code 1
+}
+
+set matches [sshare_opt v ]
+if {$matches != 3} {
+	send_user "\nFAILURE: sshare -v failed ($matches)\n"
+	set exit_code 1
+}
+
+set matches [sshare_opt -verbose ]
+if {$matches != 3} {
+	send_user "\nFAILURE: sshare --verbose failed ($matches)\n"
+	set exit_code 1
+}
+
+
+set matches [sshare_opt V ]
+if {$matches != 1} {
+	send_user "\nFAILURE: sshare -v failed ($matches)\n"
+	set exit_code 1
+}
+
+set matches [sshare_opt -version ]
+if {$matches != 1} {
+	send_user "\nFAILURE: sshare --verbose failed ($matches)\n"
+	set exit_code 1
+}
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code
