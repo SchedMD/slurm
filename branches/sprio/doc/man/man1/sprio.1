@@ -154,7 +154,7 @@ Print the list of all pending jobs with their weighted priorities
 .eo
 Print the list of all pending jobs with their normalized priorities
 .br
-> sprio -n
+> sprio \-n
 .br
   JOBID PRIORITY   AGE        FAIRSHARE  JOBSIZE    PARTITION  QOS
 .br
@@ -168,7 +168,7 @@ Print the list of all pending jobs with their normalized priorities
 .eo
 Print the job priorities for specific jobs
 .br
-> sprio --jobs=65548,65547
+> sprio \-\-jobs=65548,65547
 .br
   JOBID   PRIORITY        AGE  FAIRSHARE    JOBSIZE  PARTITION        QOS
 .br
@@ -180,7 +180,7 @@ Print the job priorities for specific jobs
 .eo
 Print the job priorities for jobs of specific users
 .br
-> sprio --users=fred,sally
+> sprio \-\-users=fred,sally
 .br
   JOBID     USER  PRIORITY       AGE  FAIRSHARE   JOBSIZE  PARTITION     QOS
 .br
@@ -192,7 +192,7 @@ Print the job priorities for jobs of specific users
 .eo
 Print the configured weights for each priority component
 .br
-> sprio -w
+> sprio \-w
 .br
   JOBID   PRIORITY        AGE  FAIRSHARE    JOBSIZE  PARTITION        QOS
 .br
