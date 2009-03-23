@@ -63,13 +63,14 @@ int max_line_size;
  ************/
 static int  _get_window_width( void );
 static void _print_date( void );
-static void _print_job (void);
-static void _print_job_steps( void );
+static int _print_job (void);
+static int _print_job_steps( void );
 
 int 
 main (int argc, char *argv[]) 
 {
 	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
+	int error_code = SLURM_SUCCESS;
 
 	log_init(xbasename(argv[0]), opts, SYSLOG_FACILITY_USER, NULL);
 	parse_command_line( argc, argv );
@@ -86,9 +87,9 @@ main (int argc, char *argv[])
 			_print_date ();
 		
 		if ( params.step_flag )
-			_print_job_steps( );
-		else 
-			_print_job( );
+			error_code = _print_job_steps( );
+		else
+			error_code = _print_job( );
 		
 		if ( params.iterate ) {
 			printf( "\n");
@@ -98,7 +99,10 @@ main (int argc, char *argv[])
 			break;
 	}
 
-	exit (0);
+	if ( error_code != SLURM_SUCCESS )
+		exit (error_code);
+	else
+		exit (0);
 }
 
 /* get_window_width - return the size of the window STDOUT goes to */
@@ -126,7 +130,7 @@ _get_window_width( void )
 
 
 /* _print_job - print the specified job's information */
-static void 
+static int
 _print_job ( void ) 
 {
 	static job_info_msg_t * old_job_ptr = NULL, * new_job_ptr;
@@ -167,7 +171,7 @@ _print_job ( void )
 
 	if (error_code) {
 		slurm_perror ("slurm_load_jobs error");
-		return;
+		return SLURM_ERROR;
 	}
 	old_job_ptr = new_job_ptr;
 	if (job_id)
@@ -189,12 +193,12 @@ _print_job ( void )
 
 	print_jobs_array( new_job_ptr->job_array, new_job_ptr->record_count , 
 			params.format_list ) ;
-	return;
+	return SLURM_SUCCESS;
 }
 
 
 /* _print_job_step - print the specified job step's information */
-static void
+static int
 _print_job_steps( void )
 {
 	int error_code;
@@ -220,7 +224,7 @@ _print_job_steps( void )
 				&new_step_ptr, show_flags);
 	if (error_code) {
 		slurm_perror ("slurm_get_job_steps error");
-		return;
+		return SLURM_ERROR;
 	}
 	old_step_ptr = new_step_ptr;
 
@@ -236,7 +240,7 @@ _print_job_steps( void )
 	print_steps_array( new_step_ptr->job_steps, 
 			   new_step_ptr->job_step_count, 
 			   params.format_list );
-	return;
+	return SLURM_SUCCESS;
 }
 
 
