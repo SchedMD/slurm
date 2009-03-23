@@ -104,13 +104,20 @@ extern void nodes_to_hilbert_curve(void)
 		AxestoTranspose(hilbert, 5, dims);
 #ifdef HAVE_3D
 		node_ptr->hilbert_integer = 
-			((hilbert[0]>>4 & 1) << 14) + ((hilbert[1]>>4 & 1) << 13) +
-			((hilbert[2]>>4 & 1) << 12) + ((hilbert[0]>>3 & 1) << 11) +
-			((hilbert[1]>>3 & 1) << 10) + ((hilbert[2]>>3 & 1) <<  9) +
-			((hilbert[0]>>2 & 1) <<  8) + ((hilbert[1]>>2 & 1) <<  7) +
-			((hilbert[2]>>2 & 1) <<  6) + ((hilbert[0]>>1 & 1) <<  5) +
-			((hilbert[1]>>1 & 1) <<  4) + ((hilbert[2]>>1 & 1) <<  3) +
-			((hilbert[0]>>0 & 1) <<  2) + ((hilbert[1]>>0 & 1) <<  1) +
+			((hilbert[0]>>4 & 1) << 14) + 
+			((hilbert[1]>>4 & 1) << 13) +
+			((hilbert[2]>>4 & 1) << 12) + 
+			((hilbert[0]>>3 & 1) << 11) +
+			((hilbert[1]>>3 & 1) << 10) + 
+			((hilbert[2]>>3 & 1) <<  9) +
+			((hilbert[0]>>2 & 1) <<  8) + 
+			((hilbert[1]>>2 & 1) <<  7) +
+			((hilbert[2]>>2 & 1) <<  6) + 
+			((hilbert[0]>>1 & 1) <<  5) +
+			((hilbert[1]>>1 & 1) <<  4) + 
+			((hilbert[2]>>1 & 1) <<  3) +
+			((hilbert[0]>>0 & 1) <<  2) + 
+			((hilbert[1]>>0 & 1) <<  1) +
 			((hilbert[2]>>0 & 1) <<  0);
 #else
 		/* A variation on the above calculation would be required here
