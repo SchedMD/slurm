@@ -6206,7 +6206,7 @@ extern int update_job_wckey(char *module, struct job_record *job_ptr,
 	return SLURM_SUCCESS;
 }
 
-extern int send_jobs_to_accounting(time_t event_time)
+extern int send_jobs_to_accounting()
 {
 	ListIterator itr = NULL;
 	struct job_record *job_ptr;

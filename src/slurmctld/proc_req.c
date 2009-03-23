@@ -3005,8 +3005,7 @@ inline static void  _slurm_rpc_accounting_first_reg(slurm_msg_t *msg)
 		return;
 	}
 	
-	send_jobs_to_accounting(event_time);
-	send_nodes_to_accounting(event_time);
+	send_all_to_accounting(event_time);
 	
 	END_TIMER2("_slurm_rpc_accounting_first_reg");
 }
