@@ -2389,6 +2389,27 @@ extern void fini_job_resv_check(void)
 	list_iterator_destroy(iter);
 }
 
+/* send all reservations to accounting.  Only needed at
+ * first registration
+ */
+extern int send_resvs_to_accounting()
+{
+	ListIterator itr = NULL;
+	slurmctld_resv_t *resv_ptr;
+
+	if(!resv_list)
+		return SLURM_SUCCESS;
+	
+	itr = list_iterator_create(resv_list);
+	while ((resv_ptr = list_next(itr))) {
+		_post_resv_create(resv_ptr);
+	}
+	list_iterator_destroy(itr);
+
+	return SLURM_SUCCESS;
+}
+
+
 /* Set or clear NODE_STATE_MAINT for node_state as needed */
 extern void set_node_maint_mode(void)
 {

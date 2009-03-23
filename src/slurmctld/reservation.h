@@ -65,6 +65,11 @@ extern int dump_all_resv_state(void);
 /* Purge all reservation data structures */
 extern void resv_fini(void);
 
+/* send all reservations to accounting.  Only needed at
+ * first registration
+ */
+extern int send_resvs_to_accounting();
+
 /* Set or clear NODE_STATE_MAINT for node_state as needed */
 extern void set_node_maint_mode(void);
 
