@@ -1,5 +1,6 @@
 # Makefile for topology/tree plugin
 
+CPPFLAGS =  -DTOPOLOGY_CONFIG_FILE=\"$(sysconfdir)/topology.conf\"
 AUTOMAKE_OPTIONS = foreign
 
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic 

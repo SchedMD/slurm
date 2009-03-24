@@ -80,9 +80,26 @@ const char plugin_name[]        = "topology tree plugin";
 const char plugin_type[]        = "topology/tree";
 const uint32_t plugin_version   = 100;
 
+typedef struct slurm_conf_switches {
+	uint32_t link_speed;	/* link speed, arbitrary units */
+	char *nodes;		/* names of nodes directly connect to
+				 * this switch, if any */
+	char *switch_name;	/* name of this switch */
+	char *switches;		/* names if child switches directly
+				 * connected to this switch, if any */
+} slurm_conf_switches_t;
+static s_p_hashtbl_t *conf_hashtbl = NULL;
+static char* topo_conf = NULL;
+
+static void _destroy_switches(void *ptr);
 static void _free_switch_record_table(void);
 static int  _get_switch_inx(const char *name);
+static char *_get_topo_conf(void);
 static void _log_switches(void);
+static int  _parse_switches(void **dest, slurm_parser_enum_t type,
+			    const char *key, const char *value,
+			    const char *line, char **leftover);
+extern int  _read_topo_file(slurm_conf_switches_t **ptr_array[]);
 static void _validate_switches(void);
 
 
@@ -103,6 +120,7 @@ extern int init(void)
 extern int fini(void)
 {
 	_free_switch_record_table();
+	xfree(topo_conf);
 	return SLURM_SUCCESS;
 }
 
@@ -127,11 +145,12 @@ static void _validate_switches(void)
 
 	_free_switch_record_table();
 
-	switch_record_cnt = slurm_conf_switch_array(&ptr_array);
+	switch_record_cnt = _read_topo_file(&ptr_array);
 	if (switch_record_cnt == 0) {
 		error("No switches configured");
+		s_p_hashtbl_destroy(conf_hashtbl);
 		return;
-	}	
+	}
 
 	switch_record_table = xmalloc(sizeof(struct switch_record) * 
 				      switch_record_cnt);
@@ -192,9 +211,8 @@ static void _validate_switches(void)
 				} else {
 					switch_ptr->level = 
 						MAX(switch_ptr->level,
-						     (1 + 
-						      switch_record_table[j].
-						      level));
+						     (switch_record_table[j].
+						      level + 1));
 					bit_or(switch_ptr->node_bitmap,
 					       switch_record_table[j].
 					       node_bitmap);
@@ -230,6 +248,8 @@ static void _validate_switches(void)
 		bit_free(switches_bitmap);
 	} else
 		fatal("switches contain no nodes");
+
+	s_p_hashtbl_destroy(conf_hashtbl);
 	_log_switches();
 }
 
@@ -244,7 +264,8 @@ static void _log_switches(void)
 			switch_ptr->nodes = bitmap2node_name(switch_ptr->
 							     node_bitmap);
 		}
-		debug("Switch level:%d name:%s nodes:%s switches:%s",
+//FIXME debug(
+		info("Switch level:%d name:%s nodes:%s switches:%s",
 		      switch_ptr->level, switch_ptr->name,
 		      switch_ptr->nodes, switch_ptr->switches);
 	}
@@ -281,7 +302,7 @@ static void _free_switch_record_table(void)
 		switch_record_cnt = 0;
 	}
 }
-#if 0
+
 static char *_get_topo_conf(void)
 {
 	char *val = getenv("SLURM_CONF");
@@ -304,31 +325,81 @@ static char *_get_topo_conf(void)
 	return rc;
 }
 
-static int _parse_fed_file(hostlist_t *adapter_list)
+/* Return count of switch configuration entries read */
+extern int  _read_topo_file(slurm_conf_switches_t **ptr_array[])
 {
-	s_p_options_t options[] = {{"AdapterName", S_P_STRING}, {NULL}};
+	static s_p_options_t switch_options[] = {
+		{"SwitchName", S_P_ARRAY, _parse_switches, _destroy_switches},
+		{NULL}
+	};
+	int count;
+	slurm_conf_switches_t **ptr;
+
+	debug("Reading the topology.conf file");
+	if (!topo_conf)
+		topo_conf = _get_topo_conf();
+
+	conf_hashtbl = s_p_hashtbl_create(switch_options);
+	if(s_p_parse_file(conf_hashtbl, topo_conf) == SLURM_ERROR)
+		fatal("something wrong with opening/reading %s: %m", topo_conf);
+
+	if (s_p_get_array((void ***)&ptr, &count, "SwitchName", conf_hashtbl)) {
+		*ptr_array = ptr;
+	} else {
+		*ptr_array = NULL;
+		count = 0;
+	}
+	return count;
+}
+
+static int  _parse_switches(void **dest, slurm_parser_enum_t type,
+			    const char *key, const char *value,
+			    const char *line, char **leftover)
+{
 	s_p_hashtbl_t *tbl;
-	char *adapter_name;
+	slurm_conf_switches_t *s;
+	static s_p_options_t _switch_options[] = {
+		{"LinkSpeed", S_P_UINT32},
+		{"Nodes", S_P_STRING},
+		{"Switches", S_P_STRING},
+		{NULL}
+	};
 
-	debug("Reading the federation.conf file");
-	if (!fed_conf)
-		fed_conf = _get_fed_conf();
+	tbl = s_p_hashtbl_create(_switch_options);
+	s_p_parse_line(tbl, *leftover, leftover);
 
-	tbl = s_p_hashtbl_create(options);
-	if(s_p_parse_file(tbl, fed_conf) == SLURM_ERROR)
-		fatal("something wrong with opening/reading federation "
-		      "conf file");
-	
-	if (s_p_get_string(&adapter_name, "AdapterName", tbl)) {
-		int rc;
-		rc = hostlist_push(*adapter_list, adapter_name);
-		if (rc == 0)
-			error("Adapter name format is incorrect.");
-		xfree(adapter_name);
+	s = xmalloc(sizeof(slurm_conf_switches_t));
+	s->switch_name = xstrdup(value);
+	if (!s_p_get_uint32(&s->link_speed, "LinkSpeed", tbl))
+		s->link_speed = 1;
+	s_p_get_string(&s->nodes, "Nodes", tbl);
+	s_p_get_string(&s->switches, "Switches", tbl);
+	s_p_hashtbl_destroy(tbl);
+
+	if (s->nodes && s->switches) {
+		error("switch %s has both child switches and nodes",
+		      s->switch_name);
+		_destroy_switches(s);
+		return -1;
+	}
+	if (!s->nodes && !s->switches) {
+		error("switch %s has neither child switches nor nodes",
+		      s->switch_name);
+		_destroy_switches(s);
+		return -1;
 	}
 
-	s_p_hashtbl_destroy(tbl);
-	
-	return SLURM_SUCCESS;
+	*dest = (void *)s;
+
+	return 1;
 }
-#endif
+
+static void _destroy_switches(void *ptr)
+{
+	slurm_conf_switches_t *s = (slurm_conf_switches_t *)ptr;
+	xfree(s->nodes);
+	xfree(s->switch_name);
+	xfree(s->switches);
+	xfree(ptr);
+}
+
