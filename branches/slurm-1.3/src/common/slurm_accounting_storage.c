@@ -326,13 +326,14 @@ static slurm_acct_storage_context_t *_acct_storage_context_create(
  */
 static int _acct_storage_context_destroy(slurm_acct_storage_context_t *c)
 {
+	int rc = SLURM_SUCCESS;
 	/*
 	 * Must check return code here because plugins might still
 	 * be loaded and active.
 	 */
 	if ( c->plugin_list ) {
 		if ( plugrack_destroy( c->plugin_list ) != SLURM_SUCCESS ) {
-			return SLURM_ERROR;
+			rc = SLURM_ERROR;
 		}
 	} else {
 		plugin_unload(c->cur_plugin);
@@ -341,7 +342,7 @@ static int _acct_storage_context_destroy(slurm_acct_storage_context_t *c)
 	xfree( c->acct_storage_type );
 	xfree( c );
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 /* 
