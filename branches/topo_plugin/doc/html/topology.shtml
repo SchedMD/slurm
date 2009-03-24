@@ -73,6 +73,11 @@ relative performance of the link.
 The units used are arbitrary and this information is currently not used.
 It may be used in the future to optimize resource allocations.</p>
 
+<p>The first example shows what a topology would look like for an
+eight node cluster in which all switches have only two children as
+shown in the diagram (not a very realistic configuration, but 
+useful for an example).</p>
+
 <pre>
 # topology.conf
 # Switch Configuration
@@ -84,6 +89,7 @@ SwitchName=s4 Switches=s[0-1]
 SwitchName=s5 Switches=s[2-3]
 SwitchName=s6 Switches=s[4-5]
 </pre>
+<img src=topo_ex1.gif width=600>
 
 <p>The next example is for a network with two levels and 
 each switch has four connections.</p>
@@ -99,6 +105,7 @@ SwitchName=s5 Switches=s[0-3]  LinkSpeed=1800
 SwitchName=s6 Switches=s[0-3]  LinkSpeed=1800
 SwitchName=s7 Switches=s[0-3]  LinkSpeed=1800
 </pre>
+<img src=topo_ex2.gif width=600>
 
 <p style="text-align:center;">Last modified 24 March 2009</p>
 
