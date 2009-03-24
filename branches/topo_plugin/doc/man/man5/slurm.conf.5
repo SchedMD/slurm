@@ -1508,8 +1508,8 @@ Acceptable values include
 systems, best\-fit logic over three\-dimensional topology)
 "topology/none" (default for other systems, best\-fit
 logic over one\-dimensional topology) and 
-"topology/slurm.conf" (determine the network topology based
-upon information contained in the slurm.conf file).
+"topology/tree" (determine the network topology based
+upon information contained in a topology.conf file).
 See \fBNETWORK TOPOLOGY\fR below for details.
 Additional plugins may be provided in the future which gather topology
 information directly from the network.
@@ -2123,7 +2123,7 @@ three\-dimensional interconnect (BlueGene, Sun Constellation, etc.)
 and information about configuring those systems are availble on 
 web pages available here: <https://computing.llnl.gov/linux/slurm/>.
 For a hierarchical network, SLURM needs to have detailed information 
-about how nodes are configured on the network switches as described below.
+about how nodes are configured on the network switches.
 .LP
 Given network topology information, SLURM allocates all of a job's 
 resources onto a single leaf of the network (if possible) using a best\-fit 
@@ -2133,47 +2133,18 @@ so as to minimize the use of higher\-level switches.
 The \fBTopologyPlugin\fR parameter controls which plugin is used to
 collect network topology information. 
 The only values presently supported are 
-"topology/3d_torus" (default for Sun Constellation and Cray XT systems, 
-best\-fit logic over three\-dimensional topology),
+"topology/3d_torus" (default for IBM BlueGene, Sun Constellation and 
+Cray XT systems, performs best\-fit logic over three\-dimensional topology),
 "topology/none" (default for other systems, 
 best\-fit logic over one\-dimensional topology),
 "topology/tree" (determine the network topology based
-upon information contained in the slurm.conf file).
+upon information contained in a topology.conf file,
+see "man topology.conf" for more information).
 Future plugins may gather topology information directly from the network.
 The topology information is optional. 
 If not provided, SLURM will perform a best\-fit algorithm assuming the
 nodes are in a one\-dimensional array as configured and the communications 
 cost is related to the node distance in this array.
-.LP
-The network topology configuration one one line defining a switch name and
-its children, either node names or switch names.
-SLURM's hostlist expression parser is used, so the node and switch
-names need not be consecutive (e.g. "Nodes=tux[0\-3,12,18\-20]"
-and "Swithces=s[0\-2,4\-8,12]" will parse fine).
-An optional link speed may also be specified.
-If maintaining this information in a distinct files is desirable, the
-"Include" option can be used in slurm.conf for this purpose
-(if a line begins with the word "Include" followed by whitespace
-and then a file name, that file will be included inline with the current
-configuration file).
-.TP
-\fBSwitchName\fR
-The name of a switch. This name is internal to SLURM and arbitrary.
-Each switch should have a unique name.
-This field must be specified.
-.TP
-\fBSwitches\fR
-Child switches of the named switch.
-Either this option or the \fBNodes\fR option must be specified.
-.TP
-\fBNodes\fR
-Child Nodes of the named leaf switch.
-Either this option or the \fBSwitches\fR option must be specified.
-.TP
-\fBLinkSpeed\fR
-An optional value specifying the performance of this communication link.
-The units used are arbitrary and this information is currently not used.
-It may be used in the future to optimize resource allocations.
 
 .SH "RELOCATING CONTROLLERS"
 If the cluster's computers used for the primary or backup controller 
@@ -2302,22 +2273,6 @@ PartitionName=debug Nodes=dev[0\-8,18\-25] Default=YES
 PartitionName=batch Nodes=dev[9\-17]  MinNodes=4
 .br
 PartitionName=long Nodes=dev[9\-17] MaxTime=120 AllowGroups=admin
-.br
-#
-.br
-# Switch Configurations
-.br
-#
-.br
-TopologyPlugin=topology/tree
-.br
-SwitchName=s0 Nodes=dev[0\-5]
-.br
-SwitchName=s1 Nodes=dev[6\-11]
-.br
-SwitchName=s2 Nodes=dev[12\-17]
-.br
-SwitchName=s3 Switches=s[0\-2]
 
 .SH "COPYING"
 Copyright (C) 2002\-2007 The Regents of the University of California.
@@ -2347,4 +2302,4 @@ details.
 \fBgetrlimit\fR(2), \fBgroup\fR(5), \fBhostname\fR(1), 
 \fBscontrol\fR(1), \fBslurmctld\fR(8), \fBslurmd\fR(8), 
 \fBslurmdbd\fR(8), \fBslurmdbd.conf\fR(5), \fBsrun(1)\fR, 
-\fBspank(8)\fR, \fBsyslog\fR(2), \fBwiki.conf\fR(5)
+\fBspank(8)\fR, \fBsyslog\fR(2), \fBtopology.conf\fR(5), \fBwiki.conf\fR(5)

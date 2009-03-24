@@ -264,8 +264,7 @@ static void _log_switches(void)
 			switch_ptr->nodes = bitmap2node_name(switch_ptr->
 							     node_bitmap);
 		}
-//FIXME debug(
-		info("Switch level:%d name:%s nodes:%s switches:%s",
+		debug("Switch level:%d name:%s nodes:%s switches:%s",
 		      switch_ptr->level, switch_ptr->name,
 		      switch_ptr->nodes, switch_ptr->switches);
 	}

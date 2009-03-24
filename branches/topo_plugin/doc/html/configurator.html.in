@@ -188,7 +188,7 @@ function displayfile()
    "TaskPlugin=task/" + get_radio_value(document.config.task_plugin) + "<br>" +
    get_task_plugin_param() + "<br>" +
    get_field("TaskProlog",document.config.task_prolog) + "<br>" +
-   "#TopologyPlugin=topology/slurm.conf <br>" +
+   "#TopologyPlugin=topology/tree <br>" +
    "#TmpFs=/tmp <br>" +
    "#TrackWCKey=no <br>" +
    "#TreeWidth= <br>" +
