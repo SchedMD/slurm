@@ -38,6 +38,8 @@
 
 #include "src/sshare/sshare.h"
 
+extern int long_flag;
+
 extern int process(shares_response_msg_t *resp)
 {
 	int rc = SLURM_SUCCESS;
@@ -59,6 +61,7 @@ extern int process(shares_response_msg_t *resp)
 		PRINT_ACCOUNT,
 		PRINT_CLUSTER,
 		PRINT_EUSED,
+		PRINT_FSFACTOR,
 		PRINT_ID,
 		PRINT_NORMS,
 		PRINT_NORMU,
@@ -71,9 +74,16 @@ extern int process(shares_response_msg_t *resp)
 		return SLURM_ERROR;
 
 	format_list = list_create(slurm_destroy_char);
-	slurm_addto_char_list(format_list,
-			      "A,User,RawShares,NormShares,"
-			      "RawUsage,NormUsage,EffUsage");
+	if (long_flag) {
+		slurm_addto_char_list(format_list,
+				      "A,User,RawShares,NormShares,"
+				      "RawUsage,NormUsage,EffUsage,"
+				      "FSFctr");
+	} else {
+		slurm_addto_char_list(format_list,
+				      "A,User,RawShares,NormShares,"
+				      "RawUsage,EffUsage,FSFctr");
+	}
 
 	print_fields_list = list_create(destroy_print_field);
 
@@ -95,6 +105,11 @@ extern int process(shares_response_msg_t *resp)
 			field->type = PRINT_EUSED;
 			field->name = xstrdup("Effectv Usage");
 			field->len = 13;
+			field->print_routine = print_fields_double;
+		} else if(!strncasecmp("FSFctr", object, 1)) {
+			field->type = PRINT_FSFACTOR;
+			field->name = xstrdup("Fair-share");
+			field->len = 10;
 			field->print_routine = print_fields_double;
 		} else if(!strncasecmp("ID", object, 1)) {
 			field->type = PRINT_ID;
@@ -138,7 +153,7 @@ extern int process(shares_response_msg_t *resp)
 			if(newlen) 
 				field->len = newlen;
 		}
-		list_append(print_fields_list, field);		
+		list_append(print_fields_list, field);
 	}
 	list_iterator_destroy(itr);
 	list_destroy(format_list);
@@ -189,6 +204,13 @@ extern int process(shares_response_msg_t *resp)
 			case PRINT_EUSED:
 				field->print_routine(field, 
 						     assoc->usage_efctv,
+						     (curr_inx == field_count));
+				break;
+			case PRINT_FSFACTOR:
+				field->print_routine(field,
+						     (assoc->shares_norm -
+						     (double)assoc->usage_efctv
+						      + 1.0) / 2.0,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_ID:
