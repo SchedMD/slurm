@@ -348,17 +348,33 @@ typedef struct {
 } acct_qos_cond_t;
 
 typedef struct {
+	List cluster_list; /* cluster reservations are on list of
+			    * char * */
+	uint16_t flags; /* flags for reservation. */
+	List id_list;   /* ids of reservations. list of char * */
+	List name_list; /* name of reservations. list of char * */
+	char *nodes; /* list of nodes in reservation */
+	time_t time_end; /* end time of reservation */
+	time_t time_start; /* start time of reservation */
+	uint16_t with_usage; /* send usage for reservation */
+} acct_reservation_cond_t;
+
+typedef struct {
+	uint64_t alloc_secs; /* number of cpu seconds allocated */
 	char *assocs; /* comma seperated list of associations */
 	char *cluster; /* cluster reservation is for */
 	uint32_t cpus; /* how many cpus are in reservation */
+	uint64_t down_secs; /* number of cpu seconds down */
 	uint16_t flags; /* flags for reservation. */
 	uint32_t id;   /* id of reservation. */
+	char *name; /* name of reservation */
 	char *nodes; /* list of nodes in reservation */
+	char *node_inx; /* node index of nodes in reservation */
 	time_t time_end; /* end time of reservation */
 	time_t time_start; /* start time of reservation */
 	time_t time_start_prev; /* If start time was changed this is
 				 * the pervious start time.  Needed
-				 * for accounting */
+				 * for accounting */	
 } acct_reservation_rec_t;
 
 /* Right now this is used in the acct_qos_rec_t structure.  In the
@@ -527,6 +543,7 @@ extern void destroy_acct_config_rec(void *object);
 extern void destroy_acct_accounting_rec(void *object);
 extern void destroy_acct_association_rec(void *object);
 extern void destroy_acct_qos_rec(void *object);
+extern void destroy_acct_reservation_rec(void *object);
 extern void destroy_acct_txn_rec(void *object);
 extern void destroy_acct_wckey_rec(void *object);
 extern void destroy_acct_archive_rec(void *object);
@@ -537,7 +554,7 @@ extern void destroy_acct_cluster_cond(void *object);
 extern void destroy_acct_association_cond(void *object);
 extern void destroy_acct_job_cond(void *object);
 extern void destroy_acct_qos_cond(void *object);
-extern void destroy_acct_reservation_rec(void *object);
+extern void destroy_acct_reservation_cond(void *object);
 extern void destroy_acct_txn_cond(void *object);
 extern void destroy_acct_wckey_cond(void *object);
 extern void destroy_acct_archive_cond(void *object);
@@ -581,6 +598,10 @@ extern int unpack_acct_association_rec(void **object, uint16_t rpc_version,
 				       Buf buffer);
 extern void pack_acct_qos_rec(void *in, uint16_t rpc_version, Buf buffer);
 extern int unpack_acct_qos_rec(void **object, uint16_t rpc_version, Buf buffer);
+extern void pack_acct_reservation_rec(void *in, uint16_t rpc_version,
+				      Buf buffer);
+extern int unpack_acct_reservation_rec(void **object, uint16_t rpc_version,
+				       Buf buffer);
 extern void pack_acct_txn_rec(void *in, uint16_t rpc_version, Buf buffer);
 extern int unpack_acct_txn_rec(void **object, uint16_t rpc_version, Buf buffer);
 extern void pack_acct_wckey_rec(void *in, uint16_t rpc_version, Buf buffer);
@@ -609,10 +630,10 @@ extern int unpack_acct_job_cond(void **object, uint16_t rpc_version,
 extern void pack_acct_qos_cond(void *in, uint16_t rpc_version, Buf buffer);
 extern int unpack_acct_qos_cond(void **object, uint16_t rpc_version,
 				Buf buffer);
-extern void pack_acct_reservation_rec(void *in, uint16_t rpc_version,
-				      Buf buffer);
-extern int unpack_acct_reservation_rec(void **object, uint16_t rpc_version,
+extern void pack_acct_reservation_cond(void *in, uint16_t rpc_version,
 				       Buf buffer);
+extern int unpack_acct_reservation_cond(void **object, uint16_t rpc_version,
+					Buf buffer);
 extern void pack_acct_txn_cond(void *in, uint16_t rpc_version, Buf buffer);
 extern int unpack_acct_txn_cond(void **object, uint16_t rpc_version,
 				Buf buffer);
@@ -949,6 +970,15 @@ extern List acct_storage_g_get_qos(void *db_conn, uint32_t uid,
  */
 extern List acct_storage_g_get_wckeys(void *db_conn, uint32_t uid,
 				      acct_wckey_cond_t *wckey_cond);
+
+/* 
+ * get info from the storage 
+ * IN:  acct_reservation_cond_t *
+ * RET: List of acct_reservation_rec_t *
+ * note List needs to be freed when called
+ */
+extern List acct_storage_g_get_reservations(void *db_conn, uint32_t uid,
+					    acct_reservation_cond_t *resv_cond);
 
 /* 
  * get info from the storage 

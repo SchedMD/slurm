@@ -222,6 +222,9 @@ extern int read_slurmdbd_conf(void)
 			if (strstr(temp_str, "accounts"))
 				slurmdbd_conf->private_data 
 					|= PRIVATE_DATA_ACCOUNTS;
+			if (strstr(temp_str, "reservations"))
+				slurmdbd_conf->private_data
+					|= PRIVATE_DATA_RESERVATIONS;
 			if (strstr(temp_str, "all"))
 				slurmdbd_conf->private_data = 0xffff;
 			xfree(temp_str);

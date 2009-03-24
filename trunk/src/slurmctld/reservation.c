@@ -420,6 +420,8 @@ static int _post_resv_create(slurmctld_resv_t *resv_ptr)
 {
 	int rc = SLURM_SUCCESS;
 	acct_reservation_rec_t resv;
+	char temp_bit[BUF_SIZE];
+
 	memset(&resv, 0, sizeof(acct_reservation_rec_t));
 	
 	resv.assocs = resv_ptr->assoc_list;
@@ -427,7 +429,12 @@ static int _post_resv_create(slurmctld_resv_t *resv_ptr)
 	resv.cpus = resv_ptr->cpu_cnt;
 	resv.flags = resv_ptr->flags;
 	resv.id = resv_ptr->resv_id;
+	resv.name = resv_ptr->name;
 	resv.nodes = resv_ptr->node_list;
+	if(resv_ptr->node_bitmap) 
+		resv.node_inx = bit_fmt(temp_bit, sizeof(temp_bit), 
+					resv_ptr->node_bitmap);
+
 	resv.time_end = resv_ptr->end_time;
 	resv.time_start = resv_ptr->start_time;
 
@@ -461,6 +468,8 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 {
 	int rc = SLURM_SUCCESS;
 	acct_reservation_rec_t resv;
+	char temp_bit[BUF_SIZE];
+
 	memset(&resv, 0, sizeof(acct_reservation_rec_t));
 	
 	resv.cluster = slurmctld_cluster_name;
@@ -494,12 +503,16 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 
 		if(old_resv_ptr->node_list && resv_ptr->node_list) {
 			if(strcmp(old_resv_ptr->node_list,
-				  resv_ptr->node_list))
+				  resv_ptr->node_list)) 
 				resv.nodes = resv_ptr->node_list;
-		} else if(resv_ptr->node_list)
+		} else if(resv_ptr->node_list) 
 			resv.nodes = resv_ptr->node_list;
-
 	}
+
+	if(resv.nodes && resv_ptr->node_bitmap) 
+		resv.node_inx = bit_fmt(temp_bit, sizeof(temp_bit),
+					resv_ptr->node_bitmap);
+
 	rc = acct_storage_g_modify_reservation(acct_db_conn, &resv);
 
 	return rc;
@@ -1489,6 +1502,18 @@ extern void show_resv(char **buffer_ptr, int *buffer_size, uid_t uid)
 	if (!iter)
 		fatal("malloc: list_iterator_create");
 	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+		if ((slurmctld_conf.private_data & PRIVATE_DATA_RESERVATIONS)
+		    && !validate_super_user(uid)) {
+			int i = 0;
+			for(i=0; i<resv_ptr->user_cnt; i++) {
+				if(resv_ptr->user_list[i] == uid)
+					break;
+			}
+
+			if(i >= resv_ptr->user_cnt)
+				continue;
+		}
+
 		_pack_resv(resv_ptr, buffer, false);
 		resv_packed++;
 	}

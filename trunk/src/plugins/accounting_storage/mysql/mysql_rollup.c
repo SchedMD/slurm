@@ -432,8 +432,8 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				c_usage->pd_cpu += r_usage->total_time;
 			else
 				c_usage->a_cpu += r_usage->total_time;
-			info("adding this much %lld to cluster %s",
-			     r_usage->total_time, c_usage->name);
+/* 			info("adding this much %lld to cluster %s", */
+/* 			     r_usage->total_time, c_usage->name); */
 
 		}
 		mysql_free_result(result);
@@ -695,9 +695,9 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			   associations in the reservation and add
 			   them to each association */
 			seconds = idle / list_count(r_usage->local_assocs);
-			info("resv %d got %d for seconds for %d assocs",
-			     r_usage->id, seconds,
-			     list_count(r_usage->local_assocs));
+/* 			info("resv %d got %d for seconds for %d assocs", */
+/* 			     r_usage->id, seconds, */
+/* 			     list_count(r_usage->local_assocs)); */
 			tmp_itr = list_iterator_create(r_usage->local_assocs);
 			while((assoc = list_next(tmp_itr))) {
 				int associd = atoi(assoc);

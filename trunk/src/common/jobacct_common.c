@@ -255,6 +255,7 @@ extern void pack_jobacct_job_rec(void *object, uint16_t rpc_version, Buf buffer)
 		pack32(job->suspended, buffer);
 		pack32(job->sys_cpu_sec, buffer);
 		pack32(job->sys_cpu_usec, buffer);
+		pack32(job->timelimit, buffer);
 		pack32(job->tot_cpu_sec, buffer);
 		pack32(job->tot_cpu_usec, buffer);
 		pack16(job->track_steps, buffer);
@@ -418,6 +419,7 @@ extern int unpack_jobacct_job_rec(void **job, uint16_t rpc_version, Buf buffer)
 		safe_unpack32(&job_ptr->suspended, buffer);
 		safe_unpack32(&job_ptr->sys_cpu_sec, buffer);
 		safe_unpack32(&job_ptr->sys_cpu_usec, buffer);
+		safe_unpack32(&job_ptr->timelimit, buffer);
 		safe_unpack32(&job_ptr->tot_cpu_sec, buffer);
 		safe_unpack32(&job_ptr->tot_cpu_usec, buffer);
 		safe_unpack16(&job_ptr->track_steps, buffer);

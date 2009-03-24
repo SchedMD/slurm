@@ -813,6 +813,8 @@ extern int assoc_mgr_fini(char *state_save_location)
 		list_destroy(assoc_mgr_qos_list);
 	if(assoc_mgr_user_list)
 		list_destroy(assoc_mgr_user_list);
+	if(assoc_mgr_wckey_list)
+		list_destroy(assoc_mgr_wckey_list);
 	xfree(assoc_mgr_cluster_name);
 	assoc_mgr_association_list = NULL;
 	assoc_mgr_qos_list = NULL;

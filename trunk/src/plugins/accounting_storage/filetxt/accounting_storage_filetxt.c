@@ -443,6 +443,12 @@ extern List acct_storage_p_get_wckeys(void *db_conn, uid_t uid,
 	return NULL;
 }
 
+extern List acct_storage_p_get_reservations(void *mysql_conn, uid_t uid,
+					    acct_reservation_cond_t *resv_cond)
+{
+	return NULL;
+}
+
 extern List acct_storage_p_get_txn(void *db_conn, uid_t uid,
 				   acct_txn_cond_t *txn_cond)
 {

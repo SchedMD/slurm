@@ -1181,6 +1181,51 @@ extern List acct_storage_p_get_wckeys(void *db_conn, uid_t uid,
 	return ret_list;
 }
 
+extern List acct_storage_p_get_reservations(void *mysql_conn, uid_t uid,
+					    acct_reservation_cond_t *resv_cond)
+{
+	slurmdbd_msg_t req, resp;
+	dbd_cond_msg_t get_msg;
+	dbd_list_msg_t *got_msg;
+	int rc;
+	List ret_list = NULL;
+
+	get_msg.cond = resv_cond;
+
+	req.msg_type = DBD_GET_RESVS;
+	req.data = &get_msg;
+	rc = slurm_send_recv_slurmdbd_msg(SLURMDBD_VERSION, &req, &resp);
+
+	if (rc != SLURM_SUCCESS)
+		error("slurmdbd: DBD_GET_RESVS failure: %m");
+	else if (resp.msg_type == DBD_RC) {
+		dbd_rc_msg_t *msg = resp.data;
+		if(msg->return_code == SLURM_SUCCESS) {
+			info("%s", msg->comment);
+			ret_list = list_create(NULL);
+		} else
+			error("%s", msg->comment);
+		slurmdbd_free_rc_msg(SLURMDBD_VERSION, msg);
+	} else if (resp.msg_type != DBD_GOT_RESVS) {
+		error("slurmdbd: response type not DBD_GOT_RESVS: %u", 
+		      resp.msg_type);
+	} else {
+		got_msg = (dbd_list_msg_t *) resp.data;
+		/* do this just for this type since it could be called
+		 * multiple times, and if we send back and empty list
+		 * instead of no list we will only call this once.
+		 */
+		if(!got_msg->my_list)
+		        ret_list = list_create(NULL);
+		else 
+			ret_list = got_msg->my_list;
+		got_msg->my_list = NULL;
+		slurmdbd_free_list_msg(SLURMDBD_VERSION, got_msg);
+	}
+
+	return ret_list;
+}
+
 extern List acct_storage_p_get_txn(void *db_conn, uid_t uid,
 				   acct_txn_cond_t *txn_cond)
 {
@@ -1515,6 +1560,7 @@ extern int jobacct_storage_p_job_start(void *db_conn, char *cluster_name,
 	req.resv_id       = job_ptr->resv_id;
 	req.priority      = job_ptr->priority;
 	req.start_time    = job_ptr->start_time;
+	req.timelimit     = job_ptr->time_limit;
 	req.wckey         = job_ptr->wckey;
 	if (job_ptr->details)
 		req.submit_time   = job_ptr->details->submit_time;

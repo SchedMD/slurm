@@ -386,6 +386,7 @@ extern Buf pack_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 	case DBD_GOT_LIST:
 	case DBD_ADD_QOS:
 	case DBD_GOT_QOS:
+	case DBD_GOT_RESVS:
 	case DBD_ADD_WCKEYS:
 	case DBD_GOT_WCKEYS:
 	case DBD_GOT_TXN:
@@ -415,6 +416,7 @@ extern Buf pack_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 	case DBD_GET_CLUSTERS:
 	case DBD_GET_JOBS_COND:
 	case DBD_GET_QOS:
+	case DBD_GET_RESVS:
 	case DBD_GET_WCKEYS:
 	case DBD_GET_TXN:
 	case DBD_GET_USERS:
@@ -550,6 +552,7 @@ extern int unpack_slurmdbd_msg(uint16_t rpc_version,
 	case DBD_GOT_LIST:
 	case DBD_ADD_QOS:
 	case DBD_GOT_QOS:
+	case DBD_GOT_RESVS:
 	case DBD_ADD_WCKEYS:
 	case DBD_GOT_WCKEYS:
 	case DBD_GOT_TXN:
@@ -580,6 +583,7 @@ extern int unpack_slurmdbd_msg(uint16_t rpc_version,
 	case DBD_GET_JOBS_COND:
 	case DBD_GET_USERS:
 	case DBD_GET_QOS:
+	case DBD_GET_RESVS:
 	case DBD_GET_WCKEYS:
 	case DBD_GET_TXN:
 	case DBD_REMOVE_ACCOUNTS:
@@ -828,6 +832,10 @@ extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 		return DBD_REMOVE_RESV;
 	} else if(!strcasecmp(msg_type, "Modify Reservation")) {
 		return DBD_MODIFY_RESV;
+	} else if(!strcasecmp(msg_type, "Get Reservations")) {
+		return DBD_GET_RESVS;
+	} else if(!strcasecmp(msg_type, "Got Reservations")) {
+		return DBD_GOT_RESVS;
 	} else if(!strcasecmp(msg_type, "Get Config")) {
 		return DBD_GET_CONFIG;
 	} else if(!strcasecmp(msg_type, "Got Config")) {
@@ -1207,6 +1215,18 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 			return "DBD_MODIFY_RESV";
 		} else
 			return "Modify Reservation";
+		break;
+	case DBD_GET_RESVS:
+		if(get_enum) {
+			return "DBD_GET_RESVS";
+		} else
+			return "Get Reservations";
+		break;
+	case DBD_GOT_RESVS:
+		if(get_enum) {
+			return "DBD_GOT_RESVS";
+		} else
+			return "Got Reservations";
 		break;
 	case DBD_GET_CONFIG:
 		if(get_enum) {
@@ -2042,6 +2062,9 @@ void inline slurmdbd_free_cond_msg(uint16_t rpc_version,
 		case DBD_ARCHIVE_DUMP:
 			my_destroy = destroy_acct_archive_cond;
 			break;
+		case DBD_GET_RESVS:
+			my_destroy = destroy_acct_reservation_cond;
+			break;
 		default:
 			fatal("Unknown cond type");
 			return;
@@ -2445,6 +2468,9 @@ void inline slurmdbd_pack_cond_msg(uint16_t rpc_version,
 	case DBD_ARCHIVE_DUMP:
 		my_function = pack_acct_archive_cond;
 		break;
+	case DBD_GET_RESVS:
+		my_function = pack_acct_reservation_cond;
+		break;
 	default:
 		fatal("Unknown pack type");
 		return;
@@ -2493,6 +2519,9 @@ int inline slurmdbd_unpack_cond_msg(uint16_t rpc_version,
 		break;
 	case DBD_ARCHIVE_DUMP:
 		my_function = unpack_acct_archive_cond;
+		break;
+	case DBD_GET_RESVS:
+		my_function = unpack_acct_reservation_cond;
 		break;
 	default:
 		fatal("Unknown unpack type");
@@ -2758,6 +2787,7 @@ slurmdbd_pack_job_start_msg(uint16_t rpc_version,
 		pack32(msg->resv_id, buffer);
 		pack_time(msg->start_time, buffer);
 		pack_time(msg->submit_time, buffer);
+		pack32(msg->timelimit, buffer);		
 		pack32(msg->uid, buffer);		
 		packstr(msg->wckey, buffer);
 	} else if(rpc_version >= 3) {
@@ -2830,6 +2860,7 @@ slurmdbd_unpack_job_start_msg(uint16_t rpc_version,
 		safe_unpack32(&msg_ptr->resv_id, buffer);
 		safe_unpack_time(&msg_ptr->start_time, buffer);
 		safe_unpack_time(&msg_ptr->submit_time, buffer);
+		safe_unpack32(&msg_ptr->timelimit, buffer);	
 		safe_unpack32(&msg_ptr->uid, buffer);	
 		safe_unpackstr_xmalloc(&msg_ptr->wckey, &uint32_tmp, buffer);
 	} else if(rpc_version >= 3) {
@@ -2998,6 +3029,9 @@ void inline slurmdbd_pack_list_msg(uint16_t rpc_version,
 	case DBD_GOT_QOS:
 		my_function = pack_acct_qos_rec;
 		break;
+	case DBD_GOT_RESVS:
+		my_function = pack_acct_reservation_rec;
+		break;
 	case DBD_ADD_WCKEYS:
 	case DBD_GOT_WCKEYS:
 		my_function = pack_acct_wckey_rec;
@@ -3072,6 +3106,10 @@ int inline slurmdbd_unpack_list_msg(uint16_t rpc_version,
 	case DBD_GOT_QOS:
 		my_function = unpack_acct_qos_rec;
 		my_destroy = destroy_acct_qos_rec;
+		break;
+	case DBD_GOT_RESVS:
+		my_function = unpack_acct_reservation_rec;
+		my_destroy = destroy_acct_reservation_rec;
 		break;
 	case DBD_ADD_WCKEYS:
 	case DBD_GOT_WCKEYS:

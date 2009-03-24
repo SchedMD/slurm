@@ -1653,6 +1653,7 @@ static int  _job_start(slurmdbd_conn_t *slurmdbd_conn,
 	job.resv_id = job_start_msg->resv_id;
 	job.priority = job_start_msg->priority;
 	job.start_time = job_start_msg->start_time;
+	job.time_limit = job_start_msg->timelimit;
 	job.wckey = _replace_double_quotes(job_start_msg->wckey);
 	details.submit_time = job_start_msg->submit_time;
 
@@ -2210,7 +2211,7 @@ static int _modify_reservation(slurmdbd_conn_t *slurmdbd_conn,
 	debug2("DBD_MODIFY_RESV: called");
 
 	rc = acct_storage_g_modify_reservation(slurmdbd_conn->db_conn,
-					     rec_msg->rec);
+					       rec_msg->rec);
 
 end_it:
 	slurmdbd_free_rec_msg(slurmdbd_conn->rpc_version,
