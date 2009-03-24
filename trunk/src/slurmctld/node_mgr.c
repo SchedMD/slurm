@@ -207,7 +207,7 @@ create_node_record (struct config_record *config_ptr, char *node_name)
 		(node_record_count + 1) * sizeof (struct node_record);
 	new_buffer_size = 
 		((int) ((new_buffer_size / BUF_SIZE) + 1)) * BUF_SIZE;
-	if (node_record_count == 0)
+	if (!node_record_table_ptr)
 		node_record_table_ptr = 
 			(struct node_record *) xmalloc (new_buffer_size);
 	else if (old_buffer_size != new_buffer_size)
