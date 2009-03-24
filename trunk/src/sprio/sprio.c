@@ -121,6 +121,11 @@ int main (int argc, char *argv[])
 
 	error_code = _get_info(&req_msg, &resp_msg);
 
+	if (error_code) {
+		slurm_perror("Couldn't get priority factors from controller");
+		exit(error_code);
+	}
+
 	if (params.format == NULL) {
 		if (params.normalized) {
 			if (params.long_list)
