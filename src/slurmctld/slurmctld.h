@@ -504,6 +504,7 @@ struct job_record {
 	time_t pre_sus_time;		/* time job ran prior to last suspend */
 	uint32_t priority;		/* relative priority of the job,
 					 * zero == held (don't initiate) */
+	double priority_fs;		/* cached value used by sprio command */
 	uint16_t qos;			/* quality of service, 
 					 * used only by Moab */
 	void *qos_ptr;	                /* pointer to the quality of
