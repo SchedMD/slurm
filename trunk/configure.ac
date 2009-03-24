@@ -301,6 +301,7 @@ AC_CONFIG_FILES([Makefile
 		 src/salloc/Makefile 
 		 src/sbatch/Makefile 
 		 src/sattach/Makefile
+		 src/sprio/Makefile
 		 src/srun/Makefile 
 		 src/srun_cr/Makefile 
 		 src/slurmd/Makefile 
@@ -386,6 +387,10 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/task/Makefile
 		 src/plugins/task/affinity/Makefile
 		 src/plugins/task/none/Makefile
+		 src/plugins/topology/Makefile
+		 src/plugins/topology/3d_torus/Makefile
+		 src/plugins/topology/none/Makefile
+		 src/plugins/topology/tree/Makefile
 		 doc/Makefile
 		 doc/man/Makefile
 		 doc/html/Makefile

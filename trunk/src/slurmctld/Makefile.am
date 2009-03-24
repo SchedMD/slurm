@@ -22,9 +22,6 @@ slurmctld_SOURCES = 	\
 	basil_interface.c \
 	basil_interface.h \
 	controller.c 	\
-	hilbert.c	\
-	hilbert.h	\
-	hilbert_slurm.c	\
 	job_mgr.c 	\
 	job_scheduler.c \
 	job_scheduler.h \
@@ -55,6 +52,8 @@ slurmctld_SOURCES = 	\
 	state_save.c	\
 	state_save.h	\
 	step_mgr.c	\
+	topo_plugin.c	\
+	topo_plugin.h	\
 	trigger_mgr.c	\
 	trigger_mgr.h
 

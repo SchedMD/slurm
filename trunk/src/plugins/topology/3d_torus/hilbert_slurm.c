@@ -3,7 +3,7 @@
  *	on a Hilbert curve so that the resource allocation problem in 
  *	N-dimensions can be reduced to a 1-dimension problem
  *****************************************************************************
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>, et. al.
  *  CODE-OCEC-09-009. All rights reserved.
@@ -42,7 +42,7 @@
 #  include "config.h"
 #endif
 
-#include "src/slurmctld/hilbert.h"
+#include "src/plugins/topology/3d_torus/hilbert.h"
 #include "src/slurmctld/slurmctld.h"
 
 static int _coord(char coord)
@@ -104,13 +104,20 @@ extern void nodes_to_hilbert_curve(void)
 		AxestoTranspose(hilbert, 5, dims);
 #ifdef HAVE_3D
 		node_ptr->hilbert_integer = 
-			((hilbert[0]>>4 & 1) << 14) + ((hilbert[1]>>4 & 1) << 13) +
-			((hilbert[2]>>4 & 1) << 12) + ((hilbert[0]>>3 & 1) << 11) +
-			((hilbert[1]>>3 & 1) << 10) + ((hilbert[2]>>3 & 1) <<  9) +
-			((hilbert[0]>>2 & 1) <<  8) + ((hilbert[1]>>2 & 1) <<  7) +
-			((hilbert[2]>>2 & 1) <<  6) + ((hilbert[0]>>1 & 1) <<  5) +
-			((hilbert[1]>>1 & 1) <<  4) + ((hilbert[2]>>1 & 1) <<  3) +
-			((hilbert[0]>>0 & 1) <<  2) + ((hilbert[1]>>0 & 1) <<  1) +
+			((hilbert[0]>>4 & 1) << 14) + 
+			((hilbert[1]>>4 & 1) << 13) +
+			((hilbert[2]>>4 & 1) << 12) + 
+			((hilbert[0]>>3 & 1) << 11) +
+			((hilbert[1]>>3 & 1) << 10) + 
+			((hilbert[2]>>3 & 1) <<  9) +
+			((hilbert[0]>>2 & 1) <<  8) + 
+			((hilbert[1]>>2 & 1) <<  7) +
+			((hilbert[2]>>2 & 1) <<  6) + 
+			((hilbert[0]>>1 & 1) <<  5) +
+			((hilbert[1]>>1 & 1) <<  4) + 
+			((hilbert[2]>>1 & 1) <<  3) +
+			((hilbert[0]>>0 & 1) <<  2) + 
+			((hilbert[1]>>0 & 1) <<  1) +
 			((hilbert[2]>>0 & 1) <<  0);
 #else
 		/* A variation on the above calculation would be required here

@@ -796,9 +796,6 @@ extern struct node_record *find_node_record (char *name);
  */
 extern struct part_record *find_part_record (char *name);
 
-/* Free all memory associated with switch_record_table structure */
-extern void free_switch_record_table(void);
-
 /*
  * get_job_env - return the environment variables and their count for a 
  *	given job
@@ -1267,11 +1264,6 @@ extern void node_not_resp (char *name, time_t msg_time);
 /* For every node with the "not_responding" flag set, clear the flag
  * and log that the node is not responding using a hostlist expression */
 extern void node_no_resp_msg(void);
-
-/* Using the node record table, generate a Hilbert integer for each node
- * based upon its coordinates and sort the records in that order. This must
- * be called once, immediately after reading the slurm.conf file. */
-extern void nodes_to_hilbert_curve(void);
 
 /*
  * job_alloc_info - get details about an existing job allocation

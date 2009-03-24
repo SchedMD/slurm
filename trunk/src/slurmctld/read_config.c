@@ -82,15 +82,15 @@
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/trigger_mgr.h"
+#include "src/slurmctld/topo_plugin.h"
 
 static void _acct_restore_active_jobs(void);
 static int  _build_bitmaps(void);
 static void _build_bitmaps_pre_select(void);
-static int  _get_switch_inx(const char *name);
 static int  _init_all_slurm_conf(void);
-static void _log_switches(void);
 static int  _preserve_select_type_param(slurm_ctl_conf_t * ctl_conf_ptr, 
-					select_type_plugin_info_t old_select_type_p);
+					select_type_plugin_info_t 
+					old_select_type_p);
 static int  _preserve_plugins(slurm_ctl_conf_t * ctl_conf_ptr, 
 				char *old_auth_type, char *old_checkpoint_type,
 				char *old_crypto_type, char *old_sched_type, 
@@ -106,7 +106,6 @@ static int  _sync_nodes_to_active_job(struct job_record *job_ptr);
 #ifdef 	HAVE_ELAN
 static void _validate_node_proc_count(void);
 #endif
-static void _validate_switches(void);
 
 static char *highest_node_name = NULL;
 int node_record_count = 0;
@@ -156,8 +155,6 @@ static void _build_bitmaps_pre_select(void)
 		}
 	}
 	list_iterator_destroy(part_iterator);
-
-	_validate_switches();
 	return;	
 }
 
@@ -580,6 +577,10 @@ static int _build_all_nodeline_info(slurm_ctl_conf_t *conf)
 		_build_single_nodeline_info(node, config_ptr, conf);
 	}
 	xfree(highest_node_name);
+
+	/* Unlock config here so that we can call
+	 * find_node_record() below and in the topology plugins */
+	slurm_conf_unlock();
 #ifdef HAVE_3D
 {
 	char *node_000 = NULL;
@@ -587,190 +588,21 @@ static int _build_all_nodeline_info(slurm_ctl_conf_t *conf)
 	if (conf->node_prefix)
 		node_000 = xstrdup(conf->node_prefix);
 	xstrcat(node_000, "000");
-	slurm_conf_unlock();
 	node_rec = find_node_record(node_000);
-	slurm_conf_lock();
 	if (node_rec == NULL)
 		fatal("No node %s configured", node_000);
 	xfree(node_000);
 #ifndef HAVE_BG
 	if (count == 1)
-		nodes_to_hilbert_curve();
+		slurm_topo_build_config();
 #endif	/* ! HAVE_BG */
 }
+#else
+	slurm_topo_build_config();
 #endif	/* HAVE_3D */
+	slurm_conf_lock();
+
 	return SLURM_SUCCESS;
-}
-
-static void _validate_switches(void)
-{
-	slurm_conf_switches_t *ptr, **ptr_array;
-	int depth, i, j;
-	struct switch_record *switch_ptr;
-	hostlist_t hl;
-	char *child;
-	bitstr_t *switches_bitmap = NULL;
-
-	free_switch_record_table();
-	/* We currently only read the switch configuration directly from
-	 * slurm.conf, but could read it from some other plugin based upon 
-	 * the value of TopologyPlugin (topology_plugin). 
-	 * We can add support for such a plugin at some time in the future. */
-	if (strcmp(slurmctld_conf.topology_plugin, "topology/slurm.conf"))
-		return;
-
-	switch_record_cnt = slurm_conf_switch_array(&ptr_array);
-	if (switch_record_cnt == 0) {
-		error("No switches configured");
-		return;
-	}	
-
-	switch_record_table = xmalloc(sizeof(struct switch_record) * 
-				      switch_record_cnt);
-	switch_ptr = switch_record_table;
-	for (i=0; i<switch_record_cnt; i++, switch_ptr++) {
-		ptr = ptr_array[i];
-		switch_ptr->name = xstrdup(ptr->switch_name);
-		switch_ptr->link_speed = ptr->link_speed;
-		if (ptr->nodes) {
-			switch_ptr->level = 0;	/* leaf switch */
-			switch_ptr->nodes = xstrdup(ptr->nodes);
-			if (node_name2bitmap(ptr->nodes, false, 
-					     &switch_ptr->node_bitmap)) {
-				fatal("Invalid node name (%s) in switch "
-				      "config (%s)", 
-				      ptr->nodes, ptr->switch_name);
-			}
-		} else if (ptr->switches) {
-			switch_ptr->level = -1;	/* determine later */
-			switch_ptr->switches = xstrdup(ptr->switches);
-		} else {
-			fatal("Switch configuration (%s) lacks children",
-			      ptr->switch_name);
-		}
-	}
-
-	for (depth=1; ; depth++) {
-		bool resolved = true;
-		switch_ptr = switch_record_table;
-		for (i=0; i<switch_record_cnt; i++, switch_ptr++) {
-			if (switch_ptr->level != -1)
-				continue;
-			hl = hostlist_create(switch_ptr->switches);
-			if (!hl)
-				fatal("hostlist_create: malloc failure");
-			while ((child = hostlist_pop(hl))) {
-				j = _get_switch_inx(child);
-				if ((j < 0) || (j == i)) {
-					fatal("Switch configuration %s has "
-					      "invalid child (%s)",
-					      switch_ptr->name, child);
-				}
-				if (switch_record_table[j].level == -1) {
-					/* Children not resolved */
-					resolved = false;
-					switch_ptr->level = -1;
-					FREE_NULL_BITMAP(switch_ptr->
-							 node_bitmap);
-					free(child);
-					break;
-				}
-				if (switch_ptr->level == -1) {
-					switch_ptr->level = 1 +
-						switch_record_table[j].level;
-					switch_ptr->node_bitmap = 
-						bit_copy(switch_record_table[j].
-							 node_bitmap);
-				} else {
-					switch_ptr->level = 
-						MAX(switch_ptr->level,
-						     (1 + switch_record_table[j].
-							  level));
-					bit_or(switch_ptr->node_bitmap,
-					       switch_record_table[j].
-					       node_bitmap);
-				}
-				free(child);
-			}
-			hostlist_destroy(hl);
-		}
-		if (resolved)
-			break;
-	}
-
-	switch_ptr = switch_record_table;
-	for (i=0; i<switch_record_cnt; i++, switch_ptr++) {
-		if (switch_ptr->node_bitmap == NULL) {
-			error("switch %s has no nodes", switch_ptr->name);
-			continue;
-		}
-		if (switches_bitmap)
-			bit_or(switches_bitmap, switch_ptr->node_bitmap);
-		else
-			switches_bitmap = bit_copy(switch_ptr->node_bitmap);
-	}
-	if (switches_bitmap) {
-		bit_not(switches_bitmap);
-		i = bit_set_count(switches_bitmap);
-		if (i >= 0) {
-			child = bitmap2node_name(switches_bitmap);
-			error("switches lack access to %d nodes: %s", 
-			      i, child);
-			xfree(child);
-		}
-		bit_free(switches_bitmap);
-	} else
-		fatal("switches contain no nodes");
-	_log_switches();
-}
-
-static void _log_switches(void)
-{
-	int i;
-	struct switch_record *switch_ptr;
-
-	switch_ptr = switch_record_table;
-	for (i=0; i<switch_record_cnt; i++, switch_ptr++) {
-		if (!switch_ptr->nodes) {
-			switch_ptr->nodes = bitmap2node_name(switch_ptr->
-							     node_bitmap);
-		}
-		debug("Switch level:%d name:%s nodes:%s switches:%s",
-		      switch_ptr->level, switch_ptr->name,
-		      switch_ptr->nodes, switch_ptr->switches);
-	}
-}
-
-/* Return the index of a given switch name or -1 if not found */
-static int _get_switch_inx(const char *name)
-{
-	int i;
-	struct switch_record *switch_ptr;
-
-	switch_ptr = switch_record_table;
-	for (i=0; i<switch_record_cnt; i++, switch_ptr++) {
-		if (strcmp(switch_ptr->name, name) == 0)
-			return i;
-	}
-
-	return -1;
-}
-
-/* Free all memory associated with switch_record_table structure */
-extern void free_switch_record_table(void)
-{
-	int i;
-
-	if (switch_record_table) {
-		for (i=0; i<switch_record_cnt; i++) {
-			xfree(switch_record_table[i].name);
-			xfree(switch_record_table[i].nodes);
-			xfree(switch_record_table[i].switches);
-			FREE_NULL_BITMAP(switch_record_table[i].node_bitmap);
-		}
-		xfree(switch_record_table);
-		switch_record_cnt = 0;
-	}
 }
 
 /*
@@ -964,6 +796,10 @@ int read_slurm_conf(int recover)
 		node_record_table_ptr = old_node_table_ptr;
 		return error_code;
 	}
+
+	if (slurm_topo_init() != SLURM_SUCCESS)
+		fatal("Failed to initialize topology plugin");
+
 	conf = slurm_conf_lock();
 	_build_all_nodeline_info(conf);
 	slurm_conf_unlock();
@@ -972,9 +808,10 @@ int read_slurm_conf(int recover)
 
 	update_logging();
 	g_slurm_jobcomp_init(slurmctld_conf.job_comp_loc);
-	slurm_sched_init();
-	if (switch_init() < 0)
-		error("Failed to initialize switch plugin");
+	if (slurm_sched_init() != SLURM_SUCCESS)
+		fatal("Failed to initialize sched plugin");
+	if (switch_init() != SLURM_SUCCESS)
+		fatal("Failed to initialize switch plugin");
 
 	if (default_part_loc == NULL)
 		error("read_slurm_conf: default partition not set.");

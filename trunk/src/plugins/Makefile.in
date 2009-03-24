@@ -256,7 +256,7 @@ target_os = @target_os@
 target_vendor = @target_vendor@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = accounting_storage auth checkpoint crypto jobacct_gather jobcomp mpi priority proctrack sched select switch task
+SUBDIRS = accounting_storage auth checkpoint crypto jobacct_gather jobcomp mpi priority proctrack sched select switch task topology
 all: all-recursive
 
 .SUFFIXES:

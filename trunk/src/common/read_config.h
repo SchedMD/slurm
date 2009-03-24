@@ -124,7 +124,7 @@ extern char *default_plugstack;
 #define DEFAULT_TASK_PLUGIN         "task/none"
 #define DEFAULT_TMP_FS              "/tmp"
 #ifdef HAVE_3D
-#  define DEFAULT_TOPOLOGY_PLUGIN     "topology/3D"
+#  define DEFAULT_TOPOLOGY_PLUGIN     "topology/3d_torus"
 #else
 #  define DEFAULT_TOPOLOGY_PLUGIN     "topology/none"
 #endif
@@ -178,15 +178,6 @@ typedef struct slurm_conf_downnodes {
 	char *reason;
 	char *state;
 } slurm_conf_downnodes_t;
-
-typedef struct slurm_conf_switches {
-	uint32_t link_speed;	/* link speed, arbitrary units */
-	char *nodes;		/* names of nodes directly connect to
-				 * this switch, if any */
-	char *switch_name;	/* name of this switch */
-	char *switches;		/* names if child switches directly
-				 * connected to this switch, if any */
-} slurm_conf_switches_t;
 
 /*
  * slurm_conf_init - load the slurm configuration from the a file.
@@ -258,14 +249,6 @@ extern int slurm_conf_partition_array(slurm_conf_partition_t **ptr_array[]);
  * Return value is the length of the array.
  */
 extern int slurm_conf_downnodes_array(slurm_conf_downnodes_t **ptr_array[]);
-
-/*
- * Set "ptr_array" with the pointer to an array of pointers to
- * slurm_conf_switch_t structures.
- * 
- * Return value is the length of the array.
- */
-extern int slurm_conf_switch_array(slurm_conf_switches_t **ptr_array[]);
 
 /*
  * slurm_conf_get_hostname - Return the NodeHostname for given NodeName
