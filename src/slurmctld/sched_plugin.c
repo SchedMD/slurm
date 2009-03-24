@@ -181,13 +181,14 @@ slurm_sched_context_create( const char *sched_type )
 static int
 slurm_sched_context_destroy( slurm_sched_context_t *c )
 {
+	int rc = SLURM_SUCCESS;
 	/*
 	 * Must check return code here because plugins might still
 	 * be loaded and active.
 	 */
 	if ( c->plugin_list ) {
 		if ( plugrack_destroy( c->plugin_list ) != SLURM_SUCCESS ) {
-			return SLURM_ERROR;
+			rc = SLURM_ERROR;
 		}
 	} else {
 		plugin_unload(c->cur_plugin);
@@ -196,7 +197,7 @@ slurm_sched_context_destroy( slurm_sched_context_t *c )
 	xfree( c->sched_type );
 	xfree( c );
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 
