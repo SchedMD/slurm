@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  priority_multifactor.c - slurm multifactor priority plugin.
  *****************************************************************************
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -302,11 +302,11 @@ static int _set_children_usage_efctv(List childern_list)
 /* job_ptr should already have the partition priority and such added
  * here before had we will be adding to it
  */
-static double _get_fairshare_priority( struct job_record *job_ptr )
+static double _get_fairshare_priority( struct job_record *job_ptr)
 {
-	acct_association_rec_t *assoc = 
+	acct_association_rec_t *assoc =
 		(acct_association_rec_t *)job_ptr->assoc_ptr;
-	double fs_priority = 0.0;
+	double priority_fs = 0.0;
 
 	if(!calc_fairshare)
 		return 0;
@@ -332,31 +332,92 @@ static double _get_fairshare_priority( struct job_record *job_ptr )
 	}
 
 	// Priority is 0 -> 1
-	fs_priority =
+	priority_fs =
 		(assoc->shares_norm - (double)assoc->usage_efctv + 1.0) / 2.0;
 	debug4("Fairshare priority for user %s in acct %s"
 	       "((%f - %Lf) + 1) / 2 = %f",
 	       assoc->user, assoc->acct, assoc->shares_norm,
-	       assoc->usage_efctv, fs_priority);
+	       assoc->usage_efctv, priority_fs);
 
 	slurm_mutex_unlock(&assoc_mgr_association_lock);
 
 	debug3("job %u has a fairshare priority of %f",
-	      job_ptr->job_id, fs_priority);
+	      job_ptr->job_id, priority_fs);
 
-	return fs_priority;
+	return priority_fs;
+}
+
+static void _get_priority_factors(time_t start_time, struct job_record *job_ptr,
+				  priority_factors_object_t* factors,
+				  bool status_only)
+{
+	acct_qos_rec_t *qos_ptr = NULL;
+
+	xassert(factors);
+	xassert(job_ptr);
+	
+	qos_ptr = (acct_qos_rec_t *)job_ptr->qos_ptr;
+
+	memset(factors, 0, sizeof(priority_factors_object_t));
+
+	if(weight_age) {
+		uint32_t diff = start_time - job_ptr->details->begin_time;
+		if(job_ptr->details->begin_time) {
+			if(diff < max_age)
+				factors->priority_age =
+					(double)diff / (double)max_age;
+			else
+				factors->priority_age = 1.0;
+		}
+	}
+
+	if(job_ptr->assoc_ptr && weight_fs) {
+		if (status_only)
+			factors->priority_fs = job_ptr->priority_fs;
+		else {
+			factors->priority_fs = _get_fairshare_priority(job_ptr);
+			job_ptr->priority_fs = factors->priority_fs;
+			debug3("sprio job %u has a fairshare priority of %f",
+			       job_ptr->job_id, job_ptr->priority_fs);
+		}
+	}
+
+	if(weight_js) {
+		if(favor_small) {
+			factors->priority_js = (double)(node_record_count
+					   - job_ptr->details->min_nodes)
+				/ (double)node_record_count;
+		} else
+			factors->priority_js =
+				(double)job_ptr->details->min_nodes
+				/ (double)node_record_count;
+		if (factors->priority_js < .0)
+			factors->priority_js = 0.0;
+		else if (factors->priority_js > 1.0)
+			factors->priority_js = 1.0;
+	}
+
+	if(job_ptr->part_ptr && job_ptr->part_ptr->priority && weight_part) {
+		factors->priority_part = job_ptr->part_ptr->norm_priority;
+	}
+
+	if(qos_ptr && qos_ptr->priority && weight_qos) {
+		factors->priority_qos = qos_ptr->norm_priority;
+	}
+
+	factors->nice = job_ptr->details->nice;
 }
 
 static uint32_t _get_priority_internal(time_t start_time,
 				       struct job_record *job_ptr)
 {
-	double age_priority = 0.0;
-	double fs_priority = 0.0;
-	double js_priority = 0.0;
-	double part_priority = 0.0;
-	double priority = 0.0;
-	double qos_priority = 0.0;
-	acct_qos_rec_t *qos_ptr = (acct_qos_rec_t *)job_ptr->qos_ptr;
+	double priority		= 0.0;
+	double priority_age	= 0.0;
+	double priority_fs	= 0.0;
+	double priority_js	= 0.0;
+	double priority_part	= 0.0;
+	double priority_qos	= 0.0;
+	priority_factors_object_t	factors;
 
 	if(job_ptr->direct_set_prio)
 		return job_ptr->priority;
@@ -366,77 +427,45 @@ static uint32_t _get_priority_internal(time_t start_time,
 		      "details symbol set, can't set priority");
 		return 0;
 	}
-	/* 
+	/*
 	 * This means the job is not eligible yet
-	 */ 
-	if(!job_ptr->details->begin_time > start_time)
+	 */
+	if(!job_ptr->details->begin_time
+	   || (job_ptr->details->begin_time > start_time))
 		return 1;
 
 	/* figure out the priority */
+	_get_priority_factors(start_time, job_ptr, &factors, false);
 
-	if(weight_age) {
-		uint32_t diff = start_time - job_ptr->details->begin_time; 
-		double norm_diff = 1;
+	priority_age = factors.priority_age * (double)weight_age;
+	debug3("Weighted Age priority is %f * %u = %.2f",
+	       factors.priority_age, weight_age, priority_age);
 
-		if(diff < max_age)
-			norm_diff = (double)diff / (double)max_age;
+	priority_fs = factors.priority_fs * (double)weight_fs;
+	debug3("Weighted Fairshare priority is %f * %u = %.2f",
+	       factors.priority_fs, weight_fs, priority_fs);
 
-		if(norm_diff > 0) {
-			age_priority = norm_diff * (double)weight_age;
-			debug3("Weighted Age priority is %f * %u = %.2f", 
-			       norm_diff, weight_age, age_priority);
-		}
-	}
+	priority_js = factors.priority_js * (double)weight_js;
+	debug3("Weighted JobSize priority is %f * %u = %.2f",
+	       factors.priority_js, weight_js, priority_js);
 
-	if(job_ptr->assoc_ptr && weight_fs) {
-		double fs_temp = _get_fairshare_priority(job_ptr);
-		fs_priority = fs_temp * (double)weight_fs;
-		debug3("Weighted Fairshare priority is %f * %u = %.2f",
-		       fs_temp, weight_fs, fs_priority);
-	}
+	priority_part = factors.priority_part * (double)weight_part;
+	debug3("Weighted Partition priority is %f * %u = %.2f",
+	       factors.priority_part, weight_part, priority_part);
 
-	if(weight_js) {
-		double norm_js = 0;
-		if(favor_small) {
-			norm_js = (double)(node_record_count 
-					   - job_ptr->details->min_nodes)
-				/ (double)node_record_count;
-		} else 
-			norm_js = (double)job_ptr->details->min_nodes
-				/ (double)node_record_count;
-		if(norm_js > 0) {
-			js_priority = norm_js * (double)weight_js;
-			debug3("Weighted JobSize priority is %f * %u = %.2f", 
-			       norm_js, weight_js, js_priority);
-		}
-	}
+	priority_qos = factors.priority_qos * (double)weight_qos;
+	debug3("Weighted QOS priority is %f * %u = %.2f",
+	       factors.priority_qos, weight_qos, priority_qos);
 
-	if(job_ptr->part_ptr && job_ptr->part_ptr->priority && weight_part) {
-		part_priority = job_ptr->part_ptr->norm_priority 
-			* (double)weight_part;
-		debug3("Weighted Partition priority is %f * %u = %.2f", 
-		       job_ptr->part_ptr->norm_priority, weight_part,
-		       part_priority);
-	}
+	priority = priority_age + priority_fs + priority_js + priority_part +
+		priority_qos - (double)(factors.nice - NICE_OFFSET);
 
-	if(qos_ptr && qos_ptr->priority && weight_qos) {
-		qos_priority = qos_ptr->norm_priority 
-			* (double)weight_qos;
-		debug3("Weighted QOS priority is %f * %u = %.2f", 
-		       qos_ptr->norm_priority, weight_qos,
-		       qos_priority);
-	}
+	debug3("Job %u priority: %.2f + %.2f + %.2f + %.2f + %.2f - %d = %.2f",
+	       job_ptr->job_id, priority_age, priority_fs, priority_js,
+	       priority_part, priority_qos, (factors.nice - NICE_OFFSET),
+	       priority);
 
-	priority = age_priority + fs_priority + js_priority + part_priority +
-		qos_priority;
-	debug3("Job %u priority: %.2f + %.2f + %.2f + %.2f + %.2f = %.2f",
-	       job_ptr->job_id, age_priority, fs_priority, js_priority,
-	       part_priority, qos_priority, priority);
-
-	priority -= ((double)job_ptr->details->nice - (double)NICE_OFFSET);
-	debug3("Nice offset is %u", job_ptr->details->nice - NICE_OFFSET);
-
-	if(priority < 1) 
+	if(priority < 1)
 		priority = 1;
 
 	return (uint32_t)priority;
@@ -451,11 +480,12 @@ static void *_decay_thread(void *no_data)
 /* 	int sigarray[] = {SIGUSR1, 0}; */
 	struct tm tm;
 	time_t last_ran = 0;
-	double decay_factor = 
+	double decay_factor =
 		1 - (0.693 / (double)slurm_get_priority_decay_hl());
 
+	/* Write lock on jobs, read lock on nodes and partitions */
 	slurmctld_lock_t job_write_lock =
-		{ READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
+		{ NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
@@ -605,6 +635,49 @@ static void *_decay_thread(void *no_data)
 		/* repeat ;) */
 	}
 	return NULL;
+}
+
+/* Selects the specific jobs that the user wanted to see
+ * Requests that include job id(s) and user id(s) must match both to be passed.
+ * Returns 1 if job should be omitted */
+static int _filter_job(struct job_record *job_ptr, List req_job_list,
+		       List req_user_list)
+{
+	int filter = 0;
+	ListIterator iterator;
+	uint32_t *job_id;
+	uint32_t *user_id;
+
+	if (req_job_list) {
+		filter = 1;
+		iterator = list_iterator_create(req_job_list);
+		while ((job_id = list_next(iterator))) {
+			if (*job_id == job_ptr->job_id) {
+				filter = 0;
+				break;
+			}
+		}
+		list_iterator_destroy(iterator);
+		if (filter == 1) {
+			return 1;
+		}
+	}
+
+	if (req_user_list) {
+		filter = 1;
+		iterator = list_iterator_create(req_user_list);
+		while ((user_id = list_next(iterator))) {
+			if (*user_id == job_ptr->user_id) {
+				filter = 0;
+				break;
+			}
+		}
+		list_iterator_destroy(iterator);
+		if (filter == 1)
+			return 1;
+	}
+
+	return filter;
 }
 
 static void *_cleanup_thread(void *no_data)
@@ -800,3 +873,65 @@ extern void priority_p_set_assoc_usage(acct_association_rec_t *assoc)
 	}
 }
 
+extern List priority_p_get_priority_factors_list(
+	priority_factors_request_msg_t *req_msg)
+{
+	List req_job_list;
+	List req_user_list;
+	List ret_list = NULL;
+	ListIterator itr;
+	priority_factors_object_t *obj = NULL;
+	struct job_record *job_ptr = NULL;
+	time_t start_time = time(NULL);
+
+	xassert(req_msg);
+	req_job_list = req_msg->job_id_list;
+	req_user_list = req_msg->uid_list;
+
+	/* Read lock on jobs, nodes, and partitions */
+	slurmctld_lock_t job_read_lock =
+		{ NO_LOCK, READ_LOCK, READ_LOCK, READ_LOCK };
+
+	if (job_list && list_count(job_list)) {
+		ret_list = list_create(slurm_destroy_priority_factors_object);
+		lock_slurmctld(job_read_lock);
+		itr = list_iterator_create(job_list);
+		while ((job_ptr = list_next(itr))) {
+			/*
+			 * We are only looking for pending jobs 
+			 */
+			if(!IS_JOB_PENDING(job_ptr))
+				continue;
+			/*
+			 * This means the job is not eligible yet
+			 */
+			if(!job_ptr->details->begin_time
+			   || (job_ptr->details->begin_time > start_time))
+				continue;
+
+			/*
+			 * 0 means the job is held; 1 means system hold
+			 */
+			if(job_ptr->priority <= 1)
+				continue;
+			
+			if (_filter_job(job_ptr, req_job_list, req_user_list))
+				continue;
+			
+			obj = xmalloc(sizeof(priority_factors_object_t));
+			
+			_get_priority_factors(start_time, job_ptr, obj, true);
+			obj->job_id = job_ptr->job_id;
+			obj->user_id = job_ptr->user_id;
+			list_append(ret_list, obj);
+		}
+		list_iterator_destroy(itr);
+		unlock_slurmctld(job_read_lock);
+		if (!list_count(ret_list)) {
+			list_destroy(ret_list);
+			ret_list = NULL;
+		}
+	}
+
+	return ret_list;
+}

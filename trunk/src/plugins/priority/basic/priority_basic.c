@@ -138,3 +138,9 @@ extern void priority_p_set_assoc_usage(acct_association_rec_t *assoc)
 {
 	return;
 }
+
+extern List priority_p_get_priority_factors_list(
+	priority_factors_request_msg_t *req_msg)
+{
+	return(list_create(NULL));
+}

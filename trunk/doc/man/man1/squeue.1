@@ -39,10 +39,8 @@ specified (in seconds).
 By default, prints a time stamp with the header.
 
 .TP
-\fB\-j\fR, \fB\-\-jobs\fR
-Specify the jobs to view.  This flag indicates that a comma separated list 
-of jobs to view follows without an equal sign (see examples).
-Defaults to all jobs.
+\fB\-j <job_id_list>\fR, \fB\-\-jobs=<job_id_list>\fR
+Requests a comma separated list of job ids to display.  Defaults to all jobs.
 
 .TP
 \fB\-l\fR, \fB\-\-long\fR
@@ -313,8 +311,8 @@ See the \fBJOB STATE CODES\fR section below for more information.
 
 .TP
 \fB\-u <user_list>\fR, \fB\-\-user=<user_list>\fR
-Specifies a comma separated list of users whose jobs or job steps are to be
-reported. The list can consist of user names or user id numbers.
+Request jobs or job steps from a comma separated list of users.  The
+list can consist of user names or user id numbers.
 
 .TP
 \fB\-\-usage\fR

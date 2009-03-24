@@ -115,6 +115,12 @@ extern void slurm_destroy_char(void *object)
 	xfree(tmp);
 }
 
+extern void slurm_destroy_uint32_ptr(void *object)
+{
+	uint32_t *tmp = (uint32_t *)object;
+	xfree(tmp);
+}
+
 /* returns number of objects added to list */
 extern int slurm_addto_char_list(List char_list, char *names)
 {
@@ -1517,6 +1523,34 @@ void inline slurm_free_shares_response_msg(shares_response_msg_t *msg)
 	}
 }
 
+void inline slurm_destroy_priority_factors_object(void *object)
+{
+	priority_factors_object_t *obj_ptr =
+		(priority_factors_object_t *)object;
+	xfree(obj_ptr);
+}
+
+void inline slurm_free_priority_factors_request_msg(
+	priority_factors_request_msg_t *msg)
+{
+	if(msg) {
+		if(msg->job_id_list)
+			list_destroy(msg->job_id_list);
+		if(msg->uid_list)
+			list_destroy(msg->uid_list);
+		xfree(msg);
+	}
+}
+
+void inline slurm_free_priority_factors_response_msg(
+	priority_factors_response_msg_t *msg)
+{
+	if(msg) {
+		if(msg->priority_factors_list)
+			list_destroy(msg->priority_factors_list);
+		xfree(msg);
+	}
+}
 
 
 void inline slurm_free_accounting_update_msg(accounting_update_msg_t *msg)
@@ -1623,6 +1657,12 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		break;
 	case RESPONSE_SHARE_INFO:
 		slurm_free_shares_response_msg(data);
+		break;
+	case REQUEST_PRIORITY_FACTORS:
+		slurm_free_priority_factors_request_msg(data);
+		break;
+	case RESPONSE_PRIORITY_FACTORS:
+		slurm_free_priority_factors_response_msg(data);
 		break;
 	case REQUEST_NODE_SELECT_INFO:
 		slurm_free_node_select_msg(data);
