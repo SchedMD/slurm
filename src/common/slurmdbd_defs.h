@@ -167,6 +167,8 @@ typedef enum {
 	DBD_ADD_RESV,    	/* add a reservation                    */
 	DBD_REMOVE_RESV,    	/* remove a reservation                 */
 	DBD_MODIFY_RESV,    	/* modify a reservation                 */
+	DBD_GET_RESVS,    	/* Get reservation information  	*/
+	DBD_GOT_RESVS,		/* Response to DBD_GET_RESV		*/
 	DBD_GET_CONFIG,  	/* Get configuration information	*/
 	DBD_GOT_CONFIG,		/* Response to DBD_GET_CONFIG		*/
 } slurmdbd_msg_type_t;
@@ -277,6 +279,7 @@ typedef struct dbd_job_start_msg {
 	uint32_t resv_id;	/* reservation id */
 	time_t   start_time;	/* job start time */
 	time_t   submit_time;	/* job submit time */
+	uint32_t timelimit;	/* job timelimit */
 	uint32_t uid;	        /* user ID if associations are being used */
 	char *   wckey;		/* wckey name */
 } dbd_job_start_msg_t;

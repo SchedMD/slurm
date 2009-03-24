@@ -1750,7 +1750,9 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		return error_code;
 	}
 	xassert(job_ptr);
-
+	if(job_ptr->details)
+		info("%u got begin time of %d",
+		     job_ptr->job_id, job_ptr->details->begin_time);
 	independent = job_independent(job_ptr);
 	if (license_job_test(job_ptr) != SLURM_SUCCESS)
 		independent = false;

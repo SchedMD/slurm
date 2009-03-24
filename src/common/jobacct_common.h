@@ -122,6 +122,7 @@ typedef struct {
 	uint32_t suspended;
 	uint32_t sys_cpu_sec;
 	uint32_t sys_cpu_usec;
+	uint32_t timelimit;
 	uint32_t tot_cpu_sec;
 	uint32_t tot_cpu_usec;
 	uint16_t track_steps;
