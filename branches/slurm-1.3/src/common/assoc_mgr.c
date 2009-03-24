@@ -461,7 +461,7 @@ static int _get_local_wckey_list(void *db_conn, int enforce)
 	if(!assoc_mgr_wckey_list) {
 		/* create list so we don't keep calling this if there
 		   isn't anything there */
-		assoc_mgr_wckey_list = list_create(NULL);
+		assoc_mgr_wckey_list = list_create(destroy_acct_wckey_rec);
 		slurm_mutex_unlock(&assoc_mgr_wckey_lock);
 		if(enforce & ACCOUNTING_ENFORCE_WCKEYS) {
 			error("_get_local_wckey_list: "
@@ -1870,6 +1870,8 @@ extern int load_assoc_mgr_state(char *state_save_location)
 				break;
 			}
 			slurm_mutex_lock(&assoc_mgr_association_lock);
+			if(local_association_list)
+				list_destroy(local_association_list);
 			local_association_list = msg->my_list;
 			_post_association_list(local_association_list);
 			debug("Recovered %u associations", 
@@ -1888,6 +1890,8 @@ extern int load_assoc_mgr_state(char *state_save_location)
 				break;
 			}
 			slurm_mutex_lock(&local_user_lock);
+			if(local_user_list)
+				list_destroy(local_user_list);
 			local_user_list = msg->my_list;
 			_post_user_list(local_user_list);
 			debug("Recovered %u users", 
@@ -1906,6 +1910,8 @@ extern int load_assoc_mgr_state(char *state_save_location)
 				break;
 			}
 			slurm_mutex_lock(&local_qos_lock);
+			if(local_qos_list)
+				list_destroy(local_qos_list);
 			local_qos_list = msg->my_list;
 			debug("Recovered %u qos", 
 			      list_count(local_qos_list));
@@ -1923,6 +1929,8 @@ extern int load_assoc_mgr_state(char *state_save_location)
 				break;
 			}
 			slurm_mutex_lock(&assoc_mgr_wckey_lock);
+			if(assoc_mgr_wckey_list)
+				list_destroy(assoc_mgr_wckey_list);
 			assoc_mgr_wckey_list = msg->my_list;
 			debug("Recovered %u wckeys", 
 			      list_count(assoc_mgr_wckey_list));
