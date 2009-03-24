@@ -1750,8 +1750,14 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		return error_code;
 	}
 	xassert(job_ptr);
-	
 	independent = job_independent(job_ptr);
+	/* priority needs to be calculated after this since we set a
+	   begin time in job_independent and that lets us know if the
+	   job is eligible.
+	*/
+	if(job_ptr->priority == NO_VAL)
+		_set_job_prio(job_ptr);
+
 	if (license_job_test(job_ptr) != SLURM_SUCCESS)
 		independent = false;
 
@@ -2498,11 +2504,12 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	job_ptr->assoc_ptr = (void *) assoc_ptr;
 
 	/* This must be done after we have the assoc_ptr set */
-	if (job_desc->priority != NO_VAL) /* already confirmed submit_uid==0 */
-		job_ptr->priority = job_desc->priority;
-	else {
-		_set_job_prio(job_ptr);
-	}
+	
+	/* already confirmed submit_uid==0 */
+	/* If the priority isn't given we will figure it out later
+	   after we see if the job is eligible or not. So we want
+	   NO_VAL if not set. */
+	job_ptr->priority = job_desc->priority;
 
 	if (update_job_dependency(job_ptr, job_desc->dependency)) {
 		error_code = ESLURM_DEPENDENCY;
@@ -4275,7 +4282,8 @@ static bool _top_priority(struct job_record *job_ptr)
 			    ((!job_ptr2->resv_name) && job_ptr->resv_name))
 				continue;	/* different reservation */
 			if (job_ptr2->resv_name && job_ptr->resv_name &&
-			    (!strcmp(job_ptr2->resv_name, job_ptr->resv_name))) {
+			    (!strcmp(job_ptr2->resv_name, 
+				     job_ptr->resv_name))) {
 				/* same reservation */
 				if (job_ptr2->priority <= job_ptr->priority)
 					continue;
