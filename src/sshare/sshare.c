@@ -42,9 +42,12 @@
 
 
 #define BUFFER_SIZE 4096
+#define OPT_LONG_HELP  0x100
+#define OPT_LONG_USAGE 0x101
 
 int exit_code;		/* sshare's exit code, =1 on any error at any time */
 int quiet_flag;		/* quiet=1, verbose=-1, normal=0 */
+int long_flag;		/* exceeds 80 character limit with more info */
 int verbosity;		/* count of -v options */
 uint32_t my_uid = 0;
 
@@ -67,18 +70,17 @@ main (int argc, char *argv[])
 	bool all_users = 0;
 
 	static struct option long_options[] = {
-		{"all", 0,0, 'a'},
 		{"accounts", 1, 0, 'A'},
-		{"help",     0, 0, 'h'},
-		{"no_header", 0, 0, 'n'},
+		{"all",      0, 0, 'a'},
+		{"long",     0, 0, 'l'},
+		{"noheader", 0, 0, 'h'},
 		{"parsable", 0, 0, 'p'},
-		{"parsable2", 0, 0, 'P'},
-		{"quiet",    0, 0, 'q'},
-		{"uid", 1, 0, 'u'},
-		{"usage",    0, 0, 'h'},
-		{"user", 1, 0, 'u'},
+		{"parsable2",0, 0, 'P'},
+		{"users",    1, 0, 'u'},
 		{"verbose",  0, 0, 'v'},
 		{"version",  0, 0, 'V'},
+		{"help",     0, 0, OPT_LONG_HELP},
+		{"usage",    0, 0, OPT_LONG_USAGE},
 		{NULL,       0, 0, 0}
 	};
 
@@ -95,12 +97,13 @@ main (int argc, char *argv[])
 	xfree(temp);
 
 	exit_code         = 0;
+	long_flag	  = 0;
 	quiet_flag        = 0;
 	verbosity         = 0;
 	memset(&req_msg, 0, sizeof(shares_request_msg_t));
 	log_init("sshare", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
-	while((opt_char = getopt_long(argc, argv, "aA:hnpPqu:t:vV",
+	while((opt_char = getopt_long(argc, argv, "aA:hlnpPqu:t:vV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -118,8 +121,12 @@ main (int argc, char *argv[])
 			slurm_addto_char_list(req_msg.acct_list, optarg);
 			break;
 		case 'h':
-			_usage ();
+			print_fields_have_header = 0;
+			break;
 			exit(exit_code);
+			break;
+		case 'l':
+			long_flag = 1;
 			break;
 		case 'n':
 			print_fields_have_header = 0;
@@ -131,9 +138,6 @@ main (int argc, char *argv[])
 		case 'P':
 			print_fields_parsable_print =
 			PRINT_FIELDS_PARSABLE_NO_ENDING;
-			break;
-		case 'q':
-			quiet_flag = 1;
 			break;
 		case 'u':
 			if(!strcmp(optarg, "-1")) {
@@ -154,6 +158,10 @@ main (int argc, char *argv[])
 			_print_version();
 			exit(exit_code);
 			break;
+		case OPT_LONG_HELP:
+		case OPT_LONG_USAGE:
+			_usage();
+			exit(0);
 		default:
 			exit_code = 1;
 			fprintf(stderr, "getopt error, returned %c\n", 
@@ -391,42 +399,22 @@ static void _print_version(void)
 	}
 }
 
-/* _usage - show the valid sshare commands */
+/* _usage - show the valid sshare options */
 void _usage () {
 	printf ("\
-sshare [<OPTION>] [<COMMAND>]                                              \n\
-    Valid <OPTION> values are:                                             \n\
-     -a or --all: equivalent to \"all\" command                            \n\
-     -A or --accounts: equivalent to \"accounts\" command                  \n\
-     -h or --help or --usage: equivalent to \"help\" command               \n\
-     -n or --no_header: no header will be added to the beginning of output \n\
-     -p or --parsable: output will be '|' delimited with a '|' at the end  \n\
-     -P or --parsable2: output will be '|' delimited without a '|' at the end\n\
-     -q or --quiet: equivalent to \"quiet\" command                        \n\
-     -u or --uid or user: equivalent to \"user\" command                   \n\
-     -v or --verbose: equivalent to \"verbose\" command                    \n\
-     -V or --version: equivalent to \"version\" command                    \n\
-                                                                           \n\
-                                                                           \n\
-                                                                           \n\
-    Valid <COMMAND> values are:                                            \n\
-     --all                      list all                                   \n\
-     --accounts <Account>       list accounts (comma separated list)       \n\
-     --help                     print this description of use.             \n\
-     --no_header                output without a header                    \n\
-     --parsable                 output will be | delimited with an ending '|'\n\
-     --parsable2                output will be | delimited without an ending '|'\n\
-     --quiet                    print no messages other than error messages. \n\
-     --uid                      list uid (comma separated list)            \n\
-     --usage                    show help                                  \n\
-     --user <User>              list user (comma separated list)           \n\
-     --verbose                  wordy and windy output.                    \n\
-     --version                  display tool version number.               \n\
-                                                                           \n\
-                                                                           \n\
-                                                                           \n\
-                                                                           \n\
-  All commands entities, and options are case-insensitive.               \n\n");
-	
+Usage:  sshare [OPTION]                                                    \n\
+  Valid OPTIONs are:                                                       \n\
+    -a or --all            list all users                                  \n\
+    -A or --accounts=      display specific accounts (comma separated list)\n\
+    -h or --noheader       omit header from output                         \n\
+    -l or --long           include normalized usage in output              \n\
+    -p or --parsable       '|' delimited output with a trailing '|'        \n\
+    -P or --parsable2      '|' delimited output without a trailing '|'     \n\
+    -u or --users=         display specific users (comma separated list)   \n\
+    -v or --verbose        display more information                        \n\
+    -V or --version        display tool version number                     \n\
+          --help           display this usage description                  \n\
+          --usage          display this usage description                  \n\
+                                                                           \n\n");
 }
 
