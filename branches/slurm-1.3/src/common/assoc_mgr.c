@@ -356,7 +356,8 @@ static int _get_local_association_list(void *db_conn, int enforce)
 	if(!local_association_list) {
 		/* create list so we don't keep calling this if there
 		   isn't anything there */
-		local_association_list = list_create(NULL);
+		local_association_list = 
+			list_create(destroy_acct_association_rec);
 		slurm_mutex_unlock(&assoc_mgr_association_lock);
 		if(enforce & ACCOUNTING_ENFORCE_ASSOCS) {
 			error("_get_local_association_list: "
