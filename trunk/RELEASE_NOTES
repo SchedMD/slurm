@@ -125,6 +125,8 @@ COMMAND CHANGES (see man pages for details)
   unless the configure option "--disable-iso8601" is used at build time.
 * sacct -S to status a job will no longer work.  Use sstat from now on.
 * sacct and sstat have been rewritten to have a more sacctmgr like feel
+* Added the sprio command to view the factors that comprise a job's scheduling
+  priority - works only with the priority/multifactor plugin
 
 ACCOUNTING CHANGES
 * Added ability for slurmdbd to archive and purge step and/or job records.
