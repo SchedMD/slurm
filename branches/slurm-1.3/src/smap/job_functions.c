@@ -323,7 +323,7 @@ static int _print_text_job(job_info_t * job_ptr)
 			  job_state_string_compact(job_ptr->job_state));
 		main_xcord += 2;
 		if(!strcasecmp(job_ptr->nodes,"waiting...")) {
-			sprintf(time_buf,"0:00:00");
+			sprintf(time_buf,"00:00:00");
 		} else {
 			time_diff = now_time - job_ptr->start_time;
 			secs2time_str(time_diff, time_buf, sizeof(time_buf));
@@ -391,7 +391,7 @@ static int _print_text_job(job_info_t * job_ptr)
 		printf("%2.2s ",
 		       job_state_string_compact(job_ptr->job_state));
 		if(!strcasecmp(job_ptr->nodes,"waiting...")) {
-			sprintf(time_buf,"0:00:00");
+			sprintf(time_buf,"00:00:00");
 		} else {
 			time_diff = now_time - job_ptr->start_time;
 			secs2time_str(time_diff, time_buf, sizeof(time_buf));
