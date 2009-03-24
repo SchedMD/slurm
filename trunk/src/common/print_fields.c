@@ -236,9 +236,9 @@ extern void print_fields_uint64(print_field_t *field, uint64_t value, int last)
 		else if(print_fields_parsable_print)
 			printf("%llu|", (long long unsigned) value);	
 		else if(field->len == abs_len)
-			printf("%*llu ", abs_len, value);
+			printf("%*llu ", abs_len, (long long unsigned) value);
 		else
-			printf("%-*llu ", abs_len, value);
+			printf("%-*llu ", abs_len, (long long unsigned) value);
 	}
 }
 
