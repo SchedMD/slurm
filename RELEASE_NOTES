@@ -103,8 +103,9 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
   SLURM's SPANK cpuset plugin is no longer be needed.
 * Resource allocations can not be optimized according to network topology.
   The following switch topology configuration options have been added: 
-  TopologyPlugin, SwitchName, Nodes, Switches. More information is available
-  here:  https://computing.llnl.gov/linux/slurm/topology.html
+  TopologyPlugin and in a new topology.conf file: SwitchName, Nodes, 
+  Switches. More information is available in man pages for slurm.conf, 
+  topology.conf, and https://computing.llnl.gov/linux/slurm/topology.html
 * BLUEGENE - Added option DenyPassthrough in the bluegene.conf.  Can be set
   to any combination of X,Y,Z to not allow passthroughs when running in 
   dynamic layout mode. (see "man bluegene.conf" for details)
