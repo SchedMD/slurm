@@ -547,10 +547,11 @@ static void _handle_all_downnodes(void)
  * Note: Operates on common variables
  *	default_node_record - default node configuration values
  */
-static int _build_all_nodeline_info(slurm_ctl_conf_t *conf)
+static int _build_all_nodeline_info(void)
 {
 	slurm_conf_node_t *node, **ptr_array;
 	struct config_record *config_ptr = NULL;
+	slurm_ctl_conf_t *conf;
 	int count;
 	int i;
 
@@ -558,6 +559,7 @@ static int _build_all_nodeline_info(slurm_ctl_conf_t *conf)
 	if (count == 0)
 		fatal("No NodeName information available!");
 
+	conf = slurm_conf_lock();
 	for (i = 0; i < count; i++) {
 		node = ptr_array[i];
 
@@ -600,7 +602,6 @@ static int _build_all_nodeline_info(slurm_ctl_conf_t *conf)
 #else
 	slurm_topo_build_config();
 #endif	/* HAVE_3D */
-	slurm_conf_lock();
 
 	return SLURM_SUCCESS;
 }
@@ -761,7 +762,7 @@ int read_slurm_conf(int recover)
 	char *old_select_type     = xstrdup(slurmctld_conf.select_type);
 	char *old_switch_type     = xstrdup(slurmctld_conf.switch_type);
 	char *state_save_dir      = xstrdup(slurmctld_conf.state_save_location);
-	slurm_ctl_conf_t *conf;
+	char *mpi_params;
 	select_type_plugin_info_t old_select_type_p = 
 		(select_type_plugin_info_t) slurmctld_conf.select_type_param;
 
@@ -800,9 +801,7 @@ int read_slurm_conf(int recover)
 	if (slurm_topo_init() != SLURM_SUCCESS)
 		fatal("Failed to initialize topology plugin");
 
-	conf = slurm_conf_lock();
-	_build_all_nodeline_info(conf);
-	slurm_conf_unlock();
+	_build_all_nodeline_info();
 	_handle_all_downnodes();
 	_build_all_partitionline_info();
 
@@ -865,7 +864,9 @@ int read_slurm_conf(int recover)
 
 	if ((rc = _build_bitmaps()))
 		fatal("_build_bitmaps failure");
-	reserve_port_config(conf->mpi_params);
+	mpi_params = slurm_get_mpi_params();
+	reserve_port_config(mpi_params);
+	xfree(mpi_params);
 
 	license_free();
 	if (license_init(slurmctld_conf.licenses) != SLURM_SUCCESS)
