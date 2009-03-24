@@ -1879,13 +1879,13 @@ io_find_filename_pattern( slurmd_job_t *job,
 			ef_all_same = false;
 	}
 
-	if (of_all_same)
+	if (of_all_same && *outpattern == SLURMD_UNKNOWN)
 		*outpattern = SLURMD_ALL_SAME;
 
-	if (ef_all_same)
+	if (ef_all_same && *errpattern == SLURMD_UNKNOWN)
 		*errpattern = SLURMD_ALL_SAME;
 
-	if (of_all_same && ef_all_same && 
+	if (job->task[0]->ofname && job->task[0]->efname &&
 	    strcmp(job->task[0]->ofname, job->task[0]->efname)==0)
 		*same_out_err_files = true;
 
@@ -1916,7 +1916,9 @@ io_find_filename_pattern( slurmd_job_t *job,
 	if (of_all_unique && ef_all_unique) {
 		*same_out_err_files = true;
 		for (ii = 0; ii < job->ntasks; ii++) {
-			if (strcmp(job->task[ii]->ofname,
+			if (job->task[ii]->ofname && 
+			    job->task[ii]->efname &&
+			    strcmp(job->task[ii]->ofname,
 				   job->task[ii]->efname) != 0) {
 				*same_out_err_files = false;
 				break;
