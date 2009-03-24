@@ -161,13 +161,14 @@ _slurm_switch_context_create(const char *switch_type)
 static int
 _slurm_switch_context_destroy( slurm_switch_context_t c )
 {
+	int rc = SLURM_SUCCESS;
 	/*
 	 * Must check return code here because plugins might still
 	 * be loaded and active.
 	 */
 	if ( c->plugin_list ) {
 		if ( plugrack_destroy( c->plugin_list ) != SLURM_SUCCESS ) {
-			return SLURM_ERROR;
+			rc = SLURM_ERROR;
 		}
 	} else {
 		plugin_unload(c->cur_plugin);
@@ -176,7 +177,7 @@ _slurm_switch_context_destroy( slurm_switch_context_t c )
 	xfree( c->switch_type );
 	xfree( c );
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 /*

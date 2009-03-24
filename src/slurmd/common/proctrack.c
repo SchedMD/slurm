@@ -174,13 +174,15 @@ _proctrack_context_create( const char *proctrack_type )
 static int
 _proctrack_context_destroy( slurm_proctrack_context_t *c )
 {
+	int rc = SLURM_SUCCESS;
+
 	/*
 	 * Must check return code here because plugins might still
 	 * be loaded and active.
 	 */
 	if ( c->plugin_list ) {
 		if ( plugrack_destroy( c->plugin_list ) != SLURM_SUCCESS ) {
-			return SLURM_ERROR;
+			rc = SLURM_ERROR;
 		}
 	} else {
 		plugin_unload(c->cur_plugin);
@@ -189,7 +191,7 @@ _proctrack_context_destroy( slurm_proctrack_context_t *c )
 	xfree( c->proctrack_type );
 	xfree( c );
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 

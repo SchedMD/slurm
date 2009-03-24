@@ -3080,21 +3080,6 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	struct job_details *detail_ptr;
 	struct job_record *job_ptr;
 
-	job_ptr = create_job_record(&error_code);
-	if (error_code)
-		return error_code;
-
-	job_ptr->partition = xstrdup(part_ptr->name);
-	job_ptr->part_ptr = part_ptr;
-	
-	if (job_desc->job_id != NO_VAL)		/* already confirmed unique */
-		job_ptr->job_id = job_desc->job_id;
-	else
-		_set_job_id(job_ptr);
-
-	if (job_desc->name)
-		job_ptr->name = xstrdup(job_desc->name);
-	
         if(slurm_get_track_wckey()) {
 		if(!job_desc->wckey) {
 			/* get the default wckey for this user since none was
@@ -3105,11 +3090,11 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 			assoc_mgr_fill_in_user(acct_db_conn, &user_rec,
 					       accounting_enforce, NULL);
 			if(user_rec.default_wckey)
-				job_ptr->wckey = xstrdup_printf(
+				job_desc->wckey = xstrdup_printf(
 					"*%s", user_rec.default_wckey);
 			else if(!(accounting_enforce 
 				  & ACCOUNTING_ENFORCE_WCKEYS))
-				job_ptr->wckey = xstrdup("*");	
+				job_desc->wckey = xstrdup("*");	
 			else {
 				error("Job didn't specify wckey and user "
 				      "%d has no default.", job_desc->user_id);
@@ -3133,14 +3118,30 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 					return ESLURM_INVALID_WCKEY;
 				}
 			}
-			job_ptr->wckey = xstrdup(job_desc->wckey);
+			job_desc->wckey = xstrdup(job_desc->wckey);
 		} else if (accounting_enforce & ACCOUNTING_ENFORCE_WCKEYS) {
 			/* This should never happen */
-			info("_job_create: no wckey was given for job '%u'.",
-			     job_ptr->job_id);
+			info("_job_create: no wckey was given for job submit.");
 				return ESLURM_INVALID_WCKEY;
 		}
 	}
+
+	job_ptr = create_job_record(&error_code);
+	if (error_code)
+		return error_code;
+
+	job_ptr->partition = xstrdup(part_ptr->name);
+	job_ptr->part_ptr = part_ptr;
+	
+	if (job_desc->job_id != NO_VAL)		/* already confirmed unique */
+		job_ptr->job_id = job_desc->job_id;
+	else
+		_set_job_id(job_ptr);
+
+	if (job_desc->name)
+		job_ptr->name = xstrdup(job_desc->name);
+	if (job_desc->wckey)
+		job_ptr->wckey = xstrdup(job_desc->wckey);
 
 	_add_job_hash(job_ptr);
 

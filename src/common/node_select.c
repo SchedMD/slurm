@@ -265,13 +265,14 @@ static slurm_select_context_t *_select_context_create(const char *select_type)
  */
 static int _select_context_destroy( slurm_select_context_t *c )
 {
+	int rc = SLURM_SUCCESS;
 	/*
 	 * Must check return code here because plugins might still
 	 * be loaded and active.
 	 */
 	if ( c->plugin_list ) {
 		if ( plugrack_destroy( c->plugin_list ) != SLURM_SUCCESS ) {
-			return SLURM_ERROR;
+			rc = SLURM_ERROR;
 		}
 	} else {
 		plugin_unload(c->cur_plugin);
@@ -280,7 +281,7 @@ static int _select_context_destroy( slurm_select_context_t *c )
 	xfree( c->select_type );
 	xfree( c );
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 /*

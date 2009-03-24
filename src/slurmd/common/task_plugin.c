@@ -162,13 +162,14 @@ _slurmd_task_context_create(const char *task_plugin_type)
 static int
 _slurmd_task_context_destroy(slurmd_task_context_t *c)
 {
+	int rc = SLURM_SUCCESS;
 	/*
 	 * Must check return code here because plugins might still
 	 * be loaded and active.
 	 */
 	if ( c->plugin_list ) {
 		if ( plugrack_destroy( c->plugin_list ) != SLURM_SUCCESS ) {
-			return SLURM_ERROR;
+			rc = SLURM_ERROR;
 		}
 	} else {
 		plugin_unload(c->cur_plugin);
@@ -177,7 +178,7 @@ _slurmd_task_context_destroy(slurmd_task_context_t *c)
 	xfree( c->task_type );
 	xfree( c );
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 
