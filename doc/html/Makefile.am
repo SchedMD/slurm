@@ -79,6 +79,8 @@ html_DATA = \
 	slurm_design.pdf \
 	slurmstyles.css \
 	sponsors.gif \
+	topo_ex1.gif \
+	topo_ex2.gif \
 	linuxstyles.css \
 	UsagePies.gif
 

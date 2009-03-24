@@ -9,10 +9,10 @@ said sampling rate from the default (every 30 seconds) by setting the
 "JobAcctGatherFrequency" option to a different number of seconds in 
 the slurm.conf.
 
-For InfiniBand switch systems, add switch topology information to 
-slurm.conf. Options used are TopologyPlugin, SwitchName, Switches, 
-and Nodes. The SwitchName is any convenient name for bookkeeping 
-purposes only. For example:
+For InfiniBand switch systems, set TopologyType=topology/tree and 
+add switch topology information to a new file called topology.conf. 
+Options used are SwitchName, Switches, and Nodes. The SwitchName is 
+any convenient name for bookkeeping purposes only. For example:
 # Switch Topology Information
 TopologyPlugin=topology/slurm.conf
 SwitchName=s0 Nodes=tux[0-11]

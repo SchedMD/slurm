@@ -14,6 +14,11 @@ documents those changes that are of interest to users and admins.
     - Get slurm user id early in crypto/munge
     - Remove buggy error code handling in crypto/munge
  -- Added sprio command - works only with the priority/multifactor plugin
+ -- Add real topology plugin infrastructure (it was initially added 
+    directly into slurmctld code). To specify topology information,
+    set TopologyType=topology/tree and add configuration information
+    to a new file called topology.conf. See "man topology.conf" or
+    topology.html web page for details.
 
 * Changes in SLURM 1.4.0-pre9
 =============================

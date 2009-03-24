@@ -46,15 +46,13 @@ The basic algorithm is to identify the lowest level switch in the
 hierarchy that can satisfy a job's request and then allocate resources
 on its underlying leaf switches using a best-fit algorithm.
 Use of this logic requires a configuration setting of 
-<i>TopologyPlugin=topology/slurm.conf</i>.</p>
+<i>TopologyPlugin=topology/tree</i>.</p>
 
 <p>At some point in the future SLURM code may be provided to 
 gather network topology information directly.
 Now the network topology information must be included 
-in the <i>slurm.conf</i> configuration file as shown in the 
+in a <i>topology.conf</i> configuration file as shown in the 
 examples below.
-If maintaining this information in a distinct file is desirable, 
-the <i>Include</i> option can be used in <i>slurm.conf</i> for this purpose.
 The first example describes a three level switch in which 
 each switch has two children. 
 Note that the <i>SwitchName</i> values are arbitrary and only
@@ -75,7 +73,13 @@ relative performance of the link.
 The units used are arbitrary and this information is currently not used.
 It may be used in the future to optimize resource allocations.</p>
 
+<p>The first example shows what a topology would look like for an
+eight node cluster in which all switches have only two children as
+shown in the diagram (not a very realistic configuration, but 
+useful for an example).</p>
+
 <pre>
+# topology.conf
 # Switch Configuration
 SwitchName=s0 Nodes=tux[0-1]
 SwitchName=s1 Nodes=tux[2-3]
@@ -85,10 +89,12 @@ SwitchName=s4 Switches=s[0-1]
 SwitchName=s5 Switches=s[2-3]
 SwitchName=s6 Switches=s[4-5]
 </pre>
+<img src=topo_ex1.gif width=600>
 
 <p>The next example is for a network with two levels and 
 each switch has four connections.</p>
 <pre>
+# topology.conf
 # Switch Configuration
 SwitchName=s0 Nodes=tux[0-3]   LinkSpeed=900
 SwitchName=s1 Nodes=tux[4-7]   LinkSpeed=900
@@ -99,7 +105,8 @@ SwitchName=s5 Switches=s[0-3]  LinkSpeed=1800
 SwitchName=s6 Switches=s[0-3]  LinkSpeed=1800
 SwitchName=s7 Switches=s[0-3]  LinkSpeed=1800
 </pre>
+<img src=topo_ex2.gif width=600>
 
-<p style="text-align:center;">Last modified 12 March 2009</p>
+<p style="text-align:center;">Last modified 24 March 2009</p>
 
 <!--#include virtual="footer.txt"-->
