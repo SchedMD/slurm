@@ -496,8 +496,8 @@ rm -rf $RPM_BUILD_ROOT
 
 %files slurmdb-direct
 %defattr(-,root,root)
-%{_perldir}/config.slurmdb.pl
-%{_bindir}/moab_2_slurmdb
+%config (noreplace) %{_perldir}/config.slurmdb.pl
+%{_sbindir}/moab_2_slurmdb
 #############################################################################
 
 %if %{slurm_with aix}
