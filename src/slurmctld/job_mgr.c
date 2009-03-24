@@ -2798,23 +2798,9 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	struct job_details *detail_ptr;
 	struct job_record *job_ptr;
 
-	job_ptr = create_job_record(&error_code);
-	if (error_code)
-		return error_code;
-
-	job_ptr->partition = xstrdup(part_ptr->name);
-	job_ptr->part_ptr = part_ptr;
-	if (job_desc->job_id != NO_VAL)		/* already confirmed unique */
-		job_ptr->job_id = job_desc->job_id;
-	else
-		_set_job_id(job_ptr);
-
-	if (job_desc->name)
-		job_ptr->name = xstrdup(job_desc->name);
-	
         if(slurm_get_track_wckey()) {
 		char *wckey = NULL;
-		if(!job_ptr->name || !strchr(job_ptr->name, '\"')) {
+		if(!job_desc->name || !strchr(job_desc->name, '\"')) {
 			/* get the default wckey for this user since none was
 			 * given */
 			acct_user_rec_t user_rec;
@@ -2823,17 +2809,18 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 			assoc_mgr_fill_in_user(acct_db_conn, &user_rec,
 					       accounting_enforce);
 			if(user_rec.default_wckey)
-				xstrfmtcat(job_ptr->name, "\"*%s",
+				xstrfmtcat(job_desc->name, "\"*%s",
 					   user_rec.default_wckey);
 			else if(!(accounting_enforce 
 				  & ACCOUNTING_ENFORCE_WCKEYS))
-				xstrcat(job_ptr->name, "\"*");	
+				xstrcat(job_desc->name, "\"*");	
 			else {
 				error("Job didn't specify wckey and user "
 				      "%d has no default.", job_desc->user_id);
 				return ESLURM_INVALID_WCKEY;
 			}
-		} else if(job_ptr->name && (wckey = strchr(job_ptr->name, '\"'))
+		} else if(job_desc->name 
+			  && (wckey = strchr(job_desc->name, '\"'))
 			  && (accounting_enforce & ACCOUNTING_ENFORCE_WCKEYS)) {
 			acct_wckey_rec_t wckey_rec, *wckey_ptr = NULL;
 			wckey++;
@@ -2852,11 +2839,24 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 			}
 		} else if (accounting_enforce & ACCOUNTING_ENFORCE_WCKEYS) {
 			/* This should never happen */
-			info("_job_create: no wckey was given for job '%u'.",
-			     job_ptr->job_id);
+			info("_job_create: no wckey was given.");
 				return ESLURM_INVALID_WCKEY;
 		}
 	}
+
+	job_ptr = create_job_record(&error_code);
+	if (error_code)
+		return error_code;
+
+	job_ptr->partition = xstrdup(part_ptr->name);
+	job_ptr->part_ptr = part_ptr;
+	if (job_desc->job_id != NO_VAL)		/* already confirmed unique */
+		job_ptr->job_id = job_desc->job_id;
+	else
+		_set_job_id(job_ptr);
+
+	if (job_desc->name)
+		job_ptr->name = xstrdup(job_desc->name);	
 
 	_add_job_hash(job_ptr);
 
