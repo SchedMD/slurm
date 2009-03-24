@@ -55,6 +55,7 @@ generated_html = \
 	team.html \
 	testimonials.html \
 	topology.html \
+	topology_plugin.html \
 	troubleshoot.html
 
 html_DATA = \

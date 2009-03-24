@@ -72,9 +72,10 @@ Also see <a href="publications.html">Publications and Presentations</a>.
 <li><a href="selectplugins.html">Resource Selection Plugin Programmer Guide</a></li>
 <li><a href="switchplugins.html">Switch (Interconnect) Plugin Programmer Guide</a></li>
 <li><a href="taskplugins.html">Task Plugin Programmer Guide</a></li>
+<li><a href="topology_plugin.html">Topology Plugin Programmer Guide</a></li>
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 9 March 2009</p>
+<p style="text-align:center;">Last modified 24 March 2009</p>
 
 <!--#include virtual="footer.txt"-->
