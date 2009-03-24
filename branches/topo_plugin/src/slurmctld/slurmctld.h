@@ -795,9 +795,6 @@ extern struct node_record *find_node_record (char *name);
  */
 extern struct part_record *find_part_record (char *name);
 
-/* Free all memory associated with switch_record_table structure */
-extern void free_switch_record_table(void);
-
 /*
  * get_job_env - return the environment variables and their count for a 
  *	given job

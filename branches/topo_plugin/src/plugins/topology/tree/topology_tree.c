@@ -42,10 +42,12 @@
 #endif
 
 #include <signal.h>
+#include <stdlib.h>
 #include <sys/types.h>
 
 #include <slurm/slurm_errno.h>
 #include "src/common/slurm_xlator.h"
+#include "src/slurmctld/slurmctld.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -78,6 +80,12 @@ const char plugin_name[]        = "topology tree plugin";
 const char plugin_type[]        = "topology/tree";
 const uint32_t plugin_version   = 100;
 
+static void _free_switch_record_table(void);
+static int  _get_switch_inx(const char *name);
+static void _log_switches(void);
+static void _validate_switches(void);
+
+
 /*
  * init() is called when the plugin is loaded, before any other functions
  *	are called.  Put global initialization here.
@@ -94,6 +102,7 @@ extern int init(void)
  */
 extern int fini(void)
 {
+	_free_switch_record_table();
 	return SLURM_SUCCESS;
 }
 
@@ -103,6 +112,223 @@ extern int fini(void)
  */
 extern int topo_build_config(void)
 {
+	_validate_switches();
 	return SLURM_SUCCESS;
 }
 
+static void _validate_switches(void)
+{
+	slurm_conf_switches_t *ptr, **ptr_array;
+	int depth, i, j;
+	struct switch_record *switch_ptr;
+	hostlist_t hl;
+	char *child;
+	bitstr_t *switches_bitmap = NULL;
+
+	_free_switch_record_table();
+
+	switch_record_cnt = slurm_conf_switch_array(&ptr_array);
+	if (switch_record_cnt == 0) {
+		error("No switches configured");
+		return;
+	}	
+
+	switch_record_table = xmalloc(sizeof(struct switch_record) * 
+				      switch_record_cnt);
+	switch_ptr = switch_record_table;
+	for (i=0; i<switch_record_cnt; i++, switch_ptr++) {
+		ptr = ptr_array[i];
+		switch_ptr->name = xstrdup(ptr->switch_name);
+		switch_ptr->link_speed = ptr->link_speed;
+		if (ptr->nodes) {
+			switch_ptr->level = 0;	/* leaf switch */
+			switch_ptr->nodes = xstrdup(ptr->nodes);
+			if (node_name2bitmap(ptr->nodes, false, 
+					     &switch_ptr->node_bitmap)) {
+				fatal("Invalid node name (%s) in switch "
+				      "config (%s)", 
+				      ptr->nodes, ptr->switch_name);
+			}
+		} else if (ptr->switches) {
+			switch_ptr->level = -1;	/* determine later */
+			switch_ptr->switches = xstrdup(ptr->switches);
+		} else {
+			fatal("Switch configuration (%s) lacks children",
+			      ptr->switch_name);
+		}
+	}
+
+	for (depth=1; ; depth++) {
+		bool resolved = true;
+		switch_ptr = switch_record_table;
+		for (i=0; i<switch_record_cnt; i++, switch_ptr++) {
+			if (switch_ptr->level != -1)
+				continue;
+			hl = hostlist_create(switch_ptr->switches);
+			if (!hl)
+				fatal("hostlist_create: malloc failure");
+			while ((child = hostlist_pop(hl))) {
+				j = _get_switch_inx(child);
+				if ((j < 0) || (j == i)) {
+					fatal("Switch configuration %s has "
+					      "invalid child (%s)",
+					      switch_ptr->name, child);
+				}
+				if (switch_record_table[j].level == -1) {
+					/* Children not resolved */
+					resolved = false;
+					switch_ptr->level = -1;
+					FREE_NULL_BITMAP(switch_ptr->
+							 node_bitmap);
+					free(child);
+					break;
+				}
+				if (switch_ptr->level == -1) {
+					switch_ptr->level = 1 +
+						switch_record_table[j].level;
+					switch_ptr->node_bitmap = 
+						bit_copy(switch_record_table[j].
+							 node_bitmap);
+				} else {
+					switch_ptr->level = 
+						MAX(switch_ptr->level,
+						     (1 + 
+						      switch_record_table[j].
+						      level));
+					bit_or(switch_ptr->node_bitmap,
+					       switch_record_table[j].
+					       node_bitmap);
+				}
+				free(child);
+			}
+			hostlist_destroy(hl);
+		}
+		if (resolved)
+			break;
+	}
+
+	switch_ptr = switch_record_table;
+	for (i=0; i<switch_record_cnt; i++, switch_ptr++) {
+		if (switch_ptr->node_bitmap == NULL) {
+			error("switch %s has no nodes", switch_ptr->name);
+			continue;
+		}
+		if (switches_bitmap)
+			bit_or(switches_bitmap, switch_ptr->node_bitmap);
+		else
+			switches_bitmap = bit_copy(switch_ptr->node_bitmap);
+	}
+	if (switches_bitmap) {
+		bit_not(switches_bitmap);
+		i = bit_set_count(switches_bitmap);
+		if (i > 0) {
+			child = bitmap2node_name(switches_bitmap);
+			error("switches lack access to %d nodes: %s", 
+			      i, child);
+			xfree(child);
+		}
+		bit_free(switches_bitmap);
+	} else
+		fatal("switches contain no nodes");
+	_log_switches();
+}
+
+static void _log_switches(void)
+{
+	int i;
+	struct switch_record *switch_ptr;
+
+	switch_ptr = switch_record_table;
+	for (i=0; i<switch_record_cnt; i++, switch_ptr++) {
+		if (!switch_ptr->nodes) {
+			switch_ptr->nodes = bitmap2node_name(switch_ptr->
+							     node_bitmap);
+		}
+		debug("Switch level:%d name:%s nodes:%s switches:%s",
+		      switch_ptr->level, switch_ptr->name,
+		      switch_ptr->nodes, switch_ptr->switches);
+	}
+}
+
+/* Return the index of a given switch name or -1 if not found */
+static int _get_switch_inx(const char *name)
+{
+	int i;
+	struct switch_record *switch_ptr;
+
+	switch_ptr = switch_record_table;
+	for (i=0; i<switch_record_cnt; i++, switch_ptr++) {
+		if (strcmp(switch_ptr->name, name) == 0)
+			return i;
+	}
+
+	return -1;
+}
+
+/* Free all memory associated with switch_record_table structure */
+static void _free_switch_record_table(void)
+{
+	int i;
+
+	if (switch_record_table) {
+		for (i=0; i<switch_record_cnt; i++) {
+			xfree(switch_record_table[i].name);
+			xfree(switch_record_table[i].nodes);
+			xfree(switch_record_table[i].switches);
+			FREE_NULL_BITMAP(switch_record_table[i].node_bitmap);
+		}
+		xfree(switch_record_table);
+		switch_record_cnt = 0;
+	}
+}
+#if 0
+static char *_get_topo_conf(void)
+{
+	char *val = getenv("SLURM_CONF");
+	char *rc;
+	int i;
+
+	if (!val)
+		return xstrdup(TOPOLOGY_CONFIG_FILE);
+
+	/* Replace file name on end of path */
+	i = strlen(val) - strlen("slurm.conf") + strlen("topology.conf") + 1;
+	rc = xmalloc(i);
+	strcpy(rc, val);
+	val = strrchr(rc, (int)'/');
+	if (val)	/* absolute path */
+		val++;
+	else		/* not absolute path */
+		val = rc;
+	strcpy(val, "topology.conf");
+	return rc;
+}
+
+static int _parse_fed_file(hostlist_t *adapter_list)
+{
+	s_p_options_t options[] = {{"AdapterName", S_P_STRING}, {NULL}};
+	s_p_hashtbl_t *tbl;
+	char *adapter_name;
+
+	debug("Reading the federation.conf file");
+	if (!fed_conf)
+		fed_conf = _get_fed_conf();
+
+	tbl = s_p_hashtbl_create(options);
+	if(s_p_parse_file(tbl, fed_conf) == SLURM_ERROR)
+		fatal("something wrong with opening/reading federation "
+		      "conf file");
+	
+	if (s_p_get_string(&adapter_name, "AdapterName", tbl)) {
+		int rc;
+		rc = hostlist_push(*adapter_list, adapter_name);
+		if (rc == 0)
+			error("Adapter name format is incorrect.");
+		xfree(adapter_name);
+	}
+
+	s_p_hashtbl_destroy(tbl);
+	
+	return SLURM_SUCCESS;
+}
+#endif

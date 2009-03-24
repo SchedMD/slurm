@@ -587,7 +587,6 @@ int main(int argc, char *argv[])
 	trigger_fini();
 	assoc_mgr_fini(slurmctld_conf.state_save_location);
 	reserve_port_config(NULL);
-	free_switch_record_table();
 
 	/* Some plugins are needed to purge job/node data structures,
 	 * unplug after other data structures are purged */
