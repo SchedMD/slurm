@@ -2583,8 +2583,8 @@ static int _get_db_index(MYSQL *db_conn,
    user or not.
 */
 static int _get_usage_for_list(mysql_conn_t *mysql_conn,
-			    slurmdbd_msg_type_t type, List object_list, 
-			    time_t start, time_t end)
+			       slurmdbd_msg_type_t type, List object_list, 
+			       time_t start, time_t end)
 {
 #ifdef HAVE_MYSQL
 	int rc = SLURM_SUCCESS;
@@ -10887,7 +10887,7 @@ extern int jobacct_storage_p_step_start(mysql_conn_t *mysql_conn,
 		} else
 			snprintf(node_list, BUFFER_SIZE, "%s",
 				 step_ptr->job_ptr->nodes);
-		select_g_get_jobinfo(job_ptr->select_jobinfo, 
+		select_g_get_jobinfo(step_ptr->job_ptr->select_jobinfo, 
 				     SELECT_DATA_NODE_CNT, 
 				     &nodes);
 #else
