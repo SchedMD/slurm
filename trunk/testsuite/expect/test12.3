@@ -57,7 +57,7 @@ set exit_code   0
 set matches     0
 set not_support 0
 	send_user "sacct -$soption\n"
-set timeout 20
+set timeout 60
 spawn $sacct -$soption
 expect {
 	-re "SLURM accounting storage is disabled" {

@@ -255,11 +255,11 @@ proc sstat_job { soption job_id} {
 	set exit_code   0
 	set matches     0
 	set not_support 0
-	send_user "sstat -$soption -j $job_id\n"
+	send_user "sstat -$soption -p -j $job_id\n"
 
 	if { $soption == "-allsteps" || $soption == "a" } {
 
-	spawn $sstat -$soption -j $job_id
+	spawn $sstat -$soption -p -j $job_id
 	expect {
 		-re "SLURM accounting storage is disabled" {
 			set not_support 1
@@ -302,7 +302,7 @@ proc sstat_job { soption job_id} {
 
 	if { $soption == "-noheader" || $soption == "n" } {
 
-	spawn $sstat -$soption -j $job_id
+	spawn $sstat -$soption -p -j $job_id
 	expect {
 		-re "SLURM accounting storage is disabled" {
 			set not_support 1
@@ -343,7 +343,7 @@ proc sstat_job { soption job_id} {
 
 	if { $soption == "-parsable" || $soption == "p" } {
 
-	spawn $sstat -$soption -j $job_id
+	spawn $sstat -$soption -p -j $job_id
 	expect {
 		-re "SLURM accounting storage is disabled" {
 			set not_support 1
@@ -439,23 +439,23 @@ proc sstat_job { soption job_id} {
 
 	if { $soption == "-verbose" || $soption == "v" } {
 
-	spawn $sstat -$soption -j $job_id
+	spawn $sstat -$soption -p -j $job_id
 	expect {
 		-re "SLURM accounting storage is disabled" {
 			set not_support 1
 			exp_continue
 		}
-		-re "JobID......MaxVMSize..MaxVMSizeNode..MaxVMSizeTask..AveVMSize..MaxRSS" {
+		-re "JobID.MaxVMSize.MaxVMSizeNode.MaxVMSizeTask.AveVMSize.MaxRSS" {
 			if {$debug} {send_user "\nmatch14\n"}
 			incr matches
 			exp_continue
 		}
-		-re "MaxRSSNode.MaxRSSTask.AveRSS.....MaxPages.MaxPagesNode.MaxPagesTask" {
+		-re "MaxRSSNode.MaxRSSTask.AveRSS.MaxPages.MaxPagesNode.MaxPagesTask" {
 			if {$debug} {send_user "\nmatch15\n"}
 			incr matches
 			exp_continue
 		}
-		-re "AvePages...MinCPU.....MinCPUNode.MinCPUTask.AveCPU.....NTasks" {
+		-re "AvePages.MinCPU.MinCPUNode.MinCPUTask.AveCPU.NTasks" {
 			if {$debug} {send_user "\nmatch16\n"}
 			incr matches
 			exp_continue
@@ -506,37 +506,37 @@ proc sstat_vargs { soption vargs job_id} {
 	set exit_code   0
 	set matches     0
 	set not_support 0
-	send_user "sstat -$soption $vargs -j $job_id\n"
+	send_user "sstat -$soption $vargs -p -j $job_id\n"
 
 	if { $soption == "o" || $soption == "-format" } {
 
-	spawn $sstat -$soption $vargs -j $job_id
+	spawn $sstat -$soption $vargs -p -j $job_id
 	expect {
 		-re "SLURM accounting storage is disabled" {
 			set not_support 1
 			exp_continue
 		}
-		-re "AveCPU.....AvePages...AveRSS.....AveVMSize" {
+		-re "AveCPU.AvePages.AveRSS.AveVMSize" {
 			if {$debug} {send_user "\nmatch18\n"}
 			incr matches
 			exp_continue
 		}
-		-re "JobID......MaxPages.MaxPagesNode.MaxPagesTask" {
+		-re "JobID.MaxPages.MaxPagesNode.MaxPagesTask" {
 			if {$debug} {send_user "\nmatch19\n"}
 			incr matches
 			exp_continue
 		}
-		-re "MaxRSS.....MaxRSSNode.MaxRSSTask.MaxVMSize" {
+		-re "MaxRSS.MaxRSSNode.MaxRSSTask.MaxVMSize" {
 			if {$debug} {send_user "\nmatch20\n"}
 			incr matches
 			exp_continue
 		}
-		-re "MaxVMSizeNode..MaxVMSizeTask..MinCPU.....MinCPUNode" {
+		-re "MaxVMSizeNode.MaxVMSizeTask.MinCPU.MinCPUNode" {
 			if {$debug} {send_user "\nmatch21\n"}
 			incr matches
 			exp_continue
 		}
-		-re "MinCPUTask.NTasks...SystemCPU..TotalCPU" {
+		-re "MinCPUTask.NTasks.SystemCPU.TotalCPU" {
 			if {$debug} {send_user "\nmatch22\n"}
 			incr matches
 			exp_continue
