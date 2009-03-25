@@ -41,7 +41,7 @@ HIGHLIGHTS
   needed. For more information see:
   https://computing.llnl.gov/linux/slurm/reservations.html
 * Idle nodes can now be completely powered down when idle and automatically
-  restarted when their is work available. For more information see:
+  restarted when there is work available. For more information see:
   https://computing.llnl.gov/linux/slurm/power_save.html
 * SLURM has been modified to allocate specific cores to jobs and job steps in
   the centralized scheduler rather than the daemons running on the individual
@@ -54,7 +54,7 @@ HIGHLIGHTS
   priority partition will resume once preempting job completes. For more 
   information see:
   https://computing.llnl.gov/linux/slurm/preempt.html
-* Add support for optimize resource allocation with respect to network 
+* Added support for optimized resource allocation with respect to network
   topology. Requires switch configuration information be added to slurm.conf.
 * Support added for Sun Constellation system with optimized resource allocation
   for a 3-dimensional torus interconnect. For more information see:
@@ -101,7 +101,7 @@ CONFIGURATION FILE CHANGES (see "man slurm.conf" for details)
   it has been allocated. The entity bound to (sockets, cores or threads)
   will be automatically set based upon the allocation size and task count
   SLURM's SPANK cpuset plugin is no longer be needed.
-* Resource allocations can not be optimized according to network topology.
+* Resource allocations can now be optimized according to network topology.
   The following switch topology configuration options have been added: 
   TopologyPlugin and in a new topology.conf file: SwitchName, Nodes, 
   Switches. More information is available in man pages for slurm.conf, 
@@ -127,7 +127,7 @@ COMMAND CHANGES (see man pages for details)
 * sacct -S to status a job will no longer work.  Use sstat from now on.
 * sacct and sstat have been rewritten to have a more sacctmgr like feel
 * Added the sprio command to view the factors that comprise a job's scheduling
-  priority - works only with the priority/multifactor plugin
+  priority - works only with the priority/multifactor plugin.
 
 ACCOUNTING CHANGES
 * Added ability for slurmdbd to archive and purge step and/or job records.
