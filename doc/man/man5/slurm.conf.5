@@ -82,16 +82,11 @@ Also see \fBDefaultStoragePort\fR.
 \fBAccountingStorageType\fR
 Define the accounting storage mechanism type.
 Acceptable values at present include 
-"accounting_storage/filetxt", "accounting_storage/gold",
 "accounting_storage/mysql", "accounting_storage/none", 
 "accounting_storage/pgsql", and "accounting_storage/slurmdbd".
 The value "accounting_storage/filetxt" indicates that accounting records
 will be written to a the file specified by the 
 \fBAccountingStorageLoc\fR parameter.
-The value "accounting_storage/gold" indicates that account records
-will be written to Gold
-(http://www.clusterresources.com/pages/products/gold-allocation-manager.php),
-which maintains its own database.
 The value "accounting_storage/mysql" indicates that accounting records
 should be written to a MySQL database specified by the 
 \fBAccountingStorageLoc\fR parameter.
@@ -311,12 +306,8 @@ Also see \fBAccountingStoragePort\fR and \fBJobCompPort\fR.
 \fBDefaultStorageType\fR
 Define the accounting and job completion storage mechanism type.
 Acceptable values at present include 
-"filetxt", "gold", "mysql", "none", "pgsql", and "slurmdbd".
+"filetxt", "mysql", "none", "pgsql", and "slurmdbd".
 The value "filetxt" indicates that records will be written to a the file.
-The value "gold" indicates that records will be written to Gold
-(http://www.clusterresources.com/pages/products/gold-allocation-manager.php),
-.na
-which maintains its own database.
 .ad
 The value "mysql" indicates that accounting records will be written to 
 a mysql database.

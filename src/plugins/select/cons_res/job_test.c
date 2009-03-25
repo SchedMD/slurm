@@ -1476,7 +1476,7 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 	}
 
 	/* NOTE: num_procs is 1 by default, 
-	 * only reset max_nodes if user explicitly sets a proc count */
+	 * Only reset max_nodes if user explicitly sets a proc count */
 	if ((job_ptr->num_procs > 1) && (max_nodes > job_ptr->num_procs))
 		max_nodes = job_ptr->num_procs;
 
