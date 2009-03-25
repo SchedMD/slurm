@@ -105,6 +105,8 @@ indicate?</a></li>
 SLURM job ID to its standard output?</li>
 <li><a href="#moab_start">I run SLURM with the Moab or Maui scheduler.
 How can I start a job under SLURM wihtout the scheduler?</li>
+<li><a href="#orphan_procs">Why are user processes and <i>srun</i>
+running even though the job is supposed to be completed?</li>
 </ol>
 
 
@@ -695,11 +697,8 @@ reconfigure &quot; any time your groups database is updated.
 
 <p><a name="maint_time"><b>8. How can I dry up the workload for a 
 maintenance period?</b></a><br>
-There isn't a mechanism to tell SLURM that all jobs should be 
-completed by a specific time. The best way to address this is 
-to shorten the <i>MaxTime</i> associated with the partitions so 
-as to avoid initiating jobs that will not have completed by 
-the maintenance period.
+Create a resource reservation as described by SLURM's 
+<a href="reservations.html">Resource Reservation Guide</a>.
 
 <p><a name="pam"><b>9. How can PAM be used to control a user's limits on 
 or access to compute nodes?</b></a><br>
@@ -1167,8 +1166,17 @@ When changing to Moab or Maui scheduling, set every job priority to zero.
 When changing from Moab or Maui scheduling, set every job priority to a
 non-zero value (preferably fairly large, say 1000000).</p>
 
+<p><a name="orphan_procs"><b>36. Why are user processes and <i>srun</i>
+running even though the job is supposed to be completed?</b></a></br>
+SLURM relies upon a configurable process tracking plugin to determine
+when all of the processes associated with a job or job step have completed.
+Those plugins relying upon a kernel patch can reliably identify every process.
+Those plugins dependent upon process group IDs or parent process IDs are not 
+reliable. See the <i>ProctrackType</i> description in the <i>slurm.conf</i>
+man page for details. We rely upon the sgi_job for most systems.</p>
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 26 February 2009</p>
+<p style="text-align:center;">Last modified 25 March 2009</p>
 
 <!--#include virtual="footer.txt"-->
