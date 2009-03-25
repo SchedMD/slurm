@@ -221,8 +221,6 @@ documents those changes that are of interest to users and admins.
     a line containing the prefix "print " to it's standard output.
  -- Fix for making the slurmdbd agent thread start up correctly when 
     stopped and then started again.
- -- Prevent the Linux out of memory killer from killing the slurmd or
-    slurmstepd daemons. Patch from Hongjia Cao, NUDT.
  -- Add squeue option to report jobs by account (-U or --account). Patch from
     Par Andersson, National Supercomputer Centre, Sweden.
  -- Add -DNUMA_VERSION1_COMPATIBILITY to Makefile CFLAGS for proper behavior
@@ -262,6 +260,8 @@ documents those changes that are of interest to users and admins.
     Par Andersson (NSC).
  -- Correct logic in select/cons_res to allocate a job the maximum node
     count from a range rather than minimum (e.g. "sbatch -N1-4 my.sh").
+ -- In accounting_storage/filetxt and accounting_storage/pgsql fix 
+    possible invalid memory reference when a job lacks a name.
 
 * Changes in SLURM 1.3.13
 =========================

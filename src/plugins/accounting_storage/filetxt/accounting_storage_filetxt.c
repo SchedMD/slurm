@@ -520,7 +520,8 @@ extern int jobacct_storage_p_job_start(void *db_conn, char *cluster_name,
 {
 	int	i,
 		rc=SLURM_SUCCESS;
-	char	buf[BUFFER_SIZE], *jname, *account, *nodes;
+	char	buf[BUFFER_SIZE], *account, *nodes;
+	char    *jname = NULL;
 	long	priority;
 	int track_steps = 0;
 
@@ -540,7 +541,7 @@ extern int jobacct_storage_p_job_start(void *db_conn, char *cluster_name,
 	}
 
 	priority = (job_ptr->priority == NO_VAL) ?
-		-1L : (long) job_ptr->priority;
+		   -1L : (long) job_ptr->priority;
 
 	if (job_ptr->name && job_ptr->name[0]) {
 		jname = xstrdup(job_ptr->name);

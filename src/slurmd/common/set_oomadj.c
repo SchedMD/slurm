@@ -46,6 +46,7 @@
 
 extern int set_oom_adj(int adj)
 {
+#if 0
 	int fd;
 	char oom_adj[16];
 
@@ -63,6 +64,7 @@ extern int set_oom_adj(int adj)
 	while ((write(fd, oom_adj, strlen(oom_adj)) < 0) && (errno == EINTR))
 		;
 	close(fd);
+#endif
 	return 0;
 }
 
