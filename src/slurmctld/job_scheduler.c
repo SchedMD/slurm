@@ -1094,7 +1094,7 @@ static char **_build_env(struct job_record *job_ptr)
 #ifdef HAVE_BG
 	select_g_get_jobinfo(job_ptr->select_jobinfo, 
 			     SELECT_DATA_BLOCK_ID, &name);
-	setenvf(&env, "MPIRUN_PARTITION", "%s", name);
+	setenvf(&my_env, "MPIRUN_PARTITION", "%s", name);
 #endif
 	setenvf(&my_env, "SLURM_JOB_ACCOUNT", "%s", job_ptr->account);
 	if (job_ptr->details) {

@@ -828,9 +828,6 @@ void
 env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc,
 		  const job_desc_msg_t *desc)
 {
-#ifdef HAVE_BG
-	char *bgl_part_id = NULL;
-#endif
 #ifdef HAVE_CRAY_XT
 	char *resv_id = NULL;
 #endif
