@@ -2,7 +2,7 @@
  *  select_bluegene.c - node selection plugin for Blue Gene system.
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Dan Phung <phung4@llnl.gov> Danny Auble <da@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -912,6 +912,14 @@ extern int select_p_get_info_from_plugin (enum select_data_info info,
 					  struct job_record *job_ptr,
 					  void *data)
 {
+	if (info == SELECT_STATIC_PART) {
+		uint16_t *tmp16 = (uint16_t *) data;
+		if (bluegene_layout_mode == LAYOUT_STATIC)
+			*tmp16 = 1;
+		else
+			*tmp16 = 0;
+	}
+
 	return SLURM_SUCCESS;
 }
 
