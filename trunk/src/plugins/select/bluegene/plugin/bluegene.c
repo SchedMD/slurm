@@ -1292,7 +1292,7 @@ no_calc:
 extern int validate_current_blocks(char *dir)
 {
 	/* found bg blocks already on system */
-	List bg_found_block_list = list_create(NULL);
+	List bg_found_block_list = NULL;
 	static time_t last_config_update = (time_t) 0;
 
 	/* only run on startup */
@@ -1300,6 +1300,7 @@ extern int validate_current_blocks(char *dir)
 		return SLURM_SUCCESS;
 
 	last_config_update = time(NULL);
+	bg_found_block_list = list_create(NULL);
 //#if 0	
 	/* Check to see if the configs we have are correct */
 	if (_validate_config_nodes(&bg_found_block_list, dir) == SLURM_ERROR) { 
