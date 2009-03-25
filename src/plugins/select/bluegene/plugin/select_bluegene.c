@@ -144,7 +144,7 @@ static int _init_status_pthread(void)
 	}
 
 	slurm_attr_init( &attr );
-	pthread_attr_setdetachstate( &attr, PTHREAD_CREATE_DETACHED );
+	/* since we do a join on this later we don't make it detached */
 	if (pthread_create( &bluegene_thread, &attr, bluegene_agent, NULL)
 	    != 0)
 		error("Failed to create bluegene_agent thread");
