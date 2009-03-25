@@ -157,6 +157,7 @@ test1.56   Test buffered standard IO with really long lines
 test1.57   Test of srun --jobid for a new job allocation (used by Moab)
 test1.58   Test of srun --jobid for an existing job allocation
 test1.59   Test of hostfile logic for job steps
+test1.60   Test of labelling output when writing a file per task or per node
 
 **NOTE**   The following tests attempt to utilize multiple CPUs or partitions,
            The test will print "WARNING" and terminate with an exit code of 
