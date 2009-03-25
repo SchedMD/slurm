@@ -58,6 +58,11 @@ an IBM SP/AIX cluster at LLNL with 12,208 Power5 processors and a Federation swi
 <li><a href="http://www.bsc.es/plantillaA.php?cat_id=5">MareNostrum</a>
 a Linux cluster at Barcelona Supercomputer Center
 with 10,240 PowerPC processors and a Myrinet switch</li>
+<li><a href="http://en.wikipedia.org/wiki/Anton_(computer)">Anton</a>
+a massively parallel supercomputer designed and built by
+<a href="http://www.deshawresearch.com/">D. E. Shaw Research</a> 
+for molecular dynamics simulation using 512 custom-designed ASICs 
+and a three-dimensional torus interconnect </li>
 </ul>
 <p>SLURM is actively being developed, distributed and supported by 
 <a href="https://www.llnl.gov">Lawrence Livermore National Laboratory</a>,
@@ -70,6 +75,6 @@ It is also distributed and supported by
 <a href="http://www.ibm.com">IBM</a> and
 <a href="http://www.sun.com">Sun Microsystems</a>.</p>
 
-<p style="text-align:center;">Last modified 3 March 2009</p>
+<p style="text-align:center;">Last modified 25 March 2009</p>
 
 <!--#include virtual="footer.txt"-->
