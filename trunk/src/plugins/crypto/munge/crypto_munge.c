@@ -106,6 +106,8 @@ enum local_error_code {
 	ESIG_BAD_USERID,
 };
 
+static uid_t slurm_user = (uid_t)NO_VAL;
+
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
@@ -144,13 +146,15 @@ crypto_read_private_key(const char *path)
 		return (NULL);
 	}
 
+	if(slurm_user == (uid_t)NO_VAL)
+		slurm_user = slurm_get_slurm_user_id();
 	/*
-	 *  Only allow user root to decode job credentials creatdd by
+	 *   Only allow slurm_user to decode job credentials created by
 	 *   slurmctld. This provides a slight layer of extra security,
 	 *   as non-privileged users cannot get at the contents of job
-	 *   credentials.
+	 *   credentials.  Root can always decode things.
 	 */
-	err = munge_ctx_set(ctx, MUNGE_OPT_UID_RESTRICTION, (uid_t) 0);
+	err = munge_ctx_set(ctx, MUNGE_OPT_UID_RESTRICTION, slurm_user);
 
 	if (err != EMUNGE_SUCCESS) {
 		error("Unable to set uid restriction on munge credentials: %s",
@@ -162,16 +166,15 @@ crypto_read_private_key(const char *path)
 	return ((void *) ctx);
 }
 
-
-static uid_t slurm_user = 0;
-
 extern void *
 crypto_read_public_key(const char *path)
 {
 	/*
 	 * Get slurm user id once. We use it later to verify credentials.
 	 */
-	slurm_user = slurm_get_slurm_user_id();
+	if(slurm_user == (uid_t)NO_VAL)
+		slurm_user = slurm_get_slurm_user_id();
+
 	return (void *) munge_ctx_create();
 }
 
@@ -191,13 +194,13 @@ crypto_str_error(int errnum)
 /* NOTE: Caller must xfree the signature returned by sig_pp */
 extern int
 crypto_sign(void * key, char *buffer, int buf_size, char **sig_pp, 
-		unsigned int *sig_size_p) 
+	    unsigned int *sig_size_p) 
 {
 	char *cred;
 	munge_err_t err;
 
 	err = munge_encode(&cred, (munge_ctx_t) key,
-				 buffer, buf_size);
+			   buffer, buf_size);
 
 	if (err != EMUNGE_SUCCESS)
 		return err;
@@ -210,7 +213,7 @@ crypto_sign(void * key, char *buffer, int buf_size, char **sig_pp,
 
 extern int
 crypto_verify_sign(void * key, char *buffer, unsigned int buf_size, 
-		char *signature, unsigned int sig_size)
+		   char *signature, unsigned int sig_size)
 {
 	uid_t uid;
 	gid_t gid;
@@ -220,8 +223,8 @@ crypto_verify_sign(void * key, char *buffer, unsigned int buf_size,
 	munge_err_t err;
 
 	err = munge_decode(signature, (munge_ctx_t) key,
-				 &buf_out, &buf_out_size, 
-				 &uid, &gid);
+			   &buf_out, &buf_out_size, 
+			   &uid, &gid);
 
 	if (err != EMUNGE_SUCCESS) {
 #ifdef MULTIPLE_SLURMD
@@ -235,6 +238,7 @@ crypto_verify_sign(void * key, char *buffer, unsigned int buf_size,
 			debug2("We had a replayed crypto, "
 			       "but this is expected in multiple "
 			       "slurmd mode.");
+			err = 0;
 		}
 #else
 		return err;
@@ -244,7 +248,7 @@ crypto_verify_sign(void * key, char *buffer, unsigned int buf_size,
 
 	if ((uid != slurm_user) && (uid != 0)) {
 		error("crypto/munge: Unexpected uid (%d) != SLURM uid (%d)",
-			(int) uid, (int) slurm_user);
+		      (int) uid, (int) slurm_user);
 		rc = ESIG_BAD_USERID;
 	}
 	else if (buf_size != buf_out_size)
