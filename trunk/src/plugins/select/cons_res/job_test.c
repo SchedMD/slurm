@@ -1017,14 +1017,14 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 			if (++consec_index >= consec_size) {
 				consec_size *= 2;
 				xrealloc(consec_cpus, sizeof(int)*consec_size);
-				xrealloc(consec_nodes, sizeof(int)*consec_size);
-				xrealloc(consec_start, sizeof(int)*consec_size);
-				xrealloc(consec_end, sizeof(int)*consec_size);
-				xrealloc(consec_req, sizeof(int)*consec_size);
+				xrealloc(consec_nodes,sizeof(int)*consec_size);
+				xrealloc(consec_start,sizeof(int)*consec_size);
+				xrealloc(consec_end,  sizeof(int)*consec_size);
+				xrealloc(consec_req,  sizeof(int)*consec_size);
 			}
-			consec_cpus[consec_index] = 0;
+			consec_cpus[consec_index]  = 0;
 			consec_nodes[consec_index] = 0;
-			consec_req[consec_index] = -1;
+			consec_req[consec_index]   = -1;
 		}
 	}
 	if (consec_nodes[consec_index] != 0)
@@ -1032,8 +1032,8 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 	
 	for (i = 0; i < consec_index; i++) {
 		debug3("cons_res: eval_nodes:%d consec c=%d n=%d b=%d e=%d r=%d",
-			i, consec_cpus[i], consec_nodes[i], consec_start[i],
-			consec_end[i], consec_req[i]);
+		       i, consec_cpus[i], consec_nodes[i], consec_start[i],
+		       consec_end[i], consec_req[i]);
 	}
 	
 	/* accumulate nodes from these sets of consecutive nodes until */
@@ -1044,9 +1044,9 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 		for (i = 0; i < consec_index; i++) {
 			if (consec_nodes[i] == 0)
 				continue;
-			sufficient =  (consec_cpus[i] >= rem_cpus)
-				&& _enough_nodes(consec_nodes[i], rem_nodes,
-						 min_nodes, req_nodes);
+			sufficient = (consec_cpus[i] >= rem_cpus) &&
+				     _enough_nodes(consec_nodes[i], rem_nodes,
+						   min_nodes, req_nodes);
 			
 			/* if first possibility OR */
 			/* contains required nodes OR */
@@ -1078,8 +1078,8 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 			 * then down from the required nodes */
 			for (i = best_fit_req;
 			     i <= consec_end[best_fit_index]; i++) {
-				if ((max_nodes <= 0)
-				    ||  ((rem_nodes <= 0) && (rem_cpus <= 0)))
+				if ((max_nodes <= 0) ||
+				    ((rem_nodes <= 0) && (rem_cpus <= 0)))
 					break;
 				if (bit_test(node_map, i))
 					continue;
@@ -1092,8 +1092,8 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 			}
 			for (i = (best_fit_req - 1);
 			     i >= consec_start[best_fit_index]; i--) {
-				if ((max_nodes <= 0)
-				    ||  ((rem_nodes <= 0) && (rem_cpus <= 0)))
+				if ((max_nodes <= 0) ||
+				    ((rem_nodes <= 0) && (rem_cpus <= 0)))
 					break;
 				if (bit_test(node_map, i)) 
 					continue;
@@ -1109,8 +1109,8 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 		} else {
 			for (i = consec_start[best_fit_index];
 			     i <= consec_end[best_fit_index]; i++) {
-				if ((max_nodes <= 0)
-				    || ((rem_nodes <= 0) && (rem_cpus <= 0)))
+				if ((max_nodes <= 0) ||
+				    ((rem_nodes <= 0) && (rem_cpus <= 0)))
 					break;
 				if (bit_test(node_map, i))
 					continue;
@@ -1140,8 +1140,8 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 		consec_nodes[best_fit_index] = 0;
 	}
 	
-	if (error_code && (rem_cpus <= 0)
-	    && _enough_nodes(0, rem_nodes, min_nodes, req_nodes))
+	if (error_code && (rem_cpus <= 0) &&
+	    _enough_nodes(0, rem_nodes, min_nodes, req_nodes))
 		error_code = SLURM_SUCCESS;
 
 	xfree(consec_cpus);
@@ -1475,11 +1475,9 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 		}
 	}
 
-	/* allocated node count should never exceed num_procs, right? 
-	 * if so, then this should be done earlier and max_nodes
-	 * could be used to make this process more efficient (truncate
-	 * # of available nodes when (# of idle nodes == max_nodes)*/
-	if (max_nodes > job_ptr->num_procs)
+	/* NOTE: num_procs is 1 by default, 
+	 * only reset max_nodes if user explicitly sets a proc count */
+	if ((job_ptr->num_procs > 1) && (max_nodes > job_ptr->num_procs))
 		max_nodes = job_ptr->num_procs;
 
 	origmap = bit_copy(node_map);
@@ -1538,9 +1536,9 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 
 /* Select the best set of resources for the given job
  * IN: job_ptr      - pointer to the job requesting resources
- * IN: min_nodes    - minimum number of nodes reuired
+ * IN: min_nodes    - minimum number of nodes required
  * IN: max_nodes    - maximum number of nodes requested
- * IN: req_nodes    - number of required nodes
+ * IN: req_nodes    - number of requested nodes
  * IN/OUT: node_map - bitmap of available nodes / bitmap of selected nodes
  * IN: cr_node_cnt  - total number of nodes in the cluster
  * IN/OUT: core_map - bitmap of available cores / bitmap of selected cores
@@ -1594,7 +1592,7 @@ static uint16_t *_select_nodes(struct job_record *job_ptr, uint32_t min_nodes,
 
 	/* choose the best nodes for the job */
 	rc = _choose_nodes(job_ptr, node_map, min_nodes, max_nodes, req_nodes,
-				cr_node_cnt, cpu_cnt, freq, size);
+			   cr_node_cnt, cpu_cnt, freq, size);
 	
 	/* if successful, sync up the core_map with the node_map, and
 	 * create a cpus array */

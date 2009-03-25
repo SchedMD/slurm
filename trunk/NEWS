@@ -260,6 +260,8 @@ documents those changes that are of interest to users and admins.
  -- For sched/wiki2 (Moab), add flag to note if job is restartable.
  -- Modify squeue to return non-zero exit code on failure. Patch from
     Par Andersson (NSC).
+ -- Correct logic in select/cons_res to allocate a job the maximum node
+    count from a range rather than minimum (e.g. "sbatch -N1-4 my.sh").
 
 * Changes in SLURM 1.3.13
 =========================
