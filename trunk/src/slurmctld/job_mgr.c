@@ -4332,7 +4332,6 @@ static bool _top_priority(struct job_record *job_ptr)
 		}
 	}
 	return top;
-#endif
 }
 
 
