@@ -372,8 +372,8 @@ _setup_normal_io(slurmd_job_t *job)
 	if (_drop_privileges(job, true, &sprivs) < 0)
 		return ESLURMD_SET_UID_OR_GID_ERROR;
 
-	/* FIXME - need to check a return code for failures */
-	io_init_tasks_stdio(job);
+	if (io_init_tasks_stdio(job) != SLURM_SUCCESS)
+		return ESLURMD_IO_ERROR;
 
 	if (_reclaim_privileges(&sprivs) < 0)
 		error("sete{u/g}id(%lu/%lu): %m", 
