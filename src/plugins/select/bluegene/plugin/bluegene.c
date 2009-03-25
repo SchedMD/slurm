@@ -96,6 +96,8 @@ int blocks_are_created = 0;
 int num_unused_cpus = 0;
 
 pthread_mutex_t freed_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t freed_cond = PTHREAD_COND_INITIALIZER;
+static pthread_cond_t destroy_cond = PTHREAD_COND_INITIALIZER;
 List bg_free_block_list = NULL;  	/* blocks to be deleted */
 List bg_destroy_block_list = NULL;       /* blocks to be destroyed */
 int free_cnt = 0;
@@ -130,7 +132,18 @@ extern int init_bg(void)
 /* Purge all plugin variables */
 extern void fini_bg(void)
 {
-	_set_bg_lists();
+	if(!agent_fini) {
+		error("The agent hasn't been finied yet!");
+		agent_fini = true;
+	}
+	/* wait for the agent threads to finish up */
+	waitfor_block_agents();
+
+	/* wait for the destroy/free threads to finish up */
+	if(free_cnt)
+		pthread_cond_wait(&freed_cond, &freed_cnt_mutex);
+	if(destroy_cnt)
+		pthread_cond_wait(&destroy_cond, &freed_cnt_mutex);
 	
 	if (bg_list) {
 		list_destroy(bg_list);
@@ -149,16 +162,7 @@ extern void fini_bg(void)
 		list_destroy(bg_booted_block_list);
 		bg_booted_block_list = NULL;
 	}
-
-	/* wait for the free threads to finish up don't destroy the
-	 * bg_free_block_list here */
-	while(free_cnt > 0)
-		usleep(1000);
-	/* wait for the destroy threads to finish up don't destroy the
-	 * bg_destroy_block_list here */
-	while(destroy_cnt > 0)
-		usleep(1000);
-	
+		
 #ifdef HAVE_BGL
 	if(bg_blrtsimage_list) {
 		list_destroy(bg_blrtsimage_list);
@@ -444,7 +448,7 @@ extern void *bluegene_agent(void *args)
 
 		if (difftime(now, last_bg_test) >= BG_POLL_TIME) {
 			if (agent_fini)		/* don't bother */
-				return NULL;	/* quit now */
+				break;	/* quit now */
 			if(blocks_are_created) {
 				last_bg_test = now;
 				if((rc = update_block_list()) == 1) {
@@ -464,7 +468,7 @@ extern void *bluegene_agent(void *args)
 
 		if (difftime(now, last_mmcs_test) >= MMCS_POLL_TIME) {
 			if (agent_fini)		/* don't bother */
-				return NULL;	/* quit now */
+				break; 	/* quit now */
 			last_mmcs_test = now;
 			test_mmcs_failures();	/* can run for a while */
 		}	
@@ -619,13 +623,7 @@ extern int bg_free_block(bg_record_t *bg_record)
 extern void *mult_free_block(void *args)
 {
 	bg_record_t *bg_record = NULL;
-	
-	slurm_mutex_lock(&freed_cnt_mutex);
-	if ((bg_freeing_list == NULL) 
-	    && ((bg_freeing_list = list_create(destroy_bg_record)) == NULL))
-		fatal("malloc failure in bg_freeing_list");
-	slurm_mutex_unlock(&freed_cnt_mutex);
-	
+		
 	/*
 	 * Don't just exit when there is no work left. Creating 
 	 * pthreads from within a dynamically linked object (plugin)
@@ -657,13 +655,10 @@ extern void *mult_free_block(void *args)
 	}
 	slurm_mutex_lock(&freed_cnt_mutex);
 	free_cnt--;
-	if(bg_freeing_list) {
-		list_destroy(bg_freeing_list);
-		bg_freeing_list = NULL;
-	}
 	if(free_cnt == 0) {
 		list_destroy(bg_free_block_list);
 		bg_free_block_list = NULL;
+		pthread_cond_signal(&freed_cond);
 	}
 	slurm_mutex_unlock(&freed_cnt_mutex);
 	return NULL;
@@ -756,13 +751,14 @@ extern void *mult_destroy_block(void *args)
 	}
 	slurm_mutex_lock(&freed_cnt_mutex);
 	destroy_cnt--;
-	if(bg_freeing_list) {
-		list_destroy(bg_freeing_list);
-		bg_freeing_list = NULL;
-	}
 	if(destroy_cnt == 0) {
+		if(bg_freeing_list) {
+			list_destroy(bg_freeing_list);
+			bg_freeing_list = NULL;
+		}
 		list_destroy(bg_destroy_block_list);
 		bg_destroy_block_list = NULL;
+		pthread_cond_signal(&destroy_cond);
 	}
 	slurm_mutex_unlock(&freed_cnt_mutex);
 
@@ -1376,8 +1372,7 @@ static void _set_bg_lists()
 	bg_mloaderimage_list = list_create(destroy_image);
 	if(bg_ramdiskimage_list)
 		list_destroy(bg_ramdiskimage_list);
-	bg_ramdiskimage_list = list_create(destroy_image);
-	
+	bg_ramdiskimage_list = list_create(destroy_image);	
 }
 
 /*
