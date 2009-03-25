@@ -52,6 +52,8 @@ documents those changes that are of interest to users and admins.
     Par Andersson (NSC).
  -- Correct logic in select/cons_res to allocate a job the maximum node
     count from a range rather than minimum (e.g. "sbatch -N1-4 my.sh").
+ -- In accounting_storage/filetxt and accounting_storage/pgsql fix 
+    possible invalid memory reference when a job lacks a name.
 
 * Changes in SLURM 1.3.13
 =========================

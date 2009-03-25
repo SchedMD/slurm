@@ -1164,7 +1164,7 @@ extern int jobacct_storage_p_job_start(PGconn *acct_pgsql_db,
 {
 #ifdef HAVE_PGSQL
 	int	rc=SLURM_SUCCESS;
-	char	*jname, *nodes;
+	char	*jname = NULL, *nodes;
 	long	priority;
 	int track_steps = 0;
 	char *block_id = NULL;
