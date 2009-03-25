@@ -90,7 +90,6 @@ static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /** initialize the status pthread */
 static int _init_status_pthread(void);
-static int _wait_for_thread (pthread_t thread_id);
 static char *_block_state_str(int state);
 
 extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data);
@@ -145,7 +144,7 @@ static int _init_status_pthread(void)
 	}
 
 	slurm_attr_init( &attr );
-	pthread_attr_setdetachstate( &attr, PTHREAD_CREATE_DETACHED );
+	/* since we do a join on this later we don't make it detached */
 	if (pthread_create( &bluegene_thread, &attr, bluegene_agent, NULL)
 	    != 0)
 		error("Failed to create bluegene_agent thread");
@@ -153,19 +152,6 @@ static int _init_status_pthread(void)
 	slurm_attr_destroy( &attr );
 
 	return SLURM_SUCCESS;
-}
-
-static int _wait_for_thread (pthread_t thread_id)
-{
-	int i;
-
-	for (i=0; i<4; i++) {
-		if (pthread_kill(thread_id, 0))
-			return SLURM_SUCCESS;
-		sleep(1);
-	}
-	error("Could not kill select script pthread");
-	return SLURM_ERROR;
 }
 
 static char *_block_state_str(int state)
@@ -189,15 +175,14 @@ extern int fini ( void )
 {
 	int rc = SLURM_SUCCESS;
 
-	pthread_mutex_lock( &thread_flag_mutex );
 	agent_fini = true;
+	pthread_mutex_lock( &thread_flag_mutex );
 	if ( bluegene_thread ) {
 		verbose("Bluegene select plugin shutting down");
-		rc = _wait_for_thread(bluegene_thread);
+		pthread_join(bluegene_thread, NULL);
 		bluegene_thread = 0;
 	}
 	pthread_mutex_unlock( &thread_flag_mutex );
-
 	fini_bg();
 
 	return rc;

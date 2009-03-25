@@ -77,6 +77,7 @@ int init( void )
 	}
 
 	slurm_attr_init( &attr );
+	/* since we do a join on this later we don't make it detached */
 	if (pthread_create( &backfill_thread, &attr, backfill_agent, NULL))
 		error("Unable to start backfill thread: %m");
 	pthread_mutex_unlock( &thread_flag_mutex );
