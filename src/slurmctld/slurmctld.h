@@ -610,7 +610,9 @@ enum select_data_info {
 	SELECT_BITMAP,       /* data-> partially_idle_bitmap (CR support) */
 	SELECT_ALLOC_CPUS,   /* data-> uint16 alloc cpus (CR support) */
 	SELECT_ALLOC_LPS,    /* data-> uint32 alloc lps  (CR support) */
-	SELECT_AVAIL_MEMORY  /* data-> uint32 avail mem  (CR support) */ 
+	SELECT_AVAIL_MEMORY, /* data-> uint32 avail mem  (CR support) */
+	SELECT_STATIC_PART   /* data-> uint16, 1 if static partitioning 
+			      * BlueGene support */
 } ;
 
 /*****************************************************************************\

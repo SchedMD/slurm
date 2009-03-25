@@ -4254,14 +4254,23 @@ void reset_job_priority(void)
  */
 static bool _top_priority(struct job_record *job_ptr)
 {
-#ifdef HAVE_BG
-	/* On BlueGene, all jobs run ASAP. 
-	 * Priority only matters within a specific job size. */
-	return true;
-
-#else
 	struct job_details *detail_ptr = job_ptr->details;
 	bool top;
+
+#ifdef HAVE_BG
+	uint16_t static_part = 0;
+	int rc;
+
+	/* On BlueGene with static partitioning, we don't want to delay
+	 * jobs based upon priority since jobs of different sizes can 
+	 * execute on different sets of nodes. While sched/backfill would
+	 * eventually start the job if delayed here based upon priority,
+	 * that could delay the initiation of a job by a few seconds. */
+	rc = select_g_get_info_from_plugin(SELECT_STATIC_PART, job_ptr, 
+					   &static_part);
+	if ((rc == SLURM_SUCCESS) && (static_part == 1))
+		return true;
+#endif
 
 	if (job_ptr->priority == 0)	/* user held */
 		top = false;
