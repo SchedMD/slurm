@@ -1910,11 +1910,9 @@ static int _select_nodes(struct job_record *job_ptr, bitstr_t * bitmap,
 		}
 	}
 
-	/* allocated node count should never exceed num_procs, right? 
-	 * if so, then this should be done earlier and max_nodes
-	 * could be used to make this process more efficient (truncate
-	 * # of available nodes when (# of idle nodes == max_nodes)*/
-	if (max_nodes > job_ptr->num_procs)
+	/* NOTE: num_procs is 1 by default.
+	 * Only reset max_nodes if user explicitly sets a process count */
+	if ((job_ptr->num_procs > 1) && (max_nodes > job_ptr->num_procs))
 		max_nodes = job_ptr->num_procs;
 
 	origmap = bit_copy(bitmap);
