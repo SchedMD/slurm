@@ -82,11 +82,11 @@ main (int argc, char *argv[])
 		{"all_clusters", 0, 0, 'a'},
 		{"help",     0, 0, 'h'},
 		{"immediate",0, 0, 'i'},
-		{"no_header", 0, 0, 'n'},
+		{"noheader", 0, 0, 'n'},
 		{"parsable", 0, 0, 'p'},
-		{"parsable2", 0, 0, 'P'},
+		{"parsable2",0, 0, 'P'},
 		{"quiet",    0, 0, 'q'},
-		{"sort",    0, 0, 's'},
+		{"sort",     0, 0, 's'},
 		{"usage",    0, 0, 'h'},
 		{"verbose",  0, 0, 'v'},
 		{"version",  0, 0, 'V'},
@@ -591,7 +591,7 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
     Valid <OPTION> values are:                                             \n\
      -a or --all_clusters: Use all clusters instead of current             \n\
      -h or --help: equivalent to \"help\" command                          \n\
-     -n or --no_header: equivalent to \"no_header\" command                \n\
+     -n or --noheader: equivalent to \"noheader\" command                \n\
      -p or --parsable: output will be '|' delimited with a '|' at the end  \n\
      -P or --parsable2: output will be '|' delimited without a '|' at the end\n\
      -q or --quiet: equivalent to \"quiet\" command                        \n\
