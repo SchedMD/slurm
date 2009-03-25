@@ -19,6 +19,10 @@ documents those changes that are of interest to users and admins.
     set TopologyType=topology/tree and add configuration information
     to a new file called topology.conf. See "man topology.conf" or
     topology.html web page for details.
+ -- Set "/proc/self/oom_adj" for slurmd and slurmstepd daemons based upon
+    the values of SLURMD_OOM_ADJ and SLURMSTEPD_OOM_ADJ environment 
+    variables. This can be used to prevent daemons being killed when
+    a node's memory is exhausted.
 
 * Changes in SLURM 1.4.0-pre9
 =============================

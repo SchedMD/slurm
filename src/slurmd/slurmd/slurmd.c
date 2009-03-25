@@ -153,6 +153,7 @@ main (int argc, char *argv[])
 {
 	int i, pidfd;
 	int blocked_signals[] = {SIGPIPE, 0};
+	char *oom_value;
 
 	/*
 	 * Make sure we have no extra open files which 
@@ -201,7 +202,11 @@ main (int argc, char *argv[])
 	info("slurmd version %s started", SLURM_VERSION);
 	debug3("finished daemonize");
 
-	set_oom_adj(OOM_DISABLE);
+	if ((oom_value = getenv("SLURMD_OOM_ADJ"))) {
+		i = atoi(oom_value);
+		debug("Setting slurmd oom_adj to %d", i);
+		set_oom_adj(i);
+	}
 
 	_kill_old_slurmd();
 
