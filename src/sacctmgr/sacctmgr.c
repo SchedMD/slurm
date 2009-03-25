@@ -80,7 +80,7 @@ main (int argc, char *argv[])
 		{"help",     0, 0, 'h'},
 		{"usage",    0, 0, 'h'},
 		{"immediate",0, 0, 'i'},
-		{"no_header",0, 0, 'n'},
+		{"noheader",0, 0, 'n'},
 		{"oneliner", 0, 0, 'o'},
 		{"parsable", 0, 0, 'p'},
 		{"parsable2", 0, 0, 'P'},
@@ -730,7 +730,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
     Valid <OPTION> values are:                                             \n\
      -h or --help: equivalent to \"help\" command                          \n\
      -i or --immediate: commit changes immediately                         \n\
-     -n or --no_header: no header will be added to the beginning of output \n\
+     -n or --noheader: no header will be added to the beginning of output  \n\
      -o or --oneliner: equivalent to \"oneliner\" command                  \n\
      -p or --parsable: output will be '|' delimited with a '|' at the end  \n\
      -P or --parsable2: output will be '|' delimited without a '|' at the end\n\

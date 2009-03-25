@@ -109,7 +109,7 @@ proc sreport_opt { soption } {
 	return $matches
 }
 
-	if { $soption == "-no_header" || $soption == "n" } {
+	if { $soption == "-noheader" || $soption == "n" } {
 
 	spawn $sreport -$soption job sizes
 	expect {
@@ -276,9 +276,9 @@ if {$matches != 0} {
 	set exit_code 1
 }
 
-set matches [sreport_opt -no_header ]
+set matches [sreport_opt -noheader ]
 if {$matches != 0} {
-	send_user "\nFAILURE: sreport --no_header failed ($matches)\n"
+	send_user "\nFAILURE: sreport --noheader failed ($matches)\n"
 	set exit_code 1
 }
 
