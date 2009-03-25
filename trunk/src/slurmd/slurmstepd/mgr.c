@@ -877,6 +877,7 @@ _fork_all_tasks(slurmd_job_t *job)
 	int fdpair[2];
 	struct priv_state sprivs;
 	jobacct_id_t jobacct_id;
+	char *oom_value;
 
 	xassert(job != NULL);
 
@@ -929,6 +930,9 @@ _fork_all_tasks(slurmd_job_t *job)
 		writefds[i] = fdpair[1];
 	}
 
+	error("setting user oom to zero");
+	set_oom_adj(0);	/* the tasks may be killed by OOM */
+
 	/* Temporarily drop effective privileges, except for the euid.
 	 * We need to wait until after pam_setup() to drop euid.
 	 */
@@ -970,8 +974,6 @@ _fork_all_tasks(slurmd_job_t *job)
 			goto fail2;
 		} else if (pid == 0)  { /* child */
 			int j;
-
-			set_oom_adj(0); /* the tasks may be killed by OOM */
 
 #ifdef HAVE_AIX
 			(void) mkcrid(0);
@@ -1028,6 +1030,14 @@ _fork_all_tasks(slurmd_job_t *job)
 		error ("Unable to reclaim privileges");
 		/* Don't bother erroring out here */
 	}
+
+	if ((oom_value = getenv("SLURMSTEPD_OOM_ADJ"))) {
+		int i = atoi(oom_value);
+		debug("Setting slurmstepd oom_adj to %d", i);
+		set_oom_adj(i);
+	} else
+		error("NO SLURMSTEPD_OOM_ADJ");
+
 
 	if (chdir (sprivs.saved_cwd) < 0) {
 		error ("Unable to return to working directory");

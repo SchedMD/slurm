@@ -46,7 +46,6 @@
 
 extern int set_oom_adj(int adj)
 {
-#if 0
 	int fd;
 	char oom_adj[16];
 
@@ -55,7 +54,7 @@ extern int set_oom_adj(int adj)
 		if (errno == ENOENT)
 			debug("failed to open /proc/self/oom_adj: %m");
 		else
-			verbose("failed to open /proc/self/oom_adj: %m");
+			error("failed to open /proc/self/oom_adj: %m");
 		return -1;
 	}
 	if (snprintf(oom_adj, 16, "%d", adj) >= 16) {
@@ -64,7 +63,7 @@ extern int set_oom_adj(int adj)
 	while ((write(fd, oom_adj, strlen(oom_adj)) < 0) && (errno == EINTR))
 		;
 	close(fd);
-#endif
+
 	return 0;
 }
 

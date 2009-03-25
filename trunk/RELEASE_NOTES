@@ -139,3 +139,7 @@ OTHER CHANGES
 * Modify PMI_Get_clique_ranks() to return an array of integers rather
   than a char * to satisfy PMI standard. Correct logic in
   PMI_Get_clique_size() for when srun --overcommit option is used.
+* Set "/proc/self/oom_adj" for slurmd and slurmstepd daemons based upon
+  the values of SLURMD_OOM_ADJ and SLURMSTEPD_OOM_ADJ environment
+  variables. This can be used to prevent daemons being killed when
+  a node's memory is exhausted.
