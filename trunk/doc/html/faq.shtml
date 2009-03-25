@@ -107,6 +107,9 @@ SLURM job ID to its standard output?</li>
 How can I start a job under SLURM wihtout the scheduler?</li>
 <li><a href="#orphan_procs">Why are user processes and <i>srun</i>
 running even though the job is supposed to be completed?</li>
+<li><a href="#slurmd_oom">How can I prevent the <i>slurmd</i> and
+<i>slurmstepd</i> daemons from being killed when a node's memory 
+is exhausted?</li>
 </ol>
 
 
@@ -1174,6 +1177,15 @@ Those plugins relying upon a kernel patch can reliably identify every process.
 Those plugins dependent upon process group IDs or parent process IDs are not 
 reliable. See the <i>ProctrackType</i> description in the <i>slurm.conf</i>
 man page for details. We rely upon the sgi_job for most systems.</p>
+
+<p><a name="slurmd_oom"><b>37. How can I prevent the <i>slurmd</i> and
+<i>slurmstepd</i> daemons from being killed when a node's memory 
+is exhausted?</b></a></br>
+You can the value set in the <i>/proc/self/oom_adj</i> for 
+<i>slurmd</i> and <i>slurmstepd</i> by initiating the <i>slurmd</i>
+daemon with the <i>SLURMD_OOM_ADJ</i> and/or <i>SLURMSTEPD_OOM_ADJ</i>
+environment variables set to the desired values.
+A value of -17 typically will disable killing.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
