@@ -110,7 +110,7 @@ for {set task_id 0} {$task_id < $node_count} {incr task_id} {
 	} else {
 		spawn $bin_cat $file_out_t_glob
 		expect {
-			-re "($number): hello" {
+			-re "($number): *hello" {
 				set test_task_id $expect_out(1,string)
 				exp_continue
 			}
@@ -174,7 +174,7 @@ for {set node_id 0} {$node_id < $node_count} {incr node_id} {
 
 		spawn $bin_cat $file_out_n_glob
 		expect {
-			-re "($number): hello" {
+			-re "($number): *hello" {
 				set test_task_id $expect_out(1,string)
 				if {$test_task_id == $node_id * 2} {
 					set t0found true
