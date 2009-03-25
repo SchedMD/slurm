@@ -203,17 +203,17 @@ proc sacct_job { soption job_id} {
 	set exit_code   0
 	set matches     0
 	set not_support 0
-	send_user "sacct -$soption -j $job_id\n"
+	send_user "sacct -$soption -p -j $job_id\n"
 
 	if { $soption == "-brief" || $soption == "b" } {
 
-	spawn $sacct -$soption -j $job_id
+	spawn $sacct -$soption -p -j $job_id
 	expect {
 		-re "SLURM accounting storage is disabled" {
 			set not_support 1
 			exp_continue
 		}
-		-re "JobID......State......ExitCode" {
+		-re "JobID.State.ExitCode" {
 			if {$debug} {send_user "\nmatch1\n"}
 			incr matches
 			exp_continue
@@ -245,38 +245,38 @@ proc sacct_job { soption job_id} {
 
 	if { $soption == "-long" || $soption == "l" } {
 
-	spawn $sacct -$soption -j $job_id
+	spawn $sacct -$soption -p -j $job_id
 	expect {
 		-re "SLURM accounting storage is disabled" {
 			set not_support 1
 			exp_continue
 		}
-		-re "JobID......JobName....Partition..MaxVMSize" {
+		-re "JobID.JobName.Partition.MaxVMSize" {
 			if {$debug} {send_user "\nmatch3\n"}
 			incr matches
 			exp_continue
 		}
-		-re "MaxVMSizeNode..MaxVMSizeTask..AveVMSize..MaxRSS" {
+		-re "MaxVMSizeNode.MaxVMSizeTask.AveVMSize.MaxRSS" {
 			if {$debug} {send_user "\nmatch4\n"}
 			incr matches
 			exp_continue
 		}
-		-re "MaxRSSNode.MaxRSSTask.AveRSS.....MaxPages" {
+		-re "MaxRSSNode.MaxRSSTask.AveRSS.MaxPages" {
 			if {$debug} {send_user "\nmatch5\n"}
 			incr matches
 			exp_continue
 		}
-		-re "MaxPagesNode.MaxPagesTask...AvePages...MinCPU" {
+		-re "MaxPagesNode.MaxPagesTask.AvePages.MinCPU" {
 			if {$debug} {send_user "\nmatch6\n"}
 			incr matches
 			exp_continue
 		}
-		-re "MinCPUNode.MinCPUTask.AveCPU.....NTasks" {
+		-re "MinCPUNode.MinCPUTask.AveCPU.NTasks" {
 			if {$debug} {send_user "\nmatch7\n"}
 			incr matches
 			exp_continue
 		}
-		-re "AllocCPUS..Elapsed....State......ExitCode" {
+		-re "AllocCPUS.Elapsed.State.ExitCode" {
 			if {$debug} {send_user "\nmatch8\n"}
 			incr matches
 			exp_continue
@@ -309,7 +309,7 @@ proc sacct_job { soption job_id} {
 
 	if { $soption == "-noheader" || $soption == "n" } {
 
-	spawn $sacct -$soption -j $job_id
+	spawn $sacct -$soption -p -j $job_id
 	expect {
 		-re "SLURM accounting storage is disabled" {
 			set not_support 1
@@ -359,7 +359,7 @@ proc sacct_job { soption job_id} {
 
 	if { $soption == "-parsable" || $soption == "p" } {
 
-	spawn $sacct -$soption -j $job_id
+	spawn $sacct -$soption -p -j $job_id
 	expect {
 		-re "SLURM accounting storage is disabled" {
 			set not_support 1
@@ -397,7 +397,7 @@ proc sacct_job { soption job_id} {
 
 	if { $soption == "-parsable2" || $soption == "P" } {
 
-	spawn $sacct -$soption -j $job_id
+	spawn $sacct -$soption -p -j $job_id
 	expect {
 		-re "SLURM accounting storage is disabled" {
 			set not_support 1
@@ -436,7 +436,7 @@ proc sacct_job { soption job_id} {
 
 	if { $soption == "-verbose" || $soption == "v" } {
 
-	spawn $sacct -$soption -j $job_id
+	spawn $sacct -$soption -p -j $job_id
 	expect {
 		-re "SLURM accounting storage is disabled" {
 			set not_support 1
@@ -447,12 +447,12 @@ proc sacct_job { soption job_id} {
 			incr matches
 			exp_continue
 		}
-		-re "JobID......JobName....Partition" {
+		-re "JobID.JobName.Partition" {
 			if {$debug} {send_user "\nmatch17\n"}
 			incr matches
 			exp_continue
 		}
-		-re "Account....AllocCPUS..State......ExitCode" {
+		-re "Account.AllocCPUS.State.ExitCode" {
 			if {$debug} {send_user "\nmatch18\n"}
 			incr matches
 			exp_continue
@@ -503,22 +503,22 @@ proc sacct_vargs { soption vargs job_id} {
 	set exit_code   0
 	set matches     0
 	set not_support 0
-	send_user "sacct -$soption $vargs -j $job_id\n"
+	send_user "sacct -$soption $vargs -p -j $job_id\n"
 
 	if { $soption == "g" || $soption == "-gid" || $soption == "-group" || $soption == "u" || $soption == "-uid" || $soption == "-user"} {
 
-	spawn $sacct -$soption $vargs -j $job_id
+	spawn $sacct -$soption $vargs -p -j $job_id
 	expect {
 		-re "SLURM accounting storage is disabled" {
 			set not_support 1
 			exp_continue
 		}
-		-re "JobID......JobName....Partition" {
+		-re "JobID.JobName.Partition" {
 			if {$debug} {send_user "\nmatch20\n"}
 			incr matches
 			exp_continue
 		}
-		-re "Account....AllocCPUS..State......ExitCode" {
+		-re "Account.AllocCPUS.State.ExitCode" {
 			if {$debug} {send_user "\nmatch21\n"}
 			incr matches
 			exp_continue
