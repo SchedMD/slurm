@@ -1007,12 +1007,7 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 		debug5("  stdout file name = %s", task->ofname);
 		task->stdout_fd = open(task->ofname, file_flags, 0666);
 		if (task->stdout_fd == -1) {
-			error("Could not open stdout file: %m");
-			xfree(task->ofname);
-			task->ofname = fname_create(job, "slurm-%J.out", 0);
-			task->stdout_fd = open(task->ofname, file_flags, 0666);
-			if (task->stdout_fd == -1)
-				return SLURM_ERROR;
+			return SLURM_ERROR;
 		}
 		fd_set_close_on_exec(task->stdout_fd);
 		task->from_stdout = -1; /* not used */
@@ -1067,12 +1062,7 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 		debug5("  stderr file name = %s", task->efname);
 		task->stderr_fd = open(task->efname, file_flags, 0666);
 		if (task->stderr_fd == -1) {
-			error("Could not open stderr file: %m");
-			xfree(task->efname);
-			task->efname = fname_create(job, "slurm-%J.err", 0);
-			task->stderr_fd = open(task->efname, file_flags, 0666);
-			if (task->stderr_fd == -1)
-				return SLURM_ERROR;
+			return SLURM_ERROR;
 		}
 		fd_set_close_on_exec(task->stderr_fd);
 		task->from_stderr = -1; /* not used */
@@ -1101,13 +1091,15 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 int
 io_init_tasks_stdio(slurmd_job_t *job)
 {
-	int i;
+	int i, rc = SLURM_SUCCESS, tmprc;
 
 	for (i = 0; i < job->ntasks; i++) {
-		_init_task_stdio_fds(job->task[i], job);
+		tmprc = _init_task_stdio_fds(job->task[i], job);
+		if (tmprc != SLURM_SUCCESS)
+			rc = tmprc;
 	}
 
-	return 0;
+	return rc;
 }
 
 int
