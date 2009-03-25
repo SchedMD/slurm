@@ -87,4 +87,6 @@ extern int term_job(struct job_record *job_ptr);
  */
 extern int term_jobs_on_block(pm_partition_id_t bg_block_id);
 
+extern void waitfor_block_agents();
+
 #endif /* _BG_JOB_RUN_H_ */

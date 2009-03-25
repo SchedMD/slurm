@@ -922,8 +922,10 @@ static void _init_slurmd_nodehash(void)
 	else
 		nodehash_initialized = true;
 
-	if(!conf_initialized) 
+	if(!conf_initialized) {
 		_init_slurm_conf(NULL);
+		conf_initialized = true;
+	}
 
 	count = slurm_conf_nodename_array(&ptr_array);
 	if (count == 0) {

@@ -92,6 +92,7 @@ static List bg_update_list = NULL;
 
 static pthread_mutex_t agent_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t job_start_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t agent_cond = PTHREAD_COND_INITIALIZER;
 static int agent_cnt = 0;
 
 #ifdef HAVE_BG_FILES
@@ -848,6 +849,8 @@ static void *_block_agent(void *args)
 	if (agent_cnt == 0) {
 		list_destroy(bg_update_list);
 		bg_update_list = NULL;
+		pthread_cond_signal(&agent_cond);
+			
 	}
 	slurm_mutex_unlock(&agent_cnt_mutex);
 	return NULL;
@@ -882,8 +885,9 @@ static void _block_op(bg_update_t *bg_update_ptr)
 		slurm_mutex_unlock(&agent_cnt_mutex);
 		return;
 	}
-	agent_cnt++;
+
 	slurm_mutex_unlock(&agent_cnt_mutex);
+	agent_cnt++;
 	/* spawn an agent */
 	slurm_attr_init(&attr_agent);
 	if (pthread_attr_setdetachstate(&attr_agent, 
@@ -1315,4 +1319,10 @@ extern int boot_block(bg_record_t *bg_record)
 	
 
 	return SLURM_SUCCESS;
+}
+
+extern void waitfor_block_agents()
+{
+	if(agent_cnt)
+		pthread_cond_wait(&agent_cond, &agent_cnt_mutex);
 }
