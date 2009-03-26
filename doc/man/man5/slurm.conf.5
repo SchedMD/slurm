@@ -1192,6 +1192,13 @@ of communications between SLURM components.
 The default value is "root". 
 
 .TP
+\fBSlurmdUser\fR
+The name of the user that the \fBslurmd\fR daemon executes as. 
+This user must exist on all nodes of the cluster for authentication 
+of communications between SLURM components.
+The default value is "root". 
+
+.TP
 \fBSlurmctldDebug\fR
 The level of detail to provide \fBslurmctld\fR daemon's logs. 
 Values from 0 to 9 are legal, with `0' being "quiet" operation and `9' 

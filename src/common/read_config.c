@@ -229,6 +229,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"SelectType", S_P_STRING},
 	{"SelectTypeParameters", S_P_STRING},
 	{"SlurmUser", S_P_STRING},
+	{"SlurmdUser", S_P_STRING},
 	{"SlurmctldDebug", S_P_UINT16},
 	{"SlurmctldLogFile", S_P_STRING},
 	{"SlurmctldPidFile", S_P_STRING},
@@ -1232,6 +1233,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->schedtype);
 	xfree (ctl_conf_ptr->select_type);
 	xfree (ctl_conf_ptr->slurm_user_name);
+	xfree (ctl_conf_ptr->slurmd_user_name);
 	xfree (ctl_conf_ptr->slurmctld_logfile);
 	xfree (ctl_conf_ptr->slurmctld_pidfile);
 	xfree (ctl_conf_ptr->slurmd_logfile);
@@ -1341,6 +1343,8 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->select_type_param         = (uint16_t) NO_VAL;
 	ctl_conf_ptr->slurm_user_id		= (uint16_t) NO_VAL; 
 	xfree (ctl_conf_ptr->slurm_user_name);
+	ctl_conf_ptr->slurmd_user_id		= (uint16_t) NO_VAL; 
+	xfree (ctl_conf_ptr->slurmd_user_name);
 	ctl_conf_ptr->slurmctld_debug		= (uint16_t) NO_VAL; 
 	xfree (ctl_conf_ptr->slurmctld_logfile);
 	xfree (ctl_conf_ptr->slurmctld_pidfile);
@@ -2129,6 +2133,20 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			xfree(conf->slurm_user_name);
 		} else {
 			conf->slurm_user_id = my_uid;
+		}
+	}
+
+	if (!s_p_get_string( &conf->slurmd_user_name, "SlurmdUser", hashtbl)) {
+		conf->slurmd_user_name = xstrdup("root");
+		conf->slurmd_user_id   = 0;
+	} else {
+		uid_t my_uid = uid_from_string(conf->slurmd_user_name);
+		if (my_uid == (uid_t) -1) {
+			error ("Invalid user for SlurmdUser %s, ignored",
+			       conf->slurmd_user_name);
+			xfree(conf->slurmd_user_name);
+		} else {
+			conf->slurmd_user_id = my_uid;
 		}
 	}
 

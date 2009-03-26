@@ -140,21 +140,23 @@ crypto_read_private_key(const char *path)
 {
 	munge_ctx_t ctx;
 	munge_err_t err;
+	static uid_t slurmd_user = (uid_t)NO_VAL;
 
 	if ((ctx = munge_ctx_create()) == NULL) {
 		error ("crypto_read_private_key: munge_ctx_create failed");
 		return (NULL);
 	}
 
-	if(slurm_user == (uid_t)NO_VAL)
-		slurm_user = slurm_get_slurm_user_id();
+	if(slurmd_user == (uid_t)NO_VAL)
+		slurmd_user = slurm_get_slurmd_user_id();
 	/*
-	 *   Only allow slurm_user to decode job credentials created by
+	 *   Only allow slurmd_user (usually root) to decode job
+	 *   credentials created by
 	 *   slurmctld. This provides a slight layer of extra security,
 	 *   as non-privileged users cannot get at the contents of job
-	 *   credentials.  Root can always decode things.
+	 *   credentials.
 	 */
-	err = munge_ctx_set(ctx, MUNGE_OPT_UID_RESTRICTION, slurm_user);
+	err = munge_ctx_set(ctx, MUNGE_OPT_UID_RESTRICTION, slurmd_user);
 
 	if (err != EMUNGE_SUCCESS) {
 		error("Unable to set uid restriction on munge credentials: %s",
@@ -238,7 +240,6 @@ crypto_verify_sign(void * key, char *buffer, unsigned int buf_size,
 			debug2("We had a replayed crypto, "
 			       "but this is expected in multiple "
 			       "slurmd mode.");
-			err = 0;
 		}
 #else
 		return err;
