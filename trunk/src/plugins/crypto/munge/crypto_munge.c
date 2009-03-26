@@ -106,7 +106,7 @@ enum local_error_code {
 	ESIG_BAD_USERID,
 };
 
-static uid_t slurm_user = (uid_t)NO_VAL;
+static uid_t slurm_user = 0;
 
 /*
  * init() is called when the plugin is loaded, before any other functions
@@ -140,15 +140,12 @@ crypto_read_private_key(const char *path)
 {
 	munge_ctx_t ctx;
 	munge_err_t err;
-	static uid_t slurmd_user = (uid_t)NO_VAL;
 
 	if ((ctx = munge_ctx_create()) == NULL) {
 		error ("crypto_read_private_key: munge_ctx_create failed");
 		return (NULL);
 	}
 
-	if(slurmd_user == (uid_t)NO_VAL)
-		slurmd_user = slurm_get_slurmd_user_id();
 	/*
 	 *   Only allow slurmd_user (usually root) to decode job
 	 *   credentials created by
@@ -156,7 +153,8 @@ crypto_read_private_key(const char *path)
 	 *   as non-privileged users cannot get at the contents of job
 	 *   credentials.
 	 */
-	err = munge_ctx_set(ctx, MUNGE_OPT_UID_RESTRICTION, slurmd_user);
+	err = munge_ctx_set(ctx, MUNGE_OPT_UID_RESTRICTION, 
+			    slurm_get_slurmd_user_id());
 
 	if (err != EMUNGE_SUCCESS) {
 		error("Unable to set uid restriction on munge credentials: %s",
@@ -174,8 +172,7 @@ crypto_read_public_key(const char *path)
 	/*
 	 * Get slurm user id once. We use it later to verify credentials.
 	 */
-	if(slurm_user == (uid_t)NO_VAL)
-		slurm_user = slurm_get_slurm_user_id();
+	slurm_user = slurm_get_slurm_user_id();
 
 	return (void *) munge_ctx_create();
 }
