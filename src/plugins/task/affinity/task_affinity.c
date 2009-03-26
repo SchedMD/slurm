@@ -296,8 +296,8 @@ extern int task_pre_launch (slurmd_job_t *job)
 		int setval = 0;
 		slurm_getaffinity(mypid, sizeof(cur_mask), &cur_mask);
 
-		if (get_cpuset(&new_mask, job)
-		&&  (!(job->cpu_bind_type & CPU_BIND_NONE))) {
+		if (get_cpuset(&new_mask, job) &&
+		    (!(job->cpu_bind_type & CPU_BIND_NONE))) {
 			if (conf->task_plugin_param & CPU_BIND_CPUSETS) {
 				setval = slurm_set_cpuset(base, path, mypid,
 						sizeof(new_mask), 
@@ -314,8 +314,8 @@ extern int task_pre_launch (slurmd_job_t *job)
 						&cur_mask);
 			}
 		}
-		slurm_chkaffinity(setval ? &new_mask : &cur_mask, 
-					job, setval);
+		slurm_chkaffinity((setval == 0) ? &new_mask : &cur_mask, 
+				  job, setval);
 	}
 
 #ifdef HAVE_NUMA
