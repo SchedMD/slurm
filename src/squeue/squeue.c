@@ -211,7 +211,9 @@ _print_job_steps( void )
 		show_flags |= SHOW_ALL;
 
 	if (old_step_ptr) {
-		error_code = slurm_get_job_steps (old_step_ptr->last_update, 
+		/* Use a last_update time of 0 so that we can get an updated
+		 * run_time for jobs rather than just its start_time */
+		error_code = slurm_get_job_steps ((time_t) 0, 
 				0, 0, &new_step_ptr, show_flags);
 		if (error_code ==  SLURM_SUCCESS)
 			slurm_free_job_step_info_response_msg( old_step_ptr );
@@ -221,7 +223,7 @@ _print_job_steps( void )
 		}
 	}
 	else
-		error_code = slurm_get_job_steps ((time_t) NULL, 0, 0, 
+		error_code = slurm_get_job_steps ((time_t) 0, 0, 0, 
 				&new_step_ptr, show_flags);
 	if (error_code) {
 		slurm_perror ("slurm_get_job_steps error");
