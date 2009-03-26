@@ -44,6 +44,7 @@
 #endif
 
 #include <ctype.h>
+#include <dirent.h>
 #include <signal.h>
 #include <sys/types.h>
 
@@ -236,6 +237,46 @@ extern int task_slurmd_resume_job (uint32_t job_id)
 extern int task_slurmd_release_resources (uint32_t job_id)
 {
 	debug("task_slurmd_release_resources: %u", job_id);
+
+	/* NOTE: The notify_on_release flag set in cpuset.c
+	 * should remove the directory, but that is not
+	 * happening reliably. */
+	if (conf->task_plugin_param & CPU_BIND_CPUSETS) {
+		char base[PATH_MAX], path[PATH_MAX];
+		if (snprintf(base, PATH_MAX, "%s/slurm%u",
+				CPUSET_DIR, job_id) > PATH_MAX) {
+			error("cpuset path too long");
+			return SLURM_ERROR;
+		}
+		if (rmdir(base) && (errno == ENOTEMPTY)) {
+			DIR *dirp;
+			struct dirent entry;
+			struct dirent *result;
+			int rc;
+			if ((dirp = opendir(base)) == NULL) {
+				error("could not open dir %s: %m", base);
+				return SLURM_ERROR;
+			}
+			while (1) {
+				rc = readdir_r(dirp, &entry, &result);
+				if (rc && (errno == EAGAIN))
+					continue;
+				if (rc || (result == NULL))
+					break;
+				if (strncmp(entry.d_name, "slurm", 5))
+					continue;
+				if (snprintf(path, PATH_MAX, "%s/%s",
+					     base, entry.d_name) > PATH_MAX) {
+					error("cpuset path too long");
+					break;
+				}
+				rmdir(path);
+			}
+			closedir(dirp);
+			rmdir(base);
+		}
+	}
+
 	return SLURM_SUCCESS;
 }
 
@@ -314,8 +355,17 @@ extern int task_pre_launch (slurmd_job_t *job)
 						&cur_mask);
 			}
 		}
-		slurm_chkaffinity((setval == 0) ? &new_mask : &cur_mask, 
+		slurm_chkaffinity(setval ? &new_mask : &cur_mask, 
 				  job, setval);
+	} else if (job->mem_bind_type &&
+		   (conf->task_plugin_param & CPU_BIND_CPUSETS)) {
+		cpu_set_t cur_mask;
+		pid_t mypid  = job->envtp->task_pid;
+
+		/* Establish cpuset just for the memory binding */
+		slurm_getaffinity(mypid, sizeof(cur_mask), &cur_mask);
+		slurm_set_cpuset(base, path, (pid_t) job->envtp->task_pid, 
+				 sizeof(cur_mask), &cur_mask);
 	}
 
 #ifdef HAVE_NUMA
@@ -355,7 +405,26 @@ extern int task_pre_launch (slurmd_job_t *job)
 extern int task_post_term (slurmd_job_t *job)
 {
 	debug("affinity task_post_term: %u.%u, task %d",
-		job->jobid, job->stepid, job->envtp->procid);
+	      job->jobid, job->stepid, job->envtp->procid);
+
+	/* NOTE: The notify_on_release flag set in cpuset.c
+	 * should remove the directory, but that is not
+	 * happening reliably. */
+	if (conf->task_plugin_param & CPU_BIND_CPUSETS) {
+		char base[PATH_MAX], path[PATH_MAX];
+		if (snprintf(base, PATH_MAX, "%s/slurm%u",
+				CPUSET_DIR, job->jobid) > PATH_MAX) {
+			error("cpuset path too long");
+			return SLURM_ERROR;
+		}
+		if (snprintf(path, PATH_MAX, "%s/slurm%u.%u_%d",
+				base, job->jobid, job->stepid,
+				job->envtp->localid) > PATH_MAX) {
+			error("cpuset path too long");
+			return SLURM_ERROR;
+		}
+		rmdir(path);
+	}
 
 	return SLURM_SUCCESS;
 }
