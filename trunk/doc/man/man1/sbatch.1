@@ -302,7 +302,7 @@ standard output and standard error are directed to a file of the name
 described below.
 
 The filename pattern may contain one or more replacement symbols, which are
-a percent sign "%" followed by a letter (e.g. %t).
+a percent sign "%" followed by a letter (e.g. %j).
 
 Supported replacement symbols are:
 .PD 0
@@ -313,7 +313,8 @@ Job allocation number.
 .PD 0
 .TP 
 \fB%N\fR
-Node name. (Will result in a separate file per node.)
+Node name.  Only one file is created, so %N will be replaced by the name of the
+first node in the job, which is the one that runs the script.
 .RE
 
 .TP
