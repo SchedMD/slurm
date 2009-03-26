@@ -63,7 +63,10 @@ expect {
 		if { $node_count < 1 } {
 			send_user "FAILURE: system has no nodes in default partition\n"
 			exit $exit_code
+		} elseif { $node_count > 10 } {
+			set node_count 10
 		}
+
 		exp_continue
 	}	
 	timeout {
