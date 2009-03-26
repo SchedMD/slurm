@@ -15,6 +15,7 @@ ControlMachine=linux0
 #BackupAddr=
 #
 SlurmUser=slurm
+#SlurmdUser=root
 SlurmctldPort=6817
 SlurmdPort=6818
 AuthType=auth/munge

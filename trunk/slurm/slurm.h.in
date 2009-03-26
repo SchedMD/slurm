@@ -1152,6 +1152,8 @@ typedef struct slurm_ctl_conf {
 				 * describing the select_type plugin */
 	uint32_t slurm_user_id;	/* uid of slurm_user_name */
 	char *slurm_user_name;	/* user that slurmctld runs as */
+	uint32_t slurmd_user_id;/* uid of slurmd_user_name */
+	char *slurmd_user_name;	/* user that slurmd runs as */
 	uint16_t slurmctld_debug; /* slurmctld logging level */
 	char *slurmctld_logfile;/* where slurmctld error log gets written */
 	char *slurmctld_pidfile;/* where to put slurmctld pidfile         */

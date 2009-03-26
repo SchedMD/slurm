@@ -451,10 +451,16 @@ extern uint16_t slurm_get_sched_port(void);
 uint16_t inline slurm_get_slurmd_port(void);
 
 /* slurm_get_slurm_user_id
- * returns slurmd uid from slurmctld_conf object 
+ * returns slurm uid from slurmctld_conf object 
  * RET uint32_t	- slurm user id
  */
 uint32_t slurm_get_slurm_user_id(void);
+
+/* slurm_get_slurmd_user_id
+ * returns slurmd uid from slurmctld_conf object 
+ * RET uint32_t	- slurmd user id
+ */
+uint32_t slurm_get_slurmd_user_id(void);
 
 /* slurm_get_sched_type
  * get sched type from slurmctld_conf object
