@@ -22,7 +22,7 @@ documents those changes that are of interest to users and admins.
  -- Set "/proc/self/oom_adj" for slurmd and slurmstepd daemons based upon
     the values of SLURMD_OOM_ADJ and SLURMSTEPD_OOM_ADJ environment 
     variables. This can be used to prevent daemons being killed when
-    a node's memory is exhausted.
+    a node's memory is exhausted. Based upon patch by Hongjia  Cao, NUDT.
 
 * Changes in SLURM 1.4.0-pre9
 =============================
