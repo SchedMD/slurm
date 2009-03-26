@@ -100,6 +100,8 @@ libcommon_la_SOURCES = 			\
 	timers.c timers.h		\
 	slurm_xlator.h			\
 	stepd_api.c stepd_api.h		\
+	write_labelled_message.c	\
+	write_labelled_message.h	\
 	proc_args.c proc_args.h		
 
 EXTRA_libcommon_la_SOURCES = 	\

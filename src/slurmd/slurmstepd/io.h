@@ -57,6 +57,23 @@ struct io_buf {
 	void *data;
 };
 
+/* For each task's ofname and efname, are all the names NULL, 
+   one null and the others "/dev/null", all non-null and unique,
+   or all non-null and identical. */
+typedef enum {
+	SLURMD_ALL_NULL,   /* output from all tasks goes to the client (srun) */
+	SLURMD_ONE_NULL,   /* output from one task goes to the client, output
+			      from other tasks is discarded */
+	SLURMD_ALL_UNIQUE, /* separate output files per task.  written from 
+			      tasks unless slurmd_job_t->labelio == true, in 
+			      which case the slurmstepd does the write */
+	SLURMD_ALL_SAME,   /* all tasks write to the same file.  written from 
+			      tasks unless slurmd_job_t->labelio == true, in 
+			      which case the slurmstepd does the write */
+	SLURMD_UNKNOWN
+} slurmd_filename_pattern_t;
+
+
 struct io_buf *alloc_io_buf(void);
 void free_io_buf(struct io_buf *buf);
 
@@ -67,7 +84,8 @@ void free_io_buf(struct io_buf *buf);
  * yet started, we initialize the msg_queue as an empty list and
  * directly add the eio_obj_t to the eio handle with eio_new_initial_handle.
  */
-int io_initial_client_connect(srun_info_t *srun, slurmd_job_t *job);
+int io_initial_client_connect(srun_info_t *srun, slurmd_job_t *job, 
+			      int stdout_tasks, int stderr_tasks);
 
 /* 
  * Initiate a TCP connection back to a waiting client (e.g. srun).
@@ -76,6 +94,16 @@ int io_initial_client_connect(srun_info_t *srun, slurmd_job_t *job);
  * it can see the new object.
  */
 int io_client_connect(srun_info_t *srun, slurmd_job_t *job);
+
+
+/* 
+ * Open a local file and create and eio object for files written
+ * from the slurmstepd, probably with labelled output.
+ */
+int
+io_create_local_client(const char *filename, int file_flags, 
+		       slurmd_job_t *job, bool labelio,
+		       int stdout_tasks, int stderr_tasks);
 
 /*
  * Initialize each task's standard I/O file descriptors.  The file descriptors
@@ -101,6 +129,23 @@ int io_dup_stdio(slurmd_task_info_t *t);
 void io_close_task_fds(slurmd_job_t *job);
 
 void io_close_all(slurmd_job_t *job);
+
+
+
+/* 
+ *  Look for a pattern in the stdout and stderr file names, and see
+ *  if stdout and stderr point to the same file(s).
+ *  See comments above for slurmd_filename_pattern_t.
+ */
+void io_find_filename_pattern(  slurmd_job_t *job, 
+				slurmd_filename_pattern_t *outpattern, 
+				slurmd_filename_pattern_t *errpattern,
+				bool *same_out_err_files );
+
+/* 
+ *  Get the flags to be used with the open call to create output files.
+ */
+int io_get_file_flags(slurmd_job_t *job);
 
 /*
  *  Initialize "user managed" IO, where each task has a single TCP
