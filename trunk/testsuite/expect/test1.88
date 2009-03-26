@@ -113,11 +113,7 @@ expect {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
-	-re "configuration not available" {
-		set no_start 1
-		exp_continue
-	}
-	-re "Unable to submit batch job" {
+	-re "(configuration not available|Unable to submit batch job|Node count specification invalid)" {
 		set no_start 1
 		exp_continue
 	}
