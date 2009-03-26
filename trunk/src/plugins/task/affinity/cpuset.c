@@ -268,8 +268,8 @@ int	slurm_set_memset(char *path, nodemask_t *new_mask)
 	int fd, i, max_node;
 	ssize_t rc;
 
-	snprintf(file_path, sizeof(file_path), "%s/mems", CPUSET_DIR);
-	fd = open(file_path, O_CREAT | O_RDONLY, 0700);
+	snprintf(file_path, sizeof(file_path), "%s/mems", path);
+	fd = open(file_path, O_CREAT | O_RDWR, 0700);
 	if (fd < 0) {
 		error("open(%s): %m", file_path);
 		return -1;
