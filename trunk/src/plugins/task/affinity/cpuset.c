@@ -135,7 +135,7 @@ int	slurm_build_cpuset(char *base, char *path, uid_t uid, gid_t gid)
 }
 
 int	slurm_set_cpuset(char *base, char *path, pid_t pid, size_t size, 
-		const cpu_set_t *mask)
+			 const cpu_set_t *mask)
 {
 	int fd, rc;
 	char file_path[PATH_MAX];
