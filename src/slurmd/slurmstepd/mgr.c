@@ -100,7 +100,6 @@
 #include "src/slurmd/common/task_plugin.h"
 #include "src/slurmd/common/run_script.h"
 #include "src/slurmd/common/reverse_tree.h"
-#include "src/slurmd/common/set_oomadj.h"
 
 #include "src/slurmd/slurmstepd/slurmstepd.h"
 #include "src/slurmd/slurmstepd/mgr.h"
@@ -950,8 +949,6 @@ _fork_all_tasks(slurmd_job_t *job)
 			goto fail2;
 		} else if (pid == 0)  { /* child */
 			int j;
-
-			set_oom_adj(0); /* the tasks may be killed by OOM */
 
 #ifdef HAVE_AIX
 			(void) mkcrid(0);
