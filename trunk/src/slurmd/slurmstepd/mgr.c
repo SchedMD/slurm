@@ -930,8 +930,8 @@ _fork_all_tasks(slurmd_job_t *job)
 		writefds[i] = fdpair[1];
 	}
 
-	error("setting user oom to zero");
 	set_oom_adj(0);	/* the tasks may be killed by OOM */
+	(void) pre_setuid(job);
 
 	/* Temporarily drop effective privileges, except for the euid.
 	 * We need to wait until after pam_setup() to drop euid.
@@ -990,7 +990,6 @@ _fork_all_tasks(slurmd_job_t *job)
 			if (conf->propagate_prio == 1)
 				_set_prio_process(job);
 
-			(void) pre_setuid(job);
  			if (_become_user(job, &sprivs) < 0) {
  				error("_become_user failed: %m");
 				/* child process, should not return */
