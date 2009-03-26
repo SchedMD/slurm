@@ -330,7 +330,8 @@ extern int task_pre_launch (slurmd_job_t *job)
 			cur_mask = new_mask;
 		}
 		slurm_chk_memset(&cur_mask, job);
-	} else if (job->mem_bind_type && (numa_available() >= 0)) {
+	}
+	if (job->mem_bind_type && (numa_available() >= 0)) {
 		nodemask_t new_mask, cur_mask;
 
 		cur_mask = numa_get_membind();
