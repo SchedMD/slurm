@@ -1034,9 +1034,7 @@ _fork_all_tasks(slurmd_job_t *job)
 		int i = atoi(oom_value);
 		debug("Setting slurmstepd oom_adj to %d", i);
 		set_oom_adj(i);
-	} else
-		error("NO SLURMSTEPD_OOM_ADJ");
-
+	}
 
 	if (chdir (sprivs.saved_cwd) < 0) {
 		error ("Unable to return to working directory");
