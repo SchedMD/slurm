@@ -110,10 +110,7 @@ static uint32_t weight_fs; /* weight for Fairshare factor */
 static uint32_t weight_js; /* weight for Job Size factor */
 static uint32_t weight_part; /* weight for Partition factor */
 static uint32_t weight_qos; /* weight for QOS factor */
-static long double small_usage; /* amount of usage to add if multiple
-				 * jobs are scheduled during the same
-				 * decay period for the same association 
-				 */
+
 extern int priority_p_set_max_cluster_usage(uint32_t procs, uint32_t half_life);
 extern void priority_p_set_assoc_usage(acct_association_rec_t *assoc);
 
@@ -318,18 +315,8 @@ static double _get_fairshare_priority( struct job_record *job_ptr)
 	}
 
 	slurm_mutex_lock(&assoc_mgr_association_lock);
-	if(assoc->usage_efctv == (long double)NO_VAL) {
+	if(assoc->usage_efctv == (long double)NO_VAL)
 		priority_p_set_assoc_usage(assoc);
-	} else {
-		/* Add a tiny amount so the next job will get a lower
-		   priority than the previous jobs if they are
-		   submitted during the polling period.   */
-		assoc->usage_efctv += small_usage;
-		/* If the user submits a bunch of jobs and then
-		   cancels the jobs before they run the priority will
-		   not be reset until the decay loop happens.
-		*/
-	}
 
 	// Priority is 0 -> 1
 	priority_fs =
@@ -355,7 +342,7 @@ static void _get_priority_factors(time_t start_time, struct job_record *job_ptr,
 
 	xassert(factors);
 	xassert(job_ptr);
-	
+
 	qos_ptr = (acct_qos_rec_t *)job_ptr->qos_ptr;
 
 	memset(factors, 0, sizeof(priority_factors_object_t));
@@ -377,8 +364,6 @@ static void _get_priority_factors(time_t start_time, struct job_record *job_ptr,
 		else {
 			factors->priority_fs = _get_fairshare_priority(job_ptr);
 			job_ptr->priority_fs = factors->priority_fs;
-			debug3("sprio job %u has a fairshare priority of %f",
-			       job_ptr->job_id, job_ptr->priority_fs);
 		}
 	}
 
@@ -460,13 +445,17 @@ static uint32_t _get_priority_internal(time_t start_time,
 	priority = priority_age + priority_fs + priority_js + priority_part +
 		priority_qos - (double)(factors.nice - NICE_OFFSET);
 
+	/*
+	 * 0 means the job is held; 1 means system hold
+	 * so 2 is the lowest non-held priority
+	 */
+	if(priority < 2)
+		priority = 2;
+
 	debug3("Job %u priority: %.2f + %.2f + %.2f + %.2f + %.2f - %d = %.2f",
 	       job_ptr->job_id, priority_age, priority_fs, priority_js,
 	       priority_part, priority_qos, (factors.nice - NICE_OFFSET),
 	       priority);
-
-	if(priority < 1)
-		priority = 1;
 
 	return (uint32_t)priority;
 }
@@ -689,14 +678,19 @@ static void *_cleanup_thread(void *no_data)
 static void _internal_setup()
 {
 	favor_small = slurm_get_priority_favor_small();
+	if (favor_small == NO_VAL) favor_small = 0;
 	max_age = slurm_get_priority_max_age();
-	weight_age = slurm_get_priority_weight_age(); 
-	weight_fs = slurm_get_priority_weight_fairshare(); 
+	if (max_age == NO_VAL) max_age = DEFAULT_PRIORITY_DECAY;
+	weight_age = slurm_get_priority_weight_age();
+	if (weight_age == NO_VAL) weight_age = 0;
+	weight_fs = slurm_get_priority_weight_fairshare();
+	if (weight_fs == NO_VAL) weight_fs = 0;
 	weight_js = slurm_get_priority_weight_job_size();
+	if (weight_js == NO_VAL) weight_js = 0;
 	weight_part = slurm_get_priority_weight_partition();
+	if (weight_part == NO_VAL) weight_part = 0;
 	weight_qos = slurm_get_priority_weight_qos();
-
-	small_usage = 2.0 / (long double) weight_fs;
+	if (weight_qos == NO_VAL) weight_qos = 0;
 
 	debug3("priority: Max Age is %u", max_age);
 	debug3("priority: Weight Age is %u", weight_age);
@@ -704,7 +698,6 @@ static void _internal_setup()
 	debug3("priority: Weight JobSize is %u", weight_js);
 	debug3("priority: Weight Part is %u", weight_part);
 	debug3("priority: Weight QOS is %u", weight_qos);
-	debug3("priority: Small Usage is %Lf", small_usage);
 }
 
 /*
@@ -731,6 +724,7 @@ int init ( void )
 		      "ignore this message.\n",
 		      temp);
 		calc_fairshare = 0;
+		weight_fs = 0;
 	} else {
 		if(!cluster_procs)
 			fatal("We need to have a cluster cpu count "

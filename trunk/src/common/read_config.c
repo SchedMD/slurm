@@ -1986,16 +1986,16 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->priority_weight_age = 1;
 	if (!s_p_get_uint32(&conf->priority_weight_fs,
 			    "PriorityWeightFairshare", hashtbl))
-		conf->priority_weight_fs = 1;
+		conf->priority_weight_fs = 0;
 	if (!s_p_get_uint32(&conf->priority_weight_js,
 			    "PriorityWeightJobSize", hashtbl))
-		conf->priority_weight_js = 1;
+		conf->priority_weight_js = 0;
 	if (!s_p_get_uint32(&conf->priority_weight_part,
 			    "PriorityWeightPartition", hashtbl))
-		conf->priority_weight_part = 1;
+		conf->priority_weight_part = 0;
 	if (!s_p_get_uint32(&conf->priority_weight_qos,
 			    "PriorityWeightQOS", hashtbl))
-		conf->priority_weight_qos = 1;
+		conf->priority_weight_qos = 0;
 
 	if (!s_p_get_string(&conf->proctrack_type, "ProctrackType", hashtbl)) {
 		if (!strcmp(conf->switch_type,"switch/elan"))
