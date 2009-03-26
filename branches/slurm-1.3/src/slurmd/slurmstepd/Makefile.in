@@ -78,8 +78,7 @@ am_slurmstepd_OBJECTS = slurmstepd.$(OBJEXT) mgr.$(OBJEXT) \
 	pam_ses.$(OBJEXT) req.$(OBJEXT) multi_prog.$(OBJEXT) \
 	step_terminate_monitor.$(OBJEXT) proctrack.$(OBJEXT) \
 	setproctitle.$(OBJEXT) slurmstepd_init.$(OBJEXT) \
-	run_script.$(OBJEXT) task_plugin.$(OBJEXT) \
-	set_oomadj.$(OBJEXT)
+	run_script.$(OBJEXT) task_plugin.$(OBJEXT)
 slurmstepd_OBJECTS = $(am_slurmstepd_OBJECTS)
 am__DEPENDENCIES_1 =
 slurmstepd_DEPENDENCIES = $(top_builddir)/src/common/libdaemonize.la \
@@ -304,8 +303,6 @@ slurmstepd_SOURCES = \
 	$(top_builddir)/src/slurmd/common/run_script.h \
 	$(top_builddir)/src/slurmd/common/task_plugin.c \
 	$(top_builddir)/src/slurmd/common/task_plugin.h \
-	$(top_builddir)/src/slurmd/common/set_oomadj.c \
-	$(top_builddir)/src/slurmd/common/set_oomadj.h \
 	$(top_builddir)/src/slurmd/common/reverse_tree.h
 
 @HAVE_AIX_FALSE@slurmstepd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
@@ -393,7 +390,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proctrack.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/req.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/run_script.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/set_oomadj.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/setproctitle.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmstepd.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmstepd_init.Po@am__quote@
@@ -493,20 +489,6 @@ task_plugin.obj: $(top_builddir)/src/slurmd/common/task_plugin.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_builddir)/src/slurmd/common/task_plugin.c' object='task_plugin.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o task_plugin.obj `if test -f '$(top_builddir)/src/slurmd/common/task_plugin.c'; then $(CYGPATH_W) '$(top_builddir)/src/slurmd/common/task_plugin.c'; else $(CYGPATH_W) '$(srcdir)/$(top_builddir)/src/slurmd/common/task_plugin.c'; fi`
-
-set_oomadj.o: $(top_builddir)/src/slurmd/common/set_oomadj.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT set_oomadj.o -MD -MP -MF $(DEPDIR)/set_oomadj.Tpo -c -o set_oomadj.o `test -f '$(top_builddir)/src/slurmd/common/set_oomadj.c' || echo '$(srcdir)/'`$(top_builddir)/src/slurmd/common/set_oomadj.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/set_oomadj.Tpo $(DEPDIR)/set_oomadj.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_builddir)/src/slurmd/common/set_oomadj.c' object='set_oomadj.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o set_oomadj.o `test -f '$(top_builddir)/src/slurmd/common/set_oomadj.c' || echo '$(srcdir)/'`$(top_builddir)/src/slurmd/common/set_oomadj.c
-
-set_oomadj.obj: $(top_builddir)/src/slurmd/common/set_oomadj.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT set_oomadj.obj -MD -MP -MF $(DEPDIR)/set_oomadj.Tpo -c -o set_oomadj.obj `if test -f '$(top_builddir)/src/slurmd/common/set_oomadj.c'; then $(CYGPATH_W) '$(top_builddir)/src/slurmd/common/set_oomadj.c'; else $(CYGPATH_W) '$(srcdir)/$(top_builddir)/src/slurmd/common/set_oomadj.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/set_oomadj.Tpo $(DEPDIR)/set_oomadj.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_builddir)/src/slurmd/common/set_oomadj.c' object='set_oomadj.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o set_oomadj.obj `if test -f '$(top_builddir)/src/slurmd/common/set_oomadj.c'; then $(CYGPATH_W) '$(top_builddir)/src/slurmd/common/set_oomadj.c'; else $(CYGPATH_W) '$(srcdir)/$(top_builddir)/src/slurmd/common/set_oomadj.c'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo

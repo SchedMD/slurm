@@ -56,7 +56,6 @@
 #include "src/slurmd/common/slurmstepd_init.h"
 #include "src/slurmd/common/setproctitle.h"
 #include "src/slurmd/common/proctrack.h"
-#include "src/slurmd/common/set_oomadj.h"
 #include "src/slurmd/slurmstepd/slurmstepd.h"
 #include "src/slurmd/slurmstepd/mgr.h"
 #include "src/slurmd/slurmstepd/req.h"
@@ -99,8 +98,6 @@ main (int argc, char *argv[])
 		_dump_user_env();
 		exit(0);
 	}
-
-	set_oom_adj(OOM_DISABLE);
 
 	xsignal_block(slurmstepd_blocked_signals);
 	conf = xmalloc(sizeof(*conf));

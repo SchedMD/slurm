@@ -83,7 +83,6 @@
 #include "src/slurmd/common/setproctitle.h"
 #include "src/slurmd/common/proctrack.h"
 #include "src/slurmd/common/task_plugin.h"
-#include "src/slurmd/common/set_oomadj.h"
 
 #define GETOPT_ARGS	"L:Dvhcf:MN:V"
 
@@ -199,8 +198,6 @@ main (int argc, char *argv[])
 		daemon(1,1);
 	info("slurmd version %s started", SLURM_VERSION);
 	debug3("finished daemonize");
-
-	set_oom_adj(OOM_DISABLE);
 
 	_kill_old_slurmd();
 
