@@ -98,6 +98,8 @@ if {[file exists $spank_conf_file]} {
 
 	exec $bin_cp $spank_conf_file $orig_spank_conf
 	exec $bin_cp $spank_conf_file $new_spank_conf
+	exec $bin_chmod 700 $spank_conf_file
+	exec $bin_chmod 700 $new_spank_conf
 } else {
 	exec $bin_cp /dev/null $new_spank_conf
 }
