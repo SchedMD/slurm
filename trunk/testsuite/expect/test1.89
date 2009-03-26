@@ -157,7 +157,7 @@ if {$task_mask != $task_cnt} {
 set verbose_cnt 0
 send "$srun -c1 --cpu_bind=verbose,map_cpu:0 $file_prog\n"
 expect {
-	-re "cpu_bind=MAP|cpu_bind_threads=MAP" {
+	-re "cpu_bind=MAP|cpu_bind_cores=MAP|cpu_bind_sockets=MAP|cpu_bind_threads=MAP" {
 		incr verbose_cnt
 		exp_continue
 	}
