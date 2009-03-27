@@ -52,6 +52,8 @@ documents those changes that are of interest to users and admins.
     count from a range rather than minimum (e.g. "sbatch -N1-4 my.sh").
  -- In accounting_storage/filetxt and accounting_storage/pgsql fix 
     possible invalid memory reference when a job lacks a name.
+ -- SECURITY BUG: Fix in sbcast logic that permits users to write files based
+    upon supplimental groups of the slurmd daemon.
 
 * Changes in SLURM 1.3.13
 =========================
