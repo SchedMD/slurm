@@ -1391,12 +1391,18 @@ _rpc_ping(slurm_msg_t *msg)
 {
 	int        rc = SLURM_SUCCESS;
 	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+	static bool first_msg = true;
 
 	if (!_slurm_authorized_user(req_uid)) {
 		error("Security violation, ping RPC from uid %u",
 		      (unsigned int) req_uid);
+		if (first_msg) {
+			error("Do you have SlurmUser configured as uid %u?",
+			     (unsigned int) req_uid);
+		}
 		rc = ESLURM_USER_ID_MISSING;	/* or bad in this case */
 	}
+	first_msg = false;
 
 	/* Return result. If the reply can't be sent this indicates that
 	 * 1. The network is broken OR
@@ -1422,7 +1428,7 @@ _rpc_health_check(slurm_msg_t *msg)
 	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 
 	if (!_slurm_authorized_user(req_uid)) {
-		error("Security violation, ping RPC from uid %u",
+		error("Security violation, health check RPC from uid %u",
 		      (unsigned int) req_uid);
 		rc = ESLURM_USER_ID_MISSING;	/* or bad in this case */
 	}
