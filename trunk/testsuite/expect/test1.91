@@ -97,11 +97,11 @@ expect {
 		set num_sockets $expect_out(1,string)
 		exp_continue
 	}
-	-re "Cores=($number)" {
+	-re "CoresPerSocket=($number)" {
 	   	set num_cores $expect_out(1,string)
 		exp_continue
 	}
-	-re "Threads=($number)" {
+	-re "ThreadsPerCore=($number)" {
 	   	set num_threads $expect_out(1,string)
 		exp_continue
 	}
