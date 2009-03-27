@@ -291,7 +291,7 @@ int slurm_setaffinity(pid_t pid, size_t size, const cpu_set_t *mask)
 #endif
 	if (rval)
 		verbose("sched_setaffinity(%d,%d,0x%s) failed with status %d",
-				pid, size, cpuset_to_str(mask, mstr), rval);
+			pid, size, cpuset_to_str(mask, mstr), rval);
 	return (rval);
 }
 

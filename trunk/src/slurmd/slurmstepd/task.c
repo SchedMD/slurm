@@ -427,7 +427,11 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 	}
 
 	/* task plugin hook */
-	pre_launch(job);
+	if (pre_launch(job)) {
+		error ("Failed task affinity setup");
+		exit (1);
+	}
+
 	if (conf->task_prolog) {
 		char *my_prolog;
 		slurm_mutex_lock(&conf->config_mutex);

@@ -100,21 +100,25 @@ int	slurm_build_cpuset(char *base, char *path, uid_t uid, gid_t gid)
 	fd = open(file_path, O_RDONLY);
 	if (fd < 0) {
 		error("open(%s): %m", file_path);
-	} else {
-		rc = read(fd, mstr, sizeof(mstr));
-		close(fd);
-		if (rc < 1)
-			error("read(%s): %m", file_path);
-		snprintf(file_path, sizeof(file_path), "%s/mems", path);
-		fd = open(file_path, O_CREAT | O_WRONLY, 0700);
-		if (fd < 0) {
-			error("open(%s): %m", file_path);
-			return -1;
-		}
-		rc = write(fd, mstr, rc);
-		close(fd);
-		if (rc < 1)
-			error("write(%s): %m", file_path);
+		return -1;
+	}
+	rc = read(fd, mstr, sizeof(mstr));
+	close(fd);
+	if (rc < 1) {
+		error("read(%s): %m", file_path);
+		return -1;
+	}
+	snprintf(file_path, sizeof(file_path), "%s/mems", path);
+	fd = open(file_path, O_CREAT | O_WRONLY, 0700);
+	if (fd < 0) {
+		error("open(%s): %m", file_path);
+		return -1;
+	}
+	rc = write(fd, mstr, rc);
+	close(fd);
+	if (rc < 1) {
+		error("write(%s): %m", file_path);
+		return -1;
 	}
 
 	/* Delete cpuset once its tasks complete.
@@ -127,6 +131,10 @@ int	slurm_build_cpuset(char *base, char *path, uid_t uid, gid_t gid)
 	}
 	rc = write(fd, "1", 2);
 	close(fd);
+	if (rc < 1) {
+		error("write(%s): %m", file_path);
+		return -1;
+	}
 
 	/* Only now can we add tasks.
 	 * We can't add self, so add tasks after exec. */
@@ -170,8 +178,10 @@ int	slurm_set_cpuset(char *base, char *path, pid_t pid, size_t size,
 	} else {
 		rc = read(fd, mstr, sizeof(mstr));
 		close(fd);
-		if (rc < 1)
+		if (rc < 1) {
 			error("read(%s): %m", file_path);
+			return -1;
+		}
 		snprintf(file_path, sizeof(file_path), "%s/mems", path);
 		fd = open(file_path, O_CREAT | O_WRONLY, 0700);
 		if (fd < 0) {
@@ -180,8 +190,10 @@ int	slurm_set_cpuset(char *base, char *path, pid_t pid, size_t size,
 		}
 		rc = write(fd, mstr, rc);
 		close(fd);
-		if (rc < 1)
+		if (rc < 1) {
 			error("write(%s): %m", file_path);
+			return -1;
+		}
 	}
 
 	/* Delete cpuset once its tasks complete.

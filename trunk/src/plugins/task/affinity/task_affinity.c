@@ -51,6 +51,8 @@
 #include "affinity.h"
 #include "dist_tasks.h"
 
+#define PURGE_CPUSET_DIRS 1
+
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -238,6 +240,7 @@ extern int task_slurmd_release_resources (uint32_t job_id)
 {
 	debug("task_slurmd_release_resources: %u", job_id);
 
+#if PURGE_CPUSET_DIRS
 	/* NOTE: The notify_on_release flag set in cpuset.c
 	 * should remove the directory, but that is not
 	 * happening reliably. */
@@ -276,6 +279,7 @@ extern int task_slurmd_release_resources (uint32_t job_id)
 			rmdir(base);
 		}
 	}
+#endif
 
 	return SLURM_SUCCESS;
 }
@@ -297,8 +301,7 @@ extern int task_pre_setuid (slurmd_job_t *job)
 		error("cpuset path too long");
 		return SLURM_ERROR;
 	}
-	slurm_build_cpuset(CPUSET_DIR, path, job->uid, job->gid);
-	return SLURM_SUCCESS;
+	return slurm_build_cpuset(CPUSET_DIR, path, job->uid, job->gid);
 }
 
 /*
@@ -309,6 +312,7 @@ extern int task_pre_setuid (slurmd_job_t *job)
 extern int task_pre_launch (slurmd_job_t *job)
 {
 	char base[PATH_MAX], path[PATH_MAX];
+	int rc = SLURM_SUCCESS;
 
 	debug("affinity task_pre_launch: %u.%u, task %d", 
 		job->jobid, job->stepid, job->envtp->procid);
@@ -334,29 +338,28 @@ extern int task_pre_launch (slurmd_job_t *job)
 		cpu_set_t new_mask, cur_mask;
 		pid_t mypid  = job->envtp->task_pid;
 
-		int setval = 0;
 		slurm_getaffinity(mypid, sizeof(cur_mask), &cur_mask);
 
 		if (get_cpuset(&new_mask, job) &&
 		    (!(job->cpu_bind_type & CPU_BIND_NONE))) {
 			if (conf->task_plugin_param & CPU_BIND_CPUSETS) {
-				setval = slurm_set_cpuset(base, path, mypid,
+				rc = slurm_set_cpuset(base, path, mypid,
 						sizeof(new_mask), 
 						&new_mask);
 				slurm_get_cpuset(path, mypid,
-						sizeof(cur_mask), 
-						&cur_mask);
+						 sizeof(cur_mask), 
+						 &cur_mask);
 			} else {
-				setval = slurm_setaffinity(mypid,
-						sizeof(new_mask), 
-						&new_mask);
+				rc = slurm_setaffinity(mypid,
+						       sizeof(new_mask), 
+						       &new_mask);
 				slurm_getaffinity(mypid,
-						sizeof(cur_mask), 
-						&cur_mask);
+						  sizeof(cur_mask), 
+						  &cur_mask);
 			}
 		}
-		slurm_chkaffinity(setval ? &new_mask : &cur_mask, 
-				  job, setval);
+		slurm_chkaffinity(rc ? &cur_mask : &new_mask, 
+				  job, rc);
 	} else if (job->mem_bind_type &&
 		   (conf->task_plugin_param & CPU_BIND_CPUSETS)) {
 		cpu_set_t cur_mask;
@@ -364,8 +367,9 @@ extern int task_pre_launch (slurmd_job_t *job)
 
 		/* Establish cpuset just for the memory binding */
 		slurm_getaffinity(mypid, sizeof(cur_mask), &cur_mask);
-		slurm_set_cpuset(base, path, (pid_t) job->envtp->task_pid, 
-				 sizeof(cur_mask), &cur_mask);
+		rc = slurm_set_cpuset(base, path, 
+				      (pid_t) job->envtp->task_pid, 
+				      sizeof(cur_mask), &cur_mask);
 	}
 
 #ifdef HAVE_NUMA
@@ -394,7 +398,7 @@ extern int task_pre_launch (slurmd_job_t *job)
 		slurm_chk_memset(&cur_mask, job);
 	}
 #endif
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 /*
@@ -407,6 +411,7 @@ extern int task_post_term (slurmd_job_t *job)
 	debug("affinity task_post_term: %u.%u, task %d",
 	      job->jobid, job->stepid, job->envtp->procid);
 
+#if PURGE_CPUSET_DIRS
 	/* NOTE: The notify_on_release flag set in cpuset.c
 	 * should remove the directory, but that is not
 	 * happening reliably. */
@@ -425,6 +430,7 @@ extern int task_post_term (slurmd_job_t *job)
 		}
 		rmdir(path);
 	}
+#endif
 
 	return SLURM_SUCCESS;
 }

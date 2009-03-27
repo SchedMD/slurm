@@ -1011,7 +1011,10 @@ _fork_all_tasks(slurmd_job_t *job)
 	}
 
 	set_oom_adj(0);	/* the tasks may be killed by OOM */
-	(void) pre_setuid(job);
+	if (pre_setuid(job)) {
+		error("Failed task affinity setup");
+		return SLURM_ERROR;
+	}
 
 	/* Temporarily drop effective privileges, except for the euid.
 	 * We need to wait until after pam_setup() to drop euid.
