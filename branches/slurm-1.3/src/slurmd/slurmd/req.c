@@ -1850,13 +1850,8 @@ _init_groups(uid_t my_uid, gid_t my_gid)
 	rc = initgroups(user_name, my_gid);
 	xfree(user_name);
 	if (rc) {
-		if ((errno == EPERM) && (getuid() != (uid_t) 0)) {
-			debug("sbcast: Error in initgroups(%s, %ld): %m",
-			      user_name, (long)my_gid);
-		} else {
- 			error("sbcast: Error in initgroups(%s, %ld): %m",
-			      user_name, (long)my_gid);
-		}
+ 		error("sbcast: Error in initgroups(%s, %ld): %m",
+		      user_name, (long)my_gid);
 		return -1;
 	}
 	return 0;
