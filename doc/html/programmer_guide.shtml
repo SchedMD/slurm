@@ -92,21 +92,27 @@ the SLURM code. Used to send and get SLURM information from the central manager.
 These are the functions user applications might utilize.<br>
 <b>common</b>&#151;General purpose functions for widespread use throughout 
 SLURM.<br>
-<b>plugins</b>&#151;Plugin functions for various infrastructure. A separate 
-subdirectory is used for each plugin class:<br> 
+<b>database</b>&#151;Various database files that support the accounting
+ storage plugin.<br>
+<b>plugins</b>&#151;Plugin functions for various infrastructures or optional
+behavior. A separate subdirectory is used for each plugin class:<br>
 <ul>
 <li><b>accounting_storage</b> for specifing the type of storage for accounting,<br>
-<li><b>auth</b> for user authentication,<br> 
+<li><b>auth</b> for user authentication,<br>
 <li><b>checkpoint</b> for system-initiated checkpoint and restart of user jobs,<br>
 <li><b>crypto</b> for cryptographic functions,<br>
 <li><b>jobacct_gather</b> for job accounting,<br>
 <li><b>jobcomp</b> for job completion logging,<br>
 <li><b>mpi</b> for MPI support,<br>
+<li><b>priority</b> calculates job priority based on a number of factors
+including fair-share,<br>
 <li><b>proctrack</b> for process tracking,<br>
-<li><b>sched</b> for job scheduler,<br> 
+<li><b>sched</b> for job scheduler,<br>
 <li><b>select</b> for a job's node selection,<br>
 <li><b>switch</b> for switch (interconnect) specific functions,<br>
-<li><b>task</b> for task affinity to processors.<br>
+<li><b>task</b> for task affinity to processors,<br>
+<li><b>topology</b> methods for assigning nodes to jobs based on node
+topology.<br>
 </ul>
 <p style="margin-left:.2in">
 <b>sacct</b>&#151;User command to view accounting information about jobs.<br>
@@ -123,15 +129,23 @@ with an existing SLURM job.<br>
 <b>slurmctld</b>&#151;SLURM central manager daemon code.<br>
 <b>slurmd</b>&#151;SLURM daemon code to manage the compute server nodes including 
 the execution of user applications.<br>
+<b>slurmdbd</b>&#151;SLURM database daemon managing access to the accounting
+storage database.<br>
 <b>smap</b>&#151;User command to view layout of nodes, partitions, and jobs.
 This is particularly valuable on systems like Bluegene, which has a three
 dimension torus topography.<br>
+<b>sprio</b>&#151;User command to see the breakdown of a job's priority
+calculation when the Multifactor Job Priority plugin is installed.<br>
 <b>squeue</b>&#151;User command to get information on SLURM jobs and job steps.<br>
 <b>sreport</b>&#151;User command to view various reports about past
 usage across the enterprise.<br>
 <b>srun</b>&#151;User command to submit a job, get an allocation, and/or 
 initiation a parallel job step.<br>
-<b>sstat</b>&#151;User tool to status running jobs.<br>
+<b>srun_cr</b>&#151;Checkpoint/Restart wrapper for srun.<br>
+<b>sshare</b>&#151;User command to view shares and usage when the Multifactor
+Job Priority plugin is installed.<br>
+<b>sstat</b>&#151;User command to view detailed statistics about running
+jobs.<br>
 <b>strigger</b>&#151;User and administrator tool to manage event triggers.<br>
 <b>sview</b>&#151;User command to view and update node, partition, and job 
 job state information.<br>
@@ -235,6 +249,6 @@ host1> slurmd -N foo21
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 7 October 2008</p>
+<p style="text-align:center;">Last modified 27 March 2009</p>
 
 <!--#include virtual="footer.txt"-->
