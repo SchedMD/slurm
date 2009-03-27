@@ -74,12 +74,14 @@ are here.</p>
 <p class="footer"><a href="#top">top</a></p>
 
 <h2>Documentation</h2>
-<p>All of the documentation is in the subdirectory <b>doc</b>. Man pages for the 
-APIs, configuration file, commands, and daemons are in <b>doc/man</b>. Various 
-documents suitable for public consumption are in <b>doc/html</b>. Overall SLURM 
-design documents including various figures are in <b>doc/pubdesign</b>. Various 
-design documents (many of which are dated) can be found in <b>doc/slides</b> and 
-<b>doc/txt</b>. A survey of available resource managers as of 2001 is in <b>doc/survey</b>. 
+<p>All of the documentation is in the subdirectory <b>doc</b>.
+Two directories are of particular interest:</p>
+
+<p style="margin-left:.2in">
+<b>doc/man</b>&#151; contains the man pages for the APIs, 
+configuration file, commands, and daemons.<br>
+<b>doc/html</b>&#151; contains the web pages.</p>
+ 
 <h2>Source Code</h2>
 
 <p>Functions are divided into several categories, each in its own subdirectory. 
