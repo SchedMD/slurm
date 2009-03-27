@@ -108,6 +108,7 @@ static bool _slurm_authorized_user(uid_t uid);
 static void _job_limits_free(void *x);
 static int  _job_limits_match(void *x, void *key);
 static bool _job_still_running(uint32_t job_id);
+static int  _init_groups(uid_t my_uid, gid_t my_gid);
 static int  _kill_all_active_steps(uint32_t jobid, int sig, bool batch);
 static int  _terminate_all_steps(uint32_t jobid, bool batch);
 static void _rpc_launch_tasks(slurm_msg_t *);
@@ -1836,12 +1837,39 @@ static void  _rpc_pid2jid(slurm_msg_t *msg)
 }
 
 static int
+_init_groups(uid_t my_uid, gid_t my_gid)
+{
+	char *user_name = uid_to_string(my_uid);
+	int rc;
+
+	if (user_name == NULL) {
+		error("sbcast: Could not find uid %ld", (long)my_uid);
+		return -1;
+	}
+
+	rc = initgroups(user_name, my_gid);
+	xfree(user_name);
+	if (rc) {
+		if ((errno == EPERM) && (getuid() != (uid_t) 0)) {
+			debug("sbcast: Error in initgroups(%s, %ld): %m",
+			      user_name, (long)my_gid);
+		} else {
+ 			error("sbcast: Error in initgroups(%s, %ld): %m",
+			      user_name, (long)my_gid);
+		}
+		return -1;
+	}
+	return 0;
+
+}
+
+static int
 _rpc_file_bcast(slurm_msg_t *msg)
 {
 	file_bcast_msg_t *req = msg->data;
 	int fd, flags, offset, inx, rc;
 	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
-	uid_t req_gid = g_slurm_auth_get_gid(msg->auth_cred, NULL);
+	gid_t req_gid = g_slurm_auth_get_gid(msg->auth_cred, NULL);
 	pid_t child;
 
 #if 0
@@ -1867,6 +1895,10 @@ _rpc_file_bcast(slurm_msg_t *msg)
 
 	/* The child actually performs the I/O and exits with 
 	 * a return code, do not return! */
+	if (_init_groups(req_uid, req_gid) < 0) {
+		error("sbcast: initgroups(%u): %m", req_uid);
+		exit(errno);
+	}
 	if (setgid(req_gid) < 0) {
 		error("sbcast: uid:%u setgid(%u): %s", req_uid, req_gid, 
 			strerror(errno));
