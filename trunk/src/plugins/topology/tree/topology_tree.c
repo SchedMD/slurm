@@ -162,7 +162,7 @@ static void _validate_switches(void)
 		if (ptr->nodes) {
 			switch_ptr->level = 0;	/* leaf switch */
 			switch_ptr->nodes = xstrdup(ptr->nodes);
-			if (node_name2bitmap(ptr->nodes, false, 
+			if (node_name2bitmap(ptr->nodes, true, 
 					     &switch_ptr->node_bitmap)) {
 				fatal("Invalid node name (%s) in switch "
 				      "config (%s)", 
