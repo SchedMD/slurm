@@ -6135,11 +6135,7 @@ extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd conn_fd)
 		rc = ESLURM_ALREADY_DONE;
 		goto reply;
 	}
-	if (job_ptr->details == NULL) {
-		/* NOTE: the job_ptr->details->requeue value is only
-		 * used for automatic job requeue after a node failure.
-		 * It does not apply when a job requeue is explicitly
-		 * requested. */
+	if ((job_ptr->details == NULL) || (job_ptr->details->requeue == 0)) {
 		rc = ESLURM_DISABLED;
 		goto reply;
 	}
