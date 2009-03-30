@@ -1,23 +1,21 @@
 .TH SACCT "1" "January 2009" "sacct 2.0" "Slurm components"
 
 .SH "NAME"
-sacct
-\- displays accounting data for all jobs and job steps in the SLURM job accounting log
+sacct \- displays accounting data for all jobs and job steps in the
+SLURM job accounting log or SLURM database
 
 .SH "SYNOPSIS"
-.HP 
-.BR "sacct "
-\f2\fP\f2options \fP 
+\fBsacct\fR [\fIOPTIONS\fR...]
 
 .SH "DESCRIPTION"
 .PP
-Accounting information for jobs invoked with SLURM are logged in the job 
-accounting log file.
+Accounting information for jobs invoked with SLURM are either logged
+in the job accounting log file or saved to the SLURM database.
 .PP
 The 
 .BR "sacct "
 command displays job accounting data stored in the job accounting log 
-file in a variety of forms for your analysis.
+file or SLURM database in a variety of forms for your analysis.
 The 
 .BR "sacct "
 command displays information on jobs, job steps, status, and exitcodes by 
@@ -62,7 +60,8 @@ If --dump is not specified, elapsed time fields are presented as
 The default input file is the file named in the jobacct_logfile
 parameter in slurm.conf.
 
-.SS "Options"
+.SH "OPTIONS"
+
 .TP "10"
 \f3\-a \fP\f3,\fP \f3\-\-allusers\fP
 Displays the current user's jobs. Displays all users jobs when run by root.
@@ -1139,4 +1138,4 @@ designate the job accounting log file that collects system job accounting.
 The default job accounting log file.
 By default, this file is set to read and write permission for root only.
 .SH "SEE ALSO"
-ps(1), srun(1), squeue(1), getrusage(2), time(2)
+sstat(1), ps(1), srun(1), squeue(1), getrusage(2), time(2)
