@@ -71,7 +71,7 @@ wait
 "
 
 #
-# Spawn 5 jobs via sbatch using this account
+# Spawn jobs
 #
 set job_id	0
 
@@ -119,7 +119,7 @@ proc sprio_opt { soption } {
 	set not_support 0
 	send_user "$sprio -$soption \n"
 
-#############
+############# sprio help option
 	if { $soption == "-help" } {
 
 	spawn $sprio -$soption
@@ -144,7 +144,7 @@ proc sprio_opt { soption } {
 			exp_continue
 		}
 		-re "usage *display a brief summary of sprio options" {
-			if {$debug} {send_user "\nmatch3\n"}
+			if {$debug} {send_user "\nmatch4\n"}
 			incr matches
 			exp_continue
 		}
@@ -169,7 +169,7 @@ proc sprio_opt { soption } {
 	return $matches
 }
 
-#############
+############# sprio usage option
 	if { $soption == "-usage" } {
 
 	spawn $sprio -$soption job sizes
@@ -179,7 +179,7 @@ proc sprio_opt { soption } {
 			exp_continue
 		}
 		-re "Usage: sprio .-j jid.s.. .-u user_name.s.. .-o format. .--usage. .-hlnvVw." {	
-			if {$debug} {send_user "\nmatch4\n"}
+			if {$debug} {send_user "\nmatch5\n"}
 			incr matches
 			exp_continue
 		}
@@ -203,7 +203,7 @@ proc sprio_opt { soption } {
 	return $matches
 }
 
-#############
+############# sprio version options
 	if { $soption == "-version" || $soption == "V" } {
 
 	spawn $sprio -$soption
@@ -213,7 +213,7 @@ proc sprio_opt { soption } {
 			exp_continue
 		}
 		-re "slurm $number.$number.$number" {
-			if {$debug} {send_user "\nmatch9\n"}
+			if {$debug} {send_user "\nmatch6\n"}
 			incr matches
 			exp_continue
 		}
@@ -238,7 +238,7 @@ proc sprio_opt { soption } {
 		return $matches
 	}
 
-#############
+############# sprio weights options
 	if { $soption == "-weights" || $soption == "w" } {
 
 	spawn $sprio -$soption
@@ -248,12 +248,12 @@ proc sprio_opt { soption } {
 			exp_continue
 		}
 		-re "JOBID   PRIORITY        AGE  FAIRSHARE    JOBSIZE  PARTITION" {
-			if {$debug} {send_user "\nmatch9\n"}
+			if {$debug} {send_user "\nmatch7\n"}
 			incr matches
 			exp_continue
 		}
 		-re "Weights.*$number *$number *$number *$number" {
-			if {$debug} {send_user "\nmatch9\n"}
+			if {$debug} {send_user "\nmatch8\n"}
 			incr matches
 			exp_continue
 		}
@@ -299,7 +299,7 @@ proc sprio_args { soption sargs jobid} {
 	set not_support 0
 	send_user "$sprio -$soption $sargs $jobid\n"
 
-#############
+############# sprio noheader options
 	if { $soption == "-noheader" || $soption == "h" } {
 
 	spawn $sprio -$soption $sargs $jobid
@@ -309,7 +309,7 @@ proc sprio_args { soption sargs jobid} {
 			exp_continue
 		}
 		-re "JOBID|PRIORITY|AGE|FAIRSHARE|JOBSIZE|PARTITION|QOS" {	
-			if {$debug} {send_user "\nmatch4\n"}
+			if {$debug} {send_user "\nmatch9\n"}
 			incr matches
 			exp_continue
 		}
@@ -333,7 +333,7 @@ proc sprio_args { soption sargs jobid} {
 	return $matches
 	}
 
-#############
+############# sprio jobs options
 	if { $soption == "-jobs" || $soption == "j" } {
 
 	spawn $sprio -$soption $jobid
@@ -343,12 +343,12 @@ proc sprio_args { soption sargs jobid} {
 			exp_continue
 		}
 		-re "JOBID   PRIORITY        AGE  FAIRSHARE    JOBSIZE  PARTITION" {	
-			if {$debug} {send_user "\nmatch4\n"}
+			if {$debug} {send_user "\nmatch10\n"}
 			incr matches
 			exp_continue
 		}
 		-re "$jobid *$number *$number *$number *$number *$number *$number" {	
-			if {$debug} {send_user "\nmatch4\n"}
+			if {$debug} {send_user "\nmatch11\n"}
 			incr matches
 			exp_continue
 		}
@@ -372,7 +372,7 @@ proc sprio_args { soption sargs jobid} {
 	return $matches
 	}
 
-#############
+############# sprio long options
 	if { $soption == "-long" || $soption == "l" } {
 
 	spawn $sprio -$soption $sargs $jobid
@@ -382,12 +382,12 @@ proc sprio_args { soption sargs jobid} {
 			exp_continue
 		}
 		-re "JOBID     USER   PRIORITY        AGE  FAIRSHARE    JOBSIZE  PARTITION        QOS   NICE" {	
-			if {$debug} {send_user "\nmatch4\n"}
+			if {$debug} {send_user "\nmatch12\n"}
 			incr matches
 			exp_continue
 		}
 		-re "$jobid.*$number *$number *$number *$number *$number *$number *$number" {	
-			if {$debug} {send_user "\nmatch4\n"}
+			if {$debug} {send_user "\nmatch13\n"}
 			incr matches
 			exp_continue
 		}
@@ -411,7 +411,7 @@ proc sprio_args { soption sargs jobid} {
 	return $matches
 	}
 
-#############
+############# sprio norm options
 	if { $soption == "-norm" || $soption == "n" } {
 
 	spawn $sprio -$soption $sargs $jobid
@@ -421,12 +421,12 @@ proc sprio_args { soption sargs jobid} {
 			exp_continue
 		}
 		-re "JOBID PRIORITY   AGE        FAIRSHARE  JOBSIZE    PARTITION" {	
-			if {$debug} {send_user "\nmatch4\n"}
+			if {$debug} {send_user "\nmatch14\n"}
 			incr matches
 			exp_continue
 		}
 		-re "$jobid *$float *$float *$float *$float *$float" {	
-			if {$debug} {send_user "\nmatch4\n"}
+			if {$debug} {send_user "\nmatch15\n"}
 			incr matches
 			exp_continue
 		}
@@ -450,7 +450,7 @@ proc sprio_args { soption sargs jobid} {
 	return $matches
 	}
 
-#############
+############# sprio format options
 	if { $soption == "-format" || $soption == "o" } {
 
 	spawn $sprio -$soption "%.7i %.8u %.10y %.10Y %.10a %.10A %.10f %.10F %.10j %.10J %.10p %.10P %.10q %.10Q %.6N" $sargs $jobid
@@ -460,17 +460,17 @@ proc sprio_args { soption sargs jobid} {
 			exp_continue
 		}
 		-re "JOBID     USER   PRIORITY   PRIORITY        AGE        AGE  " {
-			if {$debug} {send_user "\nmatch4\n"}
+			if {$debug} {send_user "\nmatch16\n"}
 			incr matches
 			exp_continue
 		}
 		-re "FAIRSHARE  FAIRSHARE    JOBSIZE    JOBSIZE  PARTITION  PARTITION        QOS        QOS   NICE" {
-			if {$debug} {send_user "\nmatch4\n"}
+			if {$debug} {send_user "\nmatch17\n"}
 			incr matches
 			exp_continue
 		}
 		-re "$jobid *.* *$float *$number *$float *$number *$float *$number *$float *$number *$float *$number *$float *$number *$number" {	
-			if {$debug} {send_user "\nmatch4\n"}
+			if {$debug} {send_user "\nmatch18\n"}
 			incr matches
 			exp_continue
 		}
@@ -494,7 +494,7 @@ proc sprio_args { soption sargs jobid} {
 	return $matches
 	}
 
-#############
+############# sprio u option
 	if { $soption == "u" } {
 
 	spawn $sprio -$soption $sargs
@@ -504,12 +504,12 @@ proc sprio_args { soption sargs jobid} {
 			exp_continue
 		}
 		-re "JOBID *USER *PRIORITY *AGE *FAIRSHARE *JOBSIZE *PARTITION" {	
-			if {$debug} {send_user "\nmatch4\n"}
+			if {$debug} {send_user "\nmatch19\n"}
 			incr matches
 			exp_continue
 		}
 		-re "$jobid *$sargs.*$number *$number *$number *$number *$number" {	
-			if {$debug} {send_user "\nmatch4\n"}
+			if {$debug} {send_user "\nmatch20\n"}
 			incr matches
 			exp_continue
 		}
@@ -533,7 +533,7 @@ proc sprio_args { soption sargs jobid} {
 	return $matches
 	}
 
-#############
+############# sprio usage option
 	if { $soption == "-user=" } {
 
 	spawn $sprio -$soption$sargs
@@ -543,12 +543,12 @@ proc sprio_args { soption sargs jobid} {
 			exp_continue
 		}
 		-re "JOBID *USER *PRIORITY *AGE *FAIRSHARE *JOBSIZE *PARTITION" {	
-			if {$debug} {send_user "\nmatch4\n"}
+			if {$debug} {send_user "\nmatch21\n"}
 			incr matches
 			exp_continue
 		}
 		-re "$jobid *$sargs.*$number *$number *$number *$number *$number" {	
-			if {$debug} {send_user "\nmatch4\n"}
+			if {$debug} {send_user "\nmatch22\n"}
 			incr matches
 			exp_continue
 		}
@@ -572,7 +572,7 @@ proc sprio_args { soption sargs jobid} {
 	return $matches
 	}
 
-#############
+############# sprio verbose options
 	if { $soption == "-verbose" || $soption == "v" } {
 
 	spawn $sprio -$soption $sargs $jobid
@@ -582,17 +582,17 @@ proc sprio_args { soption sargs jobid} {
 			exp_continue
 		}
 		-re "format.*job_flag.*jobs.*$jobid.*verbose" {	
-			if {$debug} {send_user "\nmatch4\n"}
+			if {$debug} {send_user "\nmatch23\n"}
 			incr matches
 			exp_continue
 		}
 		-re "JOBID   PRIORITY        AGE  FAIRSHARE    JOBSIZE  PARTITION" {	
-			if {$debug} {send_user "\nmatch4\n"}
+			if {$debug} {send_user "\nmatch24\n"}
 			incr matches
 			exp_continue
 		}
 		-re "$jobid *$number *$number *$number *$number *$number" {	
-			if {$debug} {send_user "\nmatch4\n"}
+			if {$debug} {send_user "\nmatch25\n"}
 			incr matches
 			exp_continue
 		}		timeout {
@@ -758,12 +758,18 @@ if {$matches != 1} {
 	set exit_code 1
 }
 
+#
+# Cancel jobs
+#
 cancel_job $jobid1 
 cancel_job $jobid2
 cancel_job $jobid3 
 cancel_job $jobid4 
 cancel_job $jobid5
 
+#
+# Exit with code as appropriate
+#
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
 } else {
