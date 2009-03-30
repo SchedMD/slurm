@@ -147,7 +147,7 @@ initiation a parallel job step.<br>
 <b>sshare</b>&#151;User command to view shares and usage when the Multifactor
 Job Priority plugin is installed.<br>
 <b>sstat</b>&#151;User command to view detailed statistics about running
-jobs.<br>
+jobs when a Job Accounting Gather plugin is installed.<br>
 <b>strigger</b>&#151;User and administrator tool to manage event triggers.<br>
 <b>sview</b>&#151;User command to view and update node, partition, and job 
 job state information.<br>
