@@ -989,11 +989,11 @@ static void _trigger_run_program(trig_mgr_info_t *trig_in)
 			error("trigger: initgroups: %m");
 			exit(1);
 		}
-		if (setgid(uid) == -1) {
+		if (setgid(gid) == -1) {
 			error("trigger: setgid: %m");
 			exit(1);
 		}
-		if (setuid(gid) == -1) {
+		if (setuid(uid) == -1) {
 			error("trigger: setuid: %m");
 			exit(1);
 		}
