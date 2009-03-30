@@ -162,6 +162,161 @@ static char *_convert_bp_state(rm_BP_state_t state)
 	return "BP_STATE_UNIDENTIFIED!";
 }
 
+static int _test_down_nodecards(rm_BP_t *bp_ptr)
+{
+	rm_bp_id_t bp_id = NULL;
+	rm_nodecard_id_t nc_name = NULL;
+	int num = 0;
+	int i=0;
+	int rc = SLURM_SUCCESS;
+	rm_nodecard_list_t *ncard_list = NULL;
+	rm_nodecard_t *ncard = NULL;
+	rm_nodecard_state state;
+	bitstr_t *ionode_bitmap = NULL;
+	bg_record_t *bg_record = NULL;
+	int *coord = NULL;
+	char *node_name_tmp = NULL;
+	struct node_record *node_ptr = NULL;
+	int bp_bit = 0;
+	int set = 0, io_cnt = 1;
+
+	/* Translate 1 nodecard count to ionode count */
+	if((io_cnt *= bluegene_io_ratio))
+		io_cnt--;
+
+	if ((rc = bridge_get_data(bp_ptr, RM_BPID, &bp_id))
+	    != STATUS_OK) {
+		error("bridge_get_data(RM_BPID): %s",
+		      bg_err_str(rc));
+		return SLURM_ERROR;
+	}
+
+	if ((rc = bridge_get_nodecards(bp_id, &ncard_list))
+	    != STATUS_OK) {
+		error("bridge_get_nodecards(%s): %d",
+		      bp_id, rc);
+		rc = SLURM_ERROR;
+		goto clean_up;
+	}
+
+	coord = find_bp_loc(bp_id);
+	if(!coord) {
+		error("Could not find coordinates for "
+		      "BP ID %s", (char *) bp_id);
+		rc = SLURM_ERROR;
+		goto cleanup;
+	}
+	
+	node_name = xstrdup_printf("%s%c%c%c",
+				   bg_slurm_node_prefix,
+				   alpha_num[coord[X]], 
+				   alpha_num[coord[Y]],
+				   alpha_num[coord[Z]]);
+
+	if((rc = bridge_get_data(ncard_list, RM_NodeCardListSize, &num))
+	   != STATUS_OK) {
+		error("bridge_get_data(RM_NodeCardListSize): %s", 
+		      bg_err_str(rc));
+		rc = SLURM_ERROR;
+		goto clean_up;
+	}
+	
+	for(i=0; i<num; i++) {
+		int nc_id = 0, io_start = 0;
+
+		if (i) {
+			if ((rc = bridge_get_data(ncard_list, 
+						  RM_NodeCardListNext, 
+						  &ncard)) != STATUS_OK) {
+				error("bridge_get_data"
+				      "(RM_NodeCardListNext): %s",
+				      rc);
+				rc = SLURM_ERROR;
+				goto cleanup;
+			}
+		} else {
+			if ((rc = bridge_get_data(ncard_list, 
+						  RM_NodeCardListFirst, 
+						  &ncard)) != STATUS_OK) {
+				error("bridge_get_data"
+				      "(RM_NodeCardListFirst: %s",
+				      rc);
+				rc = SLURM_ERROR;
+				goto cleanup;
+			}
+		}
+		if ((rc = bridge_get_data(ncard, 
+					  RM_NodeCardState, 
+					  &state)) != STATUS_OK) {
+			error("bridge_get_data(RM_NodeCardState: %s",
+			      rc);
+			rc = SLURM_ERROR;
+			goto cleanup;
+		}
+
+		if(state == RM_NODECARD_UP) 
+			continue;
+
+		if ((rc = bridge_get_data(ncard, 
+					  RM_NodeCardID, 
+					  &nc_name)) != STATUS_OK) {
+			error("bridge_get_data(RM_NodeCardID): %d",rc);
+			rc = SLURM_ERROR;
+			goto clean_up;
+		}
+		
+		if(!nc_name) {
+			rc = SLURM_ERROR;
+			goto clean_up;
+		}
+
+		debug("nodecard %s on %s is in an error state",
+		      nc_name, node_name);
+
+		/* From the first nodecard id we can figure
+		   out where to start from with the alloc of ionodes.
+		*/
+		nc_id = atoi((char*)nc_name+1);
+		free(nc_name);
+		io_start = nc_id * bluegene_io_ratio;
+
+		if(!ionode_bitmap) 
+			ionode_bitmap = bit_alloc(bluegene_numpsets);
+		
+		bit_nset(ionode_bitmap, io_start, io_start+io_cnt);
+
+	}
+
+	if(ionode_bitmap) {
+		down_sub_node_blocks(coord, ionode_bitmap);
+		up_sub_node_blocks(coord, ionode_bitmap);
+	} else {
+		ListIterator itr = NULL;
+		slurm_mutex_lock(&block_state_mutex);
+		itr = list_iterator_create(bg_list);
+		while ((bg_record = list_next(itr))) {
+			if(bg_record->state != BLOCK_ERROR_STATE)
+				continue;
+			
+			if(!bit_test(bg_record->bitmap, bp_bit))
+				continue;
+			
+			bg_record->job_running = NO_JOB_RUNNING;
+				bg_record->state = RM_PARTITION_FREE;
+		}
+		list_iterator_destroy(itr);
+		slurm_mutex_unlock(&block_state_mutex);
+	}
+	
+cleanup:
+	xfree(node_name);
+	if(ionode_bitmap)
+		FREE_NULL_BITMAP(ionode_bitmap);
+	free(bp_id);
+	
+	return rc;
+}
+
 /* Test for nodes that are not UP in MMCS and DRAIN them in SLURM */ 
 static void _test_down_nodes(my_bluegene_t *my_bg)
 {
@@ -204,9 +359,11 @@ static void _test_down_nodes(my_bluegene_t *my_bg)
 			continue;
 		}
 		
-		if  (bp_state == RM_BP_UP)
+		if  (bp_state == RM_BP_UP) {
+			_test_down_nodecards(my_bp);
 			continue;
-		
+		}
+
 		if ((rc = bridge_get_data(my_bp, RM_BPLoc, &bp_loc)) 
 		    != STATUS_OK) {
 			error("bridge_get_data(RM_BPLoc): %s", bg_err_str(rc));

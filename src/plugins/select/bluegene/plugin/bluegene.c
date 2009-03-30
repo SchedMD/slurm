@@ -234,29 +234,13 @@ extern bool blocks_overlap(bg_record_t *rec_a, bg_record_t *rec_b)
 	if (!bit_overlap(rec_a->bitmap, rec_b->bitmap)) 
 		return false;
 
-#ifdef HAVE_BGL
-
-	if(rec_a->quarter != (uint16_t) NO_VAL) {
-		if(rec_b->quarter == (uint16_t) NO_VAL)
-			return true;
-		else if(rec_a->quarter != rec_b->quarter)
-			return false;
-		if(rec_a->nodecard != (uint16_t) NO_VAL) {
-			if(rec_b->nodecard == (uint16_t) NO_VAL)
-				return true;
-			else if(rec_a->nodecard
-				!= rec_b->nodecard)
-				return false;
-		}
-	}
-#else
 	if((rec_a->node_cnt >= bluegene_bp_node_cnt)
 	   || (rec_b->node_cnt >= bluegene_bp_node_cnt))
 		return true;
 	
 	if (!bit_overlap(rec_a->ionode_bitmap, rec_b->ionode_bitmap)) 
 		return false;
-#endif	
+
 	return true;
 }
 
