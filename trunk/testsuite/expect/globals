@@ -257,6 +257,38 @@ proc slow_kill { pid } {
 
 ################################################################
 #
+# Proc: get_my_nuid
+#
+# Purpose:  gets the name uid from the running user
+#
+# Returns: A non-zero return code indicates a failure.
+#
+#
+################################################################
+
+proc get_my_nuid {  } {
+	global bin_id alpha alpha_numeric
+
+	set uid -1
+
+	log_user 0
+	spawn $bin_id -nu
+	expect {
+		-re "($alpha_numeric|$alpha)" {
+			set nuid $expect_out(1,string)
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+	
+	return $nuid
+}
+
+################################################################
+#
 # Proc: get_my_uid
 #
 # Purpose:  gets the uid from the running user
