@@ -45,6 +45,7 @@ extern int	job_requeue_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 {
 	char *arg_ptr, *tmp_char;
 	uint32_t jobid;
+	struct job_record *job_ptr;
 	static char reply_msg[128];
 	int slurm_rc;
 	/* Write lock on job and node info */
@@ -68,24 +69,23 @@ extern int	job_requeue_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 
 	lock_slurmctld(job_write_lock);
 	slurm_rc = job_requeue(0, jobid, -1);
-	if (slurm_rc == SLURM_SUCCESS) {
-		/* We need to clear the required node list here.
-		 * If the job was submitted with srun and a 
-		 * required node list, it gets lost here. */
-		struct job_record *job_ptr;
-		job_ptr = find_job_record(jobid);
-		if (job_ptr && job_ptr->details) {
-			xfree(job_ptr->details->req_nodes);
-			FREE_NULL_BITMAP(job_ptr->details->
-					 req_node_bitmap);
-		}
-		info("wiki: requeued job %u", jobid);
-	} else {
+	if (slurm_rc != SLURM_SUCCESS) {
+		unlock_slurmctld(job_write_lock);
 		*err_code = -700;
 		*err_msg = slurm_strerror(slurm_rc);
 		error("wiki: Failed to requeue job %u (%m)", jobid);
 		return -1;
 	}
+
+	/* We need to clear the required node list here.
+	 * If the job was submitted with srun and a 
+	 * required node list, it gets lost here. */
+	job_ptr = find_job_record(jobid);
+	if (job_ptr && job_ptr->details) {
+		xfree(job_ptr->details->req_nodes);
+		FREE_NULL_BITMAP(job_ptr->details->req_node_bitmap);
+	}
+	info("wiki: requeued job %u", jobid);
 	unlock_slurmctld(job_write_lock);
 	snprintf(reply_msg, sizeof(reply_msg),
 		"job %u requeued successfully", jobid);
