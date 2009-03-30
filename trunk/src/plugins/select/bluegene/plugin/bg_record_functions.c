@@ -1117,6 +1117,194 @@ extern int format_node_name(bg_record_t *bg_record, char *buf, int buf_size)
 	return SLURM_SUCCESS;
 }
 
+extern int down_sub_node_blocks(int *coord, bitstr_t *ionode_bitmap)
+{
+	List requests = NULL;
+	List delete_list = NULL;
+	List error_list = NULL;
+	ListIterator itr = NULL;
+	blockreq_t blockreq; 
+	bg_record_t *bg_record = NULL, *found_record = NULL;
+	char *node_name = NULL;
+	struct node_record *node_ptr = NULL;
+	int bp_bit = 0;
+
+	xassert(coord);
+
+	node_name = xstrdup_printf("%s%c%c%c", 
+				   bg_slurm_node_prefix,
+				   alpha_num[coord[X]], 
+				   alpha_num[coord[Y]],
+				   alpha_num[coord[Z]]);
+	node_ptr = find_node_record(node_name);
+	if (!node_ptr) {
+		error ("down_sub_node_blocks: invalid node specified %s",
+		       node_name);
+		xfree(node_name);
+		return EINVAL;
+	}
+	bp_bit = (node_ptr - node_record_table_ptr);
+	
+		
+	/* Here we need to add blocks that take up nodecards on this
+	   midplane.  Since Slurm only keeps track of midplanes
+	   natively this is the only want to handle this case.
+	*/
+	requests = list_create(destroy_bg_record);
+	memset(&blockreq, 0, sizeof(blockreq_t));
+
+	blockreq.block = node_name;
+	blockreq.conn_type = SELECT_SMALL;
+	blockreq.small32 = bluegene_bp_nodecard_cnt;
+
+	add_bg_record(requests, NULL, &blockreq);
+	
+	slurm_mutex_lock(&block_state_mutex);
+	itr = list_iterator_create(bg_list);
+		
+	error_list = list_create(NULL);
+	delete_list = list_create(NULL);
+	while((bg_record = list_pop(requests))) {
+		if(bit_overlap(bg_record->ionode_bitmap, ionode_bitmap)) {
+			/* we don't care about this one since it
+			   wasn't set. 
+			*/		   
+			destroy_bg_record(bg_record);
+			continue;
+		}
+		
+		list_iterator_reset(itr);
+		while((found_record = list_next(itr))) {
+			if(bit_equal(bg_record->bitmap,
+				     found_record->bitmap)
+			   && bit_equal(bg_record->ionode_bitmap, 
+					found_record->ionode_bitmap)) {
+				break;
+			}			
+		}
+		
+		if(found_record) {
+			debug2("block %s[%s] already there",
+			       found_record->nodes, 
+			       found_record->ionodes);
+			/* we'll get this one later.  We are just
+			   checking which ones we have to add right now.
+			*/	
+			if(found_record->job_running > NO_JOB_RUNNING) 
+				slurm_fail_job(found_record->job_running);
+			list_append(error_list, found_record);
+			destroy_bg_record(bg_record);
+			continue;
+		} else if(bluegene_layout_mode != LAYOUT_DYNAMIC) {
+			bg_record_t *smallest_bg_record = NULL;
+			/* here we only want to see if we can find the
+			smallest overlapping thing and set it to an
+			error */
+			/* don't add anything new to the list since we aren't
+			   dynamic */
+			list_iterator_reset(itr);
+			while((found_record = list_next(itr))) {
+				if(found_record->node_cnt > 1)
+					/* we don't care about
+					   anything over 1 midplane */
+				if(!blocks_overlap(bg_record, found_record)) {
+					debug2("block %s isn't part of %s",
+					       found_record->bg_block_id, 
+					       bg_record->bg_block_id);
+					continue;
+				}
+
+				if(smallest_bg_record || 
+				   (smallest_bg_record->cpu_cnt 
+				    > found_record->cpu_cnt))
+					smallest_bg_record = found_record;
+			}
+
+			if(smallest_bg_record) {
+				if(smallest_bg_record->job_running 
+				   > NO_JOB_RUNNING) 
+					slurm_fail_job(smallest_bg_record->
+						       job_running);
+				list_append(error_list, smallest_bg_record);
+			} else {						
+				if(!node_already_down(node_name)) 
+					ba_update_node_state(
+						&ba_system_ptr->grid[coord[X]]
+						[coord[Y]][coord[Z]],
+						NODE_STATE_DRAIN);
+			}
+			
+			destroy_bg_record(bg_record);
+			continue;
+		}			
+				
+		/* we need to add this record since it doesn't exist */
+		if(configure_block(bg_record) == SLURM_ERROR) {
+			destroy_bg_record(bg_record);
+			error("down_sub_node_blocks: "
+			      "unable to configure block in api");
+			continue;
+		}
+
+		debug("adding block %s to fill in small blocks "
+		      "around bad nodecards",
+		      bg_record->bg_block_id);
+		print_bg_record(bg_record);
+		list_append(bg_list, bg_record);
+		list_append(error_list, bg_record);
+	}
+	
+	/* remove overlapping blocks */
+	while((found_record = list_pop(error_list))) {
+		if(found_record->job_running == BLOCK_ERROR_STATE)
+			continue;
+		error("Setting block %s to error state "
+		      "because of failed hardware.", found_record->bg_block_id);
+		found_record->job_running = BLOCK_ERROR_STATE;
+		found_record->state = RM_PARTITION_ERROR;
+		trigger_block_error();
+	
+		/* we have to check them all just to make sure no
+		   small blocks are there 
+		*/
+		list_iterator_reset(itr);
+		while((bg_record = list_next(itr))) {
+			if(found_record == bg_record)
+				continue;
+			if(!blocks_overlap(bg_record, found_record)) {
+				debug2("block %s isn't part of %s",
+				       found_record->bg_block_id, 
+				       bg_record->bg_block_id);
+				continue;
+			}
+			debug2("removing block %s because there is something "
+			       "wrong with part of the base partition",
+			       found_record->bg_block_id);
+			if(found_record->job_running > NO_JOB_RUNNING) 
+				slurm_fail_job(found_record->job_running);
+
+			/* don't remove any blocks if not dynamic */
+			if(bluegene_layout_mode != LAYOUT_DYNAMIC)
+				continue;
+			list_push(delete_list, found_record);
+			list_remove(itr);
+			num_block_to_free++;
+		}		
+	}
+	list_iterator_destroy(itr);
+	free_block_list(delete_list);
+	list_destroy(delete_list);
+	slurm_mutex_unlock(&block_state_mutex);
+
+	list_destroy(error_list);
+	FREE_NULL_BITMAP(ionode_bitmap);
+		
+	xfree(node_name);
+	last_bg_update = time(NULL);
+	return SLURM_SUCCESS;
+	
+}
+
 /************************* local functions ***************************/
 
 #ifdef HAVE_BG
@@ -1192,6 +1380,8 @@ static int _ba_node_cmpf_inc(ba_node_t *node_a, ba_node_t *node_b)
 	      alpha_num[node_a->coord[Z]]); 
 	return 0;
 }
+
+
 #endif //HAVE_BG
 
 
