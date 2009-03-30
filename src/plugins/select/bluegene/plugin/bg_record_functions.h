@@ -146,5 +146,6 @@ extern int handle_small_record_request(List records, blockreq_t *blockreq,
 				       bg_record_t *bg_record, bitoff_t start);
 
 extern int format_node_name(bg_record_t *bg_record, char *buf, int buf_size);
+extern int down_sub_node_blocks(int *coord, bitstr_t *ionode_bitmap);
 
 #endif /* _BLUEGENE_BG_RECORD_FUNCTIONS_H_ */
