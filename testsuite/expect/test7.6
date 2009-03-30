@@ -51,7 +51,7 @@ set test_prog     "test$test_id.prog"
 set timeout       $max_job_delay
 
 # Note this appears as a single argv value to totalviewcli
-set no_bulk       "set issue_dgo false; dset TV::bulk_launch_enabled false"
+set no_bulk       "dset TV::bulk_launch_enabled false"
 
 print_header $test_id
 
@@ -179,6 +179,10 @@ expect {
 	-re "Do you really wish to exit TotalView?" {
 		incr matches
 		send "yes\n"
+		exp_continue
+	}
+	-re "Could not open breakpoint file" {
+		send_user "\nNOTE: Breakpoint file error is expected due to known Totalview bug\n"
 		exp_continue
 	}
 	timeout {

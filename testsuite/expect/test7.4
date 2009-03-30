@@ -50,8 +50,8 @@ set exit_code     0
 set test_prog     "test$test_id.prog"
 
 # Note this appears as a single argv value to totalviewcli
-set bulk "set issue_dgo false; dset TV::bulk_launch_enabled true; dset TV::bulk_launch_string {$srun -N%N -n%N --jobid=%J -w`awk -F. \'BEGIN {ORS=\",\"} {if (NR==%N) ORS=\"\"; print \$1}\' %t1` -l -i /dev/null %B/tvdsvr%K -callback_host %H -callback_ports %L -set_pws %P -verbosity %V -working_directory %D %F}"
-set no_bulk       "set issue_dgo false; dset TV::bulk_launch_enabled false"
+set bulk "dset TV::bulk_launch_enabled true; dset TV::bulk_launch_tmpfile1_host_lines %R; dset TV::bulk_launch_string {$srun --jobid=%J -N%N -n%N -w`awk -F. \'BEGIN {ORS=\",\"} {if (NR==%N) ORS=\"\"; print \$1}\' %t1` -l --input=none %B/tvdsvr%K -callback_host %H -callback_ports %L -set_pws %P -verbosity %V -working_directory %D %F}"
+set no_bulk       "dset TV::bulk_launch_enabled false"
 
 print_header $test_id
 
@@ -151,6 +151,10 @@ expect {
 		send "yes\n"
 		exp_continue
 	}
+	-re "Could not open breakpoint file" {
+		send_user "\nNOTE: Breakpoint file error is expected due to known Totalview bug\n"
+		exp_continue
+	}
 	timeout {
 		send_user "\nFAILURE: totalviewcli not responding\n"
 		set exit_code 1
@@ -227,6 +231,10 @@ expect {
 	-re "Do you really wish to exit TotalView?" {
 		incr matches
 		send "yes\n"
+		exp_continue
+	}
+	-re "Could not open breakpoint file" {
+		send_user "\nNOTE: Breakpoint file error is expected due to known Totalview bug\n"
 		exp_continue
 	}
 	timeout {
