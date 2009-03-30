@@ -327,6 +327,7 @@ EXTRA_DIST = \
 	test24.1			\
 	test24.1.prog.c			\
 	test24.2			\
+	test25.1			\
 	usleep
 
 distclean-local:

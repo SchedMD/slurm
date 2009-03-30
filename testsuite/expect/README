@@ -531,7 +531,7 @@ test22.#   Testing of sreport commands and options.
            These also test the sacctmgr archive dump/load functions.
 =================================================
 test22.1   sreport cluster utilization report
-test22.2   sreport h, n, p, P, v, V options
+test22.2   sreport h, n, p, P, t, V options
 
 test23.#   Testing of sstat commands and options.
 =================================================
@@ -543,3 +543,7 @@ test24.#   Testing of sshare/priority multifactor plugin.
 =================================================
 test24.1   multifactor plugin algo test
 test24.2   sshare h, n, p, P, v, and V options.
+
+test25.#   Testing of sprio command and options.
+=================================================
+test25.1   sprio all options
