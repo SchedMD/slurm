@@ -406,6 +406,7 @@ int srun(int ac, char **av)
 	if (slurm_step_launch(job->step_ctx, slurmctld_comm_addr.hostname, 
 	    &launch_params, &callbacks) != SLURM_SUCCESS) {
 		error("Application launch failed: %m");
+		global_rc = 1;
 		goto cleanup;
 	}
 

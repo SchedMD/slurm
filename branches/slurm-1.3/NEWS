@@ -56,6 +56,7 @@ documents those changes that are of interest to users and admins.
     count from a range rather than minimum (e.g. "sbatch -N1-4 my.sh").
  -- In accounting_storage/filetxt and accounting_storage/pgsql fix 
     possible invalid memory reference when a job lacks a name.
+ -- Give srun command an exit code of 1 if the prolog fails.
 
 * Changes in SLURM 1.3.14
 =========================
