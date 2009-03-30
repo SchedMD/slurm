@@ -51,7 +51,7 @@
 #include "affinity.h"
 #include "dist_tasks.h"
 
-#define PURGE_CPUSET_DIRS 1
+#define PURGE_CPUSET_DIRS 0
 
 /*
  * These variables are required by the generic plugin interface.  If they
