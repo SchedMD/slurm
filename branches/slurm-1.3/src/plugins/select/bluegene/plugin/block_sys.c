@@ -965,7 +965,7 @@ int read_bg_blocks()
 	return rc;
 }
 
-#else
+#endif
 
 extern int load_state_file(char *dir_name)
 {
@@ -1058,6 +1058,27 @@ extern int load_state_file(char *dir_name)
 		error("select_p_state_restore: problem unpacking node_info");
 		goto unpack_error;
 	}
+
+#ifdef HAVE_BG_FILES
+	for (i=0; i<node_select_ptr->record_count; i++) {
+		bg_info_record = &(node_select_ptr->bg_info_array[i]);
+		
+		/* we only care about the states we need here
+		 * everthing else should have been set up already */
+		if(bg_info_record->state == RM_PARTITION_ERROR) {
+			if((bg_record = find_bg_record_in_list(
+				    bg_curr_block_list,
+				    bg_info_record->bg_block_id)))
+				put_block_in_error_state(
+					bg_record, BLOCK_ERROR_STATE);
+		}
+	}
+
+	select_g_free_node_info(&node_select_ptr);
+	free_buf(buffer);
+	return SLURM_SUCCESS;
+#endif
+
 	slurm_mutex_lock(&block_state_mutex);
 	reset_ba_system(false);
 
@@ -1127,9 +1148,9 @@ extern int load_state_file(char *dir_name)
 		bg_record->quarter = bg_info_record->quarter;
 		bg_record->nodecard = bg_info_record->nodecard;
 #endif
-		if(bg_info_record->state == RM_PARTITION_ERROR)
-			bg_record->job_running = BLOCK_ERROR_STATE;
-		else
+		if(bg_info_record->state == RM_PARTITION_ERROR) {
+			put_block_in_error_state(bg_record, BLOCK_ERROR_STATE);
+		} else
 			bg_record->job_running = NO_JOB_RUNNING;
 		bg_record->bp_count = bit_size(node_bitmap);
 		bg_record->node_cnt = bg_info_record->node_cnt;
@@ -1240,5 +1261,3 @@ unpack_error:
 	free_buf(buffer);
 	return SLURM_FAILURE;
 }
-
-#endif

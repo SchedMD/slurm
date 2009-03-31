@@ -125,13 +125,13 @@ extern int block_exist_in_list(List my_list, bg_record_t *bg_record)
 		   && bit_equal(bg_record->ionode_bitmap,
 				found_record->ionode_bitmap)) {
 			if(bg_record->ionodes)
-				debug3("This block %s[%s] "
+				debug("This block %s[%s] "
 				       "is already in the list %s",
 				       bg_record->nodes,
 				       bg_record->ionodes,
 				       found_record->bg_block_id);
 			else
-				debug3("This block %s "
+				debug("This block %s "
 				       "is already in the list %s",
 				       bg_record->nodes,
 				       found_record->bg_block_id);
@@ -504,29 +504,25 @@ extern bg_record_t *find_bg_record_in_list(List my_list, char *bg_block_id)
 	ListIterator itr;
 	bg_record_t *bg_record = NULL;
 		
+	xassert(my_list);
+
 	if(!bg_block_id)
 		return NULL;
 			
-	if(my_list) {
-		slurm_mutex_lock(&block_state_mutex);
-		itr = list_iterator_create(my_list);
-		while ((bg_record = (bg_record_t *) list_next(itr)) != NULL) {
-			if(bg_record->bg_block_id)
-				if (!strcmp(bg_record->bg_block_id, 
-					    bg_block_id))
-					break;
-		}
-		list_iterator_destroy(itr);
-		slurm_mutex_unlock(&block_state_mutex);
-		if(bg_record)
-			return bg_record;
-		else
-			return NULL;
-	} else {
-		error("find_bg_record_in_list: no list");
-		return NULL;
+	slurm_mutex_lock(&block_state_mutex);
+	itr = list_iterator_create(my_list);
+	while ((bg_record = (bg_record_t *) list_next(itr)) != NULL) {
+		if(bg_record->bg_block_id)
+			if (!strcmp(bg_record->bg_block_id, 
+				    bg_block_id))
+				break;
 	}
-	
+	list_iterator_destroy(itr);
+	slurm_mutex_unlock(&block_state_mutex);
+	if(bg_record)
+		return bg_record;
+	else
+		return NULL;
 }
 
 /* All changes to the bg_list target_name must 
@@ -658,13 +654,7 @@ end_it:
 		sleep(1);
 	}
 	
-	slurm_mutex_lock(&block_state_mutex);
-	error("Setting Block %s to ERROR state.", bg_record->bg_block_id);
-	bg_record->job_running = BLOCK_ERROR_STATE;
-	bg_record->state = RM_PARTITION_ERROR;
-	remove_from_bg_list(bg_booted_block_list, bg_record);
-	slurm_mutex_unlock(&block_state_mutex);
-	trigger_block_error();
+	put_block_in_error_state(bg_record, BLOCK_ERROR_STATE);
 	return;
 }
 
@@ -728,7 +718,8 @@ extern int set_ionodes(bg_record_t *bg_record, int io_start, int io_nodes)
 
 #endif
 
-extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq)
+extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
+			 bool no_check, bitoff_t io_start)
 {
 	bg_record_t *bg_record = NULL;
 	ba_node_t *ba_node = NULL;
@@ -736,7 +727,7 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq)
 	uid_t pw_uid;
 	int i, len;
 	int small_count = 0;
-#ifdef HAVE_BGL
+#ifdef HAVE_BGQ
 	int node_cnt = 0;
 	uint16_t quarter = 0;
 	uint16_t nodecard = 0;
@@ -749,10 +740,8 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq)
 	bg_record = (bg_record_t*) xmalloc(sizeof(bg_record_t));
 	
 	
-	bg_record->user_name = 
-		xstrdup(bg_slurm_user_name);
-	bg_record->target_name = 
-		xstrdup(bg_slurm_user_name);
+	bg_record->user_name = xstrdup(bg_slurm_user_name);
+	bg_record->target_name = xstrdup(bg_slurm_user_name);
 	
 	pw_uid = uid_from_string(bg_record->user_name);
 	if(pw_uid == (uid_t) -1) {
@@ -774,7 +763,7 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq)
 	bg_record->quarter = (uint16_t)NO_VAL;
 	bg_record->nodecard = (uint16_t)NO_VAL;
 	debug2("asking for %s %d %d %s", 
-	       blockreq->block, blockreq->small128, blockreq->small32,
+	       blockreq->block, blockreq->small32, blockreq->small128,
 	       convert_conn_type(blockreq->conn_type));
 #else
 	debug2("asking for %s %d %d %d %d %d %s", 
@@ -851,7 +840,9 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq)
 		}
 	} else {
 		debug("adding a small block");
-#ifdef HAVE_BGL // remove this clause when other works.  Only here to
+		if(no_check)
+			goto no_check;
+#ifdef HAVE_BGQ // remove this clause when other works.  Only here to
 		// perserve old code 
 
 		/* if the ionode cnt for small32 is 0 then don't
@@ -1000,6 +991,7 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq)
 			+ blockreq->small128
 			+ blockreq->small256; 
 #endif
+	no_check:
 		/* Automatically create 2-way split if 
 		 * conn_type == SELECT_SMALL in bluegene.conf
 		 * Here we go through each node listed and do the same thing
@@ -1008,7 +1000,7 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq)
 		itr = list_iterator_create(bg_record->bg_block_list);
 		while ((ba_node = list_next(itr)) != NULL) {
 			handle_small_record_request(records, blockreq,
-						    bg_record, 0);
+						    bg_record, io_start);
 		}
 		list_iterator_destroy(itr);
 		destroy_bg_record(bg_record);
@@ -1018,7 +1010,6 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq)
 	return SLURM_SUCCESS;
 }
 
-#ifndef HAVE_BGL
 extern int handle_small_record_request(List records, blockreq_t *blockreq,
 				       bg_record_t *bg_record, bitoff_t start)
 {
@@ -1102,7 +1093,6 @@ extern int handle_small_record_request(List records, blockreq_t *blockreq,
 
 	return SLURM_SUCCESS;
 }
-#endif
 
 extern int format_node_name(bg_record_t *bg_record, char *buf, int buf_size)
 {
@@ -1116,127 +1106,236 @@ extern int format_node_name(bg_record_t *bg_record, char *buf, int buf_size)
 	return SLURM_SUCCESS;
 }
 
-extern int down_sub_node_blocks(int *coord, bitstr_t *ionode_bitmap)
+extern int down_nodecard(char *bp_name, bitoff_t io_start)
 {
 	List requests = NULL;
 	List delete_list = NULL;
-	List error_list = NULL;
 	ListIterator itr = NULL;
-	blockreq_t blockreq; 
-	bg_record_t *bg_record = NULL, *found_record = NULL;
-	char *node_name = NULL;
+	bg_record_t *bg_record = NULL, *found_record = NULL, tmp_record;
+	bg_record_t *smallest_bg_record = NULL;
 	struct node_record *node_ptr = NULL;
 	int bp_bit = 0;
+	static int io_cnt = NO_VAL;
+	static int create_size = NO_VAL;
+	static blockreq_t blockreq; 
+	int rc = SLURM_SUCCESS;
 
-	xassert(coord);
+	xassert(bp_name);
 
-	node_name = xstrdup_printf("%s%c%c%c", 
-				   bg_slurm_node_prefix,
-				   alpha_num[coord[X]], 
-				   alpha_num[coord[Y]],
-				   alpha_num[coord[Z]]);
-	node_ptr = find_node_record(node_name);
+	if(io_cnt == NO_VAL) {
+		io_cnt = 1;
+		/* Translate 1 nodecard count to ionode count */
+		if((io_cnt *= bluegene_io_ratio))
+			io_cnt--;
+		/* make sure we create something that is able to be
+		   created */
+		if(bluegene_smallest_block < bluegene_nodecard_node_cnt)
+			create_size = bluegene_nodecard_node_cnt;
+		else
+			create_size = bluegene_smallest_block;
+	}
+
+	node_ptr = find_node_record(bp_name);
 	if (!node_ptr) {
-		error ("down_sub_node_blocks: invalid node specified %s",
-		       node_name);
-		xfree(node_name);
+		error ("down_sub_node_blocks: invalid node specified '%s'",
+		       bp_name);
 		return EINVAL;
 	}
 	bp_bit = (node_ptr - node_record_table_ptr);
 	
+	memset(&blockreq, 0, sizeof(blockreq_t));
+	
+	blockreq.conn_type = SELECT_SMALL;
+	blockreq.block = bp_name;
+
+	debug3("here setting %d of %d and %d-%d of %d",
+	       bp_bit, node_record_count, io_start, 
+	       io_start+io_cnt, bluegene_numpsets);
+
+	memset(&tmp_record, 0, sizeof(bg_record_t));
+	tmp_record.bp_count = 1;
+	tmp_record.node_cnt = bluegene_nodecard_node_cnt;
+	tmp_record.bitmap = bit_alloc(node_record_count);
+	bit_set(tmp_record.bitmap, bp_bit);
+
+	tmp_record.ionode_bitmap = bit_alloc(bluegene_numpsets);
+	bit_nset(tmp_record.ionode_bitmap, io_start, io_start+io_cnt);
+
+	slurm_mutex_lock(&block_state_mutex);
+	itr = list_iterator_create(bg_list);
+	while ((bg_record = list_next(itr))) {
+		if(!bit_test(bg_record->bitmap, bp_bit))
+			continue;
 		
+		if(!blocks_overlap(bg_record, &tmp_record)) 
+			continue;
+
+		if(bg_record->job_running > NO_JOB_RUNNING) 
+			slurm_fail_job(bg_record->job_running);
+
+		/* if the block is smaller than the create size just
+		   continue on.
+		*/
+		if(bg_record->node_cnt < create_size)
+			continue;
+
+		if(!smallest_bg_record || 
+		   (smallest_bg_record->node_cnt > bg_record->node_cnt))
+			smallest_bg_record = bg_record;
+	}
+	list_iterator_destroy(itr);
+	slurm_mutex_unlock(&block_state_mutex);
+	
+	if(bluegene_layout_mode != LAYOUT_DYNAMIC) {
+		debug("running non-dynamic mode");
+		if(smallest_bg_record && (smallest_bg_record->bp_count <= 1)) {
+			/* we already handled this */
+			info("smallest block is %s", 
+			     smallest_bg_record->bg_block_id);
+			if(smallest_bg_record->state == RM_PARTITION_ERROR) {
+				rc = SLURM_SUCCESS;
+				goto cleanup;
+			}
+
+			rc = put_block_in_error_state(
+				smallest_bg_record, BLOCK_ERROR_STATE);
+			goto cleanup;
+		} 
+		
+		debug("didn't get a smallest block");
+		if(!node_already_down(bp_name)) {
+			time_t now = time(NULL);
+			char reason[128], time_str[32];
+			slurm_make_time_str(&now, time_str,
+					    sizeof(time_str));
+			snprintf(reason, sizeof(reason), 
+				 "select_bluegene: "
+				 "nodecard down [SLURM@%s]", 
+				 time_str); 
+			slurm_drain_nodes(bp_name, reason);
+		}
+		rc = SLURM_SUCCESS;
+		goto cleanup;
+	} 
+
+	
+	if(smallest_bg_record) {
+		debug("smallest block is %s", smallest_bg_record->bg_block_id);
+		if(smallest_bg_record->state == RM_PARTITION_ERROR) {
+			rc = SLURM_SUCCESS;
+			goto cleanup;
+		}
+		
+		while(smallest_bg_record->job_running > NO_JOB_RUNNING)
+			sleep(1);
+
+		if(smallest_bg_record->node_cnt == create_size) {
+			rc = put_block_in_error_state(
+				smallest_bg_record, BLOCK_ERROR_STATE);
+			goto cleanup;
+		} 
+
+		if(create_size > smallest_bg_record->node_cnt) {
+			/* we should never get here.  This means we
+			 * have a create_size that is bigger than a
+			 * block that is already made.
+			 */
+			rc = put_block_in_error_state(
+				smallest_bg_record, BLOCK_ERROR_STATE);
+			goto cleanup;
+		}
+		debug3("node count is %d", smallest_bg_record->node_cnt);
+		switch(smallest_bg_record->node_cnt) {
+#ifndef HAVE_BGL
+		case 64:
+			blockreq.small32 = 2;
+			break;
+		case 256:
+			blockreq.small32 = 8;
+			break;
+#endif
+		case 128:
+			blockreq.small32 = 4;			
+			break;
+		case 512:
+			blockreq.small32 = 16;
+			break;
+		default:
+			rc = SLURM_ERROR;
+			goto cleanup;
+			break;
+		}
+
+		if(create_size != bluegene_nodecard_node_cnt) {
+			blockreq.small128 = blockreq.small32 / 4;
+			blockreq.small32 = 0;
+		}
+		/* set the start to be the same as the start of the
+		   ionode_bitmap */
+		io_start = bit_ffs(smallest_bg_record->ionode_bitmap);
+	} else {
+		switch(create_size) {
+#ifndef HAVE_BGL
+		case 64:
+			blockreq.small64 = 8;
+			break;
+		case 256:
+			blockreq.small256 = 2;
+#endif
+		case 32:
+			blockreq.small32 = 16;
+			break;
+		case 128:
+			blockreq.small128 = 4;
+			break;
+		case 512:
+			if(!node_already_down(bp_name)) {
+				time_t now = time(NULL);
+				char reason[128], time_str[32];
+				slurm_make_time_str(&now, time_str,
+						    sizeof(time_str));
+				snprintf(reason, sizeof(reason), 
+					 "select_bluegene: "
+					 "nodecard down [SLURM@%s]", 
+					 time_str); 
+				slurm_drain_nodes(bp_name, reason);
+			}
+			rc = SLURM_SUCCESS;
+			goto cleanup;
+			break;
+		default:
+			break;
+		}
+		/* since we don't have a block in this midplane
+		   we need to start at the beginning. */
+		io_start = 0;
+		/* we also need a bg_block to pretend to be the
+		   smallest block that takes up the entire midplane. */
+	}
+		
+	
 	/* Here we need to add blocks that take up nodecards on this
 	   midplane.  Since Slurm only keeps track of midplanes
 	   natively this is the only want to handle this case.
 	*/
 	requests = list_create(destroy_bg_record);
-	memset(&blockreq, 0, sizeof(blockreq_t));
+	add_bg_record(requests, NULL, &blockreq, 1, io_start);
 
-	blockreq.block = node_name;
-	blockreq.conn_type = SELECT_SMALL;
-	blockreq.small32 = bluegene_bp_nodecard_cnt;
-
-	add_bg_record(requests, NULL, &blockreq);
-	
-	slurm_mutex_lock(&block_state_mutex);
-	itr = list_iterator_create(bg_list);
 		
-	error_list = list_create(NULL);
 	delete_list = list_create(NULL);
 	while((bg_record = list_pop(requests))) {
-		if(bit_overlap(bg_record->ionode_bitmap, ionode_bitmap)) {
-			/* we don't care about this one since it
-			   wasn't set. 
-			*/		   
-			destroy_bg_record(bg_record);
-			continue;
-		}
-		
-		list_iterator_reset(itr);
+		slurm_mutex_lock(&block_state_mutex);
+		itr = list_iterator_create(bg_list);
 		while((found_record = list_next(itr))) {
-			if(bit_equal(bg_record->bitmap,
-				     found_record->bitmap)
-			   && bit_equal(bg_record->ionode_bitmap, 
-					found_record->ionode_bitmap)) {
-				break;
-			}			
+			if(!blocks_overlap(bg_record, found_record))
+				continue;
+			list_push(delete_list, found_record);
+			list_remove(itr);
+			num_block_to_free++;
 		}
-		
-		if(found_record) {
-			debug2("block %s[%s] already there",
-			       found_record->nodes, 
-			       found_record->ionodes);
-			/* we'll get this one later.  We are just
-			   checking which ones we have to add right now.
-			*/	
-			if(found_record->job_running > NO_JOB_RUNNING) 
-				slurm_fail_job(found_record->job_running);
-			list_append(error_list, found_record);
-			destroy_bg_record(bg_record);
-			continue;
-		} else if(bluegene_layout_mode != LAYOUT_DYNAMIC) {
-			bg_record_t *smallest_bg_record = NULL;
-			/* here we only want to see if we can find the
-			smallest overlapping thing and set it to an
-			error */
-			/* don't add anything new to the list since we aren't
-			   dynamic */
-			list_iterator_reset(itr);
-			while((found_record = list_next(itr))) {
-				if(found_record->node_cnt > 1)
-					/* we don't care about
-					   anything over 1 midplane */
-				if(!blocks_overlap(bg_record, found_record)) {
-					debug2("block %s isn't part of %s",
-					       found_record->bg_block_id, 
-					       bg_record->bg_block_id);
-					continue;
-				}
+		list_iterator_destroy(itr);
+		slurm_mutex_unlock(&block_state_mutex);
 
-				if(smallest_bg_record || 
-				   (smallest_bg_record->cpu_cnt 
-				    > found_record->cpu_cnt))
-					smallest_bg_record = found_record;
-			}
-
-			if(smallest_bg_record) {
-				if(smallest_bg_record->job_running 
-				   > NO_JOB_RUNNING) 
-					slurm_fail_job(smallest_bg_record->
-						       job_running);
-				list_append(error_list, smallest_bg_record);
-			} else {						
-				if(!node_already_down(node_name)) 
-					ba_update_node_state(
-						&ba_system_ptr->grid[coord[X]]
-						[coord[Y]][coord[Z]],
-						NODE_STATE_DRAIN);
-			}
-			
-			destroy_bg_record(bg_record);
-			continue;
-		}			
-				
 		/* we need to add this record since it doesn't exist */
 		if(configure_block(bg_record) == SLURM_ERROR) {
 			destroy_bg_record(bg_record);
@@ -1249,59 +1348,151 @@ extern int down_sub_node_blocks(int *coord, bitstr_t *ionode_bitmap)
 		      "around bad nodecards",
 		      bg_record->bg_block_id);
 		print_bg_record(bg_record);
+		slurm_mutex_lock(&block_state_mutex);
 		list_append(bg_list, bg_record);
-		list_append(error_list, bg_record);
+		slurm_mutex_unlock(&block_state_mutex);
+		if(bit_overlap(bg_record->ionode_bitmap, 
+			       tmp_record.ionode_bitmap)) {
+			/* here we know the error block doesn't exist
+			   so just set the state here */
+			rc = put_block_in_error_state(
+				bg_record, BLOCK_ERROR_STATE);
+		}
 	}
+	list_destroy(requests);
 	
-	/* remove overlapping blocks */
-	while((found_record = list_pop(error_list))) {
-		if(found_record->job_running == BLOCK_ERROR_STATE)
-			continue;
-		error("Setting block %s to error state "
-		      "because of failed hardware.", found_record->bg_block_id);
-		found_record->job_running = BLOCK_ERROR_STATE;
-		found_record->state = RM_PARTITION_ERROR;
-		trigger_block_error();
-	
-		/* we have to check them all just to make sure no
-		   small blocks are there 
-		*/
-		list_iterator_reset(itr);
-		while((bg_record = list_next(itr))) {
-			if(found_record == bg_record)
-				continue;
-			if(!blocks_overlap(bg_record, found_record)) {
-				debug2("block %s isn't part of %s",
-				       found_record->bg_block_id, 
-				       bg_record->bg_block_id);
-				continue;
-			}
-			debug2("removing block %s because there is something "
-			       "wrong with part of the base partition",
-			       found_record->bg_block_id);
-			if(found_record->job_running > NO_JOB_RUNNING) 
-				slurm_fail_job(found_record->job_running);
-
-			/* don't remove any blocks if not dynamic */
-			if(bluegene_layout_mode != LAYOUT_DYNAMIC)
-				continue;
-			list_push(delete_list, found_record);
-			list_remove(itr);
-			num_block_to_free++;
-		}		
-	}
-	list_iterator_destroy(itr);
+	slurm_mutex_lock(&block_state_mutex);
 	free_block_list(delete_list);
 	list_destroy(delete_list);
+	sort_bg_record_inc_size(bg_list);
+	slurm_mutex_unlock(&block_state_mutex);
+	last_bg_update = time(NULL);	
+
+cleanup:
+	FREE_NULL_BITMAP(tmp_record.bitmap);
+	FREE_NULL_BITMAP(tmp_record.ionode_bitmap);
+
+	return rc;
+	
+}
+
+extern int up_nodecard(char *bp_name, bitstr_t *ionode_bitmap)
+{
+	ListIterator itr = NULL;
+	bg_record_t *bg_record = NULL;
+	struct node_record *node_ptr = NULL;
+	int bp_bit = 0;
+	int ret = 0;
+
+	xassert(bp_name);
+	xassert(ionode_bitmap);
+
+	node_ptr = find_node_record(bp_name);
+	if (!node_ptr) {
+		error ("down_sub_node_blocks: invalid node specified %s",
+		       bp_name);
+		return EINVAL;
+	}
+	bp_bit = (node_ptr - node_record_table_ptr);
+	
+	slurm_mutex_lock(&block_state_mutex);
+	itr = list_iterator_create(bg_list);
+	while((bg_record = list_next(itr))) {
+		if(bg_record->job_running != BLOCK_ERROR_STATE)
+			continue;
+		if(!bit_test(bg_record->bitmap, bp_bit))
+			continue;
+		
+		if(!bit_overlap(bg_record->ionode_bitmap, ionode_bitmap)) {
+			continue;
+		}
+		resume_block(bg_record);			
+	}
+	list_iterator_destroy(itr);
+	slurm_mutex_unlock(&block_state_mutex);
+	
+	/* FIX ME: This needs to call the opposite of
+	   slurm_drain_nodes which does not yet exist.
+	*/
+	if((ret = node_already_down(bp_name))) {
+		/* means it was drained */
+		if(ret == 2) {
+			/* debug("node %s put back into service after " */
+/* 			      "being in an error state", */
+/* 			      bp_name); */
+		}
+	}
+
+	return SLURM_SUCCESS;
+}
+
+extern int put_block_in_error_state(bg_record_t *bg_record, int state)
+{
+	uid_t pw_uid;
+
+	xassert(bg_record);
+	
+	/* Since we are putting this block in an error state we need
+	   to wait for the job to be removed.  We don't really
+	   need to free the block though since we may just
+	   want it to be in an error state for some reason. */
+	while(bg_record->job_running > NO_JOB_RUNNING)
+		sleep(1);
+	
+	error("Setting Block %s to ERROR state.", bg_record->bg_block_id);
+	/* we add the block to these lists so we don't try to schedule
+	   on them. */
+	if(!block_ptr_exist_in_list(bg_job_block_list, bg_record)) {
+		list_push(bg_job_block_list, bg_record);
+		num_unused_cpus -= bg_record->cpu_cnt;
+	}
+	if(!block_ptr_exist_in_list(bg_booted_block_list, bg_record)) 
+		list_push(bg_booted_block_list, bg_record);
+	
+	slurm_mutex_lock(&block_state_mutex);
+	bg_record->job_running = state;
+	bg_record->state = RM_PARTITION_ERROR;
+
+	xfree(bg_record->user_name);
+	xfree(bg_record->target_name);
+	bg_record->user_name = xstrdup(bg_slurm_user_name);
+	bg_record->target_name = xstrdup(bg_slurm_user_name);
+	
+	pw_uid = uid_from_string(bg_record->user_name);
+	if(pw_uid == (uid_t) -1) {
+		error("No such user: %s", bg_record->user_name);
+	} else {
+		bg_record->user_uid = pw_uid;
+	}
 	slurm_mutex_unlock(&block_state_mutex);
 
-	list_destroy(error_list);
-	FREE_NULL_BITMAP(ionode_bitmap);
-		
-	xfree(node_name);
+	trigger_block_error();
 	last_bg_update = time(NULL);
+
 	return SLURM_SUCCESS;
-	
+}
+
+/* block_state_mutex should be locked before calling */
+extern int resume_block(bg_record_t *bg_record)
+{
+	xassert(bg_record);
+
+	if(bg_record->job_running >= NO_JOB_RUNNING)
+		return SLURM_SUCCESS;
+
+	debug("block %s put back into service after "
+	      "being in an error state",
+	      bg_record->bg_block_id);
+
+	if(remove_from_bg_list(bg_job_block_list, bg_record) == SLURM_SUCCESS) 
+		num_unused_cpus += bg_record->cpu_cnt;
+	remove_from_bg_list(bg_booted_block_list, bg_record);
+
+	bg_record->job_running = NO_JOB_RUNNING;
+	bg_record->state = RM_PARTITION_FREE;
+	last_bg_update = time(NULL);
+
+	return SLURM_SUCCESS;
 }
 
 /************************* local functions ***************************/

@@ -38,7 +38,7 @@
 
 #include "dynamic_block.h"
 
-#ifdef HAVE_BGL
+#ifdef HAVE_BGQ
 static int _split_block(List block_list, List new_blocks,
 			bg_record_t *bg_record, int procs);
 #else
@@ -138,7 +138,7 @@ extern List create_dynamic_block(List block_list,
 		xfree(nodes);
 		FREE_NULL_BITMAP(bitmap);
 	}
-#ifdef HAVE_BGL
+#ifdef HAVE_BGQ
 	if(request->size==1 && cnodes < bluegene_bp_node_cnt) {
 		request->conn_type = SELECT_SMALL;
 		if(request->procs == (procs_per_node/16)) {
@@ -176,6 +176,15 @@ extern List create_dynamic_block(List block_list,
 #else
 	if(request->size==1 && cnodes < bluegene_bp_node_cnt) {
 		switch(cnodes) {
+#ifdef HAVE_BGL
+		case 32:
+			blockreq.small32 = 4;
+			blockreq.small128 = 3;
+			break;
+		case 128:
+			blockreq.small128 = 4;
+			break;
+#else
 		case 16:
 			blockreq.small16 = 2;
 			blockreq.small32 = 1;
@@ -201,6 +210,7 @@ extern List create_dynamic_block(List block_list,
 		case 256:
 			blockreq.small256 = 2;
 			break;
+#endif
 		default:
 			error("This size %d is unknown on this system", cnodes);
 			goto finished;
@@ -252,7 +262,7 @@ extern List create_dynamic_block(List block_list,
 			   set in the ionode_bitmap.
 			*/
 			if(bg_record->job_running == NO_JOB_RUNNING 
-#ifdef HAVE_BGL
+#ifdef HAVE_BGQ
 			   && (bg_record->quarter == (uint16_t) NO_VAL
 			       || (bg_record->quarter == 0 
 				   && (bg_record->nodecard == (uint16_t) NO_VAL
@@ -326,7 +336,7 @@ no_list:
 	blockreq.ramdiskimage = request->ramdiskimage;
 	blockreq.conn_type = request->conn_type;
 
-	add_bg_record(new_blocks, results, &blockreq);
+	add_bg_record(new_blocks, results, &blockreq, 0, 0);
 
 finished:
 	reset_all_removed_bps();
@@ -345,7 +355,7 @@ finished:
 	return new_blocks;
 }
 
-#ifdef HAVE_BGL
+#ifdef HAVE_BGQ
 extern bg_record_t *create_small_record(bg_record_t *bg_record, 
 					uint16_t quarter, uint16_t nodecard)
 {
@@ -373,7 +383,7 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 		new_ba_node = ba_copy_node(ba_node);
 		for (i=0; i<BA_SYSTEM_DIMENSIONS; i++){
 			for(j=0;j<NUM_PORTS_PER_NODE;j++) {
-				ba_node->axis_switch[i].int_wire[j].used = 0;	
+				ba_node->axis_switch[i].int_wire[j].used = 0;
 				if(i!=X) {
 					if(j==3 || j==4) 
 						ba_node->axis_switch[i].
@@ -425,7 +435,7 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 	bg_record_t *found_record = NULL;
 	ba_node_t *new_ba_node = NULL;
 	ba_node_t *ba_node = NULL;
-#ifdef HAVE_BGL
+#ifdef HAVE_BGQ
 	int small_size = 4;
 #else
 	char bitstring[BITSIZE];
@@ -481,7 +491,7 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 				
 	found_record->conn_type = SELECT_SMALL;
 				
-#ifdef HAVE_BGL
+#ifdef HAVE_BGQ
 	found_record->node_use = SELECT_COPROCESSOR_MODE;
 	if(nodecard != (uint16_t) NO_VAL)
 		small_size = bluegene_bp_nodecard_cnt;
@@ -508,7 +518,7 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 
 /*********************** Local Functions *************************/
 
-#ifdef HAVE_BGL
+#ifdef HAVE_BGQ
 static int _split_block(List block_list, List new_blocks,
 			bg_record_t *bg_record, int procs) 
 {
@@ -820,6 +830,41 @@ static int _split_block(List block_list, List new_blocks,
 	memset(&blockreq, 0, sizeof(blockreq_t));
 
 	switch(bg_record->node_cnt) {
+#ifdef HAVE_BGL
+	case 32:
+		error("We got a 32 we should never have this");
+		goto finished;
+		break;
+	case 128:
+		switch(cnodes) {
+		case 32:			
+			blockreq.small32 = 4;
+			break;
+		default:
+			error("We don't make a %d from size %d", 
+			      cnodes, bg_record->node_cnt);
+			goto finished;
+			break;
+		}
+		break;
+	default:
+		switch(cnodes) {
+		case 32:			
+			blockreq.small32 = 4;
+			blockreq.small128 = 3;
+			break;
+		case 128:				
+			blockreq.small128 = 4;
+			break;
+		default:
+			error("We don't make a %d from size %d", 
+			      cnodes, bg_record->node_cnt);
+			goto finished;
+			break;
+		}
+		full_bp = true;
+		break;
+#else
 	case 16:
 		error("We got a 16 we should never have this");
 		goto finished;
@@ -935,17 +980,25 @@ static int _split_block(List block_list, List new_blocks,
 		}
 		full_bp = true;
 		break;
+#endif
 	}
 
 	if(!full_bp && bg_record->ionode_bitmap)
 		start = bit_ffs(bg_record->ionode_bitmap);
 
+#ifdef HAVE_BGL
+	debug2("Asking for %u 32CNBlocks, and %u 128CNBlocks "
+	       "from a %u block, starting at ionode %d.", 
+	       blockreq.small32, blockreq.small128, 
+	       bg_record->node_cnt, start);
+#else
 	debug2("Asking for %u 16CNBlocks, %u 32CNBlocks, "
 	       "%u 64CNBlocks, %u 128CNBlocks, and %u 256CNBlocks"
 	       "from a %u block, starting at ionode %d.", 
 	       blockreq.small16, blockreq.small32, 
 	       blockreq.small64, blockreq.small128, 
 	       blockreq.small256, bg_record->node_cnt, start);
+#endif
 	handle_small_record_request(new_blocks, &blockreq, bg_record, start);
 
 finished:
@@ -995,7 +1048,7 @@ static int _breakup_blocks(List block_list, List new_blocks,
 	 * smallest blocks.
 	 */
 again:		
-	while ((bg_record = (bg_record_t *) list_next(itr)) != NULL) {
+	while ((bg_record = list_next(itr))) {
 		if(bg_record->job_running != NO_JOB_RUNNING)
 			continue;
 		/* on the third time through look for just a block
@@ -1054,7 +1107,7 @@ again:
 		}
 		/* lets see if we can combine some small ones */
 		if(bg_record->node_cnt < cnodes) {
-			//char bitstring[BITSIZE];
+			char bitstring[BITSIZE];
 			bitstr_t *bitstr = NULL;
 			bit_or(ionodes, bg_record->ionode_bitmap);
 
@@ -1074,9 +1127,12 @@ again:
 			} else
 				total_cnode_cnt += bg_record->node_cnt;
 
-			//bit_fmt(bitstring, BITSIZE, ionodes);
-			debug2("1 adding %d got %d set",
-			       bg_record->node_cnt, total_cnode_cnt);
+			bit_fmt(bitstring, BITSIZE, ionodes);
+			debug2("1 adding %s %d got %d set "
+			       "ionodes %s total is %s",
+			       bg_record->bg_block_id, 
+			       bg_record->node_cnt, total_cnode_cnt,
+			       bg_record->ionodes, bitstring);
 			if(total_cnode_cnt == cnodes) {
 				request->save_name = xstrdup_printf(
 					"%c%c%c",

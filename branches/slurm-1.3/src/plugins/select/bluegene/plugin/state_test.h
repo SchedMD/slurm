@@ -38,8 +38,9 @@
 #ifndef _STATE_TEST_H_
 #define _STATE_TEST_H_
 
-/* Determine if specific slurm node is already in DOWN or DRAIN state */
-extern bool node_already_down(char *node_name);
+/* Determine if specific slurm node is already in DOWN or DRAIN ret (1) or
+ * FAIL ret (2) state idle ret (0) */
+extern int node_already_down(char *node_name);
 
 /*
  * Search MMCS for failed switches and nodes. Failed resources are DRAINED in 

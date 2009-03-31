@@ -102,6 +102,7 @@ extern int num_unused_cpus;
 
 #define MAX_PTHREAD_RETRIES  1
 #define BLOCK_ERROR_STATE    -3
+#define ADMIN_ERROR_STATE    -4
 #define NO_JOB_RUNNING       -1
 #define MAX_AGENT_COUNT      30
 #define BUFSIZE 4096
@@ -143,9 +144,13 @@ extern char *convert_node_use(rm_partition_mode_t pt);
 /* sort a list of bg_records by size (node count) */
 extern void sort_bg_record_inc_size(List records);
 
-/* bluegene_agent - detached thread periodically tests status of bluegene 
- * nodes and switches */
-extern void *bluegene_agent(void *args);
+/* block_agent - detached thread periodically tests status of bluegene 
+ * blocks */
+extern void *block_agent(void *args);
+
+/* state_agent - thread periodically tests status of bluegene 
+ * nodes, nodecards, and switches */
+extern void *state_agent(void *args);
 
 extern int bg_free_block(bg_record_t *bg_record);
 

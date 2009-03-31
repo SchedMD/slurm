@@ -322,7 +322,7 @@ static int _used_switches(ba_node_t* ba_node)
 	return switch_count;
 }
 
-#ifdef HAVE_BGL
+#ifdef HAVE_BGQ
 extern int configure_small_block(bg_record_t *bg_record)
 {
 	int rc = SLURM_SUCCESS;
@@ -511,14 +511,13 @@ extern int configure_small_block(bg_record_t *bg_record)
 	ba_node_t* ba_node = NULL;
 	rm_BP_t *curr_bp = NULL;
 	rm_bp_id_t bp_id = NULL;
+#ifndef HAVE_BGL
 	rm_nodecard_id_t nc_char = NULL;
+#endif
 	int nc_id = 0;
-	int num_ncards = 0, sub_nodecard = 0, ionode_card = 0;
+	int num_ncards = 0, sub_nodecard = 0, ionode_card = 0, nc_count = 0;
 	rm_nodecard_t *ncard;
 	rm_nodecard_list_t *ncard_list = NULL;
-#ifdef HAVE_BGL
-	rm_quarter_t quarter;
-#endif
 	int num, i;
 	int use_nc[bluegene_bp_nodecard_cnt];
 	double nc_pos = 0;
@@ -529,7 +528,8 @@ extern int configure_small_block(bg_record_t *bg_record)
 		      bg_record->bp_count);
 		return SLURM_ERROR;
 	}
-	
+/* 	info("configuring small block on ionodes %s out of %d ncs",  */
+/* 	     bg_record->ionodes, bluegene_bp_nodecard_cnt); */
 #ifdef HAVE_BG_FILES	
 	/* set that we are doing a small block */
 	if ((rc = bridge_set_data(bg_record->bg_block, RM_PartitionSmall, 
@@ -631,7 +631,12 @@ extern int configure_small_block(bg_record_t *bg_record)
 		      bg_err_str(rc));
 		return SLURM_ERROR;
 	}
-	num_ncards = 0;
+	if(num_ncards > num) {
+		error("You requested more (%d > %d) nodecards "
+		      "than are available on this block %s",
+		      num_ncards, num, bg_record->nodes);
+	}
+
 	for(i=0; i<num; i++) {
 		if (i) {
 			if ((rc = bridge_get_data(ncard_list, 
@@ -655,6 +660,15 @@ extern int configure_small_block(bg_record_t *bg_record)
 			}
 		}
 		
+#ifdef HAVE_BGL
+		/* on BG/L we assume the order never changes when the
+		   system is up.  This could change when a reboot of
+		   the system happens, but that should be rare.
+		*/
+		nc_id = i;
+		if(!use_nc[i]) 
+			continue;
+#else
 		if ((rc = bridge_get_data(ncard, 
 					  RM_NodeCardID, 
 					  &nc_char)) != STATUS_OK) {
@@ -749,9 +763,9 @@ extern int configure_small_block(bg_record_t *bg_record)
 			}			
 		}
 		free(nc_char);
+#endif
 
-
-		if (num_ncards) {
+		if (nc_count) {
 			if ((rc = bridge_set_data(bg_record->bg_block,
 						  RM_PartitionNextNodeCard, 
 						  ncard)) 
@@ -777,8 +791,8 @@ extern int configure_small_block(bg_record_t *bg_record)
 			}
 		}
 		
-		num_ncards++;
-
+		nc_count++;
+#ifndef HAVE_BGL
 		if(sub_nodecard) {
 			if((rc = bridge_free_nodecard(ncard)) != STATUS_OK) {
 				error("bridge_free_nodecard(): %s", 
@@ -787,6 +801,9 @@ extern int configure_small_block(bg_record_t *bg_record)
 				goto cleanup;
 			}
 		}
+#endif
+		if(nc_count == num_ncards)
+			break;
 	}
 cleanup:
 	if ((rc = bridge_free_nodecard_list(ncard_list)) != STATUS_OK) {
