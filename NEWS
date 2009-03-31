@@ -57,6 +57,9 @@ documents those changes that are of interest to users and admins.
  -- In accounting_storage/filetxt and accounting_storage/pgsql fix 
     possible invalid memory reference when a job lacks a name.
  -- Give srun command an exit code of 1 if the prolog fails.
+ -- BLUEGENE - allows for checking nodecard states in the system instead 
+    of midplane state so as to not down an entire midplane if you don't 
+    have to.
 
 * Changes in SLURM 1.3.14
 =========================

@@ -141,11 +141,15 @@ extern int set_ionodes(bg_record_t *bg_record);
 extern int set_ionodes(bg_record_t *bg_record, int io_start, int io_nodes);
 #endif
 
-extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq);
+extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
+			 bool no_check, bitoff_t io_start);
 extern int handle_small_record_request(List records, blockreq_t *blockreq,
 				       bg_record_t *bg_record, bitoff_t start);
 
 extern int format_node_name(bg_record_t *bg_record, char *buf, int buf_size);
-extern int down_sub_node_blocks(int *coord, bitstr_t *ionode_bitmap);
+extern int down_nodecard(char *bp_name, bitoff_t io_start);
+extern int up_nodecard(char *bp_name, bitstr_t *ionode_bitmap);
+extern int put_block_in_error_state(bg_record_t *bg_record, int state);
+extern int resume_block(bg_record_t *bg_record);
 
 #endif /* _BLUEGENE_BG_RECORD_FUNCTIONS_H_ */

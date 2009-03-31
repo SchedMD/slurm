@@ -379,7 +379,7 @@ extern int create_full_system_block(List bg_found_block_list)
 	blockreq.block = name;
 	blockreq.conn_type = SELECT_TORUS;
 
-	add_bg_record(records, NULL, &blockreq);
+	add_bg_record(records, NULL, &blockreq, 0 , 0);
 	xfree(name);
 	
 	bg_record = (bg_record_t *) list_pop(records);
