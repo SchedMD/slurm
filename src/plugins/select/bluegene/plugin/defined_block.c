@@ -295,7 +295,7 @@ extern int create_full_system_block(List bg_found_block_list)
 	list_iterator_destroy(itr);
 
 	bit_not(bitmap);
-	if(bit_ffs(bitmap)) {
+	if(bit_ffs(bitmap) != -1) {
 		error("We don't have the entire system covered by partitions, "
 		      "can't create full system block");
 		FREE_NULL_BITMAP(bitmap);
