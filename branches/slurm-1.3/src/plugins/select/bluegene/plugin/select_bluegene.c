@@ -654,7 +654,7 @@ extern int select_p_update_sub_node (update_part_msg_t *part_desc_ptr)
 		goto end_it;
 				
 	}
-	info("got %s", 	part_desc_ptr->name);	
+
 	while (part_desc_ptr->name[j] != '\0') {
 		if (part_desc_ptr->name[j] == '[') {
 			if(set<1) {
