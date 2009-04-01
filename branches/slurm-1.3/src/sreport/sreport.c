@@ -659,7 +659,14 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
                                   of accounts under those specified will be\n\
                                   displayed, not the accounts specified.   \n\
                                   In the SizesByAccount reports the default\n\
-                                  for accounts is root.                    \n\
+                                  for accounts is root.  This explanation  \n\
+                                  does not apply when ran with the FlatView\n\
+                                  option.                                  \n\
+             - FlatView         - When used with the SizesbyAccount        \n\
+                                  will not group accounts in a             \n\
+                                  hierarchical level, but print each       \n\
+                                  account where jobs ran on a separate     \n\
+                                  line without any hierarchy.              \n\
              - GID=<OPT>        - List of group ids to include in report.  \n\
                                   Default is all.                          \n\
              - Grouping=<OPT>   - Comma separated list of size groupings.  \n\
@@ -669,8 +676,9 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
                                   Default is all.                          \n\
              - Partitions=<OPT> - List of partitions jobs ran on to include\n\
                                   in report.  Default is all.              \n\
-             - PrintJobCount    - When used with the Sizes report will print\n\
-                                  number of jobs ran instead of time used. \n\
+             - PrintJobCount    - When used with the any Sizes report      \n\
+                                  will print number of jobs ran instead of \n\
+                                  time used.                               \n\
              - Users=<OPT>      - List of users jobs to include in report. \n\
                                   Default is all.                          \n\
              - Wckeys=<OPT>     - List of wckeys to use for the report.    \n\

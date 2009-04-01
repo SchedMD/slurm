@@ -248,7 +248,13 @@ List of accounts to use for the report Default is all.  The SizesByAccount
 report only displays 1 hierarchical level. If accounts are specified
 the next layer of accounts under those specified will be displayed,
 not the accounts specified.  In the SizesByAccount reports the default
-for accounts is root. 
+for accounts is root.  This explanation does not apply when ran with
+the FlatView option.
+.TP
+.B FlatView
+When used with the SizesbyAccount will not group accounts in a
+hierarchical level, but print each account where jobs ran on a
+separate line without any hierarchy.
 .TP
 .B GID=<OPT>
 List of group ids to include in report.  Default is all.
