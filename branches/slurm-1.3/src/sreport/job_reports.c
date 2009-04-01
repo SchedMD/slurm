@@ -82,6 +82,7 @@ enum {
 static List print_fields_list = NULL; /* types are of print_field_t */
 static List grouping_print_fields_list = NULL; /* types are of print_field_t */
 static int print_job_count = 0;
+static bool flat_view = false;
 
 static void _destroy_local_grouping(void *object)
 {
@@ -271,6 +272,9 @@ static int _set_cond(int *start, int argc, char *argv[],
 		} else if (!strncasecmp (argv[i], "End", MAX(command_len, 1))) {
 			job_cond->usage_end = parse_time(argv[i]+end, 1);
 			set = 1;
+		} else if (!strncasecmp (argv[i], "FlatView",
+					 MAX(command_len, 1))) {
+			flat_view = true;
 		} else if (!strncasecmp (argv[i], "Format",
 					 MAX(command_len, 1))) {
 			if(format_list)
@@ -768,8 +772,9 @@ no_assocs:
 
 		acct_itr = list_iterator_create(cluster_group->acct_list);
 		while((acct_group = list_next(acct_itr))) {
-			if(acct_group->lft != (uint32_t)NO_VAL
-			   && job->lft != (uint32_t)NO_VAL) {
+			if(!flat_view 
+			   && (acct_group->lft != (uint32_t)NO_VAL)
+			   && (job->lft != (uint32_t)NO_VAL)) {
 				/* keep separate since we don't want
 				 * to so a strcmp if we don't have to 
 				 */
