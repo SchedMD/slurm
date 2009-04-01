@@ -137,10 +137,16 @@ static void _rotate_geo(uint16_t *req_geometry, int rot_cnt)
  */
 static int _bg_record_sort_aval_inc(bg_record_t* rec_a, bg_record_t* rec_b)
 {
-	if(rec_a->job_ptr && !rec_b->job_ptr)
+	if((rec_a->job_running == BLOCK_ERROR_STATE) 
+	   && (rec_b->job_running != BLOCK_ERROR_STATE))
+		return 1;
+	else if((rec_a->job_running != BLOCK_ERROR_STATE) 
+	   && (rec_b->job_running == BLOCK_ERROR_STATE))
 		return -1;
 	else if(!rec_a->job_ptr && rec_b->job_ptr)
 		return 1;
+	else if(rec_a->job_ptr && !rec_b->job_ptr)
+		return -1;
 	else if(rec_a->job_ptr && rec_b->job_ptr) {
 		if(rec_a->job_ptr->start_time > rec_b->job_ptr->start_time)
 			return 1;
@@ -159,10 +165,16 @@ static int _bg_record_sort_aval_inc(bg_record_t* rec_a, bg_record_t* rec_b)
  */
 static int _bg_record_sort_aval_dec(bg_record_t* rec_a, bg_record_t* rec_b)
 {
-	if(rec_a->job_ptr && !rec_b->job_ptr)
+	if((rec_a->job_running == BLOCK_ERROR_STATE) 
+	   && (rec_b->job_running != BLOCK_ERROR_STATE))
+		return -1;
+	else if((rec_a->job_running != BLOCK_ERROR_STATE) 
+	   && (rec_b->job_running == BLOCK_ERROR_STATE))
 		return 1;
 	else if(!rec_a->job_ptr && rec_b->job_ptr)
 		return -1;
+	else if(rec_a->job_ptr && !rec_b->job_ptr)
+		return 1;
 	else if(rec_a->job_ptr && rec_b->job_ptr) {
 		if(rec_a->job_ptr->start_time > rec_b->job_ptr->start_time)
 			return -1;

@@ -101,10 +101,6 @@ typedef struct bg_record {
 	uint32_t cpu_cnt;               /* count of cpus per block */
 	uint32_t node_cnt;              /* count of cnodes per block */
 #ifdef HAVE_BGL
-	uint16_t quarter;               /* used for small blocks 
-					   determine quarter of BP */
-	uint16_t nodecard;              /* used for small blocks 
-					   determine nodecard of quarter */
 	char *blrtsimage;              /* BlrtsImage for this block */
 #endif
 	char *linuximage;              /* LinuxImage/CnloadImage for
@@ -135,11 +131,7 @@ extern bg_record_t *find_bg_record_in_list(List my_list, char *bg_block_id);
 extern int update_block_user(bg_record_t *bg_block_id, int set); 
 extern void drain_as_needed(bg_record_t *bg_record, char *reason);
 
-#ifdef HAVE_BGL
-extern int set_ionodes(bg_record_t *bg_record);
-#else 
 extern int set_ionodes(bg_record_t *bg_record, int io_start, int io_nodes);
-#endif
 
 extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
 			 bool no_check, bitoff_t io_start);

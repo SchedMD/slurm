@@ -633,7 +633,7 @@ extern int select_p_update_sub_node (update_part_msg_t *part_desc_ptr)
 {
 	int rc = SLURM_SUCCESS;
 	int i = 0, j = 0;
-	char coord[BA_SYSTEM_DIMENSIONS], *node_name = NULL;
+	char coord[BA_SYSTEM_DIMENSIONS+1], *node_name = NULL;
 	char ionodes[128];
 	int set = 0;
 	double nc_pos = 0, last_pos = -1;
@@ -646,7 +646,7 @@ extern int select_p_update_sub_node (update_part_msg_t *part_desc_ptr)
 		goto end_it;
 	}
 
-	memset(coord, -1, BA_SYSTEM_DIMENSIONS);
+	memset(coord, 0, sizeof(coord));
 	memset(ionodes, 0, 128);
 	if(!part_desc_ptr->name) {
 		error("update_sub_node: No name specified");
@@ -654,7 +654,7 @@ extern int select_p_update_sub_node (update_part_msg_t *part_desc_ptr)
 		goto end_it;
 				
 	}
-			
+	info("got %s", 	part_desc_ptr->name);	
 	while (part_desc_ptr->name[j] != '\0') {
 		if (part_desc_ptr->name[j] == '[') {
 			if(set<1) {
@@ -705,9 +705,9 @@ extern int select_p_update_sub_node (update_part_msg_t *part_desc_ptr)
 					goto end_it;
 				}
 			}
+			
 			strncpy(coord, part_desc_ptr->name+j,
 				BA_SYSTEM_DIMENSIONS); 
-			
 			j += BA_SYSTEM_DIMENSIONS-1;
 			set++;
 		}
