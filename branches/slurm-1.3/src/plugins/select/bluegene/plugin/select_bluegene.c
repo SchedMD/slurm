@@ -470,7 +470,7 @@ extern int select_p_pack_node_info(time_t last_query_time, Buf *buffer_ptr)
 		debug2("Node select info hasn't changed since %d", 
 			last_bg_update);
 		return SLURM_NO_CHANGE_IN_DATA;
-	} else {
+	} else if(blocks_are_created) {
 		*buffer_ptr = NULL;
 		buffer = init_buf(HUGE_BUF_SIZE);
 		pack32(blocks_packed, buffer);
@@ -479,10 +479,7 @@ extern int select_p_pack_node_info(time_t last_query_time, Buf *buffer_ptr)
 		if(bg_list) {
 			slurm_mutex_lock(&block_state_mutex);
 			itr = list_iterator_create(bg_list);
-			while ((bg_record = (bg_record_t *) list_next(itr)) 
-			       != NULL) {
-				xassert(bg_record->bg_block_id != NULL);
-				
+			while ((bg_record = list_next(itr))) {
 				pack_block(bg_record, buffer);
 				blocks_packed++;
 			}
@@ -515,6 +512,9 @@ extern int select_p_pack_node_info(time_t last_query_time, Buf *buffer_ptr)
 		set_buf_offset(buffer, tmp_offset);
 		
 		*buffer_ptr = buffer;
+	} else {
+		error("select_p_pack_node_info: bg_list not ready yet");
+		return SLURM_ERROR;
 	}
 
 	return SLURM_SUCCESS;

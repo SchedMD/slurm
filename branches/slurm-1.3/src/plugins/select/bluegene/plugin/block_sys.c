@@ -281,6 +281,7 @@ static int _find_nodecard(rm_partition_t *block_ptr, int *nc_id)
 	rm_nodecard_t *ncard = NULL;
 	rm_BP_t *curr_bp = NULL;
 	
+	xassert(block_ptr);
 	xassert(nc_id);
 
 	if((rc = bridge_get_data(block_ptr,
@@ -362,7 +363,7 @@ static int _find_nodecard(rm_partition_t *block_ptr, int *nc_id)
 			continue;
 		}
 		free(card_name);
-		(*nc_id) = (i%4);
+		(*nc_id) = i;
 		break;
 	}
 cleanup:
@@ -596,7 +597,7 @@ int read_bg_blocks()
 
 			nc_id = 0;
 			if(nc_cnt == 1) 
-				nc_id = _find_nodecard(bg_record, block_ptr);
+				_find_nodecard(block_ptr, &nc_id);
 			
 			bg_record->node_cnt = 
 				nc_cnt * bluegene_nodecard_node_cnt;
@@ -610,7 +611,7 @@ int read_bg_blocks()
 				goto clean_up;
 			}
 			io_start *= bluegene_quarter_ionode_cnt;
-			io_start += bluegene_nodecard_ionode_cnt * nc_id;
+			io_start += bluegene_nodecard_ionode_cnt * (nc_id%4);
 #else
 			/* Translate nodecard count to ionode count */
 			if((io_cnt = nc_cnt * bluegene_io_ratio))

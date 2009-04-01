@@ -60,6 +60,7 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE - allows for checking nodecard states in the system instead 
     of midplane state so as to not down an entire midplane if you don't 
     have to.
+ -- BLUEGENE - fix creation of MESH blocks 
 
 * Changes in SLURM 1.3.14
 =========================
