@@ -14,7 +14,7 @@ where <i>plane_size</i> is the requested plane/block size.
 <p>In the examples below we assume we have 21 tasks and that the
 task list is: 0, 1, 2, 3, 4, ..., 19, 20.
 
-<p>On <u>One (1)</u> node: <i>srun -N 1-1 -n 21 -m plane=4 -s <...></i>.
+<p>On <u>One (1)</u> node: <i>srun -N 1-1 -n 21 -m plane=4 <...></i>.
 
 <p>The distribution results in a plane distribution with plane_size 21.
 Even thought the user specified a plane_size of 4 the final plane
@@ -23,10 +23,10 @@ distribution results in a plane_size of 21.
 <p>
 <center>
 <img src="plane_ex1.gif">
-<p>Figure 1: Process layout for <i>srun -N 1-1 -n 21 -m plane=4 -s <...></i>
+<p>Figure 1: Process layout for <i>srun -N 1-1 -n 21 -m plane=4 <...></i>
 </center>
 
-<p>On <u>four (4)</u> nodes: <i>srun -N 4-4 -n 21 -m plane=4 -s <...></i>.
+<p>On <u>four (4)</u> nodes: <i>srun -N 4-4 -n 21 -m plane=4 <...></i>.
 
 <p>The plane distribution with a plane_size of 4 results in the
 following allocation of the task ids:
@@ -34,10 +34,10 @@ following allocation of the task ids:
 <p>
 <center>
 <img src="plane_ex2.gif">
-<p>Figure 2: Process layout for <i>srun -N 4-4 -n 21 -m plane=4 -s <...> </i>
+<p>Figure 2: Process layout for <i>srun -N 4-4 -n 21 -m plane=4 <...> </i>
 </center>
 
-<p>On <u>four (4)</u> nodes: <i>srun -N 4-4 -n 21 -m plane=2 -s <...>
+<p>On <u>four (4)</u> nodes: <i>srun -N 4-4 -n 21 -m plane=2 <...>
 </i>. 
 
 <p>The plane distribution with a plane_size of 2 results in the
@@ -46,7 +46,7 @@ following allocation of the task ids:
 <p>
 <center>
 <img src="plane_ex3.gif">
-<p>Figure 3: Process layout for <i>srun -N 4-4 -n 21 -m plane=2 -s <...></i>
+<p>Figure 3: Process layout for <i>srun -N 4-4 -n 21 -m plane=2 <...></i>
 </center>
 
 <p class="footer"><a href="#top">top</a></p>
@@ -112,38 +112,44 @@ affinity enabled</h3>
 <p>In the examples below we assume we have 21 tasks and that the
 task list is: 0, 1, 2, 3, 4, ..., 19, 20.
 
-<p>On <u>One (1)</u> node: <i>srun -N 1-1 -n 21 -m plane=4 -s <...></i>.
+<p>On <u>One (1)</u> node: 
+<i>srun -N 1-1 -n 21 -m plane=4 --cpu_bind=core <...></i>.
 Even thought the user specified a plane_size of 4 the final plane
 distribution results in a plane distribution with plane_size=8.
 
 <p>
 <center>
 <img src="plane_ex5.gif">
-<p>Figure 5: Process layout for <i>srun -N 1-1 -n 21 -m plane=4 -s <...></i>.
+<p>Figure 5: Process layout for 
+<i>srun -N 1-1 -n 21 -m plane=4 --cpu_bind=core <...></i>.
 </center>
 
-<p>On <u>four (4)</u> nodes: <i>srun -N 4-4 -n 21 -m plane=4 -s <...>
-</i>. The plane distribution with a plane_size of 4 results in the
+<p>On <u>four (4)</u> nodes: 
+<i>srun -N 4-4 -n 21 -m plane=4 --cpu_bind=core <...></i>. 
+The plane distribution with a plane_size of 4 results in the
 following allocation of the task ids:
 
 <p>
 <center>
 <img src="plane_ex6.gif" width=600>
-<p>Figure 6: Process layout for <i>srun -N 4-4 -n 21 -m plane=4 -s <...></i>.
+<p>Figure 6: Process layout for 
+<i>srun -N 4-4 -n 21 -m plane=4 --cpu_bind=core <...></i>.
 </center>
 
-<p>On <u>four (4)</u> nodes: <i>srun -N 4-4 -n 21 -m plane=2 -s <...>
+<p>On <u>four (4)</u> nodes: 
+<i>srun -N 4-4 -n 21 -m plane=2 --cpu_bind=core <...>
 </i>. The plane distribution with a plane_size of 2 results in the
 following allocation of the task ids:
 
 <p>
 <center>
 <img src="plane_ex7.gif" width=600>
-<p>Figure 7: Process layout for <i>srun -N 4-4 -n 21 -m plane=2 -s <...></i>.
+<p>Figure 7: Process layout for 
+<i>srun -N 4-4 -n 21 -m plane=2 --cpu_bind=core <...></i>.
 </center>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 12 October 2006</p>
+<p style="text-align:center;">Last modified 1 April 2009</p>
 
 <!--#include virtual="footer.txt"-->
