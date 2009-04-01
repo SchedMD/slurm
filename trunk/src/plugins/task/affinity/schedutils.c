@@ -123,7 +123,7 @@ char * cpuset_to_str(const cpu_set_t *mask, char *str)
 {
 	int base;
 	char *ptr = str;
-	char *ret = 0;
+	char *ret = NULL;
 
 	for (base = CPU_SETSIZE - 4; base >= 0; base -= 4) {
 		char val = 0;
@@ -139,7 +139,7 @@ char * cpuset_to_str(const cpu_set_t *mask, char *str)
 			ret = ptr;
 		*ptr++ = val_to_char(val);
 	}
-	*ptr = 0;
+	*ptr = '\0';
 	return ret ? ret : ptr - 1;
 }
 
