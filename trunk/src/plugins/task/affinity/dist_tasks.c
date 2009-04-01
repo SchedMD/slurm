@@ -308,12 +308,11 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 			req->cpu_bind_type |= CPU_BIND_TO_THREADS;
 			goto make_auto;
 		}
-		if ((whole_nodes == 0) && avail_mask) {
+		if (avail_mask) {
 			xfree(req->cpu_bind);
 			req->cpu_bind = avail_mask;
 			req->cpu_bind_type |= CPU_BIND_MASK;
-		} else
-			xfree(avail_mask);
+		}
 		slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
 		info("lllp_distribution jobid [%u] auto binding off: %s",
 		     req->job_id, buf_type);
