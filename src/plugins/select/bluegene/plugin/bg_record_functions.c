@@ -477,7 +477,7 @@ extern int bg_record_cmpf_inc(bg_record_t* rec_a, bg_record_t* rec_b)
 		else if (size_a > 0)
 			return 1;
 	}
-#ifdef HAVE_BGL
+#ifdef HAVE_BGQ
 	if (rec_a->quarter < rec_b->quarter)
 		return -1;
 	else if (rec_a->quarter > rec_b->quarter)
