@@ -1032,6 +1032,16 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 		if(bg_record->job_running > NO_JOB_RUNNING) 
 			slurm_fail_job(bg_record->job_running);
 
+		/* mark every one of these in an error state */
+		if(bluegene_layout_mode != LAYOUT_DYNAMIC) {
+			if(!delete_list)
+				delete_list = list_create(NULL);
+			list_append(delete_list, bg_record);
+			continue;
+		} 
+
+		/* below is only for dynamic modes since there are
+		   never overlapping blocks there */
 		/* if the block is smaller than the create size just
 		   continue on.
 		*/
@@ -1046,18 +1056,22 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 	slurm_mutex_unlock(&block_state_mutex);
 	
 	if(bluegene_layout_mode != LAYOUT_DYNAMIC) {
-		debug("running non-dynamic mode");
-		if(smallest_bg_record && (smallest_bg_record->bp_count <= 1)) {
-			/* we already handled this */
-			info("smallest block is %s", 
-			     smallest_bg_record->bg_block_id);
-			if(smallest_bg_record->state == RM_PARTITION_ERROR) {
-				rc = SLURM_SUCCESS;
-				goto cleanup;
+		debug3("running non-dynamic mode");
+		if(delete_list) {
+			/* don't lock here since it is handled inside
+			   the put_block_in_error_state
+			*/
+			itr = list_iterator_create(delete_list);
+			while ((bg_record = list_next(itr))) {
+				/* we already handled this */
+				if(bg_record->state == RM_PARTITION_ERROR) 
+					continue;
+								
+				rc = put_block_in_error_state(
+					bg_record, BLOCK_ERROR_STATE);
 			}
-
-			rc = put_block_in_error_state(
-				smallest_bg_record, BLOCK_ERROR_STATE);
+			list_iterator_destroy(itr);
+			list_destroy(delete_list);
 			goto cleanup;
 		} 
 		
