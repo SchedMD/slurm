@@ -38,90 +38,90 @@ The overall configuration parameters available include:
 
 .TP
 \fBAccountingStorageEnforce\fR
-If set to a non-zero value and the user, partition, account association is not 
-defined for a job in the accounting database then prevent the job from being 
-executed. This needs to be set to '2' if you the association limits will also 
-be enforced.  If set to anything else limits of associations will not be 
-enforced.
-The default value is zero.
+Contains a bitmap coding of account enforcement.  If bit zero is set
+(0x0001), the job will not be scheduled if the user/cluster/account
+association is not defined for a job in the accounting database. If
+bit one is set (0x0002), the job will not be scheduled if the
+association limits are exceeded.  If bit three is set (0x0004), the
+job will not be scheduled if a valid workload characterization key is
+not specified.  The default value of zero imposes no limitations on
+job scheduling.
 
 .TP
 \fBAccountingStorageHost\fR
-Define the name of the host where the database is running we are going
-to store the accounting data.
+The name of the machine hosting the accounting storage database.
 Only used for database type storage plugins, ignored otherwise.
 Also see \fBDefaultStorageHost\fR.
 
 .TP
 \fBAccountingStorageLoc\fR
-Specifies the location of the file or database where accounting 
-records are written.
+The fully qualified file name where accounting records are written
+when the \fBAccountingStorageType\fR is "filetxt" or the database
+where accounting records are stored when the
+\fBAccountingStorageType\fR is a database.
 Also see \fBDefaultStorageLoc\fR.
 
 .TP
 \fBAccountingStoragePass\fR
-Define the password used to gain access to the database to store the
-accounting data.
-Only used for database type storage plugins, ignored otherwise.
-In the case of Slurm DBD (Data Base Daemon) with Munge authentication this can be 
-configured to use a Munge daemon specifically configured to provide authentication 
-between clusters while the default Munge daemon provides authentication within a cluster. 
-In that case, \fBAccountingStoragePass\fR should specify the named port to be used
-for communications with the alternate Munge daemon (e.g. 
-"/var/run/munge/global.socket.2"). The default value is NULL.
-Also see \fBDefaultStoragePass\fR.
+The password used to gain access to the database to store the
+accounting data.  Only used for database type storage plugins, ignored
+otherwise.  In the case of SLURM DBD (Database Daemon) with Munge
+authentication this can be configured to use a Munge daemon
+specifically configured to provide authentication between clusters
+while the default Munge daemon provides authentication within a
+cluster.  In that case, \fBAccountingStoragePass\fR should specify the
+named port to be used for communications with the alternate Munge
+daemon (e.g.  "/var/run/munge/global.socket.2"). The default value is
+NULL.  Also see \fBDefaultStoragePass\fR.
 
 .TP
 \fBAccountingStoragePort\fR
-Define the port the database server is listening on where we are going
-to store the accounting data.
+The listening port of the accounting storage database server.
 Only used for database type storage plugins, ignored otherwise.
 Also see \fBDefaultStoragePort\fR.
 
 .TP
 \fBAccountingStorageType\fR
-Define the accounting storage mechanism type.
-Acceptable values at present include 
-"accounting_storage/mysql", "accounting_storage/none", 
-"accounting_storage/pgsql", and "accounting_storage/slurmdbd".
-The value "accounting_storage/filetxt" indicates that accounting records
-will be written to a the file specified by the 
-\fBAccountingStorageLoc\fR parameter.
-The value "accounting_storage/mysql" indicates that accounting records
-should be written to a MySQL database specified by the 
-\fBAccountingStorageLoc\fR parameter.
-The default value is "accounting_storage/none", which means that
-account records are not maintained. 
-The value "accounting_storage/pgsql" indicates that accounting records
-should be written to a PostgreSQL database specified by the 
-\fBAccountingStorageLoc\fR parameter.  This plugin is not complete and 
-should not be used if wanting to use associations.  It will however work with
-basic accounting of jobs and job steps.  If interested in 
-completing please email slurm-dev@lists.llnl.gov.
-The value "accounting_storage/slurmdbd" indicates that accounting records
-will be written to SlurmDDB, which manages an underlying MySQL or 
-PostgreSQL database. See "man slurmdbd" for more information.
-Also see \fBDefaultStorageType\fR.
+The accounting storage mechanism type.  Acceptable values at
+present include "accounting_storage/filetxt",
+"accounting_storage/mysql", "accounting_storage/none",
+"accounting_storage/pgsql", and "accounting_storage/slurmdbd".  The
+"accounting_storage/filetxt" value indicates that accounting records
+will be written to the file specified by the
+\fBAccountingStorageLoc\fR parameter.  The "accounting_storage/mysql"
+value indicates that accounting records will be written to a MySQL
+database specified by the \fBAccountingStorageLoc\fR parameter.  The
+"accounting_storage/pgsql" value indicates that accounting records
+will be written to a PostgreSQL database specified by the
+\fBAccountingStorageLoc\fR parameter.  The
+"accounting_storage/slurmdbd" value indicates that accounting records
+will be written to the SLURM DBD, which manages an underlying MySQL or
+PostgreSQL database. See "man slurmdbd" for more information.  The
+default value is "accounting_storage/none" and indicates that account
+records are not maintained.  Note: the PostgreSQL plugin is not
+complete and should not be used if wanting to use associations.  It
+will however work with basic accounting of jobs and job steps.  If
+interested in completing, please email slurm-dev@lists.llnl.gov.  Also
+see \fBDefaultStorageType\fR.
 
 .TP
 \fBAccountingStorageUser\fR
-Define the name of the user we are going to connect to the database
-with to store the accounting data.
+The user account for accessing the accounting storage database.
 Only used for database type storage plugins, ignored otherwise.
 Also see \fBDefaultStorageUser\fR.
 
 .TP
 \fBAuthType\fR
-Define the authentication method for communications between SLURM 
+The authentication method for communications between SLURM 
 components. 
 Acceptable values at present include "auth/none", "auth/authd", 
 and "auth/munge".
 The default value is "auth/munge".
-"auth/nume includes the UID in each communication, but it is not verified. 
+"auth/none" includes the UID in each communication, but it is not verified. 
 This may be fine for testing purposes, but 
 \fBdo not use "auth/none" if you desire any security\fR.
 "auth/authd" indicates that Brett Chun's authd is to be used (see
-"http://www.theether.org/authd/" for more information, Note that
+"http://www.theether.org/authd/" for more information. Note that
 authd is no longer actively supported).
 "auth/munge" indicates that LLNL's MUNGE is to be used
 (this is the best supported authentication mechanism for SLURM, 
@@ -132,7 +132,7 @@ preserved).
 
 .TP
 \fBBackupAddr\fR
-Name that \fBBackupController\fR should be referred to in 
+The name that \fBBackupController\fR should be referred to in
 establishing a communications path. This name will 
 be used as an argument to the gethostbyname() function for 
 identification. For example, "elx0000" might be used to designate 
@@ -153,12 +153,12 @@ See  the \fBRELOCATING CONTROLLERS\fR section if you change this.
 
 .TP
 \fBBatchStartTimeout\fR
-The maximum time (in seconds) that a batch job is permitted for 
-launching before being considered missing and releasing the 
-allocation. The default value is 10 (seconds). Larger values may 
-be required if more time is required to execute the \fBProlog\fR, 
-loading user environment variables (for Moab spawned jobs), or the 
-slurmd daemon gets paged from memory.
+The maximum time (in seconds) that a batch job is permitted for
+launching before being considered missing and releasing the
+allocation. The default value is 10 (seconds). Larger values may be
+required if more time is required to execute the \fBProlog\fR, load
+user environment variables (for Moab spawned jobs), or if the slurmd
+daemon gets paged from memory.
 
 .TP
 \fBCacheGroups\fR
@@ -169,7 +169,7 @@ The default value is 0 to disable caching group data.
 
 .TP
 \fBCheckpointType\fR
-Define the system\-initiated checkpoint method to be used for user jobs. 
+The system\-initiated checkpoint method to be used for user jobs. 
 The slurmctld daemon must be restarted for a change in \fBCheckpointType\fR 
 to take effect. 
 Acceptable values at present include
@@ -181,14 +181,14 @@ The default value is "checkpoint/none".
 
 .TP
 \fBClusterName\fR
-The name by which this SLURM managed cluster is known for accounting 
-purposes. This is needed distinguish between accounting data from 
-multiple clusters being recorded in a single database.
+The name by which this SLURM managed cluster is known in the
+accounting database.  This is needed distinguish accounting records
+when multiple clusters report to the same database.
 
 .TP
 \fBCompleteWait\fR
 The time, in seconds, given for a job to remain in COMPLETING state
-before any any additional jobs are scheduled. 
+before any additional jobs are scheduled. 
 If set to zero, pending jobs will be started as soon as possible.
 Since a COMPLETING job's resources are released for use by other 
 jobs as soon as the \fBEpilog\fR completes on each individual node, 
@@ -213,15 +213,15 @@ By default the \fBControlAddr\fR will be identical in value to
 
 .TP
 \fBControlMachine\fR
-The name of the machine where SLURM control functions are executed
-as returned by the \fIgethostname()\fR function the cut at the first dot
-or the \fIhostname \-s\fR command (e.g. use "tux001" rather than "tux001.my.com"). 
-This value must be specified.
-See the \fBRELOCATING CONTROLLERS\fR section if you change this.
+The short hostname of the machine where SLURM control functions are
+executed.  I.e., the hostname returned by the \fIgethostname()\fR
+function cut at the first dot (e.g. use "tux001" rather than
+"tux001.my.com").  This value must be specified.  See the
+\fBRELOCATING CONTROLLERS\fR section if you change this.
 
 .TP
 \fBCryptoType\fR
-Define the cryptographic signature tool to be used in the creation of 
+The cryptographic signature tool to be used in the creation of 
 job step credentials.
 The slurmctld daemon must be restarted for a change in \fBCryptoType\fR
 to take effect.
@@ -230,7 +230,7 @@ The default value is "crypto/munge".
 
 .TP
 \fBDebugFlags\fR
-Define specific subsystems which should provide more detailed event logging.
+Defines specific subsystems which should provide more detailed event logging.
 Multiple subsystems can be specified with comma separators. 
 Valid subsystems available today (with more to come) include:
 .RS
@@ -277,51 +277,53 @@ not be stored, just collected).
 
 .TP
 \fBDefaultStorageHost\fR
-Define the name of the host where the database is running and used to
-to store the accounting and job completion data.
-Only used for database type storage plugins, ignored otherwise.
-Also see \fBAccountingStorageHost\fR and \fBJobCompHost\fR.
+The default name of the machine hosting the accounting storage and
+job completion databases.
+Only used for database type storage plugins and when the
+\fBAccountingStorageHost\fR and \fBJobCompHost\fR have not been
+defined.
 
 .TP
 \fBDefaultStorageLoc\fR
-Specifies the location of the file or database where accounting 
-and job completion records are written.
+The fully qualified file name where accounting records and/or job
+completion records are written when the \fBDefaultStorageType\fR is
+"filetxt" or the database where accounting records and/or job
+completion records are stored when the \fBDefaultStorageType\fR is a
+database.
 Also see \fBAccountingStorageLoc\fR and \fBJobCompLoc\fR.
 
 .TP
 \fBDefaultStoragePass\fR
-Define the password used to gain access to the database to store the
+The password used to gain access to the database to store the
 accounting and job completion data.
 Only used for database type storage plugins, ignored otherwise.
 Also see \fBAccountingStoragePass\fR and \fBJobCompPass\fR.
 
 .TP
 \fBDefaultStoragePort\fR
-Define the port the database server is listening on where we are going
-to store the accounting and job completion data.
+The listening port of the accounting storage and/or job completion
+database server.
 Only used for database type storage plugins, ignored otherwise.
 Also see \fBAccountingStoragePort\fR and \fBJobCompPort\fR.
 
 .TP
 \fBDefaultStorageType\fR
-Define the accounting and job completion storage mechanism type.
-Acceptable values at present include 
-"filetxt", "mysql", "none", "pgsql", and "slurmdbd".
-The value "filetxt" indicates that records will be written to a the file.
-.ad
-The value "mysql" indicates that accounting records will be written to 
-a mysql database.
-The default value is "none", which means that records are not maintained. 
-The value "pgsql" indicates that records will be written to a postresql 
-database.
-The value "slurmdbd" indicates that records will be written to SlurmDbd,
-which maintains its own database. See "man slurmdbd for more information".
-Also see \fBAccountingStorageType\fR  and \fBJobCompType\fR.
+The accounting and job completion storage mechanism type.  Acceptable
+values at present include "filetxt", "mysql", "none", "pgsql", and
+"slurmdbd".  The value "filetxt" indicates that records will be
+written to a file.  The value "mysql" indicates that accounting
+records will be written to a mysql database.  The default value is
+"none", which means that records are not maintained.  The value
+"pgsql" indicates that records will be written to a PostgreSQL
+database.  The value "slurmdbd" indicates that records will be written
+to the SLURM DBD, which maintains its own database. See "man slurmdbd"
+for more information.
+Also see \fBAccountingStorageType\fR and \fBJobCompType\fR.
 
 .TP
 \fBDefaultStorageUser\fR
-Define the name of the user we are going to connect to the database
-with to store the accounting and job completion data.
+The user account for accessing the accounting storage and/or job
+completion database.
 Only used for database type storage plugins, ignored otherwise.
 Also see \fBAccountingStorageUser\fR and \fBJobCompUser\fR.
 
@@ -370,14 +372,14 @@ See \fBProlog and Epilog Scripts\fR for more information.
 
 .TP
 \fBFastSchedule\fR
-Controls how a nodes configuration specifications in slurm.conf are used.
+Controls how a node's configuration specifications in slurm.conf are used.
 If the number of node configuration entries in the configuration file
 is significantly lower than the number of nodes, setting FastSchedule to
 1 will permit much faster scheduling decisions to be made.
 (The scheduler can just check the values in a few configuration records
 instead of possibly thousands of node records.)
 Note that on systems with hyper\-threading, the processor count
-reported by the node will be twice the actually processor count.
+reported by the node will be twice the actual processor count.
 Consider which value you want to be used for scheduling purposes.
 .RS
 .TP 5
@@ -461,7 +463,7 @@ May not exceed 65533.
 
 .TP
 \fBJobAcctGatherType\fR
-Define the job accounting mechanism type.
+The job accounting mechanism type.
 Acceptable values at present include "jobacct_gather/aix" (for AIX operating
 system), "jobacct_gather/linux" (for Linux operating system) and "jobacct_gather/none"
 (no accounting data collected).
@@ -471,7 +473,7 @@ must be configured.
 
 .TP
 \fBJobAcctGatherFrequency\fR
-Define the job accounting sampling interval.
+The job accounting sampling interval.
 For jobacct_gather/none this parameter is ignored.
 For  jobacct_gather/aix and jobacct_gather/linux the parameter is a number is 
 seconds between sampling job state.
@@ -486,34 +488,34 @@ The default value is "/var/slurm/checkpoint".
 
 .TP
 \fBJobCompHost\fR
-Define the name of the host where the database is running and used
-to store the job completion data.
+The name of the machine hosting the job completion database.
 Only used for database type storage plugins, ignored otherwise.
 Also see \fBDefaultStorageHost\fR.
 
 .TP
 \fBJobCompLoc\fR
-The interpretation of this value depends upon the logging mechanism 
-specified by the \fBJobCompType\fR parameter either a filename or a 
-database name. 
+The fully qualified file name where job completion records are written
+when the \fBJobCompType\fR is "jobcomp/filetxt" or the database where
+job completion records are stored when the \fBJobCompType\fR is a
+database.
 Also see \fBDefaultStorageLoc\fR.
 
 .TP
 \fBJobCompPass\fR
-Define the password used to gain access to the database to store the job completion data.
+The password used to gain access to the database to store the job
+completion data.
 Only used for database type storage plugins, ignored otherwise.
 Also see \fBDefaultStoragePass\fR.
 
 .TP
 \fBJobCompPort\fR
-Define the port the database server is listening on where we are going
-to store the job completion data.
+The listening port of the job completion database server.
 Only used for database type storage plugins, ignored otherwise.
 Also see \fBDefaultStoragePort\fR.
 
 .TP
 \fBJobCompType\fR
-Define the job completion logging mechanism type.
+The job completion logging mechanism type.
 Acceptable values at present include "jobcomp/none", "jobcomp/filetxt", 
 "jobcomp/mysql", "jobcomp/pgsql", and "jobcomp/script"".
 The default value is "jobcomp/none", which means that upon job completion 
@@ -525,28 +527,27 @@ written to a text file specified by the \fBJobCompLoc\fR parameter.
 The value "jobcomp/mysql" indicates that a record of the job should be 
 written to a mysql database specified by the \fBJobCompLoc\fR parameter.
 The value "jobcomp/pgsql" indicates that a record of the job should be 
-written to a postgresql database specified by the \fBJobCompLoc\fR parameter.
+written to a PostgreSQL database specified by the \fBJobCompLoc\fR parameter.
 The value "jobcomp/script" indicates that a script specified by the 
 \fBJobCompLoc\fR parameter is to be executed with environment variables 
 indicating the job information.
 
 .TP
 \fBJobCompUser\fR
-Define the name of the user we are going to connect to the database
-with to store the job completion data.
+The user account for accessing the job completion database.
 Only used for database type storage plugins, ignored otherwise.
 Also see \fBDefaultStorageUser\fR.
 
 .TP
 \fBJobCredentialPrivateKey\fR
 Fully qualified pathname of a file containing a private key used for 
-authentication by Slurm daemons.
+authentication by SLURM daemons.
 This parameter is ignored if \fBCryptType=munge\fR.
 
 .TP
 \fBJobCredentialPublicCertificate\fR
 Fully qualified pathname of a file containing a public key used for 
-authentication by Slurm daemons.
+authentication by SLURM daemons.
 This parameter is ignored if \fBCryptType=munge\fR.
 
 .TP
@@ -886,7 +887,7 @@ the default action is to propagate all limits.
 Only one of the parameters, either
 \fBPropagateResourceLimits\fR or \fBPropagateResourceLimitsExcept\fR,
 may be specified.
-The following limit names are supported by Slurm (although some 
+The following limit names are supported by SLURM (although some 
 options may not be supported on some systems):
 .RS
 .TP 10
@@ -1581,7 +1582,7 @@ If set to 0, this feature is disabled.
 May not exceed 65533 seconds.
 
 .LP
-The configuration of nodes (or machines) to be managed by Slurm is 
+The configuration of nodes (or machines) to be managed by SLURM is 
 also specified in \fB/etc/slurm.conf\fR. 
 Changes in node configuration (e.g. adding nodes, changing their
 processor count, etc.) require restarting the slurmctld daemon.
