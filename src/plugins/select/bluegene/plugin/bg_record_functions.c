@@ -448,10 +448,6 @@ extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
 	sec_record->job_ptr = fir_record->job_ptr;
 	sec_record->cpu_cnt = fir_record->cpu_cnt;
 	sec_record->node_cnt = fir_record->node_cnt;
-#ifdef HAVE_BGL
-	sec_record->quarter = fir_record->quarter;
-	sec_record->nodecard = fir_record->nodecard;
-#endif
 }
 
 /* 
@@ -477,17 +473,7 @@ extern int bg_record_cmpf_inc(bg_record_t* rec_a, bg_record_t* rec_b)
 		else if (size_a > 0)
 			return 1;
 	}
-#ifdef HAVE_BGQ
-	if (rec_a->quarter < rec_b->quarter)
-		return -1;
-	else if (rec_a->quarter > rec_b->quarter)
-		return 1;
 
-	if(rec_a->nodecard < rec_b->nodecard)
-		return -1;
-	else if(rec_a->nodecard > rec_b->nodecard)
-		return 1;
-#else
 	if(!rec_a->ionode_bitmap || !rec_b->ionode_bitmap)
 		return 0;
 
@@ -495,7 +481,7 @@ extern int bg_record_cmpf_inc(bg_record_t* rec_a, bg_record_t* rec_b)
 		return -1;
 	else
 		return 1;
-#endif
+
 	return 0;
 }
 
@@ -658,49 +644,6 @@ end_it:
 	return;
 }
 
-#ifdef HAVE_BGL
-
-extern int set_ionodes(bg_record_t *bg_record)
-{
-	int i = 0;
-	int start_bit = 0;
-	int size = 0;
-	char bitstring[BITSIZE];
-	
-	if(!bg_record)
-		return SLURM_ERROR;
-	/* set the bitmap blank here if it is a full node we don't
-	   want anything set we also don't want the bg_record->ionodes set.
-	*/
-	bg_record->ionode_bitmap = bit_alloc(bluegene_numpsets);
-	if(bg_record->quarter == (uint16_t)NO_VAL) {
-		return SLURM_SUCCESS;
-	}
-
-	start_bit = bluegene_quarter_ionode_cnt*bg_record->quarter;
-	
-	if(bg_record->nodecard != (uint16_t)NO_VAL
-	   && bluegene_nodecard_ionode_cnt) {
-		start_bit += bluegene_nodecard_ionode_cnt*bg_record->nodecard;
-		size = bluegene_nodecard_ionode_cnt;
-	} else
-		size = bluegene_quarter_ionode_cnt;
-	size += start_bit;
-
-	if(size == start_bit) {
-		error("start bit is the same as the end bit %d", size);
-		return SLURM_ERROR;
-	}
-	for(i=start_bit; i<size; i++)
-		bit_set(bg_record->ionode_bitmap, i);
-	
-	bit_fmt(bitstring, BITSIZE, bg_record->ionode_bitmap);
-	bg_record->ionodes = xstrdup(bitstring);
-
-	return SLURM_SUCCESS;
-}
-#else 
-
 extern int set_ionodes(bg_record_t *bg_record, int io_start, int io_nodes)
 {
 	char bitstring[BITSIZE];
@@ -716,8 +659,6 @@ extern int set_ionodes(bg_record_t *bg_record, int io_start, int io_nodes)
 	return SLURM_SUCCESS;
 }
 
-#endif
-
 extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
 			 bool no_check, bitoff_t io_start)
 {
@@ -727,13 +668,7 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
 	uid_t pw_uid;
 	int i, len;
 	int small_count = 0;
-#ifdef HAVE_BGQ
-	int node_cnt = 0;
-	uint16_t quarter = 0;
-	uint16_t nodecard = 0;
-	int small_size = 0;
-	bg_record_t *found_record = NULL;
-#endif
+
 	if(!records) {
 		fatal("add_bg_record: no records list given");
 	}
@@ -760,8 +695,6 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
 	/* bg_record->boot_state = 0; 	Implicit */
 	/* bg_record->state = 0;	Implicit */
 #ifdef HAVE_BGL
-	bg_record->quarter = (uint16_t)NO_VAL;
-	bg_record->nodecard = (uint16_t)NO_VAL;
 	debug2("asking for %s %d %d %s", 
 	       blockreq->block, blockreq->small32, blockreq->small128,
 	       convert_conn_type(blockreq->conn_type));
@@ -842,79 +775,6 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
 		debug("adding a small block");
 		if(no_check)
 			goto no_check;
-#ifdef HAVE_BGQ // remove this clause when other works.  Only here to
-		// perserve old code 
-
-		/* if the ionode cnt for small32 is 0 then don't
-		   allow a nodecard allocation 
-		*/
-		if(!bluegene_nodecard_ionode_cnt) {
-			if(blockreq->small32) 
-				fatal("There is an error in your "
-				      "bluegene.conf file.\n"
-				      "Can't create a 32 node block with "
-				      "Numpsets=%u. (Try setting it to 64)",
-				      bluegene_numpsets);
-		}
-
-		if(blockreq->small32==0 && blockreq->small128==0) {
-			info("No specs given for this small block, "
-			     "I am spliting this block into 4 128CnBlocks");
-			blockreq->small128=4;
-		}		
-
-		i = (blockreq->small32*bluegene_nodecard_node_cnt) + 
-			(blockreq->small128*bluegene_quarter_node_cnt);
-		if(i != bluegene_bp_node_cnt)
-			fatal("There is an error in your bluegene.conf file.\n"
-			      "I am unable to request %d nodes consisting of "
-			      "%u 32CnBlocks and\n%u 128CnBlocks in one "
-			      "base partition with %u nodes.", 
-			      i, bluegene_bp_node_cnt, 
-			      blockreq->small32, blockreq->small128);
-		small_count = blockreq->small32+blockreq->small128; 
-		/* Automatically create 4-way split if 
-		 * conn_type == SELECT_SMALL in bluegene.conf
-		 * Here we go through each node listed and do the same thing
-		 * for each node.
-		 */
-		itr = list_iterator_create(bg_record->bg_block_list);
-		while ((ba_node = list_next(itr)) != NULL) {
-			/* break base partition up into 16 parts */
-			small_size = bluegene_bp_nodecard_cnt;
-			node_cnt = 0;
-			quarter = 0;
-			nodecard = 0;
-			for(i=0; i<small_count; i++) {
-				if(i == blockreq->small32) {
-					/* break base partition 
-					   up into 4 parts */
-					small_size = 4;
-				}
-									
-				if(small_size == 4)
-					nodecard = (uint16_t)NO_VAL;
-				else
-					nodecard = i%4; 
-				found_record = create_small_record(bg_record,
-								   quarter,
-								   nodecard);
-								 
-				/* this needs to be an append so we
-				   keep things in the order we got
-				   them, they will be sorted later */
-				list_append(records, found_record);
-				node_cnt += bluegene_bp_node_cnt/small_size;
-				if(node_cnt == 128) {
-					node_cnt = 0;
-					quarter++;
-				}
-			}
-		}
-		list_iterator_destroy(itr);
-		destroy_bg_record(bg_record);
-#else // remove this when testing.  Only here to perserve old code the
-      // code below is already for bgl
 		/* if the ionode cnt for small32 is 0 then don't
 		   allow a sub quarter allocation 
 		*/
@@ -1004,7 +864,6 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq,
 		}
 		list_iterator_destroy(itr);
 		destroy_bg_record(bg_record);
-#endif // remove this when done testing
 	} 
 	
 	return SLURM_SUCCESS;

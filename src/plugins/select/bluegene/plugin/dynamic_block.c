@@ -38,13 +38,9 @@
 
 #include "dynamic_block.h"
 
-#ifdef HAVE_BGQ
-static int _split_block(List block_list, List new_blocks,
-			bg_record_t *bg_record, int procs);
-#else
 static int _split_block(List block_list, List new_blocks,
 			bg_record_t *bg_record, int cnodes);
-#endif
+
 static int _breakup_blocks(List block_list, List new_blocks,
 			   ba_request_t *request, List my_block_list);
 
@@ -138,42 +134,7 @@ extern List create_dynamic_block(List block_list,
 		xfree(nodes);
 		FREE_NULL_BITMAP(bitmap);
 	}
-#ifdef HAVE_BGQ
-	if(request->size==1 && cnodes < bluegene_bp_node_cnt) {
-		request->conn_type = SELECT_SMALL;
-		if(request->procs == (procs_per_node/16)) {
-			if(!bluegene_nodecard_ionode_cnt) {
-				error("can't create this size %d "
-				      "on this system numpsets is %d",
-				      request->procs,
-				      bluegene_numpsets);
-				goto finished;
-			}
 
-			blockreq.small32=4;
-			blockreq.small128=3;
-		} else {
-			if(!bluegene_quarter_ionode_cnt) {
-				error("can't create this size %d "
-				      "on this system numpsets is %d",
-				      request->procs,
-				      bluegene_numpsets);
-				goto finished;
-			}
-			blockreq.small128=4;
-		}
-		new_blocks = list_create(destroy_bg_record);
-		if(_breakup_blocks(block_list, new_blocks, 
-				   request, my_block_list)
-		   != SLURM_SUCCESS) {
-			list_destroy(new_blocks);
-			new_blocks = NULL;
-			debug2("small block not able to be placed");
-			//rc = SLURM_ERROR;
-		} else 
-			goto finished;
-	}
-#else
 	if(request->size==1 && cnodes < bluegene_bp_node_cnt) {
 		switch(cnodes) {
 #ifdef HAVE_BGL
@@ -229,7 +190,7 @@ extern List create_dynamic_block(List block_list,
 		} else 
 			goto finished;
 	}
-#endif	
+
 	if(request->conn_type == SELECT_NAV)
 		request->conn_type = SELECT_TORUS;
 	
@@ -262,16 +223,8 @@ extern List create_dynamic_block(List block_list,
 			   set in the ionode_bitmap.
 			*/
 			if(bg_record->job_running == NO_JOB_RUNNING 
-#ifdef HAVE_BGQ
-			   && (bg_record->quarter == (uint16_t) NO_VAL
-			       || (bg_record->quarter == 0 
-				   && (bg_record->nodecard == (uint16_t) NO_VAL
-				       || bg_record->nodecard == 0)))
-#else
 			   && ((bg_record->node_cnt >= bluegene_bp_node_cnt)
-			       || (bit_ffs(bg_record->ionode_bitmap) == 0))
-#endif
-				) {
+			       || (bit_ffs(bg_record->ionode_bitmap) == 0))) {
 				
 				for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
 					request->start[i] = 
@@ -355,91 +308,14 @@ finished:
 	return new_blocks;
 }
 
-#ifdef HAVE_BGQ
-extern bg_record_t *create_small_record(bg_record_t *bg_record, 
-					uint16_t quarter, uint16_t nodecard)
-{
-	bg_record_t *found_record = NULL;
-	int small_size = 4;
-	ba_node_t *new_ba_node = NULL;
-	ba_node_t *ba_node = NULL;
-	found_record = (bg_record_t*) xmalloc(sizeof(bg_record_t));
-				
-	found_record->job_running = NO_JOB_RUNNING;
-	found_record->user_name = xstrdup(bg_record->user_name);
-	found_record->user_uid = bg_record->user_uid;
-	found_record->bg_block_list = list_create(destroy_ba_node);
-	ba_node = list_peek(bg_record->bg_block_list);
-	if(!ba_node) {
-		hostlist_t hl = hostlist_create(bg_record->nodes);
-		char *host = hostlist_shift(hl);
-		hostlist_destroy(hl);
-		found_record->nodes = xstrdup(host);
-		free(host);
-		error("you gave me a list with no ba_nodes using %s", 
-		      found_record->nodes);
-	} else {
-		int i=0,j=0;
-		new_ba_node = ba_copy_node(ba_node);
-		for (i=0; i<BA_SYSTEM_DIMENSIONS; i++){
-			for(j=0;j<NUM_PORTS_PER_NODE;j++) {
-				ba_node->axis_switch[i].int_wire[j].used = 0;
-				if(i!=X) {
-					if(j==3 || j==4) 
-						ba_node->axis_switch[i].
-							int_wire[j].
-							used = 1;	
-				}
-				ba_node->axis_switch[i].int_wire[j].
-					port_tar = j;
-			}
-		}
-		list_append(found_record->bg_block_list, new_ba_node);
-		found_record->bp_count = 1;
-		found_record->nodes = xstrdup_printf(
-			"%s%c%c%c", 
-			bg_slurm_node_prefix, 
-			alpha_num[ba_node->coord[X]],
-			alpha_num[ba_node->coord[Y]],
-			alpha_num[ba_node->coord[Z]]);
-	}
-
-	found_record->blrtsimage = xstrdup(bg_record->blrtsimage);
-	found_record->linuximage = xstrdup(bg_record->linuximage);
-	found_record->mloaderimage = xstrdup(bg_record->mloaderimage);
-	found_record->ramdiskimage = xstrdup(bg_record->ramdiskimage);
-
-	process_nodes(found_record, false);
-				
-	found_record->conn_type = SELECT_SMALL;
-				
-	found_record->node_use = SELECT_COPROCESSOR_MODE;
-
-	if(nodecard != (uint16_t) NO_VAL)
-		small_size = bluegene_bp_nodecard_cnt;
-	found_record->cpu_cnt = procs_per_node/small_size;
-	found_record->node_cnt = bluegene_bp_node_cnt/small_size;
-	found_record->quarter = quarter; 
-	found_record->nodecard = nodecard;
-	
-	if(set_ionodes(found_record) == SLURM_ERROR) 
-		error("couldn't create ionode_bitmap for %d.%d",
-		      found_record->quarter, found_record->nodecard);
-	return found_record;
-}
-
-#else
 extern bg_record_t *create_small_record(bg_record_t *bg_record, 
 					bitstr_t *ionodes, int size)
 {
 	bg_record_t *found_record = NULL;
 	ba_node_t *new_ba_node = NULL;
 	ba_node_t *ba_node = NULL;
-#ifdef HAVE_BGQ
-	int small_size = 4;
-#else
 	char bitstring[BITSIZE];
-#endif
+
 	found_record = (bg_record_t*) xmalloc(sizeof(bg_record_t));
 				
 	found_record->job_running = NO_JOB_RUNNING;
@@ -481,6 +357,7 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 			alpha_num[ba_node->coord[Z]]);
 	}
 #ifdef HAVE_BGL
+	found_record->node_use = SELECT_COPROCESSOR_MODE;
 	found_record->blrtsimage = xstrdup(bg_record->blrtsimage);
 #endif
 	found_record->linuximage = xstrdup(bg_record->linuximage);
@@ -491,19 +368,6 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 				
 	found_record->conn_type = SELECT_SMALL;
 				
-#ifdef HAVE_BGQ
-	found_record->node_use = SELECT_COPROCESSOR_MODE;
-	if(nodecard != (uint16_t) NO_VAL)
-		small_size = bluegene_bp_nodecard_cnt;
-	found_record->cpu_cnt = procs_per_node/small_size;
-	found_record->node_cnt = bluegene_bp_node_cnt/small_size;
-	found_record->quarter = quarter; 
-	found_record->nodecard = nodecard;
-	
-	if(set_ionodes(found_record) == SLURM_ERROR) 
-		error("couldn't create ionode_bitmap for %d.%d",
-		      found_record->quarter, found_record->nodecard);
-#else
 	xassert(bluegene_proc_ratio);
 	found_record->cpu_cnt = bluegene_proc_ratio * size;
 	found_record->node_cnt = size;
@@ -511,314 +375,11 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 	found_record->ionode_bitmap = bit_copy(ionodes);
 	bit_fmt(bitstring, BITSIZE, found_record->ionode_bitmap);
 	found_record->ionodes = xstrdup(bitstring);
-#endif
+
 	return found_record;
 }
-#endif
 
 /*********************** Local Functions *************************/
-
-#ifdef HAVE_BGQ
-static int _split_block(List block_list, List new_blocks,
-			bg_record_t *bg_record, int procs) 
-{
-	bg_record_t *found_record = NULL;
-	bool full_bp = false; 
-	int small_count = 0;
-	int small_size = 0;
-	uint16_t num_nodecard = 0, num_quarter = 0;
-	int i;
-	int node_cnt = 0;
-	uint16_t quarter = 0;
-	uint16_t nodecard = 0;
-
-	if(bg_record->quarter == (uint16_t) NO_VAL)
-		full_bp = true;
-	
-	if(procs == (procs_per_node/bluegene_bp_nodecard_cnt) 
-	   && bluegene_nodecard_ionode_cnt) {
-		num_nodecard=4;
-		if(full_bp)
-			num_quarter=3;
-	} else if(full_bp) {
-		num_quarter = 4;
-	} else {
-		error("you asked for something that was already this size");
-		return SLURM_ERROR;
-	}
-	debug2("asking for %d 32s from a %d block",
-	       num_nodecard, bg_record->node_cnt);
-	small_count = num_nodecard+num_quarter; 
-
-	/* break base partition up into 16 parts */
-	small_size = bluegene_bp_node_cnt/bluegene_nodecard_node_cnt;
-	node_cnt = 0;
-	if(!full_bp)
-		quarter = bg_record->quarter;
-	else
-		quarter = 0;
-	nodecard = 0;
-	for(i=0; i<small_count; i++) {
-		if(i == num_nodecard) {
-			/* break base partition up into 4 parts */
-			small_size = 4;
-		}
-		
-		if(small_size == 4)
-			nodecard = (uint16_t)NO_VAL;
-		else
-			nodecard = i%4; 
-		found_record = create_small_record(bg_record,
-						   quarter,
-						   nodecard);
-		list_append(new_blocks, found_record);
-				
-		node_cnt += bluegene_bp_node_cnt/small_size;
-		if(node_cnt == 128) {
-			node_cnt = 0;
-			quarter++;
-		}
-	}
-		
-	return SLURM_SUCCESS;
-}
-
-static int _breakup_blocks(List block_list, List new_blocks,
-			   ba_request_t *request, List my_block_list)
-{
-	int rc = SLURM_ERROR;
-	bg_record_t *bg_record = NULL;
-	ListIterator itr;
-	int total_proc_cnt=0;
-	uint16_t last_quarter = (uint16_t) NO_VAL;
-	char tmp_char[256];
-	
-	debug2("proc count = %d size = %d",
-	       request->procs, request->size);
-	
-	itr = list_iterator_create(block_list);			
-	while ((bg_record = (bg_record_t *) list_next(itr)) != NULL) {
-		if(bg_record->job_running != NO_JOB_RUNNING)
-			continue;
-		if(bg_record->state != RM_PARTITION_FREE)
-			continue;
-		if (request->avail_node_bitmap &&
-		    !bit_super_set(bg_record->bitmap,
-				   request->avail_node_bitmap)) {
-			debug2("bg block %s has nodes not usable by this job",
-			       bg_record->bg_block_id);
-			continue;
-		}
-
-		if(request->start_req) {
-			if ((request->start[X] != bg_record->start[X])
-			    || (request->start[Y] != bg_record->start[Y])
-			    || (request->start[Z] != bg_record->start[Z])) {
-				debug4("small got %c%c%c looking for %c%c%c",
-				       alpha_num[bg_record->start[X]],
-				       alpha_num[bg_record->start[Y]],
-				       alpha_num[bg_record->start[Z]],
-				       alpha_num[request->start[X]],
-				       alpha_num[request->start[Y]],
-				       alpha_num[request->start[Z]]);
-				continue;
-			}
-			debug3("small found %c%c%c looking for %c%c%c",
-			       alpha_num[bg_record->start[X]],
-			       alpha_num[bg_record->start[Y]],
-			       alpha_num[bg_record->start[Z]],
-			       alpha_num[request->start[X]],
-			       alpha_num[request->start[Y]],
-			       alpha_num[request->start[Z]]);
-		}
-
-		if(bg_record->cpu_cnt == request->procs) {
-			debug2("found it here %s, %s",
-			       bg_record->bg_block_id,
-			       bg_record->nodes);
-			request->save_name = xstrdup_printf(
-				"%c%c%c",
-				alpha_num[bg_record->start[X]],
-				alpha_num[bg_record->start[Y]],
-				alpha_num[bg_record->start[Z]]);
-			rc = SLURM_SUCCESS;
-			goto finished;
-		}
-		if(bg_record->node_cnt > bluegene_bp_node_cnt)
-			continue;
-		if(bg_record->cpu_cnt < request->procs) {
-			if(last_quarter != bg_record->quarter){
-				last_quarter = bg_record->quarter;
-				total_proc_cnt = bg_record->cpu_cnt;
-			} else {
-				total_proc_cnt += bg_record->cpu_cnt;
-			}
-			debug2("1 got %d on quarter %d",
-			       total_proc_cnt, last_quarter);
-			if(total_proc_cnt == request->procs) {
-				request->save_name = xstrdup_printf(
-					"%c%c%c",
-					alpha_num[bg_record->start[X]],
-					alpha_num[bg_record->start[Y]],
-					alpha_num[bg_record->start[Z]]);
-				if(!my_block_list) {
-					rc = SLURM_SUCCESS;
-					goto finished;	
-				}
-						
-				bg_record = create_small_record(
-					bg_record,
-					last_quarter,
-					(uint16_t) NO_VAL);
-				list_append(new_blocks, bg_record);
-							
-				rc = SLURM_SUCCESS;
-				goto finished;	
-			}
-			continue;
-		}
-		break;
-	}
-	if(bg_record) {
-		debug2("got one on the first pass");
-		goto found_one;
-	}
-	list_iterator_reset(itr);
-	last_quarter = (uint16_t) NO_VAL;
-	while ((bg_record = (bg_record_t *) list_next(itr)) 
-	       != NULL) {
-		if(bg_record->job_running != NO_JOB_RUNNING)
-			continue;
-		if (request->avail_node_bitmap &&
-		    !bit_super_set(bg_record->bitmap,
-				   request->avail_node_bitmap)) {
-			debug2("bg block %s has nodes not usable by this job",
-			       bg_record->bg_block_id);
-			continue;
-		}
-
-		if(request->start_req) {
-			if ((request->start[X] != bg_record->start[X])
-			    || (request->start[Y] != bg_record->start[Y])
-			    || (request->start[Z] != bg_record->start[Z])) {
-				debug4("small 2 got %c%c%c looking for %c%c%c",
-				       alpha_num[bg_record->start[X]],
-				       alpha_num[bg_record->start[Y]],
-				       alpha_num[bg_record->start[Z]],
-				       alpha_num[request->start[X]],
-				       alpha_num[request->start[Y]],
-				       alpha_num[request->start[Z]]);
-				continue;
-			}
-			debug3("small 2 found %c%c%c looking for %c%c%c",
-			       alpha_num[bg_record->start[X]],
-			       alpha_num[bg_record->start[Y]],
-			       alpha_num[bg_record->start[Z]],
-			       alpha_num[request->start[X]],
-			       alpha_num[request->start[Y]],
-			       alpha_num[request->start[Z]]);
-		}
-				
-		if(bg_record->cpu_cnt == request->procs) {
-			debug2("found it here %s, %s",
-			       bg_record->bg_block_id,
-			       bg_record->nodes);
-			request->save_name = xstrdup_printf(
-				"%c%c%c",
-				alpha_num[bg_record->start[X]],
-				alpha_num[bg_record->start[Y]],
-				alpha_num[bg_record->start[Z]]);
-			rc = SLURM_SUCCESS;
-			goto finished;
-		} 
-
-		if(bg_record->node_cnt > bluegene_bp_node_cnt)
-			continue;
-		if(bg_record->cpu_cnt < request->procs) {
-			if(last_quarter != bg_record->quarter){
-				last_quarter = bg_record->quarter;
-				total_proc_cnt = bg_record->cpu_cnt;
-			} else {
-				total_proc_cnt += bg_record->cpu_cnt;
-			}
-			debug2("got %d on quarter %d",
-			       total_proc_cnt, last_quarter);
-			if(total_proc_cnt == request->procs) {
-				request->save_name = xstrdup_printf(
-					"%c%c%c",
-					alpha_num[bg_record->start[X]],
-					alpha_num[bg_record->start[Y]],
-					alpha_num[bg_record->start[Z]]);
-				if(!my_block_list) {
-					rc = SLURM_SUCCESS;
-					goto finished;	
-				}
-				bg_record = create_small_record(
-					bg_record,
-					last_quarter,
-					(uint16_t) NO_VAL);
-				list_append(new_blocks, bg_record);
-								
-				rc = SLURM_SUCCESS;
-				goto finished;	
-			}
-			continue;
-		}				
-		break;
-	}
-found_one:
-	if(bg_record) {
-		List temp_list = NULL;
-		bg_record_t *found_record = NULL;
-
-		if(bg_record->original) {
-			debug3("This was a copy");
-			found_record = bg_record->original;
-		} else {
-			debug3("looking for original");
-			found_record = find_org_in_bg_list(
-				bg_list, bg_record);
-		}
-		if(!found_record) {
-			error("this record wasn't found in the list!");
-			rc = SLURM_ERROR;
-			goto finished;
-		}
-		
-		format_node_name(found_record, tmp_char, sizeof(tmp_char));
-			
-		debug2("going to split %s, %s",
-		       found_record->bg_block_id,
-		       tmp_char);
-		request->save_name = xstrdup_printf(
-			"%c%c%c",
-			alpha_num[found_record->start[X]],
-			alpha_num[found_record->start[Y]],
-			alpha_num[found_record->start[Z]]);
-		if(!my_block_list) {
-			rc = SLURM_SUCCESS;
-			goto finished;	
-		}
-		_split_block(block_list, new_blocks,
-			     found_record, request->procs);
-		remove_from_bg_list(block_list, bg_record);
-		destroy_bg_record(bg_record);
-		remove_from_bg_list(bg_list, found_record);
-		temp_list = list_create(NULL);
-		list_push(temp_list, found_record);
-		num_block_to_free++;
-		free_block_list(temp_list);
-		list_destroy(temp_list);
-		rc = SLURM_SUCCESS;
-		goto finished;
-	}
-	
-finished:
-	list_iterator_destroy(itr);
-		
-	return rc;
-}
-#else
 
 static int _split_block(List block_list, List new_blocks,
 			bg_record_t *bg_record, int cnodes) 
@@ -1222,5 +783,3 @@ finished:
 		
 	return rc;
 }
-
-#endif
