@@ -388,8 +388,9 @@ while {$this_cnt <= $task_cnt} {
 #############################################################################
 #
 # Run a job step with plane distribution to exercise option
+# Automatic binding in slurm version 2.0 will bind one task per core
 #
-set expected_mask [ expr ((1 << $task_cnt) - 1) * $task_cnt ]
+set expected_mask [ expr ((1 << $task_cnt) - 1) ]
 set task_mask 0
 send "$srun -n $task_cnt -m plane=4 $file_prog\n"
 expect {
