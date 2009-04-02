@@ -197,6 +197,8 @@ extern int block_ready(struct job_record *job_ptr)
 		xfree(block_id);
 	} else
 		rc = READY_JOB_ERROR;
+/* 	info("returning %d for job %u %d %d", */
+/* 	     rc, job_ptr->job_id, READY_JOB_ERROR, READY_JOB_FATAL); */
 	return rc;
 }				
 
