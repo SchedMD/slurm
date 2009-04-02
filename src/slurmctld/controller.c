@@ -194,6 +194,7 @@ inline static void  _update_cred_key(void);
 inline static void  _usage(char *prog_name);
 static bool         _wait_for_server_thread(void);
 static void *       _assoc_cache_mgr(void *no_data);
+static int          _become_slurm_user(void);
 
 typedef struct connection_arg {
 	int newsockfd;
@@ -231,19 +232,11 @@ int main(int argc, char *argv[])
 	 */
 	_init_pidfile();
 
-	/* Initialize supplementary group ID list for SlurmUser */
-	if ((getuid() == 0)
-	&&  (slurmctld_conf.slurm_user_id != getuid())
-	&&  initgroups(slurmctld_conf.slurm_user_name,
-			gid_from_string(slurmctld_conf.slurm_user_name))) {
-		error("initgroups: %m");
-	}
+	if (_become_slurm_user() < 0)
+		fatal("Unable to assume slurm user (%s:%d) identity",
+				slurmctld_conf.slurm_user_name,
+				slurmctld_conf.slurm_user_id);
 
-	if ((slurmctld_conf.slurm_user_id != getuid())
-	&&  (setuid(slurmctld_conf.slurm_user_id))) {
-		fatal("Can not set uid to SlurmUser(%d): %m", 
-			slurmctld_conf.slurm_user_id);
-	}
 	if (stat(slurmctld_conf.mail_prog, &stat_buf) != 0)
 		error("Configured MailProg is invalid");
 
@@ -1757,3 +1750,43 @@ static void *_assoc_cache_mgr(void *no_data)
 	_accounting_cluster_ready();
 	return NULL;
 }
+
+static int _become_slurm_user(void)
+{
+	uid_t uid;
+	gid_t gid;
+	const char *username;
+	struct passwd *pwd;
+
+	uid = slurmctld_conf.slurm_user_id;
+	username = slurmctld_conf.slurm_user_name;
+
+	if ((pwd = getpwuid (uid)) == NULL)
+		return error("getpwuid(%d): %m", (int) uid);
+
+	gid = pwd->pw_gid;
+
+	/*
+	 *  Warning: we can't call initgroups here becuase we don't
+	 *   have proper perms. However, this probably means slurmctld
+	 *   was already started as the slurm user, so this is most
+	 *   likely safe.
+	 */
+	if (getuid() == uid && getgid() == gid)
+		return (0);
+
+	if (setgid (gid) < 0)
+		return error("Failed to set gid to slurm gid (%d): %m",
+				(int) gid);
+
+	if (initgroups(username, gid) < 0)
+		return error("initgroups: %m");
+
+	if (setuid(uid) < 0)
+		return error("Failed to setuid to slurm uid (%d): %m",
+				(int) uid);
+
+	return (0);
+}
+
+
