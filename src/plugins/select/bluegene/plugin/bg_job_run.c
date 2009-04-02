@@ -171,18 +171,28 @@ static int _remove_job(db_job_id_t job_id)
 			return STATUS_OK;
 		}
 
-		rc = bridge_cancel_job(job_id);
+		/* we have been told the next 2 lines do the same
+		 * thing, but I don't believe it to be true.  In most
+		 * cases when you do a signal of SIGTERM the mpirun
+		 * process gets killed with a SIGTERM.  In the case of
+		 * bridge_cancel_job it always gets killed with a
+		 * SIGKILL.  From IBM's point of view that is a bad
+		 * deally, so we are going to use signal ;).
+		 */
+
+//		 rc = bridge_cancel_job(job_id);
+		 rc = bridge_signal_job(job_id, SIGTERM);
 
 		if (rc != STATUS_OK) {
 			if (rc == JOB_NOT_FOUND) {
 				debug("job %d removed from MMCS", job_id);
 				return STATUS_OK;
-			} 
+			}
 			if(rc == INCOMPATIBLE_STATE)
 				debug("job %d is in an INCOMPATIBLE_STATE",
 				      job_id);
 			else
-				error("bridge_cancel_job(%d): %s", job_id, 
+				error("bridge_cancel_job(%d): %s", job_id,
 				      bg_err_str(rc));
 		}
 	}
