@@ -69,7 +69,13 @@ typedef int (spank_f) (spank_t spank, int ac, char *argv[]);
  *               `-> user_init ()  
  *               + for each task
  *               |       + fork ()
- *               |       `-> user_task_init ()
+ *               |       |
+ *               |       + reclaim privileges
+ *               |       `-> task_init_privileged ()
+ *               |       |
+ *               |       + become_user ()
+ *               |       `-> task_init ()
+ *               |       |
  *               |       + execve ()
  *               |
  *               + reclaim privileges
@@ -93,6 +99,7 @@ extern spank_f slurm_spank_init;
 extern spank_f slurm_spank_init_post_opt;
 extern spank_f slurm_spank_local_user_init;
 extern spank_f slurm_spank_user_init;
+extern spank_f slurm_spank_task_init_privileged;
 extern spank_f slurm_spank_task_init;
 extern spank_f slurm_spank_task_post_fork;
 extern spank_f slurm_spank_task_exit;

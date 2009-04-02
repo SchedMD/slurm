@@ -68,6 +68,10 @@ tasks are launched.
 \fBslurm_spank_user_init\fR 
 Called after privileges are temporarily dropped. (remote context only)
 .TP
+\fBslurm_spank_task_init_privileged\fR
+Called for each task just after fork, but before all elevated privileges
+are dropped. (remote context only)
+.TP
 \fBslurm_spank_task_init\fR 
 Called for each task just before execve(2). (remote context only)
 .TP

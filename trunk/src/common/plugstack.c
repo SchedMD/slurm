@@ -72,18 +72,20 @@ struct spank_plugin_operations {
 	spank_f *init_post_opt;
 	spank_f *local_user_init;
 	spank_f *user_init;
+	spank_f *task_init_privileged;
 	spank_f *user_task_init;
 	spank_f *task_post_fork;
 	spank_f *task_exit;
 	spank_f *exit;
 };
 
-const int n_spank_syms = 8;
+const int n_spank_syms = 9;
 const char *spank_syms[] = {
 	"slurm_spank_init",
 	"slurm_spank_init_post_opt",
 	"slurm_spank_local_user_init",
 	"slurm_spank_user_init",
+	"slurm_spank_task_init_privileged",
 	"slurm_spank_task_init",
 	"slurm_spank_task_post_fork",
 	"slurm_spank_task_exit",
@@ -145,6 +147,7 @@ typedef enum step_fn {
 	SPANK_INIT_POST_OPT,
 	LOCAL_USER_INIT,
 	STEP_USER_INIT,
+	STEP_TASK_INIT_PRIV,
 	STEP_USER_TASK_INIT,
 	STEP_TASK_POST_FORK,
 	STEP_TASK_EXIT,
@@ -523,6 +526,8 @@ static const char *_step_fn_name(step_fn_t type)
 		return ("local_user_init");
 	case STEP_USER_INIT:
 		return ("user_init");
+	case STEP_TASK_INIT_PRIV:
+		return ("task_init_privileged");
 	case STEP_USER_TASK_INIT:
 		return ("task_init");
 	case STEP_TASK_POST_FORK:
@@ -590,6 +595,14 @@ static int _do_call_stack(step_fn_t type, void * job, int taskid)
 			if (sp->ops.user_init) {
 				rc = (*sp->ops.user_init) (spank, sp->ac,
 							   sp->argv);
+				debug2("spank: %s: %s = %d\n", name,
+				       fn_name, rc);
+			}
+			break;
+		case STEP_TASK_INIT_PRIV:
+			if (sp->ops.task_init_privileged) {
+				rc = (*sp->ops.task_init_privileged)
+					(spank, sp->ac, sp->argv);
 				debug2("spank: %s: %s = %d\n", name,
 				       fn_name, rc);
 			}
@@ -732,6 +745,11 @@ int spank_user(slurmd_job_t * job)
 int spank_local_user(struct spank_launcher_job_info *job)
 {
 	return (_do_call_stack(LOCAL_USER_INIT, job, -1));
+}
+
+int spank_task_privileged(slurmd_job_t *job, int taskid)
+{
+	return (_do_call_stack(STEP_TASK_INIT_PRIV, job, taskid));
 }
 
 int spank_user_task(slurmd_job_t * job, int taskid)
