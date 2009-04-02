@@ -9234,6 +9234,8 @@ empty:
 	debug3("%d(%d) query\n%s", mysql_conn->conn, __LINE__, query);
 	if(!(result = mysql_db_query_ret(mysql_conn->db_conn, query, 0))) {
 		xfree(query);
+		if(local_cluster_list)
+			list_destroy(local_cluster_list);
 		return NULL;
 	}
 	xfree(query);
@@ -9265,6 +9267,9 @@ empty:
 		resv->time_end = atoi(row[RESV_REQ_END]);
 		resv->flags = atoi(row[RESV_REQ_FLAGS]);
 	}
+
+	if(local_cluster_list)
+		list_destroy(local_cluster_list);
 
 	if(with_usage && resv_list && list_count(resv_list)) {
 		List job_list = mysql_jobacct_process_get_jobs(

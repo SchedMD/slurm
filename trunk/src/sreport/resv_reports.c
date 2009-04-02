@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  cluster_reports.c - functions for generating cluster reports
+ *  resv_reports.c - functions for generating reservation reports
  *                       from accounting infrastructure.
  *****************************************************************************
  *
@@ -105,8 +105,16 @@ static int _set_resv_cond(int *start, int argc, char *argv[],
 					       MAX(command_len, 1))) {
 			local_cluster_flag = 1;
 		} else if(!end
-			  || !strncasecmp (argv[i], "Clusters",
-					   MAX(command_len, 1))) {
+			  || !strncasecmp (argv[i], "Names", 
+					 MAX(command_len, 1))) {
+			if(!resv_cond->name_list)
+				resv_cond->name_list = 
+					list_create(slurm_destroy_char);
+			slurm_addto_char_list(resv_cond->name_list, 
+					      argv[i]+end);
+			set = 1;
+		} else if (!strncasecmp (argv[i], "Clusters",
+					 MAX(command_len, 1))) {
 			slurm_addto_char_list(resv_cond->cluster_list,
 					      argv[i]+end);
 			set = 1;
@@ -130,13 +138,16 @@ static int _set_resv_cond(int *start, int argc, char *argv[],
 					list_create(slurm_destroy_char);
 			slurm_addto_char_list(resv_cond->id_list, argv[i]+end);
 			set = 1;
-		} else if (!strncasecmp (argv[i], "Names", 
+		} else if(!strncasecmp (argv[i], "Nodes", 
 					 MAX(command_len, 1))) {
-			if(!resv_cond->name_list)
-				resv_cond->name_list = 
-					list_create(slurm_destroy_char);
-			slurm_addto_char_list(resv_cond->name_list, 
-					      argv[i]+end);
+			if(resv_cond->nodes) {
+				error("You already specified nodes '%s' "
+				      " combine your request into 1 nodes=.",
+				      resv_cond->nodes);
+				exit_code = 1;
+				break;
+			}
+			resv_cond->nodes = xstrdup(argv[i]+end);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Start",
 					 MAX(command_len, 1))) {
