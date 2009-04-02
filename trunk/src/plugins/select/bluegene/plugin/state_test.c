@@ -339,7 +339,7 @@ static void _test_down_nodes(my_bluegene_t *my_bg)
 	int bp_num, i, rc;
 	rm_BP_t *my_bp;
 		
-	debug("Running _test_down_nodes");
+	debug2("Running _test_down_nodes");
 	if ((rc = bridge_get_data(my_bg, RM_BPNum, &bp_num)) != STATUS_OK) {
 		error("bridge_get_data(RM_BPNum): %s", bg_err_str(rc));
 		bp_num = 0;
