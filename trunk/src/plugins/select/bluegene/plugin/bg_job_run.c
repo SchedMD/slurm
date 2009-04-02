@@ -120,7 +120,7 @@ static int _remove_job(db_job_id_t job_id)
 	rm_job_state_t job_state;
 
 	debug("removing job %d from MMCS", job_id);
-	for (i=0; i<MAX_POLL_RETRIES; i++) {
+	while(1) {
 		if (i > 0)
 			sleep(POLL_INTERVAL);
 		
@@ -160,8 +160,9 @@ static int _remove_job(db_job_id_t job_id)
 			return STATUS_OK;
 		else if(job_state == RM_JOB_DYING) {
 			/* start sending sigkills for the last 5 tries */
-			if(i == (MAX_POLL_RETRIES-5))
-				(void) bridge_signal_job(job_id, SIGKILL);
+			if(i > MAX_POLL_RETRIES) 
+				error("Job %d isn't dying, trying for "
+				      "%d seconds", i*POLL_INTERVAL);
 			continue;
 		} else if(job_state == RM_JOB_ERROR) {
 			error("job %d is in a error state.", job_id);
@@ -185,7 +186,7 @@ static int _remove_job(db_job_id_t job_id)
 				      bg_err_str(rc));
 		}
 	}
-	/* try once more... */
+
 	error("Failed to remove job %d from MMCS", job_id);
 	return INTERNAL_ERROR;
 }
