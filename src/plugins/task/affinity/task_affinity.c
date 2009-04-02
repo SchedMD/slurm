@@ -314,8 +314,9 @@ extern int task_pre_launch (slurmd_job_t *job)
 	char base[PATH_MAX], path[PATH_MAX];
 	int rc = SLURM_SUCCESS;
 
-	debug("affinity task_pre_launch: %u.%u, task %d", 
-		job->jobid, job->stepid, job->envtp->procid);
+	debug("affinity task_pre_launch:%u.%u, task:%u bind:%u", 
+	      job->jobid, job->stepid, job->envtp->procid,
+	      job->cpu_bind_type);
 
 	if (conf->task_plugin_param & CPU_BIND_CPUSETS) {
 		info("Using cpuset affinity for tasks");
