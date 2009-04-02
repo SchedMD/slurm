@@ -439,6 +439,45 @@ extern int sort_assoc_dec(sreport_assoc_rec_t *assoc_a,
 	return 0;
 }
 
+/* 
+ * Comparator used for sorting resvs largest cpu to smallest cpu
+ * 
+ * returns: 1: resv_a > resv_b   0: resv_a == resv_b   -1: resv_a < resv_b
+ * 
+ */
+extern int sort_reservations_dec(acct_reservation_rec_t *resv_a, 
+				 acct_reservation_rec_t *resv_b)
+{
+	int diff = 0;
+
+	if(!resv_a->cluster || !resv_b->cluster)
+		return 0;
+
+	diff = strcmp(resv_a->cluster, resv_b->cluster);
+
+	if (diff > 0)
+		return 1;
+	else if (diff < 0)
+		return -1;
+
+	if(!resv_a->name || !resv_b->name)
+		return 0;
+
+	diff = strcmp(resv_a->name, resv_b->name);
+
+	if (diff > 0)
+		return 1;
+	else if (diff < 0)
+		return -1;
+	
+	if(resv_a->time_start < resv_b->time_start)
+		return 1;
+	else if(resv_a->time_start > resv_b->time_start)
+		return -1;
+
+	return 0;
+}
+
 extern int get_uint(char *in_value, uint32_t *out_value, char *type)
 {
 	char *ptr = NULL, *meat = NULL;

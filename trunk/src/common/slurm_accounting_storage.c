@@ -746,6 +746,8 @@ extern void destroy_acct_job_cond(void *object)
 			list_destroy(job_cond->partition_list);
 		if(job_cond->resv_list)
 			list_destroy(job_cond->resv_list);
+		if(job_cond->resvid_list)
+			list_destroy(job_cond->resvid_list);
 		if(job_cond->step_list)
 			list_destroy(job_cond->step_list);
 		if(job_cond->state_list)
@@ -5041,6 +5043,19 @@ extern void pack_acct_job_cond(void *in, uint16_t rpc_version, Buf buffer)
 		}
 		count = NO_VAL;
 
+		if(object->resvid_list)
+			count = list_count(object->resvid_list);
+	
+		pack32(count, buffer);
+		if(count && count != NO_VAL) {
+			itr = list_iterator_create(object->resvid_list);
+			while((tmp_info = list_next(itr))) {
+				packstr(tmp_info, buffer);
+			}
+			list_iterator_destroy(itr);
+		}
+		count = NO_VAL;
+
 		if(object->step_list)
 			count = list_count(object->step_list);
 	
@@ -5440,6 +5455,18 @@ extern int unpack_acct_job_cond(void **object, uint16_t rpc_version, Buf buffer)
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
 				list_append(object_ptr->resv_list, 
+					    tmp_info);
+			}
+		}
+
+		safe_unpack32(&count, buffer);
+		if(count != NO_VAL) {
+			object_ptr->resvid_list =
+				list_create(slurm_destroy_char);
+			for(i=0; i<count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info,
+						       &uint32_tmp, buffer);
+				list_append(object_ptr->resvid_list, 
 					    tmp_info);
 			}
 		}

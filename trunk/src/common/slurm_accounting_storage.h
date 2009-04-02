@@ -273,6 +273,7 @@ typedef struct {
 	List groupid_list;	/* list of char * */
 	List partition_list;	/* list of char * */
 	List resv_list;		/* list of char * */
+	List resvid_list;	/* list of char * */
 	List step_list;         /* list of jobacct_selected_step_t */
 	List state_list;        /* list of char * */
 	time_t usage_end; 
