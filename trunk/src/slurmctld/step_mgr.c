@@ -238,6 +238,8 @@ dump_step_desc(job_step_create_request_msg_t *step_spec)
 	debug3("   mem_per_task=%u resv_port_cnt=%u immediate=%u no_kill=%u",
 	       step_spec->mem_per_task, step_spec->resv_port_cnt,
 	       step_spec->immediate, step_spec->no_kill);
+	debug3("   overcommit=%d",
+	       step_spec->overcommit);
 }
 
 
@@ -1219,6 +1221,20 @@ step_create(job_step_create_request_msg_t *step_specs,
 	     (strlen(step_specs->ckpt_dir) > MAX_STR_LEN)))
 		return ESLURM_PATHNAME_TOO_LONG;
 
+	/* if the overcommit flag is checked, we 0 set cpu_count=0
+	 * which makes it so we don't check to see the available cpus
+	 */
+	orig_cpu_count =  step_specs->cpu_count;
+	if (step_specs->overcommit) {
+		if (step_specs->exclusive) {
+			/* Not really a legitimate combination, try to 
+			 * exclusively allocate one CPU per task */
+			step_specs->overcommit = 0;
+			step_specs->cpu_count = step_specs->num_tasks;
+		} else
+			step_specs->cpu_count = 0;
+	}
+
 	/* determine cpus_per_task value by reversing what srun does */
 	if (step_specs->num_tasks < 1)
 		return ESLURM_BAD_TASK_COUNT;
@@ -1230,12 +1246,6 @@ step_create(job_step_create_request_msg_t *step_specs,
 			cpus_per_task = 1;
 	}
 
-	/* if the overcommit flag is checked we 0 out the cpu_count
-	 * which makes it so we don't check to see the available cpus
-	 */
-	orig_cpu_count =  step_specs->cpu_count;
-	if (step_specs->overcommit)
-		step_specs->cpu_count = 0;
 	if (step_specs->no_kill > 1)
 		step_specs->no_kill = 1;
 
