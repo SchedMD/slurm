@@ -857,6 +857,7 @@ static void _pick_step_cores(struct step_record *step_ptr,
 {
 	int bit_offset, core_inx, i, sock_inx;
 	uint16_t sockets, cores;
+	int cpu_cnt = (int) task_cnt;
 	bool use_all_cores;
 	static int last_core_inx;
 
@@ -871,6 +872,8 @@ static void _pick_step_cores(struct step_record *step_ptr,
 		use_all_cores = true;
 	else
 		use_all_cores = false;
+	if (step_ptr->cpus_per_task > 0)
+		cpu_cnt *= step_ptr->cpus_per_task;
 
 	/* select idle cores first */
 	for (core_inx=0; core_inx<cores; core_inx++) {
@@ -892,7 +895,7 @@ static void _pick_step_cores(struct step_record *step_ptr,
 			info("step alloc N:%d S:%dC :%d", 
 			     job_node_inx, sock_inx, core_inx);
 #endif
-			if (--task_cnt == 0)
+			if (--cpu_cnt == 0)
 				return;
 		}
 	}
@@ -922,7 +925,7 @@ static void _pick_step_cores(struct step_record *step_ptr,
 			info("step alloc N:%d S:%dC :%d", 
 			     job_node_inx, sock_inx, core_inx);
 #endif
-			if (--task_cnt == 0)
+			if (--cpu_cnt == 0)
 				return;
 		}
 	}
