@@ -132,10 +132,12 @@ Valid report types are:
 
 .TP
 \<REPORT\> options for each type include:
-\fBcluster\fP	\- AccountUtilizationByUser, UserUtilizationByAccount,
+\fBcluster\fP	  \- AccountUtilizationByUser, UserUtilizationByAccount,
 UserUtilizationByWckey, Utilization, WCKeyUtilizationByUser
 
-\fBjob\fP	\- SizesByAccount, SizesByWckey
+\fBjob\fP	  \- SizesByAccount, SizesByWckey
+
+\fBreservation\fP \- Utilization
 
 \fBuser\fP	\- TopUsage
 
@@ -186,6 +188,10 @@ accounts listed.
 .B job SizesByWckey
 This report will dispay the amount of time for each wckey for job ranges
 specified by the 'grouping=' option.  
+
+.TP
+.B reservation Utilization
+This report will display total usage for reservations on the systems.
 
 .TP
 .B user TopUsage
@@ -285,6 +291,13 @@ certain users specify them them with the Users= option.
 .RE
 
 .TP
+RESERVATION
+.TP
+.B Names=<OPT>
+List of reservations to use for the report. Default is all.
+.RE
+
+.TP
 USER
 .RS
 .TP
@@ -323,6 +336,11 @@ List of users jobs to include in report.  Default is all.
              \- Account, Cluster
        SizesByWckey
              \- Wckey, Cluster
+
+\fBReservation\fP
+       Utilization
+             \- Allocated, Associations, Cluster, CPUCount, CPUTime,
+                End, Idle, Name, Nodes, Start, TotalTime
 
 \fBUser\fP
        TopUsage
