@@ -49,35 +49,6 @@ set file_out_n_glob  ""
 print_header $test_id
 
 #
-# Determine the number of nodes available
-#
-set partition [default_partition]
-spawn $scontrol show partition $partition
-expect {
-	-re "not found" {
-		send_user "\nFAILURE: partition $partition doesn't exist\n"
-		exit 1
-	}
-	-re "TotalNodes=($number)" {
-		set node_count $expect_out(1,string)
-		if { $node_count < 1 } {
-			send_user "FAILURE: system has no nodes in default partition\n"
-			exit $exit_code
-		} elseif { $node_count > 10 } {
-			set node_count 10
-		}
-
-		exp_continue
-	}	
-	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
-		exit 1
-	}
-	eof {
-	}
-}
-
-#
 # Spawn a program that generates "task_id" (%t) in stdout file names
 # and confirm they are created
 #
@@ -86,9 +57,9 @@ for {set task_id 0} {$task_id < $node_count} {incr task_id} {
 	exec $bin_rm -f $file_out_t_glob
 }
 set timeout $max_job_delay
-set srun_pid [spawn $srun -l --output=$file_out_t -N $node_count -n $node_count -v -t1 $bin_echo hello]
+set srun_pid [spawn $srun -l --output=$file_out_t -N 1-10 -v -t1 $bin_echo hello]
 expect {
-	-re "jobid ($number).*" {
+	-re "jobid ($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
@@ -105,6 +76,24 @@ if {$job_id == 0} {
 	send_user "\nFAILURE: job initiation failed\n"
 	exit 1
 }
+
+set node_count 0
+spawn $squeue -j $job_id -o "%i %D"
+expect {
+	-re "$job_id ($number)" {
+		set node_count $expect_out(1,string)
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$node_count == 0} {
+	send_user "\nFAILURE: did not get node_count\n"
+	cancel_job $job_id
+	exit 1
+}
+
 set file_cnt 0
 for {set task_id 0} {$task_id < $node_count} {incr task_id} {
 	set file_out_t_glob  "test$test_id.t.$task_id.output"
