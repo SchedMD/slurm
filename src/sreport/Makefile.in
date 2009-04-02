@@ -77,7 +77,7 @@ binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
 am_sreport_OBJECTS = sreport.$(OBJEXT) cluster_reports.$(OBJEXT) \
 	assoc_reports.$(OBJEXT) job_reports.$(OBJEXT) \
-	user_reports.$(OBJEXT) common.$(OBJEXT)
+	user_reports.$(OBJEXT) resv_reports.$(OBJEXT) common.$(OBJEXT)
 sreport_OBJECTS = $(am_sreport_OBJECTS)
 am__DEPENDENCIES_1 =
 sreport_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o \
@@ -284,6 +284,7 @@ sreport_SOURCES = \
 	assoc_reports.c assoc_reports.h	\
 	job_reports.c job_reports.h	\
 	user_reports.c user_reports.h	\
+	resv_reports.c resv_reports.h	\
 	common.c
 
 sreport_LDADD = \
@@ -366,6 +367,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cluster_reports.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/common.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_reports.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/resv_reports.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sreport.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/user_reports.Po@am__quote@
 

@@ -87,7 +87,8 @@ extern List setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 extern int good_nodes_from_inx(List local_cluster_list, 
 			       void **object, char *node_inx,
 			       int submit);
-extern int setup_job_cond_limits(acct_job_cond_t *job_cond, char **extra);
+extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
+				 acct_job_cond_t *job_cond, char **extra);
 
 extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 					   acct_job_cond_t *job_cond);

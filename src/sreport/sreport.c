@@ -41,6 +41,7 @@
 #include "src/sreport/assoc_reports.h"
 #include "src/sreport/cluster_reports.h"
 #include "src/sreport/job_reports.h"
+#include "src/sreport/resv_reports.h"
 #include "src/sreport/user_reports.h"
 #include "src/common/xsignal.h"
 
@@ -61,6 +62,7 @@ sreport_sort_t sort_flag = SREPORT_SORT_TIME;
 
 static void	_job_rep (int argc, char *argv[]);
 static void	_user_rep (int argc, char *argv[]);
+static void	_resv_rep (int argc, char *argv[]);
 static void	_cluster_rep (int argc, char *argv[]);
 static void	_assoc_rep (int argc, char *argv[]);
 static int	_get_command (int *argc, char *argv[]);
@@ -250,7 +252,7 @@ static void _job_rep (int argc, char *argv[])
 }
 
 /* 
- * _user_rep - Reports having to do with jobs 
+ * _user_rep - Reports having to do with users 
  * IN argc - count of arguments
  * IN argv - list of arguments
  */
@@ -273,7 +275,30 @@ static void _user_rep (int argc, char *argv[])
 }
 
 /* 
- * _cluster_rep - Reports having to do with jobs 
+ * _resv_rep - Reports having to do with reservations 
+ * IN argc - count of arguments
+ * IN argv - list of arguments
+ */
+static void _resv_rep (int argc, char *argv[]) 
+{
+	int error_code = SLURM_SUCCESS;
+
+	if (strncasecmp (argv[0], "Utilization", 1) == 0) {
+		error_code = resv_utilization((argc - 1), &argv[1]);
+	} else {
+		exit_code = 1;
+		fprintf(stderr, "Not valid report %s\n", argv[0]);
+		fprintf(stderr, "Valid reservation reports are, ");
+		fprintf(stderr, "\"Utilization\"\n");
+	}	
+	
+	if (error_code) {
+		exit_code = 1;
+	}
+}
+
+/* 
+ * _cluster_rep - Reports having to do with clusters 
  * IN argc - count of arguments
  * IN argv - list of arguments
  */
@@ -485,6 +510,18 @@ _process_command (int argc, char *argv[])
 				 argv[0]);
 		}
 		exit_flag = 1;
+	} else if ((strncasecmp (argv[0], "reservation",
+				 MAX(command_len, 2)) == 0)
+		   || (strncasecmp (argv[0], "resv",
+				    MAX(command_len, 2)) == 0)) {
+		if (argc < 2) {
+			exit_code = 1;
+			if (quiet_flag != 1)
+				fprintf(stderr, 
+				        "too few arguments for keyword:%s\n", 
+				        argv[0]);
+		} else 
+			_resv_rep((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "sort", MAX(command_len, 1)) == 0) {
 		if (argc < 2) {
 			exit_code = 1;

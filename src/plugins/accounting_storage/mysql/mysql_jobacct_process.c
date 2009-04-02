@@ -307,7 +307,8 @@ extern int good_nodes_from_inx(List local_cluster_list,
 	return 1;
 }
 
-extern int setup_job_cond_limits(acct_job_cond_t *job_cond, char **extra)
+extern int setup_job_cond_limits(mysql_conn_t *mysql_conn,
+				 acct_job_cond_t *job_cond, char **extra)
 {
 	int set = 0;
 	ListIterator itr = NULL;
@@ -410,17 +411,67 @@ extern int setup_job_cond_limits(acct_job_cond_t *job_cond, char **extra)
 		xstrcat(*extra, ")");
 	}
 
+	/* this must be done before resvid_list since we set
+	   resvid_list up here */
 	if(job_cond->resv_list && list_count(job_cond->resv_list)) {
+		char *query = xstrdup_printf(
+			"select distinct id from %s where (");
+		int my_set = 0;
+		MYSQL_RES *result = NULL;
+		MYSQL_ROW row;
+
+		if(job_cond->cluster_list
+		   && list_count(job_cond->cluster_list)) {
+			
+			itr = list_iterator_create(job_cond->cluster_list);
+			while((object = list_next(itr))) {
+				if(my_set) 
+					xstrcat(query, " || ");
+				xstrfmtcat(query, "cluster='%s'", object);
+				my_set = 1;
+			}
+			list_iterator_destroy(itr);
+		} 
+
+		if(my_set)
+			xstrcat(query, ") && (");
+		
+		itr = list_iterator_create(job_cond->resv_list);
+		while((object = list_next(itr))) {
+			if(my_set)
+				xstrcat(query, " || ");
+			xstrfmtcat(query, "name='%s'", object);
+			my_set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(query, ")");
+		if(!(result = mysql_db_query_ret(
+			     mysql_conn->db_conn, query, 0))) {
+			xfree(query);
+			error("couldn't query the database");
+			goto no_resv;
+		}
+		xfree(query);
+		if(!job_cond->resvid_list) 
+			job_cond->resvid_list = list_create(slurm_destroy_char);
+		while((row = mysql_fetch_row(result))) {
+			list_append(job_cond->resvid_list, xstrdup(row[0]));
+		}
+		mysql_free_result(result);
+	}
+	no_resv:
+
+	if(job_cond->resvid_list && list_count(job_cond->resvid_list)) {
 		set = 0;
 		if(*extra)
 			xstrcat(*extra, " && (");
 		else
 			xstrcat(*extra, " where (");
-		itr = list_iterator_create(job_cond->resv_list);
+		itr = list_iterator_create(job_cond->resvid_list);
 		while((object = list_next(itr))) {
-			if(set) 
+			if(set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "t1.resv='%s'", object);
+			xstrfmtcat(*extra, "t1.resvid='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -742,7 +793,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn, uid_t uid,
 		}
 	}
 
-	setup_job_cond_limits(job_cond, &extra);
+	setup_job_cond_limits(mysql_conn, job_cond, &extra);
 
 	xfree(tmp);
 	xstrfmtcat(tmp, "%s", job_req_inx[0]);

@@ -1368,7 +1368,7 @@ static int _setup_wckey_cond_limits(acct_wckey_cond_t *wckey_cond,
 }
 
 static int _setup_resv_cond_limits(acct_reservation_cond_t *resv_cond,
-				    char **extra)
+				   char **extra)
 {
 	int set = 0;
 	ListIterator itr = NULL;
@@ -1381,7 +1381,10 @@ static int _setup_resv_cond_limits(acct_reservation_cond_t *resv_cond,
 
 	if(resv_cond->cluster_list && list_count(resv_cond->cluster_list)) {
 		set = 0;
-		xstrcat(*extra, " && (");
+		if(*extra)
+			xstrcat(*extra, " && (");
+		else
+			xstrcat(*extra, " where (");
 		itr = list_iterator_create(resv_cond->cluster_list);
 		while((object = list_next(itr))) {
 			if(set) 
@@ -1395,7 +1398,10 @@ static int _setup_resv_cond_limits(acct_reservation_cond_t *resv_cond,
 
 	if(resv_cond->id_list && list_count(resv_cond->id_list)) {
 		set = 0;
-		xstrcat(*extra, " && (");
+		if(*extra)
+			xstrcat(*extra, " && (");
+		else
+			xstrcat(*extra, " where (");
 		itr = list_iterator_create(resv_cond->id_list);
 		while((object = list_next(itr))) {
 			if(set) 
@@ -1409,7 +1415,10 @@ static int _setup_resv_cond_limits(acct_reservation_cond_t *resv_cond,
 	
 	if(resv_cond->name_list && list_count(resv_cond->name_list)) {
 		set = 0;
-		xstrcat(*extra, " && (");
+		if(*extra)
+			xstrcat(*extra, " && (");
+		else
+			xstrcat(*extra, " where (");
 		itr = list_iterator_create(resv_cond->name_list);
 		while((object = list_next(itr))) {
 			if(set) 
@@ -1430,7 +1439,7 @@ static int _setup_resv_cond_limits(acct_reservation_cond_t *resv_cond,
 		else
 			xstrcat(*extra, " where (");
 		xstrfmtcat(*extra, 
-			   "(t1.eligible < %d "
+			   "(t1.start < %d "
 			   "&& (t1.end >= %d || t1.end = 0)))",
 			   resv_cond->time_end, resv_cond->time_start);
 	} else if(resv_cond->time_end) {
@@ -1439,7 +1448,7 @@ static int _setup_resv_cond_limits(acct_reservation_cond_t *resv_cond,
 		else
 			xstrcat(*extra, " where (");
 		xstrfmtcat(*extra, 
-			   "(t1.eligible < %d))", resv_cond->time_end);
+			   "(t1.start < %d))", resv_cond->time_end);
 	}
 
 
@@ -9192,8 +9201,8 @@ extern List acct_storage_p_get_reservations(mysql_conn_t *mysql_conn, uid_t uid,
 		}
 	}
 
+	memset(&job_cond, 0, sizeof(acct_job_cond_t));
 	if(resv_cond->nodes) {
-		memset(&job_cond, 0, sizeof(acct_job_cond_t));
 		job_cond.usage_start = resv_cond->time_start;
 		job_cond.usage_end = resv_cond->time_end;
 		job_cond.used_nodes = resv_cond->nodes;
@@ -9201,7 +9210,6 @@ extern List acct_storage_p_get_reservations(mysql_conn_t *mysql_conn, uid_t uid,
 		local_cluster_list = setup_cluster_list_with_inx(
 			mysql_conn, &job_cond, (void **)&curr_cluster);
 	} else if(with_usage) {
-		memset(&job_cond, 0, sizeof(acct_job_cond_t));
 		job_cond.usage_start = resv_cond->time_start;
 		job_cond.usage_end = resv_cond->time_end;
 	}
@@ -9244,9 +9252,9 @@ empty:
 		
 		resv->id = atoi(row[RESV_REQ_ID]);
 		if(with_usage) {
-			if(!job_cond.resv_list) 
-				job_cond.resv_list = list_create(NULL);
-			list_append(job_cond.resv_list, row[RESV_REQ_ID]);
+			if(!job_cond.resvid_list) 
+				job_cond.resvid_list = list_create(NULL);
+			list_append(job_cond.resvid_list, row[RESV_REQ_ID]);
 		}
 		resv->name = xstrdup(row[RESV_REQ_NAME]);
 		resv->cluster = xstrdup(row[RESV_REQ_CLUSTER]);
@@ -9258,7 +9266,7 @@ empty:
 		resv->flags = atoi(row[RESV_REQ_FLAGS]);
 	}
 
-	if(with_usage && resv_list) {
+	if(with_usage && resv_list && list_count(resv_list)) {
 		List job_list = mysql_jobacct_process_get_jobs(
 			mysql_conn, uid, &job_cond);	
 		ListIterator itr = NULL, itr2 = NULL;
@@ -9311,8 +9319,10 @@ empty:
 			list_destroy(job_list);
 	}	
 
-	if(job_cond.resv_list)
-		list_destroy(job_cond.resv_list);
+	if(job_cond.resvid_list) {
+		list_destroy(job_cond.resvid_list);
+		job_cond.resvid_list = NULL;
+	}
 
 	/* free result after we use the list with resv id's in it. */
 	mysql_free_result(result);
