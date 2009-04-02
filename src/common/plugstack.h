@@ -74,6 +74,8 @@ int spank_user (slurmd_job_t *job);
 
 int spank_local_user (struct spank_launcher_job_info *job);
 
+int spank_task_privileged (slurmd_job_t *job, int taskid);
+
 int spank_user_task (slurmd_job_t *job, int taskid);
 
 int spank_task_post_fork (slurmd_job_t *job, int taskid);
