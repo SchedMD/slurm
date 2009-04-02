@@ -83,6 +83,7 @@ enum {
 static List print_fields_list = NULL; /* types are of print_field_t */
 static List grouping_print_fields_list = NULL; /* types are of print_field_t */
 static int print_job_count = 0;
+static bool flat_view = false;
 
 static void _destroy_local_grouping(void *object)
 {
@@ -113,6 +114,58 @@ static void _destroy_cluster_grouping(void *object)
 			list_destroy(cluster_grouping->acct_list);
 		xfree(cluster_grouping);
 	}
+}
+
+/* 
+ * Comparator used for sorting clusters alphabetically
+ * 
+ * returns: 1: cluster_a > cluster_b   
+ *           0: cluster_a == cluster_b
+ *           -1: cluster_a < cluster_b
+ * 
+ */
+extern int _sort_cluster_grouping_dec(cluster_grouping_t *cluster_a,
+				      cluster_grouping_t *cluster_b)
+{
+	int diff = 0;
+
+	if(!cluster_a->cluster || !cluster_b->cluster)
+		return 0;
+
+	diff = strcmp(cluster_a->cluster, cluster_b->cluster);
+
+	if (diff > 0)
+		return 1;
+	else if (diff < 0)
+		return -1;
+	
+	return 0;
+}
+
+/* 
+ * Comparator used for sorting clusters alphabetically
+ * 
+ * returns: 1: acct_a > acct_b   
+ *           0: acct_a == acct_b
+ *           -1: acct_a < acct_b
+ * 
+ */
+extern int _sort_acct_grouping_dec(acct_grouping_t *acct_a,
+				   acct_grouping_t *acct_b)
+{
+	int diff = 0;
+
+	if(!acct_a->acct || !acct_b->acct)
+		return 0;
+
+	diff = strcmp(acct_a->acct, acct_b->acct);
+
+	if (diff > 0)
+		return 1;
+	else if (diff < 0)
+		return -1;
+	
+	return 0;
 }
 
 /* returns number of objects added to list */
@@ -247,6 +300,10 @@ static int _set_cond(int *start, int argc, char *argv[],
 					       MAX(command_len, 2))) {
 			print_job_count = 1;
 			continue;
+		} else if (!end && !strncasecmp (argv[i], "FlatView",
+					 MAX(command_len, 2))) {
+			flat_view = true;
+			continue;
 		} else if(!end 
 			  || !strncasecmp (argv[i], "Clusters",
 					   MAX(command_len, 1))) {
@@ -273,7 +330,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 			job_cond->usage_end = parse_time(argv[i]+end, 1);
 			set = 1;
 		} else if (!strncasecmp (argv[i], "Format",
-					 MAX(command_len, 1))) {
+					 MAX(command_len, 2))) {
 			if(format_list)
 				slurm_addto_char_list(format_list, argv[i]+end);
 		} else if (!strncasecmp (argv[i], "Gid", MAX(command_len, 2))) {
@@ -620,21 +677,6 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 		goto end_it;
 	}
 
-	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
-	assoc_cond.id_list = job_cond->associd_list;
-	assoc_cond.cluster_list = job_cond->cluster_list;
-	/* don't limit associations to having the partition_list */
-	//assoc_cond.partition_list = job_cond->partition_list;
-	if(!job_cond->acct_list || !list_count(job_cond->acct_list)) {
-		job_cond->acct_list = list_create(NULL);
-		list_append(job_cond->acct_list, "root");
-	}
-	assoc_cond.parent_acct_list = job_cond->acct_list;	
-	
-
-	assoc_list = acct_storage_g_get_associations(db_conn, my_uid,
-						     &assoc_cond);
-	
 	if(print_fields_have_header) {
 		char start_char[20];
 		char end_char[20];
@@ -662,6 +704,22 @@ extern int job_sizes_grouped_by_top_acct(int argc, char *argv[])
 	cluster_itr = list_iterator_create(cluster_list);
 	group_itr = list_iterator_create(grouping_list);
 
+	if(flat_view)
+		goto no_assocs;
+
+	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
+	assoc_cond.id_list = job_cond->associd_list;
+	assoc_cond.cluster_list = job_cond->cluster_list;
+	/* don't limit associations to having the partition_list */
+	//assoc_cond.partition_list = job_cond->partition_list;
+	if(!job_cond->acct_list || !list_count(job_cond->acct_list)) {
+		job_cond->acct_list = list_create(NULL);
+		list_append(job_cond->acct_list, "root");
+	}
+	assoc_cond.parent_acct_list = job_cond->acct_list;	
+	assoc_list = acct_storage_g_get_associations(db_conn, my_uid,
+						     &assoc_cond);
+	
 	if(!assoc_list) {
 		debug2(" No assoc list given.\n");
 		goto no_assocs;
@@ -758,19 +816,21 @@ no_assocs:
 			/* here we are only looking for groups that
 			 * were added with the associations above
 			 */
-			continue;
-/* 			cluster_group =  */
-/* 				xmalloc(sizeof(cluster_grouping_t)); */
-/* 			cluster_group->cluster = xstrdup(local_cluster); */
-/* 			cluster_group->acct_list = */
-/* 				list_create(_destroy_acct_grouping); */
-/* 			list_append(cluster_list, cluster_group); */
+			if(!flat_view)
+				continue;
+			cluster_group =
+				xmalloc(sizeof(cluster_grouping_t));
+			cluster_group->cluster = xstrdup(local_cluster);
+			cluster_group->acct_list =
+				list_create(_destroy_acct_grouping);
+			list_append(cluster_list, cluster_group);
 		}
 
 		acct_itr = list_iterator_create(cluster_group->acct_list);
 		while((acct_group = list_next(acct_itr))) {
-			if(acct_group->lft != (uint32_t)NO_VAL
-			   && job->lft != (uint32_t)NO_VAL) {
+			if(!flat_view 
+			   && (acct_group->lft != (uint32_t)NO_VAL)
+			   && (job->lft != (uint32_t)NO_VAL)) {
 				/* keep separate since we don't want
 				 * to so a strcmp if we don't have to 
 				 */
@@ -783,34 +843,36 @@ no_assocs:
 		list_iterator_destroy(acct_itr);		
 			
 		if(!acct_group) {
-			//char *group = NULL;
-			//uint32_t last_size = 0;
+			char *group = NULL;
+			uint32_t last_size = 0;
 			/* here we are only looking for groups that
 			 * were added with the associations above
 			 */
-			continue;
-/* 			acct_group = xmalloc(sizeof(acct_grouping_t)); */
-/* 			acct_group->acct = xstrdup(local_account); */
-/* 			acct_group->groups = */
-/* 				list_create(_destroy_local_grouping); */
-/* 			list_append(cluster_group->acct_list, acct_group); */
+			if(!flat_view)
+				continue;
 
-/* 			while((group = list_next(group_itr))) { */
-/* 				local_group = xmalloc(sizeof(local_grouping_t)); */
-/* 				local_group->jobs = list_create(NULL); */
-/* 				local_group->min_size = last_size; */
-/* 				last_size = atoi(group); */
-/* 				local_group->max_size = last_size-1; */
-/* 				list_append(acct_group->groups, local_group); */
-/* 			} */
-/* 			if(last_size) { */
-/* 				local_group = xmalloc(sizeof(local_grouping_t)); */
-/* 				local_group->jobs = list_create(NULL); */
-/* 				local_group->min_size = last_size; */
-/* 				local_group->max_size = INFINITE; */
-/* 				list_append(acct_group->groups, local_group); */
-/* 			} */
-/* 			list_iterator_reset(group_itr); */
+			acct_group = xmalloc(sizeof(acct_grouping_t));
+			acct_group->acct = xstrdup(local_account);
+			acct_group->groups =
+				list_create(_destroy_local_grouping);
+			list_append(cluster_group->acct_list, acct_group);
+
+			while((group = list_next(group_itr))) {
+				local_group = xmalloc(sizeof(local_grouping_t));
+				local_group->jobs = list_create(NULL);
+				local_group->min_size = last_size;
+				last_size = atoi(group);
+				local_group->max_size = last_size-1;
+				list_append(acct_group->groups, local_group);
+			}
+			if(last_size) {
+				local_group = xmalloc(sizeof(local_grouping_t));
+				local_group->jobs = list_create(NULL);
+				local_group->min_size = last_size;
+				local_group->max_size = INFINITE;
+				list_append(acct_group->groups, local_group);
+			}
+			list_iterator_reset(group_itr);
 		}
 
 		local_itr = list_iterator_create(acct_group->groups);
@@ -837,8 +899,12 @@ no_assocs:
 	
 	itr = list_iterator_create(print_fields_list);
 	itr2 = list_iterator_create(grouping_print_fields_list);
+	list_sort(cluster_list, (ListCmpF)_sort_cluster_grouping_dec);
 	list_iterator_reset(cluster_itr);
 	while((cluster_group = list_next(cluster_itr))) {
+		
+		list_sort(cluster_group->acct_list,
+			  (ListCmpF)_sort_acct_grouping_dec);
 		acct_itr = list_iterator_create(cluster_group->acct_list);
 		while((acct_group = list_next(acct_itr))) {
 			
@@ -1169,8 +1235,11 @@ no_assocs:
 	
 	itr = list_iterator_create(print_fields_list);
 	itr2 = list_iterator_create(grouping_print_fields_list);
+	list_sort(cluster_list, (ListCmpF)_sort_cluster_grouping_dec);
 	list_iterator_reset(cluster_itr);
 	while((cluster_group = list_next(cluster_itr))) {
+		list_sort(cluster_group->acct_list, 
+			  (ListCmpF)_sort_acct_grouping_dec);
 		acct_itr = list_iterator_create(cluster_group->acct_list);
 		while((acct_group = list_next(acct_itr))) {
 			

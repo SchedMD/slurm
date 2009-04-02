@@ -41,7 +41,7 @@
 #include "defined_block.h"
 #include <stdio.h>
 
-#define MMCS_POLL_TIME 120	/* poll MMCS for down switches and nodes 
+#define MMCS_POLL_TIME 30	/* poll MMCS for down switches and nodes 
 				 * every 120 secs */
 #define BG_POLL_TIME 0	        /* poll bg blocks every 3 secs */
 
@@ -414,22 +414,18 @@ extern void sort_bg_record_inc_size(List records){
 }
 
 /*
- * bluegene_agent - detached thread periodically updates status of
- * bluegene nodes. 
+ * block_agent - thread periodically updates status of
+ * bluegene blocks. 
  * 
- * NOTE: I don't grab any locks here because slurm_drain_nodes grabs
- * the necessary locks.
  */
-extern void *bluegene_agent(void *args)
+extern void *block_agent(void *args)
 {
-	static time_t last_mmcs_test;
 	static time_t last_bg_test;
 	int rc;
+	time_t now = time(NULL);
 
-	last_mmcs_test = time(NULL) + MMCS_POLL_TIME;
-	last_bg_test = time(NULL) + BG_POLL_TIME;
+	last_bg_test = now - BG_POLL_TIME;
 	while (!agent_fini) {
-		time_t now = time(NULL);
 
 		if (difftime(now, last_bg_test) >= BG_POLL_TIME) {
 			if (agent_fini)		/* don't bother */
@@ -449,16 +445,38 @@ extern void *bluegene_agent(void *args)
 						      "update_block_list 2");
 				}
 			}
+			now = time(NULL);
 		}
+		
+		sleep(1);
+	}
+	return NULL;
+}
 
+/*
+ * state_agent - thread periodically updates status of
+ * bluegene nodes. 
+ * 
+ */
+extern void *state_agent(void *args)
+{
+	static time_t last_mmcs_test;
+	time_t now = time(NULL);
+
+	last_mmcs_test = now - MMCS_POLL_TIME;
+	while (!agent_fini) {
 		if (difftime(now, last_mmcs_test) >= MMCS_POLL_TIME) {
 			if (agent_fini)		/* don't bother */
 				break; 	/* quit now */
-			last_mmcs_test = now;
-			test_mmcs_failures();	/* can run for a while */
-		}	
+			if(blocks_are_created) {
+				last_mmcs_test = now;
+				/* can run for a while */
+				test_mmcs_failures();
+			}
+		} 	
 				
 		sleep(1);
+		now = time(NULL);
 	}
 	return NULL;
 }
@@ -726,6 +744,7 @@ extern void *mult_destroy_block(void *args)
 		slurm_mutex_lock(&block_state_mutex);
 		destroy_bg_record(bg_record);
 		slurm_mutex_unlock(&block_state_mutex);
+		last_bg_update = time(NULL);
 		debug2("destroyed");
 		
 	already_here:
@@ -1265,7 +1284,7 @@ no_calc:
 		}
 		
 		for (i = 0; i < count; i++) {
-			add_bg_record(bg_list, NULL, blockreq_array[i]);
+			add_bg_record(bg_list, NULL, blockreq_array[i], 0, 0);
 		}
 	}
 	s_p_hashtbl_destroy(tbl);
@@ -1315,6 +1334,7 @@ extern int validate_current_blocks(char *dir)
 		list_destroy(bg_found_block_list);
 		bg_found_block_list = NULL;
 	}
+
 	last_bg_update = time(NULL);
 	blocks_are_created = 1;
 	sort_bg_record_inc_size(bg_list);
@@ -1385,6 +1405,10 @@ static int _validate_config_nodes(List *bg_found_block_list, char *dir)
 	 * happens in the state load before this in emulation mode */
 	if (read_bg_blocks() == SLURM_ERROR)
 		return SLURM_ERROR;
+	/* since we only care about error states here we don't care
+	   about the return code this must be done after the bg_list
+	   is created */
+	load_state_file(dir);
 #else
 	/* read in state from last run.  Only for emulation mode */
 	if ((rc = load_state_file(dir)) != SLURM_SUCCESS)
@@ -1409,13 +1433,12 @@ static int _validate_config_nodes(List *bg_found_block_list, char *dir)
 		while ((init_bg_record = list_next(itr_curr))) {
 			if (strcasecmp(bg_record->nodes, init_bg_record->nodes))
 				continue; /* wrong nodes */
+			if(!bit_equal(bg_record->ionode_bitmap,
+				      init_bg_record->ionode_bitmap))
+				continue;
 #ifdef HAVE_BGL
 			if (bg_record->conn_type != init_bg_record->conn_type)
 				continue; /* wrong conn_type */
-			if(bg_record->quarter != init_bg_record->quarter)
-				continue; /* wrong quart */
-			if(bg_record->nodecard != init_bg_record->nodecard)
-				continue; /* wrong nodecard */
 			if(bg_record->blrtsimage &&
 			   strcasecmp(bg_record->blrtsimage,
 				      init_bg_record->blrtsimage)) 
@@ -1425,9 +1448,6 @@ static int _validate_config_nodes(List *bg_found_block_list, char *dir)
 			    && ((bg_record->conn_type < SELECT_SMALL)
 				&& (init_bg_record->conn_type < SELECT_SMALL)))
 				continue; /* wrong conn_type */
-			if(!bit_equal(bg_record->ionode_bitmap,
-				     init_bg_record->ionode_bitmap))
-				continue;
 #endif
 			if(bg_record->linuximage &&
 			   strcasecmp(bg_record->linuximage,
