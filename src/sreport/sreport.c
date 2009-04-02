@@ -661,6 +661,8 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
      cluster - AccountUtilizationByUser, UserUtilizationByAccount,         \n\
                UserUtilizationByWckey, Utilization, WCKeyUtilizationByUser \n\
      job     - SizesByAccount, SizesByWckey                                \n\
+     reservation                                                           \n\
+             - Utilization                                                 \n\
      user    - TopUsage                                                    \n\
                                                                            \n\
   <OPTIONS> are different for each report type.                            \n\
@@ -717,6 +719,10 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
                                   you want only certain users specify them \n\
                                   them with the Users= option.             \n\
                                                                            \n\
+     reservation                                                           \n\
+             - Names=<OPT>      - List of reservations to use for the report\n\
+                                  Default is all.                          \n\
+                                                                           \n\
      user    - Accounts=<OPT>   - List of accounts to use for the report   \n\
                                   Default is all.                          \n\
              - Group            - Group all accounts together for each user.\n\
@@ -743,6 +749,11 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
        Job                                                                 \n\
        - Sizes                                                             \n\
              - Account, Cluster                                            \n\
+                                                                           \n\
+       Reservation                                                         \n\
+       - Utilization                                                       \n\
+             - Allocated, Associations, Cluster, CPUCount, CPUTime,        \n\
+               End, Idle, Name, Nodes, Start, TotalTime                    \n\
                                                                            \n\
        User                                                                \n\
        - TopUsage                                                          \n\
