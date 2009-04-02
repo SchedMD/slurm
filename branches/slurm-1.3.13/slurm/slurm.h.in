@@ -953,7 +953,6 @@ typedef struct slurm_ctl_conf {
 	char *authtype;		/* authentication type */
 	char *backup_addr;	/* comm path of slurmctld secondary server */
 	char *backup_controller;/* name of slurmctld secondary server */
-	uint16_t batch_start_timeout;	/* max secs for batch job to start */
 	time_t boot_time;	/* time slurmctld last booted */
 	uint16_t cache_groups;	/* cache /etc/groups to avoid initgroups(2) */
 	char *checkpoint_type;	/* checkpoint plugin type */
@@ -1057,7 +1056,6 @@ typedef struct slurm_ctl_conf {
 	uint16_t task_plugin_param;	/* see TASK_PARAM_* */
 	char *task_prolog;	/* pathname of task launch prolog */
 	char *tmp_fs;		/* pathname of temporary file system */
-	uint16_t track_wckey;    /* see if we are using wckey or not */
 	uint16_t tree_width;    /* number of threads per node to span */
 	char *unkillable_program; /* program run by the slurmstepd when
                                    * processes in a job step are unkillable */
@@ -1066,6 +1064,9 @@ typedef struct slurm_ctl_conf {
                                       * they are considered "unkillable". */
 	uint16_t use_pam;	/* enable/disable PAM support */
 	uint16_t wait_time;	/* default job --wait time */
+
+	uint16_t batch_start_timeout;   /* max secs for batch job to start */
+	uint16_t track_wckey;    /* see if we are using wckey or not */
 	char *salloc_default_command; /* default salloc command */
 } slurm_ctl_conf_t;
 
