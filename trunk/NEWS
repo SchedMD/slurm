@@ -25,6 +25,7 @@ documents those changes that are of interest to users and admins.
     a node's memory is exhausted. Based upon patch by Hongjia  Cao, NUDT.
  -- Fix several bugs in task/affinity: cpuset logic was broken and 
     --cpus-per-task option not properly handled.
+ -- Ensure slurmctld adopts SlurmUser GID as well as UID on startup.
 
 * Changes in SLURM 1.4.0-pre9
 =============================
