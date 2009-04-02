@@ -665,7 +665,8 @@ static int _task_layout_lllp_multi(launch_tasks_request_msg_t *req,
 	int last_taskcount = -1, taskcount = 0;
 	uint16_t c, i, s, t, hw_sockets = 0, hw_cores = 0, hw_threads = 0;
 	uint16_t num_threads, num_cores, num_sockets;
-	int size, maxtasks = req->tasks_to_launch[(int)node_id];
+	int size, max_tasks = req->tasks_to_launch[(int)node_id];
+	int max_cpus = max_tasks * req->cpus_per_task;
 	bitstr_t *avail_map;
 	bitstr_t **masks = NULL;
 	
@@ -675,14 +676,22 @@ static int _task_layout_lllp_multi(launch_tasks_request_msg_t *req,
 	if (!avail_map)
 		return SLURM_ERROR;
 	
-	*masks_p = xmalloc(maxtasks * sizeof(bitstr_t*));
+	*masks_p = xmalloc(max_tasks * sizeof(bitstr_t*));
 	masks = *masks_p;
 	
 	size = bit_set_count(avail_map);
-	if (!size || size < req->cpus_per_task) {
-		error("task/affinity: no set bits in avail_map!");
+	if (size < max_tasks) {
+		error("task/affinity: only %d bits in avail_map for %d tasks!",
+		      size, max_tasks);
 		bit_free(avail_map);
 		return SLURM_ERROR;
+	}
+	if (size < max_cpus) {
+		/* Possible result of overcommit */
+		i = size / max_tasks;
+		info("task/affinity: reset cpus_per_task from %d to %d",
+		     req->cpus_per_task, i);
+		req->cpus_per_task = i;
 	}
 	
 	size = bit_size(avail_map);
@@ -690,7 +699,7 @@ static int _task_layout_lllp_multi(launch_tasks_request_msg_t *req,
 	num_cores   = MIN(req->max_cores, hw_cores);
 	num_threads = MIN(req->max_threads, hw_threads);
 	i = 0;
-	while (taskcount < maxtasks) {
+	while (taskcount < max_tasks) {
 		if (taskcount == last_taskcount)
 			fatal("_task_layout_lllp_multi failure");
 		last_taskcount = taskcount; 
@@ -708,13 +717,13 @@ static int _task_layout_lllp_multi(launch_tasks_request_msg_t *req,
 					if (++i < req->cpus_per_task)
 						continue;
 					i = 0;
-					if (++taskcount >= maxtasks)
+					if (++taskcount >= max_tasks)
 						break;
 				}
-				if (taskcount >= maxtasks)
+				if (taskcount >= max_tasks)
 					break;
 			}
-			if (taskcount >= maxtasks)
+			if (taskcount >= max_tasks)
 				break;
 		}
 	}
@@ -722,7 +731,7 @@ static int _task_layout_lllp_multi(launch_tasks_request_msg_t *req,
 	
 	/* last step: expand the masks to bind each task
 	 * to the requested resource */
-	_expand_masks(req->cpu_bind_type, maxtasks, masks,
+	_expand_masks(req->cpu_bind_type, max_tasks, masks,
 			hw_sockets, hw_cores, hw_threads);
 
 	return SLURM_SUCCESS;
@@ -756,7 +765,8 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 	int last_taskcount = -1, taskcount = 0;
 	uint16_t c, i, s, t, hw_sockets = 0, hw_cores = 0, hw_threads = 0;
 	uint16_t num_threads, num_cores, num_sockets;
-	int size, maxtasks = req->tasks_to_launch[(int)node_id];
+	int size, max_tasks = req->tasks_to_launch[(int)node_id];
+	int max_cpus = max_tasks * req->cpus_per_task;
 	bitstr_t *avail_map;
 	bitstr_t **masks = NULL;
 	
@@ -766,22 +776,30 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 	if (!avail_map)
 		return SLURM_ERROR;
 	
-	*masks_p = xmalloc(maxtasks * sizeof(bitstr_t*));
+	*masks_p = xmalloc(max_tasks * sizeof(bitstr_t*));
 	masks = *masks_p;
 	
 	size = bit_set_count(avail_map);
-	if (!size || size < req->cpus_per_task) {
-		error("task/affinity: no set bits in avail_map!");
+	if (size < max_tasks) {
+		error("task/affinity: only %d bits in avail_map for %d tasks!",
+		      size, max_tasks);
 		bit_free(avail_map);
 		return SLURM_ERROR;
 	}
-	
+	if (size < max_cpus) {
+		/* Possible result of overcommit */
+		i = size / max_tasks;
+		info("task/affinity: reset cpus_per_task from %d to %d",
+		     req->cpus_per_task, i);
+		req->cpus_per_task = i;
+	}
+
 	size = bit_size(avail_map);
 	num_sockets = MIN(req->max_sockets, hw_sockets);
 	num_cores   = MIN(req->max_cores, hw_cores);
 	num_threads = MIN(req->max_threads, hw_threads);
 	i = 0;
-	while (taskcount < maxtasks) {
+	while (taskcount < max_tasks) {
 		if (taskcount == last_taskcount)
 			fatal("_task_layout_lllp_cyclic failure");
 		last_taskcount = taskcount; 
@@ -799,13 +817,13 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 					if (++i < req->cpus_per_task)
 						continue;
 					i = 0;
-					if (++taskcount >= maxtasks)
+					if (++taskcount >= max_tasks)
 						break;
 				}
-				if (taskcount >= maxtasks)
+				if (taskcount >= max_tasks)
 					break;
 			}
-			if (taskcount >= maxtasks)
+			if (taskcount >= max_tasks)
 				break;
 		}
 	}
@@ -813,7 +831,7 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 	
 	/* last step: expand the masks to bind each task
 	 * to the requested resource */
-	_expand_masks(req->cpu_bind_type, maxtasks, masks,
+	_expand_masks(req->cpu_bind_type, max_tasks, masks,
 			hw_sockets, hw_cores, hw_threads);
 
 	return SLURM_SUCCESS;
@@ -847,7 +865,8 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 	int c, i, j, t, size, last_taskcount = -1, taskcount = 0;
 	uint16_t hw_sockets = 0, hw_cores = 0, hw_threads = 0;
 	uint16_t num_sockets, num_cores, num_threads;
-	int maxtasks = req->tasks_to_launch[(int)node_id];
+	int max_tasks = req->tasks_to_launch[(int)node_id];
+	int max_cpus = max_tasks * req->cpus_per_task;
 	int *task_array;
 	bitstr_t *avail_map;
 	bitstr_t **masks = NULL;
@@ -860,14 +879,22 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 	}
 
 	size = bit_set_count(avail_map);
-	if (!size || size < req->cpus_per_task) {
-		error("task/affinity: no set bits in avail_map!");
+	if (size < max_tasks) {
+		error("task/affinity: only %d bits in avail_map for %d tasks!",
+		      size, max_tasks);
 		bit_free(avail_map);
 		return SLURM_ERROR;
 	}
+	if (size < max_cpus) {
+		/* Possible result of overcommit */
+		i = size / max_tasks;
+		info("task/affinity: reset cpus_per_task from %d to %d",
+		     req->cpus_per_task, i);
+		req->cpus_per_task = i;
+	}
 	size = bit_size(avail_map);
 
-	*masks_p = xmalloc(maxtasks * sizeof(bitstr_t*));
+	*masks_p = xmalloc(max_tasks * sizeof(bitstr_t*));
 	masks = *masks_p;
 
 	task_array = xmalloc(size * sizeof(int));
@@ -882,7 +909,7 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 	num_cores   = MIN(req->max_cores, hw_cores);
 	num_threads = MIN(req->max_threads, hw_threads);
 	c = 0;
-	while(taskcount < maxtasks) {
+	while(taskcount < max_tasks) {
 		if (taskcount == last_taskcount) {
 			fatal("_task_layout_lllp_block infinite loop");
 		}
@@ -904,7 +931,7 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 			if (++c < req->cpus_per_task)
 				continue;
 			c = 0;
-			if (++taskcount >= maxtasks)
+			if (++taskcount >= max_tasks)
 				break;
 		}
 	}
@@ -920,7 +947,7 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 		}
 	}
 	/* now set additional CPUs for cpus_per_task > 1 */
-	for (t=0; t<maxtasks && req->cpus_per_task>1; t++) {
+	for (t=0; t<max_tasks && req->cpus_per_task>1; t++) {
 		if (!masks[t])
 			continue;
 		for (i = 0; i < size; i++) {
@@ -951,7 +978,7 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 
 	/* last step: expand the masks to bind each task
 	 * to the requested resource */
-	_expand_masks(req->cpu_bind_type, maxtasks, masks,
+	_expand_masks(req->cpu_bind_type, max_tasks, masks,
 			hw_sockets, hw_cores, hw_threads);
 
 	return SLURM_SUCCESS;
