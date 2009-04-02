@@ -23,7 +23,8 @@ documents those changes that are of interest to users and admins.
     the values of SLURMD_OOM_ADJ and SLURMSTEPD_OOM_ADJ environment 
     variables. This can be used to prevent daemons being killed when
     a node's memory is exhausted. Based upon patch by Hongjia  Cao, NUDT.
- -- Fix several bugs with respect to cpuset logic in task/affinity plugin.
+ -- Fix several bugs in task/affinity: cpuset logic was broken and 
+    --cpus-per-task option not properly handled.
 
 * Changes in SLURM 1.4.0-pre9
 =============================
