@@ -137,10 +137,16 @@ static void _rotate_geo(uint16_t *req_geometry, int rot_cnt)
  */
 static int _bg_record_sort_aval_inc(bg_record_t* rec_a, bg_record_t* rec_b)
 {
-	if(rec_a->job_ptr && !rec_b->job_ptr)
+	if((rec_a->job_running == BLOCK_ERROR_STATE) 
+	   && (rec_b->job_running != BLOCK_ERROR_STATE))
+		return 1;
+	else if((rec_a->job_running != BLOCK_ERROR_STATE) 
+	   && (rec_b->job_running == BLOCK_ERROR_STATE))
 		return -1;
 	else if(!rec_a->job_ptr && rec_b->job_ptr)
 		return 1;
+	else if(rec_a->job_ptr && !rec_b->job_ptr)
+		return -1;
 	else if(rec_a->job_ptr && rec_b->job_ptr) {
 		if(rec_a->job_ptr->start_time > rec_b->job_ptr->start_time)
 			return 1;
@@ -159,10 +165,16 @@ static int _bg_record_sort_aval_inc(bg_record_t* rec_a, bg_record_t* rec_b)
  */
 static int _bg_record_sort_aval_dec(bg_record_t* rec_a, bg_record_t* rec_b)
 {
-	if(rec_a->job_ptr && !rec_b->job_ptr)
+	if((rec_a->job_running == BLOCK_ERROR_STATE) 
+	   && (rec_b->job_running != BLOCK_ERROR_STATE))
+		return -1;
+	else if((rec_a->job_running != BLOCK_ERROR_STATE) 
+	   && (rec_b->job_running == BLOCK_ERROR_STATE))
 		return 1;
 	else if(!rec_a->job_ptr && rec_b->job_ptr)
 		return -1;
+	else if(rec_a->job_ptr && !rec_b->job_ptr)
+		return 1;
 	else if(rec_a->job_ptr && rec_b->job_ptr) {
 		if(rec_a->job_ptr->start_time > rec_b->job_ptr->start_time)
 			return -1;
@@ -1022,10 +1034,8 @@ static int _find_best_block_match(List block_list,
 					      "block %s in an error state "
 					      "because of bad bps.",
 					      bg_record->bg_block_id);
-					bg_record->job_running =
-						BLOCK_ERROR_STATE;
-					bg_record->state = RM_PARTITION_ERROR;
-					trigger_block_error();
+					put_block_in_error_state(
+						bg_record, BLOCK_ERROR_STATE);
 					continue;
 				}
 			}
@@ -1094,14 +1104,29 @@ static int _find_best_block_match(List block_list,
 					request.geometry[i] = req_geometry[i];
 
 				bg_record = list_pop(job_list);
-				if(bg_record)
-					debug2("taking off %d(%s) started "
-					       "at %d ends at %d",
-					       bg_record->job_running,
-					       bg_record->bg_block_id,
-					       bg_record->job_ptr->start_time,
-					       bg_record->job_ptr->end_time);
-				else 
+				if(bg_record) {
+					if(bg_record->job_ptr)
+						debug2("taking off %d(%s) "
+						       "started at %d "
+						       "ends at %d",
+						       bg_record->job_running,
+						       bg_record->bg_block_id,
+						       bg_record->job_ptr->
+						       start_time,
+						       bg_record->job_ptr->
+						       end_time);
+					else if(bg_record->job_running 
+						== BLOCK_ERROR_STATE)
+						debug2("taking off (%s) "
+						       "which is in an error "
+						       "state",
+						       bg_record->job_running,
+						       bg_record->bg_block_id,
+						       bg_record->job_ptr->
+						       start_time,
+						       bg_record->job_ptr->
+						       end_time);
+				} else 
 					/* This means we didn't have
 					   any jobs to take off
 					   anymore so we are making
@@ -1407,7 +1432,8 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 				else
 					starttime =
 						bg_record->job_ptr->end_time;
-			}
+			} else if(bg_record->job_running == BLOCK_ERROR_STATE)
+				starttime = INFINITE;
 						
 			job_ptr->start_time = starttime;
 			

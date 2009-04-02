@@ -123,7 +123,6 @@ static int _remove_job(db_job_id_t job_id)
 	for (i=0; i<MAX_POLL_RETRIES; i++) {
 		if (i > 0)
 			sleep(POLL_INTERVAL);
-
 		
 		/* Find the job */
 		if ((rc = bridge_get_job(job_id, &job_rec)) != STATUS_OK) {
@@ -159,19 +158,19 @@ static int _remove_job(db_job_id_t job_id)
 		/* check the state and process accordingly */
 		if(job_state == RM_JOB_TERMINATED)
 			return STATUS_OK;
-		else if(job_state == RM_JOB_DYING)
+		else if(job_state == RM_JOB_DYING) {
+			/* start sending sigkills for the last 5 tries */
+			if(i == (MAX_POLL_RETRIES-5))
+				(void) bridge_signal_job(job_id, SIGKILL);
 			continue;
-		else if(job_state == RM_JOB_ERROR) {
+		} else if(job_state == RM_JOB_ERROR) {
 			error("job %d is in a error state.", job_id);
 			
 			//free_bg_block();
 			return STATUS_OK;
 		}
 
-		(void) bridge_signal_job(job_id, SIGKILL);
 		rc = bridge_cancel_job(job_id);
-		/* it doesn't appear that this does anything. */
-		// rc = bridge_remove_job(job_id);
 
 		if (rc != STATUS_OK) {
 			if (rc == JOB_NOT_FOUND) {
@@ -187,8 +186,6 @@ static int _remove_job(db_job_id_t job_id)
 		}
 	}
 	/* try once more... */
-	/* it doesn't appear that this does anything. */
-	// (void) bridge_remove_job(job_id);
 	error("Failed to remove job %d from MMCS", job_id);
 	return INTERNAL_ERROR;
 }

@@ -93,27 +93,18 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 					bg_found_block_list);
 				while ((found_record = (bg_record_t*) 
 					list_next(itr_found)) != NULL) {
-/* 					info("%s.%d.%d ?= %s.%d.%d\n", */
+/* 					info("%s[%s[ ?= %s[%s]\n", */
 /* 					     bg_record->nodes, */
-/* 					     bg_record->quarter, */
-/* 					     bg_record->nodecard, */
+/* 					     bg_record->ionodes, */
 /* 					     found_record->nodes, */
-/* 					     found_record->quarter, */
-/* 					     found_record->nodecard); */
+/* 					     found_record->ionodes); */
 					
 					if ((bit_equal(bg_record->bitmap, 
 						       found_record->bitmap))
-#ifdef HAVE_BGL
-					    && (bg_record->quarter ==
-						found_record->quarter)
-					    && (bg_record->nodecard ==
-						found_record->nodecard)
-#else
 					    && (bit_equal(bg_record->
 							  ionode_bitmap, 
 							  found_record->
 							  ionode_bitmap))
-#endif
 						) {
 						/* don't reboot this one */
 						break;	
@@ -305,7 +296,7 @@ extern int create_full_system_block(List bg_found_block_list)
 	list_iterator_destroy(itr);
 
 	bit_not(bitmap);
-	if(bit_ffs(bitmap)) {
+	if(bit_ffs(bitmap) != -1) {
 		error("We don't have the entire system covered by partitions, "
 		      "can't create full system block");
 		FREE_NULL_BITMAP(bitmap);
@@ -380,7 +371,7 @@ extern int create_full_system_block(List bg_found_block_list)
 	blockreq.block = name;
 	blockreq.conn_type = SELECT_TORUS;
 
-	add_bg_record(records, NULL, &blockreq);
+	add_bg_record(records, NULL, &blockreq, 0 , 0);
 	xfree(name);
 	
 	bg_record = (bg_record_t *) list_pop(records);

@@ -270,8 +270,7 @@ static int _post_allocate(bg_record_t *bg_record)
 
 #ifdef HAVE_BG_FILES
 #ifdef HAVE_BGL
-static int _find_nodecard(bg_record_t *bg_record, 
-			  rm_partition_t *block_ptr)
+static int _find_nodecard(rm_partition_t *block_ptr, int *nc_id)
 {
 	char *my_card_name = NULL;
 	char *card_name = NULL;
@@ -283,6 +282,9 @@ static int _find_nodecard(bg_record_t *bg_record,
 	rm_nodecard_t *ncard = NULL;
 	rm_BP_t *curr_bp = NULL;
 	
+	xassert(block_ptr);
+	xassert(nc_id);
+
 	if((rc = bridge_get_data(block_ptr,
 				 RM_PartitionFirstNodeCard,
 				 &ncard))
@@ -357,12 +359,12 @@ static int _find_nodecard(bg_record_t *bg_record,
 			rc = SLURM_ERROR;
 			goto cleanup;
 		}
-		if(strcmp(my_card_name,card_name)) {
+		if(strcmp(my_card_name, card_name)) {
 			free(card_name);
 			continue;
 		}
 		free(card_name);
-		bg_record->nodecard = (i%4);
+		(*nc_id) = i;
 		break;
 	}
 cleanup:
@@ -397,7 +399,7 @@ int read_bg_blocks()
 {
 	int rc = SLURM_SUCCESS;
 
-	int bp_cnt, i;
+	int bp_cnt, i, nc_cnt, io_cnt;
 	rm_element_t *bp_ptr = NULL;
 	rm_bp_id_t bpid;
 	rm_partition_t *block_ptr = NULL;
@@ -412,11 +414,8 @@ int read_bg_blocks()
 	rm_partition_list_t *block_list = NULL;
 	rm_partition_state_flag_t state = PARTITION_ALL_FLAG;
 	rm_nodecard_t *ncard = NULL;
-#ifdef HAVE_BGL
-	rm_quarter_t quarter;
-#else
 	int nc_id, io_start;
-#endif
+
 	bool small = false;
 	hostlist_t hostlist;		/* expanded form of hosts */
 
@@ -493,10 +492,7 @@ int read_bg_blocks()
 		free(tmp_char);
 
 		bg_record->state = NO_VAL;
-#ifdef HAVE_BGL
-		bg_record->quarter = (uint16_t) NO_VAL;
-		bg_record->nodecard = (uint16_t) NO_VAL;
-#else
+#ifndef HAVE_BGL
 		if ((rc = bridge_get_data(block_ptr, 
 					  RM_PartitionSize, 
 					  &bp_cnt)) 
@@ -588,7 +584,7 @@ int read_bg_blocks()
 			
 			if((rc = bridge_get_data(block_ptr,
 						 RM_PartitionNodeCardNum,
-						 &i))
+						 &nc_cnt))
 			   != STATUS_OK) {
 				error("bridge_get_data("
 				      "RM_PartitionNodeCardNum): %s",
@@ -596,33 +592,31 @@ int read_bg_blocks()
 				goto clean_up;
 			}
 #ifdef HAVE_BGL
-			if(i == 1) {
-				_find_nodecard(bg_record, block_ptr);
-				i = bluegene_bp_nodecard_cnt;
-			} 
+			/* Translate nodecard count to ionode count */
+			if((io_cnt = nc_cnt * bluegene_io_ratio))
+				io_cnt--;
+
+			nc_id = 0;
+			if(nc_cnt == 1) 
+				_find_nodecard(block_ptr, &nc_id);
+			
+			bg_record->node_cnt = 
+				nc_cnt * bluegene_nodecard_node_cnt;
+			bg_record->cpu_cnt =
+				bluegene_proc_ratio * bg_record->node_cnt;
+
 			if ((rc = bridge_get_data(ncard, 
 						  RM_NodeCardQuarter, 
-						  &quarter)) != STATUS_OK) {
+						  &io_start)) != STATUS_OK) {
 				error("bridge_get_data(CardQuarter): %d",rc);
 				goto clean_up;
 			}
-
-			bg_record->quarter = quarter;
-
-			debug3("%s is in quarter %d nodecard %d",
-			       bg_record->bg_block_id,
-			       bg_record->quarter,
-			       bg_record->nodecard);
-			bg_record->cpu_cnt = procs_per_node/i;
-			bg_record->node_cnt = bluegene_bp_node_cnt/i;
-			if(set_ionodes(bg_record) == SLURM_ERROR) 
-				error("couldn't create ionode_bitmap "
-				      "for %d.%d",
-				      bg_record->quarter, bg_record->nodecard);
+			io_start *= bluegene_quarter_ionode_cnt;
+			io_start += bluegene_nodecard_ionode_cnt * (nc_id%4);
 #else
 			/* Translate nodecard count to ionode count */
-			if((i *= bluegene_io_ratio))
-				i--;
+			if((io_cnt = nc_cnt * bluegene_io_ratio))
+				io_cnt--;
 
 			if ((rc = bridge_get_data(ncard, 
 						  RM_NodeCardID, 
@@ -672,14 +666,18 @@ int read_bg_blocks()
 				free(tmp_char);
 				/* make sure i is 0 since we are only using
 				 * 1 ionode */
-				i = 0;
+				io_cnt = 0;
 			}
+#endif
 
-			if(set_ionodes(bg_record, io_start, i) == SLURM_ERROR)
+			if(set_ionodes(bg_record, io_start, io_cnt)
+			   == SLURM_ERROR)
 				error("couldn't create ionode_bitmap "
 				      "for ionodes %d to %d",
-				      io_start, io_start+i);
-#endif
+				      io_start, io_start+io_cnt);
+			debug3("%s uses ionodes %s",
+			       bg_record->bg_block_id,
+			       bg_record->ionodes);
 		} else {
 #ifdef HAVE_BGL
 			bg_record->cpu_cnt = procs_per_node 
@@ -701,8 +699,7 @@ int read_bg_blocks()
 			   don't want the bg_record->ionodes set.
 			*/
 			bg_record->ionode_bitmap = bit_alloc(bluegene_numpsets);
-		}
-		
+		}		
 		
 		bg_record->bg_block_list =
 			get_and_set_block_wiring(bg_record->bg_block_id);
@@ -966,7 +963,7 @@ int read_bg_blocks()
 	return rc;
 }
 
-#else
+#endif
 
 extern int load_state_file(char *dir_name)
 {
@@ -1059,6 +1056,27 @@ extern int load_state_file(char *dir_name)
 		error("select_p_state_restore: problem unpacking node_info");
 		goto unpack_error;
 	}
+
+#ifdef HAVE_BG_FILES
+	for (i=0; i<node_select_ptr->record_count; i++) {
+		bg_info_record = &(node_select_ptr->bg_info_array[i]);
+		
+		/* we only care about the states we need here
+		 * everthing else should have been set up already */
+		if(bg_info_record->state == RM_PARTITION_ERROR) {
+			if((bg_record = find_bg_record_in_list(
+				    bg_curr_block_list,
+				    bg_info_record->bg_block_id)))
+				put_block_in_error_state(
+					bg_record, BLOCK_ERROR_STATE);
+		}
+	}
+
+	select_g_free_node_info(&node_select_ptr);
+	free_buf(buffer);
+	return SLURM_SUCCESS;
+#endif
+
 	slurm_mutex_lock(&block_state_mutex);
 	reset_ba_system(false);
 
@@ -1124,13 +1142,10 @@ extern int load_state_file(char *dir_name)
 			xstrdup(bg_info_record->ionodes);
 		bg_record->ionode_bitmap = bit_copy(ionode_bitmap);
 		bg_record->state = bg_info_record->state;
-#ifdef HAVE_BGL
-		bg_record->quarter = bg_info_record->quarter;
-		bg_record->nodecard = bg_info_record->nodecard;
-#endif
-		if(bg_info_record->state == RM_PARTITION_ERROR)
-			bg_record->job_running = BLOCK_ERROR_STATE;
-		else
+
+		if(bg_info_record->state == RM_PARTITION_ERROR) {
+			put_block_in_error_state(bg_record, BLOCK_ERROR_STATE);
+		} else
 			bg_record->job_running = NO_JOB_RUNNING;
 		bg_record->bp_count = bit_size(node_bitmap);
 		bg_record->node_cnt = bg_info_record->node_cnt;
@@ -1241,5 +1256,3 @@ unpack_error:
 	free_buf(buffer);
 	return SLURM_FAILURE;
 }
-
-#endif

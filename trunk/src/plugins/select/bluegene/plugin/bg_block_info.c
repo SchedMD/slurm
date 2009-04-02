@@ -212,8 +212,8 @@ extern void pack_block(bg_record_t *bg_record, Buf buffer)
 	pack16((uint16_t)bg_record->conn_type, buffer);
 #ifdef HAVE_BGL
 	pack16((uint16_t)bg_record->node_use, buffer);	
-	pack16((uint16_t)bg_record->quarter, buffer);	
-	pack16((uint16_t)bg_record->nodecard, buffer);	
+	pack16((uint16_t)0, buffer);	
+	pack16((uint16_t)0, buffer);	
 #endif
 	pack32((uint32_t)bg_record->node_cnt, buffer);
 	pack_bit_fmt(bg_record->bitmap, buffer);
