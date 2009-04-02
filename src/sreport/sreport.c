@@ -714,6 +714,8 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
                                    1-49, 50-99, 100-149, > 150).           \n\
              - Jobs=<OPT>       - List of jobs/steps to include in report. \n\
                                   Default is all.                          \n\
+             - Nodes=<OPT>      - Only show jobs that ran on these nodes.  \n\
+                                  Default is all.                          \n\
              - Partitions=<OPT> - List of partitions jobs ran on to include\n\
                                   in report.  Default is all.              \n\
              - PrintJobCount    - When used with the any Sizes report      \n\
@@ -730,6 +732,8 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
      reservation                                                           \n\
              - Names=<OPT>      - List of reservations to use for the report\n\
                                   Default is all.                          \n\
+             - Nodes=<OPT>      - Only show reservations that used these   \n\
+                                  nodes.  Default is all.                  \n\
                                                                            \n\
      user    - Accounts=<OPT>   - List of accounts to use for the report   \n\
                                   Default is all.                          \n\

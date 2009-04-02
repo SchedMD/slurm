@@ -280,6 +280,9 @@ Comma separated list of size groupings.   (i.e. 50,100,150 would group job cpu c
 .B Jobs=<OPT>
 List of jobs/steps to include in report.  Default is all.
 .TP
+.B Nodes=<OPT>
+Only show jobs that ran on these nodes. Default is all.
+.TP
 .B Partitions=<OPT>
 List of partitions jobs ran on to include in report.  Default is all.
 .TP
@@ -301,6 +304,9 @@ RESERVATION
 .TP
 .B Names=<OPT>
 List of reservations to use for the report. Default is all.
+.TP
+.B Nodes=<OPT>
+Only show reservations that used these nodes. Default is all.
 .RE
 
 .TP

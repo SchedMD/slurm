@@ -378,6 +378,17 @@ static int _set_cond(int *start, int argc, char *argv[],
 			}
 			
 			set = 1;
+		} else if(!strncasecmp (argv[i], "Nodes", 
+					 MAX(command_len, 1))) {
+			if(job_cond->used_nodes) {
+				error("You already specified nodes '%s' "
+				      " combine your request into 1 nodes=.",
+				      job_cond->used_nodes);
+				exit_code = 1;
+				break;
+			}
+			job_cond->used_nodes = xstrdup(argv[i]+end);
+			set = 1;
 		} else if (!strncasecmp (argv[i], "Partitions",
 					 MAX(command_len, 2))) {
 			if(!job_cond->partition_list)
