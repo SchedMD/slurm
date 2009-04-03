@@ -8,7 +8,7 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2002-2006 The Regents of the University of California.
+# Copyright (C) 2009 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Dave Bremer <dbremer@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
@@ -114,15 +114,18 @@ for {set task_id 0} {$task_id < $node_count} {incr task_id} {
 		if {$task_id != $test_task_id} {
 			send_user "\nFAILURE: file $file_out_t_glob was not labelled.  $task_id != $test_task_id\n"
 			set exit_code 1
+		} else {
+			exec $bin_rm -f $file_out_t_glob
 		}
-
-		exec $bin_rm -f $file_out_t_glob
 		incr file_cnt
 	}
 }
 if {$file_cnt != $node_count} {
 	send_user "\nFAILURE: file format of %t in stdout failed\n"
 	set exit_code 1
+}
+if {$exit_code != 0} {
+	exit $exit_code
 }
 
 #
@@ -184,9 +187,9 @@ for {set node_id 0} {$node_id < $node_count} {incr node_id} {
 		if {!$t0found || !$t1found} {
 			send_user "\nFAILURE: file $file_out_n_glob was not labelled correctly\n"
 			set exit_code 1
+		} else {
+			exec $bin_rm -f $file_out_n_glob
 		}
-
-		exec $bin_rm -f $file_out_n_glob
 		incr file_cnt
 	}
 }
