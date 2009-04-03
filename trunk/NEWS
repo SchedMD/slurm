@@ -3,6 +3,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.4.0-pre11
 ==============================
+ -- Fix slurm.spec file for RPM build.
 
 * Changes in SLURM 1.4.0-pre10
 ==============================
