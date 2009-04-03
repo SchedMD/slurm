@@ -261,32 +261,40 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 	int whole_nodes, whole_sockets, whole_cores, whole_threads;
 	int part_sockets, part_cores;
         const uint32_t *gtid = req->global_task_ids[(int)node_id];
-	uint16_t bind_entity, bind_mode;
+	static uint16_t bind_entity = CPU_BIND_TO_THREADS | CPU_BIND_TO_CORES |
+				      CPU_BIND_TO_SOCKETS | CPU_BIND_TO_LDOMS;
+	static uint16_t bind_mode = CPU_BIND_NONE   | CPU_BIND_MASK   |
+				    CPU_BIND_RANK   | CPU_BIND_MAP    |
+				    CPU_BIND_LDMASK | CPU_BIND_LDRANK | 
+				    CPU_BIND_LDMAP;
 
-	bind_mode = CPU_BIND_NONE   | 
-		    CPU_BIND_MASK   | CPU_BIND_RANK   | CPU_BIND_MAP |
-		    CPU_BIND_LDMASK | CPU_BIND_LDRANK | CPU_BIND_LDMAP;
-	if (req->cpu_bind_type & bind_mode) {	/* explicit user mapping */
+	if (req->cpu_bind_type & bind_mode) {
+		/* Explicit step binding specified by user */
 		char *avail_mask = _alloc_mask(req,
 					       &whole_nodes,  &whole_sockets, 
 					       &whole_cores,  &whole_threads,
 					       &part_sockets, &part_cores);
 		if ((whole_nodes == 0) && avail_mask) {
+			/* Step does NOT have access to whole node, 
+			 * bind to full mask of available processors */
 			xfree(req->cpu_bind);
 			req->cpu_bind = avail_mask;
 			req->cpu_bind_type &= (~bind_mode);
 			req->cpu_bind_type |= CPU_BIND_MASK;
-		} else
+		} else {
+			/* Step does have access to whole node, 
+			 * bind to whatever step wants */
 			xfree(avail_mask);
+		}
 		slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
 		info("lllp_distribution jobid [%u] manual binding: %s",
 		     req->job_id, buf_type);
 		return;
 	}
 
-	bind_entity = CPU_BIND_TO_THREADS | CPU_BIND_TO_CORES |
-		      CPU_BIND_TO_SOCKETS | CPU_BIND_TO_LDOMS;
 	if (!(req->cpu_bind_type & bind_entity)) {
+		/* No bind unit (sockets, cores) specified by user,
+		 * pick something reasonable */
 		int max_tasks = req->tasks_to_launch[(int)node_id];
 		char *avail_mask = _alloc_mask(req,
 					       &whole_nodes,  &whole_sockets, 
@@ -323,8 +331,9 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 		info("lllp_distribution jobid [%u] implicit auto binding: "
 		     "%s, dist %d", req->job_id, buf_type, req->task_dist);
 	} else {
+		/* Explicit bind unit (sockets, cores) specified by user */
 		slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
-		info("lllp_distribution jobid [%u] auto binding: %s, dist %d",
+		info("lllp_distribution jobid [%u] binding: %s, dist %d",
 		     req->job_id, buf_type, req->task_dist);
 	}
 
@@ -350,13 +359,10 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 		break;
 	}
 
-
 	/* FIXME: I'm worried about core_bitmap with CPU_BIND_TO_SOCKETS &
 	 * max_cores - does select/cons_res plugin allocate whole
 	 * socket??? Maybe not. Check srun man page.
 	 */
-
-
 
 	if (rc == SLURM_SUCCESS) {
 		_task_layout_display_masks(req, gtid, maxtasks, masks); 
@@ -469,7 +475,7 @@ static void _enforce_limits(launch_tasks_request_msg_t *req, bitstr_t *mask,
  *                            allocation for this node
  * OUT part__<entity>_count - returns count of partial <entities> in this 
  *                            allocation for this node
- * RET - a string representation of the available mask or NULL on errlr
+ * RET - a string representation of the available mask or NULL on error
  * NOTE: Caller must xfree() the return value. */
 static char *_alloc_mask(launch_tasks_request_msg_t *req,
 			 int *whole_node_cnt,  int *whole_socket_cnt, 
@@ -531,6 +537,15 @@ static char *_alloc_mask(launch_tasks_request_msg_t *req,
 	return str_mask;
 }
 
+/*
+ * Given a job step request, return an equivalent local bitmap for this node
+ * IN req          - The job step launch request
+ * OUT hw_sockets  - number of actual sockets on this node
+ * OUT hw_cores    - number of actual cores per socket on this node
+ * OUT hw_threads  - number of actual threads per core on this node
+ * RET: bitmap of processors available to this job step on this node
+ *      OR NULL on error
+ */
 static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 				uint16_t *hw_sockets, uint16_t *hw_cores,
 				uint16_t *hw_threads)
