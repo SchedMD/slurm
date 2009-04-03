@@ -325,10 +325,12 @@ if [ -d /etc/init.d ]; then
 fi
 
 LIST=./plugins.files
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_affinity.so &&
-   echo %{_libdir}/slurm/task_affinity.so >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/checkpoint_blcr.so &&
+   echo %{_libdir}/slurm/checkpoint_blcr.so >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/crypto_openssl.so &&
    echo %{_libdir}/slurm/crypto_openssl.so >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_affinity.so &&
+   echo %{_libdir}/slurm/task_affinity.so >> $LIST
 
 
 #############################################################################
@@ -472,6 +474,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/select_cons_res.so
 %{_libdir}/slurm/select_linear.so
 %{_libdir}/slurm/switch_none.so
+%{_libdir}/slurm/topology_3d_torus.so
+%{_libdir}/slurm/topology_none.so
+%{_libdir}/slurm/topology_tree.so
 %{_libdir}/slurm/mpi_lam.so
 %{_libdir}/slurm/mpi_mpich1_p4.so
 %{_libdir}/slurm/mpi_mpich1_shmem.so
