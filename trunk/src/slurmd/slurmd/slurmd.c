@@ -488,6 +488,7 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	int  n;
 	char *arch, *os;
 	struct utsname buf;
+	static bool first_msg = true;
 
 	msg->node_name  = xstrdup (conf->node_name);
 	msg->cpus	 = conf->cpus;
@@ -497,10 +498,18 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	msg->real_memory = conf->real_memory_size;
 	msg->tmp_disk    = conf->tmp_disk_space;
 
-	debug3("Procs=%u Sockets=%u Cores=%u Threads=%u Memory=%u TmpDisk=%u",
-	       msg->cpus, msg->sockets, msg->cores, msg->threads,
-	       msg->real_memory, msg->tmp_disk);
-
+	if (first_msg) {
+		first_msg = false;
+		info("Procs=%u Sockets=%u Cores=%u Threads=%u "
+		     "Memory=%u TmpDisk=%u",
+		     msg->cpus, msg->sockets, msg->cores, msg->threads,
+		     msg->real_memory, msg->tmp_disk);
+	} else {
+		debug3("Procs=%u Sockets=%u Cores=%u Threads=%u "
+		       "Memory=%u TmpDisk=%u",
+		       msg->cpus, msg->sockets, msg->cores, msg->threads,
+		       msg->real_memory, msg->tmp_disk);
+	}
 	uname(&buf);
 	if ((arch = getenv("SLURM_ARCH")))
 		msg->arch = xstrdup(arch);
