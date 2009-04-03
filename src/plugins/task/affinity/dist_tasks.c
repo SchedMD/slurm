@@ -351,8 +351,7 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 	}
 
 
-	/* FIXME: think about core_bitmap for select/linear (all '1')
-	 * I'm also worried about core_bitmap with CPU_BIND_TO_SOCKETS &
+	/* FIXME: I'm worried about core_bitmap with CPU_BIND_TO_SOCKETS &
 	 * max_cores - does select/cons_res plugin allocate whole
 	 * socket??? Maybe not. Check srun man page.
 	 */
@@ -372,6 +371,21 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 #endif
 	    	 /* convert masks into cpu_bind mask string */
 		 _lllp_generate_cpu_bind(req, maxtasks, masks);
+	} else {
+		char *avail_mask = _alloc_mask(req,
+					       &whole_nodes,  &whole_sockets,
+					       &whole_cores,  &whole_threads,
+					       &part_sockets, &part_cores);
+		if (avail_mask) {
+			xfree(req->cpu_bind);
+			req->cpu_bind = avail_mask;
+			req->cpu_bind_type &= (~bind_mode);
+			req->cpu_bind_type |= CPU_BIND_MASK;
+		}
+		slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
+		error("lllp_distribution jobid [%u] overriding binding: %s",
+		      req->job_id, buf_type);
+		error("Verify socket/core/thread counts in configuration");
 	}
 	_lllp_free_masks(maxtasks, masks);
 }
