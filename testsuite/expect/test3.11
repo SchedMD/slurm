@@ -67,7 +67,7 @@ proc create_res { res_params failure_expected } {
 		-re "Reservation created: ($alpha_numeric_under)" {
 			set res_name $expect_out(1,string)
 		}
-		-re "slurm_update error: Invalid user" {
+		-re "Error creating the reservation: Invalid user" {
 			send_user "\nWARNING: user not authorized "
 			send_user "to create reservation\n"
 			set ret_code 1
