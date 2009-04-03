@@ -2303,9 +2303,8 @@ static void _slurm_rpc_update_partition(slurm_msg_t * msg)
 		(unsigned int) uid);
 	if (!validate_super_user(uid)) {
 		error_code = ESLURM_USER_ID_MISSING;
-		error
-		    ("Security violation, UPDATE_PARTITION RPC from uid=%u",
-		     (unsigned int) uid);
+		error("Security violation, UPDATE_PARTITION RPC from uid=%u",
+		      (unsigned int) uid);
 	}
 
 	if (error_code == SLURM_SUCCESS) {

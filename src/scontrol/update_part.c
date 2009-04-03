@@ -299,9 +299,10 @@ scontrol_create_part (int argc, char *argv[])
 
 	if (slurm_create_partition(&part_msg)) {
 		exit_code = 1;
+		slurm_perror("Error creating the partition");
 		return slurm_get_errno ();
-	}
-	return 0;
+	} else
+		return 0;
 }
 
 
