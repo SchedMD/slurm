@@ -35,6 +35,7 @@ source ./globals
 
 set test_id     "25.1"
 set exit_code   0
+set file_in     "test$test_id.input"
 set timeout	60
 print_header	$test_id
 
@@ -45,6 +46,15 @@ if { [test_account_storage] == 0 } {
 	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
 	exit 0
 }
+if { [string compare [priority_type] multifactor] } {
+	send_user "\nWARNING: This test can't be run without a usable PriorityType\n"
+	exit 0
+}
+
+#
+# Build input script file
+#
+make_bash_script $file_in "$bin_sleep 600"
 
 ################################################################
 #
@@ -58,45 +68,31 @@ if { [test_account_storage] == 0 } {
 
 proc sub_job {} {
 
-	global number sbatch
-	set file_in	test25.1.input
+	global exit_code file_in number sbatch test_id
+	set file_in	test${test_id}.input
 
-#
-# Build input script file
-#
-make_bash_script $file_in "
-$sbatch sleep 5m
-wait
-
-"
-
-#
-# Spawn jobs
-#
-set job_id	0
-
-
-spawn $sbatch $file_in
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string) 
-		send_user "\nFOUND JobID to be $job_id\n"
-		exp_continue
+	set job_id	0
+	spawn $sbatch --output=/dev/null --error=/dev/null $file_in
+	expect {
+		-re "Submitted batch job ($number)" {
+			set job_id $expect_out(1,string) 
+			send_user "\nFOUND JobID to be $job_id\n"
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sbatch not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
 	}
-	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
+
+	if {$job_id == 0} {
+		send_user "\nFAILURE: did not get sbatch job_id\n"
 		set exit_code 1
 	}
-	eof {
-		wait
-	}
-}
-
-if {$job_id == 0} {
-	send_user "\nFAILURE: did not get sbatch job_id\n"
-	exit 1
-}
-return $job_id
+	return $job_id
 }
 
 ################################################################
@@ -625,11 +621,20 @@ set jobid2 [sub_job]
 set jobid3 [sub_job]
 set jobid4 [sub_job]
 set jobid5 [sub_job]
-	send_user "\nFirst job ID is $jobid1\n"
-	send_user "\nSecond job ID is $jobid2\n"
-	send_user "\nThird job ID is $jobid3\n"
-	send_user "\nFourth job ID is $jobid4\n"
-	send_user "\nFifth job ID is $jobid5\n"
+if {$exit_code != 0} {
+	[cancel_job $jobid1]
+	[cancel_job $jobid2]
+	[cancel_job $jobid3]
+	[cancel_job $jobid4]
+	[cancel_job $jobid5]
+	exit $exit_code
+}
+send_user "\nFirst job ID is $jobid1\n"
+send_user "\nSecond job ID is $jobid2\n"
+send_user "\nThird job ID is $jobid3\n"
+send_user "\nFourth job ID is $jobid4\n"
+send_user "\nFifth job ID is $jobid5\n"
+
 #
 # Collect uid
 #
@@ -771,8 +776,7 @@ cancel_job $jobid5
 # Exit with code as appropriate
 #
 if {$exit_code == 0} {
+	exec $bin_rm -f $file_in
 	send_user "\nSUCCESS\n"
-} else {
-	send_user "\nFAILURE\n"
 }
 exit $exit_code

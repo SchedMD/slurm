@@ -199,6 +199,10 @@ cset super_user_set 0
 proc cancel_job { job_id } {
 	global scancel bin_sleep
 
+	if {$job_id == 0} {
+		return 1
+	}
+
 	send_user "cancelling $job_id\n"
 	exec $scancel -q $job_id
 	exec $bin_sleep 1
