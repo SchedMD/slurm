@@ -817,7 +817,7 @@ _create_it (int argc, char *argv[])
 	/* Scan for "res" first, anywhere in the args.  When creating
 	   a reservation there is a partition= option, which we don't
 	   want to mistake for a requestion to create a partition. */
-	int i;
+	int i, error_code = SLURM_SUCCESS;
 	for (i=0; i<argc; i++) {
 		char *tag = argv[i];
 		char *val = strchr(argv[i], '=');
@@ -829,33 +829,20 @@ _create_it (int argc, char *argv[])
 		} else {
 			taglen = strlen(tag);
 		}
-		if (strncasecmp (tag, "ReservationName", MAX(taglen, 3)) == 0) {
-			scontrol_create_res(argc, argv);
-			return;
-		}
-	}
-
-	for (i=0; i<argc; i++) {
-		char *tag = argv[i];
-		char *val = strchr(argv[i], '=');
-		int taglen;
-
-		if (val) {
-			taglen = val - argv[i];
-			val++;
-		} else {
-			taglen = strlen(tag);
-		}
-		if (strncasecmp (tag, "PartitionName", MAX(taglen, 3)) == 0) {
-			scontrol_create_part(argc, argv);
-			return;
+		if (!strncasecmp(tag, "ReservationName", MAX(taglen, 3))) {
+			error_code = scontrol_create_res(argc, argv);
+			break;
+		} else if (!strncasecmp(tag, "PartitionName", MAX(taglen, 3))) {
+			error_code = scontrol_create_part(argc, argv);
+			break;
 		}
 	}
 
 	if (i >= argc) {
 		exit_code = 1;
 		error("Invalid creation entity: %s\n", argv[0]);
-	}
+	} else if (error_code) 
+		exit_code = 1;
 }
 
 
