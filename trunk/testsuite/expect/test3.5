@@ -39,6 +39,11 @@ set part_name      "QA_TEST"
 
 print_header $test_id
 
+if {[test_super_user] == 0} {
+	send_user "\nWARNING: can not test more unless SlurmUser or root\n"
+	exit $exit_code
+}
+
 #
 # Confirm the partition name does not already exist
 #
@@ -110,11 +115,6 @@ if {[string compare $def_node ""] == 0} {
 #
 spawn $scontrol create PartitionName=$part_name Nodes=$def_node
 expect {
-	-re "Error creating the partition: Invalid user" {
-		send_user "\nWARNING: user not authorized to create partition\n"
-		exit $exit_code
-		exp_continue
-	}
 	-re "error" {
 		send_user "\nFAILURE: something bad happened on partitiion create\n"
 		set exit_code 1
