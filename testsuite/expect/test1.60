@@ -100,6 +100,7 @@ for {set task_id 0} {$task_id < $node_count} {incr task_id} {
 	if {[wait_for_file $file_out_t_glob] != 0} {
 		set exit_code 1
 	} else {
+		set test_task_id -1
 		spawn $bin_cat $file_out_t_glob
 		expect {
 			-re "($number): *hello" {
