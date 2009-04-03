@@ -375,10 +375,6 @@ _setup_normal_io(slurmd_job_t *job)
 	if (io_init_tasks_stdio(job) != SLURM_SUCCESS)
 		return ESLURMD_IO_ERROR;
 
-	if (_reclaim_privileges(&sprivs) < 0)
-		error("sete{u/g}id(%lu/%lu): %m", 
-		      (u_long) sprivs.saved_uid, (u_long) sprivs.saved_gid);
-
 	/*
 	 * MUST create the initial client object before starting
 	 * the IO thread, or we risk losing stdout/err traffic.
@@ -464,6 +460,10 @@ _setup_normal_io(slurmd_job_t *job)
 				}
 			}
 		}
+
+	if (_reclaim_privileges(&sprivs) < 0)
+		error("sete{u/g}id(%lu/%lu): %m", 
+		      (u_long) sprivs.saved_uid, (u_long) sprivs.saved_gid);
 
 		rc = io_initial_client_connect(srun, job, srun_stdout_tasks, 
 					       srun_stderr_tasks);
