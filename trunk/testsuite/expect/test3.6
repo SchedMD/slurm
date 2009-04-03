@@ -86,7 +86,13 @@ if {$found == 1} {
 #
 # We only reach this point if a hidden partition must be 
 # created to test this feature, which only super users can do 
-# 
+#
+if {[test_super_user] == 0} {
+	send_user "\nWARNING: can not test more unless SlurmUser or root\n"
+	exit $exit_code
+}
+ 
+#
 # Confirm the partition name does not already exist
 #
 set found -1
@@ -123,11 +129,6 @@ if {$found == 1} {
 #
 spawn $scontrol create PartitionName=$part_name Hidden=YES
 expect {
-	-re "slurm_update error: Invalid user" {
-		send_user "\nWARNING: user not authorized to create partition\n"
-		exit $exit_code
-		exp_continue
-	}
 	-re "error" {
 		send_user "\nFAILURE: something bad happened on partitiion create\n"
 		set exit_code 1
