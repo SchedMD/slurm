@@ -157,7 +157,7 @@ proc update_res { res_name res_params failure_expected } {
 		-re "Reservation updated." {
 			exp_continue
 		}
-		-re "slurm_update error: Invalid user" {
+		-re "Error creating the reservation: Invalid user" {
 			if {!$failure_expected} {
 				send_user "\nWARNING: user not authorized "
 				send_user "to update reservation\n"
