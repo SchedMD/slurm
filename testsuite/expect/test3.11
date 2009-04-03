@@ -11,7 +11,7 @@
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Dave Bremer <dbremer@llnl.gov>
 # CODE-OCEC-09-009. All rights reserved.
-
+#
 # 
 # This file is part of SLURM, a resource management program.
 # For details, see <https://computing.llnl.gov/linux/slurm/>.
@@ -68,8 +68,10 @@ proc create_res { res_params failure_expected } {
 			set res_name $expect_out(1,string)
 		}
 		-re "Error creating the reservation: Invalid user" {
-			send_user "\nWARNING: user not authorized "
-			send_user "to create reservation\n"
+			if {!$failure_expected} {
+				send_user "\nFAILURE: user not authorized "
+				send_user "to create reservation\n"
+			}
 			set ret_code 1
 			exp_continue
 		}
@@ -300,6 +302,11 @@ foreach test $badtests {
 	}
 }
 
+if {[test_super_user] == 0} {
+	send_user "\nWARNING: can not test more unless SlurmUser or root\n"
+	exit $exit_code
+}
+
 set goodtests "
 	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name}
 	{StartTime=now+5minutes   EndTime=now+10minutes   Nodes=$def_node   User=$user_name}
@@ -312,10 +319,12 @@ set goodtests "
 foreach test $goodtests {
 	set ret_code [create_res $test 0]
 	if {$ret_code != 0} {
+		send_user "\nFAILURE: Unable to create a valid reservation\n"
 		exit $ret_code
 	}
 	set ret_code [delete_res $res_name]
 	if {$ret_code != 0} {
+		send_user "\nFAILURE: Unable to delete a reservation\n"
 		exit $ret_code
 	}
 }
@@ -327,6 +336,7 @@ foreach test $goodtests {
 #
 set ret_code [create_res "StartTime=now+60minutes Duration=60 NodeCnt=1 User=$user_name" 0]
 if {$ret_code != 0} {
+	send_user "\nFAILURE: Unable to create a valid reservation\n"
 	exit $ret_code
 }
 
@@ -348,6 +358,7 @@ if {$user_name != "root"} {
 foreach test $goodupdates {
 	set ret_code [update_res $res_name $test 0]
 	if {$ret_code != 0} {
+		send_user "\nFAILURE: Unable to create a valid reservation\n"
 		set exit_code 1
 		break
 	}
@@ -356,6 +367,7 @@ foreach test $goodupdates {
 
 set ret_code [delete_res $res_name]
 if {$ret_code != 0} {
+	send_user "\nFAILURE: Unable to delete a reservation\n"
 	exit $ret_code
 }
 
@@ -369,6 +381,7 @@ if {$ret_code != 0} {
 # Make the reservation
 set ret_code [create_res "StartTime=now+60minutes Duration=60 NodeCnt=1 User=$user_name" 0]
 if {$ret_code != 0} {
+	send_user "\nFAILURE: Unable to create a valid reservation\n"
 	exit $ret_code
 }
 
@@ -458,6 +471,7 @@ if {$user_name != "root"} {
 	# Make the reservation
 	set ret_code [create_res "StartTime=now+60minutes Duration=60 NodeCnt=1 User=root" 0]
 	if {$ret_code != 0} {
+		send_user "\nFAILURE: Unable to create a reservation\n"
 		set exit_code 1
 	}
 
@@ -468,6 +482,7 @@ if {$user_name != "root"} {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
 			exec $scancel $job_id
+			send_user "\nFAILURE: job submit should have been denied\n"
 			set exit_code 1
 			exp_continue
 		}
