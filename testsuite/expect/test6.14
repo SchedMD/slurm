@@ -53,12 +53,10 @@ print_header $test_id
 #
 make_bash_script $file_in "$srun $bin_sleep 600"
 
-
-
-
 #
 # Submit some jobs so we have something to work with
 #
+set timeout 20
 for {set ii 0} {$ii < $num_procs} {incr ii} {
 	set sbatch_pid [spawn $sbatch --output=/dev/null --error=/dev/null -n1 -N1 $file_in]
 	expect {
@@ -68,7 +66,7 @@ for {set ii 0} {$ii < $num_procs} {incr ii} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
+			send_user "\nFAILURE: sbatch not responding\n"
 			slow_kill $sbatch_pid
 			set exit_code 1
 		}
