@@ -315,13 +315,9 @@ extern void destroy_ba_node(void *ptr);
  * IN/OUT - geometry: requested/returned geometry of block
  * IN - linuximage: LinuxImage for this block if not default
  * IN - mloaderimage: MLoaderImage for this block if not default
- * IN - nodecards: Number of nodecards in each block in request only
- *      used of small block allocations.
  * OUT - passthroughs: if there were passthroughs used in the
  *       generation of the block.
  * IN - procs: Number of real processors requested
- * IN - quarters: Number of midplane quarters in each block in request only
- *      used of small block allocations.
  * IN - RamDiskimage: RamDiskImage for this block if not default
  * IN - rotate: if true, allows rotation of block during fit
  * OUT - save_name: hostlist of midplanes used in block

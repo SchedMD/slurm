@@ -671,10 +671,6 @@ static int _unpack_node_info(bg_info_record_t *bg_info_record, Buf buffer)
 #ifdef HAVE_BGL
 	safe_unpack16(&uint16_tmp, buffer);
 	bg_info_record->node_use = (int) uint16_tmp;
-	safe_unpack16(&uint16_tmp, buffer);
-	bg_info_record->quarter = (int) uint16_tmp;
-	safe_unpack16(&uint16_tmp, buffer);
-	bg_info_record->nodecard = (int) uint16_tmp;
 #endif
 	safe_unpack32(&uint32_tmp, buffer);
 	bg_info_record->node_cnt = (int) uint32_tmp;
@@ -1480,8 +1476,8 @@ extern char *select_g_xstrdup_jobinfo(select_jobinfo_t jobinfo, int mode)
 }
 
 /* Unpack node select info from a buffer */
-extern int select_g_unpack_node_info(node_select_info_msg_t **
-		node_select_info_msg_pptr, Buf buffer)
+extern int select_g_unpack_node_info(
+	node_select_info_msg_t **node_select_info_msg_pptr, Buf buffer)
 {
 	int i, record_count = 0;
 	node_select_info_msg_t *buf;
