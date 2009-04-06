@@ -1323,7 +1323,7 @@ extern int put_block_in_error_state(bg_record_t *bg_record, int state)
 			sleep(1);
 	}
 	
-	error("Setting Block %s to ERROR state.", bg_record->bg_block_id);
+	info("Setting Block %s to ERROR state.", bg_record->bg_block_id);
 	/* we add the block to these lists so we don't try to schedule
 	   on them. */
 	if(!block_ptr_exist_in_list(bg_job_block_list, bg_record)) {
@@ -1364,8 +1364,8 @@ extern int resume_block(bg_record_t *bg_record)
 	if(bg_record->job_running >= NO_JOB_RUNNING)
 		return SLURM_SUCCESS;
 
-	debug("block %s put back into service after "
-	      "being in an error state",
+	info("Block %s put back into service after "
+	     "being in an error state.",
 	      bg_record->bg_block_id);
 
 	if(remove_from_bg_list(bg_job_block_list, bg_record) == SLURM_SUCCESS) 
