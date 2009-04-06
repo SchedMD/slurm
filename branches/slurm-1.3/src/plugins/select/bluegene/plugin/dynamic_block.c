@@ -544,8 +544,10 @@ static int _split_block(List block_list, List new_blocks,
 #endif
 	}
 
-	if(!full_bp && bg_record->ionode_bitmap)
-		start = bit_ffs(bg_record->ionode_bitmap);
+	if(!full_bp && bg_record->ionode_bitmap) {
+		if((start = bit_ffs(bg_record->ionode_bitmap)) == -1)
+			start = 0;		
+	}
 
 #ifdef HAVE_BGL
 	debug2("Asking for %u 32CNBlocks, and %u 128CNBlocks "

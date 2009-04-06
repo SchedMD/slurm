@@ -1066,8 +1066,13 @@ extern int load_state_file(char *dir_name)
 			if((bg_record = find_bg_record_in_list(
 				    bg_curr_block_list,
 				    bg_info_record->bg_block_id)))
-				put_block_in_error_state(
-					bg_record, BLOCK_ERROR_STATE);
+				/* put_block_in_error_state should be
+				   called after the bg_list has been
+				   made.  We can't call it here since
+				   this record isn't the record kept
+				   around in bg_list.
+				*/
+				bg_record->state = bg_info_record->state;
 		}
 	}
 
@@ -1140,12 +1145,15 @@ extern int load_state_file(char *dir_name)
 		bg_record->ionodes =
 			xstrdup(bg_info_record->ionodes);
 		bg_record->ionode_bitmap = bit_copy(ionode_bitmap);
+		/* put_block_in_error_state should be
+		   called after the bg_list has been
+		   made.  We can't call it here since
+		   this record isn't the record kept
+		   around in bg_list.
+		*/
 		bg_record->state = bg_info_record->state;
+		bg_record->job_running = NO_JOB_RUNNING;
 
-		if(bg_info_record->state == RM_PARTITION_ERROR) {
-			put_block_in_error_state(bg_record, BLOCK_ERROR_STATE);
-		} else
-			bg_record->job_running = NO_JOB_RUNNING;
 		bg_record->bp_count = bit_size(node_bitmap);
 		bg_record->node_cnt = bg_info_record->node_cnt;
 		if(bluegene_bp_node_cnt > bg_record->node_cnt) {
