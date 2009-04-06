@@ -1253,6 +1253,29 @@ _send_pending_exit_msgs(slurmd_job_t *job)
 	return nsent;
 }
 
+static inline void
+_log_task_exit(unsigned long taskid, unsigned long pid, int status)
+{
+	/*
+	 *  Print a nice message to the log describing the task exit status.
+	 *
+	 *  The final else is there just in case there is ever an exit status
+	 *   that isn't WIFEXITED || WIFSIGNALED. We'll probably never reach
+	 *   that code, but it is better than dropping a potentially useful
+	 *   exit status.
+	 */
+	if (WIFEXITED(status))
+		verbose("task %lu (%lu) exited with exit code %d.",
+		        taskid, pid, WEXITSTATUS(status));
+	else if (WIFSIGNALED(status))
+		verbose("task %lu (%lu) exited. Killed by signal %d%s.",
+		        taskid, pid, WTERMSIG(status),
+		        WCOREDUMP(status) ? " (core dumped)" : "");
+	else
+		verbose("task %lu (%lu) exited with status 0x%04x.",
+		        taskid, pid, status);
+}
+
 /*
  * If waitflag is true, perform a blocking wait for a single process
  * and then return.
@@ -1311,10 +1334,8 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 			}
 		}
 		if (t != NULL) {
-			verbose("task %lu (%lu) exited status %d:%d %M",
-				(unsigned long)job->task[i]->gtid,
-				(unsigned long)pid, 
-				WEXITSTATUS(status), WIFSIGNALED(status));
+			_log_task_exit(job->task[i]->gtid, pid, status);
+
 			t->exited  = true;
 			t->estatus = status;
 			job->envtp->env = job->env;
