@@ -56,8 +56,6 @@ typedef struct {
 	int state;
 	int conn_type;
 	int node_use;
-	int quarter;
-	int nodecard;
 	int node_cnt;
 	int *bp_inx;            /* list index pairs into node_table for *nodes:
 				 * start_range_1, end_range_1,

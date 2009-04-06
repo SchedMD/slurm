@@ -717,7 +717,12 @@ extern int select_p_update_sub_node (update_part_msg_t *part_desc_ptr)
 	}
 	ionode_bitmap = bit_alloc(bluegene_numpsets);
 	bit_unfmt(ionode_bitmap, ionodes);
-	
+	if(bit_ffs(ionode_bitmap) == -1) {
+		error("update_sub_node: Invalid ionode '%s' given.", ionodes);
+		rc = SLURM_ERROR;
+		FREE_NULL_BITMAP(ionode_bitmap);
+		goto end_it;		
+	}
 	node_name = xstrdup_printf("%s%s", bg_slurm_node_prefix, coord);
 	/* find out how many nodecards to get for each ionode */
 	if(!part_desc_ptr->state_up) {
@@ -742,7 +747,7 @@ extern int select_p_update_sub_node (update_part_msg_t *part_desc_ptr)
 	
 	last_bg_update = time(NULL);
 end_it:
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 extern int select_p_get_info_from_plugin (enum select_data_info info, 

@@ -545,8 +545,10 @@ static int _split_block(List block_list, List new_blocks,
 #endif
 	}
 
-	if(!full_bp && bg_record->ionode_bitmap)
-		start = bit_ffs(bg_record->ionode_bitmap);
+	if(!full_bp && bg_record->ionode_bitmap) {
+		if((start = bit_ffs(bg_record->ionode_bitmap)) == -1)
+			start = 0;		
+	}
 
 #ifdef HAVE_BGL
 	debug2("Asking for %u 32CNBlocks, and %u 128CNBlocks "
@@ -575,7 +577,6 @@ static int _breakup_blocks(List block_list, List new_blocks,
 	ListIterator itr = NULL, bit_itr = NULL;
 	int search_cnt = 0;
 	int total_cnode_cnt=0;
-	uint16_t last_quarter = (uint16_t) NO_VAL;
 	char tmp_char[256];
 	bitstr_t *ionodes = bit_alloc(bluegene_numpsets);
 	int cnodes = request->procs / bluegene_proc_ratio;
@@ -725,7 +726,6 @@ again:
 		list_iterator_reset(itr);
 		bit_nclear(ionodes, 0, (bluegene_numpsets-1));
 		total_cnode_cnt = 0;		
-		last_quarter = (uint16_t) NO_VAL;
 		goto again;
 	}
 

@@ -1297,6 +1297,8 @@ extern int validate_current_blocks(char *dir)
 	/* found bg blocks already on system */
 	List bg_found_block_list = NULL;
 	static time_t last_config_update = (time_t) 0;
+	ListIterator itr = NULL;
+	bg_record_t *bg_record = NULL;
 
 	/* only run on startup */
 	if(last_config_update)
@@ -1327,6 +1329,17 @@ extern int validate_current_blocks(char *dir)
 		}
 	} 
 	
+	/* ok now since bg_list has been made we now can put blocks in
+	   an error state this needs to be done outside of a lock
+	   it doesn't matter much in the first place though since
+	   no threads are started before this function. */
+	itr = list_iterator_create(bg_list);
+	while((bg_record = list_next(itr))) {
+		if(bg_record->state == RM_PARTITION_ERROR) 
+			put_block_in_error_state(bg_record, BLOCK_ERROR_STATE);
+	}
+	list_iterator_destroy(itr);
+
 	slurm_mutex_lock(&block_state_mutex);
 	list_destroy(bg_curr_block_list);
 	bg_curr_block_list = NULL;
@@ -1410,7 +1423,7 @@ static int _validate_config_nodes(List *bg_found_block_list, char *dir)
 	   is created */
 	load_state_file(dir);
 #else
-	/* read in state from last run.  Only for emulation mode */
+	/* read in state from last run. */
 	if ((rc = load_state_file(dir)) != SLURM_SUCCESS)
 		return rc;
 	/* This needs to be reset to SLURM_ERROR or it will never we

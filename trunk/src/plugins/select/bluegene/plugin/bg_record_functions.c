@@ -881,6 +881,9 @@ extern int handle_small_record_request(List records, blockreq_t *blockreq,
 	xassert(blockreq);
 	xassert(bg_record);
 
+	xassert(start >= 0);
+	xassert(start < bluegene_numpsets);
+
 #ifndef HAVE_BGL
 	for(i=0; i<blockreq->small16; i++) {
 		bit_nset(ionodes, start, start);
@@ -1145,8 +1148,11 @@ extern int down_nodecard(char *bp_name, bitoff_t io_start)
 			blockreq.small32 = 0;
 		}
 		/* set the start to be the same as the start of the
-		   ionode_bitmap */
-		io_start = bit_ffs(smallest_bg_record->ionode_bitmap);
+		   ionode_bitmap.  If no ionodes set (not a small
+		   block) set io_start = 0. */
+		if((io_start = bit_ffs(smallest_bg_record->ionode_bitmap))
+		   == -1)
+			io_start = 0;
 	} else {
 		switch(create_size) {
 #ifndef HAVE_BGL
@@ -1306,12 +1312,17 @@ extern int put_block_in_error_state(bg_record_t *bg_record, int state)
 
 	xassert(bg_record);
 	
-	/* Since we are putting this block in an error state we need
-	   to wait for the job to be removed.  We don't really
-	   need to free the block though since we may just
-	   want it to be in an error state for some reason. */
-	while(bg_record->job_running > NO_JOB_RUNNING)
-		sleep(1);
+	/* only check this if the blocks are created, meaning this
+	   isn't at startup.
+	*/
+	if(blocks_are_created) {
+		/* Since we are putting this block in an error state we need
+		   to wait for the job to be removed.  We don't really
+		   need to free the block though since we may just
+		   want it to be in an error state for some reason. */
+		while(bg_record->job_running > NO_JOB_RUNNING)
+			sleep(1);
+	}
 	
 	error("Setting Block %s to ERROR state.", bg_record->bg_block_id);
 	/* we add the block to these lists so we don't try to schedule
