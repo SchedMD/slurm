@@ -160,6 +160,18 @@ main (int argc, char *argv[])
 		(void) close(i);
 
 	/*
+	 * Drop supplementary groups.
+	 */
+	if (geteuid() == 0) {
+		if (setgroups(0, NULL) != 0) {
+			fatal("Failed to drop supplementary groups, "
+			      "setgroups: %m");
+		}
+	} else {
+		info("Not running as root. Can't drop supplementary groups");
+	}
+
+	/*
 	 * Create and set default values for the slurmd global
 	 * config variable "conf"
 	 */
