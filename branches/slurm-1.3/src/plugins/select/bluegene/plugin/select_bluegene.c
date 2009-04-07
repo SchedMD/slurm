@@ -731,6 +731,8 @@ extern int select_p_update_sub_node (update_part_msg_t *part_desc_ptr)
 	node_name = xstrdup_printf("%s%s", bg_slurm_node_prefix, coord);
 	/* find out how many nodecards to get for each ionode */
 	if(!part_desc_ptr->state_up) {
+		info("Admin setting %s[%s] in an error state",
+		     node_name, ionodes);
 		for(i = 0; i<bluegene_numpsets; i++) {
 			if(bit_test(ionode_bitmap, i)) {
 				if((int)nc_pos != (int)last_pos) {
@@ -741,6 +743,8 @@ extern int select_p_update_sub_node (update_part_msg_t *part_desc_ptr)
 			nc_pos += bluegene_nc_ratio;
 		}
 	} else if(part_desc_ptr->state_up){
+		info("Admin setting %s[%s] in an free state",
+		     node_name, ionodes);
 		up_nodecard(node_name, ionode_bitmap);
 	} else {
 		return rc;
