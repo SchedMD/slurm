@@ -202,6 +202,7 @@ int main(int argc, char *argv[])
 		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK };
 	assoc_init_args_t assoc_init_arg;
 	pthread_t assoc_cache_thread;
+	gid_t slurm_user_gid;
 
 	/*
 	 * Establish initial configuration
@@ -224,19 +225,41 @@ int main(int argc, char *argv[])
 	 */
 	_init_pidfile();
 
-	/* Initialize supplementary group ID list for SlurmUser */
-	if ((getuid() == 0)
-	&&  (slurmctld_conf.slurm_user_id != getuid())
-	&&  initgroups(slurmctld_conf.slurm_user_name,
-			gid_from_string(slurmctld_conf.slurm_user_name))) {
-		error("initgroups: %m");
+	/* Determine SlurmUser gid */
+	slurm_user_gid = gid_from_uid(slurmctld_conf.slurm_user_id);
+	if (slurm_user_gid == (gid_t) -1) {
+		fatal("Failed to determine gid of SlurmUser(%d)", 
+		      slurm_user_gid);
 	}
 
-	if ((slurmctld_conf.slurm_user_id != getuid())
-	&&  (setuid(slurmctld_conf.slurm_user_id))) {
-		fatal("Can not set uid to SlurmUser(%d): %m", 
-			slurmctld_conf.slurm_user_id);
+	/* Initialize supplementary groups ID list for SlurmUser */
+	if (getuid() == 0) {
+		/* root does not need supplementary groups */
+		if ((slurmctld_conf.slurm_user_id == 0) &&
+		    (setgroups(0, NULL) != 0)) {
+			fatal("Failed to drop supplementary groups, "
+			      "setgroups: %m");
+		} else if ((slurmctld_conf.slurm_user_id != getuid()) &&
+			   initgroups(slurmctld_conf.slurm_user_name, 
+				      slurm_user_gid)) {
+			fatal("Failed to set supplementary groups, "
+			      "initgroups: %m");
+		}
 	}
+
+	/* Set GID to GID of SlurmUser */
+	if ((slurm_user_gid != getegid()) &&
+	    (setgid(slurm_user_gid))) {
+		fatal("Failed to set GID to %d", slurm_user_gid);
+	}
+
+	/* Set UID to UID of SlurmUser */
+	if ((slurmctld_conf.slurm_user_id != getuid()) &&
+	    (setuid(slurmctld_conf.slurm_user_id))) {
+		fatal("Can not set uid to SlurmUser(%d): %m", 
+		      slurmctld_conf.slurm_user_id);
+	}
+
 	if (stat(slurmctld_conf.mail_prog, &stat_buf) != 0)
 		error("Configured MailProg is invalid");
 

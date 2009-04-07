@@ -111,6 +111,24 @@ uid_to_string (uid_t uid)
 }
 
 gid_t
+gid_from_uid (uid_t uid)
+{
+	struct passwd pwd, *result;
+	char buffer[PW_BUF_SIZE];
+	gid_t gid;
+	int rc;
+
+	rc = getpwuid_r(uid, &pwd, buffer, PW_BUF_SIZE, &result);
+	if (result == NULL) {
+		gid = (gid_t) -1;
+	} else {
+		gid = result->pw_gid;
+	}
+
+	return gid;
+}
+
+gid_t
 gid_from_string (char *name)
 {
 	struct group grp, *result;
