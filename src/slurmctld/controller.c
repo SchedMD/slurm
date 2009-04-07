@@ -194,7 +194,7 @@ inline static void  _update_cred_key(void);
 inline static void  _usage(char *prog_name);
 static bool         _wait_for_server_thread(void);
 static void *       _assoc_cache_mgr(void *no_data);
-static int          _become_slurm_user(void);
+static void         _become_slurm_user(void);
 
 typedef struct connection_arg {
 	int newsockfd;
@@ -231,11 +231,7 @@ int main(int argc, char *argv[])
 	 * able to write a core dump.
 	 */
 	_init_pidfile();
-
-	if (_become_slurm_user() < 0)
-		fatal("Unable to assume slurm user (%s:%d) identity",
-				slurmctld_conf.slurm_user_name,
-				slurmctld_conf.slurm_user_id);
+	_become_slurm_user();
 
 	if (stat(slurmctld_conf.mail_prog, &stat_buf) != 0)
 		error("Configured MailProg is invalid");
@@ -1751,42 +1747,46 @@ static void *_assoc_cache_mgr(void *no_data)
 	return NULL;
 }
 
-static int _become_slurm_user(void)
+static void _become_slurm_user(void)
 {
-	uid_t uid;
-	gid_t gid;
-	const char *username;
-	struct passwd *pwd;
+	gid_t slurm_user_gid;
 
-	uid = slurmctld_conf.slurm_user_id;
-	username = slurmctld_conf.slurm_user_name;
+	/* Determine SlurmUser gid */
+	slurm_user_gid = gid_from_uid(slurmctld_conf.slurm_user_id);
+	if (slurm_user_gid == (gid_t) -1) {
+		fatal("Failed to determine gid of SlurmUser(%d)", 
+		      slurm_user_gid);
+	}
 
-	if ((pwd = getpwuid (uid)) == NULL)
-		return error("getpwuid(%d): %m", (int) uid);
+	/* Initialize supplementary groups ID list for SlurmUser */
+	if (getuid() == 0) {
+		/* root does not need supplementary groups */
+		if ((slurmctld_conf.slurm_user_id == 0) &&
+		    (setgroups(0, NULL) != 0)) {
+			fatal("Failed to drop supplementary groups, "
+			      "setgroups: %m");
+		} else if ((slurmctld_conf.slurm_user_id != getuid()) &&
+			   initgroups(slurmctld_conf.slurm_user_name, 
+				      slurm_user_gid)) {
+			fatal("Failed to set supplementary groups, "
+			      "initgroups: %m");
+		}
+	} else {
+		info("Not running as root. Can't drop supplementary groups");
+	}
 
-	gid = pwd->pw_gid;
+	/* Set GID to GID of SlurmUser */
+	if ((slurm_user_gid != getegid()) &&
+	    (setgid(slurm_user_gid))) {
+		fatal("Failed to set GID to %d", slurm_user_gid);
+	}
 
-	/*
-	 *  Warning: we can't call initgroups here becuase we don't
-	 *   have proper perms. However, this probably means slurmctld
-	 *   was already started as the slurm user, so this is most
-	 *   likely safe.
-	 */
-	if (getuid() == uid && getgid() == gid)
-		return (0);
-
-	if (setgid (gid) < 0)
-		return error("Failed to set gid to slurm gid (%d): %m",
-				(int) gid);
-
-	if (initgroups(username, gid) < 0)
-		return error("initgroups: %m");
-
-	if (setuid(uid) < 0)
-		return error("Failed to setuid to slurm uid (%d): %m",
-				(int) uid);
-
-	return (0);
+	/* Set UID to UID of SlurmUser */
+	if ((slurmctld_conf.slurm_user_id != getuid()) &&
+	    (setuid(slurmctld_conf.slurm_user_id))) {
+		fatal("Can not set uid to SlurmUser(%d): %m",
+		      slurmctld_conf.slurm_user_id);
+	}
 }
 
 

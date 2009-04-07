@@ -44,6 +44,7 @@
 #endif
 
 #include <fcntl.h>
+#include <grp.h>
 #include <string.h>
 #include <stdlib.h>
 #include <pthread.h>
@@ -163,6 +164,18 @@ main (int argc, char *argv[])
 	 */
 	for (i=3; i<256; i++)
 		(void) close(i);
+
+	/*
+	 * Drop supplementary groups.
+	 */
+	if (geteuid() == 0) {
+		if (setgroups(0, NULL) != 0) {
+			fatal("Failed to drop supplementary groups, "
+			      "setgroups: %m");
+		}
+	} else {
+		info("Not running as root. Can't drop supplementary groups");
+	}
 
 	/*
 	 * Create and set default values for the slurmd global
