@@ -652,7 +652,6 @@ extern int select_p_update_sub_node (update_part_msg_t *part_desc_ptr)
 		error("update_sub_node: No name specified");
 		rc = SLURM_ERROR;
 		goto end_it;
-				
 	}
 
 	while (part_desc_ptr->name[j] != '\0') {
@@ -747,12 +746,13 @@ extern int select_p_update_sub_node (update_part_msg_t *part_desc_ptr)
 		     node_name, ionodes);
 		up_nodecard(node_name, ionode_bitmap);
 	} else {
-		return rc;
+		error("update_sub_node: Unknown state %d", 
+		      part_desc_ptr->state_up);
+		rc = SLURM_ERROR;
 	}
 	
 	FREE_NULL_BITMAP(ionode_bitmap);
 	xfree(node_name);
-	/* This only works for the error state, not free */
 	
 	last_bg_update = time(NULL);
 end_it:
