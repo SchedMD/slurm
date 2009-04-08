@@ -3,11 +3,11 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.4.0-pre12
 ==============================
- -- Added support for hard time limit for associations with added option
-    to the slurm.conf PriorityUsageResetPeriod which is used to reset the 
-    time used. (currently only available with the use of the
-     priority/multifactor plugin.)
- -- Added SLURM_SUBMIT_DIR to sbatch's output environment variables
+ -- Added support for hard time limit by associations with added configuration 
+    option PriorityUsageResetPeriod. This specifies the interval at which to 
+    clear the record of time used. This is currently only available with the 
+    priority/multifactor plugin.
+ -- Added SLURM_SUBMIT_DIR to sbatch's output environment variables.
 
 * Changes in SLURM 1.4.0-pre11
 ==============================
