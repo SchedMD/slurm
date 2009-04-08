@@ -1,0 +1,381 @@
+.TH "Slurm API" "3" "September 2006" "Morris Jette" "Slurm job information reporting functions"
+.SH "NAME"
+slurm_free_job_alloc_info_response_msg, slurm_free_job_info_msg, 
+slurm_get_end_time, slurm_get_rem_time, slurm_get_select_jobinfo,
+slurm_load_jobs, slurm_pid2jobid, 
+slurm_print_job_info, slurm_print_job_info_msg
+\- Slurm job information reporting functions
+.LP
+ISLURM_GET_REM_TIME, ISLURM_GET_REM_TIME2
+\- Fortran callable extensions
+
+.SH "SYNTAX"
+.LP 
+#include <stdio.h>
+.br
+#include <time.h>
+.br
+#include <slurm/slurm.h>
+.br
+#include <sys/types.h>
+.LP
+void \fBslurm_free_job_alloc_info_response_msg\fR (
+.br 
+	job_alloc_info_response_msg_t *\fIjob_alloc_info_msg_ptr\fP
+.br 
+);
+.LP 
+void \fBslurm_free_job_info_msg\fR (
+.br 
+	job_info_msg_t *\fIjob_info_msg_ptr\fP
+.br 
+);
+.LP 
+int \fBslurm_load_job\fR (
+.br 
+	job_info_msg_t **\fIjob_info_msg_pptr\fP,
+.br
+	uint32_t \fIjob_id\fP
+.br 
+);
+.LP 
+.LP 
+int \fBslurm_load_jobs\fR (
+.br 
+	time_t \fIupdate_time\fP,
+.br 
+	job_info_msg_t **\fIjob_info_msg_pptr\fP,
+.br
+	uint16_t \fIshow_flags\fP
+.br 
+);
+.LP 
+int \fBslurm_pid2jobid\fR (
+.br
+	pid_t \fIjob_pid\fP,
+.br
+	uint32_t *\fIjob_id_ptr\fP
+.br 
+);
+.LP
+int \fBslurm_get_end_time\fR (
+.br
+	uint32_t \fIjobid\fP, 
+.br
+	time_t *\fIend_time_ptr\fP
+.br
+);
+.LP
+long \fBslurm_get_rem_time\fR (
+.br
+	uint32_t \fIjob_id\fP
+.br
+);
+.LP 
+void \fBslurm_print_job_info\fR (
+.br
+	FILE *\fIout_file\fP,
+.br
+	job_info_t *\fIjob_ptr\fP,
+.br
+	int \fIone_liner\fP
+.br 
+);
+.LP 
+void \fBslurm_print_job_info_msg\fR (
+.br
+	FILE *\fIout_file\fP,
+.br
+	job_info_msg_t *\fIjob_info_msg_ptr\fP,
+.br
+	int \fIone_liner\fP
+.br 
+);
+.LP
+int \fBslurm_get_select_jobinfo\fR (
+.br
+	select_jobinfo_t \fIjobinfo\fP,
+.br
+	enum select_data_type \fIdata_type\fP, 
+.br
+	void *\fIdata\fP
+);
+
+.SH "FORTRAN EXTENSION"
+.LP
+INTEGER*4 JOBID, REM_TIME
+.br
+REM_TIME = ISLURM_GET_REM_TIME(JOBID)
+.br
+REM_TIME = ISLURM_GET_REM_TIME2()
+.LP
+ISLURM_GET_REM_TIME2() is equivalent to ISLURM_GET_REM_TIME() except 
+that the JOBID is taken from the SLURM_JOBID environment variable, 
+which is set by SLURM for tasks which it launches.
+Both functions return the number of seconds remaining before the job 
+reaches the end of it's allocated time.
+
+.SH "ARGUMENTS"
+.TP 
+\fIdata_type\fP
+Identifies the type of data to retrieve \fIjobinfo\fP. Note that different types of 
+data are associated with different computer types and different configurations. 
+.TP
+\fIdata\fP
+The data value identified with \fIdata_type\fP is returned in the location specified
+by \fIdata\fP. If a type of data is requested that does not exist on a particular 
+computer type or configuration, \fBslurm_get_select_jobinfo\fR returns an error.
+See the slurm.h header file for identification of the data types associated 
+with each value of \fIdata_type\fP.
+.TP
+\fIend_time_ptr\fP
+Specified a pointer to a storage location into which the expected termination 
+time of a job is placed.
+.TP 
+\fIjob_info_msg_pptr\fP
+Specifies the double pointer to the structure to be created and filled with 
+the time of the last job update, a record count, and detailed information 
+about each job. Detailed job information is written to fixed sized records 
+and includes: ID number, name, user ID, state, assigned or requested node 
+names, indexes into the node table, etc. In the case of indexes into the 
+node table, this is an array of integers with pairs of start and end index 
+number into the node information records and the data is terminated with a 
+value of \-1. See slurm.h for full details on the data structure's contents. 
+.TP 
+\fIjob_id\fP
+Specifies a slurm job id. If zero, use the SLURM_JOBID environment variable
+to get the jobid.
+.TP 
+\fIjob_id_ptr\fP
+Specifies a pointer to a storage location into which a Slurm job id may be 
+placed.
+.TP 
+\fIjob_info_msg_ptr\fP
+Specifies the pointer to the structure created by \fBslurm_load_job\fR
+or \fBslurm_load_jobs\fR. 
+.TP
+\fIjobinfo\fP
+Job\-specific information as constructed by Slurm's NodeSelect plugin.
+This data object is returned for each job by the \fBslurm_load_job\fR or
+\fBslurm_load_jobs\fR function.
+.TP 
+\fIjob_pid\fP
+Specifies a process id of some process on the current node.
+.TP
+\fIjob_ptr\fP
+Specifies a pointer to a single job records from the \fIjob_info_msg_ptr\fP 
+data structure.
+.TP 
+\fIone_liner\fP
+Print one record per line if non\-zero.
+.TP 
+\fIout_file\fP
+Specifies the file to print data to.
+.TP 
+\fIshow_flags\fP
+Job filtering flags, may be ORed. 
+Information about jobs in partitions that are configured as 
+hidden and partitions that the user's group is unable to utilize 
+are not reported by default.
+The \fBSHOW_ALL\fP flag will cause information about jobs in all 
+partitions to be displayed.
+.TP 
+\fIupdate_time\fP
+For all of the following informational calls, if update_time is equal to or 
+greater than the last time changes where made to that information, new 
+information is not returned.  Otherwise all the configuration. job, node, 
+or partition records are returned.
+.SH "DESCRIPTION"
+.LP
+\fBslurm_free_resource_allocation_response_msg\fR Free slurm resource
+allocation response message.
+.LP 
+\fBslurm_free_job_info_msg\fR Release the storage generated by the 
+\fBslurm_load_jobs\fR function.
+.LP 
+\fBslurm_get_end_time\fR Returns the expected termination time of a specified 
+SLURM job. The time corresponds to the exhaustion of the job\'s or partition\'s 
+time limit. NOTE: The data is cached locally and only retrieved from the 
+SLURM controller once per minute.
+.LP
+\fBslurm_get_rem_time\fR Returns the number of seconds remaining before the 
+expected termination time of a specified SLURM job id. The time corresponds 
+to the exhaustion of the job\'s or partition\'s time limit. NOTE: The data is 
+cached locally and only retrieved from the SLURM controller once per minute.
+.LP 
+\fBslurm_load_job\fR Returns a job_info_msg_t that contains an update time, 
+record count, and array of job_table records for some specific job ID.
+.LP 
+\fBslurm_load_jobs\fR Returns a job_info_msg_t that contains an update time, 
+record count, and array of job_table records for all jobs.
+.LP 
+\fBslurm_pid2jobid\fR Returns a Slurm job id corresponding to the supplied 
+local process id. This only works for processes which Slurm spawns and their 
+descendants.
+.LP 
+\fBslurm_print_job_info\fR Prints the contents of the data structure 
+describing a single job records from the data loaded by the 
+\fBslurm_load_node\fR function.
+.LP 
+\fBslurm_print_job_info_msg\fR Prints the contents of the data structure 
+describing all job records loaded by the \fBslurm_load_node\fR function.
+
+.SH "RETURN VALUE"
+.LP
+For \fBslurm_get_rem_time\fR on success a number of seconds is returned.
+For all other functions zero is returned on success. 
+On error, \-1 is returned, and Slurm error code is set appropriately.
+
+.SH "ERRORS"
+.LP
+\fBSLURM_NO_CHANGE_IN_DATA\fR Data has not changed since \fBupdate_time\fR.
+.LP
+\fBSLURM_PROTOCOL_VERSION_ERROR\fR Protocol version has changed, re\-link 
+your code.
+.LP
+\fBESLURM_INVALID_JOB_ID\fR Request for information about a non\-existent job.
+.LP
+\fBSLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT\fR Timeout in communicating with 
+SLURM controller.
+.LP
+\fBINVAL\fR Invalid function argument.
+
+.SH "EXAMPLE"
+.LP 
+#include <stdio.h>
+.br
+#include <slurm/slurm.h>
+.br
+#include <slurm/slurm_errno.h>
+.br
+#include <sys/types.h>
+.LP 
+int main (int argc, char *argv[])
+.br 
+{
+.br 
+	int i;
+.br
+	job_info_msg_t	* job_info_msg = NULL;
+.br
+	job_info_t * job_ptr;
+.br
+	uint32_t job_id;
+.LP
+	/* get and dump some job information */
+.br
+	if ( slurm_load_jobs ((time_t) NULL, 
+.br
+	                      &job_buffer_ptr, SHOW_ALL) ) {
+.br
+		slurm_perror ("slurm_load_jobs error");
+.br
+		exit (1);
+.br
+	}
+.LP
+	/* The easy way to print... */
+.br
+	slurm_print_job_info_msg (stdout, job_buffer_ptr);
+.LP
+	/* A harder way.. */
+.br
+	for (i = 0; i < job_buffer_ptr\->record_count; i++) {
+.br
+		job_ptr = &job_buffer_ptr\->job_array[i];
+.br
+		slurm_print_job_info(stdout, job_ptr);
+.br
+	}
+.LP
+	/* The hardest way. */
+.br
+	printf ("Jobs updated at %lx, record count %d\\n",
+.br
+	        job_buffer_ptr\->last_update, 
+.br
+	        job_buffer_ptr\->record_count);
+.br
+	for (i = 0; i < job_buffer_ptr\->record_count; i++) {
+.br
+		printf ("JobId=%u UserId=%u\\n", 
+.br
+			job_buffer_ptr\->job_array[i].job_id, 
+.br
+			job_buffer_ptr\->job_array[i].user_id);
+.br
+	}
+.LP
+	if (job_buffer_ptr\->record_count >= 1) {
+.br
+		uint16_t rotate;
+.br
+		if (slurm_get_select_jobinfo(
+.br
+			job_buffer_ptr\->job_array[0].select_jobinfo,
+.br
+			SELECT_DATA_ROTATE,
+.br
+			&rotate) == SLURM_SUCCESS)
+.br
+			printf("JobId=%u Rotate=%u\\n",
+.br
+				job_buffer_ptr\->job_array[0].job_id, 
+.br
+				rotate);
+.br
+	}
+.LP
+	slurm_free_job_info_msg (job_buffer_ptr);
+.LP
+	if (slurm_pid2jobid (getpid(), &job_id))
+.br
+		slurm_perror ("slurm_load_jobs error");
+.br
+	else
+.br
+		printf ("Slurm job id = %u\\n", job_id);
+.br
+	exit (0);
+.br 
+}
+
+.SH "NOTES"
+These functions are included in the libslurm library, 
+which must be linked to your process for use
+(e.g. "cc \-lslurm myprog.c").
+.LP
+Some data structures contain index values to cross\-reference each other. 
+If the \fIshow_flags\fP argument is not set to SHOW_ALL when getting this 
+data, these index values will be invalid.
+.LP
+The \fBslurm_hostlist_\fR functions can be used to convert SLURM node list
+expressions into a collection of individual node names.
+
+.SH "COPYING"
+Copyright (C) 2002\-2006 The Regents of the University of California.
+Copyright (C) 2008 Lawrence Livermore National Security.
+Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+CODE\-OCEC\-09\-009. All rights reserved.
+.LP
+This file is part of SLURM, a resource management program.
+For details, see <https://computing.llnl.gov/linux/slurm/>.
+.LP
+SLURM is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+.SH "SEE ALSO"
+.LP 
+\fBscontrol\fR(1), \fBsqueue\fR(1), 
+\fBslurm_hostlist_create\fR(3), \fBslurm_hostlist_shift\fR(3), 
+\fBslurm_hostlist_destroy\fR(3),
+\fBslurm_allocation_lookup\fR(3), 
+\fBslurm_get_errno\fR(3), \fBslurm_perror\fR(3), \fBslurm_strerror\fR(3)
+
