@@ -430,7 +430,7 @@ factor as it is currently configured.</P>
   you want to enforce hard time limits per association.  If set to 0
   PriorityUsageResetPeriod must be set to some interval. 
   The unit is a time string (i.e. min, hr:min:00, days-hr:min:00, or
-  days-hr.  The default value is 7-0 (7 days). 
+  days-hr).  The default value is 7-0 (7 days). 
 <DT> PriorityUsageResetPeriod
 <DD> At this interval the usage of associations will be reset to 0.
   This is used if you want to enforce hard limits of time usage per
@@ -441,7 +441,7 @@ factor as it is currently configured.</P>
   running on your cluster, but if your schema is set up to only allow
   certain amounts of time on your system this is the way to do it.
   The unit is a time string (i.e. min, hr:min:00, days-hr:min:00, or
-  days-hr. The default value is not set (turned off). 
+  days-hr). The default value is not set (turned off). 
 
 <DT> PriorityFavorSmall
 <DD> A boolean that sets the polarity of the job size factor.  The
@@ -451,7 +451,7 @@ factor as it is currently configured.</P>
 <DT> PriorityMaxAge
 <DD> Specifies the queue wait time at which the age factor maxes out.
   The unit is a time string (i.e. min, hr:min:00, days-hr:min:00, or
-  days-hr.  The default value is 7-0 (7 days). 
+  days-hr).  The default value is 7-0 (7 days). 
 <DT> PriorityWeightAge
 <DD> An unsigned integer that scales the contribution of the age factor.
 <DT> PriorityWeightFairshare
