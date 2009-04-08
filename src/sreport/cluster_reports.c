@@ -392,7 +392,7 @@ static int _setup_print_fields_list(List format_list)
 			field->type = PRINT_CLUSTER_ACCT;
 			field->name = xstrdup("Account");
 			if(tree_display)
-				field->len = 20;
+				field->len = -20;
 			else
 				field->len = 15;
 			field->print_routine = print_fields_str;

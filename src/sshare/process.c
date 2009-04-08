@@ -94,7 +94,7 @@ extern int process(shares_response_msg_t *resp)
 		if(!strncasecmp("Account", object, 1)) {
 			field->type = PRINT_ACCOUNT;
 			field->name = xstrdup("Account");
-			field->len = 20;
+			field->len = -20;
 			field->print_routine = print_fields_str;
 		} else if(!strncasecmp("Cluster", object, 1)) {
 			field->type = PRINT_CLUSTER;

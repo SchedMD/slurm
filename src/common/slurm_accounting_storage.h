@@ -146,7 +146,7 @@ typedef struct acct_association_rec {
 	char *cluster;		/* cluster associated to association
 				 * */
 
-	uint64_t grp_cpu_mins; /* max number of cpu hours the
+	uint64_t grp_cpu_mins; /* max number of cpu minutes the
 				* underlying group of
 				* associations can run for */
 	uint32_t grp_cpus; /* max number of cpus the
@@ -166,10 +166,6 @@ typedef struct acct_association_rec {
 			    * underlying group of
 			    * associations can run for */
 	
-	uint32_t grp_used_cpu_mins; /* cpu mins the
-				     * underlying group of
-				     * associations has ran for 
-				     * (DON'T PACK) */
 	uint32_t grp_used_cpus; /* count of active jobs in the group
 				 * (DON'T PACK) */
 	uint32_t grp_used_nodes; /* count of active jobs in the group
@@ -304,8 +300,6 @@ typedef struct {
 				   * one time */
 	uint32_t grp_wall; /* total time in hours this qos can run for */
 
-	uint32_t grp_used_cpu_mins; /* cpu hours this qos has ran for 
-				      * (DON'T PACK) */
 	uint32_t grp_used_cpus; /* count of cpus in use in this qos
 				 * (DON'T PACK) */
 	uint32_t grp_used_jobs;	/* count of active jobs (DON'T PACK) */
@@ -338,6 +332,8 @@ typedef struct {
 	uint32_t priority;  /* ranged int needs to be a unint for
 			     * heterogeneous systems */
 	double usage_factor; /* factor to apply to usage in this qos */
+	long double usage_raw;	/* measure of resource usage (DON'T PACK) */
+
 	List user_limit_list; /* acct_used_limits_t's */
 } acct_qos_rec_t;
 

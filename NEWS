@@ -1,6 +1,13 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.4.0-pre12
+==============================
+ -- Added support for hard time limit for associations with added option
+    to the slurm.conf PriorityUsageResetPeriod which is used to reset the 
+    time used. (currently only available with the use of the
+     priority/multifactor plugin.)
+
 * Changes in SLURM 1.4.0-pre11
 ==============================
  -- Fix slurm.spec file for RPM build.

@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "March 2009" "slurm.conf 2.0" "Slurm configuration file"
+.TH "slurm.conf" "5" "April 2009" "slurm.conf 2.0" "Slurm configuration file"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
@@ -707,15 +707,19 @@ on SPANK plugins, see the \fBspank\fR(8) manual.
 \fBPriorityDecayHalfLife\fR
 This controls how long prior resource use is considered in determining
 how over\- or under\-serviced an association is (user, bank account and 
-cluster) in determining job priority.
+cluster) in determining job priority.  If set to 0 no decay will be applied.  
+This is helpful if you want to enforce hard time limits per association.  If 
+set to 0 PriorityUsageResetPeriod must be set to some interval.
 Applicable only if PriorityType=priority/multifactor.
-The units are minutes and the default value is 7 days.
+The unit is a time string (i.e. min, hr:min:00, days-hr:min:00, 
+or days-hr).  The default value is 7-0 (7 days).
 
 .TP
 \fBPriorityFavorSmall\fR
 Specifies that small jobs should be given preferencial scheduling priority.
 Applicable only if PriorityType=priority/multifactor.
 Supported values are "YES" and "NO". 
+Applicable only if PriorityType=priority/multifactor.
 The default value is "NO".
 
 .TP
@@ -724,7 +728,21 @@ Specifies the job age which will be given the maximum age factor in computing
 priority. For example, a value of 30 minutes would result in all jobs over
 30 minutes old would get the same age\-based priority.
 Applicable only if PriorityType=priority/multifactor.
-The units are minutes and the default value is 7 days.
+The unit is a time string (i.e. min, hr:min:00, days-hr:min:00, 
+or days-hr).  The default value is 7-0 (7 days).
+
+.TP
+\fBPriorityUsageResetPeriod\fR
+At this interval the usage of associations will be reset to 0.  This is used 
+if you want to enforce hard limits of time usage per association.  If 
+PriorityDecayHalfLife is set to be 0 no decay will happen and this is the 
+only way to reset the usage accumulated by running jobs.  By default this is 
+turned off and it is advised to use the PriorityDecayHalfLife option to avoid
+not having anything running on your cluster, but if your schema is set up to 
+only allow certain amounts of time on your system this is the way to do it.
+Applicable only if PriorityType=priority/multifactor.
+The unit is a time string (i.e. min, hr:min:00, days-hr:min:00, 
+or days-hr).  The default value is not set (turned off).
 
 .TP
 \fBPriorityType\fR

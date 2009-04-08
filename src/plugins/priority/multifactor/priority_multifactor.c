@@ -125,15 +125,18 @@ static int _apply_decay(double decay_factor)
 {
 	ListIterator itr = NULL;
 	acct_association_rec_t *assoc = NULL;
+	acct_qos_rec_t *qos = NULL;
 
-	if(!calc_fairshare)
+	/* continue if decay_factor is 0 or 1 since that doesn't help
+	   us at all. 1 means no decay and 0 will just zero
+	   everything out so don't waste time doing it */
+	if(!decay_factor)
+		return SLURM_ERROR;
+	else if(!calc_fairshare)
 		return SLURM_SUCCESS;
 
 	xassert(assoc_mgr_association_list);
 
-	if(!decay_factor)
-		return SLURM_ERROR;
-	
 	slurm_mutex_lock(&assoc_mgr_association_lock);
 	itr = list_iterator_create(assoc_mgr_association_list);
 	while((assoc = list_next(itr))) {
@@ -144,17 +147,69 @@ static int _apply_decay(double decay_factor)
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&assoc_mgr_association_lock);
 
+	slurm_mutex_lock(&assoc_mgr_qos_lock);
+	itr = list_iterator_create(assoc_mgr_qos_list);
+	while((qos = list_next(itr))) {
+		qos->usage_raw *= decay_factor;
+	}
+	list_iterator_destroy(itr);
+	slurm_mutex_unlock(&assoc_mgr_qos_lock);
+
 	return SLURM_SUCCESS;
 }
 
-static time_t _read_last_decay_ran()
+/*
+ * reset usage_raw, and grp_used_cpu_mins on all associations 
+ * This should be called every PriorityUsageResetPeriod
+ * RET: SLURM_SUCCESS on SUCCESS, SLURM_ERROR else.
+ */
+static int _reset_usage()
+{
+	ListIterator itr = NULL;
+	acct_association_rec_t *assoc = NULL;
+	acct_qos_rec_t *qos = NULL;
+
+	if(!calc_fairshare)
+		return SLURM_SUCCESS;
+
+	xassert(assoc_mgr_association_list);
+
+	slurm_mutex_lock(&assoc_mgr_association_lock);
+	itr = list_iterator_create(assoc_mgr_association_list);
+	while((assoc = list_next(itr))) {
+		if (assoc == assoc_mgr_root_assoc)
+			continue;
+		assoc->usage_raw = 0;
+		assoc->grp_used_wall = 0;
+	}
+	list_iterator_destroy(itr);
+	slurm_mutex_unlock(&assoc_mgr_association_lock);
+
+	slurm_mutex_lock(&assoc_mgr_qos_lock);
+	itr = list_iterator_create(assoc_mgr_qos_list);
+	while((qos = list_next(itr))) {
+		qos->usage_raw = 0;
+	}
+	list_iterator_destroy(itr);
+	slurm_mutex_unlock(&assoc_mgr_qos_lock);
+
+	return SLURM_SUCCESS;
+}
+
+static void _read_last_decay_ran(time_t *last_ran, time_t *last_reset)
 {
 	int data_allocated, data_read = 0;
 	uint32_t data_size = 0;
 	int state_fd;
 	char *data = NULL, *state_file;
 	Buf buffer;
-	time_t last_ran = 0;
+
+	xassert(last_ran);
+	xassert(last_reset);
+
+	(*last_ran) = 0;
+	(*last_reset) = 0;
+
 	/* read the file */
 	state_file = xstrdup(slurmctld_conf.state_save_location);
 	xstrcat(state_file, "/priority_last_decay_ran");
@@ -163,7 +218,7 @@ static time_t _read_last_decay_ran()
 	if (state_fd < 0) {
 		info("No last decay (%s) to recover", state_file);
 		unlock_state_files();
-		return 0;
+		return;
 	} else {
 		data_allocated = BUF_SIZE;
 		data = xmalloc(data_allocated);
@@ -190,20 +245,21 @@ static time_t _read_last_decay_ran()
 	unlock_state_files();
 
 	buffer = create_buf(data, data_size);
-	safe_unpack_time(&last_ran, buffer);
+	safe_unpack_time(last_ran, buffer);
+	safe_unpack_time(last_reset, buffer);
 	free_buf(buffer);
 	debug5("Last ran decay on jobs at %d", last_ran);
 
-	return last_ran;
+	return;
 
 unpack_error:
-	error("Incomplete priority last decay file returning no last ran");
+	error("Incomplete priority last decay file returning");
 	free_buf(buffer);
-	return 0;
+	return;
 
 }
 
-static int _write_last_decay_ran(time_t last_ran)
+static int _write_last_decay_ran(time_t last_ran, time_t last_reset)
 {
 	/* Save high-water mark to avoid buffer growth with copies */
 	static int high_buffer_size = BUF_SIZE;
@@ -213,6 +269,7 @@ static int _write_last_decay_ran(time_t last_ran)
 	Buf buffer = init_buf(high_buffer_size);
 
 	pack_time(last_ran, buffer);
+	pack_time(last_reset, buffer);
 
 	/* read the file */
 	old_file = xstrdup(slurmctld_conf.state_save_location);
@@ -469,8 +526,16 @@ static void *_decay_thread(void *no_data)
 /* 	int sigarray[] = {SIGUSR1, 0}; */
 	struct tm tm;
 	time_t last_ran = 0;
-	double decay_factor =
-		1 - (0.693 / (double)slurm_get_priority_decay_hl());
+	time_t last_reset = 0;
+	double decay_hl = (double)slurm_get_priority_decay_hl();
+	double decay_factor = 1;
+	uint32_t reset_period = slurm_get_priority_reset_period();
+	/* if decay_hl is 0 or less that means no decay is to be had.
+	   This also means we flush the used time at a certain time
+	   set by PriorityUsageResetPeriod in the slurm.conf
+	*/
+	if(decay_hl > 0)
+		decay_factor = 1 - (0.693 / decay_hl);
 
 	/* Write lock on jobs, read lock on nodes and partitions */
 	slurmctld_lock_t job_write_lock =
@@ -486,7 +551,7 @@ static void *_decay_thread(void *no_data)
 		return NULL;
 	}
 
-	last_ran = _read_last_decay_ran();
+	_read_last_decay_ran(&last_ran, &last_reset);
 
 	while(1) {
 		int run_delta = 0;
@@ -498,10 +563,31 @@ static void *_decay_thread(void *no_data)
 		/* If reconfig is called handle all that happens
 		   outside of the loop here */
 		if(reconfig) {
-			decay_factor = 
-				1 - (0.693 
-				     / (double)slurm_get_priority_decay_hl());
+			/* if decay_hl is 0 or less that means no
+			   decay is to be had.  This also means we
+			   flush the used time at a certain time
+			   set by PriorityUsageResetPeriod in the slurm.conf
+			*/
+			reset_period = slurm_get_priority_reset_period();
+			decay_hl = (double)slurm_get_priority_decay_hl();
+			if(decay_hl > 0)
+				decay_factor = 1 - (0.693 / decay_hl);
+			else
+				decay_factor = 1;
+			
 			reconfig = 0;
+		}
+
+		/* this needs to be done right away so as to
+		   incorporate it into the decay loop.
+		*/
+		if(reset_period != (uint32_t)NO_VAL) {
+			if(!last_reset)
+				last_reset = start_time;
+			else if(start_time >= last_reset+reset_period) {
+				_reset_usage();
+				last_reset = start_time;
+			}
 		}
 
 		if(!last_ran) 
@@ -538,6 +624,7 @@ static void *_decay_thread(void *no_data)
 					job_ptr->assoc_ptr;
 				time_t start_period = last_ran;
 				time_t end_period = start_time;
+				uint64_t cpu_time = 0;
 
 				if(job_ptr->start_time > start_period) 
 					start_period = job_ptr->start_time;
@@ -556,28 +643,44 @@ static void *_decay_thread(void *no_data)
 				debug4("job %u ran for %d seconds",
 				       job_ptr->job_id, run_delta);
 
+				/* get run time in seconds */
+				cpu_time = (uint64_t)run_delta 
+					* (uint16_t)job_ptr->total_procs;
 				/* figure out the decayed new usage to
 				   add */
-				real_decay = ((double)run_delta 
-					      * (double)job_ptr->total_procs)
+				real_decay = (double)cpu_time
 					* pow(decay_factor, (double)run_delta);
 
 				/* now apply the usage factor for this
 				   qos */
-				if(qos && qos->usage_factor > 0)
-					real_decay *= qos->usage_factor;
+				if(qos) {
+					slurm_mutex_lock(&assoc_mgr_qos_lock);
+					if(qos->usage_factor > 0)
+						real_decay *= qos->usage_factor;
+					qos->usage_raw +=
+						(long double)real_decay;
+					slurm_mutex_unlock(&assoc_mgr_qos_lock);
+				}
 
 				slurm_mutex_lock(&assoc_mgr_association_lock);
 				while(assoc) {
+					assoc->grp_used_wall += run_delta;
 					assoc->usage_raw +=
 						(long double)real_decay;
 					debug4("adding %f new usage to "
 					       "assoc %u (user='%s' acct='%s') "
-					       "raw usage is now %Lf",
+					       "raw usage is now %Lf.  Group "
+					       "wall added %d making it %d.",
 					       real_decay, assoc->id, 
 					       assoc->user, assoc->acct,
-					       assoc->usage_raw);
+					       assoc->usage_raw, run_delta,
+					       assoc->grp_used_wall);
+				
 					assoc = assoc->parent_assoc_ptr;
+					/* we don't want to make the
+					   root assoc responsible for
+					   keeping track of time 
+					*/ 
 					if (assoc == assoc_mgr_root_assoc)
 						break;
 				}
@@ -610,7 +713,7 @@ static void *_decay_thread(void *no_data)
 	
 		last_ran = start_time;
 
-		_write_last_decay_ran(last_ran);
+		_write_last_decay_ran(last_ran, last_reset);
 
 		running_decay = 0;
 		slurm_mutex_unlock(&decay_lock);

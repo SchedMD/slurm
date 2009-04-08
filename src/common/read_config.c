@@ -202,6 +202,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"PriorityDecayHalfLife", S_P_STRING},
 	{"PriorityFavorSmall", S_P_BOOLEAN},
 	{"PriorityMaxAge", S_P_STRING},
+	{"PriorityUsageResetPeriod", S_P_STRING},
 	{"PriorityType", S_P_STRING},
 	{"PriorityWeightAge", S_P_UINT32},
 	{"PriorityWeightFairshare", S_P_UINT32},
@@ -1977,6 +1978,25 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		xfree(temp_str);
 	} else 
 		conf->priority_max_age = DEFAULT_PRIORITY_DECAY;
+
+	if (s_p_get_string(&temp_str, "PriorityUsageResetPeriod", hashtbl)) {
+		int max_time = time_str2mins(temp_str);
+		if ((max_time < 0) && (max_time != INFINITE)) {
+			fatal("Bad value \"%s\" for PriorityUsageResetPeriod",
+			      temp_str);
+		}
+		conf->priority_reset_period = max_time * 60;
+		xfree(temp_str);
+	} else {
+		conf->priority_reset_period = NO_VAL;
+		if(!conf->priority_decay_hl) {
+			fatal("You have to either have "
+			      "PriorityDecayHalfLife != 0 or "
+			      "PriorityUsageResetPeriod set to something "
+			      "or the priority plugin will result in "
+			      "rolling over.");
+		}
+	}
 
 	if (!s_p_get_string(&conf->priority_type, "PriorityType", hashtbl))
 		conf->priority_type = xstrdup(DEFAULT_PRIORITY_TYPE);

@@ -358,7 +358,8 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 		return SLURM_ERROR;
 	} else if(!list_count(format_list)) 
 		slurm_addto_char_list(format_list,
-				      "C,A,U,Part,F,GrpJ,GrpN,GrpS,"
+				      "C,A,U,Part,F,"
+				      "GrpCPUMins,GrpJ,GrpN,GrpS,GrpWall,"
 				      "MaxJ,MaxN,MaxS,MaxW,QOS");
 
 	print_fields_list = list_create(destroy_print_field);
@@ -383,7 +384,7 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 			field->type = PRINT_ACCOUNT;
 			field->name = xstrdup("Account");
 			if(tree_display)
-				field->len = 20;
+				field->len = -20;
 			else
 				field->len = 10;
 			field->print_routine = print_fields_str;

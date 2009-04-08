@@ -811,13 +811,12 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             and WOPLimits                                  \n\
                                                                            \n\
        list cluster       - Format=, Names=                                \n\
-       add cluster        - Fairshare=, GrpCPUMins=, GrpCPUs=, GrpJobs=,   \n\
-                            GrpNodes=, GrpSubmitJob=, GrpWall=, MaxCPUMins=\n\
+       add cluster        - Fairshare=, GrpCPUs=, GrpJobs=,                \n\
+                            GrpNodes=, GrpSubmitJob=, MaxCPUMins=          \n\
                             MaxJobs=, MaxNodes=, MaxWall=, and Name=       \n\
-       modify cluster     - (set options) Fairshare=, GrpCPUMins=,         \n\
+       modify cluster     - (set options) Fairshare=,                      \n\
                             GrpCPUs=, GrpJobs=, GrpNodes=, GrpSubmitJob=,  \n\
-                            GrpWall=, MaxCPUMins=, MaxJobs=, MaxNodes=,    \n\
-                            and MaxWall=                                   \n\
+                            MaxCPUMins=, MaxJobs=, MaxNodes=, and MaxWall= \n\
                             (where options) Names=                         \n\
        delete cluster     - Names=                                         \n\
                                                                            \n\
@@ -875,8 +874,8 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             User                                           \n\
                                                                            \n\
        Cluster            - Cluster, ControlHost, ControlPort, CpuCount,   \n\
-                            Fairshare, GrpCPUMins, GrpCPUs, GrpJobs,       \n\
-                            GrpNodes, GrpSubmitJob, GrpWall, MaxCPUs,      \n\
+                            Fairshare, GrpCPUs, GrpJobs,                   \n\
+                            GrpNodes, GrpSubmitJob, MaxCPUs,               \n\
                             MaxCPUMins, MaxJobs, MaxNodes, MaxSubmitJobs,  \n\
                             MaxWall, NodeCount, NodeNames                  \n\
                                                                            \n\

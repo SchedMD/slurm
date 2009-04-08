@@ -104,7 +104,6 @@ static int _addto_used_info(acct_association_rec_t *assoc1,
 	if(!assoc1 || !assoc2)
 		return SLURM_ERROR;
 
-	assoc1->grp_used_cpu_mins += assoc2->grp_used_cpu_mins;
 	assoc1->grp_used_cpus += assoc2->grp_used_cpus;
 	assoc1->grp_used_nodes += assoc2->grp_used_nodes;
 	assoc1->grp_used_wall += assoc2->grp_used_wall;
@@ -121,14 +120,13 @@ static int _clear_used_info(acct_association_rec_t *assoc)
 	if(!assoc)
 		return SLURM_ERROR;
 
-	assoc->grp_used_cpu_mins = 0;
 	assoc->grp_used_cpus = 0;
 	assoc->grp_used_nodes = 0;
-	assoc->grp_used_wall = 0;
 	
 	assoc->used_jobs  = 0;
 	assoc->used_submit_jobs = 0;
-	/* do not reset usage_raw if you need to reset it do it
+	/* do not reset usage_raw or grp_used_wall.
+	 * if you need to reset it do it
 	 * else where since sometimes we call this and do not want
 	 * shares reset */
 
@@ -1746,6 +1744,7 @@ extern int assoc_mgr_update_assocs(acct_update_object_t *update)
 			if(!object->user) {
 				_clear_used_info(object);
 				object->usage_raw = 0;
+				object->grp_used_wall = 0;
 			}
 			_set_assoc_parent_and_user(
 				object, assoc_mgr_association_list, reset);
@@ -2251,7 +2250,6 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 	if(assoc_mgr_association_list) {
 		ListIterator itr = NULL;
 		acct_association_rec_t *assoc = NULL;
-
 		slurm_mutex_lock(&assoc_mgr_association_lock);
 		itr = list_iterator_create(assoc_mgr_association_list);
 		while((assoc = list_next(itr))) {
@@ -2263,6 +2261,7 @@ extern int dump_assoc_mgr_state(char *state_save_location)
 			   anything under 1 we are dropping 
 			*/
 			pack64((uint64_t)assoc->usage_raw, buffer);
+			pack32(assoc->grp_used_wall, buffer);
 		}
 		list_iterator_destroy(itr);
 		slurm_mutex_unlock(&assoc_mgr_association_lock);
@@ -2381,22 +2380,24 @@ extern int load_assoc_usage(char *state_save_location)
 	itr = list_iterator_create(assoc_mgr_association_list);
 	while (remaining_buf(buffer) > 0) {
 		uint32_t assoc_id = 0;
-		uint64_t uint64_tmp = 0;
+		uint32_t grp_used_wall = 0;
+		uint64_t usage_raw = 0;
 		acct_association_rec_t *assoc = NULL;
 
 		safe_unpack32(&assoc_id, buffer);
-		safe_unpack64(&uint64_tmp, buffer);
-		while((assoc = list_next(itr))) {
-			if(!assoc->user)
-				continue;
+		safe_unpack64(&usage_raw, buffer);
+		safe_unpack32(&grp_used_wall, buffer);
+		while((assoc = list_next(itr))) 
 			if(assoc->id == assoc_id)
 				break;
-		}
-		if(assoc) {
-			while(assoc) {
-				assoc->usage_raw += (long double)uint64_tmp;
-				assoc = assoc->parent_assoc_ptr;
-			}
+		
+		while(assoc) {
+			assoc->grp_used_wall += grp_used_wall;
+			assoc->usage_raw += (long double)usage_raw;
+
+			assoc = assoc->parent_assoc_ptr;
+			if(assoc == assoc_mgr_root_assoc)
+				break;
 		}
 		list_iterator_reset(itr);
 	}
@@ -2409,6 +2410,10 @@ extern int load_assoc_usage(char *state_save_location)
 unpack_error:
 	if(buffer)
 		free_buf(buffer);
+	if(itr) {
+		list_iterator_destroy(itr);
+		slurm_mutex_unlock(&assoc_mgr_association_lock);
+	}
 	return SLURM_ERROR;
 }
 
