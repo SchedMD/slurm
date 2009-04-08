@@ -461,19 +461,22 @@ _setup_normal_io(slurmd_job_t *job)
 			}
 		}
 
-	if (_reclaim_privileges(&sprivs) < 0)
-		error("sete{u/g}id(%lu/%lu): %m", 
-		      (u_long) sprivs.saved_uid, (u_long) sprivs.saved_gid);
-
 		rc = io_initial_client_connect(srun, job, srun_stdout_tasks, 
 					       srun_stderr_tasks);
 		if (rc < 0) 
 			return ESLURMD_IO_ERROR;
 	}
 
-	if (!job->batch)
+	if (_reclaim_privileges(&sprivs) < 0) {
+		error("sete{u/g}id(%lu/%lu): %m",
+		      (u_long) sprivs.saved_uid, (u_long) sprivs.saved_gid);
+	}
+
+	if (!job->batch) {
 		if (io_thread_start(job) < 0)
 			return ESLURMD_IO_ERROR;
+	}
+
 	debug2("Leaving  _setup_normal_io");
 	return SLURM_SUCCESS;
 }
