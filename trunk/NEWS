@@ -7,6 +7,7 @@ documents those changes that are of interest to users and admins.
     to the slurm.conf PriorityUsageResetPeriod which is used to reset the 
     time used. (currently only available with the use of the
      priority/multifactor plugin.)
+ -- Added SLURM_SUBMIT_DIR to sbatch's output environment variables
 
 * Changes in SLURM 1.4.0-pre11
 ==============================
