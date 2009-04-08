@@ -1008,7 +1008,7 @@ _task_finish(task_exit_msg_t *msg)
 		rc = WEXITSTATUS(msg->return_code);
 		if (rc != 0) {
 			_update_task_exit_state(msg->num_tasks,
-				msg->task_id_list, 1);
+						msg->task_id_list, 1);
 			node_list = _taskids_to_nodelist(tasks_exited);
 			if ((rc == OPEN_MPI_PORT_ERROR) &&
 			    (opt.resv_port_cnt != NO_VAL) &&
@@ -1035,7 +1035,7 @@ _task_finish(task_exit_msg_t *msg)
 		} else {
 			verbose("task %s: Completed", buf);
 			_update_task_exit_state(msg->num_tasks,
-				msg->task_id_list, 0);
+						msg->task_id_list, 0);
 		}
 
 	} else if (WIFSIGNALED(msg->return_code)) {
