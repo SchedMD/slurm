@@ -228,7 +228,7 @@ void batch_bind(batch_job_launch_msg_t *req)
 		info("task/affinity: job %u CPU final mask for node: %s",
 		     req->job_id, req->cpu_bind);
 	} else {
-		error("task/affinity: job %u allocated not CPUs", 
+		error("task/affinity: job %u allocated no CPUs", 
 		      req->job_id);
 	}
 	bit_free(hw_map);
@@ -449,6 +449,7 @@ static void _enforce_limits(launch_tasks_request_msg_t *req, bitstr_t *mask,
 			count--;
 		}
 	}
+
 	/* enforce max_cores */
 	for (i = 0; i < size; i++) {
 		if (bit_test(mask, i) == 0)
@@ -605,6 +606,21 @@ static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 		req->job_id, req->job_step_id, str);
 	xfree(str);
 
+	if (req->max_threads == 0) {
+		error("task/affinity: job %u.%u has max_threads=0",
+		      req->job_id, req->job_step_id);
+		req->max_threads = 1;
+	}
+	if (req->max_cores == 0) {
+		error("task/affinity: job %u.%u has max_coress=0",
+		      req->job_id, req->job_step_id);
+		req->max_cores = 1;
+	}
+	if (req->max_sockets == 0) {
+		error("task/affinity: job %u.%u has max_sockets=0",
+		      req->job_id, req->job_step_id);
+		req->max_sockets = 1;
+	}
 	num_threads = MIN(req->max_threads, (*hw_threads));
 	for (p = 0; p < num_procs; p++) {
 		if (bit_test(req_map, p) == 0)
