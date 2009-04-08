@@ -56,8 +56,8 @@ Also see \fBDefaultStorageHost\fR.
 .TP
 \fBAccountingStorageLoc\fR
 The fully qualified file name where accounting records are written
-when the \fBAccountingStorageType\fR is "filetxt" or the database
-where accounting records are stored when the
+when the \fBAccountingStorageType\fR is "accounting_storage/filetxt"
+or else the database where accounting records are stored when the
 \fBAccountingStorageType\fR is a database.
 Also see \fBDefaultStorageLoc\fR.
 
@@ -755,38 +755,38 @@ The default value is "priority/basic".
 
 .TP
 \fBPriorityWeightAge\fR
-An integer value specifying how important a job's age is in computing 
-its priority.
+An integer value that sets the degree to which the queue wait time
+component contributes to the job's priority.
 Applicable only if PriorityType=priority/multifactor.
-The default value is 1.
+The default value is 0.
 
 .TP
 \fBPriorityWeightFairshare\fR
-An integer value specifying how important a job's age is in computing 
-its priority.
+An integer value that sets the degree to which the fair-share
+component contributes to the job's priority.
 Applicable only if PriorityType=priority/multifactor.
-The default value is 1.
+The default value is 0.
 
 .TP
 \fBPriorityWeightJobSize\fR
-An integer value specifying how important a job's size is in computing 
-its priority.
+An integer value that sets the degree to which the job size
+component contributes to the job's priority.
 Applicable only if PriorityType=priority/multifactor.
-The default value is 1.
+The default value is 0.
 
 .TP
 \fBPriorityWeightPartition\fR
-An integer value specifying how important a job's partition is in computing 
-its priority.
+An integer value that sets the degree to which the node partition
+component contributes to the job's priority.
 Applicable only if PriorityType=priority/multifactor.
-The default value is 1.
+The default value is 0.
 
 .TP
 \fBPriorityWeightQOS\fR
-An integer value specifying how important a job's Quality Of Service is 
-in computing its priority.
+An integer value that sets the degree to which the Quality Of Service
+component contributes to the job's priority.
 Applicable only if PriorityType=priority/multifactor.
-The default value is 1.
+The default value is 0.
 
 .TP
 \fBPrivateData\fR

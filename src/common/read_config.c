@@ -2003,7 +2003,7 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_uint32(&conf->priority_weight_age,
 			    "PriorityWeightAge", hashtbl))
-		conf->priority_weight_age = 1;
+		conf->priority_weight_age = 0;
 	if (!s_p_get_uint32(&conf->priority_weight_fs,
 			    "PriorityWeightFairshare", hashtbl))
 		conf->priority_weight_fs = 0;
