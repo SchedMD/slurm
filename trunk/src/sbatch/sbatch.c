@@ -36,6 +36,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/param.h>               /* MAXPATHLEN */
 #include <fcntl.h>
 
 #include <slurm/slurm.h>
@@ -54,6 +55,7 @@
 static int   fill_job_desc_from_opts(job_desc_msg_t *desc);
 static void *get_script_buffer(const char *filename, int *size);
 static void  set_prio_process_env(void);
+static void  set_submit_dir_env(void);
 static int   set_umask_env(void);
 static char *script_wrap(char *command_string);
 static int  _set_rlimit_env(void);
@@ -111,6 +113,7 @@ int main(int argc, char *argv[])
 	}
 
 	set_prio_process_env();
+	set_submit_dir_env();
 	set_umask_env();
 	slurm_init_job_desc_msg(&desc);
 	if (fill_job_desc_from_opts(&desc) == -1) {
@@ -301,6 +304,24 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->ckpt_dir = opt.ckpt_dir;
 	desc->ckpt_interval = (uint16_t)opt.ckpt_interval;
 	return 0;
+}
+
+/* Set SLURM_SUBMIT_DIR environment variable with current state */
+static void set_submit_dir_env(void)
+{
+	char buf[MAXPATHLEN + 1];
+
+	if (getenv("SLURM_SUBMIT_DIR"))	/* use this value */
+		return;
+
+	if ((getcwd(buf, MAXPATHLEN)) == NULL)
+		fatal("getcwd failed: %m");
+
+	if (setenvf(NULL, "SLURM_SUBMIT_DIR", "%s", buf) < 0) {
+		error ("unable to set SLURM_SUBMIT_DIR in environment");
+		return;
+	}
+	debug ("propagating SUBMIT_DIR=%s", buf);
 }
 
 /* Set SLURM_UMASK environment variable with current state */
