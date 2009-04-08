@@ -936,6 +936,7 @@ _terminate_job_step(slurm_step_ctx_t *step_ctx)
 	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_JOBID, &job_id);
 	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_STEPID, &step_id);
 	info("Terminating job step %u.%u", job_id, step_id);
+	update_job_state(job, SRUN_JOB_CANCELLED);
 	slurm_kill_job_step(job_id, step_id, SIGKILL);
 }
 
