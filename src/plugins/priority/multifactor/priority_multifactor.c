@@ -143,6 +143,7 @@ static int _apply_decay(double decay_factor)
 		if (assoc == assoc_mgr_root_assoc)
 			continue;
 		assoc->usage_raw *= decay_factor;
+		assoc->grp_used_wall *= decay_factor;
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&assoc_mgr_association_lock);
@@ -151,6 +152,7 @@ static int _apply_decay(double decay_factor)
 	itr = list_iterator_create(assoc_mgr_qos_list);
 	while((qos = list_next(itr))) {
 		qos->usage_raw *= decay_factor;
+		qos->grp_used_wall *= decay_factor;
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&assoc_mgr_qos_lock);
@@ -189,6 +191,7 @@ static int _reset_usage()
 	itr = list_iterator_create(assoc_mgr_qos_list);
 	while((qos = list_next(itr))) {
 		qos->usage_raw = 0;
+		qos->grp_used_wall = 0;
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&assoc_mgr_qos_lock);
@@ -624,7 +627,7 @@ static void *_decay_thread(void *no_data)
 					job_ptr->assoc_ptr;
 				time_t start_period = last_ran;
 				time_t end_period = start_time;
-				uint64_t cpu_time = 0;
+				double run_decay = 0;
 
 				if(job_ptr->start_time > start_period) 
 					start_period = job_ptr->start_time;
@@ -643,20 +646,22 @@ static void *_decay_thread(void *no_data)
 				debug4("job %u ran for %d seconds",
 				       job_ptr->job_id, run_delta);
 
-				/* get run time in seconds */
-				cpu_time = (uint64_t)run_delta 
-					* (uint16_t)job_ptr->total_procs;
-				/* figure out the decayed new usage to
-				   add */
-				real_decay = (double)cpu_time
+				/* get the time in decayed fashion */
+				run_decay = run_delta 
 					* pow(decay_factor, (double)run_delta);
 
+				real_decay = run_decay
+					* (double)job_ptr->total_procs;
+	
 				/* now apply the usage factor for this
 				   qos */
 				if(qos) {
 					slurm_mutex_lock(&assoc_mgr_qos_lock);
-					if(qos->usage_factor > 0)
+					if(qos->usage_factor > 0) {
 						real_decay *= qos->usage_factor;
+						run_decay *= qos->usage_factor;
+					}
+					qos->grp_used_wall += run_decay;
 					qos->usage_raw +=
 						(long double)real_decay;
 					slurm_mutex_unlock(&assoc_mgr_qos_lock);
@@ -664,7 +669,7 @@ static void *_decay_thread(void *no_data)
 
 				slurm_mutex_lock(&assoc_mgr_association_lock);
 				while(assoc) {
-					assoc->grp_used_wall += run_delta;
+					assoc->grp_used_wall += run_decay;
 					assoc->usage_raw +=
 						(long double)real_decay;
 					debug4("adding %f new usage to "

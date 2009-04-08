@@ -170,7 +170,7 @@ typedef struct acct_association_rec {
 				 * (DON'T PACK) */
 	uint32_t grp_used_nodes; /* count of active jobs in the group
 				  * (DON'T PACK) */
-	uint32_t grp_used_wall; /* group count of time used in
+	double grp_used_wall;   /* group count of time used in
 				 * running jobs (DON'T PACK) */
 	
 	uint32_t id;		/* id identifing a combination of
@@ -307,7 +307,7 @@ typedef struct {
 				  * (DON'T PACK) */
 	uint32_t grp_used_submit_jobs; /* count of jobs pending or running
 				    * (DON'T PACK) */
-	uint32_t grp_used_wall; /* group count of time (minutes) used in
+	double grp_used_wall;   /* group count of time (minutes) used in
 				 * running jobs (DON'T PACK) */
 
 	uint64_t max_cpu_mins_pu; /* max number of cpu mins a user can
