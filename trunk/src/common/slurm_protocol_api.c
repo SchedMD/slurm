@@ -464,6 +464,25 @@ uint32_t slurm_get_priority_max_age(void)
 	return age;
 }
 
+/* slurm_get_priority_reset_period
+ * returns the priority usage reset period in seconds from slurmctld_conf object
+ * RET uint32_t - decay_hl in secs.
+ */
+uint32_t slurm_get_priority_reset_period(void)
+{
+	uint32_t reset_period = NO_VAL;
+	slurm_ctl_conf_t *conf;
+
+	if(slurmdbd_conf) {		
+	} else {
+		conf = slurm_conf_lock();
+		reset_period = conf->priority_reset_period;
+		slurm_conf_unlock();
+	}
+
+	return reset_period;
+}
+
 /* slurm_get_priority_type
  * returns the priority type from slurmctld_conf object
  * RET char *    - priority type, MUST be xfreed by caller

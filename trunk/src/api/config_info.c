@@ -274,6 +274,10 @@ void slurm_print_ctl_conf ( FILE* out,
 		secs2time_str((time_t) slurm_ctl_conf_ptr->priority_max_age,
 			      tmp_str, sizeof(tmp_str));
 		fprintf(out, "PriorityMaxAge          = %s\n", tmp_str);
+		secs2time_str((time_t) 
+			      slurm_ctl_conf_ptr->priority_reset_period,
+			      tmp_str, sizeof(tmp_str));
+		fprintf(out, "PriorityUsageResetPeriod= %s\n", tmp_str);
 		fprintf(out, "PriorityType            = %s\n",
 			slurm_ctl_conf_ptr->priority_type);
 		fprintf(out, "PriorityWeightAge       = %u\n",

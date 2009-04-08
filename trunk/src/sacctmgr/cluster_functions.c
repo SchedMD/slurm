@@ -139,10 +139,10 @@ static int _set_rec(int *start, int argc, char *argv[],
 				set = 1;
 		} else if (!strncasecmp (argv[i], "GrpCPUMins",
 					 MAX(command_len, 7))) {
-			if (get_uint64(argv[i]+end, 
-				       &assoc->grp_cpu_mins, 
-				       "GrpCPUMins") == SLURM_SUCCESS)
-				set = 1;
+			exit_code=1;
+			fprintf(stderr, "GrpCPUMins is not a valid option "
+				"for the root association of a cluster.\n");
+			break;			
 		} else if (!strncasecmp (argv[i], "GrpCpus",
 					 MAX(command_len, 7))) {
 			if (get_uint(argv[i]+end, &assoc->grp_cpus,
@@ -165,16 +165,9 @@ static int _set_rec(int *start, int argc, char *argv[],
 				set = 1;
 		} else if (!strncasecmp (argv[i], "GrpWall",
 					 MAX(command_len, 4))) {
-			mins = time_str2mins(argv[i]+end);
-			if (mins != NO_VAL) {
-				assoc->grp_wall	= (uint32_t) mins;
-				set = 1;
-			} else {
-				exit_code=1;
-				fprintf(stderr, 
-					" Bad GrpWall time format: %s\n", 
-					argv[i]);
-			}
+			exit_code=1;
+			fprintf(stderr, "GrpWall is not a valid option "
+				"for the root association of a cluster.\n");
 		} else if (!strncasecmp (argv[i], "MaxCPUMinsPerJob",
 					 MAX(command_len, 7))) {
 			if (get_uint64(argv[i]+end, 
@@ -329,13 +322,11 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 
 		cluster->root_assoc->shares_raw = start_assoc.shares_raw;
 		
-		cluster->root_assoc->grp_cpu_mins = start_assoc.grp_cpu_mins;
 		cluster->root_assoc->grp_cpus = start_assoc.grp_cpus;
 		cluster->root_assoc->grp_jobs = start_assoc.grp_jobs;
 		cluster->root_assoc->grp_nodes = start_assoc.grp_nodes;
 		cluster->root_assoc->grp_submit_jobs =
 			start_assoc.grp_submit_jobs;
-		cluster->root_assoc->grp_wall = start_assoc.grp_wall;
 
 		cluster->root_assoc->max_cpu_mins_pj = 
 			start_assoc.max_cpu_mins_pj;
@@ -490,12 +481,6 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 			field->name = xstrdup("FairShare");
 			field->len = 9;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("GrpCPUMins", object, 
-				       MAX(command_len, 8))) {
-			field->type = PRINT_GRPCM;
-			field->name = xstrdup("GrpCPUMins");
-			field->len = 11;
-			field->print_routine = print_fields_uint64;
 		} else if(!strncasecmp("GrpCPUs", object, 
 				       MAX(command_len, 8))) {
 			field->type = PRINT_GRPC;
@@ -520,12 +505,6 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 			field->name = xstrdup("GrpSubmit");
 			field->len = 9;
 			field->print_routine = print_fields_uint;
-		} else if(!strncasecmp("GrpWall", object,
-				       MAX(command_len, 4))) {
-			field->type = PRINT_GRPW;
-			field->name = xstrdup("GrpWall");
-			field->len = 11;
-			field->print_routine = print_fields_time;
 		} else if(!strncasecmp("MaxCPUMinsPerJob", object,
 				       MAX(command_len, 7))) {
 			field->type = PRINT_MAXCM;
@@ -672,12 +651,6 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 					assoc->shares_raw,
 					(curr_inx == field_count));
 				break;
-			case PRINT_GRPCM:
-				field->print_routine(
-					field,
-					assoc->grp_cpu_mins,
-					(curr_inx == field_count));
-				break;
 			case PRINT_GRPC:
 				field->print_routine(field,
 						     assoc->grp_cpus,
@@ -697,12 +670,6 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 				field->print_routine(field, 
 						     assoc->grp_submit_jobs,
 						     (curr_inx == field_count));
-				break;
-			case PRINT_GRPW:
-				field->print_routine(
-					field,
-					assoc->grp_wall,
-					(curr_inx == field_count));
 				break;
 			case PRINT_MAXCM:
 				field->print_routine(

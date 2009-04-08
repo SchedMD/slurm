@@ -426,13 +426,32 @@ factor as it is currently configured.</P>
 <DT> PriorityDecayHalfLife
 <DD> This determines the contribution of historical usage on the
   composite usage value.  The higher the number, the longer past usage
-  affects fair-share.  The unit is a time string (i.e. min, min:sec,
-  hr:min:sec, days-hr:min:sec, or days-hr.  The default value is 7-0 (7 days).
+  affects fair-share.  If set to 0 no decay will be applied.  This is helpful if
+  you want to enforce hard time limits per association.  If set to 0
+  PriorityUsageResetPeriod must be set to some interval. 
+  The unit is a time string (i.e. min, hr:min:00, days-hr:min:00, or
+  days-hr.  The default value is 7-0 (7 days). 
+<DT> PriorityUsageResetPeriod
+<DD> At this interval the usage of associations will be reset to 0.
+  This is used if you want to enforce hard limits of time usage per
+  association.  If PriorityDecayHalfLife is set to be 0 no decay will
+  happen and this is the only way to reset the usage accumulated by
+  running jobs.  By default this is turned off and it is advised to
+  use the PriorityDecayHalfLife option to avoid not having anything
+  running on your cluster, but if your schema is set up to only allow
+  certain amounts of time on your system this is the way to do it.
+  The unit is a time string (i.e. min, hr:min:00, days-hr:min:00, or
+  days-hr. The default value is not set (turned off). 
+
 <DT> PriorityFavorSmall
-<DD> A boolean that sets the polarity of the job size factor.  The default setting is NO which results in larger node sizes having a larger job size factor.  Setting this parameter to YES means that the smaller the job, the greater the job size factor will be.
+<DD> A boolean that sets the polarity of the job size factor.  The
+  default setting is NO which results in larger node sizes having a
+  larger job size factor.  Setting this parameter to YES means that
+  the smaller the job, the greater the job size factor will be.
 <DT> PriorityMaxAge
-<DD> Specifies the queue wait time at which the age factor maxes out.  The unit is a time string (i.e. min, min:sec,
-  hr:min:sec, days-hr:min:sec, or days-hr.  The default value is 7-0 (7 days).
+<DD> Specifies the queue wait time at which the age factor maxes out.
+  The unit is a time string (i.e. min, hr:min:00, days-hr:min:00, or
+  days-hr.  The default value is 7-0 (7 days). 
 <DT> PriorityWeightAge
 <DD> An unsigned integer that scales the contribution of the age factor.
 <DT> PriorityWeightFairshare
@@ -451,10 +470,15 @@ factor as it is currently configured.</P>
 <a name=configexample>
 <h2>Configuration Example</h2></a>
 
-<P> The following are sample slurm.conf file settings for the Multi-factor Job Priority Plugin.</P>
+<P> The following are sample slurm.conf file settings for the
+  Multi-factor Job Priority Plugin.</P>
 
+<P> The first example is for running the plugin applying decay over
+  time to reduce usage.  Hard limits can be used in this
+  configuration, but will have less effect since usage will decay
+  over time instead of having no decay over time.</P> 
 <PRE>
-# Activate the Multi-factor Job Priority Plugin
+# Activate the Multi-factor Job Priority Plugin with decay
 PriorityType=priority/multifactor
 
 # 2 week half-life
@@ -477,8 +501,37 @@ PriorityWeightPartition=1000
 PriorityWeightQOS=0 # don't use the qos factor
 </PRE>
 
+<P> This example is for running the plugin with no decay on usage,
+  thus making a reset of usage necessary.</P>
+<PRE>
+# Activate the Multi-factor Job Priority Plugin with decay
+PriorityType=priority/multifactor
+
+# apply no decay
+PriorityDecayHalfLife=0
+
+# reset usage after 28 days
+PriorityUsageResetPeriod=28-0
+
+# The larger the job, the greater its job size priority.
+PriorityFavorSmall=NO
+
+# The job's age factor reaches 1.0 after waiting in the
+# queue for 2 weeks.
+PriorityMaxAge=14-0
+
+# This next group determines the weighting of each of the
+# components of the Multi-factor Job Priority Plugin.
+# The default value for each of the following is 1.
+PriorityWeightAge=1000
+PriorityWeightFairshare=10000
+PriorityWeightJobSize=1000
+PriorityWeightPartition=1000
+PriorityWeightQOS=0 # don't use the qos factor
+</PRE>
+
 <!-------------------------------------------------------------------------->
-<p style="text-align:center;">Last modified 11 February 2009</p>
+<p style="text-align:center;">Last modified 08 April 2009</p>
 
 <!--#include virtual="footer.txt"-->
 

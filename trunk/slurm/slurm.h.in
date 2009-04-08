@@ -1118,6 +1118,8 @@ typedef struct slurm_ctl_conf {
 	uint16_t priority_favor_small; /* favor small jobs over large */
 	uint32_t priority_max_age; /* time when not to add any more
 				    * priority to a job if reached */
+	uint32_t priority_reset_period; /* time period to wait before
+					 * resetting usage in seconds */
 	char *priority_type;    /* priority type plugin */
 	uint32_t priority_weight_age; /* weight for age factor */
 	uint32_t priority_weight_fs; /* weight for Fairshare factor */

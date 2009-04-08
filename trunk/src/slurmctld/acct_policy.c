@@ -245,13 +245,29 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 	slurm_mutex_lock(&assoc_mgr_association_lock);
 	assoc_ptr = job_ptr->assoc_ptr;
 	while(assoc_ptr) {
+		uint64_t usage_mins =
+			(uint64_t)(assoc_ptr->usage_raw / 60.0);
+		uint32_t wall_mins = assoc_ptr->grp_used_wall / 60;
 #if _DEBUG
 		info("acct_job_limits: %u of %u", 
 		     assoc_ptr->used_jobs, assoc_ptr->max_jobs);
 #endif		
-		/* NOTE: We can't enforce assoc_ptr->grp_cpu_mins at this
-		 * time because we aren't keeping track of how long
-		 * jobs have been running yet */
+		if ((assoc_ptr->grp_cpu_mins != (uint64_t)NO_VAL)
+		    && (assoc_ptr->grp_cpu_mins != (uint64_t)INFINITE)
+		    && (usage_mins >= assoc_ptr->grp_cpu_mins)) {
+			job_ptr->state_reason = WAIT_ASSOC_JOB_LIMIT;
+			xfree(job_ptr->state_desc);
+			debug2("job %u being held, "
+			       "assoc %u is at or exceeds "
+			       "group max cpu minutes limit %llu "
+			       "with %Lf for account %s",
+			       job_ptr->job_id, assoc_ptr->id,
+			       assoc_ptr->grp_cpu_mins, 
+			       assoc_ptr->usage_raw, assoc_ptr->acct);	
+			
+			rc = false;
+			goto end_it;
+		}
 
 		if ((assoc_ptr->grp_jobs != NO_VAL) &&
 		    (assoc_ptr->grp_jobs != INFINITE) &&
@@ -302,27 +318,22 @@ extern bool acct_policy_job_runnable(struct job_record *job_ptr)
 		}
 
 		/* we don't need to check submit_jobs here */
-		
-		/* FIX ME: Once we start tracking time of running jobs
-		 * we will need to update the amount of time we have
-		 * used and check against that here.  When we start
-		 * keeping track of time we will also need to come up
-		 * with a way to refresh the time. 
-		 */
-		if ((assoc_ptr->grp_wall != NO_VAL) &&
-		    (assoc_ptr->grp_wall != INFINITE)) {
-			time_limit = assoc_ptr->grp_wall;
-			if ((job_ptr->time_limit != NO_VAL) &&
-			    (job_ptr->time_limit > time_limit)) {
-				info("job %u being cancelled, "
-				     "time limit %u exceeds group "
-				     "time limit %u for account %s",
-				     job_ptr->job_id, job_ptr->time_limit, 
-				     time_limit, assoc_ptr->acct);
-				_cancel_job(job_ptr);
-				rc = false;
-				goto end_it;
-			}
+
+		if ((assoc_ptr->grp_wall != NO_VAL) 
+		    && (assoc_ptr->grp_wall != INFINITE)
+		    && (wall_mins >= assoc_ptr->grp_wall)) {
+			job_ptr->state_reason = WAIT_ASSOC_JOB_LIMIT;
+			xfree(job_ptr->state_desc);
+			debug2("job %u being held, "
+			       "assoc %u is at or exceeds "
+			       "group wall limit %u "
+			       "with %u for account %s",
+			       job_ptr->job_id, assoc_ptr->id,
+			       assoc_ptr->grp_wall, 
+			       wall_mins, assoc_ptr->acct);
+			       
+			rc = false;
+			goto end_it;
 		}
 
 		

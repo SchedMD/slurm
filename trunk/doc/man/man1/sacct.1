@@ -1,4 +1,4 @@
-.TH SACCT "1" "January 2009" "sacct 2.0" "Slurm components"
+.TH SACCT "1" "April 2009" "sacct 2.0" "Slurm components"
 
 .SH "NAME"
 sacct \- displays accounting data for all jobs and job steps in the
@@ -145,20 +145,20 @@ Print a list of fields that can be specified with the \f3\-\-format\fP option.
 .ft 3
 Fields available:
 
-AllocCPUS     Account       AssocID       AveCPU
-AvePages      AveRSS        AveVSize      BlockID
-Cluster       CPUTime       CPUTimeRAW    Elapsed
-Eligible      End           ExitCode      GID
-Group         JobID         JobName       NodeList
-MaxPages      MaxPagesNode  MaxPagesTask  MaxRSS
-MaxRSSNode    MaxRSSTask    MaxVSize      MaxVSizeNode
-MaxVSizeTask  MinCPU        MinCPUNode    MinCPUTask
-NCPUS         NNodes        NTasks        Priority
-Partition     QOS           QOSRAW        ReqCPUS
-Reserved      ResvCPU       ResvCPURAW    Start
-State         Submit        Suspended     SystemCPU
-Timelimit     TotalCPU      UID           User
-UserCPU       WCKey         WCKeyID
+AllocCPUS     Account       AssocID       AveCPU       
+AvePages      AveRSS        AveVMSize     BlockID      
+Cluster       CPUTime       CPUTimeRAW    Elapsed      
+Eligible      End           ExitCode      GID          
+Group         JobID         JobName       Layout       
+MaxPages      MaxPagesNode  MaxPagesTask  MaxRSS       
+MaxRSSNode    MaxRSSTask    MaxVMSize     MaxVMSizeNode
+MaxVMSizeTask MinCPU        MinCPUNode    MinCPUTask   
+NCPUS         NNodes        NodeList      NTasks       
+Priority      Partition     QOS           QOSRAW       
+ReqCPUS       Reserved      ResvCPU       ResvCPURAW   
+Start         State         Submit        Suspended    
+SystemCPU     Timelimit     TotalCPU      UID          
+User          UserCPU       WCKey         WCKeyID      
 
 .ft 1
 .fi 
@@ -343,15 +343,16 @@ The following describes each job accounting field:
 .RS 
 .TP "10"
 \f3alloccpus\fP
-Allocated processors.
+Count of allocated processors.
 
 .TP
 \f3account\fP
-User supplied account number for the job.
+Account the job ran under.
 
 .TP
 \f3associd\fP
 Reference to the association of user, account and cluster.
+
 .TP
 \f3avecpu\fP
 Average CPU time of a process.
@@ -366,6 +367,7 @@ Average resident set size of a process.
 
 .TP
 \f3avevsize\fP
+Average Virtual Memory size of a process.
 
 .TP
 \f3blockid\fP
@@ -377,12 +379,12 @@ Cluster name.
 
 .TP
 \f3cputime\fP
-Minimum CPU time of any process followed by its task id along with
-the average of all processes running in the step.
+Formatted number of cpu seconds a process was allocated. 
 
 .TP
 \f3cputimeraw\fP
-
+How much cpu time process was allocated in second format, not formatted
+like above.
 
 .TP 
 \f3elapsed\fP 
@@ -414,6 +416,7 @@ seconds
 
 .TP 
 \f3eligible\fP 
+When the job became eligible to run.
 
 .TP
 \f3end\fP
@@ -467,19 +470,22 @@ It is in the form:
 \f3jobname\fP
 The name of the job or job step.
 
+.TP 
+\f3layout\fP
+What the layout of a step was when it was running.  This can be used
+to give you an idea of which node ran which rank in your job.
+
 .TP
 \f3maxpages\fP
 Maximum page faults of a process.
 
 .TP
 \f3maxpagesnode\fP
-Maximum page faults of a node.
-
+The node where the maxpages occured.
 
 .TP
 \f3maxpagestask\fP
-Maximum page faults of a task.
-
+The task on maxpagesnode where the maxpages occured.
 
 .TP
 \f3maxrss\fP
@@ -487,23 +493,23 @@ Maximum resident set size of a process.
 
 .TP
 \f3maxrssnode\fP
-Maximum resident set size of a node.
+The node where the maxrss occured.
 
 .TP
 \f3maxrsstask\fP
-Maximum resident set size of a node.
+The task on maxrssnode where the maxrss occured.
 
 .TP
-\f3maxvsize\fP
+\f3maxvmsize\fP
 Maximum  Virtual  Memory size of any process.
 
 .TP
-\f3maxvsizenode\fP
-Maximum  Virtual  Memory size of a node.
+\f3maxvmsizenode\fP
+The node where the maxvsize occured.
 
 .TP
-\f3maxvsizetask\fP
-Maximum  Virtual  Memory size of a task.
+\f3maxvmsizetask\fP
+The task on maxvsizenode where the maxvsize occured.
 
 .TP
 \f3mincpu\fP
@@ -511,11 +517,11 @@ Minimum cpu of any process.
 
 .TP
 \f3mincpunode\fP
-Minimum cpu of a node.
+The node where the mincpu occured.
 
 .TP
-\f3mincputasks\fP
-Minimum cpu of a task.
+\f3mincputask\fP
+The task on mincpunode where the mincpu occured.
 
 .TP 
 \f3ncpus\fP 
@@ -527,11 +533,11 @@ List of nodes in job/step.
 
 .TP
 \f3nnodes\fP
-Number of nodes.
+Number of nodes in a job or step.
 
 .TP 
 \f3ntasks\fP 
-Total number of tasks in a job.
+Total number of tasks in a job or step.
 
 .TP
 \f3priority\fP
@@ -543,10 +549,11 @@ Identifies the partition on which the job ran.
 
 .TP
 \f3qos\fP
-Quality of service.
+Name of Quality of Service.
 
 .TP
 \f3qosraw\fP 
+Id of Quality of Service.
 
 .TP 
 \f3reqcpus\fP 
@@ -554,13 +561,17 @@ Required CPUs.
 
 .TP 
 \f3reserved\fP 
+How much wall clock time was used as reserved time for this job.  This is
+derived from how long a job was waiting from eligible time to when it
+actually started.
 
 .TP
 \f3resvcpu\fP
-Reserved CPUs.
+Formatted time for how long (cpu secs) a job was reserved for.
 
 .TP 
 \f3resvcpuraw\fP 
+Reserved CPUs in second format, not formatted.
 
 .TP
 \f3start\fP
@@ -570,7 +581,8 @@ Initiation time of the job in the same format as \f3end\fP.
 \f3state\fP
 Displays the job status, or state.
 
-Output can be RUNNING, SUSPENDED, COMPLETED,  CANCELLED, FAILED, TIMEOUT, or NODE_FAIL.
+Output can be RUNNING, SUSPENDED, COMPLETED,  CANCELLED, FAILED,
+TIMEOUT, or NODE_FAIL. 
 
 .TP
 \f3submit\fP
@@ -579,6 +591,7 @@ was submitted.  The format of the output is identical to that of the end field.
 
 .TP
 \f3suspended\fP
+How long the job was suspended for.
 
 .TP
 \f3systemcpu\fP
@@ -591,9 +604,15 @@ field.
 
 .TP
 \f3timelimit\fP
+What the timelimit was/is for the job.
 
 .TP
 \f3totalcpu\fP
+The total amount CPU time actually used by the job, not just
+accounted for (which most likely is a higher number). (If job was
+running on multiple cpus this is a combination of  all  the  times  so
+this number could be much larger than the elapsed time.) The format of
+the output is identical  to  that  of  the elapsed field.
 
 .TP
 \f3uid\fP
@@ -605,7 +624,7 @@ The user name of the user who ran the job.
 
 .TP
 \f3usercpu\fP
-The amount of user CPU time. (If job was running on mul-tiple cpus
+The amount of user CPU time. (If job was running on multiple cpus
 this is a combination of  all  the  times  so this number could be
 much larger than the elapsed time.) The format of the output is
 identical  to  that  of  the elapsed field.

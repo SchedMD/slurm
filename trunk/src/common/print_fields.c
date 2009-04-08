@@ -86,11 +86,7 @@ extern void print_fields_header(List print_fields_list)
 			printf("%s|", field->name);
 		else {
 			int abs_len = abs(field->len);
-			if(field->len == abs_len)
-				printf("%*.*s ", abs_len, abs_len, field->name);
-			else
-				printf("%-*.*s ", abs_len, abs_len,
-				       field->name);
+			printf("%*.*s ", abs_len, abs_len, field->name);
 		}
 		curr_inx++;
 	}
