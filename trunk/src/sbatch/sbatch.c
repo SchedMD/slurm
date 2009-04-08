@@ -54,11 +54,11 @@
 
 static int   fill_job_desc_from_opts(job_desc_msg_t *desc);
 static void *get_script_buffer(const char *filename, int *size);
-static void  set_prio_process_env(void);
-static void  set_submit_dir_env(void);
-static int   set_umask_env(void);
 static char *script_wrap(char *command_string);
-static int  _set_rlimit_env(void);
+static void  _set_prio_process_env(void);
+static int   _set_rlimit_env(void);
+static void  _set_submit_dir_env(void);
+static int   _set_umask_env(void);
 
 int main(int argc, char *argv[])
 {
@@ -112,9 +112,9 @@ int main(int argc, char *argv[])
 		(void) _set_rlimit_env();
 	}
 
-	set_prio_process_env();
-	set_submit_dir_env();
-	set_umask_env();
+	_set_prio_process_env();
+	_set_submit_dir_env();
+	_set_umask_env();
 	slurm_init_job_desc_msg(&desc);
 	if (fill_job_desc_from_opts(&desc) == -1) {
 		exit(2);
@@ -307,7 +307,7 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 }
 
 /* Set SLURM_SUBMIT_DIR environment variable with current state */
-static void set_submit_dir_env(void)
+static void _set_submit_dir_env(void)
 {
 	char buf[MAXPATHLEN + 1];
 
@@ -325,7 +325,7 @@ static void set_submit_dir_env(void)
 }
 
 /* Set SLURM_UMASK environment variable with current state */
-static int set_umask_env(void)
+static int _set_umask_env(void)
 {
 	char mask_char[5];
 	mode_t mask;
@@ -347,13 +347,13 @@ static int set_umask_env(void)
 }
 
 /*
- * set_prio_process_env
+ * _set_prio_process_env
  *
  * Set the internal SLURM_PRIO_PROCESS environment variable to support
  * the propagation of the users nice value and the "PropagatePrioProcess"
  * config keyword.
  */
-static void  set_prio_process_env(void)
+static void  _set_prio_process_env(void)
 {
 	int retval;
 
