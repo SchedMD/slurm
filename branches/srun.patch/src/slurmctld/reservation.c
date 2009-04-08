@@ -1896,7 +1896,8 @@ extern int load_all_resv_state(int recover)
 
       unpack_error:
 	_validate_all_reservations();
-	error("Incomplete reservation data checkpoint file");
+	if (state_fd >= 0)
+		error("Incomplete reservation data checkpoint file");
 	info("Recovered state of %d reservations", list_count(resv_list));
 	if (resv_ptr)
 		_del_resv_rec(resv_ptr);
