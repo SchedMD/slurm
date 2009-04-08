@@ -137,6 +137,16 @@ void task_state_update (task_state_t ts, int taskid, task_state_type_t t)
 		  bit_set_count(ts->normal_exit)) == ts->nexited);
 }
 
+int task_state_first_task_exited (task_state_t ts)
+{
+	return (ts->nexited == 1);
+}
+
+int task_state_first_task_failed (task_state_t ts)
+{
+	return (ts->nexited == 1 && !bit_set_count(ts->normal_exit));
+}
+
 static void do_log_msg (bitstr_t *b, log_f fn, const char *msg)
 {
 	char buf [65536];

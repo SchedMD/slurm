@@ -55,6 +55,10 @@ void task_state_destroy (task_state_t ts);
 
 void task_state_update (task_state_t ts, int taskid, task_state_type_t t);
 
+int task_state_first_task_exited (task_state_t ts);
+
+int task_state_first_task_failed (task_state_t ts);
+
 typedef void (*log_f) (const char *, ...);
 
 void task_state_print (task_state_t ts, log_f fn);

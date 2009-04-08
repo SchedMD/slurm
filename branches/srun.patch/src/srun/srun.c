@@ -988,13 +988,27 @@ _update_task_exit_state(uint32_t ntasks, uint32_t taskids[], int abnormal)
 	    task_state_update(task_state, taskids[i], t);
 }
 
+static int _kill_on_bad_exit(void)
+{
+	return (opt.kill_bad_exit || slurm_get_kill_on_bad_exit());
+}
+
+static void _setup_max_wait_timer(void)
+{
+	/*  If these are the first tasks to finish we need to
+	 *   start a timer to kill off the job step if the other
+	 *   tasks don't finish within opt.max_wait seconds.
+	 */
+	verbose("First task exited. Terminating job in %ds.", opt.max_wait);
+	xsignal(SIGALRM, _handle_max_wait);
+	alarm(opt.max_wait);
+}
+
 static void
 _task_finish(task_exit_msg_t *msg)
 {
 	bitstr_t *tasks_exited = NULL;
 	char buf[65536], *core_str = "", *msg_str, *node_list = NULL;
-	static bool first_done = true;
-	static bool first_error = true;
 	uint32_t rc = 0;
 	int i;
 
@@ -1058,23 +1072,17 @@ _task_finish(task_exit_msg_t *msg)
 	}
 	xfree(node_list);
 	bit_free(tasks_exited);
+
+	/*
+	 *  Update global srun return code
+	 */
 	global_rc = MAX(global_rc, rc);
 
-	if (first_error && (rc > 0) &&
-	    (opt.kill_bad_exit || slurm_get_kill_on_bad_exit())) {
-		first_error = false;
-		_terminate_job_step(job->step_ctx);
-	} else if (first_done && opt.max_wait > 0) {
-		/* If these are the first tasks to finish we need to
-		 * start a timer to kill off the job step if the other
-		 * tasks don't finish within opt.max_wait seconds.
-		 */
-		first_done = false;
-		debug2("First task has exited");
-		xsignal(SIGALRM, _handle_max_wait);
-		verbose("starting alarm of %d seconds", opt.max_wait);
-		alarm(opt.max_wait);
-	}
+	if (task_state_first_task_failed(task_state) && _kill_on_bad_exit())
+  		_terminate_job_step(job->step_ctx);
+
+	if (task_state_first_task_exited(task_state) && opt.max_wait > 0)
+		_setup_max_wait_timer();
 }
 
 static void _handle_intr()
