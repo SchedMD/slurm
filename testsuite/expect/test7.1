@@ -40,6 +40,7 @@ set job_id3              0
 set prio1                -1
 set prio2                -1
 set prio3                -1
+set multi                0
 
 print_header $test_id
 
@@ -48,6 +49,12 @@ if {[test_wiki_sched] == 1} {
 	send_user "         or sched/wiki2 (Moab) schedulers\n"
 	exit $exit_code
 }
+
+# expected outcome is different under multifactor rule
+if { ![string compare [priority_type] multifactor] } {
+	set multi 1
+}
+
 
 make_bash_script "pwd_script" { $bin_pwd }
 
@@ -168,9 +175,16 @@ if {$job_id3 != 0} {
 #
 # Confirm reasonable values for the job priorities
 #
-if {$prio1 <= $prio2} {
-	send_user "\FAILURE: Job priorities are not decreasing: $prio1 <= $prio2 \n"
-	set exit_code 1
+if {$multi} {
+	if {$prio1 != $prio2} {
+		send_user "\FAILURE: Job priorities are not same: $prio1 != $prio2 \n"
+		set exit_code 1
+	}
+} else {
+	if {$prio1 <= $prio2} {
+		send_user "\FAILURE: Job priorities are not decreasing: $prio1 <= $prio2 \n"
+		set exit_code 1
+	}
 }
 if {$prio3 != 0} {
 	send_user "\FAILURE: Held job has non-zero priority: $prio3\n"
