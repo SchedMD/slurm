@@ -226,7 +226,7 @@ if {$completing_jobs != 0} {
 	set completing_jobs 0
 	spawn $squeue --noheader --user $user_name
 	expect {
-		-re "$user_name *CG" {
+		-re "test9.8 *$user_name *CG" {
 			incr completing_jobs
 			exp_continue
 		}
@@ -235,7 +235,7 @@ if {$completing_jobs != 0} {
 		}
 	}
 	if {$completing_jobs != 0} {
-		send_user "\nFAILURE: jobs not completing\n"
+		send_user "\nFAILURE: $completing_jobs jobs not completed\n"
 		set exit_code 1
 	}
 }
@@ -246,7 +246,7 @@ if {$completing_jobs != 0} {
 		exec $bin_sleep $max_wait
 		spawn $squeue --noheader --user $user_name
 		expect {
-			-re "$user_name *CG" {
+			-re "test9.8 *$user_name *CG" {
 				incr completing_jobs
 				exp_continue
 			}
@@ -257,7 +257,8 @@ if {$completing_jobs != 0} {
 	}
 }
 if {$completing_jobs != 0} {
-	send_user "\nFAILURE: Jobs not completing. Subsequent tests may fail!\n"
+	send_user "\nFAILURE: $completing_jobs jobs not completd.\n"
+	send_user "Subsequent tests may fail!\n"
 }		
 
 if {$exit_code == 0} {
