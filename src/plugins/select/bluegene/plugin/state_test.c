@@ -247,9 +247,6 @@ static int _test_down_nodecards(rm_BP_t *bp_ptr)
 			goto clean_up;
 		}
 
-		debug("nodecard %s on %s is in an error state",
-		      nc_name, node_name);
-
 #ifdef HAVE_BGL
 		if ((rc = bridge_get_data(ncard, 
 					  RM_NodeCardQuarter, 
@@ -266,7 +263,6 @@ static int _test_down_nodecards(rm_BP_t *bp_ptr)
 		io_start = atoi((char*)nc_name+1);
 		io_start *= bluegene_io_ratio;
 #endif
-		free(nc_name);
 
 /* 		if(!ionode_bitmap)  */
 /* 			ionode_bitmap = bit_alloc(bluegene_numpsets); */
@@ -275,7 +271,11 @@ static int _test_down_nodecards(rm_BP_t *bp_ptr)
 /* 		bit_nset(ionode_bitmap, io_start, io_start+io_cnt); */
 		/* we have to handle each nodecard separately to make
 		   sure we don't create holes in the system */
-		down_nodecard(node_name, io_start);
+		if(down_nodecard(node_name, io_start) == SLURM_SUCCESS) {
+			debug("nodecard %s on %s is in an error state",
+			      nc_name, node_name);
+		}
+		free(nc_name);
 	}
 
 	/* this code is here to bring up a block after it is in an

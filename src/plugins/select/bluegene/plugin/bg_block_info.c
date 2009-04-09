@@ -625,6 +625,7 @@ extern int update_freeing_block_list()
 			      state);
 
 			bg_record->state = state;
+			updated = 1;
 		}
 	next_block:
 		if ((rc = bridge_free_block(block_ptr)) 

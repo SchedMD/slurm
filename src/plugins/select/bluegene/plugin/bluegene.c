@@ -433,14 +433,14 @@ extern void *block_agent(void *args)
 			if(blocks_are_created) {
 				last_bg_test = now;
 				if((rc = update_block_list()) == 1) {
-					slurm_mutex_lock(&block_state_mutex);
 					last_bg_update = now;
-					slurm_mutex_unlock(&block_state_mutex);
 				} else if(rc == -1)
 					error("Error with update_block_list");
 				if(bluegene_layout_mode == LAYOUT_DYNAMIC) {
 					if((rc = update_freeing_block_list())
-					   == -1)
+					   == 1) {
+						last_bg_update = now;
+					} else if(rc == -1)
 						error("Error with "
 						      "update_block_list 2");
 				}
@@ -1653,6 +1653,8 @@ static int _delete_old_blocks(List bg_found_block_list)
 		
 	retries=30;
 	while(num_block_to_free > num_block_freed) {
+		/* no need to check for return code here, things
+		   haven't started up yet. */
 		update_freeing_block_list();
 		if(retries==30) {
 			info("Waiting for old blocks to be "
