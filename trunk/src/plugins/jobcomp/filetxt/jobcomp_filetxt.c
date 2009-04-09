@@ -273,7 +273,7 @@ extern int slurm_jobcomp_log_record ( struct job_record *job_ptr )
 	_make_time_str(&(job_ptr->start_time), start_str, sizeof(start_str));
 	_make_time_str(&(job_ptr->end_time), end_str, sizeof(end_str));
 
-	if (job_ptr->details)
+	if (job_ptr->details && job_ptr->details->work_dir)
 		work_dir = job_ptr->details->work_dir;
 	else
 		work_dir = "unknown";
