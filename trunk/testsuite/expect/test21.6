@@ -45,12 +45,10 @@ set mod		modify
 set nams	Names
 set nam		Name
 set fs		Fairshare
-set gm		GrpCPUMins
 set gc		GrpCPUs
 set gj		GrpJobs
 set gs		GrpSubmitJobs
 set gn		GrpNodes
-set gw		GrpWall
 set mm		MaxCPUMins
 set mc		MaxCPUs
 set mj		MaxJobs
@@ -62,12 +60,10 @@ set tc1		tcluster1
 set tc2		tcluster2
 set tc3		tcluster3
 set fs1		2500
-set gm1		1000000
 set gc1		50
 set gj1		100
 set gs1		500
 set gn1		300
-set gw1		00:45:00
 set mc1		100
 set mm1		100000
 set mj1		500
@@ -157,7 +153,7 @@ set my_pid [spawn $sacctmgr -i $del $clu $tc1,$tc2,$tc3]
 # Use sacctmgr to create a cluster
 #
 set sadd_pid [spawn $sacctmgr $add $clu $nams=$tc1,$tc2,$tc3 $fs=$fs1 \
-$gm=$gm1 $gc=$gc1 $gj=$gj1 $gn=$gn1 $gs=$gs1 $gw=$gw1 $mc=$mc1 $mm=$mm1 \
+$gc=$gc1 $gj=$gj1 $gn=$gn1 $gs=$gs1 $mc=$mc1 $mm=$mm1 \
 $mj=$mj1 $ms=$ms1 $mn=$mn1 $mw=$mw1]
 
 expect {
@@ -189,10 +185,6 @@ expect {
 		incr amatches
 		exp_continue
 	}
-	-re "$gm *= $gm1" {
-		incr amatches
-		exp_continue
-	}
 	-re "$gc *= $gc1" {
 		incr amatches
 		exp_continue
@@ -206,10 +198,6 @@ expect {
 		exp_continue
 	}
 	-re "$gs *= $gs1" {
-		incr amatches
-		exp_continue
-	}
-	-re "$gw *= $gw1" {
 		incr amatches
 		exp_continue
 	}
@@ -259,7 +247,7 @@ if {$access_err != 0} {
 	send_user "\nWARNING: not authorized to perform this test\n"
 	exit $exit_code
 }
-if {$amatches != 20} {
+if {$amatches != 18} {
 	send_user "\nFAILURE:  sacctmgr had a problem adding clusters got $amatches\n"
 	set exit_code 1
 }

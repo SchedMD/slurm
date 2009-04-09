@@ -138,7 +138,7 @@ if {[wait_for_file $file_out] == 0} {
 }
 
 if {$record != 3} {
-	send_user "\nFAILURE: Wrong record count\n"
+	send_user "\nFAILURE: Wrong record count $record\n"
 	set exit_code 1
 }
 if {$preserved == 0} {

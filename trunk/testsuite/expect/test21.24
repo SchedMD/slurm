@@ -249,8 +249,8 @@ if { $exit_code } {
 }
 
 #add cluster
-#name QOS Fairshare GrpCPUMins GrpCPUs GrpJobs GrpNodes GrpSubmitJobs GrpWall MaxCPUMins MaxCPUs MaxJobs MaxNodes MaxSubmitJobs MaxWallDurationPerJob
-incr exit_code [add_cluster "$tc3" "$qs2" "$fs6" "$gm6" "$gc6" "$gj6" "$gn6" "$gs6" "$gw6" "$mm6" "$mc6" "$mj6" "$mn6" "$ms6" "$mw6"]
+#name QOS Fairshare GrpCPUs GrpJobs GrpNodes GrpSubmitJobs MaxCPUMins MaxCPUs MaxJobs MaxNodes MaxSubmitJobs MaxWallDurationPerJob
+incr exit_code [add_cluster "$tc3" "$qs2" "$fs6" "$gc6" "$gj6" "$gn6" "$gs6" "$mm6" "$mc6" "$mj6" "$mn6" "$ms6" "$mw6"]
 if { $exit_code } {
 	remove_user "" "" "$us1,$us2,$us3,$us4"
 	remove_acct "" "$nm1,$nm2,$nm3,$nm4"
@@ -375,7 +375,7 @@ expect {
 	        send_user "FAILURE: there was a problem with the sacctmgr command\n"
 	    	incr exit_code 1
 	}
-	-re "($clu - $cl3:$fs=$fs6:$gm=$gm6:$gc=$gc6:$gj=$gj6:$gn=$gn6:$gs=$gs6:$gw=$gw6:$mp=$mm6:$mu=$mc6:$mj=$mj6:$mnj=$mn6:$ms=$ms6:$md=$mw6:$qs='$qs2')" {
+	-re "($clu - $cl3:$fs=$fs6:$gc=$gc6:$gj=$gj6:$gn=$gn6:$gs=$gs6:$mp=$mm6:$mu=$mc6:$mj=$mj6:$mnj=$mn6:$ms=$ms6:$md=$mw6:$qs='$qs2')" {
 		send_user "\nmatch 1\n"
 		incr matches
 		exp_continue
